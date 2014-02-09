@@ -89,7 +89,7 @@
 static int gtk_fps_limiter_disabled;
 static int draw_count;
 extern int _scanline_filter_a, _scanline_filter_b, _scanline_filter_c, _scanline_filter_d;
-VideoFilter video(256, 384, VideoFilterTypeID_HQ2XS, 4);
+VideoFilter video(256, 384, VideoFilterTypeID_None, 4);
 
 enum {
     MAIN_BG_0 = 0,
@@ -137,6 +137,7 @@ static void ToggleGap (GtkToggleAction *action);
 static void SetRotation(GtkAction *action, GtkRadioAction *current);
 static void SetOrientation(GtkAction *action, GtkRadioAction *current);
 static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data);
+static void ToggleHudDisplay(GtkToggleAction* action, gpointer data);
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
 static void SelectFirmwareFile();
 #endif
@@ -147,6 +148,10 @@ static const char *ui_description =
 "    <menu action='FileMenu'>"
 "      <menuitem action='open'/>"
 "      <menu action='RecentMenu'/>"
+"      <separator/>"
+"      <menuitem action='run'/>"
+"      <menuitem action='pause'/>"
+"      <menuitem action='reset'/>"
 "      <separator/>"
 "      <menuitem action='savestateto'/>"
 "      <menuitem action='loadstatefrom'/>"
@@ -185,71 +190,7 @@ static const char *ui_description =
 "      <separator/>"
 "      <menuitem action='quit'/>"
 "    </menu>"
-"    <menu action='EmulationMenu'>"
-"      <menuitem action='run'/>"
-"      <menuitem action='pause'/>"
-"      <menuitem action='reset'/>"
-"      <menuitem action='enableaudio'/>"
-#ifdef FAKE_MIC
-"      <menuitem action='micnoise'/>"
-#endif
-"      <menu action='SPUModeMenu'>"
-"        <menuitem action='SPUModeDualASync'/>"
-"        <menuitem action='SPUModeSyncN'/>"
-"        <menuitem action='SPUModeSyncZ'/>"
-#ifdef HAVE_LIBSOUNDTOUCH
-"        <menuitem action='SPUModeSyncP'/>"
-#endif
-"      </menu>"
-"      <menu action='FrameskipMenu'>"
-"        <menuitem action='enablefpslimiter'/>"
-"        <separator/>"
-"        <menuitem action='frameskipA'/>"
-"        <separator/>"
-"        <menuitem action='frameskip0'/>"
-"        <menuitem action='frameskip1'/>"
-"        <menuitem action='frameskip2'/>"
-"        <menuitem action='frameskip3'/>"
-"        <menuitem action='frameskip4'/>"
-"        <menuitem action='frameskip5'/>"
-"        <menuitem action='frameskip6'/>"
-"        <menuitem action='frameskip7'/>"
-"        <menuitem action='frameskip8'/>"
-"        <menuitem action='frameskip9'/>"
-"      </menu>"
-"      <menu action='LayersMenu'>"
-"        <menuitem action='layermainbg0'/>"
-"        <menuitem action='layermainbg1'/>"
-"        <menuitem action='layermainbg2'/>"
-"        <menuitem action='layermainbg3'/>"
-"        <menuitem action='layermainobj'/>"
-"        <menuitem action='layersubbg0'/>"
-"        <menuitem action='layersubbg1'/>"
-"        <menuitem action='layersubbg2'/>"
-"        <menuitem action='layersubbg3'/>"
-"        <menuitem action='layersubobj'/>"
-"      </menu>"
-"      <menu action='CheatMenu'>"
-"        <menuitem action='cheatsearch'/>"
-"        <menuitem action='cheatlist'/>"
-"      </menu>"
-"    </menu>"
-"    <menu action='ConfigMenu'>"
-"      <menu action='ConfigSaveMenu'>"
-"        <menuitem action='save_t0'/>"
-"        <menuitem action='save_t1'/>"
-"        <menuitem action='save_t2'/>"
-"        <menuitem action='save_t3'/>"
-"        <menuitem action='save_t4'/>"
-"        <menuitem action='save_t5'/>"
-"        <menuitem action='save_t6'/>"
-"      </menu>"
-"      <menu action='RotationMenu'>"
-"        <menuitem action='rotate_0'/>"
-"        <menuitem action='rotate_90'/>"
-"        <menuitem action='rotate_180'/>"
-"        <menuitem action='rotate_270'/>"
-"      </menu>"
+"    <menu action='ViewMenu'>"
 "      <menu action='OrientationMenu'>"
 "        <menuitem action='orient_vertical'/>"
 "        <menuitem action='orient_horizontal'/>"
@@ -257,6 +198,13 @@ static const char *ui_description =
 "        <separator/>"
 "        <menuitem action='orient_swapscreens'/>"
 "      </menu>"
+"      <menu action='RotationMenu'>"
+"        <menuitem action='rotate_0'/>"
+"        <menuitem action='rotate_90'/>"
+"        <menuitem action='rotate_180'/>"
+"        <menuitem action='rotate_270'/>"
+"      </menu>"
+"      <menuitem action='gap'/>"
 "      <menu action='PriInterpolationMenu'>"
 "        <menuitem action='pri_interp_none'/>"
 "        <menuitem action='pri_interp_lq2x'/>"
@@ -288,18 +236,86 @@ static const char *ui_description =
 "        <menuitem action='interp_bilinear'/>"
 "        <menuitem action='interp_hyper'/>"
 "      </menu>"
-"      <menuitem action='gap'/>"
+"      <menu action='HudMenu'>"
+#ifdef HAVE_LIBAGG
+"        <menuitem action='hud_fps'/>"
+"        <menuitem action='hud_input'/>"
+"        <menuitem action='hud_graphicalinput'/>"
+"        <menuitem action='hud_framecounter'/>"
+"        <menuitem action='hud_lagcounter'/>"
+"        <menuitem action='hud_rtc'/>"
+"        <menuitem action='hud_mic'/>"
+#else
+"        <menuitem action='hud_notsupported'/>"
+#endif
+"      </menu>"
+"      <separator/>"
+"      <menuitem action='view_menu'/>"
+"      <menuitem action='view_toolbar'/>"
+"      <menuitem action='view_statusbar'/>"
+"      <separator/>"
+"      <menuitem action='fullscreen'/>"
+"    </menu>"
+"    <menu action='ConfigMenu'>"
+"      <menuitem action='enableaudio'/>"
+#ifdef FAKE_MIC
+"      <menuitem action='micnoise'/>"
+#endif
+"      <menu action='SPUModeMenu'>"
+"        <menuitem action='SPUModeDualASync'/>"
+"        <menuitem action='SPUModeSyncN'/>"
+"        <menuitem action='SPUModeSyncZ'/>"
+#ifdef HAVE_LIBSOUNDTOUCH
+"        <menuitem action='SPUModeSyncP'/>"
+#endif
+"      </menu>"
+"      <menu action='FrameskipMenu'>"
+"        <menuitem action='enablefpslimiter'/>"
+"        <separator/>"
+"        <menuitem action='frameskipA'/>"
+"        <separator/>"
+"        <menuitem action='frameskip0'/>"
+"        <menuitem action='frameskip1'/>"
+"        <menuitem action='frameskip2'/>"
+"        <menuitem action='frameskip3'/>"
+"        <menuitem action='frameskip4'/>"
+"        <menuitem action='frameskip5'/>"
+"        <menuitem action='frameskip6'/>"
+"        <menuitem action='frameskip7'/>"
+"        <menuitem action='frameskip8'/>"
+"        <menuitem action='frameskip9'/>"
+"      </menu>"
+"      <menu action='CheatMenu'>"
+"        <menuitem action='cheatsearch'/>"
+"        <menuitem action='cheatlist'/>"
+"      </menu>"
+"      <menu action='ConfigSaveMenu'>"
+"        <menuitem action='save_t0'/>"
+"        <menuitem action='save_t1'/>"
+"        <menuitem action='save_t2'/>"
+"        <menuitem action='save_t3'/>"
+"        <menuitem action='save_t4'/>"
+"        <menuitem action='save_t5'/>"
+"        <menuitem action='save_t6'/>"
+"      </menu>"
 "      <menuitem action='editctrls'/>"
 "      <menuitem action='editjoyctrls'/>"
-"      <menu action='ViewMenu'>"
-"        <menuitem action='view_menu'/>"
-"        <menuitem action='view_toolbar'/>"
-"        <menuitem action='view_statusbar'/>"
-"        <menuitem action='fullscreen'/>"
-"      </menu>"
 "    </menu>"
 "    <menu action='ToolsMenu'>"
 "      <menuitem action='ioregs'/>"
+"      <separator/>"
+"      <menu action='LayersMenu'>"
+"        <menuitem action='layermainbg0'/>"
+"        <menuitem action='layermainbg1'/>"
+"        <menuitem action='layermainbg2'/>"
+"        <menuitem action='layermainbg3'/>"
+"        <menuitem action='layermainobj'/>"
+"        <menuitem action='layersubbg0'/>"
+"        <menuitem action='layersubbg1'/>"
+"        <menuitem action='layersubbg2'/>"
+"        <menuitem action='layersubbg3'/>"
+"        <menuitem action='layersubobj'/>"
+"      </menu>"
 "    </menu>"
 "    <menu action='HelpMenu'>"
 "      <menuitem action='about'/>"
@@ -317,6 +333,9 @@ static const GtkActionEntry action_entries[] = {
     { "FileMenu", NULL, "_File" },
       { "open",          "gtk-open",    "_Open",         "<Ctrl>o",  NULL,   OpenNdsDialog },
       { "RecentMenu", NULL, "Open _recent" },
+      { "run",        "gtk-media-play",   "_Run",          "<Ctrl>r",  NULL,   Launch },
+      { "pause",      "gtk-media-pause",  "_Pause",        "<Ctrl>p",  NULL,   Pause },
+      { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
       { "savestateto",    NULL,         "Save state _to ...",         NULL,  NULL,   SaveStateDialog },
       { "loadstatefrom",  NULL,         "Load state _from ...",         NULL,  NULL,   LoadStateDialog },
       { "recordmovie",  NULL,         "Record movie _to ...",         NULL,  NULL,   RecordMovieDialog },
@@ -330,28 +349,28 @@ static const GtkActionEntry action_entries[] = {
       { "printscreen","gtk-media-record", "Take a _screenshot",    "<Ctrl>s",  NULL,   Printscreen },
       { "quit",       "gtk-quit",         "_Quit",         "<Ctrl>q",  NULL,   DoQuit },
 
-    { "EmulationMenu", NULL, "_Emulation" },
-      { "run",        "gtk-media-play",   "_Run",          "<Ctrl>r",  NULL,   Launch },
-      { "pause",      "gtk-media-pause",  "_Pause",        "<Ctrl>p",  NULL,   Pause },
-      { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
+    { "ViewMenu", NULL, "_View" },
+      { "RotationMenu", NULL, "_Rotation" },
+      { "OrientationMenu", NULL, "LCDs _Layout" },
+      { "PriInterpolationMenu", NULL, "Primary _Interpolation" },
+      { "InterpolationMenu", NULL, "S_econdary Interpolation" },
+      { "HudMenu", NULL, "_HUD" },
+#ifndef HAVE_LIBAGG
+      { "hud_notsupported", NULL, "HUD support not compiled" },
+#endif
+
+    { "ConfigMenu", NULL, "_Config" },
       { "SPUModeMenu", NULL, "_SPU Mode" },
       { "FrameskipMenu", NULL, "_Frameskip" },
-      { "LayersMenu", NULL, "_Layers" },
       { "CheatMenu", NULL, "_Cheat" },
         { "cheatsearch",     NULL,      "_Search",        NULL,       NULL,   CheatSearch },
         { "cheatlist",       NULL,      "_List",        NULL,       NULL,   CheatList },
-
-    { "ConfigMenu", NULL, "_Config" },
       { "ConfigSaveMenu", NULL, "_Saves" },
       { "editctrls",  NULL,        "_Edit controls",NULL,    NULL,   Edit_Controls },
       { "editjoyctrls",  NULL,     "Edit _Joystick controls",NULL,       NULL,   Edit_Joystick_Controls },
-      { "RotationMenu", NULL, "_Rotation" },
-      { "OrientationMenu", NULL, "_Orientation" },
-      { "PriInterpolationMenu", NULL, "Primary _Interpolation" },
-      { "InterpolationMenu", NULL, "Secondary _Interpolation" },
-      { "ViewMenu", NULL, "_View" },
 
     { "ToolsMenu", NULL, "_Tools" },
+      { "LayersMenu", NULL, "View _Layers" },
 
     { "HelpMenu", NULL, "_Help" },
       { "about",      "gtk-about",        "_About",        NULL,       NULL,   About }
@@ -364,12 +383,12 @@ static const GtkToggleActionEntry toggle_entries[] = {
 #endif
     { "enablefpslimiter", NULL, "_Limit to 60 fps", NULL, NULL, G_CALLBACK(ToggleFpsLimiter), TRUE},
     { "frameskipA", NULL, "_Auto-minimize skipping", NULL, NULL, G_CALLBACK(ToggleAutoFrameskip), TRUE},
-    { "gap", NULL, "_Gap", NULL, NULL, G_CALLBACK(ToggleGap), FALSE},
-    { "view_menu", NULL, "View _menu", NULL, NULL, G_CALLBACK(ToggleMenuVisible), TRUE},
-    { "view_toolbar", NULL, "View _toolbar", NULL, NULL, G_CALLBACK(ToggleToolbarVisible), TRUE},
-    { "view_statusbar", NULL, "View _statusbar", NULL, NULL, G_CALLBACK(ToggleStatusbarVisible), TRUE},
+    { "gap", NULL, "Screen _Gap", NULL, NULL, G_CALLBACK(ToggleGap), FALSE},
+    { "view_menu", NULL, "Show _menu", NULL, NULL, G_CALLBACK(ToggleMenuVisible), TRUE},
+    { "view_toolbar", NULL, "Show _toolbar", NULL, NULL, G_CALLBACK(ToggleToolbarVisible), TRUE},
+    { "view_statusbar", NULL, "Show _statusbar", NULL, NULL, G_CALLBACK(ToggleStatusbarVisible), TRUE},
     { "orient_swapscreens", NULL, "S_wap screens", "space", NULL, G_CALLBACK(ToggleSwapScreens), FALSE},
-    { "fullscreen", NULL, "Fullscreen", "<Ctrl>f", NULL, G_CALLBACK(ToggleFullscreen), FALSE},
+    { "fullscreen", NULL, "_Fullscreen", "F11", NULL, G_CALLBACK(ToggleFullscreen), FALSE},
 };
 
 static const GtkRadioActionEntry pri_interpolation_entries[] = {
@@ -411,7 +430,6 @@ static const GtkRadioActionEntry rotation_entries[] = {
     { "rotate_180", "gtk-orientation-reverse-portrait",  "_180",NULL, NULL, 180 },
     { "rotate_270", "gtk-orientation-reverse-landscape", "_270",NULL, NULL, 270 },
 };
-
 
 /* When adding modes here remember to add the relevent entry to screen_size */
 enum orientation_enum {
@@ -1490,7 +1508,7 @@ static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
 
     if (e->button == 3) {
         GtkWidget * pMenu = gtk_menu_item_get_submenu ( GTK_MENU_ITEM(
-                    gtk_ui_manager_get_widget (ui_manager, "/MainMenu/ConfigMenu/ViewMenu")));
+                    gtk_ui_manager_get_widget (ui_manager, "/MainMenu/ViewMenu")));
         gtk_menu_popup(GTK_MENU(pMenu), NULL, NULL, NULL, NULL, 3, e->time);
     }
 
@@ -2054,7 +2072,9 @@ gboolean EmuLoop(gpointer data)
         gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME - Running");
     }
 
+    bool oneSecond = false;
     if ((next_fps_SecStart - fps_SecStart) >= 1000) {
+        oneSecond = true;
         fps_SecStart = next_fps_SecStart;
 
         float emu_ratio = fps_FrameCount / 60.0;
@@ -2063,10 +2083,50 @@ gboolean EmuLoop(gpointer data)
         snprintf(Title, sizeof(Title), "DeSmuME - %dfps, %d skipped, draw: %dfps", fps_FrameCount, skipped_frames, draw_count);
         gtk_window_set_title(GTK_WINDOW(pWindow), Title);
 
+#ifdef HAVE_LIBAGG
+        Hud.fps = fps_FrameCount;
+#endif
+
         fps_FrameCount = 0;
         skipped_frames = 0;
         draw_count = 0;
     }
+
+	// HUD display things (copied from Windows main.cpp)
+#ifdef HAVE_LIBAGG
+	gfx3d.frameCtrRaw++;
+	if(gfx3d.frameCtrRaw == 60) {
+		Hud.fps3d = gfx3d.frameCtr;
+		gfx3d.frameCtrRaw = 0;
+		gfx3d.frameCtr = 0;
+	}
+	if(nds.idleFrameCounter==0 || oneSecond) 
+	{
+		//calculate a 16 frame arm9 load average
+		for(int cpu=0;cpu<2;cpu++)
+		{
+			int load = 0;
+			//printf("%d: ",cpu);
+			for(int i=0;i<16;i++)
+			{
+				//blend together a few frames to keep low-framerate games from having a jittering load average
+				//(they will tend to work 100% for a frame and then sleep for a while)
+				//4 frames should handle even the slowest of games
+				s32 sample = 
+					nds.runCycleCollector[cpu][(i+0+nds.idleFrameCounter)&15]
+				+	nds.runCycleCollector[cpu][(i+1+nds.idleFrameCounter)&15]
+				+	nds.runCycleCollector[cpu][(i+2+nds.idleFrameCounter)&15]
+				+	nds.runCycleCollector[cpu][(i+3+nds.idleFrameCounter)&15];
+				sample /= 4;
+				load = load/8 + sample*7/8;
+			}
+			//printf("\n");
+			load = std::min(100,std::max(0,(int)(load*100/1120380)));
+			Hud.cpuload[cpu] = load;
+		}
+	}
+	Hud.cpuloopIterationCount = nds.cpuloopIterationCount;
+#endif
 
     /* Merge the joystick keys with the keyboard ones */
     process_joystick_events(&keys_latch);
@@ -2178,7 +2238,7 @@ static void changesavetype(GtkAction *action, GtkRadioAction *current)
     backup_setManualBackupType( gtk_radio_action_get_current_value(current));
 }
 
-static void desmume_gtk_menu_emulation_layers (GtkActionGroup *ag)
+static void desmume_gtk_menu_tool_layers (GtkActionGroup *ag)
 {
     const char *Layers_Menu[10][2] = {
         {"layermainbg0","_0 Main BG 0"},
@@ -2202,6 +2262,82 @@ static void desmume_gtk_menu_emulation_layers (GtkActionGroup *ag)
         gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), NULL);
     }
 }
+
+#ifdef HAVE_LIBAGG
+enum hud_display_enum {
+    HUD_DISPLAY_FPS,
+    HUD_DISPLAY_INPUT,
+    HUD_DISPLAY_GINPUT,
+    HUD_DISPLAY_FCOUNTER,
+    HUD_DISPLAY_LCOUNTER,
+    HUD_DISPLAY_RTC,
+    HUD_DISPLAY_MIC,
+};
+
+static void ToggleHudDisplay(GtkToggleAction* action, gpointer data)
+{
+    guint Layer = GPOINTER_TO_UINT(data);
+    gboolean active;
+
+    // FIXME: make it work after resume
+    if (!desmume_running())
+        return;
+
+    active = gtk_toggle_action_get_active(action);
+
+    switch (Layer) {
+    case HUD_DISPLAY_FPS:
+        CommonSettings.hud.FpsDisplay = active;
+        break;
+    case HUD_DISPLAY_INPUT:
+        CommonSettings.hud.ShowInputDisplay = active;
+        break;
+    case HUD_DISPLAY_GINPUT:
+        CommonSettings.hud.ShowGraphicalInputDisplay = active;
+        break;
+    case HUD_DISPLAY_FCOUNTER:
+        CommonSettings.hud.FrameCounterDisplay = active;
+        break;
+    case HUD_DISPLAY_LCOUNTER:
+        CommonSettings.hud.ShowLagFrameCounter = active;
+        break;
+    case HUD_DISPLAY_RTC:
+        CommonSettings.hud.ShowRTC = active;
+        break;
+    case HUD_DISPLAY_MIC:
+        CommonSettings.hud.ShowMicrophone = active;
+        break;
+    default:
+        break;
+    }
+}
+
+static void desmume_gtk_menu_view_hud (GtkActionGroup *ag)
+{
+    const struct {
+        const gchar* name;
+        const gchar* label;
+        guint id;
+    } hud_menu[] = {
+        { "hud_fps","Display _fps", HUD_DISPLAY_FPS },
+        { "hud_input","Display _Input", HUD_DISPLAY_INPUT },
+        { "hud_graphicalinput","Display _Graphical Input", HUD_DISPLAY_GINPUT },
+        { "hud_framecounter","Display Frame _Counter", HUD_DISPLAY_FCOUNTER },
+        { "hud_lagcounter","Display _Lag Counter", HUD_DISPLAY_LCOUNTER },
+        { "hud_rtc","Display _RTC", HUD_DISPLAY_RTC },
+        { "hud_mic","Display _Mic", HUD_DISPLAY_MIC },
+    };
+    guint i;
+
+    GtkToggleAction *act;
+    for(i = 0; i < sizeof(hud_menu) / sizeof(hud_menu[0]); i++){
+        act = gtk_toggle_action_new(hud_menu[i].name, hud_menu[i].label, NULL, NULL);
+        gtk_toggle_action_set_active(act, FALSE);
+        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(ToggleHudDisplay), GUINT_TO_POINTER(hud_menu[i].id));
+        gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), NULL);
+    }
+}
+#endif
 
 static void ToggleAudio (GtkToggleAction *action)
 {
@@ -2459,7 +2595,12 @@ common_gtk_main( class configured_features *my_config)
         if (action)
             gtk_toggle_action_set_active((GtkToggleAction *)action, FALSE);
     }
-    desmume_gtk_menu_emulation_layers(action_group);
+    desmume_gtk_menu_tool_layers(action_group);
+#ifdef HAVE_LIBAGG
+    desmume_gtk_menu_view_hud(action_group);
+#else
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "hud_notsupported"), FALSE);
+#endif
     desmume_gtk_menu_file_saveload_slot(action_group);
     desmume_gtk_menu_tools(action_group);
     gtk_action_group_add_radio_actions(action_group, savet_entries, G_N_ELEMENTS(savet_entries), 
@@ -2467,7 +2608,7 @@ common_gtk_main( class configured_features *my_config)
     gtk_action_group_add_radio_actions(action_group, interpolation_entries, G_N_ELEMENTS(interpolation_entries), 
             GDK_INTERP_NEAREST, G_CALLBACK(Modify_Interpolation), NULL);
     gtk_action_group_add_radio_actions(action_group, pri_interpolation_entries, G_N_ELEMENTS(pri_interpolation_entries), 
-            VideoFilterTypeID_HQ2XS, G_CALLBACK(Modify_PriInterpolation), NULL);
+            VideoFilterTypeID_None, G_CALLBACK(Modify_PriInterpolation), NULL);
     gtk_action_group_add_radio_actions(action_group, spumode_entries, G_N_ELEMENTS(spumode_entries),
             0, G_CALLBACK(Modify_SPUMode), NULL);
     gtk_action_group_add_radio_actions(action_group, frameskip_entries, G_N_ELEMENTS(frameskip_entries), 
