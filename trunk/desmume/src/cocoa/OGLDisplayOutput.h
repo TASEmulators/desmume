@@ -70,6 +70,10 @@ protected:
 	GLubyte vtxIndexBuffer[12];
 	size_t _vtxBufferOffset;
 	
+	void CalculateDisplayNormalSize(double *w, double *h);
+	void UpdateVertices();
+	void UpdateTexCoords(GLfloat s, GLfloat t);
+	
 	void GetExtensionSetOGL(std::set<std::string> *oglExtensionSet);
 	bool IsExtensionPresent(const std::set<std::string> &oglExtensionSet, const std::string &extensionName) const;
 	bool SetupShadersOGL(const char *vertexProgram, const char *fragmentProgram);
@@ -90,11 +94,7 @@ public:
 	virtual void RenderOGL();
 	virtual void SetViewportSizeOGL(GLsizei w, GLsizei h);
 	virtual void UpdateDisplayTransformationOGL();
-	virtual void RespondToVideoFilterChangeOGL(const VideoFilterTypeID videoFilterTypeID);
-	
-	void CalculateDisplayNormalSize(double *w, double *h);
-	void UpdateVertices();
-	void UpdateTexCoords(GLfloat s, GLfloat t);
+	virtual void SetVideoFilterOGL(const VideoFilterTypeID videoFilterTypeID);
 	
 	int GetDisplayMode();
 	void SetDisplayMode(int dispMode);

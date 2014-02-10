@@ -1081,8 +1081,6 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	// Set the video filter source size now since the proper size is needed on initialization.
 	// If we don't do this, new windows could draw incorrectly.
-	//const NSSize vfSrcSize = NSMakeSize(GPU_DISPLAY_WIDTH, ([self displayMode] == DS_DISPLAY_TYPE_DUAL) ? GPU_DISPLAY_HEIGHT * 2 : GPU_DISPLAY_HEIGHT);
-	//[[cdsVideoOutput vf] setSourceSize:vfSrcSize];
 	[CocoaDSUtil messageSendOneWayWithInteger:[cdsVideoOutput receivePort] msgID:MESSAGE_CHANGE_VIDEO_FILTER integerValue:[self videoFilterType]];
 	
 	// Add the video thread to the output list.
@@ -1785,7 +1783,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 {
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->RespondToVideoFilterChangeOGL((const VideoFilterTypeID)videoFilterTypeID);
+	oglv->SetVideoFilterOGL((const VideoFilterTypeID)videoFilterTypeID);
 	CGLUnlockContext(cglDisplayContext);
 }
 

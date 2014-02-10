@@ -85,16 +85,6 @@
 @synthesize frameJumpFramesForward;
 @synthesize frameJumpToFrame;
 
-@dynamic render3DRenderingEngine;
-@dynamic render3DHighPrecisionColorInterpolation;
-@dynamic render3DEdgeMarking;
-@dynamic render3DFog;
-@dynamic render3DTextures;
-@dynamic render3DDepthComparisonThreshold;
-@dynamic render3DThreads;
-@dynamic render3DLineHack;
-@dynamic render3DMultisample;
-
 @synthesize mainWindow;
 @synthesize windowList;
 
@@ -316,124 +306,6 @@
 - (float) currentVolumeValue
 {
 	return currentVolumeValue;
-}
-
-- (void) setRender3DRenderingEngine:(NSInteger)engineID
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DRenderingEngine:engineID];
-}
-
-- (NSInteger) render3DRenderingEngine
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DRenderingEngine];
-}
-
-- (void) setRender3DHighPrecisionColorInterpolation:(BOOL)theState
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DHighPrecisionColorInterpolation:theState];
-}
-
-- (BOOL) render3DHighPrecisionColorInterpolation
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DHighPrecisionColorInterpolation];
-}
-
-- (void) setRender3DEdgeMarking:(BOOL)theState
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DEdgeMarking:theState];
-}
-
-- (BOOL) render3DEdgeMarking
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DEdgeMarking];
-}
-
-- (void) setRender3DFog:(BOOL)theState
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DFog:theState];
-}
-
-- (BOOL) render3DFog
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DFog];
-}
-
-- (void) setRender3DTextures:(BOOL)theState
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DTextures:theState];
-}
-
-- (BOOL) render3DTextures
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DTextures];
-}
-
-- (void) setRender3DDepthComparisonThreshold:(NSInteger)threshold
-{
-	if (threshold < 0)
-	{
-		return;
-	}
-	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DDepthComparisonThreshold:(NSUInteger)threshold];
-}
-
-- (NSInteger) render3DDepthComparisonThreshold
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DDepthComparisonThreshold];
-}
-
-- (void) setRender3DThreads:(NSInteger)threadCount
-{
-	if (threadCount < 0)
-	{
-		return;
-	}
-	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DThreads:(NSUInteger)threadCount];
-}
-
-- (NSInteger) render3DThreads
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DThreads];
-}
-
-- (void) setRender3DLineHack:(BOOL)theState
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DLineHack:theState];
-}
-
-- (BOOL) render3DLineHack
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DLineHack];
-}
-
-- (void) setRender3DMultisample:(BOOL)theState
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore.cdsGPU setRender3DMultisample:theState];
-}
-
-- (BOOL) render3DMultisample
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore.cdsGPU render3DMultisample];
 }
 
 #pragma mark IBActions
@@ -1019,15 +891,16 @@
 	// Force end of editing of any text fields.
 	[[(NSControl *)sender window] makeFirstResponder:nil];
 	
-	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore.cdsGPU render3DRenderingEngine] forKey:@"Render3D_RenderingEngine"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DHighPrecisionColorInterpolation] forKey:@"Render3D_HighPrecisionColorInterpolation"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DEdgeMarking] forKey:@"Render3D_EdgeMarking"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DFog] forKey:@"Render3D_Fog"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DTextures] forKey:@"Render3D_Textures"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore.cdsGPU render3DDepthComparisonThreshold] forKey:@"Render3D_DepthComparisonThreshold"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore.cdsGPU render3DThreads] forKey:@"Render3D_Threads"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DLineHack] forKey:@"Render3D_LineHack"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore.cdsGPU render3DMultisample] forKey:@"Render3D_Multisample"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] render3DRenderingEngine] forKey:@"Render3D_RenderingEngine"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DHighPrecisionColorInterpolation] forKey:@"Render3D_HighPrecisionColorInterpolation"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DEdgeMarking] forKey:@"Render3D_EdgeMarking"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DFog] forKey:@"Render3D_Fog"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DTextures] forKey:@"Render3D_Textures"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] render3DDepthComparisonThreshold] forKey:@"Render3D_DepthComparisonThreshold"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] render3DThreads] forKey:@"Render3D_Threads"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DLineHack] forKey:@"Render3D_LineHack"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DMultisample] forKey:@"Render3D_Multisample"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DFragmentSamplingHack] forKey:@"Render3D_FragmentSamplingHack"];
 }
 
 - (IBAction) writeDefaultsEmulationSettings:(id)sender
@@ -2177,15 +2050,17 @@
 	[[self cdsSpeaker] setSpuSyncMethod:[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMethod"]];
 	
 	// Set the 3D rendering options per user preferences.
-	[self setRender3DThreads:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_Threads"]];
-	[self setRender3DRenderingEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_RenderingEngine"]];
-	[self setRender3DHighPrecisionColorInterpolation:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_HighPrecisionColorInterpolation"]];
-	[self setRender3DEdgeMarking:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_EdgeMarking"]];
-	[self setRender3DFog:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Fog"]];
-	[self setRender3DTextures:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Textures"]];
-	[self setRender3DDepthComparisonThreshold:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_DepthComparisonThreshold"]];
-	[self setRender3DLineHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_LineHack"]];
-	[self setRender3DMultisample:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Multisample"]];
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[[cdsCore cdsGPU] setRender3DThreads:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_Threads"]];
+	[[cdsCore cdsGPU] setRender3DRenderingEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_RenderingEngine"]];
+	[[cdsCore cdsGPU] setRender3DHighPrecisionColorInterpolation:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_HighPrecisionColorInterpolation"]];
+	[[cdsCore cdsGPU] setRender3DEdgeMarking:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_EdgeMarking"]];
+	[[cdsCore cdsGPU] setRender3DFog:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Fog"]];
+	[[cdsCore cdsGPU] setRender3DTextures:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Textures"]];
+	[[cdsCore cdsGPU] setRender3DDepthComparisonThreshold:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_DepthComparisonThreshold"]];
+	[[cdsCore cdsGPU] setRender3DLineHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_LineHack"]];
+	[[cdsCore cdsGPU] setRender3DMultisample:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Multisample"]];
+	[[cdsCore cdsGPU] setRender3DFragmentSamplingHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_FragmentSamplingHack"]];
 }
 
 #pragma mark NSUserInterfaceValidations Protocol
@@ -2466,7 +2341,8 @@
 
 - (void)controlTextDidEndEditing:(NSNotification *)aNotification
 {
-	[self setRender3DDepthComparisonThreshold:[(NSNumber *)[aNotification object] integerValue]];
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[[cdsCore cdsGPU] setRender3DDepthComparisonThreshold:[(NSNumber *)[aNotification object] integerValue]];
 }
 
 @end

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@
 @property (assign) NSUInteger render3DThreads;
 @property (assign) BOOL render3DLineHack;
 @property (assign) BOOL render3DMultisample;
+@property (assign) BOOL render3DFragmentSamplingHack;
 
 - (BOOL) gpuStateByBit:(const UInt32)stateBit;
 - (BOOL) isGPUTypeDisplayed:(const NSInteger)theGpuType;

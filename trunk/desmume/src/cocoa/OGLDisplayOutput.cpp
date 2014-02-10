@@ -363,7 +363,7 @@ void OGLVideoOutput::UpdateDisplayTransformationOGL()
 	}
 }
 
-void OGLVideoOutput::RespondToVideoFilterChangeOGL(const VideoFilterTypeID videoFilterTypeID)
+void OGLVideoOutput::SetVideoFilterOGL(const VideoFilterTypeID videoFilterTypeID)
 {
 	this->_vfSingle->ChangeFilterByID(videoFilterTypeID);
 	this->_vfDual->ChangeFilterByID(videoFilterTypeID);

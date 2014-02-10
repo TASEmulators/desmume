@@ -686,6 +686,8 @@
 	<true/>
 	<key>Render3D_Fog</key>
 	<true/>
+	<key>Render3D_FragmentSamplingHack</key>
+	<true/>
 	<key>Render3D_HighPrecisionColorInterpolation</key>
 	<true/>
 	<key>Render3D_LineHack</key>

@@ -139,16 +139,6 @@ class AudioSampleBlockGenerator;
 @property (assign) NSInteger frameJumpFramesForward;
 @property (assign) NSInteger frameJumpToFrame;
 
-@property (assign) NSInteger render3DRenderingEngine;
-@property (assign) BOOL render3DHighPrecisionColorInterpolation;
-@property (assign) BOOL render3DEdgeMarking;
-@property (assign) BOOL render3DFog;
-@property (assign) BOOL render3DTextures;
-@property (assign) NSInteger render3DDepthComparisonThreshold;
-@property (assign) NSInteger render3DThreads;
-@property (assign) BOOL render3DLineHack;
-@property (assign) BOOL render3DMultisample;
-
 @property (retain) DisplayWindowController *mainWindow;
 @property (readonly) NSMutableArray *windowList;
 
