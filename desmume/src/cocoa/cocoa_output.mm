@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2013 DeSmuME team
+	Copyright (C) 2011-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -971,30 +971,7 @@
 	const float gapScalar = *(float *)[displayGapScalarData bytes];
 	[(id<CocoaDSDisplayVideoDelegate>)delegate doDisplayGapChanged:gapScalar];
 }
-/*
-- (void) handleChangeBilinearOutput:(NSData *)bilinearStateData
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doBilinearOutputChanged:)])
-	{
-		return;
-	}
-	
-	const BOOL theState = *(BOOL *)[bilinearStateData bytes];
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doBilinearOutputChanged:theState];
-	[self handleEmuFrameProcessed:self.frameData attributes:self.frameAttributesData];
-}
 
-- (void) handleChangeVerticalSync:(NSData *)verticalSyncStateData
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doVerticalSyncChanged:)])
-	{
-		return;
-	}
-	
-	const BOOL theState = *(BOOL *)[verticalSyncStateData bytes];
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doVerticalSyncChanged:theState];
-}
-*/
 - (void) handleChangeVideoFilter:(NSData *)videoFilterTypeIdData
 {
 	if (delegate == nil || ![delegate respondsToSelector:@selector(doVideoFilterChanged:)])

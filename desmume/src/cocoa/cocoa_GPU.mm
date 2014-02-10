@@ -67,6 +67,7 @@ GPU3DInterface *core3DList[] = {
 @dynamic render3DThreads;
 @dynamic render3DLineHack;
 @dynamic render3DMultisample;
+@dynamic render3DFragmentSamplingHack;
 
 
 - (id)init
@@ -316,6 +317,22 @@ GPU3DInterface *core3DList[] = {
 {
 	pthread_mutex_lock(self.mutexProducer);
 	const BOOL state = CommonSettings.GFX3D_Renderer_Multisample ? YES : NO;
+	pthread_mutex_unlock(self.mutexProducer);
+	
+	return state;
+}
+
+- (void) setRender3DFragmentSamplingHack:(BOOL)state
+{
+	pthread_mutex_lock(self.mutexProducer);
+	CommonSettings.GFX3D_TXTHack = state ? true : false;
+	pthread_mutex_unlock(self.mutexProducer);
+}
+
+- (BOOL) render3DFragmentSamplingHack
+{
+	pthread_mutex_lock(self.mutexProducer);
+	const BOOL state = CommonSettings.GFX3D_TXTHack ? YES : NO;
 	pthread_mutex_unlock(self.mutexProducer);
 	
 	return state;
