@@ -214,6 +214,7 @@
 	
 	[inputPrefsView initSettingsSheets];
 	[inputPrefsView populateInputProfileMenu];
+	[[inputPrefsView inputPrefOutlineView] expandItem:nil expandChildren:YES];
 	[[inputPrefsView inputProfileMenu] selectItemAtIndex:0];
 }
 
