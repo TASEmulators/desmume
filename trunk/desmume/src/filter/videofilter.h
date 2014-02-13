@@ -180,7 +180,7 @@ private:
 	ThreadLock _lockAttributes;
 	ThreadCond _condRunning;
 	
-	void SetAttributes(const VideoFilterAttributes vfAttr);
+	void SetAttributes(const VideoFilterAttributes &vfAttr);
 	
 public:
 	VideoFilter(size_t srcWidth, size_t srcHeight, VideoFilterTypeID typeID, size_t threadCount);
@@ -188,11 +188,11 @@ public:
 	
 	bool SetSourceSize(const size_t width, const size_t height);
 	bool ChangeFilterByID(const VideoFilterTypeID typeID);
-	bool ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr);
+	bool ChangeFilterByAttributes(const VideoFilterAttributes &vfAttr);
 	uint32_t* RunFilter();
 	
 	static void RunFilterCustomByID(const uint32_t *__restrict srcBuffer, uint32_t *__restrict dstBuffer, const size_t srcWidth, const size_t srcHeight, const VideoFilterTypeID typeID);
-	static void RunFilterCustomByAttributes(const uint32_t *__restrict srcBuffer, uint32_t *__restrict dstBuffer, const size_t srcWidth, const size_t srcHeight, const VideoFilterAttributes *vfAttr);
+	static void RunFilterCustomByAttributes(const uint32_t *__restrict srcBuffer, uint32_t *__restrict dstBuffer, const size_t srcWidth, const size_t srcHeight, const VideoFilterAttributes &vfAttr);
 	static const char* GetTypeStringByID(const VideoFilterTypeID typeID);
 	
 	VideoFilterAttributes GetAttributes();

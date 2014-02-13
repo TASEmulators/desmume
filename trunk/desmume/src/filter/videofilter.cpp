@@ -189,7 +189,7 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 	ThreadLockUnlock(&this->_lockSrc);
 	
 	const VideoFilterAttributes vfAttr = this->GetAttributes();
-	result = this->ChangeFilterByAttributes(&vfAttr);
+	result = this->ChangeFilterByAttributes(vfAttr);
 	
 	return result;
 }
@@ -216,7 +216,7 @@ bool VideoFilter::ChangeFilterByID(const VideoFilterTypeID typeID)
 		return result;
 	}
 	
-	result = this->ChangeFilterByAttributes(&VideoFilterAttributesList[typeID]);
+	result = this->ChangeFilterByAttributes(VideoFilterAttributesList[typeID]);
 	
 	return result;
 }
@@ -233,28 +233,23 @@ bool VideoFilter::ChangeFilterByID(const VideoFilterTypeID typeID)
 		A bool that reports if the filter change was successful. A value of true means
 		success, while a value of false means failure.
  ********************************************************************************************/
-bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr)
+bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes &vfAttr)
 {
 	bool result = false;
 	
-	if (vfAttr == NULL)
+	if (vfAttr.scaleMultiply == 0 || vfAttr.scaleDivide < 1)
 	{
 		return result;
 	}
 	
-	if (vfAttr->scaleMultiply == 0 || vfAttr->scaleDivide < 1)
-	{
-		return result;
-	}
-	
-	if (this->_vfDstSurface.Surface != NULL && this->_vfAttributes.scaleMultiply == vfAttr->scaleMultiply && this->_vfAttributes.scaleDivide == vfAttr->scaleDivide)
+	if (this->_vfDstSurface.Surface != NULL && this->_vfAttributes.scaleMultiply == vfAttr.scaleMultiply && this->_vfAttributes.scaleDivide == vfAttr.scaleDivide)
 	{
 		// If we have an existing buffer and the new size is identical to the old size,
 		// we can skip the costly construction of the buffer and simply clear it instead.
 		ThreadLockLock(&this->_lockDst);
 		
 		memset(this->_vfDstSurface.Surface, 0, this->_vfDstSurface.Width * _vfDstSurface.Height * sizeof(uint32_t));
-		this->_vfFunc = vfAttr->filterFunction;
+		this->_vfFunc = vfAttr.filterFunction;
 		
 		const size_t threadCount = this->_vfThread.size();
 		for (size_t i = 0; i < threadCount; i++)
@@ -272,9 +267,9 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr)
 		const size_t srcHeight = this->_vfSrcSurface.Height;
 		ThreadLockUnlock(&this->_lockSrc);
 		
-		const size_t dstWidth = srcWidth * vfAttr->scaleMultiply / vfAttr->scaleDivide;
-		const size_t dstHeight = srcHeight * vfAttr->scaleMultiply / vfAttr->scaleDivide;
-		const VideoFilterFunc filterFunction = vfAttr->filterFunction;
+		const size_t dstWidth = srcWidth * vfAttr.scaleMultiply / vfAttr.scaleDivide;
+		const size_t dstHeight = srcHeight * vfAttr.scaleMultiply / vfAttr.scaleDivide;
+		const VideoFilterFunc filterFunction = vfAttr.filterFunction;
 		
 		ThreadLockLock(&this->_lockDst);
 		
@@ -312,7 +307,7 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes *vfAttr)
 		ThreadLockUnlock(&this->_lockDst);
 	}
 	
-	this->SetAttributes(*vfAttr);
+	this->SetAttributes(vfAttr);
 	
 	result = true;
 	return result;
@@ -408,7 +403,7 @@ void VideoFilter::RunFilterCustomByID(const uint32_t *__restrict srcBuffer, uint
 		return;
 	}
 	
-	VideoFilter::RunFilterCustomByAttributes(srcBuffer, dstBuffer, srcWidth, srcHeight, &VideoFilterAttributesList[typeID]);
+	VideoFilter::RunFilterCustomByAttributes(srcBuffer, dstBuffer, srcWidth, srcHeight, VideoFilterAttributesList[typeID]);
 }
 
 /********************************************************************************************
@@ -440,24 +435,23 @@ void VideoFilter::RunFilterCustomByID(const uint32_t *__restrict srcBuffer, uint
  ********************************************************************************************/
 void VideoFilter::RunFilterCustomByAttributes(const uint32_t *__restrict srcBuffer, uint32_t *__restrict dstBuffer,
 											  const size_t srcWidth, const size_t srcHeight,
-											  const VideoFilterAttributes *vfAttr)
+											  const VideoFilterAttributes &vfAttr)
 {
 	// Parameter check
 	if (srcBuffer == NULL ||
 		dstBuffer == NULL ||
 		srcWidth < 1 ||
 		srcHeight < 1 ||
-		vfAttr == NULL ||
-		vfAttr->scaleMultiply == 0 ||
-		vfAttr->scaleDivide < 1)
+		vfAttr.scaleMultiply == 0 ||
+		vfAttr.scaleDivide < 1)
 	{
 		return;
 	}
 	
 	// Get the filter attributes
-	const size_t dstWidth = srcWidth * vfAttr->scaleMultiply / vfAttr->scaleDivide;
-	const size_t dstHeight = srcHeight * vfAttr->scaleMultiply / vfAttr->scaleDivide;
-	const VideoFilterFunc filterFunction = vfAttr->filterFunction;
+	const size_t dstWidth = srcWidth * vfAttr.scaleMultiply / vfAttr.scaleDivide;
+	const size_t dstHeight = srcHeight * vfAttr.scaleMultiply / vfAttr.scaleDivide;
+	const VideoFilterFunc filterFunction = vfAttr.filterFunction;
 	
 	// Assign the surfaces and run the filter
 	SSurface srcSurface;
@@ -517,7 +511,7 @@ VideoFilterAttributes VideoFilter::GetAttributes()
 	return vfAttr;
 }
 
-void VideoFilter::SetAttributes(const VideoFilterAttributes vfAttr)
+void VideoFilter::SetAttributes(const VideoFilterAttributes &vfAttr)
 {
 	ThreadLockLock(&this->_lockAttributes);
 	this->_vfAttributes = vfAttr;

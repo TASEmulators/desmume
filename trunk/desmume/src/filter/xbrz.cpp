@@ -27,6 +27,7 @@ namespace
 template <uint32_t N> inline
 unsigned char getByte(uint32_t val) { return static_cast<unsigned char>((val >> (8 * N)) & 0xff); }
 
+inline unsigned char getAlpha(uint32_t val) { return getByte<3>(val); }
 inline unsigned char getRed  (uint32_t val) { return getByte<2>(val); }
 inline unsigned char getGreen(uint32_t val) { return getByte<1>(val); }
 inline unsigned char getBlue (uint32_t val) { return getByte<0>(val); }
@@ -38,9 +39,10 @@ T abs(T value)
     return value < 0 ? -value : value;
 }
 
-const uint32_t redMask   = 0xff0000;
-const uint32_t greenMask = 0x00ff00;
-const uint32_t blueMask  = 0x0000ff;
+static const uint32_t alphaMask = 0xFF000000;
+static const uint32_t redMask   = 0x00FF0000;
+static const uint32_t greenMask = 0x0000FF00;
+static const uint32_t blueMask  = 0x000000FF;
 
 template <unsigned int N, unsigned int M> inline
 void alphaBlend(uint32_t& dst, uint32_t col) //blend color over destination with opacity N / M
@@ -48,9 +50,15 @@ void alphaBlend(uint32_t& dst, uint32_t col) //blend color over destination with
     //static_assert(N < 256, "possible overflow of (col & redMask) * N");
     //static_assert(M < 256, "possible overflow of (col & redMask  ) * N + (dst & redMask  ) * (M - N)");
     //static_assert(0 < N && N < M, "");
-    dst = (redMask   & ((col & redMask  ) * N + (dst & redMask  ) * (M - N)) / M) | //this works because 8 upper bits are free
-          (greenMask & ((col & greenMask) * N + (dst & greenMask) * (M - N)) / M) |
-          (blueMask  & ((col & blueMask ) * N + (dst & blueMask ) * (M - N)) / M);
+    //dst = (redMask   & ((col & redMask  ) * N + (dst & redMask  ) * (M - N)) / M) | //this works because 8 upper bits are free
+    //      (greenMask & ((col & greenMask) * N + (dst & greenMask) * (M - N)) / M) |
+    //      (blueMask  & ((col & blueMask ) * N + (dst & blueMask ) * (M - N)) / M);
+	
+	// 2014-02-06 (rogerman): Modified to take the alpha channel into account.
+	dst = ((((col >> 24) * N + (dst >> 24) * (M - N) ) / M) << 24) |
+	      (redMask   & (((col & redMask  ) * N + (dst & redMask  ) * (M - N)) / M)) |
+	      (greenMask & (((col & greenMask) * N + (dst & greenMask) * (M - N)) / M)) |
+	      (blueMask  & (((col & blueMask ) * N + (dst & blueMask ) * (M - N)) / M));
 }
 
 
@@ -397,7 +405,8 @@ double distYCbCr(uint32_t pix1, uint32_t pix2, double lumaWeight)
     const double c_r = scale_r * (r_diff - y);
 
     //we skip division by 255 to have similar range like other distance functions
-    return std::sqrt(square(lumaWeight * y) + square(c_b) +  square(c_r));
+    //return std::sqrt(square(lumaWeight * y) + square(c_b) +  square(c_r));
+	return std::sqrt(square(lumaWeight * y) + square(c_b) +  square(c_r)+ square(static_cast<int>(getAlpha(pix1)) - getAlpha(pix2)));
 }
 
 
