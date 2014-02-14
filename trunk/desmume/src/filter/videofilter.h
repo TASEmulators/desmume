@@ -19,6 +19,13 @@
 #ifndef _VIDEOFILTER_
 #define _VIDEOFILTER_
 
+#include <stdlib.h>
+#include <string>
+#include <vector>
+#include "types.h"
+#include "filter.h"
+#include "../utils/task.h"
+
 #ifdef HOST_WINDOWS
 	typedef unsigned __int32 uint32_t;
 	#include <windows.h>
@@ -30,13 +37,6 @@
 	typedef pthread_mutex_t ThreadLock;
 	typedef pthread_cond_t ThreadCond;
 #endif
-
-#include <stdlib.h>
-#include <string>
-#include <vector>
-#include "filter.h"
-#include "../utils/task.h"
-
 
 #define VIDEOFILTERTYPE_UNKNOWN_STRING "Unknown"
 
