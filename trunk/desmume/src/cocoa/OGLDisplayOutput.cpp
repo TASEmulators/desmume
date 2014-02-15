@@ -370,33 +370,29 @@ void OGLVideoOutput::SetVideoFilterOGL(const VideoFilterTypeID videoFilterTypeID
 	
 	const GLsizei vfDstWidth = this->_vf->GetDstWidth();
 	const GLsizei vfDstHeight = (this->_displayMode == DS_DISPLAY_TYPE_DUAL) ? this->_vf->GetDstHeight() : this->_vf->GetDstHeight() * 2;
-	
-	size_t colorDepth = sizeof(uint32_t);
-	this->_glTexPixelFormat = GL_UNSIGNED_INT_8_8_8_8_REV;
-	
-	if (videoFilterTypeID == VideoFilterTypeID_None)
-	{
-		colorDepth = sizeof(uint16_t);
-		this->_glTexPixelFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
-	}
+	const GLenum newPixFormat = (videoFilterTypeID == VideoFilterTypeID_None) ? GL_UNSIGNED_SHORT_1_5_5_5_REV : GL_UNSIGNED_INT_8_8_8_8_REV;
 	
 	// Convert textures to Power-of-Two to support older GPUs
 	// Example: Radeon X1600M on the 2006 MacBook Pro
 	const GLsizei potW = GetNearestPositivePOT((uint32_t)vfDstWidth);
 	const GLsizei potH = GetNearestPositivePOT((uint32_t)vfDstHeight);
+	const size_t colorDepth = (newPixFormat == GL_UNSIGNED_SHORT_1_5_5_5_REV) ? sizeof(uint16_t) : sizeof(uint32_t);
+	const size_t texBackSize = potW * potH * colorDepth;
 	
-	if (this->_glTexBackWidth != potW || this->_glTexBackHeight != potH)
+	if (this->_glTexBackWidth != potW || this->_glTexBackHeight != potH || this->_glTexPixelFormat != newPixFormat)
 	{
 		this->_glTexBackWidth = potW;
 		this->_glTexBackHeight = potH;
+		this->_glTexPixelFormat = newPixFormat;
 		
-		free(this->_glTexBack);
-		this->_glTexBack = (GLvoid *)calloc((size_t)potW * (size_t)potH, colorDepth);
+		this->_glTexBack = (GLvoid *)realloc(this->_glTexBack, texBackSize);
 		if (this->_glTexBack == NULL)
 		{
 			return;
 		}
 	}
+	
+	memset(this->_glTexBack, 0, texBackSize);
 	
 	const GLfloat s = (GLfloat)vfDstWidth / (GLfloat)potW;
 	const GLfloat t = (GLfloat)vfDstHeight / (GLfloat)potH;
