@@ -4,6 +4,7 @@
  **	Written: 6/14/00 - JSF
  **/
 
+#include "filter.h"
 #include "types.h"
 
 int systemRedShift    = 16;
@@ -144,13 +145,6 @@ void Bilinear(u8 *srcPtr, u32 srcPitch, u8 * /* deltaPtr */,
     to_odd = (u16 *)((u8 *)to + dstPitch);
   }
 }
-
-struct SSurface {
-	unsigned char *Surface;
-
-	unsigned int Pitch;
-	unsigned int Width, Height;
-};
 
 void BilinearPlus(u8 *srcPtr, u32 srcPitch, u8 * /* deltaPtr */,
                   u8 *dstPtr, u32 dstPitch, int width, int height)
