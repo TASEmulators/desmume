@@ -51,6 +51,9 @@
 #include "cheatsGTK.h"
 #include "GPU_osd.h"
 
+#include "avout_x264.h"
+#include "avout_flac.h"
+
 #include "commandline.h"
 
 #include "slot2.h"
@@ -105,6 +108,12 @@ enum {
 };
 
 gboolean EmuLoop(gpointer data);
+
+static AVOutX264 avout_x264;
+static AVOutFlac avout_flac;
+static void RecordAV_x264();
+static void RecordAV_flac();
+static void RecordAV_stop();
 
 static void DoQuit();
 static void RecordMovieDialog();
@@ -186,6 +195,12 @@ static const char *ui_description =
 "      <menuitem action='recordmovie'/>"
 "      <menuitem action='playmovie'/>"
 "      <menuitem action='stopmovie'/>"
+"      <separator/>"
+"      <menu action='RecordAVMenu'>"
+"        <menuitem action='record_x264'/>"
+"        <menuitem action='record_flac'/>"
+"        <menuitem action='record_stop'/>"
+"      </menu>"
 "      <menuitem action='printscreen'/>"
 "      <separator/>"
 "      <menuitem action='quit'/>"
@@ -341,6 +356,10 @@ static const GtkActionEntry action_entries[] = {
       { "recordmovie",  NULL,         "Record movie _to ...",         NULL,  NULL,   RecordMovieDialog },
       { "playmovie",  NULL,         "Play movie _from ...",         NULL,  NULL,   PlayMovieDialog },
       { "stopmovie",  NULL,         "Stop movie", NULL,  NULL,   StopMovie },
+      { "RecordAVMenu", NULL, "Record _video/audio" },
+        { "record_x264", "gtk-media-record", "Record lossless H._264 (video only)...", NULL, NULL, RecordAV_x264 },
+        { "record_flac", "gtk-media-record", "Record _flac (audio only)...", NULL, NULL, RecordAV_flac },
+        { "record_stop", "gtk-media-stop", "_Stop recording", NULL, NULL, RecordAV_stop },
       { "SavestateMenu", NULL, "_Save state" },
       { "LoadstateMenu", NULL, "_Load state" },
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
@@ -1063,6 +1082,138 @@ static void SaveStateDialog()
     gtk_widget_destroy(pFileSelection);
 }
 
+static void RecordAV_x264()
+{
+    GtkFileFilter *pFilter_mkv, *pFilter_mp4, *pFilter_any;
+    GtkWidget *pFileSelection;
+    GtkWidget *pParent;
+    gchar *sPath;
+
+    if (desmume_running())
+        Pause();
+
+    pParent = GTK_WIDGET(pWindow);
+
+    pFilter_mkv = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_mkv, "*.mkv");
+    gtk_file_filter_set_name(pFilter_mkv, "Matroska (.mkv)");
+
+    pFilter_mp4 = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_mp4, "*.mp4");
+    gtk_file_filter_set_name(pFilter_mp4, "MP4 (.mp4)");
+
+    pFilter_any = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_any, "*");
+    gtk_file_filter_set_name(pFilter_any, "All files");
+
+    /* Creating the selection window */
+    pFileSelection = gtk_file_chooser_dialog_new("Save video...",
+            GTK_WINDOW(pParent),
+            GTK_FILE_CHOOSER_ACTION_SAVE,
+            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+            GTK_STOCK_SAVE, GTK_RESPONSE_OK,
+            NULL);
+    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
+
+    /* Only the dialog window is accepting events: */
+    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_mkv);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_mp4);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
+
+    /* Showing the window */
+    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
+    case GTK_RESPONSE_OK:
+        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+
+        if(avout_x264.begin(sPath)) {
+            gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "record_x264"), FALSE);
+        } else {
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+                    GTK_DIALOG_MODAL,
+                    GTK_MESSAGE_ERROR,
+                    GTK_BUTTONS_OK,
+                    "Unable to record video to:\n%s", sPath);
+            gtk_dialog_run(GTK_DIALOG(pDialog));
+            gtk_widget_destroy(pDialog);
+        }
+
+        g_free(sPath);
+        break;
+    default:
+        break;
+    }
+    gtk_widget_destroy(pFileSelection);
+}
+
+static void RecordAV_flac()
+{
+    GtkFileFilter *pFilter_flac, *pFilter_any;
+    GtkWidget *pFileSelection;
+    GtkWidget *pParent;
+    gchar *sPath;
+
+    if (desmume_running())
+        Pause();
+
+    pParent = GTK_WIDGET(pWindow);
+
+    pFilter_flac = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_flac, "*.flac");
+    gtk_file_filter_set_name(pFilter_flac, "FLAC file (.flac)");
+
+    pFilter_any = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_any, "*");
+    gtk_file_filter_set_name(pFilter_any, "All files");
+
+    /* Creating the selection window */
+    pFileSelection = gtk_file_chooser_dialog_new("Save audio...",
+            GTK_WINDOW(pParent),
+            GTK_FILE_CHOOSER_ACTION_SAVE,
+            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+            GTK_STOCK_SAVE, GTK_RESPONSE_OK,
+            NULL);
+    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
+
+    /* Only the dialog window is accepting events: */
+    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_flac);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
+
+    /* Showing the window */
+    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
+    case GTK_RESPONSE_OK:
+        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+
+        if(avout_flac.begin(sPath)) {
+            gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "record_flac"), FALSE);
+        } else {
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+                    GTK_DIALOG_MODAL,
+                    GTK_MESSAGE_ERROR,
+                    GTK_BUTTONS_OK,
+                    "Unable to record audio to:\n%s", sPath);
+            gtk_dialog_run(GTK_DIALOG(pDialog));
+            gtk_widget_destroy(pDialog);
+        }
+
+        g_free(sPath);
+        break;
+    default:
+        break;
+    }
+    gtk_widget_destroy(pFileSelection);
+}
+
+static void RecordAV_stop() {
+	avout_x264.end();
+	avout_flac.end();
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "record_x264"), TRUE);
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "record_flac"), TRUE);
+}
+
 static void OpenNdsDialog()
 {
     GtkFileFilter *pFilter_nds, *pFilter_dsgba, *pFilter_any;
@@ -1181,8 +1332,12 @@ static void OpenRecent(GtkRecentChooser *chooser, gpointer user_data)
 
 static void Reset()
 {
+    bool shouldBeRunning = desmume_running();
+    Pause();
     NDS_Reset();
-    Launch();
+    if (shouldBeRunning) {
+        Launch();
+    }
 }
 
 
@@ -2035,6 +2190,18 @@ public:
         while (gtk_events_pending())
             gtk_main_iteration();
     }
+
+	// HUD uses this to show pause state
+	virtual bool EMU_IsEmulationPaused() { return !desmume_running(); }
+
+	virtual bool AVI_IsRecording()
+	{
+		return avout_x264.isRecording() || avout_flac.isRecording();
+	}
+
+	virtual void AVI_SoundUpdate(void* soundData, int soundLen) { 
+		avout_flac.updateAudio(soundData, soundLen);
+	}
 };
 
 static void DoQuit()
@@ -2138,6 +2305,7 @@ gboolean EmuLoop(gpointer data)
     _updateDTools();
     gtk_widget_queue_draw( pDrawingArea );
     osd->clear();
+	avout_x264.updateVideo((u16*)GPU_screen);
 
     if (gtk_fps_limiter_disabled || keys_latch & KEYMASK_(KEY_BOOST - 1)) {
         if (autoframeskip) {
@@ -2746,6 +2914,9 @@ common_gtk_main( class configured_features *my_config)
 
     /* Main loop */
     gtk_main();
+
+	avout_x264.end();
+	avout_flac.end();
 
     desmume_free();
 

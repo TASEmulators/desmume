@@ -10,6 +10,10 @@ pixmap_DATA = DeSmuME.xpm
 EXTRA_DIST = DeSmuME.xpm desmume.desktop
 bin_PROGRAMS = desmume
 desmume_SOURCES = \
+	avout.h \
+	avout_pipe_base.cpp avout_pipe_base.h \
+	avout_x264.cpp avout_x264.h \
+	avout_flac.cpp avout_flac.h \
 	desmume.h desmume.cpp \
 	dTool.h dToolsList.cpp \
 	tools/ioregsView.cpp tools/ioregsView.h \
