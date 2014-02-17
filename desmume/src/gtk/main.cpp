@@ -624,7 +624,7 @@ fill_configured_features( class configured_features *config,
                                     "\t\t\t\t  4 = Italian\n"
                                     "\t\t\t\t  5 = Spanish\n",
                                     "LANG"},
-    { "timeout", 0, 0, G_OPTION_ARG_INT, &config->timeout, "Quit DesMuME after the specified seconds for testing purpose.", "SECONDS"},
+    { "timeout", 0, 0, G_OPTION_ARG_INT, &config->timeout, "Quit DeSmuME after the specified seconds for testing purpose.", "SECONDS"},
     { NULL }
   };
 
@@ -746,7 +746,7 @@ static void About()
 
     static const gchar *authors[] = {
     	"yopyop (original author)",
-    	"DesMuME team",
+    	"DeSmuME team",
     	NULL
     };
 
@@ -2740,7 +2740,7 @@ common_gtk_main( class configured_features *my_config)
 
     /* Create the window */
     pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(pWindow), "DesMuME");
+    gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME");
     gtk_window_set_resizable(GTK_WINDOW (pWindow), TRUE);
     gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
 
