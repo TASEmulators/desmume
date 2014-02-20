@@ -284,6 +284,11 @@ static const char *ui_description =
 "        <menuitem action='SPUModeSyncP'/>"
 #endif
 "      </menu>"
+"      <menu action='SPUInterpolationMenu'>"
+"        <menuitem action='SPUInterpolationNone'/>"
+"        <menuitem action='SPUInterpolationLinear'/>"
+"        <menuitem action='SPUInterpolationCosine'/>"
+"      </menu>"
 "      <menu action='FrameskipMenu'>"
 "        <menuitem action='enablefpslimiter'/>"
 "        <separator/>"
@@ -380,6 +385,7 @@ static const GtkActionEntry action_entries[] = {
 
     { "ConfigMenu", NULL, "_Config" },
       { "SPUModeMenu", NULL, "_SPU Mode" },
+      { "SPUInterpolationMenu", NULL, "Sound _Interpolation" },
       { "FrameskipMenu", NULL, "_Frameskip" },
       { "CheatMenu", NULL, "_Cheat" },
         { "cheatsearch",     NULL,      "_Search",        NULL,       NULL,   CheatSearch },
@@ -489,6 +495,12 @@ static const GtkRadioActionEntry spumode_entries[] = {
     { "SPUModeSyncP", NULL, "Synchronous (P)", NULL, NULL, SPUMODE_SYNCP},
 #endif
     { "SPUModeDualASync", NULL, "Dual Asynchronous", NULL, NULL, SPUMODE_DUALASYNC}
+};
+
+static const GtkRadioActionEntry spuinterpolation_entries[] = {
+    { "SPUInterpolationNone", NULL, "_None", NULL, NULL, SPUInterpolation_None },
+    { "SPUInterpolationLinear", NULL, "_Linear", NULL, NULL, SPUInterpolation_Linear },
+    { "SPUInterpolationCosine", NULL, "_Cosine", NULL, NULL, SPUInterpolation_Cosine }
 };
 
 enum frameskip_enum {
@@ -2133,6 +2145,11 @@ static void Modify_SPUMode(GtkAction *action, GtkRadioAction *current)
     }
 }
 
+static void Modify_SPUInterpolation(GtkAction *action, GtkRadioAction *current)
+{
+    CommonSettings.spuInterpolationMode = (SPUInterpolationMode)gtk_radio_action_get_current_value(current);
+}
+
 static void Modify_Frameskip(GtkAction *action, GtkRadioAction *current)
 {
     autoFrameskipMax = gtk_radio_action_get_current_value(current) ;
@@ -2780,6 +2797,8 @@ common_gtk_main( class configured_features *my_config)
             VideoFilterTypeID_None, G_CALLBACK(Modify_PriInterpolation), NULL);
     gtk_action_group_add_radio_actions(action_group, spumode_entries, G_N_ELEMENTS(spumode_entries),
             0, G_CALLBACK(Modify_SPUMode), NULL);
+    gtk_action_group_add_radio_actions(action_group, spuinterpolation_entries, G_N_ELEMENTS(spuinterpolation_entries),
+            CommonSettings.spuInterpolationMode, G_CALLBACK(Modify_SPUInterpolation), NULL);
     gtk_action_group_add_radio_actions(action_group, frameskip_entries, G_N_ELEMENTS(frameskip_entries), 
             0, G_CALLBACK(Modify_Frameskip), NULL);
     gtk_action_group_add_radio_actions(action_group, rotation_entries, G_N_ELEMENTS(rotation_entries), 
