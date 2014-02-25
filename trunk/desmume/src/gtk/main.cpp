@@ -144,6 +144,7 @@ static void ToggleAutoFrameskip (GtkToggleAction *action);
 static void ToggleSwapScreens(GtkToggleAction *action);
 static void ToggleGap (GtkToggleAction *action);
 static void SetRotation(GtkAction *action, GtkRadioAction *current);
+static void SetWinSize(GtkAction *action, GtkRadioAction *current);
 static void SetOrientation(GtkAction *action, GtkRadioAction *current);
 static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data);
 static void ToggleHudDisplay(GtkToggleAction* action, gpointer data);
@@ -219,6 +220,19 @@ static const char *ui_description =
 "        <menuitem action='rotate_180'/>"
 "        <menuitem action='rotate_270'/>"
 "      </menu>"
+"      <menu action='WinsizeMenu'>"
+"        <menuitem action='winsize_half'/>"
+"        <menuitem action='winsize_1'/>"
+"        <menuitem action='winsize_1half'/>"
+"        <menuitem action='winsize_2'/>"
+"        <menuitem action='winsize_2half'/>"
+"        <menuitem action='winsize_3'/>"
+"        <menuitem action='winsize_4'/>"
+"        <menuitem action='winsize_5'/>"
+"        <menuitem action='winsize_scale'/>"
+"        <separator/>"
+"        <menuitem action='fullscreen'/>"
+"      </menu>"
 "      <menuitem action='gap'/>"
 "      <menu action='PriInterpolationMenu'>"
 "        <menuitem action='pri_interp_none'/>"
@@ -269,7 +283,6 @@ static const char *ui_description =
 "      <menuitem action='view_toolbar'/>"
 "      <menuitem action='view_statusbar'/>"
 "      <separator/>"
-"      <menuitem action='fullscreen'/>"
 "    </menu>"
 "    <menu action='ConfigMenu'>"
 "      <menuitem action='enableaudio'/>"
@@ -376,6 +389,7 @@ static const GtkActionEntry action_entries[] = {
     { "ViewMenu", NULL, "_View" },
       { "RotationMenu", NULL, "_Rotation" },
       { "OrientationMenu", NULL, "LCDs _Layout" },
+      { "WinsizeMenu", NULL, "_Window Size" },
       { "PriInterpolationMenu", NULL, "Primary _Interpolation" },
       { "InterpolationMenu", NULL, "S_econdary Interpolation" },
       { "HudMenu", NULL, "_HUD" },
@@ -454,6 +468,32 @@ static const GtkRadioActionEntry rotation_entries[] = {
     { "rotate_90",  "gtk-orientation-landscape",         "_90", NULL, NULL, 90 },
     { "rotate_180", "gtk-orientation-reverse-portrait",  "_180",NULL, NULL, 180 },
     { "rotate_270", "gtk-orientation-reverse-landscape", "_270",NULL, NULL, 270 },
+};
+
+enum winsize_enum {
+	WINSIZE_SCALE = 0,
+	WINSIZE_HALF = 1,
+	WINSIZE_1 = 2,
+	WINSIZE_1HALF = 3,
+	WINSIZE_2 = 4,
+	WINSIZE_2HALF = 5,
+	WINSIZE_3 = 6,
+	WINSIZE_4 = 8,
+	WINSIZE_5 = 10,
+};
+
+static winsize_enum winsize_current;
+
+static const GtkRadioActionEntry winsize_entries[] = {
+	{ "winsize_half", NULL, "0_.5x", NULL, NULL, WINSIZE_HALF },
+	{ "winsize_1", NULL, "_1x", NULL, NULL, WINSIZE_1 },
+	{ "winsize_1half", NULL, "1.5x", NULL, NULL, WINSIZE_1HALF },
+	{ "winsize_2", NULL, "_2x", NULL, NULL, WINSIZE_2 },
+	{ "winsize_2half", NULL, "2.5x", NULL, NULL, WINSIZE_2HALF },
+	{ "winsize_3", NULL, "_3x", NULL, NULL, WINSIZE_3 },
+	{ "winsize_4", NULL, "_4x", NULL, NULL, WINSIZE_4 },
+	{ "winsize_5", NULL, "_5x", NULL, NULL, WINSIZE_5 },
+	{ "winsize_scale", NULL, "_Scale to window", NULL, NULL, WINSIZE_SCALE },
 };
 
 /* When adding modes here remember to add the relevent entry to screen_size */
@@ -1376,12 +1416,16 @@ static void UpdateDrawingAreaAspect()
             } else {
                 W += nds_screen.gap_size;
             }
-        } else {
-            
         }
     }
 
-    gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W, H);
+	if (winsize_current == WINSIZE_SCALE) {
+		gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W / 2, H / 2);
+		gtk_window_set_resizable(GTK_WINDOW(pWindow), TRUE);
+	} else {
+		gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W * winsize_current / 2, H * winsize_current / 2);
+		gtk_window_set_resizable(GTK_WINDOW(pWindow), FALSE);
+	}
 }
 
 static void ToggleGap(GtkToggleAction* action)
@@ -1394,6 +1438,13 @@ static void SetRotation(GtkAction *action, GtkRadioAction *current)
 {
     nds_screen.rotation_angle = gtk_radio_action_get_current_value(current);
     UpdateDrawingAreaAspect();
+}
+
+static void SetWinsize(GtkAction *action, GtkRadioAction *current)
+{
+	winsize_current = (winsize_enum) gtk_radio_action_get_current_value(current);
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "fullscreen"), winsize_current == WINSIZE_SCALE);
+	UpdateDrawingAreaAspect();
 }
 
 static void SetOrientation(GtkAction *action, GtkRadioAction *current)
@@ -2803,6 +2854,8 @@ common_gtk_main( class configured_features *my_config)
             0, G_CALLBACK(Modify_Frameskip), NULL);
     gtk_action_group_add_radio_actions(action_group, rotation_entries, G_N_ELEMENTS(rotation_entries), 
             0, G_CALLBACK(SetRotation), NULL);
+    gtk_action_group_add_radio_actions(action_group, winsize_entries, G_N_ELEMENTS(winsize_entries), 
+            WINSIZE_1, G_CALLBACK(SetWinsize), NULL);
     gtk_action_group_add_radio_actions(action_group, orientation_entries, G_N_ELEMENTS(orientation_entries), 
             0, G_CALLBACK(SetOrientation), NULL);
     {
@@ -2816,6 +2869,7 @@ common_gtk_main( class configured_features *my_config)
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatlist"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatsearch"), FALSE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "fullscreen"), FALSE);
 
     gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
     
@@ -2843,7 +2897,8 @@ common_gtk_main( class configured_features *my_config)
     pDrawingArea = gtk_drawing_area_new();
     gtk_container_add (GTK_CONTAINER (pVBox), pDrawingArea);
 
-    gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), 256, 384);
+    winsize_current = WINSIZE_1;
+    UpdateDrawingAreaAspect();
 
     gtk_widget_set_events(pDrawingArea,
                           GDK_EXPOSURE_MASK | GDK_LEAVE_NOTIFY_MASK |
