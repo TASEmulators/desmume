@@ -39,7 +39,8 @@ const char *key_names[NB_KEYS] =
   "A", "B", "Select", "Start",
   "Right", "Left", "Up", "Down",
   "R", "L", "X", "Y",
-  "Debug", "Boost"
+  "Debug", "Boost",
+  "Lid",
 };
 
 /* Joypad Key Codes -- 4-digit Hexadecimal number
@@ -70,7 +71,8 @@ const u16 default_joypad_cfg[NB_KEYS] =
     0x0204,  // X
     0x0203,  // Y
     0xFFFF, // DEBUG
-    0xFFFF  // BOOST
+    0xFFFF, // BOOST
+    0x0202, // Lid
   };
 
 /* Load default joystick and keyboard configurations */
@@ -265,25 +267,72 @@ static void set_mouse_coord(signed long x,signed long y)
   mouse.y = y;
 }
 
+// Adapted from Windows port
+bool allowUpAndDown = false;
+static buttonstruct<int> cardinalHeldTime = {0};
+
+static void RunAntipodalRestriction(const buttonstruct<bool>& pad)
+{
+	if(allowUpAndDown)
+		return;
+
+	pad.U ? (cardinalHeldTime.U++) : (cardinalHeldTime.U=0);
+	pad.D ? (cardinalHeldTime.D++) : (cardinalHeldTime.D=0);
+	pad.L ? (cardinalHeldTime.L++) : (cardinalHeldTime.L=0);
+	pad.R ? (cardinalHeldTime.R++) : (cardinalHeldTime.R=0);
+}
+static void ApplyAntipodalRestriction(buttonstruct<bool>& pad)
+{
+	if(allowUpAndDown)
+		return;
+
+	// give preference to whichever direction was most recently pressed
+	if(pad.U && pad.D)
+		if(cardinalHeldTime.U < cardinalHeldTime.D)
+			pad.D = false;
+		else
+			pad.U = false;
+	if(pad.L && pad.R)
+		if(cardinalHeldTime.L < cardinalHeldTime.R)
+			pad.R = false;
+		else
+			pad.L = false;
+}
+
 /* Update NDS keypad */
 void update_keypad(u16 keys)
 {
+	// Set raw inputs
+	{
+		buttonstruct<bool> input = {};
+		input.G = (keys>>12)&1;
+		input.E = (keys>>8)&1;
+		input.W = (keys>>9)&1;
+		input.X = (keys>>10)&1;
+		input.Y = (keys>>11)&1;
+		input.A = (keys>>0)&1;
+		input.B = (keys>>1)&1;
+		input.S = (keys>>3)&1;
+		input.T = (keys>>2)&1;
+		input.U = (keys>>6)&1;
+		input.D = (keys>>7)&1;
+		input.L = (keys>>5)&1;
+		input.R = (keys>>4)&1;
+		input.F = (keys>>14)&1;
+		RunAntipodalRestriction(input);
+		NDS_setPad(
+			input.R, input.L, input.D, input.U,
+			input.T, input.S, input.B, input.A,
+			input.Y, input.X, input.W, input.E,
+			input.G, input.F);
+	}
+	
+	// Set real input
 	NDS_beginProcessingInput();
-	UserButtons& input = NDS_getProcessingUserInput().buttons;
-	input.G = (keys>>12)&1;
-	input.E = (keys>>8)&1;
-	input.W = (keys>>9)&1;
-	input.X = (keys>>10)&1;
-	input.Y = (keys>>11)&1;
-	input.A = (keys>>0)&1;
-	input.B = (keys>>1)&1;
-	input.S = (keys>>3)&1;
-	input.T = (keys>>2)&1;
-	input.U = (keys>>6)&1;
-	input.D = (keys>>7)&1;
-	input.L = (keys>>5)&1;
-	input.R = (keys>>4)&1;
-	input.F = 0;
+	{
+		UserButtons& input = NDS_getProcessingUserInput().buttons;
+		ApplyAntipodalRestriction(input);
+	}
 	NDS_endProcessingInput();
 }
 

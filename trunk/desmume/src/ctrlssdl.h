@@ -44,7 +44,7 @@
 #define JOY_HAT_UP 2
 #define JOY_HAT_DOWN 3
 
-#define NB_KEYS		14
+#define NB_KEYS		15
 #define KEY_NONE		0
 #define KEY_A			1
 #define KEY_B			2
@@ -60,6 +60,7 @@
 #define KEY_Y			12
 #define KEY_DEBUG		13
 #define KEY_BOOST		14
+#define KEY_LID			15
 
 /* Keypad key names */
 extern const char *key_names[NB_KEYS];
