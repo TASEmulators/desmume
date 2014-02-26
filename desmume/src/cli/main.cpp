@@ -121,7 +121,8 @@ const u16 cli_kb_cfg[NB_KEYS] =
     SDLK_s,         // X
     SDLK_a,         // Y
     SDLK_p,         // DEBUG
-    SDLK_o          // BOOST
+    SDLK_o,         // BOOST
+    SDLK_BACKSPACE, // Lid
   };
 
 class configured_features : public CommandLine

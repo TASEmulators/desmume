@@ -61,7 +61,8 @@ const u16 gtk_kb_cfg[NB_KEYS] =
     GDK_s,         // X
     GDK_a,         // Y
     GDK_p,         // DEBUG
-    GDK_o          // BOOST
+    GDK_o,         // BOOST
+    GDK_BackSpace, // Lid
   };
 
 SoundInterface_struct *SNDCoreList[] = {
