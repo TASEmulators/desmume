@@ -149,6 +149,7 @@ VideoFilter::~VideoFilter()
 bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 {
 	bool result = false;
+	bool sizeChanged = false;
 	
 	ThreadLockLock(&this->_lockSrc);
 	
@@ -160,6 +161,10 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 		return result;
 	}
 	
+	if (this->_vfSrcSurface.Width != width || this->_vfSrcSurface.Height != height)
+	{
+		sizeChanged = true;
+	}
 	this->_vfSrcSurface.Width = width;
 	this->_vfSrcSurface.Height = height;
 	this->_vfSrcSurface.Pitch = width * 2;
@@ -189,7 +194,7 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 	ThreadLockUnlock(&this->_lockSrc);
 	
 	const VideoFilterAttributes vfAttr = this->GetAttributes();
-	result = this->ChangeFilterByAttributes(vfAttr);
+	result = this->ChangeFilterByAttributes(vfAttr, sizeChanged);
 	
 	return result;
 }
@@ -216,7 +221,7 @@ bool VideoFilter::ChangeFilterByID(const VideoFilterTypeID typeID)
 		return result;
 	}
 	
-	result = this->ChangeFilterByAttributes(VideoFilterAttributesList[typeID]);
+	result = this->ChangeFilterByAttributes(VideoFilterAttributesList[typeID], false);
 	
 	return result;
 }
@@ -233,7 +238,7 @@ bool VideoFilter::ChangeFilterByID(const VideoFilterTypeID typeID)
 		A bool that reports if the filter change was successful. A value of true means
 		success, while a value of false means failure.
  ********************************************************************************************/
-bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes &vfAttr)
+bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes &vfAttr, const bool forceRealloc)
 {
 	bool result = false;
 	
@@ -242,7 +247,7 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes &vfAttr)
 		return result;
 	}
 	
-	if (this->_vfDstSurface.Surface != NULL && this->_vfAttributes.scaleMultiply == vfAttr.scaleMultiply && this->_vfAttributes.scaleDivide == vfAttr.scaleDivide)
+	if (!forceRealloc && this->_vfDstSurface.Surface != NULL && this->_vfAttributes.scaleMultiply == vfAttr.scaleMultiply && this->_vfAttributes.scaleDivide == vfAttr.scaleDivide)
 	{
 		// If we have an existing buffer and the new size is identical to the old size,
 		// we can skip the costly construction of the buffer and simply clear it instead.
