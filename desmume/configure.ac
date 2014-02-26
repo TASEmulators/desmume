@@ -211,7 +211,7 @@ if test "x$libagg" = "xyes" ; then
        AC_SUBST(LIBAGG_LIBS)
        AC_DEFINE([HAVE_LIBAGG])
    else
-       AC_MSG_WARN([HUD rendering enabled, but libagg not found])
+       AC_MSG_ERROR([HUD rendering enabled, but libagg not found])
    fi
 fi
 
