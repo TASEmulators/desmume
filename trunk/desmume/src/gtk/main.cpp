@@ -124,6 +124,8 @@ static void SaveStateDialog();
 static void LoadStateDialog();
 void Launch();
 void Pause();
+static void ResetSaveStateTimes();
+static void LoadSaveStateInfo();
 static void Printscreen();
 static void Reset();
 static void Edit_Controls();
@@ -872,9 +874,12 @@ static void ToggleFullscreen(GtkToggleAction *action)
 static int Open(const char *filename)
 {
     int res;
+    ResetSaveStateTimes();
     res = NDS_LoadROM( filename );
-    if(res > 0)
+    if(res > 0) {
+        LoadSaveStateInfo();
         gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatlist"), TRUE);
+    }
     return res;
 }
 
@@ -1420,7 +1425,7 @@ static void UpdateDrawingAreaAspect()
     }
 
 	if (winsize_current == WINSIZE_SCALE) {
-		gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W / 2, H / 2);
+		gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W, H);
 		gtk_window_set_resizable(GTK_WINDOW(pWindow), TRUE);
 	} else {
 		gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W * winsize_current / 2, H * winsize_current / 2);
@@ -1770,6 +1775,7 @@ static void savegame(int num){
    }
    else
        savestate_slot(num);
+   LoadSaveStateInfo();
 }
 
 static void MenuLoad(GtkMenuItem *item, gpointer slot)
@@ -1794,9 +1800,9 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
   }
   if( e->keyval >= GDK_F1 && e->keyval <= GDK_F10 ){
       if(!gdk_shift_pressed)
-          loadgame(e->keyval - GDK_F1 + 1);
+          loadgame((e->keyval - GDK_F1 + 1) % 10);
       else
-          savegame(e->keyval - GDK_F1 + 1);
+          savegame((e->keyval - GDK_F1 + 1) % 10);
       return 1;
   }
   guint mask;
@@ -2449,23 +2455,63 @@ static void dui_set_accel_group(gpointer action, gpointer group) {
         gtk_action_set_accel_group((GtkAction *)action, (GtkAccelGroup *)group);
 }
 
+// The following functions are adapted from the Windows port:
+//     UpdateSaveStateMenu, ResetSaveStateTimes, LoadSaveStateInfo
+static void UpdateSaveStateMenu(int pos, char* txt)
+{
+	char name[64];
+        snprintf(name, sizeof(name), "savestate%d", (pos == 0) ? 10 : pos);
+	gtk_action_set_label(gtk_action_group_get_action(action_group, name), txt);
+        snprintf(name, sizeof(name), "loadstate%d", (pos == 0) ? 10 : pos);
+	gtk_action_set_label(gtk_action_group_get_action(action_group, name), txt);
+}
+
+static void ResetSaveStateTimes()
+{
+	char ntxt[64];
+	for(int i = 0; i < NB_STATES;i++)
+	{
+		snprintf(ntxt, sizeof(ntxt), "_%d", i);
+		UpdateSaveStateMenu(i, ntxt);
+	}
+}
+
+static void LoadSaveStateInfo()
+{
+	scan_savestates();
+	char ntxt[128];
+	for(int i = 0; i < NB_STATES; i++)
+	{
+		if(savestates[i].exists)
+		{
+			snprintf(ntxt, sizeof(ntxt), "_%d    %s", i, savestates[i].date);
+			UpdateSaveStateMenu(i, ntxt);
+		}
+	}
+}
+
 static void desmume_gtk_menu_file_saveload_slot (GtkActionGroup *ag)
 {
     for(guint i = 1; i <= 10; i++){
         GtkAction *act;
-        char label[64], name[64];
+        char label[64], name[64], accel[64];
 
-        snprintf(label, 60, "_%d", i);
+        snprintf(label, sizeof(label), "_%d", i % 10);
 
-        snprintf(name, 60, "savestate%d", i);
+        // Note: GTK+ doesn't handle Shift correctly, so the actual action is
+        // done in Key_Press. The accelerators here are simply visual cues.
+
+        snprintf(name, sizeof(name), "savestate%d", i);
+        snprintf(accel, sizeof(accel), "<Shift>F%d", i);
         act = gtk_action_new(name, label, NULL, NULL);
-        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(MenuSave), GUINT_TO_POINTER(i));
-        gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), NULL);
+        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(MenuSave), GUINT_TO_POINTER(i % 10));
+        gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), accel);
 
-        snprintf(name, 60, "loadstate%d", i);
+        snprintf(name, sizeof(name), "loadstate%d", i);
+        snprintf(accel, sizeof(accel), "F%d", i);
         act = gtk_action_new(name, label, NULL, NULL);
-        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(MenuLoad), GUINT_TO_POINTER(i));
-        gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), NULL);
+        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(MenuLoad), GUINT_TO_POINTER(i % 10));
+        gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), accel);
     }
 }
 
@@ -2855,7 +2901,7 @@ common_gtk_main( class configured_features *my_config)
     gtk_action_group_add_radio_actions(action_group, rotation_entries, G_N_ELEMENTS(rotation_entries), 
             0, G_CALLBACK(SetRotation), NULL);
     gtk_action_group_add_radio_actions(action_group, winsize_entries, G_N_ELEMENTS(winsize_entries), 
-            WINSIZE_1, G_CALLBACK(SetWinsize), NULL);
+            WINSIZE_SCALE, G_CALLBACK(SetWinsize), NULL);
     gtk_action_group_add_radio_actions(action_group, orientation_entries, G_N_ELEMENTS(orientation_entries), 
             0, G_CALLBACK(SetOrientation), NULL);
     {
@@ -2897,7 +2943,7 @@ common_gtk_main( class configured_features *my_config)
     pDrawingArea = gtk_drawing_area_new();
     gtk_container_add (GTK_CONTAINER (pVBox), pDrawingArea);
 
-    winsize_current = WINSIZE_1;
+    winsize_current = WINSIZE_SCALE;
     UpdateDrawingAreaAspect();
 
     gtk_widget_set_events(pDrawingArea,

@@ -2380,10 +2380,10 @@ void UpdateSaveStateMenu(int pos, char* txt)
  **/
 void ResetSaveStateTimes()
 {
-	char ntxt[64];
+	char ntxt[16];
 	for(int i = 0; i < NB_STATES;i++)
 	{
-		sprintf(ntxt,"%d %s", i, "");
+		snprintf(ntxt, sizeof(ntxt), "&%d", i);
 		UpdateSaveStateMenu(i, ntxt);
 	}
 }
@@ -2404,7 +2404,7 @@ void LoadSaveStateInfo()
 	{
 		if(savestates[i].exists)
 		{
-			sprintf(ntxt, "&%d    %s", i, savestates[i].date);
+			snprintf(ntxt, sizeof(ntxt), "&%d    %s", i, savestates[i].date);
 			UpdateSaveStateMenu(i, ntxt);
 		}
 	}
