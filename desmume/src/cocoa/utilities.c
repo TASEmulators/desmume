@@ -18,6 +18,12 @@
 #include "utilities.h"
 #include <Accelerate/Accelerate.h>
 
+static const uint8_t bits5to8[] = {
+	0x00, 0x08, 0x10, 0x19, 0x21, 0x29, 0x31, 0x3A,
+	0x42, 0x4A, 0x52, 0x5A, 0x63, 0x6B, 0x73, 0x7B,
+	0x84, 0x8C, 0x94, 0x9C, 0xA5, 0xAD, 0xB5, 0xBD,
+	0xC5, 0xCE, 0xD6, 0xDE, 0xE6, 0xEF, 0xF7, 0xFF
+};
 
 static CFStringRef OSXProductName = NULL;
 static CFStringRef OSXProductVersion = NULL;
@@ -136,9 +142,9 @@ bool IsOSXVersionSupported(const unsigned int major, const unsigned int minor, c
  ********************************************************************************************/
 inline uint32_t RGB555ToRGBA8888(const uint16_t color16)
 {
-	return	((color16 & 0x001F) << 3) |
-			((color16 & 0x03E0) << 6) |
-			((color16 & 0x7C00) << 9) |
+	return	(bits5to8[((color16 >> 0) & 0x001F)] << 0) |
+			(bits5to8[((color16 >> 5) & 0x001F)] << 8) |
+			(bits5to8[((color16 >> 10) & 0x001F)] << 16) |
 			0xFF000000;
 }
 
