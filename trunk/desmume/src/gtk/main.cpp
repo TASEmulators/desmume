@@ -1571,10 +1571,9 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	gint dstW = video.GetDstWidth();
 	gint dstH = video.GetDstHeight();
 	// Convert from RGBA to BGRX
-	CACHE_ALIGN u32 conv_buf[dstW * dstH];
-	for (u32 *p = conv_buf, *pe = conv_buf + dstW * dstH; p  < pe; p++)
+	for (u32 *p = fbuf, *pe = fbuf + dstW * dstH; p  < pe; p++)
 	{
-		*p = __builtin_bswap32(*fbuf++) >> 8;
+		*p = __builtin_bswap32(*p) >> 8;
 	}
 
 	gint dstScale = dstW * 2 / 256; // Actual scale * 2 to handle 1.5x filters
@@ -1609,8 +1608,8 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 		cairo_translate(cr, -imgH / 2, -imgW / 2);
 	}
 	// Draw both screens
-	drawTopScreen(cr, conv_buf, dstW, dstH / 2, gap, nds_screen.rotation_angle, nds_screen.swap, nds_screen.orientation);
-	drawBottomScreen(cr, conv_buf + dstW * dstH / 2, dstW, dstH / 2, gap, nds_screen.rotation_angle, nds_screen.swap, nds_screen.orientation);
+	drawTopScreen(cr, fbuf, dstW, dstH / 2, gap, nds_screen.rotation_angle, nds_screen.swap, nds_screen.orientation);
+	drawBottomScreen(cr, fbuf + dstW * dstH / 2, dstW, dstH / 2, gap, nds_screen.rotation_angle, nds_screen.swap, nds_screen.orientation);
 	// Draw gap
 	cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);
 	cairo_rectangle(cr, 0, dstH / 2, dstW, gap);
@@ -2339,6 +2338,12 @@ gboolean EmuLoop(gpointer data)
         } else {
             for (i = 0; i < Frameskip; i++) {
                 NDS_SkipNextFrame();
+                gfx3d.frameCtrRaw++;
+                if(gfx3d.frameCtrRaw == 60) {
+                    Hud.fps3d = gfx3d.frameCtr;
+                    gfx3d.frameCtrRaw = 0;
+                    gfx3d.frameCtr = 0;
+                }
                 desmume_cycle();
                 skipped_frames++;
             }
@@ -2349,6 +2354,12 @@ gboolean EmuLoop(gpointer data)
         if (!autoframeskip) {
             for (i = 0; i < Frameskip; i++) {
                 NDS_SkipNextFrame();
+                gfx3d.frameCtrRaw++;
+                if(gfx3d.frameCtrRaw == 60) {
+                    Hud.fps3d = gfx3d.frameCtr;
+                    gfx3d.frameCtrRaw = 0;
+                    gfx3d.frameCtr = 0;
+                }
                 desmume_cycle();
                 skipped_frames++;
                 // Update next frame time
@@ -2368,6 +2379,12 @@ gboolean EmuLoop(gpointer data)
             for (Frameskip = 0; this_tick > next_frame_time && Frameskip < autoFrameskipMax; Frameskip++, this_tick = SDL_GetTicks()) {
                 // Aggressively skip frames to avoid delay
                 NDS_SkipNextFrame();
+                gfx3d.frameCtrRaw++;
+                if(gfx3d.frameCtrRaw == 60) {
+                    Hud.fps3d = gfx3d.frameCtr;
+                    gfx3d.frameCtrRaw = 0;
+                    gfx3d.frameCtr = 0;
+                }
                 desmume_cycle();
                 skipped_frames++;
                 // Update next frame time
@@ -2512,10 +2529,6 @@ static void ToggleHudDisplay(GtkToggleAction* action, gpointer data)
 {
     guint hudId = GPOINTER_TO_UINT(data);
     gboolean active;
-
-    // FIXME: make it work after resume
-    if (!desmume_running())
-        return;
 
     active = gtk_toggle_action_get_active(action);
 
