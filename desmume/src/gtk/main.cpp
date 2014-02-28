@@ -84,10 +84,7 @@
 
 #define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20 + 1)
 
-#define SCREENS_PIXEL_SIZE (256*192*2)
-#define SCREEN_BYTES_PER_PIXEL 3
 #define GAP_SIZE 64
-#define GAP_COLOR (0x000000) 
 
 static int gtk_fps_limiter_disabled;
 static int draw_count;
@@ -262,10 +259,11 @@ static const char *ui_description =
 "        <menuitem action='pri_interp_5xbrz'/>"
 "      </menu>"
 "      <menu action='InterpolationMenu'>"
+"        <menuitem action='interp_fast'/>"
 "        <menuitem action='interp_nearest'/>"
-"        <menuitem action='interp_tiles'/>"
+"        <menuitem action='interp_good'/>"
 "        <menuitem action='interp_bilinear'/>"
-"        <menuitem action='interp_hyper'/>"
+"        <menuitem action='interp_best'/>"
 "      </menu>"
 "      <menu action='HudMenu'>"
 #ifdef HAVE_LIBAGG
@@ -392,8 +390,8 @@ static const GtkActionEntry action_entries[] = {
       { "RotationMenu", NULL, "_Rotation" },
       { "OrientationMenu", NULL, "LCDs _Layout" },
       { "WinsizeMenu", NULL, "_Window Size" },
-      { "PriInterpolationMenu", NULL, "Primary _Interpolation" },
-      { "InterpolationMenu", NULL, "S_econdary Interpolation" },
+      { "PriInterpolationMenu", NULL, "Video _Filter" },
+      { "InterpolationMenu", NULL, "S_econdary Video Filter" },
       { "HudMenu", NULL, "_HUD" },
 #ifndef HAVE_LIBAGG
       { "hud_notsupported", NULL, "HUD support not compiled" },
@@ -459,10 +457,11 @@ static const GtkRadioActionEntry pri_interpolation_entries[] = {
 };
 
 static const GtkRadioActionEntry interpolation_entries[] = {
-    { "interp_nearest", NULL, "_Nearest", NULL, NULL, GDK_INTERP_NEAREST},
-    { "interp_tiles", NULL, "_Tiles", NULL, NULL, GDK_INTERP_TILES},
-    { "interp_bilinear", NULL, "_Bilinear", NULL, NULL, GDK_INTERP_BILINEAR},
-    { "interp_hyper", NULL, "_Hyper", NULL, NULL, GDK_INTERP_HYPER},
+    { "interp_fast", NULL, "_Fast", NULL, NULL, CAIRO_FILTER_FAST },
+    { "interp_nearest", NULL, "_Nearest-neighbor", NULL, NULL, CAIRO_FILTER_NEAREST },
+    { "interp_good", NULL, "_Good", NULL, NULL, CAIRO_FILTER_GOOD },
+    { "interp_bilinear", NULL, "_Bilinear", NULL, NULL, CAIRO_FILTER_BILINEAR },
+    { "interp_best", NULL, "B_est", NULL, NULL, CAIRO_FILTER_BEST },
 };
 
 static const GtkRadioActionEntry rotation_entries[] = {
@@ -763,7 +762,7 @@ uint SPUMode = SPUMODE_DUALASYNC;
 uint Frameskip = 0;
 uint autoFrameskipMax = 0;
 bool autoframeskip = true;
-GdkInterpType Interpolation = GDK_INTERP_NEAREST;
+cairo_filter_t Interpolation = CAIRO_FILTER_NEAREST;
 
 static GtkWidget *pWindow;
 static GtkWidget *pStatusBar;
@@ -774,11 +773,8 @@ static GtkUIManager *ui_manager;
 struct nds_screen_t {
     guint gap_size;
     gint rotation_angle;
-    guint orientation;
-    gint touch_x;
-    gint touch_y;
-    gint touch_width;
-    gint touch_height;
+    orientation_enum orientation;
+    cairo_matrix_t touch_matrix;
     gboolean swap;
 };
 
@@ -1412,9 +1408,6 @@ static void UpdateDrawingAreaAspect()
         H = screen_size[nds_screen.orientation].width;
     }
 
-    // The gap is added after filtering
-    video.SetSourceSize(W, H);
-
     if (nds_screen.orientation != ORIENT_SINGLE) {
         if (nds_screen.orientation == ORIENT_VERTICAL) {
             if ((nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180)) {
@@ -1455,7 +1448,7 @@ static void SetWinsize(GtkAction *action, GtkRadioAction *current)
 
 static void SetOrientation(GtkAction *action, GtkRadioAction *current)
 {
-    nds_screen.orientation = gtk_radio_action_get_current_value(current);
+    nds_screen.orientation = (orientation_enum)gtk_radio_action_get_current_value(current);
     UpdateDrawingAreaAspect();
 }
 
@@ -1468,230 +1461,189 @@ static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpo
     return TRUE;
 }
 
+// Adapted from Cocoa port
+static const uint8_t bits5to8[] = {
+	0x00, 0x08, 0x10, 0x19, 0x21, 0x29, 0x31, 0x3A,
+	0x42, 0x4A, 0x52, 0x5A, 0x63, 0x6B, 0x73, 0x7B,
+	0x84, 0x8C, 0x94, 0x9C, 0xA5, 0xAD, 0xB5, 0xBD,
+	0xC5, 0xCE, 0xD6, 0xDE, 0xE6, 0xEF, 0xF7, 0xFF
+};
 
-static inline void gpu_screen_to_rgb(guchar * rgb, int size, int pixelsize)
+static inline uint32_t RGB555ToRGBA8888(const uint16_t color16)
 {
-    gint rot = nds_screen.rotation_angle;
-    gint height, width;
-    u16 gpu_pixel;
-    u32 offset;
+	return	(bits5to8[((color16 >> 0) & 0x001F)] << 0) |
+			(bits5to8[((color16 >> 5) & 0x001F)] << 8) |
+			(bits5to8[((color16 >> 10) & 0x001F)] << 16) |
+			0xFF000000;
+}
 
-    width = screen_size[nds_screen.orientation].width;
-    height = screen_size[nds_screen.orientation].height;
+// Adapted from Cocoa port
+static inline void RGB555ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount)
+{
+	const uint32_t *__restrict__ destBufferEnd = destBuffer + pixelCount;
+	
+	while (destBuffer < destBufferEnd)
+	{
+		*destBuffer++ = RGB555ToRGBA8888(*srcBuffer++);
+	}
+}
 
-    for (gint i = 0; i < width; i++) {
-        for (gint j = 0; j < height; j++) {
-            gint row = j, col = i;
+static inline void gpu_screen_to_rgb(u32* dst)
+{
+    RGB555ToRGBA8888Buffer((u16*)GPU_screen, dst, 256 * 384);
+}
 
-            if (i >= 256) {
-                col = i - 256;
-                row = j + 192;
-            }
-            if (nds_screen.swap)
-                 row = (row + 192) % 384;
+static inline void drawScreen(cairo_t* cr, u32* buf, gint w, gint h) {
+	cairo_surface_t* surf = cairo_image_surface_create_for_data((u8*)buf, CAIRO_FORMAT_RGB24, w, h, w * 4);
+	cairo_set_source_surface(cr, surf, 0, 0);
+	cairo_pattern_set_filter(cairo_get_source(cr), Interpolation);
+	cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_PAD);
+	cairo_rectangle(cr, 0, 0, w, h);
+	cairo_fill(cr);
+	cairo_surface_destroy(surf);
+}
 
-            gpu_pixel = *((u16 *) & GPU_screen[(col + row * 256) << 1]);
+static inline void drawTopScreen(cairo_t* cr, u32* buf, gint w, gint h, gint gap, gint rotation_angle, bool swap, orientation_enum orientation) {
+	if (orientation == ORIENT_SINGLE && swap) {
+		return;
+	}
+	cairo_save(cr);
+	switch (orientation) {
+	case ORIENT_VERTICAL:
+		if (swap) {
+			cairo_translate(cr, 0, h + gap);
+		}
+		break;
+	case ORIENT_HORIZONTAL:
+		if (swap) {
+			cairo_translate(cr, w, 0);
+		}
+		break;
+	}
+	drawScreen(cr, buf, w, h);
+	cairo_restore(cr);
+}
 
-            if (rot == 0 || rot == 180)
-                offset = i * pixelsize + j * pixelsize * width;
-            else
-                offset = j * pixelsize + (width - i - 1) * pixelsize * height;
-
-            if (rot == 90 || rot == 180)
-                offset = size - offset - pixelsize;
-              
-            *(rgb + offset + 0) = ((gpu_pixel >> 0) & 0x1f) << 3;
-            *(rgb + offset + 1) = ((gpu_pixel >> 5) & 0x1f) << 3;
-            *(rgb + offset + 2) = ((gpu_pixel >> 10) & 0x1f) << 3;
-        }
-    }
+static inline void drawBottomScreen(cairo_t* cr, u32* buf, gint w, gint h, gint gap, gint rotation_angle, bool swap, orientation_enum orientation) {
+	if (orientation == ORIENT_SINGLE && !swap) {
+		return;
+	}
+	cairo_save(cr);
+	switch (orientation) {
+	case ORIENT_VERTICAL:
+		if (!swap) {
+			cairo_translate(cr, 0, h + gap);
+		}
+		break;
+	case ORIENT_HORIZONTAL:
+		if (!swap) {
+			cairo_translate(cr, w, 0);
+		}
+		break;
+	}
+	// Store the inverted matrix for converting touchscreen coordinates
+	cairo_get_matrix(cr, &nds_screen.touch_matrix);
+	drawScreen(cr, buf, w, h);
+	cairo_restore(cr);
 }
 
 /* Drawing callback */
 static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
-    GdkPixbuf *resizedPixbuf, *drawPixbuf;
-    cairo_t *cr;
-    GdkWindow *window;
-
-    gfloat vratio, hratio, nscreen_ratio;
-    gint daW, daH, imgW, imgH, screenW, screenH, gapW, gapH;
-    gint primaryOffsetX, primaryOffsetY, secondaryOffsetX, secondaryOffsetY;
-    const gboolean gap_vertical = ((nds_screen.orientation == ORIENT_VERTICAL) ^ (nds_screen.rotation_angle == 90 || nds_screen.rotation_angle == 270));
-  
-    window = gtk_widget_get_window(GTK_WIDGET(pDrawingArea));
+	GdkWindow* window = gtk_widget_get_window(widget);
+	gint daW, daH;
 #if GTK_CHECK_VERSION(2,24,0)
-    daW = gdk_window_get_width(window);
-    daH = gdk_window_get_height(window);
+	daW = gdk_window_get_width(window);
+	daH = gdk_window_get_height(window);
 #else
-    gdk_drawable_get_size(window, &daW, &daH);
+	gdk_drawable_get_size(window, &daW, &daH);
 #endif
 
-    if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
-        imgW = screen_size[nds_screen.orientation].width;
-        imgH = screen_size[nds_screen.orientation].height;
-    } else {
-        imgH = screen_size[nds_screen.orientation].width;
-        imgW = screen_size[nds_screen.orientation].height;
-    }
+#ifdef HAVE_LIBAGG
+	osd->update();
+	DrawHUD();
+	osd->clear();
+#endif
 
-    if (nds_screen.orientation != ORIENT_VERTICAL) {
-        gapH = 0;
-        gapW = 0;
-    } else if (gap_vertical) {
-        gapH = nds_screen.gap_size;
-        gapW = 0;
-    } else {
-        gapH = 0;
-        gapW = nds_screen.gap_size;
-    }
+	gpu_screen_to_rgb(video.GetSrcBufferPtr());
 
-    hratio = (float)daW / (float)(imgW + gapW);
-    vratio = (float)daH / (float)(imgH + gapH);
-    hratio = MIN(hratio, vratio);
-    vratio = hratio;
+	u32* fbuf = video.RunFilter();
+	gint dstW = video.GetDstWidth();
+	gint dstH = video.GetDstHeight();
+	// Convert from RGBA to BGRX
+	CACHE_ALIGN u32 conv_buf[dstW * dstH];
+	for (u32 *p = conv_buf, *pe = conv_buf + dstW * dstH; p  < pe; p++)
+	{
+		*p = __builtin_bswap32(*fbuf++) >> 8;
+	}
 
-    primaryOffsetX = (daW-(int)(hratio*(float)(imgW+gapW)))/2;
-    primaryOffsetY = (daH-(int)(vratio*(float)(imgH+gapH)))/2;
+	gint dstScale = dstW * 2 / 256; // Actual scale * 2 to handle 1.5x filters
+	
+	gint gap = nds_screen.orientation == ORIENT_VERTICAL ? nds_screen.gap_size * dstScale / 2 : 0;
+	gint imgW, imgH;
+	if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
+		imgW = screen_size[nds_screen.orientation].width * dstScale / 2;
+		imgH = screen_size[nds_screen.orientation].height * dstScale / 2 + gap;
+	} else {
+		imgH = screen_size[nds_screen.orientation].width * dstScale / 2;
+		imgW = screen_size[nds_screen.orientation].height * dstScale / 2 + gap;
+	}
 
-    nscreen_ratio = nds_screen.orientation == ORIENT_SINGLE ? 1 : 0.5;
-    if (gap_vertical) {
-        screenW = (int)(hratio*(float)(imgW));
-        screenH = (int)(vratio*(float)(imgH)*nscreen_ratio);
-        secondaryOffsetX = primaryOffsetX;
-        secondaryOffsetY = primaryOffsetY + screenH + (int)(vratio * (float)gapH);
-    } else {
-        screenW = (int)(hratio*(float)(imgW)*nscreen_ratio);
-        screenH = (int)(vratio*(float)(imgH));
-        secondaryOffsetX = primaryOffsetX + screenW + (int)(hratio * (float)gapW);
-        secondaryOffsetY = primaryOffsetY;
-    }
+	// Calculate scale to fit display area to window
+	gfloat hratio = (gfloat)daW / (gfloat)imgW;
+	gfloat vratio = (gfloat)daH / (gfloat)imgH;
+	hratio = MIN(hratio, vratio);
+	vratio = hratio;
 
-    if ((nds_screen.swap) ^
-            ((nds_screen.orientation == ORIENT_VERTICAL && (nds_screen.rotation_angle == 90 || nds_screen.rotation_angle == 180)) ||
-            (nds_screen.orientation == ORIENT_HORIZONTAL && (nds_screen.rotation_angle == 180 || nds_screen.rotation_angle == 270)))) {
-        nds_screen.touch_x = primaryOffsetX;
-        nds_screen.touch_y = primaryOffsetY;
-    } else if (nds_screen.orientation != ORIENT_SINGLE) {
-        nds_screen.touch_x = secondaryOffsetX;
-        nds_screen.touch_y = secondaryOffsetY;
-    } else {
-        nds_screen.touch_x = -1;
-        nds_screen.touch_y = -1;
-    }
-    nds_screen.touch_width = screenW;
-    nds_screen.touch_height = screenH;
+	cairo_t* cr = gdk_cairo_create(window);
 
-    osd->update();
-    DrawHUD();
+	// Scale to window size at center of area
+	cairo_translate(cr, daW / 2, daH / 2);
+	cairo_scale(cr, hratio, vratio);
+	// Rotate area
+	cairo_rotate(cr, M_PI / 180 * nds_screen.rotation_angle);
+	// Translate area to top-left corner
+	if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
+		cairo_translate(cr, -imgW / 2, -imgH / 2);
+	} else {
+		cairo_translate(cr, -imgH / 2, -imgW / 2);
+	}
+	// Draw both screens
+	drawTopScreen(cr, conv_buf, dstW, dstH / 2, gap, nds_screen.rotation_angle, nds_screen.swap, nds_screen.orientation);
+	drawBottomScreen(cr, conv_buf + dstW * dstH / 2, dstW, dstH / 2, gap, nds_screen.rotation_angle, nds_screen.swap, nds_screen.orientation);
+	// Draw gap
+	cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);
+	cairo_rectangle(cr, 0, dstH / 2, dstW, gap);
+	cairo_fill(cr);
+	// Correct the touchscreen matrix
+	cairo_matrix_scale(&nds_screen.touch_matrix, (double)dstScale / 2, (double)dstScale / 2);
+	cairo_matrix_invert(&nds_screen.touch_matrix);
 
-    gpu_screen_to_rgb((u8*)video.GetSrcBufferPtr(), imgW*imgH*4, 4);
-    
-    u32* fbuf = video.RunFilter();
-    int dstW = video.GetDstWidth();
-    int dstH = video.GetDstHeight();
-    int dstScale = (dstH / imgH); // Assumed to be integer
-    int dstGapH = gapH * dstScale;
-    int dstGapW = gapW * dstScale;
-    //Convert to 24-bit
-    guchar dsurf24[(dstW+dstGapW)*(dstH+dstGapH)*SCREEN_BYTES_PER_PIXEL];
-    gint i=0, k=0, x, y;
-    // Top half
-    for (x = 0; x < dstH / 2; x++) {
-        // Left half
-        for (y = 0; y < dstW / 2; y++, i++) {
-            *(u32*) &(dsurf24[k]) = fbuf[i];
-            k += 3;
-        }
-        // Vertical gap
-        for(y = 0; y < dstGapW; y++) {
-            *(u32*) &(dsurf24[k]) = GAP_COLOR;
-            k += 3;
-        }
-        // Right half
-        for (y = 0; y < dstW / 2; y++, i++) {
-            *(u32*) &(dsurf24[k]) = fbuf[i];
-            k += 3;
-        }
-    }
-    // Horizontal gap
-    for (x = 0; x < dstGapH; x++) {
-        for(y = 0; y < dstW + dstGapW; y++) {
-            *(u32*) &(dsurf24[k]) = GAP_COLOR;
-            k += 3;
-        }
-    }
-    // Bottom half
-    for (x = 0; x < dstH / 2; x++) {
-        // Left half
-        for (y = 0; y < dstW / 2; y++, i++) {
-            *(u32*) &(dsurf24[k]) = fbuf[i];
-            k += 3;
-        }
-        // Mid gap
-        for(y = 0; y < dstGapW; y++) {
-            *(u32*) &(dsurf24[k]) = GAP_COLOR;
-            k += 3;
-        }
-        // Right half
-        for (y = 0; y < dstW / 2; y++, i++) {
-            *(u32*) &(dsurf24[k]) = fbuf[i];
-            k += 3;
-        }
-    }
-    
-    drawPixbuf = gdk_pixbuf_new_from_data(dsurf24, GDK_COLORSPACE_RGB, 
-            FALSE, 8, dstW + dstGapW, dstH + dstGapH, (dstW + dstGapW) * SCREEN_BYTES_PER_PIXEL, NULL, NULL);
+	cairo_destroy(cr);
+	draw_count++;
 
-    resizedPixbuf = gdk_pixbuf_scale_simple(drawPixbuf, hratio*(imgW+gapW), vratio*(imgH+gapH),
-                Interpolation);
-    g_object_unref(drawPixbuf);
-    drawPixbuf = resizedPixbuf;
-
-    cr = gdk_cairo_create(widget->window);
-    gdk_cairo_set_source_pixbuf(cr, drawPixbuf, 0, 0);
-
-    if (nds_screen.orientation != ORIENT_SINGLE) {
-        gdk_cairo_set_source_pixbuf(cr, drawPixbuf, primaryOffsetX, primaryOffsetY);
-    }
-    
-    g_object_unref(drawPixbuf); //drawPixbuf was never unref'd, so its ref count stayed above 0 and it was never freed
-
-    cairo_paint(cr);
-    cairo_destroy(cr);
-    draw_count++;
-
-    return TRUE;
+	return TRUE;
 }
 
 /////////////////////////////// KEYS AND STYLUS UPDATE ///////////////////////////////////////
 
 static gboolean rotoscaled_touchpos(gint x, gint y, gboolean start)
 {
+    double devX, devY;
     u16 EmuX, EmuY;
     gint X, Y;
 
-    if (nds_screen.touch_x == -1 || nds_screen.touch_y == -1) {
+    if (nds_screen.orientation == ORIENT_SINGLE && !nds_screen.swap) {
         return FALSE;
     }
 
-    if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
-        X = (x - nds_screen.touch_x) * 256 / nds_screen.touch_width;
-        Y = (y - nds_screen.touch_y) * 192 / nds_screen.touch_height;
-    } else {
-        X = (y - nds_screen.touch_y) * 256 / nds_screen.touch_height;
-        Y = (x - nds_screen.touch_x) * 192 / nds_screen.touch_width;
-    }
+    devX = x;
+    devY = y;
+    cairo_matrix_transform_point(&nds_screen.touch_matrix, &devX, &devY);
+    X = devX;
+    Y = devY;
 
-    if (nds_screen.rotation_angle == 180 || nds_screen.rotation_angle == 270) {
-        X = 255 - X;
-    }
-
-    if (nds_screen.rotation_angle == 90 || nds_screen.rotation_angle == 180) {
-        Y = 191 - Y;
-    }
-
-    LOG("X=%d, Y=%d\n",x,y);
+    LOG("X=%d, Y=%d\n", X, Y);
 
     if (!start || (X >= 0 && Y >= 0 && X < 256 && Y < 192)) {
         EmuX = CLAMP(X, 0, 255);
@@ -2073,13 +2025,13 @@ static void Printscreen()
     GdkPixbuf *screenshot;
     gchar *filename, *filen;
     GError *error = NULL;
-    u8 *rgb;
+    u8 rgb[256 * 384 * 4];
     static int seq = 0;
     gint H, W;
 
-    rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL);
-    if (!rgb)
-        return;
+    //rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL);
+    //if (!rgb)
+    //    return;
 
     if (nds_screen.rotation_angle == 0 || nds_screen.rotation_angle == 180) {
         W = screen_size[nds_screen.orientation].width;
@@ -2089,14 +2041,14 @@ static void Printscreen()
         H = screen_size[nds_screen.orientation].width;
     }
 
-    gpu_screen_to_rgb(rgb, W*H*SCREEN_BYTES_PER_PIXEL, 3);
+    gpu_screen_to_rgb((u32*)rgb);
     screenshot = gdk_pixbuf_new_from_data(rgb,
                           GDK_COLORSPACE_RGB,
-                          FALSE,
+                          TRUE,
                           8,
                           W,
                           H,
-                          W*SCREEN_BYTES_PER_PIXEL,
+                          W * 4,
                           NULL,
                           NULL);
 
@@ -2111,7 +2063,7 @@ static void Printscreen()
         seq++;
     }
 
-    free(rgb);
+    //free(rgb);
     g_object_unref(screenshot);
     g_free(filename);
     g_free(filen);
@@ -2178,7 +2130,7 @@ static void Modify_PriInterpolation(GtkAction *action, GtkRadioAction *current)
 
 static void Modify_Interpolation(GtkAction *action, GtkRadioAction *current)
 {
-    Interpolation = (GdkInterpType)gtk_radio_action_get_current_value(current);
+    Interpolation = (cairo_filter_t)gtk_radio_action_get_current_value(current);
 }
 
 static void Modify_SPUMode(GtkAction *action, GtkRadioAction *current)
@@ -2379,7 +2331,6 @@ gboolean EmuLoop(gpointer data)
 
     _updateDTools();
     gtk_widget_queue_draw( pDrawingArea );
-    osd->clear();
 	avout_x264.updateVideo((u16*)GPU_screen);
 
     if (gtk_fps_limiter_disabled || keys_latch & KEYMASK_(KEY_BOOST - 1)) {
@@ -2890,7 +2841,7 @@ common_gtk_main( class configured_features *my_config)
     gtk_action_group_add_radio_actions(action_group, savet_entries, G_N_ELEMENTS(savet_entries), 
             my_config->savetype, G_CALLBACK(changesavetype), NULL);
     gtk_action_group_add_radio_actions(action_group, interpolation_entries, G_N_ELEMENTS(interpolation_entries), 
-            GDK_INTERP_NEAREST, G_CALLBACK(Modify_Interpolation), NULL);
+            Interpolation, G_CALLBACK(Modify_Interpolation), NULL);
     gtk_action_group_add_radio_actions(action_group, pri_interpolation_entries, G_N_ELEMENTS(pri_interpolation_entries), 
             VideoFilterTypeID_None, G_CALLBACK(Modify_PriInterpolation), NULL);
     gtk_action_group_add_radio_actions(action_group, spumode_entries, G_N_ELEMENTS(spumode_entries),
@@ -2916,7 +2867,6 @@ common_gtk_main( class configured_features *my_config)
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatlist"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatsearch"), FALSE);
-    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "fullscreen"), FALSE);
 
     gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
     
