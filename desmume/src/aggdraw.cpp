@@ -118,7 +118,7 @@ static void Agg_init_fonts()
 
 AggDraw_Desmume aggDraw;
 
-#ifdef WIN32
+#if defined(WIN32) || defined(HOST_LINUX)
 T_AGG_RGBA agg_targetScreen(0, 256, 384, 1024);
 #else
 T_AGG_RGB555 agg_targetScreen(0, 256, 384, 1512);
@@ -146,11 +146,11 @@ void Agg_init()
 	aggDraw.target = targets[0];
 
 	//if we're single core, we don't want to waste time compositing
+	//and the more clever compositing isnt supported in non-windows
+	#ifdef WIN32
 	if(CommonSettings.single_core())
 		aggDraw.hud = &agg_targetScreen;
-
-	//and the more clever compositing isnt supported in non-windows
-	#ifndef WIN32
+	#else
 	aggDraw.hud = &agg_targetScreen;
 	#endif
 
