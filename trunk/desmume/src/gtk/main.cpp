@@ -1449,11 +1449,13 @@ static void SetWinsize(GtkAction *action, GtkRadioAction *current)
 static void SetOrientation(GtkAction *action, GtkRadioAction *current)
 {
     nds_screen.orientation = (orientation_enum)gtk_radio_action_get_current_value(current);
+    osd->singleScreen = nds_screen.orientation == ORIENT_SINGLE;
     UpdateDrawingAreaAspect();
 }
 
 static void ToggleSwapScreens(GtkToggleAction *action) {
     nds_screen.swap = gtk_toggle_action_get_active(action);
+    osd->swapScreens = nds_screen.swap;
 }
 
 static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpointer data)
@@ -1477,6 +1479,14 @@ static inline uint32_t RGB555ToRGBA8888(const uint16_t color16)
 			0xFF000000;
 }
 
+static inline uint32_t RGB555ToBGRA8888(const uint16_t color16)
+{
+	return	(bits5to8[((color16 >> 10) & 0x001F)] << 0) |
+			(bits5to8[((color16 >> 5) & 0x001F)] << 8) |
+			(bits5to8[((color16 >> 0) & 0x001F)] << 16) |
+			0xFF000000;
+}
+
 // Adapted from Cocoa port
 static inline void RGB555ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount)
 {
@@ -1485,6 +1495,16 @@ static inline void RGB555ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer
 	while (destBuffer < destBufferEnd)
 	{
 		*destBuffer++ = RGB555ToRGBA8888(*srcBuffer++);
+	}
+}
+
+static inline void RGB555ToBGRA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount)
+{
+	const uint32_t *__restrict__ destBufferEnd = destBuffer + pixelCount;
+	
+	while (destBuffer < destBufferEnd)
+	{
+		*destBuffer++ = RGB555ToBGRA8888(*srcBuffer++);
 	}
 }
 
@@ -1559,22 +1579,18 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	gdk_drawable_get_size(window, &daW, &daH);
 #endif
 
+	RGB555ToBGRA8888Buffer((u16*)GPU_screen, video.GetSrcBufferPtr(), 256 * 384);
+
 #ifdef HAVE_LIBAGG
+	aggDraw.hud->attach((u8*)video.GetSrcBufferPtr(), 256, 384, 1024);
 	osd->update();
 	DrawHUD();
 	osd->clear();
 #endif
 
-	gpu_screen_to_rgb(video.GetSrcBufferPtr());
-
 	u32* fbuf = video.RunFilter();
 	gint dstW = video.GetDstWidth();
 	gint dstH = video.GetDstHeight();
-	// Convert from RGBA to BGRX
-	for (u32 *p = fbuf, *pe = fbuf + dstW * dstH; p  < pe; p++)
-	{
-		*p = __builtin_bswap32(*p) >> 8;
-	}
 
 	gint dstScale = dstW * 2 / 256; // Actual scale * 2 to handle 1.5x filters
 	
@@ -1716,6 +1732,7 @@ static void loadgame(int num){
    }
    else
        loadstate_slot(num);
+   gtk_widget_queue_draw(pDrawingArea);
 }
 
 static void savegame(int num){
@@ -1728,6 +1745,7 @@ static void savegame(int num){
    else
        savestate_slot(num);
    LoadSaveStateInfo();
+   gtk_widget_queue_draw(pDrawingArea);
 }
 
 static void MenuLoad(GtkMenuItem *item, gpointer slot)
@@ -2125,11 +2143,13 @@ static void Modify_PriInterpolation(GtkAction *action, GtkRadioAction *current)
 {
     uint filter = gtk_radio_action_get_current_value(current) ;
     video.ChangeFilterByID((VideoFilterTypeID)filter);
+    gtk_widget_queue_draw(pDrawingArea);
 }
 
 static void Modify_Interpolation(GtkAction *action, GtkRadioAction *current)
 {
     Interpolation = (cairo_filter_t)gtk_radio_action_get_current_value(current);
+    gtk_widget_queue_draw(pDrawingArea);
 }
 
 static void Modify_SPUMode(GtkAction *action, GtkRadioAction *current)
@@ -2253,6 +2273,7 @@ gboolean EmuLoop(gpointer data)
       gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME - Paused");
       fps_SecStart = 0;
       regMainLoop = FALSE;
+      gtk_widget_queue_draw(pDrawingArea);
       return FALSE;
     }
 
@@ -2558,6 +2579,7 @@ static void ToggleHudDisplay(GtkToggleAction* action, gpointer data)
         g_printerr("Unknown HUD toggle %u!", hudId);
         break;
     }
+    gtk_widget_queue_draw(pDrawingArea);
 }
 
 static void desmume_gtk_menu_view_hud (GtkActionGroup *ag)
@@ -2596,6 +2618,7 @@ static void ToggleAudio (GtkToggleAction *action)
         SPU_ChangeSoundCore(0, 0);
         osd->addLine("Audio disabled");
     }
+    gtk_widget_queue_draw(pDrawingArea);
 }
 
 #ifdef FAKE_MIC
@@ -2608,6 +2631,7 @@ static void ToggleMicNoise (GtkToggleAction *action)
        osd->addLine("Fake mic enabled");
     else
        osd->addLine("Fake mic disabled");
+    gtk_widget_queue_draw(pDrawingArea);
 }
 #endif
 
@@ -2620,6 +2644,7 @@ static void ToggleFpsLimiter (GtkToggleAction *action)
        osd->addLine("Fps limiter enabled");
     else
        osd->addLine("Fps limiter disabled");
+    gtk_widget_queue_draw(pDrawingArea);
 }
 
 static void ToggleAutoFrameskip (GtkToggleAction *action)
@@ -2635,6 +2660,7 @@ static void ToggleAutoFrameskip (GtkToggleAction *action)
         Frameskip = autoFrameskipMax;
         osd->addLine("Auto frameskip disabled");
     }
+    gtk_widget_queue_draw(pDrawingArea);
 }
 
 static void desmume_gtk_menu_tools (GtkActionGroup *ag)
@@ -2785,7 +2811,6 @@ common_gtk_main( class configured_features *my_config)
 #ifdef HAVE_LIBAGG
     Desmume_InitOnce();
     Hud.reset();
-    aggDraw.hud->attach(GPU_screen, 256, 384, 512);
 #endif
 
     /*
