@@ -288,22 +288,25 @@ const RomBanner& GameInfo::getRomBanner()
 
 void GameInfo::populate()
 {
-	const char *regions[] = {	"JPFSEODIRKHXWVU",
-								"JPN",		// J
-								"EUR",		// P
-								"FRA",		// F
-								"ESP",		// S
-								"USA",		// E
-								"INT",		// O
-								"NOE",		// D
-								"ITA",		// I
-								"RUS",		// R
-								"KOR",		// K
-								"HOL",		// H
-								"EUU",		// X
-								"EUU",		// V
-								"EUU",		// W
-								"AUS",		// U
+	const char regions_index[] = "JPFSEODIRKHXVWUC";
+	const char *regions[] = {
+					"???",
+					"JPN",		// J
+					"EUR",		// P
+					"FRA",		// F
+					"ESP",		// S
+					"USA",		// E
+					"INT",		// O
+					"NOE",		// D
+					"ITA",		// I
+					"RUS",		// R
+					"KOR",		// K
+					"HOL",		// H
+					"EUU",		// X
+					"EUU",		// V
+					"EUU",		// W
+					"AUS",		// U
+					"CHN",		// C
 
 	};
 	
@@ -324,12 +327,12 @@ void GameInfo::populate()
 		memcpy(ROMserial+4, header.gameCode, 4);
 
 		u32 regions_num = ARRAY_SIZE(regions);
-		u32 region = (u32)(std::max<s32>(strchr(regions[0],header.gameCode[3]) - regions[0] + 1, 0));
+		u32 region = (u32)(std::max<s32>(strchr(regions_index,header.gameCode[3]) - regions_index + 1, 0));
 
 		if (region < regions_num)
-			strcat(ROMserial, regions[region]);
+			strncat(ROMserial, regions[region], sizeof(ROMserial));
 		else
-			strcat(ROMserial, "Unknown");
+			strncat(ROMserial, "???", sizeof(ROMserial));
 	}
 
 	//rom name is probably set even in homebrew, so do it regardless
@@ -563,7 +566,7 @@ static int rom_init_path(const char *filename, const char *physicalName, const c
 		//...but since the data was extracted to gameInfo then it is ok
 	}
 	//ds.gba in archives, it's already been loaded into memory at this point
-	else if (path.isdsgba(std::string(logicalFilename))) {
+	else if (logicalFilename && path.isdsgba(std::string(logicalFilename))) {
 		type = ROM_DSGBA;
 	} else {
 		//well, try to load it as an nds rom anyway
