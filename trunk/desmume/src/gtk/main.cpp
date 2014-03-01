@@ -274,6 +274,8 @@ static const char *ui_description =
 "        <menuitem action='hud_lagcounter'/>"
 "        <menuitem action='hud_rtc'/>"
 "        <menuitem action='hud_mic'/>"
+"        <separator/>"
+"        <menuitem action='hud_editor'/>"
 #else
 "        <menuitem action='hud_notsupported'/>"
 #endif
@@ -282,7 +284,6 @@ static const char *ui_description =
 "      <menuitem action='view_menu'/>"
 "      <menuitem action='view_toolbar'/>"
 "      <menuitem action='view_statusbar'/>"
-"      <separator/>"
 "    </menu>"
 "    <menu action='ConfigMenu'>"
 "      <menuitem action='enableaudio'/>"
@@ -775,6 +776,7 @@ struct nds_screen_t {
     gint rotation_angle;
     orientation_enum orientation;
     cairo_matrix_t touch_matrix;
+    cairo_matrix_t topscreen_matrix;
     gboolean swap;
 };
 
@@ -1456,6 +1458,7 @@ static void SetOrientation(GtkAction *action, GtkRadioAction *current)
 static void ToggleSwapScreens(GtkToggleAction *action) {
     nds_screen.swap = gtk_toggle_action_get_active(action);
     osd->swapScreens = nds_screen.swap;
+    gtk_widget_queue_draw(pDrawingArea);
 }
 
 static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpointer data)
@@ -1540,6 +1543,8 @@ static inline void drawTopScreen(cairo_t* cr, u32* buf, gint w, gint h, gint gap
 		}
 		break;
 	}
+	// Used for HUD editor mode
+	cairo_get_matrix(cr, &nds_screen.topscreen_matrix);
 	drawScreen(cr, buf, w, h);
 	cairo_restore(cr);
 }
@@ -1561,7 +1566,7 @@ static inline void drawBottomScreen(cairo_t* cr, u32* buf, gint w, gint h, gint 
 		}
 		break;
 	}
-	// Store the inverted matrix for converting touchscreen coordinates
+	// Store the matrix for converting touchscreen coordinates
 	cairo_get_matrix(cr, &nds_screen.touch_matrix);
 	drawScreen(cr, buf, w, h);
 	cairo_restore(cr);
@@ -1630,7 +1635,9 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);
 	cairo_rectangle(cr, 0, dstH / 2, dstW, gap);
 	cairo_fill(cr);
-	// Correct the touchscreen matrix
+	// Complete the touch transformation matrix
+	cairo_matrix_scale(&nds_screen.topscreen_matrix, (double)dstScale / 2, (double)dstScale / 2);
+	cairo_matrix_invert(&nds_screen.topscreen_matrix);
 	cairo_matrix_scale(&nds_screen.touch_matrix, (double)dstScale / 2, (double)dstScale / 2);
 	cairo_matrix_invert(&nds_screen.touch_matrix);
 
@@ -1641,6 +1648,55 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 }
 
 /////////////////////////////// KEYS AND STYLUS UPDATE ///////////////////////////////////////
+
+static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
+{
+	double devX, devY;
+	gint X, Y, topX = -1, topY = -1, botX = -1, botY = -1;
+	static gint startScreen = 0;
+
+	if (nds_screen.orientation != ORIENT_SINGLE || !nds_screen.swap) {
+		devX = x;
+		devY = y;
+		cairo_matrix_transform_point(&nds_screen.topscreen_matrix, &devX, &devY);
+		topX = devX;
+		topY = devY;
+	}
+
+	if (nds_screen.orientation != ORIENT_SINGLE || nds_screen.swap) {
+		devX = x;
+		devY = y;
+		cairo_matrix_transform_point(&nds_screen.touch_matrix, &devX, &devY);
+		botX = devX;
+		botY = devY;
+	}
+
+	if (topX >= 0 && topY >= 0 && topX < 256 && topY < 192) {
+		X = topX;
+		Y = topY + (nds_screen.swap ? 192 : 0);
+		startScreen = 0;
+	} else if (botX >= 0 && botY >= 0 && botX < 256 && botY < 192) {
+		X = botX;
+		Y = botY + (nds_screen.swap ? 0 : 192);
+		startScreen = 1;
+	} else if (!start) {
+		if (startScreen == 0) {
+			X = CLAMP(topX, 0, 255);
+			Y = CLAMP(topY, 0, 191) + (nds_screen.swap ? 192 : 0);
+		} else {
+			X = CLAMP(botX, 0, 255);
+			Y = CLAMP(botY, 0, 191) + (nds_screen.swap ? 0 : 192);
+		}
+	} else {
+		LOG("TopX=%d, TopY=%d, BotX=%d, BotY=%d\n", topX, topY, botX, botY);
+		return FALSE;
+	}
+
+	LOG("TopX=%d, TopY=%d, BotX=%d, BotY=%d, X=%d, Y=%d\n", topX, topY, botX, botY, X, Y);
+	EditHud(X, Y, &Hud);
+	gtk_widget_queue_draw(pDrawingArea);
+	return TRUE;
+}
 
 static gboolean rotoscaled_touchpos(gint x, gint y, gboolean start)
 {
@@ -1684,8 +1740,13 @@ static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
             state=(GdkModifierType)e->state;
         }
 
-        if(state & GDK_BUTTON1_MASK)
-            rotoscaled_touchpos(x, y, FALSE);
+        if(state & GDK_BUTTON1_MASK) {
+            if (HudEditorMode) {
+                rotoscaled_hudedit(x, y, FALSE);
+            } else {
+                rotoscaled_touchpos(x, y, FALSE);
+            }
+        }
     }
 
     return TRUE;
@@ -1703,21 +1764,23 @@ static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
         gtk_menu_popup(GTK_MENU(pMenu), NULL, NULL, NULL, NULL, 3, e->time);
     }
 
-    if( !desmume_running()) 
-        return TRUE;
-
     if (e->button == 1) {
         gdk_window_get_pointer(w->window, &x, &y, &state);
 
-        if(state & GDK_BUTTON1_MASK)
-            if (rotoscaled_touchpos(x, y, TRUE))
-                click = TRUE;
+        if(state & GDK_BUTTON1_MASK) {
+            if (HudEditorMode) {
+                click = rotoscaled_hudedit(x, y, TRUE);
+            } else if (desmume_running()) {
+                click = rotoscaled_touchpos(x, y, TRUE);
+            }
+        }
     }
 
     return TRUE;
 }
 static gboolean Stylus_Release(GtkWidget *w, GdkEventButton *e, gpointer data)
 {
+    HudClickRelease(&Hud);
     if(click) NDS_releaseTouch();
     click = FALSE;
     return TRUE;
@@ -2544,6 +2607,7 @@ enum hud_display_enum {
     HUD_DISPLAY_LCOUNTER,
     HUD_DISPLAY_RTC,
     HUD_DISPLAY_MIC,
+    HUD_DISPLAY_EDITOR,
 };
 
 static void ToggleHudDisplay(GtkToggleAction* action, gpointer data)
@@ -2575,6 +2639,9 @@ static void ToggleHudDisplay(GtkToggleAction* action, gpointer data)
     case HUD_DISPLAY_MIC:
         CommonSettings.hud.ShowMicrophone = active;
         break;
+    case HUD_DISPLAY_EDITOR:
+        HudEditorMode = active;
+        break;
     default:
         g_printerr("Unknown HUD toggle %u!", hudId);
         break;
@@ -2596,6 +2663,7 @@ static void desmume_gtk_menu_view_hud (GtkActionGroup *ag)
         { "hud_lagcounter","Display _Lag Counter", HUD_DISPLAY_LCOUNTER },
         { "hud_rtc","Display _RTC", HUD_DISPLAY_RTC },
         { "hud_mic","Display _Mic", HUD_DISPLAY_MIC },
+        { "hud_editor","_Editor Mode", HUD_DISPLAY_EDITOR },
     };
     guint i;
 
