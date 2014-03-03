@@ -19,6 +19,20 @@
 #include <cstring>
 
 #include "avout_flac.h"
+#include "SPU.h"
+
+// Helper macros to convert numerics to strings
+#if defined(_MSC_VER)
+	//re: http://72.14.203.104/search?q=cache:HG-okth5NGkJ:mail.python.org/pipermail/python-checkins/2002-November/030704.html+_msc_ver+compiler+version+string&hl=en&gl=us&ct=clnk&cd=5
+	#define _Py_STRINGIZE(X) _Py_STRINGIZE1((X))
+	#define _Py_STRINGIZE1(X) _Py_STRINGIZE2 ## X
+	#define _Py_STRINGIZE2(X) #X
+
+	#define TOSTRING(X) _Py_STRINGIZE(X) // Alias _Py_STRINGIZE so that we have a common macro name
+#else
+	#define STRINGIFY(x) #x
+	#define TOSTRING(x) STRINGIFY(x)
+#endif
 
 AVOutFlac::AVOutFlac() {
 	const char* const args[] = {
@@ -28,7 +42,7 @@ AVOutFlac::AVOutFlac() {
 		"--endian=little",
 		"--channels=2",
 		"--bps=16",
-		"--sample-rate=44100",
+		"--sample-rate=" TOSTRING(DESMUME_SAMPLE_RATE),
 		"--sign=signed",
 		"--force-raw-format",
 		"-",

@@ -99,7 +99,7 @@ int SNDSDLInit(int buffersize)
    if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
       return -1;
 
-   audiofmt.freq = 44100;
+   audiofmt.freq = DESMUME_SAMPLE_RATE;
    audiofmt.format = AUDIO_S16SYS;
    audiofmt.channels = 2;
    audiofmt.samples = (audiofmt.freq / 60) * 2;
