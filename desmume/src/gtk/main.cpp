@@ -1391,6 +1391,9 @@ static void Reset()
     bool shouldBeRunning = desmume_running();
     Pause();
     NDS_Reset();
+    // Clear the NDS screen
+    memset(GPU_screen, 0xFF, sizeof(GPU_screen));
+    gtk_widget_queue_draw(pDrawingArea);
     if (shouldBeRunning) {
         Launch();
     }
