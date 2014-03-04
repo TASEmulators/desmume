@@ -485,6 +485,8 @@ static void desmume_cycle(struct ctrls_event_config * cfg)
     SPU_Emulate_user();
 }
 
+T_AGG_RGB555 agg_targetScreen_cli(GPU_screen, 256, 384, 512);
+
 int main(int argc, char ** argv) {
   class configured_features my_config;
   struct ctrls_event_config ctrls_cfg;
@@ -747,7 +749,11 @@ int main(int argc, char ** argv) {
 #ifdef HAVE_LIBAGG
   Desmume_InitOnce();
   Hud.reset();
-  aggDraw.hud->attach(GPU_screen, 256, 384, 512);
+  // Now that gtk port draws to RGBA buffer directly, the other one
+  // has to use ugly ways to make HUD rendering work again.
+  // desmume gtk: Sorry desmume-cli :(
+  aggDraw.hud = &agg_targetScreen_cli;
+  aggDraw.hud->setFont("verdana18_bold");
 #endif
 
   ctrls_cfg.boost = 0;
