@@ -116,5 +116,8 @@
 - (void) didEndFirmwareConfigSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 
 - (void) switchContentView:(NSView *)theView;
+- (void) updateVideoFilterPreview:(const NSInteger)vfType;
+- (void) updateBilinearPreview:(const BOOL)useBilinear;
+- (void) setupUserDefaults;
 
 @end

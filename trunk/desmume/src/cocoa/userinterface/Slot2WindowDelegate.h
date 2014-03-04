@@ -105,6 +105,7 @@
 - (void) update;
 - (void) selectDeviceByType:(NSInteger)theType;
 - (void) setDeviceViewByDevice:(CocoaDSSlot2Device *)theDevice;
+- (void) setupUserDefaults;
 
 #pragma mark -
 #pragma mark Auto
