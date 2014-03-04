@@ -111,6 +111,7 @@ static AVOutFlac avout_flac;
 static void RecordAV_x264();
 static void RecordAV_flac();
 static void RecordAV_stop();
+static void RedrawScreen();
 
 static void DoQuit();
 static void RecordMovieDialog();
@@ -1393,7 +1394,7 @@ static void Reset()
     NDS_Reset();
     // Clear the NDS screen
     memset(GPU_screen, 0xFF, sizeof(GPU_screen));
-    gtk_widget_queue_draw(pDrawingArea);
+    RedrawScreen();
     if (shouldBeRunning) {
         Launch();
     }
@@ -1424,11 +1425,12 @@ static void UpdateDrawingAreaAspect()
     }
 
 	if (winsize_current == WINSIZE_SCALE) {
-		gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W, H);
 		gtk_window_set_resizable(GTK_WINDOW(pWindow), TRUE);
+		gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W, H);
 	} else {
-		gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W * winsize_current / 2, H * winsize_current / 2);
+		gtk_window_unmaximize(GTK_WINDOW(pWindow));
 		gtk_window_set_resizable(GTK_WINDOW(pWindow), FALSE);
+		gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W * winsize_current / 2, H * winsize_current / 2);
 	}
 }
 
@@ -1461,7 +1463,7 @@ static void SetOrientation(GtkAction *action, GtkRadioAction *current)
 static void ToggleSwapScreens(GtkToggleAction *action) {
     nds_screen.swap = gtk_toggle_action_get_active(action);
     osd->swapScreens = nds_screen.swap;
-    gtk_widget_queue_draw(pDrawingArea);
+    RedrawScreen();
 }
 
 static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpointer data)
@@ -1586,7 +1588,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 #else
 	gdk_drawable_get_size(window, &daW, &daH);
 #endif
-
+#if 0
 	RGB555ToBGRA8888Buffer((u16*)GPU_screen, video.GetSrcBufferPtr(), 256 * 384);
 
 #ifdef HAVE_LIBAGG
@@ -1595,8 +1597,8 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	DrawHUD();
 	osd->clear();
 #endif
-
-	u32* fbuf = video.RunFilter();
+#endif
+	u32* fbuf = video.GetDstBufferPtr();//video.RunFilter();
 	gint dstW = video.GetDstWidth();
 	gint dstH = video.GetDstHeight();
 
@@ -1650,6 +1652,18 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 	return TRUE;
 }
 
+static void RedrawScreen() {
+	RGB555ToBGRA8888Buffer((u16*)GPU_screen, video.GetSrcBufferPtr(), 256 * 384);
+#ifdef HAVE_LIBAGG
+	aggDraw.hud->attach((u8*)video.GetSrcBufferPtr(), 256, 384, 1024);
+	osd->update();
+	DrawHUD();
+	osd->clear();
+#endif
+	video.RunFilter();
+	gtk_widget_queue_draw(pDrawingArea);
+}
+
 /////////////////////////////// KEYS AND STYLUS UPDATE ///////////////////////////////////////
 
 static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
@@ -1697,7 +1711,7 @@ static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 
 	LOG("TopX=%d, TopY=%d, BotX=%d, BotY=%d, X=%d, Y=%d\n", topX, topY, botX, botY, X, Y);
 	EditHud(X, Y, &Hud);
-	gtk_widget_queue_draw(pDrawingArea);
+	RedrawScreen();
 	return TRUE;
 }
 
@@ -1798,7 +1812,7 @@ static void loadgame(int num){
    }
    else
        loadstate_slot(num);
-   gtk_widget_queue_draw(pDrawingArea);
+   RedrawScreen();
 }
 
 static void savegame(int num){
@@ -1811,7 +1825,7 @@ static void savegame(int num){
    else
        savestate_slot(num);
    LoadSaveStateInfo();
-   gtk_widget_queue_draw(pDrawingArea);
+   RedrawScreen();
 }
 
 static void MenuLoad(GtkMenuItem *item, gpointer slot)
@@ -2209,13 +2223,13 @@ static void Modify_PriInterpolation(GtkAction *action, GtkRadioAction *current)
 {
     uint filter = gtk_radio_action_get_current_value(current) ;
     video.ChangeFilterByID((VideoFilterTypeID)filter);
-    gtk_widget_queue_draw(pDrawingArea);
+    RedrawScreen();
 }
 
 static void Modify_Interpolation(GtkAction *action, GtkRadioAction *current)
 {
     Interpolation = (cairo_filter_t)gtk_radio_action_get_current_value(current);
-    gtk_widget_queue_draw(pDrawingArea);
+    RedrawScreen();
 }
 
 static void Modify_SPUMode(GtkAction *action, GtkRadioAction *current)
@@ -2339,7 +2353,7 @@ gboolean EmuLoop(gpointer data)
       gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME - Paused");
       fps_SecStart = 0;
       regMainLoop = FALSE;
-      gtk_widget_queue_draw(pDrawingArea);
+      RedrawScreen();
       return FALSE;
     }
 
@@ -2416,8 +2430,8 @@ gboolean EmuLoop(gpointer data)
     desmume_cycle();    /* Emule ! */
 
     _updateDTools();
-    gtk_widget_queue_draw( pDrawingArea );
 	avout_x264.updateVideo((u16*)GPU_screen);
+	RedrawScreen();
 
     if (gtk_fps_limiter_disabled || keys_latch & KEYMASK_(KEY_BOOST - 1)) {
         if (autoframeskip) {
@@ -2649,7 +2663,7 @@ static void ToggleHudDisplay(GtkToggleAction* action, gpointer data)
         g_printerr("Unknown HUD toggle %u!", hudId);
         break;
     }
-    gtk_widget_queue_draw(pDrawingArea);
+    RedrawScreen();
 }
 
 static void desmume_gtk_menu_view_hud (GtkActionGroup *ag)
@@ -2689,7 +2703,7 @@ static void ToggleAudio (GtkToggleAction *action)
         SPU_ChangeSoundCore(0, 0);
         osd->addLine("Audio disabled");
     }
-    gtk_widget_queue_draw(pDrawingArea);
+    RedrawScreen();
 }
 
 #ifdef FAKE_MIC
@@ -2702,7 +2716,7 @@ static void ToggleMicNoise (GtkToggleAction *action)
        osd->addLine("Fake mic enabled");
     else
        osd->addLine("Fake mic disabled");
-    gtk_widget_queue_draw(pDrawingArea);
+    RedrawScreen();
 }
 #endif
 
@@ -2715,7 +2729,7 @@ static void ToggleFpsLimiter (GtkToggleAction *action)
        osd->addLine("Fps limiter enabled");
     else
        osd->addLine("Fps limiter disabled");
-    gtk_widget_queue_draw(pDrawingArea);
+    RedrawScreen();
 }
 
 static void ToggleAutoFrameskip (GtkToggleAction *action)
@@ -2731,7 +2745,7 @@ static void ToggleAutoFrameskip (GtkToggleAction *action)
         Frameskip = autoFrameskipMax;
         osd->addLine("Auto frameskip disabled");
     }
-    gtk_widget_queue_draw(pDrawingArea);
+    RedrawScreen();
 }
 
 static void desmume_gtk_menu_tools (GtkActionGroup *ag)
