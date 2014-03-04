@@ -85,6 +85,7 @@
 @property (retain) NSMutableDictionary *inputSettingsInEdit;
 
 - (void) initSettingsSheets;
+- (void) loadSavedProfilesList;
 - (void) populateInputProfileMenu;
 
 - (BOOL) handleKeyboardEvent:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;

@@ -237,6 +237,16 @@
 	}
 }
 
+- (void) setupUserDefaults
+{
+	[self setMpcfFolderURL:[NSURL fileURLWithPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"Slot2_MPCF_DirectoryPath"]]];
+	[self setMpcfDiskImageURL:[NSURL fileURLWithPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"Slot2_MPCF_DiskImagePath"]]];
+	[self setGbaCartridgeURL:[NSURL fileURLWithPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"Slot2_GBA_CartridgePath"]]];
+	[self setGbaSRamURL:[NSURL fileURLWithPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"Slot2_GBA_SRAMPath"]]];
+	[self selectDeviceByType:[[NSUserDefaults standardUserDefaults] integerForKey:@"Slot2_LoadedDevice"]];
+	[self applySettings:nil];
+}
+
 #pragma mark -
 #pragma mark Auto
 

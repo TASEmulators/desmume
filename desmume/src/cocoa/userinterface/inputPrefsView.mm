@@ -99,38 +99,7 @@
 		[defaultProfilesList addObject:[reconstructedProfile autorelease]];
 	}
 	
-	NSArray *userDefaultsSavedProfilesList = (NSArray *)[[NSUserDefaults standardUserDefaults] arrayForKey:@"Input_SavedProfiles"];
 	savedProfilesList = [[NSMutableArray alloc] initWithCapacity:32];
-	
-	for (NSDictionary *theProfile in userDefaultsSavedProfilesList)
-	{
-		NSMutableDictionary *reconstructedProfile = [[NSMutableDictionary alloc] initWithCapacity:[theProfile count]];
-		
-		for (NSString *profileKey in theProfile)
-		{
-			if ([profileKey isEqualToString:@"Mappings"])
-			{
-				NSDictionary *profileMappings = (NSDictionary *)[theProfile objectForKey:profileKey];
-				NSMutableDictionary *reconstructedMappings = [[NSMutableDictionary alloc] initWithCapacity:[profileMappings count]];
-				
-				for (NSString *mappingKey in profileMappings)
-				{
-					NSArray *inputList = (NSArray *)[profileMappings objectForKey:mappingKey];
-					NSMutableArray *newInputList = [[NSMutableArray alloc] initWithArray:inputList copyItems:YES];
-					[reconstructedMappings setObject:[newInputList autorelease] forKey:mappingKey];
-				}
-				
-				[reconstructedProfile setObject:[reconstructedMappings autorelease] forKey:profileKey];
-			}
-			else
-			{
-				[reconstructedProfile setObject:[theProfile objectForKey:profileKey] forKey:profileKey];
-			}
-		}
-		
-		[savedProfilesList addObject:[reconstructedProfile autorelease]];
-	}
-	
 	configInputTargetID = nil;
 	configInputList = [[NSMutableDictionary alloc] initWithCapacity:128];
 	inputSettingsInEdit = nil;
@@ -189,6 +158,41 @@
 							 inputSettingsGPUState,			@"Enable/Disable GPU State",
 							 inputSettingsPaddleController,	@"Paddle",
 							 nil];
+}
+
+- (void) loadSavedProfilesList
+{
+	NSArray *userDefaultsSavedProfilesList = (NSArray *)[[NSUserDefaults standardUserDefaults] arrayForKey:@"Input_SavedProfiles"];
+	[savedProfilesList removeAllObjects];
+	
+	for (NSDictionary *theProfile in userDefaultsSavedProfilesList)
+	{
+		NSMutableDictionary *reconstructedProfile = [[NSMutableDictionary alloc] initWithCapacity:[theProfile count]];
+		
+		for (NSString *profileKey in theProfile)
+		{
+			if ([profileKey isEqualToString:@"Mappings"])
+			{
+				NSDictionary *profileMappings = (NSDictionary *)[theProfile objectForKey:profileKey];
+				NSMutableDictionary *reconstructedMappings = [[NSMutableDictionary alloc] initWithCapacity:[profileMappings count]];
+				
+				for (NSString *mappingKey in profileMappings)
+				{
+					NSArray *inputList = (NSArray *)[profileMappings objectForKey:mappingKey];
+					NSMutableArray *newInputList = [[NSMutableArray alloc] initWithArray:inputList copyItems:YES];
+					[reconstructedMappings setObject:[newInputList autorelease] forKey:mappingKey];
+				}
+				
+				[reconstructedProfile setObject:[reconstructedMappings autorelease] forKey:profileKey];
+			}
+			else
+			{
+				[reconstructedProfile setObject:[theProfile objectForKey:profileKey] forKey:profileKey];
+			}
+		}
+		
+		[savedProfilesList addObject:[reconstructedProfile autorelease]];
+	}
 }
 
 - (void) populateInputProfileMenu

@@ -115,6 +115,17 @@
 
 - (void)applicationWillFinishLaunching:(NSNotification *)notification
 {
+	// Register the application's defaults.
+	NSDictionary *prefsDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultUserPrefs" ofType:@"plist"]];
+	if (prefsDict == nil)
+	{
+		[[NSAlert alertWithMessageText:NSSTRING_ALERT_CRITICAL_FILE_MISSING_PRI defaultButton:nil alternateButton:nil otherButton:nil informativeTextWithFormat:NSSTRING_ALERT_CRITICAL_FILE_MISSING_SEC] runModal];
+		[NSApp terminate:nil];
+		return;
+	}
+	
+	[[NSUserDefaults standardUserDefaults] registerDefaults:prefsDict];
+	
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	PreferencesWindowDelegate *prefWindowDelegate = (PreferencesWindowDelegate *)[prefWindow delegate];
 	CheatWindowDelegate *cheatWindowDelegate = (CheatWindowDelegate *)[cheatListWindow delegate];
@@ -153,17 +164,6 @@
 												  nil];
 	
 	[aboutWindowController setContent:aboutWindowProperties];
-	
-	// Register the application's defaults.
-	NSDictionary *prefsDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultUserPrefs" ofType:@"plist"]];
-	if (prefsDict == nil)
-	{
-		[[NSAlert alertWithMessageText:NSSTRING_ALERT_CRITICAL_FILE_MISSING_PRI defaultButton:nil alternateButton:nil otherButton:nil informativeTextWithFormat:NSSTRING_ALERT_CRITICAL_FILE_MISSING_SEC] runModal];
-		[NSApp terminate:nil];
-		return;
-	}
-	
-	[[NSUserDefaults standardUserDefaults] registerDefaults:prefsDict];
 	
 	// Change the title colors of the NSBox objects in the ROM Info panel. We change the
 	// colors manually here because you can't change them in Interface Builder. Boo!!!
@@ -208,14 +208,6 @@
 	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
 	[prefWindowController setContent:[prefWindowDelegate bindings]];
 	[cheatWindowController setContent:[cheatWindowDelegate bindings]];
-	
-	// Setup the applications settings from the user defaults file.
-	[self setupUserDefaults];
-	
-	[inputPrefsView initSettingsSheets];
-	[inputPrefsView populateInputProfileMenu];
-	[[inputPrefsView inputPrefOutlineView] expandItem:nil expandChildren:YES];
-	[[inputPrefsView inputProfileMenu] selectItemAtIndex:0];
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
@@ -239,6 +231,15 @@
 	{
 		appFirstTimeRunDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:isFirstTimeRunNumber, bundleVersionString, nil];
 	}
+	
+	// Setup the applications settings from the user defaults file.
+	[self setupUserDefaults];
+	
+	// Set up the input preferences view.
+	[inputPrefsView initSettingsSheets];
+	[inputPrefsView populateInputProfileMenu];
+	[[inputPrefsView inputPrefOutlineView] expandItem:nil expandChildren:YES];
+	[[inputPrefsView inputProfileMenu] selectItemAtIndex:0];
 	
 	//Bring the application to the front
 	[NSApp activateIgnoringOtherApps:TRUE];
@@ -420,7 +421,6 @@
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	PreferencesWindowDelegate *prefWindowDelegate = [prefWindow delegate];
 	Slot2WindowDelegate *slot2WindowDelegate = (Slot2WindowDelegate *)[slot2Window delegate];
-	NSMutableDictionary *prefBindings = [prefWindowDelegate bindings];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	// Set the emulation flags.
@@ -512,77 +512,31 @@
 	if (arm7BiosImagePath != nil)
 	{
 		[cdsCore setArm7ImageURL:[NSURL fileURLWithPath:arm7BiosImagePath]];
-		[prefBindings setValue:[arm7BiosImagePath lastPathComponent] forKey:@"Arm7BiosImageName"];
 	}
 	else
 	{
 		[cdsCore setArm7ImageURL:nil];
-		[prefBindings setValue:nil forKey:@"Arm7BiosImageName"];
 	}
 	
 	NSString *arm9BiosImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"BIOS_ARM9ImagePath"];
 	if (arm9BiosImagePath != nil)
 	{
 		[cdsCore setArm9ImageURL:[NSURL fileURLWithPath:arm9BiosImagePath]];
-		[prefBindings setValue:[arm9BiosImagePath lastPathComponent] forKey:@"Arm9BiosImageName"];
 	}
 	else
 	{
 		[cdsCore setArm9ImageURL:nil];
-		[prefBindings setValue:nil forKey:@"Arm9BiosImageName"];
 	}
 	
 	NSString *firmwareImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Emulation_FirmwareImagePath"];
 	if (firmwareImagePath != nil)
 	{
 		[cdsCore setFirmwareImageURL:[NSURL fileURLWithPath:firmwareImagePath]];
-		[prefBindings setValue:[firmwareImagePath lastPathComponent] forKey:@"FirmwareImageName"];
 	}
 	else
 	{
 		[cdsCore setFirmwareImageURL:nil];
-		[prefBindings setValue:nil forKey:@"FirmwareImageName"];
 	}
-	
-	NSString *advansceneDatabasePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Advanscene_DatabasePath"];
-	if (advansceneDatabasePath != nil)
-	{
-		[prefBindings setValue:[advansceneDatabasePath lastPathComponent] forKey:@"AdvansceneDatabaseName"];
-	}
-	
-	NSString *cheatDatabasePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"R4Cheat_DatabasePath"];
-	if (cheatDatabasePath != nil)
-	{
-		[prefBindings setValue:[cheatDatabasePath lastPathComponent] forKey:@"R4CheatDatabaseName"];
-	}
-	
-	// Update the SPU Sync controls in the Preferences window.
-	if ([[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMode"] == SPU_SYNC_MODE_DUAL_SYNC_ASYNC)
-	{
-		[[prefWindowDelegate spuSyncMethodMenu] setEnabled:NO];
-	}
-	else
-	{
-		[[prefWindowDelegate spuSyncMethodMenu] setEnabled:YES];
-	}
-	
-	// Set the name of the autoloaded ROM.
-	NSString *autoloadRomPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"General_AutoloadROMSelectedPath"];
-	if (autoloadRomPath != nil)
-	{
-		[prefBindings setValue:[autoloadRomPath lastPathComponent] forKey:@"AutoloadRomName"];
-	}
-	else
-	{
-		[prefBindings setValue:NSSTRING_STATUS_NO_ROM_CHOSEN forKey:@"AutoloadRomName"];
-	}
-	
-	// Set the menu for the display rotation.
-	const double displayRotation = (double)[[NSUserDefaults standardUserDefaults] floatForKey:@"DisplayView_Rotation"];
-	[prefWindowDelegate updateDisplayRotationMenu:displayRotation];
-	
-	// Set the default sound volume per user preferences.
-	[prefWindowDelegate updateVolumeIcon:nil];
 	
 	// Set up the user's default input settings.
 	NSDictionary *userMappings = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_ControllerMappings"];
@@ -596,13 +550,11 @@
 	[inputManager setMappingsWithMappings:userMappings];
 	[[inputManager hidManager] setDeviceListController:inputDeviceListController];
 	
+	// Set up the preferences window.
+	[prefWindowDelegate setupUserDefaults];
+	
 	// Set up the default SLOT-2 device.
-	[slot2WindowDelegate setMpcfFolderURL:[NSURL fileURLWithPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"Slot2_MPCF_DirectoryPath"]]];
-	[slot2WindowDelegate setMpcfDiskImageURL:[NSURL fileURLWithPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"Slot2_MPCF_DiskImagePath"]]];
-	[slot2WindowDelegate setGbaCartridgeURL:[NSURL fileURLWithPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"Slot2_GBA_CartridgePath"]]];
-	[slot2WindowDelegate setGbaSRamURL:[NSURL fileURLWithPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"Slot2_GBA_SRAMPath"]]];
-	[slot2WindowDelegate selectDeviceByType:[[NSUserDefaults standardUserDefaults] integerForKey:@"Slot2_LoadedDevice"]];
-	[slot2WindowDelegate applySettings:nil];
+	[slot2WindowDelegate setupUserDefaults];
 	
 	// Set up the rest of the emulation-related user defaults.
 	[emuControl setupUserDefaults];

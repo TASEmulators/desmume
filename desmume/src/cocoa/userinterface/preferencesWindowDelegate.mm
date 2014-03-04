@@ -71,47 +71,26 @@
 		return self;
 	}
 	
-	VideoFilterTypeID vfType = (VideoFilterTypeID)[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"];
-	NSImage *videoFilterImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"VideoFilterPreview_64x64" ofType:@"png"]];
-	
-	videoFilter = [[CocoaVideoFilter alloc] initWithSize:[videoFilterImage size] typeID:vfType];
-	NSSize vfDestSize = [videoFilter destSize];
-	NSUInteger vfWidth = (NSUInteger)vfDestSize.width;
-	NSUInteger vfHeight = (NSUInteger)vfDestSize.height;
-	
-	NSArray *imageRepArray = [videoFilterImage representations];
+	// Load the preview image.
+	NSImage *previewImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"VideoFilterPreview_64x64" ofType:@"png"]];
+	NSArray *imageRepArray = [previewImage representations];
 	const NSBitmapImageRep *imageRep = [imageRepArray objectAtIndex:0];
-	RGBA8888ForceOpaqueBuffer((const uint32_t *)[imageRep bitmapData], (uint32_t *)[videoFilter srcBufferPtr], (64 * 64));
-	[videoFilterImage release];
+	const NSSize previewImageSize = [previewImage size];
 	
-	BOOL useBilinear = [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseBilinearOutput"];
+	// Create our video filters for preview.
+	videoFilter = [[CocoaVideoFilter alloc] initWithSize:previewImageSize typeID:VideoFilterTypeID_Nearest2X];
+	bilinearVideoFilter = [[CocoaVideoFilter alloc] initWithSize:[videoFilter destSize] typeID:VideoFilterTypeID_Nearest2X];
 	
-	if (vfWidth <= 64 || vfHeight <= 64)
-	{
-		[videoFilter changeFilter:VideoFilterTypeID_Nearest2X];
-		vfDestSize = [videoFilter destSize];
-		vfWidth = (NSUInteger)vfDestSize.width;
-		vfHeight = (NSUInteger)vfDestSize.height;
-		
-		bilinearVideoFilter = [[CocoaVideoFilter alloc] initWithSize:vfDestSize typeID:(useBilinear) ? VideoFilterTypeID_Bilinear : VideoFilterTypeID_Nearest2X];
-	}
-	else if  (vfWidth >= 256 || vfHeight >= 256)
-	{
-		bilinearVideoFilter = [[CocoaVideoFilter alloc] initWithSize:vfDestSize typeID:VideoFilterTypeID_None];
-	}
-	else
-	{
-		bilinearVideoFilter = [[CocoaVideoFilter alloc] initWithSize:vfDestSize typeID:(useBilinear) ? VideoFilterTypeID_Bilinear : VideoFilterTypeID_Nearest2X];
-	}
+	// Copy the preview image data into the video filter source buffer, then release it.
+	RGBA8888ForceOpaqueBuffer((const uint32_t *)[imageRep bitmapData], (uint32_t *)[videoFilter srcBufferPtr], (size_t)previewImageSize.width * (size_t)previewImageSize.height);
+	[self updateVideoFilterPreview:VideoFilterTypeID_None];
+	[previewImage release];
 	
-	RGBA8888ForceOpaqueBuffer((const uint32_t *)[videoFilter runFilter], (uint32_t *)[bilinearVideoFilter srcBufferPtr], (vfWidth * vfHeight));
-	[bindings setObject:[bilinearVideoFilter image] forKey:@"VideoFilterPreviewImage"];	
-		
+	// Load the volume icons.
 	iconVolumeFull = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeFull_16x16" ofType:@"png"]];
 	iconVolumeTwoThird = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeTwoThird_16x16" ofType:@"png"]];
 	iconVolumeOneThird = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeOneThird_16x16" ofType:@"png"]];
 	iconVolumeMute = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeMute_16x16" ofType:@"png"]];
-	
 	[bindings setObject:iconVolumeFull forKey:@"volumeIconImage"];
 	
 	prefViewDict = nil;
@@ -127,6 +106,7 @@
 	[iconVolumeMute release];
 	[bindings release];
 	[videoFilter release];
+	[bilinearVideoFilter release];
 	[prefViewDict release];
 	
 	[super dealloc];
@@ -384,114 +364,49 @@
 
 - (IBAction) setUseBilinear:(id)sender
 {
-	const BOOL useBilinear = [CocoaDSUtil getIBActionSenderButtonStateBool:sender];
-	const NSUInteger previewSrcWidth = (NSUInteger)[bilinearVideoFilter srcSize].width;
-	const NSUInteger previewSrcHeight = (NSUInteger)[bilinearVideoFilter srcSize].height;
-	
-	if (previewSrcWidth <= 128 || previewSrcHeight <= 128)
-	{
-		[bilinearVideoFilter changeFilter:(useBilinear) ? VideoFilterTypeID_Bilinear : VideoFilterTypeID_Nearest2X];
-	}
-	
-	NSBitmapImageRep *newPreviewImageRep = [bilinearVideoFilter bitmapImageRep];
-	
-	NSImage *videoFilterPreviewImage = [bindings objectForKey:@"VideoFilterPreviewImage"];
-	NSArray *imageRepArray = [videoFilterPreviewImage representations];
-	NSImageRep *oldImageRep = [imageRepArray objectAtIndex:0];
-	[videoFilterPreviewImage removeRepresentation:oldImageRep];
-	[videoFilterPreviewImage addRepresentation:newPreviewImageRep];
-	
+	const BOOL useBilinear = [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseBilinearOutput"];
+	[self updateBilinearPreview:useBilinear];
 	[previewImageView setNeedsDisplay:YES];
 }
 
 - (IBAction) selectVideoFilterType:(id)sender
 {
-	const VideoFilterTypeID vfType = (VideoFilterTypeID)[CocoaDSUtil getIBActionSenderTag:sender];
-	const BOOL useBilinear = [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseBilinearOutput"];
-	
+	const NSInteger vfType = [CocoaDSUtil getIBActionSenderTag:sender];
 	[[NSUserDefaults standardUserDefaults] setInteger:vfType forKey:@"DisplayView_VideoFilter"];
 	
-	[videoFilter changeFilter:vfType];
-	NSSize vfDestSize = [videoFilter destSize];
-	NSUInteger vfWidth = (NSUInteger)[videoFilter destSize].width;
-	NSUInteger vfHeight = (NSUInteger)[videoFilter destSize].height;
-	
-	if (vfWidth <= 64 || vfHeight <= 64)
-	{
-		[videoFilter changeFilter:VideoFilterTypeID_Nearest2X];
-		vfDestSize = [videoFilter destSize];
-		vfWidth = (NSUInteger)vfDestSize.width;
-		vfHeight = (NSUInteger)vfDestSize.height;
-		
-		[bilinearVideoFilter setSourceSize:vfDestSize];
-		[bilinearVideoFilter changeFilter:(useBilinear) ? VideoFilterTypeID_Bilinear : VideoFilterTypeID_Nearest2X];
-	}
-	else if (vfWidth >= 256 || vfHeight >= 256)
-	{
-		[bilinearVideoFilter setSourceSize:vfDestSize];
-		[bilinearVideoFilter changeFilter:VideoFilterTypeID_None];
-	}
-	else
-	{
-		[bilinearVideoFilter setSourceSize:vfDestSize];
-		[bilinearVideoFilter changeFilter:(useBilinear) ? VideoFilterTypeID_Bilinear : VideoFilterTypeID_Nearest2X];
-	}
-	
-	RGBA8888ForceOpaqueBuffer((const uint32_t *)[videoFilter runFilter], (uint32_t *)[bilinearVideoFilter srcBufferPtr], (vfWidth * vfHeight));
-	NSBitmapImageRep *newPreviewImageRep = [bilinearVideoFilter bitmapImageRep];
-	
-	NSImage *videoFilterPreviewImage = [bindings objectForKey:@"VideoFilterPreviewImage"];
-	NSArray *imageRepArray = [videoFilterPreviewImage representations];
-	NSImageRep *oldImageRep = [imageRepArray objectAtIndex:0];
-	[videoFilterPreviewImage removeRepresentation:oldImageRep];
-	[videoFilterPreviewImage addRepresentation:newPreviewImageRep];
-	
+	[self updateVideoFilterPreview:vfType];
 	[previewImageView setNeedsDisplay:YES];
 }
 
 - (IBAction) updateVolumeIcon:(id)sender
 {
 	NSImage *iconImage = (NSImage *)[bindings objectForKey:@"volumeIconImage"];
+	NSImage *newIconImage = nil;
 	const float vol = [[NSUserDefaults standardUserDefaults] floatForKey:@"Sound_Volume"];
 	
 	if (vol <= 0.0f)
 	{
-		if (iconImage == iconVolumeMute)
-		{
-			return;
-		}
-		
-		iconImage = iconVolumeMute;
+		newIconImage = iconVolumeMute;
 	}
 	else if (vol > 0.0f && vol <= VOLUME_THRESHOLD_LOW)
 	{
-		if (iconImage == iconVolumeOneThird)
-		{
-			return;
-		}
-		
-		iconImage = iconVolumeOneThird;
+		newIconImage = iconVolumeOneThird;
 	}
 	else if (vol > VOLUME_THRESHOLD_LOW && vol <= VOLUME_THRESHOLD_HIGH)
 	{
-		if (iconImage == iconVolumeTwoThird)
-		{
-			return;
-		}
-		
-		iconImage = iconVolumeTwoThird;
+		newIconImage = iconVolumeTwoThird;
 	}
 	else
 	{
-		if (iconImage == iconVolumeFull)
-		{
-			return;
-		}
-		
-		iconImage = iconVolumeFull;
+		newIconImage = iconVolumeFull;
 	}
 	
-	[bindings setObject:iconImage forKey:@"volumeIconImage"];
+	if (newIconImage == iconImage)
+	{
+		return;
+	}
+	
+	[bindings setObject:newIconImage forKey:@"volumeIconImage"];
 }
 
 - (IBAction) selectSPUSyncMode:(id)sender
@@ -735,6 +650,112 @@
 	
 	[tempView release];
 }
+
+- (void) updateVideoFilterPreview:(const NSInteger)vfType
+{
+	const BOOL useBilinear = [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseBilinearOutput"];
+	
+	[videoFilter changeFilter:(VideoFilterTypeID)vfType];
+	const NSUInteger previewWidth = (NSUInteger)[videoFilter destSize].width;
+	const NSUInteger previewHeight = (NSUInteger)[videoFilter destSize].height;
+	
+	if (previewWidth <= 64 || previewHeight <= 64)
+	{
+		[videoFilter changeFilter:VideoFilterTypeID_Nearest2X];
+	}
+	
+	[videoFilter runFilter];
+	[self updateBilinearPreview:useBilinear];
+}
+
+- (void) updateBilinearPreview:(const BOOL)useBilinear
+{
+	const NSUInteger previewWidth = (NSUInteger)[videoFilter destSize].width;
+	const NSUInteger previewHeight = (NSUInteger)[videoFilter destSize].height;
+	
+	if (previewWidth <= 128 || previewHeight <= 128)
+	{
+		[bilinearVideoFilter changeFilter:(useBilinear) ? VideoFilterTypeID_Bilinear : VideoFilterTypeID_Nearest2X];
+	}
+	else
+	{
+		[bilinearVideoFilter changeFilter:VideoFilterTypeID_None];
+	}
+	
+	[bilinearVideoFilter setSourceSize:[videoFilter destSize]];
+	memcpy([bilinearVideoFilter srcBufferPtr], [videoFilter dstBufferPtr], previewWidth * previewHeight * sizeof(uint32_t));
+	[bindings setObject:[bilinearVideoFilter image] forKey:@"VideoFilterPreviewImage"];
+}
+
+- (void) setupUserDefaults
+{
+	// Update input preferences.
+	[viewInput loadSavedProfilesList];
+	
+	// Update the SPU Sync controls in the Preferences window.
+	if ([[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMode"] == SPU_SYNC_MODE_DUAL_SYNC_ASYNC)
+	{
+		[[self spuSyncMethodMenu] setEnabled:NO];
+	}
+	else
+	{
+		[[self spuSyncMethodMenu] setEnabled:YES];
+	}
+	
+	// Set the menu for the display rotation.
+	const double displayRotation = (double)[[NSUserDefaults standardUserDefaults] floatForKey:@"DisplayView_Rotation"];
+	[self updateDisplayRotationMenu:displayRotation];
+	
+	// Set the default sound volume per user preferences.
+	[self updateVolumeIcon:nil];
+	
+	// Set the default video filter per user preferences.
+	const NSInteger vfType = [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"];
+	[self updateVideoFilterPreview:vfType];
+	
+	// Set up file paths.
+	NSString *arm7BiosImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"BIOS_ARM7ImagePath"];
+	if (arm7BiosImagePath != nil)
+	{
+		[bindings setValue:[arm7BiosImagePath lastPathComponent] forKey:@"Arm7BiosImageName"];
+	}
+	
+	NSString *arm9BiosImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"BIOS_ARM9ImagePath"];
+	if (arm9BiosImagePath != nil)
+	{
+		[bindings setValue:[arm9BiosImagePath lastPathComponent] forKey:@"Arm9BiosImageName"];
+	}
+	
+	NSString *firmwareImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Emulation_FirmwareImagePath"];
+	if (firmwareImagePath != nil)
+	{
+		[bindings setValue:[firmwareImagePath lastPathComponent] forKey:@"FirmwareImageName"];
+	}
+	
+	NSString *advansceneDatabasePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Advanscene_DatabasePath"];
+	if (advansceneDatabasePath != nil)
+	{
+		[bindings setValue:[advansceneDatabasePath lastPathComponent] forKey:@"AdvansceneDatabaseName"];
+	}
+	
+	NSString *cheatDatabasePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"R4Cheat_DatabasePath"];
+	if (cheatDatabasePath != nil)
+	{
+		[bindings setValue:[cheatDatabasePath lastPathComponent] forKey:@"R4CheatDatabaseName"];
+	}
+	
+	NSString *autoloadRomPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"General_AutoloadROMSelectedPath"];
+	if (autoloadRomPath != nil)
+	{
+		[bindings setValue:[autoloadRomPath lastPathComponent] forKey:@"AutoloadRomName"];
+	}
+	else
+	{
+		[bindings setValue:NSSTRING_STATUS_NO_ROM_CHOSEN forKey:@"AutoloadRomName"];
+	}
+}
+
+#pragma mark NSWindowDelegate Protocol
 
 - (void)windowDidBecomeKey:(NSNotification *)notification
 {
