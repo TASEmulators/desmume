@@ -52,6 +52,12 @@ VideoFilter::VideoFilter(size_t srcWidth,
 	newSurface.Pitch = srcWidth*2;
 	newSurface.Width = srcWidth;
 	newSurface.Height = srcHeight;
+	newSurface.userData = NULL;
+	
+	for (size_t i = 0; i < FILTER_MAX_WORKING_SURFACE_COUNT; i++)
+	{
+		newSurface.workingSurface[i] = NULL;
+	}
 	
 	_vfSrcSurface = newSurface;
 	_vfDstSurface = newSurface;
@@ -86,6 +92,7 @@ VideoFilter::VideoFilter(size_t srcWidth,
 		_vfThread[i].task->start(false);
 	}
 	
+	_vfFunc = _vfAttributes.filterFunction;
 	SetSourceSize(srcWidth, srcHeight);
 }
 
@@ -117,6 +124,12 @@ VideoFilter::~VideoFilter()
 	free(_vfDstSurface.Surface);
 	_vfDstSurface.Surface = NULL;
 	
+	for (size_t i = 0; i < _vfAttributes.workingSurfaceCount; i++)
+	{
+		free(_vfDstSurface.workingSurface[i]);
+		_vfDstSurface.workingSurface[i] = NULL;
+	}
+	
 	ThreadLockUnlock(&_lockDst);
 	
 	free(_vfSrcSurfacePixBuffer);
@@ -129,6 +142,79 @@ VideoFilter::~VideoFilter()
 	ThreadLockDestroy(&_lockDst);
 	ThreadLockDestroy(&_lockAttributes);
 	ThreadCondDestroy(&_condRunning);
+}
+
+bool VideoFilter::AllocateDstBuffer(const size_t dstWidth, const size_t dstHeight, const size_t workingSurfaceCount)
+{
+	bool result = false;
+	
+	// Allocate all buffers.
+	uint32_t *newSurfaceBuffer = (uint32_t *)calloc(dstWidth * dstHeight, sizeof(uint32_t));
+	if (newSurfaceBuffer == NULL)
+	{
+		return result;
+	}
+	
+	ThreadLockLock(&this->_lockDst);
+	
+	for (size_t i = 0; i < FILTER_MAX_WORKING_SURFACE_COUNT; i++)
+	{
+		if (i < workingSurfaceCount)
+		{
+			free(this->_vfDstSurface.workingSurface[i]);
+			this->_vfDstSurface.workingSurface[i] = (unsigned char *)calloc(dstWidth * dstHeight, sizeof(uint32_t));
+		}
+		else
+		{
+			free(this->_vfDstSurface.workingSurface[i]);
+			this->_vfDstSurface.workingSurface[i] = NULL;
+		}
+	}
+	
+	// Set up SSurface structure.
+	this->_vfDstSurface.Width = dstWidth;
+	this->_vfDstSurface.Height = dstHeight;
+	this->_vfDstSurface.Pitch = dstWidth * 2;
+	
+	free(this->_vfDstSurface.Surface);
+	this->_vfDstSurface.Surface = (unsigned char *)newSurfaceBuffer;
+	
+	// Update the surfaces on threads.
+	const size_t threadCount = this->_vfThread.size();
+	const unsigned int linesPerThread = (threadCount > 1) ? dstHeight/threadCount : dstHeight;
+	unsigned int remainingLines = dstHeight;
+	
+	for (size_t i = 0; i < threadCount; i++)
+	{
+		SSurface &threadDstSurface = this->_vfThread[i].param.dstSurface;
+		threadDstSurface = this->_vfDstSurface;
+		threadDstSurface.Height = (linesPerThread < remainingLines) ? linesPerThread : remainingLines;
+		remainingLines -= threadDstSurface.Height;
+		
+		// Add any remaining lines to the last thread.
+		if (i == threadCount-1)
+		{
+			threadDstSurface.Height += remainingLines;
+		}
+		
+		if (i > 0)
+		{
+			SSurface &prevThreadDstSurface = this->_vfThread[i - 1].param.dstSurface;
+			threadDstSurface.Surface = (unsigned char *)((uint32_t *)prevThreadDstSurface.Surface + (prevThreadDstSurface.Width * prevThreadDstSurface.Height));
+			
+			for (size_t j = 0; j < workingSurfaceCount; j++)
+			{
+				threadDstSurface.workingSurface[j] = (unsigned char *)((uint32_t *)prevThreadDstSurface.workingSurface[j] + (prevThreadDstSurface.Width * prevThreadDstSurface.Height));
+			}
+		}
+		
+		this->_vfThread[i].param.filterFunction = this->_vfFunc;
+	}
+	
+	ThreadLockUnlock(&this->_lockDst);
+	
+	result = true;
+	return result;
 }
 
 /********************************************************************************************
@@ -161,10 +247,11 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 		return result;
 	}
 	
-	if (this->_vfSrcSurface.Width != width || this->_vfSrcSurface.Height != height)
+	if (this->_vfSrcSurface.Surface == NULL || this->_vfSrcSurface.Width != width || this->_vfSrcSurface.Height != height)
 	{
 		sizeChanged = true;
 	}
+	
 	this->_vfSrcSurface.Width = width;
 	this->_vfSrcSurface.Height = height;
 	this->_vfSrcSurface.Pitch = width * 2;
@@ -177,12 +264,21 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 	
 	// Update the surfaces on threads.
 	size_t threadCount = this->_vfThread.size();
+	const unsigned int linesPerThread = (threadCount > 1) ? this->_vfSrcSurface.Height/threadCount : this->_vfSrcSurface.Height;
+	unsigned int remainingLines = this->_vfSrcSurface.Height;
 	
 	for (size_t i = 0; i < threadCount; i++)
 	{
 		SSurface &threadSrcSurface = this->_vfThread[i].param.srcSurface;
 		threadSrcSurface = this->_vfSrcSurface;
-		threadSrcSurface.Height /= threadCount;
+		threadSrcSurface.Height = (linesPerThread < remainingLines) ? linesPerThread : remainingLines;
+		remainingLines -= threadSrcSurface.Height;
+		
+		// Add any remaining lines to the last thread.
+		if (i == threadCount-1)
+		{
+			threadSrcSurface.Height += remainingLines;
+		}
 		
 		if (i > 0)
 		{
@@ -193,9 +289,20 @@ bool VideoFilter::SetSourceSize(const size_t width, const size_t height)
 	
 	ThreadLockUnlock(&this->_lockSrc);
 	
-	const VideoFilterAttributes vfAttr = this->GetAttributes();
-	result = this->ChangeFilterByAttributes(vfAttr, sizeChanged);
+	if (sizeChanged)
+	{
+		const VideoFilterAttributes vfAttr = this->GetAttributes();
+		const size_t dstWidth = width * vfAttr.scaleMultiply / vfAttr.scaleDivide;
+		const size_t dstHeight = height * vfAttr.scaleMultiply / vfAttr.scaleDivide;
+		
+		result = this->AllocateDstBuffer(dstWidth, dstHeight, vfAttr.workingSurfaceCount);
+		if (!result)
+		{
+			return result;
+		}
+	}
 	
+	result = true;
 	return result;
 }
 
@@ -221,7 +328,7 @@ bool VideoFilter::ChangeFilterByID(const VideoFilterTypeID typeID)
 		return result;
 	}
 	
-	result = this->ChangeFilterByAttributes(VideoFilterAttributesList[typeID], false);
+	result = this->ChangeFilterByAttributes(VideoFilterAttributesList[typeID]);
 	
 	return result;
 }
@@ -238,7 +345,7 @@ bool VideoFilter::ChangeFilterByID(const VideoFilterTypeID typeID)
 		A bool that reports if the filter change was successful. A value of true means
 		success, while a value of false means failure.
  ********************************************************************************************/
-bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes &vfAttr, const bool forceRealloc)
+bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes &vfAttr)
 {
 	bool result = false;
 	
@@ -247,13 +354,30 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes &vfAttr, 
 		return result;
 	}
 	
-	if (!forceRealloc && this->_vfDstSurface.Surface != NULL && this->_vfAttributes.scaleMultiply == vfAttr.scaleMultiply && this->_vfAttributes.scaleDivide == vfAttr.scaleDivide)
+	ThreadLockLock(&this->_lockDst);
+	unsigned char *dstSurface = this->_vfDstSurface.Surface;
+	ThreadLockUnlock(&this->_lockDst);
+	
+	const VideoFilterAttributes currentAttr = this->GetAttributes();
+	
+	if (dstSurface != NULL &&
+		currentAttr.scaleMultiply == vfAttr.scaleMultiply &&
+		currentAttr.scaleDivide == vfAttr.scaleDivide &&
+		currentAttr.workingSurfaceCount == vfAttr.workingSurfaceCount)
 	{
-		// If we have an existing buffer and the new size is identical to the old size,
-		// we can skip the costly construction of the buffer and simply clear it instead.
+		// If we have existing buffers and the new size is identical to the old size, we
+		// can skip the costly construction of the buffers and simply clear them instead.
+		
 		ThreadLockLock(&this->_lockDst);
 		
-		memset(this->_vfDstSurface.Surface, 0, this->_vfDstSurface.Width * _vfDstSurface.Height * sizeof(uint32_t));
+		const size_t bufferSizeBytes = this->_vfDstSurface.Width * this->_vfDstSurface.Height * sizeof(uint32_t);
+		
+		memset(this->_vfDstSurface.Surface, 0, bufferSizeBytes);
+		for (size_t i = 0; i < currentAttr.workingSurfaceCount; i++)
+		{
+			memset(this->_vfDstSurface.workingSurface[i], 0, bufferSizeBytes);
+		}
+		
 		this->_vfFunc = vfAttr.filterFunction;
 		
 		const size_t threadCount = this->_vfThread.size();
@@ -268,48 +392,19 @@ bool VideoFilter::ChangeFilterByAttributes(const VideoFilterAttributes &vfAttr, 
 	{
 		// Construct a new destination buffer per filter attributes.
 		ThreadLockLock(&this->_lockSrc);
-		const size_t srcWidth = this->_vfSrcSurface.Width;
-		const size_t srcHeight = this->_vfSrcSurface.Height;
+		const size_t dstWidth = this->_vfSrcSurface.Width * vfAttr.scaleMultiply / vfAttr.scaleDivide;
+		const size_t dstHeight = this->_vfSrcSurface.Height * vfAttr.scaleMultiply / vfAttr.scaleDivide;
 		ThreadLockUnlock(&this->_lockSrc);
 		
-		const size_t dstWidth = srcWidth * vfAttr.scaleMultiply / vfAttr.scaleDivide;
-		const size_t dstHeight = srcHeight * vfAttr.scaleMultiply / vfAttr.scaleDivide;
-		const VideoFilterFunc filterFunction = vfAttr.filterFunction;
-		
 		ThreadLockLock(&this->_lockDst);
+		this->_vfFunc = vfAttr.filterFunction;
+		ThreadLockUnlock(&this->_lockDst);
 		
-		uint32_t *newSurfaceBuffer = (uint32_t *)calloc(dstWidth * dstHeight, sizeof(uint32_t));
-		if (newSurfaceBuffer == NULL)
+		result = this->AllocateDstBuffer(dstWidth, dstHeight, vfAttr.workingSurfaceCount);
+		if (!result)
 		{
 			return result;
 		}
-		
-		this->_vfFunc = filterFunction;
-		this->_vfDstSurface.Width = dstWidth;
-		this->_vfDstSurface.Height = dstHeight;
-		this->_vfDstSurface.Pitch = dstWidth * 2;
-		
-		free(this->_vfDstSurface.Surface);
-		this->_vfDstSurface.Surface = (unsigned char *)newSurfaceBuffer;
-		
-		// Update the surfaces on threads.
-		const size_t threadCount = this->_vfThread.size();
-		for (size_t i = 0; i < threadCount; i++)
-		{
-			SSurface &threadDstSurface = this->_vfThread[i].param.dstSurface;
-			threadDstSurface = this->_vfDstSurface;
-			threadDstSurface.Height /= threadCount;
-			
-			if (i > 0)
-			{
-				SSurface &prevThreadDstSurface = this->_vfThread[i - 1].param.dstSurface;
-				threadDstSurface.Surface = (unsigned char *)((uint32_t *)prevThreadDstSurface.Surface + (prevThreadDstSurface.Width * prevThreadDstSurface.Height));
-			}
-			
-			this->_vfThread[i].param.filterFunction = this->_vfFunc;
-		}
-		
-		ThreadLockUnlock(&this->_lockDst);
 	}
 	
 	this->SetAttributes(vfAttr);
@@ -477,8 +572,41 @@ void VideoFilter::RunFilterCustomByAttributes(const uint32_t *__restrict srcBuff
 	}
 	else
 	{
+		for (size_t i = 0; i < vfAttr.workingSurfaceCount; i++)
+		{
+			dstSurface.workingSurface[i] = (unsigned char *)calloc(dstWidth * dstHeight, sizeof(uint32_t));
+		}
+		
 		filterFunction(srcSurface, dstSurface);
+		
+		for (size_t i = 0; i < vfAttr.workingSurfaceCount; i++)
+		{
+			free(dstSurface.workingSurface[i]);
+		}
 	}
+}
+
+/********************************************************************************************
+	GetAttributesByID() - STATIC
+
+	Returns the filter attributes associated with the given type ID.
+
+	Takes:
+		typeID - The type ID of the video filter. See the VideoFilterTypeID
+			enumeration for possible values.
+
+	Returns:
+		A copy of the filter attributes of the given type ID. If typeID is
+		invalid, this method returns the attributes of VideoFilterTypeID_None.
+ ********************************************************************************************/
+VideoFilterAttributes VideoFilter::GetAttributesByID(const VideoFilterTypeID typeID)
+{
+	if (typeID >= VideoFilterTypeIDCount)
+	{
+		return VideoFilterAttributesList[VideoFilterTypeID_None];
+	}
+	
+	return VideoFilterAttributesList[typeID];
 }
 
 /********************************************************************************************
@@ -595,7 +723,7 @@ size_t VideoFilter::GetDstHeight()
 	return height;
 }
 
-VideoFilterParamType VideoFilter::GetFilterParameterType(VideoFilterParamID paramID)
+VideoFilterParamType VideoFilter::GetFilterParameterType(VideoFilterParamID paramID) const
 {
 	return _VideoFilterParamAttributesList[paramID].type;
 }

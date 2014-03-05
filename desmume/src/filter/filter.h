@@ -15,12 +15,16 @@ You should have received a copy of the GNU General Public License
 along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define FILTER_MAX_WORKING_SURFACE_COUNT	8
 
 typedef struct {
 	unsigned char *Surface;
 
 	unsigned int Pitch;
 	unsigned int Width, Height;
+	
+	unsigned char *workingSurface[FILTER_MAX_WORKING_SURFACE_COUNT];
+	void *userData;
 } SSurface;
 
 void RenderNearest2X (SSurface Src, SSurface Dst);
