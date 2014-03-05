@@ -34,6 +34,7 @@ protected:
 	VideoFilter *_vfSingle;
 	VideoFilter *_vfDual;
 	VideoFilter *_vf;
+	
 	bool _isShaderSupported;
 	double _normalWidth;
 	double _normalHeight;
@@ -47,7 +48,6 @@ protected:
 	GLfloat _gapScalar;
 	GLfloat _rotation;
 	
-	GLenum _glTexPixelFormat;
 	GLvoid *_glTexBack;
 	GLsizei _glTexBackWidth;
 	GLsizei _glTexBackHeight;
@@ -88,7 +88,7 @@ public:
 	
 	virtual void UploadVerticesOGL();
 	virtual void UploadTexCoordsOGL();
-	virtual void UploadDisplayTextureOGL(const GLvoid *textureData, GLsizei texWidth, GLsizei texHeight);
+	virtual void UploadDisplayTextureOGL(const GLvoid *textureData, const GLenum texPixelFormat, const GLenum texPixelType, GLsizei texWidth, GLsizei texHeight);
 	
 	virtual void PrerenderOGL(const GLvoid *textureData, GLsizei texWidth, GLsizei texHeight);
 	virtual void RenderOGL();

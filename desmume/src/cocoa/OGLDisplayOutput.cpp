@@ -79,10 +79,9 @@ OGLVideoOutput::OGLVideoOutput()
 	_rotation = 0.0f;
 	
 	_displayTexFilter = GL_NEAREST;
-	_glTexPixelFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	_glTexBackWidth = GetNearestPositivePOT((uint32_t)_normalWidth);
 	_glTexBackHeight = GetNearestPositivePOT((uint32_t)_normalHeight);
-	_glTexBack = (GLvoid *)calloc(_glTexBackWidth * _glTexBackHeight, sizeof(uint16_t));
+	_glTexBack = (GLvoid *)calloc(_glTexBackWidth * _glTexBackHeight, sizeof(uint32_t));
 	
 	_vfSingle = new VideoFilter(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, VideoFilterTypeID_None, 0);
 	_vfDual = new VideoFilter(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT*2, VideoFilterTypeID_None, 2);
@@ -370,20 +369,17 @@ void OGLVideoOutput::SetVideoFilterOGL(const VideoFilterTypeID videoFilterTypeID
 	
 	const GLsizei vfDstWidth = this->_vf->GetDstWidth();
 	const GLsizei vfDstHeight = (this->_displayMode == DS_DISPLAY_TYPE_DUAL) ? this->_vf->GetDstHeight() : this->_vf->GetDstHeight() * 2;
-	const GLenum newPixFormat = (videoFilterTypeID == VideoFilterTypeID_None) ? GL_UNSIGNED_SHORT_1_5_5_5_REV : GL_UNSIGNED_INT_8_8_8_8_REV;
 	
 	// Convert textures to Power-of-Two to support older GPUs
 	// Example: Radeon X1600M on the 2006 MacBook Pro
 	const GLsizei potW = GetNearestPositivePOT((uint32_t)vfDstWidth);
 	const GLsizei potH = GetNearestPositivePOT((uint32_t)vfDstHeight);
-	const size_t colorDepth = (newPixFormat == GL_UNSIGNED_SHORT_1_5_5_5_REV) ? sizeof(uint16_t) : sizeof(uint32_t);
-	const size_t texBackSize = potW * potH * colorDepth;
+	const size_t texBackSize = potW * potH * sizeof(uint32_t);
 	
-	if (this->_glTexBackWidth != potW || this->_glTexBackHeight != potH || this->_glTexPixelFormat != newPixFormat)
+	if (this->_glTexBackWidth != potW || this->_glTexBackHeight != potH)
 	{
 		this->_glTexBackWidth = potW;
 		this->_glTexBackHeight = potH;
-		this->_glTexPixelFormat = newPixFormat;
 		
 		this->_glTexBack = (GLvoid *)realloc(this->_glTexBack, texBackSize);
 		if (this->_glTexBack == NULL)
@@ -399,7 +395,7 @@ void OGLVideoOutput::SetVideoFilterOGL(const VideoFilterTypeID videoFilterTypeID
 	this->UpdateTexCoords(s, t);
 	
 	glBindTexture(GL_TEXTURE_2D, this->_displayTexID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)potW, (GLsizei)potH, 0, GL_BGRA, this->_glTexPixelFormat, this->_glTexBack);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)potW, (GLsizei)potH, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_glTexBack);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	this->UploadTexCoordsOGL();
 }
@@ -554,7 +550,7 @@ void OGLVideoOutput::UploadTexCoordsOGL()
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 }
 
-void OGLVideoOutput::UploadDisplayTextureOGL(const GLvoid *textureData, GLsizei texWidth, GLsizei texHeight)
+void OGLVideoOutput::UploadDisplayTextureOGL(const GLvoid *textureData, const GLenum texPixelFormat, const GLenum texPixelType, GLsizei texWidth, GLsizei texHeight)
 {
 	if (textureData == NULL)
 	{
@@ -564,7 +560,7 @@ void OGLVideoOutput::UploadDisplayTextureOGL(const GLvoid *textureData, GLsizei 
 	const GLint lineOffset = (this->_displayMode == DS_DISPLAY_TYPE_TOUCH) ? texHeight : 0;
 	
 	glBindTexture(GL_TEXTURE_2D, this->_displayTexID);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, lineOffset, texWidth, texHeight, GL_RGBA, this->_glTexPixelFormat, textureData);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, lineOffset, texWidth, texHeight, texPixelFormat, texPixelType, textureData);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -633,17 +629,30 @@ void OGLVideoOutput::UpdateTexCoords(GLfloat s, GLfloat t)
 
 void OGLVideoOutput::PrerenderOGL(const GLvoid *textureData, GLsizei texWidth, GLsizei texHeight)
 {
+	GLenum texPixelFormat = GL_RGBA;
+	GLenum texPixelType = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	uint32_t *vfTextureData = (uint32_t *)textureData;
 	
-	if (this->_vf->GetTypeID() != VideoFilterTypeID_None)
+	VideoFilter *currentFilter = this->_vf;
+	if (currentFilter->GetTypeID() != VideoFilterTypeID_None)
 	{
-		RGB555ToRGBA8888Buffer((const uint16_t *)textureData, (uint32_t *)this->_vf->GetSrcBufferPtr(), texWidth * texHeight);
-		texWidth = this->_vf->GetDstWidth();
-		texHeight = this->_vf->GetDstHeight();
-		vfTextureData = this->_vf->RunFilter();
+		if (texPixelType == GL_UNSIGNED_SHORT_1_5_5_5_REV)
+		{
+			RGB555ToBGRA8888Buffer((const uint16_t *)vfTextureData, (uint32_t *)currentFilter->GetSrcBufferPtr(), texWidth * texHeight);
+			texPixelFormat = GL_BGRA;
+			texPixelType = GL_UNSIGNED_INT_8_8_8_8_REV;
+		}
+		else
+		{
+			memcpy(currentFilter->GetSrcBufferPtr(), vfTextureData, texWidth * texHeight * sizeof(uint32_t));
+		}
+		
+		vfTextureData = currentFilter->RunFilter();
+		texWidth = currentFilter->GetDstWidth();
+		texHeight = currentFilter->GetDstHeight();
 	}
 	
-	this->UploadDisplayTextureOGL(vfTextureData, texWidth, texHeight);
+	this->UploadDisplayTextureOGL(vfTextureData, texPixelFormat, texPixelType, texWidth, texHeight);
 }
 
 void OGLVideoOutput::RenderOGL()

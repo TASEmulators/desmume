@@ -30,8 +30,10 @@ extern "C"
 bool IsOSXVersionSupported(const unsigned int major, const unsigned int minor, const unsigned int revision);
 
 uint32_t RGB555ToRGBA8888(const uint16_t color16);
+uint32_t RGB555ToBGRA8888(const uint16_t color16);
 uint32_t RGBA8888ForceOpaque(const uint32_t color32);
 void RGB555ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount);
+void RGB555ToBGRA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount);
 void RGBA8888ForceOpaqueBuffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount);
 
 CGSize GetTransformedBounds(const double normalBoundsWidth, const double normalBoundsHeight,
