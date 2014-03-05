@@ -130,7 +130,7 @@ bool OSXOpenGLRendererInit()
 	timer_based = ([NSObject instancesRespondToSelector:@selector(performSelector:onThread:withObject:waitUntilDone:)]==NO)?true:false;
 
 #ifdef HAVE_JIT
-	CommonSettings.use_jit = false;
+	CommonSettings.use_jit = true;
 #endif
 	
 	//Firmware setup
@@ -461,81 +461,61 @@ bool OSXOpenGLRendererInit()
 
 - (NSImage *) romIcon
 {
-	NDS_header *header = NDS_getROMHeader();
-	if(!header)return nil;
-
-	if(header->IconOff == 0)return nil;
-
-	NSImage *result = [[NSImage alloc] initWithSize:NSMakeSize(32, 32)];
-	if(result == nil)return nil;
-
-	NSBitmapImageRep *image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-	pixelsWide:32
-	pixelsHigh:32
-	bitsPerSample:8
-	samplesPerPixel:4
-	hasAlpha:YES
-	isPlanar:NO
-	colorSpaceName:NSCalibratedRGBColorSpace
-	bytesPerRow:32 * 4
-	bitsPerPixel:32];
-
-	[image setAlpha:YES];
-
-	if(image == nil)
+	NSImage *newImage = nil;
+	
+	NDS_header *ndsRomHeader = NDS_getROMHeader();
+	if (ndsRomHeader == nil)
 	{
-		[result release];
-		return nil;
+		return newImage;
 	}
-
-	//load the palette
-	//the pallete contains 16 entries, 2 bytes each
-	//the first entry represents alpha so the value is ignored
-
-	u8 palette[16*4]; //16 entries at 32 bit (we will convert)
-	int x;
-
-	for(x = 0; x < 16; x++)
+	
+	NSUInteger iconOffset = ndsRomHeader->IconOff;
+	if(iconOffset == 0)
 	{
-		u16 temp = T1ReadWord(MMU.CART_ROM, header->IconOff + 0x220 + x*2);
-		palette[x*4+0] = (temp & 0x001F) << 3;       //r
-		palette[x*4+1] = (temp & 0x03E0) >> 5 << 3;  //g
-		palette[x*4+2] = (temp & 0x7C00) >> 10 << 3; //b
-		palette[x*4+3] = x==0?0:255; //alpha: color 0 is always transparent
+		return newImage;
 	}
-
-	//load the image
-	//the image is 32x32 pixels, each 4bit (correspoding to the pallete)
-	//it's stored just before the pallete
-
-	u8 *bitmap_data = [image bitmapData];
-
-	int y, inner_y, inner_x, offset = 0;
-	for(y = 0; y < 4; y++) //the image is split into 16 squares (4 on each axis)
-	for(x = 0; x < 4; x++)
-	for(inner_y = 0; inner_y < 8; inner_y++) //each square is 8x8
-	for(inner_x = 0; inner_x < 8; inner_x+=2) //increment by 2 since each byte is two 4bit colors
+	
+	newImage = [[NSImage alloc] initWithSize:NSMakeSize(32, 32)];
+	if(newImage == nil)
 	{
-		//grab the color indicies of the next 2 pixels
-		u8 color = T1ReadByte(MMU.CART_ROM, header->IconOff + 0x20 + offset++);
-
-		//set the first pixel color
-		*(bitmap_data+( (y*8+inner_y)*32*4+(x*8+inner_x+1)*4+0 )) = palette[(color>>4) * 4 + 0]; //r
-		*(bitmap_data+( (y*8+inner_y)*32*4+(x*8+inner_x+1)*4+1 )) = palette[(color>>4) * 4 + 1]; //g
-		*(bitmap_data+( (y*8+inner_y)*32*4+(x*8+inner_x+1)*4+2 )) = palette[(color>>4) * 4 + 2]; //b
-		*(bitmap_data+( (y*8+inner_y)*32*4+(x*8+inner_x+1)*4+3 )) = palette[(color>>4) * 4 + 3]; //a
-
-		//set the next pixel color
-		*(bitmap_data+( (y*8+inner_y)*32*4+(x*8+inner_x+0)*4+0 )) = palette[(color&0x0F) * 4 + 0]; //r
-		*(bitmap_data+( (y*8+inner_y)*32*4+(x*8+inner_x+0)*4+1 )) = palette[(color&0x0F) * 4 + 1]; //g
-		*(bitmap_data+( (y*8+inner_y)*32*4+(x*8+inner_x+0)*4+2 )) = palette[(color&0x0F) * 4 + 2]; //b
-		*(bitmap_data+( (y*8+inner_y)*32*4+(x*8+inner_x+0)*4+3 )) = palette[(color&0x0F) * 4 + 3]; //a
+		return newImage;
 	}
-
-	[result addRepresentation:image];
-	[image release];
-	[result autorelease];
-	return result;
+	
+	NSUInteger w = ROM_ICON_WIDTH;
+	NSUInteger h = ROM_ICON_HEIGHT;
+	NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
+																		 pixelsWide:w
+																		 pixelsHigh:h
+																	  bitsPerSample:8
+																	samplesPerPixel:4
+																		   hasAlpha:YES
+																		   isPlanar:NO
+																	 colorSpaceName:NSCalibratedRGBColorSpace
+																		bytesPerRow:w * 4
+																	   bitsPerPixel:32];
+	
+	if(imageRep == nil)
+	{
+		[newImage release];
+		newImage = nil;
+		return newImage;
+	}
+	
+	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
+	RomIconToRGBA8888(bitmapData);
+	
+#ifdef __BIG_ENDIAN__
+	uint32_t *bitmapDataEnd = bitmapData + (w * h);
+	while (bitmapData < bitmapDataEnd)
+	{
+		*bitmapData++ = CFSwapInt32LittleToHost(*bitmapData);
+	}
+#endif
+	
+	[imageRep autorelease];
+	[newImage addRepresentation:imageRep];
+	
+	return [newImage autorelease];
 }
 
 - (NSString *) romFileName
@@ -1185,3 +1165,120 @@ bool OSXOpenGLRendererInit()
 }
 
 @end
+
+void RomIconToRGBA8888(uint32_t *bitmapData)
+{
+	const RomBanner &ndsRomBanner = gameInfo.getRomBanner(); // Contains the memory addresses we need to get our read pointer locations.
+	const uint16_t *iconClutPtr;	// Read pointer for the icon's CLUT.
+	const uint32_t *iconPixPtr;		// Read pointer for the icon's pixel data.
+	
+	uint32_t clut[16];				// 4-bit indexed CLUT, storing RGBA8888 values for each color.
+	
+	uint32_t pixRowColors;			// Temp location for storing an 8 pixel row of 4-bit indexed color values from the icon's pixel data.
+	unsigned int pixRowIndex;		// Temp location for tracking which pixel row of an 8x8 square that we are reading.
+	unsigned int x;					// Temp location for tracking which of the 8x8 pixel squares that we are reading (x-dimension).
+	unsigned int y;					// Temp location for tracking which of the 8x8 pixel squares that we are reading (y-dimension).
+	
+	uint32_t *bitmapPixPtr;			// Write pointer for the RGBA8888 bitmap pixel data, relative to the passed in *bitmapData pointer.
+	
+	if (bitmapData == NULL)
+	{
+		return;
+	}
+	
+	if (&ndsRomBanner == NULL)
+	{
+		memset(bitmapData, 0, 4096); // 4096 bytes = 32px * 32px * sizeof(uint32_t)
+		return;
+	}
+	
+	// Set all of our icon read pointers.
+	iconClutPtr = (uint16_t *)ndsRomBanner.palette + 1;
+	iconPixPtr = (uint32_t *)ndsRomBanner.bitmap;
+	
+	// Setup the 4-bit CLUT.
+	//
+	// The actual color values are stored with the ROM icon data in RGB555 format.
+	// We convert these color values and store them in the CLUT as RGBA8888 values.
+	//
+	// The first entry always represents the alpha, so we can just ignore it.
+	clut[0] = 0x00000000;
+	RGB555ToRGBA8888Buffer(iconClutPtr, &clut[1], 15);
+	
+	// Load the image from the icon pixel data.
+	//
+	// ROM icons are stored in 4-bit indexed color and have dimensions of 32x32 pixels.
+	// Also, ROM icons are split into 16 separate 8x8 pixel squares arranged in a 4x4
+	// array. Here, we sequentially read from the ROM data, and adjust our write
+	// location appropriately within the bitmap memory block.
+	for(y = 0; y < 4; y++)
+	{
+		for(x = 0; x < 4; x++)
+		{
+			for(pixRowIndex = 0; pixRowIndex < 8; pixRowIndex++, iconPixPtr++)
+			{
+				// Load the entire row of pixels as a single 32-bit chunk.
+				pixRowColors = *iconPixPtr;
+				
+				// Set the write location. The formula below calculates the proper write
+				// location depending on the position of the read pointer. We use a more
+				// optimized version of this formula in practice.
+				//
+				// bitmapPixPtr = bitmapData + ( ((y * 8) + pixRowIndex) * 32 ) + (x * 8);
+				bitmapPixPtr = bitmapData + ( ((y << 3) + pixRowIndex) << 5 ) + (x << 3);
+				
+				// Set the RGBA8888 bitmap pixels using our CLUT from earlier.
+				
+#ifdef __BIG_ENDIAN__
+				*bitmapPixPtr = clut[(pixRowColors & 0x0F000000) >> 24];
+				
+				bitmapPixPtr++;
+				*bitmapPixPtr = clut[(pixRowColors & 0xF0000000) >> 28];
+				
+				bitmapPixPtr++;
+				*bitmapPixPtr = clut[(pixRowColors & 0x000F0000) >> 16];
+				
+				bitmapPixPtr++;
+				*bitmapPixPtr = clut[(pixRowColors & 0x00F00000) >> 20];
+				
+				bitmapPixPtr++;
+				*bitmapPixPtr = clut[(pixRowColors & 0x00000F00) >> 8];
+				
+				bitmapPixPtr++;
+				*bitmapPixPtr = clut[(pixRowColors & 0x0000F000) >> 12];
+				
+				bitmapPixPtr++;
+				*bitmapPixPtr = clut[(pixRowColors & 0x0000000F)];
+				
+				bitmapPixPtr++;
+				*bitmapPixPtr = clut[(pixRowColors & 0x000000F0) >> 4];
+				
+#else
+				
+				*bitmapPixPtr = clut[(pixRowColors & 0x0000000F)];
+				
+				bitmapPixPtr++;
+				*bitmapPixPtr = clut[(pixRowColors & 0x000000F0) >> 4];
+				
+				bitmapPixPtr++;
+				*bitmapPixPtr = clut[(pixRowColors & 0x00000F00) >> 8];
+				
+				bitmapPixPtr++;
+				*bitmapPixPtr = clut[(pixRowColors & 0x0000F000) >> 12];
+				
+				bitmapPixPtr++;
+				*bitmapPixPtr = clut[(pixRowColors & 0x000F0000) >> 16];
+				
+				bitmapPixPtr++;
+				*bitmapPixPtr = clut[(pixRowColors & 0x00F00000) >> 20];
+				
+				bitmapPixPtr++;
+				*bitmapPixPtr = clut[(pixRowColors & 0x0F000000) >> 24];
+				
+				bitmapPixPtr++;
+				*bitmapPixPtr = clut[(pixRowColors & 0xF0000000) >> 28];
+#endif
+			}
+		}
+	}
+}
