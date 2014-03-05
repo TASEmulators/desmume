@@ -62,7 +62,7 @@
 	screen_buffer = nil;
 	viewScale = 1.0;
 	viewRotation = 0.0;
-	displayMode = DS_DISPLAY_TYPE_COMBO;
+	displayMode = DS_DISPLAY_TYPE_DUAL;
 	gpuStateFlags =	GPUSTATE_MAIN_GPU_MASK |
 	GPUSTATE_MAIN_BG0_MASK |
 	GPUSTATE_MAIN_BG1_MASK |
@@ -647,7 +647,7 @@ void SetGPULayerState(int displayType, unsigned int i, bool state)
 			theGpu = MainScreen.gpu;
 			break;
 			
-		case DS_GPU_TYPE_COMBO:
+		case DS_GPU_TYPE_MAIN_AND_SUB:
 			SetGPULayerState(DS_GPU_TYPE_SUB, i, state); // Recursive call
 			theGpu = MainScreen.gpu;
 			break;
@@ -695,7 +695,7 @@ bool GetGPULayerState(int displayType, unsigned int i)
 			}
 			break;
 			
-		case DS_GPU_TYPE_COMBO:
+		case DS_GPU_TYPE_MAIN_AND_SUB:
 			if (SubScreen.gpu != nil && MainScreen.gpu != nil)
 			{
 				result = (CommonSettings.dispLayers[SubScreen.gpu->core][i] && CommonSettings.dispLayers[MainScreen.gpu->core][i]);
@@ -721,7 +721,7 @@ void SetGPUDisplayState(int displayType, bool state)
 			CommonSettings.showGpu.main = state;
 			break;
 			
-		case DS_GPU_TYPE_COMBO:
+		case DS_GPU_TYPE_MAIN_AND_SUB:
 			CommonSettings.showGpu.sub = state;
 			CommonSettings.showGpu.main = state;
 			break;
@@ -745,7 +745,7 @@ bool GetGPUDisplayState(int displayType)
 			result = CommonSettings.showGpu.main;
 			break;
 			
-		case DS_GPU_TYPE_COMBO:
+		case DS_GPU_TYPE_MAIN_AND_SUB:
 			result = (CommonSettings.showGpu.sub && CommonSettings.showGpu.main);
 			break;
 			

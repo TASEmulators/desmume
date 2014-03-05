@@ -159,4 +159,5 @@
 
 @end
 
+void RomIconToRGBA8888(uint32_t *bitmapData);
 bool OSXOpenGLRendererInit();

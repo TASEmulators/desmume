@@ -887,6 +887,69 @@
 		ABB9215E17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9215917CEB53A0049D4C5 /* slot1comp_protocol.cpp */; };
 		ABB9215F17CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9215917CEB53A0049D4C5 /* slot1comp_protocol.cpp */; };
 		ABB9216017CEB53A0049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9215917CEB53A0049D4C5 /* slot1comp_protocol.cpp */; };
+		ABBBF2EE18B7F59E00BDE776 /* 2xsai.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2DD18B7F59E00BDE776 /* 2xsai.cpp */; };
+		ABBBF2EF18B7F59E00BDE776 /* bilinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2DE18B7F59E00BDE776 /* bilinear.cpp */; };
+		ABBBF2F118B7F59E00BDE776 /* epx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E018B7F59E00BDE776 /* epx.cpp */; };
+		ABBBF2F218B7F59E00BDE776 /* hq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E118B7F59E00BDE776 /* hq2x.cpp */; };
+		ABBBF2F318B7F59E00BDE776 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E218B7F59E00BDE776 /* hq4x.cpp */; };
+		ABBBF2F418B7F59E00BDE776 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E318B7F59E00BDE776 /* lq2x.cpp */; };
+		ABBBF2F518B7F59E00BDE776 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E418B7F59E00BDE776 /* scanline.cpp */; };
+		ABBBF2F618B7F59E00BDE776 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E518B7F59E00BDE776 /* videofilter.cpp */; };
+		ABBBF2F718B7F59E00BDE776 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E618B7F59E00BDE776 /* xbrz.cpp */; };
+		ABBBF2F818B7F59E00BDE776 /* 2xsai.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2DD18B7F59E00BDE776 /* 2xsai.cpp */; };
+		ABBBF2F918B7F59E00BDE776 /* bilinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2DE18B7F59E00BDE776 /* bilinear.cpp */; };
+		ABBBF2FB18B7F59E00BDE776 /* epx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E018B7F59E00BDE776 /* epx.cpp */; };
+		ABBBF2FC18B7F59E00BDE776 /* hq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E118B7F59E00BDE776 /* hq2x.cpp */; };
+		ABBBF2FD18B7F59E00BDE776 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E218B7F59E00BDE776 /* hq4x.cpp */; };
+		ABBBF2FE18B7F59E00BDE776 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E318B7F59E00BDE776 /* lq2x.cpp */; };
+		ABBBF2FF18B7F59E00BDE776 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E418B7F59E00BDE776 /* scanline.cpp */; };
+		ABBBF30018B7F59E00BDE776 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E518B7F59E00BDE776 /* videofilter.cpp */; };
+		ABBBF30118B7F59E00BDE776 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E618B7F59E00BDE776 /* xbrz.cpp */; };
+		ABBBF30218B7F59E00BDE776 /* 2xsai.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2DD18B7F59E00BDE776 /* 2xsai.cpp */; };
+		ABBBF30318B7F59E00BDE776 /* bilinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2DE18B7F59E00BDE776 /* bilinear.cpp */; };
+		ABBBF30518B7F59E00BDE776 /* epx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E018B7F59E00BDE776 /* epx.cpp */; };
+		ABBBF30618B7F59E00BDE776 /* hq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E118B7F59E00BDE776 /* hq2x.cpp */; };
+		ABBBF30718B7F59E00BDE776 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E218B7F59E00BDE776 /* hq4x.cpp */; };
+		ABBBF30818B7F59E00BDE776 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E318B7F59E00BDE776 /* lq2x.cpp */; };
+		ABBBF30918B7F59E00BDE776 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E418B7F59E00BDE776 /* scanline.cpp */; };
+		ABBBF30A18B7F59E00BDE776 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E518B7F59E00BDE776 /* videofilter.cpp */; };
+		ABBBF30B18B7F59E00BDE776 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E618B7F59E00BDE776 /* xbrz.cpp */; };
+		ABBBF30C18B7F59E00BDE776 /* 2xsai.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2DD18B7F59E00BDE776 /* 2xsai.cpp */; };
+		ABBBF30D18B7F59E00BDE776 /* bilinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2DE18B7F59E00BDE776 /* bilinear.cpp */; };
+		ABBBF30F18B7F59E00BDE776 /* epx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E018B7F59E00BDE776 /* epx.cpp */; };
+		ABBBF31018B7F59E00BDE776 /* hq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E118B7F59E00BDE776 /* hq2x.cpp */; };
+		ABBBF31118B7F59E00BDE776 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E218B7F59E00BDE776 /* hq4x.cpp */; };
+		ABBBF31218B7F59E00BDE776 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E318B7F59E00BDE776 /* lq2x.cpp */; };
+		ABBBF31318B7F59E00BDE776 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E418B7F59E00BDE776 /* scanline.cpp */; };
+		ABBBF31418B7F59E00BDE776 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E518B7F59E00BDE776 /* videofilter.cpp */; };
+		ABBBF31518B7F59E00BDE776 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E618B7F59E00BDE776 /* xbrz.cpp */; };
+		ABBBF31618B7F59E00BDE776 /* 2xsai.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2DD18B7F59E00BDE776 /* 2xsai.cpp */; };
+		ABBBF31718B7F59E00BDE776 /* bilinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2DE18B7F59E00BDE776 /* bilinear.cpp */; };
+		ABBBF31918B7F59E00BDE776 /* epx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E018B7F59E00BDE776 /* epx.cpp */; };
+		ABBBF31A18B7F59E00BDE776 /* hq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E118B7F59E00BDE776 /* hq2x.cpp */; };
+		ABBBF31B18B7F59E00BDE776 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E218B7F59E00BDE776 /* hq4x.cpp */; };
+		ABBBF31C18B7F59E00BDE776 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E318B7F59E00BDE776 /* lq2x.cpp */; };
+		ABBBF31D18B7F59E00BDE776 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E418B7F59E00BDE776 /* scanline.cpp */; };
+		ABBBF31E18B7F59E00BDE776 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E518B7F59E00BDE776 /* videofilter.cpp */; };
+		ABBBF31F18B7F59E00BDE776 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E618B7F59E00BDE776 /* xbrz.cpp */; };
+		ABBBF32018B7F59E00BDE776 /* 2xsai.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2DD18B7F59E00BDE776 /* 2xsai.cpp */; };
+		ABBBF32118B7F59E00BDE776 /* bilinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2DE18B7F59E00BDE776 /* bilinear.cpp */; };
+		ABBBF32318B7F59E00BDE776 /* epx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E018B7F59E00BDE776 /* epx.cpp */; };
+		ABBBF32418B7F59E00BDE776 /* hq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E118B7F59E00BDE776 /* hq2x.cpp */; };
+		ABBBF32518B7F59E00BDE776 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E218B7F59E00BDE776 /* hq4x.cpp */; };
+		ABBBF32618B7F59E00BDE776 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E318B7F59E00BDE776 /* lq2x.cpp */; };
+		ABBBF32718B7F59E00BDE776 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E418B7F59E00BDE776 /* scanline.cpp */; };
+		ABBBF32818B7F59E00BDE776 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E518B7F59E00BDE776 /* videofilter.cpp */; };
+		ABBBF32918B7F59E00BDE776 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E618B7F59E00BDE776 /* xbrz.cpp */; };
+		ABBBF32A18B7F59E00BDE776 /* 2xsai.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2DD18B7F59E00BDE776 /* 2xsai.cpp */; };
+		ABBBF32B18B7F59E00BDE776 /* bilinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2DE18B7F59E00BDE776 /* bilinear.cpp */; };
+		ABBBF32D18B7F59E00BDE776 /* epx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E018B7F59E00BDE776 /* epx.cpp */; };
+		ABBBF32E18B7F59E00BDE776 /* hq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E118B7F59E00BDE776 /* hq2x.cpp */; };
+		ABBBF32F18B7F59E00BDE776 /* hq4x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E218B7F59E00BDE776 /* hq4x.cpp */; };
+		ABBBF33018B7F59E00BDE776 /* lq2x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E318B7F59E00BDE776 /* lq2x.cpp */; };
+		ABBBF33118B7F59E00BDE776 /* scanline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E418B7F59E00BDE776 /* scanline.cpp */; };
+		ABBBF33218B7F59E00BDE776 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E518B7F59E00BDE776 /* videofilter.cpp */; };
+		ABBBF33318B7F59E00BDE776 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBBF2E618B7F59E00BDE776 /* xbrz.cpp */; };
 		ABBF053014B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
 		ABBF053114B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
 		ABBF053214B5436E00E505A0 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABBF052F14B5436E00E505A0 /* cocoa_file.mm */; };
@@ -1424,6 +1487,22 @@
 		ABB328EE18313F7C00FEE4C4 /* slot2_auto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_auto.cpp; sourceTree = "<group>"; };
 		ABB9215817CEB53A0049D4C5 /* slot1comp_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot1comp_protocol.h; sourceTree = "<group>"; };
 		ABB9215917CEB53A0049D4C5 /* slot1comp_protocol.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1comp_protocol.cpp; sourceTree = "<group>"; };
+		ABBBF2DD18B7F59E00BDE776 /* 2xsai.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = 2xsai.cpp; sourceTree = "<group>"; };
+		ABBBF2DE18B7F59E00BDE776 /* bilinear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bilinear.cpp; sourceTree = "<group>"; };
+		ABBBF2E018B7F59E00BDE776 /* epx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = epx.cpp; sourceTree = "<group>"; };
+		ABBBF2E118B7F59E00BDE776 /* hq2x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hq2x.cpp; sourceTree = "<group>"; };
+		ABBBF2E218B7F59E00BDE776 /* hq4x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hq4x.cpp; sourceTree = "<group>"; };
+		ABBBF2E318B7F59E00BDE776 /* lq2x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = lq2x.cpp; sourceTree = "<group>"; };
+		ABBBF2E418B7F59E00BDE776 /* scanline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scanline.cpp; sourceTree = "<group>"; };
+		ABBBF2E518B7F59E00BDE776 /* videofilter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = videofilter.cpp; sourceTree = "<group>"; };
+		ABBBF2E618B7F59E00BDE776 /* xbrz.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = xbrz.cpp; sourceTree = "<group>"; };
+		ABBBF2E718B7F59E00BDE776 /* filter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = filter.h; sourceTree = "<group>"; };
+		ABBBF2E818B7F59E00BDE776 /* hq2x.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hq2x.h; sourceTree = "<group>"; };
+		ABBBF2E918B7F59E00BDE776 /* hq4x.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hq4x.h; sourceTree = "<group>"; };
+		ABBBF2EA18B7F59E00BDE776 /* interp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = interp.h; sourceTree = "<group>"; };
+		ABBBF2EB18B7F59E00BDE776 /* lq2x.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lq2x.h; sourceTree = "<group>"; };
+		ABBBF2EC18B7F59E00BDE776 /* videofilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = videofilter.h; sourceTree = "<group>"; };
+		ABBBF2ED18B7F59E00BDE776 /* xbrz.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xbrz.h; sourceTree = "<group>"; };
 		ABBF045E14B5144D00E505A0 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = "translations/English.lproj/MainMenu (Legacy).xib"; sourceTree = "<group>"; };
 		ABBF04CB14B51BBB00E505A0 /* Chinese */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Chinese; path = translations/Chinese.lproj/Localizable.strings; sourceTree = "<group>"; };
 		ABBF04CC14B51BC300E505A0 /* Norwegian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Norwegian; path = translations/Norwegian.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -1718,6 +1797,7 @@
 				AB06CD9B135B8AED00E977B3 /* addons */,
 				AB06CDA7135B8AED00E977B3 /* cli */,
 				AB06CDAF135B8AED00E977B3 /* gdbstub */,
+				ABBBF2DC18B7F59E00BDE776 /* filter */,
 				AB06CDB3135B8AED00E977B3 /* metaspu */,
 				AB06CDDC135B8AED00E977B3 /* utils */,
 				AB06CD0F135B8ACE00E977B3 /* aggdraw.cpp */,
@@ -2092,6 +2172,30 @@
 			);
 			name = "App Icons";
 			sourceTree = "<group>";
+		};
+		ABBBF2DC18B7F59E00BDE776 /* filter */ = {
+			isa = PBXGroup;
+			children = (
+				ABBBF2DD18B7F59E00BDE776 /* 2xsai.cpp */,
+				ABBBF2DE18B7F59E00BDE776 /* bilinear.cpp */,
+				ABBBF2E018B7F59E00BDE776 /* epx.cpp */,
+				ABBBF2E118B7F59E00BDE776 /* hq2x.cpp */,
+				ABBBF2E218B7F59E00BDE776 /* hq4x.cpp */,
+				ABBBF2E318B7F59E00BDE776 /* lq2x.cpp */,
+				ABBBF2E418B7F59E00BDE776 /* scanline.cpp */,
+				ABBBF2E518B7F59E00BDE776 /* videofilter.cpp */,
+				ABBBF2E618B7F59E00BDE776 /* xbrz.cpp */,
+				ABBBF2E718B7F59E00BDE776 /* filter.h */,
+				ABBBF2E818B7F59E00BDE776 /* hq2x.h */,
+				ABBBF2E918B7F59E00BDE776 /* hq4x.h */,
+				ABBBF2EA18B7F59E00BDE776 /* interp.h */,
+				ABBBF2EB18B7F59E00BDE776 /* lq2x.h */,
+				ABBBF2EC18B7F59E00BDE776 /* videofilter.h */,
+				ABBBF2ED18B7F59E00BDE776 /* xbrz.h */,
+			);
+			name = filter;
+			path = ../filter;
+			sourceTree = SOURCE_ROOT;
 		};
 		ABC3ADEC14B7DC6E00D5B13D /* userinterface */ = {
 			isa = PBXGroup;
@@ -2983,6 +3087,15 @@
 				AB126D2A182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */,
 				ABB328EC18313F5A00FEE4C4 /* slot2.cpp in Sources */,
 				ABB328F418313F7C00FEE4C4 /* slot2_auto.cpp in Sources */,
+				ABBBF32018B7F59E00BDE776 /* 2xsai.cpp in Sources */,
+				ABBBF32118B7F59E00BDE776 /* bilinear.cpp in Sources */,
+				ABBBF32318B7F59E00BDE776 /* epx.cpp in Sources */,
+				ABBBF32418B7F59E00BDE776 /* hq2x.cpp in Sources */,
+				ABBBF32518B7F59E00BDE776 /* hq4x.cpp in Sources */,
+				ABBBF32618B7F59E00BDE776 /* lq2x.cpp in Sources */,
+				ABBBF32718B7F59E00BDE776 /* scanline.cpp in Sources */,
+				ABBBF32818B7F59E00BDE776 /* videofilter.cpp in Sources */,
+				ABBBF32918B7F59E00BDE776 /* xbrz.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3134,6 +3247,15 @@
 				AB126D28182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */,
 				ABB328EA18313F5A00FEE4C4 /* slot2.cpp in Sources */,
 				ABB328F218313F7C00FEE4C4 /* slot2_auto.cpp in Sources */,
+				ABBBF30C18B7F59E00BDE776 /* 2xsai.cpp in Sources */,
+				ABBBF30D18B7F59E00BDE776 /* bilinear.cpp in Sources */,
+				ABBBF30F18B7F59E00BDE776 /* epx.cpp in Sources */,
+				ABBBF31018B7F59E00BDE776 /* hq2x.cpp in Sources */,
+				ABBBF31118B7F59E00BDE776 /* hq4x.cpp in Sources */,
+				ABBBF31218B7F59E00BDE776 /* lq2x.cpp in Sources */,
+				ABBBF31318B7F59E00BDE776 /* scanline.cpp in Sources */,
+				ABBBF31418B7F59E00BDE776 /* videofilter.cpp in Sources */,
+				ABBBF31518B7F59E00BDE776 /* xbrz.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3285,6 +3407,15 @@
 				AB126D26182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */,
 				ABB328E818313F5A00FEE4C4 /* slot2.cpp in Sources */,
 				ABB328F018313F7C00FEE4C4 /* slot2_auto.cpp in Sources */,
+				ABBBF2F818B7F59E00BDE776 /* 2xsai.cpp in Sources */,
+				ABBBF2F918B7F59E00BDE776 /* bilinear.cpp in Sources */,
+				ABBBF2FB18B7F59E00BDE776 /* epx.cpp in Sources */,
+				ABBBF2FC18B7F59E00BDE776 /* hq2x.cpp in Sources */,
+				ABBBF2FD18B7F59E00BDE776 /* hq4x.cpp in Sources */,
+				ABBBF2FE18B7F59E00BDE776 /* lq2x.cpp in Sources */,
+				ABBBF2FF18B7F59E00BDE776 /* scanline.cpp in Sources */,
+				ABBBF30018B7F59E00BDE776 /* videofilter.cpp in Sources */,
+				ABBBF30118B7F59E00BDE776 /* xbrz.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3406,6 +3537,15 @@
 				AB126D25182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */,
 				ABB328E718313F5A00FEE4C4 /* slot2.cpp in Sources */,
 				ABB328EF18313F7C00FEE4C4 /* slot2_auto.cpp in Sources */,
+				ABBBF2EE18B7F59E00BDE776 /* 2xsai.cpp in Sources */,
+				ABBBF2EF18B7F59E00BDE776 /* bilinear.cpp in Sources */,
+				ABBBF2F118B7F59E00BDE776 /* epx.cpp in Sources */,
+				ABBBF2F218B7F59E00BDE776 /* hq2x.cpp in Sources */,
+				ABBBF2F318B7F59E00BDE776 /* hq4x.cpp in Sources */,
+				ABBBF2F418B7F59E00BDE776 /* lq2x.cpp in Sources */,
+				ABBBF2F518B7F59E00BDE776 /* scanline.cpp in Sources */,
+				ABBBF2F618B7F59E00BDE776 /* videofilter.cpp in Sources */,
+				ABBBF2F718B7F59E00BDE776 /* xbrz.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3527,6 +3667,15 @@
 				AB126D27182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */,
 				ABB328E918313F5A00FEE4C4 /* slot2.cpp in Sources */,
 				ABB328F118313F7C00FEE4C4 /* slot2_auto.cpp in Sources */,
+				ABBBF30218B7F59E00BDE776 /* 2xsai.cpp in Sources */,
+				ABBBF30318B7F59E00BDE776 /* bilinear.cpp in Sources */,
+				ABBBF30518B7F59E00BDE776 /* epx.cpp in Sources */,
+				ABBBF30618B7F59E00BDE776 /* hq2x.cpp in Sources */,
+				ABBBF30718B7F59E00BDE776 /* hq4x.cpp in Sources */,
+				ABBBF30818B7F59E00BDE776 /* lq2x.cpp in Sources */,
+				ABBBF30918B7F59E00BDE776 /* scanline.cpp in Sources */,
+				ABBBF30A18B7F59E00BDE776 /* videofilter.cpp in Sources */,
+				ABBBF30B18B7F59E00BDE776 /* xbrz.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3658,6 +3807,15 @@
 				AB126D2B182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */,
 				ABB328ED18313F5A00FEE4C4 /* slot2.cpp in Sources */,
 				ABB328F518313F7C00FEE4C4 /* slot2_auto.cpp in Sources */,
+				ABBBF32A18B7F59E00BDE776 /* 2xsai.cpp in Sources */,
+				ABBBF32B18B7F59E00BDE776 /* bilinear.cpp in Sources */,
+				ABBBF32D18B7F59E00BDE776 /* epx.cpp in Sources */,
+				ABBBF32E18B7F59E00BDE776 /* hq2x.cpp in Sources */,
+				ABBBF32F18B7F59E00BDE776 /* hq4x.cpp in Sources */,
+				ABBBF33018B7F59E00BDE776 /* lq2x.cpp in Sources */,
+				ABBBF33118B7F59E00BDE776 /* scanline.cpp in Sources */,
+				ABBBF33218B7F59E00BDE776 /* videofilter.cpp in Sources */,
+				ABBBF33318B7F59E00BDE776 /* xbrz.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3809,6 +3967,15 @@
 				AB126D29182ECC7B00EBCF22 /* slot2_passme.cpp in Sources */,
 				ABB328EB18313F5A00FEE4C4 /* slot2.cpp in Sources */,
 				ABB328F318313F7C00FEE4C4 /* slot2_auto.cpp in Sources */,
+				ABBBF31618B7F59E00BDE776 /* 2xsai.cpp in Sources */,
+				ABBBF31718B7F59E00BDE776 /* bilinear.cpp in Sources */,
+				ABBBF31918B7F59E00BDE776 /* epx.cpp in Sources */,
+				ABBBF31A18B7F59E00BDE776 /* hq2x.cpp in Sources */,
+				ABBBF31B18B7F59E00BDE776 /* hq4x.cpp in Sources */,
+				ABBBF31C18B7F59E00BDE776 /* lq2x.cpp in Sources */,
+				ABBBF31D18B7F59E00BDE776 /* scanline.cpp in Sources */,
+				ABBBF31E18B7F59E00BDE776 /* videofilter.cpp in Sources */,
+				ABBBF31F18B7F59E00BDE776 /* xbrz.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4048,6 +4215,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				GCC_ALTIVEC_EXTENSIONS = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = YES;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_FAST_OBJC_DISPATCH = NO;
@@ -4090,6 +4258,7 @@
 				COPY_PHASE_STRIP = NO;
 				GCC_ALTIVEC_EXTENSIONS = YES;
 				GCC_AUTO_VECTORIZATION = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = YES;
 				GCC_ENABLE_SSE3_EXTENSIONS = YES;
 				GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS = YES;
