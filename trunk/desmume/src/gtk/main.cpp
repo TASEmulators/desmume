@@ -368,8 +368,8 @@ static const GtkActionEntry action_entries[] = {
     { "FileMenu", NULL, "_File" },
       { "open",          "gtk-open",    "_Open",         "<Ctrl>o",  NULL,   OpenNdsDialog },
       { "RecentMenu", NULL, "Open _recent" },
-      { "run",        "gtk-media-play",   "_Run",          "<Ctrl>r",  NULL,   Launch },
-      { "pause",      "gtk-media-pause",  "_Pause",        "<Ctrl>p",  NULL,   Pause },
+      { "run",        "gtk-media-play",   "_Run",          "Pause",  NULL,   Launch },
+      { "pause",      "gtk-media-pause",  "_Pause",        "Pause",  NULL,   Pause },
       { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
       { "savestateto",    NULL,         "Save state _to ...",         NULL,  NULL,   SaveStateDialog },
       { "loadstatefrom",  NULL,         "Load state _from ...",         NULL,  NULL,   LoadStateDialog },
@@ -3101,6 +3101,8 @@ common_gtk_main( class configured_features *my_config)
 
     /* Main loop */
     gtk_main();
+
+    delete video;
 
 	avout_x264.end();
 	avout_flac.end();
