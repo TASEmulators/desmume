@@ -119,7 +119,8 @@ bool BackupDevice::save_state(EMUFILE* os)
 	u32 savePos = fpMC->ftell();
 	std::vector<u8> data(fsize);
 	fpMC->fseek(0, SEEK_SET);
-	fread((char*)&data[0], 1, fsize, fpMC->get_fp());
+	if(data.size()!=0)
+		fread((char*)&data[0], 1, fsize, fpMC->get_fp());
 
 	u32 version = 5;
 	//v0
@@ -190,7 +191,8 @@ bool BackupDevice::load_state(EMUFILE* is)
 	fsize = data.size();
 #ifndef _DONT_SAVE_BACKUP
 	fpMC->fseek(0, SEEK_SET);
-	fwrite((char*)&data[0], 1, fsize, fpMC->get_fp());
+	if(data.size()!=0)
+		fwrite((char*)&data[0], 1, fsize, fpMC->get_fp());
 	ensure(data.size(), fpMC);
 #endif
 
