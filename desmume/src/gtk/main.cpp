@@ -1,6 +1,6 @@
 /* main.cpp - this file is part of DeSmuME
  *
- * Copyright (C) 2006-2009 DeSmuME Team
+ * Copyright (C) 2006-2014 DeSmuME Team
  * Copyright (C) 2007 Pascal Giard (evilynux)
  *
  * This file is free software; you can redistribute it and/or modify
@@ -89,7 +89,7 @@
 static int gtk_fps_limiter_disabled;
 static int draw_count;
 extern int _scanline_filter_a, _scanline_filter_b, _scanline_filter_c, _scanline_filter_d;
-VideoFilter video(256, 384, VideoFilterTypeID_None, 4);
+VideoFilter* video;
 
 enum {
     MAIN_BG_0 = 0,
@@ -1588,19 +1588,9 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 #else
 	gdk_drawable_get_size(window, &daW, &daH);
 #endif
-#if 0
-	RGB555ToBGRA8888Buffer((u16*)GPU_screen, video.GetSrcBufferPtr(), 256 * 384);
-
-#ifdef HAVE_LIBAGG
-	aggDraw.hud->attach((u8*)video.GetSrcBufferPtr(), 256, 384, 1024);
-	osd->update();
-	DrawHUD();
-	osd->clear();
-#endif
-#endif
-	u32* fbuf = video.GetDstBufferPtr();//video.RunFilter();
-	gint dstW = video.GetDstWidth();
-	gint dstH = video.GetDstHeight();
+	u32* fbuf = video->GetDstBufferPtr();
+	gint dstW = video->GetDstWidth();
+	gint dstH = video->GetDstHeight();
 
 	gint dstScale = dstW * 2 / 256; // Actual scale * 2 to handle 1.5x filters
 	
@@ -1653,14 +1643,14 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 }
 
 static void RedrawScreen() {
-	RGB555ToBGRA8888Buffer((u16*)GPU_screen, video.GetSrcBufferPtr(), 256 * 384);
+	RGB555ToBGRA8888Buffer((u16*)GPU_screen, video->GetSrcBufferPtr(), 256 * 384);
 #ifdef HAVE_LIBAGG
-	aggDraw.hud->attach((u8*)video.GetSrcBufferPtr(), 256, 384, 1024);
+	aggDraw.hud->attach((u8*)video->GetSrcBufferPtr(), 256, 384, 1024);
 	osd->update();
 	DrawHUD();
 	osd->clear();
 #endif
-	video.RunFilter();
+	video->RunFilter();
 	gtk_widget_queue_draw(pDrawingArea);
 }
 
@@ -2222,7 +2212,7 @@ static void SelectFirmwareFile()
 static void Modify_PriInterpolation(GtkAction *action, GtkRadioAction *current)
 {
     uint filter = gtk_radio_action_get_current_value(current) ;
-    video.ChangeFilterByID((VideoFilterTypeID)filter);
+    video->ChangeFilterByID((VideoFilterTypeID)filter);
     RedrawScreen();
 }
 
@@ -2927,6 +2917,9 @@ common_gtk_main( class configured_features *my_config)
     memset(&nds_screen, 0, sizeof(nds_screen));
     nds_screen.orientation = ORIENT_VERTICAL;
 
+    g_printerr("Using %d threads for video filter.\n", CommonSettings.num_cores);
+    video = new VideoFilter(256, 384, VideoFilterTypeID_None, CommonSettings.num_cores);
+
     /* Create the window */
     pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(pWindow), "DeSmuME");
@@ -3101,10 +3094,10 @@ common_gtk_main( class configured_features *my_config)
     }
 
     /* Video filter parameters */
-    video.SetFilterParameteri(VF_PARAM_SCANLINE_A, _scanline_filter_a);
-    video.SetFilterParameteri(VF_PARAM_SCANLINE_B, _scanline_filter_b);
-    video.SetFilterParameteri(VF_PARAM_SCANLINE_C, _scanline_filter_c);
-    video.SetFilterParameteri(VF_PARAM_SCANLINE_D, _scanline_filter_d);
+    video->SetFilterParameteri(VF_PARAM_SCANLINE_A, _scanline_filter_a);
+    video->SetFilterParameteri(VF_PARAM_SCANLINE_B, _scanline_filter_b);
+    video->SetFilterParameteri(VF_PARAM_SCANLINE_C, _scanline_filter_c);
+    video->SetFilterParameteri(VF_PARAM_SCANLINE_D, _scanline_filter_d);
 
     /* Main loop */
     gtk_main();
