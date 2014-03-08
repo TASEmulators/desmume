@@ -3004,6 +3004,7 @@ common_gtk_main( class configured_features *my_config)
     if (config.view_filter < VideoFilterTypeID_None || config.view_filter >= VideoFilterTypeIDCount) {
         config.view_filter = VideoFilterTypeID_None;
     }
+    video->ChangeFilterByID((VideoFilterTypeID)config.view_filter.get());
     gtk_action_group_add_radio_actions(action_group, pri_interpolation_entries, G_N_ELEMENTS(pri_interpolation_entries), 
             config.view_filter, G_CALLBACK(Modify_PriInterpolation), NULL);
 
