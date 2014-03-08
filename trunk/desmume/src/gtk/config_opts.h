@@ -38,7 +38,7 @@ OPT(window_scale, int, 0, Window, Scale2x)
 /*OPT(window_y, int, -1, Window, Y)*/
 /*OPT(window_w, int, 0, Window, Width)*/
 /*OPT(window_h, int, 0, Window, Height)*/
-OPT(window_maximized, bool, false, Window, Maximized)
+/*OPT(window_maximized, bool, false, Window, Maximized)*/
 OPT(window_fullscreen, bool, false, Window, Fullscreen)
 
 /* HUD display */
