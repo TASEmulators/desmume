@@ -14,6 +14,7 @@ desmume_SOURCES = \
 	avout_pipe_base.cpp avout_pipe_base.h \
 	avout_x264.cpp avout_x264.h \
 	avout_flac.cpp avout_flac.h \
+	config.cpp config.h config_opts.h \
 	desmume.h desmume.cpp \
 	dTool.h dToolsList.cpp \
 	tools/ioregsView.cpp tools/ioregsView.h \
