@@ -74,6 +74,8 @@
 #include "glx_3Demu.h"
 #endif
 
+#include "config.h"
+
 #include "DeSmuME.xpm"
 
 #undef GPOINTER_TO_INT
@@ -86,10 +88,11 @@
 
 #define GAP_SIZE 64
 
-static int gtk_fps_limiter_disabled;
 static int draw_count;
 extern int _scanline_filter_a, _scanline_filter_b, _scanline_filter_c, _scanline_filter_d;
 VideoFilter* video;
+
+desmume::config::Config config;
 
 enum {
     MAIN_BG_0 = 0,
@@ -400,8 +403,8 @@ static const GtkActionEntry action_entries[] = {
 #endif
 
     { "ConfigMenu", NULL, "_Config" },
-      { "SPUModeMenu", NULL, "_SPU Mode" },
-      { "SPUInterpolationMenu", NULL, "Sound _Interpolation" },
+      { "SPUModeMenu", NULL, "Audio _Synchronization" },
+      { "SPUInterpolationMenu", NULL, "Audio _Interpolation" },
       { "FrameskipMenu", NULL, "_Frameskip" },
       { "CheatMenu", NULL, "_Cheat" },
         { "cheatsearch",     NULL,      "_Search",        NULL,       NULL,   CheatSearch },
@@ -820,7 +823,8 @@ static void ToggleMenuVisible(GtkToggleAction *action)
 {
     GtkWidget *pMenuBar = gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
 
-    if (gtk_toggle_action_get_active(action) == TRUE)
+    config.view_menu = gtk_toggle_action_get_active(action);
+    if (config.view_menu)
       gtk_widget_show(pMenuBar);
     else
       gtk_widget_hide(pMenuBar);
@@ -830,7 +834,8 @@ static void ToggleToolbarVisible(GtkToggleAction *action)
 {
     GtkWidget *pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
 
-    if (gtk_toggle_action_get_active(action) == TRUE)
+    config.view_toolbar = gtk_toggle_action_get_active(action);
+    if (config.view_toolbar)
       gtk_widget_show(pToolBar);
     else
       gtk_widget_hide(pToolBar);
@@ -838,7 +843,8 @@ static void ToggleToolbarVisible(GtkToggleAction *action)
 
 static void ToggleStatusbarVisible(GtkToggleAction *action)
 {
-    if (gtk_toggle_action_get_active(action) == TRUE)
+    config.view_statusbar = gtk_toggle_action_get_active(action);
+    if (config.view_statusbar)
       gtk_widget_show(pStatusBar);
     else
       gtk_widget_hide(pStatusBar);
@@ -848,24 +854,31 @@ static void ToggleFullscreen(GtkToggleAction *action)
 {
   GtkWidget *pMenuBar = gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
   GtkWidget *pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
-  if (gtk_toggle_action_get_active(action) == TRUE)
+  config.window_fullscreen = gtk_toggle_action_get_active(action);
+  if (config.window_fullscreen)
   {
     gtk_widget_hide(pMenuBar);
     gtk_widget_hide(pToolBar);
     gtk_widget_hide(pStatusBar);
-    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_menu"), FALSE);
-    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_toolbar"), FALSE);
-    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_statusbar"), FALSE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_menu"), FALSE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_toolbar"), FALSE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_statusbar"), FALSE);
     gtk_window_fullscreen(GTK_WINDOW(pWindow));
   }
   else
   {
-    gtk_widget_show(pMenuBar);
-    gtk_widget_show(pToolBar);
-    gtk_widget_show(pStatusBar);
-    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_menu"), TRUE);
-    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_toolbar"), TRUE);
-    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_statusbar"), TRUE);
+    if (config.view_menu) {
+      gtk_widget_show(pMenuBar);
+    }
+    if (config.view_toolbar) {
+      gtk_widget_show(pToolBar);
+    }
+    if (config.view_statusbar) {
+      gtk_widget_show(pStatusBar);
+    }
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_menu"), TRUE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_toolbar"), TRUE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_statusbar"), TRUE);
     gtk_window_unfullscreen(GTK_WINDOW(pWindow));
   }
 }
@@ -1436,19 +1449,25 @@ static void UpdateDrawingAreaAspect()
 
 static void ToggleGap(GtkToggleAction* action)
 {
-    nds_screen.gap_size = gtk_toggle_action_get_active(action) ? GAP_SIZE : 0;
+    config.view_gap = gtk_toggle_action_get_active(action);
+    nds_screen.gap_size = config.view_gap ? GAP_SIZE : 0;
     UpdateDrawingAreaAspect();
 }
 
 static void SetRotation(GtkAction *action, GtkRadioAction *current)
 {
     nds_screen.rotation_angle = gtk_radio_action_get_current_value(current);
+    config.view_rot = nds_screen.rotation_angle;
     UpdateDrawingAreaAspect();
 }
 
 static void SetWinsize(GtkAction *action, GtkRadioAction *current)
 {
 	winsize_current = (winsize_enum) gtk_radio_action_get_current_value(current);
+	config.window_scale = winsize_current;
+	if (config.window_fullscreen) {
+		gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "fullscreen"), FALSE);
+	}
 	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "fullscreen"), winsize_current == WINSIZE_SCALE);
 	UpdateDrawingAreaAspect();
 }
@@ -1457,12 +1476,14 @@ static void SetOrientation(GtkAction *action, GtkRadioAction *current)
 {
     nds_screen.orientation = (orientation_enum)gtk_radio_action_get_current_value(current);
     osd->singleScreen = nds_screen.orientation == ORIENT_SINGLE;
+    config.view_orient = nds_screen.orientation;
     UpdateDrawingAreaAspect();
 }
 
 static void ToggleSwapScreens(GtkToggleAction *action) {
     nds_screen.swap = gtk_toggle_action_get_active(action);
     osd->swapScreens = nds_screen.swap;
+    config.view_swap = nds_screen.swap;
     RedrawScreen();
 }
 
@@ -2213,12 +2234,14 @@ static void Modify_PriInterpolation(GtkAction *action, GtkRadioAction *current)
 {
     uint filter = gtk_radio_action_get_current_value(current) ;
     video->ChangeFilterByID((VideoFilterTypeID)filter);
+    config.view_filter = filter;
     RedrawScreen();
 }
 
 static void Modify_Interpolation(GtkAction *action, GtkRadioAction *current)
 {
     Interpolation = (cairo_filter_t)gtk_radio_action_get_current_value(current);
+    config.view_cairoFilter = Interpolation;
     RedrawScreen();
 }
 
@@ -2242,6 +2265,7 @@ static void Modify_SPUMode(GtkAction *action, GtkRadioAction *current)
         SPU_SetSynchMode(0, 0);
         break;
     }
+    config.audio_sync = SPUMode;
 }
 
 static void Modify_SPUInterpolation(GtkAction *action, GtkRadioAction *current)
@@ -2252,6 +2276,7 @@ static void Modify_SPUInterpolation(GtkAction *action, GtkRadioAction *current)
 static void Modify_Frameskip(GtkAction *action, GtkRadioAction *current)
 {
     autoFrameskipMax = gtk_radio_action_get_current_value(current) ;
+    config.frameskip = autoFrameskipMax;
     if (!autoframeskip) {
         Frameskip = autoFrameskipMax;
     }
@@ -2423,7 +2448,7 @@ gboolean EmuLoop(gpointer data)
 	avout_x264.updateVideo((u16*)GPU_screen);
 	RedrawScreen();
 
-    if (gtk_fps_limiter_disabled || keys_latch & KEYMASK_(KEY_BOOST - 1)) {
+    if (!config.fpslimiter || keys_latch & KEYMASK_(KEY_BOOST - 1)) {
         if (autoframeskip) {
             Frameskip = 0;
         } else {
@@ -2627,24 +2652,31 @@ static void ToggleHudDisplay(GtkToggleAction* action, gpointer data)
     switch (hudId) {
     case HUD_DISPLAY_FPS:
         CommonSettings.hud.FpsDisplay = active;
+        config.hud_fps = active;
         break;
     case HUD_DISPLAY_INPUT:
         CommonSettings.hud.ShowInputDisplay = active;
+        config.hud_input = active;
         break;
     case HUD_DISPLAY_GINPUT:
         CommonSettings.hud.ShowGraphicalInputDisplay = active;
+        config.hud_graphicalInput = active;
         break;
     case HUD_DISPLAY_FCOUNTER:
         CommonSettings.hud.FrameCounterDisplay = active;
+        config.hud_frameCounter = active;
         break;
     case HUD_DISPLAY_LCOUNTER:
         CommonSettings.hud.ShowLagFrameCounter = active;
+        config.hud_lagCounter = active;
         break;
     case HUD_DISPLAY_RTC:
         CommonSettings.hud.ShowRTC = active;
+        config.hud_rtc = active;
         break;
     case HUD_DISPLAY_MIC:
         CommonSettings.hud.ShowMicrophone = active;
+        config.hud_mic = active;
         break;
     case HUD_DISPLAY_EDITOR:
         HudEditorMode = active;
@@ -2662,22 +2694,25 @@ static void desmume_gtk_menu_view_hud (GtkActionGroup *ag)
         const gchar* name;
         const gchar* label;
         guint id;
+        bool active;
+        bool& setting;
     } hud_menu[] = {
-        { "hud_fps","Display _fps", HUD_DISPLAY_FPS },
-        { "hud_input","Display _Input", HUD_DISPLAY_INPUT },
-        { "hud_graphicalinput","Display _Graphical Input", HUD_DISPLAY_GINPUT },
-        { "hud_framecounter","Display Frame _Counter", HUD_DISPLAY_FCOUNTER },
-        { "hud_lagcounter","Display _Lag Counter", HUD_DISPLAY_LCOUNTER },
-        { "hud_rtc","Display _RTC", HUD_DISPLAY_RTC },
-        { "hud_mic","Display _Mic", HUD_DISPLAY_MIC },
-        { "hud_editor","_Editor Mode", HUD_DISPLAY_EDITOR },
+        { "hud_fps","Display _fps", HUD_DISPLAY_FPS, config.hud_fps, CommonSettings.hud.FpsDisplay },
+        { "hud_input","Display _Input", HUD_DISPLAY_INPUT, config.hud_input, CommonSettings.hud.ShowInputDisplay },
+        { "hud_graphicalinput","Display _Graphical Input", HUD_DISPLAY_GINPUT, config.hud_graphicalInput, CommonSettings.hud.ShowGraphicalInputDisplay },
+        { "hud_framecounter","Display Frame _Counter", HUD_DISPLAY_FCOUNTER, config.hud_frameCounter, CommonSettings.hud.FrameCounterDisplay },
+        { "hud_lagcounter","Display _Lag Counter", HUD_DISPLAY_LCOUNTER, config.hud_lagCounter, CommonSettings.hud.ShowLagFrameCounter },
+        { "hud_rtc","Display _RTC", HUD_DISPLAY_RTC, config.hud_rtc, CommonSettings.hud.ShowRTC },
+        { "hud_mic","Display _Mic", HUD_DISPLAY_MIC, config.hud_mic, CommonSettings.hud.ShowMicrophone },
+        { "hud_editor","_Editor Mode", HUD_DISPLAY_EDITOR, false, HudEditorMode },
     };
     guint i;
 
     GtkToggleAction *act;
     for(i = 0; i < sizeof(hud_menu) / sizeof(hud_menu[0]); i++){
         act = gtk_toggle_action_new(hud_menu[i].name, hud_menu[i].label, NULL, NULL);
-        gtk_toggle_action_set_active(act, FALSE);
+        gtk_toggle_action_set_active(act, hud_menu[i].active ? TRUE : FALSE);
+        hud_menu[i].setting = hud_menu[i].active;
         g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(ToggleHudDisplay), GUINT_TO_POINTER(hud_menu[i].id));
         gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), NULL);
     }
@@ -2686,7 +2721,8 @@ static void desmume_gtk_menu_view_hud (GtkActionGroup *ag)
 
 static void ToggleAudio (GtkToggleAction *action)
 {
-    if (gtk_toggle_action_get_active(action) == TRUE) {
+    config.audio_enabled = gtk_toggle_action_get_active(action);
+    if (config.audio_enabled) {
         SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
         osd->addLine("Audio enabled");
     } else {
@@ -2712,10 +2748,9 @@ static void ToggleMicNoise (GtkToggleAction *action)
 
 static void ToggleFpsLimiter (GtkToggleAction *action)
 {
-    BOOL limiterEnable = (BOOL)gtk_toggle_action_get_active(action);
+    config.fpslimiter = (BOOL)gtk_toggle_action_get_active(action);
 
-    gtk_fps_limiter_disabled = !limiterEnable;
-    if (limiterEnable)
+    if (config.fpslimiter)
        osd->addLine("Fps limiter enabled");
     else
        osd->addLine("Fps limiter disabled");
@@ -2724,9 +2759,9 @@ static void ToggleFpsLimiter (GtkToggleAction *action)
 
 static void ToggleAutoFrameskip (GtkToggleAction *action)
 {
-    BOOL autoSet = (BOOL)gtk_toggle_action_get_active(action);
+    config.autoframeskip = (BOOL)gtk_toggle_action_get_active(action);
 
-    if ((BOOL)gtk_toggle_action_get_active(action)) {
+    if (config.autoframeskip) {
         autoframeskip = true;
         Frameskip = 0;
         osd->addLine("Auto frameskip enabled");
@@ -2760,6 +2795,8 @@ static gboolean timeout_exit_cb(gpointer data)
 static int
 common_gtk_main( class configured_features *my_config)
 {
+	config.load();
+
     driver = new GtkDriver();
 
     SDL_TimerID limiter_timer = NULL;
@@ -2880,7 +2917,7 @@ common_gtk_main( class configured_features *my_config)
     }
     desmume_init( arm9_memio, &arm9_ctrl_iface,
                       arm7_memio, &arm7_ctrl_iface,
-                      my_config->disable_sound);
+                      my_config->disable_sound || !config.audio_enabled);
 
     /* Init the hud / osd stuff */
 #ifdef HAVE_LIBAGG
@@ -2941,7 +2978,7 @@ common_gtk_main( class configured_features *my_config)
     gtk_action_group_add_actions(action_group, action_entries, G_N_ELEMENTS(action_entries), NULL);
     gtk_action_group_add_toggle_actions(action_group, toggle_entries, G_N_ELEMENTS(toggle_entries), NULL);
     /* Update audio toggle status */
-    if (my_config->disable_sound) {
+    if (my_config->disable_sound || !config.audio_enabled) {
         GtkAction *action = gtk_action_group_get_action(action_group, "enableaudio");
         if (action)
             gtk_toggle_action_set_active((GtkToggleAction *)action, FALSE);
@@ -2956,22 +2993,84 @@ common_gtk_main( class configured_features *my_config)
     desmume_gtk_menu_tools(action_group);
     gtk_action_group_add_radio_actions(action_group, savet_entries, G_N_ELEMENTS(savet_entries), 
             my_config->savetype, G_CALLBACK(changesavetype), NULL);
+
+    if (config.view_cairoFilter < CAIRO_FILTER_FAST || config.view_cairoFilter > CAIRO_FILTER_BILINEAR) {
+    	config.view_cairoFilter = CAIRO_FILTER_NEAREST;
+    }
+    Interpolation = (cairo_filter_t)config.view_cairoFilter.get();
     gtk_action_group_add_radio_actions(action_group, interpolation_entries, G_N_ELEMENTS(interpolation_entries), 
             Interpolation, G_CALLBACK(Modify_Interpolation), NULL);
+
+    if (config.view_filter < VideoFilterTypeID_None || config.view_filter >= VideoFilterTypeIDCount) {
+        config.view_filter = VideoFilterTypeID_None;
+    }
     gtk_action_group_add_radio_actions(action_group, pri_interpolation_entries, G_N_ELEMENTS(pri_interpolation_entries), 
-            VideoFilterTypeID_None, G_CALLBACK(Modify_PriInterpolation), NULL);
+            config.view_filter, G_CALLBACK(Modify_PriInterpolation), NULL);
+
+    switch (config.audio_sync) {
+    case SPUMODE_SYNCN:
+    case SPUMODE_SYNCZ:
+#ifdef HAVE_LIBSOUNDTOUCH
+    case SPUMODE_SYNCP:
+#endif
+        SPUMode = config.audio_sync;
+        SPU_SetSynchMode(1, config.audio_sync-1);
+        break;
+
+    case SPUMODE_DUALASYNC:
+    default:
+        config.audio_sync = SPUMODE_DUALASYNC;
+        SPUMode = SPUMODE_DUALASYNC;
+        SPU_SetSynchMode(0, 0);
+        break;
+    }
     gtk_action_group_add_radio_actions(action_group, spumode_entries, G_N_ELEMENTS(spumode_entries),
-            0, G_CALLBACK(Modify_SPUMode), NULL);
+            config.audio_sync, G_CALLBACK(Modify_SPUMode), NULL);
+
     gtk_action_group_add_radio_actions(action_group, spuinterpolation_entries, G_N_ELEMENTS(spuinterpolation_entries),
             CommonSettings.spuInterpolationMode, G_CALLBACK(Modify_SPUInterpolation), NULL);
+
     gtk_action_group_add_radio_actions(action_group, frameskip_entries, G_N_ELEMENTS(frameskip_entries), 
-            0, G_CALLBACK(Modify_Frameskip), NULL);
+            config.frameskip, G_CALLBACK(Modify_Frameskip), NULL);
+    autoFrameskipMax = config.frameskip;
+    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "frameskipA"), config.autoframeskip);
+    if (config.autoframeskip) {
+        autoframeskip = true;
+        Frameskip = 0;
+    } else {
+        autoframeskip = false;
+        Frameskip = autoFrameskipMax;
+    }
+
+    switch (config.view_rot) {
+        case 0:
+        case 90:
+        case 180:
+        case 270:
+            break;
+        default:
+            config.view_rot = 0;
+            break;
+    }
+    nds_screen.rotation_angle = config.view_rot;
     gtk_action_group_add_radio_actions(action_group, rotation_entries, G_N_ELEMENTS(rotation_entries), 
-            0, G_CALLBACK(SetRotation), NULL);
+            nds_screen.rotation_angle, G_CALLBACK(SetRotation), NULL);
+
+
+    if (config.window_scale < WINSIZE_SCALE || config.window_scale > WINSIZE_5) {
+    	config.window_scale = WINSIZE_SCALE;
+    }
+    winsize_current = (winsize_enum)config.window_scale.get();
     gtk_action_group_add_radio_actions(action_group, winsize_entries, G_N_ELEMENTS(winsize_entries), 
-            WINSIZE_SCALE, G_CALLBACK(SetWinsize), NULL);
+            winsize_current, G_CALLBACK(SetWinsize), NULL);
+
+    if (config.view_orient < ORIENT_VERTICAL || config.view_orient > ORIENT_SINGLE) {
+        config.view_orient = ORIENT_VERTICAL;
+    }
+    nds_screen.orientation = (orientation_enum)config.view_orient.get();
     gtk_action_group_add_radio_actions(action_group, orientation_entries, G_N_ELEMENTS(orientation_entries), 
-            0, G_CALLBACK(SetOrientation), NULL);
+            nds_screen.orientation, G_CALLBACK(SetOrientation), NULL);
+
     {
         GList * list = gtk_action_group_list_actions(action_group);
         g_list_foreach(list, dui_set_accel_group, accel_group);
@@ -2983,6 +3082,12 @@ common_gtk_main( class configured_features *my_config)
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatlist"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatsearch"), FALSE);
+
+    nds_screen.gap_size = config.view_gap ? GAP_SIZE : 0;
+    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "gap"), config.view_gap);
+
+    nds_screen.swap = config.view_swap;
+    gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "orient_swapscreens"), config.view_swap);
 
     gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
     
@@ -3010,9 +3115,6 @@ common_gtk_main( class configured_features *my_config)
     pDrawingArea = gtk_drawing_area_new();
     gtk_container_add (GTK_CONTAINER (pVBox), pDrawingArea);
 
-    winsize_current = WINSIZE_SCALE;
-    UpdateDrawingAreaAspect();
-
     gtk_widget_set_events(pDrawingArea,
                           GDK_EXPOSURE_MASK | GDK_LEAVE_NOTIFY_MASK |
                           GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
@@ -3036,8 +3138,36 @@ common_gtk_main( class configured_features *my_config)
 
     gtk_widget_show_all(pWindow);
 
-    gtk_fps_limiter_disabled = my_config->disable_limiter;
-    if (gtk_fps_limiter_disabled) {
+	if (winsize_current == WINSIZE_SCALE) {
+		if (config.window_fullscreen) {
+			gtk_widget_hide(pMenuBar);
+			gtk_widget_hide(pToolBar);
+			gtk_widget_hide(pStatusBar);
+			gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_menu"), FALSE);
+			gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_toolbar"), FALSE);
+			gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "view_statusbar"), FALSE);
+			gtk_window_fullscreen(GTK_WINDOW(pWindow));
+		}
+	} else {
+		config.window_fullscreen = false;
+		gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "fullscreen"), FALSE);
+	}
+	if (!config.view_menu) {
+		gtk_widget_hide(pMenuBar);
+		gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_menu"), FALSE);
+	}
+	if (!config.view_toolbar) {
+		gtk_widget_hide(pToolBar);
+		gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_toolbar"), FALSE);
+	}
+	if (!config.view_statusbar) {
+		gtk_widget_hide(pStatusBar);
+		gtk_toggle_action_set_active((GtkToggleAction*)gtk_action_group_get_action(action_group, "view_statusbar"), FALSE);
+	}
+    UpdateDrawingAreaAspect();
+
+    if (my_config->disable_limiter || !config.fpslimiter) {
+        config.fpslimiter = false;
         GtkAction *action = gtk_action_group_get_action(action_group, "enablefpslimiter");
         if (action)
             gtk_toggle_action_set_active((GtkToggleAction *)action, FALSE);
@@ -3099,11 +3229,13 @@ common_gtk_main( class configured_features *my_config)
     video->SetFilterParameteri(VF_PARAM_SCANLINE_C, _scanline_filter_c);
     video->SetFilterParameteri(VF_PARAM_SCANLINE_D, _scanline_filter_d);
 
+	RedrawScreen();
     /* Main loop */
     gtk_main();
 
     delete video;
 
+	config.save();
 	avout_x264.end();
 	avout_flac.end();
 
