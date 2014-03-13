@@ -485,7 +485,9 @@ static void desmume_cycle(struct ctrls_event_config * cfg)
     SPU_Emulate_user();
 }
 
+#ifdef HAVE_LIBAGG
 T_AGG_RGB555 agg_targetScreen_cli(GPU_screen, 256, 384, 512);
+#endif
 
 int main(int argc, char ** argv) {
   class configured_features my_config;

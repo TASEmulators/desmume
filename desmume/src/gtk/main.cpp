@@ -1475,14 +1475,18 @@ static void SetWinsize(GtkAction *action, GtkRadioAction *current)
 static void SetOrientation(GtkAction *action, GtkRadioAction *current)
 {
     nds_screen.orientation = (orientation_enum)gtk_radio_action_get_current_value(current);
+#ifdef HAVE_LIBAGG
     osd->singleScreen = nds_screen.orientation == ORIENT_SINGLE;
+#endif
     config.view_orient = nds_screen.orientation;
     UpdateDrawingAreaAspect();
 }
 
 static void ToggleSwapScreens(GtkToggleAction *action) {
     nds_screen.swap = gtk_toggle_action_get_active(action);
+#ifdef HAVE_LIBAGG
     osd->swapScreens = nds_screen.swap;
+#endif
     config.view_swap = nds_screen.swap;
     RedrawScreen();
 }
@@ -1677,6 +1681,7 @@ static void RedrawScreen() {
 
 /////////////////////////////// KEYS AND STYLUS UPDATE ///////////////////////////////////////
 
+#ifdef HAVE_LIBAGG
 static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 {
 	double devX, devY;
@@ -1725,6 +1730,7 @@ static gboolean rotoscaled_hudedit(gint x, gint y, gboolean start)
 	RedrawScreen();
 	return TRUE;
 }
+#endif
 
 static gboolean rotoscaled_touchpos(gint x, gint y, gboolean start)
 {
@@ -1769,9 +1775,13 @@ static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
         }
 
         if(state & GDK_BUTTON1_MASK) {
+#ifdef HAVE_LIBAGG
             if (HudEditorMode) {
                 rotoscaled_hudedit(x, y, FALSE);
             } else {
+#else
+            {
+#endif
                 rotoscaled_touchpos(x, y, FALSE);
             }
         }
@@ -1796,9 +1806,12 @@ static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
         gdk_window_get_pointer(w->window, &x, &y, &state);
 
         if(state & GDK_BUTTON1_MASK) {
+#ifdef HAVE_LIBAGG
             if (HudEditorMode) {
                 click = rotoscaled_hudedit(x, y, TRUE);
-            } else if (desmume_running()) {
+            } else
+#endif
+            if (desmume_running()) {
                 click = rotoscaled_touchpos(x, y, TRUE);
             }
         }
@@ -1808,7 +1821,9 @@ static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
 }
 static gboolean Stylus_Release(GtkWidget *w, GdkEventButton *e, gpointer data)
 {
+#ifdef HAVE_LIBAGG
     HudClickRelease(&Hud);
+#endif
     if(click) NDS_releaseTouch();
     click = FALSE;
     return TRUE;
@@ -2454,12 +2469,14 @@ gboolean EmuLoop(gpointer data)
         } else {
             for (i = 0; i < Frameskip; i++) {
                 NDS_SkipNextFrame();
+#ifdef HAVE_LIBAGG
                 gfx3d.frameCtrRaw++;
                 if(gfx3d.frameCtrRaw == 60) {
                     Hud.fps3d = gfx3d.frameCtr;
                     gfx3d.frameCtrRaw = 0;
                     gfx3d.frameCtr = 0;
                 }
+#endif
                 desmume_cycle();
                 skipped_frames++;
             }
@@ -2470,12 +2487,14 @@ gboolean EmuLoop(gpointer data)
         if (!autoframeskip) {
             for (i = 0; i < Frameskip; i++) {
                 NDS_SkipNextFrame();
+#ifdef HAVE_LIBAGG
                 gfx3d.frameCtrRaw++;
                 if(gfx3d.frameCtrRaw == 60) {
                     Hud.fps3d = gfx3d.frameCtr;
                     gfx3d.frameCtrRaw = 0;
                     gfx3d.frameCtr = 0;
                 }
+#endif
                 desmume_cycle();
                 skipped_frames++;
                 // Update next frame time
@@ -2495,12 +2514,14 @@ gboolean EmuLoop(gpointer data)
             for (Frameskip = 0; this_tick > next_frame_time && Frameskip < autoFrameskipMax; Frameskip++, this_tick = SDL_GetTicks()) {
                 // Aggressively skip frames to avoid delay
                 NDS_SkipNextFrame();
+#ifdef HAVE_LIBAGG
                 gfx3d.frameCtrRaw++;
                 if(gfx3d.frameCtrRaw == 60) {
                     Hud.fps3d = gfx3d.frameCtr;
                     gfx3d.frameCtrRaw = 0;
                     gfx3d.frameCtr = 0;
                 }
+#endif
                 desmume_cycle();
                 skipped_frames++;
                 // Update next frame time
