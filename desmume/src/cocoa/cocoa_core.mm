@@ -157,23 +157,23 @@ volatile bool execute = true;
 {
 	[self setCoreState:CORESTATE_PAUSE];
 	
+	[self removeAllOutputs];
+	[cdsOutputList release];
+	
+	[self setCdsController:nil];
+	[self setCdsFirmware:nil];
+	[self setCdsGPU:nil];
+	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	threadParam.exitThread = true;
 	pthread_cond_signal(&threadParam.condThreadExecute);
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	
 	pthread_join(coreThread, NULL);
-	coreThread = nil;
+	coreThread = NULL;
+	
 	pthread_mutex_destroy(&threadParam.mutexThreadExecute);
 	pthread_cond_destroy(&threadParam.condThreadExecute);
-	
-	self.cdsController = nil;
-	self.cdsFirmware = nil;
-	self.cdsGPU = nil;
-	
-	[self removeAllOutputs];
-	[cdsOutputList release];
-	
 	pthread_mutex_destroy(&threadParam.mutexOutputList);
 	pthread_mutex_destroy(&threadParam.mutexCoreExecute);
 	
@@ -1070,7 +1070,7 @@ static void* RunCoreThread(void *arg)
 		
 	} while (!param->exitThread);
 	
-	return nil;
+	return NULL;
 }
 
 static int CalculateFrameSkip(uint64_t timeBudgetMachAbsTime, uint64_t frameStartMachAbsTime)
