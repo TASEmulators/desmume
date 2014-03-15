@@ -19,6 +19,37 @@
 #include "videofilter.h"
 #include <string.h>
 
+
+// This function is called when running a filter in multithreaded mode.
+static void* RunVideoFilterTask(void *arg);
+
+// Attributes list of known video filters, indexed using VideoFilterTypeID.
+// Use VideoFilter::GetAttributesByID() to retrieve a filter's attributes.
+const VideoFilterAttributes VideoFilterAttributesList[] = {
+	{VideoFilterTypeID_None,			"None",				NULL,							1,	1,	0},
+	{VideoFilterTypeID_LQ2X,			"LQ2x",				&RenderLQ2X,					2,	1,	0},
+	{VideoFilterTypeID_LQ2XS,			"LQ2xS",			&RenderLQ2XS,					2,	1,	0},
+	{VideoFilterTypeID_HQ2X,			"HQ2x",				&RenderHQ2X,					2,	1,	0},
+	{VideoFilterTypeID_HQ2XS,			"HQ2xS",			&RenderHQ2XS,					2,	1,	0},
+	{VideoFilterTypeID_HQ4X,			"HQ4x",				&RenderHQ4X,					4,	1,	0},
+	{VideoFilterTypeID_2xSaI,			"2xSaI",			&Render2xSaI,					2,	1,	0},
+	{VideoFilterTypeID_Super2xSaI,		"Super 2xSaI",		&RenderSuper2xSaI,				2,	1,	0},
+	{VideoFilterTypeID_SuperEagle,		"Super Eagle",		&RenderSuperEagle,				2,	1,	0},
+	{VideoFilterTypeID_Scanline,		"Scanline",			&RenderScanline,				2,	1,	0},
+	{VideoFilterTypeID_Bilinear,		"Bilinear",			&RenderBilinear,				2,	1,	0},
+	{VideoFilterTypeID_Nearest2X,		"Nearest 2x",		&RenderNearest2X,				2,	1,	0},
+	{VideoFilterTypeID_Nearest1_5X,		"Nearest 1.5x",		&RenderNearest_1Point5x,		3,	2,	0},
+	{VideoFilterTypeID_NearestPlus1_5X,	"Nearest+ 1.5x",	&RenderNearestPlus_1Point5x,	3,	2,	0},
+	{VideoFilterTypeID_EPX,				"EPX",				&RenderEPX,						2,	1,	0},
+	{VideoFilterTypeID_EPXPlus,			"EPX+",				&RenderEPXPlus,					2,	1,	0},
+	{VideoFilterTypeID_EPX1_5X,			"EPX 1.5x",			&RenderEPX_1Point5x,			3,	2,	0},
+	{VideoFilterTypeID_EPXPlus1_5X,		"EPX+ 1.5x",		&RenderEPXPlus_1Point5x,		3,	2,	0},
+	{VideoFilterTypeID_HQ4XS,			"HQ4xS",			&RenderHQ4XS,					4,	1,	0},
+	{VideoFilterTypeID_2xBRZ,			"2xBRZ",			&Render2xBRZ,					2,	1,	0},
+	{VideoFilterTypeID_3xBRZ,			"3xBRZ",			&Render3xBRZ,					3,	1,	0},
+	{VideoFilterTypeID_4xBRZ,			"4xBRZ",			&Render4xBRZ,					4,	1,	0},
+	{VideoFilterTypeID_5xBRZ,			"5xBRZ",			&Render5xBRZ,					5,	1,	0} };
+
 // Parameters for Scanline filter
 int scanline_filter_a = 0;
 int scanline_filter_b = 2;

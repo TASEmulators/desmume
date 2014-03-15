@@ -82,31 +82,10 @@ typedef struct
 	size_t workingSurfaceCount;
 } VideoFilterAttributes;
 
-// Attributes list of known video filters, indexed using VideoFilterTypeID.
-const VideoFilterAttributes VideoFilterAttributesList[] = {
-	{VideoFilterTypeID_None,			"None",				NULL,							1,	1,	0},
-	{VideoFilterTypeID_LQ2X,			"LQ2x",				&RenderLQ2X,					2,	1,	0},
-	{VideoFilterTypeID_LQ2XS,			"LQ2xS",			&RenderLQ2XS,					2,	1,	0},
-	{VideoFilterTypeID_HQ2X,			"HQ2x",				&RenderHQ2X,					2,	1,	0},
-	{VideoFilterTypeID_HQ2XS,			"HQ2xS",			&RenderHQ2XS,					2,	1,	0},
-	{VideoFilterTypeID_HQ4X,			"HQ4x",				&RenderHQ4X,					4,	1,	0},
-	{VideoFilterTypeID_2xSaI,			"2xSaI",			&Render2xSaI,					2,	1,	0},
-	{VideoFilterTypeID_Super2xSaI,		"Super 2xSaI",		&RenderSuper2xSaI,				2,	1,	0},
-	{VideoFilterTypeID_SuperEagle,		"Super Eagle",		&RenderSuperEagle,				2,	1,	0},
-	{VideoFilterTypeID_Scanline,		"Scanline",			&RenderScanline,				2,	1,	0},
-	{VideoFilterTypeID_Bilinear,		"Bilinear",			&RenderBilinear,				2,	1,	0},
-	{VideoFilterTypeID_Nearest2X,		"Nearest 2x",		&RenderNearest2X,				2,	1,	0},
-	{VideoFilterTypeID_Nearest1_5X,		"Nearest 1.5x",		&RenderNearest_1Point5x,		3,	2,	0},
-	{VideoFilterTypeID_NearestPlus1_5X,	"Nearest+ 1.5x",	&RenderNearestPlus_1Point5x,	3,	2,	0},
-	{VideoFilterTypeID_EPX,				"EPX",				&RenderEPX,						2,	1,	0},
-	{VideoFilterTypeID_EPXPlus,			"EPX+",				&RenderEPXPlus,					2,	1,	0},
-	{VideoFilterTypeID_EPX1_5X,			"EPX 1.5x",			&RenderEPX_1Point5x,			3,	2,	0},
-	{VideoFilterTypeID_EPXPlus1_5X,		"EPX+ 1.5x",		&RenderEPXPlus_1Point5x,		3,	2,	0},
-	{VideoFilterTypeID_HQ4XS,			"HQ4xS",			&RenderHQ4XS,					4,	1,	0},
-	{VideoFilterTypeID_2xBRZ,			"2xBRZ",			&Render2xBRZ,					2,	1,	0},
-	{VideoFilterTypeID_3xBRZ,			"3xBRZ",			&Render3xBRZ,					3,	1,	0},
-	{VideoFilterTypeID_4xBRZ,			"4xBRZ",			&Render4xBRZ,					4,	1,	0},
-	{VideoFilterTypeID_5xBRZ,			"5xBRZ",			&Render5xBRZ,					5,	1,	0} };
+// Users should really be using VideoFilter::GetAttributesByID() to retrieve
+// a filter's attributes. However, extern this out just in case someone
+// wants to statically assign some attributes info at compile time.
+extern const VideoFilterAttributes VideoFilterAttributesList[];
 
 // VIDEO FILTER PARAMETER DATA TYPES
 enum VideoFilterParamType
@@ -215,8 +194,6 @@ public:
 	void SetFilterParameterui(VideoFilterParamID paramID, unsigned int value);
 	void SetFilterParameterf(VideoFilterParamID paramID, float value);
 };
-
-static void* RunVideoFilterTask(void *arg);
 
 void ThreadLockInit(ThreadLock *theLock);
 void ThreadLockDestroy(ThreadLock *theLock);
