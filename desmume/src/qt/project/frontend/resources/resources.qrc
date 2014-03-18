@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/images">
+        <file alias="open">images/open.png</file>
+        <file alias="pause">images/pause.png</file>
+        <file alias="DeSmuME-icon">DeSmuME.png</file>
+        <file alias="DeSmuME-icon-16">DeSmuME-16.png</file>
+        <file alias="DeSmuME-icon-32">DeSmuME-32.png</file>
+    </qresource>
+</RCC>

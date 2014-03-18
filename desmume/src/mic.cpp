@@ -18,7 +18,7 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef WIN32
+#if !defined(WIN32) || defined(DESMUME_QT)
 
 #include <stdlib.h>
 #include "mic.h"

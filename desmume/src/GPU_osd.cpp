@@ -552,7 +552,7 @@ void DrawHUD()
 		drawPad(Hud.GraphicalInputDisplay.x, Hud.GraphicalInputDisplay.y, 2.5);
 	}
 
-	#if defined(WIN32)
+	#if defined(WIN32) && !defined(DESMUME_QT)
 	if (CommonSettings.hud.ShowMicrophone) 
 	{
 		osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%03d [%07d]",MicDisplay, Hud.cpuloopIterationCount);
