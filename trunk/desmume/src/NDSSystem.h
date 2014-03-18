@@ -34,7 +34,7 @@
 
 #include <string>
 
-#if defined(HOST_WINDOWS)
+#if defined(HOST_WINDOWS) && !defined(DESMUME_QT)
 #include "pathsettings.h"
 #endif
 

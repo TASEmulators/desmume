@@ -28,6 +28,7 @@
 
 #ifdef HOST_WINDOWS
 	typedef unsigned __int32 uint32_t;
+	#include <winsock2.h>
 	#include <windows.h>
 	typedef CRITICAL_SECTION ThreadLock;
 	typedef HANDLE ThreadCond;

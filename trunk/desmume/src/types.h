@@ -24,7 +24,9 @@
 	#define HOST_WINDOWS
 	
 	//todo - everyone will want to support this eventually, i suppose
-	#include "config.h"
+	#ifndef DESMUME_QT
+		#include "config.h"
+	#endif
 
 #endif //_MSC_VER
 

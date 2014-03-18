@@ -32,7 +32,7 @@
 #endif
 
 //todo - everyone will want to support this eventually, i suppose
-#if defined(HOST_WINDOWS) || defined(DESMUME_COCOA)
+#if defined(HOST_WINDOWS) || defined(DESMUME_COCOA) || defined(DESMUME_QT)
 	#include "svnrev.h"
 #else
 	#ifndef SVN_REV
