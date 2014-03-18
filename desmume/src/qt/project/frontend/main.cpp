@@ -41,6 +41,7 @@ int main(int argc, char *argv[]) {
 
 	QObject::connect(desmume::qt::ds::video, &desmume::qt::Video::screenBufferUpdated, &w, &desmume::qt::MainWindow::screenBufferUpdate);
 	QObject::connect(&mainLoop, &desmume::qt::MainLoop::screenRedrawRequested, &w, &desmume::qt::MainWindow::screenRedraw);
+	QObject::connect(&mainLoop, &desmume::qt::MainLoop::fpsUpdated, &w, &desmume::qt::MainWindow::fpsUpdate);
 
 	return a.exec();
 }

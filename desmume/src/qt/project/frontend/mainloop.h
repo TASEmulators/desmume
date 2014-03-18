@@ -34,15 +34,21 @@ class MainLoop : public QObject {
 	bool mLoopInitialized;
 	int mFrameMod3;
 	qint64 mNextFrameTimeNs;
+	int mFpsCounter;
+	int mFps;
+	qint64 mNextFpsCountTime;
 	void loop();
+	void countFps(qint64 thisFrameTime);
 protected:
 	void timerEvent(QTimerEvent* event);
 public:
 	explicit MainLoop(QObject* parent = 0);
 	void kickStart();
+	int fps();
 
 signals:
 	void screenRedrawRequested(bool immediate);
+	void fpsUpdated(int fps);
 
 private slots:
 

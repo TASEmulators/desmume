@@ -36,6 +36,7 @@ namespace qt {
 MainWindow::MainWindow(QWidget *parent)
 		: QMainWindow(parent)
 		, ui(new Ui::MainWindow)
+		, mFpsLabel(NULL)
 {
 	ui->setupUi(this);
 	this->populateVideoFilterMenu();
@@ -52,7 +53,7 @@ void MainWindow::populateVideoFilterMenu() {
 	videoFilterActionGroup = new QActionGroup(this);
 	for (int i = 0; i < VideoFilterTypeIDCount; i++) {
 		const VideoFilterAttributes& filter = VideoFilterAttributesList[i];
-		QAction *act = new QAction(this);
+		QAction *act = new QAction(videoFilterActionGroup);
 		act->setObjectName(QStringLiteral("actionVideoFilter") + filter.typeString);
 		act->setCheckable(true);
 		act->setData(i);
@@ -62,7 +63,6 @@ void MainWindow::populateVideoFilterMenu() {
 		} else {
 			act->setText(filter.typeString);
 		}
-		videoFilterActionGroup->addAction(act);
 		ui->menuVideoFilter->addAction(act);
 	}
 	connect(videoFilterActionGroup, SIGNAL(triggered(QAction*)), this, SLOT(videoFilterActionGroup_triggered(QAction*)));
@@ -82,6 +82,16 @@ void MainWindow::screenRedraw(bool immediate) {
 		ui->screen->repaint();
 	} else {
 		ui->screen->update();
+	}
+}
+
+void MainWindow::fpsUpdate(int fps) {
+	QString fpsText = QStringLiteral("%1 fps").arg(fps);
+	if (mFpsLabel == NULL) {
+		mFpsLabel = new QLabel(fpsText, ui->statusBar);
+		ui->statusBar->addPermanentWidget(mFpsLabel);
+	} else {
+		mFpsLabel->setText(fpsText);
 	}
 }
 

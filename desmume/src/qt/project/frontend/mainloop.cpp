@@ -33,11 +33,18 @@ MainLoop::MainLoop(QObject *parent)
 	, mLoopInitialized(false)
 	, mFrameMod3(0)
 	, mNextFrameTimeNs(0)
+	, mFpsCounter(0)
+	, mFps(0)
+	, mNextFpsCountTime(0)
 {
 }
 
 void MainLoop::kickStart() {
 	mBasicTimer->start(100, this);
+}
+
+int MainLoop::fps() {
+	return mFps;
 }
 
 void MainLoop::timerEvent(QTimerEvent* event) {
@@ -52,6 +59,9 @@ void MainLoop::loop() {
 		mTime->start();
 		mNextFrameTimeNs = 0;
 		mFrameMod3 = 0;
+		mFpsCounter = 0;
+		mFps = 0;
+		mNextFpsCountTime = 1000;
 	}
 
 	// ---- Time keeping ----
@@ -86,6 +96,9 @@ void MainLoop::loop() {
 		mBasicTimer->start(0, this);
 	}
 
+	// Count the fps
+	countFps(mTime->elapsed());
+
 	//qDebug("Accumulative: %lld", mTime->elapsed());
 
 	// ---- Real action ----
@@ -102,6 +115,16 @@ void MainLoop::loop() {
 
 	// Don't redraw yet...
 	//this->screenRedrawRequested(false);
+}
+
+void MainLoop::countFps(qint64 thisFrameTime) {
+	mFpsCounter += 1;
+	if (thisFrameTime >= mNextFpsCountTime) {
+		mNextFpsCountTime = thisFrameTime + 1000;
+		mFps = mFpsCounter;
+		mFpsCounter = 0;
+		this->fpsUpdated(mFps);
+	}
 }
 
 } /* namespace qt */

@@ -25,6 +25,7 @@
 #include <QSize>
 #include <QAction>
 #include <QActionGroup>
+#include <QLabel>
 
 namespace desmume {
 namespace qt {
@@ -37,6 +38,7 @@ class MainWindow : public QMainWindow
 {
 	Q_OBJECT
 	QActionGroup* videoFilterActionGroup;
+	QLabel* mFpsLabel;
 	void populateVideoFilterMenu();
 protected:
 	void keyPressEvent(QKeyEvent *event);
@@ -48,17 +50,15 @@ public:
 public slots:
 	void screenBufferUpdate(unsigned int *buf, const QSize &size, qreal scale);
 	void screenRedraw(bool immediate);
+	void fpsUpdate(int fps);
 
 private slots:
 	void on_actionQuit_triggered();
 	void videoFilterActionGroup_triggered(QAction* action);
 	void on_actionConfigureControls_triggered();
 	void on_actionPause_toggled(bool checked);
-
 	void on_actionOpenROM_triggered();
-
 	void on_actionAboutQt_triggered();
-
 	void on_action_AboutDeSmuME_triggered();
 
 private:
