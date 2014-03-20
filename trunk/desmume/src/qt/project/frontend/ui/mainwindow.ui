@@ -72,9 +72,6 @@
     <addaction name="menuVideoFilter"/>
    </widget>
    <widget class="QMenu" name="menuConfig">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
     <property name="title">
      <string>&amp;Config</string>
     </property>

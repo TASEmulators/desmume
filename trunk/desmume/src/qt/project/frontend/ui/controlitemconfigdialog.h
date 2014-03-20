@@ -16,32 +16,33 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DESMUME_QT_KEYBOARDINPUT_H
-#define DESMUME_QT_KEYBOARDINPUT_H
+#ifndef DESMUME_QT_CONTROLITEMCONFIGDIALOG_H
+#define DESMUME_QT_CONTROLITEMCONFIGDIALOG_H
 
-#include "ds_input.h"
-#include <QString>
+#include <QDialog>
 
 namespace desmume {
 namespace qt {
 
-class KeyboardInput {
-	int mKeyAssignment[ds::KEY_COUNT];
-public:
-	KeyboardInput();
-	int getAssignedKey(ds::KeysEnum key) const;
-	bool isKeyAssigned(int keyboardKey) const;
-	void setAssignedKey(ds::KeysEnum key, int keyboardKey);
-	bool keyPress(int keyboardKey);
-	bool keyRelease(int keyboardKey);
-	void from(const KeyboardInput& other);
+namespace Ui {
+class ControlItemConfigDialog;
+}
 
-	static QString getKeyDisplayText(int key);
+class ControlItemConfigDialog : public QDialog {
+	Q_OBJECT
+	int mKey;
+protected:
+	void keyPressEvent(QKeyEvent* event);
+public:
+	explicit ControlItemConfigDialog(QWidget *parent = 0);
+	~ControlItemConfigDialog();
+	int key();
+
+private:
+	Ui::ControlItemConfigDialog *ui;
 };
 
-extern KeyboardInput keyboard;
 
 } /* namespace qt */
 } /* namespace desmume */
-
-#endif /* DESMUME_QT_KEYBOARDINPUT_H */
+#endif /* DESMUME_QT_CONTROLITEMCONFIGDIALOG_H */

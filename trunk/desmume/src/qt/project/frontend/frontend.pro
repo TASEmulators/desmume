@@ -74,6 +74,7 @@ SOURCES += main.cpp\
     ds.cpp \
     video.cpp \
     ui/controlconfigdialog.cpp \
+    ui/controlitemconfigdialog.cpp \
     ds_input.cpp \
     keyboardinput.cpp
 
@@ -84,6 +85,7 @@ HEADERS  += ui/mainwindow.h \
     ds.h \
     video.h \
     ui/controlconfigdialog.h \
+    ui/controlitemconfigdialog.h \
     keyboardinput.h \
     ds_input.h
 
@@ -91,7 +93,8 @@ RESOURCES += \
     resources/resources.qrc
 
 FORMS    += ui/mainwindow.ui \
-    ui/controlconfigdialog.ui
+    ui/controlconfigdialog.ui \
+    ui/controlitemconfigdialog.ui
 
 win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../core/release/ -ldesmume
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../core/debug/ -ldesmume

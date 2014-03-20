@@ -19,7 +19,10 @@
 #ifndef DESMUME_QT_CONTROLCONFIGDIALOG_H
 #define DESMUME_QT_CONTROLCONFIGDIALOG_H
 
+#include "keyboardinput.h"
+
 #include <QDialog>
+#include <QAbstractButton>
 
 namespace desmume {
 namespace qt {
@@ -30,15 +33,33 @@ class ControlConfigDialog;
 
 class ControlConfigDialog : public QDialog {
 	Q_OBJECT
-
+	KeyboardInput mKeyboard;
+	void updateButtonText();
 public:
-	explicit ControlConfigDialog(QWidget *parent = 0);
+	explicit ControlConfigDialog(QWidget* parent = 0);
 	~ControlConfigDialog();
 
-private:
-	Ui::ControlConfigDialog *ui;
-
 private slots:
+	void on_buttonControlUp_clicked();
+	void on_buttonControlDown_clicked();
+	void on_buttonControlLeft_clicked();
+	void on_buttonControlRight_clicked();
+	void on_buttonControlA_clicked();
+	void on_buttonControlB_clicked();
+	void on_buttonControlX_clicked();
+	void on_buttonControlY_clicked();
+	void on_buttonControlL_clicked();
+	void on_buttonControlR_clicked();
+	void on_buttonControlStart_clicked();
+	void on_buttonControlSelect_clicked();
+	void on_buttonControlLid_clicked();
+	void on_buttonControlDebug_clicked();
+	void on_buttonBox_accepted();
+	void on_buttonBox_rejected();
+	void on_buttonBox_clicked(QAbstractButton* button);
+
+private:
+	Ui::ControlConfigDialog* ui;
 };
 
 
