@@ -37,6 +37,15 @@ class OGLVideoOutput;
 	InputManager *inputManager;
 	OGLVideoOutput *oglv;
 	CGFloat _displayRotation;
+	BOOL canUseShaderBasedFilters;
+	
+	BOOL _useVerticalSync;
+	
+	OSSpinLock spinlockUseVerticalSync;
+	OSSpinLock spinlockVideoFiltersPreferGPU;
+	OSSpinLock spinlockOutputFilter;
+	OSSpinLock spinlockSourceDeposterize;
+	OSSpinLock spinlockPixelScaler;
 	
 	// OpenGL context
 	NSOpenGLContext *context;
@@ -44,6 +53,12 @@ class OGLVideoOutput;
 }
 
 @property (retain) InputManager *inputManager;
+@property (readonly) BOOL canUseShaderBasedFilters;
+@property (assign) BOOL useVerticalSync;
+@property (assign) BOOL videoFiltersPreferGPU;
+@property (assign) BOOL sourceDeposterize;
+@property (assign) NSInteger outputFilter;
+@property (assign) NSInteger pixelScaler;
 
 - (void) drawVideoFrame;
 - (NSPoint) dsPointFromEvent:(NSEvent *)theEvent;
@@ -75,13 +90,10 @@ class OGLVideoOutput;
 	NSSize _normalSize;
 	double _displayScale;
 	double _displayRotation;
-	BOOL _useBilinearOutput;
-	BOOL _useVerticalSync;
 	NSInteger _displayMode;
 	NSInteger _displayOrientation;
 	NSInteger _displayOrder;
 	double _displayGap;
-	NSInteger _videoFilterType;
 	NSInteger screenshotFileFormat;
 	
 	NSSize _minDisplayViewSize;
@@ -92,13 +104,10 @@ class OGLVideoOutput;
 	OSSpinLock spinlockNormalSize;
 	OSSpinLock spinlockScale;
 	OSSpinLock spinlockRotation;
-	OSSpinLock spinlockUseBilinearOutput;
-	OSSpinLock spinlockUseVerticalSync;
 	OSSpinLock spinlockDisplayMode;
 	OSSpinLock spinlockDisplayOrientation;
 	OSSpinLock spinlockDisplayOrder;
 	OSSpinLock spinlockDisplayGap;
-	OSSpinLock spinlockVideoFilterType;
 }
 
 @property (readonly) IBOutlet NSObject *dummyObject;
@@ -114,13 +123,14 @@ class OGLVideoOutput;
 @property (readonly) NSSize normalSize;
 @property (assign) double displayScale;
 @property (assign) double displayRotation;
-@property (assign) BOOL useBilinearOutput;
-@property (assign) BOOL useVerticalSync;
+@property (assign) BOOL videoFiltersPreferGPU;
+@property (assign) BOOL videoSourceDeposterize;
+@property (assign) NSInteger videoOutputFilter;
+@property (assign) NSInteger videoPixelScaler;
 @property (assign) NSInteger displayMode;
 @property (assign) NSInteger displayOrientation;
 @property (assign) NSInteger displayOrder;
 @property (assign) double displayGap;
-@property (assign) NSInteger videoFilterType;
 @property (assign) NSInteger screenshotFileFormat;
 @property (assign) BOOL isMinSizeNormal;
 @property (assign) BOOL isShowingStatusBar;
@@ -153,9 +163,9 @@ class OGLVideoOutput;
 - (IBAction) changeDisplayOrientation:(id)sender;
 - (IBAction) changeDisplayOrder:(id)sender;
 - (IBAction) changeDisplayGap:(id)sender;
-- (IBAction) toggleBilinearFilteredOutput:(id)sender;
-- (IBAction) toggleVerticalSync:(id)sender;
-- (IBAction) changeVideoFilter:(id)sender;
+- (IBAction) toggleVideoSourceDeposterize:(id)sender;
+- (IBAction) changeVideoOutputFilter:(id)sender;
+- (IBAction) changeVideoPixelScaler:(id)sender;
 
 - (IBAction) writeDefaultsDisplayRotation:(id)sender;
 - (IBAction) writeDefaultsDisplayGap:(id)sender;
