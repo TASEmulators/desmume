@@ -858,6 +858,10 @@
 			[self handleEmuFrameProcessed:[messageComponents objectAtIndex:0] attributes:[messageComponents objectAtIndex:1]];
 			break;
 			
+		case MESSAGE_REPROCESS_AND_REDRAW:
+			[self handleReprocessAndRedraw];
+			break;
+			
 		case MESSAGE_RESIZE_VIEW:
 			[self handleResizeView:[messageComponents objectAtIndex:0]];
 			break;
@@ -880,10 +884,6 @@
 			
 		case MESSAGE_CHANGE_DISPLAY_GAP:
 			[self handleChangeDisplayGap:[messageComponents objectAtIndex:0]];
-			break;
-			
-		case MESSAGE_CHANGE_VIDEO_FILTER:
-			[self handleChangeVideoFilter:[messageComponents objectAtIndex:0]];
 			break;
 			
 		default:
@@ -939,6 +939,11 @@
 	[(id<CocoaDSDisplayVideoDelegate>)delegate doRedraw];
 }
 
+- (void) handleReprocessAndRedraw
+{
+	[self handleEmuFrameProcessed:self.frameData attributes:self.frameAttributesData];
+}
+
 - (void) handleChangeDisplayOrientation:(NSData *)displayOrientationIdData
 {
 	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayOrientationChanged:)])
@@ -970,18 +975,6 @@
 	
 	const float gapScalar = *(float *)[displayGapScalarData bytes];
 	[(id<CocoaDSDisplayVideoDelegate>)delegate doDisplayGapChanged:gapScalar];
-}
-
-- (void) handleChangeVideoFilter:(NSData *)videoFilterTypeIdData
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doVideoFilterChanged:)])
-	{
-		return;
-	}
-	
-	const NSInteger theType = *(NSInteger *)[videoFilterTypeIdData bytes];
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doVideoFilterChanged:theType];
-	[self handleEmuFrameProcessed:self.frameData attributes:self.frameAttributesData];
 }
 
 @end

@@ -48,13 +48,14 @@
 @dynamic normalSize;
 @dynamic displayScale;
 @dynamic displayRotation;
-@dynamic useBilinearOutput;
-@dynamic useVerticalSync;
+@dynamic videoFiltersPreferGPU;
+@dynamic videoSourceDeposterize;
+@dynamic videoOutputFilter;
+@dynamic videoPixelScaler;
 @dynamic displayMode;
 @dynamic displayOrientation;
 @dynamic displayOrder;
 @dynamic displayGap;
-@dynamic videoFilterType;
 @synthesize screenshotFileFormat;
 @dynamic isMinSizeNormal;
 @dynamic isShowingStatusBar;
@@ -81,13 +82,10 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	spinlockNormalSize = OS_SPINLOCK_INIT;
 	spinlockScale = OS_SPINLOCK_INIT;
 	spinlockRotation = OS_SPINLOCK_INIT;
-	spinlockUseBilinearOutput = OS_SPINLOCK_INIT;
-	spinlockUseVerticalSync = OS_SPINLOCK_INIT;
 	spinlockDisplayMode = OS_SPINLOCK_INIT;
 	spinlockDisplayOrientation = OS_SPINLOCK_INIT;
 	spinlockDisplayOrder = OS_SPINLOCK_INIT;
 	spinlockDisplayGap = OS_SPINLOCK_INIT;
-	spinlockVideoFilterType = OS_SPINLOCK_INIT;
 	
 	screenshotFileFormat = NSTIFFFileType;
 	
@@ -222,42 +220,6 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	OSSpinLockUnlock(&spinlockRotation);
 	
 	return angleDegrees;
-}
-
-- (void) setUseBilinearOutput:(BOOL)theState
-{
-	OSSpinLockLock(&spinlockUseBilinearOutput);
-	_useBilinearOutput = theState;
-	OSSpinLockUnlock(&spinlockUseBilinearOutput);
-	
-	[[self view] doBilinearOutputChanged:theState];
-}
-
-- (BOOL) useBilinearOutput
-{
-	OSSpinLockLock(&spinlockUseBilinearOutput);
-	const BOOL theState = _useBilinearOutput;
-	OSSpinLockUnlock(&spinlockUseBilinearOutput);
-	
-	return theState;
-}
-
-- (void) setUseVerticalSync:(BOOL)theState
-{
-	OSSpinLockLock(&spinlockUseVerticalSync);
-	_useVerticalSync = theState;
-	OSSpinLockUnlock(&spinlockUseVerticalSync);
-	
-	[[self view] doVerticalSyncChanged:theState];
-}
-
-- (BOOL) useVerticalSync
-{
-	OSSpinLockLock(&spinlockUseVerticalSync);
-	const BOOL theState = _useVerticalSync;
-	OSSpinLockUnlock(&spinlockUseVerticalSync);
-	
-	return theState;
 }
 
 - (void) setDisplayMode:(NSInteger)displayModeID
@@ -416,22 +378,48 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	return gapScalar;
 }
 
-- (void) setVideoFilterType:(NSInteger)typeID
+- (void) setVideoFiltersPreferGPU:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockVideoFilterType);
-	_videoFilterType = typeID;
-	OSSpinLockUnlock(&spinlockVideoFilterType);
-	
-	[CocoaDSUtil messageSendOneWayWithInteger:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_CHANGE_VIDEO_FILTER integerValue:typeID];
+	[[self view] setVideoFiltersPreferGPU:theState];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
 }
 
-- (NSInteger) videoFilterType
+- (BOOL) videoFiltersPreferGPU
 {
-	OSSpinLockLock(&spinlockVideoFilterType);
-	const NSInteger typeID = _videoFilterType;
-	OSSpinLockUnlock(&spinlockVideoFilterType);
-	
-	return typeID;
+	return [[self view] videoFiltersPreferGPU];
+}
+
+- (void) setVideoSourceDeposterize:(BOOL)theState
+{
+	[[self view] setSourceDeposterize:theState];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
+}
+
+- (BOOL) videoSourceDeposterize
+{
+	return [[self view] sourceDeposterize];
+}
+
+- (void) setVideoOutputFilter:(NSInteger)filterID
+{
+	[[self view] setOutputFilter:filterID];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
+}
+
+- (NSInteger) videoOutputFilter
+{
+	return [[self view] outputFilter];
+}
+
+- (void) setVideoPixelScaler:(NSInteger)filterID
+{
+	[[self view] setPixelScaler:filterID];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
+}
+
+- (NSInteger) videoPixelScaler
+{
+	return [[self view] pixelScaler];
 }
 
 - (void) setIsMinSizeNormal:(BOOL)theState
@@ -533,9 +521,11 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	[self setDisplayOrder:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"]];
 	[self setDisplayScale:([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Size"] / 100.0)];
 	[self setDisplayRotation:[[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Rotation"]];
-	[self setVideoFilterType:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"]];
-	[self setUseBilinearOutput:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseBilinearOutput"]];
-	[self setUseVerticalSync:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseVerticalSync"]];
+	[self setVideoFiltersPreferGPU:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_FiltersPreferGPU"]];
+	[self setVideoSourceDeposterize:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_Deposterize"]];
+	[self setVideoOutputFilter:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"]];
+	[self setVideoPixelScaler:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"]];
+	[[self view] setUseVerticalSync:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseVerticalSync"]];
 }
 
 - (double) resizeWithTransform:(NSSize)normalBounds scalar:(double)scalar rotation:(double)angleDegrees
@@ -861,19 +851,19 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	[self setDisplayGap:(double)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0];
 }
 
-- (IBAction) toggleBilinearFilteredOutput:(id)sender
+- (IBAction) toggleVideoSourceDeposterize:(id)sender
 {
-	[self setUseBilinearOutput:([self useBilinearOutput]) ? NO : YES];
+	[self setVideoSourceDeposterize:![self videoSourceDeposterize]];
 }
 
-- (IBAction) toggleVerticalSync:(id)sender
+- (IBAction) changeVideoOutputFilter:(id)sender
 {
-	[self setUseVerticalSync:([self useVerticalSync]) ? NO : YES];
+	[self setVideoOutputFilter:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
-- (IBAction) changeVideoFilter:(id)sender
+- (IBAction) changeVideoPixelScaler:(id)sender
 {
-	[self setVideoFilterType:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[self setVideoPixelScaler:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) writeDefaultsDisplayRotation:(id)sender
@@ -893,9 +883,11 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 
 - (IBAction) writeDefaultsDisplayVideoSettings:(id)sender
 {
-	[[NSUserDefaults standardUserDefaults] setInteger:[self videoFilterType] forKey:@"DisplayView_VideoFilter"];
-	[[NSUserDefaults standardUserDefaults] setBool:[self useBilinearOutput] forKey:@"DisplayView_UseBilinearOutput"];
-	[[NSUserDefaults standardUserDefaults] setBool:[self useVerticalSync] forKey:@"DisplayView_UseVerticalSync"];
+	[[NSUserDefaults standardUserDefaults] setBool:[self videoFiltersPreferGPU] forKey:@"DisplayView_FiltersPreferGPU"];
+	[[NSUserDefaults standardUserDefaults] setBool:[self videoSourceDeposterize] forKey:@"DisplayView_Deposterize"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[self videoOutputFilter] forKey:@"DisplayView_OutputFilter"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[self videoPixelScaler] forKey:@"DisplayView_VideoFilter"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[self view] useVerticalSync] forKey:@"DisplayView_UseVerticalSync"];
 }
 
 #pragma mark NSUserInterfaceValidations Protocol
@@ -991,25 +983,42 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 			}
 		}
 	}
-	else if (theAction == @selector(toggleBilinearFilteredOutput:))
+	else if (theAction == @selector(changeVideoOutputFilter:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([self useBilinearOutput]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([self videoOutputFilter] == [theItem tag]) ? NSOnState : NSOffState];
+			enable = ([theItem tag] == OutputFilterTypeID_NearestNeighbor || [theItem tag] == OutputFilterTypeID_Bilinear) || [[self view] canUseShaderBasedFilters];
 		}
+	}
+	else if (theAction == @selector(toggleVideoSourceDeposterize:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem *)theItem setState:([self videoSourceDeposterize]) ? NSOnState : NSOffState];
+			enable = [[self view] canUseShaderBasedFilters];
+		}
+		
+		enable = [[self view] canUseShaderBasedFilters];
 	}
 	else if (theAction == @selector(toggleVerticalSync:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([self useVerticalSync]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] useVerticalSync]) ? NSOnState : NSOffState];
 		}
 	}
-	else if (theAction == @selector(changeVideoFilter:))
+	else if (theAction == @selector(changeVideoPixelScaler:))
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([self videoFilterType] == [theItem tag]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([self videoPixelScaler] == [theItem tag]) ? NSOnState : NSOffState];
+			
+			bool isSupportingCPU = false;
+			bool isSupportingShader = false;
+			OGLFilter::GetSupport([theItem tag], &isSupportingCPU, &isSupportingShader);
+			
+			enable = isSupportingCPU || (isSupportingShader && [[self view] canUseShaderBasedFilters]);
 		}
 	}
 	else if (theAction == @selector(toggleStatusBar:))
@@ -1078,10 +1087,6 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	// Setup default values per user preferences.
 	[self setupUserDefaults];
-	
-	// Set the video filter source size now since the proper size is needed on initialization.
-	// If we don't do this, new windows could draw incorrectly.
-	[CocoaDSUtil messageSendOneWayWithInteger:[cdsVideoOutput receivePort] msgID:MESSAGE_CHANGE_VIDEO_FILTER integerValue:[self videoFilterType]];
 	
 	// Add the video thread to the output list.
 	[emuControl addOutputToCore:cdsVideoOutput];
@@ -1257,6 +1262,12 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 @implementation DisplayView
 
 @synthesize inputManager;
+@synthesize canUseShaderBasedFilters;
+@dynamic useVerticalSync;
+@dynamic videoFiltersPreferGPU;
+@dynamic sourceDeposterize;
+@dynamic outputFilter;
+@dynamic pixelScaler;
 
 - (id)initWithFrame:(NSRect)frameRect
 {
@@ -1267,7 +1278,6 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	}
 	
 	inputManager = nil;
-	oglv = new OGLVideoOutput();
 	
 	// Initialize the OpenGL context
 	NSOpenGLPixelFormatAttribute attributes[] = {
@@ -1285,8 +1295,24 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->InitializeOGL();
+	oglv = new OGLVideoOutput();
+	oglv->InitLayers();
+	oglv->GetDisplayLayer()->SetFiltersPreferGPUOGL(true);
+	oglv->GetDisplayLayer()->SetSourceDeposterize(false);
+	oglv->GetDisplayLayer()->SetOutputFilterOGL(OutputFilterTypeID_Bilinear);
+	oglv->GetDisplayLayer()->SetPixelScalerOGL(VideoFilterTypeID_None);
 	CGLSetCurrentContext(prevContext);
+	
+	OGLDisplayLayer *displayLayer = oglv->GetDisplayLayer();
+	canUseShaderBasedFilters = (displayLayer->CanUseShaderBasedFilters()) ? YES : NO;
+	
+	_useVerticalSync = NO;
+	
+	spinlockUseVerticalSync = OS_SPINLOCK_INIT;
+	spinlockVideoFiltersPreferGPU = OS_SPINLOCK_INIT;
+	spinlockOutputFilter = OS_SPINLOCK_INIT;
+	spinlockSourceDeposterize = OS_SPINLOCK_INIT;
+	spinlockPixelScaler = OS_SPINLOCK_INIT;
 	
 	return self;
 }
@@ -1295,16 +1321,118 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 {
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->TerminateOGL();
+	delete oglv;
 	CGLSetCurrentContext(prevContext);
 	
 	[self setInputManager:nil];
 	[context clearDrawable];
 	[context release];
 	
-	delete oglv;
-	
 	[super dealloc];
+}
+
+#pragma mark Dynamic Property Methods
+
+- (void) setUseVerticalSync:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockUseVerticalSync);
+	_useVerticalSync = theState;
+	OSSpinLockUnlock(&spinlockUseVerticalSync);
+	
+	const GLint swapInt = (theState) ? 1 : 0;
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	CGLSetParameter(cglDisplayContext, kCGLCPSwapInterval, &swapInt);
+	CGLUnlockContext(cglDisplayContext);
+}
+
+- (BOOL) useVerticalSync
+{
+	OSSpinLockLock(&spinlockUseVerticalSync);
+	const BOOL theState = _useVerticalSync;
+	OSSpinLockUnlock(&spinlockUseVerticalSync);
+	
+	return theState;
+}
+
+- (void) setVideoFiltersPreferGPU:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockVideoFiltersPreferGPU);
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	oglv->GetDisplayLayer()->SetFiltersPreferGPUOGL((theState) ? true : false);
+	CGLUnlockContext(cglDisplayContext);
+	
+	OSSpinLockUnlock(&spinlockVideoFiltersPreferGPU);
+}
+
+- (BOOL) videoFiltersPreferGPU
+{
+	OSSpinLockLock(&spinlockVideoFiltersPreferGPU);
+	const BOOL theState = (oglv->GetDisplayLayer()->GetFiltersPreferGPU()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockVideoFiltersPreferGPU);
+	
+	return theState;
+}
+
+- (void) setSourceDeposterize:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockSourceDeposterize);
+	oglv->GetDisplayLayer()->SetSourceDeposterize((theState) ? true : false);
+	OSSpinLockUnlock(&spinlockSourceDeposterize);
+}
+
+- (BOOL) sourceDeposterize
+{
+	OSSpinLockLock(&spinlockSourceDeposterize);
+	const BOOL theState = (oglv->GetDisplayLayer()->GetSourceDeposterize()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockSourceDeposterize);
+	
+	return theState;
+}
+
+- (void) setOutputFilter:(NSInteger)filterID
+{
+	OSSpinLockLock(&spinlockOutputFilter);
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	oglv->GetDisplayLayer()->SetOutputFilterOGL(filterID);
+	CGLUnlockContext(cglDisplayContext);
+	
+	OSSpinLockUnlock(&spinlockOutputFilter);
+}
+
+- (NSInteger) outputFilter
+{
+	OSSpinLockLock(&spinlockOutputFilter);
+	const NSInteger filterID = oglv->GetDisplayLayer()->GetOutputFilter();
+	OSSpinLockUnlock(&spinlockOutputFilter);
+	
+	return filterID;
+}
+
+- (void) setPixelScaler:(NSInteger)filterID
+{
+	OSSpinLockLock(&spinlockPixelScaler);
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	oglv->GetDisplayLayer()->SetPixelScalerOGL(filterID);
+	CGLUnlockContext(cglDisplayContext);
+	
+	OSSpinLockUnlock(&spinlockPixelScaler);
+}
+
+- (NSInteger) pixelScaler
+{
+	OSSpinLockLock(&spinlockPixelScaler);
+	const NSInteger filterID = oglv->GetDisplayLayer()->GetPixelScaler();
+	OSSpinLockUnlock(&spinlockPixelScaler);
+	
+	return filterID;
 }
 
 #pragma mark Class Methods
@@ -1645,31 +1773,28 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 
 - (void)doProcessVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)frameDisplayMode width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight
 {
-	const bool didDisplayModeChange = (oglv->GetDisplayMode() != frameDisplayMode);
-	if (didDisplayModeChange)
+	OGLDisplayLayer *display = oglv->GetDisplayLayer();
+	
+	if (display->GetMode() != frameDisplayMode)
 	{
-		oglv->SetDisplayMode(frameDisplayMode);
+		display->SetMode(frameDisplayMode);
 	}
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	
-	if (didDisplayModeChange)
-	{
-		oglv->UploadVerticesOGL();
-	}
-	
-	oglv->PrerenderOGL(videoFrameData, frameWidth, frameHeight);
+	oglv->ProcessOGL((uint16_t *)videoFrameData, frameWidth, frameHeight);
 	[self drawVideoFrame];
-	
 	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void)doResizeView:(NSRect)rect
 {
+	const GLsizei w = (GLsizei)rect.size.width;
+	const GLsizei h = (GLsizei)rect.size.height;
+	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->SetViewportSizeOGL(rect.size.width, rect.size.height);
+	oglv->SetViewportSizeOGL(w, h);
 	[self drawVideoFrame];
 	CGLUnlockContext(cglDisplayContext);
 }
@@ -1677,13 +1802,10 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 - (void)doTransformView:(const DisplayOutputTransformData *)transformData
 {
 	_displayRotation = (GLfloat)transformData->rotation;
-	oglv->SetRotation((GLfloat)transformData->rotation);
 	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	oglv->UpdateDisplayTransformationOGL();
-	[self drawVideoFrame];
-	CGLUnlockContext(cglDisplayContext);
+	OGLDisplayLayer *display = oglv->GetDisplayLayer();
+	display->SetRotation((GLfloat)transformData->rotation);
+	[self doRedraw];
 }
 
 - (void)doRedraw
@@ -1696,95 +1818,42 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 
 - (void)doDisplayModeChanged:(NSInteger)displayModeID
 {
-	oglv->SetDisplayMode(displayModeID);
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	oglv->UpdateDisplayTransformationOGL();
-	oglv->UploadVerticesOGL();
-	[self drawVideoFrame];
-	CGLUnlockContext(cglDisplayContext);
-}
-
-- (void)doBilinearOutputChanged:(BOOL)useBilinear
-{
-	const bool c99_useBilinear = (useBilinear) ? true : false;
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	oglv->SetDisplayBilinearOGL(c99_useBilinear);
-	[self drawVideoFrame];
-	CGLUnlockContext(cglDisplayContext);
+	OGLDisplayLayer *display = oglv->GetDisplayLayer();
+	display->SetMode(displayModeID);
+	[self doRedraw];
 }
 
 - (void)doDisplayOrientationChanged:(NSInteger)displayOrientationID
 {
-	oglv->SetDisplayOrientation(displayOrientationID);
+	OGLDisplayLayer *display = oglv->GetDisplayLayer();
+	display->SetOrientation(displayOrientationID);
 	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	
-	oglv->UploadVerticesOGL();
-	
-	if (oglv->GetDisplayMode() == DS_DISPLAY_TYPE_DUAL)
+	if (display->GetMode() == DS_DISPLAY_TYPE_DUAL)
 	{
-		oglv->UpdateDisplayTransformationOGL();
-		[self drawVideoFrame];
+		[self doRedraw];
 	}
-	
-	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void)doDisplayOrderChanged:(NSInteger)displayOrderID
 {
-	oglv->SetDisplayOrder(displayOrderID);
+	OGLDisplayLayer *display = oglv->GetDisplayLayer();
+	display->SetOrder(displayOrderID);
 	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	
-	oglv->UploadVerticesOGL();
-	if (oglv->GetDisplayMode() == DS_DISPLAY_TYPE_DUAL)
+	if (display->GetMode() == DS_DISPLAY_TYPE_DUAL)
 	{
-		[self drawVideoFrame];
+		[self doRedraw];
 	}
-	
-	CGLUnlockContext(cglDisplayContext);
 }
 
 - (void)doDisplayGapChanged:(float)displayGapScalar
 {
-	oglv->SetGapScalar((GLfloat)displayGapScalar);
+	OGLDisplayLayer *display = oglv->GetDisplayLayer();
+	display->SetGapScalar((GLfloat)displayGapScalar);
 	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	
-	oglv->UploadVerticesOGL();
-	
-	if (oglv->GetDisplayMode() == DS_DISPLAY_TYPE_DUAL)
+	if (display->GetMode() == DS_DISPLAY_TYPE_DUAL)
 	{
-		oglv->UpdateDisplayTransformationOGL();
-		[self drawVideoFrame];
+		[self doRedraw];
 	}
-	
-	CGLUnlockContext(cglDisplayContext);
-}
-
-- (void)doVerticalSyncChanged:(BOOL)useVerticalSync
-{
-	const GLint swapInt = (useVerticalSync) ? 1 : 0;
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	CGLSetParameter(cglDisplayContext, kCGLCPSwapInterval, &swapInt);
-	CGLUnlockContext(cglDisplayContext);
-}
-
-- (void)doVideoFilterChanged:(NSInteger)videoFilterTypeID
-{
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	oglv->SetVideoFilterOGL((const VideoFilterTypeID)videoFilterTypeID);
-	CGLUnlockContext(cglDisplayContext);
 }
 
 @end

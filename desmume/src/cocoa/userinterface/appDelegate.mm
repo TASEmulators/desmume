@@ -606,9 +606,11 @@
 			const NSInteger displayOrientation		= [(NSNumber *)[windowProperties valueForKey:@"displayOrientation"] integerValue];
 			const NSInteger displayOrder			= [(NSNumber *)[windowProperties valueForKey:@"displayOrder"] integerValue];
 			const double displayGap					= [(NSNumber *)[windowProperties valueForKey:@"displayGap"] doubleValue];
-			const NSInteger videoFilterType			= [(NSNumber *)[windowProperties valueForKey:@"videoFilterType"] integerValue];
+			const BOOL videoFiltersPreferGPU		= [(NSNumber *)[windowProperties valueForKey:@"videoFiltersPreferGPU"] boolValue];
+			const BOOL videoSourceDeposterize		= [(NSNumber *)[windowProperties valueForKey:@"videoSourceDeposterize"] boolValue];
+			const NSInteger videoPixelScaler		= [(NSNumber *)[windowProperties valueForKey:@"videoFilterType"] integerValue];
+			const NSInteger videoOutputFilter		= [(NSNumber *)[windowProperties valueForKey:@"videoOutputFilter"] integerValue];
 			const NSInteger screenshotFileFormat	= [(NSNumber *)[windowProperties valueForKey:@"screenshotFileFormat"] integerValue];
-			const BOOL useBilinearOutput			= [(NSNumber *)[windowProperties valueForKey:@"useBilinearOutput"] boolValue];
 			const BOOL useVerticalSync				= [(NSNumber *)[windowProperties valueForKey:@"useVerticalSync"] boolValue];
 			const BOOL isMinSizeNormal				= [(NSNumber *)[windowProperties valueForKey:@"isMinSizeNormal"] boolValue];
 			const BOOL isShowingStatusBar			= [(NSNumber *)[windowProperties valueForKey:@"isShowingStatusBar"] boolValue];
@@ -625,15 +627,17 @@
 			
 			[windowController setIsMinSizeNormal:isMinSizeNormal];
 			[windowController setIsShowingStatusBar:isShowingStatusBar];
-			[windowController setVideoFilterType:videoFilterType];
+			[windowController setVideoFiltersPreferGPU:videoFiltersPreferGPU];
+			[windowController setVideoSourceDeposterize:videoSourceDeposterize];
+			[windowController setVideoPixelScaler:videoPixelScaler];
+			[windowController setVideoOutputFilter:videoOutputFilter];
 			[windowController setDisplayMode:displayMode];
 			[windowController setDisplayRotation:displayRotation];
 			[windowController setDisplayOrientation:displayOrientation];
 			[windowController setDisplayOrder:displayOrder];
 			[windowController setDisplayGap:displayGap];
 			[windowController setScreenshotFileFormat:screenshotFileFormat];
-			[windowController setUseBilinearOutput:useBilinearOutput];
-			[windowController setUseVerticalSync:useVerticalSync];
+			[[windowController view] setUseVerticalSync:useVerticalSync];
 			[windowController setDisplayScale:displayScale];
 			
 			[[windowController masterWindow] setFrameOrigin:NSMakePoint(frameX, frameY)];
@@ -702,10 +706,12 @@
 											  [NSNumber numberWithInteger:[windowController displayOrientation]], @"displayOrientation",
 											  [NSNumber numberWithInteger:[windowController displayOrder]], @"displayOrder",
 											  [NSNumber numberWithDouble:[windowController displayGap]], @"displayGap",
-											  [NSNumber numberWithInteger:[windowController videoFilterType]], @"videoFilterType",
+											  [NSNumber numberWithBool:[windowController videoFiltersPreferGPU]], @"videoFiltersPreferGPU",
+											  [NSNumber numberWithInteger:[windowController videoPixelScaler]], @"videoFilterType",
 											  [NSNumber numberWithInteger:[windowController screenshotFileFormat]], @"screenshotFileFormat",
-											  [NSNumber numberWithBool:[windowController useBilinearOutput]], @"useBilinearOutput",
-											  [NSNumber numberWithBool:[windowController useVerticalSync]], @"useVerticalSync",
+											  [NSNumber numberWithInteger:[windowController videoOutputFilter]], @"videoOutputFilter",
+											  [NSNumber numberWithBool:[windowController videoSourceDeposterize]], @"videoSourceDeposterize",
+											  [NSNumber numberWithBool:[[windowController view] useVerticalSync]], @"useVerticalSync",
 											  [NSNumber numberWithBool:[windowController isMinSizeNormal]], @"isMinSizeNormal",
 											  [NSNumber numberWithBool:[windowController isShowingStatusBar]], @"isShowingStatusBar",
 											  [NSNumber numberWithBool:isInFullScreenMode], @"isInFullScreenMode",
