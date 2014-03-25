@@ -2200,10 +2200,20 @@ template<bool SKIP> static void GPU_RenderLine_DispCapture(u16 l)
 							case 0:			// Capture screen (BG + OBJ + 3D)
 								{
 									//INFO("Capture screen (BG + OBJ + 3D)\n");
-
-									u8 *src;
-									src = (u8*)(gpu->tempScanline);
+									u8 *src = (u8*)(gpu->tempScanline);
+#ifdef LOCAL_BE
+									static u16 swapSrc[256];
+									const size_t swapSrcSize = (gpu->dispCapCnt.capx == DISPCAPCNT::_128) ? 128 : 256;
+									
+									for(size_t i = 0; i < swapSrcSize; i++)
+									{
+										swapSrc[i] = LE_TO_LOCAL_16(((u16 *)src)[i]);
+									}
+									
+									CAPCOPY((u8 *)swapSrc,cap_dst,true);
+#else
 									CAPCOPY(src,cap_dst,true);
+#endif
 								}
 							break;
 							case 1:			// Capture 3D
@@ -2571,7 +2581,14 @@ void GPU_RenderLine(NDS_Screen * screen, u16 l, bool skip)
 			{
 				u8 * dst = GPU_screen + (screen->offset + l) * 512;
 				u8 * src = gpu->VRAMaddr + (l*512);
+#ifdef LOCAL_BE
+				for(size_t i = 0; i < 256; i++)
+				{
+					((u16 *)dst)[i] = LE_TO_LOCAL_16(((u16 *)src)[i]);
+				}
+#else
 				memcpy (dst, src, 512);
+#endif
 			}
 			break;
 		case 3: // Display memory FIFO
