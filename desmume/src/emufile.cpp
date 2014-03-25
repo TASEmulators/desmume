@@ -95,20 +95,8 @@ void EMUFILE::write64le(u64* val)
 
 void EMUFILE::write64le(u64 val)
 {
-#ifdef LOCAL_BE
-	u8 s[8];
-	s[0]=(u8)val;
-	s[1]=(u8)(val>>8);
-	s[2]=(u8)(val>>16);
-	s[3]=(u8)(val>>24);
-	s[4]=(u8)(val>>32);
-	s[5]=(u8)(val>>40);
-	s[6]=(u8)(val>>48);
-	s[7]=(u8)(val>>56);
-	fwrite((char*)&s,8);
-#else
+	val = LOCAL_TO_LE_64(val);
 	fwrite(&val,8);
-#endif
 }
 
 
@@ -117,11 +105,9 @@ size_t EMUFILE::read64le(u64 *Bufo)
 	u64 buf;
 	if(fread((char*)&buf,8) != 8)
 		return 0;
-#ifndef LOCAL_BE
-	*Bufo=buf;
-#else
+	
 	*Bufo = LE_TO_LOCAL_64(buf);
-#endif
+	
 	return 1;
 }
 
@@ -139,16 +125,8 @@ void EMUFILE::write32le(u32* val)
 
 void EMUFILE::write32le(u32 val)
 {
-#ifdef LOCAL_BE
-	u8 s[4];
-	s[0]=(u8)val;
-	s[1]=(u8)(val>>8);
-	s[2]=(u8)(val>>16);
-	s[3]=(u8)(val>>24);
-	fwrite(s,4);
-#else
+	val = LOCAL_TO_LE_32(val);
 	fwrite(&val,4);
-#endif
 }
 
 size_t EMUFILE::read32le(s32* Bufo) { return read32le((u32*)Bufo); }
@@ -158,11 +136,9 @@ size_t EMUFILE::read32le(u32* Bufo)
 	u32 buf;
 	if(fread(&buf,4)<4)
 		return 0;
-#ifndef LOCAL_BE
-	*(u32*)Bufo=buf;
-#else
-	*(u32*)Bufo=((buf&0xFF)<<24)|((buf&0xFF00)<<8)|((buf&0xFF0000)>>8)|((buf&0xFF000000)>>24);
-#endif
+	
+	*Bufo = LE_TO_LOCAL_32(buf);
+	
 	return 1;
 }
 
@@ -180,14 +156,8 @@ void EMUFILE::write16le(u16* val)
 
 void EMUFILE::write16le(u16 val)
 {
-#ifdef LOCAL_BE
-	u8 s[2];
-	s[0]=(u8)val;
-	s[1]=(u8)(val>>8);
-	fwrite(s,2);
-#else
+	val = LOCAL_TO_LE_16(val);
 	fwrite(&val,2);
-#endif
 }
 
 size_t EMUFILE::read16le(s16* Bufo) { return read16le((u16*)Bufo); }
@@ -197,11 +167,9 @@ size_t EMUFILE::read16le(u16* Bufo)
 	u32 buf;
 	if(fread(&buf,2)<2)
 		return 0;
-#ifndef LOCAL_BE
-	*(u16*)Bufo=buf;
-#else
+	
 	*Bufo = LE_TO_LOCAL_16(buf);
-#endif
+	
 	return 1;
 }
 

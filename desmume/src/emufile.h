@@ -172,7 +172,7 @@ public:
 		return &(*vec)[0];
 	}
 
-	std::vector<u8>* get_vec() { return vec; };
+	std::vector<u8>* get_vec() const { return vec; };
 
 	virtual FILE *get_fp() { return NULL; }
 
