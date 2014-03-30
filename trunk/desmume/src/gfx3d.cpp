@@ -98,135 +98,108 @@ static const u8 gfx3d_commandTypes[] = {
 class GXF_Hardware
 {
 public:
+
 	GXF_Hardware()
 	{
 		reset();
 	}
-	void reset() {
-		countdown = 0;
-		commandCursor = 4;
-		for(int i=0;i<4;i++) {
-			commandsPending[i].command = 0;
-			commandsPending[i].countdown = 0;
-		}
-		size = 0;
+
+	void reset()
+	{
+		shiftCommand = 0;
+		paramCounter = 0;
 	}
 
 	void receive(u32 val) 
 	{
-		if (size > 0)
+NEXTCOMMAND:
+		
+		u8 currCommand = shiftCommand & 0xFF;
+		u8 currCommandType = gfx3d_commandTypes[currCommand];
+	
+		if(currCommandType == GFX_INVALID_COMMAND)
 		{
-			GFX_FIFOsend(front().command, val);
-			front().countdown--;
-			if (front().countdown == 0) 
-			{
-				size--; 
-				if (size == 0) return;
-				dequeue();
-
-				while (gfx3d_commandTypes[front().command] == GFX_NOARG_COMMAND)
-				{
-					GFX_FIFOsend(front().command, 0);
-					size--; 
-					if (size == 0) break;
-					dequeue();
-				}
-			}
+			//if current command is invalid, receive a packed command
+			shiftCommand = val;
+		}
+		else if(currCommandType == GFX_UNDEFINED_COMMAND)
+		{
+			//not completely sure what to do with these. lets just pretend they didnt happen: skip the command
+			shiftCommand >>= 8;
 		}
 		else
 		{
-			if (val == 0) return;	// nop
-
-			const u8 commands[] = { val&0xFF, (val>>8)&0xFF, (val>>16)&0xFF, (val>>24)&0xFF };
-			const u8 commandTypes[] = { gfx3d_commandTypes[commands[0]], gfx3d_commandTypes[commands[1]], gfx3d_commandTypes[commands[2]], gfx3d_commandTypes[commands[3]] };
-
-			commandCursor = 0;
-			size = 0;
-
-			// A "command without parameters" is one of the four following commands:
-			// - PushMatrix
-			// - LoadIdentity
-			// - End
-			// - Commands undefined within the region between 0x10 and 0xFF
-
-			for (u8 i = 0; i < 4; i++)
+			//if we are currently in a 0-param command, send it, and immediately apply this param to the next command
+			if(currCommandType == GFX_NOARG_COMMAND)
 			{
-				if (commandTypes[i] == GFX_INVALID_COMMAND)
-				{
-					//printf("gfx3D: invalid command (%02X)\n", commands[i]);
-					continue;
-				}
-
-				if (commandTypes[i] == GFX_UNDEFINED_COMMAND)
-				{
-					//printf("gfx3D: undefined command (%02X)\n", commands[i]);
-					continue;
-				}
-				commandsPending[size].command = commands[i];
-				commandsPending[size].countdown = commandTypes[i];
-				//printf("%i: CMD %02X size %i\n", i, commands[i], commandsPending[size].countdown);
-				if ((commandsPending[size].countdown == 0) && (size == 0)) // cmd 0x11, 0x15, 0x41 - no params
-				{
-					GFX_FIFOsend(commands[i], 0);
-
-					while ((i < 4) && commands[i+1] != 0 && gfx3d_commandTypes[commands[i+1]] == GFX_NOARG_COMMAND)
-						GFX_FIFOsend(commands[++i], 0);
-				}
-				else
-					size++;
+				GFX_FIFOsend(currCommand, 0);
+				shiftCommand >>= 8;
+				goto NEXTCOMMAND;
 			}
+
+			//otherwise, this is a parameter for the existing command (or a dummy value for a 0-param command)
+			GFX_FIFOsend(currCommand, val);
+			paramCounter++;
+
+			//if the current command's parameters are completed, shift down to the next command
+			if(paramCounter >= currCommandType)
+			{
+				paramCounter = 0;
+				shiftCommand >>= 8;
+			}
+
+			//note that we don't go to NEXTCOMMAND here.
+			//this means that if a 0-param command follows a N-param command, it won't get submitted until a dummy value is sent to strobe this process again
 		}
+
 	}
 
-	struct CommandItem {
-		u8 command, countdown;
-	} commandsPending[4];
-
-	u32 commandCursor;
-	u8 countdown;
-
 private:
-	void dequeue() { commandCursor++; }
-	CommandItem& front() { return commandsPending[commandCursor]; }
-	u32 size;
+
+	u32 shiftCommand;
+	u32 paramCounter;
+
 public:
 
 	void savestate(EMUFILE *f)
 	{
-		//TODO - next time we invalidate savestates, simplify this format.
-		write32le(1,f); //version
-		write32le(size,f);
-		write32le(commandCursor,f);
-		for(u32 i=0;i<4;i++) write8le(commandsPending[i].command,f);
-		for(u32 i=0;i<4;i++) write8le(commandsPending[i].countdown,f);
-		write8le(countdown,f);
+		write32le(2,f); //version
+		write32le(shiftCommand,f);
+		write32le(paramCounter,f);
 	}
 	
 	bool loadstate(EMUFILE *f)
 	{
 		u32 version;
 		if(read32le(&version,f) != 1) return false;
-		if(version > 1) return false;
+
+		u8 junk8;
+		u32 junk32;
 
 		if (version == 0)
 		{
-			read32le(&size,f);
-			commandCursor = 4-size;
-			for(u32 i=commandCursor;i<4;i++) read8le(&commandsPending[i-commandCursor].command,f);
-			read32le(&size,f);
-			size = 4-commandCursor;
-			for(u32 i=commandCursor;i<4;i++) read8le(&commandsPending[i-commandCursor].countdown,f);
+			//untested
+			read32le(&junk32,f);
+			int commandCursor = 4-junk32;
+			for(u32 i=commandCursor;i<4;i++) read8le(&junk8,f);
+			read32le(&junk32,f);
+			for(u32 i=commandCursor;i<4;i++) read8le(&junk8,f);
+			read8le(&junk8,f);
 		}
-		else
-		if (version == 1)
+		else if (version == 1)
 		{
-			read32le(&size,f);
-			read32le(&commandCursor,f);
-			for(u32 i=0;i<4;i++) read8le(&commandsPending[i].command,f);
-			for(u32 i=0;i<4;i++) read8le(&commandsPending[i].countdown,f);
+			//untested
+			read32le(&junk32,f);
+			read32le(&junk32,f);
+			for(u32 i=0;i<4;i++) read8le(&junk8,f);
+			for(u32 i=0;i<4;i++) read8le(&junk8,f);
+			read8le(&junk8,f);
 		}
-
-		read8le(&countdown,f);
+		else if(version == 2)
+		{
+			read32le(&shiftCommand,f);
+			read32le(&paramCounter,f);
+		}
 
 		return true;
 	}
