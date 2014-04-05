@@ -3335,6 +3335,7 @@ int _main()
 	CommonSettings.GFX3D_Fog = GetPrivateProfileBool("3D", "EnableFog", 1, IniName);
 	CommonSettings.GFX3D_Texture = GetPrivateProfileBool("3D", "EnableTexture", 1, IniName);
 	CommonSettings.GFX3D_LineHack = GetPrivateProfileBool("3D", "EnableLineHack", 1, IniName);
+	CommonSettings.GFX3D_Renderer_Multisample = GetPrivateProfileBool("3D", "EnableAntiAliasing", 0, IniName);
 	CommonSettings.GFX3D_TXTHack = GetPrivateProfileBool("3D", "EnableTXTHack", 0, IniName); //default is off.
 	Change3DCoreWithFallbackAndSave(cur3DCore);
 
@@ -6321,6 +6322,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			CheckDlgButton(hw,IDC_3DSETTINGS_FOG,CommonSettings.GFX3D_Fog);
 			CheckDlgButton(hw,IDC_3DSETTINGS_TEXTURE,CommonSettings.GFX3D_Texture);
 			CheckDlgButton(hw,IDC_3DSETTINGS_LINEHACK, CommonSettings.GFX3D_LineHack);
+			CheckDlgButton(hw,IDC_3DSETTINGS_ANTIALIASING, CommonSettings.GFX3D_Renderer_Multisample);
 			CheckDlgButton(hw,IDC_TXTHACK, CommonSettings.GFX3D_TXTHack);
 			SetDlgItemInt (hw,IDC_ZELDA_SHADOW_DEPTH_HACK,CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack,FALSE);
 			//CheckDlgButton(hw,IDC_ALTERNATEFLUSH,CommonSettings.gfx3d_flushMode);
@@ -6344,6 +6346,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					CommonSettings.GFX3D_Fog = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_FOG);
 					CommonSettings.GFX3D_Texture = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_TEXTURE);
 					CommonSettings.GFX3D_LineHack = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_LINEHACK);
+					CommonSettings.GFX3D_Renderer_Multisample = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_ANTIALIASING);
 					CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack  = GetDlgItemInt(hw,IDC_ZELDA_SHADOW_DEPTH_HACK,NULL,FALSE);
 					CommonSettings.GFX3D_TXTHack = IsDlgCheckboxChecked(hw,IDC_TXTHACK);
 
@@ -6354,6 +6357,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					WritePrivateProfileBool("3D", "EnableTexture", CommonSettings.GFX3D_Texture, IniName);
 					WritePrivateProfileInt ("3D", "ZeldaShadowDepthHack", CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack, IniName);
 					WritePrivateProfileInt ("3D", "EnableLineHack", CommonSettings.GFX3D_LineHack, IniName);
+					WritePrivateProfileInt ("3D", "EnableAntiAliasing", CommonSettings.GFX3D_Renderer_Multisample, IniName);
 					WritePrivateProfileInt ("3D", "EnableTXTHack", CommonSettings.GFX3D_TXTHack, IniName);
 					//WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
 				}

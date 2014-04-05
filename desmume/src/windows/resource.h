@@ -1056,6 +1056,8 @@
 #define IDC_AUTOLOADLUA                 64001
 #define IDC_TXTHACK                     64002
 #define ID_LABEL_TXTHACK1               64003
+#define IDC_3DSETTINGS_ANTIALIASING     64004
+#define IDC_3DSETTINGS_ANTIALIASING1    64005
 
 // Next default values for new objects
 // 
