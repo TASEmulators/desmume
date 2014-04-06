@@ -112,46 +112,73 @@ public:
 
 	void receive(u32 val) 
 	{
-NEXTCOMMAND:
-		
+		//so, it seems as if the dummy values and restrictions on the highest-order command in the packed command set 
+		//is solely about some unknown internal timing quirk, and not about the logical behaviour of the state machine.
+		//it's possible that writing some values too quickly can result in the gxfifo not being ready. 
+		//this would be especially troublesome when they're getting DMA'd nonstop with no delay.
+		//so, since the timing is not emulated rigorously here, and only the logic, we shouldn't depend on or expect the dummy values.
+		//indeed, some games aren't issuing them, and will break if they are expected.
+		//however, since the dummy values seem to be 0x00000000 always, theyre benign to the state machine, even if the HW timing doesnt require them.
+		//the actual logical rule seem to be:
+		//1. commands with no arguments are executed as soon as possible; when the packed command is first received, or immediately after the preceding N-arg command.
+		//1a. for example, a 0-arg command following an N-arg command doesn't require a dummy value
+		//1b. for example, two 0-arg commands constituting a packed command will execute immediately when the packed command is received.
+		//
+		//as an example, DQ6 entity rendering will issue:
+		//0x00151110
+		//0x00000000
+		//0x00171012 (next packed command)
+		//this 0 param is meant for the 0x10 mtxMode command. dummy args aren't supplied for the 0x11 or 0x15.
+		//but other times, the game will issue dummy parameters.
+		//Either this is because the rules are more complex (do only certain 0-arg commands require dummies?),
+		//or the game made a mistake in applying the rules, which didnt seem to irritate the hypothetical HW timing quirk.
+		//yet, another time, it will issue the dummy:
+		//0x00004123 (XYZ vertex)
+		//0x0c000400 (arg1)
+		//0x00000000 (arg2)
+		//0x00000000 (dummy for 0x41)
+		//0x00000017 (next packed command)
+
 		u8 currCommand = shiftCommand & 0xFF;
 		u8 currCommandType = gfx3d_commandTypes[currCommand];
-	
+
+		//if the current command is invalid, receive a new packed command.
 		if(currCommandType == GFX_INVALID_COMMAND)
 		{
-			//if current command is invalid, receive a packed command
 			shiftCommand = val;
 		}
-		else if(currCommandType == GFX_UNDEFINED_COMMAND)
+
+		//finish receiving args
+		if(paramCounter>0)
 		{
-			//not completely sure what to do with these. lets just pretend they didnt happen: skip the command
-			shiftCommand >>= 8;
+			GFX_FIFOsend(currCommand, val);
+			paramCounter--;
+			if(paramCounter <= 0)
+				shiftCommand >>= 8;
+			else return;
 		}
-		else
+
+		//analyze current packed commands
+		for(;;)
 		{
-			//if we are currently in a 0-param command, send it, and immediately apply this param to the next command
-			if(currCommandType == GFX_NOARG_COMMAND)
+			currCommand = shiftCommand & 0xFF;
+			currCommandType = gfx3d_commandTypes[currCommand];
+
+			if(currCommandType == GFX_UNDEFINED_COMMAND)
+				shiftCommand >>= 8;
+			else if(currCommandType == GFX_NOARG_COMMAND)
 			{
 				GFX_FIFOsend(currCommand, 0);
 				shiftCommand >>= 8;
-				goto NEXTCOMMAND;
 			}
-
-			//otherwise, this is a parameter for the existing command (or a dummy value for a 0-param command)
-			GFX_FIFOsend(currCommand, val);
-			paramCounter++;
-
-			//if the current command's parameters are completed, shift down to the next command
-			if(paramCounter >= currCommandType)
+			else if(currCommandType == GFX_INVALID_COMMAND)
+				break;
+			else 
 			{
-				paramCounter = 0;
-				shiftCommand >>= 8;
+				paramCounter = currCommandType;
+				break;
 			}
-
-			//note that we don't go to NEXTCOMMAND here.
-			//this means that if a 0-param command follows a N-param command, it won't get submitted until a dummy value is sent to strobe this process again
 		}
-
 	}
 
 private:
