@@ -36,9 +36,10 @@ typedef struct
 
 typedef struct
 {
-	NSInteger displayModeID;
-	size_t width;			// Measured in pixels
-	size_t height;			// Measured in pixels
+	int32_t videoSourceID;
+	int32_t displayModeID;
+	uint16_t width;			// Measured in pixels
+	uint16_t height;		// Measured in pixels
 } DisplaySrcPixelAttributes;
 
 @interface CocoaDSOutput : CocoaDSThread
@@ -51,6 +52,7 @@ typedef struct
 	
 	pthread_mutex_t *mutexProducer;
 	pthread_mutex_t *mutexConsume;
+	pthread_rwlock_t *rwProducer;
 }
 
 @property (assign) BOOL isStateChanged;
@@ -59,6 +61,7 @@ typedef struct
 @property (retain) NSData *frameAttributesData;
 @property (readonly) NSMutableDictionary *property;
 @property (assign) pthread_mutex_t *mutexProducer;
+@property (assign) pthread_rwlock_t *rwProducer;
 @property (readonly) pthread_mutex_t *mutexConsume;
 
 - (void) doCoreEmuFrame;
@@ -158,7 +161,8 @@ typedef struct
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData;
 - (void) handleCopyToPasteboard;
 
-- (void) fillVideoFrameWithColor:(UInt16)colorValue;
+- (NSData *) videoFrameUsingRGBA5551:(uint16_t)colorValue pixelCount:(size_t)pixCount;
+- (void) sendVideoFrameOfRGBA5551:(uint16_t)colorValue;
 
 - (NSImage *) image;
 - (NSBitmapImageRep *) bitmapImageRep;

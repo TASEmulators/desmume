@@ -76,6 +76,7 @@ volatile bool execute = true;
 @synthesize slot1R4URL;
 
 @dynamic mutexCoreExecute;
+@dynamic rwCoreExecute;
 
 - (id)init
 {
@@ -143,6 +144,7 @@ volatile bool execute = true;
 	pthread_mutex_init(&threadParam.mutexOutputList, NULL);
 	pthread_mutex_init(&threadParam.mutexThreadExecute, NULL);
 	pthread_cond_init(&threadParam.condThreadExecute, NULL);
+	pthread_rwlock_init(&threadParam.rwCoreExecute, NULL);
 	pthread_create(&coreThread, NULL, &RunCoreThread, &threadParam);
 	
 	[cdsGPU setMutexProducer:self.mutexCoreExecute];
@@ -176,6 +178,7 @@ volatile bool execute = true;
 	pthread_cond_destroy(&threadParam.condThreadExecute);
 	pthread_mutex_destroy(&threadParam.mutexOutputList);
 	pthread_mutex_destroy(&threadParam.mutexCoreExecute);
+	pthread_rwlock_destroy(&threadParam.rwCoreExecute);
 	
 	NDS_DeInit();
 	
@@ -596,6 +599,11 @@ volatile bool execute = true;
 	return &threadParam.mutexCoreExecute;
 }
 
+- (pthread_rwlock_t *) rwCoreExecute
+{
+	return &threadParam.rwCoreExecute;
+}
+
 - (void) setEjectCardFlag
 {
 	if (nds.cardEjected)
@@ -778,22 +786,23 @@ volatile bool execute = true;
 - (void) addOutput:(CocoaDSOutput *)theOutput
 {
 	pthread_mutex_lock(&threadParam.mutexOutputList);
-	theOutput.mutexProducer = self.mutexCoreExecute;
-	[self.cdsOutputList addObject:theOutput];
+	[theOutput setMutexProducer:[self mutexCoreExecute]];
+	[theOutput setRwProducer:[self rwCoreExecute]];
+	[[self cdsOutputList] addObject:theOutput];
 	pthread_mutex_unlock(&threadParam.mutexOutputList);
 }
 
 - (void) removeOutput:(CocoaDSOutput *)theOutput
 {
 	pthread_mutex_lock(&threadParam.mutexOutputList);
-	[self.cdsOutputList removeObject:theOutput];
+	[[self cdsOutputList] removeObject:theOutput];
 	pthread_mutex_unlock(&threadParam.mutexOutputList);
 }
 
 - (void) removeAllOutputs
 {
 	pthread_mutex_lock(&threadParam.mutexOutputList);
-	[self.cdsOutputList removeAllObjects];
+	[[self cdsOutputList] removeAllObjects];
 	pthread_mutex_unlock(&threadParam.mutexOutputList);
 }
 
@@ -947,7 +956,11 @@ static void* RunCoreThread(void *arg)
 		
 		// Execute the frame and increment the frame counter.
 		pthread_mutex_lock(&param->mutexCoreExecute);
+		
+		pthread_rwlock_wrlock(&param->rwCoreExecute);
 		NDS_exec<false>();
+		pthread_rwlock_unlock(&param->rwCoreExecute);
+		
 		frameNum = currFrameCounter;
 		pthread_mutex_unlock(&param->mutexCoreExecute);
 		
@@ -984,11 +997,13 @@ static void* RunCoreThread(void *arg)
 			}
 				
 			case CORESTATE_FRAMEADVANCE:
+			{
 				for(CocoaDSOutput *cdsOutput in cdsOutputList)
 				{
 					[cdsOutput doCoreEmuFrame];
 				}
 				break;
+			}
 				
 			case CORESTATE_FRAMEJUMP:
 			{

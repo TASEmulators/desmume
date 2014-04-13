@@ -14,6 +14,8 @@
 	<real>1</real>
 	<key>DisplayView_Deposterize</key>
 	<false/>
+	<key>DisplayView_FiltersPreferGPU</key>
+	<true/>
 	<key>DisplayView_Mode</key>
 	<integer>2</integer>
 	<key>DisplayView_OutputFilter</key>
