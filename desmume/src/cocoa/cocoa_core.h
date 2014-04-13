@@ -43,6 +43,7 @@ typedef struct
 	pthread_mutex_t mutexOutputList;
 	pthread_mutex_t mutexThreadExecute;
 	pthread_cond_t condThreadExecute;
+	pthread_rwlock_t rwCoreExecute;
 } CoreThreadParam;
 
 @interface CocoaDSCore : NSObject
@@ -122,6 +123,7 @@ typedef struct
 @property (retain) NSURL *slot1R4URL;
 
 @property (readonly) pthread_mutex_t *mutexCoreExecute;
+@property (readonly) pthread_rwlock_t *rwCoreExecute;
 
 - (BOOL) ejectCardFlag;
 - (void) setEjectCardFlag;

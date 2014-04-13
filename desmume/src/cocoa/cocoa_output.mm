@@ -40,6 +40,7 @@
 @synthesize property;
 @synthesize mutexProducer;
 @synthesize mutexConsume;
+@synthesize rwProducer;
 
 - (id)init
 {
@@ -598,34 +599,24 @@
 
 - (void) doCoreEmuFrame
 {
-	NSData *gpuData = nil;
 	NSInteger displayModeID = [self displayMode];
 	NSSize displayFrameSize = [self frameSize];
 	
-	// Here, we copy the raw GPU data from the emulation core.
-	// 
-	// The core data contains the GPU pixels from both the main and touch screens. So
-	// depending on the display type, we copy only the pixels from the respective screen.
-	if (displayModeID == DS_DISPLAY_TYPE_MAIN)
-	{
-		gpuData = [[NSData alloc] initWithBytes:GPU_screen length:GPU_SCREEN_SIZE_BYTES];
-	}
-	else if(displayModeID == DS_DISPLAY_TYPE_TOUCH)
-	{
-		gpuData = [[NSData alloc] initWithBytes:(GPU_screen + GPU_SCREEN_SIZE_BYTES) length:GPU_SCREEN_SIZE_BYTES];
-	}
-	else if(displayModeID == DS_DISPLAY_TYPE_DUAL)
-	{
-		gpuData = [[NSData alloc] initWithBytes:GPU_screen length:GPU_SCREEN_SIZE_BYTES * 2];
-	}
+	// We will be ignoring the actual video data here since we will be pulling the video data
+	// from the consumer thread instead.
+	NSData *gpuData = [[NSData alloc] init];
 	
-	DisplaySrcPixelAttributes attr = {displayModeID, (size_t)displayFrameSize.width, (size_t)displayFrameSize.height};
+	DisplaySrcPixelAttributes attr;
+	attr.videoSourceID = VIDEO_SOURCE_EMULATOR;
+	attr.displayModeID = (int32_t)displayModeID;
+	attr.width = (uint16_t)displayFrameSize.width;
+	attr.height = (uint16_t)displayFrameSize.height;
+	
 	NSData *attributesData = [[NSData alloc] initWithBytes:&attr length:sizeof(DisplaySrcPixelAttributes)];
 	
 	NSArray *messageComponents = [[NSArray alloc] initWithObjects:gpuData, attributesData, nil];
 	[CocoaDSUtil messageSendOneWayWithMessageComponents:self.receivePort msgID:MESSAGE_EMU_FRAME_PROCESSED array:messageComponents];
 	
-	// Now that we've finished sending the GPU data, release the local copy.
 	[gpuData release];
 	[attributesData release];
 	[messageComponents release];
@@ -687,12 +678,12 @@
 
 - (void) handleSetViewToBlack
 {
-	[self fillVideoFrameWithColor:0x8000];
+	[self sendVideoFrameOfRGBA5551:0x8000];
 }
 
 - (void) handleSetViewToWhite
 {
-	[self fillVideoFrameWithColor:0xFFFF];
+	[self sendVideoFrameOfRGBA5551:0xFFFF];
 }
 
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData
@@ -726,30 +717,52 @@
 	[pboard setData:[screenshot TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0f] forType:NSTIFFPboardType];
 }
 
-- (void) fillVideoFrameWithColor:(UInt16)colorValue
+- (NSData *) videoFrameUsingRGBA5551:(uint16_t)colorValue pixelCount:(size_t)pixCount
 {
-	const NSInteger displayModeID = [self displayMode];
-	const NSSize displayFrameSize = [self frameSize];
-	const size_t numberBytes = (displayModeID == DS_DISPLAY_TYPE_DUAL) ? GPU_SCREEN_SIZE_BYTES * 2 : GPU_SCREEN_SIZE_BYTES;
-	
-	UInt16 *gpuBytes = (UInt16 *)malloc(numberBytes);
+	NSData *gpuData = nil;
+	const size_t bufSize = pixCount * sizeof(uint16_t);
+	uint16_t *gpuBytes = (uint16_t *)malloc(bufSize);
 	if (gpuBytes == NULL)
 	{
-		return;
+		return gpuData;
 	}
 	
-	const UInt16 colorValuePattern[] = {colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue};
-	memset_pattern16(gpuBytes, colorValuePattern, numberBytes);
-	NSData *gpuData = [[NSData alloc] initWithBytes:gpuBytes length:numberBytes];
+	if (pixCount % 16 == 0)
+	{
+		const uint16_t colorValuePattern[] = {colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue};
+		memset_pattern16(gpuBytes, colorValuePattern, bufSize);
+	}
+	else
+	{
+		memset(gpuBytes, colorValue, bufSize);
+	}
+	
+	
+	gpuData = [NSData dataWithBytes:gpuBytes length:bufSize];
 	
 	free(gpuBytes);
 	gpuBytes = nil;
 	
-	DisplaySrcPixelAttributes attr = {displayModeID, (size_t)displayFrameSize.width, (size_t)displayFrameSize.height};
-	NSData *attributesData = [[[NSData alloc] initWithBytes:&attr length:sizeof(DisplaySrcPixelAttributes)] autorelease];
+	return gpuData;
+}
+
+- (void) sendVideoFrameOfRGBA5551:(uint16_t)colorValue
+{
+	const NSInteger displayModeID = [self displayMode];
+	const NSSize displayFrameSize = [self frameSize];
+	const size_t pixCount = (displayModeID == DS_DISPLAY_TYPE_DUAL) ? GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT * 2 : GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT;
 	
-	[self handleEmuFrameProcessed:gpuData attributes:attributesData];
-	[gpuData release];
+	NSData *videoData = [self videoFrameUsingRGBA5551:colorValue pixelCount:pixCount];
+	
+	DisplaySrcPixelAttributes attr;
+	attr.videoSourceID = VIDEO_SOURCE_INTERNAL;
+	attr.displayModeID = (int32_t)displayModeID;
+	attr.width = (uint16_t)displayFrameSize.width;
+	attr.height = (uint16_t)displayFrameSize.height;
+	
+	NSData *attributesData = [NSData dataWithBytes:&attr length:sizeof(DisplaySrcPixelAttributes)];
+	
+	[self handleEmuFrameProcessed:videoData attributes:attributesData];
 }
 
 - (NSImage *) image
@@ -899,13 +912,53 @@
 		return;
 	}
 	
-	const DisplaySrcPixelAttributes attr = *(DisplaySrcPixelAttributes *)[attributesData bytes];
+	NSData *newVideoFrame = mainData;
+	DisplaySrcPixelAttributes attr = *(DisplaySrcPixelAttributes *)[attributesData bytes];
 	const NSInteger frameDisplayMode = attr.displayModeID;
+	const NSInteger frameSource = attr.videoSourceID;
 	const NSInteger frameWidth = attr.width;
 	const NSInteger frameHeight = attr.height;
 	
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doProcessVideoFrame:[mainData bytes] displayMode:frameDisplayMode width:frameWidth height:frameHeight];
-	[super handleEmuFrameProcessed:mainData attributes:attributesData];
+	if (frameSource == VIDEO_SOURCE_EMULATOR)
+	{
+		// Note that we simply received the attributes of the video data, not the actual
+		// video data itself. So from here, we need to pull the video data from the
+		// emulator and copy it to this thread.
+		//
+		// The video data contains the pixels from both the main and touch screens. So
+		// depending on the display mode, we copy only the pixels from the respective
+		// screen.
+		
+		pthread_rwlock_rdlock([self rwProducer]);
+		
+		switch (frameDisplayMode)
+		{
+			case DS_DISPLAY_TYPE_MAIN:
+				newVideoFrame = [NSData dataWithBytes:GPU_screen length:GPU_SCREEN_SIZE_BYTES];
+				break;
+				
+			case DS_DISPLAY_TYPE_TOUCH:
+				newVideoFrame = [NSData dataWithBytes:(GPU_screen + GPU_SCREEN_SIZE_BYTES) length:GPU_SCREEN_SIZE_BYTES];
+				break;
+				
+			case DS_DISPLAY_TYPE_DUAL:
+				newVideoFrame = [NSData dataWithBytes:GPU_screen length:GPU_SCREEN_SIZE_BYTES*2];
+				break;
+				
+			default:
+				break;
+		}
+		
+		pthread_rwlock_unlock([self rwProducer]);
+	}
+	
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doProcessVideoFrame:[newVideoFrame bytes] displayMode:frameDisplayMode width:frameWidth height:frameHeight];
+	
+	// If we need to use our saved frame data, make sure that we don't pull from the
+	// emulation thread again.
+	attr.videoSourceID = VIDEO_SOURCE_INTERNAL;
+	NSData *savedAttributesData = [NSData dataWithBytes:&attr length:sizeof(DisplaySrcPixelAttributes)];
+	[super handleEmuFrameProcessed:newVideoFrame attributes:savedAttributesData];
 }
 
 - (void) handleResizeView:(NSData *)rectData
