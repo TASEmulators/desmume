@@ -37,7 +37,6 @@ typedef struct
 
 static OGLVersion _OGLDriverVersion = {0, 0, 0};
 static OpenGLRenderer *_OGLRenderer = NULL;
-static bool isIntel965 = false;
 
 // Lookup Tables
 CACHE_ALIGN GLfloat material_8bit_to_float[256] = {0};
@@ -331,17 +330,15 @@ static const char *fragmentShader_100 = {"\
 			discard; \n\
 		} \n\
 		\n\
-		#ifdef WANT_DEPTHLOGIC \n\
 		if (oglWBuffer == 1) \n\
 		{ \n\
-			// TODO \n\
-			gl_FragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
+			/* The w component is in 1.12 format, normalize it to [-1;+1] */ \
+			gl_FragDepth = (vtxPosition.w / 4096.0) * 0.5 + 0.5; \n\
 		} \n\
 		else \n\
 		{ \n\
 			gl_FragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
 		} \n\
-		#endif //WANT_DEPTHLOGIC \n\
 		\n\
 		gl_FragColor = fragColor; \n\
 	} \n\
@@ -516,8 +513,15 @@ static char OGLInit(void)
 	const char *oglVendorString = (const char *)glGetString(GL_VENDOR);
 	const char *oglRendererString = (const char *)glGetString(GL_RENDERER);
 
-	if(!strcmp(oglVendorString,"Intel") && strstr(oglRendererString,"965"))
-		isIntel965 = true;
+	// Writing to gl_FragDepth causes the driver to fail miserably on systems equipped 
+	// with a Intel G965 graphic card. Warn the user and fail gracefully.
+	// http://forums.desmume.org/viewtopic.php?id=9286
+	if(!strcmp(oglVendorString,"Intel") && strstr(oglRendererString,"965")) 
+	{
+		INFO("Incompatible graphic card detected. Disabling OpenGL support.\n");
+		result = 0;
+		return result;
+	}
 	
 	// Check the driver's OpenGL version
 	OGLGetDriverVersion(oglVersionString, &_OGLDriverVersion.major, &_OGLDriverVersion.minor, &_OGLDriverVersion.revision);
@@ -1088,12 +1092,6 @@ Render3DError OpenGLRenderer_1_2::LoadShaderPrograms(std::string *outVertexShade
 {
 	outVertexShaderProgram->clear();
 	outFragmentShaderProgram->clear();
-	
-	//not only does this hardware not work, it flat-out freezes the system.
-	//the problem is due to writing gl_FragDepth (it seems theres no way to successfully use it)
-	//so, we disable that feature. it still works pretty well.
-	if(isIntel965)
-		*outFragmentShaderProgram = std::string("#define WANT_DEPTHLOGIC\n");
 	
 	*outVertexShaderProgram += std::string(vertexShader_100);
 	*outFragmentShaderProgram += std::string(fragmentShader_100);
