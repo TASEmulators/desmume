@@ -129,8 +129,8 @@ const char *fragmentShader = {"\
 		\n\
 		if (oglWBuffer == 1) \n\
 		{ \n\
-			// TODO \n\
-			flagDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
+			/* The w component is in 1.12 format, normalize it to [-1;+1] */ \
+			flagDepth = (vtxPosition.w / 4096.0) * 0.5 + 0.5; \n\
 		} \n\
 		else \n\
 		{ \n\
