@@ -41,7 +41,6 @@ libdesmume_a_SOURCES = \
 	matrix.cpp matrix.h \
 	gfx3d.cpp gfx3d.h \
 	thumb_instructions.cpp types.h \
-	shaders.h \
 	movie.cpp movie.h \
 	PACKED.h PACKED_END.h \
 	utils/advanscene.cpp utils/advanscene.h \

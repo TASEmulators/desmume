@@ -124,7 +124,6 @@ static const char *fragmentShader_150 = {"\
 	{ \n\
 		vec4 texColor = vec4(1.0, 1.0, 1.0, 1.0); \n\
 		vec4 fragColor; \n\
-		float fragDepth; \n\
 		\n\
 		if(hasTexture) \n\
 		{ \n\
@@ -184,16 +183,15 @@ static const char *fragmentShader_150 = {"\
 		\n\
 		if (oglWBuffer == 1) \n\
 		{ \n\
-			// TODO \n\
-			fragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
+			/* The w component is in 1.12 format, normalize it to [-1;+1] */ \
+			gl_FragDepth = (vtxPosition.w / 4096.0) * 0.5 + 0.5; \n\
 		} \n\
 		else \n\
 		{ \n\
-			fragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
+			gl_FragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
 		} \n\
 		\n\
 		outFragColor = fragColor; \n\
-		gl_FragDepth = fragDepth; \n\
 	} \n\
 "};
 
