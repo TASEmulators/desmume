@@ -22,14 +22,18 @@
 #include <stdio.h>
 #include <X11/Xlib.h>
 #include <GL/glx.h>
+#include <GL/glxext.h>
 #include "../OGLRender.h"
 
 static bool glx_beginOpenGL(void) { return 1; }
 static void glx_endOpenGL(void) { }
 static bool glx_init(void) { return true; }
+static int xerror_handler(Display *dpy, XErrorEvent *ev) { return 0; }
 
 static GLXContext ctx;
 static GLXPbuffer pbuf;
+
+typedef GLXContext (*wtf)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 
 int deinit_glx_3Demu(void)
 {
@@ -111,9 +115,31 @@ int init_glx_3Demu(void)
     // The first should match exactly, otherwise is the least wrong one
     pbuf = glXCreatePbuffer(dpy, cfg[0], (int *)&pbuf_attr);
 
-    XFree(cfg);
+    // Dynamic linking is a pain, sigh
+    OGLEXT(PFNGLXCREATECONTEXTATTRIBSARBPROC, glXCreateContextAttribsARB);
+    INITOGLEXT(PFNGLXCREATECONTEXTATTRIBSARBPROC, glXCreateContextAttribsARB);
 
-    ctx = glXCreateContext(dpy, vis, NULL, true);
+    // Try to get a 3.2 core profile context
+    if (glXCreateContextAttribsARB) {
+        const int ctx_attr[] = {
+            GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+            GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+            GLX_CONTEXT_MINOR_VERSION_ARB, 2,
+            None
+        };
+        // This silly dance is needed because if Xorg can't acquire the context
+        // we asked for it will throw an error, which is caught by GTK X error
+        // handler and made fatal. The show must go on.
+        int (*old_handler)(Display*, XErrorEvent*) = XSetErrorHandler(&xerror_handler);
+        ctx = glXCreateContextAttribsARB(dpy, cfg[0], 0, true, ctx_attr);
+        XSetErrorHandler(old_handler);
+    } 
+    
+    // Something went wrong, try with a standard context
+    if (!ctx)
+        ctx = glXCreateContext(dpy, vis, NULL, true);
+
+    XFree(cfg);
 
     if (!ctx)
       return false;

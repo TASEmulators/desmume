@@ -173,7 +173,7 @@ libdesmume_a_SOURCES += \
 endif
 
 if HAVE_GL
-libdesmume_a_SOURCES += OGLRender.cpp
+libdesmume_a_SOURCES += OGLRender.cpp OGLRender_3_2.cpp
 endif
 
 if HAVE_OPENAL
