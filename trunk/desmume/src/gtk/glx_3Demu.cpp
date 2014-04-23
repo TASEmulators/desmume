@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <X11/Xlib.h>
 #include <GL/glx.h>
-#include <GL/glxext.h>
 #include "../OGLRender.h"
 
 static bool glx_beginOpenGL(void) { return 1; }
