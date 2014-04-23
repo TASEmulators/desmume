@@ -16,7 +16,7 @@
 */
 
 #ifndef __SLOT2_H__
-#define __SLOT_H__
+#define __SLOT2_H__
 
 #include "common.h"
 #include "types.h"
