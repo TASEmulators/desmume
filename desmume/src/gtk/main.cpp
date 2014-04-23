@@ -70,6 +70,7 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include "OGLRender.h"
+#include "OGLRender_3_2.h"
 #include "osmesa_3Demu.h"
 #include "glx_3Demu.h"
 #endif
@@ -593,10 +594,9 @@ NULL
 
 GPU3DInterface *core3DList[] = {
   &gpu3DNull,
-  &gpu3DRasterize
+  &gpu3DRasterize,
 #if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
-  ,
-  &gpu3Dgl
+  &gpu3Dgl,
 #endif
 };
 
@@ -3194,6 +3194,9 @@ common_gtk_main( class configured_features *my_config)
         if (action)
             gtk_toggle_action_set_active((GtkToggleAction *)action, FALSE);
     }
+
+    OGLLoadEntryPoints_3_2_Func = OGLLoadEntryPoints_3_2;
+    OGLCreateRenderer_3_2_Func = OGLCreateRenderer_3_2;
 
     //Set the 3D emulation to use
     unsigned core = my_config->engine_3d;

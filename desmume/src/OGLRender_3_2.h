@@ -39,8 +39,8 @@
 	#define EXTERNOGLEXT(procPtr, func)
 #else
 	#include <GL/gl.h>
-	#include <GL/glcorearb.h>
 	#include <GL/glx.h>
+	#include "utils/glcorearb.h"
 
 	#define OGLEXT(procPtr, func)		procPtr func = NULL;
 	#define INITOGLEXT(procPtr, func)	func = (procPtr)glXGetProcAddress((const GLubyte *) #func);
