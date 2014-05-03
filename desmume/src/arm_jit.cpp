@@ -298,7 +298,7 @@ struct PROFILER_COUNTER_INFO
 
 struct JIT_PROFILER
 {
-	JIT_PROFILER::JIT_PROFILER()
+	JIT_PROFILER()
 	{
 		memset(&arm_count[0], 0, sizeof(arm_count));
 		memset(&thumb_count[0], 0, sizeof(thumb_count));
@@ -310,8 +310,8 @@ struct JIT_PROFILER
 
 static GpVar bb_profiler;
 
-#define profiler_counter_arm(opcode)   qword_ptr(bb_profiler, offsetof(JIT_PROFILER, arm_count[INSTRUCTION_INDEX(opcode)]))
-#define profiler_counter_thumb(opcode) qword_ptr(bb_profiler, offsetof(JIT_PROFILER, thumb_count[opcode>>6]))
+#define profiler_counter_arm(opcode)   qword_ptr(bb_profiler, offsetof(JIT_PROFILER, arm_count) + (INSTRUCTION_INDEX(opcode)*sizeof(u64)))
+#define profiler_counter_thumb(opcode) qword_ptr(bb_profiler, offsetof(JIT_PROFILER, thumb_count) + ((opcode>>6)*sizeof(u64)))
 
 #if (PROFILER_JIT_LEVEL > 1)
 struct PROFILER_ENTRY
@@ -4246,9 +4246,7 @@ void arm_jit_reset(bool enable, bool suppress_msg)
 {
 #if LOG_JIT
 	c.setLogger(&logger);
-#ifdef _WINDOWS
-	freopen("\\desmume_jit.log", "w", stderr);
-#endif
+	freopen("desmume_jit.log", "w", stderr);
 #endif
 #ifdef HAVE_STATIC_CODE_BUFFER
 	scratchptr = scratchpad;
@@ -4382,11 +4380,11 @@ void arm_jit_close()
 		std::qsort(thumb_info, last[1], sizeof(PROFILER_COUNTER_INFO), (int (*)(const void *, const void *))pcmp);
 
 		char buf[MAX_PATH] = {0};
-		sprintf(buf, "\\desmume_jit%c_counter.profiler", proc==0?'9':'7');
+		sprintf(buf, "desmume_jit%c_counter.profiler", proc==0?'9':'7');
 		FILE *fp = fopen(buf, "w");
 		if (fp)
 		{
-			if (!gameInfo.isHomebrew)
+			if (!gameInfo.isHomebrew())
 			{
 				fprintf(fp, "Name:   %s\n", gameInfo.ROMname);
 				fprintf(fp, "Serial: %s\n", gameInfo.ROMserial);
@@ -4418,7 +4416,7 @@ void arm_jit_close()
 		delete [] thumb_info; thumb_info = NULL;
 
 #if (PROFILER_JIT_LEVEL > 1)
-		sprintf(buf, "\\desmume_jit%c_entry.profiler", proc==0?'9':'7');
+		sprintf(buf, "desmume_jit%c_entry.profiler", proc==0?'9':'7');
 		fp = fopen(buf, "w");
 		if (fp)
 		{
@@ -4434,7 +4432,7 @@ void arm_jit_close()
 				memcpy(&tmp[count++], &profiler_entry[proc][i], sizeof(PROFILER_ENTRY));
 			}
 			std::qsort(tmp, count, sizeof(PROFILER_ENTRY), (int (*)(const void *, const void *))pcmp_entry);
-			if (!gameInfo.isHomebrew)
+			if (!gameInfo.isHomebrew())
 			{
 				fprintf(fp, "Name:   %s\n", gameInfo.ROMname);
 				fprintf(fp, "Serial: %s\n", gameInfo.ROMserial);
