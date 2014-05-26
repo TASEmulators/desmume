@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2009 CrazyMax
-	Copyright (C) 2009-2013 DeSmuME team
+	Copyright (C) 2009-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -44,9 +44,7 @@ private:
 	EMUFILE* fROM;
 	EMUFILE* fSRAM;
 	u32		romSize;
-	u32		currentROMPos;
 	u32		sramSize;
-	u32		currentSRAMPos;
 	u32		saveType;
 
 	struct 
@@ -63,12 +61,8 @@ private:
 	{
 		if (!fROM) return 0xFFFFFFFF;
 	
-		if (currentROMPos != pos)
-			fROM->fseek(pos, SEEK_SET);
-
 		u32 data = 0xFFFFFFFF;
 		u32 readed = fROM->fread(&data, size);
-		currentROMPos = (pos + readed);
 		return data;
 	}
 
@@ -77,14 +71,11 @@ private:
 		if (!fSRAM)
 			return 0xFFFFFFFF;
 			
-		if (currentSRAMPos != pos)
-				fSRAM->fseek(pos, SEEK_SET);
+		fSRAM->fseek(pos, SEEK_SET);
 
 		u32 data = 0xFFFFFFFF;
 		u32 readed = fSRAM->fread(&data, size);
-		currentSRAMPos = (pos + readed);
 		return data;
-		return 0xFFFFFFFF;
 	}
 
 	void writeSRAM(const u32 pos, const u8 *data, u32 size) 
@@ -92,40 +83,59 @@ private:
 		if (!fSRAM)
 			return;
 
-		if (currentSRAMPos != pos)
-			fSRAM->fseek(pos, SEEK_SET);
+		fSRAM->fseek(pos, SEEK_SET);
 
 		u32 writed = size;
-		fSRAM->fwrite(&data, size);
-		currentSRAMPos = (pos + writed);
+		fSRAM->fwrite(data, size);
+		fSRAM->fflush();
 	}
 
 
-	u32 getSaveTypeGBA()
+	u32 scanSaveTypeGBA()
 	{
 		if (!fROM) return 0xFF;
 
-		u32 saveROMPos = currentROMPos;
-		u32 tmp = 0;
-
 		fROM->fseek(0, SEEK_SET);
+		int size = fROM->size();
 
-		while (!fROM->eof())
+		int lastpct=1;
+
+		int len = fROM->size();
+		for(;;)
 		{
+			u32 tmp;
 			u32 readed = fROM->fread(&tmp, 4);
-			if (readed < 4) break;
+
+			int pos = fROM->ftell();
+			int currPct = pos*100/(size-1);
+			for(int i=lastpct;i<currPct;i++)
+			{
+				if(i%10==0)
+					printf(" %d%%\n",i/10*10);
+				else printf(".");
+				lastpct = currPct;
+			}
+
+			if (readed < 4) 
+				break;
+
+			if(pos >= len)
+				break;
+
 
 			switch (tmp)
 			{
-				case EEPROM:	fROM->fseek(saveROMPos, SEEK_SET); return 1;
-				case SRAM_:		fROM->fseek(saveROMPos, SEEK_SET); return 2;
+				case EEPROM:
+					return 1;
+				case SRAM_:
+					return 2;
 				case FLASH:
 				{
-					fROM->fread(&tmp, 4);
-					fROM->fseek(saveROMPos, SEEK_SET); 
+					u32 tmp = fROM->read32le();
 					return ((tmp == FLASH1M_)?3:5);
 				}
-				case SIIRTC_V:	 fROM->fseek(saveROMPos, SEEK_SET); return 4;
+				case SIIRTC_V:
+					return 4;
 			}
 		}
 
@@ -223,7 +233,7 @@ private:
 			case 0x82:
 				if (val == 0x30)
 				{
-					u32 ofs = (adr & 0x0000F000);
+					u32 ofs = (adr & 0x0000F000) + (0x10000 * gbaFlash.bank);
 					//INFO("GBAgame: Flash: erase from 0x%08X to 0x%08X\n", ofs + 0x0A000000, ofs + 0x0A001000);
 					u8 *tmp = new u8[0x1000];
 					memset(tmp, 0xFF, 0x1000);
@@ -305,9 +315,7 @@ private:
 		delete fROM; fROM = NULL;
 		delete fSRAM; fSRAM = NULL;
 		romSize = 0;
-		currentROMPos = 0;
 		sramSize = 0;
-		currentSRAMPos = 0;
 	}
 
 public:
@@ -328,9 +336,7 @@ public:
 	{
 		Close();
 		romSize = 0;
-		currentROMPos = 0;
 		sramSize = 0;
-		currentSRAMPos = 0;
 		
 		if (gameInfo.romsize == 0)
 		{
@@ -348,8 +354,10 @@ public:
 			GBACartridge_SRAMPath = Path::GetFileNameWithoutExt(GBACartridge_RomPath) + "." + GBA_SRAM_FILE_EXT;
 		}
 		
-		printf("GBASlot opening ROM: %s", GBACartridge_RomPath.c_str());
-		fROM = new EMUFILE_FILE(GBACartridge_RomPath, "rb");
+		printf("GBASlot opening ROM: %s\n", GBACartridge_RomPath.c_str());
+		EMUFILE_FILE *inf = new EMUFILE_FILE(GBACartridge_RomPath, "rb");
+		inf->EnablePositionCache();
+		fROM = inf;
 		if (fROM->fail())
 		{
 			printf(" - Failed\n");
@@ -362,7 +370,9 @@ public:
 		printf(" - Success (%u bytes)\n", romSize);
 		
 		// Load the GBA cartridge SRAM.
-		fSRAM = new EMUFILE_FILE(GBACartridge_SRAMPath, "rb+");
+		inf = new EMUFILE_FILE(GBACartridge_SRAMPath, "rb+");
+		inf->EnablePositionCache();
+		fSRAM = inf;
 		if(fSRAM->fail())
 		{
 			delete fSRAM;
@@ -372,8 +382,9 @@ public:
 		else
 		{
 			sramSize = fSRAM->size();
-			saveType = getSaveTypeGBA();
-			printf("GBASlot found SRAM %s (%s - %u bytes)\n", GBACartridge_SRAMPath.c_str(), (saveType == 0xFF)?"Unknown":saveTypes[saveType], sramSize);
+			printf("Scanning GBA rom to ID save type\n");
+			saveType = scanSaveTypeGBA();
+			printf("\nGBASlot found SRAM (%s - %u bytes) at:\n%s\n", (saveType == 0xFF)?"Unknown":saveTypes[saveType], sramSize, GBACartridge_SRAMPath.c_str());
 			gbaFlash.size = sramSize;
 			if (gbaFlash.size <= (64 * 1024))
 			{
@@ -385,6 +396,7 @@ public:
 				gbaFlash.idDevice = 0x09;
 				gbaFlash.idManufacturer = 0xC2;
 			}
+			gbaFlash.state = 0;
 		}
 	}
 

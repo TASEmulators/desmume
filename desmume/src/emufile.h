@@ -1,7 +1,7 @@
 /*
 The MIT License
 
-Copyright (C) 2009-2012 DeSmuME team
+Copyright (C) 2009-2014 DeSmuME team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -270,10 +270,22 @@ protected:
 	FILE* fp;
 	std::string fname;
 	char mode[16];
+	long mFilePosition;
+	bool mPositionCacheEnabled;
+	
+	enum eCondition
+	{
+		eCondition_Clean,
+		eCondition_Unknown,
+		eCondition_Read,
+		eCondition_Write
+	} mCondition;
 
 private:
 	void open(const char* fname, const char* mode)
 	{
+		mPositionCacheEnabled = false;
+		mCondition = eCondition_Clean;
 		fp = fopen(fname,mode);
 		if(!fp)
 			failbit = true;
@@ -285,6 +297,8 @@ public:
 
 	EMUFILE_FILE(const std::string& fname, const char* mode) { open(fname.c_str(),mode); }
 	EMUFILE_FILE(const char* fname, const char* mode) { open(fname,mode); }
+
+	void EnablePositionCache();
 
 	virtual ~EMUFILE_FILE() {
 		if(NULL != fp)
@@ -298,6 +312,8 @@ public:
 	virtual EMUFILE* memwrap();
 
 	bool is_open() { return fp != NULL; }
+
+	void DemandCondition(eCondition cond);
 
 	virtual void truncate(s32 length);
 
@@ -316,29 +332,15 @@ public:
 		return ::fputc(c, fp);
 	}
 
-	virtual size_t _fread(const void *ptr, size_t bytes){
-		size_t ret = ::fread((void*)ptr, 1, bytes, fp);
-		if(ret < bytes)
-			failbit = true;
-		return ret;
-	}
+	virtual size_t _fread(const void *ptr, size_t bytes);
 
 	//removing these return values for now so we can find any code that might be using them and make sure
 	//they handle the return values correctly
+	virtual void fwrite(const void *ptr, size_t bytes);
 
-	virtual void fwrite(const void *ptr, size_t bytes){
-		size_t ret = ::fwrite((void*)ptr, 1, bytes, fp);
-		if(ret < bytes)
-			failbit = true;
-	}
+	virtual int fseek(int offset, int origin);
 
-	virtual int fseek(int offset, int origin) { 
-		return ::fseek(fp, offset, origin);
-	}
-
-	virtual int ftell() {
-		return (u32)::ftell(fp);
-	}
+	virtual int ftell();
 
 	virtual int size() { 
 		int oldpos = ftell();

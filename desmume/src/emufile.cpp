@@ -1,7 +1,7 @@
 /*
 The MIT License
 
-Copyright (C) 2009-2010 DeSmuME team
+Copyright (C) 2009-2014 DeSmuME team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -72,6 +72,80 @@ void EMUFILE_FILE::truncate(s32 length)
 	fclose(fp);
 	fp = NULL;
 	open(fname.c_str(),mode);
+}
+
+int EMUFILE_FILE::fseek(int offset, int origin)
+{
+	//if the position cache is enabled, and the seek offset matches the known current position, then early exit.
+	if(mPositionCacheEnabled)
+	{
+		if(origin == SEEK_SET)
+		{
+			if(mFilePosition == offset)
+			{
+				return mFilePosition;
+			}
+		}
+	}
+
+	mCondition = eCondition_Clean;
+
+	int pos = ::fseek(fp, offset, origin);
+	mPositionCacheEnabled = pos;
+
+	return pos;
+}
+
+
+int EMUFILE_FILE::ftell()
+{
+	if(mPositionCacheEnabled)
+		return (int)mFilePosition;
+	return (u32)::ftell(fp);
+}
+
+void EMUFILE_FILE::DemandCondition(eCondition cond)
+{
+	//allows switching between reading and writing; an fseek is required, under the circumstances
+
+	if(mCondition == eCondition_Clean)
+		goto CONCLUDE;
+	if(mCondition == eCondition_Unknown)
+		goto RESET;
+	if(mCondition != cond)
+		goto RESET;
+
+	return;
+
+RESET:
+	::fseek(fp,::ftell(fp),SEEK_SET);
+CONCLUDE:
+	mCondition = cond;
+}
+
+size_t EMUFILE_FILE::_fread(const void *ptr, size_t bytes)
+{
+	DemandCondition(eCondition_Read);
+	size_t ret = ::fread((void*)ptr, 1, bytes, fp);
+	mFilePosition += ret;
+	if(ret < bytes)
+		failbit = true;
+	return ret;
+}
+
+void EMUFILE_FILE::EnablePositionCache()
+{
+	mPositionCacheEnabled = true; 
+	mFilePosition = ::ftell(fp);
+}
+
+void EMUFILE_FILE::fwrite(const void *ptr, size_t bytes)
+{
+	DemandCondition(eCondition_Write);
+	size_t ret = ::fwrite((void*)ptr, 1, bytes, fp);
+	mFilePosition += ret;
+	if(ret < bytes)
+		failbit = true;
 }
 
 
