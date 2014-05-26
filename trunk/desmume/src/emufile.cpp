@@ -83,17 +83,19 @@ int EMUFILE_FILE::fseek(int offset, int origin)
 		{
 			if(mFilePosition == offset)
 			{
-				return mFilePosition;
+				return 0;
 			}
 		}
 	}
 
 	mCondition = eCondition_Clean;
 
-	int pos = ::fseek(fp, offset, origin);
-	mPositionCacheEnabled = pos;
-
-	return pos;
+	int ret = ::fseek(fp, offset, origin);
+ 
+	if(mPositionCacheEnabled)
+		mFilePosition = ::ftell(fp);
+ 
+	return ret;
 }
 
 

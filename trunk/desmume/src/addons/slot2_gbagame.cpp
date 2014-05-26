@@ -60,6 +60,8 @@ private:
 	u32	readRom(const u32 pos, const u8 size) 
 	{
 		if (!fROM) return 0xFFFFFFFF;
+		
+		fROM->fseek(pos, SEEK_SET);
 	
 		u32 data = 0xFFFFFFFF;
 		u32 readed = fROM->fread(&data, size);
