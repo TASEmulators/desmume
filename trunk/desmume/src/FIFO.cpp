@@ -1,7 +1,7 @@
 /*
 	Copyright 2006 yopyop
 	Copyright 2007 shash
-	Copyright 2007-2012 DeSmuME team
+	Copyright 2007-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -164,6 +164,8 @@ void IPC_FIFOcnt(u8 proc, u16 val)
 GFX_PIPE	gxPIPE;
 GFX_FIFO	gxFIFO;
 
+int GFX_FIFOsize() { return gxFIFO.size; }
+
 void GFX_PIPEclear()
 {
 	gxPIPE.head = 0;
@@ -202,8 +204,19 @@ static bool IsMatrixStackCommand(u8 cmd)
 	return cmd == 0x11 || cmd == 0x12;
 }
 
+extern BOOL isSwapBuffers;
 void GFX_FIFOsend(u8 cmd, u32 param)
 {
+	if(isSwapBuffers)
+	{
+		//when trying to process a 3d command while a flush is pending, freeze.
+		//NOTE: this is probably not a correct implementation. it should freeze at the moment the command is beginning to go in the fifo
+		//however, this is kind of hard with our current architecture.
+		//instead, we freeze just after the command goes into the fifo
+		//test case: https://sourceforge.net/p/desmume/bugs/1134/
+		nds.freezeBus |= FREEZEBUS_FLAG_GXFLUSH_JAMMED;
+	}
+
 	//INFO("gxFIFO: send 0x%02X = 0x%08X (size %03i/0x%02X) gxstat 0x%08X\n", cmd, param, gxFIFO.size, gxFIFO.size, gxstat);
 	//printf("fifo recv: %02X: %08X upto:%d\n",cmd,param,gxFIFO.size+1);
 
