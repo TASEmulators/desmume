@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2013 DeSmuME team
+	Copyright (C) 2008-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1740,7 +1740,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 				s32 temp = arm9;
 				arm9 = min(s32next, arm9 + kIrqWait);
 				nds.idleCycles[0] += arm9-temp;
-				if (gxFIFO.size < 255) nds.freezeBus &= ~1;
+				if (gxFIFO.size < 255) nds.freezeBus &= ~FREEZEBUS_FLAG_GXFIFO_JAMMED;
 			}
 		}
 		if(doarm7 && (!doarm9 || arm7 <= timer))

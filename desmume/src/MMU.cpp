@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2013 DeSmuME team
+	Copyright (C) 2007-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -2181,7 +2181,7 @@ void DmaController::exec()
 
 	//printf("ARM%c DMA%d execute, count %08X, mode %d%s\n", procnum?'7':'9', chan, wordcount, startmode, running?" - RUNNING":"");
 	//we'll need to unfreeze the arm9 bus now
-	if(procnum==ARMCPU_ARM9) nds.freezeBus &= ~(1<<(chan+1));
+	if(procnum==ARMCPU_ARM9) nds.freezeBus &= ~(FREEZEBUS_FLAG_ARM9_DMA0<<chan);
 
 	dmaCheck = FALSE;
 
@@ -2330,7 +2330,7 @@ void DmaController::doCopy()
 	//freeze the ARM9 bus for the duration of this DMA
 	//thats not entirely accurate
 	if(procnum==ARMCPU_ARM9) 
-		nds.freezeBus |= (1<<(chan+1));
+		nds.freezeBus |= (FREEZEBUS_FLAG_ARM9_DMA0<<chan);
 		
 	//write back the addresses
 	saddr = src;
@@ -4009,7 +4009,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case 0x40005B:
 			case 0x40005C:		// Individual Commands
 				if (gxFIFO.size > 254)
-					nds.freezeBus |= 1;
+					nds.freezeBus |= FREEZEBUS_FLAG_GXFIFO_JAMMED;
 
 				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
 				gfx3d_sendCommand(adr, val);

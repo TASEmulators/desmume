@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2013 DeSmuME team
+	Copyright (C) 2008-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -176,6 +176,13 @@ enum NDS_CONSOLE_TYPE
 	NDS_CONSOLE_TYPE_IQUE_LIE = 0x63,
 	NDS_CONSOLE_TYPE_DSI = 0xFE
 };
+
+#define FREEZEBUS_FLAG_GXFIFO_JAMMED (1<<0)
+#define FREEZEBUS_FLAG_ARM9_DMA0 (1<<1)
+#define FREEZEBUS_FLAG_ARM9_DMA1 (1<<2)
+#define FREEZEBUS_FLAG_ARM9_DMA2 (1<<3)
+#define FREEZEBUS_FLAG_ARM9_DMA3 (1<<4)
+#define FREEZEBUS_FLAG_GXFLUSH_JAMMED (1<<5)
 
 struct NDSSystem
 {
