@@ -4391,6 +4391,26 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT+2 READ\n"); return 0;
 			case REG_SQRTCNT+3: printf("ERROR 8bit SQRTCNT+3 READ\n"); return 0;
 
+			//these aren't readable
+			case REG_DISPA_BG0HOFS: case REG_DISPA_BG0HOFS+1:
+			case REG_DISPA_BG1HOFS: case REG_DISPA_BG1HOFS+1:
+			case REG_DISPA_BG2HOFS: case REG_DISPA_BG2HOFS+1:
+			case REG_DISPA_BG3HOFS: case REG_DISPA_BG3HOFS+1:
+			case REG_DISPB_BG0HOFS: case REG_DISPB_BG0HOFS+1:
+			case REG_DISPB_BG1HOFS: case REG_DISPB_BG1HOFS+1:
+			case REG_DISPB_BG2HOFS: case REG_DISPB_BG2HOFS+1:
+			case REG_DISPB_BG3HOFS: case REG_DISPB_BG3HOFS+1:
+			case REG_DISPA_BG0VOFS: case REG_DISPA_BG0VOFS+1:
+			case REG_DISPA_BG1VOFS: case REG_DISPA_BG1VOFS+1:
+			case REG_DISPA_BG2VOFS: case REG_DISPA_BG2VOFS+1:
+			case REG_DISPA_BG3VOFS: case REG_DISPA_BG3VOFS+1:
+			case REG_DISPB_BG0VOFS: case REG_DISPB_BG0VOFS+1:
+			case REG_DISPB_BG1VOFS: case REG_DISPB_BG1VOFS+1:
+			case REG_DISPB_BG2VOFS: case REG_DISPB_BG2VOFS+1:
+			case REG_DISPB_BG3VOFS: case REG_DISPB_BG3VOFS+1:
+				return 0;
+
+
 			//Nostalgia's options menu requires that these work
 			case REG_DIVCNT: return (MMU_new.div.read16() & 0xFF);
 			case REG_DIVCNT+1: return ((MMU_new.div.read16()>>8) & 0xFF);
@@ -4462,6 +4482,13 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 		{
 			case REG_DISPA_DISPSTAT:
 				break;
+
+			//these aren't readable
+			case REG_DISPA_BG0HOFS: case REG_DISPA_BG1HOFS: case REG_DISPA_BG2HOFS: case REG_DISPA_BG3HOFS:
+			case REG_DISPB_BG0HOFS: case REG_DISPB_BG1HOFS: case REG_DISPB_BG2HOFS: case REG_DISPB_BG3HOFS:
+			case REG_DISPA_BG0VOFS: case REG_DISPA_BG1VOFS: case REG_DISPA_BG2VOFS: case REG_DISPA_BG3VOFS:
+			case REG_DISPB_BG0VOFS: case REG_DISPB_BG1VOFS: case REG_DISPB_BG2VOFS: case REG_DISPB_BG3VOFS:
+				return 0;
 
 			case REG_SQRTCNT: return MMU_new.sqrt.read16();
 			//sqrtcnt isnt big enough for this to exist. but it'd probably return 0 so its ok
@@ -4572,6 +4599,12 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			case 0x04004008:
 				if(!nds.Is_DSI()) break;
 				return 0x8000;
+
+			//these aren't readable.
+			//note: ratatouille stage 3 begins testing this.. it will write a 256, then read it, and if it reads back a 256, the 3d display will be scrolled invisibly. it needs to read a 0 to cause an unscrolled 3d display.
+			case REG_DISPA_BG0HOFS: case REG_DISPA_BG1HOFS: case REG_DISPA_BG2HOFS: case REG_DISPA_BG3HOFS:
+			case REG_DISPB_BG0HOFS: case REG_DISPB_BG1HOFS: case REG_DISPB_BG2HOFS: case REG_DISPB_BG3HOFS:
+				return 0;
 
 			case REG_DISPA_DISPSTAT:
 				break;
