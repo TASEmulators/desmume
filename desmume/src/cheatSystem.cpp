@@ -98,6 +98,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 		if (if_flag > 0) 
 		{
+			if ((type == 0x0E)) i += ((lo + 7) / 8);
 			if ( (type == 0x0D) && (subtype == 0)) if_flag--;	// ENDIF
 			if ( (type == 0x0D) && (subtype == 2))				// NEXT & Flush
 			{
@@ -388,7 +389,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 					}
 				}
 				
-				i += (lo / 8);
+				i += ((lo + 7) / 8);
 			}
 			break;
 
