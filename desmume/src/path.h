@@ -342,60 +342,60 @@ public:
 
 	void formatname(char *output)
 	{
+		// Except 't' for tick and 'r' for random.
+		const char* strftimeArgs = "AbBcCdDeFgGhHIjmMnpRStTuUVwWxXyYzZ%";
+
 		std::string file;
 		time_t now = time(NULL);
 		tm *time_struct = localtime(&now);
-		srand((unsigned int)now);
 
-		for(int i = 0; i < MAX_FORMAT;i++) 
-		{		
-			char *c = &screenshotFormat[i];
-			char tmp[MAX_PATH] = {0};
+		srand((unsigned)now);
 
-			if(*c == '%')
+		for (char*  p = screenshotFormat,
+			 *end = p + sizeof(screenshotFormat); p < end; p++)
 			{
-				c = &screenshotFormat[++i];
-				switch(*c)
+			if (*p != '%')
 				{
-				case 'f':
-					
-					strcat(tmp, GetRomNameWithoutExtension().c_str());
-					break;
-				case 'D':
-					strftime(tmp, MAX_PATH, "%d", time_struct);
-					break;
-				case 'M':
-					strftime(tmp, MAX_PATH, "%m", time_struct);
-					break;
-				case 'Y':
-					strftime(tmp, MAX_PATH, "%Y", time_struct);
-					break;
-				case 'h':
-					strftime(tmp, MAX_PATH, "%H", time_struct);
-					break;
-				case 'm':
-					strftime(tmp, MAX_PATH, "%M", time_struct);
-					break;
-				case 's':
-					strftime(tmp, MAX_PATH, "%S", time_struct);
-					break;
-				case 'r':
-					sprintf(tmp, "%d", rand() % RAND_MAX);
-					break;
-				}
+				file.append(1, *p);
 			}
 			else
 			{
-				int j;
-				for(j=i;j<MAX_FORMAT-i;j++)
-					if(screenshotFormat[j] != '%')
-						tmp[j-i]=screenshotFormat[j];
-					else
-						break;
-				tmp[j-i]='\0';
+				p++;
+
+				if (*p == 'f')
+				{
+					file.append(GetRomNameWithoutExtension());
+				}
+				else if (*p == 'r')
+				{
+					file.append(stditoa(rand()));
 			}
-			file += tmp;
+				else if (*p == 't')
+			{
+					file.append(stditoa(clock() >> 5));
+			}
+				else if (strchr(strftimeArgs, *p))
+				{
+					char tmp[MAX_PATH];
+					char format[] = { '%', *p, NULL };
+					strftime(tmp, MAX_PATH, format, time_struct);
+					file.append(tmp);
 		}
+			}
+		}
+
+#ifdef WIN32
+		// Replace invalid file name character.
+		{
+			const char* invalids = "\\/:*?\"<>|";
+			size_t pos = 0;
+			while ((pos = file.find_first_of(invalids, pos)) != std::string::npos)
+			{
+				file[pos] = '-';
+			}
+		}
+#endif
+
 		strncpy(output, file.c_str(), MAX_PATH);
 	}
 

@@ -184,7 +184,17 @@ BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 	ti.hinst = hAppInst;
 	ti.uFlags = TTF_SUBCLASS | TTF_IDISHWND;
 	ti.uId = (UINT_PTR)hwnd;
-	ti.lpszText = "The format a screenshot should be saved in.\r\n%f\t\t\tFilename\r\n%D\t\t\tDay:Two Digit\r\n%M\t\t\tMonth:Two Digit\r\n%Y\t\t\tYear:Four Digit\r\n%h\t\t\tHour:Two Digit\r\n%m\t\t\tMinute: Two Digit\r\n%s\t\t\tSecond: Two Digit\r\n%r\t\tRandom: Min:0 Max:RAND_MAX";
+	ti.lpszText =
+		"The format a screenshot should be saved in.\r\n"
+		"%f\t\tFilename\r\n"
+		"%r\t\tRandom: 0 ~ RAND_MAX\r\n"
+		"%t\t\tTick: Reset on startup\r\n"
+		"%Y\t\tYear:Four Digit\r\n"
+		"%m\t\tMonth:Two Digit\r\n"
+		"%D\t\tDay:Two Digit\r\n"
+		"%H\t\tHour:Two Digit\r\n"
+		"%M\t\tMinute: Two Digit\r\n"
+		"%S\t\tSecond: Two Digit\r\n";
 	GetClientRect(hwnd, &ti.rect);
 	SendMessage(toolTip, TTM_ADDTOOL, NULL, (LPARAM)&ti);
 
