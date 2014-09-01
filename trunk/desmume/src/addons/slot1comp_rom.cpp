@@ -66,7 +66,7 @@ u32 Slot1Comp_Rom::read()
 			//if (address > gameInfo.header.endROMoffset)
 			//  ... the cart hardware doesnt know anything about the rom header. if it has a totally bogus endROMoffset, the cart will probably work just fine. and, the +4 is missing anyway:
 			//3. this is better: it just allows us to read 0xFF anywhere we dont have rom data. forget what the header says
-			if(address+4 >= gameInfo.romsize)
+			if(address+4 > gameInfo.romsize)
 			{
 				DEBUG_Notify.ReadBeyondEndOfCart(address,gameInfo.romsize);
 				return 0xFFFFFFFF;
