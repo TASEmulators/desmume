@@ -3090,6 +3090,7 @@ int _main()
 	}
 
 	//disable wacky stylus stuff
+	//TODO - we are obliged to call GlobalDeleteAtom
 	GlobalAddAtom(MICROSOFT_TABLETPENSERVICE_PROPERTY);
 	SetProp(MainWindow->getHWnd(),MICROSOFT_TABLETPENSERVICE_PROPERTY,(HANDLE)(
 		TABLET_DISABLE_PRESSANDHOLD |
