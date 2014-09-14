@@ -373,7 +373,6 @@ public:
 		
 		// Load the GBA cartridge SRAM.
 		inf = new EMUFILE_FILE(GBACartridge_SRAMPath, "rb+");
-		inf->EnablePositionCache();
 		fSRAM = inf;
 		if(fSRAM->fail())
 		{
@@ -383,6 +382,7 @@ public:
 		}
 		else
 		{
+			inf->EnablePositionCache();
 			sramSize = fSRAM->size();
 			printf("Scanning GBA rom to ID save type\n");
 			saveType = scanSaveTypeGBA();
