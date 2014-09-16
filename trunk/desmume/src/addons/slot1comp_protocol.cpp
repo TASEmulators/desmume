@@ -89,6 +89,7 @@ void Slot1Comp_Protocol::write_command_KEY1(GC_Command command)
 			delay = 0x910, length = 4;
 			//we handle this operation ourselves
 			break;
+
 		case 0x20:
 			operation = eSlot1Operation_2x_SecureAreaLoad;
 			delay = 0x910, length = 0x11A8;
@@ -101,20 +102,25 @@ void Slot1Comp_Protocol::write_command_KEY1(GC_Command command)
 				u64 cmd64 = *(u64*)command.bytes;
 #endif
 				//todo - parse into blocknumber
-				address = (u32)((cmd64 >> 32) & 0xF000);
+				u32 blocknumber = (cmd64>>44)&0xFFFF;
+				if(blocknumber<4||blocknumber>7)
+					printf("SLOT1 WARNING: INVALID BLOCKNUMBER FOR \"Get Secure Area Block\": 0x%04X\n",blocknumber);
+				address = blocknumber*0x1000;
 			}
 			client->slot1client_startOperation(operation);
-
 			break;
+
 		case 0x40:
 			//switch to KEY2
 			delay = 0x910, length = 0; 
 			//well.. not really... yet.
 			GCLOG("[GC] KEY2 ACTIVATED\n");
 			break;
+
 		case 0x60:
 			//KEY2 disable? any info?
 			break;
+
 		case 0xA0:
 			delay = 0x910, length = 0;
 			mode = eCardMode_NORMAL;

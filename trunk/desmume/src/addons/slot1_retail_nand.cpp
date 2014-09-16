@@ -93,10 +93,10 @@ public:
 		{
 			case eSlot1Operation_00_ReadHeader_Unencrypted:
 				protocol.address = (protocol.command.bytes[1] << 24) | (protocol.command.bytes[2] << 16) | (protocol.command.bytes[3] << 8) | protocol.command.bytes[4];
+				rom.start(operation,protocol.address);
 				break;
 
-			//case eSlot1Operation_B7_Read: 
-				//???
+			//case eSlot1Operation_B7_Read:  //zero 15-sep-2014 - this was removed during epoch of addon re-engineering to fix a bug
 
 			case eSlot1Operation_2x_SecureAreaLoad:
 				//don't re-generate address here. it was already done, according to different rules, for this operation
