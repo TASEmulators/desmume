@@ -44,8 +44,9 @@ u32 Slot1Comp_Rom::read()
 
 			//zero 15-sep-2014 - this is meaningless. newer mask is actually reasonable
 			//address &= gameInfo.mask; //sanity check 
-			address &= 0x3FFF; //memory safe sanity test
-			u32 ret = LE_TO_LOCAL_32(*(u32*)(gameInfo.secureArea + (address - 0x4000)));
+			u32 secureAreaAddress = (address - 0x4000);
+			secureAreaAddress &= 0x3FFF; //memory safe sanity test
+			u32 ret = LE_TO_LOCAL_32(*(u32*)(gameInfo.secureArea + secureAreaAddress));
 			address = (address&~0xFFF) + ((address+4)&0xFFF);
 			return ret;
 		}
