@@ -83,8 +83,6 @@ public:
 
 	virtual void slot1client_startOperation(eSlot1Operation operation)
 	{
-		protocol.address = (protocol.command.bytes[1] << 24) | (protocol.command.bytes[2] << 16) | (protocol.command.bytes[3] << 8) | protocol.command.bytes[4];
-
 		//INFO("Start command: %02X%02X%02X%02X%02X%02X%02X%02X\t",
 		//	protocol.command.bytes[0], protocol.command.bytes[1], protocol.command.bytes[2], protocol.command.bytes[3],
 		//	protocol.command.bytes[4], protocol.command.bytes[5], protocol.command.bytes[6], protocol.command.bytes[7]);
@@ -94,8 +92,14 @@ public:
 		switch(operation)
 		{
 			case eSlot1Operation_00_ReadHeader_Unencrypted:
+				protocol.address = (protocol.command.bytes[1] << 24) | (protocol.command.bytes[2] << 16) | (protocol.command.bytes[3] << 8) | protocol.command.bytes[4];
+				break;
+
+			//case eSlot1Operation_B7_Read: 
+				//???
+
 			case eSlot1Operation_2x_SecureAreaLoad:
-			//case eSlot1Operation_B7_Read:
+				//don't re-generate address here. it was already done, according to different rules, for this operation
 				rom.start(operation,protocol.address);
 				return;
 		}
