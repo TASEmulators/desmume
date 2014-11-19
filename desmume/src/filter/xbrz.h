@@ -13,6 +13,8 @@
 // * do so, delete this exception statement from your version.                *
 // ****************************************************************************
 
+// 2014-11-18 (rogerman):	Update to XBRZ 1.1.
+//
 // 2014-02-06 (rogerman):	Modified for use in DeSmuME by removing C++11 code.
 //							Also integrate xbrz's config.h file into this one.
 
@@ -38,24 +40,28 @@ namespace xbrz
 using a modified approach of xBR:
 http://board.byuu.org/viewtopic.php?f=10&t=2248
 - new rule set preserving small image features
+- support alpha channel
 - support multithreading
-- support 64 bit architectures
+- support 64-bit architectures
 - support processing image slices
 */
 
+enum ColorFormat //from high bits -> low bits, 8 bit per channel
+{
+    ColorFormatARGB, //including alpha channel, BGRA byte order on little-endian machines
+    ColorFormatRGB,  //8 bit for each red, green, blue, upper 8 bits unused
+};
+
 /*
 -> map source (srcWidth * srcHeight) to target (scale * width x scale * height) image, optionally processing a half-open slice of rows [yFirst, yLast) only
--> color format: ARGB (BGRA byte order), alpha channel unused
 -> support for source/target pitch in bytes!
--> if your emulator changes only a few image slices during each cycle (e.g. Dosbox) then there's no need to run xBRZ on the complete image:
+-> if your emulator changes only a few image slices during each cycle (e.g. DOSBox) then there's no need to run xBRZ on the complete image:
    Just make sure you enlarge the source image slice by 2 rows on top and 2 on bottom (this is the additional range the xBRZ algorithm is using during analysis)
-   Caveat: If there are multiple changed slices, make sure they do not overlap after adding these additional rows in order to avoid a memory race condition 
-   if you are using multiple threads for processing each enlarged slice!
+   Caveat: If there are multiple changed slices, make sure they do not overlap after adding these additional rows in order to avoid a memory race condition
+   in the target image data if you are using multiple threads for processing each enlarged slice!
 
 THREAD-SAFETY: - parts of the same image may be scaled by multiple threads as long as the [yFirst, yLast) ranges do not overlap!
                - there is a minor inefficiency for the first row of a slice, so avoid processing single rows only
-
-			   
 */
 struct ScalerCfg
 {
@@ -75,6 +81,7 @@ struct ScalerCfg
 
 void scale(size_t factor, //valid range: 2 - 5
            const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight,
+           ColorFormat colFmt,
            const ScalerCfg& cfg = ScalerCfg(),
            int yFirst = 0, int yLast = std::numeric_limits<int>::max()); //slice of source image
 
@@ -91,7 +98,7 @@ void nearestNeighborScale(const uint32_t* src, int srcWidth, int srcHeight, int 
                           SliceType st, int yFirst, int yLast);
 
 //parameter tuning
-bool equalColor(uint32_t col1, uint32_t col2, double luminanceWeight, double equalColorTolerance);
+bool equalColorTest(uint32_t col1, uint32_t col2, ColorFormat colFmt, double luminanceWeight, double equalColorTolerance);
 
 
 
