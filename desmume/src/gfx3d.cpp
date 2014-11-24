@@ -1,6 +1,6 @@
 /*	
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2014 DeSmuME team
+	Copyright (C) 2008-2013 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -112,7 +112,6 @@ public:
 
 	void receive(u32 val) 
 	{
-
 		//so, it seems as if the dummy values and restrictions on the highest-order command in the packed command set 
 		//is solely about some unknown internal timing quirk, and not about the logical behaviour of the state machine.
 		//it's possible that writing some values too quickly can result in the gxfifo not being ready. 
@@ -1974,19 +1973,16 @@ void gfx3d_execute3D()
 	u8	cmd = 0;
 	u32	param = 0;
 
-	if(nds.freezeBus & FREEZEBUS_FLAG_GXFLUSH_JAMMED)
-	{
-		//sanity check: in case a command went into the fifo but the cpu should be frozen, do nothing
-		return;
-	}
+#ifndef FLUSHMODE_HACK
+	if (isSwapBuffers) return;
+#endif
 
 	//this is a SPEED HACK
 	//fifo is currently emulated more accurately than it probably needs to be.
 	//without this batch size the emuloop will escape way too often to run fast.
 	const int HACK_FIFO_BATCH_SIZE = 64;
 
-	for(int i=0;i<HACK_FIFO_BATCH_SIZE;i++)
-	{
+	for(int i=0;i<HACK_FIFO_BATCH_SIZE;i++) {
 		if(GFX_PIPErecv(&cmd, &param))
 		{
 			//if (isSwapBuffers) printf("Executing while swapbuffers is pending: %d:%08X\n",cmd,param);
@@ -2026,7 +2022,7 @@ void gfx3d_glFlush(u32 v)
 #endif
 	
 	isSwapBuffers = TRUE;
-	
+
 	//printf("%05d:%03d:%12lld: FLUSH\n",currFrameCounter, nds.VCount, nds_timer);
 	
 	//well, the game wanted us to flush.
@@ -2183,8 +2179,6 @@ void gfx3d_VBlankSignal()
 #endif
 		GFX_DELAY(392);
 		isSwapBuffers = FALSE;
-		//GX processing can proceed once more. I think it was important that the GFX_DELAY above ran, to reschedule 3d
-		nds.freezeBus &= ~FREEZEBUS_FLAG_GXFLUSH_JAMMED;
 	}
 }
 

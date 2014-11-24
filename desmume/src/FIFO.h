@@ -1,7 +1,7 @@
 /*
 	Copyright 2006 yopyop
 	Copyright 2007 shash
-	Copyright 2007-2014 DeSmuME team
+	Copyright 2007-2011 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -74,7 +74,6 @@ extern void GFX_FIFOclear();
 extern void GFX_FIFOsend(u8 cmd, u32 param);
 extern BOOL GFX_PIPErecv(u8 *cmd, u32 *param);
 extern void GFX_FIFOcnt(u32 val);
-extern int GFX_FIFOsize();
 
 //=================================================== Display memory FIFO
 typedef struct
