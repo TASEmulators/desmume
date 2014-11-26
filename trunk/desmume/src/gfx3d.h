@@ -26,6 +26,10 @@
 #include "emufile.h"
 
 
+// Pixel dimensions of the NDS 3D framebuffer
+#define GFX3D_FRAMEBUFFER_WIDTH		256
+#define GFX3D_FRAMEBUFFER_HEIGHT	192
+
 //geometry engine command numbers
 #define GFX3D_NOP 0x00
 #define GFX3D_MTX_MODE 0x10
@@ -754,8 +758,8 @@ extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
 
 //these contain the 3d framebuffer converted into the most useful format
 //they are stored here instead of in the renderers in order to consolidate the buffers
-extern CACHE_ALIGN u8 gfx3d_convertedScreen[256*192*4];
-extern CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192*2]; //see cpp for explanation of illogical *2
+extern CACHE_ALIGN u8 gfx3d_convertedScreen[GFX3D_FRAMEBUFFER_WIDTH*GFX3D_FRAMEBUFFER_HEIGHT*4];
+extern CACHE_ALIGN u8 gfx3d_convertedAlpha[GFX3D_FRAMEBUFFER_WIDTH*GFX3D_FRAMEBUFFER_HEIGHT*2]; //see cpp for explanation of illogical *2
 
 extern BOOL isSwapBuffers;
 
