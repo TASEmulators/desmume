@@ -304,7 +304,7 @@ static float normalTable[1024];
 #define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
-CACHE_ALIGN u8 gfx3d_convertedScreen[256*192*4];
+CACHE_ALIGN u8 gfx3d_convertedScreen[GFX3D_FRAMEBUFFER_WIDTH*GFX3D_FRAMEBUFFER_HEIGHT*4];
 
 // Matrix stack handling
 CACHE_ALIGN MatrixStack	mtxStack[4] = {
@@ -2313,12 +2313,12 @@ void gfx3d_GetLineData(int line, u8** dst)
 void gfx3d_GetLineData15bpp(int line, u16** dst)
 {
 	//TODO - this is not very thread safe!!!
-	static u16 buf[256];
+	static u16 buf[GFX3D_FRAMEBUFFER_WIDTH];
 	*dst = buf;
 
 	u8* lineData;
 	gfx3d_GetLineData(line, &lineData);
-	for(int i=0;i<256;i++)
+	for(int i=0; i<GFX3D_FRAMEBUFFER_WIDTH; i++)
 	{
 		const u8 r = lineData[i*4+0];
 		const u8 g = lineData[i*4+1];
@@ -2415,7 +2415,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GTVC", 4, 1, &tempVertInfo.count},
 	{ "GTVM", 4, 4, tempVertInfo.map},
 	{ "GTVF", 4, 1, &tempVertInfo.first},
-	{ "G3CX", 1, 4*256*192, gfx3d_convertedScreen},
+	{ "G3CX", 1, 4*GFX3D_FRAMEBUFFER_WIDTH*GFX3D_FRAMEBUFFER_HEIGHT, gfx3d_convertedScreen},
 	{ 0 }
 };
 

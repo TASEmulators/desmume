@@ -115,8 +115,8 @@ static FORCEINLINE int fastFloor(float f)
 //	verts[vert_index] = &rawvert;
 //}
 
-static Fragment _screen[256*192];
-static FragmentColor _screenColor[256*192];
+static Fragment _screen[GFX3D_FRAMEBUFFER_WIDTH*GFX3D_FRAMEBUFFER_HEIGHT];
+static FragmentColor _screenColor[GFX3D_FRAMEBUFFER_WIDTH*GFX3D_FRAMEBUFFER_HEIGHT];
 
 static FORCEINLINE int iround(float f) {
 	return (int)f; //lol
@@ -817,14 +817,14 @@ public:
 			width -= -x;
 			x = 0;
 		}
-		if(x+width > (RENDERER?256:engine->width))
+		if(x+width > (RENDERER?GFX3D_FRAMEBUFFER_WIDTH:engine->width))
 		{
 			if(RENDERER && !lineHack)
 			{
 				printf("rasterizer rendering at x=%d! oops!\n",x+width-1);
 				return;
 			}
-			width = (RENDERER?256:engine->width)-x;
+			width = (RENDERER?GFX3D_FRAMEBUFFER_WIDTH:engine->width)-x;
 		}
 
 		while(width-- > 0)
@@ -854,7 +854,7 @@ public:
 		bool first=true;
 
 		//HACK: special handling for horizontal line poly
-		if (lineHack && left->Height == 0 && right->Height == 0 && left->Y<192 && left->Y>=0)
+		if (lineHack && left->Height == 0 && right->Height == 0 && left->Y<GFX3D_FRAMEBUFFER_HEIGHT && left->Y>=0)
 		{
 			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
 			if(draw) drawscanline(left,right,lineHack);
@@ -1217,7 +1217,7 @@ static void SoftRastVramReconfigureSignal()
 
 static void SoftRastConvertFramebuffer()
 {
-	memcpy(gfx3d_convertedScreen,_screenColor,256*192*4);
+	memcpy(gfx3d_convertedScreen, _screenColor, GFX3D_FRAMEBUFFER_WIDTH*GFX3D_FRAMEBUFFER_HEIGHT*4);
 }
 
 void SoftRasterizerEngine::initFramebuffer(const int width, const int height, const bool clearImage)
@@ -1246,7 +1246,7 @@ void SoftRasterizerEngine::initFramebuffer(const int width, const int height, co
 	if(clearImage)
 	{
 		//need to handle this somehow..
-		assert(width==256 && height==192);
+		assert(width==GFX3D_FRAMEBUFFER_WIDTH && height==GFX3D_FRAMEBUFFER_HEIGHT);
 
 		u16* clearImage = (u16*)MMU.texInfo.textureSlotAddr[2];
 		u16* clearDepth = (u16*)MMU.texInfo.textureSlotAddr[3];
@@ -1260,9 +1260,9 @@ void SoftRasterizerEngine::initFramebuffer(const int width, const int height, co
 		FragmentColor *dstColor = screenColor;
 		Fragment *dst = screen;
 
-		for(int iy=0;iy<192;iy++) {
+		for(int iy=0; iy<GFX3D_FRAMEBUFFER_HEIGHT; iy++) {
 			int y = ((iy + yscroll)&255)<<8;
-			for(int ix=0;ix<256;ix++) {
+			for(int ix=0; ix<GFX3D_FRAMEBUFFER_WIDTH; ix++) {
 				int x = (ix + xscroll)&255;
 				int adr = y + x;
 				
@@ -1397,9 +1397,9 @@ void SoftRasterizerEngine::framebufferProcess()
 			edgeMarkDisabled[i] = 0;
 		}
 
-		for(int i=0,y=0;y<192;y++)
+		for(int i=0,y=0; y<GFX3D_FRAMEBUFFER_HEIGHT; y++)
 		{
-			for(int x=0;x<256;x++,i++)
+			for(int x=0; x<GFX3D_FRAMEBUFFER_WIDTH; x++,i++)
 			{
 				Fragment destFragment = screen[i];
 				u8 self = destFragment.polyid.opaque;
@@ -1413,8 +1413,8 @@ void SoftRasterizerEngine::framebufferProcess()
 
 				FragmentColor edgeColor = edgeMarkColors[self>>3];
 
-#define PIXOFFSET(dx,dy) ((dx)+(256*(dy)))
-#define ISEDGE(dx,dy) ((x+(dx)!=256) && (x+(dx)!=-1) && (y+(dy)!=192) && (y+(dy)!=-1) && self > screen[i+PIXOFFSET(dx,dy)].polyid.opaque)
+#define PIXOFFSET(dx,dy) ((dx)+(GFX3D_FRAMEBUFFER_WIDTH*(dy)))
+#define ISEDGE(dx,dy) ((x+(dx)!=GFX3D_FRAMEBUFFER_WIDTH) && (x+(dx)!=-1) && (y+(dy)!=GFX3D_FRAMEBUFFER_HEIGHT) && (y+(dy)!=-1) && self > screen[i+PIXOFFSET(dx,dy)].polyid.opaque)
 #define DRAWEDGE(dx,dy) alphaBlend(screenColor[i+PIXOFFSET(dx,dy)], edgeColor)
 
 				bool upleft    = ISEDGE(-1,-1);
@@ -1457,7 +1457,7 @@ void SoftRasterizerEngine::framebufferProcess()
 		u32 g = GFX3D_5TO6((gfx3d.renderState.fogColor>>5)&0x1F);
 		u32 b = GFX3D_5TO6((gfx3d.renderState.fogColor>>10)&0x1F);
 		u32 a = (gfx3d.renderState.fogColor>>16)&0x1F;
-		for(int i=0;i<256*192;i++)
+		for(int i=0; i<GFX3D_FRAMEBUFFER_WIDTH*GFX3D_FRAMEBUFFER_HEIGHT; i++)
 		{
 			Fragment &destFragment = screen[i];
 			if(!destFragment.fogged) continue;
@@ -1477,7 +1477,7 @@ void SoftRasterizerEngine::framebufferProcess()
 	}
 
 	////debug alpha channel framebuffer contents
-	//for(int i=0;i<256*192;i++)
+	//for(int i=0;i<GFX3D_FRAMEBUFFER_WIDTH*GFX3D_FRAMEBUFFER_HEIGHT;i++)
 	//{
 	//	FragmentColor &destFragmentColor = screenColor[i];
 	//	destFragmentColor.r = destFragmentColor.a;
@@ -1512,10 +1512,10 @@ void SoftRasterizerEngine::performClipping(bool hirez)
 
 template<bool CUSTOM> void SoftRasterizerEngine::performViewportTransforms(int width, int height)
 {
-	const float xfactor = width/256.0f;
-	const float yfactor = height/192.0f;
-	const float xmax = 256.0f*xfactor-(CUSTOM?0.001f:0); //fudge factor to keep from overrunning render buffers
-	const float ymax = 192.0f*yfactor-(CUSTOM?0.001f:0);
+	const float xfactor = (float)width/GFX3D_FRAMEBUFFER_WIDTH;
+	const float yfactor = (float)height/GFX3D_FRAMEBUFFER_HEIGHT;
+	const float xmax = GFX3D_FRAMEBUFFER_WIDTH*xfactor-(CUSTOM?0.001f:0); //fudge factor to keep from overrunning render buffers
+	const float ymax = GFX3D_FRAMEBUFFER_HEIGHT*yfactor-(CUSTOM?0.001f:0);
 
 
 	//viewport transforms
@@ -1668,18 +1668,18 @@ static void SoftRastRender()
 	mainSoftRasterizer.indexlist = &gfx3d.indexlist;
 	mainSoftRasterizer.screen = _screen;
 	mainSoftRasterizer.screenColor = _screenColor;
-	mainSoftRasterizer.width = 256;
-	mainSoftRasterizer.height = 192;
+	mainSoftRasterizer.width = GFX3D_FRAMEBUFFER_WIDTH;
+	mainSoftRasterizer.height = GFX3D_FRAMEBUFFER_HEIGHT;
 
 	//setup fog variables (but only if fog is enabled)
 	if(gfx3d.renderState.enableFog)
 		mainSoftRasterizer.updateFogTable();
 	
-	mainSoftRasterizer.initFramebuffer(256,192,gfx3d.renderState.enableClearImage?true:false);
+	mainSoftRasterizer.initFramebuffer(GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, gfx3d.renderState.enableClearImage?true:false);
 	mainSoftRasterizer.updateToonTable();
 	mainSoftRasterizer.updateFloatColors();
 	mainSoftRasterizer.performClipping(CommonSettings.GFX3D_HighResolutionInterpolateColor);
-	mainSoftRasterizer.performViewportTransforms<false>(256,192);
+	mainSoftRasterizer.performViewportTransforms<false>(GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT);
 	mainSoftRasterizer.performBackfaceTests();
 	mainSoftRasterizer.performCoordAdjustment(true);
 	mainSoftRasterizer.setupTextures(true);

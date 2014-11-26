@@ -297,9 +297,9 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glGenRenderbuffers(1, &OGLRef.rboFinalOutputDepthStencilID);
 	
 	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboFinalOutputColorID);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, 256, 192);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT);
 	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboFinalOutputDepthStencilID);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 256, 192);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT);
 	
 	// Set up FBOs
 	glGenFramebuffers(1, &OGLRef.fboClearImageID);
@@ -400,9 +400,9 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO()
 	glGenRenderbuffers(1, &OGLRef.rboMultisampleDepthStencilID);
 	
 	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMultisampleColorID);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamples, GL_RGBA, 256, 192);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamples, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT);
 	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMultisampleDepthStencilID);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamples, GL_DEPTH24_STENCIL8, 256, 192);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamples, GL_DEPTH24_STENCIL8, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT);
 	
 	// Set up multisampled rendering FBO
 	glGenFramebuffers(1, &OGLRef.fboMultisampleRenderID);
@@ -557,7 +557,7 @@ Render3DError OpenGLRenderer_3_2::DownsampleFBO()
 	
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboFinalOutputID);
-	glBlitFramebuffer(0, 0, 256, 192, 0, 0, 256, 192, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebuffer(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboFinalOutputID);
 	
 	return OGLERROR_NOERR;
@@ -569,7 +569,7 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage() const
 	
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, OGLRef.fboClearImageID);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
-	glBlitFramebuffer(0, 0, 256, 192, 0, 0, 256, 192, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebuffer(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
 	
 	return OGLERROR_NOERR;

@@ -418,7 +418,7 @@ protected:
 	u16 currentToonTable16[32];
 	bool toonTableNeedsUpdate;
 	
-	DS_ALIGN(16) u32 GPU_screen3D[2][256 * 192 * sizeof(u32)];
+	DS_ALIGN(16) u32 GPU_screen3D[2][GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT * sizeof(u32)];
 	bool gpuScreen3DHasNewData[2];
 	unsigned int doubleBufferIndex;
 	u8 clearImageStencilValue;
