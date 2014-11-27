@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 
 OERingBuffer *openEmuSoundInterfaceBuffer = nil;
 static pthread_mutex_t *mutexAudioSampleReadWrite = NULL;
-pthread_mutex_t *mutexAudioEmulateCore = NULL;
+pthread_rwlock_t *rwlockAudioEmulateCore = NULL;
 
 // Sound interface to the SPU
 SoundInterface_struct SNDOpenEmu = {
@@ -124,11 +124,11 @@ size_t SNDOpenEmuPostProcessSamples(s16 *postProcessBuffer, size_t requestedSamp
 	switch (synchMode)
 	{
 		case ESynchMode_DualSynchAsynch:
-			if (mutexAudioEmulateCore != NULL)
+			if (rwlockAudioEmulateCore != NULL)
 			{
-				pthread_mutex_lock(mutexAudioEmulateCore);
+				pthread_rwlock_wrlock(rwlockAudioEmulateCore);
 				processedSampleCount = SPU_DefaultPostProcessSamples(postProcessBuffer, requestedSampleCount, synchMode, theSynchronizer);
-				pthread_mutex_unlock(mutexAudioEmulateCore);
+				pthread_rwlock_unlock(rwlockAudioEmulateCore);
 			}
 			break;
 			

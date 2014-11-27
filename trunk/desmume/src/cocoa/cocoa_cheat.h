@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2013 DeSmuME team
+	Copyright (C) 2011-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -94,8 +94,8 @@
 	CHEATS *listData;
 	NSMutableArray *list;
 	
-	pthread_mutex_t *mutexCoreExecute;
-	BOOL isUsingDummyMutex;
+	pthread_rwlock_t *rwlockCoreExecute;
+	BOOL isUsingDummyRWlock;
 	
 	NSUInteger untitledCount;
 	NSString *dbTitle;
@@ -104,7 +104,7 @@
 
 @property (readonly) CHEATS *listData;
 @property (readonly) NSMutableArray *list;
-@property (assign) pthread_mutex_t *mutexCoreExecute;
+@property (assign) pthread_rwlock_t *rwlockCoreExecute;
 @property (assign) NSUInteger untitledCount;
 @property (copy) NSString *dbTitle;
 @property (copy) NSString *dbDate;
@@ -135,15 +135,15 @@
 	CHEATSEARCH *listData;
 	NSMutableArray *addressList;
 	
-	pthread_mutex_t *mutexCoreExecute;
-	BOOL isUsingDummyMutex;
+	pthread_rwlock_t *rwlockCoreExecute;
+	BOOL isUsingDummyRWlock;
 	
 	NSUInteger searchCount;
 }
 
 @property (readonly) CHEATSEARCH *listData;
 @property (readonly) NSMutableArray *addressList;
-@property (assign) pthread_mutex_t *mutexCoreExecute;
+@property (assign) pthread_rwlock_t *rwlockCoreExecute;
 @property (readonly) NSUInteger searchCount;
 
 - (NSUInteger) runExactValueSearch:(NSInteger)value byteSize:(UInt8)byteSize signType:(NSInteger)signType;

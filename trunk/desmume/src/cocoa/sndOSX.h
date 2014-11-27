@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2007 Jeff Bland
-	Copyright (C) 2007-2013 DeSmuME team
+	Copyright (C) 2007-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 #define SNDCORE_OSX 58325 //hopefully this is unique number
 
 extern SoundInterface_struct SNDOSX; // Sound interface to the SPU
-extern pthread_mutex_t *mutexAudioEmulateCore; // Mutex for the emulation core - used when mixing audio in Dual Synch/Asynch mode in post-process
+extern pthread_rwlock_t *rwlockAudioEmulateCore; // RWlock for the emulation core - used when mixing audio in Dual Synch/Asynch mode in post-process
 
 // Core Audio functions for the sound interface
 int		SNDOSXInit(int buffer_size);

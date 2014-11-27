@@ -75,8 +75,7 @@ volatile bool execute = true;
 @dynamic firmwareImageURL;
 @synthesize slot1R4URL;
 
-@dynamic mutexCoreExecute;
-@dynamic rwCoreExecute;
+@dynamic rwlockCoreExecute;
 
 - (id)init
 {
@@ -140,14 +139,13 @@ volatile bool execute = true;
 	threadParam.timeBudgetMachAbsTime = *(uint64_t *)&timeBudgetAbsTime;
 	
 	threadParam.exitThread = false;
-	pthread_mutex_init(&threadParam.mutexCoreExecute, NULL);
 	pthread_mutex_init(&threadParam.mutexOutputList, NULL);
 	pthread_mutex_init(&threadParam.mutexThreadExecute, NULL);
 	pthread_cond_init(&threadParam.condThreadExecute, NULL);
-	pthread_rwlock_init(&threadParam.rwCoreExecute, NULL);
+	pthread_rwlock_init(&threadParam.rwlockCoreExecute, NULL);
 	pthread_create(&coreThread, NULL, &RunCoreThread, &threadParam);
 	
-	[cdsGPU setMutexProducer:self.mutexCoreExecute];
+	[cdsGPU setRwlockProducer:self.rwlockCoreExecute];
 	
 	frameStatus = @"---";
 	executionSpeedStatus = @"1.00x";
@@ -177,8 +175,7 @@ volatile bool execute = true;
 	pthread_mutex_destroy(&threadParam.mutexThreadExecute);
 	pthread_cond_destroy(&threadParam.condThreadExecute);
 	pthread_mutex_destroy(&threadParam.mutexOutputList);
-	pthread_mutex_destroy(&threadParam.mutexCoreExecute);
-	pthread_rwlock_destroy(&threadParam.rwCoreExecute);
+	pthread_rwlock_destroy(&threadParam.rwlockCoreExecute);
 	
 	NDS_DeInit();
 	
@@ -316,7 +313,7 @@ volatile bool execute = true;
 	emulationFlags = theFlags;
 	OSSpinLockUnlock(&spinlockEmulationFlags);
 	
-	pthread_mutex_lock(&threadParam.mutexCoreExecute);
+	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
 	
 	if (theFlags & EMULATION_ADVANCED_BUS_LEVEL_TIMING_MASK)
 	{
@@ -417,7 +414,7 @@ volatile bool execute = true;
 		CommonSettings.DebugConsole = false;
 	}
 	
-	pthread_mutex_unlock(&threadParam.mutexCoreExecute);
+	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
 }
 
 - (NSUInteger) emulationFlags
@@ -451,16 +448,16 @@ volatile bool execute = true;
 
 - (void) setMaxJITBlockSize:(NSInteger)blockSize
 {
-	pthread_mutex_lock(&threadParam.mutexCoreExecute);
+	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
 	CommonSettings.jit_max_block_size = (blockSize > 0) ? blockSize : 1;
-	pthread_mutex_unlock(&threadParam.mutexCoreExecute);
+	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
 }
 
 - (NSInteger) maxJITBlockSize
 {
-	pthread_mutex_lock(&threadParam.mutexCoreExecute);
+	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
 	const NSInteger blockSize = CommonSettings.jit_max_block_size;
-	pthread_mutex_unlock(&threadParam.mutexCoreExecute);
+	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
 	
 	return blockSize;
 }
@@ -594,14 +591,9 @@ volatile bool execute = true;
 	return [NSURL fileURLWithPath:[NSString stringWithCString:CommonSettings.Firmware encoding:NSUTF8StringEncoding]];
 }
 
-- (pthread_mutex_t *) mutexCoreExecute
+- (pthread_rwlock_t *) rwlockCoreExecute
 {
-	return &threadParam.mutexCoreExecute;
-}
-
-- (pthread_rwlock_t *) rwCoreExecute
-{
-	return &threadParam.rwCoreExecute;
+	return &threadParam.rwlockCoreExecute;
 }
 
 - (void) setEjectCardFlag
@@ -628,18 +620,18 @@ volatile bool execute = true;
 
 - (void) slot1Eject
 {
-	pthread_mutex_lock(&threadParam.mutexCoreExecute);
+	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
 	NDS_TriggerCardEjectIRQ();
-	pthread_mutex_unlock(&threadParam.mutexCoreExecute);
+	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
 	
 	[self setSlot1StatusText:NSSTRING_STATUS_SLOT1_NO_DEVICE];
 }
 
 - (void) changeRomSaveType:(NSInteger)saveTypeID
 {
-	pthread_mutex_lock(&threadParam.mutexCoreExecute);
+	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
 	[CocoaDSRom changeRomSaveType:saveTypeID];
-	pthread_mutex_unlock(&threadParam.mutexCoreExecute);
+	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
 }
 
 - (void) changeExecutionSpeed
@@ -755,9 +747,9 @@ volatile bool execute = true;
 
 - (NSUInteger) frameNumber
 {
-	pthread_mutex_lock(&threadParam.mutexCoreExecute);
+	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
 	const NSUInteger currFrameNum = currFrameCounter;
-	pthread_mutex_unlock(&threadParam.mutexCoreExecute);
+	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
 	
 	return currFrameNum;
 }
@@ -786,8 +778,7 @@ volatile bool execute = true;
 - (void) addOutput:(CocoaDSOutput *)theOutput
 {
 	pthread_mutex_lock(&threadParam.mutexOutputList);
-	[theOutput setMutexProducer:[self mutexCoreExecute]];
-	[theOutput setRwProducer:[self rwCoreExecute]];
+	[theOutput setRwlockProducer:[self rwlockCoreExecute]];
 	[[self cdsOutputList] addObject:theOutput];
 	pthread_mutex_unlock(&threadParam.mutexOutputList);
 }
@@ -955,14 +946,10 @@ static void* RunCoreThread(void *arg)
 		FCEUMOV_HandleRecording();
 		
 		// Execute the frame and increment the frame counter.
-		pthread_mutex_lock(&param->mutexCoreExecute);
-		
-		pthread_rwlock_wrlock(&param->rwCoreExecute);
+		pthread_rwlock_wrlock(&param->rwlockCoreExecute);
 		NDS_exec<false>();
-		pthread_rwlock_unlock(&param->rwCoreExecute);
-		
 		frameNum = currFrameCounter;
-		pthread_mutex_unlock(&param->mutexCoreExecute);
+		pthread_rwlock_unlock(&param->rwlockCoreExecute);
 		
 		// Check if an internal execution error occurred that halted the emulation.
 		if (!execute)

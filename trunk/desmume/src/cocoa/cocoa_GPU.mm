@@ -43,7 +43,7 @@ GPU3DInterface *core3DList[] = {
 @implementation CocoaDSGPU
 
 @dynamic gpuStateFlags;
-@synthesize mutexProducer;
+@synthesize rwlockProducer;
 
 @dynamic layerMainGPU;
 @dynamic layerMainBG0;
@@ -79,7 +79,7 @@ GPU3DInterface *core3DList[] = {
 	}
 	
 	spinlockGpuState = OS_SPINLOCK_INIT;
-	mutexProducer = NULL;
+	rwlockProducer = NULL;
 	
 	gpuStateFlags	= GPUSTATE_MAIN_GPU_MASK |
 					  GPUSTATE_MAIN_BG0_MASK |
@@ -143,96 +143,96 @@ GPU3DInterface *core3DList[] = {
 
 - (void) setRender3DRenderingEngine:(NSInteger)methodID
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	NDS_3D_ChangeCore(methodID);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (NSInteger) render3DRenderingEngine
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const NSInteger methodID = (NSInteger)cur3DCore;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return methodID;
 }
 
 - (void) setRender3DHighPrecisionColorInterpolation:(BOOL)state
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.GFX3D_HighResolutionInterpolateColor = state ? true : false;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (BOOL) render3DHighPrecisionColorInterpolation
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL state = CommonSettings.GFX3D_HighResolutionInterpolateColor ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return state;
 }
 
 - (void) setRender3DEdgeMarking:(BOOL)state
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.GFX3D_EdgeMark = state ? true : false;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (BOOL) render3DEdgeMarking
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL state = CommonSettings.GFX3D_EdgeMark ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return state;
 }
 
 - (void) setRender3DFog:(BOOL)state
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.GFX3D_Fog = state ? true : false;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (BOOL) render3DFog
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL state = CommonSettings.GFX3D_Fog ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return state;
 }
 
 - (void) setRender3DTextures:(BOOL)state
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.GFX3D_Texture = state ? true : false;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (BOOL) render3DTextures
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL state = CommonSettings.GFX3D_Texture ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return state;
 }
 
 - (void) setRender3DDepthComparisonThreshold:(NSUInteger)threshold
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack = threshold;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (NSUInteger) render3DDepthComparisonThreshold
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const NSUInteger threshold = (NSUInteger)CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return threshold;
 }
@@ -269,7 +269,7 @@ GPU3DInterface *core3DList[] = {
 	
 	const NSInteger renderingEngineID = [self render3DRenderingEngine];
 	
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	
 	CommonSettings.num_cores = numberCores;
 	
@@ -278,71 +278,71 @@ GPU3DInterface *core3DList[] = {
 		NDS_3D_ChangeCore(renderingEngineID);
 	}
 	
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (NSUInteger) render3DThreads
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const NSUInteger numberThreads = isCPUCoreCountAuto ? 0 : (NSUInteger)CommonSettings.num_cores;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return numberThreads;
 }
 
 - (void) setRender3DLineHack:(BOOL)state
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.GFX3D_LineHack = state ? true : false;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (BOOL) render3DLineHack
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL state = CommonSettings.GFX3D_LineHack ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return state;
 }
 
 - (void) setRender3DMultisample:(BOOL)state
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.GFX3D_Renderer_Multisample = state ? true : false;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (BOOL) render3DMultisample
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL state = CommonSettings.GFX3D_Renderer_Multisample ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return state;
 }
 
 - (void) setRender3DFragmentSamplingHack:(BOOL)state
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.GFX3D_TXTHack = state ? true : false;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (BOOL) render3DFragmentSamplingHack
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL state = CommonSettings.GFX3D_TXTHack ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return state;
 }
 
 - (void) setLayerMainGPU:(BOOL)gpuState
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	SetGPUDisplayState(DS_GPU_TYPE_MAIN, (gpuState) ? true : false);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
 	gpuStateFlags = (gpuState) ? (gpuStateFlags | GPUSTATE_MAIN_GPU_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_GPU_MASK);
@@ -351,18 +351,18 @@ GPU3DInterface *core3DList[] = {
 
 - (BOOL) layerMainGPU
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL gpuState = GetGPUDisplayState(DS_GPU_TYPE_MAIN) ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return gpuState;
 }
 
 - (void) setLayerMainBG0:(BOOL)layerState
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	SetGPULayerState(DS_GPU_TYPE_MAIN, 0, (layerState) ? true : false);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_BG0_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_BG0_MASK);
@@ -371,18 +371,18 @@ GPU3DInterface *core3DList[] = {
 
 - (BOOL) layerMainBG0
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 0) ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
 }
 
 - (void) setLayerMainBG1:(BOOL)layerState
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	SetGPULayerState(DS_GPU_TYPE_MAIN, 1, (layerState) ? true : false);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_BG1_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_BG1_MASK);
@@ -391,18 +391,18 @@ GPU3DInterface *core3DList[] = {
 
 - (BOOL) layerMainBG1
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 1) ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
 }
 
 - (void) setLayerMainBG2:(BOOL)layerState
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	SetGPULayerState(DS_GPU_TYPE_MAIN, 2, (layerState) ? true : false);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_BG2_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_BG2_MASK);
@@ -411,18 +411,18 @@ GPU3DInterface *core3DList[] = {
 
 - (BOOL) layerMainBG2
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 2) ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
 }
 
 - (void) setLayerMainBG3:(BOOL)layerState
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	SetGPULayerState(DS_GPU_TYPE_MAIN, 3, (layerState) ? true : false);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_BG3_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_BG3_MASK);
@@ -431,18 +431,18 @@ GPU3DInterface *core3DList[] = {
 
 - (BOOL) layerMainBG3
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 3) ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
 }
 
 - (void) setLayerMainOBJ:(BOOL)layerState
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	SetGPULayerState(DS_GPU_TYPE_MAIN, 4, (layerState) ? true : false);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_MAIN_OBJ_MASK) : (gpuStateFlags & ~GPUSTATE_MAIN_OBJ_MASK);
@@ -451,18 +451,18 @@ GPU3DInterface *core3DList[] = {
 
 - (BOOL) layerMainOBJ
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 4) ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
 }
 
 - (void) setLayerSubGPU:(BOOL)gpuState
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	SetGPUDisplayState(DS_GPU_TYPE_SUB, (gpuState) ? true : false);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
 	gpuStateFlags = (gpuState) ? (gpuStateFlags | GPUSTATE_SUB_GPU_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_GPU_MASK);
@@ -471,18 +471,18 @@ GPU3DInterface *core3DList[] = {
 
 - (BOOL) layerSubGPU
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL gpuState = GetGPUDisplayState(DS_GPU_TYPE_SUB) ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return gpuState;
 }
 
 - (void) setLayerSubBG0:(BOOL)layerState
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	SetGPULayerState(DS_GPU_TYPE_SUB, 0, (layerState) ? true : false);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_BG0_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_BG0_MASK);
@@ -491,18 +491,18 @@ GPU3DInterface *core3DList[] = {
 
 - (BOOL) layerSubBG0
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 0) ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
 }
 
 - (void) setLayerSubBG1:(BOOL)layerState
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	SetGPULayerState(DS_GPU_TYPE_SUB, 1, (layerState) ? true : false);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_BG1_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_BG1_MASK);
@@ -511,18 +511,18 @@ GPU3DInterface *core3DList[] = {
 
 - (BOOL) layerSubBG1
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 1) ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
 }
 
 - (void) setLayerSubBG2:(BOOL)layerState
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	SetGPULayerState(DS_GPU_TYPE_SUB, 2, (layerState) ? true : false);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_BG2_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_BG2_MASK);
@@ -531,18 +531,18 @@ GPU3DInterface *core3DList[] = {
 
 - (BOOL) layerSubBG2
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 2) ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
 }
 
 - (void) setLayerSubBG3:(BOOL)layerState
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	SetGPULayerState(DS_GPU_TYPE_SUB, 3, (layerState) ? true : false);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_BG3_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_BG3_MASK);
@@ -551,18 +551,18 @@ GPU3DInterface *core3DList[] = {
 
 - (BOOL) layerSubBG3
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 3) ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
 }
 
 - (void) setLayerSubOBJ:(BOOL)layerState
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	SetGPULayerState(DS_GPU_TYPE_SUB, 4, (layerState) ? true : false);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
 	gpuStateFlags = (layerState) ? (gpuStateFlags | GPUSTATE_SUB_OBJ_MASK) : (gpuStateFlags & ~GPUSTATE_SUB_OBJ_MASK);
@@ -571,9 +571,9 @@ GPU3DInterface *core3DList[] = {
 
 - (BOOL) layerSubOBJ
 {
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 4) ? YES : NO;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
 }
@@ -674,18 +674,18 @@ GPU3DInterface *core3DList[] = {
 {
 	NSString *theString = @"Uninitialized";
 	
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	
 	if(gpu3D == NULL)
 	{
-		pthread_mutex_unlock(self.mutexProducer);
+		pthread_rwlock_unlock(self.rwlockProducer);
 		return theString;
 	}
 	
 	const char *theName = gpu3D->name;
 	theString = [NSString stringWithCString:theName encoding:NSUTF8StringEncoding];
 	
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return theString;
 }

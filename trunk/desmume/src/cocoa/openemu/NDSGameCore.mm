@@ -50,7 +50,7 @@ volatile bool execute = true;
 	
 	// Set up threading locks
 	spinlockDisplayMode = OS_SPINLOCK_INIT;
-	pthread_mutex_init(&mutexCoreExecute, NULL);
+	pthread_rwlock_init(&rwlockCoreExecute, NULL);
 	
 	// Set up input handling
 	touchLocation.x = 0;
@@ -78,7 +78,7 @@ volatile bool execute = true;
 	
 	// Set up the DS GPU
 	cdsGPU = [[[[CocoaDSGPU alloc] init] retain] autorelease];
-	[cdsGPU setMutexProducer:&mutexCoreExecute];
+	[cdsGPU setRwlockProducer:&rwlockCoreExecute];
 	[cdsGPU setRender3DThreads:0]; // Pass 0 to automatically set the number of rendering threads
 	[cdsGPU setRender3DRenderingEngine:CORE3DLIST_SWRASTERIZE];
 	
@@ -90,7 +90,7 @@ volatile bool execute = true;
 	
 	// Set up the cheat system
 	cdsCheats = [[[[CocoaDSCheatManager alloc] init] retain] autorelease];
-	[cdsCheats setMutexCoreExecute:&mutexCoreExecute];
+	[cdsCheats setRwlockCoreExecute:&rwlockCoreExecute];
 	
 	// Set up the DS firmware using the internal firmware
 	cdsFirmware = [[[[CocoaDSFirmware alloc] init] retain] autorelease];
@@ -130,7 +130,7 @@ volatile bool execute = true;
 	[self setCdsGPU:nil];
 	[self setCdsFirmware:nil];
 	
-	pthread_mutex_destroy(&mutexCoreExecute);
+	pthread_rwlock_destroy(&rwlockCoreExecute);
 	
 	[super dealloc];
 }
@@ -184,9 +184,9 @@ volatile bool execute = true;
 
 - (void)resetEmulation
 {
-	pthread_mutex_lock(&mutexCoreExecute);
+	pthread_rwlock_wrlock(&rwlockCoreExecute);
 	NDS_Reset();
-	pthread_mutex_unlock(&mutexCoreExecute);
+	pthread_rwlock_unlock(&rwlockCoreExecute);
 	execute = true;
 }
 
@@ -207,9 +207,9 @@ volatile bool execute = true;
 	NDS_beginProcessingInput();
 	NDS_endProcessingInput();
 	
-	pthread_mutex_lock(&mutexCoreExecute);
+	pthread_rwlock_wrlock(&rwlockCoreExecute);
 	NDS_exec<false>();
-	pthread_mutex_unlock(&mutexCoreExecute);
+	pthread_rwlock_unlock(&rwlockCoreExecute);
 	
 	SPU_Emulate_user();
 }
