@@ -50,9 +50,8 @@ typedef struct
 	NSData *frameAttributesData;
 	NSMutableDictionary *property;
 	
-	pthread_mutex_t *mutexProducer;
 	pthread_mutex_t *mutexConsume;
-	pthread_rwlock_t *rwProducer;
+	pthread_rwlock_t *rwlockProducer;
 }
 
 @property (assign) BOOL isStateChanged;
@@ -60,8 +59,7 @@ typedef struct
 @property (retain) NSData *frameData;
 @property (retain) NSData *frameAttributesData;
 @property (readonly) NSMutableDictionary *property;
-@property (assign) pthread_mutex_t *mutexProducer;
-@property (assign) pthread_rwlock_t *rwProducer;
+@property (assign) pthread_rwlock_t *rwlockProducer;
 @property (readonly) pthread_mutex_t *mutexConsume;
 
 - (void) doCoreEmuFrame;

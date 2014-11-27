@@ -1726,7 +1726,7 @@
 		}
 		
 		[cheatWindowDelegate setCdsCheats:newCheatList];
-		[[cheatWindowDelegate cdsCheatSearch] setMutexCoreExecute:[cdsCore mutexCoreExecute]];
+		[[cheatWindowDelegate cdsCheatSearch] setRwlockCoreExecute:[cdsCore rwlockCoreExecute]];
 		[cheatWindowDelegate setCheatSearchViewByStyle:CHEATSEARCH_SEARCHSTYLE_EXACT_VALUE];
 	}
 	

@@ -26,11 +26,11 @@
 	BOOL isCPUCoreCountAuto;
 	
 	OSSpinLock spinlockGpuState;
-	pthread_mutex_t *mutexProducer;
+	pthread_rwlock_t *rwlockProducer;
 }
 
 @property (assign) UInt32 gpuStateFlags;
-@property (assign) pthread_mutex_t *mutexProducer;
+@property (assign) pthread_rwlock_t *rwlockProducer;
 
 @property (assign) BOOL layerMainGPU;
 @property (assign) BOOL layerMainBG0;

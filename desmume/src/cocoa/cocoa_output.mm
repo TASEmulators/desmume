@@ -38,9 +38,8 @@
 @synthesize frameData;
 @synthesize frameAttributesData;
 @synthesize property;
-@synthesize mutexProducer;
 @synthesize mutexConsume;
-@synthesize rwProducer;
+@synthesize rwlockProducer;
 
 - (id)init
 {
@@ -203,7 +202,7 @@
 	[property setValue:[NSNumber numberWithInteger:methodID] forKey:@"audioOutputEngine"];
 	OSSpinLockUnlock(&spinlockAudioOutputEngine);
 	
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	
 	NSInteger result = -1;
 	
@@ -217,9 +216,9 @@
 		SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
 	}
 	
-	mutexAudioEmulateCore = self.mutexProducer;
+	rwlockAudioEmulateCore = self.rwlockProducer;
 	
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	// Force the volume back to it's original setting.
 	[self setVolume:[self volume]];
@@ -240,9 +239,9 @@
 	[property setValue:[NSNumber numberWithBool:state] forKey:@"spuAdvancedLogic"];
 	OSSpinLockUnlock(&spinlockSpuAdvancedLogic);
 	
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.spu_advanced = state;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (BOOL) spuAdvancedLogic
@@ -260,9 +259,9 @@
 	[property setValue:[NSNumber numberWithInteger:modeID] forKey:@"spuInterpolationMode"];
 	OSSpinLockUnlock(&spinlockSpuInterpolationMode);
 	
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.spuInterpolationMode = (SPUInterpolationMode)modeID;
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (NSInteger) spuInterpolationMode
@@ -280,10 +279,10 @@
 	[property setValue:[NSNumber numberWithInteger:modeID] forKey:@"spuSyncMode"];
 	OSSpinLockUnlock(&spinlockSpuSyncMode);
 	
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.SPU_sync_mode = (int)modeID;
 	SPU_SetSynchMode(CommonSettings.SPU_sync_mode, CommonSettings.SPU_sync_method);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (NSInteger) spuSyncMode
@@ -301,10 +300,10 @@
 	[property setValue:[NSNumber numberWithInteger:methodID] forKey:@"spuSyncMethod"];
 	OSSpinLockUnlock(&spinlockSpuSyncMethod);
 	
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	CommonSettings.SPU_sync_method = (int)methodID;
 	SPU_SetSynchMode(CommonSettings.SPU_sync_mode, CommonSettings.SPU_sync_method);
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (NSInteger) spuSyncMethod
@@ -349,19 +348,19 @@
 {
 	NSString *theString = @"Uninitialized";
 	
-	pthread_mutex_lock(self.mutexProducer);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	
 	SoundInterface_struct *soundCore = SPU_SoundCore();
 	if(soundCore == NULL)
 	{
-		pthread_mutex_unlock(self.mutexProducer);
+		pthread_rwlock_unlock(self.rwlockProducer);
 		return theString;
 	}
 	
 	const char *theName = soundCore->Name;
 	theString = [NSString stringWithCString:theName encoding:NSUTF8StringEncoding];
 	
-	pthread_mutex_unlock(self.mutexProducer);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return theString;
 }
@@ -929,7 +928,7 @@
 		// depending on the display mode, we copy only the pixels from the respective
 		// screen.
 		
-		pthread_rwlock_rdlock([self rwProducer]);
+		pthread_rwlock_rdlock(self.rwlockProducer);
 		
 		switch (frameDisplayMode)
 		{
@@ -949,7 +948,7 @@
 				break;
 		}
 		
-		pthread_rwlock_unlock([self rwProducer]);
+		pthread_rwlock_unlock(self.rwlockProducer);
 	}
 	
 	[(id<CocoaDSDisplayVideoDelegate>)delegate doProcessVideoFrame:[newVideoFrame bytes] displayMode:frameDisplayMode width:frameWidth height:frameHeight];

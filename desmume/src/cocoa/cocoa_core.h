@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2013 DeSmuME team
+	Copyright (C) 2011-2014 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -39,11 +39,10 @@ typedef struct
 	int framesToSkip;
 	uint64_t timeBudgetMachAbsTime;
 	bool exitThread;
-	pthread_mutex_t mutexCoreExecute;
 	pthread_mutex_t mutexOutputList;
 	pthread_mutex_t mutexThreadExecute;
 	pthread_cond_t condThreadExecute;
-	pthread_rwlock_t rwCoreExecute;
+	pthread_rwlock_t rwlockCoreExecute;
 } CoreThreadParam;
 
 @interface CocoaDSCore : NSObject
@@ -122,8 +121,7 @@ typedef struct
 @property (copy) NSURL *firmwareImageURL;
 @property (retain) NSURL *slot1R4URL;
 
-@property (readonly) pthread_mutex_t *mutexCoreExecute;
-@property (readonly) pthread_rwlock_t *rwCoreExecute;
+@property (readonly) pthread_rwlock_t *rwlockCoreExecute;
 
 - (BOOL) ejectCardFlag;
 - (void) setEjectCardFlag;
