@@ -112,8 +112,8 @@ struct SJoyState{
     bool UDown;
     bool VUp;
     bool VDown;
-    bool ZUp;
-    bool ZDown;
+    bool ZPos;
+    bool ZNeg;
     bool Button[128];
 	bool FeedBack;
 	LPDIRECTINPUTEFFECT     pEffect;

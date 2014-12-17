@@ -115,8 +115,8 @@
 #define GAMEDEVICE_POVDNRIGHT "POV Dn Right"
 #define GAMEDEVICE_POVUPLEFT  "POV Up Left"
 #define GAMEDEVICE_POVUPRIGHT "POV Up Right"
-#define GAMEDEVICE_ZPOS "Z Up"
-#define GAMEDEVICE_ZNEG "Z Down"
+#define GAMEDEVICE_ZPOS "Z +"
+#define GAMEDEVICE_ZNEG "Z -"
 #define GAMEDEVICE_RPOS "R Up"
 #define GAMEDEVICE_RNEG "R Down"
 #define GAMEDEVICE_UPOS "U Up"
@@ -728,7 +728,7 @@ void S9xUpdateJoyState()
 				{
 					CheckAxis_game(JoyStatus.lX,-10000,10000,Joystick[C].Left,Joystick[C].Right);
 					CheckAxis_game(JoyStatus.lY,-10000,10000,Joystick[C].Up,Joystick[C].Down);
-					CheckAxis_game(JoyStatus.lZ,-10000,10000,Joystick[C].ZDown,Joystick[C].ZUp);
+					CheckAxis_game(JoyStatus.lZ,-10000,10000,Joystick[C].ZNeg,Joystick[C].ZPos);
 					CheckAxis_game(JoyStatus.lRx,-10000,10000,Joystick[C].XRotMin,Joystick[C].XRotMax);
 					CheckAxis_game(JoyStatus.lRy,-10000,10000,Joystick[C].YRotMin,Joystick[C].YRotMax);
 					CheckAxis_game(JoyStatus.lRz,-10000,10000,Joystick[C].ZRotMin,Joystick[C].ZRotMax);
@@ -807,7 +807,7 @@ void di_poll_scan()
 				{
 					CheckAxis(C,0,JoyStatus.lX,-10000,10000,Joystick[C].Left,Joystick[C].Right);
 					CheckAxis(C,2,JoyStatus.lY,-10000,10000,Joystick[C].Down,Joystick[C].Up);
-					CheckAxis(C,41,JoyStatus.lZ,-10000,10000,Joystick[C].ZDown,Joystick[C].ZUp);
+					CheckAxis(C,41,JoyStatus.lZ,-10000,10000,Joystick[C].ZNeg,Joystick[C].ZPos);
 					CheckAxis(C,53,JoyStatus.lRx,-10000,10000,Joystick[C].XRotMin,Joystick[C].XRotMax);
 					CheckAxis(C,55,JoyStatus.lRy,-10000,10000,Joystick[C].YRotMin,Joystick[C].YRotMax);
 					CheckAxis(C,57,JoyStatus.lRz,-10000,10000,Joystick[C].ZRotMin,Joystick[C].ZRotMax);
@@ -979,8 +979,8 @@ void TranslateKey(WORD keyz,char *out)
 		case 50: strcat(out,GAMEDEVICE_POVDNRIGHT); break;
 		case 51: strcat(out,GAMEDEVICE_POVUPLEFT); break;
 		case 52: strcat(out,GAMEDEVICE_POVUPRIGHT); break;
-		case 41: strcat(out,GAMEDEVICE_ZPOS); break;
-		case 42: strcat(out,GAMEDEVICE_ZNEG); break;
+		case 41: strcat(out,GAMEDEVICE_ZNEG); break;
+		case 42: strcat(out,GAMEDEVICE_ZPOS); break;
 		case 43: strcat(out,GAMEDEVICE_RPOS); break;
 		case 44: strcat(out,GAMEDEVICE_RNEG); break;
 		case 45: strcat(out,GAMEDEVICE_UPOS); break;
@@ -2398,8 +2398,8 @@ bool S9xGetState (WORD KeyIdent)
 			case 50:return !Joystick [j].PovDnRight;
 			case 51:return !Joystick [j].PovUpLeft;
 			case 52:return !Joystick [j].PovUpRight;
-            case 41:return !Joystick [j].ZUp;
-            case 42:return !Joystick [j].ZDown;
+            case 41:return !Joystick [j].ZNeg;
+            case 42:return !Joystick [j].ZPos;
             case 43:return !Joystick [j].RUp;
             case 44:return !Joystick [j].RDown;
             case 45:return !Joystick [j].UUp;
