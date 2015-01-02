@@ -58,9 +58,7 @@
 #include "commandline.h"
 #include "slot2.h"
 #include "utils/xstring.h"
-#ifdef GDB_STUB
 #include "gdbstub.h"
-#endif
 
 volatile bool execute = false;
 
@@ -492,14 +490,6 @@ T_AGG_RGB555 agg_targetScreen_cli(GPU_screen, 256, 384, 512);
 int main(int argc, char ** argv) {
   class configured_features my_config;
   struct ctrls_event_config ctrls_cfg;
-#ifdef GDB_STUB
-  gdbstub_handle_t arm9_gdb_stub;
-  gdbstub_handle_t arm7_gdb_stub;
-  struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
-  struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
-  struct armcpu_ctrl_iface *arm9_ctrl_iface;
-  struct armcpu_ctrl_iface *arm7_ctrl_iface;
-#endif
 
   int limiter_frame_counter = 0;
   int limiter_tick0 = 0;
@@ -524,12 +514,7 @@ int main(int argc, char ** argv) {
   /* the firmware settings */
   struct NDS_fw_config_data fw_config;
 
-#ifdef GDB_STUB
-  NDS_Init( arm9_memio, &arm9_ctrl_iface,
-            arm7_memio, &arm7_ctrl_iface);
-#else
-        NDS_Init();
-#endif
+  NDS_Init();
 
   /* default the firmware settings, they may get changed later */
   NDS_FillDefaultFirmwareConfigData( &fw_config);
@@ -605,28 +590,43 @@ int main(int argc, char ** argv) {
   }
 
   driver = new UnixDriver();
-
+  
 #ifdef GDB_STUB
-  if ( my_config.arm9_gdb_port != 0) {
+  /*
+   * Activate the GDB stubs
+   * This has to come after NDS_Init() where the CPUs are set up.
+   */
+  gdbstub_handle_t arm9_gdb_stub = NULL;
+  gdbstub_handle_t arm7_gdb_stub = NULL;
+  struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
+  struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
+  
+  if ( my_config.arm9_gdb_port > 0) {
     arm9_gdb_stub = createStub_gdb( my_config.arm9_gdb_port,
-                                    &arm9_memio,
-                                    &arm9_direct_memory_iface);
-
+                                   &arm9_memio,
+                                   &arm9_direct_memory_iface);
+    
     if ( arm9_gdb_stub == NULL) {
       fprintf( stderr, "Failed to create ARM9 gdbstub on port %d\n",
-               my_config.arm9_gdb_port);
+              my_config.arm9_gdb_port);
       exit( 1);
     }
+    else {
+      activateStub_gdb( arm9_gdb_stub, NDS_ARM9.GetCtrlInterface());
+    }
   }
-  if ( my_config.arm7_gdb_port != 0) {
+  if ( my_config.arm7_gdb_port > 0) {
     arm7_gdb_stub = createStub_gdb( my_config.arm7_gdb_port,
-                                    &arm7_memio,
-                                    &arm7_base_memory_iface);
-
+                                   &arm7_memio,
+                                   &arm7_base_memory_iface);
+    
     if ( arm7_gdb_stub == NULL) {
       fprintf( stderr, "Failed to create ARM7 gdbstub on port %d\n",
-               my_config.arm7_gdb_port);
+              my_config.arm7_gdb_port);
       exit( 1);
+    }
+    else {
+      activateStub_gdb( arm7_gdb_stub, NDS_ARM7.GetCtrlInterface());
     }
   }
 #endif
@@ -647,19 +647,6 @@ int main(int argc, char ** argv) {
     fprintf(stderr, "error while loading %s\n", my_config.nds_file.c_str());
     exit(-1);
   }
-
-  /*
-   * Activate the GDB stubs
-   * This has to come after the NDS_Init where the cpus are set up.
-   */
-#ifdef GDB_STUB
-  if ( my_config.arm9_gdb_port != 0) {
-    activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
-  }
-  if ( my_config.arm7_gdb_port != 0) {
-    activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
-  }
-#endif
 
   execute = true;
 
@@ -831,17 +818,17 @@ int main(int argc, char ** argv) {
   /* Unload joystick */
   uninit_joy();
 
+#ifdef GDB_STUB
+  destroyStub_gdb( arm9_gdb_stub);
+  arm9_gdb_stub = NULL;
+  
+  destroyStub_gdb( arm7_gdb_stub);
+  arm7_gdb_stub = NULL;
+#endif
+  
   SDL_Quit();
   NDS_DeInit();
 
-#ifdef GDB_STUB
-  if ( my_config.arm9_gdb_port != 0) {
-    destroyStub_gdb( arm9_gdb_stub);
-  }
-  if ( my_config.arm7_gdb_port != 0) {
-    destroyStub_gdb( arm7_gdb_stub);
-  }
-#endif
 
   return 0;
 }
