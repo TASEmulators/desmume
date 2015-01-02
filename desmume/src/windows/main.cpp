@@ -3445,10 +3445,10 @@ int _main()
 
 #ifdef GDB_STUB
 	destroyStub_gdb(arm9_gdb_stub);
-	gdbStubHandleARM9 = NULL;
+	arm9_gdb_stub = NULL;
 	
 	destroyStub_gdb(arm7_gdb_stub);
-	gdbStubHandleARM7 = NULL;
+	arm7_gdb_stub = NULL;
 #endif
 	
 	NDS_DeInit();
