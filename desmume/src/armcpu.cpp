@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2009-2012 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -53,14 +53,12 @@ armcpu_t NDS_ARM9;
 		      }       \
                       while(0)
 
-#ifdef GDB_STUB
-
 #define STALLED_CYCLE_COUNT 10
 
 static void
 stall_cpu( void *instance) {
   armcpu_t *armcpu = (armcpu_t *)instance;
-  printf("UNSTALL\n");
+  printf("STALL\n");
   armcpu->stalled = 1;
 }
                       
@@ -87,9 +85,7 @@ remove_post_exec_fn( void *instance) {
 
   armcpu->post_ex_fn = NULL;
 }
-#endif
 
-#ifdef GDB_STUB
 static u32 read_cpu_reg( void *instance, u32 reg_num)
 {
 	armcpu_t *armcpu = (armcpu_t *)instance;
@@ -104,6 +100,8 @@ static u32 read_cpu_reg( void *instance, u32 reg_num)
 	  //CPSR
 	  return armcpu->CPSR.val;
 	}
+	
+	return 0;
 }
 
 static void
@@ -120,41 +118,39 @@ set_cpu_reg( void *instance, u32 reg_num, u32 value) {
     /* FIXME: setting the CPSR */
   }
 }
-#endif
 
-#ifdef GDB_STUB
-int armcpu_new( armcpu_t *armcpu, u32 id,
-                struct armcpu_memory_iface *mem_if,
-                struct armcpu_ctrl_iface **ctrl_iface_ret)
-#else
 int armcpu_new( armcpu_t *armcpu, u32 id)
-#endif
 {
 	armcpu->proc_ID = id;
-
-#ifdef GDB_STUB
-	armcpu->mem_if = mem_if;
-
-	/* populate the control interface */
-	armcpu->ctrl_iface.stall = stall_cpu;
-	armcpu->ctrl_iface.unstall = unstall_cpu;
-	armcpu->ctrl_iface.read_reg = read_cpu_reg;
-	armcpu->ctrl_iface.set_reg = set_cpu_reg;
-	armcpu->ctrl_iface.install_post_ex_fn = install_post_exec_fn;
-	armcpu->ctrl_iface.remove_post_ex_fn = remove_post_exec_fn;
-	armcpu->ctrl_iface.data = armcpu;
-
-	*ctrl_iface_ret = &armcpu->ctrl_iface;
-
-	armcpu->post_ex_fn = NULL;
-#endif
-
 	armcpu->stalled = 0;
 
 	armcpu_init(armcpu, 0);
 
 	return 0;
-} 
+}
+
+armcpu_ctrl_iface* armcpu_t::InitCtrlInterface(armcpu_memory_iface *mem_iface)
+{
+	this->mem_if = mem_iface;
+	
+	/* populate the control interface */
+	this->ctrl_iface.stall = stall_cpu;
+	this->ctrl_iface.unstall = unstall_cpu;
+	this->ctrl_iface.read_reg = read_cpu_reg;
+	this->ctrl_iface.set_reg = set_cpu_reg;
+	this->ctrl_iface.install_post_ex_fn = install_post_exec_fn;
+	this->ctrl_iface.remove_post_ex_fn = remove_post_exec_fn;
+	this->ctrl_iface.data = this;
+	
+	this->post_ex_fn = NULL;
+	
+	return &this->ctrl_iface;
+}
+
+armcpu_ctrl_iface* armcpu_t::GetCtrlInterface()
+{
+	return &this->ctrl_iface;
+}
 
 //call this whenever CPSR is changed (other than CNVZQ or T flags); interrupts may need to be unleashed
 void armcpu_t::changeCPSR()

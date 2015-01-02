@@ -1,6 +1,6 @@
 /* main.cpp - this file is part of DeSmuME
  *
- * Copyright (C) 2006-2014 DeSmuME Team
+ * Copyright (C) 2006-2015 DeSmuME Team
  * Copyright (C) 2007 Pascal Giard (evilynux)
  *
  * This file is free software; you can redistribute it and/or modify
@@ -2827,15 +2827,6 @@ common_gtk_main( class configured_features *my_config)
     GtkWidget *pMenuBar;
     GtkWidget *pToolBar;
 
-#ifdef GDB_STUB
-    gdbstub_handle_t arm9_gdb_stub;
-    gdbstub_handle_t arm7_gdb_stub;
-#endif
-    struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
-    struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
-    struct armcpu_ctrl_iface *arm9_ctrl_iface;
-    struct armcpu_ctrl_iface *arm7_ctrl_iface;
-
     /* the firmware settings */
     struct NDS_fw_config_data fw_config;
 
@@ -2904,31 +2895,6 @@ common_gtk_main( class configured_features *my_config)
     slot2_Init();
     slot2_Change((NDS_SLOT2_TYPE)slot2_device_type);
 
-#ifdef GDB_STUB
-    if ( my_config->arm9_gdb_port != 0) {
-		arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
-                                          &arm9_memio,
-                                          &arm9_base_memory_iface);
-
-        if ( arm9_gdb_stub == NULL) {
-            g_printerr("Failed to create ARM9 gdbstub on port %d\n",
-                     my_config->arm9_gdb_port);
-            exit( -1);
-        }
-    }
-    if ( my_config->arm7_gdb_port != 0) {
-         arm7_gdb_stub = createStub_gdb( my_config->arm7_gdb_port,
-                                          &arm7_memio,
-                                          &arm7_base_memory_iface);
-
-        if ( arm7_gdb_stub == NULL) {
-            g_printerr("Failed to create ARM7 gdbstub on port %d\n",
-                     my_config->arm7_gdb_port);
-            exit( -1);
-        }
-    }
-#endif
-
     /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
      * Perhaps it needs a "window" to catch events...? */
     if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO) == -1) {
@@ -2936,9 +2902,7 @@ common_gtk_main( class configured_features *my_config)
                     SDL_GetError());
         return 1;
     }
-    desmume_init( arm9_memio, &arm9_ctrl_iface,
-                      arm7_memio, &arm7_ctrl_iface,
-                      my_config->disable_sound || !config.audio_enabled);
+    desmume_init( my_config->disable_sound || !config.audio_enabled);
 
     /* Init the hud / osd stuff */
 #ifdef HAVE_LIBAGG
@@ -2952,11 +2916,38 @@ common_gtk_main( class configured_features *my_config)
      * where the cpus are set up.
      */
 #ifdef GDB_STUB
-    if ( my_config->arm9_gdb_port != 0) {
-        activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
+    gdbstub_handle_t arm9_gdb_stub = NULL;
+    gdbstub_handle_t arm7_gdb_stub = NULL;
+    struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
+    struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
+    
+    if ( my_config->arm9_gdb_port > 0) {
+        arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
+                                         &arm9_memio,
+                                         &arm9_base_memory_iface);
+        
+        if ( arm9_gdb_stub == NULL) {
+            g_printerr("Failed to create ARM9 gdbstub on port %d\n",
+                       my_config->arm9_gdb_port);
+            exit( -1);
+        }
+        else {
+            activateStub_gdb( arm9_gdb_stub, NDS_ARM9.GetCtrlInterface());
+        }
     }
-    if ( my_config->arm7_gdb_port != 0) {
-        activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
+    if ( my_config->arm7_gdb_port > 0) {
+        arm7_gdb_stub = createStub_gdb( my_config->arm7_gdb_port,
+                                         &arm7_memio,
+                                         &arm7_base_memory_iface);
+        
+        if ( arm7_gdb_stub == NULL) {
+            g_printerr("Failed to create ARM7 gdbstub on port %d\n",
+                       my_config->arm7_gdb_port);
+            exit( -1);
+        }
+        else {
+            activateStub_gdb( arm7_gdb_stub, NDS_ARM7.GetCtrlInterface());
+        }
     }
 #endif
 
@@ -3280,12 +3271,8 @@ common_gtk_main( class configured_features *my_config)
     desmume_config_dispose(keyfile);
 
 #ifdef GDB_STUB
-    if ( my_config->arm9_gdb_port != 0) {
-        destroyStub_gdb( arm9_gdb_stub);
-    }
-    if ( my_config->arm7_gdb_port != 0) {
-        destroyStub_gdb( arm7_gdb_stub);
-    }
+    destroyStub_gdb( arm9_gdb_stub);
+    destroyStub_gdb( arm7_gdb_stub);
 #endif
 
     return EXIT_SUCCESS;

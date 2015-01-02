@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2006-2013 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -2917,14 +2917,6 @@ int _main()
 	display_invoke_done_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 	display_wakeup_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 
-#ifdef GDB_STUB
-	gdbstub_handle_t arm9_gdb_stub;
-	gdbstub_handle_t arm7_gdb_stub;
-	struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
-	struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
-	struct armcpu_ctrl_iface *arm9_ctrl_iface;
-	struct armcpu_ctrl_iface *arm7_ctrl_iface;
-#endif
 //	struct configured_features my_config;
 
 	oglrender_init = windows_opengl_init;
@@ -3246,48 +3238,48 @@ int _main()
 
 	CommonSettings.wifi.mode = GetPrivateProfileInt("Wifi", "Mode", 0, IniName);
 	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
-
+	
+	NDS_Init();
+	
 #ifdef GDB_STUB
-	if ( cmdline.arm9_gdb_port != 0) {
-		arm9_gdb_stub = createStub_gdb( cmdline.arm9_gdb_port,
-			&arm9_memio, &arm9_direct_memory_iface);
-
-		if ( arm9_gdb_stub == NULL) {
-			MessageBox(MainWindow->getHWnd(),"Failed to create ARM9 gdbstub","Error",MB_OK);
+	// Activate the GDB stubs. This has to come after the NDS_Init() where the CPUs are set up.
+	gdbstub_handle_t arm9_gdb_stub = NULL;
+	gdbstub_handle_t arm7_gdb_stub = NULL;
+	
+	if (cmdline.arm9_gdb_port > 0)
+	{
+		armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
+		
+		arm9_gdb_stub = createStub_gdb(cmdline.arm9_gdb_port, &arm9_memio, &arm9_direct_memory_iface);
+		if (arm9_gdb_stub == NULL)
+		{
+			MessageBox(MainWindow->getHWnd(), "Failed to create ARM9 gdbstub", "Error", MB_OK);
 			return -1;
 		}
-	}
-	if ( cmdline.arm7_gdb_port != 0) {
-		arm7_gdb_stub = createStub_gdb( cmdline.arm7_gdb_port,
-			&arm7_memio,
-			&arm7_base_memory_iface);
-
-		if ( arm7_gdb_stub == NULL) {
-			MessageBox(MainWindow->getHWnd(),"Failed to create ARM7 gdbstub","Error",MB_OK);
-			return -1;
+		else
+		{
+			activateStub_gdb(arm9_gdb_stub, NDS_ARM9.GetCtrlInterface());
 		}
 	}
-
-	NDS_Init( arm9_memio, &arm9_ctrl_iface,
-		arm7_memio, &arm7_ctrl_iface);
-#else
-	NDS_Init ();
+	
+	if (cmdline.arm7_gdb_port > 0)
+	{
+		armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
+		
+		arm7_gdb_stub = createStub_gdb(cmdline.arm7_gdb_port, &arm7_memio, &arm7_base_memory_iface);
+		if (arm7_gdb_stub == NULL)
+		{
+			MessageBox(MainWindow->getHWnd(), "Failed to create ARM7 gdbstub", "Error", MB_OK);
+			return -1;
+		}
+		else
+		{
+			activateStub_gdb(arm7_gdb_stub, NDS_ARM7.GetCtrlInterface());
+		}
+	}
 #endif
 
 	osd->singleScreen = (video.layout == 2);
-
-	/*
-	* Activate the GDB stubs
-	* This has to come after the NDS_Init where the cpus are set up.
-	*/
-#ifdef GDB_STUB
-	if ( cmdline.arm9_gdb_port != 0) {
-		activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
-	}
-	if ( cmdline.arm7_gdb_port != 0) {
-		activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
-	}
-#endif
 	
 	GetPrivateProfileString("General", "Language", "0", text, 80, IniName);	
 
@@ -3451,6 +3443,14 @@ int _main()
 	DRV_AviEnd();
 	WAV_End();
 
+#ifdef GDB_STUB
+	destroyStub_gdb(arm9_gdb_stub);
+	gdbStubHandleARM9 = NULL;
+	
+	destroyStub_gdb(arm7_gdb_stub);
+	gdbStubHandleARM7 = NULL;
+#endif
+	
 	NDS_DeInit();
 
 #ifdef DEBUG
