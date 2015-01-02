@@ -12,6 +12,14 @@
 	<true/>
 	<key>CoreControl_SpeedScalar</key>
 	<real>1</real>
+	<key>Debug_GDBStubEnableARM9</key>
+	<false/>
+	<key>Debug_GDBStubEnableARM7</key>
+	<false/>
+	<key>Debug_GDBStubPortARM9</key>
+	<integer>20000</integer>
+	<key>Debug_GDBStubPortARM7</key>
+	<integer>20001</integer>
 	<key>DisplayView_Deposterize</key>
 	<false/>
 	<key>DisplayView_FiltersPreferGPU</key>

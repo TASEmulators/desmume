@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2014 DeSmuME Team
+	Copyright (C) 2011-2015 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -59,6 +59,7 @@
 	NSBox *boxMisc;
 	
 	BOOL isAppRunningOnIntel;
+    BOOL isDeveloperPlusBuild;
 }
 
 @property (readonly) IBOutlet NSObject *dummyObject;
@@ -89,6 +90,7 @@
 @property (readonly) IBOutlet NSBox *boxMisc;
 
 @property (assign) BOOL isAppRunningOnIntel;
+@property (assign) BOOL isDeveloperPlusBuild;
 
 - (IBAction) launchWebsite:(id)sender;
 - (IBAction) launchForums:(id)sender;

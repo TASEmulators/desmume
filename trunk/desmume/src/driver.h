@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2010 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -77,7 +77,10 @@ public:
 	virtual bool EMU_IsFastForwarding() { return false; }
 	virtual bool EMU_HasEmulationStarted() { return true; }
 	virtual bool EMU_IsAtFrameBoundary() { return true; }
+	
+	virtual void EMU_DebugIdleEnter() {}
 	virtual void EMU_DebugIdleUpdate() {}
+	virtual void EMU_DebugIdleWakeUp() {}
 
 	enum eDebug_IOReg
 	{

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2013 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -285,14 +285,7 @@ struct NDS_fw_config_data
 
 extern NDSSystem nds;
 
-#ifdef GDB_STUB
-int NDS_Init( struct armcpu_memory_iface *arm9_mem_if,
-              struct armcpu_ctrl_iface **arm9_ctrl_iface,
-              struct armcpu_memory_iface *arm7_mem_if,
-              struct armcpu_ctrl_iface **arm7_ctrl_iface);
-#else
-int NDS_Init ( void);
-#endif
+int NDS_Init();
 
 void Desmume_InitOnce();
 

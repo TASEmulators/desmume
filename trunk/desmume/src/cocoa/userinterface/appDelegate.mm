@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2014 DeSmuME Team
+	Copyright (C) 2011-2015 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -64,6 +64,7 @@
 @synthesize boxMisc;
 
 @synthesize isAppRunningOnIntel;
+@synthesize isDeveloperPlusBuild;
 
 
 - (id)init
@@ -79,6 +80,12 @@
 	isAppRunningOnIntel = YES;
 #else
 	isAppRunningOnIntel = NO;
+#endif
+    
+#if defined(GDB_STUB)
+    isDeveloperPlusBuild = YES;
+#else
+    isDeveloperPlusBuild = NO;
 #endif
 	
 	return self;
@@ -345,6 +352,13 @@
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isFrameSkipEnabled] forKey:@"CoreControl_EnableAutoFrameSkip"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isCheatingEnabled] forKey:@"CoreControl_EnableCheats"];
 	
+#ifdef GDB_STUB
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore enableGdbStubARM9] forKey:@"Debug_GDBStubEnableARM9"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore enableGdbStubARM7] forKey:@"Debug_GDBStubEnableARM7"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore gdbStubPortARM9] forKey:@"Debug_GDBStubPortARM9"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore gdbStubPortARM7] forKey:@"Debug_GDBStubPortARM7"];
+#endif
+	
 	[cdsCoreController setContent:nil];
 }
 
@@ -537,6 +551,19 @@
 	{
 		[cdsCore setFirmwareImageURL:nil];
 	}
+	
+	// Set up GDB stub settings per user preferences.
+#ifdef GDB_STUB
+	[cdsCore setEnableGdbStubARM9:[[NSUserDefaults standardUserDefaults] boolForKey:@"Debug_GDBStubEnableARM9"]];
+	[cdsCore setEnableGdbStubARM7:[[NSUserDefaults standardUserDefaults] boolForKey:@"Debug_GDBStubEnableARM7"]];
+	[cdsCore setGdbStubPortARM9:[[NSUserDefaults standardUserDefaults] integerForKey:@"Debug_GDBStubPortARM9"]];
+	[cdsCore setGdbStubPortARM7:[[NSUserDefaults standardUserDefaults] integerForKey:@"Debug_GDBStubPortARM7"]];
+#else
+	[cdsCore setEnableGdbStubARM9:NO];
+	[cdsCore setEnableGdbStubARM7:NO];
+	[cdsCore setGdbStubPortARM9:0];
+	[cdsCore setGdbStubPortARM7:0];
+#endif
 	
 	// Set up the user's default input settings.
 	NSDictionary *userMappings = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_ControllerMappings"];

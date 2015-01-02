@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2014 DeSmuME Team
+	Copyright (C) 2013-2015 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -741,6 +741,17 @@
 - (IBAction) toggleGPUState:(id)sender
 {
 	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
+}
+
+- (IBAction) toggleGDBStubActivate:(id)sender
+{
+	// Force end of editing of any text fields.
+	[[(NSControl *)sender window] makeFirstResponder:nil];
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	const BOOL willStart = ([cdsCore isGdbStubStarted]) ? NO : YES;
+	[cdsCore setIsGdbStubStarted:willStart];
+	[(NSButton *)sender setTitle:([cdsCore isGdbStubStarted]) ? @"Stop" : @"Start"];
 }
 
 - (IBAction) changeRomSaveType:(id)sender
@@ -2160,28 +2171,28 @@
     }
 	else if (theAction == @selector(reset:))
 	{
-		if ([self currentRom] == nil || [self isUserInterfaceBlockingExecution])
+		if ([self currentRom] == nil || [self isUserInterfaceBlockingExecution] || [cdsCore isInDebugTrap])
 		{
 			enable = NO;
 		}
 	}
 	else if (theAction == @selector(loadRecentRom:))
 	{
-		if ([self isRomLoading] || [self isShowingSaveStateDialog])
+		if ([self isRomLoading] || [self isShowingSaveStateDialog] || [cdsCore isInDebugTrap])
 		{
 			enable = NO;
 		}
 	}
 	else if (theAction == @selector(openRom:))
 	{
-		if ([self isRomLoading] || [self isShowingSaveStateDialog])
+		if ([self isRomLoading] || [self isShowingSaveStateDialog] || [cdsCore isInDebugTrap])
 		{
 			enable = NO;
 		}
 	}
 	else if (theAction == @selector(closeRom:))
 	{
-		if ([self currentRom] == nil || [self isRomLoading] || [self isShowingSaveStateDialog])
+		if ([self currentRom] == nil || [self isRomLoading] || [self isShowingSaveStateDialog] || [cdsCore isInDebugTrap])
 		{
 			enable = NO;
 		}
@@ -2195,7 +2206,10 @@
 	}
 	else if (theAction == @selector(loadEmuSaveStateSlot:))
 	{
-		if ([self currentRom] == nil || [self isShowingSaveStateDialog] || ![CocoaDSFile saveStateExistsForSlot:[[self currentRom] fileURL] slotNumber:[theItem tag] + 1])
+		if ([self currentRom] == nil ||
+			[self isShowingSaveStateDialog] ||
+			![CocoaDSFile saveStateExistsForSlot:[[self currentRom] fileURL] slotNumber:[theItem tag] + 1] ||
+			[cdsCore isInDebugTrap])
 		{
 			enable = NO;
 		}
@@ -2312,7 +2326,7 @@
 			 theAction == @selector(saveEmuSaveState:) ||
 			 theAction == @selector(saveEmuSaveStateAs:))
 	{
-		if ([self currentRom] == nil || [self isShowingSaveStateDialog])
+		if ([self currentRom] == nil || [self isShowingSaveStateDialog] || [cdsCore isInDebugTrap])
 		{
 			enable = NO;
 		}
@@ -2321,7 +2335,8 @@
 	{
 		if ([self currentRom] == nil ||
 			[self isShowingSaveStateDialog] ||
-			[self currentSaveStateURL] == nil)
+			[self currentSaveStateURL] == nil ||
+			[cdsCore isInDebugTrap])
 		{
 			enable = NO;
 		}

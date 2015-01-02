@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2012 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -261,7 +261,9 @@ struct armcpu_t
 	u32 R[16]; //16
 	Status_Reg CPSR;  //80
 	Status_Reg SPSR;
-
+	
+	armcpu_ctrl_iface* InitCtrlInterface(armcpu_memory_iface *mem_iface);
+	armcpu_ctrl_iface* GetCtrlInterface();
 	void changeCPSR();
 
 	u32 R13_usr, R14_usr;
@@ -289,7 +291,6 @@ struct armcpu_t
 	u8 cond_table[16*16];
 #endif
 
-#ifdef GDB_STUB
   /** there is a pending irq for the cpu */
   int irq_flag;
 
@@ -306,15 +307,9 @@ struct armcpu_t
 
   /** the ctrl interface */
   struct armcpu_ctrl_iface ctrl_iface;
-#endif
 };
 
-#ifdef GDB_STUB
-int armcpu_new( armcpu_t *armcpu, u32 id, struct armcpu_memory_iface *mem_if,
-                struct armcpu_ctrl_iface **ctrl_iface_ret);
-#else
 int armcpu_new( armcpu_t *armcpu, u32 id);
-#endif
 void armcpu_init(armcpu_t *armcpu, u32 adr);
 u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode);
 

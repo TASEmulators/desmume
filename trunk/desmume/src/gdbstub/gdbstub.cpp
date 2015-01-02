@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2010 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	Originally written by Ben Jaques.
 
@@ -564,6 +564,7 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
     break;
 
   case 'c':
+  case 'k':
 	stub->emu_stub_state = gdb_stub_state::RUNNING_EMU_GDB_STATE;
     stub->ctl_stub_state = gdb_stub_state::START_RUN_GDB_STATE;
     stub->main_stop_flag = 0;
@@ -1451,7 +1452,6 @@ createStub_gdb( uint16_t port,
                 struct armcpu_memory_iface **cpu_memio,
                 struct armcpu_memory_iface *direct_memio) {
   struct gdb_stub_state *stub;
-  gdbstub_handle_t handle = NULL;
   int i;
   int res = 0;
 
@@ -1586,21 +1586,21 @@ createStub_gdb( uint16_t port,
       free( stub);
     }
     else {
-      handle = stub;
-
-      DEBUG_LOG("Created stub on port %d\n", port);
+      DEBUG_LOG("Created GDB stub on port %d\n", port);
     }
   }
   else {
     free( stub);
   }
 
-  return handle;
+  return stub;
 }
 
 
 void
 destroyStub_gdb( gdbstub_handle_t instance) {
+  if (instance == NULL) return;
+
   struct gdb_stub_state *stub = (struct gdb_stub_state *)instance;
 
   causeQuit_gdb( stub);
@@ -1610,12 +1610,15 @@ destroyStub_gdb( gdbstub_handle_t instance) {
   //stub->cpu_ctl->unstall( stub->cpu_ctl->data);
   //stub->cpu_ctl->remove_post_ex_fn( stub->cpu_ctl->data);
 
+  DEBUG_LOG("Destroyed GDB stub on port %d\n", stub->port_num);
   free( stub);
 }
 
 void
 activateStub_gdb( gdbstub_handle_t instance,
                   struct armcpu_ctrl_iface *cpu_ctrl) {
+  if (instance == NULL || cpu_ctrl == NULL) return;
+
   struct gdb_stub_state *stub = (struct gdb_stub_state *)instance;
 
   stub->cpu_ctrl = cpu_ctrl;

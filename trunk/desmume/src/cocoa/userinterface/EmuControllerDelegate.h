@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2014 DeSmuME Team
+	Copyright (C) 2013-2015 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -179,6 +179,7 @@ class AudioSampleBlockGenerator;
 // Tools Menu
 - (IBAction) autoholdSet:(id)sender;
 - (IBAction) toggleGPUState:(id)sender;
+- (IBAction) toggleGDBStubActivate:(id)sender;
 
 - (IBAction) changeCoreSpeed:(id)sender;
 - (IBAction) changeCoreEmuFlags:(id)sender;
