@@ -75,7 +75,7 @@ volatile bool execute = true;
 @dynamic speedScalar;
 
 @dynamic isGdbStubStarted;
-@synthesize isInDebugTrap;
+@dynamic isInDebugTrap;
 @synthesize enableGdbStubARM9;
 @synthesize enableGdbStubARM7;
 @synthesize gdbStubPortARM9;
@@ -362,16 +362,14 @@ volatile bool execute = true;
 			const uint16_t arm9Port = (uint16_t)[self gdbStubPortARM9];
 			if(arm9Port > 0)
 			{
-				armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
-				
-				gdbStubHandleARM9 = createStub_gdb(arm9Port, &arm9_memio, &arm9_direct_memory_iface);
+				gdbStubHandleARM9 = createStub_gdb(arm9Port, &NDS_ARM9, &arm9_direct_memory_iface);
 				if (gdbStubHandleARM9 == NULL)
 				{
 					NSLog(@"Failed to create ARM9 gdbstub on port %d\n", arm9Port);
 				}
 				else
 				{
-					activateStub_gdb(gdbStubHandleARM9, NDS_ARM9.GetCtrlInterface());
+					activateStub_gdb(gdbStubHandleARM9);
 				}
 			}
 		}
@@ -386,16 +384,14 @@ volatile bool execute = true;
 			const uint16_t arm7Port = (uint16_t)[self gdbStubPortARM7];
 			if (arm7Port > 0)
 			{
-				armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
-				
-				gdbStubHandleARM7 = createStub_gdb(arm7Port, &arm7_memio, &arm7_base_memory_iface);
+				gdbStubHandleARM7 = createStub_gdb(arm7Port, &NDS_ARM7, &arm7_base_memory_iface);
 				if (gdbStubHandleARM7 == NULL)
 				{
 					NSLog(@"Failed to create ARM7 gdbstub on port %d\n", arm7Port);
 				}
 				else
 				{
-					activateStub_gdb(gdbStubHandleARM7, NDS_ARM7.GetCtrlInterface());
+					activateStub_gdb(gdbStubHandleARM7);
 				}
 			}
 		}
@@ -425,6 +421,23 @@ volatile bool execute = true;
 - (BOOL) isGdbStubStarted
 {
 	return isGdbStubStarted;
+}
+
+- (void) setIsInDebugTrap:(BOOL)theState
+{
+	// If we're transitioning out of the debug trap, then ignore
+	// frame skipping this time.
+	if (isInDebugTrap && !theState)
+	{
+		threadParam.framesToSkip = 0;
+	}
+	
+	isInDebugTrap = theState;
+}
+
+- (BOOL) isInDebugTrap
+{
+	return isInDebugTrap;
 }
 
 - (void) setEmulationFlags:(NSUInteger)theFlags

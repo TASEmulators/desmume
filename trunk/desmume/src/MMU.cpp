@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2013 DeSmuME team
+	Copyright (C) 2007-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -5494,30 +5494,34 @@ static void FASTCALL arm7_write32(void *data, u32 adr, u32 val) {
 /*
  * the base memory interfaces
  */
-struct armcpu_memory_iface arm9_base_memory_iface = {
-  arm9_prefetch32,
-  arm9_prefetch16,
-
-  arm9_read8,
-  arm9_read16,
-  arm9_read32,
-
-  arm9_write8,
-  arm9_write16,
-  arm9_write32
+const armcpu_memory_iface arm9_base_memory_iface = {
+	arm9_prefetch32,
+	arm9_prefetch16,
+	
+	arm9_read8,
+	arm9_read16,
+	arm9_read32,
+	
+	arm9_write8,
+	arm9_write16,
+	arm9_write32,
+	
+	NULL
 };
 
-struct armcpu_memory_iface arm7_base_memory_iface = {
-  arm7_prefetch32,
-  arm7_prefetch16,
-
-  arm7_read8,
-  arm7_read16,
-  arm7_read32,
-
-  arm7_write8,
-  arm7_write16,
-  arm7_write32
+const armcpu_memory_iface arm7_base_memory_iface = {
+	arm7_prefetch32,
+	arm7_prefetch16,
+	
+	arm7_read8,
+	arm7_read16,
+	arm7_read32,
+	
+	arm7_write8,
+	arm7_write16,
+	arm7_write32,
+	
+	NULL
 };
 
 /*
@@ -5525,17 +5529,19 @@ struct armcpu_memory_iface arm7_base_memory_iface = {
  * This avoids the ARM9 protection unit when accessing
  * memory.
  */
-struct armcpu_memory_iface arm9_direct_memory_iface = {
-  NULL,
-  NULL,
-
-  arm9_read8,
-  arm9_read16,
-  arm9_read32,
-
-  arm9_write8,
-  arm9_write16,
-  arm9_write32
+const armcpu_memory_iface arm9_direct_memory_iface = {
+	NULL,
+	NULL,
+	
+	arm9_read8,
+	arm9_read16,
+	arm9_read32,
+	
+	arm9_write8,
+	arm9_write16,
+	arm9_write32,
+	
+	NULL
 };
 
 

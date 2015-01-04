@@ -23,21 +23,24 @@
 
 typedef void *gdbstub_handle_t;
 
+#ifdef GDB_STUB
+extern const armcpu_memory_iface gdb_memory_iface;
+#endif
+
 /*
  * The function interface
  */
 
 gdbstub_handle_t
 createStub_gdb( u16 port,
-                struct armcpu_memory_iface **cpu_memio,
-                struct armcpu_memory_iface *direct_memio);
+                armcpu_t *theCPU,
+                const armcpu_memory_iface *direct_memio);
 
 void
 destroyStub_gdb( gdbstub_handle_t stub);
 
 void
-activateStub_gdb( gdbstub_handle_t stub,
-                  struct armcpu_ctrl_iface *cpu_ctrl);
+activateStub_gdb( gdbstub_handle_t stub);
 
   /*
    * An implementation of the following functions is required

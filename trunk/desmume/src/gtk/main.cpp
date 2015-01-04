@@ -2918,13 +2918,11 @@ common_gtk_main( class configured_features *my_config)
 #ifdef GDB_STUB
     gdbstub_handle_t arm9_gdb_stub = NULL;
     gdbstub_handle_t arm7_gdb_stub = NULL;
-    struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
-    struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
     
     if ( my_config->arm9_gdb_port > 0) {
         arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
-                                         &arm9_memio,
-                                         &arm9_base_memory_iface);
+                                         &NDS_ARM9,
+                                         &arm9_direct_memory_iface);
         
         if ( arm9_gdb_stub == NULL) {
             g_printerr("Failed to create ARM9 gdbstub on port %d\n",
@@ -2932,12 +2930,12 @@ common_gtk_main( class configured_features *my_config)
             exit( -1);
         }
         else {
-            activateStub_gdb( arm9_gdb_stub, NDS_ARM9.GetCtrlInterface());
+            activateStub_gdb( arm9_gdb_stub);
         }
     }
     if ( my_config->arm7_gdb_port > 0) {
         arm7_gdb_stub = createStub_gdb( my_config->arm7_gdb_port,
-                                         &arm7_memio,
+                                         &NDS_ARM7,
                                          &arm7_base_memory_iface);
         
         if ( arm7_gdb_stub == NULL) {
@@ -2946,7 +2944,7 @@ common_gtk_main( class configured_features *my_config)
             exit( -1);
         }
         else {
-            activateStub_gdb( arm7_gdb_stub, NDS_ARM7.GetCtrlInterface());
+            activateStub_gdb( arm7_gdb_stub);
         }
     }
 #endif
@@ -3272,7 +3270,10 @@ common_gtk_main( class configured_features *my_config)
 
 #ifdef GDB_STUB
     destroyStub_gdb( arm9_gdb_stub);
+	arm9_gdb_stub = NULL;
+	
     destroyStub_gdb( arm7_gdb_stub);
+	arm7_gdb_stub = NULL;
 #endif
 
     return EXIT_SUCCESS;

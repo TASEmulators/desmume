@@ -301,7 +301,7 @@ hexToInt( const uint8_t **ptr, uint32_t *intValue)
  */
 
 static uint8_t *
-mem2hex ( struct armcpu_memory_iface *memio, uint32_t mem_addr,
+mem2hex ( armcpu_memory_iface *memio, uint32_t mem_addr,
           uint8_t *buf, int count)
 {
   uint8_t ch;
@@ -638,7 +638,7 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
       if ( *rx_ptr++ == ',') {
         if ( hexToInt( &rx_ptr, &length)) {
           //DEBUG_LOG("mem read from %08x (%d)\n", addr, length);
-          if ( !mem2hex( stub->direct_memio, addr, out_ptr, length)) {
+          if ( !mem2hex( &stub->direct_memio, addr, out_ptr, length)) {
             strcpy ( (char *)out_ptr, "E03");
             send_size = 3;
           }
@@ -674,8 +674,8 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
             for ( i = 0; i < length; i++) {
               rx_ptr = hex2mem( rx_ptr, &write_byte, 1);
 
-              stub->direct_memio->write8( stub->direct_memio->data,
-                                          addr++, write_byte);
+              stub->direct_memio.write8( stub->direct_memio.data,
+                                         addr++, write_byte);
             }
 
             strcpy( (char *)out_ptr, "OK");
@@ -1300,9 +1300,8 @@ gdb_read8( void *data, uint32_t adr) {
   uint8_t value = 0;
   int breakpoint;
 
-  /* pass down to the real memory interace */
-  value = stub->real_cpu_memio->read8( stub->real_cpu_memio->data,
-                                       adr);
+  /* pass down to the CPU's memory interface */
+  value = stub->cpu_memio->read8( stub->cpu_memio->data, adr);
 
   breakpoint = check_breaks_gdb( stub, stub->read_breakpoints, adr, 1,
                                  STOP_RWATCHPOINT);
@@ -1320,9 +1319,8 @@ gdb_read16( void *data, uint32_t adr) {
   uint16_t value;
   int breakpoint;
 
-  /* pass down to the real memory interace */
-  value = stub->real_cpu_memio->read16( stub->real_cpu_memio->data,
-                                       adr);
+  /* pass down to the CPU's memory interface */
+  value = stub->cpu_memio->read16( stub->cpu_memio->data, adr);
 
   breakpoint = check_breaks_gdb( stub, stub->read_breakpoints, adr, 2,
                                  STOP_RWATCHPOINT);
@@ -1339,9 +1337,8 @@ gdb_read32( void *data, uint32_t adr) {
   uint32_t value;
   int breakpoint;
 
-  /* pass down to the real memory interace */
-  value = stub->real_cpu_memio->read32( stub->real_cpu_memio->data,
-                                        adr);
+  /* pass down to the CPU's memory interface */
+  value = stub->cpu_memio->read32( stub->cpu_memio->data, adr);
 
   breakpoint = check_breaks_gdb( stub, stub->read_breakpoints, adr, 4,
                                  STOP_RWATCHPOINT);
@@ -1358,9 +1355,8 @@ gdb_write8( void *data, uint32_t adr, uint8_t val) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)data;
   int breakpoint;
 
-  /* pass down to the real memory interace */
-  stub->real_cpu_memio->write8( stub->real_cpu_memio->data,
-                                adr, val);
+  /* pass down to the CPU's memory interface */
+  stub->cpu_memio->write8( stub->cpu_memio->data, adr, val);
 
   breakpoint = check_breaks_gdb( stub, stub->write_breakpoints, adr, 1,
                                  STOP_WATCHPOINT);
@@ -1375,9 +1371,8 @@ gdb_write16( void *data, uint32_t adr, uint16_t val) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)data;
   int breakpoint;
 
-  /* pass down to the real memory interace */
-  stub->real_cpu_memio->write16( stub->real_cpu_memio->data,
-                                 adr, val);
+  /* pass down to the CPU's memory interface */
+  stub->cpu_memio->write16( stub->cpu_memio->data, adr, val);
 
   breakpoint = check_breaks_gdb( stub, stub->write_breakpoints, adr, 2,
                                  STOP_WATCHPOINT);
@@ -1392,9 +1387,8 @@ gdb_write32( void *data, uint32_t adr, uint32_t val) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)data;
   int breakpoint;
 
-  /* pass down to the real memory interace */
-  stub->real_cpu_memio->write32( stub->real_cpu_memio->data,
-                                 adr, val);
+  /* pass down to the CPU's memory interface */
+  stub->cpu_memio->write32( stub->cpu_memio->data, adr, val);
 
   breakpoint = check_breaks_gdb( stub, stub->write_breakpoints, adr, 4,
                                  STOP_WATCHPOINT);
@@ -1449,39 +1443,32 @@ control_creator( LPVOID lpParameter)
  */
 gdbstub_handle_t
 createStub_gdb( uint16_t port,
-                struct armcpu_memory_iface **cpu_memio,
-                struct armcpu_memory_iface *direct_memio) {
-  struct gdb_stub_state *stub;
+                armcpu_t *theCPU,
+                const armcpu_memory_iface *direct_memio) {
+  struct gdb_stub_state *stub = NULL;
   int i;
   int res = 0;
+  
+  if (theCPU == NULL) {
+    return stub;
+  }
 
   stub = (gdb_stub_state*)malloc( sizeof (struct gdb_stub_state));
   if ( stub == NULL) {
-    return NULL;
+    return stub;
   }
 
+  stub->arm_cpu_object = theCPU;
   stub->active = 0;
 
   /* keep the memory interfaces */
-  stub->real_cpu_memio = *cpu_memio;
-  stub->direct_memio = direct_memio;
+  stub->cpu_memio = theCPU->GetBaseMemoryInterface();
+  stub->direct_memio = *direct_memio;
 
-  *cpu_memio = &stub->cpu_memio;
+  stub->gdb_memio = gdb_memory_iface;
+  stub->gdb_memio.data = stub;
 
-  /* fill in the memory interface */
-  stub->cpu_memio.data = stub;
-  stub->cpu_memio.prefetch32 = gdb_prefetch32;
-  stub->cpu_memio.prefetch16 = gdb_prefetch16;
-
-  stub->cpu_memio.read8 = gdb_read8;
-  stub->cpu_memio.read16 = gdb_read16;
-  stub->cpu_memio.read32 = gdb_read32;
-
-  stub->cpu_memio.write8 = gdb_write8;
-  stub->cpu_memio.write16 = gdb_write16;
-  stub->cpu_memio.write32 = gdb_write32;
-
-
+  stub->cpu_ctrl = theCPU->GetControlInterface();
 
   /* put the breakpoint descriptors onto the free list */
   for ( i = 0; i < BREAKPOINT_POOL_SIZE - 1; i++) {
@@ -1602,6 +1589,7 @@ destroyStub_gdb( gdbstub_handle_t instance) {
   if (instance == NULL) return;
 
   struct gdb_stub_state *stub = (struct gdb_stub_state *)instance;
+  armcpu_t *theCPU = (armcpu_t *)stub->arm_cpu_object;
 
   causeQuit_gdb( stub);
   
@@ -1610,21 +1598,39 @@ destroyStub_gdb( gdbstub_handle_t instance) {
   //stub->cpu_ctl->unstall( stub->cpu_ctl->data);
   //stub->cpu_ctl->remove_post_ex_fn( stub->cpu_ctl->data);
 
+  theCPU->ResetMemoryInterfaceToBase();
+	
   DEBUG_LOG("Destroyed GDB stub on port %d\n", stub->port_num);
   free( stub);
 }
 
 void
-activateStub_gdb( gdbstub_handle_t instance,
-                  struct armcpu_ctrl_iface *cpu_ctrl) {
-  if (instance == NULL || cpu_ctrl == NULL) return;
+activateStub_gdb( gdbstub_handle_t instance) {
+  if (instance == NULL) return;
 
   struct gdb_stub_state *stub = (struct gdb_stub_state *)instance;
+  armcpu_t *theCPU = (armcpu_t *)stub->arm_cpu_object;
 
-  stub->cpu_ctrl = cpu_ctrl;
+  theCPU->SetCurrentMemoryInterface(&stub->gdb_memio);
 
   /* stall the cpu */
   stub->cpu_ctrl->stall( stub->cpu_ctrl->data);
 
   stub->active = 1;
 }
+
+// GDB memory interface for the ARM CPUs
+const armcpu_memory_iface gdb_memory_iface = {
+	gdb_prefetch32,
+	gdb_prefetch16,
+	
+	gdb_read8,
+	gdb_read16,
+	gdb_read32,
+	
+	gdb_write8,
+	gdb_write16,
+	gdb_write32,
+
+	NULL
+};

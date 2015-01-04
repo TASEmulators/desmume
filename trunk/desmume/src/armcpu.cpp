@@ -123,33 +123,97 @@ int armcpu_new( armcpu_t *armcpu, u32 id)
 {
 	armcpu->proc_ID = id;
 	armcpu->stalled = 0;
-
+	
+	armcpu->base_mem_if.prefetch32 = NULL;
+	armcpu->base_mem_if.prefetch16 = NULL;
+	armcpu->base_mem_if.read8 = NULL;
+	armcpu->base_mem_if.read16 = NULL;
+	armcpu->base_mem_if.read32 = NULL;
+	armcpu->base_mem_if.write8 = NULL;
+	armcpu->base_mem_if.write16 = NULL;
+	armcpu->base_mem_if.write32 = NULL;
+	armcpu->base_mem_if.data = NULL;
+	
+	armcpu->SetControlInterface(&arm_default_ctrl_iface);
+	armcpu->SetControlInterfaceData(armcpu);
+	armcpu->SetCurrentMemoryInterface(NULL);
+	armcpu->SetCurrentMemoryInterfaceData(NULL);
+	
+	armcpu->post_ex_fn = NULL;
+	armcpu->post_ex_fn_data = NULL;
+	
 	armcpu_init(armcpu, 0);
 
 	return 0;
 }
 
-armcpu_ctrl_iface* armcpu_t::InitCtrlInterface(armcpu_memory_iface *mem_iface)
+void armcpu_t::SetControlInterface(const armcpu_ctrl_iface *theControlInterface)
 {
-	this->mem_if = mem_iface;
-	
-	/* populate the control interface */
-	this->ctrl_iface.stall = stall_cpu;
-	this->ctrl_iface.unstall = unstall_cpu;
-	this->ctrl_iface.read_reg = read_cpu_reg;
-	this->ctrl_iface.set_reg = set_cpu_reg;
-	this->ctrl_iface.install_post_ex_fn = install_post_exec_fn;
-	this->ctrl_iface.remove_post_ex_fn = remove_post_exec_fn;
-	this->ctrl_iface.data = this;
-	
-	this->post_ex_fn = NULL;
-	
+	this->ctrl_iface = *theControlInterface;
+}
+
+armcpu_ctrl_iface* armcpu_t::GetControlInterface()
+{
 	return &this->ctrl_iface;
 }
 
-armcpu_ctrl_iface* armcpu_t::GetCtrlInterface()
+void armcpu_t::SetControlInterfaceData(void *theData)
 {
-	return &this->ctrl_iface;
+	this->ctrl_iface.data = theData;
+}
+
+void* armcpu_t::GetControlInterfaceData()
+{
+	return this->ctrl_iface.data;
+}
+
+void armcpu_t::SetCurrentMemoryInterface(armcpu_memory_iface *theMemoryInterface)
+{
+	this->mem_if = theMemoryInterface;
+}
+
+armcpu_memory_iface* armcpu_t::GetCurrentMemoryInterface()
+{
+	return this->mem_if;
+}
+
+void armcpu_t::SetCurrentMemoryInterfaceData(void *theData)
+{
+	if (this->mem_if != NULL)
+	{
+		this->mem_if->data = theData;
+	}
+}
+
+void* armcpu_t::GetCurrentMemoryInterfaceData()
+{
+	return (this->mem_if != NULL) ? this->mem_if->data : NULL;
+}
+
+void armcpu_t::SetBaseMemoryInterface(const armcpu_memory_iface *theMemInterface)
+{
+	this->base_mem_if = *theMemInterface;
+}
+
+armcpu_memory_iface* armcpu_t::GetBaseMemoryInterface()
+{
+	return &this->base_mem_if;
+}
+
+void armcpu_t::SetBaseMemoryInterfaceData(void *theData)
+{
+	this->base_mem_if.data = theData;
+}
+
+void* armcpu_t::GetBaseMemoryInterfaceData()
+{
+	return this->base_mem_if.data;
+}
+
+void armcpu_t::ResetMemoryInterfaceToBase()
+{
+	this->SetCurrentMemoryInterface(this->GetBaseMemoryInterface());
+	this->SetCurrentMemoryInterfaceData(this->GetBaseMemoryInterfaceData());
 }
 
 //call this whenever CPSR is changed (other than CNVZQ or T flags); interrupts may need to be unleashed
@@ -681,3 +745,12 @@ template u32 armcpu_exec<1,false>();
 template u32 armcpu_exec<1,true>();
 #endif
 
+const armcpu_ctrl_iface arm_default_ctrl_iface = {
+	stall_cpu,
+	unstall_cpu,
+	read_cpu_reg,
+	set_cpu_reg,
+	install_post_exec_fn,
+	remove_post_exec_fn,
+	NULL
+};

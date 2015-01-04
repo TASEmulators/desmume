@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2012 DeSmuME team
+	Copyright (C) 2007-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -513,7 +513,7 @@ extern MMU_struct MMU;
 extern MMU_struct_new MMU_new;
 
 
-struct armcpu_memory_iface {
+typedef struct {
   /** the 32 bit instruction prefetch */
   u32 FASTCALL (*prefetch32)( void *data, u32 adr);
 
@@ -535,7 +535,7 @@ struct armcpu_memory_iface {
   void FASTCALL (*write32)( void *data, u32 adr, u32 val);
 
   void *data;
-};
+} armcpu_memory_iface;
 
 
 void MMU_Init(void);
@@ -556,9 +556,9 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val);
 //template<int PROCNUM> void FASTCALL MMU_doDMA(u32 num);
 
 //The base ARM memory interfaces
-extern struct armcpu_memory_iface arm9_base_memory_iface;
-extern struct armcpu_memory_iface arm7_base_memory_iface;
-extern struct armcpu_memory_iface arm9_direct_memory_iface;	
+extern const armcpu_memory_iface arm9_base_memory_iface;
+extern const armcpu_memory_iface arm7_base_memory_iface;
+extern const armcpu_memory_iface arm9_direct_memory_iface;
 
 #define VRAM_BANKS 9
 #define VRAM_BANK_A 0

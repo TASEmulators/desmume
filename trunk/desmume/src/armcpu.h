@@ -223,7 +223,7 @@ typedef union
 /**
  * The control interface to a CPU
  */
-struct armcpu_ctrl_iface {
+typedef struct {
   /** stall the processor */
   void (*stall)( void *instance);
 
@@ -246,7 +246,7 @@ struct armcpu_ctrl_iface {
 
   /** the private data passed to all interface functions */
   void *data;
-};
+} armcpu_ctrl_iface;
 
 
 typedef void* armcp_t;
@@ -262,8 +262,23 @@ struct armcpu_t
 	Status_Reg CPSR;  //80
 	Status_Reg SPSR;
 	
-	armcpu_ctrl_iface* InitCtrlInterface(armcpu_memory_iface *mem_iface);
-	armcpu_ctrl_iface* GetCtrlInterface();
+	void SetControlInterface(const armcpu_ctrl_iface *theCtrlInterface);
+	armcpu_ctrl_iface* GetControlInterface();
+	void SetControlInterfaceData(void *theData);
+	void* GetControlInterfaceData();
+	
+	void SetCurrentMemoryInterface(armcpu_memory_iface *theMemInterface);
+	armcpu_memory_iface* GetCurrentMemoryInterface();
+	void SetCurrentMemoryInterfaceData(void *theData);
+	void* GetCurrentMemoryInterfaceData();
+	
+	void SetBaseMemoryInterface(const armcpu_memory_iface *theMemInterface);
+	armcpu_memory_iface* GetBaseMemoryInterface();
+	void SetBaseMemoryInterfaceData(void *theData);
+	void* GetBaseMemoryInterfaceData();
+	
+	void ResetMemoryInterfaceToBase();
+	
 	void changeCPSR();
 
 	u32 R13_usr, R14_usr;
@@ -290,23 +305,22 @@ struct armcpu_t
 #if defined(_M_X64) || defined(__x86_64__)
 	u8 cond_table[16*16];
 #endif
-
-  /** there is a pending irq for the cpu */
-  int irq_flag;
-
-  /** the post executed function (if installed) */
-  void (*post_ex_fn)( void *, u32 adr, int thumb);
-
-  /** data for the post executed function */
-  void *post_ex_fn_data;
-
-
-
-  /** the memory interface */
-  struct armcpu_memory_iface *mem_if;
-
-  /** the ctrl interface */
-  struct armcpu_ctrl_iface ctrl_iface;
+	
+	/** there is a pending irq for the cpu */
+	int irq_flag;
+	
+	/** the post executed function (if installed) */
+	void (*post_ex_fn)( void *, u32 adr, int thumb);
+	
+	/** data for the post executed function */
+	void *post_ex_fn_data;
+	
+	/** the memory interface */
+	armcpu_memory_iface *mem_if;		// This is the memory interface currently in use.
+	armcpu_memory_iface base_mem_if;	// This is the CPU's base memory interface.
+	
+	/** the ctrl interface */
+	armcpu_ctrl_iface ctrl_iface;
 };
 
 int armcpu_new( armcpu_t *armcpu, u32 id);
@@ -322,6 +336,7 @@ u32 armcpu_Wait4IRQ(armcpu_t *cpu);
 
 extern armcpu_t NDS_ARM7;
 extern armcpu_t NDS_ARM9;
+extern const armcpu_ctrl_iface arm_default_ctrl_iface;
 
 template<int PROCNUM> u32 armcpu_exec();
 #ifdef HAVE_JIT

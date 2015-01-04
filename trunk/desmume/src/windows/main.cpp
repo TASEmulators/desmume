@@ -3248,9 +3248,7 @@ int _main()
 	
 	if (cmdline.arm9_gdb_port > 0)
 	{
-		armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
-		
-		arm9_gdb_stub = createStub_gdb(cmdline.arm9_gdb_port, &arm9_memio, &arm9_direct_memory_iface);
+		arm9_gdb_stub = createStub_gdb(cmdline.arm9_gdb_port, &NDS_ARM9, &arm9_direct_memory_iface);
 		if (arm9_gdb_stub == NULL)
 		{
 			MessageBox(MainWindow->getHWnd(), "Failed to create ARM9 gdbstub", "Error", MB_OK);
@@ -3258,15 +3256,13 @@ int _main()
 		}
 		else
 		{
-			activateStub_gdb(arm9_gdb_stub, NDS_ARM9.GetCtrlInterface());
+			activateStub_gdb(arm9_gdb_stub);
 		}
 	}
 	
 	if (cmdline.arm7_gdb_port > 0)
 	{
-		armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
-		
-		arm7_gdb_stub = createStub_gdb(cmdline.arm7_gdb_port, &arm7_memio, &arm7_base_memory_iface);
+		arm7_gdb_stub = createStub_gdb(cmdline.arm7_gdb_port, &NDS_ARM7, &arm7_base_memory_iface);
 		if (arm7_gdb_stub == NULL)
 		{
 			MessageBox(MainWindow->getHWnd(), "Failed to create ARM7 gdbstub", "Error", MB_OK);
@@ -3274,7 +3270,7 @@ int _main()
 		}
 		else
 		{
-			activateStub_gdb(arm7_gdb_stub, NDS_ARM7.GetCtrlInterface());
+			activateStub_gdb(arm7_gdb_stub);
 		}
 	}
 #endif
