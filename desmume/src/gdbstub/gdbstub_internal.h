@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	Originally written by Ben Jaques.
 
@@ -86,21 +86,23 @@ struct gdb_stub_state {
 
   /** the listener thread */
   void *thread;
+  
+  void *arm_cpu_object;
 
   /** the id of the cpu the is under control */
   //u32 cpu_id;
 
   /** the interface used to control the CPU */
-  struct armcpu_ctrl_iface *cpu_ctrl;
+  armcpu_ctrl_iface *cpu_ctrl;
 
-  /** the memory interface passed to the CPU */
-  struct armcpu_memory_iface cpu_memio;
+  /** the CPU's memory interface */
+  armcpu_memory_iface *cpu_memio;
 
   /** the direct interface to the memory system */
-  struct armcpu_memory_iface *direct_memio;
+  armcpu_memory_iface direct_memio;
 
-  /** the CPU memory interface to the real memory system */
-  struct armcpu_memory_iface *real_cpu_memio;
+  /** GDB stub's memory interface passed to the CPU */
+  armcpu_memory_iface gdb_memio;
 
   /** the list of active instruction breakpoints */
   struct breakpoint_gdb *instr_breakpoints;

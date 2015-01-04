@@ -139,10 +139,15 @@ int NDS_Init()
 
 	gfx3d_init();
 
-	armcpu_new(&NDS_ARM7,1);
 	armcpu_new(&NDS_ARM9,0);
-	NDS_ARM9.InitCtrlInterface(&arm9_base_memory_iface);
-	NDS_ARM7.InitCtrlInterface(&arm7_base_memory_iface);
+	NDS_ARM9.SetBaseMemoryInterface(&arm9_base_memory_iface);
+	NDS_ARM9.SetBaseMemoryInterfaceData(NULL);
+	NDS_ARM9.ResetMemoryInterfaceToBase();
+	
+	armcpu_new(&NDS_ARM7,1);
+	NDS_ARM7.SetBaseMemoryInterface(&arm7_base_memory_iface);
+	NDS_ARM7.SetBaseMemoryInterfaceData(NULL);
+	NDS_ARM7.ResetMemoryInterfaceToBase();
 	
 	if (SPU_Init(SNDCORE_DUMMY, 740) != 0)
 		return -1;
