@@ -22,10 +22,7 @@
 #include "types.h"
 
 typedef void *gdbstub_handle_t;
-
-#ifdef GDB_STUB
 extern const armcpu_memory_iface gdb_memory_iface;
-#endif
 
 /*
  * The function interface
