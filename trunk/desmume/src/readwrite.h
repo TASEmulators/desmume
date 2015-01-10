@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,11 +18,13 @@
 #ifndef _READWRITE_H_
 #define _READWRITE_H_
 
-#include "types.h"
-#include "emufile.h"
 #include <iostream>
 #include <cstdio>
 #include <vector>
+
+#include "types.h"
+
+class EMUFILE;
 
 //well. just for the sake of consistency
 int write8le(u8 b, EMUFILE *fp);

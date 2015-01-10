@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2011 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,12 +17,14 @@
 */
 
 #include "tileView.h"
+
+#include "../MMU.h"
+#include "../GPU.h"
+
 #include "commctrl.h"
 #include "resource.h"
 #include "debug.h"
 #include "main.h"
-#include "../MMU.h"
-#include "../gpu.h"
 
 class tileview_struct
 {

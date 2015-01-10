@@ -21,14 +21,13 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#include <stdio.h>
+#include "decrypt.h"
+
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../types.h"
 #include "crc.h"
 #include "header.h"
-#include "decrypt.h"
 
 //encr_data
 const unsigned char arm7_key[] =

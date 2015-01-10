@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2013 DeSmuME team
+	Copyright (C) 2010-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,9 +16,6 @@
 */
 
 #include "../slot1.h"
-#include "../registers.h"
-#include "../MMU.h"
-#include "../NDSSystem.h"
 
 class Slot1_None : public ISlot1Interface
 {

@@ -1,5 +1,5 @@
 /*
-	Copyright 2008-2014 DeSmuME team
+	Copyright 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,18 +16,23 @@
 */
 
 #define WIN32_LEAN_AND_MEAN
+#include "movie.h"
+
 #include <assert.h>
 #include <limits.h>
 #include <ctype.h>
 #include <time.h>
+
 #include "utils/guid.h"
 #include "utils/xstring.h"
 #include "utils/datetime.h"
 #include "utils/ConvertUTF.h"
-#include "movie.h"
+
+#include "MMU.h"
 #include "NDSSystem.h"
 #include "readwrite.h"
 #include "debug.h"
+#include "driver.h"
 #include "rtc.h"
 #include "common.h"
 #include "mic.h"

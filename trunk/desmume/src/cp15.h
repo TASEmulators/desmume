@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2013 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,8 +19,10 @@
 #ifndef __CP15_H__
 #define __CP15_H__
 
-#include "armcpu.h"
-#include "emufile.h"
+#include <string.h>
+#include "types.h"
+
+class EMUFILE;
 
 #define CP15_ACCESS_WRITE         0
 #define CP15_ACCESS_READ          2

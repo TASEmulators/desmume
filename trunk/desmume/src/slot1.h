@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2013 DeSmuME team
+	Copyright (C) 2010-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,9 +19,8 @@
 #define __SLOT1_H__
 
 #include <string>
-#include "common.h"
+
 #include "types.h"
-#include "debug.h"
 #include "MMU.h"
 
 class EMUFILE;

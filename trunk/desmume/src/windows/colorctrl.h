@@ -1,5 +1,6 @@
 /*
 	Copyright (C) 2007 Acid Burn
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,6 +18,8 @@
 
 #ifndef COLORCTRL_H
 #define COLORCTRL_H
+
+#include <windows.h>
 
 typedef struct
 {

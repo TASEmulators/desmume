@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	Ideas borrowed from Stephane Dallongeville's SCSP core
 
@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "debug.h"
+#include "driver.h"
 #include "MMU.h"
 #include "SPU.h"
 #include "mem.h"

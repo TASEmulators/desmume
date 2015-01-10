@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,6 +17,11 @@
 
 //this file contains the components used for emulating standard gamecard "MC" devices (eeprom, fram, flash)
 
+#ifndef _SLOT1COMP_MC_H
+#define _SLOT1COMP_MC_H
+
+#include "../types.h"
+
 class Slot1Comp_MC
 {
 public:
@@ -26,3 +31,5 @@ public:
 };
 
 extern Slot1Comp_MC g_Slot1Comp_MC;
+
+#endif

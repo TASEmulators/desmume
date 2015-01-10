@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,9 +18,9 @@
 //TODO - consider making this use UTF-8 everywhere instead of wstrings. sort of cleaner. but im tired of it now. it works presently.
 
 #include "FEX_Interface.h"
-
 #include "File_Extractor/fex/fex.h"
 
+#include <windows.h>
 #include <string>
 #include <vector>
 #include <assert.h>

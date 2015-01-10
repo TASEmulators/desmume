@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2013 DeSmuME team
+	Copyright (C) 2010-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,9 @@
 */
 
 #include "slot1comp_rom.h"
-#include "MMU.h"
-#include "NDSSystem.h"
+
+#include "../NDSSystem.h"
+#include "../emufile.h"
 
 
 void Slot1Comp_Rom::start(eSlot1Operation operation, u32 addr)

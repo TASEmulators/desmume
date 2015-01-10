@@ -26,9 +26,23 @@
 #define _GDBSTUB_INTERNAL_H_ 1
 
 #ifdef WIN32
-#define SOCKET_TYPE SOCKET
+	typedef __int32 int32_t;
+	typedef unsigned __int32 uint32_t;
+	typedef __int16 int16_t;
+	typedef unsigned __int16 uint16_t;
+	typedef __int8 int8_t;
+	typedef unsigned __int8 uint8_t;
+
+	#include <winsock2.h>
+	#define SOCKET_TYPE SOCKET
 #else
-#define SOCKET_TYPE int
+	#include <stdint.h>
+	#include <unistd.h>
+	#include <sys/socket.h>
+	#include <netdb.h>
+	#include <netinet/in.h>
+	#include <netinet/tcp.h>
+	#define SOCKET_TYPE int
 #endif
 
 
@@ -42,6 +56,8 @@ enum stop_type {
   STOP_AWATCHPOINT
 };
 
+struct armcpu_ctrl_iface;
+struct armcpu_memory_iface;
 
 /**
  * The structure describing a breakpoint.
@@ -99,10 +115,10 @@ struct gdb_stub_state {
   armcpu_memory_iface *cpu_memio;
 
   /** the direct interface to the memory system */
-  armcpu_memory_iface direct_memio;
+  armcpu_memory_iface *direct_memio;
 
   /** GDB stub's memory interface passed to the CPU */
-  armcpu_memory_iface gdb_memio;
+  armcpu_memory_iface *gdb_memio;
 
   /** the list of active instruction breakpoints */
   struct breakpoint_gdb *instr_breakpoints;

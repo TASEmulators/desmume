@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 #ifndef HOTKEY_H_INCLUDED
 #define HOTKEY_H_INCLUDED
 
-#include <winsock2.h>
 #include <windows.h>
 #include <tchar.h>
 #include <string>

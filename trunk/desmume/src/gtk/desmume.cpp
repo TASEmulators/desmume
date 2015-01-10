@@ -19,13 +19,13 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#include "types.h"
-#include "NDSSystem.h"
-#include "SPU.h"
-#include "sndsdl.h"
-#include "ctrlssdl.h"
+
 #include "desmume.h"
-#include "movie.h"
+
+#include "../NDSSystem.h"
+#include "../SPU.h"
+#include "../sndsdl.h"
+#include "../movie.h"
 
 volatile bool execute = false;
 BOOL click = FALSE;

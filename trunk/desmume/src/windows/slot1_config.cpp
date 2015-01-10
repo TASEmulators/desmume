@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2011-2013 DeSmuME team
+	Copyright (C) 2011-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,15 +16,18 @@
 */
 
 #include "slot1_config.h"
+
 #include <windowsx.h>
 #include <shlobj.h>
 #include <string>
-#include "resource.h"
-#include "main.h"
-#include "debug.h"
+
 #include "../slot1.h"
+#include "../debug.h"
 #include "../NDSSystem.h"
 #include "../path.h"
+
+#include "resource.h"
+#include "main.h"
 
 HWND wndConfigSlot1 = NULL;
 NDS_SLOT1_TYPE temp_type_slot1 = NDS_SLOT1_NONE;

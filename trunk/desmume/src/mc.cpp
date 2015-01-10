@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 thoduv
 	Copyright (C) 2006-2007 Theo Berkau
-	Copyright (C) 2008-2013 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,13 +17,16 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "mc.h"
+
 #include <stdlib.h>
 #include <string.h>
 
-#include "types.h"
+#include "common.h"
+#include "armcpu.h"
 #include "debug.h"
-#include "mc.h"
 #include "movie.h"
+#include "MMU.h"
 #include "readwrite.h"
 #include "NDSSystem.h"
 #include "path.h"
@@ -524,6 +527,16 @@ void BackupDevice::writeLong(u32 val)
 {
 	if (isMovieMode) return;
 	fpMC->write32le(val);
+}
+
+void BackupDevice::seek(u32 pos)
+{
+	fpMC->fseek(pos, SEEK_SET);
+}
+
+void BackupDevice::flushBackup()
+{
+	fpMC->fflush();
 }
 
 bool BackupDevice::saveBuffer(u8 *data, u32 size, bool _rewind, bool _truncate)

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2011 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,17 +16,19 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "CWindow.h"
-#include "../MMU.h"
-#include "../NDSSystem.h"
-#include "debug.h"
-#include "resource.h"
-#include "common.h"
+#include "memView.h"
+
 #include <algorithm>
-#include <windows.h>
 #include <windowsx.h>
 #include <commctrl.h>
-#include "memView.h"
+
+#include "../common.h"
+#include "../NDSSystem.h"
+#include "../emufile.h"
+#include "../MMU.h"
+#include "../debug.h"
+
+#include "resource.h"
 #include "winutil.h"
 
 using namespace std;

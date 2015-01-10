@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2098-2010 DeSmuME team
+	Copyright (C) 2098-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,7 +15,6 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "resource.h"
 #include <assert.h>
 #include <process.h>
 #include <vector>
@@ -23,14 +22,15 @@
 #include <string>
 #include <algorithm>
 
-#include "OpenArchive.h"
+#include "../driver.h"
+#include "../lua-engine.h"
 
 #ifdef WIN32
-#include "common.h"
+#include <windows.h>
+#include "resource.h"
 #include "main.h"
-#include "driver.h"
+#include "OpenArchive.h"
 #endif
-#include "..\lua-engine.h"
 
 #define MAX_RECENT_SCRIPTS 15
 char Recent_Scripts[MAX_RECENT_SCRIPTS][1024] = {0};

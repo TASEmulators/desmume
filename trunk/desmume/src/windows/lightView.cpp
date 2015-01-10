@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2007 Acid Burn
-	Copyright (C) 2008-2011 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,11 +17,14 @@
 */
 
 #include "lightView.h"
-#include "commctrl.h"
+
+#include <commctrl.h>
+
+#include "../debug.h"
+#include "../gfx3d.h"
+
 #include "colorctrl.h"
-#include "gfx3d.h"
 #include "resource.h"
-#include "debug.h"
 #include "main.h"
 
 // Convert B5G5R5 color format into R8G8B8 color format

@@ -2,7 +2,7 @@
 //Authors: adelikat, Upthorn, Nitsuja
 
 /*
-	Modifications Copyright (C) 2009-2010 DeSmuME team
+	Modifications Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,18 +18,22 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "main.h"
-#include "resource.h"
-#include "common.h"
-#include "NDSSystem.h"
 #include "ramwatch.h"
 #include "ram_search.h"
-#include "cheatsWin.h"
+
 #include <assert.h>
 #include <windows.h>
 #include <commctrl.h>
 #include <string>
-#include "path.h"
+
+#include "../common.h"
+#include "../NDSSystem.h"
+#include "../path.h"
+#include "../MMU.h"
+
+#include "resource.h"
+#include "main.h"
+#include "cheatsWin.h"
 
 HWND RamWatchHWnd = NULL;
 

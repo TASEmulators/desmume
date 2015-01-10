@@ -30,6 +30,7 @@
 #define __CRC_H
 
 //#include "little.h"		// FixCrc is not yet big endian compatible
+#include <stdio.h>
 
 /*
  * Data

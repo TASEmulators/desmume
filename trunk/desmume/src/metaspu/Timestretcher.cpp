@@ -17,6 +17,7 @@
 
 //#include "Global.h"
 #include <math.h>
+#include <stdio.h>
 #include "types.h"
 #include "SndOut.h"
 //#include "SoundTouch/WavFile.h"

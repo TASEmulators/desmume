@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2010 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,12 +19,6 @@
 #define LUA_SCRIPT_H
 
 #include "types.h"
-
-#if defined(WIN32)
-#include <winsock2.h>
-#include <windows.h>
-#include "resource.h"
-#endif
 
 void OpenLuaContext(int uid, void(*print)(int uid, const char* str) = 0, void(*onstart)(int uid) = 0, void(*onstop)(int uid, bool statusOK) = 0);
 void RunLuaScriptFile(int uid, const char* filename);
@@ -110,16 +104,7 @@ private:
 void CallRegisteredLuaSaveFunctions(int savestateNumber, LuaSaveData& saveData);
 void CallRegisteredLuaLoadFunctions(int savestateNumber, const LuaSaveData& saveData);
 
-#if defined(WIN32)
-typedef HMENU PlatformMenu;    // hMenu
-typedef UINT PlatformMenuItem; // menuId
-#define MAX_MENU_COUNT (IDC_LUAMENU_RESERVE_END - IDC_LUAMENU_RESERVE_START + 1)
-#else
-// TODO: define appropriate types for menu
-typedef void* PlatformMenu;
-typedef u32 PlatformMenuItem;
-#define MAX_MENU_COUNT 0
-#endif
+typedef size_t PlatformMenuItem;
 void CallRegisteredLuaMenuHandlers(PlatformMenuItem menuItem);
 
 void StopAllLuaScripts();

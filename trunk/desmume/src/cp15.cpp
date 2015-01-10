@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2013 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,9 +18,12 @@
 
 #include <stdlib.h>
 
+#include "armcpu.h"
 #include "cp15.h"
 #include "debug.h"
 #include "MMU.h"
+#include "emufile.h"
+#include "readwrite.h"
 
 armcp15_t cp15;
 
@@ -292,7 +295,7 @@ BOOL armcp15_t::moveCP2ARM(u32 * R, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2)
 		}
 		return FALSE;
 	case 9:
-		if((opcode1==0))
+		if(opcode1==0)
 		{
 			switch(CRm)
 			{

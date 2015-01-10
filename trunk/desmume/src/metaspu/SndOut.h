@@ -19,6 +19,8 @@
 
 #include <algorithm>
 
+#include "types.h"
+
 struct StereoOut16;
 struct StereoOut32;
 struct StereoOutFloat;

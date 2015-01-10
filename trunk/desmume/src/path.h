@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2013 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,35 +16,33 @@
 */
 
 #include <string>
-
-#ifdef HOST_WINDOWS 
-#define mkdir _mkdir
-#endif
+#include "types.h"
 
 #if defined(HOST_WINDOWS)
-#include <winsock2.h>
-#include <windows.h>
-#include <direct.h>
-#include "common.h"
-#ifndef DESMUME_QT
-#include "winutil.h"
-#include "resource.h"
-#endif
+	#define WIN32_LEAN_AND_MEAN
+	#include <windows.h>
+	#include <direct.h>
+	#define mkdir _mkdir
+
+	#ifndef DESMUME_QT
+		#include "windows/winutil.h"
+		#include "windows/resource.h"
+	#endif
 #elif !defined(DESMUME_COCOA)
-#include <glib.h>
+	#include <glib.h>
 #endif /* HOST_WINDOWS */
 
 #include "time.h"
 #include "utils/xstring.h"
 
 #ifdef HOST_WINDOWS
-#define FILE_EXT_DELIMITER_CHAR		'.'
-#define DIRECTORY_DELIMITER_CHAR	'\\'
-#define ALL_DIRECTORY_DELIMITER_STRING "/\\"
+	#define FILE_EXT_DELIMITER_CHAR		'.'
+	#define DIRECTORY_DELIMITER_CHAR	'\\'
+	#define ALL_DIRECTORY_DELIMITER_STRING "/\\"
 #else
-#define FILE_EXT_DELIMITER_CHAR		'.'
-#define DIRECTORY_DELIMITER_CHAR	'/'
-#define ALL_DIRECTORY_DELIMITER_STRING "/"
+	#define FILE_EXT_DELIMITER_CHAR		'.'
+	#define DIRECTORY_DELIMITER_CHAR	'/'
+	#define ALL_DIRECTORY_DELIMITER_STRING "/"
 #endif
 
 #ifdef HOST_WINDOWS

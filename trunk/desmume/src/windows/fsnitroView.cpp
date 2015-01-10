@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,15 +15,18 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "resource.h"
-#include "../common.h"
-#include <shlobj.h>
 #include "fsnitroView.h"
-#include "CWindow.h"
-#include "../MMU.h"
-#include "../NDSSystem.h"
+#include <shlobj.h>
+
 #include "../path.h"
+#include "../common.h"
+#include "../NDSSystem.h"
+#include "../MMU.h"
 #include "../utils/fsnitro.h"
+
+#include "resource.h"
+#include "CWindow.h"
+#include "main.h"
 #include "memView.h"
 
 //not available on old SDK versions

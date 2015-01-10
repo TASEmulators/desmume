@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2013 DeSmuME Team
+	Copyright (C) 2009-2015 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,7 +17,9 @@
 
 #ifndef _FIRMWARE_H_
 #define _FIRMWARE_H_
-#include "common.h"
+
+#include <string>
+#include "types.h"
 
 #define NDS_FW_SIZE_V1 (256 * 1024)		/* size of fw memory on nds v1 */
 #define NDS_FW_SIZE_V2 (512 * 1024)		/* size of fw memory on nds v2 */
@@ -27,6 +29,8 @@
 
 //extension of the firmware user settings file
 #define FW_CONFIG_FILE_EXT "dfc"
+
+struct NDS_fw_config_data;
 
 class CFIRMWARE
 {
@@ -86,8 +90,8 @@ public:
 };
 
 int copy_firmware_user_data( u8 *dest_buffer, const u8 *fw_data);
-int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings);
-void NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config);
+int NDS_CreateDummyFirmware(NDS_fw_config_data *user_settings);
+void NDS_FillDefaultFirmwareConfigData(NDS_fw_config_data *fw_config);
 void NDS_PatchFirmwareMAC();
 
 struct fw_memory_chip

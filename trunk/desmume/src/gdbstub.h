@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 Ben Jaques
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,7 +22,8 @@
 #include "types.h"
 
 typedef void *gdbstub_handle_t;
-extern const armcpu_memory_iface gdb_memory_iface;
+struct armcpu_t;
+struct armcpu_memory_iface;
 
 /*
  * The function interface

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2012 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,14 +17,17 @@
 */
 
 #include "oamView.h"
+
 #include <commctrl.h>
-#include "main.h"
-#include "debug.h"
-#include "resource.h"
+
+#include "../debug.h"
 #include "../MMU.h"
 #include "../GPU.h"
 #include "../NDSSystem.h"
+
+#include "resource.h"
 #include "windriver.h"
+#include "main.h"
 
 typedef struct
 {

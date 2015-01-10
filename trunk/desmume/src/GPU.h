@@ -2,7 +2,7 @@
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 Theo Berkau
 	Copyright (C) 2007 shash
-	Copyright (C) 2009-2012 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,12 +22,12 @@
 #define GPU_H
 
 #include <stdio.h>
-#include "mem.h"
-#include "common.h"
-#include "registers.h"
-#include "FIFO.h"
-#include "MMU.h"
 #include <iosfwd>
+
+#include "types.h"
+
+class EMUFILE;
+struct MMU_struct;
 
 //#undef FORCEINLINE
 //#define FORCEINLINE
@@ -783,8 +783,8 @@ struct GPU
 		updateBLDALPHA();
 	}
 
-	u32 getHOFS(int bg) { return T1ReadWord(&dispx_st->dispx_BGxOFS[bg].BGxHOFS,0) & 0x1FF; }
-	u32 getVOFS(int bg) { return T1ReadWord(&dispx_st->dispx_BGxOFS[bg].BGxVOFS,0) & 0x1FF; }
+	u32 getHOFS(int bg);
+	u32 getVOFS(int bg);
 
 	typedef u8 TBlendTable[32][32];
 	TBlendTable *blendTable;

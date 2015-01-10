@@ -16,9 +16,10 @@
  */
 
 //#include "Global.h"
-#include "types.h"
 #include "SndOut.h"
+
 #include <assert.h>
+#include <stdio.h>
 
 //----------------
 int SndOutLatencyMS = 160;

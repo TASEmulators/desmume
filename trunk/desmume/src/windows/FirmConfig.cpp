@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2007 Normmatt
-	Copyright (C) 2007-2009 DeSmuME team
+	Copyright (C) 2007-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,21 +16,18 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include "../common.h"
-#include <mmsystem.h>
-#include <COMMDLG.H>
-#include <string.h>
-
-#include "CWindow.h"
-
-#include "resource.h"
 #include "FirmConfig.h"
 
-#include "../debug.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "../NDSSystem.h"
 #include "../firmware.h"
+
+#include "resource.h"
+#include "CWindow.h"
+#include "winutil.h"
 
 static char nickname_buffer[11];
 static char message_buffer[27];

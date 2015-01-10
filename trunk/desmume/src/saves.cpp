@@ -2,7 +2,7 @@
 	Copyright (C) 2006 Normmatt
 	Copyright (C) 2006 Theo Berkau
 	Copyright (C) 2007 Pascal Giard
-	Copyright (C) 2008-2013 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,11 +28,18 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <fstream>
+
+#include "common.h"
+#include "armcpu.h"
+#include "registers.h"
+#include "FIFO.h"
+#include "driver.h"
 #include "saves.h"
 #include "MMU.h"
 #include "NDSSystem.h"
 #include "render3D.h"
 #include "cp15.h"
+#include "GPU.h"
 #include "GPU_osd.h"
 #include "version.h"
 
@@ -43,6 +50,8 @@
 #include "MMU_timing.h"
 #include "slot1.h"
 #include "slot2.h"
+#include "SPU.h"
+#include "wifi.h"
 
 #include "path.h"
 

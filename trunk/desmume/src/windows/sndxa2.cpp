@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2006-2013 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,11 +15,11 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <winsock2.h>
+#include "sndxa2.h"
 #include "directx/XAudio2.h"
 #include <windows.h>
-#include "types.h"
-#include "sndxa2.h"
+
+#include "../types.h"
 #include "windriver.h"
 
 int SNDXA2Init(int buffersize);

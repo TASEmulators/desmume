@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2011 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,10 +15,16 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../common.h"
+#ifndef _CHEATSWIN_H_
+#define _CHEATSWIN_H_
+
+#include <windows.h>
+#include "../types.h"
 
 extern void CheatsListDialog(HWND hwnd);
 extern void CheatsSearchDialog(HWND hwnd);
 extern void CheatsSearchReset();
 extern void CheatAddVerify(HWND dialog,char* addre, char* valu,u8 size);
 extern void CheatsAddDialog(HWND parentHwnd, u32 address, u32 value, u8 size, const char* description=0);
+
+#endif

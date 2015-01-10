@@ -1,4 +1,4 @@
-/*  Copyright 2009-2010 DeSmuME team
+/*  Copyright 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@
 #define _METASPU_H_
 
 #include <algorithm>
+
+#include "types.h"
 
 template< typename T >
 static FORCEINLINE void Clampify( T& src, T min, T max )

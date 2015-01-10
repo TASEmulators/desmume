@@ -23,13 +23,16 @@
 #include <assert.h>
 #include <sstream>
 
+#include "armcpu.h"
 #include "common.h"
 #include "debug.h"
+#include "driver.h"
 #include "NDSSystem.h"
 #include "cp15.h"
 #include "wifi.h"
 #include "registers.h"
 #include "render3D.h"
+#include "FIFO.h"
 #include "gfx3d.h"
 #include "rtc.h"
 #include "mc.h"
@@ -41,6 +44,8 @@
 #include "MMU_timing.h"
 #include "firmware.h"
 #include "encrypt.h"
+#include "GPU.h"
+#include "SPU.h"
 
 #ifdef DO_ASSERT_UNALIGNED
 #define ASSERT_UNALIGNED(x) assert(x)
@@ -1259,6 +1264,29 @@ void MMU_GC_endTransfer(u32 PROCNUM)
 		NDS_makeIrq(PROCNUM, IRQ_BIT_GC_TRANSFER_COMPLETE);
 }
 
+void GC_Command::print()
+{
+	GCLOG("%02X%02X%02X%02X%02X%02X%02X%02X\n",bytes[0],bytes[1],bytes[2],bytes[3],bytes[4],bytes[5],bytes[6],bytes[7]);
+}
+
+void GC_Command::toCryptoBuffer(u32 buf[2])
+{
+	u8 temp[8] = { bytes[7], bytes[6], bytes[5], bytes[4], bytes[3], bytes[2], bytes[1], bytes[0] };
+	buf[0] = T1ReadLong(temp,0);
+	buf[1] = T1ReadLong(temp,4);
+}
+
+void GC_Command::fromCryptoBuffer(u32 buf[2])
+{
+	bytes[7] = (buf[0]>>0)&0xFF;
+	bytes[6] = (buf[0]>>8)&0xFF;
+	bytes[5] = (buf[0]>>16)&0xFF;
+	bytes[4] = (buf[0]>>24)&0xFF;
+	bytes[3] = (buf[1]>>0)&0xFF;
+	bytes[2] = (buf[1]>>8)&0xFF;
+	bytes[1] = (buf[1]>>16)&0xFF;
+	bytes[0] = (buf[1]>>24)&0xFF;
+}
 
 template<int PROCNUM>
 void FASTCALL MMU_writeToGCControl(u32 val)
@@ -2057,6 +2085,11 @@ u32 MMU_struct_new::read_dma(const int proc, const int size, const u32 _adr)
 	return temp;
 }
 
+bool MMU_struct_new::is_dma(const u32 adr)
+{
+	return adr >= _REG_DMA_CONTROL_MIN && adr <= _REG_DMA_CONTROL_MAX;
+}
+
 MMU_struct_new::MMU_struct_new()
 {
 	for(int i=0;i<2;i++)
@@ -2064,6 +2097,36 @@ MMU_struct_new::MMU_struct_new()
 			dma[i][j].procnum = i;
 			dma[i][j].chan = j;
 		}
+}
+
+void DivController::savestate(EMUFILE* os)
+{
+	write8le(&mode,os);
+	write8le(&busy,os);
+	write8le(&div0,os);
+}
+
+bool DivController::loadstate(EMUFILE* is, int version)
+{
+	int ret = 1;
+	ret &= read8le(&mode,is);
+	ret &= read8le(&busy,is);
+	ret &= read8le(&div0,is);
+	return ret==1;
+}
+
+void SqrtController::savestate(EMUFILE* os)
+{
+	write8le(&mode,os);
+	write8le(&busy,os);
+}
+
+bool SqrtController::loadstate(EMUFILE* is, int version)
+{
+	int ret=1;
+	ret &= read8le(&mode,is);
+	ret &= read8le(&busy,is);
+	return ret==1;
 }
 
 bool DmaController::loadstate(EMUFILE* f)

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2013 DeSmuME team
+	Copyright (C) 2010-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,8 +18,13 @@
 //this file contains the components used for emulating standard gamecard ROMs
 //this is largely done by accessing the rom provided in the core emulator
 
+#ifndef _SLOT1COMP_ROM_H
+#define _SLOT1COMP_ROM_H
+
 #include "slot1comp_protocol.h"
-#include "emufile.h"
+#include "../types.h"
+
+class EMUFILE;
 
 class Slot1Comp_Rom
 {
@@ -37,3 +42,4 @@ private:
 	eSlot1Operation operation;
 };
 
+#endif

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
 
 #ifndef _AVIOUT_H_
 #define _AVIOUT_H_
+
+#include "../types.h"
 
 bool DRV_AviBegin(const char* fname);
 void DRV_AviEnd();

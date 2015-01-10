@@ -1,7 +1,7 @@
 /* ioregsView.cpp - this file is part of DeSmuME
  *
  * Copyright (C) 2006 Thoduv
- * Copyright (C) 2006,2007 DeSmuME Team
+ * Copyright (C) 2006-2015 DeSmuME Team
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,8 @@
 #include <string.h>
 #include "../dTool.h"
 
-#include "../MMU.h"
+#include "../../MMU.h"
+#include "../../registers.h"
 
 #undef GPOINTER_TO_INT
 #define GPOINTER_TO_INT(p) ((gint)  (glong) (p))

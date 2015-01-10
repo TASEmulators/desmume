@@ -20,14 +20,10 @@
 #ifndef MMU_H
 #define MMU_H
 
-#include "FIFO.h"
-#include "mem.h"
-#include "registers.h"
-#include "mc.h"
-#include "bits.h"
-#include "readwrite.h"
 #include "debug.h"
 #include "firmware.h"
+#include "mc.h"
+#include "mem.h"
 
 #ifdef HAVE_LUA
 #include "lua-engine.h"
@@ -41,8 +37,9 @@
 #define ARMCPU_ARM9 0
 #define ARMPROC (PROCNUM ? NDS_ARM7:NDS_ARM9)
 
-typedef const u8 TWaitState;
+class EMUFILE;
 
+typedef const u8 TWaitState;
 
 enum EDMAMode
 {
@@ -152,20 +149,8 @@ public:
 		mode = val&3;
 		//todo - do we clear the div0 flag here or is that strictly done by the divider unit?
 	}
-	void savestate(EMUFILE* os)
-	{
-		write8le(&mode,os);
-		write8le(&busy,os);
-		write8le(&div0,os);
-	}
-	bool loadstate(EMUFILE* is, int version)
-	{
-		int ret = 1;
-		ret &= read8le(&mode,is);
-		ret &= read8le(&busy,is);
-		ret &= read8le(&div0,is);
-		return ret==1;
-	}
+	void savestate(EMUFILE* os);
+	bool loadstate(EMUFILE* is, int version);
 };
 
 class SqrtController
@@ -178,18 +163,8 @@ public:
 	u8 mode, busy;
 	u16 read16() { return mode|(busy<<15); }
 	void write16(u16 val) { mode = val&1; }
-	void savestate(EMUFILE* os)
-	{
-		write8le(&mode,os);
-		write8le(&busy,os);
-	}
-	bool loadstate(EMUFILE* is, int version)
-	{
-		int ret=1;
-		ret &= read8le(&mode,is);
-		ret &= read8le(&busy,is);
-		return ret==1;
-	}
+	void savestate(EMUFILE* os);
+	bool loadstate(EMUFILE* is, int version);
 };
 
 
@@ -324,27 +299,10 @@ void MMU_GC_endTransfer(u32 PROCNUM);
 struct GC_Command
 {
 	u8 bytes[8];
-	void print()
-	{
-		GCLOG("%02X%02X%02X%02X%02X%02X%02X%02X\n",bytes[0],bytes[1],bytes[2],bytes[3],bytes[4],bytes[5],bytes[6],bytes[7]);
-	}
-	void toCryptoBuffer(u32 buf[2])
-	{
-		u8 temp[8] = { bytes[7], bytes[6], bytes[5], bytes[4], bytes[3], bytes[2], bytes[1], bytes[0] };
-		buf[0] = T1ReadLong(temp,0);
-		buf[1] = T1ReadLong(temp,4);
-	}
-	void fromCryptoBuffer(u32 buf[2])
-	{
-		bytes[7] = (buf[0]>>0)&0xFF;
-		bytes[6] = (buf[0]>>8)&0xFF;
-		bytes[5] = (buf[0]>>16)&0xFF;
-		bytes[4] = (buf[0]>>24)&0xFF;
-		bytes[3] = (buf[1]>>0)&0xFF;
-		bytes[2] = (buf[1]>>8)&0xFF;
-		bytes[1] = (buf[1]>>16)&0xFF;
-		bytes[0] = (buf[1]>>24)&0xFF;
-	}
+	
+	void print();
+	void toCryptoBuffer(u32 buf[2]);
+	void fromCryptoBuffer(u32 buf[2]);
 };
 
 //should rather be known as GCBUS controller, or somesuch
@@ -506,14 +464,15 @@ struct MMU_struct_new
 
 	void write_dma(const int proc, const int size, const u32 adr, const u32 val);
 	u32 read_dma(const int proc, const int size, const u32 adr);
-	bool is_dma(const u32 adr) { return adr >= _REG_DMA_CONTROL_MIN && adr <= _REG_DMA_CONTROL_MAX; }
+	bool is_dma(const u32 adr);
 };
 
 extern MMU_struct MMU;
 extern MMU_struct_new MMU_new;
 
 
-typedef struct {
+struct armcpu_memory_iface
+{
   /** the 32 bit instruction prefetch */
   u32 FASTCALL (*prefetch32)( void *data, u32 adr);
 
@@ -535,7 +494,7 @@ typedef struct {
   void FASTCALL (*write32)( void *data, u32 adr, u32 val);
 
   void *data;
-} armcpu_memory_iface;
+};
 
 
 void MMU_Init(void);

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2007 Acid Burn
-	Copyright (C) 2008-2010 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,9 +16,8 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../common.h"
-#include <stdio.h>
 #include "colorctrl.h"
+#include <stdio.h>
 
 static char szClassName[] = "DeSmuME_ColorCtrl";
 

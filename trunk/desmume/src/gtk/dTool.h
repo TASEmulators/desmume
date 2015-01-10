@@ -1,9 +1,6 @@
 #ifndef __DTOOL_H__ 
 #define __DTOOL_H__
 
-#include "../types.h"
-#include "../registers.h"
-
 typedef void (*dTool_openFn)(int id);
 typedef void (*dTool_updateFn)();
 typedef void (*dTool_closeFn)();

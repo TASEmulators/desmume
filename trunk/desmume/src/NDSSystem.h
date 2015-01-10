@@ -20,23 +20,13 @@
 #define NDSSYSTEM_H
 
 #include <string.h>
-#include "armcpu.h"
-#include "MMU.h"
-#include "driver.h"
-#include "GPU.h"
-#include "SPU.h"
-#include "mem.h"
-#include "wifi.h"
-#include "emufile.h"
-#include "firmware.h"
-#include "types.h"
-#include "utils/task.h"
-
 #include <string>
 
-#if defined(HOST_WINDOWS) && !defined(DESMUME_QT)
-#include "pathsettings.h"
-#endif
+#include "types.h"
+
+class BaseDriver;
+class CFIRMWARE;
+class EMUFILE;
 
 template<typename Type>
 struct buttonstruct {
@@ -81,7 +71,8 @@ extern BOOL click;
 #define NDS_FW_LANG_CHI 6
 #define NDS_FW_LANG_RES 7
 
-extern CFIRMWARE	*firmware;
+extern BaseDriver *driver;
+extern CFIRMWARE *firmware;
 
 #define DSGBA_LOADER_SIZE 512
 enum
@@ -363,8 +354,8 @@ struct GameInfo
 	void closeROM();
 	u32 readROM(u32 pos);
 	void populate();
-	bool isDSiEnhanced() { return _isDSiEnhanced; };
-	bool isHomebrew() { return ((header.ARM9src < 0x4000) && (T1ReadLong(header.logo, 0) != 0x51AEFF24) && (T1ReadLong(header.logo, 4) != 0x699AA221)); }
+	bool isDSiEnhanced();
+	bool isHomebrew();
 	bool hasRomBanner();
 	
 };
@@ -470,18 +461,14 @@ void NDS_debug_break();
 void NDS_debug_continue();
 void NDS_debug_step();
 
-void execHardware_doAllDma(EDMAMode modeNum);
+int NDS_GetCPUCoreCount();
+void NDS_SetupDefaultFirmware();
+
+//void execHardware_doAllDma(EDMAMode modeNum);
 
 template<bool FORCE> void NDS_exec(s32 nb = 560190<<1);
 
 extern int lagframecounter;
-
-static INLINE void NDS_swapScreen(void)
-{
-   u16 tmp = MainScreen.offset;
-   MainScreen.offset = SubScreen.offset;
-   SubScreen.offset = tmp;
-}
 
 extern struct TCommonSettings {
 	TCommonSettings() 
@@ -507,7 +494,7 @@ extern struct TCommonSettings {
 		, rigorous_timing(false)
 		, advanced_timing(true)
 		, micMode(InternalNoise)
-		, spuInterpolationMode(SPUInterpolation_Linear)
+		, spuInterpolationMode(1)
 		, manualBackupType(0)
 		, autodetectBackupMethod(0)
 		, spu_captureMuted(false)
@@ -522,7 +509,6 @@ extern struct TCommonSettings {
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
 		strcpy(Firmware, "firmware.bin");
-		NDS_FillDefaultFirmwareConfigData(&fw_config);
 
 		/* WIFI mode: adhoc = 0, infrastructure = 1 */
 		wifi.mode = 1;
@@ -542,7 +528,8 @@ extern struct TCommonSettings {
 		use_jit = false;
 #endif
 
-		num_cores = getOnlineCores();
+		num_cores = NDS_GetCPUCoreCount();
+		NDS_SetupDefaultFirmware();
 	}
 	bool GFX3D_HighResolutionInterpolateColor;
 	bool GFX3D_EdgeMark;
@@ -601,7 +588,7 @@ extern struct TCommonSettings {
 	} micMode;
 
 
-	SPUInterpolationMode spuInterpolationMode;
+	int spuInterpolationMode;
 
 	//this is a temporary hack until we straighten out the flushing logic and/or gxfifo
 	//int gfx3d_flushMode;

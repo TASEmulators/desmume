@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2010 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,15 +16,18 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "resource.h"
-#include "common.h"
+#include "ginfo.h"
+
+#include <stdio.h>
+#include <commctrl.h>
+
+#include "../common.h"
 #include "../MMU.h"
 #include "../NDSSystem.h"
+
+#include "resource.h"
 #include "FirmConfig.h"
-#include <stdio.h>
-#include <windows.h>
-#include <commctrl.h>
-#include "ginfo.h"
+#include "main.h"
 
 //////////////////////////////////////////////////////////////////////////////
 

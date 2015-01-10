@@ -21,6 +21,8 @@
 #ifndef _DECRYPT_H_
 #define _DECRYPT_H_
 
+#include "../../types.h"
+
 extern const unsigned char arm7_key[];
 
 //decrypts the secure area of a rom (or does nothing if it is already decrypted)

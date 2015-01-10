@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,8 +18,7 @@
 #ifndef TILEVIEW_H
 #define TILEVIEW_H
 
-#include "../common.h"
-#include <stdlib.h>
+#include <windows.h>
 
 extern LRESULT CALLBACK TileViewBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 extern LRESULT CALLBACK MiniTileViewBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);

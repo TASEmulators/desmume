@@ -17,13 +17,15 @@
 */
 
 #include "CWindow.h"
+
+#include <windowsx.h>
+#include <commctrl.h>
+
+#include "../debug.h"
+
+#include "resource.h"
 #include "main.h"
 #include "IORegView.h"
-#include "debug.h"
-#include "resource.h"
-#include <windowsx.h>
-
-#include <commctrl.h>
 
 //-----------------------------------------------------------------------------
 //   The Toolkit - Helpers

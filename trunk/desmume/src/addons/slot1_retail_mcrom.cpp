@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2013 DeSmuME team
+	Copyright (C) 2010-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,13 +15,12 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../slot1.h"
-#include "../registers.h"
-#include "../MMU.h"
-#include "../NDSSystem.h"
 #include "slot1comp_mc.h"
 #include "slot1comp_rom.h"
 #include "slot1comp_protocol.h"
+
+#include "../slot1.h"
+#include "../NDSSystem.h"
 
 //quick architecture overview:
 //MCROM receives GC bus commands from MMU.cpp

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2009 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,13 +16,17 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "CWindow.h"
 #include "IORegView.h"
+
 #include <commctrl.h>
-#include "debug.h"
-#include "resource.h"
+
+#include "../debug.h"
 #include "../MMU.h"
+#include "../registers.h"
 #include "../armcpu.h"
+
+#include "resource.h"
+#include "main.h"
 
 //this message is only supported in vista so folks sdk might not have it.
 //therefore we shall declare it here
