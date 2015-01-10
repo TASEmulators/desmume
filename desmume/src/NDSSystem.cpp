@@ -16,34 +16,44 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "NDSSystem.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <algorithm>
 #include <math.h>
 #include <zlib.h>
 
+#include "utils/decrypt/decrypt.h"
+#include "utils/decrypt/crc.h"
+#include "utils/advanscene.h"
+#include "utils/task.h"
+
 #include "common.h"
-#include "NDSSystem.h"
+#include "armcpu.h"
 #include "render3D.h"
 #include "MMU.h"
 #include "ROMReader.h"
 #include "gfx3d.h"
-#include "utils/decrypt/decrypt.h"
-#include "utils/decrypt/crc.h"
-#include "utils/advanscene.h"
+#include "GPU.h"
 #include "cp15.h"
 #include "bios.h"
 #include "debug.h"
 #include "cheatSystem.h"
 #include "movie.h"
 #include "Disassembler.h"
+#include "FIFO.h"
 #include "readwrite.h"
+#include "registers.h"
 #include "debug.h"
+#include "driver.h"
 #include "firmware.h"
 #include "version.h"
 #include "path.h"
 #include "slot1.h"
 #include "slot2.h"
+#include "SPU.h"
+#include "wifi.h"
 
 //int xxctr=0;
 //#define LOG_ARM9
@@ -98,6 +108,16 @@ void Desmume_InitOnce()
 	extern void Agg_init(); //no need to include just for this
 	Agg_init();
 #endif
+}
+
+int NDS_GetCPUCoreCount()
+{
+	return getOnlineCores();
+}
+
+void NDS_SetupDefaultFirmware()
+{
+	NDS_FillDefaultFirmwareConfigData(&CommonSettings.fw_config);
 }
 
 void NDS_RunAdvansceneAutoImport()
@@ -543,6 +563,16 @@ u32 GameInfo::readROM(u32 pos)
 		}
 		return LE_TO_LOCAL_32(*(u32*)(romdata + pos));
 	}
+}
+
+bool GameInfo::isDSiEnhanced()
+{
+	return _isDSiEnhanced;
+}
+
+bool GameInfo::isHomebrew()
+{
+	return ((header.ARM9src < 0x4000) && (T1ReadLong(header.logo, 0) != 0x51AEFF24) && (T1ReadLong(header.logo, 4) != 0x699AA221));
 }
 
 static int rom_init_path(const char *filename, const char *physicalName, const char *logicalFilename)
@@ -2826,6 +2856,13 @@ void NDS_suspendProcessingInput(bool suspend)
 		// unwound past first time -> not processing
 		validToProcessInput = false;
 	}
+}
+
+void NDS_swapScreen()
+{
+	u16 tmp = MainScreen.offset;
+	MainScreen.offset = SubScreen.offset;
+	SubScreen.offset = tmp;
 }
 
 

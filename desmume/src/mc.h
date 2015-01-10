@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 thoduv
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2008-2013 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,10 +23,8 @@
 #include <stdio.h>
 #include <vector>
 #include <string>
+
 #include "types.h"
-#include "emufile.h"
-#include "common.h"
-#include "utils/tinyxml/tinyxml.h"
 
 #define MAX_SAVE_TYPES 13
 #define MC_TYPE_AUTODETECT      0x0
@@ -49,6 +47,9 @@
 #define MC_SIZE_128MBITS                0x1000000
 #define MC_SIZE_256MBITS                0x2000000
 #define MC_SIZE_512MBITS                0x4000000
+
+class EMUFILE;
+class EMUFILE_FILE;
 
 //This "backup device" represents a typical retail NDS save memory accessible via AUXSPI.
 //It is managed as a core emulator service for historical reasons which are bad,
@@ -84,9 +85,9 @@ public:
 	void writeWord(u16 val);
 	void writeLong(u32 val);
 
-	void seek(u32 pos) { fpMC->fseek(pos, SEEK_SET); }
+	void seek(u32 pos);
 
-	void flushBackup() { fpMC->fflush(); }
+	void flushBackup();
 	
 	u8 searchFileSaveType(u32 size);
 

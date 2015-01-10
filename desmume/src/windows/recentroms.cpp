@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,17 +15,17 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "recentroms.h"
 
 #include <vector>
 #include <string>
+#include <shlwapi.h>
 
-#include "recentroms.h"
-#include "common.h"
+#include "../common.h"
+
 #include "resource.h"
-#include "main.h"
 #include "winutil.h"
 
-#include <shlwapi.h>
 
 std::vector<std::string> RecentRoms;					//The list of recent ROM filenames
 HMENU recentromsmenu;				//Handle to the recent ROMs submenu

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 #ifndef OAMVIEW_H
 #define OAMVIEW_H
 
-#include "../common.h"
+#include <windows.h>
 
 extern LRESULT CALLBACK ViewOAMBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 extern BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);

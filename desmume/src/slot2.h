@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2013 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,11 +18,13 @@
 #ifndef __SLOT2_H__
 #define __SLOT2_H__
 
-#include "common.h"
+#include <string>
+
 #include "types.h"
-#include "debug.h"
 
 #define GBA_SRAM_FILE_EXT "sav"
+
+class EMUFILE;
 
 class Slot2Info
 {

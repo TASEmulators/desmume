@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2006-2010 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,8 +17,10 @@
 
 #ifndef SNDXA2_H
 #define SNDXA2_H
-#include "SPU.h"
+
+#include "../SPU.h"
 #define SNDCORE_XAUDIO2 3
 
 extern SoundInterface_struct SNDXAUDIO2;
+
 #endif

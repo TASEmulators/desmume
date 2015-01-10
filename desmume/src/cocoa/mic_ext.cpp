@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2013 DeSmuME team
+	Copyright (C) 2012-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,7 +18,8 @@
 
 #import "cocoa_globals.h"
 #include "mic_ext.h"
-#include "readwrite.h"
+#include "../emufile.h"
+#include "../readwrite.h"
 
 RingBuffer micInputBuffer(MIC_MAX_BUFFER_SAMPLES * 2, sizeof(u8));
 NullGenerator nullSampleGenerator;

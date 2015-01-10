@@ -1,6 +1,6 @@
 /*  
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2011 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,15 +16,18 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "disView.h"
+
 #include <algorithm>
+#include <commctrl.h>
 #include <tchar.h>
 #include <stdio.h>
+
 #include "../MMU.h"
 #include "../Disassembler.h"
 #include "../NDSSystem.h"
 #include "../armcpu.h"
-#include "disView.h"
-#include <commctrl.h>
+
 #include "resource.h"
 #include "main.h"
 

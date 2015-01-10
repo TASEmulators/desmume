@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,9 +15,8 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "common.h"
-#include "main.h"
-#include "driver.h"
+#include "OpenArchive.h"
+
 #include <windows.h>
 #include <stdio.h>
 #include <errno.h>
@@ -26,11 +25,11 @@
 #include <map>
 #include <vector>
 #include <algorithm>
-#include "FEX_Interface.h"
-//#include "G_main.h"
-//#include "G_dsound.h"
+
+#include "../driver.h"
+
 #include "resource.h"
-#include "OpenArchive.h"
+#include "main.h"
 
 static char Str_Tmp[1024];
 

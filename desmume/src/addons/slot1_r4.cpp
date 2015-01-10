@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2013 DeSmuME team
+	Copyright (C) 2010-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,14 +15,13 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "slot1comp_protocol.h"
+
 #include <time.h>
 
 #include "../slot1.h"
-#include "../registers.h"
-#include "../MMU.h"
 #include "../NDSSystem.h"
 #include "../emufile.h"
-#include "slot1comp_protocol.h"
 
 class Slot1_R4 : public ISlot1Interface, public ISlot1Comp_Protocol_Client
 {

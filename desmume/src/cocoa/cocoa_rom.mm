@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2013 DeSmuME team
+	Copyright (C) 2011-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 #import "cocoa_util.h"
 
 #include "../NDSSystem.h"
-#include "../MMU.h"
+#include "../common.h"
 #include "../mc.h"
 #undef BOOL
 

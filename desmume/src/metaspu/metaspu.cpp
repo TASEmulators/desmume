@@ -1,4 +1,4 @@
-/*  Copyright 2009 DeSmuME team
+/*  Copyright 2009-2015 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -17,8 +17,8 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
-#include "types.h"
 #include "metaspu.h"
+
 #include <queue>
 #include <vector>
 #include <assert.h>

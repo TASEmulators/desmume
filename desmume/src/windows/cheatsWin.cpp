@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2013 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,14 +16,19 @@
 */
 
 #include "cheatsWin.h"
+
 #include <commctrl.h>
+
+#include "../common.h"
 #include "../cheatSystem.h"
-#include "resource.h"
 #include "../debug.h"
 #include "../utils/xstring.h"
 #include "../path.h"
 #include "../NDSSystem.h"
 #include "../version.h"
+
+#include "resource.h"
+#include "main.h"
 
 extern u8	CheatsR4Type = 0;
 

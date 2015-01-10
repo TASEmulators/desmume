@@ -23,9 +23,10 @@
 #ifndef INPUTDX_INCLUDED
 #define INPUTDX_INCLUDED
 
-#include <mmsystem.h>
+#include <windows.h>
 #define DIRECTINPUT_VERSION 0x0800
 #include "directx/dinput.h"
+#include "directx/xinput.h"
 
 typedef struct
 {

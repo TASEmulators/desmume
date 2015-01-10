@@ -44,21 +44,25 @@
 #define CLI_UI
 #endif
 
-#include "MMU.h"
-#include "NDSSystem.h"
-#include "debug.h"
-#include "sndsdl.h"
-#include "ctrlssdl.h"
-#include "render3D.h"
-#include "rasterize.h"
-#include "saves.h"
-#include "firmware.h"
-#include "GPU_osd.h"
-#include "desmume_config.h"
-#include "commandline.h"
-#include "slot2.h"
-#include "utils/xstring.h"
-#include "gdbstub.h"
+#include "../NDSSystem.h"
+#include "../driver.h"
+#include "../GPU.h"
+#include "../SPU.h"
+#include "../sndsdl.h"
+#include "../ctrlssdl.h"
+#include "../render3D.h"
+#include "../rasterize.h"
+#include "../saves.h"
+#include "../GPU_osd.h"
+#include "../desmume_config.h"
+#include "../commandline.h"
+#include "../slot2.h"
+#include "../utils/xstring.h"
+
+#ifdef GDB_STUB
+#include "../armcpu.h"
+#include "../gdbstub.h"
+#endif
 
 volatile bool execute = false;
 
@@ -589,7 +593,7 @@ int main(int argc, char ** argv) {
     g_thread_init( NULL);
   }
 
-  driver = new UnixDriver();
+  driver = new BaseDriver();
   
 #ifdef GDB_STUB
   /*

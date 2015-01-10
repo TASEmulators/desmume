@@ -22,34 +22,18 @@
 	THE SOFTWARE.
 */
 
+#include "gdbstub_internal.h"
+
 #include <errno.h>
-//#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <fcntl.h>
 
-#include "types.h"
-#include "NDSSystem.h"
-
-#ifdef WIN32
-#include <winsock2.h>
-#else
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#endif
-
-#include "armcpu.h"
-
-#define uint32_t u32
-#define uint16_t u16
-#define uint8_t u8
-
-#include "gdbstub.h"
-#include "gdbstub_internal.h"
+#include "../gdbstub.h"
+#include "../types.h"
+#include "../NDSSystem.h"
+#include "../armcpu.h"
+#include "../MMU.h"
 
 #ifdef __GNUC__
 #define UNUSED_PARM( parm) parm __attribute__((unused))
@@ -638,7 +622,7 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
       if ( *rx_ptr++ == ',') {
         if ( hexToInt( &rx_ptr, &length)) {
           //DEBUG_LOG("mem read from %08x (%d)\n", addr, length);
-          if ( !mem2hex( &stub->direct_memio, addr, out_ptr, length)) {
+          if ( !mem2hex( stub->direct_memio, addr, out_ptr, length)) {
             strcpy ( (char *)out_ptr, "E03");
             send_size = 3;
           }
@@ -674,7 +658,7 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
             for ( i = 0; i < length; i++) {
               rx_ptr = hex2mem( rx_ptr, &write_byte, 1);
 
-              stub->direct_memio.write8( stub->direct_memio.data,
+              stub->direct_memio->write8( stub->direct_memio->data,
                                          addr++, write_byte);
             }
 
@@ -1397,7 +1381,21 @@ gdb_write32( void *data, uint32_t adr, uint32_t val) {
                       STOP_AWATCHPOINT);
 }
 
+// GDB memory interface for the ARM CPUs
+static const armcpu_memory_iface gdb_memory_iface = {
+	gdb_prefetch32,
+	gdb_prefetch16,
 
+	gdb_read8,
+	gdb_read16,
+	gdb_read32,
+
+	gdb_write8,
+	gdb_write16,
+	gdb_write32,
+
+	NULL
+};
 
 
 
@@ -1453,20 +1451,19 @@ createStub_gdb( uint16_t port,
     return stub;
   }
 
-  stub = (gdb_stub_state*)malloc( sizeof (struct gdb_stub_state));
-  if ( stub == NULL) {
-    return stub;
-  }
-
+  stub = new gdb_stub_state;
   stub->arm_cpu_object = theCPU;
   stub->active = 0;
 
   /* keep the memory interfaces */
   stub->cpu_memio = theCPU->GetBaseMemoryInterface();
-  stub->direct_memio = *direct_memio;
 
-  stub->gdb_memio = gdb_memory_iface;
-  stub->gdb_memio.data = stub;
+  stub->direct_memio = new armcpu_memory_iface;
+  *(stub->direct_memio) = *direct_memio;
+
+  stub->gdb_memio = new armcpu_memory_iface;
+  *(stub->gdb_memio) = gdb_memory_iface;
+  stub->gdb_memio->data = stub;
 
   stub->cpu_ctrl = theCPU->GetControlInterface();
 
@@ -1570,14 +1567,14 @@ createStub_gdb( uint16_t port,
 
     if ( stub->thread == NULL) {
       LOG_ERROR("Failed to create listener thread\n");
-      free( stub);
+	  delete stub;
     }
     else {
       DEBUG_LOG("Created GDB stub on port %d\n", port);
     }
   }
   else {
-    free( stub);
+	  delete stub;
   }
 
   return stub;
@@ -1601,7 +1598,9 @@ destroyStub_gdb( gdbstub_handle_t instance) {
   theCPU->ResetMemoryInterfaceToBase();
 	
   DEBUG_LOG("Destroyed GDB stub on port %d\n", stub->port_num);
-  free( stub);
+  delete stub->direct_memio;
+  delete stub->gdb_memio;
+  delete stub;
 }
 
 void
@@ -1611,26 +1610,10 @@ activateStub_gdb( gdbstub_handle_t instance) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)instance;
   armcpu_t *theCPU = (armcpu_t *)stub->arm_cpu_object;
 
-  theCPU->SetCurrentMemoryInterface(&stub->gdb_memio);
+  theCPU->SetCurrentMemoryInterface(stub->gdb_memio);
 
   /* stall the cpu */
   stub->cpu_ctrl->stall( stub->cpu_ctrl->data);
 
   stub->active = 1;
 }
-
-// GDB memory interface for the ARM CPUs
-const armcpu_memory_iface gdb_memory_iface = {
-	gdb_prefetch32,
-	gdb_prefetch16,
-	
-	gdb_read8,
-	gdb_read16,
-	gdb_read32,
-	
-	gdb_write8,
-	gdb_write16,
-	gdb_write32,
-
-	NULL
-};

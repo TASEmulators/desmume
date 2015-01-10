@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2010 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
 
 #ifndef SOUND_VIEW_H
 #define SOUND_VIEW_H
+
+#include <windows.h>
 
 BOOL SoundView_Init();
 void SoundView_DeInit();

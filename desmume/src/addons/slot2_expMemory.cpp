@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2009 CrazyMax
-	Copyright (C) 2009-2013 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
 */
 
 #include "../slot2.h"
+#include "../emufile.h"
+#include "../mem.h"
 
 #if 0
 #define EXPINFO(...) INFO(__VA_ARGS__)

@@ -1,5 +1,5 @@
 /*	
-	Copyright (C) 2009-2011 DeSmuME Team
+	Copyright (C) 2009-2015 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,10 +16,12 @@
 */
 
 #include "firmware.h"
+
 #include "NDSSystem.h"
 #include "MMU.h"
 #include "path.h"
 #include "encrypt.h"
+#include "wifi.h"
 
 #define DFC_ID_CODE	"DeSmuME Firmware User Settings"
 #define DFC_ID_SIZE	sizeof(DFC_ID_CODE)
@@ -811,7 +813,7 @@ static void fill_user_data_area( struct NDS_fw_config_data *user_settings,u8 *da
 }
 
 // creates an firmware flash image, which contains all needed info to initiate a wifi connection
-int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
+int NDS_CreateDummyFirmware(NDS_fw_config_data *user_settings)
 {
 	//Create the firmware header
 
@@ -895,18 +897,18 @@ int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
 	(*(u16*)(MMU.fw.data + 0x2A)) = calc_CRC16(0, (MMU.fw.data + 0x2C), 0x138);
 
 	if (&CommonSettings.fw_config != user_settings)
-		memcpy(&CommonSettings.fw_config, user_settings, sizeof(struct NDS_fw_config_data));
+		memcpy(&CommonSettings.fw_config, user_settings, sizeof(NDS_fw_config_data));
 
 	return TRUE ;
 }
 
-void NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config) {
+void NDS_FillDefaultFirmwareConfigData(NDS_fw_config_data *fw_config) {
 	const char *default_nickname = "DeSmuME";
 	const char *default_message = "DeSmuME makes you happy!";
 	int i;
 	int str_length;
 
-	memset( fw_config, 0, sizeof( struct NDS_fw_config_data));
+	memset( fw_config, 0, sizeof(NDS_fw_config_data));
 	fw_config->ds_type = NDS_CONSOLE_TYPE_FAT;
 
 	fw_config->fav_colour = 7;

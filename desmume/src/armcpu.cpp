@@ -20,7 +20,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <algorithm>
-#include "types.h"
+
+#include "armcpu.h"
+#include "common.h"
 #include "instructions.h"
 #include "cp15.h"
 #include "bios.h"
@@ -744,6 +746,33 @@ template u32 armcpu_exec<0,true>();
 template u32 armcpu_exec<1,false>();
 template u32 armcpu_exec<1,true>();
 #endif
+
+void setIF(int PROCNUM, u32 flag)
+{
+	//don't set generated bits!!!
+	assert(!(flag&0x00200000));
+	
+	MMU.reg_IF_bits[PROCNUM] |= flag;
+	
+	NDS_Reschedule();
+}
+
+char* decodeIntruction(bool thumb_mode, u32 instr)
+{
+	char txt[20] = {0};
+	u32 tmp = 0;
+	if (thumb_mode == true)
+	{
+		tmp = (instr >> 6);
+		strcpy(txt, intToBin((u16)tmp)+6);
+	}
+	else
+	{
+		tmp = ((instr >> 16) & 0x0FF0) | ((instr >> 4) & 0x0F);
+		strcpy(txt, intToBin((u32)tmp)+20);
+	}
+	return strdup(txt);
+}
 
 const armcpu_ctrl_iface arm_default_ctrl_iface = {
 	stall_cpu,

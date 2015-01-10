@@ -2,7 +2,7 @@
 //Authors: Nitsuja, Upthorn, adelikat
 
 /*
-	Modifications Copyright (C) 2009-2011 DeSmuME team
+	Modifications Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -47,20 +47,22 @@
 // during these sporadic "setup" steps to achieve an all-around faster per-update speed.
 // (You can test this case by performing the search: Modulo 2 Is Specific Address 0)
 
-#include "resource.h"
-
-#include "common.h"
-#include "main.h"
-#include "NDSSystem.h"
+#include "ram_search.h"
 #include "ramwatch.h"
 
-#include "ram_search.h"
 #include <assert.h>
 #include <commctrl.h>
-#include "ramwatch.h"
-#include "cheatsWin.h"
 #include <list>
 #include <vector>
+
+#include "../common.h"
+#include "../NDSSystem.h"
+#include "../MMU.h"
+
+#include "resource.h"
+#include "main.h"
+#include "cheatsWin.h"
+
 #ifdef _WIN32
    #include "BaseTsd.h"
    typedef INT_PTR intptr_t;

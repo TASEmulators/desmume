@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2013 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 	
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,10 +20,12 @@
 //it renders the use of bios files generally unnecessary.
 //it turns out that they're not too complex, although of course the timings will be all wrong here.
 
+#include "armcpu.h"
 #include "cp15.h"
 #include <math.h>
 #include "MMU.h"
 #include "debug.h"
+#include "registers.h"
 #include "NDSSystem.h"
 
 #define cpu (&ARMPROC)

@@ -1,5 +1,5 @@
 /*
-	Copyright 2008-2014 DeSmuME team
+	Copyright 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,13 +23,13 @@
 #include <string>
 #include <stdlib.h>
 #include <time.h>
-#include "emufile.h"
 
 #include "utils/datetime.h"
 #include "utils/guid.h"
 #include "utils/md5.h"
 
 struct UserInput;
+class EMUFILE;
 
 typedef struct
 {

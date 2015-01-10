@@ -30,6 +30,7 @@
 
 #include "../movie.h"
 #include "../NDSSystem.h"
+#include "../armcpu.h"
 #include "../driver.h"
 #include "../gdbstub.h"
 #include "../slot1.h"

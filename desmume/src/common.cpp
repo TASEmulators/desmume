@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2010 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,10 +17,11 @@
 
 //TODO - move this into ndssystem where it belongs probably
 
+#include "common.h"
+
 #include <string.h>
 #include <string>
 #include <stdarg.h>
-#include "common.h"
 #include <zlib.h>
 #include <stdlib.h>
 

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2007 Tim Seidel
-	Copyright (C) 2008-2011 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,17 +20,19 @@
 #define WIFI_H
 
 #include <stdio.h>
+#include <queue>
 #include "types.h"
 
-#include <queue>
-
 #ifdef EXPERIMENTAL_WIFI_COMM
+	#ifdef HOST_WINDOWS
+		#define WIN32_LEAN_AND_MEAN
+	#endif
 
-#define HAVE_REMOTE
-#define WPCAP
-#define PACKET_SIZE 65535
-#define _INC_STDIO
-
+	#include <pcap.h>
+	#define HAVE_REMOTE
+	#define WPCAP
+	#define PACKET_SIZE 65535
+	#define _INC_STDIO
 #endif
 
 
@@ -619,6 +621,57 @@ typedef struct _FW_WFCProfile
 
 } FW_WFCProfile;
 
+class WifiHandler
+{
+public:
+#ifdef EXPERIMENTAL_WIFI_COMM
+	virtual bool WIFI_SocketsAvailable() { return true; }
+	virtual bool WIFI_PCapAvailable() { return false; }
+	virtual void WIFI_GetUniqueMAC(u8* mac) {}
+	virtual bool WIFI_WFCWarning() { return false; }
+
+	virtual int PCAP_findalldevs(pcap_if_t** alldevs, char* errbuf) { return -1; }
+	virtual void PCAP_freealldevs(pcap_if_t* alldevs) {}
+	virtual pcap_t* PCAP_open(const char* source, int snaplen, int flags, int readtimeout, char* errbuf) { return NULL; }
+	virtual void PCAP_close(pcap_t* dev) {}
+	virtual int PCAP_setnonblock(pcap_t* dev, int nonblock, char* errbuf) { return -1; }
+	virtual int PCAP_sendpacket(pcap_t* dev, const u_char* data, int len) { return -1; }
+	virtual int PCAP_dispatch(pcap_t* dev, int num, pcap_handler callback, u_char* userdata) { return -1; }
+#endif
+};
+
+#ifndef HOST_WINDOWS
+class UnixWifiHandler : public WifiHandler
+{
+#ifdef EXPERIMENTAL_WIFI_COMM
+	virtual bool WIFI_SocketsAvailable() { return true; }
+	virtual bool WIFI_PCapAvailable() { return true; }
+	virtual bool WIFI_WFCWarning() { return false; }
+	
+	virtual int PCAP_findalldevs(pcap_if_t** alldevs, char* errbuf) {
+		return pcap_findalldevs(alldevs, errbuf); }
+	
+	virtual void PCAP_freealldevs(pcap_if_t* alldevs) {
+		pcap_freealldevs(alldevs); }
+	
+	virtual pcap_t* PCAP_open(const char* source, int snaplen, int flags, int readtimeout, char* errbuf) {
+		return pcap_open_live(source, snaplen, flags, readtimeout, errbuf); }
+	
+	virtual void PCAP_close(pcap_t* dev) {
+		pcap_close(dev); }
+	
+	virtual int PCAP_setnonblock(pcap_t* dev, int nonblock, char* errbuf) {
+		return pcap_setnonblock(dev, nonblock, errbuf); }
+	
+	virtual int PCAP_sendpacket(pcap_t* dev, const u_char* data, int len) {
+		return pcap_sendpacket(dev, data, len); }
+	
+	virtual int PCAP_dispatch(pcap_t* dev, int num, pcap_handler callback, u_char* userdata) {
+		return pcap_dispatch(dev, num, callback, userdata); }
+#endif
+};
+#endif
+
 /* wifi data to be stored in firmware, when no firmware image was loaded */
 extern u8 FW_Mac[6];
 extern const u8 FW_WIFIInit[32];
@@ -629,5 +682,6 @@ extern const u8 FW_BBChannel[14];
 extern FW_WFCProfile FW_WFCProfile1;
 extern FW_WFCProfile FW_WFCProfile2;
 extern FW_WFCProfile FW_WFCProfile3;
+extern WifiHandler *CurrentWifiHandler;
 
 #endif

@@ -22,9 +22,6 @@
 #include "types.h"
 #include "bits.h"
 #include "MMU.h"
-#include "common.h"
-#include "instructions.h"
-#include "cp15.h"
 
 #define CODE(i)     (((i)>>25)&0x7)
 #define OPCODE(i)   (((i)>>21)&0xF)
@@ -223,7 +220,8 @@ typedef union
 /**
  * The control interface to a CPU
  */
-typedef struct {
+struct armcpu_ctrl_iface
+{
   /** stall the processor */
   void (*stall)( void *instance);
 
@@ -246,7 +244,7 @@ typedef struct {
 
   /** the private data passed to all interface functions */
   void *data;
-} armcpu_ctrl_iface;
+};
 
 
 typedef void* armcp_t;
@@ -343,37 +341,12 @@ template<int PROCNUM> u32 armcpu_exec();
 template<int PROCNUM, bool jit> u32 armcpu_exec();
 #endif
 
-static INLINE void setIF(int PROCNUM, u32 flag)
-{
-	//don't set generated bits!!!
-	assert(!(flag&0x00200000));
-
-	MMU.reg_IF_bits[PROCNUM] |= flag;
-
-	extern void NDS_Reschedule();
-	NDS_Reschedule();
-}
+void setIF(int PROCNUM, u32 flag);
+char* decodeIntruction(bool thumb_mode, u32 instr);
 
 static INLINE void NDS_makeIrq(int PROCNUM, u32 num)
 {
 	setIF(PROCNUM,1<<num);
-}
-
-static INLINE char *decodeIntruction(bool thumb_mode, u32 instr)
-{
-	char txt[20] = {0};
-	u32 tmp = 0;
-	if (thumb_mode == true)
-	{
-		tmp = (instr >> 6);
-		strcpy(txt, intToBin((u16)tmp)+6);
-	}
-	else
-	{
-		tmp = ((instr >> 16) & 0x0FF0) | ((instr >> 4) & 0x0F);
-		strcpy(txt, intToBin((u32)tmp)+20);
-	}
-	return strdup(txt);
 }
 
 #endif

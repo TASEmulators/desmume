@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2008 shash
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,7 +19,8 @@
 #ifndef ABOUTBOX_H
 #define ABOUTBOX_H
 
-extern BOOL CALLBACK AboutBox_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lparam);
+#include <windows.h>
 
+extern BOOL CALLBACK AboutBox_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lparam);
 
 #endif

@@ -1,5 +1,6 @@
 /*
 	Copyright (C) 2006 Theo Berkau
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,7 +18,10 @@
 
 #ifndef SNDDX_H
 #define SNDDX_H
+
+#include "../SPU.h"
 #define SNDCORE_DIRECTX 2
 
 extern SoundInterface_struct SNDDIRECTX;
+
 #endif

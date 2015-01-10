@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 #ifndef _FEX_DEC_HEADER
 #define _FEX_DEC_HEADER
 
-#include "NDSSystem.h"
+#include "../types.h"
 
 // File_Extractor interface
 // NOTE: if you want to add support for opening files within archives to some part of DeSmuME,

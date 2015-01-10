@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2011-2013 DeSmuME team
+	Copyright (C) 2011-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,7 +22,9 @@
 #include "tinyxml/tinyxml.h"
 
 #include "advanscene.h"
-#include "mc.h"
+#include "../common.h"
+#include "../mc.h"
+#include "../emufile.h"
 
 ADVANsCEne advsc;
 

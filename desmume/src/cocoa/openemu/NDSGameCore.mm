@@ -27,6 +27,7 @@
 
 #include <OpenGL/gl.h>
 #include "../../NDSSystem.h"
+#include "../../GPU.h"
 #undef BOOL
 
 

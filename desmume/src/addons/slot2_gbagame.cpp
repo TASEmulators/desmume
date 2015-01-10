@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2009 CrazyMax
-	Copyright (C) 2009-2014 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,12 +16,13 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "../slot2.h"
+
 #include <string.h>
-#include "../mem.h"
-#include "../MMU.h"
+
+#include "../debug.h"
 #include "../NDSSystem.h"
 #include "../path.h"
-#include "../slot2.h"
 #include "../emufile.h"
 
 #define EEPROM		0x52504545

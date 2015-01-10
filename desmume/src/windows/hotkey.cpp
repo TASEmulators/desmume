@@ -3,7 +3,7 @@
 	licensed under the terms supplied at the end of this file (for the terms are very long!)
 	Differences from that baseline version are:
 
-	Copyright (C) 2009-2013 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,24 +20,27 @@
 */
 
 #include "hotkey.h"
-#include "main.h"
-#include "CheatsWin.h"
-#include "NDSSystem.h"
-#include "saves.h"
-#include "inputdx.h"
-#include "render3d.h"
-#include "throttle.h"
+
+#include "../NDSSystem.h"
+#include "../saves.h"
+#include "../render3D.h"
+#include "../arm_jit.h"
 #include "../mic.h"
 #include "../movie.h"
+#include "../SPU.h"
+#include "../GPU.h"
+#include "../GPU_osd.h"
+#include "../path.h"
+
+#include "main.h"
+#include "CheatsWin.h"
+#include "inputdx.h"
+#include "throttle.h"
 #include "ramwatch.h"		//In order to call UpdateRamWatch (for loadstate functions)
 #include "ram_search.h"		//In order to call UpdateRamSearch (for loadstate functions)
 #include "replay.h"
 #include "aviout.h"
-#include "spu.h"
-#include "../GPU.h"
 #include "pathsettings.h"
-#include "GPU_osd.h"
-#include "path.h"
 #include "video.h"
 #include "winutil.h"
 #include "windriver.h"

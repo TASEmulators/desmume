@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2010 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,8 +15,9 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "types.h"
 #include "driver.h"
+
+#include "debug.h"
 #include "rasterize.h"
 #include "gfx3d.h"
 #include "texcache.h"
@@ -42,5 +43,10 @@ void BaseDriver::VIEW3D_Init()
 
 BaseDriver::~BaseDriver()
 {
+}
+
+void BaseDriver::USR_InfoMessage(const char *message)
+{
+	LOG("%s\n", message);
 }
 

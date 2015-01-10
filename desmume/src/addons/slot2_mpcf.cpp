@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006 Mic
-	Copyright (C) 2009-2013 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,11 +22,12 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "../types.h"
+
+#include "../slot2.h"
 #include "../debug.h"
+#include "../emufile.h"
 #include "../path.h"
 #include "../utils/vfat.h"
-#include "../slot2.h"
 
 // Set up addresses for GBAMP
 #define CF_REG_DATA 0x9000000

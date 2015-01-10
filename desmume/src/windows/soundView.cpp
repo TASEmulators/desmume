@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2010 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,21 +15,24 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-#include "../SPU.h"
-#include "../debug.h"
-#include "../common.h"
-#include "../matrix.h"
-#include "resource.h"
-#include "NDSSystem.h"
-#include <algorithm>
-#include <windows.h>
-#include <windowsx.h>
-#include <commctrl.h>
 #include "soundView.h"
-#include "winutil.h"
 
 #include <assert.h>
+#include <commctrl.h>
+#include <windows.h>
+#include <windowsx.h>
+#include <algorithm>
+
+#include "../common.h"
+#include "../NDSSystem.h"
+#include "../debug.h"
+#include "../matrix.h"
+#include "../MMU.h"
+#include "../SPU.h"
+
+#include "resource.h"
+#include "winutil.h"
+#include "main.h"
 
 using namespace std;
 

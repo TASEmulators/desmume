@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2011 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,14 +16,18 @@
 */
 
 #include "gbaslot_config.h"
+
 #include <windowsx.h>
-#include "resource.h"
-#include "main.h"
-#include "debug.h"
+#include <shlobj.h>
+
+#include "../debug.h"
 #include "../slot2.h"
 #include "../NDSSystem.h"
+
+#include "resource.h"
 #include "inputdx.h"
-#include <shlobj.h>
+#include "main.h"
+#include "winutil.h"
 
 WNDCLASSEX	wc;
 HWND		wndConfig = NULL;

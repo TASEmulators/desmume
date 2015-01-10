@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,8 +17,9 @@
 
 #ifndef __GBASLOT_CONFIG_H_
 #define __GBASLOT_CONFIG_H_
-#include "../common.h"
+
 #include <string>
+#include <windows.h>
 
 extern std::string win32_CFlash_cfgDirectory, win32_CFlash_cfgFileName;
 extern UINT win32_CFlash_cfgMode;

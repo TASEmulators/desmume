@@ -1,6 +1,6 @@
 /*
 	Copyright 2006 Theo Berkau
-	Copyright (C) 2006-2010 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,11 +22,13 @@
 #include <iosfwd>
 #include <string>
 #include <assert.h>
+#include <stdio.h>
+
 #include "types.h"
 #include "matrix.h"
-#include "emufile.h"
 #include "metaspu/metaspu.h"
 
+class EMUFILE;
 
 #define SNDCORE_DEFAULT         -1
 #define SNDCORE_DUMMY           0

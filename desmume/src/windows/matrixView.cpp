@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2007 Acid Burn
-	Copyright (C) 2007-2011 DeSmuME team
+	Copyright (C) 2007-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,11 +17,14 @@
 */
 
 #include "matrixView.h"
+
 #include <commctrl.h>
-#include "debug.h"
+
+#include "../debug.h"
+#include "../gfx3d.h"
+
 #include "resource.h"
 #include "main.h"
-#include "gfx3d.h"
 
 typedef struct
 {

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2010 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,20 +15,21 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "types.h"
-#include <winsock2.h>
+#include "replay.h"
+
 #include <windows.h>
 #include <commdlg.h>
 #include <io.h>
 #include <fstream>
 #include <time.h>
-#include "resource.h"
-#include "replay.h"
-#include "common.h"
-#include "main.h"
-#include "movie.h"
-#include "rtc.h"
+
+#include "../types.h"
+#include "../movie.h"
 #include "utils/xstring.h"
+
+#include "resource.h"
+#include "main.h"
+#include "rtc.h"
 
 bool replayreadonly=1;
 

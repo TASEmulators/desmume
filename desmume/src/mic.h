@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2011 DeSmuME Team
+	Copyright (C) 2009-2015 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,9 +18,9 @@
 #ifndef MIC_H
 #define MIC_H
 
-#include <iostream>
-#include "emufile.h"
 #include "types.h"
+
+class EMUFILE;
 
 #ifdef WIN32
 static char MicSampleName[256];

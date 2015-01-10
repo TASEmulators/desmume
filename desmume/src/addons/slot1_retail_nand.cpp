@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2013 DeSmuME team
+	Copyright (C) 2010-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,12 +21,12 @@
 //									NTR-UORE-0
 //									- 128Mbit
 
-#include "../slot1.h"
-#include "../registers.h"
-#include "../MMU.h"
-#include "../NDSSystem.h"
 #include "slot1comp_rom.h"
 #include "slot1comp_protocol.h"
+
+#include "../slot1.h"
+#include "../NDSSystem.h"
+#include "../emufile.h"
 
 //quick architecture overview:
 //NAND receives GC bus commands from MMU.cpp

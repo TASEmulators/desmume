@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2010 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,13 +19,15 @@
 #ifndef CWINDOW_H
 #define CWINDOW_H
 
-#include "../common.h"
+#include <windows.h>
 
 #include <commctrl.h>
 #include <string>
 #include <vector>
 #include <map>
 #include <algorithm>
+
+#include "../types.h"
 
 using namespace std;
 

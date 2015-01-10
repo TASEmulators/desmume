@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2013 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,9 +15,11 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "slot2.h"
+
 #include "types.h"
 #include "mem.h"
 #include "MMU.h"
+#include "registers.h"
 #include "NDSSystem.h"
 
 //this is the currently-configured cflash mode

@@ -2,7 +2,7 @@
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 Theo Berkau
 	Copyright (C) 2007 shash
-	Copyright (C) 2008-2013 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,21 +18,26 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-#include <algorithm>
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <iostream>
-#include "MMU.h"
 #include "GPU.h"
+
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+#include <algorithm>
+#include <iostream>
+
+#include "MMU.h"
+#include "FIFO.h"
 #include "debug.h"
 #include "render3D.h"
+#include "registers.h"
 #include "gfx3d.h"
 #include "debug.h"
 #include "GPU_osd.h"
 #include "NDSSystem.h"
 #include "readwrite.h"
+#include "matrix.h"
+#include "emufile.h"
 
 #ifdef FASTBUILD
 	#undef FORCEINLINE
@@ -2737,6 +2742,16 @@ template<bool MOSAIC> void GPU::modeRender(int layer)
 		default:
 			break;
 	}
+}
+
+u32 GPU::getHOFS(int bg)
+{
+	return T1ReadWord(&dispx_st->dispx_BGxOFS[bg].BGxHOFS,0) & 0x1FF;
+}
+
+u32 GPU::getVOFS(int bg)
+{
+	return T1ReadWord(&dispx_st->dispx_BGxOFS[bg].BGxVOFS,0) & 0x1FF;
 }
 
 void gpu_SetRotateScreen(u16 angle)

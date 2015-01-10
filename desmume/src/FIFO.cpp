@@ -1,7 +1,7 @@
 /*
 	Copyright 2006 yopyop
 	Copyright 2007 shash
-	Copyright 2007-2012 DeSmuME team
+	Copyright 2007-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,11 +18,14 @@
 */
 
 #include "FIFO.h"
+
 #include <string.h>
+
 #include "armcpu.h"
 #include "debug.h"
 #include "mem.h"
 #include "MMU.h"
+#include "registers.h"
 #include "NDSSystem.h"
 #include "gfx3d.h"
 

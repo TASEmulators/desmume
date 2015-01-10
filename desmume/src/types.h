@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2005 Guillaume Duhamel
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -85,15 +85,20 @@
 #define WINAPI
 #endif
 
-#ifdef __GNUC__
-#include <limits.h>
-#ifndef PATH_MAX
-#define MAX_PATH 1024
-#else
-#define MAX_PATH PATH_MAX
+#if !defined(MAX_PATH)
+	#if defined(HOST_WINDOWS)
+		#define MAX_PATH 260
+	#elif defined(__GNUC__)
+		#include <limits.h>
+		#if !defined(PATH_MAX)
+			#define MAX_PATH 1024
+		#else
+			#define MAX_PATH PATH_MAX
+		#endif
+	#else
+		#define MAX_PATH 1024
+	#endif
 #endif
-#endif
-
 
 //------------alignment macros-------------
 //dont apply these to types without further testing. it only works portably here on declarations of variables

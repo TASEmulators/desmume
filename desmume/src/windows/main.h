@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2006-2011 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,13 +19,18 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include "../types.h"
 #include "CWindow.h"
+
 extern WINCLASS	*MainWindow;
 extern HINSTANCE hAppInst;
 extern HMENU mainMenu; //Holds handle to the main DeSmuME menu
 extern CToolBar* MainWindowToolbar;
 
 extern volatile bool execute, paused;
+extern bool romloaded;
 bool NDS_Pause(bool showMsg = true);
 void NDS_UnPause(bool showMsg = true);
 void LoadSaveStateInfo();

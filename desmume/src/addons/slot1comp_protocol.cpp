@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2013 DeSmuME team
+	Copyright (C) 2012-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,9 +16,12 @@
 */
 
 #include "slot1comp_protocol.h"
-#include "MMU.h"
-#include "armcpu.h"
-#include "encrypt.h"
+
+#include <string.h>
+
+#include "../armcpu.h"
+#include "../encrypt.h"
+#include "../emufile.h"
 #include "../utils/decrypt/decrypt.h"
 
 static _KEY1 key1((const u8*)arm7_key);

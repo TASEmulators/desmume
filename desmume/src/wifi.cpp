@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2007 Tim Seidel
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,23 +16,17 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <assert.h>
-#include "wifi.h"
-#include "armcpu.h"
-#include "NDSSystem.h"
-#include "debug.h"
-#include "bits.h"
-
+#include "types.h"
 
 #ifdef HOST_WINDOWS
-	#include <winsock2.h> 	 
+	#include <winsock2.h>
 	#include <ws2tcpip.h>
 	#define socket_t    SOCKET 	 
 	#define sockaddr_t  SOCKADDR
 	#include "windriver.h"
 	#define PCAP_DEVICE_NAME description
 #else
-	#include <unistd.h> 	 
+	#include <unistd.h>
 	#include <stdlib.h> 	 
 	#include <string.h> 	 
 	#include <arpa/inet.h> 	 
@@ -42,6 +36,16 @@
 	#define closesocket close
 	#define PCAP_DEVICE_NAME name
 #endif
+
+#include "wifi.h"
+
+#include <assert.h>
+
+#include "armcpu.h"
+#include "NDSSystem.h"
+#include "debug.h"
+#include "bits.h"
+#include "registers.h"
 
 #ifndef INVALID_SOCKET 	 
 	#define INVALID_SOCKET  (socket_t)-1 	 
@@ -66,6 +70,9 @@ pcap_t *wifi_bridge = NULL;
 #ifndef PCAP_OPENFLAG_PROMISCUOUS
 #define PCAP_OPENFLAG_PROMISCUOUS 1
 #endif
+
+static WifiHandler _defaultHandler;
+WifiHandler *CurrentWifiHandler = &_defaultHandler;
 
 wifimac_t wifiMac;
 SoftAP_t SoftAP;
@@ -1773,7 +1780,7 @@ bool Adhoc_Init()
 	BOOL opt_true = TRUE;
 	int res;
 
-	if (!driver->WIFI_SocketsAvailable())
+	if (!CurrentWifiHandler->WIFI_SocketsAvailable())
 	{
 		WIFI_LOG(1, "Ad-hoc: failed to initialize sockets.\n");
 		wifi_socket = INVALID_SOCKET;
@@ -1835,7 +1842,7 @@ void Adhoc_DeInit()
 
 void Adhoc_Reset()
 {
-	driver->WIFI_GetUniqueMAC(FW_Mac);
+	CurrentWifiHandler->WIFI_GetUniqueMAC(FW_Mac);
 	NDS_PatchFirmwareMAC();
 
 	printf("WIFI: ADHOC: MAC = %02X:%02X:%02X:%02X:%02X:%02X\n",
@@ -2060,7 +2067,7 @@ static pcap_if_t * WIFI_index_device(pcap_if_t *alldevs, int index)
 
 bool SoftAP_Init()
 {
-	if (!driver->WIFI_PCapAvailable())
+	if (!CurrentWifiHandler->WIFI_PCapAvailable())
 	{
 		WIFI_LOG(1, "SoftAP: PCap library not available on your system.\n");
 		wifi_bridge = NULL;
@@ -2071,7 +2078,7 @@ bool SoftAP_Init()
 	pcap_if_t *alldevs;
 	int ret = 0;
 
-	ret = driver->PCAP_findalldevs(&alldevs, errbuf);
+	ret = CurrentWifiHandler->PCAP_findalldevs(&alldevs, errbuf);
 	if (ret == -1 || alldevs == NULL)
 	{
 		WIFI_LOG(1, "SoftAP: PCap: failed to find any network adapter: %s\n", errbuf);
@@ -2079,20 +2086,20 @@ bool SoftAP_Init()
 	}
 
 	pcap_if_t* dev = WIFI_index_device(alldevs,CommonSettings.wifi.infraBridgeAdapter);
-	wifi_bridge = driver->PCAP_open(dev->name, PACKET_SIZE, PCAP_OPENFLAG_PROMISCUOUS, 1, errbuf);
+	wifi_bridge = CurrentWifiHandler->PCAP_open(dev->name, PACKET_SIZE, PCAP_OPENFLAG_PROMISCUOUS, 1, errbuf);
 	if(wifi_bridge == NULL)
 	{
 		WIFI_LOG(1, "SoftAP: PCap: failed to open %s: %s\n", dev->PCAP_DEVICE_NAME, errbuf);
 		return false;
 	}
 
-	driver->PCAP_freealldevs(alldevs);
+	CurrentWifiHandler->PCAP_freealldevs(alldevs);
 
 	// Set non-blocking mode
-	if (driver->PCAP_setnonblock(wifi_bridge, 1, errbuf) == -1)
+	if (CurrentWifiHandler->PCAP_setnonblock(wifi_bridge, 1, errbuf) == -1)
 	{
 		WIFI_LOG(1, "SoftAP: PCap: failed to set non-blocking mode: %s\n", errbuf);
-		driver->PCAP_close(wifi_bridge); wifi_bridge = NULL;
+		CurrentWifiHandler->PCAP_close(wifi_bridge); wifi_bridge = NULL;
 		return false;
 	}
 
@@ -2104,7 +2111,7 @@ bool SoftAP_Init()
 void SoftAP_DeInit()
 {
 	if(wifi_bridge != NULL)
-		driver->PCAP_close(wifi_bridge);
+		CurrentWifiHandler->PCAP_close(wifi_bridge);
 }
 
 void SoftAP_Reset()
@@ -2289,7 +2296,7 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 				memcpy(&epacket[14], &packet[32], epacketLen - 14);
 
 				if(wifi_bridge != NULL)
-					driver->PCAP_sendpacket(wifi_bridge, epacket, epacketLen);
+					CurrentWifiHandler->PCAP_sendpacket(wifi_bridge, epacket, epacketLen);
 			}
 			else
 			{
@@ -2374,7 +2381,7 @@ void SoftAP_msTrigger()
 	// Can now receive 64 packets per millisecond. Completely arbitrary limit. Todo: tweak if needed.
 	// But due to using non-blocking mode, this shouldn't be as slow as it used to be.
 	if (wifi_bridge != NULL)
-		driver->PCAP_dispatch(wifi_bridge, 64, SoftAP_RXHandler, NULL);
+		CurrentWifiHandler->PCAP_dispatch(wifi_bridge, 64, SoftAP_RXHandler, NULL);
 }
 
 #endif

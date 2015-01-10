@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2006-2009 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,20 +15,21 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "main.h"
-#include "types.h"
-#include "windriver.h"
-#include "console.h"
-#include "gfx3d.h"
 #include "aviout.h"
+
+#include <assert.h>
+#include <stdio.h>
+#include <windows.h>
+#include <vfw.h>
+
+#include "../debug.h"
+#include "../console.h"
+#include "../gfx3d.h"
 #include "../GPU_osd.h"
 #include "../SPU.h"
 
-#include <assert.h>
-#include <vfw.h>
-#include <stdio.h>
-
-#include "debug.h"
+#include "windriver.h"
+#include "main.h"
 
 static void EMU_PrintError(const char* msg) {
 	LOG(msg);

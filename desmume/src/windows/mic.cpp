@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,14 +24,19 @@
 	documented on GBATek.
 */
 
-#include "NDSSystem.h"
-#include "../types.h"
-#include "../debug.h"
 #include "../mic.h"
-#include "../movie.h"
-#include "readwrite.h"
+
+#include <windows.h>
+#include <string.h>
 #include <vector>
 #include <fstream>
+
+#include "../types.h"
+#include "../NDSSystem.h"
+#include "../emufile.h"
+#include "../debug.h"
+#include "../movie.h"
+#include "../readwrite.h"
 
 int MicDisplay;
 int SampleLoaded=0;

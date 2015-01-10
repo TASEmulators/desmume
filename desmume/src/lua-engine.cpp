@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2012 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,31 +15,44 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "types.h"
 #include "lua-engine.h"
-#include "movie.h"
+
+#if defined(WIN32)
+	#include <windows.h>
+	#include <direct.h>
+
+	typedef HMENU PlatformMenu;    // hMenu
+	#define MAX_MENU_COUNT (IDC_LUAMENU_RESERVE_END - IDC_LUAMENU_RESERVE_START + 1)
+
+	#include "windows/main.h"
+	#include "windows/video.h"
+	#include "windows/resource.h"
+#else
+	// TODO: define appropriate types for menu
+	typedef void* PlatformMenu;
+	#define MAX_MENU_COUNT 0
+
+	#include <unistd.h>
+#endif
+
 #include <assert.h>
 #include <vector>
 #include <map>
 #include <string>
 #include <algorithm>
+
+#include "armcpu.h"
+#include "movie.h"
 #include "zlib.h"
+#include "driver.h"
 #include "NDSSystem.h"
 #include "movie.h"
+#include "MMU.h"
+#include "GPU.h"
 #include "GPU_osd.h"
+#include "SPU.h"
 #include "saves.h"
 #include "emufile.h"
-#if defined(WIN32)
-#include <windows.h>
-#include "main.h"
-#include "video.h"
-#include "resource.h"
-#endif
-#ifdef WIN32
-#include <direct.h>
-#else
-#include <unistd.h>
-#endif
 
 using namespace std;
 
@@ -3523,7 +3536,7 @@ static PlatformMenu AddSubMenu(PlatformMenu topMenu, PlatformMenu menu, const ch
 	}
 
 	// add new submenu
-	UINT subMenuId;
+	PlatformMenuItem subMenuId;
 	if (!SearchFreeMenuItem(topMenu, subMenuId))
 	{
 		return NULL;
@@ -3567,7 +3580,7 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 		lua_rawgeti(L, -1, index);
 		if (lua_isnil(L, -1))
 		{
-			UINT menuItem;
+			PlatformMenuItem menuItem;
 			if (!SearchFreeMenuItem(topMenu, menuItem))
 			{
 				luaL_error(L, "too many menu items");
@@ -3597,7 +3610,7 @@ bool AddMenuEntries(PlatformMenu topMenu, PlatformMenu menu)
 			lua_rawgeti(L, -1, 2);
 			if (lua_isfunction(L, -1))
 			{
-				UINT menuItem;
+				PlatformMenuItem menuItem;
 				if (!SearchFreeMenuItem(topMenu, menuItem))
 				{
 					luaL_error(L, "too many menu items");

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 Guillaume Duhamel
-	Copyright (C) 2006-2011 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -26,7 +26,9 @@
 
 #include "types.h"
 #include "mem.h"
-#include "emufile.h"
+
+struct armcpu_t;
+class EMUFILE;
 
 struct DebugStatistics
 {
@@ -168,7 +170,6 @@ private:
 };
 
 extern DebugNotify DEBUG_Notify;
-struct armcpu_t;
 
 //information about a debug event will be stuffed into here by the generator
 struct TDebugEventData

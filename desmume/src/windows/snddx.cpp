@@ -1,6 +1,6 @@
 /*	snddx.cpp
 	Copyright (C) 2005-2007 Theo Berkau
-	Copyright (C) 2006-2010 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,9 +16,12 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <winsock2.h>
+#include "snddx.h"
+
 #include <stdio.h>
+#include <Windows.h>
 #include "directx/dsound.h"
+
 #ifdef __MINGW32__
 // I have to do this because for some reason because the dxerr8.h header is fubared
 const char*  __stdcall DXGetErrorString8A(HRESULT hr);
@@ -28,8 +31,8 @@ const char*  __stdcall DXGetErrorDescription8A(HRESULT hr);
 #else
 #include "directx/dxerr8.h"
 #endif
-#include "SPU.h"
-#include "snddx.h"
+
+#include "../SPU.h"
 #include "CWindow.h"
 #include "windriver.h"
 

@@ -34,8 +34,10 @@
 
 #include "types.h"
 #include "firmware.h"
-#include "armcpu.h"
 #include "NDSSystem.h"
+#include "driver.h"
+#include "GPU.h"
+#include "SPU.h"
 #include "sndsdl.h"
 #include "ctrlssdl.h"
 #include "MMU.h"
@@ -63,6 +65,7 @@
 #include "filter/videofilter.h"
 
 #ifdef GDB_STUB
+#include "armcpu.h"
 #include "gdbstub.h"
 #endif
 
@@ -2336,7 +2339,7 @@ static inline void _updateDTools()
 
 /////////////////////////////// MAIN EMULATOR LOOP ///////////////////////////////
 
-class GtkDriver : public UnixDriver
+class GtkDriver : public BaseDriver
 {
 public:
     virtual void EMU_DebugIdleUpdate()

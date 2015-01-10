@@ -3,7 +3,7 @@
 //(the code might look quite different by now, though...)
 
 /*
-	Many Modifications Copyright (C) 2009-2010 DeSmuME team
+	Many Modifications Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,12 +19,16 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../common.h"
+#include "throttle.h"
+
+#include <windows.h>
+
 #include "../types.h"
 #include "../debug.h"
 #include "../console.h"
-#include "throttle.h"
-#include "GPU_osd.h"
+#include "../GPU_osd.h"
+
+#include "winutil.h"
 
 int FastForward=0;
 static u64 tmethod,tfreq,afsfreq;

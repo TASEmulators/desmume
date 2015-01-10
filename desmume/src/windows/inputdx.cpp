@@ -3,7 +3,7 @@
 	licensed under the terms supplied at the end of this file (for the terms are very long!)
 	Differences from that baseline version are:
 
-	Copyright (C) 2009-2010 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,17 +21,15 @@
 
 //TODO - rumble is broken. hopefully nobody will notice
 
+#include "inputdx.h"
+
 #ifdef __MINGW32__
 #define _WIN32_IE 0x0501
 #define _WIN32_WINNT 0x0501
 #endif
 
-#define STRICT
-#include <winsock2.h>
-#include <windows.h>
 #include <tchar.h>
 #include <io.h>
-
 #include <string>
 
 #if (((defined(_MSC_VER) && _MSC_VER >= 1300)) || defined(__MINGW32__))
@@ -43,19 +41,16 @@
 	#include <fstream.h>
 #endif
 
-#include "inputdx.h"
-#include "hotkey.h"
-
-#include "main.h"
-#include "resource.h"
-#include "common.h"
-#include "../slot2.h"
-#include "../NDSSystem.h"
-
-#define DIRECTINPUT_VERSION 0x0800
-#include "../common.h"
 #include "../types.h"
-#include "directx/dinput.h"
+#include "../common.h"
+#include "../NDSSystem.h"
+#include "../slot2.h"
+#include "../debug.h"
+
+#include "resource.h"
+#include "hotkey.h"
+#include "main.h"
+#include "winutil.h"
 
 // Gamepad Dialog Strings
 // Support Unicode display
@@ -2624,8 +2619,6 @@ void S9xWinScanJoypads ()
 ////	}
 ////#endif
 //}
-
-#include "directx/xinput.h"
 
 void input_feedback(bool enable)
 {

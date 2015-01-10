@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2012 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,9 +22,10 @@
 #include <iosfwd>
 #include <ostream>
 #include <istream>
-#include "types.h"
-#include "emufile.h"
 
+#include "types.h"
+
+class EMUFILE;
 
 // Pixel dimensions of the NDS 3D framebuffer
 #define GFX3D_FRAMEBUFFER_WIDTH		256
@@ -231,9 +232,6 @@ enum
 
 void gfx3d_init();
 void gfx3d_reset();
-
-#define OSWRITE(x) os->fwrite((char*)&(x),sizeof((x)));
-#define OSREAD(x) is->fread((char*)&(x),sizeof((x)));
 
 typedef struct
 {
@@ -496,26 +494,9 @@ struct POLY {
 		
 		return false;
 	}
-
-	void save(EMUFILE* os)
-	{
-		OSWRITE(type); 
-		OSWRITE(vertIndexes[0]); OSWRITE(vertIndexes[1]); OSWRITE(vertIndexes[2]); OSWRITE(vertIndexes[3]);
-		OSWRITE(polyAttr); OSWRITE(texParam); OSWRITE(texPalette);
-		OSWRITE(viewport);
-		OSWRITE(miny);
-		OSWRITE(maxy);
-	}
-
-	void load(EMUFILE* is)
-	{
-		OSREAD(type); 
-		OSREAD(vertIndexes[0]); OSREAD(vertIndexes[1]); OSREAD(vertIndexes[2]); OSREAD(vertIndexes[3]);
-		OSREAD(polyAttr); OSREAD(texParam); OSREAD(texPalette);
-		OSREAD(viewport);
-		OSREAD(miny);
-		OSREAD(maxy);
-	}
+	
+	void save(EMUFILE* os);
+	void load(EMUFILE* is);
 };
 
 #define POLYLIST_SIZE 100000
@@ -582,20 +563,8 @@ struct VERT {
 		fcolor[1] = color[1];
 		fcolor[2] = color[2];
 	}
-	void save(EMUFILE* os)
-	{
-		OSWRITE(x); OSWRITE(y); OSWRITE(z); OSWRITE(w);
-		OSWRITE(u); OSWRITE(v);
-		OSWRITE(color[0]); OSWRITE(color[1]); OSWRITE(color[2]);
-		OSWRITE(fcolor[0]); OSWRITE(fcolor[1]); OSWRITE(fcolor[2]);
-	}
-	void load(EMUFILE* is)
-	{
-		OSREAD(x); OSREAD(y); OSREAD(z); OSREAD(w);
-		OSREAD(u); OSREAD(v);
-		OSREAD(color[0]); OSREAD(color[1]); OSREAD(color[2]);
-		OSREAD(fcolor[0]); OSREAD(fcolor[1]); OSREAD(fcolor[2]);
-	}
+	void save(EMUFILE* os);
+	void load(EMUFILE* is);
 };
 
 #define VERTLIST_SIZE 400000
