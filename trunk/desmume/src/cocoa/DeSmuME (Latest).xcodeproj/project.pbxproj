@@ -1138,7 +1138,7 @@
 		AB405675169F5DCC0016AC3E /* x86operand.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86operand.h; sourceTree = "<group>"; };
 		AB405676169F5DCC0016AC3E /* x86util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = x86util.cpp; sourceTree = "<group>"; };
 		AB405677169F5DCC0016AC3E /* x86util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = x86util.h; sourceTree = "<group>"; };
-		AB407F391A620D6E00313213 /* DeSmuME (Xcode 5).profdata */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DeSmuME (Xcode 5).profdata"; sourceTree = "<group>"; };
+		AB407F391A620D6E00313213 /* DeSmuME (Latest).profdata */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DeSmuME (Latest).profdata"; sourceTree = "<group>"; };
 		AB47B52B18A3F722009A42AF /* xbrz.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xbrz.h; sourceTree = "<group>"; };
 		AB47B52C18A3F722009A42AF /* xbrz.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = xbrz.cpp; sourceTree = "<group>"; };
 		AB4FCEBC1692AB82000F498F /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
@@ -1183,12 +1183,6 @@
 		AB8B7AAA17CE8C440051CEBF /* slot1comp_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot1comp_protocol.h; sourceTree = "<group>"; };
 		AB8B7AAB17CE8C440051CEBF /* slot1comp_protocol.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1comp_protocol.cpp; sourceTree = "<group>"; };
 		AB8F3D2E1A53AC2600A80BF6 /* DeSmuME (Debug, dev+).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (Debug, dev+).app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		AB901BDF1420706B00348EEC /* Japanese */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Japanese; path = translations/Japanese.lproj/Localizable.strings; sourceTree = "<group>"; };
-		AB901BE01420706F00348EEC /* French */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = French; path = translations/French.lproj/Localizable.strings; sourceTree = "<group>"; };
-		AB901BE11420707400348EEC /* Italian */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Italian; path = translations/Italian.lproj/Localizable.strings; sourceTree = "<group>"; };
-		AB901BE21420707800348EEC /* Chinese */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Chinese; path = translations/Chinese.lproj/Localizable.strings; sourceTree = "<group>"; };
-		AB901BE31420707D00348EEC /* Norwegian */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Norwegian; path = translations/Norwegian.lproj/Localizable.strings; sourceTree = "<group>"; };
-		AB901BE41420708200348EEC /* Romanian */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = Romanian; path = translations/Romanian.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB9038A417C5ECFD00F410BD /* advanscene.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = advanscene.h; sourceTree = "<group>"; };
 		AB9038A517C5ECFD00F410BD /* advanscene.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = advanscene.cpp; sourceTree = "<group>"; };
 		AB9038A917C5ED2200F410BD /* slot1_retail_auto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_auto.cpp; sourceTree = "<group>"; };
@@ -1785,7 +1779,7 @@
 		AB407F381A620D6E00313213 /* OptimizationProfiles */ = {
 			isa = PBXGroup;
 			children = (
-				AB407F391A620D6E00313213 /* DeSmuME (Xcode 5).profdata */,
+				AB407F391A620D6E00313213 /* DeSmuME (Latest).profdata */,
 			);
 			path = OptimizationProfiles;
 			sourceTree = "<group>";
@@ -2315,7 +2309,7 @@
 				LastUpgradeCheck = 0460;
 				ORGANIZATIONNAME = "DeSmuME Team";
 			};
-			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (Xcode 5)" */;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (Latest)" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
@@ -3482,12 +3476,6 @@
 			isa = PBXVariantGroup;
 			children = (
 				AB00E89114205ECC00DE561F /* English */,
-				AB901BE01420706F00348EEC /* French */,
-				AB901BE11420707400348EEC /* Italian */,
-				AB901BDF1420706B00348EEC /* Japanese */,
-				AB901BE21420707800348EEC /* Chinese */,
-				AB901BE31420707D00348EEC /* Norwegian */,
-				AB901BE41420708200348EEC /* Romanian */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -3741,7 +3729,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (Xcode 5)" */ = {
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME (Latest)" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C01FCF4F08A954540054247B /* Debug */,
