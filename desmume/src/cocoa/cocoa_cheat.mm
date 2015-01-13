@@ -22,6 +22,7 @@
 
 #include "../cheatSystem.h"
 #include "../MMU.h"
+#undef BOOL
 
 @implementation CocoaDSCheatItem
 

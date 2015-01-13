@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014 DeSmuME Team
+	Copyright (C) 2014-2015 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,8 +19,6 @@
 #import "cocoa_globals.h"
 #import "cocoa_util.h"
 
-#include "../NDSSystem.h"
-#undef BOOL
 
 @implementation CocoaDSSlot2Device
 
