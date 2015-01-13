@@ -17,7 +17,7 @@
                BlueprintIdentifier = "AB796CA415CDCBA200C59155"
                BuildableName = "DeSmuME.app"
                BlueprintName = "DeSmuME (OS X App)"
-               ReferencedContainer = "container:DeSmuME (Xcode 5).xcodeproj">
+               ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -35,7 +35,7 @@
             BlueprintIdentifier = "AB796CA415CDCBA200C59155"
             BuildableName = "DeSmuME.app"
             BlueprintName = "DeSmuME (OS X App)"
-            ReferencedContainer = "container:DeSmuME (Xcode 5).xcodeproj">
+            ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </TestAction>
@@ -54,7 +54,7 @@
             BlueprintIdentifier = "AB796CA415CDCBA200C59155"
             BuildableName = "DeSmuME.app"
             BlueprintName = "DeSmuME (OS X App)"
-            ReferencedContainer = "container:DeSmuME (Xcode 5).xcodeproj">
+            ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <AdditionalOptions>
@@ -72,7 +72,7 @@
             BlueprintIdentifier = "AB796CA415CDCBA200C59155"
             BuildableName = "DeSmuME.app"
             BlueprintName = "DeSmuME (OS X App)"
-            ReferencedContainer = "container:DeSmuME (Xcode 5).xcodeproj">
+            ReferencedContainer = "container:DeSmuME (Latest).xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
