@@ -35,7 +35,6 @@
 #include "../gdbstub.h"
 #include "../slot1.h"
 #include "../slot2.h"
-#include "../movie.h"
 #undef BOOL
 
 class OSXDriver : public BaseDriver
