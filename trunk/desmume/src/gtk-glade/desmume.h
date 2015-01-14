@@ -1,5 +1,6 @@
 /* desmume.h - this file is part of DeSmuME
  *
+ * Copyright (C) 2007-2015 DeSmuME Team
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,10 +27,7 @@
 extern SDL_sem *glade_fps_limiter_semaphore;
 extern int glade_fps_limiter_disabled;
 
-extern void desmume_init( struct armcpu_memory_iface *arm9_mem_if,
-                          struct armcpu_ctrl_iface **arm9_ctrl_iface,
-                          struct armcpu_memory_iface *arm7_mem_if,
-                          struct armcpu_ctrl_iface **arm7_ctrl_iface);
+extern void desmume_init( void);
 extern void desmume_free( void);
 
 extern int desmume_open(const char *filename);

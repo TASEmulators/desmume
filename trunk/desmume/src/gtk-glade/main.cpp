@@ -1,5 +1,6 @@
 /* main.c - this file is part of DeSmuME
  *
+ * Copyright (C) 2007-2015 DeSmuME Team
  * Copyright (C) 2007 Damien Nozay (damdoum)
  * Copyright (C) 2007 Pascal Giard (evilynux)
  * Author: damdoum at users.sourceforge.net
@@ -31,6 +32,7 @@
 #include "desmume_config.h"
 
 #ifdef GDB_STUB
+#include "../armcpu.h"
 #include "../gdbstub.h"
 #endif
 
@@ -363,15 +365,6 @@ joinThread_gdb( void *thread_handle) {
 
 static int
 common_gtk_glade_main( struct configured_features *my_config) {
-	/*SDL_TimerID limiter_timer;*/
-#ifdef GDB_STUB
-        gdbstub_handle_t arm9_gdb_stub;
-        gdbstub_handle_t arm7_gdb_stub;
-#endif
-        struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
-        struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
-        struct armcpu_ctrl_iface *arm9_ctrl_iface;
-        struct armcpu_ctrl_iface *arm7_ctrl_iface;
         /* the firmware settings */
         struct NDS_fw_config_data fw_config;
 	gchar *uifile;
@@ -389,34 +382,9 @@ common_gtk_glade_main( struct configured_features *my_config) {
 #ifdef GTKGLEXT_AVAILABLE
 // check if you have GTHREAD when running configure script
 	//g_thread_init(NULL);
-	register_gl_fun(my_gl_Begin,my_gl_End);
+	//register_gl_fun(my_gl_Begin,my_gl_End);
 #endif
 	init_keyvals();
-
-#ifdef GDB_STUB
-        if ( my_config->arm9_gdb_port != 0) {
-          arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
-                                          &arm9_memio,
-                                          &arm9_base_memory_iface);
-
-          if ( arm9_gdb_stub == NULL) {
-            g_print( _("Failed to create ARM9 gdbstub on port %d\n"),
-                     my_config->arm9_gdb_port);
-            return -1;
-          }
-        }
-        if ( my_config->arm7_gdb_port != 0) {
-          arm7_gdb_stub = createStub_gdb( my_config->arm7_gdb_port,
-                                          &arm7_memio,
-                                          &arm7_base_memory_iface);
-
-          if ( arm7_gdb_stub == NULL) {
-            g_print( _("Failed to create ARM7 gdbstub on port %d\n"),
-                     my_config->arm7_gdb_port);
-            return -1;
-          }
-        }
-#endif
 
 	if(SDL_Init( SDL_INIT_TIMER | SDL_INIT_VIDEO) == -1)
           {
@@ -425,9 +393,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
             return 1;
           }
 
-	desmume_init( arm9_memio, &arm9_ctrl_iface,
-                      arm7_memio, &arm7_ctrl_iface);
-
+	desmume_init();
 
         /* Create the dummy firmware */
         NDS_CreateDummyFirmware( &fw_config);
@@ -438,12 +404,37 @@ common_gtk_glade_main( struct configured_features *my_config) {
          * where the cpus are set up.
          */
 #ifdef GDB_STUB
-        if ( my_config->arm9_gdb_port != 0) {
-          activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
+    gdbstub_handle_t arm9_gdb_stub = NULL;
+    gdbstub_handle_t arm7_gdb_stub = NULL;
+    
+    if ( my_config->arm9_gdb_port > 0) {
+        arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
+                                         &NDS_ARM9,
+                                         &arm9_direct_memory_iface);
+        
+        if ( arm9_gdb_stub == NULL) {
+            g_printerr("Failed to create ARM9 gdbstub on port %d\n",
+                       my_config->arm9_gdb_port);
+            exit( -1);
         }
-        if ( my_config->arm7_gdb_port != 0) {
-          activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
+        else {
+            activateStub_gdb( arm9_gdb_stub);
         }
+    }
+    if ( my_config->arm7_gdb_port > 0) {
+        arm7_gdb_stub = createStub_gdb( my_config->arm7_gdb_port,
+                                         &NDS_ARM7,
+                                         &arm7_base_memory_iface);
+        
+        if ( arm7_gdb_stub == NULL) {
+            g_printerr("Failed to create ARM7 gdbstub on port %d\n",
+                       my_config->arm7_gdb_port);
+            exit( -1);
+        }
+        else {
+            activateStub_gdb( arm7_gdb_stub);
+        }
+    }
 #endif
 
         /* Initialize joysticks */
@@ -520,6 +511,14 @@ common_gtk_glade_main( struct configured_features *my_config) {
 	/* start event loop */
 	gtk_main();
 	desmume_free();
+
+#ifdef GDB_STUB
+    destroyStub_gdb( arm9_gdb_stub);
+	arm9_gdb_stub = NULL;
+	
+    destroyStub_gdb( arm7_gdb_stub);
+	arm7_gdb_stub = NULL;
+#endif
 
         /* Unload joystick */
         uninit_joy();

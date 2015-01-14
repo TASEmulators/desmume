@@ -1,5 +1,6 @@
 /* callbacks.c - this file is part of DeSmuME
  *
+ * Copyright (C) 2007-2015 DeSmuME Team
  * Copyright (C) 2007 Damien Nozay (damdoum)
  * Copyright (C) 2007 Pascal Giard (evilynux)
  * Author: damdoum at users.sourceforge.net
@@ -21,6 +22,8 @@
  */
 
 #include "callbacks.h"
+
+#include "../GPU.h"
 
 #define SAVESTATE_SLOT(x) ((x) < 10 ? (x) : 0)
 

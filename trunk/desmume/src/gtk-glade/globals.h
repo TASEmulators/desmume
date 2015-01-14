@@ -1,5 +1,6 @@
 /* globals.h - this file is part of DeSmuME
  *
+ * Copyright (C) 2007-2015 DeSmuME Team
  * Copyright (C) 2007 Damien Nozay (damdoum)
  * Author: damdoum at users.sourceforge.net
  *
@@ -35,7 +36,7 @@
 #include <libintl.h>
 #define _(String) gettext (String)
 
-#include "SDL.h"
+#include <SDL.h>
 
 // fix gtk-glade on windows with no configure
 #ifndef DATADIR
@@ -86,6 +87,7 @@ typedef union _callback_arg{
 #include "../registers.h"
 #include "../armcpu.h"
 #include "../NDSSystem.h"
+#include "../GPU.h"
 #include "../sndsdl.h"
 #include "../ctrlssdl.h"
 #include "../types.h"
