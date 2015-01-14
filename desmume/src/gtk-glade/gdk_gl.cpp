@@ -1,5 +1,6 @@
 /* gdk_gl.cpp - this file is part of DeSmuME
  *
+ * Copyright (C) 2007-2015 DeSmuME Team
  * Copyright (C) 2007 Damien Nozay (damdoum)
  * Author: damdoum at users.sourceforge.net
  *
@@ -26,6 +27,8 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
+#include "../GPU.h"
+
 #define _DUP8(a) a,a,a,a, a,a,a,a
 #define _DUP4(a) a,a,a,a
 #define _DUP2(a) a,a
@@ -48,7 +51,7 @@ static int gtk_glade_use_software_colour_convert;
 #undef _DUP2
 
 /* FIXME: Purpose of this code?  */
-static BOOL _fun_gl_Begin (int screen) { return FALSE; }
+/*static BOOL _fun_gl_Begin (int screen) { return FALSE; }
 static void _fun_gl_End (int screen) { }
 
 fun_gl_Begin Open_GL_beg = _fun_gl_Begin;
@@ -57,7 +60,7 @@ fun_gl_End   Open_GL_end = _fun_gl_End;
 void register_gl_fun(fun_gl_Begin beg,fun_gl_End end) {
 	Open_GL_beg = beg;
 	Open_GL_end = end;
-}
+}*/
 
 /************************************************/
 /* BEGIN & END                                  */

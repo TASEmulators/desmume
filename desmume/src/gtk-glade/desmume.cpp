@@ -1,6 +1,6 @@
 /* desmume.c - this file is part of DeSmuME
  *
- * Copyright (C) 2006,2007 DeSmuME Team
+ * Copyright (C) 2007-2015 DeSmuME Team
  * Copyright (C) 2007 Pascal Giard (evilynux)
  *
  * This file is free software; you can redistribute it and/or modify
@@ -37,17 +37,9 @@ void desmume_mem_init();
 u8 *desmume_rom_data = NULL;
 u32 desmume_last_cycle;
 
-void desmume_init( struct armcpu_memory_iface *arm9_mem_if,
-		   struct armcpu_ctrl_iface **arm9_ctrl_iface,		//ticksPrevFrame = ticksCurFrame;
-                   struct armcpu_memory_iface *arm7_mem_if,
-                   struct armcpu_ctrl_iface **arm7_ctrl_iface)
+void desmume_init()
 {
-#ifdef GDB_STUB
-	NDS_Init( arm9_mem_if, arm9_ctrl_iface,
-                  arm7_mem_if, arm7_ctrl_iface);
-#else
         NDS_Init();
-#endif
         SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
 	execute = false;
 }
