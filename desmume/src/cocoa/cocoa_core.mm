@@ -37,6 +37,20 @@
 #include "../slot2.h"
 #undef BOOL
 
+// Need to include assert.h this way so that GDB stub will work
+// with an optimized build.
+#if defined(GDB_STUB) && defined(NDEBUG)
+	#define TEMP_NDEBUG
+	#undef NDEBUG
+#endif
+
+#include <assert.h>
+
+#if defined(TEMP_NDEBUG)
+	#undef TEMP_NDEBUG
+	#define NDEBUG
+#endif
+
 class OSXDriver : public BaseDriver
 {
 private:
