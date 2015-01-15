@@ -33,6 +33,14 @@
 #include <math.h>
 #include <string.h>
 
+#if defined(_MSC_VER) && _MSC_VER == 1600
+#define SLEEP_HACK_2011
+#endif
+
+#ifdef SLEEP_HACK_2011
+#include <Windows.h>
+#endif
+
 #ifndef _MSC_VER 
 #include <stdint.h>
 #endif
@@ -962,7 +970,7 @@ public:
 			// hack for VC++ 2010 (bug in compiler optimization?)
 			// freeze on 3D
 			// TODO: study it
-			#if defined(_MSC_VER) && _MSC_VER == 1600
+			#ifdef SLEEP_HACK_2011
 				Sleep(0); // nop
 			#endif
 		}
