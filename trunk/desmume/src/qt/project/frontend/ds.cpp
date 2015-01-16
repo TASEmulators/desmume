@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014 DeSmuME team
+    Copyright (C) 2014-2015 DeSmuME team
 	Copyright (C) 2014 Alvin Wong
 
 	This file is free software: you can redistribute it and/or modify
@@ -19,6 +19,8 @@
 #include "ds.h"
 
 #include "NDSSystem.h"
+#include "firmware.h"
+#include "mc.h"
 #include "render3D.h"
 #include "rasterize.h"
 #include "SPU.h"
