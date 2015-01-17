@@ -155,6 +155,7 @@ private:
 	uint32_t *_vfSrcSurfacePixBuffer;
 	VideoFilterFunc _vfFunc;
 	std::vector<VideoFilterThread> _vfThread;
+	bool _useInternalDstBuffer;
 	
 	bool _isFilterRunning;
 	ThreadLock _lockSrc;
@@ -184,6 +185,7 @@ public:
 	const char* GetTypeString();
 	uint32_t* GetSrcBufferPtr();
 	uint32_t* GetDstBufferPtr();
+	void SetDstBufferPtr(uint32_t *theBuffer);
 	size_t GetSrcWidth();
 	size_t GetSrcHeight();
 	size_t GetDstWidth();
