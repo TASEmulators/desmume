@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014 DeSmuME team
+	Copyright (C) 2014-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -209,6 +209,7 @@ protected:
 	VideoFilter *_vfSingle;
 	VideoFilter *_vfDual;
 	VideoFilter *_vf;
+	uint32_t *_vfMasterDstBuffer;
 	
 	int _displayMode;
 	int _displayOrder;
@@ -220,8 +221,6 @@ protected:
 	
 	GLint _displayTexFilter;
 	GLuint _texCPUFilterDstID;
-	GLsizei _glTexBackWidth;
-	GLsizei _glTexBackHeight;
 	
 	GLint vtxBuffer[4 * 8];
 	GLfloat texCoordBuffer[2 * 8];
