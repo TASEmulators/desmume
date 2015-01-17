@@ -371,6 +371,8 @@ volatile bool execute = true;
 #ifdef GDB_STUB
 	if (theState)
 	{
+        gdbstub_mutex_init();
+        
 		if ([self enableGdbStubARM9])
 		{
 			const uint16_t arm9Port = (uint16_t)[self gdbStubPortARM9];
@@ -422,6 +424,8 @@ volatile bool execute = true;
 		
 		destroyStub_gdb(gdbStubHandleARM7);
 		gdbStubHandleARM7 = NULL;
+
+        gdbstub_mutex_destroy();
 	}
 #endif
 	if (gdbStubHandleARM9 == NULL && gdbStubHandleARM7 == NULL)

@@ -596,6 +596,8 @@ int main(int argc, char ** argv) {
   driver = new BaseDriver();
   
 #ifdef GDB_STUB
+  gdbstub_mutex_init();
+
   /*
    * Activate the GDB stubs
    * This has to come after NDS_Init() where the CPUs are set up.
@@ -826,6 +828,8 @@ int main(int argc, char ** argv) {
   
   destroyStub_gdb( arm7_gdb_stub);
   arm7_gdb_stub = NULL;
+
+  gdbstub_mutex_destroy();
 #endif
   
   SDL_Quit();

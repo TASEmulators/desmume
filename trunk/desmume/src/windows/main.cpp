@@ -3257,6 +3257,8 @@ int _main()
 	NDS_Init();
 	
 #ifdef GDB_STUB
+    gdbstub_mutex_init();
+
 	// Activate the GDB stubs. This has to come after the NDS_Init() where the CPUs are set up.
 	gdbstub_handle_t arm9_gdb_stub = NULL;
 	gdbstub_handle_t arm7_gdb_stub = NULL;
@@ -3460,6 +3462,8 @@ int _main()
 	
 	destroyStub_gdb(arm7_gdb_stub);
 	arm7_gdb_stub = NULL;
+
+    gdbstub_mutex_destroy();
 #endif
 	
 	NDS_DeInit();

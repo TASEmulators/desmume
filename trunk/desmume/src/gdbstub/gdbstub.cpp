@@ -35,6 +35,25 @@
 #include "../armcpu.h"
 #include "../MMU.h"
 
+// For cpu_mutex
+#ifdef HOST_WINDOWS
+#include <windows.h>
+#else
+#include <pthread.h>
+#if defined HOST_LINUX
+#include <unistd.h>
+#elif defined HOST_BSD || defined HOST_DARWIN
+#include <sys/sysctl.h>
+#endif
+#endif // HOST_WINDOWS
+
+#ifndef HOST_WINDOWS
+// to access the CPUs in any way, a thread has to get a lock on this first
+pthread_mutex_t cpu_mutex;
+#else
+HANDLE cpu_mutex;
+#endif
+
 #ifdef __GNUC__
 #define UNUSED_PARM( parm) parm __attribute__((unused))
 #else
@@ -134,9 +153,53 @@ enum target_signal
     TARGET_SIGNAL_PRIO = 44,
   };
 
+// Try defining/undefining this, if you have problems with the GDB stub on Windows.
+#define USE_MUTEX_ON_WINDOWS
 
+void gdbstub_mutex_init()
+{
+    #ifndef HOST_WINDOWS
+    pthread_mutex_init(&cpu_mutex, NULL);
+    #else
+#ifdef USE_MUTEX_ON_WINDOWS
+    cpu_mutex = CreateMutex(NULL, FALSE, NULL);
+#endif
+    #endif
+}
 
+void gdbstub_mutex_destroy()
+{
+    #ifndef HOST_WINDOWS
+    pthread_mutex_destroy(&cpu_mutex);
+    #else
+#ifdef USE_MUTEX_ON_WINDOWS
+    CloseHandle(cpu_mutex);
+#endif
+    #endif
+}
 
+void gdbstub_mutex_lock()
+{
+#ifndef HOST_WINDOWS
+    pthread_mutex_lock(&cpu_mutex);
+#else
+#ifdef USE_MUTEX_ON_WINDOWS
+    // Maybe we should check the return value, but then again what could we do about it anyway.
+    WaitForSingleObject(cpu_mutex, INFINITE);
+#endif
+#endif
+}
+
+void gdbstub_mutex_unlock()
+{
+#ifndef HOST_WINDOWS
+    pthread_mutex_unlock(&cpu_mutex);
+#else
+#ifdef USE_MUTEX_ON_WINDOWS
+    ReleaseMutex(cpu_mutex);
+#endif
+#endif
+}
 
 static void
 causeQuit_gdb( struct gdb_stub_state *stub) {
@@ -527,6 +590,7 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
   uint32_t send_size = 0;
 
   DEBUG_LOG("Processing packet %c\n", packet[0]);
+  gdbstub_mutex_lock();
 
   switch( packet[0]) {
   case 3:
@@ -898,6 +962,8 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
     }
     break;
   }
+
+  gdbstub_mutex_unlock();
 
   if ( send_reply) {
     return putpacket( sock, out_packet, send_size);
