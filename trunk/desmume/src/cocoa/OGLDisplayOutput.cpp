@@ -1766,7 +1766,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
-	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, _vfDual->GetDstWidth() * _vfDual->GetDstHeight(), _vfMasterDstBuffer);
+	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, _vfDual->GetDstWidth() * _vfDual->GetDstHeight() * sizeof(uint32_t), _vfMasterDstBuffer);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texInputVideoDataID);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -1911,7 +1911,7 @@ void OGLDisplayLayer::SetMode(int dispMode)
 			break;
 			
 		case DS_DISPLAY_TYPE_TOUCH:
-			this->_vfSingle->SetDstBufferPtr(_vfMasterDstBuffer + (this->_vfSingle->GetDstWidth() * this->_vfSingle->GetDstWidth()) );
+			this->_vfSingle->SetDstBufferPtr(_vfMasterDstBuffer + (this->_vfSingle->GetDstWidth() * this->_vfSingle->GetDstHeight()) );
 			this->_vf = this->_vfSingle;
 			break;
 			
@@ -2302,7 +2302,7 @@ void OGLDisplayLayer::SetCPUFilterOGL(const VideoFilterTypeID videoFilterTypeID)
 				break;
 				
 			case DS_DISPLAY_TYPE_TOUCH:
-				this->_vfSingle->SetDstBufferPtr(newMasterBuffer + (this->_vfSingle->GetDstWidth() * this->_vfSingle->GetDstWidth()) );
+				this->_vfSingle->SetDstBufferPtr(newMasterBuffer + (this->_vfSingle->GetDstWidth() * this->_vfSingle->GetDstHeight()) );
 				break;
 				
 			default:
@@ -2310,7 +2310,7 @@ void OGLDisplayLayer::SetCPUFilterOGL(const VideoFilterTypeID videoFilterTypeID)
 		}
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID);
-		glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, newDstBufferWidth * newDstBufferHeight, newMasterBuffer);
+		glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, newDstBufferWidth * newDstBufferHeight * sizeof(uint32_t), newMasterBuffer);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
 		
 		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
@@ -2356,9 +2356,7 @@ void OGLDisplayLayer::ProcessOGL(const uint16_t *videoData, GLsizei w, GLsizei h
 		lineOffset = (this->_displayMode == DS_DISPLAY_TYPE_TOUCH) ? h : 0;
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID);
-		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, lineOffset, w, h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, texData);
-		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 		
 		this->_texOutputVideoDataID = this->_texCPUFilterDstID;
 		this->UpdateTexCoords(w, (this->_displayMode == DS_DISPLAY_TYPE_DUAL) ? h : h*2);
