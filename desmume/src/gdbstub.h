@@ -25,6 +25,11 @@ typedef void *gdbstub_handle_t;
 struct armcpu_t;
 struct armcpu_memory_iface;
 
+void gdbstub_mutex_init();
+void gdbstub_mutex_destroy();
+void gdbstub_mutex_lock();
+void gdbstub_mutex_unlock();
+
 /*
  * The function interface
  */

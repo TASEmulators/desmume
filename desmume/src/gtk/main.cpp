@@ -2919,6 +2919,8 @@ common_gtk_main( class configured_features *my_config)
      * where the cpus are set up.
      */
 #ifdef GDB_STUB
+    gdbstub_mutex_init();
+    
     gdbstub_handle_t arm9_gdb_stub = NULL;
     gdbstub_handle_t arm7_gdb_stub = NULL;
     
@@ -3277,6 +3279,8 @@ common_gtk_main( class configured_features *my_config)
 	
     destroyStub_gdb( arm7_gdb_stub);
 	arm7_gdb_stub = NULL;
+
+    gdbstub_mutex_destroy();
 #endif
 
     return EXIT_SUCCESS;
