@@ -890,6 +890,7 @@ volatile bool execute = true;
 	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	NDS_Reset();
+	GPU_FillScreenWithBGRA5551(0xFFFF);
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	
 	[self restoreCoreState];

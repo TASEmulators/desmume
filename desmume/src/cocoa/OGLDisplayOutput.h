@@ -185,7 +185,7 @@ public:
 		this->_viewportHeight = h;
 	};
 	
-	virtual void ProcessOGL(const uint16_t *videoData, GLsizei w, GLsizei h) {};
+	virtual void ProcessOGL() {};
 	virtual void RenderOGL() {};
 };
 
@@ -219,6 +219,9 @@ protected:
 	GLfloat _gapScalar;
 	GLfloat _rotation;
 	
+	GLsizei _vtxElementCount;
+	GLubyte *_vtxElementPointer;
+	
 	GLint _displayTexFilter;
 	GLuint _texCPUFilterDstID;
 	
@@ -226,9 +229,10 @@ protected:
 	GLfloat texCoordBuffer[2 * 8];
 	size_t _vtxBufferOffset;
 	
-	GLuint _texInputVideoDataID;
-	GLuint _texOutputVideoDataID;
-	GLuint _texPrevOutputVideoDataID;
+	GLuint _texVideoInputDataID;
+	GLuint _texVideoSourceID;
+	GLuint _texVideoPixelScalerID;
+	GLuint _texVideoOutputID;
 	GLuint _vaoMainStatesID;
 	GLuint _vboVertexID;
 	GLuint _vboTexCoordID;
@@ -275,7 +279,8 @@ public:
 	int GetPixelScaler();
 	virtual void SetPixelScalerOGL(const int filterID);
 	virtual void SetCPUFilterOGL(const VideoFilterTypeID videoFilterTypeID);
-	virtual void ProcessOGL(const uint16_t *videoData, GLsizei w, GLsizei h);
+	virtual void LoadFrameOGL(const uint16_t *frameData, GLsizei w, GLsizei h);
+	virtual void ProcessOGL();
 	virtual void RenderOGL();
 };
 
@@ -297,7 +302,7 @@ public:
 	virtual GLsizei GetViewportHeight();
 	OGLDisplayLayer* GetDisplayLayer();
 		
-	virtual void ProcessOGL(const uint16_t *videoData, GLsizei w, GLsizei h);
+	virtual void ProcessOGL();
 	virtual void RenderOGL();
 	virtual void SetViewportSizeOGL(GLsizei w, GLsizei h);
 };
