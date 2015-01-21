@@ -1470,11 +1470,11 @@ void OGLVideoOutput::SetViewportSizeOGL(GLsizei w, GLsizei h)
 	}
 }
 
-void OGLVideoOutput::ProcessOGL(const uint16_t *videoData, GLsizei w, GLsizei h)
+void OGLVideoOutput::ProcessOGL()
 {
 	for (size_t i = 0; i < _layerList->size(); i++)
 	{
-		(*_layerList)[i]->ProcessOGL(videoData, w, h);
+		(*_layerList)[i]->ProcessOGL();
 	}
 }
 
@@ -1736,6 +1736,9 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	_displayOrder = DS_DISPLAY_ORDER_MAIN_FIRST;
 	_displayOrientation = DS_DISPLAY_ORIENTATION_VERTICAL;
 	
+	_vtxElementCount = (_displayMode == DS_DISPLAY_TYPE_DUAL) ? 12 : 6;
+	_vtxElementPointer = !(_displayMode == DS_DISPLAY_TYPE_TOUCH) ? 0 : (GLubyte *)(_vtxElementCount * sizeof(GLubyte));
+	
 	_normalWidth = GPU_DISPLAY_WIDTH;
 	_normalHeight = GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_GAP*_gapScalar);
 	_rotation = 0.0f;
@@ -1756,9 +1759,10 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	
 	// Set up textures
 	glGenTextures(1, &_texCPUFilterDstID);
-	glGenTextures(1, &_texInputVideoDataID);
-	_texOutputVideoDataID = _texInputVideoDataID;
-	_texPrevOutputVideoDataID = _texInputVideoDataID;
+	glGenTextures(1, &_texVideoInputDataID);
+	_texVideoSourceID = _texVideoInputDataID;
+	_texVideoPixelScalerID = _texVideoInputDataID;
+	_texVideoOutputID = _texVideoInputDataID;
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texCPUFilterDstID);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -1768,7 +1772,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
 	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, _vfDual->GetDstWidth() * _vfDual->GetDstHeight() * sizeof(uint32_t), _vfMasterDstBuffer);
 	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texInputVideoDataID);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texVideoInputDataID);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -1865,7 +1869,7 @@ OGLDisplayLayer::~OGLDisplayLayer()
 	glDeleteBuffersARB(1, &this->_vboTexCoordID);
 	glDeleteBuffersARB(1, &this->_vboElementID);
 	glDeleteTextures(1, &this->_texCPUFilterDstID);
-	glDeleteTextures(1, &this->_texInputVideoDataID);
+	glDeleteTextures(1, &this->_texVideoInputDataID);
 	
 	if (_canUseShaderOutput)
 	{
@@ -1908,15 +1912,21 @@ void OGLDisplayLayer::SetMode(int dispMode)
 		case DS_DISPLAY_TYPE_MAIN:
 			this->_vfSingle->SetDstBufferPtr(_vfMasterDstBuffer);
 			this->_vf = this->_vfSingle;
+			this->_vtxElementCount = 6;
+			this->_vtxElementPointer = 0;
 			break;
 			
 		case DS_DISPLAY_TYPE_TOUCH:
 			this->_vfSingle->SetDstBufferPtr(_vfMasterDstBuffer + (this->_vfSingle->GetDstWidth() * this->_vfSingle->GetDstHeight()) );
 			this->_vf = this->_vfSingle;
+			this->_vtxElementCount = 6;
+			this->_vtxElementPointer = (GLubyte *)(this->_vtxElementCount * sizeof(GLubyte));
 			break;
 			
 		case DS_DISPLAY_TYPE_DUAL:
 			this->_vf = this->_vfDual;
+			this->_vtxElementCount = 12;
+			this->_vtxElementPointer = 0;
 			break;
 			
 		default:
@@ -2279,8 +2289,8 @@ void OGLDisplayLayer::SetCPUFilterOGL(const VideoFilterTypeID videoFilterTypeID)
 	const VideoFilterAttributes newFilterAttr = VideoFilter::GetAttributesByID(videoFilterTypeID);
 	const size_t oldDstBufferWidth = this->_vfDual->GetDstWidth();
 	const size_t oldDstBufferHeight = this->_vfDual->GetDstHeight();
-	const GLsizei newDstBufferWidth = GPU_DISPLAY_WIDTH * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
-	const GLsizei newDstBufferHeight = GPU_DISPLAY_HEIGHT * 2 * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
+	const GLsizei newDstBufferWidth = this->_vfDual->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
+	const GLsizei newDstBufferHeight = this->_vfDual->GetSrcHeight() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
 	
 	if (oldDstBufferWidth != newDstBufferWidth || oldDstBufferHeight != newDstBufferHeight)
 	{
@@ -2327,73 +2337,80 @@ void OGLDisplayLayer::SetCPUFilterOGL(const VideoFilterTypeID videoFilterTypeID)
 	this->_vfDual->ChangeFilterByID(videoFilterTypeID);
 }
 
-void OGLDisplayLayer::ProcessOGL(const uint16_t *videoData, GLsizei w, GLsizei h)
+void OGLDisplayLayer::LoadFrameOGL(const uint16_t *frameData, GLsizei w, GLsizei h)
+{
+	const GLint lineOffset = (this->_displayMode == DS_DISPLAY_TYPE_TOUCH) ? h : 0;
+	const bool isUsingCPUPixelScaler = this->_pixelScaler != VideoFilterTypeID_None && !(this->_useShaderBasedPixelScaler && this->_filtersPreferGPU);
+	
+	if (!isUsingCPUPixelScaler)
+	{
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataID);
+		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, lineOffset, w, h, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frameData);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+	}
+	else
+	{
+		RGB555ToBGRA8888Buffer((const uint16_t *)frameData, this->_vf->GetSrcBufferPtr(), w * h);
+	}
+}
+
+void OGLDisplayLayer::ProcessOGL()
 {
 	VideoFilter *currentFilter = this->_vf;
-	GLint lineOffset = (this->_displayMode == DS_DISPLAY_TYPE_TOUCH) ? h : 0;
+	const bool isUsingCPUPixelScaler = this->_pixelScaler != VideoFilterTypeID_None && !(this->_useShaderBasedPixelScaler && this->_filtersPreferGPU);
 	
-	// Determine whether we should take CPU-based path or a GPU-based path
-	if	(this->_pixelScaler != VideoFilterTypeID_None && !(this->_useShaderBasedPixelScaler && this->_filtersPreferGPU) )
+	// Source
+	if (this->_useDeposterize)
 	{
-		if (!this->_useDeposterize) // Pure CPU-based path
+		this->_texVideoSourceID = this->_filterDeposterize->RunFilterOGL(this->_texVideoInputDataID, this->_viewportWidth, this->_viewportHeight);
+		
+		if (isUsingCPUPixelScaler) // Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
 		{
-			RGB555ToBGRA8888Buffer((const uint16_t *)videoData, (uint32_t *)currentFilter->GetSrcBufferPtr(), w * h);
-		}
-		else // Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
-		{
-			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texInputVideoDataID);
-			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, lineOffset, w, h, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, videoData);
-			
-			this->_filterDeposterize->RunFilterOGL(this->_texInputVideoDataID, this->_viewportWidth, this->_viewportHeight);
-			
+			const GLint lineOffset = (this->_displayMode == DS_DISPLAY_TYPE_TOUCH) ? GPU_DISPLAY_HEIGHT : 0;
 			const GLsizei readLineCount = (this->_displayMode == DS_DISPLAY_TYPE_DUAL) ? GPU_DISPLAY_HEIGHT * 2 : GPU_DISPLAY_HEIGHT;
 			this->_filterDeposterize->DownloadDstBufferOGL(currentFilter->GetSrcBufferPtr(), lineOffset, readLineCount);
 		}
-		
-		uint32_t *texData = currentFilter->RunFilter();
-		w = currentFilter->GetDstWidth();
-		h = currentFilter->GetDstHeight();
-		lineOffset = (this->_displayMode == DS_DISPLAY_TYPE_TOUCH) ? h : 0;
-		
-		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID);
-		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, lineOffset, w, h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, texData);
-		
-		this->_texOutputVideoDataID = this->_texCPUFilterDstID;
-		this->UpdateTexCoords(w, (this->_displayMode == DS_DISPLAY_TYPE_DUAL) ? h : h*2);
 	}
-	else // Pure GPU-based path
+	else
 	{
-		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texInputVideoDataID);
-		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, lineOffset, w, h, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, videoData);
-		
-		if (this->_useDeposterize)
-		{
-			this->_texOutputVideoDataID = this->_filterDeposterize->RunFilterOGL(this->_texInputVideoDataID, this->_viewportWidth, this->_viewportHeight);
-		}
-		else
-		{
-			this->_texOutputVideoDataID = this->_texInputVideoDataID;
-		}
-		
-		if (this->_displayMode != DS_DISPLAY_TYPE_DUAL)
-		{
-			h *= 2;
-		}
-		
+		this->_texVideoSourceID = this->_texVideoInputDataID;
+	}
+	
+	// Pixel scaler
+	if (!isUsingCPUPixelScaler)
+	{
 		if (this->_useShaderBasedPixelScaler)
 		{
-			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texOutputVideoDataID);
+			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoSourceID);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			
-			this->_texOutputVideoDataID = this->_shaderFilter->RunFilterOGL(this->_texOutputVideoDataID, this->_viewportWidth, this->_viewportHeight);
-			w = this->_shaderFilter->GetDstWidth();
-			h = this->_shaderFilter->GetDstHeight();
+			this->_texVideoPixelScalerID = this->_shaderFilter->RunFilterOGL(this->_texVideoSourceID, this->_viewportWidth, this->_viewportHeight);
+			
+			this->UpdateTexCoords(this->_shaderFilter->GetDstWidth(), this->_shaderFilter->GetDstHeight());
 		}
+		else
+		{
+			this->_texVideoPixelScalerID = this->_texVideoSourceID;
+			this->UpdateTexCoords(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT*2);
+		}
+	}
+	else
+	{
+		uint32_t *texData = currentFilter->RunFilter();
 		
-		this->UpdateTexCoords(w, h);
+		const GLfloat w = currentFilter->GetDstWidth();
+		const GLfloat h = currentFilter->GetDstHeight();
+		const GLsizei lineOffset = (this->_displayMode == DS_DISPLAY_TYPE_TOUCH) ? h : 0;
+		this->_texVideoPixelScalerID = this->_texCPUFilterDstID;
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoPixelScalerID);
+		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, lineOffset, w, h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, texData);
+		this->UpdateTexCoords(w, (this->_displayMode == DS_DISPLAY_TYPE_DUAL) ? h : h*2);
 	}
 	
+	// Output
+	this->_texVideoOutputID = this->_texVideoPixelScalerID;
 	this->UploadTexCoordsOGL();
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 }
@@ -2403,7 +2420,7 @@ void OGLDisplayLayer::RenderOGL()
 	glUseProgram(this->_finalOutputProgram->GetProgramID());
 	this->UploadTransformationOGL();
 	
-	if (_needUploadVertices)
+	if (this->_needUploadVertices)
 	{
 		this->UploadVerticesOGL();
 	}
@@ -2411,14 +2428,11 @@ void OGLDisplayLayer::RenderOGL()
 	// Enable vertex attributes
 	glBindVertexArrayAPPLE(this->_vaoMainStatesID);
 	
-	const GLsizei vtxElementCount = (this->_displayMode == DS_DISPLAY_TYPE_DUAL) ? 12 : 6;
-	const GLubyte *elementPointer = !(this->_displayMode == DS_DISPLAY_TYPE_TOUCH) ? 0 : (GLubyte *)(vtxElementCount * sizeof(GLubyte));
-	
 	glClear(GL_COLOR_BUFFER_BIT);
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texOutputVideoDataID);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter);
-	glDrawElements(GL_TRIANGLES, vtxElementCount, GL_UNSIGNED_BYTE, elementPointer);
+	glDrawElements(GL_TRIANGLES, this->_vtxElementCount, GL_UNSIGNED_BYTE, this->_vtxElementPointer);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
 	// Disable vertex attributes

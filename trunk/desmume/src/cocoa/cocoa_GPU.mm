@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2014 DeSmuME team
+	Copyright (C) 2013-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -99,6 +99,8 @@ GPU3DInterface *core3DList[] = {
 	SetOpenGLRendererFunctions(&OSXOpenGLRendererInit,
 							   &OSXOpenGLRendererBegin,
 							   &OSXOpenGLRendererEnd);
+	
+	GPU_FillScreenWithBGRA5551(0x8000);
 	
 	return self;
 }
@@ -819,6 +821,26 @@ bool GetGPUDisplayState(const int gpuType)
 	}
 	
 	return theState;
+}
+
+void GPU_FillScreenWithBGRA5551(const uint16_t colorValue)
+{
+	const size_t pixCount = sizeof(GPU_screen) / sizeof(uint16_t);
+	
+#ifdef __APPLE__
+	if (pixCount % 16 == 0)
+	{
+		const uint16_t colorValuePattern[] = {colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue};
+		memset_pattern16(GPU_screen, colorValuePattern, sizeof(GPU_screen));
+	}
+	else
+#endif
+	{
+		for (size_t i = 0; i < pixCount; i++)
+		{
+			((uint16_t *)GPU_screen)[i] = colorValue;
+		}
+	}
 }
 
 CGLContextObj OSXOpenGLRendererContext = NULL;

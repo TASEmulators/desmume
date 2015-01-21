@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2014 DeSmuME team
+	Copyright (C) 2011-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -36,18 +36,17 @@ typedef struct
 
 typedef struct
 {
-	int32_t videoSourceID;
-	int32_t displayModeID;
-	uint16_t width;			// Measured in pixels
-	uint16_t height;		// Measured in pixels
-} DisplaySrcPixelAttributes;
+	uint16_t	*buffer;			// Pointer to frame buffer
+	size_t		bufferSize;			// Size (in bytes) of frame buffer
+	int32_t		displayModeID;		// The selected display to read from
+	uint16_t	width;				// Measured in pixels
+	uint16_t	height;				// Measured in pixels
+} GPUFrame;
 
 @interface CocoaDSOutput : CocoaDSThread
 {
 	BOOL isStateChanged;
 	NSUInteger frameCount;
-	NSData *frameData;
-	NSData *frameAttributesData;
 	NSMutableDictionary *property;
 	
 	pthread_mutex_t *mutexConsume;
@@ -56,14 +55,12 @@ typedef struct
 
 @property (assign) BOOL isStateChanged;
 @property (assign) NSUInteger frameCount;
-@property (retain) NSData *frameData;
-@property (retain) NSData *frameAttributesData;
 @property (readonly) NSMutableDictionary *property;
 @property (assign) pthread_rwlock_t *rwlockProducer;
 @property (readonly) pthread_mutex_t *mutexConsume;
 
 - (void) doCoreEmuFrame;
-- (void) handleEmuFrameProcessed:(NSData *)mainData attributes:(NSData *)attributesData;
+- (void) handleEmuFrameProcessed;
 
 @end
 
@@ -127,7 +124,8 @@ typedef struct
 
 @required
 - (void) doInitVideoOutput:(NSDictionary *)properties;
-- (void) doProcessVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)frameDisplayMode width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight;
+- (void) doLoadVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)frameDisplayMode width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight;
+- (void) doProcessVideoFrame;
 
 @optional
 - (void) doResizeView:(NSRect)rect;
@@ -145,6 +143,7 @@ typedef struct
 	id <CocoaDSDisplayDelegate> delegate;
 	NSInteger displayMode;
 	NSSize frameSize;
+	GPUFrame _gpuFrame;
 	
 	OSSpinLock spinlockDisplayType;
 }
@@ -154,13 +153,8 @@ typedef struct
 @property (readonly) NSSize frameSize;
 
 - (void) handleChangeDisplayMode:(NSData *)displayModeData;
-- (void) handleSetViewToBlack;
-- (void) handleSetViewToWhite;
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData;
 - (void) handleCopyToPasteboard;
-
-- (NSData *) videoFrameUsingRGBA5551:(uint16_t)colorValue pixelCount:(size_t)pixCount;
-- (void) sendVideoFrameOfRGBA5551:(uint16_t)colorValue;
 
 - (NSImage *) image;
 - (NSBitmapImageRep *) bitmapImageRep;
