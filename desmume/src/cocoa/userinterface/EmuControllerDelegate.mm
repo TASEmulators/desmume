@@ -314,14 +314,7 @@
 {
 	DisplayWindowController *newWindowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow" emuControlDelegate:self];
 	
-	if ([self currentRom] == nil)
-	{
-		[[newWindowController view] clearToBlack];
-	}
-	else
-	{
-		[[newWindowController view] setNeedsDisplay:YES];
-	}
+	[CocoaDSUtil messageSendOneWay:[[newWindowController cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
 	
 	[[newWindowController window] makeKeyAndOrderFront:self];
 	[[newWindowController window] makeMainWindow];
@@ -1441,12 +1434,10 @@
 	}
 	
 	[cdsCore reset];
-	if ([cdsCore coreState] == CORESTATE_PAUSE)
+	
+	for (DisplayWindowController *windowController in windowList)
 	{
-		for (DisplayWindowController *windowController in windowList)
-		{
-			[[windowController view] clearToWhite];
-		}
+		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESET];
@@ -1747,9 +1738,10 @@
 	// Update the UI to indicate that a ROM has indeed been loaded.
 	[self updateAllWindowTitles];
 	
+	GPU_FillScreenWithBGRA5551(0xFFFF);
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[[windowController view] clearToWhite];
+		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_LOADED];
@@ -1824,9 +1816,10 @@
 	// Update the UI to indicate that the ROM has finished unloading.
 	[self updateAllWindowTitles];
 	
+	GPU_FillScreenWithBGRA5551(0x8000);
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[[windowController view] clearToBlack];
+		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_UNLOADED];

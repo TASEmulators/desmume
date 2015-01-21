@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2014 DeSmuME team
+	Copyright (C) 2013-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1079,6 +1079,9 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	cdsVideoOutput = [[CocoaDSDisplayVideo alloc] init];
 	[cdsVideoOutput setDelegate:view];
 	
+	// Add the video thread to the output list.
+	[emuControl addOutputToCore:cdsVideoOutput];
+	
 	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:cdsVideoOutput withObject:nil];
 	while ([cdsVideoOutput thread] == nil)
 	{
@@ -1087,9 +1090,6 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	// Setup default values per user preferences.
 	[self setupUserDefaults];
-	
-	// Add the video thread to the output list.
-	[emuControl addOutputToCore:cdsVideoOutput];
 }
 
 - (void)windowDidBecomeMain:(NSNotification *)notification
@@ -1598,18 +1598,6 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	return isHandled;
 }
 
-- (void) clearToBlack
-{
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_SET_VIEW_TO_BLACK];
-}
-
-- (void) clearToWhite
-{
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_SET_VIEW_TO_WHITE];
-}
-
 - (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType
 {
 	NSString *fileURLString = [fileURL absoluteString];
@@ -1771,7 +1759,7 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	// No init needed, so do nothing.
 }
 
-- (void)doProcessVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)frameDisplayMode width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight
+- (void)doLoadVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)frameDisplayMode width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight
 {
 	OGLDisplayLayer *display = oglv->GetDisplayLayer();
 	
@@ -1782,7 +1770,15 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->ProcessOGL((uint16_t *)videoFrameData, frameWidth, frameHeight);
+	display->LoadFrameOGL((uint16_t *)videoFrameData, frameWidth, frameHeight);
+	CGLUnlockContext(cglDisplayContext);
+}
+
+- (void)doProcessVideoFrame
+{
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	oglv->ProcessOGL();
 	[self drawVideoFrame];
 	CGLUnlockContext(cglDisplayContext);
 }
