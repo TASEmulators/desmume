@@ -683,14 +683,7 @@
 			}
 			
 			// Draw the display view now so that we guarantee that its drawn at least once.
-			if ([emuControl currentRom] == nil)
-			{
-				[[windowController view] clearToBlack];
-			}
-			else
-			{
-				[[windowController view] setNeedsDisplay:YES];
-			}
+			[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
 			
 			// If this window is set to full screen mode, its associated screen index must
 			// exist. If not, this window will not enter full screen mode. This is necessary,
