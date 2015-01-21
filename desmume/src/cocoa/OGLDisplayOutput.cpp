@@ -2342,7 +2342,7 @@ void OGLDisplayLayer::LoadFrameOGL(const uint16_t *frameData, GLsizei w, GLsizei
 	const GLint lineOffset = (this->_displayMode == DS_DISPLAY_TYPE_TOUCH) ? h : 0;
 	const bool isUsingCPUPixelScaler = this->_pixelScaler != VideoFilterTypeID_None && !(this->_useShaderBasedPixelScaler && this->_filtersPreferGPU);
 	
-	if (!isUsingCPUPixelScaler)
+	if (!isUsingCPUPixelScaler || this->_useDeposterize)
 	{
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataID);
 		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, lineOffset, w, h, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frameData);
