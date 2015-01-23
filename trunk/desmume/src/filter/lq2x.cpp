@@ -429,8 +429,8 @@ static void lq2xS_32_def(u32* dst0, u32* dst1, const u32* src0, const u32* src1,
 
 		brightArray[j] = bright;
 	}
-	int diffBright = ((maxBright - minBright) * 7) >> 4;
-	if(diffBright > 7)
+	int diffBright = (maxBright - minBright) >> 4;
+	if(diffBright > 1)
 	{
 		const int centerBright = brightArray[4];
 		if(ABS(brightArray[0] - centerBright) > diffBright)
@@ -620,7 +620,7 @@ void lq2xS32(u8 *srcPtr, u32 srcPitch, u8 * /* deltaPtr */,
    while(count>0) {
       dst0 += dstPitch >> 1;
       dst1 += dstPitch >> 1;
-      lq2x_32_def(dst0, dst1, src0, src1, src2, width);
+      lq2xS_32_def(dst0, dst1, src0, src1, src2, width);
       src0 = src1;
       src1 = src2;
       src2 += srcPitch >> 2;
