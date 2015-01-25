@@ -225,6 +225,10 @@ protected:
 	GLint _displayTexFilter;
 	GLuint _texCPUFilterDstID;
 	
+	GLuint _texLQ2xLUT;
+	GLuint _texHQ2xLUT;
+	GLuint _texHQ4xLUT;
+	
 	GLint vtxBuffer[4 * 8];
 	GLfloat texCoordBuffer[2 * 8];
 	size_t _vtxBufferOffset;
@@ -241,6 +245,8 @@ protected:
 	GLint _uniformFinalOutputAngleDegrees;
 	GLint _uniformFinalOutputScalar;
 	GLint _uniformFinalOutputViewSize;
+	
+	void InitHQnxPixelScaler();
 	
 	virtual void UploadVerticesOGL();
 	virtual void UploadTexCoordsOGL();
