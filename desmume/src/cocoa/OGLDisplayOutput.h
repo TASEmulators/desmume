@@ -246,7 +246,7 @@ protected:
 	GLint _uniformFinalOutputScalar;
 	GLint _uniformFinalOutputViewSize;
 	
-	void InitHQnxPixelScaler();
+	void UploadHQnxLUTs();
 	
 	virtual void UploadVerticesOGL();
 	virtual void UploadTexCoordsOGL();
