@@ -565,44 +565,50 @@ static void InputTimer()
 		DWORD firstPressedTime;
 		DWORD lastPressedTime;
 		WORD repeatCount;
-	} joyState [256];
+	} joyState [256*16];
 	static bool initialized = false;
 
 	if(!initialized) {
-		for(int i = 0; i < 256; i++) {
+		for(int i = 0; i < 256*16; i++) {
 			joyState[i].wasPressed = false;
 			joyState[i].repeatCount = 1;
 		}
 		initialized = true;
 	}
 
+	int nloops = JOYSTICK?16:1;
+	for(int j=0;j<nloops;j++)
+	{
 	for (int z = 0; z < 256; z++) {
 		int i = z | (JOYSTICK?0x8000:0);
+		i |= (j<<8);
+		int n = i&0xFFF;
 		bool active = !S9xGetState(i);
 
 		if (active) {
-			bool keyRepeat = (currentTime - joyState[z].firstPressedTime) >= (DWORD)KeyInDelayMSec;
-			if (!joyState[z].wasPressed || keyRepeat) {
-				if (!joyState[z].wasPressed)
-					joyState[z].firstPressedTime = currentTime;
-				joyState[z].lastPressedTime = currentTime;
-				if (keyRepeat && joyState[z].repeatCount < 0xffff)
-					joyState[z].repeatCount++;
+			bool keyRepeat = (currentTime - joyState[n].firstPressedTime) >= (DWORD)KeyInDelayMSec;
+			if (!joyState[n].wasPressed || keyRepeat) {
+				if (!joyState[n].wasPressed)
+					joyState[n].firstPressedTime = currentTime;
+				joyState[n].lastPressedTime = currentTime;
+				if (keyRepeat && joyState[n].repeatCount < 0xffff)
+					joyState[n].repeatCount++;
 				int mods = GetInitialModifiers(i);
-				WPARAM wparam = i | (mods << 8);
-				PostMessage(MainWindow->getHWnd(), WM_CUSTKEYDOWN, wparam,(LPARAM)(joyState[z].repeatCount | (joyState[z].wasPressed ? 0x40000000 : 0)));
+				WPARAM wparam = i | (mods << 16) | (j<<8);
+				PostMessage(MainWindow->getHWnd(), WM_CUSTKEYDOWN, wparam,(LPARAM)(joyState[n].repeatCount | (joyState[n].wasPressed ? 0x40000000 : 0)));
 			}
 		}
 		else {
-			joyState[z].repeatCount = 1;
-			if (joyState[z].wasPressed)
+			joyState[n].repeatCount = 1;
+			if (joyState[n].wasPressed)
 			{
 				int mods = GetInitialModifiers(i);
-				WPARAM wparam = i | (mods << 8);
-				PostMessage(MainWindow->getHWnd(), WM_CUSTKEYUP, wparam,(LPARAM)(joyState[z].repeatCount | (joyState[z].wasPressed ? 0x40000000 : 0)));
+				WPARAM wparam = i | (mods << 16) | (j<<8);
+				PostMessage(MainWindow->getHWnd(), WM_CUSTKEYUP, wparam,(LPARAM)(joyState[n].repeatCount | (joyState[n].wasPressed ? 0x40000000 : 0)));
 			}
 		}
-		joyState[z].wasPressed = active;
+		joyState[n].wasPressed = active;
+	}
 	}
 	lastTime = currentTime;
 }
@@ -4049,7 +4055,7 @@ int GetModifiers(int key)
 	if (key == VK_MENU || key == VK_CONTROL || key == VK_SHIFT)
 		return 0;
 
-	int bakedModifiers = (key >> 8) & (CUSTKEY_ALT_MASK | CUSTKEY_CTRL_MASK | CUSTKEY_SHIFT_MASK | CUSTKEY_NONE_MASK);
+	int bakedModifiers = (key >> 16) & (CUSTKEY_ALT_MASK | CUSTKEY_CTRL_MASK | CUSTKEY_SHIFT_MASK | CUSTKEY_NONE_MASK);
 	if(bakedModifiers)
 		return bakedModifiers & ~CUSTKEY_NONE_MASK;
 
@@ -4061,7 +4067,7 @@ int GetModifiers(int key)
 }
 int PurgeModifiers(int key)
 {
-	return key & ~((CUSTKEY_ALT_MASK | CUSTKEY_CTRL_MASK | CUSTKEY_SHIFT_MASK | CUSTKEY_NONE_MASK) << 8);
+	return key & ~((CUSTKEY_ALT_MASK | CUSTKEY_CTRL_MASK | CUSTKEY_SHIFT_MASK | CUSTKEY_NONE_MASK) << 16);
 }
 
 int HandleKeyUp(WPARAM wParam, LPARAM lParam, int modifiers)
