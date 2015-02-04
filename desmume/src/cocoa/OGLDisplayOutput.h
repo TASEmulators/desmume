@@ -39,17 +39,31 @@ enum
 	OutputFilterTypeID_Lanczos3			= 5
 };
 
+enum ShaderSupportTier
+{
+	ShaderSupport_Unsupported	= 0,
+	ShaderSupport_BottomTier	= 1,
+	ShaderSupport_LowTier		= 2,
+	ShaderSupport_MidTier		= 3,
+	ShaderSupport_HighTier		= 4,
+	ShaderSupport_TopTier		= 5,
+	ShaderSupport_FutureTier	= 6,
+};
+
 class OGLInfo
 {
 protected:
 	unsigned int _versionMajor;
 	unsigned int _versionMinor;
 	unsigned int _versionRevision;
+	ShaderSupportTier _shaderSupport;
 	
 	bool _isVBOSupported;
 	bool _isPBOSupported;
 	bool _isShaderSupported;
 	bool _isFBOSupported;
+	
+	ShaderSupportTier DetermineShaderSupport();
 	
 public:
 	OGLInfo();
@@ -61,6 +75,7 @@ public:
 	bool IsPBOSupported();
 	bool IsShaderSupported();
 	bool IsFBOSupported();
+	ShaderSupportTier GetShaderSupport();
 	
 	virtual void GetExtensionSetOGL(std::set<std::string> *oglExtensionSet) = 0;
 	virtual bool IsExtensionPresent(const std::set<std::string> &oglExtensionSet, const std::string &extensionName) const = 0;
@@ -87,7 +102,7 @@ public:
 	OGLInfo_2_1();
 };
 
-class OGLInfo_3_2 : public OGLInfo_2_0
+class OGLInfo_3_2 : public OGLInfo_2_1
 {
 public:
 	OGLInfo_3_2();
@@ -101,6 +116,7 @@ protected:
 	GLuint _vertexID;
 	GLuint _fragmentID;
 	GLuint _programID;
+	ShaderSupportTier _shaderSupport;
 	
 	virtual GLuint LoadShaderOGL(GLenum shaderType, const char *shaderProgram);
 	virtual bool LinkOGL();
@@ -109,6 +125,8 @@ public:
 	OGLShaderProgram();
 	virtual ~OGLShaderProgram();
 	
+	ShaderSupportTier GetShaderSupport();
+	void SetShaderSupport(const ShaderSupportTier theTier);
 	GLuint GetVertexShaderID();
 	void SetVertexShaderOGL(const char *shaderProgram);
 	GLuint GetFragmentShaderID();
@@ -194,13 +212,14 @@ class OGLDisplayLayer : public OGLVideoLayer
 protected:
 	bool _canUseShaderBasedFilters;
 	bool _canUseShaderOutput;
+	ShaderSupportTier _shaderSupport;
 	
 	bool _needUploadVertices;
 	bool _useDeposterize;
 	bool _useShaderBasedPixelScaler;
 	bool _filtersPreferGPU;
 	int _outputFilter;
-	int _pixelScaler;
+	VideoFilterTypeID _pixelScaler;
 	
 	OGLFilterDeposterize *_filterDeposterize;
 	OGLFilter *_shaderFilter;
@@ -210,7 +229,7 @@ protected:
 	VideoFilter *_vfDual;
 	VideoFilter *_vf;
 	uint32_t *_vfMasterDstBuffer;
-	
+		
 	int _displayMode;
 	int _displayOrder;
 	int _displayOrientation;
@@ -284,7 +303,8 @@ public:
 	virtual void SetOutputFilterOGL(const int filterID);
 	int GetPixelScaler();
 	virtual void SetPixelScalerOGL(const int filterID);
-	virtual void SetCPUFilterOGL(const VideoFilterTypeID videoFilterTypeID);
+	virtual bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
+	virtual void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	virtual void LoadFrameOGL(const uint16_t *frameData, GLsizei w, GLsizei h);
 	virtual void ProcessOGL();
 	virtual void RenderOGL();
