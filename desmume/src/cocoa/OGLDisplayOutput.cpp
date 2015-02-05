@@ -23,14 +23,14 @@
 
 // VERTEX SHADER FOR DISPLAY OUTPUT
 static const char *Sample1x1OutputVertShader_100 = {"\
-	attribute vec2 inPosition; \n\
-	attribute vec2 inTexCoord0; \n\
+	ATTRIBUTE vec2 inPosition; \n\
+	ATTRIBUTE vec2 inTexCoord0; \n\
 	\n\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
 	\n\
-	varying vec2 texCoord[1]; \n\
+	VARYING vec2 texCoord[1]; \n\
 	\n\
 	void main() \n\
 	{ \n\
@@ -57,14 +57,14 @@ static const char *BicubicSample4x4Output_VertShader_110 = {"\
 	//                       04|03|02|11\n\
 	//                       15|14|13|12\n\
 	\n\
-	attribute vec2 inPosition;\n\
-	attribute vec2 inTexCoord0;\n\
+	ATTRIBUTE vec2 inPosition;\n\
+	ATTRIBUTE vec2 inTexCoord0;\n\
 	\n\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
 	\n\
-	varying vec2 texCoord[16];\n\
+	VARYING vec2 texCoord[16];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -113,14 +113,14 @@ static const char *BicubicSample5x5Output_VertShader_110 = {"\
 	//                       17|04|03|02|11\n\
 	//                       16|15|14|13|12\n\
 	\n\
-	attribute vec2 inPosition;\n\
-	attribute vec2 inTexCoord0;\n\
+	ATTRIBUTE vec2 inPosition;\n\
+	ATTRIBUTE vec2 inTexCoord0;\n\
 	\n\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
 	\n\
-	varying vec2 texCoord[25];\n\
+	VARYING vec2 texCoord[25];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -180,14 +180,14 @@ static const char *BicubicSample6x6Output_VertShader_110 = {"\
 	//                      16|15|14|13|12|29\n\
 	//                      35|34|33|32|31|30\n\
 	\n\
-	attribute vec2 inPosition;\n\
-	attribute vec2 inTexCoord0;\n\
+	ATTRIBUTE vec2 inPosition;\n\
+	ATTRIBUTE vec2 inTexCoord0;\n\
 	\n\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
 	\n\
-	varying vec2 texCoord[36];\n\
+	VARYING vec2 texCoord[36];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -252,14 +252,13 @@ static const char *BicubicSample6x6Output_VertShader_110 = {"\
 
 // FRAGMENT SHADER FOR DISPLAY OUTPUT
 static const char *PassthroughOutputFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[1];\n\
+	VARYING vec2 texCoord[1];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	void main()\n\
 	{\n\
-		gl_FragColor = texture2DRect(tex, texCoord[0]);\n\
+		OUT_FRAG_COLOR.rgb = SAMPLE3_TEX_RECT(tex, texCoord[0]);\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
@@ -275,9 +274,9 @@ static const char *Sample1x1_VertShader_110 = {"\
 	//                       17|04|03|02|11\n\
 	//                       16|15|14|13|12\n\
 	\n\
-	attribute vec2 inPosition;\n\
-	attribute vec2 inTexCoord0;\n\
-	varying vec2 texCoord[1];\n\
+	ATTRIBUTE vec2 inPosition;\n\
+	ATTRIBUTE vec2 inTexCoord0;\n\
+	VARYING vec2 texCoord[1];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -291,9 +290,9 @@ static const char *Sample2x2_VertShader_110 = {"\
 	// Input Pixel Mapping:  00|01\n\
 	//                       03|02\n\
 	\n\
-	attribute vec2 inPosition;\n\
-	attribute vec2 inTexCoord0;\n\
-	varying vec2 texCoord[4];\n\
+	ATTRIBUTE vec2 inPosition;\n\
+	ATTRIBUTE vec2 inTexCoord0;\n\
+	VARYING vec2 texCoord[4];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -312,9 +311,9 @@ static const char *Sample3x3_VertShader_110 = {"\
 	//                       05|00|01\n\
 	//                       04|03|02\n\
 	\n\
-	attribute vec2 inPosition;\n\
-	attribute vec2 inTexCoord0;\n\
-	varying vec2 texCoord[9];\n\
+	ATTRIBUTE vec2 inPosition;\n\
+	ATTRIBUTE vec2 inTexCoord0;\n\
+	VARYING vec2 texCoord[9];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -341,9 +340,9 @@ static const char *Sample4x4_VertShader_110 = {"\
 	//                       04|03|02|11\n\
 	//                       15|14|13|12\n\
 	\n\
-	attribute vec2 inPosition;\n\
-	attribute vec2 inTexCoord0;\n\
-	varying vec2 texCoord[16];\n\
+	ATTRIBUTE vec2 inPosition;\n\
+	ATTRIBUTE vec2 inTexCoord0;\n\
+	VARYING vec2 texCoord[16];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -379,9 +378,9 @@ static const char *Sample5x5_VertShader_110 = {"\
 	//                       17|04|03|02|11\n\
 	//                       16|15|14|13|12\n\
 	\n\
-	attribute vec2 inPosition;\n\
-	attribute vec2 inTexCoord0;\n\
-	varying vec2 texCoord[25];\n\
+	ATTRIBUTE vec2 inPosition;\n\
+	ATTRIBUTE vec2 inTexCoord0;\n\
+	VARYING vec2 texCoord[25];\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -421,28 +420,25 @@ static const char *Sample5x5_VertShader_110 = {"\
 
 // FRAGMENT SHADER PASSTHROUGH FOR FILTERS
 static const char *PassthroughFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[1];\n\
+	VARYING vec2 texCoord[1];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	void main()\n\
 	{\n\
-		gl_FragColor = texture2DRect(tex, texCoord[0]);\n\
+		OUT_FRAG_COLOR.rgb = SAMPLE3_TEX_RECT(tex, texCoord[0]);\n\
+		OUT_FRAG_COLOR.a;\n\
 	}\n\
 "};
 
 // FRAGMENT SHADER FOR DEPOSTERIZATION
 static const char *FilterDeposterizeFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[9];\n\
+	VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
-	vec4 InterpLTE(vec4 pixA, vec4 pixB, vec4 threshold)\n\
+	vec3 InterpLTE(vec3 pixA, vec3 pixB, vec3 threshold)\n\
 	{\n\
-		vec4 interpPix = mix(pixA, pixB, 0.5);\n\
-		vec4 pixCompare = vec4( lessThanEqual(abs(pixB - pixA), threshold) );\n\
+		vec3 interpPix = mix(pixA, pixB, 0.5);\n\
+		vec3 pixCompare = vec3( lessThanEqual(abs(pixB - pixA), threshold) );\n\
 		\n\
 		return mix(pixA, interpPix, pixCompare);\n\
 	}\n\
@@ -456,24 +452,24 @@ static const char *FilterDeposterizeFragShader_110 = {"\
 	\n\
 	void main()\n\
 	{\n\
-		vec4 src[9];\n\
-		src[0] = texture2DRect(tex, texCoord[0]);\n\
-		src[1] = texture2DRect(tex, texCoord[1]);\n\
-		src[2] = texture2DRect(tex, texCoord[2]);\n\
-		src[3] = texture2DRect(tex, texCoord[3]);\n\
-		src[4] = texture2DRect(tex, texCoord[4]);\n\
-		src[5] = texture2DRect(tex, texCoord[5]);\n\
-		src[6] = texture2DRect(tex, texCoord[6]);\n\
-		src[7] = texture2DRect(tex, texCoord[7]);\n\
-		src[8] = texture2DRect(tex, texCoord[8]);\n\
+		vec3 src[9];\n\
+		src[0] = SAMPLE3_TEX_RECT(tex, texCoord[0]);\n\
+		src[1] = SAMPLE3_TEX_RECT(tex, texCoord[1]);\n\
+		src[2] = SAMPLE3_TEX_RECT(tex, texCoord[2]);\n\
+		src[3] = SAMPLE3_TEX_RECT(tex, texCoord[3]);\n\
+		src[4] = SAMPLE3_TEX_RECT(tex, texCoord[4]);\n\
+		src[5] = SAMPLE3_TEX_RECT(tex, texCoord[5]);\n\
+		src[6] = SAMPLE3_TEX_RECT(tex, texCoord[6]);\n\
+		src[7] = SAMPLE3_TEX_RECT(tex, texCoord[7]);\n\
+		src[8] = SAMPLE3_TEX_RECT(tex, texCoord[8]);\n\
 		\n\
-		const vec4 threshold = vec4(0.1020);\n\
+		const vec3 threshold = vec3(0.1020);\n\
 		\n\
 		float weight[2];\n\
 		weight[0] = 0.90;\n\
 		weight[1] = weight[0] * 0.60;\n\
 		\n\
-		vec4 blend[9];\n\
+		vec3 blend[9];\n\
 		blend[0] = src[0];\n\
 		blend[1] = InterpLTE(src[0], src[1], threshold);\n\
 		blend[2] = InterpLTE(src[0], src[2], threshold);\n\
@@ -484,31 +480,30 @@ static const char *FilterDeposterizeFragShader_110 = {"\
 		blend[7] = InterpLTE(src[0], src[7], threshold);\n\
 		blend[8] = InterpLTE(src[0], src[8], threshold);\n\
 		\n\
-		gl_FragColor =	mix(\n\
-							mix(\n\
-								mix(\n\
-									mix(blend[0], blend[5], weight[0]), mix(blend[0], blend[1], weight[0]),\n\
-								0.50),\n\
-								mix(\n\
-									mix(blend[0], blend[7], weight[0]), mix(blend[0], blend[3], weight[0]),\n\
-								0.50),\n\
-							0.50),\n\
-							mix(\n\
-								mix(\n\
-									mix(blend[0], blend[6], weight[1]), mix(blend[0], blend[2], weight[1]),\n\
-								0.50),\n\
-								mix(\n\
-									mix(blend[0], blend[8], weight[1]), mix(blend[0], blend[4], weight[1]),\n\
-								0.50),\n\
-							0.50),\n\
-						0.25);\n\
+		OUT_FRAG_COLOR.rgb =	mix(\n\
+									mix(\n\
+										mix(\n\
+											mix(blend[0], blend[5], weight[0]), mix(blend[0], blend[1], weight[0]),\n\
+										0.50),\n\
+										mix(\n\
+											mix(blend[0], blend[7], weight[0]), mix(blend[0], blend[3], weight[0]),\n\
+										0.50),\n\
+									0.50),\n\
+									mix(\n\
+										mix(\n\
+											mix(blend[0], blend[6], weight[1]), mix(blend[0], blend[2], weight[1]),\n\
+										0.50),\n\
+										mix(\n\
+											mix(blend[0], blend[8], weight[1]), mix(blend[0], blend[4], weight[1]),\n\
+										0.50),\n\
+									0.50),\n\
+								0.25);\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *FilterBicubicBSplineFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[16];\n\
+	VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	vec4 WeightBSpline(float f)\n\
@@ -535,29 +530,28 @@ static const char *FilterBicubicBSplineFragShader_110 = {"\
 		wx /= dot(wx, vec4(1.0));\n\
 		wy /= dot(wy, vec4(1.0));\n\
 		\n\
-		gl_FragColor	= (texture2DRect(tex, texCoord[ 6]) * wx.r\n\
-						+  texture2DRect(tex, texCoord[ 7]) * wx.g\n\
-						+  texture2DRect(tex, texCoord[ 8]) * wx.b\n\
-						+  texture2DRect(tex, texCoord[ 9]) * wx.a) * wy.r\n\
-						+ (texture2DRect(tex, texCoord[ 5]) * wx.r\n\
-						+  texture2DRect(tex, texCoord[ 0]) * wx.g\n\
-						+  texture2DRect(tex, texCoord[ 1]) * wx.b\n\
-						+  texture2DRect(tex, texCoord[10]) * wx.a) * wy.g\n\
-						+ (texture2DRect(tex, texCoord[ 4]) * wx.r\n\
-						+  texture2DRect(tex, texCoord[ 3]) * wx.g\n\
-						+  texture2DRect(tex, texCoord[ 2]) * wx.b\n\
-						+  texture2DRect(tex, texCoord[11]) * wx.a) * wy.b\n\
-						+ (texture2DRect(tex, texCoord[15]) * wx.r\n\
-						+  texture2DRect(tex, texCoord[14]) * wx.g\n\
-						+  texture2DRect(tex, texCoord[13]) * wx.b\n\
-						+  texture2DRect(tex, texCoord[12]) * wx.a) * wy.a;\n\
+		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[ 6]) * wx.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 7]) * wx.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 8]) * wx.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 9]) * wx.a) * wy.r\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[ 5]) * wx.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0]) * wx.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 1]) * wx.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[10]) * wx.a) * wy.g\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[ 4]) * wx.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 3]) * wx.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 2]) * wx.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[11]) * wx.a) * wy.b\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[15]) * wx.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[14]) * wx.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[13]) * wx.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[12]) * wx.a) * wy.a;\n\
+		OUT_FRAG_COLOR.a;\n\
 	}\n\
 "};
 
 static const char *FilterBicubicBSplineFastFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[1];\n\
+	VARYING vec2 texCoord[1];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	void main()\n\
@@ -576,17 +570,16 @@ static const char *FilterBicubicBSplineFastFragShader_110 = {"\
 		vec2 t0 = texCenterPosition - 1.0 + (w1 / s0);\n\
 		vec2 t1 = texCenterPosition + 1.0 + (w3 / s1);\n\
 		\n\
-		gl_FragColor	= (texture2DRect(tex, vec2(t0.x, t0.y)) * s0.x +\n\
-						   texture2DRect(tex, vec2(t1.x, t0.y)) * s1.x) * s0.y +\n\
-						  (texture2DRect(tex, vec2(t0.x, t1.y)) * s0.x +\n\
-						   texture2DRect(tex, vec2(t1.x, t1.y)) * s1.x) * s1.y;\n\
+		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, vec2(t0.x, t0.y)) * s0.x +\n\
+							   SAMPLE3_TEX_RECT(tex, vec2(t1.x, t0.y)) * s1.x) * s0.y +\n\
+							  (SAMPLE3_TEX_RECT(tex, vec2(t0.x, t1.y)) * s0.x +\n\
+							   SAMPLE3_TEX_RECT(tex, vec2(t1.x, t1.y)) * s1.x) * s1.y;\n\
+		OUT_FRAG_COLOR.a;\n\
 	}\n\
 "};
 
 static const char *FilterBicubicMitchellNetravaliFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[16];\n\
+	VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	vec4 WeightMitchellNetravali(float f)\n\
@@ -613,29 +606,28 @@ static const char *FilterBicubicMitchellNetravaliFragShader_110 = {"\
 		wx /= dot(wx, vec4(1.0));\n\
 		wy /= dot(wy, vec4(1.0));\n\
 		\n\
-		gl_FragColor	= (texture2DRect(tex, texCoord[ 6]) * wx.r\n\
-						+  texture2DRect(tex, texCoord[ 7]) * wx.g\n\
-						+  texture2DRect(tex, texCoord[ 8]) * wx.b\n\
-						+  texture2DRect(tex, texCoord[ 9]) * wx.a) * wy.r\n\
-						+ (texture2DRect(tex, texCoord[ 5]) * wx.r\n\
-						+  texture2DRect(tex, texCoord[ 0]) * wx.g\n\
-						+  texture2DRect(tex, texCoord[ 1]) * wx.b\n\
-						+  texture2DRect(tex, texCoord[10]) * wx.a) * wy.g\n\
-						+ (texture2DRect(tex, texCoord[ 4]) * wx.r\n\
-						+  texture2DRect(tex, texCoord[ 3]) * wx.g\n\
-						+  texture2DRect(tex, texCoord[ 2]) * wx.b\n\
-						+  texture2DRect(tex, texCoord[11]) * wx.a) * wy.b\n\
-						+ (texture2DRect(tex, texCoord[15]) * wx.r\n\
-						+  texture2DRect(tex, texCoord[14]) * wx.g\n\
-						+  texture2DRect(tex, texCoord[13]) * wx.b\n\
-						+  texture2DRect(tex, texCoord[12]) * wx.a) * wy.a;\n\
+		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[ 6]) * wx.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 7]) * wx.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 8]) * wx.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 9]) * wx.a) * wy.r\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[ 5]) * wx.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0]) * wx.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 1]) * wx.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[10]) * wx.a) * wy.g\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[ 4]) * wx.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 3]) * wx.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 2]) * wx.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[11]) * wx.a) * wy.b\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[15]) * wx.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[14]) * wx.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[13]) * wx.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[12]) * wx.a) * wy.a;\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *FilterBicubicMitchellNetravaliFastFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[1];\n\
+	VARYING vec2 texCoord[1];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	void main()\n\
@@ -654,20 +646,20 @@ static const char *FilterBicubicMitchellNetravaliFastFragShader_110 = {"\
 		vec2 t0 = texCenterPosition - 1.0 + (w1 / s0);\n\
 		vec2 t1 = texCenterPosition + 1.0 + (w3 / s1);\n\
 		\n\
-		gl_FragColor	= (texture2DRect(tex, vec2(t0.x, t0.y)) * s0.x +\n\
-						   texture2DRect(tex, vec2(t1.x, t0.y)) * s1.x) * s0.y +\n\
-						  (texture2DRect(tex, vec2(t0.x, t1.y)) * s0.x +\n\
-						   texture2DRect(tex, vec2(t1.x, t1.y)) * s1.x) * s1.y;\n\
+		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, vec2(t0.x, t0.y)) * s0.x +\n\
+							   SAMPLE3_TEX_RECT(tex, vec2(t1.x, t0.y)) * s1.x) * s0.y +\n\
+							  (SAMPLE3_TEX_RECT(tex, vec2(t0.x, t1.y)) * s0.x +\n\
+							   SAMPLE3_TEX_RECT(tex, vec2(t1.x, t1.y)) * s1.x) * s1.y;\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *FilterLanczos2FragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
 	#define PI 3.1415926535897932384626433832795\n\
 	#define RADIUS 2.0\n\
 	#define FIX(c) max(abs(c), 1e-5)\n\
 	\n\
-	varying vec2 texCoord[16];\n\
+	VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	vec4 WeightLanczos2(float f)\n\
@@ -692,37 +684,37 @@ static const char *FilterLanczos2FragShader_110 = {"\
 		wx /= dot(wx, vec4(1.0));\n\
 		wy /= dot(wy, vec4(1.0));\n\
 		\n\
-		gl_FragColor	= (texture2DRect(tex, texCoord[ 6]) * wx.r\n\
-						+  texture2DRect(tex, texCoord[ 7]) * wx.g\n\
-						+  texture2DRect(tex, texCoord[ 8]) * wx.b\n\
-						+  texture2DRect(tex, texCoord[ 9]) * wx.a) * wy.r\n\
-						+ (texture2DRect(tex, texCoord[ 5]) * wx.r\n\
-						+  texture2DRect(tex, texCoord[ 0]) * wx.g\n\
-						+  texture2DRect(tex, texCoord[ 1]) * wx.b\n\
-						+  texture2DRect(tex, texCoord[10]) * wx.a) * wy.g\n\
-						+ (texture2DRect(tex, texCoord[ 4]) * wx.r\n\
-						+  texture2DRect(tex, texCoord[ 3]) * wx.g\n\
-						+  texture2DRect(tex, texCoord[ 2]) * wx.b\n\
-						+  texture2DRect(tex, texCoord[11]) * wx.a) * wy.b\n\
-						+ (texture2DRect(tex, texCoord[15]) * wx.r\n\
-						+  texture2DRect(tex, texCoord[14]) * wx.g\n\
-						+  texture2DRect(tex, texCoord[13]) * wx.b\n\
-						+  texture2DRect(tex, texCoord[12]) * wx.a) * wy.a;\n\
+		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[ 6]) * wx.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 7]) * wx.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 8]) * wx.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 9]) * wx.a) * wy.r\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[ 5]) * wx.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0]) * wx.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 1]) * wx.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[10]) * wx.a) * wy.g\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[ 4]) * wx.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 3]) * wx.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 2]) * wx.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[11]) * wx.a) * wy.b\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[15]) * wx.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[14]) * wx.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[13]) * wx.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[12]) * wx.a) * wy.a;\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *FilterLanczos3FragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
 	#define PI 3.1415926535897932384626433832795\n\
 	#define RADIUS 3.0\n\
 	#define FIX(c) max(abs(c), 1e-5)\n\
 	\n\
 #if GPU_TIER >= SHADERSUPPORT_HIGH_TIER\n\
-	varying vec2 texCoord[36];\n\
+	VARYING vec2 texCoord[36];\n\
 #elif GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
-	varying vec2 texCoord[25];\n\
+	VARYING vec2 texCoord[25];\n\
 #else\n\
-	varying vec2 texCoord[16];\n\
+	VARYING vec2 texCoord[16];\n\
 #endif\n\
 	uniform sampler2DRect tex;\n\
 	\n\
@@ -757,124 +749,123 @@ static const char *FilterLanczos3FragShader_110 = {"\
 		wy2 /= sumY;\n\
 		\n\
 #if GPU_TIER >= SHADERSUPPORT_HIGH_TIER\n\
-		gl_FragColor	= (texture2DRect(tex, texCoord[20]) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[21]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[22]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[23]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[24]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[25]) * wx2.b) * wy1.r\n\
-						+ (texture2DRect(tex, texCoord[19]) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[ 6]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[ 7]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[ 8]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[ 9]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[26]) * wx2.b) * wy2.r\n\
-						+ (texture2DRect(tex, texCoord[18]) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[ 5]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[ 0]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[ 1]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[10]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[27]) * wx2.b) * wy1.g\n\
-						+ (texture2DRect(tex, texCoord[17]) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[ 4]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[ 3]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[ 2]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[11]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[28]) * wx2.b) * wy2.g\n\
-						+ (texture2DRect(tex, texCoord[16]) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[15]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[14]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[13]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[12]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[29]) * wx2.b) * wy1.b\n\
-						+ (texture2DRect(tex, texCoord[35]) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[34]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[33]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[32]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[31]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[30]) * wx2.b) * wy2.b;\n\
+		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[20]) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[21]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[22]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[23]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[24]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[25]) * wx2.b) * wy1.r\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[19]) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 6]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 7]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 8]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 9]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[26]) * wx2.b) * wy2.r\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[18]) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 5]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 1]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[10]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[27]) * wx2.b) * wy1.g\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[17]) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 4]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 3]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 2]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[11]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[28]) * wx2.b) * wy2.g\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[16]) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[15]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[14]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[13]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[12]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[29]) * wx2.b) * wy1.b\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[35]) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[34]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[33]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[32]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[31]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[30]) * wx2.b) * wy2.b;\n\
 #elif GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
-		gl_FragColor	= (texture2DRect(tex, texCoord[20]) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[21]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[22]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[23]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[24]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 3.0,-2.0)) * wx2.b) * wy1.r\n\
-						+ (texture2DRect(tex, texCoord[19]) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[ 6]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[ 7]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[ 8]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[ 9]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 3.0,-1.0)) * wx2.b) * wy2.r\n\
-						+ (texture2DRect(tex, texCoord[18]) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[ 5]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[ 0]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[ 1]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[10]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 3.0, 0.0)) * wx2.b) * wy1.g\n\
-						+ (texture2DRect(tex, texCoord[17]) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[ 4]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[ 3]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[ 2]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[11]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 3.0, 1.0)) * wx2.b) * wy2.g\n\
-						+ (texture2DRect(tex, texCoord[16]) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[15]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[14]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[13]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[12]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 3.0, 2.0)) * wx2.b) * wy1.b\n\
-						+ (texture2DRect(tex, texCoord[ 0] + vec2(-2.0, 3.0)) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2(-1.0, 3.0)) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 0.0, 3.0)) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 1.0, 3.0)) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 2.0, 3.0)) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 3.0, 3.0)) * wx2.b) * wy2.b;\n\
+		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[20]) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[21]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[22]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[23]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[24]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0,-2.0)) * wx2.b) * wy1.r\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[19]) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 6]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 7]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 8]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 9]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0,-1.0)) * wx2.b) * wy2.r\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[18]) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 5]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 1]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[10]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0, 0.0)) * wx2.b) * wy1.g\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[17]) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 4]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 3]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 2]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[11]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0, 1.0)) * wx2.b) * wy2.g\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[16]) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[15]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[14]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[13]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[12]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0, 2.0)) * wx2.b) * wy1.b\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2(-2.0, 3.0)) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2(-1.0, 3.0)) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 0.0, 3.0)) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 1.0, 3.0)) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 2.0, 3.0)) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0, 3.0)) * wx2.b) * wy2.b;\n\
 #else\n\
-		gl_FragColor	= (texture2DRect(tex, texCoord[ 0] + vec2(-2.0,-2.0)) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2(-1.0,-2.0)) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 0.0,-2.0)) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 1.0,-2.0)) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 2.0,-2.0)) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 3.0,-2.0)) * wx2.b) * wy1.r\n\
-						+ (texture2DRect(tex, texCoord[ 0] + vec2(-2.0,-1.0)) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[ 6]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[ 7]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[ 8]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[ 9]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 3.0,-1.0)) * wx2.b) * wy2.r\n\
-						+ (texture2DRect(tex, texCoord[ 0] + vec2(-2.0, 0.0)) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[ 5]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[ 0]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[ 1]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[10]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 3.0, 0.0)) * wx2.b) * wy1.g\n\
-						+ (texture2DRect(tex, texCoord[ 0] + vec2(-2.0, 1.0)) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[ 4]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[ 3]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[ 2]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[11]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 3.0, 1.0)) * wx2.b) * wy2.g\n\
-						+ (texture2DRect(tex, texCoord[ 0] + vec2(-2.0, 2.0)) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[15]) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[14]) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[13]) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[12]) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 3.0, 2.0)) * wx2.b) * wy1.b\n\
-						+ (texture2DRect(tex, texCoord[ 0] + vec2(-2.0, 3.0)) * wx1.r\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2(-1.0, 3.0)) * wx2.r\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 0.0, 3.0)) * wx1.g\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 1.0, 3.0)) * wx2.g\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 2.0, 3.0)) * wx1.b\n\
-						+  texture2DRect(tex, texCoord[ 0] + vec2( 3.0, 3.0)) * wx2.b) * wy2.b;\n\
+		OUT_FRAG_COLOR.rgb	= (SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2(-2.0,-2.0)) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2(-1.0,-2.0)) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 0.0,-2.0)) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 1.0,-2.0)) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 2.0,-2.0)) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0,-2.0)) * wx2.b) * wy1.r\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2(-2.0,-1.0)) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 6]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 7]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 8]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 9]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0,-1.0)) * wx2.b) * wy2.r\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2(-2.0, 0.0)) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 5]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 1]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[10]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0, 0.0)) * wx2.b) * wy1.g\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2(-2.0, 1.0)) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 4]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 3]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 2]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[11]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0, 1.0)) * wx2.b) * wy2.g\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2(-2.0, 2.0)) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[15]) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[14]) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[13]) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[12]) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0, 2.0)) * wx2.b) * wy1.b\n\
+							+ (SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2(-2.0, 3.0)) * wx1.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2(-1.0, 3.0)) * wx2.r\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 0.0, 3.0)) * wx1.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 1.0, 3.0)) * wx2.g\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 2.0, 3.0)) * wx1.b\n\
+							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0, 3.0)) * wx2.b) * wy2.b;\n\
 #endif\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *Scalar2xScanlineFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[1];\n\
+	VARYING vec2 texCoord[1];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	//---------------------------------------\n\
@@ -886,19 +877,15 @@ static const char *Scalar2xScanlineFragShader_110 = {"\
 	void main()\n\
 	{\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		vec4 outA = texture2DRect(tex, texCoord[0]) * vec4(1.000, 1.000, 1.000, 1.000);\n\
-		vec4 outB = texture2DRect(tex, texCoord[0]) * vec4(0.875, 0.875, 0.875, 1.000);\n\
-		vec4 outC = texture2DRect(tex, texCoord[0]) * vec4(0.875, 0.875, 0.875, 1.000);\n\
-		vec4 outD = texture2DRect(tex, texCoord[0]) * vec4(0.750, 0.750, 0.750, 1.000);\n\
+		float w = mix( mix(1.000, 0.875, f.x), mix(0.875, 0.750, f.x), f.y );\n\
 		\n\
-		gl_FragColor = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
+		OUT_FRAG_COLOR.rgb = SAMPLE3_TEX_RECT(tex, texCoord[0]) * w;\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *Scalar2xEPXFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[9];\n\
+	VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	float reduce(vec3 color)\n\
@@ -916,11 +903,11 @@ static const char *Scalar2xEPXFragShader_110 = {"\
 	\n\
 	void main()\n\
 	{\n\
-		vec3 src7 = texture2DRect(tex, texCoord[7]).rgb;\n\
-		vec3 src5 = texture2DRect(tex, texCoord[5]).rgb;\n\
-		vec3 src0 = texture2DRect(tex, texCoord[0]).rgb;\n\
-		vec3 src1 = texture2DRect(tex, texCoord[1]).rgb;\n\
-		vec3 src3 = texture2DRect(tex, texCoord[3]).rgb;\n\
+		vec3 src7 = SAMPLE3_TEX_RECT(tex, texCoord[7]);\n\
+		vec3 src5 = SAMPLE3_TEX_RECT(tex, texCoord[5]);\n\
+		vec3 src0 = SAMPLE3_TEX_RECT(tex, texCoord[0]);\n\
+		vec3 src1 = SAMPLE3_TEX_RECT(tex, texCoord[1]);\n\
+		vec3 src3 = SAMPLE3_TEX_RECT(tex, texCoord[3]);\n\
 		float v7 = reduce(src7);\n\
 		float v5 = reduce(src5);\n\
 		float v1 = reduce(src1);\n\
@@ -933,15 +920,13 @@ static const char *Scalar2xEPXFragShader_110 = {"\
 		vec3 outD = (pixCompare && (v3 == v1)) ? src3 : src0;\n\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		gl_FragColor.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *Scalar2xEPXPlusFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[9];\n\
+	VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	float dist(vec3 pixA, vec3 pixB)\n\
@@ -959,11 +944,11 @@ static const char *Scalar2xEPXPlusFragShader_110 = {"\
 	\n\
 	void main()\n\
 	{\n\
-		vec3 src7 = texture2DRect(tex, texCoord[7]).rgb;\n\
-		vec3 src5 = texture2DRect(tex, texCoord[5]).rgb;\n\
-		vec3 src0 = texture2DRect(tex, texCoord[0]).rgb;\n\
-		vec3 src1 = texture2DRect(tex, texCoord[1]).rgb;\n\
-		vec3 src3 = texture2DRect(tex, texCoord[3]).rgb;\n\
+		vec3 src7 = SAMPLE3_TEX_RECT(tex, texCoord[7]);\n\
+		vec3 src5 = SAMPLE3_TEX_RECT(tex, texCoord[5]);\n\
+		vec3 src0 = SAMPLE3_TEX_RECT(tex, texCoord[0]);\n\
+		vec3 src1 = SAMPLE3_TEX_RECT(tex, texCoord[1]);\n\
+		vec3 src3 = SAMPLE3_TEX_RECT(tex, texCoord[3]);\n\
 		\n\
 		vec3 outA = ( dist(src5, src7) < min(dist(src5, src3), dist(src1, src7)) ) ? mix(src5, src7, 0.5) : src0;\n\
 		vec3 outB = ( dist(src1, src7) < min(dist(src5, src7), dist(src1, src3)) ) ? mix(src1, src7, 0.5) : src0;\n\
@@ -971,15 +956,13 @@ static const char *Scalar2xEPXPlusFragShader_110 = {"\
 		vec3 outD = ( dist(src1, src3) < min(dist(src5, src3), dist(src1, src7)) ) ? mix(src1, src3, 0.5) : src0;\n\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		gl_FragColor.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *Scalar2xSaIFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[16];\n\
+	VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	const vec3 dt = vec3(65536.0, 256.0, 1.0);\n\
@@ -1012,24 +995,24 @@ static const char *Scalar2xSaIFragShader_110 = {"\
 	{\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
 		\n\
-		float Iv = reduce( texture2DRect(tex, texCoord[6]).rgb );\n\
-		float Ev = reduce( texture2DRect(tex, texCoord[7]).rgb );\n\
-		float Fv = reduce( texture2DRect(tex, texCoord[8]).rgb );\n\
-		float Jv = reduce( texture2DRect(tex, texCoord[9]).rgb );\n\
+		float Iv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[6]).rgb );\n\
+		float Ev = reduce( SAMPLE3_TEX_RECT(tex, texCoord[7]).rgb );\n\
+		float Fv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[8]).rgb );\n\
+		float Jv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[9]).rgb );\n\
 		\n\
-		float Gv = reduce( texture2DRect(tex, texCoord[5]).rgb );\n\
-		vec3 Ac = texture2DRect(tex, texCoord[0]).rgb; float Av = reduce(Ac);\n\
-		vec3 Bc = texture2DRect(tex, texCoord[1]).rgb; float Bv = reduce(Bc);\n\
-		float Kv = reduce( texture2DRect(tex, texCoord[10]).rgb );\n\
+		float Gv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[5]).rgb );\n\
+		vec3 Ac = SAMPLE3_TEX_RECT(tex, texCoord[0]).rgb; float Av = reduce(Ac);\n\
+		vec3 Bc = SAMPLE3_TEX_RECT(tex, texCoord[1]).rgb; float Bv = reduce(Bc);\n\
+		float Kv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[10]).rgb );\n\
 		\n\
-		float Hv = reduce( texture2DRect(tex, texCoord[4]).rgb );\n\
-		vec3 Cc = texture2DRect(tex, texCoord[3]).rgb; float Cv = reduce(Cc);\n\
-		vec3 Dc = texture2DRect(tex, texCoord[2]).rgb; float Dv = reduce(Dc);\n\
-		float Lv = reduce( texture2DRect(tex, texCoord[11]).rgb );\n\
+		float Hv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[4]).rgb );\n\
+		vec3 Cc = SAMPLE3_TEX_RECT(tex, texCoord[3]).rgb; float Cv = reduce(Cc);\n\
+		vec3 Dc = SAMPLE3_TEX_RECT(tex, texCoord[2]).rgb; float Dv = reduce(Dc);\n\
+		float Lv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[11]).rgb );\n\
 		\n\
-		float Mv = reduce( texture2DRect(tex, texCoord[15]).rgb );\n\
-		float Nv = reduce( texture2DRect(tex, texCoord[14]).rgb );\n\
-		float Ov = reduce( texture2DRect(tex, texCoord[13]).rgb );\n\
+		float Mv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[15]).rgb );\n\
+		float Nv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[14]).rgb );\n\
+		float Ov = reduce( SAMPLE3_TEX_RECT(tex, texCoord[13]).rgb );\n\
 		// Pv is unused, so skip this one.\n\
 		\n\
 		vec3 outA = Ac;\n\
@@ -1066,15 +1049,13 @@ static const char *Scalar2xSaIFragShader_110 = {"\
 			outD = mix( mix(Ac, Bc, 0.5), mix(Cc, Dc, 0.5), 0.5 );\n\
 		}\n\
 		\n\
-		gl_FragColor.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalarSuper2xSaIFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[16];\n\
+	VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	const vec3 dt = vec3(65536.0, 256.0, 1.0);\n\
@@ -1108,25 +1089,25 @@ static const char *ScalarSuper2xSaIFragShader_110 = {"\
 	{\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
 		\n\
-		float Iv = reduce( texture2DRect(tex, texCoord[6]).rgb );\n\
-		float Ev = reduce( texture2DRect(tex, texCoord[7]).rgb );\n\
-		float Fv = reduce( texture2DRect(tex, texCoord[8]).rgb );\n\
-		float Jv = reduce( texture2DRect(tex, texCoord[9]).rgb );\n\
+		float Iv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[6]).rgb );\n\
+		float Ev = reduce( SAMPLE3_TEX_RECT(tex, texCoord[7]).rgb );\n\
+		float Fv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[8]).rgb );\n\
+		float Jv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[9]).rgb );\n\
 		\n\
-		float Gv = reduce( texture2DRect(tex, texCoord[5]).rgb );\n\
-		vec3 Ac = texture2DRect(tex, texCoord[0]).rgb; float Av = reduce(Ac);\n\
-		vec3 Bc = texture2DRect(tex, texCoord[1]).rgb; float Bv = reduce(Bc);\n\
-		float Kv = reduce( texture2DRect(tex, texCoord[10]).rgb );\n\
+		float Gv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[5]).rgb );\n\
+		vec3 Ac = SAMPLE3_TEX_RECT(tex, texCoord[0]).rgb; float Av = reduce(Ac);\n\
+		vec3 Bc = SAMPLE3_TEX_RECT(tex, texCoord[1]).rgb; float Bv = reduce(Bc);\n\
+		float Kv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[10]).rgb );\n\
 		\n\
-		float Hv = reduce( texture2DRect(tex, texCoord[4]).rgb );\n\
-		vec3 Cc = texture2DRect(tex, texCoord[3]).rgb; float Cv = reduce(Cc);\n\
-		vec3 Dc = texture2DRect(tex, texCoord[2]).rgb; float Dv = reduce(Dc);\n\
-		float Lv = reduce( texture2DRect(tex, texCoord[11]).rgb );\n\
+		float Hv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[4]).rgb );\n\
+		vec3 Cc = SAMPLE3_TEX_RECT(tex, texCoord[3]).rgb; float Cv = reduce(Cc);\n\
+		vec3 Dc = SAMPLE3_TEX_RECT(tex, texCoord[2]).rgb; float Dv = reduce(Dc);\n\
+		float Lv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[11]).rgb );\n\
 		\n\
-		float Mv = reduce( texture2DRect(tex, texCoord[15]).rgb );\n\
-		float Nv = reduce( texture2DRect(tex, texCoord[14]).rgb );\n\
-		float Ov = reduce( texture2DRect(tex, texCoord[13]).rgb );\n\
-		float Pv = reduce( texture2DRect(tex, texCoord[12]).rgb );\n\
+		float Mv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[15]).rgb );\n\
+		float Nv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[14]).rgb );\n\
+		float Ov = reduce( SAMPLE3_TEX_RECT(tex, texCoord[13]).rgb );\n\
+		float Pv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[12]).rgb );\n\
 		\n\
 		bool compAD = (Av == Dv);\n\
 		bool compBC = (Bv == Cv);\n\
@@ -1155,15 +1136,13 @@ static const char *ScalarSuper2xSaIFragShader_110 = {"\
 			outD = ( (Bv == Dv) && (Dv == Nv) && (Cv != Ov) && (Dv != Mv) ) ? mix(Cc, Dc, 0.75) : ( ( (Av == Cv) && (Cv == Ov) && (Nv != Dv) && (Cv != Pv) ) ? mix(Cc, Dc, 0.25) : mix(Cc, Dc, 0.5) );\n\
 		}\n\
 		\n\
-		gl_FragColor.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalarSuperEagle2xFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[16];\n\
+	VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	const vec3 dt = vec3(65536.0, 256.0, 1.0);\n\
@@ -1197,21 +1176,21 @@ static const char *ScalarSuperEagle2xFragShader_110 = {"\
 	{\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
 		\n\
-		float Ev = reduce( texture2DRect(tex, texCoord[7]).rgb );\n\
-		float Fv = reduce( texture2DRect(tex, texCoord[8]).rgb );\n\
+		float Ev = reduce( SAMPLE3_TEX_RECT(tex, texCoord[7]).rgb );\n\
+		float Fv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[8]).rgb );\n\
 		\n\
-		float Gv = reduce( texture2DRect(tex, texCoord[5]).rgb );\n\
-		vec3 Ac = texture2DRect(tex, texCoord[0]).rgb; float Av = reduce(Ac);\n\
-		vec3 Bc = texture2DRect(tex, texCoord[1]).rgb; float Bv = reduce(Bc);\n\
-		float Kv = reduce( texture2DRect(tex, texCoord[10]).rgb );\n\
+		float Gv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[5]).rgb );\n\
+		vec3 Ac = SAMPLE3_TEX_RECT(tex, texCoord[0]).rgb; float Av = reduce(Ac);\n\
+		vec3 Bc = SAMPLE3_TEX_RECT(tex, texCoord[1]).rgb; float Bv = reduce(Bc);\n\
+		float Kv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[10]).rgb );\n\
 		\n\
-		float Hv = reduce( texture2DRect(tex, texCoord[4]).rgb );\n\
-		vec3 Cc = texture2DRect(tex, texCoord[3]).rgb; float Cv = reduce(Cc);\n\
-		vec3 Dc = texture2DRect(tex, texCoord[2]).rgb; float Dv = reduce(Dc);\n\
-		float Lv = reduce( texture2DRect(tex, texCoord[11]).rgb );\n\
+		float Hv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[4]).rgb );\n\
+		vec3 Cc = SAMPLE3_TEX_RECT(tex, texCoord[3]).rgb; float Cv = reduce(Cc);\n\
+		vec3 Dc = SAMPLE3_TEX_RECT(tex, texCoord[2]).rgb; float Dv = reduce(Dc);\n\
+		float Lv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[11]).rgb );\n\
 		\n\
-		float Nv = reduce( texture2DRect(tex, texCoord[14]).rgb );\n\
-		float Ov = reduce( texture2DRect(tex, texCoord[13]).rgb );\n\
+		float Nv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[14]).rgb );\n\
+		float Ov = reduce( SAMPLE3_TEX_RECT(tex, texCoord[13]).rgb );\n\
 		\n\
 		vec3 outA = Ac;\n\
 		vec3 outB = Bc;\n\
@@ -1268,15 +1247,13 @@ static const char *ScalarSuperEagle2xFragShader_110 = {"\
 			outD = mix(mix(Bc, Cc, 0.5), Dc, 0.75);\n\
 		}\n\
 		\n\
-		gl_FragColor.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalerLQ2xFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[9];\n\
+	VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	uniform sampler3D lut;\n\
 	\n\
@@ -1306,15 +1283,15 @@ static const char *ScalerLQ2xFragShader_110 = {"\
 	void main()\n\
 	{\n\
 		vec3 src[9];\n\
-		src[0] = texture2DRect(tex, texCoord[6]).rgb;\n\
-		src[1] = texture2DRect(tex, texCoord[7]).rgb;\n\
-		src[2] = texture2DRect(tex, texCoord[8]).rgb;\n\
-		src[3] = texture2DRect(tex, texCoord[5]).rgb;\n\
-		src[4] = texture2DRect(tex, texCoord[0]).rgb;\n\
-		src[5] = texture2DRect(tex, texCoord[1]).rgb;\n\
-		src[6] = texture2DRect(tex, texCoord[4]).rgb;\n\
-		src[7] = texture2DRect(tex, texCoord[3]).rgb;\n\
-		src[8] = texture2DRect(tex, texCoord[2]).rgb;\n\
+		src[0] = SAMPLE3_TEX_RECT(tex, texCoord[6]).rgb;\n\
+		src[1] = SAMPLE3_TEX_RECT(tex, texCoord[7]).rgb;\n\
+		src[2] = SAMPLE3_TEX_RECT(tex, texCoord[8]).rgb;\n\
+		src[3] = SAMPLE3_TEX_RECT(tex, texCoord[5]).rgb;\n\
+		src[4] = SAMPLE3_TEX_RECT(tex, texCoord[0]).rgb;\n\
+		src[5] = SAMPLE3_TEX_RECT(tex, texCoord[1]).rgb;\n\
+		src[6] = SAMPLE3_TEX_RECT(tex, texCoord[4]).rgb;\n\
+		src[7] = SAMPLE3_TEX_RECT(tex, texCoord[3]).rgb;\n\
+		src[8] = SAMPLE3_TEX_RECT(tex, texCoord[2]).rgb;\n\
 		\n\
 		float v[9];\n\
 		v[0] = reduce(src[0]);\n\
@@ -1343,23 +1320,21 @@ static const char *ScalerLQ2xFragShader_110 = {"\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
 		float k = (f.y*2.0) + f.x;\n\
-		vec3 p = texture3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/4.0, (compare+0.5)/16.0)).rgb;\n\
-		vec3 w = texture3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/4.0, (compare+0.5)/16.0)).rgb;\n\
+		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/4.0, (compare+0.5)/16.0));\n\
+		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/4.0, (compare+0.5)/16.0));\n\
 		\n\
 		vec3 dst[3];\n\
 		dst[0] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.r)), step(7.0*30.95/255.0, p.r)), step(6.0*30.95/255.0, p.r)), step(5.0*30.95/255.0, p.r)), step(4.0*30.95/255.0, p.r)), step(3.0*30.95/255.0, p.r)), step(2.0*30.95/255.0, p.r)), step(1.0*30.95/255.0, p.r));\n\
 		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
 		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
 		\n\
-		gl_FragColor.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalerLQ2xSFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[9];\n\
+	VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	uniform sampler3D lut;\n\
 	\n\
@@ -1384,15 +1359,15 @@ static const char *ScalerLQ2xSFragShader_110 = {"\
 	void main()\n\
 	{\n\
 		vec3 src[9];\n\
-		src[0] = texture2DRect(tex, texCoord[6]).rgb;\n\
-		src[1] = texture2DRect(tex, texCoord[7]).rgb;\n\
-		src[2] = texture2DRect(tex, texCoord[8]).rgb;\n\
-		src[3] = texture2DRect(tex, texCoord[5]).rgb;\n\
-		src[4] = texture2DRect(tex, texCoord[0]).rgb;\n\
-		src[5] = texture2DRect(tex, texCoord[1]).rgb;\n\
-		src[6] = texture2DRect(tex, texCoord[4]).rgb;\n\
-		src[7] = texture2DRect(tex, texCoord[3]).rgb;\n\
-		src[8] = texture2DRect(tex, texCoord[2]).rgb;\n\
+		src[0] = SAMPLE3_TEX_RECT(tex, texCoord[6]).rgb;\n\
+		src[1] = SAMPLE3_TEX_RECT(tex, texCoord[7]).rgb;\n\
+		src[2] = SAMPLE3_TEX_RECT(tex, texCoord[8]).rgb;\n\
+		src[3] = SAMPLE3_TEX_RECT(tex, texCoord[5]).rgb;\n\
+		src[4] = SAMPLE3_TEX_RECT(tex, texCoord[0]).rgb;\n\
+		src[5] = SAMPLE3_TEX_RECT(tex, texCoord[1]).rgb;\n\
+		src[6] = SAMPLE3_TEX_RECT(tex, texCoord[4]).rgb;\n\
+		src[7] = SAMPLE3_TEX_RECT(tex, texCoord[3]).rgb;\n\
+		src[8] = SAMPLE3_TEX_RECT(tex, texCoord[2]).rgb;\n\
 		\n\
 		float b[9];\n\
 		float minBright = 10.0;\n\
@@ -1417,23 +1392,21 @@ static const char *ScalerLQ2xSFragShader_110 = {"\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
 		float k = (f.y*2.0) + f.x;\n\
-		vec3 p = texture3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/4.0, 0.5/16.0)).rgb;\n\
-		vec3 w = texture3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/4.0, 0.5/16.0)).rgb;\n\
+		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/4.0, 0.5/16.0));\n\
+		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/4.0, 0.5/16.0));\n\
 		\n\
 		vec3 dst[3];\n\
 		dst[0] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.r)), step(7.0*30.95/255.0, p.r)), step(6.0*30.95/255.0, p.r)), step(5.0*30.95/255.0, p.r)), step(4.0*30.95/255.0, p.r)), step(3.0*30.95/255.0, p.r)), step(2.0*30.95/255.0, p.r)), step(1.0*30.95/255.0, p.r));\n\
 		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
 		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
 		\n\
-		gl_FragColor.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalerHQ2xFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[9];\n\
+	VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	uniform sampler3D lut;\n\
 	\n\
@@ -1469,15 +1442,15 @@ static const char *ScalerHQ2xFragShader_110 = {"\
 	void main()\n\
 	{\n\
 		vec3 src[9];\n\
-		src[0] = texture2DRect(tex, texCoord[6]).rgb;\n\
-		src[1] = texture2DRect(tex, texCoord[7]).rgb;\n\
-		src[2] = texture2DRect(tex, texCoord[8]).rgb;\n\
-		src[3] = texture2DRect(tex, texCoord[5]).rgb;\n\
-		src[4] = texture2DRect(tex, texCoord[0]).rgb;\n\
-		src[5] = texture2DRect(tex, texCoord[1]).rgb;\n\
-		src[6] = texture2DRect(tex, texCoord[4]).rgb;\n\
-		src[7] = texture2DRect(tex, texCoord[3]).rgb;\n\
-		src[8] = texture2DRect(tex, texCoord[2]).rgb;\n\
+		src[0] = SAMPLE3_TEX_RECT(tex, texCoord[6]).rgb;\n\
+		src[1] = SAMPLE3_TEX_RECT(tex, texCoord[7]).rgb;\n\
+		src[2] = SAMPLE3_TEX_RECT(tex, texCoord[8]).rgb;\n\
+		src[3] = SAMPLE3_TEX_RECT(tex, texCoord[5]).rgb;\n\
+		src[4] = SAMPLE3_TEX_RECT(tex, texCoord[0]).rgb;\n\
+		src[5] = SAMPLE3_TEX_RECT(tex, texCoord[1]).rgb;\n\
+		src[6] = SAMPLE3_TEX_RECT(tex, texCoord[4]).rgb;\n\
+		src[7] = SAMPLE3_TEX_RECT(tex, texCoord[3]).rgb;\n\
+		src[8] = SAMPLE3_TEX_RECT(tex, texCoord[2]).rgb;\n\
 		\n\
 		float pattern	= (float(InterpDiff(src[0], src[4])) * 1.0) +\n\
 						  (float(InterpDiff(src[1], src[4])) * 2.0) +\n\
@@ -1495,23 +1468,21 @@ static const char *ScalerHQ2xFragShader_110 = {"\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
 		float k = (f.y*2.0) + f.x;\n\
-		vec3 p = texture3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/4.0, (compare+0.5)/16.0)).rgb;\n\
-		vec3 w = texture3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/4.0, (compare+0.5)/16.0)).rgb;\n\
+		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/4.0, (compare+0.5)/16.0));\n\
+		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/4.0, (compare+0.5)/16.0));\n\
 		\n\
 		vec3 dst[3];\n\
 		dst[0] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.r)), step(7.0*30.95/255.0, p.r)), step(6.0*30.95/255.0, p.r)), step(5.0*30.95/255.0, p.r)), step(4.0*30.95/255.0, p.r)), step(3.0*30.95/255.0, p.r)), step(2.0*30.95/255.0, p.r)), step(1.0*30.95/255.0, p.r));\n\
 		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
 		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
 		\n\
-		gl_FragColor.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalerHQ2xSFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[9];\n\
+	VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	uniform sampler3D lut;\n\
 	\n\
@@ -1536,15 +1507,15 @@ static const char *ScalerHQ2xSFragShader_110 = {"\
 	void main()\n\
 	{\n\
 		vec3 src[9];\n\
-		src[0] = texture2DRect(tex, texCoord[6]).rgb;\n\
-		src[1] = texture2DRect(tex, texCoord[7]).rgb;\n\
-		src[2] = texture2DRect(tex, texCoord[8]).rgb;\n\
-		src[3] = texture2DRect(tex, texCoord[5]).rgb;\n\
-		src[4] = texture2DRect(tex, texCoord[0]).rgb;\n\
-		src[5] = texture2DRect(tex, texCoord[1]).rgb;\n\
-		src[6] = texture2DRect(tex, texCoord[4]).rgb;\n\
-		src[7] = texture2DRect(tex, texCoord[3]).rgb;\n\
-		src[8] = texture2DRect(tex, texCoord[2]).rgb;\n\
+		src[0] = SAMPLE3_TEX_RECT(tex, texCoord[6]).rgb;\n\
+		src[1] = SAMPLE3_TEX_RECT(tex, texCoord[7]).rgb;\n\
+		src[2] = SAMPLE3_TEX_RECT(tex, texCoord[8]).rgb;\n\
+		src[3] = SAMPLE3_TEX_RECT(tex, texCoord[5]).rgb;\n\
+		src[4] = SAMPLE3_TEX_RECT(tex, texCoord[0]).rgb;\n\
+		src[5] = SAMPLE3_TEX_RECT(tex, texCoord[1]).rgb;\n\
+		src[6] = SAMPLE3_TEX_RECT(tex, texCoord[4]).rgb;\n\
+		src[7] = SAMPLE3_TEX_RECT(tex, texCoord[3]).rgb;\n\
+		src[8] = SAMPLE3_TEX_RECT(tex, texCoord[2]).rgb;\n\
 		\n\
 		float b[9];\n\
 		float minBright = 10.0;\n\
@@ -1569,23 +1540,21 @@ static const char *ScalerHQ2xSFragShader_110 = {"\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
 		float k = (f.y*2.0) + f.x;\n\
-		vec3 p = texture3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/4.0, 0.5/16.0)).rgb;\n\
-		vec3 w = texture3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/4.0, 0.5/16.0)).rgb;\n\
+		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/4.0, 0.5/16.0));\n\
+		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/4.0, 0.5/16.0));\n\
 		\n\
 		vec3 dst[3];\n\
 		dst[0] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.r)), step(7.0*30.95/255.0, p.r)), step(6.0*30.95/255.0, p.r)), step(5.0*30.95/255.0, p.r)), step(4.0*30.95/255.0, p.r)), step(3.0*30.95/255.0, p.r)), step(2.0*30.95/255.0, p.r)), step(1.0*30.95/255.0, p.r));\n\
 		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
 		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
 		\n\
-		gl_FragColor.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalerHQ4xFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[9];\n\
+	VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	uniform sampler3D lut;\n\
 	\n\
@@ -1623,15 +1592,15 @@ static const char *ScalerHQ4xFragShader_110 = {"\
 	void main()\n\
 	{\n\
 		vec3 src[9];\n\
-		src[0] = texture2DRect(tex, texCoord[6]).rgb;\n\
-		src[1] = texture2DRect(tex, texCoord[7]).rgb;\n\
-		src[2] = texture2DRect(tex, texCoord[8]).rgb;\n\
-		src[3] = texture2DRect(tex, texCoord[5]).rgb;\n\
-		src[4] = texture2DRect(tex, texCoord[0]).rgb;\n\
-		src[5] = texture2DRect(tex, texCoord[1]).rgb;\n\
-		src[6] = texture2DRect(tex, texCoord[4]).rgb;\n\
-		src[7] = texture2DRect(tex, texCoord[3]).rgb;\n\
-		src[8] = texture2DRect(tex, texCoord[2]).rgb;\n\
+		src[0] = SAMPLE3_TEX_RECT(tex, texCoord[6]).rgb;\n\
+		src[1] = SAMPLE3_TEX_RECT(tex, texCoord[7]).rgb;\n\
+		src[2] = SAMPLE3_TEX_RECT(tex, texCoord[8]).rgb;\n\
+		src[3] = SAMPLE3_TEX_RECT(tex, texCoord[5]).rgb;\n\
+		src[4] = SAMPLE3_TEX_RECT(tex, texCoord[0]).rgb;\n\
+		src[5] = SAMPLE3_TEX_RECT(tex, texCoord[1]).rgb;\n\
+		src[6] = SAMPLE3_TEX_RECT(tex, texCoord[4]).rgb;\n\
+		src[7] = SAMPLE3_TEX_RECT(tex, texCoord[3]).rgb;\n\
+		src[8] = SAMPLE3_TEX_RECT(tex, texCoord[2]).rgb;\n\
 		\n\
 		float pattern	= (float(InterpDiff(src[0], src[4])) * 1.0) +\n\
 						  (float(InterpDiff(src[1], src[4])) * 2.0) +\n\
@@ -1649,23 +1618,21 @@ static const char *ScalerHQ4xFragShader_110 = {"\
 		\n\
 		vec2 f = mix( mix(vec2(0.0,0.0), vec2(1.0,1.0), step(0.25, fract(texCoord[0]))), mix(vec2(2.0,2.0), vec2(3.0,3.0), step(0.75, fract(texCoord[0]))), step(0.5, fract(texCoord[0])) );\n\
 		float k = (f.y*4.0) + f.x;\n\
-		vec3 p = texture3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/16.0, (compare+0.5)/16.0)).rgb;\n\
-		vec3 w = texture3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/16.0, (compare+0.5)/16.0)).rgb;\n\
+		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/16.0, (compare+0.5)/16.0));\n\
+		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/16.0, (compare+0.5)/16.0));\n\
 		\n\
 		vec3 dst[3];\n\
 		dst[0] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.r)), step(7.0*30.95/255.0, p.r)), step(6.0*30.95/255.0, p.r)), step(5.0*30.95/255.0, p.r)), step(4.0*30.95/255.0, p.r)), step(3.0*30.95/255.0, p.r)), step(2.0*30.95/255.0, p.r)), step(1.0*30.95/255.0, p.r));\n\
 		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
 		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
 		\n\
-		gl_FragColor.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *ScalerHQ4xSFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
-	\n\
-	varying vec2 texCoord[9];\n\
+	VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
 	uniform sampler3D lut;\n\
 	\n\
@@ -1692,15 +1659,15 @@ static const char *ScalerHQ4xSFragShader_110 = {"\
 	void main()\n\
 	{\n\
 		vec3 src[9];\n\
-		src[0] = texture2DRect(tex, texCoord[6]).rgb;\n\
-		src[1] = texture2DRect(tex, texCoord[7]).rgb;\n\
-		src[2] = texture2DRect(tex, texCoord[8]).rgb;\n\
-		src[3] = texture2DRect(tex, texCoord[5]).rgb;\n\
-		src[4] = texture2DRect(tex, texCoord[0]).rgb;\n\
-		src[5] = texture2DRect(tex, texCoord[1]).rgb;\n\
-		src[6] = texture2DRect(tex, texCoord[4]).rgb;\n\
-		src[7] = texture2DRect(tex, texCoord[3]).rgb;\n\
-		src[8] = texture2DRect(tex, texCoord[2]).rgb;\n\
+		src[0] = SAMPLE3_TEX_RECT(tex, texCoord[6]).rgb;\n\
+		src[1] = SAMPLE3_TEX_RECT(tex, texCoord[7]).rgb;\n\
+		src[2] = SAMPLE3_TEX_RECT(tex, texCoord[8]).rgb;\n\
+		src[3] = SAMPLE3_TEX_RECT(tex, texCoord[5]).rgb;\n\
+		src[4] = SAMPLE3_TEX_RECT(tex, texCoord[0]).rgb;\n\
+		src[5] = SAMPLE3_TEX_RECT(tex, texCoord[1]).rgb;\n\
+		src[6] = SAMPLE3_TEX_RECT(tex, texCoord[4]).rgb;\n\
+		src[7] = SAMPLE3_TEX_RECT(tex, texCoord[3]).rgb;\n\
+		src[8] = SAMPLE3_TEX_RECT(tex, texCoord[2]).rgb;\n\
 		\n\
 		float b[9];\n\
 		float minBright = 10.0;\n\
@@ -1725,21 +1692,20 @@ static const char *ScalerHQ4xSFragShader_110 = {"\
 		\n\
 		vec2 f = mix( mix(vec2(0.0,0.0), vec2(1.0,1.0), step(0.25, fract(texCoord[0]))), mix(vec2(2.0,2.0), vec2(3.0,3.0), step(0.75, fract(texCoord[0]))), step(0.5, fract(texCoord[0])) );\n\
 		float k = (f.y*4.0) + f.x;\n\
-		vec3 p = texture3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/16.0, 0.5/16.0)).rgb;\n\
-		vec3 w = texture3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/16.0, 0.5/16.0)).rgb;\n\
+		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/16.0, 0.5/16.0));\n\
+		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/16.0, 0.5/16.0));\n\
 		\n\
 		vec3 dst[3];\n\
 		dst[0] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.r)), step(7.0*30.95/255.0, p.r)), step(6.0*30.95/255.0, p.r)), step(5.0*30.95/255.0, p.r)), step(4.0*30.95/255.0, p.r)), step(3.0*30.95/255.0, p.r)), step(2.0*30.95/255.0, p.r)), step(1.0*30.95/255.0, p.r));\n\
 		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
 		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
 		\n\
-		gl_FragColor.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *Scaler2xBRZFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
 	#define BLEND_NONE 0\n\
 	#define BLEND_NORMAL 1\n\
 	#define BLEND_DOMINANT 2\n\
@@ -1750,9 +1716,9 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 	#define M_PI 3.1415926535897932384626433832795\n\
 	\n\
 #if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
-	varying vec2 texCoord[25];\n\
+	VARYING vec2 texCoord[25];\n\
 #else\n\
-	varying vec2 texCoord[16];\n\
+	VARYING vec2 texCoord[16];\n\
 #endif\n\
 	uniform sampler2DRect tex;\n\
 	\n\
@@ -1886,49 +1852,49 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 	{\n\
 #if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 		vec3 src[25];\n\
-		src[ 0] = texture2DRect(tex, texCoord[ 0]).rgb;\n\
-		src[ 1] = texture2DRect(tex, texCoord[ 1]).rgb;\n\
-		src[ 2] = texture2DRect(tex, texCoord[ 2]).rgb;\n\
-		src[ 3] = texture2DRect(tex, texCoord[ 3]).rgb;\n\
-		src[ 4] = texture2DRect(tex, texCoord[ 4]).rgb;\n\
-		src[ 5] = texture2DRect(tex, texCoord[ 5]).rgb;\n\
-		src[ 6] = texture2DRect(tex, texCoord[ 6]).rgb;\n\
-		src[ 7] = texture2DRect(tex, texCoord[ 7]).rgb;\n\
-		src[ 8] = texture2DRect(tex, texCoord[ 8]).rgb;\n\
-		src[ 9] = texture2DRect(tex, texCoord[ 9]).rgb;\n\
-		src[10] = texture2DRect(tex, texCoord[10]).rgb;\n\
-		src[11] = texture2DRect(tex, texCoord[11]).rgb;\n\
-		src[12] = texture2DRect(tex, texCoord[12]).rgb;\n\
-		src[13] = texture2DRect(tex, texCoord[13]).rgb;\n\
-		src[14] = texture2DRect(tex, texCoord[14]).rgb;\n\
-		src[15] = texture2DRect(tex, texCoord[15]).rgb;\n\
-		src[16] = texture2DRect(tex, texCoord[16]).rgb;\n\
-		src[17] = texture2DRect(tex, texCoord[17]).rgb;\n\
-		src[18] = texture2DRect(tex, texCoord[18]).rgb;\n\
-		src[19] = texture2DRect(tex, texCoord[19]).rgb;\n\
-		src[20] = texture2DRect(tex, texCoord[20]).rgb;\n\
-		src[21] = texture2DRect(tex, texCoord[21]).rgb;\n\
-		src[22] = texture2DRect(tex, texCoord[22]).rgb;\n\
-		src[23] = texture2DRect(tex, texCoord[23]).rgb;\n\
-		src[24] = texture2DRect(tex, texCoord[24]).rgb;\n\
+		src[ 0] = SAMPLE3_TEX_RECT(tex, texCoord[ 0]).rgb;\n\
+		src[ 1] = SAMPLE3_TEX_RECT(tex, texCoord[ 1]).rgb;\n\
+		src[ 2] = SAMPLE3_TEX_RECT(tex, texCoord[ 2]).rgb;\n\
+		src[ 3] = SAMPLE3_TEX_RECT(tex, texCoord[ 3]).rgb;\n\
+		src[ 4] = SAMPLE3_TEX_RECT(tex, texCoord[ 4]).rgb;\n\
+		src[ 5] = SAMPLE3_TEX_RECT(tex, texCoord[ 5]).rgb;\n\
+		src[ 6] = SAMPLE3_TEX_RECT(tex, texCoord[ 6]).rgb;\n\
+		src[ 7] = SAMPLE3_TEX_RECT(tex, texCoord[ 7]).rgb;\n\
+		src[ 8] = SAMPLE3_TEX_RECT(tex, texCoord[ 8]).rgb;\n\
+		src[ 9] = SAMPLE3_TEX_RECT(tex, texCoord[ 9]).rgb;\n\
+		src[10] = SAMPLE3_TEX_RECT(tex, texCoord[10]).rgb;\n\
+		src[11] = SAMPLE3_TEX_RECT(tex, texCoord[11]).rgb;\n\
+		src[12] = SAMPLE3_TEX_RECT(tex, texCoord[12]).rgb;\n\
+		src[13] = SAMPLE3_TEX_RECT(tex, texCoord[13]).rgb;\n\
+		src[14] = SAMPLE3_TEX_RECT(tex, texCoord[14]).rgb;\n\
+		src[15] = SAMPLE3_TEX_RECT(tex, texCoord[15]).rgb;\n\
+		src[16] = SAMPLE3_TEX_RECT(tex, texCoord[16]).rgb;\n\
+		src[17] = SAMPLE3_TEX_RECT(tex, texCoord[17]).rgb;\n\
+		src[18] = SAMPLE3_TEX_RECT(tex, texCoord[18]).rgb;\n\
+		src[19] = SAMPLE3_TEX_RECT(tex, texCoord[19]).rgb;\n\
+		src[20] = SAMPLE3_TEX_RECT(tex, texCoord[20]).rgb;\n\
+		src[21] = SAMPLE3_TEX_RECT(tex, texCoord[21]).rgb;\n\
+		src[22] = SAMPLE3_TEX_RECT(tex, texCoord[22]).rgb;\n\
+		src[23] = SAMPLE3_TEX_RECT(tex, texCoord[23]).rgb;\n\
+		src[24] = SAMPLE3_TEX_RECT(tex, texCoord[24]).rgb;\n\
 #else\n\
 		vec3 src[16];\n\
-		src[ 0] = texture2DRect(tex, texCoord[ 0]).rgb;\n\
-		src[ 1] = texture2DRect(tex, texCoord[ 1]).rgb;\n\
-		src[ 2] = texture2DRect(tex, texCoord[ 2]).rgb;\n\
-		src[ 3] = texture2DRect(tex, texCoord[ 3]).rgb;\n\
-		src[ 4] = texture2DRect(tex, texCoord[ 4]).rgb;\n\
-		src[ 5] = texture2DRect(tex, texCoord[ 5]).rgb;\n\
-		src[ 6] = texture2DRect(tex, texCoord[ 6]).rgb;\n\
-		src[ 7] = texture2DRect(tex, texCoord[ 7]).rgb;\n\
-		src[ 8] = texture2DRect(tex, texCoord[ 8]).rgb;\n\
-		src[ 9] = texture2DRect(tex, texCoord[ 9]).rgb;\n\
-		src[10] = texture2DRect(tex, texCoord[10]).rgb;\n\
-		src[11] = texture2DRect(tex, texCoord[11]).rgb;\n\
-		src[12] = texture2DRect(tex, texCoord[12]).rgb;\n\
-		src[13] = texture2DRect(tex, texCoord[13]).rgb;\n\
-		src[14] = texture2DRect(tex, texCoord[14]).rgb;\n\
-		src[15] = texture2DRect(tex, texCoord[15]).rgb;\n\
+		src[ 0] = SAMPLE3_TEX_RECT(tex, texCoord[ 0]).rgb;\n\
+		src[ 1] = SAMPLE3_TEX_RECT(tex, texCoord[ 1]).rgb;\n\
+		src[ 2] = SAMPLE3_TEX_RECT(tex, texCoord[ 2]).rgb;\n\
+		src[ 3] = SAMPLE3_TEX_RECT(tex, texCoord[ 3]).rgb;\n\
+		src[ 4] = SAMPLE3_TEX_RECT(tex, texCoord[ 4]).rgb;\n\
+		src[ 5] = SAMPLE3_TEX_RECT(tex, texCoord[ 5]).rgb;\n\
+		src[ 6] = SAMPLE3_TEX_RECT(tex, texCoord[ 6]).rgb;\n\
+		src[ 7] = SAMPLE3_TEX_RECT(tex, texCoord[ 7]).rgb;\n\
+		src[ 8] = SAMPLE3_TEX_RECT(tex, texCoord[ 8]).rgb;\n\
+		src[ 9] = SAMPLE3_TEX_RECT(tex, texCoord[ 9]).rgb;\n\
+		src[10] = SAMPLE3_TEX_RECT(tex, texCoord[10]).rgb;\n\
+		src[11] = SAMPLE3_TEX_RECT(tex, texCoord[11]).rgb;\n\
+		src[12] = SAMPLE3_TEX_RECT(tex, texCoord[12]).rgb;\n\
+		src[13] = SAMPLE3_TEX_RECT(tex, texCoord[13]).rgb;\n\
+		src[14] = SAMPLE3_TEX_RECT(tex, texCoord[14]).rgb;\n\
+		src[15] = SAMPLE3_TEX_RECT(tex, texCoord[15]).rgb;\n\
 #endif\n\
 		\n\
 		float v[9];\n\
@@ -1973,8 +1939,8 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 			float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
 			float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
 #else\n\
-			vec3 src17 = texture2DRect(tex, texCoord[0] + vec2(-2.0, 1.0)).rgb;\n\
-			vec3 src18 = texture2DRect(tex, texCoord[0] + vec2(-2.0, 0.0)).rgb;\n\
+			vec3 src17 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, 1.0)).rgb;\n\
+			vec3 src18 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, 0.0)).rgb;\n\
 			float dist_04_00 = DistYCbCr(src17  , src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
 			float dist_05_03 = DistYCbCr(src18  , src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
 #endif\n\
@@ -1994,8 +1960,8 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 			float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
 			float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
 #else\n\
-			vec3 src22 = texture2DRect(tex, texCoord[0] + vec2(0.0, -2.0)).rgb;\n\
-			vec3 src23 = texture2DRect(tex, texCoord[0] + vec2(1.0, -2.0)).rgb;\n\
+			vec3 src22 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(0.0, -2.0)).rgb;\n\
+			vec3 src23 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(1.0, -2.0)).rgb;\n\
 			float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src23  ) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
 			float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src22  , src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
 #endif\n\
@@ -2015,10 +1981,10 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 			float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
 			float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
 #else\n\
-			vec3 src18 = texture2DRect(tex, texCoord[0] + vec2(-2.0,  0.0)).rgb;\n\
-			vec3 src19 = texture2DRect(tex, texCoord[0] + vec2(-2.0, -1.0)).rgb;\n\
-			vec3 src21 = texture2DRect(tex, texCoord[0] + vec2(-1.0, -2.0)).rgb;\n\
-			vec3 src22 = texture2DRect(tex, texCoord[0] + vec2( 0.0, -2.0)).rgb;\n\
+			vec3 src18 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0,  0.0)).rgb;\n\
+			vec3 src19 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, -1.0)).rgb;\n\
+			vec3 src21 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-1.0, -2.0)).rgb;\n\
+			vec3 src22 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2( 0.0, -2.0)).rgb;\n\
 			float dist_05_07 = DistYCbCr(src18  , src[ 6]) + DistYCbCr(src[ 6], src22  ) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
 			float dist_06_00 = DistYCbCr(src19  , src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src21  , src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
 #endif\n\
@@ -2169,14 +2135,13 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 		}\n\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		gl_FragColor.rgb =	mix( mix(dst[0], dst[1], f.x),\n\
-							     mix(dst[3], dst[2], f.x), f.y );\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb =	mix( mix(dst[0], dst[1], f.x),\n\
+								     mix(dst[3], dst[2], f.x), f.y );\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *Scaler3xBRZFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
 	#define BLEND_NONE 0\n\
 	#define BLEND_NORMAL 1\n\
 	#define BLEND_DOMINANT 2\n\
@@ -2187,9 +2152,9 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 	#define M_PI 3.1415926535897932384626433832795\n\
 	\n\
 #if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
-	varying vec2 texCoord[25];\n\
+	VARYING vec2 texCoord[25];\n\
 #else\n\
-	varying vec2 texCoord[16];\n\
+	VARYING vec2 texCoord[16];\n\
 #endif\n\
 	uniform sampler2DRect tex;\n\
 	\n\
@@ -2334,49 +2299,49 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 	{\n\
 #if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 		vec3 src[25];\n\
-		src[ 0] = texture2DRect(tex, texCoord[ 0]).rgb;\n\
-		src[ 1] = texture2DRect(tex, texCoord[ 1]).rgb;\n\
-		src[ 2] = texture2DRect(tex, texCoord[ 2]).rgb;\n\
-		src[ 3] = texture2DRect(tex, texCoord[ 3]).rgb;\n\
-		src[ 4] = texture2DRect(tex, texCoord[ 4]).rgb;\n\
-		src[ 5] = texture2DRect(tex, texCoord[ 5]).rgb;\n\
-		src[ 6] = texture2DRect(tex, texCoord[ 6]).rgb;\n\
-		src[ 7] = texture2DRect(tex, texCoord[ 7]).rgb;\n\
-		src[ 8] = texture2DRect(tex, texCoord[ 8]).rgb;\n\
-		src[ 9] = texture2DRect(tex, texCoord[ 9]).rgb;\n\
-		src[10] = texture2DRect(tex, texCoord[10]).rgb;\n\
-		src[11] = texture2DRect(tex, texCoord[11]).rgb;\n\
-		src[12] = texture2DRect(tex, texCoord[12]).rgb;\n\
-		src[13] = texture2DRect(tex, texCoord[13]).rgb;\n\
-		src[14] = texture2DRect(tex, texCoord[14]).rgb;\n\
-		src[15] = texture2DRect(tex, texCoord[15]).rgb;\n\
-		src[16] = texture2DRect(tex, texCoord[16]).rgb;\n\
-		src[17] = texture2DRect(tex, texCoord[17]).rgb;\n\
-		src[18] = texture2DRect(tex, texCoord[18]).rgb;\n\
-		src[19] = texture2DRect(tex, texCoord[19]).rgb;\n\
-		src[20] = texture2DRect(tex, texCoord[20]).rgb;\n\
-		src[21] = texture2DRect(tex, texCoord[21]).rgb;\n\
-		src[22] = texture2DRect(tex, texCoord[22]).rgb;\n\
-		src[23] = texture2DRect(tex, texCoord[23]).rgb;\n\
-		src[24] = texture2DRect(tex, texCoord[24]).rgb;\n\
+		src[ 0] = SAMPLE3_TEX_RECT(tex, texCoord[ 0]);\n\
+		src[ 1] = SAMPLE3_TEX_RECT(tex, texCoord[ 1]);\n\
+		src[ 2] = SAMPLE3_TEX_RECT(tex, texCoord[ 2]);\n\
+		src[ 3] = SAMPLE3_TEX_RECT(tex, texCoord[ 3]);\n\
+		src[ 4] = SAMPLE3_TEX_RECT(tex, texCoord[ 4]);\n\
+		src[ 5] = SAMPLE3_TEX_RECT(tex, texCoord[ 5]);\n\
+		src[ 6] = SAMPLE3_TEX_RECT(tex, texCoord[ 6]);\n\
+		src[ 7] = SAMPLE3_TEX_RECT(tex, texCoord[ 7]);\n\
+		src[ 8] = SAMPLE3_TEX_RECT(tex, texCoord[ 8]);\n\
+		src[ 9] = SAMPLE3_TEX_RECT(tex, texCoord[ 9]);\n\
+		src[10] = SAMPLE3_TEX_RECT(tex, texCoord[10]);\n\
+		src[11] = SAMPLE3_TEX_RECT(tex, texCoord[11]);\n\
+		src[12] = SAMPLE3_TEX_RECT(tex, texCoord[12]);\n\
+		src[13] = SAMPLE3_TEX_RECT(tex, texCoord[13]);\n\
+		src[14] = SAMPLE3_TEX_RECT(tex, texCoord[14]);\n\
+		src[15] = SAMPLE3_TEX_RECT(tex, texCoord[15]);\n\
+		src[16] = SAMPLE3_TEX_RECT(tex, texCoord[16]);\n\
+		src[17] = SAMPLE3_TEX_RECT(tex, texCoord[17]);\n\
+		src[18] = SAMPLE3_TEX_RECT(tex, texCoord[18]);\n\
+		src[19] = SAMPLE3_TEX_RECT(tex, texCoord[19]);\n\
+		src[20] = SAMPLE3_TEX_RECT(tex, texCoord[20]);\n\
+		src[21] = SAMPLE3_TEX_RECT(tex, texCoord[21]);\n\
+		src[22] = SAMPLE3_TEX_RECT(tex, texCoord[22]);\n\
+		src[23] = SAMPLE3_TEX_RECT(tex, texCoord[23]);\n\
+		src[24] = SAMPLE3_TEX_RECT(tex, texCoord[24]);\n\
 #else\n\
 		vec3 src[16];\n\
-		src[ 0] = texture2DRect(tex, texCoord[ 0]).rgb;\n\
-		src[ 1] = texture2DRect(tex, texCoord[ 1]).rgb;\n\
-		src[ 2] = texture2DRect(tex, texCoord[ 2]).rgb;\n\
-		src[ 3] = texture2DRect(tex, texCoord[ 3]).rgb;\n\
-		src[ 4] = texture2DRect(tex, texCoord[ 4]).rgb;\n\
-		src[ 5] = texture2DRect(tex, texCoord[ 5]).rgb;\n\
-		src[ 6] = texture2DRect(tex, texCoord[ 6]).rgb;\n\
-		src[ 7] = texture2DRect(tex, texCoord[ 7]).rgb;\n\
-		src[ 8] = texture2DRect(tex, texCoord[ 8]).rgb;\n\
-		src[ 9] = texture2DRect(tex, texCoord[ 9]).rgb;\n\
-		src[10] = texture2DRect(tex, texCoord[10]).rgb;\n\
-		src[11] = texture2DRect(tex, texCoord[11]).rgb;\n\
-		src[12] = texture2DRect(tex, texCoord[12]).rgb;\n\
-		src[13] = texture2DRect(tex, texCoord[13]).rgb;\n\
-		src[14] = texture2DRect(tex, texCoord[14]).rgb;\n\
-		src[15] = texture2DRect(tex, texCoord[15]).rgb;\n\
+		src[ 0] = SAMPLE3_TEX_RECT(tex, texCoord[ 0]);\n\
+		src[ 1] = SAMPLE3_TEX_RECT(tex, texCoord[ 1]);\n\
+		src[ 2] = SAMPLE3_TEX_RECT(tex, texCoord[ 2]);\n\
+		src[ 3] = SAMPLE3_TEX_RECT(tex, texCoord[ 3]);\n\
+		src[ 4] = SAMPLE3_TEX_RECT(tex, texCoord[ 4]);\n\
+		src[ 5] = SAMPLE3_TEX_RECT(tex, texCoord[ 5]);\n\
+		src[ 6] = SAMPLE3_TEX_RECT(tex, texCoord[ 6]);\n\
+		src[ 7] = SAMPLE3_TEX_RECT(tex, texCoord[ 7]);\n\
+		src[ 8] = SAMPLE3_TEX_RECT(tex, texCoord[ 8]);\n\
+		src[ 9] = SAMPLE3_TEX_RECT(tex, texCoord[ 9]);\n\
+		src[10] = SAMPLE3_TEX_RECT(tex, texCoord[10]);\n\
+		src[11] = SAMPLE3_TEX_RECT(tex, texCoord[11]);\n\
+		src[12] = SAMPLE3_TEX_RECT(tex, texCoord[12]);\n\
+		src[13] = SAMPLE3_TEX_RECT(tex, texCoord[13]);\n\
+		src[14] = SAMPLE3_TEX_RECT(tex, texCoord[14]);\n\
+		src[15] = SAMPLE3_TEX_RECT(tex, texCoord[15]);\n\
 #endif\n\
 		\n\
 		float v[9];\n\
@@ -2421,8 +2386,8 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 			float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
 			float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
 #else\n\
-			vec3 src17 = texture2DRect(tex, texCoord[0] + vec2(-2.0, 1.0)).rgb;\n\
-			vec3 src18 = texture2DRect(tex, texCoord[0] + vec2(-2.0, 0.0)).rgb;\n\
+			vec3 src17 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, 1.0));\n\
+			vec3 src18 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, 0.0));\n\
 			float dist_04_00 = DistYCbCr(src17  , src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
 			float dist_05_03 = DistYCbCr(src18  , src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
 #endif\n\
@@ -2442,8 +2407,8 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 			float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
 			float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
 #else\n\
-			vec3 src22 = texture2DRect(tex, texCoord[0] + vec2(0.0, -2.0)).rgb;\n\
-			vec3 src23 = texture2DRect(tex, texCoord[0] + vec2(1.0, -2.0)).rgb;\n\
+			vec3 src22 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(0.0, -2.0));\n\
+			vec3 src23 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(1.0, -2.0));\n\
 			float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src23  ) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
 			float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src22  , src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
 #endif\n\
@@ -2463,10 +2428,10 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 			float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
 			float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
 #else\n\
-			vec3 src18 = texture2DRect(tex, texCoord[0] + vec2(-2.0,  0.0)).rgb;\n\
-			vec3 src19 = texture2DRect(tex, texCoord[0] + vec2(-2.0, -1.0)).rgb;\n\
-			vec3 src21 = texture2DRect(tex, texCoord[0] + vec2(-1.0, -2.0)).rgb;\n\
-			vec3 src22 = texture2DRect(tex, texCoord[0] + vec2( 0.0, -2.0)).rgb;\n\
+			vec3 src18 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0,  0.0));\n\
+			vec3 src19 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, -1.0));\n\
+			vec3 src21 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-1.0, -2.0));\n\
+			vec3 src22 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2( 0.0, -2.0));\n\
 			float dist_05_07 = DistYCbCr(src18  , src[ 6]) + DistYCbCr(src[ 6], src22  ) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
 			float dist_06_00 = DistYCbCr(src19  , src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src21  , src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
 #endif\n\
@@ -2651,16 +2616,15 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 		}\n\
 		\n\
 		vec2 f = fract(texCoord[0]);\n\
-		gl_FragColor.rgb =	mix( mix(     dst[6], mix(dst[7], dst[8], step(0.6, f.x)), step(0.3, f.x)),\n\
-							     mix( mix(dst[5], mix(dst[0], dst[1], step(0.6, f.x)), step(0.3, f.x)),\n\
-							          mix(dst[4], mix(dst[3], dst[2], step(0.6, f.x)), step(0.3, f.x)), step(0.6, f.y)),\n\
-							step(0.3, f.y) );\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb =	mix( mix(     dst[6], mix(dst[7], dst[8], step(0.6, f.x)), step(0.3, f.x)),\n\
+							         mix( mix(dst[5], mix(dst[0], dst[1], step(0.6, f.x)), step(0.3, f.x)),\n\
+							              mix(dst[4], mix(dst[3], dst[2], step(0.6, f.x)), step(0.3, f.x)), step(0.6, f.y)),\n\
+								step(0.3, f.y) );\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *Scaler4xBRZFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
 	#define BLEND_NONE 0\n\
 	#define BLEND_NORMAL 1\n\
 	#define BLEND_DOMINANT 2\n\
@@ -2671,9 +2635,9 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 	#define M_PI 3.1415926535897932384626433832795\n\
 	\n\
 #if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
-	varying vec2 texCoord[25];\n\
+	VARYING vec2 texCoord[25];\n\
 #else\n\
-	varying vec2 texCoord[16];\n\
+	VARYING vec2 texCoord[16];\n\
 #endif\n\
 	uniform sampler2DRect tex;\n\
 	\n\
@@ -2831,49 +2795,49 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 	{\n\
 #if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 		vec3 src[25];\n\
-		src[ 0] = texture2DRect(tex, texCoord[ 0]).rgb;\n\
-		src[ 1] = texture2DRect(tex, texCoord[ 1]).rgb;\n\
-		src[ 2] = texture2DRect(tex, texCoord[ 2]).rgb;\n\
-		src[ 3] = texture2DRect(tex, texCoord[ 3]).rgb;\n\
-		src[ 4] = texture2DRect(tex, texCoord[ 4]).rgb;\n\
-		src[ 5] = texture2DRect(tex, texCoord[ 5]).rgb;\n\
-		src[ 6] = texture2DRect(tex, texCoord[ 6]).rgb;\n\
-		src[ 7] = texture2DRect(tex, texCoord[ 7]).rgb;\n\
-		src[ 8] = texture2DRect(tex, texCoord[ 8]).rgb;\n\
-		src[ 9] = texture2DRect(tex, texCoord[ 9]).rgb;\n\
-		src[10] = texture2DRect(tex, texCoord[10]).rgb;\n\
-		src[11] = texture2DRect(tex, texCoord[11]).rgb;\n\
-		src[12] = texture2DRect(tex, texCoord[12]).rgb;\n\
-		src[13] = texture2DRect(tex, texCoord[13]).rgb;\n\
-		src[14] = texture2DRect(tex, texCoord[14]).rgb;\n\
-		src[15] = texture2DRect(tex, texCoord[15]).rgb;\n\
-		src[16] = texture2DRect(tex, texCoord[16]).rgb;\n\
-		src[17] = texture2DRect(tex, texCoord[17]).rgb;\n\
-		src[18] = texture2DRect(tex, texCoord[18]).rgb;\n\
-		src[19] = texture2DRect(tex, texCoord[19]).rgb;\n\
-		src[20] = texture2DRect(tex, texCoord[20]).rgb;\n\
-		src[21] = texture2DRect(tex, texCoord[21]).rgb;\n\
-		src[22] = texture2DRect(tex, texCoord[22]).rgb;\n\
-		src[23] = texture2DRect(tex, texCoord[23]).rgb;\n\
-		src[24] = texture2DRect(tex, texCoord[24]).rgb;\n\
+		src[ 0] = SAMPLE3_TEX_RECT(tex, texCoord[ 0]).rgb;\n\
+		src[ 1] = SAMPLE3_TEX_RECT(tex, texCoord[ 1]).rgb;\n\
+		src[ 2] = SAMPLE3_TEX_RECT(tex, texCoord[ 2]).rgb;\n\
+		src[ 3] = SAMPLE3_TEX_RECT(tex, texCoord[ 3]).rgb;\n\
+		src[ 4] = SAMPLE3_TEX_RECT(tex, texCoord[ 4]).rgb;\n\
+		src[ 5] = SAMPLE3_TEX_RECT(tex, texCoord[ 5]).rgb;\n\
+		src[ 6] = SAMPLE3_TEX_RECT(tex, texCoord[ 6]).rgb;\n\
+		src[ 7] = SAMPLE3_TEX_RECT(tex, texCoord[ 7]).rgb;\n\
+		src[ 8] = SAMPLE3_TEX_RECT(tex, texCoord[ 8]).rgb;\n\
+		src[ 9] = SAMPLE3_TEX_RECT(tex, texCoord[ 9]).rgb;\n\
+		src[10] = SAMPLE3_TEX_RECT(tex, texCoord[10]).rgb;\n\
+		src[11] = SAMPLE3_TEX_RECT(tex, texCoord[11]).rgb;\n\
+		src[12] = SAMPLE3_TEX_RECT(tex, texCoord[12]).rgb;\n\
+		src[13] = SAMPLE3_TEX_RECT(tex, texCoord[13]).rgb;\n\
+		src[14] = SAMPLE3_TEX_RECT(tex, texCoord[14]).rgb;\n\
+		src[15] = SAMPLE3_TEX_RECT(tex, texCoord[15]).rgb;\n\
+		src[16] = SAMPLE3_TEX_RECT(tex, texCoord[16]).rgb;\n\
+		src[17] = SAMPLE3_TEX_RECT(tex, texCoord[17]).rgb;\n\
+		src[18] = SAMPLE3_TEX_RECT(tex, texCoord[18]).rgb;\n\
+		src[19] = SAMPLE3_TEX_RECT(tex, texCoord[19]).rgb;\n\
+		src[20] = SAMPLE3_TEX_RECT(tex, texCoord[20]).rgb;\n\
+		src[21] = SAMPLE3_TEX_RECT(tex, texCoord[21]).rgb;\n\
+		src[22] = SAMPLE3_TEX_RECT(tex, texCoord[22]).rgb;\n\
+		src[23] = SAMPLE3_TEX_RECT(tex, texCoord[23]).rgb;\n\
+		src[24] = SAMPLE3_TEX_RECT(tex, texCoord[24]).rgb;\n\
 #else\n\
 		vec3 src[16];\n\
-		src[ 0] = texture2DRect(tex, texCoord[ 0]).rgb;\n\
-		src[ 1] = texture2DRect(tex, texCoord[ 1]).rgb;\n\
-		src[ 2] = texture2DRect(tex, texCoord[ 2]).rgb;\n\
-		src[ 3] = texture2DRect(tex, texCoord[ 3]).rgb;\n\
-		src[ 4] = texture2DRect(tex, texCoord[ 4]).rgb;\n\
-		src[ 5] = texture2DRect(tex, texCoord[ 5]).rgb;\n\
-		src[ 6] = texture2DRect(tex, texCoord[ 6]).rgb;\n\
-		src[ 7] = texture2DRect(tex, texCoord[ 7]).rgb;\n\
-		src[ 8] = texture2DRect(tex, texCoord[ 8]).rgb;\n\
-		src[ 9] = texture2DRect(tex, texCoord[ 9]).rgb;\n\
-		src[10] = texture2DRect(tex, texCoord[10]).rgb;\n\
-		src[11] = texture2DRect(tex, texCoord[11]).rgb;\n\
-		src[12] = texture2DRect(tex, texCoord[12]).rgb;\n\
-		src[13] = texture2DRect(tex, texCoord[13]).rgb;\n\
-		src[14] = texture2DRect(tex, texCoord[14]).rgb;\n\
-		src[15] = texture2DRect(tex, texCoord[15]).rgb;\n\
+		src[ 0] = SAMPLE3_TEX_RECT(tex, texCoord[ 0]).rgb;\n\
+		src[ 1] = SAMPLE3_TEX_RECT(tex, texCoord[ 1]).rgb;\n\
+		src[ 2] = SAMPLE3_TEX_RECT(tex, texCoord[ 2]).rgb;\n\
+		src[ 3] = SAMPLE3_TEX_RECT(tex, texCoord[ 3]).rgb;\n\
+		src[ 4] = SAMPLE3_TEX_RECT(tex, texCoord[ 4]).rgb;\n\
+		src[ 5] = SAMPLE3_TEX_RECT(tex, texCoord[ 5]).rgb;\n\
+		src[ 6] = SAMPLE3_TEX_RECT(tex, texCoord[ 6]).rgb;\n\
+		src[ 7] = SAMPLE3_TEX_RECT(tex, texCoord[ 7]).rgb;\n\
+		src[ 8] = SAMPLE3_TEX_RECT(tex, texCoord[ 8]).rgb;\n\
+		src[ 9] = SAMPLE3_TEX_RECT(tex, texCoord[ 9]).rgb;\n\
+		src[10] = SAMPLE3_TEX_RECT(tex, texCoord[10]).rgb;\n\
+		src[11] = SAMPLE3_TEX_RECT(tex, texCoord[11]).rgb;\n\
+		src[12] = SAMPLE3_TEX_RECT(tex, texCoord[12]).rgb;\n\
+		src[13] = SAMPLE3_TEX_RECT(tex, texCoord[13]).rgb;\n\
+		src[14] = SAMPLE3_TEX_RECT(tex, texCoord[14]).rgb;\n\
+		src[15] = SAMPLE3_TEX_RECT(tex, texCoord[15]).rgb;\n\
 #endif\n\
 		\n\
 		float v[9];\n\
@@ -2918,8 +2882,8 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 			float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
 			float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
 #else\n\
-			vec3 src17 = texture2DRect(tex, texCoord[0] + vec2(-2.0, 1.0)).rgb;\n\
-			vec3 src18 = texture2DRect(tex, texCoord[0] + vec2(-2.0, 0.0)).rgb;\n\
+			vec3 src17 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, 1.0)).rgb;\n\
+			vec3 src18 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, 0.0)).rgb;\n\
 			float dist_04_00 = DistYCbCr(src17  , src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
 			float dist_05_03 = DistYCbCr(src18  , src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
 #endif\n\
@@ -2939,8 +2903,8 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 			float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
 			float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
 #else\n\
-			vec3 src22 = texture2DRect(tex, texCoord[0] + vec2(0.0, -2.0)).rgb;\n\
-			vec3 src23 = texture2DRect(tex, texCoord[0] + vec2(1.0, -2.0)).rgb;\n\
+			vec3 src22 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(0.0, -2.0)).rgb;\n\
+			vec3 src23 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(1.0, -2.0)).rgb;\n\
 			float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src23  ) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
 			float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src22  , src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
 #endif\n\
@@ -2960,10 +2924,10 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 			float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
 			float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
 #else\n\
-			vec3 src18 = texture2DRect(tex, texCoord[0] + vec2(-2.0,  0.0)).rgb;\n\
-			vec3 src19 = texture2DRect(tex, texCoord[0] + vec2(-2.0, -1.0)).rgb;\n\
-			vec3 src21 = texture2DRect(tex, texCoord[0] + vec2(-1.0, -2.0)).rgb;\n\
-			vec3 src22 = texture2DRect(tex, texCoord[0] + vec2( 0.0, -2.0)).rgb;\n\
+			vec3 src18 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0,  0.0)).rgb;\n\
+			vec3 src19 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, -1.0)).rgb;\n\
+			vec3 src21 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-1.0, -2.0)).rgb;\n\
+			vec3 src22 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2( 0.0, -2.0)).rgb;\n\
 			float dist_05_07 = DistYCbCr(src18  , src[ 6]) + DistYCbCr(src[ 6], src22  ) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
 			float dist_06_00 = DistYCbCr(src19  , src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src21  , src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
 #endif\n\
@@ -3209,17 +3173,16 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 		}\n\
 		\n\
 		vec2 f = fract(texCoord[0]);\n\
-		gl_FragColor.rgb =	mix( mix( mix( mix(dst[ 6], dst[ 7], step(0.25, f.x)), mix(dst[ 8], dst[ 9], step(0.75, f.x)), step(0.50, f.x)),\n\
-						              mix( mix(dst[ 5], dst[ 0], step(0.25, f.x)), mix(dst[ 1], dst[10], step(0.75, f.x)), step(0.50, f.x)), step(0.25, f.y)),\n\
-						         mix( mix( mix(dst[ 4], dst[ 3], step(0.25, f.x)), mix(dst[ 2], dst[11], step(0.75, f.x)), step(0.50, f.x)),\n\
-						              mix( mix(dst[15], dst[14], step(0.25, f.x)), mix(dst[13], dst[12], step(0.75, f.x)), step(0.50, f.x)), step(0.75, f.y)),\n\
-							step(0.50, f.y));\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb =	mix( mix( mix( mix(dst[ 6], dst[ 7], step(0.25, f.x)), mix(dst[ 8], dst[ 9], step(0.75, f.x)), step(0.50, f.x)),\n\
+							              mix( mix(dst[ 5], dst[ 0], step(0.25, f.x)), mix(dst[ 1], dst[10], step(0.75, f.x)), step(0.50, f.x)), step(0.25, f.y)),\n\
+							         mix( mix( mix(dst[ 4], dst[ 3], step(0.25, f.x)), mix(dst[ 2], dst[11], step(0.75, f.x)), step(0.50, f.x)),\n\
+							              mix( mix(dst[15], dst[14], step(0.25, f.x)), mix(dst[13], dst[12], step(0.75, f.x)), step(0.50, f.x)), step(0.75, f.y)),\n\
+								step(0.50, f.y));\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
 static const char *Scaler5xBRZFragShader_110 = {"\
-	#extension GL_ARB_texture_rectangle : require\n\
 	#define BLEND_NONE 0\n\
 	#define BLEND_NORMAL 1\n\
 	#define BLEND_DOMINANT 2\n\
@@ -3235,7 +3198,7 @@ static const char *Scaler5xBRZFragShader_110 = {"\
 	// heftiest of all of them. Trust me -- older GPUs just can't\n\
 	// handle this one.\n\
 	\n\
-	varying vec2 texCoord[25];\n\
+	VARYING vec2 texCoord[25];\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	float reduce(const vec3 color)\n\
@@ -3374,31 +3337,31 @@ static const char *Scaler5xBRZFragShader_110 = {"\
 	void main()\n\
 	{\n\
 		vec3 src[25];\n\
-		src[ 0] = texture2DRect(tex, texCoord[ 0]).rgb;\n\
-		src[ 1] = texture2DRect(tex, texCoord[ 1]).rgb;\n\
-		src[ 2] = texture2DRect(tex, texCoord[ 2]).rgb;\n\
-		src[ 3] = texture2DRect(tex, texCoord[ 3]).rgb;\n\
-		src[ 4] = texture2DRect(tex, texCoord[ 4]).rgb;\n\
-		src[ 5] = texture2DRect(tex, texCoord[ 5]).rgb;\n\
-		src[ 6] = texture2DRect(tex, texCoord[ 6]).rgb;\n\
-		src[ 7] = texture2DRect(tex, texCoord[ 7]).rgb;\n\
-		src[ 8] = texture2DRect(tex, texCoord[ 8]).rgb;\n\
-		src[ 9] = texture2DRect(tex, texCoord[ 9]).rgb;\n\
-		src[10] = texture2DRect(tex, texCoord[10]).rgb;\n\
-		src[11] = texture2DRect(tex, texCoord[11]).rgb;\n\
-		src[12] = texture2DRect(tex, texCoord[12]).rgb;\n\
-		src[13] = texture2DRect(tex, texCoord[13]).rgb;\n\
-		src[14] = texture2DRect(tex, texCoord[14]).rgb;\n\
-		src[15] = texture2DRect(tex, texCoord[15]).rgb;\n\
-		src[16] = texture2DRect(tex, texCoord[16]).rgb;\n\
-		src[17] = texture2DRect(tex, texCoord[17]).rgb;\n\
-		src[18] = texture2DRect(tex, texCoord[18]).rgb;\n\
-		src[19] = texture2DRect(tex, texCoord[19]).rgb;\n\
-		src[20] = texture2DRect(tex, texCoord[20]).rgb;\n\
-		src[21] = texture2DRect(tex, texCoord[21]).rgb;\n\
-		src[22] = texture2DRect(tex, texCoord[22]).rgb;\n\
-		src[23] = texture2DRect(tex, texCoord[23]).rgb;\n\
-		src[24] = texture2DRect(tex, texCoord[24]).rgb;\n\
+		src[ 0] = SAMPLE3_TEX_RECT(tex, texCoord[ 0]).rgb;\n\
+		src[ 1] = SAMPLE3_TEX_RECT(tex, texCoord[ 1]).rgb;\n\
+		src[ 2] = SAMPLE3_TEX_RECT(tex, texCoord[ 2]).rgb;\n\
+		src[ 3] = SAMPLE3_TEX_RECT(tex, texCoord[ 3]).rgb;\n\
+		src[ 4] = SAMPLE3_TEX_RECT(tex, texCoord[ 4]).rgb;\n\
+		src[ 5] = SAMPLE3_TEX_RECT(tex, texCoord[ 5]).rgb;\n\
+		src[ 6] = SAMPLE3_TEX_RECT(tex, texCoord[ 6]).rgb;\n\
+		src[ 7] = SAMPLE3_TEX_RECT(tex, texCoord[ 7]).rgb;\n\
+		src[ 8] = SAMPLE3_TEX_RECT(tex, texCoord[ 8]).rgb;\n\
+		src[ 9] = SAMPLE3_TEX_RECT(tex, texCoord[ 9]).rgb;\n\
+		src[10] = SAMPLE3_TEX_RECT(tex, texCoord[10]).rgb;\n\
+		src[11] = SAMPLE3_TEX_RECT(tex, texCoord[11]).rgb;\n\
+		src[12] = SAMPLE3_TEX_RECT(tex, texCoord[12]).rgb;\n\
+		src[13] = SAMPLE3_TEX_RECT(tex, texCoord[13]).rgb;\n\
+		src[14] = SAMPLE3_TEX_RECT(tex, texCoord[14]).rgb;\n\
+		src[15] = SAMPLE3_TEX_RECT(tex, texCoord[15]).rgb;\n\
+		src[16] = SAMPLE3_TEX_RECT(tex, texCoord[16]).rgb;\n\
+		src[17] = SAMPLE3_TEX_RECT(tex, texCoord[17]).rgb;\n\
+		src[18] = SAMPLE3_TEX_RECT(tex, texCoord[18]).rgb;\n\
+		src[19] = SAMPLE3_TEX_RECT(tex, texCoord[19]).rgb;\n\
+		src[20] = SAMPLE3_TEX_RECT(tex, texCoord[20]).rgb;\n\
+		src[21] = SAMPLE3_TEX_RECT(tex, texCoord[21]).rgb;\n\
+		src[22] = SAMPLE3_TEX_RECT(tex, texCoord[22]).rgb;\n\
+		src[23] = SAMPLE3_TEX_RECT(tex, texCoord[23]).rgb;\n\
+		src[24] = SAMPLE3_TEX_RECT(tex, texCoord[24]).rgb;\n\
 		\n\
 		float v[9];\n\
 		v[0] = reduce(src[0]);\n\
@@ -3603,14 +3566,14 @@ static const char *Scaler5xBRZFragShader_110 = {"\
 		}\n\
 		\n\
 		vec2 f = fract(texCoord[0]);\n\
-		gl_FragColor.rgb =	mix(            mix( dst[20], mix( mix(dst[21], dst[22], step(0.40, f.x)), mix(dst[23], dst[24], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ),\n\
-						         mix ( mix( mix( dst[19], mix( mix(dst[ 6], dst[ 7], step(0.40, f.x)), mix(dst[ 8], dst[ 9], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ),\n\
-						                    mix( dst[18], mix( mix(dst[ 5], dst[ 0], step(0.40, f.x)), mix(dst[ 1], dst[10], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ), step(0.40, f.y)),\n\
-						               mix( mix( dst[17], mix( mix(dst[ 4], dst[ 3], step(0.40, f.x)), mix(dst[ 2], dst[11], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ),\n\
-						                    mix( dst[16], mix( mix(dst[15], dst[14], step(0.40, f.x)), mix(dst[13], dst[12], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ), step(0.80, f.y)),\n\
-						         step(0.60, f.y)),\n\
-							step(0.20, f.y));\n\
-		gl_FragColor.a = 1.0;\n\
+		OUT_FRAG_COLOR.rgb =	mix(            mix( dst[20], mix( mix(dst[21], dst[22], step(0.40, f.x)), mix(dst[23], dst[24], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ),\n\
+							         mix ( mix( mix( dst[19], mix( mix(dst[ 6], dst[ 7], step(0.40, f.x)), mix(dst[ 8], dst[ 9], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ),\n\
+							                    mix( dst[18], mix( mix(dst[ 5], dst[ 0], step(0.40, f.x)), mix(dst[ 1], dst[10], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ), step(0.40, f.y)),\n\
+							               mix( mix( dst[17], mix( mix(dst[ 4], dst[ 3], step(0.40, f.x)), mix(dst[ 2], dst[11], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ),\n\
+							                    mix( dst[16], mix( mix(dst[15], dst[14], step(0.40, f.x)), mix(dst[13], dst[12], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ), step(0.80, f.y)),\n\
+							         step(0.60, f.y)),\n\
+								step(0.20, f.y));\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
@@ -3637,6 +3600,93 @@ static LUTValues _HQ4xLUT[256*(4*4)*16];
 static const GLint filterVtxBuffer[8] = {-1, -1, 1, -1, 1, 1, -1, 1};
 static const GLubyte filterElementBuffer[6] = {0, 1, 2, 2, 3, 0};
 static const GLubyte outputElementBuffer[12] = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
+
+void GetGLVersionOGL(GLint *outMajor, GLint *outMinor, GLint *outRevision)
+{
+	const char *oglVersionString = (const char *)glGetString(GL_VERSION);
+	if (oglVersionString == NULL)
+	{
+		return;
+	}
+	
+	size_t versionStringLength = 0;
+	
+	// First, check for the dot in the revision string. There should be at
+	// least one present.
+	const char *versionStrEnd = strstr(oglVersionString, ".");
+	if (versionStrEnd == NULL)
+	{
+		return;
+	}
+	
+	// Next, check for the space before the vendor-specific info (if present).
+	versionStrEnd = strstr(oglVersionString, " ");
+	if (versionStrEnd == NULL)
+	{
+		// If a space was not found, then the vendor-specific info is not present,
+		// and therefore the entire string must be the version number.
+		versionStringLength = strlen(oglVersionString);
+	}
+	else
+	{
+		// If a space was found, then the vendor-specific info is present,
+		// and therefore the version number is everything before the space.
+		versionStringLength = versionStrEnd - oglVersionString;
+	}
+	
+	// Copy the version substring and parse it.
+	char *versionSubstring = (char *)malloc(versionStringLength * sizeof(char));
+	strncpy(versionSubstring, oglVersionString, versionStringLength);
+	
+	unsigned int major = 0;
+	unsigned int minor = 0;
+	unsigned int revision = 0;
+	
+	sscanf(versionSubstring, "%u.%u.%u", &major, &minor, &revision);
+	
+	free(versionSubstring);
+	versionSubstring = NULL;
+	
+	if (outMajor != NULL)
+	{
+		*outMajor = major;
+	}
+	
+	if (outMinor != NULL)
+	{
+		*outMinor = minor;
+	}
+	
+	if (outRevision != NULL)
+	{
+		*outRevision = revision;
+	}
+}
+
+OGLInfo* OGLInfoCreate_Legacy()
+{
+	return new OGLInfo_Legacy;
+}
+
+void glBindVertexArray_LegacyAPPLE(GLuint vaoID)
+{
+	glBindVertexArrayAPPLE(vaoID);
+}
+
+void glDeleteVertexArrays_LegacyAPPLE(GLsizei n, const GLuint *vaoIDs)
+{
+	glDeleteVertexArraysAPPLE(n, vaoIDs);
+}
+
+void glGenVertexArrays_LegacyAPPLE(GLsizei n, GLuint *vaoIDs)
+{
+	glGenVertexArraysAPPLE(n, vaoIDs);
+}
+
+OGLInfo* (*OGLInfoCreate_Func)() = &OGLInfoCreate_Legacy;
+void (*glBindVertexArrayDESMUME)(GLuint id) = &glBindVertexArray_LegacyAPPLE;
+void (*glDeleteVertexArraysDESMUME)(GLsizei n, const GLuint *ids) = &glDeleteVertexArrays_LegacyAPPLE;
+void (*glGenVertexArraysDESMUME)(GLsizei n, GLuint *ids) = &glGenVertexArrays_LegacyAPPLE;
 
 // Turn off inlining for this function so that we don't get hit with extremely long compile times.
 static NOINLINE LUTValues PackLUTValues(uint8_t p0, uint8_t p1, uint8_t p2, uint8_t w0, uint8_t w1, uint8_t w2)
@@ -3767,142 +3817,24 @@ static void InitHQnxLUTs()
 
 OGLInfo::OGLInfo()
 {
-	_versionMajor = 0;
-	_versionMinor = 0;
-	_versionRevision = 0;
+	GetGLVersionOGL(&_versionMajor, &_versionMinor, &_versionRevision);
 	_shaderSupport = ShaderSupport_Unsupported;
+	_useShader150 = false;
 	
+	_isShaderSupported = false;
 	_isVBOSupported = false;
 	_isPBOSupported = false;
-	_isShaderSupported = false;
 	_isFBOSupported = false;
-}
-
-ShaderSupportTier OGLInfo::DetermineShaderSupport()
-{
-	ShaderSupportTier supportTier = ShaderSupport_Unsupported;
-	
-	if (_versionMajor < 2)
-	{
-		return supportTier;
-	}
-	
-	GLint maxVaryingFloats = 0;
-	glGetIntegerv(GL_MAX_VARYING_FLOATS_ARB, &maxVaryingFloats);
-	
-	if (_versionMajor == 2 && _versionMinor == 0)
-	{
-		if (maxVaryingFloats < 32)
-		{
-			supportTier = ShaderSupport_BottomTier;
-		}
-		else
-		{
-			supportTier = ShaderSupport_LowTier;
-		}
-	}
-	else
-	{
-		if (maxVaryingFloats < 32)
-		{
-			supportTier = ShaderSupport_BottomTier;
-		}
-		else if (maxVaryingFloats < 60)
-		{
-			supportTier = ShaderSupport_LowTier;
-		}
-		else if (maxVaryingFloats < 84)
-		{
-			supportTier = ShaderSupport_MidTier;
-		}
-		else if (maxVaryingFloats < 108)
-		{
-			supportTier = ShaderSupport_HighTier;
-		}
-		else if (maxVaryingFloats >= 108)
-		{
-			supportTier = ShaderSupport_TopTier;
-		}
-	}
-	
-	return supportTier;
-}
-
-OGLInfo* OGLInfo::GetVersionedObjectOGL()
-{
-	OGLInfo *oglInfoObject = NULL;
-	
-	const char *oglVersionString = (const char *)glGetString(GL_VERSION);
-	if (oglVersionString == NULL)
-	{
-		return oglInfoObject;
-	}
-	
-	size_t versionStringLength = 0;
-	
-	// First, check for the dot in the revision string. There should be at
-	// least one present.
-	const char *versionStrEnd = strstr(oglVersionString, ".");
-	if (versionStrEnd == NULL)
-	{
-		return oglInfoObject;
-	}
-	
-	// Next, check for the space before the vendor-specific info (if present).
-	versionStrEnd = strstr(oglVersionString, " ");
-	if (versionStrEnd == NULL)
-	{
-		// If a space was not found, then the vendor-specific info is not present,
-		// and therefore the entire string must be the version number.
-		versionStringLength = strlen(oglVersionString);
-	}
-	else
-	{
-		// If a space was found, then the vendor-specific info is present,
-		// and therefore the version number is everything before the space.
-		versionStringLength = versionStrEnd - oglVersionString;
-	}
-	
-	// Copy the version substring and parse it.
-	char *versionSubstring = (char *)malloc(versionStringLength * sizeof(char));
-	strncpy(versionSubstring, oglVersionString, versionStringLength);
-	
-	unsigned int major = 0;
-	unsigned int minor = 0;
-	unsigned int revision = 0;
-	
-	sscanf(versionSubstring, "%u.%u.%u", &major, &minor, &revision);
-	
-	free(versionSubstring);
-	versionSubstring = NULL;
-	
-	// We finally have the version read. Now create an OGLInfo
-	// object based on the OpenGL version.
-	if ((major >= 4) ||
-		(major >= 3 && minor >= 2))
-	{
-		oglInfoObject = new OGLInfo_3_2;
-	}
-	else if ((major >= 3) ||
-			 (major >= 2 && minor >= 1))
-	{
-		oglInfoObject = new OGLInfo_2_1;
-	}
-	else if (major >= 2)
-	{
-		oglInfoObject = new OGLInfo_2_0;
-	}
-	else if (major >= 1 && minor >= 5)
-	{
-		oglInfoObject = new OGLInfo_1_2;
-	}
-	
-	return oglInfoObject;
 }
 
 ShaderSupportTier OGLInfo::GetShaderSupport()
 {
 	return this->_shaderSupport;
+}
+
+bool OGLInfo::IsUsingShader150()
+{
+	return this->_useShader150;
 }
 
 bool OGLInfo::IsVBOSupported()
@@ -3925,11 +3857,10 @@ bool OGLInfo::IsFBOSupported()
 	return this->_isFBOSupported;
 }
 
-OGLInfo_1_2::OGLInfo_1_2()
+OGLInfo_Legacy::OGLInfo_Legacy()
 {
-	_versionMajor = 1;
-	_versionMinor = 2;
-	_versionRevision = 0;
+	_shaderSupport = ShaderSupport_Unsupported;
+	_useShader150 = false;
 	
 	// Check the OpenGL capabilities for this renderer
 	std::set<std::string> oglExtensionSet;
@@ -3937,10 +3868,10 @@ OGLInfo_1_2::OGLInfo_1_2()
 	
 	_isVBOSupported = this->IsExtensionPresent(oglExtensionSet, "GL_ARB_vertex_buffer_object");
 	
-#if !defined(GL_ARB_shader_objects)		|| \
-    !defined(GL_ARB_vertex_shader)		|| \
-    !defined(GL_ARB_fragment_shader)	|| \
-    !defined(GL_ARB_vertex_program)
+#if	!defined(GL_ARB_shader_objects)		|| \
+	!defined(GL_ARB_vertex_shader)		|| \
+	!defined(GL_ARB_fragment_shader)	|| \
+	!defined(GL_ARB_vertex_program)
 	
 	_isShaderSupported	= false;
 #else
@@ -3951,7 +3882,71 @@ OGLInfo_1_2::OGLInfo_1_2()
 	
 	if (_isShaderSupported)
 	{
-		_shaderSupport = DetermineShaderSupport();
+		if ( _versionMajor < 3 ||
+			(_versionMajor == 3 && _versionMinor < 2) )
+		{
+			if (_versionMajor < 2)
+			{
+				_shaderSupport = ShaderSupport_Unsupported;
+			}
+			else
+			{
+				GLint maxVaryingFloats = 0;
+				glGetIntegerv(GL_MAX_VARYING_FLOATS_ARB, &maxVaryingFloats);
+				
+				if (_versionMajor == 2 && _versionMinor == 0)
+				{
+					if (maxVaryingFloats < 32)
+					{
+						_shaderSupport = ShaderSupport_BottomTier;
+					}
+					else
+					{
+						_shaderSupport = ShaderSupport_LowTier;
+					}
+				}
+				else
+				{
+					if (maxVaryingFloats < 32)
+					{
+						_shaderSupport = ShaderSupport_BottomTier;
+					}
+					else if (maxVaryingFloats < 60)
+					{
+						_shaderSupport = ShaderSupport_LowTier;
+					}
+					else if (maxVaryingFloats < 84)
+					{
+						_shaderSupport = ShaderSupport_MidTier;
+					}
+					else if (maxVaryingFloats < 108)
+					{
+						_shaderSupport = ShaderSupport_HighTier;
+					}
+					else if (maxVaryingFloats >= 108)
+					{
+						_shaderSupport = ShaderSupport_TopTier;
+					}
+				}
+			}
+		}
+		else
+		{
+			_useShader150 = true;
+			_shaderSupport = ShaderSupport_MidTier;
+			
+			if (_versionMajor == 4)
+			{
+				if (_versionMinor <= 1)
+				{
+					_shaderSupport = ShaderSupport_HighTier;
+				}
+				else
+				{
+					_shaderSupport = ShaderSupport_TopTier;
+				}
+			}
+		}
 	}
 #endif
 	
@@ -3971,7 +3966,7 @@ OGLInfo_1_2::OGLInfo_1_2()
 #endif
 }
 
-void OGLInfo_1_2::GetExtensionSetOGL(std::set<std::string> *oglExtensionSet)
+void OGLInfo_Legacy::GetExtensionSetOGL(std::set<std::string> *oglExtensionSet)
 {
 	std::string oglExtensionString = std::string((const char *)glGetString(GL_EXTENSIONS));
 	
@@ -3993,7 +3988,7 @@ void OGLInfo_1_2::GetExtensionSetOGL(std::set<std::string> *oglExtensionSet)
 	}
 }
 
-bool OGLInfo_1_2::IsExtensionPresent(const std::set<std::string> &oglExtensionSet, const std::string &extensionName) const
+bool OGLInfo_Legacy::IsExtensionPresent(const std::set<std::string> &oglExtensionSet, const std::string &extensionName) const
 {
 	if (oglExtensionSet.size() == 0)
 	{
@@ -4001,53 +3996,6 @@ bool OGLInfo_1_2::IsExtensionPresent(const std::set<std::string> &oglExtensionSe
 	}
 	
 	return (oglExtensionSet.find(extensionName) != oglExtensionSet.end());
-}
-
-OGLInfo_2_0::OGLInfo_2_0()
-{
-	_versionMajor = 2;
-	_versionMinor = 0;
-	_versionRevision = 0;
-	_shaderSupport = DetermineShaderSupport();
-	_isVBOSupported = true;
-	_isShaderSupported = true;
-}
-
-OGLInfo_2_1::OGLInfo_2_1()
-{
-	_versionMajor = 2;
-	_versionMinor = 1;
-	_versionRevision = 0;
-	_shaderSupport = DetermineShaderSupport();
-	_isVBOSupported = true;
-	_isPBOSupported = true;
-	_isShaderSupported = true;
-}
-
-OGLInfo_3_2::OGLInfo_3_2()
-{
-	_versionMajor = 3;
-	_versionMinor = 2;
-	_versionRevision = 0;
-	_shaderSupport = DetermineShaderSupport();
-	_isVBOSupported = true;
-	_isPBOSupported = true;
-	_isShaderSupported = true;
-	_isFBOSupported = true;
-}
-
-void OGLInfo_3_2::GetExtensionSetOGL(std::set<std::string> *oglExtensionSet)
-{
-#ifdef GL_VERSION_3_2
-	GLint extensionCount = 0;
-	
-	glGetIntegerv(GL_NUM_EXTENSIONS, &extensionCount);
-	for (unsigned int i = 0; i < extensionCount; i++)
-	{
-		std::string extensionName = std::string((const char *)glGetStringi(GL_EXTENSIONS, i));
-		oglExtensionSet->insert(extensionName);
-	}
-#endif
 }
 
 #pragma mark -
@@ -4073,7 +4021,7 @@ OGLShaderProgram::~OGLShaderProgram()
 	glDeleteShader(this->_fragmentID);
 }
 
-GLuint OGLShaderProgram::LoadShaderOGL(GLenum shaderType, const char *shaderProgram)
+GLuint OGLShaderProgram::LoadShaderOGL(GLenum shaderType, const char *shaderProgram, bool useShader150)
 {
 	GLint shaderStatus = GL_TRUE;
 	
@@ -4118,15 +4066,62 @@ GLuint OGLShaderProgram::LoadShaderOGL(GLenum shaderType, const char *shaderProg
 			break;
 	}
 	
-	std::string programSource = "#version 110\n\
-#define SHADERSUPPORT_UNSUPPORTED		0\n\
-#define SHADERSUPPORT_BOTTOM_TIER		1\n\
-#define SHADERSUPPORT_LOW_TIER			2\n\
-#define SHADERSUPPORT_MID_TIER			3\n\
-#define SHADERSUPPORT_HIGH_TIER			4\n\
-#define SHADERSUPPORT_TOP_TIER			5\n\
-#define SHADERSUPPORT_FUTURE_TIER		6\n\
-#define GPU_TIER " + shaderSupportStr + "\n\n";
+	std::string programSource;
+	if (useShader150)
+	{
+		programSource += "#version 150\n";
+		
+		if (shaderType == GL_VERTEX_SHADER)
+		{
+			programSource += "#define ATTRIBUTE in\n";
+			programSource += "#define VARYING out\n";
+		}
+		else if (shaderType == GL_FRAGMENT_SHADER)
+		{
+			programSource += "#define VARYING in\n";
+			programSource += "#define SAMPLE3_TEX_RECT(t,c) texture(t,c).rgb\n";
+			programSource += "#define SAMPLE3_TEX_1D(t,c)   texture(t,c).rgb\n";
+			programSource += "#define SAMPLE3_TEX_2D(t,c)   texture(t,c).rgb\n";
+			programSource += "#define SAMPLE3_TEX_3D(t,c)   texture(t,c).rgb\n";
+			programSource += "#define SAMPLE4_TEX_1D(t,c)   texture(t,c)\n";
+			programSource += "#define SAMPLE4_TEX_2D(t,c)   texture(t,c)\n";
+			programSource += "#define SAMPLE4_TEX_3D(t,c)   texture(t,c)\n";
+			programSource += "#define OUT_FRAG_COLOR outFragColor\n\n\n";
+			programSource += "out vec4 outFragColor;\n\n";
+		}
+	}
+	else
+	{
+		programSource += "#version 110\n";
+		
+		if (shaderType == GL_VERTEX_SHADER)
+		{
+			programSource += "#define ATTRIBUTE attribute\n";
+			programSource += "#define VARYING varying\n\n";
+		}
+		else if (shaderType == GL_FRAGMENT_SHADER)
+		{
+			programSource += "#extension GL_ARB_texture_rectangle : require\n";
+			programSource += "#define VARYING varying\n";
+			programSource += "#define SAMPLE3_TEX_RECT(t,c) texture2DRect(t,c).rgb\n";
+			programSource += "#define SAMPLE3_TEX_1D(t,c)   texture1D(t,c).rgb\n";
+			programSource += "#define SAMPLE3_TEX_2D(t,c)   texture2D(t,c).rgb\n";
+			programSource += "#define SAMPLE3_TEX_3D(t,c)   texture3D(t,c).rgb\n";
+			programSource += "#define SAMPLE4_TEX_1D(t,c)   texture1D(t,c)\n";
+			programSource += "#define SAMPLE4_TEX_2D(t,c)   texture2D(t,c)\n";
+			programSource += "#define SAMPLE4_TEX_3D(t,c)   texture3D(t,c)\n";
+			programSource += "#define OUT_FRAG_COLOR gl_FragColor\n\n";
+		}
+	}
+	
+	programSource += "#define SHADERSUPPORT_UNSUPPORTED		0\n";
+	programSource += "#define SHADERSUPPORT_BOTTOM_TIER		1\n";
+	programSource += "#define SHADERSUPPORT_LOW_TIER		2\n";
+	programSource += "#define SHADERSUPPORT_MID_TIER		3\n";
+	programSource += "#define SHADERSUPPORT_HIGH_TIER		4\n";
+	programSource += "#define SHADERSUPPORT_TOP_TIER		5\n";
+	programSource += "#define SHADERSUPPORT_FUTURE_TIER		6\n";
+	programSource += "#define GPU_TIER " + shaderSupportStr + "\n\n";
 	programSource += shaderProgram;
 	
 	const char *programSourceChar = programSource.c_str();
@@ -4166,7 +4161,7 @@ GLuint OGLShaderProgram::GetVertexShaderID()
 	return this->_vertexID;
 }
 
-void OGLShaderProgram::SetVertexShaderOGL(const char *shaderProgram)
+void OGLShaderProgram::SetVertexShaderOGL(const char *shaderProgram, bool useShader150)
 {
 	if (this->_vertexID != 0)
 	{
@@ -4174,7 +4169,7 @@ void OGLShaderProgram::SetVertexShaderOGL(const char *shaderProgram)
 		glDeleteShader(this->_vertexID);
 	}
 	
-	this->_vertexID = this->LoadShaderOGL(GL_VERTEX_SHADER, shaderProgram);
+	this->_vertexID = this->LoadShaderOGL(GL_VERTEX_SHADER, shaderProgram, useShader150);
 	
 	if (this->_vertexID != 0)
 	{
@@ -4194,7 +4189,7 @@ GLuint OGLShaderProgram::GetFragmentShaderID()
 	return this->_fragmentID;
 }
 
-void OGLShaderProgram::SetFragmentShaderOGL(const char *shaderProgram)
+void OGLShaderProgram::SetFragmentShaderOGL(const char *shaderProgram, bool useShader150)
 {
 	if (this->_fragmentID != 0)
 	{
@@ -4202,11 +4197,15 @@ void OGLShaderProgram::SetFragmentShaderOGL(const char *shaderProgram)
 		glDeleteShader(this->_fragmentID);
 	}
 	
-	this->_fragmentID = this->LoadShaderOGL(GL_FRAGMENT_SHADER, shaderProgram);
+	this->_fragmentID = this->LoadShaderOGL(GL_FRAGMENT_SHADER, shaderProgram, useShader150);
 	
 	if (this->_fragmentID != 0)
 	{
 		glAttachShader(this->_programID, this->_fragmentID);
+		if (useShader150)
+		{
+			glBindFragDataLocationEXT(this->_programID, 0, "outFragColor");
+		}
 	}
 	
 	if (this->_vertexID != 0 && this->_fragmentID != 0)
@@ -4215,7 +4214,7 @@ void OGLShaderProgram::SetFragmentShaderOGL(const char *shaderProgram)
 	}
 }
 
-void OGLShaderProgram::SetVertexAndFragmentShaderOGL(const char *vertShaderProgram, const char *fragShaderProgram)
+void OGLShaderProgram::SetVertexAndFragmentShaderOGL(const char *vertShaderProgram, const char *fragShaderProgram, bool useShader150)
 {
 	if (this->_vertexID != 0)
 	{
@@ -4229,8 +4228,8 @@ void OGLShaderProgram::SetVertexAndFragmentShaderOGL(const char *vertShaderProgr
 		glDeleteShader(this->_fragmentID);
 	}
 	
-	this->_vertexID = this->LoadShaderOGL(GL_VERTEX_SHADER, vertShaderProgram);
-	this->_fragmentID = this->LoadShaderOGL(GL_FRAGMENT_SHADER, fragShaderProgram);
+	this->_vertexID = this->LoadShaderOGL(GL_VERTEX_SHADER, vertShaderProgram, useShader150);
+	this->_fragmentID = this->LoadShaderOGL(GL_FRAGMENT_SHADER, fragShaderProgram, useShader150);
 	
 	if (this->_vertexID != 0)
 	{
@@ -4242,6 +4241,10 @@ void OGLShaderProgram::SetVertexAndFragmentShaderOGL(const char *vertShaderProgr
 	if (this->_fragmentID != 0)
 	{
 		glAttachShader(this->_programID, this->_fragmentID);
+		if (useShader150)
+		{
+			glBindFragDataLocationEXT(this->_programID, 0, "outFragColor");
+		}
 	}
 	
 	if (this->_vertexID != 0 && this->_fragmentID != 0)
@@ -4278,7 +4281,7 @@ bool OGLShaderProgram::LinkOGL()
 
 OGLVideoOutput::OGLVideoOutput()
 {
-	_info = OGLInfo::GetVersionedObjectOGL();
+	_info = OGLInfoCreate_Func();
 	_layerList = new std::vector<OGLVideoLayer *>;
 	_layerList->reserve(8);
 	
@@ -4386,9 +4389,14 @@ OGLFilter::OGLFilter(GLsizei srcWidth, GLsizei srcHeight, GLfloat scale = 1)
 
 OGLFilter::~OGLFilter()
 {
+	if (_isVAOPresent)
+	{
+		glDeleteVertexArraysDESMUME(1, &this->_vaoID);
+		_isVAOPresent = false;
+	}
+	
 	glDeleteFramebuffersEXT(1, &this->_fboID);
 	glDeleteTextures(1, &this->_texDstID);
-	glDeleteVertexArraysAPPLE(1, &this->_vaoID);
 	glDeleteBuffers(1, &this->_vboVtxID);
 	glDeleteBuffers(1, &this->_vboTexCoordID);
 	glDeleteBuffers(1, &this->_vboElementID);
@@ -4455,8 +4463,8 @@ void OGLFilter::OGLFilterInit(GLsizei srcWidth, GLsizei srcHeight, GLfloat scale
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(filterElementBuffer), filterElementBuffer, GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	
-	glGenVertexArraysAPPLE(1, &_vaoID);
-	glBindVertexArrayAPPLE(_vaoID);
+	glGenVertexArraysDESMUME(1, &_vaoID);
+	glBindVertexArrayDESMUME(_vaoID);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, _vboVtxID);
 	glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
@@ -4467,7 +4475,8 @@ void OGLFilter::OGLFilterInit(GLsizei srcWidth, GLsizei srcHeight, GLfloat scale
 	glEnableVertexAttribArray(OGLVertexAttributeID_Position);
 	glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
 	
-	glBindVertexArrayAPPLE(0);
+	glBindVertexArrayDESMUME(0);
+	_isVAOPresent = true;
 }
 
 OGLShaderProgram* OGLFilter::GetProgram()
@@ -4534,7 +4543,7 @@ void OGLFilter::SetScaleOGL(GLfloat scale)
 GLuint OGLFilter::RunFilterOGL(GLuint srcTexID, GLsizei viewportWidth, GLsizei viewportHeight)
 {
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, this->_fboID);
-	glBindVertexArrayAPPLE(this->_vaoID);
+	glBindVertexArrayDESMUME(this->_vaoID);
 	glUseProgram(this->_program->GetProgramID());
 	glViewport(0, 0, this->_dstWidth, this->_dstHeight);
 	
@@ -4542,7 +4551,7 @@ GLuint OGLFilter::RunFilterOGL(GLuint srcTexID, GLsizei viewportWidth, GLsizei v
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, srcTexID);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
 	
-	glBindVertexArrayAPPLE(0);
+	glBindVertexArrayDESMUME(0);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	glViewport(0, 0, viewportWidth, viewportHeight);
@@ -4564,7 +4573,7 @@ void OGLFilter::DownloadDstBufferOGL(uint32_t *dstBuffer, size_t lineOffset, siz
 
 #pragma mark -
 
-OGLFilterDeposterize::OGLFilterDeposterize(GLsizei srcWidth, GLsizei srcHeight)
+OGLFilterDeposterize::OGLFilterDeposterize(GLsizei srcWidth, GLsizei srcHeight, ShaderSupportTier theTier, bool useShader150)
 {
 	SetSrcSizeOGL(srcWidth, srcHeight);
 	
@@ -4577,8 +4586,9 @@ OGLFilterDeposterize::OGLFilterDeposterize(GLsizei srcWidth, GLsizei srcHeight)
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, _dstWidth, _dstHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
-	_program->SetVertexShaderOGL(Sample3x3_VertShader_110);
-	_program->SetFragmentShaderOGL(FilterDeposterizeFragShader_110);
+	_program->SetShaderSupport(theTier);
+	_program->SetVertexShaderOGL(Sample3x3_VertShader_110, useShader150);
+	_program->SetFragmentShaderOGL(FilterDeposterizeFragShader_110, useShader150);
 }
 
 OGLFilterDeposterize::~OGLFilterDeposterize()
@@ -4589,7 +4599,7 @@ OGLFilterDeposterize::~OGLFilterDeposterize()
 GLuint OGLFilterDeposterize::RunFilterOGL(GLuint srcTexID, GLsizei viewportWidth, GLsizei viewportHeight)
 {
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, this->_fboID);
-	glBindVertexArrayAPPLE(this->_vaoID);
+	glBindVertexArrayDESMUME(this->_vaoID);
 	glUseProgram(this->_program->GetProgramID());
 	glViewport(0, 0, this->_dstWidth, this->_dstHeight);
 	
@@ -4602,7 +4612,7 @@ GLuint OGLFilterDeposterize::RunFilterOGL(GLuint srcTexID, GLsizei viewportWidth
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texIntermediateID);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
 	
-	glBindVertexArrayAPPLE(0);
+	glBindVertexArrayDESMUME(0);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	glViewport(0, 0, viewportWidth, viewportHeight);
@@ -4682,8 +4692,8 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 	
 	// Set up VAO
-	glGenVertexArraysAPPLE(1, &this->_vaoMainStatesID);
-	glBindVertexArrayAPPLE(this->_vaoMainStatesID);
+	glGenVertexArraysDESMUME(1, &this->_vaoMainStatesID);
+	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
 	
 	if (this->_output->GetInfo()->IsShaderSupported())
 	{
@@ -4708,15 +4718,17 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	}
 	
-	glBindVertexArrayAPPLE(0);
+	glBindVertexArrayDESMUME(0);
+	_isVAOPresent = true;
 	
+	_useShader150 = this->_output->GetInfo()->IsUsingShader150();
 	_shaderSupport = this->_output->GetInfo()->GetShaderSupport();
 	_canUseShaderOutput = this->_output->GetInfo()->IsShaderSupported();
 	if (_canUseShaderOutput)
 	{
 		_finalOutputProgram = new OGLShaderProgram;
 		_finalOutputProgram->SetShaderSupport(_shaderSupport);
-		_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110);
+		_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, _useShader150);
 		
 		const GLuint finalOutputProgramID = _finalOutputProgram->GetProgramID();
 		glUseProgram(finalOutputProgramID);
@@ -4733,13 +4745,12 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	_canUseShaderBasedFilters = (_canUseShaderOutput && _output->GetInfo()->IsFBOSupported());
 	if (_canUseShaderBasedFilters)
 	{
-		_filterDeposterize = new OGLFilterDeposterize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2);
-		_filterDeposterize->GetProgram()->SetShaderSupport(_shaderSupport);
+		_filterDeposterize = new OGLFilterDeposterize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2, _shaderSupport, _useShader150);
 		
 		_shaderFilter = new OGLFilter(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2, 1);
 		OGLShaderProgram *shaderFilterProgram = _shaderFilter->GetProgram();
 		shaderFilterProgram->SetShaderSupport(_shaderSupport);
-		shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110);
+		shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, _useShader150);
 		
 		UploadHQnxLUTs();
 	}
@@ -4756,7 +4767,12 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 
 OGLDisplayLayer::~OGLDisplayLayer()
 {
-	glDeleteVertexArraysAPPLE(1, &this->_vaoMainStatesID);
+	if (_isVAOPresent)
+	{
+		glDeleteVertexArraysDESMUME(1, &this->_vaoMainStatesID);
+		_isVAOPresent = false;
+	}
+	
 	glDeleteBuffersARB(1, &this->_vboVertexID);
 	glDeleteBuffersARB(1, &this->_vboTexCoordID);
 	glDeleteBuffersARB(1, &this->_vboElementID);
@@ -5099,45 +5115,45 @@ void OGLDisplayLayer::SetOutputFilterOGL(const int filterID)
 		switch (filterID)
 		{
 			case OutputFilterTypeID_NearestNeighbor:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110);
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, _useShader150);
 				break;
 				
 			case OutputFilterTypeID_Bilinear:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110);
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, _useShader150);
 				this->_displayTexFilter = GL_LINEAR;
 				break;
 				
 			case OutputFilterTypeID_BicubicBSpline:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicBSplineFragShader_110);
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicBSplineFragShader_110, _useShader150);
 				break;
 				
 			case OutputFilterTypeID_BicubicMitchell:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicMitchellNetravaliFragShader_110);
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicMitchellNetravaliFragShader_110, _useShader150);
 				break;
 				
 			case OutputFilterTypeID_Lanczos2:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos2FragShader_110);
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos2FragShader_110, _useShader150);
 				break;
 				
 			case OutputFilterTypeID_Lanczos3:
 			{
 				if (this->_shaderSupport >= ShaderSupport_HighTier)
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample6x6Output_VertShader_110, FilterLanczos3FragShader_110);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample6x6Output_VertShader_110, FilterLanczos3FragShader_110, _useShader150);
 				}
 				else if (this->_shaderSupport >= ShaderSupport_MidTier)
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample5x5Output_VertShader_110, FilterLanczos3FragShader_110);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample5x5Output_VertShader_110, FilterLanczos3FragShader_110, _useShader150);
 				}
 				else
 				{
-					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos3FragShader_110);
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos3FragShader_110, _useShader150);
 				}
 				break;
 			}
 				
 			default:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110);
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, _useShader150);
 				this->_outputFilter = OutputFilterTypeID_NearestNeighbor;
 				break;
 		}
@@ -5163,8 +5179,8 @@ int OGLDisplayLayer::GetPixelScaler()
 
 void OGLDisplayLayer::SetPixelScalerOGL(const int filterID)
 {
-	const char *cpuTypeIDString = VideoFilter::GetTypeStringByID((VideoFilterTypeID)filterID);
-	const VideoFilterTypeID newFilterID = (strstr(cpuTypeIDString, VIDEOFILTERTYPE_UNKNOWN_STRING) == NULL) ? (VideoFilterTypeID)filterID : VideoFilterTypeID_None;
+	std::string cpuTypeIDString = std::string( VideoFilter::GetTypeStringByID((VideoFilterTypeID)filterID) );
+	const VideoFilterTypeID newFilterID = (cpuTypeIDString != std::string(VIDEOFILTERTYPE_UNKNOWN_STRING)) ? (VideoFilterTypeID)filterID : VideoFilterTypeID_None;
 	
 	this->SetCPUPixelScalerOGL(newFilterID);
 	this->_useShaderBasedPixelScaler = (this->GetFiltersPreferGPU()) ? this->SetGPUPixelScalerOGL(newFilterID) : false;
@@ -5188,35 +5204,35 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 	switch (filterID)
 	{
 		case VideoFilterTypeID_Nearest1_5X:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, _useShader150);
 			break;
 			
 		case VideoFilterTypeID_Nearest2X:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, _useShader150);
 			break;
 			
 		case VideoFilterTypeID_Scanline:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, Scalar2xScanlineFragShader_110);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, Scalar2xScanlineFragShader_110, _useShader150);
 			break;
 			
 		case VideoFilterTypeID_EPX:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, Scalar2xEPXFragShader_110);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, Scalar2xEPXFragShader_110, _useShader150);
 			break;
 			
 		case VideoFilterTypeID_EPXPlus:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, Scalar2xEPXPlusFragShader_110);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, Scalar2xEPXPlusFragShader_110, _useShader150);
 			break;
 			
 		case VideoFilterTypeID_2xSaI:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scalar2xSaIFragShader_110);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scalar2xSaIFragShader_110, _useShader150);
 			break;
 			
 		case VideoFilterTypeID_Super2xSaI:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuper2xSaIFragShader_110);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuper2xSaIFragShader_110, _useShader150);
 			break;
 			
 		case VideoFilterTypeID_SuperEagle:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuperEagle2xFragShader_110);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuperEagle2xFragShader_110, _useShader150);
 			break;
 			
 		case VideoFilterTypeID_LQ2X:
@@ -5225,7 +5241,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			glBindTexture(GL_TEXTURE_3D, this->_texLQ2xLUT);
 			glActiveTexture(GL_TEXTURE0);
 			
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xFragShader_110);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xFragShader_110, _useShader150);
 			
 			glUseProgram(shaderFilterProgram->GetProgramID());
 			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
@@ -5243,7 +5259,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			glBindTexture(GL_TEXTURE_3D, this->_texLQ2xLUT);
 			glActiveTexture(GL_TEXTURE0);
 			
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xSFragShader_110);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xSFragShader_110, _useShader150);
 			
 			glUseProgram(shaderFilterProgram->GetProgramID());
 			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
@@ -5261,7 +5277,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			glBindTexture(GL_TEXTURE_3D, this->_texHQ2xLUT);
 			glActiveTexture(GL_TEXTURE0);
 			
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xFragShader_110);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xFragShader_110, _useShader150);
 			
 			glUseProgram(shaderFilterProgram->GetProgramID());
 			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
@@ -5279,7 +5295,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			glBindTexture(GL_TEXTURE_3D, this->_texHQ2xLUT);
 			glActiveTexture(GL_TEXTURE0);
 			
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xSFragShader_110);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xSFragShader_110, _useShader150);
 			
 			glUseProgram(shaderFilterProgram->GetProgramID());
 			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
@@ -5297,7 +5313,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			glBindTexture(GL_TEXTURE_3D, this->_texHQ4xLUT);
 			glActiveTexture(GL_TEXTURE0);
 			
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xFragShader_110);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xFragShader_110, _useShader150);
 			
 			glUseProgram(shaderFilterProgram->GetProgramID());
 			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
@@ -5315,7 +5331,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			glBindTexture(GL_TEXTURE_3D, this->_texHQ4xLUT);
 			glActiveTexture(GL_TEXTURE0);
 			
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xSFragShader_110);
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xSFragShader_110, _useShader150);
 			
 			glUseProgram(shaderFilterProgram->GetProgramID());
 			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
@@ -5331,11 +5347,11 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_MidTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler2xBRZFragShader_110);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler2xBRZFragShader_110, _useShader150);
 			}
 			else if (this->_shaderSupport >= ShaderSupport_LowTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler2xBRZFragShader_110);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler2xBRZFragShader_110, _useShader150);
 			}
 			else
 			{
@@ -5348,11 +5364,11 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_MidTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler3xBRZFragShader_110);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler3xBRZFragShader_110, _useShader150);
 			}
 			else if (this->_shaderSupport >= ShaderSupport_LowTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler3xBRZFragShader_110);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler3xBRZFragShader_110, _useShader150);
 			}
 			else
 			{
@@ -5365,11 +5381,11 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_MidTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler4xBRZFragShader_110);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler4xBRZFragShader_110, _useShader150);
 			}
 			else if (this->_shaderSupport >= ShaderSupport_LowTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler4xBRZFragShader_110);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler4xBRZFragShader_110, _useShader150);
 			}
 			else
 			{
@@ -5383,7 +5399,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			if (this->_shaderSupport >= ShaderSupport_MidTier)
 			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler5xBRZFragShader_110);
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler5xBRZFragShader_110, _useShader150);
 			}
 			else
 			{
@@ -5548,7 +5564,7 @@ void OGLDisplayLayer::RenderOGL()
 	}
 	
 	// Enable vertex attributes
-	glBindVertexArrayAPPLE(this->_vaoMainStatesID);
+	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
 	
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID);
@@ -5558,5 +5574,5 @@ void OGLDisplayLayer::RenderOGL()
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
 	// Disable vertex attributes
-	glBindVertexArrayAPPLE(0);
+	glBindVertexArrayDESMUME(0);
 }
