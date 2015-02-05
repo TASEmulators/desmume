@@ -25,7 +25,12 @@
 #import "cocoa_videofilter.h"
 #import "cocoa_util.h"
 
+#ifdef MAC_OS_X_VERSION_10_7
+#include "OGLDisplayOutput_3_2.h"
+#else
 #include "OGLDisplayOutput.h"
+#endif
+
 #include <Carbon/Carbon.h>
 
 #if defined(__ppc__) || defined(__ppc64__)
@@ -1286,7 +1291,20 @@ static std::tr1::unordered_map<NSScreen *, DisplayWindowController *> _screenMap
 		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)0,
 		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)0,
 		NSOpenGLPFADoubleBuffer,
+		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
 		(NSOpenGLPixelFormatAttribute)0 };
+	
+#ifdef _OGLDISPLAYOUTPUT_3_2_H_
+	// If we can support a 3.2 Core Profile context, then request that in our
+	// pixel format attributes.
+	if (IsOSXVersionSupported(10, 7, 0))
+	{
+		attributes[9] = kCGLPFAOpenGLProfile;
+		attributes[10] = (CGLPixelFormatAttribute)kCGLOGLPVersion_3_2_Core;
+		
+		OGLInfoCreate_Func = &OGLInfoCreate_3_2;
+	}
+#endif
 	
 	NSOpenGLPixelFormat *format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 	context = [[NSOpenGLContext alloc] initWithFormat:format shareContext:nil];

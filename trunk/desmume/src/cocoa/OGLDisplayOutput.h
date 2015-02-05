@@ -18,10 +18,14 @@
 #ifndef _OGLDISPLAYOUTPUT_H_
 #define _OGLDISPLAYOUTPUT_H_
 
+#ifndef _OGLDISPLAYOUTPUT_3_2_H_
+
 #if defined(__APPLE__)
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glext.h>
 #endif
+
+#endif // _OGLDISPLAYOUTPUT_3_2_H_
 
 #include <set>
 #include <string>
@@ -53,24 +57,22 @@ enum ShaderSupportTier
 class OGLInfo
 {
 protected:
-	unsigned int _versionMajor;
-	unsigned int _versionMinor;
-	unsigned int _versionRevision;
+	GLint _versionMajor;
+	GLint _versionMinor;
+	GLint _versionRevision;
 	ShaderSupportTier _shaderSupport;
+	bool _useShader150;
 	
 	bool _isVBOSupported;
 	bool _isPBOSupported;
 	bool _isShaderSupported;
 	bool _isFBOSupported;
 	
-	ShaderSupportTier DetermineShaderSupport();
-	
 public:
 	OGLInfo();
 	virtual ~OGLInfo() {};
-	
-	static OGLInfo* GetVersionedObjectOGL();
-	
+		
+	bool IsUsingShader150();
 	bool IsVBOSupported();
 	bool IsPBOSupported();
 	bool IsShaderSupported();
@@ -81,33 +83,13 @@ public:
 	virtual bool IsExtensionPresent(const std::set<std::string> &oglExtensionSet, const std::string &extensionName) const = 0;
 };
 
-class OGLInfo_1_2 : public OGLInfo
+class OGLInfo_Legacy : public OGLInfo
 {
 public:
-	OGLInfo_1_2();
+	OGLInfo_Legacy();
 	
 	virtual void GetExtensionSetOGL(std::set<std::string> *oglExtensionSet);
 	virtual bool IsExtensionPresent(const std::set<std::string> &oglExtensionSet, const std::string &extensionName) const;
-};
-
-class OGLInfo_2_0 : public OGLInfo_1_2
-{
-public:
-	OGLInfo_2_0();
-};
-
-class OGLInfo_2_1 : public OGLInfo_2_0
-{
-public:
-	OGLInfo_2_1();
-};
-
-class OGLInfo_3_2 : public OGLInfo_2_1
-{
-public:
-	OGLInfo_3_2();
-	
-	virtual void GetExtensionSetOGL(std::set<std::string> *oglExtensionSet);
 };
 
 class OGLShaderProgram
@@ -118,7 +100,7 @@ protected:
 	GLuint _programID;
 	ShaderSupportTier _shaderSupport;
 	
-	virtual GLuint LoadShaderOGL(GLenum shaderType, const char *shaderProgram);
+	virtual GLuint LoadShaderOGL(GLenum shaderType, const char *shaderProgram, bool useShader150);
 	virtual bool LinkOGL();
 	
 public:
@@ -128,20 +110,18 @@ public:
 	ShaderSupportTier GetShaderSupport();
 	void SetShaderSupport(const ShaderSupportTier theTier);
 	GLuint GetVertexShaderID();
-	void SetVertexShaderOGL(const char *shaderProgram);
+	void SetVertexShaderOGL(const char *shaderProgram, bool useShader150);
 	GLuint GetFragmentShaderID();
-	void SetFragmentShaderOGL(const char *shaderProgram);
-	void SetVertexAndFragmentShaderOGL(const char *vertShaderProgram, const char *fragShaderProgram);
+	void SetFragmentShaderOGL(const char *shaderProgram, bool useShader150);
+	void SetVertexAndFragmentShaderOGL(const char *vertShaderProgram, const char *fragShaderProgram, bool useShader150);
 	GLuint GetProgramID();
 };
 
 class OGLFilter
 {
-private:
-	void OGLFilterInit(GLsizei srcWidth, GLsizei srcHeight, GLfloat scale);
-	
 protected:
 	OGLShaderProgram *_program;
+	bool _isVAOPresent;
 	GLuint _texDstID;
 	GLint _texCoordBuffer[8];
 	
@@ -156,6 +136,8 @@ protected:
 	GLsizei _srcHeight;
 	GLsizei _dstWidth;
 	GLsizei _dstHeight;
+	
+	virtual void OGLFilterInit(GLsizei srcWidth, GLsizei srcHeight, GLfloat scale);
 	
 public:
 	OGLFilter();
@@ -180,7 +162,7 @@ protected:
 	GLuint _texIntermediateID;
 	
 public:
-	OGLFilterDeposterize(GLsizei srcWidth, GLsizei srcHeight);
+	OGLFilterDeposterize(GLsizei srcWidth, GLsizei srcHeight, ShaderSupportTier theTier, bool useShader150);
 	~OGLFilterDeposterize();
 	
 	virtual GLuint RunFilterOGL(GLuint srcTexID, GLsizei viewportWidth, GLsizei viewportHeight);
@@ -210,8 +192,10 @@ public:
 class OGLDisplayLayer : public OGLVideoLayer
 {
 protected:
+	bool _isVAOPresent;
 	bool _canUseShaderBasedFilters;
 	bool _canUseShaderOutput;
+	bool _useShader150;
 	ShaderSupportTier _shaderSupport;
 	
 	bool _needUploadVertices;
@@ -221,7 +205,7 @@ protected:
 	int _outputFilter;
 	VideoFilterTypeID _pixelScaler;
 	
-	OGLFilterDeposterize *_filterDeposterize;
+	OGLFilter *_filterDeposterize;
 	OGLFilter *_shaderFilter;
 	OGLShaderProgram *_finalOutputProgram;
 	
@@ -275,8 +259,9 @@ protected:
 	void UpdateTexCoords(GLfloat s, GLfloat t);
 	
 public:
+	OGLDisplayLayer() {};
 	OGLDisplayLayer(OGLVideoOutput *oglVO);
-	~OGLDisplayLayer();
+	virtual ~OGLDisplayLayer();
 	
 	bool GetFiltersPreferGPU();
 	void SetFiltersPreferGPUOGL(bool preferGPU);
@@ -332,5 +317,10 @@ public:
 	virtual void RenderOGL();
 	virtual void SetViewportSizeOGL(GLsizei w, GLsizei h);
 };
+
+extern OGLInfo* (*OGLInfoCreate_Func)();
+extern void (*glBindVertexArrayDESMUME)(GLuint id);
+extern void (*glDeleteVertexArraysDESMUME)(GLsizei n, const GLuint *ids);
+extern void (*glGenVertexArraysDESMUME)(GLsizei n, GLuint *ids);
 
 #endif // _OGLDISPLAYOUTPUT_H_

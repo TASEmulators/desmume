@@ -741,6 +741,9 @@
 		ABAD3E7913AF1D6D00502E1E /* sse_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6D13AF1D6D00502E1E /* sse_optimized.cpp */; };
 		ABAD3E7A13AF1D6D00502E1E /* TDStretch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6E13AF1D6D00502E1E /* TDStretch.cpp */; };
 		ABAD3E7B13AF1D6D00502E1E /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
+		ABB24F6D1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */; };
+		ABB24F6E1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */; };
+		ABB24F6F1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */; };
 		ABB3C6621501BF4E00E0C22E /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB00E87914205EAE00DE561F /* InfoPlist.strings */; };
 		ABB3C6631501BF4E00E0C22E /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB64987B13ECC73800EE7DD2 /* FileTypeInfo.plist */; };
 		ABB3C6641501BF8A00E0C22E /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
@@ -1217,6 +1220,8 @@
 		ABAD3E6D13AF1D6D00502E1E /* sse_optimized.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sse_optimized.cpp; sourceTree = "<group>"; };
 		ABAD3E6E13AF1D6D00502E1E /* TDStretch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TDStretch.cpp; sourceTree = "<group>"; };
 		ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WavFile.cpp; sourceTree = "<group>"; };
+		ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OGLDisplayOutput_3_2.cpp; sourceTree = "<group>"; };
+		ABB24F6C1A81EE92006C1108 /* OGLDisplayOutput_3_2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OGLDisplayOutput_3_2.h; sourceTree = "<group>"; };
 		ABB3C63B1501BB8300E0C22E /* DeSmuME_Prefix_OpenEmu.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DeSmuME_Prefix_OpenEmu.pch; sourceTree = "<group>"; };
 		ABB3C63C1501BB8300E0C22E /* Info (OpenEmu Plug-in).plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info (OpenEmu Plug-in).plist"; sourceTree = "<group>"; };
 		ABB3C63D1501BB8300E0C22E /* NDSGameCore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NDSGameCore.h; sourceTree = "<group>"; };
@@ -1540,6 +1545,7 @@
 				AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */,
 				ABD10AE61715FCDD00B5729D /* mic_ext.cpp */,
 				ABE6840B189E33BC007FD69C /* OGLDisplayOutput.cpp */,
+				ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */,
 				AB1B9E601501A78000464647 /* ringbuffer.cpp */,
 				ABD104141346652500AF11D1 /* sndOSX.cpp */,
 				ABD10AE31715FCDD00B5729D /* audiosamplegenerator.h */,
@@ -1559,6 +1565,7 @@
 				ABD10AE41715FCDD00B5729D /* mic_ext.h */,
 				AB1B9E621501A78000464647 /* ringbuffer.h */,
 				ABE6840E189E33D5007FD69C /* OGLDisplayOutput.h */,
+				ABB24F6C1A81EE92006C1108 /* OGLDisplayOutput_3_2.h */,
 				ABD104011346652500AF11D1 /* sndOSX.h */,
 				AB82445E1704AEC400B8EE20 /* utilities.h */,
 				ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */,
@@ -2778,6 +2785,7 @@
 				ABD1FF591345ACBF00AF11D1 /* emufat.cpp in Sources */,
 				ABD1FEDE1345AC8400AF11D1 /* emufile.cpp in Sources */,
 				ABD1FF5E1345ACBF00AF11D1 /* fatdir.cpp in Sources */,
+				ABB24F6E1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */,
 				ABD1FF5F1345ACBF00AF11D1 /* fatfile.cpp in Sources */,
 				ABD1FEDF1345AC8400AF11D1 /* FIFO.cpp in Sources */,
 				ABAD3E7413AF1D6D00502E1E /* FIFOSampleBuffer.cpp in Sources */,
@@ -2980,6 +2988,7 @@
 				AB796D1815CDCBA200C59155 /* md5.cpp in Sources */,
 				AB796D1915CDCBA200C59155 /* metaspu.cpp in Sources */,
 				AB796D1A15CDCBA200C59155 /* MMU.cpp in Sources */,
+				ABB24F6D1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */,
 				AB796D1B15CDCBA200C59155 /* mmx_optimized.cpp in Sources */,
 				AB796D1C15CDCBA200C59155 /* movie.cpp in Sources */,
 				AB9038B817C5ED2200F410BD /* slot1comp_rom.cpp in Sources */,
@@ -3228,6 +3237,7 @@
 				AB8F3CEB1A53AC2600A80BF6 /* advanscene.cpp in Sources */,
 				AB8F3CEC1A53AC2600A80BF6 /* lq2x.cpp in Sources */,
 				AB8F3CED1A53AC2600A80BF6 /* xbrz.cpp in Sources */,
+				ABB24F6F1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */,
 				AB8F3CEE1A53AC2600A80BF6 /* scanline.cpp in Sources */,
 				AB8F3CEF1A53AC2600A80BF6 /* coreaudiosound.cpp in Sources */,
 				AB8F3CF01A53AC2600A80BF6 /* ringbuffer.cpp in Sources */,
