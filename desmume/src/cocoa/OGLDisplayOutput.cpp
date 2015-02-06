@@ -3593,9 +3593,9 @@ typedef struct
 	uint8_t w2;
 } LUTValues;
 
-static LUTValues _LQ2xLUT[256*(2*2)*16];
-static LUTValues _HQ2xLUT[256*(2*2)*16];
-static LUTValues _HQ4xLUT[256*(4*4)*16];
+static LUTValues *_LQ2xLUT = NULL;
+static LUTValues *_HQ2xLUT = NULL;
+static LUTValues *_HQ4xLUT = NULL;
 
 static const GLint filterVtxBuffer[8] = {-1, -1, 1, -1, 1, 1, -1, 1};
 static const GLubyte filterElementBuffer[6] = {0, 1, 2, 2, 3, 0};
@@ -3688,22 +3688,17 @@ void (*glBindVertexArrayDESMUME)(GLuint id) = &glBindVertexArray_LegacyAPPLE;
 void (*glDeleteVertexArraysDESMUME)(GLsizei n, const GLuint *ids) = &glDeleteVertexArrays_LegacyAPPLE;
 void (*glGenVertexArraysDESMUME)(GLsizei n, GLuint *ids) = &glGenVertexArrays_LegacyAPPLE;
 
-// Turn off inlining for this function so that we don't get hit with extremely long compile times.
-static NOINLINE LUTValues PackLUTValues(uint8_t p0, uint8_t p1, uint8_t p2, uint8_t w0, uint8_t w1, uint8_t w2)
+static LUTValues PackLUTValues(const uint8_t p0, const uint8_t p1, const uint8_t p2, const uint8_t w0, const uint8_t w1, const uint8_t w2)
 {
-	if (w1 == 0 && w2 == 0)
-	{
-		w0 = 255;
-	}
-	else
-	{
-		const uint8_t wR = 256 / (w0 + w1 + w2);
-		w0 *= wR;
-		w1 *= wR;
-		w2 *= wR;
-	}
-	
-	return {p0*31, p1*31, p2*31, w0, w1, w2};
+	const uint8_t wR = 256 / (w0 + w1 + w2);
+	return (LUTValues) {
+		p0*31,
+		p1*31,
+		p2*31,
+		(w1 == 0 && w2 == 0) ? 255 : w0*wR,
+		w1*wR,
+		w2*wR
+	};
 }
 
 static void InitHQnxLUTs()
@@ -3714,6 +3709,10 @@ static void InitHQnxLUTs()
 	{
 		return;
 	}
+	
+	_LQ2xLUT = (LUTValues *)malloc(256*(2*2)*16 * sizeof(LUTValues));
+	_HQ2xLUT = (LUTValues *)malloc(256*(2*2)*16 * sizeof(LUTValues));
+	_HQ4xLUT = (LUTValues *)malloc(256*(4*4)*16 * sizeof(LUTValues));
 	
 #define MUR (compare & 0x01) // top-right
 #define MDR (compare & 0x02) // bottom-right
@@ -5425,8 +5424,8 @@ void OGLDisplayLayer::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 {
 	bool needResizeTexture = false;
 	const VideoFilterAttributes newFilterAttr = VideoFilter::GetAttributesByID(filterID);
-	const size_t oldDstBufferWidth = this->_vfDual->GetDstWidth();
-	const size_t oldDstBufferHeight = this->_vfDual->GetDstHeight();
+	const GLsizei oldDstBufferWidth = this->_vfDual->GetDstWidth();
+	const GLsizei oldDstBufferHeight = this->_vfDual->GetDstHeight();
 	const GLsizei newDstBufferWidth = this->_vfDual->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
 	const GLsizei newDstBufferHeight = this->_vfDual->GetSrcHeight() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
 	
