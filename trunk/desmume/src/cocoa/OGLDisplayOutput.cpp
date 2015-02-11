@@ -3712,7 +3712,7 @@ static void InitHQnxLUTs()
 	
 	_LQ2xLUT = (LUTValues *)malloc(256*(2*2)*16 * sizeof(LUTValues));
 	_HQ2xLUT = (LUTValues *)malloc(256*(2*2)*16 * sizeof(LUTValues));
-	_HQ4xLUT = (LUTValues *)malloc(256*(4*4)*16 * sizeof(LUTValues));
+	_HQ4xLUT = (LUTValues *)malloc(256*(4*4)*16 * sizeof(LUTValues) + 4); // The bytes fix a mysterious crash that intermittently occurs. Don't know why this works... it just does.
 	
 #define MUR (compare & 0x01) // top-right
 #define MDR (compare & 0x02) // bottom-right
@@ -4621,6 +4621,770 @@ GLuint OGLFilterDeposterize::RunFilterOGL(GLuint srcTexID, GLsizei viewportWidth
 
 #pragma mark -
 
+OGLImage::OGLImage(OGLInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GLsizei viewportWidth, GLsizei viewportHeight)
+{
+	_needUploadVertices = true;
+	_useDeposterize = false;
+	
+	_vtxElementPointer = 0;
+	
+	_normalWidth = imageWidth;
+	_normalHeight = imageHeight;
+	_viewportWidth = viewportWidth;
+	_viewportHeight = viewportHeight;
+	
+	_vf = new VideoFilter(_normalWidth, _normalHeight, VideoFilterTypeID_None, 0);
+	
+	_vfMasterDstBuffer = (uint32_t *)calloc(_vf->GetDstWidth() * _vf->GetDstHeight(), sizeof(uint32_t));
+	_vf->SetDstBufferPtr(_vfMasterDstBuffer);
+	
+	_displayTexFilter = GL_NEAREST;
+	glViewport(0, 0, _viewportWidth, _viewportHeight);
+	
+	UpdateVertices();
+	UpdateTexCoords(_vf->GetDstWidth(), _vf->GetDstHeight());
+	
+	// Set up textures
+	glGenTextures(1, &_texCPUFilterDstID);
+	glGenTextures(1, &_texVideoInputDataID);
+	_texVideoSourceID = _texVideoInputDataID;
+	_texVideoPixelScalerID = _texVideoInputDataID;
+	_texVideoOutputID = _texVideoInputDataID;
+	
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texCPUFilterDstID);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
+	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, _vf->GetDstWidth() * _vf->GetDstHeight() * sizeof(uint32_t), _vfMasterDstBuffer);
+	
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texVideoInputDataID);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, _vf->GetSrcWidth(), _vf->GetSrcHeight(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, _vf->GetSrcBufferPtr());
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+	
+	// Set up VBOs
+	glGenBuffersARB(1, &_vboVertexID);
+	glGenBuffersARB(1, &_vboTexCoordID);
+	glGenBuffersARB(1, &_vboElementID);
+	
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(_vtxBuffer), _vtxBuffer, GL_STATIC_DRAW_ARB);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(_texCoordBuffer), _texCoordBuffer, GL_STATIC_DRAW_ARB);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	
+	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
+	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLubyte) * 6, outputElementBuffer, GL_STATIC_DRAW_ARB);
+	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+	
+	// Set up VAO
+	glGenVertexArraysDESMUME(1, &_vaoMainStatesID);
+	glBindVertexArrayDESMUME(_vaoMainStatesID);
+	
+	if (oglInfo->IsShaderSupported())
+	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
+		
+		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+	}
+	else
+	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
+		glVertexPointer(2, GL_INT, 0, 0);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
+		glTexCoordPointer(2, GL_FLOAT, 0, 0);
+		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
+		
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	}
+	
+	glBindVertexArrayDESMUME(0);
+	_isVAOPresent = true;
+	
+	_pixelScaler = VideoFilterTypeID_None;
+	_useShader150 = oglInfo->IsUsingShader150();
+	_shaderSupport = oglInfo->GetShaderSupport();
+	_canUseShaderOutput = oglInfo->IsShaderSupported();
+	if (_canUseShaderOutput)
+	{
+		_finalOutputProgram = new OGLShaderProgram;
+		_finalOutputProgram->SetShaderSupport(_shaderSupport);
+		_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, _useShader150);
+		
+		const GLuint finalOutputProgramID = _finalOutputProgram->GetProgramID();
+		glUseProgram(finalOutputProgramID);
+		_uniformFinalOutputAngleDegrees = glGetUniformLocation(finalOutputProgramID, "angleDegrees");
+		_uniformFinalOutputScalar = glGetUniformLocation(finalOutputProgramID, "scalar");
+		_uniformFinalOutputViewSize = glGetUniformLocation(finalOutputProgramID, "viewSize");
+		glUseProgram(0);
+	}
+	else
+	{
+		_finalOutputProgram = NULL;
+	}
+	
+	_canUseShaderBasedFilters = (_canUseShaderOutput && oglInfo->IsFBOSupported());
+	if (_canUseShaderBasedFilters)
+	{
+		_filterDeposterize = new OGLFilterDeposterize(_vf->GetSrcWidth(), _vf->GetSrcHeight(), _shaderSupport, _useShader150);
+		
+		_shaderFilter = new OGLFilter(_vf->GetSrcWidth(), _vf->GetSrcHeight(), 1);
+		OGLShaderProgram *shaderFilterProgram = _shaderFilter->GetProgram();
+		shaderFilterProgram->SetShaderSupport(_shaderSupport);
+		shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, _useShader150);
+		
+		UploadHQnxLUTs();
+	}
+	else
+	{
+		_filterDeposterize = NULL;
+		_shaderFilter = NULL;
+	}
+	
+	_useShaderBasedPixelScaler = false;
+	_filtersPreferGPU = true;
+	_outputFilter = OutputFilterTypeID_Bilinear;
+}
+
+OGLImage::~OGLImage()
+{
+	if (_isVAOPresent)
+	{
+		glDeleteVertexArraysDESMUME(1, &this->_vaoMainStatesID);
+		_isVAOPresent = false;
+	}
+	
+	glDeleteBuffersARB(1, &this->_vboVertexID);
+	glDeleteBuffersARB(1, &this->_vboTexCoordID);
+	glDeleteBuffersARB(1, &this->_vboElementID);
+	glDeleteTextures(1, &this->_texCPUFilterDstID);
+	glDeleteTextures(1, &this->_texVideoInputDataID);
+	
+	glActiveTexture(GL_TEXTURE0 + 1);
+	glBindTexture(GL_TEXTURE_3D, 0);
+	glDeleteTextures(1, &this->_texLQ2xLUT);
+	glDeleteTextures(1, &this->_texHQ2xLUT);
+	glDeleteTextures(1, &this->_texHQ4xLUT);
+	glActiveTexture(GL_TEXTURE0);
+	
+	if (_canUseShaderOutput)
+	{
+		glUseProgram(0);
+		delete this->_finalOutputProgram;
+	}
+	
+	if (_canUseShaderBasedFilters)
+	{
+		delete this->_filterDeposterize;
+		delete this->_shaderFilter;
+	}
+	
+	delete this->_vf;
+	free(_vfMasterDstBuffer);
+}
+
+void OGLImage::UploadHQnxLUTs()
+{
+	InitHQnxLUTs();
+	
+	glGenTextures(1, &_texLQ2xLUT);
+	glGenTextures(1, &_texHQ2xLUT);
+	glGenTextures(1, &_texHQ4xLUT);
+	glActiveTexture(GL_TEXTURE0 + 1);
+	
+	glBindTexture(GL_TEXTURE_3D, _texLQ2xLUT);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 256*2, 4, 16, 0, GL_BGR, GL_UNSIGNED_BYTE, _LQ2xLUT);
+	
+	glBindTexture(GL_TEXTURE_3D, _texHQ2xLUT);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 256*2, 4, 16, 0, GL_BGR, GL_UNSIGNED_BYTE, _HQ2xLUT);
+	
+	glBindTexture(GL_TEXTURE_3D, _texHQ4xLUT);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 256*2, 16, 16, 0, GL_BGR, GL_UNSIGNED_BYTE, _HQ4xLUT);
+	
+	glBindTexture(GL_TEXTURE_3D, 0);
+	glActiveTexture(GL_TEXTURE0);
+}
+
+bool OGLImage::GetFiltersPreferGPU()
+{
+	return this->_filtersPreferGPU;
+}
+
+void OGLImage::SetFiltersPreferGPUOGL(bool preferGPU)
+{
+	this->_filtersPreferGPU = preferGPU;
+	this->_useShaderBasedPixelScaler = (preferGPU) ? this->SetGPUPixelScalerOGL(this->_pixelScaler) : false;
+}
+
+bool OGLImage::GetSourceDeposterize()
+{
+	return this->_useDeposterize;
+}
+
+void OGLImage::SetSourceDeposterize(bool useDeposterize)
+{
+	this->_useDeposterize = (this->_canUseShaderBasedFilters) ? useDeposterize : false;
+}
+
+void OGLImage::UpdateVertices()
+{
+	const GLint w = this->_normalWidth;
+	const GLint h = this->_normalHeight;
+	
+	_vtxBuffer[0] = -w/2;	_vtxBuffer[1] =  h/2;
+	_vtxBuffer[2] =  w/2;	_vtxBuffer[3] =  h/2;
+	_vtxBuffer[4] =  w/2;	_vtxBuffer[5] = -h/2;
+	_vtxBuffer[6] = -w/2;	_vtxBuffer[7] = -h/2;
+	
+	this->_needUploadVertices = true;
+}
+
+void OGLImage::UpdateTexCoords(GLfloat s, GLfloat t)
+{
+	_texCoordBuffer[0] = 0.0f;	_texCoordBuffer[1] = 0.0f;
+	_texCoordBuffer[2] =    s;	_texCoordBuffer[3] = 0.0f;
+	_texCoordBuffer[4] =    s;	_texCoordBuffer[5] =    t;
+	_texCoordBuffer[6] = 0.0f;	_texCoordBuffer[7] =    t;
+}
+
+bool OGLImage::CanUseShaderBasedFilters()
+{
+	return this->_canUseShaderBasedFilters;
+}
+
+void OGLImage::GetNormalSize(double *w, double *h)
+{
+	if (w == NULL || h == NULL)
+	{
+		return;
+	}
+	
+	*w = this->_normalWidth;
+	*h = this->_normalHeight;
+}
+
+void OGLImage::UploadVerticesOGL()
+{
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
+	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(this->_vtxBuffer), this->_vtxBuffer);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	this->_needUploadVertices = false;
+}
+
+void OGLImage::UploadTexCoordsOGL()
+{
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
+	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(this->_texCoordBuffer), this->_texCoordBuffer);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+}
+
+void OGLImage::UploadTransformationOGL()
+{
+	const double w = this->_viewportWidth;
+	const double h = this->_viewportHeight;
+	const GLdouble s = GetMaxScalarInBounds(this->_normalWidth, this->_normalHeight, w, h);
+	
+	if (this->_canUseShaderOutput)
+	{
+		glUniform2f(this->_uniformFinalOutputViewSize, w, h);
+		glUniform1f(this->_uniformFinalOutputAngleDegrees, 0.0f);
+		glUniform1f(this->_uniformFinalOutputScalar, s);
+	}
+	else
+	{
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(-w/2.0, -w/2.0 + w, -h/2.0, -h/2.0 + h, -1.0, 1.0);
+		
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glRotatef(0.0f, 0.0f, 0.0f, 1.0f);
+		glScalef(s, s, 1.0f);
+	}
+}
+
+int OGLImage::GetOutputFilter()
+{
+	return this->_outputFilter;
+}
+
+void OGLImage::SetOutputFilterOGL(const int filterID)
+{
+	this->_displayTexFilter = GL_NEAREST;
+	
+	if (this->_canUseShaderBasedFilters)
+	{
+		this->_outputFilter = filterID;
+		
+		switch (filterID)
+		{
+			case OutputFilterTypeID_NearestNeighbor:
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, _useShader150);
+				break;
+				
+			case OutputFilterTypeID_Bilinear:
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, _useShader150);
+				this->_displayTexFilter = GL_LINEAR;
+				break;
+				
+			case OutputFilterTypeID_BicubicBSpline:
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicBSplineFragShader_110, _useShader150);
+				break;
+				
+			case OutputFilterTypeID_BicubicMitchell:
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicMitchellNetravaliFragShader_110, _useShader150);
+				break;
+				
+			case OutputFilterTypeID_Lanczos2:
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos2FragShader_110, _useShader150);
+				break;
+				
+			case OutputFilterTypeID_Lanczos3:
+			{
+				if (this->_shaderSupport >= ShaderSupport_HighTier)
+				{
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample6x6Output_VertShader_110, FilterLanczos3FragShader_110, _useShader150);
+				}
+				else if (this->_shaderSupport >= ShaderSupport_MidTier)
+				{
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample5x5Output_VertShader_110, FilterLanczos3FragShader_110, _useShader150);
+				}
+				else
+				{
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos3FragShader_110, _useShader150);
+				}
+				break;
+			}
+				
+			default:
+				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, _useShader150);
+				this->_outputFilter = OutputFilterTypeID_NearestNeighbor;
+				break;
+		}
+	}
+	else
+	{
+		if (filterID == OutputFilterTypeID_Bilinear)
+		{
+			this->_displayTexFilter = GL_LINEAR;
+			this->_outputFilter = filterID;
+		}
+		else
+		{
+			this->_outputFilter = OutputFilterTypeID_NearestNeighbor;
+		}
+	}
+}
+
+int OGLImage::GetPixelScaler()
+{
+	return (int)this->_pixelScaler;
+}
+
+void OGLImage::SetPixelScalerOGL(const int filterID)
+{
+	std::string cpuTypeIDString = std::string( VideoFilter::GetTypeStringByID((VideoFilterTypeID)filterID) );
+	const VideoFilterTypeID newFilterID = (cpuTypeIDString != std::string(VIDEOFILTERTYPE_UNKNOWN_STRING)) ? (VideoFilterTypeID)filterID : VideoFilterTypeID_None;
+	
+	this->SetCPUPixelScalerOGL(newFilterID);
+	this->_useShaderBasedPixelScaler = (this->GetFiltersPreferGPU()) ? this->SetGPUPixelScalerOGL(newFilterID) : false;
+	this->_pixelScaler = newFilterID;
+}
+
+bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
+{
+	bool willUseShaderBasedPixelScaler = true;
+	
+	if (!this->_canUseShaderBasedFilters || filterID == VideoFilterTypeID_None)
+	{
+		willUseShaderBasedPixelScaler = false;
+		return willUseShaderBasedPixelScaler;
+	}
+	
+	OGLShaderProgram *shaderFilterProgram = _shaderFilter->GetProgram();
+	VideoFilterAttributes vfAttr = VideoFilter::GetAttributesByID((VideoFilterTypeID)filterID);
+	GLfloat vfScale = (GLfloat)vfAttr.scaleMultiply / (GLfloat)vfAttr.scaleDivide;
+	
+	switch (filterID)
+	{
+		case VideoFilterTypeID_Nearest1_5X:
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, _useShader150);
+			break;
+			
+		case VideoFilterTypeID_Nearest2X:
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, _useShader150);
+			break;
+			
+		case VideoFilterTypeID_Scanline:
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, Scalar2xScanlineFragShader_110, _useShader150);
+			break;
+			
+		case VideoFilterTypeID_EPX:
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, Scalar2xEPXFragShader_110, _useShader150);
+			break;
+			
+		case VideoFilterTypeID_EPXPlus:
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, Scalar2xEPXPlusFragShader_110, _useShader150);
+			break;
+			
+		case VideoFilterTypeID_2xSaI:
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scalar2xSaIFragShader_110, _useShader150);
+			break;
+			
+		case VideoFilterTypeID_Super2xSaI:
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuper2xSaIFragShader_110, _useShader150);
+			break;
+			
+		case VideoFilterTypeID_SuperEagle:
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuperEagle2xFragShader_110, _useShader150);
+			break;
+			
+		case VideoFilterTypeID_LQ2X:
+		{
+			glActiveTexture(GL_TEXTURE0 + 1);
+			glBindTexture(GL_TEXTURE_3D, this->_texLQ2xLUT);
+			glActiveTexture(GL_TEXTURE0);
+			
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xFragShader_110, _useShader150);
+			
+			glUseProgram(shaderFilterProgram->GetProgramID());
+			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
+			glUniform1i(uniformTexSampler, 0);
+			
+			uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "lut");
+			glUniform1i(uniformTexSampler, 1);
+			glUseProgram(0);
+			break;
+		}
+			
+		case VideoFilterTypeID_LQ2XS:
+		{
+			glActiveTexture(GL_TEXTURE0 + 1);
+			glBindTexture(GL_TEXTURE_3D, this->_texLQ2xLUT);
+			glActiveTexture(GL_TEXTURE0);
+			
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xSFragShader_110, _useShader150);
+			
+			glUseProgram(shaderFilterProgram->GetProgramID());
+			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
+			glUniform1i(uniformTexSampler, 0);
+			
+			uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "lut");
+			glUniform1i(uniformTexSampler, 1);
+			glUseProgram(0);
+			break;
+		}
+			
+		case VideoFilterTypeID_HQ2X:
+		{
+			glActiveTexture(GL_TEXTURE0 + 1);
+			glBindTexture(GL_TEXTURE_3D, this->_texHQ2xLUT);
+			glActiveTexture(GL_TEXTURE0);
+			
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xFragShader_110, _useShader150);
+			
+			glUseProgram(shaderFilterProgram->GetProgramID());
+			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
+			glUniform1i(uniformTexSampler, 0);
+			
+			uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "lut");
+			glUniform1i(uniformTexSampler, 1);
+			glUseProgram(0);
+			break;
+		}
+			
+		case VideoFilterTypeID_HQ2XS:
+		{
+			glActiveTexture(GL_TEXTURE0 + 1);
+			glBindTexture(GL_TEXTURE_3D, this->_texHQ2xLUT);
+			glActiveTexture(GL_TEXTURE0);
+			
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xSFragShader_110, _useShader150);
+			
+			glUseProgram(shaderFilterProgram->GetProgramID());
+			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
+			glUniform1i(uniformTexSampler, 0);
+			
+			uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "lut");
+			glUniform1i(uniformTexSampler, 1);
+			glUseProgram(0);
+			break;
+		}
+			
+		case VideoFilterTypeID_HQ4X:
+		{
+			glActiveTexture(GL_TEXTURE0 + 1);
+			glBindTexture(GL_TEXTURE_3D, this->_texHQ4xLUT);
+			glActiveTexture(GL_TEXTURE0);
+			
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xFragShader_110, _useShader150);
+			
+			glUseProgram(shaderFilterProgram->GetProgramID());
+			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
+			glUniform1i(uniformTexSampler, 0);
+			
+			uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "lut");
+			glUniform1i(uniformTexSampler, 1);
+			glUseProgram(0);
+			break;
+		}
+			
+		case VideoFilterTypeID_HQ4XS:
+		{
+			glActiveTexture(GL_TEXTURE0 + 1);
+			glBindTexture(GL_TEXTURE_3D, this->_texHQ4xLUT);
+			glActiveTexture(GL_TEXTURE0);
+			
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xSFragShader_110, _useShader150);
+			
+			glUseProgram(shaderFilterProgram->GetProgramID());
+			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
+			glUniform1i(uniformTexSampler, 0);
+			
+			uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "lut");
+			glUniform1i(uniformTexSampler, 1);
+			glUseProgram(0);
+			break;
+		}
+			
+		case VideoFilterTypeID_2xBRZ:
+		{
+			if (this->_shaderSupport >= ShaderSupport_MidTier)
+			{
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler2xBRZFragShader_110, _useShader150);
+			}
+			else if (this->_shaderSupport >= ShaderSupport_LowTier)
+			{
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler2xBRZFragShader_110, _useShader150);
+			}
+			else
+			{
+				willUseShaderBasedPixelScaler = false;
+			}
+			break;
+		}
+			
+		case VideoFilterTypeID_3xBRZ:
+		{
+			if (this->_shaderSupport >= ShaderSupport_MidTier)
+			{
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler3xBRZFragShader_110, _useShader150);
+			}
+			else if (this->_shaderSupport >= ShaderSupport_LowTier)
+			{
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler3xBRZFragShader_110, _useShader150);
+			}
+			else
+			{
+				willUseShaderBasedPixelScaler = false;
+			}
+			break;
+		}
+			
+		case VideoFilterTypeID_4xBRZ:
+		{
+			if (this->_shaderSupport >= ShaderSupport_MidTier)
+			{
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler4xBRZFragShader_110, _useShader150);
+			}
+			else if (this->_shaderSupport >= ShaderSupport_LowTier)
+			{
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler4xBRZFragShader_110, _useShader150);
+			}
+			else
+			{
+				willUseShaderBasedPixelScaler = false;
+			}
+			break;
+		}
+			
+			
+		case VideoFilterTypeID_5xBRZ:
+		{
+			if (this->_shaderSupport >= ShaderSupport_MidTier)
+			{
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler5xBRZFragShader_110, _useShader150);
+			}
+			else
+			{
+				willUseShaderBasedPixelScaler = false;
+			}
+			break;
+		}
+			
+		default:
+			willUseShaderBasedPixelScaler = false;
+			break;
+	}
+	
+	if (willUseShaderBasedPixelScaler)
+	{
+		_shaderFilter->SetScaleOGL(vfScale);
+	}
+	
+	return willUseShaderBasedPixelScaler;
+}
+
+void OGLImage::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
+{
+	bool needResizeTexture = false;
+	const VideoFilterAttributes newFilterAttr = VideoFilter::GetAttributesByID(filterID);
+	const GLsizei oldDstBufferWidth = this->_vf->GetDstWidth();
+	const GLsizei oldDstBufferHeight = this->_vf->GetDstHeight();
+	const GLsizei newDstBufferWidth = this->_vf->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
+	const GLsizei newDstBufferHeight = this->_vf->GetSrcHeight() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
+	
+	if (oldDstBufferWidth != newDstBufferWidth || oldDstBufferHeight != newDstBufferHeight)
+	{
+		needResizeTexture = true;
+	}
+	
+	if (needResizeTexture)
+	{
+		uint32_t *oldMasterBuffer = _vfMasterDstBuffer;
+		uint32_t *newMasterBuffer = (uint32_t *)calloc(newDstBufferWidth * newDstBufferHeight, sizeof(uint32_t));
+		this->_vf->SetDstBufferPtr(newMasterBuffer);
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID);
+		glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, newDstBufferWidth * newDstBufferHeight * sizeof(uint32_t), newMasterBuffer);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
+		
+		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, newDstBufferWidth, newDstBufferHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, newMasterBuffer);
+		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+		
+		_vfMasterDstBuffer = newMasterBuffer;
+		free(oldMasterBuffer);
+	}
+	
+	this->_vf->ChangeFilterByID(filterID);
+}
+
+void OGLImage::LoadFrameOGL(const uint32_t *frameData, GLsizei w, GLsizei h)
+{
+	const bool isUsingCPUPixelScaler = this->_pixelScaler != VideoFilterTypeID_None && !this->_useShaderBasedPixelScaler;
+	
+	if (!isUsingCPUPixelScaler || this->_useDeposterize)
+	{
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataID);
+		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, frameData);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+	}
+	else
+	{
+		memcpy(this->_vf->GetSrcBufferPtr(), frameData, w * h * sizeof(uint32_t));
+	}
+}
+
+void OGLImage::ProcessOGL()
+{
+	VideoFilter *currentFilter = this->_vf;
+	const bool isUsingCPUPixelScaler = this->_pixelScaler != VideoFilterTypeID_None && !this->_useShaderBasedPixelScaler;
+	
+	// Source
+	if (this->_useDeposterize)
+	{
+		this->_texVideoSourceID = this->_filterDeposterize->RunFilterOGL(this->_texVideoInputDataID, this->_viewportWidth, this->_viewportHeight);
+		
+		if (isUsingCPUPixelScaler) // Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
+		{
+			this->_filterDeposterize->DownloadDstBufferOGL(currentFilter->GetSrcBufferPtr(), 0, this->_normalHeight);
+		}
+	}
+	else
+	{
+		this->_texVideoSourceID = this->_texVideoInputDataID;
+	}
+	
+	// Pixel scaler
+	if (!isUsingCPUPixelScaler)
+	{
+		if (this->_useShaderBasedPixelScaler)
+		{
+			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoSourceID);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			
+			this->_texVideoPixelScalerID = this->_shaderFilter->RunFilterOGL(this->_texVideoSourceID, this->_viewportWidth, this->_viewportHeight);
+			
+			this->UpdateTexCoords(this->_shaderFilter->GetDstWidth(), this->_shaderFilter->GetDstHeight());
+		}
+		else
+		{
+			this->_texVideoPixelScalerID = this->_texVideoSourceID;
+			this->UpdateTexCoords(this->_normalWidth, this->_normalHeight);
+		}
+	}
+	else
+	{
+		uint32_t *texData = currentFilter->RunFilter();
+		
+		const GLfloat w = currentFilter->GetDstWidth();
+		const GLfloat h = currentFilter->GetDstHeight();
+		this->_texVideoPixelScalerID = this->_texCPUFilterDstID;
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoPixelScalerID);
+		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, w, h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, texData);
+		this->UpdateTexCoords(w, h);
+	}
+	
+	// Output
+	this->_texVideoOutputID = this->_texVideoPixelScalerID;
+	this->UploadTexCoordsOGL();
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+}
+
+void OGLImage::RenderOGL()
+{
+	glUseProgram(this->_finalOutputProgram->GetProgramID());
+	this->UploadTransformationOGL();
+	
+	if (this->_needUploadVertices)
+	{
+		this->UploadVerticesOGL();
+	}
+	
+	// Enable vertex attributes
+	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
+	
+	glClear(GL_COLOR_BUFFER_BIT);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, this->_vtxElementPointer);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+	
+	// Disable vertex attributes
+	glBindVertexArrayDESMUME(0);
+}
+
+#pragma mark -
+
 OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 {
 	_output = oglVO;
@@ -4720,6 +5484,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	glBindVertexArrayDESMUME(0);
 	_isVAOPresent = true;
 	
+	_pixelScaler = VideoFilterTypeID_None;
 	_useShader150 = this->_output->GetInfo()->IsUsingShader150();
 	_shaderSupport = this->_output->GetInfo()->GetShaderSupport();
 	_canUseShaderOutput = this->_output->GetInfo()->IsShaderSupported();

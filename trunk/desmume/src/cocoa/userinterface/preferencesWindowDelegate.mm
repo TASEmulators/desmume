@@ -27,6 +27,191 @@
 #import "cocoa_videofilter.h"
 #import "cocoa_util.h"
 
+#ifdef MAC_OS_X_VERSION_10_7
+#include "../OGLDisplayOutput_3_2.h"
+#else
+#include "../OGLDisplayOutput.h"
+#endif
+
+
+#pragma mark -
+@implementation DisplayPreviewView
+
+@dynamic filtersPreferGPU;
+@dynamic sourceDeposterize;
+@dynamic pixelScaler;
+@dynamic outputFilter;
+
+- (id)initWithFrame:(NSRect)frameRect
+{
+	self = [super initWithFrame:frameRect];
+	if (self == nil)
+	{
+		return self;
+	}
+	
+	isPreviewImageLoaded = false;
+		
+	// Initialize the OpenGL context
+	NSOpenGLPixelFormatAttribute attributes[] = {
+		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
+		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
+		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)0,
+		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)0,
+		NSOpenGLPFADoubleBuffer,
+		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
+		(NSOpenGLPixelFormatAttribute)0 };
+	
+#ifdef _OGLDISPLAYOUTPUT_3_2_H_
+	// If we can support a 3.2 Core Profile context, then request that in our
+	// pixel format attributes.
+	if (IsOSXVersionSupported(10, 7, 0))
+	{
+		attributes[9] = kCGLPFAOpenGLProfile;
+		attributes[10] = (CGLPixelFormatAttribute)kCGLOGLPVersion_3_2_Core;
+		
+		OGLInfoCreate_Func = &OGLInfoCreate_3_2;
+	}
+#endif
+	
+	NSOpenGLPixelFormat *format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+	context = [[NSOpenGLContext alloc] initWithFormat:format shareContext:nil];
+	[format release];
+	cglDisplayContext = (CGLContextObj)[context CGLContextObj];
+	
+	CGLContextObj prevContext = CGLGetCurrentContext();
+	CGLSetCurrentContext(cglDisplayContext);
+	
+	OGLInfo *oglInfo = OGLInfoCreate_Func();
+	oglImage = new OGLImage(oglInfo, 64, 64, frameRect.size.width, frameRect.size.height);
+	oglImage->SetFiltersPreferGPUOGL(true);
+	oglImage->SetSourceDeposterize(false);
+	oglImage->SetOutputFilterOGL(OutputFilterTypeID_Bilinear);
+	oglImage->SetPixelScalerOGL(VideoFilterTypeID_None);
+	
+	CGLSetCurrentContext(prevContext);
+	
+	return self;
+}
+
+- (void)dealloc
+{
+	CGLContextObj prevContext = CGLGetCurrentContext();
+	CGLSetCurrentContext(cglDisplayContext);
+	delete oglImage;
+	CGLSetCurrentContext(prevContext);
+	
+	[context clearDrawable];
+	[context release];
+	
+	[super dealloc];
+}
+
+- (void) setFiltersPreferGPU:(BOOL)theState
+{
+	CGLContextObj prevContext = CGLGetCurrentContext();
+	CGLSetCurrentContext(cglDisplayContext);
+	oglImage->SetFiltersPreferGPUOGL(theState ? true : false);
+	oglImage->ProcessOGL();
+	CGLSetCurrentContext(prevContext);
+}
+
+- (BOOL) filtersPreferGPU
+{
+	return (oglImage->GetFiltersPreferGPU() ? YES : NO);
+}
+
+- (void) setSourceDeposterize:(BOOL)theState
+{
+	CGLContextObj prevContext = CGLGetCurrentContext();
+	CGLSetCurrentContext(cglDisplayContext);
+	oglImage->SetSourceDeposterize(theState ? true : false);
+	oglImage->ProcessOGL();
+	CGLSetCurrentContext(prevContext);
+}
+
+- (BOOL) sourceDeposterize
+{
+	return (oglImage->GetSourceDeposterize() ? YES : NO);
+}
+
+- (void) setPixelScaler:(NSInteger)scalerID
+{
+	CGLContextObj prevContext = CGLGetCurrentContext();
+	CGLSetCurrentContext(cglDisplayContext);
+	oglImage->SetPixelScalerOGL(scalerID);
+	oglImage->ProcessOGL();
+	CGLSetCurrentContext(prevContext);
+}
+
+- (NSInteger) pixelScaler
+{
+	return (NSInteger)oglImage->GetPixelScaler();
+}
+
+- (void) setOutputFilter:(NSInteger)outputFilterID
+{
+	CGLContextObj prevContext = CGLGetCurrentContext();
+	CGLSetCurrentContext(cglDisplayContext);
+	oglImage->SetOutputFilterOGL(outputFilterID);
+	CGLSetCurrentContext(prevContext);
+}
+
+- (NSInteger) outputFilter
+{
+	return (NSInteger)oglImage->GetOutputFilter();
+}
+
+- (void) loadPreviewImage:(NSImage *)previewImage
+{
+	NSArray *imageRepArray = [previewImage representations];
+	const NSBitmapImageRep *imageRep = [imageRepArray objectAtIndex:0];
+	const NSSize previewImageSize = [previewImage size];
+	
+	CGLContextObj prevContext = CGLGetCurrentContext();
+	CGLSetCurrentContext(cglDisplayContext);
+	oglImage->LoadFrameOGL((const uint32_t *)[imageRep bitmapData], previewImageSize.width, previewImageSize.height);
+	oglImage->ProcessOGL();
+	CGLSetCurrentContext(prevContext);
+}
+
+- (BOOL)isOpaque
+{
+	return YES;
+}
+
+- (void)lockFocus
+{
+	[super lockFocus];
+	
+	if ([context view] != self)
+	{
+		[context setView:self];
+	}
+}
+
+- (void)drawRect:(NSRect)dirtyRect
+{
+	if (!isPreviewImageLoaded)
+	{
+		// Load the preview image.
+		NSImage *previewImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"VideoFilterPreview_64x64" ofType:@"png"]];
+		[self loadPreviewImage:previewImage];
+		[previewImage release];
+		
+		isPreviewImageLoaded = true;
+	}
+	
+	CGLContextObj prevContext = CGLGetCurrentContext();
+	CGLSetCurrentContext(cglDisplayContext);
+	oglImage->RenderOGL();
+	CGLFlushDrawable(cglDisplayContext);
+	CGLSetCurrentContext(prevContext);
+}
+
+@end
+
+#pragma mark -
 
 @implementation PreferencesWindowDelegate
 
@@ -51,7 +236,7 @@
 @synthesize displayRotationField;
 @synthesize spuSyncMethodMenu;
 
-@synthesize previewImageView;
+@synthesize previewView;
 
 @synthesize bindings;
 
@@ -70,21 +255,6 @@
 		self = nil;
 		return self;
 	}
-	
-	// Load the preview image.
-	NSImage *previewImage = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"VideoFilterPreview_64x64" ofType:@"png"]];
-	NSArray *imageRepArray = [previewImage representations];
-	const NSBitmapImageRep *imageRep = [imageRepArray objectAtIndex:0];
-	const NSSize previewImageSize = [previewImage size];
-	
-	// Create our video filters for preview.
-	videoFilter = [[CocoaVideoFilter alloc] initWithSize:previewImageSize typeID:VideoFilterTypeID_Nearest2X];
-	bilinearVideoFilter = [[CocoaVideoFilter alloc] initWithSize:[videoFilter destSize] typeID:VideoFilterTypeID_Nearest2X];
-	
-	// Copy the preview image data into the video filter source buffer, then release it.
-	RGBA8888ForceOpaqueBuffer((const uint32_t *)[imageRep bitmapData], (uint32_t *)[videoFilter srcBufferPtr], (size_t)previewImageSize.width * (size_t)previewImageSize.height);
-	[self updateVideoFilterPreview:VideoFilterTypeID_None];
-	[previewImage release];
 	
 	// Load the volume icons.
 	iconVolumeFull = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeFull_16x16" ofType:@"png"]];
@@ -105,8 +275,6 @@
 	[iconVolumeOneThird release];
 	[iconVolumeMute release];
 	[bindings release];
-	[videoFilter release];
-	[bilinearVideoFilter release];
 	[prefViewDict release];
 	
 	[super dealloc];
@@ -362,20 +530,34 @@
 	}
 }
 
-- (IBAction) setUseBilinear:(id)sender
+- (IBAction) updateFiltersPreferGPU:(id)sender
 {
-	const BOOL useBilinear = [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseBilinearOutput"];
-	[self updateBilinearPreview:useBilinear];
-	[previewImageView setNeedsDisplay:YES];
+	const BOOL theState = [CocoaDSUtil getIBActionSenderButtonStateBool:sender];
+	[[self previewView] setFiltersPreferGPU:theState];
+	[previewView setNeedsDisplay:YES];
 }
 
-- (IBAction) selectVideoFilterType:(id)sender
+- (IBAction) updateSourceDeposterize:(id)sender
 {
-	const NSInteger vfType = [CocoaDSUtil getIBActionSenderTag:sender];
-	[[NSUserDefaults standardUserDefaults] setInteger:vfType forKey:@"DisplayView_VideoFilter"];
-	
-	[self updateVideoFilterPreview:vfType];
-	[previewImageView setNeedsDisplay:YES];
+	const BOOL theState = [CocoaDSUtil getIBActionSenderButtonStateBool:sender];
+	[[self previewView] setSourceDeposterize:theState];
+	[previewView setNeedsDisplay:YES];
+}
+
+- (IBAction) selectOutputFilter:(id)sender
+{
+	const NSInteger filterID = [CocoaDSUtil getIBActionSenderTag:sender];
+	[[NSUserDefaults standardUserDefaults] setInteger:filterID forKey:@"DisplayView_OutputFilter"];
+	[[self previewView] setOutputFilter:filterID];
+	[previewView setNeedsDisplay:YES];
+}
+
+- (IBAction) selectPixelScaler:(id)sender
+{
+	const NSInteger filterID = [CocoaDSUtil getIBActionSenderTag:sender];
+	[[NSUserDefaults standardUserDefaults] setInteger:filterID forKey:@"DisplayView_VideoFilter"];
+	[[self previewView] setPixelScaler:filterID];
+	[previewView setNeedsDisplay:YES];
 }
 
 - (IBAction) updateVolumeIcon:(id)sender
@@ -651,42 +833,6 @@
 	[tempView release];
 }
 
-- (void) updateVideoFilterPreview:(const NSInteger)vfType
-{
-	const BOOL useBilinear = [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseBilinearOutput"];
-	
-	[videoFilter changeFilter:(VideoFilterTypeID)vfType];
-	const NSUInteger previewWidth = (NSUInteger)[videoFilter destSize].width;
-	const NSUInteger previewHeight = (NSUInteger)[videoFilter destSize].height;
-	
-	if (previewWidth <= 64 || previewHeight <= 64)
-	{
-		[videoFilter changeFilter:VideoFilterTypeID_Nearest2X];
-	}
-	
-	[videoFilter runFilter];
-	[self updateBilinearPreview:useBilinear];
-}
-
-- (void) updateBilinearPreview:(const BOOL)useBilinear
-{
-	const NSUInteger previewWidth = (NSUInteger)[videoFilter destSize].width;
-	const NSUInteger previewHeight = (NSUInteger)[videoFilter destSize].height;
-	
-	if (previewWidth <= 128 || previewHeight <= 128)
-	{
-		[bilinearVideoFilter changeFilter:(useBilinear) ? VideoFilterTypeID_Bilinear : VideoFilterTypeID_Nearest2X];
-	}
-	else
-	{
-		[bilinearVideoFilter changeFilter:VideoFilterTypeID_None];
-	}
-	
-	[bilinearVideoFilter setSourceSize:[videoFilter destSize]];
-	memcpy([bilinearVideoFilter srcBufferPtr], [videoFilter dstBufferPtr], previewWidth * previewHeight * sizeof(uint32_t));
-	[bindings setObject:[bilinearVideoFilter image] forKey:@"VideoFilterPreviewImage"];
-}
-
 - (void) setupUserDefaults
 {
 	// Update input preferences.
@@ -709,9 +855,18 @@
 	// Set the default sound volume per user preferences.
 	[self updateVolumeIcon:nil];
 	
-	// Set the default video filter per user preferences.
-	const NSInteger vfType = [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"];
-	[self updateVideoFilterPreview:vfType];
+	// Set the default video settings per user preferences.
+	const BOOL filtersPreferGPU = [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_FiltersPreferGPU"];
+	[[self previewView] setFiltersPreferGPU:filtersPreferGPU];
+	
+	const BOOL sourceDeposterize = [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Deposterize"];
+	[[self previewView] setSourceDeposterize:sourceDeposterize];
+	
+	const NSInteger pixelScalerID = [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"];
+	[[self previewView] setPixelScaler:pixelScalerID];
+	
+	const NSInteger outputFilterID = [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"];
+	[[self previewView] setOutputFilter:outputFilterID];
 	
 	// Set up file paths.
 	NSString *arm7BiosImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:@"BIOS_ARM7ImagePath"];
