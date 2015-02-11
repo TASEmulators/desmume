@@ -224,7 +224,7 @@
 #define FRAME_SKIP_BIAS								0.1		// May be any real number. This value acts as a vector addition to the frame skip.
 #define MAX_FRAME_SKIP								(DS_FRAMES_PER_SECOND / 3.0)
 
-#define SPU_SAMPLE_RATE								44100.0	// Samples per second
+#define SPU_SAMPLE_RATE								(44100.0 * DS_FRAMES_PER_SECOND / 60.0)	// Samples per second
 #define SPU_SAMPLE_RESOLUTION						16		// Bits per sample; must be a multiple of 8
 #define SPU_NUMBER_CHANNELS							2		// Number of channels
 #define SPU_SAMPLE_SIZE								((SPU_SAMPLE_RESOLUTION / 8) * SPU_NUMBER_CHANNELS) // Bytes per sample, multiplied by the number of channels

@@ -52,7 +52,7 @@ SoundInterface_struct *SNDCoreList[] = {
 int SNDOSXInit(int buffer_size)
 {
 	CoreAudioOutput *oldcoreAudioPlaybackManager = coreAudioPlaybackManager;
-	coreAudioPlaybackManager = new CoreAudioOutput(buffer_size / SPU_SAMPLE_SIZE, SPU_SAMPLE_SIZE);
+	coreAudioPlaybackManager = new CoreAudioOutput(buffer_size * 4 / SPU_SAMPLE_SIZE, SPU_SAMPLE_SIZE);
 	delete oldcoreAudioPlaybackManager;
 	
 	if (mutexAudioSampleReadWrite == NULL)
