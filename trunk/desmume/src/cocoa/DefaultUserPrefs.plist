@@ -735,7 +735,7 @@
 	<key>SPU_InterpolationMode</key>
 	<integer>2</integer>
 	<key>SPU_SyncMethod</key>
-	<integer>2</integer>
+	<integer>0</integer>
 	<key>SPU_SyncMode</key>
 	<integer>1</integer>
 </dict>
