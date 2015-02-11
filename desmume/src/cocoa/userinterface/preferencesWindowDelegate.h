@@ -17,10 +17,29 @@
 */
 
 #import <Cocoa/Cocoa.h>
+#import <OpenGL/OpenGL.h>
 #import "inputPrefsView.h"
 
 @class CocoaVideoFilter;
+class OGLImage;
 
+@interface DisplayPreviewView : NSView
+{
+	OGLImage *oglImage;
+	NSOpenGLContext *context;
+	CGLContextObj cglDisplayContext;
+	
+	bool isPreviewImageLoaded;
+}
+
+@property (assign) BOOL filtersPreferGPU;
+@property (assign) BOOL sourceDeposterize;
+@property (assign) NSInteger pixelScaler;
+@property (assign) NSInteger outputFilter;
+
+@end
+
+#pragma mark -
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
 @interface PreferencesWindowDelegate : NSObject <NSWindowDelegate>
@@ -55,9 +74,7 @@
 	NSImage *iconVolumeMute;
 	NSPopUpButton *spuSyncMethodMenu;
 	
-	NSImageView *previewImageView;
-	CocoaVideoFilter *videoFilter;
-	CocoaVideoFilter *bilinearVideoFilter;
+	DisplayPreviewView *previewView;
 	
 	NSMutableDictionary *bindings;
 }
@@ -82,7 +99,7 @@
 @property (readonly) IBOutlet NSTextField *displayRotationField;
 @property (readonly) IBOutlet NSPopUpButton *spuSyncMethodMenu;
 
-@property (readonly) IBOutlet NSImageView *previewImageView;
+@property (readonly) IBOutlet DisplayPreviewView *previewView;
 
 @property (readonly) NSMutableDictionary *bindings;
 
@@ -98,8 +115,10 @@
 - (IBAction) selectDisplayRotation:(id)sender;
 - (void) updateDisplayRotationMenu:(double)displayRotation;
 
-- (IBAction) setUseBilinear:(id)sender;
-- (IBAction) selectVideoFilterType:(id)sender;
+- (IBAction) updateFiltersPreferGPU:(id)sender;
+- (IBAction) updateSourceDeposterize:(id)sender;
+- (IBAction) selectOutputFilter:(id)sender;
+- (IBAction) selectPixelScaler:(id)sender;
 
 - (IBAction) updateVolumeIcon:(id)sender;
 - (IBAction) selectSPUSyncMode:(id)sender;
@@ -116,8 +135,6 @@
 - (void) didEndFirmwareConfigSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo;
 
 - (void) switchContentView:(NSView *)theView;
-- (void) updateVideoFilterPreview:(const NSInteger)vfType;
-- (void) updateBilinearPreview:(const BOOL)useBilinear;
 - (void) setupUserDefaults;
 
 @end

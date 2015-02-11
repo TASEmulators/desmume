@@ -189,6 +189,93 @@ public:
 	virtual void RenderOGL() {};
 };
 
+class OGLImage
+{
+protected:
+	bool _isVAOPresent;
+	bool _canUseShaderBasedFilters;
+	bool _canUseShaderOutput;
+	bool _useShader150;
+	ShaderSupportTier _shaderSupport;
+	
+	bool _needUploadVertices;
+	bool _useDeposterize;
+	bool _useShaderBasedPixelScaler;
+	bool _filtersPreferGPU;
+	int _outputFilter;
+	VideoFilterTypeID _pixelScaler;
+	
+	OGLFilter *_filterDeposterize;
+	OGLFilter *_shaderFilter;
+	OGLShaderProgram *_finalOutputProgram;
+	
+	VideoFilter *_vf;
+	uint32_t *_vfMasterDstBuffer;
+	
+	double _normalWidth;
+	double _normalHeight;
+	GLsizei _viewportWidth;
+	GLsizei _viewportHeight;
+	
+	GLubyte *_vtxElementPointer;
+	
+	GLint _displayTexFilter;
+	GLuint _texCPUFilterDstID;
+	
+	GLuint _texLQ2xLUT;
+	GLuint _texHQ2xLUT;
+	GLuint _texHQ4xLUT;
+	
+	GLint _vtxBuffer[8];
+	GLfloat _texCoordBuffer[8];
+	
+	GLuint _texVideoInputDataID;
+	GLuint _texVideoSourceID;
+	GLuint _texVideoPixelScalerID;
+	GLuint _texVideoOutputID;
+	GLuint _vaoMainStatesID;
+	GLuint _vboVertexID;
+	GLuint _vboTexCoordID;
+	GLuint _vboElementID;
+	
+	GLint _uniformFinalOutputAngleDegrees;
+	GLint _uniformFinalOutputScalar;
+	GLint _uniformFinalOutputViewSize;
+	
+	void UploadHQnxLUTs();
+	
+	virtual void UploadVerticesOGL();
+	virtual void UploadTexCoordsOGL();
+	virtual void UploadTransformationOGL();
+	
+	void UpdateVertices();
+	void UpdateTexCoords(GLfloat s, GLfloat t);
+	
+public:
+	OGLImage() {};
+	OGLImage(OGLInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GLsizei viewportWidth, GLsizei viewportHeight);
+	virtual ~OGLImage();
+	
+	bool GetFiltersPreferGPU();
+	void SetFiltersPreferGPUOGL(bool preferGPU);
+	
+	bool GetSourceDeposterize();
+	void SetSourceDeposterize(bool useDeposterize);
+	
+	bool CanUseShaderBasedFilters();
+	void GetNormalSize(double *w, double *h);
+	
+	int GetOutputFilter();
+	virtual void SetOutputFilterOGL(const int filterID);
+	int GetPixelScaler();
+	virtual void SetPixelScalerOGL(const int filterID);
+	virtual bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
+	virtual void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
+	virtual void LoadFrameOGL(const uint32_t *frameData, GLsizei w, GLsizei h);
+	virtual void ProcessOGL();
+	virtual void RenderOGL();
+};
+
 class OGLDisplayLayer : public OGLVideoLayer
 {
 protected:
