@@ -40,7 +40,6 @@ typedef struct
 	NSUInteger frameJumpTarget;
 	int framesToSkip;
 	uint64_t timeBudgetMachAbsTime;
-	bool exitThread;
 	pthread_mutex_t mutexOutputList;
 	pthread_mutex_t mutexThreadExecute;
 	pthread_cond_t condThreadExecute;

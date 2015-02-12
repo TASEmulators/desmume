@@ -189,7 +189,6 @@ volatile bool execute = true;
 	AbsoluteTime timeBudgetAbsTime = NanosecondsToAbsolute(*(Nanoseconds *)&timeBudgetNanoseconds);
 	threadParam.timeBudgetMachAbsTime = *(uint64_t *)&timeBudgetAbsTime;
 	
-	threadParam.exitThread = false;
 	pthread_mutex_init(&threadParam.mutexOutputList, NULL);
 	pthread_mutex_init(&threadParam.mutexThreadExecute, NULL);
 	pthread_cond_init(&threadParam.condThreadExecute, NULL);
@@ -221,11 +220,7 @@ volatile bool execute = true;
 	[self setCdsFirmware:nil];
 	[self setCdsGPU:nil];
 	
-	pthread_mutex_lock(&threadParam.mutexThreadExecute);
-	threadParam.exitThread = true;
-	pthread_cond_signal(&threadParam.condThreadExecute);
-	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
-	
+	pthread_cancel(coreThread);
 	pthread_join(coreThread, NULL);
 	coreThread = NULL;
 	
@@ -1070,17 +1065,11 @@ static void* RunCoreThread(void *arg)
 		pthread_mutex_lock(&param->mutexThreadExecute);
 		timeBudget = param->timeBudgetMachAbsTime;
 		
-		while (!(param->state != CORESTATE_PAUSE && execute && !param->exitThread))
+		while (!(param->state != CORESTATE_PAUSE && execute))
 		{
 			pthread_cond_wait(&param->condThreadExecute, &param->mutexThreadExecute);
 			startTime = mach_absolute_time();
 			timeBudget = param->timeBudgetMachAbsTime;
-		}
-		
-		if (param->exitThread)
-		{
-			pthread_mutex_unlock(&param->mutexThreadExecute);
-			break;
 		}
 		
 		if (param->state != CORESTATE_FRAMEJUMP)
@@ -1222,7 +1211,7 @@ static void* RunCoreThread(void *arg)
 			mach_wait_until(startTime + timeBudget);
 		}
 		
-	} while (!param->exitThread);
+	} while(true);
 	
 	return NULL;
 }
