@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -14,6 +14,10 @@
 	You should have received a copy of the GNU General Public License
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <AvailabilityMacros.h>
+
+#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_5
 
 #include <ostream>
 #include <istream>
@@ -88,3 +92,5 @@ template wistream& wistream::_M_extract(void*&);
 #endif
 
 _GLIBCXX_END_NAMESPACE
+
+#endif
