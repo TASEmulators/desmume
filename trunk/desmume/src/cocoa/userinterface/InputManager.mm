@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2014 DeSmuME Team
+	Copyright (C) 2012-2015 DeSmuME Team
 	
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -982,8 +982,10 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 
 #if defined(__ppc__) || defined(__ppc64__)
 static std::map<unsigned short, std::string> keyboardNameTable; // Key = Key code, Value = Key name
-#else
+#elif !defined(MAC_OS_X_VERSION_10_7) || (MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_6)
 static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; // Key = Key code, Value = Key name
+#else
+static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key = Key code, Value = Key name
 #endif
 
 - (id)init
