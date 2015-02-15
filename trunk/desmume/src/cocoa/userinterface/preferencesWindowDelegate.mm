@@ -166,11 +166,36 @@
 {
 	NSArray *imageRepArray = [previewImage representations];
 	const NSBitmapImageRep *imageRep = [imageRepArray objectAtIndex:0];
-	const NSSize previewImageSize = [previewImage size];
+	const size_t previewWidth = (GLsizei)[previewImage size].width;
+	const size_t previewHeight = (GLsizei)[previewImage size].height;
 	
+	// When an NSImage is loaded from file, it is loaded as ABGR (or RGBA for big-endian).
+	// However, the OpenGL blitter takes BGRA format. Therefore, we need to convert the
+	// pixel format before sending to OpenGL.
+	
+	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
+	for (size_t i = 0; i < previewWidth * previewHeight; i++)
+	{
+		const uint32_t color = bitmapData[i];
+		
+#if defined(__i386__) || defined(__x86_64__)
+		bitmapData[i]	=           0xFF000000         | // lA
+						  ((color & 0x00FF0000) >> 16) | // lB -> lR
+						   (color & 0x0000FF00)        | // lG
+						  ((color & 0x000000FF) << 16);  // lR -> lB
+#else
+		bitmapData[i]	=           0xFF000000         | // lA
+						  ((color & 0xFF000000) >>  8) | // bR -> lR
+						   (color & 0x00FF0000) >>  8  | // bG -> lG
+						  ((color & 0x0000FF00) >>  8);  // bB -> lB
+#endif
+		
+	}
+	
+	// Send the NSImage to OpenGL.
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
-	oglImage->LoadFrameOGL((const uint32_t *)[imageRep bitmapData], previewImageSize.width, previewImageSize.height);
+	oglImage->LoadFrameOGL(bitmapData, previewWidth, previewHeight);
 	oglImage->ProcessOGL();
 	CGLSetCurrentContext(prevContext);
 }
