@@ -5287,18 +5287,10 @@ void OGLImage::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 
 void OGLImage::LoadFrameOGL(const uint32_t *frameData, GLsizei w, GLsizei h)
 {
-	const bool isUsingCPUPixelScaler = this->_pixelScaler != VideoFilterTypeID_None && !this->_useShaderBasedPixelScaler;
-	
-	if (!isUsingCPUPixelScaler || this->_useDeposterize)
-	{
-		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataID);
-		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, frameData);
-		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
-	}
-	else
-	{
-		memcpy(this->_vf->GetSrcBufferPtr(), frameData, w * h * sizeof(uint32_t));
-	}
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataID);
+	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, w, h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, frameData);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+	memcpy(this->_vf->GetSrcBufferPtr(), frameData, w * h * sizeof(uint32_t));
 }
 
 void OGLImage::ProcessOGL()
