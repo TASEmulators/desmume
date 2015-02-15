@@ -271,7 +271,7 @@ public:
 	virtual void SetPixelScalerOGL(const int filterID);
 	virtual bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	virtual void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
-	virtual void LoadFrameOGL(const uint32_t *frameData, GLsizei w, GLsizei h);
+	virtual void LoadFrameOGL(const uint32_t *frameData, GLint x, GLint y, GLsizei w, GLsizei h);
 	virtual void ProcessOGL();
 	virtual void RenderOGL();
 };
@@ -377,7 +377,7 @@ public:
 	virtual void SetPixelScalerOGL(const int filterID);
 	virtual bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	virtual void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
-	virtual void LoadFrameOGL(const uint16_t *frameData, GLsizei w, GLsizei h);
+	virtual void LoadFrameOGL(const uint16_t *frameData, GLint x, GLint y, GLsizei w, GLsizei h);
 	virtual void ProcessOGL();
 	virtual void RenderOGL();
 };

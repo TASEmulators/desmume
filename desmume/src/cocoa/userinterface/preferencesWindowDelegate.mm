@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2014 DeSmuME Team
+	Copyright (C) 2012-2015 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -195,7 +195,7 @@
 	// Send the NSImage to OpenGL.
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
-	oglImage->LoadFrameOGL(bitmapData, previewWidth, previewHeight);
+	oglImage->LoadFrameOGL(bitmapData, 0, 0, previewWidth, previewHeight);
 	oglImage->ProcessOGL();
 	CGLSetCurrentContext(prevContext);
 }

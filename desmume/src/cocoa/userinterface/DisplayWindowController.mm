@@ -1784,16 +1784,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)doLoadVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)frameDisplayMode width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight
 {
-	OGLDisplayLayer *display = oglv->GetDisplayLayer();
-	
-	if (display->GetMode() != frameDisplayMode)
-	{
-		display->SetMode(frameDisplayMode);
-	}
+	const GLint lineOffset = (frameDisplayMode == DS_DISPLAY_TYPE_TOUCH) ? frameHeight : 0;
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	display->LoadFrameOGL((uint16_t *)videoFrameData, frameWidth, frameHeight);
+	oglv->GetDisplayLayer()->LoadFrameOGL((uint16_t *)videoFrameData, 0, lineOffset, frameWidth, frameHeight);
 	CGLUnlockContext(cglDisplayContext);
 }
 
