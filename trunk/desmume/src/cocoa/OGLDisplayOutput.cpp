@@ -5285,10 +5285,10 @@ void OGLImage::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 	this->_vf->ChangeFilterByID(filterID);
 }
 
-void OGLImage::LoadFrameOGL(const uint32_t *frameData, GLsizei w, GLsizei h)
+void OGLImage::LoadFrameOGL(const uint32_t *frameData, GLint x, GLint y, GLsizei w, GLsizei h)
 {
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataID);
-	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, w, h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, frameData);
+	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, w, h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, frameData);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	memcpy(this->_vf->GetSrcBufferPtr(), frameData, w * h * sizeof(uint32_t));
 }
@@ -6206,7 +6206,7 @@ void OGLDisplayLayer::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 				break;
 				
 			case DS_DISPLAY_TYPE_TOUCH:
-				this->_vfSingle->SetDstBufferPtr(newMasterBuffer + (this->_vfSingle->GetDstWidth() * this->_vfSingle->GetDstHeight()) );
+				this->_vfSingle->SetDstBufferPtr(newMasterBuffer + (newDstBufferWidth * newDstBufferHeight / 2) );
 				break;
 				
 			default:
@@ -6231,15 +6231,14 @@ void OGLDisplayLayer::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 	this->_vfDual->ChangeFilterByID(filterID);
 }
 
-void OGLDisplayLayer::LoadFrameOGL(const uint16_t *frameData, GLsizei w, GLsizei h)
+void OGLDisplayLayer::LoadFrameOGL(const uint16_t *frameData, GLint x, GLint y, GLsizei w, GLsizei h)
 {
-	const GLint lineOffset = (this->_displayMode == DS_DISPLAY_TYPE_TOUCH) ? h : 0;
 	const bool isUsingCPUPixelScaler = this->_pixelScaler != VideoFilterTypeID_None && !this->_useShaderBasedPixelScaler;
 	
 	if (!isUsingCPUPixelScaler || this->_useDeposterize)
 	{
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataID);
-		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, lineOffset, w, h, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frameData);
+		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, x, y, w, h, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frameData);
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	}
 	else
