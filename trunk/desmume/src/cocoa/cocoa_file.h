@@ -70,9 +70,6 @@
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_4
 + (BOOL) moveFileToCurrentDirectory:(NSURL *)fileURL;
 + (BOOL) copyFileToCurrentDirectory:(NSURL *)fileURL;
-+ (BOOL) moveFileListToCurrent:(NSMutableArray *)fileList;
-+ (BOOL) copyFileListToCurrent:(NSMutableArray *)fileList;
-+ (NSMutableArray *) completeFileList;
 + (NSMutableArray *) appFileList:(NSURL *)directoryURL;
 + (NSMutableArray *) appFileList:(NSURL *)directoryURL fileKind:(NSString *)theFileKind;
 #endif
