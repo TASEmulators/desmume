@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 
 @synthesize dummyObject;
 @synthesize window;
-@synthesize fileListController;
+@synthesize fileTreeOutlineView;
 @synthesize filesPresent;
 
 - (id)init
@@ -53,7 +53,9 @@
 		[_portStringsDict setObject:newPortStringsList forKey:versionKey];
 	}
 	
-	//_fileTree = [[NSMutableDictionary alloc] initWithCapacity:100];
+	_fileTree = [[NSMutableDictionary alloc] initWithCapacity:100];
+	_fileTreeSelection = [[NSMutableDictionary alloc] initWithCapacity:1024];
+	_fileTreeVersionList = [[NSMutableArray alloc] initWithCapacity:[_versionList count] * [_portStringsDict count]];
 	
 	filesPresent = NO;
 	
@@ -64,28 +66,22 @@
 {
 	[_versionList release];
 	[_portStringsDict release];
-	//[_fileTree release];
+	[_fileTree release];
+	[_fileTreeSelection release];
+	[_fileTreeVersionList release];
 	
 	[super dealloc];
 }
 
 - (void) updateFileList
 {
-	NSMutableArray *fileList = [CocoaDSFile completeFileList];
-	if (fileList != nil)
-	{
-		[self setFilesPresent:([fileList count] == 0) ? NO : YES];
-	}
-	
-	[fileListController setContent:fileList];
-	
-	// Refresh the file tree.
-	/*
 	NSDictionary *fileTypeInfoRootDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FileTypeInfo" ofType:@"plist"]];
 	NSDictionary *defaultPaths = (NSDictionary *)[fileTypeInfoRootDict valueForKey:@"DefaultPaths"];
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
 	
 	[_fileTree removeAllObjects];
+	[_fileTreeSelection removeAllObjects];
+	[_fileTreeVersionList removeAllObjects];
 	
 	for (NSString *versionKey in _versionList)
 	{
@@ -95,8 +91,6 @@
 			continue;
 		}
 		
-		NSMutableDictionary *newVersionTree = [NSMutableDictionary dictionaryWithCapacity:[portStringsList count]];
-		
 		for (NSString *portKey in portStringsList)
 		{
 			NSDictionary *pathsDict = (NSDictionary *)[(NSDictionary *)[defaultPaths valueForKey:versionKey] valueForKey:portKey];
@@ -105,27 +99,122 @@
 				continue;
 			}
 			
-			NSMutableArray *newPortTree = [NSMutableArray arrayWithCapacity:128];
+			NSMutableDictionary *newVersionTree = [NSMutableDictionary dictionaryWithCapacity:[pathsDict count]];
 			
-			for (NSString *pathKey in pathsDict)
+			for (NSString *kindKey in pathsDict)
 			{
-				NSString *pathString = (NSString *)[pathsDict valueForKey:pathKey];
-				NSArray *fileList = [fileManager contentsOfDirectoryAtPath:pathString error:nil];
+				NSMutableArray *fileList = [NSMutableArray arrayWithCapacity:128];
+				NSURL *pathURL = [CocoaDSFile directoryURLByKind:kindKey version:versionKey port:portKey];
+				[fileList addObjectsFromArray:[CocoaDSFile appFileList:pathURL fileKind:kindKey]];
 				
-				for (NSString *filePath in fileList)
+				if ([fileList count] > 0)
 				{
-					[newPortTree addObject:[NSMutableDictionary dictionaryWithObject:filePath forKey:@"FileName"]];
+					[newVersionTree setObject:fileList forKey:kindKey];
 				}
 			}
 			
-			[newVersionTree setObject:newPortTree forKey:portKey];
+			if ([newVersionTree count] > 0)
+			{
+				NSString *versionAndPortKey = [NSString stringWithFormat:@"%@ %@", versionKey, portKey];
+				[_fileTree setObject:newVersionTree forKey:versionAndPortKey];
+				[_fileTreeVersionList addObject:versionAndPortKey];
+			}
 		}
-		
-		[_fileTree setObject:newVersionTree forKey:versionKey];
 	}
 	
 	[fileManager release];
-	 */
+	
+	[self setFilesPresent:([_fileTree count] > 0)];
+	
+	NSButton *closeButton = [[self window] standardWindowButton:NSWindowCloseButton];
+	[closeButton setEnabled:![self filesPresent]];
+	
+	[fileTreeOutlineView reloadItem:nil reloadChildren:YES];
+}
+
+- (void) setFileSelectionInOutlineView:(NSOutlineView *)outlineView file:(NSMutableDictionary *)fileItem isSelected:(BOOL)isSelected
+{
+	[fileItem setValue:[NSNumber numberWithBool:isSelected] forKey:@"willMigrate"];
+	NSString *fileName = (NSString *)[fileItem objectForKey:@"name"];
+	
+	if (isSelected)
+	{
+		NSMutableDictionary *oldSelection = (NSMutableDictionary *)[_fileTreeSelection objectForKey:fileName];
+		
+		if (oldSelection != nil && oldSelection != fileItem)
+		{
+			[oldSelection setValue:[NSNumber numberWithBool:NO] forKey:@"willMigrate"];
+			[outlineView reloadItem:oldSelection];
+			[outlineView reloadItem:[outlineView parentForItem:oldSelection]];
+			[outlineView reloadItem:[outlineView parentForItem:[outlineView parentForItem:oldSelection]]];
+		}
+		
+		[_fileTreeSelection setValue:fileItem forKey:fileName];
+	}
+	else
+	{
+		[_fileTreeSelection removeObjectForKey:fileName];
+	}
+}
+
++ (NSMutableDictionary *) fileItemFromURL:(NSURL *)fileURL fileManager:(NSFileManager *)fileManager
+{
+	if (fileURL == nil || fileManager == nil)
+	{
+		return nil;
+	}
+	
+	NSNumber *willMigrate = [NSNumber numberWithBool:YES];
+	NSString *filePath = [fileURL path];
+	NSString *fileName = [filePath lastPathComponent];
+	NSString *fileVersion = [CocoaDSFile fileVersionByURL:fileURL];
+	NSString *fileKind = [CocoaDSFile fileKindByURL:fileURL];
+	NSDictionary *fileAttributes = [fileManager attributesOfItemAtPath:filePath error:nil];
+	
+	return [NSMutableDictionary dictionaryWithObjectsAndKeys:
+			willMigrate, @"willMigrate",
+			fileName, @"name",
+			fileVersion, @"version",
+			fileKind, @"kind",
+			[fileAttributes fileModificationDate], @"dateModified",
+			[fileURL absoluteString], @"URL",
+			nil];
+}
+
+- (void) moveSelectedFilesToCurrent
+{
+	NSArray *fileList = [_fileTreeSelection allKeys];
+	for (NSString *fileName in fileList)
+	{
+		NSDictionary *fileItem = (NSDictionary *)[_fileTreeSelection objectForKey:fileName];
+		const BOOL willMigrate = [[fileItem valueForKey:@"willMigrate"] boolValue];
+		
+		if (!willMigrate)
+		{
+			continue;
+		}
+		
+		NSURL *fileURL = [NSURL URLWithString:[fileItem valueForKey:@"URL"]];
+		[CocoaDSFile moveFileToCurrentDirectory:fileURL];
+	}
+}
+
+- (void) copySelectedFilesToCurrent
+{
+	NSArray *fileList = [_fileTreeSelection allKeys];
+	for (NSString *fileName in fileList)
+	{
+		NSDictionary *fileItem = (NSDictionary *)[_fileTreeSelection objectForKey:fileName];
+		const BOOL willMigrate = [[fileItem valueForKey:@"willMigrate"] boolValue];
+		
+		if (!willMigrate)
+		{
+			continue;
+		}
+		
+		NSURL *fileURL = [NSURL URLWithString:[fileItem valueForKey:@"URL"]];
+		[CocoaDSFile copyFileToCurrentDirectory:fileURL];
+	}
 }
 
 #pragma mark NSOutlineViewDelegate Protocol
@@ -137,7 +226,7 @@
 
 - (BOOL)outlineView:(NSOutlineView *)outlineView shouldTrackCell:(NSCell *)cell forTableColumn:(NSTableColumn *)tableColumn item:(id)item
 {
-	if ([(NSString *)[tableColumn identifier] isEqualToString:@"FileWillMigrateColumn"])
+	if ([(NSString *)[tableColumn identifier] isEqualToString:@"FileNameColumn"])
 	{
 		return YES;
 	}
@@ -152,13 +241,28 @@
 	
 	if ([columnID isEqualToString:@"FileNameColumn"])
 	{
+		NSFont *newFont = [[NSFontManager sharedFontManager] fontWithFamily:[[outCell font] familyName]
+																	 traits:([item isKindOfClass:[NSString class]]) ? NSBoldFontMask : 0
+																	 weight:5
+																	   size:[[outCell font] pointSize]];
+		[outCell setFont:newFont];
+		
 		if ([item isKindOfClass:[NSString class]])
 		{
-			NSFont *newFont = [[NSFontManager sharedFontManager] fontWithFamily:[[outCell font] familyName]
-																		 traits:NSBoldFontMask
-																		 weight:0
-																		   size:[[outCell font] pointSize]];
-			[outCell setFont:newFont];
+			[outCell setTitle:(NSString *)item];
+			[outCell setAllowsMixedState:YES];
+		}
+		else if ([item isKindOfClass:[NSArray class]])
+		{
+			NSString *parentItem = [outlineView parentForItem:item];
+			NSArray *allKeys = [(NSDictionary *)[_fileTree objectForKey:parentItem] allKeysForObject:item];
+			[outCell setTitle:(NSString *)[allKeys objectAtIndex:0]];
+			[outCell setAllowsMixedState:YES];
+		}
+		else if ([item isKindOfClass:[NSDictionary class]])
+		{
+			[outCell setTitle:(NSString *)[(NSDictionary *)item objectForKey:@"name"]];
+			[outCell setAllowsMixedState:NO];
 		}
 	}
 	
@@ -170,20 +274,16 @@
 {
 	if (item == nil)
 	{
-		return [_versionList objectAtIndex:index];
+		return [_fileTreeVersionList objectAtIndex:index];
 	}
 	else if ([item isKindOfClass:[NSString class]])
 	{
-		if ([_versionList containsObject:item])
-		{
-			return [(NSArray *)[_portStringsDict valueForKey:item] objectAtIndex:index];
-		}
-		else
-		{
-			NSString *versionKey = (NSString *)[outlineView parentForItem:item];
-			//return [(NSArray *)[(NSDictionary *)[_fileTree valueForKey:versionKey] valueForKey:item] objectAtIndex:index];
-			return nil;
-		}
+		NSArray *versionKeys = [(NSDictionary *)[_fileTree objectForKey:(NSString *)item] allKeys];
+		return [(NSDictionary *)[_fileTree objectForKey:(NSString *)item] objectForKey:[versionKeys objectAtIndex:index]];
+	}
+	else if ([item isKindOfClass:[NSArray class]])
+	{
+		return [(NSArray *)item objectAtIndex:index];
 	}
 	
 	return nil;
@@ -191,7 +291,7 @@
 
 - (BOOL)outlineView:(NSOutlineView *)outlineView isItemExpandable:(id)item
 {
-	if ([item isKindOfClass:[NSString class]])
+	if ([item isKindOfClass:[NSString class]] || [item isKindOfClass:[NSArray class]])
 	{
 		return YES;
 	}
@@ -205,20 +305,15 @@
 	
 	if (item == nil)
 	{
-		numberChildren = [_versionList count];
+		numberChildren = [_fileTreeVersionList count];
 	}
 	else if ([item isKindOfClass:[NSString class]])
 	{
-		if ([_versionList containsObject:item])
-		{
-			return [[_portStringsDict valueForKey:item] count];
-		}
-		else
-		{
-			NSString *versionKey = (NSString *)[outlineView parentForItem:item];
-			//return [(NSArray *)[(NSDictionary *)[_fileTree valueForKey:versionKey] valueForKey:item] count];
-			return 0;
-		}
+		numberChildren = [(NSDictionary *)[_fileTree objectForKey:(NSString *)item] count];
+	}
+	else if ([item isKindOfClass:[NSArray class]])
+	{
+		numberChildren = [(NSArray *)item count];
 	}
 	
 	return numberChildren;
@@ -228,20 +323,108 @@
 {
 	NSString *columnID = (NSString *)[tableColumn identifier];
 	
-	if ([columnID isEqualToString:@"FileWillMigrateColumn"])
-	{
-		return nil;
-	}
-	else if ([columnID isEqualToString:@"FileNameColumn"])
+	if ([columnID isEqualToString:@"FileNameColumn"])
 	{
 		if ([item isKindOfClass:[NSString class]])
 		{
-			return item;
+			NSString *parentKey = [outlineView parentForItem:item];
+			
+			if (parentKey == nil)
+			{
+				NSDictionary *versionDict = (NSDictionary *)[_fileTree objectForKey:(NSString *)item];
+				NSArray *kindKeyList = [versionDict allKeys];
+				NSUInteger kindCount = [kindKeyList count];
+				NSUInteger willMigrateKindCount = 0;
+				
+				for (NSString *kindKey in kindKeyList)
+				{
+					NSArray *fileList = (NSArray *)[versionDict objectForKey:kindKey];
+					NSUInteger fileCount = [fileList count];
+					NSUInteger willMigrateFileCount = 0;
+					
+					for (NSDictionary *fileAttr in fileList)
+					{
+						if ([(NSNumber *)[fileAttr objectForKey:@"willMigrate"] boolValue])
+						{
+							willMigrateFileCount++;
+						}
+						else
+						{
+							if (willMigrateFileCount > 0)
+							{
+								return [NSNumber numberWithInteger:NSMixedState];
+							}
+						}
+					}
+					
+					if (willMigrateFileCount == 0)
+					{
+						if (willMigrateKindCount > 0)
+						{
+							return [NSNumber numberWithInteger:NSMixedState];
+						}
+					}
+					else if (willMigrateFileCount == fileCount)
+					{
+						willMigrateKindCount++;
+					}
+					else
+					{
+						return [NSNumber numberWithInteger:NSMixedState];
+					}
+				}
+				
+				if (willMigrateKindCount == 0)
+				{
+					return [NSNumber numberWithInteger:NSOffState];
+				}
+				else if (willMigrateKindCount == kindCount)
+				{
+					return [NSNumber numberWithInteger:NSOnState];
+				}
+				else
+				{
+					return [NSNumber numberWithInteger:NSMixedState];
+				}
+			}
+		}
+		else if ([item isKindOfClass:[NSArray class]])
+		{
+			NSArray *fileList = (NSArray *)item;
+			NSUInteger fileCount = [fileList count];
+			NSUInteger willMigrateFileCount = 0;
+			
+			for (NSDictionary *fileAttr in fileList)
+			{
+				if ([(NSNumber *)[fileAttr objectForKey:@"willMigrate"] boolValue])
+				{
+					willMigrateFileCount++;
+				}
+				else
+				{
+					if (willMigrateFileCount > 0)
+					{
+						return [NSNumber numberWithInteger:NSMixedState];
+					}
+				}
+			}
+			
+			if (willMigrateFileCount == 0)
+			{
+				return [NSNumber numberWithInteger:NSOffState];
+			}
+			else if (willMigrateFileCount == fileCount)
+			{
+				return [NSNumber numberWithInteger:NSOnState];
+			}
+			else
+			{
+				return [NSNumber numberWithInteger:NSMixedState];
+			}
 		}
 		else if ([item isKindOfClass:[NSDictionary class]])
 		{
-			NSString *fileName = [item valueForKey:@"FileName"];
-			return (fileName != nil) ? fileName : @"";
+			return [(NSDictionary *)item objectForKey:@"willMigrate"];
 		}
 		else
 		{
@@ -250,13 +433,9 @@
 	}
 	else if ([columnID isEqualToString:@"FileKindColumn"])
 	{
-		if ([item isKindOfClass:[NSString class]])
+		if ([item isKindOfClass:[NSDictionary class]])
 		{
-			return @"";
-		}
-		else if ([item isKindOfClass:[NSDictionary class]])
-		{
-			return @"";
+			return [(NSDictionary *)item objectForKey:@"kind"];
 		}
 		else
 		{
@@ -265,13 +444,9 @@
 	}
 	else if ([columnID isEqualToString:@"FileDateModifiedColumn"])
 	{
-		if ([item isKindOfClass:[NSString class]])
+		if ([item isKindOfClass:[NSDictionary class]])
 		{
-			return @"";
-		}
-		else if ([item isKindOfClass:[NSDictionary class]])
-		{
-			return @"";
+			return [(NSDictionary *)item objectForKey:@"dateModified"];
 		}
 		else
 		{
@@ -280,6 +455,84 @@
 	}
 	
 	return item;
+}
+
+- (void)outlineView:(NSOutlineView *)outlineView setObjectValue:(id)object forTableColumn:(NSTableColumn *)tableColumn byItem:(id)item
+{
+	NSString *columnID = (NSString *)[tableColumn identifier];
+	NSCell *itemCell = [tableColumn dataCellForRow:[outlineView rowForItem:item]];
+	
+	if ([columnID isEqualToString:@"FileNameColumn"])
+	{
+		if ([item isKindOfClass:[NSString class]])
+		{
+			NSMutableDictionary *versionDict = (NSMutableDictionary *)[_fileTree objectForKey:(NSString *)item];
+			const BOOL newSelectState = !([itemCell state] == NSOnState);
+			
+			for (NSString *kindKey in versionDict)
+			{
+				NSArray *fileList = (NSArray *)[versionDict objectForKey:kindKey];
+				
+				if ([outlineView isItemExpanded:item])
+				{
+					if ([outlineView isItemExpanded:fileList])
+					{
+						for (NSMutableDictionary *fileAttr in fileList)
+						{
+							[self setFileSelectionInOutlineView:outlineView file:fileAttr isSelected:newSelectState];
+							[outlineView reloadItem:fileAttr];
+						}
+					}
+					else
+					{
+						for (NSMutableDictionary *fileAttr in fileList)
+						{
+							[self setFileSelectionInOutlineView:outlineView file:fileAttr isSelected:newSelectState];
+						}
+					}
+					
+					[outlineView reloadItem:fileList];
+				}
+				else
+				{
+					for (NSMutableDictionary *fileAttr in fileList)
+					{
+						[self setFileSelectionInOutlineView:outlineView file:fileAttr isSelected:newSelectState];
+					}
+				}
+			}
+		}
+		else if ([item isKindOfClass:[NSArray class]])
+		{
+			const BOOL newSelectState = !([itemCell state] == NSOnState);
+			NSArray *fileList = (NSArray *)item;
+			
+			if ([outlineView isItemExpanded:item])
+			{
+				for (NSMutableDictionary *fileAttr in fileList)
+				{
+					[self setFileSelectionInOutlineView:outlineView file:fileAttr isSelected:newSelectState];
+					[outlineView reloadItem:fileAttr];
+				}
+			}
+			else
+			{
+				for (NSMutableDictionary *fileAttr in fileList)
+				{
+					[self setFileSelectionInOutlineView:outlineView file:fileAttr isSelected:newSelectState];
+				}
+			}
+			
+			[outlineView reloadItem:[outlineView parentForItem:item]];
+		}
+		else if ([item isKindOfClass:[NSDictionary class]])
+		{
+			const BOOL newSelectState = !([itemCell state] == NSOnState);
+			[self setFileSelectionInOutlineView:outlineView file:(NSMutableDictionary *)item isSelected:newSelectState];
+			[outlineView reloadItem:[outlineView parentForItem:item]];
+			[outlineView reloadItem:[outlineView parentForItem:[outlineView parentForItem:item]]];
+		}
+	}
 }
 
 #pragma mark IBActions
@@ -294,16 +547,15 @@
 - (IBAction) handleChoice:(id)sender
 {
 	const NSInteger option = [(NSControl *)sender tag];
-	NSMutableArray *fileList = [fileListController content];
 	
 	switch (option)
 	{
 		case COCOA_DIALOG_DEFAULT:
-			[CocoaDSFile copyFileListToCurrent:fileList];
+			[self copySelectedFilesToCurrent];
 			break;
 			
 		case COCOA_DIALOG_OPTION:
-			[CocoaDSFile moveFileListToCurrent:fileList];
+			[self moveSelectedFilesToCurrent];
 			break;
 			
 		default:
@@ -311,26 +563,6 @@
 	}
 	
 	[[(NSControl *)sender window] close];
-}
-
-- (IBAction) selectAll:(id)sender
-{
-	NSMutableArray *fileList = [fileListController content];
-	
-	for (NSMutableDictionary *fileAttr in fileList)
-	{
-		[fileAttr setValue:[NSNumber numberWithBool:YES] forKey:@"willMigrate"];
-	}
-}
-
-- (IBAction) selectNone:(id)sender
-{
-	NSMutableArray *fileList = [fileListController content];
-	
-	for (NSMutableDictionary *fileAttr in fileList)
-	{
-		[fileAttr setValue:[NSNumber numberWithBool:NO] forKey:@"willMigrate"];
-	}
 }
 
 @end

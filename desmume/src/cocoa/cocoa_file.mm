@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1183,97 +1183,6 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	return result;
 }
 
-+ (BOOL) moveFileListToCurrent:(NSMutableArray *)fileList
-{
-	BOOL result = NO;
-	
-	if (fileList == nil)
-	{
-		return result;
-	}
-	
-	for (NSDictionary *fileDict in fileList)
-	{
-		BOOL willMigrate = [[fileDict valueForKey:@"willMigrate"] boolValue];
-		if (!willMigrate)
-		{
-			continue;
-		}
-		
-		NSURL *fileURL = [NSURL URLWithString:[fileDict valueForKey:@"URL"]];
-		[CocoaDSFile moveFileToCurrentDirectory:fileURL];
-	}
-	
-	result = YES;
-	
-	return result;
-}
-
-+ (BOOL) copyFileListToCurrent:(NSMutableArray *)fileList
-{
-	BOOL result = NO;
-	
-	if (fileList == nil)
-	{
-		return result;
-	}
-	
-	for (NSDictionary *fileDict in fileList)
-	{
-		BOOL willMigrate = [[fileDict valueForKey:@"willMigrate"] boolValue];
-		if (!willMigrate)
-		{
-			continue;
-		}
-		
-		NSURL *fileURL = [NSURL URLWithString:[fileDict valueForKey:@"URL"]];
-		[CocoaDSFile copyFileToCurrentDirectory:fileURL];
-	}
-	
-	result = YES;
-	
-	return result;
-}
-
-+ (NSMutableArray *) completeFileList
-{
-	NSMutableArray *fileList = [NSMutableArray arrayWithCapacity:100];
-	if (fileList == nil)
-	{
-		return fileList;
-	}
-	
-	NSString *currentVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
-	NSDictionary *fileTypeInfoRootDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FileTypeInfo" ofType:@"plist"]];
-	NSArray *versionList = [fileTypeInfoRootDict valueForKey:@"VersionStrings"];
-	NSDictionary *filePathsDict = (NSDictionary *)[fileTypeInfoRootDict valueForKey:@"DefaultPaths"];
-	
-	for (NSString *versionKey in versionList)
-	{
-		if ([currentVersion isEqualToString:versionKey])
-		{
-			continue;
-		}
-		
-		NSDictionary *versionDict = (NSDictionary *)[filePathsDict valueForKey:versionKey];
-		NSArray *portArray = [versionDict allKeys];
-		
-		for (NSString *portKey in portArray)
-		{
-			NSDictionary *portDict = (NSDictionary *)[versionDict valueForKey:portKey];
-			NSArray *fileKindList = [portDict allKeys];
-			
-			for (NSString *fileKind in fileKindList)
-			{
-				NSURL *dirURL = [CocoaDSFile directoryURLByKind:fileKind version:versionKey port:portKey];
-				[fileList addObjectsFromArray:[CocoaDSFile appFileList:dirURL fileKind:fileKind]];
-			}
-		}
-	}
-	
-	return fileList;
-}
-
 + (NSMutableArray *) appFileList:(NSURL *)directoryURL
 {
 	return [self appFileList:directoryURL fileKind:nil];
@@ -1308,7 +1217,7 @@ static NSMutableDictionary *_gURLDictionary = nil;
 	
 	for (NSString *fileName in fileList)
 	{
-		NSNumber *willMigrate = [NSNumber numberWithBool:YES];
+		NSNumber *willMigrate = [NSNumber numberWithBool:NO];
 		NSString *filePath = [directoryPath stringByAppendingPathComponent:fileName];
 		NSURL *fileURL = [NSURL fileURLWithPath:filePath];
 		NSString *fileVersion = [CocoaDSFile fileVersionByURL:fileURL];

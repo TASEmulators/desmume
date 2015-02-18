@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -25,24 +25,27 @@
 {
 	NSObject *dummyObject;
 	NSWindow *window;
-	NSArrayController *fileListController;
+	NSOutlineView *fileTreeOutlineView;
 	NSArray *_versionList;
 	NSMutableDictionary *_portStringsDict;
-	//NSMutableDictionary *_fileTree;
+	NSMutableDictionary *_fileTree;
+	NSMutableDictionary *_fileTreeSelection;
+	NSMutableArray *_fileTreeVersionList;
 	
 	BOOL filesPresent;
 }
 
 @property (readonly) IBOutlet NSObject *dummyObject;
 @property (readonly) IBOutlet NSWindow *window;
-@property (readonly) IBOutlet NSArrayController *fileListController;
+@property (readonly) IBOutlet NSOutlineView *fileTreeOutlineView;
 
 @property (assign) BOOL filesPresent;
 
 - (void) updateFileList;
+- (void) setFileSelectionInOutlineView:(NSOutlineView *)outlineView file:(NSMutableDictionary *)fileItem isSelected:(BOOL)isSelected;
+- (void) moveSelectedFilesToCurrent;
+- (void) copySelectedFilesToCurrent;
 - (IBAction) updateAndShowWindow:(id)sender;
 - (IBAction) handleChoice:(id)sender;
-- (IBAction) selectAll:(id)sender;
-- (IBAction) selectNone:(id)sender;
 
 @end
