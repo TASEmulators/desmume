@@ -714,6 +714,8 @@
 	<true/>
 	<key>Render3D_Threads</key>
 	<integer>0</integer>
+	<key>RomInfoPanel_SectionViewState</key>
+	<dict/>
 	<key>Slot2_GBA_CartridgePath</key>
 	<string></string>
 	<key>Slot2_GBA_SRAMPath</key>

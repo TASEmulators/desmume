@@ -20,6 +20,7 @@
 #import "DisplayWindowController.h"
 #import "EmuControllerDelegate.h"
 #import "FileMigrationDelegate.h"
+#import "RomInfoPanel.h"
 #import "Slot2WindowDelegate.h"
 #import "preferencesWindowDelegate.h"
 #import "troubleshootingWindowDelegate.h"
@@ -56,12 +57,7 @@
 @synthesize cheatWindowController;
 @synthesize migrationDelegate;
 @synthesize inputManager;
-
-@synthesize boxGeneralInfo;
-@synthesize boxTitles;
-@synthesize boxARMBinaries;
-@synthesize boxFileSystem;
-@synthesize boxMisc;
+@synthesize romInfoPanel;
 
 @synthesize isAppRunningOnIntel;
 @synthesize isDeveloperPlusBuild;
@@ -171,10 +167,6 @@
 												  nil];
 	
 	[aboutWindowController setContent:aboutWindowProperties];
-	
-	// Change the title colors of the NSBox objects in the ROM Info panel. We change the
-	// colors manually here because you can't change them in Interface Builder. Boo!!!
-	[self setRomInfoPanelBoxTitleColors];
 	
 	// Set the preferences window to the general view by default.
 	[[prefWindowDelegate toolbar] setSelectedItemIdentifier:@"General"];
@@ -347,6 +339,7 @@
 	
 	// Save some settings to user defaults before app termination
 	[self saveDisplayWindowStates];
+	[romInfoPanel writeDefaults];
 	[[NSUserDefaults standardUserDefaults] setDouble:[emuControl lastSetSpeedScalar] forKey:@"CoreControl_SpeedScalar"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isSpeedLimitEnabled] forKey:@"CoreControl_EnableSpeedLimit"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isFrameSkipEnabled] forKey:@"CoreControl_EnableAutoFrameSkip"];
@@ -577,6 +570,9 @@
 	[inputManager setMappingsWithMappings:userMappings];
 	[[inputManager hidManager] setDeviceListController:inputDeviceListController];
 	
+	// Set up the ROM Info panel.
+	[romInfoPanel setupUserDefaults];
+	
 	// Set up the preferences window.
 	[prefWindowDelegate setupUserDefaults];
 	
@@ -585,23 +581,6 @@
 	
 	// Set up the rest of the emulation-related user defaults.
 	[emuControl setupUserDefaults];
-}
-
-- (void) setRomInfoPanelBoxTitleColors
-{
-	NSColor *boxTitleColor = [NSColor whiteColor];
-	
-	[[boxGeneralInfo titleCell] setTextColor:boxTitleColor];
-	[[boxTitles titleCell] setTextColor:boxTitleColor];
-	[[boxARMBinaries titleCell] setTextColor:boxTitleColor];
-	[[boxFileSystem titleCell] setTextColor:boxTitleColor];
-	[[boxMisc titleCell] setTextColor:boxTitleColor];
-	
-	[boxGeneralInfo setNeedsDisplay:YES];
-	[boxTitles setNeedsDisplay:YES];
-	[boxARMBinaries setNeedsDisplay:YES];
-	[boxFileSystem setNeedsDisplay:YES];
-	[boxMisc setNeedsDisplay:YES];
 }
 
 - (void) restoreDisplayWindowStates
