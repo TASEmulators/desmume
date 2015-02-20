@@ -741,6 +741,9 @@
 		ABAD3E7913AF1D6D00502E1E /* sse_optimized.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6D13AF1D6D00502E1E /* sse_optimized.cpp */; };
 		ABAD3E7A13AF1D6D00502E1E /* TDStretch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6E13AF1D6D00502E1E /* TDStretch.cpp */; };
 		ABAD3E7B13AF1D6D00502E1E /* WavFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */; };
+		ABAF0A411A96E67200B95B75 /* RomInfoPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAF0A401A96E67200B95B75 /* RomInfoPanel.mm */; };
+		ABAF0A421A96E67200B95B75 /* RomInfoPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAF0A401A96E67200B95B75 /* RomInfoPanel.mm */; };
+		ABAF0A431A96E67200B95B75 /* RomInfoPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAF0A401A96E67200B95B75 /* RomInfoPanel.mm */; };
 		ABB24F6D1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */; };
 		ABB24F6E1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */; };
 		ABB24F6F1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */; };
@@ -1220,6 +1223,8 @@
 		ABAD3E6D13AF1D6D00502E1E /* sse_optimized.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sse_optimized.cpp; sourceTree = "<group>"; };
 		ABAD3E6E13AF1D6D00502E1E /* TDStretch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TDStretch.cpp; sourceTree = "<group>"; };
 		ABAD3E6F13AF1D6D00502E1E /* WavFile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WavFile.cpp; sourceTree = "<group>"; };
+		ABAF0A3F1A96E67200B95B75 /* RomInfoPanel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RomInfoPanel.h; sourceTree = "<group>"; };
+		ABAF0A401A96E67200B95B75 /* RomInfoPanel.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = RomInfoPanel.mm; sourceTree = "<group>"; };
 		ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OGLDisplayOutput_3_2.cpp; sourceTree = "<group>"; };
 		ABB24F6C1A81EE92006C1108 /* OGLDisplayOutput_3_2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OGLDisplayOutput_3_2.h; sourceTree = "<group>"; };
 		ABB3C63B1501BB8300E0C22E /* DeSmuME_Prefix_OpenEmu.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DeSmuME_Prefix_OpenEmu.pch; sourceTree = "<group>"; };
@@ -1688,6 +1693,7 @@
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB01005C170D07AF00D70FBE /* InputProfileController.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
+				ABAF0A3F1A96E67200B95B75 /* RomInfoPanel.h */,
 				AB564902186E6EBC002740F4 /* Slot2WindowDelegate.h */,
 				ABF2B9F81690412A000FF7C0 /* troubleshootingWindowDelegate.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
@@ -1699,6 +1705,7 @@
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB01005D170D07B000D70FBE /* InputProfileController.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
+				ABAF0A401A96E67200B95B75 /* RomInfoPanel.mm */,
 				AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */,
 				ABF2B9FA16904133000FF7C0 /* troubleshootingWindowDelegate.mm */,
 			);
@@ -2765,6 +2772,7 @@
 				ABD1FF531345ACBF00AF11D1 /* ConvertUTF.c in Sources */,
 				ABAD3E7113AF1D6D00502E1E /* AAFilter.cpp in Sources */,
 				ABD1FED21345AC8400AF11D1 /* arm_instructions.cpp in Sources */,
+				ABAF0A421A96E67200B95B75 /* RomInfoPanel.mm in Sources */,
 				ABD1FED31345AC8400AF11D1 /* armcpu.cpp in Sources */,
 				ABD1FED41345AC8400AF11D1 /* bios.cpp in Sources */,
 				ABD1FF5B1345ACBF00AF11D1 /* cache.cpp in Sources */,
@@ -2974,6 +2982,7 @@
 				AB796D0B15CDCBA200C59155 /* FIRFilter.cpp in Sources */,
 				AB796D0C15CDCBA200C59155 /* firmware.cpp in Sources */,
 				AB796D0D15CDCBA200C59155 /* fs-linux.cpp in Sources */,
+				ABAF0A411A96E67200B95B75 /* RomInfoPanel.mm in Sources */,
 				AB796D0E15CDCBA200C59155 /* gfx3d.cpp in Sources */,
 				AB796D0F15CDCBA200C59155 /* GPU.cpp in Sources */,
 				AB9038AF17C5ED2200F410BD /* slot1_retail_auto.cpp in Sources */,
@@ -3132,6 +3141,7 @@
 				AB8F3C821A53AC2600A80BF6 /* decrypt.cpp in Sources */,
 				AB8F3C831A53AC2600A80BF6 /* directory.cpp in Sources */,
 				AB8F3C841A53AC2600A80BF6 /* Disassembler.cpp in Sources */,
+				ABAF0A431A96E67200B95B75 /* RomInfoPanel.mm in Sources */,
 				AB8F3C851A53AC2600A80BF6 /* disc.cpp in Sources */,
 				AB8F3C861A53AC2600A80BF6 /* dlditool.cpp in Sources */,
 				AB8F3C871A53AC2600A80BF6 /* driver.cpp in Sources */,
@@ -3513,7 +3523,6 @@
 					"DEBUG=1",
 					GDB_STUB,
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = "DeSmuME (Debug, dev+)";
 			};
 			name = Debug;
@@ -3526,7 +3535,6 @@
 					GDB_STUB,
 				);
 				LLVM_LTO = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = "DeSmuME (dev+)";
 			};
 			name = Release;
@@ -3535,6 +3543,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LIBRARY = "libc++";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/openemu\"",
@@ -3551,6 +3560,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LIBRARY = "libc++";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/openemu\"",
@@ -3580,7 +3590,6 @@
 				INFOPLIST_FILE = Info.plist;
 				LLVM_LTO = YES;
 				LLVM_VECTORIZE_LOOPS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = DeSmuME;
 				SKIP_INSTALL = NO;
@@ -3603,7 +3612,6 @@
 				GCC_UNROLL_LOOPS = YES;
 				IBC_FLATTEN_NIBS = YES;
 				LLVM_LTO = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -3646,7 +3654,7 @@
 				IBC_FLATTEN_NIBS = NO;
 				INFOPLIST_FILE = "Info (Debug).plist";
 				LD_NO_PIE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "DeSmuME (Debug)";
 				SDKROOT = macosx;
@@ -3692,7 +3700,7 @@
 				INFOPLIST_FILE = Info.plist;
 				LD_NO_PIE = YES;
 				LLVM_VECTORIZE_LOOPS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = DeSmuME;
 				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;

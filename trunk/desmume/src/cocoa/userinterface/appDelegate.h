@@ -21,6 +21,7 @@
 @class InputPrefsView;
 @class InputManager;
 @class FileMigrationDelegate;
+@class RomInfoPanel;
 
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
@@ -41,6 +42,7 @@
 	NSArrayController *inputDeviceListController;
 	FileMigrationDelegate *migrationDelegate;
 	InputManager *inputManager;
+	RomInfoPanel *romInfoPanel;
 	
 	NSWindow *prefWindow;
 	NSWindow *troubleshootingWindow;
@@ -51,12 +53,6 @@
 	
 	NSMenu *mLoadStateSlot;
 	NSMenu *mSaveStateSlot;
-	
-	NSBox *boxGeneralInfo;
-	NSBox *boxTitles;
-	NSBox *boxARMBinaries;
-	NSBox *boxFileSystem;
-	NSBox *boxMisc;
 	
 	BOOL isAppRunningOnIntel;
     BOOL isDeveloperPlusBuild;
@@ -82,12 +78,7 @@
 @property (readonly) IBOutlet NSMenu *mLoadStateSlot;
 @property (readonly) IBOutlet NSMenu *mSaveStateSlot;
 @property (readonly) IBOutlet InputPrefsView *inputPrefsView;
-
-@property (readonly) IBOutlet NSBox *boxGeneralInfo;
-@property (readonly) IBOutlet NSBox *boxTitles;
-@property (readonly) IBOutlet NSBox *boxARMBinaries;
-@property (readonly) IBOutlet NSBox *boxFileSystem;
-@property (readonly) IBOutlet NSBox *boxMisc;
+@property (readonly) IBOutlet RomInfoPanel *romInfoPanel;
 
 @property (assign) BOOL isAppRunningOnIntel;
 @property (assign) BOOL isDeveloperPlusBuild;
@@ -100,7 +91,6 @@
 - (void) setupSlotMenuItems;
 - (NSMenuItem *) addSlotMenuItem:(NSMenu *)menu slotNumber:(NSUInteger)slotNumber;
 - (void) setupUserDefaults;
-- (void) setRomInfoPanelBoxTitleColors;
 - (void) restoreDisplayWindowStates;
 - (void) saveDisplayWindowStates;
 

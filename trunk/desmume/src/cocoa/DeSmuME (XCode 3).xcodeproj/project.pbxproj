@@ -1131,6 +1131,11 @@
 		ABC3AF3514B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC3AF2D14B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png */; };
 		ABC3AF3614B7F06900D5B13D /* Icon_VolumeTwoThird_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC3AF2E14B7F06900D5B13D /* Icon_VolumeTwoThird_16x16.png */; };
 		ABC3AFCF14B8D16700D5B13D /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
+		ABC3DEBD1A96EA96009EC345 /* RomInfoPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABC3DEBC1A96EA96009EC345 /* RomInfoPanel.mm */; };
+		ABC3DEBE1A96EA96009EC345 /* RomInfoPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABC3DEBC1A96EA96009EC345 /* RomInfoPanel.mm */; };
+		ABC3DEBF1A96EA96009EC345 /* RomInfoPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABC3DEBC1A96EA96009EC345 /* RomInfoPanel.mm */; };
+		ABC3DEC01A96EA96009EC345 /* RomInfoPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABC3DEBC1A96EA96009EC345 /* RomInfoPanel.mm */; };
+		ABC3DEC11A96EA96009EC345 /* RomInfoPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABC3DEBC1A96EA96009EC345 /* RomInfoPanel.mm */; };
 		ABD0A53A1501AA5A0074A094 /* coreaudiosound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5341501AA5A0074A094 /* coreaudiosound.cpp */; };
 		ABD0A53B1501AA5A0074A094 /* ringbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD0A5351501AA5A0074A094 /* ringbuffer.cpp */; };
 		ABD597BC187CD95A00069403 /* Image_GuitarGrip.png in Resources */ = {isa = PBXBuildFile; fileRef = ABD597BB187CD95A00069403 /* Image_GuitarGrip.png */; };
@@ -1428,6 +1433,8 @@
 		ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeMute_16x16.png; path = images/Icon_VolumeMute_16x16.png; sourceTree = "<group>"; };
 		ABC3AF2D14B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeOneThird_16x16.png; path = images/Icon_VolumeOneThird_16x16.png; sourceTree = "<group>"; };
 		ABC3AF2E14B7F06900D5B13D /* Icon_VolumeTwoThird_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeTwoThird_16x16.png; path = images/Icon_VolumeTwoThird_16x16.png; sourceTree = "<group>"; };
+		ABC3DEBB1A96EA96009EC345 /* RomInfoPanel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RomInfoPanel.h; sourceTree = "<group>"; };
+		ABC3DEBC1A96EA96009EC345 /* RomInfoPanel.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = RomInfoPanel.mm; sourceTree = "<group>"; };
 		ABC570D0134431CE00E7B0B1 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = System/Library/Frameworks/AudioUnit.framework; sourceTree = SDKROOT; };
 		ABC570D4134431DA00E7B0B1 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		ABC719E1138CB25E002827A9 /* DefaultKeyMappings.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = DefaultKeyMappings.plist; sourceTree = "<group>"; };
@@ -1961,6 +1968,7 @@
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB213D43170CB141006DDB0F /* InputProfileController.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
+				ABC3DEBB1A96EA96009EC345 /* RomInfoPanel.h */,
 				ABAE2F7918682B6C00C92F4F /* Slot2WindowDelegate.h */,
 				ABA0356E169127BB00817C69 /* troubleshootingWindowDelegate.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
@@ -1972,6 +1980,7 @@
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB213D44170CB141006DDB0F /* InputProfileController.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
+				ABC3DEBC1A96EA96009EC345 /* RomInfoPanel.mm */,
 				ABAE2F7A18682B6C00C92F4F /* Slot2WindowDelegate.mm */,
 				ABA0356F169127C000817C69 /* troubleshootingWindowDelegate.mm */,
 			);
@@ -3380,6 +3389,7 @@
 				ABAE2F8818682B8F00C92F4F /* cocoa_slot2.mm in Sources */,
 				ABECB50D18A460710052D52A /* xbrz.cpp in Sources */,
 				ABECB51818A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
+				ABC3DEC11A96EA96009EC345 /* RomInfoPanel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3524,6 +3534,7 @@
 				ABAE2F8418682B8F00C92F4F /* cocoa_slot2.mm in Sources */,
 				ABECB50A18A460710052D52A /* xbrz.cpp in Sources */,
 				ABECB51518A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
+				ABC3DEBD1A96EA96009EC345 /* RomInfoPanel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3698,6 +3709,7 @@
 				AB8FFCB4186F8E5400C10085 /* slot2_mpcf.cpp in Sources */,
 				ABECB50918A460710052D52A /* xbrz.cpp in Sources */,
 				ABECB51418A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
+				ABC3DEBE1A96EA96009EC345 /* RomInfoPanel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3872,6 +3884,7 @@
 				ABAE2F8718682B8F00C92F4F /* cocoa_slot2.mm in Sources */,
 				ABECB50C18A460710052D52A /* xbrz.cpp in Sources */,
 				ABECB51718A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
+				ABC3DEC01A96EA96009EC345 /* RomInfoPanel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4016,6 +4029,7 @@
 				ABAE2F8618682B8F00C92F4F /* cocoa_slot2.mm in Sources */,
 				ABECB50B18A460710052D52A /* xbrz.cpp in Sources */,
 				ABECB51618A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
+				ABC3DEBF1A96EA96009EC345 /* RomInfoPanel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4081,7 +4095,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = ppc;
-				"GCC_MODEL_TUNING[sdk=macosx10.5][arch=ppc]" = G5;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					NDEBUG,
 					PUBLIC_RELEASE,
@@ -4269,10 +4282,7 @@
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
 				"GCC_MODEL_PPC64[sdk=macosx10.5][arch=ppc64]" = YES;
-				GCC_MODEL_TUNING = "";
-				"GCC_MODEL_TUNING[sdk=macosx10.4][arch=ppc]" = G4;
-				"GCC_MODEL_TUNING[sdk=macosx10.5][arch=ppc64]" = G5;
-				"GCC_MODEL_TUNING[sdk=macosx10.5][arch=ppc]" = G4;
+				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = DeSmuME_Prefix.pch;

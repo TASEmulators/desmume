@@ -56,12 +56,14 @@
 - (NSString *) serial;
 - (NSString *) developerName;
 - (NSString *) developerNameAndCode;
+- (NSString *) unitCodeStringUsingID:(NSInteger)unitCodeID;
 - (NSImage *) icon;
 - (void) handleAdvansceneDatabaseInfo;
 
 + (void) changeRomSaveType:(NSInteger)saveTypeID;
 + (NSInteger) saveTypeByString:(NSString *)saveTypeString;
 + (NSMutableDictionary *) romNotLoadedBindings;
++ (NSString *) byteSizeStringWithLargerUnit:(NSUInteger)byteSize;
 
 @end
 
