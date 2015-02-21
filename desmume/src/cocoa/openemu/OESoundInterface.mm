@@ -18,6 +18,7 @@
 #import "OESoundInterface.h"
 
 #import "cocoa_globals.h"
+#include <pthread.h>
 
 
 OERingBuffer *openEmuSoundInterfaceBuffer = nil;
