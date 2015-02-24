@@ -195,6 +195,25 @@ volatile bool execute = true;
 	pthread_rwlock_init(&threadParam.rwlockCoreExecute, NULL);
 	pthread_create(&coreThread, NULL, &RunCoreThread, &threadParam);
 	
+	// The core emulation thread needs max priority since it is the sole
+	// producer thread for all output threads. Note that this is not being
+	// done for performance -- this is being done for timing accuracy. The
+	// core emulation thread is responsible for determining the emulator's
+	// timing. If one output thread interferes with timing, then it ends up
+	// affecting the whole emulator.
+	//
+	// Though it may be tempting to make this a real-time thread, it's best
+	// to keep this a normal thread. The core emulation thread can use up a
+	// lot of CPU time under certain conditions, which may interfere with
+	// other threads. (Example: Video tearing on display windows, even with
+	// V-sync enabled.)
+	struct sched_param sp;
+	int thePolicy = 0;
+	memset(&sp, 0, sizeof(struct sched_param));
+	pthread_getschedparam(coreThread, &thePolicy, &sp);
+	sp.sched_priority = sched_get_priority_max(thePolicy);
+	pthread_setschedparam(coreThread, thePolicy, &sp);
+	
 	[cdsGPU setRwlockProducer:self.rwlockCoreExecute];
 	
 	OSXDriver *newDriver = new OSXDriver;
