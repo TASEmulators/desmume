@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2014 DeSmuME team
+	Copyright (C) 2012-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -92,6 +92,7 @@ volatile bool execute = true;
 	// Set up the cheat system
 	cdsCheats = [[[[CocoaDSCheatManager alloc] init] retain] autorelease];
 	[cdsCheats setRwlockCoreExecute:&rwlockCoreExecute];
+	addedCheatsDict = [[NSMutableDictionary alloc] initWithCapacity:128];
 	
 	// Set up the DS firmware using the internal firmware
 	cdsFirmware = [[[[CocoaDSFirmware alloc] init] retain] autorelease];
@@ -101,7 +102,7 @@ volatile bool execute = true;
 	CommonSettings.spu_advanced = true;
 	CommonSettings.spuInterpolationMode = SPUInterpolation_Cosine;
 	CommonSettings.SPU_sync_mode = SPU_SYNC_MODE_SYNCHRONOUS;
-	CommonSettings.SPU_sync_method = SPU_SYNC_METHOD_P;
+	CommonSettings.SPU_sync_method = SPU_SYNC_METHOD_N;
 	openEmuSoundInterfaceBuffer = [self ringBufferAtIndex:0];
 	
 	NSInteger result = SPU_ChangeSoundCore(SNDCORE_OPENEMU, (int)SPU_BUFFER_BYTES);
@@ -126,6 +127,7 @@ volatile bool execute = true;
 	SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
 	NDS_DeInit();
 	
+	[addedCheatsDict release];
 	[self setCdsCheats:nil];
 	[self setCdsController:nil];
 	[self setCdsGPU:nil];
@@ -246,6 +248,11 @@ volatile bool execute = true;
 }
 
 #pragma mark Video
+
+- (BOOL)rendersToOpenGL
+{
+	return NO;
+}
 
 - (OEIntRect)screenRect
 {
@@ -446,17 +453,39 @@ volatile bool execute = true;
 
 - (void)setCheat:(NSString *)code setType:(NSString *)type setEnabled:(BOOL)enabled
 {
-	CocoaDSCheatItem *newCheatItem = [[[CocoaDSCheatItem alloc] init] autorelease];
-	[newCheatItem setEnabled:enabled];
-	[newCheatItem setCheatType:CHEAT_TYPE_ACTION_REPLAY]; // Default to Action Replay for now
-	[newCheatItem setFreezeType:0];
-	[newCheatItem setDescription:@""]; // OpenEmu takes care of this
-	[newCheatItem setCode:code];
-	[newCheatItem setMemAddress:0x00000000]; // UNUSED
-	[newCheatItem setBytes:1]; // UNUSED
-	[newCheatItem setValue:0]; // UNUSED
+	// This method can be used for both adding a new cheat or setting the enable
+	// state on an existing cheat, so be sure to account for both cases.
 	
-	[[self cdsCheats] add:newCheatItem];
+	// First check if the cheat exists.
+	CocoaDSCheatItem *cheatItem = (CocoaDSCheatItem *)[addedCheatsDict objectForKey:code];
+	
+	if (cheatItem == nil)
+	{
+		// If the cheat doesn't already exist, then create a new one and add it.
+		cheatItem = [[[CocoaDSCheatItem alloc] init] autorelease];
+		[cheatItem setCheatType:CHEAT_TYPE_ACTION_REPLAY]; // Default to Action Replay for now
+		[cheatItem setFreezeType:0];
+		[cheatItem setDescription:@""]; // OpenEmu takes care of this
+		[cheatItem setCode:code];
+		[cheatItem setMemAddress:0x00000000]; // UNUSED
+		[cheatItem setBytes:1]; // UNUSED
+		[cheatItem setValue:0]; // UNUSED
+		
+		[cheatItem setEnabled:enabled];
+		[[self cdsCheats] add:cheatItem];
+		
+		// OpenEmu doesn't currently save cheats per game, so assume that the
+		// cheat list is short and that code strings are unique. This allows
+		// us to get away with simply saving the cheat code string and hashing
+		// for it later.
+		[addedCheatsDict setObject:cheatItem forKey:code];
+	}
+	else
+	{
+		// If the cheat does exist, then just set its enable state.
+		[cheatItem setEnabled:enabled];
+		[[self cdsCheats] update:cheatItem];
+	}
 }
 
 @end

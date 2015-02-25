@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2014 DeSmuME team
+	Copyright (C) 2012-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ SoundInterface_struct *SNDCoreList[] = {
 
 int SNDOpenEmuInit(int buffer_size)
 {
-	[openEmuSoundInterfaceBuffer setLength:buffer_size];
+	[openEmuSoundInterfaceBuffer setLength:buffer_size * 4 / SPU_SAMPLE_SIZE];
 	
 	if (mutexAudioSampleReadWrite == NULL)
 	{
