@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2013 DeSmuME team
+	Copyright (C) 2012-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,9 +16,826 @@
  */
 
 #include "coreaudiosound.h"
+
+#include <CoreAudio/CoreAudio.h>
 #include "cocoa_globals.h"
 #include "utilities.h"
 
+
+CoreAudioInput::CoreAudioInput()
+{
+	OSStatus error = noErr;
+	
+	_spinlockAUHAL = (OSSpinLock *)malloc(sizeof(OSSpinLock));
+	*_spinlockAUHAL = OS_SPINLOCK_INIT;
+	
+	_hwGainChangedCallbackFunc = &CoreAudioInputDefaultHardwareGainChangedCallback;
+	_hwGainChangedCallbackParam1 = NULL;
+	_hwGainChangedCallbackParam2 = NULL;
+	
+	_inputGainNormalized = 0.0f;
+	_inputElement = 0;
+	
+	_isMuted = false;
+	_isPaused = false;
+	_isHardwareEnabled = false;
+	_isHardwareLocked = true;
+	_captureFrames = 0;
+	
+	_auHALInputDevice = NULL;
+	_auGraph = NULL;
+	_auFormatConverterUnit = NULL;
+	_auOutputUnit = NULL;
+	_auFormatConverterNode = 0;
+	_auOutputNode = 0;
+	memset(&_timeStamp, 0, sizeof(AudioTimeStamp));
+	
+#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
+	AudioComponentDescription halInputDeviceDesc;
+	AudioComponentDescription formatConverterDesc;
+	AudioComponentDescription outputDesc;
+#else
+	ComponentDescription halInputDeviceDesc;
+	ComponentDescription formatConverterDesc;
+	ComponentDescription outputDesc;
+#endif
+	halInputDeviceDesc.componentType = kAudioUnitType_Output;
+	halInputDeviceDesc.componentSubType = kAudioUnitSubType_HALOutput;
+	halInputDeviceDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
+	halInputDeviceDesc.componentFlags = 0;
+	halInputDeviceDesc.componentFlagsMask = 0;
+	
+	formatConverterDesc.componentType = kAudioUnitType_FormatConverter;
+	formatConverterDesc.componentSubType = kAudioUnitSubType_AUConverter;
+	formatConverterDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
+	formatConverterDesc.componentFlags = 0;
+	formatConverterDesc.componentFlagsMask = 0;
+	
+	outputDesc.componentType = kAudioUnitType_Output;
+	outputDesc.componentSubType = kAudioUnitSubType_GenericOutput;
+	outputDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
+	outputDesc.componentFlags = 0;
+	outputDesc.componentFlagsMask = 0;
+	
+	CreateAudioUnitInstance(&_auHALInputDevice, &halInputDeviceDesc);
+	
+	error = NewAUGraph(&_auGraph);
+	error = AUGraphOpen(_auGraph);
+	
+	error = AUGraphAddNode(_auGraph, &formatConverterDesc, &_auFormatConverterNode);
+	error = AUGraphAddNode(_auGraph, &outputDesc, &_auOutputNode);
+	error = AUGraphConnectNodeInput(_auGraph, _auFormatConverterNode, 0, _auOutputNode, 0);
+	
+	error = AUGraphNodeInfo(_auGraph, _auFormatConverterNode, NULL, &_auFormatConverterUnit);
+	error = AUGraphNodeInfo(_auGraph, _auOutputNode, NULL, &_auOutputUnit);
+	
+	static const UInt32 disableFlag = 0;
+	static const UInt32 enableFlag = 1;
+	static const AudioUnitScope inputBus = 1;
+	static const AudioUnitScope outputBus = 0;
+	UInt32 propertySize = 0;
+	
+	error = AudioUnitSetProperty(_auHALInputDevice,
+								 kAudioOutputUnitProperty_EnableIO,
+								 kAudioUnitScope_Input,
+								 inputBus,
+								 &enableFlag,
+								 sizeof(enableFlag) );
+	
+	error = AudioUnitSetProperty(_auHALInputDevice,
+								 kAudioOutputUnitProperty_EnableIO,
+								 kAudioUnitScope_Output,
+								 outputBus,
+								 &disableFlag,
+								 sizeof(disableFlag) );
+	
+	AudioStreamBasicDescription outputFormat;
+	propertySize = sizeof(AudioStreamBasicDescription);
+	outputFormat.mSampleRate = MIC_SAMPLE_RATE;
+	outputFormat.mFormatID =  kAudioFormatLinearPCM;
+	outputFormat.mFormatFlags = kAudioFormatFlagIsPacked;
+	outputFormat.mBytesPerPacket = MIC_SAMPLE_SIZE;
+	outputFormat.mFramesPerPacket = 1;
+	outputFormat.mBytesPerFrame = MIC_SAMPLE_SIZE;
+	outputFormat.mChannelsPerFrame = MIC_NUMBER_CHANNELS;
+	outputFormat.mBitsPerChannel = MIC_SAMPLE_RESOLUTION;
+	
+	AudioStreamBasicDescription deviceOutputFormat;
+	error = AudioUnitGetProperty(_auOutputUnit,
+								 kAudioUnitProperty_StreamFormat,
+								 kAudioUnitScope_Output,
+								 0,
+								 &deviceOutputFormat,
+								 &propertySize);
+	
+	error = AudioUnitSetProperty(_auFormatConverterUnit,
+								 kAudioUnitProperty_StreamFormat,
+								 kAudioUnitScope_Input,
+								 0,
+								 &outputFormat,
+								 propertySize);
+	
+	error = AudioUnitSetProperty(_auFormatConverterUnit,
+								 kAudioUnitProperty_StreamFormat,
+								 kAudioUnitScope_Output,
+								 0,
+								 &outputFormat,
+								 propertySize);
+	
+	error = AudioUnitSetProperty(_auOutputUnit,
+								 kAudioUnitProperty_StreamFormat,
+								 kAudioUnitScope_Input,
+								 0,
+								 &outputFormat,
+								 propertySize);
+	
+	error = AudioUnitSetProperty(_auOutputUnit,
+								 kAudioUnitProperty_StreamFormat,
+								 kAudioUnitScope_Output,
+								 0,
+								 &outputFormat,
+								 propertySize);
+	
+	static const UInt32 bestQuality = kAudioUnitSampleRateConverterComplexity_Mastering;
+	error = AudioUnitSetProperty(_auFormatConverterUnit,
+								 kAudioUnitProperty_SampleRateConverterComplexity,
+								 kAudioUnitScope_Global,
+								 0,
+								 &bestQuality,
+								 sizeof(bestQuality));
+	
+	// Set up the capture buffers.
+	const size_t audioBufferListSize = offsetof(AudioBufferList, mBuffers[0]) + sizeof(AudioBuffer);
+	
+	_captureBufferList = (AudioBufferList *)malloc(audioBufferListSize);
+	_captureBufferList->mNumberBuffers = 0;
+	_captureBufferList->mBuffers[0].mNumberChannels = 0;
+	_captureBufferList->mBuffers[0].mDataByteSize = 0;
+	_captureBufferList->mBuffers[0].mData = NULL;
+	
+	_convertBufferList = (AudioBufferList *)malloc(audioBufferListSize);
+	_convertBufferList->mNumberBuffers = 1;
+	_convertBufferList->mBuffers[0].mNumberChannels = 1;
+	_convertBufferList->mBuffers[0].mDataByteSize = MIC_CAPTURE_FRAMES * sizeof(uint8_t);
+	_convertBufferList->mBuffers[0].mData = malloc(_convertBufferList->mBuffers[0].mDataByteSize);
+	
+	_samplesCaptured = new RingBuffer(MIC_CAPTURE_FRAMES * 3, sizeof(uint8_t));
+	_samplesConverted = new RingBuffer(MIC_CAPTURE_FRAMES * 3, sizeof(uint8_t));
+	
+	// Set the AUHAL callback.
+	AURenderCallbackStruct inputCaptureCallback;
+	inputCaptureCallback.inputProc = &CoreAudioInputCaptureCallback;
+	inputCaptureCallback.inputProcRefCon = this;
+	
+	error = AudioUnitSetProperty(_auHALInputDevice,
+								 kAudioOutputUnitProperty_SetInputCallback,
+								 kAudioUnitScope_Global,
+								 0,
+								 &inputCaptureCallback,
+								 sizeof(inputCaptureCallback) );
+	
+	error = AudioUnitAddPropertyListener(this->_auHALInputDevice,
+										 kAudioDevicePropertyVolumeScalar,
+										 &CoreAudioInputAUHALChanged,
+										 this);
+	
+	error = AudioUnitAddPropertyListener(this->_auHALInputDevice,
+										 kAudioHardwarePropertyDefaultInputDevice,
+										 &CoreAudioInputAUHALChanged,
+										 this);
+	
+	error = AudioUnitAddPropertyListener(this->_auHALInputDevice,
+										 kAudioDevicePropertyHogMode,
+										 &CoreAudioInputAUHALChanged,
+										 this);
+	
+	error = AudioUnitAddPropertyListener(this->_auHALInputDevice,
+										 kAudioDevicePropertyJackIsConnected,
+										 &CoreAudioInputAUHALChanged,
+										 this);
+	
+	AudioObjectPropertyAddress defaultDeviceProperty;
+	defaultDeviceProperty.mSelector = kAudioHardwarePropertyDefaultInputDevice;
+	defaultDeviceProperty.mScope = kAudioObjectPropertyScopeGlobal;
+	defaultDeviceProperty.mElement = kAudioObjectPropertyElementMaster;
+	
+	error = AudioObjectAddPropertyListener(kAudioObjectSystemObject,
+										   &defaultDeviceProperty,
+										   &CoreAudioInputDeviceChanged,
+										   this);
+	
+	// Set up the AUGraph callbacks
+	AURenderCallbackStruct inputReceiveCallback;
+	inputReceiveCallback.inputProc = &CoreAudioInputReceiveCallback;
+	inputReceiveCallback.inputProcRefCon = this->_samplesCaptured;
+	
+	error = AudioUnitSetProperty(_auFormatConverterUnit,
+								 kAudioUnitProperty_SetRenderCallback,
+								 kAudioUnitScope_Global,
+								 0,
+								 &inputReceiveCallback,
+								 sizeof(inputReceiveCallback) );
+	
+	error = AUGraphAddRenderNotify(_auGraph, &CoreAudioInputConvertCallback, this->_samplesConverted);
+}
+
+CoreAudioInput::~CoreAudioInput()
+{
+	OSSpinLockLock(_spinlockAUHAL);
+	DestroyAudioUnitInstance(&_auHALInputDevice);
+	OSSpinLockUnlock(_spinlockAUHAL);
+	
+	AUGraphClose(_auGraph);
+	AUGraphUninitialize(_auGraph);
+	AUGraphRemoveNode(_auGraph, _auFormatConverterNode);
+	AUGraphRemoveNode(_auGraph, _auOutputNode);
+	DisposeAUGraph(_auGraph);
+	
+	free(_captureBufferList->mBuffers[0].mData);
+	_captureBufferList->mBuffers[0].mData = NULL;
+	free(_captureBufferList);
+	_captureBufferList = NULL;
+	
+	free(_convertBufferList->mBuffers[0].mData);
+	_convertBufferList->mBuffers[0].mData = NULL;
+	free(_convertBufferList);
+	_convertBufferList = NULL;
+	
+	delete _samplesCaptured;
+	_samplesCaptured = NULL;
+	
+	delete _samplesConverted;
+	_samplesConverted = NULL;
+	
+	free(_spinlockAUHAL);
+	_spinlockAUHAL = NULL;
+}
+
+OSStatus CoreAudioInput::InitInputAUHAL(UInt32 deviceID)
+{
+	OSStatus error = noErr;
+	static const AudioUnitScope inputBus = 1;
+	UInt32 propertySize = 0;
+	
+	if (deviceID == kAudioObjectUnknown)
+	{
+		error = kAudioHardwareUnspecifiedError;
+		return error;
+	}
+	
+	// Get some information about the device before attempting to attach it to the AUHAL.
+	// Currently, this information is only available in debug mode. However, if there is
+	// a need to actually do something with this information, then we've already got it.
+	CFStringRef devicePropertyString;
+	AudioObjectPropertyAddress deviceProperty;
+	UInt32 dataSize = 0;
+	deviceProperty.mScope = kAudioObjectPropertyScopeGlobal;
+	deviceProperty.mElement = kAudioObjectPropertyElementMaster;
+	printf("\nInput Device Information:\n");
+	
+	deviceProperty.mSelector = kAudioObjectPropertyName;
+	error = AudioObjectGetPropertyDataSize(deviceID, &deviceProperty, 0, NULL, &dataSize);
+	if (error == noErr)
+	{
+		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &devicePropertyString);
+		printf("   Name: %s\n", CFStringGetCStringPtr(devicePropertyString, kCFStringEncodingUTF8));
+		CFRelease(devicePropertyString);
+	}
+	
+	deviceProperty.mSelector = kAudioObjectPropertyManufacturer;
+	error = AudioObjectGetPropertyDataSize(deviceID, &deviceProperty, 0, NULL, &dataSize);
+	if (error == noErr)
+	{
+		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &devicePropertyString);
+		printf("   Manufacturer: %s\n", CFStringGetCStringPtr(devicePropertyString, kCFStringEncodingUTF8));
+		CFRelease(devicePropertyString);
+	}
+	
+	deviceProperty.mSelector = kAudioDevicePropertyDeviceUID;
+	error = AudioObjectGetPropertyDataSize(deviceID, &deviceProperty, 0, NULL, &dataSize);
+	if (error == noErr)
+	{
+		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &devicePropertyString);
+		printf("   Device UID: %s\n", CFStringGetCStringPtr(devicePropertyString, kCFStringEncodingUTF8));
+		CFRelease(devicePropertyString);
+	}
+	
+	deviceProperty.mSelector = kAudioDevicePropertyModelUID;
+	error = AudioObjectGetPropertyDataSize(deviceID, &deviceProperty, 0, NULL, &dataSize);
+	if (error == noErr)
+	{
+		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &devicePropertyString);
+		printf("   Model UID: %s\n", CFStringGetCStringPtr(devicePropertyString, kCFStringEncodingUTF8));
+		CFRelease(devicePropertyString);
+	}
+	
+	deviceProperty.mSelector = kAudioDevicePropertyNominalSampleRate;
+	deviceProperty.mScope = kAudioDevicePropertyScopeInput;
+	error = AudioObjectGetPropertyDataSize(deviceID, &deviceProperty, 0, NULL, &dataSize);
+	if (error == noErr)
+	{
+		Float64 deviceSampleRate = 0.0;
+		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &deviceSampleRate);
+		printf("   Sample Rate: %1.1f\n\n", deviceSampleRate);
+	}
+	
+	// Before attaching the HAL input device, stop everything first.
+	AUGraphStop(this->_auGraph);
+	AUGraphUninitialize(this->_auGraph);
+	AudioOutputUnitStop(this->_auHALInputDevice);
+	AudioUnitUninitialize(this->_auHALInputDevice);
+	
+	// Attach the device to the AUHAL.
+	//
+	// From here on out, any error related to the AUHAL will be treated
+	// as a failure to initialize and cause this method to exit.
+	error = AudioUnitSetProperty(this->_auHALInputDevice,
+								 kAudioOutputUnitProperty_CurrentDevice,
+								 kAudioUnitScope_Global,
+								 0,
+								 &deviceID,
+								 sizeof(deviceID) );
+	if (error != noErr)
+	{
+		return error;
+	}
+	
+	// Get the AUHAL's audio format and set that as on the input scope
+	// of the format converter unit.
+	AudioStreamBasicDescription inputFormat;
+	propertySize = sizeof(AudioStreamBasicDescription);
+	error = AudioUnitGetProperty(this->_auHALInputDevice,
+								 kAudioUnitProperty_StreamFormat,
+								 kAudioUnitScope_Input,
+								 inputBus,
+								 &inputFormat,
+								 &propertySize);
+	if (error != noErr)
+	{
+		return error;
+	}
+	
+	// Interleaved audio is the only real requirement for the audio input.
+	// All the other ASBD fields can be passed as-is.
+	inputFormat.mFormatFlags &= ~kAudioFormatFlagIsNonInterleaved;
+	
+	error = AudioUnitSetProperty(this->_auHALInputDevice,
+								 kAudioUnitProperty_StreamFormat,
+								 kAudioUnitScope_Output,
+								 inputBus,
+								 &inputFormat,
+								 propertySize);
+	if (error != noErr)
+	{
+		return error;
+	}
+	
+	error = AudioUnitSetProperty(this->_auFormatConverterUnit,
+								 kAudioUnitProperty_StreamFormat,
+								 kAudioUnitScope_Input,
+								 0,
+								 &inputFormat,
+								 propertySize);
+	if (error != noErr)
+	{
+		return error;
+	}
+	
+	// Set up the capture buffers.
+	AudioValueRange bufferRange;
+	propertySize = sizeof(AudioValueRange);
+	error = AudioUnitGetProperty(this->_auHALInputDevice,
+								 kAudioDevicePropertyBufferFrameSizeRange,
+								 kAudioUnitScope_Input,
+								 inputBus,
+								 &bufferRange,
+								 &propertySize);
+	if (error != noErr)
+	{
+		return error;
+	}
+	
+	const UInt32 captureFramesScaled = (MIC_CAPTURE_FRAMES * ((double)inputFormat.mSampleRate / (double)MIC_SAMPLE_RATE)) + 0.5;
+	this->_captureFrames = (captureFramesScaled < bufferRange.mMinimum) ? bufferRange.mMinimum : ((captureFramesScaled > bufferRange.mMaximum) ? bufferRange.mMaximum : captureFramesScaled);
+	
+	propertySize = sizeof(UInt32);
+	error = AudioUnitSetProperty(this->_auHALInputDevice,
+								 kAudioDevicePropertyBufferFrameSize,
+								 kAudioUnitScope_Input,
+								 inputBus,
+								 &this->_captureFrames,
+								 propertySize);
+	if (error != noErr)
+	{
+		return error;
+	}
+	
+	free(this->_captureBufferList->mBuffers[0].mData);
+	this->_samplesCaptured->resize(this->_captureFrames * 3, inputFormat.mBytesPerFrame);
+	this->_captureBufferList->mNumberBuffers = 1;
+	this->_captureBufferList->mBuffers[0].mNumberChannels = inputFormat.mChannelsPerFrame;
+	this->_captureBufferList->mBuffers[0].mDataByteSize = this->_captureFrames * inputFormat.mBytesPerFrame;
+	this->_captureBufferList->mBuffers[0].mData = malloc(this->_captureBufferList->mBuffers[0].mDataByteSize);
+	
+	// Now that the AUHAL is set up, attempt to initialize the AUHAL.
+	error = AudioUnitInitialize(this->_auHALInputDevice);
+	if (error != noErr)
+	{
+		return error;
+	}
+	
+	return error;
+}
+
+void CoreAudioInput::Start()
+{
+	OSStatus error = noErr;
+	char errorString[5] = {0};
+	
+	// Get the default input device ID.
+	AudioObjectID defaultInputDeviceID = kAudioObjectUnknown;
+	UInt32 propertySize = sizeof(defaultInputDeviceID);
+	AudioObjectPropertyAddress defaultDeviceProperty;
+	defaultDeviceProperty.mSelector = kAudioHardwarePropertyDefaultInputDevice;
+	defaultDeviceProperty.mScope = kAudioObjectPropertyScopeGlobal;
+	defaultDeviceProperty.mElement = kAudioObjectPropertyElementMaster;
+	
+	error = AudioObjectGetPropertyData(kAudioObjectSystemObject,
+									   &defaultDeviceProperty,
+									   0,
+									   NULL,
+									   &propertySize,
+									   &defaultInputDeviceID);
+	
+	// Set the default input device to the audio unit.
+	OSSpinLockLock(this->_spinlockAUHAL);
+	
+	error = this->InitInputAUHAL(defaultInputDeviceID);
+	if (error == noErr)
+	{
+		Float32 theGain = 0.0f;
+		UInt32 gainPropSize = sizeof(theGain);
+		
+		// Try and get the gain properties on the AUHAL.
+		for (AudioUnitElement elementNumber = 0; elementNumber < 3; elementNumber++)
+		{
+			error = AudioUnitGetProperty(this->_auHALInputDevice,
+										 kAudioDevicePropertyVolumeScalar,
+										 kAudioUnitScope_Input,
+										 elementNumber,
+										 &theGain,
+										 &gainPropSize);
+			
+			if (error == noErr)
+			{
+				this->_inputElement = elementNumber;
+				this->SetGain_ValueOnly(theGain);
+				this->RunHardwareGainChangedCallback(theGain);
+				break;
+			}
+		}
+		
+		this->_isHardwareEnabled = true;
+		this->UpdateHardwareLock();
+	}
+	else
+	{
+		*(OSStatus *)errorString = CFSwapInt32BigToHost(error);
+		printf("CoreAudioInput - AUHAL init error: %s\n", errorString);
+		this->_isHardwareEnabled = false;
+	}
+	
+	if (this->_isHardwareEnabled && !this->IsHardwareLocked() && !this->_isPaused)
+	{
+		error = AudioOutputUnitStart(this->_auHALInputDevice);
+	}
+	
+	OSSpinLockUnlock(this->_spinlockAUHAL);
+	
+	error = AUGraphInitialize(_auGraph);
+	if (!this->_isPaused)
+	{
+		error = AUGraphStart(this->_auGraph);
+	}
+	
+	this->_samplesCaptured->clear();
+	this->_samplesConverted->clear();
+}
+
+void CoreAudioInput::Stop()
+{
+	OSSpinLockLock(this->_spinlockAUHAL);
+	AudioOutputUnitStop(this->_auHALInputDevice);
+	AudioUnitUninitialize(this->_auHALInputDevice);
+	OSSpinLockUnlock(this->_spinlockAUHAL);
+	
+	AUGraphStop(this->_auGraph);
+	AUGraphUninitialize(this->_auGraph);
+	
+	this->_isHardwareEnabled = false;
+	this->_samplesCaptured->clear();
+	this->_samplesConverted->clear();
+}
+
+size_t CoreAudioInput::Pull()
+{
+	OSStatus error = noErr;
+	AudioUnitRenderActionFlags ioActionFlags = 0;
+	
+	error = AudioUnitRender(this->_auOutputUnit,
+							&ioActionFlags,
+							&this->_timeStamp,
+							0,
+							MIC_CAPTURE_FRAMES,
+							this->_convertBufferList);
+	
+	return MIC_CAPTURE_FRAMES;
+}
+
+bool CoreAudioInput::IsHardwareEnabled() const
+{
+	return this->_isHardwareEnabled;
+}
+
+bool CoreAudioInput::IsHardwareLocked() const
+{
+	return this->_isHardwareLocked;
+}
+
+bool CoreAudioInput::GetMuteState() const
+{
+	return this->_isMuted;
+}
+
+void CoreAudioInput::SetMuteState(bool muteState)
+{
+	this->SetPauseState(muteState);
+	this->_isMuted = muteState;
+}
+
+bool CoreAudioInput::GetPauseState() const
+{
+	return this->_isPaused;
+}
+
+void CoreAudioInput::SetPauseState(bool pauseState)
+{
+	if (pauseState && !this->_isPaused)
+	{
+		OSSpinLockLock(this->_spinlockAUHAL);
+		AudioOutputUnitStop(this->_auHALInputDevice);
+		OSSpinLockUnlock(this->_spinlockAUHAL);
+		AUGraphStop(this->_auGraph);
+	}
+	else if (!pauseState && this->_isPaused && !this->IsHardwareLocked())
+	{
+		OSSpinLockLock(this->_spinlockAUHAL);
+		AudioOutputUnitStart(this->_auHALInputDevice);
+		OSSpinLockUnlock(this->_spinlockAUHAL);
+		AUGraphStart(this->_auGraph);
+	}
+	
+	this->_isPaused = pauseState;
+}
+
+float CoreAudioInput::GetGain() const
+{
+	return this->_inputGainNormalized;
+}
+
+void CoreAudioInput::SetGain(float normalizedGain)
+{
+	OSStatus error = noErr;
+	Float32 gainValue = normalizedGain;
+	UInt32 gainPropSize = sizeof(gainValue);
+	
+	OSSpinLockLock(this->_spinlockAUHAL);
+	error = AudioUnitSetProperty(this->_auHALInputDevice,
+								 kAudioDevicePropertyVolumeScalar,
+								 kAudioUnitScope_Input,
+								 this->_inputElement,
+								 &gainValue,
+								 gainPropSize);
+	OSSpinLockUnlock(this->_spinlockAUHAL);
+}
+
+void CoreAudioInput::SetGain_ValueOnly(float normalizedGain)
+{
+	this->_inputGainNormalized = normalizedGain;
+}
+
+void CoreAudioInput::UpdateHardwareLock()
+{
+	OSStatus error = noErr;
+	bool hardwareLocked = false;
+	
+	if (!this->IsHardwareEnabled())
+	{
+		hardwareLocked = true;
+		this->_isHardwareLocked = hardwareLocked;
+		return;
+	}
+	
+	// Check if another application has exclusive access to the hardware.
+	pid_t hogMode = 0;
+	UInt32 propertySize = sizeof(hogMode);
+	error = AudioUnitGetProperty(this->_auHALInputDevice,
+								 kAudioDevicePropertyHogMode,
+								 kAudioUnitScope_Input,
+								 1,
+								 &hogMode,
+								 &propertySize);
+	if (error == noErr)
+	{
+		if (hogMode != -1)
+		{
+			hardwareLocked = true;
+		}
+	}
+	else
+	{
+		// If this property is not supported, then always assume that
+		// the hardware device is shared.
+		hogMode = -1;
+	}
+	
+	// Check if the hardware device is plugged in.
+	UInt32 isJackConnected = 0;
+	propertySize = sizeof(isJackConnected);
+	error = AudioUnitGetProperty(this->_auHALInputDevice,
+								 kAudioDevicePropertyJackIsConnected,
+								 kAudioUnitScope_Input,
+								 1,
+								 &hogMode,
+								 &propertySize);
+	if (error == noErr)
+	{
+		if (isJackConnected == 0)
+		{
+			hardwareLocked = true;
+		}
+	}
+	else
+	{
+		// If this property is not supported, then always assume that
+		// the hardware device is always plugged in.
+		isJackConnected = 1;
+	}
+	
+	if (hardwareLocked && !this->GetPauseState())
+	{
+		this->SetPauseState(true);
+	}
+	
+	this->_isHardwareLocked = hardwareLocked;
+}
+
+void CoreAudioInput::SetCallbackHardwareGainChanged(CoreAudioInputHardwareGainChangedCallback callbackFunc, void *inParam1, void *inParam2)
+{
+	this->_hwGainChangedCallbackFunc = callbackFunc;
+	this->_hwGainChangedCallbackParam1 = inParam1;
+	this->_hwGainChangedCallbackParam2 = inParam2;
+}
+
+void CoreAudioInput::RunHardwareGainChangedCallback(float normalizedGain)
+{
+	this->_hwGainChangedCallbackFunc(normalizedGain, this->_hwGainChangedCallbackParam1, this->_hwGainChangedCallbackParam2);
+}
+
+OSStatus CoreAudioInputCaptureCallback(void *inRefCon,
+									   AudioUnitRenderActionFlags *ioActionFlags,
+									   const AudioTimeStamp *inTimeStamp,
+									   UInt32 inBusNumber,
+									   UInt32 inNumberFrames,
+									   AudioBufferList *ioData)
+{
+	OSStatus error = noErr;
+	CoreAudioInput *caInput = (CoreAudioInput *)inRefCon;
+	caInput->_timeStamp = *inTimeStamp;
+	
+	error = AudioUnitRender(caInput->_auHALInputDevice,
+							ioActionFlags,
+							inTimeStamp,
+							inBusNumber,
+							inNumberFrames,
+							caInput->_captureBufferList);
+	
+	if (error != noErr)
+	{
+		return error;
+	}
+	
+	caInput->_samplesCaptured->write(caInput->_captureBufferList->mBuffers[0].mData, inNumberFrames);
+	
+	return error;
+}
+
+OSStatus CoreAudioInputReceiveCallback(void *inRefCon,
+									   AudioUnitRenderActionFlags *ioActionFlags,
+									   const AudioTimeStamp *inTimeStamp,
+									   UInt32 inBusNumber,
+									   UInt32 inNumberFrames,
+									   AudioBufferList *ioData)
+{
+	OSStatus error = noErr;
+	RingBuffer *__restrict__ samplesCaptured = (RingBuffer *)inRefCon;
+	uint8_t *__restrict__ receiveBuffer = (uint8_t *)ioData->mBuffers[0].mData;
+	const size_t framesRead = samplesCaptured->read(receiveBuffer, inNumberFrames);
+	
+	// Pad any remaining samples.
+	if (framesRead < inNumberFrames)
+	{
+		const size_t frameSize = samplesCaptured->getElementSize();
+		memset(receiveBuffer + (framesRead * frameSize), MIC_NULL_SAMPLE_VALUE, (inNumberFrames - framesRead) * frameSize);
+	}
+	
+	return error;
+}
+
+OSStatus CoreAudioInputConvertCallback(void *inRefCon,
+									   AudioUnitRenderActionFlags *ioActionFlags,
+									   const AudioTimeStamp *inTimeStamp,
+									   UInt32 inBusNumber,
+									   UInt32 inNumberFrames,
+									   AudioBufferList *ioData)
+{
+	OSStatus error = noErr;
+	
+	if (*ioActionFlags & kAudioUnitRenderAction_PostRender)
+	{
+		RingBuffer *samplesConverted = (RingBuffer *)inRefCon;
+		samplesConverted->write(ioData->mBuffers[0].mData, inNumberFrames);
+	}
+	
+	return error;
+}
+
+OSStatus CoreAudioInputDeviceChanged(AudioObjectID inObjectID,
+									 UInt32 inNumberAddresses,
+									 const AudioObjectPropertyAddress inAddresses[],
+									 void *inClientData)
+{
+	OSStatus error = noErr;
+	CoreAudioInput *caInput = (CoreAudioInput *)inClientData;
+	
+	caInput->Start();
+	if (!caInput->IsHardwareEnabled())
+	{
+		error = kAudioHardwareNotRunningError;
+	}
+	
+	return error;
+}
+
+void CoreAudioInputAUHALChanged(void *inRefCon,
+								AudioUnit inUnit,
+								AudioUnitPropertyID inID,
+								AudioUnitScope inScope,
+								AudioUnitElement inElement)
+{
+	OSStatus error = noErr;
+	CoreAudioInput *caInput = (CoreAudioInput *)inRefCon;
+	
+	switch (inID)
+	{
+		case kAudioDevicePropertyVolumeScalar:
+		{
+			Float32 gainValue = 0.0f;
+			UInt32 propertySize = sizeof(gainValue);
+			error = AudioUnitGetProperty(inUnit,
+										 inID,
+										 kAudioUnitScope_Input,
+										 inElement,
+										 &gainValue,
+										 &propertySize);
+			
+			if (error == noErr)
+			{
+				caInput->SetGain_ValueOnly(gainValue);
+				caInput->RunHardwareGainChangedCallback(gainValue);
+			}
+			
+			break;
+		}
+		
+		case kAudioDevicePropertyHogMode:
+		case kAudioDevicePropertyJackIsConnected:
+		{
+			caInput->UpdateHardwareLock();
+			break;
+		}
+		
+		default:
+			break;
+	}
+}
+
+void CoreAudioInputDefaultHardwareGainChangedCallback(float normalizedGain, void *inParam1, void *inParam2)
+{
+	// Do nothing.
+}
+
+#pragma mark -
 
 CoreAudioOutput::CoreAudioOutput(size_t bufferSamples, size_t sampleSize)
 {
@@ -41,19 +858,10 @@ CoreAudioOutput::CoreAudioOutput(size_t bufferSamples, size_t sampleSize)
 		audioDesc.componentFlags = 0;
 		audioDesc.componentFlagsMask = 0;
 		
-		AudioComponent audioComponent = AudioComponentFindNext(NULL, &audioDesc);
-		if (audioComponent == NULL)
-		{
-			return;
-		}
-		
-		error = AudioComponentInstanceNew(audioComponent, &_au);
-		if (error != noErr)
-		{
-			return;
-		}
+		CreateAudioUnitInstance(&_au, &audioDesc);
 	}
 	else
+#endif
 	{
 		ComponentDescription audioDesc;
 		audioDesc.componentType = kAudioUnitType_Output;
@@ -62,38 +870,8 @@ CoreAudioOutput::CoreAudioOutput(size_t bufferSamples, size_t sampleSize)
 		audioDesc.componentFlags = 0;
 		audioDesc.componentFlagsMask = 0;
 		
-		Component audioComponent = FindNextComponent(NULL, &audioDesc);
-		if (audioComponent == NULL)
-		{
-			return;
-		}
-		
-		error = OpenAComponent(audioComponent, &_au);
-		if (error != noErr)
-		{
-			return;
-		}
+		CreateAudioUnitInstance(&_au, &audioDesc);
 	}
-#else
-	ComponentDescription audioDesc;
-	audioDesc.componentType = kAudioUnitType_Output;
-	audioDesc.componentSubType = kAudioUnitSubType_DefaultOutput;
-	audioDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
-	audioDesc.componentFlags = 0;
-	audioDesc.componentFlagsMask = 0;
-	
-	Component audioComponent = FindNextComponent(NULL, &audioDesc);
-	if (audioComponent == NULL)
-	{
-		return;
-	}
-	
-	error = OpenAComponent(audioComponent, &_au);
-	if (error != noErr)
-	{
-		return;
-	}
-#endif
 	
 	// Set the render callback
 	AURenderCallbackStruct callback;
@@ -146,26 +924,7 @@ CoreAudioOutput::CoreAudioOutput(size_t bufferSamples, size_t sampleSize)
 CoreAudioOutput::~CoreAudioOutput()
 {
 	OSSpinLockLock(_spinlockAU);
-	
-	if(_au != NULL)
-	{
-		AudioOutputUnitStop(_au);
-		AudioUnitUninitialize(_au);
-#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
-		if (IsOSXVersionSupported(10, 6, 0))
-		{
-			AudioComponentInstanceDispose(_au);
-		}
-		else
-		{
-			CloseComponent(_au);
-		}
-#else
-		CloseComponent(_au);
-#endif
-		_au = NULL;
-	}
-	
+	DestroyAudioUnitInstance(&_au);
 	OSSpinLockUnlock(_spinlockAU);
 	
 	delete _buffer;
@@ -271,14 +1030,82 @@ OSStatus CoreAudioOutputRenderCallback(void *inRefCon,
 	// Pad any remaining samples.
 	if (framesRead < inNumberFrames)
 	{
-		memset(playbackBuffer + (framesRead * SPU_SAMPLE_SIZE), 0, (inNumberFrames - framesRead) * SPU_SAMPLE_SIZE);
-	}
-	
-	// Copy to other channels.
-	for (UInt32 channel = 1; channel < ioData->mNumberBuffers; channel++)
-	{
-		memcpy(ioData->mBuffers[channel].mData, playbackBuffer, ioData->mBuffers[0].mDataByteSize);
+		const size_t frameSize = audioBuffer->getElementSize();
+		memset(playbackBuffer + (framesRead * frameSize), 0, (inNumberFrames - framesRead) * frameSize);
 	}
 	
 	return noErr;
+}
+
+#pragma mark -
+
+bool CreateAudioUnitInstance(AudioUnit *au, ComponentDescription *auDescription)
+{
+	bool result = false;
+	if (au == NULL || auDescription == NULL || IsOSXVersionSupported(10, 6, 0))
+	{
+		return result;
+	}
+	
+	Component theComponent = FindNextComponent(NULL, auDescription);
+	if (theComponent == NULL)
+	{
+		return result;
+	}
+	
+	OSErr error = OpenAComponent(theComponent, au);
+	if (error != noErr)
+	{
+		return result;
+	}
+	
+	result = true;
+	return result;
+}
+
+#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
+bool CreateAudioUnitInstance(AudioUnit *au, AudioComponentDescription *auDescription)
+{
+	bool result = false;
+	if (au == NULL || auDescription == NULL || !IsOSXVersionSupported(10, 6, 0))
+	{
+		return result;
+	}
+	
+	AudioComponent theComponent = AudioComponentFindNext(NULL, auDescription);
+	if (theComponent == NULL)
+	{
+		return result;
+	}
+	
+	OSStatus error = AudioComponentInstanceNew(theComponent, au);
+	if (error != noErr)
+	{
+		return result;
+	}
+	
+	result = true;
+	return result;
+}
+#endif
+
+void DestroyAudioUnitInstance(AudioUnit *au)
+{
+	if (au == NULL)
+	{
+		return;
+	}
+	
+	AudioOutputUnitStop(*au);
+	AudioUnitUninitialize(*au);
+#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
+	if (IsOSXVersionSupported(10, 6, 0))
+	{
+		AudioComponentInstanceDispose(*au);
+	}
+	else
+#endif
+	{
+		CloseComponent(*au);
+	}
 }

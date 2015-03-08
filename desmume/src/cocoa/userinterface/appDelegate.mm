@@ -181,6 +181,7 @@
 	
 	// Init the DS controller.
 	CocoaDSController *newController = [[[CocoaDSController alloc] init] autorelease];
+	[newController setDelegate:emuControl];
 	[newCore setCdsController:newController];
 	
 	// Init the DS speakers.

@@ -18,6 +18,7 @@
 #import <Cocoa/Cocoa.h>
 #import <OpenEmuBase/OEGameCore.h>
 #import "OENDSSystemResponderClient.h"
+#import "../cocoa_input.h"
 #include <libkern/OSAtomic.h>
 #include <pthread.h>
 
@@ -27,7 +28,7 @@
 @class CocoaDSFirmware;
 
 
-@interface NDSGameCore : OEGameCore
+@interface NDSGameCore : OEGameCore <CocoaDSControllerDelegate>
 {
 	NSPoint touchLocation;
 	NSMutableDictionary *addedCheatsDict;

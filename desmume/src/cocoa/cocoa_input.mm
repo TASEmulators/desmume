@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2014 DeSmuME team
+	Copyright (C) 2012-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,15 +19,34 @@
 #import "cocoa_input.h"
 #import "cocoa_globals.h"
 
+#include "mic_ext.h"
+#include "coreaudiosound.h"
+#include "audiosamplegenerator.h"
 #include "../NDSSystem.h"
 #include "../slot2.h"
 #undef BOOL
 
+NullGenerator nullSampleGenerator;
+InternalNoiseGenerator internalNoiseGenerator;
+WhiteNoiseGenerator whiteNoiseGenerator;
+SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
+
 
 @implementation CocoaDSController
 
+@synthesize delegate;
+@dynamic isHardwareMicAvailable;
+@dynamic hardwareMicEnabled;
+@dynamic hardwareMicLocked;
+@dynamic hardwareMicGain;
+@dynamic hardwareMicMute;
+@dynamic hardwareMicPause;
+@dynamic softwareMicState;
+@dynamic softwareMicMode;
 @dynamic autohold;
 @synthesize micMode;
+@synthesize CAInputDevice;
+@synthesize softwareMicSampleGenerator;
 @synthesize selectedAudioFileGenerator;
 @synthesize paddleAdjust;
 
@@ -47,21 +66,124 @@
 		ndsInput[i].autohold = false;
 	}
 	
+	delegate = nil;
 	spinlockControllerState = OS_SPINLOCK_INIT;	
 	autohold = NO;
 	isAutoholdCleared = YES;
+	_useHardwareMic = NO;
+	_availableMicSamples = 0;
 	
 	micMode = MICMODE_NONE;
 	selectedAudioFileGenerator = NULL;
+	CAInputDevice = new CoreAudioInput;
+	CAInputDevice->SetCallbackHardwareGainChanged(&CAHardwareGainChangedCallback, self, NULL);
+	softwareMicSampleGenerator = &nullSampleGenerator;
 	touchLocation = NSMakePoint(0.0f, 0.0f);
 	paddleAdjust = 0;
+	
+	Mic_SetResetCallback(&CAResetCallback, self, NULL);
+	Mic_SetSampleReadCallback(&CASampleReadCallback, self, NULL);
 	
 	return self;
 }
 
 - (void)dealloc
 {
+	delete CAInputDevice;
 	[super dealloc];
+}
+
+- (BOOL) isHardwareMicAvailable
+{
+	return ( CAInputDevice->IsHardwareEnabled() &&
+			!CAInputDevice->IsHardwareLocked() &&
+			!CAInputDevice->GetPauseState() ) ? YES : NO;
+}
+
+- (void) setHardwareMicEnabled:(BOOL)micEnabled
+{
+	if (micEnabled)
+	{
+		CAInputDevice->Start();
+	}
+	else
+	{
+		CAInputDevice->Stop();
+	}
+}
+
+- (BOOL) hardwareMicEnabled
+{
+	return (CAInputDevice->IsHardwareEnabled()) ? YES : NO;
+}
+
+- (BOOL) hardwareMicLocked
+{
+	return (CAInputDevice->IsHardwareLocked()) ? YES : NO;
+}
+
+- (void) setHardwareMicGain:(float)micGain
+{
+	CAInputDevice->SetGain(micGain);
+}
+
+- (float) hardwareMicGain
+{
+	return CAInputDevice->GetGain();
+}
+
+- (void) setHardwareMicMute:(BOOL)isMicMuted
+{
+	bool muteState = (isMicMuted) ? true : false;
+	CAInputDevice->SetMuteState(muteState);
+}
+
+- (BOOL) hardwareMicMute
+{
+	BOOL isMicMuted = (CAInputDevice->GetMuteState()) ? YES : NO;
+	return isMicMuted;
+}
+
+- (void) setHardwareMicPause:(BOOL)isMicPaused
+{
+	bool pauseState = (isMicPaused) ? true : false;
+	CAInputDevice->SetMuteState(pauseState);
+}
+
+- (BOOL) hardwareMicPause
+{
+	BOOL isMicPaused = (CAInputDevice->GetPauseState()) ? YES : NO;
+	return isMicPaused;
+}
+
+- (void) setSoftwareMicState:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockControllerState);
+	ndsInput[DSControllerState_Microphone].state = (theState) ? true : false;
+	OSSpinLockUnlock(&spinlockControllerState);
+}
+
+- (BOOL) softwareMicState
+{
+	OSSpinLockLock(&spinlockControllerState);
+	BOOL theState = (ndsInput[DSControllerState_Microphone].state) ? YES : NO;
+	OSSpinLockUnlock(&spinlockControllerState);
+	return theState;
+}
+
+- (void) setSoftwareMicMode:(NSInteger)theMode
+{
+	OSSpinLockLock(&spinlockControllerState);
+	micMode = theMode;
+	OSSpinLockUnlock(&spinlockControllerState);
+}
+
+- (NSInteger) softwareMicMode
+{
+	OSSpinLockLock(&spinlockControllerState);
+	NSInteger theMode = micMode;
+	OSSpinLockUnlock(&spinlockControllerState);
+	return theMode;
 }
 
 - (void) setAutohold:(BOOL)theState
@@ -133,14 +255,6 @@
 	OSSpinLockLock(&spinlockControllerState);
 	ndsInput[DSControllerState_Touch].state = (theState) ? true : false;
 	touchLocation = theLocation;
-	OSSpinLockUnlock(&spinlockControllerState);
-}
-
-- (void) setMicrophoneState:(BOOL)theState inputMode:(const NSInteger)inputMode
-{
-	OSSpinLockLock(&spinlockControllerState);
-	ndsInput[DSControllerState_Microphone].state = (theState) ? true : false;
-	micMode = inputMode;
 	OSSpinLockUnlock(&spinlockControllerState);
 }
 
@@ -262,36 +376,37 @@
 	
 	// Setup the DS mic.
 	AudioGenerator *selectedGenerator = &nullSampleGenerator;
-	switch (theMicMode)
-	{
-		case MICMODE_INTERNAL_NOISE:
-			selectedGenerator = &internalNoiseGenerator;
-			break;
-			
-		case MICMODE_WHITE_NOISE:
-			selectedGenerator = &whiteNoiseGenerator;
-			break;
-			
-		case MICMODE_SINE_WAVE:
-			selectedGenerator = &sineWaveGenerator;
-			break;
-			
-		case MICMODE_AUDIO_FILE:
-			if (selectedAudioFileGenerator != NULL)
-			{
-				selectedGenerator = selectedAudioFileGenerator;
-			}
-			break;
-			
-		default:
-			break;
-	}
 	
-	NDS_setMic(isMicPressed);
-	if (!isMicPressed)
+	if (isMicPressed)
+	{
+		switch (theMicMode)
+		{
+			case MICMODE_INTERNAL_NOISE:
+				selectedGenerator = &internalNoiseGenerator;
+				break;
+				
+			case MICMODE_WHITE_NOISE:
+				selectedGenerator = &whiteNoiseGenerator;
+				break;
+				
+			case MICMODE_SINE_WAVE:
+				selectedGenerator = &sineWaveGenerator;
+				break;
+				
+			case MICMODE_AUDIO_FILE:
+				if (selectedAudioFileGenerator != NULL)
+				{
+					selectedGenerator = selectedAudioFileGenerator;
+				}
+				break;
+				
+			default:
+				break;
+		}
+	}
+	else
 	{
 		selectedGenerator = &nullSampleGenerator;
-		
 		internalNoiseGenerator.setSamplePosition(0);
 		sineWaveGenerator.setCyclePosition(0.0);
 		
@@ -301,26 +416,9 @@
 		}
 	}
 	
-	static const bool useBufferedSource = false;
-	Mic_SetUseBufferedSource(useBufferedSource);
-	if (useBufferedSource)
-	{
-		static u8 generatedSampleBuffer[(size_t)(MIC_MAX_BUFFER_SAMPLES + 0.5)] = {0};
-		static const size_t requestedSamples = MIC_MAX_BUFFER_SAMPLES;
-		
-		const size_t availableSamples = micInputBuffer.getAvailableElements();
-		if (availableSamples < requestedSamples)
-		{
-			micInputBuffer.drop(requestedSamples - availableSamples);
-		}
-		
-		selectedGenerator->generateSampleBlock(requestedSamples, generatedSampleBuffer);
-		micInputBuffer.write(generatedSampleBuffer, requestedSamples);
-	}
-	else
-	{
-		Mic_SetSelectedDirectSampleGenerator(selectedGenerator);
-	}
+	_useHardwareMic = (isMicPressed) ? NO : YES;
+	softwareMicSampleGenerator = selectedGenerator;
+	NDS_setMic(isMicPressed);
 }
 
 - (void) flushEmpty
@@ -380,30 +478,67 @@
 	}
 	
 	// Setup the DS mic.
-	AudioGenerator *selectedGenerator = &nullSampleGenerator;
-	
+	_useHardwareMic = NO;
+	softwareMicSampleGenerator = &nullSampleGenerator;
 	NDS_setMic(false);
+}
+
+- (uint8_t) handleMicSampleRead:(CoreAudioInput *)caInput softwareMic:(AudioGenerator *)sampleGenerator
+{
+	uint8_t theSample = MIC_NULL_SAMPLE_VALUE;
 	
-	static const bool useBufferedSource = false;
-	Mic_SetUseBufferedSource(useBufferedSource);
-	if (useBufferedSource)
+	if (_useHardwareMic && (caInput != NULL))
 	{
-		static u8 generatedSampleBuffer[(size_t)(MIC_MAX_BUFFER_SAMPLES + 0.5)] = {0};
-		static const size_t requestedSamples = MIC_MAX_BUFFER_SAMPLES;
-		
-		const size_t availableSamples = micInputBuffer.getAvailableElements();
-		if (availableSamples < requestedSamples)
+		if (caInput->GetPauseState())
 		{
-			micInputBuffer.drop(requestedSamples - availableSamples);
+			return theSample;
 		}
-		
-		selectedGenerator->generateSampleBlock(requestedSamples, generatedSampleBuffer);
-		micInputBuffer.write(generatedSampleBuffer, requestedSamples);
+		else
+		{
+			if (_availableMicSamples == 0)
+			{
+				_availableMicSamples = CAInputDevice->Pull();
+			}
+			
+			caInput->_samplesConverted->read(&theSample, 1);
+			theSample >>= 1; // Samples from CoreAudio are 8-bit, so we need to convert the sample to 7-bit
+			_availableMicSamples--;
+		}
 	}
 	else
 	{
-		Mic_SetSelectedDirectSampleGenerator(selectedGenerator);
+		theSample = sampleGenerator->generateSample();
 	}
+	
+	return [[self delegate] doMicSamplesReadFromController:self inSample:theSample];
+}
+
+- (void) handleMicHardwareGainChanged:(float)gainValue
+{
+	if (delegate == nil || ![delegate respondsToSelector:@selector(doMicHardwareGainChangedFromController:gain:)])
+	{
+		return;
+	}
+	
+	[[self delegate] doMicHardwareGainChangedFromController:self gain:gainValue];
 }
 
 @end
+
+void CAResetCallback(void *inParam1, void *inParam2)
+{
+	CocoaDSController *cdsController = (CocoaDSController *)inParam1;
+	[cdsController CAInputDevice]->Start();
+}
+
+uint8_t CASampleReadCallback(void *inParam1, void *inParam2)
+{
+	CocoaDSController *cdsController = (CocoaDSController *)inParam1;
+	return [cdsController handleMicSampleRead:[cdsController CAInputDevice] softwareMic:[cdsController softwareMicSampleGenerator]];
+}
+
+void CAHardwareGainChangedCallback(float normalizedGain, void *inParam1, void *inParam2)
+{
+	CocoaDSController *cdsController = (CocoaDSController *)inParam1;
+	[cdsController handleMicHardwareGainChanged:normalizedGain];
+}

@@ -34,15 +34,19 @@ private:
 	size_t _readPosition;
 	size_t _writePosition;
 	
+	void allocate(const size_t numberElements, const size_t elementSize);
+	
 public:
-	RingBuffer(const size_t numberElements, const size_t newBufferElementSize);
+	RingBuffer(const size_t numberElements, const size_t elementSize);
 	~RingBuffer();
 	
 	void clear();
+	void resize(const size_t numberElements, const size_t elementSize);
 	size_t read(void *__restrict__ destBuffer, size_t requestedNumberElements);
 	size_t write(const void *__restrict__ srcBuffer, size_t requestedNumberElements);
 	size_t drop(size_t requestedNumberElements);
 	size_t getAvailableElements() const;
+	size_t getUsedElements() const;
 	size_t getElementCapacity() const;
 	size_t getElementSize() const;
 	bool isEmpty() const;

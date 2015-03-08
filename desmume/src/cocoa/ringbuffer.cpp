@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,23 +21,36 @@
 #include <libkern/OSAtomic.h>
 
 
-RingBuffer::RingBuffer(const size_t numberElements, const size_t newBufferElementSize)
+RingBuffer::RingBuffer(const size_t numberElements, const size_t elementSize)
 {
-	_elementCapacity = numberElements;
-	_elementSize = newBufferElementSize;
-	
-	_buffer = (uint8_t *)calloc(numberElements + 2, newBufferElementSize);
-	_bufferSize = (numberElements + 2) * newBufferElementSize;
-	
-	_readPosition = 0;
-	_writePosition = 1;
-	_elementFillCount = 0;
+	_buffer = NULL;
+	allocate(numberElements, elementSize);
 }
 
 RingBuffer::~RingBuffer()
 {
 	free(_buffer);
 	_buffer = NULL;
+}
+
+void RingBuffer::allocate(const size_t numberElements, const size_t elementSize)
+{
+	this->_elementCapacity = numberElements;
+	this->_elementSize = elementSize;
+	
+	this->_bufferSize = (this->_elementCapacity + 2) * this->_elementSize;
+	this->_buffer = (uint8_t *)realloc(this->_buffer, this->_bufferSize);
+	memset(this->_buffer, 0, this->_bufferSize);
+	
+	this->_readPosition = 0;
+	this->_writePosition = 1;
+	this->_elementFillCount = 0;
+}
+
+void RingBuffer::resize(const size_t numberElements, const size_t elementSize)
+{
+	this->drop(this->getUsedElements());
+	this->allocate(numberElements, elementSize);
 }
 
 void RingBuffer::clear()
@@ -235,6 +248,11 @@ size_t RingBuffer::drop(size_t requestedNumberElements)
 size_t RingBuffer::getAvailableElements() const
 {
 	return (this->_elementCapacity - this->_elementFillCount);
+}
+
+size_t RingBuffer::getUsedElements() const
+{
+	return (size_t)this->_elementFillCount;
 }
 
 size_t RingBuffer::getElementCapacity() const

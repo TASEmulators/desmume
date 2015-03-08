@@ -224,7 +224,8 @@
 #define FRAME_SKIP_BIAS								0.1		// May be any real number. This value acts as a vector addition to the frame skip.
 #define MAX_FRAME_SKIP								(DS_FRAMES_PER_SECOND / 3.0)
 
-#define SPU_SAMPLE_RATE								(44100.0 * DS_FRAMES_PER_SECOND / 60.0)	// Samples per second
+//#define SPU_SAMPLE_RATE								(44100.0 * DS_FRAMES_PER_SECOND / 60.0)	// Samples per second
+#define SPU_SAMPLE_RATE								44100.0	// Samples per second
 #define SPU_SAMPLE_RESOLUTION						16		// Bits per sample; must be a multiple of 8
 #define SPU_NUMBER_CHANNELS							2		// Number of channels
 #define SPU_SAMPLE_SIZE								((SPU_SAMPLE_RESOLUTION / 8) * SPU_NUMBER_CHANNELS) // Bytes per sample, multiplied by the number of channels
@@ -242,8 +243,17 @@
 #define ROMINFO_GAME_CODE_LENGTH					4
 #define ROMINFO_GAME_BANNER_LENGTH					128
 
-#define MIC_SAMPLE_RATE								16000
-#define MIC_MAX_BUFFER_SAMPLES						(MIC_SAMPLE_RATE / DS_FRAMES_PER_SECOND)
+#define MIC_SAMPLE_RATE								16000.0
+#define MIC_SAMPLE_RESOLUTION						8		// Bits per sample; must be a multiple of 8
+#define MIC_NUMBER_CHANNELS							1		// Number of channels
+#define MIC_SAMPLE_SIZE								((MIC_SAMPLE_RESOLUTION / 8) * MIC_NUMBER_CHANNELS) // Bytes per sample, multiplied by the number of channels
+#define MIC_MAX_BUFFER_SAMPLES						((MIC_SAMPLE_RATE / DS_FRAMES_PER_SECOND) * MIC_SAMPLE_SIZE)
+#define MIC_CAPTURE_FRAMES							192		// The number of audio frames that the NDS microphone should pull. The lower this value, the lower the latency. Ensure that this value is not too low, or else audio frames may be lost.
+#define MIC_CLIP_FRAME_THRESHOLD					15		// When the number of clipped mic samples exceeds this amount, the UI will reflect that the mic is clipping.
+#define MIC_CLIP_FRAME_MAX_COUNT					60		// When counting clipped mic samples, don't count past this number. This is to prevent the mic clip state from persisting too long after the mic has stopped clipping.
+#define MIC_NULL_FRAME_THRESHOLD					12		// When the number of null mic samples exceeds this amount, the UI will reflect that the mic is null.
+#define MIC_NULL_FRAME_MAX_COUNT					24		// When counting null mic samples, don't count past this number. This is to prevent the mic null state from persisting too long after the mic has read some samples.
+#define MIC_NULL_SAMPLE_VALUE						64
 
 #define COCOA_DIALOG_CANCEL							0
 #define COCOA_DIALOG_DEFAULT						1

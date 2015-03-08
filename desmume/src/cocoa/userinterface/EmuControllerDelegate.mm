@@ -71,7 +71,13 @@
 @synthesize isWorking;
 @synthesize isRomLoading;
 @synthesize statusText;
+@synthesize isSoftwareMicActive;
+@dynamic isHardwareMicMuted;
+@synthesize isHardwareMicIdle;
+@synthesize isHardwareMicInClip;
+@synthesize currentMicGainValue;
 @dynamic currentVolumeValue;
+@synthesize currentMicStatusIcon;
 @synthesize currentVolumeIcon;
 
 @synthesize isShowingSaveStateDialog;
@@ -121,6 +127,12 @@
 	frameJumpToFrame = 0;
 	
 	lastSetSpeedScalar = 1.0f;
+	hwMicNumberIdleFrames = 0;
+	hwMicNumberClippedFrames = 0;
+	isSoftwareMicActive = NO;
+	isHardwareMicIdle = YES;
+	isHardwareMicInClip = NO;
+	currentMicGainValue = 0.5f;
 	isSoundMuted = NO;
 	lastSetVolumeValue = MAX_VOLUME;
 	
@@ -128,6 +140,12 @@
 	iconPause = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Pause_420x420" ofType:@"png"]];
 	iconSpeedNormal = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Speed1x_420x420" ofType:@"png"]];
 	iconSpeedDouble = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Speed2x_420x420" ofType:@"png"]];
+	
+	iconMicDisabled = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_MicrophoneBlack_256x256" ofType:@"png"]];
+	iconMicIdle = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_MicrophoneDarkGreen_256x256" ofType:@"png"]];
+	iconMicActive = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_MicrophoneGreen_256x256" ofType:@"png"]];
+	iconMicInClip = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_MicrophoneRed_256x256" ofType:@"png"]];
+	iconMicManualOverride = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_MicrophoneGray_256x256" ofType:@"png"]];
 	iconVolumeFull = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeFull_16x16" ofType:@"png"]];
 	iconVolumeTwoThird = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeTwoThird_16x16" ofType:@"png"]];
 	iconVolumeOneThird = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeOneThird_16x16" ofType:@"png"]];
@@ -137,6 +155,7 @@
 	isRomLoading = NO;
 	statusText = NSSTRING_STATUS_READY;
 	currentVolumeValue = MAX_VOLUME;
+	currentMicStatusIcon = [iconMicDisabled retain];
 	currentVolumeIcon = [iconVolumeFull retain];
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
@@ -155,6 +174,12 @@
 	[iconPause release];
 	[iconSpeedNormal release];
 	[iconSpeedDouble release];
+	
+	[iconMicDisabled release];
+	[iconMicIdle release];
+	[iconMicActive release];
+	[iconMicInClip release];
+	[iconMicManualOverride release];
 	[iconVolumeFull release];
 	[iconVolumeTwoThird release];
 	[iconVolumeOneThird release];
@@ -265,6 +290,19 @@
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	return [cdsCore speedScalar];
+}
+
+- (void) setIsHardwareMicMuted:(BOOL)theState
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[[cdsCore cdsController] setHardwareMicMute:theState];
+	[self updateMicStatusIcon];
+}
+
+- (BOOL) isHardwareMicMuted
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	return [[cdsCore cdsController] hardwareMicMute];
 }
 
 - (void) setCurrentVolumeValue:(float)vol
@@ -807,11 +845,16 @@
 	[[cdsCore cdsFirmware] update];
 }
 
+- (IBAction) changeHardwareMicGain:(id)sender
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[[cdsCore cdsController] setHardwareMicGain:[self currentMicGainValue]];
+}
+
 - (IBAction) changeVolume:(id)sender
 {
 	const float vol = [self currentVolumeValue];
 	[self setCurrentVolumeValue:vol];
-	[self setStatusText:[NSString stringWithFormat:NSSTRING_STATUS_VOLUME, vol]];
 	[CocoaDSUtil messageSendOneWayWithFloat:[cdsSpeaker receivePort] msgID:MESSAGE_SET_VOLUME floatValue:vol];
 }
 
@@ -1008,15 +1051,18 @@
 	const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	CocoaDSController *cdsController = [cdsCore cdsController];
 	
 	const NSInteger micMode = cmdAttr.intValue[1];
-	[[cdsCore cdsController] setMicrophoneState:theState inputMode:micMode];
+	[cdsController setSoftwareMicState:theState];
+	[cdsController setSoftwareMicMode:micMode];
+	//[self updateMicStatusIcon];
 	
 	const float sineWaveFrequency = cmdAttr.floatValue[0];
-	[[cdsCore cdsController] setSineWaveGeneratorFrequency:sineWaveFrequency];
+	[cdsController setSineWaveGeneratorFrequency:sineWaveFrequency];
 	
 	NSString *audioFilePath = cmdAttr.object[0];
-	[[cdsCore cdsController] setSelectedAudioFileGenerator:[inputManager audioFileGeneratorFromFilePath:audioFilePath]];
+	[cdsController setSelectedAudioFileGenerator:[inputManager audioFileGeneratorFromFilePath:audioFilePath]];
 }
 
 - (void) cmdUpdateDSPaddle:(NSValue *)cmdAttrValue
@@ -1865,18 +1911,93 @@
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore setCoreState:CORESTATE_EXECUTE];
+	[self updateMicStatusIcon];
 }
 
 - (void) pauseCore
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore setCoreState:CORESTATE_PAUSE];
+	[self updateMicStatusIcon];
 }
 
 - (void) restoreCoreState
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore restoreCoreState];
+	[self updateMicStatusIcon];
+}
+
+- (void) updateMicStatusIcon
+{
+	NSImage *micIcon = iconMicDisabled;
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	CocoaDSController *cdsController = [cdsCore cdsController];
+	
+	if ([self isSoftwareMicActive])
+	{
+		micIcon = iconMicManualOverride;
+	}
+	else
+	{
+		if ([cdsController isHardwareMicAvailable])
+		{
+			if ([self isHardwareMicInClip])
+			{
+				micIcon = iconMicInClip;
+			}
+			else if ([self isHardwareMicIdle])
+			{
+				micIcon = iconMicIdle;
+			}
+			else
+			{
+				micIcon = iconMicActive;
+			}
+		}
+	}
+	
+	[self performSelectorOnMainThread:@selector(setCurrentMicStatusIcon:) withObject:micIcon waitUntilDone:NO];
+}
+
+- (BOOL) isMicSampleIdle:(uint8_t)sampleValue
+{
+	if (sampleValue == MIC_NULL_SAMPLE_VALUE)
+	{
+		if (hwMicNumberIdleFrames < MIC_NULL_FRAME_MAX_COUNT)
+		{
+			hwMicNumberIdleFrames++;
+		}
+	}
+	else
+	{
+		if (hwMicNumberIdleFrames > 0)
+		{
+			hwMicNumberIdleFrames--;
+		}
+	}
+	
+	return (hwMicNumberIdleFrames >= MIC_NULL_FRAME_THRESHOLD);
+}
+
+- (BOOL) isMicSampleCausingClip:(uint8_t)sampleValue
+{
+	if (sampleValue == 0 || sampleValue == 127)
+	{
+		if (hwMicNumberClippedFrames < MIC_CLIP_FRAME_MAX_COUNT)
+		{
+			hwMicNumberClippedFrames++;
+		}
+	}
+	else
+	{
+		if (hwMicNumberClippedFrames > 0)
+		{
+			hwMicNumberClippedFrames--;
+		}
+	}
+	
+	return (hwMicNumberClippedFrames >= MIC_CLIP_FRAME_THRESHOLD);
 }
 
 - (AudioSampleBlockGenerator *) selectedAudioFileGenerator
@@ -2351,6 +2472,58 @@
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsGPU] setRender3DDepthComparisonThreshold:[(NSNumber *)[aNotification object] integerValue]];
+}
+
+#pragma mark CocoaDSControllerDelegate Protocol
+
+- (uint8_t) doMicSamplesReadFromController:(CocoaDSController *)cdsController inSample:(uint8_t)sampleValue
+{
+	BOOL needsUpdate = NO;
+	const BOOL controllerSoftwareMicState = [cdsController softwareMicState];
+	const BOOL isEmuSoftwareMicActive = [self isSoftwareMicActive];
+	
+	// Check if the software mic state transitioned.
+	if (( controllerSoftwareMicState && !isEmuSoftwareMicActive) ||
+		(!controllerSoftwareMicState &&  isEmuSoftwareMicActive))
+	{
+		[self setIsSoftwareMicActive:controllerSoftwareMicState];
+		needsUpdate = YES;
+	}
+	
+	// If we're reading the hardware mic, then check the sample value and make
+	// sure to check the mic's level state.
+	if (!controllerSoftwareMicState)
+	{
+		const BOOL isSampleIdle = [self isMicSampleIdle:sampleValue];
+		const BOOL isIdle = [self isHardwareMicIdle];
+		if (( isSampleIdle && !isIdle) ||
+			(!isSampleIdle &&  isIdle))
+		{
+			[self setIsHardwareMicIdle:isSampleIdle];
+			needsUpdate = YES;
+		}
+		
+		const BOOL isCausingClip = [self isMicSampleCausingClip:sampleValue];
+		const BOOL isInClip = [self isHardwareMicInClip];
+		if (( isCausingClip && !isInClip) ||
+			(!isCausingClip &&  isInClip))
+		{
+			[self setIsHardwareMicInClip:isCausingClip];
+			needsUpdate = YES;
+		}
+	}
+	
+	if (needsUpdate)
+	{
+		[self updateMicStatusIcon];
+	}
+	
+	return sampleValue;
+}
+
+- (void) doMicHardwareGainChangedFromController:(CocoaDSController *)cdsController gain:(float)gainValue
+{
+	[self setCurrentMicGainValue:gainValue];
 }
 
 @end

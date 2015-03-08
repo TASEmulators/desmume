@@ -30,8 +30,7 @@
 #include <string>
 #include <vector>
 
-#include "mic_ext.h"
-#undef BOOL
+#include "../audiosamplegenerator.h"
 
 #define INPUT_HANDLER_STRING_LENGTH 256
 
