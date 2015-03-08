@@ -1027,7 +1027,7 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonR_420x420" ofType:@"png"]] autorelease],			@"R",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonStart_420x420" ofType:@"png"]] autorelease],		@"Start",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_DSButtonSelect_420x420" ofType:@"png"]] autorelease],		@"Select",
-				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Microphone_420x420" ofType:@"png"]] autorelease],			@"Microphone",
+				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_MicrophoneBlueGlow_256x256" ofType:@"png"]] autorelease],			@"Microphone",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_GuitarGrip_Button_Green_512x512" ofType:@"png"]] autorelease],	@"Guitar Grip: Green",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_GuitarGrip_Button_Red_512x512" ofType:@"png"]] autorelease],		@"Guitar Grip: Red",
 				   [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_GuitarGrip_Button_Yellow_512x512" ofType:@"png"]] autorelease],	@"Guitar Grip: Yellow",
@@ -1851,11 +1851,11 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 	outputFormat.mSampleRate = MIC_SAMPLE_RATE;
 	outputFormat.mFormatID = kAudioFormatLinearPCM;
 	outputFormat.mFormatFlags = kAudioFormatFlagIsPacked;
-	outputFormat.mBytesPerPacket = 1;
+	outputFormat.mBytesPerPacket = MIC_SAMPLE_SIZE;
 	outputFormat.mFramesPerPacket = 1;
-	outputFormat.mBytesPerFrame = 1;
-	outputFormat.mChannelsPerFrame = 1;
-	outputFormat.mBitsPerChannel = 8;
+	outputFormat.mBytesPerFrame = MIC_SAMPLE_SIZE;
+	outputFormat.mChannelsPerFrame = MIC_NUMBER_CHANNELS;
+	outputFormat.mBitsPerChannel = MIC_SAMPLE_RESOLUTION;
 	
 	error = ExtAudioFileSetProperty(audioFile, kExtAudioFileProperty_ClientDataFormat, sizeof(outputFormat), &outputFormat);
 	if (error != noErr)
@@ -1886,7 +1886,7 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 	AudioSampleBlockGenerator &theGenerator = audioFileGenerators[filePathStr];
 	const size_t readSize = 32 * 1024;
 	const size_t bufferSize = (size_t)((double)(outputFormat.mSampleRate / inputFormat.mSampleRate) * (double)fileLengthFrames) + readSize;
-	u8 *buffer = theGenerator.allocate(bufferSize);
+	uint8_t *buffer = theGenerator.allocate(bufferSize);
 	
 	// Read the audio file and fill the generator's buffer.
 	AudioBufferList convertedData;

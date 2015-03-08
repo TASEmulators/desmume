@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,10 +18,7 @@
 #ifndef _AUDIO_SAMPLE_GENERATOR_
 #define _AUDIO_SAMPLE_GENERATOR_
 
-#include <stdio.h>
-#include "types.h"
-
-#define MIC_NULL_SAMPLE_VALUE 64
+#include <stdint.h>
 
 
 class AudioGenerator
@@ -30,25 +27,8 @@ public:
 	AudioGenerator() {};
 	virtual ~AudioGenerator() {};
 	
-	virtual size_t generateSampleBlock(size_t sampleCount, u8 *outBuffer)
-	{
-		if (outBuffer == NULL)
-		{
-			return 0;
-		}
-		
-		for (u8 *i = outBuffer; i < outBuffer + sampleCount; i++)
-		{
-			*i = this->generateSample();
-		}
-		
-		return sampleCount;
-	}
-	
-	virtual u8 generateSample()
-	{
-		return MIC_NULL_SAMPLE_VALUE;
-	}
+	virtual size_t generateSampleBlock(size_t sampleCount, uint8_t *outBuffer);
+	virtual uint8_t generateSample();
 };
 
 class NullGenerator : public AudioGenerator {};
@@ -56,7 +36,7 @@ class NullGenerator : public AudioGenerator {};
 class AudioSampleBlockGenerator : public AudioGenerator
 {
 protected:
-	u8 *_buffer;
+	uint8_t *_buffer;
 	size_t _sampleCount;
 	size_t _samplePosition;
 	
@@ -66,16 +46,16 @@ public:
 		, _sampleCount(0)
 		, _samplePosition(0)
 	{};
-	AudioSampleBlockGenerator(const u8 *audioBuffer, const size_t sampleCount);
+	AudioSampleBlockGenerator(const uint8_t *audioBuffer, const size_t sampleCount);
 	~AudioSampleBlockGenerator();
 	
-	u8* allocate(const size_t sampleCount);
-	u8* getBuffer() const;
+	uint8_t* allocate(const size_t sampleCount);
+	uint8_t* getBuffer() const;
 	size_t getSampleCount() const;
 	size_t getSamplePosition() const;
 	void setSamplePosition(size_t thePosition);
 	
-	virtual u8 generateSample();
+	virtual uint8_t generateSample();
 };
 
 class InternalNoiseGenerator : public AudioSampleBlockGenerator
@@ -87,7 +67,7 @@ public:
 class WhiteNoiseGenerator : public AudioGenerator
 {
 public:
-	virtual u8 generateSample();
+	virtual uint8_t generateSample();
 };
 
 class SineWaveGenerator : public AudioGenerator
@@ -98,11 +78,7 @@ protected:
 	double _cyclePosition;
 	
 public:
-	SineWaveGenerator()
-		: _frequency(250.0)
-		, _sampleRate(44100.0)
-		, _cyclePosition(0.0)
-	{};
+	SineWaveGenerator();
 	SineWaveGenerator(const double freq, const double sampleRate);
 	
 	double getFrequency() const;
@@ -112,7 +88,7 @@ public:
 	double getCyclePosition() const;
 	void setCyclePosition(double thePosition);
 	
-	virtual u8 generateSample();
+	virtual uint8_t generateSample();
 };
 
 #endif // _AUDIO_SAMPLE_GENERATOR_

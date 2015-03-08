@@ -694,6 +694,8 @@ volatile bool execute = true;
 	
 	pthread_cond_signal(&threadParam.condThreadExecute);
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+	
+	[[self cdsController] setHardwareMicPause:!(coreState == CORESTATE_EXECUTE)];
 }
 
 - (NSInteger) coreState

@@ -51,6 +51,12 @@
 @synthesize masterWindow;
 @synthesize view;
 @synthesize saveScreenshotPanelAccessoryView;
+@synthesize outputVolumeControlView;
+@synthesize microphoneGainControlView;
+@synthesize outputVolumeMenuItem;
+@synthesize microphoneGainMenuItem;
+@synthesize microphoneGainSlider;
+@synthesize microphoneMuteButton;
 
 @dynamic normalSize;
 @dynamic displayScale;
@@ -708,6 +714,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_COPY_TO_PASTEBOARD];
 }
 
+- (IBAction) changeHardwareMicGain:(id)sender
+{
+	[emuControl changeHardwareMicGain:sender];
+}
+
 - (IBAction) changeVolume:(id)sender
 {
 	[emuControl changeVolume:sender];
@@ -1084,6 +1095,10 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[view setInputManager:[emuControl inputManager]];
 	[[emuControl windowList] addObject:self];
 	[emuControl updateAllWindowTitles];
+	
+	// Set up some custom UI elements.
+	[microphoneGainMenuItem setView:microphoneGainControlView];
+	[outputVolumeMenuItem setView:outputVolumeControlView];
 	
 	// Set up the video output thread.
 	cdsVideoOutput = [[CocoaDSDisplayVideo alloc] init];

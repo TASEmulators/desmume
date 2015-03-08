@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,21 +22,42 @@
 
 #include "audiosamplegenerator.h"
 #include <math.h>
+#include "cocoa_globals.h"
 
 #define NUM_INTERNAL_NOISE_SAMPLES 32
 
-static const u8 noiseSample[NUM_INTERNAL_NOISE_SAMPLES] =
+static const uint8_t noiseSample[NUM_INTERNAL_NOISE_SAMPLES] =
 {
 	0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF5, 0xFF, 0xFF, 0xFF, 0xFF, 0x8E, 0xFF,
 	0xF4, 0xE1, 0xBF, 0x9A, 0x71, 0x58, 0x5B, 0x5F, 0x62, 0xC2, 0x25, 0x05, 0x01, 0x01, 0x01, 0x01
 };
 
-AudioSampleBlockGenerator::AudioSampleBlockGenerator(const u8 *audioBuffer, const size_t sampleCount)
+size_t AudioGenerator::generateSampleBlock(size_t sampleCount, uint8_t *outBuffer)
 {
-	_buffer = (u8 *)malloc(sampleCount * sizeof(u8));
+	if (outBuffer == NULL)
+	{
+		return 0;
+	}
+	
+	for (uint8_t *i = outBuffer; i < outBuffer + sampleCount; i++)
+	{
+		*i = this->generateSample();
+	}
+	
+	return sampleCount;
+}
+
+uint8_t AudioGenerator::generateSample()
+{
+	return MIC_NULL_SAMPLE_VALUE;
+}
+
+AudioSampleBlockGenerator::AudioSampleBlockGenerator(const uint8_t *audioBuffer, const size_t sampleCount)
+{
+	_buffer = (uint8_t *)malloc(sampleCount * sizeof(uint8_t));
 	_sampleCount = sampleCount;
 	_samplePosition = 0;
-	memcpy(_buffer, audioBuffer, _sampleCount * sizeof(u8));
+	memcpy(_buffer, audioBuffer, _sampleCount * sizeof(uint8_t));
 }
 
 AudioSampleBlockGenerator::~AudioSampleBlockGenerator()
@@ -45,22 +66,22 @@ AudioSampleBlockGenerator::~AudioSampleBlockGenerator()
 	this->_buffer = NULL;
 }
 
-u8* AudioSampleBlockGenerator::allocate(const size_t sampleCount)
+uint8_t* AudioSampleBlockGenerator::allocate(const size_t sampleCount)
 {
 	if (this->_buffer != NULL)
 	{
 		free(this->_buffer);
 	}
 	
-	this->_buffer = (u8 *)malloc(sampleCount * sizeof(u8));
+	this->_buffer = (uint8_t *)malloc(sampleCount * sizeof(uint8_t));
 	this->_sampleCount = sampleCount;
 	this->_samplePosition = 0;
-	memset(this->_buffer, MIC_NULL_SAMPLE_VALUE, this->_sampleCount * sizeof(u8));
+	memset(this->_buffer, MIC_NULL_SAMPLE_VALUE, this->_sampleCount * sizeof(uint8_t));
 	
 	return this->_buffer;
 }
 
-u8 AudioSampleBlockGenerator::generateSample()
+uint8_t AudioSampleBlockGenerator::generateSample()
 {
 	if (this->_samplePosition >= this->_sampleCount)
 	{
@@ -70,7 +91,7 @@ u8 AudioSampleBlockGenerator::generateSample()
 	return this->_buffer[_samplePosition++];
 }
 
-u8* AudioSampleBlockGenerator::getBuffer() const
+uint8_t* AudioSampleBlockGenerator::getBuffer() const
 {
 	return this->_buffer;
 }
@@ -92,28 +113,40 @@ void AudioSampleBlockGenerator::setSamplePosition(size_t thePosition)
 
 InternalNoiseGenerator::InternalNoiseGenerator()
 {
-	_buffer = (u8 *)malloc(NUM_INTERNAL_NOISE_SAMPLES * sizeof(u8));
+	_buffer = (uint8_t *)malloc(NUM_INTERNAL_NOISE_SAMPLES * sizeof(uint8_t));
 	_sampleCount = NUM_INTERNAL_NOISE_SAMPLES;
 	_samplePosition = 0;
-	memcpy(_buffer, noiseSample, _sampleCount * sizeof(u8));
+	memcpy(_buffer, noiseSample, _sampleCount * sizeof(uint8_t));
+	
+	for (size_t i = 0; i < NUM_INTERNAL_NOISE_SAMPLES; i++)
+	{
+		_buffer[i] >>= 1;
+	}
 }
 
-u8 WhiteNoiseGenerator::generateSample()
+uint8_t WhiteNoiseGenerator::generateSample()
 {
 #ifdef __APPLE__
 	#ifdef MAC_OS_X_VERSION_10_7
 	if (IsOSXVersionSupported(10, 7, 0))
 	{
-		return (u8)(arc4random_uniform(0x00000080) & 0x7F);
+		return (uint8_t)(arc4random_uniform(0x00000080) & 0x7F);
 	}
-	return (u8)((arc4random() % 0x00000080) & 0x7F);
+	return (uint8_t)((arc4random() % 0x00000080) & 0x7F);
 	#else
-	return (u8)((arc4random() % 0x00000080) & 0x7F);
+	return (uint8_t)((arc4random() % 0x00000080) & 0x7F);
 	#endif
 #else
-	return (u8)(rand() & 0x7F);
+	return (uint8_t)(rand() & 0x7F);
 #endif
 }
+
+SineWaveGenerator::SineWaveGenerator()
+{
+	_frequency = 250.0;
+	_sampleRate = MIC_SAMPLE_RATE;
+	_cyclePosition = 0.0;
+};
 
 SineWaveGenerator::SineWaveGenerator(const double freq, const double sampleRate)
 {
@@ -122,9 +155,9 @@ SineWaveGenerator::SineWaveGenerator(const double freq, const double sampleRate)
 	_cyclePosition = 0.0;
 }
 
-u8 SineWaveGenerator::generateSample()
+uint8_t SineWaveGenerator::generateSample()
 {
-	const u8 sampleValue = (u8)(63.0 * sin(2.0 * M_PI * this->_cyclePosition)) + MIC_NULL_SAMPLE_VALUE;
+	const uint8_t sampleValue = (uint8_t)(63.0 * sin(2.0 * M_PI * this->_cyclePosition)) + MIC_NULL_SAMPLE_VALUE;
 	this->_cyclePosition += (this->_frequency / this->_sampleRate);
 	
 	return sampleValue;

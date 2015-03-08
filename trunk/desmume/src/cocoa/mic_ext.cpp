@@ -21,74 +21,52 @@
 #include "../emufile.h"
 #include "../readwrite.h"
 
-RingBuffer micInputBuffer(MIC_MAX_BUFFER_SAMPLES * 2, sizeof(u8));
-NullGenerator nullSampleGenerator;
-InternalNoiseGenerator internalNoiseGenerator;
-WhiteNoiseGenerator whiteNoiseGenerator;
-SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 
-static bool _micUseBufferedSource = true;
-static AudioGenerator *_selectedDirectSampleGenerator = NULL;
+MicResetCallback _micResetCallback = &Mic_DefaultResetCallback;
+void *_resetCallbackParam1 = NULL;
+void *_resetCallbackParam2 = NULL;
 
+MicSampleReadCallback _micSampleReadCallback = &Mic_DefaultSampleReadCallback;
+void *_sampleReadCallbackParam1 = NULL;
+void *_sampleReadCallbackParam2 = NULL;
 
 BOOL Mic_Init()
 {
-	// Do nothing.
 	return TRUE;
-}
-
-void Mic_Reset()
-{
-	micInputBuffer.clear();
 }
 
 void Mic_DeInit()
 {
-	// Do nothing.
+	
 }
 
+void Mic_Reset()
+{
+	_micResetCallback(_resetCallbackParam1, _resetCallbackParam2);
+}
+
+// The NDS reads audio samples in the following format:
+//    Format: Unsigned Linear PCM
+//    Channels: 1 (mono)
+//    Sample Rate: 16000 Hz
+//    Sample Resolution: 7-bit
 u8 Mic_ReadSample()
 {
-	u8 theSample = MIC_NULL_SAMPLE_VALUE;
-	
-	if (_micUseBufferedSource)
-	{
-		if (micInputBuffer.isEmpty())
-		{
-			return theSample;
-		}
-		
-		micInputBuffer.read(&theSample, 1);
-	}
-	else
-	{
-		if (_selectedDirectSampleGenerator != NULL)
-		{
-			theSample = _selectedDirectSampleGenerator->generateSample();
-		}
-	}
-	
-	return theSample;
+	return _micSampleReadCallback(_sampleReadCallbackParam1, _sampleReadCallbackParam2);
 }
 
-bool Mic_GetUseBufferedSource()
+void Mic_SetResetCallback(MicResetCallback callbackFunc, void *inParam1, void *inParam2)
 {
-	return _micUseBufferedSource;
+	_micResetCallback = callbackFunc;
+	_resetCallbackParam1 = inParam1;
+	_resetCallbackParam2 = inParam2;
 }
 
-void Mic_SetUseBufferedSource(bool theState)
+void Mic_SetSampleReadCallback(MicSampleReadCallback callbackFunc, void *inParam1, void *inParam2)
 {
-	_micUseBufferedSource = theState;
-}
-
-AudioGenerator* Mic_GetSelectedDirectSampleGenerator()
-{
-	return _selectedDirectSampleGenerator;
-}
-
-void Mic_SetSelectedDirectSampleGenerator(AudioGenerator *theGenerator)
-{
-	_selectedDirectSampleGenerator = theGenerator;
+	_micSampleReadCallback = callbackFunc;
+	_sampleReadCallbackParam1 = inParam1;
+	_sampleReadCallbackParam2 = inParam2;
 }
 
 void mic_savestate(EMUFILE* os)
@@ -100,4 +78,14 @@ bool mic_loadstate(EMUFILE* is, int size)
 {
 	is->fseek(size, SEEK_CUR);
 	return true;
+}
+
+void Mic_DefaultResetCallback(void *inParam1, void *inParam2)
+{
+	// Do nothing.
+}
+
+uint8_t Mic_DefaultSampleReadCallback(void *inParam1, void *inParam2)
+{
+	return MIC_NULL_SAMPLE_VALUE;
 }

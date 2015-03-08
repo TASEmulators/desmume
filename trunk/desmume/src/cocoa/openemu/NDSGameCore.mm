@@ -488,4 +488,13 @@ volatile bool execute = true;
 	}
 }
 
+#pragma mark CocoaDSControllerDelegate Protocol
+
+- (uint8_t) doMicSamplesReadFromController:(CocoaDSController *)cdsController inSample:(uint8_t)sampleValue
+{
+	// Do nothing.
+	// OpenEmu has no UI to reflect changes with the NDS microphone input.
+	return sampleValue;
+}
+
 @end

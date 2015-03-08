@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2013 DeSmuME team
+	Copyright (C) 2012-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,29 +19,15 @@
 #ifndef _MIC_EXTENSION_
 #define _MIC_EXTENSION_
 
-#include "audiosamplegenerator.h"
-#include "ringbuffer.h"
+#include <stdint.h>
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
-bool Mic_GetUseBufferedSource();
-void Mic_SetUseBufferedSource(bool theState);
-AudioGenerator* Mic_GetSelectedDirectSampleGenerator();
-void Mic_SetSelectedDirectSampleGenerator(AudioGenerator *theGenerator);
+typedef void (*MicResetCallback)(void *inParam1, void *inParam2);
+typedef uint8_t (*MicSampleReadCallback)(void *inParam1, void *inParam2);
 
-extern RingBuffer micInputBuffer;
-extern NullGenerator nullSampleGenerator;
-extern InternalNoiseGenerator internalNoiseGenerator;
-extern WhiteNoiseGenerator whiteNoiseGenerator;
-extern SineWaveGenerator sineWaveGenerator;
-
-extern AudioGenerator *selectedGeneratorDirect;
-
-#ifdef __cplusplus
-}
-#endif
+void Mic_SetResetCallback(MicResetCallback callbackFunc, void *inParam1, void *inParam2);
+void Mic_SetSampleReadCallback(MicSampleReadCallback callbackFunc, void *inParam1, void *inParam2);
+void Mic_DefaultResetCallback(void *inParam1, void *inParam2);
+uint8_t Mic_DefaultSampleReadCallback(void *inParam1, void *inParam2);
 
 #endif // _MIC_EXTENSION_

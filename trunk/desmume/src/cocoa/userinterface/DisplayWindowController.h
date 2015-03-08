@@ -79,6 +79,12 @@ class OGLVideoOutput;
 	
 	DisplayView *view;
 	NSView *saveScreenshotPanelAccessoryView;
+	NSView *outputVolumeControlView;
+	NSView *microphoneGainControlView;
+	NSMenuItem *outputVolumeMenuItem;
+	NSMenuItem *microphoneGainMenuItem;
+	NSSlider *microphoneGainSlider;
+	NSButton *microphoneMuteButton;
 	
 	EmuControllerDelegate *emuControl;
 	CocoaDSDisplayVideo *cdsVideoOutput;
@@ -112,6 +118,12 @@ class OGLVideoOutput;
 
 @property (readonly) IBOutlet DisplayView *view;
 @property (readonly) IBOutlet NSView *saveScreenshotPanelAccessoryView;
+@property (readonly) IBOutlet NSView *outputVolumeControlView;
+@property (readonly) IBOutlet NSView *microphoneGainControlView;
+@property (readonly) IBOutlet NSMenuItem *outputVolumeMenuItem;
+@property (readonly) IBOutlet NSMenuItem *microphoneGainMenuItem;
+@property (readonly) IBOutlet NSSlider *microphoneGainSlider;
+@property (readonly) IBOutlet NSButton *microphoneMuteButton;
 
 @property (retain) EmuControllerDelegate *emuControl;
 @property (assign) CocoaDSDisplayVideo *cdsVideoOutput;
@@ -142,6 +154,7 @@ class OGLVideoOutput;
 - (void) exitFullScreen;
 
 - (IBAction) copy:(id)sender;
+- (IBAction) changeHardwareMicGain:(id)sender;
 - (IBAction) changeVolume:(id)sender;
 - (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender;
 - (IBAction) toggleStatusBar:(id)sender;

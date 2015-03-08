@@ -113,7 +113,7 @@
 	{
 		NSFont *newFont = [[NSFontManager sharedFontManager] fontWithFamily:[[outCell font] familyName]
 																	 traits:([item isKindOfClass:[NSArray class]]) ? NSBoldFontMask : 0
-																	 weight:0
+																	 weight:5
 																	   size:[[outCell font] pointSize]];
 		[outCell setFont:newFont];
 	}
@@ -121,7 +121,7 @@
 	{
 		NSFont *newFont = [[NSFontManager sharedFontManager] fontWithFamily:[[outCell font] familyName]
 																	 traits:([item isKindOfClass:[NSArray class]]) ? NSBoldFontMask : 0
-																	 weight:0
+																	 weight:5
 																	   size:[[outCell font] pointSize]];
 		[outCell setFont:newFont];
 	}

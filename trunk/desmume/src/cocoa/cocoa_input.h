@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2014 DeSmuME Team
+	Copyright (C) 2012-2015 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,8 +18,11 @@
 
 #import <Cocoa/Cocoa.h>
 #include <libkern/OSAtomic.h>
-#include "mic_ext.h"
-#undef BOOL
+
+@class CocoaDSController;
+class CoreAudioInput;
+class AudioGenerator;
+class AudioSampleBlockGenerator;
 
 enum
 {
@@ -71,32 +74,72 @@ typedef struct
 	uint16_t turboPattern;
 } NDSInput;
 
+@protocol CocoaDSControllerDelegate <NSObject>
+
+@required
+- (uint8_t) doMicSamplesReadFromController:(CocoaDSController *)cdsController inSample:(uint8_t)sampleValue;
+
+@optional
+- (void) doMicHardwareGainChangedFromController:(CocoaDSController *)cdsController gain:(float)gainValue;
+
+@end
+
 @interface CocoaDSController : NSObject
 {
+	id <CocoaDSControllerDelegate> delegate;
 	BOOL autohold;
 	BOOL isAutoholdCleared;
+	BOOL _useHardwareMic;
+	size_t _availableMicSamples;
 	NSInteger micMode;
 	NSPoint touchLocation;
 	
 	NDSInput ndsInput[DSControllerState_StatesCount];
 	AudioSampleBlockGenerator *selectedAudioFileGenerator;
+	CoreAudioInput *CAInputDevice;
+	AudioGenerator *softwareMicSampleGenerator;
 	NSInteger paddleAdjust;
 	
 	OSSpinLock spinlockControllerState;
 }
 
+@property (retain) id <CocoaDSControllerDelegate> delegate;
 @property (assign) BOOL autohold;
+@property (readonly) BOOL isHardwareMicAvailable;
+@property (assign) BOOL hardwareMicEnabled;
+@property (readonly) BOOL hardwareMicLocked;
+@property (assign) float hardwareMicGain;
+@property (assign) BOOL hardwareMicMute;
+@property (assign) BOOL hardwareMicPause;
+@property (assign) BOOL softwareMicState;
+@property (assign) NSInteger softwareMicMode;
 @property (assign) NSInteger micMode;
+@property (readonly) CoreAudioInput *CAInputDevice;
+@property (readonly) AudioGenerator *softwareMicSampleGenerator;
 @property (assign) AudioSampleBlockGenerator *selectedAudioFileGenerator;
 @property (assign) NSInteger paddleAdjust;
 
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID;
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID turbo:(const BOOL)isTurboEnabled;
 - (void) setTouchState:(BOOL)theState location:(const NSPoint)theLocation;
-- (void) setMicrophoneState:(BOOL)theState inputMode:(const NSInteger)inputMode;
 - (void) setSineWaveGeneratorFrequency:(const double)freq;
 - (void) clearAutohold;
 - (void) flush;
 - (void) flushEmpty;
+- (uint8_t) handleMicSampleRead:(CoreAudioInput *)caInput softwareMic:(AudioGenerator *)sampleGenerator;
+- (void) handleMicHardwareGainChanged:(float)gainValue;
 
 @end
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+void CAResetCallback(void *inParam1, void *inParam2);
+uint8_t CASampleReadCallback(void *inParam1, void *inParam2);
+void CAHardwareGainChangedCallback(float normalizedGain, void *inParam1, void *inParam2);
+
+#ifdef __cplusplus
+}
+#endif

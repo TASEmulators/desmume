@@ -17,10 +17,12 @@
 
 #import <Cocoa/Cocoa.h>
 #include <libkern/OSAtomic.h>
+#import "../cocoa_input.h"
 
 @class InputManager;
 @class CocoaDSRom;
 @class CocoaDSFirmware;
+@class CocoaDSController;
 @class CocoaDSOutput;
 @class CocoaDSSpeaker;
 @class CocoaDSCheatManager;
@@ -28,7 +30,7 @@
 @class DisplayWindowController;
 class AudioSampleBlockGenerator;
 
-@interface EmuControllerDelegate : NSObject <NSUserInterfaceValidations>
+@interface EmuControllerDelegate : NSObject <NSUserInterfaceValidations, CocoaDSControllerDelegate>
 {
 	InputManager *inputManager;
 	
@@ -60,6 +62,7 @@ class AudioSampleBlockGenerator;
 	BOOL isRomLoading;
 	NSString *statusText;
 	float currentVolumeValue;
+	NSImage *currentMicStatusIcon;
 	NSImage *currentVolumeIcon;
 	BOOL isShowingSaveStateDialog;
 	BOOL isShowingFileMigrationDialog;
@@ -72,9 +75,20 @@ class AudioSampleBlockGenerator;
 	NSInteger frameJumpToFrame;
 	
 	CGFloat lastSetSpeedScalar;
+	uint32_t hwMicNumberIdleFrames;
+	uint32_t hwMicNumberClippedFrames;
+	BOOL isSoftwareMicActive;
+	BOOL isHardwareMicIdle;
+	BOOL isHardwareMicInClip;
+	float currentMicGainValue;
 	BOOL isSoundMuted;
 	float lastSetVolumeValue;
 	
+	NSImage *iconMicDisabled;
+	NSImage *iconMicIdle;
+	NSImage *iconMicActive;
+	NSImage *iconMicInClip;
+	NSImage *iconMicManualOverride;
 	NSImage *iconVolumeFull;
 	NSImage *iconVolumeTwoThird;
 	NSImage *iconVolumeOneThird;
@@ -127,7 +141,13 @@ class AudioSampleBlockGenerator;
 @property (assign) BOOL isWorking;
 @property (assign) BOOL isRomLoading;
 @property (assign) NSString *statusText;
+@property (assign) BOOL isSoftwareMicActive;
+@property (assign) BOOL isHardwareMicMuted;
+@property (assign) BOOL isHardwareMicIdle;
+@property (assign) BOOL isHardwareMicInClip;
+@property (assign) float currentMicGainValue;
 @property (assign) float currentVolumeValue;
+@property (retain) NSImage *currentMicStatusIcon;
 @property (retain) NSImage *currentVolumeIcon;
 @property (assign) BOOL isShowingSaveStateDialog;
 @property (assign) BOOL isShowingFileMigrationDialog;
@@ -184,6 +204,7 @@ class AudioSampleBlockGenerator;
 - (IBAction) changeCoreSpeed:(id)sender;
 - (IBAction) changeCoreEmuFlags:(id)sender;
 - (IBAction) changeFirmwareSettings:(id)sender;
+- (IBAction) changeHardwareMicGain:(id)sender;
 - (IBAction) changeVolume:(id)sender;
 - (IBAction) changeAudioEngine:(id)sender;
 - (IBAction) changeSpuAdvancedLogic:(id)sender;
@@ -239,6 +260,9 @@ class AudioSampleBlockGenerator;
 - (void) executeCore;
 - (void) pauseCore;
 - (void) restoreCoreState;
+- (void) updateMicStatusIcon;
+- (BOOL) isMicSampleIdle:(uint8_t)sampleValue;
+- (BOOL) isMicSampleCausingClip:(uint8_t)sampleValue;
 
 - (AudioSampleBlockGenerator *) selectedAudioFileGenerator;
 - (void) setSelectedAudioFileGenerator:(AudioSampleBlockGenerator *)theGenerator;
