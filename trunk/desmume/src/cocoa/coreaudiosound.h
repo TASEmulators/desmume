@@ -25,12 +25,34 @@
 #include "ringbuffer.h"
 
 
+struct CoreAudioInputDeviceInfo
+{
+	AudioObjectID objectID;
+	CFStringRef name;
+	CFStringRef manufacturer;
+	CFStringRef deviceUID;
+	CFStringRef modelUID;
+	Float64 sampleRate;
+};
+typedef CoreAudioInputDeviceInfo CoreAudioInputDeviceInfo;
+
+typedef void (*CoreAudioInputHardwareStateChangedCallback)(CoreAudioInputDeviceInfo *deviceInfo,
+														   const bool isHardwareEnabled,
+														   const bool isHardwareLocked,
+														   const bool isHardwareMuted,
+														   void *inParam1,
+														   void *inParam2);
+
 typedef void (*CoreAudioInputHardwareGainChangedCallback)(float normalizedGain, void *inParam1, void *inParam2);
 
 class CoreAudioInput
 {
 private:
 	OSSpinLock *_spinlockAUHAL;
+	
+	CoreAudioInputHardwareStateChangedCallback _hwStateChangedCallbackFunc;
+	void *_hwStateChangedCallbackParam1;
+	void *_hwStateChangedCallbackParam2;
 	
 	CoreAudioInputHardwareGainChangedCallback _hwGainChangedCallbackFunc;
 	void *_hwGainChangedCallbackParam1;
@@ -39,26 +61,26 @@ private:
 	AUGraph _auGraph;
 	AUNode _auFormatConverterNode;
 	AUNode _auOutputNode;
-	
 	AudioUnit _auFormatConverterUnit;
+	AudioUnit _auOutputUnit;
+	AudioBufferList *_convertBufferList;
+	UInt32 _captureFrames;
 	
 	float _inputGainNormalized;
 	AudioUnitElement _inputElement;
 	
-	bool _isMuted;
 	bool _isPaused;
+	CoreAudioInputDeviceInfo _hwDeviceInfo;
 	bool _isHardwareEnabled;
 	bool _isHardwareLocked;
+	bool _isMuted;
 	
 	OSStatus InitInputAUHAL(UInt32 deviceID);
 	
 public:
 	AudioUnit _auHALInputDevice;
-	AudioUnit _auOutputUnit;
 	AudioTimeStamp _timeStamp;
 	AudioBufferList *_captureBufferList;
-	AudioBufferList *_convertBufferList;
-	UInt32 _captureFrames;
 	RingBuffer *_samplesCaptured;
 	RingBuffer *_samplesConverted;
 	
@@ -68,6 +90,7 @@ public:
 	void Start();
 	void Stop();
 	size_t Pull();
+	
 	bool IsHardwareEnabled() const;
 	bool IsHardwareLocked() const;
 	bool GetMuteState() const;
@@ -76,10 +99,11 @@ public:
 	void SetPauseState(bool pauseState);
 	float GetGain() const;
 	void SetGain(float normalizedGain);
-	void SetGain_ValueOnly(float normalizedGain);
+	
+	void UpdateHardwareGain(float normalizedGain);
 	void UpdateHardwareLock();
+	void SetCallbackHardwareStateChanged(CoreAudioInputHardwareStateChangedCallback callbackFunc, void *inParam1, void *inParam2);
 	void SetCallbackHardwareGainChanged(CoreAudioInputHardwareGainChangedCallback callbackFunc, void *inParam1, void *inParam2);
-	void RunHardwareGainChangedCallback(float normalizedGain);
 };
 
 class CoreAudioOutput
@@ -145,6 +169,13 @@ OSStatus CoreAudioOutputRenderCallback(void *inRefCon,
 									   UInt32 inBusNumber,
 									   UInt32 inNumberFrames,
 									   AudioBufferList *ioData);
+
+void CoreAudioInputDefaultHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,
+													   const bool isHardwareEnabled,
+													   const bool isHardwareLocked,
+													   const bool isHardwareMuted,
+													   void *inParam1,
+													   void *inParam2);
 
 void CoreAudioInputDefaultHardwareGainChangedCallback(float normalizedGain, void *inParam1, void *inParam2);
 

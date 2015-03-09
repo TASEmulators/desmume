@@ -178,7 +178,6 @@ volatile bool execute = true;
 	_slot1R4Path = "";
 	
 	threadParam.cdsCore = self;
-	threadParam.cdsController = cdsController;
 	threadParam.state = CORESTATE_PAUSE;
 	threadParam.isFrameSkipEnabled = true;
 	threadParam.frameCount = 0;
@@ -289,7 +288,6 @@ volatile bool execute = true;
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	[cdsController release];
 	cdsController = theController;
-	threadParam.cdsController = theController;
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	
 	OSSpinLockUnlock(&spinlockCdsController);
@@ -1093,13 +1091,14 @@ static void* RunCoreThread(void *arg)
 			timeBudget = param->timeBudgetMachAbsTime;
 		}
 		
+		CocoaDSController *cdsController = [cdsCore cdsController];
 		if (param->state != CORESTATE_FRAMEJUMP)
 		{
-			[(CocoaDSController *)param->cdsController flush];
+			[cdsController flush];
 		}
 		else
 		{
-			[(CocoaDSController *)param->cdsController flushEmpty];
+			[cdsController flushEmpty];
 		}
 		
 		NDS_beginProcessingInput();
@@ -1125,6 +1124,18 @@ static void* RunCoreThread(void *arg)
 		if (param->framesToSkip == 0)
 		{
 			param->frameCount++;
+		}
+		
+		// Make sure that the mic level is updated at least once per frame, regardless
+		// of whether the NDS actually reads the mic or not.
+		if (![cdsController isHardwareMicReadThisFrame])
+		{
+			[cdsController updateHardwareMicLevelWithSample:MIC_NULL_SAMPLE_VALUE];
+			[[cdsController delegate] doMicSamplesReadFromController:cdsController inSample:MIC_NULL_SAMPLE_VALUE];
+		}
+		else
+		{
+			[cdsController setIsHardwareMicReadThisFrame:NO];
 		}
 		
 		pthread_mutex_lock(&param->mutexOutputList);

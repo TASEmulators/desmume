@@ -29,6 +29,10 @@ CoreAudioInput::CoreAudioInput()
 	_spinlockAUHAL = (OSSpinLock *)malloc(sizeof(OSSpinLock));
 	*_spinlockAUHAL = OS_SPINLOCK_INIT;
 	
+	_hwStateChangedCallbackFunc = &CoreAudioInputDefaultHardwareStateChangedCallback;
+	_hwStateChangedCallbackParam1 = NULL;
+	_hwStateChangedCallbackParam2 = NULL;
+	
 	_hwGainChangedCallbackFunc = &CoreAudioInputDefaultHardwareGainChangedCallback;
 	_hwGainChangedCallbackParam1 = NULL;
 	_hwGainChangedCallbackParam2 = NULL;
@@ -37,6 +41,12 @@ CoreAudioInput::CoreAudioInput()
 	_inputElement = 0;
 	
 	_isMuted = false;
+	_hwDeviceInfo.objectID = kAudioObjectUnknown;
+	_hwDeviceInfo.name = CFSTR("Unknown Device");
+	_hwDeviceInfo.manufacturer = CFSTR("Unknown Manufacturer");
+	_hwDeviceInfo.deviceUID = CFSTR("");
+	_hwDeviceInfo.modelUID = CFSTR("");
+	_hwDeviceInfo.sampleRate = 0.0;
 	_isPaused = false;
 	_isHardwareEnabled = false;
 	_isHardwareLocked = true;
@@ -269,6 +279,11 @@ CoreAudioInput::~CoreAudioInput()
 	
 	free(_spinlockAUHAL);
 	_spinlockAUHAL = NULL;
+	
+	CFRelease(this->_hwDeviceInfo.name);
+	CFRelease(this->_hwDeviceInfo.manufacturer);
+	CFRelease(this->_hwDeviceInfo.deviceUID);
+	CFRelease(this->_hwDeviceInfo.modelUID);
 }
 
 OSStatus CoreAudioInput::InitInputAUHAL(UInt32 deviceID)
@@ -277,6 +292,7 @@ OSStatus CoreAudioInput::InitInputAUHAL(UInt32 deviceID)
 	static const AudioUnitScope inputBus = 1;
 	UInt32 propertySize = 0;
 	
+	this->_hwDeviceInfo.objectID = kAudioObjectUnknown;
 	if (deviceID == kAudioObjectUnknown)
 	{
 		error = kAudioHardwareUnspecifiedError;
@@ -286,47 +302,47 @@ OSStatus CoreAudioInput::InitInputAUHAL(UInt32 deviceID)
 	// Get some information about the device before attempting to attach it to the AUHAL.
 	// Currently, this information is only available in debug mode. However, if there is
 	// a need to actually do something with this information, then we've already got it.
-	CFStringRef devicePropertyString;
 	AudioObjectPropertyAddress deviceProperty;
 	UInt32 dataSize = 0;
 	deviceProperty.mScope = kAudioObjectPropertyScopeGlobal;
 	deviceProperty.mElement = kAudioObjectPropertyElementMaster;
 	printf("\nInput Device Information:\n");
+	printf("   Object ID: %d\n", deviceID);
 	
 	deviceProperty.mSelector = kAudioObjectPropertyName;
 	error = AudioObjectGetPropertyDataSize(deviceID, &deviceProperty, 0, NULL, &dataSize);
 	if (error == noErr)
 	{
-		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &devicePropertyString);
-		printf("   Name: %s\n", CFStringGetCStringPtr(devicePropertyString, kCFStringEncodingUTF8));
-		CFRelease(devicePropertyString);
+		CFRelease(this->_hwDeviceInfo.name);
+		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.name);
+		printf("   Name: %s\n", CFStringGetCStringPtr(this->_hwDeviceInfo.name, kCFStringEncodingUTF8));
 	}
 	
 	deviceProperty.mSelector = kAudioObjectPropertyManufacturer;
 	error = AudioObjectGetPropertyDataSize(deviceID, &deviceProperty, 0, NULL, &dataSize);
 	if (error == noErr)
 	{
-		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &devicePropertyString);
-		printf("   Manufacturer: %s\n", CFStringGetCStringPtr(devicePropertyString, kCFStringEncodingUTF8));
-		CFRelease(devicePropertyString);
+		CFRelease(this->_hwDeviceInfo.manufacturer);
+		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.manufacturer);
+		printf("   Manufacturer: %s\n", CFStringGetCStringPtr(this->_hwDeviceInfo.manufacturer, kCFStringEncodingUTF8));
 	}
 	
 	deviceProperty.mSelector = kAudioDevicePropertyDeviceUID;
 	error = AudioObjectGetPropertyDataSize(deviceID, &deviceProperty, 0, NULL, &dataSize);
 	if (error == noErr)
 	{
-		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &devicePropertyString);
-		printf("   Device UID: %s\n", CFStringGetCStringPtr(devicePropertyString, kCFStringEncodingUTF8));
-		CFRelease(devicePropertyString);
+		CFRelease(this->_hwDeviceInfo.deviceUID);
+		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.deviceUID);
+		printf("   Device UID: %s\n", CFStringGetCStringPtr(this->_hwDeviceInfo.deviceUID, kCFStringEncodingUTF8));
 	}
 	
 	deviceProperty.mSelector = kAudioDevicePropertyModelUID;
 	error = AudioObjectGetPropertyDataSize(deviceID, &deviceProperty, 0, NULL, &dataSize);
 	if (error == noErr)
 	{
-		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &devicePropertyString);
-		printf("   Model UID: %s\n", CFStringGetCStringPtr(devicePropertyString, kCFStringEncodingUTF8));
-		CFRelease(devicePropertyString);
+		CFRelease(this->_hwDeviceInfo.modelUID);
+		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.modelUID);
+		printf("   Model UID: %s\n", CFStringGetCStringPtr(this->_hwDeviceInfo.modelUID, kCFStringEncodingUTF8));
 	}
 	
 	deviceProperty.mSelector = kAudioDevicePropertyNominalSampleRate;
@@ -334,9 +350,8 @@ OSStatus CoreAudioInput::InitInputAUHAL(UInt32 deviceID)
 	error = AudioObjectGetPropertyDataSize(deviceID, &deviceProperty, 0, NULL, &dataSize);
 	if (error == noErr)
 	{
-		Float64 deviceSampleRate = 0.0;
-		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &deviceSampleRate);
-		printf("   Sample Rate: %1.1f\n\n", deviceSampleRate);
+		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.sampleRate);
+		printf("   Sample Rate: %1.1f\n\n", this->_hwDeviceInfo.sampleRate);
 	}
 	
 	// Before attaching the HAL input device, stop everything first.
@@ -444,6 +459,8 @@ OSStatus CoreAudioInput::InitInputAUHAL(UInt32 deviceID)
 		return error;
 	}
 	
+	this->_hwDeviceInfo.objectID = deviceID;
+	
 	return error;
 }
 
@@ -489,8 +506,7 @@ void CoreAudioInput::Start()
 			if (error == noErr)
 			{
 				this->_inputElement = elementNumber;
-				this->SetGain_ValueOnly(theGain);
-				this->RunHardwareGainChangedCallback(theGain);
+				this->UpdateHardwareGain(theGain);
 				break;
 			}
 		}
@@ -505,7 +521,7 @@ void CoreAudioInput::Start()
 		this->_isHardwareEnabled = false;
 	}
 	
-	if (this->_isHardwareEnabled && !this->IsHardwareLocked() && !this->_isPaused)
+	if (this->IsHardwareEnabled() && !this->IsHardwareLocked() && !this->GetPauseState())
 	{
 		error = AudioOutputUnitStart(this->_auHALInputDevice);
 	}
@@ -513,13 +529,19 @@ void CoreAudioInput::Start()
 	OSSpinLockUnlock(this->_spinlockAUHAL);
 	
 	error = AUGraphInitialize(_auGraph);
-	if (!this->_isPaused)
+	if (!this->GetPauseState())
 	{
 		error = AUGraphStart(this->_auGraph);
 	}
 	
 	this->_samplesCaptured->clear();
 	this->_samplesConverted->clear();
+	this->_hwStateChangedCallbackFunc(&this->_hwDeviceInfo,
+									  this->IsHardwareEnabled(),
+									  this->IsHardwareLocked(),
+									  this->_isMuted,
+									  this->_hwStateChangedCallbackParam1,
+									  this->_hwStateChangedCallbackParam2);
 }
 
 void CoreAudioInput::Stop()
@@ -569,8 +591,14 @@ bool CoreAudioInput::GetMuteState() const
 
 void CoreAudioInput::SetMuteState(bool muteState)
 {
-	this->SetPauseState(muteState);
 	this->_isMuted = muteState;
+	this->SetPauseState(muteState);
+	this->_hwStateChangedCallbackFunc(&this->_hwDeviceInfo,
+									  this->IsHardwareEnabled(),
+									  this->IsHardwareLocked(),
+									  this->_isMuted,
+									  this->_hwStateChangedCallbackParam1,
+									  this->_hwStateChangedCallbackParam2);
 }
 
 bool CoreAudioInput::GetPauseState() const
@@ -580,14 +608,14 @@ bool CoreAudioInput::GetPauseState() const
 
 void CoreAudioInput::SetPauseState(bool pauseState)
 {
-	if (pauseState && !this->_isPaused)
+	if (pauseState && !this->GetPauseState())
 	{
 		OSSpinLockLock(this->_spinlockAUHAL);
 		AudioOutputUnitStop(this->_auHALInputDevice);
 		OSSpinLockUnlock(this->_spinlockAUHAL);
 		AUGraphStop(this->_auGraph);
 	}
-	else if (!pauseState && this->_isPaused && !this->IsHardwareLocked())
+	else if (!pauseState && this->GetPauseState() && !this->IsHardwareLocked() && !this->GetMuteState())
 	{
 		OSSpinLockLock(this->_spinlockAUHAL);
 		AudioOutputUnitStart(this->_auHALInputDevice);
@@ -595,7 +623,7 @@ void CoreAudioInput::SetPauseState(bool pauseState)
 		AUGraphStart(this->_auGraph);
 	}
 	
-	this->_isPaused = pauseState;
+	this->_isPaused = (this->IsHardwareLocked() || this->GetMuteState()) ? true : pauseState;
 }
 
 float CoreAudioInput::GetGain() const
@@ -619,9 +647,10 @@ void CoreAudioInput::SetGain(float normalizedGain)
 	OSSpinLockUnlock(this->_spinlockAUHAL);
 }
 
-void CoreAudioInput::SetGain_ValueOnly(float normalizedGain)
+void CoreAudioInput::UpdateHardwareGain(float normalizedGain)
 {
 	this->_inputGainNormalized = normalizedGain;
+	this->_hwGainChangedCallbackFunc(this->_inputGainNormalized, this->_hwGainChangedCallbackParam1, this->_hwGainChangedCallbackParam2);
 }
 
 void CoreAudioInput::UpdateHardwareLock()
@@ -629,65 +658,78 @@ void CoreAudioInput::UpdateHardwareLock()
 	OSStatus error = noErr;
 	bool hardwareLocked = false;
 	
-	if (!this->IsHardwareEnabled())
+	if (this->IsHardwareEnabled())
+	{
+		// Check if another application has exclusive access to the hardware.
+		pid_t hogMode = 0;
+		UInt32 propertySize = sizeof(hogMode);
+		error = AudioUnitGetProperty(this->_auHALInputDevice,
+									 kAudioDevicePropertyHogMode,
+									 kAudioUnitScope_Input,
+									 1,
+									 &hogMode,
+									 &propertySize);
+		if (error == noErr)
+		{
+			if (hogMode != -1)
+			{
+				hardwareLocked = true;
+			}
+		}
+		else
+		{
+			// If this property is not supported, then always assume that
+			// the hardware device is shared.
+			hogMode = -1;
+		}
+		
+		// Check if the hardware device is plugged in.
+		UInt32 isJackConnected = 0;
+		propertySize = sizeof(isJackConnected);
+		error = AudioUnitGetProperty(this->_auHALInputDevice,
+									 kAudioDevicePropertyJackIsConnected,
+									 kAudioUnitScope_Input,
+									 1,
+									 &hogMode,
+									 &propertySize);
+		if (error == noErr)
+		{
+			if (isJackConnected == 0)
+			{
+				hardwareLocked = true;
+			}
+		}
+		else
+		{
+			// If this property is not supported, then always assume that
+			// the hardware device is always plugged in.
+			isJackConnected = 1;
+		}
+	}
+	else
 	{
 		hardwareLocked = true;
-		this->_isHardwareLocked = hardwareLocked;
-		return;
 	}
 	
-	// Check if another application has exclusive access to the hardware.
-	pid_t hogMode = 0;
-	UInt32 propertySize = sizeof(hogMode);
-	error = AudioUnitGetProperty(this->_auHALInputDevice,
-								 kAudioDevicePropertyHogMode,
-								 kAudioUnitScope_Input,
-								 1,
-								 &hogMode,
-								 &propertySize);
-	if (error == noErr)
-	{
-		if (hogMode != -1)
-		{
-			hardwareLocked = true;
-		}
-	}
-	else
-	{
-		// If this property is not supported, then always assume that
-		// the hardware device is shared.
-		hogMode = -1;
-	}
-	
-	// Check if the hardware device is plugged in.
-	UInt32 isJackConnected = 0;
-	propertySize = sizeof(isJackConnected);
-	error = AudioUnitGetProperty(this->_auHALInputDevice,
-								 kAudioDevicePropertyJackIsConnected,
-								 kAudioUnitScope_Input,
-								 1,
-								 &hogMode,
-								 &propertySize);
-	if (error == noErr)
-	{
-		if (isJackConnected == 0)
-		{
-			hardwareLocked = true;
-		}
-	}
-	else
-	{
-		// If this property is not supported, then always assume that
-		// the hardware device is always plugged in.
-		isJackConnected = 1;
-	}
-	
-	if (hardwareLocked && !this->GetPauseState())
+	this->_isHardwareLocked = hardwareLocked;
+	if (this->_isHardwareLocked && !this->GetPauseState())
 	{
 		this->SetPauseState(true);
 	}
 	
-	this->_isHardwareLocked = hardwareLocked;
+	this->_hwStateChangedCallbackFunc(&this->_hwDeviceInfo,
+									  this->IsHardwareEnabled(),
+									  this->IsHardwareLocked(),
+									  this->_isMuted,
+									  this->_hwStateChangedCallbackParam1,
+									  this->_hwStateChangedCallbackParam2);
+}
+
+void CoreAudioInput::SetCallbackHardwareStateChanged(CoreAudioInputHardwareStateChangedCallback callbackFunc, void *inParam1, void *inParam2)
+{
+	this->_hwStateChangedCallbackFunc = callbackFunc;
+	this->_hwStateChangedCallbackParam1 = inParam1;
+	this->_hwStateChangedCallbackParam2 = inParam2;
 }
 
 void CoreAudioInput::SetCallbackHardwareGainChanged(CoreAudioInputHardwareGainChangedCallback callbackFunc, void *inParam1, void *inParam2)
@@ -695,11 +737,6 @@ void CoreAudioInput::SetCallbackHardwareGainChanged(CoreAudioInputHardwareGainCh
 	this->_hwGainChangedCallbackFunc = callbackFunc;
 	this->_hwGainChangedCallbackParam1 = inParam1;
 	this->_hwGainChangedCallbackParam2 = inParam2;
-}
-
-void CoreAudioInput::RunHardwareGainChangedCallback(float normalizedGain)
-{
-	this->_hwGainChangedCallbackFunc(normalizedGain, this->_hwGainChangedCallbackParam1, this->_hwGainChangedCallbackParam2);
 }
 
 OSStatus CoreAudioInputCaptureCallback(void *inRefCon,
@@ -808,26 +845,31 @@ void CoreAudioInputAUHALChanged(void *inRefCon,
 										 inElement,
 										 &gainValue,
 										 &propertySize);
-			
 			if (error == noErr)
 			{
-				caInput->SetGain_ValueOnly(gainValue);
-				caInput->RunHardwareGainChangedCallback(gainValue);
+				caInput->UpdateHardwareGain(gainValue);
 			}
-			
 			break;
 		}
 		
 		case kAudioDevicePropertyHogMode:
 		case kAudioDevicePropertyJackIsConnected:
-		{
 			caInput->UpdateHardwareLock();
 			break;
-		}
 		
 		default:
 			break;
 	}
+}
+
+void CoreAudioInputDefaultHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,
+													   const bool isHardwareEnabled,
+													   const bool isHardwareLocked,
+													   const bool isHardwareMuted,
+													   void *inParam1,
+													   void *inParam2)
+{
+	// Do nothing.
 }
 
 void CoreAudioInputDefaultHardwareGainChangedCallback(float normalizedGain, void *inParam1, void *inParam2)

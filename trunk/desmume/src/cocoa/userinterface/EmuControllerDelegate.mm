@@ -72,7 +72,7 @@
 @synthesize isRomLoading;
 @synthesize statusText;
 @synthesize isSoftwareMicActive;
-@dynamic isHardwareMicMuted;
+@synthesize isHardwareMicAvailable;
 @synthesize isHardwareMicIdle;
 @synthesize isHardwareMicInClip;
 @synthesize currentMicGainValue;
@@ -127,12 +127,11 @@
 	frameJumpToFrame = 0;
 	
 	lastSetSpeedScalar = 1.0f;
-	hwMicNumberIdleFrames = 0;
-	hwMicNumberClippedFrames = 0;
 	isSoftwareMicActive = NO;
+	isHardwareMicAvailable = NO;
 	isHardwareMicIdle = YES;
 	isHardwareMicInClip = NO;
-	currentMicGainValue = 0.5f;
+	currentMicGainValue = 0.0f;
 	isSoundMuted = NO;
 	lastSetVolumeValue = MAX_VOLUME;
 	
@@ -290,19 +289,6 @@
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	return [cdsCore speedScalar];
-}
-
-- (void) setIsHardwareMicMuted:(BOOL)theState
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[[cdsCore cdsController] setHardwareMicMute:theState];
-	[self updateMicStatusIcon];
-}
-
-- (BOOL) isHardwareMicMuted
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [[cdsCore cdsController] hardwareMicMute];
 }
 
 - (void) setCurrentVolumeValue:(float)vol
@@ -1960,46 +1946,6 @@
 	[self performSelectorOnMainThread:@selector(setCurrentMicStatusIcon:) withObject:micIcon waitUntilDone:NO];
 }
 
-- (BOOL) isMicSampleIdle:(uint8_t)sampleValue
-{
-	if (sampleValue == MIC_NULL_SAMPLE_VALUE)
-	{
-		if (hwMicNumberIdleFrames < MIC_NULL_FRAME_MAX_COUNT)
-		{
-			hwMicNumberIdleFrames++;
-		}
-	}
-	else
-	{
-		if (hwMicNumberIdleFrames > 0)
-		{
-			hwMicNumberIdleFrames--;
-		}
-	}
-	
-	return (hwMicNumberIdleFrames >= MIC_NULL_FRAME_THRESHOLD);
-}
-
-- (BOOL) isMicSampleCausingClip:(uint8_t)sampleValue
-{
-	if (sampleValue == 0 || sampleValue == 127)
-	{
-		if (hwMicNumberClippedFrames < MIC_CLIP_FRAME_MAX_COUNT)
-		{
-			hwMicNumberClippedFrames++;
-		}
-	}
-	else
-	{
-		if (hwMicNumberClippedFrames > 0)
-		{
-			hwMicNumberClippedFrames--;
-		}
-	}
-	
-	return (hwMicNumberClippedFrames >= MIC_CLIP_FRAME_THRESHOLD);
-}
-
 - (AudioSampleBlockGenerator *) selectedAudioFileGenerator
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
@@ -2494,21 +2440,21 @@
 	// sure to check the mic's level state.
 	if (!controllerSoftwareMicState)
 	{
-		const BOOL isSampleIdle = [self isMicSampleIdle:sampleValue];
-		const BOOL isIdle = [self isHardwareMicIdle];
-		if (( isSampleIdle && !isIdle) ||
-			(!isSampleIdle &&  isIdle))
+		const BOOL isIdleHardware = [cdsController isHardwareMicIdle];
+		const BOOL isIdleEmuControl = [self isHardwareMicIdle];
+		if (( isIdleHardware && !isIdleEmuControl) ||
+			(!isIdleHardware &&  isIdleEmuControl))
 		{
-			[self setIsHardwareMicIdle:isSampleIdle];
+			[self setIsHardwareMicIdle:isIdleHardware];
 			needsUpdate = YES;
 		}
 		
-		const BOOL isCausingClip = [self isMicSampleCausingClip:sampleValue];
-		const BOOL isInClip = [self isHardwareMicInClip];
-		if (( isCausingClip && !isInClip) ||
-			(!isCausingClip &&  isInClip))
+		const BOOL isClipHardware = [cdsController isHardwareMicInClip];
+		const BOOL isClipEmuControl = [self isHardwareMicInClip];
+		if (( isClipHardware && !isClipEmuControl) ||
+			(!isClipHardware &&  isClipEmuControl))
 		{
-			[self setIsHardwareMicInClip:isCausingClip];
+			[self setIsHardwareMicInClip:isClipHardware];
 			needsUpdate = YES;
 		}
 	}
@@ -2519,6 +2465,16 @@
 	}
 	
 	return sampleValue;
+}
+
+- (void) doMicHardwareStateChangedFromController:(CocoaDSController *)cdsController
+									   isEnabled:(BOOL)isHardwareEnabled
+										isLocked:(BOOL)isHardwareLocked
+										 isMuted:(BOOL)isHardwareMuted
+{
+	const BOOL hwMicAvailable = (isHardwareEnabled && !isHardwareLocked);
+	[self setIsHardwareMicAvailable:hwMicAvailable];
+	[self updateMicStatusIcon];
 }
 
 - (void) doMicHardwareGainChangedFromController:(CocoaDSController *)cdsController gain:(float)gainValue

@@ -21,6 +21,7 @@
 
 @class CocoaDSController;
 class CoreAudioInput;
+struct CoreAudioInputDeviceInfo;
 class AudioGenerator;
 class AudioSampleBlockGenerator;
 
@@ -80,6 +81,11 @@ typedef struct
 - (uint8_t) doMicSamplesReadFromController:(CocoaDSController *)cdsController inSample:(uint8_t)sampleValue;
 
 @optional
+- (void) doMicHardwareStateChangedFromController:(CocoaDSController *)cdsController
+									   isEnabled:(BOOL)isHardwareEnabled
+										isLocked:(BOOL)isHardwareLocked
+										 isMuted:(BOOL)isHardwareMuted;
+
 - (void) doMicHardwareGainChangedFromController:(CocoaDSController *)cdsController gain:(float)gainValue;
 
 @end
@@ -87,10 +93,13 @@ typedef struct
 @interface CocoaDSController : NSObject
 {
 	id <CocoaDSControllerDelegate> delegate;
+	BOOL isHardwareMicReadThisFrame;
 	BOOL autohold;
 	BOOL isAutoholdCleared;
 	BOOL _useHardwareMic;
 	size_t _availableMicSamples;
+	uint32_t _hwMicNumberIdleFrames;
+	uint32_t _hwMicNumberClippedFrames;
 	NSInteger micMode;
 	NSPoint touchLocation;
 	
@@ -99,6 +108,7 @@ typedef struct
 	CoreAudioInput *CAInputDevice;
 	AudioGenerator *softwareMicSampleGenerator;
 	NSInteger paddleAdjust;
+	NSString *hardwareMicInfoString;
 	
 	OSSpinLock spinlockControllerState;
 }
@@ -106,6 +116,9 @@ typedef struct
 @property (retain) id <CocoaDSControllerDelegate> delegate;
 @property (assign) BOOL autohold;
 @property (readonly) BOOL isHardwareMicAvailable;
+@property (assign) BOOL isHardwareMicIdle;
+@property (assign) BOOL isHardwareMicInClip;
+@property (assign) BOOL isHardwareMicReadThisFrame;
 @property (assign) BOOL hardwareMicEnabled;
 @property (readonly) BOOL hardwareMicLocked;
 @property (assign) float hardwareMicGain;
@@ -118,6 +131,7 @@ typedef struct
 @property (readonly) AudioGenerator *softwareMicSampleGenerator;
 @property (assign) AudioSampleBlockGenerator *selectedAudioFileGenerator;
 @property (assign) NSInteger paddleAdjust;
+@property (retain) NSString *hardwareMicInfoString;
 
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID;
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID turbo:(const BOOL)isTurboEnabled;
@@ -126,7 +140,12 @@ typedef struct
 - (void) clearAutohold;
 - (void) flush;
 - (void) flushEmpty;
+- (void) updateHardwareMicLevelWithSample:(uint8_t)inSample;
 - (uint8_t) handleMicSampleRead:(CoreAudioInput *)caInput softwareMic:(AudioGenerator *)sampleGenerator;
+- (void) handleMicHardwareStateChanged:(CoreAudioInputDeviceInfo *)deviceInfo
+							 isEnabled:(BOOL)isHardwareEnabled
+							  isLocked:(BOOL)isHardwareLocked
+							   isMuted:(BOOL)isHardwareMuted;
 - (void) handleMicHardwareGainChanged:(float)gainValue;
 
 @end
@@ -138,6 +157,12 @@ extern "C"
 
 void CAResetCallback(void *inParam1, void *inParam2);
 uint8_t CASampleReadCallback(void *inParam1, void *inParam2);
+void CAHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,
+									const bool isHardwareEnabled,
+									const bool isHardwareLocked,
+									const bool isHardwareMuted,
+									void *inParam1,
+									void *inParam2);
 void CAHardwareGainChangedCallback(float normalizedGain, void *inParam1, void *inParam2);
 
 #ifdef __cplusplus
