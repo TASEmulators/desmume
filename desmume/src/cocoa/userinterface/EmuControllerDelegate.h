@@ -75,9 +75,8 @@ class AudioSampleBlockGenerator;
 	NSInteger frameJumpToFrame;
 	
 	CGFloat lastSetSpeedScalar;
-	uint32_t hwMicNumberIdleFrames;
-	uint32_t hwMicNumberClippedFrames;
 	BOOL isSoftwareMicActive;
+	BOOL isHardwareMicAvailable;
 	BOOL isHardwareMicIdle;
 	BOOL isHardwareMicInClip;
 	float currentMicGainValue;
@@ -142,7 +141,7 @@ class AudioSampleBlockGenerator;
 @property (assign) BOOL isRomLoading;
 @property (assign) NSString *statusText;
 @property (assign) BOOL isSoftwareMicActive;
-@property (assign) BOOL isHardwareMicMuted;
+@property (assign) BOOL isHardwareMicAvailable;
 @property (assign) BOOL isHardwareMicIdle;
 @property (assign) BOOL isHardwareMicInClip;
 @property (assign) float currentMicGainValue;
@@ -261,8 +260,6 @@ class AudioSampleBlockGenerator;
 - (void) pauseCore;
 - (void) restoreCoreState;
 - (void) updateMicStatusIcon;
-- (BOOL) isMicSampleIdle:(uint8_t)sampleValue;
-- (BOOL) isMicSampleCausingClip:(uint8_t)sampleValue;
 
 - (AudioSampleBlockGenerator *) selectedAudioFileGenerator;
 - (void) setSelectedAudioFileGenerator:(AudioSampleBlockGenerator *)theGenerator;

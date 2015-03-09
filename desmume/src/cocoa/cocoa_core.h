@@ -23,6 +23,7 @@
 #import "cocoa_util.h"
 
 
+@class CocoaDSCore;
 @class CocoaDSController;
 @class CocoaDSFirmware;
 @class CocoaDSGPU;
@@ -32,8 +33,7 @@ typedef void *gdbstub_handle_t;
 
 typedef struct
 {
-	void *cdsCore;
-	void *cdsController;
+	CocoaDSCore *cdsCore;
 	int state;
 	bool isFrameSkipEnabled;
 	size_t frameCount;
