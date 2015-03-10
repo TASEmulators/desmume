@@ -181,8 +181,9 @@
 	
 	// Init the DS controller.
 	CocoaDSController *newController = [[[CocoaDSController alloc] init] autorelease];
-	[newController setDelegate:emuControl];
 	[newCore setCdsController:newController];
+	[newController setDelegate:emuControl];
+	[newController setHardwareMicEnabled:YES];
 	
 	// Init the DS speakers.
 	CocoaDSSpeaker *newSpeaker = [[[CocoaDSSpeaker alloc] init] autorelease];
@@ -212,6 +213,7 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	
 	// Determine if the app was run for the first time.
@@ -240,6 +242,10 @@
 	[inputPrefsView populateInputProfileMenu];
 	[[inputPrefsView inputPrefOutlineView] expandItem:nil expandChildren:YES];
 	[[inputPrefsView inputProfileMenu] selectItemAtIndex:0];
+	
+	// Make sure that the mic is paused to start with.
+	[[cdsCore cdsController] setHardwareMicPause:YES];
+	[emuControl updateMicStatusIcon];
 	
 	//Bring the application to the front
 	[NSApp activateIgnoringOtherApps:TRUE];
@@ -341,6 +347,7 @@
 	// Save some settings to user defaults before app termination
 	[self saveDisplayWindowStates];
 	[romInfoPanel writeDefaults];
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsController] hardwareMicMute] forKey:@"Microphone_HardwareMicMute"];
 	[[NSUserDefaults standardUserDefaults] setDouble:[emuControl lastSetSpeedScalar] forKey:@"CoreControl_SpeedScalar"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isSpeedLimitEnabled] forKey:@"CoreControl_EnableSpeedLimit"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isFrameSkipEnabled] forKey:@"CoreControl_EnableAutoFrameSkip"];

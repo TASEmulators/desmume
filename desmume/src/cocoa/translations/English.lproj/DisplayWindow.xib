@@ -471,6 +471,7 @@
 									</array>
 									<reference key="NSMenuFont" ref="844216569"/>
 								</object>
+								<int key="NSSelectedIndex">-1</int>
 								<bool key="NSPullDown">YES</bool>
 								<int key="NSPreferredEdge">1</int>
 								<bool key="NSUsesItemFromMenu">YES</bool>
@@ -1756,7 +1757,7 @@
 				<string key="154.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="16.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<reference key="161.IBNSViewMetadataGestureRecognizers" ref="0"/>
-				<string key="161.IBPersistedLastKnownCanvasPosition">{229, 364.5}</string>
+				<string key="161.IBPersistedLastKnownCanvasPosition">{84.5, 324.5}</string>
 				<string key="161.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="162.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="165.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>

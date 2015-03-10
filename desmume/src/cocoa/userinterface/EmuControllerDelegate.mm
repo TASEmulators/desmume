@@ -1868,6 +1868,8 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore setSlot1StatusText:NSSTRING_STATUS_EMULATION_NOT_RUNNING];
+	[[cdsCore cdsController] resetMicLevel];
+	[[cdsCore cdsController] updateMicLevel];
 	
 	result = YES;
 	
@@ -2111,6 +2113,11 @@
 
 - (void) setupUserDefaults
 {
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	
+	// Set the microphone settings per user preferences.
+	[[cdsCore cdsController] setHardwareMicMute:[[NSUserDefaults standardUserDefaults] boolForKey:@"Microphone_HardwareMicMute"]];
+	
 	// Set the SPU settings per user preferences.
 	[self setCurrentVolumeValue:[[NSUserDefaults standardUserDefaults] floatForKey:@"Sound_Volume"]];
 	[[self cdsSpeaker] setVolume:[[NSUserDefaults standardUserDefaults] floatForKey:@"Sound_Volume"]];
@@ -2121,7 +2128,6 @@
 	[[self cdsSpeaker] setSpuSyncMethod:[[NSUserDefaults standardUserDefaults] integerForKey:@"SPU_SyncMethod"]];
 	
 	// Set the 3D rendering options per user preferences.
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsGPU] setRender3DThreads:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_Threads"]];
 	[[cdsCore cdsGPU] setRender3DRenderingEngine:[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_RenderingEngine"]];
 	[[cdsCore cdsGPU] setRender3DHighPrecisionColorInterpolation:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_HighPrecisionColorInterpolation"]];
@@ -2422,7 +2428,7 @@
 
 #pragma mark CocoaDSControllerDelegate Protocol
 
-- (uint8_t) doMicSamplesReadFromController:(CocoaDSController *)cdsController inSample:(uint8_t)sampleValue
+- (void) doMicLevelUpdateFromController:(CocoaDSController *)cdsController
 {
 	BOOL needsUpdate = NO;
 	const BOOL controllerSoftwareMicState = [cdsController softwareMicState];
@@ -2463,8 +2469,6 @@
 	{
 		[self updateMicStatusIcon];
 	}
-	
-	return sampleValue;
 }
 
 - (void) doMicHardwareStateChangedFromController:(CocoaDSController *)cdsController
