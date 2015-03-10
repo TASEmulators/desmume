@@ -2,13 +2,13 @@
 <archive type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="8.00">
 	<data>
 		<int key="IBDocument.SystemTarget">1050</int>
-		<string key="IBDocument.SystemVersion">14C109</string>
-		<string key="IBDocument.InterfaceBuilderVersion">6254</string>
+		<string key="IBDocument.SystemVersion">14C1510</string>
+		<string key="IBDocument.InterfaceBuilderVersion">6751</string>
 		<string key="IBDocument.AppKitVersion">1344.72</string>
 		<string key="IBDocument.HIToolboxVersion">757.30</string>
 		<object class="NSMutableDictionary" key="IBDocument.PluginVersions">
 			<string key="NS.key.0">com.apple.InterfaceBuilder.CocoaPlugin</string>
-			<string key="NS.object.0">6254</string>
+			<string key="NS.object.0">6751</string>
 		</object>
 		<array key="IBDocument.IntegratedClassDependencies">
 			<string>NSArrayController</string>
@@ -17454,10 +17454,10 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 								<int key="NSCellFlags">-2080374784</int>
 								<int key="NSCellFlags2">134217728</int>
 								<string key="NSContents">Save Settings as Default</string>
-								<object class="NSFont" key="NSSupport" id="28">
+								<object class="NSFont" key="NSSupport" id="974315963">
 									<bool key="IBIsSystemFont">YES</bool>
 									<double key="NSSize">12</double>
-									<int key="NSfFlags">4883</int>
+									<int key="NSfFlags">787</int>
 								</object>
 								<reference key="NSControlView" ref="1070563138"/>
 								<int key="NSButtonFlags">-2038153216</int>
@@ -17935,7 +17935,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 							<int key="NSCellFlags">-2080374784</int>
 							<int key="NSCellFlags2">134217728</int>
 							<string key="NSContents">Apply</string>
-							<reference key="NSSupport" ref="28"/>
+							<reference key="NSSupport" ref="974315963"/>
 							<reference key="NSControlView" ref="275562154"/>
 							<int key="NSButtonFlags">-2038153216</int>
 							<int key="NSButtonFlags2">164</int>
@@ -19501,7 +19501,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 								<int key="NSCellFlags">-2080374784</int>
 								<int key="NSCellFlags2">134217728</int>
 								<string key="NSContents">Save Settings as Default</string>
-								<reference key="NSSupport" ref="28"/>
+								<reference key="NSSupport" ref="974315963"/>
 								<reference key="NSControlView" ref="448396937"/>
 								<int key="NSButtonFlags">-2038153216</int>
 								<int key="NSButtonFlags2">164</int>
@@ -19584,7 +19584,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 								<int key="NSCellFlags">-2080374784</int>
 								<int key="NSCellFlags2">134217728</int>
 								<string key="NSContents">Save Settings as Default</string>
-								<reference key="NSSupport" ref="28"/>
+								<reference key="NSSupport" ref="974315963"/>
 								<reference key="NSControlView" ref="670018968"/>
 								<int key="NSButtonFlags">-2038153216</int>
 								<int key="NSButtonFlags2">164</int>
@@ -20968,7 +20968,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 								<int key="NSCellFlags">-2080374784</int>
 								<int key="NSCellFlags2">134217728</int>
 								<string key="NSContents">Save Settings as Default</string>
-								<reference key="NSSupport" ref="28"/>
+								<reference key="NSSupport" ref="974315963"/>
 								<reference key="NSControlView" ref="412885015"/>
 								<int key="NSButtonFlags">-2038153216</int>
 								<int key="NSButtonFlags2">164</int>
@@ -21455,7 +21455,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 								<int key="NSCellFlags">67108864</int>
 								<int key="NSCellFlags2">134217728</int>
 								<string key="NSContents">Input Preferences</string>
-								<reference key="NSSupport" ref="28"/>
+								<reference key="NSSupport" ref="974315963"/>
 								<string key="NSCellIdentifier">_NS:610</string>
 								<reference key="NSControlView" ref="485916972"/>
 								<int key="NSButtonFlags">-2038284288</int>
@@ -21635,7 +21635,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 										<object class="NSSlider" id="178999512">
 											<reference key="NSNextResponder" ref="171588644"/>
 											<int key="NSvFlags">268</int>
-											<string key="NSFrame">{{57, 23}, {205, 27}}</string>
+											<string key="NSFrame">{{65, 23}, {205, 27}}</string>
 											<reference key="NSSuperview" ref="171588644"/>
 											<reference key="NSNextKeyView" ref="800503471"/>
 											<string key="NSReuseIdentifierKey">_NS:9</string>
@@ -21660,7 +21660,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 										<object class="NSTextField" id="780543719">
 											<reference key="NSNextResponder" ref="171588644"/>
 											<int key="NSvFlags">268</int>
-											<string key="NSFrame">{{59, 14}, {26, 11}}</string>
+											<string key="NSFrame">{{67, 14}, {26, 11}}</string>
 											<reference key="NSSuperview" ref="171588644"/>
 											<reference key="NSNextKeyView" ref="1064219595"/>
 											<string key="NSReuseIdentifierKey">_NS:526</string>
@@ -21682,7 +21682,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 										<object class="NSTextField" id="1064219595">
 											<reference key="NSNextResponder" ref="171588644"/>
 											<int key="NSvFlags">268</int>
-											<string key="NSFrame">{{104, 14}, {33, 11}}</string>
+											<string key="NSFrame">{{112, 14}, {33, 11}}</string>
 											<reference key="NSSuperview" ref="171588644"/>
 											<reference key="NSNextKeyView" ref="848795802"/>
 											<string key="NSReuseIdentifierKey">_NS:526</string>
@@ -21704,7 +21704,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 										<object class="NSTextField" id="848795802">
 											<reference key="NSNextResponder" ref="171588644"/>
 											<int key="NSvFlags">268</int>
-											<string key="NSFrame">{{148, 14}, {33, 11}}</string>
+											<string key="NSFrame">{{156, 14}, {33, 11}}</string>
 											<reference key="NSSuperview" ref="171588644"/>
 											<reference key="NSNextKeyView" ref="618794549"/>
 											<string key="NSReuseIdentifierKey">_NS:526</string>
@@ -21726,7 +21726,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 										<object class="NSTextField" id="618794549">
 											<reference key="NSNextResponder" ref="171588644"/>
 											<int key="NSvFlags">268</int>
-											<string key="NSFrame">{{196, 14}, {33, 11}}</string>
+											<string key="NSFrame">{{204, 14}, {33, 11}}</string>
 											<reference key="NSSuperview" ref="171588644"/>
 											<reference key="NSNextKeyView" ref="252767148"/>
 											<string key="NSReuseIdentifierKey">_NS:526</string>
@@ -21748,7 +21748,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 										<object class="NSTextField" id="252767148">
 											<reference key="NSNextResponder" ref="171588644"/>
 											<int key="NSvFlags">268</int>
-											<string key="NSFrame">{{240, 14}, {41, 11}}</string>
+											<string key="NSFrame">{{248, 14}, {41, 11}}</string>
 											<reference key="NSSuperview" ref="171588644"/>
 											<reference key="NSNextKeyView" ref="712229647"/>
 											<string key="NSReuseIdentifierKey">_NS:526</string>
@@ -21770,7 +21770,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 										<object class="NSTextField" id="889832010">
 											<reference key="NSNextResponder" ref="171588644"/>
 											<int key="NSvFlags">268</int>
-											<string key="NSFrame">{{16, 33}, {37, 17}}</string>
+											<string key="NSFrame">{{24, 33}, {37, 17}}</string>
 											<reference key="NSSuperview" ref="171588644"/>
 											<reference key="NSNextKeyView" ref="178999512"/>
 											<string key="NSReuseIdentifierKey">_NS:526</string>
@@ -21798,7 +21798,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="280650594">
 												<int key="NSCellFlags">605028416</int>
-												<int key="NSCellFlags2">4199424</int>
+												<int key="NSCellFlags2">71308288</int>
 												<reference key="NSSupport" ref="462791774"/>
 												<object class="NSNumberFormatter" key="NSFormatter" id="301201756">
 													<dictionary class="NSMutableDictionary" key="NS.attributes">
@@ -21868,7 +21868,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 							<object class="NSTextFieldCell" key="NSTitleCell">
 								<int key="NSCellFlags">67108864</int>
 								<int key="NSCellFlags2">0</int>
-								<string key="NSContents">Host Device Info</string>
+								<string key="NSContents">Host Device Information</string>
 								<reference key="NSSupport" ref="26"/>
 								<reference key="NSBackgroundColor" ref="527409595"/>
 								<reference key="NSTextColor" ref="353533534"/>
@@ -21955,6 +21955,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 					<string key="NSReuseIdentifierKey">_NS:21</string>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {1920, 1177}}</string>
+				<string key="NSMaxSize">{10000000000000, 10000000000000}</string>
 				<string key="NSFrameAutosaveName">MicrophoneSettingsPanel</string>
 				<bool key="NSWindowIsRestorable">YES</bool>
 			</object>
@@ -22999,7 +23000,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 								<int key="NSCellFlags">-2080374784</int>
 								<int key="NSCellFlags2">134217728</int>
 								<string key="NSContents">Save Settings as Default</string>
-								<reference key="NSSupport" ref="28"/>
+								<reference key="NSSupport" ref="974315963"/>
 								<reference key="NSControlView" ref="31256562"/>
 								<int key="NSButtonFlags">-2038153216</int>
 								<int key="NSButtonFlags2">164</int>
@@ -24937,7 +24938,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 								<int key="NSCellFlags">-2080374784</int>
 								<int key="NSCellFlags2">134217728</int>
 								<string key="NSContents">Set to 0º</string>
-								<reference key="NSSupport" ref="28"/>
+								<reference key="NSSupport" ref="974315963"/>
 								<reference key="NSControlView" ref="332275623"/>
 								<int key="NSButtonFlags">-2038153216</int>
 								<int key="NSButtonFlags2">164</int>
@@ -24958,7 +24959,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 								<int key="NSCellFlags">-2080374784</int>
 								<int key="NSCellFlags2">134217728</int>
 								<string key="NSContents">Save Settings as Default</string>
-								<reference key="NSSupport" ref="28"/>
+								<reference key="NSSupport" ref="974315963"/>
 								<reference key="NSControlView" ref="574064879"/>
 								<int key="NSButtonFlags">-2038153216</int>
 								<int key="NSButtonFlags2">164</int>
@@ -25190,7 +25191,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 								<int key="NSCellFlags">-2080374784</int>
 								<int key="NSCellFlags2">134217728</int>
 								<string key="NSContents">Set to 0%</string>
-								<reference key="NSSupport" ref="28"/>
+								<reference key="NSSupport" ref="974315963"/>
 								<reference key="NSControlView" ref="196301010"/>
 								<int key="NSButtonFlags">-2038153216</int>
 								<int key="NSButtonFlags2">164</int>
@@ -25212,7 +25213,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 								<int key="NSCellFlags">-2080374784</int>
 								<int key="NSCellFlags2">134217728</int>
 								<string key="NSContents">Set to 100%</string>
-								<reference key="NSSupport" ref="28"/>
+								<reference key="NSSupport" ref="974315963"/>
 								<reference key="NSControlView" ref="643271830"/>
 								<int key="NSButtonFlags">-2038153216</int>
 								<int key="NSButtonFlags2">164</int>
@@ -25233,7 +25234,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 								<int key="NSCellFlags">-2080374784</int>
 								<int key="NSCellFlags2">134217728</int>
 								<string key="NSContents">Save Settings as Default</string>
-								<reference key="NSSupport" ref="28"/>
+								<reference key="NSSupport" ref="974315963"/>
 								<reference key="NSControlView" ref="881028302"/>
 								<int key="NSButtonFlags">-2038153216</int>
 								<int key="NSButtonFlags2">164</int>
@@ -25858,7 +25859,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
 								<int key="NSCellFlags">-2080374784</int>
 								<int key="NSCellFlags2">134217728</int>
 								<string key="NSContents">Start</string>
-								<reference key="NSSupport" ref="28"/>
+								<reference key="NSSupport" ref="974315963"/>
 								<string key="NSCellIdentifier">_NS:2460</string>
 								<reference key="NSControlView" ref="820947364"/>
 								<int key="NSButtonFlags">-2038153216</int>
