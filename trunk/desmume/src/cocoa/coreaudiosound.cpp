@@ -300,22 +300,17 @@ OSStatus CoreAudioInput::InitInputAUHAL(UInt32 deviceID)
 	}
 	
 	// Get some information about the device before attempting to attach it to the AUHAL.
-	// Currently, this information is only available in debug mode. However, if there is
-	// a need to actually do something with this information, then we've already got it.
 	AudioObjectPropertyAddress deviceProperty;
 	UInt32 dataSize = 0;
 	deviceProperty.mScope = kAudioObjectPropertyScopeGlobal;
 	deviceProperty.mElement = kAudioObjectPropertyElementMaster;
-	printf("\nInput Device Information:\n");
-	printf("   Object ID: %d\n", deviceID);
 	
 	deviceProperty.mSelector = kAudioObjectPropertyName;
 	error = AudioObjectGetPropertyDataSize(deviceID, &deviceProperty, 0, NULL, &dataSize);
 	if (error == noErr)
 	{
 		CFRelease(this->_hwDeviceInfo.name);
-		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.name);
-		printf("   Name: %s\n", CFStringGetCStringPtr(this->_hwDeviceInfo.name, kCFStringEncodingUTF8));
+		AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.name);
 	}
 	
 	deviceProperty.mSelector = kAudioObjectPropertyManufacturer;
@@ -323,8 +318,7 @@ OSStatus CoreAudioInput::InitInputAUHAL(UInt32 deviceID)
 	if (error == noErr)
 	{
 		CFRelease(this->_hwDeviceInfo.manufacturer);
-		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.manufacturer);
-		printf("   Manufacturer: %s\n", CFStringGetCStringPtr(this->_hwDeviceInfo.manufacturer, kCFStringEncodingUTF8));
+		AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.manufacturer);
 	}
 	
 	deviceProperty.mSelector = kAudioDevicePropertyDeviceUID;
@@ -332,8 +326,7 @@ OSStatus CoreAudioInput::InitInputAUHAL(UInt32 deviceID)
 	if (error == noErr)
 	{
 		CFRelease(this->_hwDeviceInfo.deviceUID);
-		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.deviceUID);
-		printf("   Device UID: %s\n", CFStringGetCStringPtr(this->_hwDeviceInfo.deviceUID, kCFStringEncodingUTF8));
+		AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.deviceUID);
 	}
 	
 	deviceProperty.mSelector = kAudioDevicePropertyModelUID;
@@ -341,8 +334,7 @@ OSStatus CoreAudioInput::InitInputAUHAL(UInt32 deviceID)
 	if (error == noErr)
 	{
 		CFRelease(this->_hwDeviceInfo.modelUID);
-		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.modelUID);
-		printf("   Model UID: %s\n", CFStringGetCStringPtr(this->_hwDeviceInfo.modelUID, kCFStringEncodingUTF8));
+		AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.modelUID);
 	}
 	
 	deviceProperty.mSelector = kAudioDevicePropertyNominalSampleRate;
@@ -350,8 +342,7 @@ OSStatus CoreAudioInput::InitInputAUHAL(UInt32 deviceID)
 	error = AudioObjectGetPropertyDataSize(deviceID, &deviceProperty, 0, NULL, &dataSize);
 	if (error == noErr)
 	{
-		error = AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.sampleRate);
-		printf("   Sample Rate: %1.1f\n\n", this->_hwDeviceInfo.sampleRate);
+		AudioObjectGetPropertyData(deviceID, &deviceProperty, 0, NULL, &dataSize, &this->_hwDeviceInfo.sampleRate);
 	}
 	
 	// Before attaching the HAL input device, stop everything first.

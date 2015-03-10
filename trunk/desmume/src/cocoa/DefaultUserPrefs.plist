@@ -694,6 +694,8 @@
 	<dict/>
 	<key>Input_SavedProfiles</key>
 	<array/>
+	<key>Microphone_HardwareMicMute</key>
+	<false/>
 	<key>Render3D_DepthComparisonThreshold</key>
 	<integer>0</integer>
 	<key>Render3D_EdgeMarking</key>

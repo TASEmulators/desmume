@@ -18,6 +18,7 @@
 
 #import <Cocoa/Cocoa.h>
 #include <libkern/OSAtomic.h>
+#include <vector>
 
 @class CocoaDSController;
 class CoreAudioInput;
@@ -77,10 +78,8 @@ typedef struct
 
 @protocol CocoaDSControllerDelegate <NSObject>
 
-@required
-- (uint8_t) doMicSamplesReadFromController:(CocoaDSController *)cdsController inSample:(uint8_t)sampleValue;
-
 @optional
+- (void) doMicLevelUpdateFromController:(CocoaDSController *)cdsController;
 - (void) doMicHardwareStateChangedFromController:(CocoaDSController *)cdsController
 									   isEnabled:(BOOL)isHardwareEnabled
 										isLocked:(BOOL)isHardwareLocked
@@ -93,13 +92,12 @@ typedef struct
 @interface CocoaDSController : NSObject
 {
 	id <CocoaDSControllerDelegate> delegate;
-	BOOL isHardwareMicReadThisFrame;
+	float micLevel;
 	BOOL autohold;
 	BOOL isAutoholdCleared;
 	BOOL _useHardwareMic;
 	size_t _availableMicSamples;
-	uint32_t _hwMicNumberIdleFrames;
-	uint32_t _hwMicNumberClippedFrames;
+	std::vector<uint8_t> *_hwMicLevelList;
 	NSInteger micMode;
 	NSPoint touchLocation;
 	
@@ -108,7 +106,11 @@ typedef struct
 	CoreAudioInput *CAInputDevice;
 	AudioGenerator *softwareMicSampleGenerator;
 	NSInteger paddleAdjust;
+	
 	NSString *hardwareMicInfoString;
+	NSString *hardwareMicNameString;
+	NSString *hardwareMicManufacturerString;
+	NSString *hardwareMicSampleRateString;
 	
 	OSSpinLock spinlockControllerState;
 }
@@ -116,9 +118,9 @@ typedef struct
 @property (retain) id <CocoaDSControllerDelegate> delegate;
 @property (assign) BOOL autohold;
 @property (readonly) BOOL isHardwareMicAvailable;
-@property (assign) BOOL isHardwareMicIdle;
-@property (assign) BOOL isHardwareMicInClip;
-@property (assign) BOOL isHardwareMicReadThisFrame;
+@property (readonly) BOOL isHardwareMicIdle;
+@property (readonly) BOOL isHardwareMicInClip;
+@property (assign) float micLevel;
 @property (assign) BOOL hardwareMicEnabled;
 @property (readonly) BOOL hardwareMicLocked;
 @property (assign) float hardwareMicGain;
@@ -132,6 +134,9 @@ typedef struct
 @property (assign) AudioSampleBlockGenerator *selectedAudioFileGenerator;
 @property (assign) NSInteger paddleAdjust;
 @property (retain) NSString *hardwareMicInfoString;
+@property (retain) NSString *hardwareMicNameString;
+@property (retain) NSString *hardwareMicManufacturerString;
+@property (retain) NSString *hardwareMicSampleRateString;
 
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID;
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID turbo:(const BOOL)isTurboEnabled;
@@ -140,7 +145,9 @@ typedef struct
 - (void) clearAutohold;
 - (void) flush;
 - (void) flushEmpty;
-- (void) updateHardwareMicLevelWithSample:(uint8_t)inSample;
+
+- (void) resetMicLevel;
+- (void) updateMicLevel;
 - (uint8_t) handleMicSampleRead:(CoreAudioInput *)caInput softwareMic:(AudioGenerator *)sampleGenerator;
 - (void) handleMicHardwareStateChanged:(CoreAudioInputDeviceInfo *)deviceInfo
 							 isEnabled:(BOOL)isHardwareEnabled

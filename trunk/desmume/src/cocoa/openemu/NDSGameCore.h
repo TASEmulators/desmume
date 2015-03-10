@@ -28,7 +28,7 @@
 @class CocoaDSFirmware;
 
 
-@interface NDSGameCore : OEGameCore <CocoaDSControllerDelegate>
+@interface NDSGameCore : OEGameCore
 {
 	NSPoint touchLocation;
 	NSMutableDictionary *addedCheatsDict;

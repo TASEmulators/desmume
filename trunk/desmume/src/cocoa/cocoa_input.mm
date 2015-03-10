@@ -38,7 +38,7 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 @dynamic isHardwareMicAvailable;
 @dynamic isHardwareMicIdle;
 @dynamic isHardwareMicInClip;
-@synthesize isHardwareMicReadThisFrame;
+@synthesize micLevel;
 @dynamic hardwareMicEnabled;
 @dynamic hardwareMicLocked;
 @dynamic hardwareMicGain;
@@ -53,6 +53,9 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 @synthesize selectedAudioFileGenerator;
 @synthesize paddleAdjust;
 @synthesize hardwareMicInfoString;
+@synthesize hardwareMicNameString;
+@synthesize hardwareMicManufacturerString;
+@synthesize hardwareMicSampleRateString;
 
 - (id)init
 {
@@ -74,11 +77,13 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 	spinlockControllerState = OS_SPINLOCK_INIT;	
 	autohold = NO;
 	isAutoholdCleared = YES;
-	isHardwareMicReadThisFrame = NO;
+	micLevel = 0.0f;
 	_useHardwareMic = NO;
 	_availableMicSamples = 0;
-	_hwMicNumberIdleFrames = MIC_NULL_FRAME_THRESHOLD;
-	_hwMicNumberClippedFrames = 0;
+	
+	_hwMicLevelList = new std::vector<uint8_t>;
+	_hwMicLevelList->reserve(1024);
+	_hwMicLevelList->clear();
 	
 	micMode = MICMODE_NONE;
 	selectedAudioFileGenerator = NULL;
@@ -88,7 +93,11 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 	softwareMicSampleGenerator = &nullSampleGenerator;
 	touchLocation = NSMakePoint(0.0f, 0.0f);
 	paddleAdjust = 0;
+	
 	hardwareMicInfoString = @"No hardware input detected.";
+	hardwareMicNameString = @"No hardware input detected.";
+	hardwareMicManufacturerString = @"No hardware input detected.";
+	hardwareMicSampleRateString = @"No hardware input detected.";
 	
 	Mic_SetResetCallback(&CAResetCallback, self, NULL);
 	Mic_SetSampleReadCallback(&CASampleReadCallback, self, NULL);
@@ -99,6 +108,7 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 - (void)dealloc
 {
 	delete CAInputDevice;
+	delete _hwMicLevelList;
 	[super dealloc];
 }
 
@@ -109,40 +119,14 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 			!CAInputDevice->GetPauseState() ) ? YES : NO;
 }
 
-- (void) setIsHardwareMicIdle:(BOOL)theState
-{
-	if (theState)
-	{
-		_hwMicNumberIdleFrames = MIC_NULL_FRAME_THRESHOLD;
-		_hwMicNumberClippedFrames = 0;
-	}
-	else
-	{
-		_hwMicNumberIdleFrames = 0;
-	}
-}
-
 - (BOOL) isHardwareMicIdle
 {
-	return (_hwMicNumberIdleFrames >= MIC_NULL_FRAME_THRESHOLD);
-}
-
-- (void) setIsHardwareMicInClip:(BOOL)theState
-{
-	if (theState)
-	{
-		_hwMicNumberIdleFrames = 0;
-		_hwMicNumberClippedFrames = MIC_CLIP_FRAME_THRESHOLD;
-	}
-	else
-	{
-		_hwMicNumberClippedFrames = 0;
-	}
+	return (micLevel < MIC_NULL_LEVEL_THRESHOLD);
 }
 
 - (BOOL) isHardwareMicInClip
 {
-	return (_hwMicNumberClippedFrames >= MIC_CLIP_FRAME_THRESHOLD);
+	return (micLevel >= MIC_CLIP_LEVEL_THRESHOLD);
 }
 
 - (void) setHardwareMicEnabled:(BOOL)micEnabled
@@ -526,42 +510,35 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 	NDS_setMic(false);
 }
 
-- (void) updateHardwareMicLevelWithSample:(uint8_t)inSample
+- (void) resetMicLevel
 {
-	switch (inSample)
+	_hwMicLevelList->clear();
+}
+
+- (void) updateMicLevel
+{
+	float avgMicLevel = 0.0f;
+	size_t recordedLevelCount = _hwMicLevelList->size();
+	
+	for(size_t i = 0; i < recordedLevelCount; i++)
 	{
-		case MIC_NULL_SAMPLE_VALUE:
-		{
-			if (_hwMicNumberIdleFrames < MIC_NULL_FRAME_MAX_COUNT)
-			{
-				_hwMicNumberIdleFrames++;
-			}
-			break;
-		}
-		
-		case 0:
-		case 127:
-		{
-			if (_hwMicNumberClippedFrames < MIC_CLIP_FRAME_MAX_COUNT)
-			{
-				_hwMicNumberClippedFrames++;
-			}
-			break;
-		}
-		
-		default:
-		{
-			if (_hwMicNumberIdleFrames > 0)
-			{
-				_hwMicNumberIdleFrames--;
-			}
-			
-			if (_hwMicNumberClippedFrames > 0)
-			{
-				_hwMicNumberClippedFrames--;
-			}
-			break;
-		}
+		avgMicLevel += (*_hwMicLevelList)[i];
+	}
+	
+	if (recordedLevelCount > 0)
+	{
+		avgMicLevel /= _hwMicLevelList->size();
+	}
+	else
+	{
+		avgMicLevel = 0.0f;
+	}
+	
+	[self setMicLevel:avgMicLevel];
+	
+	if (delegate != nil && [delegate respondsToSelector:@selector(doMicLevelUpdateFromController:)])
+	{
+		[[self delegate] doMicLevelUpdateFromController:self];
 	}
 }
 
@@ -585,9 +562,6 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 			caInput->_samplesConverted->read(&theSample, 1);
 			theSample >>= 1; // Samples from CoreAudio are 8-bit, so we need to convert the sample to 7-bit
 			_availableMicSamples--;
-			
-			[self updateHardwareMicLevelWithSample:theSample];
-			[self setIsHardwareMicReadThisFrame:YES];
 		}
 	}
 	else
@@ -595,7 +569,8 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 		theSample = sampleGenerator->generateSample();
 	}
 	
-	return [[self delegate] doMicSamplesReadFromController:self inSample:theSample];
+	_hwMicLevelList->push_back(abs((float)theSample - MIC_NULL_SAMPLE_VALUE));
+	return theSample;
 }
 
 - (void) handleMicHardwareStateChanged:(CoreAudioInputDeviceInfo *)deviceInfo
@@ -603,21 +578,25 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 							  isLocked:(BOOL)isHardwareLocked
 							   isMuted:(BOOL)isHardwareMuted
 {
-	NSString *newHWMicInfoString;
 	if (deviceInfo->objectID == kAudioObjectUnknown)
 	{
-		newHWMicInfoString = @"No hardware input detected.";
+		[self setHardwareMicInfoString:@"No hardware input detected."];
+		[self setHardwareMicNameString:@"No hardware input detected."];
+		[self setHardwareMicManufacturerString:@"No hardware input detected."];
+		[self setHardwareMicSampleRateString:@"No hardware input detected."];
+		
 	}
 	else
 	{
-		newHWMicInfoString = [NSString stringWithFormat:@"%@\nSample Rate: %1.1f Hz",
-									(NSString *)deviceInfo->name,
-									(double)deviceInfo->sampleRate];
+		[self setHardwareMicInfoString:[NSString stringWithFormat:@"%@\nSample Rate: %1.1f Hz",
+										(NSString *)deviceInfo->name,
+										(double)deviceInfo->sampleRate]];
+		[self setHardwareMicNameString:(NSString *)deviceInfo->name];
+		[self setHardwareMicManufacturerString:(NSString *)deviceInfo->manufacturer];
+		[self setHardwareMicSampleRateString:[NSString stringWithFormat:@"%1.1f Hz", (double)deviceInfo->sampleRate]];
 	}
 	
-	[self setHardwareMicInfoString:newHWMicInfoString];
-	[self setIsHardwareMicIdle:YES];
-	[self setIsHardwareMicInClip:NO];
+	[self resetMicLevel];
 	
 	if (delegate != nil && [delegate respondsToSelector:@selector(doMicHardwareStateChangedFromController:isEnabled:isLocked:isMuted:)])
 	{
