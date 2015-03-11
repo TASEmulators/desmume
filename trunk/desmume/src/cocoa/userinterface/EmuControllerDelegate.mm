@@ -52,6 +52,10 @@
 @synthesize cheatDatabaseController;
 @synthesize slot2WindowController;
 
+@synthesize displayRotationPanel;
+@synthesize displaySeparationPanel;
+@synthesize displayVideoSettingsPanel;
+
 @synthesize executionControlWindow;
 @synthesize slot1ManagerWindow;
 @synthesize saveFileMigrationSheet;
@@ -108,6 +112,10 @@
 	
 	mainWindow = nil;
 	windowList = [[NSMutableArray alloc] initWithCapacity:32];
+	
+	displayRotationPanelTitle = nil;
+	displaySeparationPanelTitle = nil;
+	displayVideoSettingsPanelTitle = nil;
 	
 	currentRom = nil;
 	cdsFirmware = nil;
@@ -2108,6 +2116,32 @@
 		[theWindow setTitle:romName];
 		[theWindow setRepresentedURL:repURL];
 		[[theWindow standardWindowButton:NSWindowDocumentIconButton] setImage:titleIcon];
+	}
+}
+
+- (void) updateDisplayPanelTitles
+{
+	// If the original panel titles haven't been saved yet, then save them now.
+	if (displayRotationPanelTitle == nil)
+	{
+		displayRotationPanelTitle = [[displayRotationPanel title] copy];
+		displaySeparationPanelTitle = [[displaySeparationPanel title] copy];
+		displayVideoSettingsPanelTitle = [[displayVideoSettingsPanel title] copy];
+	}
+	
+	// Set the panel titles to the window number.
+	if ([windowList count] <= 1)
+	{
+		[displayRotationPanel setTitle:displayRotationPanelTitle];
+		[displaySeparationPanel setTitle:displaySeparationPanelTitle];
+		[displayVideoSettingsPanel setTitle:displayVideoSettingsPanelTitle];
+	}
+	else
+	{
+		unsigned long windowNumber = (unsigned long)[windowList indexOfObject:mainWindow] + 1;
+		[displayRotationPanel setTitle:[displayRotationPanelTitle stringByAppendingFormat:@":%ld", windowNumber]];
+		[displaySeparationPanel setTitle:[displaySeparationPanelTitle stringByAppendingFormat:@":%ld", windowNumber]];
+		[displayVideoSettingsPanel setTitle:[displayVideoSettingsPanelTitle stringByAppendingFormat:@":%ld", windowNumber]];
 	}
 }
 

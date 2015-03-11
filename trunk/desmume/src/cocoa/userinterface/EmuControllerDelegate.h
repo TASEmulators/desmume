@@ -50,6 +50,13 @@ class AudioSampleBlockGenerator;
 	NSArrayController *cheatListController;
 	NSArrayController *cheatDatabaseController;
 	
+	NSWindow *displayRotationPanel;
+	NSWindow *displaySeparationPanel;
+	NSWindow *displayVideoSettingsPanel;
+	NSString *displayRotationPanelTitle;
+	NSString *displaySeparationPanelTitle;
+	NSString *displayVideoSettingsPanelTitle;
+	
 	NSWindow *executionControlWindow;
 	NSWindow *slot1ManagerWindow;
 	NSWindow *saveFileMigrationSheet;
@@ -120,6 +127,10 @@ class AudioSampleBlockGenerator;
 @property (readonly) IBOutlet NSObjectController *slot2WindowController;
 @property (readonly) IBOutlet NSArrayController *cheatListController;
 @property (readonly) IBOutlet NSArrayController *cheatDatabaseController;
+
+@property (readonly) IBOutlet NSWindow *displayRotationPanel;
+@property (readonly) IBOutlet NSWindow *displaySeparationPanel;
+@property (readonly) IBOutlet NSWindow *displayVideoSettingsPanel;
 
 @property (readonly) IBOutlet NSWindow *executionControlWindow;
 @property (readonly) IBOutlet NSWindow *slot1ManagerWindow;
@@ -271,6 +282,7 @@ class AudioSampleBlockGenerator;
 - (void) didEndChooseSlot1R4Directory:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
 
 - (void) updateAllWindowTitles;
+- (void) updateDisplayPanelTitles;
 - (void) setupUserDefaults;
 
 @end
