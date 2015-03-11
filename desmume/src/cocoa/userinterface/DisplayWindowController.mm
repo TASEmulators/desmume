@@ -1120,6 +1120,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void)windowDidBecomeMain:(NSNotification *)notification
 {
 	[emuControl setMainWindow:self];
+	[emuControl updateDisplayPanelTitles];
 	[view setNextResponder:[self window]];
 	[[view inputManager] setHidInputTarget:view];
 }
@@ -1219,6 +1220,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	
 	[emuControl updateAllWindowTitles];
+	[emuControl updateDisplayPanelTitles];
 }
 
 - (BOOL)validateToolbarItem:(NSToolbarItem *)theItem
