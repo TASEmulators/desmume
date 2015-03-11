@@ -249,8 +249,8 @@
 #define MIC_SAMPLE_SIZE								((MIC_SAMPLE_RESOLUTION / 8) * MIC_NUMBER_CHANNELS) // Bytes per sample, multiplied by the number of channels
 #define MIC_MAX_BUFFER_SAMPLES						((MIC_SAMPLE_RATE / DS_FRAMES_PER_SECOND) * MIC_SAMPLE_SIZE)
 #define MIC_CAPTURE_FRAMES							192		// The number of audio frames that the NDS microphone should pull. The lower this value, the lower the latency. Ensure that this value is not too low, or else audio frames may be lost.
-#define MIC_NULL_LEVEL_THRESHOLD					3
-#define MIC_CLIP_LEVEL_THRESHOLD					59
+#define MIC_NULL_LEVEL_THRESHOLD					2.5
+#define MIC_CLIP_LEVEL_THRESHOLD					39.743665431525209 // ((2.0/pi) * MIC_NULL_SAMPLE_VALUE) - 1.0
 #define MIC_NULL_SAMPLE_VALUE						64
 
 #define COCOA_DIALOG_CANCEL							0
