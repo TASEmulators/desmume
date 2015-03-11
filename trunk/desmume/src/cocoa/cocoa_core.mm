@@ -314,6 +314,7 @@ volatile bool execute = true;
 	{
 		threadParam.isFrameSkipEnabled = false;
 		threadParam.framesToSkip = 0;
+		NDS_OmitFrameSkip(2);
 	}
 	
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
@@ -460,6 +461,7 @@ volatile bool execute = true;
 	if (isInDebugTrap && !theState)
 	{
 		threadParam.framesToSkip = 0;
+		NDS_OmitFrameSkip(2);
 	}
 	
 	isInDebugTrap = theState;
@@ -636,6 +638,7 @@ volatile bool execute = true;
 	
 	threadParam.state = coreState;
 	threadParam.framesToSkip = 0;
+	NDS_OmitFrameSkip(2);
 	
 	switch (coreState)
 	{
@@ -1227,7 +1230,12 @@ static void* RunCoreThread(void *arg)
 		}
 		else if (param->state == CORESTATE_FRAMEJUMP)
 		{
-			if (frameNum >= param->frameJumpTarget)
+			if (frameNum == (param->frameJumpTarget - 1))
+			{
+				param->framesToSkip = 0;
+				NDS_OmitFrameSkip(2);
+			}
+			else if (frameNum >= param->frameJumpTarget)
 			{
 				[cdsCore restoreCoreState];
 			}
