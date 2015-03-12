@@ -348,6 +348,7 @@
 	[self saveDisplayWindowStates];
 	[romInfoPanel writeDefaults];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsController] hardwareMicMute] forKey:@"Microphone_HardwareMicMute"];
+	[[NSUserDefaults standardUserDefaults] setDouble:[emuControl currentVolumeValue] forKey:@"Sound_Volume"];
 	[[NSUserDefaults standardUserDefaults] setDouble:[emuControl lastSetSpeedScalar] forKey:@"CoreControl_SpeedScalar"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isSpeedLimitEnabled] forKey:@"CoreControl_EnableSpeedLimit"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore isFrameSkipEnabled] forKey:@"CoreControl_EnableAutoFrameSkip"];

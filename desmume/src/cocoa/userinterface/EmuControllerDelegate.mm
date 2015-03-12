@@ -842,7 +842,7 @@
 - (IBAction) changeHardwareMicGain:(id)sender
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[[cdsCore cdsController] setHardwareMicGain:[self currentMicGainValue]];
+	[[cdsCore cdsController] setHardwareMicGain:([self currentMicGainValue]/100.0f)];
 }
 
 - (IBAction) changeVolume:(id)sender
@@ -2517,7 +2517,7 @@
 
 - (void) doMicHardwareGainChangedFromController:(CocoaDSController *)cdsController gain:(float)gainValue
 {
-	[self setCurrentMicGainValue:gainValue];
+	[self setCurrentMicGainValue:gainValue*100.0f];
 }
 
 @end

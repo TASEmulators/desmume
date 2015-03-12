@@ -284,7 +284,7 @@
 				<nil key="NSUserInterfaceItemIdentifier"/>
 				<string key="NSWindowContentMinSize">{256, 408}</string>
 				<object class="NSView" key="NSWindowView" id="1027645320">
-					<nil key="NSNextResponder"/>
+					<reference key="NSNextResponder"/>
 					<int key="NSvFlags">256</int>
 					<array class="NSMutableArray" key="NSSubviews">
 						<object class="NSProgressIndicator" id="963885183">
@@ -292,6 +292,7 @@
 							<int key="NSvFlags">5156</int>
 							<string key="NSFrame">{{2, 3}, {16, 16}}</string>
 							<reference key="NSSuperview" ref="1027645320"/>
+							<reference key="NSWindow"/>
 							<reference key="NSNextKeyView" ref="731708450"/>
 							<int key="NSpiFlags">28938</int>
 							<double key="NSMaxValue">100</double>
@@ -301,6 +302,7 @@
 							<int key="NSvFlags">294</int>
 							<string key="NSFrame">{{17, 5}, {137, 14}}</string>
 							<reference key="NSSuperview" ref="1027645320"/>
+							<reference key="NSWindow"/>
 							<reference key="NSNextKeyView" ref="154157914"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSTextFieldCell" key="NSCell" id="644649254">
@@ -342,6 +344,7 @@
 							<array class="NSMutableArray" key="NSSubviews"/>
 							<string key="NSFrame">{{0, 24}, {256, 384}}</string>
 							<reference key="NSSuperview" ref="1027645320"/>
+							<reference key="NSWindow"/>
 							<reference key="NSNextKeyView" ref="963885183"/>
 							<bool key="NSViewCanDrawConcurrently">YES</bool>
 							<string key="NSClassName">DisplayView</string>
@@ -351,6 +354,8 @@
 							<int key="NSvFlags">289</int>
 							<string key="NSFrame">{{192, -1}, {40, 26}}</string>
 							<reference key="NSSuperview" ref="1027645320"/>
+							<reference key="NSWindow"/>
+							<reference key="NSNextKeyView"/>
 							<string key="NSReuseIdentifierKey">_NS:791</string>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSPopUpButtonCell" key="NSCell" id="1063916850">
@@ -366,7 +371,7 @@
 								<int key="NSButtonFlags">-2043002880</int>
 								<int key="NSButtonFlags2">34</int>
 								<object class="NSFont" key="NSAlternateImage" id="598094278">
-									<string key="NSName">.HelveticaNeueDeskInterface-Regular</string>
+									<string key="NSName">LucidaGrande</string>
 									<double key="NSSize">13</double>
 									<int key="NSfFlags">16</int>
 								</object>
@@ -421,6 +426,7 @@
 							<int key="NSvFlags">289</int>
 							<string key="NSFrame">{{151, -1}, {42, 26}}</string>
 							<reference key="NSSuperview" ref="1027645320"/>
+							<reference key="NSWindow"/>
 							<reference key="NSNextKeyView" ref="347607109"/>
 							<string key="NSReuseIdentifierKey">_NS:791</string>
 							<bool key="NSEnabled">YES</bool>
@@ -481,10 +487,12 @@
 						</object>
 					</array>
 					<string key="NSFrameSize">{256, 408}</string>
+					<reference key="NSSuperview"/>
+					<reference key="NSWindow"/>
 					<reference key="NSNextKeyView" ref="740908585"/>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {1920, 1177}}</string>
-				<string key="NSMinSize">{256, 476}</string>
+				<string key="NSMinSize">{256, 477}</string>
 				<string key="NSMaxSize">{10000000000000, 10000000000000}</string>
 				<bool key="NSWindowIsRestorable">NO</bool>
 			</object>
@@ -613,7 +621,7 @@
 				<string key="NSClassName">NSView</string>
 			</object>
 			<object class="NSCustomView" id="545736283">
-				<nil key="NSNextResponder"/>
+				<reference key="NSNextResponder"/>
 				<int key="NSvFlags">268</int>
 				<array class="NSMutableArray" key="NSSubviews">
 					<object class="NSButton" id="208921964">
@@ -621,6 +629,8 @@
 						<int key="NSvFlags">268</int>
 						<string key="NSFrame">{{2, 0}, {49, 18}}</string>
 						<reference key="NSSuperview" ref="545736283"/>
+						<reference key="NSWindow"/>
+						<reference key="NSNextKeyView"/>
 						<string key="NSReuseIdentifierKey">_NS:682</string>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSButtonCell" key="NSCell" id="169016076">
@@ -649,8 +659,9 @@
 					<object class="NSTextField" id="261027162">
 						<reference key="NSNextResponder" ref="545736283"/>
 						<int key="NSvFlags">268</int>
-						<string key="NSFrame">{{-4, 20}, {66, 11}}</string>
+						<string key="NSFrame">{{-3, 20}, {66, 11}}</string>
 						<reference key="NSSuperview" ref="545736283"/>
+						<reference key="NSWindow"/>
 						<reference key="NSNextKeyView" ref="208921964"/>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSTextFieldCell" key="NSCell" id="30057499">
@@ -672,13 +683,10 @@
 									</object>
 									<integer value="1" key="maximumFractionDigits"/>
 									<integer value="1" key="minimumFractionDigits"/>
-									<integer value="100" key="multiplier"/>
-									<string key="negativeFormat">#0.0%</string>
+									<integer value="1" key="multiplier"/>
 									<string key="negativeInfinitySymbol">-∞</string>
-									<string key="negativePrefix">-</string>
 									<string key="nilSymbol"/>
-									<integer value="1" key="numberStyle"/>
-									<string key="positiveFormat">#0.0%</string>
+									<integer value="3" key="numberStyle"/>
 									<string key="positiveInfinitySymbol">+∞</string>
 									<boolean value="NO" key="usesGroupingSeparator"/>
 								</dictionary>
@@ -692,7 +700,7 @@
 								</object>
 								<object class="NSAttributedString" key="NS.nan">
 									<string key="NSString">NaN</string>
-									<dictionary key="NSAttributes" id="903901229"/>
+									<dictionary key="NSAttributes" id="481024347"/>
 								</object>
 								<object class="NSDecimalNumberPlaceholder" key="NS.min" id="986569588">
 									<int key="NS.exponent">0</int>
@@ -728,6 +736,7 @@
 						<int key="NSvFlags">268</int>
 						<string key="NSFrame">{{17, 31}, {21, 105}}</string>
 						<reference key="NSSuperview" ref="545736283"/>
+						<reference key="NSWindow"/>
 						<reference key="NSNextKeyView" ref="261027162"/>
 						<string key="NSReuseIdentifierKey">_NS:768</string>
 						<bool key="NSEnabled">YES</bool>
@@ -737,9 +746,9 @@
 							<string key="NSContents"/>
 							<string key="NSCellIdentifier">_NS:768</string>
 							<reference key="NSControlView" ref="738109744"/>
-							<double key="NSMaxValue">1</double>
+							<double key="NSMaxValue">100</double>
 							<double key="NSMinValue">0.0</double>
-							<double key="NSValue">1</double>
+							<double key="NSValue">0.0</double>
 							<double key="NSAltIncValue">0.0</double>
 							<int key="NSNumberOfTickMarks">0</int>
 							<int key="NSTickMarkPosition">0</int>
@@ -750,12 +759,14 @@
 					</object>
 				</array>
 				<string key="NSFrameSize">{55, 139}</string>
+				<reference key="NSSuperview"/>
+				<reference key="NSWindow"/>
 				<reference key="NSNextKeyView" ref="738109744"/>
 				<string key="NSReuseIdentifierKey">_NS:1109</string>
 				<string key="NSClassName">NSView</string>
 			</object>
 			<object class="NSCustomView" id="552471306">
-				<nil key="NSNextResponder"/>
+				<reference key="NSNextResponder"/>
 				<int key="NSvFlags">268</int>
 				<array class="NSMutableArray" key="NSSubviews">
 					<object class="NSTextField" id="1023402314">
@@ -763,6 +774,8 @@
 						<int key="NSvFlags">268</int>
 						<string key="NSFrame">{{-1, 6}, {51, 11}}</string>
 						<reference key="NSSuperview" ref="552471306"/>
+						<reference key="NSWindow"/>
+						<reference key="NSNextKeyView"/>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSTextFieldCell" key="NSCell" id="999175719">
 							<int key="NSCellFlags">68157504</int>
@@ -776,12 +789,12 @@
 									<boolean value="NO" key="lenient"/>
 									<reference key="locale" ref="135116341"/>
 									<integer value="1" key="maximumFractionDigits"/>
+									<integer value="2000000000" key="maximumIntegerDigits"/>
 									<integer value="1" key="minimumFractionDigits"/>
+									<integer value="1" key="minimumIntegerDigits"/>
 									<real value="1" key="multiplier"/>
-									<string key="negativeInfinitySymbol">-∞</string>
 									<string key="nilSymbol"/>
 									<integer value="3" key="numberStyle"/>
-									<string key="positiveInfinitySymbol">+∞</string>
 									<boolean value="NO" key="usesGroupingSeparator"/>
 								</dictionary>
 								<string key="NS.positiveformat">#0.0%</string>
@@ -794,7 +807,7 @@
 								</object>
 								<object class="NSAttributedString" key="NS.nan">
 									<string key="NSString">NaN</string>
-									<reference key="NSAttributes" ref="903901229"/>
+									<reference key="NSAttributes" ref="481024347"/>
 								</object>
 								<reference key="NS.min" ref="986569588"/>
 								<reference key="NS.max" ref="986569588"/>
@@ -823,6 +836,7 @@
 						<int key="NSvFlags">268</int>
 						<string key="NSFrame">{{12, 17}, {21, 105}}</string>
 						<reference key="NSSuperview" ref="552471306"/>
+						<reference key="NSWindow"/>
 						<reference key="NSNextKeyView" ref="1023402314"/>
 						<string key="NSReuseIdentifierKey">_NS:768</string>
 						<bool key="NSEnabled">YES</bool>
@@ -845,6 +859,8 @@
 					</object>
 				</array>
 				<string key="NSFrameSize">{45, 125}</string>
+				<reference key="NSSuperview"/>
+				<reference key="NSWindow"/>
 				<reference key="NSNextKeyView" ref="782084649"/>
 				<string key="NSReuseIdentifierKey">_NS:1109</string>
 				<string key="NSClassName">NSView</string>
@@ -1664,9 +1680,9 @@
 						<int key="objectID">161</int>
 						<reference key="object" ref="545736283"/>
 						<array class="NSMutableArray" key="children">
-							<reference ref="261027162"/>
-							<reference ref="738109744"/>
 							<reference ref="208921964"/>
+							<reference ref="738109744"/>
+							<reference ref="261027162"/>
 						</array>
 						<reference key="parent" ref="0"/>
 						<string key="objectName">Microphone Input Gain Menu Item</string>
@@ -1747,12 +1763,13 @@
 				<string key="145.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="146.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="15.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="151.IBPersistedLastKnownCanvasPosition">{348.5, 357.5}</string>
+				<string key="151.IBPersistedLastKnownCanvasPosition">{183.5, 317.5}</string>
 				<string key="151.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="152.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="153.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<integer value="1040" key="154.IBNumberFormatterBehaviorMetadataKey"/>
 				<boolean value="NO" key="154.IBNumberFormatterLocalizesFormatMetadataKey"/>
+				<real value="10" key="154.IBNumberFormatterSampleNumberKey"/>
 				<string key="154.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="16.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<reference key="161.IBNSViewMetadataGestureRecognizers" ref="0"/>
@@ -1791,7 +1808,537 @@
 			<nil key="sourceID"/>
 			<int key="maxID">232</int>
 		</object>
-		<object class="IBClassDescriber" key="IBDocument.Classes"/>
+		<object class="IBClassDescriber" key="IBDocument.Classes">
+			<array class="NSMutableArray" key="referencedPartialClassDescriptions">
+				<object class="IBPartialClassDescription">
+					<string key="className">DisplayView</string>
+					<string key="superclassName">NSView</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier" id="225754194">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">../userinterface/DisplayWindowController.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">DisplayWindowController</string>
+					<string key="superclassName">NSWindowController</string>
+					<dictionary class="NSMutableDictionary" key="actions">
+						<string key="changeCoreSpeed:">id</string>
+						<string key="changeDisplayGap:">id</string>
+						<string key="changeDisplayMode:">id</string>
+						<string key="changeDisplayOrder:">id</string>
+						<string key="changeDisplayOrientation:">id</string>
+						<string key="changeHardwareMicGain:">id</string>
+						<string key="changeRotation:">id</string>
+						<string key="changeRotationRelative:">id</string>
+						<string key="changeScale:">id</string>
+						<string key="changeVideoOutputFilter:">id</string>
+						<string key="changeVideoPixelScaler:">id</string>
+						<string key="changeVolume:">id</string>
+						<string key="copy:">id</string>
+						<string key="openRom:">id</string>
+						<string key="reset:">id</string>
+						<string key="saveScreenshotAs:">id</string>
+						<string key="toggleExecutePause:">id</string>
+						<string key="toggleFullScreenDisplay:">id</string>
+						<string key="toggleKeepMinDisplaySizeAtNormal:">id</string>
+						<string key="toggleStatusBar:">id</string>
+						<string key="toggleVideoSourceDeposterize:">id</string>
+						<string key="writeDefaultsDisplayGap:">id</string>
+						<string key="writeDefaultsDisplayRotation:">id</string>
+						<string key="writeDefaultsDisplayVideoSettings:">id</string>
+						<string key="writeDefaultsHUDSettings:">id</string>
+					</dictionary>
+					<dictionary class="NSMutableDictionary" key="actionInfosByName">
+						<object class="IBActionInfo" key="changeCoreSpeed:">
+							<string key="name">changeCoreSpeed:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeDisplayGap:">
+							<string key="name">changeDisplayGap:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeDisplayMode:">
+							<string key="name">changeDisplayMode:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeDisplayOrder:">
+							<string key="name">changeDisplayOrder:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeDisplayOrientation:">
+							<string key="name">changeDisplayOrientation:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeHardwareMicGain:">
+							<string key="name">changeHardwareMicGain:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeRotation:">
+							<string key="name">changeRotation:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeRotationRelative:">
+							<string key="name">changeRotationRelative:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeScale:">
+							<string key="name">changeScale:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeVideoOutputFilter:">
+							<string key="name">changeVideoOutputFilter:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeVideoPixelScaler:">
+							<string key="name">changeVideoPixelScaler:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeVolume:">
+							<string key="name">changeVolume:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="copy:">
+							<string key="name">copy:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="openRom:">
+							<string key="name">openRom:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="reset:">
+							<string key="name">reset:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="saveScreenshotAs:">
+							<string key="name">saveScreenshotAs:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="toggleExecutePause:">
+							<string key="name">toggleExecutePause:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="toggleFullScreenDisplay:">
+							<string key="name">toggleFullScreenDisplay:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="toggleKeepMinDisplaySizeAtNormal:">
+							<string key="name">toggleKeepMinDisplaySizeAtNormal:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="toggleStatusBar:">
+							<string key="name">toggleStatusBar:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="toggleVideoSourceDeposterize:">
+							<string key="name">toggleVideoSourceDeposterize:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="writeDefaultsDisplayGap:">
+							<string key="name">writeDefaultsDisplayGap:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="writeDefaultsDisplayRotation:">
+							<string key="name">writeDefaultsDisplayRotation:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="writeDefaultsDisplayVideoSettings:">
+							<string key="name">writeDefaultsDisplayVideoSettings:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="writeDefaultsHUDSettings:">
+							<string key="name">writeDefaultsHUDSettings:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+					</dictionary>
+					<dictionary class="NSMutableDictionary" key="outlets">
+						<string key="microphoneGainControlView">NSView</string>
+						<string key="microphoneGainMenuItem">NSMenuItem</string>
+						<string key="microphoneGainSlider">NSSlider</string>
+						<string key="microphoneMuteButton">NSButton</string>
+						<string key="outputVolumeControlView">NSView</string>
+						<string key="outputVolumeMenuItem">NSMenuItem</string>
+						<string key="saveScreenshotPanelAccessoryView">NSView</string>
+						<string key="view">DisplayView</string>
+					</dictionary>
+					<dictionary class="NSMutableDictionary" key="toOneOutletInfosByName">
+						<object class="IBToOneOutletInfo" key="microphoneGainControlView">
+							<string key="name">microphoneGainControlView</string>
+							<string key="candidateClassName">NSView</string>
+						</object>
+						<object class="IBToOneOutletInfo" key="microphoneGainMenuItem">
+							<string key="name">microphoneGainMenuItem</string>
+							<string key="candidateClassName">NSMenuItem</string>
+						</object>
+						<object class="IBToOneOutletInfo" key="microphoneGainSlider">
+							<string key="name">microphoneGainSlider</string>
+							<string key="candidateClassName">NSSlider</string>
+						</object>
+						<object class="IBToOneOutletInfo" key="microphoneMuteButton">
+							<string key="name">microphoneMuteButton</string>
+							<string key="candidateClassName">NSButton</string>
+						</object>
+						<object class="IBToOneOutletInfo" key="outputVolumeControlView">
+							<string key="name">outputVolumeControlView</string>
+							<string key="candidateClassName">NSView</string>
+						</object>
+						<object class="IBToOneOutletInfo" key="outputVolumeMenuItem">
+							<string key="name">outputVolumeMenuItem</string>
+							<string key="candidateClassName">NSMenuItem</string>
+						</object>
+						<object class="IBToOneOutletInfo" key="saveScreenshotPanelAccessoryView">
+							<string key="name">saveScreenshotPanelAccessoryView</string>
+							<string key="candidateClassName">NSView</string>
+						</object>
+						<object class="IBToOneOutletInfo" key="view">
+							<string key="name">view</string>
+							<string key="candidateClassName">DisplayView</string>
+						</object>
+					</dictionary>
+					<reference key="sourceIdentifier" ref="225754194"/>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">DisplayWindowController</string>
+					<dictionary class="NSMutableDictionary" key="actions">
+						<string key="changeCoreSpeed:">id</string>
+						<string key="changeDisplayGap:">id</string>
+						<string key="changeDisplayMode:">id</string>
+						<string key="changeDisplayOrder:">id</string>
+						<string key="changeDisplayOrientation:">id</string>
+						<string key="changeHardwareMicGain:">id</string>
+						<string key="changeRotation:">id</string>
+						<string key="changeRotationRelative:">id</string>
+						<string key="changeScale:">id</string>
+						<string key="changeVideoOutputFilter:">id</string>
+						<string key="changeVideoPixelScaler:">id</string>
+						<string key="changeVolume:">id</string>
+						<string key="copy:">id</string>
+						<string key="openRom:">id</string>
+						<string key="reset:">id</string>
+						<string key="saveScreenshotAs:">id</string>
+						<string key="toggleExecutePause:">id</string>
+						<string key="toggleFullScreenDisplay:">id</string>
+						<string key="toggleKeepMinDisplaySizeAtNormal:">id</string>
+						<string key="toggleStatusBar:">id</string>
+						<string key="toggleVideoSourceDeposterize:">id</string>
+						<string key="writeDefaultsDisplayGap:">id</string>
+						<string key="writeDefaultsDisplayRotation:">id</string>
+						<string key="writeDefaultsDisplayVideoSettings:">id</string>
+						<string key="writeDefaultsHUDSettings:">id</string>
+					</dictionary>
+					<dictionary class="NSMutableDictionary" key="actionInfosByName">
+						<object class="IBActionInfo" key="changeCoreSpeed:">
+							<string key="name">changeCoreSpeed:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeDisplayGap:">
+							<string key="name">changeDisplayGap:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeDisplayMode:">
+							<string key="name">changeDisplayMode:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeDisplayOrder:">
+							<string key="name">changeDisplayOrder:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeDisplayOrientation:">
+							<string key="name">changeDisplayOrientation:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeHardwareMicGain:">
+							<string key="name">changeHardwareMicGain:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeRotation:">
+							<string key="name">changeRotation:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeRotationRelative:">
+							<string key="name">changeRotationRelative:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeScale:">
+							<string key="name">changeScale:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeVideoOutputFilter:">
+							<string key="name">changeVideoOutputFilter:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeVideoPixelScaler:">
+							<string key="name">changeVideoPixelScaler:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="changeVolume:">
+							<string key="name">changeVolume:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="copy:">
+							<string key="name">copy:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="openRom:">
+							<string key="name">openRom:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="reset:">
+							<string key="name">reset:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="saveScreenshotAs:">
+							<string key="name">saveScreenshotAs:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="toggleExecutePause:">
+							<string key="name">toggleExecutePause:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="toggleFullScreenDisplay:">
+							<string key="name">toggleFullScreenDisplay:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="toggleKeepMinDisplaySizeAtNormal:">
+							<string key="name">toggleKeepMinDisplaySizeAtNormal:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="toggleStatusBar:">
+							<string key="name">toggleStatusBar:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="toggleVideoSourceDeposterize:">
+							<string key="name">toggleVideoSourceDeposterize:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="writeDefaultsDisplayGap:">
+							<string key="name">writeDefaultsDisplayGap:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="writeDefaultsDisplayRotation:">
+							<string key="name">writeDefaultsDisplayRotation:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="writeDefaultsDisplayVideoSettings:">
+							<string key="name">writeDefaultsDisplayVideoSettings:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="writeDefaultsHUDSettings:">
+							<string key="name">writeDefaultsHUDSettings:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+					</dictionary>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBProjectSource</string>
+						<string key="minorKey">../userinterface/DisplayWindowController.mm</string>
+					</object>
+				</object>
+			</array>
+			<array class="NSMutableArray" key="referencedPartialClassDescriptionsV3.2+">
+				<object class="IBPartialClassDescription">
+					<string key="className">NSActionCell</string>
+					<string key="superclassName">NSCell</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSActionCell.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSApplication</string>
+					<string key="superclassName">NSResponder</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSApplication.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSButton</string>
+					<string key="superclassName">NSControl</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSButton.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSButtonCell</string>
+					<string key="superclassName">NSActionCell</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSButtonCell.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSCell</string>
+					<string key="superclassName">NSObject</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSCell.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSControl</string>
+					<string key="superclassName">NSView</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSControl.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSFormatter</string>
+					<string key="superclassName">NSObject</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">Foundation.framework/Headers/NSFormatter.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSMenu</string>
+					<string key="superclassName">NSObject</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSMenu.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSMenuItem</string>
+					<string key="superclassName">NSObject</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSMenuItem.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSMenuItemCell</string>
+					<string key="superclassName">NSButtonCell</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSMenuItemCell.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSNumberFormatter</string>
+					<string key="superclassName">NSFormatter</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">Foundation.framework/Headers/NSNumberFormatter.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSPopUpButton</string>
+					<string key="superclassName">NSButton</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSPopUpButton.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSPopUpButtonCell</string>
+					<string key="superclassName">NSMenuItemCell</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSPopUpButtonCell.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSProgressIndicator</string>
+					<string key="superclassName">NSView</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSProgressIndicator.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSResponder</string>
+					<string key="superclassName">NSObject</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSResponder.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSSlider</string>
+					<string key="superclassName">NSControl</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSSlider.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSSliderCell</string>
+					<string key="superclassName">NSActionCell</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSSliderCell.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSTextField</string>
+					<string key="superclassName">NSControl</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSTextField.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSTextFieldCell</string>
+					<string key="superclassName">NSActionCell</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSTextFieldCell.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSToolbar</string>
+					<string key="superclassName">NSObject</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSToolbar.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSToolbarItem</string>
+					<string key="superclassName">NSObject</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSToolbarItem.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSView</string>
+					<string key="superclassName">NSResponder</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSView.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSWindow</string>
+					<string key="superclassName">NSResponder</string>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSWindow.h</string>
+					</object>
+				</object>
+				<object class="IBPartialClassDescription">
+					<string key="className">NSWindowController</string>
+					<string key="superclassName">NSResponder</string>
+					<object class="NSMutableDictionary" key="actions">
+						<string key="NS.key.0">showWindow:</string>
+						<string key="NS.object.0">id</string>
+					</object>
+					<object class="NSMutableDictionary" key="actionInfosByName">
+						<string key="NS.key.0">showWindow:</string>
+						<object class="IBActionInfo" key="NS.object.0">
+							<string key="name">showWindow:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+					</object>
+					<object class="IBClassDescriptionSource" key="sourceIdentifier">
+						<string key="majorKey">IBFrameworkSource</string>
+						<string key="minorKey">AppKit.framework/Headers/NSWindowController.h</string>
+					</object>
+				</object>
+			</array>
+		</object>
 		<int key="IBDocument.localizationMode">0</int>
 		<string key="IBDocument.TargetRuntimeIdentifier">IBCocoaFramework</string>
 		<bool key="IBDocument.previouslyAttemptedUpgradeToXcode5">NO</bool>
