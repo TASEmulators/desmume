@@ -405,6 +405,8 @@ public:
 	virtual void SetViewportSizeOGL(GLsizei w, GLsizei h);
 };
 
+OGLInfo* OGLInfoCreate_Legacy();
+
 extern OGLInfo* (*OGLInfoCreate_Func)();
 extern void (*glBindVertexArrayDESMUME)(GLuint id);
 extern void (*glDeleteVertexArraysDESMUME)(GLsizei n, const GLuint *ids);
