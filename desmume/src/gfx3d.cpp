@@ -521,8 +521,22 @@ void gfx3d_init()
 
 	//printf("SPEED TEST %d %d\n",diff,diff2);
 
-	if(polylists == NULL) { polylists = new POLYLIST[2]; polylist = &polylists[0]; }
-	if(vertlists == NULL) { vertlists = new VERTLIST[2]; vertlist = &vertlists[0]; }
+	// Use malloc() instead of new because, for some unknown reason, GCC 4.9 has a bug
+	// that causes a std::bad_alloc exception on certain memory allocations. Right now,
+	// POLYLIST and VERTLIST are POD-style structs, so malloc() can substitute for new
+	// in this case.
+	if(polylists == NULL)
+	{
+		polylists = (POLYLIST *)malloc(sizeof(POLYLIST)*2);
+		polylist = &polylists[0];
+	}
+	
+	if(vertlists == NULL)
+	{
+		vertlists = (VERTLIST *)malloc(sizeof(VERTLIST)*2);
+		vertlist = &vertlists[0];
+	}
+	
 	makeTables();
 	gfx3d_reset();
 }
