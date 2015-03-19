@@ -1,7 +1,7 @@
 /*
 The MIT License
 
-Copyright (C) 2009-2014 DeSmuME team
+Copyright (C) 2009-2015 DeSmuME team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -84,11 +84,7 @@ public:
 	virtual int fputc(int c) = 0;
 
 	virtual size_t _fread(const void *ptr, size_t bytes) = 0;
-
-	//removing these return values for now so we can find any code that might be using them and make sure
-	//they handle the return values correctly
-
-	virtual void fwrite(const void *ptr, size_t bytes) = 0;
+	virtual size_t fwrite(const void *ptr, size_t bytes) = 0;
 
 	void write64le(u64* val);
 	void write64le(u64 val);
@@ -221,15 +217,13 @@ public:
 	}
 
 	virtual size_t _fread(const void *ptr, size_t bytes);
-
-	//removing these return values for now so we can find any code that might be using them and make sure
-	//they handle the return values correctly
-
-	virtual void fwrite(const void *ptr, size_t bytes){
+	virtual size_t fwrite(const void *ptr, size_t bytes){
 		reserve(pos+(s32)bytes);
 		memcpy(buf()+pos,ptr,bytes);
 		pos += (s32)bytes;
 		len = std::max(pos,len);
+		
+		return bytes;
 	}
 
 	virtual int fseek(int offset, int origin){ 
@@ -333,10 +327,7 @@ public:
 	}
 
 	virtual size_t _fread(const void *ptr, size_t bytes);
-
-	//removing these return values for now so we can find any code that might be using them and make sure
-	//they handle the return values correctly
-	virtual void fwrite(const void *ptr, size_t bytes);
+	virtual size_t fwrite(const void *ptr, size_t bytes);
 
 	virtual int fseek(int offset, int origin);
 

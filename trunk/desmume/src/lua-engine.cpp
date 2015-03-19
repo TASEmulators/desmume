@@ -2210,7 +2210,7 @@ public:
 
 	std::vector<std::string> differences;
 
-	virtual void fwrite(const void *ptr, size_t bytes)
+	virtual size_t fwrite(const void *ptr, size_t bytes)
 	{
 		if(!failbit)
 		{
@@ -2243,6 +2243,8 @@ public:
 		}
 
 		pos += bytes;
+		
+		return bytes;
 	}
 };
 

@@ -1,7 +1,7 @@
 /*
 The MIT License
 
-Copyright (C) 2009-2014 DeSmuME team
+Copyright (C) 2009-2015 DeSmuME team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -141,13 +141,15 @@ void EMUFILE_FILE::EnablePositionCache()
 	mFilePosition = ::ftell(fp);
 }
 
-void EMUFILE_FILE::fwrite(const void *ptr, size_t bytes)
+size_t EMUFILE_FILE::fwrite(const void *ptr, size_t bytes)
 {
 	DemandCondition(eCondition_Write);
 	size_t ret = ::fwrite((void*)ptr, 1, bytes, fp);
 	mFilePosition += ret;
 	if(ret < bytes)
 		failbit = true;
+	
+	return ret;
 }
 
 

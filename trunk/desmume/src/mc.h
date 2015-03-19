@@ -49,7 +49,6 @@
 #define MC_SIZE_512MBITS                0x4000000
 
 class EMUFILE;
-class EMUFILE_FILE;
 
 //This "backup device" represents a typical retail NDS save memory accessible via AUXSPI.
 //It is managed as a core emulator service for historical reasons which are bad,
@@ -104,8 +103,8 @@ public:
 		u32 addr_size;
 	} savedInfo;
 
-	void ensure(u32 addr, EMUFILE_FILE *fpOut = NULL);
-	void ensure(u32 addr, u8 val, EMUFILE_FILE *fpOut = NULL);
+	void ensure(u32 addr, EMUFILE *fpOut = NULL);
+	void ensure(u32 addr, u8 val, EMUFILE *fpOut = NULL);
 
 	//and these are used by old savestates
 	void load_old_state(u32 addr_size, u8* data, u32 datasize);
@@ -145,7 +144,7 @@ public:
 	u8 uninitializedValue;
 
 private:
-	EMUFILE_FILE *fpMC;
+	EMUFILE *fpMC;
 	std::string filename;
 	u32	fsize;
 	int readFooter();
