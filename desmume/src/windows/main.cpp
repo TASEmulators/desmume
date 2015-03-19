@@ -3937,6 +3937,23 @@ static BOOL OpenCore(const char* filename)
 		MainWindowToolbar->EnableButton(IDM_RESET, true);
 		MainWindowToolbar->ChangeButtonBitmap(IDM_PAUSE, IDB_PAUSE);
 
+		// Warn the user if the battery save won't be written to an actual file on disk.
+		char batteryPath[MAX_PATH] = {0};
+		memset(batteryPath, 0, MAX_PATH);
+		path.getpathnoext(path.BATTERY, batteryPath);
+		std::string batteryPathString = std::string(batteryPath) + ".dsv";
+		FILE *testFs = fopen(batteryPathString.c_str(), "rb+");
+		if (testFs == NULL)
+		{
+			msgbox->warn("\
+Could not get read/write access to the battery save file! The file will not be saved in this current session.\n\n\
+Choose Config > Path Settings and ensure that the SaveRam directory exists and is available for read/write access.");
+		}
+		else
+		{
+			fclose(testFs);
+		}
+		
 		return TRUE;
 	}
 	else return FALSE;

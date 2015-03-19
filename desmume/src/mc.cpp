@@ -123,7 +123,7 @@ bool BackupDevice::save_state(EMUFILE* os)
 	std::vector<u8> data(fsize);
 	fpMC->fseek(0, SEEK_SET);
 	if(data.size()!=0)
-		fread((char*)&data[0], 1, fsize, fpMC->get_fp());
+		fpMC->fwrite((char *)&data[0], fsize);
 
 	u32 version = 5;
 	//v0
@@ -195,7 +195,7 @@ bool BackupDevice::load_state(EMUFILE* is)
 #ifndef _DONT_SAVE_BACKUP
 	fpMC->fseek(0, SEEK_SET);
 	if(data.size()!=0)
-		fwrite((char*)&data[0], 1, fsize, fpMC->get_fp());
+		fpMC->fwrite((char *)&data[0], fsize);
 	ensure(data.size(), fpMC);
 #endif
 
@@ -249,19 +249,29 @@ BackupDevice::BackupDevice()
 				if (!out->fail())
 				{
 					u8 *data = new u8[sz];
-					fread(data, 1, sz, in->get_fp());
-					fwrite(data, 1, sz, out->get_fp());
+					in->fread(data, sz);
+					out->fwrite(data, sz);
 					delete [] data;
 				}
+				else
+				{
+					printf("BackupDevice: Could not create the backup save file.\n");
+				}
+				
 				delete out;
 			}
 		}
+		else
+		{
+			printf("BackupDevice: Could not read the save file for creating a backup.\n");
+		}
+		
 		delete in;
 	}
 
 	if (!fexists)
 	{
-		printf("DeSmuME .dsv save file not found. Trying to load an old raw .sav file.\n");
+		printf("BackupDevice: DeSmuME .dsv save file not found. Trying to load a .sav file.\n");
 		std::string tmp_fsav = std::string(buf) + ".sav";
 
 		EMUFILE_FILE *fpTmp = new EMUFILE_FILE(tmp_fsav, "rb");
@@ -275,14 +285,19 @@ BackupDevice::BackupDevice()
 				if (!fpOut->fail())
 				{
 					u8 *buf = new u8[sz + 1];
-					if ((buf) && (fread(buf, 1, sz, fpTmp->get_fp()) == sz))
+					if ((buf) && (fpTmp->fread(buf, sz) == sz))
 					{
 						if (no_gba_unpack(buf, sz))
-							printf("Converted from no$gba save.\n");
+						{
+							printf("BackupDevice: Converting no$gba .sav file.\n");
+						}
 						else
+						{
+							printf("BackupDevice: Converting old raw .sav file.\n");
 							sz = trim(buf, sz);
+						}
 
-						if (fwrite(buf, 1, sz, fpOut->get_fp()) == sz)
+						if (fpOut->fwrite(buf, sz) == sz)
 						{
 							u8 res = searchFileSaveType(sz);
 							if (res != 0xFF)
@@ -297,6 +312,10 @@ BackupDevice::BackupDevice()
 								info.type = 0;
 							fexists = true;
 						}
+						else
+						{
+							printf("BackupDevice: Error converting .sav file.\n");
+						}
 					}
 					delete [] buf;
 				}
@@ -307,6 +326,14 @@ BackupDevice::BackupDevice()
 	}
 
 	fpMC = new EMUFILE_FILE(filename, fexists?"rb+":"wb+");
+	const bool fileCanReadWrite = (fpMC->get_fp() != NULL);
+	if (!fileCanReadWrite)
+	{
+		delete fpMC;
+		fpMC = new EMUFILE_MEMORY();
+		printf("BackupDevice: WARNING! Failed to get read/write access to the save file! Will operate in RAM instead.\n");
+	}
+	
 	if (!fpMC->fail())
 	{
 		fsize = fpMC->size();
@@ -372,7 +399,7 @@ BackupDevice::BackupDevice()
 		}
 
 		if (ss > 0)
-			printf("Backup size: %u %cbit\n", ss, _Mbit?'M':'K');
+			printf("BackupDevice: size = %u %cbit\n", ss, _Mbit?'M':'K');
 	}
 
 	state = (fsize > 0)?RUNNING:DETECTING;
@@ -491,7 +518,7 @@ bool  BackupDevice::write(u8 val)
 	//never use save files if we are in movie mode
 	if (isMovieMode) return true;
 
-	return fwrite(&val, 1, 1, fpMC->get_fp())?true:false;
+	return (fpMC->fwrite(&val, 1) == 1);
 }
 
 void BackupDevice::writeByte(u32 addr, u8 val)
@@ -548,7 +575,7 @@ bool BackupDevice::saveBuffer(u8 *data, u32 size, bool _rewind, bool _truncate)
 			fpMC->truncate(0);
 	}
 	fsize = size;
-	fwrite(data, 1, size, fpMC->get_fp());
+	fpMC->fwrite(data, size);
 	ensure(size, fpMC);
 	return true;
 }
@@ -886,16 +913,16 @@ u8 BackupDevice::data_command(u8 val, u8 PROCNUM)
 }
 
 //guarantees that the data buffer has room enough for the specified number of bytes
-void BackupDevice::ensure(u32 addr, EMUFILE_FILE *fpOut)
+void BackupDevice::ensure(u32 addr, EMUFILE *fpOut)
 {
 	ensure(addr, uninitializedValue, fpOut);
 }
 
-void BackupDevice::ensure(u32 addr, u8 val, EMUFILE_FILE *fpOut)
+void BackupDevice::ensure(u32 addr, u8 val, EMUFILE *fpOut)
 {
 	if (!fpOut && (addr < fsize)) return;
 
-	EMUFILE_FILE *fp = fpOut?fpOut:fpMC;
+	EMUFILE *fp = fpOut?fpOut:fpMC;
 
 #ifndef _DONT_SAVE_BACKUP
 	fp->fseek(fsize, SEEK_SET);
@@ -912,7 +939,7 @@ void BackupDevice::ensure(u32 addr, u8 val, EMUFILE_FILE *fpOut)
 	{
 		u8 *tmp = new u8[size];
 		memset(tmp, val, size);
-		fwrite(tmp, 1, size, fp->get_fp());
+		fp->fwrite(tmp, size);
 		delete [] tmp;
 	}
 
@@ -1297,7 +1324,7 @@ bool BackupDevice::export_no_gba(const char* fname)
 	std::vector<u8> data(fsize);
 	u32 pos = fpMC->ftell();
 	fpMC->fseek(0, SEEK_SET);
-	fread((char*)&data[0], 1, fsize, fpMC->get_fp());
+	fpMC->fread((char *)&data[0], fsize);
 	fpMC->fseek(pos, SEEK_SET);
 
 	FILE* outf = fopen(fname,"wb");
@@ -1326,7 +1353,7 @@ bool BackupDevice::export_raw(const char* filename)
 	std::vector<u8> data(fsize);
 	u32 pos = fpMC->ftell();
 	fpMC->fseek(0, SEEK_SET);
-	fread((char*)&data[0], 1, fsize, fpMC->get_fp());
+	fpMC->fread((char *)&data[0], fsize);
 	fpMC->fseek(pos, SEEK_SET);
 
 	FILE* outf = fopen(filename,"wb");
@@ -1525,7 +1552,7 @@ bool BackupDevice::load_movie(EMUFILE* is) {
 	is->fread((char*)&info.mem_size,4);
 
 	is->fseek(0, SEEK_SET);
-	fpMC = (EMUFILE_FILE*)&is;
+	fpMC = (EMUFILE*)&is;
 
 	state = RUNNING;
 	addr_size = info.addr_size;
