@@ -414,6 +414,12 @@ BackupDevice::~BackupDevice()
 
 int BackupDevice::readFooter()
 {
+	// Check if the footer data exists.
+	if (fpMC->size() < (strlen(kDesmumeSaveCookie) + strlen(DESMUME_BACKUP_FOOTER_TXT) + 24))
+	{
+		return -1;
+	}
+	
 	//scan for desmume save footer
 	const s32 cookieLen = (s32)strlen(kDesmumeSaveCookie);
 	char *sigbuf = new char[cookieLen];
