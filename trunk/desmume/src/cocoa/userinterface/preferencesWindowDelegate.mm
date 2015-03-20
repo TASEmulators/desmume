@@ -58,7 +58,6 @@
 		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
 		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)0,
 		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)0,
-		NSOpenGLPFADoubleBuffer,
 		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
 		(NSOpenGLPixelFormatAttribute)0 };
 	
@@ -67,14 +66,23 @@
 	// pixel format attributes.
 	if (IsOSXVersionSupported(10, 7, 0))
 	{
-		attributes[9] = kCGLPFAOpenGLProfile;
-		attributes[10] = (CGLPixelFormatAttribute)kCGLOGLPVersion_3_2_Core;
-		
+		attributes[8] = NSOpenGLPFAOpenGLProfile;
+		attributes[9] = NSOpenGLProfileVersion3_2Core;
 		OGLInfoCreate_Func = &OGLInfoCreate_3_2;
 	}
 #endif
 	
 	NSOpenGLPixelFormat *format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+	if (format == nil)
+	{
+		// If we can't get a 3.2 Core Profile context, then switch to using a
+		// legacy context instead.
+		attributes[8] = (NSOpenGLPixelFormatAttribute)0;
+		attributes[9] = (NSOpenGLPixelFormatAttribute)0;
+		OGLInfoCreate_Func = &OGLInfoCreate_Legacy;
+		format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+	}
+	
 	context = [[NSOpenGLContext alloc] initWithFormat:format shareContext:nil];
 	[format release];
 	cglDisplayContext = (CGLContextObj)[context CGLContextObj];
@@ -230,7 +238,7 @@
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
 	oglImage->RenderOGL();
-	CGLFlushDrawable(cglDisplayContext);
+	glFlush();
 	CGLSetCurrentContext(prevContext);
 }
 

@@ -65,7 +65,6 @@ protected:
 	
 	bool _isVBOSupported;
 	bool _isPBOSupported;
-	bool _isShaderSupported;
 	bool _isFBOSupported;
 	
 public:

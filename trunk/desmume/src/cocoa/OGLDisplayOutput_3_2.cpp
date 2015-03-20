@@ -46,7 +46,6 @@ void glGenVertexArrays_3_2(GLsizei n, GLuint *vaoIDs)
 OGLInfo_3_2::OGLInfo_3_2()
 {
 	_useShader150 = true;
-	_isShaderSupported = true;
 	_isVBOSupported = true;
 	_isPBOSupported = true;
 	_isFBOSupported = true;

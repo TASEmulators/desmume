@@ -1316,8 +1316,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
 		(NSOpenGLPixelFormatAttribute)0 };
 	
-	NSOpenGLPixelFormat *format = nil;
-	
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	// If we can support a 3.2 Core Profile context, then request that in our
 	// pixel format attributes.
@@ -1326,20 +1324,14 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		attributes[9] = NSOpenGLPFAOpenGLProfile;
 		attributes[10] = NSOpenGLProfileVersion3_2Core;
 		OGLInfoCreate_Func = &OGLInfoCreate_3_2;
-		format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
-		
-		if (format == nil)
-		{
-			attributes[9] = NSOpenGLPFAOpenGLProfile;
-			attributes[10] = NSOpenGLProfileVersionLegacy;
-			OGLInfoCreate_Func = &OGLInfoCreate_Legacy;
-			format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
-		}
 	}
 #endif
 	
+	NSOpenGLPixelFormat *format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 	if (format == nil)
 	{
+		// If we can't get a 3.2 Core Profile context, then switch to using a
+		// legacy context instead.
 		attributes[9] = (NSOpenGLPixelFormatAttribute)0;
 		attributes[10] = (NSOpenGLPixelFormatAttribute)0;
 		OGLInfoCreate_Func = &OGLInfoCreate_Legacy;

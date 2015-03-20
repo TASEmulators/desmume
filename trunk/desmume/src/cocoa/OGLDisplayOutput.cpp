@@ -3820,7 +3820,6 @@ OGLInfo::OGLInfo()
 	_shaderSupport = ShaderSupport_Unsupported;
 	_useShader150 = false;
 	
-	_isShaderSupported = false;
 	_isVBOSupported = false;
 	_isPBOSupported = false;
 	_isFBOSupported = false;
@@ -3848,7 +3847,7 @@ bool OGLInfo::IsPBOSupported()
 
 bool OGLInfo::IsShaderSupported()
 {
-	return this->_isShaderSupported;
+	return (this->_shaderSupport != ShaderSupport_Unsupported);
 }
 
 bool OGLInfo::IsFBOSupported()
@@ -3867,19 +3866,11 @@ OGLInfo_Legacy::OGLInfo_Legacy()
 	
 	_isVBOSupported = this->IsExtensionPresent(oglExtensionSet, "GL_ARB_vertex_buffer_object");
 	
-#if	!defined(GL_ARB_shader_objects)		|| \
-	!defined(GL_ARB_vertex_shader)		|| \
-	!defined(GL_ARB_fragment_shader)	|| \
-	!defined(GL_ARB_vertex_program)
-	
-	_isShaderSupported	= false;
-#else
-	_isShaderSupported	= this->IsExtensionPresent(oglExtensionSet, "GL_ARB_shader_objects") &&
-						  this->IsExtensionPresent(oglExtensionSet, "GL_ARB_vertex_shader") &&
-						  this->IsExtensionPresent(oglExtensionSet, "GL_ARB_fragment_shader") &&
-						  this->IsExtensionPresent(oglExtensionSet, "GL_ARB_vertex_program");
-	
-	if (_isShaderSupported)
+	bool isShaderSupported	= this->IsExtensionPresent(oglExtensionSet, "GL_ARB_shader_objects") &&
+							  this->IsExtensionPresent(oglExtensionSet, "GL_ARB_vertex_shader") &&
+							  this->IsExtensionPresent(oglExtensionSet, "GL_ARB_fragment_shader") &&
+							  this->IsExtensionPresent(oglExtensionSet, "GL_ARB_vertex_program");
+	if (isShaderSupported)
 	{
 		if ( _versionMajor < 3 ||
 			(_versionMajor == 3 && _versionMinor < 2) )
@@ -3947,22 +3938,12 @@ OGLInfo_Legacy::OGLInfo_Legacy()
 			}
 		}
 	}
-#endif
 	
-#if	!defined(GL_ARB_pixel_buffer_object) && !defined(GL_EXT_pixel_buffer_object)
-	_isPBOSupported = false;
-#else
 	_isPBOSupported	= this->IsExtensionPresent(oglExtensionSet, "GL_ARB_vertex_buffer_object") &&
 					 (this->IsExtensionPresent(oglExtensionSet, "GL_ARB_pixel_buffer_object") ||
 					  this->IsExtensionPresent(oglExtensionSet, "GL_EXT_pixel_buffer_object"));
-#endif
 	
-	// Don't use ARB versions since we're using the EXT versions for backwards compatibility.
-#if	!defined(GL_EXT_framebuffer_object)
-	_isFBOSupported = false;
-#else
 	_isFBOSupported	= this->IsExtensionPresent(oglExtensionSet, "GL_EXT_framebuffer_object");
-#endif
 }
 
 void OGLInfo_Legacy::GetExtensionSetOGL(std::set<std::string> *oglExtensionSet)
@@ -4715,6 +4696,7 @@ OGLImage::OGLImage(OGLInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GL
 	_pixelScaler = VideoFilterTypeID_None;
 	_useShader150 = oglInfo->IsUsingShader150();
 	_shaderSupport = oglInfo->GetShaderSupport();
+	
 	_canUseShaderOutput = oglInfo->IsShaderSupported();
 	if (_canUseShaderOutput)
 	{
@@ -4734,7 +4716,7 @@ OGLImage::OGLImage(OGLInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GL
 		_finalOutputProgram = NULL;
 	}
 	
-	_canUseShaderBasedFilters = (_canUseShaderOutput && oglInfo->IsFBOSupported());
+	_canUseShaderBasedFilters = (oglInfo->IsShaderSupported() && oglInfo->IsFBOSupported());
 	if (_canUseShaderBasedFilters)
 	{
 		_filterDeposterize = new OGLFilterDeposterize(_vf->GetSrcWidth(), _vf->GetSrcHeight(), _shaderSupport, _useShader150);
