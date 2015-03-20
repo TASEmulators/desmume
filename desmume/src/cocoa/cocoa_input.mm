@@ -42,7 +42,7 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 @dynamic hardwareMicEnabled;
 @dynamic hardwareMicLocked;
 @dynamic hardwareMicGain;
-@dynamic hardwareMicMute;
+@synthesize hardwareMicMute;
 @dynamic hardwareMicPause;
 @dynamic softwareMicState;
 @dynamic softwareMicMode;
@@ -76,14 +76,14 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 	delegate = nil;
 	spinlockControllerState = OS_SPINLOCK_INIT;	
 	autohold = NO;
-	isAutoholdCleared = YES;
-	micLevel = 0.0f;
+	_isAutoholdCleared = YES;
 	_useHardwareMic = NO;
 	_availableMicSamples = 0;
 	
 	_hwMicLevelList = new std::vector<uint8_t>;
 	_hwMicLevelList->reserve(1024);
 	_hwMicLevelList->clear();
+	micLevel = 0.0f;
 	
 	micMode = MICMODE_NONE;
 	selectedAudioFileGenerator = NULL;
@@ -161,20 +161,9 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 	return CAInputDevice->GetGain();
 }
 
-- (void) setHardwareMicMute:(BOOL)isMicMuted
-{
-	bool muteState = (isMicMuted) ? true : false;
-	CAInputDevice->SetMuteState(muteState);
-}
-
-- (BOOL) hardwareMicMute
-{
-	return (CAInputDevice->GetMuteState()) ? YES : NO;
-}
-
 - (void) setHardwareMicPause:(BOOL)isMicPaused
 {
-	bool pauseState = (isMicPaused) ? true : false;
+	bool pauseState = (isMicPaused || [self hardwareMicMute]) ? true : false;
 	CAInputDevice->SetPauseState(pauseState);
 }
 
@@ -219,10 +208,10 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 	
 	autohold = theState;
 	
-	if (autohold && isAutoholdCleared)
+	if (autohold && _isAutoholdCleared)
 	{
 		memset(ndsInput, 0, sizeof(ndsInput));
-		isAutoholdCleared = NO;
+		_isAutoholdCleared = NO;
 	}
 	
 	if (!autohold)
@@ -295,10 +284,10 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 	[self setAutohold:NO];
 	OSSpinLockLock(&spinlockControllerState);
 	
-	if (!isAutoholdCleared)
+	if (!_isAutoholdCleared)
 	{
 		memset(ndsInput, 0, sizeof(ndsInput));
-		isAutoholdCleared = YES;
+		_isAutoholdCleared = YES;
 	}
 	
 	OSSpinLockUnlock(&spinlockControllerState);
@@ -510,7 +499,22 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 	NDS_setMic(false);
 }
 
-- (void) resetMicLevel
+- (void) reset
+{
+	for (size_t i = 0; i < DSControllerState_StatesCount; i++)
+	{
+		memset(ndsInput, 0, sizeof(ndsInput));
+	}
+	
+	[self setAutohold:NO];
+	[self setMicLevel:0.0f];
+	
+	_isAutoholdCleared = YES;
+	_availableMicSamples = 0;
+	_hwMicLevelList->clear();
+}
+
+- (void) clearMicLevelMeasure
 {
 	_hwMicLevelList->clear();
 }
@@ -576,7 +580,6 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 - (void) handleMicHardwareStateChanged:(CoreAudioInputDeviceInfo *)deviceInfo
 							 isEnabled:(BOOL)isHardwareEnabled
 							  isLocked:(BOOL)isHardwareLocked
-							   isMuted:(BOOL)isHardwareMuted
 {
 	if (deviceInfo->objectID == kAudioObjectUnknown)
 	{
@@ -596,14 +599,14 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 		[self setHardwareMicSampleRateString:[NSString stringWithFormat:@"%1.1f Hz", (double)deviceInfo->sampleRate]];
 	}
 	
-	[self resetMicLevel];
+	[self clearMicLevelMeasure];
+	[self setMicLevel:0.0f];
 	
-	if (delegate != nil && [delegate respondsToSelector:@selector(doMicHardwareStateChangedFromController:isEnabled:isLocked:isMuted:)])
+	if (delegate != nil && [delegate respondsToSelector:@selector(doMicHardwareStateChangedFromController:isEnabled:isLocked:)])
 	{
 		[[self delegate] doMicHardwareStateChangedFromController:self
 													   isEnabled:isHardwareEnabled
-														isLocked:isHardwareLocked
-														 isMuted:isHardwareMuted];
+														isLocked:isHardwareLocked];
 	}
 }
 
@@ -632,15 +635,13 @@ uint8_t CASampleReadCallback(void *inParam1, void *inParam2)
 void CAHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,
 									const bool isHardwareEnabled,
 									const bool isHardwareLocked,
-									const bool isHardwareMuted,
 									void *inParam1,
 									void *inParam2)
 {
 	CocoaDSController *cdsController = (CocoaDSController *)inParam1;
 	[cdsController handleMicHardwareStateChanged:(CoreAudioInputDeviceInfo *)deviceInfo
 									   isEnabled:((isHardwareEnabled) ? YES : NO)
-										isLocked:((isHardwareLocked) ? YES : NO)
-										 isMuted:((isHardwareMuted) ? YES : NO)];
+										isLocked:((isHardwareLocked) ? YES : NO)];
 }
 
 void CAHardwareGainChangedCallback(float normalizedGain, void *inParam1, void *inParam2)

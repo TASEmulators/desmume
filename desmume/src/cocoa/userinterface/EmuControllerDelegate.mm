@@ -845,6 +845,15 @@
 	[[cdsCore cdsController] setHardwareMicGain:([self currentMicGainValue]/100.0f)];
 }
 
+- (IBAction) changeHardwareMicMute:(id)sender
+{
+	const BOOL muteState = [CocoaDSUtil getIBActionSenderButtonStateBool:sender];
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[[cdsCore cdsController] setHardwareMicMute:muteState];
+	[[cdsCore cdsController] setHardwareMicPause:([cdsCore coreState] != CORESTATE_EXECUTE)];
+	[self updateMicStatusIcon];
+}
+
 - (IBAction) changeVolume:(id)sender
 {
 	const float vol = [self currentVolumeValue];
@@ -1050,7 +1059,6 @@
 	const NSInteger micMode = cmdAttr.intValue[1];
 	[cdsController setSoftwareMicState:theState];
 	[cdsController setSoftwareMicMode:micMode];
-	//[self updateMicStatusIcon];
 	
 	const float sineWaveFrequency = cmdAttr.floatValue[0];
 	[cdsController setSineWaveGeneratorFrequency:sineWaveFrequency];
@@ -1876,7 +1884,7 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore setSlot1StatusText:NSSTRING_STATUS_EMULATION_NOT_RUNNING];
-	[[cdsCore cdsController] resetMicLevel];
+	[[cdsCore cdsController] reset];
 	[[cdsCore cdsController] updateMicLevel];
 	
 	result = YES;
@@ -1926,9 +1934,9 @@
 
 - (void) updateMicStatusIcon
 {
-	NSImage *micIcon = iconMicDisabled;
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	CocoaDSController *cdsController = [cdsCore cdsController];
+	NSImage *micIcon = iconMicDisabled;
 	
 	if ([self isSoftwareMicActive])
 	{
@@ -1953,7 +1961,10 @@
 		}
 	}
 	
-	[self performSelectorOnMainThread:@selector(setCurrentMicStatusIcon:) withObject:micIcon waitUntilDone:NO];
+	if (micIcon != [self currentMicStatusIcon])
+	{
+		[self performSelectorOnMainThread:@selector(setCurrentMicStatusIcon:) withObject:micIcon waitUntilDone:NO];
+	}
 }
 
 - (AudioSampleBlockGenerator *) selectedAudioFileGenerator
@@ -2464,51 +2475,15 @@
 
 - (void) doMicLevelUpdateFromController:(CocoaDSController *)cdsController
 {
-	BOOL needsUpdate = NO;
-	const BOOL controllerSoftwareMicState = [cdsController softwareMicState];
-	const BOOL isEmuSoftwareMicActive = [self isSoftwareMicActive];
-	
-	// Check if the software mic state transitioned.
-	if (( controllerSoftwareMicState && !isEmuSoftwareMicActive) ||
-		(!controllerSoftwareMicState &&  isEmuSoftwareMicActive))
-	{
-		[self setIsSoftwareMicActive:controllerSoftwareMicState];
-		needsUpdate = YES;
-	}
-	
-	// If we're reading the hardware mic, then check the sample value and make
-	// sure to check the mic's level state.
-	if (!controllerSoftwareMicState)
-	{
-		const BOOL isIdleHardware = [cdsController isHardwareMicIdle];
-		const BOOL isIdleEmuControl = [self isHardwareMicIdle];
-		if (( isIdleHardware && !isIdleEmuControl) ||
-			(!isIdleHardware &&  isIdleEmuControl))
-		{
-			[self setIsHardwareMicIdle:isIdleHardware];
-			needsUpdate = YES;
-		}
-		
-		const BOOL isClipHardware = [cdsController isHardwareMicInClip];
-		const BOOL isClipEmuControl = [self isHardwareMicInClip];
-		if (( isClipHardware && !isClipEmuControl) ||
-			(!isClipHardware &&  isClipEmuControl))
-		{
-			[self setIsHardwareMicInClip:isClipHardware];
-			needsUpdate = YES;
-		}
-	}
-	
-	if (needsUpdate)
-	{
-		[self updateMicStatusIcon];
-	}
+	[self setIsSoftwareMicActive:[cdsController softwareMicState]];
+	[self setIsHardwareMicIdle:[cdsController isHardwareMicIdle]];
+	[self setIsHardwareMicInClip:[cdsController isHardwareMicInClip]];
+	[self updateMicStatusIcon];
 }
 
 - (void) doMicHardwareStateChangedFromController:(CocoaDSController *)cdsController
 									   isEnabled:(BOOL)isHardwareEnabled
 										isLocked:(BOOL)isHardwareLocked
-										 isMuted:(BOOL)isHardwareMuted
 {
 	const BOOL hwMicAvailable = (isHardwareEnabled && !isHardwareLocked);
 	[self setIsHardwareMicAvailable:hwMicAvailable];
