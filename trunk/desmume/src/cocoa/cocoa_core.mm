@@ -904,8 +904,6 @@ volatile bool execute = true;
 	[self setCoreState:CORESTATE_PAUSE];
 	[self applyDynaRec];
 	[self applySlot1Device];
-	[[self cdsController] resetMicLevel];
-	[[self cdsController] updateMicLevel];
 	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	NDS_Reset();
@@ -913,7 +911,9 @@ volatile bool execute = true;
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	
 	[self restoreCoreState];
-	self.masterExecute = YES;
+	[self setMasterExecute:YES];
+	[[self cdsController] reset];
+	[[self cdsController] updateMicLevel];
 }
 
 - (NSUInteger) frameNumber
@@ -1134,7 +1134,7 @@ static void* RunCoreThread(void *arg)
 		// Make sure that the mic level is updated at least once per frame, regardless
 		// of whether the NDS actually reads the mic or not.
 		[cdsController updateMicLevel];
-		[cdsController resetMicLevel];
+		[cdsController clearMicLevelMeasure];
 		
 		pthread_mutex_lock(&param->mutexOutputList);
 		

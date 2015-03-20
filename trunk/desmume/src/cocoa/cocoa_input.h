@@ -82,8 +82,7 @@ typedef struct
 - (void) doMicLevelUpdateFromController:(CocoaDSController *)cdsController;
 - (void) doMicHardwareStateChangedFromController:(CocoaDSController *)cdsController
 									   isEnabled:(BOOL)isHardwareEnabled
-										isLocked:(BOOL)isHardwareLocked
-										 isMuted:(BOOL)isHardwareMuted;
+										isLocked:(BOOL)isHardwareLocked;
 
 - (void) doMicHardwareGainChangedFromController:(CocoaDSController *)cdsController gain:(float)gainValue;
 
@@ -94,7 +93,7 @@ typedef struct
 	id <CocoaDSControllerDelegate> delegate;
 	float micLevel;
 	BOOL autohold;
-	BOOL isAutoholdCleared;
+	BOOL _isAutoholdCleared;
 	BOOL _useHardwareMic;
 	size_t _availableMicSamples;
 	std::vector<uint8_t> *_hwMicLevelList;
@@ -145,14 +144,14 @@ typedef struct
 - (void) clearAutohold;
 - (void) flush;
 - (void) flushEmpty;
+- (void) reset;
 
-- (void) resetMicLevel;
+- (void) clearMicLevelMeasure;
 - (void) updateMicLevel;
 - (uint8_t) handleMicSampleRead:(CoreAudioInput *)caInput softwareMic:(AudioGenerator *)sampleGenerator;
 - (void) handleMicHardwareStateChanged:(CoreAudioInputDeviceInfo *)deviceInfo
 							 isEnabled:(BOOL)isHardwareEnabled
-							  isLocked:(BOOL)isHardwareLocked
-							   isMuted:(BOOL)isHardwareMuted;
+							  isLocked:(BOOL)isHardwareLocked;
 - (void) handleMicHardwareGainChanged:(float)gainValue;
 
 @end
@@ -167,7 +166,6 @@ uint8_t CASampleReadCallback(void *inParam1, void *inParam2);
 void CAHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,
 									const bool isHardwareEnabled,
 									const bool isHardwareLocked,
-									const bool isHardwareMuted,
 									void *inParam1,
 									void *inParam2);
 void CAHardwareGainChangedCallback(float normalizedGain, void *inParam1, void *inParam2);

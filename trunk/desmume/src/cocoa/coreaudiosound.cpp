@@ -40,7 +40,6 @@ CoreAudioInput::CoreAudioInput()
 	_inputGainNormalized = 0.0f;
 	_inputElement = 0;
 	
-	_isMuted = false;
 	_hwDeviceInfo.objectID = kAudioObjectUnknown;
 	_hwDeviceInfo.name = CFSTR("Unknown Device");
 	_hwDeviceInfo.manufacturer = CFSTR("Unknown Manufacturer");
@@ -530,7 +529,6 @@ void CoreAudioInput::Start()
 	this->_hwStateChangedCallbackFunc(&this->_hwDeviceInfo,
 									  this->IsHardwareEnabled(),
 									  this->IsHardwareLocked(),
-									  this->_isMuted,
 									  this->_hwStateChangedCallbackParam1,
 									  this->_hwStateChangedCallbackParam2);
 }
@@ -575,23 +573,6 @@ bool CoreAudioInput::IsHardwareLocked() const
 	return this->_isHardwareLocked;
 }
 
-bool CoreAudioInput::GetMuteState() const
-{
-	return this->_isMuted;
-}
-
-void CoreAudioInput::SetMuteState(bool muteState)
-{
-	this->_isMuted = muteState;
-	this->SetPauseState(muteState);
-	this->_hwStateChangedCallbackFunc(&this->_hwDeviceInfo,
-									  this->IsHardwareEnabled(),
-									  this->IsHardwareLocked(),
-									  this->_isMuted,
-									  this->_hwStateChangedCallbackParam1,
-									  this->_hwStateChangedCallbackParam2);
-}
-
 bool CoreAudioInput::GetPauseState() const
 {
 	return this->_isPaused;
@@ -606,7 +587,7 @@ void CoreAudioInput::SetPauseState(bool pauseState)
 		OSSpinLockUnlock(this->_spinlockAUHAL);
 		AUGraphStop(this->_auGraph);
 	}
-	else if (!pauseState && this->GetPauseState() && !this->IsHardwareLocked() && !this->GetMuteState())
+	else if (!pauseState && this->GetPauseState() && !this->IsHardwareLocked())
 	{
 		OSSpinLockLock(this->_spinlockAUHAL);
 		AudioOutputUnitStart(this->_auHALInputDevice);
@@ -614,7 +595,7 @@ void CoreAudioInput::SetPauseState(bool pauseState)
 		AUGraphStart(this->_auGraph);
 	}
 	
-	this->_isPaused = (this->IsHardwareLocked() || this->GetMuteState()) ? true : pauseState;
+	this->_isPaused = (this->IsHardwareLocked()) ? true : pauseState;
 }
 
 float CoreAudioInput::GetGain() const
@@ -711,7 +692,6 @@ void CoreAudioInput::UpdateHardwareLock()
 	this->_hwStateChangedCallbackFunc(&this->_hwDeviceInfo,
 									  this->IsHardwareEnabled(),
 									  this->IsHardwareLocked(),
-									  this->_isMuted,
 									  this->_hwStateChangedCallbackParam1,
 									  this->_hwStateChangedCallbackParam2);
 }
@@ -856,7 +836,6 @@ void CoreAudioInputAUHALChanged(void *inRefCon,
 void CoreAudioInputDefaultHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,
 													   const bool isHardwareEnabled,
 													   const bool isHardwareLocked,
-													   const bool isHardwareMuted,
 													   void *inParam1,
 													   void *inParam2)
 {

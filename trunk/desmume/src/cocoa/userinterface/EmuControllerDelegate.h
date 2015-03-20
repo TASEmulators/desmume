@@ -215,6 +215,7 @@ class AudioSampleBlockGenerator;
 - (IBAction) changeCoreEmuFlags:(id)sender;
 - (IBAction) changeFirmwareSettings:(id)sender;
 - (IBAction) changeHardwareMicGain:(id)sender;
+- (IBAction) changeHardwareMicMute:(id)sender;
 - (IBAction) changeVolume:(id)sender;
 - (IBAction) changeAudioEngine:(id)sender;
 - (IBAction) changeSpuAdvancedLogic:(id)sender;

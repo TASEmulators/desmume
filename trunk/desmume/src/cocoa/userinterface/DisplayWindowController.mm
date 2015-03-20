@@ -719,6 +719,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[emuControl changeHardwareMicGain:sender];
 }
 
+- (IBAction) changeHardwareMicMute:(id)sender
+{
+	[emuControl changeHardwareMicMute:sender];
+}
+
 - (IBAction) changeVolume:(id)sender
 {
 	[emuControl changeVolume:sender];
