@@ -151,7 +151,7 @@ public:
 	void SetSrcSizeOGL(GLsizei w, GLsizei h);
 	GLfloat GetScale();
 	void SetScaleOGL(GLfloat scale);
-	virtual GLuint RunFilterOGL(GLuint srcTexID, GLsizei viewportWidth, GLsizei viewportHeight);
+	virtual GLuint RunFilterOGL(GLuint srcTexID);
 	void DownloadDstBufferOGL(uint32_t *dstBuffer, size_t lineOffset, size_t readLineCount);
 };
 
@@ -164,7 +164,7 @@ public:
 	OGLFilterDeposterize(GLsizei srcWidth, GLsizei srcHeight, ShaderSupportTier theTier, bool useShader150);
 	~OGLFilterDeposterize();
 	
-	virtual GLuint RunFilterOGL(GLuint srcTexID, GLsizei viewportWidth, GLsizei viewportHeight);
+	virtual GLuint RunFilterOGL(GLuint srcTexID);
 };
 
 class OGLVideoLayer
@@ -362,8 +362,6 @@ public:
 	void SetGapScalar(GLfloat theScalar);
 	GLfloat GetRotation();
 	void SetRotation(GLfloat theRotation);
-	bool GetBilinear();
-	void SetBilinear(bool useBilinear);
 	bool GetSourceDeposterize();
 	void SetSourceDeposterize(bool useDeposterize);
 	

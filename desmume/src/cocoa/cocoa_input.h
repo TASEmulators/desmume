@@ -93,6 +93,7 @@ typedef struct
 	id <CocoaDSControllerDelegate> delegate;
 	float micLevel;
 	BOOL autohold;
+	BOOL hardwareMicMute;
 	BOOL _isAutoholdCleared;
 	BOOL _useHardwareMic;
 	size_t _availableMicSamples;
