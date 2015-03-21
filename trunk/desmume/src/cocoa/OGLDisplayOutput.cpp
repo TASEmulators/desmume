@@ -4520,7 +4520,7 @@ void OGLFilter::SetScaleOGL(GLfloat scale)
 	free(tempDstBuffer);
 }
 
-GLuint OGLFilter::RunFilterOGL(GLuint srcTexID, GLsizei viewportWidth, GLsizei viewportHeight)
+GLuint OGLFilter::RunFilterOGL(GLuint srcTexID)
 {
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, this->_fboID);
 	glBindVertexArrayDESMUME(this->_vaoID);
@@ -4534,7 +4534,6 @@ GLuint OGLFilter::RunFilterOGL(GLuint srcTexID, GLsizei viewportWidth, GLsizei v
 	glBindVertexArrayDESMUME(0);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-	glViewport(0, 0, viewportWidth, viewportHeight);
 	
 	return this->GetDstTexID();
 }
@@ -4576,7 +4575,7 @@ OGLFilterDeposterize::~OGLFilterDeposterize()
 	glDeleteTextures(1, &this->_texIntermediateID);
 }
 
-GLuint OGLFilterDeposterize::RunFilterOGL(GLuint srcTexID, GLsizei viewportWidth, GLsizei viewportHeight)
+GLuint OGLFilterDeposterize::RunFilterOGL(GLuint srcTexID)
 {
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, this->_fboID);
 	glBindVertexArrayDESMUME(this->_vaoID);
@@ -4595,7 +4594,6 @@ GLuint OGLFilterDeposterize::RunFilterOGL(GLuint srcTexID, GLsizei viewportWidth
 	glBindVertexArrayDESMUME(0);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-	glViewport(0, 0, viewportWidth, viewportHeight);
 	
 	return this->GetDstTexID();
 }
@@ -4906,6 +4904,8 @@ void OGLImage::UploadTransformationOGL()
 		glRotatef(0.0f, 0.0f, 0.0f, 1.0f);
 		glScalef(s, s, 1.0f);
 	}
+	
+	glViewport(0, 0, this->_viewportWidth, this->_viewportHeight);
 }
 
 int OGLImage::GetOutputFilter()
@@ -5283,7 +5283,7 @@ void OGLImage::ProcessOGL()
 	// Source
 	if (this->_useDeposterize)
 	{
-		this->_texVideoSourceID = this->_filterDeposterize->RunFilterOGL(this->_texVideoInputDataID, this->_viewportWidth, this->_viewportHeight);
+		this->_texVideoSourceID = this->_filterDeposterize->RunFilterOGL(this->_texVideoInputDataID);
 		
 		if (isUsingCPUPixelScaler) // Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
 		{
@@ -5304,7 +5304,7 @@ void OGLImage::ProcessOGL()
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			
-			this->_texVideoPixelScalerID = this->_shaderFilter->RunFilterOGL(this->_texVideoSourceID, this->_viewportWidth, this->_viewportHeight);
+			this->_texVideoPixelScalerID = this->_shaderFilter->RunFilterOGL(this->_texVideoSourceID);
 			
 			this->UpdateTexCoords(this->_shaderFilter->GetDstWidth(), this->_shaderFilter->GetDstHeight());
 		}
@@ -5659,16 +5659,6 @@ void OGLDisplayLayer::SetRotation(GLfloat theRotation)
 	this->_rotation = theRotation;
 }
 
-bool OGLDisplayLayer::GetBilinear()
-{
-	return (this->_displayTexFilter == GL_LINEAR);
-}
-
-void OGLDisplayLayer::SetBilinear(bool useBilinear)
-{
-	this->_displayTexFilter = (useBilinear) ? GL_LINEAR : GL_NEAREST;
-}
-
 bool OGLDisplayLayer::GetSourceDeposterize()
 {
 	return this->_useDeposterize;
@@ -5835,6 +5825,8 @@ void OGLDisplayLayer::UploadTransformationOGL()
 		glRotatef(CLOCKWISE_DEGREES(this->_rotation), 0.0f, 0.0f, 1.0f);
 		glScalef(s, s, 1.0f);
 	}
+	
+	glViewport(0, 0, this->_viewportWidth, this->_viewportHeight);
 }
 
 int OGLDisplayLayer::GetOutputFilter()
@@ -6237,7 +6229,7 @@ void OGLDisplayLayer::ProcessOGL()
 	// Source
 	if (this->_useDeposterize)
 	{
-		this->_texVideoSourceID = this->_filterDeposterize->RunFilterOGL(this->_texVideoInputDataID, this->_viewportWidth, this->_viewportHeight);
+		this->_texVideoSourceID = this->_filterDeposterize->RunFilterOGL(this->_texVideoInputDataID);
 		
 		if (isUsingCPUPixelScaler) // Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
 		{
@@ -6260,7 +6252,7 @@ void OGLDisplayLayer::ProcessOGL()
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			
-			this->_texVideoPixelScalerID = this->_shaderFilter->RunFilterOGL(this->_texVideoSourceID, this->_viewportWidth, this->_viewportHeight);
+			this->_texVideoPixelScalerID = this->_shaderFilter->RunFilterOGL(this->_texVideoSourceID);
 			
 			this->UpdateTexCoords(this->_shaderFilter->GetDstWidth(), this->_shaderFilter->GetDstHeight());
 		}
