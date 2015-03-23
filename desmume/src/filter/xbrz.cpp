@@ -24,6 +24,11 @@
 #include <complex>
 #include <algorithm>
 
+#define COLOR_MASK_A	0xFF000000
+#define COLOR_MASK_R	0x00FF0000
+#define COLOR_MASK_G	0x0000FF00
+#define COLOR_MASK_B	0x000000FF
+
 namespace
 {
 template <uint32_t N> inline
@@ -48,15 +53,10 @@ void alphaBlend(uint32_t& dst, uint32_t col) //blend color over destination with
 {
     //static_assert(0 < M && M < N && N <= 256, "possible overflow of (col & byte1Mask) * M + (dst & byte1Mask) * (N - M)");
 
-    const uint32_t byte1Mask = 0x000000ff;
-    const uint32_t byte2Mask = 0x0000ff00;
-    const uint32_t byte3Mask = 0x00ff0000;
-    const uint32_t byte4Mask = 0xff000000;
-
-    dst = (byte1Mask & (((col & byte1Mask) * M + (dst & byte1Mask) * (N - M)) / N)) | //
-          (byte2Mask & (((col & byte2Mask) * M + (dst & byte2Mask) * (N - M)) / N)) | //this works because next higher 8 bits are free
-          (byte3Mask & (((col & byte3Mask) * M + (dst & byte3Mask) * (N - M)) / N)) | //
-          (byte4Mask & (((((col & byte4Mask) >> 8) * M + ((dst & byte4Mask) >> 8) * (N - M)) / N) << 8)); //next 8 bits are not free, so shift
+    dst = (COLOR_MASK_B & (((col & COLOR_MASK_B) * M + (dst & COLOR_MASK_B) * (N - M)) / N)) | //
+          (COLOR_MASK_G & (((col & COLOR_MASK_G) * M + (dst & COLOR_MASK_G) * (N - M)) / N)) | //this works because next higher 8 bits are free
+          (COLOR_MASK_R & (((col & COLOR_MASK_R) * M + (dst & COLOR_MASK_R) * (N - M)) / N)) | //
+          (COLOR_MASK_A & (((((col & COLOR_MASK_A) >> 8) * M + ((dst & COLOR_MASK_A) >> 8) * (N - M)) / N) << 8)); //next 8 bits are not free, so shift
     //the last row operating on a potential alpha channel costs only ~1% perf => negligible!
 }
 
@@ -396,17 +396,17 @@ double distYCbCr(uint32_t pix1, uint32_t pix2, double lumaWeight)
     //const double k_r = 0.2126; //
     const double k_b = 0.0593; //ITU-R BT.2020 conversion
     const double k_r = 0.2627; //
-    const double k_g = 1 - k_b - k_r;
+    const double k_g = 1.0 - k_b - k_r;
 
-    const double scale_b = 0.5 / (1 - k_b);
-    const double scale_r = 0.5 / (1 - k_r);
+    const double scale_b = 0.5 / (1.0 - k_b);
+    const double scale_r = 0.5 / (1.0 - k_r);
 
     const double y   = k_r * r_diff + k_g * g_diff + k_b * b_diff; //[!], analog YCbCr!
     const double c_b = scale_b * (b_diff - y);
     const double c_r = scale_r * (r_diff - y);
 
     //we skip division by 255 to have similar range like other distance functions
-    return std::sqrt(square(lumaWeight * y) + square(c_b) +  square(c_r));
+    return std::sqrt(square(lumaWeight * y) + square(c_b) + square(c_r));
 }
 
 
@@ -487,13 +487,6 @@ struct Kernel_4x4 //kernel for preprocessing step
     /**/m, n, o, p;
 };
 
-template <class ColorDistance>
-FORCE_INLINE
-double ppCornerDist(uint32_t col1, uint32_t col2, const double lumWeight)
-{
-	return ColorDistance::dist(col1, col2, lumWeight);
-}
-
 /*
 input kernel area naming convention:
 -----------------
@@ -521,8 +514,8 @@ BlendResult preProcessCorners(const Kernel_4x4& ker, const xbrz::ScalerCfg& cfg)
     //auto dist = [&](uint32_t pix1, uint32_t pix2) { return ColorDistance::dist(pix1, pix2, cfg.luminanceWeight_); };
 
     const int weight = 4;
-    double jg = ppCornerDist<ColorDistance>(ker.i, ker.f, cfg.luminanceWeight_) + ppCornerDist<ColorDistance>(ker.f, ker.c, cfg.luminanceWeight_) + ppCornerDist<ColorDistance>(ker.n, ker.k, cfg.luminanceWeight_) + ppCornerDist<ColorDistance>(ker.k, ker.h, cfg.luminanceWeight_) + weight * ppCornerDist<ColorDistance>(ker.j, ker.g, cfg.luminanceWeight_);
-    double fk = ppCornerDist<ColorDistance>(ker.e, ker.j, cfg.luminanceWeight_) + ppCornerDist<ColorDistance>(ker.j, ker.o, cfg.luminanceWeight_) + ppCornerDist<ColorDistance>(ker.b, ker.g, cfg.luminanceWeight_) + ppCornerDist<ColorDistance>(ker.g, ker.l, cfg.luminanceWeight_) + weight * ppCornerDist<ColorDistance>(ker.f, ker.k, cfg.luminanceWeight_);
+    double jg = ColorDistance::dist(ker.i, ker.f, cfg.luminanceWeight_) + ColorDistance::dist(ker.f, ker.c, cfg.luminanceWeight_) + ColorDistance::dist(ker.n, ker.k, cfg.luminanceWeight_) + ColorDistance::dist(ker.k, ker.h, cfg.luminanceWeight_) + weight * ColorDistance::dist(ker.j, ker.g, cfg.luminanceWeight_);
+    double fk = ColorDistance::dist(ker.e, ker.j, cfg.luminanceWeight_) + ColorDistance::dist(ker.j, ker.o, cfg.luminanceWeight_) + ColorDistance::dist(ker.b, ker.g, cfg.luminanceWeight_) + ColorDistance::dist(ker.g, ker.l, cfg.luminanceWeight_) + weight * ColorDistance::dist(ker.f, ker.k, cfg.luminanceWeight_);
 
     if (jg < fk) //test sample: 70% of values max(jg, fk) / min(jg, fk) are between 1.1 and 3.7 with median being 1.8
     {
@@ -612,13 +605,6 @@ double sPixEQ(uint32_t col1, uint32_t col2, const xbrz::ScalerCfg& cfg)
 	return ColorDistance::dist(col1, col2, cfg.luminanceWeight_) < cfg.equalColorTolerance_;
 }
 
-template <class ColorDistance>
-FORCE_INLINE
-double sPixDist(uint32_t col1, uint32_t col2, const double lumWeight)
-{
-	return ColorDistance::dist(col1, col2, lumWeight);
-}
-
 template <RotationDegree rotDeg, class ColorDistance>
 FORCE_INLINE
 const bool sPixDoLineBlend(const Kernel_3x3& ker, const char blend, const xbrz::ScalerCfg& cfg)
@@ -643,11 +629,13 @@ const bool sPixDoLineBlend(const Kernel_3x3& ker, const char blend, const xbrz::
 		return false;
 	
 	//no full blending for L-shapes; blend corner only (handles "mario mushroom eyes")
-	if (sPixEQ<ColorDistance>(g, h, cfg) &&  sPixEQ<ColorDistance>(h , i, cfg) && sPixEQ<ColorDistance>(i, f, cfg) && sPixEQ<ColorDistance>(f, c, cfg) && !sPixEQ<ColorDistance>(e, i, cfg))
+	if ( sPixEQ<ColorDistance>(g, h, cfg) &&
+		 sPixEQ<ColorDistance>(h, i, cfg) &&
+		 sPixEQ<ColorDistance>(i, f, cfg) &&
+		 sPixEQ<ColorDistance>(f, c, cfg) &&
+		!sPixEQ<ColorDistance>(e, i, cfg) )
 		return false;
-	
-	return true;
-	
+		
 #undef a
 #undef b
 #undef c
@@ -718,14 +706,14 @@ void scalePixel(const Kernel_3x3& ker,
             return true;
         }();
 */
-        const uint32_t px = sPixDist<ColorDistance>(e, f, cfg.luminanceWeight_) <= sPixDist<ColorDistance>(e, h, cfg.luminanceWeight_) ? f : h; //choose most similar color
+		const uint32_t px = ( ColorDistance::dist(e, f, cfg.luminanceWeight_) <= ColorDistance::dist(e, h, cfg.luminanceWeight_) ) ? f : h; //choose most similar color
 
         OutputMatrix<Scaler::scale, rotDeg> out(target, trgWidth);
 
         if (sPixDoLineBlend<rotDeg, ColorDistance>(ker, blend, cfg))
         {
-            const double fg = sPixDist<ColorDistance>(f, g, cfg.luminanceWeight_); //test sample: 70% of values max(fg, hc) / min(fg, hc) are between 1.1 and 3.7 with median being 1.9
-            const double hc = sPixDist<ColorDistance>(h, c, cfg.luminanceWeight_); //
+            const double fg = ColorDistance::dist(f, g, cfg.luminanceWeight_); //test sample: 70% of values max(fg, hc) / min(fg, hc) are between 1.1 and 3.7 with median being 1.9
+            const double hc = ColorDistance::dist(h, c, cfg.luminanceWeight_); //
 
             const bool haveShallowLine = cfg.steepDirectionThreshold * fg <= hc && e != g && d != g;
             const bool haveSteepLine   = cfg.steepDirectionThreshold * hc <= fg && e != c && b != c;
