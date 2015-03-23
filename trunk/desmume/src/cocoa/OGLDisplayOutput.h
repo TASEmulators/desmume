@@ -146,6 +146,8 @@ public:
 	
 	OGLShaderProgram* GetProgram();
 	GLuint GetDstTexID();
+	GLsizei GetSrcWidth();
+	GLsizei GetSrcHeight();
 	GLsizei GetDstWidth();
 	GLsizei GetDstHeight();
 	void SetSrcSizeOGL(GLsizei w, GLsizei h);
@@ -291,14 +293,20 @@ protected:
 	int _outputFilter;
 	VideoFilterTypeID _pixelScaler;
 	
-	OGLFilter *_filterDeposterize;
-	OGLFilter *_shaderFilter;
 	OGLShaderProgram *_finalOutputProgram;
+	OGLFilter *_filterDeposterize[2];
+	OGLFilter *_shaderFilter[2];
+	GLint _displayTexFilter[2];
 	
-	VideoFilter *_vfSingle;
-	VideoFilter *_vfDual;
-	VideoFilter *_vf;
+	GLuint _texVideoInputDataID[2];
+	GLuint _texVideoSourceID[2];
+	GLuint _texVideoPixelScalerID[2];
+	GLuint _texVideoOutputID[2];
+	
 	uint32_t *_vfMasterDstBuffer;
+	VideoFilter *_vf[2];
+	VideoFilter *_vfDual;
+	GLuint _texCPUFilterDstID[2];
 		
 	int _displayMode;
 	int _displayOrder;
@@ -308,12 +316,6 @@ protected:
 	GLfloat _gapScalar;
 	GLfloat _rotation;
 	
-	GLsizei _vtxElementCount;
-	GLubyte *_vtxElementPointer;
-	
-	GLint _displayTexFilter;
-	GLuint _texCPUFilterDstID;
-	
 	GLuint _texLQ2xLUT;
 	GLuint _texHQ2xLUT;
 	GLuint _texHQ4xLUT;
@@ -322,10 +324,6 @@ protected:
 	GLfloat texCoordBuffer[2 * 8];
 	size_t _vtxBufferOffset;
 	
-	GLuint _texVideoInputDataID;
-	GLuint _texVideoSourceID;
-	GLuint _texVideoPixelScalerID;
-	GLuint _texVideoOutputID;
 	GLuint _vaoMainStatesID;
 	GLuint _vboVertexID;
 	GLuint _vboTexCoordID;
