@@ -1,3 +1,32 @@
+0.9.10 -> 0.9.11 (r4908-r????)
+
+Cocoa:
+ bug: 16-bit to 32-bit color space conversions no longer darken video or images
+ bug: fix intermittent issues with loading user defaults on app startup
+ bug: fix rendering inaccuracies of the video preview in the app display preferences
+ bug: fix various UI font rendering and text alignment issues on OS X Yosemite
+ bug: fix crackly sound from N-sync and Z-sync methods
+ enh: make N-sync method the default sound sync method since it has much lower latency than P-sync method
+ enh: add support for gdbstub (Tools > Show GDB Stub Control) (only available on custom builds using the dev+ build target)
+ enh: optimize input handling to use less CPU
+ enh: add support for App Nap when the app is in an idle state (only supported on OS X Mavericks and later)
+ enh: add Execution Control panel (Emulation > Show Execution Control), now with frame advance and frame jump controls
+ enh: auto frame skip is now smoother
+ enh: further improve execution timing accuracy
+ enh: improve overall video performance
+ enh: render video through a 3-stage filtering pipeline, (Video Source)-->(Pixel Scaler)-->(Video Output)
+ enh: add the following video source filters - Deposterize
+ enh: add the following video output filters - Bicubic B-Spline, Bicubic Mitchell-Netravali, Lanczos2, Lanczos3
+ enh: add ability to run all existing pixel scalers on either the CPU or the GPU
+ enh: add ability to toggle the main and touch display positions (View > Toggle All Displays)
+ enh: add support for turbo and autohold
+ enh: add support for the entire suite of slot-2 devices (Emulation > Show SLOT-2 Manager)
+ enh: add support for using the host machine's audio input device for emulating the NDS microphone (Emulation > Show Microphone Settings)
+ enh: change the sine wave tone generator's range from 100Hz-5000Hz to 40Hz-4000Hz
+ enh: reorganize the menu options to more logical locations
+ enh: greatly improve the File Migration Assistant (now renamed Game Data Migration Assistant) and ROM Info panel with a more modern and space efficient look and feel
+ enh: miscellaneous user interface improvements
+
 0.9.9 -> 0.9.10 (r4623-r4908)
 
 In this version, we have focused on trying to clean up some complexities in the user experience and emulator internals. Pretty unglamorous stuff, but some games are newly compatible.
