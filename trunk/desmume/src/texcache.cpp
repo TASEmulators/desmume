@@ -549,15 +549,14 @@ public:
 								
 							case 1:
 #ifdef LOCAL_BE
-								tmp_col[2]	= ( (((tmp_col[0]&0xFF000000)>>1)+((tmp_col[1]&0xFF000000)>>1)) & 0xFF000000 ) |
-											  ( ((tmp_col[0]&0x00FF0000)+(tmp_col[1]&0x00FF0000))>>1 ) |
-											  ( ((tmp_col[0]&0x0000FF00)+(tmp_col[1]&0x0000FF00))>>1 ) |
+								tmp_col[2]	= ( (((tmp_col[0] & 0xFF000000) >> 1)+((tmp_col[1] & 0xFF000000)  >> 1)) & 0xFF000000 ) |
+											  ( (((tmp_col[0] & 0x00FF0000)      + (tmp_col[1] & 0x00FF0000)) >> 1)  & 0x00FF0000 ) |
+											  ( (((tmp_col[0] & 0x0000FF00)      + (tmp_col[1] & 0x0000FF00)) >> 1)  & 0x0000FF00 ) |
 											  0x000000FF;
 								tmp_col[3]	= 0xFFFFFF00;
 #else
-								tmp_col[2]	= ( ((tmp_col[0]&0x000000FF)+(tmp_col[1]&0x000000FF))>>1 ) |
-											  ( ((tmp_col[0]&0x0000FF00)+(tmp_col[1]&0x0000FF00))>>1 ) |
-											  ( ((tmp_col[0]&0x00FF0000)+(tmp_col[1]&0x00FF0000))>>1 ) |
+								tmp_col[2]	= ( (((tmp_col[0] & 0x00FF00FF) + (tmp_col[1] & 0x00FF00FF)) >> 1) & 0x00FF00FF ) |
+											  ( (((tmp_col[0] & 0x0000FF00) + (tmp_col[1] & 0x0000FF00)) >> 1) & 0x0000FF00 ) |
 											  0xFF000000;
 								tmp_col[3]	= 0x00FFFFFF;
 #endif
@@ -601,18 +600,18 @@ public:
 
 						if(TEXFORMAT==TexFormat_15bpp)
 						{
-							for(int i=0;i<4;i++)
+							for (size_t i = 0; i < 4; i++)
 							{
-								tmp_col[i] >>= 2;
-								tmp_col[i] &= 0x3F3F3F3F;
 #ifdef LOCAL_BE
-								u32 a = tmp_col[i] & 0x000000FF;
-								tmp_col[i] &= 0xFFFFFF00;
-								tmp_col[i] |= (a>>1);
+								const u32 a = (tmp_col[i] >> 3) & 0x0000001F;
+								tmp_col[i] >>= 2;
+								tmp_col[i] &= 0x3F3F3F00;
+								tmp_col[i] |= a;
 #else
-								u32 a = tmp_col[i]>>24;
-								tmp_col[i] &= 0x00FFFFFF;
-								tmp_col[i] |= (a>>1)<<24;
+								const u32 a = (tmp_col[i] >> 3) & 0x1F000000;
+								tmp_col[i] >>= 2;
+								tmp_col[i] &= 0x003F3F3F;
+								tmp_col[i] |= a;
 #endif
 							}
 						}
@@ -620,23 +619,19 @@ public:
 						//TODO - this could be more precise for 32bpp mode (run it through the color separation table)
 
 						//set all 16 texels
-						for (int sy = 0; sy < 4; sy++)
+						for (size_t sy = 0; sy < 4; sy++)
 						{
 							// Texture offset
 							u32 currentPos = (x<<2) + tmpPos[sy];
 							u8 currRow = (u8)((currBlock>>(sy<<3))&0xFF);
 
-							dwdst[currentPos] = tmp_col[currRow&3];
+							dwdst[currentPos  ] = tmp_col[ currRow    &3];
 							dwdst[currentPos+1] = tmp_col[(currRow>>2)&3];
 							dwdst[currentPos+2] = tmp_col[(currRow>>4)&3];
 							dwdst[currentPos+3] = tmp_col[(currRow>>6)&3];
 						}
-
-
 					}
 				}
-
-
 				break;
 			}
 		case TEXMODE_A5I3:
