@@ -266,7 +266,7 @@ static const char *fragmentShader_100 = {"\
 	uniform bool hasTexture; \n\
 	uniform int polygonMode; \n\
 	uniform int toonShadingMode; \n\
-	uniform int oglWBuffer; \n\
+	uniform bool oglWBuffer; \n\
 	uniform bool enableAlphaTest; \n\
 	uniform float alphaTestRef; \n\
 	\n\
@@ -331,16 +331,7 @@ static const char *fragmentShader_100 = {"\
 			discard; \n\
 		} \n\
 		\n\
-		if (oglWBuffer == 1) \n\
-		{ \n\
-			/* The w component is in 1.12 format, normalize it to [-1;+1] */ \
-			gl_FragDepth = (vtxPosition.w / 4096.0) * 0.5 + 0.5; \n\
-		} \n\
-		else \n\
-		{ \n\
-			gl_FragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
-		} \n\
-		\n\
+		gl_FragDepth = (oglWBuffer) ? vtxPosition.w/4096.0 : vtxPosition.z/4096.0; \n\
 		gl_FragColor = fragColor; \n\
 	} \n\
 "};
@@ -1833,7 +1824,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State *renderState)
 		glUniform1i(OGLRef.uniformEnableAlphaTest, renderState->enableAlphaTest ? GL_TRUE : GL_FALSE);
 		glUniform1f(OGLRef.uniformAlphaTestRef, divide5bitBy31_LUT[renderState->alphaTestRef]);
 		glUniform1i(OGLRef.uniformToonShadingMode, renderState->shading);
-		glUniform1i(OGLRef.uniformWBuffer, renderState->wbuffer);
+		glUniform1i(OGLRef.uniformWBuffer, renderState->wbuffer ? GL_TRUE : GL_FALSE);
 	}
 	else
 	{
@@ -2337,7 +2328,7 @@ Render3DError OpenGLRenderer_1_2::Reset()
 		glUniform1i(OGLRef.uniformHasTexture, GL_FALSE);
 		glUniform1i(OGLRef.uniformPolygonMode, 0);
 		glUniform1i(OGLRef.uniformToonShadingMode, 0);
-		glUniform1i(OGLRef.uniformWBuffer, 0);
+		glUniform1i(OGLRef.uniformWBuffer, GL_FALSE);
 		glUniform1i(OGLRef.uniformEnableAlphaTest, GL_TRUE);
 		glUniform1f(OGLRef.uniformAlphaTestRef, 0.0f);
 	}
@@ -3002,7 +2993,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State *renderState)
 	glUniform1i(OGLRef.uniformEnableAlphaTest, renderState->enableAlphaTest ? GL_TRUE : GL_FALSE);
 	glUniform1f(OGLRef.uniformAlphaTestRef, divide5bitBy31_LUT[renderState->alphaTestRef]);
 	glUniform1i(OGLRef.uniformToonShadingMode, renderState->shading);
-	glUniform1i(OGLRef.uniformWBuffer, renderState->wbuffer);
+	glUniform1i(OGLRef.uniformWBuffer, renderState->wbuffer ? GL_TRUE : GL_FALSE);
 	
 	if(renderState->enableAlphaBlending)
 	{

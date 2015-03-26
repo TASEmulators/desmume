@@ -114,7 +114,7 @@ static const char *fragmentShader_150 = {"\
 	uniform bool hasTexture; \n\
 	uniform int polygonMode; \n\
 	uniform int toonShadingMode; \n\
-	uniform int oglWBuffer; \n\
+	uniform bool oglWBuffer; \n\
 	uniform bool enableAlphaTest; \n\
 	uniform float alphaTestRef; \n\
 	\n\
@@ -181,16 +181,7 @@ static const char *fragmentShader_150 = {"\
 			discard; \n\
 		} \n\
 		\n\
-		if (oglWBuffer == 1) \n\
-		{ \n\
-			/* The w component is in 1.12 format, normalize it to [-1;+1] */ \
-			gl_FragDepth = (vtxPosition.w / 4096.0) * 0.5 + 0.5; \n\
-		} \n\
-		else \n\
-		{ \n\
-			gl_FragDepth = (vtxPosition.z / vtxPosition.w) * 0.5 + 0.5; \n\
-		} \n\
-		\n\
+		gl_FragDepth = (oglWBuffer) ? vtxPosition.w/4096.0 : vtxPosition.z/4096.0; \n\
 		outFragColor = fragColor; \n\
 	} \n\
 "};
