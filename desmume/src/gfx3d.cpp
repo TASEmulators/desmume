@@ -2185,16 +2185,20 @@ static void gfx3d_doFlush()
 	//also the buttons in the knights in the nightmare frontend depend on this
 	for(int i=0; i<polycount; i++)
 	{
+		// TODO: Possible divide by zero with the w-coordinate.
+		// Is the vertex being read correctly? Is 0 a valid value for w?
+		// If both of these questions answer to yes, then how does the NDS handle a NaN?
+		// For now, simply prevent w from being zero.
 		POLY &poly = polylist->list[i];
 		float verty = vertlist->list[poly.vertIndexes[0]].y;
-		float vertw = vertlist->list[poly.vertIndexes[0]].w;
+		float vertw = (vertlist->list[poly.vertIndexes[0]].w != 0.0f) ? vertlist->list[poly.vertIndexes[0]].w : 0.00000001f;
 		verty = 1.0f-(verty+vertw)/(2*vertw);
 		poly.miny = poly.maxy = verty;
 
 		for(int j=1; j<poly.type; j++)
 		{
 			verty = vertlist->list[poly.vertIndexes[j]].y;
-			vertw = vertlist->list[poly.vertIndexes[j]].w;
+			vertw = (vertlist->list[poly.vertIndexes[j]].w != 0.0f) ? vertlist->list[poly.vertIndexes[j]].w : 0.00000001f;
 			verty = 1.0f-(verty+vertw)/(2*vertw);
 			poly.miny = min(poly.miny, verty);
 			poly.maxy = max(poly.maxy, verty);
