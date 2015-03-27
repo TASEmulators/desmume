@@ -45,6 +45,7 @@ Cocoa:
  enh: add the following video output filters - Bicubic B-Spline, Bicubic Mitchell-Netravali, Lanczos2, Lanczos3
  enh: add ability to run all existing pixel scalers on either the CPU or the GPU
  enh: add ability to toggle the main and touch display positions (View > Toggle All Displays)
+ enh: add preliminary support for replay playback and recording
  enh: add support for turbo and autohold
  enh: add support for the entire suite of slot-2 devices (Emulation > Show SLOT-2 Manager)
  enh: add support for using the host machine's audio input device for emulating the NDS microphone (Emulation > Show Microphone Settings)
