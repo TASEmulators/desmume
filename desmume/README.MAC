@@ -1,15 +1,15 @@
                                        DeSmuME
                       _________________________________________
                       Copyright (C) 2006 yopyop
-                      Copyright (C) 2006-2013 DeSmuME team
-                      Last Updated: November 27, 2013
+                      Copyright (C) 2006-2015 DeSmuME team
+                      Last Updated: March 28, 2015
 
 Contents:
 1) System Requirements ..................................................... 15
 2) Quick Start Guide for Using DeSmuME for OS X ............................ 36
-3) Additional Documentation ............................................... 137
-4) Contact Information .................................................... 167
-5) License ................................................................ 269
+3) Additional Documentation ............................................... 201
+4) Contact Information .................................................... 231
+5) License ................................................................ 333
 
 
 1) System Requirements ________________________________________________________
@@ -51,13 +51,13 @@ default, DeSmuME will load the ROM and start emulation. Also, there are
 additional ROM loading options that you can change in DeSmuME > Preferences if
 you need them.
 
-Using the DS Controller:
-Each DS controller button can be mapped to a button of your choice on your
+Using the NDS Controller:
+Each NDS controller button can be mapped to a button of your choice on your
 keyboard, gamepad, or joystick. You can view the mappings by clicking on Input
-in DeSmuME > Preferences. To change a mapping, click on the DS control that you
+in DeSmuME > Preferences. To change a mapping, click on the NDS control that you
 want to change, then press the button on your input device to map it.
 
-By default, the DS controller is mapped to the following keys on your keyboard:
+By default, the NDS controller is mapped to the following keys on your keyboard:
     Up - Up Arrow
     Down - Down Arrow
     Left - Left Arrow
@@ -71,25 +71,89 @@ By default, the DS controller is mapped to the following keys on your keyboard:
     Start - Return
     Select - Tab
     Lid - Delete (Backspace)
-    Microphone - ` (Accent)
+    Microphone (Internal Noise Samples) - ` (Accent)
+
+The NDS can support a variety of SLOT-2 devices. Some devices, such as the
+Guitar Grip, EasyPiano, and Taito Paddle have inputs, which are mapped to your
+keyboard using these defaults:
+    Guitar Grip:
+        Green  - E
+        Red    - R
+        Yellow - T
+        Blue   - Y
+
+    EasyPiano:
+        C  - C
+        C# - F
+        D  - V
+        D# - G
+        E  - B
+        F  - N
+        F# - J
+        G  - M
+        G# - K
+        A  - , (Comma)
+        A# - L
+        B  - . (Period)
+        High C - / (Forward Slash)
+
+    Paddle:
+        Paddle Adjust -5 - O
+        Paddle Adjust +5 - P
 
 In addition, the following emulator functions are mapped to your keyboard by
 default:
     Execute/Pause - Forward Delete
     Reset - Page Down
+    Rotate Display Left - [ (Left Bracket)
+    Rotate Display Right - ] (Right Bracket)
     Set Speed to Half - - (Dash)
-    Set Speed to Double - =
+    Set Speed to Double - = (Equal)
 
-Using the DS Touch Pad:
-Touch pad input is emulated using the left mouse button by default. Simply click
-in the touch pad area of the DS display window to use the DS touch pad.
+Using the NDS Touch Pad:
+Touch pad input is emulated using the left mouse button by default. Simply
+click in the touch pad area of the NDS display window to use the NDS touch pad.
 
-Rotating the DS Display:
-Some games require that the DS display be at a certain rotation in order to
+Using the NDS Microphone:
+Some games make use of the NDS microphone. DeSmuME emulates the NDS microphone
+by using the default input device selected in your System Preferences. You can
+choose Emulation > Show Microphone Settings to view the input device that
+DeSmuME is currently using, as well as setting its gain.
+
+DeSmuME will track the input level on the meter as the NDS reads the
+microphone. The meter reflects the input level as seen by the NDS. Note that
+some games ignore the microphone, and therefore will not register on the meter.
+If you need to view the input level from the host machine's perspective, you
+can view the host's input level in your System Preferences.
+
+Finally, you can generate audio samples in software by using one of DeSmuME's
+audio generators, and send those audio samples to the NDS. This is what the
+Microphone command in your Input Preferences does. As long as the Microphone
+command is engaged, the host input device will be ignored. When you disengage
+the Microphone command, DeSmuME will automatically return to reading the host
+input device.
+
+The microphone icon serves to indicate the current status of the NDS
+microphone, and will change color for each status:
+    Black - The microphone is inactive.
+    Dark Green - The microphone is active. However, the input level is too
+                 low to be meaningful, or the game is ignoring the microphone.
+    Bright Green - The microphone is active and the game is reading a
+                   meaningful input level.
+    Bright Red - The microphone is active and the game is reading a clipped
+                 input level. Depending on the situation, this may or may not
+                 be desirable. Use the gain slider to influence the input
+                 level if needed.
+    Gray - The host input device is being temporarily ignored because a
+           Microphone command is currently engaged.
+
+Rotating the NDS Display:
+Some games require that the NDS display be at a certain rotation in order to
 look correct. Rotation options can be found by choosing
 View > Display Rotation. You can also use the toolbar buttons Rotate Left and
 Rotate Right to rotate the display by 90 degrees counterclockwise or clockwise,
-respectively.
+respectively. Finally, you can assign inputs to Rotate Left and Rotate Right in
+your Input Preferences.
 
 Freezing and Restoring the Emulation State:
 Save states are a powerful feature that allows you to freeze the emulation
@@ -248,8 +312,8 @@ possible. The better your descriptions are, the faster we can test and fix
 bugs. For example, if you observed a bug in the game Golden Sun: Dark Dawn, then
 the bug report could look something like this:
 
-    App Version: v0.9.10
-    Operating System: OS X v10.8.3 (12D78)
+    App Version: v0.9.11
+    Operating System: OS X v10.10.2 (14C1510)
     Mac Model Identifier: iMac11,2
     ROM Name: GOLDENSUN_DD
     ROM Serial: NTR-BO5E-USA
