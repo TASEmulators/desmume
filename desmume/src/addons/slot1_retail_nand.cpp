@@ -45,8 +45,9 @@ private:
 
 	u32 mode;
 	u32 handle_save;
+
+	//current NAND read/write cursor
 	u32 save_adr;
-	u32 save_start_adr;
 
 public:
 	virtual Slot1Info const* info()
@@ -61,7 +62,7 @@ public:
 		protocol.chipId = gameInfo.chipID;
 		protocol.gameCode = T1ReadLong((u8*)gameInfo.header.gameCode,0);
 
-		save_start_adr = 0;
+		save_adr = 0;
 		handle_save = 0;
 		mode = 0;
 		subAdr = T1ReadWord(gameInfo.header.reserved2, 0x6) << 17;
@@ -81,6 +82,11 @@ public:
 		return protocol.read_GCDATAIN(PROCNUM);
 	}
 
+	void setProtocolAddress()
+	{
+		protocol.address = (protocol.command.bytes[1] << 24) | (protocol.command.bytes[2] << 16) | (protocol.command.bytes[3] << 8) | protocol.command.bytes[4];
+	}
+
 	virtual void slot1client_startOperation(eSlot1Operation operation)
 	{
 		//INFO("Start command: %02X%02X%02X%02X%02X%02X%02X%02X\t",
@@ -92,17 +98,18 @@ public:
 		switch(operation)
 		{
 			case eSlot1Operation_00_ReadHeader_Unencrypted:
-				protocol.address = (protocol.command.bytes[1] << 24) | (protocol.command.bytes[2] << 16) | (protocol.command.bytes[3] << 8) | protocol.command.bytes[4];
+				setProtocolAddress();
 				rom.start(operation,protocol.address);
 				break;
-
-			//case eSlot1Operation_B7_Read:  //zero 15-sep-2014 - this was removed during epoch of addon re-engineering to fix a bug
 
 			case eSlot1Operation_2x_SecureAreaLoad:
 				//don't re-generate address here. it was already done, according to different rules, for this operation
 				rom.start(operation,protocol.address);
 				return;
 		}
+
+		//subsequent commands should have access to the address set this way
+		setProtocolAddress();
 
 		//handle special commands ourselves
 		int cmd = protocol.command.bytes[0];
@@ -120,11 +127,7 @@ public:
 			//Nand Write Page
 			case 0x81:
 				mode = cmd;
-				if (save_start_adr != (protocol.address & gameInfo.mask) - subAdr)
-				{
-					save_start_adr = save_adr = (protocol.address & gameInfo.mask) - subAdr;
-					MMU_new.backupDevice.seek(save_start_adr);
-				}
+				save_adr = (protocol.address & gameInfo.mask) - subAdr;
 				handle_save = 1;
 				break;
 
@@ -142,11 +145,7 @@ public:
 				if (handle_save)
 				{
 					mode = cmd;
-					if (save_start_adr != (protocol.address & gameInfo.mask) - subAdr)
-					{
-						save_start_adr = save_adr = (protocol.address & gameInfo.mask) - subAdr;
-						MMU_new.backupDevice.seek(save_start_adr);
-					}
+					save_adr = (protocol.address & gameInfo.mask) - subAdr;
 				}
 				else
 				{
@@ -156,8 +155,7 @@ public:
 
 			case 0xB2: //Set save position
 				mode = cmd;
-				save_start_adr = save_adr = (protocol.address & gameInfo.mask) - subAdr;
-				MMU_new.backupDevice.seek(save_start_adr);
+				save_adr = (protocol.address & gameInfo.mask) - subAdr;
 				handle_save = 1;
 				break;
 		}
@@ -278,7 +276,7 @@ public:
 		os->write32le(mode);
 		os->write32le(handle_save);
 		os->write32le(save_adr);
-		os->write32le(save_start_adr);
+		os->write32le((u32)0);
 		os->write32le(subAdr);
 	}
 
@@ -297,7 +295,8 @@ public:
 			is->read32le(&mode);
 			is->read32le(&handle_save);
 			is->read32le(&save_adr);
-			is->read32le(&save_start_adr);
+			u32 junk;
+			is->read32le(&junk);
 			is->read32le(&subAdr);
 		}
 	}
