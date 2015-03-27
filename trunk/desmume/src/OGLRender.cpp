@@ -331,8 +331,8 @@ static const char *fragmentShader_100 = {"\
 			discard; \n\
 		} \n\
 		\n\
-		float vertW = (vtxPosition.w == 0.0f) ? 0.00000001f : vtxPosition.w; \n\
-		gl_FragDepth = (oglWBuffer) ? vtxPosition.w/4096.0 : (vtxPosition.z / vertW) * 0.5 + 0.5; \n\
+		float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w; \n\
+		gl_FragDepth = (oglWBuffer) ? vtxPosition.w/4096.0 : clamp((vtxPosition.z/vertW) * 0.5 + 0.5, 0.0, 1.0); \n\
 		gl_FragColor = fragColor; \n\
 	} \n\
 "};
