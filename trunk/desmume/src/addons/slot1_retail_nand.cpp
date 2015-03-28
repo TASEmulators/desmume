@@ -46,6 +46,12 @@ private:
 	u32 mode;
 	u32 handle_save;
 
+	//current NAND read/write start position
+	//when this is changed, the read/write cursor will be reset to it
+	//when it is set to the same value, the read/write cursor will NOT be reset
+	//(this is since some value must necessarily come in on the protocol address, so the 'current save_start' is used as a special 'dont change' value
+	u32 save_start;
+
 	//current NAND read/write cursor
 	u32 save_adr;
 
@@ -119,7 +125,11 @@ public:
 			//Nand Write Page
 			case 0x81:
 				mode = cmd;
-				save_adr = (addressFromProtocol & gameInfo.mask) - subAdr;
+				if(addressFromProtocol != save_start)
+				{
+					save_start = addressFromProtocol;
+					save_adr = (addressFromProtocol & gameInfo.mask) - subAdr;
+				}
 				handle_save = 1;
 				break;
 
@@ -133,11 +143,16 @@ public:
 				MMU_new.backupDevice.flushBackup();
 				break;
 
+			//Start read mode
 			case 0xB7:
 				if (handle_save)
 				{
 					mode = cmd;
-					save_adr = (addressFromProtocol & gameInfo.mask) - subAdr;
+					if(addressFromProtocol != save_start)
+					{
+						save_start = addressFromProtocol;
+						save_adr = (addressFromProtocol & gameInfo.mask) - subAdr;
+					}
 				}
 				else
 				{
@@ -147,6 +162,9 @@ public:
 
 			case 0xB2: //Set save position
 				mode = cmd;
+				save_start = addressFromProtocol;
+				//cursor resets regardless of whether save_start changed, that's what makes this special.
+				//the cursor could be reset to the beginning of the previous save_start region
 				save_adr = (addressFromProtocol & gameInfo.mask) - subAdr;
 				handle_save = 1;
 				break;
@@ -268,7 +286,7 @@ public:
 		os->write32le(mode);
 		os->write32le(handle_save);
 		os->write32le(save_adr);
-		os->write32le((u32)0);
+		os->write32le(save_start);
 		os->write32le(subAdr);
 	}
 
@@ -287,8 +305,7 @@ public:
 			is->read32le(&mode);
 			is->read32le(&handle_save);
 			is->read32le(&save_adr);
-			u32 junk;
-			is->read32le(&junk);
+			is->read32le(&save_start);
 			is->read32le(&subAdr);
 		}
 	}
