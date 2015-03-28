@@ -82,11 +82,6 @@ public:
 		return protocol.read_GCDATAIN(PROCNUM);
 	}
 
-	void setProtocolAddress()
-	{
-		protocol.address = (protocol.command.bytes[1] << 24) | (protocol.command.bytes[2] << 16) | (protocol.command.bytes[3] << 8) | protocol.command.bytes[4];
-	}
-
 	virtual void slot1client_startOperation(eSlot1Operation operation)
 	{
 		//INFO("Start command: %02X%02X%02X%02X%02X%02X%02X%02X\t",
@@ -94,22 +89,19 @@ public:
 		//	protocol.command.bytes[4], protocol.command.bytes[5], protocol.command.bytes[6], protocol.command.bytes[7]);
 		//INFO("FROM: %08X\n", NDS_ARM9.instruct_adr);
 
+		u32 addressFromProtocol = (protocol.command.bytes[1] << 24) | (protocol.command.bytes[2] << 16) | (protocol.command.bytes[3] << 8) | protocol.command.bytes[4];
+
 		//pass the normal rom operations along to the rom component
 		switch(operation)
 		{
 			case eSlot1Operation_00_ReadHeader_Unencrypted:
-				setProtocolAddress();
-				rom.start(operation,protocol.address);
-				break;
+				rom.start(operation,addressFromProtocol);
+				return;
 
 			case eSlot1Operation_2x_SecureAreaLoad:
-				//don't re-generate address here. it was already done, according to different rules, for this operation
 				rom.start(operation,protocol.address);
 				return;
 		}
-
-		//subsequent commands should have access to the address set this way
-		setProtocolAddress();
 
 		//handle special commands ourselves
 		int cmd = protocol.command.bytes[0];
@@ -127,7 +119,7 @@ public:
 			//Nand Write Page
 			case 0x81:
 				mode = cmd;
-				save_adr = (protocol.address & gameInfo.mask) - subAdr;
+				save_adr = (addressFromProtocol & gameInfo.mask) - subAdr;
 				handle_save = 1;
 				break;
 
@@ -145,17 +137,17 @@ public:
 				if (handle_save)
 				{
 					mode = cmd;
-					save_adr = (protocol.address & gameInfo.mask) - subAdr;
+					save_adr = (addressFromProtocol & gameInfo.mask) - subAdr;
 				}
 				else
 				{
-					rom.start(operation, protocol.address);
+					rom.start(operation, addressFromProtocol);
 				}
 				break;
 
 			case 0xB2: //Set save position
 				mode = cmd;
-				save_adr = (protocol.address & gameInfo.mask) - subAdr;
+				save_adr = (addressFromProtocol & gameInfo.mask) - subAdr;
 				handle_save = 1;
 				break;
 		}
