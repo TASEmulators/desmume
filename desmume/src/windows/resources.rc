@@ -1703,16 +1703,6 @@ BEGIN
             MENUITEM SEPARATOR
             MENUITEM "&VSync",                      ID_DISPLAYMETHOD_VSYNC
         END
-        POPUP "Ad&vanced"
-        BEGIN
-            MENUITEM "advanced",                    ID_ADVANCED
-            POPUP "&Save Type"
-            BEGIN
-                MENUITEM "&Autodetect",                 IDC_SAVETYPE
-                MENUITEM SEPARATOR
-                MENUITEM "Force As Current",            IDC_SAVETYPE_FORCE
-            END
-        END
     END
     POPUP "&Tools"
     BEGIN

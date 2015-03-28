@@ -2524,9 +2524,7 @@ int MenuInit()
 	ResetSaveStateTimes();
 
 	HMENU configMenu = GetSubMenuByIdOfFirstChild(mainMenu, IDM_3DCONFIG);
-	HMENU advancedMenu = GetSubMenuByIdOfFirstChild(configMenu, ID_ADVANCED);
 	HMENU toolsMenu = GetSubMenuByIdOfFirstChild(mainMenu, IDM_DISASSEMBLER);
-	DeleteMenu(advancedMenu,ID_ADVANCED,MF_BYCOMMAND);
 
 #ifndef DEVELOPER_MENU_ITEMS
 	// menu items that are only useful for desmume developers (maybe)
@@ -2534,27 +2532,29 @@ int MenuInit()
 	DeleteMenu(fileMenu, IDM_FILE_RECORDUSERSPUWAV, MF_BYCOMMAND);
 #endif
 
-#ifdef DEVELOPER
-	for(int i=0; i<MAX_SAVE_TYPES; i++)
-	{
-		memset(&mm, 0, sizeof(MENUITEMINFO));
-		
-		mm.cbSize = sizeof(MENUITEMINFO);
-		mm.fMask = MIIM_TYPE | MIIM_ID;
-		mm.fType = MFT_STRING;
-		mm.wID = IDC_SAVETYPE+i+1;
-		mm.dwTypeData = (LPSTR)save_types[i].descr;
-
-		MainWindow->addMenuItem(IDC_SAVETYPE, false, &mm);
-	}
-	memset(&mm, 0, sizeof(MENUITEMINFO));
-	mm.cbSize = sizeof(MENUITEMINFO);
-	mm.fMask = MIIM_TYPE;
-	mm.fType = MFT_SEPARATOR;
-	MainWindow->addMenuItem(IDC_SAVETYPE, false, &mm);
-#else
-	DeleteMenu(configMenu,GetSubMenuIndexByHMENU(configMenu,advancedMenu),MF_BYPOSITION);
-#endif
+	//zero 27-mar-2015 - removing this.. its just glitchy and rarely maintained.
+	//add a different dialog, near the save import (perhaps based on it, where the save is cleared and re-initialized instead of imported) to restore this in the future if needed
+//#ifdef DEVELOPER
+//	for(int i=0; i<MAX_SAVE_TYPES; i++)
+//	{
+//		memset(&mm, 0, sizeof(MENUITEMINFO));
+//		
+//		mm.cbSize = sizeof(MENUITEMINFO);
+//		mm.fMask = MIIM_TYPE | MIIM_ID;
+//		mm.fType = MFT_STRING;
+//		mm.wID = IDC_SAVETYPE+i+1;
+//		mm.dwTypeData = (LPSTR)save_types[i].descr;
+//
+//		MainWindow->addMenuItem(IDC_SAVETYPE, false, &mm);
+//	}
+//	memset(&mm, 0, sizeof(MENUITEMINFO));
+//	mm.cbSize = sizeof(MENUITEMINFO);
+//	mm.fMask = MIIM_TYPE;
+//	mm.fType = MFT_SEPARATOR;
+//	MainWindow->addMenuItem(IDC_SAVETYPE, false, &mm);
+//#else
+//	DeleteMenu(configMenu,GetSubMenuIndexByHMENU(configMenu,advancedMenu),MF_BYPOSITION);
+//#endif
 
 	if (!gShowConsole)
 		DeleteMenu(toolsMenu, IDM_CONSOLE_ALWAYS_ON_TOP, MF_BYCOMMAND);
