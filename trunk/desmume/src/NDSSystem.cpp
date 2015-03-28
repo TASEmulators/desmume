@@ -2409,7 +2409,7 @@ bool NDS_FakeBoot()
 		_MMU_write08<ARMCPU_ARM9>(kCommandline+i, rompath[i]);
 	_MMU_write08<ARMCPU_ARM9>(kCommandline+rompath.size(), 0);
 	//--------------------------------
-    
+
 	//Call the card post_fakeboot hook to perform additional initialization
 	slot1_device->post_fakeboot(ARMCPU_ARM9);
 	slot1_device->post_fakeboot(ARMCPU_ARM7);
