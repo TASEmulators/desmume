@@ -78,11 +78,11 @@ public:
 		rom.start(operation,protocol.address);
 	}
 
-    virtual void post_fakeboot(int PROCNUM)
-    {
-        // The BIOS leaves the card in NORMAL mode
-        protocol.mode = eCardMode_NORMAL;
-    }
+	virtual void post_fakeboot(int PROCNUM)
+	{
+		// The BIOS leaves the card in NORMAL mode
+		protocol.mode = eCardMode_NORMAL;
+	}
 
 	virtual void savestate(EMUFILE* os)
 	{
