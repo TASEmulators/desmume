@@ -1,0 +1,130 @@
+2SF plugins / DeSmuMe
+This build is from the DeSmuMe SVN repository
+
+foo_8_vio2sf.dll + vio2sf.bin(put into same directory)
+	foobar2000 v0.8.x plugin
+
+foo_input_vio2sf.dll + vio2sf.bin(put into same directory)
+	foobar2000 v0.9.x plugin
+
+in_vio2sf.dll + vio2sf.bin(put into same directory)
+	Winamp 2.x plugin
+	Missing feature:reading-from-archive unicode-filename(by-spec)
+
+in_vio2sfu.dll + vio2sf.bin(put into same directory)
+	Winamp 5.x unicode plugin
+	Missing feature:reading-from-archive
+
+vio2sf.kpi + vio2sf.bin(put into same directory)
+	KbMedia Player plugin
+	Missing feature:replaygain(by-spec) tag-writing(by-spec) unicode-filename(by-spec) libs-in-archive-with-sub-directory(by-spec)
+
+History
+-------
+
+0.23 (2010/01/19)
+    Import desmume 0.9.4 generation SPU
+     - fix bugs in ADPCM looping and PSG channels
+    Add interpolation options (none,linear,cosine)
+
+0.22 (2009/10/16)
+	Fixed: Failed to load libs by relative path.
+	Fixed: Failed to read '_libN' tags.
+
+0.21 (2009/09/30)
+	Fixed: Bufffer for several dsp plugins needed double space.
+
+0.20 (2009/07/22)
+	Fixed: Skipped loading 2sflib described in '_lib2' tag without '_lib' tag.
+
+0.19 (2009/03/13)
+	Removed: Experimental tag('_vio2sf_loader_type').
+	Ignored: Inconsistency with priority of superimposing.
+
+0.18 (2009/03/10)
+	Added: Experimental tag('_vio2sf_loader_type').
+
+0.17 (2009/03/07)
+	Fixed:Obsolete config dialog for Winamp 2.x was not able to be displayed.
+
+0.16 (2009/03/06)
+	Fixed:Skipped silent songs although these had length information.
+
+0.15 (2009/03/05)
+	Fixed:ROM address mask was set to invalid value when 2sf had only single memory block.
+
+0.14 (2008/04/30)
+	DeSmuMe 0.8.0
+
+0.13 (2008/03/05)
+	Added:Plugin for foobar v0.8.x
+	Fixed:Informed blank title last played to Winamp.
+
+0.12 (2008/03/04)
+	Fixed:Loaded libs in nonstandard order.
+	Clean up common code.
+
+0.11 (2008/02/11)
+	Added:'_clockdown' tag support.
+	Fixed:ARM coprocessor work memory is leaked.
+
+0.10 (2008/02/04)
+	Fixed:Played with inaccurate pitch and timer speed.
+	Added:'_frame' tag support.
+	Added: Experimental tags('_vio2sf_sync_type','_vio2sf_arm9_clockdown_level','_vio2sf_arm7_clockdown_level').
+		_vio2sf_sync_type=0(hsync:default),1(vsync:fast but inaccurate)
+		_vio2sf_arm9_clockdown_level=0(default),1(Clock of ARM9 down to 1/2),2(Clock of ARM9 down to 1/4),3(Clock of ARM9 down to 1/8)
+		_vio2sf_arm7_clockdown_level=0(default),1(Clock of ARM7 down to 1/2),2(Clock of ARM7 down to 1/4),3(Clock of ARM7 down to 1/8)
+
+0.09 (2008/02/03)
+	Fixed:Crashed with memory access violation over rom length.
+
+0.08 (2008/02/02)
+	Fixed:No samples clipped after mixing.
+	Fixed:Wasted CPU cycles by looping ADPCM.
+
+0.07 (2008/02/01)
+	SPU emulation based on DeSmuME v0.7.3wp1 mdn.
+
+0.06 / 0.05 / 0.04 (2008/02/01)
+	Fixed:Invaid initial state of ARM9.
+
+0.03 (2008/01/30)
+	Removed:Needless cpu emulation on loading process.
+
+0.02 (2008/01/29)
+	Fixed:Erased system tags('_lib') by tag writer in Winamp. 
+	Fixed:Uncompressed buffers are leaked on loading process.
+
+
+0.01 (2008/01/28)
+	First release.
+
+License
+-------
+
+[DeSmuMe](GPL)
+                        DeSmuME
+        _________________________________________
+        Copyright (C) 2006 yopyop
+        Copyright (C) 2006-2007 DeSmuME team
+
+    DeSmuME is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+Please refer to src.7z/src/vio2sf/desmume/COPYING.
+
+[zlib](ZLIBL)
+'zlib' general purpose compression library version 1.2.3, July 18th, 2005
+
+Copyright (C) 1995-2005 Jean-loup Gailly and Mark Adler
+
+Please refer to src.7z/src/vio2sf/zlib/zlib.h
+
+[loadpe](LGPL)
+libloadpe
+Copyright (C)2007  Ku-Zu
+
+Please refer to src.7z/src/loadpe/COPYING.LIB for redistributing.

@@ -1,0 +1,17 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cheatsConverter_VS2008", "cheatsConverter_VS2008.vcproj", "{6D076DD4-4000-4249-BDEA-F7AB407C813D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6D076DD4-4000-4249-BDEA-F7AB407C813D}.Release|Win32.ActiveCfg = Release|Win32
+		{6D076DD4-4000-4249-BDEA-F7AB407C813D}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

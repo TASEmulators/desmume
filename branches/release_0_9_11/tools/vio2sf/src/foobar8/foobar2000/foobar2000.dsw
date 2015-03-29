@@ -1,0 +1,1346 @@
+Microsoft Developer Studio Workspace File, Format Version 6.00
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
+
+###############################################################################
+
+Project: "7z_static"=.\foo_unpack\7zip\7zip\Bundles\Format7z\7z_static\7z_static.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "MACLib"=..\MAC_SDK_398a1\Source\MACLib\MACLib.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "foo_abx"=.\foo_abx\foo_abx.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_albumlist"=.\foo_albumlist\foo_albumlist.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_ape"=.\foo_ape\foo_ape.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name MACLib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_bitcompare"=.\foo_bitcompare\foo_bitcompare.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_burn"=.\foo_burn\foo_burn.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_cdda"=.\foo_cdda\foo_cdda.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_clienc"=.\foo_clienc\foo_clienc.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_console"=.\foo_console\foo_console.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_diskwriter"=.\foo_diskwriter\foo_diskwriter.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_dsp_declick"=.\foo_dsp_declick\foo_dsp_declick.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_dsp_extra"=.\foo_dsp_extra\foo_dsp_extra.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_dsp_pitch"=.\foo_dsp_pitch\foo_dsp_pitch.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_dsp_stereo3x"=.\foo_dsp_stereo3x\foo_dsp_stereo3x.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_flac"=.\foo_flac\foo_flac.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libFLAC_static
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libOggFLAC_static
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_infobox_simple"=.\foo_infobox_simple\foo_infobox_simple.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_input_std"=.\foo_input_std\foo_input_std.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name ogg_static
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name vorbis_static
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name vorbisfile_static
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name pfc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name mpcdec
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name mpglib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libfaad
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name mp4ff
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_masstag"=.\foo_masstag\foo_masstag.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_matroska"=.\foo_matroska\foo_matroska.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libebml
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libmatroska
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_mod"=.\foo_mod\foo_mod.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_mpeg4u"=.\foo_mpeg4u\foo_mpeg4u.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libmp4av_st
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libmp4v2_st
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libmp4v2_cb
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_oggpreview"=.\foo_oggpreview\foo_oggpreview.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libOggFLAC_static
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name vorbis_static
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name vorbisfile_static
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name vorbisenc_static
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_out_dsound_ex"=.\foo_out_dsound_ex\foo_out_dsound_ex.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_out_ks"=.\foo_out_ks\foo_out_ks.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_output_std"=.\foo_output_std\foo_output_std.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_playlist_switcher"=.\foo_playlist_switcher\foo_playlist_switcher.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_playlistgen"=.\foo_playlistgen\foo_playlistgen.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_read_http"=.\foo_read_http\foo_read_http.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name jnetlib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_rgscan"=.\foo_rgscan\foo_rgscan.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_search_ex"=.\foo_search_ex\foo_search_ex.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_spc"=.\foo_spc\foo_spc.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name openspc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_tagstress"=.\foo_tagstress\foo_tagstress.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_tfmx"=.\foo_tfmx\foo_tfmx.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_ui_std"=.\foo_ui_std\foo_ui_std.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_ui_std_ex"=.\foo_ui_std\foo_ui_std_ex.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_ui_test"=.\foo_ui_test\foo_ui_test.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_unpack"=.\foo_unpack\foo_unpack.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name unrar
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name zlib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name 7z_static
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_vis_manager"=.\foo_vis_manager\foo_vis_manager.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_vis_test"=.\foo_vis_test\foo_vis_test.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_vorbisenc"=.\foo_vorbisenc\foo_vorbisenc.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name vorbis_static
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name vorbisenc_static
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name ogg_static
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foo_wavpack"=.\foo_wavpack\foo_wavpack.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_component_client
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foobar2000"=.\exe\foobar2000.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name foo_abx
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_albumlist
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_ape
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_bitcompare
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_cdda
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_console
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_diskwriter
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_dsp_extra
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_dsp_pitch
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_infobox_simple
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_input_std
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_masstag
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_mod
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_out_ks
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_output_std
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_read_http
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_rgscan
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_spc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_tfmx
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_ui_std
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_ui_test
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_unpack
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_vis_manager
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_vis_test
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_vorbisenc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_wavpack
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_SDK
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foobar2000_sdk_helpers
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_search_ex
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_ui_std_ex
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_playlist_switcher
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_out_dsound_ex
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_dsp_declick
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_flac
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_cltag
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_tagstress
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_mp4
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_mpeg4u
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_matroska
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_playlistgen
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_clienc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name foo_mad
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foobar2000_SDK"=.\SDK\foobar2000_SDK.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name pfc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name utf8api
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "foobar2000_component_client"=.\foobar2000_component_client\foobar2000_component_client.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "foobar2000_sdk_helpers"=.\helpers\foobar2000_sdk_helpers.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "jnetlib"=.\foo_read_http\jnetlib\jnetlib.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libFLAC_static"=..\flac\src\libFLAC\libFLAC_static.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libOggFLAC_static"=..\flac\src\libOggFLAC\libOggFLAC_static.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name ogg_static
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "libebml"=..\libebml\make\vc6\lib\static\libebml.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libfaad"=..\faad2\libfaad\libfaad.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libmad"="..\libmad-0.15.1b\msvc++\libmad.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libmatroska"=..\libmatroska\make\vc6\lib\static\libmatroska.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libmp4av_st"=..\faad2\common\mp4av\libmp4av_st.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libmp4v2_cb"=..\faad2\common\mp4v2\libmp4v2_cb.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libspeex"=..\speex\win32\libspeex\libspeex.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "mp4ff"=..\faad2\common\mp4ff\mp4ff.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "mpcdec"=.\foo_input_std\mpc\mpcdec.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "mpglib"=.\foo_input_std\mpglib\mpglib.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "ogg_static"=..\ogg\win32\ogg_static.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "openspc"=..\libopenspc\openspc.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "pfc"=..\pfc\pfc.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "unrar"=..\UnrarSrc\unrar.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "utf8api"=.\utf8api\utf8api.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name pfc
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "vorbis_static"=..\vorbis\win32\vorbis_static.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "vorbisenc_static"=..\vorbis\win32\vorbisenc_static.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "vorbisfile_static"=..\vorbis\win32\vorbisfile_static.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "zlib"=..\zlib\zlib.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Global:
+
+Package=<5>
+{{{
+}}}
+
+Package=<3>
+{{{
+}}}
+
+###############################################################################
+

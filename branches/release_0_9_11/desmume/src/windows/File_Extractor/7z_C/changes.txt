@@ -1,0 +1,18 @@
+Changes to 7z_C source
+----------------------
+I made several minor changes:
+
+* Hard-coded setup to _SZ_ONE_DIRECTORY, _LZMA_IN_CB, _LZMA_LOC_OPT
+
+* Fixed several memory free functions to not access NULL when cleaning
+up after a failed allocation.
+
+* Made private functions static.
+
+* Fixed SzArchiveOpen to properly report error when header can't be
+read.
+
+* Fixed glaring conflicts between LzmaTypes.h and 7zTypes.h.
+
+-- 
+Shay Green <gblargg@gmail.com>

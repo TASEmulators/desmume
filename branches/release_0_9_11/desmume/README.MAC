@@ -1,0 +1,348 @@
+                                       DeSmuME
+                      _________________________________________
+                      Copyright (C) 2006 yopyop
+                      Copyright (C) 2006-2015 DeSmuME team
+                      Last Updated: March 28, 2015
+
+Contents:
+1) System Requirements ..................................................... 15
+2) Quick Start Guide for Using DeSmuME for OS X ............................ 36
+3) Additional Documentation ............................................... 201
+4) Contact Information .................................................... 231
+5) License ................................................................ 333
+
+
+1) System Requirements ________________________________________________________
+
+DeSmuME is a very demanding app, especially for CPU usage. Before you begin,
+make sure that your Mac meets the listed system requirements.
+
+If your Mac meets only the minimum requirements, then you should expect to run
+most simple 2D-only games with some frameskip, but you will be unable to run
+complex 2D games or any 3D-heavy games. However, if your Mac meets the
+recommended requirements, then you should expect to run almost every game,
+including very complex 3D-heavy games, with minimal to no frameskip.
+
+Operating System: OS X v10.5 (Leopard) or later
+
+CPU:              Can run on any PowerPC G4, G5, or Intel processor
+                  2.1 GHz Intel Core 2 Duo (minimum)
+                  3.0 GHz Intel Core 2 Duo or faster (recommended)
+
+RAM:              512 MB (minimum)
+                  2 GB (recommended)
+
+
+2) Quick Start Guide for Using DeSmuME for OS X _______________________________
+
+Installing DeSmuME is as easy as copying DeSmuME.app to your Applications
+folder (or other folder of your choice). Double-click the app to start DeSmuME.
+
+Note that DeSmuME for OS X may have a different feature set than DeSmuME for
+Windows and DeSmuME for Linux. As of this writing, some features that are
+present in DeSmuME for Windows are not present in DeSmuME for OS X.
+
+The rest of this section will be a guide to help you quickly get started using
+DeSmuME for OS X.
+
+Loading a ROM and Starting the Emulator:
+Simply double-click the desired ROM from the Finder to play the game. By
+default, DeSmuME will load the ROM and start emulation. Also, there are
+additional ROM loading options that you can change in DeSmuME > Preferences if
+you need them.
+
+Using the NDS Controller:
+Each NDS controller button can be mapped to a button of your choice on your
+keyboard, gamepad, or joystick. You can view the mappings by clicking on Input
+in DeSmuME > Preferences. To change a mapping, click on the NDS control that you
+want to change, then press the button on your input device to map it.
+
+By default, the NDS controller is mapped to the following keys on your keyboard:
+    Up - Up Arrow
+    Down - Down Arrow
+    Left - Left Arrow
+    Right - Right Arrow
+    A Button - X
+    B Button - Z
+    X Button - S
+    Y Button - A
+    L Trigger - Q
+    R Trigger - W
+    Start - Return
+    Select - Tab
+    Lid - Delete (Backspace)
+    Microphone (Internal Noise Samples) - ` (Accent)
+
+The NDS can support a variety of SLOT-2 devices. Some devices, such as the
+Guitar Grip, EasyPiano, and Taito Paddle have inputs, which are mapped to your
+keyboard using these defaults:
+    Guitar Grip:
+        Green  - E
+        Red    - R
+        Yellow - T
+        Blue   - Y
+
+    EasyPiano:
+        C  - C
+        C# - F
+        D  - V
+        D# - G
+        E  - B
+        F  - N
+        F# - J
+        G  - M
+        G# - K
+        A  - , (Comma)
+        A# - L
+        B  - . (Period)
+        High C - / (Forward Slash)
+
+    Paddle:
+        Paddle Adjust -5 - O
+        Paddle Adjust +5 - P
+
+In addition, the following emulator functions are mapped to your keyboard by
+default:
+    Execute/Pause - Forward Delete
+    Reset - Page Down
+    Rotate Display Left - [ (Left Bracket)
+    Rotate Display Right - ] (Right Bracket)
+    Set Speed to Half - - (Dash)
+    Set Speed to Double - = (Equal)
+
+Using the NDS Touch Pad:
+Touch pad input is emulated using the left mouse button by default. Simply
+click in the touch pad area of the NDS display window to use the NDS touch pad.
+
+Using the NDS Microphone:
+Some games make use of the NDS microphone. DeSmuME emulates the NDS microphone
+by using the default input device selected in your System Preferences. You can
+choose Emulation > Show Microphone Settings to view the input device that
+DeSmuME is currently using, as well as setting its gain.
+
+DeSmuME will track the input level on the meter as the NDS reads the
+microphone. The meter reflects the input level as seen by the NDS. Note that
+some games ignore the microphone, and therefore will not register on the meter.
+If you need to view the input level from the host machine's perspective, you
+can view the host's input level in your System Preferences.
+
+Finally, you can generate audio samples in software by using one of DeSmuME's
+audio generators, and send those audio samples to the NDS. This is what the
+Microphone command in your Input Preferences does. As long as the Microphone
+command is engaged, the host input device will be ignored. When you disengage
+the Microphone command, DeSmuME will automatically return to reading the host
+input device.
+
+The microphone icon serves to indicate the current status of the NDS
+microphone, and will change color for each status:
+    Black - The microphone is inactive.
+    Dark Green - The microphone is active. However, the input level is too
+                 low to be meaningful, or the game is ignoring the microphone.
+    Bright Green - The microphone is active and the game is reading a
+                   meaningful input level.
+    Bright Red - The microphone is active and the game is reading a clipped
+                 input level. Depending on the situation, this may or may not
+                 be desirable. Use the gain slider to influence the input
+                 level if needed.
+    Gray - The host input device is being temporarily ignored because a
+           Microphone command is currently engaged.
+
+Rotating the NDS Display:
+Some games require that the NDS display be at a certain rotation in order to
+look correct. Rotation options can be found by choosing
+View > Display Rotation. You can also use the toolbar buttons Rotate Left and
+Rotate Right to rotate the display by 90 degrees counterclockwise or clockwise,
+respectively. Finally, you can assign inputs to Rotate Left and Rotate Right in
+your Input Preferences.
+
+Freezing and Restoring the Emulation State:
+Save states are a powerful feature that allows you to freeze the emulation
+state and restore it later. However, note that save states are only a
+temporary means of saving -- more permanent saves must be done using the
+in-game save (or ROM save).
+
+- To freeze the emulation state, choose File > Save State File.
+- To restore the emulation state, choose File > Open State File.
+
+You can also freeze/restore emulation states without having to manage the
+Open/Save dialogs. There are ten available save state "slots" that you can
+use to quickly freeze/restore the emulation state.
+
+- To quick freeze the emulation state, choose File > Save State Slot > Slot #.
+  The default hotkey for this is (Shift-#).
+- To quick restore the emulation state, choose File > Load State Slot > Slot #.
+  The default hotkey for this is (#).
+
+Improving Emulation Performance:
+There are many settings you can change in order to improve DeSmuME's emulation
+performance. All of the settings listed below affect performance the most. Use
+the settings as shown for the best possible performance. All of these settings
+may be found in DeSmuME > Preferences.
+
+- WARNING: Changing any Emulation setting may cause emulation glitches in
+           certain ROMs. Do not change these settings unless you are willing to
+           accept reduced ROM compatibility.
+
+    Display:
+        Video Output:
+            Use Vertical Sync - Off
+            Video Filter - None
+        3D Rendering:
+            3D Rendering Engine - SoftRasterizer
+            Rendering Threads - Automatic
+    
+    Emulation:
+        Advanced Bus Level Timing - Off (May cause glitches)
+        Rigourous 3D Rendering Timing - On (May cause graphical glitches)
+        3D Rendering Engine - Dynamic Recompiler (May reduce ROM compatibility)
+            Dynamic Recompiler Block Size - 100 (May cause glitches)
+        Use External BIOS Images - Off (May reduce ROM compatibility)
+
+3) Additional Documentation ___________________________________________________
+
+The quick start guide in this Read Me is by no means a complete reference to
+everything that DeSmuME can do! If you need any additional information about
+DeSmuME, then you can reference our online Wiki pages for up-to-date
+information.
+
+* Official Documentation: http://wiki.desmume.org/index.php?title=Main_Page
+
+This is the main Wiki page that contains all of our official documentation.
+
+* FAQ: http://wiki.desmume.org/index.php?title=Faq
+
+The Frequently Asked Questions (FAQ) page has a lot of useful general
+information about DeSmuME. Do note that some of the information may be platform
+specific, and may not directly apply to the OS X version of DeSmuME.
+
+* DeSmuME Manual for OS X:
+http://wiki.desmume.org/index.php?title=DeSmuME_Manual_for_the_Macintosh_port
+
+This page contains complete and detailed information about how to operate
+DeSmuME for OS X.
+
+* DeSmuME Build Instructions for OS X:
+http://wiki.desmume.org/index.php?title=Installing_DeSmuME_from_source_on_OS_X
+
+This page contains complete and detailed instructions about how to make your
+own build of DeSmuME for OS X directly from the source code.
+
+
+4) Contact Information ________________________________________________________
+
+Thank you for you interest in DeSmuME! If you want to tell us how useful
+DeSmuME is in your life, your love (or hate) of certain NDS games, your passion
+for NDS homebrew development, or anything else related to DeSmuME or NDS
+emulation, then there are various ways for you to contact us!
+
+However, keep in mind that there are a few of rules that you need to follow:
+- Do not ask us to provide ROMs, BIOS files, or any other copyrighted stuff.
+  We don't want to have to deal with any legal issues that could get us in
+  trouble, or worse, completely shut down.
+  
+- When contacting us, please use the appropriate means to do it. For example,
+  if you simply want to tell us how much you love or hate us, then use the
+  comments on the official webpage. Another example: If you want to post on the
+  forum, be sure to keep the topic focused on DeSmuME; questions that ask for
+  things like us providing you the latest Pokemon cheats are not DeSmuME
+  related, and we will instead refer you to a Pokemon cheaters forum. Finally,
+  our developer chat channel is intended for furthering the development work of
+  DeSmuME; questions about how to use DeSmuME should not come here, but instead
+  go to the Support forum. In short, use the appropriate contact method. That's
+  why the different methods exist!
+
+* Official Website: http://desmume.org
+
+Our official website has the latest news on DeSmuME releases, and also has a
+lot of other useful information about DeSmuME. You can comment on different
+posts telling us how you feel about DeSmuME. Is DeSmuME the best thing in your
+life? Is it making you cry? Or is it a bunch of blah? Let us know here!
+
+* Public Forum: http://forums.desmume.org
+
+If you have a question about DeSmuME, then this is the place to ask it. But
+before you ask it, be aware that your question may have already been answered
+before, so try the following things first:
+
+- Read the manual and the FAQ. A lot of questions people have are usually
+  already answered in our documentation.
+- Do a forum search about your question.
+
+If you still need to ask a question, choose Help > Submit a Support Request in
+the DeSmuME application. Follow the onscreen instructions on the Support
+Request Form.
+
+* Live Developer Chat Channel: irc://irc.freenode.net/desmume
+
+We have a live developer chatline on Freenode IRC at #desmume. This channel
+is meant for discussing the development of DeSmuME, and shows the real work
+that goes on behind the scenes. If you are interested in doing any sort of
+software programming, software testing, documentation, or graphics work, then
+please join our chat channel! We would love for you to join us!
+
+* Bug Reports:
+
+If you believe that you have found a bug, you may submit a bug report by
+choosing Help > Submit a Bug Report in the DeSmuME application. Follow the
+onscreen instructions on the Bug Report Form.
+
+When you click Go To Bug Report Webpage, you will be taken to our bug tracker
+on SourceForge. Do note that you will need a SourceForge account in order to
+submit a bug report.
+
+Bug submissions are very welcome and encouraged. However, when you submit a bug
+to us, you MUST provide the following information, or else your bug submission
+may be rejected:
+
+- DeSmuME app version
+- Your operating system and OS version
+- Your Mac model identifier
+- The name of the running ROM when the bug was observed (or "None", if no ROM
+  was running)
+- The serial code of the running ROM when the bug was observed (or "None", if
+  no ROM was running)
+- A description of the exact behavior you observed
+- A description of the behavior you expected
+
+All of this information will be prepared for you if you use the Bug Report Form
+from Help > Submit a Bug Report.
+
+When you write your description, make sure that they are as detailed as
+possible. The better your descriptions are, the faster we can test and fix
+bugs. For example, if you observed a bug in the game Golden Sun: Dark Dawn, then
+the bug report could look something like this:
+
+    App Version: v0.9.11
+    Operating System: OS X v10.10.2 (14C1510)
+    Mac Model Identifier: iMac11,2
+    ROM Name: GOLDENSUN_DD
+    ROM Serial: NTR-BO5E-USA
+    Observed Behavior: I tried to load a save state using the
+    File > Load State > Slot 3 menu option, but the game froze. If I reset, I
+    can get the game working again.
+    Expected Behavior: The game should continue running from the point where I
+    made the save state.
+
+We will try to get your bug tested as soon as possible, but any fixes may take
+longer, depending on the complexity of the bug. Also, some bugs may require us
+to ask you for certain files, such as your ROM saves, save states, or console
+logs. For the above example, we would probably ask you for your save states to
+help us track down the bug.
+
+
+5) License ____________________________________________________________________
+
+This file is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 2 of the License, or (at your option) any later
+version.
+
+This file is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this software.  If not, see <http://www.gnu.org/licenses/>.
+
+
+    * See the GNU General Public License details in COPYING.

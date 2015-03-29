@@ -1,0 +1,592 @@
+# French translation for the desmume-glade UI.
+# Copyright (C) 2007 The DeSmuME Team.
+# Pascal Giard <evilynux@gmail.com>, 2007.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-07-17 01:38-0400\n"
+"PO-Revision-Date: 2007-07-17 05:27-0400\n"
+"Last-Translator: Pascal Giard <evilynux@gmail.com>\n"
+"Language-Team: DeSmuME Team <desmume-devel@lists.sourceforge.net>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ISO-8859-1\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Creating the selection window
+#: ../src/gtk-glade/callbacks.c:91
+msgid "Open..."
+msgstr "Ouvrir..."
+
+#: ../src/gtk-glade/callbacks.c:100
+msgid "Nds binary (.nds)"
+msgstr "Binaire NDS (.nds)"
+
+#: ../src/gtk-glade/callbacks.c:101
+msgid "Nds binary with loader (.ds.gba)"
+msgstr "Binaire NDS avec lanceur (.ds.gba)"
+
+#: ../src/gtk-glade/callbacks.c:102
+msgid "All files"
+msgstr "Tous les fichiers"
+
+#: ../src/gtk-glade/callbacks.c:117 ../src/gtk-glade/main.c:532
+#, c-format
+msgid ""
+"Unable to load :\n"
+"%s"
+msgstr ""
+"Impossible de charger:\n"
+"%s"
+
+#: ../src/gtk-glade/callbacks.c:291
+msgid "You don't have any joystick!"
+msgstr "Aucune manette de jeu n'est connectée!"
+
+#: ../src/gtk-glade/callbacks.c:293
+msgid "Can't configure joystick while the game is running!"
+msgstr "Vous ne pouvez pas configurer la manette de jeux pendant l'exécution du jeu!"
+
+#: ../src/gtk-glade/gdk_3Demu.c:64
+#, c-format
+msgid "*** Cannot get %s attribute value\n"
+msgstr "*** Impossible d'obtenir la valeur de l'attribut %s\n"
+
+#: ../src/gtk-glade/gdk_3Demu.c:158
+msgid "*** Failed to create pixmap.\n"
+msgstr "*** Échec lors de la création du pixmap.\n"
+
+#: ../src/gtk-glade/gdk_3Demu.c:168
+msgid "*** No appropriate OpenGL-capable visual found.\n"
+msgstr "*** Aucun affichage supportant OpenGL n'est détecté.\n"
+
+#: ../src/gtk-glade/gdk_3Demu.c:181
+msgid "Failed to create the GdkGLPixmap\n"
+msgstr "Échec lors de la création du GdkGLPixmap\n"
+
+#: ../src/gtk-glade/gdk_3Demu.c:191
+msgid "Connot create the OpenGL rendering context\n"
+msgstr "Impossible de créer le contexte d'affichage OpenGL\n"
+
+#: ../src/gtk-glade/glade-xml.c:113
+#, c-format
+msgid "could not find signal handler '%s'."
+msgstr "impossible de trouver la fonction associé au signal '%s'."
+
+#: ../src/gtk-glade/main.c:106
+#, c-format
+msgid "USAGE: %s [OPTIONS] [nds-file]\n"
+msgstr "UTILISATION: %s [OPTIONS] [fichier-nds]\n"
+
+#: ../src/gtk-glade/main.c:107
+msgid "OPTIONS:\n"
+msgstr "OPTIONS:\n"
+
+#: ../src/gtk-glade/main.c:109
+msgid ""
+"   --soft-convert      Use software colour conversion during OpenGL\n"
+"                       screen rendering. May produce better or worse\n"
+"                       frame rates depending on hardware.\n"
+"   \n"
+"   --disable-3d        Disables the 3D emulation\n"
+"\n"
+msgstr ""
+"   --soft-convert      Utiliser la conversion logiciel des couleurs lors de\n"
+"                       l'affichage OpenGL. Peut améliorer ou détériorer les\n"
+"                       performances dépendamment de la carte vidéo.\n"
+"\n"
+"   --disable-3d        Désactiver l'émulation 3D.\n"
+"\n"
+
+#: ../src/gtk-glade/main.c:116
+msgid ""
+"   --disable-limiter   Disables the 60 fps limiter\n"
+"   \n"
+"   --fwlang=LANG       Set the language in the firmware, LANG as follows:\n"
+"                         0 = Japanese\n"
+"                         1 = English\n"
+"                         2 = French\n"
+"                         3 = German\n"
+"                         4 = Italian\n"
+"                         5 = Spanish\n"
+"\n"
+"   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n"
+"   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n"
+"   \n"
+"   --help              Display this message\n"
+msgstr ""
+"   --disable-limiter   Désactiver la limitation de 60 images/seconde.\n"
+"   \n"
+"   --fwlang=LANG       Configurer la langue du firmware où LANG est:\n"
+"                         0 = Japanais\n"
+"                         1 = Anglais\n"
+"                         2 = Français\n"
+"                         3 = Allemand\n"
+"                         4 = Italien\n"
+"                         5 = Espagnol\n"
+"\n"
+"   --arm9gdb=PORT_NUM  Activer le stub GDB du ARM9 sur le port PORT_NUM.\n"
+"   --arm7gdb=PORT_NUM  Activer le stub GDB du ARM7 sur le port PORT_NUM.\n"
+"   \n"
+"   --help              Afficher ce message d'aide.\n"
+
+#: ../src/gtk-glade/main.c:149
+msgid "Firmware language must be set to a value from 0 to 5.\n"
+msgstr "La langue du firmware doit être une valeur entre 0 et 5.\n"
+
+#: ../src/gtk-glade/main.c:161
+msgid "ARM9 GDB stub port must be in the range 1 to 65535\n"
+msgstr "Le numéro de port du stub GDB du ARM9 doit être entre 1 et 65535\n"
+
+#: ../src/gtk-glade/main.c:173
+msgid "ARM7 GDB stub port must be in the range 1 to 65535\n"
+msgstr "Le numéro de port du stub GDB du ARM7 doit être entre 1 et 65535\n"
+
+#: ../src/gtk-glade/main.c:185
+#, c-format
+msgid "NDS file (\"%s\") already set\n"
+msgstr "Fichier NDS (\"%s\") déjà configuré\n"
+
+#: ../src/gtk-glade/main.c:198
+#, fuzzy, c-format
+msgid "USAGE: %s [options] [nds-file]\n"
+msgstr "UTILISATION: %s [OPTIONS] [fichier-nds]\n"
+
+#: ../src/gtk-glade/main.c:199
+#, c-format
+msgid "USAGE: %s --help    - for help\n"
+msgstr "UTILISATION: %s --help   - pour l'aide\n"
+
+#: ../src/gtk-glade/main.c:332
+#, c-format
+msgid "State %d (empty)"
+msgstr "État %d (vide)"
+
+#: ../src/gtk-glade/main.c:459
+#, c-format
+msgid "Failed to create ARM9 gdbstub on port %d\n"
+msgstr ""
+
+#: ../src/gtk-glade/main.c:470
+#, c-format
+msgid "Failed to create ARM7 gdbstub on port %d\n"
+msgstr ""
+
+#: ../src/gtk-glade/main.c:479
+#, c-format
+msgid "Error trying to initialize SDL: %s\n"
+msgstr ""
+
+#: ../src/gtk-glade/main.c:551
+#, c-format
+msgid "Failed to initialise openGL 3D emulation; removing 3D support\n"
+msgstr ""
+
+#: ../src/gtk-glade/main.c:557
+#, c-format
+msgid "Failed to setup openGL 3D emulation; removing 3D support\n"
+msgstr ""
+
+#: ../src/gtk-glade/main.c:584
+#, c-format
+msgid "Error trying to start FPS limiter timer: %s\n"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:1
+msgid "0"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:2
+msgid "1"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:3
+msgid "1x"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:4
+msgid "2"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:5
+msgid "2x"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:6
+msgid "3"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:7
+msgid "3D operation detected"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:8
+msgid "3D rom"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:9
+msgid "3x"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:10
+msgid "4"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:11
+msgid "5"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:12
+msgid "6"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:13
+msgid "7"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:14
+msgid "8"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:15
+msgid "9"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:16
+msgid "?"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:17
+msgid "A : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:18
+msgid "Audio On"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:19
+msgid "Axis :"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:20
+msgid "B : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:21
+msgid "BG0"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:22
+msgid "BG1"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:23
+msgid "BG2"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:24
+msgid "BG3"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:25
+msgid "Boost : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:26
+msgid "Config"
+msgstr "_Config."
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:27
+msgid "DeSmuME"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:28
+msgid "DeSmuMe"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:29
+msgid "Debug : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:30
+msgid "Down : "
+msgstr "Bas: "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:31
+msgid "FrameSkip"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:32
+msgid "IO regs"
+msgstr "Registres d'E/S"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:33
+msgid "Joystick Config"
+msgstr "Configuration de la manette de jeu"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:34
+msgid "Joystick controls"
+msgstr "Manette de jeu"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:35
+msgid "Key definition"
+msgstr "Valeur de la touche"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:36
+msgid "Keyboard Config"
+msgstr "Configuration du clavier"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:37
+msgid "Keyboard controls"
+msgstr "Clavier"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:38
+msgid "L : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:39
+msgid "Layers"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:40
+msgid "Left : "
+msgstr "Gaucher: "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:41
+msgid "Load State"
+msgstr "Chargement d'un état"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:42
+msgid "Nintendo DS emulator based on work by Yopyop"
+msgstr "Émulateur de Nintendo DS basé sur le travail de Yopyop"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:43
+msgid "OBJ"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:44
+msgid "Press a button..."
+msgstr "Appuyez sur un bouton..."
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:45
+msgid "Press a key..."
+msgstr "Appuyez sur une touche..."
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:46
+msgid "R : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:47
+msgid "Reset"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:48
+msgid "Right : "
+msgstr "Droite: "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:49
+msgid "Right Screen"
+msgstr "Écran à droite"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:50
+msgid "Rotate Screen 0"
+msgstr "Rotation de l'écran 0"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:51
+msgid "Rotate Screen 180"
+msgstr "Rotation de l'écran 180"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:52
+msgid "Rotate Screen 270"
+msgstr "Rotation de l'écran 270"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:53
+msgid "Rotate Screen 90"
+msgstr "Rotation de l'écran 90"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:54
+msgid "Save State"
+msgstr "Sauvegarder l'état"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:55
+msgid "Select : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:56
+msgid "Size"
+msgstr "Taille"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:57
+msgid "Start : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:58
+msgid "State 1"
+msgstr "État 1"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:59
+msgid "State 10"
+msgstr "État 10"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:60
+msgid "State 2"
+msgstr "État 2"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:61
+msgid "State 3"
+msgstr "État 3"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:62
+msgid "State 4"
+msgstr "État 4"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:63
+msgid "State 5"
+msgstr "État 5"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:64
+msgid "State 6"
+msgstr "État 6"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:65
+msgid "State 7"
+msgstr "État 7"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:66
+msgid "State 8"
+msgstr "État 8"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:67
+msgid "State 9"
+msgstr "État 9"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:68
+msgid "TYPE: Auto (1B)"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:69
+msgid "TYPE: EEPROM1 (4kB)"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:70
+msgid "TYPE: EEPROM2 (512kB)"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:71
+msgid "TYPE: EEPROM2 (64kB)"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:72
+msgid "TYPE: FLASH (256kB)"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:73
+msgid "TYPE: FRAM (2MB)"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:74
+msgid "Tools"
+msgstr "Outils"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:75
+msgid "True Gap"
+msgstr "Espace entre les écrans"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:76
+msgid "Up : "
+msgstr "Haut: "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:77
+msgid "View Memory"
+msgstr "Afficher la mémoire"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:78
+msgid "View Palette"
+msgstr "Afficher la palette de couleur"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:79
+msgid "View Tiles"
+msgstr "Afficher les tuiles"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:80
+msgid "X : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:81
+msgid "Y : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:82
+msgid "_Emulation"
+msgstr "_Émul."
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:83
+msgid "_File"
+msgstr "_Fichier"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:84
+msgid "_PrintScreen"
+msgstr "_Capture d'écran"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:85
+msgid "_Saves"
+msgstr "_Sauv."
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:86
+msgid "http://desmume.sf.net"
+msgstr ""
+
+#. TRANSLATORS: Replace this string with your names, one name per line.
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:88
+msgid "translator-credits"
+msgstr "fr: Pascal Giard"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:1
+msgid "      GoTo: "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:2
+msgid "  Palette : "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:3
+msgid "16 bit"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:4
+msgid "16c"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:5
+msgid "256c"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:6
+msgid "32 bit"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:7
+msgid "8 bit"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:8
+msgid ""
+"ARM9 cpu\n"
+"ARM7 cpu"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:10
+msgid "BMP"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:11
+msgid "Go!"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:12
+msgid ""
+"cpu : ARM9\n"
+"cpu : ARM7"
+msgstr ""

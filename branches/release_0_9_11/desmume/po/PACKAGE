@@ -1,0 +1,17 @@
+# Makefile snippet that holds all package-dependent information.
+
+# Add more languages here!  Beware that this is a makefile snippet and
+# you have to adhere to make syntax.
+LINGUAS = fr pt_BR sv zh_CN
+
+# Textdomain for our package.
+
+TEXTDOMAIN = desmume
+
+# Initial copyright holder added to pot and po files.
+COPYRIGHT_HOLDER = Pascal Giard
+#COPYRIGHT_HOLDER = Edit the file PACKAGE to change this.
+
+# Where to send msgid bugs?  
+MSGID_BUGS_ADDRESS = Desmume Team <desmume-devel@lists.sourceforge.net>
+#MSGID_BUGS_ADDRESS = Edit the file PACAKGE to change this.

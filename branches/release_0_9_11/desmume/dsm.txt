@@ -1,0 +1,74 @@
+DSM is ascii plain text. It is derived from the FCEUX FM2 format.
+It consists of several key-value pairs followed by an inputlog section.
+The inputlog section can be identified by its starting with a | (pipe).
+The inputlog section terminates at eof.
+Newlines may be \r\n or \n
+
+Key-value pairs consist of a key identifier, followed by a space separator, followed by the value text.
+Value text is always terminated by a newline, which the value text will not include.
+The value text is parsed differently depending on the type of the key.
+The key-value pairs may be in any order, except that the first key must be version.
+
+Integer keys (also used for booleans, with a 1 or 0) will have a value that is a simple integer not to exceed 32bits
+ - version (required) - the version of the movie file format; for now it is always 3
+ - emuVersion (required) - the version of the emulator used to produce the movie
+ - rerecordCount (optional) - the rerecord count
+ - romChecksum (optional) - the CRC32 of the rom used to make the movie. should match values specified on advanscene.com
+ - romSerial (optional) - a concatenation of other uniquely identifying information about the rom (name,gamecode,makercode)
+ - useExtBios (optional) - were bios files was used? defaults to false. 
+ - swiFromBios (optional) - were swi emulated by ExtBios? (alternative is internal HLE bios). defaults to false.
+ 
+The rom identification information may be used at a later point to warn about mismatches between movies and roms, but is not right now.
+
+String keys have values that consist of the remainder of the key-value pair line. As a consequence, string values cannot contain newlines.
+ - romFilename (required) - the name of the file used to record the movie
+ - comment (optional) - simply a memo. 
+     by convention, the first token in the comment value is the subject of the comment.
+     by convention, subsequent comments with the same subject will have their ordering preserved and may be used to approximate multiline comments.
+     by convention, the author of the movie should be stored in comment(s) with a subject of: author
+
+Hex string keys (used for binary blobs) will have a value that is like 0x0123456789ABCDEF...
+ - romChecksum (required) - this is currently unused.
+
+GUID keys have a value which is in the standard guid format: 452DE2C3-EF43-2FA9-77AC-0677FC51543B
+ - guid (required) a unique identifier for a movie, generated when the movie is created, which is used when loading a savestate to make sure it belongs to the current movie.
+
+The inputlog section consists of lines beginning and ending with a | (pipe).
+The fields are as follows, except as noted in note C.
+|c|.............XXX YYY Z|
+
+'R','L','D','U','T','S','B','A','Y','X','W','E','G'
+
+field c is a variable length decimal integer which is a bitfield corresponding to miscellaneous input states which are valid at the start of the frame.
+Therefore, no miscellaneous commands is represented by a value of 0.
+Here are the currently defined bit values:
+0x01 - Microphone Noise (hardcoded noise sample; to be held through duration of frame)
+0x02 - Reset
+0x04 - Lid
+
+
+the format of the main section is as follows:
+
+ the field begins with 13 characters which constitute a bitfield.
+ any character other than ' ' or '.' means that the button was pressed.
+ by convention, the following mnemonics will be used in a column to remind us of which button corresponds to which column:
+   RLDUTSBAYXWEG (Right,Left,Down,Up,sTart,Select,B,A,Y,X,lshoulder,rshoulder,debuG)
+ This ordering is based on FCEUX to a certain extent, and arbitrary after that.
+ W and E were chosen for shoulders to suggest West and East for Left and Right.
+ While the emulator supports a 'lid' button, and to some extent a 'blow' button, these are not supported in the movies.
+
+ XXX: %03d, the x position of the stylus (0,0 topleft, 255,191 bottomright)
+ YYY: %03d, the y position of the stylus
+ Z: %1d, 1 if the stylus is pressed pressed; 0 if not
+
+Additional fields after this main section may be added later without breaking the file format.
+
+* Notes *
+A. There is no key-value pair that indicates the length of the movie. This must be read by scanning the inputlog and counting the number of lines.
+
+B. All movies start from power-on.
+
+C. The emulator uses these framerate constants
+   arm7_cycles_per_frame = 560190
+   frames_per_second = 59.8261
+

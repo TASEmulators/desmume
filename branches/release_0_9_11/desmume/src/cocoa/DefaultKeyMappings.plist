@@ -1,0 +1,768 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CommandTagList</key>
+	<array>
+		<string>Up</string>
+		<string>Down</string>
+		<string>Left</string>
+		<string>Right</string>
+		<string>A</string>
+		<string>B</string>
+		<string>X</string>
+		<string>Y</string>
+		<string>L</string>
+		<string>R</string>
+		<string>Start</string>
+		<string>Select</string>
+		<string>Touch</string>
+		<string>Microphone</string>
+		<string>Lid</string>
+		<string>Debug</string>
+		<string>Guitar Grip: Green</string>
+		<string>Guitar Grip: Red</string>
+		<string>Guitar Grip: Yellow</string>
+		<string>Guitar Grip: Blue</string>
+		<string>Piano: C</string>
+		<string>Piano: C#</string>
+		<string>Piano: D</string>
+		<string>Piano: D#</string>
+		<string>Piano: E</string>
+		<string>Piano: F</string>
+		<string>Piano: F#</string>
+		<string>Piano: G</string>
+		<string>Piano: G#</string>
+		<string>Piano: A</string>
+		<string>Piano: A#</string>
+		<string>Piano: B</string>
+		<string>Piano: High C</string>
+		<string>Paddle</string>
+		<string>Autohold - Set</string>
+		<string>Autohold - Clear</string>
+		<string>Execute/Pause</string>
+		<string>Frame Advance</string>
+		<string>Frame Jump</string>
+		<string>Reset</string>
+		<string>Mute/Unmute</string>
+		<string>Load State Slot</string>
+		<string>Save State Slot</string>
+		<string>Copy Screen</string>
+		<string>Rotate Display Left</string>
+		<string>Rotate Display Right</string>
+		<string>Toggle All Displays</string>
+		<string>Set Speed</string>
+		<string>Enable/Disable Speed Limiter</string>
+		<string>Enable/Disable Auto Frame Skip</string>
+		<string>Enable/Disable Cheats</string>
+		<string>Enable/Disable GPU State</string>
+	</array>
+	<key>DefaultInputProfiles</key>
+	<array>
+		<dict>
+			<key>Name</key>
+			<string>Default</string>
+			<key>IsDefaultType</key>
+			<true/>
+			<key>Mappings</key>
+			<dict>
+				<key>Up</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: Up Arrow</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>126</string>
+						<key>elementName</key>
+						<string>Up Arrow</string>
+						<key>intValue1</key>
+						<false/>
+					</dict>
+				</array>
+				<key>Down</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: Down Arrow</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>125</string>
+						<key>elementName</key>
+						<string>Down Arrow</string>
+						<key>intValue1</key>
+						<false/>
+					</dict>
+				</array>
+				<key>Left</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: Left Arrow</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>123</string>
+						<key>elementName</key>
+						<string>Left Arrow</string>
+						<key>intValue1</key>
+						<false/>
+					</dict>
+				</array>
+				<key>Right</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: Right Arrow</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>124</string>
+						<key>elementName</key>
+						<string>Right Arrow</string>
+						<key>intValue1</key>
+						<false/>
+					</dict>
+				</array>
+				<key>A</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: X</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>7</string>
+						<key>elementName</key>
+						<string>X</string>
+						<key>intValue1</key>
+						<false/>
+					</dict>
+				</array>
+				<key>B</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: Z</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>6</string>
+						<key>elementName</key>
+						<string>Z</string>
+						<key>intValue1</key>
+						<false/>
+					</dict>
+				</array>
+				<key>X</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: S</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>1</string>
+						<key>elementName</key>
+						<string>S</string>
+						<key>intValue1</key>
+						<false/>
+					</dict>
+				</array>
+				<key>Y</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: A</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>0</string>
+						<key>elementName</key>
+						<string>A</string>
+						<key>intValue1</key>
+						<false/>
+					</dict>
+				</array>
+				<key>L</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: Q</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>12</string>
+						<key>elementName</key>
+						<string>Q</string>
+						<key>intValue1</key>
+						<false/>
+					</dict>
+				</array>
+				<key>R</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: W</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>13</string>
+						<key>elementName</key>
+						<string>W</string>
+						<key>intValue1</key>
+						<false/>
+					</dict>
+				</array>
+				<key>Start</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: Return</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>36</string>
+						<key>elementName</key>
+						<string>Return</string>
+						<key>intValue1</key>
+						<false/>
+					</dict>
+				</array>
+				<key>Select</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: Tab</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>48</string>
+						<key>elementName</key>
+						<string>Tab</string>
+						<key>intValue1</key>
+						<false/>
+					</dict>
+				</array>
+				<key>Touch</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Mouse: Primary Button</string>
+						<key>deviceCode</key>
+						<string>NSEventMouse</string>
+						<key>deviceName</key>
+						<string>Mouse</string>
+						<key>elementCode</key>
+						<string>0</string>
+						<key>elementName</key>
+						<string>Primary Button</string>
+						<key>inputSettingsSummary</key>
+						<string>Use Device Coordinates</string>
+						<key>useInputForIntCoord</key>
+						<true/>
+					</dict>
+				</array>
+				<key>Microphone</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: ` (Accent)</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>50</string>
+						<key>elementName</key>
+						<string>` (Accent)</string>
+						<key>inputSettingsSummary</key>
+						<string>Internal Noise Samples</string>
+						<key>intValue1</key>
+						<integer>1</integer>
+						<key>floatValue0</key>
+						<real>250</real>
+					</dict>
+				</array>
+				<key>Lid</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: Delete (Backspace)</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>51</string>
+						<key>elementName</key>
+						<string>Delete (Backspace)</string>
+					</dict>
+				</array>
+				<key>Debug</key>
+				<array/>
+				<key>Guitar Grip: Green</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: E</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>14</string>
+						<key>elementName</key>
+						<string>E</string>
+					</dict>
+				</array>
+				<key>Guitar Grip: Red</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: R</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>15</string>
+						<key>elementName</key>
+						<string>R</string>
+					</dict>
+				</array>
+				<key>Guitar Grip: Yellow</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: T</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>17</string>
+						<key>elementName</key>
+						<string>T</string>
+					</dict>
+				</array>
+				<key>Guitar Grip: Blue</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: Y</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>16</string>
+						<key>elementName</key>
+						<string>Y</string>
+					</dict>
+				</array>
+				<key>Piano: C</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: C</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>8</string>
+						<key>elementName</key>
+						<string>C</string>
+					</dict>
+				</array>
+				<key>Piano: C#</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: F</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>3</string>
+						<key>elementName</key>
+						<string>F</string>
+					</dict>
+				</array>
+				<key>Piano: D</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: V</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>9</string>
+						<key>elementName</key>
+						<string>V</string>
+					</dict>
+				</array>
+				<key>Piano: D#</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: G</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>5</string>
+						<key>elementName</key>
+						<string>G</string>
+					</dict>
+				</array>
+				<key>Piano: E</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: B</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>11</string>
+						<key>elementName</key>
+						<string>B</string>
+					</dict>
+				</array>
+				<key>Piano: F</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: N</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>45</string>
+						<key>elementName</key>
+						<string>N</string>
+					</dict>
+				</array>
+				<key>Piano: F#</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: J</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>38</string>
+						<key>elementName</key>
+						<string>J</string>
+					</dict>
+				</array>
+				<key>Piano: G</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: M</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>46</string>
+						<key>elementName</key>
+						<string>M</string>
+					</dict>
+				</array>
+				<key>Piano: G#</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: K</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>40</string>
+						<key>elementName</key>
+						<string>K</string>
+					</dict>
+				</array>
+				<key>Piano: A</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: , (Comma)</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>43</string>
+						<key>elementName</key>
+						<string>, (Comma)</string>
+					</dict>
+				</array>
+				<key>Piano: A#</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: L</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>37</string>
+						<key>elementName</key>
+						<string>L</string>
+					</dict>
+				</array>
+				<key>Piano: B</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: . (Period)</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>47</string>
+						<key>elementName</key>
+						<string>. (Period)</string>
+					</dict>
+				</array>
+				<key>Piano: High C</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: /</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>44</string>
+						<key>elementName</key>
+						<string>/</string>
+					</dict>
+				</array>
+				<key>Paddle</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: O</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>31</string>
+						<key>elementName</key>
+						<string>O</string>
+						<key>isInputAnalog</key>
+						<false/>
+						<key>inputSettingsSummary</key>
+						<string>Paddle Adjust: -5</string>
+						<key>intValue1</key>
+						<integer>-5</integer>
+					</dict>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: P</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>35</string>
+						<key>elementName</key>
+						<string>P</string>
+						<key>isInputAnalog</key>
+						<false/>
+						<key>inputSettingsSummary</key>
+						<string>Paddle Adjust: +5</string>
+						<key>intValue1</key>
+						<integer>5</integer>
+					</dict>
+				</array>
+				<key>Autohold - Set</key>
+				<array/>
+				<key>Autohold - Clear</key>
+				<array/>
+				<key>HUD</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: H</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>4</string>
+						<key>elementName</key>
+						<string>H</string>
+					</dict>
+				</array>
+				<key>Execute/Pause</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: Forward Delete</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>117</string>
+						<key>elementName</key>
+						<string>Forward Delete</string>
+					</dict>
+				</array>
+				<key>Frame Advance</key>
+				<array/>
+				<key>Frame Jump</key>
+				<array/>
+				<key>Reset</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: Page Down</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>121</string>
+						<key>elementName</key>
+						<string>Page Down</string>
+					</dict>
+				</array>
+				<key>Mute/Unmute</key>
+				<array/>
+				<key>Load State Slot</key>
+				<array/>
+				<key>Save State Slot</key>
+				<array/>
+				<key>Copy Screen</key>
+				<array/>
+				<key>Rotate Display Left</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: [</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>33</string>
+						<key>elementName</key>
+						<string>[</string>
+						<key>intValue0</key>
+						<integer>-90</integer>
+					</dict>
+				</array>
+				<key>Rotate Display Right</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: ]</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>30</string>
+						<key>elementName</key>
+						<string>]</string>
+						<key>intValue0</key>
+						<integer>90</integer>
+					</dict>
+				</array>
+				<key>Toggle All Displays</key>
+				<array/>
+				<key>Set Speed</key>
+				<array>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: - (Dash)</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>27</string>
+						<key>elementName</key>
+						<string>- (Dash)</string>
+						<key>inputSettingsSummary</key>
+						<string>0.50x Speed</string>
+						<key>floatValue0</key>
+						<real>0.5</real>
+					</dict>
+					<dict>
+						<key>deviceInfoSummary</key>
+						<string>Keyboard: =</string>
+						<key>deviceCode</key>
+						<string>NSEventKeyboard</string>
+						<key>deviceName</key>
+						<string>Keyboard</string>
+						<key>elementCode</key>
+						<string>24</string>
+						<key>elementName</key>
+						<string>=</string>
+						<key>inputSettingsSummary</key>
+						<string>2.00x Speed</string>
+						<key>floatValue0</key>
+						<integer>2</integer>
+					</dict>
+				</array>
+				<key>Enable/Disable Speed Limiter</key>
+				<array/>
+				<key>Enable/Disable Auto Frame Skip</key>
+				<array/>
+				<key>Enable/Disable Cheats</key>
+				<array/>
+				<key>Enable/Disable GPU State</key>
+				<array/>
+			</dict>
+		</dict>
+	</array>
+</dict>
+</plist>

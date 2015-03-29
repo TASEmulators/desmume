@@ -1,0 +1,5 @@
+EXTRA_DIST = README.LIN README.MAC README.WIN dsm.txt dsv.txt autogen.sh \
+		$(PO_FILES_IN)
+DISTCLEANFILES = $(PO_FILES)
+SUBDIRS = $(PO_DIR) src
+
