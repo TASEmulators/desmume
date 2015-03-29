@@ -1,4 +1,6 @@
-0.9.10 -> 0.9.11 (r4908-r????)
+0.9.11 -> 0.9.12 (r5146-r????)
+
+0.9.10 -> 0.9.11 (r4908-r5146)
 
 In this version, we have focused on the Cocoa frontend, but there have been some good core fixes over so long.
 Notably, the save-related issues resulting in the advice "dont use 0.9.10" have been resolved.
