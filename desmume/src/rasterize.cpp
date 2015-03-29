@@ -416,7 +416,7 @@ public:
 
 		bool enabled;
 		int width, height;
-		int wmask, hmask;
+		s32 wmask, hmask;
 		int wrap;
 		int wshift;
 		int texFormat;
@@ -432,27 +432,27 @@ public:
 			enabled = gfx3d.renderState.enableTexturing && (texFormat!=0);
 		}
 
-		FORCEINLINE void clamp(int &val, const int size, const int sizemask){
+		FORCEINLINE void clamp(s32 &val, const int size, const s32 sizemask){
 			if(val<0) val = 0;
 			if(val>sizemask) val = sizemask;
 		}
-		FORCEINLINE void hclamp(int &val) { clamp(val,width,wmask); }
-		FORCEINLINE void vclamp(int &val) { clamp(val,height,hmask); }
+		FORCEINLINE void hclamp(s32 &val) { clamp(val,width,wmask); }
+		FORCEINLINE void vclamp(s32 &val) { clamp(val,height,hmask); }
 
-		FORCEINLINE void repeat(int &val, const int size, const int sizemask) {
+		FORCEINLINE void repeat(s32 &val, const int size, const s32 sizemask) {
 			val &= sizemask;
 		}
-		FORCEINLINE void hrepeat(int &val) { repeat(val,width,wmask); }
-		FORCEINLINE void vrepeat(int &val) { repeat(val,height,hmask); }
+		FORCEINLINE void hrepeat(s32 &val) { repeat(val,width,wmask); }
+		FORCEINLINE void vrepeat(s32 &val) { repeat(val,height,hmask); }
 
-		FORCEINLINE void flip(int &val, const int size, const int sizemask) {
+		FORCEINLINE void flip(s32 &val, const int size, const s32 sizemask) {
 			val &= ((size<<1)-1);
 			if(val>=size) val = (size<<1)-val-1;
 		}
-		FORCEINLINE void hflip(int &val) { flip(val,width,wmask); }
-		FORCEINLINE void vflip(int &val) { flip(val,height,hmask); }
+		FORCEINLINE void hflip(s32 &val) { flip(val,width,wmask); }
+		FORCEINLINE void vflip(s32 &val) { flip(val,height,hmask); }
 
-		FORCEINLINE void dowrap(int& iu, int& iv)
+		FORCEINLINE void dowrap(s32 &iu, s32 &iv)
 		{
 			switch(wrap) {
 				//flip none
@@ -486,25 +486,24 @@ public:
 
 		//finally, we can use floor here. but, it is slower than we want.
 		//the best solution is probably to wait until the pipeline is full of fixed point
-	
-		//add TXT Hack options - tkd3
-		if(CommonSettings.GFX3D_TXTHack==false)
+		s32 iu = 0;
+		s32 iv = 0;
+		
+		if (!CommonSettings.GFX3D_TXTHack)
 		{
-				s32 iu = s32floor(u);
-				s32 iv = s32floor(v);
-				sampler.dowrap(iu,iv);
-				FragmentColor color;
-				color.color = ((u32*)lastTexKey->decoded)[(iv<<sampler.wshift)+iu];
-			return color;
-		}else{
-				s32 iu = round_s(u);
-				s32 iv = round_s(v);
-				sampler.dowrap(iu,iv);
-				FragmentColor color;
-				color.color = ((u32*)lastTexKey->decoded)[(iv<<sampler.wshift)+iu];
-			return color;
+			iu = s32floor(u);
+			iv = s32floor(v);
 		}
-
+		else
+		{
+			iu = round_s(u);
+			iv = round_s(v);
+		}
+		
+		sampler.dowrap(iu, iv);
+		FragmentColor color;
+		color.color = ((u32*)lastTexKey->decoded)[(iv<<sampler.wshift)+iu];
+		return color;
 	}
 
 	//round function - tkd3
