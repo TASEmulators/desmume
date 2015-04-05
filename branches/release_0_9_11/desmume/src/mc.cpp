@@ -123,7 +123,7 @@ bool BackupDevice::save_state(EMUFILE* os)
 	std::vector<u8> data(fsize);
 	fpMC->fseek(0, SEEK_SET);
 	if(data.size()!=0)
-		fpMC->fwrite((char *)&data[0], fsize);
+		fpMC->fread((char *)&data[0], fsize);
 
 	u32 version = 5;
 	//v0
