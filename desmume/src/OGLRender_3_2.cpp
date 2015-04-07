@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2013 DeSmuME team
+	Copyright (C) 2008-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -110,80 +110,55 @@ static const char *fragmentShader_150 = {"\
 	\n\
 	uniform sampler2D texMainRender; \n\
 	uniform sampler1D texToonTable; \n\
+	\n\
+	uniform int stateToonShadingMode; \n\
+	uniform bool stateEnableAlphaTest; \n\
+	uniform bool stateUseWDepth; \n\
+	uniform float stateAlphaTestRef; \n\
+	\n\
+	uniform int polyMode; \n\
 	uniform int polyID; \n\
-	uniform bool hasTexture; \n\
-	uniform int polygonMode; \n\
-	uniform int toonShadingMode; \n\
-	uniform bool oglWBuffer; \n\
-	uniform bool enableAlphaTest; \n\
-	uniform float alphaTestRef; \n\
+	\n\
+	uniform bool polyEnableTexture; \n\
 	\n\
 	out vec4 outFragColor; \n\
 	\n\
 	void main() \n\
 	{ \n\
-		vec4 texColor = vec4(1.0, 1.0, 1.0, 1.0); \n\
-		vec4 fragColor; \n\
+		vec4 mainTexColor = (polyEnableTexture) ? texture(texMainRender, vtxTexCoord) : vec4(1.0, 1.0, 1.0, 1.0); \n\
+		vec4 tempFragColor = mainTexColor; \n\
 		\n\
-		if(hasTexture) \n\
+		if(polyMode == 0) \n\
 		{ \n\
-			texColor = texture(texMainRender, vtxTexCoord); \n\
+			tempFragColor = vtxColor * mainTexColor; \n\
 		} \n\
-		\n\
-		fragColor = texColor; \n\
-		\n\
-		if(polygonMode == 0) \n\
+		else if(polyMode == 1) \n\
 		{ \n\
-			fragColor = vtxColor * texColor; \n\
+			tempFragColor.rgb = (polyEnableTexture) ? (mainTexColor.rgb * mainTexColor.a) + (vtxColor.rgb * (1.0 - mainTexColor.a)) : vtxColor.rgb; \n\
+			tempFragColor.a = vtxColor.a; \n\
 		} \n\
-		else if(polygonMode == 1) \n\
-		{ \n\
-			if (texColor.a == 0.0 || !hasTexture) \n\
-			{ \n\
-				fragColor.rgb = vtxColor.rgb; \n\
-			} \n\
-			else if (texColor.a == 1.0) \n\
-			{ \n\
-				fragColor.rgb = texColor.rgb; \n\
-			} \n\
-			else \n\
-			{ \n\
-				fragColor.rgb = texColor.rgb * (1.0-texColor.a) + vtxColor.rgb * texColor.a; \n\
-			} \n\
-			\n\
-			fragColor.a = vtxColor.a; \n\
-		} \n\
-		else if(polygonMode == 2) \n\
+		else if(polyMode == 2) \n\
 		{ \n\
 			vec3 toonColor = vec3(texture(texToonTable, vtxColor.r).rgb); \n\
-			\n\
-			if (toonShadingMode == 0) \n\
-			{ \n\
-				fragColor.rgb = texColor.rgb * toonColor.rgb; \n\
-			} \n\
-			else \n\
-			{ \n\
-				fragColor.rgb = texColor.rgb * vtxColor.rgb + toonColor.rgb; \n\
-			} \n\
-			\n\
-			fragColor.a = texColor.a * vtxColor.a; \n\
+			tempFragColor.rgb = (stateToonShadingMode == 0) ? mainTexColor.rgb * toonColor.rgb : min((mainTexColor.rgb * vtxColor.rgb) + toonColor.rgb, 1.0); \n\
+			tempFragColor.a = mainTexColor.a * vtxColor.a; \n\
 		} \n\
-		else if(polygonMode == 3) \n\
+		else if(polyMode == 3) \n\
 		{ \n\
 			if (polyID != 0) \n\
 			{ \n\
-				fragColor = vtxColor; \n\
+				tempFragColor = vtxColor; \n\
 			} \n\
 		} \n\
 		\n\
-		if (fragColor.a == 0.0 || (enableAlphaTest && fragColor.a < alphaTestRef)) \n\
+		if (tempFragColor.a == 0.0 || (stateEnableAlphaTest && tempFragColor.a < stateAlphaTestRef)) \n\
 		{ \n\
 			discard; \n\
 		} \n\
 		\n\
 		float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w; \n\
-		gl_FragDepth = (oglWBuffer) ? vtxPosition.w/4096.0 : clamp((vtxPosition.z/vertW) * 0.5 + 0.5, 0.0, 1.0); \n\
-		outFragColor = fragColor; \n\
+		gl_FragDepth = (stateUseWDepth) ? vtxPosition.w/4096.0 : clamp((vtxPosition.z/vertW) * 0.5 + 0.5, 0.0, 1.0); \n\
+		outFragColor = tempFragColor; \n\
 	} \n\
 "};
 
@@ -252,7 +227,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	error = this->CreateFBOs();
 	if (error != OGLERROR_NOERR)
 	{
-		OGLRef.fboFinalOutputID = 0;
+		OGLRef.fboRenderID = 0;
 		this->isFBOSupported = false;
 		return error;
 	}
@@ -283,19 +258,28 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	// Set up FBO render targets
-	this->CreateClearImage();
+	glGenTextures(1, &OGLRef.texClearImageColorID);
+	glGenTextures(1, &OGLRef.texClearImageDepthStencilID);
 	
-	glGenRenderbuffers(1, &OGLRef.rboFinalOutputColorID);
-	glGenRenderbuffers(1, &OGLRef.rboFinalOutputDepthStencilID);
+	glBindTexture(GL_TEXTURE_2D, OGLRef.texClearImageColorID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
-	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboFinalOutputColorID);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT);
-	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboFinalOutputDepthStencilID);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT);
+	glBindTexture(GL_TEXTURE_2D, OGLRef.texClearImageDepthStencilID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+	
+	glBindTexture(GL_TEXTURE_2D, 0);
 	
 	// Set up FBOs
 	glGenFramebuffers(1, &OGLRef.fboClearImageID);
-	
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboClearImageID);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, OGLRef.texClearImageColorID, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, OGLRef.texClearImageDepthStencilID, 0);
@@ -305,37 +289,40 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 		INFO("OpenGL: Failed to created FBOs. Some emulation features will be disabled.\n");
 		
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		
 		glDeleteFramebuffers(1, &OGLRef.fboClearImageID);
-		this->DestroyClearImage();
-		
-		glDeleteRenderbuffers(1, &OGLRef.rboFinalOutputColorID);
-		glDeleteRenderbuffers(1, &OGLRef.rboFinalOutputDepthStencilID);
+		glDeleteTextures(1, &OGLRef.texClearImageColorID);
+		glDeleteTextures(1, &OGLRef.texClearImageDepthStencilID);
 		
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
 	
 	// Set up final output FBO
-	glGenFramebuffers(1, &OGLRef.fboFinalOutputID);
+	glGenRenderbuffers(1, &OGLRef.rboFragColorID);
+	glGenRenderbuffers(1, &OGLRef.rboFragDepthStencilID);
+	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboFragColorID);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT);
+	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboFragDepthStencilID);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT);
 	
-	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboFinalOutputID);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, OGLRef.rboFinalOutputColorID);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, OGLRef.rboFinalOutputDepthStencilID);
+	glGenFramebuffers(1, &OGLRef.fboRenderID);
+	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, OGLRef.rboFragColorID);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, OGLRef.rboFragDepthStencilID);
 	
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		INFO("OpenGL: Failed to created FBOs. Some emulation features will be disabled.\n");
 		
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		
 		glDeleteFramebuffers(1, &OGLRef.fboClearImageID);
-		this->DestroyClearImage();
+		glDeleteTextures(1, &OGLRef.texClearImageColorID);
+		glDeleteTextures(1, &OGLRef.texClearImageDepthStencilID);
 		
-		glDeleteFramebuffers(1, &OGLRef.fboFinalOutputID);
-		glDeleteRenderbuffers(1, &OGLRef.rboFinalOutputColorID);
-		glDeleteRenderbuffers(1, &OGLRef.rboFinalOutputDepthStencilID);
+		glDeleteFramebuffers(1, &OGLRef.fboRenderID);
+		glDeleteRenderbuffers(1, &OGLRef.rboFragColorID);
+		glDeleteRenderbuffers(1, &OGLRef.rboFragDepthStencilID);
 		
-		OGLRef.fboFinalOutputID = 0;
+		OGLRef.fboRenderID = 0;
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
 	
@@ -356,13 +343,13 @@ void OpenGLRenderer_3_2::DestroyFBOs()
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	
 	glDeleteFramebuffers(1, &OGLRef.fboClearImageID);
-	this->DestroyClearImage();
+	glDeleteTextures(1, &OGLRef.texClearImageColorID);
+	glDeleteTextures(1, &OGLRef.texClearImageDepthStencilID);
 	
-	glDeleteFramebuffers(1, &OGLRef.fboFinalOutputID);
-	glDeleteRenderbuffers(1, &OGLRef.rboFinalOutputColorID);
-	glDeleteRenderbuffers(1, &OGLRef.rboFinalOutputDepthStencilID);
+	glDeleteFramebuffers(1, &OGLRef.fboRenderID);
+	glDeleteRenderbuffers(1, &OGLRef.rboFragColorID);
+	glDeleteRenderbuffers(1, &OGLRef.rboFragDepthStencilID);
 	
 	this->isFBOSupported = false;
 }
@@ -388,33 +375,32 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO()
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	// Set up FBO render targets
-	glGenRenderbuffers(1, &OGLRef.rboMultisampleColorID);
-	glGenRenderbuffers(1, &OGLRef.rboMultisampleDepthStencilID);
+	glGenRenderbuffers(1, &OGLRef.rboMSFragColorID);
+	glGenRenderbuffers(1, &OGLRef.rboMSFragDepthStencilID);
 	
-	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMultisampleColorID);
+	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSFragColorID);
 	glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamples, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT);
-	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMultisampleDepthStencilID);
+	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSFragDepthStencilID);
 	glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamples, GL_DEPTH24_STENCIL8, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT);
 	
 	// Set up multisampled rendering FBO
-	glGenFramebuffers(1, &OGLRef.fboMultisampleRenderID);
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboMultisampleRenderID);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, OGLRef.rboMultisampleColorID);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, OGLRef.rboMultisampleDepthStencilID);
+	glGenFramebuffers(1, &OGLRef.fboMSIntermediateRenderID);
+	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboMSIntermediateRenderID);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, OGLRef.rboMSFragColorID);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, OGLRef.rboMSFragDepthStencilID);
 	
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDeleteFramebuffers(1, &OGLRef.fboMultisampleRenderID);
-		glDeleteRenderbuffers(1, &OGLRef.rboMultisampleColorID);
-		glDeleteRenderbuffers(1, &OGLRef.rboMultisampleDepthStencilID);
+		glDeleteFramebuffers(1, &OGLRef.fboMSIntermediateRenderID);
+		glDeleteRenderbuffers(1, &OGLRef.rboMSFragColorID);
+		glDeleteRenderbuffers(1, &OGLRef.rboMSFragDepthStencilID);
 		
 		INFO("OpenGL: Failed to create multisampled FBO. Multisample antialiasing will be disabled.\n");
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
 	
-	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboFinalOutputID);
+	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
 	INFO("OpenGL: Successfully created multisampled FBO.\n");
 	
 	return OGLERROR_NOERR;
@@ -430,9 +416,9 @@ void OpenGLRenderer_3_2::DestroyMultisampledFBO()
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glDeleteFramebuffers(1, &OGLRef.fboMultisampleRenderID);
-	glDeleteRenderbuffers(1, &OGLRef.rboMultisampleColorID);
-	glDeleteRenderbuffers(1, &OGLRef.rboMultisampleDepthStencilID);
+	glDeleteFramebuffers(1, &OGLRef.fboMSIntermediateRenderID);
+	glDeleteRenderbuffers(1, &OGLRef.rboMSFragColorID);
+	glDeleteRenderbuffers(1, &OGLRef.rboMSFragDepthStencilID);
 	
 	this->isMultisampledFBOSupported = false;
 }
@@ -498,14 +484,14 @@ void OpenGLRenderer_3_2::GetExtensionSet(std::set<std::string> *oglExtensionSet)
 	GLint extensionCount = 0;
 	
 	glGetIntegerv(GL_NUM_EXTENSIONS, &extensionCount);
-	for (unsigned int i = 0; i < extensionCount; i++)
+	for (size_t i = 0; i < extensionCount; i++)
 	{
 		std::string extensionName = std::string((const char *)glGetStringi(GL_EXTENSIONS, i));
 		oglExtensionSet->insert(extensionName);
 	}
 }
 
-Render3DError OpenGLRenderer_3_2::EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const unsigned int vertIndexCount)
+Render3DError OpenGLRenderer_3_2::EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const size_t vertIndexCount)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -525,15 +511,11 @@ Render3DError OpenGLRenderer_3_2::DisableVertexAttributes()
 Render3DError OpenGLRenderer_3_2::SelectRenderingFramebuffer()
 {
 	OGLRenderRef &OGLRef = *this->ref;
+	static const GLenum drawDirect[1] = {GL_COLOR_ATTACHMENT0};
 	
-	if (this->isMultisampledFBOSupported)
-	{
-		OGLRef.selectedRenderingFBO = CommonSettings.GFX3D_Renderer_Multisample ? OGLRef.fboMultisampleRenderID : OGLRef.fboFinalOutputID;
-		glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
-		
-		const GLenum drawBufferList = {GL_COLOR_ATTACHMENT0};
-		glDrawBuffers(1, &drawBufferList);
-	}
+	OGLRef.selectedRenderingFBO = (CommonSettings.GFX3D_Renderer_Multisample) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
+	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
+	glDrawBuffers(1, &drawDirect[0]);
 	
 	return OGLERROR_NOERR;
 }
@@ -542,15 +524,15 @@ Render3DError OpenGLRenderer_3_2::DownsampleFBO()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if (!this->isMultisampledFBOSupported || OGLRef.selectedRenderingFBO != OGLRef.fboMultisampleRenderID)
+	if (OGLRef.selectedRenderingFBO != OGLRef.fboMSIntermediateRenderID)
 	{
 		return OGLERROR_NOERR;
 	}
 	
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboFinalOutputID);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboRenderID);
 	glBlitFramebuffer(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboFinalOutputID);
+	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
 	
 	return OGLERROR_NOERR;
 }

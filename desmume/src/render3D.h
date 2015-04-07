@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2013 DeSmuME team
+	Copyright (C) 2007-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -84,13 +84,16 @@ typedef int Render3DError;
 class Render3D
 {
 protected:
+	CACHE_ALIGN u16 clearImageColor16Buffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
+	CACHE_ALIGN u32 clearImageDepthStencilBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
+	
 	virtual Render3DError BeginRender(const GFX3D_State *renderState);
 	virtual Render3DError PreRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
 	virtual Render3DError DoRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
 	virtual Render3DError PostRender();
 	virtual Render3DError EndRender(const u64 frameCount);
 	
-	virtual Render3DError UpdateClearImage(const u16 *__restrict colorBuffer, const u16 *__restrict depthBuffer, const u8 clearStencil, const u8 xScroll, const u8 yScroll);
+	virtual Render3DError UpdateClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer);
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	
 	virtual Render3DError ClearFramebuffer(const GFX3D_State *renderState);
@@ -99,9 +102,11 @@ protected:
 	
 	virtual Render3DError SetupPolygon(const POLY *thePoly);
 	virtual Render3DError SetupTexture(const POLY *thePoly, bool enableTexturing);
-	virtual Render3DError SetupViewport(const POLY *thePoly);
+	virtual Render3DError SetupViewport(const u32 viewportValue);
 	
 public:
+	Render3D();
+	
 	virtual Render3DError Reset();
 	virtual Render3DError Render(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, const u64 frameCount);
 	virtual Render3DError RenderFinish();
