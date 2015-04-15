@@ -25,12 +25,12 @@ static THREAD_FUNC_RET_TYPE THREAD_FUNC_CALL_TYPE LoopThreadFunc(void *pp)
   for (;;)
   {
     if (Event_Wait(&p->startEvent) != 0)
-      return SZ_ERROR_THREAD;
+      return (THREAD_FUNC_RET_TYPE) SZ_ERROR_THREAD;
     if (p->stop)
       return 0;
     p->res = p->func(p->param);
     if (Event_Set(&p->finishedEvent) != 0)
-      return SZ_ERROR_THREAD;
+      return (THREAD_FUNC_RET_TYPE) SZ_ERROR_THREAD;
   }
 }
 
@@ -239,7 +239,7 @@ static THREAD_FUNC_RET_TYPE THREAD_FUNC_CALL_TYPE ThreadFunc(void *pp)
       next->stopWriting = True;
       Event_Set(&next->canRead);
       Event_Set(&next->canWrite);
-      return res;
+      return (THREAD_FUNC_RET_TYPE) (long) res;
     }
     if (stop)
       return 0;

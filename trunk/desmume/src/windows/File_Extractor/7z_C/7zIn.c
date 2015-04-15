@@ -1322,7 +1322,7 @@ SRes SzArEx_Open(CSzArEx *p, ILookInStream *inStream, ISzAlloc *allocMain, ISzAl
 SRes SzArEx_Extract(
     const CSzArEx *p,
     ILookInStream *inStream,
-    UInt32 fileIndex,
+    UInt64 fileIndex,
     UInt32 *blockIndex,
     Byte **outBuffer,
     size_t *outBufferSize,

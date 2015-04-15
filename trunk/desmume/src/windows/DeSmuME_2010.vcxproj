@@ -125,7 +125,7 @@
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;BETA_VERSION;NOMINMAX;HAVE_LIBZ;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -164,7 +164,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -204,7 +204,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;FASTBUILD;DEVELOPER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -536,40 +536,10 @@
     <ClCompile Include="File_Extractor\7z_C\7zCrc.c" />
     <ClCompile Include="File_Extractor\7z_C\7zCrcOpt.c" />
     <ClCompile Include="File_Extractor\7z_C\7zDec.c" />
-    <ClCompile Include="File_Extractor\7z_C\7zDecode.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="File_Extractor\7z_C\7zExtract.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="File_Extractor\7z_C\7zDecode.c" />
+    <ClCompile Include="File_Extractor\7z_C\7zExtract.c" />
     <ClCompile Include="File_Extractor\7z_C\7zFile.c" />
-    <ClCompile Include="File_Extractor\7z_C\7zHeader.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="File_Extractor\7z_C\7zIn.c" />
-    <ClCompile Include="File_Extractor\7z_C\7zItem.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dev+|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="File_Extractor\7z_C\7zStream.c" />
     <ClCompile Include="File_Extractor\7z_C\Alloc.c" />
     <ClCompile Include="File_Extractor\7z_C\Bcj2.c" />
@@ -591,7 +561,7 @@
     <ClCompile Include="File_Extractor\7z_C\Ppmd7.c" />
     <ClCompile Include="File_Extractor\7z_C\Ppmd7Dec.c" />
     <ClCompile Include="File_Extractor\7z_C\Ppmd7Enc.c" />
-    <ClCompile Include="File_Extractor\7z_C\Threads.c" />
+    <ClCompile Include="File_Extractor\7z_C\win32\Threads.c" />
     <ClCompile Include="File_Extractor\fex\Binary_Extractor.cpp" />
     <ClCompile Include="File_Extractor\fex\blargg_common.cpp" />
     <ClCompile Include="File_Extractor\fex\blargg_errors.cpp" />
@@ -606,20 +576,33 @@
     <ClCompile Include="File_Extractor\fex\Zlib_Inflater.cpp" />
     <ClCompile Include="File_Extractor\unrar\archive.cpp" />
     <ClCompile Include="File_Extractor\unrar\arcread.cpp" />
+    <ClCompile Include="File_Extractor\unrar\blake2s.cpp" />
+    <ClCompile Include="File_Extractor\unrar\blake2sp.cpp" />
+    <ClCompile Include="File_Extractor\unrar\blake2s_sse.cpp" />
     <ClCompile Include="File_Extractor\unrar\coder.cpp" />
     <ClCompile Include="File_Extractor\unrar\crc.cpp" />
     <ClCompile Include="File_Extractor\unrar\encname.cpp" />
     <ClCompile Include="File_Extractor\unrar\extract.cpp" />
     <ClCompile Include="File_Extractor\unrar\getbits.cpp" />
+    <ClCompile Include="File_Extractor\unrar\hash.cpp" />
+    <ClCompile Include="File_Extractor\unrar\headers.cpp" />
     <ClCompile Include="File_Extractor\unrar\model.cpp" />
+    <ClCompile Include="File_Extractor\unrar\pathfn.cpp" />
     <ClCompile Include="File_Extractor\unrar\rarvm.cpp" />
     <ClCompile Include="File_Extractor\unrar\rarvmtbl.cpp" />
     <ClCompile Include="File_Extractor\unrar\rawread.cpp" />
+    <ClCompile Include="File_Extractor\unrar\secpassword.cpp" />
+    <ClCompile Include="File_Extractor\unrar\strfn.cpp" />
     <ClCompile Include="File_Extractor\unrar\suballoc.cpp" />
+    <ClCompile Include="File_Extractor\unrar\timefn.cpp" />
     <ClCompile Include="File_Extractor\unrar\unicode.cpp" />
     <ClCompile Include="File_Extractor\unrar\unpack.cpp" />
     <ClCompile Include="File_Extractor\unrar\unpack15.cpp" />
     <ClCompile Include="File_Extractor\unrar\unpack20.cpp" />
+    <ClCompile Include="File_Extractor\unrar\unpack30.cpp" />
+    <ClCompile Include="File_Extractor\unrar\unpack50.cpp" />
+    <ClCompile Include="File_Extractor\unrar\unpack50frag.cpp" />
+    <ClCompile Include="File_Extractor\unrar\unpackinline.cpp" />
     <ClCompile Include="File_Extractor\unrar\unrar.cpp" />
     <ClCompile Include="File_Extractor\unrar\unrar_misc.cpp" />
     <ClCompile Include="File_Extractor\unrar\unrar_open.cpp" />
@@ -671,7 +654,6 @@
     <ClInclude Include="..\debug.h" />
     <ClInclude Include="..\Disassembler.h" />
     <ClInclude Include="..\driver.h" />
-    <ClInclude Include="..\emufat_types.h" />
     <ClInclude Include="..\emufile.h" />
     <ClInclude Include="..\encrypt.h" />
     <ClInclude Include="..\fat.h" />
@@ -817,9 +799,7 @@
     <ClInclude Include="File_Extractor\7z_C\7zDecode.h" />
     <ClInclude Include="File_Extractor\7z_C\7zExtract.h" />
     <ClInclude Include="File_Extractor\7z_C\7zFile.h" />
-    <ClInclude Include="File_Extractor\7z_C\7zHeader.h" />
     <ClInclude Include="File_Extractor\7z_C\7zIn.h" />
-    <ClInclude Include="File_Extractor\7z_C\7zItem.h" />
     <ClInclude Include="File_Extractor\7z_C\7zTypes.h" />
     <ClInclude Include="File_Extractor\7z_C\7zVersion.h" />
     <ClInclude Include="File_Extractor\7z_C\Alloc.h" />
@@ -843,6 +823,7 @@
     <ClInclude Include="File_Extractor\7z_C\RotateDefs.h" />
     <ClInclude Include="File_Extractor\7z_C\Threads.h" />
     <ClInclude Include="File_Extractor\7z_C\Types.h" />
+    <ClInclude Include="File_Extractor\7z_C\win32\Threads.h" />
     <ClInclude Include="File_Extractor\fex\Binary_Extractor.h" />
     <ClInclude Include="File_Extractor\fex\blargg_common.h" />
     <ClInclude Include="File_Extractor\fex\blargg_config.h" />
@@ -860,22 +841,24 @@
     <ClInclude Include="File_Extractor\fex\Zlib_Inflater.h" />
     <ClInclude Include="File_Extractor\unrar\archive.hpp" />
     <ClInclude Include="File_Extractor\unrar\array.hpp" />
+    <ClInclude Include="File_Extractor\unrar\blake2s.hpp" />
     <ClInclude Include="File_Extractor\unrar\coder.hpp" />
     <ClInclude Include="File_Extractor\unrar\compress.hpp" />
     <ClInclude Include="File_Extractor\unrar\encname.hpp" />
     <ClInclude Include="File_Extractor\unrar\getbits.hpp" />
+    <ClInclude Include="File_Extractor\unrar\hash.hpp" />
     <ClInclude Include="File_Extractor\unrar\headers.hpp" />
+    <ClInclude Include="File_Extractor\unrar\headers5.hpp" />
     <ClInclude Include="File_Extractor\unrar\model.hpp" />
     <ClInclude Include="File_Extractor\unrar\rar.hpp" />
     <ClInclude Include="File_Extractor\unrar\rarvm.hpp" />
     <ClInclude Include="File_Extractor\unrar\rawread.hpp" />
+    <ClInclude Include="File_Extractor\unrar\strfn.hpp" />
     <ClInclude Include="File_Extractor\unrar\suballoc.hpp" />
+    <ClInclude Include="File_Extractor\unrar\timefn.hpp" />
     <ClInclude Include="File_Extractor\unrar\unicode.hpp" />
     <ClInclude Include="File_Extractor\unrar\unpack.hpp" />
     <ClInclude Include="File_Extractor\unrar\unrar.h" />
-    <ClInclude Include="filter\hq2x.h" />
-    <ClInclude Include="filter\interp.h" />
-    <ClInclude Include="filter\lq2x.h" />
     <ClInclude Include="FirmConfig.h" />
     <ClInclude Include="fsnitroView.h" />
     <ClInclude Include="gbaslot_config.h" />
@@ -984,6 +967,7 @@
     <None Include="File_Extractor\7z_C\changes.txt" />
     <None Include="File_Extractor\7z_C\lzma.txt" />
     <None Include="File_Extractor\7z_C\readme.txt" />
+    <None Include="File_Extractor\unrar\acknow.txt" />
     <None Include="File_Extractor\unrar\changes.txt" />
     <None Include="File_Extractor\unrar\license.txt" />
     <None Include="File_Extractor\unrar\readme.txt" />

@@ -20,7 +20,7 @@ protected:
 	virtual blargg_err_t rewind_v();
 
 	virtual blargg_err_t stat_v();
-	virtual blargg_err_t extract_v( void*, int );
+	virtual blargg_err_t extract_v( void*, long );
 };
 
 #endif

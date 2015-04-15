@@ -42,8 +42,7 @@ void Rar_Error_Handler::MemoryError()
 
 //// Internal
 
-unrar_t::unrar_t() :
-	Buffer( &Arc )
+unrar_t::unrar_t()
 {
 	Arc.user_read   = NULL;
 	Arc.user_write  = NULL;
@@ -74,8 +73,8 @@ unrar_t::~unrar_t()
 static inline bool solid_file( const unrar_t* p )
 {
 	return p->Arc.Solid &&
-			p->Arc.NewLhd.Method != 0x30 &&
-			p->Arc.NewLhd.FullPackSize != 0;
+			p->Arc.FileHead.Method != 0 &&
+			p->Arc.FileHead.PackSize != 0;
 }
 
 static void update_solid_pos( unrar_t* p )
@@ -129,8 +128,9 @@ static unrar_err_t next_( unrar_t* p, bool skipping_solid )
 	
 	for (;;)
 	{
+        size_t ReadSize;
 		p->Arc.SeekToNext();
-		unrar_err_t const err = p->Arc.ReadHeader();
+		unrar_err_t const err = p->Arc.ReadHeader(&ReadSize);
 		if ( err != unrar_err_arc_eof )
 			RETURN_ERR( err );
 		//else
@@ -138,16 +138,16 @@ static unrar_err_t next_( unrar_t* p, bool skipping_solid )
 
 		HEADER_TYPE const type = (HEADER_TYPE) p->Arc.GetHeaderType();
 		
-		if ( err != unrar_ok || type == ENDARC_HEAD )
+		if ( err != unrar_ok || type == HEAD_ENDARC )
 		{
 			p->done = true;
 			break;
 		}
 		
-		if ( type != FILE_HEAD )
+		if ( type != HEAD_FILE )
 		{
 			// Skip non-files
-			if ( type != NEWSUB_HEAD && type != PROTECT_HEAD && type != SIGN_HEAD && type != SUB_HEAD )
+			if ( type != HEAD_SERVICE && type != HEAD_CRYPT && type != HEAD_MARK )
 				debug_printf( "unrar: Skipping unknown block type: %X\n", (unsigned) type );
 			
 			update_solid_pos( p );
@@ -162,7 +162,7 @@ static unrar_err_t next_( unrar_t* p, bool skipping_solid )
 			{
 				// Ignore labels
 			}
-			else if ( IsLink( p->Arc.NewLhd.FileAttr ) )
+			else if ( IsLink( p->Arc.FileHead.FileAttr ) )
 			{
 				// Ignore links
 				
@@ -175,12 +175,12 @@ static unrar_err_t next_( unrar_t* p, bool skipping_solid )
 			}
 			else
 			{
-				p->info.size       = p->Arc.NewLhd.UnpSize;
-				p->info.name       = p->Arc.NewLhd.FileName;
-				p->info.name_w     = p->Arc.NewLhd.FileNameW;
-				p->info.is_unicode = (p->Arc.NewLhd.Flags & LHD_UNICODE) != 0;
-				p->info.dos_date   = p->Arc.NewLhd.mtime.time;
-				p->info.crc        = p->Arc.NewLhd.FileCRC;
+				p->info.size       = p->Arc.FileHead.UnpSize;
+				p->info.name_w     = p->Arc.FileHead.FileName;
+                WideToChar(p->info.name_w, p->info.name);
+				p->info.is_unicode = (p->Arc.FileHead.Flags & LHD_UNICODE) != 0;
+				p->info.dos_date   = p->Arc.FileHead.mtime.GetDos();
+				p->info.crc        = p->Arc.FileHead.FileHash.CRC32;
 				p->info.is_crc32   = !p->Arc.OldFormat;
 				
 				// Stop for files

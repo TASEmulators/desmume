@@ -6,10 +6,6 @@
 #include <stdio.h>
 #include <errno.h>
 
-#if BLARGG_UTF8_PATHS
-	#include <windows.h>
-#endif
-
 /* Copyright (C) 2005-2009 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
 General Public License as published by the Free Software Foundation; either
@@ -25,7 +21,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 // Data_Reader
 
-blargg_err_t Data_Reader::read( void* p, int n )
+blargg_err_t Data_Reader::read( void* p, long n )
 {
 	assert( n >= 0 );
 	
@@ -49,7 +45,7 @@ blargg_err_t Data_Reader::read_avail( void* p, int* n_ )
 {
 	assert( *n_ >= 0 );
 	
-	int n = min( (BOOST::uint64_t)(*n_), remain() );
+	long n = (long) min( (BOOST::uint64_t)(*n_), remain() );
 	*n_ = 0;
 	
 	if ( n < 0 )
@@ -62,7 +58,7 @@ blargg_err_t Data_Reader::read_avail( void* p, int* n_ )
 	if ( !err )
 	{
 		remain_ -= n;
-		*n_ = n;
+		*n_ = (int) n;
 	}
 	
 	return err;
@@ -76,19 +72,19 @@ blargg_err_t Data_Reader::read_avail( void* p, long* n )
 	return err;
 }
 
-blargg_err_t Data_Reader::skip_v( int count )
+blargg_err_t Data_Reader::skip_v( BOOST::uint64_t count )
 {
 	char buf [512];
 	while ( count )
 	{
-		int n = min( count, (int) sizeof buf );
+        BOOST::uint64_t n = min( count, (BOOST::uint64_t) sizeof buf );
 		count -= n;
-		RETURN_ERR( read_v( buf, n ) );
+		RETURN_ERR( read_v( buf, (long)n ) );
 	}
 	return blargg_ok;
 }
 
-blargg_err_t Data_Reader::skip( int n )
+blargg_err_t Data_Reader::skip( long n )
 {
 	assert( n >= 0 );
 	
@@ -114,9 +110,6 @@ blargg_err_t Data_Reader::skip( int n )
 blargg_err_t File_Reader::seek( BOOST::uint64_t n )
 {
 	assert( n >= 0 );
-	
-	if ( n < 0 )
-		return blargg_err_caller;
 	
 	if ( n == tell() )
 		return blargg_ok;
@@ -145,7 +138,7 @@ Subset_Reader::Subset_Reader( Data_Reader* dr, BOOST::uint64_t size ) :
 	set_remain( min( size, dr->remain() ) );
 }
 
-blargg_err_t Subset_Reader::read_v( void* p, int s )
+blargg_err_t Subset_Reader::read_v( void* p, long s )
 {
 	return in->read( p, s );
 }
@@ -162,9 +155,9 @@ Remaining_Reader::Remaining_Reader( void const* h, int size, Data_Reader* r ) :
 	set_remain( size + r->remain() );
 }
 
-blargg_err_t Remaining_Reader::read_v( void* out, int count )
+blargg_err_t Remaining_Reader::read_v( void* out, long count )
 {
-	int first = min( count, header_remain );
+	long first = min( count, header_remain );
 	if ( first )
 	{
 		memcpy( out, header, first );
@@ -184,13 +177,13 @@ Mem_File_Reader::Mem_File_Reader( const void* p, long s ) :
 	set_size( s );
 }
 
-blargg_err_t Mem_File_Reader::read_v( void* p, int s )
+blargg_err_t Mem_File_Reader::read_v( void* p, long s )
 {
 	memcpy( p, begin + tell(), s );
 	return blargg_ok;
 }
 
-blargg_err_t Mem_File_Reader::seek_v( int )
+blargg_err_t Mem_File_Reader::seek_v( BOOST::uint64_t )
 {
 	return blargg_ok;
 }
@@ -205,7 +198,7 @@ Callback_Reader::Callback_Reader( callback_t c, BOOST::uint64_t s, void* d ) :
 	set_remain( s );
 }
 
-blargg_err_t Callback_Reader::read_v( void* out, int count )
+blargg_err_t Callback_Reader::read_v( void* out, long count )
 {
 	return callback( user_data, out, count );
 }
@@ -220,12 +213,12 @@ Callback_File_Reader::Callback_File_Reader( callback_t c, BOOST::uint64_t s, voi
 	set_size( s );
 }
 
-blargg_err_t Callback_File_Reader::read_v( void* out, int count )
+blargg_err_t Callback_File_Reader::read_v( void* out, long count )
 {
 	return callback( user_data, out, count, tell() );
 }
 
-blargg_err_t Callback_File_Reader::seek_v( int )
+blargg_err_t Callback_File_Reader::seek_v( BOOST::uint64_t )
 {
 	return blargg_ok;
 }
@@ -236,8 +229,6 @@ static const BOOST::uint8_t val_tab[6]={0,0xC0,0xE0,0xF0,0xF8,0xFC};
 
 size_t utf8_char_len_from_header( char p_c )
 {
-	BOOST::uint8_t c = (BOOST::uint8_t)p_c;
-
 	size_t cnt = 0;
 	for(;;)
 	{
@@ -349,21 +340,21 @@ size_t utf8_encode_char( unsigned wide, char * target )
 	return count;
 }
 
-size_t utf16_encode_char( unsigned cur_wchar, wchar_t * out )
+size_t utf16_encode_char( unsigned cur_wchar, blargg_wchar_t * out )
 {
 	if ( cur_wchar < 0x10000 )
 	{
-		if ( out ) *out = (wchar_t) cur_wchar; return 1;
+        if ( out ) *out = (blargg_wchar_t) cur_wchar; return 1;
 	}
 	else if ( cur_wchar < ( 1 << 20 ) )
 	{
 		unsigned c = cur_wchar - 0x10000;
 		//MSDN:
-		//The first (high) surrogate is a 16-bit code value in the range U+D800 to U+DBFF. The second (low) surrogate is a 16-bit code value in the range U+DC00 to U+DFFF. Using surrogates, Unicode can support over one million characters. For more details about surrogates, refer to The Unicode Standard, version 2.0.
+        //The first (high) surrogate is a 16-bit code value in the range U+D800 to U+DBFF. The second (low) surrogate is a 16-bit code value in the range U+DC00 to U+DFFF. Using surrogates, Unicode can support over one million characters. For more details about surrogates, refer to The Unicode Standard, version 2.0.
 		if ( out )
 		{
-			out[0] = ( wchar_t )( 0xD800 | ( 0x3FF & ( c >> 10 ) ) );
-			out[1] = ( wchar_t )( 0xDC00 | ( 0x3FF & c ) ) ;
+            out[0] = ( blargg_wchar_t )( 0xD800 | ( 0x3FF & ( c >> 10 ) ) );
+            out[1] = ( blargg_wchar_t )( 0xDC00 | ( 0x3FF & c ) ) ;
 		}
 		return 2;
 	}
@@ -373,7 +364,7 @@ size_t utf16_encode_char( unsigned cur_wchar, wchar_t * out )
 	}
 }
 
-size_t utf16_decode_char( const wchar_t * p_source, unsigned * p_out, size_t p_source_length )
+size_t utf16_decode_char( const blargg_wchar_t * p_source, unsigned * p_out, size_t p_source_length )
 {
 	if ( p_source_length == 0 ) return 0;
 	else if ( p_source_length == 1 )
@@ -404,13 +395,13 @@ size_t utf16_decode_char( const wchar_t * p_source, unsigned * p_out, size_t p_s
 }
 
 // Converts wide-character path to UTF-8. Free result with free(). Only supported on Windows.
-char* blargg_to_utf8( const wchar_t* wpath )
+char* blargg_to_utf8( const blargg_wchar_t* wpath )
 {
 	if ( wpath == NULL )
 		return NULL;
 	
 	size_t needed = 0;
-	size_t mmax = wcslen( wpath );
+    size_t mmax = blargg_wcslen( wpath );
 	if ( mmax <= 0 )
 		return NULL;
 
@@ -452,7 +443,7 @@ char* blargg_to_utf8( const wchar_t* wpath )
 }
 
 // Converts UTF-8 path to wide-character. Free result with free() Only supported on Windows.
-wchar_t* blargg_to_wide( const char* path )
+blargg_wchar_t* blargg_to_wide( const char* path )
 {
 	if ( path == NULL )
 		return NULL;
@@ -474,7 +465,7 @@ wchar_t* blargg_to_wide( const char* path )
 	if ( needed <= 0 )
 		return NULL;
 	
-	wchar_t* wpath = (wchar_t*) calloc( needed + 1, sizeof *wpath );
+    blargg_wchar_t* wpath = (blargg_wchar_t*) calloc( needed + 1, sizeof *wpath );
 	if ( wpath == NULL )
 		return NULL;
 
@@ -503,15 +494,19 @@ wchar_t* blargg_to_wide( const char* path )
 static FILE* blargg_fopen( const char path [], const char mode [] )
 {
 	FILE* file = NULL;
-	wchar_t* wmode = NULL;
-	wchar_t* wpath = NULL;
+    blargg_wchar_t* wmode = NULL;
+    blargg_wchar_t* wpath = NULL;
 	
 	wpath = blargg_to_wide( path );
 	if ( wpath )
 	{
 		wmode = blargg_to_wide( mode );
-		if ( wmode )
+		if (wmode)
+#if _MSC_VER >= 1300
+			errno = _wfopen_s(&file, wpath, wmode);
+#else
 			file = _wfopen( wpath, wmode );
+#endif
 	}
 	
 	// Save and restore errno in case free() clears it
@@ -603,11 +598,21 @@ blargg_err_t Std_File_Reader::open( const char path [] )
 
 void Std_File_Reader::make_unbuffered()
 {
+#ifdef _WIN32
+    BOOST::uint64_t offset = _ftelli64( STATIC_CAST(FILE*, file_) );
+#else
+    BOOST::uint64_t offset = ftello( STATIC_CAST(FILE*, file_) );
+#endif
 	if ( setvbuf( STATIC_CAST(FILE*, file_), NULL, _IONBF, 0 ) )
 		check( false ); // shouldn't fail, but OK if it does
+#ifdef _WIN32
+    _fseeki64( STATIC_CAST(FILE*, file_), offset, SEEK_SET );
+#else
+    fseeko( STATIC_CAST(FILE*, file_), offset, SEEK_SET );
+#endif
 }
 
-blargg_err_t Std_File_Reader::read_v( void* p, int s )
+blargg_err_t Std_File_Reader::read_v( void* p, long s )
 {
 	if ( (size_t) s != fread( p, 1, s, STATIC_CAST(FILE*, file_) ) )
 	{
@@ -622,7 +627,11 @@ blargg_err_t Std_File_Reader::read_v( void* p, int s )
 
 blargg_err_t Std_File_Reader::seek_v( BOOST::uint64_t n )
 {
+#ifdef _WIN32
 	if ( _fseeki64( STATIC_CAST(FILE*, file_), n, SEEK_SET ) )
+#else
+    if ( fseeko( STATIC_CAST(FILE*, file_), n, SEEK_SET ) )
+#endif
 	{
 		// Data_Reader's wrapper should prevent EOF
 		check( !feof( STATIC_CAST(FILE*, file_) ) );
@@ -729,24 +738,30 @@ static blargg_err_t convert_gz_error( gzFile file )
 	return blargg_err_internal;
 }
 
-blargg_err_t Gzip_File_Reader::read_v( void* p, int s )
+blargg_err_t Gzip_File_Reader::read_v( void* p, long s )
 {
-	int result = gzread( file_, p, s );
-	if ( result != s )
-	{
-		if ( result < 0 )
-			return convert_gz_error( file_ );
+    while ( s > 0 )
+    {
+        int s_i = (int)( s > INT_MAX ? INT_MAX : s );
+        int result = gzread( (gzFile) file_, p, s_i );
+        if ( result != s_i )
+        {
+            if ( result < 0 )
+                return convert_gz_error( (gzFile) file_ );
 		
-		return blargg_err_file_corrupt;
-	}
+            return blargg_err_file_corrupt;
+        }
+        p = (char*)p + result;
+        s -= result;
+    }
 	
 	return blargg_ok;
 }
 
-blargg_err_t Gzip_File_Reader::seek_v( int n )
+blargg_err_t Gzip_File_Reader::seek_v( BOOST::uint64_t n )
 {
-	if ( gzseek( file_, n, SEEK_SET ) < 0 )
-		return convert_gz_error( file_ );
+    if ( gzseek( (gzFile) file_, (long)n, SEEK_SET ) < 0 )
+        return convert_gz_error( (gzFile) file_ );
 
 	return blargg_ok;
 }
@@ -755,7 +770,7 @@ void Gzip_File_Reader::close()
 {
 	if ( file_ )
 	{
-		if ( gzclose( file_ ) )
+        if ( gzclose( (gzFile) file_ ) )
 			check( false );
 		file_ = NULL;
 	}

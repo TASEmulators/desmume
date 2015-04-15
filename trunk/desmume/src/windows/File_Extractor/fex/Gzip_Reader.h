@@ -32,12 +32,12 @@ public:
 	virtual ~Gzip_Reader();
 	
 protected:
-	virtual blargg_err_t read_v( void*, int );
+	virtual blargg_err_t read_v( void*, long );
 
 private:
 	File_Reader* in;
 	unsigned crc32_;
-	int size_;
+    BOOST::uint64_t size_;
 	Zlib_Inflater inflater;
 
 	blargg_err_t calc_size();

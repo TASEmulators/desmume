@@ -24,6 +24,8 @@
 // NOTE: if you want to add support for opening files within archives to some part of DeSmuME,
 // consider using the higher-level interface provided by OpenArchive.h instead
 
+typedef const struct fex_type_t_* fex_type_t;
+
 void InitDecoder();
 void CleanupDecoder();
 const char* GetSupportedFormatsFilter();
@@ -56,7 +58,7 @@ protected:
 	};
 	ArchiveItem* m_items;
 	int m_numItems;
-	int m_typeIndex;
+	fex_type_t archiveType;
 	char* m_filename;
 };
 

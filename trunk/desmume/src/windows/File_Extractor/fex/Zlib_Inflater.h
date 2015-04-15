@@ -13,13 +13,13 @@ public:
 
 	// Reads at most min(*count,bytes_until_eof()) bytes into *out and set *count
 	// to that number, or returns error if that many can't be read.
-	typedef blargg_err_t (*callback_t)( void* user_data, void* out, int* count );
+	typedef blargg_err_t (*callback_t)( void* user_data, void* out, long* count );
 
 	// Begins by setting callback and filling buffer. Default buffer is 16K and
 	// filled to 4K, or specify buf_size and initial_read for custom buffer size
 	// and how much to read initially.
 	blargg_err_t begin( callback_t, void* user_data,
-			int buf_size = 0, int initial_read = 0 );
+			long buf_size = 0, long initial_read = 0 );
 
 	// Data read into buffer by begin()
 	const unsigned char* data() const   { return zbuf.next_in; }
@@ -39,10 +39,10 @@ public:
 	// number of bytes read (less than requested if end of data was reached).
 	// Buffers source data internally, even in copy mode, so input file can be
 	// unbuffered without sacrificing performance.
-	blargg_err_t read( void* out, int* count_io );
+	blargg_err_t read( void* out, long* count_io );
 
 	// Total number of bytes read since begin()
-	int tell() const                    { return zbuf.total_out; }
+	long tell() const                    { return zbuf.total_out; }
 
 	// Ends inflation and frees memory
 	void end();
@@ -64,7 +64,7 @@ private:
 	callback_t callback;
 	void* user_data;
 
-	blargg_err_t fill_buf( int count );
+	blargg_err_t fill_buf( long count );
 };
 
 #endif

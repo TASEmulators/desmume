@@ -59,17 +59,17 @@ Zlib_Inflater::~Zlib_Inflater()
 	end();
 }
 
-blargg_err_t Zlib_Inflater::fill_buf( int count )
+blargg_err_t Zlib_Inflater::fill_buf( long count )
 {
 	byte* out = buf.end() - count;
 	RETURN_ERR( callback( user_data, out, &count ) );
-	zbuf.avail_in = count;
+	zbuf.avail_in = (uInt) count;
 	zbuf.next_in  = out;
 	return blargg_ok;
 }
 
 blargg_err_t Zlib_Inflater::begin( callback_t new_callback, void* new_user_data,
-		int new_buf_size, int initial_read )
+		long new_buf_size, long initial_read )
 {
 	callback  = new_callback;
 	user_data = new_user_data;
@@ -163,15 +163,15 @@ blargg_err_t Zlib_Inflater::read_all( void* out, int count )
 }
 */
 
-blargg_err_t Zlib_Inflater::read( void* out, int* count_io )
+blargg_err_t Zlib_Inflater::read( void* out, long* count_io )
 {
-	int remain = *count_io;
+	long remain = *count_io;
 	if ( remain && zbuf.next_in )
 	{
 		if ( deflated_ )
 		{
 			zbuf.next_out  = (Bytef*) out;
-			zbuf.avail_out = remain;
+			zbuf.avail_out = (uInt)( remain > UINT_MAX ? UINT_MAX : remain );
 			
 			while ( 1 )
 			{
@@ -232,7 +232,7 @@ blargg_err_t Zlib_Inflater::read( void* out, int* count_io )
 				// read large request directly
 				if ( remain + zbuf.total_out % block_size >= buf.size() )
 				{
-					int count = remain;
+					long count = remain;
 					RETURN_ERR( callback( user_data, out, &count ) );
 					zbuf.total_out += count;
 					out = (char*) out + count;

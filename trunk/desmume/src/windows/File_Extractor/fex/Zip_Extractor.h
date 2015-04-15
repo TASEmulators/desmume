@@ -23,26 +23,23 @@ protected:
 	virtual fex_pos_t    tell_arc_v() const;
 	virtual blargg_err_t seek_arc_v( fex_pos_t );
 	
-	virtual blargg_err_t extract_v( void*, int );
+	virtual blargg_err_t extract_v( void*, long );
 
 private:
 	blargg_vector<char> catalog;
-	int catalog_begin;  // offset of first catalog entry in file (to detect corruption)
-	int catalog_pos;    // position of current entry in catalog
+    BOOST::int64_t catalog_begin;  // offset of first catalog entry in file (to detect corruption)
+    BOOST::int64_t catalog_pos;    // position of current entry in catalog
 	BOOST::uint64_t raw_remain;     // bytes remaining to be read from zip file for current file
-	unsigned crc;       // ongoing CRC of extracted bytes
-	unsigned correct_crc;
+	unsigned long crc;       // ongoing CRC of extracted bytes
+	unsigned long correct_crc;
 	bool file_deflated;
 	Zlib_Inflater buf;
 
-	blargg_err_t fill_buf( int offset, int buf_size, int initial_read );
+	blargg_err_t fill_buf( long offset, long buf_size, long initial_read );
 	blargg_err_t update_info( bool advance_first );
-	blargg_err_t first_read( int count );
-	void reorder_entry_header( int offset );
-	static blargg_err_t inflater_read( void* data, void* out, int* count );
-
-	blargg_vector<char> name;
-	blargg_vector<wchar_t> wname;
+	blargg_err_t first_read( long count );
+	void reorder_entry_header( long offset );
+	static blargg_err_t inflater_read( void* data, void* out, long* count );
 };
 
 #endif

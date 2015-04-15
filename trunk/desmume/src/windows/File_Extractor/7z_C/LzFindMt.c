@@ -97,7 +97,7 @@ void MtSync_Destruct(CMtSync *p)
 
 #define RINOK_THREAD(x) { if ((x) != 0) return SZ_ERROR_THREAD; }
 
-static SRes MtSync_Create2(CMtSync *p, unsigned (MY_STD_CALL *startAddress)(void *), void *obj, UInt32 numBlocks)
+static SRes MtSync_Create2(CMtSync *p, THREAD_FUNC_RET_TYPE (MY_STD_CALL *startAddress)(void *), void *obj, UInt32 numBlocks)
 {
   if (p->wasCreated)
     return SZ_OK;
@@ -119,7 +119,7 @@ static SRes MtSync_Create2(CMtSync *p, unsigned (MY_STD_CALL *startAddress)(void
   return SZ_OK;
 }
 
-static SRes MtSync_Create(CMtSync *p, unsigned (MY_STD_CALL *startAddress)(void *), void *obj, UInt32 numBlocks)
+static SRes MtSync_Create(CMtSync *p, THREAD_FUNC_RET_TYPE (MY_STD_CALL *startAddress)(void *), void *obj, UInt32 numBlocks)
 {
   SRes res = MtSync_Create2(p, startAddress, obj, numBlocks);
   if (res != SZ_OK)
@@ -451,8 +451,8 @@ void MatchFinderMt_Destruct(CMatchFinderMt *p, ISzAlloc *alloc)
 #define kHashBufferSize (kMtHashBlockSize * kMtHashNumBlocks)
 #define kBtBufferSize (kMtBtBlockSize * kMtBtNumBlocks)
 
-static unsigned MY_STD_CALL HashThreadFunc2(void *p) { HashThreadFunc((CMatchFinderMt *)p);  return 0; }
-static unsigned MY_STD_CALL BtThreadFunc2(void *p)
+static THREAD_FUNC_RET_TYPE MY_STD_CALL HashThreadFunc2(void *p) { HashThreadFunc((CMatchFinderMt *)p);  return 0; }
+static THREAD_FUNC_RET_TYPE MY_STD_CALL BtThreadFunc2(void *p)
 {
   Byte allocaDummy[0x180];
   int i = 0;

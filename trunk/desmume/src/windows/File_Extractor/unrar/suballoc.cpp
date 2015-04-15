@@ -7,6 +7,9 @@
 
 // #included by unpack.cpp
 #ifdef RAR_COMMON_HPP
+static const uint UNIT_SIZE=Max(sizeof(RARPPM_CONTEXT),sizeof(RARPPM_MEM_BLK));
+static const uint FIXED_UNIT_SIZE=12;
+
 SubAllocator::SubAllocator()
 {
 	Clean();
@@ -41,12 +44,12 @@ inline uint SubAllocator::U2B(int NU)
 
 
 /*
-   calculate RAR_MEM_BLK + Items address. Real RAR_MEM_BLK size must be
-   equal to UNIT_SIZE, so we cannot just add Items to RAR_MEM_BLK address
+   calculate RARPPM_MEM_BLK + Items address. Real RARPPM_MEM_BLK size must be
+   equal to UNIT_SIZE, so we cannot just add Items to RARPPM_MEM_BLK address
 */
-inline RAR_MEM_BLK* SubAllocator::MBPtr(RAR_MEM_BLK *BasePtr,int Items)
+inline RARPPM_MEM_BLK* SubAllocator::MBPtr(RARPPM_MEM_BLK *BasePtr,int Items)
 {
-  return((RAR_MEM_BLK*)( ((byte *)(BasePtr))+U2B(Items) ));
+  return((RARPPM_MEM_BLK*)( ((byte *)(BasePtr))+U2B(Items) ));
 }
 
 
@@ -102,9 +105,9 @@ void SubAllocator::InitSubAllocator()
 	int i, k;
 	memset(FreeList,0,sizeof(FreeList));
 	pText=HeapStart;
-	uint Size2=FIXED_UNIT_SIZE*(SubAllocatorSize/8/FIXED_UNIT_SIZE*7);
+	uint Size2=(uint)(FIXED_UNIT_SIZE*(SubAllocatorSize/8/FIXED_UNIT_SIZE*7));
 	uint RealSize2=Size2/FIXED_UNIT_SIZE*UNIT_SIZE;
-	uint Size1=SubAllocatorSize-Size2;
+	uint Size1=(uint)(SubAllocatorSize-Size2);
 	uint RealSize1=Size1/FIXED_UNIT_SIZE*UNIT_SIZE+Size1%FIXED_UNIT_SIZE;
 #ifdef STRICT_ALIGNMENT_REQUIRED
 	if (Size1%FIXED_UNIT_SIZE!=0)
@@ -132,14 +135,14 @@ void SubAllocator::InitSubAllocator()
 
 inline void SubAllocator::GlueFreeBlocks()
 {
-	RAR_MEM_BLK s0, * p, * p1;
+	RARPPM_MEM_BLK s0, * p, * p1;
 	int i, k, sz;
 	if (LoUnit != HiUnit)
 		*LoUnit=0;
 	for (i=0, s0.next=s0.prev=&s0;i < N_INDEXES;i++)
 		while ( FreeList[i].next )
 		{
-			p=(RAR_MEM_BLK*)RemoveNode(i);
+			p=(RARPPM_MEM_BLK*)RemoveNode(i);
 			p->insertAt(&s0);
 			p->Stamp=0xFFFF;
 			p->NU=Indx2Units[i];

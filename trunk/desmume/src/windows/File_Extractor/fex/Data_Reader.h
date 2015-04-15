@@ -26,13 +26,13 @@ public:
 
 	// Reads exactly n bytes, or returns error if they couldn't ALL be read.
 	// Reading past end of file results in blargg_err_file_eof.
-	blargg_err_t read( void* p, int n );
+	blargg_err_t read( void* p, long n );
 
 	// Number of bytes remaining until end of file
 	BOOST::uint64_t remain() const                              { return remain_; }
 
 	// Reads and discards n bytes. Skipping past end of file results in blargg_err_file_eof.
-	blargg_err_t skip( int n );
+	blargg_err_t skip( long n );
 	
 	virtual ~Data_Reader() { }
 
@@ -50,12 +50,12 @@ protected:
 	
 	// Do same as read(). Guaranteed that 0 < n <= remain(). Value of remain() is updated
 	// AFTER this call succeeds, not before. set_remain() should NOT be called from this.
-	virtual blargg_err_t read_v( void*, int n )     BLARGG_PURE( { (void)n; return blargg_ok; } )
+	virtual blargg_err_t read_v( void*, long n )     BLARGG_PURE( { (void)n; return blargg_ok; } )
 	
 	// Do same as skip(). Guaranteed that 0 < n <= remain(). Default just reads data
 	// and discards it. Value of remain() is updated AFTER this call succeeds, not
 	// before. set_remain() should NOT be called from this.
-	virtual blargg_err_t skip_v( int n );
+	virtual blargg_err_t skip_v( BOOST::uint64_t n );
 
 // Implementation
 public:
@@ -126,7 +126,7 @@ public:
 	virtual ~Std_File_Reader();
 	
 protected:
-	virtual blargg_err_t read_v( void*, int );
+	virtual blargg_err_t read_v( void*, long );
 	virtual blargg_err_t seek_v( BOOST::uint64_t );
 
 private:
@@ -142,8 +142,8 @@ public:
 
 // Implementation
 protected:
-	virtual blargg_err_t read_v( void*, int );
-	virtual blargg_err_t seek_v( int );
+	virtual blargg_err_t read_v( void*, long );
+	virtual blargg_err_t seek_v( BOOST::uint64_t );
 
 private:
 	const char* const begin;
@@ -158,7 +158,7 @@ public:
 
 // Implementation
 protected:
-	virtual blargg_err_t read_v( void*, int );
+	virtual blargg_err_t read_v( void*, long );
 
 private:
 	Data_Reader* const in;
@@ -175,12 +175,12 @@ public:
 
 // Implementation
 protected:
-	virtual blargg_err_t read_v( void*, int );
+	virtual blargg_err_t read_v( void*, long );
 
 private:
 	Data_Reader* const in;
 	void const* header;
-	int header_remain;
+	long header_remain;
 };
 
 
@@ -189,7 +189,7 @@ extern "C" { // necessary to be usable from C
 	typedef const char* (*callback_reader_func_t)(
 		void* user_data,    // Same value passed to constructor
 		void* out,          // Buffer to place data into
-		int count           // Number of bytes to read
+		long count           // Number of bytes to read
 	);
 }
 class Callback_Reader : public Data_Reader {
@@ -199,7 +199,7 @@ public:
 	
 // Implementation
 protected:
-	virtual blargg_err_t read_v( void*, int );
+	virtual blargg_err_t read_v( void*, long );
 
 private:
 	callback_t const callback;
@@ -212,7 +212,7 @@ extern "C" { // necessary to be usable from C
 	typedef const char* (*callback_file_reader_func_t)(
 		void* user_data,    // Same value passed to constructor
 		void* out,          // Buffer to place data into
-		int count,          // Number of bytes to read
+		long count,          // Number of bytes to read
 		BOOST::uint64_t pos             // Position in file to read from
 	);
 }
@@ -223,8 +223,8 @@ public:
 	
 // Implementation
 protected:
-	virtual blargg_err_t read_v( void*, int );
-	virtual blargg_err_t seek_v( int );
+	virtual blargg_err_t read_v( void*, long );
+	virtual blargg_err_t seek_v( BOOST::uint64_t );
 
 private:
 	callback_t const callback;
@@ -250,8 +250,8 @@ public:
 	~Gzip_File_Reader();
 	
 protected:
-	virtual blargg_err_t read_v( void*, int );
-	virtual blargg_err_t seek_v( int );
+	virtual blargg_err_t read_v( void*, long );
+	virtual blargg_err_t seek_v( BOOST::uint64_t );
 	
 private:
 	// void* so "zlib.h" doesn't have to be included here
@@ -259,7 +259,16 @@ private:
 };
 #endif
 
-char* blargg_to_utf8( const wchar_t* );
-wchar_t* blargg_to_wide( const char* );
+#ifdef _WIN32
+typedef wchar_t blargg_wchar_t;
+#elif defined(HAVE_STDINT_H)
+#include <stdint.h>
+typedef uint16_t blargg_wchar_t;
+#else
+typedef unsigned short blargg_wchar_t;
+#endif
+
+char* blargg_to_utf8( const blargg_wchar_t* );
+blargg_wchar_t* blargg_to_wide( const char* );
 
 #endif

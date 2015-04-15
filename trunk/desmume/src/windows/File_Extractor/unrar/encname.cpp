@@ -11,10 +11,10 @@ EncodeFileName::EncodeFileName()
 
 
 
-void EncodeFileName::Decode(char *Name,byte *EncName,int EncSize,wchar *NameW,
-                            int MaxDecSize)
+void EncodeFileName::Decode(char *Name,byte *EncName,size_t EncSize,wchar *NameW,
+                            size_t MaxDecSize)
 {
-  int EncPos=0,DecPos=0;
+  size_t EncPos=0,DecPos=0;
   byte HighByte=EncName[EncPos++];
   while (EncPos<EncSize && DecPos<MaxDecSize)
   {

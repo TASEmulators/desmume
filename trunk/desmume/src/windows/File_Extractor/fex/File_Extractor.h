@@ -39,7 +39,7 @@ public:
 
 	// See fex.h
 	const char* name() const            { return name_; }
-	const wchar_t* wname() const        { return wname_; }
+    const blargg_wchar_t* wname() const        { return wname_; }
 	blargg_err_t stat();
 	BOOST::uint64_t size() const                    { assert( stat_called ); return size_; }
 	unsigned int dos_date() const       { return date_; }
@@ -73,7 +73,7 @@ protected:
 	File_Reader& arc() const                        { return *reader_; }
 	
 	// Sets current file name
-	void set_name( const char name [], const wchar_t* wname = NULL );
+    void set_name( const char name [], const blargg_wchar_t* wname = NULL );
 	
 	// Sets current file information
 	void set_info( BOOST::uint64_t size, unsigned date = 0, unsigned crc = 0 );
@@ -118,7 +118,7 @@ protected:
 	virtual blargg_err_t data_v( const void** out );
 	
 	// Extract next n bytes
-	virtual blargg_err_t extract_v( void* out, int n );
+	virtual blargg_err_t extract_v( void* out, long n );
 	
 // Implementation
 public:
@@ -139,7 +139,7 @@ private:
 	
 	// Info for current file in archive
 	const char* name_;
-	const wchar_t* wname_;
+    const blargg_wchar_t* wname_;
 	unsigned    date_;
 	unsigned    crc32_;
 	BOOST::uint64_t size_;
@@ -158,13 +158,12 @@ private:
 	
 	// Data_Reader overrides
 	// TODO: override skip_v?
-	virtual blargg_err_t read_v( void* out, int n );
+	virtual blargg_err_t read_v( void* out, long n );
 };
 
 struct fex_type_t_
 {
 	const char* extension;
-	const char** signatures;
 	File_Extractor* (*new_fex)();
 	const char* name;
 	blargg_err_t (*init)(); // Called by fex_init(). Can be NULL.

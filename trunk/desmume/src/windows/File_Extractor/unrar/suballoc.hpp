@@ -10,21 +10,21 @@
 const int N1=4, N2=4, N3=4, N4=(128+3-1*N1-2*N2-3*N3)/4;
 const int N_INDEXES=N1+N2+N3+N4;
 
-#if defined(__GNUC__) && !defined(STRICT_ALIGNMENT_REQUIRED)
-#define _PACK_ATTR __attribute__ ((packed))
+#if defined(__GNUC__) && defined(ALLOW_MISALIGNED)
+#define RARPPM_PACK_ATTR __attribute__ ((packed))
 #else
-#define _PACK_ATTR
+#define RARPPM_PACK_ATTR
 #endif /* defined(__GNUC__) */
 
-#ifndef STRICT_ALIGNMENT_REQUIRED
+#ifdef ALLOW_MISALIGNED
 #pragma pack(1)
 #endif
 
-struct RAR_MEM_BLK
+struct RARPPM_MEM_BLK
 {
 	ushort Stamp, NU;
-	RAR_MEM_BLK* next, * prev;
-	void insertAt(RAR_MEM_BLK* p)
+	RARPPM_MEM_BLK* next, * prev;
+	void insertAt(RARPPM_MEM_BLK* p)
 	{
 		next=(prev=p)->next;
 		p->next=next->prev=this;
@@ -34,9 +34,9 @@ struct RAR_MEM_BLK
 		prev->next=next;
 		next->prev=prev;
 	}
-} _PACK_ATTR;
+} RARPPM_PACK_ATTR;
 
-#ifndef STRICT_ALIGNMENT_REQUIRED
+#ifndef ALLOW_MISALIGNED
 #ifdef _AIX
 #pragma pack(pop)
 #else
@@ -60,7 +60,7 @@ class SubAllocator
 		uint GetUsedMemory();
 		inline void GlueFreeBlocks();
 		void* AllocUnitsRare(int indx);
-		inline RAR_MEM_BLK* MBPtr(RAR_MEM_BLK *BasePtr,int Items);
+		inline RARPPM_MEM_BLK* MBPtr(RARPPM_MEM_BLK *BasePtr,int Items);
 
 		long SubAllocatorSize;
 		byte Indx2Units[N_INDEXES], Units2Indx[128], GlueCount;

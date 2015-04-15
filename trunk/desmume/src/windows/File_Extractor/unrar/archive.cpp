@@ -5,90 +5,89 @@
 
 Archive::Archive() : Raw( this )
 {
-	OldFormat=false;
+    Format=RARFMT15;
 	Solid=false;
 
 	CurBlockPos=0;
 	NextBlockPos=0;
 
-	memset(&NewMhd,0,sizeof(NewMhd));
-	NewMhd.HeadType=MAIN_HEAD;
-	NewMhd.HeadSize=SIZEOF_NEWMHD;
-	HeaderCRC=0;
+    memset(&MainHead,0,sizeof(MainHead));
+    memset(&EndArcHead,0,sizeof(EndArcHead));
+
+    HeaderCRC=0;
 }
 
-bool Archive::IsSignature(byte *D)
+RARFORMAT Archive::IsSignature(const byte *D,size_t Size)
 {
-	bool Valid=false;
-	if (D[0]==0x52)
+    RARFORMAT Type=RARFMT_NONE;
+	if (Size>=1 && D[0]==0x52)
 #ifndef SFX_MODULE
-		if (D[1]==0x45 && D[2]==0x7e && D[3]==0x5e)
-		{
-			OldFormat=true;
-			Valid=true;
-		}
+		if (Size>=4 && D[1]==0x45 && D[2]==0x7e && D[3]==0x5e)
+            Type=RARFMT14;
 		else
 #endif
-			if (D[1]==0x61 && D[2]==0x72 && D[3]==0x21 && D[4]==0x1a && D[5]==0x07 && D[6]==0x00)
+			if (Size>=7 && D[1]==0x61 && D[2]==0x72 && D[3]==0x21 && D[4]==0x1a && D[5]==0x07)
 			{
-				OldFormat=false;
-				Valid=true;
+                // We check for non-zero last signature byte, so we can return
+                // a sensible warning in case we'll want to change the archive
+                // format sometimes in the future.
+                if (D[6]==0)
+                    Type=RARFMT15;
+                else if (D[6]==1)
+                    Type=RARFMT50;
+                else if (D[6]==2)
+                    Type=RARFMT_FUTURE;
 			}
-	return(Valid);
+	return Type;
 }
 
 
 unrar_err_t Archive::IsArchive()
 {
-	if (Read(MarkHead.Mark,SIZEOF_MARKHEAD)!=SIZEOF_MARKHEAD)
+	if (Read(MarkHead.Mark,SIZEOF_MARKHEAD3)!=SIZEOF_MARKHEAD3)
 		return unrar_err_not_arc;
 
-	if (IsSignature(MarkHead.Mark))
+    RARFORMAT Type;
+	if ((Type=IsSignature(MarkHead.Mark,SIZEOF_MARKHEAD3))!=RARFMT_NONE)
 	{
-		if (OldFormat)
-			Seek(0,SEEK_SET);
+        Format=Type;
+		if (Format==RARFMT14)
+			Seek(Tell()-SIZEOF_MARKHEAD3,SEEK_SET);
 	}
 	else
 	{
 		if (SFXSize==0)
 			return unrar_err_not_arc;
 	}
+    if (Format==RARFMT_FUTURE)
+        return unrar_err_new_algo;
+    if (Format==RARFMT50) // RAR 5.0 signature is one byte longer.
+    {
+        Read(MarkHead.Mark+SIZEOF_MARKHEAD3,1);
+        if (MarkHead.Mark[SIZEOF_MARKHEAD3]!=0)
+            return unrar_err_not_arc;
+        MarkHead.HeadSize=SIZEOF_MARKHEAD5;
+    }
+    else
+        MarkHead.HeadSize=SIZEOF_MARKHEAD3;
 
-	unrar_err_t error =
-	ReadHeader();
-	// (no need to seek to next)
+    unrar_err_t error;
+    size_t HeaderSize;
+    while ((error=ReadHeader(&HeaderSize))==unrar_ok && HeaderSize!=0)
+    {
+        HEADER_TYPE Type=GetHeaderType();
+        // In RAR 5.0 we need to quit after reading HEAD_CRYPT if we wish to
+        // avoid the password prompt.
+        if (Type==HEAD_MAIN)
+            break;
+        SeekToNext();
+    }
 	if ( error != unrar_ok )
 		return error;
 
-#ifndef SFX_MODULE
-	if (OldFormat)
-	{
-		NewMhd.Flags=OldMhd.Flags & 0x3f;
-		NewMhd.HeadSize=OldMhd.HeadSize;
-	}
-	else
-#endif
-	{
-		if (HeaderCRC!=NewMhd.HeadCRC)
-		{
-			return unrar_err_corrupt;
-		}
-	}
-	bool
-	Volume=(NewMhd.Flags & MHD_VOLUME);
-	Solid=(NewMhd.Flags & MHD_SOLID)!=0;
-	bool
-	Encrypted=(NewMhd.Flags & MHD_PASSWORD)!=0;
-
-	// (removed decryption and volume handling)
-
-	if ( Encrypted )
-		return unrar_err_encrypted;
-
-	if ( Volume )
-		return unrar_err_segmented;
-
-	return unrar_ok;
+    SeekToNext();
+    
+    return unrar_ok;
 }
 
 void Archive::SeekToNext()

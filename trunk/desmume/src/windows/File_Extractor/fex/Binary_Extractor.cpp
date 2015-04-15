@@ -24,7 +24,6 @@ static File_Extractor* new_binary()
 
 fex_type_t_ const fex_bin_type [1] = {{
 	"",
-	{ NULL },
 	&new_binary,
 	"file",
 	NULL
@@ -72,7 +71,7 @@ blargg_err_t Binary_Extractor::stat_v()
 	return open_v();
 }
 
-blargg_err_t Binary_Extractor::extract_v( void* p, int n )
+blargg_err_t Binary_Extractor::extract_v( void* p, long n )
 {
 	return arc().read( p, n );
 }

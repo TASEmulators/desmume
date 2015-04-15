@@ -8,6 +8,16 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+
+typedef unsigned char BOOL;
+#define FALSE 0
+#define TRUE 1
+
+typedef long LONG;
+
+typedef void *LPVOID;
+
 #endif
 
 #ifndef EXTERN_C_BEGIN

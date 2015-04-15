@@ -55,7 +55,7 @@
 				FavorSizeOrSpeed="0"
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx"
+				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;stdint"
 				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;_WIN32_WINNT=0x0501;_CRTDBG_MAPALLOC "
 				ExceptionHandling="1"
 				BasicRuntimeChecks="0"
@@ -247,7 +247,7 @@
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx"
+				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;stdint"
 				PreprocessorDefinitions="_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;NDEBUG;RELEASE;_WIN32_WINNT=0x0501"
 				StringPooling="true"
 				ExceptionHandling="1"
@@ -446,7 +446,7 @@
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx"
+				AdditionalIncludeDirectories=".;..;lua\include;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;stdint"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;NDEBUG;RELEASE;_WIN32_WINNT=0x0501;FASTBUILD"
 				StringPooling="true"
 				ExceptionHandling="1"
@@ -687,6 +687,10 @@
 			</File>
 			<File
 				RelativePath=".\FEX_Interface.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\FEX_Interface.h"
 				>
 			</File>
 			<File
@@ -961,66 +965,26 @@
 				Name="File_Extractor"
 				>
 				<File
-					RelativePath=".\File_Extractor\fex\Binary_Extractor.cpp"
+					RelativePath=".\File_Extractor\7z_C\7zIn.c"
 					>
 				</File>
 				<File
-					RelativePath=".\File_Extractor\fex\blargg_common.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\File_Extractor\fex\blargg_errors.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\File_Extractor\fex\Data_Reader.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\File_Extractor\fex\fex.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\File_Extractor\fex\fex.h"
-					>
-				</File>
-				<File
-					RelativePath=".\File_Extractor\fex\File_Extractor.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\File_Extractor\fex\Gzip_Extractor.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\File_Extractor\fex\Gzip_Reader.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\File_Extractor\fex\Rar_Extractor.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\File_Extractor\fex\Zip7_Extractor.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\File_Extractor\fex\Zip_Extractor.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\File_Extractor\fex\Zip_Extractor.h"
-					>
-				</File>
-				<File
-					RelativePath=".\File_Extractor\fex\Zlib_Inflater.cpp"
+					RelativePath=".\File_Extractor\7z_C\7zIn.h"
 					>
 				</File>
 				<Filter
-					Name="7-Zip"
+					Name="7z_C"
 					>
 					<File
+						RelativePath=".\File_Extractor\7z_C\7z.h"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\7z_C\7zAlloc.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zAlloc.h"
 						>
 					</File>
 					<File
@@ -1028,11 +992,23 @@
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\7z_C\7zBuf.h"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\7z_C\7zBuf2.c"
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\7z_C\7zC.txt"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\7z_C\7zCrc.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zCrc.h"
 						>
 					</File>
 					<File
@@ -1044,11 +1020,27 @@
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\7z_C\7zDecode.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zDecode.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zExtract.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zExtract.h"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\7z_C\7zFile.c"
 						>
 					</File>
 					<File
-						RelativePath=".\File_Extractor\7z_C\7zIn.c"
+						RelativePath=".\File_Extractor\7z_C\7zFile.h"
 						>
 					</File>
 					<File
@@ -1056,7 +1048,19 @@
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\7z_C\7zTypes.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\7zVersion.h"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\7z_C\Alloc.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Alloc.h"
 						>
 					</File>
 					<File
@@ -1064,7 +1068,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\7z_C\Bcj2.h"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\7z_C\Bra.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Bra.h"
 						>
 					</File>
 					<File
@@ -1076,7 +1088,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\7z_C\changes.txt"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\7z_C\CpuArch.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\CpuArch.h"
 						>
 					</File>
 					<File
@@ -1084,7 +1104,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\7z_C\Delta.h"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\7z_C\LzFind.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\LzFind.h"
 						>
 					</File>
 					<File
@@ -1092,11 +1120,35 @@
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\7z_C\LzFindMt.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\LzHash.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\lzma.txt"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\7z_C\Lzma2Dec.c"
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\7z_C\Lzma2Dec.h"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\7z_C\Lzma2Enc.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Lzma2Enc.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Lzma86.h"
 						>
 					</File>
 					<File
@@ -1112,7 +1164,15 @@
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\7z_C\LzmaDec.h"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\7z_C\LzmaEnc.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\LzmaEnc.h"
 						>
 					</File>
 					<File
@@ -1120,11 +1180,31 @@
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\7z_C\LzmaLib.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\LzmaTypes.h"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\7z_C\MtCoder.c"
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\7z_C\MtCoder.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Ppmd.h"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\7z_C\Ppmd7.c"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Ppmd7.h"
 						>
 					</File>
 					<File
@@ -1136,9 +1216,29 @@
 						>
 					</File>
 					<File
-						RelativePath=".\File_Extractor\7z_C\Threads.c"
+						RelativePath=".\File_Extractor\7z_C\RotateDefs.h"
 						>
 					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Threads.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\7z_C\Types.h"
+						>
+					</File>
+					<Filter
+						Name="win32"
+						>
+						<File
+							RelativePath=".\File_Extractor\7z_C\win32\Threads.c"
+							>
+						</File>
+						<File
+							RelativePath=".\File_Extractor\7z_C\win32\Threads.h"
+							>
+						</File>
+					</Filter>
 				</Filter>
 				<Filter
 					Name="unrar"
@@ -1149,6 +1249,22 @@
 					</File>
 					<File
 						RelativePath=".\File_Extractor\unrar\arcread.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\blake2s.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\blake2s.hpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\blake2s_sse.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\blake2sp.cpp"
 						>
 					</File>
 					<File
@@ -1172,7 +1288,27 @@
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\unrar\hash.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\hash.hpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\headers.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\headers5.hpp"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\unrar\model.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\pathfn.cpp"
 						>
 					</File>
 					<File
@@ -1188,7 +1324,27 @@
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\unrar\secpassword.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\strfn.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\strfn.hpp"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\unrar\suballoc.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\timefn.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\timefn.hpp"
 						>
 					</File>
 					<File
@@ -1208,6 +1364,22 @@
 						>
 					</File>
 					<File
+						RelativePath=".\File_Extractor\unrar\unpack30.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\unpack50.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\unpack50frag.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\unrar\unpackinline.cpp"
+						>
+					</File>
+					<File
 						RelativePath=".\File_Extractor\unrar\unrar.cpp"
 						>
 					</File>
@@ -1217,6 +1389,118 @@
 					</File>
 					<File
 						RelativePath=".\File_Extractor\unrar\unrar_open.cpp"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="fex"
+					>
+					<File
+						RelativePath=".\File_Extractor\fex\Binary_Extractor.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Binary_Extractor.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\blargg_common.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\blargg_common.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\blargg_config.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\blargg_endian.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\blargg_errors.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\blargg_errors.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\blargg_source.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Data_Reader.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Data_Reader.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\fex.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\fex.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\File_Extractor.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\File_Extractor.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Gzip_Extractor.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Gzip_Extractor.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Gzip_Reader.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Gzip_Reader.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Rar_Extractor.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Rar_Extractor.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Zip7_Extractor.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Zip7_Extractor.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Zip_Extractor.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Zip_Extractor.h"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Zlib_Inflater.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\File_Extractor\fex\Zlib_Inflater.h"
 						>
 					</File>
 				</Filter>
