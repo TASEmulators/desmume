@@ -31,7 +31,6 @@ struct ArchiveFormatInfo
 {
 	std::string name;
 	std::vector<std::string> extensions;
-	std::vector<std::string> signatures;
 	fex_type_t type;
 };
 
@@ -101,13 +100,6 @@ void InitDecoder()
 
 		info.type = type_list[i];
 
-		const char ** signatures = fex_type_signatures(type_list[i]);
-
-		for (unsigned int j = 0; signatures[j]; j++)
-		{
-			info.signatures.push_back(signatures[j]);
-		}
-
 		s_formatInfos.push_back(info);
 	}
 }
@@ -122,7 +114,7 @@ ArchiveFile::ArchiveFile(const char* filename)
 {
 	assert(!s_formatInfos.empty());
 
-	m_typeIndex = -1;
+	archiveType = NULL;
 	m_numItems = 0;
 	m_items = NULL;
 	m_filename = NULL;
@@ -144,52 +136,18 @@ ArchiveFile::ArchiveFile(const char* filename)
 	m_filename = new char[strlen(filename_utf8)+1];
 	strcpy(m_filename, filename_utf8);
 
-	// detect archive type using format signature in file
-	for(size_t i = 0; i < s_formatInfos.size() && m_typeIndex < 0; i++)
+	fex_err_t err = fex_identify_file(&archiveType, filename);
+
+	//handle uncompressed files specially
+	if(!err)
 	{
-		for (size_t j = 0; j < s_formatInfos[i].signatures.size(); j++)
-		{
-			fseek(file, 0, SEEK_SET);
-
-			std::string& formatSig = s_formatInfos[i].signatures[j];
-			int len = formatSig.size();
-
-			if(len == 0)
-				continue; // because some formats have no signature
-
-			char* fileSig = (char*)_alloca(len);
-			fread(fileSig, 1, len, file);
-
-			if(!memcmp(formatSig.c_str(), fileSig, len))
-				m_typeIndex = i;
-		}
+		if(!strcmp(fex_type_name(archiveType),"file"))
+			archiveType = NULL;
 	}
 
-	// if no signature match has been found, detect archive type using filename.
-	// this is only for signature-less formats
-	const char* fileExt = strrchr(filename, '.');
-	if(fileExt++)
+	if (err || archiveType == NULL)
 	{
-		for(size_t i = 0; i < s_formatInfos.size() && m_typeIndex < 0; i++)
-		{
-			if(s_formatInfos[i].signatures.empty())
-			{
-				std::vector<std::string>& formatExts = s_formatInfos[i].extensions;
-				for(size_t j = 0; j < formatExts.size(); j++)
-				{
-					if(!_stricmp(formatExts[j].c_str(), fileExt))
-					{
-						m_typeIndex = i;
-						break;
-					}
-				}
-			}
-		}
-	}
-
-	if(m_typeIndex < 0)
-	{
-		// uncompressed
+		// uncompressed, we guess
 
 		m_numItems = 1;
 		m_items = new ArchiveItem[m_numItems];
@@ -205,7 +163,7 @@ ArchiveFile::ArchiveFile(const char* filename)
 	else
 	{
 		fex_t * object;
-		fex_err_t err = fex_open_type( &object, m_filename, s_formatInfos[m_typeIndex].type );
+		fex_err_t err = fex_open_type( &object, m_filename, archiveType );
 		if ( !err )
 		{
 			int numItems = 0;
@@ -279,10 +237,10 @@ const char* ArchiveFile::GetArchiveTypeName()
 {
 	assert(!s_formatInfos.empty());
 
-	if((size_t)m_typeIndex >= s_formatInfos.size())
+	if(archiveType == NULL)
 		return "";
 
-	return s_formatInfos[m_typeIndex].name.c_str();
+	return fex_type_name(archiveType);
 }
 
 int ArchiveFile::GetNumItems()
@@ -314,7 +272,7 @@ const wchar_t* ArchiveFile::GetItemNameW(int item)
 
 bool ArchiveFile::IsCompressed()
 {
-	return (m_typeIndex >= 0);
+	return archiveType != NULL;
 }
 
 int ArchiveFile::ExtractItem(int index, unsigned char* outBuffer, int bufSize) const
@@ -328,7 +286,7 @@ int ArchiveFile::ExtractItem(int index, unsigned char* outBuffer, int bufSize) c
 	if(bufSize < item.size)
 		return 0;
 
-	if(m_typeIndex < 0)
+	if(archiveType == NULL)
 	{
 		// uncompressed
 		FILE* file = fopen(m_filename, "rb");
@@ -338,7 +296,7 @@ int ArchiveFile::ExtractItem(int index, unsigned char* outBuffer, int bufSize) c
 	else
 	{
 		fex_t * object;
-		fex_err_t err = fex_open_type( &object, m_filename, s_formatInfos[m_typeIndex].type );
+		fex_err_t err = fex_open_type( &object, m_filename, archiveType );
 		if ( !err )
 		{
 			if ( index != 0 ) err = fex_seek_arc( object, item.offset );
@@ -375,7 +333,7 @@ int ArchiveFile::ExtractItem(int index, const char* outFilename) const
 	if(outAttributes & FILE_ATTRIBUTE_READONLY)
 		SetFileAttributes(outFilename, outAttributes & ~FILE_ATTRIBUTE_READONLY); // temporarily remove read-only attribute so we can decompress to there
 
-	if(m_typeIndex < 0)
+	if(archiveType == NULL)
 	{
 		// uncompressed
 		if(!CopyFile(m_filename, outFilename, false))
@@ -384,7 +342,7 @@ int ArchiveFile::ExtractItem(int index, const char* outFilename) const
 	else
 	{
 		fex_t * object;
-		fex_err_t err = fex_open_type( &object, m_filename, s_formatInfos[m_typeIndex].type );
+		fex_err_t err = fex_open_type( &object, m_filename, archiveType );
 		if ( !err )
 		{
 			if ( index != 0 ) err = fex_seek_arc( object, item.offset );

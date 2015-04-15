@@ -25,7 +25,7 @@ Gzip_Reader::Gzip_Reader()
 Gzip_Reader::~Gzip_Reader()
 { }
 
-static blargg_err_t gzip_reader_read( void* file, void* out, int* count )
+static blargg_err_t gzip_reader_read( void* file, void* out, long* count )
 {
 	return STATIC_CAST(File_Reader*,file)->read_avail( out, count );
 }
@@ -37,7 +37,7 @@ blargg_err_t Gzip_Reader::calc_size()
 	if ( inflater.deflated() )
 	{
 		byte trailer [8];
-		int old_pos = in->tell();
+        BOOST::uint64_t old_pos = in->tell();
 		RETURN_ERR( in->seek( size_ - sizeof trailer ) );
 		RETURN_ERR( in->read( trailer, sizeof trailer ) );
 		RETURN_ERR( in->seek( old_pos ) );
@@ -72,10 +72,10 @@ void Gzip_Reader::close()
 	inflater.end();
 }
 
-blargg_err_t Gzip_Reader::read_v( void* out, int count )
+blargg_err_t Gzip_Reader::read_v( void* out, long count )
 {
 	assert( in );
-	int actual = count;
+	long actual = count;
 	RETURN_ERR( inflater.read( out, &actual ) );
 	
 	if ( actual != count )

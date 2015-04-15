@@ -9,28 +9,29 @@ unrar_err_t CmdExtract::ExtractCurrentFile( bool SkipSolid, bool check_compatibi
 {
 	check( Arc.GetHeaderType() == FILE_HEAD );
 
-	if ( Arc.NewLhd.Flags & (LHD_SPLIT_AFTER | LHD_SPLIT_BEFORE) )
+	if ( Arc.FileHead.SplitBefore || Arc.FileHead.SplitAfter )
 		return unrar_err_segmented;
 
-	if ( Arc.NewLhd.Flags & LHD_PASSWORD )
+	if ( Arc.FileHead.Encrypted )
 		return unrar_err_encrypted;
 	
 	if ( !check_compatibility_only )
 	{
-		check(   Arc.NextBlockPos-Arc.NewLhd.FullPackSize == Arc.Tell() );
-		Arc.Seek(Arc.NextBlockPos-Arc.NewLhd.FullPackSize,SEEK_SET);
+		check(   Arc.NextBlockPos-Arc.FileHead.PackSize == Arc.Tell() );
+		Arc.Seek(Arc.NextBlockPos-Arc.FileHead.PackSize,SEEK_SET);
 	}
 	
 	// (removed lots of command-line handling)
 
 #ifdef SFX_MODULE
-	if ((Arc.NewLhd.UnpVer!=UNP_VER && Arc.NewLhd.UnpVer!=29) &&
-			Arc.NewLhd.Method!=0x30)
+	if ((Arc.FileHead.UnpVer!=UNP_VER && Arc.FileHead.UnpVer!=29) &&
+			Arc.FileHead.Method!=0x30)
 #else
-	if (Arc.NewLhd.UnpVer<13 || Arc.NewLhd.UnpVer>UNP_VER)
+	if (Arc.FileHead.UnpVer!=VER_UNPACK5 &&
+        (Arc.FileHead.UnpVer<13 || Arc.FileHead.UnpVer>VER_UNPACK))
 #endif
 	{
-		if (Arc.NewLhd.UnpVer>UNP_VER)
+		if (Arc.FileHead.UnpVer>VER_UNPACK)
 			return unrar_err_new_algo;
 		return unrar_err_old_algo;
 	}
@@ -44,12 +45,15 @@ unrar_err_t CmdExtract::ExtractCurrentFile( bool SkipSolid, bool check_compatibi
 	FileCount++;
 	DataIO.UnpFileCRC=Arc.OldFormat ? 0 : 0xffffffff;
 	// (removed decryption)
-	DataIO.SetPackedSizeToRead(Arc.NewLhd.FullPackSize);
+    DataIO.UnpHash.Init(Arc.FileHead.FileHash.Type,1);
+    DataIO.PackedDataHash.Init(Arc.FileHead.FileHash.Type,1);
+    DataIO.SetPackedSizeToRead(Arc.FileHead.PackSize);
+    DataIO.SetSkipUnpCRC(SkipSolid);
 	// (removed command-line handling)
 	DataIO.SetSkipUnpCRC(SkipSolid);
 
-	if (Arc.NewLhd.Method==0x30)
-		UnstoreFile(Arc.NewLhd.FullUnpSize);
+	if (Arc.FileHead.Method==0)
+		UnstoreFile(Arc.FileHead.UnpSize);
 	else
 	{
 		// Defer creation of Unpack until first extraction
@@ -58,26 +62,26 @@ unrar_err_t CmdExtract::ExtractCurrentFile( bool SkipSolid, bool check_compatibi
 			Unp = new Unpack( &Arc );
 			if ( !Unp )
 				return unrar_err_memory;
-			
-			Unp->Init( NULL );
 		}
 		
-		Unp->SetDestSize(Arc.NewLhd.FullUnpSize);
+        Unp->Init(Arc.FileHead.WinSize,Arc.FileHead.Solid);
+        Unp->SetDestSize(Arc.FileHead.UnpSize);
 #ifndef SFX_MODULE
-		if (Arc.NewLhd.UnpVer<=15)
+		if (Arc.Format!=RARFMT50 && Arc.FileHead.UnpVer<=15)
 			Unp->DoUnpack(15,FileCount>1 && Arc.Solid);
 		else
 #endif
-			Unp->DoUnpack(Arc.NewLhd.UnpVer,Arc.NewLhd.Flags & LHD_SOLID);
+			Unp->DoUnpack(Arc.FileHead.UnpVer,Arc.FileHead.Solid);
 	}
 	
 	// (no need to seek to next file)
 	
 	if (!SkipSolid)
 	{
-	    if (Arc.OldFormat && UINT32(DataIO.UnpFileCRC)==UINT32(Arc.NewLhd.FileCRC) ||
-	        !Arc.OldFormat && UINT32(DataIO.UnpFileCRC)==UINT32(Arc.NewLhd.FileCRC^0xffffffff))
-	    {
+        HashValue UnpHash;
+        DataIO.UnpHash.Result(&UnpHash);
+	    if (UnpHash==Arc.FileHead.FileHash)
+        {
 	    	// CRC is correct
 	    }
 	    else
@@ -93,12 +97,12 @@ unrar_err_t CmdExtract::ExtractCurrentFile( bool SkipSolid, bool check_compatibi
 }
 
 
-void CmdExtract::UnstoreFile(Int64 DestUnpSize)
+void CmdExtract::UnstoreFile(int64 DestUnpSize)
 {
-	Buffer.Alloc(Min(DestUnpSize,0x10000));
+	Buffer.Alloc((int)Min(DestUnpSize,0x10000));
 	while (1)
 	{
-		unsigned int Code=DataIO.UnpRead(&Buffer[0],Buffer.Size());
+		unsigned int Code=DataIO.UnpRead(&Buffer[0],(uint)Buffer.Size());
 		if (Code==0 || (int)Code==-1)
 			break;
 		Code=Code<DestUnpSize ? Code:int64to32(DestUnpSize);

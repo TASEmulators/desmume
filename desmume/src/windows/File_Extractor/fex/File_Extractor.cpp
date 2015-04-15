@@ -152,7 +152,7 @@ void File_Extractor::clear_file()
 	clear_file_v();
 }
 
-void File_Extractor::set_name( const char new_name [], const wchar_t* new_wname )
+void File_Extractor::set_name( const char new_name [], const blargg_wchar_t* new_wname )
 {
 	name_  = new_name;
 	wname_ = new_wname;
@@ -313,7 +313,7 @@ blargg_err_t File_Extractor::data( const void** data_out )
 
 blargg_err_t File_Extractor::data_v( void const** out )
 {
-	RETURN_ERR( own_data_.resize( size() ) );
+	RETURN_ERR( own_data_.resize( (size_t) size() ) );
 	*out = own_data_.begin();
 	
 	blargg_err_t err = extract_v( own_data_.begin(), own_data_.size() );
@@ -323,7 +323,7 @@ blargg_err_t File_Extractor::data_v( void const** out )
 	return err;
 }
 
-blargg_err_t File_Extractor::extract_v( void* out, int count )
+blargg_err_t File_Extractor::extract_v( void* out, long count )
 {
 	void const* p;
 	RETURN_ERR( data( &p ) );
@@ -332,7 +332,7 @@ blargg_err_t File_Extractor::extract_v( void* out, int count )
 	return blargg_ok;
 }
 
-blargg_err_t File_Extractor::read_v( void* out, int count )
+blargg_err_t File_Extractor::read_v( void* out, long count )
 {
 	if ( data_ptr_ )
 		return File_Extractor::extract_v( out, count );

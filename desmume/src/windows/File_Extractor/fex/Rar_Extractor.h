@@ -5,7 +5,7 @@
 #define RAR_EXTRACTOR_H
 
 #include "File_Extractor.h"
-#include "../unrar/unrar.h"
+#include "unrar/unrar.h"
 
 class Rar_Extractor : public File_Extractor {
 public:
@@ -29,7 +29,7 @@ protected:
 	virtual blargg_err_t seek_arc_v( fex_pos_t );
 
 	virtual blargg_err_t data_v( void const** );
-	virtual blargg_err_t extract_v( void*, int );
+	virtual blargg_err_t extract_v( void*, long );
 	
 private:
 	unrar_t* unrar;

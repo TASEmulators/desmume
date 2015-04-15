@@ -8,13 +8,13 @@ class EncodeFileName
 
     byte *EncName;
     byte Flags;
-    int FlagBits;
-    int FlagsPos;
-    int DestSize;
+    size_t FlagBits;
+    size_t FlagsPos;
+    size_t DestSize;
   public:
     EncodeFileName();
-    int Encode(char *Name,wchar *NameW,byte *EncName);
-    void Decode(char *Name,byte *EncName,int EncSize,wchar *NameW,int MaxDecSize);
+    size_t Encode(char *Name,wchar *NameW,byte *EncName);
+    void Decode(char *Name,byte *EncName,size_t EncSize,wchar *NameW,size_t MaxDecSize);
 };
 
 #endif

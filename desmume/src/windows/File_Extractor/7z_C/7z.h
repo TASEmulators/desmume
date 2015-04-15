@@ -175,7 +175,7 @@ size_t SzArEx_GetFileNameUtf16(const CSzArEx *p, size_t fileIndex, UInt16 *dest)
 SRes SzArEx_Extract(
     const CSzArEx *db,
     ILookInStream *inStream,
-    UInt32 fileIndex,         /* index of file */
+    UInt64 fileIndex,         /* index of file */
     UInt32 *blockIndex,       /* index of solid block */
     Byte **outBuffer,         /* pointer to pointer to output buffer (allocated with allocMain) */
     size_t *outBufferSize,    /* buffer size for output buffer */

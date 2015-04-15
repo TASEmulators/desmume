@@ -34,7 +34,7 @@ enum VM_Commands
 
 enum VM_StandardFilters {
 	VMSF_NONE, VMSF_E8, VMSF_E8E9, VMSF_ITANIUM, VMSF_RGB, VMSF_AUDIO,
-	VMSF_DELTA, VMSF_UPCASE
+	VMSF_DELTA
 };
 
 enum VM_Flags {VM_FC=1,VM_FZ=2,VM_FS=0x80000000};
@@ -59,8 +59,12 @@ struct VM_PreparedCommand
 
 struct VM_PreparedProgram
 {
-	VM_PreparedProgram( Rar_Error_Handler* eh ) : Cmd( eh ), GlobalData( eh ), StaticData( eh )
-			{AltCmd=NULL;}
+	VM_PreparedProgram()
+    {
+        AltCmd=NULL;
+        FilteredDataSize=0;
+        CmdCount=0;
+    }
 
 	Array<VM_PreparedCommand> Cmd;
 	VM_PreparedCommand *AltCmd;
@@ -71,7 +75,7 @@ struct VM_PreparedProgram
 	uint InitR[7];
 
 	byte *FilteredData;
-	unsigned int FilteredDataSize;
+	uint FilteredDataSize;
 };
 
 class RarVM:private BitInput
@@ -84,13 +88,12 @@ class RarVM:private BitInput
 #ifdef VM_OPTIMIZE
 		void Optimize(VM_PreparedProgram *Prg);
 #endif
-		bool ExecuteCode(VM_PreparedCommand *PreparedCode,int CodeSize);
+		bool ExecuteCode(VM_PreparedCommand *PreparedCode,uint CodeSize);
 #ifdef VM_STANDARDFILTERS
-		VM_StandardFilters IsStandardFilter(byte *Code,int CodeSize);
+		VM_StandardFilters IsStandardFilter(byte *Code,uint CodeSize);
 		void ExecuteStandardFilter(VM_StandardFilters FilterType);
 		unsigned int FilterItanium_GetBits(byte *Data,int BitPos,int BitCount);
-		void FilterItanium_SetBits(byte *Data,unsigned int BitField,int BitPos,
-			int BitCount);
+		void FilterItanium_SetBits(byte *Data,uint BitField,int BitPos,int BitCount);
 #endif
 
 		byte *Mem;
@@ -102,10 +105,10 @@ class RarVM:private BitInput
 		void Init();
 		void handle_mem_error( Rar_Error_Handler& );
 		friend class Unpack;
-		void Prepare(byte *Code,int CodeSize,VM_PreparedProgram *Prg);
+		void Prepare(byte *Code,uint CodeSize,VM_PreparedProgram *Prg);
 		void Execute(VM_PreparedProgram *Prg);
 		void SetLowEndianValue(uint *Addr,uint Value);
-		void SetMemory(unsigned int Pos,byte *Data,unsigned int DataSize);
+		void SetMemory(size_t Pos,byte *Data,size_t DataSize);
 		static uint ReadData(BitInput &Inp);
 };
 

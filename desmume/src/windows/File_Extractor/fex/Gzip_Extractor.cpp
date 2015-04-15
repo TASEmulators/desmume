@@ -28,11 +28,8 @@ static File_Extractor* new_gzip()
 	return BLARGG_NEW Gzip_Extractor;
 }
 
-static const char * gz_signatures[] = { "\x1F\x8B", NULL };
-
 fex_type_t_ const fex_gz_type [1]  = {{
 	".gz",
-	gz_signatures,
 	&new_gzip,
 	"gzipped file",
 	&init_gzip_file
@@ -95,7 +92,7 @@ blargg_err_t Gzip_Extractor::rewind_v()
 	return blargg_ok;
 }
 
-blargg_err_t Gzip_Extractor::extract_v( void* p, int n )
+blargg_err_t Gzip_Extractor::extract_v( void* p, long n )
 {
 	return gr.read( p, n );
 }

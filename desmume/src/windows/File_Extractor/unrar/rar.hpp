@@ -2,12 +2,13 @@
 // It may NOT be used to develop a RAR (WinRAR) compatible archiver.
 // See license.txt for copyright and licensing.
 
-// unrar_core 3.8.5
+// unrar_core 5.1.7
 #ifndef RAR_COMMON_HPP
 #define RAR_COMMON_HPP
 
 #include "unrar.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <setjmp.h>
@@ -21,7 +22,7 @@
 // These names are too generic and might clash (or have already, hmpf)
 #define Array               Rar_Array
 #define uint32              rar_uint32
-#define sint32              rar_sint32
+#define int32               rar_int32
 #define Unpack              Rar_Unpack
 #define Archive             Rar_Archive
 #define RawRead             Rar_RawRead
@@ -73,6 +74,8 @@ struct Rar_Allocator
 };
 
 //// os.hpp
+#define FALSE 0
+#define TRUE  1
 #undef STRICT_ALIGNMENT_REQUIRED
 #undef LITTLE_ENDIAN
 #define  NM  1024
@@ -92,7 +95,7 @@ struct Rar_Allocator
 //// rartypes.hpp
 #if INT_MAX == 0x7FFFFFFF && UINT_MAX == 0xFFFFFFFF
 	typedef unsigned int     uint32; //32 bits exactly
-	typedef          int     sint32; //signed 32 bits exactly
+	typedef          int     int32;  //signed 32 bits exactly
 	#define PRESENT_INT32
 #endif
 
@@ -100,36 +103,37 @@ typedef unsigned char    byte;   //8 bits
 typedef unsigned short   ushort; //preferably 16 bits, but can be more
 typedef unsigned int     uint;   //32 bits or more
 
-typedef wchar_t wchar;
+typedef blargg_wchar_t wchar;
 
-#define SHORT16(x) (sizeof(ushort)==2 ? (ushort)(x):((x)&0xffff))
-#define UINT32(x)  (sizeof(uint  )==4 ? (uint  )(x):((x)&0xffffffff))
+#define GET_SHORT16(x) (sizeof(ushort)==2 ? (ushort)(x):((x)&0xffff))
+#define GET_UINT32(x)  (sizeof(uint  )==4 ? (uint  )(x):((x)&0xffffffff))
 
 //// rardefs.hpp
 #define  Min(x,y) (((x)<(y)) ? (x):(y))
 #define  Max(x,y) (((x)>(y)) ? (x):(y))
+#define  ALIGN_VALUE(v,a) (size_t(v) + ( (~size_t(v) + 1) & (a - 1) ) )
+#define  ASIZE(x) (sizeof(x)/sizeof(x[0]))
 
 //// int64.hpp
-typedef unrar_long_long Int64;
+typedef unrar_long_long int64;
+typedef unrar_ulong_long uint64;
 
 #define int64to32(x) ((uint)(x))
-#define int32to64(high,low) ((((Int64)(high))<<31<<1)+(low))
+#define int32to64(high,low) ((((int64)(high))<<31<<1)+(low))
 #define is64plus(x) (x>=0)
 
 #define INT64MAX int32to64(0x7fffffff,0)
+#define INT64NDF int32to64(0x7fffffff,0x7fffffff)
 
 //// crc.hpp
-extern uint CRCTab[256];
-void InitCRC();
-uint CRC(uint StartCRC,const void *Addr,size_t Size);
-ushort OldCRC(ushort StartCRC,const void *Addr,size_t Size);
+extern uint crc_tables[8][256];
+void InitCRCTables();
+uint CRC32(uint StartCRC,const void *Addr,size_t Size);
+ushort Checksum14(ushort StartCRC,const void *Addr,size_t Size);
 
-//// rartime.hpp
-struct RarTime
-{
-	unsigned time;
-    void SetDos(uint DosTime) { time = DosTime; }
-};
+#define SHA256_DIGEST_SIZE 32
+#include "blake2s.hpp"
+#include "hash.hpp"
 
 //// rdwrfn.hpp
 class ComprDataIO
@@ -141,30 +145,47 @@ public:
 	void* user_read_data;
 	void* user_write_data;
 	unrar_err_t write_error; // once write error occurs, no more writes are made
- 	Int64 Tell_;
+ 	int64 Tell_;
 	bool OldFormat;
 
 private:
-	Int64 UnpPackedSize;
+	int64 UnpPackedSize;
     bool SkipUnpCRC;
 
 public:
 	int UnpRead(byte *Addr,uint Count);
     void UnpWrite(byte *Addr,uint Count);
 	void SetSkipUnpCRC( bool b ) { SkipUnpCRC = b; }
-	void SetPackedSizeToRead( Int64 n ) { UnpPackedSize = n; }
+	void SetPackedSizeToRead( int64 n ) { UnpPackedSize = n; }
 
 	uint UnpFileCRC;
 
-	void Seek(Int64 Offset, int Method = 0 ) { (void)Method; Tell_ = Offset; }
-	Int64 Tell() { return Tell_; }
+	void Seek(int64 Offset, int Method = 0 ) { (void)Method; Tell_ = Offset; }
+	int64 Tell() { return Tell_; }
 	int Read( void* p, int n );
+    
+    DataHash PackedDataHash; // Packed write and unpack read hash.
+    DataHash PackHash; // Pack read hash.
+    DataHash UnpHash;  // Unpack write hash.
 };
+
+//// secpassword.hpp
+void cleandata(void *data,size_t size);
+
+//// pathfn.hpp
+wchar* GetWideName(const char *Name,const wchar *NameW,wchar *DestW,size_t DestSize);
+void UnixSlashToDos(const char *SrcName, char *DestName, size_t MaxLength);
+void DosSlashToUnix(const char *SrcName, char *DestName, size_t MaxLength);
+void UnixSlashToDos(const wchar *SrcName, wchar *DestName, size_t MaxLength);
+void DosSlashToUnix(const wchar *SrcName, wchar *DestName, size_t MaxLength);
 
 //// rar.hpp
 class Unpack;
 #include "array.hpp"
+#include "unicode.hpp"
+#include "timefn.hpp"
 #include "headers.hpp"
+#include "headers5.hpp"
 #include "getbits.hpp"
 #include "archive.hpp"
 #include "rawread.hpp"
@@ -172,7 +193,26 @@ class Unpack;
 #include "compress.hpp"
 #include "rarvm.hpp"
 #include "model.hpp"
+#include "strfn.hpp"
 #include "unpack.hpp"
+
+//// savepos.hpp
+class SaveFilePos
+{
+private:
+    File *SaveFile;
+    int64 SavePos;
+public:
+    SaveFilePos(File &Src)
+    {
+        SaveFile=&Src;
+        SavePos=Src.Tell();
+    }
+    ~SaveFilePos()
+    {
+        SaveFile->Seek(SavePos,SEEK_SET);
+    }
+};
 
 //// extract.hpp
 /** RAR archive */
@@ -195,7 +235,7 @@ struct unrar_t
  	
 	unrar_t();
 	~unrar_t();
-	void UnstoreFile( Int64 );
+	void UnstoreFile( int64 );
 	unrar_err_t ExtractCurrentFile( bool SkipSolid = false, bool check_compatibility_only = false );
 	void update_first_file_pos()
 	{

@@ -10,7 +10,7 @@ extern "C" {
 		FILE* file = (FILE*) user_data;
 		
 		// most of the time, seeking won't be necessary
-		if ( pos != ftell( file ) && fseek( file, pos, SEEK_SET ) != 0 )
+		if ( pos != ftell( file ) && fseek( file, (long)pos, SEEK_SET ) != 0 )
 			return unrar_err_corrupt;
 		
 		*count = (int) fread( out, 1, *count, file );
@@ -30,8 +30,13 @@ static void unrar_close_file( void* user_data )
 unrar_err_t unrar_open( unrar_t** arc_out, const char path [] )
 {
 	*arc_out = NULL;
-	
+
+#if _MSC_VER >= 1300
+	FILE* file = NULL;
+	fopen_s(&file, path, "rb");
+#else
 	FILE* file = fopen( path, "rb" );
+#endif
 	if ( file == NULL )
 		return unrar_err_open;
 	
