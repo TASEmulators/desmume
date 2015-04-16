@@ -1767,7 +1767,8 @@ Render3DError OpenGLRenderer_1_2::DoRender(const GFX3D_State *renderState, const
 	u32 lastPolyAttr = 0;
 	u32 lastViewport = 0xFFFFFFFF;
 	const size_t polyCount = polyList->count;
-	GLushort *indexBufferPtr = this->isVBOSupported ? 0 : OGLRef.vertIndexBuffer;
+	GLsizei vertIndexCount = 0;
+	GLushort *indexBufferPtr = (this->isVBOSupported) ? 0 : OGLRef.vertIndexBuffer;
 	
 	// Map GFX3D_QUADS and GFX3D_QUAD_STRIP to GL_TRIANGLES since we will convert them.
 	//
@@ -1783,56 +1784,81 @@ Render3DError OpenGLRenderer_1_2::DoRender(const GFX3D_State *renderState, const
 	// Set up initial states, but only if there are polygons to draw
 	if (polyCount > 0)
 	{
-		const POLY *poly = &polyList->list[indexList->list[0]];
+		const POLY *firstPoly = &polyList->list[indexList->list[0]];
 		
-		lastPolyAttr = poly->polyAttr;
-		this->SetupPolygon(poly);
+		lastPolyAttr = firstPoly->polyAttr;
+		this->SetupPolygon(firstPoly);
 		
-		lastTexParams = poly->texParam;
-		lastTexPalette = poly->texPalette;
-		this->SetupTexture(poly, renderState->enableTexturing);
+		lastTexParams = firstPoly->texParam;
+		lastTexPalette = firstPoly->texPalette;
+		this->SetupTexture(firstPoly, renderState->enableTexturing);
 		
-		lastViewport = poly->viewport;
-		this->SetupViewport(poly->viewport);
-	}
-	
-	for(size_t i = 0; i < polyCount; i++)
-	{
-		const POLY *poly = &polyList->list[indexList->list[i]];
+		lastViewport = firstPoly->viewport;
+		this->SetupViewport(firstPoly->viewport);
 		
-		// Set up the polygon if it changed
-		if(lastPolyAttr != poly->polyAttr)
+		// Enumerate through all polygons and render
+		for(size_t i = 0; i < polyCount; i++)
 		{
-			lastPolyAttr = poly->polyAttr;
-			this->SetupPolygon(poly);
+			const POLY *poly = &polyList->list[indexList->list[i]];
+			
+			// Set up the polygon if it changed
+			if(lastPolyAttr != poly->polyAttr)
+			{
+				lastPolyAttr = poly->polyAttr;
+				this->SetupPolygon(poly);
+			}
+			
+			// Set up the texture if it changed
+			if(lastTexParams != poly->texParam || lastTexPalette != poly->texPalette)
+			{
+				lastTexParams = poly->texParam;
+				lastTexPalette = poly->texPalette;
+				this->SetupTexture(poly, renderState->enableTexturing);
+			}
+			
+			// Set up the viewport if it changed
+			if(lastViewport != poly->viewport)
+			{
+				lastViewport = poly->viewport;
+				this->SetupViewport(poly->viewport);
+			}
+			
+			// In wireframe mode, redefine all primitives as GL_LINE_LOOP rather than
+			// setting the polygon mode to GL_LINE though glPolygonMode(). Not only is
+			// drawing more accurate this way, but it also allows GFX3D_QUADS and
+			// GFX3D_QUAD_STRIP primitives to properly draw as wireframe without the
+			// extra diagonal line.
+			const GLenum polyPrimitive = (!poly->isWireframe()) ? oglPrimitiveType[poly->vtxFormat] : GL_LINE_LOOP;
+			
+			// Increment the vertex count
+			vertIndexCount += indexIncrementLUT[poly->vtxFormat];
+			
+			// Look ahead to the next polygon to see if we can simply buffer the indices
+			// instead of uploading them now. We can buffer if all polygon states remain
+			// the same and we're not drawing a line loop or line strip.
+			if (i+1 < polyCount)
+			{
+				const POLY *nextPoly = &polyList->list[indexList->list[i+1]];
+				
+				if (lastPolyAttr == nextPoly->polyAttr &&
+					lastTexParams == nextPoly->texParam &&
+					lastTexPalette == nextPoly->texPalette &&
+					lastViewport == nextPoly->viewport &&
+					polyPrimitive == oglPrimitiveType[nextPoly->vtxFormat] &&
+					polyPrimitive != GL_LINE_LOOP &&
+					polyPrimitive != GL_LINE_STRIP &&
+					oglPrimitiveType[nextPoly->vtxFormat] != GL_LINE_LOOP &&
+					oglPrimitiveType[nextPoly->vtxFormat] != GL_LINE_STRIP)
+				{
+					continue;
+				}
+			}
+			
+			// Render the polygons
+			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+			indexBufferPtr += vertIndexCount;
+			vertIndexCount = 0;
 		}
-		
-		// Set up the texture if it changed
-		if(lastTexParams != poly->texParam || lastTexPalette != poly->texPalette)
-		{
-			lastTexParams = poly->texParam;
-			lastTexPalette = poly->texPalette;
-			this->SetupTexture(poly, renderState->enableTexturing);
-		}
-		
-		// Set up the viewport if it changed
-		if(lastViewport != poly->viewport)
-		{
-			lastViewport = poly->viewport;
-			this->SetupViewport(poly->viewport);
-		}
-		
-		// In wireframe mode, redefine all primitives as GL_LINE_LOOP rather than
-		// setting the polygon mode to GL_LINE though glPolygonMode(). Not only is
-		// drawing more accurate this way, but it also allows GFX3D_QUADS and
-		// GFX3D_QUAD_STRIP primitives to properly draw as wireframe without the
-		// extra diagonal line.
-		const GLenum polyPrimitive = !poly->isWireframe() ? oglPrimitiveType[poly->vtxFormat] : GL_LINE_LOOP;
-		
-		// Render the polygon
-		const GLsizei vertIndexCount = indexIncrementLUT[poly->vtxFormat];
-		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-		indexBufferPtr += vertIndexCount;
 	}
 	
 	return OGLERROR_NOERR;
