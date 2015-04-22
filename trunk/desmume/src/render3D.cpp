@@ -20,6 +20,7 @@
 
 #include <string.h>
 
+#include "bits.h"
 #include "gfx3d.h"
 #include "MMU.h"
 #include "texcache.h"
@@ -120,27 +121,12 @@ Render3DError Render3D::BeginRender(const GFX3D_State *renderState)
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::PreRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
-{
-	return RENDER3DERROR_NOERR;
-}
-
-Render3DError Render3D::DoRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
-{
-	return RENDER3DERROR_NOERR;
-}
-
-Render3DError Render3D::PostRender()
+Render3DError Render3D::RenderGeometry(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
 {
 	return RENDER3DERROR_NOERR;
 }
 
 Render3DError Render3D::EndRender(const u64 frameCount)
-{
-	return RENDER3DERROR_NOERR;
-}
-
-Render3DError Render3D::UpdateClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer)
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -168,6 +154,7 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State *renderState)
 	clearColor.a = (renderState->clearColor >> 16) & 0x1F;
 	
 	const u8 polyID = (renderState->clearColor >> 24) & 0x3F;
+	const bool enableFog = BIT15(renderState->clearColor);
 	
 	if (renderState->enableClearImage)
 	{
@@ -190,6 +177,7 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State *renderState)
 				
 				this->clearImageColor16Buffer[dd] = clearColorBuffer[adr];
 				this->clearImageDepthStencilBuffer[dd] = dsDepthToD24S8_LUT[clearDepthBuffer[adr] & 0x7FFF] | polyID;
+				this->clearImageFogBuffer[dd] = BIT15(clearDepthBuffer[adr]);
 				
 				dd++;
 			}
@@ -197,30 +185,26 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State *renderState)
 			dd -= GFX3D_FRAMEBUFFER_WIDTH * 2;
 		}
 		
-		error = this->UpdateClearImage(this->clearImageColor16Buffer, this->clearImageDepthStencilBuffer);
-		if (error == RENDER3DERROR_NOERR)
+		error = this->ClearUsingImage(this->clearImageColor16Buffer, this->clearImageDepthStencilBuffer, this->clearImageFogBuffer);
+		if (error != RENDER3DERROR_NOERR)
 		{
-			error = this->ClearUsingImage();
-		}
-		else
-		{
-			error = this->ClearUsingValues(clearColor.r, clearColor.g, clearColor.b, clearColor.a, renderState->clearDepth, polyID);
+			error = this->ClearUsingValues(clearColor.r, clearColor.g, clearColor.b, clearColor.a, renderState->clearDepth, polyID, enableFog);
 		}
 	}
 	else
 	{
-		error = this->ClearUsingValues(clearColor.r, clearColor.g, clearColor.b, clearColor.a, renderState->clearDepth, polyID);
+		error = this->ClearUsingValues(clearColor.r, clearColor.g, clearColor.b, clearColor.a, renderState->clearDepth, polyID, enableFog);
 	}
 	
 	return error;
 }
 
-Render3DError Render3D::ClearUsingImage() const
+Render3DError Render3D::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer)
 {
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearStencil) const
+Render3DError Render3D::ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearStencil, const bool enableFog) const
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -261,10 +245,8 @@ Render3DError Render3D::Render(const GFX3D_State *renderState, const VERTLIST *v
 	this->UpdateToonTable(renderState->u16ToonTable);
 	this->ClearFramebuffer(renderState);
 	
-	this->PreRender(renderState, vertList, polyList, indexList);
-	this->DoRender(renderState, vertList, polyList, indexList);
-	this->PostRender();
-	
+	this->RenderGeometry(renderState, vertList, polyList, indexList);
+
 	this->EndRender(frameCount);
 	
 	return error;

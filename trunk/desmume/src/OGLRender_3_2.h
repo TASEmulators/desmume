@@ -77,7 +77,7 @@ protected:
 	virtual Render3DError SelectRenderingFramebuffer();
 	virtual Render3DError DownsampleFBO();
 	
-	virtual Render3DError ClearUsingImage() const;
+	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer);
 	
 public:
 	~OpenGLRenderer_3_2();

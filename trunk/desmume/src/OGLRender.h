@@ -273,7 +273,9 @@ enum OGLTextureUnitID
 {
 	// Main textures will always be on texture unit 0.
 	OGLTextureUnitID_ToonTable = 1,
-	OGLTextureUnitID_ClearImage
+	OGLTextureUnitID_GColor,
+	OGLTextureUnitID_GDepth,
+	OGLTextureUnitID_FogAttr
 };
 
 enum OGLErrorCode
@@ -301,48 +303,76 @@ struct OGLRenderRef
 	GLint stateTexMirroredRepeat;
 	
 	// VBO
-	GLuint vboVertexID;
-	GLuint iboIndexID;
+	GLuint vboGeometryVtxID;
+	GLuint iboGeometryIndexID;
+	GLuint vboPostprocessVtxID;
+	GLuint iboPostprocessIndexID;
 	
 	// PBO
 	GLuint pboRenderDataID[2];
 	
 	// FBO
-	GLuint texClearImageColorID;
-	GLuint texClearImageDepthStencilID;
+	GLuint texGColorID;
+	GLuint texGDepthStencilID;
+	GLuint texGDepthID;
+	GLuint texGFogAttrID;
+	GLuint texPostprocessID;
 	
-	GLuint rboFragColorID;
-	GLuint rboFragDepthStencilID;
-	GLuint rboMSFragColorID;
-	GLuint rboMSFragDepthStencilID;
+	GLuint rboMSGColorID;
+	GLuint rboMSGDepthStencilID;
+	GLuint rboMSGDepthID;
+	GLuint rboMSGFogAttrID;
+	GLuint rboMSPostprocessID;
 	
-	GLuint fboClearImageID;
-	GLuint fboMSIntermediateRenderID;
 	GLuint fboRenderID;
+	GLuint fboPostprocessID;
+	GLuint fboMSIntermediateRenderID;
+	GLuint fboOutputID;
 	GLuint selectedRenderingFBO;
 	
 	// Shader states
-	GLuint vertexShaderID;
-	GLuint fragmentShaderID;
-	GLuint shaderProgram;
+	GLuint vertexGeometryShaderID;
+	GLuint fragmentGeometryShaderID;
+	GLuint programGeometryID;
 	
-	GLint uniformTexScale;
+	GLuint vertexPostprocessShaderID;
+	GLuint fragmentEdgeMarkShaderID;
+	GLuint fragmentFogShaderID;
+	GLuint programEdgeMarkID;
+	GLuint programFogID;
+	
+	GLuint uniformTexRenderObject;
+	GLuint uniformTexToonTable;
+	GLuint uniformTexGColor;
+	GLuint uniformTexGDepth;
+	GLuint uniformTexGFog;
 	
 	GLint uniformStateToonShadingMode;
 	GLint uniformStateEnableAlphaTest;
+	GLint uniformStateEnableAntialiasing;
+	GLint uniformStateEnableEdgeMarking;
+	GLint uniformStateEnableFogAlphaOnly;
 	GLint uniformStateUseWDepth;
 	GLint uniformStateAlphaTestRef;
+	GLint uniformStateFogColor;
+	GLint uniformStateFogDensity;
+	GLint uniformStateFogOffset;
+	GLint uniformStateFogStep;
 	
+	GLint uniformPolyTexScale;
 	GLint uniformPolyMode;
+	GLint uniformPolySetNewDepthForTranslucent;
 	GLint uniformPolyAlpha;
 	GLint uniformPolyID;
 	
 	GLint uniformPolyEnableTexture;
+	GLint uniformPolyEnableFog;
 	
 	GLuint texToonTableID;
 	
 	// VAO
 	GLuint vaoMainStatesID;
+	GLuint vaoPostprocessStatesID;
 	
 	// Textures
 	std::queue<GLuint> freeTextureIDs;
@@ -363,6 +393,8 @@ class OpenGLRenderer;
 extern GPU3DInterface gpu3Dgl;
 extern GPU3DInterface gpu3DglOld;
 extern GPU3DInterface gpu3Dgl_3_2;
+
+extern const GLenum RenderDrawList[3];
 
 //This is called by OGLRender whenever it initializes.
 //Platforms, please be sure to set this up.
@@ -415,7 +447,6 @@ protected:
 	CACHE_ALIGN u32 GPU_screen3D[2][GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT * sizeof(u32)];
 	bool gpuScreen3DHasNewData[2];
 	size_t doubleBufferIndex;
-	u8 clearImageStencilValue;
 	
 	// OpenGL-specific methods
 	virtual Render3DError CreateVBOs() = 0;
@@ -439,7 +470,7 @@ protected:
 	virtual Render3DError CreateToonTable() = 0;
 	virtual Render3DError DestroyToonTable() = 0;
 	virtual Render3DError UploadToonTable(const u16 *toonTableBuffer) = 0;
-	virtual Render3DError UploadClearImage(const u16 *clearImageColor16Buffer, const u32 *clearImageDepthStencilBuffer) = 0;
+	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer) = 0;
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet) = 0;
 	virtual Render3DError ExpandFreeTextures() = 0;
@@ -452,16 +483,13 @@ protected:
 	
 	// Base rendering methods
 	virtual Render3DError BeginRender(const GFX3D_State *renderState) = 0;
-	virtual Render3DError PreRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList) = 0;
-	virtual Render3DError DoRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList) = 0;
-	virtual Render3DError PostRender() = 0;
+	virtual Render3DError RenderGeometry(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList) = 0;
 	virtual Render3DError EndRender(const u64 frameCount) = 0;
 	
-	virtual Render3DError UpdateClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer) = 0;
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer) = 0;
 	
-	virtual Render3DError ClearUsingImage() const = 0;
-	virtual Render3DError ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearStencil) const = 0;
+	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer) = 0;
+	virtual Render3DError ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearStencil, const bool enableFog) const = 0;
 	
 	virtual Render3DError SetupPolygon(const POLY *thePoly) = 0;
 	virtual Render3DError SetupTexture(const POLY *thePoly, bool enableTexturing) = 0;
@@ -510,7 +538,7 @@ protected:
 	virtual Render3DError CreateToonTable();
 	virtual Render3DError DestroyToonTable();
 	virtual Render3DError UploadToonTable(const u16 *toonTableBuffer);
-	virtual Render3DError UploadClearImage(const u16 *clearImageColor16Buffer, const u32 *clearImageDepthStencilBuffer);
+	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer);
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
 	virtual Render3DError ExpandFreeTextures();
@@ -523,16 +551,13 @@ protected:
 	
 	// Base rendering methods
 	virtual Render3DError BeginRender(const GFX3D_State *renderState);
-	virtual Render3DError PreRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
-	virtual Render3DError DoRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
-	virtual Render3DError PostRender();
+	virtual Render3DError RenderGeometry(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
 	virtual Render3DError EndRender(const u64 frameCount);
 	
-	virtual Render3DError UpdateClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer);
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	
-	virtual Render3DError ClearUsingImage() const;
-	virtual Render3DError ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearStencil) const;
+	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer);
+	virtual Render3DError ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearStencil, const bool enableFog) const;
 	
 	virtual Render3DError SetupPolygon(const POLY *thePoly);
 	virtual Render3DError SetupTexture(const POLY *thePoly, bool enableTexturing);
@@ -553,7 +578,7 @@ class OpenGLRenderer_1_3 : public OpenGLRenderer_1_2
 {
 protected:
 	virtual Render3DError UploadToonTable(const u16 *toonTableBuffer);
-	virtual Render3DError UploadClearImage(const u16 *clearImageColor16Buffer, const u32 *clearImageDepthStencilBuffer);
+	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer);
 };
 
 class OpenGLRenderer_1_4 : public OpenGLRenderer_1_3
@@ -592,7 +617,6 @@ protected:
 	virtual Render3DError DisableVertexAttributes();
 	
 	virtual Render3DError BeginRender(const GFX3D_State *renderState);
-	virtual Render3DError PreRender(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
 	
 	virtual Render3DError SetupPolygon(const POLY *thePoly);
 	virtual Render3DError SetupTexture(const POLY *thePoly, bool enableTexturing);
