@@ -322,8 +322,11 @@ static const char *fragmentShader_100 = {"\
 		float newFragDepth = (stateUseWDepth) ? vtxPosition.w/4096.0 : clamp((vtxPosition.z/vertW) * 0.5 + 0.5, 0.0, 1.0); \n\
 		\n\
 		gl_FragData[0] = newFragColor;\n\
-		gl_FragData[1] = vec4( packVec3FromFloat(newFragDepth), 1.0);\n\
 		gl_FragData[2] = vec4( float(polyEnableFog), float(stateEnableFogAlphaOnly), 0.0, 1.0);\n\
+		if (newFragColor.a >= 1.0 || polySetNewDepthForTranslucent)\n\
+		{\n\
+			gl_FragData[1] = vec4( packVec3FromFloat(newFragDepth), 1.0);\n\
+		}\n\
 		gl_FragDepth = newFragDepth;\n\
 	} \n\
 "};
@@ -2196,7 +2199,6 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY *thePoly)
 	if (this->isShaderSupported)
 	{
 		glUniform1i(OGLRef.uniformPolyMode, attr.polygonMode);
-		glUniform1i(OGLRef.uniformPolySetNewDepthForTranslucent, (attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformPolyEnableFog, (attr.enableRenderFog) ? GL_TRUE : GL_FALSE);
 		glUniform1f(OGLRef.uniformPolyAlpha, (!attr.isWireframe && attr.isTranslucent) ? divide5bitBy31_LUT[attr.alpha] : 1.0f);
 		glUniform1i(OGLRef.uniformPolyID, attr.polygonID);
@@ -2278,6 +2280,11 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY *thePoly)
 	}
 	
 	glDepthMask(enableDepthWrite);
+	
+	if (this->isShaderSupported)
+	{
+		glUniform1i(OGLRef.uniformPolySetNewDepthForTranslucent, ((enableDepthWrite == GL_TRUE) || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
+	}
 	
 	return OGLERROR_NOERR;
 }
@@ -3236,7 +3243,6 @@ Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY *thePoly)
 	
 	// Set up polygon attributes
 	glUniform1i(OGLRef.uniformPolyMode, attr.polygonMode);
-	glUniform1i(OGLRef.uniformPolySetNewDepthForTranslucent, (attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	glUniform1i(OGLRef.uniformPolyEnableFog, (attr.enableRenderFog) ? GL_TRUE : GL_FALSE);
 	glUniform1f(OGLRef.uniformPolyAlpha, (!attr.isWireframe && attr.isTranslucent) ? divide5bitBy31_LUT[attr.alpha] : 1.0f);
 	glUniform1i(OGLRef.uniformPolyID, attr.polygonID);
@@ -3311,6 +3317,7 @@ Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY *thePoly)
 	}
 	
 	glDepthMask(enableDepthWrite);
+	glUniform1i(OGLRef.uniformPolySetNewDepthForTranslucent, ((enableDepthWrite == GL_TRUE) || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	
 	return OGLERROR_NOERR;
 }
