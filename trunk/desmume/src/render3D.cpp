@@ -126,6 +126,11 @@ Render3DError Render3D::RenderGeometry(const GFX3D_State *renderState, const VER
 	return RENDER3DERROR_NOERR;
 }
 
+Render3DError Render3D::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift)
+{
+	return RENDER3DERROR_NOERR;
+}
+
 Render3DError Render3D::EndRender(const u64 frameCount)
 {
 	return RENDER3DERROR_NOERR;
@@ -246,6 +251,11 @@ Render3DError Render3D::Render(const GFX3D_State *renderState, const VERTLIST *v
 	this->ClearFramebuffer(renderState);
 	
 	this->RenderGeometry(renderState, vertList, polyList, indexList);
+	
+	if (renderState->enableFog)
+	{
+		this->RenderFog(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0360, renderState->fogColor, renderState->fogOffset, renderState->fogShift);
+	}
 
 	this->EndRender(frameCount);
 	

@@ -61,6 +61,7 @@ class OpenGLRenderer_3_2 : public OpenGLRenderer_2_1
 {
 protected:
 	virtual Render3DError InitExtensions();
+	virtual Render3DError InitPostprocessingProgramBindings();
 	virtual Render3DError CreateFBOs();
 	virtual void DestroyFBOs();
 	virtual Render3DError CreateMultisampledFBO();
@@ -68,14 +69,15 @@ protected:
 	virtual Render3DError CreateVAOs();
 	virtual void DestroyVAOs();
 	
-	virtual Render3DError LoadShaderPrograms(std::string *outVertexShaderProgram, std::string *outFragmentShaderProgram);
-	virtual Render3DError SetupShaderIO();
+	virtual Render3DError LoadGeometryShaders(std::string &outVertexShaderProgram, std::string &outFragmentShaderProgram);
+	virtual Render3DError InitGeometryProgramBindings();
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
 	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const size_t vertIndexCount);
 	virtual Render3DError DisableVertexAttributes();
 	virtual Render3DError SelectRenderingFramebuffer();
 	virtual Render3DError DownsampleFBO();
+	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift);
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer);
 	

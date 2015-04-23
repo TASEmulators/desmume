@@ -327,7 +327,6 @@ struct OGLRenderRef
 	GLuint fboRenderID;
 	GLuint fboPostprocessID;
 	GLuint fboMSIntermediateRenderID;
-	GLuint fboOutputID;
 	GLuint selectedRenderingFBO;
 	
 	// Shader states
@@ -371,7 +370,7 @@ struct OGLRenderRef
 	GLuint texToonTableID;
 	
 	// VAO
-	GLuint vaoMainStatesID;
+	GLuint vaoGeometryStatesID;
 	GLuint vaoPostprocessStatesID;
 	
 	// Textures
@@ -395,6 +394,9 @@ extern GPU3DInterface gpu3DglOld;
 extern GPU3DInterface gpu3Dgl_3_2;
 
 extern const GLenum RenderDrawList[3];
+extern CACHE_ALIGN const GLfloat divide5bitBy31_LUT[32];
+extern const GLfloat PostprocessVtxBuffer[16];;
+extern const GLubyte PostprocessElementBuffer[6];
 
 //This is called by OGLRender whenever it initializes.
 //Platforms, please be sure to set this up.
@@ -457,16 +459,19 @@ protected:
 	virtual void DestroyFBOs() = 0;
 	virtual Render3DError CreateMultisampledFBO() = 0;
 	virtual void DestroyMultisampledFBO() = 0;
-	virtual Render3DError CreateShaders(const std::string *vertexShaderProgram, const std::string *fragmentShaderProgram) = 0;
-	virtual void DestroyShaders() = 0;
+	virtual Render3DError InitGeometryProgram(const std::string &vertexShaderProgram, const std::string &fragmentShaderProgram) = 0;
+	virtual void DestroyGeometryProgram() = 0;
 	virtual Render3DError CreateVAOs() = 0;
 	virtual void DestroyVAOs() = 0;
 	virtual Render3DError InitTextures() = 0;
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet) = 0;
 	virtual Render3DError InitTables() = 0;
+	virtual Render3DError InitPostprocessingProgram(const std::string &vtxShader, const std::string &fragShader) = 0;
+	virtual Render3DError InitPostprocessingProgramBindings() = 0;
+	virtual Render3DError DestroyPostprocessingProgram() = 0;
 	
-	virtual Render3DError LoadShaderPrograms(std::string *outVertexShaderProgram, std::string *outFragmentShaderProgram) = 0;
-	virtual Render3DError SetupShaderIO() = 0;
+	virtual Render3DError LoadGeometryShaders(std::string &outVertexShaderProgram, std::string &outFragmentShaderProgram) = 0;
+	virtual Render3DError InitGeometryProgramBindings() = 0;
 	virtual Render3DError CreateToonTable() = 0;
 	virtual Render3DError DestroyToonTable() = 0;
 	virtual Render3DError UploadToonTable(const u16 *toonTableBuffer) = 0;
@@ -481,28 +486,11 @@ protected:
 	virtual Render3DError DownsampleFBO() = 0;
 	virtual Render3DError ReadBackPixels() = 0;
 	
-	// Base rendering methods
-	virtual Render3DError BeginRender(const GFX3D_State *renderState) = 0;
-	virtual Render3DError RenderGeometry(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList) = 0;
-	virtual Render3DError EndRender(const u64 frameCount) = 0;
-	
-	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer) = 0;
-	
-	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer) = 0;
-	virtual Render3DError ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearStencil, const bool enableFog) const = 0;
-	
-	virtual Render3DError SetupPolygon(const POLY *thePoly) = 0;
-	virtual Render3DError SetupTexture(const POLY *thePoly, bool enableTexturing) = 0;
-	virtual Render3DError SetupViewport(const u32 viewportValue) = 0;
-	
 public:
 	OpenGLRenderer();
 	virtual ~OpenGLRenderer() {};
 	
 	virtual Render3DError InitExtensions() = 0;
-	virtual Render3DError Reset() = 0;
-	virtual Render3DError RenderFinish() = 0;
-	
 	virtual Render3DError DeleteTexture(const TexCacheItem *item) = 0;
 	
 	bool IsExtensionPresent(const std::set<std::string> *oglExtensionSet, const std::string extensionName) const;
@@ -525,16 +513,20 @@ protected:
 	virtual void DestroyFBOs();
 	virtual Render3DError CreateMultisampledFBO();
 	virtual void DestroyMultisampledFBO();
-	virtual Render3DError CreateShaders(const std::string *vertexShaderProgram, const std::string *fragmentShaderProgram);
-	virtual void DestroyShaders();
 	virtual Render3DError CreateVAOs();
 	virtual void DestroyVAOs();
 	virtual Render3DError InitTextures();
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
 	virtual Render3DError InitTables();
 	
-	virtual Render3DError LoadShaderPrograms(std::string *outVertexShaderProgram, std::string *outFragmentShaderProgram);
-	virtual Render3DError SetupShaderIO();
+	virtual Render3DError InitGeometryProgram(const std::string &vertexShaderProgram, const std::string &fragmentShaderProgram);
+	virtual Render3DError LoadGeometryShaders(std::string &outVertexShaderProgram, std::string &outFragmentShaderProgram);
+	virtual Render3DError InitGeometryProgramBindings();
+	virtual void DestroyGeometryProgram();
+	virtual Render3DError InitPostprocessingProgram(const std::string &vtxShader, const std::string &fragShader);
+	virtual Render3DError InitPostprocessingProgramBindings();
+	virtual Render3DError DestroyPostprocessingProgram();
+	
 	virtual Render3DError CreateToonTable();
 	virtual Render3DError DestroyToonTable();
 	virtual Render3DError UploadToonTable(const u16 *toonTableBuffer);
@@ -611,12 +603,16 @@ class OpenGLRenderer_2_0 : public OpenGLRenderer_1_5
 protected:
 	virtual Render3DError InitExtensions();
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
+	virtual Render3DError InitPostprocessingProgram(const std::string &vtxShader, const std::string &fragShader);
+	virtual Render3DError InitPostprocessingProgramBindings();
+	virtual Render3DError DestroyPostprocessingProgram();
 	
 	virtual Render3DError SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, GLushort *outIndexBuffer, size_t *outIndexCount);
 	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const size_t vertIndexCount);
 	virtual Render3DError DisableVertexAttributes();
 	
 	virtual Render3DError BeginRender(const GFX3D_State *renderState);
+	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift);
 	
 	virtual Render3DError SetupPolygon(const POLY *thePoly);
 	virtual Render3DError SetupTexture(const POLY *thePoly, bool enableTexturing);
