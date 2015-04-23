@@ -169,8 +169,11 @@ static const char *GeometryFragShader_150 = {"\
 		float newFragDepth = (stateUseWDepth) ? vtxPosition.w/4096.0 : clamp((vtxPosition.z/vertW) * 0.5 + 0.5, 0.0, 1.0); \n\
 		\n\
 		outFragColor = newFragColor;\n\
-		outFragDepth = vec4( packVec3FromFloat(newFragDepth), 1.0);\n\
 		outFogAttributes = vec4( float(polyEnableFog), float(stateEnableFogAlphaOnly), 0.0, 1.0);\n\
+		if (newFragColor.a >= 1.0 || polySetNewDepthForTranslucent)\n\
+		{\n\
+			outFragDepth = vec4( packVec3FromFloat(newFragDepth), 1.0);\n\
+		}\n\
 		gl_FragDepth = newFragDepth;\n\
 	} \n\
 "};
