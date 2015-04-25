@@ -126,6 +126,11 @@ Render3DError Render3D::RenderGeometry(const GFX3D_State *renderState, const VER
 	return RENDER3DERROR_NOERR;
 }
 
+Render3DError Render3D::RenderEdgeMarking(const u16 *colorTable)
+{
+	return RENDER3DERROR_NOERR;
+}
+
 Render3DError Render3D::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift)
 {
 	return RENDER3DERROR_NOERR;
@@ -209,7 +214,7 @@ Render3DError Render3D::ClearUsingImage(const u16 *__restrict colorBuffer, const
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearStencil, const bool enableFog) const
+Render3DError Render3D::ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearPolyID, const bool enableFog) const
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -251,6 +256,11 @@ Render3DError Render3D::Render(const GFX3D_State *renderState, const VERTLIST *v
 	this->ClearFramebuffer(renderState);
 	
 	this->RenderGeometry(renderState, vertList, polyList, indexList);
+	
+	if (renderState->enableEdgeMarking)
+	{
+		this->RenderEdgeMarking((const u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0330));
+	}
 	
 	if (renderState->enableFog)
 	{

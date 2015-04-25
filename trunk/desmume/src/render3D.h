@@ -90,6 +90,7 @@ protected:
 	
 	virtual Render3DError BeginRender(const GFX3D_State *renderState);
 	virtual Render3DError RenderGeometry(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
+	virtual Render3DError RenderEdgeMarking(const u16 *colorTable);
 	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift);
 	virtual Render3DError EndRender(const u64 frameCount);
 	
@@ -97,7 +98,7 @@ protected:
 	
 	virtual Render3DError ClearFramebuffer(const GFX3D_State *renderState);
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer);
-	virtual Render3DError ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearStencil, const bool enableFog) const;
+	virtual Render3DError ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearPolyID, const bool enableFog) const;
 	
 	virtual Render3DError SetupPolygon(const POLY *thePoly);
 	virtual Render3DError SetupTexture(const POLY *thePoly, bool enableTexturing);
