@@ -3455,7 +3455,7 @@ Render3DError OpenGLRenderer_2_0::RenderEdgeMarking(const u16 *colorTable)
 								   divide5bitBy31_LUT[(colorTable[7] >> 10) & 0x001F],
 								   1.0f};
 	
-	glBindFramebuffer(GL_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	glUseProgram(OGLRef.programEdgeMarkID);
