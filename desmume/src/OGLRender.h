@@ -133,6 +133,7 @@ EXTERNOGLEXT(PFNGLUNIFORM1FPROC, glUniform1f) // Core in v2.0
 EXTERNOGLEXT(PFNGLUNIFORM1FVPROC, glUniform1fv) // Core in v2.0
 EXTERNOGLEXT(PFNGLUNIFORM2FPROC, glUniform2f) // Core in v2.0
 EXTERNOGLEXT(PFNGLUNIFORM4FPROC, glUniform4f) // Core in v2.0
+EXTERNOGLEXT(PFNGLUNIFORM4FVPROC, glUniform4fv) // Core in v2.0
 EXTERNOGLEXT(PFNGLDRAWBUFFERSPROC, glDrawBuffers) // Core in v2.0
 
 // Generic vertex attributes
@@ -216,6 +217,7 @@ EXTERNOGLEXT(PFNGLUNIFORM1FPROC, glUniform1f) // Core in v2.0
 EXTERNOGLEXT(PFNGLUNIFORM1FVPROC, glUniform1fv) // Core in v2.0
 EXTERNOGLEXT(PFNGLUNIFORM2FPROC, glUniform2f) // Core in v2.0
 EXTERNOGLEXT(PFNGLUNIFORM4FPROC, glUniform4f) // Core in v2.0
+EXTERNOGLEXT(PFNGLUNIFORM4FVPROC, glUniform4fv) // Core in v2.0
 EXTERNOGLEXT(PFNGLDRAWBUFFERSPROC, glDrawBuffers) // Core in v2.0
 
 // Generic vertex attributes
@@ -279,6 +281,7 @@ enum OGLTextureUnitID
 	OGLTextureUnitID_ToonTable = 1,
 	OGLTextureUnitID_GColor,
 	OGLTextureUnitID_GDepth,
+	OGLTextureUnitID_GPolyID,
 	OGLTextureUnitID_FogAttr
 };
 
@@ -317,15 +320,18 @@ struct OGLRenderRef
 	
 	// FBO
 	GLuint texGColorID;
-	GLuint texGDepthStencilID;
 	GLuint texGDepthID;
 	GLuint texGFogAttrID;
-	GLuint texPostprocessID;
+	GLuint texGPolyID;
+	GLuint texGDepthStencilID;
+	GLuint texPostprocessEdgeMarkID;
+	GLuint texPostprocessFogID;
 	
 	GLuint rboMSGColorID;
-	GLuint rboMSGDepthStencilID;
 	GLuint rboMSGDepthID;
+	GLuint rboMSGPolyID;
 	GLuint rboMSGFogAttrID;
+	GLuint rboMSGDepthStencilID;
 	GLuint rboMSPostprocessID;
 	
 	GLuint fboRenderID;
@@ -338,7 +344,8 @@ struct OGLRenderRef
 	GLuint fragmentGeometryShaderID;
 	GLuint programGeometryID;
 	
-	GLuint vertexPostprocessShaderID;
+	GLuint vertexEdgeMarkShaderID;
+	GLuint vertexFogShaderID;
 	GLuint fragmentEdgeMarkShaderID;
 	GLuint fragmentFogShaderID;
 	GLuint programEdgeMarkID;
@@ -346,10 +353,14 @@ struct OGLRenderRef
 	
 	GLuint uniformTexRenderObject;
 	GLuint uniformTexToonTable;
-	GLuint uniformTexGColor;
-	GLuint uniformTexGDepth;
-	GLuint uniformTexGFog;
+	GLuint uniformTexGColor_EdgeMark;
+	GLuint uniformTexGDepth_EdgeMark;
+	GLuint uniformTexGPolyID_EdgeMark;
+	GLuint uniformTexGColor_Fog;
+	GLuint uniformTexGDepth_Fog;
+	GLuint uniformTexGFog_Fog;
 	
+	GLint uniformFramebufferSize;
 	GLint uniformStateToonShadingMode;
 	GLint uniformStateEnableAlphaTest;
 	GLint uniformStateEnableAntialiasing;
@@ -357,6 +368,7 @@ struct OGLRenderRef
 	GLint uniformStateEnableFogAlphaOnly;
 	GLint uniformStateUseWDepth;
 	GLint uniformStateAlphaTestRef;
+	GLint uniformStateEdgeColor;
 	GLint uniformStateFogColor;
 	GLint uniformStateFogDensity;
 	GLint uniformStateFogOffset;
@@ -397,7 +409,7 @@ extern GPU3DInterface gpu3Dgl;
 extern GPU3DInterface gpu3DglOld;
 extern GPU3DInterface gpu3Dgl_3_2;
 
-extern const GLenum RenderDrawList[3];
+extern const GLenum RenderDrawList[4];
 extern CACHE_ALIGN const GLfloat divide5bitBy31_LUT[32];
 extern const GLfloat PostprocessVtxBuffer[16];;
 extern const GLubyte PostprocessElementBuffer[6];
@@ -452,6 +464,7 @@ protected:
 	
 	CACHE_ALIGN u32 GPU_screen3D[2][GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT * sizeof(u32)];
 	bool gpuScreen3DHasNewData[2];
+	bool didRenderEdgeMark;
 	size_t doubleBufferIndex;
 	
 	// OpenGL-specific methods
@@ -470,9 +483,10 @@ protected:
 	virtual Render3DError InitTextures() = 0;
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet) = 0;
 	virtual Render3DError InitTables() = 0;
-	virtual Render3DError InitPostprocessingProgram(const std::string &vtxShader, const std::string &fragShader) = 0;
-	virtual Render3DError InitPostprocessingProgramBindings() = 0;
-	virtual Render3DError DestroyPostprocessingProgram() = 0;
+	virtual Render3DError InitEdgeMarkProgramBindings() = 0;
+	virtual Render3DError InitPostprocessingPrograms(const std::string &edgeMarkVtxShader, const std::string &edgeMarkFragShader, const std::string &fogVtxShader, const std::string &fogFragShader) = 0;
+	virtual Render3DError InitFogProgramBindings() = 0;
+	virtual Render3DError DestroyPostprocessingPrograms() = 0;
 	
 	virtual Render3DError LoadGeometryShaders(std::string &outVertexShaderProgram, std::string &outFragmentShaderProgram) = 0;
 	virtual Render3DError InitGeometryProgramBindings() = 0;
@@ -527,9 +541,10 @@ protected:
 	virtual Render3DError LoadGeometryShaders(std::string &outVertexShaderProgram, std::string &outFragmentShaderProgram);
 	virtual Render3DError InitGeometryProgramBindings();
 	virtual void DestroyGeometryProgram();
-	virtual Render3DError InitPostprocessingProgram(const std::string &vtxShader, const std::string &fragShader);
-	virtual Render3DError InitPostprocessingProgramBindings();
-	virtual Render3DError DestroyPostprocessingProgram();
+	virtual Render3DError InitEdgeMarkProgramBindings();
+	virtual Render3DError InitPostprocessingPrograms(const std::string &edgeMarkVtxShader, const std::string &edgeMarkFragShader, const std::string &fogVtxShader, const std::string &fogFragShader);
+	virtual Render3DError InitFogProgramBindings();
+	virtual Render3DError DestroyPostprocessingPrograms();
 	
 	virtual Render3DError CreateToonTable();
 	virtual Render3DError DestroyToonTable();
@@ -553,7 +568,7 @@ protected:
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer);
-	virtual Render3DError ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearStencil, const bool enableFog) const;
+	virtual Render3DError ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearPolyID, const bool enableFog) const;
 	
 	virtual Render3DError SetupPolygon(const POLY *thePoly);
 	virtual Render3DError SetupTexture(const POLY *thePoly, bool enableTexturing);
@@ -607,15 +622,17 @@ class OpenGLRenderer_2_0 : public OpenGLRenderer_1_5
 protected:
 	virtual Render3DError InitExtensions();
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
-	virtual Render3DError InitPostprocessingProgram(const std::string &vtxShader, const std::string &fragShader);
-	virtual Render3DError InitPostprocessingProgramBindings();
-	virtual Render3DError DestroyPostprocessingProgram();
+	virtual Render3DError InitEdgeMarkProgramBindings();
+	virtual Render3DError InitPostprocessingPrograms(const std::string &edgeMarkVtxShader, const std::string &edgeMarkFragShader, const std::string &fogVtxShader, const std::string &fogFragShader);
+	virtual Render3DError InitFogProgramBindings();
+	virtual Render3DError DestroyPostprocessingPrograms();
 	
 	virtual Render3DError SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, GLushort *outIndexBuffer, size_t *outIndexCount);
 	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const size_t vertIndexCount);
 	virtual Render3DError DisableVertexAttributes();
 	
 	virtual Render3DError BeginRender(const GFX3D_State *renderState);
+	virtual Render3DError RenderEdgeMarking(const u16 *colorTable);
 	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift);
 	
 	virtual Render3DError SetupPolygon(const POLY *thePoly);
