@@ -120,6 +120,7 @@ static const char *GeometryFragShader_150 = {"\
 	uniform float stateAlphaTestRef; \n\
 	\n\
 	uniform int polyMode; \n\
+	uniform bool polyEnableDepthWrite;\n\
 	uniform bool polySetNewDepthForTranslucent;\n\
 	uniform int polyID; \n\
 	\n\
@@ -172,7 +173,7 @@ static const char *GeometryFragShader_150 = {"\
 		outFragColor = newFragColor;\n\
 		outFogAttributes = vec4( float(polyEnableFog), float(stateEnableFogAlphaOnly), 0.0, 1.0);\n\
 		if (newFragColor.a > 0.999) outPolyID = vec4(float(polyID)/63.0, float(stateEnableAntialiasing), 0.0, 1.0);\n\
-		if (newFragColor.a > 0.999 || polySetNewDepthForTranslucent) outFragDepth = vec4( packVec3FromFloat(newFragDepth), 1.0);\n\
+		if (polyEnableDepthWrite && (newFragColor.a > 0.999 || polySetNewDepthForTranslucent)) outFragDepth = vec4( packVec3FromFloat(newFragDepth), 1.0);\n\
 		gl_FragDepth = newFragDepth;\n\
 	} \n\
 "};

@@ -376,6 +376,7 @@ struct OGLRenderRef
 	
 	GLint uniformPolyTexScale;
 	GLint uniformPolyMode;
+	GLint uniformPolyEnableDepthWrite;
 	GLint uniformPolySetNewDepthForTranslucent;
 	GLint uniformPolyAlpha;
 	GLint uniformPolyID;
