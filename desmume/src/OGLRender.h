@@ -282,7 +282,8 @@ enum OGLTextureUnitID
 	OGLTextureUnitID_GColor,
 	OGLTextureUnitID_GDepth,
 	OGLTextureUnitID_GPolyID,
-	OGLTextureUnitID_FogAttr
+	OGLTextureUnitID_FogAttr,
+	OGLTextureUnitID_TranslucentFogAttr
 };
 
 enum OGLErrorCode
@@ -634,7 +635,7 @@ protected:
 	
 	virtual Render3DError BeginRender(const GFX3D_State *renderState);
 	virtual Render3DError RenderEdgeMarking(const u16 *colorTable);
-	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift);
+	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
 	
 	virtual Render3DError SetupPolygon(const POLY *thePoly);
 	virtual Render3DError SetupTexture(const POLY *thePoly, bool enableTexturing);

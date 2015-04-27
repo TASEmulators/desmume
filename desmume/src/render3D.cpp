@@ -131,7 +131,7 @@ Render3DError Render3D::RenderEdgeMarking(const u16 *colorTable)
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift)
+Render3DError Render3D::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly)
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -264,7 +264,7 @@ Render3DError Render3D::Render(const GFX3D_State *renderState, const VERTLIST *v
 	
 	if (renderState->enableFog)
 	{
-		this->RenderFog(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0360, renderState->fogColor, renderState->fogOffset, renderState->fogShift);
+		this->RenderFog(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0360, renderState->fogColor, renderState->fogOffset, renderState->fogShift, renderState->enableFogAlphaOnly);
 	}
 
 	this->EndRender(frameCount);
