@@ -79,7 +79,7 @@ protected:
 	virtual Render3DError SelectRenderingFramebuffer();
 	virtual Render3DError DownsampleFBO();
 	virtual Render3DError RenderEdgeMarking(const u16 *colorTable);
-	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift);
+	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer);
 	

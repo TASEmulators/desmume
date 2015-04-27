@@ -115,7 +115,6 @@ static const char *GeometryFragShader_150 = {"\
 	uniform bool stateEnableAlphaTest; \n\
 	uniform bool stateEnableAntialiasing;\n\
 	uniform bool stateEnableEdgeMarking;\n\
-	uniform bool stateEnableFogAlphaOnly;\n\
 	uniform bool stateUseWDepth; \n\
 	uniform float stateAlphaTestRef; \n\
 	\n\
@@ -171,9 +170,9 @@ static const char *GeometryFragShader_150 = {"\
 		float newFragDepth = (stateUseWDepth) ? vtxPosition.w/4096.0 : clamp((vtxPosition.z/vertW) * 0.5 + 0.5, 0.0, 1.0); \n\
 		\n\
 		outFragColor = newFragColor;\n\
-		outFogAttributes = vec4( float(polyEnableFog), float(stateEnableFogAlphaOnly), 0.0, 1.0);\n\
-		if (newFragColor.a > 0.999) outPolyID = vec4(float(polyID)/63.0, float(stateEnableAntialiasing), 0.0, 1.0);\n\
-		if (polyEnableDepthWrite && (newFragColor.a > 0.999 || polySetNewDepthForTranslucent)) outFragDepth = vec4( packVec3FromFloat(newFragDepth), 1.0);\n\
+		outFragDepth = vec4( packVec3FromFloat(newFragDepth), float(polyEnableDepthWrite && (newFragColor.a > 0.999 || polySetNewDepthForTranslucent)));\n\
+		outPolyID = vec4(float(polyID)/63.0, float(stateEnableAntialiasing), 0.0, float(newFragColor.a > 0.999));\n\
+		outFogAttributes = vec4( float(polyEnableFog), 0.0, 0.0, float(newFragColor.a > 0.999 || !polyEnableFog));\n\
 		gl_FragDepth = newFragDepth;\n\
 	} \n\
 "};
@@ -268,7 +267,7 @@ static const char *EdgeMarkFragShader_150 = {"\
 			}\n\
 		}\n\
 		\n\
-		outFragColor = (doEdgeMark) ? ((doAntialias) ? mix(edgeColor, inFragColor, 0.4) : edgeColor) : inFragColor;\n\
+		outFragColor = mix(inFragColor, edgeColor, (doEdgeMark) ? ((doAntialias) ? (16.0/31.0) : 1.0) : 0.0);\n\
 	}\n\
 "};
 
@@ -296,6 +295,7 @@ static const char *FogFragShader_150 = {"\
 	uniform sampler2D texInFragColor;\n\
 	uniform sampler2D texInFragDepth;\n\
 	uniform sampler2D texInFogAttributes;\n\
+	uniform bool stateEnableFogAlphaOnly;\n\
 	uniform vec4 stateFogColor;\n\
 	uniform float stateFogDensity[32];\n\
 	uniform float stateFogOffset;\n\
@@ -312,37 +312,41 @@ static const char *FogFragShader_150 = {"\
 	void main()\n\
 	{\n\
 		vec4 inFragColor = texture(texInFragColor, texCoord);\n\
-		float inFragDepth = unpackFloatFromVec3(texture(texInFragDepth, texCoord).rgb);\n\
 		vec4 inFogAttributes = texture(texInFogAttributes, texCoord);\n\
-		\n\
 		bool polyEnableFog = bool(inFogAttributes.r);\n\
-		bool stateEnableFogAlphaOnly = bool(inFogAttributes.g) ;\n\
+		vec4 newFoggedColor = inFragColor;\n\
 		\n\
-		float fogMixWeight = 0.0;\n\
-		if (inFragDepth <= min(stateFogOffset + stateFogStep, 1.0))\n\
+		if (polyEnableFog)\n\
 		{\n\
-			fogMixWeight = stateFogDensity[0];\n\
-		}\n\
-		else if (inFragDepth >= min(stateFogOffset + (stateFogStep*32.0), 1.0))\n\
-		{\n\
-			fogMixWeight = stateFogDensity[31];\n\
-		}\n\
-		else\n\
-		{\n\
-			for (int i = 1; i < 32; i++)\n\
+			float inFragDepth = unpackFloatFromVec3(texture(texInFragDepth, texCoord).rgb);\n\
+			float fogMixWeight = 0.0;\n\
+			\n\
+			if (inFragDepth <= min(stateFogOffset + stateFogStep, 1.0))\n\
 			{\n\
-				float currentFogStep = min(stateFogOffset + (stateFogStep * float(i+1)), 1.0);\n\
-				if (inFragDepth <= currentFogStep)\n\
+				fogMixWeight = stateFogDensity[0];\n\
+			}\n\
+			else if (inFragDepth >= min(stateFogOffset + (stateFogStep*32.0), 1.0))\n\
+			{\n\
+				fogMixWeight = stateFogDensity[31];\n\
+			}\n\
+			else\n\
+			{\n\
+				for (int i = 1; i < 32; i++)\n\
 				{\n\
-					float previousFogStep = min(stateFogOffset + (stateFogStep * float(i)), 1.0);\n\
-					fogMixWeight = mix(stateFogDensity[i-1], stateFogDensity[i], (inFragDepth - previousFogStep) / (currentFogStep - previousFogStep));\n\
-					break;\n\
+					float currentFogStep = min(stateFogOffset + (stateFogStep * float(i+1)), 1.0);\n\
+					if (inFragDepth <= currentFogStep)\n\
+					{\n\
+						float previousFogStep = min(stateFogOffset + (stateFogStep * float(i)), 1.0);\n\
+						fogMixWeight = mix(stateFogDensity[i-1], stateFogDensity[i], (inFragDepth - previousFogStep) / (currentFogStep - previousFogStep));\n\
+						break;\n\
+					}\n\
 				}\n\
 			}\n\
+			\n\
+			newFoggedColor = mix(inFragColor, (stateEnableFogAlphaOnly) ? vec4(inFragColor.rgb, stateFogColor.a) : stateFogColor, fogMixWeight);\n\
 		}\n\
 		\n\
-		vec4 newFoggedColor = mix(inFragColor, stateFogColor, fogMixWeight);\n\
-		outFragColor = (polyEnableFog) ? ((stateEnableFogAlphaOnly) ? vec4(inFragColor.rgb, newFoggedColor.a) : newFoggedColor) : inFragColor;\n\
+		outFragColor = newFoggedColor;\n\
 	}\n\
 "};
 
@@ -950,7 +954,7 @@ Render3DError OpenGLRenderer_3_2::RenderEdgeMarking(const u16 *colorTable)
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_3_2::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift)
+Render3DError OpenGLRenderer_3_2::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	static GLfloat oglDensityTable[32];
@@ -975,6 +979,7 @@ Render3DError OpenGLRenderer_3_2::RenderFog(const u8 *densityTable, const u32 co
 	glUniform1i(OGLRef.uniformTexGColor_Fog, OGLTextureUnitID_GColor);
 	glUniform1i(OGLRef.uniformTexGDepth_Fog, OGLTextureUnitID_GDepth);
 	glUniform1i(OGLRef.uniformTexGFog_Fog, OGLTextureUnitID_FogAttr);
+	glUniform1i(OGLRef.uniformStateEnableFogAlphaOnly, (alphaOnly) ? GL_TRUE : GL_FALSE);
 	glUniform4f(OGLRef.uniformStateFogColor, oglColor[0], oglColor[1], oglColor[2], oglColor[3]);
 	glUniform1f(OGLRef.uniformStateFogOffset, oglOffset);
 	glUniform1f(OGLRef.uniformStateFogStep, oglFogStep);

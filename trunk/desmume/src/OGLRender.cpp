@@ -278,11 +278,11 @@ static const char *fragmentShader_100 = {"\
 	uniform bool stateEnableAlphaTest; \n\
 	uniform bool stateEnableAntialiasing;\n\
 	uniform bool stateEnableEdgeMarking;\n\
-	uniform bool stateEnableFogAlphaOnly;\n\
 	uniform bool stateUseWDepth; \n\
 	uniform float stateAlphaTestRef; \n\
 	\n\
 	uniform int polyMode; \n\
+	uniform bool polyEnableDepthWrite;\n\
 	uniform bool polySetNewDepthForTranslucent;\n\
 	uniform int polyID; \n\
 	\n\
@@ -328,9 +328,9 @@ static const char *fragmentShader_100 = {"\
 		float newFragDepth = (stateUseWDepth) ? vtxPosition.w/4096.0 : clamp((vtxPosition.z/vertW) * 0.5 + 0.5, 0.0, 1.0); \n\
 		\n\
 		gl_FragData[0] = newFragColor;\n\
-		gl_FragData[3] = vec4( float(polyEnableFog), float(stateEnableFogAlphaOnly), 0.0, 1.0);\n\
-		if (newFragColor.a > 0.999) gl_FragData[2] = vec4(float(polyID)/63.0, float(stateEnableAntialiasing), 0.0, 1.0);\n\
-		if (polyEnableDepthWrite && (newFragColor.a > 0.999 || polySetNewDepthForTranslucent)) gl_FragData[1] = vec4( packVec3FromFloat(newFragDepth), 1.0);\n\
+		gl_FragData[1] = vec4( packVec3FromFloat(newFragDepth), float(polyEnableDepthWrite && (newFragColor.a > 0.999 || polySetNewDepthForTranslucent)));\n\
+		gl_FragData[2] = vec4(float(polyID)/63.0, float(stateEnableAntialiasing), 0.0, float(newFragColor.a > 0.999));\n\
+		gl_FragData[3] = vec4( float(polyEnableFog), 0.0, 0.0, float(newFragColor.a > 0.999 || !polyEnableFog));\n\
 		gl_FragDepth = newFragDepth;\n\
 	} \n\
 "};
@@ -419,7 +419,7 @@ static const char *EdgeMarkFragShader_100 = {"\
 			}\n\
 		}\n\
 		\n\
-		gl_FragData[0] = (doEdgeMark) ? ((doAntialias) ? mix(edgeColor, inFragColor, 0.4) : edgeColor) : inFragColor;\n\
+		gl_FragData[0] = mix(inFragColor, edgeColor, (doEdgeMark) ? ((doAntialias) ? (16.0/31.0) : 1.0) : 0.0);\n\
 	}\n\
 "};
 
@@ -443,6 +443,7 @@ static const char *FogFragShader_100 = {"\
 	uniform sampler2D texInFragColor;\n\
 	uniform sampler2D texInFragDepth;\n\
 	uniform sampler2D texInFogAttributes;\n\
+	uniform bool stateEnableFogAlphaOnly;\n\
 	uniform vec4 stateFogColor;\n\
 	uniform float stateFogDensity[32];\n\
 	uniform float stateFogOffset;\n\
@@ -457,37 +458,41 @@ static const char *FogFragShader_100 = {"\
 	void main()\n\
 	{\n\
 		vec4 inFragColor = texture2D(texInFragColor, texCoord);\n\
-		float inFragDepth = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord).rgb);\n\
 		vec4 inFogAttributes = texture2D(texInFogAttributes, texCoord);\n\
-		\n\
 		bool polyEnableFog = bool(inFogAttributes.r);\n\
-		bool stateEnableFogAlphaOnly = bool(inFogAttributes.g) ;\n\
+		vec4 newFoggedColor = inFragColor;\n\
 		\n\
-		float fogMixWeight = 0.0;\n\
-		if (inFragDepth <= min(stateFogOffset + stateFogStep, 1.0))\n\
+		if (polyEnableFog)\n\
 		{\n\
-			fogMixWeight = stateFogDensity[0];\n\
-		}\n\
-		else if (inFragDepth >= min(stateFogOffset + (stateFogStep*32.0), 1.0))\n\
-		{\n\
-			fogMixWeight = stateFogDensity[31];\n\
-		}\n\
-		else\n\
-		{\n\
-			for (int i = 1; i < 32; i++)\n\
+			float inFragDepth = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord).rgb);\n\
+			float fogMixWeight = 0.0;\n\
+			\n\
+			if (inFragDepth <= min(stateFogOffset + stateFogStep, 1.0))\n\
 			{\n\
-				float currentFogStep = min(stateFogOffset + (stateFogStep * float(i+1)), 1.0);\n\
-				if (inFragDepth <= currentFogStep)\n\
+				fogMixWeight = stateFogDensity[0];\n\
+			}\n\
+			else if (inFragDepth >= min(stateFogOffset + (stateFogStep*32.0), 1.0))\n\
+			{\n\
+				fogMixWeight = stateFogDensity[31];\n\
+			}\n\
+			else\n\
+			{\n\
+				for (int i = 1; i < 32; i++)\n\
 				{\n\
-					float previousFogStep = min(stateFogOffset + (stateFogStep * float(i)), 1.0);\n\
-					fogMixWeight = mix(stateFogDensity[i-1], stateFogDensity[i], (inFragDepth - previousFogStep) / (currentFogStep - previousFogStep));\n\
-					break;\n\
+					float currentFogStep = min(stateFogOffset + (stateFogStep * float(i+1)), 1.0);\n\
+					if (inFragDepth <= currentFogStep)\n\
+					{\n\
+						float previousFogStep = min(stateFogOffset + (stateFogStep * float(i)), 1.0);\n\
+						fogMixWeight = mix(stateFogDensity[i-1], stateFogDensity[i], (inFragDepth - previousFogStep) / (currentFogStep - previousFogStep));\n\
+						break;\n\
+					}\n\
 				}\n\
 			}\n\
+			\n\
+			newFoggedColor = mix(inFragColor, (stateEnableFogAlphaOnly) ? vec4(inFragColor.rgb, stateFogColor.a) : stateFogColor, fogMixWeight);\n\
 		}\n\
 		\n\
-		vec4 newFoggedColor = mix(inFragColor, stateFogColor, fogMixWeight);\n\
-		gl_FragData[0] = (polyEnableFog) ? ((stateEnableFogAlphaOnly) ? vec4(inFragColor.rgb, newFoggedColor.a) : newFoggedColor) : inFragColor;\n\
+		gl_FragData[0] = newFoggedColor;\n\
 	}\n\
 "};
 
@@ -1283,7 +1288,6 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const std::string &vertexS
 	OGLRef.uniformStateEnableAlphaTest			= glGetUniformLocation(OGLRef.programGeometryID, "stateEnableAlphaTest");
 	OGLRef.uniformStateEnableAntialiasing		= glGetUniformLocation(OGLRef.programGeometryID, "stateEnableAntialiasing");
 	OGLRef.uniformStateEnableEdgeMarking		= glGetUniformLocation(OGLRef.programGeometryID, "stateEnableEdgeMarking");
-	OGLRef.uniformStateEnableFogAlphaOnly		= glGetUniformLocation(OGLRef.programGeometryID, "stateEnableFogAlphaOnly");
 	OGLRef.uniformStateUseWDepth				= glGetUniformLocation(OGLRef.programGeometryID, "stateUseWDepth");
 	OGLRef.uniformStateAlphaTestRef				= glGetUniformLocation(OGLRef.programGeometryID, "stateAlphaTestRef");
 	
@@ -2089,7 +2093,6 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State *renderState)
 		glUniform1i(OGLRef.uniformStateEnableAlphaTest, (renderState->enableAlphaTest) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformStateEnableAntialiasing, (renderState->enableAntialiasing) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (renderState->enableEdgeMarking) ? GL_TRUE : GL_FALSE);
-		glUniform1i(OGLRef.uniformStateEnableFogAlphaOnly, (renderState->enableFogAlphaOnly) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformStateUseWDepth, (renderState->wbuffer) ? GL_TRUE : GL_FALSE);
 		glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[renderState->alphaTestRef]);
 		glUniform1i(OGLRef.uniformTexRenderObject, 0);
@@ -2552,7 +2555,6 @@ Render3DError OpenGLRenderer_1_2::Reset()
 		glUniform1i(OGLRef.uniformStateEnableAlphaTest, GL_TRUE);
 		glUniform1i(OGLRef.uniformStateEnableAntialiasing, GL_FALSE);
 		glUniform1i(OGLRef.uniformStateEnableEdgeMarking, GL_TRUE);
-		glUniform1i(OGLRef.uniformStateEnableFogAlphaOnly, GL_FALSE);
 		glUniform1i(OGLRef.uniformStateUseWDepth, GL_FALSE);
 		glUniform1f(OGLRef.uniformStateAlphaTestRef, 0.0f);
 		
@@ -3251,14 +3253,15 @@ Render3DError OpenGLRenderer_2_0::InitPostprocessingPrograms(const std::string &
 	glUseProgram(OGLRef.programFogID);
 	
 	// Set up shader uniforms
-	OGLRef.uniformTexGColor_Fog			= glGetUniformLocation(OGLRef.programFogID, "texInFragColor");
-	OGLRef.uniformTexGDepth_Fog			= glGetUniformLocation(OGLRef.programFogID, "texInFragDepth");
-	OGLRef.uniformTexGFog_Fog			= glGetUniformLocation(OGLRef.programFogID, "texInFogAttributes");
+	OGLRef.uniformTexGColor_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFragColor");
+	OGLRef.uniformTexGDepth_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFragDepth");
+	OGLRef.uniformTexGFog_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFogAttributes");
 	
-	OGLRef.uniformStateFogColor			= glGetUniformLocation(OGLRef.programFogID, "stateFogColor");
-	OGLRef.uniformStateFogDensity		= glGetUniformLocation(OGLRef.programFogID, "stateFogDensity");
-	OGLRef.uniformStateFogOffset		= glGetUniformLocation(OGLRef.programFogID, "stateFogOffset");
-	OGLRef.uniformStateFogStep			= glGetUniformLocation(OGLRef.programFogID, "stateFogStep");
+	OGLRef.uniformStateEnableFogAlphaOnly	= glGetUniformLocation(OGLRef.programFogID, "stateEnableFogAlphaOnly");
+	OGLRef.uniformStateFogColor				= glGetUniformLocation(OGLRef.programFogID, "stateFogColor");
+	OGLRef.uniformStateFogDensity			= glGetUniformLocation(OGLRef.programFogID, "stateFogDensity");
+	OGLRef.uniformStateFogOffset			= glGetUniformLocation(OGLRef.programFogID, "stateFogOffset");
+	OGLRef.uniformStateFogStep				= glGetUniformLocation(OGLRef.programFogID, "stateFogStep");
 	
 	glUseProgram(OGLRef.programGeometryID);
 	INFO("OpenGL: Successfully created postprocess shaders.\n");
@@ -3398,7 +3401,6 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State *renderState)
 	glUniform1i(OGLRef.uniformStateEnableAlphaTest, (renderState->enableAlphaTest) ? GL_TRUE : GL_FALSE);
 	glUniform1i(OGLRef.uniformStateEnableAntialiasing, (renderState->enableAntialiasing) ? GL_TRUE : GL_FALSE);
 	glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (renderState->enableEdgeMarking) ? GL_TRUE : GL_FALSE);
-	glUniform1i(OGLRef.uniformStateEnableFogAlphaOnly, (renderState->enableFogAlphaOnly) ? GL_TRUE : GL_FALSE);
 	glUniform1i(OGLRef.uniformStateUseWDepth, (renderState->wbuffer) ? GL_TRUE : GL_FALSE);
 	glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[renderState->alphaTestRef]);
 	glUniform1i(OGLRef.uniformTexRenderObject, 0);
@@ -3515,7 +3517,7 @@ Render3DError OpenGLRenderer_2_0::RenderEdgeMarking(const u16 *colorTable)
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_2_0::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift)
+Render3DError OpenGLRenderer_2_0::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	static GLfloat oglDensityTable[32];
@@ -3545,6 +3547,7 @@ Render3DError OpenGLRenderer_2_0::RenderFog(const u8 *densityTable, const u32 co
 	glUniform1i(OGLRef.uniformTexGColor_Fog, OGLTextureUnitID_GColor);
 	glUniform1i(OGLRef.uniformTexGDepth_Fog, OGLTextureUnitID_GDepth);
 	glUniform1i(OGLRef.uniformTexGFog_Fog, OGLTextureUnitID_FogAttr);
+	glUniform1i(OGLRef.uniformStateEnableFogAlphaOnly, (alphaOnly) ? GL_TRUE : GL_FALSE);
 	glUniform4f(OGLRef.uniformStateFogColor, oglColor[0], oglColor[1], oglColor[2], oglColor[3]);
 	glUniform1f(OGLRef.uniformStateFogOffset, oglOffset);
 	glUniform1f(OGLRef.uniformStateFogStep, oglFogStep);
