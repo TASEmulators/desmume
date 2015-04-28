@@ -3497,10 +3497,8 @@ Render3DError OpenGLRenderer_2_0::RenderEdgeMarking(const u16 *colorTable)
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthID);
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGPolyID);
-	glActiveTexture(GL_TEXTURE0);
 	
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
-	glBindTexture(GL_TEXTURE_2D, 0);
 	
 	if (this->isVAOSupported)
 	{
@@ -3580,10 +3578,8 @@ Render3DError OpenGLRenderer_2_0::RenderFog(const u8 *densityTable, const u32 co
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthID);
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGFogAttrID);
-	glActiveTexture(GL_TEXTURE0);
 	
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
-	glBindTexture(GL_TEXTURE_2D, 0);
 	
 	if (this->isVAOSupported)
 	{
