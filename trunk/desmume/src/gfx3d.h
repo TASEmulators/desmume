@@ -587,12 +587,12 @@ public:
 	};
 
 	//the entry point for poly clipping
-	template<bool hirez> void clipPoly(POLY* poly, VERT** verts);
+	template<bool hirez> void clipPoly(const POLY &poly, const VERT **verts);
 
 	//the output of clipping operations goes into here.
 	//be sure you init it before clipping!
 	TClippedPoly *clippedPolys;
-	int clippedPolyCounter;
+	size_t clippedPolyCounter;
 	void reset() { clippedPolyCounter=0; }
 
 private:

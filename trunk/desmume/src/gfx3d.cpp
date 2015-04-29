@@ -722,6 +722,7 @@ static void SetVertex()
 	vert.color[0] = GFX3D_5TO6(colorRGB[0]);
 	vert.color[1] = GFX3D_5TO6(colorRGB[1]);
 	vert.color[2] = GFX3D_5TO6(colorRGB[2]);
+	vert.color_to_float();
 	tempVertInfo.map[tempVertInfo.count] = vertlist->count + tempVertInfo.count - continuation;
 	tempVertInfo.count++;
 
@@ -1603,15 +1604,15 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	//clip each poly
 	for(int i=0;i<6;i++) 
 	{
-		POLY* poly = &polys[i];
-		VERT* vertTable[4] = {
-			&verts[poly->vertIndexes[0]],
-			&verts[poly->vertIndexes[1]],
-			&verts[poly->vertIndexes[2]],
-			&verts[poly->vertIndexes[3]]
+		const POLY &thePoly = polys[i];
+		const VERT *vertTable[4] = {
+			&verts[thePoly.vertIndexes[0]],
+			&verts[thePoly.vertIndexes[1]],
+			&verts[thePoly.vertIndexes[2]],
+			&verts[thePoly.vertIndexes[3]]
 		};
 
-		boxtestClipper.clipPoly<false>(poly,vertTable);
+		boxtestClipper.clipPoly<false>(thePoly, vertTable);
 		
 		//if any portion of this poly was retained, then the test passes.
 		if(boxtestClipper.clippedPolyCounter>0) {
@@ -2612,9 +2613,9 @@ static T interpolate(const float ratio, const T& x0, const T& x1) {
 
 //http://www.cs.berkeley.edu/~ug/slide/pipeline/assignments/as6/discussion.shtml
 #ifdef OPTIMIZED_CLIPPING_METHOD
-template<int coord, int which> static FORCEINLINE VERT clipPoint(bool hirez, VERT* inside, VERT* outside)
+template<int coord, int which> static FORCEINLINE VERT clipPoint(bool hirez, const VERT *inside, const VERT *outside)
 #else
-static FORCEINLINE VERT clipPoint(VERT* inside, VERT* outside, int coord, int which)
+static FORCEINLINE VERT clipPoint(const VERT *inside, const VERT *outside, int coord, int which)
 #endif
 {
 	VERT ret;
@@ -2679,13 +2680,13 @@ public:
 		m_next.init(verts);
 	}
 
-	void clipVert(bool hirez, VERT* vert)
+	void clipVert(bool hirez, const VERT *vert)
 	{
 		if(m_prevVert)
 			this->clipSegmentVsPlane(hirez, m_prevVert, vert);
 		else
-			m_firstVert = vert;
-		m_prevVert = vert;
+			m_firstVert = (VERT *)vert;
+		m_prevVert = (VERT *)vert;
 	}
 
 	// closes the loop and returns the number of clipped output verts
@@ -2701,10 +2702,10 @@ private:
 	VERT* m_firstVert;
 	Next& m_next;
 
-	FORCEINLINE void clipSegmentVsPlane(bool hirez, VERT* vert0, VERT* vert1)
+	FORCEINLINE void clipSegmentVsPlane(bool hirez, const VERT *vert0, const VERT *vert1)
 	{
-		float* vert0coord = vert0->coord;
-		float* vert1coord = vert1->coord;
+		const float *vert0coord = vert0->coord;
+		const float *vert1coord = vert1->coord;
 		bool out0, out1;
 		if(which==-1) 
 			out0 = vert0coord[coord] < -vert0coord[3];
@@ -2730,7 +2731,7 @@ private:
 		if(!out0 && !out1) 
 		{
 			CLIPLOG(" both inside\n");
-			m_next.clipVert(hirez,vert1);
+			m_next.clipVert(hirez, vert1);
 		}
 
 		//exiting volume: insert the clipped point
@@ -2738,7 +2739,7 @@ private:
 		{
 			CLIPLOG(" exiting\n");
 			assert((u32)numScratchClipVerts < MAX_SCRATCH_CLIP_VERTS);
-			scratchClipVerts[numScratchClipVerts] = clipPoint<coord, which>(hirez,vert0,vert1);
+			scratchClipVerts[numScratchClipVerts] = clipPoint<coord, which>(hirez, vert0, vert1);
 			m_next.clipVert(hirez,&scratchClipVerts[numScratchClipVerts++]);
 		}
 
@@ -2746,7 +2747,7 @@ private:
 		if(out0 && !out1) {
 			CLIPLOG(" entering\n");
 			assert((u32)numScratchClipVerts < MAX_SCRATCH_CLIP_VERTS);
-			scratchClipVerts[numScratchClipVerts] = clipPoint<coord, which>(hirez,vert1,vert0);
+			scratchClipVerts[numScratchClipVerts] = clipPoint<coord, which>(hirez, vert1, vert0);
 			m_next.clipVert(hirez,&scratchClipVerts[numScratchClipVerts++]);
 			m_next.clipVert(hirez,vert1);
 		}
@@ -2761,7 +2762,7 @@ public:
 		m_nextDestVert = verts;
 		m_numVerts = 0;
 	}
-	void clipVert(bool hirez, VERT* vert)
+	void clipVert(bool hirez, const VERT *vert)
 	{
 		assert((u32)m_numVerts < MAX_CLIPPED_VERTS);
 		*m_nextDestVert++ = *vert;
@@ -2786,16 +2787,16 @@ typedef ClipperPlane<1,-1,Stage4> Stage3;        static Stage3 clipper3 (clipper
 typedef ClipperPlane<0, 1,Stage3> Stage2;        static Stage2 clipper2 (clipper3); // right plane
 typedef ClipperPlane<0,-1,Stage2> Stage1;        static Stage1 clipper  (clipper2); // left plane
 
-template<bool hirez> void GFX3D_Clipper::clipPoly(POLY* poly, VERT** verts)
+template<bool hirez> void GFX3D_Clipper::clipPoly(const POLY &poly, const VERT **verts)
 {
 	CLIPLOG("==Begin poly==\n");
 
-	int type = poly->type;
+	int type = poly.type;
 	numScratchClipVerts = 0;
 
 	clipper.init(clippedPolys[clippedPolyCounter].clipVerts);
 	for(int i=0;i<type;i++)
-		clipper.clipVert(hirez,verts[i]);
+		clipper.clipVert(hirez, verts[i]);
 	int outType = clipper.finish(hirez);
 
 	assert((u32)outType < MAX_CLIPPED_VERTS);
@@ -2807,13 +2808,13 @@ template<bool hirez> void GFX3D_Clipper::clipPoly(POLY* poly, VERT** verts)
 	else
 	{
 		clippedPolys[clippedPolyCounter].type = outType;
-		clippedPolys[clippedPolyCounter].poly = poly;
+		clippedPolys[clippedPolyCounter].poly = (POLY *)&poly;
 		clippedPolyCounter++;
 	}
 }
 //these templates needed to be instantiated manually
-template void GFX3D_Clipper::clipPoly<true>(POLY* poly, VERT** verts);
-template void GFX3D_Clipper::clipPoly<false>(POLY* poly, VERT** verts);
+template void GFX3D_Clipper::clipPoly<true>(const POLY &poly, const VERT **verts);
+template void GFX3D_Clipper::clipPoly<false>(const POLY &poly, const VERT **verts);
 
 void GFX3D_Clipper::clipSegmentVsPlane(VERT** verts, const int coord, int which)
 {
@@ -2897,9 +2898,9 @@ FORCEINLINE void GFX3D_Clipper::clipPolyVsPlane(const int coord, int which)
 }
 
 
-void GFX3D_Clipper::clipPoly(POLY* poly, VERT** verts)
+void GFX3D_Clipper::clipPoly(const POLY &poly, const VERT **verts)
 {
-	int type = poly->type;
+	int type = poly.type;
 
 	CLIPLOG("==Begin poly==\n");
 
@@ -2930,7 +2931,7 @@ void GFX3D_Clipper::clipPoly(POLY* poly, VERT** verts)
 	{
 		//TODO - build right in this list instead of copying
 		clippedPolys[clippedPolyCounter] = tempClippedPoly;
-		clippedPolys[clippedPolyCounter].poly = poly;
+		clippedPolys[clippedPolyCounter].poly = &poly;
 		clippedPolyCounter++;
 	}
 
