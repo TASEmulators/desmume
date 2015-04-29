@@ -329,7 +329,7 @@ static const char *fragmentShader_100 = {"\
 		\n\
 		gl_FragData[0] = newFragColor;\n\
 		gl_FragData[1] = vec4( packVec3FromFloat(newFragDepth), float(polyEnableDepthWrite && (newFragColor.a > 0.999 || polySetNewDepthForTranslucent)));\n\
-		gl_FragData[2] = vec4(float(polyID)/63.0, float(stateEnableAntialiasing), 0.0, float(newFragColor.a > 0.999));\n\
+		gl_FragData[2] = vec4(float(polyID)/63.0, 0.0, 0.0, float(newFragColor.a > 0.999));\n\
 		gl_FragData[3] = vec4( float(polyEnableFog), 0.0, 0.0, float(newFragColor.a > 0.999 || !polyEnableFog));\n\
 		gl_FragDepth = newFragDepth;\n\
 	} \n\
@@ -360,7 +360,6 @@ static const char *EdgeMarkVtxShader_100 = {"\
 static const char *EdgeMarkFragShader_100 = {"\
 	varying vec2 texCoord[5];\n\
 	\n\
-	uniform sampler2D texInFragColor;\n\
 	uniform sampler2D texInFragDepth;\n\
 	uniform sampler2D texInPolyID;\n\
 	uniform vec4 stateEdgeColor[8];\n\
@@ -373,9 +372,6 @@ static const char *EdgeMarkFragShader_100 = {"\
 	\n\
 	void main()\n\
 	{\n\
-		vec4 inFragColor = texture2D(texInFragColor, texCoord[0]);\n\
-		float inFragDepth = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord[0]).rgb);\n\
-		\n\
 		vec4 inPolyIDAttributes[5];\n\
 		inPolyIDAttributes[0] = texture2D(texInPolyID, texCoord[0]);\n\
 		inPolyIDAttributes[1] = texture2D(texInPolyID, texCoord[1]);\n\
@@ -390,13 +386,6 @@ static const char *EdgeMarkFragShader_100 = {"\
 		polyID[3] = int((inPolyIDAttributes[3].r * 63.0) + 0.5);\n\
 		polyID[4] = int((inPolyIDAttributes[4].r * 63.0) + 0.5);\n\
 		\n\
-		bool antialias[5];\n\
-		antialias[0] = bool(inPolyIDAttributes[0].g);\n\
-		antialias[1] = bool(inPolyIDAttributes[1].g);\n\
-		antialias[2] = bool(inPolyIDAttributes[2].g);\n\
-		antialias[3] = bool(inPolyIDAttributes[3].g);\n\
-		antialias[4] = bool(inPolyIDAttributes[4].g);\n\
-		\n\
 		float depth[5];\n\
 		depth[0] = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord[0]).rgb);\n\
 		depth[1] = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord[1]).rgb);\n\
@@ -404,22 +393,18 @@ static const char *EdgeMarkFragShader_100 = {"\
 		depth[3] = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord[3]).rgb);\n\
 		depth[4] = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord[4]).rgb);\n\
 		\n\
-		vec4 edgeColor = stateEdgeColor[polyID[0]/8];\n\
-		bool doEdgeMark = false;\n\
-		bool doAntialias = false;\n\
+		vec4 edgeColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
 		\n\
 		for (int i = 1; i < 5; i++)\n\
 		{\n\
 			if (polyID[0] != polyID[i] && depth[0] >= depth[i])\n\
 			{\n\
-				doEdgeMark = true;\n\
 				edgeColor = stateEdgeColor[polyID[i]/8];\n\
-				doAntialias = antialias[i];\n\
 				break;\n\
 			}\n\
 		}\n\
 		\n\
-		gl_FragData[0] = mix(inFragColor, edgeColor, (doEdgeMark) ? ((doAntialias) ? (16.0/31.0) : 1.0) : 0.0);\n\
+		gl_FragData[0] = edgeColor;\n\
 	}\n\
 "};
 
@@ -1391,7 +1376,6 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glGenTextures(1, &OGLRef.texGPolyID);
 	glGenTextures(1, &OGLRef.texGFogAttrID);
 	glGenTextures(1, &OGLRef.texGDepthStencilID);
-	glGenTextures(1, &OGLRef.texPostprocessEdgeMarkID);
 	glGenTextures(1, &OGLRef.texPostprocessFogID);
 	
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
@@ -1424,13 +1408,6 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGFogAttrID);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texPostprocessEdgeMarkID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -1470,7 +1447,6 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 		glDeleteTextures(1, &OGLRef.texGPolyID);
 		glDeleteTextures(1, &OGLRef.texGFogAttrID);
 		glDeleteTextures(1, &OGLRef.texGDepthStencilID);
-		glDeleteTextures(1, &OGLRef.texPostprocessEdgeMarkID);
 		glDeleteTextures(1, &OGLRef.texPostprocessFogID);
 		
 		this->isFBOSupported = false;
@@ -1481,8 +1457,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, OGLRef.texPostprocessEdgeMarkID, 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, OGLRef.texPostprocessFogID, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, OGLRef.texPostprocessFogID, 0);
 	
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
 	{
@@ -1496,7 +1471,6 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 		glDeleteTextures(1, &OGLRef.texGPolyID);
 		glDeleteTextures(1, &OGLRef.texGFogAttrID);
 		glDeleteTextures(1, &OGLRef.texGDepthStencilID);
-		glDeleteTextures(1, &OGLRef.texPostprocessEdgeMarkID);
 		glDeleteTextures(1, &OGLRef.texPostprocessFogID);
 		
 		this->isFBOSupported = false;
@@ -1530,7 +1504,7 @@ void OpenGLRenderer_1_2::DestroyFBOs()
 	glDeleteTextures(1, &OGLRef.texGPolyID);
 	glDeleteTextures(1, &OGLRef.texGFogAttrID);
 	glDeleteTextures(1, &OGLRef.texGDepthStencilID);
-	glDeleteTextures(1, &OGLRef.texPostprocessEdgeMarkID);
+	glDeleteTextures(1, &OGLRef.texPostprocessFogID);
 	
 	OGLRef.fboRenderID = 0;
 	OGLRef.fboPostprocessID = 0;
@@ -1658,9 +1632,6 @@ Render3DError OpenGLRenderer_1_2::InitFinalRenderStates(const std::set<std::stri
 	
 	// Mirrored Repeat Mode Support
 	OGLRef.stateTexMirroredRepeat = isTexMirroredRepeatSupported ? GL_MIRRORED_REPEAT : GL_REPEAT;
-	
-	// Always enable depth test, and control using glDepthMask().
-	glEnable(GL_DEPTH_TEST);
 	
 	// Map the vertex list's colors with 4 floats per color. This is being done
 	// because OpenGL needs 4-colors per vertex to support translucency. (The DS
@@ -2243,7 +2214,6 @@ Render3DError OpenGLRenderer_1_2::EndRender(const u64 frameCount)
 	TexCache_EvictFrame();
 	
 	this->ReadBackPixels();
-	this->didRenderEdgeMark = false;
 	
 	return OGLERROR_NOERR;
 }
@@ -2539,7 +2509,6 @@ Render3DError OpenGLRenderer_1_2::Reset()
 	
 	this->gpuScreen3DHasNewData[0] = false;
 	this->gpuScreen3DHasNewData[1] = false;
-	didRenderEdgeMark = false;
 	
 	glFinish();
 	
@@ -2692,9 +2661,6 @@ Render3DError OpenGLRenderer_1_4::InitFinalRenderStates(const std::set<std::stri
 	
 	// Mirrored Repeat Mode Support
 	OGLRef.stateTexMirroredRepeat = GL_MIRRORED_REPEAT;
-	
-	// Always enable depth test, and control using glDepthMask().
-	glEnable(GL_DEPTH_TEST);
 	
 	// Map the vertex list's colors with 4 floats per color. This is being done
 	// because OpenGL needs 4-colors per vertex to support translucency. (The DS
@@ -3069,9 +3035,6 @@ Render3DError OpenGLRenderer_2_0::InitFinalRenderStates(const std::set<std::stri
 	// Mirrored Repeat Mode Support
 	OGLRef.stateTexMirroredRepeat = GL_MIRRORED_REPEAT;
 	
-	// Always enable depth test, and control using glDepthMask().
-	glEnable(GL_DEPTH_TEST);
-	
 	// Ignore our color buffer since we'll transfer the polygon alpha through a uniform.
 	OGLRef.color4fBuffer = NULL;
 	
@@ -3423,48 +3386,47 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State *renderState)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_2_0::RenderEdgeMarking(const u16 *colorTable)
+Render3DError OpenGLRenderer_2_0::RenderEdgeMarking(const u16 *colorTable, const bool useAntialias)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
+	const GLfloat alpha = (useAntialias) ? (16.0f/31.0f) : 1.0f;
 	const GLfloat oglColor[4*8]	= {divide5bitBy31_LUT[(colorTable[0]      ) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[0] >>  5) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[0] >> 10) & 0x001F],
-								   1.0f,
+								   alpha,
 								   divide5bitBy31_LUT[(colorTable[1]      ) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[1] >>  5) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[1] >> 10) & 0x001F],
-								   1.0f,
+								   alpha,
 								   divide5bitBy31_LUT[(colorTable[2]      ) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[2] >>  5) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[2] >> 10) & 0x001F],
-								   1.0f,
+								   alpha,
 								   divide5bitBy31_LUT[(colorTable[3]      ) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[3] >>  5) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[3] >> 10) & 0x001F],
-								   1.0f,
+								   alpha,
 								   divide5bitBy31_LUT[(colorTable[4]      ) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[4] >>  5) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[4] >> 10) & 0x001F],
-								   1.0f,
+								   alpha,
 								   divide5bitBy31_LUT[(colorTable[5]      ) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[5] >>  5) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[5] >> 10) & 0x001F],
-								   1.0f,
+								   alpha,
 								   divide5bitBy31_LUT[(colorTable[6]      ) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[6] >>  5) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[6] >> 10) & 0x001F],
-								   1.0f,
+								   alpha,
 								   divide5bitBy31_LUT[(colorTable[7]      ) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[7] >>  5) & 0x001F],
 								   divide5bitBy31_LUT[(colorTable[7] >> 10) & 0x001F],
-								   1.0f};
+								   alpha};
 	
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	glUseProgram(OGLRef.programEdgeMarkID);
-	glUniform1i(OGLRef.uniformTexGColor_EdgeMark, OGLTextureUnitID_GColor);
 	glUniform1i(OGLRef.uniformTexGDepth_EdgeMark, OGLTextureUnitID_GDepth);
 	glUniform1i(OGLRef.uniformTexGPolyID_EdgeMark, OGLTextureUnitID_GPolyID);
 	glUniform2f(OGLRef.uniformFramebufferSize, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT);
@@ -3473,7 +3435,7 @@ Render3DError OpenGLRenderer_2_0::RenderEdgeMarking(const u16 *colorTable)
 	glViewport(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_STENCIL_TEST);
-	glDisable(GL_BLEND);
+	glEnable(GL_BLEND);
 	glDisable(GL_CULL_FACE);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
@@ -3491,8 +3453,6 @@ Render3DError OpenGLRenderer_2_0::RenderEdgeMarking(const u16 *colorTable)
 		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
 	}
 	
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GDepth);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthID);
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
@@ -3509,9 +3469,7 @@ Render3DError OpenGLRenderer_2_0::RenderEdgeMarking(const u16 *colorTable)
 		glDisableVertexAttribArray(OGLVertexAttributeID_Position);
 		glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
 	}
-	
-	this->didRenderEdgeMark = true;
-	
+		
 	return RENDER3DERROR_NOERR;
 }
 
@@ -3539,8 +3497,6 @@ Render3DError OpenGLRenderer_2_0::RenderFog(const u8 *densityTable, const u32 co
 	const GLfloat oglFogStep = (GLfloat)(0x0400 >> shift) / 32767.0f;
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
-	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
 	glUseProgram(OGLRef.programFogID);
 	glUniform1i(OGLRef.uniformTexGColor_Fog, OGLTextureUnitID_GColor);
 	glUniform1i(OGLRef.uniformTexGDepth_Fog, OGLTextureUnitID_GDepth);
@@ -3573,7 +3529,7 @@ Render3DError OpenGLRenderer_2_0::RenderFog(const u8 *densityTable, const u32 co
 	}
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
-	glBindTexture(GL_TEXTURE_2D, (this->didRenderEdgeMark) ? OGLRef.texPostprocessEdgeMarkID : OGLRef.texGColorID);
+	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GDepth);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthID);
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);

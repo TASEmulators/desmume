@@ -325,7 +325,6 @@ struct OGLRenderRef
 	GLuint texGFogAttrID;
 	GLuint texGPolyID;
 	GLuint texGDepthStencilID;
-	GLuint texPostprocessEdgeMarkID;
 	GLuint texPostprocessFogID;
 	
 	GLuint rboMSGColorID;
@@ -466,7 +465,6 @@ protected:
 	
 	CACHE_ALIGN u32 GPU_screen3D[2][GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT * sizeof(u32)];
 	bool gpuScreen3DHasNewData[2];
-	bool didRenderEdgeMark;
 	size_t doubleBufferIndex;
 	
 	// OpenGL-specific methods
@@ -634,7 +632,7 @@ protected:
 	virtual Render3DError DisableVertexAttributes();
 	
 	virtual Render3DError BeginRender(const GFX3D_State *renderState);
-	virtual Render3DError RenderEdgeMarking(const u16 *colorTable);
+	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
 	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
 	
 	virtual Render3DError SetupPolygon(const POLY *thePoly);

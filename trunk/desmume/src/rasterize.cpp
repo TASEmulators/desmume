@@ -1434,9 +1434,6 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D_State *renderState
 		}
 	}
 	
-	this->_framebufferWidth = GFX3D_FRAMEBUFFER_WIDTH;
-	this->_framebufferHeight = GFX3D_FRAMEBUFFER_HEIGHT;
-	
 	return RENDER3DERROR_NOERR;
 }
 
@@ -1468,7 +1465,7 @@ Render3DError SoftRasterizerRenderer::RenderGeometry(const GFX3D_State *renderSt
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable)
+Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable, const bool useAntialias)
 {
 	// this looks ok although it's still pretty much a hack,
 	// it needs to be redone with low-level accuracy at some point,
@@ -1485,7 +1482,7 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable)
 	for (size_t i = 0; i < 8; i++)
 	{
 		u16 col = colorTable[i];
-		edgeMarkColors[i].color = RGB15TO5555(col,gfx3d.state.enableAntialiasing ? 0x0F : 0x1F);
+		edgeMarkColors[i].color = RGB15TO5555(col, (useAntialias) ? 0x0F : 0x1F);
 		edgeMarkColors[i].r = GFX3D_5TO6(edgeMarkColors[i].r);
 		edgeMarkColors[i].g = GFX3D_5TO6(edgeMarkColors[i].g);
 		edgeMarkColors[i].b = GFX3D_5TO6(edgeMarkColors[i].b);
@@ -1730,14 +1727,6 @@ Render3DError SoftRasterizerRenderer::Render(const GFX3D_State *renderState, con
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
-	if (this->_renderGeometryNeedsFinish)
-	{
-		for (size_t i = 0; i < rasterizerCores; i++)
-		{
-			rasterizerUnitTask[i].finish();
-		}
-	}
-	
 	error = this->BeginRender(renderState);
 	if (error != RENDER3DERROR_NOERR)
 	{
@@ -1751,6 +1740,7 @@ Render3DError SoftRasterizerRenderer::Render(const GFX3D_State *renderState, con
 	
 	if (rasterizerCores > 1)
 	{
+		this->_enableAntialias = renderState->enableAntialiasing;
 		this->_enableEdgeMark = renderState->enableEdgeMarking;
 		this->_enableFog = renderState->enableFog;
 		this->_enableFogAlphaOnly = renderState->enableFogAlphaOnly;
@@ -1762,18 +1752,19 @@ Render3DError SoftRasterizerRenderer::Render(const GFX3D_State *renderState, con
 	}
 	else
 	{
-		if (this->_enableEdgeMark)
+		this->_renderGeometryNeedsFinish = false;
+		
+		if (renderState->enableEdgeMarking)
 		{
-			this->RenderEdgeMarking((const u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0330));
+			this->RenderEdgeMarking((const u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0330), renderState->enableAntialiasing);
 		}
 		
-		if (this->_enableFog)
+		if (renderState->enableFog)
 		{
-			this->RenderFog(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0360, this->_fogColor, this->_fogOffset, this->_fogShift, this->_enableFogAlphaOnly);
+			this->RenderFog(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0360, renderState->fogColor, renderState->fogOffset, renderState->fogShift, renderState->enableFogAlphaOnly);
 		}
 		
 		memcpy(gfx3d_convertedScreen, this->screenColor, this->_framebufferWidth * this->_framebufferHeight * sizeof(FragmentColor));
-		this->_renderGeometryNeedsFinish = false;
 	}
 	
 	return error;
@@ -1795,7 +1786,7 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 	
 	if (this->_enableEdgeMark)
 	{
-		this->RenderEdgeMarking((const u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0330));
+		this->RenderEdgeMarking((const u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0330), this->_enableAntialias);
 	}
 	
 	if (this->_enableFog)
