@@ -23,9 +23,11 @@
 
 extern GPU3DInterface gpu3DRasterize;
 
-union FragmentColor {
+union FragmentColor
+{
 	u32 color;
-	struct {
+	struct
+	{
 		u8 r,g,b,a;
 	};
 };
@@ -37,60 +39,70 @@ inline FragmentColor MakeFragmentColor(u8 r, u8 g,u8 b,u8 a)
 	return ret;
 }
 
-struct Fragment
+struct FragmentAttributes
 {
 	u32 depth;
-
-	struct
-	{
-		u8 opaque, translucent;
-	} polyid;
-
+	u8 opaquePolyID;
+	u8 translucentPolyID;
 	u8 stencil;
-
-	struct
-	{
-		u8 isTranslucentPoly:1;
-		u8 fogged:1;
-	};
+	bool isFogged;
+	bool isTranslucentPoly;
 };
 
 class TexCacheItem;
 
-class SoftRasterizerEngine
+class SoftRasterizerRenderer : public Render3D
 {
-public:
-	//debug:
-	int _debug_drawClippedUserPoly;
-
-	SoftRasterizerEngine();
-	
-	void initFramebuffer(const int width, const int height, const bool clearImage);
-	void framebufferProcess();
-	void updateToonTable();
-	void updateFogTable();
-	void updateFloatColors();
-	void performClipping(bool hirez);
-	template<bool CUSTOM> void performViewportTransforms(int width, int height);
-	void performCoordAdjustment(const bool skipBackfacing);
-	void performBackfaceTests();
-	void setupTextures(const bool skipBackfacing);
-
-	FragmentColor toonTable[32];
-	u8 fogTable[32768];
+protected:
 	GFX3D_Clipper clipper;
+	u8 fogTable[32768];
+	bool _enableEdgeMark;
+	bool _enableFog;
+	bool _enableFogAlphaOnly;
+	u32 _fogColor;
+	u32 _fogOffset;
+	u32 _fogShift;
+	bool _renderGeometryNeedsFinish;
+	
+	// SoftRasterizer-specific methods
+	virtual Render3DError InitTables();
+	
+	size_t performClipping(bool hirez, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
+	template<bool CUSTOM> void performViewportTransforms(const size_t polyCount);
+	void performCoordAdjustment(const size_t polyCount);
+	void performBackfaceTests(const size_t polyCount);
+	void setupTextures(const size_t polyCount);
+	
+	// Base rendering methods
+	virtual Render3DError BeginRender(const GFX3D_State *renderState);
+	virtual Render3DError RenderGeometry(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
+	virtual Render3DError RenderEdgeMarking(const u16 *colorTable);
+	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
+	
+	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
+	
+	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer);
+	virtual Render3DError ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearPolyID, const bool enableFog) const;
+	
+public:
+	int _debug_drawClippedUserPoly;
+	size_t _clippedPolyCount;
+	FragmentColor _toonColor32LUT[32];
 	GFX3D_Clipper::TClippedPoly *clippedPolys;
-	int clippedPolyCounter;
-	TexCacheItem* polyTexKeys[POLYLIST_SIZE];
+	FragmentAttributes *screenAttributes;
+	FragmentColor *screenColor;
+	TexCacheItem *polyTexKeys[POLYLIST_SIZE];
 	bool polyVisible[POLYLIST_SIZE];
 	bool polyBackfacing[POLYLIST_SIZE];
-	Fragment *screen;
-	FragmentColor *screenColor;
-	POLYLIST* polylist;
-	VERTLIST* vertlist;
-	INDEXLIST* indexlist;
-	int width, height;
+	size_t _framebufferWidth;
+	size_t _framebufferHeight;
+	
+	SoftRasterizerRenderer();
+	virtual ~SoftRasterizerRenderer();
+	
+	virtual Render3DError Reset();
+	virtual Render3DError Render(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, const u64 frameCount);
+	virtual Render3DError RenderFinish();
 };
-
 
 #endif

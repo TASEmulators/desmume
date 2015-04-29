@@ -168,6 +168,8 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State *renderState)
 	
 	if (renderState->enableClearImage)
 	{
+		//the lion, the witch, and the wardrobe (thats book 1, suck it you new-school numberers)
+		//uses the scroll registers in the main game engine
 		const u16 *__restrict clearColorBuffer = (u16 *__restrict)MMU.texInfo.textureSlotAddr[2];
 		const u16 *__restrict clearDepthBuffer = (u16 *__restrict)MMU.texInfo.textureSlotAddr[3];
 		const u16 scrollBits = T1ReadWord(MMU.ARM9_REG, 0x356); //CLRIMAGE_OFFSET
@@ -185,8 +187,15 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State *renderState)
 				const size_t x = (ix + xScroll) & 0xFF;
 				const size_t adr = y + x;
 				
+				//this is tested by harry potter and the order of the phoenix.
+				//TODO (optimization) dont do this if we are mapped to blank memory (such as in sonic chronicles)
+				//(or use a special zero fill in the bulk clearing above)
 				this->clearImageColor16Buffer[dd] = clearColorBuffer[adr];
+				
+				//this is tested quite well in the sonic chronicles main map mode
+				//where depth values are used for trees etc you can walk behind
 				this->clearImageDepthStencilBuffer[dd] = dsDepthToD24S8_LUT[clearDepthBuffer[adr] & 0x7FFF] | polyID;
+				
 				this->clearImageFogBuffer[dd] = BIT15(clearDepthBuffer[adr]);
 				
 				dd++;
