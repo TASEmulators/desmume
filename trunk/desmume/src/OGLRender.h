@@ -495,7 +495,7 @@ protected:
 	virtual Render3DError CreateToonTable() = 0;
 	virtual Render3DError DestroyToonTable() = 0;
 	virtual Render3DError UploadToonTable(const u16 *toonTableBuffer) = 0;
-	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer) = 0;
+	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer) = 0;
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet) = 0;
 	virtual Render3DError ExpandFreeTextures() = 0;
@@ -551,7 +551,7 @@ protected:
 	virtual Render3DError CreateToonTable();
 	virtual Render3DError DestroyToonTable();
 	virtual Render3DError UploadToonTable(const u16 *toonTableBuffer);
-	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer);
+	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
 	virtual Render3DError ExpandFreeTextures();
@@ -569,7 +569,7 @@ protected:
 	
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	
-	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer);
+	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
 	virtual Render3DError ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearPolyID, const bool enableFog) const;
 	
 	virtual Render3DError SetupPolygon(const POLY *thePoly);
@@ -591,7 +591,7 @@ class OpenGLRenderer_1_3 : public OpenGLRenderer_1_2
 {
 protected:
 	virtual Render3DError UploadToonTable(const u16 *toonTableBuffer);
-	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer);
+	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
 };
 
 class OpenGLRenderer_1_4 : public OpenGLRenderer_1_3
