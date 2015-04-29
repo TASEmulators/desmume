@@ -1654,7 +1654,7 @@ Render3DError SoftRasterizerRenderer::UpdateToonTable(const u16 *toonTableBuffer
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer)
+Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
 {
 	// The clear image buffer is y-flipped, so we need to flip it back to normal here.
 	for (size_t y = 0; y < this->_framebufferHeight; y++)
@@ -1666,8 +1666,8 @@ Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colo
 			
 			((u32 *)this->screenColor)[iw] = RGB15TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 31);
 			screenAttributes[iw].isFogged = fogBuffer[ir];
-			screenAttributes[iw].depth = (depthStencilBuffer[ir] & 0xFFFFFF00) >> 8;
-			screenAttributes[iw].opaquePolyID = depthStencilBuffer[ir] & 0x000000FF;
+			screenAttributes[iw].depth = depthBuffer[ir];
+			screenAttributes[iw].opaquePolyID = polyIDBuffer[ir];
 			screenAttributes[iw].translucentPolyID = kUnsetTranslucentPolyID;
 			screenAttributes[iw].isTranslucentPoly = false;
 			screenAttributes[iw].stencil = 0;

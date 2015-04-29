@@ -1749,24 +1749,24 @@ Render3DError OpenGLRenderer_1_2::UploadToonTable(const u16 *toonTableBuffer)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer)
+Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	static GLuint depth[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
-	static GLuint polyID[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
 	static GLuint fogAttributes[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
+	static GLuint polyID[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
 	
 	for (size_t i = 0; i < GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT; i++)
 	{
-		depth[i] = clearImageDepthStencilBuffer[i] >> 8;
-		polyID[i] = (depthStencilBuffer[i] & 0x0000003F) | 0xFF000000;
+		depth[i] = depthBuffer[i] | 0xFF000000;
 		fogAttributes[i] = (fogBuffer[i]) ? 0xFF0000FF : 0xFF000000;
+		polyID[i] = (GLuint)polyIDBuffer[i] | 0xFF000000;
 	}
 	
 	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_GColor);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthStencilID);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, depthStencilBuffer);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, depthBuffer);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, colorBuffer);
 	
@@ -2255,7 +2255,7 @@ Render3DError OpenGLRenderer_1_2::UpdateToonTable(const u16 *toonTableBuffer)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer)
+Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
 {
 	if (!this->isFBOSupported)
 	{
@@ -2264,7 +2264,7 @@ Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuf
 	
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	this->UploadClearImage(colorBuffer, depthStencilBuffer, fogBuffer);
+	this->UploadClearImage(colorBuffer, depthBuffer, fogBuffer, polyIDBuffer);
 	
 	if (this->isMultisampledFBOSupported && OGLRef.selectedRenderingFBO == OGLRef.fboMSIntermediateRenderID)
 	{
@@ -2282,7 +2282,7 @@ Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuf
 		// We do this because glBlitFramebufferEXT() for GL_STENCIL_BUFFER_BIT has been tested
 		// to be unsupported on ATI/AMD GPUs running in compatibility mode. So we do the separate
 		// glClear() for GL_STENCIL_BUFFER_BIT to keep these GPUs working.
-		glClearStencil(depthStencilBuffer[0] & 0x3F);
+		glClearStencil(0);
 		glClear(GL_STENCIL_BUFFER_BIT);
 		
 		// Blit the working depth buffer
@@ -2316,7 +2316,7 @@ Render3DError OpenGLRenderer_1_2::ClearUsingValues(const u8 r, const u8 g, const
 		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT); // texGColorID
 		glClearColor(divide5bitBy31_LUT[r], divide5bitBy31_LUT[g], divide5bitBy31_LUT[b], divide5bitBy31_LUT[a]);
 		glClearDepth((GLclampd)clearDepth / (GLclampd)0x00FFFFFF);
-		glClearStencil(clearPolyID);
+		glClearStencil(0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		
 		glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT); // texGDepthID
@@ -2337,7 +2337,7 @@ Render3DError OpenGLRenderer_1_2::ClearUsingValues(const u8 r, const u8 g, const
 	{
 		glClearColor(divide5bitBy31_LUT[r], divide5bitBy31_LUT[g], divide5bitBy31_LUT[b], divide5bitBy31_LUT[a]);
 		glClearDepth((GLclampd)clearDepth / (GLclampd)0x00FFFFFF);
-		glClearStencil(clearPolyID);
+		glClearStencil(0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	}
 	
@@ -2633,24 +2633,24 @@ Render3DError OpenGLRenderer_1_3::UploadToonTable(const u16 *toonTableBuffer)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_3::UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer)
+Render3DError OpenGLRenderer_1_3::UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	static GLuint depth[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
-	static GLuint polyID[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
 	static GLuint fogAttributes[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
+	static GLuint polyID[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
 	
 	for (size_t i = 0; i < GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT; i++)
 	{
-		depth[i] = (depthStencilBuffer[i] >> 8) | 0xFF000000;
-		polyID[i] = (depthStencilBuffer[i] & 0x0000003F) | 0xFF000000;
+		depth[i] = depthBuffer[i] | 0xFF000000;
 		fogAttributes[i] = (fogBuffer[i]) ? 0xFF0000FF : 0xFF000000;
+		polyID[i] = (GLuint)polyIDBuffer[i] | 0xFF000000;
 	}
 
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthStencilID);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, depthStencilBuffer);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, depthBuffer);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, colorBuffer);
 	

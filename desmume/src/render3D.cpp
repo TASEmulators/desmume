@@ -194,9 +194,10 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State *renderState)
 				
 				//this is tested quite well in the sonic chronicles main map mode
 				//where depth values are used for trees etc you can walk behind
-				this->clearImageDepthStencilBuffer[dd] = dsDepthToD24S8_LUT[clearDepthBuffer[adr] & 0x7FFF] | polyID;
+				this->clearImageDepthBuffer[dd] = dsDepthToD24S8_LUT[clearDepthBuffer[adr] & 0x7FFF];
 				
 				this->clearImageFogBuffer[dd] = BIT15(clearDepthBuffer[adr]);
+				this->clearImagePolyIDBuffer[dd] = polyID;
 				
 				dd++;
 			}
@@ -204,7 +205,7 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State *renderState)
 			dd -= GFX3D_FRAMEBUFFER_WIDTH * 2;
 		}
 		
-		error = this->ClearUsingImage(this->clearImageColor16Buffer, this->clearImageDepthStencilBuffer, this->clearImageFogBuffer);
+		error = this->ClearUsingImage(this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 		if (error != RENDER3DERROR_NOERR)
 		{
 			error = this->ClearUsingValues(clearColor.r, clearColor.g, clearColor.b, clearColor.a, renderState->clearDepth, polyID, enableFog);
@@ -218,7 +219,7 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State *renderState)
 	return error;
 }
 
-Render3DError Render3D::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthStencilBuffer, const bool *__restrict fogBuffer)
+Render3DError Render3D::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -246,7 +247,9 @@ Render3DError Render3D::SetupViewport(const u32 viewportValue)
 Render3DError Render3D::Reset()
 {
 	memset(this->clearImageColor16Buffer, 0, sizeof(this->clearImageColor16Buffer));
-	memset(this->clearImageDepthStencilBuffer, 0, sizeof(this->clearImageDepthStencilBuffer));
+	memset(this->clearImageDepthBuffer, 0, sizeof(this->clearImageDepthBuffer));
+	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
+	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
 	
 	return RENDER3DERROR_NOERR;
 }
