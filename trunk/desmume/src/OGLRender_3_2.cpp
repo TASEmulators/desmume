@@ -31,6 +31,8 @@
 
 // Basic Functions
 OGLEXT(PFNGLGETSTRINGIPROC, glGetStringi) // Core in v3.0
+OGLEXT(PFNGLCLEARBUFFERFVPROC, glClearBufferfv) // Core in v3.0
+OGLEXT(PFNGLCLEARBUFFERFIPROC, glClearBufferfi) // Core in v3.0
 
 // Shaders
 OGLEXT(PFNGLBINDFRAGDATALOCATIONPROC, glBindFragDataLocation) // Core in v3.0
@@ -53,6 +55,8 @@ void OGLLoadEntryPoints_3_2()
 {
 	// Basic Functions
 	INITOGLEXT(PFNGLGETSTRINGIPROC, glGetStringi)
+	INITOGLEXT(PFNGLCLEARBUFFERFVPROC, glClearBufferfv)
+	INITOGLEXT(PFNGLCLEARBUFFERFIPROC, glClearBufferfi)
 	
 	// Shaders
 	INITOGLEXT(PFNGLBINDFRAGDATALOCATIONPROC, glBindFragDataLocation)
