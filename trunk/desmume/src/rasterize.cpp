@@ -69,8 +69,6 @@ template<typename T> T _max(T a, T b, T c) { return max(max(a,b),c); }
 template<typename T> T _min(T a, T b, T c, T d) { return min(_min(a,b,d),c); }
 template<typename T> T _max(T a, T b, T c, T d) { return max(_max(a,b,d),c); }
 
-static const int kUnsetTranslucentPolyID = 255;
-
 static u8 modulate_table[64][64];
 static u8 decal_table[32][64][64];
 static u8 index_lookup_table[65];
@@ -540,7 +538,7 @@ public:
 			case 2: //toon/highlight shading
 			{
 				texColor = sample(texCoordU, texCoordV);
-				FragmentColor toonColor = this->_softRender->_toonColor32LUT[src.r >> 1];
+				FragmentColor toonColor = this->_softRender->toonColor32LUT[src.r >> 1];
 				
 				if(gfx3d.renderState.shading == GFX3D_State::HIGHLIGHT)
 				{
@@ -571,10 +569,8 @@ public:
 		}
 	}
 	
-	FORCEINLINE void pixel(PolygonAttributes &polyAttr, FragmentAttributes *fragmentAttributes, FragmentColor *fragmentColor, int adr, float r, float g, float b, float invu, float invv, float w, float z)
+	FORCEINLINE void pixel(const PolygonAttributes &polyAttr, FragmentAttributes &dstAttributes, FragmentColor &dstColor, float r, float g, float b, float invu, float invv, float w, float z)
 	{
-		FragmentAttributes &destFragment = fragmentAttributes[adr];
-		FragmentColor &destFragmentColor = fragmentColor[adr];
 		FragmentColor srcColor;
 		FragmentColor shaderOutput;
 
@@ -596,15 +592,15 @@ public:
 		{
 			if (CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack > 0)
 			{
-				if( depth<destFragment.depth - CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack
-					|| depth>destFragment.depth + CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack) 
+				if( depth < dstAttributes.depth - CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack
+					|| depth > dstAttributes.depth + CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack)
 				{
 					goto depth_fail;
 				}
 			}
 			else
 			{
-				if (depth != destFragment.depth)
+				if (depth != dstAttributes.depth)
 				{
 					goto depth_fail;
 				}
@@ -612,7 +608,7 @@ public:
 		}
 		else
 		{
-			if (depth >= destFragment.depth)
+			if (depth >= dstAttributes.depth)
 			{
 				goto depth_fail;
 			}
@@ -627,7 +623,7 @@ public:
 			}
 			else
 			{
-				if (destFragment.stencil == 0)
+				if (dstAttributes.stencil == 0)
 				{
 					goto rejected_fragment;
 				}	
@@ -635,7 +631,7 @@ public:
 				//shadow polys have a special check here to keep from self-shadowing when user
 				//has tried to prevent it from happening
 				//if this isnt here, then the vehicle select in mariokart will look terrible
-				if (destFragment.opaquePolyID == polyAttr.polygonID)
+				if (dstAttributes.opaquePolyID == polyAttr.polygonID)
 				{
 					goto rejected_fragment;
 				}
@@ -672,31 +668,31 @@ public:
 			bool isOpaquePixel = shaderOutput.a == 31;
 			if (isOpaquePixel)
 			{
-				destFragment.opaquePolyID = polyAttr.polygonID;
-				destFragment.isTranslucentPoly = polyAttr.isTranslucent;
-				destFragment.isFogged = polyAttr.enableRenderFog;
-				destFragmentColor = shaderOutput;
+				dstAttributes.opaquePolyID = polyAttr.polygonID;
+				dstAttributes.isTranslucentPoly = polyAttr.isTranslucent;
+				dstAttributes.isFogged = polyAttr.enableRenderFog;
+				dstColor = shaderOutput;
 			}
 			else
 			{
 				//dont overwrite pixels on translucent polys with the same polyids
-				if (destFragment.translucentPolyID == polyAttr.polygonID)
+				if (dstAttributes.translucentPolyID == polyAttr.polygonID)
 					goto rejected_fragment;
 			
 				//originally we were using a test case of shadows-behind-trees in sm64ds
 				//but, it looks bad in that game. this is actually correct
 				//if this isnt correct, then complex shape cart shadows in mario kart don't work right
-				destFragment.translucentPolyID = polyAttr.polygonID;
+				dstAttributes.translucentPolyID = polyAttr.polygonID;
 
 				//alpha blending and write color
-				alphaBlend(destFragmentColor, shaderOutput);
+				alphaBlend(dstColor, shaderOutput);
 				
-				destFragment.isFogged = (destFragment.isFogged && polyAttr.enableRenderFog);
+				dstAttributes.isFogged = (dstAttributes.isFogged && polyAttr.enableRenderFog);
 			}
 
 			//depth writing
 			if (isOpaquePixel || polyAttr.enableAlphaDepthWrite)
-				destFragment.depth = depth;
+				dstAttributes.depth = depth;
 
 		}
 
@@ -709,17 +705,17 @@ public:
 		goto done;
 		depth_fail:
 		if (polyAttr.polygonMode == 3 && polyAttr.polygonID == 0)
-			destFragment.stencil++;
+			dstAttributes.stencil++;
 		rejected_fragment:
 		done:
 		;
 
-		if (polyAttr.polygonMode == 3 && polyAttr.polygonID != 0 && destFragment.stencil)
-			destFragment.stencil--;
+		if (polyAttr.polygonMode == 3 && polyAttr.polygonID != 0 && dstAttributes.stencil)
+			dstAttributes.stencil--;
 	}
 
 	//draws a single scanline
-	FORCEINLINE void drawscanline(PolygonAttributes &polyAttr, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight, bool lineHack)
+	FORCEINLINE void drawscanline(const PolygonAttributes &polyAttr, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight, bool lineHack)
 	{
 		int XStart = pLeft->X;
 		int width = pRight->X - XStart;
@@ -802,7 +798,7 @@ public:
 
 		while(width-- > 0)
 		{
-			pixel(polyAttr, this->_softRender->screenAttributes, this->_softRender->screenColor, adr,color[0],color[1],color[2],u,v,1.0f/invw,z);
+			pixel(polyAttr, this->_softRender->screenAttributes[adr], this->_softRender->screenColor[adr], color[0], color[1], color[2], u, v, 1.0f/invw, z);
 			adr++;
 			x++;
 
@@ -818,7 +814,7 @@ public:
 
 	//runs several scanlines, until an edge is finished
 	template<bool SLI>
-	void runscanlines(PolygonAttributes &polyAttr, FragmentColor *color, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *left, edge_fx_fl *right, bool horizontal, bool lineHack)
+	void runscanlines(const PolygonAttributes &polyAttr, FragmentColor *color, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *left, edge_fx_fl *right, bool horizontal, bool lineHack)
 	{
 		//oh lord, hack city for edge drawing
 
@@ -957,7 +953,7 @@ public:
 	//I didnt reference anything for this algorithm but it seems like I've seen it somewhere before.
 	//Maybe it is like crow's algorithm
 	template<bool SLI>
-	void shape_engine(PolygonAttributes &polyAttr, FragmentColor *color, const size_t framebufferWidth, const size_t framebufferHeight, int type, const bool backwards, bool lineHack)
+	void shape_engine(const PolygonAttributes &polyAttr, FragmentColor *color, const size_t framebufferWidth, const size_t framebufferHeight, int type, const bool backwards, bool lineHack)
 	{
 		bool failure = false;
 
@@ -1081,6 +1077,42 @@ static void* execRasterizerUnit(void *arg)
 	return 0;
 }
 
+static void* SoftRasterizer_RunCalculateVertices(void *arg)
+{
+	SoftRasterizerRenderer *softRender = (SoftRasterizerRenderer *)arg;
+	softRender->performViewportTransforms<false>();
+	softRender->performBackfaceTests();
+	softRender->performCoordAdjustment();
+	
+	return NULL;
+}
+
+static void* SoftRasterizer_RunSetupTextures(void *arg)
+{
+	SoftRasterizerRenderer *softRender = (SoftRasterizerRenderer *)arg;
+	softRender->setupTextures();
+	
+	return NULL;
+}
+
+static void* SoftRasterizer_RunUpdateTables(void *arg)
+{
+	SoftRasterizerRenderer *softRender = (SoftRasterizerRenderer *)arg;
+	softRender->UpdateToonTable(softRender->currentRenderState->u16ToonTable);
+	softRender->UpdateFogTable(softRender->currentRenderState->fogDensityTable);
+	softRender->UpdateEdgeMarkColorTable(softRender->currentRenderState->edgeMarkColorTable);
+	
+	return NULL;
+}
+
+static void* SoftRasterizer_RunClearFramebuffer(void *arg)
+{
+	SoftRasterizerRenderer *softRender = (SoftRasterizerRenderer *)arg;
+	softRender->ClearFramebuffer(*softRender->currentRenderState);
+	
+	return NULL;
+}
+
 void _HACK_Viewer_ExecUnit()
 {
 	_HACK_viewer_rasterizerUnit.mainLoop<false>();
@@ -1115,7 +1147,7 @@ static void SoftRastClose()
 
 static void SoftRastRender()
 {
-	_SoftRastRenderer->Render(&gfx3d.renderState, gfx3d.vertlist, gfx3d.polylist, &gfx3d.indexlist, gfx3d.frameCtr);
+	_SoftRastRenderer->Render(gfx3d);
 }
 
 static void SoftRastVramReconfigureSignal()
@@ -1143,6 +1175,7 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	_debug_drawClippedUserPoly = -1;
 	clippedPolys = clipper.clippedPolys = new GFX3D_Clipper::TClippedPoly[POLYLIST_SIZE*2];
 	
+	_stateSetupNeedsFinish = false;
 	_renderGeometryNeedsFinish = false;
 	_framebufferWidth = GFX3D_FRAMEBUFFER_WIDTH;
 	_framebufferHeight = GFX3D_FRAMEBUFFER_HEIGHT;
@@ -1268,7 +1301,7 @@ size_t SoftRasterizerRenderer::performClipping(bool hirez, const VERTLIST *vertL
 	return clipper.clippedPolyCounter;
 }
 
-template<bool CUSTOM> void SoftRasterizerRenderer::performViewportTransforms(const size_t polyCount)
+template<bool CUSTOM> void SoftRasterizerRenderer::performViewportTransforms()
 {
 	const float xfactor = (float)this->_framebufferWidth/(float)GFX3D_FRAMEBUFFER_WIDTH;
 	const float yfactor = (float)this->_framebufferHeight/(float)GFX3D_FRAMEBUFFER_HEIGHT;
@@ -1276,7 +1309,7 @@ template<bool CUSTOM> void SoftRasterizerRenderer::performViewportTransforms(con
 	const float ymax = GFX3D_FRAMEBUFFER_HEIGHT*yfactor-(CUSTOM?0.001f:0);
 	
 	//viewport transforms
-	for (size_t i = 0; i < polyCount; i++)
+	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
 		GFX3D_Clipper::TClippedPoly &poly = clippedPolys[i];
 		for (size_t j = 0; j < poly.type; j++)
@@ -1317,12 +1350,12 @@ template<bool CUSTOM> void SoftRasterizerRenderer::performViewportTransforms(con
 	}
 }
 //these templates needed to be instantiated manually
-template void SoftRasterizerRenderer::performViewportTransforms<true>(const size_t polyCount);
-template void SoftRasterizerRenderer::performViewportTransforms<false>(const size_t polyCount);
+template void SoftRasterizerRenderer::performViewportTransforms<true>();
+template void SoftRasterizerRenderer::performViewportTransforms<false>();
 
-void SoftRasterizerRenderer::performCoordAdjustment(const size_t polyCount)
+void SoftRasterizerRenderer::performCoordAdjustment()
 {
-	for (size_t i = 0; i < polyCount; i++)
+	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
 		GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
 		int type = clippedPoly.type;
@@ -1337,13 +1370,14 @@ void SoftRasterizerRenderer::performCoordAdjustment(const size_t polyCount)
 	}
 }
 
-void SoftRasterizerRenderer::setupTextures(const size_t polyCount)
+
+void SoftRasterizerRenderer::setupTextures()
 {
 	TexCacheItem *lastTexKey = NULL;
 	u32 lastTextureFormat = 0, lastTexturePalette = 0;
 	bool needInitTexture = true;
 	
-	for (size_t i = 0; i < polyCount; i++)
+	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
 		GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
 		POLY *thePoly = clippedPoly.poly;
@@ -1388,9 +1422,9 @@ bool PolygonIsVisible(const PolygonAttributes &polyAttr, const bool backfacing)
 	return false;
 }
 
-void SoftRasterizerRenderer::performBackfaceTests(const size_t polyCount)
+void SoftRasterizerRenderer::performBackfaceTests()
 {
-	for (size_t i = 0; i < polyCount; i++)
+	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
 		GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
 		POLY *thePoly = clippedPoly.poly;
@@ -1423,40 +1457,82 @@ void SoftRasterizerRenderer::performBackfaceTests(const size_t polyCount)
 	}
 }
 
-Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D_State *renderState)
+Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 {
-	// Force threads to finish before rendering with new data
 	if (rasterizerCores > 1)
 	{
+		// Force all threads to finish before rendering with new data
 		for (size_t i = 0; i < rasterizerCores; i++)
 		{
 			rasterizerUnitTask[i].finish();
 		}
 	}
 	
+	// Keep the current render states for later use
+	this->currentRenderState = (GFX3D_State *)&engine.renderState;
+	
+	this->_clippedPolyCount = this->performClipping(CommonSettings.GFX3D_HighResolutionInterpolateColor, engine.vertlist, engine.polylist, &engine.indexlist);
+	
+	if (rasterizerCores >= 4)
+	{
+		rasterizerUnitTask[0].execute(&SoftRasterizer_RunCalculateVertices, this);
+		rasterizerUnitTask[1].execute(&SoftRasterizer_RunSetupTextures, this);
+		rasterizerUnitTask[2].execute(&SoftRasterizer_RunUpdateTables, this);
+		rasterizerUnitTask[3].execute(&SoftRasterizer_RunClearFramebuffer, this);
+		this->_stateSetupNeedsFinish = true;
+	}
+	else
+	{
+		this->performViewportTransforms<false>();
+		this->performBackfaceTests();
+		this->performCoordAdjustment();
+		this->setupTextures();
+		this->UpdateToonTable(engine.renderState.u16ToonTable);
+		
+		if (this->currentRenderState->enableEdgeMarking)
+		{
+			this->UpdateEdgeMarkColorTable(this->currentRenderState->edgeMarkColorTable);
+		}
+		
+		if (this->currentRenderState->enableFog)
+		{
+			this->UpdateFogTable(this->currentRenderState->fogDensityTable);
+		}
+		
+		this->ClearFramebuffer(engine.renderState);
+		
+		this->_stateSetupNeedsFinish = false;
+	}
+	
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError SoftRasterizerRenderer::RenderGeometry(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
+Render3DError SoftRasterizerRenderer::RenderGeometry(const GFX3D_State &renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
 {
-	const size_t polyCount = this->performClipping(CommonSettings.GFX3D_HighResolutionInterpolateColor, vertList, polyList, indexList);
-	this->_clippedPolyCount = polyCount;
+	// If multithreaded, allow for states to finish setting up
+	if (this->_stateSetupNeedsFinish)
+	{
+		rasterizerUnitTask[0].finish();
+		rasterizerUnitTask[1].finish();
+		rasterizerUnitTask[2].finish();
+		rasterizerUnitTask[3].finish();
+		this->_stateSetupNeedsFinish = false;
+	}
 	
-	this->performViewportTransforms<false>(polyCount);
-	this->performBackfaceTests(polyCount);
-	this->performCoordAdjustment(polyCount);
-	this->setupTextures(polyCount);
-	
+	// Render the geometry
 	if (rasterizerCores > 1)
 	{
 		for (size_t i = 0; i < rasterizerCores; i++)
 		{
 			rasterizerUnitTask[i].execute(&execRasterizerUnit, (void *)i);
 		}
+		
+		this->_renderGeometryNeedsFinish = true;
 	}
 	else
 	{
 		rasterizerUnit[0].mainLoop<false>();
+		this->_renderGeometryNeedsFinish = false;
 	}
 	
 	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
@@ -1474,24 +1550,6 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable, c
 	// - the edges are completely sharp/opaque on the very brief title screen intro,
 	// - the level-start intro gets a pseudo-antialiasing effect around the silhouette,
 	// - the character edges in-level are clearly transparent, and also show well through shield powerups.
-	//TODO - need to test and find out whether these get grabbed at flush time, or at render time
-	//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
-	FragmentColor edgeMarkColors[8];
-	int edgeMarkDisabled[8];
-	
-	for (size_t i = 0; i < 8; i++)
-	{
-		u16 col = colorTable[i];
-		edgeMarkColors[i].color = RGB15TO5555(col, (useAntialias) ? 0x0F : 0x1F);
-		edgeMarkColors[i].r = GFX3D_5TO6(edgeMarkColors[i].r);
-		edgeMarkColors[i].g = GFX3D_5TO6(edgeMarkColors[i].g);
-		edgeMarkColors[i].b = GFX3D_5TO6(edgeMarkColors[i].b);
-		
-		//zero 20-jun-2013 - this doesnt make any sense. at least, it should be related to the 0x8000 bit. if this is undocumented behaviour, lets write about which scenario proves it here, or which scenario is requiring this code.
-		//// this seems to be the only thing that selectively disables edge marking
-		//edgeMarkDisabled[i] = (col == 0x7FFF);
-		edgeMarkDisabled[i] = 0;
-	}
 	
 	for (size_t i = 0, y = 0; y < this->_framebufferHeight; y++)
 	{
@@ -1507,7 +1565,7 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable, c
 			// also note that the edge generally goes on the outside, not the inside, (maybe needs to change later)
 			// and that polys with the same edge color can make edges against each other.
 			
-			FragmentColor edgeColor = edgeMarkColors[self>>3];
+			FragmentColor edgeColor = this->edgeMarkTable[self>>3];
 			
 #define PIXOFFSET(dx,dy) ((dx)+(GFX3D_FRAMEBUFFER_WIDTH*(dy)))
 #define ISEDGE(dx,dy) ((x+(dx)!=GFX3D_FRAMEBUFFER_WIDTH) && (x+(dx)!=-1) && (y+(dy)!=GFX3D_FRAMEBUFFER_HEIGHT) && (y+(dy)!=-1) && self > screenAttributes[i+PIXOFFSET(dx,dy)].opaquePolyID)
@@ -1549,7 +1607,28 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable, c
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError SoftRasterizerRenderer::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly)
+Render3DError SoftRasterizerRenderer::UpdateEdgeMarkColorTable(const u16 *edgeMarkColorTable)
+{
+	//TODO: need to test and find out whether these get grabbed at flush time, or at render time
+	//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
+	for (size_t i = 0; i < 8; i++)
+	{
+		u16 col = edgeMarkColorTable[i];
+		this->edgeMarkTable[i].color = RGB15TO5555(col, (this->currentRenderState->enableAntialiasing) ? 0x0F : 0x1F);
+		this->edgeMarkTable[i].r = GFX3D_5TO6(this->edgeMarkTable[i].r);
+		this->edgeMarkTable[i].g = GFX3D_5TO6(this->edgeMarkTable[i].g);
+		this->edgeMarkTable[i].b = GFX3D_5TO6(this->edgeMarkTable[i].b);
+		
+		//zero 20-jun-2013 - this doesnt make any sense. at least, it should be related to the 0x8000 bit. if this is undocumented behaviour, lets write about which scenario proves it here, or which scenario is requiring this code.
+		//// this seems to be the only thing that selectively disables edge marking
+		//edgeMarkDisabled[i] = (col == 0x7FFF);
+		this->edgeMarkDisabled[i] = false;
+	}
+	
+	return RENDER3DERROR_NOERR;
+}
+
+Render3DError SoftRasterizerRenderer::UpdateFogTable(const u8 *fogDensityTable)
 {
 #if 0
 	//TODO - this might be a little slow;
@@ -1587,46 +1666,71 @@ Render3DError SoftRasterizerRenderer::RenderFog(const u8 *densityTable, const u3
 	// this should behave exactly the same as the previous loop,
 	// except much faster. (because it's not a 2d loop and isn't so branchy either)
 	// maybe it's fast enough to not need to be cached, now.
-	const int increment = ((1 << 10) >> shift);
-	const int incrementDivShift = 10 - shift;
-	u32 fogOffset = min<u32>(max<u32>(offset, 0), 32768);
+	const int increment = ((1 << 10) >> this->currentRenderState->fogShift);
+	const int incrementDivShift = 10 - this->currentRenderState->fogShift;
+	u32 fogOffset = min<u32>(max<u32>(this->currentRenderState->fogOffset, 0), 32768);
 	u32 iMin = min<u32>(32768, (( 1 + 1) << incrementDivShift) + fogOffset + 1 - increment);
 	u32 iMax = min<u32>(32768, ((32 + 1) << incrementDivShift) + fogOffset + 1 - increment);
 	assert(iMin <= iMax);
-	memset(fogTable, densityTable[0], iMin);
-	for(u32 i = iMin; i < iMax; i++) {
+	
+	// If the fog factor is 127, then treat it as 128.
+	u8 fogFactor = (fogDensityTable[0] == 127) ? 128 : fogDensityTable[0];
+	memset(this->fogTable, fogFactor, iMin);
+	
+	for(u32 i = iMin; i < iMax; i++)
+	{
 		int num = (i - fogOffset + (increment-1));
 		int j = (num >> incrementDivShift) - 1;
 		u32 value = (num & ~(increment-1)) + fogOffset;
 		u32 diff = value - i;
 		assert(j >= 1 && j < 32);
-		fogTable[i] = ((diff*(densityTable[j-1]) + (increment-diff)*(densityTable[j])) >> incrementDivShift);
+		fogFactor = ((diff*(fogDensityTable[j-1]) + (increment-diff)*(fogDensityTable[j])) >> incrementDivShift);
+		this->fogTable[i] = (fogFactor == 127) ? 128 : fogFactor;
 	}
-	memset(fogTable+iMax, densityTable[31], 32768-iMax);
+	
+	fogFactor = (fogDensityTable[31] == 127) ? 128 : fogDensityTable[31];
+	memset(this->fogTable+iMax, fogFactor, 32768-iMax);
 #endif
 	
+	return RENDER3DERROR_NOERR;
+}
+
+Render3DError SoftRasterizerRenderer::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly)
+{
 	u32 r = GFX3D_5TO6((color)&0x1F);
 	u32 g = GFX3D_5TO6((color>>5)&0x1F);
 	u32 b = GFX3D_5TO6((color>>10)&0x1F);
 	u32 a = (color>>16)&0x1F;
+	const size_t framebufferFragmentCount = this->_framebufferWidth * this->_framebufferHeight;
 	
-	for (size_t i = 0; i < (this->_framebufferWidth * this->_framebufferHeight); i++)
+	if (!alphaOnly)
 	{
-		FragmentAttributes &destFragment = screenAttributes[i];
-		if (!destFragment.isFogged) continue;
-		
-		FragmentColor &destFragmentColor = screenColor[i];
-		u32 fogIndex = destFragment.depth>>9;
-		assert(fogIndex < 32768);
-		u8 fog = fogTable[fogIndex];
-		if (fog == 127) fog = 128;
-		if (!alphaOnly)
+		for (size_t i = 0; i < framebufferFragmentCount; i++)
 		{
+			const FragmentAttributes &destFragment = screenAttributes[i];
+			const size_t fogIndex = destFragment.depth >> 9;
+			assert(fogIndex < 32768);
+			const u8 fog = (destFragment.isFogged) ? this->fogTable[fogIndex] : 0;
+			
+			FragmentColor &destFragmentColor = screenColor[i];
 			destFragmentColor.r = ((128-fog)*destFragmentColor.r + r*fog)>>7;
 			destFragmentColor.g = ((128-fog)*destFragmentColor.g + g*fog)>>7;
 			destFragmentColor.b = ((128-fog)*destFragmentColor.b + b*fog)>>7;
+			destFragmentColor.a = ((128-fog)*destFragmentColor.a + a*fog)>>7;
 		}
-		destFragmentColor.a = ((128-fog)*destFragmentColor.a + a*fog)>>7;
+	}
+	else
+	{
+		for (size_t i = 0; i < framebufferFragmentCount; i++)
+		{
+			const FragmentAttributes &destFragment = screenAttributes[i];
+			const size_t fogIndex = destFragment.depth >> 9;
+			assert(fogIndex < 32768);
+			const u8 fog = (destFragment.isFogged) ? this->fogTable[fogIndex] : 0;
+			
+			FragmentColor &destFragmentColor = screenColor[i];
+			destFragmentColor.a = ((128-fog)*destFragmentColor.a + a*fog)>>7;
+		}
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -1639,13 +1743,13 @@ Render3DError SoftRasterizerRenderer::UpdateToonTable(const u16 *toonTableBuffer
 	{
 #ifdef WORDS_BIGENDIAN
 		u32 u32temp = RGB15TO32_NOALPHA(toonTableBuffer[i]);
-		this->_toonColor32LUT[i].r = (u32temp >> 2) & 0x3F;
-		this->_toonColor32LUT[i].g = (u32temp >> 10) & 0x3F;
-		this->_toonColor32LUT[i].b = (u32temp >> 18) & 0x3F;
+		this->toonColor32LUT[i].r = (u32temp >> 2) & 0x3F;
+		this->toonColor32LUT[i].g = (u32temp >> 10) & 0x3F;
+		this->toonColor32LUT[i].b = (u32temp >> 18) & 0x3F;
 #else
-		this->_toonColor32LUT[i].color = (RGB15TO32_NOALPHA(toonTableBuffer[i])>>2)&0x3F3F3F3F;
+		this->toonColor32LUT[i].color = (RGB15TO32_NOALPHA(toonTableBuffer[i])>>2)&0x3F3F3F3F;
 #endif
-		//printf("%d %d %d %d\n", this->_toonColor32LUT[i].r, this->_toonColor32LUT[i].g, this->_toonColor32LUT[i].b, this->_toonColor32LUT[i].a);
+		//printf("%d %d %d %d\n", this->toonColor32LUT[i].r, this->toonColor32LUT[i].g, this->toonColor32LUT[i].b, this->toonColor32LUT[i].a);
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -1662,41 +1766,30 @@ Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colo
 			size_t iw = x + ((this->_framebufferHeight - 1 - y) * this->_framebufferWidth);
 			
 			((u32 *)this->screenColor)[iw] = RGB15TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 31);
-			screenAttributes[iw].isFogged = fogBuffer[ir];
-			screenAttributes[iw].depth = depthBuffer[ir];
-			screenAttributes[iw].opaquePolyID = polyIDBuffer[ir];
-			screenAttributes[iw].translucentPolyID = kUnsetTranslucentPolyID;
-			screenAttributes[iw].isTranslucentPoly = false;
-			screenAttributes[iw].stencil = 0;
+			this->screenAttributes[iw].isFogged = fogBuffer[ir];
+			this->screenAttributes[iw].depth = depthBuffer[ir];
+			this->screenAttributes[iw].opaquePolyID = polyIDBuffer[ir];
+			this->screenAttributes[iw].translucentPolyID = kUnsetTranslucentPolyID;
+			this->screenAttributes[iw].isTranslucentPoly = false;
+			this->screenAttributes[iw].stencil = 0;
 		}
 	}
 	
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError SoftRasterizerRenderer::ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearPolyID, const bool enableFog) const
+Render3DError SoftRasterizerRenderer::ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const
 {
-	FragmentColor clearFragmentColor;
-	clearFragmentColor.r = GFX3D_5TO6(r);
-	clearFragmentColor.g = GFX3D_5TO6(g);
-	clearFragmentColor.b = GFX3D_5TO6(b);
-	clearFragmentColor.a = a;
-	
-	FragmentAttributes clearFragment;
-	clearFragment.opaquePolyID = clearPolyID;
-	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
-	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
-	//but in spiderman2 some fires with polyid 0 try to render on top of the background
-	clearFragment.translucentPolyID = kUnsetTranslucentPolyID;
-	clearFragment.depth = clearDepth;
-	clearFragment.stencil = 0;
-	clearFragment.isTranslucentPoly = false;
-	clearFragment.isFogged = enableFog;
+	FragmentColor convertedClearColor;
+	convertedClearColor.r = GFX3D_5TO6(clearColor.r);
+	convertedClearColor.g = GFX3D_5TO6(clearColor.g);
+	convertedClearColor.b = GFX3D_5TO6(clearColor.b);
+	convertedClearColor.a = clearColor.a;
 	
 	for (size_t i = 0; i < (this->_framebufferWidth * this->_framebufferHeight); i++)
 	{
-		screenAttributes[i] = clearFragment;
-		screenColor[i] = clearFragmentColor;
+		this->screenAttributes[i] = clearAttributes;
+		this->screenColor[i] = convertedClearColor;
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -1717,57 +1810,48 @@ Render3DError SoftRasterizerRenderer::Reset()
 		rasterizerUnit[0].SetRenderer(this);
 	}
 	
+	this->_stateSetupNeedsFinish = false;
 	this->_renderGeometryNeedsFinish = false;
 	Default3D_Reset();
 	
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError SoftRasterizerRenderer::Render(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, const u64 frameCount)
+Render3DError SoftRasterizerRenderer::Render(const GFX3D &engine)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
-	error = this->BeginRender(renderState);
+	error = this->BeginRender(engine);
 	if (error != RENDER3DERROR_NOERR)
 	{
 		return error;
 	}
 	
-	this->UpdateToonTable(renderState->u16ToonTable);
-	this->ClearFramebuffer(renderState);
-	this->RenderGeometry(renderState, vertList, polyList, indexList);
-	this->EndRender(frameCount);
+	this->RenderGeometry(engine.renderState, engine.vertlist, engine.polylist, &engine.indexlist);
+	this->EndRender(engine.frameCtr);
 	
-	if (rasterizerCores > 1)
+	return error;
+}
+
+Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
+{
+	// If we're not multithreaded, then just do the post-processing steps now.
+	if (!this->_renderGeometryNeedsFinish)
 	{
-		this->_enableAntialias = renderState->enableAntialiasing;
-		this->_enableEdgeMark = renderState->enableEdgeMarking;
-		this->_enableFog = renderState->enableFog;
-		this->_enableFogAlphaOnly = renderState->enableFogAlphaOnly;
-		this->_fogColor = renderState->fogColor;
-		this->_fogOffset = renderState->fogOffset;
-		this->_fogShift = renderState->fogShift;
-		
-		this->_renderGeometryNeedsFinish = true;
-	}
-	else
-	{
-		this->_renderGeometryNeedsFinish = false;
-		
-		if (renderState->enableEdgeMarking)
+		if (this->currentRenderState->enableEdgeMarking)
 		{
-			this->RenderEdgeMarking((const u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0330), renderState->enableAntialiasing);
+			this->RenderEdgeMarking(this->currentRenderState->edgeMarkColorTable, this->currentRenderState->enableAntialiasing);
 		}
 		
-		if (renderState->enableFog)
+		if (this->currentRenderState->enableFog)
 		{
-			this->RenderFog(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0360, renderState->fogColor, renderState->fogOffset, renderState->fogShift, renderState->enableFogAlphaOnly);
+			this->RenderFog(this->currentRenderState->fogDensityTable, this->currentRenderState->fogColor, this->currentRenderState->fogOffset, this->currentRenderState->fogShift, this->currentRenderState->enableFogAlphaOnly);
 		}
 		
 		memcpy(gfx3d_convertedScreen, this->screenColor, this->_framebufferWidth * this->_framebufferHeight * sizeof(FragmentColor));
 	}
 	
-	return error;
+	return RENDER3DERROR_NOERR;
 }
 
 Render3DError SoftRasterizerRenderer::RenderFinish()
@@ -1784,14 +1868,14 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 		rasterizerUnitTask[i].finish();
 	}
 	
-	if (this->_enableEdgeMark)
+	if (this->currentRenderState->enableEdgeMarking)
 	{
-		this->RenderEdgeMarking((const u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0330), this->_enableAntialias);
+		this->RenderEdgeMarking(this->currentRenderState->edgeMarkColorTable, this->currentRenderState->enableAntialiasing);
 	}
 	
-	if (this->_enableFog)
+	if (this->currentRenderState->enableFog)
 	{
-		this->RenderFog(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0360, this->_fogColor, this->_fogOffset, this->_fogShift, this->_enableFogAlphaOnly);
+		this->RenderFog(this->currentRenderState->fogDensityTable, this->currentRenderState->fogColor, this->currentRenderState->fogOffset, this->currentRenderState->fogShift, this->currentRenderState->enableFogAlphaOnly);
 	}
 	
 	memcpy(gfx3d_convertedScreen, this->screenColor, this->_framebufferWidth * this->_framebufferHeight * sizeof(FragmentColor));

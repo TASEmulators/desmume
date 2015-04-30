@@ -116,12 +116,12 @@ Render3D::Render3D()
 	Reset();
 }
 
-Render3DError Render3D::BeginRender(const GFX3D_State *renderState)
+Render3DError Render3D::BeginRender(const GFX3D &engine)
 {
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::RenderGeometry(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
+Render3DError Render3D::RenderGeometry(const GFX3D_State &renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -146,27 +146,28 @@ Render3DError Render3D::UpdateToonTable(const u16 *toonTableBuffer)
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::ClearFramebuffer(const GFX3D_State *renderState)
+Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
-	struct GFX3D_ClearColor
-	{
-		u8 r;
-		u8 g;
-		u8 b;
-		u8 a;
-	} clearColor;
+	FragmentColor clearColor;
+	clearColor.r =  renderState.clearColor & 0x1F;
+	clearColor.g = (renderState.clearColor >> 5) & 0x1F;
+	clearColor.b = (renderState.clearColor >> 10) & 0x1F;
+	clearColor.a = (renderState.clearColor >> 16) & 0x1F;
 	
-	clearColor.r = renderState->clearColor & 0x1F;
-	clearColor.g = (renderState->clearColor >> 5) & 0x1F;
-	clearColor.b = (renderState->clearColor >> 10) & 0x1F;
-	clearColor.a = (renderState->clearColor >> 16) & 0x1F;
+	FragmentAttributes clearFragment;
+	clearFragment.opaquePolyID = (renderState.clearColor >> 24) & 0x3F;
+	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
+	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
+	//but in spiderman2 some fires with polyid 0 try to render on top of the background
+	clearFragment.translucentPolyID = kUnsetTranslucentPolyID;
+	clearFragment.depth = renderState.clearDepth;
+	clearFragment.stencil = 0;
+	clearFragment.isTranslucentPoly = false;
+	clearFragment.isFogged = BIT15(renderState.clearColor);
 	
-	const u8 polyID = (renderState->clearColor >> 24) & 0x3F;
-	const bool enableFog = BIT15(renderState->clearColor);
-	
-	if (renderState->enableClearImage)
+	if (renderState.enableClearImage)
 	{
 		//the lion, the witch, and the wardrobe (thats book 1, suck it you new-school numberers)
 		//uses the scroll registers in the main game engine
@@ -197,7 +198,7 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State *renderState)
 				this->clearImageDepthBuffer[dd] = dsDepthToD24S8_LUT[clearDepthBuffer[adr] & 0x7FFF];
 				
 				this->clearImageFogBuffer[dd] = BIT15(clearDepthBuffer[adr]);
-				this->clearImagePolyIDBuffer[dd] = polyID;
+				this->clearImagePolyIDBuffer[dd] = clearFragment.opaquePolyID;
 				
 				dd++;
 			}
@@ -208,12 +209,12 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State *renderState)
 		error = this->ClearUsingImage(this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 		if (error != RENDER3DERROR_NOERR)
 		{
-			error = this->ClearUsingValues(clearColor.r, clearColor.g, clearColor.b, clearColor.a, renderState->clearDepth, polyID, enableFog);
+			error = this->ClearUsingValues(clearColor, clearFragment);
 		}
 	}
 	else
 	{
-		error = this->ClearUsingValues(clearColor.r, clearColor.g, clearColor.b, clearColor.a, renderState->clearDepth, polyID, enableFog);
+		error = this->ClearUsingValues(clearColor, clearFragment);
 	}
 	
 	return error;
@@ -224,7 +225,7 @@ Render3DError Render3D::ClearUsingImage(const u16 *__restrict colorBuffer, const
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearPolyID, const bool enableFog) const
+Render3DError Render3D::ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -254,32 +255,32 @@ Render3DError Render3D::Reset()
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::Render(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, const u64 frameCount)
+Render3DError Render3D::Render(const GFX3D &engine)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
-	error = this->BeginRender(renderState);
+	error = this->BeginRender(engine);
 	if (error != RENDER3DERROR_NOERR)
 	{
 		return error;
 	}
 	
-	this->UpdateToonTable(renderState->u16ToonTable);
-	this->ClearFramebuffer(renderState);
+	this->UpdateToonTable(engine.renderState.u16ToonTable);
+	this->ClearFramebuffer(engine.renderState);
 	
-	this->RenderGeometry(renderState, vertList, polyList, indexList);
+	this->RenderGeometry(engine.renderState, engine.vertlist, engine.polylist, &engine.indexlist);
 	
-	if (renderState->enableEdgeMarking)
+	if (engine.renderState.enableEdgeMarking)
 	{
-		this->RenderEdgeMarking((const u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0330), renderState->enableAntialiasing);
+		this->RenderEdgeMarking(engine.renderState.edgeMarkColorTable, engine.renderState.enableAntialiasing);
 	}
 	
-	if (renderState->enableFog)
+	if (engine.renderState.enableFog)
 	{
-		this->RenderFog(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0360, renderState->fogColor, renderState->fogOffset, renderState->fogShift, renderState->enableFogAlphaOnly);
+		this->RenderFog(engine.renderState.fogDensityTable, engine.renderState.fogColor, engine.renderState.fogOffset, engine.renderState.fogShift, engine.renderState.enableFogAlphaOnly);
 	}
 
-	this->EndRender(frameCount);
+	this->EndRender(engine.frameCtr);
 	
 	return error;
 }

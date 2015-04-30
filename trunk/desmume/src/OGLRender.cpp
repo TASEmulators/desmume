@@ -763,7 +763,7 @@ static void OGLRender()
 	if(!BEGINGL())
 		return;
 	
-	_OGLRenderer->Render(&gfx3d.renderState, gfx3d.vertlist, gfx3d.polylist, &gfx3d.indexlist, gfx3d.frameCtr);
+	_OGLRenderer->Render(gfx3d);
 	
 	ENDGL();
 }
@@ -2050,7 +2050,7 @@ Render3DError OpenGLRenderer_1_2::DeleteTexture(const TexCacheItem *item)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State *renderState)
+Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	this->doubleBufferIndex = (this->doubleBufferIndex + 1) & 0x01;
@@ -2060,12 +2060,12 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State *renderState)
 	if (this->isShaderSupported)
 	{
 		glUseProgram(OGLRef.programGeometryID);
-		glUniform1i(OGLRef.uniformStateToonShadingMode, renderState->shading);
-		glUniform1i(OGLRef.uniformStateEnableAlphaTest, (renderState->enableAlphaTest) ? GL_TRUE : GL_FALSE);
-		glUniform1i(OGLRef.uniformStateEnableAntialiasing, (renderState->enableAntialiasing) ? GL_TRUE : GL_FALSE);
-		glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (renderState->enableEdgeMarking) ? GL_TRUE : GL_FALSE);
-		glUniform1i(OGLRef.uniformStateUseWDepth, (renderState->wbuffer) ? GL_TRUE : GL_FALSE);
-		glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[renderState->alphaTestRef]);
+		glUniform1i(OGLRef.uniformStateToonShadingMode, engine.renderState.shading);
+		glUniform1i(OGLRef.uniformStateEnableAlphaTest, (engine.renderState.enableAlphaTest) ? GL_TRUE : GL_FALSE);
+		glUniform1i(OGLRef.uniformStateEnableAntialiasing, (engine.renderState.enableAntialiasing) ? GL_TRUE : GL_FALSE);
+		glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (engine.renderState.enableEdgeMarking) ? GL_TRUE : GL_FALSE);
+		glUniform1i(OGLRef.uniformStateUseWDepth, (engine.renderState.wbuffer) ? GL_TRUE : GL_FALSE);
+		glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
 		glUniform1i(OGLRef.uniformTexRenderObject, 0);
 		glUniform1i(OGLRef.uniformTexToonTable, OGLTextureUnitID_ToonTable);
 		
@@ -2074,9 +2074,9 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State *renderState)
 	}
 	else
 	{
-		if(renderState->enableAlphaTest && (renderState->alphaTestRef > 0))
+		if(engine.renderState.enableAlphaTest && (engine.renderState.alphaTestRef > 0))
 		{
-			glAlphaFunc(GL_GEQUAL, divide5bitBy31_LUT[renderState->alphaTestRef]);
+			glAlphaFunc(GL_GEQUAL, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
 		}
 		else
 		{
@@ -2087,7 +2087,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State *renderState)
 		glLoadIdentity();
 	}
 	
-	if(renderState->enableAlphaBlending)
+	if(engine.renderState.enableAlphaBlending)
 	{
 		glEnable(GL_BLEND);
 	}
@@ -2101,7 +2101,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D_State *renderState)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
+Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	const size_t polyCount = polyList->count;
@@ -2130,7 +2130,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State *renderState,
 		u32 lastViewport = firstPoly->viewport;
 		
 		this->SetupPolygon(firstPoly);
-		this->SetupTexture(firstPoly, renderState->enableTexturing);
+		this->SetupTexture(firstPoly, renderState.enableTexturing);
 		this->SetupViewport(lastViewport);
 		
 		GLsizei vertIndexCount = 0;
@@ -2153,7 +2153,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State *renderState,
 			{
 				lastTexParams = poly->texParam;
 				lastTexPalette = poly->texPalette;
-				this->SetupTexture(poly, renderState->enableTexturing);
+				this->SetupTexture(poly, renderState.enableTexturing);
 			}
 			
 			// Set up the viewport if it changed
@@ -2279,34 +2279,34 @@ Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuf
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearPolyID, const bool enableFog) const
+Render3DError OpenGLRenderer_1_2::ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const
 {
 	if (this->isShaderSupported && this->isFBOSupported)
 	{
 		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT); // texGColorID
-		glClearColor(divide5bitBy31_LUT[r], divide5bitBy31_LUT[g], divide5bitBy31_LUT[b], divide5bitBy31_LUT[a]);
-		glClearDepth((GLclampd)clearDepth / (GLclampd)0x00FFFFFF);
+		glClearColor(divide5bitBy31_LUT[clearColor.r], divide5bitBy31_LUT[clearColor.g], divide5bitBy31_LUT[clearColor.b], divide5bitBy31_LUT[clearColor.a]);
+		glClearDepth((GLclampd)clearAttributes.depth / (GLclampd)0x00FFFFFF);
 		glClearStencil(0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		
 		glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT); // texGDepthID
-		glClearColor((GLfloat)(clearDepth & 0x000000FF)/255.0f, (GLfloat)((clearDepth >> 8) & 0x000000FF)/255.0f, (GLfloat)((clearDepth >> 16) & 0x000000FF)/255.0f, 1.0);
+		glClearColor((GLfloat)(clearAttributes.depth & 0x000000FF)/255.0f, (GLfloat)((clearAttributes.depth >> 8) & 0x000000FF)/255.0f, (GLfloat)((clearAttributes.depth >> 16) & 0x000000FF)/255.0f, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT);
 		
 		glDrawBuffer(GL_COLOR_ATTACHMENT2_EXT); // texGPolyID
-		glClearColor((GLfloat)clearPolyID/63.0f, 0.0, 0.0, 1.0);
+		glClearColor((GLfloat)clearAttributes.opaquePolyID/63.0f, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT);
 		
 		glDrawBuffer(GL_COLOR_ATTACHMENT3_EXT); // texGFogAttrID
-		glClearColor((enableFog) ? 1.0 : 0.0, 0.0, 0.0, 1.0);
+		glClearColor((clearAttributes.isFogged) ? 1.0 : 0.0, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT);
 		
 		glDrawBuffers(4, RenderDrawList);
 	}
 	else
 	{
-		glClearColor(divide5bitBy31_LUT[r], divide5bitBy31_LUT[g], divide5bitBy31_LUT[b], divide5bitBy31_LUT[a]);
-		glClearDepth((GLclampd)clearDepth / (GLclampd)0x00FFFFFF);
+		glClearColor(divide5bitBy31_LUT[clearColor.r], divide5bitBy31_LUT[clearColor.g], divide5bitBy31_LUT[clearColor.b], divide5bitBy31_LUT[clearColor.a]);
+		glClearDepth((GLclampd)clearAttributes.depth / (GLclampd)0x00FFFFFF);
 		glClearStencil(0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	}
@@ -3352,7 +3352,7 @@ Render3DError OpenGLRenderer_2_0::DisableVertexAttributes()
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State *renderState)
+Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	this->doubleBufferIndex = (this->doubleBufferIndex + 1) & 0x01;
@@ -3360,19 +3360,19 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D_State *renderState)
 	this->SelectRenderingFramebuffer();
 	
 	glUseProgram(OGLRef.programGeometryID);
-	glUniform1i(OGLRef.uniformStateToonShadingMode, renderState->shading);
-	glUniform1i(OGLRef.uniformStateEnableAlphaTest, (renderState->enableAlphaTest) ? GL_TRUE : GL_FALSE);
-	glUniform1i(OGLRef.uniformStateEnableAntialiasing, (renderState->enableAntialiasing) ? GL_TRUE : GL_FALSE);
-	glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (renderState->enableEdgeMarking) ? GL_TRUE : GL_FALSE);
-	glUniform1i(OGLRef.uniformStateUseWDepth, (renderState->wbuffer) ? GL_TRUE : GL_FALSE);
-	glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[renderState->alphaTestRef]);
+	glUniform1i(OGLRef.uniformStateToonShadingMode, engine.renderState.shading);
+	glUniform1i(OGLRef.uniformStateEnableAlphaTest, (engine.renderState.enableAlphaTest) ? GL_TRUE : GL_FALSE);
+	glUniform1i(OGLRef.uniformStateEnableAntialiasing, (engine.renderState.enableAntialiasing) ? GL_TRUE : GL_FALSE);
+	glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (engine.renderState.enableEdgeMarking) ? GL_TRUE : GL_FALSE);
+	glUniform1i(OGLRef.uniformStateUseWDepth, (engine.renderState.wbuffer) ? GL_TRUE : GL_FALSE);
+	glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
 	glUniform1i(OGLRef.uniformTexRenderObject, 0);
 	glUniform1i(OGLRef.uniformTexToonTable, OGLTextureUnitID_ToonTable);
 	
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_STENCIL_TEST);
 	
-	if(renderState->enableAlphaBlending)
+	if(engine.renderState.enableAlphaBlending)
 	{
 		glEnable(GL_BLEND);
 	}

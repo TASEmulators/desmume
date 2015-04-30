@@ -561,14 +561,12 @@ protected:
 	virtual Render3DError ReadBackPixels();
 	
 	// Base rendering methods
-	virtual Render3DError BeginRender(const GFX3D_State *renderState);
-	virtual Render3DError RenderGeometry(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
+	virtual Render3DError BeginRender(const GFX3D &engine);
+	virtual Render3DError RenderGeometry(const GFX3D_State &renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
 	virtual Render3DError EndRender(const u64 frameCount);
 	
-	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
-	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
-	virtual Render3DError ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearPolyID, const bool enableFog) const;
+	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const;
 	
 	virtual Render3DError SetupPolygon(const POLY *thePoly);
 	virtual Render3DError SetupTexture(const POLY *thePoly, bool enableTexturing);
@@ -579,6 +577,7 @@ public:
 	~OpenGLRenderer_1_2();
 	
 	virtual Render3DError InitExtensions();
+	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError Reset();
 	virtual Render3DError RenderFinish();
 	
@@ -631,7 +630,7 @@ protected:
 	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const size_t vertIndexCount);
 	virtual Render3DError DisableVertexAttributes();
 	
-	virtual Render3DError BeginRender(const GFX3D_State *renderState);
+	virtual Render3DError BeginRender(const GFX3D &engine);
 	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
 	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
 	

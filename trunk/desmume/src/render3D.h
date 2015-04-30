@@ -25,6 +25,8 @@
 //not using this right now
 #define CALL_CONVENTION
 
+#define kUnsetTranslucentPolyID 255
+
 typedef struct Render3DInterface
 {
 	// The name of the plugin, this name will appear in the plugins list
@@ -81,6 +83,32 @@ enum Render3DErrorCode
 
 typedef int Render3DError;
 
+union FragmentColor
+{
+	u32 color;
+	struct
+	{
+		u8 r,g,b,a;
+	};
+};
+
+struct FragmentAttributes
+{
+	u32 depth;
+	u8 opaquePolyID;
+	u8 translucentPolyID;
+	u8 stencil;
+	bool isFogged;
+	bool isTranslucentPoly;
+};
+
+inline FragmentColor MakeFragmentColor(u8 r, u8 g,u8 b,u8 a)
+{
+	FragmentColor ret;
+	ret.r = r; ret.g = g; ret.b = b; ret.a = a;
+	return ret;
+}
+
 class Render3D
 {
 protected:
@@ -89,17 +117,14 @@ protected:
 	CACHE_ALIGN bool clearImageFogBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
 	CACHE_ALIGN u8 clearImagePolyIDBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
 	
-	virtual Render3DError BeginRender(const GFX3D_State *renderState);
-	virtual Render3DError RenderGeometry(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
+	virtual Render3DError BeginRender(const GFX3D &engine);
+	virtual Render3DError RenderGeometry(const GFX3D_State &renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
 	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
 	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
 	virtual Render3DError EndRender(const u64 frameCount);
 	
-	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
-	
-	virtual Render3DError ClearFramebuffer(const GFX3D_State *renderState);
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
-	virtual Render3DError ClearUsingValues(const u8 r, const u8 g, const u8 b, const u8 a, const u32 clearDepth, const u8 clearPolyID, const bool enableFog) const;
+	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const;
 	
 	virtual Render3DError SetupPolygon(const POLY *thePoly);
 	virtual Render3DError SetupTexture(const POLY *thePoly, bool enableTexturing);
@@ -108,8 +133,11 @@ protected:
 public:
 	Render3D();
 	
+	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
+	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
+	
 	virtual Render3DError Reset();
-	virtual Render3DError Render(const GFX3D_State *renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, const u64 frameCount);
+	virtual Render3DError Render(const GFX3D &engine);
 	virtual Render3DError RenderFinish();
 	virtual Render3DError VramReconfigureSignal();
 };
