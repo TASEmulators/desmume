@@ -1012,3 +1012,19 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 	
 	return OGLERROR_NOERR;
 }
+
+Render3DError OpenGLRenderer_3_2::ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const
+{
+	const GLfloat oglColor[4] = {divide5bitBy31_LUT[clearColor.r], divide5bitBy31_LUT[clearColor.g], divide5bitBy31_LUT[clearColor.b], divide5bitBy31_LUT[clearColor.a]};
+	const GLfloat oglDepth[4] = {(GLfloat)(clearAttributes.depth & 0x000000FF)/255.0f, (GLfloat)((clearAttributes.depth >> 8) & 0x000000FF)/255.0f, (GLfloat)((clearAttributes.depth >> 16) & 0x000000FF)/255.0f, 1.0};
+	const GLfloat oglPolyID[4] = {(GLfloat)clearAttributes.opaquePolyID/63.0f, 0.0, 0.0, 1.0};
+	const GLfloat oglFogAttr[4] = {(clearAttributes.isFogged) ? 1.0 : 0.0, 0.0, 0.0, 1.0};
+	
+	glClearBufferfi(GL_DEPTH_STENCIL, 0, (GLfloat)clearAttributes.depth / (GLfloat)0x00FFFFFF, 0);
+	glClearBufferfv(GL_COLOR, 0, oglColor); // texGColorID
+	glClearBufferfv(GL_COLOR, 1, oglDepth); // texGDepthID
+	glClearBufferfv(GL_COLOR, 2, oglPolyID); // texGPolyID
+	glClearBufferfv(GL_COLOR, 3, oglFogAttr); // texGFogAttrID
+	
+	return OGLERROR_NOERR;
+}

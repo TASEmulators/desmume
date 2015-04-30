@@ -658,6 +658,8 @@ struct GFX3D_State
 	bool invalidateToon;
 	u16 u16ToonTable[32];
 	u8 shininessTable[128];
+	u8 *fogDensityTable;		// Alias to MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0360
+	u16 *edgeMarkColorTable;	// Alias to MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0330
 };
 
 struct Viewer3d_State
