@@ -126,8 +126,8 @@ protected:
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const;
 	
-	virtual Render3DError SetupPolygon(const POLY *thePoly);
-	virtual Render3DError SetupTexture(const POLY *thePoly, bool enableTexturing);
+	virtual Render3DError SetupPolygon(const POLY &thePoly);
+	virtual Render3DError SetupTexture(const POLY &thePoly, bool enableTexturing);
 	virtual Render3DError SetupViewport(const u32 viewportValue);
 	
 public:

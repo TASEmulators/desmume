@@ -230,12 +230,12 @@ Render3DError Render3D::ClearUsingValues(const FragmentColor &clearColor, const 
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::SetupPolygon(const POLY *thePoly)
+Render3DError Render3D::SetupPolygon(const POLY &thePoly)
 {
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::SetupTexture(const POLY *thePoly, bool enableTexturing)
+Render3DError Render3D::SetupTexture(const POLY &thePoly, bool enableTexturing)
 {
 	return RENDER3DERROR_NOERR;
 }
