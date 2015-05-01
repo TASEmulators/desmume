@@ -579,7 +579,7 @@ static void OGLGetDriverVersion(const char *oglVersionString,
 	}
 }
 
-static void texDeleteCallback(TexCacheItem *item)
+void texDeleteCallback(TexCacheItem *item)
 {
 	_OGLRenderer->DeleteTexture(item);
 }
@@ -1196,6 +1196,36 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgramBindings()
 	return OGLERROR_NOERR;
 }
 
+Render3DError OpenGLRenderer_1_2::InitGeometryProgramShaderLocations()
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	
+	// Set up shader uniforms
+	OGLRef.uniformTexRenderObject				= glGetUniformLocation(OGLRef.programGeometryID, "texRenderObject");
+	OGLRef.uniformTexToonTable					= glGetUniformLocation(OGLRef.programGeometryID, "texToonTable");
+	glUniform1i(OGLRef.uniformTexRenderObject, 0);
+	glUniform1i(OGLRef.uniformTexToonTable, OGLTextureUnitID_ToonTable);
+	
+	OGLRef.uniformStateToonShadingMode			= glGetUniformLocation(OGLRef.programGeometryID, "stateToonShadingMode");
+	OGLRef.uniformStateEnableAlphaTest			= glGetUniformLocation(OGLRef.programGeometryID, "stateEnableAlphaTest");
+	OGLRef.uniformStateEnableAntialiasing		= glGetUniformLocation(OGLRef.programGeometryID, "stateEnableAntialiasing");
+	OGLRef.uniformStateEnableEdgeMarking		= glGetUniformLocation(OGLRef.programGeometryID, "stateEnableEdgeMarking");
+	OGLRef.uniformStateUseWDepth				= glGetUniformLocation(OGLRef.programGeometryID, "stateUseWDepth");
+	OGLRef.uniformStateAlphaTestRef				= glGetUniformLocation(OGLRef.programGeometryID, "stateAlphaTestRef");
+	
+	OGLRef.uniformPolyTexScale					= glGetUniformLocation(OGLRef.programGeometryID, "polyTexScale");
+	OGLRef.uniformPolyMode						= glGetUniformLocation(OGLRef.programGeometryID, "polyMode");
+	OGLRef.uniformPolyEnableDepthWrite			= glGetUniformLocation(OGLRef.programGeometryID, "polyEnableDepthWrite");
+	OGLRef.uniformPolySetNewDepthForTranslucent	= glGetUniformLocation(OGLRef.programGeometryID, "polySetNewDepthForTranslucent");
+	OGLRef.uniformPolyAlpha						= glGetUniformLocation(OGLRef.programGeometryID, "polyAlpha");
+	OGLRef.uniformPolyID						= glGetUniformLocation(OGLRef.programGeometryID, "polyID");
+	
+	OGLRef.uniformPolyEnableTexture				= glGetUniformLocation(OGLRef.programGeometryID, "polyEnableTexture");
+	OGLRef.uniformPolyEnableFog					= glGetUniformLocation(OGLRef.programGeometryID, "polyEnableFog");
+	
+	return OGLERROR_NOERR;
+}
+
 Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const std::string &vertexShaderProgram, const std::string &fragmentShaderProgram)
 {
 	OGLRenderRef &OGLRef = *this->ref;
@@ -1265,26 +1295,7 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const std::string &vertexS
 	glValidateProgram(OGLRef.programGeometryID);
 	glUseProgram(OGLRef.programGeometryID);
 	
-	// Set up shader uniforms
-	OGLRef.uniformTexRenderObject				= glGetUniformLocation(OGLRef.programGeometryID, "texRenderObject");
-	OGLRef.uniformTexToonTable					= glGetUniformLocation(OGLRef.programGeometryID, "texToonTable");
-	
-	OGLRef.uniformStateToonShadingMode			= glGetUniformLocation(OGLRef.programGeometryID, "stateToonShadingMode");
-	OGLRef.uniformStateEnableAlphaTest			= glGetUniformLocation(OGLRef.programGeometryID, "stateEnableAlphaTest");
-	OGLRef.uniformStateEnableAntialiasing		= glGetUniformLocation(OGLRef.programGeometryID, "stateEnableAntialiasing");
-	OGLRef.uniformStateEnableEdgeMarking		= glGetUniformLocation(OGLRef.programGeometryID, "stateEnableEdgeMarking");
-	OGLRef.uniformStateUseWDepth				= glGetUniformLocation(OGLRef.programGeometryID, "stateUseWDepth");
-	OGLRef.uniformStateAlphaTestRef				= glGetUniformLocation(OGLRef.programGeometryID, "stateAlphaTestRef");
-	
-	OGLRef.uniformPolyTexScale					= glGetUniformLocation(OGLRef.programGeometryID, "polyTexScale");
-	OGLRef.uniformPolyMode						= glGetUniformLocation(OGLRef.programGeometryID, "polyMode");
-	OGLRef.uniformPolyEnableDepthWrite			= glGetUniformLocation(OGLRef.programGeometryID, "polyEnableDepthWrite");
-	OGLRef.uniformPolySetNewDepthForTranslucent	= glGetUniformLocation(OGLRef.programGeometryID, "polySetNewDepthForTranslucent");
-	OGLRef.uniformPolyAlpha						= glGetUniformLocation(OGLRef.programGeometryID, "polyAlpha");
-	OGLRef.uniformPolyID						= glGetUniformLocation(OGLRef.programGeometryID, "polyID");
-	
-	OGLRef.uniformPolyEnableTexture				= glGetUniformLocation(OGLRef.programGeometryID, "polyEnableTexture");
-	OGLRef.uniformPolyEnableFog					= glGetUniformLocation(OGLRef.programGeometryID, "polyEnableFog");
+	this->InitGeometryProgramShaderLocations();
 	
 	INFO("OpenGL: Successfully created shaders.\n");
 	
@@ -1669,12 +1680,22 @@ Render3DError OpenGLRenderer_1_2::InitEdgeMarkProgramBindings()
 	return OGLERROR_FEATURE_UNSUPPORTED;
 }
 
+Render3DError OpenGLRenderer_1_2::InitEdgeMarkProgramShaderLocations()
+{
+	return OGLERROR_FEATURE_UNSUPPORTED;
+}
+
 Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const std::string &edgeMarkVtxShader, const std::string &edgeMarkFragShader, const std::string &fogVtxShader, const std::string &fogFragShader)
 {
 	return OGLERROR_FEATURE_UNSUPPORTED;
 }
 
 Render3DError OpenGLRenderer_1_2::InitFogProgramBindings()
+{
+	return OGLERROR_FEATURE_UNSUPPORTED;
+}
+
+Render3DError OpenGLRenderer_1_2::InitFogProgramShaderLocations()
 {
 	return OGLERROR_FEATURE_UNSUPPORTED;
 }
@@ -2066,8 +2087,6 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (engine.renderState.enableEdgeMarking) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformStateUseWDepth, (engine.renderState.wbuffer) ? GL_TRUE : GL_FALSE);
 		glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
-		glUniform1i(OGLRef.uniformTexRenderObject, 0);
-		glUniform1i(OGLRef.uniformTexToonTable, OGLTextureUnitID_ToonTable);
 		
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_STENCIL_TEST);
@@ -2123,11 +2142,11 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 		this->SetupVertices(vertList, polyList, indexList, OGLRef.vertIndexBuffer, &vertIndexBufferCount);
 		this->EnableVertexAttributes(vertList, OGLRef.vertIndexBuffer, vertIndexBufferCount);
 		
-		const POLY *firstPoly = &polyList->list[indexList->list[0]];
-		u32 lastPolyAttr = firstPoly->polyAttr;
-		u32 lastTexParams = firstPoly->texParam;
-		u32 lastTexPalette = firstPoly->texPalette;
-		u32 lastViewport = firstPoly->viewport;
+		const POLY &firstPoly = polyList->list[indexList->list[0]];
+		u32 lastPolyAttr = firstPoly.polyAttr;
+		u32 lastTexParams = firstPoly.texParam;
+		u32 lastTexPalette = firstPoly.texPalette;
+		u32 lastViewport = firstPoly.viewport;
 		
 		this->SetupPolygon(firstPoly);
 		this->SetupTexture(firstPoly, renderState.enableTexturing);
@@ -2137,30 +2156,31 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 		GLushort *indexBufferPtr = (this->isVBOSupported) ? 0 : OGLRef.vertIndexBuffer;
 		
 		// Enumerate through all polygons and render
-		for(size_t i = 0; i < polyCount; i++)
+		for (size_t i = 0; i < polyCount; i++)
 		{
-			const POLY *poly = &polyList->list[indexList->list[i]];
+			const POLY &thePoly = polyList->list[indexList->list[i]];
+			this->SetPolygonIndex(i);
 			
 			// Set up the polygon if it changed
-			if(lastPolyAttr != poly->polyAttr)
+			if (lastPolyAttr != thePoly.polyAttr)
 			{
-				lastPolyAttr = poly->polyAttr;
-				this->SetupPolygon(poly);
+				lastPolyAttr = thePoly.polyAttr;
+				this->SetupPolygon(thePoly);
 			}
 			
 			// Set up the texture if it changed
-			if(lastTexParams != poly->texParam || lastTexPalette != poly->texPalette)
+			if (lastTexParams != thePoly.texParam || lastTexPalette != thePoly.texPalette)
 			{
-				lastTexParams = poly->texParam;
-				lastTexPalette = poly->texPalette;
-				this->SetupTexture(poly, renderState.enableTexturing);
+				lastTexParams = thePoly.texParam;
+				lastTexPalette = thePoly.texPalette;
+				this->SetupTexture(thePoly, renderState.enableTexturing);
 			}
 			
 			// Set up the viewport if it changed
-			if(lastViewport != poly->viewport)
+			if (lastViewport != thePoly.viewport)
 			{
-				lastViewport = poly->viewport;
-				this->SetupViewport(poly->viewport);
+				lastViewport = thePoly.viewport;
+				this->SetupViewport(thePoly.viewport);
 			}
 			
 			// In wireframe mode, redefine all primitives as GL_LINE_LOOP rather than
@@ -2168,10 +2188,10 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 			// drawing more accurate this way, but it also allows GFX3D_QUADS and
 			// GFX3D_QUAD_STRIP primitives to properly draw as wireframe without the
 			// extra diagonal line.
-			const GLenum polyPrimitive = (!poly->isWireframe()) ? oglPrimitiveType[poly->vtxFormat] : GL_LINE_LOOP;
+			const GLenum polyPrimitive = (!thePoly.isWireframe()) ? oglPrimitiveType[thePoly.vtxFormat] : GL_LINE_LOOP;
 			
 			// Increment the vertex count
-			vertIndexCount += indexIncrementLUT[poly->vtxFormat];
+			vertIndexCount += indexIncrementLUT[thePoly.vtxFormat];
 			
 			// Look ahead to the next polygon to see if we can simply buffer the indices
 			// instead of uploading them now. We can buffer if all polygon states remain
@@ -2314,10 +2334,15 @@ Render3DError OpenGLRenderer_1_2::ClearUsingValues(const FragmentColor &clearCol
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY *thePoly)
+void OpenGLRenderer_1_2::SetPolygonIndex(const size_t index)
+{
+	this->_currentPolyIndex = index;
+}
+
+Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 {
 	OGLRenderRef &OGLRef = *this->ref;
-	const PolygonAttributes attr = thePoly->getAttributes();
+	const PolygonAttributes attr = thePoly.getAttributes();
 	
 	// Set up polygon attributes
 	if (this->isShaderSupported)
@@ -2414,13 +2439,13 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY *thePoly)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY *thePoly, bool enableTexturing)
+Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableTexturing)
 {
 	OGLRenderRef &OGLRef = *this->ref;
-	const PolygonTexParams params = thePoly->getTexParams();
+	const PolygonTexParams params = thePoly.getTexParams();
 	
 	// Check if we need to use textures
-	if (thePoly->texParam == 0 || params.texFormat == TEXMODE_NONE || !enableTexturing)
+	if (thePoly.texParam == 0 || params.texFormat == TEXMODE_NONE || !enableTexturing)
 	{
 		if (this->isShaderSupported)
 		{
@@ -2445,14 +2470,14 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY *thePoly, bool enableT
 	}
 	
 	//	texCacheUnit.TexCache_SetTexture<TexFormat_32bpp>(format, texpal);
-	TexCacheItem *newTexture = TexCache_SetTexture(TexFormat_32bpp, thePoly->texParam, thePoly->texPalette);
+	TexCacheItem *newTexture = TexCache_SetTexture(TexFormat_32bpp, thePoly.texParam, thePoly.texPalette);
 	if(newTexture != this->currTexture)
 	{
 		this->currTexture = newTexture;
 		//has the ogl renderer initialized the texture?
 		if(!this->currTexture->deleteCallback)
 		{
-			this->currTexture->deleteCallback = texDeleteCallback;
+			this->currTexture->deleteCallback = &texDeleteCallback;
 			
 			if(OGLRef.freeTextureIDs.empty())
 			{
@@ -2517,27 +2542,7 @@ Render3DError OpenGLRenderer_1_2::Reset()
 		memset(this->GPU_screen3D[i], 0, sizeof(this->GPU_screen3D[i]));
 	}
 	
-	if(this->isShaderSupported)
-	{
-		glUseProgram(OGLRef.programGeometryID);
-		glUniform1i(OGLRef.uniformStateToonShadingMode, 0);
-		glUniform1i(OGLRef.uniformStateEnableAlphaTest, GL_TRUE);
-		glUniform1i(OGLRef.uniformStateEnableAntialiasing, GL_FALSE);
-		glUniform1i(OGLRef.uniformStateEnableEdgeMarking, GL_TRUE);
-		glUniform1i(OGLRef.uniformStateUseWDepth, GL_FALSE);
-		glUniform1f(OGLRef.uniformStateAlphaTestRef, 0.0f);
-		
-		glUniform2f(OGLRef.uniformPolyTexScale, 1.0f, 1.0f);
-		glUniform1i(OGLRef.uniformPolyMode, 0);
-		glUniform1i(OGLRef.uniformPolyEnableDepthWrite, GL_TRUE);
-		glUniform1i(OGLRef.uniformPolySetNewDepthForTranslucent, GL_TRUE);
-		glUniform1f(OGLRef.uniformPolyAlpha, 1.0f);
-		glUniform1i(OGLRef.uniformPolyID, 0);
-		
-		glUniform1i(OGLRef.uniformPolyEnableTexture, GL_TRUE);
-		glUniform1i(OGLRef.uniformPolyEnableFog, GL_FALSE);
-	}
-	else
+	if(!this->isShaderSupported)
 	{
 		glEnable(GL_NORMALIZE);
 		glEnable(GL_TEXTURE_1D);
@@ -2552,6 +2557,7 @@ Render3DError OpenGLRenderer_1_2::Reset()
 	memset(OGLRef.vertIndexBuffer, 0, OGLRENDER_VERT_INDEX_BUFFER_COUNT * sizeof(GLushort));
 	this->currTexture = NULL;
 	this->doubleBufferIndex = 0;
+	this->_currentPolyIndex = 0;
 	
 	return OGLERROR_NOERR;
 }
@@ -3050,6 +3056,21 @@ Render3DError OpenGLRenderer_2_0::InitEdgeMarkProgramBindings()
 	return OGLERROR_NOERR;
 }
 
+Render3DError OpenGLRenderer_2_0::InitEdgeMarkProgramShaderLocations()
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	
+	OGLRef.uniformTexGDepth_EdgeMark	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInFragDepth");
+	OGLRef.uniformTexGPolyID_EdgeMark	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInPolyID");
+	glUniform1i(OGLRef.uniformTexGDepth_EdgeMark, OGLTextureUnitID_GDepth);
+	glUniform1i(OGLRef.uniformTexGPolyID_EdgeMark, OGLTextureUnitID_GPolyID);
+	
+	OGLRef.uniformFramebufferSize		= glGetUniformLocation(OGLRef.programEdgeMarkID, "framebufferSize");
+	OGLRef.uniformStateEdgeColor		= glGetUniformLocation(OGLRef.programEdgeMarkID, "stateEdgeColor");
+	
+	return OGLERROR_NOERR;
+}
+
 Render3DError OpenGLRenderer_2_0::InitPostprocessingPrograms(const std::string &edgeMarkVtxShader, const std::string &edgeMarkFragShader, const std::string &fogVtxShader, const std::string &fogFragShader)
 {
 	Render3DError error = OGLERROR_NOERR;
@@ -3130,13 +3151,7 @@ Render3DError OpenGLRenderer_2_0::InitPostprocessingPrograms(const std::string &
 	glValidateProgram(OGLRef.programEdgeMarkID);
 	glUseProgram(OGLRef.programEdgeMarkID);
 	
-	// Set up shader uniforms
-	OGLRef.uniformTexGColor_EdgeMark	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInFragColor");
-	OGLRef.uniformTexGDepth_EdgeMark	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInFragDepth");
-	OGLRef.uniformTexGPolyID_EdgeMark	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInPolyID");
-	
-	OGLRef.uniformFramebufferSize		= glGetUniformLocation(OGLRef.programEdgeMarkID, "framebufferSize");
-	OGLRef.uniformStateEdgeColor		= glGetUniformLocation(OGLRef.programEdgeMarkID, "stateEdgeColor");
+	this->InitEdgeMarkProgramShaderLocations();
 	
 	// ------------------------------------------
 	
@@ -3215,16 +3230,7 @@ Render3DError OpenGLRenderer_2_0::InitPostprocessingPrograms(const std::string &
 	glValidateProgram(OGLRef.programFogID);
 	glUseProgram(OGLRef.programFogID);
 	
-	// Set up shader uniforms
-	OGLRef.uniformTexGColor_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFragColor");
-	OGLRef.uniformTexGDepth_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFragDepth");
-	OGLRef.uniformTexGFog_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFogAttributes");
-	
-	OGLRef.uniformStateEnableFogAlphaOnly	= glGetUniformLocation(OGLRef.programFogID, "stateEnableFogAlphaOnly");
-	OGLRef.uniformStateFogColor				= glGetUniformLocation(OGLRef.programFogID, "stateFogColor");
-	OGLRef.uniformStateFogDensity			= glGetUniformLocation(OGLRef.programFogID, "stateFogDensity");
-	OGLRef.uniformStateFogOffset			= glGetUniformLocation(OGLRef.programFogID, "stateFogOffset");
-	OGLRef.uniformStateFogStep				= glGetUniformLocation(OGLRef.programFogID, "stateFogStep");
+	this->InitFogProgramShaderLocations();
 	
 	glUseProgram(OGLRef.programGeometryID);
 	INFO("OpenGL: Successfully created postprocess shaders.\n");
@@ -3237,6 +3243,26 @@ Render3DError OpenGLRenderer_2_0::InitFogProgramBindings()
 	OGLRenderRef &OGLRef = *this->ref;
 	glBindAttribLocation(OGLRef.programFogID, OGLVertexAttributeID_Position, "inPosition");
 	glBindAttribLocation(OGLRef.programFogID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
+	
+	return OGLERROR_NOERR;
+}
+
+Render3DError OpenGLRenderer_2_0::InitFogProgramShaderLocations()
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	
+	OGLRef.uniformTexGColor_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFragColor");
+	OGLRef.uniformTexGDepth_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFragDepth");
+	OGLRef.uniformTexGFog_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFogAttributes");
+	glUniform1i(OGLRef.uniformTexGColor_Fog, OGLTextureUnitID_GColor);
+	glUniform1i(OGLRef.uniformTexGDepth_Fog, OGLTextureUnitID_GDepth);
+	glUniform1i(OGLRef.uniformTexGFog_Fog, OGLTextureUnitID_FogAttr);
+	
+	OGLRef.uniformStateEnableFogAlphaOnly	= glGetUniformLocation(OGLRef.programFogID, "stateEnableFogAlphaOnly");
+	OGLRef.uniformStateFogColor				= glGetUniformLocation(OGLRef.programFogID, "stateFogColor");
+	OGLRef.uniformStateFogDensity			= glGetUniformLocation(OGLRef.programFogID, "stateFogDensity");
+	OGLRef.uniformStateFogOffset			= glGetUniformLocation(OGLRef.programFogID, "stateFogOffset");
+	OGLRef.uniformStateFogStep				= glGetUniformLocation(OGLRef.programFogID, "stateFogStep");
 	
 	return OGLERROR_NOERR;
 }
@@ -3366,8 +3392,6 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (engine.renderState.enableEdgeMarking) ? GL_TRUE : GL_FALSE);
 	glUniform1i(OGLRef.uniformStateUseWDepth, (engine.renderState.wbuffer) ? GL_TRUE : GL_FALSE);
 	glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
-	glUniform1i(OGLRef.uniformTexRenderObject, 0);
-	glUniform1i(OGLRef.uniformTexToonTable, OGLTextureUnitID_ToonTable);
 	
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_STENCIL_TEST);
@@ -3427,8 +3451,6 @@ Render3DError OpenGLRenderer_2_0::RenderEdgeMarking(const u16 *colorTable, const
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	glUseProgram(OGLRef.programEdgeMarkID);
-	glUniform1i(OGLRef.uniformTexGDepth_EdgeMark, OGLTextureUnitID_GDepth);
-	glUniform1i(OGLRef.uniformTexGPolyID_EdgeMark, OGLTextureUnitID_GPolyID);
 	glUniform2f(OGLRef.uniformFramebufferSize, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT);
 	glUniform4fv(OGLRef.uniformStateEdgeColor, 8, oglColor);
 	
@@ -3498,9 +3520,6 @@ Render3DError OpenGLRenderer_2_0::RenderFog(const u8 *densityTable, const u32 co
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
 	glUseProgram(OGLRef.programFogID);
-	glUniform1i(OGLRef.uniformTexGColor_Fog, OGLTextureUnitID_GColor);
-	glUniform1i(OGLRef.uniformTexGDepth_Fog, OGLTextureUnitID_GDepth);
-	glUniform1i(OGLRef.uniformTexGFog_Fog, OGLTextureUnitID_FogAttr);
 	glUniform1i(OGLRef.uniformStateEnableFogAlphaOnly, (alphaOnly) ? GL_TRUE : GL_FALSE);
 	glUniform4f(OGLRef.uniformStateFogColor, oglColor[0], oglColor[1], oglColor[2], oglColor[3]);
 	glUniform1f(OGLRef.uniformStateFogOffset, oglOffset);
@@ -3550,10 +3569,10 @@ Render3DError OpenGLRenderer_2_0::RenderFog(const u8 *densityTable, const u32 co
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY *thePoly)
+Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY &thePoly)
 {
 	OGLRenderRef &OGLRef = *this->ref;
-	const PolygonAttributes attr = thePoly->getAttributes();
+	const PolygonAttributes attr = thePoly.getAttributes();
 	
 	// Set up polygon attributes
 	glUniform1i(OGLRef.uniformPolyMode, attr.polygonMode);
@@ -3637,13 +3656,13 @@ Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY *thePoly)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY *thePoly, bool enableTexturing)
+Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableTexturing)
 {
 	OGLRenderRef &OGLRef = *this->ref;
-	const PolygonTexParams params = thePoly->getTexParams();
+	const PolygonTexParams params = thePoly.getTexParams();
 	
 	// Check if we need to use textures
-	if (thePoly->texParam == 0 || params.texFormat == TEXMODE_NONE || !enableTexturing)
+	if (thePoly.texParam == 0 || params.texFormat == TEXMODE_NONE || !enableTexturing)
 	{
 		glUniform1i(OGLRef.uniformPolyEnableTexture, GL_FALSE);
 		return OGLERROR_NOERR;
@@ -3652,14 +3671,14 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY *thePoly, bool enableT
 	glUniform1i(OGLRef.uniformPolyEnableTexture, GL_TRUE);
 	
 	//	texCacheUnit.TexCache_SetTexture<TexFormat_32bpp>(format, texpal);
-	TexCacheItem *newTexture = TexCache_SetTexture(TexFormat_32bpp, thePoly->texParam, thePoly->texPalette);
+	TexCacheItem *newTexture = TexCache_SetTexture(TexFormat_32bpp, thePoly.texParam, thePoly.texPalette);
 	if(newTexture != this->currTexture)
 	{
 		this->currTexture = newTexture;
 		//has the ogl renderer initialized the texture?
 		if(!this->currTexture->deleteCallback)
 		{
-			this->currTexture->deleteCallback = texDeleteCallback;
+			this->currTexture->deleteCallback = &texDeleteCallback;
 			
 			if(OGLRef.freeTextureIDs.empty())
 			{
