@@ -5,7 +5,7 @@
 #define RAR_EXTRACTOR_H
 
 #include "File_Extractor.h"
-#include "unrar/unrar.h"
+#include "../unrar/unrar.h"
 
 class Rar_Extractor : public File_Extractor {
 public:

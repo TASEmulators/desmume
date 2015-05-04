@@ -3,9 +3,9 @@
 #include "Zip7_Extractor.h"
 
 extern "C" {
-#include "7z_C/7z.h"
-#include "7z_C/7zAlloc.h"
-#include "7z_C/7zCrc.h"
+#include "../7z_C/7z.h"
+#include "../7z_C/7zAlloc.h"
+#include "../7z_C/7zCrc.h"
 }
 
 #include <time.h>
