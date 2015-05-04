@@ -485,7 +485,7 @@ struct POLY {
 	void load(EMUFILE* is);
 };
 
-#define POLYLIST_SIZE 100000
+#define POLYLIST_SIZE 20000
 struct POLYLIST {
 	POLY list[POLYLIST_SIZE];
 	int count;
@@ -553,15 +553,15 @@ struct VERT {
 	void load(EMUFILE* is);
 };
 
-#define VERTLIST_SIZE 400000
-//#define VERTLIST_SIZE 10000
+#define VERTLIST_SIZE (POLYLIST_SIZE * 4)
 struct VERTLIST {
 	VERT list[VERTLIST_SIZE];
 	int count;
 };
 
+#define INDEXLIST_SIZE (POLYLIST_SIZE * 4)
 struct INDEXLIST {
-	int list[POLYLIST_SIZE];
+	int list[INDEXLIST_SIZE];
 };
 
 

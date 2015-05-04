@@ -25,7 +25,7 @@
 #include "MMU.h"
 #include "texcache.h"
 
-static CACHE_ALIGN u32 dsDepthToD24S8_LUT[32768] = {0};
+static CACHE_ALIGN u32 dsDepthToD24_LUT[32768] = {0};
 int cur3DCore = GPU3D_NULL;
 
 GPU3DInterface gpu3DNull = { 
@@ -107,7 +107,7 @@ Render3D::Render3D()
 	{
 		for (size_t i = 0; i < 32768; i++)
 		{
-			dsDepthToD24S8_LUT[i] = (u32)DS_DEPTH15TO24(i) << 8;
+			dsDepthToD24_LUT[i] = (u32)DS_DEPTH15TO24(i);
 		}
 		
 		needTableInit = false;
@@ -195,7 +195,7 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 				
 				//this is tested quite well in the sonic chronicles main map mode
 				//where depth values are used for trees etc you can walk behind
-				this->clearImageDepthBuffer[dd] = dsDepthToD24S8_LUT[clearDepthBuffer[adr] & 0x7FFF];
+				this->clearImageDepthBuffer[dd] = dsDepthToD24_LUT[clearDepthBuffer[adr] & 0x7FFF];
 				
 				this->clearImageFogBuffer[dd] = BIT15(clearDepthBuffer[adr]);
 				this->clearImagePolyIDBuffer[dd] = clearFragment.opaquePolyID;

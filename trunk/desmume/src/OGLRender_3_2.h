@@ -78,9 +78,8 @@ protected:
 	virtual void DestroyGeometryProgram();
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
-	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const size_t vertIndexCount);
+	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
-	virtual Render3DError SelectRenderingFramebuffer();
 	virtual Render3DError DownsampleFBO();
 	virtual Render3DError BeginRender(const GFX3D &engine);
 	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
