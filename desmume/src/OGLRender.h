@@ -280,7 +280,7 @@ EXTERNOGLEXT(PFNGLTEXBUFFERPROC, glTexBuffer) // Core in v3.1
 #define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION		0
 
 #define OGLRENDER_MAX_MULTISAMPLES			16
-#define OGLRENDER_VERT_INDEX_BUFFER_COUNT	131072
+#define OGLRENDER_VERT_INDEX_BUFFER_COUNT	(POLYLIST_SIZE * 6)
 
 enum OGLVertexAttributeID
 {
@@ -477,7 +477,12 @@ struct OGLRenderRef
 	
 	// Client-side Buffers
 	GLfloat *color4fBuffer;
-	CACHE_ALIGN GLushort vertIndexBuffer[OGLRENDER_VERT_INDEX_BUFFER_COUNT];
+	GLushort *vertIndexBuffer;
+	
+	// Vertex Attributes Pointers
+	GLvoid *vtxPtrPosition;
+	GLvoid *vtxPtrTexCoord;
+	GLvoid *vtxPtrColor;
 };
 
 struct GFX3D_State;
@@ -580,15 +585,12 @@ protected:
 	virtual Render3DError InitGeometryProgramShaderLocations() = 0;
 	virtual Render3DError CreateToonTable() = 0;
 	virtual Render3DError DestroyToonTable() = 0;
-	virtual Render3DError UploadToonTable(const u16 *toonTableBuffer) = 0;
 	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer) = 0;
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet) = 0;
 	virtual Render3DError ExpandFreeTextures() = 0;
-	virtual Render3DError SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, GLushort *outIndexBuffer, size_t *outIndexCount) = 0;
-	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const size_t vertIndexCount) = 0;
+	virtual Render3DError EnableVertexAttributes() = 0;
 	virtual Render3DError DisableVertexAttributes() = 0;
-	virtual Render3DError SelectRenderingFramebuffer() = 0;
 	virtual Render3DError DownsampleFBO() = 0;
 	virtual Render3DError ReadBackPixels() = 0;
 	
@@ -641,15 +643,12 @@ protected:
 	
 	virtual Render3DError CreateToonTable();
 	virtual Render3DError DestroyToonTable();
-	virtual Render3DError UploadToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
 	virtual Render3DError ExpandFreeTextures();
-	virtual Render3DError SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, GLushort *outIndexBuffer, size_t *outIndexCount);
-	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const size_t vertIndexCount);
+	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
-	virtual Render3DError SelectRenderingFramebuffer();
 	virtual Render3DError DownsampleFBO();
 	virtual Render3DError ReadBackPixels();
 	
@@ -681,8 +680,10 @@ public:
 class OpenGLRenderer_1_3 : public OpenGLRenderer_1_2
 {
 protected:
-	virtual Render3DError UploadToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
+	
+public:
+	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 };
 
 class OpenGLRenderer_1_4 : public OpenGLRenderer_1_3
@@ -700,8 +701,9 @@ protected:
 	virtual void DestroyPBOs();
 	virtual Render3DError CreateVAOs();
 	
-	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const size_t vertIndexCount);
+	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
+	virtual Render3DError BeginRender(const GFX3D &engine);
 	virtual Render3DError ReadBackPixels();
 		
 public:
@@ -722,8 +724,7 @@ protected:
 	virtual Render3DError InitFogProgramShaderLocations();
 	virtual Render3DError DestroyPostprocessingPrograms();
 	
-	virtual Render3DError SetupVertices(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList, GLushort *outIndexBuffer, size_t *outIndexCount);
-	virtual Render3DError EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const size_t vertIndexCount);
+	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
 	
 	virtual Render3DError BeginRender(const GFX3D &engine);

@@ -990,34 +990,15 @@ void OpenGLRenderer_3_2::GetExtensionSet(std::set<std::string> *oglExtensionSet)
 	}
 }
 
-Render3DError OpenGLRenderer_3_2::EnableVertexAttributes(const VERTLIST *vertList, const GLushort *indexBuffer, const size_t vertIndexCount)
+Render3DError OpenGLRenderer_3_2::EnableVertexAttributes()
 {
-	OGLRenderRef &OGLRef = *this->ref;
-	
-	glBindVertexArray(OGLRef.vaoGeometryStatesID);
-	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
-	
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * vertList->count, vertList);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, vertIndexCount * sizeof(GLushort), indexBuffer);
-	
+	glBindVertexArray(this->ref->vaoGeometryStatesID);
 	return OGLERROR_NOERR;
 }
 
 Render3DError OpenGLRenderer_3_2::DisableVertexAttributes()
 {
 	glBindVertexArray(0);
-	return OGLERROR_NOERR;
-}
-
-Render3DError OpenGLRenderer_3_2::SelectRenderingFramebuffer()
-{
-	OGLRenderRef &OGLRef = *this->ref;
-	
-	OGLRef.selectedRenderingFBO = (CommonSettings.GFX3D_Renderer_Multisample) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
-	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
-	glDrawBuffers(4, RenderDrawList);
-	
 	return OGLERROR_NOERR;
 }
 
@@ -1141,13 +1122,19 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	// Do per-poly setup
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_PolyStates);
 	glBindTexture(GL_TEXTURE_BUFFER, OGLRef.texPolyStatesID);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
 	glBindBuffer(GL_TEXTURE_BUFFER, OGLRef.tboPolyStatesID);
 	
+	size_t vertIndexCount = 0;
+	GLushort *indexPtr = (GLushort *)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, engine.polylist->count * 6 * sizeof(GLushort), GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 	OGLPolyStates *polyStates = (OGLPolyStates *)glMapBufferRange(GL_TEXTURE_BUFFER, 0, engine.polylist->count * sizeof(OGLPolyStates), GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 	
 	for (size_t i = 0; i < engine.polylist->count; i++)
 	{
 		const POLY *thePoly = &engine.polylist->list[engine.indexlist.list[i]];
+		const size_t polyType = thePoly->type;
 		PolygonAttributes polyAttr = thePoly->getAttributes();
 		PolygonTexParams texParams = thePoly->getTexParams();
 		
@@ -1155,34 +1142,41 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		polyStates[i].enableFog = (polyAttr.enableRenderFog) ? GL_TRUE : GL_FALSE;
 		polyStates[i].enableDepthWrite = ((!polyAttr.isTranslucent || polyAttr.enableAlphaDepthWrite) && !(polyAttr.polygonMode == 3 && polyAttr.polygonID == 0)) ? GL_TRUE : GL_FALSE;
 		polyStates[i].setNewDepthForTranslucent = (polyAttr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
-		
 		polyStates[i].polyAlpha = (!polyAttr.isWireframe && polyAttr.isTranslucent) ? polyAttr.alpha : 0x1F;
 		polyStates[i].polyMode = polyAttr.polygonMode;
 		polyStates[i].polyID = polyAttr.polygonID;
 		polyStates[i].texSizeS = texParams.sizeS;
 		polyStates[i].texSizeT = texParams.sizeT;
+		
+		for (size_t j = 0; j < polyType; j++)
+		{
+			const GLushort vertIndex = thePoly->vertIndexes[j];
+			
+			// While we're looping through our vertices, add each vertex index to
+			// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
+			// vertices here to convert them to GL_TRIANGLES, which are much easier
+			// to work with and won't be deprecated in future OpenGL versions.
+			indexPtr[vertIndexCount++] = vertIndex;
+			if (thePoly->vtxFormat == GFX3D_QUADS || thePoly->vtxFormat == GFX3D_QUAD_STRIP)
+			{
+				if (j == 2)
+				{
+					indexPtr[vertIndexCount++] = vertIndex;
+				}
+				else if (j == 3)
+				{
+					indexPtr[vertIndexCount++] = thePoly->vertIndexes[0];
+				}
+			}
+		}
 	}
 	
+	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 	glUnmapBuffer(GL_TEXTURE_BUFFER);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * engine.vertlist->count, engine.vertlist);
 	
-	// Set up remaining framebuffer states
-	this->SelectRenderingFramebuffer();
 	glUseProgram(OGLRef.programGeometryID);
-	
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_STENCIL_TEST);
-	
-	if(engine.renderState.enableAlphaBlending)
-	{
-		glEnable(GL_BLEND);
-	}
-	else
-	{
-		glDisable(GL_BLEND);
-	}
-	
-	glDepthMask(GL_TRUE);
-	
+		
 	return OGLERROR_NOERR;
 }
 
@@ -1253,15 +1247,11 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 	
 	this->UploadClearImage(colorBuffer, depthBuffer, fogBuffer, polyIDBuffer);
 	
+	OGLRef.selectedRenderingFBO = (CommonSettings.GFX3D_Renderer_Multisample) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
 	if (OGLRef.selectedRenderingFBO == OGLRef.fboMSIntermediateRenderID)
 	{
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, OGLRef.fboRenderID);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboMSIntermediateRenderID);
-		
-		// Blit the color buffer
-		glReadBuffer(GL_COLOR_ATTACHMENT0);
-		glDrawBuffer(GL_COLOR_ATTACHMENT0);
-		glBlitFramebuffer(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 		
 		// Blit the working depth buffer
 		glReadBuffer(GL_COLOR_ATTACHMENT1);
@@ -1278,17 +1268,26 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 		glDrawBuffer(GL_COLOR_ATTACHMENT3);
 		glBlitFramebuffer(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		
-		// Reset framebuffer targets
+		// Blit the color buffer. Do this last so that color attachment 0 is set to the read FBO.
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
-		glDrawBuffers(4, RenderDrawList);
-		glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboMSIntermediateRenderID);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+		glBlitFramebuffer(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 	}
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
+	glDrawBuffers(4, RenderDrawList);
 	
 	return OGLERROR_NOERR;
 }
 
 Render3DError OpenGLRenderer_3_2::ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const
 {
+	OGLRenderRef &OGLRef = *this->ref;
+	OGLRef.selectedRenderingFBO = (CommonSettings.GFX3D_Renderer_Multisample) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
+	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
+	glDrawBuffers(4, RenderDrawList);
+	glDepthMask(GL_TRUE);
+	
 	const GLfloat oglColor[4] = {divide5bitBy31_LUT[clearColor.r], divide5bitBy31_LUT[clearColor.g], divide5bitBy31_LUT[clearColor.b], divide5bitBy31_LUT[clearColor.a]};
 	const GLfloat oglDepth[4] = {(GLfloat)(clearAttributes.depth & 0x000000FF)/255.0f, (GLfloat)((clearAttributes.depth >> 8) & 0x000000FF)/255.0f, (GLfloat)((clearAttributes.depth >> 16) & 0x000000FF)/255.0f, 1.0};
 	const GLfloat oglPolyID[4] = {(GLfloat)clearAttributes.opaquePolyID/63.0f, 0.0, 0.0, 1.0};
@@ -1309,10 +1308,8 @@ void OpenGLRenderer_3_2::SetPolygonIndex(const size_t index)
 	glUniform1i(this->ref->uniformPolyStateIndex, index);
 }
 
-
 Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 {
-	//OGLRenderRef &OGLRef = *this->ref;
 	const PolygonAttributes attr = thePoly.getAttributes();
 	
 	// Set up depth test mode
