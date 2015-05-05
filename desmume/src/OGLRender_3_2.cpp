@@ -603,13 +603,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glGenTextures(1, &OGLRef.texGDepthStencilID);
 	glGenTextures(1, &OGLRef.texPostprocessFogID);
 	
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthStencilID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -618,6 +612,14 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
 	
+	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GDepth);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -625,6 +627,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGPolyID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -632,6 +635,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGFogAttrID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -639,6 +643,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texPostprocessFogID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -993,6 +998,7 @@ void OpenGLRenderer_3_2::GetExtensionSet(std::set<std::string> *oglExtensionSet)
 Render3DError OpenGLRenderer_3_2::EnableVertexAttributes()
 {
 	glBindVertexArray(this->ref->vaoGeometryStatesID);
+	glActiveTexture(GL_TEXTURE0);
 	return OGLERROR_NOERR;
 }
 
@@ -1077,59 +1083,25 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	}
 	
 	const GLfloat edgeColorAlpha = (engine.renderState.enableAntialiasing) ? (16.0f/31.0f) : 1.0f;
-	state->edgeColor[0].r = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[0]      ) & 0x001F];
-	state->edgeColor[0].g = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[0] >>  5) & 0x001F];
-	state->edgeColor[0].b = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[0] >> 10) & 0x001F];
-	state->edgeColor[0].a = edgeColorAlpha;
-	
-	state->edgeColor[1].r = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[1]      ) & 0x001F];
-	state->edgeColor[1].g = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[1] >>  5) & 0x001F];
-	state->edgeColor[1].b = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[1] >> 10) & 0x001F];
-	state->edgeColor[1].a = edgeColorAlpha;
-	
-	state->edgeColor[2].r = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[2]      ) & 0x001F];
-	state->edgeColor[2].g = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[2] >>  5) & 0x001F];
-	state->edgeColor[2].b = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[2] >> 10) & 0x001F];
-	state->edgeColor[2].a = edgeColorAlpha;
-	
-	state->edgeColor[3].r = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[3]      ) & 0x001F];
-	state->edgeColor[3].g = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[3] >>  5) & 0x001F];
-	state->edgeColor[3].b = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[3] >> 10) & 0x001F];
-	state->edgeColor[3].a = edgeColorAlpha;
-	
-	state->edgeColor[4].r = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[4]      ) & 0x001F];
-	state->edgeColor[4].g = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[4] >>  5) & 0x001F];
-	state->edgeColor[4].b = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[4] >> 10) & 0x001F];
-	state->edgeColor[4].a = edgeColorAlpha;
-	
-	state->edgeColor[5].r = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[5]      ) & 0x001F];
-	state->edgeColor[5].g = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[5] >>  5) & 0x001F];
-	state->edgeColor[5].b = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[5] >> 10) & 0x001F];
-	state->edgeColor[5].a = edgeColorAlpha;
-	
-	state->edgeColor[6].r = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[6]      ) & 0x001F];
-	state->edgeColor[6].g = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[6] >>  5) & 0x001F];
-	state->edgeColor[6].b = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[6] >> 10) & 0x001F];
-	state->edgeColor[6].a = edgeColorAlpha;
-	
-	state->edgeColor[7].r = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[7]      ) & 0x001F];
-	state->edgeColor[7].g = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[7] >>  5) & 0x001F];
-	state->edgeColor[7].b = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[7] >> 10) & 0x001F];
-	state->edgeColor[7].a = edgeColorAlpha;
+	for (size_t i = 0; i < 8; i++)
+	{
+		state->edgeColor[i].r = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[i]      ) & 0x001F];
+		state->edgeColor[i].g = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[i] >>  5) & 0x001F];
+		state->edgeColor[i].b = divide5bitBy31_LUT[(engine.renderState.edgeMarkColorTable[i] >> 10) & 0x001F];
+		state->edgeColor[i].a = edgeColorAlpha;
+	}
 	
 	glUnmapBuffer(GL_UNIFORM_BUFFER);
 	
 	// Do per-poly setup
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_PolyStates);
-	glBindTexture(GL_TEXTURE_BUFFER, OGLRef.texPolyStatesID);
-	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboGeometryIndexID);
 	glBindBuffer(GL_TEXTURE_BUFFER, OGLRef.tboPolyStatesID);
 	
 	size_t vertIndexCount = 0;
-	GLushort *indexPtr = (GLushort *)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, engine.polylist->count * 6 * sizeof(GLushort), GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-	OGLPolyStates *polyStates = (OGLPolyStates *)glMapBufferRange(GL_TEXTURE_BUFFER, 0, engine.polylist->count * sizeof(OGLPolyStates), GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+	GLushort *indexPtr = (GLushort *)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, engine.polylist->count * 6 * sizeof(GLushort), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+	OGLPolyStates *polyStates = (OGLPolyStates *)glMapBufferRange(GL_TEXTURE_BUFFER, 0, engine.polylist->count * sizeof(OGLPolyStates), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 	
 	for (size_t i = 0; i < engine.polylist->count; i++)
 	{
@@ -1173,10 +1145,14 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	
 	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 	glUnmapBuffer(GL_TEXTURE_BUFFER);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * engine.vertlist->count, engine.vertlist);
+	
+	const size_t vtxBufferSize = sizeof(VERT) * engine.vertlist->count;
+	VERT *vtxPtr = (VERT *)glMapBufferRange(GL_ARRAY_BUFFER, 0, vtxBufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+	memcpy(vtxPtr, engine.vertlist, vtxBufferSize);
+	glUnmapBuffer(GL_ARRAY_BUFFER);
 	
 	glUseProgram(OGLRef.programGeometryID);
-		
+	
 	return OGLERROR_NOERR;
 }
 
@@ -1197,11 +1173,6 @@ Render3DError OpenGLRenderer_3_2::RenderEdgeMarking(const u16 *colorTable, const
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboPostprocessIndexID);
 	glBindVertexArray(OGLRef.vaoPostprocessStatesID);
-	
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GDepth);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthID);
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGPolyID);
 	
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
 	
@@ -1226,13 +1197,6 @@ Render3DError OpenGLRenderer_3_2::RenderFog(const u8 *densityTable, const u32 co
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboPostprocessIndexID);
 	glBindVertexArray(OGLRef.vaoPostprocessStatesID);
-	
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GDepth);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthID);
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGFogAttrID);
 	
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
 	
@@ -1337,7 +1301,6 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 	// can change this too.
 	if(attr.polygonMode == 3)
 	{
-		glEnable(GL_STENCIL_TEST);
 		if(attr.polygonID == 0)
 		{
 			//when the polyID is zero, we are writing the shadow mask.
@@ -1361,7 +1324,6 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 	}
 	else
 	{
-		glEnable(GL_STENCIL_TEST);
 		if(attr.isTranslucent)
 		{
 			glStencilFunc(GL_NOTEQUAL, attr.polygonID, 255);

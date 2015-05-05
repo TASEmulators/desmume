@@ -977,8 +977,6 @@ OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 	//kill the tex cache to free all the texture ids
 	TexCache_Reset();
 	
-	glBindTexture(GL_TEXTURE_2D, 0);
-	
 	while(!ref->freeTextureIDs.empty())
 	{
 		GLuint temp = ref->freeTextureIDs.front();
@@ -1393,13 +1391,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glGenTextures(1, &OGLRef.texGDepthStencilID);
 	glGenTextures(1, &OGLRef.texPostprocessFogID);
 	
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthStencilID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1408,6 +1400,14 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
 	
+	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GDepth);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1415,6 +1415,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGPolyID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1422,6 +1423,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGFogAttrID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1429,6 +1431,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texPostprocessFogID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1722,12 +1725,15 @@ Render3DError OpenGLRenderer_1_2::CreateToonTable()
 	// The toon table is a special 1D texture where each pixel corresponds
 	// to a specific color in the toon table.
 	glGenTextures(1, &OGLRef.texToonTableID);
+	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_ToonTable);
 	glBindTexture(GL_TEXTURE_1D, OGLRef.texToonTableID);
+	
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, tempToonTable);
-	glBindTexture(GL_TEXTURE_1D, 0);
+	
+	glActiveTextureARB(GL_TEXTURE0_ARB);
 	
 	return OGLERROR_NOERR;
 }
@@ -1763,15 +1769,12 @@ Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBu
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, colorBuffer);
 	
 	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_GDepth);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthID);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, depth);
 	
 	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_GPolyID);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGPolyID);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, polyID);
 	
 	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_FogAttr);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGFogAttrID);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, fogAttributes);
 	
 	glActiveTextureARB(GL_TEXTURE0_ARB);
@@ -1855,6 +1858,8 @@ Render3DError OpenGLRenderer_1_2::EnableVertexAttributes()
 			glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), OGLRef.vtxPtrTexCoord);
 		}
 	}
+	
+	glActiveTextureARB(GL_TEXTURE0_ARB);
 	
 	return OGLERROR_NOERR;
 }
@@ -2122,7 +2127,6 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 		for (size_t i = 0; i < polyCount; i++)
 		{
 			const POLY &thePoly = polyList->list[indexList->list[i]];
-			this->SetPolygonIndex(i);
 			
 			// Set up the polygon if it changed
 			if (lastPolyAttr != thePoly.polyAttr)
@@ -2178,6 +2182,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 			}
 			
 			// Render the polygons
+			this->SetPolygonIndex(i);
 			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 			indexBufferPtr += vertIndexCount;
 			vertIndexCount = 0;
@@ -2204,9 +2209,7 @@ Render3DError OpenGLRenderer_1_2::EndRender(const u64 frameCount)
 Render3DError OpenGLRenderer_1_2::UpdateToonTable(const u16 *toonTableBuffer)
 {
 	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_ToonTable);
-	glBindTexture(GL_TEXTURE_1D, this->ref->texToonTableID);
 	glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, toonTableBuffer);
-	glActiveTextureARB(GL_TEXTURE0_ARB);
 	
 	return OGLERROR_NOERR;
 }
@@ -2347,7 +2350,6 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 	// can change this too.
 	if(attr.polygonMode == 3)
 	{
-		glEnable(GL_STENCIL_TEST);
 		if(attr.polygonID == 0)
 		{
 			//when the polyID is zero, we are writing the shadow mask.
@@ -2371,7 +2373,6 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 	}
 	else
 	{
-		glEnable(GL_STENCIL_TEST);
 		if(attr.isTranslucent)
 		{
 			glStencilFunc(GL_NOTEQUAL, attr.polygonID, 255);
@@ -2583,12 +2584,32 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 	return OGLERROR_NOERR;
 }
 
+Render3DError OpenGLRenderer_1_3::CreateToonTable()
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	u16 tempToonTable[32];
+	memset(tempToonTable, 0, sizeof(tempToonTable));
+	
+	// The toon table is a special 1D texture where each pixel corresponds
+	// to a specific color in the toon table.
+	glGenTextures(1, &OGLRef.texToonTableID);
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ToonTable);
+	glBindTexture(GL_TEXTURE_1D, OGLRef.texToonTableID);
+	
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, tempToonTable);
+	
+	glActiveTexture(GL_TEXTURE0);
+	
+	return OGLERROR_NOERR;
+}
+
 Render3DError OpenGLRenderer_1_3::UpdateToonTable(const u16 *toonTableBuffer)
 {
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_ToonTable);
-	glBindTexture(GL_TEXTURE_1D, this->ref->texToonTableID);
 	glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 32, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, toonTableBuffer);
-	glActiveTexture(GL_TEXTURE0);
 	
 	return OGLERROR_NOERR;
 }
@@ -2617,18 +2638,13 @@ Render3DError OpenGLRenderer_1_3::UploadClearImage(const u16 *__restrict colorBu
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, colorBuffer);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GDepth);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthID);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, depth);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGPolyID);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, polyID);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGFogAttrID);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, fogAttributes);
-	
-	glActiveTexture(GL_TEXTURE0);
 	
 	return OGLERROR_NOERR;
 }
@@ -2818,6 +2834,8 @@ Render3DError OpenGLRenderer_1_5::EnableVertexAttributes()
 			glTexCoordPointer(2, GL_FLOAT, sizeof(VERT), OGLRef.vtxPtrTexCoord);
 		}
 	}
+	
+	glActiveTexture(GL_TEXTURE0);
 	
 	return OGLERROR_NOERR;
 }
@@ -3351,6 +3369,8 @@ Render3DError OpenGLRenderer_2_0::EnableVertexAttributes()
 		glVertexAttribPointer(OGLVertexAttributeID_Color, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VERT), OGLRef.vtxPtrColor);
 	}
 	
+	glActiveTexture(GL_TEXTURE0);
+	
 	return OGLERROR_NOERR;
 }
 
@@ -3489,11 +3509,6 @@ Render3DError OpenGLRenderer_2_0::RenderEdgeMarking(const u16 *colorTable, const
 		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
 	}
 	
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GDepth);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthID);
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGPolyID);
-	
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
 	
 	if (this->isVAOSupported)
@@ -3561,13 +3576,6 @@ Render3DError OpenGLRenderer_2_0::RenderFog(const u8 *densityTable, const u32 co
 		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
 	}
 	
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GDepth);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthID);
-	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGFogAttrID);
-	
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
 	
 	if (this->isVAOSupported)
@@ -3613,7 +3621,6 @@ Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY &thePoly)
 	// can change this too.
 	if(attr.polygonMode == 3)
 	{
-		glEnable(GL_STENCIL_TEST);
 		if(attr.polygonID == 0)
 		{
 			//when the polyID is zero, we are writing the shadow mask.
@@ -3637,7 +3644,6 @@ Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY &thePoly)
 	}
 	else
 	{
-		glEnable(GL_STENCIL_TEST);
 		if(attr.isTranslucent)
 		{
 			glStencilFunc(GL_NOTEQUAL, attr.polygonID, 255);

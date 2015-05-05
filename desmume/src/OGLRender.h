@@ -680,6 +680,7 @@ public:
 class OpenGLRenderer_1_3 : public OpenGLRenderer_1_2
 {
 protected:
+	virtual Render3DError CreateToonTable();
 	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
 	
 public:
