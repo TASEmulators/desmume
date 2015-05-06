@@ -178,10 +178,10 @@ static const char *GeometryFragShader_150 = {"\
 		vec4 fogColor;\n\
 		float fogDensity[32];\n\
 		vec4 edgeColor[8];\n\
+		vec4 toonColor[32];\n\
 	} state;\n\
 	\n\
 	uniform sampler2D texRenderObject; \n\
-	uniform sampler1D texToonTable; \n\
 	uniform usamplerBuffer PolyStates;\n\
 	uniform int polyIndex;\n\
 	\n\
@@ -209,8 +209,8 @@ static const char *GeometryFragShader_150 = {"\
 		} \n\
 		else if (polyMode == 2u) \n\
 		{ \n\
-			vec3 toonColor = vec3(texture(texToonTable, vtxColor.r).rgb); \n\
-			newFragColor.rgb = (state.toonShadingMode == 0) ? mainTexColor.rgb * toonColor.rgb : min((mainTexColor.rgb * vtxColor.rgb) + toonColor.rgb, 1.0); \n\
+			vec3 newToonColor = state.toonColor[int((vtxColor.r * 31.0) + 0.5)].rgb;\n\
+			newFragColor.rgb = (state.toonShadingMode == 0) ? mainTexColor.rgb * newToonColor.rgb : min((mainTexColor.rgb * vtxColor.rgb) + newToonColor.rgb, 1.0); \n\
 		} \n\
 		else if (polyMode == 3u) \n\
 		{ \n\
@@ -258,6 +258,7 @@ static const char *EdgeMarkVtxShader_150 = {"\
 		vec4 fogColor;\n\
 		float fogDensity[32];\n\
 		vec4 edgeColor[8];\n\
+		vec4 toonColor[32];\n\
 	} state;\n\
 	\n\
 	out vec2 texCoord[5];\n\
@@ -298,6 +299,7 @@ static const char *EdgeMarkFragShader_150 = {"\
 		vec4 fogColor;\n\
 		float fogDensity[32];\n\
 		vec4 edgeColor[8];\n\
+		vec4 toonColor[32];\n\
 	} state;\n\
 	\n\
 	uniform sampler2D texInFragDepth;\n\
@@ -313,19 +315,12 @@ static const char *EdgeMarkFragShader_150 = {"\
 	\n\
 	void main()\n\
 	{\n\
-		vec4 inPolyIDAttributes[5];\n\
-		inPolyIDAttributes[0] = texture(texInPolyID, texCoord[0]);\n\
-		inPolyIDAttributes[1] = texture(texInPolyID, texCoord[1]);\n\
-		inPolyIDAttributes[2] = texture(texInPolyID, texCoord[2]);\n\
-		inPolyIDAttributes[3] = texture(texInPolyID, texCoord[3]);\n\
-		inPolyIDAttributes[4] = texture(texInPolyID, texCoord[4]);\n\
-		\n\
 		int polyID[5];\n\
-		polyID[0] = int((inPolyIDAttributes[0].r * 63.0) + 0.5);\n\
-		polyID[1] = int((inPolyIDAttributes[1].r * 63.0) + 0.5);\n\
-		polyID[2] = int((inPolyIDAttributes[2].r * 63.0) + 0.5);\n\
-		polyID[3] = int((inPolyIDAttributes[3].r * 63.0) + 0.5);\n\
-		polyID[4] = int((inPolyIDAttributes[4].r * 63.0) + 0.5);\n\
+		polyID[0] = int((texture(texInPolyID, texCoord[0]).r * 63.0) + 0.5);\n\
+		polyID[1] = int((texture(texInPolyID, texCoord[1]).r * 63.0) + 0.5);\n\
+		polyID[2] = int((texture(texInPolyID, texCoord[2]).r * 63.0) + 0.5);\n\
+		polyID[3] = int((texture(texInPolyID, texCoord[3]).r * 63.0) + 0.5);\n\
+		polyID[4] = int((texture(texInPolyID, texCoord[4]).r * 63.0) + 0.5);\n\
 		\n\
 		float depth[5];\n\
 		depth[0] = unpackFloatFromVec3(texture(texInFragDepth, texCoord[0]).rgb);\n\
@@ -386,6 +381,7 @@ static const char *FogFragShader_150 = {"\
 		vec4 fogColor;\n\
 		float fogDensity[32];\n\
 		vec4 edgeColor[8];\n\
+		vec4 toonColor[32];\n\
 	} state;\n\
 	\n\
 	uniform sampler2D texInFragColor;\n\
@@ -944,10 +940,8 @@ Render3DError OpenGLRenderer_3_2::InitGeometryProgramShaderLocations()
 	glActiveTexture(GL_TEXTURE0);
 	
 	OGLRef.uniformTexRenderObject				= glGetUniformLocation(OGLRef.programGeometryID, "texRenderObject");
-	OGLRef.uniformTexToonTable					= glGetUniformLocation(OGLRef.programGeometryID, "texToonTable");
 	OGLRef.uniformTexBufferPolyStates			= glGetUniformLocation(OGLRef.programGeometryID, "PolyStates");
 	glUniform1i(OGLRef.uniformTexRenderObject, 0);
-	glUniform1i(OGLRef.uniformTexToonTable, OGLTextureUnitID_ToonTable);
 	glUniform1i(OGLRef.uniformTexBufferPolyStates, OGLTextureUnitID_PolyStates);
 	
 	OGLRef.uniformPolyStateIndex				= glGetUniformLocation(OGLRef.programGeometryID, "polyIndex");
@@ -1091,6 +1085,14 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		state->edgeColor[i].a = edgeColorAlpha;
 	}
 	
+	for (size_t i = 0; i < 32; i++)
+	{
+		state->toonColor[i].r = divide5bitBy31_LUT[(engine.renderState.u16ToonTable[i]      ) & 0x001F];
+		state->toonColor[i].g = divide5bitBy31_LUT[(engine.renderState.u16ToonTable[i] >>  5) & 0x001F];
+		state->toonColor[i].b = divide5bitBy31_LUT[(engine.renderState.u16ToonTable[i] >> 10) & 0x001F];
+		state->toonColor[i].a = 1.0f;
+	}
+	
 	glUnmapBuffer(GL_UNIFORM_BUFFER);
 	
 	// Do per-poly setup
@@ -1202,6 +1204,24 @@ Render3DError OpenGLRenderer_3_2::RenderFog(const u8 *densityTable, const u32 co
 	
 	glBindVertexArray(0);
 	
+	return OGLERROR_NOERR;
+}
+
+Render3DError OpenGLRenderer_3_2::CreateToonTable()
+{
+	// Do nothing. The toon table is updated in the render states UBO.
+	return OGLERROR_NOERR;
+}
+
+Render3DError OpenGLRenderer_3_2::DestroyToonTable()
+{
+	// Do nothing. The toon table is updated in the render states UBO.
+	return OGLERROR_NOERR;
+}
+
+Render3DError OpenGLRenderer_3_2::UpdateToonTable(const u16 *toonTableBuffer)
+{
+	// Do nothing. The toon table is updated in the render states UBO.
 	return OGLERROR_NOERR;
 }
 

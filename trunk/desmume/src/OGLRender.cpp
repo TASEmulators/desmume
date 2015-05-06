@@ -372,19 +372,12 @@ static const char *EdgeMarkFragShader_100 = {"\
 	\n\
 	void main()\n\
 	{\n\
-		vec4 inPolyIDAttributes[5];\n\
-		inPolyIDAttributes[0] = texture2D(texInPolyID, texCoord[0]);\n\
-		inPolyIDAttributes[1] = texture2D(texInPolyID, texCoord[1]);\n\
-		inPolyIDAttributes[2] = texture2D(texInPolyID, texCoord[2]);\n\
-		inPolyIDAttributes[3] = texture2D(texInPolyID, texCoord[3]);\n\
-		inPolyIDAttributes[4] = texture2D(texInPolyID, texCoord[4]);\n\
-		\n\
 		int polyID[5];\n\
-		polyID[0] = int((inPolyIDAttributes[0].r * 63.0) + 0.5);\n\
-		polyID[1] = int((inPolyIDAttributes[1].r * 63.0) + 0.5);\n\
-		polyID[2] = int((inPolyIDAttributes[2].r * 63.0) + 0.5);\n\
-		polyID[3] = int((inPolyIDAttributes[3].r * 63.0) + 0.5);\n\
-		polyID[4] = int((inPolyIDAttributes[4].r * 63.0) + 0.5);\n\
+		polyID[0] = int((texture2D(texInPolyID, texCoord[0]).r * 63.0) + 0.5);\n\
+		polyID[1] = int((texture2D(texInPolyID, texCoord[1]).r * 63.0) + 0.5);\n\
+		polyID[2] = int((texture2D(texInPolyID, texCoord[2]).r * 63.0) + 0.5);\n\
+		polyID[3] = int((texture2D(texInPolyID, texCoord[3]).r * 63.0) + 0.5);\n\
+		polyID[4] = int((texture2D(texInPolyID, texCoord[4]).r * 63.0) + 0.5);\n\
 		\n\
 		float depth[5];\n\
 		depth[0] = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord[0]).rgb);\n\
