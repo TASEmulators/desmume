@@ -353,6 +353,7 @@ struct OGLRenderStates
 	GLvec4 fogColor;
 	GLvec4 fogDensity[32]; // Array of floats need to be padded as vec4
 	GLvec4 edgeColor[8];
+	GLvec4 toonColor[32];
 };
 
 struct OGLPolyStates
@@ -499,7 +500,7 @@ extern GPU3DInterface gpu3Dgl_3_2;
 
 extern const GLenum RenderDrawList[4];
 extern CACHE_ALIGN const GLfloat divide5bitBy31_LUT[32];
-extern const GLfloat PostprocessVtxBuffer[16];;
+extern const GLfloat PostprocessVtxBuffer[16];
 extern const GLubyte PostprocessElementBuffer[6];
 
 extern void texDeleteCallback(TexCacheItem *item);
