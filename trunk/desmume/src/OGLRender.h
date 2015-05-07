@@ -309,6 +309,8 @@ enum OGLErrorCode
 {
 	OGLERROR_NOERR = RENDER3DERROR_NOERR,
 	
+	OGLERROR_BEGINGL_FAILED,
+	
 	OGLERROR_FEATURE_UNSUPPORTED,
 	OGLERROR_VBO_UNSUPPORTED,
 	OGLERROR_PBO_UNSUPPORTED,
@@ -504,7 +506,7 @@ extern CACHE_ALIGN const GLfloat divide5bitBy31_LUT[32];
 extern const GLfloat PostprocessVtxBuffer[16];
 extern const GLubyte PostprocessElementBuffer[6];
 
-extern void texDeleteCallback(TexCacheItem *item);
+extern void texDeleteCallback(TexCacheItem *texItem, void *param1, void *param2);
 
 //This is called by OGLRender whenever it initializes.
 //Platforms, please be sure to set this up.
@@ -517,6 +519,11 @@ extern bool (*oglrender_beginOpenGL)();
 
 //This is called by OGLRender after it is done using opengl.
 extern void (*oglrender_endOpenGL)();
+
+// Helper functions for calling the above function pointers at the
+// beginning and ending of OpenGL commands.
+bool BEGINGL();
+void ENDGL();
 
 // These functions need to be assigned by ports that support using an
 // OpenGL 3.2 Core Profile context. The OGLRender_3_2.cpp file includes
@@ -668,7 +675,6 @@ protected:
 	virtual Render3DError SetupViewport(const u32 viewportValue);
 	
 public:
-	OpenGLRenderer_1_2();
 	~OpenGLRenderer_1_2();
 	
 	virtual Render3DError InitExtensions();

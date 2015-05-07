@@ -30,38 +30,34 @@ int cur3DCore = GPU3D_NULL;
 
 GPU3DInterface gpu3DNull = { 
 	"None",
-	Default3D_Init,
-	Default3D_Close,
-	Default3D_Reset,
-	Default3D_Render,
-	Default3D_RenderFinish,
-	Default3D_VramReconfigureSignal
+	Render3DBaseCreate,
+	Render3DBaseDestroy
 };
 
 GPU3DInterface *gpu3D = &gpu3DNull;
-static Render3D *_baseRenderer = NULL;
+Render3D *BaseRenderer = NULL;
 Render3D *CurrentRenderer = NULL;
 
 void Render3D_Init()
 {
-	if (_baseRenderer == NULL)
+	if (BaseRenderer == NULL)
 	{
-		_baseRenderer = new Render3D;
+		BaseRenderer = new Render3D;
 	}
 	
 	if (CurrentRenderer == NULL)
 	{
 		gpu3D = &gpu3DNull;
 		cur3DCore = GPU3D_NULL;
-		CurrentRenderer = _baseRenderer;
+		CurrentRenderer = BaseRenderer;
 	}
 }
 
 void Render3D_DeInit()
 {
 	gpu3D->NDS_3D_Close();
-	delete _baseRenderer;
-	_baseRenderer = NULL;
+	delete BaseRenderer;
+	BaseRenderer = NULL;
 }
 
 bool NDS_3D_ChangeCore(int newCore)
@@ -87,7 +83,7 @@ bool NDS_3D_ChangeCore(int newCore)
 	gpu3D->NDS_3D_Close();
 	gpu3D = &gpu3DNull;
 	cur3DCore = GPU3D_NULL;
-	CurrentRenderer = _baseRenderer;
+	CurrentRenderer = BaseRenderer;
 	
 	Render3D *newRenderer = newRenderInterface->NDS_3D_Init();
 	if (newRenderer == NULL)
@@ -103,39 +99,19 @@ bool NDS_3D_ChangeCore(int newCore)
 	return result;
 }
 
-Render3D* Default3D_Init()
+Render3D* Render3DBaseCreate()
 {
-	_baseRenderer->Reset();
-	return _baseRenderer;
+	BaseRenderer->Reset();
+	return BaseRenderer;
 }
 
-void Default3D_Close()
+void Render3DBaseDestroy()
 {
-	if (CurrentRenderer != _baseRenderer)
+	if (CurrentRenderer != BaseRenderer)
 	{
 		delete CurrentRenderer;
-		CurrentRenderer = NULL;
+		CurrentRenderer = BaseRenderer;
 	}
-}
-
-void Default3D_Reset()
-{
-	CurrentRenderer->Reset();
-}
-
-void Default3D_Render()
-{
-	CurrentRenderer->Render(gfx3d);
-}
-
-void Default3D_RenderFinish()
-{
-	CurrentRenderer->RenderFinish();
-}
-
-void Default3D_VramReconfigureSignal()
-{
-	CurrentRenderer->VramReconfigureSignal();
 }
 
 Render3D::Render3D()
@@ -160,7 +136,6 @@ Render3D::Render3D()
 
 Render3D::~Render3D()
 {
-	memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_convertedScreen));
 	TexCache_Reset();
 }
 
@@ -309,7 +284,6 @@ Render3DError Render3D::Reset()
 	memset(this->clearImageDepthBuffer, 0, sizeof(this->clearImageDepthBuffer));
 	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
 	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
-	memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_convertedScreen));
 	
 	TexCache_Reset();
 	

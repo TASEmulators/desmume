@@ -28,28 +28,9 @@ class Render3D;
 
 typedef struct Render3DInterface
 {
-	// The name of the plugin, this name will appear in the plugins list
-	const char *name;
-	
-	//called once when the plugin starts up
-	Render3D* (*NDS_3D_Init)();
-	
-	//called when the plugin shuts down
-	void (*NDS_3D_Close)();
-	
-	//called when the emulator resets
-	void (*NDS_3D_Reset)();
-	
-	//called when the renderer should do its job and render the current display lists
-	void (*NDS_3D_Render)();
-	
-	// Called whenever 3D rendering needs to finish. This function should block the calling thread
-	// and only release the block when 3D rendering is finished. (Before reading the 3D layer, be
-	// sure to always call this function.)
-	void (*NDS_3D_RenderFinish)();
-	
-	//called when the emulator reconfigures its vram. you may need to invalidate your texture cache.
-	void (*NDS_3D_VramReconfigureSignal)();
+	const char *name;				// The name of the renderer.
+	Render3D* (*NDS_3D_Init)();		// Called when the renderer is created.
+	void (*NDS_3D_Close)();			// Called when the renderer is destroyed.
 	
 } GPU3DInterface;
 
@@ -63,15 +44,12 @@ extern GPU3DInterface *core3DList[];
 extern GPU3DInterface gpu3DNull;
 
 // Extern pointer
+extern Render3D *BaseRenderer;
 extern Render3D *CurrentRenderer;
 extern GPU3DInterface *gpu3D;
 
-Render3D* Default3D_Init();
-void Default3D_Close();
-void Default3D_Reset();
-void Default3D_Render();
-void Default3D_RenderFinish();
-void Default3D_VramReconfigureSignal();
+Render3D* Render3DBaseCreate();
+void Render3DBaseDestroy();
 
 void Render3D_Init();
 void Render3D_DeInit();
@@ -153,10 +131,15 @@ public:
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
 	
-	virtual Render3DError Reset();
-	virtual Render3DError Render(const GFX3D &engine);
-	virtual Render3DError RenderFinish();
-	virtual Render3DError VramReconfigureSignal();
+	virtual Render3DError Reset();						// Called when the emulator resets.
+	
+	virtual Render3DError Render(const GFX3D &engine);	// Called when the renderer should do its job and render the current display lists.
+	
+	virtual Render3DError RenderFinish();				// Called whenever 3D rendering needs to finish. This function should block the calling thread
+														// and only release the block when 3D rendering is finished. (Before reading the 3D layer, be
+														// sure to always call this function.)
+	
+	virtual Render3DError VramReconfigureSignal();		// Called when the emulator reconfigures its VRAM. Ypu may need to invalidate your texture cache.
 };
 
 #endif

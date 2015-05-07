@@ -37,7 +37,6 @@ typedef struct
 } OGLVersion;
 
 static OGLVersion _OGLDriverVersion = {0, 0, 0};
-static OpenGLRenderer *_OGLRenderer = NULL;
 
 // Lookup Tables
 static CACHE_ALIGN GLfloat material_8bit_to_float[256] = {0};
@@ -56,14 +55,14 @@ const GLubyte PostprocessElementBuffer[6] = {0, 1, 2, 2, 3, 0};
 
 const GLenum RenderDrawList[4] = {GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_COLOR_ATTACHMENT3_EXT};
 
-static bool BEGINGL()
+bool BEGINGL()
 {
 	if(oglrender_beginOpenGL) 
 		return oglrender_beginOpenGL();
 	else return true;
 }
 
-static void ENDGL()
+void ENDGL()
 {
 	if(oglrender_endOpenGL) 
 		oglrender_endOpenGL();
@@ -572,13 +571,14 @@ static void OGLGetDriverVersion(const char *oglVersionString,
 	}
 }
 
-void texDeleteCallback(TexCacheItem *item)
+void texDeleteCallback(TexCacheItem *texItem, void *param1, void *param2)
 {
-	_OGLRenderer->DeleteTexture(item);
+	OpenGLRenderer *oglRenderer = (OpenGLRenderer *)param1;
+	oglRenderer->DeleteTexture(texItem);
 }
 
 template<bool require_profile, bool enable_3_2>
-static Render3D* OGLInit()
+static Render3D* OpenGLRendererCreate()
 {
 	OpenGLRenderer *newRenderer = NULL;
 	Render3DError error = OGLERROR_NOERR;
@@ -599,11 +599,6 @@ static Render3D* OGLInit()
 		return NULL;
 	}
 	
-	// Force the creation of a new rendering object since we don't know what OpenGL version
-	// the user might be requesting.
-	delete _OGLRenderer;
-	_OGLRenderer = NULL;
-	
 	// Get OpenGL info
 	const char *oglVersionString = (const char *)glGetString(GL_VERSION);
 	const char *oglVendorString = (const char *)glGetString(GL_VENDOR);
@@ -615,7 +610,7 @@ static Render3D* OGLInit()
 	if(!strcmp(oglVendorString,"Intel") && strstr(oglRendererString,"965")) 
 	{
 		INFO("OpenGL: Incompatible graphic card detected. Disabling OpenGL support.\n");
-		return _OGLRenderer;
+		return newRenderer;
 	}
 	
 	// Check the driver's OpenGL version
@@ -627,7 +622,7 @@ static Render3D* OGLInit()
 			 OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION,
 			 oglVersionString, oglVendorString, oglRendererString);
 		
-		return _OGLRenderer;
+		return newRenderer;
 	}
 	
 	// Create new OpenGL rendering object
@@ -642,7 +637,7 @@ static Render3D* OGLInit()
 		else 
 		{
 			if(require_profile)
-				return _OGLRenderer;
+				return newRenderer;
 		}
 	}
 	
@@ -688,7 +683,7 @@ static Render3D* OGLInit()
 	{
 		INFO("OpenGL: Renderer did not initialize. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
 			 oglVersionString, oglVendorString, oglRendererString);
-		return _OGLRenderer;
+		return newRenderer;
 	}
 	
 	// Initialize OpenGL extensions
@@ -702,20 +697,24 @@ static Render3D* OGLInit()
 		{
 			INFO("OpenGL: Shaders are not working, even though they should be. Disabling 3D renderer.\n");
 			delete newRenderer;
-			return _OGLRenderer;
+			newRenderer = NULL;
+			
+			return newRenderer;
 		}
 		else if (IsVersionSupported(3, 0, 0) && error == OGLERROR_FBO_CREATE_ERROR && OGLLoadEntryPoints_3_2_Func != NULL)
 		{
 			INFO("OpenGL: FBOs are not working, even though they should be. Disabling 3D renderer.\n");
 			delete newRenderer;
-			return _OGLRenderer;
+			newRenderer = NULL;
+			
+			return newRenderer;
 		}
 	}
 	
+	ENDGL();
+	
 	// Initialization finished -- reset the renderer
 	newRenderer->Reset();
-	
-	ENDGL();
 	
 	unsigned int major = 0;
 	unsigned int minor = 0;
@@ -725,62 +724,19 @@ static Render3D* OGLInit()
 	INFO("OpenGL: Renderer initialized successfully (v%u.%u.%u).\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
 		 major, minor, revision, oglVersionString, oglVendorString, oglRendererString);
 	
-	_OGLRenderer = newRenderer;
-	return _OGLRenderer;
+	return newRenderer;
 }
 
-static void OGLClose()
+static void OpenGLRendererDestroy()
 {
 	if(!BEGINGL())
 		return;
 	
-	if (CurrentRenderer == _OGLRenderer)
+	if (CurrentRenderer != BaseRenderer)
 	{
-		CurrentRenderer = NULL;
+		delete (OpenGLRenderer *)CurrentRenderer;
+		CurrentRenderer = BaseRenderer;
 	}
-	
-	delete _OGLRenderer;
-	_OGLRenderer = NULL;
-	
-	ENDGL();
-}
-
-static void OGLReset()
-{
-	if(!BEGINGL())
-		return;
-	
-	_OGLRenderer->Reset();
-	
-	ENDGL();
-}
-
-static void OGLRender()
-{
-	if(!BEGINGL())
-		return;
-	
-	_OGLRenderer->Render(gfx3d);
-	
-	ENDGL();
-}
-
-static void OGLVramReconfigureSignal()
-{
-	if(!BEGINGL())
-		return;
-	
-	_OGLRenderer->VramReconfigureSignal();
-	
-	ENDGL();
-}
-
-static void OGLRenderFinish()
-{
-	if(!BEGINGL())
-		return;
-	
-	_OGLRenderer->RenderFinish();
 	
 	ENDGL();
 }
@@ -788,34 +744,22 @@ static void OGLRenderFinish()
 //automatically select 3.2 or old profile depending on whether 3.2 is available
 GPU3DInterface gpu3Dgl = {
 	"OpenGL",
-	OGLInit<false,true>,
-	OGLClose,
-	OGLReset,
-	OGLRender,
-	OGLRenderFinish,
-	OGLVramReconfigureSignal
+	OpenGLRendererCreate<false,true>,
+	OpenGLRendererDestroy
 };
 
 //forcibly use old profile
 GPU3DInterface gpu3DglOld = {
 	"OpenGL Old",
-	OGLInit<true,false>,
-	OGLClose,
-	OGLReset,
-	OGLRender,
-	OGLRenderFinish,
-	OGLVramReconfigureSignal
+	OpenGLRendererCreate<true,false>,
+	OpenGLRendererDestroy
 };
 
 //forcibly use new profile
 GPU3DInterface gpu3Dgl_3_2 = {
 	"OpenGL 3.2",
-	OGLInit<true,true>,
-	OGLClose,
-	OGLReset,
-	OGLRender,
-	OGLRenderFinish,
-	OGLVramReconfigureSignal
+	OpenGLRendererCreate<true,true>,
+	OpenGLRendererDestroy
 };
 
 OpenGLRenderer::OpenGLRenderer()
@@ -826,6 +770,28 @@ OpenGLRenderer::OpenGLRenderer()
 	versionMajor = 0;
 	versionMinor = 0;
 	versionRevision = 0;
+	
+	isVBOSupported = false;
+	isPBOSupported = false;
+	isFBOSupported = false;
+	isMultisampledFBOSupported = false;
+	isShaderSupported = false;
+	isVAOSupported = false;
+	
+	// Init OpenGL rendering states
+	ref = new OGLRenderRef;
+	ref->fboRenderID = 0;
+	ref->fboMSIntermediateRenderID = 0;
+	ref->fboPostprocessID = 0;
+	ref->selectedRenderingFBO = 0;
+	
+	memset(GPU_screen3D, 0, sizeof(GPU_screen3D));
+	
+	currTexture = NULL;
+	gpuScreen3DHasNewData[0] = false;
+	gpuScreen3DHasNewData[1] = false;
+	doubleBufferIndex = 0;
+	_currentPolyIndex = 0;
 }
 
 bool OpenGLRenderer::IsExtensionPresent(const std::set<std::string> *oglExtensionSet, const std::string extensionName) const
@@ -929,23 +895,6 @@ void OpenGLRenderer::ConvertFramebuffer(const u32 *__restrict srcBuffer, u32 *ds
 #endif
 		}
 	}
-}
-
-OpenGLRenderer_1_2::OpenGLRenderer_1_2()
-{
-	isVBOSupported = false;
-	isPBOSupported = false;
-	isFBOSupported = false;
-	isMultisampledFBOSupported = false;
-	isShaderSupported = false;
-	isVAOSupported = false;
-	
-	// Init OpenGL rendering states
-	ref = new OGLRenderRef;
-	ref->fboRenderID = 0;
-	ref->fboMSIntermediateRenderID = 0;
-	ref->fboPostprocessID = 0;
-	ref->selectedRenderingFBO = 0;
 }
 
 OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
@@ -1959,6 +1908,11 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	OGLRenderRef &OGLRef = *this->ref;
 	this->doubleBufferIndex = (this->doubleBufferIndex + 1) & 0x01;
 	
+	if(!BEGINGL())
+	{
+		return OGLERROR_BEGINGL_FAILED;
+	}
+	
 	if (this->isShaderSupported)
 	{
 		glUseProgram(OGLRef.programGeometryID);
@@ -2202,6 +2156,8 @@ Render3DError OpenGLRenderer_1_2::EndRender(const u64 frameCount)
 	TexCache_EvictFrame();
 	
 	this->ReadBackPixels();
+	
+	ENDGL();
 	
 	return OGLERROR_NOERR;
 }
@@ -2450,9 +2406,9 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 	{
 		this->currTexture = newTexture;
 		//has the ogl renderer initialized the texture?
-		if(!this->currTexture->deleteCallback)
+		if(this->currTexture->GetDeleteCallback() == NULL)
 		{
-			this->currTexture->deleteCallback = &texDeleteCallback;
+			this->currTexture->SetDeleteCallback(&texDeleteCallback, this, NULL);
 			
 			if(OGLRef.freeTextureIDs.empty())
 			{
@@ -2507,15 +2463,12 @@ Render3DError OpenGLRenderer_1_2::Reset()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	this->gpuScreen3DHasNewData[0] = false;
-	this->gpuScreen3DHasNewData[1] = false;
+	if(!BEGINGL())
+	{
+		return OGLERROR_BEGINGL_FAILED;
+	}
 	
 	glFinish();
-	
-	for (size_t i = 0; i < 2; i++)
-	{
-		memset(this->GPU_screen3D[i], 0, sizeof(this->GPU_screen3D[i]));
-	}
 	
 	if (!this->isShaderSupported)
 	{
@@ -2525,6 +2478,16 @@ Render3DError OpenGLRenderer_1_2::Reset()
 		glAlphaFunc(GL_GREATER, 0);
 		glEnable(GL_ALPHA_TEST);
 		glEnable(GL_BLEND);
+	}
+	
+	ENDGL();
+	
+	this->gpuScreen3DHasNewData[0] = false;
+	this->gpuScreen3DHasNewData[1] = false;
+	
+	for (size_t i = 0; i < 2; i++)
+	{
+		memset(this->GPU_screen3D[i], 0, sizeof(this->GPU_screen3D[i]));
 	}
 	
 	if (OGLRef.color4fBuffer != NULL)
@@ -2549,7 +2512,6 @@ Render3DError OpenGLRenderer_1_2::Reset()
 	memset(this->clearImageDepthBuffer, 0, sizeof(this->clearImageDepthBuffer));
 	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
 	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
-	memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_convertedScreen));
 	
 	TexCache_Reset();
 	
@@ -2566,6 +2528,11 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 	}
 	
 	OGLRenderRef &OGLRef = *this->ref;
+	
+	if(!BEGINGL())
+	{
+		return OGLERROR_BEGINGL_FAILED;
+	}
 	
 	if (this->isPBOSupported)
 	{
@@ -2586,6 +2553,8 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 		glReadPixels(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_BGRA, GL_UNSIGNED_BYTE, workingBuffer);
 		this->ConvertFramebuffer(workingBuffer, (u32 *)gfx3d_convertedScreen);
 	}
+	
+	ENDGL();
 	
 	this->gpuScreen3DHasNewData[i] = false;
 	
@@ -2878,6 +2847,11 @@ Render3DError OpenGLRenderer_1_5::BeginRender(const GFX3D &engine)
 	OGLRenderRef &OGLRef = *this->ref;
 	this->doubleBufferIndex = (this->doubleBufferIndex + 1) & 0x01;
 	
+	if(!BEGINGL())
+	{
+		return OGLERROR_BEGINGL_FAILED;
+	}
+	
 	if (this->isShaderSupported)
 	{
 		glUseProgram(OGLRef.programGeometryID);
@@ -2970,6 +2944,11 @@ Render3DError OpenGLRenderer_1_5::RenderFinish()
 	
 	OGLRenderRef &OGLRef = *this->ref;
 	
+	if(!BEGINGL())
+	{
+		return OGLERROR_BEGINGL_FAILED;
+	}
+	
 	if (this->isPBOSupported)
 	{
 		glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, OGLRef.pboRenderDataID[i]);
@@ -2989,6 +2968,8 @@ Render3DError OpenGLRenderer_1_5::RenderFinish()
 		glReadPixels(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_BGRA, GL_UNSIGNED_BYTE, workingBuffer);
 		this->ConvertFramebuffer(workingBuffer, (u32 *)gfx3d_convertedScreen);
 	}
+	
+	ENDGL();
 	
 	this->gpuScreen3DHasNewData[i] = false;
 	
@@ -3403,6 +3384,11 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	OGLRenderRef &OGLRef = *this->ref;
 	this->doubleBufferIndex = (this->doubleBufferIndex + 1) & 0x01;
 	
+	if(!BEGINGL())
+	{
+		return OGLERROR_BEGINGL_FAILED;
+	}
+	
 	// Setup render states
 	glUseProgram(OGLRef.programGeometryID);
 	glUniform1i(OGLRef.uniformStateToonShadingMode, engine.renderState.shading);
@@ -3704,9 +3690,9 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 	{
 		this->currTexture = newTexture;
 		//has the ogl renderer initialized the texture?
-		if(!this->currTexture->deleteCallback)
+		if(this->currTexture->GetDeleteCallback() == NULL)
 		{
-			this->currTexture->deleteCallback = &texDeleteCallback;
+			this->currTexture->SetDeleteCallback(&texDeleteCallback, this, NULL);
 			
 			if(OGLRef.freeTextureIDs.empty())
 			{
@@ -3761,6 +3747,11 @@ Render3DError OpenGLRenderer_2_1::RenderFinish()
 		return OGLERROR_NOERR;
 	}
 	
+	if(!BEGINGL())
+	{
+		return OGLERROR_BEGINGL_FAILED;
+	}
+	
 	glBindBuffer(GL_PIXEL_PACK_BUFFER, this->ref->pboRenderDataID[i]);
 	
 	const u32 *__restrict mappedBufferPtr = (u32 *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
@@ -3771,6 +3762,8 @@ Render3DError OpenGLRenderer_2_1::RenderFinish()
 	}
 	
 	glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+	
+	ENDGL();
 	
 	this->gpuScreen3DHasNewData[i] = false;
 	

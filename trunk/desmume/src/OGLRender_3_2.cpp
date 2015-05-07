@@ -1045,6 +1045,11 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	OGLRenderRef &OGLRef = *this->ref;
 	this->doubleBufferIndex = (this->doubleBufferIndex + 1) & 0x01;
 	
+	if(!BEGINGL())
+	{
+		return OGLERROR_BEGINGL_FAILED;
+	}
+	
 	// Since glReadPixels() is called at the end of every render, we know that rendering
 	// must be synchronized at that time. Therefore, GL_MAP_UNSYNCHRONIZED_BIT should be
 	// safe to use.
@@ -1384,9 +1389,9 @@ Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, bool enableT
 	{
 		this->currTexture = newTexture;
 		//has the ogl renderer initialized the texture?
-		if(!this->currTexture->deleteCallback)
+		if(this->currTexture->GetDeleteCallback() == NULL)
 		{
-			this->currTexture->deleteCallback = &texDeleteCallback;
+			this->currTexture->SetDeleteCallback(&texDeleteCallback, this, NULL);
 			
 			if(OGLRef.freeTextureIDs.empty())
 			{
