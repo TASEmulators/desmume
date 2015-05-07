@@ -139,7 +139,7 @@ public:
 														// and only release the block when 3D rendering is finished. (Before reading the 3D layer, be
 														// sure to always call this function.)
 	
-	virtual Render3DError VramReconfigureSignal();		// Called when the emulator reconfigures its VRAM. Ypu may need to invalidate your texture cache.
+	virtual Render3DError VramReconfigureSignal();		// Called when the emulator reconfigures its VRAM. You may need to invalidate your texture cache.
 };
 
 #endif

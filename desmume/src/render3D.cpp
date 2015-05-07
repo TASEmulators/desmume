@@ -70,12 +70,6 @@ bool NDS_3D_ChangeCore(int newCore)
 		return result;
 	}
 	
-	if (newRenderInterface == gpu3D)
-	{
-		result = true;
-		return result;
-	}
-	
 	// Some resources are shared between renderers, such as the texture cache,
 	// so we need to shut down the current renderer now to ensure that any
 	// shared resources aren't in use.

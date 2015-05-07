@@ -1111,6 +1111,14 @@ static void* SoftRasterizer_RunClearFramebuffer(void *arg)
 	return NULL;
 }
 
+static void* SoftRasterizer_RunRenderEdgeMarkAndFog(void *arg)
+{
+	SoftRasterizerPostProcessParams *params = (SoftRasterizerPostProcessParams *)arg;
+	params->renderer->RenderEdgeMarkingAndFog(*params);
+	
+	return NULL;
+}
+
 void _HACK_Viewer_ExecUnit()
 {
 	_HACK_viewer_rasterizerUnit.mainLoop<false>();
@@ -1121,10 +1129,19 @@ static Render3D* SoftRasterizerRendererCreate()
 	return new SoftRasterizerRenderer;
 }
 
+static void SoftRasterizerRendererDestroy()
+{
+	if (CurrentRenderer != BaseRenderer)
+	{
+		delete (SoftRasterizerRenderer *)CurrentRenderer;
+		CurrentRenderer = BaseRenderer;
+	}
+}
+
 GPU3DInterface gpu3DRasterize = {
 	"SoftRasterizer",
 	SoftRasterizerRendererCreate,
-	Render3DBaseDestroy
+	SoftRasterizerRendererDestroy
 };
 
 SoftRasterizerRenderer::SoftRasterizerRenderer()
@@ -1159,15 +1176,35 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 			rasterizerUnit[0]._debug_thisPoly = false;
 			rasterizerUnit[0].SLI_MASK = 0;
 			rasterizerUnit[0].SLI_VALUE = 0;
+			
+			postprocessParam = new SoftRasterizerPostProcessParams[rasterizerCores];
+			postprocessParam[0].renderer = this;
+			postprocessParam[0].startLine = 0;
+			postprocessParam[0].endLine = _framebufferHeight;
+			postprocessParam[0].enableEdgeMarking = true;
+			postprocessParam[0].enableFog = true;
+			postprocessParam[0].fogColor = 0x80FFFFFF;
+			postprocessParam[0].fogAlphaOnly = false;
 		}
 		else
 		{
+			const size_t linesPerThread = _framebufferHeight / rasterizerCores;
+			postprocessParam = new SoftRasterizerPostProcessParams[rasterizerCores];
+			
 			for (size_t i = 0; i < rasterizerCores; i++)
 			{
 				rasterizerUnit[i]._debug_thisPoly = false;
 				rasterizerUnit[i].SLI_MASK = (rasterizerCores - 1);
 				rasterizerUnit[i].SLI_VALUE = i;
 				rasterizerUnitTask[i].start(false);
+				
+				postprocessParam[i].renderer = this;
+				postprocessParam[i].startLine = i * linesPerThread;
+				postprocessParam[i].endLine = (i < rasterizerCores - 1) ? (i + 1) * linesPerThread : _framebufferHeight;
+				postprocessParam[i].enableEdgeMarking = true;
+				postprocessParam[i].enableFog = true;
+				postprocessParam[i].fogColor = 0x80FFFFFF;
+				postprocessParam[i].fogAlphaOnly = false;
 			}
 		}
 		
@@ -1192,6 +1229,8 @@ SoftRasterizerRenderer::~SoftRasterizerRenderer()
 	}
 	
 	rasterizerUnitTasksInited = false;
+	delete[] postprocessParam;
+	postprocessParam = NULL;
 	
 	free(screenAttributes);
 	free(screenColor);
@@ -1499,8 +1538,14 @@ Render3DError SoftRasterizerRenderer::RenderGeometry(const GFX3D_State &renderSt
 	return RENDER3DERROR_NOERR;
 }
 
+// This method is currently unused right now, in favor of the new multithreaded
+// SoftRasterizerRenderer::RenderEdgeMarkingAndFog() method. But let's keep this
+// one around for reference just in case something goes horribly wrong with the
+// new multithreaded method.
 Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable, const bool useAntialias)
 {
+	// TODO: Old edge marking algorithm which tests only polyID, but checks the 8 surrounding pixels. Can this be removed?
+	
 	// this looks ok although it's still pretty much a hack,
 	// it needs to be redone with low-level accuracy at some point,
 	// but that should probably wait until the shape renderer is more accurate.
@@ -1513,20 +1558,21 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable, c
 	{
 		for (size_t x = 0; x < this->_framebufferWidth; x++, i++)
 		{
-			FragmentAttributes destFragment = screenAttributes[i];
-			u8 self = destFragment.opaquePolyID;
-			if(edgeMarkDisabled[self>>3]) continue;
-			if(destFragment.isTranslucentPoly) continue;
+			const FragmentAttributes dstAttributes = this->screenAttributes[i];
+			const u8 polyID = dstAttributes.opaquePolyID;
+			
+			if(this->edgeMarkDisabled[polyID>>3]) continue;
+			if(dstAttributes.isTranslucentPoly) continue;
 			
 			// > is used instead of != to prevent double edges
 			// between overlapping polys of different IDs.
 			// also note that the edge generally goes on the outside, not the inside, (maybe needs to change later)
 			// and that polys with the same edge color can make edges against each other.
 			
-			FragmentColor edgeColor = this->edgeMarkTable[self>>3];
+			FragmentColor edgeColor = this->edgeMarkTable[polyID>>3];
 			
-#define PIXOFFSET(dx,dy) ((dx)+(GFX3D_FRAMEBUFFER_WIDTH*(dy)))
-#define ISEDGE(dx,dy) ((x+(dx)!=GFX3D_FRAMEBUFFER_WIDTH) && (x+(dx)!=-1) && (y+(dy)!=GFX3D_FRAMEBUFFER_HEIGHT) && (y+(dy)!=-1) && self > screenAttributes[i+PIXOFFSET(dx,dy)].opaquePolyID)
+#define PIXOFFSET(dx,dy) ((dx)+(this->_framebufferWidth*(dy)))
+#define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID > this->screenAttributes[i+PIXOFFSET(dx,dy)].opaquePolyID)
 #define DRAWEDGE(dx,dy) alphaBlend(screenColor[i+PIXOFFSET(dx,dy)], edgeColor)
 			
 			bool upleft    = ISEDGE(-1,-1);
@@ -1558,7 +1604,6 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable, c
 #undef PIXOFFSET
 #undef ISEDGE
 #undef DRAWEDGE
-			
 		}
 	}
 	
@@ -1653,6 +1698,10 @@ Render3DError SoftRasterizerRenderer::UpdateFogTable(const u8 *fogDensityTable)
 	return RENDER3DERROR_NOERR;
 }
 
+// This method is currently unused right now, in favor of the new multithreaded
+// SoftRasterizerRenderer::RenderEdgeMarkingAndFog() method. But let's keep this
+// one around for reference just in case something goes horribly wrong with the
+// new multithreaded method.
 Render3DError SoftRasterizerRenderer::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly)
 {
 	u32 r = GFX3D_5TO6((color)&0x1F);
@@ -1688,6 +1737,99 @@ Render3DError SoftRasterizerRenderer::RenderFog(const u8 *densityTable, const u3
 			
 			FragmentColor &destFragmentColor = screenColor[i];
 			destFragmentColor.a = ((128-fog)*destFragmentColor.a + a*fog)>>7;
+		}
+	}
+	
+	return RENDER3DERROR_NOERR;
+}
+
+Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasterizerPostProcessParams &param)
+{
+	for (size_t i = param.startLine * this->_framebufferWidth, y = param.startLine; y < param.endLine; y++)
+	{
+		for (size_t x = 0; x < this->_framebufferWidth; x++, i++)
+		{
+			FragmentColor &dstColor = screenColor[i];
+			const FragmentAttributes dstAttributes = this->screenAttributes[i];
+			const u32 depth = dstAttributes.depth;
+			const u8 polyID = dstAttributes.opaquePolyID;
+			
+			// TODO: New edge marking algorithm which tests both polyID and depth, but only checks 4 surrounding pixels. Can we keep this one?
+			if (param.enableEdgeMarking)
+			{
+				// this looks ok although it's still pretty much a hack,
+				// it needs to be redone with low-level accuracy at some point,
+				// but that should probably wait until the shape renderer is more accurate.
+				// a good test case for edge marking is Sonic Rush:
+				// - the edges are completely sharp/opaque on the very brief title screen intro,
+				// - the level-start intro gets a pseudo-antialiasing effect around the silhouette,
+				// - the character edges in-level are clearly transparent, and also show well through shield powerups.
+				
+				FragmentColor edgeColor = this->edgeMarkTable[polyID>>3];
+				bool right = false;
+				bool down = false;
+				bool left = false;
+				bool up = false;
+				
+#define PIXOFFSET(dx,dy) ((dx)+(this->_framebufferWidth*(dy)))
+#define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID != this->screenAttributes[i+PIXOFFSET(dx,dy)].opaquePolyID && depth >= this->screenAttributes[i+PIXOFFSET(dx,dy)].depth)
+				
+				up		= ISEDGE( 0,-1);
+				left	= ISEDGE(-1, 0);
+				right	= ISEDGE( 1, 0);
+				down	= ISEDGE( 0, 1);
+				
+				if(this->edgeMarkDisabled[polyID>>3]) goto END_EDGE_MARK;
+				if(dstAttributes.isTranslucentPoly) goto END_EDGE_MARK;
+				
+				if (right)
+				{
+					edgeColor = this->edgeMarkTable[this->screenAttributes[i+PIXOFFSET( 1, 0)].opaquePolyID >> 3];
+					alphaBlend(dstColor, edgeColor);
+				}
+				else if (down)
+				{
+					edgeColor = this->edgeMarkTable[this->screenAttributes[i+PIXOFFSET( 0, 1)].opaquePolyID >> 3];
+					alphaBlend(dstColor, edgeColor);
+				}
+				else if (left)
+				{
+					edgeColor = this->edgeMarkTable[this->screenAttributes[i+PIXOFFSET(-1, 0)].opaquePolyID >> 3];
+					alphaBlend(dstColor, edgeColor);
+				}
+				else if (up)
+				{
+					edgeColor = this->edgeMarkTable[this->screenAttributes[i+PIXOFFSET( 0,-1)].opaquePolyID >> 3];
+					alphaBlend(dstColor, edgeColor);
+				}
+				
+#undef PIXOFFSET
+#undef ISEDGE
+#undef DRAWEDGE
+				
+END_EDGE_MARK: ;
+			}
+			
+			if (param.enableFog)
+			{
+				const u32 r = GFX3D_5TO6((param.fogColor)&0x1F);
+				const u32 g = GFX3D_5TO6((param.fogColor>>5)&0x1F);
+				const u32 b = GFX3D_5TO6((param.fogColor>>10)&0x1F);
+				const u32 a = (param.fogColor>>16)&0x1F;
+				
+				const size_t fogIndex = depth >> 9;
+				assert(fogIndex < 32768);
+				const u8 fog = (dstAttributes.isFogged) ? this->fogTable[fogIndex] : 0;
+				
+				if (!param.fogAlphaOnly)
+				{
+					dstColor.r = ((128-fog)*dstColor.r + r*fog)>>7;
+					dstColor.g = ((128-fog)*dstColor.g + g*fog)>>7;
+					dstColor.b = ((128-fog)*dstColor.b + b*fog)>>7;
+				}
+				
+				dstColor.a = ((128-fog)*dstColor.a + a*fog)>>7;
+			}
 		}
 	}
 	
@@ -1802,14 +1944,17 @@ Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
 	// If we're not multithreaded, then just do the post-processing steps now.
 	if (!this->_renderGeometryNeedsFinish)
 	{
-		if (this->currentRenderState->enableEdgeMarking)
+		if (this->currentRenderState->enableEdgeMarking || this->currentRenderState->enableFog)
 		{
-			this->RenderEdgeMarking(this->currentRenderState->edgeMarkColorTable, this->currentRenderState->enableAntialiasing);
-		}
-		
-		if (this->currentRenderState->enableFog)
-		{
-			this->RenderFog(this->currentRenderState->fogDensityTable, this->currentRenderState->fogColor, this->currentRenderState->fogOffset, this->currentRenderState->fogShift, this->currentRenderState->enableFogAlphaOnly);
+			this->postprocessParam[0].renderer = this;
+			this->postprocessParam[0].startLine = 0;
+			this->postprocessParam[0].endLine = this->_framebufferHeight;
+			this->postprocessParam[0].enableEdgeMarking = this->currentRenderState->enableEdgeMarking;
+			this->postprocessParam[0].enableFog = this->currentRenderState->enableFog;
+			this->postprocessParam[0].fogColor = this->currentRenderState->fogColor;
+			this->postprocessParam[0].fogAlphaOnly = this->currentRenderState->enableFogAlphaOnly;
+			
+			this->RenderEdgeMarkingAndFog(this->postprocessParam[0]);
 		}
 		
 		memcpy(gfx3d_convertedScreen, this->screenColor, this->_framebufferWidth * this->_framebufferHeight * sizeof(FragmentColor));
@@ -1825,21 +1970,31 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 		return RENDER3DERROR_NOERR;
 	}
 	
+	// Allow for the geometry rendering to finish.
 	this->_renderGeometryNeedsFinish = false;
-	
 	for (size_t i = 0; i < rasterizerCores; i++)
 	{
 		rasterizerUnitTask[i].finish();
 	}
 	
-	if (this->currentRenderState->enableEdgeMarking)
+	// Do multithreaded post-processing.
+	if (this->currentRenderState->enableEdgeMarking || this->currentRenderState->enableFog)
 	{
-		this->RenderEdgeMarking(this->currentRenderState->edgeMarkColorTable, this->currentRenderState->enableAntialiasing);
-	}
-	
-	if (this->currentRenderState->enableFog)
-	{
-		this->RenderFog(this->currentRenderState->fogDensityTable, this->currentRenderState->fogColor, this->currentRenderState->fogOffset, this->currentRenderState->fogShift, this->currentRenderState->enableFogAlphaOnly);
+		for (size_t i = 0; i < rasterizerCores; i++)
+		{
+			this->postprocessParam[i].enableEdgeMarking = this->currentRenderState->enableEdgeMarking;
+			this->postprocessParam[i].enableFog = this->currentRenderState->enableFog;
+			this->postprocessParam[i].fogColor = this->currentRenderState->fogColor;
+			this->postprocessParam[i].fogAlphaOnly = this->currentRenderState->enableFogAlphaOnly;
+			
+			rasterizerUnitTask[i].execute(&SoftRasterizer_RunRenderEdgeMarkAndFog, &this->postprocessParam[i]);
+		}
+		
+		// Allow for post-processing to finish.
+		for (size_t i = 0; i < rasterizerCores; i++)
+		{
+			rasterizerUnitTask[i].finish();
+		}
 	}
 	
 	memcpy(gfx3d_convertedScreen, this->screenColor, this->_framebufferWidth * this->_framebufferHeight * sizeof(FragmentColor));

@@ -24,6 +24,18 @@
 extern GPU3DInterface gpu3DRasterize;
 
 class TexCacheItem;
+class SoftRasterizerRenderer;
+
+struct SoftRasterizerPostProcessParams
+{
+	SoftRasterizerRenderer *renderer;
+	size_t startLine;
+	size_t endLine;
+	bool enableEdgeMarking;
+	bool enableFog;
+	u32 fogColor;
+	bool fogAlphaOnly;
+};
 
 class SoftRasterizerRenderer : public Render3D
 {
@@ -64,6 +76,7 @@ public:
 	size_t _framebufferWidth;
 	size_t _framebufferHeight;
 	GFX3D_State *currentRenderState;
+	SoftRasterizerPostProcessParams *postprocessParam;
 	
 	SoftRasterizerRenderer();
 	virtual ~SoftRasterizerRenderer();
@@ -74,6 +87,7 @@ public:
 	void setupTextures();
 	Render3DError UpdateEdgeMarkColorTable(const u16 *edgeMarkColorTable);
 	Render3DError UpdateFogTable(const u8 *fogDensityTable);
+	Render3DError RenderEdgeMarkingAndFog(const SoftRasterizerPostProcessParams &param);
 	
 	// Base rendering methods
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
