@@ -330,11 +330,25 @@ union GLvec2
 	GLfloat v[2];
 };
 
+union GLvec3
+{
+	struct { GLfloat r, g, b; };
+	struct { GLfloat x, y, z; };
+	GLfloat v[3];
+};
+
 union GLvec4
 {
 	struct { GLfloat r, g, b, a; };
 	struct { GLfloat x, y, z, w; };
 	GLfloat v[4];
+};
+
+struct OGLVertex
+{
+	GLvec4 position;
+	GLvec2 texCoord;
+	GLvec3 color;
 };
 
 struct OGLRenderStates
@@ -427,19 +441,6 @@ struct OGLRenderRef
 	GLuint fragmentFogShaderID;
 	GLuint programEdgeMarkID;
 	GLuint programFogID;
-	
-	GLuint uniformBlockRenderStatesGeometry;
-	GLuint uniformBlockRenderStatesEdgeMark;
-	GLuint uniformBlockRenderStatesFog;
-	GLuint uniformTexBufferPolyStates;
-	
-	GLuint uniformTexRenderObject;
-	GLuint uniformTexToonTable;
-	GLuint uniformTexGDepth_EdgeMark;
-	GLuint uniformTexGPolyID_EdgeMark;
-	GLuint uniformTexGColor_Fog;
-	GLuint uniformTexGDepth_Fog;
-	GLuint uniformTexGFog_Fog;
 	
 	GLint uniformFramebufferSize;
 	GLint uniformStateToonShadingMode;
@@ -655,7 +656,7 @@ protected:
 	
 	// Base rendering methods
 	virtual Render3DError BeginRender(const GFX3D &engine);
-	virtual Render3DError RenderGeometry(const GFX3D_State &renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
+	virtual Render3DError RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList);
 	virtual Render3DError EndRender(const u64 frameCount);
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);

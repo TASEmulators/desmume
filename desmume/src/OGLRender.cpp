@@ -578,28 +578,31 @@ void texDeleteCallback(TexCacheItem *item)
 }
 
 template<bool require_profile, bool enable_3_2>
-static char OGLInit(void)
+static Render3D* OGLInit()
 {
-	char result = 0;
+	OpenGLRenderer *newRenderer = NULL;
 	Render3DError error = OGLERROR_NOERR;
 	
-	if(!oglrender_init)
-		return result;
-	if(!oglrender_init())
-		return result;
-	
-	result = Default3D_Init();
-	if (result == 0)
+	if (oglrender_init == NULL)
 	{
-		return result;
+		return NULL;
 	}
-
-	if(!BEGINGL())
+	
+	if (!oglrender_init())
+	{
+		return NULL;
+	}
+	
+	if (!BEGINGL())
 	{
 		INFO("OpenGL<%s,%s>: Could not initialize -- BEGINGL() failed.\n",require_profile?"force":"auto",enable_3_2?"3_2":"old");
-		result = 0;
-		return result;
+		return NULL;
 	}
+	
+	// Force the creation of a new rendering object since we don't know what OpenGL version
+	// the user might be requesting.
+	delete _OGLRenderer;
+	_OGLRenderer = NULL;
 	
 	// Get OpenGL info
 	const char *oglVersionString = (const char *)glGetString(GL_VERSION);
@@ -611,9 +614,8 @@ static char OGLInit(void)
 	// http://forums.desmume.org/viewtopic.php?id=9286
 	if(!strcmp(oglVendorString,"Intel") && strstr(oglRendererString,"965")) 
 	{
-		INFO("Incompatible graphic card detected. Disabling OpenGL support.\n");
-		result = 0;
-		return result;
+		INFO("OpenGL: Incompatible graphic card detected. Disabling OpenGL support.\n");
+		return _OGLRenderer;
 	}
 	
 	// Check the driver's OpenGL version
@@ -625,74 +627,72 @@ static char OGLInit(void)
 			 OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION,
 			 oglVersionString, oglVendorString, oglRendererString);
 		
-		result = 0;
-		return result;
+		return _OGLRenderer;
 	}
 	
 	// Create new OpenGL rendering object
-	if(enable_3_2)
+	if (enable_3_2)
 	{
 		if (OGLLoadEntryPoints_3_2_Func != NULL && OGLCreateRenderer_3_2_Func != NULL)
 		{
 			OGLLoadEntryPoints_3_2_Func();
 			OGLLoadEntryPoints_Legacy(); //zero 04-feb-2013 - this seems to be necessary as well
-			OGLCreateRenderer_3_2_Func(&_OGLRenderer);
+			OGLCreateRenderer_3_2_Func(&newRenderer);
 		}
 		else 
 		{
 			if(require_profile)
-				return 0;
+				return _OGLRenderer;
 		}
 	}
 	
 	// If the renderer doesn't initialize with OpenGL v3.2 or higher, fall back
 	// to one of the lower versions.
-	if (_OGLRenderer == NULL)
+	if (newRenderer == NULL)
 	{
 		OGLLoadEntryPoints_Legacy();
 		
 		if (IsVersionSupported(2, 1, 0))
 		{
-			_OGLRenderer = new OpenGLRenderer_2_1;
-			_OGLRenderer->SetVersion(2, 1, 0);
+			newRenderer = new OpenGLRenderer_2_1;
+			newRenderer->SetVersion(2, 1, 0);
 		}
 		else if (IsVersionSupported(2, 0, 0))
 		{
-			_OGLRenderer = new OpenGLRenderer_2_0;
-			_OGLRenderer->SetVersion(2, 0, 0);
+			newRenderer = new OpenGLRenderer_2_0;
+			newRenderer->SetVersion(2, 0, 0);
 		}
 		else if (IsVersionSupported(1, 5, 0))
 		{
-			_OGLRenderer = new OpenGLRenderer_1_5;
-			_OGLRenderer->SetVersion(1, 5, 0);
+			newRenderer = new OpenGLRenderer_1_5;
+			newRenderer->SetVersion(1, 5, 0);
 		}
 		else if (IsVersionSupported(1, 4, 0))
 		{
-			_OGLRenderer = new OpenGLRenderer_1_4;
-			_OGLRenderer->SetVersion(1, 4, 0);
+			newRenderer = new OpenGLRenderer_1_4;
+			newRenderer->SetVersion(1, 4, 0);
 		}
 		else if (IsVersionSupported(1, 3, 0))
 		{
-			_OGLRenderer = new OpenGLRenderer_1_3;
-			_OGLRenderer->SetVersion(1, 3, 0);
+			newRenderer = new OpenGLRenderer_1_3;
+			newRenderer->SetVersion(1, 3, 0);
 		}
 		else if (IsVersionSupported(1, 2, 0))
 		{
-			_OGLRenderer = new OpenGLRenderer_1_2;
-			_OGLRenderer->SetVersion(1, 2, 0);
+			newRenderer = new OpenGLRenderer_1_2;
+			newRenderer->SetVersion(1, 2, 0);
 		}
 	}
 	
-	if (_OGLRenderer == NULL)
+	if (newRenderer == NULL)
 	{
 		INFO("OpenGL: Renderer did not initialize. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
 			 oglVersionString, oglVendorString, oglRendererString);
-		result = 0;
-		return result;
+		return _OGLRenderer;
 	}
 	
 	// Initialize OpenGL extensions
-	error = _OGLRenderer->InitExtensions();
+	error = newRenderer->InitExtensions();
 	if (error != OGLERROR_NOERR)
 	{
 		if ( IsVersionSupported(2, 0, 0) &&
@@ -701,31 +701,48 @@ static char OGLInit(void)
 			 error == OGLERROR_FRAGMENT_SHADER_PROGRAM_LOAD_ERROR) )
 		{
 			INFO("OpenGL: Shaders are not working, even though they should be. Disabling 3D renderer.\n");
-			result = 0;
-			return result;
+			delete newRenderer;
+			return _OGLRenderer;
 		}
 		else if (IsVersionSupported(3, 0, 0) && error == OGLERROR_FBO_CREATE_ERROR && OGLLoadEntryPoints_3_2_Func != NULL)
 		{
 			INFO("OpenGL: FBOs are not working, even though they should be. Disabling 3D renderer.\n");
-			result = 0;
-			return result;
+			delete newRenderer;
+			return _OGLRenderer;
 		}
 	}
 	
 	// Initialization finished -- reset the renderer
-	_OGLRenderer->Reset();
+	newRenderer->Reset();
 	
 	ENDGL();
 	
 	unsigned int major = 0;
 	unsigned int minor = 0;
 	unsigned int revision = 0;
-	_OGLRenderer->GetVersion(&major, &minor, &revision);
+	newRenderer->GetVersion(&major, &minor, &revision);
 	
 	INFO("OpenGL: Renderer initialized successfully (v%u.%u.%u).\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
 		 major, minor, revision, oglVersionString, oglVendorString, oglRendererString);
 	
-	return result;
+	_OGLRenderer = newRenderer;
+	return _OGLRenderer;
+}
+
+static void OGLClose()
+{
+	if(!BEGINGL())
+		return;
+	
+	if (CurrentRenderer == _OGLRenderer)
+	{
+		CurrentRenderer = NULL;
+	}
+	
+	delete _OGLRenderer;
+	_OGLRenderer = NULL;
+	
+	ENDGL();
 }
 
 static void OGLReset()
@@ -736,19 +753,6 @@ static void OGLReset()
 	_OGLRenderer->Reset();
 	
 	ENDGL();
-}
-
-static void OGLClose()
-{
-	if(!BEGINGL())
-		return;
-	
-	delete _OGLRenderer;
-	_OGLRenderer = NULL;
-	
-	ENDGL();
-	
-	Default3D_Close();
 }
 
 static void OGLRender()
@@ -785,8 +789,8 @@ static void OGLRenderFinish()
 GPU3DInterface gpu3Dgl = {
 	"OpenGL",
 	OGLInit<false,true>,
-	OGLReset,
 	OGLClose,
+	OGLReset,
 	OGLRender,
 	OGLRenderFinish,
 	OGLVramReconfigureSignal
@@ -796,8 +800,8 @@ GPU3DInterface gpu3Dgl = {
 GPU3DInterface gpu3DglOld = {
 	"OpenGL Old",
 	OGLInit<true,false>,
-	OGLReset,
 	OGLClose,
+	OGLReset,
 	OGLRender,
 	OGLRenderFinish,
 	OGLVramReconfigureSignal
@@ -807,8 +811,8 @@ GPU3DInterface gpu3DglOld = {
 GPU3DInterface gpu3Dgl_3_2 = {
 	"OpenGL 3.2",
 	OGLInit<true,true>,
-	OGLReset,
 	OGLClose,
+	OGLReset,
 	OGLRender,
 	OGLRenderFinish,
 	OGLVramReconfigureSignal
@@ -816,6 +820,9 @@ GPU3DInterface gpu3Dgl_3_2 = {
 
 OpenGLRenderer::OpenGLRenderer()
 {
+	_renderID = RENDERID_OPENGL_AUTO;
+	_renderName = "OpenGL";
+	
 	versionMajor = 0;
 	versionMinor = 0;
 	versionRevision = 0;
@@ -967,7 +974,7 @@ OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 	DestroyFBOs();
 	DestroyMultisampledFBO();
 	
-	//kill the tex cache to free all the texture ids
+	// Kill the texture cache now before all of our texture IDs disappear.
 	TexCache_Reset();
 	
 	while(!ref->freeTextureIDs.empty())
@@ -1196,10 +1203,10 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgramShaderLocations()
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	// Set up shader uniforms
-	OGLRef.uniformTexRenderObject				= glGetUniformLocation(OGLRef.programGeometryID, "texRenderObject");
-	OGLRef.uniformTexToonTable					= glGetUniformLocation(OGLRef.programGeometryID, "texToonTable");
-	glUniform1i(OGLRef.uniformTexRenderObject, 0);
-	glUniform1i(OGLRef.uniformTexToonTable, OGLTextureUnitID_ToonTable);
+	const GLint uniformTexRenderObject			= glGetUniformLocation(OGLRef.programGeometryID, "texRenderObject");
+	const GLint uniformTexToonTable				= glGetUniformLocation(OGLRef.programGeometryID, "texToonTable");
+	glUniform1i(uniformTexRenderObject, 0);
+	glUniform1i(uniformTexToonTable, OGLTextureUnitID_ToonTable);
 	
 	OGLRef.uniformStateToonShadingMode			= glGetUniformLocation(OGLRef.programGeometryID, "stateToonShadingMode");
 	OGLRef.uniformStateEnableAlphaTest			= glGetUniformLocation(OGLRef.programGeometryID, "stateEnableAlphaTest");
@@ -2071,7 +2078,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
+Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	const size_t polyCount = polyList->count;
@@ -2413,7 +2420,7 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 	const PolygonTexParams params = thePoly.getTexParams();
 	
 	// Check if we need to use textures
-	if (thePoly.texParam == 0 || params.texFormat == TEXMODE_NONE || !enableTexturing)
+	if (params.texFormat == TEXMODE_NONE || !enableTexturing)
 	{
 		if (this->isShaderSupported)
 		{
@@ -2537,6 +2544,14 @@ Render3DError OpenGLRenderer_1_2::Reset()
 	OGLRef.vtxPtrPosition = (GLvoid *)offsetof(VERT, coord);
 	OGLRef.vtxPtrTexCoord = (GLvoid *)offsetof(VERT, texcoord);
 	OGLRef.vtxPtrColor = (this->isShaderSupported) ? (GLvoid *)offsetof(VERT, color) : OGLRef.color4fBuffer;
+	
+	memset(this->clearImageColor16Buffer, 0, sizeof(this->clearImageColor16Buffer));
+	memset(this->clearImageDepthBuffer, 0, sizeof(this->clearImageDepthBuffer));
+	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
+	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
+	memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_convertedScreen));
+	
+	TexCache_Reset();
 	
 	return OGLERROR_NOERR;
 }
@@ -3116,13 +3131,13 @@ Render3DError OpenGLRenderer_2_0::InitEdgeMarkProgramShaderLocations()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	OGLRef.uniformTexGDepth_EdgeMark	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInFragDepth");
-	OGLRef.uniformTexGPolyID_EdgeMark	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInPolyID");
-	glUniform1i(OGLRef.uniformTexGDepth_EdgeMark, OGLTextureUnitID_GDepth);
-	glUniform1i(OGLRef.uniformTexGPolyID_EdgeMark, OGLTextureUnitID_GPolyID);
+	const GLint uniformTexGDepth	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInFragDepth");
+	const GLint uniformTexGPolyID	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInPolyID");
+	glUniform1i(uniformTexGDepth, OGLTextureUnitID_GDepth);
+	glUniform1i(uniformTexGPolyID, OGLTextureUnitID_GPolyID);
 	
-	OGLRef.uniformFramebufferSize		= glGetUniformLocation(OGLRef.programEdgeMarkID, "framebufferSize");
-	OGLRef.uniformStateEdgeColor		= glGetUniformLocation(OGLRef.programEdgeMarkID, "stateEdgeColor");
+	OGLRef.uniformFramebufferSize	= glGetUniformLocation(OGLRef.programEdgeMarkID, "framebufferSize");
+	OGLRef.uniformStateEdgeColor	= glGetUniformLocation(OGLRef.programEdgeMarkID, "stateEdgeColor");
 	
 	return OGLERROR_NOERR;
 }
@@ -3307,12 +3322,12 @@ Render3DError OpenGLRenderer_2_0::InitFogProgramShaderLocations()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	OGLRef.uniformTexGColor_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFragColor");
-	OGLRef.uniformTexGDepth_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFragDepth");
-	OGLRef.uniformTexGFog_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFogAttributes");
-	glUniform1i(OGLRef.uniformTexGColor_Fog, OGLTextureUnitID_GColor);
-	glUniform1i(OGLRef.uniformTexGDepth_Fog, OGLTextureUnitID_GDepth);
-	glUniform1i(OGLRef.uniformTexGFog_Fog, OGLTextureUnitID_FogAttr);
+	const GLint uniformTexGColor			= glGetUniformLocation(OGLRef.programFogID, "texInFragColor");
+	const GLint uniformTexGDepth			= glGetUniformLocation(OGLRef.programFogID, "texInFragDepth");
+	const GLint uniformTexGFog				= glGetUniformLocation(OGLRef.programFogID, "texInFogAttributes");
+	glUniform1i(uniformTexGColor, OGLTextureUnitID_GColor);
+	glUniform1i(uniformTexGDepth, OGLTextureUnitID_GDepth);
+	glUniform1i(uniformTexGFog, OGLTextureUnitID_FogAttr);
 	
 	OGLRef.uniformStateEnableFogAlphaOnly	= glGetUniformLocation(OGLRef.programFogID, "stateEnableFogAlphaOnly");
 	OGLRef.uniformStateFogColor				= glGetUniformLocation(OGLRef.programFogID, "stateFogColor");
@@ -3675,7 +3690,7 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 	const PolygonTexParams params = thePoly.getTexParams();
 	
 	// Check if we need to use textures
-	if (thePoly.texParam == 0 || params.texFormat == TEXMODE_NONE || !enableTexturing)
+	if (params.texFormat == TEXMODE_NONE || !enableTexturing)
 	{
 		glUniform1i(OGLRef.uniformPolyEnableTexture, GL_FALSE);
 		return OGLERROR_NOERR;

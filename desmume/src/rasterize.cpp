@@ -120,8 +120,6 @@ static FORCEINLINE int fastFloor(float f)
 //	verts[vert_index] = &rawvert;
 //}
 
-static SoftRasterizerRenderer *_SoftRastRenderer = NULL;
-
 static FORCEINLINE int iround(float f) {
 	return (int)f; //lol
 }
@@ -1118,60 +1116,26 @@ void _HACK_Viewer_ExecUnit()
 	_HACK_viewer_rasterizerUnit.mainLoop<false>();
 }
 
-static char SoftRastInit(void)
+static Render3D* SoftRastInit()
 {
-	char result = Default3D_Init();
-	if (result == 0)
-	{
-		return result;
-	}
-	
-	if (_SoftRastRenderer == NULL)
-	{
-		_SoftRastRenderer = new SoftRasterizerRenderer;
-	}
-	
-	return result;
-}
-
-static void SoftRastReset()
-{
-	_SoftRastRenderer->Reset();
-}
-
-static void SoftRastClose()
-{
-	delete _SoftRastRenderer;
-	_SoftRastRenderer = NULL;
-}
-
-static void SoftRastRender()
-{
-	_SoftRastRenderer->Render(gfx3d);
-}
-
-static void SoftRastVramReconfigureSignal()
-{
-	_SoftRastRenderer->VramReconfigureSignal();
-}
-
-static void SoftRastRenderFinish()
-{
-	_SoftRastRenderer->RenderFinish();
+	return new SoftRasterizerRenderer;
 }
 
 GPU3DInterface gpu3DRasterize = {
 	"SoftRasterizer",
 	SoftRastInit,
-	SoftRastReset,
-	SoftRastClose,
-	SoftRastRender,
-	SoftRastRenderFinish,
-	SoftRastVramReconfigureSignal
+	Default3D_Close,
+	Default3D_Reset,
+	Default3D_Render,
+	Default3D_RenderFinish,
+	Default3D_VramReconfigureSignal
 };
 
 SoftRasterizerRenderer::SoftRasterizerRenderer()
 {
+	_renderID = RENDERID_SOFTRASTERIZER;
+	_renderName = "SoftRasterizer";
+	
 	_debug_drawClippedUserPoly = -1;
 	clippedPolys = clipper.clippedPolys = new GFX3D_Clipper::TClippedPoly[POLYLIST_SIZE*2];
 	
@@ -1235,8 +1199,6 @@ SoftRasterizerRenderer::~SoftRasterizerRenderer()
 	
 	free(screenAttributes);
 	free(screenColor);
-	
-	Default3D_Close();
 }
 
 Render3DError SoftRasterizerRenderer::InitTables()
@@ -1507,7 +1469,7 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError SoftRasterizerRenderer::RenderGeometry(const GFX3D_State &renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
+Render3DError SoftRasterizerRenderer::RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList)
 {
 	// If multithreaded, allow for states to finish setting up
 	if (this->_stateSetupNeedsFinish)
@@ -1812,7 +1774,14 @@ Render3DError SoftRasterizerRenderer::Reset()
 	
 	this->_stateSetupNeedsFinish = false;
 	this->_renderGeometryNeedsFinish = false;
-	Default3D_Reset();
+	
+	memset(this->clearImageColor16Buffer, 0, sizeof(this->clearImageColor16Buffer));
+	memset(this->clearImageDepthBuffer, 0, sizeof(this->clearImageDepthBuffer));
+	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
+	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
+	memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_convertedScreen));
+	
+	TexCache_Reset();
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -1827,7 +1796,7 @@ Render3DError SoftRasterizerRenderer::Render(const GFX3D &engine)
 		return error;
 	}
 	
-	this->RenderGeometry(engine.renderState, engine.vertlist, engine.polylist, &engine.indexlist);
+	this->RenderGeometry(engine.renderState, engine.polylist, &engine.indexlist);
 	this->EndRender(engine.frameCtr);
 	
 	return error;

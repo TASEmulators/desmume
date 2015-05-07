@@ -22,36 +22,35 @@
 #include "gfx3d.h"
 #include "types.h"
 
-//not using this right now
-#define CALL_CONVENTION
-
 #define kUnsetTranslucentPolyID 255
+
+class Render3D;
 
 typedef struct Render3DInterface
 {
 	// The name of the plugin, this name will appear in the plugins list
-	const char * name;
-
-	//called once when the plugin starts up
-	char (CALL_CONVENTION*  NDS_3D_Init)					();
+	const char *name;
 	
-	//called when the emulator resets (is this necessary?)
-	void (CALL_CONVENTION*  NDS_3D_Reset)					();
+	//called once when the plugin starts up
+	Render3D* (*NDS_3D_Init)();
 	
 	//called when the plugin shuts down
-	void (CALL_CONVENTION*  NDS_3D_Close)					();
+	void (*NDS_3D_Close)();
+	
+	//called when the emulator resets
+	void (*NDS_3D_Reset)();
 	
 	//called when the renderer should do its job and render the current display lists
-	void (CALL_CONVENTION*  NDS_3D_Render)					();
+	void (*NDS_3D_Render)();
 	
 	// Called whenever 3D rendering needs to finish. This function should block the calling thread
 	// and only release the block when 3D rendering is finished. (Before reading the 3D layer, be
 	// sure to always call this function.)
-	void (CALL_CONVENTION*	NDS_3D_RenderFinish)			();
-
+	void (*NDS_3D_RenderFinish)();
+	
 	//called when the emulator reconfigures its vram. you may need to invalidate your texture cache.
-	void (CALL_CONVENTION*  NDS_3D_VramReconfigureSignal)	();
-
+	void (*NDS_3D_VramReconfigureSignal)();
+	
 } GPU3DInterface;
 
 extern int cur3DCore;
@@ -64,17 +63,28 @@ extern GPU3DInterface *core3DList[];
 extern GPU3DInterface gpu3DNull;
 
 // Extern pointer
+extern Render3D *CurrentRenderer;
 extern GPU3DInterface *gpu3D;
 
-char Default3D_Init();
-void Default3D_Reset();
+Render3D* Default3D_Init();
 void Default3D_Close();
+void Default3D_Reset();
 void Default3D_Render();
 void Default3D_RenderFinish();
 void Default3D_VramReconfigureSignal();
 
-void NDS_3D_SetDriver (int core3DIndex);
+void Render3D_Init();
+void Render3D_DeInit();
 bool NDS_3D_ChangeCore(int newCore);
+
+enum RendererID
+{
+	RENDERID_NULL				= 0,
+	RENDERID_SOFTRASTERIZER		= 1,
+	RENDERID_OPENGL_AUTO		= 1000,
+	RENDERID_OPENGL_LEGACY		= 1001,
+	RENDERID_OPENGL_3_2			= 1002
+};
 
 enum Render3DErrorCode
 {
@@ -112,13 +122,16 @@ inline FragmentColor MakeFragmentColor(u8 r, u8 g,u8 b,u8 a)
 class Render3D
 {
 protected:
+	RendererID _renderID;
+	std::string _renderName;
+	
 	CACHE_ALIGN u16 clearImageColor16Buffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
 	CACHE_ALIGN u32 clearImageDepthBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
 	CACHE_ALIGN bool clearImageFogBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
 	CACHE_ALIGN u8 clearImagePolyIDBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
 	
 	virtual Render3DError BeginRender(const GFX3D &engine);
-	virtual Render3DError RenderGeometry(const GFX3D_State &renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
+	virtual Render3DError RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList);
 	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
 	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
 	virtual Render3DError EndRender(const u64 frameCount);
@@ -132,6 +145,10 @@ protected:
 	
 public:
 	Render3D();
+	~Render3D();
+	
+	RendererID GetRenderID();
+	std::string GetName();
 	
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
@@ -143,4 +160,3 @@ public:
 };
 
 #endif
- 
