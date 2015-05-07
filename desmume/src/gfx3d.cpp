@@ -546,7 +546,7 @@ void gfx3d_init()
 
 void gfx3d_reset()
 {
-	gpu3D->NDS_3D_RenderFinish();
+	CurrentRenderer->RenderFinish();
 	
 #ifdef _SHOW_VTX_COUNTERS
 	max_polys = max_verts = 0;
@@ -625,6 +625,8 @@ void gfx3d_reset()
 
 	GFX_PIPEclear();
 	GFX_FIFOclear();
+	
+	CurrentRenderer->Reset();
 }
 
 
@@ -2284,7 +2286,7 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 		return;
 	}
 	
-	gpu3D->NDS_3D_Render();
+	CurrentRenderer->Render(gfx3d);
 }
 
 //#define _3D_LOG
@@ -2395,7 +2397,7 @@ void gfx3d_glGetLightColor(unsigned int index, unsigned int* dest)
 
 void gfx3d_GetLineData(int line, u8** dst)
 {
-	gpu3D->NDS_3D_RenderFinish();
+	CurrentRenderer->RenderFinish();
 	*dst = gfx3d_convertedScreen+((line)<<(8+2));
 }
 
@@ -2511,7 +2513,7 @@ SFORMAT SF_GFX3D[]={
 //-------------savestate
 void gfx3d_savestate(EMUFILE* os)
 {
-	gpu3D->NDS_3D_RenderFinish();
+	CurrentRenderer->RenderFinish();
 	
 	//version
 	write32le(4,os);

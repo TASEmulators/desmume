@@ -2510,7 +2510,6 @@ void NDS_Reset()
 
 	Screen_Reset();
 	gfx3d_reset();
-	gpu3D->NDS_3D_Reset();
 
 	WIFI_Reset();
 	memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);

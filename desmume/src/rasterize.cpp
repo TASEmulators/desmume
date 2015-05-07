@@ -1116,19 +1116,15 @@ void _HACK_Viewer_ExecUnit()
 	_HACK_viewer_rasterizerUnit.mainLoop<false>();
 }
 
-static Render3D* SoftRastInit()
+static Render3D* SoftRasterizerRendererCreate()
 {
 	return new SoftRasterizerRenderer;
 }
 
 GPU3DInterface gpu3DRasterize = {
 	"SoftRasterizer",
-	SoftRastInit,
-	Default3D_Close,
-	Default3D_Reset,
-	Default3D_Render,
-	Default3D_RenderFinish,
-	Default3D_VramReconfigureSignal
+	SoftRasterizerRendererCreate,
+	Render3DBaseDestroy
 };
 
 SoftRasterizerRenderer::SoftRasterizerRenderer()
@@ -1779,7 +1775,6 @@ Render3DError SoftRasterizerRenderer::Reset()
 	memset(this->clearImageDepthBuffer, 0, sizeof(this->clearImageDepthBuffer));
 	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
 	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
-	memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_convertedScreen));
 	
 	TexCache_Reset();
 	

@@ -34,21 +34,31 @@ enum TexCache_TexFormat
 class TexCacheItem;
 
 typedef std::multimap<u32,TexCacheItem*> TTexCacheItemMultimap;
+typedef void (*TexCacheItemDeleteCallback)(TexCacheItem *texItem, void *param1, void *param2);
 
 class TexCacheItem
 {
+private:
+	TexCacheItemDeleteCallback _deleteCallback;
+	void *_deleteCallbackParam1;
+	void *_deleteCallbackParam2;
+	
 public:
 	TexCacheItem() 
 		: decode_len(0)
 		, decoded(NULL)
 		, suspectedInvalid(false)
 		, assumedInvalid(false)
-		, deleteCallback(NULL)
+		, _deleteCallback(NULL)
+		, _deleteCallbackParam1(NULL)
+		, _deleteCallbackParam2(NULL)
 		, cacheFormat(TexFormat_None)
 	{}
-	~TexCacheItem() {
+	
+	~TexCacheItem()
+	{
 		delete[] decoded;
-		if(deleteCallback) deleteCallback(this);
+		if(_deleteCallback != NULL) _deleteCallback(this, this->_deleteCallbackParam1, this->_deleteCallbackParam2);
 	}
 	u32 decode_len;
 	u32 mode;
@@ -64,8 +74,6 @@ public:
 	float invSizeX, invSizeY;
 
 	u64 texid; //used by ogl renderer for the texid
-	void (*deleteCallback)(TexCacheItem*);
-
 	TexCache_TexFormat cacheFormat;
 
 	struct Dump {
@@ -77,6 +85,18 @@ public:
 		u8* texture;
 		u8 palette[256*2];
 	} dump;
+	
+	TexCacheItemDeleteCallback GetDeleteCallback()
+	{
+		return this->_deleteCallback;
+	}
+	
+	void SetDeleteCallback(TexCacheItemDeleteCallback callbackFunc, void *inParam1, void *inParam2)
+	{
+		this->_deleteCallback = callbackFunc;
+		this->_deleteCallbackParam1 = inParam1;
+		this->_deleteCallbackParam2 = inParam2;
+	}
 };
 
 void TexCache_Invalidate();
