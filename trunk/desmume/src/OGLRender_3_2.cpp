@@ -549,13 +549,13 @@ Render3DError OpenGLRenderer_3_2::InitEdgeMarkProgramShaderLocations()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	OGLRef.uniformBlockRenderStatesEdgeMark = glGetUniformBlockIndex(OGLRef.programEdgeMarkID, "RenderStates");
-	glUniformBlockBinding(OGLRef.programEdgeMarkID, OGLRef.uniformBlockRenderStatesEdgeMark, OGLBindingPointID_RenderStates);
+	const GLuint uniformBlockRenderStates = glGetUniformBlockIndex(OGLRef.programEdgeMarkID, "RenderStates");
+	glUniformBlockBinding(OGLRef.programEdgeMarkID, uniformBlockRenderStates, OGLBindingPointID_RenderStates);
 	
-	OGLRef.uniformTexGDepth_EdgeMark	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInFragDepth");
-	OGLRef.uniformTexGPolyID_EdgeMark	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInPolyID");
-	glUniform1i(OGLRef.uniformTexGDepth_EdgeMark, OGLTextureUnitID_GDepth);
-	glUniform1i(OGLRef.uniformTexGPolyID_EdgeMark, OGLTextureUnitID_GPolyID);
+	const GLint uniformTexGDepth	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInFragDepth");
+	const GLint uniformTexGPolyID	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInPolyID");
+	glUniform1i(uniformTexGDepth, OGLTextureUnitID_GDepth);
+	glUniform1i(uniformTexGPolyID, OGLTextureUnitID_GPolyID);
 	
 	return OGLERROR_NOERR;
 }
@@ -574,15 +574,15 @@ Render3DError OpenGLRenderer_3_2::InitFogProgramShaderLocations()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	OGLRef.uniformBlockRenderStatesFog = glGetUniformBlockIndex(OGLRef.programFogID, "RenderStates");
-	glUniformBlockBinding(OGLRef.programFogID, OGLRef.uniformBlockRenderStatesFog, OGLBindingPointID_RenderStates);
+	const GLuint uniformBlockRenderStates = glGetUniformBlockIndex(OGLRef.programFogID, "RenderStates");
+	glUniformBlockBinding(OGLRef.programFogID, uniformBlockRenderStates, OGLBindingPointID_RenderStates);
 	
-	OGLRef.uniformTexGColor_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFragColor");
-	OGLRef.uniformTexGDepth_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFragDepth");
-	OGLRef.uniformTexGFog_Fog				= glGetUniformLocation(OGLRef.programFogID, "texInFogAttributes");
-	glUniform1i(OGLRef.uniformTexGColor_Fog, OGLTextureUnitID_GColor);
-	glUniform1i(OGLRef.uniformTexGDepth_Fog, OGLTextureUnitID_GDepth);
-	glUniform1i(OGLRef.uniformTexGFog_Fog, OGLTextureUnitID_FogAttr);
+	const GLint uniformTexGColor	= glGetUniformLocation(OGLRef.programFogID, "texInFragColor");
+	const GLint uniformTexGDepth	= glGetUniformLocation(OGLRef.programFogID, "texInFragDepth");
+	const GLint uniformTexGFog		= glGetUniformLocation(OGLRef.programFogID, "texInFogAttributes");
+	glUniform1i(uniformTexGColor, OGLTextureUnitID_GColor);
+	glUniform1i(uniformTexGDepth, OGLTextureUnitID_GDepth);
+	glUniform1i(uniformTexGFog, OGLTextureUnitID_FogAttr);
 	
 	return OGLERROR_NOERR;
 }
@@ -915,11 +915,11 @@ Render3DError OpenGLRenderer_3_2::InitGeometryProgramShaderLocations()
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	// Set up render states UBO
-	OGLRef.uniformBlockRenderStatesGeometry		= glGetUniformBlockIndex(OGLRef.programGeometryID, "RenderStates");
-	glUniformBlockBinding(OGLRef.programGeometryID, OGLRef.uniformBlockRenderStatesGeometry, OGLBindingPointID_RenderStates);
+	const GLuint uniformBlockRenderStates	= glGetUniformBlockIndex(OGLRef.programGeometryID, "RenderStates");
+	glUniformBlockBinding(OGLRef.programGeometryID, uniformBlockRenderStates, OGLBindingPointID_RenderStates);
 	
 	GLint uboSize = 0;
-	glGetActiveUniformBlockiv(OGLRef.programGeometryID, OGLRef.uniformBlockRenderStatesGeometry, GL_UNIFORM_BLOCK_DATA_SIZE, &uboSize);
+	glGetActiveUniformBlockiv(OGLRef.programGeometryID, uniformBlockRenderStates, GL_UNIFORM_BLOCK_DATA_SIZE, &uboSize);
 	assert(uboSize == sizeof(OGLRenderStates));
 	
 	glGenBuffers(1, &OGLRef.uboRenderStatesID);
@@ -939,12 +939,12 @@ Render3DError OpenGLRenderer_3_2::InitGeometryProgramShaderLocations()
 	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA8UI, OGLRef.tboPolyStatesID);
 	glActiveTexture(GL_TEXTURE0);
 	
-	OGLRef.uniformTexRenderObject				= glGetUniformLocation(OGLRef.programGeometryID, "texRenderObject");
-	OGLRef.uniformTexBufferPolyStates			= glGetUniformLocation(OGLRef.programGeometryID, "PolyStates");
-	glUniform1i(OGLRef.uniformTexRenderObject, 0);
-	glUniform1i(OGLRef.uniformTexBufferPolyStates, OGLTextureUnitID_PolyStates);
+	const GLint uniformTexRenderObject		= glGetUniformLocation(OGLRef.programGeometryID, "texRenderObject");
+	const GLint uniformTexBufferPolyStates	= glGetUniformLocation(OGLRef.programGeometryID, "PolyStates");
+	glUniform1i(uniformTexRenderObject, 0);
+	glUniform1i(uniformTexBufferPolyStates, OGLTextureUnitID_PolyStates);
 	
-	OGLRef.uniformPolyStateIndex				= glGetUniformLocation(OGLRef.programGeometryID, "polyIndex");
+	OGLRef.uniformPolyStateIndex			= glGetUniformLocation(OGLRef.programGeometryID, "polyIndex");
 	
 	return OGLERROR_NOERR;
 }
@@ -1112,7 +1112,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		PolygonAttributes polyAttr = thePoly->getAttributes();
 		PolygonTexParams texParams = thePoly->getTexParams();
 		
-		polyStates[i].enableTexture = (thePoly->texParam != 0 && texParams.texFormat != TEXMODE_NONE && engine.renderState.enableTexturing) ? GL_TRUE : GL_FALSE;
+		polyStates[i].enableTexture = (texParams.texFormat != TEXMODE_NONE && engine.renderState.enableTexturing) ? GL_TRUE : GL_FALSE;
 		polyStates[i].enableFog = (polyAttr.enableRenderFog) ? GL_TRUE : GL_FALSE;
 		polyStates[i].enableDepthWrite = ((!polyAttr.isTranslucent || polyAttr.enableAlphaDepthWrite) && !(polyAttr.polygonMode == 3 && polyAttr.polygonID == 0)) ? GL_TRUE : GL_FALSE;
 		polyStates[i].setNewDepthForTranslucent = (polyAttr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
@@ -1374,7 +1374,7 @@ Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, bool enableT
 	const PolygonTexParams params = thePoly.getTexParams();
 	
 	// Check if we need to use textures
-	if (thePoly.texParam == 0 || params.texFormat == TEXMODE_NONE || !enableTexturing)
+	if (params.texFormat == TEXMODE_NONE || !enableTexturing)
 	{
 		return OGLERROR_NOERR;
 	}

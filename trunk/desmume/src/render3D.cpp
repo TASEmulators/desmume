@@ -31,76 +31,118 @@ int cur3DCore = GPU3D_NULL;
 GPU3DInterface gpu3DNull = { 
 	"None",
 	Default3D_Init,
-	Default3D_Reset,
 	Default3D_Close,
+	Default3D_Reset,
 	Default3D_Render,
 	Default3D_RenderFinish,
 	Default3D_VramReconfigureSignal
 };
 
 GPU3DInterface *gpu3D = &gpu3DNull;
-static bool default3DAlreadyClearedLayer = false;
+static Render3D *_baseRenderer = NULL;
+Render3D *CurrentRenderer = NULL;
 
-char Default3D_Init()
+void Render3D_Init()
 {
-	default3DAlreadyClearedLayer = false;
-	
-	return 1;
-}
-
-void Default3D_Reset()
-{
-	default3DAlreadyClearedLayer = false;
-	
-	TexCache_Reset();
-}
-
-void Default3D_Close()
-{
-	memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_convertedScreen));
-	default3DAlreadyClearedLayer = false;
-}
-
-void Default3D_Render()
-{
-	if (!default3DAlreadyClearedLayer)
+	if (_baseRenderer == NULL)
 	{
-		memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_convertedScreen));
-		default3DAlreadyClearedLayer = true;
+		_baseRenderer = new Render3D;
+	}
+	
+	if (CurrentRenderer == NULL)
+	{
+		gpu3D = &gpu3DNull;
+		cur3DCore = GPU3D_NULL;
+		CurrentRenderer = _baseRenderer;
 	}
 }
 
-void Default3D_RenderFinish()
+void Render3D_DeInit()
 {
-	// Do nothing
-}
-
-void Default3D_VramReconfigureSignal()
-{
-	TexCache_Invalidate();
-}
-
-void NDS_3D_SetDriver (int core3DIndex)
-{
-	cur3DCore = core3DIndex;
-	gpu3D = core3DList[cur3DCore];
+	gpu3D->NDS_3D_Close();
+	delete _baseRenderer;
+	_baseRenderer = NULL;
 }
 
 bool NDS_3D_ChangeCore(int newCore)
 {
-	gpu3D->NDS_3D_Close();
-	NDS_3D_SetDriver(newCore);
-	if(gpu3D->NDS_3D_Init() == 0)
+	bool result = false;
+		
+	Render3DInterface *newRenderInterface = core3DList[newCore];
+	if (newRenderInterface->NDS_3D_Init == NULL)
 	{
-		NDS_3D_SetDriver(GPU3D_NULL);
-		gpu3D->NDS_3D_Init();
-		return false;
+		return result;
 	}
-	return true;
+	
+	if (newRenderInterface == gpu3D)
+	{
+		result = true;
+		return result;
+	}
+	
+	// Some resources are shared between renderers, such as the texture cache,
+	// so we need to shut down the current renderer now to ensure that any
+	// shared resources aren't in use.
+	CurrentRenderer->RenderFinish();
+	gpu3D->NDS_3D_Close();
+	gpu3D = &gpu3DNull;
+	cur3DCore = GPU3D_NULL;
+	CurrentRenderer = _baseRenderer;
+	
+	Render3D *newRenderer = newRenderInterface->NDS_3D_Init();
+	if (newRenderer == NULL)
+	{
+		return result;
+	}
+	
+	gpu3D = newRenderInterface;
+	cur3DCore = newCore;
+	CurrentRenderer = newRenderer;
+	
+	result = true;
+	return result;
+}
+
+Render3D* Default3D_Init()
+{
+	_baseRenderer->Reset();
+	return _baseRenderer;
+}
+
+void Default3D_Close()
+{
+	if (CurrentRenderer != _baseRenderer)
+	{
+		delete CurrentRenderer;
+		CurrentRenderer = NULL;
+	}
+}
+
+void Default3D_Reset()
+{
+	CurrentRenderer->Reset();
+}
+
+void Default3D_Render()
+{
+	CurrentRenderer->Render(gfx3d);
+}
+
+void Default3D_RenderFinish()
+{
+	CurrentRenderer->RenderFinish();
+}
+
+void Default3D_VramReconfigureSignal()
+{
+	CurrentRenderer->VramReconfigureSignal();
 }
 
 Render3D::Render3D()
 {
+	_renderID = RENDERID_NULL;
+	_renderName = "None";
+	
 	static bool needTableInit = true;
 	
 	if (needTableInit)
@@ -116,12 +158,28 @@ Render3D::Render3D()
 	Reset();
 }
 
+Render3D::~Render3D()
+{
+	memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_convertedScreen));
+	TexCache_Reset();
+}
+
+RendererID Render3D::GetRenderID()
+{
+	return this->_renderID;
+}
+
+std::string Render3D::GetName()
+{
+	return this->_renderName;
+}
+
 Render3DError Render3D::BeginRender(const GFX3D &engine)
 {
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::RenderGeometry(const GFX3D_State &renderState, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
+Render3DError Render3D::RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList)
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -251,6 +309,9 @@ Render3DError Render3D::Reset()
 	memset(this->clearImageDepthBuffer, 0, sizeof(this->clearImageDepthBuffer));
 	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
 	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
+	memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_convertedScreen));
+	
+	TexCache_Reset();
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -268,7 +329,7 @@ Render3DError Render3D::Render(const GFX3D &engine)
 	this->UpdateToonTable(engine.renderState.u16ToonTable);
 	this->ClearFramebuffer(engine.renderState);
 	
-	this->RenderGeometry(engine.renderState, engine.vertlist, engine.polylist, &engine.indexlist);
+	this->RenderGeometry(engine.renderState, engine.polylist, &engine.indexlist);
 	
 	if (engine.renderState.enableEdgeMarking)
 	{
@@ -287,6 +348,7 @@ Render3DError Render3D::Render(const GFX3D &engine)
 
 Render3DError Render3D::RenderFinish()
 {
+	memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_convertedScreen));
 	return RENDER3DERROR_NOERR;
 }
 
