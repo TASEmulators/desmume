@@ -610,6 +610,8 @@ static Render3D* OpenGLRendererCreate()
 	if(!strcmp(oglVendorString,"Intel") && strstr(oglRendererString,"965")) 
 	{
 		INFO("OpenGL: Incompatible graphic card detected. Disabling OpenGL support.\n");
+		
+		ENDGL();
 		return newRenderer;
 	}
 	
@@ -622,6 +624,7 @@ static Render3D* OpenGLRendererCreate()
 			 OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MAJOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR, OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION,
 			 oglVersionString, oglVendorString, oglRendererString);
 		
+		ENDGL();
 		return newRenderer;
 	}
 	
@@ -637,7 +640,10 @@ static Render3D* OpenGLRendererCreate()
 		else 
 		{
 			if(require_profile)
+			{
+				ENDGL();
 				return newRenderer;
+			}
 		}
 	}
 	
@@ -683,6 +689,8 @@ static Render3D* OpenGLRendererCreate()
 	{
 		INFO("OpenGL: Renderer did not initialize. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
 			 oglVersionString, oglVendorString, oglRendererString);
+		
+		ENDGL();
 		return newRenderer;
 	}
 	
@@ -699,6 +707,7 @@ static Render3D* OpenGLRendererCreate()
 			delete newRenderer;
 			newRenderer = NULL;
 			
+			ENDGL();
 			return newRenderer;
 		}
 		else if (IsVersionSupported(3, 0, 0) && error == OGLERROR_FBO_CREATE_ERROR && OGLLoadEntryPoints_3_2_Func != NULL)
@@ -707,6 +716,7 @@ static Render3D* OpenGLRendererCreate()
 			delete newRenderer;
 			newRenderer = NULL;
 			
+			ENDGL();
 			return newRenderer;
 		}
 	}
