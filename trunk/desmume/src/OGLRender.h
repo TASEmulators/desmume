@@ -405,7 +405,7 @@ struct OGLRenderRef
 	GLuint iboPostprocessIndexID;
 	
 	// PBO
-	GLuint pboRenderDataID[2];
+	GLuint pboRenderDataID;
 	
 	// UBO / TBO
 	GLuint uboRenderStatesID;
@@ -482,6 +482,10 @@ struct OGLRenderRef
 	// Client-side Buffers
 	GLfloat *color4fBuffer;
 	GLushort *vertIndexBuffer;
+	GLuint *workingDepthBuffer;
+	GLuint *workingDepthStencilBuffer;
+	GLuint *workingFogAttributesBuffer;
+	GLuint *workingPolyIDBuffer;
 	
 	// Vertex Attributes Pointers
 	GLvoid *vtxPtrPosition;
@@ -561,10 +565,10 @@ protected:
 	// Textures
 	TexCacheItem *currTexture;
 	
-	CACHE_ALIGN u32 GPU_screen3D[2][GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT * sizeof(u32)];
-	bool gpuScreen3DHasNewData[2];
-	size_t doubleBufferIndex;
+	bool _pixelReadNeedsFinish;
 	size_t _currentPolyIndex;
+	
+	Render3DError FlushFramebuffer(FragmentColor *dstBuffer);
 	
 	// OpenGL-specific methods
 	virtual Render3DError CreateVBOs() = 0;
@@ -607,7 +611,7 @@ protected:
 	
 public:
 	OpenGLRenderer();
-	virtual ~OpenGLRenderer() {};
+	virtual ~OpenGLRenderer();
 	
 	virtual Render3DError InitExtensions() = 0;
 	virtual Render3DError DeleteTexture(const TexCacheItem *item) = 0;
@@ -617,7 +621,6 @@ public:
 	bool ValidateShaderProgramLink(GLuint theProgram) const;
 	void GetVersion(unsigned int *major, unsigned int *minor, unsigned int *revision) const;
 	void SetVersion(unsigned int major, unsigned int minor, unsigned int revision);
-	void ConvertFramebuffer(const u32 *__restrict srcBuffer, u32 *dstBuffer);
 };
 
 class OpenGLRenderer_1_2 : public OpenGLRenderer
@@ -681,6 +684,7 @@ public:
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError Reset();
 	virtual Render3DError RenderFinish();
+	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 	
 	virtual Render3DError DeleteTexture(const TexCacheItem *item);
 };

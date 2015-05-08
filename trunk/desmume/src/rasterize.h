@@ -68,13 +68,10 @@ public:
 	size_t _clippedPolyCount;
 	FragmentColor toonColor32LUT[32];
 	GFX3D_Clipper::TClippedPoly *clippedPolys;
-	FragmentAttributes *screenAttributes;
-	FragmentColor *screenColor;
+	FragmentAttributes *_framebufferAttributes;
 	TexCacheItem *polyTexKeys[POLYLIST_SIZE];
 	bool polyVisible[POLYLIST_SIZE];
 	bool polyBackfacing[POLYLIST_SIZE];
-	size_t _framebufferWidth;
-	size_t _framebufferHeight;
 	GFX3D_State *currentRenderState;
 	SoftRasterizerPostProcessParams *postprocessParam;
 	
@@ -94,6 +91,7 @@ public:
 	virtual Render3DError Reset();
 	virtual Render3DError Render(const GFX3D &engine);
 	virtual Render3DError RenderFinish();
+	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 
 #endif

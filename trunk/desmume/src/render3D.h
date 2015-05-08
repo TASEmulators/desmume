@@ -103,6 +103,11 @@ protected:
 	RendererID _renderID;
 	std::string _renderName;
 	
+	size_t _framebufferWidth;
+	size_t _framebufferHeight;
+	size_t _framebufferColorSizeBytes;
+	FragmentColor *_framebufferColor;
+	
 	CACHE_ALIGN u16 clearImageColor16Buffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
 	CACHE_ALIGN u32 clearImageDepthBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
 	CACHE_ALIGN bool clearImageFogBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
@@ -113,6 +118,7 @@ protected:
 	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
 	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
 	virtual Render3DError EndRender(const u64 frameCount);
+	virtual Render3DError FlushFramebuffer(FragmentColor *dstBuffer);
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const;
@@ -128,6 +134,10 @@ public:
 	RendererID GetRenderID();
 	std::string GetName();
 	
+	FragmentColor* GetFramebuffer();
+	size_t GetFramebufferWidth();
+	size_t GetFramebufferHeight();
+	
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
 	
@@ -140,6 +150,8 @@ public:
 														// sure to always call this function.)
 	
 	virtual Render3DError VramReconfigureSignal();		// Called when the emulator reconfigures its VRAM. You may need to invalidate your texture cache.
+	
+	virtual Render3DError SetFramebufferSize(size_t w, size_t h);	// Called whenever the output framebuffer size changes.
 };
 
 #endif
