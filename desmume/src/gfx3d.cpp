@@ -308,7 +308,10 @@ static float normalTable[1024];
 #define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
-CACHE_ALIGN u8 gfx3d_convertedScreen[GFX3D_FRAMEBUFFER_WIDTH*GFX3D_FRAMEBUFFER_HEIGHT*4];
+// Color buffer that is filled by the 3D renderer and is read by the GPU engine.
+u8 *gfx3d_convertedScreen = NULL;
+static size_t gfx3d_framebufferWidth = GFX3D_FRAMEBUFFER_WIDTH;
+static size_t gfx3d_framebufferHeight = GFX3D_FRAMEBUFFER_HEIGHT;
 
 // Matrix stack handling
 CACHE_ALIGN MatrixStack	mtxStack[4] = {
@@ -537,11 +540,33 @@ void gfx3d_init()
 		vertlist = &vertlists[0];
 	}
 	
+	gfx3d_framebufferWidth = GFX3D_FRAMEBUFFER_WIDTH;
+	gfx3d_framebufferHeight = GFX3D_FRAMEBUFFER_HEIGHT;
+	
+	if (gfx3d_convertedScreen == NULL)
+	{
+		gfx3d_convertedScreen = (u8 *)malloc(gfx3d_framebufferWidth * gfx3d_framebufferHeight * sizeof(FragmentColor));
+	}
+	
 	gfx3d.state.fogDensityTable = MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0360;
 	gfx3d.state.edgeMarkColorTable = (u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0330);
 	
 	makeTables();
 	gfx3d_reset();
+}
+
+void gfx3d_deinit()
+{
+	free(polylists);
+	polylists = NULL;
+	polylist = NULL;
+	
+	free(vertlists);
+	vertlists = NULL;
+	vertlist = NULL;
+	
+	free(gfx3d_convertedScreen);
+	gfx3d_convertedScreen = NULL;
 }
 
 void gfx3d_reset()
@@ -616,7 +641,7 @@ void gfx3d_reset()
 	last_s = 0;
 	viewport = 0xBFFF0000;
 
-	memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
+	memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_framebufferWidth * gfx3d_framebufferHeight * sizeof(FragmentColor)));
 
 	gfx3d.state.clearDepth = DS_DEPTH15TO24(0x7FFF);
 	
@@ -629,6 +654,31 @@ void gfx3d_reset()
 	CurrentRenderer->Reset();
 }
 
+size_t gfx3d_getFramebufferWidth()
+{
+	return gfx3d_framebufferWidth;
+}
+
+size_t gfx3d_getFramebufferHeight()
+{
+	return gfx3d_framebufferHeight;
+}
+
+void gfx3d_setFramebufferSize(size_t w, size_t h)
+{
+	if (w < GFX3D_FRAMEBUFFER_WIDTH || h < GFX3D_FRAMEBUFFER_HEIGHT)
+	{
+		return;
+	}
+	
+	CurrentRenderer->RenderFinish();
+	
+	gfx3d_framebufferWidth = w;
+	gfx3d_framebufferHeight = h;
+	gfx3d_convertedScreen = (u8 *)realloc(gfx3d_convertedScreen, w * h * sizeof(FragmentColor));
+	
+	CurrentRenderer->SetFramebufferSize(w, h);
+}
 
 //================================================================================= Geometry Engine
 //=================================================================================
@@ -2282,7 +2332,7 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 
 	if(!CommonSettings.showGpu.main)
 	{
-		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
+		memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_framebufferWidth * gfx3d_framebufferHeight * sizeof(FragmentColor)));
 		return;
 	}
 	

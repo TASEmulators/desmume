@@ -125,11 +125,17 @@ Render3D::Render3D()
 		needTableInit = false;
 	}
 	
+	_framebufferWidth = GFX3D_FRAMEBUFFER_WIDTH;
+	_framebufferHeight = GFX3D_FRAMEBUFFER_HEIGHT;
+	_framebufferColorSizeBytes = _framebufferWidth * _framebufferHeight * sizeof(FragmentColor);
+	_framebufferColor = (FragmentColor *)calloc(_framebufferWidth * _framebufferHeight, sizeof(FragmentColor));
+	
 	Reset();
 }
 
 Render3D::~Render3D()
 {
+	free(_framebufferColor);
 	TexCache_Reset();
 }
 
@@ -141,6 +147,38 @@ RendererID Render3D::GetRenderID()
 std::string Render3D::GetName()
 {
 	return this->_renderName;
+}
+
+FragmentColor* Render3D::GetFramebuffer()
+{
+	return this->_framebufferColor;
+}
+
+size_t Render3D::GetFramebufferWidth()
+{
+	return this->_framebufferWidth;
+}
+
+size_t Render3D::GetFramebufferHeight()
+{
+	return this->_framebufferHeight;
+}
+
+Render3DError Render3D::SetFramebufferSize(size_t w, size_t h)
+{
+	if (w < GFX3D_FRAMEBUFFER_WIDTH || h < GFX3D_FRAMEBUFFER_HEIGHT)
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
+	this->RenderFinish();
+	
+	this->_framebufferWidth = w;
+	this->_framebufferHeight = h;
+	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
+	this->_framebufferColor = (FragmentColor *)realloc(this->_framebufferColor, w * h * sizeof(FragmentColor));
+	
+	return RENDER3DERROR_NOERR;
 }
 
 Render3DError Render3D::BeginRender(const GFX3D &engine)
@@ -165,6 +203,12 @@ Render3DError Render3D::RenderFog(const u8 *densityTable, const u32 color, const
 
 Render3DError Render3D::EndRender(const u64 frameCount)
 {
+	return RENDER3DERROR_NOERR;
+}
+
+Render3DError Render3D::FlushFramebuffer(FragmentColor *dstBuffer)
+{
+	memcpy(dstBuffer, this->_framebufferColor, this->_framebufferColorSizeBytes);
 	return RENDER3DERROR_NOERR;
 }
 
@@ -274,6 +318,7 @@ Render3DError Render3D::SetupViewport(const u32 viewportValue)
 
 Render3DError Render3D::Reset()
 {
+	memset(this->_framebufferColor, 0, this->_framebufferColorSizeBytes);
 	memset(this->clearImageColor16Buffer, 0, sizeof(this->clearImageColor16Buffer));
 	memset(this->clearImageDepthBuffer, 0, sizeof(this->clearImageDepthBuffer));
 	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
@@ -316,7 +361,7 @@ Render3DError Render3D::Render(const GFX3D &engine)
 
 Render3DError Render3D::RenderFinish()
 {
-	memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_convertedScreen));
+	this->FlushFramebuffer((FragmentColor *)gfx3d_convertedScreen);
 	return RENDER3DERROR_NOERR;
 }
 

@@ -217,7 +217,12 @@ enum
 };
 
 void gfx3d_init();
+void gfx3d_deinit();
 void gfx3d_reset();
+
+size_t gfx3d_getFramebufferWidth();
+size_t gfx3d_getFramebufferHeight();
+void gfx3d_setFramebufferSize(size_t w, size_t h);
 
 typedef struct
 {
@@ -715,9 +720,7 @@ extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
 
 //these contain the 3d framebuffer converted into the most useful format
 //they are stored here instead of in the renderers in order to consolidate the buffers
-extern CACHE_ALIGN u8 gfx3d_convertedScreen[GFX3D_FRAMEBUFFER_WIDTH*GFX3D_FRAMEBUFFER_HEIGHT*4];
-extern CACHE_ALIGN u8 gfx3d_convertedAlpha[GFX3D_FRAMEBUFFER_WIDTH*GFX3D_FRAMEBUFFER_HEIGHT*2]; //see cpp for explanation of illogical *2
-
+extern u8 *gfx3d_convertedScreen;
 extern BOOL isSwapBuffers;
 
 int _hack_getMatrixStackLevel(int);

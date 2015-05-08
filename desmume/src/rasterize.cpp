@@ -713,7 +713,7 @@ public:
 	}
 
 	//draws a single scanline
-	FORCEINLINE void drawscanline(const PolygonAttributes &polyAttr, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight, bool lineHack)
+	FORCEINLINE void drawscanline(const PolygonAttributes &polyAttr, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight, bool lineHack)
 	{
 		int XStart = pLeft->X;
 		int width = pRight->X - XStart;
@@ -755,20 +755,22 @@ public:
 
 		//CONSIDER: in case some other math is wrong (shouldve been clipped OK), we might go out of bounds here.
 		//better check the Y value.
-		if(RENDERER && (pLeft->Y<0 || pLeft->Y>191)) {
+		if (RENDERER && (pLeft->Y<0 || pLeft->Y > (framebufferHeight - 1)))
+		{
 			printf("rasterizer rendering at y=%d! oops!\n",pLeft->Y);
 			return;
 		}
-		if(!RENDERER && (pLeft->Y<0 || pLeft->Y>=framebufferHeight)) {
+		if (!RENDERER && (pLeft->Y<0 || pLeft->Y >= framebufferHeight))
+		{
 			printf("rasterizer rendering at y=%d! oops!\n",pLeft->Y);
 			return;
 		}
 
 		int x = XStart;
 
-		if(x<0)
+		if (x<0)
 		{
-			if(RENDERER && !lineHack)
+			if (RENDERER && !lineHack)
 			{
 				printf("rasterizer rendering at x=%d! oops!\n",x);
 				return;
@@ -784,19 +786,19 @@ public:
 			width -= -x;
 			x = 0;
 		}
-		if(x+width > (RENDERER?GFX3D_FRAMEBUFFER_WIDTH:framebufferWidth))
+		if (x+width > framebufferWidth)
 		{
-			if(RENDERER && !lineHack)
+			if (RENDERER && !lineHack)
 			{
 				printf("rasterizer rendering at x=%d! oops!\n",x+width-1);
 				return;
 			}
-			width = (RENDERER?GFX3D_FRAMEBUFFER_WIDTH:framebufferWidth)-x;
+			width = framebufferWidth - x;
 		}
-
-		while(width-- > 0)
+		
+		while (width-- > 0)
 		{
-			pixel(polyAttr, this->_softRender->screenAttributes[adr], this->_softRender->screenColor[adr], color[0], color[1], color[2], u, v, 1.0f/invw, z);
+			pixel(polyAttr, this->_softRender->_framebufferAttributes[adr], dstColor[adr], color[0], color[1], color[2], u, v, 1.0f/invw, z);
 			adr++;
 			x++;
 
@@ -812,7 +814,7 @@ public:
 
 	//runs several scanlines, until an edge is finished
 	template<bool SLI>
-	void runscanlines(const PolygonAttributes &polyAttr, FragmentColor *color, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *left, edge_fx_fl *right, bool horizontal, bool lineHack)
+	void runscanlines(const PolygonAttributes &polyAttr, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *left, edge_fx_fl *right, bool horizontal, bool lineHack)
 	{
 		//oh lord, hack city for edge drawing
 
@@ -821,16 +823,16 @@ public:
 		bool first=true;
 
 		//HACK: special handling for horizontal line poly
-		if (lineHack && left->Height == 0 && right->Height == 0 && left->Y<GFX3D_FRAMEBUFFER_HEIGHT && left->Y>=0)
+		if (lineHack && left->Height == 0 && right->Height == 0 && left->Y<framebufferHeight && left->Y>=0)
 		{
 			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
-			if(draw) drawscanline(polyAttr, framebufferWidth, framebufferHeight, left,right,lineHack);
+			if(draw) drawscanline(polyAttr, dstColor, framebufferWidth, framebufferHeight, left,right,lineHack);
 		}
 
 		while(Height--)
 		{
 			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
-			if(draw) drawscanline(polyAttr, framebufferWidth, framebufferHeight, left,right,lineHack);
+			if(draw) drawscanline(polyAttr, dstColor, framebufferWidth, framebufferHeight, left,right,lineHack);
 			const int xl = left->X;
 			const int xr = right->X;
 			const int y = left->Y;
@@ -855,9 +857,9 @@ public:
 							for (int x = xs; x <= xe; x++)
 							{
 								int adr = (y*framebufferWidth)+x;
-								color[adr].r = 63;
-								color[adr].g = 0;
-								color[adr].b = 0;
+								dstColor[adr].r = 63;
+								dstColor[adr].g = 0;
+								dstColor[adr].b = 0;
 							}
 						}
 						else if(bottom)
@@ -867,9 +869,9 @@ public:
 							for (int x = xs; x <= xe; x++)
 							{
 								int adr = (y*framebufferWidth)+x;
-								color[adr].r = 63;
-								color[adr].g = 0;
-								color[adr].b = 0;
+								dstColor[adr].r = 63;
+								dstColor[adr].g = 0;
+								dstColor[adr].b = 0;
 							}
 						}
 						else
@@ -879,18 +881,18 @@ public:
 							for (int x = xs; x <= xe; x++)
 							{
 								int adr = (y*framebufferWidth)+x;
-								color[adr].r = 63;
-								color[adr].g = 0;
-								color[adr].b = 0;
+								dstColor[adr].r = 63;
+								dstColor[adr].g = 0;
+								dstColor[adr].b = 0;
 							}
 							xs = min(xr,nxr);
 							xe = max(xr,nxr);
 							for (int x = xs; x <= xe; x++)
 							{
 								int adr = (y*framebufferWidth)+x;
-								color[adr].r = 63;
-								color[adr].g = 0;
-								color[adr].b = 0;
+								dstColor[adr].r = 63;
+								dstColor[adr].g = 0;
+								dstColor[adr].b = 0;
 							}
 						}
 
@@ -951,7 +953,7 @@ public:
 	//I didnt reference anything for this algorithm but it seems like I've seen it somewhere before.
 	//Maybe it is like crow's algorithm
 	template<bool SLI>
-	void shape_engine(const PolygonAttributes &polyAttr, FragmentColor *color, const size_t framebufferWidth, const size_t framebufferHeight, int type, const bool backwards, bool lineHack)
+	void shape_engine(const PolygonAttributes &polyAttr, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type, const bool backwards, bool lineHack)
 	{
 		bool failure = false;
 
@@ -991,7 +993,7 @@ public:
 				return;
 
 			bool horizontal = left.Y == right.Y;
-			runscanlines<SLI>(polyAttr, color, framebufferWidth, framebufferHeight, &left, &right, horizontal, lineHack);
+			runscanlines<SLI>(polyAttr, dstColor, framebufferWidth, framebufferHeight, &left, &right, horizontal, lineHack);
 
 			//if we ran out of an edge, step to the next one
 			if (right.Height == 0)
@@ -1013,6 +1015,10 @@ public:
 	template<bool SLI>
 	FORCEINLINE void mainLoop()
 	{
+		FragmentColor *dstColor = this->_softRender->GetFramebuffer();
+		size_t dstWidth = this->_softRender->GetFramebufferWidth();
+		size_t dstHeight = this->_softRender->GetFramebufferHeight();
+		
 		lastTexKey = NULL;
 		
 		PolygonAttributes polyAttr;
@@ -1054,7 +1060,7 @@ public:
 			for (int j = type; j < MAX_CLIPPED_VERTS; j++)
 				this->verts[j] = NULL;
 			
-			shape_engine<SLI>(polyAttr, this->_softRender->screenColor, this->_softRender->_framebufferWidth, this->_softRender->_framebufferHeight, type, !this->_softRender->polyBackfacing[i], (thePoly->vtxFormat & 4) && CommonSettings.GFX3D_LineHack);
+			shape_engine<SLI>(polyAttr, dstColor, dstWidth, dstHeight, type, !this->_softRender->polyBackfacing[i], (thePoly->vtxFormat & 4) && CommonSettings.GFX3D_LineHack);
 		}
 	}
 
@@ -1154,10 +1160,7 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	
 	_stateSetupNeedsFinish = false;
 	_renderGeometryNeedsFinish = false;
-	_framebufferWidth = GFX3D_FRAMEBUFFER_WIDTH;
-	_framebufferHeight = GFX3D_FRAMEBUFFER_HEIGHT;
-	screenAttributes = (FragmentAttributes *)malloc(_framebufferWidth * _framebufferHeight * sizeof(FragmentAttributes));
-	screenColor = (FragmentColor *)malloc(_framebufferWidth * _framebufferHeight * sizeof(FragmentColor));
+	_framebufferAttributes = (FragmentAttributes *)calloc(_framebufferWidth * _framebufferHeight, sizeof(FragmentAttributes));
 	
 	if (!rasterizerUnitTasksInited)
 	{
@@ -1232,8 +1235,7 @@ SoftRasterizerRenderer::~SoftRasterizerRenderer()
 	delete[] postprocessParam;
 	postprocessParam = NULL;
 	
-	free(screenAttributes);
-	free(screenColor);
+	free(_framebufferAttributes);
 }
 
 Render3DError SoftRasterizerRenderer::InitTables()
@@ -1302,8 +1304,8 @@ template<bool CUSTOM> void SoftRasterizerRenderer::performViewportTransforms()
 {
 	const float xfactor = (float)this->_framebufferWidth/(float)GFX3D_FRAMEBUFFER_WIDTH;
 	const float yfactor = (float)this->_framebufferHeight/(float)GFX3D_FRAMEBUFFER_HEIGHT;
-	const float xmax = GFX3D_FRAMEBUFFER_WIDTH*xfactor-(CUSTOM?0.001f:0); //fudge factor to keep from overrunning render buffers
-	const float ymax = GFX3D_FRAMEBUFFER_HEIGHT*yfactor-(CUSTOM?0.001f:0);
+	const float xmax = (float)this->_framebufferWidth-(CUSTOM?0.001f:0); //fudge factor to keep from overrunning render buffers
+	const float ymax = (float)this->_framebufferHeight-(CUSTOM?0.001f:0);
 	
 	//viewport transforms
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
@@ -1558,7 +1560,7 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable, c
 	{
 		for (size_t x = 0; x < this->_framebufferWidth; x++, i++)
 		{
-			const FragmentAttributes dstAttributes = this->screenAttributes[i];
+			const FragmentAttributes dstAttributes = this->_framebufferAttributes[i];
 			const u8 polyID = dstAttributes.opaquePolyID;
 			
 			if(this->edgeMarkDisabled[polyID>>3]) continue;
@@ -1572,8 +1574,8 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable, c
 			FragmentColor edgeColor = this->edgeMarkTable[polyID>>3];
 			
 #define PIXOFFSET(dx,dy) ((dx)+(this->_framebufferWidth*(dy)))
-#define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID > this->screenAttributes[i+PIXOFFSET(dx,dy)].opaquePolyID)
-#define DRAWEDGE(dx,dy) alphaBlend(screenColor[i+PIXOFFSET(dx,dy)], edgeColor)
+#define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID > this->_framebufferAttributes[i+PIXOFFSET(dx,dy)].opaquePolyID)
+#define DRAWEDGE(dx,dy) alphaBlend(_framebufferColor[i+PIXOFFSET(dx,dy)], edgeColor)
 			
 			bool upleft    = ISEDGE(-1,-1);
 			bool up        = ISEDGE( 0,-1);
@@ -1714,12 +1716,12 @@ Render3DError SoftRasterizerRenderer::RenderFog(const u8 *densityTable, const u3
 	{
 		for (size_t i = 0; i < framebufferFragmentCount; i++)
 		{
-			const FragmentAttributes &destFragment = screenAttributes[i];
+			const FragmentAttributes &destFragment = _framebufferAttributes[i];
 			const size_t fogIndex = destFragment.depth >> 9;
 			assert(fogIndex < 32768);
 			const u8 fog = (destFragment.isFogged) ? this->fogTable[fogIndex] : 0;
 			
-			FragmentColor &destFragmentColor = screenColor[i];
+			FragmentColor &destFragmentColor = _framebufferColor[i];
 			destFragmentColor.r = ((128-fog)*destFragmentColor.r + r*fog)>>7;
 			destFragmentColor.g = ((128-fog)*destFragmentColor.g + g*fog)>>7;
 			destFragmentColor.b = ((128-fog)*destFragmentColor.b + b*fog)>>7;
@@ -1730,12 +1732,12 @@ Render3DError SoftRasterizerRenderer::RenderFog(const u8 *densityTable, const u3
 	{
 		for (size_t i = 0; i < framebufferFragmentCount; i++)
 		{
-			const FragmentAttributes &destFragment = screenAttributes[i];
+			const FragmentAttributes &destFragment = _framebufferAttributes[i];
 			const size_t fogIndex = destFragment.depth >> 9;
 			assert(fogIndex < 32768);
 			const u8 fog = (destFragment.isFogged) ? this->fogTable[fogIndex] : 0;
 			
-			FragmentColor &destFragmentColor = screenColor[i];
+			FragmentColor &destFragmentColor = _framebufferColor[i];
 			destFragmentColor.a = ((128-fog)*destFragmentColor.a + a*fog)>>7;
 		}
 	}
@@ -1749,8 +1751,8 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 	{
 		for (size_t x = 0; x < this->_framebufferWidth; x++, i++)
 		{
-			FragmentColor &dstColor = screenColor[i];
-			const FragmentAttributes dstAttributes = this->screenAttributes[i];
+			FragmentColor &dstColor = _framebufferColor[i];
+			const FragmentAttributes dstAttributes = this->_framebufferAttributes[i];
 			const u32 depth = dstAttributes.depth;
 			const u8 polyID = dstAttributes.opaquePolyID;
 			
@@ -1772,7 +1774,7 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 				bool up = false;
 				
 #define PIXOFFSET(dx,dy) ((dx)+(this->_framebufferWidth*(dy)))
-#define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID != this->screenAttributes[i+PIXOFFSET(dx,dy)].opaquePolyID && depth >= this->screenAttributes[i+PIXOFFSET(dx,dy)].depth)
+#define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID != this->_framebufferAttributes[i+PIXOFFSET(dx,dy)].opaquePolyID && depth >= this->_framebufferAttributes[i+PIXOFFSET(dx,dy)].depth)
 				
 				up		= ISEDGE( 0,-1);
 				left	= ISEDGE(-1, 0);
@@ -1784,22 +1786,22 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 				
 				if (right)
 				{
-					edgeColor = this->edgeMarkTable[this->screenAttributes[i+PIXOFFSET( 1, 0)].opaquePolyID >> 3];
+					edgeColor = this->edgeMarkTable[this->_framebufferAttributes[i+PIXOFFSET( 1, 0)].opaquePolyID >> 3];
 					alphaBlend(dstColor, edgeColor);
 				}
 				else if (down)
 				{
-					edgeColor = this->edgeMarkTable[this->screenAttributes[i+PIXOFFSET( 0, 1)].opaquePolyID >> 3];
+					edgeColor = this->edgeMarkTable[this->_framebufferAttributes[i+PIXOFFSET( 0, 1)].opaquePolyID >> 3];
 					alphaBlend(dstColor, edgeColor);
 				}
 				else if (left)
 				{
-					edgeColor = this->edgeMarkTable[this->screenAttributes[i+PIXOFFSET(-1, 0)].opaquePolyID >> 3];
+					edgeColor = this->edgeMarkTable[this->_framebufferAttributes[i+PIXOFFSET(-1, 0)].opaquePolyID >> 3];
 					alphaBlend(dstColor, edgeColor);
 				}
 				else if (up)
 				{
-					edgeColor = this->edgeMarkTable[this->screenAttributes[i+PIXOFFSET( 0,-1)].opaquePolyID >> 3];
+					edgeColor = this->edgeMarkTable[this->_framebufferAttributes[i+PIXOFFSET( 0,-1)].opaquePolyID >> 3];
 					alphaBlend(dstColor, edgeColor);
 				}
 				
@@ -1865,13 +1867,13 @@ Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colo
 			size_t ir = x + (y * this->_framebufferWidth);
 			size_t iw = x + ((this->_framebufferHeight - 1 - y) * this->_framebufferWidth);
 			
-			((u32 *)this->screenColor)[iw] = RGB15TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 31);
-			this->screenAttributes[iw].isFogged = fogBuffer[ir];
-			this->screenAttributes[iw].depth = depthBuffer[ir];
-			this->screenAttributes[iw].opaquePolyID = polyIDBuffer[ir];
-			this->screenAttributes[iw].translucentPolyID = kUnsetTranslucentPolyID;
-			this->screenAttributes[iw].isTranslucentPoly = false;
-			this->screenAttributes[iw].stencil = 0;
+			this->_framebufferColor[iw].color = RGB15TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 31);
+			this->_framebufferAttributes[iw].isFogged = fogBuffer[ir];
+			this->_framebufferAttributes[iw].depth = depthBuffer[ir];
+			this->_framebufferAttributes[iw].opaquePolyID = polyIDBuffer[ir];
+			this->_framebufferAttributes[iw].translucentPolyID = kUnsetTranslucentPolyID;
+			this->_framebufferAttributes[iw].isTranslucentPoly = false;
+			this->_framebufferAttributes[iw].stencil = 0;
 		}
 	}
 	
@@ -1888,8 +1890,8 @@ Render3DError SoftRasterizerRenderer::ClearUsingValues(const FragmentColor &clea
 	
 	for (size_t i = 0; i < (this->_framebufferWidth * this->_framebufferHeight); i++)
 	{
-		this->screenAttributes[i] = clearAttributes;
-		this->screenColor[i] = convertedClearColor;
+		this->_framebufferAttributes[i] = clearAttributes;
+		this->_framebufferColor[i] = convertedClearColor;
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -1957,7 +1959,7 @@ Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
 			this->RenderEdgeMarkingAndFog(this->postprocessParam[0]);
 		}
 		
-		memcpy(gfx3d_convertedScreen, this->screenColor, this->_framebufferWidth * this->_framebufferHeight * sizeof(FragmentColor));
+		this->FlushFramebuffer((FragmentColor *)gfx3d_convertedScreen);
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -1997,7 +1999,19 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 		}
 	}
 	
-	memcpy(gfx3d_convertedScreen, this->screenColor, this->_framebufferWidth * this->_framebufferHeight * sizeof(FragmentColor));
+	this->FlushFramebuffer((FragmentColor *)gfx3d_convertedScreen);
+	
+	return RENDER3DERROR_NOERR;
+}
+
+Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
+{
+	if (w < GFX3D_FRAMEBUFFER_WIDTH || h < GFX3D_FRAMEBUFFER_HEIGHT)
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
+	// TODO: We're not prepared to do this yet, so do nothing for now.
 	
 	return RENDER3DERROR_NOERR;
 }
