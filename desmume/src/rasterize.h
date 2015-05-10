@@ -21,6 +21,8 @@
 #include "render3D.h"
 #include "gfx3d.h"
 
+#define SOFTRASTERIZER_DEPTH_EQUAL_TEST_TOLERANCE 0x200
+
 extern GPU3DInterface gpu3DRasterize;
 
 class TexCacheItem;

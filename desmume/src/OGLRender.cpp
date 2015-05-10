@@ -2288,7 +2288,7 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 	
 	// Set up depth test mode
 	static const GLenum oglDepthFunc[2] = {GL_LESS, GL_EQUAL};
-	glDepthFunc(oglDepthFunc[attr.enableDepthTest]);
+	glDepthFunc(oglDepthFunc[attr.enableDepthEqualTest]);
 	
 	// Set up culling mode
 	static const GLenum oglCullingMode[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
@@ -2309,9 +2309,9 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 	
 	// Handle shadow polys. Do this after checking for depth write, since shadow polys
 	// can change this too.
-	if(attr.polygonMode == 3)
+	if (attr.polygonMode == POLYGON_MODE_SHADOW)
 	{
-		if(attr.polygonID == 0)
+		if (attr.polygonID == 0)
 		{
 			//when the polyID is zero, we are writing the shadow mask.
 			//set stencilbuf = 1 where the shadow volume is obstructed by geometry.
@@ -2334,7 +2334,7 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 	}
 	else
 	{
-		if(attr.isTranslucent)
+		if (attr.isTranslucent)
 		{
 			glStencilFunc(GL_NOTEQUAL, attr.polygonID, 255);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -2348,7 +2348,7 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 		}
 	}
 	
-	if(attr.isTranslucent && !attr.enableAlphaDepthWrite)
+	if (attr.isTranslucent && !attr.enableAlphaDepthWrite)
 	{
 		enableDepthWrite = GL_FALSE;
 	}
@@ -3583,7 +3583,7 @@ Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY &thePoly)
 	
 	// Set up depth test mode
 	static const GLenum oglDepthFunc[2] = {GL_LESS, GL_EQUAL};
-	glDepthFunc(oglDepthFunc[attr.enableDepthTest]);
+	glDepthFunc(oglDepthFunc[attr.enableDepthEqualTest]);
 	
 	// Set up culling mode
 	static const GLenum oglCullingMode[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
@@ -3604,9 +3604,9 @@ Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY &thePoly)
 	
 	// Handle shadow polys. Do this after checking for depth write, since shadow polys
 	// can change this too.
-	if(attr.polygonMode == 3)
+	if (attr.polygonMode == POLYGON_MODE_SHADOW)
 	{
-		if(attr.polygonID == 0)
+		if (attr.polygonID == 0)
 		{
 			//when the polyID is zero, we are writing the shadow mask.
 			//set stencilbuf = 1 where the shadow volume is obstructed by geometry.
@@ -3629,7 +3629,7 @@ Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY &thePoly)
 	}
 	else
 	{
-		if(attr.isTranslucent)
+		if (attr.isTranslucent)
 		{
 			glStencilFunc(GL_NOTEQUAL, attr.polygonID, 255);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -3643,7 +3643,7 @@ Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY &thePoly)
 		}
 	}
 	
-	if(attr.isTranslucent && !attr.enableAlphaDepthWrite)
+	if (attr.isTranslucent && !attr.enableAlphaDepthWrite)
 	{
 		enableDepthWrite = GL_FALSE;
 	}
