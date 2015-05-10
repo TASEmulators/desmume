@@ -1118,7 +1118,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		
 		polyStates[i].enableTexture = (texParams.texFormat != TEXMODE_NONE && engine.renderState.enableTexturing) ? GL_TRUE : GL_FALSE;
 		polyStates[i].enableFog = (polyAttr.enableRenderFog) ? GL_TRUE : GL_FALSE;
-		polyStates[i].enableDepthWrite = ((!polyAttr.isTranslucent || polyAttr.enableAlphaDepthWrite) && !(polyAttr.polygonMode == 3 && polyAttr.polygonID == 0)) ? GL_TRUE : GL_FALSE;
+		polyStates[i].enableDepthWrite = ((!polyAttr.isTranslucent || polyAttr.enableAlphaDepthWrite) && !(polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0)) ? GL_TRUE : GL_FALSE;
 		polyStates[i].setNewDepthForTranslucent = (polyAttr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
 		polyStates[i].polyAlpha = (!polyAttr.isWireframe && polyAttr.isTranslucent) ? polyAttr.alpha : 0x1F;
 		polyStates[i].polyMode = polyAttr.polygonMode;
@@ -1302,7 +1302,7 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 	
 	// Set up depth test mode
 	static const GLenum oglDepthFunc[2] = {GL_LESS, GL_EQUAL};
-	glDepthFunc(oglDepthFunc[attr.enableDepthTest]);
+	glDepthFunc(oglDepthFunc[attr.enableDepthEqualTest]);
 	
 	// Set up culling mode
 	static const GLenum oglCullingMode[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
@@ -1323,7 +1323,7 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 	
 	// Handle shadow polys. Do this after checking for depth write, since shadow polys
 	// can change this too.
-	if(attr.polygonMode == 3)
+	if (attr.polygonMode == POLYGON_MODE_SHADOW)
 	{
 		if(attr.polygonID == 0)
 		{
@@ -1348,7 +1348,7 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 	}
 	else
 	{
-		if(attr.isTranslucent)
+		if (attr.isTranslucent)
 		{
 			glStencilFunc(GL_NOTEQUAL, attr.polygonID, 255);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -1362,7 +1362,7 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 		}
 	}
 	
-	if(attr.isTranslucent && !attr.enableAlphaDepthWrite)
+	if (attr.isTranslucent && !attr.enableAlphaDepthWrite)
 	{
 		enableDepthWrite = GL_FALSE;
 	}

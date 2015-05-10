@@ -132,6 +132,15 @@ enum
 	GFX3D_LINE				= 4
 };
 
+// POLYGON MODES
+enum PolygonMode
+{
+	POLYGON_MODE_MODULATE		= 0,
+	POLYGON_MODE_DECAL			= 1,
+	POLYGON_MODE_TOONHIGHLIGHT	= 2,
+	POLYGON_MODE_SHADOW			= 3
+};
+
 // POLYGON ATTRIBUTES - BIT LOCATIONS
 enum
 {
@@ -146,7 +155,7 @@ enum
 	POLYGON_ATTR_ENABLE_ALPHA_DEPTH_WRITE_BIT	= 11,
 	POLYGON_ATTR_ENABLE_RENDER_ON_FAR_PLANE_INTERSECT_BIT	= 12,
 	POLYGON_ATTR_ENABLE_ONE_DOT_RENDER_BIT		= 13,
-	POLYGON_ATTR_ENABLE_DEPTH_TEST_BIT			= 14,
+	POLYGON_ATTR_ENABLE_DEPTH_EQUAL_TEST_BIT	= 14,
 	POLYGON_ATTR_ENABLE_FOG_BIT					= 15,
 	POLYGON_ATTR_ALPHA_BIT						= 16, // Bits 16 - 20
 	// Bits 21 - 23 unused
@@ -167,7 +176,7 @@ enum
 	POLYGON_ATTR_ENABLE_ALPHA_DEPTH_WRITE_MASK	= 0x01 << POLYGON_ATTR_ENABLE_ALPHA_DEPTH_WRITE_BIT,
 	POLYGON_ATTR_ENABLE_RENDER_ON_FAR_PLANE_INTERSECT_MASK = 0x01 << POLYGON_ATTR_ENABLE_RENDER_ON_FAR_PLANE_INTERSECT_BIT,
 	POLYGON_ATTR_ENABLE_ONE_DOT_RENDER_MASK		= 0x01 << POLYGON_ATTR_ENABLE_ONE_DOT_RENDER_BIT,
-	POLYGON_ATTR_ENABLE_DEPTH_TEST_MASK			= 0x01 << POLYGON_ATTR_ENABLE_DEPTH_TEST_BIT,
+	POLYGON_ATTR_ENABLE_DEPTH_EQUAL_TEST_MASK	= 0x01 << POLYGON_ATTR_ENABLE_DEPTH_EQUAL_TEST_BIT,
 	POLYGON_ATTR_ENABLE_FOG_MASK				= 0x01 << POLYGON_ATTR_ENABLE_FOG_BIT,
 	POLYGON_ATTR_ALPHA_MASK						= 0x1F << POLYGON_ATTR_ALPHA_BIT,
 	POLYGON_ATTR_POLYGON_ID_MASK				= 0x3F << POLYGON_ATTR_POLYGON_ID_BIT
@@ -226,25 +235,25 @@ void gfx3d_setFramebufferSize(size_t w, size_t h);
 
 typedef struct
 {
-	u8		enableLightFlags;
-	bool	enableLight0;
-	bool	enableLight1;
-	bool	enableLight2;
-	bool	enableLight3;
-	u8		polygonMode;
-	u8		surfaceCullingMode;
-	bool	enableRenderBackSurface;
-	bool	enableRenderFrontSurface;
-	bool	enableAlphaDepthWrite;
-	bool	enableRenderOnFarPlaneIntersect;
-	bool	enableRenderOneDot;
-	bool	enableDepthTest;
-	bool	enableRenderFog;
-	bool	isWireframe;
-	bool	isOpaque;
-	bool	isTranslucent;
-	u8		alpha;
-	u8		polygonID;
+	u8				enableLightFlags;
+	bool			enableLight0;
+	bool			enableLight1;
+	bool			enableLight2;
+	bool			enableLight3;
+	PolygonMode		polygonMode;
+	u8				surfaceCullingMode;
+	bool			enableRenderBackSurface;
+	bool			enableRenderFrontSurface;
+	bool			enableAlphaDepthWrite;
+	bool			enableRenderOnFarPlaneIntersect;
+	bool			enableRenderOneDot;
+	bool			enableDepthEqualTest;
+	bool			enableRenderFog;
+	bool			isWireframe;
+	bool			isOpaque;
+	bool			isTranslucent;
+	u8				alpha;
+	u8				polygonID;
 } PolygonAttributes;
 
 typedef struct
@@ -306,9 +315,9 @@ struct POLY {
 		return ((polyAttr & POLYGON_ATTR_ENABLE_LIGHT3_MASK) > 0);
 	}
 	
-	u8 getAttributePolygonMode() const
+	PolygonMode getAttributePolygonMode() const
 	{
-		return ((polyAttr & POLYGON_ATTR_MODE_MASK) >> POLYGON_ATTR_MODE_BIT);
+		return (PolygonMode)((polyAttr & POLYGON_ATTR_MODE_MASK) >> POLYGON_ATTR_MODE_BIT);
 	}
 	
 	u8 getAttributeEnableFaceCullingFlags() const
@@ -342,9 +351,9 @@ struct POLY {
 		return ((polyAttr & POLYGON_ATTR_ENABLE_ONE_DOT_RENDER_MASK) > 0);
 	}
 	
-	bool getAttributeEnableDepthTest() const
+	bool getAttributeEnableDepthEqualTest() const
 	{
-		return ((polyAttr & POLYGON_ATTR_ENABLE_DEPTH_TEST_MASK) > 0);
+		return ((polyAttr & POLYGON_ATTR_ENABLE_DEPTH_EQUAL_TEST_MASK) > 0);
 	}
 	
 	bool getAttributeEnableFog() const
@@ -378,7 +387,7 @@ struct POLY {
 		theAttr.enableAlphaDepthWrite			= this->getAttributeEnableAlphaDepthWrite();
 		theAttr.enableRenderOnFarPlaneIntersect	= this->getAttributeEnableRenderOnFarPlaneIntersect();
 		theAttr.enableRenderOneDot				= this->getAttributeEnableOneDotRender();
-		theAttr.enableDepthTest					= this->getAttributeEnableDepthTest();
+		theAttr.enableDepthEqualTest			= this->getAttributeEnableDepthEqualTest();
 		theAttr.enableRenderFog					= this->getAttributeEnableFog();
 		theAttr.alpha							= this->getAttributeAlpha();
 		theAttr.isWireframe						= this->isWireframe();

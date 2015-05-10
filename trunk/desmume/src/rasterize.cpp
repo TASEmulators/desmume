@@ -452,9 +452,6 @@ public:
 
 	FORCEINLINE FragmentColor sample(const float u, const float v)
 	{
-		static const FragmentColor white = MakeFragmentColor(63,63,63,31);
-		if(!sampler.enabled) return white;
-
 		//finally, we can use floor here. but, it is slower than we want.
 		//the best solution is probably to wait until the pipeline is full of fixed point
 		s32 iu = 0;
@@ -490,18 +487,18 @@ public:
 		}
 	}
 	
-	FORCEINLINE void shade(const u8 polygonMode, const FragmentColor src, FragmentColor &dst, const float texCoordU, const float texCoordV)
+	FORCEINLINE void shade(const PolygonMode polygonMode, const FragmentColor src, FragmentColor &dst, const float texCoordU, const float texCoordV)
 	{
-		FragmentColor texColor;
+		static const FragmentColor colorWhite = MakeFragmentColor(0x3F, 0x3F, 0x3F, 0x1F);
+		const FragmentColor mainTexColor = (sampler.enabled) ? sample(texCoordU, texCoordV) : colorWhite;
 		
-		switch(polygonMode)
+		switch (polygonMode)
 		{
-			case 0: //modulate
-				texColor = sample(texCoordU, texCoordV);
-				dst.r = modulate_table[texColor.r][src.r];
-				dst.g = modulate_table[texColor.g][src.g];
-				dst.b = modulate_table[texColor.b][src.b];
-				dst.a = modulate_table[GFX3D_5TO6(texColor.a)][GFX3D_5TO6(src.a)]>>1;
+			case POLYGON_MODE_MODULATE:
+				dst.r = modulate_table[mainTexColor.r][src.r];
+				dst.g = modulate_table[mainTexColor.g][src.g];
+				dst.b = modulate_table[mainTexColor.b][src.b];
+				dst.a = modulate_table[GFX3D_5TO6(mainTexColor.a)][GFX3D_5TO6(src.a)]>>1;
 				//dst.a = 28;
 				//#ifdef _MSC_VER
 				//if(GetAsyncKeyState(VK_SHIFT)) {
@@ -516,14 +513,13 @@ public:
 				//#endif
 				break;
 				
-			case 1: //decal
+			case POLYGON_MODE_DECAL:
 			{
 				if(sampler.enabled)
 				{
-					texColor = sample(texCoordU, texCoordV);
-					dst.r = decal_table[texColor.a][texColor.r][src.r];
-					dst.g = decal_table[texColor.a][texColor.g][src.g];
-					dst.b = decal_table[texColor.a][texColor.b][src.b];
+					dst.r = decal_table[mainTexColor.a][mainTexColor.r][src.r];
+					dst.g = decal_table[mainTexColor.a][mainTexColor.g][src.g];
+					dst.b = decal_table[mainTexColor.a][mainTexColor.b][src.b];
 					dst.a = src.a;
 				}
 				else
@@ -533,75 +529,59 @@ public:
 			}
 				break;
 				
-			case 2: //toon/highlight shading
+			case POLYGON_MODE_TOONHIGHLIGHT:
 			{
-				texColor = sample(texCoordU, texCoordV);
-				FragmentColor toonColor = this->_softRender->toonColor32LUT[src.r >> 1];
+				const FragmentColor toonColor = this->_softRender->toonColor32LUT[src.r >> 1];
 				
 				if(gfx3d.renderState.shading == GFX3D_State::HIGHLIGHT)
 				{
-					dst.r = modulate_table[texColor.r][src.r];
-					dst.g = modulate_table[texColor.g][src.r];
-					dst.b = modulate_table[texColor.b][src.r];
-					dst.a = modulate_table[GFX3D_5TO6(texColor.a)][GFX3D_5TO6(src.a)] >> 1;
+					dst.r = modulate_table[mainTexColor.r][src.r];
+					dst.g = modulate_table[mainTexColor.g][src.r];
+					dst.b = modulate_table[mainTexColor.b][src.r];
+					dst.a = modulate_table[GFX3D_5TO6(mainTexColor.a)][GFX3D_5TO6(src.a)] >> 1;
 					
-					dst.r = min<u8>(63, (dst.r + toonColor.r));
-					dst.g = min<u8>(63, (dst.g + toonColor.g));
-					dst.b = min<u8>(63, (dst.b + toonColor.b));
+					dst.r = min<u8>(0x3F, (dst.r + toonColor.r));
+					dst.g = min<u8>(0x3F, (dst.g + toonColor.g));
+					dst.b = min<u8>(0x3F, (dst.b + toonColor.b));
 				}
 				else
 				{
-					dst.r = modulate_table[texColor.r][toonColor.r];
-					dst.g = modulate_table[texColor.g][toonColor.g];
-					dst.b = modulate_table[texColor.b][toonColor.b];
-					dst.a = modulate_table[GFX3D_5TO6(texColor.a)][GFX3D_5TO6(src.a)] >> 1;
+					dst.r = modulate_table[mainTexColor.r][toonColor.r];
+					dst.g = modulate_table[mainTexColor.g][toonColor.g];
+					dst.b = modulate_table[mainTexColor.b][toonColor.b];
+					dst.a = modulate_table[GFX3D_5TO6(mainTexColor.a)][GFX3D_5TO6(src.a)] >> 1;
 				}
 				
 			}
 				break;
 				
-			case 3: //shadows
+			case POLYGON_MODE_SHADOW:
 				//is this right? only with the material color?
 				dst = src;
 				break;
 		}
 	}
 	
+	template<bool isShadowPolygon>
 	FORCEINLINE void pixel(const PolygonAttributes &polyAttr, FragmentAttributes &dstAttributes, FragmentColor &dstColor, float r, float g, float b, float invu, float invv, float w, float z)
 	{
 		FragmentColor srcColor;
 		FragmentColor shaderOutput;
-
-		u32 depth;
-		if (gfx3d.renderState.wbuffer)
+		bool isOpaquePixel;
+		
+		//not sure about the w-buffer depth value
+		//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
+		const u32 depth = (gfx3d.renderState.wbuffer) ? u32floor(4096*w) : DS_DEPTH15TO24( u32floor(z*0x7FFF) );
+		
+		// run the depth test
+		if (polyAttr.enableDepthEqualTest)
 		{
-			//not sure about this
-			//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
-			depth = u32floor(4096*w);
-		}
-		else
-		{
-			depth = u32floor(z*0x7FFF);
-			depth <<= 9;
-		}
-
-		//if(polyAttr.decalMode)
-		if (polyAttr.enableDepthTest) // Why was this originally called "decalMode"?
-		{
-			if (CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack > 0)
+			const u32 minDepth = max<u32>(0x00000000, dstAttributes.depth - SOFTRASTERIZER_DEPTH_EQUAL_TEST_TOLERANCE);
+			const u32 maxDepth = min<u32>(0x00FFFFFF, dstAttributes.depth + SOFTRASTERIZER_DEPTH_EQUAL_TEST_TOLERANCE);
+			
+			if (depth < minDepth || depth > maxDepth)
 			{
-				if( depth < dstAttributes.depth - CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack
-					|| depth > dstAttributes.depth + CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack)
-				{
-					goto depth_fail;
-				}
-			}
-			else
-			{
-				if (depth != dstAttributes.depth)
-				{
-					goto depth_fail;
-				}
+				goto depth_fail;
 			}
 		}
 		else
@@ -613,7 +593,7 @@ public:
 		}
 		
 		//handle shadow polys
-		if (polyAttr.polygonMode == 3)
+		if (isShadowPolygon)
 		{
 			if (polyAttr.polygonID == 0)
 			{
@@ -644,55 +624,50 @@ public:
 		//this is a HACK: 
 		//we are being very sloppy with our interpolation precision right now
 		//and rather than fix it, i just want to clamp it
-		srcColor = MakeFragmentColor(max(0U,min(63U,u32floor(r))),
-									 max(0U,min(63U,u32floor(g))),
-									 max(0U,min(63U,u32floor(b))),
+		srcColor = MakeFragmentColor(max<u8>(0x00, min<u32>(0x3F,u32floor(r))),
+									 max<u8>(0x00, min<u32>(0x3F,u32floor(g))),
+									 max<u8>(0x00, min<u32>(0x3F,u32floor(b))),
 									 polyAttr.alpha);
 		
 		//pixel shader
 		shade(polyAttr.polygonMode, srcColor, shaderOutput, invu * w, invv * w);
 		
-		//we shouldnt do any of this if we generated a totally transparent pixel
-		if (shaderOutput.a != 0)
+		// handle alpha test
+		if ( shaderOutput.a == 0 ||
+			(this->_softRender->currentRenderState->enableAlphaTest && shaderOutput.a < this->_softRender->currentRenderState->alphaTestRef) )
 		{
-			//alpha test (don't have any test cases for this...? is it in the right place...?)
-			if (gfx3d.renderState.enableAlphaTest)
-			{
-				if (shaderOutput.a < gfx3d.renderState.alphaTestRef)
-					goto rejected_fragment;
-			}
-
-			//handle polyids
-			bool isOpaquePixel = shaderOutput.a == 31;
-			if (isOpaquePixel)
-			{
-				dstAttributes.opaquePolyID = polyAttr.polygonID;
-				dstAttributes.isTranslucentPoly = polyAttr.isTranslucent;
-				dstAttributes.isFogged = polyAttr.enableRenderFog;
-				dstColor = shaderOutput;
-			}
-			else
-			{
-				//dont overwrite pixels on translucent polys with the same polyids
-				if (dstAttributes.translucentPolyID == polyAttr.polygonID)
-					goto rejected_fragment;
-			
-				//originally we were using a test case of shadows-behind-trees in sm64ds
-				//but, it looks bad in that game. this is actually correct
-				//if this isnt correct, then complex shape cart shadows in mario kart don't work right
-				dstAttributes.translucentPolyID = polyAttr.polygonID;
-
-				//alpha blending and write color
-				alphaBlend(dstColor, shaderOutput);
-				
-				dstAttributes.isFogged = (dstAttributes.isFogged && polyAttr.enableRenderFog);
-			}
-
-			//depth writing
-			if (isOpaquePixel || polyAttr.enableAlphaDepthWrite)
-				dstAttributes.depth = depth;
-
+			goto rejected_fragment;
 		}
+		
+		// write pixel values to the framebuffer
+		isOpaquePixel = (shaderOutput.a == 0x1F);
+		if (isOpaquePixel)
+		{
+			dstAttributes.opaquePolyID = polyAttr.polygonID;
+			dstAttributes.isTranslucentPoly = polyAttr.isTranslucent;
+			dstAttributes.isFogged = polyAttr.enableRenderFog;
+			dstColor = shaderOutput;
+		}
+		else
+		{
+			//dont overwrite pixels on translucent polys with the same polyids
+			if (dstAttributes.translucentPolyID == polyAttr.polygonID)
+				goto rejected_fragment;
+			
+			//originally we were using a test case of shadows-behind-trees in sm64ds
+			//but, it looks bad in that game. this is actually correct
+			//if this isnt correct, then complex shape cart shadows in mario kart don't work right
+			dstAttributes.translucentPolyID = polyAttr.polygonID;
+			
+			//alpha blending and write color
+			alphaBlend(dstColor, shaderOutput);
+			
+			dstAttributes.isFogged = (dstAttributes.isFogged && polyAttr.enableRenderFog);
+		}
+		
+		//depth writing
+		if (isOpaquePixel || polyAttr.enableAlphaDepthWrite)
+			dstAttributes.depth = depth;
 
 		//shadow cases: (need multi-bit stencil buffer to cope with all of these, especially the mariokart complex shadows)
 		//1. sm64 (standing near signs and blocks)
@@ -702,17 +677,19 @@ public:
 
 		goto done;
 		depth_fail:
-		if (polyAttr.polygonMode == 3 && polyAttr.polygonID == 0)
+		if (isShadowPolygon && polyAttr.polygonID == 0)
 			dstAttributes.stencil++;
+		
 		rejected_fragment:
 		done:
 		;
 
-		if (polyAttr.polygonMode == 3 && polyAttr.polygonID != 0 && dstAttributes.stencil)
+		if (isShadowPolygon && polyAttr.polygonID != 0 && dstAttributes.stencil)
 			dstAttributes.stencil--;
 	}
 
 	//draws a single scanline
+	template <bool isShadowPolygon>
 	FORCEINLINE void drawscanline(const PolygonAttributes &polyAttr, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight, bool lineHack)
 	{
 		int XStart = pLeft->X;
@@ -798,7 +775,7 @@ public:
 		
 		while (width-- > 0)
 		{
-			pixel(polyAttr, this->_softRender->_framebufferAttributes[adr], dstColor[adr], color[0], color[1], color[2], u, v, 1.0f/invw, z);
+			pixel<isShadowPolygon>(polyAttr, this->_softRender->_framebufferAttributes[adr], dstColor[adr], color[0], color[1], color[2], u, v, 1.0f/invw, z);
 			adr++;
 			x++;
 
@@ -813,7 +790,7 @@ public:
 	}
 
 	//runs several scanlines, until an edge is finished
-	template<bool SLI>
+	template<bool SLI, bool isShadowPolygon>
 	void runscanlines(const PolygonAttributes &polyAttr, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *left, edge_fx_fl *right, bool horizontal, bool lineHack)
 	{
 		//oh lord, hack city for edge drawing
@@ -826,13 +803,13 @@ public:
 		if (lineHack && left->Height == 0 && right->Height == 0 && left->Y<framebufferHeight && left->Y>=0)
 		{
 			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
-			if(draw) drawscanline(polyAttr, dstColor, framebufferWidth, framebufferHeight, left,right,lineHack);
+			if(draw) drawscanline<isShadowPolygon>(polyAttr, dstColor, framebufferWidth, framebufferHeight, left,right,lineHack);
 		}
 
 		while(Height--)
 		{
 			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
-			if(draw) drawscanline(polyAttr, dstColor, framebufferWidth, framebufferHeight, left,right,lineHack);
+			if(draw) drawscanline<isShadowPolygon>(polyAttr, dstColor, framebufferWidth, framebufferHeight, left,right,lineHack);
 			const int xl = left->X;
 			const int xr = right->X;
 			const int y = left->Y;
@@ -952,7 +929,7 @@ public:
 	//verts must be clockwise.
 	//I didnt reference anything for this algorithm but it seems like I've seen it somewhere before.
 	//Maybe it is like crow's algorithm
-	template<bool SLI>
+	template<bool SLI, bool isShadowPolygon>
 	void shape_engine(const PolygonAttributes &polyAttr, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type, const bool backwards, bool lineHack)
 	{
 		bool failure = false;
@@ -993,7 +970,7 @@ public:
 				return;
 
 			bool horizontal = left.Y == right.Y;
-			runscanlines<SLI>(polyAttr, dstColor, framebufferWidth, framebufferHeight, &left, &right, horizontal, lineHack);
+			runscanlines<SLI, isShadowPolygon>(polyAttr, dstColor, framebufferWidth, framebufferHeight, &left, &right, horizontal, lineHack);
 
 			//if we ran out of an edge, step to the next one
 			if (right.Height == 0)
@@ -1015,44 +992,50 @@ public:
 	template<bool SLI>
 	FORCEINLINE void mainLoop()
 	{
+		const size_t polyCount = this->_softRender->_clippedPolyCount;
+		if (polyCount == 0)
+		{
+			return;
+		}
+		
 		FragmentColor *dstColor = this->_softRender->GetFramebuffer();
-		size_t dstWidth = this->_softRender->GetFramebufferWidth();
-		size_t dstHeight = this->_softRender->GetFramebufferHeight();
+		const size_t dstWidth = this->_softRender->GetFramebufferWidth();
+		const size_t dstHeight = this->_softRender->GetFramebufferHeight();
 		
 		lastTexKey = NULL;
 		
-		PolygonAttributes polyAttr;
-		u32 lastPolyAttr = 0;
-		u32 lastTextureFormat = 0, lastTexturePalette = 0;
+		GFX3D_Clipper::TClippedPoly &firstClippedPoly = this->_softRender->clippedPolys[0];
+		POLY &firstPoly = *firstClippedPoly.poly;
+		PolygonAttributes polyAttr = firstPoly.getAttributes();
+		u32 lastPolyAttr = firstPoly.polyAttr;
+		u32 lastTexParams = firstPoly.texParam;
+		u32 lastTexPalette = firstPoly.texPalette;
+		sampler.setup(firstPoly.texParam);
 
 		//iterate over polys
-		bool first=true;
-		for (size_t i = 0; i < this->_softRender->_clippedPolyCount; i++)
+		for (size_t i = 0; i < polyCount; i++)
 		{
 			if (!RENDERER) _debug_thisPoly = (i == this->_softRender->_debug_drawClippedUserPoly);
 			if (!this->_softRender->polyVisible[i]) continue;
 			polynum = i;
 
 			GFX3D_Clipper::TClippedPoly &clippedPoly = this->_softRender->clippedPolys[i];
-			POLY *thePoly = clippedPoly.poly;
+			POLY &thePoly = *clippedPoly.poly;
 			int type = clippedPoly.type;
-
-			if (first || lastPolyAttr != thePoly->polyAttr)
+			
+			if (lastPolyAttr != thePoly.polyAttr)
 			{
-				polyAttr = thePoly->getAttributes();
-				lastPolyAttr = thePoly->polyAttr;
+				polyAttr = thePoly.getAttributes();
+				lastPolyAttr = thePoly.polyAttr;
 			}
-
-
-			if (first || lastTextureFormat != thePoly->texParam || lastTexturePalette != thePoly->texPalette)
+			
+			if (lastTexParams != thePoly.texParam || lastTexPalette != thePoly.texPalette)
 			{
-				sampler.setup(thePoly->texParam);
-				lastTextureFormat = thePoly->texParam;
-				lastTexturePalette = thePoly->texPalette;
+				sampler.setup(thePoly.texParam);
+				lastTexParams = thePoly.texParam;
+				lastTexPalette = thePoly.texPalette;
 			}
-
-			first = false;
-
+			
 			lastTexKey = this->_softRender->polyTexKeys[i];
 			
 			for (int j = 0; j < type; j++)
@@ -1060,7 +1043,14 @@ public:
 			for (int j = type; j < MAX_CLIPPED_VERTS; j++)
 				this->verts[j] = NULL;
 			
-			shape_engine<SLI>(polyAttr, dstColor, dstWidth, dstHeight, type, !this->_softRender->polyBackfacing[i], (thePoly->vtxFormat & 4) && CommonSettings.GFX3D_LineHack);
+			if (polyAttr.polygonMode == POLYGON_MODE_SHADOW)
+			{
+				shape_engine<SLI, true>(polyAttr, dstColor, dstWidth, dstHeight, type, !this->_softRender->polyBackfacing[i], (thePoly.vtxFormat & 4) && CommonSettings.GFX3D_LineHack);
+			}
+			else
+			{
+				shape_engine<SLI, false>(polyAttr, dstColor, dstWidth, dstHeight, type, !this->_softRender->polyBackfacing[i], (thePoly.vtxFormat & 4) && CommonSettings.GFX3D_LineHack);
+			}
 		}
 	}
 
@@ -1402,7 +1392,7 @@ bool PolygonIsVisible(const PolygonAttributes &polyAttr, const bool backfacing)
 {
 	//this was added after adding multi-bit stencil buffer
 	//it seems that we also need to prevent drawing back faces of shadow polys for rendering
-	if (polyAttr.polygonMode == 3 && polyAttr.polygonID != 0) return !backfacing;
+	if (polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID != 0) return !backfacing;
 	
 	//another reasonable possibility is that we should be forcing back faces to draw (mariokart doesnt use them)
 	//and then only using a single bit buffer (but a cursory test of this doesnt actually work)
@@ -1776,13 +1766,13 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 #define PIXOFFSET(dx,dy) ((dx)+(this->_framebufferWidth*(dy)))
 #define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID != this->_framebufferAttributes[i+PIXOFFSET(dx,dy)].opaquePolyID && depth >= this->_framebufferAttributes[i+PIXOFFSET(dx,dy)].depth)
 				
+				if (this->edgeMarkDisabled[polyID>>3] || dstAttributes.isTranslucentPoly)
+					goto END_EDGE_MARK;
+				
 				up		= ISEDGE( 0,-1);
 				left	= ISEDGE(-1, 0);
 				right	= ISEDGE( 1, 0);
 				down	= ISEDGE( 0, 1);
-				
-				if(this->edgeMarkDisabled[polyID>>3]) goto END_EDGE_MARK;
-				if(dstAttributes.isTranslucentPoly) goto END_EDGE_MARK;
 				
 				if (right)
 				{
@@ -1860,14 +1850,11 @@ Render3DError SoftRasterizerRenderer::UpdateToonTable(const u16 *toonTableBuffer
 Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
 {
 	// The clear image buffer is y-flipped, so we need to flip it back to normal here.
-	for (size_t y = 0; y < this->_framebufferHeight; y++)
+	for (size_t y = 0, iw = 0, ir = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, ir -= (this->_framebufferWidth * 2))
 	{
-		for (size_t x = 0; x < this->_framebufferWidth; x++)
+		for (size_t x = 0; x < this->_framebufferWidth; x++, iw++, ir++)
 		{
-			size_t ir = x + (y * this->_framebufferWidth);
-			size_t iw = x + ((this->_framebufferHeight - 1 - y) * this->_framebufferWidth);
-			
-			this->_framebufferColor[iw].color = RGB15TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 31);
+			this->_framebufferColor[iw].color = RGB15TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 0x1F);
 			this->_framebufferAttributes[iw].isFogged = fogBuffer[ir];
 			this->_framebufferAttributes[iw].depth = depthBuffer[ir];
 			this->_framebufferAttributes[iw].opaquePolyID = polyIDBuffer[ir];
@@ -1948,9 +1935,6 @@ Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
 	{
 		if (this->currentRenderState->enableEdgeMarking || this->currentRenderState->enableFog)
 		{
-			this->postprocessParam[0].renderer = this;
-			this->postprocessParam[0].startLine = 0;
-			this->postprocessParam[0].endLine = this->_framebufferHeight;
 			this->postprocessParam[0].enableEdgeMarking = this->currentRenderState->enableEdgeMarking;
 			this->postprocessParam[0].enableFog = this->currentRenderState->enableFog;
 			this->postprocessParam[0].fogColor = this->currentRenderState->fogColor;

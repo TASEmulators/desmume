@@ -552,11 +552,14 @@ void gfx3d_init()
 	gfx3d.state.edgeMarkColorTable = (u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0330);
 	
 	makeTables();
+	Render3D_Init();
 	gfx3d_reset();
 }
 
 void gfx3d_deinit()
 {
+	Render3D_DeInit();
+	
 	free(polylists);
 	polylists = NULL;
 	polylist = NULL;
