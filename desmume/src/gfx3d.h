@@ -122,14 +122,26 @@ inline u32 RGB15TO6665(u16 col, u8 alpha5)
 // 15-bit to 24-bit depth formula from http://nocash.emubase.de/gbatek.htm#ds3drearplane
 #define DS_DEPTH15TO24(depth) ( dsDepthExtend_15bit_to_24bit[(depth) & 0x7FFF] )
 
-// POLYGON PRIMITIVE TYPES
-enum
+// MATRIX MODES
+enum MatrixMode
 {
-	GFX3D_TRIANGLES			= 0,
-	GFX3D_QUADS				= 1,
-	GFX3D_TRIANGLE_STRIP	= 2,
-	GFX3D_QUAD_STRIP		= 3,
-	GFX3D_LINE				= 4
+	MATRIXMODE_PROJECTION		= 0,
+	MATRIXMODE_POSITION			= 1,
+	MATRIXMODE_POSITION_VECTOR	= 2,
+	MATRIXMODE_TEXTURE			= 3
+};
+
+// POLYGON PRIMITIVE TYPES
+enum PolygonPrimitiveType
+{
+	GFX3D_TRIANGLES				= 0,
+	GFX3D_QUADS					= 1,
+	GFX3D_TRIANGLE_STRIP		= 2,
+	GFX3D_QUAD_STRIP			= 3,
+	GFX3D_TRIANGLES_LINE		= 4,
+	GFX3D_QUADS_LINE			= 5,
+	GFX3D_TRIANGLE_STRIP_LINE	= 6,
+	GFX3D_QUAD_STRIP_LINE		= 7
 };
 
 // POLYGON MODES
@@ -139,6 +151,13 @@ enum PolygonMode
 	POLYGON_MODE_DECAL			= 1,
 	POLYGON_MODE_TOONHIGHLIGHT	= 2,
 	POLYGON_MODE_SHADOW			= 3
+};
+
+// POLYGON TYPES
+enum PolygonType
+{
+	POLYGON_TYPE_TRIANGLE	= 3,
+	POLYGON_TYPE_QUAD		= 4
 };
 
 // POLYGON ATTRIBUTES - BIT LOCATIONS
@@ -271,8 +290,8 @@ typedef struct
 } PolygonTexParams;
 
 struct POLY {
-	int type; //tri or quad
-	u8 vtxFormat;
+	PolygonType type; //tri or quad
+	PolygonPrimitiveType vtxFormat;
 	u16 vertIndexes[4]; //up to four verts can be referenced by this poly
 	u32 polyAttr, texParam, texPalette; //the hardware rendering params
 	u32 viewport;
@@ -283,8 +302,8 @@ struct POLY {
 		vertIndexes[0] = a;
 		vertIndexes[1] = b;
 		vertIndexes[2] = c;
-		if(d != -1) { vertIndexes[3] = d; type = 4; }
-		else type = 3;
+		if(d != -1) { vertIndexes[3] = d; type = POLYGON_TYPE_QUAD; }
+		else type = POLYGON_TYPE_TRIANGLE;
 	}
 	
 	u8 getAttributeEnableLightFlags() const
@@ -580,7 +599,8 @@ struct INDEXLIST {
 
 
 struct VIEWPORT {
-	int x, y, width, height;
+	u8 x, y;
+	u16 width, height;
 	void decode(u32 v);
 };
 
@@ -595,8 +615,8 @@ public:
 	
 	struct TClippedPoly
 	{
-		int type; //otherwise known as "count" of verts
-		POLY* poly;
+		PolygonType type; //otherwise known as "count" of verts
+		POLY *poly;
 		VERT clipVerts[MAX_CLIPPED_VERTS];
 	};
 
@@ -721,7 +741,7 @@ extern CACHE_ALIGN u32 color_15bit_to_24bit_reverse[32768];
 extern CACHE_ALIGN u16 color_15bit_to_16bit_reverse[32768];
 extern CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 extern CACHE_ALIGN u8 mixTable555[32][32][32];
-extern CACHE_ALIGN const int material_5bit_to_31bit[32];
+extern CACHE_ALIGN const u32 material_5bit_to_31bit[32];
 extern CACHE_ALIGN const u8 material_5bit_to_8bit[32];
 extern CACHE_ALIGN const u8 material_3bit_to_5bit[8];
 extern CACHE_ALIGN const u8 material_3bit_to_6bit[8];
@@ -745,11 +765,11 @@ int gfx3d_GetNumPolys();
 int gfx3d_GetNumVertex();
 void gfx3d_UpdateToonTable(u8 offset, u16 val);
 void gfx3d_UpdateToonTable(u8 offset, u32 val);
-s32 gfx3d_GetClipMatrix (u32 index);
-s32 gfx3d_GetDirectionalMatrix (u32 index);
+s32 gfx3d_GetClipMatrix (const u32 index);
+s32 gfx3d_GetDirectionalMatrix(const u32 index);
 void gfx3d_glAlphaFunc(u32 v);
-u32 gfx3d_glGetPosRes(u32 index);
-u16 gfx3d_glGetVecRes(u32 index);
+u32 gfx3d_glGetPosRes(const size_t index);
+u16 gfx3d_glGetVecRes(const size_t index);
 void gfx3d_VBlankSignal();
 void gfx3d_VBlankEndSignal(bool skipFrame);
 void gfx3d_Control(u32 v);

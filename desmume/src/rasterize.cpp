@@ -515,7 +515,7 @@ public:
 				
 			case POLYGON_MODE_DECAL:
 			{
-				if(sampler.enabled)
+				if (sampler.enabled)
 				{
 					dst.r = decal_table[mainTexColor.a][mainTexColor.r][src.r];
 					dst.g = decal_table[mainTexColor.a][mainTexColor.g][src.g];
@@ -533,7 +533,7 @@ public:
 			{
 				const FragmentColor toonColor = this->_softRender->toonColor32LUT[src.r >> 1];
 				
-				if(gfx3d.renderState.shading == GFX3D_State::HIGHLIGHT)
+				if (gfx3d.renderState.shading == GFX3D_State::HIGHLIGHT)
 				{
 					dst.r = modulate_table[mainTexColor.r][src.r];
 					dst.g = modulate_table[mainTexColor.g][src.r];
@@ -1004,8 +1004,8 @@ public:
 		
 		lastTexKey = NULL;
 		
-		GFX3D_Clipper::TClippedPoly &firstClippedPoly = this->_softRender->clippedPolys[0];
-		POLY &firstPoly = *firstClippedPoly.poly;
+		const GFX3D_Clipper::TClippedPoly &firstClippedPoly = this->_softRender->clippedPolys[0];
+		const POLY &firstPoly = *firstClippedPoly.poly;
 		PolygonAttributes polyAttr = firstPoly.getAttributes();
 		u32 lastPolyAttr = firstPoly.polyAttr;
 		u32 lastTexParams = firstPoly.texParam;
@@ -1020,8 +1020,8 @@ public:
 			polynum = i;
 
 			GFX3D_Clipper::TClippedPoly &clippedPoly = this->_softRender->clippedPolys[i];
-			POLY &thePoly = *clippedPoly.poly;
-			int type = clippedPoly.type;
+			const POLY &thePoly = *clippedPoly.poly;
+			const PolygonType type = clippedPoly.type;
 			
 			if (lastPolyAttr != thePoly.polyAttr)
 			{
@@ -1232,7 +1232,7 @@ Render3DError SoftRasterizerRenderer::InitTables()
 {
 	static bool needTableInit = true;
 	
-	if(needTableInit)
+	if (needTableInit)
 	{
 		for (size_t i = 0; i < 64; i++)
 		{
@@ -1265,7 +1265,8 @@ Render3DError SoftRasterizerRenderer::InitTables()
 	return RENDER3DERROR_NOERR;
 }
 
-size_t SoftRasterizerRenderer::performClipping(bool hirez, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
+template<bool useHiResInterpolate>
+size_t SoftRasterizerRenderer::performClipping(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
 {
 	//submit all polys to clipper
 	clipper.reset();
@@ -1276,15 +1277,12 @@ size_t SoftRasterizerRenderer::performClipping(bool hirez, const VERTLIST *vertL
 			&vertList->list[poly.vertIndexes[0]],
 			&vertList->list[poly.vertIndexes[1]],
 			&vertList->list[poly.vertIndexes[2]],
-			poly.type==4
+			poly.type==POLYGON_TYPE_QUAD
 			?&vertList->list[poly.vertIndexes[3]]
 			:NULL
 		};
 		
-		if(hirez)
-			clipper.clipPoly<true>(poly, clipVerts);
-		else
-			clipper.clipPoly<false>(poly, clipVerts);
+		clipper.clipPoly<useHiResInterpolate>(poly, clipVerts);
 	}
 	
 	return clipper.clippedPolyCounter;
@@ -1347,7 +1345,7 @@ void SoftRasterizerRenderer::performCoordAdjustment()
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
 		GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
-		int type = clippedPoly.type;
+		const PolygonType type = clippedPoly.type;
 		VERT *verts = &clippedPoly.clipVerts[0];
 		
 		//here is a hack which needs to be removed.
@@ -1359,28 +1357,33 @@ void SoftRasterizerRenderer::performCoordAdjustment()
 	}
 }
 
-
 void SoftRasterizerRenderer::setupTextures()
 {
-	TexCacheItem *lastTexKey = NULL;
-	u32 lastTextureFormat = 0, lastTexturePalette = 0;
-	bool needInitTexture = true;
+	if (this->_clippedPolyCount == 0)
+	{
+		return;
+	}
+	
+	const GFX3D_Clipper::TClippedPoly &firstClippedPoly = this->clippedPolys[0];
+	const POLY &firstPoly = *firstClippedPoly.poly;
+	u32 lastTexParams = firstPoly.texParam;
+	u32 lastTexPalette = firstPoly.texPalette;
+	TexCacheItem *lastTexKey = TexCache_SetTexture(TexFormat_15bpp, firstPoly.texParam, firstPoly.texPalette);
 	
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
-		GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
-		POLY *thePoly = clippedPoly.poly;
+		const GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
+		const POLY &thePoly = *clippedPoly.poly;
 		
 		//make sure all the textures we'll need are cached
 		//(otherwise on a multithreaded system there will be multiple writers--
 		//this SHOULD be read-only, although some day the texcache may collect statistics or something
 		//and then it won't be safe.
-		if (needInitTexture || lastTextureFormat != thePoly->texParam || lastTexturePalette != thePoly->texPalette)
+		if (lastTexParams != thePoly.texParam || lastTexPalette != thePoly.texPalette)
 		{
-			lastTexKey = TexCache_SetTexture(TexFormat_15bpp, thePoly->texParam, thePoly->texPalette);
-			lastTextureFormat = thePoly->texParam;
-			lastTexturePalette = thePoly->texPalette;
-			needInitTexture = false;
+			lastTexKey = TexCache_SetTexture(TexFormat_15bpp, thePoly.texParam, thePoly.texPalette);
+			lastTexParams = thePoly.texParam;
+			lastTexPalette = thePoly.texPalette;
 		}
 		
 		//printf("%08X %d\n",poly->texParam,rasterizerUnit[0].textures.currentNum);
@@ -1415,11 +1418,11 @@ void SoftRasterizerRenderer::performBackfaceTests()
 {
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
-		GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
-		POLY *thePoly = clippedPoly.poly;
-		int type = clippedPoly.type;
-		VERT* verts = &clippedPoly.clipVerts[0];
-		const PolygonAttributes polyAttr = thePoly->getAttributes();
+		const GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
+		const POLY &thePoly = *clippedPoly.poly;
+		const PolygonType type = clippedPoly.type;
+		const VERT *verts = &clippedPoly.clipVerts[0];
+		const PolygonAttributes polyAttr = thePoly.getAttributes();
 		
 		//HACK: backface culling
 		//this should be moved to gfx3d, but first we need to redo the way the lists are built
@@ -1434,11 +1437,11 @@ void SoftRasterizerRenderer::performBackfaceTests()
 		//a better approach
 		// we have to support somewhat non-convex polygons (see NSMB world map 1st screen).
 		// this version should handle those cases better.
-		size_t n = type - 1;
+		const size_t n = type - 1;
 		float facing = (verts[0].y + verts[n].y) * (verts[0].x - verts[n].x)
 		+ (verts[1].y + verts[0].y) * (verts[1].x - verts[0].x)
 		+ (verts[2].y + verts[1].y) * (verts[2].x - verts[1].x);
-		for(int j = 2; j < n; j++)
+		for (size_t j = 2; j < n; j++)
 			facing += (verts[j+1].y + verts[j].y) * (verts[j+1].x - verts[j].x);
 		
 		polyBackfacing[i] = (facing < 0);
@@ -1460,7 +1463,14 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 	// Keep the current render states for later use
 	this->currentRenderState = (GFX3D_State *)&engine.renderState;
 	
-	this->_clippedPolyCount = this->performClipping(CommonSettings.GFX3D_HighResolutionInterpolateColor, engine.vertlist, engine.polylist, &engine.indexlist);
+	if (CommonSettings.GFX3D_HighResolutionInterpolateColor)
+	{
+		this->_clippedPolyCount = this->performClipping<true>(engine.vertlist, engine.polylist, &engine.indexlist);
+	}
+	else
+	{
+		this->_clippedPolyCount = this->performClipping<false>(engine.vertlist, engine.polylist, &engine.indexlist);
+	}
 	
 	if (rasterizerCores >= 4)
 	{
@@ -1553,15 +1563,15 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable, c
 			const FragmentAttributes dstAttributes = this->_framebufferAttributes[i];
 			const u8 polyID = dstAttributes.opaquePolyID;
 			
-			if(this->edgeMarkDisabled[polyID>>3]) continue;
-			if(dstAttributes.isTranslucentPoly) continue;
+			if (this->edgeMarkDisabled[polyID>>3]) continue;
+			if (dstAttributes.isTranslucentPoly) continue;
 			
 			// > is used instead of != to prevent double edges
 			// between overlapping polys of different IDs.
 			// also note that the edge generally goes on the outside, not the inside, (maybe needs to change later)
 			// and that polys with the same edge color can make edges against each other.
 			
-			FragmentColor edgeColor = this->edgeMarkTable[polyID>>3];
+			const FragmentColor edgeColor = this->edgeMarkTable[polyID>>3];
 			
 #define PIXOFFSET(dx,dy) ((dx)+(this->_framebufferWidth*(dy)))
 #define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID > this->_framebufferAttributes[i+PIXOFFSET(dx,dy)].opaquePolyID)
@@ -1706,12 +1716,12 @@ Render3DError SoftRasterizerRenderer::RenderFog(const u8 *densityTable, const u3
 	{
 		for (size_t i = 0; i < framebufferFragmentCount; i++)
 		{
-			const FragmentAttributes &destFragment = _framebufferAttributes[i];
+			const FragmentAttributes &destFragment = this->_framebufferAttributes[i];
 			const size_t fogIndex = destFragment.depth >> 9;
 			assert(fogIndex < 32768);
 			const u8 fog = (destFragment.isFogged) ? this->fogTable[fogIndex] : 0;
 			
-			FragmentColor &destFragmentColor = _framebufferColor[i];
+			FragmentColor &destFragmentColor = this->_framebufferColor[i];
 			destFragmentColor.r = ((128-fog)*destFragmentColor.r + r*fog)>>7;
 			destFragmentColor.g = ((128-fog)*destFragmentColor.g + g*fog)>>7;
 			destFragmentColor.b = ((128-fog)*destFragmentColor.b + b*fog)>>7;
@@ -1722,12 +1732,12 @@ Render3DError SoftRasterizerRenderer::RenderFog(const u8 *densityTable, const u3
 	{
 		for (size_t i = 0; i < framebufferFragmentCount; i++)
 		{
-			const FragmentAttributes &destFragment = _framebufferAttributes[i];
+			const FragmentAttributes &destFragment = this->_framebufferAttributes[i];
 			const size_t fogIndex = destFragment.depth >> 9;
 			assert(fogIndex < 32768);
 			const u8 fog = (destFragment.isFogged) ? this->fogTable[fogIndex] : 0;
 			
-			FragmentColor &destFragmentColor = _framebufferColor[i];
+			FragmentColor &destFragmentColor = this->_framebufferColor[i];
 			destFragmentColor.a = ((128-fog)*destFragmentColor.a + a*fog)>>7;
 		}
 	}
@@ -1741,7 +1751,7 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 	{
 		for (size_t x = 0; x < this->_framebufferWidth; x++, i++)
 		{
-			FragmentColor &dstColor = _framebufferColor[i];
+			FragmentColor &dstColor = this->_framebufferColor[i];
 			const FragmentAttributes dstAttributes = this->_framebufferAttributes[i];
 			const u32 depth = dstAttributes.depth;
 			const u8 polyID = dstAttributes.opaquePolyID;

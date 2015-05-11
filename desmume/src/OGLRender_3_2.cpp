@@ -1054,7 +1054,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	// safe to use.
 	
 	glBindBuffer(GL_UNIFORM_BUFFER, OGLRef.uboRenderStatesID);
-	OGLRenderStates *state = (OGLRenderStates *)glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(OGLRenderStates), GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+	OGLRenderStates *state = (OGLRenderStates *)glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(OGLRenderStates), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 	
 	state->framebufferSize.x = this->_framebufferWidth;
 	state->framebufferSize.y = this->_framebufferHeight;

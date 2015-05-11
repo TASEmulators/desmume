@@ -157,9 +157,9 @@ void	MatrixIdentity			(s32 *matrix)
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1<<12;
 }
 
-s32 MatrixGetMultipliedIndex (int index, s32 *matrix, s32 *rightMatrix)
+s32 MatrixGetMultipliedIndex(const u32 index, s32 *matrix, s32 *rightMatrix)
 {
-	int iMod = index%4, iDiv = (index>>2)<<2;
+	const size_t iMod = index%4, iDiv = (index>>2)<<2;
 
 	s64 temp = ((s64)matrix[iMod  ]*rightMatrix[iDiv  ])+((s64)matrix[iMod+ 4]*rightMatrix[iDiv+1])+
 			((s64)matrix[iMod+8]*rightMatrix[iDiv+2])+((s64)matrix[iMod+12]*rightMatrix[iDiv+3]);
@@ -271,21 +271,21 @@ void MatrixStackPopMatrix (s32 *mtxCurr, MatrixStack *stack, int size)
 		MatrixCopy (mtxCurr, &stack->matrix[stack->position*16]);
 }
 
-s32 * MatrixStackGetPos (MatrixStack *stack, int pos)
+s32* MatrixStackGetPos(MatrixStack *stack, const size_t pos)
 {
 	assert(pos<31);
 	return &stack->matrix[pos*16];
 }
 
-s32 * MatrixStackGet (MatrixStack *stack)
+s32* MatrixStackGet (MatrixStack *stack)
 {
 	return &stack->matrix[stack->position*16];
 }
 
-void MatrixStackLoadMatrix (MatrixStack *stack, int pos, const s32 *ptr)
+void MatrixStackLoadMatrix (MatrixStack *stack, const size_t pos, const s32 *ptr)
 {
 	assert(pos<31);
-	MatrixCopy (&stack->matrix[pos*16], ptr);
+	MatrixCopy(&stack->matrix[pos*16], ptr);
 }
 
 void Vector2Copy(float *dst, const float *src)

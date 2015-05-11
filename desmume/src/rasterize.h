@@ -53,7 +53,7 @@ protected:
 	// SoftRasterizer-specific methods
 	virtual Render3DError InitTables();
 	
-	size_t performClipping(bool hirez, const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
+	template<bool useHiResInterpolate> size_t performClipping(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList);
 	
 	// Base rendering methods
 	virtual Render3DError BeginRender(const GFX3D &engine);

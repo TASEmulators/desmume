@@ -49,8 +49,8 @@ void	MatrixInit				(s32 *matrix);
 //without having to make new build types to exclude the assembly files.
 //a bit sloppy, but there aint much to it
 
-float	MatrixGetMultipliedIndex	(int index, float *matrix, float *rightMatrix);
-s32	MatrixGetMultipliedIndex	(int index, s32 *matrix, s32 *rightMatrix);
+float	MatrixGetMultipliedIndex	(const u32 index, float *matrix, float *rightMatrix);
+s32	MatrixGetMultipliedIndex	(const u32 index, s32 *matrix, s32 *rightMatrix);
 void	MatrixSet				(s32 *matrix, int x, int y, s32 value);
 void	MatrixCopy				(s32 * matrixDST, const s32 * matrixSRC);
 int		MatrixCompare				(const s32 * matrixDST, const float * matrixSRC);
@@ -60,9 +60,9 @@ void	MatrixStackInit				(MatrixStack *stack);
 void	MatrixStackSetMaxSize		(MatrixStack *stack, int size);
 void	MatrixStackPushMatrix		(MatrixStack *stack, const s32 *ptr);
 void	MatrixStackPopMatrix		(s32 *mtxCurr, MatrixStack *stack, int size);
-s32*	MatrixStackGetPos			(MatrixStack *stack, int pos);
+s32*	MatrixStackGetPos			(MatrixStack *stack, const size_t pos);
 s32*	MatrixStackGet				(MatrixStack *stack);
-void	MatrixStackLoadMatrix		(MatrixStack *stack, int pos, const s32 *ptr);
+void	MatrixStackLoadMatrix		(MatrixStack *stack, const size_t pos, const s32 *ptr);
 
 void Vector2Copy(float *dst, const float *src);
 void Vector2Add(float *dst, const float *src);
