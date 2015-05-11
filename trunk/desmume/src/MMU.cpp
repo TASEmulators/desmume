@@ -4704,7 +4704,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			case eng_3D_CLIPMTX_RESULT+60:
 			{
 				//LOG("4000640h..67Fh - CLIPMTX_RESULT - Read Current Clip Coordinates Matrix (R)");
-				return gfx3d_GetClipMatrix ((adr-0x04000640)/4);
+				return gfx3d_GetClipMatrix((adr-0x04000640)/4);
 			}
 			case eng_3D_VECMTX_RESULT:
 			case eng_3D_VECMTX_RESULT+4:
@@ -4717,7 +4717,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			case eng_3D_VECMTX_RESULT+32:
 			{
 				//LOG("4000680h..6A3h - VECMTX_RESULT - Read Current Directional Vector Matrix (R)");
-				return gfx3d_GetDirectionalMatrix ((adr-0x04000680)/4);
+				return gfx3d_GetDirectionalMatrix((adr-0x04000680)/4);
 			}
 
 			case eng_3D_RAM_COUNT:
