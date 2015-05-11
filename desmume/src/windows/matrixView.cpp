@@ -64,7 +64,7 @@ void MatrixView_OnPaintPositionMatrix(HWND hwnd)
 
 	stackIndex = SendMessage(hStackCombo, CB_GETCURSEL, 0, 0) - 1;
 
-	gfx3d_glGetMatrix(1, stackIndex, matrix);
+	gfx3d_glGetMatrix(MATRIXMODE_POSITION, stackIndex, matrix);
 	MatrixView_SetMatrix(hwnd, idcGroup, matrix);
 }
 
@@ -87,7 +87,7 @@ void MatrixView_OnPaintDirectionMatrix(HWND hwnd)
 
 	stackIndex = SendMessage(hStackCombo, CB_GETCURSEL, 0, 0) - 1;
 
-	gfx3d_glGetMatrix(2, stackIndex, matrix);
+	gfx3d_glGetMatrix(MATRIXMODE_POSITION_VECTOR, stackIndex, matrix);
 	MatrixView_SetMatrix(hwnd, idcGroup, matrix);
 }
 
@@ -106,7 +106,7 @@ void MatrixView_OnPaintProjectionMatrix(HWND hwnd)
 
 	float mat[16];
 
-	gfx3d_glGetMatrix(0, -1, mat);
+	gfx3d_glGetMatrix(MATRIXMODE_PROJECTION, -1, mat);
 	MatrixView_SetMatrix(hwnd, idcGroup, mat);
 }
 
@@ -125,7 +125,7 @@ void MatrixView_OnPaintTextureMatrix(HWND hwnd)
 
 	float mat[16];
 
-	gfx3d_glGetMatrix(3, -1, mat);
+	gfx3d_glGetMatrix(MATRIXMODE_TEXTURE, -1, mat);
 	MatrixView_SetMatrix(hwnd, idcGroup, mat);
 }
 

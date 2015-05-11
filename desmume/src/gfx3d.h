@@ -778,9 +778,9 @@ void gfx3d_sendCommandToFIFO(u32 val);
 void gfx3d_sendCommand(u32 cmd, u32 param);
 
 //other misc stuff
-void gfx3d_glGetMatrix(u32 mode, int index, float* dest);
-void gfx3d_glGetLightDirection(u32 index, u32* dest);
-void gfx3d_glGetLightColor(u32 index, u32* dest);
+void gfx3d_glGetMatrix(const MatrixMode mode, int index, float *dst);
+void gfx3d_glGetLightDirection(const size_t index, u32 &dst);
+void gfx3d_glGetLightColor(const size_t index, u32 &dst);
 
 void gfx3d_GetLineData(int line, u8** dst);
 void gfx3d_GetLineData15bpp(int line, u16** dst);
