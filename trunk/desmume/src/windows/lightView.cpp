@@ -63,14 +63,14 @@ void LightView_OnPaintLight(HWND hwnd, int index)
 		IDC_LIGHT_VIEWER_LIGHT2COLOR_COLORCTRL, IDC_LIGHT_VIEWER_LIGHT3COLOR_COLORCTRL
 	};
 
-	unsigned int	color;
-	unsigned int	direction;
+	u32	color;
+	u32	direction;
 	//ColorCtrl*		colorCtrl;
 	char			buffer[128];
 
 	// Get necessary information from gfx3d module
-	gfx3d_glGetLightColor(index, &color);
-	gfx3d_glGetLightDirection(index, &direction);
+	gfx3d_glGetLightColor(index, color);
+	gfx3d_glGetLightDirection(index, direction);
 
 	// Print Light Direction
 	sprintf(buffer, "%.8x", direction);
