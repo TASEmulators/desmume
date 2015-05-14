@@ -573,7 +573,7 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 		theSample = sampleGenerator->generateSample();
 	}
 	
-	_hwMicLevelList->push_back(abs((float)theSample - MIC_NULL_SAMPLE_VALUE));
+	_hwMicLevelList->push_back(fabs((float)theSample - MIC_NULL_SAMPLE_VALUE));
 	return theSample;
 }
 

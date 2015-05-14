@@ -151,22 +151,19 @@ static NSMutableDictionary *saveTypeValues = nil;
 		return;
 	}
 	
-	if (&ndsRomBanner != NULL)
-	{
-		[self.header setValue:[self banner:ndsRomBanner.titles[0]] forKey:@"bannerJapanese"];
-		[self.header setValue:[self banner:ndsRomBanner.titles[1]] forKey:@"bannerEnglish"];
-		[self.header setValue:[self banner:ndsRomBanner.titles[2]] forKey:@"bannerFrench"];
-		[self.header setValue:[self banner:ndsRomBanner.titles[3]] forKey:@"bannerGerman"];
-		[self.header setValue:[self banner:ndsRomBanner.titles[4]] forKey:@"bannerItalian"];
-		[self.header setValue:[self banner:ndsRomBanner.titles[5]] forKey:@"bannerSpanish"];
-		
-		[self.bindings setValue:[self.header objectForKey:@"bannerJapanese"] forKey:@"bannerJapanese"];
-		[self.bindings setValue:[self.header objectForKey:@"bannerEnglish"] forKey:@"bannerEnglish"];
-		[self.bindings setValue:[self.header objectForKey:@"bannerFrench"] forKey:@"bannerFrench"];
-		[self.bindings setValue:[self.header objectForKey:@"bannerGerman"] forKey:@"bannerGerman"];
-		[self.bindings setValue:[self.header objectForKey:@"bannerItalian"] forKey:@"bannerItalian"];
-		[self.bindings setValue:[self.header objectForKey:@"bannerSpanish"] forKey:@"bannerSpanish"];
-	}
+	[self.header setValue:[self banner:ndsRomBanner.titles[0]] forKey:@"bannerJapanese"];
+	[self.header setValue:[self banner:ndsRomBanner.titles[1]] forKey:@"bannerEnglish"];
+	[self.header setValue:[self banner:ndsRomBanner.titles[2]] forKey:@"bannerFrench"];
+	[self.header setValue:[self banner:ndsRomBanner.titles[3]] forKey:@"bannerGerman"];
+	[self.header setValue:[self banner:ndsRomBanner.titles[4]] forKey:@"bannerItalian"];
+	[self.header setValue:[self banner:ndsRomBanner.titles[5]] forKey:@"bannerSpanish"];
+	
+	[self.bindings setValue:[self.header objectForKey:@"bannerJapanese"] forKey:@"bannerJapanese"];
+	[self.bindings setValue:[self.header objectForKey:@"bannerEnglish"] forKey:@"bannerEnglish"];
+	[self.bindings setValue:[self.header objectForKey:@"bannerFrench"] forKey:@"bannerFrench"];
+	[self.bindings setValue:[self.header objectForKey:@"bannerGerman"] forKey:@"bannerGerman"];
+	[self.bindings setValue:[self.header objectForKey:@"bannerItalian"] forKey:@"bannerItalian"];
+	[self.bindings setValue:[self.header objectForKey:@"bannerSpanish"] forKey:@"bannerSpanish"];
 	
 	if (ndsRomHeader != NULL)
 	{
@@ -662,12 +659,6 @@ void RomIconToRGBA8888(uint32_t *bitmapData)
 	
 	if (bitmapData == NULL)
 	{
-		return;
-	}
-	
-	if (&ndsRomBanner == NULL)
-	{
-		memset(bitmapData, 0, 4096); // 4096 bytes = 32px * 32px * sizeof(uint32_t)
 		return;
 	}
 	

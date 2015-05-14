@@ -381,7 +381,7 @@ CGSize GetTransformedBounds(const double normalBoundsWidth, const double normalB
 	}
 	else
 	{
-		transformBounds.width = abs(x[1] - x[3]);
+		transformBounds.width = fabs(x[1] - x[3]);
 	}
 	
 	// Determine the transformed height, which is dependent on the location of
@@ -418,7 +418,7 @@ CGSize GetTransformedBounds(const double normalBoundsWidth, const double normalB
 	}
 	else
 	{
-		transformBounds.height = abs(y[3] - y[1]);
+		transformBounds.height = fabs(y[3] - y[1]);
 	}
 	
 	return transformBounds;
