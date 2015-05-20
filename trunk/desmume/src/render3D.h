@@ -71,15 +71,6 @@ enum Render3DErrorCode
 
 typedef int Render3DError;
 
-union FragmentColor
-{
-	u32 color;
-	struct
-	{
-		u8 r,g,b,a;
-	};
-};
-
 struct FragmentAttributes
 {
 	u32 depth;
@@ -89,13 +80,6 @@ struct FragmentAttributes
 	bool isFogged;
 	bool isTranslucentPoly;
 };
-
-inline FragmentColor MakeFragmentColor(u8 r, u8 g,u8 b,u8 a)
-{
-	FragmentColor ret;
-	ret.r = r; ret.g = g; ret.b = b; ret.a = a;
-	return ret;
-}
 
 class Render3D
 {

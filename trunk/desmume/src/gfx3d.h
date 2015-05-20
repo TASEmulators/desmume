@@ -24,6 +24,7 @@
 #include <istream>
 
 #include "types.h"
+#include "GPU.h"
 
 class EMUFILE;
 
@@ -749,7 +750,7 @@ extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
 
 //these contain the 3d framebuffer converted into the most useful format
 //they are stored here instead of in the renderers in order to consolidate the buffers
-extern u8 *gfx3d_convertedScreen;
+extern FragmentColor *gfx3d_convertedScreen;
 extern BOOL isSwapBuffers;
 
 int _hack_getMatrixStackLevel(int);
@@ -782,8 +783,8 @@ void gfx3d_glGetMatrix(const MatrixMode mode, int index, float *dst);
 void gfx3d_glGetLightDirection(const size_t index, u32 &dst);
 void gfx3d_glGetLightColor(const size_t index, u32 &dst);
 
-void gfx3d_GetLineData(int line, u8** dst);
-void gfx3d_GetLineData15bpp(int line, u16** dst);
+void gfx3d_GetLineData(const size_t line, FragmentColor **dst);
+void gfx3d_GetLineData15bpp(const size_t line, u16 **dst);
 
 struct SFORMAT;
 extern SFORMAT SF_GFX3D[];

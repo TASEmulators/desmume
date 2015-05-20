@@ -41,6 +41,7 @@
 #include "driver.h"
 #include "emufile.h"
 #include "matrix.h"
+#include "GPU.h"
 #include "bits.h"
 #include "MMU.h"
 #include "render3D.h"
@@ -309,7 +310,7 @@ static float normalTable[1024];
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
 // Color buffer that is filled by the 3D renderer and is read by the GPU engine.
-u8 *gfx3d_convertedScreen = NULL;
+FragmentColor *gfx3d_convertedScreen = NULL;
 static size_t gfx3d_framebufferWidth = GFX3D_FRAMEBUFFER_WIDTH;
 static size_t gfx3d_framebufferHeight = GFX3D_FRAMEBUFFER_HEIGHT;
 
@@ -323,8 +324,8 @@ CACHE_ALIGN MatrixStack	mtxStack[4] = {
 
 int _hack_getMatrixStackLevel(int which) { return mtxStack[which].position; }
 
-static CACHE_ALIGN s32		mtxCurrent [4][16];
-static CACHE_ALIGN s32		mtxTemporal[16];
+static CACHE_ALIGN s32 mtxCurrent[4][16];
+static CACHE_ALIGN s32 mtxTemporal[16];
 static MatrixMode mode = MATRIXMODE_PROJECTION;
 
 // Indexes for matrix loading/multiplication
@@ -543,19 +544,12 @@ void gfx3d_init()
 		vertlist = &vertlists[0];
 	}
 	
-	gfx3d_framebufferWidth = GFX3D_FRAMEBUFFER_WIDTH;
-	gfx3d_framebufferHeight = GFX3D_FRAMEBUFFER_HEIGHT;
-	
-	if (gfx3d_convertedScreen == NULL)
-	{
-		gfx3d_convertedScreen = (u8 *)malloc(gfx3d_framebufferWidth * gfx3d_framebufferHeight * sizeof(FragmentColor));
-	}
-	
 	gfx3d.state.fogDensityTable = MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0360;
 	gfx3d.state.edgeMarkColorTable = (u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0330);
 	
 	makeTables();
 	Render3D_Init();
+	gfx3d_setFramebufferSize(gfx3d_framebufferWidth, gfx3d_framebufferHeight);
 	gfx3d_reset();
 }
 
@@ -677,11 +671,16 @@ void gfx3d_setFramebufferSize(size_t w, size_t h)
 		return;
 	}
 	
-	CurrentRenderer->RenderFinish();
+	// Check if we're calling this function from initialization.
+	// If we're not initializing, we need to finish rendering first.
+	if (gfx3d_convertedScreen != NULL)
+	{
+		CurrentRenderer->RenderFinish();
+	}
 	
 	gfx3d_framebufferWidth = w;
 	gfx3d_framebufferHeight = h;
-	gfx3d_convertedScreen = (u8 *)realloc(gfx3d_convertedScreen, w * h * sizeof(FragmentColor));
+	gfx3d_convertedScreen = (FragmentColor *)realloc(gfx3d_convertedScreen, w * h * sizeof(FragmentColor));
 	
 	CurrentRenderer->SetFramebufferSize(w, h);
 }
@@ -1519,8 +1518,8 @@ static void gfx3d_glLightColor(u32 v)
 
 static BOOL gfx3d_glShininess(u32 val)
 {
-	gfx3d.state.shininessTable[shininessInd++] = ((val & 0xFF));
-	gfx3d.state.shininessTable[shininessInd++] = (((val >> 8) & 0xFF));
+	gfx3d.state.shininessTable[shininessInd++] =   (val        & 0xFF);
+	gfx3d.state.shininessTable[shininessInd++] = (((val >>  8) & 0xFF));
 	gfx3d.state.shininessTable[shininessInd++] = (((val >> 16) & 0xFF));
 	gfx3d.state.shininessTable[shininessInd++] = (((val >> 24) & 0xFF));
 
@@ -2458,27 +2457,23 @@ void gfx3d_glGetLightColor(const size_t index, u32 &dst)
 	dst = lightColor[index];
 }
 
-void gfx3d_GetLineData(int line, u8** dst)
+void gfx3d_GetLineData(const size_t line, FragmentColor **dst)
 {
 	CurrentRenderer->RenderFinish();
-	*dst = gfx3d_convertedScreen+((line)<<(8+2));
+	*dst = gfx3d_convertedScreen + (line * gfx3d_framebufferWidth);
 }
 
-void gfx3d_GetLineData15bpp(int line, u16** dst)
+void gfx3d_GetLineData15bpp(const size_t line, u16 **dst)
 {
 	//TODO - this is not very thread safe!!!
 	static u16 buf[GFX3D_FRAMEBUFFER_WIDTH];
 	*dst = buf;
-
-	u8* lineData;
+	
+	FragmentColor *lineData;
 	gfx3d_GetLineData(line, &lineData);
 	for (size_t i = 0; i < GFX3D_FRAMEBUFFER_WIDTH; i++)
 	{
-		const u8 r = lineData[i*4+0];
-		const u8 g = lineData[i*4+1];
-		const u8 b = lineData[i*4+2];
-		const u8 a = lineData[i*4+3];
-		buf[i] = R6G6B6TORGB15(r,g,b) | ((a == 0) ? 0x0000 : 0x8000);
+		buf[i] = R6G6B6TORGB15(lineData[i].r, lineData[i].g, lineData[i].b) | ((lineData[i].a == 0) ? 0x0000 : 0x8000);
 	}
 }
 
