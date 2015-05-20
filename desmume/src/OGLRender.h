@@ -413,6 +413,12 @@ struct OGLRenderRef
 	GLuint texPolyStatesID;
 	
 	// FBO
+	GLuint texCIColorID;
+	GLuint texCIDepthID;
+	GLuint texCIFogAttrID;
+	GLuint texCIPolyID;
+	GLuint texCIDepthStencilID;
+	
 	GLuint texGColorID;
 	GLuint texGDepthID;
 	GLuint texGFogAttrID;
@@ -427,6 +433,7 @@ struct OGLRenderRef
 	GLuint rboMSGDepthStencilID;
 	GLuint rboMSPostprocessID;
 	
+	GLuint fboClearImageID;
 	GLuint fboRenderID;
 	GLuint fboPostprocessID;
 	GLuint fboMSIntermediateRenderID;
@@ -482,10 +489,10 @@ struct OGLRenderRef
 	// Client-side Buffers
 	GLfloat *color4fBuffer;
 	GLushort *vertIndexBuffer;
-	GLuint *workingDepthBuffer;
-	GLuint *workingDepthStencilBuffer;
-	GLuint *workingFogAttributesBuffer;
-	GLuint *workingPolyIDBuffer;
+	CACHE_ALIGN GLuint workingCIDepthBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
+	CACHE_ALIGN GLuint workingCIDepthStencilBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
+	CACHE_ALIGN GLuint workingCIFogAttributesBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
+	CACHE_ALIGN GLuint workingCIPolyIDBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
 	
 	// Vertex Attributes Pointers
 	GLvoid *vtxPtrPosition;
@@ -697,6 +704,7 @@ protected:
 	
 public:
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
+	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 
 class OpenGLRenderer_1_4 : public OpenGLRenderer_1_3

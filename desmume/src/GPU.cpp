@@ -564,12 +564,9 @@ FORCEINLINE FASTCALL void GPU::_master_setFinal3dColor(int dstX, int srcX)
 {
 	int x = dstX;
 	int passing = dstX<<1;
-	u8* color = &_3dColorLine[srcX<<2];
-	u8 red = color[0];
-	u8 green = color[1];
-	u8 blue = color[2];
-	u8 alpha = color[3];
-	u8* dst = currDst;
+	const FragmentColor color = _3dColorLine[srcX];
+	u8 alpha = color.a;
+	u8 *dst = currDst;
 	u16 final;
 
 	bool windowEffect = blend1; //bomberman land touch dialogbox will fail without setting to blend1
@@ -596,17 +593,17 @@ FORCEINLINE FASTCALL void GPU::_master_setFinal3dColor(int dstX, int srcX)
 
 			c2.val = HostReadWord(dst, passing);
 
-			cfinal.bits.red = ((red * alpha) + ((c2.bits.red<<1) * (32 - alpha)))>>6;
-			cfinal.bits.green = ((green * alpha) + ((c2.bits.green<<1) * (32 - alpha)))>>6;
-			cfinal.bits.blue = ((blue * alpha) + ((c2.bits.blue<<1) * (32 - alpha)))>>6;
+			cfinal.bits.red = ((color.r * alpha) + ((c2.bits.red<<1) * (32 - alpha)))>>6;
+			cfinal.bits.green = ((color.g * alpha) + ((c2.bits.green<<1) * (32 - alpha)))>>6;
+			cfinal.bits.blue = ((color.b * alpha) + ((c2.bits.blue<<1) * (32 - alpha)))>>6;
 
 			final = cfinal.val;
 		}
-		else final = R6G6B6TORGB15(red,green,blue);
+		else final = R6G6B6TORGB15(color.r, color.g, color.b);
 	}
 	else
 	{
-		final = R6G6B6TORGB15(red,green,blue);
+		final = R6G6B6TORGB15(color.r, color.g, color.b);
 		//perform the special effect
 		if(windowEffect)
 			switch(FUNC) {
@@ -2068,7 +2065,7 @@ PLAIN_CLEAR:
 		// render BGs
 		if (BG_enabled)
 		{
-			for (int i=0; i < item->nbBGs; i++) 
+			for (size_t i = 0; i < item->nbBGs; i++)
 			{
 				i16 = item->BGs[i];
 				if (gpu->LayersEnable[i16])
@@ -2088,17 +2085,16 @@ PLAIN_CLEAR:
 							const u16 hofs = gpu->getHOFS(i16);
 
 							gfx3d_GetLineData(l, &gpu->_3dColorLine);
-							u8* colorLine = gpu->_3dColorLine;
+							const FragmentColor *colorLine = gpu->_3dColorLine;
 
-							for(int k = 0; k < 256; k++)
+							for (size_t k = 0; k < 256; k++)
 							{
-								int q = ((k + hofs) & 0x1FF);
+								const size_t q = ((k + hofs) & 0x1FF);
 
-								if((q < 0) || (q > 255))
+								if (q > 255 || colorLine[q].a == 0)
 									continue;
-
-								if(colorLine[(q<<2)+3])
-									gpu->setFinalColor3d(k, q);
+								
+								gpu->setFinalColor3d(k, q);
 							}
 
 							continue;

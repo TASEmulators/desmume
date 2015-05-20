@@ -110,6 +110,15 @@ struct _DISPCNT
 };
 #endif
 
+union FragmentColor
+{
+	u32 color;
+	struct
+	{
+		u8 r,g,b,a;
+	};
+};
+
 typedef union
 {
     struct _DISPCNT bits;
@@ -688,7 +697,7 @@ struct GPU
 	bool blend1;
 	u8* currDst;
 
-	u8* _3dColorLine;
+	FragmentColor *_3dColorLine;
 
 
 	static struct MosaicLookup {
@@ -919,5 +928,11 @@ void gpu_SetRotateScreen(u16 angle);
 //#undef FORCEINLINE
 //#define FORCEINLINE __forceinline
 
-#endif
+inline FragmentColor MakeFragmentColor(const u8 r, const u8 g, const u8 b, const u8 a)
+{
+	FragmentColor ret;
+	ret.r = r; ret.g = g; ret.b = b; ret.a = a;
+	return ret;
+}
 
+#endif

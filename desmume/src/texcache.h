@@ -73,7 +73,7 @@ public:
 	u32 sizeX, sizeY;
 	float invSizeX, invSizeY;
 
-	u64 texid; //used by ogl renderer for the texid
+	u32 texid; //used by ogl renderer for the texid
 	TexCache_TexFormat cacheFormat;
 
 	struct Dump {

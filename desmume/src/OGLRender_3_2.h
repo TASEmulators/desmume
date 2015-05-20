@@ -94,6 +94,7 @@ protected:
 	virtual void SetPolygonIndex(const size_t index);
 	virtual Render3DError SetupPolygon(const POLY &thePoly);
 	virtual Render3DError SetupTexture(const POLY &thePoly, bool enableTexturing);
+	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 	
 public:
 	~OpenGLRenderer_3_2();

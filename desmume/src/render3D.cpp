@@ -85,6 +85,12 @@ bool NDS_3D_ChangeCore(int newCore)
 		return result;
 	}
 	
+	Render3DError error = newRenderer->SetFramebufferSize(gfx3d_getFramebufferWidth(), gfx3d_getFramebufferHeight());
+	if (error != RENDER3DERROR_NOERR)
+	{
+		return result;
+	}
+	
 	gpu3D = newRenderInterface;
 	cur3DCore = newCore;
 	CurrentRenderer = newRenderer;
@@ -127,8 +133,8 @@ Render3D::Render3D()
 	
 	_framebufferWidth = GFX3D_FRAMEBUFFER_WIDTH;
 	_framebufferHeight = GFX3D_FRAMEBUFFER_HEIGHT;
-	_framebufferColorSizeBytes = _framebufferWidth * _framebufferHeight * sizeof(FragmentColor);
-	_framebufferColor = (FragmentColor *)calloc(_framebufferWidth * _framebufferHeight, sizeof(FragmentColor));
+	_framebufferColorSizeBytes = 0;
+	_framebufferColor = NULL;
 	
 	Reset();
 }
@@ -171,12 +177,10 @@ Render3DError Render3D::SetFramebufferSize(size_t w, size_t h)
 		return RENDER3DERROR_NOERR;
 	}
 	
-	this->RenderFinish();
-	
 	this->_framebufferWidth = w;
 	this->_framebufferHeight = h;
 	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
-	this->_framebufferColor = (FragmentColor *)realloc(this->_framebufferColor, w * h * sizeof(FragmentColor));
+	this->_framebufferColor = (FragmentColor *)realloc(this->_framebufferColor, this->_framebufferColorSizeBytes);
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -318,7 +322,11 @@ Render3DError Render3D::SetupViewport(const u32 viewportValue)
 
 Render3DError Render3D::Reset()
 {
-	memset(this->_framebufferColor, 0, this->_framebufferColorSizeBytes);
+	if (this->_framebufferColor != NULL)
+	{
+		memset(this->_framebufferColor, 0, this->_framebufferColorSizeBytes);
+	}
+	
 	memset(this->clearImageColor16Buffer, 0, sizeof(this->clearImageColor16Buffer));
 	memset(this->clearImageDepthBuffer, 0, sizeof(this->clearImageDepthBuffer));
 	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
@@ -361,7 +369,7 @@ Render3DError Render3D::Render(const GFX3D &engine)
 
 Render3DError Render3D::RenderFinish()
 {
-	this->FlushFramebuffer((FragmentColor *)gfx3d_convertedScreen);
+	this->FlushFramebuffer(gfx3d_convertedScreen);
 	return RENDER3DERROR_NOERR;
 }
 

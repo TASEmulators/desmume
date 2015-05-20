@@ -592,10 +592,16 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	// Set up FBO render targets
+	glGenTextures(1, &OGLRef.texCIColorID);
+	glGenTextures(1, &OGLRef.texCIDepthID);
+	glGenTextures(1, &OGLRef.texCIFogAttrID);
+	glGenTextures(1, &OGLRef.texCIPolyID);
+	glGenTextures(1, &OGLRef.texCIDepthStencilID);
+	
 	glGenTextures(1, &OGLRef.texGColorID);
 	glGenTextures(1, &OGLRef.texGDepthID);
-	glGenTextures(1, &OGLRef.texGPolyID);
 	glGenTextures(1, &OGLRef.texGFogAttrID);
+	glGenTextures(1, &OGLRef.texGPolyID);
 	glGenTextures(1, &OGLRef.texGDepthStencilID);
 	glGenTextures(1, &OGLRef.texPostprocessFogID);
 	
@@ -640,6 +646,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glActiveTexture(GL_TEXTURE0);
+	
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texPostprocessFogID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -647,11 +654,85 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
+	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIColorID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	
+	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIDepthStencilID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+	
+	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIDepthID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	
+	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIPolyID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	
+	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIFogAttrID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
 	// Set up FBOs
+	glGenFramebuffers(1, &OGLRef.fboClearImageID);
 	glGenFramebuffers(1, &OGLRef.fboRenderID);
 	glGenFramebuffers(1, &OGLRef.fboPostprocessID);
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboClearImageID);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, OGLRef.texCIColorID, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, OGLRef.texCIDepthID, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, OGLRef.texCIPolyID, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, OGLRef.texCIFogAttrID, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, OGLRef.texCIDepthStencilID, 0);
+	
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		INFO("OpenGL: Failed to created FBOs. Some emulation features will be disabled.\n");
+		
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDeleteFramebuffers(1, &OGLRef.fboClearImageID);
+		glDeleteFramebuffers(1, &OGLRef.fboRenderID);
+		glDeleteFramebuffers(1, &OGLRef.fboPostprocessID);
+		glDeleteTextures(1, &OGLRef.texCIColorID);
+		glDeleteTextures(1, &OGLRef.texCIDepthID);
+		glDeleteTextures(1, &OGLRef.texCIFogAttrID);
+		glDeleteTextures(1, &OGLRef.texCIPolyID);
+		glDeleteTextures(1, &OGLRef.texCIDepthStencilID);
+		glDeleteTextures(1, &OGLRef.texGColorID);
+		glDeleteTextures(1, &OGLRef.texGDepthID);
+		glDeleteTextures(1, &OGLRef.texGPolyID);
+		glDeleteTextures(1, &OGLRef.texGFogAttrID);
+		glDeleteTextures(1, &OGLRef.texGDepthStencilID);
+		glDeleteTextures(1, &OGLRef.texPostprocessFogID);
+		
+		OGLRef.fboClearImageID = 0;
+		OGLRef.fboRenderID = 0;
+		OGLRef.fboPostprocessID = 0;
+		
+		return OGLERROR_FBO_CREATE_ERROR;
+	}
+	
+	glDrawBuffers(4, RenderDrawList);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, OGLRef.texGColorID, 0);
@@ -665,8 +746,14 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 		INFO("OpenGL: Failed to created FBOs. Some emulation features will be disabled.\n");
 		
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDeleteFramebuffers(1, &OGLRef.fboClearImageID);
 		glDeleteFramebuffers(1, &OGLRef.fboRenderID);
 		glDeleteFramebuffers(1, &OGLRef.fboPostprocessID);
+		glDeleteTextures(1, &OGLRef.texCIColorID);
+		glDeleteTextures(1, &OGLRef.texCIDepthID);
+		glDeleteTextures(1, &OGLRef.texCIFogAttrID);
+		glDeleteTextures(1, &OGLRef.texCIPolyID);
+		glDeleteTextures(1, &OGLRef.texCIDepthStencilID);
 		glDeleteTextures(1, &OGLRef.texGColorID);
 		glDeleteTextures(1, &OGLRef.texGDepthID);
 		glDeleteTextures(1, &OGLRef.texGPolyID);
@@ -674,6 +761,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 		glDeleteTextures(1, &OGLRef.texGDepthStencilID);
 		glDeleteTextures(1, &OGLRef.texPostprocessFogID);
 		
+		OGLRef.fboClearImageID = 0;
 		OGLRef.fboRenderID = 0;
 		OGLRef.fboPostprocessID = 0;
 		
@@ -691,8 +779,14 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 		INFO("OpenGL: Failed to created FBOs. Some emulation features will be disabled.\n");
 		
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDeleteFramebuffers(1, &OGLRef.fboClearImageID);
 		glDeleteFramebuffers(1, &OGLRef.fboRenderID);
 		glDeleteFramebuffers(1, &OGLRef.fboPostprocessID);
+		glDeleteTextures(1, &OGLRef.texCIColorID);
+		glDeleteTextures(1, &OGLRef.texCIDepthID);
+		glDeleteTextures(1, &OGLRef.texCIFogAttrID);
+		glDeleteTextures(1, &OGLRef.texCIPolyID);
+		glDeleteTextures(1, &OGLRef.texCIDepthStencilID);
 		glDeleteTextures(1, &OGLRef.texGColorID);
 		glDeleteTextures(1, &OGLRef.texGDepthID);
 		glDeleteTextures(1, &OGLRef.texGPolyID);
@@ -700,6 +794,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 		glDeleteTextures(1, &OGLRef.texGDepthStencilID);
 		glDeleteTextures(1, &OGLRef.texPostprocessFogID);
 		
+		OGLRef.fboClearImageID = 0;
 		OGLRef.fboRenderID = 0;
 		OGLRef.fboPostprocessID = 0;
 		
@@ -726,8 +821,14 @@ void OpenGLRenderer_3_2::DestroyFBOs()
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDeleteFramebuffers(1, &OGLRef.fboClearImageID);
 	glDeleteFramebuffers(1, &OGLRef.fboRenderID);
 	glDeleteFramebuffers(1, &OGLRef.fboPostprocessID);
+	glDeleteTextures(1, &OGLRef.texCIColorID);
+	glDeleteTextures(1, &OGLRef.texCIDepthID);
+	glDeleteTextures(1, &OGLRef.texCIFogAttrID);
+	glDeleteTextures(1, &OGLRef.texCIPolyID);
+	glDeleteTextures(1, &OGLRef.texCIDepthStencilID);
 	glDeleteTextures(1, &OGLRef.texGColorID);
 	glDeleteTextures(1, &OGLRef.texGDepthID);
 	glDeleteTextures(1, &OGLRef.texGPolyID);
@@ -735,6 +836,7 @@ void OpenGLRenderer_3_2::DestroyFBOs()
 	glDeleteTextures(1, &OGLRef.texGDepthStencilID);
 	glDeleteTextures(1, &OGLRef.texPostprocessFogID);
 	
+	OGLRef.fboClearImageID = 0;
 	OGLRef.fboRenderID = 0;
 	OGLRef.fboPostprocessID = 0;
 	
@@ -1235,11 +1337,37 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 	
 	this->UploadClearImage(colorBuffer, depthBuffer, fogBuffer, polyIDBuffer);
 	
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, OGLRef.fboClearImageID);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboRenderID);
+	
+	// Blit the working depth buffer
+	glReadBuffer(GL_COLOR_ATTACHMENT1);
+	glDrawBuffer(GL_COLOR_ATTACHMENT1);
+	glBlitFramebuffer(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	
+	// Blit the polygon ID buffer
+	glReadBuffer(GL_COLOR_ATTACHMENT2);
+	glDrawBuffer(GL_COLOR_ATTACHMENT2);
+	glBlitFramebuffer(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	
+	// Blit the fog buffer
+	glReadBuffer(GL_COLOR_ATTACHMENT3);
+	glDrawBuffer(GL_COLOR_ATTACHMENT3);
+	glBlitFramebuffer(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	
+	// Blit the color buffer. Do this last so that color attachment 0 is set to the read FBO.
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glBlitFramebuffer(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
+	glDrawBuffers(4, RenderDrawList);
+	
 	OGLRef.selectedRenderingFBO = (CommonSettings.GFX3D_Renderer_Multisample) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
 	if (OGLRef.selectedRenderingFBO == OGLRef.fboMSIntermediateRenderID)
 	{
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, OGLRef.fboRenderID);
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboMSIntermediateRenderID);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
 		
 		// Blit the working depth buffer
 		glReadBuffer(GL_COLOR_ATTACHMENT1);
@@ -1260,10 +1388,10 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 		glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+		
+		glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
+		glDrawBuffers(4, RenderDrawList);
 	}
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
-	glDrawBuffers(4, RenderDrawList);
 	
 	return OGLERROR_NOERR;
 }
@@ -1417,6 +1545,61 @@ Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, bool enableT
 			glBindTexture(GL_TEXTURE_2D, (GLuint)this->currTexture->texid);
 		}
 	}
+	
+	return OGLERROR_NOERR;
+}
+
+Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	
+	if (w < GFX3D_FRAMEBUFFER_WIDTH || h < GFX3D_FRAMEBUFFER_HEIGHT)
+	{
+		return OGLERROR_NOERR;
+	}
+	
+	this->_framebufferWidth = w;
+	this->_framebufferHeight = h;
+	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
+	this->_framebufferColor = (FragmentColor *)realloc(this->_framebufferColor, this->_framebufferColorSizeBytes);
+	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
+	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthStencilID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, w, h, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GDepth);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GPolyID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	
+	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, OGLRef.texPostprocessFogID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	
+	if (this->isMultisampledFBOSupported)
+	{
+		GLint maxSamples = 0;
+		glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
+		
+		glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGColorID);
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamples, GL_RGBA, w, h);
+		glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGDepthID);
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamples, GL_RGBA, w, h);
+		glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGPolyID);
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamples, GL_RGBA, w, h);
+		glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGFogAttrID);
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamples, GL_RGBA, w, h);
+		glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGDepthStencilID);
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamples, GL_DEPTH24_STENCIL8, w, h);
+	}
+	
+	glBufferData(GL_PIXEL_PACK_BUFFER, this->_framebufferColorSizeBytes, NULL, GL_STREAM_READ);
 	
 	return OGLERROR_NOERR;
 }

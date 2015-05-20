@@ -1150,7 +1150,7 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	
 	_stateSetupNeedsFinish = false;
 	_renderGeometryNeedsFinish = false;
-	_framebufferAttributes = (FragmentAttributes *)calloc(_framebufferWidth * _framebufferHeight, sizeof(FragmentAttributes));
+	_framebufferAttributes = NULL;
 	
 	if (!rasterizerUnitTasksInited)
 	{
@@ -1859,11 +1859,17 @@ Render3DError SoftRasterizerRenderer::UpdateToonTable(const u16 *toonTableBuffer
 
 Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
 {
+	const float lineDecrement = ((float)GFX3D_FRAMEBUFFER_HEIGHT / (float)this->_framebufferHeight) + 0.000001;
+	const float readIncrement = ((float)GFX3D_FRAMEBUFFER_WIDTH / (float)this->_framebufferWidth) + 0.000001;
+	float line = GFX3D_FRAMEBUFFER_HEIGHT - 1.0 + lineDecrement;
+	float readLocation = (GFX3D_FRAMEBUFFER_HEIGHT - 1) * GFX3D_FRAMEBUFFER_WIDTH;
+	
 	// The clear image buffer is y-flipped, so we need to flip it back to normal here.
-	for (size_t y = 0, iw = 0, ir = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, ir -= (this->_framebufferWidth * 2))
+	for (size_t y = 0, iw = 0; y < this->_framebufferHeight; y++, readLocation = ((size_t)line * GFX3D_FRAMEBUFFER_WIDTH))
 	{
-		for (size_t x = 0; x < this->_framebufferWidth; x++, iw++, ir++)
+		for (size_t x = 0; x < this->_framebufferWidth; x++, iw++, readLocation += readIncrement)
 		{
+			const size_t ir = (size_t)readLocation;
 			this->_framebufferColor[iw].color = RGB15TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 0x1F);
 			this->_framebufferAttributes[iw].isFogged = fogBuffer[ir];
 			this->_framebufferAttributes[iw].depth = depthBuffer[ir];
@@ -1872,6 +1878,8 @@ Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colo
 			this->_framebufferAttributes[iw].isTranslucentPoly = false;
 			this->_framebufferAttributes[iw].stencil = 0;
 		}
+		
+		line -= lineDecrement;
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -1953,7 +1961,7 @@ Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
 			this->RenderEdgeMarkingAndFog(this->postprocessParam[0]);
 		}
 		
-		this->FlushFramebuffer((FragmentColor *)gfx3d_convertedScreen);
+		this->FlushFramebuffer(gfx3d_convertedScreen);
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -1993,7 +2001,7 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 		}
 	}
 	
-	this->FlushFramebuffer((FragmentColor *)gfx3d_convertedScreen);
+	this->FlushFramebuffer(gfx3d_convertedScreen);
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -2004,8 +2012,12 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 	{
 		return RENDER3DERROR_NOERR;
 	}
-	
-	// TODO: We're not prepared to do this yet, so do nothing for now.
+		
+	this->_framebufferWidth = w;
+	this->_framebufferHeight = h;
+	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
+	this->_framebufferColor = (FragmentColor *)realloc(this->_framebufferColor, this->_framebufferColorSizeBytes);
+	this->_framebufferAttributes = (FragmentAttributes *)realloc(this->_framebufferAttributes, w * h * sizeof(FragmentAttributes));
 	
 	return RENDER3DERROR_NOERR;
 }
