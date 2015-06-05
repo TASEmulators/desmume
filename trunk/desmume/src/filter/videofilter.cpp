@@ -48,7 +48,9 @@ const VideoFilterAttributes VideoFilterAttributesList[] = {
 	{VideoFilterTypeID_2xBRZ,			"2xBRZ",			&Render2xBRZ,					2,	1,	0},
 	{VideoFilterTypeID_3xBRZ,			"3xBRZ",			&Render3xBRZ,					3,	1,	0},
 	{VideoFilterTypeID_4xBRZ,			"4xBRZ",			&Render4xBRZ,					4,	1,	0},
-	{VideoFilterTypeID_5xBRZ,			"5xBRZ",			&Render5xBRZ,					5,	1,	0} };
+	{VideoFilterTypeID_5xBRZ,			"5xBRZ",			&Render5xBRZ,					5,	1,	0},
+	{VideoFilterTypeID_HQ3X,			"HQ3x",				&RenderHQ3X,					3,	1,	0},
+	{VideoFilterTypeID_HQ3XS,			"HQ3xS",			&RenderHQ3XS,					3,	1,	0} };
 
 // Parameters for Scanline filter
 int scanline_filter_a = 0;

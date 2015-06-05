@@ -197,6 +197,10 @@
 		AB4676F314AB12D60002FF94 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		AB47B52E18A3F722009A42AF /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
 		AB47B52F18A45C35009A42AF /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
+		AB4C81E41B21676C00ACECD5 /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C81E31B21676C00ACECD5 /* hq3x.cpp */; };
+		AB4C81E51B21676C00ACECD5 /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C81E31B21676C00ACECD5 /* hq3x.cpp */; };
+		AB4C81E61B21676C00ACECD5 /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C81E31B21676C00ACECD5 /* hq3x.cpp */; };
+		AB4C81E71B21677700ACECD5 /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C81E31B21676C00ACECD5 /* hq3x.cpp */; };
 		AB4FCEBD1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
 		AB4FCEBE1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
 		AB4FCEBF1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
@@ -1166,6 +1170,7 @@
 		AB407F391A620D6E00313213 /* DeSmuME (Latest).profdata */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DeSmuME (Latest).profdata"; sourceTree = "<group>"; };
 		AB47B52B18A3F722009A42AF /* xbrz.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xbrz.h; sourceTree = "<group>"; };
 		AB47B52C18A3F722009A42AF /* xbrz.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = xbrz.cpp; sourceTree = "<group>"; };
+		AB4C81E31B21676C00ACECD5 /* hq3x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hq3x.cpp; sourceTree = "<group>"; };
 		AB4FCEBC1692AB82000F498F /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		AB5648FD186E6EA8002740F4 /* cocoa_slot2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_slot2.h; sourceTree = "<group>"; };
 		AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_slot2.mm; sourceTree = "<group>"; };
@@ -1484,7 +1489,6 @@
 		ABFE14FE14C92FF5005D6699 /* hq2x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hq2x.cpp; sourceTree = "<group>"; };
 		ABFE14FF14C92FF5005D6699 /* hq2x.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hq2x.h; sourceTree = "<group>"; };
 		ABFE150014C92FF5005D6699 /* hq4x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hq4x.cpp; sourceTree = "<group>"; };
-		ABFE150214C92FF5005D6699 /* hq4x.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hq4x.h; sourceTree = "<group>"; };
 		ABFE150314C92FF5005D6699 /* interp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = interp.h; sourceTree = "<group>"; };
 		ABFE150414C92FF5005D6699 /* lq2x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = lq2x.cpp; sourceTree = "<group>"; };
 		ABFE150514C92FF5005D6699 /* lq2x.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lq2x.h; sourceTree = "<group>"; };
@@ -2251,6 +2255,7 @@
 				ABFE14FB14C92FF5005D6699 /* bilinear.cpp */,
 				ABFE14FC14C92FF5005D6699 /* epx.cpp */,
 				ABFE14FE14C92FF5005D6699 /* hq2x.cpp */,
+				AB4C81E31B21676C00ACECD5 /* hq3x.cpp */,
 				ABFE150014C92FF5005D6699 /* hq4x.cpp */,
 				ABFE150414C92FF5005D6699 /* lq2x.cpp */,
 				ABFE150614C92FF5005D6699 /* scanline.cpp */,
@@ -2258,7 +2263,6 @@
 				AB47B52C18A3F722009A42AF /* xbrz.cpp */,
 				ABFE14FD14C92FF5005D6699 /* filter.h */,
 				ABFE14FF14C92FF5005D6699 /* hq2x.h */,
-				ABFE150214C92FF5005D6699 /* hq4x.h */,
 				ABFE150314C92FF5005D6699 /* interp.h */,
 				ABFE150514C92FF5005D6699 /* lq2x.h */,
 				AB817A34143EE2DB00A7DFE9 /* videofilter.h */,
@@ -2991,6 +2995,7 @@
 				ABD10AE81715FCDD00B5729D /* audiosamplegenerator.cpp in Sources */,
 				ABD10AEB1715FCDD00B5729D /* mic_ext.cpp in Sources */,
 				ABD42048172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */,
+				AB4C81E51B21676C00ACECD5 /* hq3x.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3008,6 +3013,7 @@
 				AB796CF615CDCBA200C59155 /* cheatSystem.cpp in Sources */,
 				AB796CF715CDCBA200C59155 /* common.cpp in Sources */,
 				AB9038B517C5ED2200F410BD /* slot1comp_mc.cpp in Sources */,
+				AB4C81E41B21676C00ACECD5 /* hq3x.cpp in Sources */,
 				AB796CF815CDCBA200C59155 /* cp15.cpp in Sources */,
 				AB796CF915CDCBA200C59155 /* cpu_detect_x86_gcc.cpp in Sources */,
 				AB796CFA15CDCBA200C59155 /* crc.cpp in Sources */,
@@ -3309,6 +3315,7 @@
 				AB8F3CF51A53AC2600A80BF6 /* buffer.cpp in Sources */,
 				AB8F3CF61A53AC2600A80BF6 /* compiler.cpp in Sources */,
 				AB8F3CF71A53AC2600A80BF6 /* compilercontext.cpp in Sources */,
+				AB4C81E61B21676C00ACECD5 /* hq3x.cpp in Sources */,
 				AB8F3CF81A53AC2600A80BF6 /* compilerfunc.cpp in Sources */,
 				AB8F3CF91A53AC2600A80BF6 /* compileritem.cpp in Sources */,
 				AB8F3CFA1A53AC2600A80BF6 /* context.cpp in Sources */,
@@ -3400,6 +3407,7 @@
 				ABB3C6971501C04F00E0C22E /* Timestretcher.cpp in Sources */,
 				ABB3C6981501C04F00E0C22E /* crc.cpp in Sources */,
 				AB031B5518472F3100541888 /* cocoa_cheat.mm in Sources */,
+				AB4C81E71B21677700ACECD5 /* hq3x.cpp in Sources */,
 				ABB3C6991501C04F00E0C22E /* decrypt.cpp in Sources */,
 				ABB3C69A1501C04F00E0C22E /* header.cpp in Sources */,
 				AB1773FF182ECA8A009F29DD /* slot2_passme.cpp in Sources */,
