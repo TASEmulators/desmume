@@ -1,7 +1,7 @@
 /*
  * This file is part of the Advance project.
  *
- * Copyright (C) 2003, 2008 Andrea Mazzoleni
+ * Copyright (C) 2003 Andrea Mazzoleni
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,27 +31,25 @@
 #include "filter.h"
 #include "interp.h"
 
+
 /***************************************************************************/
-/* HQ4x C implementation */
+/* HQ3x C implementation */
 
 /*
- * This effect is a rewritten implementation of the hq4x effect made by Maxim Stepin
+ * This effect is a rewritten implementation of the hq3x effect made by Maxim Stepin
  */
 
-
-void hq4x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst2, u32 *__restrict dst3,
-				 const u32 *src0, const u32 *src1, const u32 *src2,
-				 unsigned count, unsigned flag)
+void hq3x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst2, const u32 *src0, const u32 *src1, const u32 *src2, int count)
 {
 	for (int i = 0; i < count; ++i)
 	{
 		u8 mask = 0;
 		u32 c[9];
-		
+
 		c[1] = src0[0];
 		c[4] = src1[0];
 		c[7] = src2[0];
-		
+
 		if (i > 0)
 		{
 			c[0] = src0[-1];
@@ -60,12 +58,12 @@ void hq4x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst
 		}
 		else
 		{
-			c[0] = src0[0];
-			c[3] = src1[0];
-			c[6] = src2[0];
+			c[0] = c[1];
+			c[3] = c[4];
+			c[6] = c[7];
 		}
-		
-		if (i < count-1)
+
+		if (i < count - 1)
 		{
 			c[2] = src0[1];
 			c[5] = src1[1];
@@ -73,9 +71,9 @@ void hq4x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst
 		}
 		else
 		{
-			c[2] = src0[0];
-			c[5] = src1[0];
-			c[8] = src2[0];
+			c[2] = c[1];
+			c[5] = c[4];
+			c[8] = c[7];
 		}
 		
 		if (interp_32_diff(c[0], c[4]))
@@ -106,7 +104,7 @@ void hq4x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst
 
 		switch (mask)
 		{
-#include "hq4x.dat"
+#include "hq3x.dat"
 		}
 
 #undef P
@@ -121,16 +119,13 @@ void hq4x_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst
 		src0 += 1;
 		src1 += 1;
 		src2 += 1;
-		dst0 += 4;
-		dst1 += 4;
-		dst2 += 4;
-		dst3 += 4;
+		dst0 += 3;
+		dst1 += 3;
+		dst2 += 3;
 	}
 }
 
-void hq4xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst2, u32 *__restrict dst3,
-				  const u32 *src0, const u32 *src1, const u32 *src2,
-				  unsigned count, unsigned flag)
+void hq3xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict dst2, const u32 *src0, const u32 *src1, const u32 *src2, int count)
 {
 	for (int i = 0; i < count; ++i)
 	{
@@ -149,12 +144,12 @@ void hq4xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict ds
 		}
 		else
 		{
-			c[0] = src0[0];
-			c[3] = src1[0];
-			c[6] = src2[0];
+			c[0] = c[1];
+			c[3] = c[4];
+			c[6] = c[7];
 		}
 		
-		if (i < count-1)
+		if (i < count - 1)
 		{
 			c[2] = src0[1];
 			c[5] = src1[1];
@@ -162,12 +157,12 @@ void hq4xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict ds
 		}
 		else
 		{
-			c[2] = src0[0];
-			c[5] = src1[0];
-			c[8] = src2[0];
+			c[2] = c[1];
+			c[5] = c[4];
+			c[8] = c[7];
 		}
 		
-		// hq4xS dynamic edge detection:
+		// hq3xS dynamic edge detection:
 		// simply comparing the center color against its surroundings will give bad results in many cases,
 		// so, instead, compare the center color relative to the max difference in brightness of this 3x3 block
 		int brightArray[9];
@@ -216,7 +211,7 @@ void hq4xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict ds
 		
 		switch (mask)
 		{
-#include "hq4x.dat"
+#include "hq3x.dat"
 		}
 		
 #undef P
@@ -231,24 +226,22 @@ void hq4xS_32_def(u32 *__restrict dst0, u32 *__restrict dst1, u32 *__restrict ds
 		src0 += 1;
 		src1 += 1;
 		src2 += 1;
-		dst0 += 4;
-		dst1 += 4;
-		dst2 += 4;
-		dst3 += 4;
+		dst0 += 3;
+		dst1 += 3;
+		dst2 += 3;
 	}
 }
 
-void hq4x32(const u8 *srcPtr, const u32 srcPitch, const u8 *dstPtr, const u32 dstPitch, const int width, const int height)
+void hq3x32(const u8 *srcPtr, const u32 srcPitch, const u8 *dstPtr, const u32 dstPitch, const int width, const int height)
 {
 	u32 *dst0 = (u32 *)dstPtr;
-	u32 *dst1 = dst0 + (dstPitch >> 2);
-	u32 *dst2 = dst1 + (dstPitch >> 2);
-	u32 *dst3 = dst2 + (dstPitch >> 2);
+	u32 *dst1 = dst0 + (dstPitch / 3);
+	u32 *dst2 = dst1 + (dstPitch / 3);
 	
 	u32 *src0 = (u32 *)srcPtr;
 	u32 *src1 = src0 + srcPitch;
 	u32 *src2 = src1 + srcPitch;
-	hq4x_32_def(dst0, dst1, dst2, dst3, src0, src0, src1, width, 0);
+	hq3x_32_def(dst0, dst1, dst2, src0, src0, src1, width);
 	
 	int count = height;
 	
@@ -258,8 +251,7 @@ void hq4x32(const u8 *srcPtr, const u32 srcPitch, const u8 *dstPtr, const u32 ds
 		dst0 += dstPitch;
 		dst1 += dstPitch;
 		dst2 += dstPitch;
-		dst3 += dstPitch;
-		hq4x_32_def(dst0, dst1, dst2, dst3, src0, src1, src2, width, 0);
+		hq3x_32_def(dst0, dst1, dst2, src0, src1, src2, width);
 		src0 = src1;
 		src1 = src2;
 		src2 += srcPitch;
@@ -269,21 +261,19 @@ void hq4x32(const u8 *srcPtr, const u32 srcPitch, const u8 *dstPtr, const u32 ds
 	dst0 += dstPitch;
 	dst1 += dstPitch;
 	dst2 += dstPitch;
-	dst3 += dstPitch;
-	hq4x_32_def(dst0, dst1, dst2, dst3, src0, src1, src1, width, 0);
+	hq3x_32_def(dst0, dst1, dst2, src0, src1, src1, width);
 }
 
-void hq4x32S(const u8 *srcPtr, const u32 srcPitch, const u8 *dstPtr, const u32 dstPitch, const int width, const int height)
+void hq3x32S(const u8 *srcPtr, const u32 srcPitch, const u8 *dstPtr, const u32 dstPitch, const int width, const int height)
 {
 	u32 *dst0 = (u32 *)dstPtr;
-	u32 *dst1 = dst0 + (dstPitch >> 2);
-	u32 *dst2 = dst1 + (dstPitch >> 2);
-	u32 *dst3 = dst2 + (dstPitch >> 2);
+	u32 *dst1 = dst0 + (dstPitch / 3);
+	u32 *dst2 = dst1 + (dstPitch / 3);
 	
 	u32 *src0 = (u32 *)srcPtr;
 	u32 *src1 = src0 + srcPitch;
 	u32 *src2 = src1 + srcPitch;
-	hq4xS_32_def(dst0, dst1, dst2, dst3, src0, src0, src1, width, 0);
+	hq3xS_32_def(dst0, dst1, dst2, src0, src0, src1, width);
 	
 	int count = height;
 	
@@ -293,8 +283,7 @@ void hq4x32S(const u8 *srcPtr, const u32 srcPitch, const u8 *dstPtr, const u32 d
 		dst0 += dstPitch;
 		dst1 += dstPitch;
 		dst2 += dstPitch;
-		dst3 += dstPitch;
-		hq4xS_32_def(dst0, dst1, dst2, dst3, src0, src1, src2, width, 0);
+		hq3xS_32_def(dst0, dst1, dst2, src0, src1, src2, width);
 		src0 = src1;
 		src1 = src2;
 		src2 += srcPitch;
@@ -304,16 +293,16 @@ void hq4x32S(const u8 *srcPtr, const u32 srcPitch, const u8 *dstPtr, const u32 d
 	dst0 += dstPitch;
 	dst1 += dstPitch;
 	dst2 += dstPitch;
-	dst3 += dstPitch;
-	hq4xS_32_def(dst0, dst1, dst2, dst3, src0, src1, src1, width, 0);
+	hq3xS_32_def(dst0, dst1, dst2, src0, src1, src1, width);
 }
 
-void RenderHQ4X(SSurface Src, SSurface Dst)
+void RenderHQ3X(SSurface Src, SSurface Dst)
 {
-	hq4x32(Src.Surface, Src.Pitch >> 1, Dst.Surface, Dst.Pitch*2, Src.Width, Src.Height);
+	hq3x32(Src.Surface, Src.Pitch >> 1, Dst.Surface, Dst.Pitch*3/2, Src.Width, Src.Height);
 }
 
-void RenderHQ4XS(SSurface Src, SSurface Dst)
+void RenderHQ3XS(SSurface Src, SSurface Dst)
 {
-	hq4x32S(Src.Surface, Src.Pitch >> 1, Dst.Surface, Dst.Pitch*2, Src.Width, Src.Height);
+	hq3x32S(Src.Surface, Src.Pitch >> 1, Dst.Surface, Dst.Pitch*3/2, Src.Width, Src.Height);
 }
+

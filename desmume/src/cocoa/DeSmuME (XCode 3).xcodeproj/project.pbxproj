@@ -929,6 +929,11 @@
 		ABA93EB2178C7D4200CBF50B /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABA93EAF178C7D4200CBF50B /* encrypt.cpp */; };
 		ABA93EB3178C7D4200CBF50B /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABA93EAF178C7D4200CBF50B /* encrypt.cpp */; };
 		ABA93EB4178C7D4200CBF50B /* encrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABA93EAF178C7D4200CBF50B /* encrypt.cpp */; };
+		ABAAEFFF1B22361800E1269D /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAAEFFE1B22361800E1269D /* hq3x.cpp */; };
+		ABAAF0001B22361800E1269D /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAAEFFE1B22361800E1269D /* hq3x.cpp */; };
+		ABAAF0011B22361800E1269D /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAAEFFE1B22361800E1269D /* hq3x.cpp */; };
+		ABAAF0021B22361800E1269D /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAAEFFE1B22361800E1269D /* hq3x.cpp */; };
+		ABAAF0031B22361800E1269D /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAAEFFE1B22361800E1269D /* hq3x.cpp */; };
 		ABAAFBEA172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */; };
 		ABAAFBEB172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */; };
 		ABAAFBEC172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */; };
@@ -1441,6 +1446,7 @@
 		ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_cheat.mm; sourceTree = "<group>"; };
 		ABA93EAE178C7D4200CBF50B /* encrypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = encrypt.h; path = ../encrypt.h; sourceTree = SOURCE_ROOT; };
 		ABA93EAF178C7D4200CBF50B /* encrypt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = encrypt.cpp; path = ../encrypt.cpp; sourceTree = SOURCE_ROOT; };
+		ABAAEFFE1B22361800E1269D /* hq3x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hq3x.cpp; sourceTree = "<group>"; };
 		ABAAFBE8172122B6005DDDBE /* FileMigrationDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileMigrationDelegate.h; sourceTree = "<group>"; };
 		ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FileMigrationDelegate.mm; sourceTree = "<group>"; };
 		ABACB7391AAC46B20066F429 /* Icon_MicrophoneDarkGreen_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneDarkGreen_256x256.png; path = images/Icon_MicrophoneDarkGreen_256x256.png; sourceTree = "<group>"; };
@@ -1754,7 +1760,6 @@
 		ABFE14FE14C92FF5005D6699 /* hq2x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hq2x.cpp; sourceTree = "<group>"; };
 		ABFE14FF14C92FF5005D6699 /* hq2x.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hq2x.h; sourceTree = "<group>"; };
 		ABFE150014C92FF5005D6699 /* hq4x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hq4x.cpp; sourceTree = "<group>"; };
-		ABFE150214C92FF5005D6699 /* hq4x.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hq4x.h; sourceTree = "<group>"; };
 		ABFE150314C92FF5005D6699 /* interp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = interp.h; sourceTree = "<group>"; };
 		ABFE150414C92FF5005D6699 /* lq2x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = lq2x.cpp; sourceTree = "<group>"; };
 		ABFE150514C92FF5005D6699 /* lq2x.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lq2x.h; sourceTree = "<group>"; };
@@ -2513,6 +2518,7 @@
 				ABFE14FB14C92FF5005D6699 /* bilinear.cpp */,
 				ABFE14FC14C92FF5005D6699 /* epx.cpp */,
 				ABFE14FE14C92FF5005D6699 /* hq2x.cpp */,
+				ABAAEFFE1B22361800E1269D /* hq3x.cpp */,
 				ABFE150014C92FF5005D6699 /* hq4x.cpp */,
 				ABFE150414C92FF5005D6699 /* lq2x.cpp */,
 				ABFE150614C92FF5005D6699 /* scanline.cpp */,
@@ -2520,7 +2526,6 @@
 				ABECB50818A460710052D52A /* xbrz.cpp */,
 				ABFE14FD14C92FF5005D6699 /* filter.h */,
 				ABFE14FF14C92FF5005D6699 /* hq2x.h */,
-				ABFE150214C92FF5005D6699 /* hq4x.h */,
 				ABFE150314C92FF5005D6699 /* interp.h */,
 				ABFE150514C92FF5005D6699 /* lq2x.h */,
 				AB817A34143EE2DB00A7DFE9 /* videofilter.h */,
@@ -3462,6 +3467,7 @@
 				ABECB50D18A460710052D52A /* xbrz.cpp in Sources */,
 				ABECB51818A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
 				ABC3DEC11A96EA96009EC345 /* RomInfoPanel.mm in Sources */,
+				ABAAF0031B22361800E1269D /* hq3x.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3607,6 +3613,7 @@
 				ABECB50A18A460710052D52A /* xbrz.cpp in Sources */,
 				ABECB51518A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
 				ABC3DEBD1A96EA96009EC345 /* RomInfoPanel.mm in Sources */,
+				ABAAEFFF1B22361800E1269D /* hq3x.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3782,6 +3789,7 @@
 				ABECB50918A460710052D52A /* xbrz.cpp in Sources */,
 				ABECB51418A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
 				ABC3DEBE1A96EA96009EC345 /* RomInfoPanel.mm in Sources */,
+				ABAAF0001B22361800E1269D /* hq3x.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3957,6 +3965,7 @@
 				ABECB50C18A460710052D52A /* xbrz.cpp in Sources */,
 				ABECB51718A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
 				ABC3DEC01A96EA96009EC345 /* RomInfoPanel.mm in Sources */,
+				ABAAF0021B22361800E1269D /* hq3x.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4102,6 +4111,7 @@
 				ABECB50B18A460710052D52A /* xbrz.cpp in Sources */,
 				ABECB51618A460910052D52A /* OGLDisplayOutput.cpp in Sources */,
 				ABC3DEBF1A96EA96009EC345 /* RomInfoPanel.mm in Sources */,
+				ABAAF0011B22361800E1269D /* hq3x.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
