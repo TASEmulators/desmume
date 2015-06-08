@@ -569,9 +569,9 @@ public:
 		FragmentColor shaderOutput;
 		bool isOpaquePixel;
 		
-		//not sure about the w-buffer depth value
-		//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
-		const u32 depth = (gfx3d.renderState.wbuffer) ? u32floor(4096*w) : DS_DEPTH15TO24( u32floor(z*0x7FFF) );
+		// not sure about the w-buffer depth value: this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
+		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly
+		const u32 depth = (gfx3d.renderState.wbuffer) ? u32floor(4096*w) : DS_DEPTH15TO24( u32floor(z*0x7FFF) ) & 0x00FFFFFC;
 		
 		// run the depth test
 		if (polyAttr.enableDepthEqualTest)
