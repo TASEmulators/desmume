@@ -19,10 +19,17 @@
 #include <pthread.h>
 #include <libkern/OSAtomic.h>
 
+enum GPUType
+{
+	DS_GPU_TYPE_MAIN = 0,
+	DS_GPU_TYPE_SUB,
+	DS_GPU_TYPE_MAIN_AND_SUB
+};
 
 @interface CocoaDSGPU : NSObject
 {
 	UInt32 gpuStateFlags;
+	uint8_t _gpuScale;
 	BOOL isCPUCoreCountAuto;
 	
 	OSSpinLock spinlockGpuState;
@@ -30,6 +37,8 @@
 }
 
 @property (assign) UInt32 gpuStateFlags;
+@property (assign) NSSize gpuDimensions;
+@property (assign) NSUInteger gpuScale;
 @property (assign) pthread_rwlock_t *rwlockProducer;
 
 @property (assign) BOOL layerMainGPU;
@@ -71,21 +80,23 @@ extern "C"
 #endif
 
 void GPU_FillScreenWithBGRA5551(const uint16_t colorValue);
-void SetGPULayerState(const int gpuType, const unsigned int i, const bool state);
-bool GetGPULayerState(const int gpuType, const unsigned int i);
-void SetGPUDisplayState(const int gpuType, const bool state);
-bool GetGPUDisplayState(const int gpuType);
+void SetGPULayerState(const GPUType gpuType, const unsigned int i, const bool state);
+bool GetGPULayerState(const GPUType gpuType, const unsigned int i);
+void SetGPUDisplayState(const GPUType gpuType, const bool state);
+bool GetGPUDisplayState(const GPUType gpuType);
 
 bool OSXOpenGLRendererInit();
 bool OSXOpenGLRendererBegin();
 void OSXOpenGLRendererEnd();
+bool OSXOpenGLRendererFramebufferDidResize(size_t w, size_t h);
 
 bool CreateOpenGLRenderer();
 void DestroyOpenGLRenderer();
 void RequestOpenGLRenderer_3_2(bool request_3_2);
 void SetOpenGLRendererFunctions(bool (*initFunction)(),
 								bool (*beginOGLFunction)(),
-								void (*endOGLFunction)());
+								void (*endOGLFunction)(),
+								bool (*resizeOGLFunction)(size_t w, size_t h));
 
 #ifdef __cplusplus
 }
