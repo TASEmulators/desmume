@@ -226,6 +226,7 @@ protected:
 	
 	GLuint _texLQ2xLUT;
 	GLuint _texHQ2xLUT;
+	GLuint _texHQ3xLUT;
 	GLuint _texHQ4xLUT;
 	
 	GLint _vtxBuffer[8];
@@ -322,6 +323,7 @@ protected:
 	
 	GLuint _texLQ2xLUT;
 	GLuint _texHQ2xLUT;
+	GLuint _texHQ3xLUT;
 	GLuint _texHQ4xLUT;
 	
 	GLint vtxBuffer[4 * 8];

@@ -1553,6 +1553,158 @@ static const char *ScalerHQ2xSFragShader_110 = {"\
 	}\n\
 "};
 
+static const char *ScalerHQ3xFragShader_110 = {"\
+	VARYING vec2 texCoord[9];\n\
+	uniform sampler2DRect tex;\n\
+	uniform sampler3D lut;\n\
+	\n\
+	bool InterpDiff(vec3 p1, vec3 p2)\n\
+	{\n\
+		vec3 diff = p1 - p2;\n\
+		vec3 yuv =	vec3( diff.r + diff.g + diff.b,\n\
+						  diff.r - diff.b,\n\
+						 -diff.r + (2.0*diff.g) - diff.b );\n\
+		yuv = abs(yuv);\n\
+		\n\
+		return any( greaterThan(yuv, vec3(192.0/255.0, 28.0/255.0, 48.0/255.0)) );\n\
+	}\n\
+	\n\
+	vec3 Lerp(vec3 weight, vec3 p1, vec3 p2, vec3 p3)\n\
+	{\n\
+		return p1*weight.r + p2*weight.g + p3*weight.b;\n\
+	}\n\
+	\n\
+	//---------------------------------------\n\
+	// Input Pixel Mapping:   06|07|08\n\
+	//                        05|00|01\n\
+	//                        04|03|02\n\
+	//\n\
+	// Output Pixel Mapping: 00|01|02|03\n\
+	//                       04|05|06|07\n\
+	//                       08|09|10|11\n\
+	//                       12|13|14|15\n\
+	\n\
+	//---------------------------------------\n\
+	// HQ3x Pixel Mapping:      0|1|2\n\
+	//                          3|4|5\n\
+	//                          6|7|8\n\
+	\n\
+	void main()\n\
+	{\n\
+		vec3 src[9];\n\
+		src[0] = SAMPLE3_TEX_RECT(tex, texCoord[6]).rgb;\n\
+		src[1] = SAMPLE3_TEX_RECT(tex, texCoord[7]).rgb;\n\
+		src[2] = SAMPLE3_TEX_RECT(tex, texCoord[8]).rgb;\n\
+		src[3] = SAMPLE3_TEX_RECT(tex, texCoord[5]).rgb;\n\
+		src[4] = SAMPLE3_TEX_RECT(tex, texCoord[0]).rgb;\n\
+		src[5] = SAMPLE3_TEX_RECT(tex, texCoord[1]).rgb;\n\
+		src[6] = SAMPLE3_TEX_RECT(tex, texCoord[4]).rgb;\n\
+		src[7] = SAMPLE3_TEX_RECT(tex, texCoord[3]).rgb;\n\
+		src[8] = SAMPLE3_TEX_RECT(tex, texCoord[2]).rgb;\n\
+		\n\
+		float pattern	= (float(InterpDiff(src[0], src[4])) * 1.0) +\n\
+						  (float(InterpDiff(src[1], src[4])) * 2.0) +\n\
+						  (float(InterpDiff(src[2], src[4])) * 4.0) +\n\
+						  (float(InterpDiff(src[3], src[4])) * 8.0) +\n\
+						  (float(InterpDiff(src[5], src[4])) * 16.0) +\n\
+						  (float(InterpDiff(src[6], src[4])) * 32.0) +\n\
+						  (float(InterpDiff(src[7], src[4])) * 64.0) +\n\
+						  (float(InterpDiff(src[8], src[4])) * 128.0);\n\
+		\n\
+		float compare	= (float(InterpDiff(src[1], src[5])) * 1.0) +\n\
+						  (float(InterpDiff(src[5], src[7])) * 2.0) +\n\
+						  (float(InterpDiff(src[7], src[3])) * 4.0) +\n\
+						  (float(InterpDiff(src[3], src[1])) * 8.0);\n\
+		\n\
+		vec2 f = mix( vec2(0.0,0.0), mix(vec2(1.0,1.0), vec2(2.0,2.0), step(0.6, fract(texCoord[0]))), step(0.3, fract(texCoord[0])) );\n\
+		float k = (f.y*3.0) + f.x;\n\
+		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/9.0, (compare+0.5)/16.0));\n\
+		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/9.0, (compare+0.5)/16.0));\n\
+		\n\
+		vec3 dst[3];\n\
+		dst[0] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.r)), step(7.0*30.95/255.0, p.r)), step(6.0*30.95/255.0, p.r)), step(5.0*30.95/255.0, p.r)), step(4.0*30.95/255.0, p.r)), step(3.0*30.95/255.0, p.r)), step(2.0*30.95/255.0, p.r)), step(1.0*30.95/255.0, p.r));\n\
+		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
+		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
+		\n\
+		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
+	}\n\
+"};
+
+static const char *ScalerHQ3xSFragShader_110 = {"\
+	VARYING vec2 texCoord[9];\n\
+	uniform sampler2DRect tex;\n\
+	uniform sampler3D lut;\n\
+	\n\
+	vec3 Lerp(vec3 weight, vec3 p1, vec3 p2, vec3 p3)\n\
+	{\n\
+		return p1*weight.r + p2*weight.g + p3*weight.b;\n\
+	}\n\
+	\n\
+	//---------------------------------------\n\
+	// Input Pixel Mapping:   06|07|08\n\
+	//                        05|00|01\n\
+	//                        04|03|02\n\
+	//\n\
+	// Output Pixel Mapping: 00|01|02|03\n\
+	//                       04|05|06|07\n\
+	//                       08|09|10|11\n\
+	//                       12|13|14|15\n\
+	\n\
+	//---------------------------------------\n\
+	// HQ3xS Pixel Mapping:     0|1|2\n\
+	//                          3|4|5\n\
+	//                          6|7|8\n\
+	\n\
+	void main()\n\
+	{\n\
+		vec3 src[9];\n\
+		src[0] = SAMPLE3_TEX_RECT(tex, texCoord[6]).rgb;\n\
+		src[1] = SAMPLE3_TEX_RECT(tex, texCoord[7]).rgb;\n\
+		src[2] = SAMPLE3_TEX_RECT(tex, texCoord[8]).rgb;\n\
+		src[3] = SAMPLE3_TEX_RECT(tex, texCoord[5]).rgb;\n\
+		src[4] = SAMPLE3_TEX_RECT(tex, texCoord[0]).rgb;\n\
+		src[5] = SAMPLE3_TEX_RECT(tex, texCoord[1]).rgb;\n\
+		src[6] = SAMPLE3_TEX_RECT(tex, texCoord[4]).rgb;\n\
+		src[7] = SAMPLE3_TEX_RECT(tex, texCoord[3]).rgb;\n\
+		src[8] = SAMPLE3_TEX_RECT(tex, texCoord[2]).rgb;\n\
+		\n\
+		float b[9];\n\
+		float minBright = 10.0;\n\
+		float maxBright = 0.0;\n\
+		\n\
+		for (int i = 0; i < 9; i++)\n\
+		{\n\
+			b[i] = (src[i].r + src[i].r + src[i].r) + (src[i].g + src[i].g + src[i].g) + (src[i].b + src[i].b);\n\
+			minBright = min(minBright, b[i]);\n\
+			maxBright = max(maxBright, b[i]);\n\
+		}\n\
+		\n\
+		float diffBright = (maxBright - minBright) * (7.0/16.0);\n\
+		float pattern = step((3.5*7.0/892.5), diffBright) *	((float(abs(b[0] - b[4]) > diffBright) * 1.0) +\n\
+															 (float(abs(b[1] - b[4]) > diffBright) * 2.0) +\n\
+															 (float(abs(b[2] - b[4]) > diffBright) * 4.0) +\n\
+															 (float(abs(b[3] - b[4]) > diffBright) * 8.0) +\n\
+															 (float(abs(b[5] - b[4]) > diffBright) * 16.0) +\n\
+															 (float(abs(b[6] - b[4]) > diffBright) * 32.0) +\n\
+															 (float(abs(b[7] - b[4]) > diffBright) * 64.0) +\n\
+															 (float(abs(b[8] - b[4]) > diffBright) * 128.0));\n\
+		\n\
+		vec2 f = mix( vec2(0.0,0.0), mix(vec2(1.0,1.0), vec2(2.0,2.0), step(0.6, fract(texCoord[0]))), step(0.3, fract(texCoord[0])) );\n\
+		float k = (f.y*3.0) + f.x;\n\
+		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/9.0, 0.5/16.0));\n\
+		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/9.0, 0.5/16.0));\n\
+		\n\
+		vec3 dst[3];\n\
+		dst[0] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.r)), step(7.0*30.95/255.0, p.r)), step(6.0*30.95/255.0, p.r)), step(5.0*30.95/255.0, p.r)), step(4.0*30.95/255.0, p.r)), step(3.0*30.95/255.0, p.r)), step(2.0*30.95/255.0, p.r)), step(1.0*30.95/255.0, p.r));\n\
+		dst[1] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.g)), step(7.0*30.95/255.0, p.g)), step(6.0*30.95/255.0, p.g)), step(5.0*30.95/255.0, p.g)), step(4.0*30.95/255.0, p.g)), step(3.0*30.95/255.0, p.g)), step(2.0*30.95/255.0, p.g)), step(1.0*30.95/255.0, p.g));\n\
+		dst[2] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.b)), step(7.0*30.95/255.0, p.b)), step(6.0*30.95/255.0, p.b)), step(5.0*30.95/255.0, p.b)), step(4.0*30.95/255.0, p.b)), step(3.0*30.95/255.0, p.b)), step(2.0*30.95/255.0, p.b)), step(1.0*30.95/255.0, p.b));\n\
+		\n\
+		OUT_FRAG_COLOR.rgb = Lerp(w, dst[0], dst[1], dst[2]);\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
+	}\n\
+"};
+
 static const char *ScalerHQ4xFragShader_110 = {"\
 	VARYING vec2 texCoord[9];\n\
 	uniform sampler2DRect tex;\n\
@@ -3595,6 +3747,7 @@ typedef struct
 
 static LUTValues *_LQ2xLUT = NULL;
 static LUTValues *_HQ2xLUT = NULL;
+static LUTValues *_HQ3xLUT = NULL;
 static LUTValues *_HQ4xLUT = NULL;
 
 static const GLint filterVtxBuffer[8] = {-1, -1, 1, -1, 1, 1, -1, 1};
@@ -3712,6 +3865,7 @@ static void InitHQnxLUTs()
 	
 	_LQ2xLUT = (LUTValues *)malloc(256*(2*2)*16 * sizeof(LUTValues));
 	_HQ2xLUT = (LUTValues *)malloc(256*(2*2)*16 * sizeof(LUTValues));
+	_HQ3xLUT = (LUTValues *)malloc(256*(3*3)*16 * sizeof(LUTValues) + 2);
 	_HQ4xLUT = (LUTValues *)malloc(256*(4*4)*16 * sizeof(LUTValues) + 4); // The bytes fix a mysterious crash that intermittently occurs. Don't know why this works... it just does.
 	
 #define MUR (compare & 0x01) // top-right
@@ -3770,6 +3924,25 @@ static void InitHQnxLUTs()
 #undef P1
 #undef P2
 #undef P3
+
+#define P(a, b)						_HQ3xLUT[pattern+(256*((b*3)+a))+(2304*compare)]
+#define I1(p0)						PackLUTValues(p0, p0, p0,  1,  0,  0)
+#define I2(i0, i1, p0, p1)			PackLUTValues(p0, p1, p0, i0, i1,  0)
+#define I3(i0, i1, i2, p0, p1, p2)	PackLUTValues(p0, p1, p2, i0, i1, i2)
+	for (size_t compare = 0; compare < 16; compare++)
+	{
+		for (size_t pattern = 0; pattern < 256; pattern++)
+		{
+			switch (pattern)
+			{
+#include "../filter/hq3x.dat"
+			}
+		}
+	}
+#undef P
+#undef I1
+#undef I2
+#undef I3
 
 #define P(a, b)						_HQ4xLUT[pattern+(256*((b*4)+a))+(4096*compare)]
 #define I1(p0)						PackLUTValues(p0, p0, p0,  1,  0,  0)
@@ -4838,6 +5011,13 @@ void OGLImage::UploadHQnxLUTs()
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 256*2, 4, 16, 0, GL_BGR, GL_UNSIGNED_BYTE, _HQ2xLUT);
 	
+	glBindTexture(GL_TEXTURE_3D, _texHQ3xLUT);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 256*2, 9, 16, 0, GL_BGR, GL_UNSIGNED_BYTE, _HQ3xLUT);
+	
 	glBindTexture(GL_TEXTURE_3D, _texHQ4xLUT);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -5141,6 +5321,42 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			glActiveTexture(GL_TEXTURE0);
 			
 			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xSFragShader_110, _useShader150);
+			
+			glUseProgram(shaderFilterProgram->GetProgramID());
+			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
+			glUniform1i(uniformTexSampler, 0);
+			
+			uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "lut");
+			glUniform1i(uniformTexSampler, 1);
+			glUseProgram(0);
+			break;
+		}
+			
+		case VideoFilterTypeID_HQ3X:
+		{
+			glActiveTexture(GL_TEXTURE0 + 1);
+			glBindTexture(GL_TEXTURE_3D, this->_texHQ3xLUT);
+			glActiveTexture(GL_TEXTURE0);
+			
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xFragShader_110, _useShader150);
+			
+			glUseProgram(shaderFilterProgram->GetProgramID());
+			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
+			glUniform1i(uniformTexSampler, 0);
+			
+			uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "lut");
+			glUniform1i(uniformTexSampler, 1);
+			glUseProgram(0);
+			break;
+		}
+			
+		case VideoFilterTypeID_HQ3XS:
+		{
+			glActiveTexture(GL_TEXTURE0 + 1);
+			glBindTexture(GL_TEXTURE_3D, this->_texHQ3xLUT);
+			glActiveTexture(GL_TEXTURE0);
+			
+			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xSFragShader_110, _useShader150);
 			
 			glUseProgram(shaderFilterProgram->GetProgramID());
 			GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
@@ -5624,6 +5840,13 @@ void OGLDisplayLayer::UploadHQnxLUTs()
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 256*2, 4, 16, 0, GL_BGR, GL_UNSIGNED_BYTE, _HQ2xLUT);
+	
+	glBindTexture(GL_TEXTURE_3D, _texHQ3xLUT);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 256*2, 9, 16, 0, GL_BGR, GL_UNSIGNED_BYTE, _HQ3xLUT);
 	
 	glBindTexture(GL_TEXTURE_3D, _texHQ4xLUT);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -6165,6 +6388,42 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 				glActiveTexture(GL_TEXTURE0);
 				
 				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ2xSFragShader_110, _useShader150);
+				
+				glUseProgram(shaderFilterProgram->GetProgramID());
+				GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
+				glUniform1i(uniformTexSampler, 0);
+				
+				uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "lut");
+				glUniform1i(uniformTexSampler, 1);
+				glUseProgram(0);
+				break;
+			}
+				
+			case VideoFilterTypeID_HQ3X:
+			{
+				glActiveTexture(GL_TEXTURE0 + 1);
+				glBindTexture(GL_TEXTURE_3D, this->_texHQ3xLUT);
+				glActiveTexture(GL_TEXTURE0);
+				
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xFragShader_110, _useShader150);
+				
+				glUseProgram(shaderFilterProgram->GetProgramID());
+				GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
+				glUniform1i(uniformTexSampler, 0);
+				
+				uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "lut");
+				glUniform1i(uniformTexSampler, 1);
+				glUseProgram(0);
+				break;
+			}
+				
+			case VideoFilterTypeID_HQ3XS:
+			{
+				glActiveTexture(GL_TEXTURE0 + 1);
+				glBindTexture(GL_TEXTURE_3D, this->_texHQ3xLUT);
+				glActiveTexture(GL_TEXTURE0);
+				
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xSFragShader_110, _useShader150);
 				
 				glUseProgram(shaderFilterProgram->GetProgramID());
 				GLint uniformTexSampler = glGetUniformLocation(shaderFilterProgram->GetProgramID(), "tex");
