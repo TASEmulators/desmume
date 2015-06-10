@@ -712,11 +712,12 @@ public:
 		float u = pLeft->u.curr;
 		float v = pLeft->v.curr;
 		float z = pLeft->z.curr;
+		
 		float color[3] = {
 			pLeft->color[0].curr,
 			pLeft->color[1].curr,
 			pLeft->color[2].curr };
-
+		
 		//our dx values are taken from the steps up until the right edge
 		float invWidth = 1.0f / width;
 		float dinvw_dx = (pRight->invw.curr - invw) * invWidth;
@@ -1961,7 +1962,7 @@ Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
 			this->RenderEdgeMarkingAndFog(this->postprocessParam[0]);
 		}
 		
-		this->FlushFramebuffer(gfx3d_convertedScreen);
+		this->FlushFramebuffer(gfx3d_colorRGBA6665, gfx3d_colorRGBA5551);
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -2001,7 +2002,7 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 		}
 	}
 	
-	this->FlushFramebuffer(gfx3d_convertedScreen);
+	this->FlushFramebuffer(gfx3d_colorRGBA6665, gfx3d_colorRGBA5551);
 	
 	return RENDER3DERROR_NOERR;
 }

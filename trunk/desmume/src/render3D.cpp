@@ -210,9 +210,15 @@ Render3DError Render3D::EndRender(const u64 frameCount)
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::FlushFramebuffer(FragmentColor *dstBuffer)
+Render3DError Render3D::FlushFramebuffer(FragmentColor *dstRGBA6665, u16 *dstRGBA5551)
 {
-	memcpy(dstBuffer, this->_framebufferColor, this->_framebufferColorSizeBytes);
+	memcpy(dstRGBA6665, this->_framebufferColor, this->_framebufferColorSizeBytes);
+	
+	for (size_t i = 0; i < (this->_framebufferWidth * this->_framebufferHeight); i++)
+	{
+		dstRGBA5551[i] = R6G6B6TORGB15(this->_framebufferColor[i].r, this->_framebufferColor[i].g, this->_framebufferColor[i].b) | ((this->_framebufferColor[i].a == 0) ? 0x0000 : 0x8000);
+	}
+	
 	return RENDER3DERROR_NOERR;
 }
 
@@ -369,7 +375,7 @@ Render3DError Render3D::Render(const GFX3D &engine)
 
 Render3DError Render3D::RenderFinish()
 {
-	this->FlushFramebuffer(gfx3d_convertedScreen);
+	this->FlushFramebuffer(gfx3d_colorRGBA6665, gfx3d_colorRGBA5551);
 	return RENDER3DERROR_NOERR;
 }
 
