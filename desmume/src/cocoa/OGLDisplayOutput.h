@@ -150,7 +150,7 @@ public:
 	GLsizei GetSrcHeight();
 	GLsizei GetDstWidth();
 	GLsizei GetDstHeight();
-	void SetSrcSizeOGL(GLsizei w, GLsizei h);
+	virtual void SetSrcSizeOGL(GLsizei w, GLsizei h);
 	GLfloat GetScale();
 	void SetScaleOGL(GLfloat scale);
 	virtual GLuint RunFilterOGL(GLuint srcTexID);
@@ -166,6 +166,7 @@ public:
 	OGLFilterDeposterize(GLsizei srcWidth, GLsizei srcHeight, ShaderSupportTier theTier, bool useShader150);
 	~OGLFilterDeposterize();
 	
+	virtual void SetSrcSizeOGL(GLsizei w, GLsizei h);
 	virtual GLuint RunFilterOGL(GLuint srcTexID);
 };
 
@@ -264,7 +265,7 @@ public:
 	void SetSourceDeposterize(bool useDeposterize);
 	
 	bool CanUseShaderBasedFilters();
-	void GetNormalSize(double *w, double *h);
+	void GetNormalSize(double &w, double &h);
 	
 	int GetOutputFilter();
 	virtual void SetOutputFilterOGL(const int filterID);
@@ -287,6 +288,7 @@ protected:
 	ShaderSupportTier _shaderSupport;
 	
 	bool _needUploadVertices;
+	bool _needUploadTexCoords;
 	bool _useDeposterize;
 	bool _useShaderBasedPixelScaler;
 	bool _filtersPreferGPU;
@@ -307,7 +309,9 @@ protected:
 	VideoFilter *_vf[2];
 	VideoFilter *_vfDual;
 	GLuint _texCPUFilterDstID[2];
-		
+	
+	uint16_t _displayWidth;
+	uint16_t _displayHeight;
 	int _displayMode;
 	int _displayOrder;
 	int _displayOrientation;
@@ -335,6 +339,7 @@ protected:
 	
 	void UploadHQnxLUTs();
 	
+	virtual void ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide);
 	virtual void UploadVerticesOGL();
 	virtual void UploadTexCoordsOGL();
 	virtual void UploadTransformationOGL();
@@ -350,6 +355,9 @@ public:
 	bool GetFiltersPreferGPU();
 	void SetFiltersPreferGPUOGL(bool preferGPU);
 	
+	uint16_t GetDisplayWidth();
+	uint16_t GetDisplayHeight();
+	void SetDisplaySize(uint16_t w, uint16_t h);
 	int GetMode();
 	void SetMode(int dispMode);
 	int GetOrientation();
@@ -364,7 +372,7 @@ public:
 	void SetSourceDeposterize(bool useDeposterize);
 	
 	bool CanUseShaderBasedFilters();
-	void GetNormalSize(double *w, double *h);
+	void GetNormalSize(double &w, double &h);
 	
 	int GetOutputFilter();
 	virtual void SetOutputFilterOGL(const int filterID);

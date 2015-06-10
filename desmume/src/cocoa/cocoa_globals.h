@@ -202,10 +202,9 @@
 #define GPU_DISPLAY_WIDTH							256
 #define GPU_DISPLAY_HEIGHT							192
 #define GPU_DISPLAY_COLOR_DEPTH						sizeof(UInt16)
-#define GPU_SCREEN_SIZE_BYTES						(GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT * GPU_DISPLAY_COLOR_DEPTH) // The numbers are: 256px width, 192px height, 16bit color depth
 
 #define DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO		(21.0/46.0) // Based on the official DS specification: 21mm/46mm
-#define DS_DISPLAY_GAP								(GPU_DISPLAY_HEIGHT * DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO)
+#define DS_DISPLAY_UNSCALED_GAP						(GPU_DISPLAY_HEIGHT * DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO)
 
 #define WINDOW_STATUS_BAR_HEIGHT					24		// Height of an emulation window status bar in pixels.
 
@@ -484,16 +483,6 @@ enum
 {
 	DS_DISPLAY_ORDER_MAIN_FIRST = 0,
 	DS_DISPLAY_ORDER_TOUCH_FIRST
-};
-
-/*
- DS GPU TYPES
- */
-enum
-{
-	DS_GPU_TYPE_MAIN = 0,
-	DS_GPU_TYPE_SUB,
-	DS_GPU_TYPE_MAIN_AND_SUB
 };
 
 /*

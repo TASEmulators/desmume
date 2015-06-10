@@ -91,7 +91,6 @@ class OGLVideoOutput;
 	NSScreen *assignedScreen;
 	NSWindow *masterWindow;
 	
-	NSSize _normalSize;
 	double _displayScale;
 	double _displayRotation;
 	NSInteger _displayMode;
@@ -105,7 +104,6 @@ class OGLVideoOutput;
 	NSUInteger _statusBarHeight;
 	BOOL _isWindowResizing;
 	
-	OSSpinLock spinlockNormalSize;
 	OSSpinLock spinlockScale;
 	OSSpinLock spinlockRotation;
 	OSSpinLock spinlockDisplayMode;

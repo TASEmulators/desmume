@@ -37,7 +37,6 @@ typedef struct
 typedef struct
 {
 	uint16_t	*buffer;			// Pointer to frame buffer
-	size_t		bufferSize;			// Size (in bytes) of frame buffer
 	int32_t		displayModeID;		// The selected display to read from
 	uint16_t	width;				// Measured in pixels
 	uint16_t	height;				// Measured in pixels
@@ -118,6 +117,9 @@ typedef struct
 @required
 - (void) doDisplayModeChanged:(NSInteger)displayModeID;
 
+@optional
+- (void) doDisplaySizeChanged:(NSSize)displaySize;
+
 @end
 
 @protocol CocoaDSDisplayVideoDelegate <CocoaDSDisplayDelegate>
@@ -141,16 +143,18 @@ typedef struct
 @interface CocoaDSDisplay : CocoaDSOutput
 {
 	id <CocoaDSDisplayDelegate> delegate;
+	NSSize displaySize;
 	NSInteger displayMode;
-	NSSize frameSize;
 	GPUFrame _gpuFrame;
+	size_t _gpuCurrentWidth;
+	size_t _gpuCurrentHeight;
 	
 	OSSpinLock spinlockDisplayType;
 }
 
 @property (retain) id <CocoaDSDisplayDelegate> delegate;
+@property (readonly) NSSize displaySize;
 @property (assign) NSInteger displayMode;
-@property (readonly) NSSize frameSize;
 
 - (void) handleChangeDisplayMode:(NSData *)displayModeData;
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData;

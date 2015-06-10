@@ -43,6 +43,8 @@ GPU3DInterface *core3DList[] = {
 @implementation CocoaDSGPU
 
 @dynamic gpuStateFlags;
+@dynamic gpuDimensions;
+@dynamic gpuScale;
 @synthesize rwlockProducer;
 
 @dynamic layerMainGPU;
@@ -81,6 +83,7 @@ GPU3DInterface *core3DList[] = {
 	spinlockGpuState = OS_SPINLOCK_INIT;
 	rwlockProducer = NULL;
 	
+	_gpuScale = 1;
 	gpuStateFlags	= GPUSTATE_MAIN_GPU_MASK |
 					  GPUSTATE_MAIN_BG0_MASK |
 					  GPUSTATE_MAIN_BG1_MASK |
@@ -95,10 +98,11 @@ GPU3DInterface *core3DList[] = {
 					  GPUSTATE_SUB_OBJ_MASK;
 	
 	isCPUCoreCountAuto = NO;
-	
+		
 	SetOpenGLRendererFunctions(&OSXOpenGLRendererInit,
 							   &OSXOpenGLRendererBegin,
-							   &OSXOpenGLRendererEnd);
+							   &OSXOpenGLRendererEnd,
+							   &OSXOpenGLRendererFramebufferDidResize);
 	
 	GPU_FillScreenWithBGRA5551(0x8000);
 	
@@ -141,6 +145,33 @@ GPU3DInterface *core3DList[] = {
 	OSSpinLockUnlock(&spinlockGpuState);
 	
 	return flags;
+}
+
+- (void) setGpuDimensions:(NSSize)theDimensions
+{
+	pthread_rwlock_wrlock(self.rwlockProducer);
+	GPU_SetFramebufferSize(theDimensions.width, theDimensions.height);
+	pthread_rwlock_unlock(self.rwlockProducer);
+}
+
+- (NSSize) gpuDimensions
+{
+	pthread_rwlock_rdlock(self.rwlockProducer);
+	const NSSize dimensions = NSMakeSize(GPU_GetFramebufferWidth(), GPU_GetFramebufferHeight());
+	pthread_rwlock_unlock(self.rwlockProducer);
+	
+	return dimensions;
+}
+
+- (void) setGpuScale:(NSUInteger)theScale
+{
+	_gpuScale = (uint8_t)theScale;
+	[self setGpuDimensions:NSMakeSize(GPU_DISPLAY_WIDTH * theScale, GPU_DISPLAY_HEIGHT * theScale)];
+}
+
+- (NSUInteger) gpuScale
+{
+	return (NSUInteger)_gpuScale;
 }
 
 - (void) setRender3DRenderingEngine:(NSInteger)methodID
@@ -694,12 +725,12 @@ GPU3DInterface *core3DList[] = {
 
 @end
 
-void SetGPULayerState(const int gpuType, const unsigned int i, const bool state)
+void SetGPULayerState(const GPUType gpuType, const unsigned int i, const bool state)
 {
 	GPU *theGpu = NULL;
 	
 	// Check bounds on the layer index.
-	if(i > 4)
+	if (i > 4)
 	{
 		return;
 	}
@@ -736,12 +767,12 @@ void SetGPULayerState(const int gpuType, const unsigned int i, const bool state)
 	}
 }
 
-bool GetGPULayerState(const int gpuType, const unsigned int i)
+bool GetGPULayerState(const GPUType gpuType, const unsigned int i)
 {
 	bool theState = false;
 	
 	// Check bounds on the layer index.
-	if(i > 4)
+	if (i > 4)
 	{
 		return theState;
 	}
@@ -776,7 +807,7 @@ bool GetGPULayerState(const int gpuType, const unsigned int i)
 	return theState;
 }
 
-void SetGPUDisplayState(const int gpuType, const bool state)
+void SetGPUDisplayState(const GPUType gpuType, const bool state)
 {
 	switch (gpuType)
 	{
@@ -798,7 +829,7 @@ void SetGPUDisplayState(const int gpuType, const bool state)
 	}
 }
 
-bool GetGPUDisplayState(const int gpuType)
+bool GetGPUDisplayState(const GPUType gpuType)
 {
 	bool theState = false;
 	
@@ -825,20 +856,20 @@ bool GetGPUDisplayState(const int gpuType)
 
 void GPU_FillScreenWithBGRA5551(const uint16_t colorValue)
 {
-	const size_t pixCount = sizeof(GPU_screen) / sizeof(uint16_t);
+	const size_t pixCount = GPU_GetFramebufferWidth() * GPU_GetFramebufferHeight() * 2;
 	
 #ifdef __APPLE__
 	if (pixCount % 16 == 0)
 	{
 		const uint16_t colorValuePattern[] = {colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue};
-		memset_pattern16(GPU_screen, colorValuePattern, sizeof(GPU_screen));
+		memset_pattern16(GPU_screen, colorValuePattern, pixCount * sizeof(uint16_t));
 	}
 	else
 #endif
 	{
 		for (size_t i = 0; i < pixCount; i++)
 		{
-			((uint16_t *)GPU_screen)[i] = colorValue;
+			GPU_screen[i] = colorValue;
 		}
 	}
 }
@@ -870,13 +901,46 @@ void OSXOpenGLRendererEnd()
 	
 }
 
+bool OSXOpenGLRendererFramebufferDidResize(size_t w, size_t h)
+{
+	bool result = false;
+	CGLPBufferObj newPBuffer = NULL;
+	
+	if (OGLCreateRenderer_3_2_Func != NULL)
+	{
+		result = true;
+		return result;
+	}
+	
+	// Create a PBuffer for legacy contexts since the availability of FBOs
+	// is not guaranteed.
+	CGLCreatePBuffer(w, h, GL_TEXTURE_2D, GL_RGBA, 0, &newPBuffer);
+	
+	if (newPBuffer == NULL)
+	{
+		return result;
+	}
+	else
+	{
+		GLint virtualScreenID = 0;
+		CGLGetVirtualScreen(OSXOpenGLRendererContext, &virtualScreenID);
+		CGLSetPBuffer(OSXOpenGLRendererContext, newPBuffer, 0, 0, virtualScreenID);
+	}
+	
+	CGLPBufferObj oldPBuffer = OSXOpenGLRendererPBuffer;
+	OSXOpenGLRendererPBuffer = newPBuffer;
+	CGLReleasePBuffer(oldPBuffer);
+	
+	result = true;
+	return result;
+}
+
 bool CreateOpenGLRenderer()
 {
 	bool result = false;
 	bool useContext_3_2 = false;
 	CGLPixelFormatObj cglPixFormat = NULL;
 	CGLContextObj newContext = NULL;
-	CGLPBufferObj newPBuffer = NULL;
 	GLint virtualScreenCount = 0;
 	
 	CGLPixelFormatAttribute attrs[] = {
@@ -916,29 +980,8 @@ bool CreateOpenGLRenderer()
 	CGLCreateContext(cglPixFormat, NULL, &newContext);
 	CGLReleasePixelFormat(cglPixFormat);
 	
-	// Create a PBuffer for legacy contexts since the availability of FBOs
-	// is not guaranteed.
-	if (!useContext_3_2)
-	{
-		CGLCreatePBuffer(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, GL_TEXTURE_2D, GL_RGBA, 0, &newPBuffer);
-		
-		if (newPBuffer == NULL)
-		{
-			CGLReleaseContext(newContext);
-			return result;
-		}
-		else
-		{
-			GLint virtualScreenID = 0;
-			
-			CGLGetVirtualScreen(newContext, &virtualScreenID);
-			CGLSetPBuffer(newContext, newPBuffer, 0, 0, virtualScreenID);
-		}
-	}
-	
 	RequestOpenGLRenderer_3_2(useContext_3_2);
 	OSXOpenGLRendererContext = newContext;
-	OSXOpenGLRendererPBuffer = newPBuffer;
 	
 	result = true;
 	return result;
@@ -973,9 +1016,11 @@ void RequestOpenGLRenderer_3_2(bool request_3_2)
 
 void SetOpenGLRendererFunctions(bool (*initFunction)(),
 								bool (*beginOGLFunction)(),
-								void (*endOGLFunction)())
+								void (*endOGLFunction)(),
+								bool (*resizeOGLFunction)(size_t w, size_t h))
 {
 	oglrender_init = initFunction;
 	oglrender_beginOpenGL = beginOGLFunction;
 	oglrender_endOpenGL = endOGLFunction;
+	oglrender_framebufferDidResizeCallback = resizeOGLFunction;
 }

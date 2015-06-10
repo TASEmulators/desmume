@@ -503,8 +503,8 @@
 @implementation CocoaDSDisplay
 
 @synthesize delegate;
+@dynamic displaySize;
 @dynamic displayMode;
-@dynamic frameSize;
 
 
 - (id)init
@@ -519,13 +519,14 @@
 	
 	delegate = nil;
 	displayMode = DS_DISPLAY_TYPE_DUAL;
-	frameSize = NSMakeSize((CGFloat)GPU_DISPLAY_WIDTH, (CGFloat)GPU_DISPLAY_HEIGHT * 2);
 	
 	_gpuFrame.buffer = (uint16_t *)GPU_screen;
-	_gpuFrame.bufferSize = GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT * 2 * sizeof(uint16_t);
 	_gpuFrame.displayModeID = DS_DISPLAY_TYPE_DUAL;
-	_gpuFrame.width = frameSize.width;
-	_gpuFrame.height = frameSize.height;
+	_gpuFrame.width = GPU_DISPLAY_WIDTH;
+	_gpuFrame.height = GPU_DISPLAY_HEIGHT * 2;
+	
+	_gpuCurrentWidth = GPU_DISPLAY_WIDTH;
+	_gpuCurrentHeight = GPU_DISPLAY_HEIGHT;
 	
 	[property setValue:[NSNumber numberWithInteger:displayMode] forKey:@"displayMode"];
 	[property setValue:NSSTRING_DISPLAYMODE_MAIN forKey:@"displayModeString"];
@@ -540,10 +541,18 @@
 	[super dealloc];
 }
 
+- (NSSize) displaySize
+{
+	OSSpinLockLock(&spinlockDisplayType);
+	NSSize size = NSMakeSize((CGFloat)GPU_GetFramebufferWidth(), (displayMode == DS_DISPLAY_TYPE_DUAL) ? (CGFloat)(GPU_GetFramebufferHeight() * 2): (CGFloat)GPU_GetFramebufferHeight());
+	OSSpinLockUnlock(&spinlockDisplayType);
+	
+	return size;
+}
+
 - (void) setDisplayMode:(NSInteger)displayModeID
 {
 	NSString *newDispString = nil;
-	NSSize newFrameSize = NSMakeSize((CGFloat)GPU_DISPLAY_WIDTH, (CGFloat)GPU_DISPLAY_HEIGHT);
 	
 	switch (displayModeID)
 	{
@@ -557,7 +566,6 @@
 			
 		case DS_DISPLAY_TYPE_DUAL:
 			newDispString = NSSTRING_DISPLAYMODE_DUAL;
-			newFrameSize.height *= 2;
 			break;
 			
 		default:
@@ -567,7 +575,6 @@
 	
 	OSSpinLockLock(&spinlockDisplayType);
 	displayMode = displayModeID;
-	frameSize = newFrameSize;
 	[property setValue:[NSNumber numberWithInteger:displayModeID] forKey:@"displayMode"];
 	[property setValue:newDispString forKey:@"displayModeString"];
 	OSSpinLockUnlock(&spinlockDisplayType);
@@ -580,15 +587,6 @@
 	OSSpinLockUnlock(&spinlockDisplayType);
 	
 	return displayModeID;
-}
-
-- (NSSize) frameSize
-{
-	OSSpinLockLock(&spinlockDisplayType);
-	NSSize size = frameSize;
-	OSSpinLockUnlock(&spinlockDisplayType);
-	
-	return size;
 }
 
 - (void)handlePortMessage:(NSPortMessage *)portMessage
@@ -618,29 +616,23 @@
 
 - (void) handleEmuFrameProcessed
 {
-	_gpuFrame.displayModeID = [self displayMode];
-	_gpuFrame.width = [self frameSize].width;
-	_gpuFrame.height = [self frameSize].height;
+	const uint16_t newGpuWidth = GPU_GetFramebufferWidth();
+	const uint16_t newGpuHeight = GPU_GetFramebufferHeight();
 	
-	switch (_gpuFrame.displayModeID)
+	_gpuFrame.buffer = (uint16_t *)GPU_screen;
+	_gpuFrame.displayModeID = [self displayMode];
+	_gpuFrame.width = newGpuWidth;
+	_gpuFrame.height = (_gpuFrame.displayModeID == DS_DISPLAY_TYPE_DUAL) ? newGpuHeight * 2 : newGpuHeight;
+	
+	if (newGpuWidth != _gpuCurrentWidth || newGpuHeight != _gpuCurrentHeight)
 	{
-		case DS_DISPLAY_TYPE_MAIN:
-			_gpuFrame.buffer = (uint16_t *)GPU_screen;
-			_gpuFrame.bufferSize = GPU_SCREEN_SIZE_BYTES;
-			break;
-			
-		case DS_DISPLAY_TYPE_TOUCH:
-			_gpuFrame.buffer = (uint16_t *)GPU_screen + (GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT);
-			_gpuFrame.bufferSize = GPU_SCREEN_SIZE_BYTES;
-			break;
-			
-		case DS_DISPLAY_TYPE_DUAL:
-			_gpuFrame.buffer = (uint16_t *)GPU_screen;
-			_gpuFrame.bufferSize = GPU_SCREEN_SIZE_BYTES * 2;
-			break;
-			
-		default:
-			break;
+		if (delegate != nil && [delegate respondsToSelector:@selector(doDisplaySizeChanged:)])
+		{
+			[(id<CocoaDSDisplayDelegate>)delegate doDisplaySizeChanged:NSMakeSize(newGpuWidth, newGpuHeight)];
+		}
+		
+		_gpuCurrentWidth = newGpuWidth;
+		_gpuCurrentHeight = newGpuHeight;
 	}
 	
 	[super handleEmuFrameProcessed];
@@ -655,7 +647,7 @@
 	
 	const NSInteger displayModeID = *(NSInteger *)[displayModeData bytes];
 	[self setDisplayMode:displayModeID];
-	[delegate doDisplayModeChanged:displayModeID];
+	[(id<CocoaDSDisplayDelegate>)delegate doDisplayModeChanged:displayModeID];
 }
 
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData
@@ -691,7 +683,7 @@
 
 - (NSImage *) image
 {
-	NSImage *newImage = [[NSImage alloc] initWithSize:self.frameSize];
+	NSImage *newImage = [[NSImage alloc] initWithSize:[self displaySize]];
 	if (newImage == nil)
 	{
 		return newImage;
@@ -719,7 +711,7 @@
 		return nil;
 	}
 	
-	NSSize srcSize = self.frameSize;
+	NSSize srcSize = [self displaySize];
 	NSUInteger w = (NSUInteger)srcSize.width;
 	NSUInteger h = (NSUInteger)srcSize.height;
 	NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
