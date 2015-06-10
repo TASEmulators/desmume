@@ -310,7 +310,8 @@ static float normalTable[1024];
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
 // Color buffer that is filled by the 3D renderer and is read by the GPU engine.
-FragmentColor *gfx3d_convertedScreen = NULL;
+FragmentColor *gfx3d_colorRGBA6665 = NULL;
+u16 *gfx3d_colorRGBA5551 = NULL;
 static size_t gfx3d_framebufferWidth = GFX3D_FRAMEBUFFER_WIDTH;
 static size_t gfx3d_framebufferHeight = GFX3D_FRAMEBUFFER_HEIGHT;
 
@@ -565,8 +566,11 @@ void gfx3d_deinit()
 	vertlists = NULL;
 	vertlist = NULL;
 	
-	free(gfx3d_convertedScreen);
-	gfx3d_convertedScreen = NULL;
+	free(gfx3d_colorRGBA6665);
+	gfx3d_colorRGBA6665 = NULL;
+	
+	free(gfx3d_colorRGBA5551);
+	gfx3d_colorRGBA5551 = NULL;
 }
 
 void gfx3d_reset()
@@ -641,7 +645,8 @@ void gfx3d_reset()
 	last_s = 0;
 	viewport = 0xBFFF0000;
 
-	memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_framebufferWidth * gfx3d_framebufferHeight * sizeof(FragmentColor)));
+	memset(gfx3d_colorRGBA6665, 0, gfx3d_framebufferWidth * gfx3d_framebufferHeight * sizeof(FragmentColor));
+	memset(gfx3d_colorRGBA5551, 0, gfx3d_framebufferWidth * gfx3d_framebufferHeight * sizeof(u16));
 
 	gfx3d.state.clearDepth = DS_DEPTH15TO24(0x7FFF);
 	
@@ -673,14 +678,15 @@ void gfx3d_setFramebufferSize(size_t w, size_t h)
 	
 	// Check if we're calling this function from initialization.
 	// If we're not initializing, we need to finish rendering first.
-	if (gfx3d_convertedScreen != NULL)
+	if (gfx3d_colorRGBA6665 != NULL && gfx3d_colorRGBA5551 != NULL)
 	{
 		CurrentRenderer->RenderFinish();
 	}
 	
 	gfx3d_framebufferWidth = w;
 	gfx3d_framebufferHeight = h;
-	gfx3d_convertedScreen = (FragmentColor *)realloc(gfx3d_convertedScreen, w * h * sizeof(FragmentColor));
+	gfx3d_colorRGBA6665 = (FragmentColor *)realloc(gfx3d_colorRGBA6665, w * h * sizeof(FragmentColor));
+	gfx3d_colorRGBA5551 = (u16 *)realloc(gfx3d_colorRGBA5551, w * h * sizeof(u16));
 	
 	CurrentRenderer->SetFramebufferSize(w, h);
 }
@@ -2345,7 +2351,7 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 
 	if (!CommonSettings.showGpu.main)
 	{
-		memset(gfx3d_convertedScreen, 0, sizeof(gfx3d_framebufferWidth * gfx3d_framebufferHeight * sizeof(FragmentColor)));
+		memset(gfx3d_colorRGBA6665, 0, sizeof(gfx3d_framebufferWidth * gfx3d_framebufferHeight * sizeof(FragmentColor)));
 		return;
 	}
 	
@@ -2457,24 +2463,16 @@ void gfx3d_glGetLightColor(const size_t index, u32 &dst)
 	dst = lightColor[index];
 }
 
-void gfx3d_GetLineData(const size_t line, FragmentColor **dst)
+const FragmentColor* gfx3d_GetLineDataRGBA6665(const size_t line)
 {
 	CurrentRenderer->RenderFinish();
-	*dst = gfx3d_convertedScreen + (line * gfx3d_framebufferWidth);
+	return (gfx3d_colorRGBA6665 + (line * gfx3d_framebufferWidth));
 }
 
-void gfx3d_GetLineData15bpp(const size_t line, u16 **dst)
+const u16* gfx3d_GetLineDataRGBA5551(const size_t line)
 {
-	//TODO - this is not very thread safe!!!
-	static u16 buf[GFX3D_FRAMEBUFFER_WIDTH];
-	*dst = buf;
-	
-	FragmentColor *lineData;
-	gfx3d_GetLineData(line, &lineData);
-	for (size_t i = 0; i < GFX3D_FRAMEBUFFER_WIDTH; i++)
-	{
-		buf[i] = R6G6B6TORGB15(lineData[i].r, lineData[i].g, lineData[i].b) | ((lineData[i].a == 0) ? 0x0000 : 0x8000);
-	}
+	CurrentRenderer->RenderFinish();
+	return (gfx3d_colorRGBA5551 + (line * gfx3d_framebufferWidth));
 }
 
 
@@ -2564,7 +2562,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GTVC", 4, 1, &tempVertInfo.count},
 	{ "GTVM", 4, 4, tempVertInfo.map},
 	{ "GTVF", 4, 1, &tempVertInfo.first},
-	{ "G3CX", 1, 4*GFX3D_FRAMEBUFFER_WIDTH*GFX3D_FRAMEBUFFER_HEIGHT, gfx3d_convertedScreen},
+	{ "G3CX", 1, 4*GFX3D_FRAMEBUFFER_WIDTH*GFX3D_FRAMEBUFFER_HEIGHT, gfx3d_colorRGBA6665},
 	{ 0 }
 };
 

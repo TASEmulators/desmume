@@ -583,6 +583,23 @@ enum BGType {
 	BGType_AffineExt=4, BGType_AffineExt_256x16=5, BGType_AffineExt_256x1=6, BGType_AffineExt_Direct=7
 };
 
+enum GPUDisplayMode
+{
+	GPUDisplayMode_Off				= 0,
+	GPUDisplayMode_Normal			= 1,
+	GPUDisplayMode_VRAM				= 2,
+	GPUDisplayMode_MainMemory		= 3
+};
+
+enum GPUMasterBrightMode
+{
+	GPUMasterBrightMode_Disable		= 0,
+	GPUMasterBrightMode_Up			= 1,
+	GPUMasterBrightMode_Down		= 2,
+	GPUMasterBrightMode_Reserved	= 3
+	
+};
+
 extern const BGType GPU_mode2type[8][4];
 
 struct GPU
@@ -636,7 +653,7 @@ struct GPU
 
 	u8 core;
 
-	u8 dispMode;
+	GPUDisplayMode dispMode;
 	u8 vramBlock;
 	u8 *VRAMaddr;
 
@@ -685,9 +702,9 @@ struct GPU
 	bool blend2[8];
 
 	CACHE_ALIGN u16 tempScanlineBuffer[256];
-	u8 *tempScanline;
+	u16 *tempScanline;
 
-	u8	MasterBrightMode;
+	GPUMasterBrightMode	MasterBrightMode;
 	u32 MasterBrightFactor;
 
 	CACHE_ALIGN u8 bgPixels[1024]; //yes indeed, this is oversized. map debug tools try to write to it
@@ -695,11 +712,8 @@ struct GPU
 	u32 currLine;
 	u8 currBgNum;
 	bool blend1;
-	u8* currDst;
-
-	FragmentColor *_3dColorLine;
-
-
+	u16 *currDst;
+	
 	static struct MosaicLookup {
 
 		struct TableEntry {
@@ -728,7 +742,7 @@ struct GPU
 	FORCEINLINE FASTCALL bool _master_setFinalBGColor(u16 &color, const u32 x);
 
 	template<BlendFunc FUNC, bool WINDOW>
-	FORCEINLINE FASTCALL void _master_setFinal3dColor(int dstX, int srcX);
+	FORCEINLINE FASTCALL void _master_setFinal3dColor(int dstX, const FragmentColor src);
 
 	int setFinalColorBck_funcNum;
 	int bgFunc;
@@ -751,7 +765,7 @@ struct GPU
 	}
 
 
-	void setFinalColor3d(int dstX, int srcX);
+	void setFinalColor3d(int dstX, const FragmentColor src);
 	
 	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(u16 color, const u32 x);
 	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const u32 x, const int opaque);
@@ -824,12 +838,14 @@ static void REG_DISPx_pack_test(GPU * gpu)
 }
 #endif
 
-CACHE_ALIGN extern u8 GPU_screen[4*256*192];
-
+extern u16 *GPU_screen;
 
 GPU * GPU_Init(u8 l);
 void GPU_Reset(GPU *g, u8 l);
 void GPU_DeInit(GPU *);
+size_t GPU_GetFramebufferWidth();
+size_t GPU_GetFramebufferHeight();
+void GPU_SetFramebufferSize(size_t w, size_t h);
 
 //these are functions used by debug tools which want to render layers etc outside the context of the emulation
 namespace GPU_EXT

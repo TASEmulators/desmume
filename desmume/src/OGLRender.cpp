@@ -72,6 +72,7 @@ void ENDGL()
 bool (*oglrender_init)() = NULL;
 bool (*oglrender_beginOpenGL)() = NULL;
 void (*oglrender_endOpenGL)() = NULL;
+bool (*oglrender_framebufferDidResizeCallback)(size_t w, size_t h) = NULL;
 void (*OGLLoadEntryPoints_3_2_Func)() = NULL;
 void (*OGLCreateRenderer_3_2_Func)(OpenGLRenderer **rendererPtr) = NULL;
 
@@ -884,7 +885,7 @@ void OpenGLRenderer::SetVersion(unsigned int major, unsigned int minor, unsigned
 	this->versionRevision = revision;
 }
 
-Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *dstBuffer)
+Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *dstRGBA6665, u16 *dstRGBA5551)
 {
 	// Convert from 32-bit BGRA8888 format to 32-bit RGBA6665 reversed format. OpenGL
 	// stores pixels using a flipped Y-coordinate, so this needs to be flipped back
@@ -896,10 +897,17 @@ Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *dstBuffer)
 			// Use the correct endian format since OpenGL uses the native endian of
 			// the architecture it is running on.
 #ifdef WORDS_BIGENDIAN
-			dstBuffer[iw].color = BGRA8888_32_To_RGBA6665_32(this->_framebufferColor[ir].color);
-			
+			dstRGBA6665[iw].color = BGRA8888_32_To_RGBA6665_32(this->_framebufferColor[ir].color);
+			dstRGBA5551[iw] = R5G5B5TORGB15((this->_framebufferColor[ir].b >> 3) & 0x1F,
+											(this->_framebufferColor[ir].g >> 3) & 0x1F,
+											(this->_framebufferColor[ir].r >> 3) & 0x1F) |
+											((this->_framebufferColor[ir].a == 0) ? 0x0000 : 0x8000);
 #else
-			dstBuffer[iw].color = BGRA8888_32Rev_To_RGBA6665_32Rev(this->_framebufferColor[ir].color);
+			dstRGBA6665[iw].color = BGRA8888_32Rev_To_RGBA6665_32Rev(this->_framebufferColor[ir].color);
+			dstRGBA5551[iw] = R5G5B5TORGB15((this->_framebufferColor[ir].b >> 3) & 0x1F,
+											(this->_framebufferColor[ir].g >> 3) & 0x1F,
+											(this->_framebufferColor[ir].r >> 3) & 0x1F) |
+											((this->_framebufferColor[ir].a == 0) ? 0x0000 : 0x8000);
 #endif
 		}
 	}
@@ -1405,7 +1413,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
 	
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIDepthID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -2682,7 +2690,7 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 	
 	ENDGL();
 	
-	this->FlushFramebuffer(gfx3d_convertedScreen);
+	this->FlushFramebuffer(gfx3d_colorRGBA6665, gfx3d_colorRGBA5551);
 	this->_pixelReadNeedsFinish = false;
 	
 	return OGLERROR_NOERR;
@@ -2701,6 +2709,11 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	this->_framebufferHeight = h;
 	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
 	this->_framebufferColor = (FragmentColor *)realloc(this->_framebufferColor, this->_framebufferColorSizeBytes);
+	
+	if (oglrender_framebufferDidResizeCallback != NULL)
+	{
+		oglrender_framebufferDidResizeCallback(w, h);
+	}
 	
 	if (this->isFBOSupported)
 	{
@@ -2838,6 +2851,11 @@ Render3DError OpenGLRenderer_1_3::SetFramebufferSize(size_t w, size_t h)
 	this->_framebufferHeight = h;
 	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
 	this->_framebufferColor = (FragmentColor *)realloc(this->_framebufferColor, this->_framebufferColorSizeBytes);
+	
+	if (oglrender_framebufferDidResizeCallback != NULL)
+	{
+		oglrender_framebufferDidResizeCallback(w, h);
+	}
 	
 	if (this->isFBOSupported)
 	{
@@ -3211,7 +3229,7 @@ Render3DError OpenGLRenderer_1_5::RenderFinish()
 	
 	ENDGL();
 	
-	this->FlushFramebuffer(gfx3d_convertedScreen);
+	this->FlushFramebuffer(gfx3d_colorRGBA6665, gfx3d_colorRGBA5551);
 	this->_pixelReadNeedsFinish = false;
 	
 	return OGLERROR_NOERR;
@@ -3994,7 +4012,7 @@ Render3DError OpenGLRenderer_2_1::RenderFinish()
 	
 	ENDGL();
 	
-	this->FlushFramebuffer(gfx3d_convertedScreen);
+	this->FlushFramebuffer(gfx3d_colorRGBA6665, gfx3d_colorRGBA5551);
 	this->_pixelReadNeedsFinish = false;
 	
 	return OGLERROR_NOERR;

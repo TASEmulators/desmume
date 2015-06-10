@@ -531,6 +531,9 @@ extern bool (*oglrender_beginOpenGL)();
 //This is called by OGLRender after it is done using opengl.
 extern void (*oglrender_endOpenGL)();
 
+//This is called by OGLRender whenever the framebuffer is resized.
+extern bool (*oglrender_framebufferDidResizeCallback)(size_t w, size_t h);
+
 // Helper functions for calling the above function pointers at the
 // beginning and ending of OpenGL commands.
 bool BEGINGL();
@@ -575,7 +578,7 @@ protected:
 	bool _pixelReadNeedsFinish;
 	size_t _currentPolyIndex;
 	
-	Render3DError FlushFramebuffer(FragmentColor *dstBuffer);
+	Render3DError FlushFramebuffer(FragmentColor *dstRGBA6665, u16 *dstRGBA5551);
 	
 	// OpenGL-specific methods
 	virtual Render3DError CreateVBOs() = 0;
