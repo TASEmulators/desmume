@@ -62,7 +62,7 @@ struct mapview_struct
 
 		for(u32 i = 0; i < gpu.BGSize[map][1]; ++i)
 		{
-			gpu.currDst = (u8 *)bitmap + i*gpu.BGSize[map][0]*2;
+			gpu.currDst = bitmap + i*gpu.BGSize[map][0];
 			gpu.currLine = i;
 			gpu.modeRender<false>(map);
 		}
