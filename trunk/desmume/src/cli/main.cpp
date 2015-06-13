@@ -488,7 +488,7 @@ static void desmume_cycle(struct ctrls_event_config * cfg)
 }
 
 #ifdef HAVE_LIBAGG
-T_AGG_RGB555 agg_targetScreen_cli(GPU_screen, 256, 384, 512);
+T_AGG_RGB555 agg_targetScreen_cli((u8 *)GPU_screen, 256, 384, 512);
 #endif
 
 int main(int argc, char ** argv) {

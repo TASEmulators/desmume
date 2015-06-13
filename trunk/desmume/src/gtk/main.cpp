@@ -1413,7 +1413,7 @@ static void Reset()
     Pause();
     NDS_Reset();
     // Clear the NDS screen
-    memset(GPU_screen, 0xFF, sizeof(GPU_screen));
+    memset(GPU_screen, 0xFF, GPU_GetFramebufferWidth() * GPU_GetFramebufferHeight() * 2 * sizeof(u16));
     RedrawScreen();
     if (shouldBeRunning) {
         Launch();
