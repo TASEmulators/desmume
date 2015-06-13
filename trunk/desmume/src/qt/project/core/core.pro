@@ -76,8 +76,9 @@ win32 {
 	QMAKE_CXXFLAGS += -pthread
 
 	# Note: If you plan to distribute the binary, remove -march=native
-	QMAKE_CXXFLAGS_RELEASE += -O3 -flto=4 -fuse-linker-plugin -funroll-loops -march=native -minline-all-stringops
-	QMAKE_LFLAGS_RELEASE += -O3 -flto=4 -fuse-linker-plugin -funroll-loops -march=native -minline-all-stringops
+	QMAKE_CFLAGS_RELEASE += -Ofast -flto=4 -fuse-linker-plugin -funroll-loops -march=native -minline-all-stringops -ffast-math
+	QMAKE_CXXFLAGS_RELEASE += -Ofast -flto=4 -fuse-linker-plugin -funroll-loops -march=native -minline-all-stringops -ffast-math
+	QMAKE_LFLAGS_RELEASE += -Ofast -flto=4 -fuse-linker-plugin -funroll-loops -march=native -minline-all-stringops -ffast-math
 
 	contains(DESMUME_ARCH, x86_64) {
 		message("Build target decided as x86_64")
@@ -186,6 +187,7 @@ SOURCES += \
     ../../../filter/bilinear.cpp \
     ../../../filter/epx.cpp \
     ../../../filter/hq2x.cpp \
+    ../../../filter/hq3x.cpp \
     ../../../filter/hq4x.cpp \
     ../../../filter/lq2x.cpp \
     ../../../filter/scanline.cpp \
@@ -323,7 +325,6 @@ HEADERS += \
     ../../../metaspu/metaspu.h \
     ../../../filter/filter.h \
     ../../../filter/hq2x.h \
-    ../../../filter/hq4x.h \
     ../../../filter/interp.h \
     ../../../filter/lq2x.h \
     ../../../filter/videofilter.h \

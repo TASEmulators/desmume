@@ -58,8 +58,9 @@ win32 {
 	linux-*-32: DESMUME_ARCH = x86
 
 	# Note: If you plan to distribute the binary, remove -march=native
-	QMAKE_CXXFLAGS_RELEASE += -O3 -flto=4 -fuse-linker-plugin -funroll-loops -march=native -minline-all-stringops
-	QMAKE_LFLAGS_RELEASE += -O3 -flto=4 -fuse-linker-plugin -funroll-loops -march=native -minline-all-stringops
+	QMAKE_CFLAGS_RELEASE += -Ofast -flto=4 -fuse-linker-plugin -funroll-loops -march=native -minline-all-stringops -ffast-math
+	QMAKE_CXXFLAGS_RELEASE += -Ofast -flto=4 -fuse-linker-plugin -funroll-loops -march=native -minline-all-stringops -ffast-math
+	QMAKE_LFLAGS_RELEASE += -Ofast -flto=4 -fuse-linker-plugin -funroll-loops -march=native -minline-all-stringops -ffast-math
 } else:macx {
 	error("Mac OS X not supported")
 }

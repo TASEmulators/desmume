@@ -93,7 +93,9 @@ libdesmume_a_SOURCES = \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	metaspu/metaspu.cpp metaspu/metaspu.h \
 	filter/2xsai.cpp filter/bilinear.cpp filter/epx.cpp filter/filter.h \
-	filter/hq2x.cpp filter/hq2x.h filter/hq4x.cpp filter/hq4x.dat filter/hq4x.h \
+	filter/hq2x.cpp filter/hq2x.h \
+	filter/hq3x.cpp filter/hq3x.dat \
+	filter/hq4x.cpp filter/hq4x.dat \
 	filter/interp.h filter/lq2x.cpp filter/lq2x.h filter/scanline.cpp \
 	filter/videofilter.cpp filter/videofilter.h \
 	filter/xbrz.cpp filter/xbrz.h \
