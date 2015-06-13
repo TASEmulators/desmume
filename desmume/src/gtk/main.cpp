@@ -247,6 +247,8 @@ static const char *ui_description =
 "        <menuitem action='pri_interp_lq2xs'/>"
 "        <menuitem action='pri_interp_hq2x'/>"
 "        <menuitem action='pri_interp_hq2xs'/>"
+"        <menuitem action='pri_interp_hq3x'/>"
+"        <menuitem action='pri_interp_hq3xs'/>"
 "        <menuitem action='pri_interp_hq4x'/>"
 "        <menuitem action='pri_interp_hq4xs'/>"
 "        <menuitem action='pri_interp_2xsai'/>"
@@ -445,6 +447,8 @@ static const GtkRadioActionEntry pri_interpolation_entries[] = {
     { "pri_interp_lq2xs", NULL, VideoFilterAttributesList[VideoFilterTypeID_LQ2XS].typeString, NULL, NULL, VideoFilterTypeID_LQ2XS},
     { "pri_interp_hq2x", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ2X].typeString, NULL, NULL, VideoFilterTypeID_HQ2X},
     { "pri_interp_hq2xs", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ2XS].typeString, NULL, NULL, VideoFilterTypeID_HQ2XS},
+    { "pri_interp_hq3x", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ3X].typeString, NULL, NULL, VideoFilterTypeID_HQ3X},
+    { "pri_interp_hq3xs", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ3XS].typeString, NULL, NULL, VideoFilterTypeID_HQ3XS},
     { "pri_interp_hq4x", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ4X].typeString, NULL, NULL, VideoFilterTypeID_HQ4X},
     { "pri_interp_hq4xs", NULL, VideoFilterAttributesList[VideoFilterTypeID_HQ4XS].typeString, NULL, NULL, VideoFilterTypeID_HQ4XS},
     { "pri_interp_2xsai", NULL, VideoFilterAttributesList[VideoFilterTypeID_2xSaI].typeString, NULL, NULL, VideoFilterTypeID_2xSaI},

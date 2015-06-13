@@ -33,7 +33,7 @@
 
 #ifdef GDB_STUB
 #include "../armcpu.h"
-#include "../gdbstub.h"
+#include "../gdbstub/gdbstub.h"
 #endif
 
 #ifdef GTKGLEXT_AVAILABLE
