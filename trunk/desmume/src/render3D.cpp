@@ -210,7 +210,7 @@ Render3DError Render3D::EndRender(const u64 frameCount)
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::FlushFramebuffer(FragmentColor *dstRGBA6665, u16 *dstRGBA5551)
+Render3DError Render3D::FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
 {
 	memcpy(dstRGBA6665, this->_framebufferColor, this->_framebufferColorSizeBytes);
 	

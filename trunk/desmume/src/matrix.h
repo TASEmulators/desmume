@@ -120,32 +120,30 @@ FORCEINLINE s32 s32floor(double d)
 //-------------
 #ifdef ENABLE_SSE2
 
-template<int NUM>
-FORCEINLINE void memset_u16_le(void* dst, u16 val)
+FORCEINLINE void memset_u16_le(void* dst, const size_t length, u16 val)
 {
 	u32 u32val;
 	//just for the endian safety
-	T1WriteWord((u8*)&u32val,0,val);
-	T1WriteWord((u8*)&u32val,2,val);
+	T1WriteWord((u8*)&u32val, 0, val);
+	T1WriteWord((u8*)&u32val, 2, val);
 	////const __m128i temp = _mm_set_epi32(u32val,u32val,u32val,u32val);
 	
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
 	const __m128i temp = _mm_set_epi32(u32val,u32val,u32val,u32val);
-	MACRODO_N(NUM/8,_mm_store_si128((__m128i*)((u8*)dst+(X)*16), temp));
+	MACRODO_N(length/8,_mm_store_si128((__m128i*)((u8*)dst+(X)*16), temp));
 #else
 	__m128 temp; temp.m128_i32[0] = u32val;
-	//MACRODO_N(NUM/8,_mm_store_si128((__m128i*)((u8*)dst+(X)*16), temp));
-	MACRODO_N(NUM/8,_mm_store_ps1((float*)((u8*)dst+(X)*16), temp));
+	//MACRODO_N(length/8,_mm_store_si128((__m128i*)((u8*)dst+(X)*16), temp));
+	MACRODO_N(length/8,_mm_store_ps1((float*)((u8*)dst+(X)*16), temp));
 #endif
 }
 
 #else //no sse2
 
-template<int NUM>
-static FORCEINLINE void memset_u16_le(void* dst, u16 val)
+static FORCEINLINE void memset_u16_le(void *dst, const size_t length, const u16 val)
 {
-	for(int i=0;i<NUM;i++)
-		T1WriteWord((u8*)dst,i<<1,val);
+	for (size_t i = 0; i < length; i++)
+		T1WriteWord((u8*)dst, i << 1, val);
 }
 
 #endif

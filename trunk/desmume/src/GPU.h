@@ -399,8 +399,11 @@ typedef void (*fun_gl_End) (int screen);
 // if call to beg succeeds opengl draw
 void register_gl_fun(fun_gl_Begin beg,fun_gl_End end);
 
-#define GPU_MAIN	0
-#define GPU_SUB		1
+enum GPUCoreID
+{
+	GPUCOREID_MAIN	= 0,
+	GPUCOREID_SUB	= 1
+};
 
 /* human readable bitmask names */
 #define ADDRESS_STEP_512B	   0x00200
@@ -644,15 +647,15 @@ struct GPU
 	} mosaicColors;
 
 	u8 sprNum[256];
-	u8 h_win[2][256];
+	//u8 h_win[2][256];
+	u8 *h_win[2];
 	const u8 *curr_win[2];
 	void update_winh(int WIN_NUM); 
 	bool need_update_winh[2];
 	
 	template<int WIN_NUM> void setup_windows();
 
-	u8 core;
-
+	GPUCoreID core;
 	GPUDisplayMode dispMode;
 	u8 vramBlock;
 	u8 *VRAMaddr;
@@ -663,7 +666,7 @@ struct GPU
 
 	BOOL bg0HasHighestPrio;
 
-	void * oam;
+	void *oam;
 	u32	sprMem;
 	u8 sprBoundary;
 	u8 sprBMPBoundary;
@@ -701,13 +704,15 @@ struct GPU
 	u16 *currentFadeInColors, *currentFadeOutColors;
 	bool blend2[8];
 
-	CACHE_ALIGN u16 tempScanlineBuffer[256];
+	//CACHE_ALIGN u16 tempScanlineBuffer[256];
+	u16 *tempScanlineBuffer;
 	u16 *tempScanline;
 
 	GPUMasterBrightMode	MasterBrightMode;
 	u32 MasterBrightFactor;
 
-	CACHE_ALIGN u8 bgPixels[1024]; //yes indeed, this is oversized. map debug tools try to write to it
+	//CACHE_ALIGN u8 bgPixels[1024]; //yes indeed, this is oversized. map debug tools try to write to it
+	u8 *bgPixels;
 
 	u32 currLine;
 	u8 currBgNum;
@@ -736,13 +741,13 @@ struct GPU
 	} mosaicLookup;
 	bool curr_mosaic_enabled;
 
-	u16 blend(u16 colA, u16 colB);
+	u16 blend(const u16 colA, const u16 colB);
 
 	template<bool BACKDROP, BlendFunc FUNC, bool WINDOW>
-	FORCEINLINE FASTCALL bool _master_setFinalBGColor(u16 &color, const u32 x);
+	FORCEINLINE FASTCALL bool _master_setFinalBGColor(u16 &outColor, const size_t x);
 
 	template<BlendFunc FUNC, bool WINDOW>
-	FORCEINLINE FASTCALL void _master_setFinal3dColor(int dstX, const FragmentColor src);
+	FORCEINLINE FASTCALL void _master_setFinal3dColor(const size_t x, u16 &outDst, const FragmentColor src);
 
 	int setFinalColorBck_funcNum;
 	int bgFunc;
@@ -754,22 +759,22 @@ struct GPU
 	} spriteRenderMode;
 
 	template<GPU::SpriteRenderMode MODE>
-	void _spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
+	void _spriteRender(u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 	
-	inline void spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
+	inline void spriteRender(u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab)
 	{
-		if(spriteRenderMode == SPRITE_1D)
-			_spriteRender<SPRITE_1D>(dst,dst_alpha,typeTab, prioTab);
+		if (spriteRenderMode == SPRITE_1D)
+			_spriteRender<SPRITE_1D>(dst, dst_alpha, typeTab, prioTab);
 		else
-			_spriteRender<SPRITE_2D>(dst,dst_alpha,typeTab, prioTab);
+			_spriteRender<SPRITE_2D>(dst, dst_alpha, typeTab, prioTab);
 	}
 
 
-	void setFinalColor3d(int dstX, const FragmentColor src);
+	void setFinalColor3d(const size_t x, u16 &outDst, const FragmentColor src);
 	
-	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(u16 color, const u32 x);
-	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const u32 x, const int opaque);
-	template<bool MOSAIC, bool BACKDROP, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const u32 x, const int opaque);
+	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(u16 color, const size_t x);
+	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const size_t x, const bool opaque);
+	template<bool MOSAIC, bool BACKDROP, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const size_t x, const bool opaque);
 
 	void setAffineStart(int layer, int xy, u32 val);
 	void setAffineStartWord(int layer, int xy, u16 val, int word);
@@ -781,11 +786,11 @@ struct GPU
 		u32 x, y;
 	} affineInfo[2];
 
-	void renderline_checkWindows(u16 x, bool &draw, bool &effect) const;
+	void renderline_checkWindows(const size_t x, bool &draw, bool &effect) const;
 
 	// check whether (x,y) is within the rectangle (including wraparounds) 
 	template<int WIN_NUM>
-	u8 withinRect(u16 x) const;
+	u8 withinRect(const size_t x) const;
 
 	void setBLDALPHA(u16 val)
 	{
@@ -840,9 +845,9 @@ static void REG_DISPx_pack_test(GPU * gpu)
 
 extern u16 *GPU_screen;
 
-GPU * GPU_Init(u8 l);
-void GPU_Reset(GPU *g, u8 l);
-void GPU_DeInit(GPU *);
+GPU* GPU_Init(const GPUCoreID coreID);
+void GPU_Reset(GPU *gpu);
+void GPU_DeInit(GPU *gpu);
 size_t GPU_GetFramebufferWidth();
 size_t GPU_GetFramebufferHeight();
 void GPU_SetFramebufferSize(size_t w, size_t h);
@@ -850,17 +855,18 @@ void GPU_SetFramebufferSize(size_t w, size_t h);
 //these are functions used by debug tools which want to render layers etc outside the context of the emulation
 namespace GPU_EXT
 {
-	void textBG(GPU * gpu, u8 num, u8 * DST);		//Draw text based background
-	void rotBG(GPU * gpu, u8 num, u8 * DST);
-	void extRotBG(GPU * gpu, u8 num, u8 * DST);
+	void textBG(GPU *gpu, u8 num, u8 *DST);		//Draw text based background
+	void rotBG(GPU *gpu, u8 num, u8 *DST);
+	void extRotBG(GPU *gpu, u8 num, u8 *DST);
 };
-void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
-void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
+void sprite1D(GPU *gpu, u16 l, u8 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
+void sprite2D(GPU *gpu, u16 l, u8 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 
 extern const size sprSizeTab[4][4];
 
-typedef struct {
-	GPU * gpu;
+typedef struct
+{
+	GPU *gpu;
 	u16 offset;
 } NDS_Screen;
 
@@ -873,38 +879,38 @@ void Screen_DeInit(void);
 
 extern MMU_struct MMU;
 
-void GPU_setVideoProp(GPU *, u32 p);
-void GPU_setBGProp(GPU *, u16 num, u16 p);
+void GPU_setVideoProp(GPU *gpu, u32 p);
+void GPU_setBGProp(GPU *gpu, u16 num, u16 p);
 
-void GPU_setBLDCNT(GPU *gpu, u16 v) ;
-void GPU_setBLDY(GPU *gpu, u16 v) ;
-void GPU_setMOSAIC(GPU *gpu, u16 v) ;
+void GPU_setBLDCNT(GPU *gpu, u16 v);
+void GPU_setBLDY(GPU *gpu, u16 v);
+void GPU_setMOSAIC(GPU *gpu, u16 v);
 
 
-void GPU_remove(GPU *, u8 num);
-void GPU_addBack(GPU *, u8 num);
+void GPU_remove(GPU *gpu, const size_t num);
+void GPU_addBack(GPU *gpu, const size_t num);
 
 int GPU_ChangeGraphicsCore(int coreid);
 
-void GPU_set_DISPCAPCNT(u32 val) ;
-void GPU_RenderLine(NDS_Screen * screen, u16 l, bool skip = false) ;
-void GPU_setMasterBrightness (GPU *gpu, u16 val);
+void GPU_set_DISPCAPCNT(u32 val);
+void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip = false);
+void GPU_setMasterBrightness(GPU *gpu, const u16 val);
 
-inline void GPU_setWIN0_H(GPU* gpu, u16 val) { gpu->WIN0H0 = val >> 8; gpu->WIN0H1 = val&0xFF; gpu->need_update_winh[0] = true; }
-inline void GPU_setWIN0_H0(GPU* gpu, u8 val) { gpu->WIN0H0 = val;  gpu->need_update_winh[0] = true; }
-inline void GPU_setWIN0_H1(GPU* gpu, u8 val) { gpu->WIN0H1 = val;  gpu->need_update_winh[0] = true; }
+inline void GPU_setWIN0_H(GPU *gpu, u16 val) { gpu->WIN0H0 = val >> 8; gpu->WIN0H1 = val&0xFF; gpu->need_update_winh[0] = true; }
+inline void GPU_setWIN0_H0(GPU *gpu, u8 val) { gpu->WIN0H0 = val;  gpu->need_update_winh[0] = true; }
+inline void GPU_setWIN0_H1(GPU *gpu, u8 val) { gpu->WIN0H1 = val;  gpu->need_update_winh[0] = true; }
 
-inline void GPU_setWIN0_V(GPU* gpu, u16 val) { gpu->WIN0V0 = val >> 8; gpu->WIN0V1 = val&0xFF;}
-inline void GPU_setWIN0_V0(GPU* gpu, u8 val) { gpu->WIN0V0 = val; }
-inline void GPU_setWIN0_V1(GPU* gpu, u8 val) { gpu->WIN0V1 = val; }
+inline void GPU_setWIN0_V(GPU *gpu, u16 val) { gpu->WIN0V0 = val >> 8; gpu->WIN0V1 = val&0xFF;}
+inline void GPU_setWIN0_V0(GPU *gpu, u8 val) { gpu->WIN0V0 = val; }
+inline void GPU_setWIN0_V1(GPU *gpu, u8 val) { gpu->WIN0V1 = val; }
 
-inline void GPU_setWIN1_H(GPU* gpu, u16 val) {gpu->WIN1H0 = val >> 8; gpu->WIN1H1 = val&0xFF;  gpu->need_update_winh[1] = true; }
-inline void GPU_setWIN1_H0(GPU* gpu, u8 val) { gpu->WIN1H0 = val;  gpu->need_update_winh[1] = true; }
-inline void GPU_setWIN1_H1(GPU* gpu, u8 val) { gpu->WIN1H1 = val;  gpu->need_update_winh[1] = true; }
+inline void GPU_setWIN1_H(GPU *gpu, u16 val) {gpu->WIN1H0 = val >> 8; gpu->WIN1H1 = val&0xFF;  gpu->need_update_winh[1] = true; }
+inline void GPU_setWIN1_H0(GPU *gpu, u8 val) { gpu->WIN1H0 = val;  gpu->need_update_winh[1] = true; }
+inline void GPU_setWIN1_H1(GPU *gpu, u8 val) { gpu->WIN1H1 = val;  gpu->need_update_winh[1] = true; }
 
-inline void GPU_setWIN1_V(GPU* gpu, u16 val) { gpu->WIN1V0 = val >> 8; gpu->WIN1V1 = val&0xFF; }
-inline void GPU_setWIN1_V0(GPU* gpu, u8 val) { gpu->WIN1V0 = val; }
-inline void GPU_setWIN1_V1(GPU* gpu, u8 val) { gpu->WIN1V1 = val; }
+inline void GPU_setWIN1_V(GPU *gpu, u16 val) { gpu->WIN1V0 = val >> 8; gpu->WIN1V1 = val&0xFF; }
+inline void GPU_setWIN1_V0(GPU *gpu, u8 val) { gpu->WIN1V0 = val; }
+inline void GPU_setWIN1_V1(GPU *gpu, u8 val) { gpu->WIN1V1 = val; }
 
 inline void GPU_setWININ(GPU* gpu, u16 val) {
 	gpu->WININ0=val&0x1F;

@@ -414,7 +414,7 @@ struct tmpVertInfo
 	//indices to the main vert list
 	int map[4];
 	//indicates that the first poly in a list has been completed
-	BOOL first;
+	bool first;
 } tempVertInfo;
 
 
