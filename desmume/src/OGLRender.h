@@ -578,7 +578,7 @@ protected:
 	bool _pixelReadNeedsFinish;
 	size_t _currentPolyIndex;
 	
-	Render3DError FlushFramebuffer(FragmentColor *dstRGBA6665, u16 *dstRGBA5551);
+	Render3DError FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551);
 	
 	// OpenGL-specific methods
 	virtual Render3DError CreateVBOs() = 0;

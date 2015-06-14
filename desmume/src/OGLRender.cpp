@@ -885,7 +885,7 @@ void OpenGLRenderer::SetVersion(unsigned int major, unsigned int minor, unsigned
 	this->versionRevision = revision;
 }
 
-Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *dstRGBA6665, u16 *dstRGBA5551)
+Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
 {
 	// Convert from 32-bit BGRA8888 format to 32-bit RGBA6665 reversed format. OpenGL
 	// stores pixels using a flipped Y-coordinate, so this needs to be flipped back
