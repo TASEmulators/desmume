@@ -331,6 +331,7 @@ Render3DError Render3D::Reset()
 	if (this->_framebufferColor != NULL)
 	{
 		memset(this->_framebufferColor, 0, this->_framebufferColorSizeBytes);
+		this->FlushFramebuffer(gfx3d_colorRGBA6665, gfx3d_colorRGBA5551);
 	}
 	
 	memset(this->clearImageColor16Buffer, 0, sizeof(this->clearImageColor16Buffer));
@@ -375,7 +376,6 @@ Render3DError Render3D::Render(const GFX3D &engine)
 
 Render3DError Render3D::RenderFinish()
 {
-	this->FlushFramebuffer(gfx3d_colorRGBA6665, gfx3d_colorRGBA5551);
 	return RENDER3DERROR_NOERR;
 }
 
