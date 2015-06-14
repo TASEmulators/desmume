@@ -54,7 +54,11 @@ GPU::MosaicLookup GPU::mosaicLookup;
 
 //#define DEBUG_TRI
 
+//this value should be 32-byte aligned
 u16 *GPU_screen = NULL;
+//and this is the raw pointer
+u16 *GPU_screen_raw = NULL;
+
 static size_t _gpuFramebufferWidth = 256;
 static size_t _gpuFramebufferHeight = 192;
 
@@ -255,8 +259,9 @@ void GPU_DeInit(GPU *gpu)
 {
 	if (gpu == &GPU_main || gpu == &GPU_sub) return;
 	
-	free(gpu->tempScanlineBuffer);
+	free(gpu->tempScanlineBufferRaw);
 	gpu->tempScanlineBuffer = NULL;
+	gpu->tempScanlineBufferRaw = NULL;
 	free(gpu->bgPixels);
 	gpu->bgPixels = NULL;
 	
@@ -1952,7 +1957,8 @@ void Screen_DeInit(void)
 	delete osd;
 	osd = NULL;
 	
-	free(GPU_screen);
+	free(GPU_screen_raw);
+	GPU_screen_raw = NULL;
 	GPU_screen = NULL;
 	
 	free(win_empty);
@@ -1981,12 +1987,15 @@ void GPU_SetFramebufferSize(size_t w, size_t h)
 	
 	_gpuFramebufferWidth = w;
 	_gpuFramebufferHeight = h;
-	GPU_screen = (u16 *)realloc(GPU_screen, w * h * sizeof(u16) * 2);
+	GPU_screen_raw = (u16 *)realloc(GPU_screen_raw, w * h * sizeof(u16) * 2 + 32);
+	GPU_screen = (u16*)(((uintptr_t)GPU_screen_raw+32) & ~31);
 	MainScreen.offset = 0;
 	SubScreen.offset = _gpuFramebufferHeight;
 	
-	MainScreen.gpu->tempScanlineBuffer = (u16 *)realloc(MainScreen.gpu->tempScanlineBuffer, w * lineCount * sizeof(u16));
-	SubScreen.gpu->tempScanlineBuffer = (u16 *)realloc(SubScreen.gpu->tempScanlineBuffer, w * lineCount * sizeof(u16));
+	MainScreen.gpu->tempScanlineBufferRaw = (u16 *)realloc(MainScreen.gpu->tempScanlineBufferRaw, w * lineCount * sizeof(u16) + 32);
+	SubScreen.gpu->tempScanlineBufferRaw = (u16 *)realloc(SubScreen.gpu->tempScanlineBufferRaw, w * lineCount * sizeof(u16) + 32);
+	MainScreen.gpu->tempScanlineBuffer = (u16*)(((uintptr_t)MainScreen.gpu->tempScanlineBufferRaw+32) & ~31);
+	SubScreen.gpu->tempScanlineBuffer = (u16*)(((uintptr_t)SubScreen.gpu->tempScanlineBufferRaw+32) & ~31);
 	MainScreen.gpu->bgPixels = (u8 *)realloc(MainScreen.gpu->bgPixels, w * lineCount * 4 * sizeof(u8)); // yes indeed, this is oversized. map debug tools try to write to it
 	SubScreen.gpu->bgPixels = (u8 *)realloc(SubScreen.gpu->bgPixels, w * lineCount * 4 * sizeof(u8)); // yes indeed, this is oversized. map debug tools try to write to it
 	
