@@ -704,8 +704,11 @@ struct GPU
 	u16 *currentFadeInColors, *currentFadeOutColors;
 	bool blend2[8];
 
-	//CACHE_ALIGN u16 tempScanlineBuffer[256];
+	//this should be suitably aligned for SSE2 (32bytes)
 	u16 *tempScanlineBuffer;
+	//this is the raw unadjusted pointer
+	u16 *tempScanlineBufferRaw;
+
 	u16 *tempScanline;
 
 	GPUMasterBrightMode	MasterBrightMode;
