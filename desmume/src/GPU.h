@@ -32,6 +32,9 @@ struct MMU_struct;
 //#undef FORCEINLINE
 //#define FORCEINLINE
 
+#define GPU_FRAMEBUFFER_NATIVE_WIDTH	256
+#define GPU_FRAMEBUFFER_NATIVE_HEIGHT	192
+
 void gpu_savestate(EMUFILE* os);
 bool gpu_loadstate(EMUFILE* is, int size);
 
@@ -544,14 +547,14 @@ struct _OAM_
 	u16 attr3;
 };
 
-void SlurpOAM(_OAM_* oam_output, void* oam_buffer, int oam_index);
-u16 SlurpOAMAffineParam(void* oam_buffer, int oam_index);
+void SlurpOAM(_OAM_ *oam_output, void *oam_buffer, const size_t oam_index);
+u16 SlurpOAMAffineParam(void *oam_buffer, const size_t oam_index);
 
 typedef struct
 {
 	 s16 x;
 	 s16 y;
-} size;
+} SpriteSize;
 
 
 #define NB_PRIORITIES	4
@@ -620,7 +623,7 @@ struct GPU
 
 	_BGxCNT & bgcnt(int num) { return (dispx_st)->dispx_BGxCNT[num].bits; }
 	_DISPCNT & dispCnt() { return dispx_st->dispx_DISPCNT.bits; }
-	template<bool MOSAIC> void modeRender(int layer);
+	template<bool MOSAIC> void modeRender(const size_t layer);
 
 	DISPCAPCNT dispCapCnt;
 	BOOL LayersEnable[5];
@@ -647,18 +650,18 @@ struct GPU
 	} mosaicColors;
 
 	u8 sprNum[256];
-	//u8 h_win[2][256];
 	u8 *h_win[2];
 	const u8 *curr_win[2];
-	void update_winh(int WIN_NUM); 
 	bool need_update_winh[2];
 	
-	template<int WIN_NUM> void setup_windows();
+	template<size_t WIN_NUM> void update_winh();
+	template<size_t WIN_NUM> void setup_windows();
 
 	GPUCoreID core;
 	GPUDisplayMode dispMode;
 	u8 vramBlock;
-	u8 *VRAMaddr;
+	u16 *VRAMaddr;
+	u16 *VRAMBuffer;
 
 	//FIFO	fifo;
 
@@ -714,7 +717,6 @@ struct GPU
 	GPUMasterBrightMode	MasterBrightMode;
 	u32 MasterBrightFactor;
 
-	//CACHE_ALIGN u8 bgPixels[1024]; //yes indeed, this is oversized. map debug tools try to write to it
 	u8 *bgPixels;
 
 	u32 currLine;
@@ -779,9 +781,9 @@ struct GPU
 	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const size_t x, const bool opaque);
 	template<bool MOSAIC, bool BACKDROP, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const size_t x, const bool opaque);
 
-	void setAffineStart(int layer, int xy, u32 val);
-	void setAffineStartWord(int layer, int xy, u16 val, int word);
-	u32 getAffineStart(int layer, int xy);
+	void setAffineStart(const size_t layer, int xy, u32 val);
+	void setAffineStartWord(const size_t layer, int xy, u16 val, int word);
+	u32 getAffineStart(const size_t layer, int xy);
 	void refreshAffineStartRegs(const int num, const int xy);
 
 	struct AffineInfo {
@@ -814,8 +816,8 @@ struct GPU
 		updateBLDALPHA();
 	}
 
-	u32 getHOFS(int bg);
-	u32 getVOFS(int bg);
+	u32 getHOFS(const size_t bg);
+	u32 getVOFS(const size_t bg);
 
 	typedef u8 TBlendTable[32][32];
 	TBlendTable *blendTable;
@@ -865,7 +867,7 @@ namespace GPU_EXT
 void sprite1D(GPU *gpu, u16 l, u8 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 void sprite2D(GPU *gpu, u16 l, u8 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 
-extern const size sprSizeTab[4][4];
+extern const SpriteSize sprSizeTab[4][4];
 
 typedef struct
 {
@@ -882,8 +884,8 @@ void Screen_DeInit(void);
 
 extern MMU_struct MMU;
 
-void GPU_setVideoProp(GPU *gpu, u32 p);
-void GPU_setBGProp(GPU *gpu, u16 num, u16 p);
+void GPU_setVideoProp(GPU *gpu, const u32 ctrlBits);
+void GPU_setBGProp(GPU *gpu, const size_t num, const u16 ctrlBits);
 
 void GPU_setBLDCNT(GPU *gpu, u16 v);
 void GPU_setBLDY(GPU *gpu, u16 v);
@@ -907,7 +909,7 @@ inline void GPU_setWIN0_V(GPU *gpu, u16 val) { gpu->WIN0V0 = val >> 8; gpu->WIN0
 inline void GPU_setWIN0_V0(GPU *gpu, u8 val) { gpu->WIN0V0 = val; }
 inline void GPU_setWIN0_V1(GPU *gpu, u8 val) { gpu->WIN0V1 = val; }
 
-inline void GPU_setWIN1_H(GPU *gpu, u16 val) {gpu->WIN1H0 = val >> 8; gpu->WIN1H1 = val&0xFF;  gpu->need_update_winh[1] = true; }
+inline void GPU_setWIN1_H(GPU *gpu, u16 val) { gpu->WIN1H0 = val >> 8; gpu->WIN1H1 = val&0xFF;  gpu->need_update_winh[1] = true; }
 inline void GPU_setWIN1_H0(GPU *gpu, u8 val) { gpu->WIN1H0 = val;  gpu->need_update_winh[1] = true; }
 inline void GPU_setWIN1_H1(GPU *gpu, u8 val) { gpu->WIN1H1 = val;  gpu->need_update_winh[1] = true; }
 

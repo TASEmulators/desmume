@@ -28,6 +28,13 @@
 #include "NDSSystem.h"
 #include "texcache.h"
 
+#ifdef ENABLE_SSE2
+#include <emmintrin.h>
+#endif
+
+#ifdef ENABLE_SSSE3
+#include <tmmintrin.h>
+#endif
 
 typedef struct
 {
@@ -885,6 +892,79 @@ void OpenGLRenderer::SetVersion(unsigned int major, unsigned int minor, unsigned
 	this->versionRevision = revision;
 }
 
+#if defined(ENABLE_SSE2) && defined(ENABLE_SSSE3) && defined(LOCAL_LE)
+Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
+{
+	// Convert from 32-bit BGRA8888 format to 32-bit RGBA6665 reversed format. OpenGL
+	// stores pixels using a flipped Y-coordinate, so this needs to be flipped back
+	// to the DS Y-coordinate.
+	
+	if ((this->_framebufferWidth % 4) == 0)
+	{
+		for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, iw -= (this->_framebufferWidth * 2))
+		{
+			for (size_t x = 0; x < this->_framebufferWidth; x+=4, ir+=4, iw+=4)
+			{
+				// Convert to RGBA6665
+				__m128i v = _mm_load_si128((__m128i *)(this->_framebufferColor + ir));
+				v = _mm_srli_epi32(v, 2);
+				
+				__m128i a = _mm_srli_epi32(v, 1); // Special handling for 5-bit alpha
+				a = _mm_and_si128(a, _mm_set1_epi32(0x1F000000));
+				
+				v = _mm_and_si128(v, _mm_set1_epi32(0x003F3F3F));
+				v = _mm_or_si128(v, a);
+				v = _mm_shuffle_epi8(v, _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2)); // Swizzle RGBA to BGRA
+				_mm_store_si128((__m128i *)(dstRGBA6665 + iw), v);
+				
+				// Convert to RGBA5551
+				v = _mm_load_si128((__m128i *)(this->_framebufferColor + ir));
+				
+				__m128i b = _mm_and_si128(v, _mm_set1_epi32(0x000000F8));	// Read from R
+				b = _mm_slli_epi32(b, 7);									// Shift to B
+				
+				__m128i g = _mm_and_si128(v, _mm_set1_epi32(0x0000F800));	// Read from G
+				g = _mm_srli_epi32(g, 6);									// Shift in G
+				
+				__m128i r = _mm_and_si128(v, _mm_set1_epi32(0x00F80000));	// Read from B
+				r = _mm_srli_epi32(r, 19);									// Shift to R
+				
+				a = _mm_and_si128(v, _mm_set1_epi32(0xFF000000));			// Read from A
+				a = _mm_cmpgt_epi32(a, _mm_set1_epi32(0x00000000));			// Determine A
+				a = _mm_and_si128(a, _mm_set1_epi32(0x00008000));			// Mask to A
+				
+				v = b;
+				v = _mm_add_epi32(v, g);
+				v = _mm_add_epi32(v, r);
+				v = _mm_add_epi32(v, a);
+				
+				// All the colors are currently placed every other 16 bits, so we need to swizzle them
+				// to the lower 64 bits of our vector before we store them back to memory.
+				v = _mm_shuffle_epi8(v, _mm_set_epi8(15, 14, 11, 10, 7, 6, 3, 2, 13, 12, 9, 8, 5, 4, 1, 0));
+				_mm_storel_epi64((__m128i *)(dstRGBA5551 + iw), v);
+			}
+		}
+	}
+	else
+	{
+		for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, iw -= (this->_framebufferWidth * 2))
+		{
+			for (size_t x = 0; x < this->_framebufferWidth; x++, ir++, iw++)
+			{
+				dstRGBA6665[iw].color = BGRA8888_32Rev_To_RGBA6665_32Rev(this->_framebufferColor[ir].color);
+				dstRGBA5551[iw] = R5G5B5TORGB15((this->_framebufferColor[ir].b >> 3) & 0x1F,
+												(this->_framebufferColor[ir].g >> 3) & 0x1F,
+												(this->_framebufferColor[ir].r >> 3) & 0x1F) |
+												((this->_framebufferColor[ir].a == 0) ? 0x0000 : 0x8000);
+			}
+		}
+	}
+	
+	return RENDER3DERROR_NOERR;
+}
+
+#else // Code path where SSE2, SSSE3, or little-endian is not supported
+
 Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
 {
 	// Convert from 32-bit BGRA8888 format to 32-bit RGBA6665 reversed format. OpenGL
@@ -914,6 +994,8 @@ Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA
 	
 	return RENDER3DERROR_NOERR;
 }
+
+#endif // defined(ENABLE_SSE2) && defined(ENABLE_SSSE3) && defined(LOCAL_LE)
 
 OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 {
