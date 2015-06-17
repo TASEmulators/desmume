@@ -185,11 +185,10 @@ GPU* GPU_Init(const GPUCoreID coreID)
 	gpu->bgPixels = NULL;
 	gpu->h_win[0] = NULL;
 	gpu->h_win[1] = NULL;
-	gpu->VRAMBuffer = NULL;
-
+	
 	GPU_Reset(gpu);
 	GPU_InitFadeColors();
-
+	
 	gpu->curr_win[0] = win_empty;
 	gpu->curr_win[1] = win_empty;
 	gpu->need_update_winh[0] = true;
@@ -197,7 +196,7 @@ GPU* GPU_Init(const GPUCoreID coreID)
 	gpu->setFinalColorBck_funcNum = 0;
 	gpu->setFinalColor3d_funcNum = 0;
 	gpu->setFinalColorSpr_funcNum = 0;
-
+	
 	return gpu;
 }
 
@@ -209,7 +208,6 @@ void GPU_Reset(GPU *gpu)
 	// It would be better if we were more precise about GPU resets.
 	const GPUCoreID currentCoreID = gpu->core;
 	u16 *currentTempScanlineBuffer = gpu->tempScanlineBuffer;
-	u16 *currentVRAMBuffer = gpu->VRAMBuffer;
 	u8 *currentBGPixels = gpu->bgPixels;
 	u8 *currentHWin0 = gpu->h_win[0];
 	u8 *currentHWin1 = gpu->h_win[1];
@@ -218,14 +216,12 @@ void GPU_Reset(GPU *gpu)
 	
 	gpu->core = currentCoreID;
 	gpu->tempScanlineBuffer = currentTempScanlineBuffer;
-	gpu->VRAMBuffer = currentVRAMBuffer;
 	gpu->bgPixels = currentBGPixels;
 	gpu->h_win[0] = currentHWin0;
 	gpu->h_win[1] = currentHWin1;
 	
 	// Clear the separate memory blocks that weren't cleared in the last memset()
 	if (gpu->tempScanlineBuffer != NULL) memset(gpu->tempScanlineBuffer, 0, _gpuFramebufferWidth * _gpuLargestDstLineCount * sizeof(u16));
-	if (gpu->VRAMBuffer != NULL) memset(gpu->VRAMBuffer, 0, _gpuFramebufferWidth * _gpuFramebufferHeight * sizeof(u16));
 	if (gpu->bgPixels != NULL) memset(gpu->bgPixels, 0, _gpuFramebufferWidth * _gpuLargestDstLineCount * 4 * sizeof(u8));
 	if (gpu->h_win[0] != NULL) memset(gpu->h_win[0], 0, _gpuFramebufferWidth * sizeof(u8));
 	if (gpu->h_win[1] != NULL) memset(gpu->h_win[1], 0, _gpuFramebufferWidth * sizeof(u8));
@@ -278,9 +274,6 @@ void GPU_DeInit(GPU *gpu)
 	gpu->h_win[0] = NULL;
 	free(gpu->h_win[1]);
 	gpu->h_win[1] = NULL;
-	
-	free(gpu->VRAMBuffer);
-	gpu->VRAMBuffer = NULL;
 	
 	free(gpu);
 	gpu = NULL;
@@ -412,38 +405,8 @@ void GPU_setVideoProp(GPU *gpu, const u32 ctrlBits)
 			break;
 			
 		case GPUDisplayMode_VRAM: // Display framebuffer
-		{
 			gpu->VRAMaddr = (u16 *)((u8 *)MMU.ARM9_LCD + (gpu->vramBlock * ADDRESS_STEP_128KB));
-			
-			if (_gpuFramebufferWidth == GPU_FRAMEBUFFER_NATIVE_WIDTH && _gpuFramebufferHeight == GPU_FRAMEBUFFER_NATIVE_HEIGHT)
-			{
-#ifdef LOCAL_BE
-				for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT; i++)
-				{
-					gpu->VRAMBuffer[i] = LE_TO_LOCAL_16(gpu->VRAMaddr[i]);
-				}
-#else
-				memcpy(gpu->VRAMBuffer, gpu->VRAMaddr, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
-#endif
-			}
-			else
-			{
-				for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
-				{
-					for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
-					{
-						for (size_t l = 0; l < _gpuDstLineCount[y]; l++)
-						{
-							for (size_t p = 0; p < _gpuDstPitchCount[x]; p++)
-							{
-								gpu->VRAMBuffer[((_gpuDstLineIndex[y] + l) * _gpuFramebufferWidth) + (_gpuDstPitchIndex[x] + p)] = LE_TO_LOCAL_16(gpu->VRAMaddr[(y * GPU_FRAMEBUFFER_NATIVE_WIDTH) + x]);
-							}
-						}
-					}
-				}
-			}
 			break;
-		}
 			
 		case GPUDisplayMode_MainMemory: // Display from Main RAM
 			// nothing to be done here
@@ -2044,9 +2007,6 @@ void GPU_SetFramebufferSize(size_t w, size_t h)
 	MainScreen.gpu->bgPixels = (u8 *)realloc(MainScreen.gpu->bgPixels, w * _gpuLargestDstLineCount * 4 * sizeof(u8)); // yes indeed, this is oversized. map debug tools try to write to it
 	SubScreen.gpu->bgPixels = (u8 *)realloc(SubScreen.gpu->bgPixels, w * _gpuLargestDstLineCount * 4 * sizeof(u8)); // yes indeed, this is oversized. map debug tools try to write to it
 	
-	MainScreen.gpu->VRAMBuffer = (u16 *)realloc(MainScreen.gpu->VRAMBuffer, w * h * sizeof(u16));
-	SubScreen.gpu->VRAMBuffer = (u16 *)realloc(SubScreen.gpu->VRAMBuffer, w * h * sizeof(u16));
-	
 	const size_t windowBufferSize = w * sizeof(u8);
 	const u8 *oldWinEmptyPtr = win_empty;
 	win_empty = (u8 *)realloc(win_empty, windowBufferSize);
@@ -2710,7 +2670,33 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 			break;
 			
 		case GPUDisplayMode_VRAM: // Display vram framebuffer
-			memcpy(dstLine, gpu->VRAMBuffer + (dstLineIndex * _gpuFramebufferWidth), _gpuFramebufferWidth * dstLineCount * sizeof(u16));
+		{
+			const u16 *src = (u16 *)gpu->VRAMaddr + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+#ifdef LOCAL_BE
+			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
+			{
+				dstLine[i] = LE_TO_LOCAL_16(src[i]);
+			}
+#else
+			if (_gpuFramebufferWidth == GPU_FRAMEBUFFER_NATIVE_WIDTH && _gpuFramebufferHeight == GPU_FRAMEBUFFER_NATIVE_HEIGHT)
+			{
+				memcpy(dstLine, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
+			}
+			else
+			{
+				for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
+				{
+					for (size_t line = 0; line < _gpuDstLineCount[l]; line++)
+					{
+						for (size_t p = 0; p < _gpuDstPitchCount[x]; p++)
+						{
+							dstLine[(line * _gpuFramebufferWidth) + (x + p)] = LE_TO_LOCAL_16(src[x]);
+						}
+					}
+				}
+			}
+#endif
+		}
 			break;
 			
 		case GPUDisplayMode_MainMemory: // Display memory FIFO
