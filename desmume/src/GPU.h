@@ -661,7 +661,6 @@ struct GPU
 	GPUDisplayMode dispMode;
 	u8 vramBlock;
 	u16 *VRAMaddr;
-	u16 *VRAMBuffer;
 
 	//FIFO	fifo;
 
