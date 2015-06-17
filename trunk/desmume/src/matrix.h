@@ -120,30 +120,75 @@ FORCEINLINE s32 s32floor(double d)
 //-------------
 #ifdef ENABLE_SSE2
 
-FORCEINLINE void memset_u16_le(void* dst, const size_t length, u16 val)
+static void memset_u16(void *dst, const u16 val, const size_t length)
 {
-	u32 u32val;
-	//just for the endian safety
-	T1WriteWord((u8*)&u32val, 0, val);
-	T1WriteWord((u8*)&u32val, 2, val);
-	////const __m128i temp = _mm_set_epi32(u32val,u32val,u32val,u32val);
-	
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
-	const __m128i temp = _mm_set_epi32(u32val,u32val,u32val,u32val);
-	MACRODO_N(length/8,_mm_store_si128((__m128i*)((u8*)dst+(X)*16), temp));
+	__m128i *dst_vec128 = (__m128i *)dst;
+	const __m128i val_vec128 = _mm_set1_epi16(val);
+	const size_t length_vec128 = length / (sizeof(val_vec128) / sizeof(val));
+	//MACRODO_N(length_vec128, (dst_vec128[X] = val_vec128));
+	
+	for (size_t i = 0; i < length_vec128; i++)
+		dst_vec128[i] = val_vec128;
 #else
-	__m128 temp; temp.m128_i32[0] = u32val;
-	//MACRODO_N(length/8,_mm_store_si128((__m128i*)((u8*)dst+(X)*16), temp));
-	MACRODO_N(length/8,_mm_store_ps1((float*)((u8*)dst+(X)*16), temp));
+	const u32 val_u32 = ((u32)val << 16) | (u32)val;
+	__m128 val_vec128; val_vec128.m128_i32[0] = val_u32;
+	const size_t length_vec128 = length / (sizeof(val_vec128) / sizeof(val));
+	//MACRODO_N(length_vec128,_mm_store_si128((__m128i*)((u8*)dst+(X)*16), val_vec128));
+	MACRODO_N(length_vec128, _mm_store_ps1((float*)((u8*)dst+(X)*16), val_vec128));
+#endif
+}
+
+static void memset_u32(void *dst, const u32 val, const size_t length)
+{
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
+	__m128i *dst_vec128 = (__m128i *)dst;
+	const __m128i val_vec128 = _mm_set1_epi32(val);
+	const size_t length_vec128 = length / (sizeof(val_vec128) / sizeof(val));
+	//MACRODO_N(length_vec128, (dst_vec128[X] = val_vec128));
+	
+	for (size_t i = 0; i < length_vec128; i++)
+		dst_vec128[i] = val_vec128;
+#else
+	__m128 val_vec128; val_vec128.m128_i32[0] = val;
+	const size_t length_vec128 = length / (sizeof(val_vec128) / sizeof(val));
+	//MACRODO_N(length_vec128,_mm_store_si128((__m128i*)((u8*)dst+(X)*16), val_vec128));
+	MACRODO_N(length_vec128, _mm_store_ps1((float*)((u8*)dst+(X)*16), val_vec128));
 #endif
 }
 
 #else //no sse2
 
-static FORCEINLINE void memset_u16_le(void *dst, const size_t length, const u16 val)
+static void memset_u16(void *dst, const u16 val, const size_t length)
 {
+#ifdef HOST_64
+	u64 *dst_u64 = (u64 *)dst;
+	const u64 val_u64 = ((u64)val << 48) | ((u64)val << 32) | ((u64)val << 16) | (u64)val;
+	const size_t length_u64 = length / (sizeof(val_u64) / sizeof(val));
+	//MACRODO_N(length_u64, (dst_u64[X] = val_u64));
+	
+	for (size_t i = 0; i < length_u64; i++)
+		dst_u64[i] = val_u64;
+#else
 	for (size_t i = 0; i < length; i++)
-		T1WriteWord((u8*)dst, i << 1, val);
+		((u16 *)dst)[i] = val;
+#endif
+}
+
+static void memset_u32(void *dst, const u32 val, const size_t length)
+{
+#ifdef HOST_64
+	u64 *dst_u64 = (u64 *)dst;
+	const u64 val_u64 = ((u64)val << 32) | (u64)val;
+	const size_t length_u64 = length / (sizeof(val_u64) / sizeof(val));
+	//MACRODO_N(length_u64, (dst_u64[X] = val_u64));
+	
+	for (size_t i = 0; i < length_u64; i++)
+		dst_u64[i] = val_u64;
+#else
+	for (size_t i = 0; i < length; i++)
+		((u32 *)dst)[i] = val;
+#endif
 }
 
 #endif
