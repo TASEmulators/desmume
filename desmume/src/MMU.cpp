@@ -1012,7 +1012,7 @@ void MMU_Reset()
 	T1WriteWord(MMU.ARM7_REG, 0x304, 0x0001);
 	
 	MainScreen.offset = 0;
-	SubScreen.offset  = 192;
+	SubScreen.offset  = GPU_GetFramebufferHeight();
 	
 	MMU_VRAM_unmap_all();
 
@@ -1852,12 +1852,12 @@ static void writereg_POWCNT1(const int size, const u32 adr, const u32 val) {
 			{
 				//printf("Main core on top (vcount=%d)\n",nds.VCount);
 				MainScreen.offset = 0;
-				SubScreen.offset = 192;
+				SubScreen.offset = GPU_GetFramebufferHeight();
 			}
 			else
 			{
 				//printf("Main core on bottom (vcount=%d)\n",nds.VCount);
-				MainScreen.offset = 192;
+				MainScreen.offset = GPU_GetFramebufferHeight();
 				SubScreen.offset = 0;
 			}	
 			break;

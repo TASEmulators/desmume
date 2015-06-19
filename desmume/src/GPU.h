@@ -748,10 +748,10 @@ struct GPU
 	u16 blend(const u16 colA, const u16 colB);
 
 	template<bool BACKDROP, BlendFunc FUNC, bool WINDOW>
-	FORCEINLINE FASTCALL bool _master_setFinalBGColor(u16 &outColor, const size_t x);
+	FORCEINLINE FASTCALL bool _master_setFinalBGColor(const u16 *dstLine, const u8 *bgPixelsLine, u16 &outColor, const size_t dstX);
 
 	template<BlendFunc FUNC, bool WINDOW>
-	FORCEINLINE FASTCALL void _master_setFinal3dColor(const size_t x, u16 &outDst, const FragmentColor src);
+	FORCEINLINE FASTCALL void _master_setFinal3dColor(const size_t dstX, u16 &outDst, u8 *bgPixelsLine, const FragmentColor src);
 
 	int setFinalColorBck_funcNum;
 	int bgFunc;
@@ -774,11 +774,11 @@ struct GPU
 	}
 
 
-	void setFinalColor3d(const size_t x, u16 &outDst, const FragmentColor src);
+	void setFinalColor3d(const size_t dstX, u16 &outDst, u8 *bgPixelsLine, const FragmentColor src);
 	
-	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(u16 color, const size_t x);
-	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const size_t x, const bool opaque);
-	template<bool MOSAIC, bool BACKDROP, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const size_t x, const bool opaque);
+	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(u16 *dstLine, u8 *bgPixelsLine, u16 color, const size_t dstX);
+	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
+	template<bool MOSAIC, bool BACKDROP, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
 
 	void setAffineStart(const size_t layer, int xy, u32 val);
 	void setAffineStartWord(const size_t layer, int xy, u16 val, int word);
@@ -790,7 +790,7 @@ struct GPU
 		u32 x, y;
 	} affineInfo[2];
 
-	void renderline_checkWindows(const size_t x, bool &draw, bool &effect) const;
+	void renderline_checkWindows(const size_t dstX, bool &draw, bool &effect) const;
 
 	// check whether (x,y) is within the rectangle (including wraparounds) 
 	template<int WIN_NUM>
