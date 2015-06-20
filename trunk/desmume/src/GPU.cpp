@@ -2231,7 +2231,7 @@ PLAIN_CLEAR:
 						{
 							gpu->currBgNum = 0;
 							
-							const u16 hofs =  (u16)_gpuDstPitchIndex[gpu->getHOFS(layerNum)];
+							const u16 hofs = (u16)( ((float)gpu->getHOFS(layerNum) * _gpuWidthScale) + 0.5f );
 							u16 *oldDstLine = dstLine;
 							
 							for (size_t lineIndex = 0; lineIndex < _gpuDstLineCount[l]; lineIndex++, dstLine += _gpuFramebufferWidth)
