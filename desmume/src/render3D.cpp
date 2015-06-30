@@ -693,7 +693,7 @@ Render3DError Render3D_SSSE3::ClearFramebuffer(const GFX3D_State &renderState)
 					clearDepth_vec128 = _mm_and_si128(clearDepth_vec128, fogBufferBitMask_vec128);
 					clearDepth_vec128 = _mm_srli_epi16(clearDepth_vec128, 15);
 					
-					__m128 clearDepthFogBit_vec128 = _mm_shuffle_epi8(clearDepth_vec128, _mm_set_epi8(15, 13, 11, 9, 7, 5, 3, 1, 14, 12, 10, 8, 6, 4, 2, 0));
+					__m128i clearDepthFogBit_vec128 = _mm_shuffle_epi8(clearDepth_vec128, _mm_set_epi8(15, 13, 11, 9, 7, 5, 3, 1, 14, 12, 10, 8, 6, 4, 2, 0));
 					
 					clearDepth_vec128 = _mm_load_si128((__m128i *)(clearDepthBuffer + addr));
 					clearDepth_vec128 = _mm_and_si128(clearDepth_vec128, fogBufferBitMask_vec128);
