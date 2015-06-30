@@ -19,6 +19,10 @@
 
 #include "common.h"
 
+#ifndef _MSC_VER
+#include <stdint.h>
+#endif
+
 #include <string.h>
 #include <string>
 #include <stdarg.h>
