@@ -122,39 +122,24 @@ FORCEINLINE s32 s32floor(double d)
 
 static void memset_u16(void *dst, const u16 val, const size_t length)
 {
-#if defined(__GNUC__) || defined(__INTEL_COMPILER)
 	__m128i *dst_vec128 = (__m128i *)dst;
 	const __m128i val_vec128 = _mm_set1_epi16(val);
 	const size_t length_vec128 = length / (sizeof(val_vec128) / sizeof(val));
 	//MACRODO_N(length_vec128, (dst_vec128[X] = val_vec128));
 	
 	for (size_t i = 0; i < length_vec128; i++)
-		dst_vec128[i] = val_vec128;
-#else
-	const u32 val_u32 = ((u32)val << 16) | (u32)val;
-	__m128 val_vec128; val_vec128.m128_i32[0] = val_u32;
-	const size_t length_vec128 = length / (sizeof(val_vec128) / sizeof(val));
-	//MACRODO_N(length_vec128,_mm_store_si128((__m128i*)((u8*)dst+(X)*16), val_vec128));
-	MACRODO_N(length_vec128, _mm_store_ps1((float*)((u8*)dst+(X)*16), val_vec128));
-#endif
+		_mm_stream_si128(dst_vec128 + i, val_vec128);
 }
 
 static void memset_u32(void *dst, const u32 val, const size_t length)
 {
-#if defined(__GNUC__) || defined(__INTEL_COMPILER)
 	__m128i *dst_vec128 = (__m128i *)dst;
 	const __m128i val_vec128 = _mm_set1_epi32(val);
 	const size_t length_vec128 = length / (sizeof(val_vec128) / sizeof(val));
 	//MACRODO_N(length_vec128, (dst_vec128[X] = val_vec128));
 	
 	for (size_t i = 0; i < length_vec128; i++)
-		dst_vec128[i] = val_vec128;
-#else
-	__m128 val_vec128; val_vec128.m128_i32[0] = val;
-	const size_t length_vec128 = length / (sizeof(val_vec128) / sizeof(val));
-	//MACRODO_N(length_vec128,_mm_store_si128((__m128i*)((u8*)dst+(X)*16), val_vec128));
-	MACRODO_N(length_vec128, _mm_store_ps1((float*)((u8*)dst+(X)*16), val_vec128));
-#endif
+		_mm_stream_si128(dst_vec128 + i, val_vec128);
 }
 
 #else //no sse2

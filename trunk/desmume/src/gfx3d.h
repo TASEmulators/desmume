@@ -28,10 +28,6 @@
 
 class EMUFILE;
 
-// Pixel dimensions of the NDS 3D framebuffer
-#define GFX3D_FRAMEBUFFER_WIDTH		256
-#define GFX3D_FRAMEBUFFER_HEIGHT	192
-
 //geometry engine command numbers
 #define GFX3D_NOP 0x00
 #define GFX3D_MTX_MODE 0x10
@@ -248,10 +244,6 @@ enum
 void gfx3d_init();
 void gfx3d_deinit();
 void gfx3d_reset();
-
-size_t gfx3d_getFramebufferWidth();
-size_t gfx3d_getFramebufferHeight();
-void gfx3d_setFramebufferSize(size_t w, size_t h);
 
 typedef struct
 {

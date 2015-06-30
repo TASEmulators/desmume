@@ -4045,7 +4045,7 @@ void CloseRom()
 
 	// clear screen so the last frame we rendered doesn't stick around
 	// (TODO: maybe NDS_Reset should do this?)
-	memset(GPU_screen, 0xFF, sizeof(GPU_screen));
+	memset(GPU_screen, 0xFF, GPU_GetFramebufferWidth() * GPU_GetFramebufferHeight() * 2 * sizeof(u16));
 
 	InvalidateRect(MainWindow->getHWnd(), NULL, TRUE); // make sure the window refreshes with the cleared screen
 

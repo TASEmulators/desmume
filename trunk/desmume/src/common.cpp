@@ -24,6 +24,9 @@
 #include <stdarg.h>
 #include <zlib.h>
 #include <stdlib.h>
+#include <map>
+
+static std::map<void *, void *> _alignedPtrList; // Key: Aligned pointer / Value: Original pointer
 
 char *trim(char *s, int len)
 {
@@ -677,3 +680,66 @@ msgBoxInterface msgBoxFake = {
 };
 
 msgBoxInterface *msgbox = &msgBoxFake;
+
+void* malloc_aligned(size_t length, size_t alignment)
+{
+	const uintptr_t ptrOffset = alignment; // This value must be a power of 2, or this function will fail.
+	const uintptr_t ptrOffsetMask = ~(ptrOffset - 1);
+	
+	void *originalPtr = malloc(length + ptrOffset);
+	if (originalPtr == NULL)
+	{
+		return originalPtr;
+	}
+	
+	void *alignedPtr = (void *)(((uintptr_t)originalPtr + ptrOffset) & ptrOffsetMask);
+	_alignedPtrList[alignedPtr] = originalPtr;
+	
+	return alignedPtr;
+}
+
+void* malloc_aligned16(size_t length)
+{
+	return malloc_aligned(length, 16);
+}
+
+void* malloc_aligned32(size_t length)
+{
+	return malloc_aligned(length, 32);
+}
+
+void* malloc_aligned64(size_t length)
+{
+	return malloc_aligned(length, 64);
+}
+
+void* malloc_alignedCacheLine(size_t length)
+{
+#if defined(HOST_32)
+	return malloc_aligned32(length);
+#elif defined(HOST_64)
+	return malloc_aligned64(length);
+#else
+	return malloc_aligned16(length);
+#endif
+}
+
+void free_aligned(void *ptr)
+{
+	if (ptr == NULL)
+	{
+		return;
+	}
+	
+	// If the input pointer is aligned through malloc_aligned(),
+	// then retrieve the original pointer first. Otherwise, this
+	// function behaves like the usual free().
+	void *originalPtr = ptr;
+	if (_alignedPtrList.find(ptr) != _alignedPtrList.end())
+	{
+		originalPtr = _alignedPtrList[ptr];
+		_alignedPtrList.erase(ptr);
+	}
+	
+	free(originalPtr);
+}

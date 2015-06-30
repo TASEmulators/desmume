@@ -91,4 +91,11 @@ extern int NDS_WritePNG(const char *fname, u16 *data);
 extern int NDS_WriteBMP(const char *filename, u16 *data);
 extern int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
 
+void* malloc_aligned(size_t length, size_t alignment);
+void* malloc_aligned16(size_t length);
+void* malloc_aligned32(size_t length);
+void* malloc_aligned64(size_t length);
+void* malloc_alignedCacheLine(size_t length);
+void free_aligned(void *ptr);
+
 #endif
