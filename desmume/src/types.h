@@ -86,6 +86,14 @@
 #undef ENABLE_SSE2
 #endif
 
+#ifndef ENABLE_SSE2
+#undef ENABLE_SSE3
+#endif
+
+#ifndef ENABLE_SSE3
+#undef ENABLE_SSSE3
+#endif
+
 #ifdef _MSC_VER 
 #define strcasecmp(x,y) _stricmp(x,y)
 #define strncasecmp(x, y, l) strnicmp(x, y, l)
@@ -119,7 +127,12 @@
 #else
 #define DS_ALIGN(X)
 #endif
+
+#ifdef HOST_64
+#define CACHE_ALIGN DS_ALIGN(64)
+#else
 #define CACHE_ALIGN DS_ALIGN(32)
+#endif
 //use this for example when you want a byte value to be better-aligned
 #define FAST_ALIGN DS_ALIGN(4)
 //---------------------------------------------

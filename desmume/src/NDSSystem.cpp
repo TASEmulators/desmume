@@ -2504,7 +2504,6 @@ void NDS_Reset()
 	memcpy(&TSCal, firmware->getTouchCalibrate(), sizeof(TSCalInfo));
 
 	Screen_Reset();
-	gfx3d_reset();
 
 	WIFI_Reset();
 	memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);

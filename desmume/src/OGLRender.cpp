@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "common.h"
 #include "debug.h"
 #include "gfx3d.h"
 #include "NDSSystem.h"
@@ -892,78 +893,73 @@ void OpenGLRenderer::SetVersion(unsigned int major, unsigned int minor, unsigned
 	this->versionRevision = revision;
 }
 
-#if defined(ENABLE_SSE2) && defined(ENABLE_SSSE3) && defined(LOCAL_LE)
+#if defined(ENABLE_SSSE3) && defined(LOCAL_LE)
 Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
 {
 	// Convert from 32-bit BGRA8888 format to 32-bit RGBA6665 reversed format. OpenGL
 	// stores pixels using a flipped Y-coordinate, so this needs to be flipped back
 	// to the DS Y-coordinate.
 	
-	if ((this->_framebufferWidth % 4) == 0)
+	const size_t pixCount = this->_framebufferWidth;
+	const size_t ssePixCount = pixCount - (pixCount % 4);
+	
+	for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, iw -= (this->_framebufferWidth * 2))
 	{
-		for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, iw -= (this->_framebufferWidth * 2))
+		for (size_t x = 0; x < ssePixCount; x+=4, ir+=4, iw+=4)
 		{
-			for (size_t x = 0; x < this->_framebufferWidth; x+=4, ir+=4, iw+=4)
-			{
-				// Convert to RGBA6665
-				__m128i v = _mm_load_si128((__m128i *)(this->_framebufferColor + ir));
-				v = _mm_srli_epi32(v, 2);
-				
-				__m128i a = _mm_srli_epi32(v, 1); // Special handling for 5-bit alpha
-				a = _mm_and_si128(a, _mm_set1_epi32(0x1F000000));
-				
-				v = _mm_and_si128(v, _mm_set1_epi32(0x003F3F3F));
-				v = _mm_or_si128(v, a);
-				v = _mm_shuffle_epi8(v, _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2)); // Swizzle RGBA to BGRA
-				_mm_store_si128((__m128i *)(dstRGBA6665 + iw), v);
-				
-				// Convert to RGBA5551
-				v = _mm_load_si128((__m128i *)(this->_framebufferColor + ir));
-				
-				__m128i b = _mm_and_si128(v, _mm_set1_epi32(0x000000F8));	// Read from R
-				b = _mm_slli_epi32(b, 7);									// Shift to B
-				
-				__m128i g = _mm_and_si128(v, _mm_set1_epi32(0x0000F800));	// Read from G
-				g = _mm_srli_epi32(g, 6);									// Shift in G
-				
-				__m128i r = _mm_and_si128(v, _mm_set1_epi32(0x00F80000));	// Read from B
-				r = _mm_srli_epi32(r, 19);									// Shift to R
-				
-				a = _mm_and_si128(v, _mm_set1_epi32(0xFF000000));			// Read from A
-				a = _mm_cmpgt_epi32(a, _mm_set1_epi32(0x00000000));			// Determine A
-				a = _mm_and_si128(a, _mm_set1_epi32(0x00008000));			// Mask to A
-				
-				v = b;
-				v = _mm_add_epi32(v, g);
-				v = _mm_add_epi32(v, r);
-				v = _mm_add_epi32(v, a);
-				
-				// All the colors are currently placed every other 16 bits, so we need to swizzle them
-				// to the lower 64 bits of our vector before we store them back to memory.
-				v = _mm_shuffle_epi8(v, _mm_set_epi8(15, 14, 11, 10, 7, 6, 3, 2, 13, 12, 9, 8, 5, 4, 1, 0));
-				_mm_storel_epi64((__m128i *)(dstRGBA5551 + iw), v);
-			}
+			// Convert to RGBA6665
+			__m128i color = _mm_load_si128((__m128i *)(this->_framebufferColor + ir));
+			color = _mm_srli_epi32(color, 2);
+			
+			__m128i a = _mm_srli_epi32(color, 1); // Special handling for 5-bit alpha
+			a = _mm_and_si128(a, _mm_set1_epi32(0x1F000000));
+			
+			color = _mm_and_si128(color, _mm_set1_epi32(0x003F3F3F));
+			color = _mm_or_si128(color, a);
+			color = _mm_shuffle_epi8(color, _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2)); // Swizzle RGBA to BGRA
+			_mm_store_si128((__m128i *)(dstRGBA6665 + iw), color);
+			
+			// Convert to RGBA5551
+			color = _mm_load_si128((__m128i *)(this->_framebufferColor + ir));
+			
+			__m128i b = _mm_and_si128(color, _mm_set1_epi32(0x000000F8));	// Read from R
+			b = _mm_slli_epi32(b, 7);										// Shift to B
+			
+			__m128i g = _mm_and_si128(color, _mm_set1_epi32(0x0000F800));	// Read from G
+			g = _mm_srli_epi32(g, 6);										// Shift in G
+			
+			__m128i r = _mm_and_si128(color, _mm_set1_epi32(0x00F80000));	// Read from B
+			r = _mm_srli_epi32(r, 19);										// Shift to R
+			
+			a = _mm_and_si128(color, _mm_set1_epi32(0xFF000000));			// Read from A
+			a = _mm_cmpgt_epi32(a, _mm_set1_epi32(0x00000000));				// Determine A
+			a = _mm_and_si128(a, _mm_set1_epi32(0x00008000));				// Mask to A
+			
+			color = b;
+			color = _mm_or_si128(color, g);
+			color = _mm_or_si128(color, r);
+			color = _mm_or_si128(color, a);
+			
+			// All the colors are currently placed every other 16 bits, so we need to swizzle them
+			// to the lower 64 bits of our vector before we store them back to memory.
+			color = _mm_shuffle_epi8(color, _mm_set_epi8(15, 14, 11, 10, 7, 6, 3, 2, 13, 12, 9, 8, 5, 4, 1, 0));
+			_mm_storel_epi64((__m128i *)(dstRGBA5551 + iw), color);
 		}
-	}
-	else
-	{
-		for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, iw -= (this->_framebufferWidth * 2))
+		
+		for (size_t x = ssePixCount; x < pixCount; x++, ir++, iw++)
 		{
-			for (size_t x = 0; x < this->_framebufferWidth; x++, ir++, iw++)
-			{
-				dstRGBA6665[iw].color = BGRA8888_32Rev_To_RGBA6665_32Rev(this->_framebufferColor[ir].color);
-				dstRGBA5551[iw] = R5G5B5TORGB15((this->_framebufferColor[ir].b >> 3) & 0x1F,
-												(this->_framebufferColor[ir].g >> 3) & 0x1F,
-												(this->_framebufferColor[ir].r >> 3) & 0x1F) |
-												((this->_framebufferColor[ir].a == 0) ? 0x0000 : 0x8000);
-			}
+			dstRGBA6665[iw].color = BGRA8888_32Rev_To_RGBA6665_32Rev(this->_framebufferColor[ir].color);
+			dstRGBA5551[iw] = R5G5B5TORGB15((this->_framebufferColor[ir].b >> 3) & 0x1F,
+											(this->_framebufferColor[ir].g >> 3) & 0x1F,
+											(this->_framebufferColor[ir].r >> 3) & 0x1F) |
+											((this->_framebufferColor[ir].a == 0) ? 0x0000 : 0x8000);
 		}
 	}
 	
 	return RENDER3DERROR_NOERR;
 }
 
-#else // Code path where SSE2, SSSE3, or little-endian is not supported
+#else // Code path where SSSE3 or little-endian is not supported
 
 Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
 {
@@ -995,7 +991,7 @@ Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA
 	return RENDER3DERROR_NOERR;
 }
 
-#endif // defined(ENABLE_SSE2) && defined(ENABLE_SSSE3) && defined(LOCAL_LE)
+#endif // defined(ENABLE_SSSE3) && defined(LOCAL_LE)
 
 OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 {
@@ -1487,7 +1483,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIDepthStencilID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -1495,28 +1491,28 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
 	
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIDepthID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIPolyID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIFogAttrID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
@@ -1891,13 +1887,13 @@ Render3DError OpenGLRenderer_1_2::DestroyToonTable()
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
+Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	if (this->isShaderSupported)
 	{
-		for (size_t i = 0; i < GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT; i++)
+		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT; i++)
 		{
 			OGLRef.workingCIDepthStencilBuffer[i] = depthBuffer[i] << 8;
 			OGLRef.workingCIDepthBuffer[i] = depthBuffer[i] | 0xFF000000;
@@ -1916,20 +1912,20 @@ Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBu
 	glActiveTextureARB(GL_TEXTURE0_ARB);
 	
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIColorID);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, colorBuffer);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, colorBuffer);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIDepthStencilID);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, OGLRef.workingCIDepthStencilBuffer);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, OGLRef.workingCIDepthStencilBuffer);
 	
 	if (this->isShaderSupported)
 	{
 		glBindTexture(GL_TEXTURE_2D, OGLRef.texCIDepthID);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, OGLRef.workingCIDepthBuffer);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, OGLRef.workingCIDepthBuffer);
 		
 		glBindTexture(GL_TEXTURE_2D, OGLRef.texCIFogAttrID);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, OGLRef.workingCIFogAttributesBuffer);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, OGLRef.workingCIFogAttributesBuffer);
 		
 		glBindTexture(GL_TEXTURE_2D, OGLRef.texCIPolyID);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, OGLRef.workingCIPolyIDBuffer);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, OGLRef.workingCIPolyIDBuffer);
 	}
 	
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -2371,7 +2367,7 @@ Render3DError OpenGLRenderer_1_2::UpdateToonTable(const u16 *toonTableBuffer)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
+Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
 {
 	if (!this->isFBOSupported)
 	{
@@ -2397,22 +2393,22 @@ Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuf
 	// Blit the working depth buffer
 	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
 	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glBlitFramebufferEXT(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebufferEXT(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	
 	// Blit the polygon ID buffer
 	glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
 	glDrawBuffer(GL_COLOR_ATTACHMENT2_EXT);
-	glBlitFramebufferEXT(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebufferEXT(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	
 	// Blit the fog buffer
 	glReadBuffer(GL_COLOR_ATTACHMENT3_EXT);
 	glDrawBuffer(GL_COLOR_ATTACHMENT3_EXT);
-	glBlitFramebufferEXT(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebufferEXT(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	
 	// Blit the color buffer. Do this last so that color attachment 0 is set to the read FBO.
 	glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glBlitFramebufferEXT(0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebufferEXT(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
 	glDrawBuffers(4, RenderDrawList);
@@ -2485,7 +2481,7 @@ Render3DError OpenGLRenderer_1_2::ClearUsingValues(const FragmentColor &clearCol
 		glClear(GL_COLOR_BUFFER_BIT);
 		
 		glDrawBuffer(GL_COLOR_ATTACHMENT3_EXT); // texGFogAttrID
-		glClearColor((clearAttributes.isFogged) ? 1.0 : 0.0, 0.0, 0.0, 1.0);
+		glClearColor(clearAttributes.isFogged, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT);
 		
 		glDrawBuffers(4, RenderDrawList);
@@ -2682,8 +2678,8 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 
 Render3DError OpenGLRenderer_1_2::SetupViewport(const u32 viewportValue)
 {
-	const GLfloat wScalar = this->_framebufferWidth / GFX3D_FRAMEBUFFER_WIDTH;
-	const GLfloat hScalar = this->_framebufferHeight / GFX3D_FRAMEBUFFER_HEIGHT;
+	const GLfloat wScalar = this->_framebufferWidth / GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	const GLfloat hScalar = this->_framebufferHeight / GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
 	VIEWPORT viewport;
 	viewport.decode(viewportValue);
@@ -2782,19 +2778,9 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if (w < GFX3D_FRAMEBUFFER_WIDTH || h < GFX3D_FRAMEBUFFER_HEIGHT)
+	if (w < GPU_FRAMEBUFFER_NATIVE_WIDTH || h < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
 	{
 		return OGLERROR_NOERR;
-	}
-	
-	this->_framebufferWidth = w;
-	this->_framebufferHeight = h;
-	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
-	this->_framebufferColor = (FragmentColor *)realloc(this->_framebufferColor, this->_framebufferColorSizeBytes);
-	
-	if (oglrender_framebufferDidResizeCallback != NULL)
-	{
-		oglrender_framebufferDidResizeCallback(w, h);
 	}
 	
 	if (this->isFBOSupported)
@@ -2836,10 +2822,27 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamples, GL_DEPTH24_STENCIL8_EXT, w, h);
 	}
 	
+	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
+	FragmentColor *oldFramebufferColor = this->_framebufferColor;
+	FragmentColor *newFramebufferColor = (FragmentColor *)malloc_alignedCacheLine(newFramebufferColorSizeBytes);
+	memset(newFramebufferColor, 0, newFramebufferColorSizeBytes);
+	
 	if (this->isPBOSupported)
 	{
-		glBufferData(GL_PIXEL_PACK_BUFFER_ARB, this->_framebufferColorSizeBytes, NULL, GL_STREAM_READ);
+		glBufferData(GL_PIXEL_PACK_BUFFER_ARB, newFramebufferColorSizeBytes, newFramebufferColor, GL_STREAM_READ);
 	}
+	
+	this->_framebufferWidth = w;
+	this->_framebufferHeight = h;
+	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
+	this->_framebufferColor = newFramebufferColor;
+	
+	if (oglrender_framebufferDidResizeCallback != NULL)
+	{
+		oglrender_framebufferDidResizeCallback(w, h);
+	}
+	
+	free_aligned(oldFramebufferColor);
 	
 	return OGLERROR_NOERR;
 }
@@ -2874,13 +2877,13 @@ Render3DError OpenGLRenderer_1_3::UpdateToonTable(const u16 *toonTableBuffer)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_3::UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
+Render3DError OpenGLRenderer_1_3::UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	if (this->isShaderSupported)
 	{
-		for (size_t i = 0; i < GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT; i++)
+		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT; i++)
 		{
 			OGLRef.workingCIDepthStencilBuffer[i] = depthBuffer[i] << 8;
 			OGLRef.workingCIDepthBuffer[i] = depthBuffer[i] | 0xFF000000;
@@ -2899,20 +2902,20 @@ Render3DError OpenGLRenderer_1_3::UploadClearImage(const u16 *__restrict colorBu
 	glActiveTexture(GL_TEXTURE0);
 	
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIColorID);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, colorBuffer);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, colorBuffer);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIDepthStencilID);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, OGLRef.workingCIDepthStencilBuffer);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, OGLRef.workingCIDepthStencilBuffer);
 	
 	if (this->isShaderSupported)
 	{
 		glBindTexture(GL_TEXTURE_2D, OGLRef.texCIDepthID);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, OGLRef.workingCIDepthBuffer);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, OGLRef.workingCIDepthBuffer);
 		
 		glBindTexture(GL_TEXTURE_2D, OGLRef.texCIFogAttrID);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, OGLRef.workingCIFogAttributesBuffer);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, OGLRef.workingCIFogAttributesBuffer);
 		
 		glBindTexture(GL_TEXTURE_2D, OGLRef.texCIPolyID);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GFX3D_FRAMEBUFFER_WIDTH, GFX3D_FRAMEBUFFER_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, OGLRef.workingCIPolyIDBuffer);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, OGLRef.workingCIPolyIDBuffer);
 	}
 	
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -2924,19 +2927,9 @@ Render3DError OpenGLRenderer_1_3::SetFramebufferSize(size_t w, size_t h)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if (w < GFX3D_FRAMEBUFFER_WIDTH || h < GFX3D_FRAMEBUFFER_HEIGHT)
+	if (w < GPU_FRAMEBUFFER_NATIVE_WIDTH || h < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
 	{
 		return OGLERROR_NOERR;
-	}
-	
-	this->_framebufferWidth = w;
-	this->_framebufferHeight = h;
-	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
-	this->_framebufferColor = (FragmentColor *)realloc(this->_framebufferColor, this->_framebufferColorSizeBytes);
-	
-	if (oglrender_framebufferDidResizeCallback != NULL)
-	{
-		oglrender_framebufferDidResizeCallback(w, h);
 	}
 	
 	if (this->isFBOSupported)
@@ -2978,10 +2971,27 @@ Render3DError OpenGLRenderer_1_3::SetFramebufferSize(size_t w, size_t h)
 		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamples, GL_DEPTH24_STENCIL8_EXT, w, h);
 	}
 	
+	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
+	FragmentColor *oldFramebufferColor = this->_framebufferColor;
+	FragmentColor *newFramebufferColor = (FragmentColor *)malloc_alignedCacheLine(newFramebufferColorSizeBytes);
+	memset(newFramebufferColor, 0, newFramebufferColorSizeBytes);
+	
 	if (this->isPBOSupported)
 	{
-		glBufferData(GL_PIXEL_PACK_BUFFER_ARB, this->_framebufferColorSizeBytes, NULL, GL_STREAM_READ);
+		glBufferData(GL_PIXEL_PACK_BUFFER_ARB, newFramebufferColorSizeBytes, newFramebufferColor, GL_STREAM_READ);
 	}
+	
+	this->_framebufferWidth = w;
+	this->_framebufferHeight = h;
+	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
+	this->_framebufferColor = newFramebufferColor;
+	
+	if (oglrender_framebufferDidResizeCallback != NULL)
+	{
+		oglrender_framebufferDidResizeCallback(w, h);
+	}
+	
+	free_aligned(oldFramebufferColor);
 	
 	return OGLERROR_NOERR;
 }

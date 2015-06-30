@@ -77,8 +77,25 @@ struct FragmentAttributes
 	u8 opaquePolyID;
 	u8 translucentPolyID;
 	u8 stencil;
-	bool isFogged;
-	bool isTranslucentPoly;
+	u8 isFogged;
+	u8 isTranslucentPoly;
+};
+
+struct FragmentAttributesBuffer
+{
+	size_t count;
+	u32 *depth;
+	u8 *opaquePolyID;
+	u8 *translucentPolyID;
+	u8 *stencil;
+	u8 *isFogged;
+	u8 *isTranslucentPoly;
+	
+	FragmentAttributesBuffer(size_t newCount);
+	~FragmentAttributesBuffer();
+	
+	void SetAtIndex(const size_t index, const FragmentAttributes &attr);
+	void SetAll(const FragmentAttributes &attr);
 };
 
 class Render3D
@@ -92,10 +109,10 @@ protected:
 	size_t _framebufferColorSizeBytes;
 	FragmentColor *_framebufferColor;
 	
-	CACHE_ALIGN u16 clearImageColor16Buffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
-	CACHE_ALIGN u32 clearImageDepthBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
-	CACHE_ALIGN bool clearImageFogBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
-	CACHE_ALIGN u8 clearImagePolyIDBuffer[GFX3D_FRAMEBUFFER_WIDTH * GFX3D_FRAMEBUFFER_HEIGHT];
+	CACHE_ALIGN u16 clearImageColor16Buffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
+	CACHE_ALIGN u32 clearImageDepthBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
+	CACHE_ALIGN u8 clearImageFogBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
+	CACHE_ALIGN u8 clearImagePolyIDBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	
 	virtual Render3DError BeginRender(const GFX3D &engine);
 	virtual Render3DError RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList);
@@ -104,7 +121,7 @@ protected:
 	virtual Render3DError EndRender(const u64 frameCount);
 	virtual Render3DError FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551);
 	
-	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const bool *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
+	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const;
 	
 	virtual Render3DError SetupPolygon(const POLY &thePoly);
@@ -138,4 +155,27 @@ public:
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);	// Called whenever the output framebuffer size changes.
 };
 
+#ifdef ENABLE_SSE2
+
+class Render3D_SSE2 : public Render3D
+{	
+public:
+	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
+};
+
 #endif
+
+#ifdef ENABLE_SSSE3
+
+class Render3D_SSSE3 : public Render3D_SSE2
+{
+protected:
+	virtual Render3DError FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551);
+	
+public:
+	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
+};
+
+#endif
+
+#endif // RENDER3D_H

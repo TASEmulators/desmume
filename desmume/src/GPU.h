@@ -621,6 +621,11 @@ struct GPU
 	//this indicates whether this gpu is handling debug tools
 	bool debug;
 
+	CACHE_ALIGN u16 sprColor[GPU_FRAMEBUFFER_NATIVE_WIDTH];
+	CACHE_ALIGN u8 sprAlpha[GPU_FRAMEBUFFER_NATIVE_WIDTH];
+	CACHE_ALIGN u8 sprType[GPU_FRAMEBUFFER_NATIVE_WIDTH];
+	CACHE_ALIGN u8 sprPrio[GPU_FRAMEBUFFER_NATIVE_WIDTH];
+	
 	_BGxCNT & bgcnt(int num) { return (dispx_st)->dispx_BGxCNT[num].bits; }
 	_DISPCNT & dispCnt() { return dispx_st->dispx_DISPCNT.bits; }
 	template<bool MOSAIC> void modeRender(const size_t layer);
@@ -705,14 +710,8 @@ struct GPU
 	u8	BLDY_EVY;
 	u16 *currentFadeInColors, *currentFadeOutColors;
 	bool blend2[8];
-
-	//this should be suitably aligned for SSE2 (32bytes)
+	
 	u16 *tempScanlineBuffer;
-	//this is the raw unadjusted pointer
-	u16 *tempScanlineBufferRaw;
-
-	u16 *tempScanline;
-
 	GPUMasterBrightMode	MasterBrightMode;
 	u32 MasterBrightFactor;
 
@@ -748,11 +747,14 @@ struct GPU
 	u16 blend(const u16 colA, const u16 colB);
 
 	template<bool BACKDROP, BlendFunc FUNC, bool WINDOW>
-	FORCEINLINE FASTCALL bool _master_setFinalBGColor(const u16 *dstLine, const u8 *bgPixelsLine, u16 &outColor, const size_t dstX);
+	FORCEINLINE FASTCALL bool _master_setFinalBGColor(const size_t dstX, const u16 *dstLine, const u8 *bgPixelsLine, u16 &outColor);
 
 	template<BlendFunc FUNC, bool WINDOW>
-	FORCEINLINE FASTCALL void _master_setFinal3dColor(const size_t dstX, u16 &outDst, u8 *bgPixelsLine, const FragmentColor src);
-
+	FORCEINLINE FASTCALL void _master_setFinal3dColor(const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, const FragmentColor src);
+	
+	template<BlendFunc FUNC, bool WINDOW>
+	FORCEINLINE FASTCALL void _master_setFinalOBJColor(const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, const u16 src, const u8 alpha, const u8 type);
+	
 	int setFinalColorBck_funcNum;
 	int bgFunc;
 	int setFinalColor3d_funcNum;
@@ -774,9 +776,10 @@ struct GPU
 	}
 
 
-	void setFinalColor3d(const size_t dstX, u16 &outDst, u8 *bgPixelsLine, const FragmentColor src);
+	void setFinalColor3d(const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, const FragmentColor src);
+	void setFinalColorSpr(const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, const u16 src, const u8 alpha, const u8 type);
 	
-	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(u16 *dstLine, u8 *bgPixelsLine, u16 color, const size_t dstX);
+	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, u16 src);
 	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
 	template<bool MOSAIC, bool BACKDROP, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
 
