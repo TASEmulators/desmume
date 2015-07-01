@@ -158,7 +158,10 @@ public:
 #ifdef ENABLE_SSE2
 
 class Render3D_SSE2 : public Render3D
-{	
+{
+protected:
+	virtual Render3DError FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551);
+	
 public:
 	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
 };
@@ -169,11 +172,7 @@ public:
 
 class Render3D_SSSE3 : public Render3D_SSE2
 {
-protected:
-	virtual Render3DError FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551);
 	
-public:
-	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
 };
 
 #endif

@@ -935,8 +935,7 @@ Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA
 			a = _mm_cmpgt_epi32(a, _mm_set1_epi32(0x00000000));				// Determine A
 			a = _mm_and_si128(a, _mm_set1_epi32(0x00008000));				// Mask to A
 			
-			color = b;
-			color = _mm_or_si128(color, g);
+			color = _mm_or_si128(b, g);
 			color = _mm_or_si128(color, r);
 			color = _mm_or_si128(color, a);
 			
@@ -2393,22 +2392,22 @@ Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuf
 	// Blit the working depth buffer
 	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
 	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glBlitFramebufferEXT(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebufferEXT(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	
 	// Blit the polygon ID buffer
 	glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
 	glDrawBuffer(GL_COLOR_ATTACHMENT2_EXT);
-	glBlitFramebufferEXT(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebufferEXT(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	
 	// Blit the fog buffer
 	glReadBuffer(GL_COLOR_ATTACHMENT3_EXT);
 	glDrawBuffer(GL_COLOR_ATTACHMENT3_EXT);
-	glBlitFramebufferEXT(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebufferEXT(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	
 	// Blit the color buffer. Do this last so that color attachment 0 is set to the read FBO.
 	glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glBlitFramebufferEXT(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebufferEXT(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
 	glDrawBuffers(4, RenderDrawList);

@@ -1794,14 +1794,10 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 				// - the character edges in-level are clearly transparent, and also show well through shield powerups.
 				
 				FragmentColor edgeColor = this->edgeMarkTable[polyID>>3];
-				bool upleft = false;
 				bool up = false;
-				bool upright = false;
 				bool left = false;
 				bool right = false;
-				bool downleft = false;
 				bool down = false;
-				bool downright = false;
 				
 #define PIXOFFSET(dx,dy) ((dx)+(this->_framebufferWidth*(dy)))
 #define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID != this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET(dx,dy)] && depth >= this->_framebufferAttributes->depth[i+PIXOFFSET(dx,dy)])
@@ -1889,27 +1885,25 @@ Render3DError SoftRasterizerRenderer::UpdateToonTable(const u16 *toonTableBuffer
 
 Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 *__restrict polyIDBuffer)
 {
-	const float lineDecrement = ((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT / (float)this->_framebufferHeight) + 0.000001;
-	const float readIncrement = ((float)GPU_FRAMEBUFFER_NATIVE_WIDTH / (float)this->_framebufferWidth) + 0.000001;
-	float line = GPU_FRAMEBUFFER_NATIVE_HEIGHT - 1.0 + lineDecrement;
-	float readLocation = (GPU_FRAMEBUFFER_NATIVE_HEIGHT - 1) * GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	const size_t xRatio = (size_t)((GPU_FRAMEBUFFER_NATIVE_WIDTH << 16) / this->_framebufferWidth) + 1;
+	const size_t yRatio = (size_t)((GPU_FRAMEBUFFER_NATIVE_HEIGHT << 16) / this->_framebufferHeight) + 1;
 	
-	// The clear image buffer is y-flipped, so we need to flip it back to normal here.
-	for (size_t y = 0, iw = 0; y < this->_framebufferHeight; y++, readLocation = ((size_t)line * GPU_FRAMEBUFFER_NATIVE_WIDTH))
+	for (size_t y = 0, iw = 0; y < this->_framebufferHeight; y++)
 	{
-		for (size_t x = 0; x < this->_framebufferWidth; x++, iw++, readLocation += readIncrement)
+		const size_t readLine = (size_t)(((y * yRatio) >> 16) * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+		
+		for (size_t x = 0; x < this->_framebufferWidth; x++, iw++)
 		{
-			const size_t ir = (size_t)readLocation;
+			const size_t ir = readLine + ((x * xRatio) >> 16);
+			
 			this->_framebufferColor[iw].color = RGB15TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 0x1F);
-			this->_framebufferAttributes->isFogged[iw] = fogBuffer[ir];
 			this->_framebufferAttributes->depth[iw] = depthBuffer[ir];
+			this->_framebufferAttributes->isFogged[iw] = fogBuffer[ir];
 			this->_framebufferAttributes->opaquePolyID[iw] = polyIDBuffer[ir];
 			this->_framebufferAttributes->translucentPolyID[iw] = kUnsetTranslucentPolyID;
 			this->_framebufferAttributes->isTranslucentPoly[iw] = 0;
 			this->_framebufferAttributes->stencil[iw] = 0;
 		}
-		
-		line -= lineDecrement;
 	}
 	
 	return RENDER3DERROR_NOERR;
