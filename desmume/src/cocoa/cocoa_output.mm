@@ -543,9 +543,9 @@
 
 - (NSSize) displaySize
 {
-	OSSpinLockLock(&spinlockDisplayType);
+	pthread_rwlock_rdlock(self.rwlockProducer);
 	NSSize size = NSMakeSize((CGFloat)GPU_GetFramebufferWidth(), (displayMode == DS_DISPLAY_TYPE_DUAL) ? (CGFloat)(GPU_GetFramebufferHeight() * 2): (CGFloat)GPU_GetFramebufferHeight());
-	OSSpinLockUnlock(&spinlockDisplayType);
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return size;
 }
@@ -616,6 +616,8 @@
 
 - (void) handleEmuFrameProcessed
 {
+	pthread_rwlock_rdlock(self.rwlockProducer);
+	
 	const uint16_t newGpuWidth = GPU_GetFramebufferWidth();
 	const uint16_t newGpuHeight = GPU_GetFramebufferHeight();
 	
@@ -623,6 +625,8 @@
 	_gpuFrame.displayModeID = [self displayMode];
 	_gpuFrame.width = newGpuWidth;
 	_gpuFrame.height = (_gpuFrame.displayModeID == DS_DISPLAY_TYPE_DUAL) ? newGpuHeight * 2 : newGpuHeight;
+	
+	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	if (newGpuWidth != _gpuCurrentWidth || newGpuHeight != _gpuCurrentHeight)
 	{
