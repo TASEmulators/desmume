@@ -1148,7 +1148,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if(!BEGINGL())
+	if (!BEGINGL())
 	{
 		return OGLERROR_BEGINGL_FAILED;
 	}
@@ -1560,6 +1560,11 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 		return OGLERROR_NOERR;
 	}
 	
+	if (!BEGINGL())
+	{
+		return OGLERROR_BEGINGL_FAILED;
+	}
+	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_GColor);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthStencilID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, w, h, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
@@ -1614,6 +1619,8 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	}
 	
 	free_aligned(oldFramebufferColor);
+	
+	ENDGL();
 	
 	return OGLERROR_NOERR;
 }

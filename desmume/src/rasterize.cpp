@@ -577,7 +577,6 @@ public:
 		FragmentColor shaderOutput;
 		bool isOpaquePixel;
 		
-		//FragmentColor &dstColor				= this->_softRender->GetFramebuffer()[fragmentIndex];
 		u32 &dstAttributeDepth				= this->_softRender->_framebufferAttributes->depth[fragmentIndex];
 		u8 &dstAttributeOpaquePolyID		= this->_softRender->_framebufferAttributes->opaquePolyID[fragmentIndex];
 		u8 &dstAttributeTranslucentPolyID	= this->_softRender->_framebufferAttributes->translucentPolyID[fragmentIndex];
@@ -2063,9 +2062,6 @@ Render3DError SoftRasterizerRenderer_SSE2::ClearUsingValues(const FragmentColor 
 	convertedClearColor.g = GFX3D_5TO6(clearColor.g);
 	convertedClearColor.b = GFX3D_5TO6(clearColor.b);
 	
-	const size_t pixCount = this->_framebufferWidth * this->_framebufferHeight;
-	const size_t ssePixCount = pixCount - (pixCount % 16);
-	
 	const __m128i color_vec128					= _mm_set1_epi32(convertedClearColor.color);
 	const __m128i attrDepth_vec128				= _mm_set1_epi32(clearAttributes.depth);
 	const __m128i attrOpaquePolyID_vec128		= _mm_set1_epi8(clearAttributes.opaquePolyID);
@@ -2074,7 +2070,11 @@ Render3DError SoftRasterizerRenderer_SSE2::ClearUsingValues(const FragmentColor 
 	const __m128i attrIsFogged_vec128			= _mm_set1_epi8(clearAttributes.isFogged);
 	const __m128i attrIsTranslucentPoly_vec128	= _mm_set1_epi8(clearAttributes.isTranslucentPoly);
 	
-	for (size_t i = 0; i < ssePixCount; i += 16)
+	size_t i = 0;
+	const size_t pixCount = this->_framebufferWidth * this->_framebufferHeight;
+	const size_t ssePixCount = pixCount - (pixCount % 16);
+	
+	for (; i < ssePixCount; i += 16)
 	{
 		_mm_stream_si128((__m128i *)(this->_framebufferColor + i +  0), color_vec128);
 		_mm_stream_si128((__m128i *)(this->_framebufferColor + i +  4), color_vec128);
@@ -2093,7 +2093,7 @@ Render3DError SoftRasterizerRenderer_SSE2::ClearUsingValues(const FragmentColor 
 		_mm_stream_si128((__m128i *)(this->_framebufferAttributes->isTranslucentPoly + i), attrIsTranslucentPoly_vec128);
 	}
 	
-	for (size_t i = ssePixCount; i < pixCount; i++)
+	for (; i < pixCount; i++)
 	{
 		this->_framebufferColor[i] = convertedClearColor;
 		this->_framebufferAttributes->SetAtIndex(i, clearAttributes);

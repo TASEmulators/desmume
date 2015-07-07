@@ -125,10 +125,17 @@ static void memset_u16(void *dst, const u16 val, const size_t length)
 	__m128i *dst_vec128 = (__m128i *)dst;
 	const __m128i val_vec128 = _mm_set1_epi16(val);
 	const size_t length_vec128 = length / (sizeof(val_vec128) / sizeof(val));
-	//MACRODO_N(length_vec128, (dst_vec128[X] = val_vec128));
 	
 	for (size_t i = 0; i < length_vec128; i++)
 		_mm_stream_si128(dst_vec128 + i, val_vec128);
+}
+
+template <size_t LENGTH>
+static void memset_u16_fast(void *dst, const u16 val)
+{
+	__m128i *dst_vec128 = (__m128i *)dst;
+	const __m128i val_vec128 = _mm_set1_epi16(val);
+	MACRODO_N(LENGTH / (sizeof(val_vec128) / sizeof(val)), _mm_store_si128(dst_vec128 + (X), val_vec128));
 }
 
 static void memset_u32(void *dst, const u32 val, const size_t length)
@@ -136,10 +143,17 @@ static void memset_u32(void *dst, const u32 val, const size_t length)
 	__m128i *dst_vec128 = (__m128i *)dst;
 	const __m128i val_vec128 = _mm_set1_epi32(val);
 	const size_t length_vec128 = length / (sizeof(val_vec128) / sizeof(val));
-	//MACRODO_N(length_vec128, (dst_vec128[X] = val_vec128));
 	
 	for (size_t i = 0; i < length_vec128; i++)
 		_mm_stream_si128(dst_vec128 + i, val_vec128);
+}
+
+template <size_t LENGTH>
+static void memset_u32_fast(void *dst, const u32 val)
+{
+	__m128i *dst_vec128 = (__m128i *)dst;
+	const __m128i val_vec128 = _mm_set1_epi32(val);
+	MACRODO_N(LENGTH / (sizeof(val_vec128) / sizeof(val)), _mm_store_si128(dst_vec128 + (X), val_vec128));
 }
 
 #else //no sse2
@@ -150,12 +164,24 @@ static void memset_u16(void *dst, const u16 val, const size_t length)
 	u64 *dst_u64 = (u64 *)dst;
 	const u64 val_u64 = ((u64)val << 48) | ((u64)val << 32) | ((u64)val << 16) | (u64)val;
 	const size_t length_u64 = length / (sizeof(val_u64) / sizeof(val));
-	//MACRODO_N(length_u64, (dst_u64[X] = val_u64));
 	
 	for (size_t i = 0; i < length_u64; i++)
 		dst_u64[i] = val_u64;
 #else
 	for (size_t i = 0; i < length; i++)
+		((u16 *)dst)[i] = val;
+#endif
+}
+
+template <size_t LENGTH>
+static void memset_u16_fast(void *dst, const u16 val)
+{
+#ifdef HOST_64
+	u64 *dst_u64 = (u64 *)dst;
+	const u64 val_u64 = ((u64)val << 48) | ((u64)val << 32) | ((u64)val << 16) | (u64)val;
+	MACRODO_N(LENGTH / (sizeof(val_u64) / sizeof(val)), (dst_u64[(X)] = val_u64));
+#else
+	for (size_t i = 0; i < LENGTH; i++)
 		((u16 *)dst)[i] = val;
 #endif
 }
@@ -166,7 +192,6 @@ static void memset_u32(void *dst, const u32 val, const size_t length)
 	u64 *dst_u64 = (u64 *)dst;
 	const u64 val_u64 = ((u64)val << 32) | (u64)val;
 	const size_t length_u64 = length / (sizeof(val_u64) / sizeof(val));
-	//MACRODO_N(length_u64, (dst_u64[X] = val_u64));
 	
 	for (size_t i = 0; i < length_u64; i++)
 		dst_u64[i] = val_u64;
@@ -176,7 +201,20 @@ static void memset_u32(void *dst, const u32 val, const size_t length)
 #endif
 }
 
+template <size_t LENGTH>
+static void memset_u32_fast(void *dst, const u32 val)
+{
+#ifdef HOST_64
+	u64 *dst_u64 = (u64 *)dst;
+	const u64 val_u64 = ((u64)val << 32) | (u64)val;
+	MACRODO_N(LENGTH / (sizeof(val_u64) / sizeof(val)), (dst_u64[(X)] = val_u64));
+#else
+	for (size_t i = 0; i < LENGTH; i++)
+		((u16 *)dst)[i] = val;
 #endif
+}
+
+#endif // ENABLE_SSE2
 
 // NOSSE version always used in gfx3d.cpp
 void _NOSSE_MatrixMultVec4x4 (const float *matrix, float *vecPtr);
@@ -232,8 +270,6 @@ FORCEINLINE void MatrixMultiply(float * matrix, const float * rightMatrix)
 	_mm_store_ps(matrix+8,row2);
 	_mm_store_ps(matrix+12,row3);
 }
-
-
 
 FORCEINLINE void MatrixMultVec4x4(const float *matrix, float *vecPtr)
 {
@@ -311,18 +347,6 @@ FORCEINLINE void vector_fix2float(float* matrix, const float divisor)
 		_mm_store_ps(matrix+12,_mm_div_ps(_mm_load_ps(matrix+12),val));
 }
 
-//WARNING: I do not think this is as fast as a memset, for some reason.
-//at least in vc2005 with sse enabled. better figure out why before using it
-template<int NUM>
-static FORCEINLINE void memset_u8(void* _dst, u8 val)
-{
-	memset(_dst,val,NUM);
-	//const u8* dst = (u8*)_dst;
-	//u32 u32val = (val<<24)|(val<<16)|(val<<8)|val;
-	//const __m128i temp = _mm_set_epi32(u32val,u32val,u32val,u32val);
-	//MACRODO_N(NUM/16,_mm_store_si128((__m128i*)(dst+(X)*16), temp));
-}
-
 #else //no sse
 
 void MatrixMultVec4x4 (const float *matrix, float *vecPtr);
@@ -345,12 +369,6 @@ FORCEINLINE void vector_fix2float(float* matrix, const float divisor)
 		matrix[i] /= divisor;
 }
 
-template<int NUM>
-static FORCEINLINE void memset_u8(void* dst, u8 val)
-{
-	memset(dst,val,NUM);
-}
-
 #endif //switched SSE functions
 
 void MatrixMultVec4x4 (const s32 *matrix, s32 *vecPtr);
@@ -360,5 +378,5 @@ void MatrixMultVec4x4_M2(const s32 *matrix, s32 *vecPtr);
 void MatrixMultiply(s32* matrix, const s32* rightMatrix);
 void MatrixScale(s32 *matrix, const s32 *ptr);
 void MatrixTranslate(s32 *matrix, const s32 *ptr);
-#endif
 
+#endif // MATRIX_H

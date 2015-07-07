@@ -2206,7 +2206,7 @@ PLAIN_CLEAR:
 	if (gpu->LayersEnable[4]) 
 	{
 		//n.b. - this is clearing the sprite line buffer to the background color,
-		memset_u16(gpu->sprColor, backdrop_color, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+		memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(gpu->sprColor, backdrop_color);
 		
 		//zero 06-may-09: I properly supported window color effects for backdrop, but I am not sure
 		//how it interacts with this. I wish we knew why we needed this
@@ -2531,14 +2531,14 @@ static INLINE void GPU_RenderLine_MasterBrightness(const GPUMasterBrightMode mod
 		{
 			if (factor < 16)
 			{
-#ifdef ENABLE_SSE2
-				static size_t ssePixCount = pixCount - (pixCount % 4);
-				static const __m128i colorMask = _mm_set1_epi16(0x7FFF);
+				size_t i = 0;
 				
-				for (size_t i = 0; i < ssePixCount; i += 8)
+#ifdef ENABLE_SSE2
+				const size_t ssePixCount = pixCount - (pixCount % 8);
+				for (; i < ssePixCount; i += 8)
 				{
 					__m128i dstColor_vec128 = _mm_load_si128((__m128i *)(dstLine + i));
-					dstColor_vec128 = _mm_and_si128(dstColor_vec128, colorMask);
+					dstColor_vec128 = _mm_and_si128(dstColor_vec128, _mm_set1_epi16(0x7FFF));
 					
 					dstLine[i+7] = fadeInColors[factor][ _mm_extract_epi16(dstColor_vec128, 7) ];
 					dstLine[i+6] = fadeInColors[factor][ _mm_extract_epi16(dstColor_vec128, 6) ];
@@ -2549,17 +2549,11 @@ static INLINE void GPU_RenderLine_MasterBrightness(const GPUMasterBrightMode mod
 					dstLine[i+1] = fadeInColors[factor][ _mm_extract_epi16(dstColor_vec128, 1) ];
 					dstLine[i+0] = fadeInColors[factor][ _mm_extract_epi16(dstColor_vec128, 0) ];
 				}
-				
-				for (size_t i = ssePixCount; i < pixCount; i++)
-				{
-					dstLine[i] = fadeInColors[factor][ dstLine[i] & 0x7FFF ];
-				}
-#else
-				for (size_t i = 0; i < pixCount; i++)
-				{
-					dstLine[i] = fadeInColors[factor][ dstLine[i] & 0x7FFF ];
-				}
 #endif
+				for (; i < pixCount; i++)
+				{
+					dstLine[i] = fadeInColors[factor][ dstLine[i] & 0x7FFF ];
+				}
 			}
 			else
 			{
@@ -2573,14 +2567,14 @@ static INLINE void GPU_RenderLine_MasterBrightness(const GPUMasterBrightMode mod
 		{
 			if (factor < 16)
 			{
-#ifdef ENABLE_SSE2
-				static size_t ssePixCount = pixCount - (pixCount % 4);
-				static const __m128i colorMask = _mm_set1_epi16(0x7FFF);
+				size_t i = 0;
 				
-				for (size_t i = 0; i < ssePixCount; i += 8)
+#ifdef ENABLE_SSE2
+				const size_t ssePixCount = pixCount - (pixCount % 8);
+				for (; i < ssePixCount; i += 8)
 				{
 					__m128i dstColor_vec128 = _mm_load_si128((__m128i *)(dstLine + i));
-					dstColor_vec128 = _mm_and_si128(dstColor_vec128, colorMask);
+					dstColor_vec128 = _mm_and_si128(dstColor_vec128, _mm_set1_epi16(0x7FFF));
 					
 					dstLine[i+7] = fadeOutColors[factor][ _mm_extract_epi16(dstColor_vec128, 7) ];
 					dstLine[i+6] = fadeOutColors[factor][ _mm_extract_epi16(dstColor_vec128, 6) ];
@@ -2591,17 +2585,11 @@ static INLINE void GPU_RenderLine_MasterBrightness(const GPUMasterBrightMode mod
 					dstLine[i+1] = fadeOutColors[factor][ _mm_extract_epi16(dstColor_vec128, 1) ];
 					dstLine[i+0] = fadeOutColors[factor][ _mm_extract_epi16(dstColor_vec128, 0) ];
 				}
-				
-				for (size_t i = ssePixCount; i < pixCount; i++)
-				{
-					dstLine[i] = fadeOutColors[factor][ dstLine[i] & 0x7FFF ];
-				}
-#else
-				for (size_t i = 0; i < pixCount; i++)
-				{
-					dstLine[i] = fadeOutColors[factor][ dstLine[i] & 0x7FFF ];
-				}
 #endif
+				for (; i < pixCount; i++)
+				{
+					dstLine[i] = fadeOutColors[factor][ dstLine[i] & 0x7FFF ];
+				}
 			}
 			else
 			{
@@ -2614,7 +2602,6 @@ static INLINE void GPU_RenderLine_MasterBrightness(const GPUMasterBrightMode mod
 		case GPUMasterBrightMode_Reserved:
 			break;
 	}
-	
 }
 
 template<size_t WIN_NUM>
@@ -2818,10 +2805,21 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 			{
 				//this has not been tested since the dma timing for dispfifo was changed around the time of
 				//newemuloop. it may not work.
-				for (size_t i = 0; i < 128; i++)
+#ifdef ENABLE_SSE2
+				const __m128i fifoMask = _mm_set1_epi32(0x7FFF7FFF);
+				for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(__m128i); i++)
+				{
+					__m128i fifoColor = _mm_set_epi32(DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv());
+					fifoColor = _mm_shuffle_epi32(fifoColor, 0x1B); // We need to shuffle the four FIFO values back into the correct order, since they were originally loaded in reverse order.
+					
+					((__m128i *)dstLine)[i] = fifoColor & fifoMask;
+				}
+#else
+				for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(u32); i++)
 				{
 					((u32 *)dstLine)[i] = DISP_FIFOrecv() & 0x7FFF7FFF;
 				}
+#endif
 				
 				if (_gpuFramebufferWidth != GPU_FRAMEBUFFER_NATIVE_WIDTH)
 				{
