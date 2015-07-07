@@ -519,9 +519,9 @@ Render3DError Render3D_SSE2::FlushFramebuffer(FragmentColor *__restrict dstRGBA6
 		a = _mm_slli_si128(a, 1);										// Shift the A bit back to where it needs to be
 		
 		// Assemble the RGB colors, pack the 32-bit color into a signed 16-bit color, then por the alpha bit back in.
-		color = r | g | b;
+		color = _mm_or_si128(_mm_or_si128(r, g), b);
 		color = _mm_packs_epi32(color, zero_vec128);
-		color |= a;
+		color = _mm_or_si128(color, a);
 		
 		_mm_storel_epi64((__m128i *)(dstRGBA5551 + i), color);
 	}

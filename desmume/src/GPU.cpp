@@ -2811,8 +2811,7 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 				{
 					__m128i fifoColor = _mm_set_epi32(DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv());
 					fifoColor = _mm_shuffle_epi32(fifoColor, 0x1B); // We need to shuffle the four FIFO values back into the correct order, since they were originally loaded in reverse order.
-					
-					((__m128i *)dstLine)[i] = fifoColor & fifoMask;
+					_mm_store_si128((__m128i *)dstLine + i, _mm_and_si128(fifoColor, fifoMask));
 				}
 #else
 				for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(u32); i++)
