@@ -50,6 +50,13 @@
 		return self;
 	}
 	
+#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+	if ([self respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
+	{
+		[self setWantsBestResolutionOpenGLSurface:YES];
+	}
+#endif
+	
 	isPreviewImageLoaded = false;
 		
 	// Initialize the OpenGL context
@@ -90,8 +97,14 @@
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
 	
+#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+	const NSRect newViewportRect = [self convertRectToBacking:frameRect];
+#else
+	const NSRect newViewportRect = frameRect;
+#endif
+	
 	OGLInfo *oglInfo = OGLInfoCreate_Func();
-	oglImage = new OGLImage(oglInfo, 64, 64, frameRect.size.width, frameRect.size.height);
+	oglImage = new OGLImage(oglInfo, 64, 64, newViewportRect.size.width, newViewportRect.size.height);
 	oglImage->SetFiltersPreferGPUOGL(true);
 	oglImage->SetSourceDeposterize(false);
 	oglImage->SetOutputFilterOGL(OutputFilterTypeID_Bilinear);
