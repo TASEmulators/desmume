@@ -1269,6 +1269,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		return self;
 	}
 	
+#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+	if ([self respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
+	{
+		[self setWantsBestResolutionOpenGLSurface:YES];
+	}
+#endif
+	
 	inputManager = nil;
 	
 	// Initialize the OpenGL context
@@ -1658,7 +1665,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		[context update];
 		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-		[CocoaDSUtil messageSendOneWayWithRect:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RESIZE_VIEW rect:rect];
+		
+#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+		const NSRect newViewportRect = [self convertRectToBacking:rect];
+#else
+		const NSRect newViewportRect = rect;
+#endif
+		[CocoaDSUtil messageSendOneWayWithRect:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RESIZE_VIEW rect:newViewportRect];
 	}
 }
 
