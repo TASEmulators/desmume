@@ -554,7 +554,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 
 + (NSMutableDictionary *) romNotLoadedBindings
 {
-	NSImage *iconImage = [[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"AppIcon_DeSmuME" ofType:@"icns"]] autorelease];
+	NSImage *iconImage = [NSImage imageNamed:@"NSApplicationIcon"];
 	
 	NSString *romNameAndSerialInfoString = @"Name: ";
 	romNameAndSerialInfoString = [romNameAndSerialInfoString stringByAppendingString:NSSTRING_STATUS_NO_ROM_LOADED];
