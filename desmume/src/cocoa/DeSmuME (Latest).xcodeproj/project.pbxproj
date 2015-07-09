@@ -435,6 +435,27 @@
 		AB82445B1704AE9A00B8EE20 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB82445A1704AE9A00B8EE20 /* utilities.c */; };
 		AB82445C1704AE9A00B8EE20 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB82445A1704AE9A00B8EE20 /* utilities.c */; };
 		AB82445D1704AE9A00B8EE20 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB82445A1704AE9A00B8EE20 /* utilities.c */; };
+		AB8493AF1B4E614D00CD1C73 /* Icon_ActionReplay_32x32@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493A81B4E614D00CD1C73 /* Icon_ActionReplay_32x32@2x.png */; };
+		AB8493B01B4E614D00CD1C73 /* Icon_ActionReplay_32x32@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493A81B4E614D00CD1C73 /* Icon_ActionReplay_32x32@2x.png */; };
+		AB8493B11B4E614D00CD1C73 /* Icon_ActionReplay_32x32@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493A81B4E614D00CD1C73 /* Icon_ActionReplay_32x32@2x.png */; };
+		AB8493B21B4E614D00CD1C73 /* Icon_CodeBreaker_32x32@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493A91B4E614D00CD1C73 /* Icon_CodeBreaker_32x32@2x.png */; };
+		AB8493B31B4E614D00CD1C73 /* Icon_CodeBreaker_32x32@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493A91B4E614D00CD1C73 /* Icon_CodeBreaker_32x32@2x.png */; };
+		AB8493B41B4E614D00CD1C73 /* Icon_CodeBreaker_32x32@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493A91B4E614D00CD1C73 /* Icon_CodeBreaker_32x32@2x.png */; };
+		AB8493B51B4E614D00CD1C73 /* Icon_DeSmuME_32x32@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AA1B4E614D00CD1C73 /* Icon_DeSmuME_32x32@2x.png */; };
+		AB8493B61B4E614D00CD1C73 /* Icon_DeSmuME_32x32@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AA1B4E614D00CD1C73 /* Icon_DeSmuME_32x32@2x.png */; };
+		AB8493B71B4E614D00CD1C73 /* Icon_DeSmuME_32x32@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AA1B4E614D00CD1C73 /* Icon_DeSmuME_32x32@2x.png */; };
+		AB8493B81B4E614D00CD1C73 /* Icon_VolumeFull_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AB1B4E614D00CD1C73 /* Icon_VolumeFull_16x16@2x.png */; };
+		AB8493B91B4E614D00CD1C73 /* Icon_VolumeFull_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AB1B4E614D00CD1C73 /* Icon_VolumeFull_16x16@2x.png */; };
+		AB8493BA1B4E614D00CD1C73 /* Icon_VolumeFull_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AB1B4E614D00CD1C73 /* Icon_VolumeFull_16x16@2x.png */; };
+		AB8493BB1B4E614D00CD1C73 /* Icon_VolumeMute_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AC1B4E614D00CD1C73 /* Icon_VolumeMute_16x16@2x.png */; };
+		AB8493BC1B4E614D00CD1C73 /* Icon_VolumeMute_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AC1B4E614D00CD1C73 /* Icon_VolumeMute_16x16@2x.png */; };
+		AB8493BD1B4E614D00CD1C73 /* Icon_VolumeMute_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AC1B4E614D00CD1C73 /* Icon_VolumeMute_16x16@2x.png */; };
+		AB8493BE1B4E614D00CD1C73 /* Icon_VolumeOneThird_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AD1B4E614D00CD1C73 /* Icon_VolumeOneThird_16x16@2x.png */; };
+		AB8493BF1B4E614D00CD1C73 /* Icon_VolumeOneThird_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AD1B4E614D00CD1C73 /* Icon_VolumeOneThird_16x16@2x.png */; };
+		AB8493C01B4E614D00CD1C73 /* Icon_VolumeOneThird_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AD1B4E614D00CD1C73 /* Icon_VolumeOneThird_16x16@2x.png */; };
+		AB8493C11B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AE1B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png */; };
+		AB8493C21B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AE1B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png */; };
+		AB8493C31B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB8493AE1B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png */; };
 		AB8967D916D2ED0700F826F1 /* DisplayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8967D816D2ED0700F826F1 /* DisplayWindowController.mm */; };
 		AB8967DA16D2ED0700F826F1 /* DisplayWindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB8967D816D2ED0700F826F1 /* DisplayWindowController.mm */; };
 		AB8967DD16D2ED2700F826F1 /* DisplayWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = AB8967DB16D2ED2700F826F1 /* DisplayWindow.xib */; };
@@ -1207,6 +1228,13 @@
 		AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = videofilter.cpp; sourceTree = "<group>"; };
 		AB82445A1704AE9A00B8EE20 /* utilities.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = utilities.c; sourceTree = "<group>"; };
 		AB82445E1704AEC400B8EE20 /* utilities.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = utilities.h; sourceTree = "<group>"; };
+		AB8493A81B4E614D00CD1C73 /* Icon_ActionReplay_32x32@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_ActionReplay_32x32@2x.png"; path = "images/Icon_ActionReplay_32x32@2x.png"; sourceTree = "<group>"; };
+		AB8493A91B4E614D00CD1C73 /* Icon_CodeBreaker_32x32@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_CodeBreaker_32x32@2x.png"; path = "images/Icon_CodeBreaker_32x32@2x.png"; sourceTree = "<group>"; };
+		AB8493AA1B4E614D00CD1C73 /* Icon_DeSmuME_32x32@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_DeSmuME_32x32@2x.png"; path = "images/Icon_DeSmuME_32x32@2x.png"; sourceTree = "<group>"; };
+		AB8493AB1B4E614D00CD1C73 /* Icon_VolumeFull_16x16@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_VolumeFull_16x16@2x.png"; path = "images/Icon_VolumeFull_16x16@2x.png"; sourceTree = "<group>"; };
+		AB8493AC1B4E614D00CD1C73 /* Icon_VolumeMute_16x16@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_VolumeMute_16x16@2x.png"; path = "images/Icon_VolumeMute_16x16@2x.png"; sourceTree = "<group>"; };
+		AB8493AD1B4E614D00CD1C73 /* Icon_VolumeOneThird_16x16@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_VolumeOneThird_16x16@2x.png"; path = "images/Icon_VolumeOneThird_16x16@2x.png"; sourceTree = "<group>"; };
+		AB8493AE1B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_VolumeTwoThird_16x16@2x.png"; path = "images/Icon_VolumeTwoThird_16x16@2x.png"; sourceTree = "<group>"; };
 		AB8967D716D2ED0700F826F1 /* DisplayWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DisplayWindowController.h; sourceTree = "<group>"; };
 		AB8967D816D2ED0700F826F1 /* DisplayWindowController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = DisplayWindowController.mm; sourceTree = "<group>"; };
 		AB8967DC16D2ED2700F826F1 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = translations/English.lproj/DisplayWindow.xib; sourceTree = "<group>"; };
@@ -1895,6 +1923,7 @@
 				AB0F293714BE6FA7009ABC6F /* ColorSwatch_Yellow_16x16.png */,
 				AB0F296B14BE705D009ABC6F /* Icon_ActionReplay_128x128.png */,
 				ABB97873144E89CC00793FA3 /* Icon_ActionReplay_32x32.png */,
+				AB8493A81B4E614D00CD1C73 /* Icon_ActionReplay_32x32@2x.png */,
 				AB0F298814BE71E0009ABC6F /* Icon_ArrowDown_420x420.png */,
 				AB0F298914BE71E0009ABC6F /* Icon_ArrowLeft_420x420.png */,
 				AB0F298A14BE71E0009ABC6F /* Icon_ArrowRight_420x420.png */,
@@ -1903,7 +1932,9 @@
 				AB7EC7F3189B2B92009D198A /* Icon_AutoholdSet_420x420.png */,
 				AB0F296C14BE705D009ABC6F /* Icon_CodeBreaker_128x128.png */,
 				ABB97874144E89CC00793FA3 /* Icon_CodeBreaker_32x32.png */,
+				AB8493A91B4E614D00CD1C73 /* Icon_CodeBreaker_32x32@2x.png */,
 				ABB97875144E89CC00793FA3 /* Icon_DeSmuME_32x32.png */,
+				AB8493AA1B4E614D00CD1C73 /* Icon_DeSmuME_32x32@2x.png */,
 				ABDDF7C41898F024007583C1 /* Icon_DisplayToggle_420x420.png */,
 				AB0F299414BE7213009ABC6F /* Icon_DoubleSpeed_420x420.png */,
 				AB0F299514BE7213009ABC6F /* Icon_DSButtonA_420x420.png */,
@@ -1941,9 +1972,13 @@
 				AB0F290014BE6E68009ABC6F /* Icon_Speed1x_420x420.png */,
 				AB0F290114BE6E68009ABC6F /* Icon_Speed2x_420x420.png */,
 				ABC3AF2B14B7F06900D5B13D /* Icon_VolumeFull_16x16.png */,
+				AB8493AB1B4E614D00CD1C73 /* Icon_VolumeFull_16x16@2x.png */,
 				ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */,
+				AB8493AC1B4E614D00CD1C73 /* Icon_VolumeMute_16x16@2x.png */,
 				ABC3AF2D14B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png */,
+				AB8493AD1B4E614D00CD1C73 /* Icon_VolumeOneThird_16x16@2x.png */,
 				ABC3AF2E14B7F06900D5B13D /* Icon_VolumeTwoThird_16x16.png */,
+				AB8493AE1B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png */,
 				ABAB454E187CDB70007BE20C /* Image_GuitarGrip.png */,
 				AB564909186E6F67002740F4 /* Image_MemoryExpansionPak.png */,
 				AB0038A61872A96700B0B055 /* Image_PaddleController.png */,
@@ -2402,6 +2437,7 @@
 				AB64987C13ECC73800EE7DD2 /* FileTypeInfo.plist in Resources */,
 				ABEFCF61141AB82A000CC0CD /* AppIcon_ROMSave.icns in Resources */,
 				ABEFCF62141AB82A000CC0CD /* AppIcon_DeSmuME.icns in Resources */,
+				AB8493B01B4E614D00CD1C73 /* Icon_ActionReplay_32x32@2x.png in Resources */,
 				ABB0FBD01A9EED350060C55A /* Icon_MicrophoneBlueGlow_256x256.png in Resources */,
 				ABEFCF63141AB82A000CC0CD /* AppIcon_NintendoDS_ROM.icns in Resources */,
 				ABEFCF64141AB82A000CC0CD /* AppIcon_SaveState.icns in Resources */,
@@ -2420,6 +2456,7 @@
 				ABC3AF3214B7F06900D5B13D /* Icon_VolumeTwoThird_16x16.png in Resources */,
 				ABB0FBD31A9EED350060C55A /* Icon_MicrophoneGreen_256x256.png in Resources */,
 				ABDDF7CC1898F032007583C1 /* Icon_FrameJump_420x420.png in Resources */,
+				AB8493C21B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png in Resources */,
 				AB0F290214BE6E68009ABC6F /* Icon_Execute_420x420.png in Resources */,
 				AB0F290314BE6E68009ABC6F /* Icon_Pause_420x420.png in Resources */,
 				AB0F290414BE6E68009ABC6F /* Icon_Speed1x_420x420.png in Resources */,
@@ -2428,18 +2465,22 @@
 				AB0F293914BE6FA7009ABC6F /* ColorSwatch_Brown_16x16.png in Resources */,
 				AB0F293A14BE6FA7009ABC6F /* ColorSwatch_DarkBlue_16x16.png in Resources */,
 				AB0F293B14BE6FA7009ABC6F /* ColorSwatch_DarkGreen_16x16.png in Resources */,
+				AB8493B31B4E614D00CD1C73 /* Icon_CodeBreaker_32x32@2x.png in Resources */,
 				AB0F293C14BE6FA7009ABC6F /* ColorSwatch_DarkPurple_16x16.png in Resources */,
 				AB0F293D14BE6FA7009ABC6F /* ColorSwatch_Gray_16x16.png in Resources */,
 				ABC503AF1AAC2B91002FCD43 /* Icon_MicrophoneDarkGreen_256x256.png in Resources */,
 				AB0F293E14BE6FA7009ABC6F /* ColorSwatch_Green_16x16.png in Resources */,
 				AB0F293F14BE6FA7009ABC6F /* ColorSwatch_LimeGreen_16x16.png in Resources */,
 				AB0F294014BE6FA7009ABC6F /* ColorSwatch_Magenta_16x16.png in Resources */,
+				AB8493BC1B4E614D00CD1C73 /* Icon_VolumeMute_16x16@2x.png in Resources */,
 				AB0F294114BE6FA7009ABC6F /* ColorSwatch_Orange_16x16.png in Resources */,
 				AB0F294214BE6FA7009ABC6F /* ColorSwatch_Pink_16x16.png in Resources */,
 				AB68101E187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png in Resources */,
 				AB0F294314BE6FA7009ABC6F /* ColorSwatch_Red_16x16.png in Resources */,
+				AB8493BF1B4E614D00CD1C73 /* Icon_VolumeOneThird_16x16@2x.png in Resources */,
 				AB68101C187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */,
 				AB0F294414BE6FA7009ABC6F /* ColorSwatch_SeaGreen_16x16.png in Resources */,
+				AB8493B61B4E614D00CD1C73 /* Icon_DeSmuME_32x32@2x.png in Resources */,
 				AB0F294514BE6FA7009ABC6F /* ColorSwatch_Turquoise_16x16.png in Resources */,
 				AB564911186E6F67002740F4 /* Image_MemoryExpansionPak.png in Resources */,
 				AB0F294614BE6FA7009ABC6F /* ColorSwatch_Violet_16x16.png in Resources */,
@@ -2449,6 +2490,7 @@
 				AB0F297A14BE70BC009ABC6F /* VideoFilterPreview_64x64.png in Resources */,
 				AB564913186E6F67002740F4 /* Image_PassME.png in Resources */,
 				AB681026187D4AEF0049F2C2 /* Icon_PaddleKnob_256x256.png in Resources */,
+				AB8493B91B4E614D00CD1C73 /* Icon_VolumeFull_16x16@2x.png in Resources */,
 				AB0F298C14BE71E0009ABC6F /* Icon_ArrowDown_420x420.png in Resources */,
 				AB0F298D14BE71E0009ABC6F /* Icon_ArrowLeft_420x420.png in Resources */,
 				AB0F298E14BE71E0009ABC6F /* Icon_ArrowRight_420x420.png in Resources */,
@@ -2502,6 +2544,7 @@
 				AB796CAA15CDCBA200C59155 /* FileTypeInfo.plist in Resources */,
 				AB796CAB15CDCBA200C59155 /* AppIcon_ROMSave.icns in Resources */,
 				AB796CAC15CDCBA200C59155 /* AppIcon_DeSmuME.icns in Resources */,
+				AB8493AF1B4E614D00CD1C73 /* Icon_ActionReplay_32x32@2x.png in Resources */,
 				ABB0FBCF1A9EED350060C55A /* Icon_MicrophoneBlueGlow_256x256.png in Resources */,
 				AB796CAD15CDCBA200C59155 /* AppIcon_NintendoDS_ROM.icns in Resources */,
 				AB796CAE15CDCBA200C59155 /* AppIcon_SaveState.icns in Resources */,
@@ -2520,6 +2563,7 @@
 				AB796CBA15CDCBA200C59155 /* Icon_VolumeTwoThird_16x16.png in Resources */,
 				ABB0FBD21A9EED350060C55A /* Icon_MicrophoneGreen_256x256.png in Resources */,
 				ABDDF7CB1898F032007583C1 /* Icon_FrameJump_420x420.png in Resources */,
+				AB8493C11B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png in Resources */,
 				AB796CBB15CDCBA200C59155 /* Icon_Execute_420x420.png in Resources */,
 				AB796CBC15CDCBA200C59155 /* Icon_Pause_420x420.png in Resources */,
 				AB796CBD15CDCBA200C59155 /* Icon_Speed1x_420x420.png in Resources */,
@@ -2528,18 +2572,22 @@
 				AB796CC015CDCBA200C59155 /* ColorSwatch_Brown_16x16.png in Resources */,
 				AB796CC115CDCBA200C59155 /* ColorSwatch_DarkBlue_16x16.png in Resources */,
 				AB796CC215CDCBA200C59155 /* ColorSwatch_DarkGreen_16x16.png in Resources */,
+				AB8493B21B4E614D00CD1C73 /* Icon_CodeBreaker_32x32@2x.png in Resources */,
 				AB796CC315CDCBA200C59155 /* ColorSwatch_DarkPurple_16x16.png in Resources */,
 				AB796CC415CDCBA200C59155 /* ColorSwatch_Gray_16x16.png in Resources */,
 				ABC503AD1AAC2B71002FCD43 /* Icon_MicrophoneDarkGreen_256x256.png in Resources */,
 				AB796CC515CDCBA200C59155 /* ColorSwatch_Green_16x16.png in Resources */,
 				AB796CC615CDCBA200C59155 /* ColorSwatch_LimeGreen_16x16.png in Resources */,
 				AB796CC715CDCBA200C59155 /* ColorSwatch_Magenta_16x16.png in Resources */,
+				AB8493BB1B4E614D00CD1C73 /* Icon_VolumeMute_16x16@2x.png in Resources */,
 				AB796CC815CDCBA200C59155 /* ColorSwatch_Orange_16x16.png in Resources */,
 				AB796CC915CDCBA200C59155 /* ColorSwatch_Pink_16x16.png in Resources */,
 				AB68101D187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Green_512x512.png in Resources */,
 				AB796CCA15CDCBA200C59155 /* ColorSwatch_Red_16x16.png in Resources */,
+				AB8493BE1B4E614D00CD1C73 /* Icon_VolumeOneThird_16x16@2x.png in Resources */,
 				AB68101B187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */,
 				AB796CCB15CDCBA200C59155 /* ColorSwatch_SeaGreen_16x16.png in Resources */,
+				AB8493B51B4E614D00CD1C73 /* Icon_DeSmuME_32x32@2x.png in Resources */,
 				AB796CCC15CDCBA200C59155 /* ColorSwatch_Turquoise_16x16.png in Resources */,
 				AB564910186E6F67002740F4 /* Image_MemoryExpansionPak.png in Resources */,
 				AB796CCD15CDCBA200C59155 /* ColorSwatch_Violet_16x16.png in Resources */,
@@ -2549,6 +2597,7 @@
 				AB796CD115CDCBA200C59155 /* VideoFilterPreview_64x64.png in Resources */,
 				AB564912186E6F67002740F4 /* Image_PassME.png in Resources */,
 				AB681025187D4AEF0049F2C2 /* Icon_PaddleKnob_256x256.png in Resources */,
+				AB8493B81B4E614D00CD1C73 /* Icon_VolumeFull_16x16@2x.png in Resources */,
 				AB796CD215CDCBA200C59155 /* Icon_ArrowDown_420x420.png in Resources */,
 				AB796CD315CDCBA200C59155 /* Icon_ArrowLeft_420x420.png in Resources */,
 				AB796CD415CDCBA200C59155 /* Icon_ArrowRight_420x420.png in Resources */,
@@ -2602,6 +2651,7 @@
 				AB8F3C1D1A53AC2600A80BF6 /* FileTypeInfo.plist in Resources */,
 				AB8F3C1E1A53AC2600A80BF6 /* AppIcon_ROMSave.icns in Resources */,
 				AB8F3C1F1A53AC2600A80BF6 /* AppIcon_DeSmuME.icns in Resources */,
+				AB8493B11B4E614D00CD1C73 /* Icon_ActionReplay_32x32@2x.png in Resources */,
 				ABB0FBD11A9EED350060C55A /* Icon_MicrophoneBlueGlow_256x256.png in Resources */,
 				AB8F3C201A53AC2600A80BF6 /* AppIcon_NintendoDS_ROM.icns in Resources */,
 				AB8F3C211A53AC2600A80BF6 /* AppIcon_SaveState.icns in Resources */,
@@ -2620,6 +2670,7 @@
 				AB8F3C2E1A53AC2600A80BF6 /* Icon_VolumeTwoThird_16x16.png in Resources */,
 				ABB0FBD41A9EED350060C55A /* Icon_MicrophoneGreen_256x256.png in Resources */,
 				AB8F3C2F1A53AC2600A80BF6 /* Icon_FrameJump_420x420.png in Resources */,
+				AB8493C31B4E614D00CD1C73 /* Icon_VolumeTwoThird_16x16@2x.png in Resources */,
 				AB8F3C301A53AC2600A80BF6 /* Icon_Execute_420x420.png in Resources */,
 				AB8F3C311A53AC2600A80BF6 /* Icon_Pause_420x420.png in Resources */,
 				AB8F3C321A53AC2600A80BF6 /* Icon_Speed1x_420x420.png in Resources */,
@@ -2628,18 +2679,22 @@
 				AB8F3C351A53AC2600A80BF6 /* ColorSwatch_Brown_16x16.png in Resources */,
 				AB8F3C361A53AC2600A80BF6 /* ColorSwatch_DarkBlue_16x16.png in Resources */,
 				AB8F3C371A53AC2600A80BF6 /* ColorSwatch_DarkGreen_16x16.png in Resources */,
+				AB8493B41B4E614D00CD1C73 /* Icon_CodeBreaker_32x32@2x.png in Resources */,
 				AB8F3C381A53AC2600A80BF6 /* ColorSwatch_DarkPurple_16x16.png in Resources */,
 				AB8F3C391A53AC2600A80BF6 /* ColorSwatch_Gray_16x16.png in Resources */,
 				ABC503AE1AAC2B90002FCD43 /* Icon_MicrophoneDarkGreen_256x256.png in Resources */,
 				AB8F3C3A1A53AC2600A80BF6 /* ColorSwatch_Green_16x16.png in Resources */,
 				AB8F3C3B1A53AC2600A80BF6 /* ColorSwatch_LimeGreen_16x16.png in Resources */,
 				AB8F3C3C1A53AC2600A80BF6 /* ColorSwatch_Magenta_16x16.png in Resources */,
+				AB8493BD1B4E614D00CD1C73 /* Icon_VolumeMute_16x16@2x.png in Resources */,
 				AB8F3C3D1A53AC2600A80BF6 /* ColorSwatch_Orange_16x16.png in Resources */,
 				AB8F3C3E1A53AC2600A80BF6 /* ColorSwatch_Pink_16x16.png in Resources */,
 				AB8F3C3F1A53AC2600A80BF6 /* Icon_GuitarGrip_Button_Green_512x512.png in Resources */,
 				AB8F3C401A53AC2600A80BF6 /* ColorSwatch_Red_16x16.png in Resources */,
+				AB8493C01B4E614D00CD1C73 /* Icon_VolumeOneThird_16x16@2x.png in Resources */,
 				AB8F3C411A53AC2600A80BF6 /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */,
 				AB8F3C421A53AC2600A80BF6 /* ColorSwatch_SeaGreen_16x16.png in Resources */,
+				AB8493B71B4E614D00CD1C73 /* Icon_DeSmuME_32x32@2x.png in Resources */,
 				AB8F3C431A53AC2600A80BF6 /* ColorSwatch_Turquoise_16x16.png in Resources */,
 				AB8F3C441A53AC2600A80BF6 /* Image_MemoryExpansionPak.png in Resources */,
 				AB8F3C451A53AC2600A80BF6 /* ColorSwatch_Violet_16x16.png in Resources */,
@@ -2649,6 +2704,7 @@
 				AB8F3C491A53AC2600A80BF6 /* VideoFilterPreview_64x64.png in Resources */,
 				AB8F3C4A1A53AC2600A80BF6 /* Image_PassME.png in Resources */,
 				AB8F3C4B1A53AC2600A80BF6 /* Icon_PaddleKnob_256x256.png in Resources */,
+				AB8493BA1B4E614D00CD1C73 /* Icon_VolumeFull_16x16@2x.png in Resources */,
 				AB8F3C4C1A53AC2600A80BF6 /* Icon_ArrowDown_420x420.png in Resources */,
 				AB8F3C4D1A53AC2600A80BF6 /* Icon_ArrowLeft_420x420.png in Resources */,
 				AB8F3C4E1A53AC2600A80BF6 /* Icon_ArrowRight_420x420.png in Resources */,

@@ -143,20 +143,21 @@
 	isSoundMuted = NO;
 	lastSetVolumeValue = MAX_VOLUME;
 	
-	iconExecute = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Execute_420x420" ofType:@"png"]];
-	iconPause = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Pause_420x420" ofType:@"png"]];
-	iconSpeedNormal = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Speed1x_420x420" ofType:@"png"]];
-	iconSpeedDouble = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_Speed2x_420x420" ofType:@"png"]];
+	iconExecute				= [[NSImage imageNamed:@"Icon_Execute_420x420"] retain];
+	iconPause				= [[NSImage imageNamed:@"Icon_Pause_420x420"] retain];
+	iconSpeedNormal			= [[NSImage imageNamed:@"Icon_Speed1x_420x420"] retain];
+	iconSpeedDouble			= [[NSImage imageNamed:@"Icon_Speed2x_420x420"] retain];
 	
-	iconMicDisabled = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_MicrophoneBlack_256x256" ofType:@"png"]];
-	iconMicIdle = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_MicrophoneDarkGreen_256x256" ofType:@"png"]];
-	iconMicActive = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_MicrophoneGreen_256x256" ofType:@"png"]];
-	iconMicInClip = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_MicrophoneRed_256x256" ofType:@"png"]];
-	iconMicManualOverride = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_MicrophoneGray_256x256" ofType:@"png"]];
-	iconVolumeFull = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeFull_16x16" ofType:@"png"]];
-	iconVolumeTwoThird = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeTwoThird_16x16" ofType:@"png"]];
-	iconVolumeOneThird = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeOneThird_16x16" ofType:@"png"]];
-	iconVolumeMute = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeMute_16x16" ofType:@"png"]];
+	iconMicDisabled			= [[NSImage imageNamed:@"Icon_MicrophoneBlack_256x256"] retain];
+	iconMicIdle				= [[NSImage imageNamed:@"Icon_MicrophoneDarkGreen_256x256"] retain];
+	iconMicActive			= [[NSImage imageNamed:@"Icon_MicrophoneGreen_256x256"] retain];
+	iconMicInClip			= [[NSImage imageNamed:@"Icon_MicrophoneRed_256x256"] retain];
+	iconMicManualOverride	= [[NSImage imageNamed:@"Icon_MicrophoneGray_256x256"] retain];
+	
+	iconVolumeFull			= [[NSImage imageNamed:@"Icon_VolumeFull_16x16"] retain];
+	iconVolumeTwoThird		= [[NSImage imageNamed:@"Icon_VolumeTwoThird_16x16"] retain];
+	iconVolumeOneThird		= [[NSImage imageNamed:@"Icon_VolumeOneThird_16x16"] retain];
+	iconVolumeMute			= [[NSImage imageNamed:@"Icon_VolumeMute_16x16"] retain];
 	
 	isWorking = NO;
 	isRomLoading = NO;
@@ -187,6 +188,7 @@
 	[iconMicActive release];
 	[iconMicInClip release];
 	[iconMicManualOverride release];
+	
 	[iconVolumeFull release];
 	[iconVolumeTwoThird release];
 	[iconVolumeOneThird release];

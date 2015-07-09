@@ -96,9 +96,9 @@
 	
 	if ([CocoaDSCheatItem iconInternalCheat] == nil || [CocoaDSCheatItem iconActionReplay] == nil || [CocoaDSCheatItem iconCodeBreaker] == nil)
 	{
-		[CocoaDSCheatItem setIconInternalCheat:[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"AppIcon_DeSmuME" ofType:@"icns"]]];
-		[CocoaDSCheatItem setIconActionReplay:[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_ActionReplay_128x128" ofType:@"png"]]];
-		[CocoaDSCheatItem setIconCodeBreaker:[[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_CodeBreaker_128x128" ofType:@"png"]]];
+		[CocoaDSCheatItem setIconInternalCheat:[NSImage imageNamed:@"NSApplicationIcon"]];
+		[CocoaDSCheatItem setIconActionReplay:[NSImage imageNamed:@"Icon_ActionReplay_128x128"]];
+		[CocoaDSCheatItem setIconCodeBreaker:[NSImage imageNamed:@"Icon_CodeBreaker_128x128"]];
 	}
 	
 	return self;

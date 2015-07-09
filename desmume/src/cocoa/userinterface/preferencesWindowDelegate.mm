@@ -303,10 +303,10 @@
 	}
 	
 	// Load the volume icons.
-	iconVolumeFull = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeFull_16x16" ofType:@"png"]];
-	iconVolumeTwoThird = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeTwoThird_16x16" ofType:@"png"]];
-	iconVolumeOneThird = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeOneThird_16x16" ofType:@"png"]];
-	iconVolumeMute = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icon_VolumeMute_16x16" ofType:@"png"]];
+	iconVolumeFull		= [[NSImage imageNamed:@"Icon_VolumeFull_16x16"] retain];
+	iconVolumeTwoThird	= [[NSImage imageNamed:@"Icon_VolumeTwoThird_16x16"] retain];
+	iconVolumeOneThird	= [[NSImage imageNamed:@"Icon_VolumeOneThird_16x16"] retain];
+	iconVolumeMute		= [[NSImage imageNamed:@"Icon_VolumeMute_16x16"] retain];
 	[bindings setObject:iconVolumeFull forKey:@"volumeIconImage"];
 	
 	prefViewDict = nil;
