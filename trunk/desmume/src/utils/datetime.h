@@ -194,30 +194,31 @@ public:
 		//catch (OverflowException) throw new OverflowException (Locale.GetText ("This TimeSpan value is MinValue so you cannot get the duration."));
 	}
 
-	static TimeSpan FromDays (double value)
-	{
-		return From (value, TicksPerDay);
-	}
+	//removed per http://sourceforge.net/p/desmume/bugs/1484/ since it was erroneous (well, From() was) and wasn't being used
+	//static TimeSpan FromDays (double value)
+	//{
+	//	return From (value, TicksPerDay);
+	//}
 
-	static TimeSpan FromHours (double value)
-	{
-		return From (value, TicksPerHour);
-	}
+	//static TimeSpan FromHours (double value)
+	//{
+	//	return From (value, TicksPerHour);
+	//}
 
-	static TimeSpan FromMinutes (double value)
-	{
-		return From (value, TicksPerMinute);
-	}
+	//static TimeSpan FromMinutes (double value)
+	//{
+	//	return From (value, TicksPerMinute);
+	//}
 
-	static TimeSpan FromSeconds (double value)
-	{
-		return From (value, TicksPerSecond);
-	}
+	//static TimeSpan FromSeconds (double value)
+	//{
+	//	return From (value, TicksPerSecond);
+	//}
 
-	static TimeSpan FromMilliseconds (double value)
-	{
-		return From (value, TicksPerMillisecond);
-	}
+	//static TimeSpan FromMilliseconds (double value)
+	//{
+	//	return From (value, TicksPerMillisecond);
+	//}
 
 	static TimeSpan FromTicks (s64 value)
 	{
@@ -343,28 +344,29 @@ private:
 		return t;
 	}
 
-	static TimeSpan From (double value, s64 tickMultiplicator) 
-	{
-		//a bunch of error handling removed
+	//removed per http://sourceforge.net/p/desmume/bugs/1484/ since it was erroneous and wasn't being used
+	//static TimeSpan From (double value, s64 tickMultiplicator) 
+	//{
+	//	//a bunch of error handling removed
 
-		//if (Double.IsNaN (value)) throw new ArgumentException (Locale.GetText ("Value cannot be NaN."), "value");
-		//if (Double.IsNegativeInfinity (value) || Double.IsPositiveInfinity (value) ||
-		//	(value < MinValue.Ticks) || (value > MaxValue.Ticks))
-		//	throw new OverflowException (Locale.GetText ("Outside range [MinValue,MaxValue]"));
+	//	//if (Double.IsNaN (value)) throw new ArgumentException (Locale.GetText ("Value cannot be NaN."), "value");
+	//	//if (Double.IsNegativeInfinity (value) || Double.IsPositiveInfinity (value) ||
+	//	//	(value < MinValue.Ticks) || (value > MaxValue.Ticks))
+	//	//	throw new OverflowException (Locale.GetText ("Outside range [MinValue,MaxValue]"));
 
-		//try {
-		value = (value * (tickMultiplicator / TicksPerMillisecond));
+	//	//try {
+	//	value = (value * (tickMultiplicator / TicksPerMillisecond));
 
-		//	checked {
-		//		long val = (long) Math.Round(value);
-		//		return new TimeSpan (val * TicksPerMillisecond);
-		//	}
-		//}
-		//catch (OverflowException) {
-		//	throw new OverflowException (Locale.GetText ("Resulting timespan is too big."));
-		//}
-		//}
-	}
+	//	//	checked {
+	//	//		long val = (long) Math.Round(value);
+	//	//		return new TimeSpan (val * TicksPerMillisecond);
+	//	//	}
+	//	//}
+	//	//catch (OverflowException) {
+	//	//	throw new OverflowException (Locale.GetText ("Resulting timespan is too big."));
+	//	//}
+	//	//}
+	//}
 
 };
 

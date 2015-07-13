@@ -345,9 +345,9 @@ void GameInfo::populate()
 		u32 region = (u32)(std::max<s32>(strchr(regions_index,header.gameCode[3]) - regions_index + 1, 0));
 
 		if (region < regions_num)
-			strncat(ROMserial, regions[region], sizeof(ROMserial));
+			strcat(ROMserial, regions[region]);
 		else
-			strncat(ROMserial, "???", sizeof(ROMserial));
+			strcat(ROMserial, "???");
 	}
 
 	//rom name is probably set even in homebrew, so do it regardless
