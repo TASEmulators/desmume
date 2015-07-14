@@ -130,7 +130,7 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 					u32 res = 0;
 
 					if (SendDlgItemMessage(hDlg, IDC_IMP_AUTO_CURRENT, BM_GETCHECK, 0, 0) == BST_CHECKED)
-						res = MMU_new.backupDevice.info.type;
+						res = MMU_new.backupDevice.searchFileSaveType(MMU_new.backupDevice.info.size);
 					else
 						if (SendDlgItemMessage(hDlg, IDC_IMP_AUTO_FILE, BM_GETCHECK, 0, 0) == BST_CHECKED)
 						{

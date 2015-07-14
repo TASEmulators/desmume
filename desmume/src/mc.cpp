@@ -627,6 +627,11 @@ void BackupDevice::close_rom()
 	fpMC = NULL;
 }
 
+//todo - this function is horrible. it's only needed due to our big disorganization between save types and sizes.
+//the concept of a backup memory type "enum" (not actually an enum) was added after the original .dsv format
+//the original .dsv format contains a 'type' which is kind of useless (flash vs eeprom) and then a memory size
+//the memory size also happens to exactly identify a memory type. this function performs that mapping.
+//we should fix this in a new revision of .dsv
 u8 BackupDevice::searchFileSaveType(u32 size)
 {
 	for (u8 i = 1; i < MAX_SAVE_TYPES; i++)
