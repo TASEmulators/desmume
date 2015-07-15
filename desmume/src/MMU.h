@@ -562,7 +562,7 @@ extern VramConfiguration vramConfiguration;
 
 #define VRAM_ARM9_PAGES 512
 extern u8 vram_arm9_map[VRAM_ARM9_PAGES];
-FORCEINLINE void* MMU_gpu_map(u32 vram_addr)
+FORCEINLINE void* MMU_gpu_map(const u32 vram_addr)
 {
 	//this is supposed to map a single gpu vram address to emulator host memory
 	//but it returns a pointer to some zero memory in case of accesses to unmapped memory.
@@ -575,12 +575,11 @@ FORCEINLINE void* MMU_gpu_map(u32 vram_addr)
 	//due to it storing 0x0F0F or somesuch in screen memory which points to a ridiculously big tile
 	//which should contain all 0 pixels
 
-	u32 vram_page = (vram_addr>>14)&(VRAM_ARM9_PAGES-1);
-	u32 ofs = vram_addr & 0x3FFF;
-	vram_page = vram_arm9_map[vram_page];
+	const u32 vram_page = vram_arm9_map[ (vram_addr >> 14) & (VRAM_ARM9_PAGES - 1) ];
+	const u32 ofs = vram_addr & 0x3FFF;
 	//blank pages are handled by the extra 16KB of blank memory at the end of ARM9_LCD
 	//and the fact that blank pages are mapped to appear at that location
-	return MMU.ARM9_LCD + (vram_page<<14) + ofs;
+	return MMU.ARM9_LCD + (vram_page << 14) + ofs;
 }
 
 
