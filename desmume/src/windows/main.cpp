@@ -3117,8 +3117,6 @@ int _main()
 			TABLET_DISABLE_FLICKFALLBACKKEYS
 			));
 
-	gpu_SetRotateScreen(video.rotation);
-
 	//GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
 	//SetLanguage(atoi(text));
 	//zero 09-feb-2013 - all the translations are out of date. this is dumb. lets just take out the translations. you cant expect translations in a project with our staff size using our tech
@@ -3741,8 +3739,6 @@ void SetRotate(HWND hwnd, int rot, bool user)
 		video.rotation_userset = video.rotation;
 		WritePrivateProfileInt("Video","Window Rotate Set",video.rotation_userset,IniName);
 	}
-
-	gpu_SetRotateScreen(video.rotation);
 
 	UpdateScreenRects();
 	UpdateWndRects(hwnd);
