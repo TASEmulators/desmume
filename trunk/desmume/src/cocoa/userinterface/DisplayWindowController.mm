@@ -837,6 +837,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[self setDisplayGap:(double)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0];
 }
 
+- (IBAction) toggleVerticalSync:(id)sender
+{
+	[[self view] setUseVerticalSync:![[self view] useVerticalSync]];
+}
+
+- (IBAction) toggleVideoFiltersPreferGPU:(id)sender
+{
+	[self setVideoFiltersPreferGPU:![self videoFiltersPreferGPU]];
+}
+
 - (IBAction) toggleVideoSourceDeposterize:(id)sender
 {
 	[self setVideoSourceDeposterize:![self videoSourceDeposterize]];
@@ -992,6 +1002,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
 			[(NSMenuItem *)theItem setState:([[self view] useVerticalSync]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(toggleVideoFiltersPreferGPU:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem *)theItem setState:([[self view] videoFiltersPreferGPU]) ? NSOnState : NSOffState];
 		}
 	}
 	else if (theAction == @selector(changeVideoPixelScaler:))
