@@ -4994,6 +4994,7 @@ void OGLImage::UploadHQnxLUTs()
 	
 	glGenTextures(1, &_texLQ2xLUT);
 	glGenTextures(1, &_texHQ2xLUT);
+	glGenTextures(1, &_texHQ3xLUT);
 	glGenTextures(1, &_texHQ4xLUT);
 	glActiveTexture(GL_TEXTURE0 + 1);
 	
@@ -5824,6 +5825,7 @@ void OGLDisplayLayer::UploadHQnxLUTs()
 	
 	glGenTextures(1, &_texLQ2xLUT);
 	glGenTextures(1, &_texHQ2xLUT);
+	glGenTextures(1, &_texHQ3xLUT);
 	glGenTextures(1, &_texHQ4xLUT);
 	glActiveTexture(GL_TEXTURE0 + 1);
 	
