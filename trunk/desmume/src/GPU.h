@@ -582,9 +582,8 @@ typedef struct
 #define MMU_BOBJ	0x06600000
 #define MMU_LCDC	0x06800000
 
-extern CACHE_ALIGN u8 gpuBlendTable555[17][17][32][32];
-
-enum BGType {
+enum BGType
+{
 	BGType_Invalid=0, BGType_Text=1, BGType_Affine=2, BGType_Large8bpp=3, 
 	BGType_AffineExt=4, BGType_AffineExt_256x16=5, BGType_AffineExt_256x1=6, BGType_AffineExt_Direct=7
 };
@@ -606,7 +605,12 @@ enum GPUMasterBrightMode
 	
 };
 
-extern const BGType GPU_mode2type[8][4];
+enum GPULayerType
+{
+	GPULayerType_3D					= 0,
+	GPULayerType_BG					= 1,
+	GPULayerType_OBJ				= 2
+};
 
 struct GPU
 {
@@ -643,7 +647,7 @@ struct GPU
 	u32 BG_map_ram[4];
 
 	u8 BGExtPalSlot[4];
-	u32 BGSize[4][2];
+	u16 BGSize[4][2];
 	BGType BGTypes[4];
 
 	struct MosaicColor {
@@ -655,7 +659,7 @@ struct GPU
 	} mosaicColors;
 
 	u8 sprNum[256];
-	u8 *h_win[2];
+	CACHE_ALIGN u8 h_win[2][GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	const u8 *curr_win[2];
 	bool need_update_winh[2];
 	
@@ -711,6 +715,9 @@ struct GPU
 	u16 *currentFadeInColors, *currentFadeOutColors;
 	bool blend2[8];
 	
+	typedef u8 TBlendTable[32][32];
+	TBlendTable *blendTable;
+	
 	u16 *tempScanlineBuffer;
 	GPUMasterBrightMode	MasterBrightMode;
 	u32 MasterBrightFactor;
@@ -747,13 +754,13 @@ struct GPU
 	u16 blend(const u16 colA, const u16 colB);
 
 	template<bool BACKDROP, BlendFunc FUNC, bool WINDOW>
-	FORCEINLINE FASTCALL bool _master_setFinalBGColor(const size_t dstX, const u16 *dstLine, const u8 *bgPixelsLine, u16 &outColor);
+	FORCEINLINE FASTCALL bool _master_setFinalBGColor(const size_t srcX, const size_t dstX, const u16 *dstLine, const u8 *bgPixelsLine, u16 &outColor);
 
 	template<BlendFunc FUNC, bool WINDOW>
-	FORCEINLINE FASTCALL void _master_setFinal3dColor(const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, const FragmentColor src);
+	FORCEINLINE FASTCALL void _master_setFinal3dColor(const size_t srcX, const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, const FragmentColor src);
 	
 	template<BlendFunc FUNC, bool WINDOW>
-	FORCEINLINE FASTCALL void _master_setFinalOBJColor(const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, const u16 src, const u8 alpha, const u8 type);
+	FORCEINLINE FASTCALL void _master_setFinalOBJColor(const size_t srcX, const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, const u16 src, const u8 alpha, const u8 type);
 	
 	int setFinalColorBck_funcNum;
 	int bgFunc;
@@ -776,12 +783,15 @@ struct GPU
 	}
 
 
-	void setFinalColor3d(const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, const FragmentColor src);
-	void setFinalColorSpr(const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, const u16 src, const u8 alpha, const u8 type);
+	void setFinalColor3d(const size_t srcX, const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, const FragmentColor src);
+	void setFinalColorSpr(const size_t srcX, const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, const u16 src, const u8 alpha, const u8 type);
 	
-	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, u16 src);
+	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(const size_t srcX, const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, u16 src);
 	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
 	template<bool MOSAIC, bool BACKDROP, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
+	
+	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBckExtended(u16 color, const size_t srcX, const bool opaque);
+	template<bool MOSAIC, bool BACKDROP, int FUNCNUM> FORCEINLINE void ___setFinalColorBckExtended(u16 color, const size_t srcX, const bool opaque);
 
 	void setAffineStart(const size_t layer, int xy, u32 val);
 	void setAffineStartWord(const size_t layer, int xy, u16 val, int word);
@@ -793,42 +803,18 @@ struct GPU
 		u32 x, y;
 	} affineInfo[2];
 
-	void renderline_checkWindows(const size_t dstX, bool &draw, bool &effect) const;
+	void renderline_checkWindows(const size_t srcX, bool &draw, bool &effect) const;
 
 	// check whether (x,y) is within the rectangle (including wraparounds) 
-	template<int WIN_NUM>
-	u8 withinRect(const size_t x) const;
-
-	void setBLDALPHA(u16 val)
-	{
-		BLDALPHA_EVA = (val&0x1f) > 16 ? 16 : (val&0x1f); 
-		BLDALPHA_EVB = ((val>>8)&0x1f) > 16 ? 16 : ((val>>8)&0x1f);
-		updateBLDALPHA();
-	}
-
-	void setBLDALPHA_EVA(u8 val)
-	{
-		BLDALPHA_EVA = (val&0x1f) > 16 ? 16 : (val&0x1f);
-		updateBLDALPHA();
-	}
+	template<int WIN_NUM> u8 withinRect(const size_t x) const;
 	
-	void setBLDALPHA_EVB(u8 val)
-	{
-		BLDALPHA_EVB = (val&0x1f) > 16 ? 16 : (val&0x1f);
-		updateBLDALPHA();
-	}
-
 	u32 getHOFS(const size_t bg);
 	u32 getVOFS(const size_t bg);
 
-	typedef u8 TBlendTable[32][32];
-	TBlendTable *blendTable;
-
-	void updateBLDALPHA()
-	{
-		blendTable = (TBlendTable*)&gpuBlendTable555[BLDALPHA_EVA][BLDALPHA_EVB][0][0];
-	}
-	
+	void updateBLDALPHA();
+	void setBLDALPHA(const u16 val);
+	void setBLDALPHA_EVA(const u8 val);
+	void setBLDALPHA_EVB(const u8 val);
 };
 #if 0
 // normally should have same addresses
@@ -868,8 +854,6 @@ namespace GPU_EXT
 };
 void sprite1D(GPU *gpu, u16 l, u8 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 void sprite2D(GPU *gpu, u16 l, u8 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
-
-extern const SpriteSize sprSizeTab[4][4];
 
 typedef struct
 {
@@ -943,19 +927,11 @@ void SetupFinalPixelBlitter (GPU *gpu);
 #define GPU_setBLDCNT_LOW(gpu, val) {gpu->BLDCNT = (gpu->BLDCNT&0xFF00) | (val); SetupFinalPixelBlitter (gpu);}
 #define GPU_setBLDCNT_HIGH(gpu, val) {gpu->BLDCNT = (gpu->BLDCNT&0xFF) | (val<<8); SetupFinalPixelBlitter (gpu);}
 #define GPU_setBLDCNT(gpu, val) {gpu->BLDCNT = (val); SetupFinalPixelBlitter (gpu);}
-
-
-
 #define GPU_setBLDY_EVY(gpu, val) {gpu->BLDY_EVY = ((val)&0x1f) > 16 ? 16 : ((val)&0x1f);}
 
 //these arent needed right now since the values get poked into memory via default mmu handling and dispx_st
 //#define GPU_setBGxHOFS(bg, gpu, val) gpu->dispx_st->dispx_BGxOFS[bg].BGxHOFS = ((val) & 0x1FF)
 //#define GPU_setBGxVOFS(bg, gpu, val) gpu->dispx_st->dispx_BGxOFS[bg].BGxVOFS = ((val) & 0x1FF)
-
-void gpu_SetRotateScreen(u16 angle);
-
-//#undef FORCEINLINE
-//#define FORCEINLINE __forceinline
 
 inline FragmentColor MakeFragmentColor(const u8 r, const u8 g, const u8 b, const u8 a)
 {
