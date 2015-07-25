@@ -545,24 +545,49 @@ void GameInfo::closeROM()
 
 u32 GameInfo::readROM(u32 pos)
 {
+	u32 num;
+	u32 data;
 	if (!romdata)
 	{
-		u32 data;
 		if (lastReadPos != pos)
 			fseek(fROM, pos + headerOffset, SEEK_SET);
-		u32 num = fread(&data, 1, 4, fROM);
+		num = fread(&data, 1, 4, fROM);
 		lastReadPos = (pos + num);
-		return LE_TO_LOCAL_32(data);
 	}
 	else
 	{
-		if(pos + 4 > romsize)
+		if(pos + 4 <= romsize)
 		{
-			printf("Panic! GameInfo reading out of buffer!\n");
-			exit(-1);
+			//fast path
+			data = LE_TO_LOCAL_32(*(u32*)(romdata + pos));
+			num = 4;
 		}
-		return LE_TO_LOCAL_32(*(u32*)(romdata + pos));
+		else
+		{
+			data = 0;
+			num = 0;
+			for(int i=0;i<4;i++)
+			{
+				if(pos >= romsize)
+					break;
+				data |= (romdata[pos]<<(i*8));
+				pos++;
+				num++;
+			}
+		}
 	}
+
+
+	//in case we didn't read enough data, pad the remainder with 0xFF
+	u32 pad = 0;
+	while(num<4)
+	{
+		pad >>= 8;
+		pad |= 0xFF000000;
+		num++;
+	}
+
+	return LE_TO_LOCAL_32(data) & ~pad | pad;
 }
 
 bool GameInfo::isDSiEnhanced()
