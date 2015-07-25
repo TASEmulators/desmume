@@ -1363,7 +1363,6 @@ static void OpenNdsDialog()
             gtk_recent_manager_add_full (manager, uri, &recentData);
 
             g_free(uri);
-            g_free(recentData.app_name);
             g_free(recentData.app_exec);
             gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
             Launch();
