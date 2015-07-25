@@ -71,10 +71,10 @@ u32 Slot1Comp_Rom::read()
 			//if (address > gameInfo.header.endROMoffset)
 			//  ... the cart hardware doesnt know anything about the rom header. if it has a totally bogus endROMoffset, the cart will probably work just fine. and, the +4 is missing anyway:
 			//3. this is better: it just allows us to read 0xFF anywhere we dont have rom data. forget what the header says
+			//note: we allow the reading to proceed anyway, because the readROM method is built to allow jaggedy reads off the end of the rom to support trimmed roms
 			if(address+4 > gameInfo.romsize)
 			{
 				DEBUG_Notify.ReadBeyondEndOfCart(address,gameInfo.romsize);
-				return 0xFFFFFFFF;
 			}
 
 			//actually read from the ROM provider
