@@ -493,16 +493,16 @@ Render3DError Render3D_SSE2::FlushFramebuffer(FragmentColor *__restrict dstRGBA6
 		
 		// Convert to RGBA5551
 		__m128i r = _mm_and_si128(color, _mm_set1_epi32(0x0000003E));	// Read from R
-		r = _mm_srli_si128(r, 1);										// Shift to R
+		r = _mm_srli_epi32(r, 1);										// Shift to R
 		
 		__m128i g = _mm_and_si128(color, _mm_set1_epi32(0x00003E00));	// Read from G
-		g = _mm_srli_si128(g, 4);										// Shift in G
+		g = _mm_srli_epi32(g, 4);										// Shift in G
 		
 		__m128i b = _mm_and_si128(color, _mm_set1_epi32(0x003E0000));	// Read from B
-		b = _mm_srli_si128(b, 7);										// Shift to B
+		b = _mm_srli_epi32(b, 7);										// Shift to B
 		
 		__m128i a = _mm_and_si128(color, _mm_set1_epi32(0xFF000000));	// Read from A
-		a = _mm_cmpgt_epi32(a, zero_vec128);							// Determine A
+		a = _mm_cmpeq_epi32(a, zero_vec128);							// Determine A
 		
 		// From here on, we're going to do an SSE2 trick to pack 32-bit down to unsigned
 		// 16-bit. Since SSE2 only has packssdw (signed 16-bit pack), then the alpha bit
@@ -514,9 +514,9 @@ Render3DError Render3D_SSE2::FlushFramebuffer(FragmentColor *__restrict dstRGBA6
 		// packssdw, then shift the bit back to its original position. Then we por the
 		// alpha vector with the post-packed color vector to get the final color.
 		
-		a = _mm_and_si128(a, _mm_set1_epi32(0x00004000));				// Mask out the bit before A
+		a = _mm_andnot_si128(a, _mm_set1_epi32(0x00004000));			// Mask out the bit before A
 		a = _mm_packs_epi32(a, zero_vec128);							// Pack 32-bit down to 16-bit
-		a = _mm_slli_si128(a, 1);										// Shift the A bit back to where it needs to be
+		a = _mm_slli_epi16(a, 1);										// Shift the A bit back to where it needs to be
 		
 		// Assemble the RGB colors, pack the 32-bit color into a signed 16-bit color, then por the alpha bit back in.
 		color = _mm_or_si128(_mm_or_si128(r, g), b);
@@ -607,8 +607,8 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 				clearDepthLo_vec128 = _mm_loadu_si128((__m128i *)(clearDepthBuffer + i));
 				clearDepthHi_vec128 = _mm_and_si128(clearDepthHi_vec128, fogBufferBitMask_vec128);
 				clearDepthLo_vec128 = _mm_and_si128(clearDepthLo_vec128, fogBufferBitMask_vec128);
-				clearDepthHi_vec128 = _mm_srli_si128(clearDepthHi_vec128, 15);
-				clearDepthLo_vec128 = _mm_srli_si128(clearDepthLo_vec128, 15);
+				clearDepthHi_vec128 = _mm_srli_epi16(clearDepthHi_vec128, 15);
+				clearDepthLo_vec128 = _mm_srli_epi16(clearDepthLo_vec128, 15);
 				
 				_mm_store_si128((__m128i *)(this->clearImageFogBuffer + i), _mm_packus_epi16(clearDepthLo_vec128, clearDepthHi_vec128));
 				

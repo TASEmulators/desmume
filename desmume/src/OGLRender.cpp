@@ -925,19 +925,19 @@ Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA
 			color = _mm_load_si128((__m128i *)(this->_framebufferColor + ir));
 			
 			__m128i b = _mm_and_si128(color, _mm_set1_epi32(0x000000F8));	// Read from R
-			b = _mm_slli_si128(b, 7);										// Shift to B
+			b = _mm_slli_epi32(b, 7);										// Shift to B
 			
 			__m128i g = _mm_and_si128(color, _mm_set1_epi32(0x0000F800));	// Read from G
-			g = _mm_srli_si128(g, 6);										// Shift in G
+			g = _mm_srli_epi32(g, 6);										// Shift in G
 			
 			__m128i r = _mm_and_si128(color, _mm_set1_epi32(0x00F80000));	// Read from B
-			r = _mm_srli_si128(r, 19);										// Shift to R
+			r = _mm_srli_epi32(r, 19);										// Shift to R
 			
 			a = _mm_and_si128(color, _mm_set1_epi32(0xFF000000));			// Read from A
-			a = _mm_cmpgt_epi32(a, _mm_set1_epi32(0x00000000));				// Determine A
-			a = _mm_and_si128(a, _mm_set1_epi32(0x00008000));				// Mask to A
+			a = _mm_cmpeq_epi32(a, _mm_setzero_si128());					// Determine A
+			a = _mm_andnot_si128(a, _mm_set1_epi32(0x00008000));			// Mask to A
 			
-			color = b | g | r | a;
+			color = _mm_or_si128(_mm_or_si128(_mm_or_si128(b, g), r), a);
 			
 			// All the colors are currently placed every other 16 bits, so we need to swizzle them
 			// to the lower 64 bits of our vector before we store them back to memory.
