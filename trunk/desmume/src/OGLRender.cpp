@@ -317,7 +317,7 @@ static const char *fragmentShader_100 = {"\
 		else if(polyMode == 2) \n\
 		{ \n\
 			vec3 toonColor = vec3(texture1D(texToonTable, vtxColor.r).rgb); \n\
-			newFragColor.rgb = (stateToonShadingMode == 0) ? mainTexColor.rgb * toonColor.rgb : min((mainTexColor.rgb * vtxColor.rgb) + toonColor.rgb, 1.0); \n\
+			newFragColor.rgb = (stateToonShadingMode == 0) ? mainTexColor.rgb * toonColor.rgb : min((mainTexColor.rgb * vtxColor.r) + toonColor.rgb, 1.0); \n\
 		} \n\
 		else if(polyMode == 3) \n\
 		{ \n\
