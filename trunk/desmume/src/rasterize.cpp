@@ -310,36 +310,25 @@ FORCEINLINE int edge_fx_fl::Step() {
 
 
 
-static FORCEINLINE void alphaBlend(FragmentColor & dst, const FragmentColor & src)
+static FORCEINLINE void alphaBlend(FragmentColor &dst, const FragmentColor src)
 {
-	if(gfx3d.renderState.enableAlphaBlending)
+	if (src.a == 0)
 	{
-		if(src.a == 31 || dst.a == 0)
-		{
-			dst = src;
-		}
-		//else if(src.a == 0) { } //this is not necessary since it was handled earlier
-		else
-		{
-			u8 alpha = src.a+1;
-			u8 invAlpha = 32 - alpha;
-			dst.r = (alpha*src.r + invAlpha*dst.r)>>5;
-			dst.g = (alpha*src.g + invAlpha*dst.g)>>5;
-			dst.b = (alpha*src.b + invAlpha*dst.b)>>5;
-		}
-
-		dst.a = max(src.a,dst.a);
+		return;
+	}
+	
+	if (src.a == 31 || dst.a == 0 || !gfx3d.renderState.enableAlphaBlending)
+	{
+		dst = src;
 	}
 	else
 	{
-		if(src.a == 0)
-		{
-			//do nothing; the fragment is totally transparent
-		}
-		else
-		{
-			dst = src;
-		}
+		const u8 alpha = src.a + 1;
+		const u8 invAlpha = 32 - alpha;
+		dst.r = (alpha*src.r + invAlpha*dst.r) >> 5;
+		dst.g = (alpha*src.g + invAlpha*dst.g) >> 5;
+		dst.b = (alpha*src.b + invAlpha*dst.b) >> 5;
+		dst.a = max(src.a, dst.a);
 	}
 }
 
@@ -1646,8 +1635,8 @@ Render3DError SoftRasterizerRenderer::UpdateEdgeMarkColorTable(const u16 *edgeMa
 	//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
 	for (size_t i = 0; i < 8; i++)
 	{
-		u16 col = edgeMarkColorTable[i];
-		this->edgeMarkTable[i].color = RGB15TO5555(col, (this->currentRenderState->enableAntialiasing) ? 0x0F : 0x1F);
+		const u16 col = edgeMarkColorTable[i];
+		this->edgeMarkTable[i].color = RGB15TO5555(col, (this->currentRenderState->enableAntialiasing) ? 0x10 : 0x1F);
 		this->edgeMarkTable[i].r = GFX3D_5TO6(this->edgeMarkTable[i].r);
 		this->edgeMarkTable[i].g = GFX3D_5TO6(this->edgeMarkTable[i].g);
 		this->edgeMarkTable[i].b = GFX3D_5TO6(this->edgeMarkTable[i].b);
@@ -1839,10 +1828,10 @@ END_EDGE_MARK: ;
 			
 			if (param.enableFog)
 			{
-				const u32 r = GFX3D_5TO6((param.fogColor)&0x1F);
-				const u32 g = GFX3D_5TO6((param.fogColor>>5)&0x1F);
-				const u32 b = GFX3D_5TO6((param.fogColor>>10)&0x1F);
-				const u32 a = (param.fogColor>>16)&0x1F;
+				const u32 r = GFX3D_5TO6( (param.fogColor      ) & 0x1F );
+				const u32 g = GFX3D_5TO6( (param.fogColor >>  5) & 0x1F );
+				const u32 b = GFX3D_5TO6( (param.fogColor >> 10) & 0x1F );
+				const u32 a = (param.fogColor >> 16) & 0x1F;
 				
 				const size_t fogIndex = depth >> 9;
 				assert(fogIndex < 32768);
@@ -1850,12 +1839,12 @@ END_EDGE_MARK: ;
 				
 				if (!param.fogAlphaOnly)
 				{
-					dstColor.r = ((128-fog)*dstColor.r + r*fog)>>7;
-					dstColor.g = ((128-fog)*dstColor.g + g*fog)>>7;
-					dstColor.b = ((128-fog)*dstColor.b + b*fog)>>7;
+					dstColor.r = ( (128-fog)*dstColor.r + r*fog ) >> 7;
+					dstColor.g = ( (128-fog)*dstColor.g + g*fog ) >> 7;
+					dstColor.b = ( (128-fog)*dstColor.b + b*fog ) >> 7;
 				}
 				
-				dstColor.a = ((128-fog)*dstColor.a + a*fog)>>7;
+				dstColor.a = ( (128-fog)*dstColor.a + a*fog ) >> 7;
 			}
 		}
 	}
@@ -2046,6 +2035,22 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
 	this->_framebufferColor = newFramebufferColor;
 	this->_framebufferAttributes = newFramebufferAttributes;
+	
+	if (rasterizerCores == 0 || rasterizerCores == 1)
+	{
+		postprocessParam[0].startLine = 0;
+		postprocessParam[0].endLine = h;
+	}
+	else
+	{
+		const size_t linesPerThread = h / rasterizerCores;
+		
+		for (size_t i = 0; i < rasterizerCores; i++)
+		{
+			postprocessParam[i].startLine = i * linesPerThread;
+			postprocessParam[i].endLine = (i < rasterizerCores - 1) ? (i + 1) * linesPerThread : h;
+		}
+	}
 	
 	free_aligned(oldFramebufferColor);
 	delete oldFramebufferAttributes;
