@@ -211,7 +211,7 @@ static const char *GeometryFragShader_150 = {"\
 		else if (polyMode == 2u) \n\
 		{ \n\
 			vec3 newToonColor = state.toonColor[int((vtxColor.r * 31.0) + 0.5)].rgb;\n\
-			newFragColor.rgb = (state.toonShadingMode == 0) ? mainTexColor.rgb * newToonColor.rgb : min((mainTexColor.rgb * vtxColor.rgb) + newToonColor.rgb, 1.0); \n\
+			newFragColor.rgb = (state.toonShadingMode == 0) ? mainTexColor.rgb * newToonColor.rgb : min((mainTexColor.rgb * vtxColor.r) + newToonColor.rgb, 1.0); \n\
 		} \n\
 		else if (polyMode == 3u) \n\
 		{ \n\

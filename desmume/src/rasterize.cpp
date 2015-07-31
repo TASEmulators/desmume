@@ -532,6 +532,7 @@ public:
 				
 				if (gfx3d.renderState.shading == GFX3D_State::HIGHLIGHT)
 				{
+					// Tested in the "Shadows of Almia" logo in the Pokemon Ranger: Shadows of Almia title screen.
 					dst.r = modulate_table[mainTexColor.r][src.r];
 					dst.g = modulate_table[mainTexColor.g][src.r];
 					dst.b = modulate_table[mainTexColor.b][src.r];
