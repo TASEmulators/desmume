@@ -1411,7 +1411,7 @@ Render3DError OpenGLRenderer_3_2::ClearUsingValues(const FragmentColor &clearCol
 	const GLfloat oglPolyID[4] = {(GLfloat)clearAttributes.opaquePolyID/63.0f, 0.0, 0.0, 1.0};
 	const GLfloat oglFogAttr[4] = {clearAttributes.isFogged, 0.0, 0.0, 1.0};
 	
-	glClearBufferfi(GL_DEPTH_STENCIL, 0, (GLfloat)clearAttributes.depth / (GLfloat)0x00FFFFFF, 0);
+	glClearBufferfi(GL_DEPTH_STENCIL, 0, (GLfloat)clearAttributes.depth / (GLfloat)0x00FFFFFF, clearAttributes.opaquePolyID);
 	glClearBufferfv(GL_COLOR, 0, oglColor); // texGColorID
 	glClearBufferfv(GL_COLOR, 1, oglDepth); // texGDepthID
 	glClearBufferfv(GL_COLOR, 2, oglPolyID); // texGPolyID
