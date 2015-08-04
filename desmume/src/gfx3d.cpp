@@ -177,8 +177,19 @@ public:
 				GFX_FIFOsend(currCommand, 0);
 				shiftCommand >>= 8;
 			}
+			else if(currCommand == 0 && shiftCommand!=0)
+			{
+				//quantum of solace will send a command: 0x001B1100
+				//you see NOP in the first command. that needs to get bypassed somehow.
+				//since the general goal here is to process packed commands until we have none left (0's will be shifted in)
+				//we can just skip this command and continue processing if theres anything left to process.
+				shiftCommand >>= 8;
+			}
 			else if(currCommandType == GFX_INVALID_COMMAND)
+			{
+				//break when the current command is invalid. 0x00 is invalid; this is what gets used to terminate a loop after all the commands are handled
 				break;
+			}
 			else 
 			{
 				paramCounter = currCommandType;
