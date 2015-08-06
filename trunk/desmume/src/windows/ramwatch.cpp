@@ -101,7 +101,7 @@ bool VerifyWatchNotAlreadyAdded(const AddressWatcher& watch)
 }
 
 
-bool InsertWatch(const AddressWatcher& Watch, char *Comment)
+bool InsertWatch(const AddressWatcher& Watch, char *Comment, int atIndex)
 {
 	if(!VerifyWatchNotAlreadyAdded(Watch))
 		return false;
@@ -109,7 +109,16 @@ bool InsertWatch(const AddressWatcher& Watch, char *Comment)
 	if(WatchCount >= MAX_WATCH_COUNT)
 		return false;
 
-	int i = WatchCount++;
+	int i = WatchCount;
+	if(atIndex == -1) {}
+	else
+	{
+		//move watches down
+		i = atIndex;
+		for(int x=WatchCount;x>atIndex;x--)
+			rswatches[x] = rswatches[x-1];
+	}
+	WatchCount++;
 	AddressWatcher& NewWatch = rswatches[i];
 	NewWatch = Watch;
 	//if (NewWatch.comment) free(NewWatch.comment);
@@ -760,7 +769,7 @@ LRESULT CALLBACK EditWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 						{
 							GetDlgItemText(hDlg,IDC_PROMPT_EDIT,Str_Tmp,80);
 							if (index < WatchCount) RemoveWatch(index);
-							InsertWatch(Temp,Str_Tmp);
+							InsertWatch(Temp,Str_Tmp,index);
 							if(RamWatchHWnd)
 							{
 								ListView_SetItemCount(GetDlgItem(RamWatchHWnd,IDC_WATCHLIST),WatchCount);
