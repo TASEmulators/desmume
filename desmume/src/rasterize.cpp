@@ -533,6 +533,8 @@ public:
 				if (gfx3d.renderState.shading == GFX3D_State::HIGHLIGHT)
 				{
 					// Tested in the "Shadows of Almia" logo in the Pokemon Ranger: Shadows of Almia title screen.
+					// Also tested in Advance Wars: Dual Strike and Advance Wars: Days of Ruin when tiles highlight
+					// during unit selection.
 					dst.r = modulate_table[mainTexColor.r][src.r];
 					dst.g = modulate_table[mainTexColor.g][src.r];
 					dst.b = modulate_table[mainTexColor.b][src.r];
@@ -1551,10 +1553,10 @@ Render3DError SoftRasterizerRenderer::RenderGeometry(const GFX3D_State &renderSt
 	{
 		rasterizerUnit[0].mainLoop<false>();
 		this->_renderGeometryNeedsFinish = false;
+		TexCache_EvictFrame(); // Since we're finishing geometry rendering here and now, also check the texture cache now.
 	}
 	
 	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
-	TexCache_EvictFrame();
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -1782,7 +1784,6 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 				// - the level-start intro gets a pseudo-antialiasing effect around the silhouette,
 				// - the character edges in-level are clearly transparent, and also show well through shield powerups.
 				
-				FragmentColor edgeColor = this->edgeMarkTable[polyID>>3];
 				bool up = false;
 				bool left = false;
 				bool right = false;
@@ -1790,6 +1791,7 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 				
 #define PIXOFFSET(dx,dy) ((dx)+(this->_framebufferWidth*(dy)))
 #define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID != this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET(dx,dy)] && depth >= this->_framebufferAttributes->depth[i+PIXOFFSET(dx,dy)])
+#define DRAWEDGE(dx,dy) alphaBlend(dstColor, this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET(dx,dy)] >> 3])
 				
 				if (this->edgeMarkDisabled[polyID>>3] || this->_framebufferAttributes->isTranslucentPoly[i] != 0)
 					goto END_EDGE_MARK;
@@ -1799,26 +1801,11 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 				right	= ISEDGE( 1, 0);
 				down	= ISEDGE( 0, 1);
 				
-				if (right)
-				{
-					edgeColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET( 1, 0)] >> 3];
-					alphaBlend(dstColor, edgeColor);
-				}
-				else if (down)
-				{
-					edgeColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET( 0, 1)] >> 3];
-					alphaBlend(dstColor, edgeColor);
-				}
-				else if (left)
-				{
-					edgeColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET(-1, 0)] >> 3];
-					alphaBlend(dstColor, edgeColor);
-				}
-				else if (up)
-				{
-					edgeColor = this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET( 0,-1)] >> 3];
-					alphaBlend(dstColor, edgeColor);
-				}
+				if (right)			DRAWEDGE( 1, 0);
+				else if (down)		DRAWEDGE( 0, 1);
+				else if (left)		DRAWEDGE(-1, 0);
+				else if (up)		DRAWEDGE( 0,-1);
+				
 				
 #undef PIXOFFSET
 #undef ISEDGE
@@ -1992,6 +1979,9 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 	{
 		rasterizerUnitTask[i].finish();
 	}
+	
+	// Now that geometry rendering is finished on all threads, check the texture cache.
+	TexCache_EvictFrame();
 	
 	// Do multithreaded post-processing.
 	if (this->currentRenderState->enableEdgeMarking || this->currentRenderState->enableFog)
