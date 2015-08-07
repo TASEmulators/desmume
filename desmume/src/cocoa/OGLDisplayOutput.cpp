@@ -4969,6 +4969,7 @@ OGLImage::~OGLImage()
 	glBindTexture(GL_TEXTURE_3D, 0);
 	glDeleteTextures(1, &this->_texLQ2xLUT);
 	glDeleteTextures(1, &this->_texHQ2xLUT);
+	glDeleteTextures(1, &this->_texHQ3xLUT);
 	glDeleteTextures(1, &this->_texHQ4xLUT);
 	glActiveTexture(GL_TEXTURE0);
 	
@@ -5796,6 +5797,7 @@ OGLDisplayLayer::~OGLDisplayLayer()
 	glBindTexture(GL_TEXTURE_3D, 0);
 	glDeleteTextures(1, &this->_texLQ2xLUT);
 	glDeleteTextures(1, &this->_texHQ2xLUT);
+	glDeleteTextures(1, &this->_texHQ3xLUT);
 	glDeleteTextures(1, &this->_texHQ4xLUT);
 	glActiveTexture(GL_TEXTURE0);
 	
