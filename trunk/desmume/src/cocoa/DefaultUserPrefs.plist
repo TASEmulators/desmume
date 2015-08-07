@@ -64,6 +64,10 @@
 	<integer>12</integer>
 	<key>Emulation_RigorousTiming</key>
 	<false/>
+	<key>Emulation_StylusPressure</key>
+	<integer>50</integer>
+	<key>Emulation_StylusEnableJitter</key>
+	<false/>
 	<key>Emulation_UseDebugConsole</key>
 	<false/>
 	<key>Emulation_UseExternalBIOSImages</key>

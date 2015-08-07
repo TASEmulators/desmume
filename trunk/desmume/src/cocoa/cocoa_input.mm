@@ -35,6 +35,10 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 @implementation CocoaDSController
 
 @synthesize delegate;
+@dynamic autohold;
+@synthesize paddleAdjust;
+@synthesize stylusPressure;
+@synthesize stylusEnableJitter;
 @dynamic isHardwareMicAvailable;
 @dynamic isHardwareMicIdle;
 @dynamic isHardwareMicInClip;
@@ -46,12 +50,10 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 @dynamic hardwareMicPause;
 @dynamic softwareMicState;
 @dynamic softwareMicMode;
-@dynamic autohold;
 @synthesize micMode;
 @synthesize CAInputDevice;
 @synthesize softwareMicSampleGenerator;
 @synthesize selectedAudioFileGenerator;
-@synthesize paddleAdjust;
 @synthesize hardwareMicInfoString;
 @synthesize hardwareMicNameString;
 @synthesize hardwareMicManufacturerString;
@@ -343,6 +345,9 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 			   flushedStates[DSControllerState_Lid]);
 	
 	// Setup the DS touch pad.
+	CommonSettings.StylusPressure = (int)[self stylusPressure];
+	CommonSettings.StylusJitter = ([self stylusEnableJitter]) ? true : false;
+	
 	if (isTouchDown)
 	{
 		NDS_setTouchPos((u16)theLocation.x, (u16)theLocation.y);
