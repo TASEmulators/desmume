@@ -550,11 +550,13 @@ volatile bool execute = true;
 	{
 		self.emuFlagUseExternalFirmware = YES;
 		CommonSettings.UseExtFirmware = true;
+		CommonSettings.UseExtFirmwareSettings = true;
 	}
 	else
 	{
 		self.emuFlagUseExternalFirmware = NO;
 		CommonSettings.UseExtFirmware = false;
+		CommonSettings.UseExtFirmwareSettings = false;
 	}
 	
 	if (theFlags & EMULATION_BOOT_FROM_FIRMWARE_MASK)
