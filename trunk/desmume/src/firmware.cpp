@@ -250,7 +250,7 @@ bool CFIRMWARE::load()
 	u32 size = 0;
 	u8	*data = NULL;
 	
-	if (CommonSettings.UseExtFirmware == false)
+	if (!CommonSettings.UseExtFirmware)
 		return false;
 	if (strlen(CommonSettings.Firmware) == 0)
 		return false;

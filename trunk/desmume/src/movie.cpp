@@ -559,7 +559,7 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	//poweron(true);
 
 	// reset firmware (some games can write to it)
-	if (CommonSettings.UseExtFirmware == false)
+	if (!CommonSettings.UseExtFirmware)
 	{
 		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
 	}
@@ -674,7 +674,7 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::stri
 	currMovieData.rtcStart = rtcstart;
 
 	// reset firmware (some games can write to it)
-	if (CommonSettings.UseExtFirmware == false)
+	if (!CommonSettings.UseExtFirmware)
 	{
 		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
 	}
