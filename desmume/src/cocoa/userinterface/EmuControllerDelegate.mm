@@ -1002,6 +1002,15 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuSyncMethod"] integerValue] forKey:@"SPU_SyncMethod"];
 }
 
+- (IBAction) writeDefaultsStylusSettings:(id)sender
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	CocoaDSController *cdsController = [cdsCore cdsController];
+	
+	[[NSUserDefaults standardUserDefaults] setInteger:[cdsController stylusPressure] forKey:@"Emulation_StylusPressure"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsController stylusEnableJitter] forKey:@"Emulation_StylusEnableJitter"];
+}
+
 - (IBAction) closeSheet:(id)sender
 {
 	NSWindow *sheet = [(NSControl *)sender window];
@@ -2185,6 +2194,10 @@
 	[[cdsCore cdsGPU] setRender3DLineHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_LineHack"]];
 	[[cdsCore cdsGPU] setRender3DMultisample:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Multisample"]];
 	[[cdsCore cdsGPU] setRender3DFragmentSamplingHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_FragmentSamplingHack"]];
+	
+	// Set the stylus options per user preferences.
+	[[cdsCore cdsController] setStylusPressure:[[NSUserDefaults standardUserDefaults] integerForKey:@"Emulation_StylusPressure"]];
+	[[cdsCore cdsController] setStylusEnableJitter:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_StylusEnableJitter"]];
 }
 
 #pragma mark NSUserInterfaceValidations Protocol

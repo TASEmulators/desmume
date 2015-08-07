@@ -91,21 +91,26 @@ typedef struct
 @interface CocoaDSController : NSObject
 {
 	id <CocoaDSControllerDelegate> delegate;
-	float micLevel;
+	
+	NDSInput ndsInput[DSControllerState_StatesCount];
 	BOOL autohold;
-	BOOL hardwareMicMute;
 	BOOL _isAutoholdCleared;
+	
+	NSPoint touchLocation;
+	NSInteger paddleAdjust;
+	NSInteger stylusPressure;
+	BOOL stylusEnableJitter;
+	
+	float micLevel;
+	BOOL hardwareMicMute;
 	BOOL _useHardwareMic;
 	size_t _availableMicSamples;
 	std::vector<uint8_t> *_hwMicLevelList;
 	NSInteger micMode;
-	NSPoint touchLocation;
 	
-	NDSInput ndsInput[DSControllerState_StatesCount];
 	AudioSampleBlockGenerator *selectedAudioFileGenerator;
 	CoreAudioInput *CAInputDevice;
 	AudioGenerator *softwareMicSampleGenerator;
-	NSInteger paddleAdjust;
 	
 	NSString *hardwareMicInfoString;
 	NSString *hardwareMicNameString;
@@ -117,6 +122,9 @@ typedef struct
 
 @property (retain) id <CocoaDSControllerDelegate> delegate;
 @property (assign) BOOL autohold;
+@property (assign) NSInteger paddleAdjust;
+@property (assign) NSInteger stylusPressure;
+@property (assign) BOOL stylusEnableJitter;
 @property (readonly) BOOL isHardwareMicAvailable;
 @property (readonly) BOOL isHardwareMicIdle;
 @property (readonly) BOOL isHardwareMicInClip;
@@ -132,7 +140,6 @@ typedef struct
 @property (readonly) CoreAudioInput *CAInputDevice;
 @property (readonly) AudioGenerator *softwareMicSampleGenerator;
 @property (assign) AudioSampleBlockGenerator *selectedAudioFileGenerator;
-@property (assign) NSInteger paddleAdjust;
 @property (retain) NSString *hardwareMicInfoString;
 @property (retain) NSString *hardwareMicNameString;
 @property (retain) NSString *hardwareMicManufacturerString;

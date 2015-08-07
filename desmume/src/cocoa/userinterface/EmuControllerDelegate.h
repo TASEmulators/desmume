@@ -231,6 +231,7 @@ class AudioSampleBlockGenerator;
 - (IBAction) writeDefaultsEmulationSettings:(id)sender;
 - (IBAction) writeDefaultsSlot1Settings:(id)sender;
 - (IBAction) writeDefaultsSoundSettings:(id)sender;
+- (IBAction) writeDefaultsStylusSettings:(id)sender;
 
 - (IBAction) closeSheet:(id)sender;
 
