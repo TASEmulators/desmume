@@ -35,6 +35,8 @@ struct MMU_struct;
 #define GPU_FRAMEBUFFER_NATIVE_WIDTH	256
 #define GPU_FRAMEBUFFER_NATIVE_HEIGHT	192
 
+#define GPU_VRAM_BLOCK_LINES			256
+
 void gpu_savestate(EMUFILE* os);
 bool gpu_loadstate(EMUFILE* is, int size);
 
@@ -43,7 +45,7 @@ bool gpu_loadstate(EMUFILE* is, int size);
     it holds flags for general display
 *******************************************************************************/
 
-#ifdef WORDS_BIGENDIAN
+#ifdef LOCAL_BE
 struct _DISPCNT
 {
 /* 7*/  u8 ForceBlank:1;      // A+B:
@@ -143,7 +145,7 @@ enum BlendFunc
     some flags indicate special drawing mode, size, FX
 *******************************************************************************/
 
-#ifdef WORDS_BIGENDIAN
+#ifdef LOCAL_BE
 struct _BGxCNT
 {
 /* 7*/ u8 Palette_256:1;         // 0=16x16, 1=1*256 palette
@@ -229,7 +231,7 @@ typedef union {
 	u16 val;
 } WINxDIM;
 
-#ifdef WORDS_BIGENDIAN
+#ifdef LOCAL_BE
 typedef struct {
 /* 6*/  u8 :2;
 /* 5*/  u8 WINx_Effect_Enable:1;
@@ -251,7 +253,7 @@ typedef struct {
 } WINxBIT;
 #endif
 
-#ifdef WORDS_BIGENDIAN
+#ifdef LOCAL_BE
 typedef union {
 	struct {
 		WINxBIT win0;
@@ -395,13 +397,6 @@ typedef struct _reg_dispx {
     u32 dispA_DISPMMEMFIFO;           // 0x04000068
 } REG_DISPx ;
 
-
-typedef BOOL (*fun_gl_Begin) (int screen);
-typedef void (*fun_gl_End) (int screen);
-// the GUI should use this function prior to all gl calls
-// if call to beg succeeds opengl draw
-void register_gl_fun(fun_gl_Begin beg,fun_gl_End end);
-
 enum GPUCoreID
 {
 	GPUCOREID_MAIN	= 0,
@@ -422,7 +417,7 @@ enum GPUCoreID
 #define ADDRESS_STEP_512KB	   0x80000
 #define ADDRESS_MASK_256KB	   (ADDRESS_STEP_256KB-1)
 
-#ifdef WORDS_BIGENDIAN
+#ifdef LOCAL_BE
 struct _TILEENTRY
 {
 /*14*/	unsigned Palette:4;
@@ -466,7 +461,7 @@ typedef union
 */
 
 struct _COLOR { // abgr x555
-#ifdef WORDS_BIGENDIAN
+#ifdef LOCAL_BE
 	unsigned alpha:1;    // sometimes it is unused (pad)
 	unsigned blue:5;
 	unsigned green:5;
@@ -525,30 +520,62 @@ enum GPU_OBJ_MODE
 	GPU_OBJ_MODE_Bitmap = 3
 };
 
-struct _OAM_
+typedef union
 {
-	//attr0
-	u8 Y;
-	u8 RotScale;
-	u8 Mode;
-	u8 Mosaic;
-	u8 Depth;
-	u8 Shape;
-	//att1
-	s16 X;
-	u8 RotScalIndex;
-	u8 HFlip, VFlip;
-	u8 Size;
-	//attr2
-	u16 TileIndex;
-	u8 Priority;
-	u8 PaletteIndex;
-	//attr3
-	u16 attr3;
-};
-
-void SlurpOAM(_OAM_ *oam_output, void *oam_buffer, const size_t oam_index);
-u16 SlurpOAMAffineParam(void *oam_buffer, const size_t oam_index);
+	u16 attr[4];
+	
+	struct
+	{
+#ifdef LOCAL_BE
+		//attr0
+		unsigned Shape:2;
+		unsigned Depth:1;
+		unsigned Mosaic:1;
+		unsigned Mode:2;
+		unsigned RotScale:2;
+		unsigned Y:8;
+		
+		//attr1
+		unsigned Size:2;
+		unsigned VFlip:1;
+		unsigned HFlip:1;
+		unsigned RotScalIndex:3;
+		signed X:9;
+		
+		//attr2
+		unsigned PaletteIndex:4;
+		unsigned Priority:2;
+		unsigned TileIndex:10;
+		
+		//attr3
+		unsigned attr3:16; // Whenever this is used, you will need to explicitly convert endianness.
+#else
+		//attr0
+		unsigned Y:8;
+		unsigned RotScale:2;
+		unsigned Mode:2;
+		unsigned Mosaic:1;
+		unsigned Depth:1;
+		unsigned Shape:2;
+		
+		//attr1
+		signed X:9;
+		unsigned RotScalIndex:3;
+		unsigned HFlip:1;
+		unsigned VFlip:1;
+		unsigned Size:2;
+		
+		//attr2
+		unsigned TileIndex:10;
+		unsigned Priority:2;
+		unsigned PaletteIndex:4;
+		
+		//attr3
+		unsigned attr3:16; // Whenever this is used, you will need to explicitly convert endianness.
+#endif
+	};
+	
+} OAMAttributes;
 
 typedef struct
 {
@@ -584,8 +611,15 @@ typedef struct
 
 enum BGType
 {
-	BGType_Invalid=0, BGType_Text=1, BGType_Affine=2, BGType_Large8bpp=3, 
-	BGType_AffineExt=4, BGType_AffineExt_256x16=5, BGType_AffineExt_256x1=6, BGType_AffineExt_Direct=7
+	BGType_Invalid					= 0,
+	BGType_Text						= 1,
+	BGType_Affine					= 2,
+	BGType_Large8bpp				= 3,
+	
+	BGType_AffineExt				= 4,
+	BGType_AffineExt_256x16			= 5,
+	BGType_AffineExt_256x1			= 6,
+	BGType_AffineExt_Direct			= 7
 };
 
 enum GPUDisplayMode
@@ -665,7 +699,7 @@ struct GPU
 	
 	template<size_t WIN_NUM> void update_winh();
 	template<size_t WIN_NUM> void setup_windows();
-
+	
 	GPUCoreID core;
 	GPUDisplayMode dispMode;
 	u8 vramBlock;
@@ -675,9 +709,9 @@ struct GPU
 
 	u8 bgPrio[5];
 
-	BOOL bg0HasHighestPrio;
+	bool bg0HasHighestPrio;
 
-	void *oam;
+	OAMAttributes *oamList;
 	u32	sprMem;
 	u8 sprBoundary;
 	u8 sprBMPBoundary;
@@ -790,9 +824,6 @@ struct GPU
 	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
 	template<bool MOSAIC, bool BACKDROP, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
 	
-	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBckExtended(u16 color, const size_t srcX, const bool opaque);
-	template<bool MOSAIC, bool BACKDROP, int FUNCNUM> FORCEINLINE void ___setFinalColorBckExtended(u16 color, const size_t srcX, const bool opaque);
-
 	void setAffineStart(const size_t layer, int xy, u32 val);
 	void setAffineStartWord(const size_t layer, int xy, u16 val, int word);
 	u32 getAffineStart(const size_t layer, int xy);
@@ -844,6 +875,7 @@ void GPU_DeInit(GPU *gpu);
 size_t GPU_GetFramebufferWidth();
 size_t GPU_GetFramebufferHeight();
 void GPU_SetFramebufferSize(size_t w, size_t h);
+bool GPU_IsFramebufferNativeSize();
 
 //these are functions used by debug tools which want to render layers etc outside the context of the emulation
 namespace GPU_EXT
