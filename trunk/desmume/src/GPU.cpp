@@ -2525,6 +2525,7 @@ static void GPU_RenderLine_DispCapture_SSE2(const u16 l)
 		cap_dst_adr &= 0x1FFFF;
 		cap_dst_adr += vramWriteBlock * GPU_VRAM_BLOCK_LINES * GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16);
 		
+		// TODO: Make MMU.blank_memory and MMU.ARM9_LCD 16-byte aligned so that we can use aligned load/store for better performance.
 		const u16 *cap_src = (u16 *)MMU.blank_memory;
 		u16 *cap_dst = (u16 *)(MMU.ARM9_LCD + cap_dst_adr);
 		
@@ -2695,7 +2696,7 @@ static void GPU_RenderLine_DispCapture_SSE2(const u16 l)
 					b = _mm_slli_epi16(b, 10);
 					
 					const __m128i a = _mm_or_si128(srcA_alpha, srcB_alpha);
-					_mm_store_si128( (__m128i *)(cap_dst + i), _mm_or_si128(_mm_or_si128(_mm_or_si128(r, g), b), a) );
+					_mm_storeu_si128( (__m128i *)(cap_dst + i), _mm_or_si128(_mm_or_si128(_mm_or_si128(r, g), b), a) );
 				}
 				break;
 			}
