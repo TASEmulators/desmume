@@ -128,7 +128,7 @@ int SNDXA2Init(int buffersize)
 		return -1;
 	}
 
-	bufferReadyEvent = CreateEvent(NULL,TRUE,TRUE,NULL);
+	bufferReadyEvent = CreateEvent(NULL,FALSE,TRUE,NULL);
 	threadQuitEvent = CreateEvent(NULL,TRUE,TRUE,NULL);
 	exitthread = false;
 
