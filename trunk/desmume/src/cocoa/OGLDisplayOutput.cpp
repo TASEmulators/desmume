@@ -3845,12 +3845,12 @@ static LUTValues PackLUTValues(const uint8_t p0, const uint8_t p1, const uint8_t
 {
 	const uint8_t wR = 256 / (w0 + w1 + w2);
 	return (LUTValues) {
-		p0*31,
-		p1*31,
-		p2*31,
-		(w1 == 0 && w2 == 0) ? 255 : w0*wR,
-		w1*wR,
-		w2*wR
+		(uint8_t)(p0*31),
+		(uint8_t)(p1*31),
+		(uint8_t)(p2*31),
+		(uint8_t)((w1 == 0 && w2 == 0) ? 255 : w0*wR),
+		(uint8_t)(w1*wR),
+		(uint8_t)(w2*wR)
 	};
 }
 
