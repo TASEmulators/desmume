@@ -139,7 +139,7 @@ static size_t _FAT_directory_mbstoucs2 (ucs2_t* dst, const char* src, size_t len
 	int bytes;
 	size_t count = 0;
 
-	while (count < len-1 && src != '\0') {
+	while (count < len-1 && *src != '\0') {
 		bytes = mbrtowc (&tempChar, src, MB_CUR_MAX, &ps);
 		if (bytes > 0) {
 			*dst = (ucs2_t)tempChar;
