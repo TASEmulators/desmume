@@ -67,6 +67,7 @@ static size_t _gpuFramebufferHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 static float _gpuWidthScale = (float)_gpuFramebufferWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 static float _gpuHeightScale = (float)_gpuFramebufferHeight / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 static size_t _gpuLargestDstLineCount = (size_t)ceilf(_gpuHeightScale);
+static size_t _gpuVRAMBlockOffset = GPU_VRAM_BLOCK_LINES * GPU_FRAMEBUFFER_NATIVE_WIDTH;
 static bool _gpuIsNativeSize = true;
 
 static u16 *_gpuDstToSrcIndex = NULL; // Key: Destination pixel index / Value: Source pixel index
@@ -75,8 +76,13 @@ static CACHE_ALIGN size_t _gpuDstPitchCount[GPU_FRAMEBUFFER_NATIVE_WIDTH];	// Ke
 static CACHE_ALIGN size_t _gpuDstPitchIndex[GPU_FRAMEBUFFER_NATIVE_WIDTH];	// Key: Source pixel index in x-dimension / Value: First destination pixel that maps to the source pixel
 static CACHE_ALIGN size_t _gpuDstLineCount[GPU_FRAMEBUFFER_NATIVE_HEIGHT];	// Key: Source line index / Value: Number of destination lines for the source line
 static CACHE_ALIGN size_t _gpuDstLineIndex[GPU_FRAMEBUFFER_NATIVE_HEIGHT];	// Key: Source line index / Value: First destination line that maps to the source line
+static CACHE_ALIGN size_t _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES + 1];	// Key: Source line index / Value: First destination line that maps to the source line
 
 static CACHE_ALIGN u8 sprWin[GPU_FRAMEBUFFER_NATIVE_WIDTH];
+
+static VRAM3DUsageProperties vram3DUsage;
+static u16 *_gpuNonNativeVRAM = NULL;
+static u16 *_gpuNonNativeVRAMBlank = NULL;
 
 static const CACHE_ALIGN SpriteSize sprSizeTab[4][4] = {
      {{8, 8}, {16, 8}, {8, 16}, {8, 8}},
@@ -201,6 +207,8 @@ GPU* GPU_Init(const GPUCoreID coreID)
 	gpu->setFinalColorBck_funcNum = 0;
 	gpu->setFinalColor3d_funcNum = 0;
 	gpu->setFinalColorSpr_funcNum = 0;
+	gpu->VRAMaddr = (u16 *)MMU.ARM9_LCD;
+	gpu->VRAMaddrNonNative = _gpuNonNativeVRAM;
 	
 	return gpu;
 }
@@ -399,6 +407,7 @@ void GPU_setVideoProp(GPU *gpu, const u32 ctrlBits)
 			
 		case GPUDisplayMode_VRAM: // Display framebuffer
 			gpu->VRAMaddr = (u16 *)MMU.ARM9_LCD + (gpu->vramBlock * GPU_VRAM_BLOCK_LINES * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+			gpu->VRAMaddrNonNative = _gpuNonNativeVRAM + (gpu->vramBlock * _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * _gpuFramebufferWidth);
 			break;
 			
 		case GPUDisplayMode_MainMemory: // Display from Main RAM
@@ -844,12 +853,12 @@ FORCEINLINE void GPU::setFinalColorSpr(const size_t srcX, const size_t dstX, u16
 template<bool MOSAIC, bool BACKDROP>
 FORCEINLINE void GPU::__setFinalColorBck(const u16 color, const size_t srcX, const bool opaque)
 {
-	return ___setFinalColorBck<MOSAIC, BACKDROP, 0>(color, srcX, opaque);
+	return ___setFinalColorBck<MOSAIC, BACKDROP, false, 0>(color, srcX, opaque);
 }
 
 //this was forced inline because most of the time it just falls through to setFinalColorBck() and the function call
 //overhead was ridiculous and terrible
-template<bool MOSAIC, bool BACKDROP, int FUNCNUM>
+template<bool MOSAIC, bool BACKDROP, bool USENONNATIVEVRAM, int FUNCNUM>
 FORCEINLINE void GPU::___setFinalColorBck(u16 color, const size_t srcX, const bool opaque)
 {
 	//due to this early out, we will get incorrect behavior in cases where 
@@ -858,20 +867,22 @@ FORCEINLINE void GPU::___setFinalColorBck(u16 color, const size_t srcX, const bo
 	{
 		if (opaque)
 		{
-			u16 *dstLine = currDst;
-			u8 *bgLine = bgPixels;
+			u16 *dstLine = this->currDst;
+			u8 *bgLine = this->bgPixels;
 			
-			for (size_t line = 0; line < _gpuDstLineCount[currLine]; line++)
+			for (size_t line = 0; line < _gpuDstLineCount[this->currLine]; line++)
 			{
+				const u16 *srcLine = (USENONNATIVEVRAM) ? _gpuNonNativeVRAM + (vram3DUsage.blockIndexBG[this->core] * _gpuVRAMBlockOffset) + ((_gpuDstLineIndex[this->currLine] + line) * _gpuFramebufferWidth) : NULL;
+				
 				for (size_t p = 0; p < _gpuDstPitchCount[srcX]; p++)
 				{
 					const size_t dstX = _gpuDstPitchIndex[srcX] + p;
 					
 					setFinalColorBG<BACKDROP,FUNCNUM>(srcX,
 													  dstX,
-													  currDst + (line * _gpuFramebufferWidth),
-													  bgPixels + (line * _gpuFramebufferWidth),
-													  color);
+													  dstLine,
+													  bgLine,
+													  (USENONNATIVEVRAM) ? srcLine[dstX] : color);
 				}
 				
 				dstLine += _gpuFramebufferWidth;
@@ -885,7 +896,7 @@ FORCEINLINE void GPU::___setFinalColorBck(u16 color, const size_t srcX, const bo
 	if (!opaque) color = 0xFFFF;
 	else color &= 0x7FFF;
 	
-	if (GPU::mosaicLookup.width[srcX].begin && GPU::mosaicLookup.height[currLine].begin)
+	if (GPU::mosaicLookup.width[srcX].begin && GPU::mosaicLookup.height[this->currLine].begin)
 	{
 		// Do nothing.
 	}
@@ -894,18 +905,20 @@ FORCEINLINE void GPU::___setFinalColorBck(u16 color, const size_t srcX, const bo
 		//due to the early out, enabled must always be true
 		//x_int = enabled ? GPU::mosaicLookup.width[srcX].trunc : srcX;
 		const size_t x_int = GPU::mosaicLookup.width[srcX].trunc;
-		color = mosaicColors.bg[currBgNum][x_int];
+		color = mosaicColors.bg[this->currBgNum][x_int];
 	}
 	
-	mosaicColors.bg[currBgNum][srcX] = color;
+	mosaicColors.bg[this->currBgNum][srcX] = color;
 	
 	if (color != 0xFFFF)
 	{
 		u16 *dstLine = currDst;
 		u8 *bgLine = bgPixels;
 		
-		for (size_t line = 0; line < _gpuDstLineCount[currLine]; line++)
+		for (size_t line = 0; line < _gpuDstLineCount[this->currLine]; line++)
 		{
+			const u16 *srcLine = (USENONNATIVEVRAM) ? _gpuNonNativeVRAM + (vram3DUsage.blockIndexBG[this->core] * _gpuVRAMBlockOffset) + ((_gpuDstLineIndex[this->currLine] + line) * _gpuFramebufferWidth) : NULL;
+			
 			for (size_t p = 0; p < _gpuDstPitchCount[srcX]; p++)
 			{
 				const size_t dstX = _gpuDstPitchIndex[srcX] + p;
@@ -914,7 +927,7 @@ FORCEINLINE void GPU::___setFinalColorBck(u16 color, const size_t srcX, const bo
 												  dstX,
 												  dstLine,
 												  bgLine,
-												  color);
+												  (USENONNATIVEVRAM) ? srcLine[dstX] : color);
 			}
 			
 			dstLine += _gpuFramebufferWidth;
@@ -1186,12 +1199,19 @@ FORCEINLINE void rot_256_map(GPU *gpu, const s32 auxX, const s32 auxY, const int
 	gpu->__setFinalColorBck<MOSAIC,false>(color, i, (palette_entry != 0));
 }
 
-template<bool MOSAIC>
+template<bool MOSAIC, bool USENONNATIVEVRAM>
 FORCEINLINE void rot_BMP_map(GPU *gpu, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *pal, const size_t i)
 {
 	const u16 color = LE_TO_LOCAL_16( *(u16 *)MMU_gpu_map((map) + ((auxX + auxY * lg) << 1)) );
 	
-	gpu->__setFinalColorBck<MOSAIC,false>(color, i, ((color&0x8000) != 0));
+	if (USENONNATIVEVRAM)
+	{
+		gpu->___setFinalColorBck<MOSAIC, false, true, 0>(color, i, ((color & 0x8000) != 0));
+	}
+	else
+	{
+		gpu->__setFinalColorBck<MOSAIC, false>(color, i, ((color & 0x8000) != 0));
+	}
 }
 
 typedef void (*rot_fun)(GPU *gpu, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *pal, const size_t i);
@@ -1287,8 +1307,17 @@ FORCEINLINE void extRotBG2(GPU *gpu, const BGxPARMS &param, const u16 LG)
 			break;
 			
 		case BGType_AffineExt_Direct: // direct colors / BMP
-			apply_rot_fun< rot_BMP_map<MOSAIC> >(gpu, param, LG, gpu->BG_bmp_ram[num], 0, NULL);
+		{
+			if (!_gpuIsNativeSize && vram3DUsage.is3DEnabled[gpu->core] && (gpu->currBgNum == vram3DUsage.bgLayerUsingVRAM[gpu->core]))
+			{
+				apply_rot_fun< rot_BMP_map<MOSAIC, true> >(gpu, param, LG, gpu->BG_bmp_ram[num], 0, NULL);
+			}
+			else
+			{
+				apply_rot_fun< rot_BMP_map<MOSAIC, false> >(gpu, param, LG, gpu->BG_bmp_ram[num], 0, NULL);
+			}
 			break;
+		}
 			
 		case BGType_Large8bpp: // large screen 256 colors
 			pal = (u16 *)(MMU.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB);
@@ -1899,6 +1928,20 @@ void Screen_Reset(void)
 	memset(gfx3d_colorRGBA6665, 0, _gpuFramebufferWidth * _gpuFramebufferHeight * sizeof(FragmentColor));
 	memset(gfx3d_colorRGBA5551, 0, _gpuFramebufferWidth * _gpuFramebufferHeight * sizeof(u16));
 	
+	vram3DUsage.is3DEnabled[GPUCOREID_MAIN] = false;
+	vram3DUsage.is3DEnabled[GPUCOREID_SUB] = false;
+	vram3DUsage.blockIndexBG[GPUCOREID_MAIN] = VRAM_NO_3D_USAGE;
+	vram3DUsage.blockIndexBG[GPUCOREID_SUB] = VRAM_NO_3D_USAGE;
+	vram3DUsage.blockIndexOBJ[GPUCOREID_MAIN] = VRAM_NO_3D_USAGE;
+	vram3DUsage.blockIndexOBJ[GPUCOREID_SUB] = VRAM_NO_3D_USAGE;
+	vram3DUsage.blockIndexDisplayVRAM = VRAM_NO_3D_USAGE;
+	vram3DUsage.isBlockUsed[0] = false;
+	vram3DUsage.isBlockUsed[1] = false;
+	vram3DUsage.isBlockUsed[2] = false;
+	vram3DUsage.isBlockUsed[3] = false;
+	vram3DUsage.bgLayerUsingVRAM[GPUCOREID_MAIN] = VRAM_NO_3D_USAGE;
+	vram3DUsage.bgLayerUsingVRAM[GPUCOREID_SUB] = VRAM_NO_3D_USAGE;
+	
 	disp_fifo.head = disp_fifo.tail = 0;
 	osd->clear();
 }
@@ -1958,6 +2001,7 @@ void GPU_SetFramebufferSize(size_t w, size_t h)
 	u16 *oldSubScreenTempScanlineBuffer = SubScreen.gpu->tempScanlineBuffer;
 	u8 *oldMainScreenBGPixels = MainScreen.gpu->bgPixels;
 	u8 *oldSubScreenBGPixels = SubScreen.gpu->bgPixels;
+	u16 *oldNonNativeVRAM = _gpuNonNativeVRAM;
 	
 	for (size_t srcX = 0, currentPitchCount = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH; srcX++)
 	{
@@ -1972,6 +2016,13 @@ void GPU_SetFramebufferSize(size_t w, size_t h)
 		const size_t lineCount = (size_t)ceilf((srcY+1) * newGpuHeightScale) - currentLineCount;
 		_gpuDstLineCount[srcY] = lineCount;
 		_gpuDstLineIndex[srcY] = currentLineCount;
+		currentLineCount += lineCount;
+	}
+	
+	for (size_t srcY = 0, currentLineCount = 0; srcY < GPU_VRAM_BLOCK_LINES + 1; srcY++)
+	{
+		const size_t lineCount = (size_t)ceilf((srcY+1) * newGpuHeightScale) - currentLineCount;
+		_gpuCaptureLineIndex[srcY] = currentLineCount;
 		currentLineCount += lineCount;
 	}
 	
@@ -2001,13 +2052,21 @@ void GPU_SetFramebufferSize(size_t w, size_t h)
 	u8 *newMainScreenBGPixels = (u8 *)malloc_alignedCacheLine(w * newGpuLargestDstLineCount * 4 * sizeof(u8)); // yes indeed, this is oversized. map debug tools try to write to it
 	u8 *newSubScreenBGPixels = (u8 *)malloc_alignedCacheLine(w * newGpuLargestDstLineCount * 4 * sizeof(u8)); // yes indeed, this is oversized. map debug tools try to write to it
 	
+	const size_t newNonNativeVRAMBlockSize = _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w;
+	const size_t newNonNativeVRAMBlankSize = newGpuLargestDstLineCount * w;
+	u16 *newNonNativeVRAM = (u16 *)malloc_alignedCacheLine(((newNonNativeVRAMBlockSize * 4) + newNonNativeVRAMBlankSize) * sizeof(u16));
+	memset(newNonNativeVRAM, 0, ((newNonNativeVRAMBlockSize * 4) + newNonNativeVRAMBlankSize) * sizeof(u16));
+	
 	_gpuFramebufferWidth = w;
 	_gpuFramebufferHeight = h;
 	_gpuWidthScale = newGpuWidthScale;
 	_gpuHeightScale = newGpuHeightScale;
 	_gpuIsNativeSize = ( (w == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (h == GPU_FRAMEBUFFER_NATIVE_HEIGHT) );
 	_gpuLargestDstLineCount = newGpuLargestDstLineCount;
+	_gpuVRAMBlockOffset = _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w;
 	_gpuDstToSrcIndex = newGpuDstToSrcIndex;
+	_gpuNonNativeVRAM = newNonNativeVRAM;
+	_gpuNonNativeVRAMBlank = newNonNativeVRAM + (newNonNativeVRAMBlockSize * 4);
 	
 	MainScreen.gpu->tempScanlineBuffer = newMainScreenTempScanlineBuffer;
 	SubScreen.gpu->tempScanlineBuffer = newSubScreenTempScanlineBuffer;
@@ -2019,6 +2078,8 @@ void GPU_SetFramebufferSize(size_t w, size_t h)
 	
 	MainScreen.offset = (MainScreen.offset == 0) ? 0 : h;
 	SubScreen.offset = (SubScreen.offset == 0) ? 0 : h;
+	MainScreen.gpu->VRAMaddrNonNative = newNonNativeVRAM + (MainScreen.gpu->vramBlock * _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w);
+	SubScreen.gpu->VRAMaddrNonNative = newNonNativeVRAM + (SubScreen.gpu->vramBlock * _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w);
 	
 	CurrentRenderer->SetFramebufferSize(w, h);
 	
@@ -2030,6 +2091,7 @@ void GPU_SetFramebufferSize(size_t w, size_t h)
 	free_aligned(oldSubScreenTempScanlineBuffer);
 	free_aligned(oldMainScreenBGPixels);
 	free_aligned(oldSubScreenBGPixels);
+	free_aligned(oldNonNativeVRAM);
 }
 
 bool GPU_IsFramebufferNativeSize()
@@ -2128,10 +2190,10 @@ PLAIN_CLEAR:
 			break;
 
 		//windowed cases apparently need special treatment? why? can we not render the backdrop? how would that even work?
-		case 4: for(size_t x=0;x<GPU_FRAMEBUFFER_NATIVE_WIDTH;x++) gpu->___setFinalColorBck<false,true,4>(backdrop_color,x,true); break;
-		case 5: for(size_t x=0;x<GPU_FRAMEBUFFER_NATIVE_WIDTH;x++) gpu->___setFinalColorBck<false,true,5>(backdrop_color,x,true); break;
-		case 6: for(size_t x=0;x<GPU_FRAMEBUFFER_NATIVE_WIDTH;x++) gpu->___setFinalColorBck<false,true,6>(backdrop_color,x,true); break;
-		case 7: for(size_t x=0;x<GPU_FRAMEBUFFER_NATIVE_WIDTH;x++) gpu->___setFinalColorBck<false,true,7>(backdrop_color,x,true); break;
+		case 4: for(size_t x=0;x<GPU_FRAMEBUFFER_NATIVE_WIDTH;x++) gpu->___setFinalColorBck<false,true,false,4>(backdrop_color,x,true); break;
+		case 5: for(size_t x=0;x<GPU_FRAMEBUFFER_NATIVE_WIDTH;x++) gpu->___setFinalColorBck<false,true,false,5>(backdrop_color,x,true); break;
+		case 6: for(size_t x=0;x<GPU_FRAMEBUFFER_NATIVE_WIDTH;x++) gpu->___setFinalColorBck<false,true,false,6>(backdrop_color,x,true); break;
+		case 7: for(size_t x=0;x<GPU_FRAMEBUFFER_NATIVE_WIDTH;x++) gpu->___setFinalColorBck<false,true,false,7>(backdrop_color,x,true); break;
 	}
 	
 	memset(gpu->bgPixels, 5, pixCount);
@@ -2274,6 +2336,9 @@ PLAIN_CLEAR:
 				u16 *sprDstLine = gpu->currDst;
 				u8 *sprBgLine = gpu->bgPixels;
 				
+				const bool useNonNativeVRAM = vram3DUsage.is3DEnabled[gpu->core] && (vram3DUsage.blockIndexOBJ[gpu->core] != VRAM_NO_3D_USAGE);
+				const u16 *srcLine = (useNonNativeVRAM) ? _gpuNonNativeVRAM + (vram3DUsage.blockIndexOBJ[gpu->core] * _gpuVRAMBlockOffset) + (_gpuDstLineIndex[l] * _gpuFramebufferWidth) : NULL;
+				
 				for (size_t line = 0; line < _gpuDstLineCount[l]; line++)
 				{
 					for (size_t i = 0; i < item->nbPixelsX; i++)
@@ -2288,12 +2353,13 @@ PLAIN_CLEAR:
 												  dstX,
 												  sprDstLine,
 												  sprBgLine,
-												  gpu->sprColor[srcX],
+												  (useNonNativeVRAM) ? srcLine[dstX] : gpu->sprColor[srcX],
 												  gpu->sprAlpha[srcX],
 												  gpu->sprType[srcX]);
 						}
 					}
 					
+					srcLine += _gpuFramebufferWidth;
 					sprDstLine += _gpuFramebufferWidth;
 					sprBgLine += _gpuFramebufferWidth;
 				}
@@ -2302,7 +2368,309 @@ PLAIN_CLEAR:
 	}
 }
 
-template<bool PERFORMCAPTURE, size_t CAPTURELENGTH>
+static void GPU_RenderLine_DispCapture_FIFOToBuffer(u16 *fifoLineBuffer)
+{
+#ifdef ENABLE_SSE2
+	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(__m128i); i++)
+	{
+		__m128i fifoColor = _mm_set_epi32(DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv());
+		_mm_store_si128((__m128i *)fifoLineBuffer + i, _mm_shuffle_epi32(fifoColor, 0x1B)); // We need to shuffle the four FIFO values back into the correct order, since they were originally loaded in reverse order.
+	}
+#else
+	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(u32); i++)
+	{
+		((u32 *)fifoLineBuffer)[i] = LE_TO_LOCAL_32( DISP_FIFOrecv() );
+	}
+#endif
+}
+
+template<int SOURCESWITCH, size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRC, bool CAPTURETONATIVEDST>
+static void GPU_RenderLine_DispCapture_Copy(const u16 *__restrict src, u16 *__restrict dst, const size_t captureLengthExt, const size_t captureLineCount)
+{
+	const u16 alphaBit = (SOURCESWITCH == 0) ? 0x8000 : 0x0000;
+	
+#ifdef ENABLE_SSE2
+	const __m128i alpha_vec128 = _mm_set1_epi16(alphaBit);
+#endif
+	
+	if (CAPTURETONATIVEDST)
+	{
+		if (CAPTUREFROMNATIVESRC)
+		{
+#ifdef ENABLE_SSE2
+			MACRODO_N(CAPTURELENGTH / (sizeof(__m128i) / sizeof(u16)), _mm_storeu_si128((__m128i *)dst + X, _mm_or_si128( _mm_loadu_si128( (__m128i *)src + X), alpha_vec128 ) ));
+#else
+			for (size_t i = 0; i < CAPTURELENGTH; i++)
+			{
+				dst[i] = LE_TO_LOCAL_16(src[i]) | alphaBit;
+			}
+#endif
+		}
+		else
+		{
+			for (size_t i = 0; i < CAPTURELENGTH; i++)
+			{
+				dst[i] = LE_TO_LOCAL_16(src[_gpuDstPitchIndex[i]]) | alphaBit;
+			}
+		}
+	}
+	else
+	{
+		if (CAPTUREFROMNATIVESRC)
+		{
+			for (size_t i = 0; i < CAPTURELENGTH; i++)
+			{
+				for (size_t p = 0; p < _gpuDstPitchCount[i]; p++)
+				{
+					dst[_gpuDstPitchIndex[i] + p] = LE_TO_LOCAL_16(src[i]) | alphaBit;
+				}
+			}
+			
+			for (size_t line = 1; line < captureLineCount; line++)
+			{
+				memcpy(dst + (line * _gpuFramebufferWidth), dst, captureLengthExt * sizeof(u16));
+			}
+		}
+		else
+		{
+			if (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH)
+			{
+				const size_t pixCountExt = captureLengthExt * captureLineCount;
+				size_t i = 0;
+				
+#ifdef ENABLE_SSE2
+				const size_t ssePixCount = pixCountExt - (pixCountExt % 8);
+				for (; i < ssePixCount; i += 8)
+				{
+					_mm_store_si128((__m128i *)(dst + i), _mm_or_si128( _mm_load_si128( (__m128i *)(src + i)), alpha_vec128 ) );
+				}
+#endif
+				for (; i < pixCountExt; i++)
+				{
+					dst[i] = LE_TO_LOCAL_16(src[i]) | alphaBit;
+				}
+			}
+			else
+			{
+				for (size_t line = 0; line < captureLineCount; line++)
+				{
+					size_t i = 0;
+#ifdef ENABLE_SSE2
+					const size_t ssePixCount = captureLengthExt - (captureLengthExt % 8);
+					for (; i < ssePixCount; i += 8)
+					{
+						_mm_store_si128((__m128i *)(dst + i), _mm_or_si128( _mm_load_si128( (__m128i *)(src + i)), alpha_vec128 ) );
+					}
+#endif
+					for (; i < captureLengthExt; i++)
+					{
+						dst[i] = LE_TO_LOCAL_16(src[i]) | alphaBit;
+					}
+					
+					src += _gpuFramebufferWidth;
+					dst += _gpuFramebufferWidth;
+				}
+			}
+		}
+	}
+}
+
+static u16 GPU_RenderLine_DispCapture_BlendFunc(const u16 srcA, const u16 srcB, const u8 blendEVA, const u8 blendEVB)
+{
+	u16 a = 0;
+	u16 r = 0;
+	u16 g = 0;
+	u16 b = 0;
+	u16 a_alpha = srcA & 0x8000;
+	u16 b_alpha = srcB & 0x8000;
+	
+	if (a_alpha)
+	{
+		a = 0x8000;
+		r =  ((srcA        & 0x1F) * blendEVA);
+		g = (((srcA >>  5) & 0x1F) * blendEVA);
+		b = (((srcA >> 10) & 0x1F) * blendEVA);
+	}
+	
+	if (b_alpha)
+	{
+		a = 0x8000;
+		r +=  ((srcB        & 0x1F) * blendEVB);
+		g += (((srcB >>  5) & 0x1F) * blendEVB);
+		b += (((srcB >> 10) & 0x1F) * blendEVB);
+	}
+	
+	r >>= 4;
+	g >>= 4;
+	b >>= 4;
+	
+	//freedom wings sky will overflow while doing some fsaa/motionblur effect without this
+	r = std::min((u16)31,r);
+	g = std::min((u16)31,g);
+	b = std::min((u16)31,b);
+	
+	return (a | (b << 10) | (g << 5) | r);
+}
+
+#ifdef ENABLE_SSE2
+static __m128i GPU_RenderLine_DispCapture_BlendFunc_SSE2(__m128i srcA, __m128i srcB, const __m128i blendEVA, const __m128i blendEVB)
+{
+	const __m128i colorBitMask = _mm_set1_epi16(0x001F);
+	const __m128i srcA_alpha = _mm_and_si128(srcA, _mm_set1_epi16(0x8000));
+	const __m128i srcB_alpha = _mm_and_si128(srcB, _mm_set1_epi16(0x8000));
+	
+	srcA = _mm_andnot_si128( _mm_cmpeq_epi16(srcA_alpha, _mm_setzero_si128()), srcA );
+	srcB = _mm_andnot_si128( _mm_cmpeq_epi16(srcB_alpha, _mm_setzero_si128()), srcB );
+	
+	__m128i srcB_r = _mm_and_si128(srcB, colorBitMask);
+	srcB_r = _mm_mullo_epi16(srcB_r, blendEVB);
+	
+	__m128i srcB_g = _mm_srli_epi16(srcB, 5);
+	srcB_g = _mm_and_si128(srcB_g, colorBitMask);
+	srcB_g = _mm_mullo_epi16(srcB_g, blendEVB);
+	
+	__m128i srcB_b = _mm_srli_epi16(srcB, 10);
+	srcB_b = _mm_and_si128(srcB_b, colorBitMask);
+	srcB_b = _mm_mullo_epi16(srcB_b, blendEVB);
+	
+	__m128i r = _mm_and_si128(srcA, colorBitMask);
+	r = _mm_mullo_epi16(r, blendEVA);
+	r = _mm_add_epi16(r, srcB_r);
+	r = _mm_srli_epi16(r, 4);
+	r = _mm_min_epi16(r, colorBitMask);
+	
+	__m128i g = _mm_srli_epi16(srcA, 5);
+	g = _mm_and_si128(g, colorBitMask);
+	g = _mm_mullo_epi16(g, blendEVA);
+	g = _mm_add_epi16(g, srcB_g);
+	g = _mm_srli_epi16(g, 4);
+	g = _mm_min_epi16(g, colorBitMask);
+	g = _mm_slli_epi16(g, 5);
+	
+	__m128i b = _mm_srli_epi16(srcA, 10);
+	b = _mm_and_si128(b, colorBitMask);
+	b = _mm_mullo_epi16(b, blendEVA);
+	b = _mm_add_epi16(b, srcB_b);
+	b = _mm_srli_epi16(b, 4);
+	b = _mm_min_epi16(b, colorBitMask);
+	b = _mm_slli_epi16(b, 10);
+	
+	const __m128i a = _mm_or_si128(srcA_alpha, srcB_alpha);
+	
+	return _mm_or_si128(_mm_or_si128(_mm_or_si128(r, g), b), a);
+}
+#endif
+
+template<bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB>
+static void GPU_RenderLine_DispCapture_BlendToNonNativeDstBuffer(const u16 *__restrict srcA, const u16 *__restrict srcB, u16 *__restrict dst, const u8 blendEVA, const u8 blendEVB, const size_t length, size_t l)
+{
+#ifdef ENABLE_SSE2
+	const __m128i blendEVA_vec128 = _mm_set1_epi16(blendEVA);
+	const __m128i blendEVB_vec128 = _mm_set1_epi16(blendEVB);
+#endif
+	
+	size_t i = 0;
+	
+#ifdef ENABLE_SSE2
+	const size_t ssePixCount = length - (length % 8);
+	for (; i < ssePixCount; i += 8)
+	{
+		__m128i srcA_vec128 = (!CAPTUREFROMNATIVESRCA) ? _mm_load_si128((__m128i *)(srcA + i)) : _mm_set_epi16(srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 7],
+																											   srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 6],
+																											   srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 5],
+																											   srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 4],
+																											   srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 3],
+																											   srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 2],
+																											   srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 1],
+																											   srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 0]);
+		
+		__m128i srcB_vec128 = (!CAPTUREFROMNATIVESRCB) ? _mm_load_si128((__m128i *)(srcB + i)) : _mm_set_epi16(srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 7],
+																											   srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 6],
+																											   srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 5],
+																											   srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 4],
+																											   srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 3],
+																											   srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 2],
+																											   srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 1],
+																											   srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 0]);
+		
+		_mm_store_si128( (__m128i *)(dst + i), GPU_RenderLine_DispCapture_BlendFunc_SSE2(srcA_vec128, srcB_vec128, blendEVA_vec128, blendEVB_vec128) );
+	}
+#endif
+	for (; i < length; i++)
+	{
+		const u16 colorA = (!CAPTUREFROMNATIVESRCA) ? srcA[i] : srcA[_gpuDstToSrcIndex[(_gpuDstLineIndex[l] * _gpuFramebufferWidth) + i] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH)];
+		const u16 colorB = (!CAPTUREFROMNATIVESRCB) ? srcB[i] : srcB[_gpuDstToSrcIndex[(_gpuDstLineIndex[l] * _gpuFramebufferWidth) + i] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH)];
+		
+		dst[i] = GPU_RenderLine_DispCapture_BlendFunc(colorA, colorB, blendEVA, blendEVB);
+	}
+}
+
+template<size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB, bool CAPTURETONATIVEDST>
+static void GPU_RenderLine_DispCapture_Blend(const u16 *__restrict srcA, const u16 *__restrict srcB, u16 *__restrict dst, const size_t captureLengthExt, const size_t l)
+{
+	const u8 blendEVA = MainScreen.gpu->dispCapCnt.EVA;
+	const u8 blendEVB = MainScreen.gpu->dispCapCnt.EVB;
+	
+	if (CAPTURETONATIVEDST)
+	{
+#ifdef ENABLE_SSE2
+		const __m128i blendEVA_vec128 = _mm_set1_epi16(blendEVA);
+		const __m128i blendEVB_vec128 = _mm_set1_epi16(blendEVB);
+		
+		for (size_t i = 0; i < CAPTURELENGTH; i += 8)
+		{
+			__m128i srcA_vec128 = (CAPTUREFROMNATIVESRCA) ? _mm_load_si128((__m128i *)(srcA + i)) : _mm_set_epi16(srcA[_gpuDstPitchIndex[i+7]],
+			                                                                                                      srcA[_gpuDstPitchIndex[i+6]],
+			                                                                                                      srcA[_gpuDstPitchIndex[i+5]],
+			                                                                                                      srcA[_gpuDstPitchIndex[i+4]],
+			                                                                                                      srcA[_gpuDstPitchIndex[i+3]],
+			                                                                                                      srcA[_gpuDstPitchIndex[i+2]],
+			                                                                                                      srcA[_gpuDstPitchIndex[i+1]],
+			                                                                                                      srcA[_gpuDstPitchIndex[i+0]]);
+			
+			__m128i srcB_vec128 = (CAPTUREFROMNATIVESRCB) ? _mm_loadu_si128((__m128i *)(srcB + i)) : _mm_set_epi16(srcB[_gpuDstPitchIndex[i+7]],
+			                                                                                                       srcB[_gpuDstPitchIndex[i+6]],
+			                                                                                                       srcB[_gpuDstPitchIndex[i+5]],
+			                                                                                                       srcB[_gpuDstPitchIndex[i+4]],
+			                                                                                                       srcB[_gpuDstPitchIndex[i+3]],
+			                                                                                                       srcB[_gpuDstPitchIndex[i+2]],
+			                                                                                                       srcB[_gpuDstPitchIndex[i+1]],
+			                                                                                                       srcB[_gpuDstPitchIndex[i+0]]);
+			
+			_mm_storeu_si128( (__m128i *)(dst + i), GPU_RenderLine_DispCapture_BlendFunc_SSE2(srcA_vec128, srcB_vec128, blendEVA_vec128, blendEVB_vec128) );
+		}
+#else
+		for (size_t i = 0; i < CAPTURELENGTH; i++)
+		{
+			const u16 colorA = (CAPTUREFROMNATIVESRCA) ? srcA[i] : srcA[_gpuDstPitchIndex[i]];
+			const u16 colorB = (CAPTUREFROMNATIVESRCB) ? srcB[i] : srcB[_gpuDstPitchIndex[i]];
+			
+			dst[i] = GPU_RenderLine_DispCapture_BlendFunc(colorA, colorB, blendEVA, blendEVB);
+		}
+#endif
+	}
+	else
+	{
+		const size_t captureLineCount = _gpuDstLineCount[l];
+		
+		if (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH)
+		{
+			GPU_RenderLine_DispCapture_BlendToNonNativeDstBuffer<CAPTUREFROMNATIVESRCA, CAPTUREFROMNATIVESRCB>(srcA, srcB, dst, blendEVA, blendEVB, captureLengthExt * captureLineCount, l);
+		}
+		else
+		{
+			for (size_t line = 0; line < captureLineCount; line++)
+			{
+				GPU_RenderLine_DispCapture_BlendToNonNativeDstBuffer<CAPTUREFROMNATIVESRCA, CAPTUREFROMNATIVESRCB>(srcA, srcB, dst, blendEVA, blendEVB, captureLengthExt, l);
+				srcA += _gpuFramebufferWidth;
+				srcB += _gpuFramebufferWidth;
+				dst += _gpuFramebufferWidth;
+			}
+		}
+	}
+}
+
+template<size_t CAPTURELENGTH>
 static void GPU_RenderLine_DispCapture(const u16 l)
 {
 	assert( (CAPTURELENGTH == 0) || (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH/2) || (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH) );
@@ -2317,201 +2685,13 @@ static void GPU_RenderLine_DispCapture(const u16 l)
 			T1WriteLong(MMU.ARM9_REG, 0x64, gpu->dispCapCnt.val);
 		}
 	}
-
-	if (!gpu->dispCapCnt.enabled)
-	{
-		return;
-	}
-	
-	if (PERFORMCAPTURE)
-	{
-		const u8 vramWriteBlock = gpu->dispCapCnt.writeBlock;
-		const u8 vramReadBlock = gpu->dispCapCnt.readBlock;
-		
-		//128-wide captures should write linearly into memory, with no gaps
-		//this is tested by hotel dusk
-		u32 cap_dst_adr = ( (gpu->dispCapCnt.writeOffset * 64 * GPU_FRAMEBUFFER_NATIVE_WIDTH) + (l * CAPTURELENGTH) ) * sizeof(u16);
-		
-		//Read/Write block wrap to 00000h when exceeding 1FFFFh (128k)
-		//this has not been tested yet (I thought I needed it for hotel dusk, but it was fixed by the above)
-		cap_dst_adr &= 0x1FFFF;
-		cap_dst_adr += vramWriteBlock * GPU_VRAM_BLOCK_LINES * GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16);
-		
-		const u16 *cap_src = (u16 *)MMU.blank_memory;
-		u16 *cap_dst = (u16 *)(MMU.ARM9_LCD + cap_dst_adr);
-		
-		if (vramConfiguration.banks[vramReadBlock].purpose == VramConfiguration::LCDC)
-		{
-			u32 cap_src_adr = ( (gpu->dispCapCnt.readOffset * 64 * GPU_FRAMEBUFFER_NATIVE_WIDTH) + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) ) * sizeof(u16);
-			cap_src_adr &= 0x1FFFF;
-			cap_src_adr += vramReadBlock * GPU_VRAM_BLOCK_LINES * GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16);
-			cap_src = (u16 *)(MMU.ARM9_LCD + cap_src_adr);
-		}
-		
-		static CACHE_ALIGN u16 fifoLine[GPU_FRAMEBUFFER_NATIVE_WIDTH];
-		const u16 *srcA = gpu->currDst;
-		const u16 *srcB = cap_src;
-		
-		switch (gpu->dispCapCnt.capSrc)
-		{
-			case 0: // Capture source is SourceA
-			{
-				//INFO("Capture source is SourceA\n");
-				switch (gpu->dispCapCnt.srcA)
-				{
-					case 0: // Capture screen (BG + OBJ + 3D)
-					{
-						//INFO("Capture screen (BG + OBJ + 3D)\n");
-						for (size_t i = 0; i < CAPTURELENGTH; i++)
-						{
-							cap_dst[i] = LE_TO_LOCAL_16((_gpuIsNativeSize) ? srcA[i] : srcA[_gpuDstPitchIndex[i]]) | 0x8000;
-						}
-						break;
-					}
-						
-					case 1: // Capture 3D
-					{
-						//INFO("Capture 3D\n");
-						srcA = gfx3d_GetLineDataRGBA5551(l);
-						for (size_t i = 0; i < CAPTURELENGTH; i++)
-						{
-							cap_dst[i] = LE_TO_LOCAL_16((_gpuIsNativeSize) ? srcA[i] : srcA[_gpuDstPitchIndex[i]]);
-						}
-						break;
-					}
-				}
-				break;
-			}
-				
-			case 1: // Capture source is SourceB
-			{
-				//INFO("Capture source is SourceB\n");
-				switch (gpu->dispCapCnt.srcB)
-				{
-					case 0: // Capture VRAM
-					{
-						for (size_t i = 0; i < CAPTURELENGTH; i++)
-						{
-							cap_dst[i] = LE_TO_LOCAL_16(srcB[i]) | 0x8000;
-						}
-						break;
-					}
-						
-					case 1: // Capture dispfifo (not yet tested)
-					{
-						srcB = fifoLine;
-						for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(u32); i++)
-						{
-							((u32 *)srcB)[i] = LE_TO_LOCAL_32( DISP_FIFOrecv() );
-						}
-						
-						for (size_t i = 0; i < CAPTURELENGTH; i++)
-						{
-							cap_dst[i] = LE_TO_LOCAL_16(srcB[i]);
-						}
-						break;
-					}
-				}
-				
-				break;
-			}
-				
-			default: // Capture source is SourceA+B blended
-			{
-				//INFO("Capture source is SourceA+B blended\n");
-				
-				if (gpu->dispCapCnt.srcA == 1)
-				{
-					srcA = gfx3d_GetLineDataRGBA5551(l);
-				}
-				
-				if (gpu->dispCapCnt.srcB == 1)
-				{
-					// fifo - tested by splinter cell chaos theory thermal view
-					srcB = fifoLine;
-					for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(u32); i++)
-					{
-						((u32 *)srcB)[i] = LE_TO_LOCAL_32( DISP_FIFOrecv() );
-					}
-				}
-				
-				for (size_t i = 0; i < CAPTURELENGTH; i++)
-				{
-					const u16 colorA = (_gpuIsNativeSize) ? srcA[i] : srcA[_gpuDstPitchIndex[i]];
-					const u16 colorB = srcB[i];
-					const u8 blendEVA = gpu->dispCapCnt.EVA;
-					const u8 blendEVB = gpu->dispCapCnt.EVB;
-					
-					u16 a = 0;
-					u16 r = 0;
-					u16 g = 0;
-					u16 b = 0;
-					u16 a_alpha = colorA & 0x8000;
-					u16 b_alpha = colorB & 0x8000;
-					
-					if (a_alpha)
-					{
-						a = 0x8000;
-						r =  ((colorA        & 0x1F) * blendEVA);
-						g = (((colorA >>  5) & 0x1F) * blendEVA);
-						b = (((colorA >> 10) & 0x1F) * blendEVA);
-					}
-					
-					if (b_alpha)
-					{
-						a = 0x8000;
-						r +=  ((colorB        & 0x1F) * blendEVB);
-						g += (((colorB >>  5) & 0x1F) * blendEVB);
-						b += (((colorB >> 10) & 0x1F) * blendEVB);
-					}
-					
-					r >>= 4;
-					g >>= 4;
-					b >>= 4;
-					
-					//freedom wings sky will overflow while doing some fsaa/motionblur effect without this
-					r = std::min((u16)31,r);
-					g = std::min((u16)31,g);
-					b = std::min((u16)31,b);
-					
-					cap_dst[i] = a | (b << 10) | (g << 5) | r;
-				}
-				break;
-			}
-		}
-	}
-	
-	if (l >= 191)
-	{
-		gpu->dispCapCnt.enabled = FALSE;
-		gpu->dispCapCnt.val &= 0x7FFFFFFF;
-		T1WriteLong(MMU.ARM9_REG, 0x64, gpu->dispCapCnt.val);
-	}
-}
-
-#ifdef ENABLE_SSE2
-template<bool PERFORMCAPTURE, size_t CAPTURELENGTH>
-static void GPU_RenderLine_DispCapture_SSE2(const u16 l)
-{
-	assert( (CAPTURELENGTH == 0) || (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH/2) || (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH) );
-	
-	GPU *gpu = MainScreen.gpu;
-	
-	if (l == 0)
-	{
-		if (gpu->dispCapCnt.val & 0x80000000)
-		{
-			gpu->dispCapCnt.enabled = TRUE;
-			T1WriteLong(MMU.ARM9_REG, 0x64, gpu->dispCapCnt.val);
-		}
-	}
 	
 	if (!gpu->dispCapCnt.enabled)
 	{
 		return;
 	}
 	
-	if (PERFORMCAPTURE)
+	if (CAPTURELENGTH != 0)
 	{
 		const u8 vramWriteBlock = gpu->dispCapCnt.writeBlock;
 		const u8 vramReadBlock = gpu->dispCapCnt.readBlock;
@@ -2538,8 +2718,8 @@ static void GPU_RenderLine_DispCapture_SSE2(const u16 l)
 		}
 		
 		static CACHE_ALIGN u16 fifoLine[GPU_FRAMEBUFFER_NATIVE_WIDTH];
-		const u16 *srcA = gpu->currDst;
-		const u16 *srcB = cap_src;
+		const u16 *srcA = (gpu->dispCapCnt.srcA == 0) ? gpu->currDst : gfx3d_GetLineDataRGBA5551(_gpuDstLineIndex[l]);
+		const u16 *srcB = (gpu->dispCapCnt.srcB == 0) ? cap_src : fifoLine;
 		
 		switch (gpu->dispCapCnt.capSrc)
 		{
@@ -2553,40 +2733,31 @@ static void GPU_RenderLine_DispCapture_SSE2(const u16 l)
 						//INFO("Capture screen (BG + OBJ + 3D)\n");
 						if (_gpuIsNativeSize)
 						{
-							const __m128i alpha_vec128 = _mm_set1_epi16(0x8000);
-							MACRODO_N(CAPTURELENGTH / (sizeof(__m128i) / sizeof(u16)), _mm_storeu_si128((__m128i *)cap_dst + X, _mm_or_si128( _mm_load_si128( (__m128i *)srcA + X), alpha_vec128 ) ));
+							GPU_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, true, true>(srcA, cap_dst, CAPTURELENGTH, 1);
 						}
 						else
 						{
-							for (size_t i = 0; i < CAPTURELENGTH; i++)
-							{
-								cap_dst[i] = LE_TO_LOCAL_16(srcA[_gpuDstPitchIndex[i]]) | 0x8000;
-							}
+							GPU_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, false, true>(srcA, cap_dst, CAPTURELENGTH, 1);
 						}
-						
 						break;
 					}
 						
 					case 1: // Capture 3D
 					{
 						//INFO("Capture 3D\n");
-						srcA = gfx3d_GetLineDataRGBA5551(l);
-						
 						if (_gpuIsNativeSize)
 						{
-							MACRODO_N(CAPTURELENGTH / (sizeof(__m128i) / sizeof(u16)), _mm_storeu_si128( (__m128i *)cap_dst + X, _mm_load_si128((__m128i *)srcA + X) ));
+							GPU_RenderLine_DispCapture_Copy<1, CAPTURELENGTH, true, true>(srcA, cap_dst, CAPTURELENGTH, 1);
 						}
 						else
 						{
-							for (size_t i = 0; i < CAPTURELENGTH; i++)
-							{
-								cap_dst[i] = LE_TO_LOCAL_16(srcA[_gpuDstPitchIndex[i]]);
-							}
+							GPU_RenderLine_DispCapture_Copy<1, CAPTURELENGTH, false, true>(srcA, cap_dst, CAPTURELENGTH, 1);
 						}
-						
 						break;
 					}
 				}
+				
+				vram3DUsage.isBlockUsed[vramWriteBlock] = true;
 				break;
 			}
 				
@@ -2597,22 +2768,24 @@ static void GPU_RenderLine_DispCapture_SSE2(const u16 l)
 				{
 					case 0: // Capture VRAM
 					{
-						const __m128i alpha_vec128 = _mm_set1_epi16(0x8000);
-						MACRODO_N(CAPTURELENGTH / (sizeof(__m128i) / sizeof(u16)), _mm_storeu_si128((__m128i *)cap_dst + X, _mm_or_si128( _mm_loadu_si128( (__m128i *)srcB + X), alpha_vec128 ) ));
+						if (_gpuIsNativeSize || !vram3DUsage.isBlockUsed[vramReadBlock])
+						{
+							GPU_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, true, true>(srcB, cap_dst, CAPTURELENGTH, 1);
+						}
+						else
+						{
+							GPU_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, false, true>(srcB, cap_dst, CAPTURELENGTH, 1);
+						}
+						
+						vram3DUsage.isBlockUsed[vramWriteBlock] = vram3DUsage.isBlockUsed[vramReadBlock];
 						break;
 					}
 						
 					case 1: // Capture dispfifo (not yet tested)
 					{
-						srcB = fifoLine;
-						
-						for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(__m128i); i++)
-						{
-							__m128i fifoColor = _mm_set_epi32(DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv());
-							_mm_store_si128((__m128i *)srcB + i, _mm_shuffle_epi32(fifoColor, 0x1B)); // We need to shuffle the four FIFO values back into the correct order, since they were originally loaded in reverse order.
-						}
-						
-						MACRODO_N(CAPTURELENGTH / (sizeof(__m128i) / sizeof(u16)), _mm_storeu_si128( (__m128i *)cap_dst + X, _mm_load_si128((__m128i *)srcB + X) ));
+						GPU_RenderLine_DispCapture_FIFOToBuffer(fifoLine);
+						GPU_RenderLine_DispCapture_Copy<1, CAPTURELENGTH, true, true>(srcB, cap_dst, CAPTURELENGTH, 1);
+						vram3DUsage.isBlockUsed[vramWriteBlock] = false;
 						break;
 					}
 				}
@@ -2624,81 +2797,140 @@ static void GPU_RenderLine_DispCapture_SSE2(const u16 l)
 			{
 				//INFO("Capture source is SourceA+B blended\n");
 				
-				if (gpu->dispCapCnt.srcA == 1)
-				{
-					srcA = gfx3d_GetLineDataRGBA5551(l);
-				}
-				
 				if (gpu->dispCapCnt.srcB == 1)
 				{
 					// fifo - tested by splinter cell chaos theory thermal view
-					srcB = fifoLine;
+					GPU_RenderLine_DispCapture_FIFOToBuffer(fifoLine);
 					
-					for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(__m128i); i++)
+					if (_gpuIsNativeSize)
 					{
-						__m128i fifoColor = _mm_set_epi32(DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv());
-						_mm_store_si128((__m128i *)srcB + i, _mm_shuffle_epi32(fifoColor, 0x1B)); // We need to shuffle the four FIFO values back into the correct order, since they were originally loaded in reverse order.
+						GPU_RenderLine_DispCapture_Blend<CAPTURELENGTH, true, true, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+					}
+					else
+					{
+						GPU_RenderLine_DispCapture_Blend<CAPTURELENGTH, false, true, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+					}
+				}
+				else
+				{
+					if (_gpuIsNativeSize)
+					{
+						if (vram3DUsage.isBlockUsed[vramReadBlock])
+						{
+							GPU_RenderLine_DispCapture_Blend<CAPTURELENGTH, true, false, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+						}
+						else
+						{
+							GPU_RenderLine_DispCapture_Blend<CAPTURELENGTH, true, true, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+						}
+					}
+					else
+					{
+						if (vram3DUsage.isBlockUsed[vramReadBlock])
+						{
+							GPU_RenderLine_DispCapture_Blend<CAPTURELENGTH, false, false, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+						}
+						else
+						{
+							GPU_RenderLine_DispCapture_Blend<CAPTURELENGTH, false, true, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+						}
 					}
 				}
 				
-				for (size_t i = 0; i < CAPTURELENGTH; i += 8)
-				{
-					const __m128i colorBitMask = _mm_set1_epi16(0x001F);
-					const __m128i blendEVA_vec128 = _mm_set1_epi16(gpu->dispCapCnt.EVA);
-					const __m128i blendEVB_vec128 = _mm_set1_epi16(gpu->dispCapCnt.EVB);
-					
-					__m128i srcA_vec128 = (_gpuIsNativeSize) ? _mm_load_si128((__m128i *)(srcA + i)) : _mm_set_epi16(srcA[_gpuDstPitchIndex[i+7]],
-																													 srcA[_gpuDstPitchIndex[i+6]],
-																													 srcA[_gpuDstPitchIndex[i+5]],
-																													 srcA[_gpuDstPitchIndex[i+4]],
-																													 srcA[_gpuDstPitchIndex[i+3]],
-																													 srcA[_gpuDstPitchIndex[i+2]],
-																													 srcA[_gpuDstPitchIndex[i+1]],
-																													 srcA[_gpuDstPitchIndex[i+0]]);
-					__m128i srcB_vec128 = _mm_loadu_si128((__m128i *)(srcB + i));
-					__m128i srcA_alpha = _mm_and_si128(srcA_vec128, _mm_set1_epi16(0x8000));
-					__m128i srcB_alpha = _mm_and_si128(srcB_vec128, _mm_set1_epi16(0x8000));
-					
-					srcA_vec128 = _mm_andnot_si128( _mm_cmpeq_epi16(srcA_alpha, _mm_setzero_si128()), srcA_vec128 );
-					srcB_vec128 = _mm_andnot_si128( _mm_cmpeq_epi16(srcB_alpha, _mm_setzero_si128()), srcB_vec128 );
-					
-					__m128i srcB_r = _mm_and_si128(srcB_vec128, colorBitMask);
-					srcB_r = _mm_mullo_epi16(srcB_r, blendEVB_vec128);
-					
-					__m128i srcB_g = _mm_srli_epi16(srcB_vec128, 5);
-					srcB_g = _mm_and_si128(srcB_g, colorBitMask);
-					srcB_g = _mm_mullo_epi16(srcB_g, blendEVB_vec128);
-					
-					__m128i srcB_b = _mm_srli_epi16(srcB_vec128, 10);
-					srcB_b = _mm_and_si128(srcB_b, colorBitMask);
-					srcB_b = _mm_mullo_epi16(srcB_b, blendEVB_vec128);
-					
-					__m128i r = _mm_and_si128(srcA_vec128, colorBitMask);
-					r = _mm_mullo_epi16(r, blendEVA_vec128);
-					r = _mm_add_epi16(r, srcB_r);
-					r = _mm_srli_epi16(r, 4);
-					r = _mm_min_epi16(r, colorBitMask);
-					
-					__m128i g = _mm_srli_epi16(srcA_vec128, 5);
-					g = _mm_and_si128(g, colorBitMask);
-					g = _mm_mullo_epi16(g, blendEVA_vec128);
-					g = _mm_add_epi16(g, srcB_g);
-					g = _mm_srli_epi16(g, 4);
-					g = _mm_min_epi16(g, colorBitMask);
-					g = _mm_slli_epi16(g, 5);
-					
-					__m128i b = _mm_srli_epi16(srcA_vec128, 10);
-					b = _mm_and_si128(b, colorBitMask);
-					b = _mm_mullo_epi16(b, blendEVA_vec128);
-					b = _mm_add_epi16(b, srcB_b);
-					b = _mm_srli_epi16(b, 4);
-					b = _mm_min_epi16(b, colorBitMask);
-					b = _mm_slli_epi16(b, 10);
-					
-					const __m128i a = _mm_or_si128(srcA_alpha, srcB_alpha);
-					_mm_storeu_si128( (__m128i *)(cap_dst + i), _mm_or_si128(_mm_or_si128(_mm_or_si128(r, g), b), a) );
-				}
+				vram3DUsage.isBlockUsed[vramWriteBlock] = true;
 				break;
+			}
+		}
+		
+		if (!_gpuIsNativeSize)
+		{
+			const size_t captureLengthExt = (CAPTURELENGTH) ? _gpuFramebufferWidth : _gpuFramebufferWidth / 2;
+			const size_t captureLineCount = _gpuDstLineCount[l];
+			const size_t vramBlockOffsetExt = _gpuVRAMBlockOffset;
+			const u32 ofsmulExt = (CAPTURELENGTH) ? _gpuFramebufferWidth : _gpuFramebufferWidth / 2;
+			
+			size_t cap_dst_adr_ext = (gpu->dispCapCnt.writeOffset * _gpuCaptureLineIndex[64] * _gpuFramebufferWidth) + (_gpuCaptureLineIndex[l] * ofsmulExt);
+			
+			while (cap_dst_adr_ext >= vramBlockOffsetExt)
+			{
+				cap_dst_adr_ext -= vramBlockOffsetExt;
+			}
+			
+			cap_dst_adr_ext += vramWriteBlock * vramBlockOffsetExt;
+			
+			const u16 *cap_src_ext = _gpuNonNativeVRAMBlank;
+			u16 *cap_dst_ext = _gpuNonNativeVRAM + cap_dst_adr_ext;
+			
+			if (vramConfiguration.banks[vramReadBlock].purpose == VramConfiguration::LCDC)
+			{
+				size_t cap_src_adr_ext = (gpu->dispCapCnt.readOffset * _gpuCaptureLineIndex[64] * _gpuFramebufferWidth) + (_gpuCaptureLineIndex[l] * _gpuFramebufferWidth);
+				
+				while (cap_src_adr_ext >= vramBlockOffsetExt)
+				{
+					cap_src_adr_ext -= vramBlockOffsetExt;
+				}
+				
+				cap_src_adr_ext += vramReadBlock * vramBlockOffsetExt;
+				cap_src_ext = _gpuNonNativeVRAM + cap_src_adr_ext;
+			}
+			
+			srcB = (gpu->dispCapCnt.srcB == 0) ? cap_src_ext : fifoLine;
+			
+			switch (gpu->dispCapCnt.capSrc)
+			{
+				case 0: // Capture source is SourceA
+				{
+					switch (gpu->dispCapCnt.srcA)
+					{
+						case 0: // Capture screen (BG + OBJ + 3D)
+							GPU_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, false, false>(srcA, cap_dst_ext, captureLengthExt, captureLineCount);
+							break;
+							
+						case 1: // Capture 3D
+							GPU_RenderLine_DispCapture_Copy<1, CAPTURELENGTH, false, false>(srcA, cap_dst_ext, captureLengthExt, captureLineCount);
+							break;
+					}
+					break;
+				}
+					
+				case 1: // Capture source is SourceB
+				{
+					switch (gpu->dispCapCnt.srcB)
+					{
+						case 0: // Capture VRAM
+						{
+							if (vram3DUsage.isBlockUsed[vramReadBlock])
+							{
+								GPU_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, false, false>(srcB, cap_dst_ext, captureLengthExt, captureLineCount);
+							}
+							else
+							{
+								GPU_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, true, false>(srcB, cap_dst_ext, captureLengthExt, captureLineCount);
+							}
+							break;
+						}
+							
+						case 1: // Capture dispfifo (not yet tested)
+							GPU_RenderLine_DispCapture_Copy<1, CAPTURELENGTH, true, false>(srcB, cap_dst_ext, captureLengthExt, captureLineCount);
+							break;
+					}
+					
+					break;
+				}
+					
+				default: // Capture source is SourceA+B blended
+				{
+					if (vram3DUsage.isBlockUsed[vramReadBlock])
+					{
+						GPU_RenderLine_DispCapture_Blend<CAPTURELENGTH, false, false, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
+					}
+					else
+					{
+						GPU_RenderLine_DispCapture_Blend<CAPTURELENGTH, false, true, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
+					}
+					
+					break;
+				}
 			}
 		}
 	}
@@ -2710,8 +2942,6 @@ static void GPU_RenderLine_DispCapture_SSE2(const u16 l)
 		T1WriteLong(MMU.ARM9_REG, 0x64, gpu->dispCapCnt.val);
 	}
 }
-
-#endif // ENABLE_SSE2
 
 static INLINE void GPU_RenderLine_MasterBrightness(const GPUMasterBrightMode mode, const u32 factor, u16 *dstLine, const size_t dstLineCount)
 {
@@ -2897,6 +3127,8 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 		//NOTE:
 		//I am REALLY unsatisfied with this logic now. But it seems to be working..
 		gpu->refreshAffineStartRegs(-1,-1);
+		
+		gpu->UpdateVRAM3DUsageProperties(vram3DUsage);
 	}
 
 	if (skip)
@@ -2904,7 +3136,7 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 		gpu->currLine = l;
 		if (gpu->core == GPUCOREID_MAIN)
 		{
-			GPU_RenderLine_DispCapture<false, 0>(l);
+			GPU_RenderLine_DispCapture<0>(l);
 			if (l == 191) { disp_fifo.head = disp_fifo.tail = 0; }
 		}
 		return;
@@ -2978,7 +3210,6 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 			if (_gpuIsNativeSize)
 			{
 				const u16 *src = gpu->VRAMaddr + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
-				
 #ifdef LOCAL_LE
 				memcpy(dstLine, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
 #else
@@ -2990,21 +3221,36 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 			}
 			else
 			{
-				const u16 *src = gpu->VRAMaddr + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
-				
-				for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
+				if (vram3DUsage.isBlockUsed[MainScreen.gpu->vramBlock] && (vram3DUsage.blockIndexDisplayVRAM == MainScreen.gpu->vramBlock))
 				{
-					const u16 color = LE_TO_LOCAL_16(src[x]);
-					
-					for (size_t p = 0; p < _gpuDstPitchCount[x]; p++)
+					const u16 *src = gpu->VRAMaddrNonNative + (_gpuDstLineIndex[l] * _gpuFramebufferWidth);
+#ifdef LOCAL_LE
+					memcpy(dstLine, src, _gpuFramebufferWidth * _gpuDstLineCount[l] * sizeof(u16));
+#else
+					for (size_t x = 0; x < _gpuFramebufferWidth * _gpuDstLineCount[l]; x++)
 					{
-						dstLine[_gpuDstPitchIndex[x] + p] = color;
+						dstLine[x] = LE_TO_LOCAL_16(src[x]);
 					}
+#endif
 				}
-				
-				for (size_t line = 1; line < dstLineCount; line++)
+				else
 				{
-					memcpy(dstLine + (line * _gpuFramebufferWidth), dstLine, _gpuFramebufferWidth * sizeof(u16));
+					const u16 *src = gpu->VRAMaddr + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+					
+					for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
+					{
+						const u16 color = LE_TO_LOCAL_16(src[x]);
+						
+						for (size_t p = 0; p < _gpuDstPitchCount[x]; p++)
+						{
+							dstLine[_gpuDstPitchIndex[x] + p] = color;
+						}
+					}
+					
+					for (size_t line = 1; line < dstLineCount; line++)
+					{
+						memcpy(dstLine + (line * _gpuFramebufferWidth), dstLine, _gpuFramebufferWidth * sizeof(u16));
+					}
 				}
 			}
 		}
@@ -3057,29 +3303,18 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 		
 		if ((vramConfiguration.banks[gpu->dispCapCnt.writeBlock].purpose == VramConfiguration::LCDC) && (l < gpu->dispCapCnt.capy))
 		{
-#ifdef ENABLE_SSE2
 			if (gpu->dispCapCnt.capx == DISPCAPCNT::_128)
 			{
-				GPU_RenderLine_DispCapture_SSE2<true, GPU_FRAMEBUFFER_NATIVE_WIDTH/2>(l);
+				GPU_RenderLine_DispCapture<GPU_FRAMEBUFFER_NATIVE_WIDTH/2>(l);
 			}
 			else
 			{
-				GPU_RenderLine_DispCapture_SSE2<true, GPU_FRAMEBUFFER_NATIVE_WIDTH>(l);
+				GPU_RenderLine_DispCapture<GPU_FRAMEBUFFER_NATIVE_WIDTH>(l);
 			}
-#else
-			if (gpu->dispCapCnt.capx == DISPCAPCNT::_128)
-			{
-				GPU_RenderLine_DispCapture<true, GPU_FRAMEBUFFER_NATIVE_WIDTH/2>(l);
-			}
-			else
-			{
-				GPU_RenderLine_DispCapture<true, GPU_FRAMEBUFFER_NATIVE_WIDTH>(l);
-			}
-#endif
 		}
 		else
 		{
-			GPU_RenderLine_DispCapture<false, 0>(l);
+			GPU_RenderLine_DispCapture<0>(l);
 		}
 		
 		if (l == 191) { disp_fifo.head = disp_fifo.tail = 0; }
@@ -3147,6 +3382,146 @@ bool gpu_loadstate(EMUFILE* is, int size)
 	MainScreen.gpu->updateBLDALPHA();
 	SubScreen.gpu->updateBLDALPHA();
 	return !is->fail();
+}
+
+void GPU::UpdateVRAM3DUsageProperties_BGLayer(const GPU &gpuEngine, const size_t bankIndex, VRAM3DUsageProperties &outProperty) const
+{
+	const GPUCoreID gpuEngineID = gpuEngine.core;
+	const bool bg2 = (gpuEngine.dispCnt().BG2_Enable == 1) && (gpuEngine.BGTypes[2] == BGType_AffineExt_Direct) && (gpuEngine.BGSize[2][0] == 256) && (gpuEngine.BGSize[2][1] == 256);
+	const bool bg3 = (gpuEngine.dispCnt().BG3_Enable == 1) && (gpuEngine.BGTypes[3] == BGType_AffineExt_Direct) && (gpuEngine.BGSize[3][0] == 256) && (gpuEngine.BGSize[3][1] == 256);
+	u8 selectedBGLayer = VRAM_NO_3D_USAGE;
+	
+	if (!bg2 && !bg3)
+	{
+		return;
+	}
+	
+	outProperty.is3DEnabled[gpuEngineID] = true;
+	outProperty.blockIndexBG[gpuEngineID] = bankIndex;
+	
+	if (bg3 && !bg2)
+	{
+		selectedBGLayer = (gpuEngine.bgPrio[3] >= gpuEngine.bgPrio[0]) ? 3 : VRAM_NO_3D_USAGE;
+	}
+	else if (!bg3 && bg2)
+	{
+		selectedBGLayer = (gpuEngine.bgPrio[2] >= gpuEngine.bgPrio[0]) ? 2 : VRAM_NO_3D_USAGE;
+	}
+	else if (bg3 && bg2)
+	{
+		selectedBGLayer = (gpuEngine.bgPrio[3] >= gpuEngine.bgPrio[2]) ? ((gpuEngine.bgPrio[3] >= gpuEngine.bgPrio[0]) ? 3 : VRAM_NO_3D_USAGE) : ((gpuEngine.bgPrio[2] >= gpuEngine.bgPrio[0]) ? 2 : VRAM_NO_3D_USAGE);
+	}
+	
+	if (selectedBGLayer != VRAM_NO_3D_USAGE)
+	{
+		const BGxPARMS &bgParams = (selectedBGLayer == 3) ? (gpuEngine.dispx_st)->dispx_BG3PARMS : (gpuEngine.dispx_st)->dispx_BG2PARMS;
+		const AffineInfo &affineParams = gpuEngine.affineInfo[selectedBGLayer - 2];
+		
+		if ( (bgParams.BGxPA != 256) ||
+		     (bgParams.BGxPB !=   0) ||
+		     (bgParams.BGxPC !=   0) ||
+		     (bgParams.BGxPD != 256) ||
+		     (affineParams.x !=   0) ||
+		     (affineParams.y !=   0) )
+		{
+			outProperty.bgLayerUsingVRAM[gpuEngineID] = VRAM_NO_3D_USAGE;
+		}
+	}
+	
+	outProperty.bgLayerUsingVRAM[gpuEngineID] = selectedBGLayer;
+}
+
+void GPU::UpdateVRAM3DUsageProperties_OBJLayer(const GPU &gpuEngine, const size_t bankIndex, VRAM3DUsageProperties &outProperty) const
+{
+	const GPUCoreID gpuEngineID = gpuEngine.core;
+	
+	if ((gpuEngine.dispCnt().OBJ_Enable != 1) || (gpuEngine.dispCnt().OBJ_BMP_mapping != 0) || (gpuEngine.dispCnt().OBJ_BMP_2D_dim != 1))
+	{
+		return;
+	}
+	
+	for (size_t spriteIndex = 0; spriteIndex < 128; spriteIndex++)
+	{
+		const OAMAttributes &spriteInfo = gpuEngine.oamList[spriteIndex];
+		
+		if ( (spriteInfo.RotScale != 2) && ((spriteInfo.RotScale & 1) == 0) && (spriteInfo.Mode == 3) && (spriteInfo.PaletteIndex != 0) )
+		{
+			const u32 vramAddress = ( (spriteInfo.TileIndex & 0x1F) * 0x10 ) + ( (spriteInfo.TileIndex & ~0x1F) * 0x80 );
+			const SpriteSize sprSize = sprSizeTab[spriteInfo.Size][spriteInfo.Shape];
+			
+			if( (vramAddress == (MainScreen.gpu->dispCapCnt.writeOffset * ADDRESS_STEP_32KB)) && (sprSize.x == 64) && (sprSize.y == 64) )
+			{
+				outProperty.is3DEnabled[gpuEngineID] = true;
+				outProperty.blockIndexOBJ[gpuEngineID] = bankIndex;
+				return;
+			}
+		}
+	}
+}
+
+void GPU::UpdateVRAM3DUsageProperties(VRAM3DUsageProperties &outProperty) const
+{
+	if (this->core != GPUCOREID_MAIN)
+	{
+		return;
+	}
+	
+	outProperty.blockIndexDisplayVRAM = VRAM_NO_3D_USAGE;
+	outProperty.blockIndexBG[GPUCOREID_MAIN] = VRAM_NO_3D_USAGE;
+	outProperty.blockIndexBG[GPUCOREID_SUB] = VRAM_NO_3D_USAGE;
+	outProperty.blockIndexOBJ[GPUCOREID_MAIN] = VRAM_NO_3D_USAGE;
+	outProperty.blockIndexOBJ[GPUCOREID_SUB] = VRAM_NO_3D_USAGE;
+	outProperty.bgLayerUsingVRAM[GPUCOREID_MAIN] = VRAM_NO_3D_USAGE;
+	outProperty.bgLayerUsingVRAM[GPUCOREID_SUB] = VRAM_NO_3D_USAGE;
+	
+	outProperty.is3DEnabled[GPUCOREID_MAIN] = (MainScreen.gpu->dispCnt().BG0_Enable == 1) && (MainScreen.gpu->dispCnt().BG0_3D == 1);
+	outProperty.is3DEnabled[GPUCOREID_SUB] = false;
+	
+	if (_gpuIsNativeSize)
+	{
+		return;
+	}
+	
+	// Iterate through VRAM banks A-D and determine if they will be used for this frame.
+	for (size_t i = 0; i < 4; i++)
+	{
+		if (!outProperty.isBlockUsed[i])
+		{
+			continue;
+		}
+		
+		switch (vramConfiguration.banks[i].purpose)
+		{
+			case VramConfiguration::ABG:
+				this->UpdateVRAM3DUsageProperties_BGLayer(*MainScreen.gpu, i, outProperty);
+				break;
+				
+			case VramConfiguration::BBG:
+				this->UpdateVRAM3DUsageProperties_BGLayer(*SubScreen.gpu, i, outProperty);
+				break;
+				
+			case VramConfiguration::AOBJ:
+				this->UpdateVRAM3DUsageProperties_OBJLayer(*MainScreen.gpu, i, outProperty);
+				break;
+				
+			case VramConfiguration::BOBJ:
+				this->UpdateVRAM3DUsageProperties_OBJLayer(*SubScreen.gpu, i, outProperty);
+				break;
+				
+			case VramConfiguration::LCDC:
+			{
+				if ((this->dispMode == GPUDisplayMode_VRAM) && (this->vramBlock == i))
+				{
+					outProperty.blockIndexDisplayVRAM = i;
+				}
+				break;
+			}
+				
+			default:
+				outProperty.isBlockUsed[i] = false;
+				break;
+		}
+	}
 }
 
 u32 GPU::getAffineStart(const size_t layer, int xy)
