@@ -708,6 +708,8 @@
 	<true/>
 	<key>Render3D_FragmentSamplingHack</key>
 	<false/>
+	<key>Render3D_ScalingFactor</key>
+	<integer>1</integer>
 	<key>Render3D_HighPrecisionColorInterpolation</key>
 	<true/>
 	<key>Render3D_LineHack</key>
