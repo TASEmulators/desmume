@@ -646,6 +646,19 @@ enum GPULayerType
 	GPULayerType_OBJ				= 2
 };
 
+typedef struct
+{
+	u8 blockIndexBG[2];
+	u8 bgLayerUsingVRAM[2];
+	u8 blockIndexOBJ[2];
+	u8 blockIndexDisplayVRAM;
+	
+	bool isBlockUsed[4];
+	bool is3DEnabled[2];
+} VRAM3DUsageProperties;
+
+#define VRAM_NO_3D_USAGE 0xFF
+
 struct GPU
 {
 	GPU()
@@ -665,7 +678,7 @@ struct GPU
 	CACHE_ALIGN u8 sprPrio[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	
 	_BGxCNT & bgcnt(int num) { return (dispx_st)->dispx_BGxCNT[num].bits; }
-	_DISPCNT & dispCnt() { return dispx_st->dispx_DISPCNT.bits; }
+	const _DISPCNT& dispCnt() const { return dispx_st->dispx_DISPCNT.bits; }
 	template<bool MOSAIC> void modeRender(const size_t layer);
 
 	DISPCAPCNT dispCapCnt;
@@ -704,6 +717,7 @@ struct GPU
 	GPUDisplayMode dispMode;
 	u8 vramBlock;
 	u16 *VRAMaddr;
+	u16 *VRAMaddrNonNative;
 
 	//FIFO	fifo;
 
@@ -822,7 +836,11 @@ struct GPU
 	
 	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(const size_t srcX, const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, u16 src);
 	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
-	template<bool MOSAIC, bool BACKDROP, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
+	template<bool MOSAIC, bool BACKDROP, bool USENONNATIVEVRAM, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
+	
+	void UpdateVRAM3DUsageProperties_BGLayer(const GPU &gpuEngine, const size_t bankIndex, VRAM3DUsageProperties &outProperty) const;
+	void UpdateVRAM3DUsageProperties_OBJLayer(const GPU &gpuEngine, const size_t bankIndex, VRAM3DUsageProperties &outProperty) const;
+	void UpdateVRAM3DUsageProperties(VRAM3DUsageProperties &outProperty) const;
 	
 	void setAffineStart(const size_t layer, int xy, u32 val);
 	void setAffineStartWord(const size_t layer, int xy, u16 val, int word);
