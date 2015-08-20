@@ -2513,7 +2513,7 @@ static u16 GPU_RenderLine_DispCapture_BlendFunc(const u16 srcA, const u16 srcB, 
 }
 
 #ifdef ENABLE_SSE2
-static __m128i GPU_RenderLine_DispCapture_BlendFunc_SSE2(__m128i srcA, __m128i srcB, const __m128i blendEVA, const __m128i blendEVB)
+static __m128i GPU_RenderLine_DispCapture_BlendFunc_SSE2(__m128i &srcA, __m128i &srcB, const __m128i &blendEVA, const __m128i &blendEVB)
 {
 	const __m128i colorBitMask = _mm_set1_epi16(0x001F);
 	const __m128i srcA_alpha = _mm_and_si128(srcA, _mm_set1_epi16(0x8000));
