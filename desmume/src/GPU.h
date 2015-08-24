@@ -646,16 +646,34 @@ enum GPULayerType
 	GPULayerType_OBJ				= 2
 };
 
+enum NDSDisplayID
+{
+	NDSDisplayID_Main				= 0,
+	NDSDisplayID_Touch				= 1
+};
+
 typedef struct
 {
-	u8 blockIndexBG[2];
-	u8 bgLayerUsingVRAM[2];
-	u8 blockIndexOBJ[2];
 	u8 blockIndexDisplayVRAM;
-	
 	bool isBlockUsed[4];
-	bool is3DEnabled[2];
 } VRAM3DUsageProperties;
+
+typedef struct
+{
+	bool isCustomSizeRequested;			// true - A custom size was requested; false - Use the native size
+	size_t customWidth;					// The custom buffer width, measured in pixels
+	size_t customHeight;				// The custom buffer height, measured in pixels
+	u16 *masterCustomBuffer;			// Pointer to the head of the master custom buffer.
+	u16 *masterNativeBuffer;			// Pointer to the head of the master native buffer.
+	
+	u16 *customBuffer[2];				// Pointer to a display's custom size framebuffer
+	u16	*nativeBuffer[2];				// Pointer to a display's native size framebuffer
+	
+	bool didPerformCustomRender[2];		// true - The display performed a custom render; false - The display performed a native render
+	size_t renderedWidth[2];			// The display rendered at this width, measured in pixels
+	size_t renderedHeight[2];			// The display rendered at this height, measured in pixels
+	u16 *renderedBuffer[2];				// The display rendered to this buffer
+} NDSDisplayInfo;
 
 #define VRAM_NO_3D_USAGE 0xFF
 
@@ -714,11 +732,24 @@ struct GPU
 	template<size_t WIN_NUM> void setup_windows();
 	
 	GPUCoreID core;
+	NDSDisplayID targetDisplayID;
 	GPUDisplayMode dispMode;
 	u8 vramBlock;
-	u16 *VRAMaddr;
-	u16 *VRAMaddrNonNative;
-
+	u16 *VRAMaddrNative;
+	u16 *VRAMaddrCustom;
+	
+	bool isCustomRenderingNeeded;
+	bool is3DEnabled;
+	u8 vramBlockBGIndex;
+	u8 vramBGLayer;
+	u8 vramBlockOBJIndex;
+	
+	u16 *customBuffer;
+	u16	*nativeBuffer;
+	size_t renderedWidth;
+	size_t renderedHeight;
+	u16 *renderedBuffer;
+	
 	//FIFO	fifo;
 
 	u8 bgPrio[5];
@@ -836,11 +867,10 @@ struct GPU
 	
 	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(const size_t srcX, const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, u16 src);
 	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
-	template<bool MOSAIC, bool BACKDROP, bool USENONNATIVEVRAM, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
+	template<bool MOSAIC, bool BACKDROP, bool USECUSTOMVRAM, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
 	
-	void UpdateVRAM3DUsageProperties_BGLayer(const GPU &gpuEngine, const size_t bankIndex, VRAM3DUsageProperties &outProperty) const;
-	void UpdateVRAM3DUsageProperties_OBJLayer(const GPU &gpuEngine, const size_t bankIndex, VRAM3DUsageProperties &outProperty) const;
-	void UpdateVRAM3DUsageProperties(VRAM3DUsageProperties &outProperty) const;
+	void UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
+	void UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
 	
 	void setAffineStart(const size_t layer, int xy, u32 val);
 	void setAffineStartWord(const size_t layer, int xy, u16 val, int word);
@@ -864,6 +894,8 @@ struct GPU
 	void setBLDALPHA(const u16 val);
 	void setBLDALPHA_EVA(const u8 val);
 	void setBLDALPHA_EVB(const u8 val);
+	
+	void SetDisplayByID(const NDSDisplayID theDisplayID);
 };
 #if 0
 // normally should have same addresses
@@ -885,7 +917,7 @@ static void REG_DISPx_pack_test(GPU * gpu)
 }
 #endif
 
-extern u16 *GPU_screen;
+extern u16 *GPU_screen; // TODO: Old pointer - need to eliminate direct reference in frontends
 
 GPU* GPU_Init(const GPUCoreID coreID);
 void GPU_Reset(GPU *gpu);
@@ -893,7 +925,8 @@ void GPU_DeInit(GPU *gpu);
 size_t GPU_GetFramebufferWidth();
 size_t GPU_GetFramebufferHeight();
 void GPU_SetFramebufferSize(size_t w, size_t h);
-bool GPU_IsFramebufferNativeSize();
+void GPU_UpdateVRAM3DUsageProperties(VRAM3DUsageProperties &outProperty);
+const NDSDisplayInfo& NDS_GetDisplayInfo(); // Frontends need to call this whenever they need to read the video buffers from the emulator core
 
 //these are functions used by debug tools which want to render layers etc outside the context of the emulation
 namespace GPU_EXT
@@ -905,14 +938,31 @@ namespace GPU_EXT
 void sprite1D(GPU *gpu, u16 l, u8 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 void sprite2D(GPU *gpu, u16 l, u8 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 
-typedef struct
+class NDSDisplay
+{
+private:
+	NDSDisplayID _ID;
+	GPU *_gpu;
+	
+public:
+	NDSDisplay();
+	NDSDisplay(const NDSDisplayID displayID);
+	NDSDisplay(const NDSDisplayID displayID, const GPUCoreID coreID);
+	
+	GPU* GetEngine();
+	GPUCoreID GetEngineID();
+	void SetEngineByID(const GPUCoreID theID);
+};
+
+struct NDS_Screen
 {
 	GPU *gpu;
-	u16 offset;
-} NDS_Screen;
+};
 
 extern NDS_Screen MainScreen;
 extern NDS_Screen SubScreen;
+extern NDSDisplay MainDisplay;
+extern NDSDisplay TouchDisplay;
 
 int Screen_Init();
 void Screen_Reset(void);
