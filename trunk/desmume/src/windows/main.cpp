@@ -816,11 +816,13 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 	}
 
 	// finally, make it relative to the correct screen
+	const bool isMainGPUFirst = (MainDisplay.GetEngineID() == GPUCOREID_MAIN);
+
 	if (video.layout == 0 || video.layout == 2)
 	{
 		if(whichScreen)
 		{
-			bool topOnTop = (video.swap == 0) || (video.swap == 2 && !MainScreen.offset) || (video.swap == 3 && MainScreen.offset);
+			bool topOnTop = (video.swap == 0) || (video.swap == 2 && isMainGPUFirst) || (video.swap == 3 && !isMainGPUFirst);
 			bool bottom = (whichScreen > 0);
 			if(topOnTop)
 				y += bottom ? -192 : 0;
@@ -832,7 +834,7 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 	{
 		if(whichScreen)
 		{
-			bool topOnTop = (video.swap == 0) || (video.swap == 2 && !MainScreen.offset) || (video.swap == 3 && MainScreen.offset);
+			bool topOnTop = (video.swap == 0) || (video.swap == 2 && isMainGPUFirst) || (video.swap == 3 && !isMainGPUFirst);
 			bool bottom = (whichScreen > 0);
 			if(topOnTop)
 				x += bottom ? -256 : 0;
@@ -1654,6 +1656,7 @@ static void OGL_DoDisplay()
 
 
 	RECT srcRects [2];
+	const bool isMainGPUFirst = (MainDisplay.GetEngineID() == GPUCOREID_MAIN);
 
 	if(video.swap == 0)
 	{
@@ -1669,15 +1672,15 @@ static void OGL_DoDisplay()
 	}
 	else if(video.swap == 2)
 	{
-		srcRects[0] = (MainScreen.offset) ? SubScreenSrcRect : MainScreenSrcRect;
-		srcRects[1] = (MainScreen.offset) ? MainScreenSrcRect : SubScreenSrcRect;
-		if(osd) osd->swapScreens = (MainScreen.offset != 0);
+		srcRects[0] = (!isMainGPUFirst) ? SubScreenSrcRect : MainScreenSrcRect;
+		srcRects[1] = (!isMainGPUFirst) ? MainScreenSrcRect : SubScreenSrcRect;
+		if(osd) osd->swapScreens = !isMainGPUFirst;
 	}
 	else if(video.swap == 3)
 	{
-		srcRects[0] = (MainScreen.offset) ? MainScreenSrcRect : SubScreenSrcRect;
-		srcRects[1] = (MainScreen.offset) ? SubScreenSrcRect : MainScreenSrcRect;
-		if(osd) osd->swapScreens = (SubScreen.offset != 0);
+		srcRects[0] = (!isMainGPUFirst) ? MainScreenSrcRect : SubScreenSrcRect;
+		srcRects[1] = (!isMainGPUFirst) ? SubScreenSrcRect : MainScreenSrcRect;
+		if(osd) osd->swapScreens = isMainGPUFirst;
 	}
 
 	//printf("%d,%d %dx%d  -- %d,%d %dx%d\n",
@@ -1771,6 +1774,7 @@ static void DD_DoDisplay()
 
 	RECT* dstRects [2] = {&MainScreenRect, &SubScreenRect};
 	RECT* srcRects [2];
+	const bool isMainGPUFirst = (MainDisplay.GetEngineID() == GPUCOREID_MAIN);
 
 	if(video.swap == 0)
 	{
@@ -1786,15 +1790,15 @@ static void DD_DoDisplay()
 	}
 	else if(video.swap == 2)
 	{
-		srcRects[0] = (MainScreen.offset) ? &SubScreenSrcRect : &MainScreenSrcRect;
-		srcRects[1] = (MainScreen.offset) ? &MainScreenSrcRect : &SubScreenSrcRect;
-		if(osd) osd->swapScreens = (MainScreen.offset != 0);
+		srcRects[0] = (!isMainGPUFirst) ? &SubScreenSrcRect : &MainScreenSrcRect;
+		srcRects[1] = (!isMainGPUFirst) ? &MainScreenSrcRect : &SubScreenSrcRect;
+		if(osd) osd->swapScreens = !isMainGPUFirst;
 	}
 	else if(video.swap == 3)
 	{
-		srcRects[0] = (MainScreen.offset) ? &MainScreenSrcRect : &SubScreenSrcRect;
-		srcRects[1] = (MainScreen.offset) ? &SubScreenSrcRect : &MainScreenSrcRect;
-		if(osd) osd->swapScreens = (SubScreen.offset != 0);
+		srcRects[0] = (!isMainGPUFirst) ? &MainScreenSrcRect : &SubScreenSrcRect;
+		srcRects[1] = (!isMainGPUFirst) ? &SubScreenSrcRect : &MainScreenSrcRect;
+		if(osd) osd->swapScreens = isMainGPUFirst;
 	}
 
 	//this code fills in all the undrawn areas if we are in fullscreen mode.
@@ -5141,7 +5145,9 @@ DOKEYDOWN:
 			}
 			else
 			{
-				if ((video.layout == 2) && ((video.swap == 0) || (video.swap == 2 && !MainScreen.offset) || (video.swap == 3 && MainScreen.offset))) return 0;
+				const bool isMainGPUFirst = (MainDisplay.GetEngineID() == GPUCOREID_MAIN);
+				if ((video.layout == 2) && ((video.swap == 0) || (video.swap == 2 && isMainGPUFirst) || (video.swap == 3 && !isMainGPUFirst))) return 0;
+				
 				ToDSScreenRelativeCoords(x,y,1);
 				if(x<0) x = 0; else if(x>255) x = 255;
 				if(y<0) y = 0; else if(y>192) y = 192;

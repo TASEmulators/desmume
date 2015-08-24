@@ -60,13 +60,14 @@ GPU::MosaicLookup GPU::mosaicLookup;
 
 NDS_Screen MainScreen;
 NDS_Screen SubScreen;
-u16 *GPU_screen = NULL;
+NDSDisplay MainDisplay(NDSDisplayID_Main, GPUCOREID_MAIN);
+NDSDisplay TouchDisplay(NDSDisplayID_Touch, GPUCOREID_SUB);
 
-static size_t _gpuFramebufferWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-static size_t _gpuFramebufferHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-static float _gpuWidthScale = (float)_gpuFramebufferWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
-static float _gpuHeightScale = (float)_gpuFramebufferHeight / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-static size_t _gpuLargestDstLineCount = (size_t)ceilf(_gpuHeightScale);
+static NDSDisplayInfo _displayInfo;
+static u16 *GPU_CustomFramebuffer = NULL;
+u16 *GPU_screen = GPU_CustomFramebuffer; // TODO: Old pointer - need to eliminate direct reference in frontends
+
+static size_t _gpuLargestDstLineCount = 1;
 static size_t _gpuVRAMBlockOffset = GPU_VRAM_BLOCK_LINES * GPU_FRAMEBUFFER_NATIVE_WIDTH;
 static bool _gpuIsNativeSize = true;
 
@@ -81,8 +82,8 @@ static CACHE_ALIGN size_t _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES + 1];	// Key
 static CACHE_ALIGN u8 sprWin[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 
 static VRAM3DUsageProperties vram3DUsage;
-static u16 *_gpuNonNativeVRAM = NULL;
-static u16 *_gpuNonNativeVRAMBlank = NULL;
+static u16 *_gpuCustomVRAM = NULL;
+static u16 *_gpuCustomVRAMBlank = NULL;
 
 static const CACHE_ALIGN SpriteSize sprSizeTab[4][4] = {
      {{8, 8}, {16, 8}, {8, 16}, {8, 8}},
@@ -200,6 +201,7 @@ GPU* GPU_Init(const GPUCoreID coreID)
 	GPU_Reset(gpu);
 	GPU_InitFadeColors();
 	
+	gpu->targetDisplayID = (coreID == GPUCOREID_MAIN) ? NDSDisplayID_Main : NDSDisplayID_Touch;
 	gpu->curr_win[0] = win_empty;
 	gpu->curr_win[1] = win_empty;
 	gpu->need_update_winh[0] = true;
@@ -207,8 +209,19 @@ GPU* GPU_Init(const GPUCoreID coreID)
 	gpu->setFinalColorBck_funcNum = 0;
 	gpu->setFinalColor3d_funcNum = 0;
 	gpu->setFinalColorSpr_funcNum = 0;
-	gpu->VRAMaddr = (u16 *)MMU.ARM9_LCD;
-	gpu->VRAMaddrNonNative = _gpuNonNativeVRAM;
+	gpu->VRAMaddrNative = (u16 *)MMU.ARM9_LCD;
+	gpu->VRAMaddrCustom = _gpuCustomVRAM;
+	
+	gpu->renderedWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	gpu->renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	
+#ifdef ENABLE_COMBINATION_RENDERING
+	gpu->nativeBuffer = (coreID == GPUCOREID_MAIN) ? GPU_NativeFramebuffer : GPU_NativeFramebuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+#else
+	gpu->nativeBuffer = NULL;
+#endif
+	gpu->customBuffer = NULL;
+	gpu->renderedBuffer = gpu->nativeBuffer;
 	
 	return gpu;
 }
@@ -220,18 +233,30 @@ void GPU_Reset(GPU *gpu)
 	// whatever persistent states we need now, do the memset(), and then restore them.
 	// It would be better if we were more precise about GPU resets.
 	const GPUCoreID currentCoreID = gpu->core;
+	const NDSDisplayID currentDisplayID = gpu->targetDisplayID;
 	u16 *currentTempScanlineBuffer = gpu->tempScanlineBuffer;
 	u8 *currentBGPixels = gpu->bgPixels;
+	bool currentIsCustomRenderingNeeded = gpu->isCustomRenderingNeeded;
+	u16 *currentCustomBuffer = gpu->customBuffer;
+	u16	*currentNativeBuffer = gpu->nativeBuffer;
 	
 	memset(gpu, 0, sizeof(GPU));
 	
 	gpu->core = currentCoreID;
+	gpu->targetDisplayID = currentDisplayID;
 	gpu->tempScanlineBuffer = currentTempScanlineBuffer;
 	gpu->bgPixels = currentBGPixels;
+	gpu->isCustomRenderingNeeded = currentIsCustomRenderingNeeded;
+	gpu->customBuffer = currentCustomBuffer;
+	gpu->nativeBuffer = currentNativeBuffer;
+	
+	gpu->vramBlockBGIndex = VRAM_NO_3D_USAGE;
+	gpu->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
+	gpu->vramBGLayer = VRAM_NO_3D_USAGE;
 	
 	// Clear the separate memory blocks that weren't cleared in the last memset()
-	if (gpu->tempScanlineBuffer != NULL) memset(gpu->tempScanlineBuffer, 0, _gpuFramebufferWidth * _gpuLargestDstLineCount * sizeof(u16));
-	if (gpu->bgPixels != NULL) memset(gpu->bgPixels, 0, _gpuFramebufferWidth * _gpuLargestDstLineCount * 4 * sizeof(u8));
+	if (gpu->tempScanlineBuffer != NULL) memset(gpu->tempScanlineBuffer, 0, _displayInfo.customWidth * _gpuLargestDstLineCount * sizeof(u16));
+	if (gpu->bgPixels != NULL) memset(gpu->bgPixels, 0, _displayInfo.customWidth * _gpuLargestDstLineCount * 4 * sizeof(u8));
 	
 	//important for emulator stability for this to initialize, since we have to setup a table based on it
 	gpu->BLDALPHA_EVA = 0;
@@ -406,8 +431,8 @@ void GPU_setVideoProp(GPU *gpu, const u32 ctrlBits)
 			break;
 			
 		case GPUDisplayMode_VRAM: // Display framebuffer
-			gpu->VRAMaddr = (u16 *)MMU.ARM9_LCD + (gpu->vramBlock * GPU_VRAM_BLOCK_LINES * GPU_FRAMEBUFFER_NATIVE_WIDTH);
-			gpu->VRAMaddrNonNative = _gpuNonNativeVRAM + (gpu->vramBlock * _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * _gpuFramebufferWidth);
+			gpu->VRAMaddrNative = (u16 *)MMU.ARM9_LCD + (gpu->vramBlock * GPU_VRAM_BLOCK_LINES * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+			gpu->VRAMaddrCustom = _gpuCustomVRAM + (gpu->vramBlock * _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * _displayInfo.customWidth);
 			break;
 			
 		case GPUDisplayMode_MainMemory: // Display from Main RAM
@@ -858,7 +883,7 @@ FORCEINLINE void GPU::__setFinalColorBck(const u16 color, const size_t srcX, con
 
 //this was forced inline because most of the time it just falls through to setFinalColorBck() and the function call
 //overhead was ridiculous and terrible
-template<bool MOSAIC, bool BACKDROP, bool USENONNATIVEVRAM, int FUNCNUM>
+template<bool MOSAIC, bool BACKDROP, bool USECUSTOMVRAM, int FUNCNUM>
 FORCEINLINE void GPU::___setFinalColorBck(u16 color, const size_t srcX, const bool opaque)
 {
 	//due to this early out, we will get incorrect behavior in cases where 
@@ -872,7 +897,7 @@ FORCEINLINE void GPU::___setFinalColorBck(u16 color, const size_t srcX, const bo
 			
 			for (size_t line = 0; line < _gpuDstLineCount[this->currLine]; line++)
 			{
-				const u16 *srcLine = (USENONNATIVEVRAM) ? _gpuNonNativeVRAM + (vram3DUsage.blockIndexBG[this->core] * _gpuVRAMBlockOffset) + ((_gpuDstLineIndex[this->currLine] + line) * _gpuFramebufferWidth) : NULL;
+				const u16 *srcLine = (USECUSTOMVRAM) ? _gpuCustomVRAM + (this->vramBlockBGIndex * _gpuVRAMBlockOffset) + ((_gpuDstLineIndex[this->currLine] + line) * _displayInfo.customWidth) : NULL;
 				
 				for (size_t p = 0; p < _gpuDstPitchCount[srcX]; p++)
 				{
@@ -882,11 +907,11 @@ FORCEINLINE void GPU::___setFinalColorBck(u16 color, const size_t srcX, const bo
 													  dstX,
 													  dstLine,
 													  bgLine,
-													  (USENONNATIVEVRAM) ? srcLine[dstX] : color);
+													  (USECUSTOMVRAM) ? srcLine[dstX] : color);
 				}
 				
-				dstLine += _gpuFramebufferWidth;
-				bgLine += _gpuFramebufferWidth;
+				dstLine += _displayInfo.customWidth;
+				bgLine += _displayInfo.customWidth;
 			}
 		}
 		
@@ -917,7 +942,7 @@ FORCEINLINE void GPU::___setFinalColorBck(u16 color, const size_t srcX, const bo
 		
 		for (size_t line = 0; line < _gpuDstLineCount[this->currLine]; line++)
 		{
-			const u16 *srcLine = (USENONNATIVEVRAM) ? _gpuNonNativeVRAM + (vram3DUsage.blockIndexBG[this->core] * _gpuVRAMBlockOffset) + ((_gpuDstLineIndex[this->currLine] + line) * _gpuFramebufferWidth) : NULL;
+			const u16 *srcLine = (USECUSTOMVRAM) ? _gpuCustomVRAM + (this->vramBlockBGIndex * _gpuVRAMBlockOffset) + ((_gpuDstLineIndex[this->currLine] + line) * _displayInfo.customWidth) : NULL;
 			
 			for (size_t p = 0; p < _gpuDstPitchCount[srcX]; p++)
 			{
@@ -927,11 +952,11 @@ FORCEINLINE void GPU::___setFinalColorBck(u16 color, const size_t srcX, const bo
 												  dstX,
 												  dstLine,
 												  bgLine,
-												  (USENONNATIVEVRAM) ? srcLine[dstX] : color);
+												  (USECUSTOMVRAM) ? srcLine[dstX] : color);
 			}
 			
-			dstLine += _gpuFramebufferWidth;
-			bgLine += _gpuFramebufferWidth;
+			dstLine += _displayInfo.customWidth;
+			bgLine += _displayInfo.customWidth;
 		}
 	}
 }
@@ -1199,12 +1224,12 @@ FORCEINLINE void rot_256_map(GPU *gpu, const s32 auxX, const s32 auxY, const int
 	gpu->__setFinalColorBck<MOSAIC,false>(color, i, (palette_entry != 0));
 }
 
-template<bool MOSAIC, bool USENONNATIVEVRAM>
+template<bool MOSAIC, bool USECUSTOMVRAM>
 FORCEINLINE void rot_BMP_map(GPU *gpu, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *pal, const size_t i)
 {
 	const u16 color = LE_TO_LOCAL_16( *(u16 *)MMU_gpu_map((map) + ((auxX + auxY * lg) << 1)) );
 	
-	if (USENONNATIVEVRAM)
+	if (USECUSTOMVRAM)
 	{
 		gpu->___setFinalColorBck<MOSAIC, false, true, 0>(color, i, ((color & 0x8000) != 0));
 	}
@@ -1308,7 +1333,7 @@ FORCEINLINE void extRotBG2(GPU *gpu, const BGxPARMS &param, const u16 LG)
 			
 		case BGType_AffineExt_Direct: // direct colors / BMP
 		{
-			if (!_gpuIsNativeSize && vram3DUsage.is3DEnabled[gpu->core] && (gpu->currBgNum == vram3DUsage.bgLayerUsingVRAM[gpu->core]))
+			if (!_gpuIsNativeSize && gpu->isCustomRenderingNeeded && (gpu->currBgNum == gpu->vramBGLayer))
 			{
 				apply_rot_fun< rot_BMP_map<MOSAIC, true> >(gpu, param, LG, gpu->BG_bmp_ram[num], 0, NULL);
 			}
@@ -1913,6 +1938,12 @@ int Screen_Init()
 	
 	GPU_SetFramebufferSize(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 	
+#ifdef ENABLE_COMBINATION_RENDERING
+	_displayInfo.masterNativeBuffer = GPU_NativeFramebuffer;
+#else
+	_displayInfo.masterNativeBuffer = NULL;
+#endif
+	
 	return 0;
 }
 
@@ -1921,26 +1952,16 @@ void Screen_Reset(void)
 	gfx3d_reset();
 	GPU_Reset(MainScreen.gpu);
 	GPU_Reset(SubScreen.gpu);
-	MainScreen.offset = 0;
-	SubScreen.offset = _gpuFramebufferHeight;
 	
-	memset(GPU_screen, 0xFF, _gpuFramebufferWidth * _gpuFramebufferHeight * 2 * sizeof(u16));
-	memset(gfx3d_colorRGBA6665, 0, _gpuFramebufferWidth * _gpuFramebufferHeight * sizeof(FragmentColor));
-	memset(gfx3d_colorRGBA5551, 0, _gpuFramebufferWidth * _gpuFramebufferHeight * sizeof(u16));
+	memset(GPU_CustomFramebuffer, 0xFF, _displayInfo.customWidth * _displayInfo.customHeight * 2 * sizeof(u16));
+	memset(gfx3d_colorRGBA6665, 0, _displayInfo.customWidth * _displayInfo.customHeight * sizeof(FragmentColor));
+	memset(gfx3d_colorRGBA5551, 0, _displayInfo.customWidth * _displayInfo.customHeight * sizeof(u16));
 	
-	vram3DUsage.is3DEnabled[GPUCOREID_MAIN] = false;
-	vram3DUsage.is3DEnabled[GPUCOREID_SUB] = false;
-	vram3DUsage.blockIndexBG[GPUCOREID_MAIN] = VRAM_NO_3D_USAGE;
-	vram3DUsage.blockIndexBG[GPUCOREID_SUB] = VRAM_NO_3D_USAGE;
-	vram3DUsage.blockIndexOBJ[GPUCOREID_MAIN] = VRAM_NO_3D_USAGE;
-	vram3DUsage.blockIndexOBJ[GPUCOREID_SUB] = VRAM_NO_3D_USAGE;
 	vram3DUsage.blockIndexDisplayVRAM = VRAM_NO_3D_USAGE;
 	vram3DUsage.isBlockUsed[0] = false;
 	vram3DUsage.isBlockUsed[1] = false;
 	vram3DUsage.isBlockUsed[2] = false;
 	vram3DUsage.isBlockUsed[3] = false;
-	vram3DUsage.bgLayerUsingVRAM[GPUCOREID_MAIN] = VRAM_NO_3D_USAGE;
-	vram3DUsage.bgLayerUsingVRAM[GPUCOREID_SUB] = VRAM_NO_3D_USAGE;
 	
 	disp_fifo.head = disp_fifo.tail = 0;
 	osd->clear();
@@ -1958,7 +1979,8 @@ void Screen_DeInit(void)
 	delete osd;
 	osd = NULL;
 	
-	free_aligned(GPU_screen);
+	free_aligned(GPU_CustomFramebuffer);
+	GPU_CustomFramebuffer = NULL;
 	GPU_screen = NULL;
 	
 	free_aligned(_gpuDstToSrcIndex);
@@ -1967,12 +1989,12 @@ void Screen_DeInit(void)
 
 size_t GPU_GetFramebufferWidth()
 {
-	return _gpuFramebufferWidth;
+	return _displayInfo.customWidth;
 }
 
 size_t GPU_GetFramebufferHeight()
 {
-	return _gpuFramebufferHeight;
+	return _displayInfo.customHeight;
 }
 
 void GPU_SetFramebufferSize(size_t w, size_t h)
@@ -1989,11 +2011,11 @@ void GPU_SetFramebufferSize(size_t w, size_t h)
 		CurrentRenderer->RenderFinish();
 	}
 	
-	const float newGpuWidthScale = (float)w / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	const float newGpuHeightScale = (float)h / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	const float newGpuLargestDstLineCount = (size_t)ceilf(newGpuHeightScale);
+	const float customWidthScale = (float)w / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	const float customHeightScale = (float)h / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	const float newGpuLargestDstLineCount = (size_t)ceilf(customHeightScale);
 	
-	u16 *oldGPUScreenPtr = GPU_screen;
+	u16 *oldCustomFramebuffer = GPU_CustomFramebuffer;
 	u16 *oldGpuDstToSrcIndexPtr = _gpuDstToSrcIndex;
 	FragmentColor *oldColorRGBA6665Buffer = gfx3d_colorRGBA6665;
 	u16 *oldColorRGBA5551Buffer = gfx3d_colorRGBA5551;
@@ -2001,11 +2023,11 @@ void GPU_SetFramebufferSize(size_t w, size_t h)
 	u16 *oldSubScreenTempScanlineBuffer = SubScreen.gpu->tempScanlineBuffer;
 	u8 *oldMainScreenBGPixels = MainScreen.gpu->bgPixels;
 	u8 *oldSubScreenBGPixels = SubScreen.gpu->bgPixels;
-	u16 *oldNonNativeVRAM = _gpuNonNativeVRAM;
+	u16 *oldCustomVRAM = _gpuCustomVRAM;
 	
 	for (size_t srcX = 0, currentPitchCount = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH; srcX++)
 	{
-		const size_t pitch = (size_t)ceilf((srcX+1) * newGpuWidthScale) - currentPitchCount;
+		const size_t pitch = (size_t)ceilf((srcX+1) * customWidthScale) - currentPitchCount;
 		_gpuDstPitchCount[srcX] = pitch;
 		_gpuDstPitchIndex[srcX] = currentPitchCount;
 		currentPitchCount += pitch;
@@ -2013,7 +2035,7 @@ void GPU_SetFramebufferSize(size_t w, size_t h)
 	
 	for (size_t srcY = 0, currentLineCount = 0; srcY < GPU_FRAMEBUFFER_NATIVE_HEIGHT; srcY++)
 	{
-		const size_t lineCount = (size_t)ceilf((srcY+1) * newGpuHeightScale) - currentLineCount;
+		const size_t lineCount = (size_t)ceilf((srcY+1) * customHeightScale) - currentLineCount;
 		_gpuDstLineCount[srcY] = lineCount;
 		_gpuDstLineIndex[srcY] = currentLineCount;
 		currentLineCount += lineCount;
@@ -2021,7 +2043,7 @@ void GPU_SetFramebufferSize(size_t w, size_t h)
 	
 	for (size_t srcY = 0, currentLineCount = 0; srcY < GPU_VRAM_BLOCK_LINES + 1; srcY++)
 	{
-		const size_t lineCount = (size_t)ceilf((srcY+1) * newGpuHeightScale) - currentLineCount;
+		const size_t lineCount = (size_t)ceilf((srcY+1) * customHeightScale) - currentLineCount;
 		_gpuCaptureLineIndex[srcY] = currentLineCount;
 		currentLineCount += lineCount;
 	}
@@ -2041,8 +2063,8 @@ void GPU_SetFramebufferSize(size_t w, size_t h)
 		}
 	}
 	
-	u16 *newGPUScreenPtr = (u16 *)malloc_alignedCacheLine(w * h * sizeof(u16) * 2);
-	memset_u16(newGPUScreenPtr, 0x7FFF, w * h * 2);
+	u16 *newCustomFramebuffer = (u16 *)malloc_alignedCacheLine(w * h * sizeof(u16) * 2);
+	memset_u16(newCustomFramebuffer, 0x7FFF, w * h * 2);
 	
 	FragmentColor *newColorRGBA6665Buffer = (FragmentColor *)malloc_alignedCacheLine(w * h * sizeof(FragmentColor));
 	u16 *newColorRGBA5551 = (u16 *)malloc_alignedCacheLine(w * h * sizeof(u16));
@@ -2052,38 +2074,56 @@ void GPU_SetFramebufferSize(size_t w, size_t h)
 	u8 *newMainScreenBGPixels = (u8 *)malloc_alignedCacheLine(w * newGpuLargestDstLineCount * 4 * sizeof(u8)); // yes indeed, this is oversized. map debug tools try to write to it
 	u8 *newSubScreenBGPixels = (u8 *)malloc_alignedCacheLine(w * newGpuLargestDstLineCount * 4 * sizeof(u8)); // yes indeed, this is oversized. map debug tools try to write to it
 	
-	const size_t newNonNativeVRAMBlockSize = _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w;
-	const size_t newNonNativeVRAMBlankSize = newGpuLargestDstLineCount * w;
-	u16 *newNonNativeVRAM = (u16 *)malloc_alignedCacheLine(((newNonNativeVRAMBlockSize * 4) + newNonNativeVRAMBlankSize) * sizeof(u16));
-	memset(newNonNativeVRAM, 0, ((newNonNativeVRAMBlockSize * 4) + newNonNativeVRAMBlankSize) * sizeof(u16));
+	const size_t newCustomVRAMBlockSize = _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w;
+	const size_t newCustomVRAMBlankSize = newGpuLargestDstLineCount * w;
+	u16 *newCustomVRAM = (u16 *)malloc_alignedCacheLine(((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
+	memset(newCustomVRAM, 0, ((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
 	
-	_gpuFramebufferWidth = w;
-	_gpuFramebufferHeight = h;
-	_gpuWidthScale = newGpuWidthScale;
-	_gpuHeightScale = newGpuHeightScale;
 	_gpuIsNativeSize = ( (w == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (h == GPU_FRAMEBUFFER_NATIVE_HEIGHT) );
 	_gpuLargestDstLineCount = newGpuLargestDstLineCount;
 	_gpuVRAMBlockOffset = _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w;
 	_gpuDstToSrcIndex = newGpuDstToSrcIndex;
-	_gpuNonNativeVRAM = newNonNativeVRAM;
-	_gpuNonNativeVRAMBlank = newNonNativeVRAM + (newNonNativeVRAMBlockSize * 4);
+	_gpuCustomVRAM = newCustomVRAM;
+	_gpuCustomVRAMBlank = newCustomVRAM + (newCustomVRAMBlockSize * 4);
 	
 	MainScreen.gpu->tempScanlineBuffer = newMainScreenTempScanlineBuffer;
 	SubScreen.gpu->tempScanlineBuffer = newSubScreenTempScanlineBuffer;
 	MainScreen.gpu->bgPixels = newMainScreenBGPixels;
 	SubScreen.gpu->bgPixels = newSubScreenBGPixels;
-	GPU_screen = newGPUScreenPtr;
+	GPU_CustomFramebuffer = newCustomFramebuffer;
+	GPU_screen = GPU_CustomFramebuffer;
 	gfx3d_colorRGBA6665 = newColorRGBA6665Buffer;
 	gfx3d_colorRGBA5551 = newColorRGBA5551;
 	
-	MainScreen.offset = (MainScreen.offset == 0) ? 0 : h;
-	SubScreen.offset = (SubScreen.offset == 0) ? 0 : h;
-	MainScreen.gpu->VRAMaddrNonNative = newNonNativeVRAM + (MainScreen.gpu->vramBlock * _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w);
-	SubScreen.gpu->VRAMaddrNonNative = newNonNativeVRAM + (SubScreen.gpu->vramBlock * _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w);
+	MainScreen.gpu->VRAMaddrCustom = newCustomVRAM + (MainScreen.gpu->vramBlock * _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w);
+	SubScreen.gpu->VRAMaddrCustom = newCustomVRAM + (SubScreen.gpu->vramBlock * _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w);
+	MainScreen.gpu->customBuffer = (MainScreen.gpu->targetDisplayID == NDSDisplayID_Main) ? GPU_CustomFramebuffer : GPU_CustomFramebuffer + (w * h);
+	SubScreen.gpu->customBuffer = (SubScreen.gpu->targetDisplayID == NDSDisplayID_Main) ? GPU_CustomFramebuffer : GPU_CustomFramebuffer + (w * h);
 	
 	CurrentRenderer->SetFramebufferSize(w, h);
 	
-	free_aligned(oldGPUScreenPtr);
+	_displayInfo.isCustomSizeRequested = ( (w != GPU_FRAMEBUFFER_NATIVE_WIDTH) || (h != GPU_FRAMEBUFFER_NATIVE_HEIGHT) );
+	_displayInfo.masterCustomBuffer = GPU_CustomFramebuffer;
+	_displayInfo.customWidth = w;
+	_displayInfo.customHeight = h;
+	_displayInfo.customBuffer[NDSDisplayID_Main] = MainDisplay.GetEngine()->customBuffer;
+	_displayInfo.customBuffer[NDSDisplayID_Touch] = TouchDisplay.GetEngine()->customBuffer;
+	
+	if (_displayInfo.didPerformCustomRender[NDSDisplayID_Main])
+	{
+		_displayInfo.renderedBuffer[NDSDisplayID_Main] = _displayInfo.customBuffer[NDSDisplayID_Main];
+		_displayInfo.renderedWidth[NDSDisplayID_Main] = _displayInfo.customWidth;
+		_displayInfo.renderedHeight[NDSDisplayID_Main] = _displayInfo.customHeight;
+	}
+	
+	if (_displayInfo.didPerformCustomRender[NDSDisplayID_Touch])
+	{
+		_displayInfo.renderedBuffer[NDSDisplayID_Touch] = _displayInfo.customBuffer[NDSDisplayID_Touch];
+		_displayInfo.renderedWidth[NDSDisplayID_Touch] = _displayInfo.customWidth;
+		_displayInfo.renderedHeight[NDSDisplayID_Touch] = _displayInfo.customHeight;
+	}
+	
+	free_aligned(oldCustomFramebuffer);
 	free_aligned(oldGpuDstToSrcIndexPtr);
 	free_aligned(oldColorRGBA6665Buffer);
 	free_aligned(oldColorRGBA5551Buffer);
@@ -2091,12 +2131,7 @@ void GPU_SetFramebufferSize(size_t w, size_t h)
 	free_aligned(oldSubScreenTempScanlineBuffer);
 	free_aligned(oldMainScreenBGPixels);
 	free_aligned(oldSubScreenBGPixels);
-	free_aligned(oldNonNativeVRAM);
-}
-
-bool GPU_IsFramebufferNativeSize()
-{
-	return _gpuIsNativeSize;
+	free_aligned(oldCustomVRAM);
 }
 
 /*****************************************************************************/
@@ -2152,11 +2187,10 @@ void GPU_set_DISPCAPCNT(u32 val)
 			gpu->dispCapCnt.srcA, gpu->dispCapCnt.srcB);*/
 }
 
-static void GPU_RenderLine_layer(GPU *gpu, const u16 l)
+static void GPU_RenderLine_layer(GPU *gpu, const u16 l, u16 *dstLine, const size_t dstLineWidth, const size_t dstLineCount)
 {
-	const size_t pixCount = _gpuFramebufferWidth * _gpuDstLineCount[l];
-
-	u16 *dstLine = gpu->currDst;
+	const size_t pixCount = dstLineWidth * dstLineCount;
+	const size_t dstLineIndex = _gpuDstLineIndex[l];
 	struct _DISPCNT *dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	itemsForPriority_t *item;
 
@@ -2262,24 +2296,25 @@ PLAIN_CLEAR:
 
 					if (gpu->core == GPUCOREID_MAIN && layerNum == 0 && dispCnt->BG0_3D)
 					{
-						const FragmentColor *srcLine = gfx3d_GetLineDataRGBA6665(_gpuDstLineIndex[l]);
-						const u16 hofs = (u16)( ((float)gpu->getHOFS(layerNum) * _gpuWidthScale) + 0.5f );
+						const float customWidthScale = (float)_displayInfo.customWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+						const FragmentColor *srcLine = gfx3d_GetLineDataRGBA6665(dstLineIndex);
+						const u16 hofs = (u16)( ((float)gpu->getHOFS(layerNum) * customWidthScale) + 0.5f );
 						u16 *render3DdstLine = dstLine;
 						u8 *render3DbgLine = gpu->bgPixels;
 						
 						gpu->currBgNum = 0;
 						
-						for (size_t line = 0; line < _gpuDstLineCount[l]; line++)
+						for (size_t line = 0; line < dstLineCount; line++)
 						{
-							for (size_t dstX = 0; dstX < _gpuFramebufferWidth; dstX++)
+							for (size_t dstX = 0; dstX < dstLineWidth; dstX++)
 							{
 								size_t srcX = dstX + hofs;
-								if (srcX >= _gpuFramebufferWidth * 2)
+								if (srcX >= dstLineWidth * 2)
 								{
-									srcX -= _gpuFramebufferWidth * 2;
+									srcX -= dstLineWidth * 2;
 								}
 								
-								if (srcX >= _gpuFramebufferWidth || srcLine[srcX].a == 0)
+								if (srcX >= dstLineWidth || srcLine[srcX].a == 0)
 									continue;
 								
 								gpu->setFinalColor3d(_gpuDstToSrcIndex[dstX],
@@ -2289,9 +2324,9 @@ PLAIN_CLEAR:
 													 srcLine[srcX]);
 							}
 							
-							srcLine += _gpuFramebufferWidth;
-							render3DdstLine += _gpuFramebufferWidth;
-							render3DbgLine += _gpuFramebufferWidth;
+							srcLine += dstLineWidth;
+							render3DdstLine += dstLineWidth;
+							render3DbgLine += dstLineWidth;
 						}
 						
 						continue;
@@ -2336,10 +2371,10 @@ PLAIN_CLEAR:
 				u16 *sprDstLine = gpu->currDst;
 				u8 *sprBgLine = gpu->bgPixels;
 				
-				const bool useNonNativeVRAM = vram3DUsage.is3DEnabled[gpu->core] && (vram3DUsage.blockIndexOBJ[gpu->core] != VRAM_NO_3D_USAGE);
-				const u16 *srcLine = (useNonNativeVRAM) ? _gpuNonNativeVRAM + (vram3DUsage.blockIndexOBJ[gpu->core] * _gpuVRAMBlockOffset) + (_gpuDstLineIndex[l] * _gpuFramebufferWidth) : NULL;
+				const bool useCustomVRAM = gpu->isCustomRenderingNeeded && (gpu->vramBlockOBJIndex != VRAM_NO_3D_USAGE);
+				const u16 *srcLine = (useCustomVRAM) ? _gpuCustomVRAM + (gpu->vramBlockOBJIndex * _gpuVRAMBlockOffset) + (dstLineIndex * dstLineWidth) : NULL;
 				
-				for (size_t line = 0; line < _gpuDstLineCount[l]; line++)
+				for (size_t line = 0; line < dstLineCount; line++)
 				{
 					for (size_t i = 0; i < item->nbPixelsX; i++)
 					{
@@ -2353,15 +2388,15 @@ PLAIN_CLEAR:
 												  dstX,
 												  sprDstLine,
 												  sprBgLine,
-												  (useNonNativeVRAM) ? srcLine[dstX] : gpu->sprColor[srcX],
+												  (useCustomVRAM) ? srcLine[dstX] : gpu->sprColor[srcX],
 												  gpu->sprAlpha[srcX],
 												  gpu->sprType[srcX]);
 						}
 					}
 					
-					srcLine += _gpuFramebufferWidth;
-					sprDstLine += _gpuFramebufferWidth;
-					sprBgLine += _gpuFramebufferWidth;
+					srcLine += dstLineWidth;
+					sprDstLine += dstLineWidth;
+					sprBgLine += dstLineWidth;
 				}
 			}
 		}
@@ -2428,7 +2463,7 @@ static void GPU_RenderLine_DispCapture_Copy(const u16 *__restrict src, u16 *__re
 			
 			for (size_t line = 1; line < captureLineCount; line++)
 			{
-				memcpy(dst + (line * _gpuFramebufferWidth), dst, captureLengthExt * sizeof(u16));
+				memcpy(dst + (line * _displayInfo.customWidth), dst, captureLengthExt * sizeof(u16));
 			}
 		}
 		else
@@ -2467,8 +2502,8 @@ static void GPU_RenderLine_DispCapture_Copy(const u16 *__restrict src, u16 *__re
 						dst[i] = LE_TO_LOCAL_16(src[i]) | alphaBit;
 					}
 					
-					src += _gpuFramebufferWidth;
-					dst += _gpuFramebufferWidth;
+					src += _displayInfo.customWidth;
+					dst += _displayInfo.customWidth;
 				}
 			}
 		}
@@ -2562,44 +2597,46 @@ static __m128i GPU_RenderLine_DispCapture_BlendFunc_SSE2(__m128i &srcA, __m128i 
 #endif
 
 template<bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB>
-static void GPU_RenderLine_DispCapture_BlendToNonNativeDstBuffer(const u16 *__restrict srcA, const u16 *__restrict srcB, u16 *__restrict dst, const u8 blendEVA, const u8 blendEVB, const size_t length, size_t l)
+static void GPU_RenderLine_DispCapture_BlendToCustomDstBuffer(const u16 *__restrict srcA, const u16 *__restrict srcB, u16 *__restrict dst, const u8 blendEVA, const u8 blendEVB, const size_t length, size_t l)
 {
 #ifdef ENABLE_SSE2
 	const __m128i blendEVA_vec128 = _mm_set1_epi16(blendEVA);
 	const __m128i blendEVB_vec128 = _mm_set1_epi16(blendEVB);
 #endif
 	
+	size_t offset = _gpuDstToSrcIndex[_gpuDstLineIndex[l] * _displayInfo.customWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 	size_t i = 0;
 	
 #ifdef ENABLE_SSE2
+	
 	const size_t ssePixCount = length - (length % 8);
 	for (; i < ssePixCount; i += 8)
 	{
-		__m128i srcA_vec128 = (!CAPTUREFROMNATIVESRCA) ? _mm_load_si128((__m128i *)(srcA + i)) : _mm_set_epi16(srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 7],
-																											   srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 6],
-																											   srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 5],
-																											   srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 4],
-																											   srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 3],
-																											   srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 2],
-																											   srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 1],
-																											   srcA[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 0]);
+		__m128i srcA_vec128 = (!CAPTUREFROMNATIVESRCA) ? _mm_load_si128((__m128i *)(srcA + i)) : _mm_set_epi16(srcA[offset + i + 7],
+																											   srcA[offset + i + 6],
+																											   srcA[offset + i + 5],
+																											   srcA[offset + i + 4],
+																											   srcA[offset + i + 3],
+																											   srcA[offset + i + 2],
+																											   srcA[offset + i + 1],
+																											   srcA[offset + i + 0]);
 		
-		__m128i srcB_vec128 = (!CAPTUREFROMNATIVESRCB) ? _mm_load_si128((__m128i *)(srcB + i)) : _mm_set_epi16(srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 7],
-																											   srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 6],
-																											   srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 5],
-																											   srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 4],
-																											   srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 3],
-																											   srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 2],
-																											   srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 1],
-																											   srcB[_gpuDstToSrcIndex[_gpuDstLineIndex[l] * _gpuFramebufferWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) + i + 0]);
+		__m128i srcB_vec128 = (!CAPTUREFROMNATIVESRCB) ? _mm_load_si128((__m128i *)(srcB + i)) : _mm_set_epi16(srcB[offset + i + 7],
+																											   srcB[offset + i + 6],
+																											   srcB[offset + i + 5],
+																											   srcB[offset + i + 4],
+																											   srcB[offset + i + 3],
+																											   srcB[offset + i + 2],
+																											   srcB[offset + i + 1],
+																											   srcB[offset + i + 0]);
 		
 		_mm_store_si128( (__m128i *)(dst + i), GPU_RenderLine_DispCapture_BlendFunc_SSE2(srcA_vec128, srcB_vec128, blendEVA_vec128, blendEVB_vec128) );
 	}
 #endif
 	for (; i < length; i++)
 	{
-		const u16 colorA = (!CAPTUREFROMNATIVESRCA) ? srcA[i] : srcA[_gpuDstToSrcIndex[(_gpuDstLineIndex[l] * _gpuFramebufferWidth) + i] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH)];
-		const u16 colorB = (!CAPTUREFROMNATIVESRCB) ? srcB[i] : srcB[_gpuDstToSrcIndex[(_gpuDstLineIndex[l] * _gpuFramebufferWidth) + i] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH)];
+		const u16 colorA = (!CAPTUREFROMNATIVESRCA) ? srcA[i] : srcA[offset + i];
+		const u16 colorB = (!CAPTUREFROMNATIVESRCB) ? srcB[i] : srcB[offset + i];
 		
 		dst[i] = GPU_RenderLine_DispCapture_BlendFunc(colorA, colorB, blendEVA, blendEVB);
 	}
@@ -2655,16 +2692,16 @@ static void GPU_RenderLine_DispCapture_Blend(const u16 *__restrict srcA, const u
 		
 		if (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH)
 		{
-			GPU_RenderLine_DispCapture_BlendToNonNativeDstBuffer<CAPTUREFROMNATIVESRCA, CAPTUREFROMNATIVESRCB>(srcA, srcB, dst, blendEVA, blendEVB, captureLengthExt * captureLineCount, l);
+			GPU_RenderLine_DispCapture_BlendToCustomDstBuffer<CAPTUREFROMNATIVESRCA, CAPTUREFROMNATIVESRCB>(srcA, srcB, dst, blendEVA, blendEVB, captureLengthExt * captureLineCount, l);
 		}
 		else
 		{
 			for (size_t line = 0; line < captureLineCount; line++)
 			{
-				GPU_RenderLine_DispCapture_BlendToNonNativeDstBuffer<CAPTUREFROMNATIVESRCA, CAPTUREFROMNATIVESRCB>(srcA, srcB, dst, blendEVA, blendEVB, captureLengthExt, l);
-				srcA += _gpuFramebufferWidth;
-				srcB += _gpuFramebufferWidth;
-				dst += _gpuFramebufferWidth;
+				GPU_RenderLine_DispCapture_BlendToCustomDstBuffer<CAPTUREFROMNATIVESRCA, CAPTUREFROMNATIVESRCB>(srcA, srcB, dst, blendEVA, blendEVB, captureLengthExt, l);
+				srcA += _displayInfo.customWidth;
+				srcB += _displayInfo.customWidth;
+				dst += _displayInfo.customWidth;
 			}
 		}
 	}
@@ -2844,12 +2881,12 @@ static void GPU_RenderLine_DispCapture(const u16 l)
 		
 		if (!_gpuIsNativeSize)
 		{
-			const size_t captureLengthExt = (CAPTURELENGTH) ? _gpuFramebufferWidth : _gpuFramebufferWidth / 2;
+			const size_t captureLengthExt = (CAPTURELENGTH) ? _displayInfo.customWidth : _displayInfo.customWidth / 2;
 			const size_t captureLineCount = _gpuDstLineCount[l];
 			const size_t vramBlockOffsetExt = _gpuVRAMBlockOffset;
-			const u32 ofsmulExt = (CAPTURELENGTH) ? _gpuFramebufferWidth : _gpuFramebufferWidth / 2;
+			const u32 ofsmulExt = (CAPTURELENGTH) ? _displayInfo.customWidth : _displayInfo.customWidth / 2;
 			
-			size_t cap_dst_adr_ext = (gpu->dispCapCnt.writeOffset * _gpuCaptureLineIndex[64] * _gpuFramebufferWidth) + (_gpuCaptureLineIndex[l] * ofsmulExt);
+			size_t cap_dst_adr_ext = (gpu->dispCapCnt.writeOffset * _gpuCaptureLineIndex[64] * _displayInfo.customWidth) + (_gpuCaptureLineIndex[l] * ofsmulExt);
 			
 			while (cap_dst_adr_ext >= vramBlockOffsetExt)
 			{
@@ -2858,12 +2895,12 @@ static void GPU_RenderLine_DispCapture(const u16 l)
 			
 			cap_dst_adr_ext += vramWriteBlock * vramBlockOffsetExt;
 			
-			const u16 *cap_src_ext = _gpuNonNativeVRAMBlank;
-			u16 *cap_dst_ext = _gpuNonNativeVRAM + cap_dst_adr_ext;
+			const u16 *cap_src_ext = _gpuCustomVRAMBlank;
+			u16 *cap_dst_ext = _gpuCustomVRAM + cap_dst_adr_ext;
 			
 			if (vramConfiguration.banks[vramReadBlock].purpose == VramConfiguration::LCDC)
 			{
-				size_t cap_src_adr_ext = (gpu->dispCapCnt.readOffset * _gpuCaptureLineIndex[64] * _gpuFramebufferWidth) + (_gpuCaptureLineIndex[l] * _gpuFramebufferWidth);
+				size_t cap_src_adr_ext = (gpu->dispCapCnt.readOffset * _gpuCaptureLineIndex[64] * _displayInfo.customWidth) + (_gpuCaptureLineIndex[l] * _displayInfo.customWidth);
 				
 				while (cap_src_adr_ext >= vramBlockOffsetExt)
 				{
@@ -2871,7 +2908,7 @@ static void GPU_RenderLine_DispCapture(const u16 l)
 				}
 				
 				cap_src_adr_ext += vramReadBlock * vramBlockOffsetExt;
-				cap_src_ext = _gpuNonNativeVRAM + cap_src_adr_ext;
+				cap_src_ext = _gpuCustomVRAM + cap_src_adr_ext;
 			}
 			
 			srcB = (gpu->dispCapCnt.srcB == 0) ? cap_src_ext : fifoLine;
@@ -2943,7 +2980,7 @@ static void GPU_RenderLine_DispCapture(const u16 l)
 	}
 }
 
-static INLINE void GPU_RenderLine_MasterBrightness(const GPUMasterBrightMode mode, const u32 factor, u16 *dstLine, const size_t dstLineCount)
+static INLINE void GPU_RenderLine_MasterBrightness(const GPUMasterBrightMode mode, const u32 factor, u16 *dstLine, const size_t dstLineWidth, const size_t dstLineCount)
 {
 	//isn't it odd that we can set uselessly high factors here?
 	//factors above 16 change nothing. curious.
@@ -2952,7 +2989,7 @@ static INLINE void GPU_RenderLine_MasterBrightness(const GPUMasterBrightMode mod
 	//Apply final brightness adjust (MASTER_BRIGHT)
 	//http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
 	
-	const size_t pixCount = _gpuFramebufferWidth * dstLineCount;
+	const size_t pixCount = dstLineWidth * dstLineCount;
 	
 	switch (mode)
 	{
@@ -3106,12 +3143,8 @@ void GPU::update_winh()
 
 void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 {
-	const size_t dstLineCount = _gpuDstLineCount[l];
-	const size_t dstLineIndex = _gpuDstLineIndex[l];
-	
 	GPU *gpu = screen->gpu;
-	u16 *dstLine = GPU_screen + ((screen->offset + dstLineIndex) * _gpuFramebufferWidth);
-
+	
 	//here is some setup which is only done on line 0
 	if (l == 0)
 	{
@@ -3128,9 +3161,12 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 		//I am REALLY unsatisfied with this logic now. But it seems to be working..
 		gpu->refreshAffineStartRegs(-1,-1);
 		
-		gpu->UpdateVRAM3DUsageProperties(vram3DUsage);
+		if (gpu->core == GPUCOREID_MAIN)
+		{
+			GPU_UpdateVRAM3DUsageProperties(vram3DUsage);
+		}
 	}
-
+	
 	if (skip)
 	{
 		gpu->currLine = l;
@@ -3141,11 +3177,16 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 		}
 		return;
 	}
-
+	
+	const size_t dstLineWidth = _displayInfo.customWidth;
+	const size_t dstLineCount = _gpuDstLineCount[l];
+	const size_t dstLineIndex = _gpuDstLineIndex[l];
+	u16 *dstLine = gpu->customBuffer + (dstLineIndex * dstLineWidth);
+	
 	//blacken the screen if it is turned off by the user
 	if (!CommonSettings.showGpu.screens[gpu->core])
 	{
-		memset(dstLine, 0, _gpuFramebufferWidth * dstLineCount * sizeof(u16));
+		memset(dstLine, 0, dstLineWidth * dstLineCount * sizeof(u16));
 		return;
 	}
 
@@ -3156,7 +3197,7 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 		if (!(gpu->core == GPUCOREID_MAIN && (gpu->dispCapCnt.enabled || l == 0 || l == 191)))
 		{
 			gpu->currLine = l;
-			GPU_RenderLine_MasterBrightness(gpu->MasterBrightMode, gpu->MasterBrightFactor, dstLine, dstLineCount);
+			GPU_RenderLine_MasterBrightness(gpu->MasterBrightMode, gpu->MasterBrightFactor, dstLine, dstLineWidth, dstLineCount);
 			return;
 		}
 	}
@@ -3193,12 +3234,12 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 		gpu->currDst = gpu->tempScanlineBuffer;
 	}
 
-	GPU_RenderLine_layer(gpu, l);
+	GPU_RenderLine_layer(gpu, l, gpu->currDst, dstLineWidth, dstLineCount);
 
 	switch (gpu->dispMode)
 	{
 		case GPUDisplayMode_Off: // Display Off(Display white)
-			memset_u16(dstLine, 0x7FFF, _gpuFramebufferWidth * dstLineCount);
+			memset_u16(dstLine, 0x7FFF, dstLineWidth * dstLineCount);
 			break;
 			
 		case GPUDisplayMode_Normal: // Display BG and OBJ layers
@@ -3209,7 +3250,7 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 		{
 			if (_gpuIsNativeSize)
 			{
-				const u16 *src = gpu->VRAMaddr + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+				const u16 *src = gpu->VRAMaddrNative + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 #ifdef LOCAL_LE
 				memcpy(dstLine, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
 #else
@@ -3223,11 +3264,11 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 			{
 				if (vram3DUsage.isBlockUsed[MainScreen.gpu->vramBlock] && (vram3DUsage.blockIndexDisplayVRAM == MainScreen.gpu->vramBlock))
 				{
-					const u16 *src = gpu->VRAMaddrNonNative + (_gpuDstLineIndex[l] * _gpuFramebufferWidth);
+					const u16 *src = gpu->VRAMaddrCustom + (dstLineIndex * dstLineWidth);
 #ifdef LOCAL_LE
-					memcpy(dstLine, src, _gpuFramebufferWidth * _gpuDstLineCount[l] * sizeof(u16));
+					memcpy(dstLine, src, dstLineWidth * dstLineCount * sizeof(u16));
 #else
-					for (size_t x = 0; x < _gpuFramebufferWidth * _gpuDstLineCount[l]; x++)
+					for (size_t x = 0; x < dstLineWidth * dstLineCount; x++)
 					{
 						dstLine[x] = LE_TO_LOCAL_16(src[x]);
 					}
@@ -3235,7 +3276,7 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 				}
 				else
 				{
-					const u16 *src = gpu->VRAMaddr + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+					const u16 *src = gpu->VRAMaddrNative + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 					
 					for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
 					{
@@ -3249,7 +3290,7 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 					
 					for (size_t line = 1; line < dstLineCount; line++)
 					{
-						memcpy(dstLine + (line * _gpuFramebufferWidth), dstLine, _gpuFramebufferWidth * sizeof(u16));
+						memcpy(dstLine + (line * dstLineWidth), dstLine, dstLineWidth * sizeof(u16));
 					}
 				}
 			}
@@ -3275,7 +3316,7 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 					((u32 *)dstLine)[i] = DISP_FIFOrecv() & 0x7FFF7FFF;
 				}
 #endif
-				if (_gpuFramebufferWidth != GPU_FRAMEBUFFER_NATIVE_WIDTH)
+				if (_displayInfo.customWidth != GPU_FRAMEBUFFER_NATIVE_WIDTH)
 				{
 					for (size_t i = GPU_FRAMEBUFFER_NATIVE_WIDTH - 1; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i--)
 					{
@@ -3288,7 +3329,7 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 				
 				for (size_t line = 1; line < dstLineCount; line++)
 				{
-					memcpy(dstLine + (line * _gpuFramebufferWidth), dstLine, _gpuFramebufferWidth * sizeof(u16));
+					memcpy(dstLine + (line * dstLineWidth), dstLine, dstLineWidth * sizeof(u16));
 				}
 			}
 			break;
@@ -3320,7 +3361,7 @@ void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip)
 		if (l == 191) { disp_fifo.head = disp_fifo.tail = 0; }
 	}
 	
-	GPU_RenderLine_MasterBrightness(gpu->MasterBrightMode, gpu->MasterBrightFactor, dstLine, dstLineCount);
+	GPU_RenderLine_MasterBrightness(gpu->MasterBrightMode, gpu->MasterBrightFactor, dstLine, dstLineWidth, dstLineCount);
 }
 
 void gpu_savestate(EMUFILE* os)
@@ -3328,7 +3369,7 @@ void gpu_savestate(EMUFILE* os)
 	//version
 	write32le(1,os);
 	
-	os->fwrite((u8 *)GPU_screen, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
+	os->fwrite((u8 *)GPU_CustomFramebuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
 	
 	write32le(MainScreen.gpu->affineInfo[0].x,os);
 	write32le(MainScreen.gpu->affineInfo[0].y,os);
@@ -3362,7 +3403,7 @@ bool gpu_loadstate(EMUFILE* is, int size)
 	
 	if (version > 1) return false;
 
-	is->fread((u8 *)GPU_screen, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
+	is->fread((u8 *)GPU_CustomFramebuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
 
 	if (version == 1)
 	{
@@ -3384,11 +3425,10 @@ bool gpu_loadstate(EMUFILE* is, int size)
 	return !is->fail();
 }
 
-void GPU::UpdateVRAM3DUsageProperties_BGLayer(const GPU &gpuEngine, const size_t bankIndex, VRAM3DUsageProperties &outProperty) const
+void GPU::UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty)
 {
-	const GPUCoreID gpuEngineID = gpuEngine.core;
-	const bool bg2 = (gpuEngine.dispCnt().BG2_Enable == 1) && (gpuEngine.BGTypes[2] == BGType_AffineExt_Direct) && (gpuEngine.BGSize[2][0] == 256) && (gpuEngine.BGSize[2][1] == 256);
-	const bool bg3 = (gpuEngine.dispCnt().BG3_Enable == 1) && (gpuEngine.BGTypes[3] == BGType_AffineExt_Direct) && (gpuEngine.BGSize[3][0] == 256) && (gpuEngine.BGSize[3][1] == 256);
+	const bool bg2 = (this->dispCnt().BG2_Enable == 1) && (this->BGTypes[2] == BGType_AffineExt_Direct) && (this->BGSize[2][0] == 256) && (this->BGSize[2][1] == 256);
+	const bool bg3 = (this->dispCnt().BG3_Enable == 1) && (this->BGTypes[3] == BGType_AffineExt_Direct) && (this->BGSize[3][0] == 256) && (this->BGSize[3][1] == 256);
 	u8 selectedBGLayer = VRAM_NO_3D_USAGE;
 	
 	if (!bg2 && !bg3)
@@ -3396,26 +3436,23 @@ void GPU::UpdateVRAM3DUsageProperties_BGLayer(const GPU &gpuEngine, const size_t
 		return;
 	}
 	
-	outProperty.is3DEnabled[gpuEngineID] = true;
-	outProperty.blockIndexBG[gpuEngineID] = bankIndex;
-	
 	if (bg3 && !bg2)
 	{
-		selectedBGLayer = (gpuEngine.bgPrio[3] >= gpuEngine.bgPrio[0]) ? 3 : VRAM_NO_3D_USAGE;
+		selectedBGLayer = (this->bgPrio[3] >= this->bgPrio[0]) ? 3 : VRAM_NO_3D_USAGE;
 	}
 	else if (!bg3 && bg2)
 	{
-		selectedBGLayer = (gpuEngine.bgPrio[2] >= gpuEngine.bgPrio[0]) ? 2 : VRAM_NO_3D_USAGE;
+		selectedBGLayer = (this->bgPrio[2] >= this->bgPrio[0]) ? 2 : VRAM_NO_3D_USAGE;
 	}
 	else if (bg3 && bg2)
 	{
-		selectedBGLayer = (gpuEngine.bgPrio[3] >= gpuEngine.bgPrio[2]) ? ((gpuEngine.bgPrio[3] >= gpuEngine.bgPrio[0]) ? 3 : VRAM_NO_3D_USAGE) : ((gpuEngine.bgPrio[2] >= gpuEngine.bgPrio[0]) ? 2 : VRAM_NO_3D_USAGE);
+		selectedBGLayer = (this->bgPrio[3] >= this->bgPrio[2]) ? ((this->bgPrio[3] >= this->bgPrio[0]) ? 3 : VRAM_NO_3D_USAGE) : ((this->bgPrio[2] >= this->bgPrio[0]) ? 2 : VRAM_NO_3D_USAGE);
 	}
 	
 	if (selectedBGLayer != VRAM_NO_3D_USAGE)
 	{
-		const BGxPARMS &bgParams = (selectedBGLayer == 3) ? (gpuEngine.dispx_st)->dispx_BG3PARMS : (gpuEngine.dispx_st)->dispx_BG2PARMS;
-		const AffineInfo &affineParams = gpuEngine.affineInfo[selectedBGLayer - 2];
+		const BGxPARMS &bgParams = (selectedBGLayer == 3) ? (this->dispx_st)->dispx_BG3PARMS : (this->dispx_st)->dispx_BG2PARMS;
+		const AffineInfo &affineParams = this->affineInfo[selectedBGLayer - 2];
 		
 		if ( (bgParams.BGxPA != 256) ||
 		     (bgParams.BGxPB !=   0) ||
@@ -3424,25 +3461,25 @@ void GPU::UpdateVRAM3DUsageProperties_BGLayer(const GPU &gpuEngine, const size_t
 		     (affineParams.x !=   0) ||
 		     (affineParams.y !=   0) )
 		{
-			outProperty.bgLayerUsingVRAM[gpuEngineID] = VRAM_NO_3D_USAGE;
+			selectedBGLayer = VRAM_NO_3D_USAGE;
 		}
 	}
 	
-	outProperty.bgLayerUsingVRAM[gpuEngineID] = selectedBGLayer;
+	this->vramBGLayer = selectedBGLayer;
+	this->vramBlockBGIndex = bankIndex;
+	this->isCustomRenderingNeeded = (selectedBGLayer != VRAM_NO_3D_USAGE);
 }
 
-void GPU::UpdateVRAM3DUsageProperties_OBJLayer(const GPU &gpuEngine, const size_t bankIndex, VRAM3DUsageProperties &outProperty) const
+void GPU::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty)
 {
-	const GPUCoreID gpuEngineID = gpuEngine.core;
-	
-	if ((gpuEngine.dispCnt().OBJ_Enable != 1) || (gpuEngine.dispCnt().OBJ_BMP_mapping != 0) || (gpuEngine.dispCnt().OBJ_BMP_2D_dim != 1))
+	if ((this->dispCnt().OBJ_Enable != 1) || (this->dispCnt().OBJ_BMP_mapping != 0) || (this->dispCnt().OBJ_BMP_2D_dim != 1))
 	{
 		return;
 	}
 	
 	for (size_t spriteIndex = 0; spriteIndex < 128; spriteIndex++)
 	{
-		const OAMAttributes &spriteInfo = gpuEngine.oamList[spriteIndex];
+		const OAMAttributes &spriteInfo = this->oamList[spriteIndex];
 		
 		if ( (spriteInfo.RotScale != 2) && ((spriteInfo.RotScale & 1) == 0) && (spriteInfo.Mode == 3) && (spriteInfo.PaletteIndex != 0) )
 		{
@@ -3451,36 +3488,68 @@ void GPU::UpdateVRAM3DUsageProperties_OBJLayer(const GPU &gpuEngine, const size_
 			
 			if( (vramAddress == (MainScreen.gpu->dispCapCnt.writeOffset * ADDRESS_STEP_32KB)) && (sprSize.x == 64) && (sprSize.y == 64) )
 			{
-				outProperty.is3DEnabled[gpuEngineID] = true;
-				outProperty.blockIndexOBJ[gpuEngineID] = bankIndex;
+				this->vramBlockOBJIndex = bankIndex;
+				this->isCustomRenderingNeeded = true;
 				return;
 			}
 		}
 	}
 }
 
-void GPU::UpdateVRAM3DUsageProperties(VRAM3DUsageProperties &outProperty) const
+void GPU_UpdateVRAM3DUsageProperties(VRAM3DUsageProperties &outProperty)
 {
-	if (this->core != GPUCOREID_MAIN)
-	{
-		return;
-	}
-	
 	outProperty.blockIndexDisplayVRAM = VRAM_NO_3D_USAGE;
-	outProperty.blockIndexBG[GPUCOREID_MAIN] = VRAM_NO_3D_USAGE;
-	outProperty.blockIndexBG[GPUCOREID_SUB] = VRAM_NO_3D_USAGE;
-	outProperty.blockIndexOBJ[GPUCOREID_MAIN] = VRAM_NO_3D_USAGE;
-	outProperty.blockIndexOBJ[GPUCOREID_SUB] = VRAM_NO_3D_USAGE;
-	outProperty.bgLayerUsingVRAM[GPUCOREID_MAIN] = VRAM_NO_3D_USAGE;
-	outProperty.bgLayerUsingVRAM[GPUCOREID_SUB] = VRAM_NO_3D_USAGE;
 	
-	outProperty.is3DEnabled[GPUCOREID_MAIN] = (MainScreen.gpu->dispCnt().BG0_Enable == 1) && (MainScreen.gpu->dispCnt().BG0_3D == 1);
-	outProperty.is3DEnabled[GPUCOREID_SUB] = false;
+	MainScreen.gpu->is3DEnabled = (MainScreen.gpu->dispCnt().BG0_Enable == 1) && (MainScreen.gpu->dispCnt().BG0_3D == 1);
+	MainScreen.gpu->isCustomRenderingNeeded = false;
+	MainScreen.gpu->vramBlockBGIndex = VRAM_NO_3D_USAGE;
+	MainScreen.gpu->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
+	MainScreen.gpu->vramBGLayer = VRAM_NO_3D_USAGE;
+	
+	SubScreen.gpu->is3DEnabled = false;
+	SubScreen.gpu->isCustomRenderingNeeded = false;
+	SubScreen.gpu->vramBlockBGIndex = VRAM_NO_3D_USAGE;
+	SubScreen.gpu->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
+	SubScreen.gpu->vramBGLayer = VRAM_NO_3D_USAGE;
+	
+#ifdef ENABLE_COMBINATION_RENDERING
+	MainScreen.gpu->renderedWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	MainScreen.gpu->renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	MainScreen.gpu->renderedBuffer = MainScreen.gpu->nativeBuffer;
+	
+	SubScreen.gpu->renderedWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	SubScreen.gpu->renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	SubScreen.gpu->renderedBuffer = SubScreen.gpu->nativeBuffer;
+	
+	_displayInfo.didPerformCustomRender[NDSDisplayID_Main] = false;
+	_displayInfo.didPerformCustomRender[NDSDisplayID_Touch] = false;
+#else
+	MainScreen.gpu->renderedWidth = _displayInfo.customWidth;
+	MainScreen.gpu->renderedHeight = _displayInfo.customHeight;
+	MainScreen.gpu->renderedBuffer = MainScreen.gpu->customBuffer;
+	
+	SubScreen.gpu->renderedWidth = _displayInfo.customWidth;
+	SubScreen.gpu->renderedHeight = _displayInfo.customHeight;
+	SubScreen.gpu->renderedBuffer = SubScreen.gpu->customBuffer;
+	
+	_displayInfo.didPerformCustomRender[NDSDisplayID_Main] = true;
+	_displayInfo.didPerformCustomRender[NDSDisplayID_Touch] = true;
+#endif
+	
+	_displayInfo.renderedBuffer[NDSDisplayID_Main] = MainDisplay.GetEngine()->renderedBuffer;
+	_displayInfo.renderedWidth[NDSDisplayID_Main] = MainDisplay.GetEngine()->renderedWidth;
+	_displayInfo.renderedHeight[NDSDisplayID_Main] = MainDisplay.GetEngine()->renderedHeight;
+	
+	_displayInfo.renderedBuffer[NDSDisplayID_Touch] = TouchDisplay.GetEngine()->renderedBuffer;
+	_displayInfo.renderedWidth[NDSDisplayID_Touch] = TouchDisplay.GetEngine()->renderedWidth;
+	_displayInfo.renderedHeight[NDSDisplayID_Touch] = TouchDisplay.GetEngine()->renderedHeight;
 	
 	if (_gpuIsNativeSize)
 	{
 		return;
 	}
+	
+	MainScreen.gpu->isCustomRenderingNeeded = MainScreen.gpu->is3DEnabled;
 	
 	// Iterate through VRAM banks A-D and determine if they will be used for this frame.
 	for (size_t i = 0; i < 4; i++)
@@ -3493,24 +3562,24 @@ void GPU::UpdateVRAM3DUsageProperties(VRAM3DUsageProperties &outProperty) const
 		switch (vramConfiguration.banks[i].purpose)
 		{
 			case VramConfiguration::ABG:
-				this->UpdateVRAM3DUsageProperties_BGLayer(*MainScreen.gpu, i, outProperty);
+				MainScreen.gpu->UpdateVRAM3DUsageProperties_BGLayer(i, outProperty);
 				break;
 				
 			case VramConfiguration::BBG:
-				this->UpdateVRAM3DUsageProperties_BGLayer(*SubScreen.gpu, i, outProperty);
+				SubScreen.gpu->UpdateVRAM3DUsageProperties_BGLayer(i, outProperty);
 				break;
 				
 			case VramConfiguration::AOBJ:
-				this->UpdateVRAM3DUsageProperties_OBJLayer(*MainScreen.gpu, i, outProperty);
+				MainScreen.gpu->UpdateVRAM3DUsageProperties_OBJLayer(i, outProperty);
 				break;
 				
 			case VramConfiguration::BOBJ:
-				this->UpdateVRAM3DUsageProperties_OBJLayer(*SubScreen.gpu, i, outProperty);
+				SubScreen.gpu->UpdateVRAM3DUsageProperties_OBJLayer(i, outProperty);
 				break;
 				
 			case VramConfiguration::LCDC:
 			{
-				if ((this->dispMode == GPUDisplayMode_VRAM) && (this->vramBlock == i))
+				if ((MainScreen.gpu->dispMode == GPUDisplayMode_VRAM) && (MainScreen.gpu->vramBlock == i))
 				{
 					outProperty.blockIndexDisplayVRAM = i;
 				}
@@ -3522,6 +3591,37 @@ void GPU::UpdateVRAM3DUsageProperties(VRAM3DUsageProperties &outProperty) const
 				break;
 		}
 	}
+	
+#ifdef ENABLE_COMBINATION_RENDERING
+	if (MainScreen.gpu->isCustomRenderingNeeded)
+	{
+		MainScreen.gpu->renderedWidth = DisplayInfo.customWidth;
+		MainScreen.gpu->renderedHeight = DisplayInfo.customHeight;
+		MainScreen.gpu->renderedBuffer = MainScreen.gpu->customBuffer;
+	}
+	
+	if (SubScreen.gpu->isCustomRenderingNeeded)
+	{
+		SubScreen.gpu->renderedWidth = DisplayInfo.customWidth;
+		SubScreen.gpu->renderedHeight = DisplayInfo.customHeight;
+		SubScreen.gpu->renderedBuffer = SubScreen.gpu->customBuffer;
+	}
+	
+	DisplayInfo.didPerformCustomRender[NDSDisplayID_Main] = MainDisplay.GetEngine()->isCustomRenderingNeeded;
+	DisplayInfo.renderedBuffer[NDSDisplayID_Main] = MainDisplay.GetEngine()->renderedBuffer;
+	DisplayInfo.renderedWidth[NDSDisplayID_Main] = MainDisplay.GetEngine()->renderedWidth;
+	DisplayInfo.renderedHeight[NDSDisplayID_Main] = MainDisplay.GetEngine()->renderedHeight;
+	
+	DisplayInfo.didPerformCustomRender[NDSDisplayID_Touch] = TouchDisplay.GetEngine()->isCustomRenderingNeeded;
+	DisplayInfo.renderedBuffer[NDSDisplayID_Touch] = TouchDisplay.GetEngine()->renderedBuffer;
+	DisplayInfo.renderedWidth[NDSDisplayID_Touch] = TouchDisplay.GetEngine()->renderedWidth;
+	DisplayInfo.renderedHeight[NDSDisplayID_Touch] = TouchDisplay.GetEngine()->renderedHeight;
+#endif
+}
+
+const NDSDisplayInfo& NDS_GetDisplayInfo()
+{
+	return _displayInfo;
 }
 
 u32 GPU::getAffineStart(const size_t layer, int xy)
@@ -3627,4 +3727,58 @@ void GPU::setBLDALPHA_EVB(const u8 val)
 {
 	BLDALPHA_EVB = ( (val & 0x1F) > 16 ) ? 16 :  (val & 0x1F);
 	this->updateBLDALPHA();
+}
+
+void GPU::SetDisplayByID(const NDSDisplayID theDisplayID)
+{
+	this->targetDisplayID = theDisplayID;
+	
+	if (theDisplayID == NDSDisplayID_Main)
+	{
+#ifdef ENABLE_COMBINATION_RENDERING
+		this->nativeBuffer = GPU_NativeFramebuffer;
+#endif
+		this->customBuffer = GPU_CustomFramebuffer;
+	}
+	else
+	{
+#ifdef ENABLE_COMBINATION_RENDERING
+		this->nativeBuffer = GPU_NativeFramebuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+#endif
+		this->customBuffer = GPU_CustomFramebuffer + (_displayInfo.customWidth * _displayInfo.customHeight);
+	}
+}
+
+NDSDisplay::NDSDisplay()
+{
+	_ID = NDSDisplayID_Main;
+	SetEngineByID(GPUCOREID_MAIN);
+}
+
+NDSDisplay::NDSDisplay(const NDSDisplayID displayID)
+{
+	_ID = displayID;
+	SetEngineByID(GPUCOREID_MAIN);
+}
+
+NDSDisplay::NDSDisplay(const NDSDisplayID displayID, const GPUCoreID coreID)
+{
+	_ID = displayID;
+	SetEngineByID(coreID);
+}
+
+GPU* NDSDisplay::GetEngine()
+{
+	return this->_gpu;
+}
+
+GPUCoreID NDSDisplay::GetEngineID()
+{
+	return this->_gpu->core;
+}
+
+void NDSDisplay::SetEngineByID(const GPUCoreID theID)
+{
+	this->_gpu = (theID == GPUCOREID_MAIN) ? &GPU_main : &GPU_sub;
+	this->_gpu->SetDisplayByID(this->_ID);
 }

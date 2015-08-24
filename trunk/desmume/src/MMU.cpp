@@ -1011,9 +1011,6 @@ void MMU_Reset()
 	// Enable the sound speakers
 	T1WriteWord(MMU.ARM7_REG, 0x304, 0x0001);
 	
-	MainScreen.offset = 0;
-	SubScreen.offset  = GPU_GetFramebufferHeight();
-	
 	MMU_VRAM_unmap_all();
 
 	MMU.powerMan_CntReg = 0x00;
@@ -1851,14 +1848,14 @@ static void writereg_POWCNT1(const int size, const u32 adr, const u32 val) {
 			if(nds.power1.dispswap)
 			{
 				//printf("Main core on top (vcount=%d)\n",nds.VCount);
-				MainScreen.offset = 0;
-				SubScreen.offset = GPU_GetFramebufferHeight();
+				MainDisplay.SetEngineByID(GPUCOREID_MAIN);
+				TouchDisplay.SetEngineByID(GPUCOREID_SUB);
 			}
 			else
 			{
 				//printf("Main core on bottom (vcount=%d)\n",nds.VCount);
-				MainScreen.offset = GPU_GetFramebufferHeight();
-				SubScreen.offset = 0;
+				MainDisplay.SetEngineByID(GPUCOREID_SUB);
+				TouchDisplay.SetEngineByID(GPUCOREID_MAIN);
 			}	
 			break;
 		}

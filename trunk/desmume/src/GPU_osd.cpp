@@ -404,7 +404,7 @@ static void TextualInputDisplay() {
 	}
 }
 
-static void TouchDisplay() {
+static void OSD_HandleTouchDisplay() {
 	// note: calcY should not be used in this function.
 	aggDraw.hud->lineWidth(1.0);
 
@@ -523,7 +523,7 @@ void DrawHUD()
 	if (CommonSettings.hud.ShowInputDisplay) 
 	{
 		TextualInputDisplay();
-		TouchDisplay();
+		OSD_HandleTouchDisplay();
 	}
 
 	if (CommonSettings.hud.FpsDisplay) 
