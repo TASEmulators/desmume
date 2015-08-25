@@ -1329,6 +1329,12 @@ static void execHardware_hstart_vblankEnd()
 
 	//some emulation housekeeping
 	frameSkipper.Advance();
+	
+	if (GPU_GetWillAutoBlitNativeToCustomBuffer())
+	{
+		MainScreen.gpu->BlitNativeToCustomFramebuffer();
+		SubScreen.gpu->BlitNativeToCustomFramebuffer();
+	}
 }
 
 static void execHardware_hstart_vblankStart()

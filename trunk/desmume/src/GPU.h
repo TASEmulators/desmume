@@ -660,7 +660,7 @@ typedef struct
 
 typedef struct
 {
-	bool isCustomSizeRequested;			// true - A custom size was requested; false - Use the native size
+	bool isCustomSizeRequested;			// true - The user requested a custom size; false - The user requested the native size
 	size_t customWidth;					// The custom buffer width, measured in pixels
 	size_t customHeight;				// The custom buffer height, measured in pixels
 	u16 *masterCustomBuffer;			// Pointer to the head of the master custom buffer.
@@ -797,7 +797,7 @@ struct GPU
 	typedef u8 TBlendTable[32][32];
 	TBlendTable *blendTable;
 	
-	u16 *tempScanlineBuffer;
+	u16 *workingScanline;
 	GPUMasterBrightMode	MasterBrightMode;
 	u32 MasterBrightFactor;
 
@@ -896,6 +896,7 @@ struct GPU
 	void setBLDALPHA_EVB(const u8 val);
 	
 	void SetDisplayByID(const NDSDisplayID theDisplayID);
+	void BlitNativeToCustomFramebuffer();
 };
 #if 0
 // normally should have same addresses
@@ -922,10 +923,28 @@ extern u16 *GPU_screen; // TODO: Old pointer - need to eliminate direct referenc
 GPU* GPU_Init(const GPUCoreID coreID);
 void GPU_Reset(GPU *gpu);
 void GPU_DeInit(GPU *gpu);
+
 size_t GPU_GetFramebufferWidth();
 size_t GPU_GetFramebufferHeight();
 void GPU_SetFramebufferSize(size_t w, size_t h);
+
+// Normally, the GPUs will automatically blit their native buffers to the master
+// framebuffer at the end of V-blank so that all rendered graphics are contained
+// within a single common buffer. This is necessary for when someone wants to read
+// the NDS framebuffers, but the reader can only read a single buffer at a time.
+// Certain functions, such as taking screenshots, as well as many frontends running
+// the NDS video displays, require that they read from only a single buffer.
+//
+// However, if GPU_SetWillAutoBlitNativeToCustomBuffer() is passed "false", then the
+// frontend becomes responsible for calling NDS_GetDisplayInfo() and reading the
+// native and custom buffers properly for each display. If a single buffer is still
+// needed for certain cases, then the frontend must manually call
+// GPU::BlitNativeToCustomFramebuffer() for each GPU before reading the master framebuffer.
+bool GPU_GetWillAutoBlitNativeToCustomBuffer();
+void GPU_SetWillAutoBlitNativeToCustomBuffer(const bool willAutoBlit);
+
 void GPU_UpdateVRAM3DUsageProperties(VRAM3DUsageProperties &outProperty);
+
 const NDSDisplayInfo& NDS_GetDisplayInfo(); // Frontends need to call this whenever they need to read the video buffers from the emulator core
 
 //these are functions used by debug tools which want to render layers etc outside the context of the emulation
