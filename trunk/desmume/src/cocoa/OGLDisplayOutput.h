@@ -289,7 +289,6 @@ protected:
 	ShaderSupportTier _shaderSupport;
 	
 	bool _needUploadVertices;
-	bool _needUploadTexCoords;
 	bool _useDeposterize;
 	bool _useShaderBasedPixelScaler;
 	bool _filtersPreferGPU;
@@ -301,14 +300,15 @@ protected:
 	OGLFilter *_shaderFilter[2];
 	GLint _displayTexFilter[2];
 	
-	GLuint _texVideoInputDataID[2];
-	GLuint _texVideoSourceID[2];
-	GLuint _texVideoPixelScalerID[2];
+	bool _isTexVideoInputDataNative[2];
+	GLuint _texVideoInputDataNativeID[2];
+	GLuint _texVideoInputDataCustomID[2];
 	GLuint _texVideoOutputID[2];
+	GLfloat _texLoadedWidth[2];
+	GLfloat _texLoadedHeight[2];
 	
 	uint32_t *_vfMasterDstBuffer;
 	VideoFilter *_vf[2];
-	VideoFilter *_vfDual;
 	GLuint _texCPUFilterDstID[2];
 	
 	uint16_t _displayWidth;
@@ -347,7 +347,7 @@ protected:
 	virtual void UploadTransformationOGL();
 	
 	void UpdateVertices();
-	void UpdateTexCoords(GLfloat s, GLfloat t);
+	void UpdateTexCoords(GLfloat s0, GLfloat t0, GLfloat s1, GLfloat t1);
 	
 public:
 	OGLDisplayLayer() {};
@@ -382,7 +382,7 @@ public:
 	virtual void SetPixelScalerOGL(const int filterID);
 	virtual bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	virtual void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
-	virtual void LoadFrameOGL(const uint16_t *frameData, GLint x, GLint y, GLsizei w, GLsizei h);
+	virtual void LoadFrameOGL(const uint16_t *frameData0, const uint16_t *frameData1, GLsizei w0, GLsizei h0, GLsizei w1, GLsizei h1);
 	virtual void ProcessOGL();
 	virtual void RenderOGL();
 };

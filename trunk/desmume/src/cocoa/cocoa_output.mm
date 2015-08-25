@@ -519,12 +519,6 @@
 	
 	delegate = nil;
 	displayMode = DS_DISPLAY_TYPE_DUAL;
-	
-	_gpuFrame.buffer = (uint16_t *)GPU_screen;
-	_gpuFrame.displayModeID = DS_DISPLAY_TYPE_DUAL;
-	_gpuFrame.width = GPU_DISPLAY_WIDTH;
-	_gpuFrame.height = GPU_DISPLAY_HEIGHT * 2;
-	
 	_gpuCurrentWidth = GPU_DISPLAY_WIDTH;
 	_gpuCurrentHeight = GPU_DISPLAY_HEIGHT;
 	
@@ -614,34 +608,6 @@
 	}
 }
 
-- (void) handleEmuFrameProcessed
-{
-	pthread_rwlock_rdlock(self.rwlockProducer);
-	
-	const uint16_t newGpuWidth = GPU_GetFramebufferWidth();
-	const uint16_t newGpuHeight = GPU_GetFramebufferHeight();
-	
-	_gpuFrame.buffer = (uint16_t *)GPU_screen;
-	_gpuFrame.displayModeID = [self displayMode];
-	_gpuFrame.width = newGpuWidth;
-	_gpuFrame.height = (_gpuFrame.displayModeID == DS_DISPLAY_TYPE_DUAL) ? newGpuHeight * 2 : newGpuHeight;
-	
-	pthread_rwlock_unlock(self.rwlockProducer);
-	
-	if (newGpuWidth != _gpuCurrentWidth || newGpuHeight != _gpuCurrentHeight)
-	{
-		if (delegate != nil && [delegate respondsToSelector:@selector(doDisplaySizeChanged:)])
-		{
-			[(id<CocoaDSDisplayDelegate>)delegate doDisplaySizeChanged:NSMakeSize(newGpuWidth, newGpuHeight)];
-		}
-		
-		_gpuCurrentWidth = newGpuWidth;
-		_gpuCurrentHeight = newGpuHeight;
-	}
-	
-	[super handleEmuFrameProcessed];
-}
-
 - (void) handleChangeDisplayMode:(NSData *)displayModeData
 {
 	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayModeChanged:)])
@@ -710,14 +676,13 @@
 
 - (NSBitmapImageRep *) bitmapImageRep
 {
-	if (_gpuFrame.buffer == NULL)
-	{
-		return nil;
-	}
+	const NDSDisplayInfo &dispInfo = NDS_GetDisplayInfo();
+	const NSInteger dispMode = [self displayMode];
 	
-	NSSize srcSize = [self displaySize];
-	NSUInteger w = (NSUInteger)srcSize.width;
-	NSUInteger h = (NSUInteger)srcSize.height;
+	uint16_t *displayBuffer = dispInfo.masterCustomBuffer;
+	NSUInteger w = (NSUInteger)dispInfo.customWidth;
+	NSUInteger h = (dispMode == DS_DISPLAY_TYPE_DUAL) ? (NSUInteger)(dispInfo.customHeight * 2) : (NSUInteger)dispInfo.customHeight;
+	
 	NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
 																		 pixelsWide:w
 																		 pixelsHigh:h
@@ -736,7 +701,9 @@
 	
 	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	RGB555ToRGBA8888Buffer((const uint16_t *)_gpuFrame.buffer, bitmapData, (w * h));
+	MainScreen.gpu->BlitNativeToCustomFramebuffer();
+	SubScreen.gpu->BlitNativeToCustomFramebuffer();
+	RGB555ToRGBA8888Buffer(displayBuffer, bitmapData, (w * h));
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 #ifdef __BIG_ENDIAN__
@@ -828,10 +795,34 @@
 	[super handleEmuFrameProcessed];
 	
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doLoadVideoFrame:_gpuFrame.buffer
-													displayMode:_gpuFrame.displayModeID
-														  width:_gpuFrame.width
-														 height:_gpuFrame.height];
+	
+	const NDSDisplayInfo &dispInfo = NDS_GetDisplayInfo();
+	const NSInteger dispMode = [self displayMode];
+	const uint16_t newGpuWidth = dispInfo.customWidth;
+	const uint16_t newGpuHeight = dispInfo.customHeight;
+	
+	if (newGpuWidth != _gpuCurrentWidth || newGpuHeight != _gpuCurrentHeight)
+	{
+		if (delegate != nil && [delegate respondsToSelector:@selector(doDisplaySizeChanged:)])
+		{
+			[(id<CocoaDSDisplayDelegate>)delegate doDisplaySizeChanged:NSMakeSize(newGpuWidth, newGpuHeight)];
+		}
+		
+		_gpuCurrentWidth = newGpuWidth;
+		_gpuCurrentHeight = newGpuHeight;
+	}
+	
+	void *mainFramebuffer = (dispMode == DS_DISPLAY_TYPE_MAIN || dispMode == DS_DISPLAY_TYPE_DUAL) ? dispInfo.renderedBuffer[NDSDisplayID_Main] : NULL;
+	void *touchFramebuffer = (dispMode == DS_DISPLAY_TYPE_TOUCH || dispMode == DS_DISPLAY_TYPE_DUAL) ? dispInfo.renderedBuffer[NDSDisplayID_Touch] : NULL;
+	
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doLoadVideoFrameUsingMode:dispMode
+														  displayBuffer0:mainFramebuffer
+														  displayBuffer1:touchFramebuffer
+																  width0:dispInfo.renderedWidth[NDSDisplayID_Main]
+																 height0:dispInfo.renderedHeight[NDSDisplayID_Main]
+																  width1:dispInfo.renderedWidth[NDSDisplayID_Touch]
+																 height1:dispInfo.renderedHeight[NDSDisplayID_Touch]];
+	
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	[(id<CocoaDSDisplayVideoDelegate>)delegate doProcessVideoFrame];

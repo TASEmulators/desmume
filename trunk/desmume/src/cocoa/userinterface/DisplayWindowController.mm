@@ -1803,13 +1803,17 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// No init needed, so do nothing.
 }
 
-- (void)doLoadVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)frameDisplayMode width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight
+- (void) doLoadVideoFrameUsingMode:(const NSInteger)displayMode
+					displayBuffer0:(const void *)buffer0
+					displayBuffer1:(const void *)buffer1
+							width0:(const NSInteger)w0
+						   height0:(const NSInteger)h0
+							width1:(const NSInteger)w1
+						   height1:(const NSInteger)h1
 {
-	const GLint lineOffset = (frameDisplayMode == DS_DISPLAY_TYPE_TOUCH) ? frameHeight : 0;
-	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->GetDisplayLayer()->LoadFrameOGL((uint16_t *)videoFrameData, 0, lineOffset, frameWidth, frameHeight);
+	oglv->GetDisplayLayer()->LoadFrameOGL((const uint16_t *)buffer0, (const uint16_t *)buffer1, w0, h0, w1, h1);
 	CGLUnlockContext(cglDisplayContext);
 }
 
