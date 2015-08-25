@@ -34,14 +34,6 @@ typedef struct
 	double	translationZ;
 } DisplayOutputTransformData;
 
-typedef struct
-{
-	uint16_t	*buffer;			// Pointer to frame buffer
-	int32_t		displayModeID;		// The selected display to read from
-	uint16_t	width;				// Measured in pixels
-	uint16_t	height;				// Measured in pixels
-} GPUFrame;
-
 @interface CocoaDSOutput : CocoaDSThread
 {
 	BOOL isStateChanged;
@@ -126,7 +118,13 @@ typedef struct
 
 @required
 - (void) doInitVideoOutput:(NSDictionary *)properties;
-- (void) doLoadVideoFrame:(const void *)videoFrameData displayMode:(const NSInteger)frameDisplayMode width:(const NSInteger)frameWidth height:(const NSInteger)frameHeight;
+- (void) doLoadVideoFrameUsingMode:(const NSInteger)displayMode
+					displayBuffer0:(const void *)buffer0
+					displayBuffer1:(const void *)buffer1
+							width0:(const NSInteger)w0
+						   height0:(const NSInteger)h0
+							width1:(const NSInteger)w1
+						   height1:(const NSInteger)h1;
 - (void) doProcessVideoFrame;
 
 @optional
@@ -145,7 +143,6 @@ typedef struct
 	id <CocoaDSDisplayDelegate> delegate;
 	NSSize displaySize;
 	NSInteger displayMode;
-	GPUFrame _gpuFrame;
 	size_t _gpuCurrentWidth;
 	size_t _gpuCurrentHeight;
 	

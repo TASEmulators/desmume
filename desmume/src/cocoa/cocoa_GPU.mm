@@ -104,6 +104,7 @@ GPU3DInterface *core3DList[] = {
 							   &OSXOpenGLRendererEnd,
 							   &OSXOpenGLRendererFramebufferDidResize);
 	
+	GPU_SetWillAutoBlitNativeToCustomBuffer(false);
 	GPU_FillScreenWithBGRA5551(0x8000);
 	
 	return self;
@@ -856,20 +857,34 @@ bool GetGPUDisplayState(const GPUType gpuType)
 
 void GPU_FillScreenWithBGRA5551(const uint16_t colorValue)
 {
-	const size_t pixCount = GPU_GetFramebufferWidth() * GPU_GetFramebufferHeight() * 2;
+	const NDSDisplayInfo &dispInfo = NDS_GetDisplayInfo();
+	const size_t pixCountNative = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	const size_t pixCountCustom = dispInfo.customWidth * dispInfo.customHeight;
 	
 #ifdef __APPLE__
-	if (pixCount % 16 == 0)
+	const uint16_t colorValuePattern[] = {colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue};
+	
+	memset_pattern16(MainScreen.gpu->nativeBuffer, colorValuePattern, pixCountNative * sizeof(uint16_t));
+	memset_pattern16(SubScreen.gpu->nativeBuffer, colorValuePattern, pixCountNative * sizeof(uint16_t));
+	
+	if (pixCountCustom % 16 == 0)
 	{
-		const uint16_t colorValuePattern[] = {colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue};
-		memset_pattern16(GPU_screen, colorValuePattern, pixCount * sizeof(uint16_t));
+		memset_pattern16(MainScreen.gpu->customBuffer, colorValuePattern, pixCountCustom * sizeof(uint16_t));
+		memset_pattern16(SubScreen.gpu->customBuffer, colorValuePattern, pixCountCustom * sizeof(uint16_t));
 	}
 	else
 #endif
 	{
-		for (size_t i = 0; i < pixCount; i++)
+		for (size_t i = 0; i < pixCountNative; i++)
 		{
-			GPU_screen[i] = colorValue;
+			MainScreen.gpu->nativeBuffer[i] = colorValue;
+			SubScreen.gpu->nativeBuffer[i] = colorValue;
+		}
+		
+		for (size_t i = 0; i < pixCountCustom; i++)
+		{
+			MainScreen.gpu->customBuffer[i] = colorValue;
+			SubScreen.gpu->customBuffer[i] = colorValue;
 		}
 	}
 }
