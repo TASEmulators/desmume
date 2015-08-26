@@ -95,11 +95,14 @@
 #endif
 
 #ifdef _MSC_VER 
-#define strcasecmp(x,y) _stricmp(x,y)
-#define strncasecmp(x, y, l) strnicmp(x, y, l)
-#define snprintf _snprintf
+	#define strcasecmp(x,y) _stricmp(x,y)
+	#define strncasecmp(x, y, l) strnicmp(x, y, l)
+
+	#if _MSC_VER < 1900
+		#define snprintf _snprintf
+	#endif
 #else
-#define WINAPI
+	#define WINAPI
 #endif
 
 #if !defined(MAX_PATH)
