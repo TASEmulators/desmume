@@ -1573,7 +1573,7 @@ createStub_gdb( uint16_t port,
 
     if ( temp_sock != -1) {
       /* create a thread to connect to this socket */
-      temp_thread = CreateThread( NULL, 0, control_creator, &temp_data, 0, &temp_threadID);
+      temp_thread = CreateThread( NULL, 0, (LPTHREAD_START_ROUTINE)control_creator, &temp_data, 0, &temp_threadID);
       if ( temp_thread != INVALID_HANDLE_VALUE) {
         struct sockaddr_in ignore_addr;
         int addr_size = sizeof( ignore_addr);
