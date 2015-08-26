@@ -566,7 +566,7 @@ void GPU_addBack(GPU *gpu, const size_t num)
 /*****************************************************************************/
 
 template<int WIN_NUM>
-FORCEINLINE u8 GPU::withinRect(const size_t x) const
+u8 GPU::withinRect(const size_t x) const
 {
 	return curr_win[WIN_NUM][x];
 }
@@ -575,7 +575,7 @@ FORCEINLINE u8 GPU::withinRect(const size_t x) const
 
 //  Now assumes that *draw and *effect are different from 0 when called, so we can avoid
 // setting some values twice
-FORCEINLINE void GPU::renderline_checkWindows(const size_t srcX, bool &draw, bool &effect) const
+void GPU::renderline_checkWindows(const size_t srcX, bool &draw, bool &effect) const
 {
 	// Check if win0 if enabled, and only check if it is
 	// howevever, this has already been taken care of by the window precalculation
@@ -878,6 +878,43 @@ FORCEINLINE void GPU::__setFinalColorBck(const u16 color, const size_t srcX, con
 	return ___setFinalColorBck<MOSAIC, BACKDROP, false, 0>(color, srcX, opaque);
 }
 
+template<bool BACKDROP, bool USECUSTOMVRAM, int FUNCNUM>
+FORCEINLINE void GPU::____setFinalColorBck(const u16 color, const size_t srcX)
+{
+	u16 *dstLine = this->currDst;
+	u8 *bgLine = this->bgPixels;
+	
+	if (this->isCustomRenderingNeeded)
+	{
+		for (size_t line = 0; line < _gpuDstLineCount[this->currLine]; line++)
+		{
+			const u16 *srcLine = (USECUSTOMVRAM) ? _gpuCustomVRAM + (this->vramBlockBGIndex * _gpuVRAMBlockOffset) + ((_gpuDstLineIndex[this->currLine] + line) * _displayInfo.customWidth) : NULL;
+			
+			for (size_t p = 0; p < _gpuDstPitchCount[srcX]; p++)
+			{
+				const size_t dstX = _gpuDstPitchIndex[srcX] + p;
+				
+				setFinalColorBG<BACKDROP,FUNCNUM>(srcX,
+												  dstX,
+												  dstLine,
+												  bgLine,
+												  (USECUSTOMVRAM) ? srcLine[dstX] : color);
+			}
+			
+			dstLine += _displayInfo.customWidth;
+			bgLine += _displayInfo.customWidth;
+		}
+	}
+	else
+	{
+		setFinalColorBG<BACKDROP,FUNCNUM>(srcX,
+										  srcX,
+										  dstLine,
+										  bgLine,
+										  color);
+	}
+}
+
 //this was forced inline because most of the time it just falls through to setFinalColorBck() and the function call
 //overhead was ridiculous and terrible
 template<bool MOSAIC, bool BACKDROP, bool USECUSTOMVRAM, int FUNCNUM>
@@ -889,38 +926,7 @@ FORCEINLINE void GPU::___setFinalColorBck(u16 color, const size_t srcX, const bo
 	{
 		if (opaque)
 		{
-			u16 *dstLine = this->currDst;
-			u8 *bgLine = this->bgPixels;
-			
-			if (this->isCustomRenderingNeeded)
-			{
-				for (size_t line = 0; line < _gpuDstLineCount[this->currLine]; line++)
-				{
-					const u16 *srcLine = (USECUSTOMVRAM) ? _gpuCustomVRAM + (this->vramBlockBGIndex * _gpuVRAMBlockOffset) + ((_gpuDstLineIndex[this->currLine] + line) * _displayInfo.customWidth) : NULL;
-					
-					for (size_t p = 0; p < _gpuDstPitchCount[srcX]; p++)
-					{
-						const size_t dstX = _gpuDstPitchIndex[srcX] + p;
-						
-						setFinalColorBG<BACKDROP,FUNCNUM>(srcX,
-														  dstX,
-														  dstLine,
-														  bgLine,
-														  (USECUSTOMVRAM) ? srcLine[dstX] : color);
-					}
-					
-					dstLine += _displayInfo.customWidth;
-					bgLine += _displayInfo.customWidth;
-				}
-			}
-			else
-			{
-				setFinalColorBG<BACKDROP,FUNCNUM>(srcX,
-												  srcX,
-												  dstLine,
-												  bgLine,
-												  color);
-			}
+			this->____setFinalColorBck<BACKDROP, USECUSTOMVRAM, FUNCNUM>(color, srcX);
 		}
 		
 		return;
@@ -945,38 +951,7 @@ FORCEINLINE void GPU::___setFinalColorBck(u16 color, const size_t srcX, const bo
 	
 	if (color != 0xFFFF)
 	{
-		u16 *dstLine = currDst;
-		u8 *bgLine = bgPixels;
-		
-		if (this->isCustomRenderingNeeded)
-		{
-			for (size_t line = 0; line < _gpuDstLineCount[this->currLine]; line++)
-			{
-				const u16 *srcLine = (USECUSTOMVRAM) ? _gpuCustomVRAM + (this->vramBlockBGIndex * _gpuVRAMBlockOffset) + ((_gpuDstLineIndex[this->currLine] + line) * _displayInfo.customWidth) : NULL;
-				
-				for (size_t p = 0; p < _gpuDstPitchCount[srcX]; p++)
-				{
-					const size_t dstX = _gpuDstPitchIndex[srcX] + p;
-					
-					setFinalColorBG<BACKDROP,FUNCNUM>(srcX,
-													  dstX,
-													  dstLine,
-													  bgLine,
-													  (USECUSTOMVRAM) ? srcLine[dstX] : color);
-				}
-				
-				dstLine += _displayInfo.customWidth;
-				bgLine += _displayInfo.customWidth;
-			}
-		}
-		else
-		{
-			setFinalColorBG<BACKDROP,FUNCNUM>(srcX,
-											  srcX,
-											  dstLine,
-											  bgLine,
-											  color);
-		}
+		this->____setFinalColorBck<BACKDROP, USECUSTOMVRAM, FUNCNUM>(color, srcX);
 	}
 }
 
@@ -1018,7 +993,7 @@ static void mosaicSpriteLinePixel(GPU *gpu, const size_t x, u16 l, u16 *dst, u8 
 	if(!objColor.opaque) prioTab[x] = 0xFF;
 }
 
-FORCEINLINE static void mosaicSpriteLine(GPU *gpu, u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab)
+static void mosaicSpriteLine(GPU *gpu, u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab)
 {
 	//don't even try this unless the mosaic is effective
 	if (gpu->mosaicLookup.widthValue != 0 || gpu->mosaicLookup.heightValue != 0)
@@ -1064,7 +1039,7 @@ void lineLarge8bpp(GPU *gpu)
 /*****************************************************************************/
 // render a text background to the combined pixelbuffer
 template<bool MOSAIC>
-INLINE void renderline_textBG(GPU *gpu, u16 XBG, u16 YBG, u16 LG)
+void renderline_textBG(GPU *gpu, u16 XBG, u16 YBG, u16 LG)
 {
 	const u8 num = gpu->currBgNum;
 	struct _BGxCNT *bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[num].bits;
@@ -1261,7 +1236,7 @@ FORCEINLINE void rot_BMP_map(GPU *gpu, const s32 auxX, const s32 auxY, const int
 typedef void (*rot_fun)(GPU *gpu, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *pal, const size_t i);
 
 template<rot_fun fun, bool WRAP>
-FORCEINLINE void rot_scale_op(GPU *gpu, const BGxPARMS &param, const u16 LG, const s32 wh, const s32 ht, const u32 map, const u32 tile, const u16 *pal)
+void rot_scale_op(GPU *gpu, const BGxPARMS &param, const u16 LG, const s32 wh, const s32 ht, const u32 map, const u32 tile, const u16 *pal)
 {
 	ROTOCOORD x, y;
 	x.val = param.BGxX;
@@ -1303,7 +1278,7 @@ FORCEINLINE void rot_scale_op(GPU *gpu, const BGxPARMS &param, const u16 LG, con
 }
 
 template<rot_fun fun>
-FORCEINLINE void apply_rot_fun(GPU *gpu, const BGxPARMS &param, const u16 LG, const u32 map, const u32 tile, const u16 *pal)
+void apply_rot_fun(GPU *gpu, const BGxPARMS &param, const u16 LG, const u32 map, const u32 tile, const u16 *pal)
 {
 	struct _BGxCNT *bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[gpu->currBgNum].bits;
 	s32 wh = gpu->BGSize[gpu->currBgNum][0];
@@ -1317,7 +1292,7 @@ FORCEINLINE void apply_rot_fun(GPU *gpu, const BGxPARMS &param, const u16 LG, co
 
 
 template<bool MOSAIC>
-FORCEINLINE void rotBG2(GPU *gpu, const BGxPARMS &param, const u16 LG)
+void rotBG2(GPU *gpu, const BGxPARMS &param, const u16 LG)
 {
 	const size_t num = gpu->currBgNum;
 	const u16 *pal = (u16 *)(MMU.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB);
@@ -1326,7 +1301,7 @@ FORCEINLINE void rotBG2(GPU *gpu, const BGxPARMS &param, const u16 LG)
 }
 
 template<bool MOSAIC>
-FORCEINLINE void extRotBG2(GPU *gpu, const BGxPARMS &param, const u16 LG)
+void extRotBG2(GPU *gpu, const BGxPARMS &param, const u16 LG)
 {
 	const size_t num = gpu->currBgNum;
 	struct _DISPCNT *dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
@@ -1444,7 +1419,7 @@ void lineExtRot(GPU *gpu)
 /* if i understand it correct, and it fixes some sprite problems in chameleon shot */
 /* we have a 15 bit color, and should use the pal entry bits as alpha ?*/
 /* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
-INLINE void render_sprite_BMP(GPU *gpu, const u8 spriteNum, const u16 l, u16 *dst, const u32 srcadr, u8 *dst_alpha, u8 *typeTab, u8 *prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
+void render_sprite_BMP(GPU *gpu, const u8 spriteNum, const u16 l, u16 *dst, const u32 srcadr, u8 *dst_alpha, u8 *typeTab, u8 *prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
 {
 	for (size_t i = 0; i < lg; i++, ++sprX, x += xdir)
 	{
@@ -1462,7 +1437,7 @@ INLINE void render_sprite_BMP(GPU *gpu, const u8 spriteNum, const u16 l, u16 *ds
 	}
 }
 
-INLINE void render_sprite_256(GPU *gpu, const u8 spriteNum, const u16 l, u16 *dst, const u32 srcadr, const u16 *pal, u8 *dst_alpha, u8 *typeTab, u8 *prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
+void render_sprite_256(GPU *gpu, const u8 spriteNum, const u16 l, u16 *dst, const u32 srcadr, const u16 *pal, u8 *dst_alpha, u8 *typeTab, u8 *prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
 {
 	for (size_t i = 0; i < lg; i++, ++sprX, x += xdir)
 	{
@@ -1483,7 +1458,7 @@ INLINE void render_sprite_256(GPU *gpu, const u8 spriteNum, const u16 l, u16 *ds
 	}
 }
 
-INLINE void render_sprite_16(GPU *gpu, const u16 l, u16 *dst, const u32 srcadr, const u16 *pal, u8 *dst_alpha, u8 *typeTab, u8 *prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
+void render_sprite_16(GPU *gpu, const u16 l, u16 *dst, const u32 srcadr, const u16 *pal, u8 *dst_alpha, u8 *typeTab, u8 *prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
 {
 	for (size_t i = 0; i < lg; i++, ++sprX, x += xdir)
 	{
@@ -1505,7 +1480,7 @@ INLINE void render_sprite_16(GPU *gpu, const u16 l, u16 *dst, const u32 srcadr, 
 	}
 }
 
-INLINE void render_sprite_Win(const u8 *src, const bool col256, const size_t lg, size_t sprX, size_t x, const s32 xdir)
+void render_sprite_Win(const u8 *src, const bool col256, const size_t lg, size_t sprX, size_t x, const s32 xdir)
 {
 	if (col256)
 	{
@@ -1535,7 +1510,7 @@ INLINE void render_sprite_Win(const u8 *src, const bool col256, const size_t lg,
 }
 
 // return val means if the sprite is to be drawn or not
-FORCEINLINE bool compute_sprite_vars(const OAMAttributes &spriteInfo, const u16 l,
+bool compute_sprite_vars(const OAMAttributes &spriteInfo, const u16 l,
 	SpriteSize &sprSize, s32 &sprX, s32 &sprY, s32 &x, s32 &y, s32 &lg, s32 &xdir)
 {
 	x = 0;
@@ -3004,7 +2979,7 @@ static void GPU_RenderLine_DispCapture(const u16 l)
 	}
 }
 
-static INLINE void GPU_RenderLine_MasterBrightness(const GPUMasterBrightMode mode, const u32 factor, u16 *dstLine, const size_t dstLineWidth, const size_t dstLineCount)
+static void GPU_RenderLine_MasterBrightness(const GPUMasterBrightMode mode, const u32 factor, u16 *dstLine, const size_t dstLineWidth, const size_t dstLineCount)
 {
 	//isn't it odd that we can set uselessly high factors here?
 	//factors above 16 change nothing. curious.
@@ -3098,7 +3073,7 @@ static INLINE void GPU_RenderLine_MasterBrightness(const GPUMasterBrightMode mod
 }
 
 template<size_t WIN_NUM>
-FORCEINLINE void GPU::setup_windows()
+void GPU::setup_windows()
 {
 	const u8 y = currLine;
 	const u16 startY = (WIN_NUM == 0) ? WIN0V0 : WIN1V0;

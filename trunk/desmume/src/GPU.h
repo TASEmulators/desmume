@@ -866,6 +866,7 @@ struct GPU
 	void setFinalColorSpr(const size_t srcX, const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, const u16 src, const u8 alpha, const u8 type);
 	
 	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(const size_t srcX, const size_t dstX, u16 *dstLine, u8 *bgPixelsLine, u16 src);
+	template<bool BACKDROP, bool USECUSTOMVRAM, int FUNCNUM> FORCEINLINE void ____setFinalColorBck(const u16 color, const size_t srcX);
 	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
 	template<bool MOSAIC, bool BACKDROP, bool USECUSTOMVRAM, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
 	
