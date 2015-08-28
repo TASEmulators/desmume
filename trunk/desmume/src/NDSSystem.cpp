@@ -798,7 +798,7 @@ public:
 			SkipNext2DFrame = false;
 			nextSkip = false;
 		}
-		else if((lastDisplayTarget != MainScreen.gpu->targetDisplayID) && lastSkip && !skipped)
+		else if((lastDisplayTarget != MainScreen.gpu->GetDisplayByID()) && lastSkip && !skipped)
 		{
 			// if we're switching from not skipping to skipping
 			// and the screens are also switching around this frame,
@@ -813,7 +813,7 @@ public:
 		else if(!(consecutiveNonCaptures > 9000)) // arbitrary cap to avoid eventual wrap
 			consecutiveNonCaptures++;
 		
-		lastDisplayTarget = MainScreen.gpu->targetDisplayID;
+		lastDisplayTarget = MainScreen.gpu->GetDisplayByID();
 		lastSkip = skipped;
 		skipped = nextSkip;
 		nextSkip = false;

@@ -2127,22 +2127,14 @@ static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data)
     case MAIN_BG_2:
     case MAIN_BG_3:
     case MAIN_OBJ:
-        if(active == TRUE) {
-            GPU_addBack(MainScreen.gpu, Layer);
-        } else {
-            GPU_remove(MainScreen.gpu, Layer);
-        }
+        MainScreen.gpu->SetLayerState(Layer, (active == TRUE) ? true : false);
         break;
     case SUB_BG_0:
     case SUB_BG_1:
     case SUB_BG_2:
     case SUB_BG_3:
     case SUB_OBJ:
-        if(active == TRUE) {
-            GPU_addBack(SubScreen.gpu, Layer-SUB_BG_0);
-        } else { 
-            GPU_remove(SubScreen.gpu, Layer-SUB_BG_0);
-        }
+        SubScreen.gpu->SetLayerState(Layer-SUB_BG_0, (active == TRUE) ? true : false);
         break;
     default:
         break;

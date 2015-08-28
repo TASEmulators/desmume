@@ -69,11 +69,11 @@ typedef struct
 
 extern GFX_PIPE gxPIPE;
 extern GFX_FIFO gxFIFO;
-extern void GFX_PIPEclear();
-extern void GFX_FIFOclear();
-extern void GFX_FIFOsend(u8 cmd, u32 param);
-extern BOOL GFX_PIPErecv(u8 *cmd, u32 *param);
-extern void GFX_FIFOcnt(u32 val);
+void GFX_PIPEclear();
+void GFX_FIFOclear();
+void GFX_FIFOsend(u8 cmd, u32 param);
+BOOL GFX_PIPErecv(u8 *cmd, u32 *param);
+void GFX_FIFOcnt(u32 val);
 
 //=================================================== Display memory FIFO
 typedef struct
@@ -84,8 +84,9 @@ typedef struct
 } DISP_FIFO;
 
 extern DISP_FIFO disp_fifo;
-extern void DISP_FIFOinit();
-extern void DISP_FIFOsend(u32 val);
-extern u32 DISP_FIFOrecv();
+void DISP_FIFOinit();
+void DISP_FIFOsend(u32 val);
+u32 DISP_FIFOrecv();
+void DISP_FIFOreset();
 
 #endif

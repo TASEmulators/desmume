@@ -36,7 +36,7 @@ typedef struct
 
 	s16 num;
 	void*oam;
-	GPU *gpu;
+	GPUEngineBase *gpu;
 	u8 scale;
 	bool border;
 } oamview_struct;
@@ -220,11 +220,11 @@ LRESULT OamView_OnPaint(HWND hwnd, oamview_struct *win, WPARAM wParam, LPARAM lP
              SetWindowText(GetDlgItem(hwnd, IDC_PROP1), "");
         }
         
-		GPU copy = *win->gpu;
+		GPUEngineBase copy = *win->gpu;
         for(i = 0; i < 192; ++i)
         {
 			copy.currLine = i;
-             copy.spriteRender((u16*)(bitmap + i*256), bitmap_alpha + i*256, type + i*256, prio + i*256);
+             copy.SpriteRender((u16*)(bitmap + i*256), bitmap_alpha + i*256, type + i*256, prio + i*256);
         }
 
 		u32 width = dimm_int[(oam->attr1>>14)][(oam->attr0>>14)][0];

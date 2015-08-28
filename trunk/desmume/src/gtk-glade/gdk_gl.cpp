@@ -277,7 +277,7 @@ static void my_gl_ScreenTexApply(int screen) {
 
 gboolean screen (GtkWidget * widget, int viewportscreen) {
 	int screen;
-	GPU * gpu;
+	GPUEngineBase * gpu;
 	float bright_color = 0.0f; // blend with black
 	float bright_alpha = 0.0f; // don't blend
 	

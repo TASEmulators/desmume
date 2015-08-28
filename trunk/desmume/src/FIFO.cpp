@@ -301,7 +301,7 @@ void GFX_FIFOcnt(u32 val)
 }
 
 // ========================================================= DISP FIFO
-DISP_FIFO	disp_fifo;
+DISP_FIFO disp_fifo;
 
 void DISP_FIFOinit()
 {
@@ -325,4 +325,10 @@ u32 DISP_FIFOrecv()
 	if (disp_fifo.head > 0x5FFF)
 		disp_fifo.head = 0;
 	return (val);
+}
+
+void DISP_FIFOreset()
+{
+	disp_fifo.head = 0;
+	disp_fifo.tail = 0;
 }
