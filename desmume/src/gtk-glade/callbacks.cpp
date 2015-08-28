@@ -525,11 +525,9 @@ void  on_wgt_Exec_toggled  (GtkToggleToolButton *toggletoolbutton, gpointer user
 /* LAYERS ***** ***** ***** ***** */
 static void change_bgx_layer(int layer, gboolean state, NDS_Screen scr) {
 	//if(!desmume_running()) return;
-	if(state==TRUE) { 
-		GPU_addBack(scr.gpu, layer);
-	} else {
-		GPU_remove(scr.gpu, layer); 
-	}
+	
+	scr.gpu->SetLayerState(layer, (state) ? true : false);
+	
 	//fprintf(stderr,"Changed Layer %s to %d\n",layer,state);
 }
 void  on_wc_1_BGXX_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {

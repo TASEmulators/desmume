@@ -29,7 +29,6 @@
 #include "main.h"
 #include "windriver.h"
 
-using namespace GPU_EXT;
 
 struct mapview_struct
 {
@@ -45,18 +44,18 @@ struct mapview_struct
 	{
 		//we're going to make a copy of the gpu so that we don't wreck affine scroll params
 		//hopefully we won't mess up anything else
-		GPU *realGpu;
+		GPUEngineBase *realGpu;
 		if(lcd) realGpu = SubScreen.gpu;
 		else realGpu = MainScreen.gpu;
-		GPU &gpu = *realGpu;
+		GPUEngineBase &gpu = *realGpu;
 
 		//forgive the gyrations, some of this junk in here is to remind us of gyrations we might have to go
 		//through to avoid breaking the gpu struct
 
 		gpu.currBgNum = map;
 		gpu.debug = true;
-		int temp = gpu.setFinalColorBck_funcNum;
-		gpu.setFinalColorBck_funcNum = 0; //hax... why arent we copying gpu now?? i cant remember
+		int temp = gpu.GetFinalColorBckFuncID();
+		gpu.SetFinalColorBckFuncID(0); //hax... why arent we copying gpu now?? i cant remember
 
 		memset(bitmap,0,sizeof(bitmap));
 
@@ -64,11 +63,11 @@ struct mapview_struct
 		{
 			gpu.currDst = bitmap + i*gpu.BGSize[map][0];
 			gpu.currLine = i;
-			gpu.modeRender<false>(map);
+			gpu.ModeRender<false>(map);
 		}
-		gpu.debug = false;
-		gpu.setFinalColorBck_funcNum = temp;
 
+		gpu.debug = false;
+		gpu.SetFinalColorBckFuncID(temp);
 	}
 };
 

@@ -728,7 +728,7 @@ GPU3DInterface *core3DList[] = {
 
 void SetGPULayerState(const GPUType gpuType, const unsigned int i, const bool state)
 {
-	GPU *theGpu = NULL;
+	GPUEngineBase *theGpu = NULL;
 	
 	// Check bounds on the layer index.
 	if (i > 4)
@@ -757,14 +757,7 @@ void SetGPULayerState(const GPUType gpuType, const unsigned int i, const bool st
 	
 	if (theGpu != NULL)
 	{
-		if (state)
-		{
-			GPU_addBack(theGpu, i);
-		}
-		else
-		{
-			GPU_remove(theGpu, i);
-		}
+		theGpu->SetLayerState(i, state);
 	}
 }
 

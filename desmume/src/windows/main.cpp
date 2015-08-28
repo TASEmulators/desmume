@@ -4382,18 +4382,11 @@ void SaveWindowPos(HWND hwnd)
 
 static void TwiddleLayer(UINT ctlid, int core, int layer)
 {
-	GPU* gpu = core==0?MainScreen.gpu:SubScreen.gpu;
-	if(CommonSettings.dispLayers[core][layer])
-	{
-		GPU_remove(gpu,layer);
-		MainWindow->checkMenu(ctlid, false);
-	}
-	else
-	{
-		GPU_addBack(gpu,layer);
-		MainWindow->checkMenu(ctlid, true);
-	}
+	GPUEngineBase *gpu = ((GPUCoreID)core == GPUCOREID_MAIN) ? MainScreen.gpu : SubScreen.gpu;
 
+	const bool newLayerState = !CommonSettings.dispLayers[core][layer];
+	gpu->SetLayerState(layer, newLayerState);
+	MainWindow->checkMenu(ctlid, newLayerState);
 }
 
 //========================================================================================
