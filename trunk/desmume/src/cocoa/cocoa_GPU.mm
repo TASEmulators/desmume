@@ -104,8 +104,7 @@ GPU3DInterface *core3DList[] = {
 							   &OSXOpenGLRendererEnd,
 							   &OSXOpenGLRendererFramebufferDidResize);
 	
-	GPU_SetWillAutoBlitNativeToCustomBuffer(false);
-	GPU_FillScreenWithBGRA5551(0x8000);
+	GPU->SetWillAutoBlitNativeToCustomBuffer(false);
 	
 	return self;
 }
@@ -151,14 +150,14 @@ GPU3DInterface *core3DList[] = {
 - (void) setGpuDimensions:(NSSize)theDimensions
 {
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	GPU_SetFramebufferSize(theDimensions.width, theDimensions.height);
+	GPU->SetCustomFramebufferSize(theDimensions.width, theDimensions.height);
 	pthread_rwlock_unlock(self.rwlockProducer);
 }
 
 - (NSSize) gpuDimensions
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	const NSSize dimensions = NSMakeSize(GPU_GetFramebufferWidth(), GPU_GetFramebufferHeight());
+	const NSSize dimensions = NSMakeSize(GPU->GetCustomFramebufferWidth(), GPU->GetCustomFramebufferHeight());
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return dimensions;
@@ -375,7 +374,7 @@ GPU3DInterface *core3DList[] = {
 - (void) setLayerMainGPU:(BOOL)gpuState
 {
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	SetGPUDisplayState(DS_GPU_TYPE_MAIN, (gpuState) ? true : false);
+	GPU->GetEngineMain()->SetEnableState((gpuState) ? true : false);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
@@ -386,7 +385,7 @@ GPU3DInterface *core3DList[] = {
 - (BOOL) layerMainGPU
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	const BOOL gpuState = GetGPUDisplayState(DS_GPU_TYPE_MAIN) ? YES : NO;
+	const BOOL gpuState = GPU->GetEngineMain()->GetEnableState() ? YES : NO;
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return gpuState;
@@ -395,7 +394,7 @@ GPU3DInterface *core3DList[] = {
 - (void) setLayerMainBG0:(BOOL)layerState
 {
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	SetGPULayerState(DS_GPU_TYPE_MAIN, 0, (layerState) ? true : false);
+	GPU->GetEngineMain()->SetLayerEnableState(0, (layerState) ? true : false);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
@@ -406,7 +405,7 @@ GPU3DInterface *core3DList[] = {
 - (BOOL) layerMainBG0
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 0) ? YES : NO;
+	const BOOL layerState = GPU->GetEngineMain()->GetLayerEnableState(0);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
@@ -415,7 +414,7 @@ GPU3DInterface *core3DList[] = {
 - (void) setLayerMainBG1:(BOOL)layerState
 {
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	SetGPULayerState(DS_GPU_TYPE_MAIN, 1, (layerState) ? true : false);
+	GPU->GetEngineMain()->SetLayerEnableState(1, (layerState) ? true : false);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
@@ -426,7 +425,7 @@ GPU3DInterface *core3DList[] = {
 - (BOOL) layerMainBG1
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 1) ? YES : NO;
+	const BOOL layerState = GPU->GetEngineMain()->GetLayerEnableState(1);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
@@ -435,7 +434,7 @@ GPU3DInterface *core3DList[] = {
 - (void) setLayerMainBG2:(BOOL)layerState
 {
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	SetGPULayerState(DS_GPU_TYPE_MAIN, 2, (layerState) ? true : false);
+	GPU->GetEngineMain()->SetLayerEnableState(2, (layerState) ? true : false);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
@@ -446,7 +445,7 @@ GPU3DInterface *core3DList[] = {
 - (BOOL) layerMainBG2
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 2) ? YES : NO;
+	const BOOL layerState = GPU->GetEngineMain()->GetLayerEnableState(2);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
@@ -455,7 +454,7 @@ GPU3DInterface *core3DList[] = {
 - (void) setLayerMainBG3:(BOOL)layerState
 {
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	SetGPULayerState(DS_GPU_TYPE_MAIN, 3, (layerState) ? true : false);
+	GPU->GetEngineMain()->SetLayerEnableState(3, (layerState) ? true : false);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
@@ -466,7 +465,7 @@ GPU3DInterface *core3DList[] = {
 - (BOOL) layerMainBG3
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 3) ? YES : NO;
+	const BOOL layerState = GPU->GetEngineMain()->GetLayerEnableState(3);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
@@ -475,7 +474,7 @@ GPU3DInterface *core3DList[] = {
 - (void) setLayerMainOBJ:(BOOL)layerState
 {
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	SetGPULayerState(DS_GPU_TYPE_MAIN, 4, (layerState) ? true : false);
+	GPU->GetEngineMain()->SetLayerEnableState(4, (layerState) ? true : false);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
@@ -486,7 +485,7 @@ GPU3DInterface *core3DList[] = {
 - (BOOL) layerMainOBJ
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_MAIN, 4) ? YES : NO;
+	const BOOL layerState = GPU->GetEngineMain()->GetLayerEnableState(4);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
@@ -495,7 +494,7 @@ GPU3DInterface *core3DList[] = {
 - (void) setLayerSubGPU:(BOOL)gpuState
 {
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	SetGPUDisplayState(DS_GPU_TYPE_SUB, (gpuState) ? true : false);
+	GPU->GetEngineSub()->SetEnableState((gpuState) ? true : false);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
@@ -506,7 +505,7 @@ GPU3DInterface *core3DList[] = {
 - (BOOL) layerSubGPU
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	const BOOL gpuState = GetGPUDisplayState(DS_GPU_TYPE_SUB) ? YES : NO;
+	const BOOL gpuState = GPU->GetEngineSub()->GetEnableState() ? YES : NO;
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return gpuState;
@@ -515,7 +514,7 @@ GPU3DInterface *core3DList[] = {
 - (void) setLayerSubBG0:(BOOL)layerState
 {
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	SetGPULayerState(DS_GPU_TYPE_SUB, 0, (layerState) ? true : false);
+	GPU->GetEngineSub()->SetLayerEnableState(0, (layerState) ? true : false);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
@@ -526,7 +525,7 @@ GPU3DInterface *core3DList[] = {
 - (BOOL) layerSubBG0
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 0) ? YES : NO;
+	const BOOL layerState = GPU->GetEngineSub()->GetLayerEnableState(0);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
@@ -535,7 +534,7 @@ GPU3DInterface *core3DList[] = {
 - (void) setLayerSubBG1:(BOOL)layerState
 {
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	SetGPULayerState(DS_GPU_TYPE_SUB, 1, (layerState) ? true : false);
+	GPU->GetEngineSub()->SetLayerEnableState(1, (layerState) ? true : false);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
@@ -546,7 +545,7 @@ GPU3DInterface *core3DList[] = {
 - (BOOL) layerSubBG1
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 1) ? YES : NO;
+	const BOOL layerState = GPU->GetEngineSub()->GetLayerEnableState(1);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
@@ -555,7 +554,7 @@ GPU3DInterface *core3DList[] = {
 - (void) setLayerSubBG2:(BOOL)layerState
 {
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	SetGPULayerState(DS_GPU_TYPE_SUB, 2, (layerState) ? true : false);
+	GPU->GetEngineSub()->SetLayerEnableState(2, (layerState) ? true : false);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
@@ -566,7 +565,7 @@ GPU3DInterface *core3DList[] = {
 - (BOOL) layerSubBG2
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 2) ? YES : NO;
+	const BOOL layerState = GPU->GetEngineSub()->GetLayerEnableState(2);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
@@ -575,7 +574,7 @@ GPU3DInterface *core3DList[] = {
 - (void) setLayerSubBG3:(BOOL)layerState
 {
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	SetGPULayerState(DS_GPU_TYPE_SUB, 3, (layerState) ? true : false);
+	GPU->GetEngineSub()->SetLayerEnableState(3, (layerState) ? true : false);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
@@ -586,7 +585,7 @@ GPU3DInterface *core3DList[] = {
 - (BOOL) layerSubBG3
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 3) ? YES : NO;
+	const BOOL layerState = GPU->GetEngineSub()->GetLayerEnableState(3);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
@@ -595,7 +594,7 @@ GPU3DInterface *core3DList[] = {
 - (void) setLayerSubOBJ:(BOOL)layerState
 {
 	pthread_rwlock_wrlock(self.rwlockProducer);
-	SetGPULayerState(DS_GPU_TYPE_SUB, 4, (layerState) ? true : false);
+	GPU->GetEngineSub()->SetLayerEnableState(4, (layerState) ? true : false);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	OSSpinLockLock(&spinlockGpuState);
@@ -606,7 +605,7 @@ GPU3DInterface *core3DList[] = {
 - (BOOL) layerSubOBJ
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	const BOOL layerState = GetGPULayerState(DS_GPU_TYPE_SUB, 4) ? YES : NO;
+	const BOOL layerState = GPU->GetEngineSub()->GetLayerEnableState(4);
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return layerState;
@@ -615,93 +614,6 @@ GPU3DInterface *core3DList[] = {
 - (BOOL) gpuStateByBit:(const UInt32)stateBit
 {
 	return ([self gpuStateFlags] & (1 << stateBit)) ? YES : NO;
-}
-
-- (BOOL) isGPUTypeDisplayed:(const NSInteger)theGpuType
-{
-	BOOL result = NO;
-	const UInt32 flags = [self gpuStateFlags];
-	
-	switch (theGpuType)
-	{
-		case DS_GPU_TYPE_MAIN:
-			if (flags & GPUSTATE_MAIN_GPU_MASK)
-			{
-				result = YES;
-			}
-			break;
-			
-		case DS_GPU_TYPE_SUB:
-			if (flags & GPUSTATE_SUB_GPU_MASK)
-			{
-				result = YES;
-			}
-			break;
-			
-		case DS_GPU_TYPE_MAIN_AND_SUB:
-			if (flags & (GPUSTATE_MAIN_GPU_MASK | GPUSTATE_SUB_GPU_MASK))
-			{
-				result = YES;
-			}
-			break;
-			
-		default:
-			break;
-	}
-	
-	return result;
-}
-
-- (void) hideGPUType:(const NSInteger)theGpuType
-{
-	UInt32 flags = [self gpuStateFlags];
-	
-	switch (theGpuType)
-	{
-		case DS_GPU_TYPE_MAIN:
-			flags &= ~GPUSTATE_MAIN_GPU_MASK;
-			break;
-			
-		case DS_GPU_TYPE_SUB:
-			flags &= ~GPUSTATE_SUB_GPU_MASK;
-			break;
-			
-		case DS_GPU_TYPE_MAIN_AND_SUB:
-			flags &= ~GPUSTATE_MAIN_GPU_MASK;
-			flags &= ~GPUSTATE_SUB_GPU_MASK;
-			break;
-			
-		default:
-			break;
-	}
-	
-	[self setGpuStateFlags:flags];
-}
-
-- (void) showGPUType:(const NSInteger)theGpuType
-{
-	UInt32 flags = [self gpuStateFlags];
-	
-	switch (theGpuType)
-	{
-		case DS_GPU_TYPE_MAIN:
-			flags |= GPUSTATE_MAIN_GPU_MASK;
-			break;
-			
-		case DS_GPU_TYPE_SUB:
-			flags |= GPUSTATE_SUB_GPU_MASK;
-			break;
-			
-		case DS_GPU_TYPE_MAIN_AND_SUB:
-			flags |= GPUSTATE_MAIN_GPU_MASK;
-			flags |= GPUSTATE_SUB_GPU_MASK;
-			break;
-			
-		default:
-			break;
-	}
-	
-	[self setGpuStateFlags:flags];
 }
 
 - (NSString *) render3DRenderingEngineString
@@ -724,163 +636,14 @@ GPU3DInterface *core3DList[] = {
 	return theString;
 }
 
+- (void) clearWithColor:(const uint16_t)colorBGRA5551
+{
+	pthread_rwlock_wrlock(self.rwlockProducer);
+	GPU->ClearWithColor(colorBGRA5551);
+	pthread_rwlock_unlock(self.rwlockProducer);
+}
+
 @end
-
-void SetGPULayerState(const GPUType gpuType, const unsigned int i, const bool state)
-{
-	GPUEngineBase *theGpu = NULL;
-	
-	// Check bounds on the layer index.
-	if (i > 4)
-	{
-		return;
-	}
-	
-	switch (gpuType)
-	{
-		case DS_GPU_TYPE_SUB:
-			theGpu = SubScreen.gpu;
-			break;
-			
-		case DS_GPU_TYPE_MAIN:
-			theGpu = MainScreen.gpu;
-			break;
-			
-		case DS_GPU_TYPE_MAIN_AND_SUB:
-			SetGPULayerState(DS_GPU_TYPE_SUB, i, state); // Recursive call
-			theGpu = MainScreen.gpu;
-			break;
-			
-		default:
-			break;
-	}
-	
-	if (theGpu != NULL)
-	{
-		theGpu->SetLayerState(i, state);
-	}
-}
-
-bool GetGPULayerState(const GPUType gpuType, const unsigned int i)
-{
-	bool theState = false;
-	
-	// Check bounds on the layer index.
-	if (i > 4)
-	{
-		return theState;
-	}
-	
-	switch (gpuType)
-	{
-		case DS_GPU_TYPE_SUB:
-			if (SubScreen.gpu != NULL)
-			{
-				theState = CommonSettings.dispLayers[SubScreen.gpu->core][i];
-			}
-			break;
-			
-		case DS_GPU_TYPE_MAIN:
-			if (MainScreen.gpu != NULL)
-			{
-				theState = CommonSettings.dispLayers[MainScreen.gpu->core][i];
-			}
-			break;
-			
-		case DS_GPU_TYPE_MAIN_AND_SUB:
-			if (SubScreen.gpu != NULL && MainScreen.gpu != NULL)
-			{
-				theState = (CommonSettings.dispLayers[SubScreen.gpu->core][i] && CommonSettings.dispLayers[MainScreen.gpu->core][i]);
-			}
-			break;
-			
-		default:
-			break;
-	}
-	
-	return theState;
-}
-
-void SetGPUDisplayState(const GPUType gpuType, const bool state)
-{
-	switch (gpuType)
-	{
-		case DS_GPU_TYPE_SUB:
-			CommonSettings.showGpu.sub = state;
-			break;
-			
-		case DS_GPU_TYPE_MAIN:
-			CommonSettings.showGpu.main = state;
-			break;
-			
-		case DS_GPU_TYPE_MAIN_AND_SUB:
-			CommonSettings.showGpu.sub = state;
-			CommonSettings.showGpu.main = state;
-			break;
-			
-		default:
-			break;
-	}
-}
-
-bool GetGPUDisplayState(const GPUType gpuType)
-{
-	bool theState = false;
-	
-	switch (gpuType)
-	{
-		case DS_GPU_TYPE_SUB:
-			theState = CommonSettings.showGpu.sub;
-			break;
-			
-		case DS_GPU_TYPE_MAIN:
-			theState = CommonSettings.showGpu.main;
-			break;
-			
-		case DS_GPU_TYPE_MAIN_AND_SUB:
-			theState = (CommonSettings.showGpu.sub && CommonSettings.showGpu.main);
-			break;
-			
-		default:
-			break;
-	}
-	
-	return theState;
-}
-
-void GPU_FillScreenWithBGRA5551(const uint16_t colorValue)
-{
-	const NDSDisplayInfo &dispInfo = NDS_GetDisplayInfo();
-	const size_t pixCountNative = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	const size_t pixCountCustom = dispInfo.customWidth * dispInfo.customHeight;
-	
-#ifdef __APPLE__
-	const uint16_t colorValuePattern[] = {colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue, colorValue};
-	
-	memset_pattern16(MainScreen.gpu->nativeBuffer, colorValuePattern, pixCountNative * sizeof(uint16_t));
-	memset_pattern16(SubScreen.gpu->nativeBuffer, colorValuePattern, pixCountNative * sizeof(uint16_t));
-	
-	if (pixCountCustom % 16 == 0)
-	{
-		memset_pattern16(MainScreen.gpu->customBuffer, colorValuePattern, pixCountCustom * sizeof(uint16_t));
-		memset_pattern16(SubScreen.gpu->customBuffer, colorValuePattern, pixCountCustom * sizeof(uint16_t));
-	}
-	else
-#endif
-	{
-		for (size_t i = 0; i < pixCountNative; i++)
-		{
-			MainScreen.gpu->nativeBuffer[i] = colorValue;
-			SubScreen.gpu->nativeBuffer[i] = colorValue;
-		}
-		
-		for (size_t i = 0; i < pixCountCustom; i++)
-		{
-			MainScreen.gpu->customBuffer[i] = colorValue;
-			SubScreen.gpu->customBuffer[i] = colorValue;
-		}
-	}
-}
 
 CGLContextObj OSXOpenGLRendererContext = NULL;
 CGLPBufferObj OSXOpenGLRendererPBuffer = NULL;

@@ -95,7 +95,7 @@ bool NDS_3D_ChangeCore(int newCore)
 		return result;
 	}
 	
-	Render3DError error = newRenderer->SetFramebufferSize(GPU_GetFramebufferWidth(), GPU_GetFramebufferHeight());
+	Render3DError error = newRenderer->SetFramebufferSize(GPU->GetCustomFramebufferWidth(), GPU->GetCustomFramebufferHeight());
 	if (error != RENDER3DERROR_NOERR)
 	{
 		return result;
@@ -218,7 +218,6 @@ Render3D::Render3D()
 Render3D::~Render3D()
 {
 	free_aligned(_framebufferColor);
-	TexCache_Reset();
 }
 
 RendererID Render3D::GetRenderID()

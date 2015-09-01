@@ -1411,8 +1411,6 @@ static void Reset()
     bool shouldBeRunning = desmume_running();
     Pause();
     NDS_Reset();
-    // Clear the NDS screen
-    memset(GPU_screen, 0xFF, GPU_GetFramebufferWidth() * GPU_GetFramebufferHeight() * 2 * sizeof(u16));
     RedrawScreen();
     if (shouldBeRunning) {
         Launch();
@@ -1549,7 +1547,7 @@ static inline void RGB555ToBGRA8888Buffer(const uint16_t *__restrict__ srcBuffer
 
 static inline void gpu_screen_to_rgb(u32* dst)
 {
-    RGB555ToRGBA8888Buffer((u16*)GPU_screen, dst, 256 * 384);
+    RGB555ToRGBA8888Buffer(GPU->GetNativeFramebuffer(), dst, 256 * 384);
 }
 
 static inline void drawScreen(cairo_t* cr, u32* buf, gint w, gint h) {
@@ -1674,7 +1672,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 }
 
 static void RedrawScreen() {
-	RGB555ToBGRA8888Buffer((u16*)GPU_screen, video->GetSrcBufferPtr(), 256 * 384);
+	RGB555ToBGRA8888Buffer(GPU->GetNativeFramebuffer(), video->GetSrcBufferPtr(), 256 * 384);
 #ifdef HAVE_LIBAGG
 	aggDraw.hud->attach((u8*)video->GetSrcBufferPtr(), 256, 384, 1024);
 	osd->update();
@@ -2127,14 +2125,14 @@ static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data)
     case MAIN_BG_2:
     case MAIN_BG_3:
     case MAIN_OBJ:
-        MainScreen.gpu->SetLayerState(Layer, (active == TRUE) ? true : false);
+        GPU->GetEngineMain()->SetLayerEnableState(Layer, (active == TRUE) ? true : false);
         break;
     case SUB_BG_0:
     case SUB_BG_1:
     case SUB_BG_2:
     case SUB_BG_3:
     case SUB_OBJ:
-        SubScreen.gpu->SetLayerState(Layer-SUB_BG_0, (active == TRUE) ? true : false);
+        GPU->GetEngineSub()->SetLayerEnableState(Layer-SUB_BG_0, (active == TRUE) ? true : false);
         break;
     default:
         break;
@@ -2458,7 +2456,7 @@ gboolean EmuLoop(gpointer data)
     desmume_cycle();    /* Emule ! */
 
     _updateDTools();
-	avout_x264.updateVideo((u16*)GPU_screen);
+	avout_x264.updateVideo(GPU->GetNativeFramebuffer());
 	RedrawScreen();
 
     if (!config.fpslimiter || keys_latch & KEYMASK_(KEY_BOOST - 1)) {

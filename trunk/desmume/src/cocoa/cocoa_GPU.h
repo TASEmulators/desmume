@@ -19,13 +19,6 @@
 #include <pthread.h>
 #include <libkern/OSAtomic.h>
 
-enum GPUType
-{
-	DS_GPU_TYPE_MAIN = 0,
-	DS_GPU_TYPE_SUB,
-	DS_GPU_TYPE_MAIN_AND_SUB
-};
-
 @interface CocoaDSGPU : NSObject
 {
 	UInt32 gpuStateFlags;
@@ -66,11 +59,8 @@ enum GPUType
 @property (assign) BOOL render3DFragmentSamplingHack;
 
 - (BOOL) gpuStateByBit:(const UInt32)stateBit;
-- (BOOL) isGPUTypeDisplayed:(const NSInteger)theGpuType;
-- (void) hideGPUType:(const NSInteger)theGpuType;
-- (void) showGPUType:(const NSInteger)theGpuType;
-
 - (NSString *) render3DRenderingEngineString;
+- (void) clearWithColor:(const uint16_t)colorBGRA5551;
 
 @end
 
@@ -78,12 +68,6 @@ enum GPUType
 extern "C"
 {
 #endif
-
-void GPU_FillScreenWithBGRA5551(const uint16_t colorValue);
-void SetGPULayerState(const GPUType gpuType, const unsigned int i, const bool state);
-bool GetGPULayerState(const GPUType gpuType, const unsigned int i);
-void SetGPUDisplayState(const GPUType gpuType, const bool state);
-bool GetGPUDisplayState(const GPUType gpuType);
 
 bool OSXOpenGLRendererInit();
 bool OSXOpenGLRendererBegin();

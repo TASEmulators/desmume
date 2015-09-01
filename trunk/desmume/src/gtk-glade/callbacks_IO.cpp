@@ -117,7 +117,7 @@ static void decode_screen () {
 
 	int x,y, m, W,H,L,BL;
 	u32 image[RAW_H*2][RAW_W], pix;
-	u16 * pixel = (u16*)&GPU_screen;
+	u16 * pixel = GPU->GetNativeFramebuffer();
 	u32 * rgb32 = &on_screen_image32[0];
 
 	/* decode colors */

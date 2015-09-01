@@ -1798,7 +1798,6 @@
 	// Update the UI to indicate that a ROM has indeed been loaded.
 	[self updateAllWindowTitles];
 	
-	GPU_FillScreenWithBGRA5551(0xFFFF);
 	for (DisplayWindowController *windowController in windowList)
 	{
 		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
@@ -1829,6 +1828,7 @@
 {
 	BOOL result = NO;
 	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[self setCurrentSaveStateURL:nil];
 	
 	isSaveStateEdited = NO;
@@ -1876,7 +1876,7 @@
 	// Update the UI to indicate that the ROM has finished unloading.
 	[self updateAllWindowTitles];
 	
-	GPU_FillScreenWithBGRA5551(0x8000);
+	[[cdsCore cdsGPU] clearWithColor:0x8000];
 	for (DisplayWindowController *windowController in windowList)
 	{
 		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
@@ -1894,7 +1894,6 @@
 		[[windowController window] displayIfNeeded];
 	}
 	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore setSlot1StatusText:NSSTRING_STATUS_EMULATION_NOT_RUNNING];
 	[[cdsCore cdsController] reset];
 	[[cdsCore cdsController] updateMicLevel];
@@ -2196,7 +2195,6 @@
 	[[cdsCore cdsGPU] setRender3DMultisample:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Multisample"]];
 	[[cdsCore cdsGPU] setRender3DFragmentSamplingHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_FragmentSamplingHack"]];
 	[[cdsCore cdsGPU] setGpuScale:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_ScalingFactor"]];
-	GPU_FillScreenWithBGRA5551(0x8000); // Fill the GPU framebuffer with black after the GPU scaling factor is set.
 	
 	// Set the stylus options per user preferences.
 	[[cdsCore cdsController] setStylusPressure:[[NSUserDefaults standardUserDefaults] integerForKey:@"Emulation_StylusPressure"]];

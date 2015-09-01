@@ -221,15 +221,16 @@ static void Printscreen()
         gchar *filename;
         GError *error = NULL;
         u8 *rgb;
+        u16 *gpuFramebuffer = GPU->GetNativeFramebuffer();
         static int seq = 0;
 
         rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*3);
         if (!rgb)
                 return;
         for (int i = 0; i < SCREENS_PIXEL_SIZE; i++) {
-                rgb[(i * 3) + 0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
-                rgb[(i * 3) + 1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
-                rgb[(i * 3) + 2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
+                rgb[(i * 3) + 0] = ((gpuFramebuffer[i] >> 0) & 0x1f) << 3;
+                rgb[(i * 3) + 1] = ((gpuFramebuffer[i] >> 5) & 0x1f) << 3;
+                rgb[(i * 3) + 2] = ((gpuFramebuffer[i] >> 10) & 0x1f) << 3;
         }
 
         screenshot = gdk_pixbuf_new_from_data(rgb,
@@ -523,18 +524,18 @@ void  on_wgt_Exec_toggled  (GtkToggleToolButton *toggletoolbutton, gpointer user
 
 
 /* LAYERS ***** ***** ***** ***** */
-static void change_bgx_layer(int layer, gboolean state, NDS_Screen scr) {
+static void change_bgx_layer(int layer, gboolean state, GPUEngineBase *gpuEngine) {
 	//if(!desmume_running()) return;
 	
-	scr.gpu->SetLayerState(layer, (state) ? true : false);
+	gpuEngine->SetLayerEnableState(layer, (state) ? true : false);
 	
 	//fprintf(stderr,"Changed Layer %s to %d\n",layer,state);
 }
 void  on_wc_1_BGXX_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
 	int layer = dyn_CAST(int,user_data);
-	change_bgx_layer(layer, gtk_toggle_button_get_active(togglebutton), MainScreen);
+	change_bgx_layer(layer, gtk_toggle_button_get_active(togglebutton), GPU->GetEngineMain());
 }
 void  on_wc_2_BGXX_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
 	int layer = dyn_CAST(int,user_data);
-	change_bgx_layer(layer, gtk_toggle_button_get_active(togglebutton), SubScreen);
+	change_bgx_layer(layer, gtk_toggle_button_get_active(togglebutton), GPU->GetEngineSub());
 }
