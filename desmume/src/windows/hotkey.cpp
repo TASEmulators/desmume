@@ -162,13 +162,13 @@ void HK_QuickScreenShot(int param, bool justPressed)
 	case path.PNG:
 		{		
 			strcat(buffer, ".png");
-			NDS_WritePNG(buffer, GPU_screen);
+			NDS_WritePNG(buffer, GPU->GetNativeFramebuffer());
 		}
 		break;
 	case path.BMP:
 		{
 			strcat(buffer, ".bmp");
-			NDS_WriteBMP(buffer, GPU_screen);
+			NDS_WriteBMP(buffer, GPU->GetNativeFramebuffer());
 		}
 		break;
 	}
@@ -220,9 +220,9 @@ void HK_PrintScreen(int param, bool justPressed)
 		filename = outFilename;
 
 		if(toupper(strright(filename,4)) == ".PNG")
-			NDS_WritePNG(filename.c_str(), GPU_screen);
+			NDS_WritePNG(filename.c_str(), GPU->GetNativeFramebuffer());
 		else if(toupper(strright(filename,4)) == ".BMP")
-			NDS_WriteBMP(filename.c_str(), GPU_screen);
+			NDS_WriteBMP(filename.c_str(), GPU->GetNativeFramebuffer());
 	}
 
 	if(unpause) NDS_UnPause(false);

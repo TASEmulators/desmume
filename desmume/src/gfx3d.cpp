@@ -2325,7 +2325,7 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 
 	if (!CommonSettings.showGpu.main)
 	{
-		memset(gfx3d_colorRGBA6665, 0, GPU_GetFramebufferWidth() * GPU_GetFramebufferHeight() * sizeof(FragmentColor));
+		memset(gfx3d_colorRGBA6665, 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(FragmentColor));
 		return;
 	}
 	
@@ -2440,13 +2440,13 @@ void gfx3d_glGetLightColor(const size_t index, u32 &dst)
 const FragmentColor* gfx3d_GetLineDataRGBA6665(const size_t line)
 {
 	CurrentRenderer->RenderFinish();
-	return (gfx3d_colorRGBA6665 + (line * GPU_GetFramebufferWidth()));
+	return (gfx3d_colorRGBA6665 + (line * GPU->GetCustomFramebufferWidth()));
 }
 
 const u16* gfx3d_GetLineDataRGBA5551(const size_t line)
 {
 	CurrentRenderer->RenderFinish();
-	return (gfx3d_colorRGBA5551 + (line * GPU_GetFramebufferWidth()));
+	return (gfx3d_colorRGBA5551 + (line * GPU->GetCustomFramebufferWidth()));
 }
 
 

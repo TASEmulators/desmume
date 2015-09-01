@@ -816,7 +816,7 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 	}
 
 	// finally, make it relative to the correct screen
-	const bool isMainGPUFirst = (MainDisplay.GetEngineID() == GPUCOREID_MAIN);
+	const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUCOREID_MAIN);
 
 	if (video.layout == 0 || video.layout == 2)
 	{
@@ -1656,7 +1656,7 @@ static void OGL_DoDisplay()
 
 
 	RECT srcRects [2];
-	const bool isMainGPUFirst = (MainDisplay.GetEngineID() == GPUCOREID_MAIN);
+	const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUCOREID_MAIN);
 
 	if(video.swap == 0)
 	{
@@ -1774,7 +1774,7 @@ static void DD_DoDisplay()
 
 	RECT* dstRects [2] = {&MainScreenRect, &SubScreenRect};
 	RECT* srcRects [2];
-	const bool isMainGPUFirst = (MainDisplay.GetEngineID() == GPUCOREID_MAIN);
+	const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUCOREID_MAIN);
 
 	if(video.swap == 0)
 	{
@@ -1999,7 +1999,7 @@ void Display()
 {
 	if(CommonSettings.single_core())
 	{
-		video.srcBuffer = (u8*)GPU_screen;
+		video.srcBuffer = (u8*)GPU->GetNativeFramebuffer();
 		DoDisplay(true);
 	}
 	else
@@ -2019,7 +2019,7 @@ void Display()
 			newestDisplayBuffer += diff;
 		else newestDisplayBuffer = (currDisplayBuffer+2)%3;
 
-		memcpy(displayBuffers[newestDisplayBuffer],GPU_screen,256*192*4);
+		memcpy(displayBuffers[newestDisplayBuffer],GPU->GetNativeFramebuffer(),256*192*4);
 
 		g_mutex_unlock(display_mutex);
 	}
@@ -2119,7 +2119,7 @@ static void StepRunLoop_Core()
 		win_sound_samplecounter = DESMUME_SAMPLE_RATE/60;
 	}
 	inFrameBoundary = true;
-	DRV_AviVideoUpdate((u16*)GPU_screen);
+	DRV_AviVideoUpdate(GPU->GetNativeFramebuffer());
 
 	extern bool rewinding;
 
@@ -2143,7 +2143,7 @@ static void StepRunLoop_Paused()
 	// periodically update single-core OSD when paused and in the foreground
 	if(CommonSettings.single_core() && GetActiveWindow() == mainLoopData.hwnd)
 	{
-		video.srcBuffer = (u8*)GPU_screen;
+		video.srcBuffer = (u8*)GPU->GetNativeFramebuffer();
 		DoDisplay(true);
 	}
 
@@ -3263,6 +3263,7 @@ int _main()
 	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 	
 	NDS_Init();
+	GPU->ClearWithColor(0xFFFF);
 	
 #ifdef GDB_STUB
     gdbstub_mutex_init();
@@ -4045,7 +4046,7 @@ void CloseRom()
 
 	// clear screen so the last frame we rendered doesn't stick around
 	// (TODO: maybe NDS_Reset should do this?)
-	memset(GPU_screen, 0xFF, GPU_GetFramebufferWidth() * GPU_GetFramebufferHeight() * 2 * sizeof(u16));
+	GPU->ClearWithColor(0xFFFF);
 
 	InvalidateRect(MainWindow->getHWnd(), NULL, TRUE); // make sure the window refreshes with the cleared screen
 
@@ -4238,7 +4239,7 @@ void ScreenshotToClipboard(bool extraInfo)
     bmi.bV4Height = -384;
 
 	FillRect(hMemDC, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
-	SetDIBitsToDevice(hMemDC, 0, 0, 256, 384, 0, 0, 0, 384, &GPU_screen[0], (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+	SetDIBitsToDevice(hMemDC, 0, 0, 256, 384, 0, 0, 0, 384, GPU->GetNativeFramebuffer(), (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
 	
 	if(extraInfo)
 	{
@@ -4382,10 +4383,10 @@ void SaveWindowPos(HWND hwnd)
 
 static void TwiddleLayer(UINT ctlid, int core, int layer)
 {
-	GPUEngineBase *gpu = ((GPUCoreID)core == GPUCOREID_MAIN) ? MainScreen.gpu : SubScreen.gpu;
+	GPUEngineBase *gpu = ((GPUCoreID)core == GPUCOREID_MAIN) ? GPU->GetEngineMain() : GPU->GetEngineSub();
 
 	const bool newLayerState = !CommonSettings.dispLayers[core][layer];
-	gpu->SetLayerState(layer, newLayerState);
+	gpu->SetLayerEnableState(layer, newLayerState);
 	MainWindow->checkMenu(ctlid, newLayerState);
 }
 
@@ -5023,7 +5024,7 @@ DOKEYDOWN:
 			{
 				if(CommonSettings.single_core())
 				{
-					video.srcBuffer = (u8*)GPU_screen;
+					video.srcBuffer = (u8*)GPU->GetNativeFramebuffer();
 					DoDisplay(true);
 				}
 			}
@@ -5138,7 +5139,7 @@ DOKEYDOWN:
 			}
 			else
 			{
-				const bool isMainGPUFirst = (MainDisplay.GetEngineID() == GPUCOREID_MAIN);
+				const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUCOREID_MAIN);
 				if ((video.layout == 2) && ((video.swap == 0) || (video.swap == 2 && isMainGPUFirst) || (video.swap == 3 && !isMainGPUFirst))) return 0;
 				
 				ToDSScreenRelativeCoords(x,y,1);

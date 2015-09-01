@@ -237,14 +237,16 @@ static void my_gl_Texture2D() {
 
 static void
 my_gl_ScreenTex( int software_convert) {
+  u16 *gpuFramebuffer = GPU->GetNativeFramebuffer();
+
   if ( software_convert) {
     u8 converted[256 * 384 * 3];
     int i;
 
     for ( i = 0; i < (256 * 384); i++) {
-      converted[(i * 3) + 0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
-      converted[(i * 3) + 1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
-      converted[(i * 3) + 2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
+      converted[(i * 3) + 0] = ((gpuFramebuffer[i] >> 0) & 0x1f) << 3;
+      converted[(i * 3) + 1] = ((gpuFramebuffer[i] >> 5) & 0x1f) << 3;
+      converted[(i * 3) + 2] = ((gpuFramebuffer[i] >> 10) & 0x1f) << 3;
     }
 
     glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 256, 384,
@@ -256,7 +258,7 @@ my_gl_ScreenTex( int software_convert) {
     glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 256, 384,
                      GL_RGBA,
                      GL_UNSIGNED_SHORT_1_5_5_5_REV,
-                     &GPU_screen);
+                     gpuFramebuffer);
   }
 }
 
@@ -299,7 +301,7 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 	if (desmume_running()) {
 
 		// master bright
-		gpu = ((screen)?SubScreen:MainScreen).gpu;
+		gpu = (screen) ? GPU->GetEngineSub() : GPU->GetEngineMain();
 		
 		switch (gpu->MasterBrightMode)
 		{

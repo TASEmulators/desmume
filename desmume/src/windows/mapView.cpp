@@ -45,8 +45,8 @@ struct mapview_struct
 		//we're going to make a copy of the gpu so that we don't wreck affine scroll params
 		//hopefully we won't mess up anything else
 		GPUEngineBase *realGpu;
-		if(lcd) realGpu = SubScreen.gpu;
-		else realGpu = MainScreen.gpu;
+		if(lcd) realGpu = GPU->GetEngineSub();
+		else realGpu = GPU->GetEngineMain();
 		GPUEngineBase &gpu = *realGpu;
 
 		//forgive the gyrations, some of this junk in here is to remind us of gyrations we might have to go
@@ -100,13 +100,13 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 
 	if(win->lcd)
 	{
-		lg = SubScreen.gpu->BGSize[win->map][0];
-		ht = SubScreen.gpu->BGSize[win->map][1];
+		lg = GPU->GetEngineSub()->BGSize[win->map][0];
+		ht = GPU->GetEngineSub()->BGSize[win->map][1];
 	}
 	else
 	{
-		lg = MainScreen.gpu->BGSize[win->map][0];
-		ht = MainScreen.gpu->BGSize[win->map][1];
+		lg = GPU->GetEngineMain()->BGSize[win->map][0];
+		ht = GPU->GetEngineMain()->BGSize[win->map][1];
 	}
 	bmi.bV4Width = lg;
 	bmi.bV4Height = -ht;
@@ -133,7 +133,7 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 				sprintf(text, "extended slot %d", (bgcnt&(1<<13))?3:1);
 				break;
 			default :
-				sprintf(text, "extended slot %d", MainScreen.gpu->BGExtPalSlot[win->map]);
+				sprintf(text, "extended slot %d", GPU->GetEngineMain()->BGExtPalSlot[win->map]);
 				break;
 			}
 		}
@@ -155,14 +155,14 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 	sprintf(text, "0x%08X", (int)(0x6000000 + 0x800*((bgcnt>>8)&0x1F) + win->lcd*0x200000 + ((dispcnt>>27)&7)*0x10000));
 	SetWindowText(GetDlgItem(hwnd, IDC_SCR), text);
 
-	//sprintf(text, "%d x %d",  MainScreen.gpu->BGPA[win->map], MainScreen.gpu->BGPB[win->map]);
-	sprintf(text, "%d x %d",  (int)MainScreen.gpu->BGSize[win->map][0], (int)MainScreen.gpu->BGSize[win->map][1]);
+	//sprintf(text, "%d x %d",  GPU->GetEngineMain()->BGPA[win->map], GPU->GetEngineMain()->BGPB[win->map]);
+	sprintf(text, "%d x %d",  (int)GPU->GetEngineMain()->BGSize[win->map][0], (int)GPU->GetEngineMain()->BGSize[win->map][1]);
 	SetWindowText(GetDlgItem(hwnd, IDC_MSIZE), text);
 
 	//if (win->map==2) {
-	//	parms = &(MainScreen.gpu->dispx_st)->dispx_BG2PARMS;
+	//	parms = &(GPU->GetEngineMain()->dispx_st)->dispx_BG2PARMS;
 	//} else {
-	//	parms = &(MainScreen.gpu->dispx_st)->dispx_BG3PARMS;		
+	//	parms = &(GPU->GetEngineMain()->dispx_st)->dispx_BG3PARMS;
 	//}
 	//sprintf(text, "%d x %d", parms->BGxX, parms->BGxY);
 	SetWindowText(GetDlgItem(hwnd, IDC_SCROLL), "useless");

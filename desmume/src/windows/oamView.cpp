@@ -280,7 +280,7 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 						OAMView = new oamview_struct;
 						memset(OAMView, 0, sizeof(oamview_struct));
 						OAMView->oam = MMU.ARM9_OAM;
-						OAMView->gpu = MainScreen.gpu;
+						OAMView->gpu = GPU->GetEngineMain();
 						OAMView->scale = 2;
 						OAMView->border = true;
 
@@ -391,12 +391,12 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
                                                  case 0 :
                                                       OAMView->oam = MMU.ARM9_OAM;
                                                       OAMView->num = 0;
-                                                      OAMView->gpu = MainScreen.gpu;
+                                                      OAMView->gpu = GPU->GetEngineMain();
                                                       break;
                                                  case 1 :
                                                       OAMView->oam = (MMU.ARM9_OAM+0x400);
                                                       OAMView->num = 0;
-                                                      OAMView->gpu = SubScreen.gpu;
+                                                      OAMView->gpu = GPU->GetEngineSub();
                                                       break;
                                             }
                                        }

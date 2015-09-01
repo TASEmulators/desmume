@@ -371,6 +371,7 @@ resizeWindow( u16 width, u16 height, GLuint *screen_texture) {
 static void
 opengl_Draw( GLuint *texture, int software_convert) {
   GLenum errCode;
+  u16 *gpuFramebuffer = GPU->GetNativeFramebuffer();
 
   /* Clear The Screen And The Depth Buffer */
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -385,9 +386,9 @@ opengl_Draw( GLuint *texture, int software_convert) {
     u8 converted[256 * 384 * 3];
 
     for ( i = 0; i < (256 * 384); i++) {
-      converted[(i * 3) + 0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
-      converted[(i * 3) + 1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
-      converted[(i * 3) + 2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
+      converted[(i * 3) + 0] = ((gpuFramebuffer[i] >> 0) & 0x1f) << 3;
+      converted[(i * 3) + 1] = ((gpuFramebuffer[i] >> 5) & 0x1f) << 3;
+      converted[(i * 3) + 2] = ((gpuFramebuffer[i] >> 10) & 0x1f) << 3;
     }
 
     glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 256, 384,
@@ -399,7 +400,7 @@ opengl_Draw( GLuint *texture, int software_convert) {
     glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 256, 384,
                      GL_RGBA,
                      GL_UNSIGNED_SHORT_1_5_5_5_REV,
-                     &GPU_screen);
+                     gpuFramebuffer);
   }
 
   if ((errCode = glGetError()) != GL_NO_ERROR) {
@@ -445,7 +446,7 @@ static void
 Draw( void) {
   SDL_Surface *rawImage;
 
-  rawImage = SDL_CreateRGBSurfaceFrom((void*)&GPU_screen, 256, 384, 16, 512, 0x001F, 0x03E0, 0x7C00, 0);
+  rawImage = SDL_CreateRGBSurfaceFrom((void*)GPU->GetNativeFramebuffer(), 256, 384, 16, 512, 0x001F, 0x03E0, 0x7C00, 0);
   if(rawImage == NULL) return;
 
   SDL_BlitSurface(rawImage, 0, surface, 0);
@@ -488,7 +489,7 @@ static void desmume_cycle(struct ctrls_event_config * cfg)
 }
 
 #ifdef HAVE_LIBAGG
-T_AGG_RGB555 agg_targetScreen_cli((u8 *)GPU_screen, 256, 384, 512);
+T_AGG_RGB555 agg_targetScreen_cli((u8 *)GPU->GetNativeFramebuffer(), 256, 384, 512);
 #endif
 
 int main(int argc, char ** argv) {

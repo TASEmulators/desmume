@@ -687,10 +687,36 @@ typedef struct
 class GPUEngineBase
 {
 private:
+	static CACHE_ALIGN u16 _fadeInColors[17][0x8000];
+	static CACHE_ALIGN u16 _fadeOutColors[17][0x8000];
+	static CACHE_ALIGN u8 _blendTable555[17][17][32][32];
+	
+	static struct MosaicLookup {
+		
+		struct TableEntry {
+			u8 begin, trunc;
+		} table[16][256];
+		
+		MosaicLookup() {
+			for(int m=0;m<16;m++)
+				for(int i=0;i<256;i++) {
+					int mosaic = m+1;
+					TableEntry &te = table[m][i];
+					te.begin = (i%mosaic==0);
+					te.trunc = i/mosaic*mosaic;
+				}
+		}
+		
+		TableEntry *width, *height;
+		int widthValue, heightValue;
+		
+	} _mosaicLookup;
+	
 	CACHE_ALIGN u16 _sprColor[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	CACHE_ALIGN u8 _sprAlpha[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	CACHE_ALIGN u8 _sprType[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	CACHE_ALIGN u8 _sprPrio[GPU_FRAMEBUFFER_NATIVE_WIDTH];
+	CACHE_ALIGN u8 _sprWin[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	
 	bool _enableLayer[5];
 	itemsForPriority_t _itemsForPriority[NB_PRIORITIES];
@@ -776,6 +802,8 @@ private:
 	u8 _BLDALPHA_EVB;
 	u8 _BLDY_EVY;
 	
+	void _InitLUTs();
+	
 	void _MosaicSpriteLinePixel(const size_t x, u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 	void _MosaicSpriteLine(u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 	
@@ -831,8 +859,11 @@ public:
 	
 	void SetVideoProp(const u32 ctrlBits);
 	void SetBGProp(const size_t num, const u16 ctrlBits);
+	void SetDISPCAPCNT(u32 val);
 	
-	void RenderLine(const u16 l, u16 *dstLine, const size_t dstLineWidth, const size_t dstLineCount);
+	void RenderLine(const u16 l, bool skip);
+	void RenderLine_Layer(const u16 l, u16 *dstLine, const size_t dstLineWidth, const size_t dstLineCount);
+	void RenderLine_MasterBrightness(u16 *dstLine, const size_t dstLineWidth, const size_t dstLineCount);
 	
 	// some structs are becoming redundant
 	// some functions too (no need to recopy some vars as it is done by MMU)
@@ -879,33 +910,15 @@ public:
 	
 	bool need_update_winh[2];
 	
-	static struct MosaicLookup {
-
-		struct TableEntry {
-			u8 begin, trunc;
-		} table[16][256];
-
-		MosaicLookup() {
-			for(int m=0;m<16;m++)
-				for(int i=0;i<256;i++) {
-					int mosaic = m+1;
-					TableEntry &te = table[m][i];
-					te.begin = (i%mosaic==0);
-					te.trunc = i/mosaic*mosaic;
-				}
-		}
-
-		TableEntry *width, *height;
-		int widthValue, heightValue;
-		
-	} mosaicLookup;
-	
 	struct AffineInfo {
 		AffineInfo() : x(0), y(0) {}
 		u32 x, y;
 	} affineInfo[2];
 	
-	void SetLayerState(const size_t layerIndex, bool theState);
+	bool GetEnableState();
+	void SetEnableState(bool theState);
+	bool GetLayerEnableState(const size_t layerIndex);
+	void SetLayerEnableState(const size_t layerIndex, bool theState);
 	
 	template<bool BACKDROP, bool USECUSTOMVRAM, int FUNCNUM> FORCEINLINE void ____setFinalColorBck(const u16 color, const size_t srcX);
 	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
@@ -926,8 +939,8 @@ public:
 	void HandleDisplayModeVRAM(u16 *dstLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
 	void HandleDisplayModeMainMemory(u16 *dstLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
 	
-	u32 GetHOFS(const size_t bg);
-	u32 GetVOFS(const size_t bg);
+	u32 GetHOFS(const size_t bg) const;
+	u32 GetVOFS(const size_t bg) const;
 
 	void UpdateBLDALPHA();
 	void SetBLDALPHA(const u16 val);
@@ -964,10 +977,10 @@ public:
 	void SetWINOUT(const u8 val);
 	void SetWINOBJ(const u8 val);
 	
-	int GetFinalColorBckFuncID();
+	int GetFinalColorBckFuncID() const;
 	void SetFinalColorBckFuncID(int funcID);
 
-	NDSDisplayID GetDisplayByID();
+	NDSDisplayID GetDisplayByID() const;
 	void SetDisplayByID(const NDSDisplayID theDisplayID);
 	
 	void SetCustomFramebufferSize(size_t w, size_t h);
@@ -975,31 +988,6 @@ public:
 	
 	void REG_DISPx_pack_test();
 };
-
-extern u16 *GPU_screen; // TODO: Old pointer - need to eliminate direct reference in frontends
-
-size_t GPU_GetFramebufferWidth();
-size_t GPU_GetFramebufferHeight();
-void GPU_SetFramebufferSize(size_t w, size_t h);
-
-// Normally, the GPUs will automatically blit their native buffers to the master
-// framebuffer at the end of V-blank so that all rendered graphics are contained
-// within a single common buffer. This is necessary for when someone wants to read
-// the NDS framebuffers, but the reader can only read a single buffer at a time.
-// Certain functions, such as taking screenshots, as well as many frontends running
-// the NDS video displays, require that they read from only a single buffer.
-//
-// However, if GPU_SetWillAutoBlitNativeToCustomBuffer() is passed "false", then the
-// frontend becomes responsible for calling NDS_GetDisplayInfo() and reading the
-// native and custom buffers properly for each display. If a single buffer is still
-// needed for certain cases, then the frontend must manually call
-// GPU::BlitNativeToCustomFramebuffer() for each GPU before reading the master framebuffer.
-bool GPU_GetWillAutoBlitNativeToCustomBuffer();
-void GPU_SetWillAutoBlitNativeToCustomBuffer(const bool willAutoBlit);
-
-void GPU_UpdateVRAM3DUsageProperties(VRAM3DUsageProperties &outProperty);
-
-const NDSDisplayInfo& NDS_GetDisplayInfo(); // Frontends need to call this whenever they need to read the video buffers from the emulator core
 
 class NDSDisplay
 {
@@ -1010,31 +998,83 @@ private:
 public:
 	NDSDisplay();
 	NDSDisplay(const NDSDisplayID displayID);
-	NDSDisplay(const NDSDisplayID displayID, const GPUCoreID coreID);
+	NDSDisplay(const NDSDisplayID displayID, GPUEngineBase *theEngine);
 	
 	GPUEngineBase* GetEngine();
+	void SetEngine(GPUEngineBase *theEngine);
+	
 	GPUCoreID GetEngineID();
 	void SetEngineByID(const GPUCoreID theID);
 };
 
-struct NDS_Screen
+class GPUSubsystem
 {
-	GPUEngineBase *gpu;
+private:
+	GPUEngineBase *_engineMain;
+	GPUEngineBase *_engineSub;
+	NDSDisplay *_displayMain;
+	NDSDisplay *_displayTouch;
+	
+	bool _willAutoBlitNativeToCustomBuffer;
+	VRAM3DUsageProperties _VRAM3DUsage;
+	u16 *_customVRAM;
+	u16 *_customVRAMBlank;
+	
+	CACHE_ALIGN u16 _nativeFramebuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2];
+	u16 *_customFramebuffer;
+	
+	NDSDisplayInfo _displayInfo;
+	
+public:
+	GPUSubsystem();
+	~GPUSubsystem();
+	
+	void Reset();
+	VRAM3DUsageProperties& GetVRAM3DUsageProperties();
+	const NDSDisplayInfo& GetDisplayInfo(); // Frontends need to call this whenever they need to read the video buffers from the emulator core
+	void SetDisplayDidCustomRender(NDSDisplayID displayID, bool theState);
+	
+	GPUEngineBase* GetEngineMain();
+	GPUEngineBase* GetEngineSub();
+	NDSDisplay* GetDisplayMain();
+	NDSDisplay* GetDisplayTouch();
+	
+	u16* GetNativeFramebuffer();
+	u16* GetNativeFramebuffer(const NDSDisplayID theDisplayID);
+	u16* GetCustomFramebuffer();
+	u16* GetCustomFramebuffer(const NDSDisplayID theDisplayID);
+	
+	u16* GetCustomVRAMBuffer();
+	u16* GetCustomVRAMBlankBuffer();
+	
+	size_t GetCustomFramebufferWidth() const;
+	size_t GetCustomFramebufferHeight() const;
+	void SetCustomFramebufferSize(size_t w, size_t h);
+	
+	void UpdateVRAM3DUsageProperties();
+	
+	// Normally, the GPUs will automatically blit their native buffers to the master
+	// framebuffer at the end of V-blank so that all rendered graphics are contained
+	// within a single common buffer. This is necessary for when someone wants to read
+	// the NDS framebuffers, but the reader can only read a single buffer at a time.
+	// Certain functions, such as taking screenshots, as well as many frontends running
+	// the NDS video displays, require that they read from only a single buffer.
+	//
+	// However, if SetWillAutoBlitNativeToCustomBuffer() is passed "false", then the
+	// frontend becomes responsible for calling GetDisplayInfo() and reading the native
+	// and custom buffers properly for each display. If a single buffer is still needed
+	// for certain cases, then the frontend must manually call
+	// GPUEngineBase::BlitNativeToCustomFramebuffer() for each GPU before reading the
+	// master framebuffer.
+	bool GetWillAutoBlitNativeToCustomBuffer() const;
+	void SetWillAutoBlitNativeToCustomBuffer(const bool willAutoBlit);
+	
+	void RenderLine(const u16 l, bool skip = false);
+	void ClearWithColor(const u16 colorBGRA5551);
 };
 
-extern NDS_Screen MainScreen;
-extern NDS_Screen SubScreen;
-extern NDSDisplay MainDisplay;
-extern NDSDisplay TouchDisplay;
-
-int Screen_Init();
-void Screen_Reset(void);
-void Screen_DeInit(void);
-
+extern GPUSubsystem *GPU;
 extern MMU_struct MMU;
-
-void GPU_set_DISPCAPCNT(u32 val);
-void GPU_RenderLine(NDS_Screen *screen, const u16 l, bool skip = false);
 
 inline FragmentColor MakeFragmentColor(const u8 r, const u8 g, const u8 b, const u8 a)
 {

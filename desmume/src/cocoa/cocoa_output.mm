@@ -538,7 +538,7 @@
 - (NSSize) displaySize
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	NSSize size = NSMakeSize((CGFloat)GPU_GetFramebufferWidth(), (displayMode == DS_DISPLAY_TYPE_DUAL) ? (CGFloat)(GPU_GetFramebufferHeight() * 2): (CGFloat)GPU_GetFramebufferHeight());
+	NSSize size = NSMakeSize((CGFloat)GPU->GetCustomFramebufferWidth(), (displayMode == DS_DISPLAY_TYPE_DUAL) ? (CGFloat)(GPU->GetCustomFramebufferHeight() * 2): (CGFloat)GPU->GetCustomFramebufferHeight());
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return size;
@@ -676,7 +676,7 @@
 
 - (NSBitmapImageRep *) bitmapImageRep
 {
-	const NDSDisplayInfo &dispInfo = NDS_GetDisplayInfo();
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	const NSInteger dispMode = [self displayMode];
 	
 	uint16_t *displayBuffer = dispInfo.masterCustomBuffer;
@@ -700,9 +700,10 @@
 	}
 	
 	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
+	
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	MainScreen.gpu->BlitNativeToCustomFramebuffer();
-	SubScreen.gpu->BlitNativeToCustomFramebuffer();
+	GPU->GetEngineMain()->BlitNativeToCustomFramebuffer();
+	GPU->GetEngineSub()->BlitNativeToCustomFramebuffer();
 	RGB555ToRGBA8888Buffer(displayBuffer, bitmapData, (w * h));
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
@@ -796,7 +797,7 @@
 	
 	pthread_rwlock_rdlock(self.rwlockProducer);
 	
-	const NDSDisplayInfo &dispInfo = NDS_GetDisplayInfo();
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	const NSInteger dispMode = [self displayMode];
 	const uint16_t newGpuWidth = dispInfo.customWidth;
 	const uint16_t newGpuHeight = dispInfo.customHeight;
