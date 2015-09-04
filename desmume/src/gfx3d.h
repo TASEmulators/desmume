@@ -740,10 +740,6 @@ extern CACHE_ALIGN const u8 material_3bit_to_5bit[8];
 extern CACHE_ALIGN const u8 material_3bit_to_6bit[8];
 extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
 
-//these contain the 3d framebuffer converted into the most useful format
-//they are stored here instead of in the renderers in order to consolidate the buffers
-extern FragmentColor *gfx3d_colorRGBA6665;
-extern u16 *gfx3d_colorRGBA5551;
 extern BOOL isSwapBuffers;
 
 int _hack_getMatrixStackLevel(int);
@@ -776,11 +772,9 @@ void gfx3d_glGetMatrix(const MatrixMode mode, int index, float *dst);
 void gfx3d_glGetLightDirection(const size_t index, u32 &dst);
 void gfx3d_glGetLightColor(const size_t index, u32 &dst);
 
-const FragmentColor* gfx3d_GetLineDataRGBA6665(const size_t line);
-const u16* gfx3d_GetLineDataRGBA5551(const size_t line);
-
 struct SFORMAT;
 extern SFORMAT SF_GFX3D[];
+void gfx3d_Update3DFramebuffers(FragmentColor *framebufferRGBA6665, u16 *framebufferRGBA5551);
 void gfx3d_savestate(EMUFILE* os);
 bool gfx3d_loadstate(EMUFILE* is, int size);
 

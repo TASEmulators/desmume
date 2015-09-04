@@ -816,7 +816,7 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 	}
 
 	// finally, make it relative to the correct screen
-	const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUCOREID_MAIN);
+	const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUEngineID_Main);
 
 	if (video.layout == 0 || video.layout == 2)
 	{
@@ -1656,7 +1656,7 @@ static void OGL_DoDisplay()
 
 
 	RECT srcRects [2];
-	const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUCOREID_MAIN);
+	const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUEngineID_Main);
 
 	if(video.swap == 0)
 	{
@@ -1774,7 +1774,7 @@ static void DD_DoDisplay()
 
 	RECT* dstRects [2] = {&MainScreenRect, &SubScreenRect};
 	RECT* srcRects [2];
-	const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUCOREID_MAIN);
+	const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUEngineID_Main);
 
 	if(video.swap == 0)
 	{
@@ -4383,7 +4383,7 @@ void SaveWindowPos(HWND hwnd)
 
 static void TwiddleLayer(UINT ctlid, int core, int layer)
 {
-	GPUEngineBase *gpu = ((GPUCoreID)core == GPUCOREID_MAIN) ? GPU->GetEngineMain() : GPU->GetEngineSub();
+	GPUEngineBase *gpu = ((GPUEngineID)core == GPUEngineID_Main) ? (GPUEngineBase *)GPU->GetEngineMain() : (GPUEngineBase *)GPU->GetEngineSub();
 
 	const bool newLayerState = !CommonSettings.dispLayers[core][layer];
 	gpu->SetLayerEnableState(layer, newLayerState);
@@ -5139,7 +5139,7 @@ DOKEYDOWN:
 			}
 			else
 			{
-				const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUCOREID_MAIN);
+				const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUEngineID_Main);
 				if ((video.layout == 2) && ((video.swap == 0) || (video.swap == 2 && isMainGPUFirst) || (video.swap == 3 && !isMainGPUFirst))) return 0;
 				
 				ToDSScreenRelativeCoords(x,y,1);

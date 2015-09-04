@@ -35,8 +35,8 @@ struct mapview_struct
 	u32	autoup_secs;
 	bool autoup;
 
-	u8 map;
-	u16 lcd;
+	GPULayerID layerID;
+	GPUEngineID engineID;
 	u16 bitmap[1024*1024];
 	bool clear;
 
@@ -44,26 +44,23 @@ struct mapview_struct
 	{
 		//we're going to make a copy of the gpu so that we don't wreck affine scroll params
 		//hopefully we won't mess up anything else
-		GPUEngineBase *realGpu;
-		if(lcd) realGpu = GPU->GetEngineSub();
-		else realGpu = GPU->GetEngineMain();
+		GPUEngineBase *realGpu = (engineID == GPUEngineID_Main) ? (GPUEngineBase *)GPU->GetEngineMain() : (GPUEngineBase *)GPU->GetEngineSub();
 		GPUEngineBase &gpu = *realGpu;
 
 		//forgive the gyrations, some of this junk in here is to remind us of gyrations we might have to go
 		//through to avoid breaking the gpu struct
 
-		gpu.currBgNum = map;
 		gpu.debug = true;
 		int temp = gpu.GetFinalColorBckFuncID();
 		gpu.SetFinalColorBckFuncID(0); //hax... why arent we copying gpu now?? i cant remember
 
 		memset(bitmap,0,sizeof(bitmap));
 
-		for(u32 i = 0; i < gpu.BGSize[map][1]; ++i)
+		for(u32 i = 0; i < gpu.BGSize[layerID][1]; ++i)
 		{
-			gpu.currDst = bitmap + i*gpu.BGSize[map][0];
+			gpu.currDst = bitmap + i*gpu.BGSize[layerID][0];
 			gpu.currLine = i;
-			gpu.ModeRender<false>(map);
+			gpu.ModeRenderDebug(layerID);
 		}
 
 		gpu.debug = false;
@@ -81,8 +78,8 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 	HDC          hdc;
 	PAINTSTRUCT  ps;
 	char text[80];
-	u32 dispcnt = ((volatile u32 *)MMU.ARM9_REG)[(win->lcd*0x400)];
-	u32 bgcnt =  ((volatile u16 *)MMU.ARM9_REG)[(8 + (win->map<<1) + (win->lcd*0x1000))>>1];
+	u32 dispcnt = ((volatile u32 *)MMU.ARM9_REG)[(win->engineID*0x400)];
+	u32 bgcnt =  ((volatile u16 *)MMU.ARM9_REG)[(8 + (win->layerID<<1) + (win->engineID*0x1000))>>1];
 	BITMAPV4HEADER bmi;
 	u16 lg;
 	u16 ht;
@@ -98,15 +95,15 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 	bmi.bV4GreenMask = 0x03E0;
 	bmi.bV4BlueMask = 0x7C00;
 
-	if(win->lcd)
+	if(win->engineID == GPUEngineID_Main)
 	{
-		lg = GPU->GetEngineSub()->BGSize[win->map][0];
-		ht = GPU->GetEngineSub()->BGSize[win->map][1];
+		lg = GPU->GetEngineMain()->BGSize[win->layerID][0];
+		ht = GPU->GetEngineMain()->BGSize[win->layerID][1];
 	}
 	else
 	{
-		lg = GPU->GetEngineMain()->BGSize[win->map][0];
-		ht = GPU->GetEngineMain()->BGSize[win->map][1];
+		lg = GPU->GetEngineSub()->BGSize[win->layerID][0];
+		ht = GPU->GetEngineSub()->BGSize[win->layerID][1];
 	}
 	bmi.bV4Width = lg;
 	bmi.bV4Height = -ht;
@@ -124,16 +121,16 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 			sprintf(text, "normal 256");
 		else
 		{
-			switch(win->map)
+			switch(win->layerID)
 			{
-			case 0 :
+			case GPULayerID_BG0 :
 				sprintf(text, "extended slot %d", (bgcnt&(1<<13))?2:0);
 				break;
-			case 1 :
+			case GPULayerID_BG1 :
 				sprintf(text, "extended slot %d", (bgcnt&(1<<13))?3:1);
 				break;
 			default :
-				sprintf(text, "extended slot %d", GPU->GetEngineMain()->BGExtPalSlot[win->map]);
+				sprintf(text, "extended slot %d", GPU->GetEngineMain()->BGExtPalSlot[win->layerID]);
 				break;
 			}
 		}
@@ -144,19 +141,19 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 	SetWindowText(GetDlgItem(hwnd, IDC_PRIO), text);
 
 
-	if((dispcnt>>8>>win->map)&1)
+	if((dispcnt>>8>>win->layerID)&1)
 		SetWindowText(GetDlgItem(hwnd, IDC_VISIBLE), "true");
 	else
 		SetWindowText(GetDlgItem(hwnd, IDC_VISIBLE), "false");
 
-	sprintf(text, "0x%08X", (int)(0x6000000 + ((bgcnt>>2)&0xF)*0x4000 + win->lcd*0x200000 +((dispcnt>>24)&7)*0x10000));
+	sprintf(text, "0x%08X", (int)(0x6000000 + ((bgcnt>>2)&0xF)*0x4000 + win->engineID*0x200000 +((dispcnt>>24)&7)*0x10000));
 	SetWindowText(GetDlgItem(hwnd, IDC_CHAR), text);
 
-	sprintf(text, "0x%08X", (int)(0x6000000 + 0x800*((bgcnt>>8)&0x1F) + win->lcd*0x200000 + ((dispcnt>>27)&7)*0x10000));
+	sprintf(text, "0x%08X", (int)(0x6000000 + 0x800*((bgcnt>>8)&0x1F) + win->engineID*0x200000 + ((dispcnt>>27)&7)*0x10000));
 	SetWindowText(GetDlgItem(hwnd, IDC_SCR), text);
 
 	//sprintf(text, "%d x %d",  GPU->GetEngineMain()->BGPA[win->map], GPU->GetEngineMain()->BGPB[win->map]);
-	sprintf(text, "%d x %d",  (int)GPU->GetEngineMain()->BGSize[win->map][0], (int)GPU->GetEngineMain()->BGSize[win->map][1]);
+	sprintf(text, "%d x %d",  (int)GPU->GetEngineMain()->BGSize[win->layerID][0], (int)GPU->GetEngineMain()->BGSize[win->layerID][1]);
 	SetWindowText(GetDlgItem(hwnd, IDC_MSIZE), text);
 
 	//if (win->map==2) {
@@ -206,8 +203,8 @@ BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
 			memset(MapView, 0, sizeof(MapView));
 			MapView->clear = true;
 			MapView->autoup_secs = 1;
-			MapView->map = 0;
-			MapView->lcd = 0;
+			MapView->layerID = GPULayerID_BG0;
+			MapView->engineID = GPUEngineID_Main;
 			SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 				UDM_SETRANGE, 0, MAKELONG(99, 1));
 			SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -295,15 +292,15 @@ BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
 					case 1 :
 					case 2 :
 					case 3 :
-						MapView->map = sel;
-						MapView->lcd = 0;
+						MapView->layerID = (GPULayerID)sel;
+						MapView->engineID = GPUEngineID_Main;
 						break;
 					case 4 :
 					case 5 :
 					case 6 :
 					case 7 :
-						MapView->map = sel-4;
-						MapView->lcd = 1;
+						MapView->layerID = (GPULayerID)(sel - 4);
+						MapView->engineID = GPUEngineID_Sub;
 						break;
 					}
 				}

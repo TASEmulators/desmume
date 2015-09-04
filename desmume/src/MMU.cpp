@@ -1848,14 +1848,14 @@ static void writereg_POWCNT1(const int size, const u32 adr, const u32 val) {
 			if(nds.power1.dispswap)
 			{
 				//printf("Main core on top (vcount=%d)\n",nds.VCount);
-				GPU->GetDisplayMain()->SetEngineByID(GPUCOREID_MAIN);
-				GPU->GetDisplayTouch()->SetEngineByID(GPUCOREID_SUB);
+				GPU->GetDisplayMain()->SetEngineByID(GPUEngineID_Main);
+				GPU->GetDisplayTouch()->SetEngineByID(GPUEngineID_Sub);
 			}
 			else
 			{
 				//printf("Main core on bottom (vcount=%d)\n",nds.VCount);
-				GPU->GetDisplayMain()->SetEngineByID(GPUCOREID_SUB);
-				GPU->GetDisplayTouch()->SetEngineByID(GPUCOREID_MAIN);
+				GPU->GetDisplayMain()->SetEngineByID(GPUEngineID_Sub);
+				GPU->GetDisplayTouch()->SetEngineByID(GPUEngineID_Main);
 			}	
 			break;
 		}
@@ -3286,8 +3286,8 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			return;
 		}
 		
-		GPUEngineBase *mainEngine = GPU->GetEngineMain();
-		GPUEngineBase *subEngine = GPU->GetEngineSub();
+		GPUEngineA *mainEngine = GPU->GetEngineMain();
+		GPUEngineB *subEngine = GPU->GetEngineSub();
 		
 		switch(adr)
 		{
@@ -3573,8 +3573,8 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			return;
 		}
 		
-		GPUEngineBase *mainEngine = GPU->GetEngineMain();
-		GPUEngineBase *subEngine = GPU->GetEngineSub();
+		GPUEngineA *mainEngine = GPU->GetEngineMain();
+		GPUEngineB *subEngine = GPU->GetEngineSub();
 		
 		// Address is an IO register
 		switch(adr)
@@ -4091,8 +4091,8 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			return;
 		}
 		
-		GPUEngineBase *mainEngine = GPU->GetEngineMain();
-		GPUEngineBase *subEngine = GPU->GetEngineSub();
+		GPUEngineA *mainEngine = GPU->GetEngineMain();
+		GPUEngineB *subEngine = GPU->GetEngineSub();
 
 		switch(adr)
 		{

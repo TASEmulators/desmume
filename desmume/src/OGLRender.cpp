@@ -2744,7 +2744,7 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 	
 	ENDGL();
 	
-	this->FlushFramebuffer(gfx3d_colorRGBA6665, gfx3d_colorRGBA5551);
+	this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	this->_pixelReadNeedsFinish = false;
 	
 	return OGLERROR_NOERR;
@@ -3311,7 +3311,7 @@ Render3DError OpenGLRenderer_1_5::RenderFinish()
 	
 	ENDGL();
 	
-	this->FlushFramebuffer(gfx3d_colorRGBA6665, gfx3d_colorRGBA5551);
+	this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	this->_pixelReadNeedsFinish = false;
 	
 	return OGLERROR_NOERR;
@@ -4094,7 +4094,7 @@ Render3DError OpenGLRenderer_2_1::RenderFinish()
 	
 	ENDGL();
 	
-	this->FlushFramebuffer(gfx3d_colorRGBA6665, gfx3d_colorRGBA5551);
+	this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	this->_pixelReadNeedsFinish = false;
 	
 	return OGLERROR_NOERR;
