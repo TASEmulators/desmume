@@ -301,7 +301,7 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 	if (desmume_running()) {
 
 		// master bright
-		gpu = (screen) ? GPU->GetEngineSub() : GPU->GetEngineMain();
+                gpu = (screen) ? (GPUEngineBase *)GPU->GetEngineSub() : (GPUEngineBase *)GPU->GetEngineMain();
 		
 		switch (gpu->MasterBrightMode)
 		{

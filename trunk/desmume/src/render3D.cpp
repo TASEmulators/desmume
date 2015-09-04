@@ -420,7 +420,7 @@ Render3DError Render3D::Reset()
 	if (this->_framebufferColor != NULL)
 	{
 		memset(this->_framebufferColor, 0, this->_framebufferColorSizeBytes);
-		this->FlushFramebuffer(gfx3d_colorRGBA6665, gfx3d_colorRGBA5551);
+		this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	}
 	
 	memset(this->clearImageColor16Buffer, 0, sizeof(this->clearImageColor16Buffer));

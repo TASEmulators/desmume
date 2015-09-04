@@ -1960,7 +1960,7 @@ Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
 			this->RenderEdgeMarkingAndFog(this->postprocessParam[0]);
 		}
 		
-		this->FlushFramebuffer(gfx3d_colorRGBA6665, gfx3d_colorRGBA5551);
+		this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -2003,7 +2003,7 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 		}
 	}
 	
-	this->FlushFramebuffer(gfx3d_colorRGBA6665, gfx3d_colorRGBA5551);
+	this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	
 	return RENDER3DERROR_NOERR;
 }

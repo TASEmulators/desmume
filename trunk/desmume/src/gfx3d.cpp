@@ -322,8 +322,8 @@ static float normalTable[1024];
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
 // Color buffer that is filled by the 3D renderer and is read by the GPU engine.
-FragmentColor *gfx3d_colorRGBA6665 = NULL;
-u16 *gfx3d_colorRGBA5551 = NULL;
+static FragmentColor *_gfx3d_colorRGBA6665 = NULL;
+static u16 *_gfx3d_colorRGBA5551 = NULL;
 
 // Matrix stack handling
 CACHE_ALIGN MatrixStack	mtxStack[4] = {
@@ -574,12 +574,6 @@ void gfx3d_deinit()
 	free(vertlists);
 	vertlists = NULL;
 	vertlist = NULL;
-	
-	free_aligned(gfx3d_colorRGBA6665);
-	gfx3d_colorRGBA6665 = NULL;
-	
-	free_aligned(gfx3d_colorRGBA5551);
-	gfx3d_colorRGBA5551 = NULL;
 }
 
 void gfx3d_reset()
@@ -2325,7 +2319,7 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 
 	if (!CommonSettings.showGpu.main)
 	{
-		memset(gfx3d_colorRGBA6665, 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(FragmentColor));
+		memset(_gfx3d_colorRGBA6665, 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(FragmentColor));
 		return;
 	}
 	
@@ -2437,19 +2431,6 @@ void gfx3d_glGetLightColor(const size_t index, u32 &dst)
 	dst = lightColor[index];
 }
 
-const FragmentColor* gfx3d_GetLineDataRGBA6665(const size_t line)
-{
-	CurrentRenderer->RenderFinish();
-	return (gfx3d_colorRGBA6665 + (line * GPU->GetCustomFramebufferWidth()));
-}
-
-const u16* gfx3d_GetLineDataRGBA5551(const size_t line)
-{
-	CurrentRenderer->RenderFinish();
-	return (gfx3d_colorRGBA5551 + (line * GPU->GetCustomFramebufferWidth()));
-}
-
-
 //http://www.opengl.org/documentation/specs/version1.1/glspec1.1/node17.html
 //talks about the state required to process verts in quadlists etc. helpful ideas.
 //consider building a little state structure that looks exactly like this describes
@@ -2536,9 +2517,15 @@ SFORMAT SF_GFX3D[]={
 	{ "GTVC", 4, 1, &tempVertInfo.count},
 	{ "GTVM", 4, 4, tempVertInfo.map},
 	{ "GTVF", 4, 1, &tempVertInfo.first},
-	{ "G3CX", 1, 4*GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT, gfx3d_colorRGBA6665},
+	{ "G3CX", 1, 4*GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT, _gfx3d_colorRGBA6665},
 	{ 0 }
 };
+
+void gfx3d_Update3DFramebuffers(FragmentColor *framebufferRGBA6665, u16 *framebufferRGBA5551)
+{
+	_gfx3d_colorRGBA6665 = framebufferRGBA6665;
+	_gfx3d_colorRGBA5551 = framebufferRGBA5551;
+}
 
 //-------------savestate
 void gfx3d_savestate(EMUFILE* os)

@@ -794,7 +794,7 @@ public:
 	}
 	void Advance()
 	{
-		const GPUEngineBase *mainEngine = GPU->GetEngineMain();
+		const GPUEngineA *mainEngine = GPU->GetEngineMain();
 		bool capturing = (mainEngine->dispCapCnt.enabled || (mainEngine->dispCapCnt.val & 0x80000000));
 
 		if(capturing && consecutiveNonCaptures > 30)
@@ -2899,15 +2899,15 @@ void NDS_suspendProcessingInput(bool suspend)
 
 void NDS_swapScreen()
 {
-	if (GPU->GetDisplayMain()->GetEngineID() == GPUCOREID_MAIN)
+	if (GPU->GetDisplayMain()->GetEngineID() == GPUEngineID_Main)
 	{
-		GPU->GetDisplayMain()->SetEngineByID(GPUCOREID_SUB);
-		GPU->GetDisplayTouch()->SetEngineByID(GPUCOREID_MAIN);
+		GPU->GetDisplayMain()->SetEngineByID(GPUEngineID_Sub);
+		GPU->GetDisplayTouch()->SetEngineByID(GPUEngineID_Main);
 	}
 	else
 	{
-		GPU->GetDisplayMain()->SetEngineByID(GPUCOREID_MAIN);
-		GPU->GetDisplayTouch()->SetEngineByID(GPUCOREID_SUB);
+		GPU->GetDisplayMain()->SetEngineByID(GPUEngineID_Main);
+		GPU->GetDisplayTouch()->SetEngineByID(GPUEngineID_Sub);
 	}
 }
 
