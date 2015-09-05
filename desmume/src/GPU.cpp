@@ -1535,11 +1535,11 @@ void GPUEngineBase::_RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *dst, 
 		const size_t ssePixCount = lg - (lg % 16);
 		for (; i < ssePixCount; i += 16, x += 16, sprX += 16)
 		{
-			__m128i prioTab_vec128 = _mm_load_si128((__m128i *)(prioTab + sprX));
+			__m128i prioTab_vec128 = _mm_loadu_si128((__m128i *)(prioTab + sprX));
 			const __m128i prioCompare = _mm_cmplt_epi8(prio_vec128, prioTab_vec128);
 			
-			__m128i colorLo_vec128 = _mm_load_si128((__m128i *)(bmpBuffer + x));
-			__m128i colorHi_vec128 = _mm_load_si128((__m128i *)(bmpBuffer + x + 8));
+			__m128i colorLo_vec128 = _mm_loadu_si128((__m128i *)(bmpBuffer + x));
+			__m128i colorHi_vec128 = _mm_loadu_si128((__m128i *)(bmpBuffer + x + 8));
 			
 			const __m128i colorAlphaLo_vec128 = _mm_and_si128(colorLo_vec128, _mm_set1_epi16(0x8000));
 			const __m128i colorAlphaHi_vec128 = _mm_and_si128(colorHi_vec128, _mm_set1_epi16(0x8000));
@@ -1552,19 +1552,19 @@ void GPUEngineBase::_RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *dst, 
 			const __m128i combinedLoCompare = _mm_cmpeq_epi16( _mm_unpacklo_epi8(combinedPackedCompare, _mm_setzero_si128()), _mm_set1_epi16(0x00FF) );
 			const __m128i combinedHiCompare = _mm_cmpeq_epi16( _mm_unpackhi_epi8(combinedPackedCompare, _mm_setzero_si128()), _mm_set1_epi16(0x00FF) );
 			
-			colorLo_vec128 = _mm_or_si128( _mm_and_si128(combinedLoCompare, colorLo_vec128), _mm_andnot_si128(combinedLoCompare, _mm_load_si128((__m128i *)(dst + sprX))) );
-			colorHi_vec128 = _mm_or_si128( _mm_and_si128(combinedHiCompare, colorHi_vec128), _mm_andnot_si128(combinedHiCompare, _mm_load_si128((__m128i *)(dst + sprX + 8))) );
-			const __m128i dstAlpha_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(alpha + 1)), _mm_andnot_si128(combinedPackedCompare, _mm_load_si128((__m128i *)(dst_alpha + sprX))) );
-			const __m128i dstTypeTab_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(3)), _mm_andnot_si128(combinedPackedCompare, _mm_load_si128((__m128i *)(typeTab + sprX))) );
+			colorLo_vec128 = _mm_or_si128( _mm_and_si128(combinedLoCompare, colorLo_vec128), _mm_andnot_si128(combinedLoCompare, _mm_loadu_si128((__m128i *)(dst + sprX))) );
+			colorHi_vec128 = _mm_or_si128( _mm_and_si128(combinedHiCompare, colorHi_vec128), _mm_andnot_si128(combinedHiCompare, _mm_loadu_si128((__m128i *)(dst + sprX + 8))) );
+			const __m128i dstAlpha_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(alpha + 1)), _mm_andnot_si128(combinedPackedCompare, _mm_loadu_si128((__m128i *)(dst_alpha + sprX))) );
+			const __m128i dstTypeTab_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(3)), _mm_andnot_si128(combinedPackedCompare, _mm_loadu_si128((__m128i *)(typeTab + sprX))) );
 			prioTab_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, prio_vec128), _mm_andnot_si128(combinedPackedCompare, prioTab_vec128) );
-			const __m128i sprNum_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(spriteNum)), _mm_andnot_si128(combinedPackedCompare, _mm_load_si128((__m128i *)(this->_sprNum + sprX))) );
+			const __m128i sprNum_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(spriteNum)), _mm_andnot_si128(combinedPackedCompare, _mm_loadu_si128((__m128i *)(this->_sprNum + sprX))) );
 			
-			_mm_store_si128((__m128i *)(dst + sprX), colorLo_vec128);
-			_mm_store_si128((__m128i *)(dst + sprX + 8), colorHi_vec128);
-			_mm_store_si128((__m128i *)(dst_alpha + sprX), dstAlpha_vec128);
-			_mm_store_si128((__m128i *)(typeTab + sprX), dstTypeTab_vec128);
-			_mm_store_si128((__m128i *)(prioTab + sprX), prioTab_vec128);
-			_mm_store_si128((__m128i *)(this->_sprNum + sprX), sprNum_vec128);
+			_mm_storeu_si128((__m128i *)(dst + sprX), colorLo_vec128);
+			_mm_storeu_si128((__m128i *)(dst + sprX + 8), colorHi_vec128);
+			_mm_storeu_si128((__m128i *)(dst_alpha + sprX), dstAlpha_vec128);
+			_mm_storeu_si128((__m128i *)(typeTab + sprX), dstTypeTab_vec128);
+			_mm_storeu_si128((__m128i *)(prioTab + sprX), prioTab_vec128);
+			_mm_storeu_si128((__m128i *)(this->_sprNum + sprX), sprNum_vec128);
 		}
 	}
 #endif
