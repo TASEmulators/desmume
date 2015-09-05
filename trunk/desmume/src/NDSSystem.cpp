@@ -1448,7 +1448,7 @@ static void execHardware_hstart()
 		//when the vcount hits 263 it rolls over to 0
 		nds.VCount=0;
 	}
-	if(nds.VCount==262)
+	else if(nds.VCount==262)
 	{
 		//when the vcount hits 262, vblank ends (oam pre-renders by one scanline)
 		execHardware_hstart_vblankEnd();

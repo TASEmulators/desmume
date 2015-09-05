@@ -575,12 +575,12 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 			{
 				// Copy the colors to the color buffer. Since we can only copy 8 elements at once,
 				// we need to load-store twice.
-				_mm_store_si128( (__m128i *)(this->clearImageColor16Buffer + i + 8), _mm_loadu_si128((__m128i *)(clearColorBuffer + i + 8)) );
-				_mm_store_si128( (__m128i *)(this->clearImageColor16Buffer + i), _mm_loadu_si128((__m128i *)(clearColorBuffer + i)) );
+				_mm_store_si128( (__m128i *)(this->clearImageColor16Buffer + i + 8), _mm_load_si128((__m128i *)(clearColorBuffer + i + 8)) );
+				_mm_store_si128( (__m128i *)(this->clearImageColor16Buffer + i), _mm_load_si128((__m128i *)(clearColorBuffer + i)) );
 				
 				// Write the depth values to the depth buffer.
-				__m128i clearDepthHi_vec128 = _mm_loadu_si128((__m128i *)(clearDepthBuffer + i + 8));
-				__m128i clearDepthLo_vec128 = _mm_loadu_si128((__m128i *)(clearDepthBuffer + i));
+				__m128i clearDepthHi_vec128 = _mm_load_si128((__m128i *)(clearDepthBuffer + i + 8));
+				__m128i clearDepthLo_vec128 = _mm_load_si128((__m128i *)(clearDepthBuffer + i));
 				clearDepthHi_vec128 = _mm_and_si128(clearDepthHi_vec128, depthBitMask_vec128);
 				clearDepthLo_vec128 = _mm_and_si128(clearDepthLo_vec128, depthBitMask_vec128);
 				
@@ -602,8 +602,8 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 				this->clearImageDepthBuffer[i+ 0] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthLo_vec128, 0)];
 				
 				// Write the fog flags to the fog flag buffer.
-				clearDepthHi_vec128 = _mm_loadu_si128((__m128i *)(clearDepthBuffer + i + 8));
-				clearDepthLo_vec128 = _mm_loadu_si128((__m128i *)(clearDepthBuffer + i));
+				clearDepthHi_vec128 = _mm_load_si128((__m128i *)(clearDepthBuffer + i + 8));
+				clearDepthLo_vec128 = _mm_load_si128((__m128i *)(clearDepthBuffer + i));
 				clearDepthHi_vec128 = _mm_and_si128(clearDepthHi_vec128, fogBufferBitMask_vec128);
 				clearDepthLo_vec128 = _mm_and_si128(clearDepthLo_vec128, fogBufferBitMask_vec128);
 				clearDepthHi_vec128 = _mm_srli_epi16(clearDepthHi_vec128, 15);
