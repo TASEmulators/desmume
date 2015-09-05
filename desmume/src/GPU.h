@@ -30,6 +30,7 @@
 #include <emmintrin.h>
 #endif
 
+class GPUEngineBase;
 class EMUFILE;
 struct MMU_struct;
 
@@ -43,6 +44,8 @@ struct MMU_struct;
 
 void gpu_savestate(EMUFILE* os);
 bool gpu_loadstate(EMUFILE* is, int size);
+
+typedef void (*rot_fun)(GPUEngineBase *gpu, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *pal, const size_t i);
 
 /*******************************************************************************
     this structure is for display control,
@@ -751,12 +754,14 @@ protected:
 	} _mosaicColors;
 	
 	GPUEngineID _engineID;
+	u16 *_paletteBG;
+	u16 *_paletteOBJ;
+	OAMAttributes *_oamList;
+	u32 _sprMem;
 	
 	u8 _bgPrio[5];
 	bool _bg0HasHighestPrio;
 	
-	OAMAttributes *_oamList;
-	u32 _sprMem;
 	u8 _sprBoundary;
 	u8 _sprBMPBoundary;
 	u8 _sprBMPMode;
@@ -833,6 +838,9 @@ protected:
 	void _MosaicSpriteLinePixel(const size_t x, u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 	void _MosaicSpriteLine(u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 	
+	template<rot_fun fun, bool WRAP> void _rot_scale_op(const BGxPARMS &param, const u16 LG, const s32 wh, const s32 ht, const u32 map, const u32 tile, const u16 *pal);
+	template<GPULayerID LAYERID, rot_fun fun> void _apply_rot_fun(const BGxPARMS &param, const u16 LG, const u32 map, const u32 tile, const u16 *pal);
+	
 	template<GPULayerID LAYERID, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineLarge8bpp();
 	template<GPULayerID LAYERID, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_TextBG(u16 XBG, u16 YBG, u16 LG);
 	
@@ -843,7 +851,6 @@ protected:
 	template<GPULayerID LAYERID, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineRot();
 	template<GPULayerID LAYERID, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineExtRot();
 	
-	// check whether (x,y) is within the rectangle (including wraparounds)
 	template<int WIN_NUM> u8 _WithinRect(const size_t x) const;
 	template <GPULayerID LAYERID> void _RenderLine_CheckWindows(const size_t srcX, bool &draw, bool &effect) const;
 	
@@ -890,7 +897,7 @@ public:
 	void SetupFinalPixelBlitter();
 	
 	void SetVideoProp(const u32 ctrlBits);
-	void SetBGProp(const size_t num, const u16 ctrlBits);
+	template<GPULayerID LAYERID> void SetBGProp(const u16 ctrlBits);
 	
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool skip);
 	
@@ -945,10 +952,10 @@ public:
 	void UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
 	void UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
 	
-	void setAffineStart(const size_t layer, int xy, u32 val);
-	void setAffineStartWord(const size_t layer, int xy, u16 val, int word);
-	u32 getAffineStart(const size_t layer, int xy);
-	void refreshAffineStartRegs(const int num, const int xy);
+	template<GPULayerID LAYERID, int SET_XY> void setAffineStart(u32 val);
+	template<GPULayerID LAYERID, int SET_XY, bool HIWORD> void setAffineStartWord(u16 val);
+	template<GPULayerID LAYERID, int SET_XY> u32 getAffineStart();
+	template<GPULayerID LAYERID, int SET_XY> void refreshAffineStartRegs();
 	
 	void SpriteRender(u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 	void ModeRenderDebug(const GPULayerID layerID);

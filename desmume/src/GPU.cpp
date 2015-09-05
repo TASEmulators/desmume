@@ -159,63 +159,6 @@ FORCEINLINE void rot_BMP_map(GPUEngineBase *gpu, const s32 auxX, const s32 auxY,
 	gpu->___setFinalColorBck<LAYERID, MOSAIC, false, 0, ISCUSTOMRENDERINGNEEDED, USECUSTOMVRAM>(color, i, ((color & 0x8000) != 0));
 }
 
-typedef void (*rot_fun)(GPUEngineBase *gpu, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *pal, const size_t i);
-
-template<rot_fun fun, bool WRAP>
-void rot_scale_op(GPUEngineBase *gpu, const BGxPARMS &param, const u16 LG, const s32 wh, const s32 ht, const u32 map, const u32 tile, const u16 *pal)
-{
-	ROTOCOORD x, y;
-	x.val = param.BGxX;
-	y.val = param.BGxY;
-	
-	const s32 dx = (s32)param.BGxPA;
-	const s32 dy = (s32)param.BGxPC;
-	
-	// as an optimization, specially handle the fairly common case of
-	// "unrotated + unscaled + no boundary checking required"
-	if (dx == GPU_FRAMEBUFFER_NATIVE_WIDTH && dy == 0)
-	{
-		s32 auxX = (WRAP) ? x.bits.Integer & (wh-1) : x.bits.Integer;
-		const s32 auxY = (WRAP) ? y.bits.Integer & (ht-1) : y.bits.Integer;
-		
-		if (WRAP || (auxX + LG < wh && auxX >= 0 && auxY < ht && auxY >= 0))
-		{
-			for (size_t i = 0; i < LG; i++)
-			{
-				fun(gpu, auxX, auxY, wh, map, tile, pal, i);
-				auxX++;
-				
-				if (WRAP)
-					auxX = auxX & (wh-1);
-			}
-			
-			return;
-		}
-	}
-	
-	for (size_t i = 0; i < LG; i++, x.val += dx, y.val += dy)
-	{
-		const s32 auxX = (WRAP) ? x.bits.Integer & (wh-1) : x.bits.Integer;
-		const s32 auxY = (WRAP) ? y.bits.Integer & (ht-1) : y.bits.Integer;
-		
-		if (WRAP || ((auxX >= 0) && (auxX < wh) && (auxY >= 0) && (auxY < ht)))
-			fun(gpu, auxX, auxY, wh, map, tile, pal, i);
-	}
-}
-
-template<GPULayerID LAYERID, rot_fun fun>
-void apply_rot_fun(GPUEngineBase *gpu, const BGxPARMS &param, const u16 LG, const u32 map, const u32 tile, const u16 *pal)
-{
-	struct _BGxCNT *bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[LAYERID].bits;
-	s32 wh = gpu->BGSize[LAYERID][0];
-	s32 ht = gpu->BGSize[LAYERID][1];
-	
-	if (bgCnt->PaletteSet_Wrap)
-		rot_scale_op<fun,true>(gpu, param, LG, wh, ht, map, tile, pal);
-	else
-		rot_scale_op<fun,false>(gpu, param, LG, wh, ht, map, tile, pal);
-}
-
 void gpu_savestate(EMUFILE* os)
 {
 	const GPUEngineA *mainEngine = GPU->GetEngineMain();
@@ -351,6 +294,9 @@ void GPUEngineBase::_InitLUTs()
 
 GPUEngineBase::GPUEngineBase()
 {
+	_paletteBG = NULL;
+	_paletteOBJ = NULL;
+	
 	debug = false;
 	_InitLUTs();
 	workingScanline = NULL;
@@ -419,7 +365,7 @@ void GPUEngineBase::_Reset_Base()
 	this->_bgPrio[1] = 0;
 	this->_bgPrio[2] = 0;
 	this->_bgPrio[3] = 0;
-	this->_bgPrio[4] = 0xFF;
+	this->_bgPrio[4] = 0x7F;
 	
 	this->_bg0HasHighestPrio = true;
 	
@@ -677,54 +623,55 @@ void GPUEngineBase::SetVideoProp(const u32 ctrlBits)
 
 	this->_sprEnable = cnt->OBJ_Enable;
 	
-	this->SetBGProp(3, T1ReadWord(MMU.ARM9_REG, this->_engineID * ADDRESS_STEP_4KB + 14));
-	this->SetBGProp(2, T1ReadWord(MMU.ARM9_REG, this->_engineID * ADDRESS_STEP_4KB + 12));
-	this->SetBGProp(1, T1ReadWord(MMU.ARM9_REG, this->_engineID * ADDRESS_STEP_4KB + 10));
-	this->SetBGProp(0, T1ReadWord(MMU.ARM9_REG, this->_engineID * ADDRESS_STEP_4KB + 8));
+	this->SetBGProp<GPULayerID_BG3>( T1ReadWord(MMU.ARM9_REG, this->_engineID * ADDRESS_STEP_4KB + 14) );
+	this->SetBGProp<GPULayerID_BG2>( T1ReadWord(MMU.ARM9_REG, this->_engineID * ADDRESS_STEP_4KB + 12) );
+	this->SetBGProp<GPULayerID_BG1>( T1ReadWord(MMU.ARM9_REG, this->_engineID * ADDRESS_STEP_4KB + 10) );
+	this->SetBGProp<GPULayerID_BG0>( T1ReadWord(MMU.ARM9_REG, this->_engineID * ADDRESS_STEP_4KB + 8) );
 }
 
 //this handles writing in BGxCNT
-void GPUEngineBase::SetBGProp(const size_t num, const u16 ctrlBits)
+template <GPULayerID LAYERID>
+void GPUEngineBase::SetBGProp(const u16 ctrlBits)
 {
-	struct _BGxCNT *cnt = &((this->dispx_st)->dispx_BGxCNT[num].bits);
+	struct _BGxCNT *cnt = &((this->dispx_st)->dispx_BGxCNT[LAYERID].bits);
 	struct _DISPCNT *dispCnt = &(this->dispx_st)->dispx_DISPCNT.bits;
 	
-	this->dispx_st->dispx_BGxCNT[num].val = LE_TO_LOCAL_16(ctrlBits);
+	this->dispx_st->dispx_BGxCNT[LAYERID].val = LE_TO_LOCAL_16(ctrlBits);
 	
 	this->ResortBGLayers();
 
 	if (this->_engineID == GPUEngineID_Sub)
 	{
-		this->_BG_tile_ram[num] = MMU_BBG;
-		this->_BG_bmp_ram[num]  = MMU_BBG;
-		this->_BG_bmp_large_ram[num]  = MMU_BBG;
-		this->_BG_map_ram[num]  = MMU_BBG;
+		this->_BG_tile_ram[LAYERID] = MMU_BBG;
+		this->_BG_bmp_ram[LAYERID]  = MMU_BBG;
+		this->_BG_bmp_large_ram[LAYERID]  = MMU_BBG;
+		this->_BG_map_ram[LAYERID]  = MMU_BBG;
 	} 
 	else 
 	{
-		this->_BG_tile_ram[num] = MMU_ABG +  dispCnt->CharacBase_Block * ADDRESS_STEP_64KB;
-		this->_BG_bmp_ram[num]  = MMU_ABG;
-		this->_BG_bmp_large_ram[num] = MMU_ABG;
-		this->_BG_map_ram[num]  = MMU_ABG +  dispCnt->ScreenBase_Block * ADDRESS_STEP_64KB;
+		this->_BG_tile_ram[LAYERID] = MMU_ABG + dispCnt->CharacBase_Block * ADDRESS_STEP_64KB;
+		this->_BG_bmp_ram[LAYERID]  = MMU_ABG;
+		this->_BG_bmp_large_ram[LAYERID] = MMU_ABG;
+		this->_BG_map_ram[LAYERID]  = MMU_ABG + dispCnt->ScreenBase_Block * ADDRESS_STEP_64KB;
 	}
 
-	this->_BG_tile_ram[num] += (cnt->CharacBase_Block * ADDRESS_STEP_16KB);
-	this->_BG_bmp_ram[num]  += (cnt->ScreenBase_Block * ADDRESS_STEP_16KB);
-	this->_BG_map_ram[num]  += (cnt->ScreenBase_Block * ADDRESS_STEP_2KB);
+	this->_BG_tile_ram[LAYERID] += (cnt->CharacBase_Block * ADDRESS_STEP_16KB);
+	this->_BG_bmp_ram[LAYERID]  += (cnt->ScreenBase_Block * ADDRESS_STEP_16KB);
+	this->_BG_map_ram[LAYERID]  += (cnt->ScreenBase_Block * ADDRESS_STEP_2KB);
 
-	switch (num)
+	switch (LAYERID)
 	{
 		case 0:
 		case 1:
-			this->BGExtPalSlot[num] = cnt->PaletteSet_Wrap * 2 + num;
+			this->BGExtPalSlot[LAYERID] = cnt->PaletteSet_Wrap * 2 + LAYERID;
 			break;
 			
 		default:
-			this->BGExtPalSlot[num] = (u8)num;
+			this->BGExtPalSlot[LAYERID] = (u8)LAYERID;
 			break;
 	}
 
-	BGType mode = GPUEngineBase::_mode2type[dispCnt->BG_Mode][num];
+	BGType mode = GPUEngineBase::_mode2type[dispCnt->BG_Mode][LAYERID];
 
 	//clarify affine ext modes 
 	if (mode == BGType_AffineExt)
@@ -746,12 +693,12 @@ void GPUEngineBase::SetBGProp(const size_t num, const u16 ctrlBits)
 		}
 	}
 
-	this->_BGTypes[num] = mode;
+	this->_BGTypes[LAYERID] = mode;
 
-	this->BGSize[num][0] = GPUEngineBase::_sizeTab[mode][cnt->ScreenSize][0];
-	this->BGSize[num][1] = GPUEngineBase::_sizeTab[mode][cnt->ScreenSize][1];
+	this->BGSize[LAYERID][0] = GPUEngineBase::_sizeTab[mode][cnt->ScreenSize][0];
+	this->BGSize[LAYERID][1] = GPUEngineBase::_sizeTab[mode][cnt->ScreenSize][1];
 	
-	this->_bgPrio[num] = (ctrlBits & 0x3);
+	this->_bgPrio[LAYERID] = (ctrlBits & 0x3);
 }
 
 template<bool ISCUSTOMRENDERINGNEEDED>
@@ -789,6 +736,7 @@ void GPUEngineBase::SetLayerEnableState(const size_t layerIndex, bool theState)
 //		ROUTINES FOR INSIDE / OUTSIDE WINDOW CHECKS
 /*****************************************************************************/
 
+// check whether (x,y) is within the rectangle (including wraparounds)
 template<int WIN_NUM>
 u8 GPUEngineBase::_WithinRect(const size_t x) const
 {
@@ -1100,11 +1048,11 @@ FORCEINLINE void GPUEngineBase::_SetFinalColorSprite(const size_t srcX, const si
 template<GPULayerID LAYERID, bool BACKDROP, int FUNCNUM, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM>
 FORCEINLINE void GPUEngineBase::____setFinalColorBck(const u16 color, const size_t srcX)
 {
-	u16 *dstLine = this->currDst;
-	u8 *bgLine = this->_bgPixels;
-	
 	if (ISCUSTOMRENDERINGNEEDED)
 	{
+		u16 *dstLine = this->currDst;
+		u8 *bgLine = this->_bgPixels;
+		
 		const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 		
 		for (size_t line = 0; line < _gpuDstLineCount[this->currLine]; line++)
@@ -1130,8 +1078,8 @@ FORCEINLINE void GPUEngineBase::____setFinalColorBck(const u16 color, const size
 	{
 		this->_SetFinalColorBG<LAYERID, BACKDROP, FUNCNUM>(srcX,
 														   srcX,
-														   dstLine,
-														   bgLine,
+														   this->currDst,
+														   this->_bgPixels,
 														   color);
 	}
 }
@@ -1217,7 +1165,7 @@ void GPUEngineBase::_MosaicSpriteLinePixel(const size_t x, u16 l, u16 *dst, u8 *
 	
 	dst[x] = LE_TO_LOCAL_16(objColor.color);
 	dst_alpha[x] = objColor.alpha;
-	if (!objColor.opaque) prioTab[x] = 0xFF;
+	if (!objColor.opaque) prioTab[x] = 0x7F;
 }
 
 void GPUEngineBase::_MosaicSpriteLine(u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab)
@@ -1226,6 +1174,61 @@ void GPUEngineBase::_MosaicSpriteLine(u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTa
 	if (GPUEngineBase::_mosaicLookup.widthValue != 0 || GPUEngineBase::_mosaicLookup.heightValue != 0)
 		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
 			this->_MosaicSpriteLinePixel(i, l, dst, dst_alpha, typeTab, prioTab);
+}
+
+template<rot_fun fun, bool WRAP>
+void GPUEngineBase::_rot_scale_op(const BGxPARMS &param, const u16 LG, const s32 wh, const s32 ht, const u32 map, const u32 tile, const u16 *pal)
+{
+	ROTOCOORD x, y;
+	x.val = param.BGxX;
+	y.val = param.BGxY;
+	
+	const s32 dx = (s32)param.BGxPA;
+	const s32 dy = (s32)param.BGxPC;
+	
+	// as an optimization, specially handle the fairly common case of
+	// "unrotated + unscaled + no boundary checking required"
+	if (dx == GPU_FRAMEBUFFER_NATIVE_WIDTH && dy == 0)
+	{
+		s32 auxX = (WRAP) ? x.bits.Integer & (wh-1) : x.bits.Integer;
+		const s32 auxY = (WRAP) ? y.bits.Integer & (ht-1) : y.bits.Integer;
+		
+		if (WRAP || (auxX + LG < wh && auxX >= 0 && auxY < ht && auxY >= 0))
+		{
+			for (size_t i = 0; i < LG; i++)
+			{
+				fun(this, auxX, auxY, wh, map, tile, pal, i);
+				auxX++;
+				
+				if (WRAP)
+					auxX = auxX & (wh-1);
+			}
+			
+			return;
+		}
+	}
+	
+	for (size_t i = 0; i < LG; i++, x.val += dx, y.val += dy)
+	{
+		const s32 auxX = (WRAP) ? x.bits.Integer & (wh-1) : x.bits.Integer;
+		const s32 auxY = (WRAP) ? y.bits.Integer & (ht-1) : y.bits.Integer;
+		
+		if (WRAP || ((auxX >= 0) && (auxX < wh) && (auxY >= 0) && (auxY < ht)))
+			fun(this, auxX, auxY, wh, map, tile, pal, i);
+	}
+}
+
+template<GPULayerID LAYERID, rot_fun fun>
+void GPUEngineBase::_apply_rot_fun(const BGxPARMS &param, const u16 LG, const u32 map, const u32 tile, const u16 *pal)
+{
+	struct _BGxCNT *bgCnt = &(this->dispx_st)->dispx_BGxCNT[LAYERID].bits;
+	s32 wh = this->BGSize[LAYERID][0];
+	s32 ht = this->BGSize[LAYERID][1];
+	
+	if (bgCnt->PaletteSet_Wrap)
+		this->_rot_scale_op<fun,true>(param, LG, wh, ht, map, tile, pal);
+	else
+		this->_rot_scale_op<fun,false>(param, LG, wh, ht, map, tile, pal);
 }
 
 template<GPULayerID LAYERID, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
@@ -1250,12 +1253,10 @@ void GPUEngineBase::_LineLarge8bpp()
 	u32 tmp_map = this->_BG_bmp_large_ram[LAYERID] + lg * YBG;
 	u8 *map = (u8 *)MMU_gpu_map(tmp_map);
 
-	const u16 *pal = (u16 *)(MMU.ARM9_VMEM + this->_engineID * ADDRESS_STEP_1KB);
-
 	for (size_t x = 0; x < lg; ++x, ++XBG)
 	{
 		XBG &= wmask;
-		const u16 color = LE_TO_LOCAL_16( pal[map[XBG]] );
+		const u16 color = LE_TO_LOCAL_16( this->_paletteBG[map[XBG]] );
 		this->__setFinalColorBck<MOSAIC,false,ISCUSTOMRENDERINGNEEDED>(color,x,(color!=0));
 	}
 }
@@ -1295,7 +1296,7 @@ void GPUEngineBase::_RenderLine_TextBG(u16 XBG, u16 YBG, u16 LG)
 
 	if (!bgCnt->Palette_256) // color: 16 palette entries
 	{
-		const u16 *pal = (u16 *)(MMU.ARM9_VMEM + this->_engineID * ADDRESS_STEP_1KB);
+		const u16 *pal = this->_paletteBG;
 		
 		yoff = ((YBG&7)<<2);
 		xfin = 8 - (xoff&7);
@@ -1360,11 +1361,7 @@ void GPUEngineBase::_RenderLine_TextBG(u16 XBG, u16 YBG, u16 LG)
 	}
 	else //256-color BG
 	{
-		const u16 *pal = (dispCnt->ExBGxPalette_Enable) ? (u16 *)MMU.ExtPal[this->_engineID][this->BGExtPalSlot[LAYERID]] : (u16 *)(MMU.ARM9_VMEM + this->_engineID * ADDRESS_STEP_1KB);
-		if (pal == NULL)
-		{
-			return;
-		}
+		const u16 *pal = (dispCnt->ExBGxPalette_Enable) ? (u16 *)MMU.ExtPal[this->_engineID][this->BGExtPalSlot[LAYERID]] : this->_paletteBG;
 		
 		yoff = ((YBG&7)<<3);
 		xfin = 8 - (xoff&7);
@@ -1407,9 +1404,8 @@ void GPUEngineBase::_RenderLine_TextBG(u16 XBG, u16 YBG, u16 LG)
 template<GPULayerID LAYERID, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_RotBG2(const BGxPARMS &param, const u16 LG)
 {
-	const u16 *pal = (u16 *)(MMU.ARM9_VMEM + this->_engineID * ADDRESS_STEP_1KB);
 //	printf("rot mode\n");
-	apply_rot_fun< LAYERID, rot_tiled_8bit_entry<LAYERID, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(this, param, LG, this->_BG_map_ram[LAYERID], this->_BG_tile_ram[LAYERID], pal);
+	this->_apply_rot_fun< LAYERID, rot_tiled_8bit_entry<LAYERID, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(param, LG, this->_BG_map_ram[LAYERID], this->_BG_tile_ram[LAYERID], this->_paletteBG);
 }
 
 template<GPULayerID LAYERID, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
@@ -1417,41 +1413,43 @@ void GPUEngineBase::_ExtRotBG2(const BGxPARMS &param, const u16 LG)
 {
 	struct _DISPCNT *dispCnt = &(this->dispx_st)->dispx_DISPCNT.bits;
 	
-	u16 *pal = NULL;
+	u16 *pal = this->_paletteBG;
 
 	switch (this->_BGTypes[LAYERID])
 	{
 		case BGType_AffineExt_256x16: // 16  bit bgmap entries
-			pal = (dispCnt->ExBGxPalette_Enable) ? (u16 *)(MMU.ExtPal[this->_engineID][this->BGExtPalSlot[LAYERID]]) : (u16 *)(MMU.ARM9_VMEM + this->_engineID * ADDRESS_STEP_1KB);
-			if (pal == NULL) return;
-			
-			if(dispCnt->ExBGxPalette_Enable)
-				apply_rot_fun< LAYERID, rot_tiled_16bit_entry<LAYERID, MOSAIC, true, ISCUSTOMRENDERINGNEEDED> >(this, param, LG, this->_BG_map_ram[LAYERID], this->_BG_tile_ram[LAYERID], pal);
+		{
+			if (dispCnt->ExBGxPalette_Enable)
+			{
+				pal = (u16 *)(MMU.ExtPal[this->_engineID][this->BGExtPalSlot[LAYERID]]);
+				this->_apply_rot_fun< LAYERID, rot_tiled_16bit_entry<LAYERID, MOSAIC, true, ISCUSTOMRENDERINGNEEDED> >(param, LG, this->_BG_map_ram[LAYERID], this->_BG_tile_ram[LAYERID], pal);
+			}
 			else
-				apply_rot_fun< LAYERID, rot_tiled_16bit_entry<LAYERID, MOSAIC, false, ISCUSTOMRENDERINGNEEDED> >(this, param, LG, this->_BG_map_ram[LAYERID], this->_BG_tile_ram[LAYERID], pal);
+			{
+				this->_apply_rot_fun< LAYERID, rot_tiled_16bit_entry<LAYERID, MOSAIC, false, ISCUSTOMRENDERINGNEEDED> >(param, LG, this->_BG_map_ram[LAYERID], this->_BG_tile_ram[LAYERID], pal);
+			}
 			break;
+		}
 			
 		case BGType_AffineExt_256x1: // 256 colors
-			pal = (u16 *)(MMU.ARM9_VMEM + this->_engineID * ADDRESS_STEP_1KB);
-			apply_rot_fun< LAYERID, rot_256_map<LAYERID, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(this, param, LG, this->_BG_bmp_ram[LAYERID], 0, pal);
+			this->_apply_rot_fun< LAYERID, rot_256_map<LAYERID, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(param, LG, this->_BG_bmp_ram[LAYERID], 0, pal);
 			break;
 			
 		case BGType_AffineExt_Direct: // direct colors / BMP
 		{
 			if (ISCUSTOMRENDERINGNEEDED && (LAYERID == this->vramBGLayer))
 			{
-				apply_rot_fun< LAYERID, rot_BMP_map<LAYERID, MOSAIC, ISCUSTOMRENDERINGNEEDED, true> >(this, param, LG, this->_BG_bmp_ram[LAYERID], 0, NULL);
+				this->_apply_rot_fun< LAYERID, rot_BMP_map<LAYERID, MOSAIC, ISCUSTOMRENDERINGNEEDED, true> >(param, LG, this->_BG_bmp_ram[LAYERID], 0, pal);
 			}
 			else
 			{
-				apply_rot_fun< LAYERID, rot_BMP_map<LAYERID, MOSAIC, ISCUSTOMRENDERINGNEEDED, false> >(this, param, LG, this->_BG_bmp_ram[LAYERID], 0, NULL);
+				this->_apply_rot_fun< LAYERID, rot_BMP_map<LAYERID, MOSAIC, ISCUSTOMRENDERINGNEEDED, false> >(param, LG, this->_BG_bmp_ram[LAYERID], 0, pal);
 			}
 			break;
 		}
 			
 		case BGType_Large8bpp: // large screen 256 colors
-			pal = (u16 *)(MMU.ARM9_VMEM + this->_engineID * ADDRESS_STEP_1KB);
-			apply_rot_fun< LAYERID, rot_256_map<LAYERID, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(this, param, LG, this->_BG_bmp_large_ram[LAYERID], 0, pal);
+			this->_apply_rot_fun< LAYERID, rot_256_map<LAYERID, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(param, LG, this->_BG_bmp_large_ram[LAYERID], 0, pal);
 			break;
 			
 		default:
@@ -1526,9 +1524,54 @@ void GPUEngineBase::_LineExtRot()
 /* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
 void GPUEngineBase::_RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *dst, const u32 srcadr, u8 *dst_alpha, u8 *typeTab, u8 *prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
 {
-	for (size_t i = 0; i < lg; i++, ++sprX, x += xdir)
+	const u16 *bmpBuffer = (u16 *)MMU_gpu_map(srcadr);
+	size_t i = 0;
+	
+#ifdef ENABLE_SSE2
+	if (xdir == 1)
 	{
-		const u16 color = LE_TO_LOCAL_16( *(u16 *)MMU_gpu_map(srcadr + (x << 1)) );
+		const __m128i prio_vec128 = _mm_set1_epi8(prio);
+		
+		const size_t ssePixCount = lg - (lg % 16);
+		for (; i < ssePixCount; i += 16, x += 16, sprX += 16)
+		{
+			__m128i prioTab_vec128 = _mm_load_si128((__m128i *)(prioTab + sprX));
+			const __m128i prioCompare = _mm_cmplt_epi8(prio_vec128, prioTab_vec128);
+			
+			__m128i colorLo_vec128 = _mm_load_si128((__m128i *)(bmpBuffer + x));
+			__m128i colorHi_vec128 = _mm_load_si128((__m128i *)(bmpBuffer + x + 8));
+			
+			const __m128i colorAlphaLo_vec128 = _mm_and_si128(colorLo_vec128, _mm_set1_epi16(0x8000));
+			const __m128i colorAlphaHi_vec128 = _mm_and_si128(colorHi_vec128, _mm_set1_epi16(0x8000));
+			
+			const __m128i colorAlphaLoCompare = _mm_cmpeq_epi16(colorAlphaLo_vec128, _mm_set1_epi16(0x8000));
+			const __m128i colorAlphaHiCompare = _mm_cmpeq_epi16(colorAlphaHi_vec128, _mm_set1_epi16(0x8000));
+			const __m128i colorAlphaPackedCompare = _mm_cmpeq_epi8( _mm_packs_epi16(colorAlphaLoCompare, colorAlphaHiCompare), _mm_set1_epi8(0xFF) );
+			
+			const __m128i combinedPackedCompare = _mm_and_si128(prioCompare, colorAlphaPackedCompare);
+			const __m128i combinedLoCompare = _mm_cmpeq_epi16( _mm_unpacklo_epi8(combinedPackedCompare, _mm_setzero_si128()), _mm_set1_epi16(0x00FF) );
+			const __m128i combinedHiCompare = _mm_cmpeq_epi16( _mm_unpackhi_epi8(combinedPackedCompare, _mm_setzero_si128()), _mm_set1_epi16(0x00FF) );
+			
+			colorLo_vec128 = _mm_or_si128( _mm_and_si128(combinedLoCompare, colorLo_vec128), _mm_andnot_si128(combinedLoCompare, _mm_load_si128((__m128i *)(dst + sprX))) );
+			colorHi_vec128 = _mm_or_si128( _mm_and_si128(combinedHiCompare, colorHi_vec128), _mm_andnot_si128(combinedHiCompare, _mm_load_si128((__m128i *)(dst + sprX + 8))) );
+			const __m128i dstAlpha_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(alpha + 1)), _mm_andnot_si128(combinedPackedCompare, _mm_load_si128((__m128i *)(dst_alpha + sprX))) );
+			const __m128i dstTypeTab_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(3)), _mm_andnot_si128(combinedPackedCompare, _mm_load_si128((__m128i *)(typeTab + sprX))) );
+			prioTab_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, prio_vec128), _mm_andnot_si128(combinedPackedCompare, prioTab_vec128) );
+			const __m128i sprNum_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(spriteNum)), _mm_andnot_si128(combinedPackedCompare, _mm_load_si128((__m128i *)(this->_sprNum + sprX))) );
+			
+			_mm_store_si128((__m128i *)(dst + sprX), colorLo_vec128);
+			_mm_store_si128((__m128i *)(dst + sprX + 8), colorHi_vec128);
+			_mm_store_si128((__m128i *)(dst_alpha + sprX), dstAlpha_vec128);
+			_mm_store_si128((__m128i *)(typeTab + sprX), dstTypeTab_vec128);
+			_mm_store_si128((__m128i *)(prioTab + sprX), prioTab_vec128);
+			_mm_store_si128((__m128i *)(this->_sprNum + sprX), sprNum_vec128);
+		}
+	}
+#endif
+	
+	for (; i < lg; i++, sprX++, x += xdir)
+	{
+		const u16 color = LE_TO_LOCAL_16(bmpBuffer[x]);
 		
 		//a cleared alpha bit suppresses the pixel from processing entirely; it doesnt exist
 		if ((color & 0x8000) && (prio < prioTab[sprX]))
@@ -1708,12 +1751,11 @@ void GPUEngineBase::SpriteRender(u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioT
 template<SpriteRenderMode MODE>
 void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab)
 {
-	u16 l = currLine;
+	u16 l = this->currLine;
 	size_t cost = 0;
 
 	struct _DISPCNT *dispCnt = &(this->dispx_st)->dispx_DISPCNT.bits;
-	u8 block = this->_sprBoundary;
-
+	
 	for (size_t i = 0; i < 128; i++)
 	{
 		const OAMAttributes &spriteInfo = this->_oamList[i];
@@ -1733,6 +1775,7 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 		s32 sprX, sprY, x, y, lg;
 		s32 xdir;
 		u8 prio;
+		u16 *pal;
 		u8 *src;
 		u32 srcadr;
 		
@@ -1746,7 +1789,6 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 		{
 			s32		fieldX, fieldY, auxX, auxY, realX, realY, offset;
 			u8		blockparameter;
-			u16		*pal;
 			s16		dx, dmx, dy, dmy;
 			u16		colour;
 
@@ -1818,13 +1860,10 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 			// If we are using 1 palette of 256 colours
 			if (spriteInfo.Depth)
 			{
-				src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex << block));
+				src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex << this->_sprBoundary));
 
 				// If extended palettes are set, use them
-				if (dispCnt->ExOBJPalette_Enable)
-					pal = (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*0x200));
-				else
-					pal = (u16 *)(MMU.ARM9_VMEM + 0x200 + this->_engineID * ADDRESS_STEP_1KB);
+				pal = (dispCnt->ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*0x200)) : this->_paletteOBJ;
 
 				for (size_t j = 0; j < lg; ++j, ++sprX)
 				{
@@ -1908,13 +1947,13 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 				if (MODE == SpriteRenderMode_Sprite2D)
 				{
 					src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex << 5));
-					pal = (u16 *)(MMU.ARM9_VMEM + 0x200 + (this->_engineID * ADDRESS_STEP_1KB) + (spriteInfo.PaletteIndex * 32));
 				}
 				else
 				{
 					src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex << this->_sprBoundary));
-					pal = (u16 *)(MMU.ARM9_VMEM + 0x200 + (this->_engineID * ADDRESS_STEP_1KB) + (spriteInfo.PaletteIndex * 32));
 				}
+				
+				pal = this->_paletteOBJ + (spriteInfo.PaletteIndex << 4);
 
 				for (size_t j = 0; j < lg; ++j, ++sprX)
 				{
@@ -1977,9 +2016,9 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 				else
 				{
 					if (spriteInfo.Depth)
-						src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
+						src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex<<this->_sprBoundary) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
 					else
-						src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
+						src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex<<this->_sprBoundary) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
 				}
 
 				this->_RenderSpriteWin(src, (spriteInfo.Depth != 0), lg, sprX, x, xdir);
@@ -1999,9 +2038,9 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 				if (MODE == SpriteRenderMode_Sprite2D)
 					srcadr = this->_sprMem + ((spriteInfo.TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
 				else
-					srcadr = this->_sprMem + (spriteInfo.TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
+					srcadr = this->_sprMem + (spriteInfo.TileIndex<<this->_sprBoundary) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
 				
-				const u16 *pal = (dispCnt->ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*0x200)) : (u16 *)(MMU.ARM9_VMEM + 0x200 + this->_engineID * ADDRESS_STEP_1KB);
+				pal = (dispCnt->ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*0x200)) : this->_paletteOBJ;
 				this->_RenderSprite256(i, l, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo.Mode == 1);
 			}
 			else // 16 colors
@@ -2012,10 +2051,10 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 				}
 				else
 				{
-					srcadr = this->_sprMem + (spriteInfo.TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
+					srcadr = this->_sprMem + (spriteInfo.TileIndex<<this->_sprBoundary) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
 				}
 				
-				const u16 *pal = (u16 *)(MMU.ARM9_VMEM + 0x200 + this->_engineID * ADDRESS_STEP_1KB) + (spriteInfo.PaletteIndex << 4);
+				pal = this->_paletteOBJ + (spriteInfo.PaletteIndex << 4);
 				this->_RenderSprite16(l, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo.Mode == 1);
 			}
 		}
@@ -2259,7 +2298,7 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex,
 		
 		if ( (spriteInfo.RotScale != 2) && ((spriteInfo.RotScale & 1) == 0) && (spriteInfo.Mode == 3) && (spriteInfo.PaletteIndex != 0) )
 		{
-			const u32 vramAddress = ( (spriteInfo.TileIndex & 0x1F) * 0x10 ) + ( (spriteInfo.TileIndex & ~0x1F) * 0x80 );
+			const u32 vramAddress = ((spriteInfo.TileIndex & 0x1F) << 5) + ((spriteInfo.TileIndex & ~0x1F) << 7);
 			const SpriteSize sprSize = GPUEngineBase::_sprSizeTab[spriteInfo.Size][spriteInfo.Shape];
 			
 			if( (vramAddress == (mainEngine->dispCapCnt.writeOffset * ADDRESS_STEP_32KB)) && (sprSize.x == 64) && (sprSize.y == 64) )
@@ -2272,58 +2311,62 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex,
 	}
 }
 
-u32 GPUEngineBase::getAffineStart(const size_t layer, int xy)
+template<GPULayerID LAYERID, int SET_XY>
+u32 GPUEngineBase::getAffineStart()
 {
-	if (xy == 0)
-		return affineInfo[layer-2].x;
+	if (SET_XY == 0)
+		return this->affineInfo[LAYERID-2].x;
 	else
-		return affineInfo[layer-2].y;
+		return this->affineInfo[LAYERID-2].y;
 }
 
-void GPUEngineBase::setAffineStartWord(const size_t layer, int xy, u16 val, int word)
+template<GPULayerID LAYERID, int SET_XY, bool HIWORD>
+void GPUEngineBase::setAffineStartWord(u16 val)
 {
-	u32 curr = getAffineStart(layer, xy);
+	u32 curr = this->getAffineStart<LAYERID, SET_XY>();
 	
-	if (word == 0)
+	if (!HIWORD)
 		curr = (curr & 0xFFFF0000) | val;
 	else
 		curr = (curr & 0x0000FFFF) | (((u32)val) << 16);
 	
-	setAffineStart(layer, xy, curr);
+	this->setAffineStart<LAYERID, SET_XY>(curr);
 }
 
-void GPUEngineBase::setAffineStart(const size_t layer, int xy, u32 val)
+template<GPULayerID LAYERID, int SET_XY>
+void GPUEngineBase::setAffineStart(u32 val)
 {
-	if (xy == 0)
-		affineInfo[layer-2].x = val;
+	if (SET_XY == 0)
+		this->affineInfo[LAYERID-2].x = val;
 	else
-		affineInfo[layer-2].y = val;
+		this->affineInfo[LAYERID-2].y = val;
 	
-	refreshAffineStartRegs(layer, xy);
+	this->refreshAffineStartRegs<LAYERID, SET_XY>();
 }
 
-void GPUEngineBase::refreshAffineStartRegs(const int num, const int xy)
+template<GPULayerID LAYERID, int SET_XY>
+void GPUEngineBase::refreshAffineStartRegs()
 {
-	if (num == -1)
+	if (LAYERID == -1)
 	{
-		refreshAffineStartRegs(2, xy);
-		refreshAffineStartRegs(3, xy);
+		this->refreshAffineStartRegs<GPULayerID_BG2, SET_XY>();
+		this->refreshAffineStartRegs<GPULayerID_BG3, SET_XY>();
 		return;
 	}
 
-	if (xy == -1)
+	if (SET_XY == -1)
 	{
-		refreshAffineStartRegs(num, 0);
-		refreshAffineStartRegs(num, 1);
+		this->refreshAffineStartRegs<LAYERID, 0>();
+		this->refreshAffineStartRegs<LAYERID, 1>();
 		return;
 	}
 
-	BGxPARMS *params = (num == 2) ? &(dispx_st)->dispx_BG2PARMS : &(dispx_st)->dispx_BG3PARMS;
+	BGxPARMS *params = (LAYERID == GPULayerID_BG2) ? &(dispx_st)->dispx_BG2PARMS : &(dispx_st)->dispx_BG3PARMS;
 	
-	if (xy == 0)
-		params->BGxX = affineInfo[num-2].x;
+	if (SET_XY == 0)
+		params->BGxX = this->affineInfo[LAYERID-2].x;
 	else
-		params->BGxY = affineInfo[num-2].y;
+		params->BGxY = this->affineInfo[LAYERID-2].y;
 }
 
 template<GPULayerID LAYERID, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
@@ -2737,6 +2780,8 @@ void GPUEngineBase::REG_DISPx_pack_test()
 GPUEngineA::GPUEngineA()
 {
 	_engineID = GPUEngineID_Main;
+	_paletteBG = (u16 *)MMU.ARM9_VMEM;
+	_paletteOBJ = (u16 *)(MMU.ARM9_VMEM + 0x200);
 	_oamList = (OAMAttributes *)(MMU.ARM9_OAM);
 	_sprMem = MMU_AOBJ;
 	dispx_st = (REG_DISPx *)MMU.ARM9_REG;
@@ -2888,7 +2933,7 @@ void GPUEngineA::RenderLine(const u16 l, bool skip)
 		//bubble bobble revolution classic mode
 		//NOTE:
 		//I am REALLY unsatisfied with this logic now. But it seems to be working..
-		this->refreshAffineStartRegs(-1,-1);
+		this->refreshAffineStartRegs<(GPULayerID)-1, -1>();
 	}
 	
 	if (skip)
@@ -3019,7 +3064,7 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstLine, const size_t dstLi
 	this->_currentFadeInColors = &GPUEngineBase::_fadeInColors[this->_BLDY_EVY][0];
 	this->_currentFadeOutColors = &GPUEngineBase::_fadeOutColors[this->_BLDY_EVY][0];
 	
-	const u16 backdrop_color = T1ReadWord(MMU.ARM9_VMEM, 0) & 0x7FFF;
+	const u16 backdrop_color = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
 	
 	//we need to write backdrop colors in the same way as we do BG pixels in order to do correct window processing
 	//this is currently eating up 2fps or so. it is a reasonable candidate for optimization.
@@ -3056,7 +3101,7 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstLine, const size_t dstLi
 	// init background color & priorities
 	memset(this->_sprAlpha, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 	memset(this->_sprType, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH);
-	memset(this->_sprPrio, 0xFF, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+	memset(this->_sprPrio, 0x7F, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 	memset(this->_sprWin, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 	
 	// init pixels priorities
@@ -3275,7 +3320,6 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 		cap_dst_adr &= 0x1FFFF;
 		cap_dst_adr += vramWriteBlock * GPU_VRAM_BLOCK_LINES * GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16);
 		
-		// TODO: Make MMU.blank_memory and MMU.ARM9_LCD 16-byte aligned so that we can use aligned load/store for better performance.
 		const u16 *cap_src = (u16 *)MMU.blank_memory;
 		u16 *cap_dst = (u16 *)(MMU.ARM9_LCD + cap_dst_adr);
 		
@@ -3507,7 +3551,7 @@ void GPUEngineA::_RenderLine_DispCapture_Copy(const u16 *__restrict src, u16 *__
 		if (CAPTUREFROMNATIVESRC)
 		{
 #ifdef ENABLE_SSE2
-			MACRODO_N(CAPTURELENGTH / (sizeof(__m128i) / sizeof(u16)), _mm_storeu_si128((__m128i *)dst + X, _mm_or_si128( _mm_loadu_si128( (__m128i *)src + X), alpha_vec128 ) ));
+			MACRODO_N(CAPTURELENGTH / (sizeof(__m128i) / sizeof(u16)), _mm_store_si128((__m128i *)dst + X, _mm_or_si128( _mm_load_si128( (__m128i *)src + X), alpha_vec128 ) ));
 #else
 			for (size_t i = 0; i < CAPTURELENGTH; i++)
 			{
@@ -3742,7 +3786,7 @@ void GPUEngineA::_RenderLine_DispCapture_Blend(const u16 *__restrict srcA, const
 			                                                                                                      srcA[_gpuDstPitchIndex[i+1]],
 			                                                                                                      srcA[_gpuDstPitchIndex[i+0]]);
 			
-			__m128i srcB_vec128 = (CAPTUREFROMNATIVESRCB) ? _mm_loadu_si128((__m128i *)(srcB + i)) : _mm_set_epi16(srcB[_gpuDstPitchIndex[i+7]],
+			__m128i srcB_vec128 = (CAPTUREFROMNATIVESRCB) ? _mm_load_si128((__m128i *)(srcB + i)) : _mm_set_epi16(srcB[_gpuDstPitchIndex[i+7]],
 			                                                                                                       srcB[_gpuDstPitchIndex[i+6]],
 			                                                                                                       srcB[_gpuDstPitchIndex[i+5]],
 			                                                                                                       srcB[_gpuDstPitchIndex[i+4]],
@@ -3751,7 +3795,7 @@ void GPUEngineA::_RenderLine_DispCapture_Blend(const u16 *__restrict srcA, const
 			                                                                                                       srcB[_gpuDstPitchIndex[i+1]],
 			                                                                                                       srcB[_gpuDstPitchIndex[i+0]]);
 			
-			_mm_storeu_si128( (__m128i *)(dst + i), this->_RenderLine_DispCapture_BlendFunc_SSE2(srcA_vec128, srcB_vec128, blendEVA_vec128, blendEVB_vec128) );
+			_mm_store_si128( (__m128i *)(dst + i), this->_RenderLine_DispCapture_BlendFunc_SSE2(srcA_vec128, srcB_vec128, blendEVA_vec128, blendEVB_vec128) );
 		}
 #else
 		for (size_t i = 0; i < CAPTURELENGTH; i++)
@@ -3788,6 +3832,8 @@ void GPUEngineA::_RenderLine_DispCapture_Blend(const u16 *__restrict srcA, const
 GPUEngineB::GPUEngineB()
 {
 	_engineID = GPUEngineID_Sub;
+	_paletteBG = (u16 *)(MMU.ARM9_VMEM + ADDRESS_STEP_1KB);
+	_paletteOBJ = (u16 *)(MMU.ARM9_VMEM + ADDRESS_STEP_1KB + 0x200);
 	_oamList = (OAMAttributes *)(MMU.ARM9_OAM + ADDRESS_STEP_1KB);
 	_sprMem = MMU_BOBJ;
 	dispx_st = (REG_DISPx *)(&MMU.ARM9_REG[REG_DISPB]);
@@ -3837,7 +3883,7 @@ void GPUEngineB::RenderLine(const u16 l, bool skip)
 		//bubble bobble revolution classic mode
 		//NOTE:
 		//I am REALLY unsatisfied with this logic now. But it seems to be working..
-		this->refreshAffineStartRegs(-1,-1);
+		this->refreshAffineStartRegs<(GPULayerID)-1, -1>();
 	}
 	
 	if (skip)
@@ -3934,7 +3980,7 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstLine, const size_t dstLi
 	this->_currentFadeInColors = &GPUEngineBase::_fadeInColors[this->_BLDY_EVY][0];
 	this->_currentFadeOutColors = &GPUEngineBase::_fadeOutColors[this->_BLDY_EVY][0];
 	
-	const u16 backdrop_color = T1ReadWord(MMU.ARM9_VMEM, ADDRESS_STEP_1KB) & 0x7FFF;
+	const u16 backdrop_color = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
 	
 	//we need to write backdrop colors in the same way as we do BG pixels in order to do correct window processing
 	//this is currently eating up 2fps or so. it is a reasonable candidate for optimization.
@@ -3971,7 +4017,7 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstLine, const size_t dstLi
 	// init background color & priorities
 	memset(this->_sprAlpha, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 	memset(this->_sprType, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH);
-	memset(this->_sprPrio, 0xFF, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+	memset(this->_sprPrio, 0x7F, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 	memset(this->_sprWin, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 	
 	// init pixels priorities
@@ -4028,9 +4074,6 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstLine, const size_t dstLi
 					
 					struct _BGxCNT *bgCnt = &(this->dispx_st)->dispx_BGxCNT[layerID].bits;
 					this->_curr_mosaic_enabled = bgCnt->Mosaic_Enable;
-					
-					//useful for debugging individual layers
-					//if(this->core == GPUEngineID_Sub || layerNum != 2) continue;
 					
 #ifndef DISABLE_MOSAIC
 					if (this->_curr_mosaic_enabled)
@@ -4531,10 +4574,6 @@ void GPUSubsystem::RenderLine(const u16 l, bool skip)
 		this->_engineSub->RenderLine<false>(l, skip);
 	}
 	
-	if (l == 191)
-	{
-		
-	}
 }
 
 void GPUSubsystem::ClearWithColor(const u16 colorBGRA5551)
@@ -4581,3 +4620,18 @@ void NDSDisplay::SetEngineByID(const GPUEngineID theID)
 	this->_gpu = (theID == GPUEngineID_Main) ? (GPUEngineBase *)GPU->GetEngineMain() : (GPUEngineBase *)GPU->GetEngineSub();
 	this->_gpu->SetDisplayByID(this->_ID);
 }
+
+template void GPUEngineBase::setAffineStart<GPULayerID_BG2, 0>(u32 val);
+template void GPUEngineBase::setAffineStart<GPULayerID_BG2, 1>(u32 val);
+template void GPUEngineBase::setAffineStart<GPULayerID_BG3, 0>(u32 val);
+template void GPUEngineBase::setAffineStart<GPULayerID_BG3, 1>(u32 val);
+
+template void GPUEngineBase::setAffineStartWord<GPULayerID_BG2, 0, false>(u16 val);
+template void GPUEngineBase::setAffineStartWord<GPULayerID_BG2, 0, true>(u16 val);
+template void GPUEngineBase::setAffineStartWord<GPULayerID_BG2, 1, false>(u16 val);
+template void GPUEngineBase::setAffineStartWord<GPULayerID_BG2, 1, true>(u16 val);
+
+template void GPUEngineBase::setAffineStartWord<GPULayerID_BG3, 0, false>(u16 val);
+template void GPUEngineBase::setAffineStartWord<GPULayerID_BG3, 0, true>(u16 val);
+template void GPUEngineBase::setAffineStartWord<GPULayerID_BG3, 1, false>(u16 val);
+template void GPUEngineBase::setAffineStartWord<GPULayerID_BG3, 1, true>(u16 val);
