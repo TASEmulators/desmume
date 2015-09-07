@@ -318,8 +318,22 @@ void GPUEngineBase::_Reset_Base()
 	memset(this->_sprColor, 0, sizeof(this->_sprColor));
 	memset(this->_sprAlpha, 0, sizeof(this->_sprAlpha));
 	memset(this->_sprType, 0, sizeof(this->_sprType));
-	memset(this->_sprPrio, 0, sizeof(this->_sprPrio));
+	memset(this->_sprPrio, 0x7F, sizeof(this->_sprPrio));
+	memset(this->_sprNum, 0, sizeof(this->_sprNum));
+	
+	memset(this->_h_win[0], 0, sizeof(this->_h_win[0]));
+	memset(this->_h_win[1], 0, sizeof(this->_h_win[1]));
+	memset(&this->_mosaicColors, 0, sizeof(MosaicColor));
 	memset(this->_itemsForPriority, 0, sizeof(this->_itemsForPriority));
+	
+	if (this->workingScanline != NULL)
+	{
+		memset(this->workingScanline, 0, dispInfo.customWidth * _gpuLargestDstLineCount * sizeof(u16));
+	}
+	if (this->_bgPixels != NULL)
+	{
+		memset(this->_bgPixels, 0, dispInfo.customWidth * _gpuLargestDstLineCount * 4 * sizeof(u8));
+	}
 	
 	this->_enableLayer[0] = false;
 	this->_enableLayer[1] = false;
@@ -339,11 +353,6 @@ void GPUEngineBase::_Reset_Base()
 	this->_BGTypes[1] = BGType_Invalid;
 	this->_BGTypes[2] = BGType_Invalid;
 	this->_BGTypes[3] = BGType_Invalid;
-	
-	memset(&this->_mosaicColors, 0, sizeof(MosaicColor));
-	memset(this->_sprNum, 0, sizeof(this->_sprNum));
-	memset(this->_h_win[0], 0, sizeof(this->_h_win[0]));
-	memset(this->_h_win[1], 0, sizeof(this->_h_win[1]));
 	
 	this->_curr_win[0] = GPUEngineBase::_winEmpty;
 	this->_curr_win[1] = GPUEngineBase::_winEmpty;
@@ -419,15 +428,6 @@ void GPUEngineBase::_Reset_Base()
 	
 	this->MasterBrightMode = GPUMasterBrightMode_Disable;
 	this->MasterBrightFactor = 0;
-	
-	if (this->workingScanline != NULL)
-	{
-		memset(this->workingScanline, 0, dispInfo.customWidth * _gpuLargestDstLineCount * sizeof(u16));
-	}
-	if (this->_bgPixels != NULL)
-	{
-		memset(this->_bgPixels, 0, dispInfo.customWidth * _gpuLargestDstLineCount * 4 * sizeof(u8));
-	}
 	
 	this->currLine = 0;
 	this->currDst = this->workingScanline;
@@ -2841,7 +2841,7 @@ void GPUEngineA::SetDISPCAPCNT(u32 val)
 	this->dispCapCnt.writeBlock =  (val >> 16) & 0x03;
 	this->dispCapCnt.writeOffset = (val >> 18) & 0x03;
 	this->dispCapCnt.readBlock = dispCnt->VRAM_Block;
-	this->dispCapCnt.readOffset = (dispCnt->DisplayMode == 2) ? 0 : (val >> 26) & 0x03;
+	this->dispCapCnt.readOffset = (dispCnt->DisplayMode == GPUDisplayMode_VRAM) ? 0 : (val >> 26) & 0x03;
 	this->dispCapCnt.srcA = (val >> 24) & 0x01;
 	this->dispCapCnt.srcB = (val >> 25) & 0x01;
 	this->dispCapCnt.capSrc = (val >> 29) & 0x03;
@@ -3070,24 +3070,60 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstLine, const size_t dstLi
 	//this is currently eating up 2fps or so. it is a reasonable candidate for optimization.
 	switch (this->_finalColorBckFuncID)
 	{
-			//for backdrops, blend isnt applied (it's illogical, isnt it?)
-		case 0:
+		case 0: //for backdrops, blend isnt applied (it's illogical, isnt it?)
 		case 1:
+		{
 		PLAIN_CLEAR:
-			memset_u16(dstLine, LE_TO_LOCAL_16(backdrop_color), pixCount);
+			if (ISCUSTOMRENDERINGNEEDED)
+			{
+				memset_u16(dstLine, LE_TO_LOCAL_16(backdrop_color), pixCount);
+			}
+			else
+			{
+				memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(dstLine, LE_TO_LOCAL_16(backdrop_color));
+			}
 			break;
+		}
 			
-			//for backdrops, fade in and fade out can be applied if it's a 1st target screen
-		case 2:
-			if(this->_BLDCNT & 0x20) //backdrop is selected for color effect
-				memset_u16(dstLine, LE_TO_LOCAL_16(this->_currentFadeInColors[backdrop_color]), pixCount);
-			else goto PLAIN_CLEAR;
+		case 2: //for backdrops, fade in and fade out can be applied if it's a 1st target screen
+		{
+			if (this->_BLDCNT & 0x20) //backdrop is selected for color effect
+			{
+				if (ISCUSTOMRENDERINGNEEDED)
+				{
+					memset_u16(dstLine, LE_TO_LOCAL_16(this->_currentFadeInColors[backdrop_color]), pixCount);
+				}
+				else
+				{
+					memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(dstLine, LE_TO_LOCAL_16(this->_currentFadeInColors[backdrop_color]));
+				}
+			}
+			else
+			{
+				goto PLAIN_CLEAR;
+			}
 			break;
+		}
+			
 		case 3:
+		{
 			if(this->_BLDCNT & 0x20) //backdrop is selected for color effect
-				memset_u16(dstLine, LE_TO_LOCAL_16(this->_currentFadeOutColors[backdrop_color]), pixCount);
-			else goto PLAIN_CLEAR;
+			{
+				if (ISCUSTOMRENDERINGNEEDED)
+				{
+					memset_u16(dstLine, LE_TO_LOCAL_16(this->_currentFadeOutColors[backdrop_color]), pixCount);
+				}
+				else
+				{
+					memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(dstLine, LE_TO_LOCAL_16(this->_currentFadeOutColors[backdrop_color]));
+				}
+			}
+			else
+			{
+				goto PLAIN_CLEAR;
+			}
 			break;
+		}
 			
 			//windowed cases apparently need special treatment? why? can we not render the backdrop? how would that even work?
 		case 4: for(size_t x=0;x<GPU_FRAMEBUFFER_NATIVE_WIDTH;x++) this->___setFinalColorBck<GPULayerID_None,false,true,4,ISCUSTOMRENDERINGNEEDED,false>(backdrop_color,x,true); break;
@@ -3787,13 +3823,13 @@ void GPUEngineA::_RenderLine_DispCapture_Blend(const u16 *__restrict srcA, const
 			                                                                                                      srcA[_gpuDstPitchIndex[i+0]]);
 			
 			__m128i srcB_vec128 = (CAPTUREFROMNATIVESRCB) ? _mm_load_si128((__m128i *)(srcB + i)) : _mm_set_epi16(srcB[_gpuDstPitchIndex[i+7]],
-			                                                                                                       srcB[_gpuDstPitchIndex[i+6]],
-			                                                                                                       srcB[_gpuDstPitchIndex[i+5]],
-			                                                                                                       srcB[_gpuDstPitchIndex[i+4]],
-			                                                                                                       srcB[_gpuDstPitchIndex[i+3]],
-			                                                                                                       srcB[_gpuDstPitchIndex[i+2]],
-			                                                                                                       srcB[_gpuDstPitchIndex[i+1]],
-			                                                                                                       srcB[_gpuDstPitchIndex[i+0]]);
+			                                                                                                      srcB[_gpuDstPitchIndex[i+6]],
+			                                                                                                      srcB[_gpuDstPitchIndex[i+5]],
+			                                                                                                      srcB[_gpuDstPitchIndex[i+4]],
+			                                                                                                      srcB[_gpuDstPitchIndex[i+3]],
+			                                                                                                      srcB[_gpuDstPitchIndex[i+2]],
+			                                                                                                      srcB[_gpuDstPitchIndex[i+1]],
+			                                                                                                      srcB[_gpuDstPitchIndex[i+0]]);
 			
 			_mm_store_si128( (__m128i *)(dst + i), this->_RenderLine_DispCapture_BlendFunc_SSE2(srcA_vec128, srcB_vec128, blendEVA_vec128, blendEVB_vec128) );
 		}
@@ -3958,12 +3994,7 @@ void GPUEngineB::RenderLine(const u16 l, bool skip)
 			this->HandleDisplayModeNormal<ISCUSTOMRENDERINGNEEDED>(dstLine, l, dstLineWidth, dstLineCount);
 			break;
 			
-		case GPUDisplayMode_VRAM: // Display vram framebuffer
-			this->HandleDisplayModeVRAM<ISCUSTOMRENDERINGNEEDED>(dstLine, l, dstLineWidth, dstLineCount);
-			break;
-			
-		case GPUDisplayMode_MainMemory: // Display memory FIFO
-			this->HandleDisplayModeMainMemory<ISCUSTOMRENDERINGNEEDED>(dstLine, l, dstLineWidth, dstLineCount);
+		default:
 			break;
 	}
 	
@@ -3986,33 +4017,69 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstLine, const size_t dstLi
 	//this is currently eating up 2fps or so. it is a reasonable candidate for optimization.
 	switch (this->_finalColorBckFuncID)
 	{
-			//for backdrops, blend isnt applied (it's illogical, isnt it?)
-		case 0:
+		case 0: //for backdrops, blend isnt applied (it's illogical, isnt it?)
 		case 1:
+		{
 		PLAIN_CLEAR:
-			memset_u16(dstLine, LE_TO_LOCAL_16(backdrop_color), pixCount);
+			if (ISCUSTOMRENDERINGNEEDED)
+			{
+				memset_u16(dstLine, LE_TO_LOCAL_16(backdrop_color), pixCount);
+			}
+			else
+			{
+				memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(dstLine, LE_TO_LOCAL_16(backdrop_color));
+			}
 			break;
+		}
 			
-			//for backdrops, fade in and fade out can be applied if it's a 1st target screen
-		case 2:
-			if(this->_BLDCNT & 0x20) //backdrop is selected for color effect
-				memset_u16(dstLine, LE_TO_LOCAL_16(this->_currentFadeInColors[backdrop_color]), pixCount);
-			else goto PLAIN_CLEAR;
+		case 2: //for backdrops, fade in and fade out can be applied if it's a 1st target screen
+		{
+			if (this->_BLDCNT & 0x20) //backdrop is selected for color effect
+			{
+				if (ISCUSTOMRENDERINGNEEDED)
+				{
+					memset_u16(dstLine, LE_TO_LOCAL_16(this->_currentFadeInColors[backdrop_color]), pixCount);
+				}
+				else
+				{
+					memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(dstLine, LE_TO_LOCAL_16(this->_currentFadeInColors[backdrop_color]));
+				}
+			}
+			else
+			{
+				goto PLAIN_CLEAR;
+			}
 			break;
+		}
+			
 		case 3:
+		{
 			if(this->_BLDCNT & 0x20) //backdrop is selected for color effect
-				memset_u16(dstLine, LE_TO_LOCAL_16(this->_currentFadeOutColors[backdrop_color]), pixCount);
-			else goto PLAIN_CLEAR;
+			{
+				if (ISCUSTOMRENDERINGNEEDED)
+				{
+					memset_u16(dstLine, LE_TO_LOCAL_16(this->_currentFadeOutColors[backdrop_color]), pixCount);
+				}
+				else
+				{
+					memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(dstLine, LE_TO_LOCAL_16(this->_currentFadeOutColors[backdrop_color]));
+				}
+			}
+			else
+			{
+				goto PLAIN_CLEAR;
+			}
 			break;
+		}
 			
-			//windowed cases apparently need special treatment? why? can we not render the backdrop? how would that even work?
+		//windowed cases apparently need special treatment? why? can we not render the backdrop? how would that even work?
 		case 4: for(size_t x=0;x<GPU_FRAMEBUFFER_NATIVE_WIDTH;x++) this->___setFinalColorBck<GPULayerID_None,false,true,4,ISCUSTOMRENDERINGNEEDED,false>(backdrop_color,x,true); break;
 		case 5: for(size_t x=0;x<GPU_FRAMEBUFFER_NATIVE_WIDTH;x++) this->___setFinalColorBck<GPULayerID_None,false,true,5,ISCUSTOMRENDERINGNEEDED,false>(backdrop_color,x,true); break;
 		case 6: for(size_t x=0;x<GPU_FRAMEBUFFER_NATIVE_WIDTH;x++) this->___setFinalColorBck<GPULayerID_None,false,true,6,ISCUSTOMRENDERINGNEEDED,false>(backdrop_color,x,true); break;
 		case 7: for(size_t x=0;x<GPU_FRAMEBUFFER_NATIVE_WIDTH;x++) this->___setFinalColorBck<GPULayerID_None,false,true,7,ISCUSTOMRENDERINGNEEDED,false>(backdrop_color,x,true); break;
 	}
 	
-	memset(this->_bgPixels, 5, pixCount);
+	memset(this->_bgPixels, GPULayerID_None, pixCount);
 	
 	// init background color & priorities
 	memset(this->_sprAlpha, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH);
@@ -4285,11 +4352,6 @@ void GPUSubsystem::UpdateVRAM3DUsageProperties()
 	this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = this->_displayTouch->GetEngine()->renderedWidth;
 	this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = this->_displayTouch->GetEngine()->renderedHeight;
 	
-	if (this->_engineMain->is3DEnabled)
-	{
-		CurrentRenderer->RenderFinish();
-	}
-	
 	if (!this->_displayInfo.isCustomSizeRequested)
 	{
 		return;
@@ -4553,6 +4615,7 @@ void GPUSubsystem::RenderLine(const u16 l, bool skip)
 {
 	if (l == 0)
 	{
+		CurrentRenderer->RenderFinish();
 		GPU->UpdateVRAM3DUsageProperties();
 	}
 	
@@ -4573,7 +4636,6 @@ void GPUSubsystem::RenderLine(const u16 l, bool skip)
 	{
 		this->_engineSub->RenderLine<false>(l, skip);
 	}
-	
 }
 
 void GPUSubsystem::ClearWithColor(const u16 colorBGRA5551)
