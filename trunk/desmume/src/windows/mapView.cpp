@@ -50,7 +50,7 @@ struct mapview_struct
 		//forgive the gyrations, some of this junk in here is to remind us of gyrations we might have to go
 		//through to avoid breaking the gpu struct
 
-		gpu.debug = true;
+		gpu.SetDebugState(true);
 		int temp = gpu.GetFinalColorBckFuncID();
 		gpu.SetFinalColorBckFuncID(0); //hax... why arent we copying gpu now?? i cant remember
 
@@ -58,12 +58,10 @@ struct mapview_struct
 
 		for(u32 i = 0; i < gpu.BGSize[layerID][1]; ++i)
 		{
-			gpu.currDst = bitmap + i*gpu.BGSize[layerID][0];
-			gpu.currLine = i;
-			gpu.ModeRenderDebug(layerID);
+			gpu.ModeRenderDebug(i, layerID, bitmap + i*gpu.BGSize[layerID][0]);
 		}
 
-		gpu.debug = false;
+		gpu.SetDebugState(false);
 		gpu.SetFinalColorBckFuncID(temp);
 	}
 };
