@@ -746,19 +746,6 @@ typedef union
 	u16 val;
 } TILEENTRY;
 
-struct _ROTOCOORD
-{
-	u32 Fraction:8;
-	s32 Integer:20;
-	u32 pad:4;
-};
-typedef union
-{
-	struct _ROTOCOORD bits;
-	s32 val;
-} ROTOCOORD;
-
-
 /*
 	this structure is for color representation,
 	it holds 5 meaningful bits per color channel (red,green,blue)
@@ -790,23 +777,6 @@ typedef union
 	struct _COLORx bitx;
 	u16 val;
 } COLOR;
-
-struct _COLOR32 { // ARGB
-	unsigned :3;
-	unsigned blue:5;
-	unsigned :3;
-	unsigned green:5;
-	unsigned :3;
-	unsigned red:5;
-	unsigned :7;
-	unsigned alpha:1;	// sometimes it is unused (pad)
-};
-
-typedef union
-{
-	struct _COLOR32 bits;
-	u32 val;
-} COLOR32;
 
 #define COLOR_16_32(w,i)	\
 	/* doesnt matter who's 16bit who's 32bit */ \
@@ -1040,10 +1010,6 @@ protected:
 					te.trunc = i/mosaic*mosaic;
 				}
 		}
-		
-		TableEntry *width, *height;
-		int widthValue, heightValue;
-		
 	} _mosaicLookup;
 	
 	CACHE_ALIGN u16 _sprColor[GPU_FRAMEBUFFER_NATIVE_WIDTH];
@@ -1054,6 +1020,7 @@ protected:
 	
 	bool _enableDebug;
 	bool _enableLayer[5];
+	bool _isBGLayerEnabled;
 	itemsForPriority_t _itemsForPriority[NB_PRIORITIES];
 	
 	struct MosaicColor {
@@ -1080,13 +1047,11 @@ protected:
 	u8 _sprBMPMode;
 	u32 _sprEnable;
 	
-	u16 *_currentFadeInColors;
-	u16 *_currentFadeOutColors;
-	
-	bool _blend1;
 	bool _blend2[8];
 	
 	TBlendTable *_blendTable;
+	u16 *_currentFadeInColors;
+	u16 *_currentFadeOutColors;
 	
 	u32 _BG_bmp_large_ram[4];
 	u32 _BG_bmp_ram[4];
@@ -1121,34 +1086,17 @@ protected:
 	u8 *_dstLayerID;
 	bool _needUpdateWINH[2];
 	
-	u8 _WIN0H0;
-	u8 _WIN0H1;
-	u8 _WIN0V0;
-	u8 _WIN0V1;
-	
-	u8 _WIN1H0;
-	u8 _WIN1H1;
-	u8 _WIN1V0;
-	u8 _WIN1V1;
-	
-	u8 _WININ0;
-	bool _WININ0_SPECIAL;
-	u8 _WININ1;
-	bool _WININ1_SPECIAL;
-	
-	u8 _WINOUT;
-	bool _WINOUT_SPECIAL;
-	u8 _WINOBJ;
-	bool _WINOBJ_SPECIAL;
-	
 	u8 _WIN0_ENABLED;
 	u8 _WIN1_ENABLED;
 	u8 _WINOBJ_ENABLED;
 	
-	u16 _BLDCNT;
+	MosaicLookup::TableEntry *_mosaicWidth;
+	MosaicLookup::TableEntry *_mosaicHeight;
+	u8 _mosaicWidthValue;
+	u8 _mosaicHeightValue;
+	
 	u8 _BLDALPHA_EVA;
 	u8 _BLDALPHA_EVB;
-	u8 _BLDY_EVY;
 	
 	void _InitLUTs();
 	void _Reset_Base();
@@ -1204,6 +1152,7 @@ protected:
 	u32 _SpriteAddressBMP(const OAMAttributes &spriteInfo, const SpriteSize sprSize, const s32 y);
 	
 	template<SpriteRenderMode MODE> void _SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
+	void _RefreshAffineStartRegs();
 	
 public:
 	GPUEngineBase();
@@ -1211,11 +1160,18 @@ public:
 	
 	virtual void Reset();
 	void ResortBGLayers();
-	void SetMasterBrightness(const u16 val);
 	void SetupFinalPixelBlitter();
 	
-	void SetVideoProp(const u32 ctrlBits);
-	template<GPULayerID LAYERID> void SetBGProp(const u16 ctrlBits);
+	void ParseReg_DISPCNT();
+	template<GPULayerID LAYERID> void ParseReg_BGnCNT();
+	template<GPULayerID LAYERID> void ParseReg_BGnX();
+	template<GPULayerID LAYERID> void ParseReg_BGnY();
+	template<size_t WINNUM> void ParseReg_WINnH();
+	void ParseReg_MOSAIC();
+	void ParseReg_BLDCNT();
+	void ParseReg_BLDALPHA();
+	void ParseReg_BLDY();
+	void ParseReg_MASTER_BRIGHT();
 	
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool skip);
 	
@@ -1234,10 +1190,10 @@ public:
 	size_t renderedHeight;
 	u16 *renderedBuffer;
 	
-	struct AffineInfo {
-		AffineInfo() : x(0), y(0) {}
-		u32 x, y;
-	} affineInfo[2];
+	IOREG_BG2X savedBG2X;
+	IOREG_BG2Y savedBG2Y;
+	IOREG_BG3X savedBG3X;
+	IOREG_BG3Y savedBG3Y;
 	
 	const GPU_IOREG& GetIORegisterMap() const;
 	
@@ -1258,11 +1214,6 @@ public:
 	void UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
 	void UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
 	
-	template<GPULayerID LAYERID, int SET_XY> void setAffineStart(u32 val);
-	template<GPULayerID LAYERID, int SET_XY, bool HIWORD> void setAffineStartWord(u16 val);
-	template<GPULayerID LAYERID, int SET_XY> u32 getAffineStart();
-	template<GPULayerID LAYERID, int SET_XY> void refreshAffineStartRegs();
-	
 	void SpriteRender(u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 	void SpriteRenderDebug(const size_t targetScanline, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 	void ModeRenderDebug(const size_t targetScanline, const GPULayerID layerID, u16 *dstLineColor);
@@ -1271,41 +1222,6 @@ public:
 	template<bool ISCUSTOMRENDERINGNEEDED> void HandleDisplayModeNormal(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
 	template<bool ISCUSTOMRENDERINGNEEDED> void HandleDisplayModeVRAM(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
 	template<bool ISCUSTOMRENDERINGNEEDED> void HandleDisplayModeMainMemory(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
-
-	void UpdateBLDALPHA();
-	void SetBLDALPHA(const u16 val);
-	void SetBLDALPHA_EVA(const u8 val);
-	void SetBLDALPHA_EVB(const u8 val);
-	
-	// Blending
-	void SetBLDCNT_LOW(const u8 val);
-	void SetBLDCNT_HIGH(const u8 val);
-	void SetBLDCNT(const u16 val);
-	void SetBLDY_EVY(const u8 val);
-	
-	void SetWIN0_H(const u16 val);
-	void SetWIN0_H0(const u8 val);
-	void SetWIN0_H1(const u8 val);
-	
-	void SetWIN0_V(const u16 val);
-	void SetWIN0_V0(const u8 val);
-	void SetWIN0_V1(const u8 val);
-	
-	void SetWIN1_H(const u16 val);
-	void SetWIN1_H0(const u8 val);
-	void SetWIN1_H1(const u8 val);
-	
-	void SetWIN1_V(const u16 val);
-	void SetWIN1_V0(const u8 val);
-	void SetWIN1_V1(const u8 val);
-	
-	void SetWININ(const u16 val);
-	void SetWININ0(const u8 val);
-	void SetWININ1(const u8 val);
-	
-	void SetWINOUT16(const u16 val);
-	void SetWINOUT(const u8 val);
-	void SetWINOBJ(const u8 val);
 	
 	int GetFinalColorBckFuncID() const;
 	void SetFinalColorBckFuncID(int funcID);
@@ -1353,7 +1269,7 @@ public:
 	~GPUEngineA();
 	
 	virtual void Reset();
-	void SetDISPCAPCNT(u32 val);
+	void ParseReg_DISPCAPCNT();
 	GPUDisplayMode GetDisplayMode() const;
 	u8 GetVRAMBlock() const;
 	FragmentColor* Get3DFramebufferRGBA6665() const;

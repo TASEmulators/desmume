@@ -169,14 +169,14 @@ void gpu_savestate(EMUFILE* os)
 	
 	os->fwrite((u8 *)GPU->GetCustomFramebuffer(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
 	
-	write32le(mainEngine->affineInfo[0].x,os);
-	write32le(mainEngine->affineInfo[0].y,os);
-	write32le(mainEngine->affineInfo[1].x,os);
-	write32le(mainEngine->affineInfo[1].y,os);
-	write32le(subEngine->affineInfo[0].x,os);
-	write32le(subEngine->affineInfo[0].y,os);
-	write32le(subEngine->affineInfo[1].x,os);
-	write32le(subEngine->affineInfo[1].y,os);
+	write32le(mainEngine->savedBG2X.value, os);
+	write32le(mainEngine->savedBG2Y.value, os);
+	write32le(mainEngine->savedBG3X.value, os);
+	write32le(mainEngine->savedBG3Y.value, os);
+	write32le(subEngine->savedBG2X.value, os);
+	write32le(subEngine->savedBG2Y.value, os);
+	write32le(subEngine->savedBG3X.value, os);
+	write32le(subEngine->savedBG3Y.value, os);
 }
 
 bool gpu_loadstate(EMUFILE* is, int size)
@@ -208,21 +208,21 @@ bool gpu_loadstate(EMUFILE* is, int size)
 	
 	if (version == 1)
 	{
-		read32le(&(mainEngine->affineInfo[0].x),is);
-		read32le(&(mainEngine->affineInfo[0].y),is);
-		read32le(&(mainEngine->affineInfo[1].x),is);
-		read32le(&(mainEngine->affineInfo[1].y),is);
-		read32le(&(subEngine->affineInfo[0].x),is);
-		read32le(&(subEngine->affineInfo[0].y),is);
-		read32le(&(subEngine->affineInfo[1].x),is);
-		read32le(&(subEngine->affineInfo[1].y),is);
+		read32le((u32 *)&mainEngine->savedBG2X, is);
+		read32le((u32 *)&mainEngine->savedBG2Y, is);
+		read32le((u32 *)&mainEngine->savedBG3X, is);
+		read32le((u32 *)&mainEngine->savedBG3Y, is);
+		read32le((u32 *)&subEngine->savedBG2X, is);
+		read32le((u32 *)&subEngine->savedBG2Y, is);
+		read32le((u32 *)&subEngine->savedBG3X, is);
+		read32le((u32 *)&subEngine->savedBG3Y, is);
 		//removed per nitsuja feedback. anyway, this same thing will happen almost immediately in gpu line=0
 		//mainEngine->refreshAffineStartRegs(-1,-1);
 		//subEngine->refreshAffineStartRegs(-1,-1);
 	}
 	
-	mainEngine->UpdateBLDALPHA();
-	subEngine->UpdateBLDALPHA();
+	mainEngine->ParseReg_BLDALPHA();
+	subEngine->ParseReg_BLDALPHA();
 	return !is->fail();
 }
 
@@ -336,11 +336,12 @@ void GPUEngineBase::_Reset_Base()
 		memset(this->_dstLayerID, 0, dispInfo.customWidth * _gpuLargestDstLineCount * 4 * sizeof(u8));
 	}
 	
-	this->_enableLayer[0] = false;
-	this->_enableLayer[1] = false;
-	this->_enableLayer[2] = false;
-	this->_enableLayer[3] = false;
-	this->_enableLayer[4] = false;
+	this->_enableLayer[GPULayerID_BG0] = false;
+	this->_enableLayer[GPULayerID_BG1] = false;
+	this->_enableLayer[GPULayerID_BG2] = false;
+	this->_enableLayer[GPULayerID_BG3] = false;
+	this->_enableLayer[GPULayerID_OBJ] = false;
+	this->_isBGLayerEnabled = false;
 	
 	this->BGExtPalSlot[0] = 0;
 	this->BGExtPalSlot[1] = 0;
@@ -384,40 +385,16 @@ void GPUEngineBase::_Reset_Base()
 	this->_sprBMPMode = 0;
 	this->_sprEnable = 0;
 	
-	this->_WIN0H0 = 0;
-	this->_WIN0H1 = 0;
-	this->_WIN0V0 = 0;
-	this->_WIN0V1 = 0;
-	
-	this->_WIN1H0 = 0;
-	this->_WIN1H1 = 0;
-	this->_WIN1V0 = 0;
-	this->_WIN1V1 = 0;
-	
-	this->_WININ0 = 0;
-	this->_WININ0_SPECIAL = false;
-	this->_WININ1 = 0;
-	this->_WININ1_SPECIAL = false;
-	
-	this->_WINOUT = 0;
-	this->_WINOUT_SPECIAL = false;
-	this->_WINOBJ = 0;
-	this->_WINOBJ_SPECIAL = false;
-	
 	this->_WIN0_ENABLED = 0;
 	this->_WIN1_ENABLED = 0;
 	this->_WINOBJ_ENABLED = 0;
 	
-	this->_BLDCNT = 0;
 	this->_BLDALPHA_EVA = 0;
 	this->_BLDALPHA_EVB = 0;
-	this->_BLDY_EVY = 0;
-	this->UpdateBLDALPHA();
+	this->_blendTable = (TBlendTable *)&GPUEngineBase::_blendTable555[this->_BLDALPHA_EVA][this->_BLDALPHA_EVB][0][0];
+	this->_currentFadeInColors = &GPUEngineBase::_fadeInColors[0][0];
+	this->_currentFadeOutColors = &GPUEngineBase::_fadeOutColors[0][0];
 	
-	this->_currentFadeInColors = &GPUEngineBase::_fadeInColors[this->_BLDY_EVY][0];
-	this->_currentFadeOutColors = &GPUEngineBase::_fadeOutColors[this->_BLDY_EVY][0];
-	
-	this->_blend1 = false;
 	this->_blend2[0] = false;
 	this->_blend2[1] = false;
 	this->_blend2[2] = false;
@@ -440,10 +417,10 @@ void GPUEngineBase::_Reset_Base()
 	
 	this->_spriteRenderMode = SpriteRenderMode_Sprite1D;
 	
-	this->affineInfo[0].x = 0;
-	this->affineInfo[0].y = 0;
-	this->affineInfo[1].x = 0;
-	this->affineInfo[1].y = 0;
+	this->savedBG2X.value = 0;
+	this->savedBG2Y.value = 0;
+	this->savedBG3X.value = 0;
+	this->savedBG3Y.value = 0;
 	
 	this->renderedWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	this->renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
@@ -466,11 +443,13 @@ void GPUEngineBase::ResortBGLayers()
 #define OP ^ !
 	// if we untick boxes, layers become invisible
 	//#define OP &&
-	this->_enableLayer[0] = CommonSettings.dispLayers[this->_engineID][0] OP(DISPCNT.BG0_Enable/* && !(cnt->BG0_3D && (gpu->core==0))*/);
-	this->_enableLayer[1] = CommonSettings.dispLayers[this->_engineID][1] OP(DISPCNT.BG1_Enable);
-	this->_enableLayer[2] = CommonSettings.dispLayers[this->_engineID][2] OP(DISPCNT.BG2_Enable);
-	this->_enableLayer[3] = CommonSettings.dispLayers[this->_engineID][3] OP(DISPCNT.BG3_Enable);
-	this->_enableLayer[4] = CommonSettings.dispLayers[this->_engineID][4] OP(DISPCNT.OBJ_Enable);
+	this->_enableLayer[GPULayerID_BG0] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG0] OP(DISPCNT.BG0_Enable/* && !(cnt->BG0_3D && (gpu->core==0))*/);
+	this->_enableLayer[GPULayerID_BG1] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG1] OP(DISPCNT.BG1_Enable);
+	this->_enableLayer[GPULayerID_BG2] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG2] OP(DISPCNT.BG2_Enable);
+	this->_enableLayer[GPULayerID_BG3] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG3] OP(DISPCNT.BG3_Enable);
+	this->_enableLayer[GPULayerID_OBJ] = CommonSettings.dispLayers[this->_engineID][GPULayerID_OBJ] OP(DISPCNT.OBJ_Enable);
+	
+	this->_isBGLayerEnabled = this->_enableLayer[GPULayerID_BG0] || this->_enableLayer[GPULayerID_BG1] || this->_enableLayer[GPULayerID_BG2] || this->_enableLayer[GPULayerID_BG3];
 	
 	// KISS ! lower priority first, if same then lower num
 	for (i = 0; i < NB_PRIORITIES; i++)
@@ -536,23 +515,24 @@ FORCEINLINE u16 GPUEngineBase::_FinalColorBlend(const u16 colA, const u16 colB)
 	return this->_FinalColorBlendFunc(colA, colB, this->_blendTable);
 }
 
-void GPUEngineBase::SetMasterBrightness(const u16 val)
+void GPUEngineBase::ParseReg_MASTER_BRIGHT()
 {
 	if (!nds.isInVblank())
 	{
 		PROGINFO("Changing master brightness outside of vblank\n");
 	}
 	
- 	this->_masterBrightFactor = (val & 0x1F);
-	this->_masterBrightMode = (GPUMasterBrightMode)(val >> 14);
-	this->_isMasterBrightFullIntensity = ( (this->_masterBrightFactor >= 16) && ((this->_masterBrightMode == _masterBrightMode == GPUMasterBrightMode_Up) || (this->_masterBrightMode == GPUMasterBrightMode_Down)) );
+	const IOREG_MASTER_BRIGHT &MASTER_BRIGHT = this->_IORegisterMap->MASTER_BRIGHT;
+	this->_masterBrightFactor = MASTER_BRIGHT.Intensity;
+	this->_masterBrightMode = (GPUMasterBrightMode)MASTER_BRIGHT.Mode;
+	this->_isMasterBrightFullIntensity = ( (this->_masterBrightFactor >= 16) && ((this->_masterBrightMode == GPUMasterBrightMode_Up) || (this->_masterBrightMode == GPUMasterBrightMode_Down)) );
 	//printf("MASTER BRIGHTNESS %d to %d at %d\n",this->core,this->_masterBrightFactor,nds.VCount);
 }
 
 void GPUEngineBase::SetupFinalPixelBlitter()
 {
 	const u8 windowUsed = (this->_WIN0_ENABLED | this->_WIN1_ENABLED | this->_WINOBJ_ENABLED);
-	const u8 blendMode = (this->_BLDCNT >> 6) & 3;
+	const u8 blendMode = this->_IORegisterMap->BLDCNT.ColorEffect;
 	const int funcNum = (windowUsed * 4) + blendMode;
 
 	this->_finalColorSpriteFuncID = funcNum;
@@ -561,12 +541,10 @@ void GPUEngineBase::SetupFinalPixelBlitter()
 }
     
 //Sets up LCD control variables for Display Engines A and B for quick reading
-void GPUEngineBase::SetVideoProp(const u32 ctrlBits)
+void GPUEngineBase::ParseReg_DISPCNT()
 {
-	IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
-
-	DISPCNT.value = LE_TO_LOCAL_32(ctrlBits);
-
+	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
+	
 	this->_WIN0_ENABLED	= DISPCNT.Win0_Enable;
 	this->_WIN1_ENABLED	= DISPCNT.Win1_Enable;
 	this->_WINOBJ_ENABLED = DISPCNT.WinOBJ_Enable;
@@ -624,20 +602,17 @@ void GPUEngineBase::SetVideoProp(const u32 ctrlBits)
 
 	this->_sprEnable = DISPCNT.OBJ_Enable;
 	
-	this->SetBGProp<GPULayerID_BG3>( T1ReadWord(MMU.ARM9_REG, this->_engineID * ADDRESS_STEP_4KB + 14) );
-	this->SetBGProp<GPULayerID_BG2>( T1ReadWord(MMU.ARM9_REG, this->_engineID * ADDRESS_STEP_4KB + 12) );
-	this->SetBGProp<GPULayerID_BG1>( T1ReadWord(MMU.ARM9_REG, this->_engineID * ADDRESS_STEP_4KB + 10) );
-	this->SetBGProp<GPULayerID_BG0>( T1ReadWord(MMU.ARM9_REG, this->_engineID * ADDRESS_STEP_4KB + 8) );
+	this->ParseReg_BGnCNT<GPULayerID_BG3>();
+	this->ParseReg_BGnCNT<GPULayerID_BG2>();
+	this->ParseReg_BGnCNT<GPULayerID_BG1>();
+	this->ParseReg_BGnCNT<GPULayerID_BG0>();
 }
 
-//this handles writing in BGxCNT
 template <GPULayerID LAYERID>
-void GPUEngineBase::SetBGProp(const u16 ctrlBits)
+void GPUEngineBase::ParseReg_BGnCNT()
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
-	IOREG_BGnCNT &BGnCNT = this->_IORegisterMap->BGnCNT[LAYERID];
-	
-	BGnCNT.value = LE_TO_LOCAL_16(ctrlBits);
+	const IOREG_BGnCNT &BGnCNT = this->_IORegisterMap->BGnCNT[LAYERID];
 	
 	this->ResortBGLayers();
 
@@ -699,7 +674,33 @@ void GPUEngineBase::SetBGProp(const u16 ctrlBits)
 	this->BGSize[LAYERID][0] = GPUEngineBase::_sizeTab[mode][BGnCNT.ScreenSize][0];
 	this->BGSize[LAYERID][1] = GPUEngineBase::_sizeTab[mode][BGnCNT.ScreenSize][1];
 	
-	this->_bgPrio[LAYERID] = (ctrlBits & 0x3);
+	this->_bgPrio[LAYERID] = BGnCNT.Priority;
+}
+
+template<GPULayerID LAYERID>
+void GPUEngineBase::ParseReg_BGnX()
+{
+	if (LAYERID == GPULayerID_BG2)
+	{
+		this->savedBG2X = this->_IORegisterMap->BG2X;
+	}
+	else if (LAYERID == GPULayerID_BG3)
+	{
+		this->savedBG3X = this->_IORegisterMap->BG3X;
+	}
+}
+
+template<GPULayerID LAYERID>
+void GPUEngineBase::ParseReg_BGnY()
+{
+	if (LAYERID == GPULayerID_BG2)
+	{
+		this->savedBG2Y = this->_IORegisterMap->BG2Y;
+	}
+	else if (LAYERID == GPULayerID_BG3)
+	{
+		this->savedBG3Y = this->_IORegisterMap->BG3Y;
+	}
 }
 
 template<bool ISCUSTOMRENDERINGNEEDED>
@@ -778,8 +779,19 @@ void GPUEngineBase::_RenderLine_CheckWindows(const size_t srcX, bool &draw, bool
 		if (this->_WithinRect<0>(srcX))
 		{
 			//INFO("bg%i passed win0 : (%i %i) was within (%i %i)(%i %i)\n", bgnum, x, gpu->_currentScanline, gpu->WIN0H0, gpu->WIN0V0, gpu->WIN0H1, gpu->WIN0V1);
-			draw = (this->_WININ0 >> LAYERID) & 1;
-			effect = (this->_WININ0_SPECIAL);
+			switch (LAYERID)
+			{
+				case GPULayerID_BG0: draw = (this->_IORegisterMap->WIN0IN.BG0_Enable != 0); break;
+				case GPULayerID_BG1: draw = (this->_IORegisterMap->WIN0IN.BG1_Enable != 0); break;
+				case GPULayerID_BG2: draw = (this->_IORegisterMap->WIN0IN.BG2_Enable != 0); break;
+				case GPULayerID_BG3: draw = (this->_IORegisterMap->WIN0IN.BG3_Enable != 0); break;
+				case GPULayerID_OBJ: draw = (this->_IORegisterMap->WIN0IN.OBJ_Enable != 0); break;
+					
+				default:
+					break;
+			}
+			
+			effect = (this->_IORegisterMap->WIN0IN.Effect_Enable != 0);
 			return;
 		}
 	}
@@ -793,8 +805,19 @@ void GPUEngineBase::_RenderLine_CheckWindows(const size_t srcX, bool &draw, bool
 		if (this->_WithinRect<1>(srcX))
 		{
 			//INFO("bg%i passed win1 : (%i %i) was within (%i %i)(%i %i)\n", bgnum, x, gpu->_currentScanline, gpu->WIN1H0, gpu->WIN1V0, gpu->WIN1H1, gpu->WIN1V1);
-			draw = (this->_WININ1 >> LAYERID) & 1;
-			effect = (this->_WININ1_SPECIAL);
+			switch (LAYERID)
+			{
+				case GPULayerID_BG0: draw = (this->_IORegisterMap->WIN1IN.BG0_Enable != 0); break;
+				case GPULayerID_BG1: draw = (this->_IORegisterMap->WIN1IN.BG1_Enable != 0); break;
+				case GPULayerID_BG2: draw = (this->_IORegisterMap->WIN1IN.BG2_Enable != 0); break;
+				case GPULayerID_BG3: draw = (this->_IORegisterMap->WIN1IN.BG3_Enable != 0); break;
+				case GPULayerID_OBJ: draw = (this->_IORegisterMap->WIN1IN.OBJ_Enable != 0); break;
+					
+				default:
+					break;
+			}
+			
+			effect = (this->_IORegisterMap->WIN1IN.Effect_Enable != 0);
 			return;
 		}
 	}
@@ -806,16 +829,38 @@ void GPUEngineBase::_RenderLine_CheckWindows(const size_t srcX, bool &draw, bool
 		// low priority
 		if (this->_sprWin[srcX])
 		{
-			draw = (this->_WINOBJ >> LAYERID) & 1;
-			effect = (this->_WINOBJ_SPECIAL);
+			switch (LAYERID)
+			{
+				case GPULayerID_BG0: draw = (this->_IORegisterMap->WINOBJ.BG0_Enable != 0); break;
+				case GPULayerID_BG1: draw = (this->_IORegisterMap->WINOBJ.BG1_Enable != 0); break;
+				case GPULayerID_BG2: draw = (this->_IORegisterMap->WINOBJ.BG2_Enable != 0); break;
+				case GPULayerID_BG3: draw = (this->_IORegisterMap->WINOBJ.BG3_Enable != 0); break;
+				case GPULayerID_OBJ: draw = (this->_IORegisterMap->WINOBJ.OBJ_Enable != 0); break;
+					
+				default:
+					break;
+			}
+			
+			effect = (this->_IORegisterMap->WINOBJ.Effect_Enable != 0);
 			return;
 		}
 	}
 
 	if (this->_WINOBJ_ENABLED | this->_WIN1_ENABLED | this->_WIN0_ENABLED)
 	{
-		draw = (this->_WINOUT >> LAYERID) & 1;
-		effect = (this->_WINOUT_SPECIAL);
+		switch (LAYERID)
+		{
+			case GPULayerID_BG0: draw = (this->_IORegisterMap->WINOUT.BG0_Enable != 0); break;
+			case GPULayerID_BG1: draw = (this->_IORegisterMap->WINOUT.BG1_Enable != 0); break;
+			case GPULayerID_BG2: draw = (this->_IORegisterMap->WINOUT.BG2_Enable != 0); break;
+			case GPULayerID_BG3: draw = (this->_IORegisterMap->WINOUT.BG3_Enable != 0); break;
+			case GPULayerID_OBJ: draw = (this->_IORegisterMap->WINOUT.OBJ_Enable != 0); break;
+				
+			default:
+				break;
+		}
+		
+		effect = (this->_IORegisterMap->WINOUT.Effect_Enable != 0);
 	}
 }
 
@@ -829,7 +874,7 @@ FORCEINLINE FASTCALL void GPUEngineBase::_master_setFinal3dColor(const size_t sr
 	u8 alpha = src.a;
 	u16 final;
 
-	bool windowEffect = this->_blend1; //bomberman land touch dialogbox will fail without setting to blend1
+	bool windowEffect = (this->_IORegisterMap->BLDCNT.BG0_Target1 != 0); //bomberman land touch dialogbox will fail without setting to blend1
 	
 	//TODO - should we do an alpha==0 -> bail out entirely check here?
 
@@ -906,9 +951,28 @@ FORCEINLINE FASTCALL bool GPUEngineBase::_master_setFinalBGColor(const size_t sr
 	}
 
 	//special effects rejected. just draw it.
-	if (!(this->_blend1 && windowEffect))
-		return true;
-
+	switch (LAYERID)
+	{
+		case GPULayerID_BG0:
+			if (!((this->_IORegisterMap->BLDCNT.BG0_Target1 != 0) && windowEffect)) return true;
+			break;
+			
+		case GPULayerID_BG1:
+			if (!((this->_IORegisterMap->BLDCNT.BG1_Target1 != 0) && windowEffect)) return true;
+			break;
+			
+		case GPULayerID_BG2:
+			if (!((this->_IORegisterMap->BLDCNT.BG2_Target1 != 0) && windowEffect)) return true;
+			break;
+			
+		case GPULayerID_BG3:
+			if (!((this->_IORegisterMap->BLDCNT.BG3_Target1 != 0) && windowEffect)) return true;
+			break;
+			
+		default:
+			break;
+	}
+	
 	const GPULayerID dstLayerID = (GPULayerID)dstLayerIDLine[dstX];
 
 	//perform the special effect
@@ -942,7 +1006,7 @@ FORCEINLINE FASTCALL void GPUEngineBase::_master_setFinalOBJColor(const size_t s
 	{
 		const bool isObjTranslucentType = type == GPU_OBJ_MODE_Transparent || type == GPU_OBJ_MODE_Bitmap;
 		const GPULayerID dstLayerID = (GPULayerID)dstLayerIDLine[dstX];
-		const bool firstTargetSatisfied = this->_blend1;
+		const bool firstTargetSatisfied = (this->_IORegisterMap->BLDCNT.OBJ_Target1 != 0);
 		const bool secondTargetSatisfied = (dstLayerID != GPULayerID_OBJ) && this->_blend2[dstLayerID];
 		BlendFunc selectedFunc = NoBlend;
 
@@ -1122,15 +1186,15 @@ FORCEINLINE void GPUEngineBase::___setFinalColorBck(u16 color, const size_t srcX
 		if (!opaque) color = 0xFFFF;
 		else color &= 0x7FFF;
 		
-		if (GPUEngineBase::_mosaicLookup.width[srcX].begin && GPUEngineBase::_mosaicLookup.height[this->_currentScanline].begin)
+		if (this->_mosaicWidth[srcX].begin && this->_mosaicHeight[this->_currentScanline].begin)
 		{
 			// Do nothing.
 		}
 		else
 		{
 			//due to the early out, enabled must always be true
-			//x_int = enabled ? GPU::_mosaicLookup.width[srcX].trunc : srcX;
-			const size_t x_int = GPUEngineBase::_mosaicLookup.width[srcX].trunc;
+			//x_int = enabled ? this->_mosaicWidth[srcX].trunc : srcX;
+			const size_t x_int = this->_mosaicWidth[srcX].trunc;
 			color = this->_mosaicColors.bg[LAYERID][x_int];
 		}
 		
@@ -1165,13 +1229,13 @@ void GPUEngineBase::_MosaicSpriteLinePixel(const size_t x, u16 l, u16 *dst, u8 *
 	objColor.alpha = dst_alpha[x];
 	objColor.opaque = opaque;
 
-	const size_t x_int = (enableMosaic) ? GPUEngineBase::_mosaicLookup.width[x].trunc : x;
+	const size_t x_int = (enableMosaic) ? this->_mosaicWidth[x].trunc : x;
 
 	if (enableMosaic)
 	{
 		const size_t y = l;
 		
-		if (GPUEngineBase::_mosaicLookup.width[x].begin && GPUEngineBase::_mosaicLookup.height[y].begin)
+		if (this->_mosaicWidth[x].begin && this->_mosaicHeight[y].begin)
 		{
 			// Do nothing.
 		}
@@ -1190,7 +1254,7 @@ void GPUEngineBase::_MosaicSpriteLinePixel(const size_t x, u16 l, u16 *dst, u8 *
 void GPUEngineBase::_MosaicSpriteLine(u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab)
 {
 	//don't even try this unless the mosaic is effective
-	if (GPUEngineBase::_mosaicLookup.widthValue != 0 || GPUEngineBase::_mosaicLookup.heightValue != 0)
+	if (this->_mosaicWidthValue != 0 || this->_mosaicHeightValue != 0)
 		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
 			this->_MosaicSpriteLinePixel(i, l, dst, dst_alpha, typeTab, prioTab);
 }
@@ -1198,10 +1262,8 @@ void GPUEngineBase::_MosaicSpriteLine(u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTa
 template<rot_fun fun, bool WRAP>
 void GPUEngineBase::_rot_scale_op(const IOREG_BGnParameter &param, const u16 LG, const s32 wh, const s32 ht, const u32 map, const u32 tile, const u16 *pal)
 {
-	ROTOCOORD x, y;
-	x.val = param.BGnX.value;
-	y.val = param.BGnY.value;
-	
+	IOREG_BGnX x = param.BGnX;
+	IOREG_BGnY y = param.BGnY;
 	const s32 dx = (s32)param.BGnPA.value;
 	const s32 dy = (s32)param.BGnPC.value;
 	
@@ -1209,8 +1271,8 @@ void GPUEngineBase::_rot_scale_op(const IOREG_BGnParameter &param, const u16 LG,
 	// "unrotated + unscaled + no boundary checking required"
 	if (dx == GPU_FRAMEBUFFER_NATIVE_WIDTH && dy == 0)
 	{
-		s32 auxX = (WRAP) ? x.bits.Integer & (wh-1) : x.bits.Integer;
-		const s32 auxY = (WRAP) ? y.bits.Integer & (ht-1) : y.bits.Integer;
+		s32 auxX = (WRAP) ? x.Integer & (wh-1) : x.Integer;
+		const s32 auxY = (WRAP) ? y.Integer & (ht-1) : y.Integer;
 		
 		if (WRAP || (auxX + LG < wh && auxX >= 0 && auxY < ht && auxY >= 0))
 		{
@@ -1227,10 +1289,10 @@ void GPUEngineBase::_rot_scale_op(const IOREG_BGnParameter &param, const u16 LG,
 		}
 	}
 	
-	for (size_t i = 0; i < LG; i++, x.val += dx, y.val += dy)
+	for (size_t i = 0; i < LG; i++, x.value += dx, y.value += dy)
 	{
-		const s32 auxX = (WRAP) ? x.bits.Integer & (wh-1) : x.bits.Integer;
-		const s32 auxY = (WRAP) ? y.bits.Integer & (ht-1) : y.bits.Integer;
+		const s32 auxX = (WRAP) ? x.Integer & (wh-1) : x.Integer;
+		const s32 auxY = (WRAP) ? y.Integer & (ht-1) : y.Integer;
 		
 		if (WRAP || ((auxX >= 0) && (auxX < wh) && (auxY >= 0) && (auxY < ht)))
 			fun(this, auxX, auxY, wh, map, tile, pal, i);
@@ -1245,9 +1307,9 @@ void GPUEngineBase::_apply_rot_fun(const IOREG_BGnParameter &param, const u16 LG
 	s32 ht = this->BGSize[LAYERID][1];
 	
 	if (BGnCNT.PaletteSet_Wrap)
-		this->_rot_scale_op<fun,true>(param, LG, wh, ht, map, tile, pal);
+		this->_rot_scale_op<fun, true>(param, LG, wh, ht, map, tile, pal);
 	else
-		this->_rot_scale_op<fun,false>(param, LG, wh, ht, map, tile, pal);
+		this->_rot_scale_op<fun, false>(param, LG, wh, ht, map, tile, pal);
 }
 
 template<GPULayerID LAYERID, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
@@ -2114,7 +2176,7 @@ void GPUEngineBase::_RenderLine_MasterBrightness(u16 *dstColorLine, const size_t
 			
 		case GPUMasterBrightMode_Up:
 		{
-			if (factor < 16)
+			if (!this->_isMasterBrightFullIntensity)
 			{
 				size_t i = 0;
 				
@@ -2157,7 +2219,7 @@ void GPUEngineBase::_RenderLine_MasterBrightness(u16 *dstColorLine, const size_t
 			
 		case GPUMasterBrightMode_Down:
 		{
-			if (factor < 16)
+			if (!this->_isMasterBrightFullIntensity)
 			{
 				size_t i = 0;
 				
@@ -2199,20 +2261,20 @@ void GPUEngineBase::_RenderLine_MasterBrightness(u16 *dstColorLine, const size_t
 template<size_t WIN_NUM>
 void GPUEngineBase::_SetupWindows()
 {
-	const u8 y = _currentScanline;
-	const u16 startY = (WIN_NUM == 0) ? this->_WIN0V0 : this->_WIN1V0;
-	const u16 endY   = (WIN_NUM == 0) ? this->_WIN0V1 : this->_WIN1V1;
+	const u8 y = this->_currentScanline;
+	const u16 windowTop		= (WIN_NUM == 0) ? this->_IORegisterMap->WIN0V.Top : this->_IORegisterMap->WIN1V.Top;
+	const u16 windowBottom	= (WIN_NUM == 0) ? this->_IORegisterMap->WIN0V.Bottom : this->_IORegisterMap->WIN1V.Bottom;
 	
 	if (WIN_NUM == 0 && !this->_WIN0_ENABLED) goto allout;
 	if (WIN_NUM == 1 && !this->_WIN1_ENABLED) goto allout;
 
-	if (startY > endY)
+	if (windowTop > windowBottom)
 	{
-		if((y < startY) && (y > endY)) goto allout;
+		if((y < windowTop) && (y > windowBottom)) goto allout;
 	}
 	else
 	{
-		if((y < startY) || (y >= endY)) goto allout;
+		if((y < windowTop) || (y >= windowBottom)) goto allout;
 	}
 
 	//the x windows will apply for this scanline
@@ -2231,35 +2293,35 @@ void GPUEngineBase::_UpdateWINH()
 	if (WIN_NUM == 1 && !this->_WIN1_ENABLED) return;
 
 	this->_needUpdateWINH[WIN_NUM] = false;
-	const size_t startX = (WIN_NUM == 0) ? this->_WIN0H0 : this->_WIN1H0;
-	const size_t endX   = (WIN_NUM == 0) ? this->_WIN0H1 : this->_WIN1H1;
+	const size_t windowLeft		= (WIN_NUM == 0) ? this->_IORegisterMap->WIN0H.Left : this->_IORegisterMap->WIN1H.Left;
+	const size_t windowRight	= (WIN_NUM == 0) ? this->_IORegisterMap->WIN0H.Right : this->_IORegisterMap->WIN1H.Right;
 
 	//the original logic: if you doubt the window code, please check it against the newer implementation below
-	//if(startX > endX)
+	//if(windowLeft > windowRight)
 	//{
-	//	if((x < startX) && (x > endX)) return false;
+	//	if((x < windowLeft) && (x > windowRight)) return false;
 	//}
 	//else
 	//{
-	//	if((x < startX) || (x >= endX)) return false;
+	//	if((x < windowLeft) || (x >= windowRight)) return false;
 	//}
 
-	if (startX > endX)
+	if (windowLeft > windowRight)
 	{
-		for (size_t i = 0; i <= endX; i++)
+		for (size_t i = 0; i <= windowRight; i++)
 			this->_h_win[WIN_NUM][i] = 1;
-		for (size_t i = endX + 1; i < startX; i++)
+		for (size_t i = windowRight + 1; i < windowLeft; i++)
 			this->_h_win[WIN_NUM][i] = 0;
-		for (size_t i = startX; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
+		for (size_t i = windowLeft; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
 			this->_h_win[WIN_NUM][i] = 1;
 	}
 	else
 	{
-		for (size_t i = 0; i < startX; i++)
+		for (size_t i = 0; i < windowLeft; i++)
 			this->_h_win[WIN_NUM][i] = 0;
-		for (size_t i = startX; i < endX; i++)
+		for (size_t i = windowLeft; i < windowRight; i++)
 			this->_h_win[WIN_NUM][i] = 1;
-		for (size_t i = endX; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
+		for (size_t i = windowRight; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
 			this->_h_win[WIN_NUM][i] = 0;
 	}
 }
@@ -2292,14 +2354,15 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex, 
 	if (selectedBGLayer != VRAM_NO_3D_USAGE)
 	{
 		const IOREG_BGnParameter *bgParams = (selectedBGLayer == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
-		const AffineInfo &affineParams = this->affineInfo[selectedBGLayer - 2];
+		const IOREG_BGnX &savedBGnX = (selectedBGLayer == GPULayerID_BG2) ? this->savedBG2X : this->savedBG3X;
+		const IOREG_BGnY &savedBGnY = (selectedBGLayer == GPULayerID_BG2) ? this->savedBG2Y : this->savedBG3Y;
 		
 		if ( (bgParams->BGnPA.value != 0x100) ||
 		     (bgParams->BGnPB.value !=     0) ||
 		     (bgParams->BGnPC.value !=     0) ||
 		     (bgParams->BGnPD.value != 0x100) ||
-		     (affineParams.x        !=     0) ||
-		     (affineParams.y        !=     0) )
+		     (savedBGnX.value       !=     0) ||
+		     (savedBGnY.value       !=     0) )
 		{
 			selectedBGLayer = VRAM_NO_3D_USAGE;
 		}
@@ -2338,64 +2401,6 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex,
 			}
 		}
 	}
-}
-
-template<GPULayerID LAYERID, int SET_XY>
-u32 GPUEngineBase::getAffineStart()
-{
-	if (SET_XY == 0)
-		return this->affineInfo[LAYERID-2].x;
-	else
-		return this->affineInfo[LAYERID-2].y;
-}
-
-template<GPULayerID LAYERID, int SET_XY, bool HIWORD>
-void GPUEngineBase::setAffineStartWord(u16 val)
-{
-	u32 curr = this->getAffineStart<LAYERID, SET_XY>();
-	
-	if (!HIWORD)
-		curr = (curr & 0xFFFF0000) | val;
-	else
-		curr = (curr & 0x0000FFFF) | (((u32)val) << 16);
-	
-	this->setAffineStart<LAYERID, SET_XY>(curr);
-}
-
-template<GPULayerID LAYERID, int SET_XY>
-void GPUEngineBase::setAffineStart(u32 val)
-{
-	if (SET_XY == 0)
-		this->affineInfo[LAYERID-2].x = val;
-	else
-		this->affineInfo[LAYERID-2].y = val;
-	
-	this->refreshAffineStartRegs<LAYERID, SET_XY>();
-}
-
-template<GPULayerID LAYERID, int SET_XY>
-void GPUEngineBase::refreshAffineStartRegs()
-{
-	if (LAYERID == -1)
-	{
-		this->refreshAffineStartRegs<GPULayerID_BG2, SET_XY>();
-		this->refreshAffineStartRegs<GPULayerID_BG3, SET_XY>();
-		return;
-	}
-
-	if (SET_XY == -1)
-	{
-		this->refreshAffineStartRegs<LAYERID, 0>();
-		this->refreshAffineStartRegs<LAYERID, 1>();
-		return;
-	}
-
-	IOREG_BGnParameter *bgParams = (LAYERID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
-	
-	if (SET_XY == 0)
-		bgParams->BGnX.value = this->affineInfo[LAYERID-2].x;
-	else
-		bgParams->BGnY.value = this->affineInfo[LAYERID-2].y;
 }
 
 template<GPULayerID LAYERID, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
@@ -2543,161 +2548,53 @@ void GPUEngineBase::HandleDisplayModeMainMemory(u16 *dstColorLine, const size_t 
 	}
 }
 
-void GPUEngineBase::UpdateBLDALPHA()
+void GPUEngineBase::ParseReg_MOSAIC()
 {
+	const u8 bgMosaicH = this->_IORegisterMap->MOSAIC.BG_MosaicH;
+	const u8 bgMosaicV = this->_IORegisterMap->MOSAIC.BG_MosaicV;
+	
+	this->_mosaicWidthValue = bgMosaicH;
+	this->_mosaicHeightValue = bgMosaicV;
+	this->_mosaicWidth = &GPUEngineBase::_mosaicLookup.table[bgMosaicH][0];
+	this->_mosaicHeight = &GPUEngineBase::_mosaicLookup.table[bgMosaicV][0];
+}
+
+void GPUEngineBase::ParseReg_BLDCNT()
+{
+	const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
+	
+	this->_blend2[0] = (BLDCNT.BG0_Target2 != 0);
+	this->_blend2[1] = (BLDCNT.BG1_Target2 != 0);
+	this->_blend2[2] = (BLDCNT.BG2_Target2 != 0);
+	this->_blend2[3] = (BLDCNT.BG3_Target2 != 0);
+	this->_blend2[4] = (BLDCNT.OBJ_Target2 != 0);
+	this->_blend2[5] = (BLDCNT.Backdrop_Target2 != 0);
+	
+	this->SetupFinalPixelBlitter();
+}
+
+void GPUEngineBase::ParseReg_BLDALPHA()
+{
+	const IOREG_BLDALPHA &BLDALPHA = this->_IORegisterMap->BLDALPHA;
+	
+	this->_BLDALPHA_EVA = (BLDALPHA.EVA >= 16) ? 16 : BLDALPHA.EVA;
+	this->_BLDALPHA_EVB = (BLDALPHA.EVB >= 16) ? 16 : BLDALPHA.EVB;
 	this->_blendTable = (TBlendTable *)&GPUEngineBase::_blendTable555[this->_BLDALPHA_EVA][this->_BLDALPHA_EVB][0][0];
 }
 
-void GPUEngineBase::SetBLDALPHA(const u16 val)
+void GPUEngineBase::ParseReg_BLDY()
 {
-	this->_BLDALPHA_EVA = (  (val       & 0x1F) > 16 ) ? 16 :  (val       & 0x1F);
-	this->_BLDALPHA_EVB = ( ((val >> 8) & 0x1F) > 16 ) ? 16 : ((val >> 8) & 0x1F);
-	this->UpdateBLDALPHA();
+	const IOREG_BLDY &BLDY = this->_IORegisterMap->BLDY;
+	const u8 BLDY_EVY = (BLDY.EVY >= 16) ? 16 : BLDY.EVY;
+	
+	this->_currentFadeInColors = &GPUEngineBase::_fadeInColors[BLDY_EVY][0];
+	this->_currentFadeOutColors = &GPUEngineBase::_fadeOutColors[BLDY_EVY][0];
 }
 
-void GPUEngineBase::SetBLDALPHA_EVA(const u8 val)
+template<size_t WINNUM>
+void GPUEngineBase::ParseReg_WINnH()
 {
-	this->_BLDALPHA_EVA = ( (val & 0x1F) > 16 ) ? 16 :  (val & 0x1F);
-	this->UpdateBLDALPHA();
-}
-
-void GPUEngineBase::SetBLDALPHA_EVB(const u8 val)
-{
-	this->_BLDALPHA_EVB = ( (val & 0x1F) > 16 ) ? 16 :  (val & 0x1F);
-	this->UpdateBLDALPHA();
-}
-
-void GPUEngineBase::SetBLDCNT_LOW(const u8 val)
-{
-	this->_BLDCNT = (this->_BLDCNT & 0xFF00) | (val);
-	this->SetupFinalPixelBlitter();
-}
-
-void GPUEngineBase::SetBLDCNT_HIGH(const u8 val)
-{
-	this->_BLDCNT = (this->_BLDCNT & 0xFF) | ((u16)val << 8);
-	this->SetupFinalPixelBlitter();
-}
-
-void GPUEngineBase::SetBLDCNT(const u16 val)
-{
-	this->_BLDCNT = val;
-	this->SetupFinalPixelBlitter();
-}
-
-void GPUEngineBase::SetBLDY_EVY(const u8 val)
-{
-	this->_BLDY_EVY = ((val) & 0x1F) > 16 ? 16 : ((val) & 0x1F);
-}
-
-void GPUEngineBase::SetWIN0_H(const u16 val)
-{
-	this->_WIN0H0 = val >> 8;
-	this->_WIN0H1 = val & 0xFF;
-	this->_needUpdateWINH[0] = true;
-}
-
-void GPUEngineBase::SetWIN0_H0(const u8 val)
-{
-	this->_WIN0H0 = val;
-	this->_needUpdateWINH[0] = true;
-}
-
-void GPUEngineBase::SetWIN0_H1(const u8 val)
-{
-	this->_WIN0H1 = val;
-	this->_needUpdateWINH[0] = true;
-}
-
-void GPUEngineBase::SetWIN0_V(const u16 val)
-{
-	this->_WIN0V0 = val >> 8;
-	this->_WIN0V1 = val & 0xFF;
-}
-
-void GPUEngineBase::SetWIN0_V0(const u8 val)
-{
-	this->_WIN0V0 = val;
-}
-
-void GPUEngineBase::SetWIN0_V1(const u8 val)
-{
-	this->_WIN0V1 = val;
-}
-
-void GPUEngineBase::SetWIN1_H(const u16 val)
-{
-	this->_WIN1H0 = val >> 8;
-	this->_WIN1H1 = val & 0xFF;
-	this->_needUpdateWINH[1] = true;
-}
-
-void GPUEngineBase::SetWIN1_H0(const u8 val)
-{
-	this->_WIN1H0 = val;
-	this->_needUpdateWINH[1] = true;
-}
-
-void GPUEngineBase::SetWIN1_H1(const u8 val)
-{
-	this->_WIN1H1 = val;
-	this->_needUpdateWINH[1] = true;
-}
-
-void GPUEngineBase::SetWIN1_V(const u16 val)
-{
-	this->_WIN1V0 = val >> 8;
-	this->_WIN1V1 = val & 0xFF;
-}
-
-void GPUEngineBase::SetWIN1_V0(const u8 val)
-{
-	this->_WIN1V0 = val;
-}
-
-void GPUEngineBase::SetWIN1_V1(const u8 val)
-{
-	this->_WIN1V1 = val;
-}
-
-void GPUEngineBase::SetWININ(const u16 val)
-{
-	this->_WININ0 = val & 0x1F;
-	this->_WININ0_SPECIAL = (((val >> 5) & 1) != 0);
-	this->_WININ1 = (val >> 8) & 0x1F;
-	this->_WININ1_SPECIAL = (((val >> 13) & 1) != 0);
-}
-
-void GPUEngineBase::SetWININ0(const u8 val)
-{
-	this->_WININ0 = val & 0x1F;
-	this->_WININ0_SPECIAL = (((val >> 5) & 1) != 0);
-}
-
-void GPUEngineBase::SetWININ1(const u8 val)
-{
-	this->_WININ1 = val & 0x1F;
-	this->_WININ1_SPECIAL = (((val >> 5) & 1) != 0);
-}
-
-void GPUEngineBase::SetWINOUT16(const u16 val)
-{
-	this->_WINOUT = val & 0x1F;
-	this->_WINOUT_SPECIAL = (((val >> 5) & 1) != 0);
-	this->_WINOBJ = (val >> 8) & 0x1F;
-	this->_WINOBJ_SPECIAL = (((val >> 13) & 1) != 0);
-}
-
-void GPUEngineBase::SetWINOUT(const u8 val)
-{
-	this->_WINOUT = val & 0x1F;
-	this->_WINOUT_SPECIAL = (((val >> 5) & 1) != 0);
-}
-
-void GPUEngineBase::SetWINOBJ(const u8 val)
-{
-	this->_WINOBJ = val & 0x1F;
-	this->_WINOBJ_SPECIAL = (((val >> 5) & 1) != 0);
+	this->_needUpdateWINH[WINNUM] = true;
 }
 
 int GPUEngineBase::GetFinalColorBckFuncID() const
@@ -2781,6 +2678,14 @@ void GPUEngineBase::BlitNativeToCustomFramebuffer()
 	GPU->SetDisplayDidCustomRender(this->_targetDisplayID, true);
 }
 
+void GPUEngineBase::_RefreshAffineStartRegs()
+{
+	this->_IORegisterMap->BG2X = this->savedBG2X;
+	this->_IORegisterMap->BG2Y = this->savedBG2Y;
+	this->_IORegisterMap->BG3X = this->savedBG3X;
+	this->_IORegisterMap->BG3Y = this->savedBG3Y;
+}
+
 // normally should have same addresses
 void GPUEngineBase::REG_DISPx_pack_test()
 {
@@ -2852,18 +2757,16 @@ void GPUEngineA::Reset()
 	memset(this->_3DFramebufferRGBA5551, 0, dispInfo.customWidth * dispInfo.customHeight * sizeof(u16));
 }
 
-void GPUEngineA::SetDISPCAPCNT(u32 val)
+void GPUEngineA::ParseReg_DISPCAPCNT()
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
+	const IOREG_DISPCAPCNT &DISPCAPCNT = this->_IORegisterMap->DISPCAPCNT;
 	
-	IOREG_DISPCAPCNT new_DISPCAPCNT;
-	new_DISPCAPCNT.value = val;
+	this->dispCapCnt.EVA = (DISPCAPCNT.EVA >= 16) ? 16 : DISPCAPCNT.EVA;
+	this->dispCapCnt.EVB = (DISPCAPCNT.EVB >= 16) ? 16 : DISPCAPCNT.EVB;
+	this->dispCapCnt.readOffset = (DISPCNT.DisplayMode == GPUDisplayMode_VRAM) ? 0 : DISPCAPCNT.VRAMReadOffset;
 	
-	this->dispCapCnt.EVA = (new_DISPCAPCNT.EVA >= 16) ? 16 : new_DISPCAPCNT.EVA;
-	this->dispCapCnt.EVB = (new_DISPCAPCNT.EVB >= 16) ? 16 : new_DISPCAPCNT.EVB;
-	this->dispCapCnt.readOffset = (DISPCNT.DisplayMode == GPUDisplayMode_VRAM) ? 0 : new_DISPCAPCNT.VRAMReadOffset;
-	
-	switch ((val >> 20) & 0x03)
+	switch (DISPCAPCNT.CaptureSize)
 	{
 		case 0:
 			this->dispCapCnt.capx = DISPCAPCNT_parsed::_128;
@@ -2950,7 +2853,7 @@ void GPUEngineA::RenderLine(const u16 l, bool skip)
 		//bubble bobble revolution classic mode
 		//NOTE:
 		//I am REALLY unsatisfied with this logic now. But it seems to be working..
-		this->refreshAffineStartRegs<(GPULayerID)-1, -1>();
+		this->_RefreshAffineStartRegs();
 	}
 	
 	if (skip)
@@ -2980,7 +2883,7 @@ void GPUEngineA::RenderLine(const u16 l, bool skip)
 	}
 	
 	// skip some work if master brightness makes the screen completely white or completely black
-	if (this->_masterBrightFactor >= 16 && (this->_masterBrightMode == GPUMasterBrightMode_Up || this->_masterBrightMode == GPUMasterBrightMode_Down))
+	if (this->_isMasterBrightFullIntensity)
 	{
 		// except if it could cause any side effects (for example if we're capturing), then don't skip anything
 		if ( !DISPCAPCNT.CaptureEnable && (l != 0) && (l != 191) )
@@ -2993,16 +2896,6 @@ void GPUEngineA::RenderLine(const u16 l, bool skip)
 	
 	//cache some parameters which are assumed to be stable throughout the rendering of the entire line
 	this->_currentScanline = l;
-	const u8 bgMosaicH = this->_IORegisterMap->MOSAIC.BG_MosaicH;
-	const u8 bgMosaicV = this->_IORegisterMap->MOSAIC.BG_MosaicV;
-	
-	//mosaic test hacks
-	//mosaic_width = mosaic_height = 3;
-	
-	GPUEngineBase::_mosaicLookup.widthValue = bgMosaicH;
-	GPUEngineBase::_mosaicLookup.heightValue = bgMosaicV;
-	GPUEngineBase::_mosaicLookup.width = &GPUEngineBase::_mosaicLookup.table[bgMosaicH][0];
-	GPUEngineBase::_mosaicLookup.height = &GPUEngineBase::_mosaicLookup.table[bgMosaicV][0];
 	
 	if (this->_needUpdateWINH[0]) this->_UpdateWINH<0>();
 	if (this->_needUpdateWINH[1]) this->_UpdateWINH<1>();
@@ -3075,12 +2968,10 @@ void GPUEngineA::RenderLine(const u16 l, bool skip)
 template <bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount)
 {
+	const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
 	const size_t pixCount = dstLineWidth * dstLineCount;
 	const size_t dstLineIndex = _gpuDstLineIndex[l];
 	itemsForPriority_t *item;
-	
-	this->_currentFadeInColors = &GPUEngineBase::_fadeInColors[this->_BLDY_EVY][0];
-	this->_currentFadeOutColors = &GPUEngineBase::_fadeOutColors[this->_BLDY_EVY][0];
 	
 	const u16 backdrop_color = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
 	
@@ -3105,7 +2996,7 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 			
 		case 2: //for backdrops, fade in and fade out can be applied if it's a 1st target screen
 		{
-			if (this->_BLDCNT & 0x20) //backdrop is selected for color effect
+			if (BLDCNT.Backdrop_Target1 != 0) //backdrop is selected for color effect
 			{
 				if (ISCUSTOMRENDERINGNEEDED)
 				{
@@ -3125,7 +3016,7 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 			
 		case 3:
 		{
-			if(this->_BLDCNT & 0x20) //backdrop is selected for color effect
+			if (BLDCNT.Backdrop_Target1 != 0) //backdrop is selected for color effect
 			{
 				if (ISCUSTOMRENDERINGNEEDED)
 				{
@@ -3189,11 +3080,6 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 		}
 	}
 	
-	for (size_t j = 0; j < 8; j++)
-		this->_blend2[j] = (this->_BLDCNT & (0x100 << j)) != 0;
-	
-	const bool BG_enabled = this->_enableLayer[0] || this->_enableLayer[1] || this->_enableLayer[2] || this->_enableLayer[3];
-	
 	// paint lower priorities first
 	// then higher priorities on top
 	for (size_t prio = NB_PRIORITIES; prio > 0; )
@@ -3201,14 +3087,13 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 		prio--;
 		item = &(this->_itemsForPriority[prio]);
 		// render BGs
-		if (BG_enabled)
+		if (this->_isBGLayerEnabled)
 		{
 			for (size_t i = 0; i < item->nbBGs; i++)
 			{
 				const GPULayerID layerID = (GPULayerID)item->BGs[i];
 				if (this->_enableLayer[layerID])
 				{
-					this->_blend1 = (this->_BLDCNT & (1 << layerID)) != 0;
 					const IOREG_BGnCNT &BGnCNT = this->_IORegisterMap->BGnCNT[layerID];
 					
 					if (layerID == GPULayerID_BG0 && this->is3DEnabled)
@@ -3283,8 +3168,6 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 		// render sprite Pixels
 		if (this->_enableLayer[GPULayerID_OBJ])
 		{
-			this->_blend1 = (this->_BLDCNT & (1 << GPULayerID_OBJ)) != 0;
-			
 			u16 *dstColorLinePtr = this->_currentDstColor;
 			u8 *layerIDLine = this->_dstLayerID;
 			
@@ -3927,7 +3810,7 @@ void GPUEngineB::RenderLine(const u16 l, bool skip)
 		//bubble bobble revolution classic mode
 		//NOTE:
 		//I am REALLY unsatisfied with this logic now. But it seems to be working..
-		this->refreshAffineStartRegs<(GPULayerID)-1, -1>();
+		this->_RefreshAffineStartRegs();
 	}
 	
 	if (skip)
@@ -3950,7 +3833,7 @@ void GPUEngineB::RenderLine(const u16 l, bool skip)
 	}
 	
 	// skip some work if master brightness makes the screen completely white or completely black
-	if (this->_masterBrightFactor >= 16 && (this->_masterBrightMode == GPUMasterBrightMode_Up || this->_masterBrightMode == GPUMasterBrightMode_Down))
+	if (this->_isMasterBrightFullIntensity)
 	{
 		// except if it could cause any side effects (for example if we're capturing), then don't skip anything
 		this->_currentScanline = l;
@@ -3960,16 +3843,6 @@ void GPUEngineB::RenderLine(const u16 l, bool skip)
 	
 	//cache some parameters which are assumed to be stable throughout the rendering of the entire line
 	this->_currentScanline = l;
-	const u8 bgMosaicH = this->_IORegisterMap->MOSAIC.BG_MosaicH;
-	const u8 bgMosaicV = this->_IORegisterMap->MOSAIC.BG_MosaicV;
-	
-	//mosaic test hacks
-	//mosaic_width = mosaic_height = 3;
-	
-	GPUEngineBase::_mosaicLookup.widthValue = bgMosaicH;
-	GPUEngineBase::_mosaicLookup.heightValue = bgMosaicV;
-	GPUEngineBase::_mosaicLookup.width = &GPUEngineBase::_mosaicLookup.table[bgMosaicH][0];
-	GPUEngineBase::_mosaicLookup.height = &GPUEngineBase::_mosaicLookup.table[bgMosaicV][0];
 	
 	if (this->_needUpdateWINH[0]) this->_UpdateWINH<0>();
 	if (this->_needUpdateWINH[1]) this->_UpdateWINH<1>();
@@ -4011,12 +3884,10 @@ void GPUEngineB::RenderLine(const u16 l, bool skip)
 template <bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount)
 {
+	const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
 	const size_t pixCount = dstLineWidth * dstLineCount;
 	const size_t dstLineIndex = _gpuDstLineIndex[l];
 	itemsForPriority_t *item;
-	
-	this->_currentFadeInColors = &GPUEngineBase::_fadeInColors[this->_BLDY_EVY][0];
-	this->_currentFadeOutColors = &GPUEngineBase::_fadeOutColors[this->_BLDY_EVY][0];
 	
 	const u16 backdrop_color = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
 	
@@ -4041,7 +3912,7 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 			
 		case 2: //for backdrops, fade in and fade out can be applied if it's a 1st target screen
 		{
-			if (this->_BLDCNT & 0x20) //backdrop is selected for color effect
+			if (BLDCNT.Backdrop_Target1 != 0) //backdrop is selected for color effect
 			{
 				if (ISCUSTOMRENDERINGNEEDED)
 				{
@@ -4061,7 +3932,7 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 			
 		case 3:
 		{
-			if(this->_BLDCNT & 0x20) //backdrop is selected for color effect
+			if (BLDCNT.Backdrop_Target1 != 0) //backdrop is selected for color effect
 			{
 				if (ISCUSTOMRENDERINGNEEDED)
 				{
@@ -4102,7 +3973,7 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 	this->_itemsForPriority[3].nbPixelsX = 0;
 	
 	// for all the pixels in the line
-	if (this->_enableLayer[4])
+	if (this->_enableLayer[GPULayerID_OBJ])
 	{
 		//n.b. - this is clearing the sprite line buffer to the background color,
 		memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(this->_sprColor, backdrop_color);
@@ -4125,11 +3996,6 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 		}
 	}
 	
-	for (size_t j = 0; j < 8; j++)
-		this->_blend2[j] = (this->_BLDCNT & (0x100 << j)) != 0;
-	
-	const bool BG_enabled = this->_enableLayer[0] || this->_enableLayer[1] || this->_enableLayer[2] || this->_enableLayer[3];
-	
 	// paint lower priorities first
 	// then higher priorities on top
 	for (size_t prio = NB_PRIORITIES; prio > 0; )
@@ -4137,14 +4003,13 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 		prio--;
 		item = &(this->_itemsForPriority[prio]);
 		// render BGs
-		if (BG_enabled)
+		if (this->_isBGLayerEnabled)
 		{
 			for (size_t i = 0; i < item->nbBGs; i++)
 			{
 				const GPULayerID layerID = (GPULayerID)item->BGs[i];
 				if (this->_enableLayer[layerID])
 				{
-					this->_blend1 = (this->_BLDCNT & (1 << layerID)) != 0;
 					const IOREG_BGnCNT &BGnCNT = this->_IORegisterMap->BGnCNT[layerID];
 					
 #ifndef DISABLE_MOSAIC
@@ -4182,8 +4047,6 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 		// render sprite Pixels
 		if (this->_enableLayer[GPULayerID_OBJ])
 		{
-			this->_blend1 = (this->_BLDCNT & (1 << GPULayerID_OBJ)) != 0;
-			
 			u16 *dstColorLinePtr = this->_currentDstColor;
 			u8 *layerIDLine = this->_dstLayerID;
 			
@@ -4688,17 +4551,10 @@ void NDSDisplay::SetEngineByID(const GPUEngineID theID)
 	this->_gpu->SetDisplayByID(this->_ID);
 }
 
-template void GPUEngineBase::setAffineStart<GPULayerID_BG2, 0>(u32 val);
-template void GPUEngineBase::setAffineStart<GPULayerID_BG2, 1>(u32 val);
-template void GPUEngineBase::setAffineStart<GPULayerID_BG3, 0>(u32 val);
-template void GPUEngineBase::setAffineStart<GPULayerID_BG3, 1>(u32 val);
+template void GPUEngineBase::ParseReg_WINnH<0>();
+template void GPUEngineBase::ParseReg_WINnH<1>();
 
-template void GPUEngineBase::setAffineStartWord<GPULayerID_BG2, 0, false>(u16 val);
-template void GPUEngineBase::setAffineStartWord<GPULayerID_BG2, 0, true>(u16 val);
-template void GPUEngineBase::setAffineStartWord<GPULayerID_BG2, 1, false>(u16 val);
-template void GPUEngineBase::setAffineStartWord<GPULayerID_BG2, 1, true>(u16 val);
-
-template void GPUEngineBase::setAffineStartWord<GPULayerID_BG3, 0, false>(u16 val);
-template void GPUEngineBase::setAffineStartWord<GPULayerID_BG3, 0, true>(u16 val);
-template void GPUEngineBase::setAffineStartWord<GPULayerID_BG3, 1, false>(u16 val);
-template void GPUEngineBase::setAffineStartWord<GPULayerID_BG3, 1, true>(u16 val);
+template void GPUEngineBase::ParseReg_BGnX<GPULayerID_BG2>();
+template void GPUEngineBase::ParseReg_BGnY<GPULayerID_BG2>();
+template void GPUEngineBase::ParseReg_BGnX<GPULayerID_BG3>();
+template void GPUEngineBase::ParseReg_BGnY<GPULayerID_BG3>();
