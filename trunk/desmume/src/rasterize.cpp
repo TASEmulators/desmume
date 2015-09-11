@@ -530,7 +530,7 @@ public:
 			{
 				const FragmentColor toonColor = this->_softRender->toonColor32LUT[src.r >> 1];
 				
-				if (gfx3d.renderState.shading == GFX3D_State::HIGHLIGHT)
+				if (gfx3d.renderState.shading == PolygonShadingMode_Highlight)
 				{
 					// Tested in the "Shadows of Almia" logo in the Pokemon Ranger: Shadows of Almia title screen.
 					// Also tested in Advance Wars: Dual Strike and Advance Wars: Days of Ruin when tiles highlight

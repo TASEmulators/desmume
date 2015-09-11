@@ -297,7 +297,7 @@ void GFX_FIFOcnt(u32 val)
 	//	val &= 0xFFFF5FFF;		// clear reset (bit15) & stack level (bit13)
 	//}
 
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, val);
+	T1WriteLong(MMU.ARM9_REG, 0x600, val);
 }
 
 // ========================================================= DISP FIFO

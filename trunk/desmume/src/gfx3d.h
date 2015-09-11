@@ -241,6 +241,12 @@ enum
 	TEXMODE_16BPP								= 7
 };
 
+enum PolygonShadingMode
+{
+	PolygonShadingMode_Toon						= 0,
+	PolygonShadingMode_Highlight				= 1
+};
+
 void gfx3d_init();
 void gfx3d_deinit();
 void gfx3d_reset();
@@ -641,7 +647,7 @@ struct GFX3D_State
 		, enableClearImage(false)
 		, enableFog(false)
 		, enableFogAlphaOnly(false)
-		, shading(TOON)
+		, shading(PolygonShadingMode_Toon)
 		, alphaTestRef(0)
 		, activeFlushCommand(0)
 		, pendingFlushCommand(0)
@@ -659,11 +665,11 @@ struct GFX3D_State
 			u16ToonTable[i] = 0;
 	}
 
+	IOREG_DISP3DCNT currentDISP3DCNT;
+	
 	BOOL enableTexturing, enableAlphaTest, enableAlphaBlending, 
 		enableAntialiasing, enableEdgeMarking, enableClearImage, enableFog, enableFogAlphaOnly;
 
-	static const u32 TOON = 0;
-	static const u32 HIGHLIGHT = 1;
 	u32 shading;
 
 	BOOL wbuffer, sortmode;
@@ -685,8 +691,8 @@ struct GFX3D_State
 	bool invalidateToon;
 	u16 u16ToonTable[32];
 	u8 shininessTable[128];
-	u8 *fogDensityTable;		// Alias to MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0360
-	u16 *edgeMarkColorTable;	// Alias to MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0330
+	u8 *fogDensityTable;		// Alias to MMU.ARM9_REG+0x0360
+	u16 *edgeMarkColorTable;	// Alias to MMU.ARM9_REG+0x0330
 };
 
 struct Viewer3d_State
@@ -762,7 +768,7 @@ u32 gfx3d_glGetPosRes(const size_t index);
 u16 gfx3d_glGetVecRes(const size_t index);
 void gfx3d_VBlankSignal();
 void gfx3d_VBlankEndSignal(bool skipFrame);
-void gfx3d_Control(u32 v);
+void ParseReg_DISP3DCNT();
 void gfx3d_execute3D();
 void gfx3d_sendCommandToFIFO(u32 val);
 void gfx3d_sendCommand(u32 cmd, u32 param);

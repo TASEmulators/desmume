@@ -289,7 +289,7 @@ SFORMAT SF_MMU[]={
 	{ "PMCW", 4, 1,			&MMU.powerMan_CntRegWritten},
 	{ "PMCR", 1, 5,			&MMU.powerMan_Reg},
 
-	{ "MR3D", 4, 1,		&MMU.reg_DISP3DCNT_bits},
+	{ "MR3D", 4, 1,			&MMU.ARM9_REG[0x0060]},
 	
 	{ 0 }
 };
@@ -562,9 +562,7 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 	MMU_new.gxstat.fifo_low = gxFIFO.size <= 127;
 	MMU_new.gxstat.fifo_empty = gxFIFO.size == 0;
 
-	if(version < 5)
-		MMU.reg_DISP3DCNT_bits = T1ReadWord(MMU.ARM9_REG,0x60);
-
+	if(version < 5) return ok;
 	if(version < 6) return ok;
 
 	MMU_new.dsi_tsc.load_state(is);
