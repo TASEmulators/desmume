@@ -379,8 +379,6 @@ static u32 polyAttr=0,textureFormat=0, texturePalette=0, polyAttrPending=0;
 //the current vertex color, 5bit values
 static u8 colorRGB[4] = { 31,31,31,31 };
 
-u32 control = 0;
-
 //light state:
 static u32 lightColor[4] = {0,0,0,0};
 static s32 lightDirection[4] = {0,0,0,0};
@@ -555,8 +553,9 @@ void gfx3d_init()
 		vertlist = &vertlists[0];
 	}
 	
-	gfx3d.state.fogDensityTable = MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0360;
-	gfx3d.state.edgeMarkColorTable = (u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]+0x0330);
+	gfx3d.state.currentDISP3DCNT.value = 0;
+	gfx3d.state.fogDensityTable = MMU.ARM9_REG+0x0360;
+	gfx3d.state.edgeMarkColorTable = (u16 *)(MMU.ARM9_REG+0x0330);
 	
 	makeTables();
 	Render3D_Init();
@@ -590,7 +589,6 @@ void gfx3d_reset()
 	
 	gxf_hardware.reset();
 
-	control = 0;
 	drawPending = FALSE;
 	flushPending = FALSE;
 	memset(polylists, 0, sizeof(POLYLIST)*2);
@@ -2182,17 +2180,6 @@ static void gfx3d_doFlush()
 	gfx3d.vertlist = vertlist;
 
 	//and also our current render state
-	if (BIT1(control)) gfx3d.state.shading = GFX3D_State::HIGHLIGHT;
-	else gfx3d.state.shading = GFX3D_State::TOON;
-	gfx3d.state.enableTexturing = BIT0(control);
-	gfx3d.state.enableAlphaTest = BIT2(control);
-	gfx3d.state.enableAlphaBlending = BIT3(control);
-	gfx3d.state.enableAntialiasing = BIT4(control);
-	gfx3d.state.enableEdgeMarking = BIT5(control);
-	gfx3d.state.enableFogAlphaOnly = BIT6(control);
-	gfx3d.state.enableFog = BIT7(control);
-	gfx3d.state.enableClearImage = BIT14(control);
-	gfx3d.state.fogShift = (control>>8)&0xF;
 	gfx3d.state.sortmode = BIT0(gfx3d.state.activeFlushCommand);
 	gfx3d.state.wbuffer = BIT1(gfx3d.state.activeFlushCommand);
 
@@ -2396,11 +2383,27 @@ void gfx3d_sendCommand(u32 cmd, u32 param)
 	}
 }
 
-
-
-void gfx3d_Control(u32 v)
+void ParseReg_DISP3DCNT()
 {
-	control = v;
+	const IOREG_DISP3DCNT &DISP3DCNT = GPU->GetEngineMain()->GetIORegisterMap().DISP3DCNT;
+	
+	if (gfx3d.state.currentDISP3DCNT.value == DISP3DCNT.value)
+	{
+		return;
+	}
+	
+	gfx3d.state.currentDISP3DCNT.value = DISP3DCNT.value;
+	
+	gfx3d.state.enableTexturing		= (DISP3DCNT.EnableTexMapping != 0);
+	gfx3d.state.shading				=  DISP3DCNT.PolygonShading;
+	gfx3d.state.enableAlphaTest		= (DISP3DCNT.EnableAlphaTest != 0);
+	gfx3d.state.enableAlphaBlending	= (DISP3DCNT.EnableAlphaBlending != 0);
+	gfx3d.state.enableAntialiasing	= (DISP3DCNT.EnableAntiAliasing != 0);
+	gfx3d.state.enableEdgeMarking	= (DISP3DCNT.EnableEdgeMarking != 0);
+	gfx3d.state.enableFogAlphaOnly	= (DISP3DCNT.FogOnlyAlpha != 0);
+	gfx3d.state.enableFog			= (DISP3DCNT.EnableFog != 0);
+	gfx3d.state.fogShift			=  DISP3DCNT.FogShiftSHR;
+	gfx3d.state.enableClearImage	= (DISP3DCNT.RearPlaneMode != 0);
 }
 
 //--------------
@@ -2436,7 +2439,7 @@ void gfx3d_glGetLightColor(const size_t index, u32 &dst)
 //consider building a little state structure that looks exactly like this describes
 
 SFORMAT SF_GFX3D[]={
-	{ "GCTL", 4, 1, &control}, // no longer regenerated indirectly, see comment in loadstate()
+	{ "GCTL", 4, 1, &MMU.ARM9_REG[0x0060]},
 	{ "GPAT", 4, 1, &polyAttr},
 	{ "GPAP", 4, 1, &polyAttrPending},
 	{ "GINB", 4, 1, &inBegin},
@@ -2576,6 +2579,8 @@ bool gfx3d_loadstate(EMUFILE* is, int size)
 	polylist = &polylists[listTwiddle];
 	vertlist = &vertlists[listTwiddle];
 
+	gfx3d.state.currentDISP3DCNT.value = MMU.ARM9_REG[0x0060];
+	
 	if (version >= 1)
 	{
 		OSREAD(vertlist->count);

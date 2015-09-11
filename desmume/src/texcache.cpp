@@ -148,7 +148,7 @@ static MemSpan MemSpan_TexMem(u32 ofs, u32 len)
 		u8* ptr = MMU.texInfo.textureSlotAddr[slot];
 		
 		//TODO - dont alert if the masterbrightnesses are max or min
-		if(ptr == MMU.blank_memory) {
+		if (ptr == MMU.blank_memory && !GPU->GetEngineMain()->GetIsMasterBrightFullIntensity()) {
 			PROGINFO("Tried to reference unmapped texture memory: slot %d\n",slot);
 		}
 		curr.ptr = ptr + curr.start;
@@ -180,7 +180,7 @@ static MemSpan MemSpan_TexPalette(u32 ofs, u32 len, bool silent)
 		u8* ptr = MMU.texInfo.texPalSlot[slot];
 		
 		//TODO - dont alert if the masterbrightnesses are max or min
-		if(ptr == MMU.blank_memory && !silent) {
+		if(ptr == MMU.blank_memory && !GPU->GetEngineMain()->GetIsMasterBrightFullIntensity() && !silent) {
 			PROGINFO("Tried to reference unmapped texture palette memory: 16k slot #%d\n",slot);
 		}
 		curr.ptr = ptr + curr.start;

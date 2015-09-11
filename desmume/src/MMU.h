@@ -412,8 +412,6 @@ struct MMU_struct
 	//these flags are set occasionally to indicate that an irq should have entered the pipeline, and processing will be deferred a tiny bit to help emulate things
 	u32 reg_IF_pending[2];
 
-	u32 reg_DISP3DCNT_bits;
-
 	template<int PROCNUM> u32 gen_IF();
 
 	BOOL divRunning;
