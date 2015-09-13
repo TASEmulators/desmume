@@ -1173,6 +1173,8 @@ public:
 	void ParseReg_BLDY();
 	void ParseReg_MASTER_BRIGHT();
 	
+	void ParseAllRegisters();
+	
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool skip);
 	
 	u16 BGSize[4][2];

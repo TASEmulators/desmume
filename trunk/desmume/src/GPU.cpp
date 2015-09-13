@@ -221,8 +221,9 @@ bool gpu_loadstate(EMUFILE* is, int size)
 		//subEngine->refreshAffineStartRegs(-1,-1);
 	}
 	
-	mainEngine->ParseReg_BLDALPHA();
-	subEngine->ParseReg_BLDALPHA();
+	mainEngine->ParseAllRegisters();
+	subEngine->ParseAllRegisters();
+	
 	return !is->fail();
 }
 
@@ -2701,6 +2702,27 @@ void GPUEngineBase::REG_DISPx_pack_test()
 	printf("\t%02x\n", (u32)((uintptr_t)(&r->DISP3DCNT) - (uintptr_t)r) );
 	printf("\t%02x\n", (u32)((uintptr_t)(&r->DISPCAPCNT) - (uintptr_t)r) );
 	printf("\t%02x\n", (u32)((uintptr_t)(&r->DISP_MMEM_FIFO) - (uintptr_t)r) );
+}
+
+void GPUEngineBase::ParseAllRegisters()
+{
+	this->ParseReg_DISPCNT();
+	// No need to call ParseReg_BGnCNT<GPULayerID>(), since it is
+	// already called by ParseReg_DISPCNT().
+	
+	this->ParseReg_BGnX<GPULayerID_BG2>();
+	this->ParseReg_BGnY<GPULayerID_BG2>();
+	this->ParseReg_BGnX<GPULayerID_BG3>();
+	this->ParseReg_BGnY<GPULayerID_BG3>();
+	
+	this->ParseReg_WINnH<0>();
+	this->ParseReg_WINnH<1>();
+	
+	this->ParseReg_MOSAIC();
+	this->ParseReg_BLDCNT();
+	this->ParseReg_BLDALPHA();
+	this->ParseReg_BLDY();
+	this->ParseReg_MASTER_BRIGHT();
 }
 
 GPUEngineA::GPUEngineA()
