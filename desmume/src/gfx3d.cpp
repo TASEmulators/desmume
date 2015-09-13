@@ -553,7 +553,7 @@ void gfx3d_init()
 		vertlist = &vertlists[0];
 	}
 	
-	gfx3d.state.currentDISP3DCNT.value = 0;
+	gfx3d.state.savedDISP3DCNT.value = 0;
 	gfx3d.state.fogDensityTable = MMU.ARM9_REG+0x0360;
 	gfx3d.state.edgeMarkColorTable = (u16 *)(MMU.ARM9_REG+0x0330);
 	
@@ -2383,29 +2383,6 @@ void gfx3d_sendCommand(u32 cmd, u32 param)
 	}
 }
 
-void ParseReg_DISP3DCNT()
-{
-	const IOREG_DISP3DCNT &DISP3DCNT = GPU->GetEngineMain()->GetIORegisterMap().DISP3DCNT;
-	
-	if (gfx3d.state.currentDISP3DCNT.value == DISP3DCNT.value)
-	{
-		return;
-	}
-	
-	gfx3d.state.currentDISP3DCNT.value = DISP3DCNT.value;
-	
-	gfx3d.state.enableTexturing		= (DISP3DCNT.EnableTexMapping != 0);
-	gfx3d.state.shading				=  DISP3DCNT.PolygonShading;
-	gfx3d.state.enableAlphaTest		= (DISP3DCNT.EnableAlphaTest != 0);
-	gfx3d.state.enableAlphaBlending	= (DISP3DCNT.EnableAlphaBlending != 0);
-	gfx3d.state.enableAntialiasing	= (DISP3DCNT.EnableAntiAliasing != 0);
-	gfx3d.state.enableEdgeMarking	= (DISP3DCNT.EnableEdgeMarking != 0);
-	gfx3d.state.enableFogAlphaOnly	= (DISP3DCNT.FogOnlyAlpha != 0);
-	gfx3d.state.enableFog			= (DISP3DCNT.EnableFog != 0);
-	gfx3d.state.fogShift			=  DISP3DCNT.FogShiftSHR;
-	gfx3d.state.enableClearImage	= (DISP3DCNT.RearPlaneMode != 0);
-}
-
 //--------------
 //other misc stuff
 void gfx3d_glGetMatrix(const MatrixMode m_mode, int index, float *dst)
@@ -2439,7 +2416,7 @@ void gfx3d_glGetLightColor(const size_t index, u32 &dst)
 //consider building a little state structure that looks exactly like this describes
 
 SFORMAT SF_GFX3D[]={
-	{ "GCTL", 4, 1, &MMU.ARM9_REG[0x0060]},
+	{ "GCTL", 4, 1, &gfx3d.state.savedDISP3DCNT},
 	{ "GPAT", 4, 1, &polyAttr},
 	{ "GPAP", 4, 1, &polyAttrPending},
 	{ "GINB", 4, 1, &inBegin},
@@ -2578,8 +2555,8 @@ bool gfx3d_loadstate(EMUFILE* is, int size)
 	listTwiddle = 0;
 	polylist = &polylists[listTwiddle];
 	vertlist = &vertlists[listTwiddle];
-
-	gfx3d.state.currentDISP3DCNT.value = MMU.ARM9_REG[0x0060];
+	
+	gfx3d_parseCurrentDISP3DCNT();
 	
 	if (version >= 1)
 	{
@@ -2618,6 +2595,35 @@ bool gfx3d_loadstate(EMUFILE* is, int size)
 	}
 
 	return true;
+}
+
+void gfx3d_parseCurrentDISP3DCNT()
+{
+	const IOREG_DISP3DCNT &DISP3DCNT = gfx3d.state.savedDISP3DCNT;
+	
+	gfx3d.state.enableTexturing		= (DISP3DCNT.EnableTexMapping != 0);
+	gfx3d.state.shading				=  DISP3DCNT.PolygonShading;
+	gfx3d.state.enableAlphaTest		= (DISP3DCNT.EnableAlphaTest != 0);
+	gfx3d.state.enableAlphaBlending	= (DISP3DCNT.EnableAlphaBlending != 0);
+	gfx3d.state.enableAntialiasing	= (DISP3DCNT.EnableAntiAliasing != 0);
+	gfx3d.state.enableEdgeMarking	= (DISP3DCNT.EnableEdgeMarking != 0);
+	gfx3d.state.enableFogAlphaOnly	= (DISP3DCNT.FogOnlyAlpha != 0);
+	gfx3d.state.enableFog			= (DISP3DCNT.EnableFog != 0);
+	gfx3d.state.fogShift			=  DISP3DCNT.FogShiftSHR;
+	gfx3d.state.enableClearImage	= (DISP3DCNT.RearPlaneMode != 0);
+}
+
+void ParseReg_DISP3DCNT()
+{
+	const IOREG_DISP3DCNT &DISP3DCNT = GPU->GetEngineMain()->GetIORegisterMap().DISP3DCNT;
+	
+	if (gfx3d.state.savedDISP3DCNT.value == DISP3DCNT.value)
+	{
+		return;
+	}
+	
+	gfx3d.state.savedDISP3DCNT.value = DISP3DCNT.value;
+	gfx3d_parseCurrentDISP3DCNT();
 }
 
 //-------------------

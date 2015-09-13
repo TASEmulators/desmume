@@ -665,7 +665,7 @@ struct GFX3D_State
 			u16ToonTable[i] = 0;
 	}
 
-	IOREG_DISP3DCNT currentDISP3DCNT;
+	IOREG_DISP3DCNT savedDISP3DCNT;
 	
 	BOOL enableTexturing, enableAlphaTest, enableAlphaBlending, 
 		enableAntialiasing, enableEdgeMarking, enableClearImage, enableFog, enableFogAlphaOnly;
@@ -768,7 +768,6 @@ u32 gfx3d_glGetPosRes(const size_t index);
 u16 gfx3d_glGetVecRes(const size_t index);
 void gfx3d_VBlankSignal();
 void gfx3d_VBlankEndSignal(bool skipFrame);
-void ParseReg_DISP3DCNT();
 void gfx3d_execute3D();
 void gfx3d_sendCommandToFIFO(u32 val);
 void gfx3d_sendCommand(u32 cmd, u32 param);
@@ -785,5 +784,8 @@ void gfx3d_savestate(EMUFILE* os);
 bool gfx3d_loadstate(EMUFILE* is, int size);
 
 void gfx3d_ClearStack();
+
+void gfx3d_parseCurrentDISP3DCNT();
+void ParseReg_DISP3DCNT();
 
 #endif //_GFX3D_H_
