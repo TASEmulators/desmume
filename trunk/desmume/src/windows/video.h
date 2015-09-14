@@ -16,6 +16,7 @@
 */
 
 #include "filter/filter.h"
+#include "common.h"
 
 class VideoInfo
 {
@@ -32,10 +33,31 @@ public:
 	int	swap;
 
 	int currentfilter;
+	int prescaleHD;
+	int prescalePost; //not supported yet
+	int prescaleTotal;
 
 	u8* srcBuffer;
-	CACHE_ALIGN u32 buffer[5*5*256*192*2];
-	CACHE_ALIGN u32 filteredbuffer[5*5*256*192*2];
+	int srcBufferSize;
+	u32 *buffer;
+	u32 *filteredbuffer;
+
+	void SetPrescale(int prescaleHD, int prescalePost)
+	{
+		this->prescaleHD = prescaleHD;
+		this->prescalePost = prescalePost;
+
+		prescaleTotal = prescaleHD;
+		
+		const int kInflationFactor = 5*5; //the largest filter is going up 5x in each dimension
+		int bufferSize = kInflationFactor * 256*192*2*prescaleHD * 4;
+
+		//why are these the same size, anyway?
+		buffer = (u32*)malloc_alignedCacheLine(bufferSize);
+		filteredbuffer = (u32*)malloc_alignedCacheLine(bufferSize);
+
+		setfilter(currentfilter);
+	}
 
 	enum {
 		NONE,
@@ -75,6 +97,7 @@ public:
 	}
 
 	void reset() {
+		SetPrescale(1,1); //should i do this here?
 		width = 256;
 		height = 384;
 	}
@@ -103,18 +126,18 @@ public:
 			case _5XBRZ:
 				width = 256*5;
 				height = 384*5;
-        break;
+				break;
 
-      case HQ4X:
+			case HQ4X:
 			case _4XBRZ:
 				width = 256*4;
 				height = 384*4;
-        break;
+				break;
 
 			case _3XBRZ:
 				width = 256*3;
 				height = 384*3;
-        break;
+				break;
 
 			case _2XBRZ:
 			default:
@@ -122,6 +145,9 @@ public:
 				height = 384*2;
 				break;
 		}
+
+		width *= prescaleHD;
+		height *= prescaleHD;
 	}
 
 	SSurface src;
@@ -136,9 +162,9 @@ public:
 
 	void filter() {
 
-		src.Height = 384;
-		src.Width = 256;
-		src.Pitch = 512;
+		src.Height = 384 * prescaleHD;
+		src.Width = 256 * prescaleHD;
+		src.Pitch = src.Width * 2;
 		src.Surface = (u8*)buffer;
 
 		dst.Height = height;
@@ -285,6 +311,6 @@ public:
 	}
 
 	int scaledscreengap() {
-		return screengap * height / 384;
+		return screengap * height / (384 * prescaleHD);
 	}
 };

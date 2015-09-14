@@ -464,7 +464,10 @@
 #define IDC_FILE_QVIEW                  1060
 #define IDC_BEDIT                       1061
 #define IDC_STATIC_S1                   1061
+#define IDC_SPIN1                       1061
+#define IDC_NUD_PRESCALEHD              1061
 #define IDC_STATIC_S2                   1062
+#define IDC_TEXT_PRESCALEHD             1062
 #define IDC_STATIC_S3                   1063
 #define IDC_STATIC_S4                   1064
 #define IDC_EVALUE                      1065
@@ -1066,7 +1069,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
 #define _APS_NEXT_COMMAND_VALUE         40126
-#define _APS_NEXT_CONTROL_VALUE         1059
+#define _APS_NEXT_CONTROL_VALUE         1063
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
