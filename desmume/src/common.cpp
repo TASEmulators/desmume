@@ -427,12 +427,10 @@ static int WritePNGChunk(FILE *fp, uint32 size, const char *type, const uint8 *d
 	return 1;
 }
 
-int NDS_WritePNG(const char *fname, u16 *data)
+int NDS_WritePNG_16bpp(int width, int height, const u16 *data, const char *fname)
 {
 	int x, y;
-	int width=256;
-	int height=192*2;
-	u16 * bmp = data;
+	const u16 * bmp = data;
 	FILE *pp=NULL;
 	uint8 *compmem = NULL;
 	uLongf compmemsize = (uLongf)( (height * (width + 1) * 3 * 1.001 + 1) + 12 );
@@ -485,7 +483,7 @@ int NDS_WritePNG(const char *fname, u16 *data)
 			for(x=0;x<width;x++)
 			{
 				int r,g,b;
-				u16 pixel = bmp[y*256+x];
+				u16 pixel = bmp[y*width+x];
 				r = pixel>>10;
 				pixel-=r<<10;
 				g = pixel>>5;
@@ -552,13 +550,13 @@ typedef struct
 } bmpfileheader_struct;
 #include "PACKED_END.h"
 
-int NDS_WriteBMP(const char *filename, u16 *data)
+int NDS_WriteBMP_16bpp(int width, int height, const u16 *data, const char *filename)
 {
 	bmpfileheader_struct fileheader;
 	bmpimgheader_struct imageheader;
 	FILE *file;
 	int i,j;
-	u16 * bmp = data;
+	const u16 * bmp = data;
 	size_t elems_written = 0;
 
 	memset(&fileheader, 0, sizeof(fileheader));
@@ -568,8 +566,8 @@ int NDS_WriteBMP(const char *filename, u16 *data)
 
 	memset(&imageheader, 0, sizeof(imageheader));
 	imageheader.size = sizeof(imageheader);
-	imageheader.width = 256;
-	imageheader.height = 192*2;
+	imageheader.width = width;
+	imageheader.height = height;
 	imageheader.planes = 1;
 	imageheader.bpp = 24;
 	imageheader.cmptype = 0; // None
@@ -581,12 +579,12 @@ int NDS_WriteBMP(const char *filename, u16 *data)
 	elems_written += fwrite(&fileheader, 1, sizeof(fileheader), file);
 	elems_written += fwrite(&imageheader, 1, sizeof(imageheader), file);
 
-	for(j=0;j<192*2;j++)
+	for(j=0;j<height;j++)
 	{
-		for(i=0;i<256;i++)
+		for(i=0;i<width;i++)
 		{
 			u8 r,g,b;
-			u16 pixel = bmp[(192*2-j-1)*256+i];
+			u16 pixel = bmp[(height-j-1)*width+i];
 			r = pixel>>10;
 			pixel-=r<<10;
 			g = pixel>>5;
