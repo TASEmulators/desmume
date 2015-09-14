@@ -1324,7 +1324,9 @@ private:
 	u16 *_customVRAM;
 	u16 *_customVRAMBlank;
 	
-	CACHE_ALIGN u16 _nativeFramebuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2];
+	//zero 13-sep-2015 - had to change this to a pointer instead of an array. as an array, we need the whole GPUSubsystem aligned, and that gets annoying. 
+	//If having the array instead of the pointer is faster, we can change it back and just deal with this type being allocated specially
+	u16 *_nativeFramebuffer;
 	u16 *_customFramebuffer;
 	
 	NDSDisplayInfo _displayInfo;

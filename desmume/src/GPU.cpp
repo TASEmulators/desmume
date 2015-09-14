@@ -4142,8 +4142,7 @@ GPUSubsystem::GPUSubsystem()
 	_customVRAM = NULL;
 	_customVRAMBlank = NULL;
 	_customFramebuffer = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
-	
-	ClearWithColor(0x8000);
+	_nativeFramebuffer = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
 	
 	_displayInfo.isCustomSizeRequested = false;
 	_displayInfo.customWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
@@ -4163,6 +4162,8 @@ GPUSubsystem::GPUSubsystem()
 	_displayInfo.renderedHeight[1] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	_displayInfo.renderedBuffer[0] = _displayInfo.nativeBuffer[0];
 	_displayInfo.renderedBuffer[1] = _displayInfo.nativeBuffer[1];
+
+	ClearWithColor(0x8000);
 }
 
 GPUSubsystem::~GPUSubsystem()
@@ -4170,6 +4171,7 @@ GPUSubsystem::~GPUSubsystem()
 	delete osd;
 	osd = NULL;
 	
+	free_aligned(this->_nativeFramebuffer);
 	free_aligned(this->_customFramebuffer);
 	free_aligned(this->_customVRAM);
 	
