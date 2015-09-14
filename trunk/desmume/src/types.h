@@ -123,7 +123,9 @@
 //------------alignment macros-------------
 //dont apply these to types without further testing. it only works portably here on declarations of variables
 //cant we find a pattern other people use more successfully?
-#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
+#if _MSC_VER >= 1900
+#define DS_ALIGN(X) alignas(X)
+#elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define DS_ALIGN(X) __declspec(align(X))
 #elif defined(__GNUC__)
 #define DS_ALIGN(X) __attribute__ ((aligned (X)))
@@ -132,11 +134,13 @@
 #endif
 
 #ifdef HOST_64
-#define CACHE_ALIGN DS_ALIGN(64)
+#define CACHE_ALIGN_SIZE 64
 #else
-#define CACHE_ALIGN DS_ALIGN(32)
+#define CACHE_ALIGN_SIZE 32
 #endif
+
 //use this for example when you want a byte value to be better-aligned
+#define CACHE_ALIGN DS_ALIGN(CACHE_ALIGN_SIZE)
 #define FAST_ALIGN DS_ALIGN(4)
 //---------------------------------------------
 
