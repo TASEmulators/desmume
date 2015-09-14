@@ -1857,7 +1857,17 @@ static void DD_DoDisplay()
 }
 
 //triple buffering logic
-u16 displayBuffers[3][256*192*4];
+struct DisplayBuffer
+{
+	DisplayBuffer() 
+		: buffer(NULL)
+		, size(0)
+	{
+	}
+	u16* buffer;
+	int size; //[256*192*4];
+} displayBuffers[3];
+
 volatile int currDisplayBuffer=-1;
 volatile int newestDisplayBuffer=-2;
 GMutex *display_mutex = NULL;
@@ -1897,7 +1907,7 @@ static void DoDisplay(bool firstTime)
 	//convert pixel format to 32bpp for compositing
 	//why do we do this over and over? well, we are compositing to 
 	//filteredbuffer32bpp, and it needs to get refreshed each frame..
-	const int size = video.size();
+	const int size = video.srcBufferSize/2;
 	u16* src = (u16*)video.srcBuffer;
 	for(int i=0;i<size;i++)
  		video.buffer[i] = RGB15TO24_REVERSE(src[i]);
@@ -1967,7 +1977,8 @@ void displayProc()
 	if(!alreadyDisplayed) {
 		//start displaying a new buffer
 		currDisplayBuffer = todo;
-		video.srcBuffer = (u8*)displayBuffers[currDisplayBuffer];
+		video.srcBuffer = (u8*)displayBuffers[currDisplayBuffer].buffer;
+		video.srcBufferSize = displayBuffers[currDisplayBuffer].size;
 
 		DoDisplay(true);
 	}
@@ -2000,6 +2011,7 @@ void Display()
 	if(CommonSettings.single_core())
 	{
 		video.srcBuffer = (u8*)GPU->GetNativeFramebuffer();
+		video.srcBufferSize = GPU->GetCustomFramebufferHeight()*GPU->GetCustomFramebufferWidth()*2*2;
 		DoDisplay(true);
 	}
 	else
@@ -2019,7 +2031,15 @@ void Display()
 			newestDisplayBuffer += diff;
 		else newestDisplayBuffer = (currDisplayBuffer+2)%3;
 
-		memcpy(displayBuffers[newestDisplayBuffer],GPU->GetNativeFramebuffer(),256*192*4);
+		DisplayBuffer& db = displayBuffers[newestDisplayBuffer];
+		int targetSize = 256*192*4*video.prescaleHD*video.prescaleHD;
+		if(db.size != targetSize)
+		{
+			free_aligned(db.buffer);
+			db.buffer = (u16*)malloc_alignedCacheLine(targetSize);
+			db.size = targetSize;
+		}
+		memcpy(db.buffer,GPU->GetCustomFramebuffer(),targetSize);
 
 		g_mutex_unlock(display_mutex);
 	}
@@ -3139,6 +3159,9 @@ int _main()
 
 	SetMinWindowSize();
 
+	CommonSettings.GFX3D_PrescaleHD = GetPrivateProfileInt("3D", "PrescaleHD", 0, IniName);
+	video.SetPrescale(CommonSettings.GFX3D_PrescaleHD,1);
+
 	ScaleScreen(windowSize, false);
 
 	DragAcceptFiles(MainWindow->getHWnd(), TRUE);
@@ -3264,6 +3287,8 @@ int _main()
 	
 	NDS_Init();
 	GPU->ClearWithColor(0xFFFF);
+
+	GPU->SetCustomFramebufferSize(256*video.prescaleHD,192*video.prescaleHD);
 	
 #ifdef GDB_STUB
     gdbstub_mutex_init();
@@ -3353,6 +3378,7 @@ int _main()
 	CommonSettings.GFX3D_Renderer_Multisample = GetPrivateProfileBool("3D", "EnableAntiAliasing", 0, IniName);
 	CommonSettings.GFX3D_TXTHack = GetPrivateProfileBool("3D", "EnableTXTHack", 0, IniName); //default is off.
 	Change3DCoreWithFallbackAndSave(cur3DCore);
+
 
 #ifdef BETA_VERSION
 	EnableMenuItem (mainMenu, IDM_SUBMITBUGREPORT, MF_GRAYED);
@@ -6362,6 +6388,9 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			SetDlgItemInt (hw,IDC_ZELDA_SHADOW_DEPTH_HACK,CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack,FALSE);
 			//CheckDlgButton(hw,IDC_ALTERNATEFLUSH,CommonSettings.gfx3d_flushMode);
 
+			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(5, 1));
+			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, CommonSettings.GFX3D_PrescaleHD);
+
 			for(i = 0; core3DList[i] != NULL; i++)
 			{
 				ComboBox_AddString(GetDlgItem(hw, IDC_3DCORE), core3DList[i]->name);
@@ -6384,8 +6413,14 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					CommonSettings.GFX3D_Renderer_Multisample = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_ANTIALIASING);
 					CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack  = GetDlgItemInt(hw,IDC_ZELDA_SHADOW_DEPTH_HACK,NULL,FALSE);
 					CommonSettings.GFX3D_TXTHack = IsDlgCheckboxChecked(hw,IDC_TXTHACK);
+					CommonSettings.GFX3D_PrescaleHD = SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_GETPOS, 0, 0);
 
 					Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
+					video.SetPrescale(CommonSettings.GFX3D_PrescaleHD,1);
+					GPU->SetCustomFramebufferSize(256*video.prescaleHD,192*video.prescaleHD);
+					ScaleScreen(windowSize, false);
+					UpdateScreenRects();
+
 					WritePrivateProfileBool("3D", "HighResolutionInterpolateColor", CommonSettings.GFX3D_HighResolutionInterpolateColor, IniName);
 					WritePrivateProfileBool("3D", "EnableEdgeMark", CommonSettings.GFX3D_EdgeMark, IniName);
 					WritePrivateProfileBool("3D", "EnableFog", CommonSettings.GFX3D_Fog, IniName);
@@ -6394,7 +6429,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					WritePrivateProfileInt ("3D", "EnableLineHack", CommonSettings.GFX3D_LineHack, IniName);
 					WritePrivateProfileInt ("3D", "EnableAntiAliasing", CommonSettings.GFX3D_Renderer_Multisample, IniName);
 					WritePrivateProfileInt ("3D", "EnableTXTHack", CommonSettings.GFX3D_TXTHack, IniName);
-					//WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
+					WritePrivateProfileInt ("3D", "PrescaleHD", CommonSettings.GFX3D_PrescaleHD, IniName);
 				}
 			case IDCANCEL:
 				{

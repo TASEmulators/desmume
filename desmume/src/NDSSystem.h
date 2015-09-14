@@ -480,6 +480,7 @@ extern struct TCommonSettings {
 		, GFX3D_Zelda_Shadow_Depth_Hack(0)
 		, GFX3D_Renderer_Multisample(false)
 		, GFX3D_TXTHack(false)
+		, GFX3D_PrescaleHD(1)
 		, jit_max_block_size(100)
 		, loadToMemory(false)
 		, UseExtBIOS(false)
@@ -539,6 +540,9 @@ extern struct TCommonSettings {
 	int  GFX3D_Zelda_Shadow_Depth_Hack;
 	bool GFX3D_Renderer_Multisample;
 	bool GFX3D_TXTHack;
+
+	//may not want this on OSX port
+	int GFX3D_PrescaleHD;
 
 	bool loadToMemory;
 
