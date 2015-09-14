@@ -250,6 +250,7 @@ NDS_SLOT2_TYPE slot2_DetermineTypeByGameCode(const char *theGameCode)
 		{"CB6", NDS_SLOT2_PADDLE},			// Space Bust-A-Move
 		{"YXX", NDS_SLOT2_PADDLE},			// Space Invaders Extreme
 		{"CV8", NDS_SLOT2_PADDLE},			// Space Invaders Extreme 2
+		{"AMH", NDS_SLOT2_RUMBLEPAK},		// Metroid Prime Hunters
 		{"AP2", NDS_SLOT2_RUMBLEPAK},		// Metroid Prime Pinball
 	};
 	
