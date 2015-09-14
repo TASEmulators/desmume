@@ -3286,9 +3286,9 @@ int _main()
 	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 	
 	NDS_Init();
-	GPU->ClearWithColor(0xFFFF);
-
 	GPU->SetCustomFramebufferSize(256*video.prescaleHD,192*video.prescaleHD);
+	//GPU->SetWillAutoBlitNativeToCustomBuffer(false); //we need to do this right now, because we depend on having one solitary framebuffer
+	GPU->ClearWithColor(0xFFFF);
 	
 #ifdef GDB_STUB
     gdbstub_mutex_init();
@@ -4243,14 +4243,19 @@ void ScreenshotToClipboard(bool extraInfo)
 		exHeight = (14 * (twolinever ? 8:7));
 	}
 
+	const NDSDisplayInfo& dispInfo = GPU->GetDisplayInfo();
+
+	int width = dispInfo.customWidth;
+	int height = dispInfo.customHeight*2;
+
 	HDC hScreenDC = GetDC(NULL);
 	HDC hMemDC = CreateCompatibleDC(hScreenDC);
-	HBITMAP hMemBitmap = CreateCompatibleBitmap(hScreenDC, 256, 384 + exHeight);
+	HBITMAP hMemBitmap = CreateCompatibleBitmap(hScreenDC, width, height + exHeight);
 	HBITMAP hOldBitmap = (HBITMAP)SelectObject(hMemDC, hMemBitmap);
 	HFONT hOldFont = (HFONT)SelectObject(hMemDC, hFont);
 
 
-	RECT rc; SetRect(&rc, 0, 0, 256, 384 + exHeight);
+	RECT rc; SetRect(&rc, 0, 0, width, height + exHeight);
 
 	BITMAPV4HEADER bmi;
 	memset(&bmi, 0, sizeof(bmi));
@@ -4261,11 +4266,14 @@ void ScreenshotToClipboard(bool extraInfo)
     bmi.bV4RedMask = 0x001F;
     bmi.bV4GreenMask = 0x03E0;
     bmi.bV4BlueMask = 0x7C00;
-    bmi.bV4Width = 256;
-    bmi.bV4Height = -384;
+    bmi.bV4Width = width;
+    bmi.bV4Height = -height;
 
 	FillRect(hMemDC, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
-	SetDIBitsToDevice(hMemDC, 0, 0, 256, 384, 0, 0, 0, 384, GPU->GetNativeFramebuffer(), (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+	SetDIBitsToDevice(hMemDC, 0, 0, width, height, 0, 0, 0, height, GPU->GetCustomFramebuffer(), (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+
+	//center-justify the extra text
+	int xo = (width - 256)/2;
 	
 	if(extraInfo)
 	{
@@ -4279,25 +4287,25 @@ void ScreenshotToClipboard(bool extraInfo)
 				if (nameandver[i] == ' ')
 					break;
 
-			TextOut(hMemDC, 0, 384 + 14, &nameandver[0], i+1);
-			TextOut(hMemDC, 8, 384 + 14*2, &nameandver[i+1], strlen(nameandver) - (i+1));
+			TextOut(hMemDC, xo + 0, height + 14, &nameandver[0], i+1);
+			TextOut(hMemDC, xo + 8, height + 14*2, &nameandver[i+1], strlen(nameandver) - (i+1));
 		}
 		else
-			TextOut(hMemDC, 0, 384 + 14, nameandver, strlen(nameandver));
+			TextOut(hMemDC, xo + 0, height + 14, nameandver, strlen(nameandver));
 
 		char str[32] = {0};
-		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 3:2), gameInfo.ROMname, strlen(gameInfo.ROMname));
-		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 4:3), gameInfo.ROMserial, strlen(gameInfo.ROMserial));
+		TextOut(hMemDC, xo + 8, height + 14 * (twolinever ? 3:2), gameInfo.ROMname, strlen(gameInfo.ROMname));
+		TextOut(hMemDC, xo + 8, height + 14 * (twolinever ? 4:3), gameInfo.ROMserial, strlen(gameInfo.ROMserial));
 		
 
 		sprintf(str, "CPU: %s", CommonSettings.use_jit ? "JIT":"Interpreter");
-		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 5:4), str, strlen(str));
+		TextOut(hMemDC, xo + 8, height + 14 * (twolinever ? 5:4), str, strlen(str));
 
 		sprintf(str, "FPS: %i/%i (%02d%%/%02d%%) | %s", mainLoopData.fps, mainLoopData.fps3d, Hud.cpuload[0], Hud.cpuload[1], paused ? "Paused":"Running");
-		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 6:5), str, strlen(str));
+		TextOut(hMemDC, xo + 8, height + 14 * (twolinever ? 6:5), str, strlen(str));
 
 		sprintf(str, "3D Render: %s", core3DList[cur3DCore]->name);
-		TextOut(hMemDC, 8, 384 + 14 * (twolinever ? 7:6), str, strlen(str));
+		TextOut(hMemDC, xo + 8, height + 14 * (twolinever ? 7:6), str, strlen(str));
 	}
 
 	OpenClipboard(NULL);
