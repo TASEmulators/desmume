@@ -3565,36 +3565,36 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		{
 			case REG_DISPA_DISPCNT:
 				T1WriteWord(MMU.ARM9_REG, 0x0000, val);
-				mainEngine->ParseReg_DISPCNT();
+				mainEngine->ParseReg_DISPCNT<GPUEngineID_Main>();
 				return;
 				
 			case REG_DISPA_DISPCNT+2:
 				T1WriteWord(MMU.ARM9_REG, 0x0002, val);
-				mainEngine->ParseReg_DISPCNT();
+				mainEngine->ParseReg_DISPCNT<GPUEngineID_Main>();
 				return;
 				
 			case REG_DISPA_BG0CNT:
 				//GPULOG("MAIN BG0 SETPROP 16B %08X\r\n", val);
 				T1WriteWord(MMU.ARM9_REG, 0x0008, val);
-				mainEngine->ParseReg_BGnCNT<GPULayerID_BG0>();
+				mainEngine->ParseReg_BGnCNT<GPUEngineID_Main, GPULayerID_BG0>();
 				return;
 				
 			case REG_DISPA_BG1CNT:
 				//GPULOG("MAIN BG1 SETPROP 16B %08X\r\n", val);
 				T1WriteWord(MMU.ARM9_REG, 0x000A, val);
-				mainEngine->ParseReg_BGnCNT<GPULayerID_BG1>();
+				mainEngine->ParseReg_BGnCNT<GPUEngineID_Main, GPULayerID_BG1>();
 				return;
 				
 			case REG_DISPA_BG2CNT:
 				//GPULOG("MAIN BG2 SETPROP 16B %08X\r\n", val);
 				T1WriteWord(MMU.ARM9_REG, 0x000C, val);
-				mainEngine->ParseReg_BGnCNT<GPULayerID_BG2>();
+				mainEngine->ParseReg_BGnCNT<GPUEngineID_Main, GPULayerID_BG2>();
 				return;
 				
 			case REG_DISPA_BG3CNT:
 				//GPULOG("MAIN BG3 SETPROP 16B %08X\r\n", val);
 				T1WriteWord(MMU.ARM9_REG, 0x000E, val);
-				mainEngine->ParseReg_BGnCNT<GPULayerID_BG3>();
+				mainEngine->ParseReg_BGnCNT<GPUEngineID_Main, GPULayerID_BG3>();
 				return;
 				
 			case REG_DISPA_BG2XL:
@@ -3708,36 +3708,36 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				
 			case REG_DISPB_DISPCNT:
 				T1WriteWord(MMU.ARM9_REG, 0x1000, val);
-				subEngine->ParseReg_DISPCNT();
+				subEngine->ParseReg_DISPCNT<GPUEngineID_Sub>();
 				return;
 				
 			case REG_DISPB_DISPCNT+2:
 				T1WriteWord(MMU.ARM9_REG, 0x1002, val);
-				subEngine->ParseReg_DISPCNT();
+				subEngine->ParseReg_DISPCNT<GPUEngineID_Sub>();
 				return;
 				
 			case REG_DISPB_BG0CNT:
 				//GPULOG("SUB BG0 SETPROP 16B %08X\r\n", val);
 				T1WriteWord(MMU.ARM9_REG, 0x1008, val);
-				subEngine->ParseReg_BGnCNT<GPULayerID_BG0>();
+				subEngine->ParseReg_BGnCNT<GPUEngineID_Sub, GPULayerID_BG0>();
 				return;
 				
 			case REG_DISPB_BG1CNT:
 				//GPULOG("SUB BG1 SETPROP 16B %08X\r\n", val);
 				T1WriteWord(MMU.ARM9_REG, 0x100A, val);
-				subEngine->ParseReg_BGnCNT<GPULayerID_BG1>();
+				subEngine->ParseReg_BGnCNT<GPUEngineID_Sub, GPULayerID_BG1>();
 				return;
 				
 			case REG_DISPB_BG2CNT:
 				//GPULOG("SUB BG2 SETPROP 16B %08X\r\n", val);
 				T1WriteWord(MMU.ARM9_REG, 0x100C, val);
-				subEngine->ParseReg_BGnCNT<GPULayerID_BG2>();
+				subEngine->ParseReg_BGnCNT<GPUEngineID_Sub, GPULayerID_BG2>();
 				return;
 				
 			case REG_DISPB_BG3CNT:
 				//GPULOG("SUB BG3 SETPROP 16B %08X\r\n", val);
 				T1WriteWord(MMU.ARM9_REG, 0x100E, val);
-				subEngine->ParseReg_BGnCNT<GPULayerID_BG3>();
+				subEngine->ParseReg_BGnCNT<GPUEngineID_Sub, GPULayerID_BG3>();
 				return;
 				
 			case REG_DISPB_BG2XL:
@@ -4110,20 +4110,20 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 		{
 			case REG_DISPA_DISPCNT:
 				T1WriteLong(MMU.ARM9_REG, 0x0000, val);
-				mainEngine->ParseReg_DISPCNT();
+				mainEngine->ParseReg_DISPCNT<GPUEngineID_Main>();
 				//GPULOG("MAIN INIT 32B %08X\r\n", val);
 				return;
 				
 			case REG_DISPA_BG0CNT:
 				T1WriteLong(MMU.ARM9_REG, 0x0008, val);
-				mainEngine->ParseReg_BGnCNT<GPULayerID_BG0>();
-				mainEngine->ParseReg_BGnCNT<GPULayerID_BG1>();
+				mainEngine->ParseReg_BGnCNT<GPUEngineID_Main, GPULayerID_BG0>();
+				mainEngine->ParseReg_BGnCNT<GPUEngineID_Main, GPULayerID_BG1>();
 				return;
 				
 			case REG_DISPA_BG2CNT:
 				T1WriteLong(MMU.ARM9_REG, 0x000C, val);
-				mainEngine->ParseReg_BGnCNT<GPULayerID_BG2>();
-				mainEngine->ParseReg_BGnCNT<GPULayerID_BG3>();
+				mainEngine->ParseReg_BGnCNT<GPUEngineID_Main, GPULayerID_BG2>();
+				mainEngine->ParseReg_BGnCNT<GPUEngineID_Main, GPULayerID_BG3>();
 				return;
 				
 			case REG_DISPA_BG2XL:
@@ -4197,20 +4197,20 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				
 			case REG_DISPB_DISPCNT:
 				T1WriteLong(MMU.ARM9_REG, 0x1000, val);
-				subEngine->ParseReg_DISPCNT();
+				subEngine->ParseReg_DISPCNT<GPUEngineID_Sub>();
 				//GPULOG("SUB INIT 32B %08X\r\n", val);
 				return;
 				
 			case REG_DISPB_BG0CNT:
 				T1WriteLong(MMU.ARM9_REG, 0x1008, val);
-				subEngine->ParseReg_BGnCNT<GPULayerID_BG0>();
-				subEngine->ParseReg_BGnCNT<GPULayerID_BG1>();
+				subEngine->ParseReg_BGnCNT<GPUEngineID_Sub, GPULayerID_BG0>();
+				subEngine->ParseReg_BGnCNT<GPUEngineID_Sub, GPULayerID_BG1>();
 				return;
 				
 			case REG_DISPB_BG2CNT:
 				T1WriteLong(MMU.ARM9_REG, 0x100C, val);
-				subEngine->ParseReg_BGnCNT<GPULayerID_BG2>();
-				subEngine->ParseReg_BGnCNT<GPULayerID_BG3>();
+				subEngine->ParseReg_BGnCNT<GPUEngineID_Sub, GPULayerID_BG2>();
+				subEngine->ParseReg_BGnCNT<GPUEngineID_Sub, GPULayerID_BG3>();
 				return;
 				
 			case REG_DISPB_BG2XL:
@@ -4321,12 +4321,12 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 				
 			// Fog Color - Parameters:4b
-			case 0x04000358:
+			case eng_3D_FOG_COLOR:
 				HostWriteLong(MMU.ARM9_REG, 0x0358, val);
 				gfx3d_glFogColor(val);
 				return;
 				
-			case 0x0400035C:
+			case eng_3D_FOG_OFFSET:
 				HostWriteLong(MMU.ARM9_REG, 0x035C, val);
 				gfx3d_glFogOffset(val);
 				return;

@@ -47,6 +47,28 @@ bool gpu_loadstate(EMUFILE* is, int size);
 
 typedef void (*rot_fun)(GPUEngineBase *gpu, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *pal, const size_t i);
 
+enum PaletteMode
+{
+	PaletteMode_16x16		= 0,
+	PaletteMode_1x256		= 1
+};
+
+enum OBJMode
+{
+	OBJMode_Normal			= 0,
+	OBJMode_Transparent		= 1,
+	OBJMode_Window			= 2,
+	OBJMode_Bitmap			= 3
+};
+
+enum OBJShape
+{
+	OBJShape_Square			= 0,
+	OBJShape_Horizontal		= 1,
+	OBJShape_Vertical		= 2,
+	OBJShape_Prohibited		= 3
+};
+
 union FragmentColor
 {
 	u32 color;
@@ -169,10 +191,10 @@ typedef union
 	struct
 	{
 #ifdef LOCAL_LE
-		u8 Priority:2;						//  0- 1: 0..3=high..low
+		u8 Priority:2;						//  0- 1: Rendering priority; 0...3, where 0 is highest priority and 3 is lowest priority
 		u8 CharacBase_Block:4;				//  2- 5: individual character base offset (n*16KB)
-		u8 Mosaic_Enable:1;					//     6: 0=disable, 1=Enable mosaic
-		u8 Palette_256:1;					//     7: 0=16x16, 1=1*256 palette
+		u8 Mosaic:1;						//     6: Mosaic render: 0=Disable, 1=Enable
+		u8 PaletteMode:1;					//     7: Color/palette mode; 0=16 palettes of 16 colors each, 1=Single palette of 256 colors
 		
 		u8 ScreenBase_Block:5;				//  8-12: individual screen base offset (text n*2KB, BMP n*16KB)
 		u8 PaletteSet_Wrap:1;				//    13: BG0 extended palette set 0=set0, 1=set2
@@ -184,10 +206,10 @@ typedef union
 											//        bmp     : 128x128 256x256 512x256 512x512
 											//        large   : 512x1024 1024x512 - -
 #else
-		u8 Palette_256:1;					//     7: 0=16x16, 1=1*256 palette
-		u8 Mosaic_Enable:1;					//     6: 0=disable, 1=Enable mosaic
+		u8 PaletteMode:1;					//     7: Color/palette mode; 0=16 palettes of 16 colors each, 1=Single palette of 256 colors
+		u8 Mosaic:1;						//     6: Mosaic render: 0=Disable, 1=Enable
 		u8 CharacBase_Block:4;				//  2- 5: individual character base offset (n*16KB)
-		u8 Priority:2;						//  0- 1: 0..3=high..low
+		u8 Priority:2;						//  0- 1: Rendering priority; 0...3, where 0 is highest priority and 3 is lowest priority
 		
 		u8 ScreenSize:2;					// 14-15: text    : 256x256 512x256 256x512 512x512
 											//        x/rot/s : 128x128 256x256 512x512 1024x1024
@@ -785,72 +807,96 @@ typedef union
 	i.bits.blue  = w.bits.blue; \
 	i.bits.alpha = w.bits.alpha;
 
-
-
- // (00: Normal, 01: Transparent, 10: Object window, 11: Bitmap)
-enum GPU_OBJ_MODE
-{
-	GPU_OBJ_MODE_Normal = 0,
-	GPU_OBJ_MODE_Transparent = 1,
-	GPU_OBJ_MODE_Window = 2,
-	GPU_OBJ_MODE_Bitmap = 3
-};
-
 typedef union
 {
 	u16 attr[4];
 	
 	struct
 	{
-#ifdef LOCAL_BE
-		//attr0
-		unsigned Shape:2;
-		unsigned Depth:1;
-		unsigned Mosaic:1;
-		unsigned Mode:2;
-		unsigned RotScale:2;
-		unsigned Y:8;
+#ifdef LOCAL_LE
+		union
+		{
+			u16 attr0;
+			
+			struct
+			{
+				u16 Y:8;					//  0- 7: Sprite Y-coordinate; 0...255
+				u16 RotScale:1;				//     8: Perform rotation/scaling; 0=Disable, 1=Enable
+				u16 Disable:1;				//     9: OBJ disable flag, only if Bit8 is cleared; 0=Perform render, 1=Do not perform render
+				u16 Mode:2;					// 10-11: OBJ mode; 0=Normal, 1=Transparent, 2=Window, 3=Bitmap
+				u16 Mosaic:1;				//    12: Mosaic render: 0=Disable, 1=Enable
+				u16 PaletteMode:1;			//    13: Color/palette select; 0=16 palettes of 16 colors each, 1=Single palette of 256 colors
+				u16 Shape:2;				// 14-15: OBJ shape; 0=Square, 1=Horizontal, 2=Vertical, 3=Prohibited
+			};
+			
+			struct
+			{
+				u16 :8;
+				u16 :1;
+				u16 DoubleSize:1;			//     9: Perform double-size render, only if Bit8 is set; 0=Disable, 1=Enable
+				u16 :6;
+			};
+		};
 		
-		//attr1
-		unsigned Size:2;
-		unsigned VFlip:1;
-		unsigned HFlip:1;
-		unsigned RotScalIndex:3;
-		signed X:9;
+		s16 X:9;							// 16-24: Sprite X-coordinate; 0...511
+		u16 RotScaleIndex:3;				// 25-27: Rotation/scaling parameter selection; 0...31
+		u16 HFlip:1;						//    28: Flip sprite horizontally; 0=Normal, 1=Flip
+		u16 VFlip:1;						//    29: Flip sprite vertically; 0=Normal, 1=Flip
+		u16 Size:2;							// 30-31: OBJ size, interacts with Bit 14-15
+											//
+											//        Size| Square | Horizontal | Vertical
+											//           0:   8x8       16x8        8x16
+											//           1:  16x16      32x8        8x32
+											//           2:  32x32      32x16      16x32
+											//           3:  64x64      64x32      32x64
 		
-		//attr2
-		unsigned PaletteIndex:4;
-		unsigned Priority:2;
-		unsigned TileIndex:10;
-		
-		//attr3
-		unsigned attr3:16; // Whenever this is used, you will need to explicitly convert endianness.
+		u16 TileIndex:10;					// 32-41: Tile index; 0...1023
+		u16 Priority:2;						// 42-43: Rendering priority; 0...3, where 0 is highest priority and 3 is lowest priority
+		u16 PaletteIndex:4;					// 44-47: Palette index; 0...15
 #else
-		//attr0
-		unsigned Y:8;
-		unsigned RotScale:2;
-		unsigned Mode:2;
-		unsigned Mosaic:1;
-		unsigned Depth:1;
-		unsigned Shape:2;
+		union
+		{
+			u16 attr0;
+			
+			struct
+			{
+				u16 Shape:2;				// 14-15: OBJ shape; 0=Square, 1=Horizontal, 2=Vertical, 3=Prohibited
+				u16 PaletteMode:1;			//    13: Color/palette select; 0=16 palettes of 16 colors each, 1=Single palette of 256 colors
+				u16 Mosaic:1;				//    12: Mosaic render: 0=Disable, 1=Enable
+				u16 Mode:2;					// 10-11: OBJ mode; 0=Normal, 1=Transparent, 2=Window, 3=Bitmap
+				u16 Disable:1;				//     9: OBJ disable flag, only if Bit8 is cleared; 0=Perform render, 1=Do not perform render
+				u16 RotScale:1;				//     8: Perform rotation/scaling; 0=Disable, 1=Enable
+				u16 Y:8;					//  0- 7: Sprite Y-coordinate; 0...255
+			};
+			
+			struct
+			{
+				u16 :6;
+				u16 DoubleSize:1;			//     9: Perform double-size render, only if Bit8 is set; 0=Disable, 1=Enable
+				u16 :1;
+				u16 :8;
+			};
+		};
 		
-		//attr1
-		signed X:9;
-		unsigned RotScalIndex:3;
-		unsigned HFlip:1;
-		unsigned VFlip:1;
-		unsigned Size:2;
+		u16 Size:2;							// 30-31: OBJ size, interacts with Bit 14-15
+											//
+											//        Size| Square | Horizontal | Vertical
+											//           0:   8x8       16x8        8x16
+											//           1:  16x16      32x8        8x32
+											//           2:  32x32      32x16      16x32
+											//           3:  64x64      64x32      32x64
+		u16 VFlip:1;						//    29: Flip sprite vertically; 0=Normal, 1=Flip
+		u16 HFlip:1;						//    28: Flip sprite horizontally; 0=Normal, 1=Flip
+		u16 RotScaleIndex:3;				// 25-27: Rotation/scaling parameter selection; 0...31
+		s16 X:9;							// 16-24: Sprite X-coordinate; 0...511
 		
-		//attr2
-		unsigned TileIndex:10;
-		unsigned Priority:2;
-		unsigned PaletteIndex:4;
-		
-		//attr3
-		unsigned attr3:16; // Whenever this is used, you will need to explicitly convert endianness.
+		u16 PaletteIndex:4;					// 44-47: Palette index; 0...15
+		u16 Priority:2;						// 42-43: Rendering priority; 0...3, where 0 is highest priority and 3 is lowest priority
+		u16 TileIndex:10;					// 32-41: Tile index; 0...1023
 #endif
+		
+		u16 attr3:16;						// 48-63: Whenever this is used, you will need to explicitly convert endianness.
 	};
-	
 } OAMAttributes;
 
 enum SpriteRenderMode
@@ -1044,8 +1090,6 @@ protected:
 	
 	u8 _sprBoundary;
 	u8 _sprBMPBoundary;
-	u8 _sprBMPMode;
-	u32 _sprEnable;
 	
 	bool _blend2[8];
 	
@@ -1057,20 +1101,14 @@ protected:
 	u32 _BG_bmp_ram[4];
 	u32 _BG_tile_ram[4];
 	u32 _BG_map_ram[4];
-	
 	BGType _BGTypes[4];
-	
-	GPUDisplayMode _dispMode;
-	u8 _vramBlock;
 	
 	CACHE_ALIGN u8 _sprNum[256];
 	CACHE_ALIGN u8 _h_win[2][GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	const u8 *_curr_win[2];
 	
 	NDSDisplayID _targetDisplayID;
-	u16 *_VRAMaddrNative;
-	u16 *_VRAMaddrCustom;
-		
+	
 	int _finalColorBckFuncID;
 	int _finalColor3DFuncID;
 	int _finalColorSpriteFuncID;
@@ -1123,6 +1161,9 @@ protected:
 	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
 	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_MasterBrightness(u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
 	
+	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeOff(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
+	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeNormal(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
+	
 	template<size_t WIN_NUM> void _UpdateWINH();
 	template<size_t WIN_NUM> void _SetupWindows();
 	template<GPULayerID LAYERID, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _ModeRender();
@@ -1134,11 +1175,11 @@ protected:
 	FORCEINLINE FASTCALL void _master_setFinal3dColor(const size_t srcX, const size_t dstX, u16 *dstColorLine, u8 *dstLayerIDLine, const FragmentColor src);
 	
 	template<BlendFunc FUNC, bool WINDOW>
-	FORCEINLINE FASTCALL void _master_setFinalOBJColor(const size_t srcX, const size_t dstX, u16 *dstColorLine, u8 *dstLayerIDLine, const u16 src, const u8 alpha, const u8 type);
+	FORCEINLINE FASTCALL void _master_setFinalOBJColor(const size_t srcX, const size_t dstX, u16 *dstColorLine, u8 *dstLayerIDLine, const u16 src, const u8 alpha, const OBJMode objMode);
 	
 	template<GPULayerID LAYERID, bool BACKDROP, int FUNCNUM> void _SetFinalColorBG(const size_t srcX, const size_t dstX, u16 *dstColorLine, u8 *dstLayerIDLine, u16 src);
 	void _SetFinalColor3D(const size_t srcX, const size_t dstX, u16 *dstColorLine, u8 *dstLayerIDLine, const FragmentColor src);
-	void _SetFinalColorSprite(const size_t srcX, const size_t dstX, u16 *dstColorLine, u8 *dstLayerIDLine, const u16 src, const u8 alpha, const u8 type);
+	void _SetFinalColorSprite(const size_t srcX, const size_t dstX, u16 *dstColorLine, u8 *dstLayerIDLine, const u16 src, const u8 alpha, const OBJMode objMode);
 	
 	u16 _FinalColorBlend(const u16 colA, const u16 colB);
 	FORCEINLINE u16 _FinalColorBlendFunc(const u16 colA, const u16 colB, const TBlendTable *blendTable);
@@ -1162,8 +1203,8 @@ public:
 	void ResortBGLayers();
 	void SetupFinalPixelBlitter();
 	
-	void ParseReg_DISPCNT();
-	template<GPULayerID LAYERID> void ParseReg_BGnCNT();
+	template<GPUEngineID ENGINEID> void ParseReg_DISPCNT();
+	template<GPUEngineID ENGINEID, GPULayerID LAYERID> void ParseReg_BGnCNT();
 	template<GPULayerID LAYERID> void ParseReg_BGnX();
 	template<GPULayerID LAYERID> void ParseReg_BGnY();
 	template<size_t WINNUM> void ParseReg_WINnH();
@@ -1173,7 +1214,7 @@ public:
 	void ParseReg_BLDY();
 	void ParseReg_MASTER_BRIGHT();
 	
-	void ParseAllRegisters();
+	template<GPUEngineID ENGINEID> void ParseAllRegisters();
 	
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool skip);
 	
@@ -1219,11 +1260,6 @@ public:
 	void SpriteRender(u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 	void SpriteRenderDebug(const size_t targetScanline, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 	void ModeRenderDebug(const size_t targetScanline, const GPULayerID layerID, u16 *dstLineColor);
-
-	template<bool ISCUSTOMRENDERINGNEEDED> void HandleDisplayModeOff(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
-	template<bool ISCUSTOMRENDERINGNEEDED> void HandleDisplayModeNormal(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
-	template<bool ISCUSTOMRENDERINGNEEDED> void HandleDisplayModeVRAM(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
-	template<bool ISCUSTOMRENDERINGNEEDED> void HandleDisplayModeMainMemory(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
 	
 	int GetFinalColorBckFuncID() const;
 	void SetFinalColorBckFuncID(int funcID);
@@ -1241,9 +1277,18 @@ public:
 
 class GPUEngineA : public GPUEngineBase
 {
+private:
+	GPUEngineA();
+	~GPUEngineA();
+	
 protected:
 	FragmentColor *_3DFramebufferRGBA6665;
 	u16 *_3DFramebufferRGBA5551;
+	
+	u16 *_VRAMaddrNative;
+	u16 *_VRAMaddrCustom;
+	u16 *_VRAMNativeBlockPtr[4];
+	u16 *_VRAMCustomBlockPtr[4];
 	
 	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
 	template<bool ISCUSTOMRENDERINGNEEDED, size_t CAPTURELENGTH> void _RenderLine_DisplayCapture(const u16 l);
@@ -1264,6 +1309,10 @@ protected:
 	template<size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB, bool CAPTURETONATIVEDST>
 	void _RenderLine_DispCapture_Blend(const u16 *__restrict srcA, const u16 *__restrict srcB, u16 *__restrict dst, const size_t captureLengthExt, const size_t l);
 	
+	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeVRAM(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
+	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeMainMemory(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
+
+	
 public:
 	DISPCAPCNT_parsed dispCapCnt;
 	
@@ -1272,21 +1321,20 @@ public:
 	
 	virtual void Reset();
 	void ParseReg_DISPCAPCNT();
-	GPUDisplayMode GetDisplayMode() const;
-	u8 GetVRAMBlock() const;
+	void UpdateSelectedVRAMBlock();
 	FragmentColor* Get3DFramebufferRGBA6665() const;
 	u16* Get3DFramebufferRGBA5551() const;
 	virtual void SetCustomFramebufferSize(size_t w, size_t h);
 		
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool skip);
-
-private:
-	GPUEngineA();
-	~GPUEngineA();
 };
 
 class GPUEngineB : public GPUEngineBase
 {
+private:
+	GPUEngineB();
+	~GPUEngineB();
+	
 protected:
 	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
 	
@@ -1296,10 +1344,6 @@ public:
 	
 	virtual void Reset();
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool skip);
-
-private:
-	GPUEngineB();
-	~GPUEngineB();
 };
 
 class NDSDisplay
@@ -1323,6 +1367,9 @@ public:
 class GPUSubsystem
 {
 private:
+	GPUSubsystem();
+	~GPUSubsystem();
+	
 	GPUEngineA *_engineMain;
 	GPUEngineB *_engineSub;
 	NDSDisplay *_displayMain;
@@ -1338,9 +1385,6 @@ private:
 	
 	NDSDisplayInfo _displayInfo;
 	
-	GPUSubsystem();
-	~GPUSubsystem();
-
 public:
 	static GPUSubsystem* Allocate();
 	void FinalizeAndDeallocate();
@@ -1380,7 +1424,7 @@ public:
 	// frontend becomes responsible for calling GetDisplayInfo() and reading the native
 	// and custom buffers properly for each display. If a single buffer is still needed
 	// for certain cases, then the frontend must manually call
-	// GPUEngineBase::BlitNativeToCustomFramebuffer() for each GPU before reading the
+	// GPUEngineBase::BlitNativeToCustomFramebuffer() for each engine before reading the
 	// master framebuffer.
 	bool GetWillAutoBlitNativeToCustomBuffer() const;
 	void SetWillAutoBlitNativeToCustomBuffer(const bool willAutoBlit);
