@@ -2746,6 +2746,17 @@ GPUEngineA::~GPUEngineA()
 	gfx3d_Update3DFramebuffers(NULL, NULL);
 }
 
+GPUEngineA* GPUEngineA::Allocate()
+{
+	return new(malloc_aligned64(sizeof(GPUEngineA))) GPUEngineA();
+}
+
+void GPUEngineA::FinalizeAndDeallocate()
+{
+	this->~GPUEngineA();
+	free_aligned(this);
+}
+
 void GPUEngineA::Reset()
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
@@ -3788,6 +3799,21 @@ GPUEngineB::GPUEngineB()
 	_sprMem = MMU_BOBJ;
 }
 
+GPUEngineB::~GPUEngineB()
+{
+}
+
+GPUEngineB* GPUEngineB::Allocate()
+{
+	return new(malloc_aligned64(sizeof(GPUEngineB))) GPUEngineB();
+}
+
+void GPUEngineB::FinalizeAndDeallocate()
+{
+	this->~GPUEngineB();
+	free_aligned(this);
+}
+
 void GPUEngineB::Reset()
 {
 	this->_Reset_Base();
@@ -4125,8 +4151,8 @@ GPUSubsystem::GPUSubsystem()
 {
 	gfx3d_init();
 	
-	_engineMain = new GPUEngineA;
-	_engineSub = new GPUEngineB;
+	_engineMain = GPUEngineA::Allocate();
+	_engineSub = GPUEngineB::Allocate();
 	
 	_displayMain = new NDSDisplay(NDSDisplayID_Main);
 	_displayMain->SetEngine(_engineMain);
@@ -4143,8 +4169,6 @@ GPUSubsystem::GPUSubsystem()
 	_customVRAMBlank = NULL;
 	_customFramebuffer = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
 	
-	ClearWithColor(0x8000);
-	
 	_displayInfo.isCustomSizeRequested = false;
 	_displayInfo.customWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	_displayInfo.customHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
@@ -4154,6 +4178,8 @@ GPUSubsystem::GPUSubsystem()
 	_displayInfo.nativeBuffer[1] = _nativeFramebuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 	_displayInfo.customBuffer[0] = _customFramebuffer;
 	_displayInfo.customBuffer[1] = _customFramebuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+
+	ClearWithColor(0x8000);
 	
 	_displayInfo.didPerformCustomRender[0] = false;
 	_displayInfo.didPerformCustomRender[1] = false;
@@ -4178,8 +4204,8 @@ GPUSubsystem::~GPUSubsystem()
 	
 	delete _displayMain;
 	delete _displayTouch;
-	delete _engineMain;
-	delete _engineSub;
+	_engineMain->FinalizeAndDeallocate();
+	_engineSub->FinalizeAndDeallocate();
 	
 	gfx3d_deinit();
 }
