@@ -170,10 +170,10 @@ int NDS_Init()
 	
 	if (GPU != NULL)
 	{
-		delete GPU;
+		GPU->FinalizeAndDeallocate();
 	}
 	
-	GPU = new GPUSubsystem;
+	GPU = GPUSubsystem::Allocate();
 	
 	if (SPU_Init(SNDCORE_DUMMY, 740) != 0)
 		return -1;
@@ -191,7 +191,7 @@ void NDS_DeInit(void)
 	gameInfo.closeROM();
 	SPU_DeInit();
 	
-	delete GPU;
+	GPU->FinalizeAndDeallocate();
 	GPU = NULL;
 	
 	MMU_DeInit();
