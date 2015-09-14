@@ -1267,8 +1267,8 @@ protected:
 public:
 	DISPCAPCNT_parsed dispCapCnt;
 	
-	GPUEngineA();
-	~GPUEngineA();
+	static GPUEngineA* Allocate();
+	void FinalizeAndDeallocate();
 	
 	virtual void Reset();
 	void ParseReg_DISPCAPCNT();
@@ -1279,6 +1279,10 @@ public:
 	virtual void SetCustomFramebufferSize(size_t w, size_t h);
 		
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool skip);
+
+private:
+	GPUEngineA();
+	~GPUEngineA();
 };
 
 class GPUEngineB : public GPUEngineBase
@@ -1287,10 +1291,15 @@ protected:
 	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
 	
 public:
-	GPUEngineB();
+	static GPUEngineB* Allocate();
+	void FinalizeAndDeallocate();
 	
 	virtual void Reset();
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool skip);
+
+private:
+	GPUEngineB();
+	~GPUEngineB();
 };
 
 class NDSDisplay
