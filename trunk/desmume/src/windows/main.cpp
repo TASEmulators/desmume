@@ -7396,3 +7396,5 @@ bool DDRAW::blt(LPRECT dst, LPRECT src)
 	}
 	return true;
 }
+
+//vs2015 hacks

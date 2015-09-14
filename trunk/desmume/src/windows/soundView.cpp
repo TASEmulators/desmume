@@ -182,7 +182,7 @@ void SoundView_Refresh(bool forceRedraw)
 				if (chan < 8)
 					sprintf(buf, "%d (PSG/Noise?)", thischan.format);
 				else if (chan < 14)
-					sprintf(buf, "%d (%.1f% Square)", thischan.format, (float)thischan.waveduty/8);
+					sprintf(buf, "%d (%.1f%% Square)", thischan.format, (float)thischan.waveduty/8);
 				else
 					sprintf(buf, "%d (Noise)", thischan.format);
 			}

@@ -881,9 +881,6 @@
     <ClInclude Include="..\emufile.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\fat.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="..\FIFO.h">
       <Filter>Core</Filter>
     </ClInclude>
@@ -954,9 +951,6 @@
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\saves.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shaders.h">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\slot1.h">
@@ -1224,9 +1218,6 @@
       <Filter>Core\filter</Filter>
     </ClInclude>
     <ClInclude Include="..\filter\hq2x.h">
-      <Filter>Core\filter</Filter>
-    </ClInclude>
-    <ClInclude Include="..\filter\hq4x.h">
       <Filter>Core\filter</Filter>
     </ClInclude>
     <ClInclude Include="..\filter\interp.h">
