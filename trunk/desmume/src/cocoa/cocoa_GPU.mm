@@ -104,7 +104,7 @@ GPU3DInterface *core3DList[] = {
 							   &OSXOpenGLRendererEnd,
 							   &OSXOpenGLRendererFramebufferDidResize);
 	
-	GPU->SetWillAutoBlitNativeToCustomBuffer(false);
+	GPU->SetWillAutoResolveToCustomBuffer(false);
 	
 	return self;
 }

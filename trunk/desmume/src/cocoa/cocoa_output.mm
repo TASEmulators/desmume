@@ -702,8 +702,8 @@
 	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
 	
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	GPU->GetEngineMain()->BlitNativeToCustomFramebuffer();
-	GPU->GetEngineSub()->BlitNativeToCustomFramebuffer();
+	GPU->GetEngineMain()->ResolveToCustomFramebuffer();
+	GPU->GetEngineSub()->ResolveToCustomFramebuffer();
 	RGB555ToRGBA8888Buffer(displayBuffer, bitmapData, (w * h));
 	pthread_rwlock_unlock(self.rwlockProducer);
 	

@@ -279,7 +279,7 @@ volatile bool execute = true;
 
 - (const void *)videoBuffer
 {
-	return GPU->GetNativeFramebuffer();
+	return GPU->GetDisplayInfo().masterNativeBuffer;
 }
 
 - (GLenum)pixelFormat
