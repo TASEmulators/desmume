@@ -67,15 +67,15 @@ static GtkSpinButton * wSpin;
 static u16 mem[0x100];
 
 
-static COLOR c;
-static COLOR32 c32;
+//static COLOR c;
+//static COLOR32 c32;
 static GdkGC * gdkGC;
 
 static inline void paint_col(int x, int y, u16 col) {
-	c.val = col;
-	COLOR_16_32(c,c32)
-	gdk_rgb_gc_set_foreground(gdkGC, c32.val);
-	gdk_draw_rectangle(wPaint->window, gdkGC, TRUE, x, y, 15, 15);
+        //c.val = col;
+        //COLOR_16_32(c,c32)
+        //gdk_rgb_gc_set_foreground(gdkGC, c32.val);
+        //gdk_draw_rectangle(wPaint->window, gdkGC, TRUE, x, y, 15, 15);
 }
 static inline void paint_cross(int x, int y) {
 	gdk_rgb_gc_set_foreground(gdkGC, 0x808080);

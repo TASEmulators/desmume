@@ -371,7 +371,7 @@ resizeWindow( u16 width, u16 height, GLuint *screen_texture) {
 static void
 opengl_Draw( GLuint *texture, int software_convert) {
   GLenum errCode;
-  u16 *gpuFramebuffer = GPU->GetNativeFramebuffer();
+  u16 *gpuFramebuffer = GPU->GetDisplayInfo().masterNativeBuffer;
 
   /* Clear The Screen And The Depth Buffer */
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -446,7 +446,7 @@ static void
 Draw( void) {
   SDL_Surface *rawImage;
 
-  rawImage = SDL_CreateRGBSurfaceFrom((void*)GPU->GetNativeFramebuffer(), 256, 384, 16, 512, 0x001F, 0x03E0, 0x7C00, 0);
+  rawImage = SDL_CreateRGBSurfaceFrom((void*)GPU->GetDisplayInfo().masterNativeBuffer, 256, 384, 16, 512, 0x001F, 0x03E0, 0x7C00, 0);
   if(rawImage == NULL) return;
 
   SDL_BlitSurface(rawImage, 0, surface, 0);
@@ -489,7 +489,7 @@ static void desmume_cycle(struct ctrls_event_config * cfg)
 }
 
 #ifdef HAVE_LIBAGG
-T_AGG_RGB555 agg_targetScreen_cli((u8 *)GPU->GetNativeFramebuffer(), 256, 384, 512);
+T_AGG_RGB555 agg_targetScreen_cli((u8 *)GPU->GetDisplayInfo().masterNativeBuffer, 256, 384, 512);
 #endif
 
 int main(int argc, char ** argv) {
