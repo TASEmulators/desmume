@@ -794,7 +794,7 @@ public:
 		char strmon[4];
 		int done = sscanf(str,"%04d-%3s-%02d %02d:%02d:%02d:%03d",&year,strmon,&day,&hour,&min,&sec,&ms);
 		if(done != 7) return false;
-		for(int i=1;i<12;i++)
+		for(int i=1;i<=12;i++)
 			if(!strncasecmp(monthnames[i],strmon,3))
 			{
 				mon=i;
