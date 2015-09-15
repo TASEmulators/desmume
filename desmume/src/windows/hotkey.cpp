@@ -145,6 +145,8 @@ void HK_QuickScreenShot(int param, bool justPressed)
 	if(!romloaded) return;
 	if(!justPressed) return;
 
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+
 	char fname[MAX_PATH];
 	ZeroMemory(fname, sizeof(fname));
 	path.getpath(path.SCREENSHOTS, fname);
@@ -162,13 +164,13 @@ void HK_QuickScreenShot(int param, bool justPressed)
 	case path.PNG:
 		{		
 			strcat(fname, ".png");
-			NDS_WritePNG_16bpp(GPU->GetCustomFramebufferWidth(), GPU->GetCustomFramebufferHeight()*2, GPU->GetCustomFramebuffer(), fname);
+			NDS_WritePNG_16bpp(dispInfo.customWidth, dispInfo.customHeight*2, dispInfo.masterCustomBuffer, fname);
 		}
 		break;
 	case path.BMP:
 		{
 			strcat(fname, ".bmp");
-			NDS_WriteBMP_16bpp(GPU->GetCustomFramebufferWidth(), GPU->GetCustomFramebufferHeight()*2, GPU->GetCustomFramebuffer(), fname);
+			NDS_WriteBMP_16bpp(dispInfo.customWidth, dispInfo.customHeight *2, dispInfo.masterCustomBuffer, fname);
 		}
 		break;
 	}
@@ -217,12 +219,14 @@ void HK_PrintScreen(int param, bool justPressed)
 	strcpy(outFilename,filename.c_str());
 	if(GetSaveFileName(&ofn))
 	{
+		const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+
 		filename = outFilename;
 
 		if(toupper(strright(filename,4)) == ".PNG")
-			NDS_WritePNG_16bpp(GPU->GetCustomFramebufferWidth(), GPU->GetCustomFramebufferHeight()*2, GPU->GetNativeFramebuffer(), filename.c_str());
+			NDS_WritePNG_16bpp(dispInfo.customWidth, dispInfo.customHeight*2, dispInfo.masterCustomBuffer, filename.c_str());
 		else if(toupper(strright(filename,4)) == ".BMP")
-			NDS_WriteBMP_16bpp(GPU->GetCustomFramebufferWidth(), GPU->GetCustomFramebufferHeight()*2, GPU->GetNativeFramebuffer(), filename.c_str());
+			NDS_WriteBMP_16bpp(dispInfo.customWidth, dispInfo.customHeight*2, dispInfo.masterCustomBuffer, filename.c_str());
 	}
 
 	if(unpause) NDS_UnPause(false);
