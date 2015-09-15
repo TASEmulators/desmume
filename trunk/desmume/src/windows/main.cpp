@@ -2008,10 +2008,12 @@ void KillDisplay()
 
 void Display()
 {
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+
 	if(CommonSettings.single_core())
 	{
-		video.srcBuffer = (u8*)GPU->GetNativeFramebuffer();
-		video.srcBufferSize = GPU->GetCustomFramebufferHeight()*GPU->GetCustomFramebufferWidth()*2*2;
+		video.srcBuffer = (u8*)dispInfo.masterNativeBuffer;
+		video.srcBufferSize = dispInfo.customWidth*dispInfo.customHeight*2*2;
 		DoDisplay(true);
 	}
 	else
@@ -2039,7 +2041,7 @@ void Display()
 			db.buffer = (u16*)malloc_alignedCacheLine(targetSize);
 			db.size = targetSize;
 		}
-		memcpy(db.buffer,GPU->GetCustomFramebuffer(),targetSize);
+		memcpy(db.buffer,dispInfo.masterCustomBuffer,targetSize);
 
 		g_mutex_unlock(display_mutex);
 	}
@@ -2139,7 +2141,7 @@ static void StepRunLoop_Core()
 		win_sound_samplecounter = DESMUME_SAMPLE_RATE/60;
 	}
 	inFrameBoundary = true;
-	DRV_AviVideoUpdate(GPU->GetNativeFramebuffer());
+	DRV_AviVideoUpdate(GPU->GetDisplayInfo().masterNativeBuffer);
 
 	extern bool rewinding;
 
@@ -2163,7 +2165,7 @@ static void StepRunLoop_Paused()
 	// periodically update single-core OSD when paused and in the foreground
 	if(CommonSettings.single_core() && GetActiveWindow() == mainLoopData.hwnd)
 	{
-		video.srcBuffer = (u8*)GPU->GetNativeFramebuffer();
+		video.srcBuffer = (u8*)GPU->GetDisplayInfo().masterNativeBuffer;
 		DoDisplay(true);
 	}
 
@@ -3051,6 +3053,9 @@ int _main()
 	CommonSettings.StylusJitter = GetPrivateProfileBool("Emulation", "StylusJitter", false, IniName);
 
 	CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack = GetPrivateProfileInt("3D", "ZeldaShadowDepthHack", 0, IniName);
+
+	CommonSettings.GFX3D_PrescaleHD = GetPrivateProfileInt("3D", "PrescaleHD", 1, IniName);
+	video.SetPrescale(CommonSettings.GFX3D_PrescaleHD, 1);
 		
 	lostFocusPause = GetPrivateProfileBool("Focus", "BackgroundPause", false, IniName);
 
@@ -3158,9 +3163,6 @@ int _main()
 	SetStyle(style);
 
 	SetMinWindowSize();
-
-	CommonSettings.GFX3D_PrescaleHD = GetPrivateProfileInt("3D", "PrescaleHD", 0, IniName);
-	video.SetPrescale(CommonSettings.GFX3D_PrescaleHD,1);
 
 	ScaleScreen(windowSize, false);
 
@@ -4270,7 +4272,7 @@ void ScreenshotToClipboard(bool extraInfo)
     bmi.bV4Height = -height;
 
 	FillRect(hMemDC, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
-	SetDIBitsToDevice(hMemDC, 0, 0, width, height, 0, 0, 0, height, GPU->GetCustomFramebuffer(), (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+	SetDIBitsToDevice(hMemDC, 0, 0, width, height, 0, 0, 0, height, dispInfo.masterCustomBuffer, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
 
 	//center-justify the extra text
 	int xo = (width - 256)/2;
@@ -5058,7 +5060,8 @@ DOKEYDOWN:
 			{
 				if(CommonSettings.single_core())
 				{
-					video.srcBuffer = (u8*)GPU->GetNativeFramebuffer();
+					const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+					video.srcBuffer = (u8*)dispInfo.masterNativeBuffer;
 					DoDisplay(true);
 				}
 			}
