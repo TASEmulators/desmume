@@ -1128,8 +1128,6 @@ protected:
 	int _finalColorSpriteFuncID;
 	
 	SpriteRenderMode _spriteRenderMode;
-	GPUMasterBrightMode _masterBrightMode;
-	u32 _masterBrightFactor;
 	bool _isMasterBrightFullIntensity;
 	
 	u32 _currentScanline;
@@ -1173,7 +1171,7 @@ protected:
 	template <GPULayerID LAYERID> void _RenderLine_CheckWindows(const size_t srcX, bool &draw, bool &effect) const;
 	
 	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
-	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_MasterBrightness(u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
+	template<bool ISFULLINTENSITYHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_MasterBrightness(u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
 	
 	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeOff(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
 	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeNormal(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);

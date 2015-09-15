@@ -400,8 +400,6 @@ void GPUEngineBase::_Reset_Base()
 	this->_blend2[6] = false;
 	this->_blend2[7] = false;
 	
-	this->_masterBrightMode = GPUMasterBrightMode_Disable;
-	this->_masterBrightFactor = 0;
 	this->_isMasterBrightFullIntensity = false;
 	
 	this->_currentScanline = 0;
@@ -519,10 +517,8 @@ void GPUEngineBase::ParseReg_MASTER_BRIGHT()
 	}
 	
 	const IOREG_MASTER_BRIGHT &MASTER_BRIGHT = this->_IORegisterMap->MASTER_BRIGHT;
-	this->_masterBrightFactor = MASTER_BRIGHT.Intensity;
-	this->_masterBrightMode = (GPUMasterBrightMode)MASTER_BRIGHT.Mode;
-	this->_isMasterBrightFullIntensity = ( (this->_masterBrightFactor >= 16) && ((this->_masterBrightMode == GPUMasterBrightMode_Up) || (this->_masterBrightMode == GPUMasterBrightMode_Down)) );
-	//printf("MASTER BRIGHTNESS %d to %d at %d\n",this->core,this->_masterBrightFactor,nds.VCount);
+	this->_isMasterBrightFullIntensity = ( (MASTER_BRIGHT.Intensity >= 16) && ((MASTER_BRIGHT.Mode == GPUMasterBrightMode_Up) || (MASTER_BRIGHT.Mode == GPUMasterBrightMode_Down)) );
+	//printf("MASTER BRIGHTNESS %d to %d at %d\n",this->core,MASTER_BRIGHT.Intensity,nds.VCount);
 }
 
 void GPUEngineBase::SetupFinalPixelBlitter()
@@ -1006,9 +1002,9 @@ FORCEINLINE FASTCALL void GPUEngineBase::_master_setFinalOBJColor(const size_t s
 		{
 			selectedFunc = Blend;
 		
-			//obj without fine-grained alpha are using EVA/EVB for blending. this is signified by receiving 255 in the alpha
+			//obj without fine-grained alpha are using EVA/EVB for blending. this is signified by receiving 0xFF in the alpha
 			//it's tested by the spriteblend demo and the glory of heracles title screen
-			if (alpha != 255)
+			if (alpha != 0xFF)
 			{
 				eva = alpha;
 				evb = 16 - alpha;
@@ -1635,7 +1631,7 @@ void GPUEngineBase::_RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *dst, 
 		{
 			dst[sprX] = color;
 			dst_alpha[sprX] = alpha+1;
-			typeTab[sprX] = 3;
+			typeTab[sprX] = OBJMode_Bitmap;
 			prioTab[sprX] = prio;
 			this->_sprNum[sprX] = spriteNum;
 		}
@@ -1655,8 +1651,8 @@ void GPUEngineBase::_RenderSprite256(const u8 spriteNum, const u16 l, u16 *dst, 
 		{
 			const u16 color = LE_TO_LOCAL_16(pal[palette_entry]);
 			dst[sprX] = color;
-			dst_alpha[sprX] = -1;
-			typeTab[sprX] = (alpha ? 1 : 0);
+			dst_alpha[sprX] = 0xFF;
+			typeTab[sprX] = (alpha ? OBJMode_Transparent : OBJMode_Normal);
 			prioTab[sprX] = prio;
 			this->_sprNum[sprX] = spriteNum;
 		}
@@ -1678,8 +1674,8 @@ void GPUEngineBase::_RenderSprite16(const u16 l, u16 *dst, const u32 srcadr, con
 		{
 			const u16 color = LE_TO_LOCAL_16(pal[palette_entry]);
 			dst[sprX] = color;
-			dst_alpha[sprX] = -1;
-			typeTab[sprX] = (alpha ? 1 : 0);
+			dst_alpha[sprX] = 0xFF;
+			typeTab[sprX] = (alpha ? OBJMode_Transparent : OBJMode_Normal);
 			prioTab[sprX] = prio;
 		}
 	}
@@ -1719,14 +1715,10 @@ bool GPUEngineBase::_ComputeSpriteVars(const OAMAttributes &spriteInfo, const u1
 {
 	x = 0;
 	// get sprite location and size
-	sprX = (spriteInfo.X/*<<23*/)/*>>23*/;
+	sprX = spriteInfo.X;
 	sprY = spriteInfo.Y;
 	sprSize = GPUEngineBase::_sprSizeTab[spriteInfo.Size][spriteInfo.Shape];
-
 	lg = sprSize.x;
-	
-	if (sprY >= GPU_FRAMEBUFFER_NATIVE_HEIGHT)
-		sprY = (s32)((s8)(spriteInfo.Y));
 	
 // FIXME: for rot/scale, a list of entries into the sprite should be maintained,
 // that tells us where the first pixel of a screenline starts in the sprite,
@@ -1834,18 +1826,24 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 
 		//do we incur a cost if a sprite is disabled?? we guess so.
 		cost += 2;
+		
+		// Check if sprite is disabled before everything
+		if (spriteInfo.RotScale == 0 && spriteInfo.Disable != 0)
+			continue;
+		
+		const OBJMode objMode = (OBJMode)spriteInfo.Mode;
 
 		SpriteSize sprSize;
-		s32 sprX, sprY, x, y, lg;
+		s32 sprX;
+		s32 sprY;
+		s32 x;
+		s32 y;
+		s32 lg;
 		s32 xdir;
 		u8 prio;
 		u16 *pal;
 		u8 *src;
 		u32 srcadr;
-		
-		// Check if sprite is disabled before everything
-		if (spriteInfo.RotScale == 0 && spriteInfo.Disable != 0)
-			continue;
 
 		prio = spriteInfo.Priority;
 
@@ -1857,18 +1855,14 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 			u16		colour;
 
 			// Get sprite positions and size
-			sprX = (spriteInfo.X << 23) >> 23;
+			sprX = spriteInfo.X;
 			sprY = spriteInfo.Y;
 			sprSize = GPUEngineBase::_sprSizeTab[spriteInfo.Size][spriteInfo.Shape];
-
-			lg = sprSize.x;
-			
-			if (sprY >= GPU_FRAMEBUFFER_NATIVE_HEIGHT)
-				sprY = (s32)((s8)(spriteInfo.Y));
 
 			// Copy sprite size, to check change it if needed
 			fieldX = sprSize.x;
 			fieldY = sprSize.y;
+			lg = sprSize.x;
 
 			// If we are using double size mode, double our control vars
 			if (spriteInfo.DoubleSize != 0)
@@ -1899,9 +1893,9 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 			dy  = LE_TO_LOCAL_16((s16)this->_oamList[blockparameter+2].attr3);
 			dmy = LE_TO_LOCAL_16((s16)this->_oamList[blockparameter+3].attr3);
 			
-			// Calculate fixed poitn 8.8 start offsets
-			realX = ((sprSize.x) << 7) - (fieldX >> 1)*dx - (fieldY>>1)*dmx + y * dmx;
-			realY = ((sprSize.y) << 7) - (fieldX >> 1)*dy - (fieldY>>1)*dmy + y * dmy;
+			// Calculate fixed point 8.8 start offsets
+			realX = (sprSize.x << 7) - (fieldX >> 1)*dx - (fieldY >> 1)*dmx + y*dmx;
+			realY = (sprSize.y << 7) - (fieldX >> 1)*dy - (fieldY >> 1)*dmy + y*dmy;
 
 			if (sprX < 0)
 			{
@@ -1927,7 +1921,7 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 				src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex << this->_sprBoundary));
 
 				// If extended palettes are set, use them
-				pal = (DISPCNT.ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*0x200)) : this->_paletteOBJ;
+				pal = (DISPCNT.ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*ADDRESS_STEP_512B)) : this->_paletteOBJ;
 
 				for (size_t j = 0; j < lg; ++j, ++sprX)
 				{
@@ -1944,11 +1938,11 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 
 						colour = src[offset];
 
-						if (colour && (prio<prioTab[sprX]))
+						if (colour && (prio < prioTab[sprX]))
 						{ 
 							dst[sprX] = pal[colour];
-							dst_alpha[sprX] = -1;
-							typeTab[sprX] = spriteInfo.Mode;
+							dst_alpha[sprX] = 0xFF;
+							typeTab[sprX] = objMode;
 							prioTab[sprX] = prio;
 						}
 					}
@@ -1960,7 +1954,7 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 				}
 			}
 			// Rotozoomed direct color
-			else if (spriteInfo.Mode == 3)
+			else if (objMode == OBJMode_Bitmap)
 			{
 				//transparent (i think, dont bother to render?) if alpha is 0
 				if (spriteInfo.PaletteIndex == 0)
@@ -1994,7 +1988,7 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 						{
 							dst[sprX] = colour;
 							dst_alpha[sprX] = spriteInfo.PaletteIndex;
-							typeTab[sprX] = spriteInfo.Mode;
+							typeTab[sprX] = objMode;
 							prioTab[sprX] = prio;
 						}
 					}
@@ -2040,15 +2034,15 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 
 						if (colour && (prio<prioTab[sprX]))
 						{
-							if (spriteInfo.Mode == 2)
+							if (objMode == OBJMode_Window)
 							{
 								this->_sprWin[sprX] = 1;
 							}
 							else
 							{
 								dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
-								dst_alpha[sprX] = -1;
-								typeTab[sprX] = spriteInfo.Mode;
+								dst_alpha[sprX] = 0xFF;
+								typeTab[sprX] = objMode;
 								prioTab[sprX] = prio;
 							}
 						}
@@ -2068,7 +2062,7 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 
 			cost += sprSize.x;
 
-			if (spriteInfo.Mode == 2)
+			if (objMode == OBJMode_Window)
 			{
 				if (MODE == SpriteRenderMode_Sprite2D)
 				{
@@ -2087,7 +2081,7 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 
 				this->_RenderSpriteWin(src, (spriteInfo.PaletteMode == PaletteMode_1x256), lg, sprX, x, xdir);
 			}
-			else if (spriteInfo.Mode == 3) //sprite is in BMP format
+			else if (objMode == OBJMode_Bitmap) //sprite is in BMP format
 			{
 				srcadr = this->_SpriteAddressBMP(spriteInfo, sprSize, y);
 
@@ -2104,8 +2098,8 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 				else
 					srcadr = this->_sprMem + (spriteInfo.TileIndex<<this->_sprBoundary) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
 				
-				pal = (DISPCNT.ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*0x200)) : this->_paletteOBJ;
-				this->_RenderSprite256(i, l, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo.Mode == 1);
+				pal = (DISPCNT.ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*ADDRESS_STEP_512B)) : this->_paletteOBJ;
+				this->_RenderSprite256(i, l, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
 			}
 			else // 16 colors
 			{
@@ -2119,7 +2113,7 @@ void GPUEngineBase::_SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u
 				}
 				
 				pal = this->_paletteOBJ + (spriteInfo.PaletteIndex << 4);
-				this->_RenderSprite16(l, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo.Mode == 1);
+				this->_RenderSprite16(l, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
 			}
 		}
 	}
@@ -2131,28 +2125,29 @@ void GPUEngineBase::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size
 	
 }
 
-template<bool ISCUSTOMRENDERINGNEEDED>
+template<bool ISFULLINTENSITYHINT, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_RenderLine_MasterBrightness(u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount)
 {
-	const u32 factor = this->_masterBrightFactor;
+	const IOREG_MASTER_BRIGHT &MASTER_BRIGHT = this->_IORegisterMap->MASTER_BRIGHT;
+	const u32 intensity = MASTER_BRIGHT.Intensity;
 	
 	//isn't it odd that we can set uselessly high factors here?
 	//factors above 16 change nothing. curious.
-	if (factor == 0) return;
+	if (!ISFULLINTENSITYHINT && (intensity == 0)) return;
 	
 	//Apply final brightness adjust (MASTER_BRIGHT)
 	//http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
 	
 	const size_t pixCount = dstLineWidth * dstLineCount;
 	
-	switch (this->_masterBrightMode)
+	switch (MASTER_BRIGHT.Mode)
 	{
 		case GPUMasterBrightMode_Disable:
 			break;
 			
 		case GPUMasterBrightMode_Up:
 		{
-			if (!this->_isMasterBrightFullIntensity)
+			if (!ISFULLINTENSITYHINT && !this->_isMasterBrightFullIntensity)
 			{
 				size_t i = 0;
 				
@@ -2163,19 +2158,19 @@ void GPUEngineBase::_RenderLine_MasterBrightness(u16 *dstColorLine, const size_t
 					__m128i dstColor_vec128 = _mm_load_si128((__m128i *)(dstColorLine + i));
 					dstColor_vec128 = _mm_and_si128(dstColor_vec128, _mm_set1_epi16(0x7FFF));
 					
-					dstColorLine[i+7] = GPUEngineBase::_fadeInColors[factor][ _mm_extract_epi16(dstColor_vec128, 7) ];
-					dstColorLine[i+6] = GPUEngineBase::_fadeInColors[factor][ _mm_extract_epi16(dstColor_vec128, 6) ];
-					dstColorLine[i+5] = GPUEngineBase::_fadeInColors[factor][ _mm_extract_epi16(dstColor_vec128, 5) ];
-					dstColorLine[i+4] = GPUEngineBase::_fadeInColors[factor][ _mm_extract_epi16(dstColor_vec128, 4) ];
-					dstColorLine[i+3] = GPUEngineBase::_fadeInColors[factor][ _mm_extract_epi16(dstColor_vec128, 3) ];
-					dstColorLine[i+2] = GPUEngineBase::_fadeInColors[factor][ _mm_extract_epi16(dstColor_vec128, 2) ];
-					dstColorLine[i+1] = GPUEngineBase::_fadeInColors[factor][ _mm_extract_epi16(dstColor_vec128, 1) ];
-					dstColorLine[i+0] = GPUEngineBase::_fadeInColors[factor][ _mm_extract_epi16(dstColor_vec128, 0) ];
+					dstColorLine[i+7] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 7) ];
+					dstColorLine[i+6] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 6) ];
+					dstColorLine[i+5] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 5) ];
+					dstColorLine[i+4] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 4) ];
+					dstColorLine[i+3] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 3) ];
+					dstColorLine[i+2] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 2) ];
+					dstColorLine[i+1] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 1) ];
+					dstColorLine[i+0] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 0) ];
 				}
 #endif
 				for (; i < pixCount; i++)
 				{
-					dstColorLine[i] = GPUEngineBase::_fadeInColors[factor][ dstColorLine[i] & 0x7FFF ];
+					dstColorLine[i] = GPUEngineBase::_fadeInColors[intensity][ dstColorLine[i] & 0x7FFF ];
 				}
 			}
 			else
@@ -2195,7 +2190,7 @@ void GPUEngineBase::_RenderLine_MasterBrightness(u16 *dstColorLine, const size_t
 			
 		case GPUMasterBrightMode_Down:
 		{
-			if (!this->_isMasterBrightFullIntensity)
+			if (!ISFULLINTENSITYHINT && !this->_isMasterBrightFullIntensity)
 			{
 				size_t i = 0;
 				
@@ -2206,19 +2201,19 @@ void GPUEngineBase::_RenderLine_MasterBrightness(u16 *dstColorLine, const size_t
 					__m128i dstColor_vec128 = _mm_load_si128((__m128i *)(dstColorLine + i));
 					dstColor_vec128 = _mm_and_si128(dstColor_vec128, _mm_set1_epi16(0x7FFF));
 					
-					dstColorLine[i+7] = GPUEngineBase::_fadeOutColors[factor][ _mm_extract_epi16(dstColor_vec128, 7) ];
-					dstColorLine[i+6] = GPUEngineBase::_fadeOutColors[factor][ _mm_extract_epi16(dstColor_vec128, 6) ];
-					dstColorLine[i+5] = GPUEngineBase::_fadeOutColors[factor][ _mm_extract_epi16(dstColor_vec128, 5) ];
-					dstColorLine[i+4] = GPUEngineBase::_fadeOutColors[factor][ _mm_extract_epi16(dstColor_vec128, 4) ];
-					dstColorLine[i+3] = GPUEngineBase::_fadeOutColors[factor][ _mm_extract_epi16(dstColor_vec128, 3) ];
-					dstColorLine[i+2] = GPUEngineBase::_fadeOutColors[factor][ _mm_extract_epi16(dstColor_vec128, 2) ];
-					dstColorLine[i+1] = GPUEngineBase::_fadeOutColors[factor][ _mm_extract_epi16(dstColor_vec128, 1) ];
-					dstColorLine[i+0] = GPUEngineBase::_fadeOutColors[factor][ _mm_extract_epi16(dstColor_vec128, 0) ];
+					dstColorLine[i+7] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 7) ];
+					dstColorLine[i+6] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 6) ];
+					dstColorLine[i+5] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 5) ];
+					dstColorLine[i+4] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 4) ];
+					dstColorLine[i+3] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 3) ];
+					dstColorLine[i+2] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 2) ];
+					dstColorLine[i+1] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 1) ];
+					dstColorLine[i+0] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 0) ];
 				}
 #endif
 				for (; i < pixCount; i++)
 				{
-					dstColorLine[i] = GPUEngineBase::_fadeOutColors[factor][ dstColorLine[i] & 0x7FFF ];
+					dstColorLine[i] = GPUEngineBase::_fadeOutColors[intensity][ dstColorLine[i] & 0x7FFF ];
 				}
 			}
 			else
@@ -2364,7 +2359,7 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex,
 	{
 		const OAMAttributes &spriteInfo = this->_oamList[spriteIndex];
 		
-		if ( ((spriteInfo.RotScale != 0) || (spriteInfo.Disable == 0)) && (spriteInfo.Mode == 3) && (spriteInfo.PaletteIndex != 0) )
+		if ( ((spriteInfo.RotScale != 0) || (spriteInfo.Disable == 0)) && (spriteInfo.Mode == OBJMode_Bitmap) && (spriteInfo.PaletteIndex != 0) )
 		{
 			const u32 vramAddress = ((spriteInfo.TileIndex & 0x1F) << 5) + ((spriteInfo.TileIndex & ~0x1F) << 7);
 			const SpriteSize sprSize = GPUEngineBase::_sprSizeTab[spriteInfo.Size][spriteInfo.Shape];
@@ -2826,7 +2821,7 @@ void GPUEngineA::RenderLine(const u16 l, bool skip)
 		if ( !DISPCAPCNT.CaptureEnable && (l != 0) && (l != 191) )
 		{
 			this->_currentScanline = l;
-			this->_RenderLine_MasterBrightness<ISCUSTOMRENDERINGNEEDED>(dstColorLine, dstLineWidth, dstLineCount);
+			this->_RenderLine_MasterBrightness<true, ISCUSTOMRENDERINGNEEDED>(dstColorLine, dstLineWidth, dstLineCount);
 			return;
 		}
 	}
@@ -2901,7 +2896,7 @@ void GPUEngineA::RenderLine(const u16 l, bool skip)
 		DISP_FIFOreset();
 	}
 	
-	this->_RenderLine_MasterBrightness<ISCUSTOMRENDERINGNEEDED>(dstColorLine, dstLineWidth, dstLineCount);
+	this->_RenderLine_MasterBrightness<false, ISCUSTOMRENDERINGNEEDED>(dstColorLine, dstLineWidth, dstLineCount);
 }
 
 template <bool ISCUSTOMRENDERINGNEEDED>
@@ -3883,7 +3878,7 @@ void GPUEngineB::RenderLine(const u16 l, bool skip)
 	{
 		// except if it could cause any side effects (for example if we're capturing), then don't skip anything
 		this->_currentScanline = l;
-		this->_RenderLine_MasterBrightness<ISCUSTOMRENDERINGNEEDED>(dstColorLine, dstLineWidth, dstLineCount);
+		this->_RenderLine_MasterBrightness<true, ISCUSTOMRENDERINGNEEDED>(dstColorLine, dstLineWidth, dstLineCount);
 		return;
 	}
 	
@@ -3926,7 +3921,7 @@ void GPUEngineB::RenderLine(const u16 l, bool skip)
 			break;
 	}
 	
-	this->_RenderLine_MasterBrightness<ISCUSTOMRENDERINGNEEDED>(dstColorLine, dstLineWidth, dstLineCount);
+	this->_RenderLine_MasterBrightness<false, ISCUSTOMRENDERINGNEEDED>(dstColorLine, dstLineWidth, dstLineCount);
 }
 
 template <bool ISCUSTOMRENDERINGNEEDED>
