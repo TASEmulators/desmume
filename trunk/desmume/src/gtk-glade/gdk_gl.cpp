@@ -237,7 +237,7 @@ static void my_gl_Texture2D() {
 
 static void
 my_gl_ScreenTex( int software_convert) {
-  u16 *gpuFramebuffer = GPU->GetNativeFramebuffer();
+  u16 *gpuFramebuffer = GPU->GetDisplayInfo().masterNativeBuffer;
 
   if ( software_convert) {
     u8 converted[256 * 384 * 3];
@@ -280,8 +280,6 @@ static void my_gl_ScreenTexApply(int screen) {
 gboolean screen (GtkWidget * widget, int viewportscreen) {
 	int screen;
 	GPUEngineBase * gpu;
-	float bright_color = 0.0f; // blend with black
-	float bright_alpha = 0.0f; // don't blend
 	
 	// we take care to draw the right thing the right place
 	// we need to rearrange widgets not to use this trick
@@ -293,29 +291,16 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 	glLoadIdentity();
 
 	// clear screen
-	glClearColor(0.0f,0.0f,0.0f,0.0f);
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	glClearColor(0.0f,0.0f,0.0f,1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_DITHER);
+	glDisable(GL_STENCIL_TEST);
 
 	if (desmume_running()) {
-
-		// master bright
-                gpu = (screen) ? (GPUEngineBase *)GPU->GetEngineSub() : (GPUEngineBase *)GPU->GetEngineMain();
-		
-		switch (gpu->MasterBrightMode)
-		{
-			case 1: // Bright up : blend with white
-				bright_color = 1.0f;
-				// no break;
-			case 2: // Bright down : blend with black
-				bright_alpha = 1.0f; // blending max
-
-				bright_alpha = gpu->MasterBrightFactor / 16.0;
-				break;
-			// Disabled 0, Reserved 3
-			default: break;
-		}
 		// rotate
 		glRotatef(ScreenRotate, 0.0, 0.0, 1.0);
 		// create the texture for both display
@@ -323,12 +308,8 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 		if (viewportscreen==0) {
                   my_gl_ScreenTex( gtk_glade_use_software_colour_convert);
 		}
-	} else {
-		// pause
-		// fake master bright up 50%
-		bright_color = 0.0f;
-		bright_alpha = 0.5f;
 	}
+	
 	// make sure current color is ok
 	glColor4ub(255,255,255,255);
 	// apply part of the texture
@@ -338,7 +319,6 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 	// master bright (bis)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-	glColor4f(bright_color,bright_color,bright_color,bright_alpha);
 	glBegin(GL_QUADS);
 		glVertex2d(-1.0, 1.0);
 		glVertex2d( 1.0, 1.0);

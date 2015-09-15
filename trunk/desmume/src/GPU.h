@@ -1012,19 +1012,33 @@ typedef struct
 
 typedef struct
 {
-	bool isCustomSizeRequested;			// true - The user requested a custom size; false - The user requested the native size
-	size_t customWidth;					// The custom buffer width, measured in pixels
-	size_t customHeight;				// The custom buffer height, measured in pixels
-	u16 *masterCustomBuffer;			// Pointer to the head of the master custom buffer.
+	// User-requested settings. These fields will always remain constant, and can only be changed if
+	// the user calls GPUSubsystem::SetFramebufferSize().
+	
+	bool isCustomSizeRequested;			// Reports that the call to GPUSubsystem::SetFramebufferSize() resulted in a custom rendering size.
+										//    true - The user requested a custom size.
+										//    false - The user requested the native size.
+	size_t customWidth;					// The requested custom width, measured in pixels.
+	size_t customHeight;				// The requested custom height, measured in pixels.
+	
 	u16 *masterNativeBuffer;			// Pointer to the head of the master native buffer.
+	u16 *masterCustomBuffer;			// Pointer to the head of the master custom buffer.
+										// If GPUSubsystem::GetWillAutoResolveToCustomBuffer() would return true, or if
+										// GPUEngineBase::ResolveToCustomFramebuffer() is called, then this buffer is used as the target
+										// buffer for resolving any native-sized renders.
 	
-	u16 *customBuffer[2];				// Pointer to a display's custom size framebuffer
-	u16	*nativeBuffer[2];				// Pointer to a display's native size framebuffer
 	
-	bool didPerformCustomRender[2];		// true - The display performed a custom-sized render; false - The display performed a native-sized render
-	size_t renderedWidth[2];			// The display rendered at this width, measured in pixels
-	size_t renderedHeight[2];			// The display rendered at this height, measured in pixels
-	u16 *renderedBuffer[2];				// The display rendered to this buffer
+	// Frame information. These fields will change per frame, depending on how each display was rendered.
+	
+	u16	*nativeBuffer[2];				// Pointer to the display's native size framebuffer.
+	u16 *customBuffer[2];				// Pointer to the display's custom size framebuffer.
+	
+	bool didPerformCustomRender[2];		// Reports that the display actually rendered at a custom size for this frame.
+										//    true - The display performed a custom-sized render.
+										//    false - The display performed a native-sized render.
+	size_t renderedWidth[2];			// The display rendered at this width, measured in pixels.
+	size_t renderedHeight[2];			// The display rendered at this height, measured in pixels.
+	u16 *renderedBuffer[2];				// The display rendered to this buffer.
 } NDSDisplayInfo;
 
 #define VRAM_NO_3D_USAGE 0xFF
@@ -1270,7 +1284,7 @@ public:
 	GPUEngineID GetEngineID() const;
 	
 	virtual void SetCustomFramebufferSize(size_t w, size_t h);
-	void BlitNativeToCustomFramebuffer();
+	void ResolveToCustomFramebuffer();
 	
 	void REG_DISPx_pack_test();
 };
@@ -1375,7 +1389,7 @@ private:
 	NDSDisplay *_displayMain;
 	NDSDisplay *_displayTouch;
 	
-	bool _willAutoBlitNativeToCustomBuffer;
+	bool _willAutoResolveToCustomBuffer;
 	VRAM3DUsageProperties _VRAM3DUsage;
 	u16 *_customVRAM;
 	u16 *_customVRAMBlank;
@@ -1399,11 +1413,6 @@ public:
 	NDSDisplay* GetDisplayMain();
 	NDSDisplay* GetDisplayTouch();
 	
-	u16* GetNativeFramebuffer();
-	u16* GetNativeFramebuffer(const NDSDisplayID theDisplayID);
-	u16* GetCustomFramebuffer();
-	u16* GetCustomFramebuffer(const NDSDisplayID theDisplayID);
-	
 	u16* GetCustomVRAMBuffer();
 	u16* GetCustomVRAMBlankBuffer();
 	
@@ -1413,21 +1422,21 @@ public:
 	
 	void UpdateVRAM3DUsageProperties();
 	
-	// Normally, the GPUs will automatically blit their native buffers to the master
-	// framebuffer at the end of V-blank so that all rendered graphics are contained
+	// Normally, the GPUs will automatically resolve their native buffers to the master
+	// custom framebuffer at the end of V-blank so that all rendered graphics are contained
 	// within a single common buffer. This is necessary for when someone wants to read
 	// the NDS framebuffers, but the reader can only read a single buffer at a time.
 	// Certain functions, such as taking screenshots, as well as many frontends running
 	// the NDS video displays, require that they read from only a single buffer.
 	//
-	// However, if SetWillAutoBlitNativeToCustomBuffer() is passed "false", then the
+	// However, if SetWillAutoResolveToCustomBuffer() is passed "false", then the
 	// frontend becomes responsible for calling GetDisplayInfo() and reading the native
 	// and custom buffers properly for each display. If a single buffer is still needed
 	// for certain cases, then the frontend must manually call
-	// GPUEngineBase::BlitNativeToCustomFramebuffer() for each engine before reading the
-	// master framebuffer.
-	bool GetWillAutoBlitNativeToCustomBuffer() const;
-	void SetWillAutoBlitNativeToCustomBuffer(const bool willAutoBlit);
+	// GPUEngineBase::ResolveToCustomFramebuffer() for each engine before reading the
+	// master custom framebuffer.
+	bool GetWillAutoResolveToCustomBuffer() const;
+	void SetWillAutoResolveToCustomBuffer(const bool willAutoResolve);
 	
 	void RenderLine(const u16 l, bool skip = false);
 	void ClearWithColor(const u16 colorBGRA5551);
