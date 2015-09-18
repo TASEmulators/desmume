@@ -311,6 +311,6 @@ public:
 	}
 
 	int scaledscreengap() {
-		return screengap * height / (384 * prescaleHD);
+		return screengap * height / 384;
 	}
 };
