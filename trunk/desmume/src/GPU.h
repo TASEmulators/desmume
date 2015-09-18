@@ -720,9 +720,12 @@ typedef struct
 } GPU_IOREG;										// 0x04000000, 0x04001000: GPU registers
 #include "PACKED_END.h"
 
-enum BlendFunc
+enum ColorEffect
 {
-	NoBlend, Blend, Increase, Decrease
+	ColorEffect_Disable					= 0,
+	ColorEffect_Blend					= 1,
+	ColorEffect_IncreaseBrightness		= 2,
+	ColorEffect_DecreaseBrightness		= 3
 };
 
 enum GPUEngineID
@@ -1170,9 +1173,9 @@ protected:
 	template<int WIN_NUM> u8 _WithinRect(const size_t x) const;
 	template <GPULayerID LAYERID> void _RenderLine_CheckWindows(const size_t srcX, bool &draw, bool &effect) const;
 	
+	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_Clear(const u16 clearColor, const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
 	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
-	template<bool ISFULLINTENSITYHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_MasterBrightness(u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
-	
+		
 	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeOff(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
 	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeNormal(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
 	
@@ -1180,16 +1183,16 @@ protected:
 	template<size_t WIN_NUM> void _SetupWindows();
 	template<GPULayerID LAYERID, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _ModeRender();
 	
-	template<GPULayerID LAYERID, bool BACKDROP, BlendFunc FUNC, bool WINDOW>
+	template<GPULayerID LAYERID, ColorEffect EFFECT, bool WINDOW>
 	FORCEINLINE FASTCALL bool _master_setFinalBGColor(const size_t srcX, const size_t dstX, const u16 *dstColorLine, const u8 *dstLayerIDLine, u16 &outColor);
 	
-	template<BlendFunc FUNC, bool WINDOW>
+	template<ColorEffect EFFECT, bool WINDOW>
 	FORCEINLINE FASTCALL void _master_setFinal3dColor(const size_t srcX, const size_t dstX, u16 *dstColorLine, u8 *dstLayerIDLine, const FragmentColor src);
 	
-	template<BlendFunc FUNC, bool WINDOW>
+	template<ColorEffect EFFECT, bool WINDOW>
 	FORCEINLINE FASTCALL void _master_setFinalOBJColor(const size_t srcX, const size_t dstX, u16 *dstColorLine, u8 *dstLayerIDLine, const u16 src, const u8 alpha, const OBJMode objMode);
 	
-	template<GPULayerID LAYERID, bool BACKDROP, int FUNCNUM> void _SetFinalColorBG(const size_t srcX, const size_t dstX, u16 *dstColorLine, u8 *dstLayerIDLine, u16 src);
+	template<GPULayerID LAYERID, int FUNCNUM> void _SetFinalColorBG(const size_t srcX, const size_t dstX, u16 *dstColorLine, u8 *dstLayerIDLine, u16 src);
 	void _SetFinalColor3D(const size_t srcX, const size_t dstX, u16 *dstColorLine, u8 *dstLayerIDLine, const FragmentColor src);
 	void _SetFinalColorSprite(const size_t srcX, const size_t dstX, u16 *dstColorLine, u8 *dstLayerIDLine, const u16 src, const u8 alpha, const OBJMode objMode);
 	
@@ -1205,7 +1208,6 @@ protected:
 	u32 _SpriteAddressBMP(const OAMAttributes &spriteInfo, const SpriteSize sprSize, const s32 y);
 	
 	template<SpriteRenderMode MODE> void _SpriteRenderPerform(u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
-	void _RefreshAffineStartRegs();
 	
 public:
 	GPUEngineBase();
@@ -1214,6 +1216,7 @@ public:
 	virtual void Reset();
 	void ResortBGLayers();
 	void SetupFinalPixelBlitter();
+	void RefreshAffineStartRegs();
 	
 	template<GPUEngineID ENGINEID> void ParseReg_DISPCNT();
 	template<GPUEngineID ENGINEID, GPULayerID LAYERID> void ParseReg_BGnCNT();
@@ -1228,7 +1231,8 @@ public:
 	
 	template<GPUEngineID ENGINEID> void ParseAllRegisters();
 	
-	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool skip);
+	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool isFrameSkipRequested);
+	void FramebufferPostprocess();
 	
 	u16 BGSize[4][2];
 	u8 BGExtPalSlot[4];
@@ -1262,9 +1266,11 @@ public:
 	bool GetDebugState();
 	void SetDebugState(bool theState);
 	
-	template<GPULayerID LAYERID, bool BACKDROP, int FUNCNUM, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM> FORCEINLINE void ____setFinalColorBck(const u16 color, const size_t srcX);
-	template<GPULayerID LAYERID, bool MOSAIC, bool BACKDROP, int FUNCNUM, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM> FORCEINLINE void ___setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
-	template<GPULayerID LAYERID, bool MOSAIC, bool BACKDROP, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void __setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
+	template<bool ISFULLINTENSITYHINT> void ApplyMasterBrightness();
+	
+	template<GPULayerID LAYERID, int FUNCNUM, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM> FORCEINLINE void ____setFinalColorBck(const u16 color, const size_t srcX);
+	template<GPULayerID LAYERID, bool MOSAIC, int FUNCNUM, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM> FORCEINLINE void ___setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
+	template<GPULayerID LAYERID, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void __setFinalColorBck(u16 color, const size_t srcX, const bool opaque);
 	
 	void UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
 	void UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
@@ -1338,7 +1344,8 @@ public:
 	u16* Get3DFramebufferRGBA5551() const;
 	virtual void SetCustomFramebufferSize(size_t w, size_t h);
 		
-	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool skip);
+	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool isFrameSkipRequested);
+	void FramebufferPostprocess();
 };
 
 class GPUEngineB : public GPUEngineBase
@@ -1355,7 +1362,7 @@ public:
 	void FinalizeAndDeallocate();
 	
 	virtual void Reset();
-	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool skip);
+	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l);
 };
 
 class NDSDisplay
