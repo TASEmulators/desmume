@@ -3164,6 +3164,7 @@ int _main()
 
 	SetMinWindowSize();
 
+	//BUGZOOM
 	ScaleScreen(windowSize, false);
 
 	DragAcceptFiles(MainWindow->getHWnd(), TRUE);
