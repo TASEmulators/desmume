@@ -106,14 +106,6 @@
 #define IDC_BUTTON_BROWSEFILE           201
 #define IDC_CHECK_READONLY              201
 #define IDM_IMPORTBACKUPMEMORY          201
-#define IDC_LANGENGLISH                 210
-#define IDC_LANGFRENCH                  211
-#define IDC_LANG_CHINESE_SIMPLIFIED     213
-#define IDC_LANGITALIAN                 214
-#define IDC_LANGJAPANESE                215
-#define IDC_LANGSPANISH                 216
-#define IDC_LANGKOREAN                  217
-#define IDC_LANG_BRAZILIAN_PORTUGUESE   218
 #define IDM_MGPU                        219
 #define IDM_SGPU                        220
 #define IDC_FRAMESKIPAUTO               221

@@ -419,8 +419,6 @@ RECT FullScreenRect, MainScreenRect, SubScreenRect, GapRect;
 RECT MainScreenSrcRect, SubScreenSrcRect;
 int WndX = 0;
 int WndY = 0;
-int currLanguage = LANGUAGE_ENGLISH;
-UINT currLanguageMenuItem = IDC_LANGENGLISH;
 
 extern HWND RamSearchHWnd;
 static bool lostFocusPause = true;
@@ -2594,80 +2592,6 @@ void MenuDeinit()
 	DestroyMenu(mainMenu);
 }
 
-typedef int (WINAPI *setLanguageFunc)(LANGID id);
-
-void SetLanguage(int langid)
-{
-	//zero 20-may-2013 - languages not supported anymore
-
-
-
-	//HMODULE kernel32 = LoadLibrary("kernel32.dll");
-	//FARPROC _setThreadUILanguage = (FARPROC)GetProcAddress(kernel32,"SetThreadUILanguage");
-	//setLanguageFunc setLanguage = _setThreadUILanguage?(setLanguageFunc)_setThreadUILanguage:(setLanguageFunc)SetThreadLocale;
-	//currLanguage = langid;
-
-	//switch(langid)
-	//{
-	//case LANGUAGE_ENGLISH:
-	//	currLanguageMenuItem = IDC_LANGENGLISH;
-	//	setLanguage(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
-	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
-	//	break;
-	//case LANGUAGE_FRENCH:
-	//	currLanguageMenuItem = IDC_LANGFRENCH;
-	//	setLanguage(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
-	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
-	//	break;
-	//case LANGUAGE_CHINESE:
-	//	currLanguageMenuItem = IDC_LANG_CHINESE_SIMPLIFIED;
-	//	setLanguage(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
-	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
-	//	break;
-	//case LANGUAGE_ITALIAN:
-	//	currLanguageMenuItem = IDC_LANGITALIAN;
-	//	setLanguage(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
-	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_ITALIAN, SUBLANG_ITALIAN), SORT_DEFAULT));
-	//	break;
-	//case LANGUAGE_JAPANESE:
-	//	currLanguageMenuItem = IDC_LANGJAPANESE;
-	//	setLanguage(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
-	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
-	//	break;
-	//case LANGUAGE_SPANISH:
-	//	currLanguageMenuItem = IDC_LANGSPANISH;
-	//	setLanguage(MAKELCID(MAKELANGID(LANG_SPANISH, SUBLANG_SPANISH), SORT_DEFAULT));
-	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_SPANISH, SUBLANG_SPANISH), SORT_DEFAULT));
-	//	break;
-	//case LANGUAGE_KOREAN:
-	//	currLanguageMenuItem = IDC_LANGKOREAN;
-	//	setLanguage(MAKELCID(MAKELANGID(LANG_KOREAN, SUBLANG_KOREAN), SORT_DEFAULT));
-	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_KOREAN, SUBLANG_KOREAN), SORT_DEFAULT));
-	//	break;
-	//case LANGUAGE_BRAZILIAN:
-	//	currLanguageMenuItem = IDC_LANG_BRAZILIAN_PORTUGUESE;
-	//	setLanguage(MAKELCID(MAKELANGID(LANG_PORTUGUESE, SUBLANG_PORTUGUESE_BRAZILIAN), SORT_DEFAULT));
-	//	SetThreadLocale(MAKELCID(MAKELANGID(LANG_PORTUGUESE, SUBLANG_PORTUGUESE_BRAZILIAN), SORT_DEFAULT));
-	//	break;
-
-	//default:
-	//	break;
-	//}
-
-	//FreeLibrary(kernel32);
-
-	//WritePrivateProfileInt("General", "Language", langid, IniName);
-	InitCustomKeys(&CustomKeys);
-	LoadHotkeyConfig();
-}
-
-void ChangeLanguage(int id)
-{
-	SetLanguage(id);
-
-	MenuDeinit();
-	MenuInit();
-}
 
 static void ExitRunLoop()
 {
@@ -3146,12 +3070,8 @@ int _main()
 			TABLET_DISABLE_FLICKFALLBACKKEYS
 			));
 
-	//GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
-	//SetLanguage(atoi(text));
-	//zero 09-feb-2013 - all the translations are out of date. this is dumb. lets just take out the translations. you cant expect translations in a project with our staff size using our tech
-	SetLanguage(LANGUAGE_ENGLISH);
-
-	//hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL)); //Now that we have a hotkey system we down need the Accel table.  Not deleting just yet though
+	InitCustomKeys(&CustomKeys);
+	LoadHotkeyConfig();
 
 	if(MenuInit() == 0)
 	{
@@ -3164,7 +3084,6 @@ int _main()
 
 	SetMinWindowSize();
 
-	//BUGZOOM
 	ScaleScreen(windowSize, false);
 
 	DragAcceptFiles(MainWindow->getHWnd(), TRUE);
@@ -4509,12 +4428,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DesEnableMenuItem(mainMenu, ID_FILE_RECENTROM, RecentRoms.size()>0);
 
 			DesEnableMenuItem(mainMenu, ID_TOOLS_VIEWFSNITRO,     romloaded);
-
-			//Updated Checked menu items
-
-			//language choices
-			for(UINT i = IDC_LANGENGLISH; i <= IDC_LANG_BRAZILIAN_PORTUGUESE; i++)
-				MainWindow->checkMenu(i, i == currLanguageMenuItem);
 
 			//emulation menu
 			MainWindow->checkMenu(IDM_PAUSE, ((paused)));
@@ -6014,30 +5927,7 @@ DOKEYDOWN:
 			for(int i=(int)LuaScriptHWnds.size()-1; i>=0; i--)
 				SendMessage(LuaScriptHWnds[i], WM_CLOSE, 0,0);
 			break;
-		case IDC_LANGENGLISH:
-			ChangeLanguage(LANGUAGE_ENGLISH);
-			return 0;
-		case IDC_LANGFRENCH:
-			ChangeLanguage(LANGUAGE_FRENCH);
-			return 0;
-		case IDC_LANG_CHINESE_SIMPLIFIED:
-			ChangeLanguage(LANGUAGE_CHINESE);
-			return 0;
-		case IDC_LANGITALIAN:
-			ChangeLanguage(LANGUAGE_ITALIAN);
-			return 0;
-		case IDC_LANGJAPANESE:
-			ChangeLanguage(LANGUAGE_JAPANESE);
-			return 0;
-		case IDC_LANGSPANISH:
-			ChangeLanguage(LANGUAGE_SPANISH);
-			return 0;
-		case IDC_LANGKOREAN:
-			ChangeLanguage(LANGUAGE_KOREAN);
-			return 0;
-		case IDC_LANG_BRAZILIAN_PORTUGUESE:
-			ChangeLanguage(LANGUAGE_BRAZILIAN);
-			return 0;
+	
 
 		case IDC_FRAMELIMIT:
 			FrameLimit ^= 1;
