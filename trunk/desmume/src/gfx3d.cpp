@@ -348,15 +348,15 @@ static u8 MM3x3ind = 0;
 
 // Data for vertex submission
 static CACHE_ALIGN s16		s16coord[4] = {0, 0, 0, 0};
-static char		coordind = 0;
+static u8 coordind = 0;
 static PolygonPrimitiveType vtxFormat = GFX3D_TRIANGLES;
 static BOOL inBegin = FALSE;
 
 // Data for basic transforms
 static CACHE_ALIGN s32	trans[4] = {0, 0, 0, 0};
-static int		transind = 0;
+static u8		transind = 0;
 static CACHE_ALIGN s32	scale[4] = {0, 0, 0, 0};
-static int		scaleind = 0;
+static u8		scaleind = 0;
 static u32 viewport = 0;
 
 //various other registers
@@ -385,7 +385,7 @@ static s32 lightDirection[4] = {0,0,0,0};
 //material state:
 static u16 dsDiffuse, dsAmbient, dsSpecular, dsEmission;
 //used for indexing the shininess table during parameters to shininess command
-static int shininessInd = 0;
+static u8 shininessInd = 0;
 
 
 //-----------cached things:
@@ -411,18 +411,18 @@ VERTLIST* vertlists = NULL;
 VERTLIST* vertlist = NULL;
 int			polygonListCompleted = 0;
 
-int listTwiddle = 1;
-int triStripToggle;
+static int listTwiddle = 1;
+static u8 triStripToggle;
 
 //list-building state
 struct tmpVertInfo
 {
 	//the number of verts registered in this list
-	int count;
+	s32 count;
 	//indices to the main vert list
-	int map[4];
+	s32 map[4];
 	//indicates that the first poly in a list has been completed
-	bool first;
+	BOOL first;
 } tempVertInfo;
 
 
@@ -2430,7 +2430,7 @@ SFORMAT SF_GFX3D[]={
 	{ "MM4I", 1, 1, &MM4x4ind},
 	{ "MM3I", 1, 1, &MM4x3ind},
 	{ "MMxI", 1, 1, &MM3x3ind},
-	{ "GSCO", 4, 1, s16coord},
+	{ "GSCO", 2, 4, s16coord},
 	{ "GCOI", 1, 1, &coordind},
 	{ "GVFM", 4, 1, &vtxFormat},
 	{ "GTRN", 4, 4, trans},
@@ -2489,11 +2489,11 @@ SFORMAT SF_GFX3D[]={
 	{ "GSFO", 4, 1, &gfx3d.state.fogOffset},
 	{ "GST4", 2, 32, gfx3d.state.u16ToonTable},
 	{ "GSSU", 1, 128, &gfx3d.state.shininessTable[0]},
-	{ "GSSI", 4, 1, &shininessInd},
+	{ "GSSI", 1, 1, &shininessInd},
 	{ "GSAF", 4, 1, &gfx3d.state.activeFlushCommand},
 	{ "GSPF", 4, 1, &gfx3d.state.pendingFlushCommand},
 	//------------------------
-	{ "GTST", 4, 1, &triStripToggle},
+	{ "GTST", 1, 1, &triStripToggle},
 	{ "GTVC", 4, 1, &tempVertInfo.count},
 	{ "GTVM", 4, 4, tempVertInfo.map},
 	{ "GTVF", 4, 1, &tempVertInfo.first},
