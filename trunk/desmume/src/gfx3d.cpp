@@ -1344,8 +1344,8 @@ static void gfx3d_glTexCoord(s32 val)
 	if (texCoordinateTransform == 1)
 	{
 		//dragon quest 4 overworld will test this
-		last_s = (s32)(((s64)(_s<<12) * mtxCurrent[3][0] + (s64)(_t<<12) * mtxCurrent[3][4] + ((s64)mtxCurrent[3][8]<<12) + ((s64)mtxCurrent[3][12]<<12))>>24);
-		last_t = (s32)(((s64)(_s<<12) * mtxCurrent[3][1] + (s64)(_t<<12) * mtxCurrent[3][5] + ((s64)mtxCurrent[3][9]<<12) + ((s64)mtxCurrent[3][13]<<12))>>24);
+		last_s = (s32) (( (s64)_s * mtxCurrent[3][0] + (s64)_t * mtxCurrent[3][4] + (s64)mtxCurrent[3][8] + (s64)mtxCurrent[3][12])>>12);
+		last_t = (s32) (( (s64)_s * mtxCurrent[3][1] + (s64)_t * mtxCurrent[3][5] + (s64)mtxCurrent[3][9] + (s64)mtxCurrent[3][13])>>12);
 	}
 	else if(texCoordinateTransform == 0)
 	{
