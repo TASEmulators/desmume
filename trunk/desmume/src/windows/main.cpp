@@ -676,6 +676,10 @@ void ScaleScreen(float factor, bool user)
 			factor = 1.5f;
 		else if(factor==kScale2point5x)
 			factor = 2.5f;
+		
+		//don't incorporate prescale into these calculations
+		factor /= video.prescaleHD;
+
 		if (video.layout == 0)
 			MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor), (int)(video.rotatedheightgap() * factor));
 		else
