@@ -42,27 +42,20 @@ struct mapview_struct
 
 	void render()
 	{
-		//we're going to make a copy of the gpu so that we don't wreck affine scroll params
-		//hopefully we won't mess up anything else
-		GPUEngineBase *realGpu = (engineID == GPUEngineID_Main) ? (GPUEngineBase *)GPU->GetEngineMain() : (GPUEngineBase *)GPU->GetEngineSub();
-		GPUEngineBase &gpu = *realGpu;
-
-		//forgive the gyrations, some of this junk in here is to remind us of gyrations we might have to go
-		//through to avoid breaking the gpu struct
-
-		gpu.SetDebugState(true);
-		int temp = gpu.GetFinalColorBckFuncID();
-		gpu.SetFinalColorBckFuncID(0); //hax... why arent we copying gpu now?? i cant remember
+		GPUEngineBase *gpu = (engineID == GPUEngineID_Main) ? (GPUEngineBase *)GPU->GetEngineMain() : (GPUEngineBase *)GPU->GetEngineSub();
 
 		memset(bitmap,0,sizeof(bitmap));
 
-		for(u32 i = 0; i < gpu.BGSize[layerID][1]; ++i)
+		switch (layerID)
 		{
-			gpu.ModeRenderDebug(i, layerID, bitmap + i*gpu.BGSize[layerID][0]);
-		}
+			case GPULayerID_BG0: gpu->RenderLayerBG<GPULayerID_BG0>(bitmap); break;
+			case GPULayerID_BG1: gpu->RenderLayerBG<GPULayerID_BG1>(bitmap); break;
+			case GPULayerID_BG2: gpu->RenderLayerBG<GPULayerID_BG2>(bitmap); break;
+			case GPULayerID_BG3: gpu->RenderLayerBG<GPULayerID_BG3>(bitmap); break;
 
-		gpu.SetDebugState(false);
-		gpu.SetFinalColorBckFuncID(temp);
+			default:
+				break;
+		}
 	}
 };
 
