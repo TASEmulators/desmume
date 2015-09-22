@@ -70,10 +70,10 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 	PAINTSTRUCT  ps;
 	char text[80];
 	u32 dispcnt = ((volatile u32 *)MMU.ARM9_REG)[(win->engineID*0x400)];
-	u32 bgcnt =  ((volatile u16 *)MMU.ARM9_REG)[(8 + (win->layerID<<1) + (win->engineID*0x1000))>>1];
+	const BGLayerInfo &BGLayer = (win->engineID == GPUEngineID_Main) ? GPU->GetEngineMain()->GetBGLayerInfoByID(win->layerID) : GPU->GetEngineSub()->GetBGLayerInfoByID(win->layerID);
 	BITMAPV4HEADER bmi;
-	u16 lg;
-	u16 ht;
+	u16 lg = BGLayer.size.width;
+	u16 ht = BGLayer.size.height;
 	//BGxPARMS * parms;
 
 	//CreateBitmapIndirect(&bmi);
@@ -85,26 +85,15 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 	bmi.bV4RedMask = 0x001F;
 	bmi.bV4GreenMask = 0x03E0;
 	bmi.bV4BlueMask = 0x7C00;
-
-	if(win->engineID == GPUEngineID_Main)
-	{
-		lg = GPU->GetEngineMain()->BGSize[win->layerID][0];
-		ht = GPU->GetEngineMain()->BGSize[win->layerID][1];
-	}
-	else
-	{
-		lg = GPU->GetEngineSub()->BGSize[win->layerID][0];
-		ht = GPU->GetEngineSub()->BGSize[win->layerID][1];
-	}
 	bmi.bV4Width = lg;
 	bmi.bV4Height = -ht;
 
 	hdc = BeginPaint(hwnd, &ps);        
 
-	sprintf(text, "%d %08X, %08X", (int)(dispcnt&7), (int)dispcnt, (int)bgcnt);
+	sprintf(text, "%d %08X, %08X", (int)(dispcnt&7), (int)dispcnt, (int)BGLayer.BGnCNT.value);
 	SetWindowText(GetDlgItem(hwnd, IDC_MODE), text);
 
-	if(!(bgcnt&(1<<7)))
+	if(BGLayer.BGnCNT.PaletteMode == 0)
 		sprintf(text, "normal 16");
 	else
 	{
@@ -112,39 +101,27 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 			sprintf(text, "normal 256");
 		else
 		{
-			switch(win->layerID)
-			{
-			case GPULayerID_BG0 :
-				sprintf(text, "extended slot %d", (bgcnt&(1<<13))?2:0);
-				break;
-			case GPULayerID_BG1 :
-				sprintf(text, "extended slot %d", (bgcnt&(1<<13))?3:1);
-				break;
-			default :
-				sprintf(text, "extended slot %d", GPU->GetEngineMain()->BGExtPalSlot[win->layerID]);
-				break;
-			}
+			sprintf(text, "extended slot %d", BGLayer.extPaletteSlot);
 		}
 	}
 	SetWindowText(GetDlgItem(hwnd, IDC_PAL), text);
 
-	sprintf(text, "%d", (int)(bgcnt&3));
+	sprintf(text, "%d", (int)(BGLayer.priority));
 	SetWindowText(GetDlgItem(hwnd, IDC_PRIO), text);
 
-
-	if((dispcnt>>8>>win->layerID)&1)
+	if(BGLayer.isVisible)
 		SetWindowText(GetDlgItem(hwnd, IDC_VISIBLE), "true");
 	else
 		SetWindowText(GetDlgItem(hwnd, IDC_VISIBLE), "false");
 
-	sprintf(text, "0x%08X", (int)(0x6000000 + ((bgcnt>>2)&0xF)*0x4000 + win->engineID*0x200000 +((dispcnt>>24)&7)*0x10000));
+	sprintf(text, "0x%08X", (int)(0x6000000 + (BGLayer.BGnCNT.CharacBase_Block)*0x4000 + win->engineID*0x200000 +((dispcnt>>24)&7)*0x10000));
 	SetWindowText(GetDlgItem(hwnd, IDC_CHAR), text);
 
-	sprintf(text, "0x%08X", (int)(0x6000000 + 0x800*((bgcnt>>8)&0x1F) + win->engineID*0x200000 + ((dispcnt>>27)&7)*0x10000));
+	sprintf(text, "0x%08X", (int)(0x6000000 + 0x800*(BGLayer.BGnCNT.ScreenBase_Block) + win->engineID*0x200000 + ((dispcnt>>27)&7)*0x10000));
 	SetWindowText(GetDlgItem(hwnd, IDC_SCR), text);
 
 	//sprintf(text, "%d x %d",  GPU->GetEngineMain()->BGPA[win->map], GPU->GetEngineMain()->BGPB[win->map]);
-	sprintf(text, "%d x %d",  (int)GPU->GetEngineMain()->BGSize[win->layerID][0], (int)GPU->GetEngineMain()->BGSize[win->layerID][1]);
+	sprintf(text, "%d x %d",  (int)lg, (int)ht);
 	SetWindowText(GetDlgItem(hwnd, IDC_MSIZE), text);
 
 	//if (win->map==2) {
