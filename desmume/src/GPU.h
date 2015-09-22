@@ -910,9 +910,12 @@ enum SpriteRenderMode
 
 typedef struct
 {
-	 s16 x;
-	 s16 y;
-} SpriteSize;
+	u16 width;
+	u16 height;
+} GPUSize_u16;
+
+typedef GPUSize_u16 SpriteSize;
+typedef GPUSize_u16 BGLayerSize;
 
 typedef u8 TBlendTable[32][32];
 
@@ -948,8 +951,7 @@ enum GPULayerID
 	GPULayerID_BG2					= 2,
 	GPULayerID_BG3					= 3,
 	GPULayerID_OBJ					= 4,
-	
-	GPULayerID_None					= 5
+	GPULayerID_Backdrop				= 5
 };
 
 enum BGType
@@ -1046,6 +1048,28 @@ typedef struct
 
 #define VRAM_NO_3D_USAGE 0xFF
 
+typedef struct
+{
+	GPULayerID layerID;
+	IOREG_BGnCNT BGnCNT;
+	
+	BGLayerSize size;
+	BGType type;
+	u8 priority;
+	
+	bool isVisible;
+	bool isMosaic;
+	bool isDisplayWrapped;
+	
+	u8 extPaletteSlot;
+	u16 *extPalette;
+	
+	u32 largeBMPAddress;
+	u32 BMPAddress;
+	u32 tileMapAddress;
+	u32 tileEntryAddress;
+} BGLayerInfo;
+
 class GPUEngineBase
 {
 protected:
@@ -1054,8 +1078,8 @@ protected:
 	static CACHE_ALIGN u8 _blendTable555[17][17][32][32];
 	
 	static const CACHE_ALIGN SpriteSize _sprSizeTab[4][4];
+	static const CACHE_ALIGN BGLayerSize _BGLayerSizeLUT[8][4];
 	static const CACHE_ALIGN BGType _mode2type[8][4];
-	static const CACHE_ALIGN u16 _sizeTab[8][4][2];
 	static const CACHE_ALIGN u8 _winEmpty[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	
 	static struct MosaicLookup {
@@ -1082,7 +1106,7 @@ protected:
 	CACHE_ALIGN u8 _sprWin[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	
 	bool _enableLayer[5];
-	bool _isBGLayerEnabled;
+	bool _isAnyBGLayerEnabled;
 	itemsForPriority_t _itemsForPriority[NB_PRIORITIES];
 	
 	struct MosaicColor {
@@ -1101,23 +1125,16 @@ protected:
 	OAMAttributes *_oamList;
 	u32 _sprMem;
 	
-	u8 _bgPrio[5];
-	bool _bg0HasHighestPrio;
-	
 	u8 _sprBoundary;
 	u8 _sprBMPBoundary;
 	
-	bool _blend2[8];
+	bool _blend2[6];
 	
 	TBlendTable *_blendTable;
 	u16 *_currentFadeInColors;
 	u16 *_currentFadeOutColors;
 	
-	u32 _BG_bmp_large_ram[4];
-	u32 _BG_bmp_ram[4];
-	u32 _BG_tile_ram[4];
-	u32 _BG_map_ram[4];
-	BGType _BGTypes[4];
+	BGLayerInfo _BGLayer[4];
 	
 	CACHE_ALIGN u8 _sprNum[256];
 	CACHE_ALIGN u8 _h_win[2][GPU_FRAMEBUFFER_NATIVE_WIDTH];
@@ -1146,6 +1163,7 @@ protected:
 	
 	void _InitLUTs();
 	void _Reset_Base();
+	void _ResortBGLayers();
 	
 	void _MosaicSpriteLinePixel(const size_t x, u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
 	void _MosaicSpriteLine(u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
@@ -1153,7 +1171,6 @@ protected:
 	template<rot_fun fun, bool WRAP> void _rot_scale_op(u16 *dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG, const s32 wh, const s32 ht, const u32 map, const u32 tile, const u16 *pal);
 	template<GPULayerID LAYERID, rot_fun fun> void _apply_rot_fun(u16 *dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG, const u32 map, const u32 tile, const u16 *pal);
 	
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineLarge8bpp(u16 *dstColorLine, const u16 lineIndex);
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_TextBG(u16 *dstColorLine, const u16 lineIndex, u16 XBG, u16 YBG, u16 LG);
 	
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _RotBG2(u16 *dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG);
@@ -1196,7 +1213,6 @@ public:
 	virtual ~GPUEngineBase();
 	
 	virtual void Reset();
-	void ResortBGLayers();
 	void SetupFinalPixelBlitter();
 	void RefreshAffineStartRegs();
 	
@@ -1215,9 +1231,6 @@ public:
 	
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool isFrameSkipRequested);
 	void FramebufferPostprocess();
-	
-	u16 BGSize[4][2];
-	u8 BGExtPalSlot[4];
 	
 	bool isCustomRenderingNeeded;
 	bool is3DEnabled;
@@ -1250,6 +1263,8 @@ public:
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM> FORCEINLINE void ____setFinalColorBck(u16 *dstColorLine, const u16 lineIndex, const u16 color, const size_t srcX);
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM> FORCEINLINE void ___setFinalColorBck(u16 *dstColorLine, const u16 lineIndex, u16 color, const size_t srcX, const bool opaque);
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void __setFinalColorBck(u16 *dstColorLine, const u16 lineIndex, u16 color, const size_t srcX, const bool opaque);
+	
+	const BGLayerInfo& GetBGLayerInfoByID(const GPULayerID layerID);
 	
 	void UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
 	void UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
@@ -1319,6 +1334,8 @@ public:
 	FragmentColor* Get3DFramebufferRGBA6665() const;
 	u16* Get3DFramebufferRGBA5551() const;
 	virtual void SetCustomFramebufferSize(size_t w, size_t h);
+	
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineLarge8bpp(u16 *dstColorLine, const u16 lineIndex);
 		
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool isFrameSkipRequested);
 	void FramebufferPostprocess();

@@ -94,7 +94,7 @@ const CACHE_ALIGN BGType GPUEngineBase::_mode2type[8][4] = {
 
 //dont ever think of changing these to bits because you could avoid the multiplies in the main tile blitter.
 //it doesnt really help any
-const CACHE_ALIGN u16 GPUEngineBase::_sizeTab[8][4][2] = {
+const CACHE_ALIGN BGLayerSize GPUEngineBase::_BGLayerSizeLUT[8][4] = {
 	{{0, 0}, {0, 0}, {0, 0}, {0, 0}}, //Invalid
     {{256,256}, {512,256}, {256,512}, {512,512}}, //text
     {{128,128}, {256,256}, {512,512}, {1024,1024}}, //affine
@@ -298,8 +298,22 @@ void GPUEngineBase::_InitLUTs()
 GPUEngineBase::GPUEngineBase()
 {
 	_IORegisterMap = NULL;
-	_paletteBG = NULL;
 	_paletteOBJ = NULL;
+	
+	this->_BGLayer[GPULayerID_BG0].layerID = GPULayerID_BG0;
+	this->_BGLayer[GPULayerID_BG1].layerID = GPULayerID_BG1;
+	this->_BGLayer[GPULayerID_BG2].layerID = GPULayerID_BG2;
+	this->_BGLayer[GPULayerID_BG3].layerID = GPULayerID_BG3;
+	
+	this->_BGLayer[GPULayerID_BG0].extPaletteSlot = GPULayerID_BG0;
+	this->_BGLayer[GPULayerID_BG1].extPaletteSlot = GPULayerID_BG1;
+	this->_BGLayer[GPULayerID_BG2].extPaletteSlot = GPULayerID_BG2;
+	this->_BGLayer[GPULayerID_BG3].extPaletteSlot = GPULayerID_BG3;
+	
+	this->_BGLayer[GPULayerID_BG0].extPalette = NULL;
+	this->_BGLayer[GPULayerID_BG1].extPalette = NULL;
+	this->_BGLayer[GPULayerID_BG2].extPalette = NULL;
+	this->_BGLayer[GPULayerID_BG3].extPalette = NULL;
 	
 	_InitLUTs();
 	_workingDstColorBuffer = NULL;
@@ -343,20 +357,49 @@ void GPUEngineBase::_Reset_Base()
 	this->_enableLayer[GPULayerID_BG2] = false;
 	this->_enableLayer[GPULayerID_BG3] = false;
 	this->_enableLayer[GPULayerID_OBJ] = false;
-	this->_isBGLayerEnabled = false;
+	this->_isAnyBGLayerEnabled = false;
 	
-	this->BGExtPalSlot[0] = 0;
-	this->BGExtPalSlot[1] = 0;
-	this->BGExtPalSlot[2] = 0;
-	this->BGExtPalSlot[3] = 0;
+	this->_BGLayer[GPULayerID_BG0].BGnCNT = this->_IORegisterMap->BG0CNT;
+	this->_BGLayer[GPULayerID_BG1].BGnCNT = this->_IORegisterMap->BG1CNT;
+	this->_BGLayer[GPULayerID_BG2].BGnCNT = this->_IORegisterMap->BG2CNT;
+	this->_BGLayer[GPULayerID_BG3].BGnCNT = this->_IORegisterMap->BG3CNT;
 	
-	this->BGSize[0][0] = this->BGSize[1][0] = this->BGSize[2][0] = this->BGSize[3][0] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	this->BGSize[0][1] = this->BGSize[1][1] = this->BGSize[2][1] = this->BGSize[3][1] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	this->_BGLayer[GPULayerID_BG0].size = GPUEngineBase::_BGLayerSizeLUT[BGType_Affine][1];
+	this->_BGLayer[GPULayerID_BG1].size = GPUEngineBase::_BGLayerSizeLUT[BGType_Affine][1];
+	this->_BGLayer[GPULayerID_BG2].size = GPUEngineBase::_BGLayerSizeLUT[BGType_Affine][1];
+	this->_BGLayer[GPULayerID_BG3].size = GPUEngineBase::_BGLayerSizeLUT[BGType_Affine][1];
 	
-	this->_BGTypes[0] = BGType_Invalid;
-	this->_BGTypes[1] = BGType_Invalid;
-	this->_BGTypes[2] = BGType_Invalid;
-	this->_BGTypes[3] = BGType_Invalid;
+	this->_BGLayer[GPULayerID_BG0].type = BGType_Invalid;
+	this->_BGLayer[GPULayerID_BG1].type = BGType_Invalid;
+	this->_BGLayer[GPULayerID_BG2].type = BGType_Invalid;
+	this->_BGLayer[GPULayerID_BG3].type = BGType_Invalid;
+	
+	this->_BGLayer[GPULayerID_BG0].priority = 0;
+	this->_BGLayer[GPULayerID_BG1].priority = 0;
+	this->_BGLayer[GPULayerID_BG2].priority = 0;
+	this->_BGLayer[GPULayerID_BG3].priority = 0;
+	
+	this->_BGLayer[GPULayerID_BG0].isVisible = false;
+	this->_BGLayer[GPULayerID_BG1].isVisible = false;
+	this->_BGLayer[GPULayerID_BG2].isVisible = false;
+	this->_BGLayer[GPULayerID_BG3].isVisible = false;
+	
+	this->_BGLayer[GPULayerID_BG0].isMosaic = false;
+	this->_BGLayer[GPULayerID_BG1].isMosaic = false;
+	this->_BGLayer[GPULayerID_BG2].isMosaic = false;
+	this->_BGLayer[GPULayerID_BG3].isMosaic = false;
+	
+	this->_BGLayer[GPULayerID_BG0].isDisplayWrapped = false;
+	this->_BGLayer[GPULayerID_BG1].isDisplayWrapped = false;
+	this->_BGLayer[GPULayerID_BG2].isDisplayWrapped = false;
+	this->_BGLayer[GPULayerID_BG3].isDisplayWrapped = false;
+	
+	this->_BGLayer[GPULayerID_BG0].extPaletteSlot = GPULayerID_BG0;
+	this->_BGLayer[GPULayerID_BG1].extPaletteSlot = GPULayerID_BG1;
+	this->_BGLayer[GPULayerID_BG0].extPalette = (u16 *)MMU.ExtPal[this->_engineID][GPULayerID_BG0];
+	this->_BGLayer[GPULayerID_BG1].extPalette = (u16 *)MMU.ExtPal[this->_engineID][GPULayerID_BG1];
+	this->_BGLayer[GPULayerID_BG2].extPalette = (u16 *)MMU.ExtPal[this->_engineID][GPULayerID_BG2];
+	this->_BGLayer[GPULayerID_BG3].extPalette = (u16 *)MMU.ExtPal[this->_engineID][GPULayerID_BG3];
 	
 	this->_curr_win[0] = GPUEngineBase::_winEmpty;
 	this->_curr_win[1] = GPUEngineBase::_winEmpty;
@@ -368,14 +411,6 @@ void GPUEngineBase::_Reset_Base()
 	this->vramBGLayer = VRAM_NO_3D_USAGE;
 	this->vramBlockBGIndex = VRAM_NO_3D_USAGE;
 	this->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
-	
-	this->_bgPrio[0] = 0;
-	this->_bgPrio[1] = 0;
-	this->_bgPrio[2] = 0;
-	this->_bgPrio[3] = 0;
-	this->_bgPrio[4] = 0x7F;
-	
-	this->_bg0HasHighestPrio = true;
 	
 	this->_sprBoundary = 0;
 	this->_sprBMPBoundary = 0;
@@ -391,14 +426,12 @@ void GPUEngineBase::_Reset_Base()
 	this->_currentFadeInColors = &GPUEngineBase::_fadeInColors[0][0];
 	this->_currentFadeOutColors = &GPUEngineBase::_fadeOutColors[0][0];
 	
-	this->_blend2[0] = false;
-	this->_blend2[1] = false;
-	this->_blend2[2] = false;
-	this->_blend2[3] = false;
-	this->_blend2[4] = false;
-	this->_blend2[5] = false;
-	this->_blend2[6] = false;
-	this->_blend2[7] = false;
+	this->_blend2[GPULayerID_BG0] = false;
+	this->_blend2[GPULayerID_BG1] = false;
+	this->_blend2[GPULayerID_BG2] = false;
+	this->_blend2[GPULayerID_BG3] = false;
+	this->_blend2[GPULayerID_OBJ] = false;
+	this->_blend2[GPULayerID_Backdrop] = false;
 	
 	this->_isMasterBrightFullIntensity = false;
 	
@@ -419,7 +452,7 @@ void GPUEngineBase::Reset()
 	this->_Reset_Base();
 }
 
-void GPUEngineBase::ResortBGLayers()
+void GPUEngineBase::_ResortBGLayers()
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
 	int i, prio;
@@ -430,13 +463,13 @@ void GPUEngineBase::ResortBGLayers()
 #define OP ^ !
 	// if we untick boxes, layers become invisible
 	//#define OP &&
-	this->_enableLayer[GPULayerID_BG0] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG0] OP(DISPCNT.BG0_Enable/* && !(cnt->BG0_3D && (gpu->core==0))*/);
-	this->_enableLayer[GPULayerID_BG1] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG1] OP(DISPCNT.BG1_Enable);
-	this->_enableLayer[GPULayerID_BG2] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG2] OP(DISPCNT.BG2_Enable);
-	this->_enableLayer[GPULayerID_BG3] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG3] OP(DISPCNT.BG3_Enable);
+	this->_enableLayer[GPULayerID_BG0] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG0] OP(this->_BGLayer[GPULayerID_BG0].isVisible);
+	this->_enableLayer[GPULayerID_BG1] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG1] OP(this->_BGLayer[GPULayerID_BG1].isVisible);
+	this->_enableLayer[GPULayerID_BG2] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG2] OP(this->_BGLayer[GPULayerID_BG2].isVisible);
+	this->_enableLayer[GPULayerID_BG3] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG3] OP(this->_BGLayer[GPULayerID_BG3].isVisible);
 	this->_enableLayer[GPULayerID_OBJ] = CommonSettings.dispLayers[this->_engineID][GPULayerID_OBJ] OP(DISPCNT.OBJ_Enable);
 	
-	this->_isBGLayerEnabled = this->_enableLayer[GPULayerID_BG0] || this->_enableLayer[GPULayerID_BG1] || this->_enableLayer[GPULayerID_BG2] || this->_enableLayer[GPULayerID_BG3];
+	this->_isAnyBGLayerEnabled = this->_enableLayer[GPULayerID_BG0] || this->_enableLayer[GPULayerID_BG1] || this->_enableLayer[GPULayerID_BG2] || this->_enableLayer[GPULayerID_BG3];
 	
 	// KISS ! lower priority first, if same then lower num
 	for (i = 0; i < NB_PRIORITIES; i++)
@@ -450,24 +483,10 @@ void GPUEngineBase::ResortBGLayers()
 	{
 		i--;
 		if (!this->_enableLayer[i]) continue;
-		prio = this->_IORegisterMap->BGnCNT[i].Priority;
+		prio = this->_BGLayer[i].priority;
 		item = &(this->_itemsForPriority[prio]);
 		item->BGs[item->nbBGs]=i;
 		item->nbBGs++;
-	}
-	
-	int bg0Prio = this->_IORegisterMap->BGnCNT[0].Priority;
-	this->_bg0HasHighestPrio = true;
-	for (i = 1; i < 4; i++)
-	{
-		if (this->_enableLayer[i])
-		{
-			if (this->_IORegisterMap->BGnCNT[i].Priority < bg0Prio)
-			{
-				this->_bg0HasHighestPrio = false;
-				break;
-			}
-		}
 	}
 	
 #if 0
@@ -561,43 +580,36 @@ void GPUEngineBase::ParseReg_BGnCNT()
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
 	const IOREG_BGnCNT &BGnCNT = this->_IORegisterMap->BGnCNT[LAYERID];
+	this->_BGLayer[LAYERID].BGnCNT = BGnCNT;
 	
-	this->ResortBGLayers();
-
-	if (ENGINEID == GPUEngineID_Sub)
-	{
-		this->_BG_tile_ram[LAYERID] = MMU_BBG;
-		this->_BG_bmp_ram[LAYERID]  = MMU_BBG;
-		this->_BG_bmp_large_ram[LAYERID]  = MMU_BBG;
-		this->_BG_map_ram[LAYERID]  = MMU_BBG;
-	} 
-	else 
-	{
-		this->_BG_tile_ram[LAYERID] = MMU_ABG + DISPCNT.CharacBase_Block * ADDRESS_STEP_64KB;
-		this->_BG_bmp_ram[LAYERID]  = MMU_ABG;
-		this->_BG_bmp_large_ram[LAYERID] = MMU_ABG;
-		this->_BG_map_ram[LAYERID]  = MMU_ABG + DISPCNT.ScreenBase_Block * ADDRESS_STEP_64KB;
-	}
-
-	this->_BG_tile_ram[LAYERID] += (BGnCNT.CharacBase_Block * ADDRESS_STEP_16KB);
-	this->_BG_bmp_ram[LAYERID]  += (BGnCNT.ScreenBase_Block * ADDRESS_STEP_16KB);
-	this->_BG_map_ram[LAYERID]  += (BGnCNT.ScreenBase_Block * ADDRESS_STEP_2KB);
-
 	switch (LAYERID)
 	{
-		case 0:
-		case 1:
-			this->BGExtPalSlot[LAYERID] = BGnCNT.PaletteSet_Wrap * 2 + LAYERID;
-			break;
+		case GPULayerID_BG0: this->_BGLayer[LAYERID].isVisible = (DISPCNT.BG0_Enable != 0); break;
+		case GPULayerID_BG1: this->_BGLayer[LAYERID].isVisible = (DISPCNT.BG1_Enable != 0); break;
+		case GPULayerID_BG2: this->_BGLayer[LAYERID].isVisible = (DISPCNT.BG2_Enable != 0); break;
+		case GPULayerID_BG3: this->_BGLayer[LAYERID].isVisible = (DISPCNT.BG3_Enable != 0); break;
 			
 		default:
-			this->BGExtPalSlot[LAYERID] = (u8)LAYERID;
 			break;
 	}
-
+	
+	if (ENGINEID == GPUEngineID_Main)
+	{
+		this->_BGLayer[LAYERID].largeBMPAddress  = MMU_ABG;
+		this->_BGLayer[LAYERID].BMPAddress       = MMU_ABG + (BGnCNT.ScreenBase_Block * ADDRESS_STEP_16KB);
+		this->_BGLayer[LAYERID].tileMapAddress   = MMU_ABG + (DISPCNT.ScreenBase_Block * ADDRESS_STEP_64KB) + (BGnCNT.ScreenBase_Block * ADDRESS_STEP_2KB);
+		this->_BGLayer[LAYERID].tileEntryAddress = MMU_ABG + (DISPCNT.CharacBase_Block * ADDRESS_STEP_64KB) + (BGnCNT.CharacBase_Block * ADDRESS_STEP_16KB);
+	}
+	else
+	{
+		this->_BGLayer[LAYERID].largeBMPAddress  = MMU_BBG;
+		this->_BGLayer[LAYERID].BMPAddress       = MMU_BBG + (BGnCNT.ScreenBase_Block * ADDRESS_STEP_16KB);
+		this->_BGLayer[LAYERID].tileMapAddress   = MMU_BBG + (BGnCNT.ScreenBase_Block * ADDRESS_STEP_2KB);
+		this->_BGLayer[LAYERID].tileEntryAddress = MMU_BBG + (BGnCNT.CharacBase_Block * ADDRESS_STEP_16KB);
+	}
+	
+	//clarify affine ext modes
 	BGType mode = GPUEngineBase::_mode2type[DISPCNT.BG_Mode][LAYERID];
-
-	//clarify affine ext modes 
 	if (mode == BGType_AffineExt)
 	{
 		//see: http://nocash.emubase.de/gbatek.htm#dsvideobgmodescontrol
@@ -616,13 +628,25 @@ void GPUEngineBase::ParseReg_BGnCNT()
 				break;
 		}
 	}
-
-	this->_BGTypes[LAYERID] = mode;
-
-	this->BGSize[LAYERID][0] = GPUEngineBase::_sizeTab[mode][BGnCNT.ScreenSize][0];
-	this->BGSize[LAYERID][1] = GPUEngineBase::_sizeTab[mode][BGnCNT.ScreenSize][1];
 	
-	this->_bgPrio[LAYERID] = BGnCNT.Priority;
+	// Extended palette slots can be changed for BG0 and BG1, but BG2 and BG3 remain constant.
+	// Display wrapping can be changed for BG2 and BG3, but BG0 and BG1 cannot wrap.
+	if (LAYERID == GPULayerID_BG0 || LAYERID == GPULayerID_BG1)
+	{
+		this->_BGLayer[LAYERID].extPaletteSlot = (BGnCNT.PaletteSet_Wrap * 2) + LAYERID;
+	}
+	else
+	{
+		this->_BGLayer[LAYERID].isDisplayWrapped = (BGnCNT.PaletteSet_Wrap != 0);
+	}
+	
+	this->_BGLayer[LAYERID].type = mode;
+	this->_BGLayer[LAYERID].size = GPUEngineBase::_BGLayerSizeLUT[mode][BGnCNT.ScreenSize];
+	this->_BGLayer[LAYERID].isMosaic = (BGnCNT.Mosaic != 0);
+	this->_BGLayer[LAYERID].priority = BGnCNT.Priority;
+	this->_BGLayer[LAYERID].extPalette = (u16 *)MMU.ExtPal[this->_engineID][this->_BGLayer[LAYERID].extPaletteSlot];
+	
+	this->_ResortBGLayers();
 }
 
 template<GPULayerID LAYERID>
@@ -682,7 +706,7 @@ void GPUEngineBase::_RenderLine_Clear(const u16 clearColor, const u16 l, u16 *ds
 		memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(dstColorLine, dstClearColor);
 	}
 	
-	memset(this->_dstLayerID, GPULayerID_None, pixCount);
+	memset(this->_dstLayerID, GPULayerID_Backdrop, pixCount);
 	
 	// init background color & priorities
 	memset(this->_sprAlpha, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH);
@@ -741,7 +765,7 @@ bool GPUEngineBase::GetLayerEnableState(const size_t layerIndex)
 void GPUEngineBase::SetLayerEnableState(const size_t layerIndex, bool theState)
 {
 	CommonSettings.dispLayers[this->_engineID][layerIndex] = theState;
-	this->ResortBGLayers();
+	this->_ResortBGLayers();
 }
 
 /*****************************************************************************/
@@ -755,8 +779,6 @@ u8 GPUEngineBase::_WithinRect(const size_t x) const
 	return this->_curr_win[WIN_NUM][x];
 }
 
-//  Now assumes that *draw and *effect are different from 0 when called, so we can avoid
-// setting some values twice
 template <GPULayerID LAYERID>
 FORCEINLINE void GPUEngineBase::_RenderPixel_CheckWindows(const size_t srcX, bool &didPassWindowTest, bool &enableColorEffect) const
 {
@@ -1256,44 +1278,13 @@ void GPUEngineBase::_rot_scale_op(u16 *dstColorLine, const u16 lineIndex, const 
 template<GPULayerID LAYERID, rot_fun fun>
 void GPUEngineBase::_apply_rot_fun(u16 *dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG, const u32 map, const u32 tile, const u16 *pal)
 {
-	const IOREG_BGnCNT &BGnCNT = this->_IORegisterMap->BGnCNT[LAYERID];
-	s32 wh = this->BGSize[LAYERID][0];
-	s32 ht = this->BGSize[LAYERID][1];
+	s32 wh = this->_BGLayer[LAYERID].size.width;
+	s32 ht = this->_BGLayer[LAYERID].size.height;
 	
-	if (BGnCNT.PaletteSet_Wrap)
+	if (this->_BGLayer[LAYERID].isDisplayWrapped)
 		this->_rot_scale_op<fun, true>(dstColorLine, lineIndex, param, LG, wh, ht, map, tile, pal);
 	else
 		this->_rot_scale_op<fun, false>(dstColorLine, lineIndex, param, LG, wh, ht, map, tile, pal);
-}
-
-template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_LineLarge8bpp(u16 *dstColorLine, const u16 lineIndex)
-{
-	if (this->_engineID == GPUEngineID_Sub)
-	{
-		PROGINFO("Cannot use large 8bpp screen on sub core\n");
-		return;
-	}
-
-	u16 XBG = this->_IORegisterMap->BGnOFS[LAYERID].BGnHOFS.Offset;
-	u16 YBG = lineIndex + this->_IORegisterMap->BGnOFS[LAYERID].BGnVOFS.Offset;
-	u16 lg = this->BGSize[LAYERID][0];
-	u16 ht = this->BGSize[LAYERID][1];
-	u16 wmask = (lg-1);
-	u16 hmask = (ht-1);
-	YBG &= hmask;
-
-	//TODO - handle wrapping / out of bounds correctly from rot_scale_op?
-
-	u32 tmp_map = this->_BG_bmp_large_ram[LAYERID] + lg * YBG;
-	u8 *map = (u8 *)MMU_gpu_map(tmp_map);
-
-	for (size_t x = 0; x < lg; ++x, ++XBG)
-	{
-		XBG &= wmask;
-		const u16 color = LE_TO_LOCAL_16( this->_paletteBG[map[XBG]] );
-		this->__setFinalColorBck<MOSAIC, ISDEBUGRENDER, false, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, x, (color != 0));
-	}
 }
 
 /*****************************************************************************/
@@ -1304,9 +1295,8 @@ template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDE
 void GPUEngineBase::_RenderLine_TextBG(u16 *dstColorLine, const u16 lineIndex, u16 XBG, u16 YBG, u16 LG)
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
-	const IOREG_BGnCNT &BGnCNT = this->_IORegisterMap->BGnCNT[LAYERID];
-	const u16 lg     = this->BGSize[LAYERID][0];
-	const u16 ht     = this->BGSize[LAYERID][1];
+	const u16 lg     = this->_BGLayer[LAYERID].size.width;
+	const u16 ht     = this->_BGLayer[LAYERID].size.height;
 	const u16 wmask  = (lg-1);
 	const u16 hmask  = (ht-1);
 	u16 tmp    = ((YBG & hmask) >> 3);
@@ -1320,16 +1310,16 @@ void GPUEngineBase::_RenderLine_TextBG(u16 *dstColorLine, const u16 lineIndex, u
 	u32 mapinfo;
 	TILEENTRY tileentry;
 
-	u32 tmp_map = this->_BG_map_ram[LAYERID] + (tmp&31) * 64;
+	u32 tmp_map = this->_BGLayer[LAYERID].tileMapAddress + (tmp&31) * 64;
 	if (tmp > 31)
-		tmp_map+= ADDRESS_STEP_512B << BGnCNT.ScreenSize;
+		tmp_map+= ADDRESS_STEP_512B << this->_BGLayer[LAYERID].BGnCNT.ScreenSize;
 
 	map = tmp_map;
-	tile = this->_BG_tile_ram[LAYERID];
+	tile = this->_BGLayer[LAYERID].tileEntryAddress;
 
 	xoff = XBG;
 
-	if (BGnCNT.PaletteMode == PaletteMode_16x16) // color: 16 palette entries
+	if (this->_BGLayer[LAYERID].BGnCNT.PaletteMode == PaletteMode_16x16) // color: 16 palette entries
 	{
 		const u16 *pal = this->_paletteBG;
 		
@@ -1396,7 +1386,7 @@ void GPUEngineBase::_RenderLine_TextBG(u16 *dstColorLine, const u16 lineIndex, u
 	}
 	else //256-color BG
 	{
-		const u16 *pal = (DISPCNT.ExBGxPalette_Enable) ? (u16 *)MMU.ExtPal[this->_engineID][this->BGExtPalSlot[LAYERID]] : this->_paletteBG;
+		const u16 *pal = (DISPCNT.ExBGxPalette_Enable) ? this->_BGLayer[LAYERID].extPalette : this->_paletteBG;
 		
 		yoff = ((YBG&7)<<3);
 		xfin = 8 - (xoff&7);
@@ -1440,7 +1430,7 @@ template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDE
 void GPUEngineBase::_RotBG2(u16 *dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG)
 {
 //	printf("rot mode\n");
-	this->_apply_rot_fun< LAYERID, rot_tiled_8bit_entry<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BG_map_ram[LAYERID], this->_BG_tile_ram[LAYERID], this->_paletteBG);
+	this->_apply_rot_fun< LAYERID, rot_tiled_8bit_entry<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].tileMapAddress, this->_BGLayer[LAYERID].tileEntryAddress, this->_paletteBG);
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
@@ -1450,41 +1440,41 @@ void GPUEngineBase::_ExtRotBG2(u16 *dstColorLine, const u16 lineIndex, const IOR
 	
 	u16 *pal = this->_paletteBG;
 
-	switch (this->_BGTypes[LAYERID])
+	switch (this->_BGLayer[LAYERID].type)
 	{
 		case BGType_AffineExt_256x16: // 16  bit bgmap entries
 		{
 			if (DISPCNT.ExBGxPalette_Enable)
 			{
-				pal = (u16 *)(MMU.ExtPal[this->_engineID][this->BGExtPalSlot[LAYERID]]);
-				this->_apply_rot_fun< LAYERID, rot_tiled_16bit_entry<LAYERID, ISDEBUGRENDER, MOSAIC, true, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BG_map_ram[LAYERID], this->_BG_tile_ram[LAYERID], pal);
+				pal = this->_BGLayer[LAYERID].extPalette;
+				this->_apply_rot_fun< LAYERID, rot_tiled_16bit_entry<LAYERID, ISDEBUGRENDER, MOSAIC, true, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].tileMapAddress, this->_BGLayer[LAYERID].tileEntryAddress, pal);
 			}
 			else
 			{
-				this->_apply_rot_fun< LAYERID, rot_tiled_16bit_entry<LAYERID, ISDEBUGRENDER, MOSAIC, false, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BG_map_ram[LAYERID], this->_BG_tile_ram[LAYERID], pal);
+				this->_apply_rot_fun< LAYERID, rot_tiled_16bit_entry<LAYERID, ISDEBUGRENDER, MOSAIC, false, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].tileMapAddress, this->_BGLayer[LAYERID].tileEntryAddress, pal);
 			}
 			break;
 		}
 			
 		case BGType_AffineExt_256x1: // 256 colors
-			this->_apply_rot_fun< LAYERID, rot_256_map<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BG_bmp_ram[LAYERID], 0, pal);
+			this->_apply_rot_fun< LAYERID, rot_256_map<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].BMPAddress, 0, pal);
 			break;
 			
 		case BGType_AffineExt_Direct: // direct colors / BMP
 		{
 			if (ISCUSTOMRENDERINGNEEDED && (LAYERID == this->vramBGLayer))
 			{
-				this->_apply_rot_fun< LAYERID, rot_BMP_map<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED, true> >(dstColorLine, lineIndex, param, LG, this->_BG_bmp_ram[LAYERID], 0, pal);
+				this->_apply_rot_fun< LAYERID, rot_BMP_map<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED, true> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].BMPAddress, 0, pal);
 			}
 			else
 			{
-				this->_apply_rot_fun< LAYERID, rot_BMP_map<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED, false> >(dstColorLine, lineIndex, param, LG, this->_BG_bmp_ram[LAYERID], 0, pal);
+				this->_apply_rot_fun< LAYERID, rot_BMP_map<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED, false> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].BMPAddress, 0, pal);
 			}
 			break;
 		}
 			
 		case BGType_Large8bpp: // large screen 256 colors
-			this->_apply_rot_fun< LAYERID, rot_256_map<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BG_bmp_large_ram[LAYERID], 0, pal);
+			this->_apply_rot_fun< LAYERID, rot_256_map<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].largeBMPAddress, 0, pal);
 			break;
 			
 		default:
@@ -1501,8 +1491,7 @@ void GPUEngineBase::_LineText(u16 *dstColorLine, const u16 lineIndex)
 {
 	if (ISDEBUGRENDER)
 	{
-		const s32 wh = this->BGSize[LAYERID][0];
-		this->_RenderLine_TextBG<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, 0, lineIndex, wh);
+		this->_RenderLine_TextBG<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, 0, lineIndex, this->_BGLayer[LAYERID].size.width);
 	}
 	else
 	{
@@ -1518,8 +1507,7 @@ void GPUEngineBase::_LineRot(u16 *dstColorLine, const u16 lineIndex)
 	if (ISDEBUGRENDER)
 	{
 		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, (s16)(lineIndex*GPU_FRAMEBUFFER_NATIVE_WIDTH)};
-		const s32 wh = this->BGSize[LAYERID][0];
-		this->_RotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, debugParams, wh);
+		this->_RotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, debugParams, this->_BGLayer[LAYERID].size.width);
 	}
 	else
 	{
@@ -1537,8 +1525,7 @@ void GPUEngineBase::_LineExtRot(u16 *dstColorLine, const u16 lineIndex)
 	if (ISDEBUGRENDER)
 	{
 		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, (s16)(lineIndex*GPU_FRAMEBUFFER_NATIVE_WIDTH)};
-		const s32 wh = this->BGSize[LAYERID][0];
-		this->_ExtRotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, debugParams, wh);
+		this->_ExtRotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, debugParams, this->_BGLayer[LAYERID].size.width);
 	}
 	else
 	{
@@ -1700,7 +1687,7 @@ bool GPUEngineBase::_ComputeSpriteVars(const OAMAttributes &spriteInfo, const u1
 	sprX = spriteInfo.X;
 	sprY = spriteInfo.Y;
 	sprSize = GPUEngineBase::_sprSizeTab[spriteInfo.Size][spriteInfo.Shape];
-	lg = sprSize.x;
+	lg = sprSize.width;
 	
 // FIXME: for rot/scale, a list of entries into the sprite should be maintained,
 // that tells us where the first pixel of a screenline starts in the sprite,
@@ -1708,10 +1695,10 @@ bool GPUEngineBase::_ComputeSpriteVars(const OAMAttributes &spriteInfo, const u1
 
 	//this wasn't really tested by anything. very unlikely to get triggered
 	y = (l - sprY) & 0xFF;                        /* get the y line within sprite coords */
-	if (y >= sprSize.y)
+	if (y >= sprSize.height)
 		return false;
 
-	if ((sprX == GPU_FRAMEBUFFER_NATIVE_WIDTH) || (sprX+sprSize.x <= 0))	/* sprite pixels outside of line */
+	if ((sprX == GPU_FRAMEBUFFER_NATIVE_WIDTH) || (sprX+sprSize.width <= 0))	/* sprite pixels outside of line */
 		return false;				/* not to be drawn */
 
 	// sprite portion out of the screen (LEFT)
@@ -1722,17 +1709,17 @@ bool GPUEngineBase::_ComputeSpriteVars(const OAMAttributes &spriteInfo, const u1
 		sprX = 0;
 	}
 	// sprite portion out of the screen (RIGHT)
-	if (sprX+sprSize.x >= GPU_FRAMEBUFFER_NATIVE_WIDTH)
+	if (sprX+sprSize.width >= GPU_FRAMEBUFFER_NATIVE_WIDTH)
 		lg = GPU_FRAMEBUFFER_NATIVE_WIDTH - sprX;
 
 	// switch TOP<-->BOTTOM
 	if (spriteInfo.VFlip)
-		y = sprSize.y - y - 1;
+		y = sprSize.height - y - 1;
 	
 	// switch LEFT<-->RIGHT
 	if (spriteInfo.HFlip)
 	{
-		x = sprSize.x - x - 1;
+		x = sprSize.width - x - 1;
 		xdir = -1;
 	}
 	else
@@ -1757,7 +1744,7 @@ u32 GPUEngineBase::_SpriteAddressBMP(const OAMAttributes &spriteInfo, const Spri
 	if (DISPCNT.OBJ_BMP_mapping)
 	{
 		//tested by buffy sacrifice damage blood splatters in corner
-		return this->_sprMem + (spriteInfo.TileIndex << this->_sprBMPBoundary) + (y * sprSize.x * 2);
+		return this->_sprMem + (spriteInfo.TileIndex << this->_sprBMPBoundary) + (y * sprSize.width * 2);
 	}
 	else
 	{
@@ -1840,9 +1827,9 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *dst, u8 *dst_
 			sprSize = GPUEngineBase::_sprSizeTab[spriteInfo.Size][spriteInfo.Shape];
 
 			// Copy sprite size, to check change it if needed
-			fieldX = sprSize.x;
-			fieldY = sprSize.y;
-			lg = sprSize.x;
+			fieldX = sprSize.width;
+			fieldY = sprSize.height;
+			lg = sprSize.width;
 
 			// If we are using double size mode, double our control vars
 			if (spriteInfo.DoubleSize != 0)
@@ -1862,7 +1849,7 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *dst, u8 *dst_
 			if ((sprX == GPU_FRAMEBUFFER_NATIVE_WIDTH) || (sprX + fieldX <= 0))
 				continue;
 
-			cost += (sprSize.x * 2) + 10;
+			cost += (sprSize.width * 2) + 10;
 
 			// Get which four parameter block is assigned to this sprite
 			blockparameter = (spriteInfo.RotScaleIndex + (spriteInfo.HFlip << 3) + (spriteInfo.VFlip << 4)) * 4;
@@ -1874,8 +1861,8 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *dst, u8 *dst_
 			dmy = LE_TO_LOCAL_16((s16)this->_oamList[blockparameter+3].attr3);
 			
 			// Calculate fixed point 8.8 start offsets
-			realX = (sprSize.x << 7) - (fieldX >> 1)*dx - (fieldY >> 1)*dmx + y*dmx;
-			realY = (sprSize.y << 7) - (fieldX >> 1)*dy - (fieldY >> 1)*dmy + y*dmy;
+			realX = (sprSize.width  << 7) - (fieldX >> 1)*dx - (fieldY >> 1)*dmx + y*dmx;
+			realY = (sprSize.height << 7) - (fieldX >> 1)*dy - (fieldY >> 1)*dmy + y*dmy;
 
 			if (sprX < 0)
 			{
@@ -1909,12 +1896,12 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *dst, u8 *dst_
 					auxX = (realX >> 8);
 					auxY = (realY >> 8);
 
-					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
+					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.width && auxY < sprSize.height)
 					{
 						if (MODE == SpriteRenderMode_Sprite2D)
 							offset = (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)<<10) + ((auxY&0x7)*8);
 						else
-							offset = (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)*sprSize.x*8) + ((auxY&0x7)*8);
+							offset = (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)*sprSize.width*8) + ((auxY&0x7)*8);
 
 						colour = src[offset];
 
@@ -1951,14 +1938,14 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *dst, u8 *dst_
 					//this is all very slow, and so much dup code with other rotozoomed modes.
 					//dont bother fixing speed until this whole thing gets reworked
 
-					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
+					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.width && auxY < sprSize.height)
 					{
 						if (DISPCNT.OBJ_BMP_2D_dim)
 							//tested by knights in the nightmare
 							offset = (this->_SpriteAddressBMP(spriteInfo, sprSize, auxY)-srcadr)/2+auxX;
 						else //tested by lego indiana jones (somehow?)
 							//tested by buffy sacrifice damage blood splatters in corner
-							offset = auxX + (auxY*sprSize.x);
+							offset = auxX + (auxY*sprSize.width);
 
 
 						u16* mem = (u16*)MMU_gpu_map(srcadr + (offset<<1));
@@ -1999,12 +1986,12 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *dst, u8 *dst_
 					auxX = realX >> 8;
 					auxY = realY >> 8;
 
-					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
+					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.width && auxY < sprSize.height)
 					{
 						if (MODE == SpriteRenderMode_Sprite2D)
 							offset = ((auxX>>1)&0x3) + (((auxX>>1)&0xFFFC)<<3) + ((auxY>>3)<<10) + ((auxY&0x7)*4);
 						else
-							offset = ((auxX>>1)&0x3) + (((auxX>>1)&0xFFFC)<<3) + ((auxY>>3)*sprSize.x)*4 + ((auxY&0x7)*4);
+							offset = ((auxX>>1)&0x3) + (((auxX>>1)&0xFFFC)<<3) + ((auxY>>3)*sprSize.width)*4 + ((auxY&0x7)*4);
 						
 						colour = src[offset];
 
@@ -2040,7 +2027,7 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *dst, u8 *dst_
 			if (!this->_ComputeSpriteVars(spriteInfo, lineIndex, sprSize, sprX, sprY, x, y, lg, xdir))
 				continue;
 
-			cost += sprSize.x;
+			cost += sprSize.width;
 
 			if (objMode == OBJMode_Window)
 			{
@@ -2054,9 +2041,9 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *dst, u8 *dst_
 				else
 				{
 					if (spriteInfo.PaletteMode == PaletteMode_1x256)
-						src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex<<this->_sprBoundary) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
+						src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex<<this->_sprBoundary) + ((y>>3)*sprSize.width*8) + ((y&0x7)*8));
 					else
-						src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex<<this->_sprBoundary) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
+						src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex<<this->_sprBoundary) + ((y>>3)*sprSize.width*4) + ((y&0x7)*4));
 				}
 
 				this->_RenderSpriteWin(src, (spriteInfo.PaletteMode == PaletteMode_1x256), lg, sprX, x, xdir);
@@ -2076,7 +2063,7 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *dst, u8 *dst_
 				if (MODE == SpriteRenderMode_Sprite2D)
 					srcadr = this->_sprMem + ((spriteInfo.TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
 				else
-					srcadr = this->_sprMem + (spriteInfo.TileIndex<<this->_sprBoundary) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
+					srcadr = this->_sprMem + (spriteInfo.TileIndex<<this->_sprBoundary) + ((y>>3)*sprSize.width*8) + ((y&0x7)*8);
 				
 				pal = (DISPCNT.ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*ADDRESS_STEP_512B)) : this->_paletteOBJ;
 				this->_RenderSprite256(i, lineIndex, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
@@ -2089,7 +2076,7 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *dst, u8 *dst_
 				}
 				else
 				{
-					srcadr = this->_sprMem + (spriteInfo.TileIndex<<this->_sprBoundary) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
+					srcadr = this->_sprMem + (spriteInfo.TileIndex<<this->_sprBoundary) + ((y>>3)*sprSize.width*4) + ((y&0x7)*4);
 				}
 				
 				pal = this->_paletteOBJ + (spriteInfo.PaletteIndex << 4);
@@ -2260,26 +2247,25 @@ void GPUEngineBase::_UpdateWINH()
 void GPUEngineBase::UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty)
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
-	const bool bg2 = (DISPCNT.BG2_Enable == 1) && (this->_BGTypes[2] == BGType_AffineExt_Direct) && (this->BGSize[2][0] == 256) && (this->BGSize[2][1] == 256);
-	const bool bg3 = (DISPCNT.BG3_Enable == 1) && (this->_BGTypes[3] == BGType_AffineExt_Direct) && (this->BGSize[3][0] == 256) && (this->BGSize[3][1] == 256);
+	const bool isBG2UsingVRAM = (DISPCNT.BG2_Enable == 1) && (this->_BGLayer[GPULayerID_BG2].type == BGType_AffineExt_Direct) && (this->_BGLayer[GPULayerID_BG2].size.width == 256) && (this->_BGLayer[GPULayerID_BG2].size.height == 256);
+	const bool isBG3UsingVRAM = (DISPCNT.BG3_Enable == 1) && (this->_BGLayer[GPULayerID_BG3].type == BGType_AffineExt_Direct) && (this->_BGLayer[GPULayerID_BG3].size.width == 256) && (this->_BGLayer[GPULayerID_BG3].size.height == 256);
 	u8 selectedBGLayer = VRAM_NO_3D_USAGE;
 	
-	if (!bg2 && !bg3)
+	if (!isBG2UsingVRAM && !isBG3UsingVRAM)
 	{
 		return;
 	}
-	
-	if (bg3 && !bg2)
+	else if (!isBG2UsingVRAM && isBG3UsingVRAM)
 	{
-		selectedBGLayer = (this->_bgPrio[GPULayerID_BG3] >= this->_bgPrio[GPULayerID_BG0]) ? GPULayerID_BG3 : VRAM_NO_3D_USAGE;
+		selectedBGLayer = (this->_BGLayer[GPULayerID_BG3].priority <= this->_BGLayer[GPULayerID_BG0].priority) ? GPULayerID_BG3 : VRAM_NO_3D_USAGE;
 	}
-	else if (!bg3 && bg2)
+	else if (isBG2UsingVRAM && !isBG3UsingVRAM)
 	{
-		selectedBGLayer = (this->_bgPrio[GPULayerID_BG2] >= this->_bgPrio[GPULayerID_BG0]) ? GPULayerID_BG2 : VRAM_NO_3D_USAGE;
+		selectedBGLayer = (this->_BGLayer[GPULayerID_BG2].priority <= this->_BGLayer[GPULayerID_BG0].priority) ? GPULayerID_BG2 : VRAM_NO_3D_USAGE;
 	}
-	else if (bg3 && bg2)
+	else if (isBG2UsingVRAM && isBG3UsingVRAM)
 	{
-		selectedBGLayer = (this->_bgPrio[GPULayerID_BG3] >= this->_bgPrio[GPULayerID_BG2]) ? ((this->_bgPrio[GPULayerID_BG3] >= this->_bgPrio[GPULayerID_BG0]) ? GPULayerID_BG3 : VRAM_NO_3D_USAGE) : ((this->_bgPrio[GPULayerID_BG2] >= this->_bgPrio[GPULayerID_BG0]) ? GPULayerID_BG2 : VRAM_NO_3D_USAGE);
+		selectedBGLayer = (this->_BGLayer[GPULayerID_BG3].priority <= this->_BGLayer[GPULayerID_BG2].priority) ? ((this->_BGLayer[GPULayerID_BG3].priority <= this->_BGLayer[GPULayerID_BG0].priority) ? GPULayerID_BG3 : VRAM_NO_3D_USAGE) : ((this->_BGLayer[GPULayerID_BG2].priority <= this->_BGLayer[GPULayerID_BG0].priority) ? GPULayerID_BG2 : VRAM_NO_3D_USAGE);
 	}
 	
 	if (selectedBGLayer != VRAM_NO_3D_USAGE)
@@ -2324,7 +2310,7 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex,
 			const u32 vramAddress = ((spriteInfo.TileIndex & 0x1F) << 5) + ((spriteInfo.TileIndex & ~0x1F) << 7);
 			const SpriteSize sprSize = GPUEngineBase::_sprSizeTab[spriteInfo.Size][spriteInfo.Shape];
 			
-			if( (vramAddress == (DISPCAPCNT.VRAMWriteOffset * ADDRESS_STEP_32KB)) && (sprSize.x == 64) && (sprSize.y == 64) )
+			if( (vramAddress == (DISPCAPCNT.VRAMWriteOffset * ADDRESS_STEP_32KB)) && (sprSize.width == 64) && (sprSize.height == 64) )
 			{
 				this->vramBlockOBJIndex = bankIndex;
 				this->isCustomRenderingNeeded = true;
@@ -2355,8 +2341,8 @@ template <GPULayerID LAYERID>
 void GPUEngineBase::RenderLayerBG(u16 *dstColorBuffer)
 {
 	u16 *dstColorLine = dstColorBuffer;
-	const size_t layerWidth = this->BGSize[LAYERID][0];
-	const size_t layerHeight = this->BGSize[LAYERID][1];
+	const size_t layerWidth = this->_BGLayer[LAYERID].size.width;
+	const size_t layerHeight = this->_BGLayer[LAYERID].size.height;
 	
 	for (size_t lineIndex = 0; lineIndex < layerHeight; lineIndex++)
 	{
@@ -2400,12 +2386,12 @@ void GPUEngineBase::ParseReg_BLDCNT()
 {
 	const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
 	
-	this->_blend2[0] = (BLDCNT.BG0_Target2 != 0);
-	this->_blend2[1] = (BLDCNT.BG1_Target2 != 0);
-	this->_blend2[2] = (BLDCNT.BG2_Target2 != 0);
-	this->_blend2[3] = (BLDCNT.BG3_Target2 != 0);
-	this->_blend2[4] = (BLDCNT.OBJ_Target2 != 0);
-	this->_blend2[5] = (BLDCNT.Backdrop_Target2 != 0);
+	this->_blend2[GPULayerID_BG0] = (BLDCNT.BG0_Target2 != 0);
+	this->_blend2[GPULayerID_BG1] = (BLDCNT.BG1_Target2 != 0);
+	this->_blend2[GPULayerID_BG2] = (BLDCNT.BG2_Target2 != 0);
+	this->_blend2[GPULayerID_BG3] = (BLDCNT.BG3_Target2 != 0);
+	this->_blend2[GPULayerID_OBJ] = (BLDCNT.OBJ_Target2 != 0);
+	this->_blend2[GPULayerID_Backdrop] = (BLDCNT.Backdrop_Target2 != 0);
 }
 
 void GPUEngineBase::ParseReg_BLDALPHA()
@@ -2430,6 +2416,11 @@ template<size_t WINNUM>
 void GPUEngineBase::ParseReg_WINnH()
 {
 	this->_needUpdateWINH[WINNUM] = true;
+}
+
+const BGLayerInfo& GPUEngineBase::GetBGLayerInfoByID(const GPULayerID layerID)
+{
+	return this->_BGLayer[layerID];
 }
 
 NDSDisplayID GPUEngineBase::GetDisplayByID() const
@@ -2616,25 +2607,26 @@ void GPUEngineA::Reset()
 	
 	memset(&this->_dispCapCnt, 0, sizeof(DISPCAPCNT_parsed));
 	
-	this->_BG_tile_ram[0] = MMU_ABG;
-	this->_BG_tile_ram[1] = MMU_ABG;
-	this->_BG_tile_ram[2] = MMU_ABG;
-	this->_BG_tile_ram[3] = MMU_ABG;
 	
-	this->_BG_bmp_ram[0] = MMU_ABG;
-	this->_BG_bmp_ram[1] = MMU_ABG;
-	this->_BG_bmp_ram[2] = MMU_ABG;
-	this->_BG_bmp_ram[3] = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG0].BMPAddress = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG1].BMPAddress = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG2].BMPAddress = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG3].BMPAddress = MMU_ABG;
 	
-	this->_BG_bmp_large_ram[0] = MMU_ABG;
-	this->_BG_bmp_large_ram[1] = MMU_ABG;
-	this->_BG_bmp_large_ram[2] = MMU_ABG;
-	this->_BG_bmp_large_ram[3] = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG0].largeBMPAddress = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG1].largeBMPAddress = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG2].largeBMPAddress = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG3].largeBMPAddress = MMU_ABG;
 	
-	this->_BG_map_ram[0] = MMU_ABG;
-	this->_BG_map_ram[1] = MMU_ABG;
-	this->_BG_map_ram[2] = MMU_ABG;
-	this->_BG_map_ram[3] = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG0].tileMapAddress = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG1].tileMapAddress = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG2].tileMapAddress = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG3].tileMapAddress = MMU_ABG;
+	
+	this->_BGLayer[GPULayerID_BG0].tileEntryAddress = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG1].tileEntryAddress = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG2].tileEntryAddress = MMU_ABG;
+	this->_BGLayer[GPULayerID_BG3].tileEntryAddress = MMU_ABG;
 	
 	this->SetDisplayByID(NDSDisplayID_Main);
 	
@@ -2829,15 +2821,13 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 		prio--;
 		item = &(this->_itemsForPriority[prio]);
 		// render BGs
-		if (this->_isBGLayerEnabled)
+		if (this->_isAnyBGLayerEnabled)
 		{
 			for (size_t i = 0; i < item->nbBGs; i++)
 			{
 				const GPULayerID layerID = (GPULayerID)item->BGs[i];
 				if (this->_enableLayer[layerID])
 				{
-					const IOREG_BGnCNT &BGnCNT = this->_IORegisterMap->BGnCNT[layerID];
-					
 					if (layerID == GPULayerID_BG0 && this->is3DEnabled)
 					{
 						const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
@@ -2876,7 +2866,7 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 					}
 					
 #ifndef DISABLE_MOSAIC
-					if (BGnCNT.Mosaic != 0)
+					if (this->_BGLayer[layerID].isMosaic)
 					{
 						switch (layerID)
 						{
@@ -3574,6 +3564,30 @@ void GPUEngineA::_HandleDisplayModeMainMemory(u16 *dstColorLine, const size_t l,
 	}
 }
 
+template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
+void GPUEngineA::_LineLarge8bpp(u16 *dstColorLine, const u16 lineIndex)
+{
+	u16 XBG = this->_IORegisterMap->BGnOFS[LAYERID].BGnHOFS.Offset;
+	u16 YBG = lineIndex + this->_IORegisterMap->BGnOFS[LAYERID].BGnVOFS.Offset;
+	u16 lg = this->_BGLayer[LAYERID].size.width;
+	u16 ht = this->_BGLayer[LAYERID].size.height;
+	u16 wmask = (lg-1);
+	u16 hmask = (ht-1);
+	YBG &= hmask;
+	
+	//TODO - handle wrapping / out of bounds correctly from rot_scale_op?
+	
+	u32 tmp_map = this->_BGLayer[LAYERID].largeBMPAddress + lg * YBG;
+	u8 *map = (u8 *)MMU_gpu_map(tmp_map);
+	
+	for (size_t x = 0; x < lg; ++x, ++XBG)
+	{
+		XBG &= wmask;
+		const u16 color = LE_TO_LOCAL_16( this->_paletteBG[map[XBG]] );
+		this->__setFinalColorBck<MOSAIC, ISDEBUGRENDER, false, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, x, (color != 0));
+	}
+}
+
 void GPUEngineA::FramebufferPostprocess()
 {
 	this->GPUEngineBase::FramebufferPostprocess();
@@ -3612,25 +3626,25 @@ void GPUEngineB::Reset()
 {
 	this->_Reset_Base();
 	
-	this->_BG_tile_ram[0] = MMU_BBG;
-	this->_BG_tile_ram[1] = MMU_BBG;
-	this->_BG_tile_ram[2] = MMU_BBG;
-	this->_BG_tile_ram[3] = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG0].BMPAddress = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG1].BMPAddress = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG2].BMPAddress = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG3].BMPAddress = MMU_BBG;
 	
-	this->_BG_bmp_ram[0] = MMU_BBG;
-	this->_BG_bmp_ram[1] = MMU_BBG;
-	this->_BG_bmp_ram[2] = MMU_BBG;
-	this->_BG_bmp_ram[3] = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG0].largeBMPAddress = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG1].largeBMPAddress = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG2].largeBMPAddress = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG3].largeBMPAddress = MMU_BBG;
 	
-	this->_BG_bmp_large_ram[0] = MMU_BBG;
-	this->_BG_bmp_large_ram[1] = MMU_BBG;
-	this->_BG_bmp_large_ram[2] = MMU_BBG;
-	this->_BG_bmp_large_ram[3] = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG0].tileMapAddress = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG1].tileMapAddress = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG2].tileMapAddress = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG3].tileMapAddress = MMU_BBG;
 	
-	this->_BG_map_ram[0] = MMU_BBG;
-	this->_BG_map_ram[1] = MMU_BBG;
-	this->_BG_map_ram[2] = MMU_BBG;
-	this->_BG_map_ram[3] = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG0].tileEntryAddress = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG1].tileEntryAddress = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG2].tileEntryAddress = MMU_BBG;
+	this->_BGLayer[GPULayerID_BG3].tileEntryAddress = MMU_BBG;
 	
 	this->SetDisplayByID(NDSDisplayID_Touch);
 }
@@ -3708,17 +3722,15 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 		prio--;
 		item = &(this->_itemsForPriority[prio]);
 		// render BGs
-		if (this->_isBGLayerEnabled)
+		if (this->_isAnyBGLayerEnabled)
 		{
 			for (size_t i = 0; i < item->nbBGs; i++)
 			{
 				const GPULayerID layerID = (GPULayerID)item->BGs[i];
 				if (this->_enableLayer[layerID])
 				{
-					const IOREG_BGnCNT &BGnCNT = this->_IORegisterMap->BGnCNT[layerID];
-					
 #ifndef DISABLE_MOSAIC
-					if (BGnCNT.Mosaic != 0)
+					if (this->_BGLayer[layerID].isMosaic)
 					{
 						switch (layerID)
 						{
