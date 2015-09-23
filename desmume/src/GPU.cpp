@@ -1162,15 +1162,13 @@ FORCEINLINE void GPUEngineBase::___setFinalColorBck(u16 *dstColorLine, const u16
 		if (!opaque) color = 0xFFFF;
 		else color &= 0x7FFF;
 		
-		if (this->_mosaicWidth[srcX].begin && this->_mosaicHeight[lineIndex].begin)
+		if (this->_mosaicWidthBG[srcX].begin && this->_mosaicHeightBG[lineIndex].begin)
 		{
 			// Do nothing.
 		}
 		else
 		{
-			//due to the early out, enabled must always be true
-			//x_int = enabled ? this->_mosaicWidth[srcX].trunc : srcX;
-			const size_t x_int = this->_mosaicWidth[srcX].trunc;
+			const size_t x_int = this->_mosaicWidthBG[srcX].trunc;
 			color = this->_mosaicColors.bg[LAYERID][x_int];
 		}
 		
@@ -1197,7 +1195,7 @@ void GPUEngineBase::_MosaicSpriteLinePixel(const size_t x, u16 l, u16 *dst, u8 *
 	const bool enableMosaic = (this->_oamList[this->_sprNum[x]].Mosaic != 0);
 	if (!enableMosaic)
 		return;
-
+	
 	const bool opaque = prioTab[x] <= 4;
 
 	GPUEngineBase::MosaicColor::Obj objColor;
@@ -1205,21 +1203,18 @@ void GPUEngineBase::_MosaicSpriteLinePixel(const size_t x, u16 l, u16 *dst, u8 *
 	objColor.alpha = dst_alpha[x];
 	objColor.opaque = opaque;
 
-	const size_t x_int = (enableMosaic) ? this->_mosaicWidth[x].trunc : x;
-
-	if (enableMosaic)
+	const size_t y = l;
+	
+	if (this->_mosaicWidthOBJ[x].begin && this->_mosaicHeightOBJ[y].begin)
 	{
-		const size_t y = l;
-		
-		if (this->_mosaicWidth[x].begin && this->_mosaicHeight[y].begin)
-		{
-			// Do nothing.
-		}
-		else
-		{
-			objColor = this->_mosaicColors.obj[x_int];
-		}
+		// Do nothing.
 	}
+	else
+	{
+		const size_t x_int = this->_mosaicWidthOBJ[x].trunc;
+		objColor = this->_mosaicColors.obj[x_int];
+	}
+	
 	this->_mosaicColors.obj[x] = objColor;
 	
 	dst[x] = LE_TO_LOCAL_16(objColor.color);
@@ -1229,10 +1224,10 @@ void GPUEngineBase::_MosaicSpriteLinePixel(const size_t x, u16 l, u16 *dst, u8 *
 
 void GPUEngineBase::_MosaicSpriteLine(u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab)
 {
-	//don't even try this unless the mosaic is effective
-	if (this->_mosaicWidthValue != 0 || this->_mosaicHeightValue != 0)
-		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
-			this->_MosaicSpriteLinePixel(i, l, dst, dst_alpha, typeTab, prioTab);
+	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
+	{
+		this->_MosaicSpriteLinePixel(i, l, dst, dst_alpha, typeTab, prioTab);
+	}
 }
 
 template<rot_fun fun, bool WRAP>
@@ -2188,8 +2183,8 @@ void GPUEngineBase::ApplyMasterBrightness()
 template<size_t WIN_NUM>
 void GPUEngineBase::_SetupWindows(const u16 lineIndex)
 {
-	const u16 windowTop		= (WIN_NUM == 0) ? this->_IORegisterMap->WIN0V.Top : this->_IORegisterMap->WIN1V.Top;
-	const u16 windowBottom	= (WIN_NUM == 0) ? this->_IORegisterMap->WIN0V.Bottom : this->_IORegisterMap->WIN1V.Bottom;
+	const u16 windowTop    = (WIN_NUM == 0) ? this->_IORegisterMap->WIN0V.Top : this->_IORegisterMap->WIN1V.Top;
+	const u16 windowBottom = (WIN_NUM == 0) ? this->_IORegisterMap->WIN0V.Bottom : this->_IORegisterMap->WIN1V.Bottom;
 	
 	if (WIN_NUM == 0 && !this->_WIN0_ENABLED) goto allout;
 	if (WIN_NUM == 1 && !this->_WIN1_ENABLED) goto allout;
@@ -2219,8 +2214,8 @@ void GPUEngineBase::_UpdateWINH()
 	if (WIN_NUM == 1 && !this->_WIN1_ENABLED) return;
 
 	this->_needUpdateWINH[WIN_NUM] = false;
-	const size_t windowLeft		= (WIN_NUM == 0) ? this->_IORegisterMap->WIN0H.Left : this->_IORegisterMap->WIN1H.Left;
-	const size_t windowRight	= (WIN_NUM == 0) ? this->_IORegisterMap->WIN0H.Right : this->_IORegisterMap->WIN1H.Right;
+	const size_t windowLeft  = (WIN_NUM == 0) ? this->_IORegisterMap->WIN0H.Left  : this->_IORegisterMap->WIN1H.Left;
+	const size_t windowRight = (WIN_NUM == 0) ? this->_IORegisterMap->WIN0H.Right : this->_IORegisterMap->WIN1H.Right;
 
 	//the original logic: if you doubt the window code, please check it against the newer implementation below
 	//if(windowLeft > windowRight)
@@ -2373,13 +2368,10 @@ void GPUEngineBase::_HandleDisplayModeNormal(u16 *dstColorLine, const size_t l, 
 
 void GPUEngineBase::ParseReg_MOSAIC()
 {
-	const u8 bgMosaicH = this->_IORegisterMap->MOSAIC.BG_MosaicH;
-	const u8 bgMosaicV = this->_IORegisterMap->MOSAIC.BG_MosaicV;
-	
-	this->_mosaicWidthValue = bgMosaicH;
-	this->_mosaicHeightValue = bgMosaicV;
-	this->_mosaicWidth = &GPUEngineBase::_mosaicLookup.table[bgMosaicH][0];
-	this->_mosaicHeight = &GPUEngineBase::_mosaicLookup.table[bgMosaicV][0];
+	this->_mosaicWidthBG = &GPUEngineBase::_mosaicLookup.table[this->_IORegisterMap->MOSAIC.BG_MosaicH][0];
+	this->_mosaicHeightBG = &GPUEngineBase::_mosaicLookup.table[this->_IORegisterMap->MOSAIC.BG_MosaicV][0];
+	this->_mosaicWidthOBJ = &GPUEngineBase::_mosaicLookup.table[this->_IORegisterMap->MOSAIC.OBJ_MosaicH][0];
+	this->_mosaicHeightOBJ = &GPUEngineBase::_mosaicLookup.table[this->_IORegisterMap->MOSAIC.OBJ_MosaicV][0];
 }
 
 void GPUEngineBase::ParseReg_BLDCNT()
@@ -4192,7 +4184,7 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 	if (l == 0)
 	{
 		CurrentRenderer->RenderFinish();
-		GPU->UpdateVRAM3DUsageProperties();
+		this->UpdateVRAM3DUsageProperties();
 		
 		// Clear displays to black if they are turned off by the user.
 		if (!isFrameSkipRequested)
@@ -4257,6 +4249,12 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 			{
 				this->_engineSub->ApplyMasterBrightness<false>();
 			}
+		}
+		
+		if (this->_willAutoResolveToCustomBuffer)
+		{
+			this->_engineMain->ResolveToCustomFramebuffer();
+			this->_engineSub->ResolveToCustomFramebuffer();
 		}
 		
 		this->_engineMain->FramebufferPostprocess();
