@@ -1153,10 +1153,10 @@ protected:
 	bool _WINOBJ_ENABLED;
 	bool _isAnyWindowEnabled;
 	
-	MosaicLookup::TableEntry *_mosaicWidth;
-	MosaicLookup::TableEntry *_mosaicHeight;
-	u8 _mosaicWidthValue;
-	u8 _mosaicHeightValue;
+	MosaicLookup::TableEntry *_mosaicWidthBG;
+	MosaicLookup::TableEntry *_mosaicHeightBG;
+	MosaicLookup::TableEntry *_mosaicWidthOBJ;
+	MosaicLookup::TableEntry *_mosaicHeightOBJ;
 	
 	u8 _BLDALPHA_EVA;
 	u8 _BLDALPHA_EVB;
