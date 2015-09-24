@@ -723,7 +723,7 @@ void GPUEngineBase::_RenderLine_Clear(const u16 clearColor, const u16 l, u16 *ds
 }
 
 template<bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::RenderLine(const u16 l, bool isFrameSkipRequested)
+void GPUEngineBase::RenderLine(const u16 l)
 {
 	
 }
@@ -2710,7 +2710,7 @@ void GPUEngineA::SetCustomFramebufferSize(size_t w, size_t h)
 }
 
 template<bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineA::RenderLine(const u16 l, bool isFrameSkipRequested)
+void GPUEngineA::RenderLine(const u16 l)
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	const size_t dstLineWidth = (ISCUSTOMRENDERINGNEEDED) ? dispInfo.customWidth : GPU_FRAMEBUFFER_NATIVE_WIDTH;
@@ -3808,6 +3808,9 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 
 GPUSubsystem::GPUSubsystem()
 {
+	_defaultEventHandler = new GPUEventHandlerDefault;
+	_event = _defaultEventHandler;
+	
 	gfx3d_init();
 	
 	_engineMain = GPUEngineA::Allocate();
@@ -3867,6 +3870,8 @@ GPUSubsystem::~GPUSubsystem()
 	_engineSub->FinalizeAndDeallocate();
 	
 	gfx3d_deinit();
+	
+	delete _defaultEventHandler;
 }
 
 GPUSubsystem* GPUSubsystem::Allocate()
@@ -3878,6 +3883,16 @@ void GPUSubsystem::FinalizeAndDeallocate()
 {
 	this->~GPUSubsystem();
 	free_aligned(this);
+}
+
+void GPUSubsystem::SetEventHandler(GPUEventHandler *eventHandler)
+{
+	this->_event = eventHandler;
+}
+
+GPUEventHandler* GPUSubsystem::GetEventHandler()
+{
+	return this->_event;
 }
 
 void GPUSubsystem::Reset()
@@ -4184,6 +4199,7 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 	if (l == 0)
 	{
 		CurrentRenderer->RenderFinish();
+		this->_event->DidFrameBegin();
 		this->UpdateVRAM3DUsageProperties();
 		
 		// Clear displays to black if they are turned off by the user.
@@ -4215,11 +4231,11 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 		{
 			if (this->_engineMain->isCustomRenderingNeeded)
 			{
-				this->_engineMain->RenderLine<true>(l, isFrameSkipRequested);
+				this->_engineMain->RenderLine<true>(l);
 			}
 			else
 			{
-				this->_engineMain->RenderLine<false>(l, isFrameSkipRequested);
+				this->_engineMain->RenderLine<false>(l);
 			}
 		}
 		
@@ -4249,16 +4265,17 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 			{
 				this->_engineSub->ApplyMasterBrightness<false>();
 			}
-		}
-		
-		if (this->_willAutoResolveToCustomBuffer)
-		{
-			this->_engineMain->ResolveToCustomFramebuffer();
-			this->_engineSub->ResolveToCustomFramebuffer();
+			
+			if (this->_willAutoResolveToCustomBuffer)
+			{
+				this->_engineMain->ResolveToCustomFramebuffer();
+				this->_engineSub->ResolveToCustomFramebuffer();
+			}
 		}
 		
 		this->_engineMain->FramebufferPostprocess();
 		this->_engineSub->FramebufferPostprocess();
+		this->_event->DidFrameEnd(isFrameSkipRequested);
 	}
 }
 

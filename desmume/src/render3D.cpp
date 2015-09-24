@@ -437,6 +437,7 @@ Render3DError Render3D::Render(const GFX3D &engine)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
+	GPU->GetEventHandler()->DidRender3DBegin();
 	error = this->BeginRender(engine);
 	if (error != RENDER3DERROR_NOERR)
 	{
@@ -465,6 +466,7 @@ Render3DError Render3D::Render(const GFX3D &engine)
 
 Render3DError Render3D::RenderFinish()
 {
+	GPU->GetEventHandler()->DidRender3DEnd();
 	return RENDER3DERROR_NOERR;
 }
 

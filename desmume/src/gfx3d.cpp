@@ -559,7 +559,6 @@ void gfx3d_init()
 	
 	makeTables();
 	Render3D_Init();
-	gfx3d_reset();
 }
 
 void gfx3d_deinit()
