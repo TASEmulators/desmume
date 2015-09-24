@@ -1229,7 +1229,7 @@ public:
 	
 	template<GPUEngineID ENGINEID> void ParseAllRegisters();
 	
-	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool isFrameSkipRequested);
+	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l);
 	void FramebufferPostprocess();
 	
 	bool isCustomRenderingNeeded;
@@ -1337,7 +1337,7 @@ public:
 	
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineLarge8bpp(u16 *dstColorLine, const u16 lineIndex);
 		
-	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l, bool isFrameSkipRequested);
+	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l);
 	void FramebufferPostprocess();
 };
 
@@ -1376,11 +1376,35 @@ public:
 	void SetEngineByID(const GPUEngineID theID);
 };
 
+class GPUEventHandler
+{
+public:
+	virtual void DidFrameBegin() = 0;
+	virtual void DidFrameEnd(bool isFrameSkipped) = 0;
+	virtual void DidRender3DBegin() = 0;
+	virtual void DidRender3DEnd() = 0;
+};
+
+// All of the default event handler methods should do nothing.
+// If a subclass doesn't need to override every method, then it might be easier
+// if you subclass GPUEventHandlerDefault instead of GPUEventHandler.
+class GPUEventHandlerDefault : public GPUEventHandler
+{
+public:
+	virtual void DidFrameBegin() {};
+	virtual void DidFrameEnd(bool isFrameSkipped) {};
+	virtual void DidRender3DBegin() {};
+	virtual void DidRender3DEnd() {};
+};
+
 class GPUSubsystem
 {
 private:
 	GPUSubsystem();
 	~GPUSubsystem();
+	
+	GPUEventHandlerDefault *_defaultEventHandler;
+	GPUEventHandler *_event;
 	
 	GPUEngineA *_engineMain;
 	GPUEngineB *_engineSub;
@@ -1400,6 +1424,9 @@ private:
 public:
 	static GPUSubsystem* Allocate();
 	void FinalizeAndDeallocate();
+	
+	void SetEventHandler(GPUEventHandler *eventHandler);
+	GPUEventHandler* GetEventHandler();
 	
 	void Reset();
 	VRAM3DUsageProperties& GetVRAM3DUsageProperties();

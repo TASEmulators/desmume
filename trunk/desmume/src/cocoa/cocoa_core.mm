@@ -213,7 +213,7 @@ volatile bool execute = true;
 	sp.sched_priority = sched_get_priority_max(thePolicy);
 	pthread_setschedparam(coreThread, thePolicy, &sp);
 	
-	[cdsGPU setRwlockProducer:self.rwlockCoreExecute];
+	[cdsGPU setOutputList:cdsOutputList];
 	
 	OSXDriver *newDriver = new OSXDriver;
 	newDriver->SetCoreThreadMutexLock(&threadParam.mutexThreadExecute);
@@ -950,7 +950,16 @@ volatile bool execute = true;
 - (void) addOutput:(CocoaDSOutput *)theOutput
 {
 	pthread_mutex_lock(&threadParam.mutexOutputList);
-	[theOutput setRwlockProducer:[self rwlockCoreExecute]];
+	
+	if ([theOutput isKindOfClass:[CocoaDSDisplay class]])
+	{
+		[theOutput setRwlockProducer:[[self cdsGPU] gpuFrameRWLock]];
+	}
+	else
+	{
+		[theOutput setRwlockProducer:[self rwlockCoreExecute]];
+	}
+	
 	[[self cdsOutputList] addObject:theOutput];
 	pthread_mutex_unlock(&threadParam.mutexOutputList);
 }
@@ -1145,12 +1154,10 @@ static void* RunCoreThread(void *arg)
 			{
 				for(CocoaDSOutput *cdsOutput in cdsOutputList)
 				{
-					if (param->framesToSkip > 0 && [cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+					if (![cdsOutput isKindOfClass:[CocoaDSDisplay class]])
 					{
-						continue;
+						[cdsOutput doCoreEmuFrame];
 					}
-					
-					[cdsOutput doCoreEmuFrame];
 				}
 				break;
 			}
@@ -1159,7 +1166,10 @@ static void* RunCoreThread(void *arg)
 			{
 				for(CocoaDSOutput *cdsOutput in cdsOutputList)
 				{
-					[cdsOutput doCoreEmuFrame];
+					if (![cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+					{
+						[cdsOutput doCoreEmuFrame];
+					}
 				}
 				break;
 			}
@@ -1168,7 +1178,7 @@ static void* RunCoreThread(void *arg)
 			{
 				for(CocoaDSOutput *cdsOutput in cdsOutputList)
 				{
-					if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]] && (param->framesToSkip == 0 || frameNum >= param->frameJumpTarget))
+					if (![cdsOutput isKindOfClass:[CocoaDSDisplay class]])
 					{
 						[cdsOutput doCoreEmuFrame];
 					}

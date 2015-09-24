@@ -2720,11 +2720,13 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 {
 	if (!this->_pixelReadNeedsFinish)
 	{
+		GPU->GetEventHandler()->DidRender3DEnd();
 		return OGLERROR_NOERR;
 	}
 	
 	if(!BEGINGL())
 	{
+		GPU->GetEventHandler()->DidRender3DEnd();
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
@@ -2747,6 +2749,7 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 	this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	this->_pixelReadNeedsFinish = false;
 	
+	GPU->GetEventHandler()->DidRender3DEnd();
 	return OGLERROR_NOERR;
 }
 
@@ -3287,11 +3290,13 @@ Render3DError OpenGLRenderer_1_5::RenderFinish()
 {
 	if (!this->_pixelReadNeedsFinish)
 	{
+		GPU->GetEventHandler()->DidRender3DEnd();
 		return OGLERROR_NOERR;
 	}
 	
 	if(!BEGINGL())
 	{
+		GPU->GetEventHandler()->DidRender3DEnd();
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
@@ -3314,6 +3319,7 @@ Render3DError OpenGLRenderer_1_5::RenderFinish()
 	this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	this->_pixelReadNeedsFinish = false;
 	
+	GPU->GetEventHandler()->DidRender3DEnd();
 	return OGLERROR_NOERR;
 }
 
@@ -4077,11 +4083,13 @@ Render3DError OpenGLRenderer_2_1::RenderFinish()
 {
 	if (!this->_pixelReadNeedsFinish)
 	{
+		GPU->GetEventHandler()->DidRender3DEnd();
 		return OGLERROR_NOERR;
 	}
 	
 	if(!BEGINGL())
 	{
+		GPU->GetEventHandler()->DidRender3DEnd();
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
@@ -4097,5 +4105,6 @@ Render3DError OpenGLRenderer_2_1::RenderFinish()
 	this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	this->_pixelReadNeedsFinish = false;
 	
+	GPU->GetEventHandler()->DidRender3DEnd();
 	return OGLERROR_NOERR;
 }

@@ -19,6 +19,9 @@
 #include <pthread.h>
 #include <libkern/OSAtomic.h>
 
+
+class GPUEventHandlerOSX;
+
 @interface CocoaDSGPU : NSObject
 {
 	UInt32 gpuStateFlags;
@@ -26,13 +29,14 @@
 	BOOL isCPUCoreCountAuto;
 	
 	OSSpinLock spinlockGpuState;
-	pthread_rwlock_t *rwlockProducer;
+	GPUEventHandlerOSX *gpuEvent;
 }
 
 @property (assign) UInt32 gpuStateFlags;
 @property (assign) NSSize gpuDimensions;
 @property (assign) NSUInteger gpuScale;
-@property (assign) pthread_rwlock_t *rwlockProducer;
+@property (readonly) pthread_rwlock_t *gpuFrameRWLock;
+@property (assign) NSMutableArray *outputList;
 
 @property (assign) BOOL layerMainGPU;
 @property (assign) BOOL layerMainBG0;
