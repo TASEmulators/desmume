@@ -116,6 +116,7 @@
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCPU Emulation Engine: "] stringByAppendingString:([cdsCore cpuEmulationEngine] == CPU_EMULATION_ENGINE_DYNAMIC_RECOMPILER ? [NSString stringWithFormat:@"%@ (BlockSize=%li)", [cdsCore cpuEmulationEngineString], (long)[cdsCore maxJITBlockSize]] : [cdsCore cpuEmulationEngineString])];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nExternal BIOS: "] stringByAppendingString:([cdsCore emuFlagUseExternalBios] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nExternal Firmware: "] stringByAppendingString:([cdsCore emuFlagUseExternalFirmware] ? @"YES" : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nGPU - Scaling Factor: "] stringByAppendingString:[NSString stringWithFormat:@"%ldx", (unsigned long)[[cdsCore cdsGPU] gpuScale]]];
 	
 	NSString *render3DEngineDetails = [[cdsCore cdsGPU] render3DRenderingEngineString];
 	switch ([[cdsCore cdsGPU] render3DRenderingEngine])
@@ -124,14 +125,11 @@
 			break;
 			
 		case CORE3DLIST_SWRASTERIZE:
-			render3DEngineDetails = [NSString stringWithFormat:@"%@ (HighResColor=%@, EdgeMark=%@, Fog=%@, LineHack=%@, FragmentSamplingHack=%@, DepthCompare=%ld, ThreadCount=%@)",
+			render3DEngineDetails = [NSString stringWithFormat:@"%@ (HighResColor=%@, LineHack=%@, FragmentSamplingHack=%@, ThreadCount=%@)",
 									 [[cdsCore cdsGPU] render3DRenderingEngineString],
 									 ([[cdsCore cdsGPU] render3DHighPrecisionColorInterpolation] ? @"YES" : @"NO"),
-									 ([[cdsCore cdsGPU] render3DEdgeMarking] ? @"YES" : @"NO"),
-									 ([[cdsCore cdsGPU] render3DFog] ? @"YES" : @"NO"),
 									 ([[cdsCore cdsGPU] render3DLineHack] ? @"YES" : @"NO"),
 									 ([[cdsCore cdsGPU] render3DFragmentSamplingHack] ? @"YES" : @"NO"),
-									 (unsigned long)[[cdsCore cdsGPU] render3DDepthComparisonThreshold],
 									 ([[cdsCore cdsGPU] render3DThreads] == 0 ? @"Automatic" : [NSString stringWithFormat:@"%ld", (unsigned long)[[cdsCore cdsGPU] render3DThreads]])];
 			break;
 			
@@ -147,6 +145,8 @@
 	
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Engine: "] stringByAppendingString:render3DEngineDetails];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Textures: "] stringByAppendingString:([[cdsCore cdsGPU] render3DTextures] ? @"YES" : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Edge Marking: "] stringByAppendingString:([[cdsCore cdsGPU] render3DEdgeMarking] ? @"YES" : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Fog: "] stringByAppendingString:([[cdsCore cdsGPU] render3DFog] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Output Engine: "] stringByAppendingString:[[emuControl cdsSpeaker] audioOutputEngineString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Advanced SPU Logic: "] stringByAppendingString:([[emuControl cdsSpeaker] spuAdvancedLogic] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Sound Interpolation Method: "] stringByAppendingString:[[emuControl cdsSpeaker] spuInterpolationModeString]];

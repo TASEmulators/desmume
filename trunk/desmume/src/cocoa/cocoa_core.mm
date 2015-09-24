@@ -1151,29 +1151,7 @@ static void* RunCoreThread(void *arg)
 		switch (param->state)
 		{
 			case CORESTATE_EXECUTE:
-			{
-				for(CocoaDSOutput *cdsOutput in cdsOutputList)
-				{
-					if (![cdsOutput isKindOfClass:[CocoaDSDisplay class]])
-					{
-						[cdsOutput doCoreEmuFrame];
-					}
-				}
-				break;
-			}
-				
 			case CORESTATE_FRAMEADVANCE:
-			{
-				for(CocoaDSOutput *cdsOutput in cdsOutputList)
-				{
-					if (![cdsOutput isKindOfClass:[CocoaDSDisplay class]])
-					{
-						[cdsOutput doCoreEmuFrame];
-					}
-				}
-				break;
-			}
-				
 			case CORESTATE_FRAMEJUMP:
 			{
 				for(CocoaDSOutput *cdsOutput in cdsOutputList)
