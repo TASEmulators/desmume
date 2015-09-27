@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2011 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ public:
 	int prescalePost; //not supported yet
 	int prescaleTotal;
 
+	int scratchBufferSize;
 	u8* srcBuffer;
 	int srcBufferSize;
 	u32 *buffer;
@@ -49,12 +50,23 @@ public:
 
 		prescaleTotal = prescaleHD;
 		
-		const int kInflationFactor = 5*5; //the largest filter is going up 5x in each dimension
-		int bufferSize = kInflationFactor * 256*192*2*prescaleHD * 4;
+		const int kInflationFactor = 5; //the largest filter is going up 5x in each dimension
+
+		//all these stupid video filters read outside of their buffer. let's allocate too much and hope it stays filled with black. geeze
+		const int kPadSize = 4;
+		
+		int scratchBufferWidth = 256*kInflationFactor*prescaleHD + (kPadSize*2);
+		int scratchBufferHeight = 192*2*prescaleHD*kInflationFactor + (kPadSize*2);
+		scratchBufferSize = scratchBufferWidth * scratchBufferHeight * 4;
 
 		//why are these the same size, anyway?
-		buffer = (u32*)malloc_alignedCacheLine(bufferSize);
-		filteredbuffer = (u32*)malloc_alignedCacheLine(bufferSize);
+		buffer = (u32*)malloc_alignedCacheLine(scratchBufferSize);
+		filteredbuffer = (u32*)malloc_alignedCacheLine(scratchBufferSize);
+
+		clear();
+
+		//move the buffer pointer inside it's padded area so that earlier reads won't go out of the buffer we allocated
+		buffer += (kPadSize*scratchBufferWidth + kPadSize)*4;
 
 		setfilter(currentfilter);
 	}
