@@ -22,6 +22,12 @@ class VideoInfo
 {
 public:
 
+	VideoInfo()
+		: buffer(NULL)
+		, filteredbuffer(NULL)
+	{
+	}
+
 	int width;
 	int height;
 
@@ -40,11 +46,14 @@ public:
 	int scratchBufferSize;
 	u8* srcBuffer;
 	int srcBufferSize;
-	u32 *buffer;
+	u32 *buffer, *buffer_raw;
 	u32 *filteredbuffer;
 
 	void SetPrescale(int prescaleHD, int prescalePost)
 	{
+		free_aligned(buffer_raw);
+		free_aligned(filteredbuffer);
+
 		this->prescaleHD = prescaleHD;
 		this->prescalePost = prescalePost;
 
@@ -60,7 +69,7 @@ public:
 		scratchBufferSize = scratchBufferWidth * scratchBufferHeight * 4;
 
 		//why are these the same size, anyway?
-		buffer = (u32*)malloc_alignedCacheLine(scratchBufferSize);
+		buffer_raw = buffer = (u32*)malloc_alignedCacheLine(scratchBufferSize);
 		filteredbuffer = (u32*)malloc_alignedCacheLine(scratchBufferSize);
 
 		clear();
@@ -100,12 +109,13 @@ public:
 
 	void clear()
 	{
-		if (srcBuffer)
-		{
-			memset(srcBuffer, 0xFF, size() * 2);
-		}
-		memset(&buffer[0], 0, sizeof(buffer));
-		memset(&filteredbuffer[0], 0, sizeof(filteredbuffer));
+		//I dont understand this...
+		//if (srcBuffer)
+		//{
+		//	memset(srcBuffer, 0xFF, size() * 2);
+		//}
+		memset(buffer_raw, 0, scratchBufferSize);
+		memset(filteredbuffer, 0, scratchBufferSize);
 	}
 
 	void reset() {
@@ -179,8 +189,8 @@ public:
 		src.Pitch = src.Width * 2;
 		src.Surface = (u8*)buffer;
 
-		dst.Height = height;
-		dst.Width = width;
+		dst.Height = height * prescaleHD;
+		dst.Width = width * prescaleHD;
 		dst.Pitch = width*2;
 		dst.Surface = (u8*)filteredbuffer;
 

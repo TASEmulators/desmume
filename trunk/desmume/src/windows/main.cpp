@@ -6321,11 +6321,16 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					CommonSettings.GFX3D_TXTHack = IsDlgCheckboxChecked(hw,IDC_TXTHACK);
 					CommonSettings.GFX3D_PrescaleHD = SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_GETPOS, 0, 0);
 
-					Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
-					video.SetPrescale(CommonSettings.GFX3D_PrescaleHD,1);
-					GPU->SetCustomFramebufferSize(256*video.prescaleHD,192*video.prescaleHD);
-					ScaleScreen(windowSize, false);
-					UpdateScreenRects();
+					{
+						Lock lock(win_backbuffer_sync);
+						if(display_mutex) g_mutex_lock(display_mutex);
+						Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
+						video.SetPrescale(CommonSettings.GFX3D_PrescaleHD,1);
+						GPU->SetCustomFramebufferSize(256*video.prescaleHD,192*video.prescaleHD);
+						ScaleScreen(windowSize, false);
+						UpdateScreenRects();
+						if(display_mutex) g_mutex_unlock(display_mutex);
+					}
 
 					WritePrivateProfileBool("3D", "HighResolutionInterpolateColor", CommonSettings.GFX3D_HighResolutionInterpolateColor, IniName);
 					WritePrivateProfileBool("3D", "EnableEdgeMark", CommonSettings.GFX3D_EdgeMark, IniName);
