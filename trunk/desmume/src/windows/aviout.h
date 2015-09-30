@@ -24,6 +24,6 @@ bool DRV_AviBegin(const char* fname);
 void DRV_AviEnd();
 void DRV_AviSoundUpdate(void* soundData, int soundLen);
 bool AVI_IsRecording();
-void DRV_AviVideoUpdate(const u16* buffer);
+void DRV_AviVideoUpdate();
 
 #endif

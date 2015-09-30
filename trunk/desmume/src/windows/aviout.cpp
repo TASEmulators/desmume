@@ -28,8 +28,11 @@
 #include "../GPU_osd.h"
 #include "../SPU.h"
 
+#include "video.h"
 #include "windriver.h"
 #include "main.h"
+
+extern VideoInfo video;
 
 static void EMU_PrintError(const char* msg) {
 	LOG(msg);
@@ -45,8 +48,6 @@ static void EMU_PrintMessage(const char* msg) {
 
 #define VIDEO_STREAM	0
 #define AUDIO_STREAM	1
-
-#define VIDEO_WIDTH		256
 
 static struct AVIFile
 {
@@ -72,7 +73,8 @@ static struct AVIFile
 	int					video_frames;
 	int					sound_samples;
 
-	u8					convert_buffer[256*384*3];
+	u8					*convert_buffer;
+	int					prescaleLevel;
 	int					start_scanline;
 	int					end_scanline;
 	
@@ -178,6 +180,7 @@ static void avi_destroy(struct AVIFile** avi_out)
 		(*avi_out)->avi_file = NULL;
 	}
 
+	free_aligned((*avi_out)->convert_buffer);
 	free(*avi_out);
 	*avi_out = NULL;
 }
@@ -213,13 +216,6 @@ static int avi_open(const char* filename, const BITMAPINFOHEADER* pbmih, const W
 		// create the object
 		avi_create(&avi_file);
 
-		// set video size and framerate
-		/*avi_file->start_scanline = vsi->start_scanline;
-		avi_file->end_scanline = vsi->end_scanline;
-		avi_file->fps = vsi->fps;
-		avi_file->fps_scale = 16777216-1;
-		avi_file->convert_buffer = new u8[256*384*3];*/
-
 		// open the file
 		if(FAILED(AVIFileOpen(&avi_file->avi_file, filename, OF_CREATE | OF_WRITE, NULL)))
 			break;
@@ -228,6 +224,9 @@ static int avi_open(const char* filename, const BITMAPINFOHEADER* pbmih, const W
 		set_video_format(pbmih, avi_file);
 
 		memset(&avi_file->avi_video_header, 0, sizeof(AVISTREAMINFO));
+		avi_file->prescaleLevel = video.prescaleHD;
+		avi_file->convert_buffer = (u8*)malloc_alignedCacheLine(video.prescaleHD*video.prescaleHD*256*384*3);
+
 		avi_file->avi_video_header.fccType = streamtypeVIDEO;
 		avi_file->avi_video_header.dwScale = 6*355*263;
 		avi_file->avi_video_header.dwRate = 33513982;
@@ -311,13 +310,15 @@ static int avi_open(const char* filename, const BITMAPINFOHEADER* pbmih, const W
 }
 
 //converts 16bpp to 24bpp and flips
-static void do_video_conversion(const u16* buffer)
+static void do_video_conversion(AVIFile* avi, const u16* buffer)
 {
-	u8* outbuf = avi_file->convert_buffer + 256*(384-1)*3;
+	int width = avi->prescaleLevel*256;
+	int height = avi->prescaleLevel*384;
+	u8* outbuf = avi_file->convert_buffer + width*(height-1)*3;
 
-	for(int y=0;y<384;y++)
+	for(int y=0;y<height;y++)
 	{
-		for(int x=0;x<256;x++)
+		for(int x=0;x<width;x++)
 		{
 			u16 col16 = *buffer++;
 			col16 &=0x7FFF;
@@ -327,7 +328,7 @@ static void do_video_conversion(const u16* buffer)
 			*outbuf++ = col24&0xFF;
 		}
 
-		outbuf -= 256*3*2;
+		outbuf -= width*3*2;
 	}
 }
 
@@ -352,14 +353,16 @@ bool DRV_AviBegin(const char* fname)
 {
 	DRV_AviEnd();
 
+	;
+
 	BITMAPINFOHEADER bi;
 	memset(&bi, 0, sizeof(bi));
 	bi.biSize = 0x28;    
 	bi.biPlanes = 1;
 	bi.biBitCount = 24;
-	bi.biWidth = 256;
-	bi.biHeight = 384;
-	bi.biSizeImage = 3 * 256 * 384;
+	bi.biWidth = 256 * video.prescaleHD;
+	bi.biHeight = 384 * video.prescaleHD;
+	bi.biSizeImage = 3 * bi.biWidth * bi.biHeight;
 
 	WAVEFORMATEX wf;
 	wf.cbSize = sizeof(WAVEFORMATEX);
@@ -410,12 +413,19 @@ bool DRV_AviBegin(const char* fname)
 	return 1;
 }
 
-void DRV_AviVideoUpdate(const u16* buffer)
+void DRV_AviVideoUpdate()
 {
 	if(!avi_file || !avi_file->valid)
 		return;
 
-	do_video_conversion(buffer);
+	const NDSDisplayInfo& dispInfo = GPU->GetDisplayInfo();
+	const u16* buffer = dispInfo.masterCustomBuffer;
+
+	//dont do anything if prescale has changed, it's just going to be garbage
+	if(video.prescaleHD != avi_file->prescaleLevel)
+		return;
+
+	do_video_conversion(avi_file, buffer);
 
     if(FAILED(AVIStreamWrite(avi_file->compressed_streams[VIDEO_STREAM],
                                  avi_file->video_frames, 1, avi_file->convert_buffer,

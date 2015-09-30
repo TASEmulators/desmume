@@ -2143,7 +2143,7 @@ static void StepRunLoop_Core()
 		win_sound_samplecounter = DESMUME_SAMPLE_RATE/60;
 	}
 	inFrameBoundary = true;
-	DRV_AviVideoUpdate(GPU->GetDisplayInfo().masterNativeBuffer);
+	DRV_AviVideoUpdate();
 
 	extern bool rewinding;
 
