@@ -3439,7 +3439,7 @@ void GPUEngineA::_RenderLine_DispCapture_Blend(const u16 *__restrict srcA, const
 			const u16 colorA = (CAPTUREFROMNATIVESRCA) ? srcA[i] : srcA[_gpuDstPitchIndex[i]];
 			const u16 colorB = (CAPTUREFROMNATIVESRCB) ? srcB[i] : srcB[_gpuDstPitchIndex[i]];
 			
-			dst[i] = GPU_RenderLine_DispCapture_BlendFunc(colorA, colorB, blendEVA, blendEVB);
+			dst[i] = this->_RenderLine_DispCapture_BlendFunc(colorA, colorB, blendEVA, blendEVB);
 		}
 #endif
 	}
