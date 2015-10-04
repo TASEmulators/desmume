@@ -4948,9 +4948,14 @@ DOKEYDOWN:
 					int fakeheight = FullScreenRect.bottom-FullScreenRect.top;
 					
 					//now use it to create a new virtual area in the center of the client rect
-					int xfudge = (fswidth-fakewidth)/2;
-					int yfudge = (fsheight-fakeheight)/2;
-					OffsetRect(&FullScreenRect,xfudge,yfudge);
+					if(ForceRatio)
+					{
+						int xfudge = (fswidth-fakewidth)/2;
+						int yfudge = (fsheight-fakeheight)/2;
+						OffsetRect(&FullScreenRect,xfudge,yfudge);
+					}
+					else
+						FullScreenRect = fullscreen;
 				}
 				else if(wParam==SIZE_RESTORED)
 				{
