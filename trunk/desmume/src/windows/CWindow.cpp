@@ -640,13 +640,17 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 
 	RECT adjr;
 	SetRect(&adjr,0,0,minWidth,minHeight);
-	MyAdjustWindowRectEx(&adjr,hwnd);
+	if(!(keepRatio & FULLSCREEN))
+		MyAdjustWindowRectEx(&adjr,hwnd);
 
 	RECT frameInfo; 
 	SetRect(&frameInfo,0,0,0,0);
 	MyAdjustWindowRectEx(&frameInfo,hwnd);
 	int frameWidth = frameInfo.right-frameInfo.left;
 	int frameHeight = frameInfo.bottom-frameInfo.top + tbheight;
+
+	if((keepRatio & FULLSCREEN))
+		frameWidth = frameHeight = 0;
 
 	// Calculate the minimum size in pixels
 	_minWidth = adjr.right-adjr.left;
