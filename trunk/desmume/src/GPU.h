@@ -399,11 +399,19 @@ typedef union
 	
 	struct
 	{
+#ifdef LOCAL_LE
 		u32 BG_MosaicH:4;					//  0- 3: Mosaic pixel width for BG layers; 0...15
 		u32 BG_MosaicV:4;					//  4- 7: Mosaic pixel height for BG layers; 0...15
 		
 		u32 OBJ_MosaicH:4;					//  8-11: Mosaic pixel width for OBJ layer; 0...15
 		u32 OBJ_MosaicV:4;					// 12-15: Mosaic pixel height for OBJ layer; 0...15
+#else
+		u32 BG_MosaicV:4;					//  4- 7: Mosaic pixel height for BG layers; 0...15
+		u32 BG_MosaicH:4;					//  0- 3: Mosaic pixel width for BG layers; 0...15
+		
+		u32 OBJ_MosaicV:4;					// 12-15: Mosaic pixel height for OBJ layer; 0...15
+		u32 OBJ_MosaicH:4;					//  8-11: Mosaic pixel width for OBJ layer; 0...15
+#endif
 		
 		u32 :16;							// 16-31: Unused bits
 	};
@@ -465,11 +473,19 @@ typedef union
 	
 	struct
 	{
+#ifdef LOCAL_LE
 		u16 EVA:5;							//  0- 4: Blending coefficient for 1st target; 0...31 (clamped to 16)
 		u16 :3;								//  5- 7: Unused bits
 		
 		u16 EVB:5;							//  8-12: Blending coefficient for 2nd target; 0...31 (clamped to 16)
 		u16 :3;								// 13-15: Unused bits
+#else
+		u16 :3;								//  5- 7: Unused bits
+		u16 EVA:5;							//  0- 4: Blending coefficient for 1st target; 0...31 (clamped to 16)
+		
+		u16 :3;								// 13-15: Unused bits
+		u16 EVB:5;							//  8-12: Blending coefficient for 2nd target; 0...31 (clamped to 16)
+#endif
 	};
 } IOREG_BLDALPHA;							// 0x400x052: Color effects selection, interacts with BLDCNT (0x400x050) (Engine A+B)
 
@@ -482,14 +498,11 @@ typedef union
 #ifdef LOCAL_LE
 		u16 EVY:5;							//  0- 4: Blending coefficient for increase/decrease brightness; 0...31 (clamped to 16)
 		u16 :3;								//  5- 7: Unused bits
-		
-		u16 :8;								//  8-15: Unused bits
 #else
 		u16 :3;								//  5- 7: Unused bits
 		u16 EVY:5;							//  0- 4: Blending coefficient for increase/decrease brightness; 0...31 (clamped to 16)
-		
-		u16 :8;								//  8-15: Unused bits
 #endif
+		u16 :8;								//  8-15: Unused bits
 	};
 } IOREG_BLDY;								// 0x400x054: Color effects selection, interacts with BLDCNT (0x400x050) (Engine A+B)
 
@@ -852,8 +865,8 @@ typedef union
 											//           1:  16x16      32x8        8x32
 											//           2:  32x32      32x16      16x32
 											//           3:  64x64      64x32      32x64
-		
 		u16 TileIndex:10;					// 32-41: Tile index; 0...1023
+		
 		u16 Priority:2;						// 42-43: Rendering priority; 0...3, where 0 is highest priority and 3 is lowest priority
 		u16 PaletteIndex:4;					// 44-47: Palette index; 0...15
 #else
@@ -863,24 +876,25 @@ typedef union
 			
 			struct
 			{
+				u16 Y:8;					//  0- 7: Sprite Y-coordinate; 0...255
 				u16 Shape:2;				// 14-15: OBJ shape; 0=Square, 1=Horizontal, 2=Vertical, 3=Prohibited
 				u16 PaletteMode:1;			//    13: Color/palette select; 0=16 palettes of 16 colors each, 1=Single palette of 256 colors
 				u16 Mosaic:1;				//    12: Mosaic render: 0=Disable, 1=Enable
 				u16 Mode:2;					// 10-11: OBJ mode; 0=Normal, 1=Transparent, 2=Window, 3=Bitmap
 				u16 Disable:1;				//     9: OBJ disable flag, only if Bit8 is cleared; 0=Perform render, 1=Do not perform render
 				u16 RotScale:1;				//     8: Perform rotation/scaling; 0=Disable, 1=Enable
-				u16 Y:8;					//  0- 7: Sprite Y-coordinate; 0...255
 			};
 			
 			struct
 			{
+				u16 :8;
 				u16 :6;
 				u16 DoubleSize:1;			//     9: Perform double-size render, only if Bit8 is set; 0=Disable, 1=Enable
 				u16 :1;
-				u16 :8;
 			};
 		};
 		
+		// 16-31: Whenever this is used, you will need to explicitly convert endianness.
 		u16 Size:2;							// 30-31: OBJ size, interacts with Bit 14-15
 											//
 											//        Size| Square | Horizontal | Vertical
@@ -893,6 +907,7 @@ typedef union
 		u16 RotScaleIndex:3;				// 25-27: Rotation/scaling parameter selection; 0...31
 		s16 X:9;							// 16-24: Sprite X-coordinate; 0...511
 		
+		// 32-47: Whenever this is used, you will need to explicitly convert endianness.
 		u16 PaletteIndex:4;					// 44-47: Palette index; 0...15
 		u16 Priority:2;						// 42-43: Rendering priority; 0...3, where 0 is highest priority and 3 is lowest priority
 		u16 TileIndex:10;					// 32-41: Tile index; 0...1023
@@ -1052,6 +1067,8 @@ typedef struct
 {
 	GPULayerID layerID;
 	IOREG_BGnCNT BGnCNT;
+	IOREG_BGnHOFS BGnHOFS;
+	IOREG_BGnVOFS BGnVOFS;
 	
 	BGLayerSize size;
 	BGType type;
@@ -1068,6 +1085,9 @@ typedef struct
 	u32 BMPAddress;
 	u32 tileMapAddress;
 	u32 tileEntryAddress;
+	
+	u16 xOffset;
+	u16 yOffset;
 } BGLayerInfo;
 
 class GPUEngineBase
@@ -1218,6 +1238,8 @@ public:
 	
 	template<GPUEngineID ENGINEID> void ParseReg_DISPCNT();
 	template<GPUEngineID ENGINEID, GPULayerID LAYERID> void ParseReg_BGnCNT();
+	template<GPULayerID LAYERID> void ParseReg_BGnHOFS();
+	template<GPULayerID LAYERID> void ParseReg_BGnVOFS();
 	template<GPULayerID LAYERID> void ParseReg_BGnX();
 	template<GPULayerID LAYERID> void ParseReg_BGnY();
 	template<size_t WINNUM> void ParseReg_WINnH();
