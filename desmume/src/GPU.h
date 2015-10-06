@@ -1079,7 +1079,7 @@ typedef struct
 	bool isDisplayWrapped;
 	
 	u8 extPaletteSlot;
-	u16 *extPalette;
+	u16 **extPalette;
 	
 	u32 largeBMPAddress;
 	u32 BMPAddress;
