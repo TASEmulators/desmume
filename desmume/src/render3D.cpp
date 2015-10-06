@@ -314,10 +314,19 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 	Render3DError error = RENDER3DERROR_NOERR;
 	
 	FragmentColor clearColor;
+	
+#ifdef LOCAL_LE
 	clearColor.r =  renderState.clearColor & 0x1F;
 	clearColor.g = (renderState.clearColor >> 5) & 0x1F;
 	clearColor.b = (renderState.clearColor >> 10) & 0x1F;
 	clearColor.a = (renderState.clearColor >> 16) & 0x1F;
+#else
+	const u32 clearColorSwapped = LE_TO_LOCAL_32(renderState.clearColor);
+	clearColor.r =  clearColorSwapped & 0x1F;
+	clearColor.g = (clearColorSwapped >> 5) & 0x1F;
+	clearColor.b = (clearColorSwapped >> 10) & 0x1F;
+	clearColor.a = (clearColorSwapped >> 16) & 0x1F;
+#endif
 	
 	FragmentAttributes clearFragment;
 	clearFragment.opaquePolyID = (renderState.clearColor >> 24) & 0x3F;

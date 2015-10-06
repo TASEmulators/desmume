@@ -316,6 +316,7 @@ typedef union
 {
 	u8 value;
 	
+#ifdef LOCAL_LE
 	struct
 	{
 		unsigned MST:3;
@@ -332,6 +333,24 @@ typedef union
 		unsigned :2;
 		unsigned Enable_ABHI:1;
 	};
+#else
+	struct
+	{
+		unsigned Enable:1;
+		unsigned :2;
+		unsigned OFS:2;
+		unsigned MST:3;
+	};
+	
+	struct
+	{
+		unsigned Enable_ABHI:1;
+		unsigned :2;
+		unsigned OFS_ABHI:2;
+		unsigned :1;
+		unsigned MST_ABHI:2;
+	};
+#endif
 } VRAMCNT;
 
 #define DUP2(x)  x, x
