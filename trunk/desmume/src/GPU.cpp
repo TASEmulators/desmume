@@ -396,10 +396,10 @@ void GPUEngineBase::_Reset_Base()
 	
 	this->_BGLayer[GPULayerID_BG0].extPaletteSlot = GPULayerID_BG0;
 	this->_BGLayer[GPULayerID_BG1].extPaletteSlot = GPULayerID_BG1;
-	this->_BGLayer[GPULayerID_BG0].extPalette = (u16 *)MMU.ExtPal[this->_engineID][GPULayerID_BG0];
-	this->_BGLayer[GPULayerID_BG1].extPalette = (u16 *)MMU.ExtPal[this->_engineID][GPULayerID_BG1];
-	this->_BGLayer[GPULayerID_BG2].extPalette = (u16 *)MMU.ExtPal[this->_engineID][GPULayerID_BG2];
-	this->_BGLayer[GPULayerID_BG3].extPalette = (u16 *)MMU.ExtPal[this->_engineID][GPULayerID_BG3];
+	this->_BGLayer[GPULayerID_BG0].extPalette = (u16 **)&MMU.ExtPal[this->_engineID][GPULayerID_BG0];
+	this->_BGLayer[GPULayerID_BG1].extPalette = (u16 **)&MMU.ExtPal[this->_engineID][GPULayerID_BG1];
+	this->_BGLayer[GPULayerID_BG2].extPalette = (u16 **)&MMU.ExtPal[this->_engineID][GPULayerID_BG2];
+	this->_BGLayer[GPULayerID_BG3].extPalette = (u16 **)&MMU.ExtPal[this->_engineID][GPULayerID_BG3];
 	
 	this->_curr_win[0] = GPUEngineBase::_winEmpty;
 	this->_curr_win[1] = GPUEngineBase::_winEmpty;
@@ -644,7 +644,7 @@ void GPUEngineBase::ParseReg_BGnCNT()
 	this->_BGLayer[LAYERID].size = GPUEngineBase::_BGLayerSizeLUT[mode][BGnCNT.ScreenSize];
 	this->_BGLayer[LAYERID].isMosaic = (BGnCNT.Mosaic != 0);
 	this->_BGLayer[LAYERID].priority = BGnCNT.Priority;
-	this->_BGLayer[LAYERID].extPalette = (u16 *)MMU.ExtPal[this->_engineID][this->_BGLayer[LAYERID].extPaletteSlot];
+	this->_BGLayer[LAYERID].extPalette = (u16 **)&MMU.ExtPal[this->_engineID][this->_BGLayer[LAYERID].extPaletteSlot];
 	
 	this->_ResortBGLayers();
 }
@@ -1397,7 +1397,7 @@ void GPUEngineBase::_RenderLine_TextBG(u16 *dstColorLine, const u16 lineIndex, u
 	}
 	else //256-color BG
 	{
-		const u16 *pal = (DISPCNT.ExBGxPalette_Enable) ? this->_BGLayer[LAYERID].extPalette : this->_paletteBG;
+		const u16 *pal = (DISPCNT.ExBGxPalette_Enable) ? *(this->_BGLayer[LAYERID].extPalette) : this->_paletteBG;
 		
 		yoff = ((YBG&7)<<3);
 		xfin = 8 - (xoff&7);
@@ -1457,7 +1457,7 @@ void GPUEngineBase::_ExtRotBG2(u16 *dstColorLine, const u16 lineIndex, const IOR
 		{
 			if (DISPCNT.ExBGxPalette_Enable)
 			{
-				pal = this->_BGLayer[LAYERID].extPalette;
+				pal = *(this->_BGLayer[LAYERID].extPalette);
 				this->_apply_rot_fun< LAYERID, rot_tiled_16bit_entry<LAYERID, ISDEBUGRENDER, MOSAIC, true, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].tileMapAddress, this->_BGLayer[LAYERID].tileEntryAddress, pal);
 			}
 			else
