@@ -45,7 +45,7 @@ struct MMU_struct;
 void gpu_savestate(EMUFILE* os);
 bool gpu_loadstate(EMUFILE* is, int size);
 
-typedef void (*rot_fun)(GPUEngineBase *gpu, u16 *dstColorLine, const u16 lineIndex, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *pal, const size_t i);
+typedef void (*rot_fun)(GPUEngineBase *gpu, u16 *__restrict dstColorLine, const u16 lineIndex, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *__restrict pal, const size_t i);
 
 enum PaletteMode
 {
@@ -1185,20 +1185,20 @@ protected:
 	void _Reset_Base();
 	void _ResortBGLayers();
 	
-	void _MosaicSpriteLinePixel(const size_t x, u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
-	void _MosaicSpriteLine(u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
+	void _MosaicSpriteLinePixel(const size_t x, u16 l, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
+	void _MosaicSpriteLine(u16 l, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
 	
-	template<rot_fun fun, bool WRAP> void _rot_scale_op(u16 *dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG, const s32 wh, const s32 ht, const u32 map, const u32 tile, const u16 *pal);
-	template<GPULayerID LAYERID, rot_fun fun> void _apply_rot_fun(u16 *dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG, const u32 map, const u32 tile, const u16 *pal);
+	template<rot_fun fun, bool WRAP> void _rot_scale_op(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG, const s32 wh, const s32 ht, const u32 map, const u32 tile, const u16 *__restrict pal);
+	template<GPULayerID LAYERID, rot_fun fun> void _apply_rot_fun(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG, const u32 map, const u32 tile, const u16 *__restrict pal);
 	
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_TextBG(u16 *dstColorLine, const u16 lineIndex, u16 XBG, u16 YBG, u16 LG);
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_TextBG(u16 *__restrict dstColorLine, const u16 lineIndex, u16 XBG, u16 YBG, u16 LG);
 	
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _RotBG2(u16 *dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _ExtRotBG2(u16 *dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG);
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _RotBG2(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG);
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _ExtRotBG2(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG);
 	
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineText(u16 *dstColorLine, const u16 lineIndex);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineRot(u16 *dstColorLine, const u16 lineIndex);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineExtRot(u16 *dstColorLine, const u16 lineIndex);
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineText(u16 *__restrict dstColorLine, const u16 lineIndex);
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineRot(u16 *__restrict dstColorLine, const u16 lineIndex);
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineExtRot(u16 *__restrict dstColorLine, const u16 lineIndex);
 	
 	template<int WIN_NUM> u8 _WithinRect(const size_t x) const;
 	template <GPULayerID LAYERID> void _RenderPixel_CheckWindows(const size_t srcX, bool &didPassWindowTest, bool &enableColorEffect) const;
@@ -1213,20 +1213,20 @@ protected:
 	template<size_t WIN_NUM> void _SetupWindows(const u16 lineIndex);
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG(u16 *dstColorLine, const u16 lineIndex);
 			
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER> FORCEINLINE void _RenderPixel(const size_t srcX, const size_t dstX, const u16 src, const u8 srcAlpha, u16 *dstColorLine, u8 *dstLayerIDLine);
-	FORCEINLINE void _RenderPixel3D(const size_t srcX, const size_t dstX, const FragmentColor src, u16 *dstColorLine, u8 *dstLayerIDLine);
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER> FORCEINLINE void _RenderPixel(const size_t srcX, const size_t dstX, const u16 src, const u8 srcAlpha, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
+	FORCEINLINE void _RenderPixel3D(const size_t srcX, const size_t dstX, const FragmentColor src, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
 	FORCEINLINE u16 _ColorEffectBlend(const u16 colA, const u16 colB, const TBlendTable *blendTable);
 	FORCEINLINE FragmentColor _ColorEffectBlend(const FragmentColor colA, const FragmentColor colB);
 	
-	void _RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *dst, const u32 srcadr, u8 *dst_alpha, u8 *typeTab, u8 *prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
-	void _RenderSprite256(const u8 spriteNum, const u16 l, u16 *dst, const u32 srcadr, const u16 *pal, u8 *dst_alpha, u8 *typeTab, u8 *prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
-	void _RenderSprite16(const u16 l, u16 *dst, const u32 srcadr, const u16 *pal, u8 *dst_alpha, u8 *typeTab, u8 *prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
+	void _RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
+	void _RenderSprite256(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
+	void _RenderSprite16(const u16 l, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
 	void _RenderSpriteWin(const u8 *src, const bool col256, const size_t lg, size_t sprX, size_t x, const s32 xdir);
 	bool _ComputeSpriteVars(const OAMAttributes &spriteInfo, const u16 l, SpriteSize &sprSize, s32 &sprX, s32 &sprY, s32 &x, s32 &y, s32 &lg, s32 &xdir);
 	
 	u32 _SpriteAddressBMP(const OAMAttributes &spriteInfo, const SpriteSize sprSize, const s32 y);
 	
-	template<SpriteRenderMode MODE> void _SpriteRenderPerform(const u16 lineIndex, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
+	template<SpriteRenderMode MODE> void _SpriteRenderPerform(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
 	
 public:
 	GPUEngineBase();
@@ -1282,7 +1282,7 @@ public:
 	
 	template<bool ISFULLINTENSITYHINT> void ApplyMasterBrightness();
 	
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM> FORCEINLINE void ____setFinalColorBck(u16 *dstColorLine, const u16 lineIndex, const u16 color, const size_t srcX);
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM> FORCEINLINE void ____setFinalColorBck(u16 *__restrict dstColorLine, const u16 lineIndex, const u16 color, const size_t srcX);
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM> FORCEINLINE void ___setFinalColorBck(u16 *dstColorLine, const u16 lineIndex, u16 color, const size_t srcX, const bool opaque);
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void __setFinalColorBck(u16 *dstColorLine, const u16 lineIndex, u16 color, const size_t srcX, const bool opaque);
 	
@@ -1291,8 +1291,8 @@ public:
 	void UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
 	void UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
 	
-	void SpriteRender(const u16 lineIndex, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
-	void SpriteRenderDebug(const u16 lineIndex, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab);
+	void SpriteRender(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
+	void SpriteRenderDebug(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
 	template<GPULayerID LAYERID> void RenderLayerBG(u16 *dstLineColor);
 
 	NDSDisplayID GetDisplayByID() const;
@@ -1342,7 +1342,7 @@ protected:
 	template<size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB, bool CAPTURETONATIVEDST>
 	void _RenderLine_DispCapture_Blend(const u16 *__restrict srcA, const u16 *__restrict srcB, u16 *__restrict dst, const size_t captureLengthExt, const size_t l);
 	
-	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeVRAM(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
+	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeVRAM(u16 *__restrict dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
 	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeMainMemory(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
 
 	
@@ -1357,7 +1357,7 @@ public:
 	u16* Get3DFramebufferRGBA5551() const;
 	virtual void SetCustomFramebufferSize(size_t w, size_t h);
 	
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineLarge8bpp(u16 *dstColorLine, const u16 lineIndex);
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineLarge8bpp(u16 *__restrict dstColorLine, const u16 lineIndex);
 		
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l);
 	void FramebufferPostprocess();

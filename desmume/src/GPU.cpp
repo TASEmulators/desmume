@@ -117,7 +117,7 @@ const CACHE_ALIGN u8 GPUEngineBase::_winEmpty[GPU_FRAMEBUFFER_NATIVE_WIDTH] = {
 /*****************************************************************************/
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
-FORCEINLINE void rot_tiled_8bit_entry(GPUEngineBase *gpu, u16 *dstColorLine, const u16 lineIndex, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *pal, const size_t i)
+FORCEINLINE void rot_tiled_8bit_entry(GPUEngineBase *gpu, u16 *__restrict dstColorLine, const u16 lineIndex, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *__restrict pal, const size_t i)
 {
 	const u16 tileindex = *(u8*)MMU_gpu_map(map + ((auxX>>3) + (auxY>>3) * (lg>>3)));
 	const u16 x = auxX & 7;
@@ -129,7 +129,7 @@ FORCEINLINE void rot_tiled_8bit_entry(GPUEngineBase *gpu, u16 *dstColorLine, con
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool extPal, bool ISCUSTOMRENDERINGNEEDED>
-FORCEINLINE void rot_tiled_16bit_entry(GPUEngineBase *gpu, u16 *dstColorLine, const u16 lineIndex, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *pal, const size_t i)
+FORCEINLINE void rot_tiled_16bit_entry(GPUEngineBase *gpu, u16 *__restrict dstColorLine, const u16 lineIndex, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *__restrict pal, const size_t i)
 {
 	TILEENTRY tileentry;
 	tileentry.val = LE_TO_LOCAL_16( *(u16 *)MMU_gpu_map(map + (((auxX>>3) + (auxY>>3) * (lg>>3))<<1)) );
@@ -143,7 +143,7 @@ FORCEINLINE void rot_tiled_16bit_entry(GPUEngineBase *gpu, u16 *dstColorLine, co
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
-FORCEINLINE void rot_256_map(GPUEngineBase *gpu, u16 *dstColorLine, const u16 lineIndex, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *pal, const size_t i)
+FORCEINLINE void rot_256_map(GPUEngineBase *gpu, u16 *__restrict dstColorLine, const u16 lineIndex, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *__restrict pal, const size_t i)
 {
 	const u8 palette_entry = *(u8*)MMU_gpu_map((map) + ((auxX + auxY * lg)));
 	const u16 color = LE_TO_LOCAL_16( pal[palette_entry] );
@@ -152,7 +152,7 @@ FORCEINLINE void rot_256_map(GPUEngineBase *gpu, u16 *dstColorLine, const u16 li
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM>
-FORCEINLINE void rot_BMP_map(GPUEngineBase *gpu, u16 *dstColorLine, const u16 lineIndex, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *pal, const size_t i)
+FORCEINLINE void rot_BMP_map(GPUEngineBase *gpu, u16 *__restrict dstColorLine, const u16 lineIndex, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *__restrict pal, const size_t i)
 {
 	const u16 color = LE_TO_LOCAL_16( *(u16 *)MMU_gpu_map((map) + ((auxX + auxY * lg) << 1)) );
 	
@@ -898,7 +898,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel_CheckWindows(const size_t srcX, boo
 //			PIXEL RENDERING
 /*****************************************************************************/
 template <GPULayerID LAYERID, bool ISDEBUGRENDER>
-FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const size_t dstX, const u16 src, const u8 srcAlpha, u16 *dstColorLine, u8 *dstLayerIDLine)
+FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const size_t dstX, const u16 src, const u8 srcAlpha, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine)
 {
 	if (ISDEBUGRENDER)
 	{
@@ -1025,7 +1025,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const size_t dst
 // We can't unify this yet because the output framebuffer is in RGBA5551, but the 3D source pixels are in RGBA6665.
 // However, GPUEngineBase::_RenderPixel() takes source pixels in RGB555. In order to unify the methods, all pixels
 // must be processed in RGBA6665.
-FORCEINLINE void GPUEngineBase::_RenderPixel3D(const size_t srcX, const size_t dstX, const FragmentColor src, u16 *dstColorLine, u8 *dstLayerIDLine)
+FORCEINLINE void GPUEngineBase::_RenderPixel3D(const size_t srcX, const size_t dstX, const FragmentColor src, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine)
 {
 	bool didPassWindowTest = true;
 	bool enableColorEffect = true;
@@ -1120,17 +1120,17 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D(const size_t srcX, const size_t d
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM>
-FORCEINLINE void GPUEngineBase::____setFinalColorBck(u16 *dstColorLine, const u16 lineIndex, const u16 color, const size_t srcX)
+FORCEINLINE void GPUEngineBase::____setFinalColorBck(u16 *__restrict dstColorLine, const u16 lineIndex, const u16 color, const size_t srcX)
 {
 	if (ISCUSTOMRENDERINGNEEDED)
 	{
-		u8 *dstLayerIDLine = this->_dstLayerID;
+		u8 *__restrict dstLayerIDLine = this->_dstLayerID;
 		
 		const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 		
 		for (size_t line = 0; line < _gpuDstLineCount[lineIndex]; line++)
 		{
-			const u16 *srcLine = (USECUSTOMVRAM) ? GPU->GetCustomVRAMBuffer() + (this->vramBlockBGIndex * _gpuVRAMBlockOffset) + ((_gpuDstLineIndex[lineIndex] + line) * dispInfo.customWidth) : NULL;
+			const u16 *__restrict srcLine = (USECUSTOMVRAM) ? GPU->GetCustomVRAMBuffer() + (this->vramBlockBGIndex * _gpuVRAMBlockOffset) + ((_gpuDstLineIndex[lineIndex] + line) * dispInfo.customWidth) : NULL;
 			
 			for (size_t p = 0; p < _gpuDstPitchCount[srcX]; p++)
 			{
@@ -1206,7 +1206,7 @@ FORCEINLINE void GPUEngineBase::__setFinalColorBck(u16 *dstColorLine, const u16 
 //this is fantastically inaccurate.
 //we do the early return even though it reduces the resulting accuracy
 //because we need the speed, and because it is inaccurate anyway
-void GPUEngineBase::_MosaicSpriteLinePixel(const size_t x, u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab)
+void GPUEngineBase::_MosaicSpriteLinePixel(const size_t x, u16 l, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab)
 {
 	const bool enableMosaic = (this->_oamList[this->_sprNum[x]].Mosaic != 0);
 	if (!enableMosaic)
@@ -1238,7 +1238,7 @@ void GPUEngineBase::_MosaicSpriteLinePixel(const size_t x, u16 l, u16 *dst, u8 *
 	if (!objColor.opaque) prioTab[x] = 0x7F;
 }
 
-void GPUEngineBase::_MosaicSpriteLine(u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab)
+void GPUEngineBase::_MosaicSpriteLine(u16 l, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab)
 {
 	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
 	{
@@ -1247,7 +1247,7 @@ void GPUEngineBase::_MosaicSpriteLine(u16 l, u16 *dst, u8 *dst_alpha, u8 *typeTa
 }
 
 template<rot_fun fun, bool WRAP>
-void GPUEngineBase::_rot_scale_op(u16 *dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG, const s32 wh, const s32 ht, const u32 map, const u32 tile, const u16 *pal)
+void GPUEngineBase::_rot_scale_op(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG, const s32 wh, const s32 ht, const u32 map, const u32 tile, const u16 *__restrict pal)
 {
 	IOREG_BGnX x = param.BGnX;
 	IOREG_BGnY y = param.BGnY;
@@ -1287,7 +1287,7 @@ void GPUEngineBase::_rot_scale_op(u16 *dstColorLine, const u16 lineIndex, const 
 }
 
 template<GPULayerID LAYERID, rot_fun fun>
-void GPUEngineBase::_apply_rot_fun(u16 *dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG, const u32 map, const u32 tile, const u16 *pal)
+void GPUEngineBase::_apply_rot_fun(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG, const u32 map, const u32 tile, const u16 *__restrict pal)
 {
 	s32 wh = this->_BGLayer[LAYERID].size.width;
 	s32 ht = this->_BGLayer[LAYERID].size.height;
@@ -1303,14 +1303,14 @@ void GPUEngineBase::_apply_rot_fun(u16 *dstColorLine, const u16 lineIndex, const
 /*****************************************************************************/
 // render a text background to the combined pixelbuffer
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_RenderLine_TextBG(u16 *dstColorLine, const u16 lineIndex, u16 XBG, u16 YBG, u16 LG)
+void GPUEngineBase::_RenderLine_TextBG(u16 *__restrict dstColorLine, const u16 lineIndex, u16 XBG, u16 YBG, u16 LG)
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
 	const u16 lg     = this->_BGLayer[LAYERID].size.width;
 	const u16 ht     = this->_BGLayer[LAYERID].size.height;
 	const u16 wmask  = (lg-1);
 	const u16 hmask  = (ht-1);
-	u16 tmp    = ((YBG & hmask) >> 3);
+	u16 tmp = ((YBG & hmask) >> 3);
 	u32 map;
 	u32 tile;
 	u16 xoff;
@@ -1332,7 +1332,7 @@ void GPUEngineBase::_RenderLine_TextBG(u16 *dstColorLine, const u16 lineIndex, u
 
 	if (this->_BGLayer[LAYERID].BGnCNT.PaletteMode == PaletteMode_16x16) // color: 16 palette entries
 	{
-		const u16 *pal = this->_paletteBG;
+		const u16 *__restrict pal = this->_paletteBG;
 		
 		yoff = ((YBG&7)<<2);
 		xfin = 8 - (xoff&7);
@@ -1346,7 +1346,7 @@ void GPUEngineBase::_RenderLine_TextBG(u16 *dstColorLine, const u16 lineIndex, u
 
 			tilePalette = (tileentry.bits.Palette*16);
 
-			u8 *line = (u8 *)MMU_gpu_map(tile + (tileentry.bits.TileNum * 0x20) + ((tileentry.bits.VFlip) ? (7*4)-yoff : yoff));
+			u8 *__restrict line = (u8 *)MMU_gpu_map(tile + (tileentry.bits.TileNum * 0x20) + ((tileentry.bits.VFlip) ? (7*4)-yoff : yoff));
 			u8 offset = 0;
 			
 			if (tileentry.bits.HFlip)
@@ -1397,7 +1397,7 @@ void GPUEngineBase::_RenderLine_TextBG(u16 *dstColorLine, const u16 lineIndex, u
 	}
 	else //256-color BG
 	{
-		const u16 *pal = (DISPCNT.ExBGxPalette_Enable) ? *(this->_BGLayer[LAYERID].extPalette) : this->_paletteBG;
+		const u16 *__restrict pal = (DISPCNT.ExBGxPalette_Enable) ? *(this->_BGLayer[LAYERID].extPalette) : this->_paletteBG;
 		
 		yoff = ((YBG&7)<<3);
 		xfin = 8 - (xoff&7);
@@ -1410,8 +1410,8 @@ void GPUEngineBase::_RenderLine_TextBG(u16 *dstColorLine, const u16 lineIndex, u
 			if(tmp > 31) mapinfo += 32*32*2;
 			tileentry.val = LOCAL_TO_LE_16( *(u16 *)MMU_gpu_map(mapinfo) );
 			
-			const u16 *tilePal = (u16 *)((u8 *)pal + ((tileentry.bits.Palette<<9) & extPalMask));
-			u8 *line = (u8 *)MMU_gpu_map(tile + (tileentry.bits.TileNum * 0x40) + ((tileentry.bits.VFlip) ? (7*8)-yoff : yoff));
+			const u16 *__restrict tilePal = (u16 *)((u8 *)pal + ((tileentry.bits.Palette<<9) & extPalMask));
+			u8 *__restrict line = (u8 *)MMU_gpu_map(tile + (tileentry.bits.TileNum * 0x40) + ((tileentry.bits.VFlip) ? (7*8)-yoff : yoff));
 			
 			if (tileentry.bits.HFlip)
 			{
@@ -1438,18 +1438,18 @@ void GPUEngineBase::_RenderLine_TextBG(u16 *dstColorLine, const u16 lineIndex, u
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_RotBG2(u16 *dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG)
+void GPUEngineBase::_RotBG2(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG)
 {
 //	printf("rot mode\n");
 	this->_apply_rot_fun< LAYERID, rot_tiled_8bit_entry<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].tileMapAddress, this->_BGLayer[LAYERID].tileEntryAddress, this->_paletteBG);
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_ExtRotBG2(u16 *dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG)
+void GPUEngineBase::_ExtRotBG2(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG)
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
 	
-	u16 *pal = this->_paletteBG;
+	u16 *__restrict pal = this->_paletteBG;
 
 	switch (this->_BGLayer[LAYERID].type)
 	{
@@ -1498,7 +1498,7 @@ void GPUEngineBase::_ExtRotBG2(u16 *dstColorLine, const u16 lineIndex, const IOR
 /*****************************************************************************/
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_LineText(u16 *dstColorLine, const u16 lineIndex)
+void GPUEngineBase::_LineText(u16 *__restrict dstColorLine, const u16 lineIndex)
 {
 	if (ISDEBUGRENDER)
 	{
@@ -1511,7 +1511,7 @@ void GPUEngineBase::_LineText(u16 *dstColorLine, const u16 lineIndex)
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_LineRot(u16 *dstColorLine, const u16 lineIndex)
+void GPUEngineBase::_LineRot(u16 *__restrict dstColorLine, const u16 lineIndex)
 {
 	if (ISDEBUGRENDER)
 	{
@@ -1520,7 +1520,7 @@ void GPUEngineBase::_LineRot(u16 *dstColorLine, const u16 lineIndex)
 	}
 	else
 	{
-		IOREG_BGnParameter *bgParams = (LAYERID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
+		IOREG_BGnParameter *__restrict bgParams = (LAYERID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
 		
 		this->_RotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, *bgParams, 256);
 		bgParams->BGnX.value += bgParams->BGnPB.value;
@@ -1529,7 +1529,7 @@ void GPUEngineBase::_LineRot(u16 *dstColorLine, const u16 lineIndex)
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_LineExtRot(u16 *dstColorLine, const u16 lineIndex)
+void GPUEngineBase::_LineExtRot(u16 *__restrict dstColorLine, const u16 lineIndex)
 {
 	if (ISDEBUGRENDER)
 	{
@@ -1538,7 +1538,7 @@ void GPUEngineBase::_LineExtRot(u16 *dstColorLine, const u16 lineIndex)
 	}
 	else
 	{
-		IOREG_BGnParameter *bgParams = (LAYERID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
+		IOREG_BGnParameter *__restrict bgParams = (LAYERID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
 		
 		this->_ExtRotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, *bgParams, 256);
 		bgParams->BGnX.value += bgParams->BGnPB.value;
@@ -1553,9 +1553,9 @@ void GPUEngineBase::_LineExtRot(u16 *dstColorLine, const u16 lineIndex)
 /* if i understand it correct, and it fixes some sprite problems in chameleon shot */
 /* we have a 15 bit color, and should use the pal entry bits as alpha ?*/
 /* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
-void GPUEngineBase::_RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *dst, const u32 srcadr, u8 *dst_alpha, u8 *typeTab, u8 *prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
+void GPUEngineBase::_RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
 {
-	const u16 *bmpBuffer = (u16 *)MMU_gpu_map(srcadr);
+	const u16 *__restrict bmpBuffer = (u16 *)MMU_gpu_map(srcadr);
 	size_t i = 0;
 	
 #ifdef ENABLE_SSE2
@@ -1616,12 +1616,12 @@ void GPUEngineBase::_RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *dst, 
 	}
 }
 
-void GPUEngineBase::_RenderSprite256(const u8 spriteNum, const u16 l, u16 *dst, const u32 srcadr, const u16 *pal, u8 *dst_alpha, u8 *typeTab, u8 *prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
+void GPUEngineBase::_RenderSprite256(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
 {
 	for (size_t i = 0; i < lg; i++, ++sprX, x += xdir)
 	{
 		const u32 adr = srcadr + (x & 0x7) + ((x & 0xFFF8) << 3);
-		const u8 *src = (u8 *)MMU_gpu_map(adr);
+		const u8 *__restrict src = (u8 *)MMU_gpu_map(adr);
 		const u8 palette_entry = *src;
 
 		//a zero value suppresses the pixel from processing entirely; it doesnt exist
@@ -1637,13 +1637,13 @@ void GPUEngineBase::_RenderSprite256(const u8 spriteNum, const u16 l, u16 *dst, 
 	}
 }
 
-void GPUEngineBase::_RenderSprite16(const u16 l, u16 *dst, const u32 srcadr, const u16 *pal, u8 *dst_alpha, u8 *typeTab, u8 *prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
+void GPUEngineBase::_RenderSprite16(const u16 l, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
 {
 	for (size_t i = 0; i < lg; i++, ++sprX, x += xdir)
 	{
 		const u16 x1 = x >> 1;
 		const u32 adr = srcadr + (x1 & 0x3) + ((x1 & 0xFFFC) << 3);
-		const u8 *src = (u8 *)MMU_gpu_map(adr);//
+		const u8 *__restrict src = (u8 *)MMU_gpu_map(adr);
 		const u8 palette = *src;
 		const u8 palette_entry = (x & 1) ? palette >> 4 : palette & 0xF;
 		
@@ -1769,7 +1769,7 @@ u32 GPUEngineBase::_SpriteAddressBMP(const OAMAttributes &spriteInfo, const Spri
 	}
 }
 
-void GPUEngineBase::SpriteRender(const u16 lineIndex, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab)
+void GPUEngineBase::SpriteRender(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab)
 {
 	if (this->_spriteRenderMode == SpriteRenderMode_Sprite1D)
 		this->_SpriteRenderPerform<SpriteRenderMode_Sprite1D>(lineIndex, dst, dst_alpha, typeTab, prioTab);
@@ -1777,13 +1777,13 @@ void GPUEngineBase::SpriteRender(const u16 lineIndex, u16 *dst, u8 *dst_alpha, u
 		this->_SpriteRenderPerform<SpriteRenderMode_Sprite2D>(lineIndex, dst, dst_alpha, typeTab, prioTab);
 }
 
-void GPUEngineBase::SpriteRenderDebug(const u16 lineIndex, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab)
+void GPUEngineBase::SpriteRenderDebug(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab)
 {
 	this->SpriteRender(lineIndex, dst, dst_alpha, typeTab, prioTab);
 }
 
 template<SpriteRenderMode MODE>
-void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *dst, u8 *dst_alpha, u8 *typeTab, u8 *prioTab)
+void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab)
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
 	size_t cost = 0;
@@ -1821,8 +1821,8 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *dst, u8 *dst_
 		s32 lg;
 		s32 xdir;
 		u8 prio = spriteInfo.Priority;
-		u16 *pal;
-		u8 *src;
+		u16 *__restrict pal;
+		u8 *__restrict src;
 		u32 srcadr;
 		
 		if (spriteInfo.RotScale != 0)
@@ -2799,7 +2799,7 @@ template <bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount)
 {
 	const size_t dstLineIndex = _gpuDstLineIndex[l];
-	itemsForPriority_t *item;
+	itemsForPriority_t *__restrict item;
 	
 	const u16 backdropColor = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
 	this->_RenderLine_Clear<ISCUSTOMRENDERINGNEEDED>(backdropColor, l, dstColorLine, dstLineWidth, dstLineCount);
@@ -2846,10 +2846,10 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 					{
 						const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 						const float customWidthScale = (float)dispInfo.customWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
-						const FragmentColor *srcLine = this->_3DFramebufferRGBA6665 + (dstLineIndex * dispInfo.customWidth);
+						const FragmentColor *__restrict srcLine = this->_3DFramebufferRGBA6665 + (dstLineIndex * dispInfo.customWidth);
 						const u16 hofs = (u16)( ((float)this->_BGLayer[GPULayerID_BG0].xOffset * customWidthScale) + 0.5f );
-						u16 *dstColorLinePtr = dstColorLine;
-						u8 *layerIDLine = this->_dstLayerID;
+						u16 *__restrict dstColorLinePtr = dstColorLine;
+						u8 *__restrict layerIDLine = this->_dstLayerID;
 						
 						for (size_t line = 0; line < dstLineCount; line++)
 						{
@@ -2914,13 +2914,13 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 		// render sprite Pixels
 		if (this->_enableLayer[GPULayerID_OBJ])
 		{
-			u16 *dstColorLinePtr = dstColorLine;
-			u8 *layerIDLine = this->_dstLayerID;
+			u16 *__restrict dstColorLinePtr = dstColorLine;
+			u8 *__restrict layerIDLine = this->_dstLayerID;
 			
 			if (ISCUSTOMRENDERINGNEEDED)
 			{
 				const bool useCustomVRAM = (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE);
-				const u16 *srcLine = (useCustomVRAM) ? GPU->GetCustomVRAMBuffer() + (this->vramBlockOBJIndex * _gpuVRAMBlockOffset) + (dstLineIndex * dstLineWidth) : NULL;
+				const u16 *__restrict srcLine = (useCustomVRAM) ? GPU->GetCustomVRAMBuffer() + (this->vramBlockOBJIndex * _gpuVRAMBlockOffset) + (dstLineIndex * dstLineWidth) : NULL;
 				
 				for (size_t line = 0; line < dstLineCount; line++)
 				{
@@ -3488,11 +3488,11 @@ void GPUEngineA::_RenderLine_DispCapture_Blend(const u16 *__restrict srcA, const
 }
 
 template<bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineA::_HandleDisplayModeVRAM(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount)
+void GPUEngineA::_HandleDisplayModeVRAM(u16 *__restrict dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount)
 {
 	if (!ISCUSTOMRENDERINGNEEDED)
 	{
-		const u16 *src = this->_VRAMaddrNative + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+		const u16 *__restrict src = this->_VRAMaddrNative + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 #ifdef LOCAL_LE
 		memcpy(dstColorLine, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
 #else
@@ -3509,7 +3509,7 @@ void GPUEngineA::_HandleDisplayModeVRAM(u16 *dstColorLine, const size_t l, const
 		
 		if (vramUsageProperty.isBlockUsed[DISPCNT.VRAM_Block] && (vramUsageProperty.blockIndexDisplayVRAM == DISPCNT.VRAM_Block))
 		{
-			const u16 *src = this->_VRAMaddrCustom + (_gpuDstLineIndex[l] * dstLineWidth);
+			const u16 *__restrict src = this->_VRAMaddrCustom + (_gpuDstLineIndex[l] * dstLineWidth);
 #ifdef LOCAL_LE
 			memcpy(dstColorLine, src, dstLineWidth * dstLineCount * sizeof(u16));
 #else
@@ -3521,7 +3521,7 @@ void GPUEngineA::_HandleDisplayModeVRAM(u16 *dstColorLine, const size_t l, const
 		}
 		else
 		{
-			const u16 *src = this->_VRAMaddrNative + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+			const u16 *__restrict src = this->_VRAMaddrNative + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 			
 			for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
 			{
@@ -3579,7 +3579,7 @@ void GPUEngineA::_HandleDisplayModeMainMemory(u16 *dstColorLine, const size_t l,
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineA::_LineLarge8bpp(u16 *dstColorLine, const u16 lineIndex)
+void GPUEngineA::_LineLarge8bpp(u16 *__restrict dstColorLine, const u16 lineIndex)
 {
 	u16 XBG = this->_IORegisterMap->BGnOFS[LAYERID].BGnHOFS.Offset;
 	u16 YBG = lineIndex + this->_IORegisterMap->BGnOFS[LAYERID].BGnVOFS.Offset;
@@ -3592,7 +3592,7 @@ void GPUEngineA::_LineLarge8bpp(u16 *dstColorLine, const u16 lineIndex)
 	//TODO - handle wrapping / out of bounds correctly from rot_scale_op?
 	
 	u32 tmp_map = this->_BGLayer[LAYERID].largeBMPAddress + lg * YBG;
-	u8 *map = (u8 *)MMU_gpu_map(tmp_map);
+	u8 *__restrict map = (u8 *)MMU_gpu_map(tmp_map);
 	
 	for (size_t x = 0; x < lg; ++x, ++XBG)
 	{
@@ -3700,7 +3700,7 @@ template <bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount)
 {
 	const size_t dstLineIndex = _gpuDstLineIndex[l];
-	itemsForPriority_t *item;
+	itemsForPriority_t *__restrict item;
 	
 	const u16 backdropColor = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
 	this->_RenderLine_Clear<ISCUSTOMRENDERINGNEEDED>(backdropColor, l, dstColorLine, dstLineWidth, dstLineCount);
@@ -3778,13 +3778,13 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 		// render sprite Pixels
 		if (this->_enableLayer[GPULayerID_OBJ])
 		{
-			u16 *dstColorLinePtr = dstColorLine;
-			u8 *layerIDLine = this->_dstLayerID;
+			u16 *__restrict dstColorLinePtr = dstColorLine;
+			u8 *__restrict layerIDLine = this->_dstLayerID;
 			
 			if (ISCUSTOMRENDERINGNEEDED)
 			{
 				const bool useCustomVRAM = (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE);
-				const u16 *srcLine = (useCustomVRAM) ? GPU->GetCustomVRAMBuffer() + (this->vramBlockOBJIndex * _gpuVRAMBlockOffset) + (dstLineIndex * dstLineWidth) : NULL;
+				const u16 *__restrict srcLine = (useCustomVRAM) ? GPU->GetCustomVRAMBuffer() + (this->vramBlockOBJIndex * _gpuVRAMBlockOffset) + (dstLineIndex * dstLineWidth) : NULL;
 				
 				for (size_t line = 0; line < dstLineCount; line++)
 				{
