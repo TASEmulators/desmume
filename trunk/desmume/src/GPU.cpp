@@ -401,6 +401,13 @@ void GPUEngineBase::_Reset_Base()
 	this->_BGLayer[GPULayerID_BG2].extPalette = (u16 **)&MMU.ExtPal[this->_engineID][GPULayerID_BG2];
 	this->_BGLayer[GPULayerID_BG3].extPalette = (u16 **)&MMU.ExtPal[this->_engineID][GPULayerID_BG3];
 	
+	this->_mosaicWidthBG = &GPUEngineBase::_mosaicLookup.table[0][0];
+	this->_mosaicHeightBG = &GPUEngineBase::_mosaicLookup.table[0][0];
+	this->_mosaicWidthOBJ = &GPUEngineBase::_mosaicLookup.table[0][0];
+	this->_mosaicHeightOBJ = &GPUEngineBase::_mosaicLookup.table[0][0];
+	this->_isBGMosaicSet = false;
+	this->_isOBJMosaicSet = false;
+	
 	this->_curr_win[0] = GPUEngineBase::_winEmpty;
 	this->_curr_win[1] = GPUEngineBase::_winEmpty;
 	this->_needUpdateWINH[0] = true;
@@ -1240,6 +1247,11 @@ void GPUEngineBase::_MosaicSpriteLinePixel(const size_t x, u16 l, u16 *__restric
 
 void GPUEngineBase::_MosaicSpriteLine(u16 l, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab)
 {
+	if (!this->_isOBJMosaicSet)
+	{
+		return;
+	}
+	
 	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
 	{
 		this->_MosaicSpriteLinePixel(i, l, dst, dst_alpha, typeTab, prioTab);
@@ -2385,6 +2397,9 @@ void GPUEngineBase::ParseReg_MOSAIC()
 	this->_mosaicHeightBG = &GPUEngineBase::_mosaicLookup.table[this->_IORegisterMap->MOSAIC.BG_MosaicV][0];
 	this->_mosaicWidthOBJ = &GPUEngineBase::_mosaicLookup.table[this->_IORegisterMap->MOSAIC.OBJ_MosaicH][0];
 	this->_mosaicHeightOBJ = &GPUEngineBase::_mosaicLookup.table[this->_IORegisterMap->MOSAIC.OBJ_MosaicV][0];
+	
+	this->_isBGMosaicSet = (this->_IORegisterMap->MOSAIC.BG_MosaicH != 0) && (this->_IORegisterMap->MOSAIC.BG_MosaicV != 0);
+	this->_isOBJMosaicSet = (this->_IORegisterMap->MOSAIC.OBJ_MosaicH != 0) && (this->_IORegisterMap->MOSAIC.OBJ_MosaicV != 0);
 }
 
 void GPUEngineBase::ParseReg_BLDCNT()
@@ -2880,7 +2895,7 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 					}
 					
 #ifndef DISABLE_MOSAIC
-					if (this->_BGLayer[layerID].isMosaic)
+					if (this->_BGLayer[layerID].isMosaic && this->_isBGMosaicSet)
 					{
 						switch (layerID)
 						{
@@ -3744,7 +3759,7 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 				if (this->_enableLayer[layerID])
 				{
 #ifndef DISABLE_MOSAIC
-					if (this->_BGLayer[layerID].isMosaic)
+					if (this->_BGLayer[layerID].isMosaic && this->_isBGMosaicSet)
 					{
 						switch (layerID)
 						{
