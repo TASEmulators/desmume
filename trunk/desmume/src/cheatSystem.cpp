@@ -135,24 +135,24 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 				else	// 0XXXXXXX YYYYYYYY   word[XXXXXXX+offset] = YYYYYYYY
 				{
 					addr = hi + offset;
-					_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, lo);
+					_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, lo);
 				}
 			}
 			break;
 
 			case 0x01:	// 1XXXXXXX 0000YYYY   half[XXXXXXX+offset] = YYYY
 				addr = hi + offset;
-				_MMU_write16<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, lo);
+				_MMU_write16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, lo);
 			break;
 
 			case 0x02:	// 2XXXXXXX 000000YY   byte[XXXXXXX+offset] = YY
 				addr = hi + offset;
-				_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, lo);
+				_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, lo);
 			break;
 
 			case 0x03:	// 3XXXXXXX YYYYYYYY   IF YYYYYYYY > word[XXXXXXX]   ;unsigned
 				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
+				val = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
 				if ( lo > val )
 				{
 					if (if_flag > 0) if_flag--;
@@ -169,7 +169,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 					break;
 				}
 				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
+				val = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
 				if ( lo < val )
 				{
 					if (if_flag > 0) if_flag--;
@@ -182,7 +182,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x05:	// 5XXXXXXX YYYYYYYY   IF YYYYYYYY = word[XXXXXXX]
 				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
+				val = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
 				if ( lo == val )
 				{
 					if (if_flag > 0) if_flag--;
@@ -195,7 +195,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x06:	// 6XXXXXXX YYYYYYYY   IF YYYYYYYY <> word[XXXXXXX]
 				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
+				val = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
 				if ( lo != val )
 				{
 					if (if_flag > 0) if_flag--;
@@ -208,7 +208,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x07:	// 7XXXXXXX ZZZZYYYY   IF YYYY > ((not ZZZZ) AND half[XXXXXXX])
 				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
+				val = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
 				if ( (lo & 0xFFFF) > ( (~(lo >> 16)) & val) )
 				{
 					if (if_flag > 0) if_flag--;
@@ -221,7 +221,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x08:	// 8XXXXXXX ZZZZYYYY   IF YYYY < ((not ZZZZ) AND half[XXXXXXX])
 				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
+				val = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
 				if ( (lo & 0xFFFF) < ( (~(lo >> 16)) & val) )
 				{
 					if (if_flag > 0) if_flag--;
@@ -234,7 +234,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x09:	// 9XXXXXXX ZZZZYYYY   IF YYYY = ((not ZZZZ) AND half[XXXXXXX])
 				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
+				val = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
 				if ( (lo & 0xFFFF) == ( (~(lo >> 16)) & val) )
 				{
 					if (if_flag > 0) if_flag--;
@@ -247,7 +247,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x0A:	// AXXXXXXX ZZZZYYYY   IF YYYY <> ((not ZZZZ) AND half[XXXXXXX])
 				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(hi);
+				val = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
 				if ( (lo & 0xFFFF) != ( (~(lo >> 16)) & val) )
 				{
 					if (if_flag > 0) if_flag--;
@@ -260,7 +260,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			case 0x0B:	// BXXXXXXX 00000000   offset = word[XXXXXXX+offset]
 				addr = hi + offset;
-				offset = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);;
+				offset = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);;
 			break;
 
 			case 0x0C:
@@ -292,7 +292,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 					break;
 
 					case 0x6:	// C6000000 XXXXXXXX   [XXXXXXXX]=offset ; V1.54
-						_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(lo, offset);
+						_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(lo, offset);
 					break;
 				}
 			break;
@@ -337,35 +337,35 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 					case 0x6:	// D6000000 XXXXXXXX   word[XXXXXXXX+offset]=datareg, offset=offset+4
 						addr = lo + offset;
-						_MMU_write32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, datareg);
+						_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, datareg);
 						offset += 4;
 					break;
 
 					case 0x7:	// D7000000 XXXXXXXX   half[XXXXXXXX+offset]=datareg, offset=offset+2
 						addr = lo + offset;
-						_MMU_write16<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, datareg);
+						_MMU_write16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, datareg);
 						offset += 2;
 					break;
 
 					case 0x8:	// D8000000 XXXXXXXX   byte[XXXXXXXX+offset]=datareg, offset=offset+1
 						addr = lo + offset;
-						_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, datareg);
+						_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, datareg);
 						offset += 1;
 					break;
 
 					case 0x9:	// D9000000 XXXXXXXX   datareg = word[XXXXXXXX+offset]
 						addr = lo + offset;
-						datareg = _MMU_read32<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);
+						datareg = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
 					break;
 
 					case 0xA:	// DA000000 XXXXXXXX   datareg = half[XXXXXXXX+offset]
 						addr = lo + offset;
-						datareg = _MMU_read16<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);
+						datareg = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
 					break;
 
 					case 0xB:	// DB000000 XXXXXXXX   datareg = byte[XXXXXXXX+offset] ;bugged on pre-v1.54
 						addr = lo + offset;
-						datareg = _MMU_read08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr);
+						datareg = _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
 					break;
 
 					case 0xC:	// DC000000 XXXXXXXX   offset = offset + XXXXXXXX
@@ -386,7 +386,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 					for (u32 t = 0; t < lo; t++)
 					{
 						u8	tmp = tmp_code[t];
-						_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(addr, tmp);
+						_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, tmp);
 						addr++;
 					}
 				}
@@ -398,8 +398,8 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			case 0xF:		// FXXXXXXX YYYYYYYY   Copy YYYYYYYY bytes from [offset..] to [XXXXXXX...]
 				for (u32 t = 0; t < lo; t++)
 				{
-					u8 tmp = _MMU_read08<ARMCPU_ARM9,MMU_AT_DEBUG>(offset+t);
-					_MMU_write08<ARMCPU_ARM9,MMU_AT_DEBUG>(hi+t, tmp);
+					u8 tmp = _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(offset+t);
+					_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(hi+t, tmp);
 				}
 			break;
 			default: PROGINFO("AR: ERROR unknown command 0x%2X at %08X:%08X\n", type, hi, lo); break;
