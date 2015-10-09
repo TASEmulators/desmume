@@ -1177,6 +1177,8 @@ protected:
 	MosaicLookup::TableEntry *_mosaicHeightBG;
 	MosaicLookup::TableEntry *_mosaicWidthOBJ;
 	MosaicLookup::TableEntry *_mosaicHeightOBJ;
+	bool _isBGMosaicSet;
+	bool _isOBJMosaicSet;
 	
 	u8 _BLDALPHA_EVA;
 	u8 _BLDALPHA_EVB;
