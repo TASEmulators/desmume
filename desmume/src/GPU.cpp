@@ -661,7 +661,12 @@ void GPUEngineBase::ParseReg_BGnHOFS()
 {
 	const IOREG_BGnHOFS &BGnHOFS = this->_IORegisterMap->BGnOFS[LAYERID].BGnHOFS;
 	this->_BGLayer[LAYERID].BGnHOFS = BGnHOFS;
-	this->_BGLayer[LAYERID].xOffset = LOCAL_TO_LE_16(BGnHOFS.value);
+	
+#ifdef LOCAL_LE
+	this->_BGLayer[LAYERID].xOffset = BGnHOFS.Offset;
+#else
+	this->_BGLayer[LAYERID].xOffset = LOCAL_TO_LE_16(BGnHOFS.value) & 0x01FF;
+#endif
 }
 
 template <GPULayerID LAYERID>
@@ -669,7 +674,12 @@ void GPUEngineBase::ParseReg_BGnVOFS()
 {
 	const IOREG_BGnVOFS &BGnVOFS = this->_IORegisterMap->BGnOFS[LAYERID].BGnVOFS;
 	this->_BGLayer[LAYERID].BGnVOFS = BGnVOFS;
-	this->_BGLayer[LAYERID].yOffset = LOCAL_TO_LE_16(BGnVOFS.value);
+	
+#ifdef LOCAL_LE
+	this->_BGLayer[LAYERID].yOffset = BGnVOFS.Offset;
+#else
+	this->_BGLayer[LAYERID].yOffset = LOCAL_TO_LE_16(BGnVOFS.value) & 0x01FF;
+#endif
 }
 
 template<GPULayerID LAYERID>
@@ -2862,9 +2872,12 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 						const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 						const float customWidthScale = (float)dispInfo.customWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 						const FragmentColor *__restrict srcLine = this->_3DFramebufferRGBA6665 + (dstLineIndex * dispInfo.customWidth);
-						const u16 hofs = (u16)( ((float)this->_BGLayer[GPULayerID_BG0].xOffset * customWidthScale) + 0.5f );
 						u16 *__restrict dstColorLinePtr = dstColorLine;
 						u8 *__restrict layerIDLine = this->_dstLayerID;
+						
+						// Horizontally offset the 3D layer by this amount.
+						// Test case: Blowing up large objects in Nanostray 2 will cause the main screen to shake horizontally.
+						const u16 hofs = (u16)( ((float)this->_BGLayer[GPULayerID_BG0].xOffset * customWidthScale) + 0.5f );
 						
 						for (size_t line = 0; line < dstLineCount; line++)
 						{
@@ -3337,7 +3350,7 @@ u16 GPUEngineA::_RenderLine_DispCapture_BlendFunc(const u16 srcA, const u16 srcB
 	g = std::min((u16)31,g);
 	b = std::min((u16)31,b);
 	
-	return (a | (b << 10) | (g << 5) | r);
+	return LOCAL_TO_LE_16(a | (b << 10) | (g << 5) | r);
 }
 
 #ifdef ENABLE_SSE2
