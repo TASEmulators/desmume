@@ -29,6 +29,11 @@
 #define CHEAT_FILE_MIN_FGETS_BUFFER	32768
 #define CHEAT_DB_GAME_TITLE_SIZE	256
 
+#define CHEAT_TYPE_EMPTY 0xFF
+#define CHEAT_TYPE_INTERNAL 0
+#define CHEAT_TYPE_AR 1
+#define CHEAT_TYPE_CODEBREAKER 2
+
 struct CHEATS_LIST
 {
 	CHEATS_LIST()
@@ -36,9 +41,7 @@ struct CHEATS_LIST
 		memset(this,0,sizeof(*this));
 		type = 0xFF;
 	}
-	u8		type;				// 0 - internal cheat system
-								// 1 - Action Replay
-								// 2 - Codebreakers
+	u8 type;
 	BOOL	enabled;
 	// TODO
 	u8		freezeType;			// 0 - normal freeze
@@ -88,7 +91,7 @@ public:
 	void	setDescription(const char *description, u32 pos);
 	BOOL	save();
 	BOOL	load();
-	void	process();
+	void	process(int targetType);
 	void	getXXcodeString(CHEATS_LIST cheat, char *res_buf);
 	
 	static BOOL XXCodeFromString(CHEATS_LIST *cheatItem, const std::string codeString);
