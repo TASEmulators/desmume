@@ -142,7 +142,6 @@ public:
 
 - (void)dealloc
 {
-	NDS_3D_ChangeCore(CORE3DLIST_NULL);
 	DestroyOpenGLRenderer();
 	
 	delete gpuEvent;
@@ -721,7 +720,9 @@ void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped)
 	
 	if (!isFrameSkipped)
 	{
-		for (CocoaDSOutput *cdsOutput in this->_cdsOutputList)
+		NSMutableArray *outputList = this->_cdsOutputList;
+		
+		for (CocoaDSOutput *cdsOutput in outputList)
 		{
 			if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
 			{

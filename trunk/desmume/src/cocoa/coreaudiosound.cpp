@@ -91,8 +91,13 @@ CoreAudioInput::CoreAudioInput()
 	
 	error = NewAUGraph(&_auGraph);
 	error = AUGraphOpen(_auGraph);
+#if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
 	error = AUGraphAddNode(_auGraph, (AudioComponentDescription *)&formatConverterDesc, &_auFormatConverterNode);
 	error = AUGraphAddNode(_auGraph, (AudioComponentDescription *)&outputDesc, &_auOutputNode);
+#else
+	error = AUGraphAddNode(_auGraph, (ComponentDescription *)&formatConverterDesc, &_auFormatConverterNode);
+	error = AUGraphAddNode(_auGraph, (ComponentDescription *)&outputDesc, &_auOutputNode);
+#endif
 	error = AUGraphConnectNodeInput(_auGraph, _auFormatConverterNode, 0, _auOutputNode, 0);
 	
 	error = AUGraphNodeInfo(_auGraph, _auFormatConverterNode, NULL, &_auFormatConverterUnit);

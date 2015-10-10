@@ -153,6 +153,7 @@ class OGLVideoOutput;
 
 - (IBAction) copy:(id)sender;
 - (IBAction) changeHardwareMicGain:(id)sender;
+- (IBAction) changeHardwareMicMute:(id)sender;
 - (IBAction) changeVolume:(id)sender;
 - (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender;
 - (IBAction) toggleStatusBar:(id)sender;
