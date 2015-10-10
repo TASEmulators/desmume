@@ -3241,7 +3241,7 @@ void GPUEngineA::_RenderLine_DispCapture_Copy(const u16 *__restrict src, u16 *__
 #else
 			for (size_t i = 0; i < CAPTURELENGTH; i++)
 			{
-				dst[i] = LE_TO_LOCAL_16(src[i]) | alphaBit;
+				dst[i] = LE_TO_LOCAL_16(src[i] | alphaBit);
 			}
 #endif
 		}
@@ -3249,7 +3249,7 @@ void GPUEngineA::_RenderLine_DispCapture_Copy(const u16 *__restrict src, u16 *__
 		{
 			for (size_t i = 0; i < CAPTURELENGTH; i++)
 			{
-				dst[i] = LE_TO_LOCAL_16(src[_gpuDstPitchIndex[i]]) | alphaBit;
+				dst[i] = LE_TO_LOCAL_16(src[_gpuDstPitchIndex[i]] | alphaBit);
 			}
 		}
 	}
@@ -3263,7 +3263,7 @@ void GPUEngineA::_RenderLine_DispCapture_Copy(const u16 *__restrict src, u16 *__
 			{
 				for (size_t p = 0; p < _gpuDstPitchCount[i]; p++)
 				{
-					dst[_gpuDstPitchIndex[i] + p] = LE_TO_LOCAL_16(src[i]) | alphaBit;
+					dst[_gpuDstPitchIndex[i] + p] = LE_TO_LOCAL_16(src[i] | alphaBit);
 				}
 			}
 			
@@ -3288,7 +3288,7 @@ void GPUEngineA::_RenderLine_DispCapture_Copy(const u16 *__restrict src, u16 *__
 #endif
 				for (; i < pixCountExt; i++)
 				{
-					dst[i] = LE_TO_LOCAL_16(src[i]) | alphaBit;
+					dst[i] = LE_TO_LOCAL_16(src[i] | alphaBit);
 				}
 			}
 			else
@@ -3305,7 +3305,7 @@ void GPUEngineA::_RenderLine_DispCapture_Copy(const u16 *__restrict src, u16 *__
 #endif
 					for (; i < captureLengthExt; i++)
 					{
-						dst[i] = LE_TO_LOCAL_16(src[i]) | alphaBit;
+						dst[i] = LE_TO_LOCAL_16(src[i] | alphaBit);
 					}
 					
 					src += dispInfo.customWidth;
