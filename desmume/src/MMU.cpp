@@ -4550,7 +4550,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					return;
 					
 				case REG_DISPB_MASTERBRIGHT:
-					T1WriteLong(MMU.ARM9_REG, 0x006C, val);
+					T1WriteLong(MMU.ARM9_REG, 0x106C, val);
 					subEngine->ParseReg_MASTER_BRIGHT();
 					return;
 					
