@@ -68,6 +68,8 @@ const char	*team[] = {
 	"Luigi__",
 	"CrazyMax",
 	"Riccardo Magliocchetti",
+	"CyberWarriorX",
+	"mic"
 };
 
 static HWND		gList = NULL;

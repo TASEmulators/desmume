@@ -747,7 +747,7 @@ BOOL CHEATS::load()
 	return TRUE;
 }
 
-void CHEATS::process()
+void CHEATS::process(int targetType)
 {
 	if (CommonSettings.cheatsDisable) return;
 	if (list.size() == 0) return;
@@ -756,7 +756,12 @@ void CHEATS::process()
 	{
 		if (!list[i].enabled) continue;
 
-		switch (list[i].type)
+		int type = list[i].type;
+		
+		if(type != targetType)
+		continue;
+
+		switch(type)
 		{
 			case 0:		// internal cheat system
 			{

@@ -1334,11 +1334,18 @@ static void execHardware_hstart_vblankStart()
 
 	//fire vblank interrupts if necessary
 	for(int i=0;i<2;i++)
+	{
 		if(MMU.reg_IF_pending[i] & (1<<IRQ_BIT_LCD_VBLANK))
 		{
 			MMU.reg_IF_pending[i] &= ~(1<<IRQ_BIT_LCD_VBLANK);
 			NDS_makeIrq(i,IRQ_BIT_LCD_VBLANK);
+
+			//for ARM7, cheats process when a vblank IRQ fires. necessary for AR compatibility and to stop cheats from breaking game boot-ups.
+			//note that how we process raw cheats is up to us. so we'll do it the same way we used to, elsewhere
+			if (i==1 && cheats)
+				cheats->process(CHEAT_TYPE_AR);
 		}
+	}
 
 	//trigger vblank dmas
 	triggerDma(EDMAMode_VBlank);
@@ -1990,8 +1997,7 @@ void NDS_exec(s32 nb)
 	}
 	currFrameCounter++;
 	DEBUG_Notify.NextFrame();
-	if (cheats)
-		cheats->process();
+	if(cheats) cheats->process(CHEAT_TYPE_INTERNAL);
 
         #ifdef GDB_STUB
         gdbstub_mutex_unlock();
