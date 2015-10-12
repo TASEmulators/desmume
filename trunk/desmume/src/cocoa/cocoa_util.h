@@ -40,9 +40,6 @@
 + (NSInteger) getIBActionSenderTag:(id)sender;
 + (BOOL) getIBActionSenderButtonStateBool:(id)sender;
 
-+ (void) quickDialogUsingTitle:(NSString *)titleText message:(NSString *)messageText;
-+ (BOOL) quickYesNoDialogUsingTitle:(NSString *)titleText message:(NSString *)messageText;
-
 + (NSInteger) appVersionNumeric;
 + (NSString *) appInternalVersionString;
 + (NSString *) appInternalNameAndVersionString;

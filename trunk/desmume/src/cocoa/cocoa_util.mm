@@ -155,16 +155,6 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 	return theState;
 }
 
-+ (void) quickDialogUsingTitle:(NSString *)titleText message:(NSString *)messageText
-{
-	NSRunAlertPanel(titleText, messageText, nil, nil, nil);
-}
-
-+ (BOOL) quickYesNoDialogUsingTitle:(NSString *)titleText message:(NSString *)messageText
-{
-	return NSRunAlertPanel(titleText, messageText, NSLocalizedString(@"Yes", nil), NSLocalizedString(@"No", nil), nil) != 0;
-}
-
 + (NSInteger) appVersionNumeric
 {
 	return (NSInteger)EMU_DESMUME_VERSION_NUMERIC();
