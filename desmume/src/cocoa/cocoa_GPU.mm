@@ -788,7 +788,11 @@ void GPUEventHandlerOSX::SetOutputList(NSMutableArray *outputList)
 }
 
 CGLContextObj OSXOpenGLRendererContext = NULL;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 CGLPBufferObj OSXOpenGLRendererPBuffer = NULL;
+#pragma GCC diagnostic pop
 
 bool OSXOpenGLRendererInit()
 {
@@ -817,34 +821,38 @@ void OSXOpenGLRendererEnd()
 bool OSXOpenGLRendererFramebufferDidResize(size_t w, size_t h)
 {
 	bool result = false;
-	CGLPBufferObj newPBuffer = NULL;
 	
-	if (OGLCreateRenderer_3_2_Func != NULL)
-	{
-		result = true;
-		return result;
-	}
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 	
 	// Create a PBuffer for legacy contexts since the availability of FBOs
 	// is not guaranteed.
-	CGLCreatePBuffer(w, h, GL_TEXTURE_2D, GL_RGBA, 0, &newPBuffer);
-	
-	if (newPBuffer == NULL)
+	if (OGLCreateRenderer_3_2_Func == NULL)
 	{
-		return result;
-	}
-	else
-	{
-		GLint virtualScreenID = 0;
-		CGLGetVirtualScreen(OSXOpenGLRendererContext, &virtualScreenID);
-		CGLSetPBuffer(OSXOpenGLRendererContext, newPBuffer, 0, 0, virtualScreenID);
+		CGLPBufferObj newPBuffer = NULL;
+		
+		CGLCreatePBuffer(w, h, GL_TEXTURE_2D, GL_RGBA, 0, &newPBuffer);
+		
+		if (newPBuffer == NULL)
+		{
+			return result;
+		}
+		else
+		{
+			GLint virtualScreenID = 0;
+			CGLGetVirtualScreen(OSXOpenGLRendererContext, &virtualScreenID);
+			CGLSetPBuffer(OSXOpenGLRendererContext, newPBuffer, 0, 0, virtualScreenID);
+		}
+		
+		CGLPBufferObj oldPBuffer = OSXOpenGLRendererPBuffer;
+		OSXOpenGLRendererPBuffer = newPBuffer;
+		CGLReleasePBuffer(oldPBuffer);
+		
+		result = true;
 	}
 	
-	CGLPBufferObj oldPBuffer = OSXOpenGLRendererPBuffer;
-	OSXOpenGLRendererPBuffer = newPBuffer;
-	CGLReleasePBuffer(oldPBuffer);
+#pragma GCC diagnostic pop
 	
-	result = true;
 	return result;
 }
 
@@ -907,10 +915,19 @@ void DestroyOpenGLRenderer()
 		return;
 	}
 	
-	CGLReleasePBuffer(OSXOpenGLRendererPBuffer);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+	
+	if (OGLCreateRenderer_3_2_Func == NULL)
+	{
+		CGLReleasePBuffer(OSXOpenGLRendererPBuffer);
+		OSXOpenGLRendererPBuffer = NULL;
+	}
+	
+#pragma GCC diagnostic pop
+	
 	CGLReleaseContext(OSXOpenGLRendererContext);
 	OSXOpenGLRendererContext = NULL;
-	OSXOpenGLRendererPBuffer = NULL;
 }
 
 void RequestOpenGLRenderer_3_2(bool request_3_2)

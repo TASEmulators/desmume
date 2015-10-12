@@ -556,10 +556,17 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	NSBitmapImageFileType fileType = (NSBitmapImageFileType)[(NSNumber *)[[aNotification userInfo] valueForKey:@"fileType"] integerValue];
 	NSImage *screenshotImage = (NSImage *)[[aNotification userInfo] valueForKey:@"screenshotImage"];
 	
-	const BOOL fileSaved = [CocoaDSFile saveScreenshot:fileURL bitmapData:[[screenshotImage representations] objectAtIndex:0] fileType:fileType];
+	const BOOL fileSaved = [CocoaDSFile saveScreenshot:fileURL bitmapData:(NSBitmapImageRep *)[[screenshotImage representations] objectAtIndex:0] fileType:fileType];
 	if (!fileSaved)
 	{
-		[CocoaDSUtil quickDialogUsingTitle:NSSTRING_ERROR_TITLE_LEGACY message:NSSTRING_ERROR_SCREENSHOT_FAILED_LEGACY];
+		NSAlert *theAlert = [[NSAlert alloc] init];
+		[theAlert setMessageText:NSSTRING_ALERT_SCREENSHOT_FAILED_TITLE];
+		[theAlert setInformativeText:NSSTRING_ALERT_SCREENSHOT_FAILED_MESSAGE];
+		[theAlert setAlertStyle:NSCriticalAlertStyle];
+		
+		[theAlert runModal];
+		
+		[theAlert release];
 	}
 	
 	[emuControl restoreCoreState];
@@ -1335,6 +1342,10 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	CGLSetCurrentContext(cglDisplayContext);
 	oglv = new OGLVideoOutput();
 	oglv->InitLayers();
+	
+	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Semibold" ofType:@"otf"];
+	oglv->GetHUDLayer()->SetFontUsingPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
+	
 	oglv->GetDisplayLayer()->SetFiltersPreferGPUOGL(true);
 	oglv->GetDisplayLayer()->SetSourceDeposterize(false);
 	oglv->GetDisplayLayer()->SetOutputFilterOGL(OutputFilterTypeID_Bilinear);

@@ -69,6 +69,8 @@
 
 #define NSSTRING_ALERT_CRITICAL_FILE_MISSING_PRI	NSLocalizedString(@"A critical file is missing. DeSmuME will now quit.", nil)
 #define NSSTRING_ALERT_CRITICAL_FILE_MISSING_SEC	NSLocalizedString(@"The file \"DefaultUserPrefs.plist\" is missing. Please reinstall DeSmuME.", nil)
+#define NSSTRING_ALERT_SCREENSHOT_FAILED_TITLE		NSLocalizedString(@"DeSmuME could not create the screenshot file.", nil)
+#define NSSTRING_ALERT_SCREENSHOT_FAILED_MESSAGE	NSLocalizedString(@"The screenshot file could not be written using the selected format.", nil)
 
 #define NSSTRING_STATUS_READY						NSLocalizedString(@"Ready.", nil)
 #define NSSTRING_STATUS_SAVESTATE_LOADING_FAILED	NSLocalizedString(@"Save state file loading failed!", nil)
@@ -149,22 +151,6 @@
 #define NSSTRING_INPUTPREF_SPEED_SCALAR				NSLocalizedString(@"%1.2fx Speed", nil)
 #define NSSTRING_INPUTPREF_GPU_STATE_ALL_MAIN		NSLocalizedString(@"Main GPU - All Layers", nil)
 #define NSSTRING_INPUTPREF_GPU_STATE_ALL_SUB		NSLocalizedString(@"Sub GPU - All Layers", nil)
-
-// LEGACY STRINGS
-#define NSSTRING_TITLE_OPEN_ROM_PANEL_LEGACY		NSLocalizedString(@"Open ROM...", nil)
-#define NSSTRING_TITLE_OPEN_STATE_FILE_PANEL_LEGACY	NSLocalizedString(@"Load State From...", nil)
-#define NSSTRING_TITLE_SAVE_STATE_FILE_PANEL_LEGACY	NSLocalizedString(@"Save State...", nil)
-#define NSSTRING_STATUS_ROM_UNLOADED_LEGACY			NSLocalizedString(@"No ROM Loaded", nil)
-#define NSSTRING_STATUS_ROM_LOADED_LEGACY			NSLocalizedString(@"ROM Loaded", nil)
-#define NSSTRING_STATUS_ROM_LOADING_FAILED_LEGACY	NSLocalizedString(@"Couldn't load ROM", nil)
-#define NSSTRING_STATUS_EMULATOR_EXECUTING_LEGACY	NSLocalizedString(@"Emulation Executing", nil)
-#define NSSTRING_STATUS_EMULATOR_PAUSED_LEGACY		NSLocalizedString(@"Emulation Paused", nil)
-#define NSSTRING_STATUS_EMULATOR_RESET_LEGACY		NSLocalizedString(@"Emulation Reset", nil)
-#define NSSTRING_ERROR_TITLE_LEGACY					NSLocalizedString(@"Error", nil)
-#define NSSTRING_ERROR_GENERIC_LEGACY				NSLocalizedString(@"An emulation error occurred", nil)
-#define NSSTRING_ERROR_SCREENSHOT_FAILED_LEGACY		NSLocalizedString(@"Couldn't create the screenshot image", nil)
-#define NSSTRING_MESSAGE_TITLE_LEGACY				NSLocalizedString(@"DeSmuME Emulator", nil)
-#define NSSTRING_MESSAGE_ASK_CLOSE_LEGACY			NSLocalizedString(@"Are you sure you want to close the ROM?", nil)
 
 #define FILENAME_README								"README"
 #define FILENAME_COPYING							"COPYING"
