@@ -112,7 +112,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_minDisplayViewSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_UNSCALED_GAP*_displayGap));
 	_isMinSizeNormal = YES;
 	_statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
-	_isWindowResizing = NO;
+	_isUpdatingDisplayScaleValueOnly = NO;
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(saveScreenshotAsFinish:)
@@ -141,20 +141,24 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void) setDisplayScale:(double)s
 {
-	if (_isWindowResizing)
+	// There are two ways that this property is used:
+	// 1. Update the displayScale value (usually as the result of a window resize)
+	// 2. Resize the window as a result of setting displayScale
+	//
+	// Use the _isUpdatingDisplayScaleValueOnly flag to control this property's behavior.
+	
+	if (_isUpdatingDisplayScaleValueOnly)
 	{
-		// Resize the window when displayScale changes.
-		// No need to set the view's scale here since window resizing will implicitly change it.
+		// Update the displayScale value only
 		OSSpinLockLock(&spinlockScale);
 		_displayScale = s;
 		OSSpinLockUnlock(&spinlockScale);
 	}
 	else
 	{
-		const double constrainedScale = [self resizeWithTransform:[self normalSize] scalar:s rotation:[self displayRotation]];
-		OSSpinLockLock(&spinlockScale);
-		_displayScale = constrainedScale;
-		OSSpinLockUnlock(&spinlockScale);
+		// Resize the window.
+		// When the window resizes, this property's value will be implicitly updated using _isUpdatingDisplayScaleValueOnly.
+		[self resizeWithTransform:[self normalSize] scalar:s rotation:[self displayRotation]];
 	}
 }
 
@@ -1121,8 +1125,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		return frameSize;
 	}
 	
-	_isWindowResizing = YES;
-	
 	// Get a content Rect so that we can make our comparison.
 	// This will be based on the proposed frameSize.
 	const NSRect frameRect = NSMakeRect(0.0f, 0.0f, frameSize.width, frameSize.height);
@@ -1150,8 +1152,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		return;
 	}
 	
-	_isWindowResizing = YES;
-	
 	// Get the max scalar within the window's current content bounds.
 	const NSSize normalBounds = [self normalSize];
 	const CGSize checkSize = GetTransformedBounds(normalBounds.width, normalBounds.height, 1.0, [self displayRotation]);
@@ -1159,16 +1159,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	contentBounds.height -= _statusBarHeight;
 	const double maxS = GetMaxScalarInBounds(checkSize.width, checkSize.height, contentBounds.width, contentBounds.height);
 	
-	// Set the display view's properties.
+	// Since we are already resizing, only update the displayScale property here.
+	_isUpdatingDisplayScaleValueOnly = YES;
 	[self setDisplayScale:maxS];
+	_isUpdatingDisplayScaleValueOnly = NO;
 	
 	// Resize the view.
 	NSRect newContentFrame = [[[self window] contentView] bounds];
 	newContentFrame.origin.y = _statusBarHeight;
 	newContentFrame.size.height -= _statusBarHeight;
 	[view setFrame:newContentFrame];
-	
-	_isWindowResizing = NO;
 }
 
 - (BOOL)windowShouldClose:(id)sender

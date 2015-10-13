@@ -102,7 +102,7 @@ class OGLVideoOutput;
 	NSSize _minDisplayViewSize;
 	BOOL _isMinSizeNormal;
 	NSUInteger _statusBarHeight;
-	BOOL _isWindowResizing;
+	BOOL _isUpdatingDisplayScaleValueOnly;
 	
 	OSSpinLock spinlockScale;
 	OSSpinLock spinlockRotation;
