@@ -318,11 +318,13 @@ protected:
 	bool _showRender3DFPS;
 	bool _showFrameIndex;
 	bool _showLagFrameCount;
+	bool _showRTC;
 	
 	uint32_t _lastVideoFPS;
 	uint32_t _lastRender3DFPS;
 	uint32_t _lastFrameIndex;
 	uint32_t _lastLagFrameCount;
+	char _lastRTCString[25];
 	
 	GLint _textBoxLines;
 	GLint _textBoxWidth;
@@ -336,7 +338,7 @@ public:
 	
 	void SetFontUsingPath(const char *filePath);
 	
-	void SetInfo(const uint32_t videoFPS, const uint32_t render3DFPS, const uint32_t frameIndex, const uint32_t lagFrameCount);
+	void SetInfo(const uint32_t videoFPS, const uint32_t render3DFPS, const uint32_t frameIndex, const uint32_t lagFrameCount, const char *rtcString);
 	void RefreshInfo();
 	
 	void SetShowVideoFPS(const bool visibleState);
@@ -347,6 +349,8 @@ public:
 	bool GetShowFrameIndex() const;
 	void SetShowLagFrameCount(const bool visibleState);
 	bool GetShowLagFrameCount() const;
+	void SetShowRTC(const bool visibleState);
+	bool GetShowRTC() const;
 	
 	virtual void SetViewportSizeOGL(GLsizei w, GLsizei h);
 	virtual void ProcessOGL();

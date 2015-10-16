@@ -55,6 +55,7 @@ public:
 		fps3d = 0;
 		cpuload[0] = cpuload[1] = 0;
 		cpuloopIterationCount = 0;
+		memset(rtcString, 0, sizeof(rtcString));
 		clicked = false;
 	}
 
@@ -72,6 +73,7 @@ public:
 	void reset();
 
 	int fps, fps3d, cpuload[2], cpuloopIterationCount;
+	char rtcString[25];
 	bool clicked;
 };
 

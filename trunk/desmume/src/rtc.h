@@ -25,6 +25,7 @@
 #include "utils/datetime.h"
 
 DateTime rtcGetTime(void);
+void rtcGetTimeAsString(char *buffer);
 
 extern	void rtcInit();
 extern	u16 rtcRead();
