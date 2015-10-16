@@ -621,10 +621,21 @@
 			const NSInteger displayOrientation		= [(NSNumber *)[windowProperties valueForKey:@"displayOrientation"] integerValue];
 			const NSInteger displayOrder			= [(NSNumber *)[windowProperties valueForKey:@"displayOrder"] integerValue];
 			const double displayGap					= [(NSNumber *)[windowProperties valueForKey:@"displayGap"] doubleValue];
+			
 			const BOOL videoFiltersPreferGPU		= [(NSNumber *)[windowProperties valueForKey:@"videoFiltersPreferGPU"] boolValue];
 			const BOOL videoSourceDeposterize		= [(NSNumber *)[windowProperties valueForKey:@"videoSourceDeposterize"] boolValue];
 			const NSInteger videoPixelScaler		= [(NSNumber *)[windowProperties valueForKey:@"videoFilterType"] integerValue];
 			const NSInteger videoOutputFilter		= [(NSNumber *)[windowProperties valueForKey:@"videoOutputFilter"] integerValue];
+			
+			const BOOL hudEnable					= [(NSNumber *)[windowProperties valueForKey:@"hudEnable"] boolValue];
+			const BOOL hudShowVideoFPS				= [(NSNumber *)[windowProperties valueForKey:@"hudShowVideoFPS"] boolValue];
+			const BOOL hudShowRender3DFPS			= [(NSNumber *)[windowProperties valueForKey:@"hudShowRender3DFPS"] boolValue];
+			const BOOL hudShowFrameIndex			= [(NSNumber *)[windowProperties valueForKey:@"hudShowFrameIndex"] boolValue];
+			const BOOL hudShowLagFrameCount			= [(NSNumber *)[windowProperties valueForKey:@"hudShowLagFrameCount"] boolValue];
+			// TODO: Show HUD Input and RTC.
+			//const BOOL hudShowInput					= [(NSNumber *)[windowProperties valueForKey:@"hudShowInput"] boolValue];
+			//const BOOL hudShowRTC					= [(NSNumber *)[windowProperties valueForKey:@"hudShowRTC"] boolValue];
+			
 			const NSInteger screenshotFileFormat	= [(NSNumber *)[windowProperties valueForKey:@"screenshotFileFormat"] integerValue];
 			const BOOL useVerticalSync				= [(NSNumber *)[windowProperties valueForKey:@"useVerticalSync"] boolValue];
 			const BOOL isMinSizeNormal				= [(NSNumber *)[windowProperties valueForKey:@"isMinSizeNormal"] boolValue];
@@ -652,8 +663,13 @@
 			[windowController setDisplayOrder:displayOrder];
 			[windowController setDisplayGap:displayGap];
 			[windowController setScreenshotFileFormat:screenshotFileFormat];
-			[[windowController view] setUseVerticalSync:useVerticalSync];
 			[windowController setDisplayScale:displayScale];
+			[[windowController view] setUseVerticalSync:useVerticalSync];
+			[[windowController view] setIsHUDVisible:hudEnable];
+			[[windowController view] setIsHUDVideoFPSVisible:hudShowVideoFPS];
+			[[windowController view] setIsHUDRender3DFPSVisible:hudShowRender3DFPS];
+			[[windowController view] setIsHUDFrameIndexVisible:hudShowFrameIndex];
+			[[windowController view] setIsHUDLagFrameCountVisible:hudShowLagFrameCount];
 			
 			[[windowController masterWindow] setFrameOrigin:NSMakePoint(frameX, frameY)];
 			
@@ -720,12 +736,21 @@
 											  [NSNumber numberWithInteger:[windowController videoOutputFilter]], @"videoOutputFilter",
 											  [NSNumber numberWithBool:[windowController videoSourceDeposterize]], @"videoSourceDeposterize",
 											  [NSNumber numberWithBool:[[windowController view] useVerticalSync]], @"useVerticalSync",
+											  [NSNumber numberWithBool:[[windowController view] isHUDVisible]], @"hudEnable",
+											  [NSNumber numberWithBool:[[windowController view] isHUDVideoFPSVisible]], @"hudShowVideoFPS",
+											  [NSNumber numberWithBool:[[windowController view] isHUDRender3DFPSVisible]], @"hudShowRender3DFPS",
+											  [NSNumber numberWithBool:[[windowController view] isHUDFrameIndexVisible]], @"hudShowFrameIndex",
+											  [NSNumber numberWithBool:[[windowController view] isHUDLagFrameCountVisible]], @"hudShowLagFrameCount",
 											  [NSNumber numberWithBool:[windowController isMinSizeNormal]], @"isMinSizeNormal",
 											  [NSNumber numberWithBool:[windowController isShowingStatusBar]], @"isShowingStatusBar",
 											  [NSNumber numberWithBool:isInFullScreenMode], @"isInFullScreenMode",
 											  [NSNumber numberWithUnsignedInteger:screenIndex], @"screenIndex",
 											  windowFrameStr, @"windowFrame",
 											  nil];
+			
+			// TODO: Show HUD Input and RTC.
+			//[NSNumber numberWithBool:[[windowController view] isHUDInputVisible]], @"hudShowInput",
+			//[NSNumber numberWithBool:[[windowController view] isHUDRealTimeClockVisible]], @"hudShowRTC",
 			
 			[windowPropertiesList addObject:windowProperties];
 		}

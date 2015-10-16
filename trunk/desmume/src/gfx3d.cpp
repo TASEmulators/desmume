@@ -557,6 +557,10 @@ void gfx3d_init()
 	gfx3d.state.fogDensityTable = MMU.ARM9_REG+0x0360;
 	gfx3d.state.edgeMarkColorTable = (u16 *)(MMU.ARM9_REG+0x0330);
 	
+	gfx3d._videoFrameCount = 0;
+	gfx3d.render3DFrameCount = 0;
+	Render3DFramesPerSecond = 0;
+	
 	makeTables();
 	Render3D_Init();
 }
@@ -652,6 +656,10 @@ void gfx3d_reset()
 
 	GFX_PIPEclear();
 	GFX_FIFOclear();
+	
+	gfx3d._videoFrameCount = 0;
+	gfx3d.render3DFrameCount = 0;
+	Render3DFramesPerSecond = 0;
 	
 	CurrentRenderer->Reset();
 }
@@ -2172,7 +2180,7 @@ static bool gfx3d_ysort_compare(int num1, int num2)
 
 static void gfx3d_doFlush()
 {
-	gfx3d.frameCtr++;
+	gfx3d.render3DFrameCount++;
 
 	//the renderer will get the lists we just built
 	gfx3d.polylist = polylist;

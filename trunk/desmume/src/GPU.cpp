@@ -55,6 +55,8 @@
 	#define DISABLE_MOSAIC
 #endif
 
+u32 Render3DFramesPerSecond;
+
 //instantiate static instance
 u16 GPUEngineBase::_fadeInColors[17][0x8000];
 u16 GPUEngineBase::_fadeOutColors[17][0x8000];
@@ -4325,6 +4327,15 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 		
 		this->_engineMain->FramebufferPostprocess();
 		this->_engineSub->FramebufferPostprocess();
+		
+		gfx3d._videoFrameCount++;
+		if (gfx3d._videoFrameCount == 60)
+		{
+			Render3DFramesPerSecond = gfx3d.render3DFrameCount;
+			gfx3d.render3DFrameCount = 0;
+			gfx3d._videoFrameCount = 0;
+		}
+		
 		this->_event->DidFrameEnd(isFrameSkipRequested);
 	}
 }

@@ -36,7 +36,6 @@ class GPUEventHandlerOSX;
 @property (assign) NSSize gpuDimensions;
 @property (assign) NSUInteger gpuScale;
 @property (readonly) pthread_rwlock_t *gpuFrameRWLock;
-@property (assign) NSMutableArray *outputList;
 
 @property (assign) BOOL layerMainGPU;
 @property (assign) BOOL layerMainBG0;
@@ -62,6 +61,7 @@ class GPUEventHandlerOSX;
 @property (assign) BOOL render3DMultisample;
 @property (assign) BOOL render3DFragmentSamplingHack;
 
+- (void) setOutputList:(NSMutableArray *)theOutputList mutexPtr:(pthread_mutex_t *)theMutex;
 - (BOOL) gpuStateByBit:(const UInt32)stateBit;
 - (NSString *) render3DRenderingEngineString;
 - (void) clearWithColor:(const uint16_t)colorBGRA5551;

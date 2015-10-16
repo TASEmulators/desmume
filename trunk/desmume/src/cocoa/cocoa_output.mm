@@ -20,11 +20,14 @@
 #import "cocoa_globals.h"
 #import "cocoa_videofilter.h"
 #import "cocoa_util.h"
+#import "cocoa_core.h"
 #include "sndOSX.h"
 
 #include "../NDSSystem.h"
 #include "../GPU.h"
+#include "../gfx3d.h"
 #include "../SPU.h"
+#include "../movie.h"
 #include "../metaspu/metaspu.h"
 
 #import <Cocoa/Cocoa.h>
@@ -516,11 +519,16 @@
 	}
 	
 	spinlockDisplayType = OS_SPINLOCK_INIT;
+	spinlockReceivedFrameIndex = OS_SPINLOCK_INIT;
 	
 	delegate = nil;
 	displayMode = DS_DISPLAY_TYPE_DUAL;
 	_gpuCurrentWidth = GPU_DISPLAY_WIDTH;
 	_gpuCurrentHeight = GPU_DISPLAY_HEIGHT;
+	
+	_receivedFrameIndex = 0;
+	_currentReceivedFrameIndex = 0;
+	_receivedFrameCount = 0;
 	
 	[property setValue:[NSNumber numberWithInteger:displayMode] forKey:@"displayMode"];
 	[property setValue:NSSTRING_DISPLAYMODE_MAIN forKey:@"displayModeString"];
@@ -583,6 +591,11 @@
 	return displayModeID;
 }
 
+- (void) doReceiveGPUFrame
+{
+	[CocoaDSUtil messageSendOneWay:self.receivePort msgID:MESSAGE_RECEIVE_GPU_FRAME];
+}
+
 - (void)handlePortMessage:(NSPortMessage *)portMessage
 {
 	NSInteger message = (NSInteger)[portMessage msgid];
@@ -590,6 +603,10 @@
 	
 	switch (message)
 	{
+		case MESSAGE_RECEIVE_GPU_FRAME:
+			[self handleReceiveGPUFrame];
+			break;
+			
 		case MESSAGE_CHANGE_DISPLAY_TYPE:
 			[self handleChangeDisplayMode:[messageComponents objectAtIndex:0]];
 			break;
@@ -606,6 +623,13 @@
 			[super handlePortMessage:portMessage];
 			break;
 	}
+}
+
+- (void) handleReceiveGPUFrame
+{
+	OSSpinLockLock(&spinlockReceivedFrameIndex);
+	_receivedFrameIndex++;
+	OSSpinLockUnlock(&spinlockReceivedFrameIndex);
 }
 
 - (void) handleChangeDisplayMode:(NSData *)displayModeData
@@ -649,6 +673,14 @@
 	NSPasteboard *pboard = [NSPasteboard generalPasteboard];
 	[pboard declareTypes:[NSArray arrayWithObjects:NSTIFFPboardType, nil] owner:self];
 	[pboard setData:[screenshot TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0f] forType:NSTIFFPboardType];
+}
+
+- (void) takeFrameCount
+{
+	OSSpinLockLock(&spinlockReceivedFrameIndex);
+	_receivedFrameCount = _receivedFrameIndex - _currentReceivedFrameIndex;
+	_currentReceivedFrameIndex = _receivedFrameIndex;
+	OSSpinLockUnlock(&spinlockReceivedFrameIndex);
 }
 
 - (NSImage *) image
@@ -795,6 +827,19 @@
 {
 	[super handleEmuFrameProcessed];
 	
+	NDSFrameInfo frameInfo;
+	frameInfo.videoFPS = _receivedFrameCount;
+	frameInfo.render3DFPS = Render3DFramesPerSecond;
+	frameInfo.frameIndex = currFrameCounter;
+	frameInfo.lagFrameCount = TotalLagFrames;
+	
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doProcessVideoFrameWithInfo:frameInfo];
+}
+
+- (void) handleReceiveGPUFrame
+{
+	[super handleReceiveGPUFrame];
+	
 	pthread_rwlock_rdlock(self.rwlockProducer);
 	
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
@@ -816,17 +861,14 @@
 	void *mainFramebuffer = (dispMode == DS_DISPLAY_TYPE_MAIN || dispMode == DS_DISPLAY_TYPE_DUAL) ? dispInfo.renderedBuffer[NDSDisplayID_Main] : NULL;
 	void *touchFramebuffer = (dispMode == DS_DISPLAY_TYPE_TOUCH || dispMode == DS_DISPLAY_TYPE_DUAL) ? dispInfo.renderedBuffer[NDSDisplayID_Touch] : NULL;
 	
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doLoadVideoFrameUsingMode:dispMode
-														  displayBuffer0:mainFramebuffer
-														  displayBuffer1:touchFramebuffer
-																  width0:dispInfo.renderedWidth[NDSDisplayID_Main]
-																 height0:dispInfo.renderedHeight[NDSDisplayID_Main]
-																  width1:dispInfo.renderedWidth[NDSDisplayID_Touch]
-																 height1:dispInfo.renderedHeight[NDSDisplayID_Touch]];
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doLoadVideoFrameWithMainBuffer:mainFramebuffer
+																  touchBuffer:touchFramebuffer
+																	mainWidth:dispInfo.renderedWidth[NDSDisplayID_Main]
+																   mainHeight:dispInfo.renderedHeight[NDSDisplayID_Main]
+																   touchWidth:dispInfo.renderedWidth[NDSDisplayID_Touch]
+																  touchHeight:dispInfo.renderedHeight[NDSDisplayID_Touch]];
 	
 	pthread_rwlock_unlock(self.rwlockProducer);
-	
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doProcessVideoFrame];
 }
 
 - (void) handleResizeView:(NSData *)rectData

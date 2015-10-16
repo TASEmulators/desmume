@@ -25,6 +25,8 @@
 @class NSImage;
 @class NSBitmapImageRep;
 
+struct NDSFrameInfo;
+
 typedef struct
 {
 	double	scale;
@@ -118,14 +120,13 @@ typedef struct
 
 @required
 - (void) doInitVideoOutput:(NSDictionary *)properties;
-- (void) doLoadVideoFrameUsingMode:(const NSInteger)displayMode
-					displayBuffer0:(const void *)buffer0
-					displayBuffer1:(const void *)buffer1
-							width0:(const NSInteger)w0
-						   height0:(const NSInteger)h0
-							width1:(const NSInteger)w1
-						   height1:(const NSInteger)h1;
-- (void) doProcessVideoFrame;
+- (void) doLoadVideoFrameWithMainBuffer:(const void *)mainBuffer
+							touchBuffer:(const void *)touchBuffer
+							  mainWidth:(const NSInteger)mainWidth
+							 mainHeight:(const NSInteger)mainHeight
+							 touchWidth:(const NSInteger)touchWidth
+							touchHeight:(const NSInteger)touchHeight;
+- (void) doProcessVideoFrameWithInfo:(const NDSFrameInfo &)frameInfo;
 
 @optional
 - (void) doResizeView:(NSRect)rect;
@@ -146,17 +147,25 @@ typedef struct
 	size_t _gpuCurrentWidth;
 	size_t _gpuCurrentHeight;
 	
+	uint32_t _receivedFrameIndex;
+	uint32_t _currentReceivedFrameIndex;
+	uint32_t _receivedFrameCount;
+	
 	OSSpinLock spinlockDisplayType;
+	OSSpinLock spinlockReceivedFrameIndex;
 }
 
 @property (retain) id <CocoaDSDisplayDelegate> delegate;
 @property (readonly) NSSize displaySize;
 @property (assign) NSInteger displayMode;
 
+- (void) doReceiveGPUFrame;
+- (void) handleReceiveGPUFrame;
 - (void) handleChangeDisplayMode:(NSData *)displayModeData;
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData;
 - (void) handleCopyToPasteboard;
 
+- (void) takeFrameCount;
 - (NSImage *) image;
 - (NSBitmapImageRep *) bitmapImageRep;
 
@@ -167,6 +176,7 @@ typedef struct
 	
 }
 
+- (void) handleReceiveGPUFrame;
 - (void) handleResizeView:(NSData *)rectData;
 - (void) handleTransformView:(NSData *)transformData;
 - (void) handleRedrawView;
