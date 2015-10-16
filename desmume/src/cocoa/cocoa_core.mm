@@ -144,6 +144,8 @@ volatile bool execute = true;
 		return self;
 	}
 	
+	_fpsTimer = nil;
+	
 	cdsController = nil;
 	cdsFirmware = nil;
 	cdsGPU = [[[[CocoaDSGPU alloc] init] autorelease] retain];
@@ -213,7 +215,7 @@ volatile bool execute = true;
 	sp.sched_priority = sched_get_priority_max(thePolicy);
 	pthread_setschedparam(coreThread, thePolicy, &sp);
 	
-	[cdsGPU setOutputList:cdsOutputList];
+	[cdsGPU setOutputList:cdsOutputList mutexPtr:&threadParam.mutexOutputList];
 	
 	OSXDriver *newDriver = new OSXDriver;
 	newDriver->SetCoreThreadMutexLock(&threadParam.mutexThreadExecute);
@@ -646,40 +648,56 @@ volatile bool execute = true;
 	{
 		case CORESTATE_PAUSE:
 		{
-			for(CocoaDSOutput *cdsOutput in cdsOutputList)
+			for (CocoaDSOutput *cdsOutput in cdsOutputList)
 			{
 				[cdsOutput setIdle:YES];
 			}
 			
 			[self setFrameStatus:[NSString stringWithFormat:@"%lu", (unsigned long)[self frameNumber]]];
+			[_fpsTimer invalidate];
+			_fpsTimer = nil;
 			break;
 		}
 			
 		case CORESTATE_FRAMEADVANCE:
 		{
-			for(CocoaDSOutput *cdsOutput in cdsOutputList)
+			for (CocoaDSOutput *cdsOutput in cdsOutputList)
 			{
 				[cdsOutput setIdle:NO];
 			}
 			
 			[self setFrameStatus:[NSString stringWithFormat:@"%lu", (unsigned long)[self frameNumber]]];
+			[_fpsTimer invalidate];
+			_fpsTimer = nil;
 			break;
 		}
 			
 		case CORESTATE_EXECUTE:
 		{
-			for(CocoaDSOutput *cdsOutput in cdsOutputList)
+			for (CocoaDSOutput *cdsOutput in cdsOutputList)
 			{
 				[cdsOutput setIdle:NO];
 			}
 			
 			[self setFrameStatus:@"Executing..."];
+			
+			if (_fpsTimer == nil)
+			{
+				_fpsTimer = [[NSTimer alloc] initWithFireDate:[NSDate date]
+													 interval:1.0
+													   target:self
+													 selector:@selector(fpsUpdate:)
+													 userInfo:nil
+													  repeats:YES];
+				
+				[[NSRunLoop currentRunLoop] addTimer:_fpsTimer forMode:NSRunLoopCommonModes];
+			}
 			break;
 		}
 			
 		case CORESTATE_FRAMEJUMP:
 		{
-			for(CocoaDSOutput *cdsOutput in cdsOutputList)
+			for (CocoaDSOutput *cdsOutput in cdsOutputList)
 			{
 				if (![cdsOutput isKindOfClass:[CocoaDSDisplay class]])
 				{
@@ -688,6 +706,8 @@ volatile bool execute = true;
 			}
 			
 			[self setFrameStatus:[NSString stringWithFormat:@"Jumping to frame %lu.", (unsigned long)threadParam.frameJumpTarget]];
+			[_fpsTimer invalidate];
+			_fpsTimer = nil;
 			break;
 		}
 			
@@ -915,6 +935,17 @@ volatile bool execute = true;
 	[self setMasterExecute:YES];
 	[[self cdsController] reset];
 	[[self cdsController] updateMicLevel];
+}
+
+- (void) fpsUpdate:(NSTimer *)timer
+{
+	for (CocoaDSOutput *cdsOutput in cdsOutputList)
+	{
+		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+		{
+			[(CocoaDSDisplay *)cdsOutput takeFrameCount];
+		}
+	}
 }
 
 - (NSUInteger) frameNumber
@@ -1154,9 +1185,9 @@ static void* RunCoreThread(void *arg)
 			case CORESTATE_FRAMEADVANCE:
 			case CORESTATE_FRAMEJUMP:
 			{
-				for(CocoaDSOutput *cdsOutput in cdsOutputList)
+				for (CocoaDSOutput *cdsOutput in cdsOutputList)
 				{
-					if (![cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+					//if (![cdsOutput isKindOfClass:[CocoaDSDisplay class]])
 					{
 						[cdsOutput doCoreEmuFrame];
 					}

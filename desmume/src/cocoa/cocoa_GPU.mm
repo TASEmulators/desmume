@@ -46,6 +46,7 @@ class GPUEventHandlerOSX : public GPUEventHandlerDefault
 private:
 	pthread_rwlock_t _rwlockFrame;
 	pthread_mutex_t _mutex3DRender;
+	pthread_mutex_t *_mutexOutputList;
 	NSMutableArray *_cdsOutputList;
 	bool _isRender3DLockHeld;
 	
@@ -61,7 +62,7 @@ public:
 	
 	pthread_rwlock_t* GetFrameRWLock();
 	NSMutableArray* GetOutputList();
-	void SetOutputList(NSMutableArray *outputList);
+	void SetOutputList(NSMutableArray *outputList, pthread_mutex_t *theMutex);
 	
 	virtual void DidFrameBegin();
 	virtual void DidFrameEnd(bool isFrameSkipped);
@@ -75,7 +76,6 @@ public:
 @dynamic gpuDimensions;
 @dynamic gpuScale;
 @dynamic gpuFrameRWLock;
-@dynamic outputList;
 
 @dynamic layerMainGPU;
 @dynamic layerMainBG0;
@@ -215,14 +215,9 @@ public:
 	return gpuEvent->GetFrameRWLock();
 }
 
-- (void) setOutputList:(NSMutableArray *)outputList
+- (void) setOutputList:(NSMutableArray *)theOutputList mutexPtr:(pthread_mutex_t *)theMutex
 {
-	gpuEvent->SetOutputList(outputList);
-}
-
-- (NSMutableArray *) outputList
-{
-	return gpuEvent->GetOutputList();
+	gpuEvent->SetOutputList(theOutputList, theMutex);
 }
 
 - (void) setRender3DRenderingEngine:(NSInteger)methodID
@@ -699,6 +694,7 @@ public:
 GPUEventHandlerOSX::GPUEventHandlerOSX()
 {
 	_isRender3DLockHeld = false;
+	_mutexOutputList = NULL;
 	pthread_rwlock_init(&_rwlockFrame, NULL);
 	pthread_mutex_init(&_mutex3DRender, NULL);
 }
@@ -720,14 +716,24 @@ void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped)
 	
 	if (!isFrameSkipped)
 	{
+		if (this->_mutexOutputList != NULL)
+		{
+			pthread_mutex_lock(this->_mutexOutputList);
+		}
+		
 		NSMutableArray *outputList = this->_cdsOutputList;
 		
 		for (CocoaDSOutput *cdsOutput in outputList)
 		{
 			if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
 			{
-				[cdsOutput doCoreEmuFrame];
+				[(CocoaDSDisplay *)cdsOutput doReceiveGPUFrame];
 			}
+		}
+		
+		if (this->_mutexOutputList != NULL)
+		{
+			pthread_mutex_unlock(this->_mutexOutputList);
 		}
 	}
 }
@@ -782,9 +788,10 @@ NSMutableArray* GPUEventHandlerOSX::GetOutputList()
 	return this->_cdsOutputList;
 }
 
-void GPUEventHandlerOSX::SetOutputList(NSMutableArray *outputList)
+void GPUEventHandlerOSX::SetOutputList(NSMutableArray *outputList, pthread_mutex_t *theMutex)
 {
 	this->_cdsOutputList = outputList;
+	this->_mutexOutputList = theMutex;
 }
 
 CGLContextObj OSXOpenGLRendererContext = NULL;
@@ -818,12 +825,12 @@ void OSXOpenGLRendererEnd()
 	
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 bool OSXOpenGLRendererFramebufferDidResize(size_t w, size_t h)
 {
 	bool result = false;
-	
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 	
 	// Create a PBuffer for legacy contexts since the availability of FBOs
 	// is not guaranteed.
@@ -851,10 +858,10 @@ bool OSXOpenGLRendererFramebufferDidResize(size_t w, size_t h)
 		result = true;
 	}
 	
-#pragma GCC diagnostic pop
-	
 	return result;
 }
+
+#pragma GCC diagnostic pop
 
 bool CreateOpenGLRenderer()
 {
@@ -908,6 +915,9 @@ bool CreateOpenGLRenderer()
 	return result;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 void DestroyOpenGLRenderer()
 {
 	if (OSXOpenGLRendererContext == NULL)
@@ -915,20 +925,17 @@ void DestroyOpenGLRenderer()
 		return;
 	}
 	
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-	
 	if (OGLCreateRenderer_3_2_Func == NULL)
 	{
 		CGLReleasePBuffer(OSXOpenGLRendererPBuffer);
 		OSXOpenGLRendererPBuffer = NULL;
 	}
 	
-#pragma GCC diagnostic pop
-	
 	CGLReleaseContext(OSXOpenGLRendererContext);
 	OSXOpenGLRendererContext = NULL;
 }
+
+#pragma GCC diagnostic pop
 
 void RequestOpenGLRenderer_3_2(bool request_3_2)
 {

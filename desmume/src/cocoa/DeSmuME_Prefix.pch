@@ -25,6 +25,9 @@
 #define HAVE_OPENGL
 #define HAVE_LIBZ
 
+#define FT2_BUILD_LIBRARY
+#define DARWIN_NO_CARBON
+
 #if defined(__i386__) || defined(__x86_64__)
 	#define HAVE_JIT
 #endif

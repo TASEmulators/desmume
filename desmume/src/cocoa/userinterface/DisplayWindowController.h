@@ -41,6 +41,7 @@ class OGLVideoOutput;
 	
 	BOOL _useVerticalSync;
 	
+	OSSpinLock spinlockIsHUDVisible;
 	OSSpinLock spinlockUseVerticalSync;
 	OSSpinLock spinlockVideoFiltersPreferGPU;
 	OSSpinLock spinlockOutputFilter;
@@ -54,6 +55,11 @@ class OGLVideoOutput;
 
 @property (retain) InputManager *inputManager;
 @property (readonly) BOOL canUseShaderBasedFilters;
+@property (assign) BOOL isHUDVisible;
+@property (assign) BOOL isHUDVideoFPSVisible;
+@property (assign) BOOL isHUDRender3DFPSVisible;
+@property (assign) BOOL isHUDFrameIndexVisible;
+@property (assign) BOOL isHUDLagFrameCountVisible;
 @property (assign) BOOL useVerticalSync;
 @property (assign) BOOL videoFiltersPreferGPU;
 @property (assign) BOOL sourceDeposterize;
@@ -155,9 +161,6 @@ class OGLVideoOutput;
 - (IBAction) changeHardwareMicGain:(id)sender;
 - (IBAction) changeHardwareMicMute:(id)sender;
 - (IBAction) changeVolume:(id)sender;
-- (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender;
-- (IBAction) toggleStatusBar:(id)sender;
-- (IBAction) toggleFullScreenDisplay:(id)sender;
 
 - (IBAction) toggleExecutePause:(id)sender;
 - (IBAction) reset:(id)sender;
@@ -178,6 +181,16 @@ class OGLVideoOutput;
 - (IBAction) toggleVideoSourceDeposterize:(id)sender;
 - (IBAction) changeVideoOutputFilter:(id)sender;
 - (IBAction) changeVideoPixelScaler:(id)sender;
+- (IBAction) toggleHUDVisibility:(id)sender;
+- (IBAction) toggleShowHUDVideoFPS:(id)sender;
+- (IBAction) toggleShowHUDRender3DFPS:(id)sender;
+- (IBAction) toggleShowHUDFrameIndex:(id)sender;
+- (IBAction) toggleShowHUDLagFrameCount:(id)sender;
+- (IBAction) toggleShowHUDInput:(id)sender;
+- (IBAction) toggleShowHUDRealTimeClock:(id)sender;
+- (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender;
+- (IBAction) toggleStatusBar:(id)sender;
+- (IBAction) toggleFullScreenDisplay:(id)sender;
 
 - (IBAction) writeDefaultsDisplayRotation:(id)sender;
 - (IBAction) writeDefaultsDisplayGap:(id)sender;

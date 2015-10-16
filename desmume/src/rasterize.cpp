@@ -1941,7 +1941,7 @@ Render3DError SoftRasterizerRenderer::Render(const GFX3D &engine)
 	}
 	
 	this->RenderGeometry(engine.renderState, engine.polylist, &engine.indexlist);
-	this->EndRender(engine.frameCtr);
+	this->EndRender(engine.render3DFrameCount);
 	
 	return error;
 }

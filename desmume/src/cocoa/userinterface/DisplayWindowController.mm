@@ -19,6 +19,7 @@
 #import "EmuControllerDelegate.h"
 #import "InputManager.h"
 
+#import "cocoa_core.h"
 #import "cocoa_file.h"
 #import "cocoa_input.h"
 #import "cocoa_globals.h"
@@ -487,6 +488,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[self setVideoOutputFilter:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"]];
 	[self setVideoPixelScaler:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"]];
 	[[self view] setUseVerticalSync:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseVerticalSync"]];
+	
+	[[self view] setIsHUDVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_EnableHUD"]];
+	[[self view] setIsHUDVideoFPSVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowVideoFPS"]];
+	[[self view] setIsHUDRender3DFPSVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRender3DFPS"]];
+	[[self view] setIsHUDFrameIndexVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowFrameIndex"]];
+	[[self view] setIsHUDLagFrameCountVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowLagFrameCount"]];
+	// TODO: Show HUD Input and RTC.
+	//[[self view] setIsHUDInputVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowInput"]];
+	//[[self view] setIsHUDRealTimeClockVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRTC"]];
 }
 
 - (NSSize) normalSize
@@ -700,6 +710,41 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[emuControl changeVolume:sender];
 }
 
+- (IBAction) toggleHUDVisibility:(id)sender
+{
+	[[self view] setIsHUDVisible:![[self view] isHUDVisible]];
+}
+
+- (IBAction) toggleShowHUDVideoFPS:(id)sender
+{
+	[[self view] setIsHUDVideoFPSVisible:![[self view] isHUDVideoFPSVisible]];
+}
+
+- (IBAction) toggleShowHUDRender3DFPS:(id)sender
+{
+	[[self view] setIsHUDRender3DFPSVisible:![[self view] isHUDRender3DFPSVisible]];
+}
+
+- (IBAction) toggleShowHUDFrameIndex:(id)sender
+{
+	[[self view] setIsHUDFrameIndexVisible:![[self view] isHUDFrameIndexVisible]];
+}
+
+- (IBAction) toggleShowHUDLagFrameCount:(id)sender
+{
+	[[self view] setIsHUDLagFrameCountVisible:![[self view] isHUDLagFrameCountVisible]];
+}
+
+- (IBAction) toggleShowHUDInput:(id)sender
+{
+	//[[self view] setIsHUDInputVisible:![[self view] isHUDInputVisible]];
+}
+
+- (IBAction) toggleShowHUDRealTimeClock:(id)sender
+{
+	//[[self view] setIsHUDRealTimeClockVisible:![[self view] isHUDRealTimeClockVisible]];
+}
+
 - (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender
 {	
 	if ([self isMinSizeNormal])
@@ -885,7 +930,14 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (IBAction) writeDefaultsHUDSettings:(id)sender
 {
-	// TODO: Not implemented.
+	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDVisible] forKey:@"DisplayView_EnableHUD"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDVideoFPSVisible] forKey:@"HUD_ShowVideoFPS"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDRender3DFPSVisible] forKey:@"HUD_ShowRender3DFPS"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDFrameIndexVisible] forKey:@"HUD_ShowFrameIndex"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDLagFrameCountVisible] forKey:@"HUD_ShowLagFrameCount"];
+	// TODO: Show HUD Input and RTC.
+	//[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDInputVisible] forKey:@"HUD_ShowInput"];
+	//[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDRealTimeClockVisible] forKey:@"HUD_ShowRTC"];
 }
 
 - (IBAction) writeDefaultsDisplayVideoSettings:(id)sender
@@ -1033,6 +1085,41 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			OGLFilter::GetSupport([theItem tag], &isSupportingCPU, &isSupportingShader);
 			
 			enable = isSupportingCPU || (isSupportingShader && [[self view] canUseShaderBasedFilters]);
+		}
+	}
+	else if (theAction == @selector(toggleHUDVisibility:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem *)theItem setState:([[self view] isHUDVisible]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(toggleShowHUDVideoFPS:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem *)theItem setState:([[self view] isHUDVideoFPSVisible]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(toggleShowHUDRender3DFPS:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem *)theItem setState:([[self view] isHUDRender3DFPSVisible]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(toggleShowHUDFrameIndex:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem *)theItem setState:([[self view] isHUDFrameIndexVisible]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(toggleShowHUDLagFrameCount:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem *)theItem setState:([[self view] isHUDLagFrameCountVisible]) ? NSOnState : NSOffState];
 		}
 	}
 	else if (theAction == @selector(toggleStatusBar:))
@@ -1279,6 +1366,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 @synthesize inputManager;
 @synthesize canUseShaderBasedFilters;
+@dynamic isHUDVisible;
+@dynamic isHUDVideoFPSVisible;
+@dynamic isHUDRender3DFPSVisible;
+@dynamic isHUDFrameIndexVisible;
+@dynamic isHUDLagFrameCountVisible;
 @dynamic useVerticalSync;
 @dynamic videoFiltersPreferGPU;
 @dynamic sourceDeposterize;
@@ -1342,7 +1434,10 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	CGLSetCurrentContext(cglDisplayContext);
 	oglv = new OGLVideoOutput();
 	oglv->InitLayers();
-		
+	
+	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Semibold" ofType:@"otf"];
+	oglv->GetHUDLayer()->SetFontUsingPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
+	
 	oglv->GetDisplayLayer()->SetFiltersPreferGPUOGL(true);
 	oglv->GetDisplayLayer()->SetSourceDeposterize(false);
 	oglv->GetDisplayLayer()->SetOutputFilterOGL(OutputFilterTypeID_Bilinear);
@@ -1354,6 +1449,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	_useVerticalSync = NO;
 	
+	spinlockIsHUDVisible = OS_SPINLOCK_INIT;
 	spinlockUseVerticalSync = OS_SPINLOCK_INIT;
 	spinlockVideoFiltersPreferGPU = OS_SPINLOCK_INIT;
 	spinlockOutputFilter = OS_SPINLOCK_INIT;
@@ -1378,6 +1474,116 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 }
 
 #pragma mark Dynamic Property Methods
+
+- (void) setIsHUDVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	oglv->GetHUDLayer()->SetVisibility((theState) ? true : false);
+	[self drawVideoFrame];
+	CGLUnlockContext(cglDisplayContext);
+	
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (oglv->GetHUDLayer()->IsVisible()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
+
+- (void) setIsHUDVideoFPSVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	oglv->GetHUDLayer()->SetShowVideoFPS((theState) ? true : false);
+	[self drawVideoFrame];
+	CGLUnlockContext(cglDisplayContext);
+	
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDVideoFPSVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (oglv->GetHUDLayer()->GetShowVideoFPS()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
+
+- (void) setIsHUDRender3DFPSVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	oglv->GetHUDLayer()->SetShowRender3DFPS((theState) ? true : false);
+	[self drawVideoFrame];
+	CGLUnlockContext(cglDisplayContext);
+	
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDRender3DFPSVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (oglv->GetHUDLayer()->GetShowRender3DFPS()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
+
+- (void) setIsHUDFrameIndexVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	oglv->GetHUDLayer()->SetShowFrameIndex((theState) ? true : false);
+	[self drawVideoFrame];
+	CGLUnlockContext(cglDisplayContext);
+	
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDFrameIndexVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (oglv->GetHUDLayer()->GetShowFrameIndex()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
+
+- (void) setIsHUDLagFrameCountVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	oglv->GetHUDLayer()->SetShowLagFrameCount((theState) ? true : false);
+	[self drawVideoFrame];
+	CGLUnlockContext(cglDisplayContext);
+	
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDLagFrameCountVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (oglv->GetHUDLayer()->GetShowLagFrameCount()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
 
 - (void) setUseVerticalSync:(BOOL)theState
 {
@@ -1811,25 +2017,38 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// No init needed, so do nothing.
 }
 
-- (void) doLoadVideoFrameUsingMode:(const NSInteger)displayMode
-					displayBuffer0:(const void *)buffer0
-					displayBuffer1:(const void *)buffer1
-							width0:(const NSInteger)w0
-						   height0:(const NSInteger)h0
-							width1:(const NSInteger)w1
-						   height1:(const NSInteger)h1
+- (void) doLoadVideoFrameWithMainBuffer:(const void *)mainBuffer
+							touchBuffer:(const void *)touchBuffer
+							  mainWidth:(const NSInteger)mainWidth
+							 mainHeight:(const NSInteger)mainHeight
+							 touchWidth:(const NSInteger)touchWidth
+							touchHeight:(const NSInteger)touchHeight
 {
+	OGLDisplayLayer *displayLayer = oglv->GetDisplayLayer();
+	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->GetDisplayLayer()->LoadFrameOGL((const uint16_t *)buffer0, (const uint16_t *)buffer1, w0, h0, w1, h1);
+	displayLayer->LoadFrameOGL((const uint16_t *)mainBuffer, (const uint16_t *)touchBuffer, mainWidth, mainHeight, touchWidth, touchHeight);
+	displayLayer->ProcessOGL();
 	CGLUnlockContext(cglDisplayContext);
 }
 
-- (void)doProcessVideoFrame
+- (void)doProcessVideoFrameWithInfo:(const NDSFrameInfo &)frameInfo
 {
+	OGLHUDLayer *hudLayer = oglv->GetHUDLayer();
+	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->ProcessOGL();
+	
+	if (hudLayer->IsVisible())
+	{
+		hudLayer->SetInfo(frameInfo.videoFPS,
+						  frameInfo.render3DFPS,
+						  frameInfo.frameIndex,
+						  frameInfo.lagFrameCount);
+		hudLayer->ProcessOGL();
+	}
+	
 	[self drawVideoFrame];
 	CGLUnlockContext(cglDisplayContext);
 }

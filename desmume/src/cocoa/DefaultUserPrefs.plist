@@ -30,8 +30,8 @@
 	<integer>1</integer>
 	<key>DisplayView_Rotation</key>
 	<integer>0</integer>
-	<key>DisplayView_ShowHUD</key>
-	<true/>
+	<key>DisplayView_EnableHUD</key>
+	<false/>
 	<key>DisplayView_ShowStatusBar</key>
 	<true/>
 	<key>DisplayView_Size</key>
@@ -100,19 +100,17 @@
 	<true/>
 	<key>General_WillRestoreDisplayWindows</key>
 	<true/>
-	<key>HUD_FrameCounter</key>
+	<key>HUD_ShowVideoFPS</key>
+	<true/>
+	<key>HUD_ShowRender3DFPS</key>
 	<false/>
-	<key>HUD_FramesPerSecond</key>
+	<key>HUD_ShowFrameIndex</key>
 	<false/>
-	<key>HUD_GraphicalInput</key>
+	<key>HUD_ShowLagFrameCount</key>
 	<false/>
-	<key>HUD_Input</key>
+	<key>HUD_ShowInput</key>
 	<false/>
-	<key>HUD_LagCounter</key>
-	<false/>
-	<key>HUD_Microphone</key>
-	<false/>
-	<key>HUD_RealTimeClock</key>
+	<key>HUD_ShowRTC</key>
 	<false/>
 	<key>Input_AudioInputMode</key>
 	<integer>1</integer>

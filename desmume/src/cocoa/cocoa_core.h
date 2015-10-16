@@ -46,6 +46,16 @@ typedef struct
 	pthread_rwlock_t rwlockCoreExecute;
 } CoreThreadParam;
 
+struct NDSFrameInfo
+{
+	uint32_t videoFPS;
+	uint32_t render3DFPS;
+	uint32_t frameIndex;
+	uint32_t lagFrameCount;
+};
+
+typedef struct NDSFrameInfo NDSFrameInfo;
+
 @interface CocoaDSCore : NSObject
 {
 	CocoaDSController *cdsController;
@@ -60,6 +70,8 @@ typedef struct
 	BOOL isSpeedLimitEnabled;
 	CGFloat speedScalar;
 	std::string _slot1R4Path;
+	
+	NSTimer *_fpsTimer;
 	
 	BOOL isGdbStubStarted;
 	BOOL isInDebugTrap;
@@ -151,6 +163,7 @@ typedef struct
 
 - (void) restoreCoreState;
 - (void) reset;
+- (void) fpsUpdate:(NSTimer *)timer;
 - (NSUInteger) frameNumber;
 - (void) frameJumpTo:(NSUInteger)targetFrameNum;
 - (void) frameJump:(NSUInteger)relativeFrameNum;

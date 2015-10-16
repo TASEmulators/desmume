@@ -20,6 +20,38 @@
 #include "utilities.h"
 #include "../filter/videofilter.h"
 
+#include <sstream>
+
+
+// VERTEX SHADER FOR HUD OUTPUT
+static const char *HUDOutputVertShader_100 = {"\
+	ATTRIBUTE vec2 inPosition; \n\
+	ATTRIBUTE vec2 inTexCoord0; \n\
+	\n\
+	uniform vec2 viewSize; \n\
+	\n\
+	VARYING vec2 texCoord[1]; \n\
+	\n\
+	void main() \n\
+	{ \n\
+		mat2 projection	= mat2(	vec2(2.0/viewSize.x,            0.0), \n\
+								vec2(           0.0, 2.0/viewSize.y)); \n\
+		\n\
+		texCoord[0] = inTexCoord0; \n\
+		gl_Position = vec4(projection * inPosition, 0.0, 1.0);\n\
+	} \n\
+"};
+
+// FRAGMENT SHADER FOR HUD OUTPUT
+static const char *HUDOutputFragShader_110 = {"\
+	VARYING vec2 texCoord[1];\n\
+	uniform sampler2D tex;\n\
+	\n\
+	void main()\n\
+	{\n\
+		OUT_FRAG_COLOR = SAMPLE4_TEX_2D(tex, texCoord[0]);\n\
+	}\n\
+"};
 
 // VERTEX SHADER FOR DISPLAY OUTPUT
 static const char *Sample1x1OutputVertShader_100 = {"\
@@ -426,7 +458,7 @@ static const char *PassthroughFragShader_110 = {"\
 	void main()\n\
 	{\n\
 		OUT_FRAG_COLOR.rgb = SAMPLE3_TEX_RECT(tex, texCoord[0]);\n\
-		OUT_FRAG_COLOR.a;\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
@@ -546,7 +578,7 @@ static const char *FilterBicubicBSplineFragShader_110 = {"\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[14]) * wx.g\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[13]) * wx.b\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[12]) * wx.a) * wy.a;\n\
-		OUT_FRAG_COLOR.a;\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
@@ -574,7 +606,7 @@ static const char *FilterBicubicBSplineFastFragShader_110 = {"\
 							   SAMPLE3_TEX_RECT(tex, vec2(t1.x, t0.y)) * s1.x) * s0.y +\n\
 							  (SAMPLE3_TEX_RECT(tex, vec2(t0.x, t1.y)) * s0.x +\n\
 							   SAMPLE3_TEX_RECT(tex, vec2(t1.x, t1.y)) * s1.x) * s1.y;\n\
-		OUT_FRAG_COLOR.a;\n\
+		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
 
@@ -4439,10 +4471,12 @@ OGLVideoOutput::OGLVideoOutput()
 	_layerList->reserve(8);
 	
 	// Render State Setup (common to both shaders and fixed-function pipeline)
-	glDisable(GL_BLEND);
+	glEnable(GL_BLEND);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_DITHER);
 	glDisable(GL_STENCIL_TEST);
+	
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	// Set up fixed-function pipeline render states.
 	if (!this->_info->IsShaderSupported())
@@ -4478,6 +4512,7 @@ void OGLVideoOutput::InitLayers()
 	
 	this->_layerList->clear();
 	this->_layerList->push_back(new OGLDisplayLayer(this));
+	this->_layerList->push_back(new OGLHUDLayer(this));
 }
 
 OGLInfo* OGLVideoOutput::GetInfo()
@@ -4500,6 +4535,11 @@ OGLDisplayLayer* OGLVideoOutput::GetDisplayLayer()
 	return (OGLDisplayLayer *)this->_layerList->at(0);
 }
 
+OGLHUDLayer* OGLVideoOutput::GetHUDLayer()
+{
+	return (OGLHUDLayer *)this->_layerList->at(1);
+}
+
 void OGLVideoOutput::SetViewportSizeOGL(GLsizei w, GLsizei h)
 {
 	this->_viewportWidth = w;
@@ -4508,7 +4548,16 @@ void OGLVideoOutput::SetViewportSizeOGL(GLsizei w, GLsizei h)
 	
 	for (size_t i = 0; i < _layerList->size(); i++)
 	{
-		(*_layerList)[i]->SetViewportSizeOGL(w, h);
+		OGLVideoLayer *theLayer = (*_layerList)[i];
+		
+		if (theLayer->IsVisible())
+		{
+			theLayer->SetViewportSizeOGL(w, h);
+		}
+		else
+		{
+			theLayer->OGLVideoLayer::SetViewportSizeOGL(w, h);
+		}
 	}
 }
 
@@ -4516,15 +4565,27 @@ void OGLVideoOutput::ProcessOGL()
 {
 	for (size_t i = 0; i < _layerList->size(); i++)
 	{
-		(*_layerList)[i]->ProcessOGL();
+		OGLVideoLayer *theLayer = (*_layerList)[i];
+		
+		if (theLayer->IsVisible())
+		{
+			theLayer->ProcessOGL();
+		}
 	}
 }
 
 void OGLVideoOutput::RenderOGL()
 {
+	glClear(GL_COLOR_BUFFER_BIT);
+	
 	for (size_t i = 0; i < _layerList->size(); i++)
 	{
-		(*_layerList)[i]->RenderOGL();
+		OGLVideoLayer *theLayer = (*_layerList)[i];
+		
+		if (theLayer->IsVisible())
+		{
+			theLayer->RenderOGL();
+		}
 	}
 }
 
@@ -5607,9 +5668,496 @@ void OGLImage::RenderOGL()
 }
 
 #pragma mark -
+bool OGLVideoLayer::IsVisible()
+{
+	return this->_isVisible;
+}
+
+void OGLVideoLayer::SetVisibility(const bool visibleState)
+{
+	if (!this->_isVisible && visibleState)
+	{
+		this->_isVisible = visibleState;
+		this->SetViewportSizeOGL(this->_viewportWidth, this->_viewportHeight);
+		this->ProcessOGL();
+		
+		return;
+	}
+	
+	this->_isVisible = visibleState;
+}
+
+void OGLVideoLayer::SetViewportSizeOGL(GLsizei w, GLsizei h)
+{
+	this->_viewportWidth = w;
+	this->_viewportHeight = h;
+};
+
+#pragma mark -
+
+OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
+{
+	FT_Error error = FT_Init_FreeType(&_ftLibrary);
+	if (error)
+	{
+		printf("OGLVideoOutput: FreeType failed to init!\n");
+	}
+	
+	_isVisible = false;
+	_showVideoFPS = false;
+	_showRender3DFPS = false;
+	_showFrameIndex = false;
+	_showLagFrameCount = false;
+	
+	_lastVideoFPS = 0;
+	_lastRender3DFPS = 0;
+	_lastFrameIndex = 0;
+	_lastLagFrameCount = 0;
+	_textBoxLines = 0;
+	_textBoxWidth = 0;
+	
+	_isVAOPresent = true;
+	_output = oglVO;
+	_canUseShaderOutput = oglVO->GetInfo()->IsShaderSupported();
+	
+	if (_canUseShaderOutput)
+	{
+		_program = new OGLShaderProgram;
+		_program->SetShaderSupport(oglVO->GetInfo()->GetShaderSupport());
+		_program->SetVertexAndFragmentShaderOGL(HUDOutputVertShader_100, HUDOutputFragShader_110, oglVO->GetInfo()->IsUsingShader150());
+		
+		glUseProgram(_program->GetProgramID());
+		_uniformViewSize = glGetUniformLocation(_program->GetProgramID(), "viewSize");
+		glUseProgram(0);
+	}
+	else
+	{
+		_program = NULL;
+	}
+	
+	_statusString = "\x01"; // Char value 0x01 will represent the "text box" character, which will always be first in the string.
+	_glyphTileSize = 32;
+	_glyphSize = (float)_glyphTileSize * 0.90f;
+	
+	assert(_glyphTileSize <= 128);
+	
+	memset(_vtxBuffer, 0, sizeof(_vtxBuffer));
+	memset(_texCoordBuffer, 0, sizeof(_texCoordBuffer));
+	memset(_idxBuffer, 0, sizeof(_idxBuffer));
+	
+	for (size_t i = 0; i < 4096; i++)
+	{
+		_idxBuffer[(i*6)+0] = (i*4)+0;
+		_idxBuffer[(i*6)+1] = (i*4)+1;
+		_idxBuffer[(i*6)+2] = (i*4)+2;
+		_idxBuffer[(i*6)+3] = (i*4)+2;
+		_idxBuffer[(i*6)+4] = (i*4)+3;
+		_idxBuffer[(i*6)+5] = (i*4)+0;
+	}
+	
+	glGenTextures(1, &_texCharMap);
+	
+	// Set up VBOs
+	glGenBuffersARB(1, &_vboVertexID);
+	glGenBuffersARB(1, &_vboTexCoordID);
+	glGenBuffersARB(1, &_vboElementID);
+	
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLint) * 4096 * (2 * 4), _vtxBuffer, GL_STATIC_DRAW_ARB);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * 4096 * (2 * 4), _texCoordBuffer, GL_STATIC_DRAW_ARB);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	
+	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
+	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLshort) * 4096 * 6, _idxBuffer, GL_STATIC_DRAW_ARB);
+	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+	
+	// Set up VAO
+	glGenVertexArraysDESMUME(1, &_vaoMainStatesID);
+	glBindVertexArrayDESMUME(_vaoMainStatesID);
+	
+	if (oglVO->GetInfo()->IsShaderSupported())
+	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
+		
+		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
+		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
+	}
+	else
+	{
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
+		glVertexPointer(2, GL_INT, 0, 0);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
+		glTexCoordPointer(2, GL_FLOAT, 0, 0);
+		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
+		
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	}
+	
+	glBindVertexArrayDESMUME(0);
+}
+
+OGLHUDLayer::~OGLHUDLayer()
+{
+	if (_canUseShaderOutput)
+	{
+		glUseProgram(0);
+		delete this->_program;
+	}
+	
+	glDeleteVertexArraysDESMUME(1, &this->_vaoMainStatesID);
+	glDeleteBuffersARB(1, &this->_vboVertexID);
+	glDeleteBuffersARB(1, &this->_vboTexCoordID);
+	glDeleteBuffersARB(1, &this->_vboElementID);
+	
+	glDeleteTextures(1, &this->_texCharMap);
+	
+	FT_Done_FreeType(this->_ftLibrary);
+}
+
+void OGLHUDLayer::SetFontUsingPath(const char *filePath)
+{
+	FT_Face fontFace;
+	FT_Error error = FT_Err_Ok;
+	
+	error = FT_New_Face(this->_ftLibrary, filePath, 0, &fontFace);
+	if (error == FT_Err_Unknown_File_Format)
+	{
+		printf("OGLVideoOutput: FreeType failed to load font face because it is in an unknown format from:\n%s\n", filePath);
+		return;
+	}
+	else if (error)
+	{
+		printf("OGLVideoOutput: FreeType failed to load font face with an unknown error from:\n%s\n", filePath);
+		return;
+	}
+	
+	const size_t charMapBufferPixCount = (16 * this->_glyphTileSize) * (16 * this->_glyphTileSize);
+	
+	error = FT_Set_Char_Size(fontFace, this->_glyphSize << 6, this->_glyphSize << 6, 72, 72);
+	if (error)
+	{
+		printf("OGLVideoOutput: FreeType failed to set the font size!\n");
+	}
+	
+	const uint32_t fontColor = 0x00FFFFFF;
+	uint32_t *charMapBuffer = (uint32_t *)malloc(charMapBufferPixCount * 2 * sizeof(uint32_t));
+	for (size_t i = 0; i < charMapBufferPixCount; i++)
+	{
+		charMapBuffer[i] = fontColor;
+	}
+	
+	memset(this->_glyphInfo, 0, sizeof(this->_glyphInfo));
+	
+	FT_GlyphSlot glyphSlot = fontFace->glyph;
+	
+	// Set up the text box, which resides at glyph position 1.
+	GlyphInfo &boxInfo = this->_glyphInfo[1];
+	boxInfo.width = this->_glyphTileSize;
+	boxInfo.texCoord[0] = 1.0f/16.0f;		boxInfo.texCoord[1] = 0.0f;
+	boxInfo.texCoord[2] = 2.0f/16.0f;		boxInfo.texCoord[3] = 0.0f;
+	boxInfo.texCoord[4] = 2.0f/16.0f;		boxInfo.texCoord[5] = 1.0f/16.0f;
+	boxInfo.texCoord[6] = 1.0f/16.0f;		boxInfo.texCoord[7] = 1.0f/16.0f;
+	
+	// Fill the box with a translucent black color.
+	for (size_t rowIndex = 0; rowIndex < this->_glyphTileSize; rowIndex++)
+	{
+		for (size_t pixIndex = 0; pixIndex < this->_glyphTileSize; pixIndex++)
+		{
+			const uint32_t colorRGBA8888 = 0x50000000;
+			charMapBuffer[(this->_glyphTileSize + pixIndex) + (rowIndex * (16 * this->_glyphTileSize))] = colorRGBA8888;
+		}
+	}
+	
+	// Set up the glyphs.
+	for (unsigned char c = 32; c < 255; c++)
+	{
+		error = FT_Load_Char(fontFace, c, FT_LOAD_RENDER);
+		if (error)
+		{
+			continue;
+		}
+		
+		GlyphInfo &glyphInfo = this->_glyphInfo[c];
+		const uint16_t tileOffsetX = (c & 0x0F) * this->_glyphTileSize;
+		const uint16_t tileOffsetY = (c >> 4) * this->_glyphTileSize;
+		const uint16_t tileOffsetY_texture = tileOffsetY - (this->_glyphTileSize - this->_glyphSize + (this->_glyphSize / 16));
+		
+		const uint16_t texSize = this->_glyphTileSize * 16;
+		const GLuint glyphWidth = glyphSlot->bitmap.width;
+		
+		glyphInfo.width = (c != ' ') ? glyphWidth : (GLfloat)this->_glyphTileSize / 4.5f;
+		
+		glyphInfo.texCoord[0] = (GLfloat)tileOffsetX / (GLfloat)texSize;					glyphInfo.texCoord[1] = (GLfloat)tileOffsetY / (GLfloat)texSize;
+		glyphInfo.texCoord[2] = (GLfloat)(tileOffsetX + glyphWidth) / (GLfloat)texSize;		glyphInfo.texCoord[3] = (GLfloat)tileOffsetY / (GLfloat)texSize;
+		glyphInfo.texCoord[4] = (GLfloat)(tileOffsetX + glyphWidth) / (GLfloat)texSize;		glyphInfo.texCoord[5] = (GLfloat)(tileOffsetY + this->_glyphTileSize) / (GLfloat)texSize;
+		glyphInfo.texCoord[6] = (GLfloat)tileOffsetX / (GLfloat)texSize;					glyphInfo.texCoord[7] = (GLfloat)(tileOffsetY + this->_glyphTileSize) / (GLfloat)texSize;
+		
+		// Draw the glyph to the client-side buffer.
+		for (size_t rowIndex = 0; rowIndex < glyphSlot->bitmap.rows; rowIndex++)
+		{
+			for (size_t pixIndex = 0; pixIndex < glyphWidth; pixIndex++)
+			{
+				const uint32_t colorRGBA8888 = fontColor | ((uint32_t)((uint8_t *)(glyphSlot->bitmap.buffer))[pixIndex + (rowIndex * glyphWidth)] << 24);
+				charMapBuffer[(tileOffsetX + pixIndex) + ((tileOffsetY_texture + rowIndex + (this->_glyphTileSize - glyphSlot->bitmap_top)) * (16 * this->_glyphTileSize))] = colorRGBA8888;
+			}
+		}
+	}
+	
+	FT_Done_Face(fontFace);
+	
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, this->_texCharMap);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 16 * this->_glyphTileSize, 16 * this->_glyphTileSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, charMapBuffer);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void OGLHUDLayer::SetInfo(const uint32_t videoFPS, const uint32_t render3DFPS, const uint32_t frameIndex, const uint32_t lagFrameCount)
+{
+	this->_lastVideoFPS = videoFPS;
+	this->_lastRender3DFPS = render3DFPS;
+	this->_lastFrameIndex = frameIndex;
+	this->_lastLagFrameCount = lagFrameCount;
+	
+	this->RefreshInfo();
+}
+
+void OGLHUDLayer::RefreshInfo()
+{
+	std::ostringstream ss;
+	ss << "\x01"; // This represents the text box. It must always be the first character.
+	
+	const float charSize = (float)this->_glyphSize * 0.80f;
+	this->_textBoxWidth = 0;
+	
+	if (this->_showVideoFPS)
+	{
+		ss << "Video FPS: " << this->_lastVideoFPS << "\n";
+		this->_textBoxWidth = (GLint)((charSize * 5.2f) + 6.5f);
+	}
+	
+	if (this->_showRender3DFPS)
+	{
+		ss << "3D Rendering FPS: " << this->_lastRender3DFPS << "\n";
+		
+		const GLint newTextBoxWidth = (charSize * 7.2f) + 6.5f;
+		if (newTextBoxWidth > this->_textBoxWidth)
+		{
+			this->_textBoxWidth = newTextBoxWidth;
+		}
+	}
+	
+	if (this->_showFrameIndex)
+	{
+		ss << "Frame Index: " << this->_lastFrameIndex << "\n";
+		
+		const GLint newTextBoxWidth = (charSize * 7.6f) + 6.5f;
+		if (newTextBoxWidth > this->_textBoxWidth)
+		{
+			this->_textBoxWidth = newTextBoxWidth;
+		}
+	}
+	
+	if (this->_showLagFrameCount)
+	{
+		ss << "Lag Frame Count: " << this->_lastLagFrameCount << "\n";
+		
+		const GLint newTextBoxWidth = (charSize * 8.5f) + 6.5f;
+		if (newTextBoxWidth > this->_textBoxWidth)
+		{
+			this->_textBoxWidth = newTextBoxWidth;
+		}
+	}
+	
+	this->_statusString = ss.str();
+}
+
+void OGLHUDLayer::_SetShowInfoItemOGL(bool &infoItemFlag, const bool visibleState)
+{
+	if (infoItemFlag == visibleState)
+	{
+		return;
+	}
+	
+	infoItemFlag = visibleState;
+	if (visibleState)
+	{
+		this->_textBoxLines++;
+	}
+	else
+	{
+		this->_textBoxLines--;
+	}
+	
+	this->RefreshInfo();
+	this->ProcessOGL();
+}
+
+void OGLHUDLayer::SetShowVideoFPS(const bool visibleState)
+{
+	this->_SetShowInfoItemOGL(this->_showVideoFPS, visibleState);
+}
+
+bool OGLHUDLayer::GetShowVideoFPS() const
+{
+	return this->_showVideoFPS;
+}
+
+void OGLHUDLayer::SetShowRender3DFPS(const bool visibleState)
+{
+	this->_SetShowInfoItemOGL(this->_showRender3DFPS, visibleState);
+}
+
+bool OGLHUDLayer::GetShowRender3DFPS() const
+{
+	return this->_showRender3DFPS;
+}
+
+void OGLHUDLayer::SetShowFrameIndex(const bool visibleState)
+{
+	this->_SetShowInfoItemOGL(this->_showFrameIndex, visibleState);
+}
+
+bool OGLHUDLayer::GetShowFrameIndex() const
+{
+	return this->_showFrameIndex;
+}
+
+void OGLHUDLayer::SetShowLagFrameCount(const bool visibleState)
+{
+	this->_SetShowInfoItemOGL(this->_showLagFrameCount, visibleState);
+}
+
+bool OGLHUDLayer::GetShowLagFrameCount() const
+{
+	return this->_showLagFrameCount;
+}
+
+void OGLHUDLayer::_ProcessVerticesOGL()
+{
+	if (this->_textBoxLines <= 0)
+	{
+		return;
+	}
+	
+	const size_t length = this->_statusString.length();
+	const char *cString = this->_statusString.c_str();
+	
+	const GLint leftAlignedPosition = 10 - (this->_viewportWidth / 2);
+	const GLint charSize = (float)this->_glyphSize * 0.80f;
+	GLint charLocX = leftAlignedPosition;
+	GLint charLocY = (this->_viewportHeight / 2) - charSize - (this->_glyphTileSize - this->_glyphSize);
+	GLint textBoxTop = this->_viewportHeight / 2;
+	
+	// First, calculate the vertices of the text box.
+	// The text box should always be the first character in the string.
+	this->_vtxBuffer[0] = leftAlignedPosition - 6;						this->_vtxBuffer[1] = textBoxTop - 3;
+	this->_vtxBuffer[2] = leftAlignedPosition + this->_textBoxWidth;	this->_vtxBuffer[3] = textBoxTop - 3;
+	this->_vtxBuffer[4] = leftAlignedPosition + this->_textBoxWidth;	this->_vtxBuffer[5] = textBoxTop - (charSize * this->_textBoxLines) - 8;
+	this->_vtxBuffer[6] = leftAlignedPosition - 6;						this->_vtxBuffer[7] = textBoxTop - (charSize * this->_textBoxLines) - 8;
+	
+	// Calculate the vertices of the remaining characters in the string.
+	for (size_t i = 1; i < length; i++)
+	{
+		const char c = cString[i];
+		
+		if (c == '\n')
+		{
+			charLocX = leftAlignedPosition;
+			charLocY -= charSize;
+			continue;
+		}
+		
+		const GLint glyphWidth = this->_glyphInfo[c].width;
+		const GLint charWidth = (GLfloat)glyphWidth * ((GLfloat)charSize / (GLfloat)this->_glyphTileSize);
+		
+		this->_vtxBuffer[(i*8)+0] = charLocX;				this->_vtxBuffer[(i*8)+1] = charLocY + charSize;	// Top Left
+		this->_vtxBuffer[(i*8)+2] = charLocX + charWidth;	this->_vtxBuffer[(i*8)+3] = charLocY + charSize;	// Top Right
+		this->_vtxBuffer[(i*8)+4] = charLocX + charWidth;	this->_vtxBuffer[(i*8)+5] = charLocY;				// Bottom Right
+		this->_vtxBuffer[(i*8)+6] = charLocX;				this->_vtxBuffer[(i*8)+7] = charLocY;				// Bottom Left
+		charLocX += (charWidth + (GLint)(((GLfloat)charSize / 32.0f) + 0.5f));
+	}
+	
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
+	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, length * (2 * 4) * sizeof(GLint), this->_vtxBuffer);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+}
+
+void OGLHUDLayer::SetViewportSizeOGL(GLsizei w, GLsizei h)
+{
+	this->OGLVideoLayer::SetViewportSizeOGL(w, h);
+	
+	glUseProgram(this->_program->GetProgramID());
+	glUniform2f(this->_uniformViewSize, this->_viewportWidth, this->_viewportHeight);
+	
+	this->_ProcessVerticesOGL();
+};
+
+void OGLHUDLayer::ProcessOGL()
+{
+	if (this->_textBoxLines <= 0)
+	{
+		return;
+	}
+	
+	const size_t length = this->_statusString.length();
+	const char *cString = this->_statusString.c_str();
+	
+	for (size_t i = 0; i < length; i++)
+	{
+		const char c = cString[i];
+		GLfloat *texCoord = &this->_texCoordBuffer[i * 8];
+		memcpy(texCoord, this->_glyphInfo[c].texCoord, sizeof(GLfloat) * 8);
+	}
+	
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
+	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, length * (2 * 4) * sizeof(GLfloat), this->_texCoordBuffer);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	
+	this->_ProcessVerticesOGL();
+}
+
+void OGLHUDLayer::RenderOGL()
+{
+	if (this->_textBoxLines <= 0)
+	{
+		return;
+	}
+	
+	const size_t length = this->_statusString.length();
+	
+	glUseProgram(this->_program->GetProgramID());
+	
+	// Enable vertex attributes
+	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
+	
+	glBindTexture(GL_TEXTURE_2D, this->_texCharMap);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glDrawElements(GL_TRIANGLES, (length - 1) * 6, GL_UNSIGNED_SHORT, (GLvoid *)(6 * sizeof(GLshort)));
+	glBindTexture(GL_TEXTURE_2D, 0);
+	
+	// Disable vertex attributes
+	glBindVertexArrayDESMUME(0);
+}
+
+#pragma mark -
 
 OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 {
+	_isVisible = true;
 	_output = oglVO;
 	_needUploadVertices = true;
 	_useDeposterize = false;
@@ -5714,17 +6262,17 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
 	// Set up VBOs
-	glGenBuffersARB(1, &this->_vboVertexID);
-	glGenBuffersARB(1, &this->_vboTexCoordID);
-	glGenBuffersARB(1, &this->_vboElementID);
+	glGenBuffersARB(1, &_vboVertexID);
+	glGenBuffersARB(1, &_vboTexCoordID);
+	glGenBuffersARB(1, &_vboElementID);
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLint) * (2 * 8), this->vtxBuffer, GL_STATIC_DRAW_ARB);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * (2 * 8), this->texCoordBuffer, GL_STATIC_DRAW_ARB);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLint) * (2 * 8), vtxBuffer, GL_STATIC_DRAW_ARB);
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * (2 * 8), texCoordBuffer, GL_STATIC_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
-	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, this->_vboElementID);
+	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
 	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLubyte) * 12, outputElementBuffer, GL_STATIC_DRAW_ARB);
 	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 	
@@ -5734,22 +6282,22 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	
 	if (this->_output->GetInfo()->IsShaderSupported())
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
 		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
 		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, this->_vboElementID);
+		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
 		
 		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
 		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
 	}
 	else
 	{
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
 		glVertexPointer(2, GL_INT, 0, 0);
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
+		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
 		glTexCoordPointer(2, GL_FLOAT, 0, 0);
-		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, this->_vboElementID);
+		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
 		
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -5759,9 +6307,9 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	_isVAOPresent = true;
 	
 	_pixelScaler = VideoFilterTypeID_None;
-	_useShader150 = this->_output->GetInfo()->IsUsingShader150();
-	_shaderSupport = this->_output->GetInfo()->GetShaderSupport();
-	_canUseShaderOutput = this->_output->GetInfo()->IsShaderSupported();
+	_useShader150 = _output->GetInfo()->IsUsingShader150();
+	_shaderSupport = _output->GetInfo()->GetShaderSupport();
+	_canUseShaderOutput = _output->GetInfo()->IsShaderSupported();
 	if (_canUseShaderOutput)
 	{
 		_finalOutputProgram = new OGLShaderProgram;
@@ -6154,8 +6702,8 @@ void OGLDisplayLayer::UploadTexCoordsOGL()
 
 void OGLDisplayLayer::UploadTransformationOGL()
 {
-	const double w = this->_viewportWidth;
-	const double h = this->_viewportHeight;
+	const GLdouble w = this->_viewportWidth;
+	const GLdouble h = this->_viewportHeight;
 	const CGSize checkSize = GetTransformedBounds(this->_normalWidth, this->_normalHeight, 1.0, this->_rotation);
 	const GLdouble s = GetMaxScalarInBounds(checkSize.width, checkSize.height, w, h);
 	
@@ -6741,8 +7289,6 @@ void OGLDisplayLayer::RenderOGL()
 	
 	// Enable vertex attributes
 	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
-	
-	glClear(GL_COLOR_BUFFER_BIT);
 	
 	switch (this->GetMode())
 	{

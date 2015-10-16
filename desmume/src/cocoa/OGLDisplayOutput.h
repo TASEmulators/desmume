@@ -31,7 +31,11 @@
 #include <string>
 #include "../filter/videofilter.h"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 class OGLVideoOutput;
+struct NDSFrameInfo;
 
 enum
 {
@@ -170,27 +174,6 @@ public:
 	virtual GLuint RunFilterOGL(GLuint srcTexID);
 };
 
-class OGLVideoLayer
-{
-protected:
-	OGLVideoOutput *_output;
-	GLsizei _viewportWidth;
-	GLsizei _viewportHeight;
-	
-public:
-	OGLVideoLayer() {};
-	~OGLVideoLayer() {};
-	
-	void SetViewportSizeOGL(GLsizei w, GLsizei h)
-	{
-		this->_viewportWidth = w;
-		this->_viewportHeight = h;
-	};
-	
-	virtual void ProcessOGL() {};
-	virtual void RenderOGL() {};
-};
-
 class OGLImage
 {
 protected:
@@ -247,9 +230,9 @@ protected:
 	
 	void UploadHQnxLUTs();
 	
-	virtual void UploadVerticesOGL();
-	virtual void UploadTexCoordsOGL();
-	virtual void UploadTransformationOGL();
+	void UploadVerticesOGL();
+	void UploadTexCoordsOGL();
+	void UploadTransformationOGL();
 	
 	void UpdateVertices();
 	void UpdateTexCoords(GLfloat s, GLfloat t);
@@ -271,10 +254,101 @@ public:
 	int GetOutputFilter();
 	virtual void SetOutputFilterOGL(const int filterID);
 	int GetPixelScaler();
-	virtual void SetPixelScalerOGL(const int filterID);
-	virtual bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
-	virtual void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
-	virtual void LoadFrameOGL(const uint32_t *frameData, GLint x, GLint y, GLsizei w, GLsizei h);
+	void SetPixelScalerOGL(const int filterID);
+	bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
+	void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
+	void LoadFrameOGL(const uint32_t *frameData, GLint x, GLint y, GLsizei w, GLsizei h);
+	void ProcessOGL();
+	void RenderOGL();
+};
+
+class OGLVideoLayer
+{
+protected:
+	OGLVideoOutput *_output;
+	bool _isVisible;
+	GLsizei _viewportWidth;
+	GLsizei _viewportHeight;
+	
+public:
+	virtual ~OGLVideoLayer() {};
+	
+	virtual bool IsVisible();
+	virtual void SetVisibility(const bool visibleState);
+	virtual void SetViewportSizeOGL(GLsizei w, GLsizei h);
+	
+	virtual void ProcessOGL() = 0;
+	virtual void RenderOGL() = 0;
+};
+
+typedef struct
+{
+	uint32_t width;
+	GLfloat texCoord[8];
+} GlyphInfo;
+
+class OGLHUDLayer : public OGLVideoLayer
+{
+protected:
+	FT_Library _ftLibrary;
+	GLuint _texCharMap;	
+	GlyphInfo _glyphInfo[256];
+	
+	std::string _statusString;
+	size_t _glyphSize;
+	size_t _glyphTileSize;
+	
+	OGLShaderProgram *_program;
+	
+	GLint _vtxBuffer[4096 * (2 * 4)];
+	GLfloat _texCoordBuffer[4096 * (2 * 4)];
+	GLshort _idxBuffer[4096 * 6];
+	
+	bool _isVAOPresent;
+	bool _canUseShaderOutput;
+	
+	GLint _uniformViewSize;
+	
+	GLuint _vaoMainStatesID;
+	GLuint _vboVertexID;
+	GLuint _vboTexCoordID;
+	GLuint _vboElementID;
+	
+	bool _showVideoFPS;
+	bool _showRender3DFPS;
+	bool _showFrameIndex;
+	bool _showLagFrameCount;
+	
+	uint32_t _lastVideoFPS;
+	uint32_t _lastRender3DFPS;
+	uint32_t _lastFrameIndex;
+	uint32_t _lastLagFrameCount;
+	
+	GLint _textBoxLines;
+	GLint _textBoxWidth;
+	
+	void _SetShowInfoItemOGL(bool &infoItemFlag, const bool visibleState);
+	void _ProcessVerticesOGL();
+	
+public:
+	OGLHUDLayer(OGLVideoOutput *oglVO);
+	virtual ~OGLHUDLayer();
+	
+	void SetFontUsingPath(const char *filePath);
+	
+	void SetInfo(const uint32_t videoFPS, const uint32_t render3DFPS, const uint32_t frameIndex, const uint32_t lagFrameCount);
+	void RefreshInfo();
+	
+	void SetShowVideoFPS(const bool visibleState);
+	bool GetShowVideoFPS() const;
+	void SetShowRender3DFPS(const bool visibleState);
+	bool GetShowRender3DFPS() const;
+	void SetShowFrameIndex(const bool visibleState);
+	bool GetShowFrameIndex() const;
+	void SetShowLagFrameCount(const bool visibleState);
+	bool GetShowLagFrameCount() const;
+	
+	virtual void SetViewportSizeOGL(GLsizei w, GLsizei h);
 	virtual void ProcessOGL();
 	virtual void RenderOGL();
 };
@@ -341,10 +415,10 @@ protected:
 	
 	void UploadHQnxLUTs();
 	
-	virtual void ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide);
-	virtual void UploadVerticesOGL();
-	virtual void UploadTexCoordsOGL();
-	virtual void UploadTransformationOGL();
+	void ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide);
+	void UploadVerticesOGL();
+	void UploadTexCoordsOGL();
+	void UploadTransformationOGL();
 	
 	void UpdateVertices();
 	void UpdateTexCoords(GLfloat s0, GLfloat t0, GLfloat s1, GLfloat t1);
@@ -379,10 +453,11 @@ public:
 	int GetOutputFilter();
 	virtual void SetOutputFilterOGL(const int filterID);
 	int GetPixelScaler();
-	virtual void SetPixelScalerOGL(const int filterID);
-	virtual bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
-	virtual void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
-	virtual void LoadFrameOGL(const uint16_t *frameData0, const uint16_t *frameData1, GLsizei w0, GLsizei h0, GLsizei w1, GLsizei h1);
+	void SetPixelScalerOGL(const int filterID);
+	bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
+	void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
+	void LoadFrameOGL(const uint16_t *frameData0, const uint16_t *frameData1, GLsizei w0, GLsizei h0, GLsizei w1, GLsizei h1);
+	
 	virtual void ProcessOGL();
 	virtual void RenderOGL();
 };
@@ -399,15 +474,16 @@ public:
 	OGLVideoOutput();
 	~OGLVideoOutput();
 	
-	virtual void InitLayers();
-	virtual OGLInfo* GetInfo();
-	virtual GLsizei GetViewportWidth();
-	virtual GLsizei GetViewportHeight();
+	void InitLayers();
+	OGLInfo* GetInfo();
+	GLsizei GetViewportWidth();
+	GLsizei GetViewportHeight();
 	OGLDisplayLayer* GetDisplayLayer();
+	OGLHUDLayer* GetHUDLayer();
 		
-	virtual void ProcessOGL();
-	virtual void RenderOGL();
-	virtual void SetViewportSizeOGL(GLsizei w, GLsizei h);
+	void ProcessOGL();
+	void RenderOGL();
+	void SetViewportSizeOGL(GLsizei w, GLsizei h);
 };
 
 OGLInfo* OGLInfoCreate_Legacy();

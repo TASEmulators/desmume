@@ -2179,17 +2179,11 @@ static void StepRunLoop_User()
 	const int kFramesPerToolUpdate = 1;
 
 	Hud.fps = mainLoopData.fps;
-	Hud.fps3d = mainLoopData.fps3d;
+	Hud.fps3d = Render3DFramesPerSecond;
 
 	Display();
 
-	gfx3d.frameCtrRaw++;
-	if(gfx3d.frameCtrRaw == 60) {
-		mainLoopData.fps3d = gfx3d.frameCtr;
-		gfx3d.frameCtrRaw = 0;
-		gfx3d.frameCtr = 0;
-	}
-
+	mainLoopData.fps3d = Hud.fps3d;
 
 	mainLoopData.toolframecount++;
 	if (mainLoopData.toolframecount == kFramesPerToolUpdate)

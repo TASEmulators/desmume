@@ -468,7 +468,7 @@ Render3DError Render3D::Render(const GFX3D &engine)
 		this->RenderFog(engine.renderState.fogDensityTable, engine.renderState.fogColor, engine.renderState.fogOffset, engine.renderState.fogShift, engine.renderState.enableFogAlphaOnly);
 	}
 
-	this->EndRender(engine.frameCtr);
+	this->EndRender(engine.render3DFrameCount);
 	
 	return error;
 }
