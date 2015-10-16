@@ -632,9 +632,9 @@
 			const BOOL hudShowRender3DFPS			= [(NSNumber *)[windowProperties valueForKey:@"hudShowRender3DFPS"] boolValue];
 			const BOOL hudShowFrameIndex			= [(NSNumber *)[windowProperties valueForKey:@"hudShowFrameIndex"] boolValue];
 			const BOOL hudShowLagFrameCount			= [(NSNumber *)[windowProperties valueForKey:@"hudShowLagFrameCount"] boolValue];
-			// TODO: Show HUD Input and RTC.
+			const BOOL hudShowRTC					= [(NSNumber *)[windowProperties valueForKey:@"hudShowRTC"] boolValue];
+			// TODO: Show HUD Input.
 			//const BOOL hudShowInput					= [(NSNumber *)[windowProperties valueForKey:@"hudShowInput"] boolValue];
-			//const BOOL hudShowRTC					= [(NSNumber *)[windowProperties valueForKey:@"hudShowRTC"] boolValue];
 			
 			const NSInteger screenshotFileFormat	= [(NSNumber *)[windowProperties valueForKey:@"screenshotFileFormat"] integerValue];
 			const BOOL useVerticalSync				= [(NSNumber *)[windowProperties valueForKey:@"useVerticalSync"] boolValue];
@@ -670,6 +670,7 @@
 			[[windowController view] setIsHUDRender3DFPSVisible:hudShowRender3DFPS];
 			[[windowController view] setIsHUDFrameIndexVisible:hudShowFrameIndex];
 			[[windowController view] setIsHUDLagFrameCountVisible:hudShowLagFrameCount];
+			[[windowController view] setIsHUDRealTimeClockVisible:hudShowRTC];
 			
 			[[windowController masterWindow] setFrameOrigin:NSMakePoint(frameX, frameY)];
 			
@@ -741,6 +742,7 @@
 											  [NSNumber numberWithBool:[[windowController view] isHUDRender3DFPSVisible]], @"hudShowRender3DFPS",
 											  [NSNumber numberWithBool:[[windowController view] isHUDFrameIndexVisible]], @"hudShowFrameIndex",
 											  [NSNumber numberWithBool:[[windowController view] isHUDLagFrameCountVisible]], @"hudShowLagFrameCount",
+											  [NSNumber numberWithBool:[[windowController view] isHUDRealTimeClockVisible]], @"hudShowRTC",
 											  [NSNumber numberWithBool:[windowController isMinSizeNormal]], @"isMinSizeNormal",
 											  [NSNumber numberWithBool:[windowController isShowingStatusBar]], @"isShowingStatusBar",
 											  [NSNumber numberWithBool:isInFullScreenMode], @"isInFullScreenMode",
@@ -748,9 +750,8 @@
 											  windowFrameStr, @"windowFrame",
 											  nil];
 			
-			// TODO: Show HUD Input and RTC.
+			// TODO: Show HUD Input.
 			//[NSNumber numberWithBool:[[windowController view] isHUDInputVisible]], @"hudShowInput",
-			//[NSNumber numberWithBool:[[windowController view] isHUDRealTimeClockVisible]], @"hudShowRTC",
 			
 			[windowPropertiesList addObject:windowProperties];
 		}

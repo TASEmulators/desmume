@@ -29,6 +29,7 @@
 #include "../SPU.h"
 #include "../movie.h"
 #include "../metaspu/metaspu.h"
+#include "../rtc.h"
 
 #import <Cocoa/Cocoa.h>
 
@@ -832,6 +833,7 @@
 	frameInfo.render3DFPS = Render3DFramesPerSecond;
 	frameInfo.frameIndex = currFrameCounter;
 	frameInfo.lagFrameCount = TotalLagFrames;
+	rtcGetTimeAsString(frameInfo.rtcString);
 	
 	[(id<CocoaDSDisplayVideoDelegate>)delegate doProcessVideoFrameWithInfo:frameInfo];
 }

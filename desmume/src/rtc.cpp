@@ -116,6 +116,21 @@ DateTime rtcGetTime(void)
 	}
 }
 
+void rtcGetTimeAsString(char *buffer)
+{
+	static const char *wday[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+	
+	const DateTime rtcTime = rtcGetTime();
+	snprintf(buffer, 25, "%04d-%3s-%02d %s %02d:%02d:%02d",
+			 rtcTime.get_Year(),
+			 DateTime::GetNameOfMonth(rtcTime.get_Month()),
+			 rtcTime.get_Day(),
+			 wday[rtcTime.get_DayOfWeek()%7],
+			 rtcTime.get_Hour(),
+			 rtcTime.get_Minute(),
+			 rtcTime.get_Second());
+}
+
 static void rtcRecv()
 {
 	//INFO("RTC Read command 0x%02X\n", (rtc.cmd >> 1));

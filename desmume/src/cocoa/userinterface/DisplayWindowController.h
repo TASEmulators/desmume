@@ -60,6 +60,7 @@ class OGLVideoOutput;
 @property (assign) BOOL isHUDRender3DFPSVisible;
 @property (assign) BOOL isHUDFrameIndexVisible;
 @property (assign) BOOL isHUDLagFrameCountVisible;
+@property (assign) BOOL isHUDRealTimeClockVisible;
 @property (assign) BOOL useVerticalSync;
 @property (assign) BOOL videoFiltersPreferGPU;
 @property (assign) BOOL sourceDeposterize;

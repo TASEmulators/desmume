@@ -52,6 +52,7 @@ struct NDSFrameInfo
 	uint32_t render3DFPS;
 	uint32_t frameIndex;
 	uint32_t lagFrameCount;
+	char rtcString[25];
 };
 
 typedef struct NDSFrameInfo NDSFrameInfo;

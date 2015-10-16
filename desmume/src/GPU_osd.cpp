@@ -562,9 +562,8 @@ void DrawHUD()
 
 	if (CommonSettings.hud.ShowRTC) 
 	{
-		DateTime tm = rtcGetTime();
-		static const char *wday[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-		osd->addFixed(Hud.RTCDisplay.x, Hud.RTCDisplay.y, "%04d-%03s-%02d %s %02d:%02d:%02d", tm.get_Year(), DateTime::GetNameOfMonth(tm.get_Month()), tm.get_Day(), wday[tm.get_DayOfWeek()%7], tm.get_Hour(), tm.get_Minute(), tm.get_Second());
+		rtcGetTimeAsString(Hud.rtcString);
+		osd->addFixed(Hud.RTCDisplay.x, Hud.RTCDisplay.y, Hud.rtcString);
 	}
 
 	DrawStateSlots();

@@ -13,7 +13,7 @@
     <object class="NSMutableArray" key="IBDocument.EditedObjectIDs">
       <bool key="EncodedWithXMLCoder">YES</bool>
       <integer value="795"/>
-      <integer value="29"/>
+      <integer value="10142"/>
     </object>
     <object class="NSArray" key="IBDocument.PluginDependencies">
       <bool key="EncodedWithXMLCoder">YES</bool>
@@ -1671,7 +1671,6 @@
                       </object>
                       <object class="NSMenuItem" id="713295923">
                         <reference key="NSMenu" ref="240738211"/>
-                        <bool key="NSIsDisabled">YES</bool>
                         <string key="NSTitle">Real-Time Clock</string>
                         <string key="NSKeyEquiv"/>
                         <int key="NSMnemonicLoc">2147483647</int>
@@ -5842,7 +5841,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
                       <string key="NSReuseIdentifierKey">_NS:682</string>
                       <bool key="NSEnabled">YES</bool>
                       <object class="NSButtonCell" key="NSCell" id="485509450">
-                        <int key="NSCellFlags">-2080374784</int>
+                        <int key="NSCellFlags">67108864</int>
                         <int key="NSCellFlags2">0</int>
                         <string key="NSContents">Enable Heads-Up Display</string>
                         <reference key="NSSupport" ref="462791774"/>
@@ -5892,7 +5891,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
                       <string key="NSReuseIdentifierKey">_NS:682</string>
                       <bool key="NSEnabled">YES</bool>
                       <object class="NSButtonCell" key="NSCell" id="448115349">
-                        <int key="NSCellFlags">-2080374784</int>
+                        <int key="NSCellFlags">67108864</int>
                         <int key="NSCellFlags2">0</int>
                         <string key="NSContents">Show 3D Renderer FPS</string>
                         <reference key="NSSupport" ref="462791774"/>
@@ -5917,7 +5916,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
                       <string key="NSReuseIdentifierKey">_NS:682</string>
                       <bool key="NSEnabled">YES</bool>
                       <object class="NSButtonCell" key="NSCell" id="151263599">
-                        <int key="NSCellFlags">-2080374784</int>
+                        <int key="NSCellFlags">67108864</int>
                         <int key="NSCellFlags2">0</int>
                         <string key="NSContents">Show Frame Index</string>
                         <reference key="NSSupport" ref="462791774"/>
@@ -5942,7 +5941,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
                       <string key="NSReuseIdentifierKey">_NS:682</string>
                       <bool key="NSEnabled">YES</bool>
                       <object class="NSButtonCell" key="NSCell" id="577627485">
-                        <int key="NSCellFlags">-2080374784</int>
+                        <int key="NSCellFlags">67108864</int>
                         <int key="NSCellFlags2">0</int>
                         <string key="NSContents">Show Lag Counter</string>
                         <reference key="NSSupport" ref="462791774"/>
@@ -5992,7 +5991,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
                       <string key="NSReuseIdentifierKey">_NS:682</string>
                       <bool key="NSEnabled">YES</bool>
                       <object class="NSButtonCell" key="NSCell" id="922088406">
-                        <int key="NSCellFlags">603979776</int>
+                        <int key="NSCellFlags">67108864</int>
                         <int key="NSCellFlags2">0</int>
                         <string key="NSContents">Show Real Time Clock</string>
                         <reference key="NSSupport" ref="462791774"/>
@@ -21054,7 +21053,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
               <reference key="NSSuperview" ref="1004755540"/>
               <bool key="NSEnabled">YES</bool>
               <object class="NSButtonCell" key="NSCell" id="975096499">
-                <int key="NSCellFlags">603979776</int>
+                <int key="NSCellFlags">67108864</int>
                 <int key="NSCellFlags2">131072</int>
                 <string key="NSContents">Real Time Clock</string>
                 <reference key="NSSupport" ref="26"/>
@@ -29814,6 +29813,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
           <string>mainWindow.view.isHUDRender3DFPSVisible</string>
           <string>mainWindow.view.isHUDFrameIndexVisible</string>
           <string>mainWindow.view.isHUDLagFrameCountVisible</string>
+          <string>mainWindow.view.isHUDRealTimeClockVisible</string>
         </object>
         <string key="NSObjectClassName">EmuControllerDelegate</string>
         <object class="_NSManagedProxy" key="_NSManagedProxy"/>
@@ -30083,6 +30083,10 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
         <bool key="NSClearsFilterPredicateOnInsertion">YES</bool>
       </object>
       <object class="NSUserDefaultsController" id="178548672">
+        <object class="NSMutableArray" key="NSDeclaredKeys">
+          <bool key="EncodedWithXMLCoder">YES</bool>
+          <string>HUD_ShowRTC</string>
+        </object>
         <bool key="NSSharedInstance">YES</bool>
       </object>
     </object>
@@ -42648,6 +42652,46 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
           </object>
           <int key="connectionID">10186</int>
         </object>
+        <object class="IBConnectionRecord">
+          <object class="IBBindingConnection" key="connection">
+            <string key="label">value: selection.mainWindow.view.isHUDRealTimeClockVisible</string>
+            <reference key="source" ref="523387766"/>
+            <reference key="destination" ref="258098641"/>
+            <object class="NSNibBindingConnector" key="connector">
+              <reference key="NSSource" ref="523387766"/>
+              <reference key="NSDestination" ref="258098641"/>
+              <string key="NSLabel">value: selection.mainWindow.view.isHUDRealTimeClockVisible</string>
+              <string key="NSBinding">value</string>
+              <string key="NSKeyPath">selection.mainWindow.view.isHUDRealTimeClockVisible</string>
+              <int key="NSNibBindingConnectorVersion">2</int>
+            </object>
+          </object>
+          <int key="connectionID">10187</int>
+        </object>
+        <object class="IBConnectionRecord">
+          <object class="IBBindingConnection" key="connection">
+            <string key="label">value: values.HUD_ShowRTC</string>
+            <reference key="source" ref="821096320"/>
+            <reference key="destination" ref="178548672"/>
+            <object class="NSNibBindingConnector" key="connector">
+              <reference key="NSSource" ref="821096320"/>
+              <reference key="NSDestination" ref="178548672"/>
+              <string key="NSLabel">value: values.HUD_ShowRTC</string>
+              <string key="NSBinding">value</string>
+              <string key="NSKeyPath">values.HUD_ShowRTC</string>
+              <int key="NSNibBindingConnectorVersion">2</int>
+            </object>
+          </object>
+          <int key="connectionID">10188</int>
+        </object>
+        <object class="IBConnectionRecord">
+          <object class="IBActionConnection" key="connection">
+            <string key="label">toggleShowHUDRealTimeClock:</string>
+            <reference key="source" ref="1014"/>
+            <reference key="destination" ref="713295923"/>
+          </object>
+          <int key="connectionID">10189</int>
+        </object>
       </object>
       <object class="IBMutableOrderedSet" key="objectRecords">
         <object class="NSArray" key="orderedObjects">
@@ -43180,14 +43224,14 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
             <object class="NSMutableArray" key="children">
               <bool key="EncodedWithXMLCoder">YES</bool>
               <reference ref="304092617"/>
-              <reference ref="523387766"/>
               <reference ref="269230248"/>
               <reference ref="189973188"/>
-              <reference ref="708958649"/>
               <reference ref="272928836"/>
               <reference ref="278136792"/>
               <reference ref="302843702"/>
               <reference ref="448396937"/>
+              <reference ref="708958649"/>
+              <reference ref="523387766"/>
             </object>
             <reference key="parent" ref="485576541"/>
           </object>
@@ -57617,9 +57661,9 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
               <reference ref="987081603"/>
               <reference ref="162261505"/>
               <reference ref="250008560"/>
-              <reference ref="821096320"/>
-              <reference ref="115372504"/>
               <reference ref="770825807"/>
+              <reference ref="115372504"/>
+              <reference ref="821096320"/>
             </object>
             <reference key="parent" ref="460623416"/>
           </object>
@@ -62905,7 +62949,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
           <object class="NSAffineTransform">
-            <bytes key="NSTransformStruct">P4AAAL+AAABBkAAAwsYAAA</bytes>
+            <bytes key="NSTransformStruct">P4AAAL+AAABBgAAAwsYAAA</bytes>
           </object>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -62944,7 +62988,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
           <object class="NSAffineTransform">
-            <bytes key="NSTransformStruct">P4AAAL+AAABBkAAAwmwAAA</bytes>
+            <bytes key="NSTransformStruct">P4AAAL+AAABBgAAAwmwAAA</bytes>
           </object>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -63708,7 +63752,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
         </object>
       </object>
       <nil key="sourceID"/>
-      <int key="maxID">10186</int>
+      <int key="maxID">10189</int>
     </object>
     <object class="IBClassDescriber" key="IBDocument.Classes">
       <object class="NSMutableArray" key="referencedPartialClassDescriptions">
@@ -67079,7 +67123,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
       <integer value="3100" key="NS.object.0"/>
     </object>
     <bool key="IBDocument.PluginDeclaredDependenciesTrackSystemTargetVersion">YES</bool>
-    <nil key="IBDocument.LastKnownRelativeProjectPath"/>
+    <string key="IBDocument.LastKnownRelativeProjectPath">../../DeSmuME (XCode 3).xcodeproj</string>
     <int key="IBDocument.defaultPropertyAccessControl">3</int>
     <object class="NSMutableDictionary" key="IBDocument.LastKnownImageSizes">
       <bool key="EncodedWithXMLCoder">YES</bool>

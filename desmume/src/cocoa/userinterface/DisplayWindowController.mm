@@ -494,9 +494,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[self view] setIsHUDRender3DFPSVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRender3DFPS"]];
 	[[self view] setIsHUDFrameIndexVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowFrameIndex"]];
 	[[self view] setIsHUDLagFrameCountVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowLagFrameCount"]];
-	// TODO: Show HUD Input and RTC.
+	[[self view] setIsHUDRealTimeClockVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRTC"]];
+	// TODO: Show HUD Input.
 	//[[self view] setIsHUDInputVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowInput"]];
-	//[[self view] setIsHUDRealTimeClockVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRTC"]];
 }
 
 - (NSSize) normalSize
@@ -742,7 +742,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (IBAction) toggleShowHUDRealTimeClock:(id)sender
 {
-	//[[self view] setIsHUDRealTimeClockVisible:![[self view] isHUDRealTimeClockVisible]];
+	[[self view] setIsHUDRealTimeClockVisible:![[self view] isHUDRealTimeClockVisible]];
 }
 
 - (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender
@@ -935,9 +935,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDRender3DFPSVisible] forKey:@"HUD_ShowRender3DFPS"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDFrameIndexVisible] forKey:@"HUD_ShowFrameIndex"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDLagFrameCountVisible] forKey:@"HUD_ShowLagFrameCount"];
-	// TODO: Show HUD Input and RTC.
+	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDRealTimeClockVisible] forKey:@"HUD_ShowRTC"];
+	// TODO: Show HUD Input.
 	//[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDInputVisible] forKey:@"HUD_ShowInput"];
-	//[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDRealTimeClockVisible] forKey:@"HUD_ShowRTC"];
 }
 
 - (IBAction) writeDefaultsDisplayVideoSettings:(id)sender
@@ -1120,6 +1120,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
 			[(NSMenuItem *)theItem setState:([[self view] isHUDLagFrameCountVisible]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(toggleShowHUDRealTimeClock:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem *)theItem setState:([[self view] isHUDRealTimeClockVisible]) ? NSOnState : NSOffState];
 		}
 	}
 	else if (theAction == @selector(toggleStatusBar:))
@@ -1371,6 +1378,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 @dynamic isHUDRender3DFPSVisible;
 @dynamic isHUDFrameIndexVisible;
 @dynamic isHUDLagFrameCountVisible;
+@dynamic isHUDRealTimeClockVisible;
 @dynamic useVerticalSync;
 @dynamic videoFiltersPreferGPU;
 @dynamic sourceDeposterize;
@@ -1580,6 +1588,28 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
 	const BOOL theState = (oglv->GetHUDLayer()->GetShowLagFrameCount()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
+
+- (void) setIsHUDRealTimeClockVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	oglv->GetHUDLayer()->SetShowRTC((theState) ? true : false);
+	[self drawVideoFrame];
+	CGLUnlockContext(cglDisplayContext);
+	
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDRealTimeClockVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (oglv->GetHUDLayer()->GetShowRTC()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -2045,7 +2075,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		hudLayer->SetInfo(frameInfo.videoFPS,
 						  frameInfo.render3DFPS,
 						  frameInfo.frameIndex,
-						  frameInfo.lagFrameCount);
+						  frameInfo.lagFrameCount,
+						  frameInfo.rtcString);
 		hudLayer->ProcessOGL();
 	}
 	

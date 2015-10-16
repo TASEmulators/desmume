@@ -5708,11 +5708,13 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	_showRender3DFPS = false;
 	_showFrameIndex = false;
 	_showLagFrameCount = false;
+	_showRTC = false;
 	
 	_lastVideoFPS = 0;
 	_lastRender3DFPS = 0;
 	_lastFrameIndex = 0;
 	_lastLagFrameCount = 0;
+	memset(_lastRTCString, 0, sizeof(_lastRTCString));
 	_textBoxLines = 0;
 	_textBoxWidth = 0;
 	
@@ -5921,12 +5923,13 @@ void OGLHUDLayer::SetFontUsingPath(const char *filePath)
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void OGLHUDLayer::SetInfo(const uint32_t videoFPS, const uint32_t render3DFPS, const uint32_t frameIndex, const uint32_t lagFrameCount)
+void OGLHUDLayer::SetInfo(const uint32_t videoFPS, const uint32_t render3DFPS, const uint32_t frameIndex, const uint32_t lagFrameCount, const char *rtcString)
 {
 	this->_lastVideoFPS = videoFPS;
 	this->_lastRender3DFPS = render3DFPS;
 	this->_lastFrameIndex = frameIndex;
 	this->_lastLagFrameCount = lagFrameCount;
+	memcpy(this->_lastRTCString, rtcString, sizeof(this->_lastRTCString));
 	
 	this->RefreshInfo();
 }
@@ -5972,6 +5975,17 @@ void OGLHUDLayer::RefreshInfo()
 		ss << "Lag Frame Count: " << this->_lastLagFrameCount << "\n";
 		
 		const GLint newTextBoxWidth = (charSize * 8.5f) + 6.5f;
+		if (newTextBoxWidth > this->_textBoxWidth)
+		{
+			this->_textBoxWidth = newTextBoxWidth;
+		}
+	}
+	
+	if (this->_showRTC)
+	{
+		ss << "RTC: " << this->_lastRTCString << "\n";
+		
+		const GLint newTextBoxWidth = (charSize * 10.3f) + 6.5f;
 		if (newTextBoxWidth > this->_textBoxWidth)
 		{
 			this->_textBoxWidth = newTextBoxWidth;
@@ -6040,6 +6054,16 @@ void OGLHUDLayer::SetShowLagFrameCount(const bool visibleState)
 bool OGLHUDLayer::GetShowLagFrameCount() const
 {
 	return this->_showLagFrameCount;
+}
+
+void OGLHUDLayer::SetShowRTC(const bool visibleState)
+{
+	this->_SetShowInfoItemOGL(this->_showRTC, visibleState);
+}
+
+bool OGLHUDLayer::GetShowRTC() const
+{
+	return this->_showRTC;
 }
 
 void OGLHUDLayer::_ProcessVerticesOGL()
