@@ -73,21 +73,20 @@ volatile bool execute = true;
 	inputID[OENDSButtonLid]			= DSControllerState_Lid;
 	inputID[OENDSButtonDebug]		= DSControllerState_Debug;
 	
-	// Set up the DS controller
-	cdsController = [[[[CocoaDSController alloc] init] retain] autorelease];
-	[cdsController setMicMode:MICMODE_INTERNAL_NOISE];
-	
-	// Set up the DS GPU
-	cdsGPU = [[[[CocoaDSGPU alloc] init] retain] autorelease];
-	[cdsGPU setRwlockProducer:&rwlockCoreExecute];
-	[cdsGPU setRender3DThreads:0]; // Pass 0 to automatically set the number of rendering threads
-	[cdsGPU setRender3DRenderingEngine:CORE3DLIST_SWRASTERIZE];
-	
 	// Set up the emulation core
 	CommonSettings.advanced_timing = true;
 	CommonSettings.jit_max_block_size = 12;
 	CommonSettings.use_jit = true;
 	NDS_Init();
+	
+	// Set up the DS GPU
+	cdsGPU = [[[[CocoaDSGPU alloc] init] retain] autorelease];
+	[cdsGPU setRender3DThreads:0]; // Pass 0 to automatically set the number of rendering threads
+	[cdsGPU setRender3DRenderingEngine:CORE3DLIST_SWRASTERIZE];
+	
+	// Set up the DS controller
+	cdsController = [[[[CocoaDSController alloc] init] retain] autorelease];
+	[cdsController setMicMode:MICMODE_INTERNAL_NOISE];
 	
 	// Set up the cheat system
 	cdsCheats = [[[[CocoaDSCheatManager alloc] init] retain] autorelease];
@@ -181,9 +180,21 @@ volatile bool execute = true;
 	OSSpinLockUnlock(&spinlockDisplayMode);
 }
 
-#pragma mark -
+#pragma mark - Plug-in Support
 
-#pragma mark Execution
+- (BOOL)supportsRewinding
+{
+	return NO;
+}
+
+#pragma mark - Execution
+
+- (BOOL)rendersToOpenGL
+{
+	return NO;
+}
+
+#pragma mark - ABSTRACT METHODS
 
 - (void)resetEmulation
 {
@@ -247,12 +258,7 @@ volatile bool execute = true;
 	return isRomLoaded;
 }
 
-#pragma mark Video
-
-- (BOOL)rendersToOpenGL
-{
-	return NO;
-}
+#pragma mark - Video
 
 - (OEIntRect)screenRect
 {
@@ -324,7 +330,7 @@ volatile bool execute = true;
     }
 }
 
-#pragma mark Audio
+#pragma mark - Audio
 
 - (NSUInteger)audioBufferCount
 {
@@ -361,7 +367,7 @@ volatile bool execute = true;
 	return [self audioSampleRate];
 }
 
-#pragma mark Input
+#pragma mark - Input
 
 - (oneway void)didPushNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player
 {
@@ -437,7 +443,7 @@ volatile bool execute = true;
 	//[self doesNotImplementSelector:_cmd];
 }
 
-#pragma mark Save State
+#pragma mark - Save State
 
 - (BOOL)saveStateToFileAtPath:(NSString *)fileName
 {
@@ -449,7 +455,7 @@ volatile bool execute = true;
 	return [CocoaDSFile loadState:[NSURL fileURLWithPath:fileName]];
 }
 
-#pragma mark Miscellaneous
+#pragma mark - Miscellaneous
 
 - (void)setCheat:(NSString *)code setType:(NSString *)type setEnabled:(BOOL)enabled
 {
