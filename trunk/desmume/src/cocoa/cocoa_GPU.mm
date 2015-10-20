@@ -714,6 +714,7 @@ void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped)
 {
 	this->FramebufferUnlock();
 	
+#if !defined(PORT_VERSION_OPENEMU)
 	if (!isFrameSkipped)
 	{
 		if (this->_mutexOutputList != NULL)
@@ -736,6 +737,7 @@ void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped)
 			pthread_mutex_unlock(this->_mutexOutputList);
 		}
 	}
+#endif
 }
 
 void GPUEventHandlerOSX::DidRender3DBegin()

@@ -33,3 +33,4 @@
 #endif
 
 #define PORT_VERSION	"Cocoa"
+#define PORT_VERSION_OS_X_APP
