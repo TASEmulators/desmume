@@ -1220,15 +1220,16 @@ protected:
 	FORCEINLINE u16 _ColorEffectBlend(const u16 colA, const u16 colB, const TBlendTable *blendTable);
 	FORCEINLINE FragmentColor _ColorEffectBlend(const FragmentColor colA, const FragmentColor colB);
 	
-	void _RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
-	void _RenderSprite256(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
-	void _RenderSprite16(const u16 l, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
+	template<bool ISDEBUGRENDER> void _RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
+	template<bool ISDEBUGRENDER> void _RenderSprite256(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
+	template<bool ISDEBUGRENDER> void _RenderSprite16(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
 	void _RenderSpriteWin(const u8 *src, const bool col256, const size_t lg, size_t sprX, size_t x, const s32 xdir);
 	bool _ComputeSpriteVars(const OAMAttributes &spriteInfo, const u16 l, SpriteSize &sprSize, s32 &sprX, s32 &sprY, s32 &x, s32 &y, s32 &lg, s32 &xdir);
 	
 	u32 _SpriteAddressBMP(const OAMAttributes &spriteInfo, const SpriteSize sprSize, const s32 y);
 	
-	template<SpriteRenderMode MODE> void _SpriteRenderPerform(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
+	template<bool ISDEBUGRENDER> void _SpriteRender(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
+	template<SpriteRenderMode MODE, bool ISDEBUGRENDER> void _SpriteRenderPerform(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
 	
 public:
 	GPUEngineBase();
@@ -1293,8 +1294,7 @@ public:
 	void UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
 	void UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
 	
-	void SpriteRender(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
-	void SpriteRenderDebug(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
+	void SpriteRenderDebug(const u16 lineIndex, u16 *dst);
 	template<GPULayerID LAYERID> void RenderLayerBG(u16 *dstLineColor);
 
 	NDSDisplayID GetDisplayByID() const;

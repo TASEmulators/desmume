@@ -112,9 +112,6 @@ LRESULT OamView_OnPaint(HWND hwnd, oamview_struct *win, WPARAM wParam, LPARAM lP
 {
         HDC          hdc;
         PAINTSTRUCT  ps;
-				//_OAM_ _oam;
-				//_OAM_* oam = &_oam;
-				//SlurpOAM(oam,win->oam,win->num);
 
 				struct MyOam
 				{
@@ -126,9 +123,6 @@ LRESULT OamView_OnPaint(HWND hwnd, oamview_struct *win, WPARAM wParam, LPARAM lP
 
         char text[80];
         u16 bitmap[256*192];
-		u8 bitmap_alpha[256*192];
-		u8 type[256*192];
-        u8 prio[256*192];
         BITMAPV4HEADER bmi;
         u16 i;
         s16 x = 0, y = 0;
@@ -148,9 +142,6 @@ LRESULT OamView_OnPaint(HWND hwnd, oamview_struct *win, WPARAM wParam, LPARAM lP
         for(i = 0; i < 256*192; ++i)
         {
            bitmap[i] = 0x7F0F;
-		   bitmap_alpha[i] = 0;
-		   type[i] = 0;
-           prio[i] = 4;
         }
      
         hdc = BeginPaint(hwnd, &ps);
@@ -220,10 +211,9 @@ LRESULT OamView_OnPaint(HWND hwnd, oamview_struct *win, WPARAM wParam, LPARAM lP
              SetWindowText(GetDlgItem(hwnd, IDC_PROP1), "");
         }
         
-		GPUEngineBase copy = *win->gpu;
         for(i = 0; i < 192; ++i)
         {
-             copy.SpriteRenderDebug(i, (u16*)(bitmap + i*256), bitmap_alpha + i*256, type + i*256, prio + i*256);
+             win->gpu->SpriteRenderDebug(i, (u16*)(bitmap + i*256));
         }
 
 		u32 width = dimm_int[(oam->attr1>>14)][(oam->attr0>>14)][0];
