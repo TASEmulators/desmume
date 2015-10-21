@@ -1577,6 +1577,7 @@ void GPUEngineBase::_LineExtRot(u16 *__restrict dstColorLine, const u16 lineInde
 /* if i understand it correct, and it fixes some sprite problems in chameleon shot */
 /* we have a 15 bit color, and should use the pal entry bits as alpha ?*/
 /* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
+template<bool ISDEBUGRENDER>
 void GPUEngineBase::_RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
 {
 	const u16 *__restrict bmpBuffer = (u16 *)MMU_gpu_map(srcadr);
@@ -1585,41 +1586,57 @@ void GPUEngineBase::_RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *__res
 #ifdef ENABLE_SSE2
 	if (xdir == 1)
 	{
-		const __m128i prio_vec128 = _mm_set1_epi8(prio);
-		
-		const size_t ssePixCount = lg - (lg % 16);
-		for (; i < ssePixCount; i += 16, x += 16, sprX += 16)
+		if (ISDEBUGRENDER)
 		{
-			__m128i prioTab_vec128 = _mm_loadu_si128((__m128i *)(prioTab + sprX));
-			const __m128i prioCompare = _mm_cmplt_epi8(prio_vec128, prioTab_vec128);
+			const size_t ssePixCount = lg - (lg % 8);
+			for (; i < ssePixCount; i += 8, x += 8, sprX += 8)
+			{
+				__m128i color_vec128 = _mm_loadu_si128((__m128i *)(bmpBuffer + x));
+				const __m128i colorAlpha_vec128 = _mm_and_si128(color_vec128, _mm_set1_epi16(0x8000));
+				const __m128i colorAlphaCompare = _mm_cmpeq_epi16(colorAlpha_vec128, _mm_set1_epi16(0x8000));
+				color_vec128 = _mm_or_si128( _mm_and_si128(colorAlphaCompare, color_vec128), _mm_andnot_si128(colorAlphaCompare, _mm_loadu_si128((__m128i *)(dst + sprX))) );
+				
+				_mm_storeu_si128((__m128i *)(dst + sprX), color_vec128);
+			}
+		}
+		else
+		{
+			const __m128i prio_vec128 = _mm_set1_epi8(prio);
 			
-			__m128i colorLo_vec128 = _mm_loadu_si128((__m128i *)(bmpBuffer + x));
-			__m128i colorHi_vec128 = _mm_loadu_si128((__m128i *)(bmpBuffer + x + 8));
-			
-			const __m128i colorAlphaLo_vec128 = _mm_and_si128(colorLo_vec128, _mm_set1_epi16(0x8000));
-			const __m128i colorAlphaHi_vec128 = _mm_and_si128(colorHi_vec128, _mm_set1_epi16(0x8000));
-			
-			const __m128i colorAlphaLoCompare = _mm_cmpeq_epi16(colorAlphaLo_vec128, _mm_set1_epi16(0x8000));
-			const __m128i colorAlphaHiCompare = _mm_cmpeq_epi16(colorAlphaHi_vec128, _mm_set1_epi16(0x8000));
-			const __m128i colorAlphaPackedCompare = _mm_cmpeq_epi8( _mm_packs_epi16(colorAlphaLoCompare, colorAlphaHiCompare), _mm_set1_epi8(0xFF) );
-			
-			const __m128i combinedPackedCompare = _mm_and_si128(prioCompare, colorAlphaPackedCompare);
-			const __m128i combinedLoCompare = _mm_cmpeq_epi16( _mm_unpacklo_epi8(combinedPackedCompare, _mm_setzero_si128()), _mm_set1_epi16(0x00FF) );
-			const __m128i combinedHiCompare = _mm_cmpeq_epi16( _mm_unpackhi_epi8(combinedPackedCompare, _mm_setzero_si128()), _mm_set1_epi16(0x00FF) );
-			
-			colorLo_vec128 = _mm_or_si128( _mm_and_si128(combinedLoCompare, colorLo_vec128), _mm_andnot_si128(combinedLoCompare, _mm_loadu_si128((__m128i *)(dst + sprX))) );
-			colorHi_vec128 = _mm_or_si128( _mm_and_si128(combinedHiCompare, colorHi_vec128), _mm_andnot_si128(combinedHiCompare, _mm_loadu_si128((__m128i *)(dst + sprX + 8))) );
-			const __m128i dstAlpha_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(alpha + 1)), _mm_andnot_si128(combinedPackedCompare, _mm_loadu_si128((__m128i *)(dst_alpha + sprX))) );
-			const __m128i dstTypeTab_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(3)), _mm_andnot_si128(combinedPackedCompare, _mm_loadu_si128((__m128i *)(typeTab + sprX))) );
-			prioTab_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, prio_vec128), _mm_andnot_si128(combinedPackedCompare, prioTab_vec128) );
-			const __m128i sprNum_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(spriteNum)), _mm_andnot_si128(combinedPackedCompare, _mm_loadu_si128((__m128i *)(this->_sprNum + sprX))) );
-			
-			_mm_storeu_si128((__m128i *)(dst + sprX), colorLo_vec128);
-			_mm_storeu_si128((__m128i *)(dst + sprX + 8), colorHi_vec128);
-			_mm_storeu_si128((__m128i *)(dst_alpha + sprX), dstAlpha_vec128);
-			_mm_storeu_si128((__m128i *)(typeTab + sprX), dstTypeTab_vec128);
-			_mm_storeu_si128((__m128i *)(prioTab + sprX), prioTab_vec128);
-			_mm_storeu_si128((__m128i *)(this->_sprNum + sprX), sprNum_vec128);
+			const size_t ssePixCount = lg - (lg % 16);
+			for (; i < ssePixCount; i += 16, x += 16, sprX += 16)
+			{
+				__m128i prioTab_vec128 = _mm_loadu_si128((__m128i *)(prioTab + sprX));
+				const __m128i prioCompare = _mm_cmplt_epi8(prio_vec128, prioTab_vec128);
+				
+				__m128i colorLo_vec128 = _mm_loadu_si128((__m128i *)(bmpBuffer + x));
+				__m128i colorHi_vec128 = _mm_loadu_si128((__m128i *)(bmpBuffer + x + 8));
+				
+				const __m128i colorAlphaLo_vec128 = _mm_and_si128(colorLo_vec128, _mm_set1_epi16(0x8000));
+				const __m128i colorAlphaHi_vec128 = _mm_and_si128(colorHi_vec128, _mm_set1_epi16(0x8000));
+				
+				const __m128i colorAlphaLoCompare = _mm_cmpeq_epi16(colorAlphaLo_vec128, _mm_set1_epi16(0x8000));
+				const __m128i colorAlphaHiCompare = _mm_cmpeq_epi16(colorAlphaHi_vec128, _mm_set1_epi16(0x8000));
+				const __m128i colorAlphaPackedCompare = _mm_cmpeq_epi8( _mm_packs_epi16(colorAlphaLoCompare, colorAlphaHiCompare), _mm_set1_epi8(0xFF) );
+				
+				const __m128i combinedPackedCompare = _mm_and_si128(prioCompare, colorAlphaPackedCompare);
+				const __m128i combinedLoCompare = _mm_cmpeq_epi16( _mm_unpacklo_epi8(combinedPackedCompare, _mm_setzero_si128()), _mm_set1_epi16(0x00FF) );
+				const __m128i combinedHiCompare = _mm_cmpeq_epi16( _mm_unpackhi_epi8(combinedPackedCompare, _mm_setzero_si128()), _mm_set1_epi16(0x00FF) );
+				
+				colorLo_vec128 = _mm_or_si128( _mm_and_si128(combinedLoCompare, colorLo_vec128), _mm_andnot_si128(combinedLoCompare, _mm_loadu_si128((__m128i *)(dst + sprX))) );
+				colorHi_vec128 = _mm_or_si128( _mm_and_si128(combinedHiCompare, colorHi_vec128), _mm_andnot_si128(combinedHiCompare, _mm_loadu_si128((__m128i *)(dst + sprX + 8))) );
+				const __m128i dstAlpha_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(alpha + 1)), _mm_andnot_si128(combinedPackedCompare, _mm_loadu_si128((__m128i *)(dst_alpha + sprX))) );
+				const __m128i dstTypeTab_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(3)), _mm_andnot_si128(combinedPackedCompare, _mm_loadu_si128((__m128i *)(typeTab + sprX))) );
+				prioTab_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, prio_vec128), _mm_andnot_si128(combinedPackedCompare, prioTab_vec128) );
+				const __m128i sprNum_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(spriteNum)), _mm_andnot_si128(combinedPackedCompare, _mm_loadu_si128((__m128i *)(this->_sprNum + sprX))) );
+				
+				_mm_storeu_si128((__m128i *)(dst + sprX), colorLo_vec128);
+				_mm_storeu_si128((__m128i *)(dst + sprX + 8), colorHi_vec128);
+				_mm_storeu_si128((__m128i *)(dst_alpha + sprX), dstAlpha_vec128);
+				_mm_storeu_si128((__m128i *)(typeTab + sprX), dstTypeTab_vec128);
+				_mm_storeu_si128((__m128i *)(prioTab + sprX), prioTab_vec128);
+				_mm_storeu_si128((__m128i *)(this->_sprNum + sprX), sprNum_vec128);
+			}
 		}
 	}
 #endif
@@ -1629,17 +1646,28 @@ void GPUEngineBase::_RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *__res
 		const u16 color = LE_TO_LOCAL_16(bmpBuffer[x]);
 		
 		//a cleared alpha bit suppresses the pixel from processing entirely; it doesnt exist
-		if ((color & 0x8000) && (prio < prioTab[sprX]))
+		if (ISDEBUGRENDER)
 		{
-			dst[sprX] = color;
-			dst_alpha[sprX] = alpha+1;
-			typeTab[sprX] = OBJMode_Bitmap;
-			prioTab[sprX] = prio;
-			this->_sprNum[sprX] = spriteNum;
+			if (color & 0x8000)
+			{
+				dst[sprX] = color;
+			}
+		}
+		else
+		{
+			if ((color & 0x8000) && (prio < prioTab[sprX]))
+			{
+				dst[sprX] = color;
+				dst_alpha[sprX] = alpha+1;
+				typeTab[sprX] = OBJMode_Bitmap;
+				prioTab[sprX] = prio;
+				this->_sprNum[sprX] = spriteNum;
+			}
 		}
 	}
 }
 
+template<bool ISDEBUGRENDER>
 void GPUEngineBase::_RenderSprite256(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
 {
 	for (size_t i = 0; i < lg; i++, ++sprX, x += xdir)
@@ -1649,19 +1677,29 @@ void GPUEngineBase::_RenderSprite256(const u8 spriteNum, const u16 l, u16 *__res
 		const u8 palette_entry = *src;
 
 		//a zero value suppresses the pixel from processing entirely; it doesnt exist
-		if ((palette_entry > 0) && (prio < prioTab[sprX]))
+		if (ISDEBUGRENDER)
 		{
-			const u16 color = LE_TO_LOCAL_16(pal[palette_entry]);
-			dst[sprX] = color;
-			dst_alpha[sprX] = 0xFF;
-			typeTab[sprX] = (alpha ? OBJMode_Transparent : OBJMode_Normal);
-			prioTab[sprX] = prio;
-			this->_sprNum[sprX] = spriteNum;
+			if (palette_entry > 0)
+			{
+				dst[sprX] = LE_TO_LOCAL_16(pal[palette_entry]);
+			}
+		}
+		else
+		{
+			if ((palette_entry > 0) && (prio < prioTab[sprX]))
+			{
+				dst[sprX] = LE_TO_LOCAL_16(pal[palette_entry]);
+				dst_alpha[sprX] = 0xFF;
+				typeTab[sprX] = (alpha ? OBJMode_Transparent : OBJMode_Normal);
+				prioTab[sprX] = prio;
+				this->_sprNum[sprX] = spriteNum;
+			}
 		}
 	}
 }
 
-void GPUEngineBase::_RenderSprite16(const u16 l, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
+template<bool ISDEBUGRENDER>
+void GPUEngineBase::_RenderSprite16(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
 {
 	for (size_t i = 0; i < lg; i++, ++sprX, x += xdir)
 	{
@@ -1672,13 +1710,23 @@ void GPUEngineBase::_RenderSprite16(const u16 l, u16 *__restrict dst, const u32 
 		const u8 palette_entry = (x & 1) ? palette >> 4 : palette & 0xF;
 		
 		//a zero value suppresses the pixel from processing entirely; it doesnt exist
-		if ((palette_entry > 0) && (prio < prioTab[sprX]))
+		if (ISDEBUGRENDER)
 		{
-			const u16 color = LE_TO_LOCAL_16(pal[palette_entry]);
-			dst[sprX] = color;
-			dst_alpha[sprX] = 0xFF;
-			typeTab[sprX] = (alpha ? OBJMode_Transparent : OBJMode_Normal);
-			prioTab[sprX] = prio;
+			if (palette_entry > 0)
+			{
+				dst[sprX] = LE_TO_LOCAL_16(pal[palette_entry]);
+			}
+		}
+		else
+		{
+			if ((palette_entry > 0) && (prio < prioTab[sprX]))
+			{
+				dst[sprX] = LE_TO_LOCAL_16(pal[palette_entry]);
+				dst_alpha[sprX] = 0xFF;
+				typeTab[sprX] = (alpha ? OBJMode_Transparent : OBJMode_Normal);
+				prioTab[sprX] = prio;
+				this->_sprNum[sprX] = spriteNum;
+			}
 		}
 	}
 }
@@ -1793,20 +1841,21 @@ u32 GPUEngineBase::_SpriteAddressBMP(const OAMAttributes &spriteInfo, const Spri
 	}
 }
 
-void GPUEngineBase::SpriteRender(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab)
+template <bool ISDEBUGRENDER>
+void GPUEngineBase::_SpriteRender(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab)
 {
 	if (this->_spriteRenderMode == SpriteRenderMode_Sprite1D)
-		this->_SpriteRenderPerform<SpriteRenderMode_Sprite1D>(lineIndex, dst, dst_alpha, typeTab, prioTab);
+		this->_SpriteRenderPerform<SpriteRenderMode_Sprite1D, ISDEBUGRENDER>(lineIndex, dst, dst_alpha, typeTab, prioTab);
 	else
-		this->_SpriteRenderPerform<SpriteRenderMode_Sprite2D>(lineIndex, dst, dst_alpha, typeTab, prioTab);
+		this->_SpriteRenderPerform<SpriteRenderMode_Sprite2D, ISDEBUGRENDER>(lineIndex, dst, dst_alpha, typeTab, prioTab);
 }
 
-void GPUEngineBase::SpriteRenderDebug(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab)
+void GPUEngineBase::SpriteRenderDebug(const u16 lineIndex, u16 *dst)
 {
-	this->SpriteRender(lineIndex, dst, dst_alpha, typeTab, prioTab);
+	this->_SpriteRender<true>(lineIndex, dst, NULL, NULL, NULL);
 }
 
-template<SpriteRenderMode MODE>
+template <SpriteRenderMode MODE, bool ISDEBUGRENDER>
 void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab)
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
@@ -1939,13 +1988,23 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *__restrict ds
 							offset = (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)*sprSize.width*8) + ((auxY&0x7)*8);
 
 						colour = src[offset];
-
-						if (colour && (prio < prioTab[sprX]))
-						{ 
-							dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
-							dst_alpha[sprX] = 0xFF;
-							typeTab[sprX] = objMode;
-							prioTab[sprX] = prio;
+						
+						if (ISDEBUGRENDER)
+						{
+							if (colour)
+							{
+								dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
+							}
+						}
+						else
+						{
+							if (colour && (prio < prioTab[sprX]))
+							{
+								dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
+								dst_alpha[sprX] = 0xFF;
+								typeTab[sprX] = objMode;
+								prioTab[sprX] = prio;
+							}
 						}
 					}
 
@@ -1985,12 +2044,22 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *__restrict ds
 						u16* mem = (u16*)MMU_gpu_map(srcadr + (offset<<1));
 						colour = LE_TO_LOCAL_16(*mem);
 						
-						if ((colour & 0x8000) && (prio < prioTab[sprX]))
+						if (ISDEBUGRENDER)
 						{
-							dst[sprX] = colour;
-							dst_alpha[sprX] = spriteInfo.PaletteIndex;
-							typeTab[sprX] = objMode;
-							prioTab[sprX] = prio;
+							if (colour & 0x8000)
+							{
+								dst[sprX] = colour;
+							}
+						}
+						else
+						{
+							if ((colour & 0x8000) && (prio < prioTab[sprX]))
+							{
+								dst[sprX] = colour;
+								dst_alpha[sprX] = spriteInfo.PaletteIndex;
+								typeTab[sprX] = objMode;
+								prioTab[sprX] = prio;
+							}
 						}
 					}
 
@@ -2031,19 +2100,29 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *__restrict ds
 						// Get 4bits value from the readed 8bits
 						if (auxX&1)	colour >>= 4;
 						else		colour &= 0xF;
-
-						if (colour && (prio<prioTab[sprX]))
+						
+						if (ISDEBUGRENDER)
 						{
-							if (objMode == OBJMode_Window)
-							{
-								this->_sprWin[sprX] = 1;
-							}
-							else
+							if (colour)
 							{
 								dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
-								dst_alpha[sprX] = 0xFF;
-								typeTab[sprX] = objMode;
-								prioTab[sprX] = prio;
+							}
+						}
+						else
+						{
+							if (colour && (prio < prioTab[sprX]))
+							{
+								if (objMode == OBJMode_Window)
+								{
+									this->_sprWin[sprX] = 1;
+								}
+								else
+								{
+									dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
+									dst_alpha[sprX] = 0xFF;
+									typeTab[sprX] = objMode;
+									prioTab[sprX] = prio;
+								}
 							}
 						}
 					}
@@ -2088,7 +2167,7 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *__restrict ds
 				if (spriteInfo.PaletteIndex == 0)
 					continue;
 				
-				this->_RenderSpriteBMP(i, lineIndex, dst, srcadr, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo.PaletteIndex);
+				this->_RenderSpriteBMP<ISDEBUGRENDER>(i, lineIndex, dst, srcadr, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo.PaletteIndex);
 			}
 			else if (spriteInfo.PaletteMode == PaletteMode_1x256) //256 colors
 			{
@@ -2098,7 +2177,7 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *__restrict ds
 					srcadr = this->_sprMem + (spriteInfo.TileIndex<<this->_sprBoundary) + ((y>>3)*sprSize.width*8) + ((y&0x7)*8);
 				
 				pal = (DISPCNT.ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*ADDRESS_STEP_512B)) : this->_paletteOBJ;
-				this->_RenderSprite256(i, lineIndex, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
+				this->_RenderSprite256<ISDEBUGRENDER>(i, lineIndex, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
 			}
 			else // 16 colors
 			{
@@ -2112,7 +2191,7 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *__restrict ds
 				}
 				
 				pal = this->_paletteOBJ + (spriteInfo.PaletteIndex << 4);
-				this->_RenderSprite16(lineIndex, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
+				this->_RenderSprite16<ISDEBUGRENDER>(i, lineIndex, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
 			}
 		}
 	}
@@ -2840,7 +2919,7 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 		//zero 06-may-09: I properly supported window color effects for backdrop, but I am not sure
 		//how it interacts with this. I wish we knew why we needed this
 		
-		this->SpriteRender(l, this->_sprColor, this->_sprAlpha, this->_sprType, this->_sprPrio);
+		this->_SpriteRender<false>(l, this->_sprColor, this->_sprAlpha, this->_sprType, this->_sprPrio);
 		this->_MosaicSpriteLine(l, this->_sprColor, this->_sprAlpha, this->_sprType, this->_sprPrio);
 		
 		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
@@ -3744,7 +3823,7 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 		//zero 06-may-09: I properly supported window color effects for backdrop, but I am not sure
 		//how it interacts with this. I wish we knew why we needed this
 		
-		this->SpriteRender(l, this->_sprColor, this->_sprAlpha, this->_sprType, this->_sprPrio);
+		this->_SpriteRender<false>(l, this->_sprColor, this->_sprAlpha, this->_sprType, this->_sprPrio);
 		this->_MosaicSpriteLine(l, this->_sprColor, this->_sprAlpha, this->_sprType, this->_sprPrio);
 		
 		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
