@@ -5985,7 +5985,7 @@ void OGLHUDLayer::RefreshInfo()
 	{
 		ss << "RTC: " << this->_lastRTCString << "\n";
 		
-		const GLint newTextBoxWidth = (charSize * 10.3f) + 6.5f;
+		const GLint newTextBoxWidth = (charSize * 10.7f) + 6.5f;
 		if (newTextBoxWidth > this->_textBoxWidth)
 		{
 			this->_textBoxWidth = newTextBoxWidth;

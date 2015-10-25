@@ -38,16 +38,12 @@ typedef struct
 
 @interface CocoaDSOutput : CocoaDSThread
 {
-	BOOL isStateChanged;
-	NSUInteger frameCount;
 	NSMutableDictionary *property;
 	
 	pthread_mutex_t *mutexConsume;
 	pthread_rwlock_t *rwlockProducer;
 }
 
-@property (assign) BOOL isStateChanged;
-@property (assign) NSUInteger frameCount;
 @property (readonly) NSMutableDictionary *property;
 @property (assign) pthread_rwlock_t *rwlockProducer;
 @property (readonly) pthread_mutex_t *mutexConsume;

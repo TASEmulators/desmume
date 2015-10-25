@@ -38,8 +38,6 @@
 
 @implementation CocoaDSOutput
 
-@synthesize isStateChanged;
-@synthesize frameCount;
 @synthesize property;
 @synthesize mutexConsume;
 @synthesize rwlockProducer;
@@ -51,10 +49,7 @@
 	{
 		return self;
 	}
-	
-	isStateChanged = NO;
-	frameCount = 0;
-	
+		
 	property = [[NSMutableDictionary alloc] init];
 	[property setValue:[NSDate date] forKey:@"outputTime"];
 	
@@ -102,7 +97,7 @@
 
 - (void) handleEmuFrameProcessed
 {
-	self.frameCount++;
+	// The base method does nothing.
 }
 
 @end

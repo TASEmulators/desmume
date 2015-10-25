@@ -182,7 +182,6 @@ volatile bool execute = true;
 	threadParam.cdsCore = self;
 	threadParam.state = CORESTATE_PAUSE;
 	threadParam.isFrameSkipEnabled = true;
-	threadParam.frameCount = 0;
 	threadParam.framesToSkip = 0;
 	threadParam.frameJumpTarget = 0;
 	
@@ -1167,11 +1166,6 @@ static void* RunCoreThread(void *arg)
 			continue;
 		}
 		
-		if (param->framesToSkip == 0)
-		{
-			param->frameCount++;
-		}
-		
 		// Make sure that the mic level is updated at least once per frame, regardless
 		// of whether the NDS actually reads the mic or not.
 		[cdsController updateMicLevel];
@@ -1187,7 +1181,7 @@ static void* RunCoreThread(void *arg)
 			{
 				for (CocoaDSOutput *cdsOutput in cdsOutputList)
 				{
-					//if (![cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+					if (![cdsOutput isKindOfClass:[CocoaDSDisplay class]] || param->framesToSkip <= 0)
 					{
 						[cdsOutput doCoreEmuFrame];
 					}

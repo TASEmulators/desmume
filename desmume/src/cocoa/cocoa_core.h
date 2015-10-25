@@ -36,7 +36,6 @@ typedef struct
 	CocoaDSCore *cdsCore;
 	int state;
 	bool isFrameSkipEnabled;
-	size_t frameCount;
 	NSUInteger frameJumpTarget;
 	int framesToSkip;
 	uint64_t timeBudgetMachAbsTime;
