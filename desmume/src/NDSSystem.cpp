@@ -2966,6 +2966,38 @@ bool ValidateSlot2Access(u32 procnum, u32 demandSRAMSpeed, u32 demand1stROMSpeed
 	return true;
 }
 
+void NDS_GetCPULoadAverage(u32 &outLoadAvgARM9, u32 &outLoadAvgARM7)
+{
+	//calculate a 16 frame arm9 load average
+	u32 calcLoad = 0;
+	for (size_t i = 0; i < 16; i++)
+	{
+		//blend together a few frames to keep low-framerate games from having a jittering load average
+		//(they will tend to work 100% for a frame and then sleep for a while)
+		//4 frames should handle even the slowest of games
+		u32 sample	= nds.runCycleCollector[ARMCPU_ARM9][(i + 0 + nds.idleFrameCounter) & 15]
+					+ nds.runCycleCollector[ARMCPU_ARM9][(i + 1 + nds.idleFrameCounter) & 15]
+					+ nds.runCycleCollector[ARMCPU_ARM9][(i + 2 + nds.idleFrameCounter) & 15]
+					+ nds.runCycleCollector[ARMCPU_ARM9][(i + 3 + nds.idleFrameCounter) & 15];
+		sample /= 4;
+		calcLoad = calcLoad/8 + sample*7/8;
+	}
+	outLoadAvgARM9 = std::min<u32>( 100, std::max<u32>(0, (u32)(calcLoad*100/1120380)) );
+	
+	//calculate a 16 frame arm7 load average
+	calcLoad = 0;
+	for (size_t i = 0; i < 16; i++)
+	{
+		u32 sample	= nds.runCycleCollector[ARMCPU_ARM7][(i + 0 + nds.idleFrameCounter) & 15]
+					+ nds.runCycleCollector[ARMCPU_ARM7][(i + 1 + nds.idleFrameCounter) & 15]
+					+ nds.runCycleCollector[ARMCPU_ARM7][(i + 2 + nds.idleFrameCounter) & 15]
+					+ nds.runCycleCollector[ARMCPU_ARM7][(i + 3 + nds.idleFrameCounter) & 15];
+		sample /= 4;
+		calcLoad = calcLoad/8 + sample*7/8;
+	}
+	outLoadAvgARM7 = std::min<u32>( 100, std::max<u32>(0, (u32)(calcLoad*100/1120380)) );
+}
+
 //these templates needed to be instantiated manually
 template void NDS_exec<FALSE>(s32 nb);
 template void NDS_exec<TRUE>(s32 nb);

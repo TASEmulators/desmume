@@ -110,6 +110,8 @@
 	<false/>
 	<key>HUD_ShowInput</key>
 	<false/>
+	<key>HUD_ShowCPULoadAverage</key>
+	<false/>
 	<key>HUD_ShowRTC</key>
 	<false/>
 	<key>Input_AudioInputMode</key>
