@@ -516,6 +516,7 @@
 	
 	spinlockDisplayType = OS_SPINLOCK_INIT;
 	spinlockReceivedFrameIndex = OS_SPINLOCK_INIT;
+	spinlockCPULoadAverage = OS_SPINLOCK_INIT;
 	
 	delegate = nil;
 	displayMode = DS_DISPLAY_TYPE_DUAL;
@@ -525,6 +526,9 @@
 	_receivedFrameIndex = 0;
 	_currentReceivedFrameIndex = 0;
 	_receivedFrameCount = 0;
+	
+	_cpuLoadAvgARM9 = 0;
+	_cpuLoadAvgARM7 = 0;
 	
 	[property setValue:[NSNumber numberWithInteger:displayMode] forKey:@"displayMode"];
 	[property setValue:NSSTRING_DISPLAYMODE_MAIN forKey:@"displayModeString"];
@@ -679,6 +683,14 @@
 	OSSpinLockUnlock(&spinlockReceivedFrameIndex);
 }
 
+- (void) setCPULoadAvgARM9:(uint32_t)loadAvgARM9 ARM7:(uint32_t)loadAvgARM7
+{
+	OSSpinLockLock(&spinlockCPULoadAverage);
+	_cpuLoadAvgARM9 = loadAvgARM9;
+	_cpuLoadAvgARM7 = loadAvgARM7;
+	OSSpinLockUnlock(&spinlockCPULoadAverage);
+}
+
 - (NSImage *) image
 {
 	NSImage *newImage = [[NSImage alloc] initWithSize:[self displaySize]];
@@ -824,10 +836,19 @@
 	[super handleEmuFrameProcessed];
 	
 	NDSFrameInfo frameInfo;
-	frameInfo.videoFPS = _receivedFrameCount;
 	frameInfo.render3DFPS = Render3DFramesPerSecond;
 	frameInfo.frameIndex = currFrameCounter;
 	frameInfo.lagFrameCount = TotalLagFrames;
+	
+	OSSpinLockLock(&spinlockReceivedFrameIndex);
+	frameInfo.videoFPS = _receivedFrameCount;
+	OSSpinLockUnlock(&spinlockReceivedFrameIndex);
+	
+	OSSpinLockLock(&spinlockCPULoadAverage);
+	frameInfo.cpuLoadAvgARM9 = _cpuLoadAvgARM9;
+	frameInfo.cpuLoadAvgARM7 = _cpuLoadAvgARM7;
+	OSSpinLockUnlock(&spinlockCPULoadAverage);
+	
 	rtcGetTimeAsString(frameInfo.rtcString);
 	
 	[(id<CocoaDSDisplayVideoDelegate>)delegate doProcessVideoFrameWithInfo:frameInfo];

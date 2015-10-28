@@ -5708,12 +5708,15 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	_showRender3DFPS = false;
 	_showFrameIndex = false;
 	_showLagFrameCount = false;
+	_showCPULoadAverage = false;
 	_showRTC = false;
 	
 	_lastVideoFPS = 0;
 	_lastRender3DFPS = 0;
 	_lastFrameIndex = 0;
 	_lastLagFrameCount = 0;
+	_lastCpuLoadAvgARM9 = 0;
+	_lastCpuLoadAvgARM7 = 0;
 	memset(_lastRTCString, 0, sizeof(_lastRTCString));
 	_textBoxLines = 0;
 	_textBoxWidth = 0;
@@ -5923,12 +5926,14 @@ void OGLHUDLayer::SetFontUsingPath(const char *filePath)
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void OGLHUDLayer::SetInfo(const uint32_t videoFPS, const uint32_t render3DFPS, const uint32_t frameIndex, const uint32_t lagFrameCount, const char *rtcString)
+void OGLHUDLayer::SetInfo(const uint32_t videoFPS, const uint32_t render3DFPS, const uint32_t frameIndex, const uint32_t lagFrameCount, const char *rtcString, const uint32_t cpuLoadAvgARM9, const uint32_t cpuLoadAvgARM7)
 {
 	this->_lastVideoFPS = videoFPS;
 	this->_lastRender3DFPS = render3DFPS;
 	this->_lastFrameIndex = frameIndex;
 	this->_lastLagFrameCount = lagFrameCount;
+	this->_lastCpuLoadAvgARM9 = cpuLoadAvgARM9;
+	this->_lastCpuLoadAvgARM7 = cpuLoadAvgARM7;
 	memcpy(this->_lastRTCString, rtcString, sizeof(this->_lastRTCString));
 	
 	this->RefreshInfo();
@@ -5981,11 +5986,26 @@ void OGLHUDLayer::RefreshInfo()
 		}
 	}
 	
+	if (this->_showCPULoadAverage)
+	{
+		static char buffer[32];
+		memset(buffer, 0, sizeof(buffer));
+		snprintf(buffer, 25, "CPU Load Avg: %02d%% / %02d%%\n", this->_lastCpuLoadAvgARM9, this->_lastCpuLoadAvgARM7);
+		
+		ss << buffer;
+		
+		const GLint newTextBoxWidth = (charSize * 9.2f) + 6.5f;
+		if (newTextBoxWidth > this->_textBoxWidth)
+		{
+			this->_textBoxWidth = newTextBoxWidth;
+		}
+	}
+	
 	if (this->_showRTC)
 	{
 		ss << "RTC: " << this->_lastRTCString << "\n";
 		
-		const GLint newTextBoxWidth = (charSize * 10.7f) + 6.5f;
+		const GLint newTextBoxWidth = (charSize * 10.8f) + 6.5f;
 		if (newTextBoxWidth > this->_textBoxWidth)
 		{
 			this->_textBoxWidth = newTextBoxWidth;
@@ -6054,6 +6074,16 @@ void OGLHUDLayer::SetShowLagFrameCount(const bool visibleState)
 bool OGLHUDLayer::GetShowLagFrameCount() const
 {
 	return this->_showLagFrameCount;
+}
+
+void OGLHUDLayer::SetShowCPULoadAverage(const bool visibleState)
+{
+	this->_SetShowInfoItemOGL(this->_showCPULoadAverage, visibleState);
+}
+
+bool OGLHUDLayer::GetShowCPULoadAverage() const
+{
+	return this->_showCPULoadAverage;
 }
 
 void OGLHUDLayer::SetShowRTC(const bool visibleState)

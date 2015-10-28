@@ -740,6 +740,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	//[[self view] setIsHUDInputVisible:![[self view] isHUDInputVisible]];
 }
 
+- (IBAction) toggleShowHUDCPULoadAverage:(id)sender
+{
+	[[self view] setIsHUDCPULoadAverageVisible:![[self view] isHUDCPULoadAverageVisible]];
+}
+
 - (IBAction) toggleShowHUDRealTimeClock:(id)sender
 {
 	[[self view] setIsHUDRealTimeClockVisible:![[self view] isHUDRealTimeClockVisible]];
@@ -935,6 +940,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDRender3DFPSVisible] forKey:@"HUD_ShowRender3DFPS"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDFrameIndexVisible] forKey:@"HUD_ShowFrameIndex"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDLagFrameCountVisible] forKey:@"HUD_ShowLagFrameCount"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDCPULoadAverageVisible] forKey:@"HUD_ShowCPULoadAverage"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDRealTimeClockVisible] forKey:@"HUD_ShowRTC"];
 	// TODO: Show HUD Input.
 	//[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDInputVisible] forKey:@"HUD_ShowInput"];
@@ -1120,6 +1126,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
 			[(NSMenuItem *)theItem setState:([[self view] isHUDLagFrameCountVisible]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(toggleShowHUDCPULoadAverage:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem *)theItem setState:([[self view] isHUDCPULoadAverageVisible]) ? NSOnState : NSOffState];
 		}
 	}
 	else if (theAction == @selector(toggleShowHUDRealTimeClock:))
@@ -1378,6 +1391,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 @dynamic isHUDRender3DFPSVisible;
 @dynamic isHUDFrameIndexVisible;
 @dynamic isHUDLagFrameCountVisible;
+@dynamic isHUDCPULoadAverageVisible;
 @dynamic isHUDRealTimeClockVisible;
 @dynamic useVerticalSync;
 @dynamic videoFiltersPreferGPU;
@@ -1588,6 +1602,28 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
 	const BOOL theState = (oglv->GetHUDLayer()->GetShowLagFrameCount()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
+
+- (void) setIsHUDCPULoadAverageVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	oglv->GetHUDLayer()->SetShowCPULoadAverage((theState) ? true : false);
+	[self drawVideoFrame];
+	CGLUnlockContext(cglDisplayContext);
+	
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDCPULoadAverageVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (oglv->GetHUDLayer()->GetShowCPULoadAverage()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -2076,7 +2112,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 						  frameInfo.render3DFPS,
 						  frameInfo.frameIndex,
 						  frameInfo.lagFrameCount,
-						  frameInfo.rtcString);
+						  frameInfo.rtcString,
+						  frameInfo.cpuLoadAvgARM9,
+						  frameInfo.cpuLoadAvgARM7);
 		hudLayer->ProcessOGL();
 	}
 	

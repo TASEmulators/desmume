@@ -145,6 +145,7 @@ volatile bool execute = true;
 	}
 	
 	_fpsTimer = nil;
+	_isTimerAtSecond = NO;
 	
 	cdsController = nil;
 	cdsFirmware = nil;
@@ -682,10 +683,11 @@ volatile bool execute = true;
 			
 			if (_fpsTimer == nil)
 			{
+				_isTimerAtSecond = NO;
 				_fpsTimer = [[NSTimer alloc] initWithFireDate:[NSDate date]
-													 interval:1.0
+													 interval:0.5
 													   target:self
-													 selector:@selector(fpsUpdate:)
+													 selector:@selector(getTimedEmulatorStatistics:)
 													 userInfo:nil
 													  repeats:YES];
 				
@@ -936,13 +938,28 @@ volatile bool execute = true;
 	[[self cdsController] updateMicLevel];
 }
 
-- (void) fpsUpdate:(NSTimer *)timer
+- (void) getTimedEmulatorStatistics:(NSTimer *)timer
 {
+	uint32_t loadAvgARM9;
+	uint32_t loadAvgARM7;
+	
+	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
+	NDS_GetCPULoadAverage(loadAvgARM9, loadAvgARM7);
+	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
+	
 	for (CocoaDSOutput *cdsOutput in cdsOutputList)
 	{
 		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
 		{
-			[(CocoaDSDisplay *)cdsOutput takeFrameCount];
+			// The timer should fire every 0.5 seconds, so only take the frame
+			// count every other instance the timer fires.
+			_isTimerAtSecond = !_isTimerAtSecond;
+			if (_isTimerAtSecond)
+			{
+				[(CocoaDSDisplay *)cdsOutput takeFrameCount];
+			}
+			
+			[(CocoaDSDisplay *)cdsOutput setCPULoadAvgARM9:loadAvgARM9 ARM7:loadAvgARM7];
 		}
 	}
 }

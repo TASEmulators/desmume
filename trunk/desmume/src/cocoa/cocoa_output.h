@@ -147,8 +147,12 @@ typedef struct
 	uint32_t _currentReceivedFrameIndex;
 	uint32_t _receivedFrameCount;
 	
+	uint32_t _cpuLoadAvgARM9;
+	uint32_t _cpuLoadAvgARM7;
+	
 	OSSpinLock spinlockDisplayType;
 	OSSpinLock spinlockReceivedFrameIndex;
+	OSSpinLock spinlockCPULoadAverage;
 }
 
 @property (retain) id <CocoaDSDisplayDelegate> delegate;
@@ -162,6 +166,7 @@ typedef struct
 - (void) handleCopyToPasteboard;
 
 - (void) takeFrameCount;
+- (void) setCPULoadAvgARM9:(uint32_t)loadAvgARM9 ARM7:(uint32_t)loadAvgARM7;
 - (NSImage *) image;
 - (NSBitmapImageRep *) bitmapImageRep;
 

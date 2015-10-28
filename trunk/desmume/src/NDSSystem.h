@@ -462,6 +462,7 @@ void NDS_debug_continue();
 void NDS_debug_step();
 
 int NDS_GetCPUCoreCount();
+void NDS_GetCPULoadAverage(u32 &outLoadAvgARM9, u32 &outLoadAvgARM7);
 void NDS_SetupDefaultFirmware();
 
 //void execHardware_doAllDma(EDMAMode modeNum);
