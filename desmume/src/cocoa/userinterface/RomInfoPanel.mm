@@ -217,6 +217,7 @@
 	}
 	
 	[[NSUserDefaults standardUserDefaults] setObject:viewStatesDict forKey:@"RomInfoPanel_SectionViewState"];
+	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 #pragma mark NSPanel Methods

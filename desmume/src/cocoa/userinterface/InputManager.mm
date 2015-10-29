@@ -373,7 +373,9 @@ static NSDictionary *hidUsageTable = nil;
 	
 	NSMutableDictionary *newInputDeviceDict = [NSMutableDictionary dictionaryWithDictionary:savedInputDeviceDict];
 	[newInputDeviceDict setObject:[self propertiesDictionary] forKey:[self identifier]];
+	
 	[[NSUserDefaults standardUserDefaults] setObject:newInputDeviceDict forKey:@"Input_SavedDeviceProperties"];
+	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (void) start
@@ -1593,6 +1595,7 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 - (void) writeDefaultsInputMappings
 {
 	[[NSUserDefaults standardUserDefaults] setObject:[self inputMappings] forKey:@"Input_ControllerMappings"];
+	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (NSString *) commandTagFromInputList:(NSArray *)inputList

@@ -690,7 +690,7 @@
 			}
 			
 			// Draw the display view now so that we guarantee that its drawn at least once.
-			[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
+			[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
 			
 			// If this window is set to full screen mode, its associated screen index must
 			// exist. If not, this window will not enter full screen mode. This is necessary,
