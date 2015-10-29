@@ -181,6 +181,7 @@ typedef struct
 - (void) handleResizeView:(NSData *)rectData;
 - (void) handleTransformView:(NSData *)transformData;
 - (void) handleRedrawView;
+- (void) handleReloadAndRedraw;
 - (void) handleReprocessAndRedraw;
 - (void) handleChangeDisplayOrientation:(NSData *)displayOrientationIdData;
 - (void) handleChangeDisplayOrder:(NSData *)displayOrderIdData;

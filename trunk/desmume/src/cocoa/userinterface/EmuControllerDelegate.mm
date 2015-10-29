@@ -348,7 +348,7 @@
 {
 	DisplayWindowController *newWindowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow" emuControlDelegate:self];
 	
-	[CocoaDSUtil messageSendOneWay:[[newWindowController cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
+	[CocoaDSUtil messageSendOneWay:[[newWindowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
 	
 	[[newWindowController window] makeKeyAndOrderFront:self];
 	[[newWindowController window] makeMainWindow];
@@ -954,6 +954,8 @@
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DMultisample] forKey:@"Render3D_Multisample"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DFragmentSamplingHack] forKey:@"Render3D_FragmentSamplingHack"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] gpuScale] forKey:@"Render3D_ScalingFactor"];
+	
+	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (IBAction) writeDefaultsEmulationSettings:(id)sender
@@ -981,6 +983,8 @@
 	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"FavoriteColor"] forKey:@"FirmwareConfig_FavoriteColor"];
 	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Birthday"] forKey:@"FirmwareConfig_Birthday"];
 	[[NSUserDefaults standardUserDefaults] setObject:[firmwareDict valueForKey:@"Language"] forKey:@"FirmwareConfig_Language"];
+	
+	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (IBAction) writeDefaultsSlot1Settings:(id)sender
@@ -989,6 +993,8 @@
 	
 	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore slot1DeviceType] forKey:@"EmulationSlot1_DeviceType"];
 	[[NSUserDefaults standardUserDefaults] setObject:[[cdsCore slot1R4URL] path] forKey:@"EmulationSlot1_R4StoragePath"];
+	
+	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (IBAction) writeDefaultsSoundSettings:(id)sender
@@ -1001,6 +1007,8 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuInterpolationMode"] integerValue] forKey:@"SPU_InterpolationMode"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuSyncMode"] integerValue] forKey:@"SPU_SyncMode"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[[speakerBindings valueForKey:@"spuSyncMethod"] integerValue] forKey:@"SPU_SyncMethod"];
+	
+	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (IBAction) writeDefaultsStylusSettings:(id)sender
@@ -1010,6 +1018,8 @@
 	
 	[[NSUserDefaults standardUserDefaults] setInteger:[cdsController stylusPressure] forKey:@"Emulation_StylusPressure"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsController stylusEnableJitter] forKey:@"Emulation_StylusEnableJitter"];
+	
+	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (IBAction) closeSheet:(id)sender
@@ -1497,7 +1507,7 @@
 	
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
+		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESET];
@@ -1800,7 +1810,7 @@
 	
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
+		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_LOADED];
@@ -1879,7 +1889,7 @@
 	[[cdsCore cdsGPU] clearWithColor:0x8000];
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
+		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_UNLOADED];

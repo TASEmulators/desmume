@@ -343,7 +343,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setVideoFiltersPreferGPU:(BOOL)theState
 {
 	[[self view] setVideoFiltersPreferGPU:theState];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
 }
 
 - (BOOL) videoFiltersPreferGPU
@@ -354,7 +354,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setVideoSourceDeposterize:(BOOL)theState
 {
 	[[self view] setSourceDeposterize:theState];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
 }
 
 - (BOOL) videoSourceDeposterize
@@ -376,7 +376,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setVideoPixelScaler:(NSInteger)filterID
 {
 	[[self view] setPixelScaler:filterID];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
 }
 
 - (NSInteger) videoPixelScaler
@@ -926,11 +926,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (IBAction) writeDefaultsDisplayRotation:(id)sender
 {
 	[[NSUserDefaults standardUserDefaults] setDouble:[self displayRotation] forKey:@"DisplayView_Rotation"];
+	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (IBAction) writeDefaultsDisplayGap:(id)sender
 {
 	[[NSUserDefaults standardUserDefaults] setDouble:([self displayGap] * 100.0) forKey:@"DisplayViewCombo_Gap"];
+	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (IBAction) writeDefaultsHUDSettings:(id)sender
@@ -944,6 +946,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDRealTimeClockVisible] forKey:@"HUD_ShowRTC"];
 	// TODO: Show HUD Input.
 	//[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDInputVisible] forKey:@"HUD_ShowInput"];
+	
+	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (IBAction) writeDefaultsDisplayVideoSettings:(id)sender
@@ -953,6 +957,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[NSUserDefaults standardUserDefaults] setInteger:[self videoOutputFilter] forKey:@"DisplayView_OutputFilter"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self videoPixelScaler] forKey:@"DisplayView_VideoFilter"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] useVerticalSync] forKey:@"DisplayView_UseVerticalSync"];
+	
+	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 #pragma mark NSUserInterfaceValidations Protocol

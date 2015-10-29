@@ -797,6 +797,10 @@
 	
 	switch (message)
 	{
+		case MESSAGE_RELOAD_AND_REDRAW:
+			[self handleReloadAndRedraw];
+			break;
+			
 		case MESSAGE_REPROCESS_AND_REDRAW:
 			[self handleReprocessAndRedraw];
 			break;
@@ -918,6 +922,12 @@
 	}
 	
 	[(id<CocoaDSDisplayVideoDelegate>)delegate doRedraw];
+}
+
+- (void) handleReloadAndRedraw
+{
+	[self handleReceiveGPUFrame];
+	[self handleEmuFrameProcessed];
 }
 
 - (void) handleReprocessAndRedraw
