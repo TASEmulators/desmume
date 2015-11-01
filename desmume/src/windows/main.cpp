@@ -1803,12 +1803,11 @@ static void DD_DoDisplay()
 		if(osd) osd->swapScreens = isMainGPUFirst;
 	}
 
-	//this code fills in all the undrawn areas if we are in fullscreen mode.
+	//this code fills in all the undrawn areas
 	//it is probably a waste of time to keep black-filling all this, but we need to do it to be safe.
-	if(IsZoomed(MainWindow->getHWnd()))
 	{
-		RECT fullScreen;
-		GetWindowRect(MainWindow->getHWnd(),&fullScreen);
+		RECT wr;
+		GetWindowRect(MainWindow->getHWnd(),&wr);
 		RECT r;
 		GetNdsScreenRect(&r);
 		int left = r.left;
@@ -1819,12 +1818,12 @@ static void DD_DoDisplay()
 		//printf("%d %d %d %d / %d %d %d %d\n",MainScreenRect.left,MainScreenRect.top,MainScreenRect.right,MainScreenRect.bottom,SubScreenRect.left,SubScreenRect.top,SubScreenRect.right,SubScreenRect.bottom);
 		DD_FillRect(ddraw.surface.primary,0,0,left,top,RGB(255,0,0)); //topleft
 		DD_FillRect(ddraw.surface.primary,left,0,right,top,RGB(128,0,0)); //topcenter
-		DD_FillRect(ddraw.surface.primary,right,0,fullScreen.right,top,RGB(0,255,0)); //topright
+		DD_FillRect(ddraw.surface.primary,right,0,wr.right,top,RGB(0,255,0)); //topright
 		DD_FillRect(ddraw.surface.primary,0,top,left,bottom,RGB(0,128,0));  //left
-		DD_FillRect(ddraw.surface.primary,right,top,fullScreen.right,bottom,RGB(0,0,255)); //right
-		DD_FillRect(ddraw.surface.primary,0,bottom,left,fullScreen.bottom,RGB(0,0,128)); //bottomleft
-		DD_FillRect(ddraw.surface.primary,left,bottom,right,fullScreen.bottom,RGB(255,0,255)); //bottomcenter
-		DD_FillRect(ddraw.surface.primary,right,bottom,fullScreen.left,fullScreen.bottom,RGB(0,255,255)); //bottomright
+		DD_FillRect(ddraw.surface.primary,right,top,wr.right,bottom,RGB(0,0,255)); //right
+		DD_FillRect(ddraw.surface.primary,0,bottom,left,wr.bottom,RGB(0,0,128)); //bottomleft
+		DD_FillRect(ddraw.surface.primary,left,bottom,right,wr.bottom,RGB(255,0,255)); //bottomcenter
+		DD_FillRect(ddraw.surface.primary,right,bottom,wr.right,wr.bottom,RGB(0,255,255)); //bottomright
 	}
 
 	for(int i = 0; i < 2; i++)
@@ -4836,16 +4835,9 @@ DOKEYDOWN:
 
 			if(message == WM_SYSKEYDOWN && wParam==VK_RETURN && !(lParam&0x40000000))
 			{
-				//having aspect ratio correction enabled during fullscreen switch causes errors to happen.
-				//90% sure this is because the aspect ratio correction calculations happens with the wrong frame/menu/nonclient properties in place.
-				//if we ToggleFullscreen before the ShowWindow() here, then the ShowWindow() will wreck the fullscreening.
-				//There might be another way to fix this, by cleverer logic choosing when to set SW_NORMAL.. but this approach of temporarily disabling the aspect ratio forcing seems to work
-				bool oldForceRatio = ForceRatio;
-				ForceRatio = false;
 				if(IsZoomed(hwnd))
 					ShowWindow(hwnd,SW_NORMAL); //maximize and fullscreen get mixed up so make sure no maximize now. IOW, alt+enter from fullscreen should never result in a maximized state
 				ToggleFullscreen();
-				ForceRatio = oldForceRatio;
 			}
 			else
 			{
