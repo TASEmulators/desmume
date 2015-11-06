@@ -360,6 +360,7 @@ struct DDRAW
 	bool lock();
 	bool unlock();
 	bool blt(LPRECT dst, LPRECT src);
+	bool OK();
 
 	LPDIRECTDRAW7			handle;
 	struct
@@ -1816,14 +1817,17 @@ static void DD_DoDisplay()
 		int bottom = r.bottom;
 		//printf("%d %d %d %d / %d %d %d %d\n",fullScreen.left,fullScreen.top,fullScreen.right,fullScreen.bottom,left,top,right,bottom);
 		//printf("%d %d %d %d / %d %d %d %d\n",MainScreenRect.left,MainScreenRect.top,MainScreenRect.right,MainScreenRect.bottom,SubScreenRect.left,SubScreenRect.top,SubScreenRect.right,SubScreenRect.bottom);
-		DD_FillRect(ddraw.surface.primary,0,0,left,top,RGB(255,0,0)); //topleft
-		DD_FillRect(ddraw.surface.primary,left,0,right,top,RGB(128,0,0)); //topcenter
-		DD_FillRect(ddraw.surface.primary,right,0,wr.right,top,RGB(0,255,0)); //topright
-		DD_FillRect(ddraw.surface.primary,0,top,left,bottom,RGB(0,128,0));  //left
-		DD_FillRect(ddraw.surface.primary,right,top,wr.right,bottom,RGB(0,0,255)); //right
-		DD_FillRect(ddraw.surface.primary,0,bottom,left,wr.bottom,RGB(0,0,128)); //bottomleft
-		DD_FillRect(ddraw.surface.primary,left,bottom,right,wr.bottom,RGB(255,0,255)); //bottomcenter
-		DD_FillRect(ddraw.surface.primary,right,bottom,wr.right,wr.bottom,RGB(0,255,255)); //bottomright
+		if(ddraw.OK())
+		{
+			DD_FillRect(ddraw.surface.primary,0,0,left,top,RGB(255,0,0)); //topleft
+			DD_FillRect(ddraw.surface.primary,left,0,right,top,RGB(128,0,0)); //topcenter
+			DD_FillRect(ddraw.surface.primary,right,0,wr.right,top,RGB(0,255,0)); //topright
+			DD_FillRect(ddraw.surface.primary,0,top,left,bottom,RGB(0,128,0));  //left
+			DD_FillRect(ddraw.surface.primary,right,top,wr.right,bottom,RGB(0,0,255)); //right
+			DD_FillRect(ddraw.surface.primary,0,bottom,left,wr.bottom,RGB(0,0,128)); //bottomleft
+			DD_FillRect(ddraw.surface.primary,left,bottom,right,wr.bottom,RGB(255,0,255)); //bottomcenter
+			DD_FillRect(ddraw.surface.primary,right,bottom,wr.right,wr.bottom,RGB(0,255,255)); //bottomright
+		}
 	}
 
 	for(int i = 0; i < 2; i++)
@@ -7282,6 +7286,14 @@ bool DDRAW::unlock()
 	if (!handle) return true;
 	if (!surface.back) return false;
 	if (FAILED(surface.back->Unlock((LPRECT)surfDescBack.lpSurface))) return false;
+	return true;
+}
+
+bool DDRAW::OK()
+{
+	if (!handle) return false;
+	if (!surface.primary) return false;
+	if (!surface.back) return false;
 	return true;
 }
 
