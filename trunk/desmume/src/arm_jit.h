@@ -31,9 +31,21 @@ void arm_jit_close();
 void arm_jit_sync();
 template<int PROCNUM> u32 arm_jit_compile();
 
-#if defined(HOST_WINDOWS) || defined(DESMUME_COCOA)
+//#define MAPPED_JIT_FUNCS: to define or not to define?
+//* x86 windows seems faster with NON-DEFINED
+//* x64 windows seems faster with DEFINED
+//* x86 windows seems to have problems without DEFINED when desmume is built as a dll due to the 
+//   ~300 MB .bss section created by the 256MB non-mapped compiled_funcs table
+//   (when loaded as a dll into a busy process, that much contiguous address space is hard to find. No big deal when starting up a process)
+//In principle, mapped compiled_funcs should be faster because it avoids some bit shifting logic to look it up from the memory map, right, 
+//but I guess it doesn't always work out that way.
+//
+//So here's my proposed policy. NON-DEFINED is dangerous due to the huge .bss section, so it should be the default
+//The build system should #define JIT_FUNCS_FLAT to make the flat array
+#ifndef JIT_FUNCS_FLAT
 #define MAPPED_JIT_FUNCS
 #endif
+
 #ifdef MAPPED_JIT_FUNCS
 struct JIT_struct 
 {
