@@ -190,6 +190,22 @@ void FragmentAttributesBuffer::SetAll(const FragmentAttributes &attr)
 	}
 }
 
+void* Render3D::operator new(size_t size)
+{
+	void *newPtr = malloc_alignedCacheLine(size);
+	if (newPtr == NULL)
+	{
+		throw std::bad_alloc();
+	}
+	
+	return newPtr;
+}
+
+void Render3D::operator delete(void *ptr)
+{
+	free_aligned(ptr);
+}
+
 Render3D::Render3D()
 {
 	_renderID = RENDERID_NULL;

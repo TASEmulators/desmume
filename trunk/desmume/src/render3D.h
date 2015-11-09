@@ -129,6 +129,8 @@ protected:
 	virtual Render3DError SetupViewport(const u32 viewportValue);
 	
 public:
+	static void* operator new(size_t size);
+	static void operator delete(void *p);
 	Render3D();
 	~Render3D();
 	
