@@ -46,7 +46,7 @@
 - (id) initWithURL:(NSURL *)theURL;
 - (id) initWithURL:(NSURL *)theURL saveType:(NSInteger)saveTypeID;
 - (id) initWithURL:(NSURL *)theURL saveType:(NSInteger)saveTypeID streamLoadData:(BOOL)willStreamLoad;
-- (void) initHeader;
+- (BOOL) initHeader;
 - (BOOL) loadData:(NSURL *)theURL;
 - (void) loadDataOnThread:(id)object;
 - (NSString *) title;
