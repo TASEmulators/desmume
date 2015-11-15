@@ -141,14 +141,16 @@ static NSMutableDictionary *saveTypeValues = nil;
 	return (gameInfo.romdata != NULL);
 }
 
-- (void) initHeader
+- (BOOL) initHeader
 {
+	BOOL result = NO;
+	
 	const NDS_header *ndsRomHeader = NDS_getROMHeader();
 	const RomBanner &ndsRomBanner = gameInfo.getRomBanner();
 	
-	if(self.header == nil || self.bindings == nil)
+	if (self.header == nil || self.bindings == nil)
 	{
-		return;
+		return result;
 	}
 	
 	[self.header setValue:[self banner:ndsRomBanner.titles[0]] forKey:@"bannerJapanese"];
@@ -218,20 +220,33 @@ static NSMutableDictionary *saveTypeValues = nil;
 	NSImage *iconImage = [self icon];
 	if (iconImage != nil)
 	{
-		[header setObject:iconImage forKey:@"iconImage"];
+		[self.header setObject:iconImage forKey:@"iconImage"];
 		[self.bindings setObject:(NSImage *)[self.header objectForKey:@"iconImage"] forKey:@"iconImage"];
 	}
 	
-	[self.header setValue:[self internalName] forKey:@"romInternalName"];
-	[self.header setValue:[self serial] forKey:@"romSerial"];
+	NSString *internalNameString = [self internalName];
+	NSString *serialString = [self serial];
 	
-	[self.bindings setValue:[self.header objectForKey:@"romInternalName"] forKey:@"romInternalName"];
-	[self.bindings setValue:[self.header objectForKey:@"romSerial"] forKey:@"romSerial"];
+	if (internalNameString == nil || serialString == nil)
+	{
+		return result;
+	}
+	else
+	{
+		[self.header setValue:internalNameString forKey:@"romInternalName"];
+		[self.header setValue:serialString forKey:@"romSerial"];
+		
+		[self.bindings setValue:[self.header objectForKey:@"romInternalName"] forKey:@"romInternalName"];
+		[self.bindings setValue:[self.header objectForKey:@"romSerial"] forKey:@"romSerial"];
+		
+		NSString *romNameAndSerialInfoString = @"Name: ";
+		romNameAndSerialInfoString = [romNameAndSerialInfoString stringByAppendingString:[self.header objectForKey:@"romInternalName"]];
+		romNameAndSerialInfoString = [[romNameAndSerialInfoString stringByAppendingString:@"\nSerial: "] stringByAppendingString:[self.header objectForKey:@"romSerial"]];
+		[self.bindings setValue:romNameAndSerialInfoString forKey:@"romNameAndSerialInfo"];
+	}
 	
-	NSString *romNameAndSerialInfoString = @"Name: ";
-	romNameAndSerialInfoString = [romNameAndSerialInfoString stringByAppendingString:[self.header objectForKey:@"romInternalName"]];
-	romNameAndSerialInfoString = [[romNameAndSerialInfoString stringByAppendingString:@"\nSerial: "] stringByAppendingString:[self.header objectForKey:@"romSerial"]];
-	[self.bindings setValue:romNameAndSerialInfoString forKey:@"romNameAndSerialInfo"];
+	result = YES;
+	return result;
 }
 
 - (BOOL) loadData:(NSURL *)theURL
@@ -239,6 +254,12 @@ static NSMutableDictionary *saveTypeValues = nil;
 	[CocoaDSRom changeRomSaveType:saveType];
 	
 	BOOL result = [CocoaDSFile loadRom:theURL];
+	
+	if (result)
+	{
+		result = [self initHeader];
+	}
+	
 	if (!result)
 	{
 		NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithBool:NO], @"DidLoad", nil];
@@ -248,7 +269,6 @@ static NSMutableDictionary *saveTypeValues = nil;
 	}
 	
 	fileURL = [theURL copy];
-	[self initHeader];
 	
 	NSString *advscDBPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Advanscene_DatabasePath"];
 	if (advscDBPath != nil)

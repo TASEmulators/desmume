@@ -26,6 +26,7 @@
 
 #include "utils/decrypt/decrypt.h"
 #include "utils/decrypt/crc.h"
+#include "utils/decrypt/header.h"
 #include "utils/advanscene.h"
 #include "utils/task.h"
 
@@ -306,6 +307,50 @@ bool GameInfo::hasRomBanner()
 const RomBanner& GameInfo::getRomBanner()
 {
 	return banner;
+}
+
+bool GameInfo::ValidateHeader()
+{
+	bool isRomValid = false;
+	
+	// Validate the ROM type.
+	int detectedRomType = DetectRomType(*(Header *)&header, (char *)secureArea);
+	if (detectedRomType == ROMTYPE_INVALID)
+	{
+		printf("ROM Validation: Invalid ROM type detected.\n");
+		return isRomValid;
+	}
+	
+	// Ensure that the game title and game code are both clean ASCII, but also
+	// make an exception for homebrew ROMs, which may not always have clean
+	// headers to begin with.
+	if (detectedRomType != ROMTYPE_HOMEBREW)
+	{
+		for (size_t i = 0; i < 12; i++)
+		{
+			char c = (char)header.gameTile[i];
+			if (c < 0 || (c > 0 && c < 32) || c == 127)
+			{
+				printf("ROM Validation: Invalid character detected in ROM Title.\n");
+				printf("                charIndex = %d, charValue = %d\n", (int)i, c);
+				return isRomValid;
+			}
+		}
+		
+		for (size_t i = 0; i < 4; i++)
+		{
+			char c = (char)header.gameCode[i];
+			if (c < 0 || (c > 0 && c < 32) || c == 127)
+			{
+				printf("ROM Validation: Invalid character detected in ROM Game Code.\n");
+				printf("                charIndex = %d, charValue = %d\n", (int)i, c);
+				return isRomValid;
+			}
+		}
+	}
+	
+	isRomValid = true;
+	return isRomValid;
 }
 
 void GameInfo::populate()
@@ -656,18 +701,15 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	if (cheatSearch)
 		cheatSearch->close();
 	FCEUI_StopMovie();
-
-
-	//check whether this rom is any kind of valid
-	if(!CheckValidRom((u8*)&gameInfo.header, gameInfo.secureArea))
+	
+	if (!gameInfo.ValidateHeader())
 	{
-		printf("Specified file is not a valid rom\n");
-		return -1;
+		ret = -1;
+		return ret;
 	}
-
+	
 	gameInfo.populate();
-
-
+	
 	if (CommonSettings.loadToMemory)
 		gameInfo.crc = crc32(0, (u8*)gameInfo.romdata, gameInfo.romsize);
 	else
