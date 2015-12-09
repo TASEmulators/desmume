@@ -357,6 +357,7 @@ struct DDRAW
 	u32	create(HWND hwnd);
 	bool release();
 	bool createSurfaces(HWND hwnd);
+	bool createBackSurface(int width, int height);
 	bool lock();
 	bool unlock();
 	bool blt(LPRECT dst, LPRECT src);
@@ -1750,6 +1751,11 @@ static void DD_DoDisplay()
 {
 	if (!ddraw.lock()) return;
 	char* buffer = (char*)ddraw.surfDescBack.lpSurface;
+
+	if(ddraw.surfDescBack.dwWidth != video.width || ddraw.surfDescBack.dwHeight != video.height)
+	{
+		ddraw.createBackSurface(video.width,video.height);
+	}
 
 	switch(ddraw.surfDescBack.ddpfPixelFormat.dwRGBBitCount)
 	{
@@ -5820,7 +5826,6 @@ DOKEYDOWN:
 				Lock lock (win_backbuffer_sync);
 				SetStyle((GetStyle()&~DWS_DISPMETHODS) | DWS_OPENGL);
 				WritePrivateProfileInt("Video","Display Method", DISPMETHOD_OPENGL, IniName);
-				ddraw.createSurfaces(hwnd);
 			}
 			break;
 
@@ -7216,26 +7221,14 @@ bool DDRAW::release()
 	return true;
 }
 
-bool DDRAW::createSurfaces(HWND hwnd)
+bool DDRAW::createBackSurface(int width, int height)
 {
-	if (!handle) return true;
-
-	if (clip) { clip->Release(); clip = NULL; }
 	if (surface.back) { surface.back->Release(); surface.back = NULL; }
-	if (surface.primary) { surface.primary->Release();  surface.primary = NULL; }
 
 	bool hw = (GetStyle()&DWS_DDRAW_HW)!=0;
 	bool sw = (GetStyle()&DWS_DDRAW_SW)!=0;
 
 	if(!hw && !sw) return true;
-
-	// primary
-	memset(&surfDesc, 0, sizeof(surfDesc));
-	surfDesc.dwSize = sizeof(surfDesc);
-	surfDesc.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
-	surfDesc.dwFlags = DDSD_CAPS;
-	if (FAILED(handle->CreateSurface(&surfDesc, &surface.primary, NULL)))
-		return false;
 
 	memset(&surfDescBack, 0, sizeof(surfDescBack));
 	surfDescBack.dwSize          = sizeof(surfDescBack);
@@ -7247,10 +7240,36 @@ bool DDRAW::createSurfaces(HWND hwnd)
 	else
 		surfDescBack.ddsCaps.dwCaps |= DDSCAPS_VIDEOMEMORY;
 
-	surfDescBack.dwWidth         = 384 * 5;
-	surfDescBack.dwHeight        = 384 * 5;
+	
+	surfDescBack.dwWidth         = width;
+	surfDescBack.dwHeight        = height;
 
 	if (FAILED(handle->CreateSurface(&surfDescBack, &surface.back, NULL))) return false;
+
+	return true;
+}
+
+bool DDRAW::createSurfaces(HWND hwnd)
+{
+	if (!handle) return true;
+
+	if (clip) { clip->Release(); clip = NULL; }
+	if (surface.back) { surface.back->Release(); surface.back = NULL; }
+	if (surface.primary) { surface.primary->Release();  surface.primary = NULL; }
+
+
+	// primary
+	memset(&surfDesc, 0, sizeof(surfDesc));
+	surfDesc.dwSize = sizeof(surfDesc);
+	surfDesc.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
+	surfDesc.dwFlags = DDSD_CAPS;
+	if (FAILED(handle->CreateSurface(&surfDesc, &surface.primary, NULL)))
+		return false;
+
+	//default doesnt matter much, itll get adjusted later
+	if(!createBackSurface(256,384))
+		return false;
+
 	if (FAILED(handle->CreateClipper(0, &clip, NULL))) return false;
 	if (FAILED(clip->SetHWnd(0, hwnd))) return false;
 	if (FAILED(surface.primary->SetClipper(clip))) return false;
