@@ -4957,7 +4957,9 @@ DOKEYDOWN:
 
 			if(!romloaded)
 			{
-				Display();
+				//ugh, dont do this when creating the window. in case we're using ddraw display method, ddraw wont be setup yet
+				if(ddraw.handle)
+					Display();
 			}
 			else
 			{
@@ -7254,7 +7256,6 @@ bool DDRAW::createSurfaces(HWND hwnd)
 	if (!handle) return true;
 
 	if (clip) { clip->Release(); clip = NULL; }
-	if (surface.back) { surface.back->Release(); surface.back = NULL; }
 	if (surface.primary) { surface.primary->Release();  surface.primary = NULL; }
 
 
