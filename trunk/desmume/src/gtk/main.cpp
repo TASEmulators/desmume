@@ -2414,36 +2414,17 @@ gboolean EmuLoop(gpointer data)
 
 	// HUD display things (copied from Windows main.cpp)
 #ifdef HAVE_LIBAGG
-	gfx3d.frameCtrRaw++;
-	if(gfx3d.frameCtrRaw == 60) {
-		Hud.fps3d = gfx3d.frameCtr;
-		gfx3d.frameCtrRaw = 0;
-		gfx3d.frameCtr = 0;
-	}
+	Hud.fps3d = Render3DFramesPerSecond;
+	
 	if(nds.idleFrameCounter==0 || oneSecond) 
 	{
-		//calculate a 16 frame arm9 load average
-		for(int cpu=0;cpu<2;cpu++)
-		{
-			int load = 0;
-			//printf("%d: ",cpu);
-			for(int i=0;i<16;i++)
-			{
-				//blend together a few frames to keep low-framerate games from having a jittering load average
-				//(they will tend to work 100% for a frame and then sleep for a while)
-				//4 frames should handle even the slowest of games
-				s32 sample = 
-					nds.runCycleCollector[cpu][(i+0+nds.idleFrameCounter)&15]
-				+	nds.runCycleCollector[cpu][(i+1+nds.idleFrameCounter)&15]
-				+	nds.runCycleCollector[cpu][(i+2+nds.idleFrameCounter)&15]
-				+	nds.runCycleCollector[cpu][(i+3+nds.idleFrameCounter)&15];
-				sample /= 4;
-				load = load/8 + sample*7/8;
-			}
-			//printf("\n");
-			load = std::min(100,std::max(0,(int)(load*100/1120380)));
-			Hud.cpuload[cpu] = load;
-		}
+		u32 loadAvgARM9;
+		u32 loadAvgARM7;
+		NDS_GetCPULoadAverage(loadAvgARM9, loadAvgARM7);
+		
+		Hud.cpuload[ARMCPU_ARM9] = (int)loadAvgARM9;
+		Hud.cpuload[ARMCPU_ARM7] = (int)loadAvgARM7;
+
 	}
 	Hud.cpuloopIterationCount = nds.cpuloopIterationCount;
 #endif
@@ -2466,12 +2447,7 @@ gboolean EmuLoop(gpointer data)
             for (i = 0; i < Frameskip; i++) {
                 NDS_SkipNextFrame();
 #ifdef HAVE_LIBAGG
-                gfx3d.frameCtrRaw++;
-                if(gfx3d.frameCtrRaw == 60) {
-                    Hud.fps3d = gfx3d.frameCtr;
-                    gfx3d.frameCtrRaw = 0;
-                    gfx3d.frameCtr = 0;
-                }
+                Hud.fps3d = Render3DFramesPerSecond;
 #endif
                 desmume_cycle();
                 skipped_frames++;
@@ -2484,12 +2460,7 @@ gboolean EmuLoop(gpointer data)
             for (i = 0; i < Frameskip; i++) {
                 NDS_SkipNextFrame();
 #ifdef HAVE_LIBAGG
-                gfx3d.frameCtrRaw++;
-                if(gfx3d.frameCtrRaw == 60) {
-                    Hud.fps3d = gfx3d.frameCtr;
-                    gfx3d.frameCtrRaw = 0;
-                    gfx3d.frameCtr = 0;
-                }
+                Hud.fps3d = Render3DFramesPerSecond;
 #endif
                 desmume_cycle();
                 skipped_frames++;
@@ -2511,12 +2482,7 @@ gboolean EmuLoop(gpointer data)
                 // Aggressively skip frames to avoid delay
                 NDS_SkipNextFrame();
 #ifdef HAVE_LIBAGG
-                gfx3d.frameCtrRaw++;
-                if(gfx3d.frameCtrRaw == 60) {
-                    Hud.fps3d = gfx3d.frameCtr;
-                    gfx3d.frameCtrRaw = 0;
-                    gfx3d.frameCtr = 0;
-                }
+                Hud.fps3d = Render3DFramesPerSecond;
 #endif
                 desmume_cycle();
                 skipped_frames++;
