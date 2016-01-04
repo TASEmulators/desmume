@@ -69,6 +69,14 @@ enum OBJShape
 	OBJShape_Prohibited		= 3
 };
 
+enum DisplayCaptureSize
+{
+	DisplayCaptureSize_128x128	= 0,
+	DisplayCaptureSize_256x64	= 1,
+	DisplayCaptureSize_256x128	= 2,
+	DisplayCaptureSize_256x192	= 3,
+};
+
 union FragmentColor
 {
 	u32 color;
@@ -1014,10 +1022,6 @@ enum NDSDisplayID
 
 struct DISPCAPCNT_parsed
 {
-	enum CAPX {
-		_128, _256
-	} capx;
-	
 	u8 EVA;
 	u8 EVB;
 	u8 readOffset;
@@ -1182,6 +1186,7 @@ protected:
 	
 	u8 _BLDALPHA_EVA;
 	u8 _BLDALPHA_EVB;
+	u8 _BLDALPHA_EVY;
 	
 	void _InitLUTs();
 	void _Reset_Base();
@@ -1202,7 +1207,6 @@ protected:
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineRot(u16 *__restrict dstColorLine, const u16 lineIndex);
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _LineExtRot(u16 *__restrict dstColorLine, const u16 lineIndex);
 	
-	template<int WIN_NUM> u8 _WithinRect(const size_t x) const;
 	template <GPULayerID LAYERID> void _RenderPixel_CheckWindows(const size_t srcX, bool &didPassWindowTest, bool &enableColorEffect) const;
 	
 	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_Clear(const u16 clearColor, const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
@@ -1215,10 +1219,20 @@ protected:
 	template<size_t WIN_NUM> void _SetupWindows(const u16 lineIndex);
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG(u16 *dstColorLine, const u16 lineIndex);
 			
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER> FORCEINLINE void _RenderPixel(const size_t srcX, const size_t dstX, const u16 src, const u8 srcAlpha, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
-	FORCEINLINE void _RenderPixel3D(const size_t srcX, const size_t dstX, const FragmentColor src, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER> FORCEINLINE void _RenderPixel(const size_t srcX, const u16 src, const u8 srcAlpha, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
+	FORCEINLINE void _RenderPixel3D(const size_t srcX, const FragmentColor src, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
+	
+	FORCEINLINE u16 _ColorEffectBlend(const u16 colA, const u16 colB, const u16 blendEVA, const u16 blendEVB);
 	FORCEINLINE u16 _ColorEffectBlend(const u16 colA, const u16 colB, const TBlendTable *blendTable);
-	FORCEINLINE FragmentColor _ColorEffectBlend(const FragmentColor colA, const FragmentColor colB);
+	
+	FORCEINLINE u16 _ColorEffectBlend3D(const FragmentColor colA, const u16 colB);
+	FORCEINLINE FragmentColor _ColorEffectBlend3D(const FragmentColor colA, const FragmentColor colB);
+	
+	FORCEINLINE u16 _ColorEffectIncreaseBrightness(const u16 col);
+	FORCEINLINE u16 _ColorEffectIncreaseBrightness(const u16 col, const u16 blendEVY);
+	
+	FORCEINLINE u16 _ColorEffectDecreaseBrightness(const u16 col);
+	FORCEINLINE u16 _ColorEffectDecreaseBrightness(const u16 col, const u16 blendEVY);
 	
 	template<bool ISDEBUGRENDER> void _RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
 	template<bool ISDEBUGRENDER> void _RenderSprite256(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
