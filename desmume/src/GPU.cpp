@@ -258,12 +258,11 @@ void GPUEngineBase::_InitLUTs()
 	See: http://mightymax.org/gfx_test_brightness.nds
 	The Pokemon Problem could be a problem with 8/32 bit writes not recognized yet,
 	i'll add that so you can check back.
-
 	*/
-
-	for(int i = 0; i <= 16; i++)
+	
+	for (size_t i = 0; i <= 16; i++)
 	{
-		for(int j = 0x8000; j < 0x10000; j++)
+		for (size_t j = 0x0000; j < 0x8000; j++)
 		{
 			COLOR cur;
 
@@ -272,18 +271,17 @@ void GPUEngineBase::_InitLUTs()
 			cur.bits.green = (cur.bits.green + ((31 - cur.bits.green) * i / 16));
 			cur.bits.blue = (cur.bits.blue + ((31 - cur.bits.blue) * i / 16));
 			cur.bits.alpha = 0;
-			GPUEngineBase::_fadeInColors[i][j & 0x7FFF] = cur.val;
-
+			GPUEngineBase::_fadeInColors[i][j] = cur.val;
+			
 			cur.val = j;
 			cur.bits.red = (cur.bits.red - (cur.bits.red * i / 16));
 			cur.bits.green = (cur.bits.green - (cur.bits.green * i / 16));
 			cur.bits.blue = (cur.bits.blue - (cur.bits.blue * i / 16));
 			cur.bits.alpha = 0;
-			GPUEngineBase::_fadeOutColors[i][j & 0x7FFF] = cur.val;
+			GPUEngineBase::_fadeOutColors[i][j] = cur.val;
 		}
 	}
-
-
+	
 	for(int c0=0;c0<=31;c0++) 
 		for(int c1=0;c1<=31;c1++) 
 			for(int eva=0;eva<=16;eva++)
@@ -431,9 +429,10 @@ void GPUEngineBase::_Reset_Base()
 	
 	this->_BLDALPHA_EVA = 0;
 	this->_BLDALPHA_EVB = 0;
+	this->_BLDALPHA_EVY = 0;
 	this->_blendTable = (TBlendTable *)&GPUEngineBase::_blendTable555[this->_BLDALPHA_EVA][this->_BLDALPHA_EVB][0][0];
-	this->_currentFadeInColors = &GPUEngineBase::_fadeInColors[0][0];
-	this->_currentFadeOutColors = &GPUEngineBase::_fadeOutColors[0][0];
+	this->_currentFadeInColors = &GPUEngineBase::_fadeInColors[this->_BLDALPHA_EVY][0];
+	this->_currentFadeOutColors = &GPUEngineBase::_fadeOutColors[this->_BLDALPHA_EVY][0];
 	
 	this->_blend2[GPULayerID_BG0] = false;
 	this->_blend2[GPULayerID_BG1] = false;
@@ -516,12 +515,96 @@ void GPUEngineBase::_ResortBGLayers()
 #endif
 }
 
+FORCEINLINE u16 GPUEngineBase::_ColorEffectBlend(const u16 colA, const u16 colB, const u16 blendEVA, const u16 blendEVB)
+{
+	u16 ra = (colA & 0x001F);
+	u16 ga = (colA & 0x03E0) >>  5;
+	u16 ba = (colA & 0x7C00) >> 10;
+	u16 rb = (colB & 0x001F);
+	u16 gb = (colB & 0x03E0) >>  5;
+	u16 bb = (colB & 0x7C00) >> 10;
+	
+	ra = ( (ra * blendEVA) + (rb * blendEVB) ) / 16;
+	if (ra > 31) ra = 31;
+	ga = ( (ga * blendEVA) + (gb * blendEVB) ) / 16;
+	if (ga > 31) ga = 31;
+	ba = ( (ba * blendEVA) + (bb * blendEVB) ) / 16;
+	if (ba > 31) ba = 31;
+	
+	return ra | (ga << 5) | (ba << 10);
+}
+
 FORCEINLINE u16 GPUEngineBase::_ColorEffectBlend(const u16 colA, const u16 colB, const TBlendTable *blendTable)
 {
 	const u8 r = (*blendTable)[ colA        & 0x1F][ colB        & 0x1F];
 	const u8 g = (*blendTable)[(colA >>  5) & 0x1F][(colB >>  5) & 0x1F];
 	const u8 b = (*blendTable)[(colA >> 10) & 0x1F][(colB >> 10) & 0x1F];
 
+	return r | (g << 5) | (b << 10);
+}
+
+FORCEINLINE u16 GPUEngineBase::_ColorEffectBlend3D(const FragmentColor colA, const u16 colB)
+{
+	const u8 alpha = colA.a + 1;
+	COLOR c2;
+	COLOR cfinal;
+	
+	c2.val = colB;
+	
+	cfinal.bits.red   = ((colA.r * alpha) + ((c2.bits.red   << 1) * (32 - alpha))) >> 6;
+	cfinal.bits.green = ((colA.g * alpha) + ((c2.bits.green << 1) * (32 - alpha))) >> 6;
+	cfinal.bits.blue  = ((colA.b * alpha) + ((c2.bits.blue  << 1) * (32 - alpha))) >> 6;
+	cfinal.bits.alpha = 0;
+	
+	return cfinal.val;
+}
+
+FORCEINLINE FragmentColor GPUEngineBase::_ColorEffectBlend3D(const FragmentColor colA, const FragmentColor colB)
+{
+	FragmentColor blendedColor;
+	const u8 alpha = colA.a + 1;
+	
+	blendedColor.r = ((colA.r * alpha) + (colB.r * (32 - alpha))) >> 6;
+	blendedColor.g = ((colA.g * alpha) + (colB.g * (32 - alpha))) >> 6;
+	blendedColor.b = ((colA.b * alpha) + (colB.b * (32 - alpha))) >> 6;
+	blendedColor.a = 0;
+	
+	return blendedColor;
+}
+
+FORCEINLINE u16 GPUEngineBase::_ColorEffectIncreaseBrightness(const u16 col)
+{
+	return this->_currentFadeInColors[col];
+}
+
+FORCEINLINE u16 GPUEngineBase::_ColorEffectIncreaseBrightness(const u16 col, const u16 blendEVY)
+{
+	u16 r = (col & 0x001F);
+	u16 g = (col & 0x03E0) >>  5;
+	u16 b = (col & 0x7C00) >> 10;
+	
+	r = (r + ((31 - r) * blendEVY / 16));
+	g = (g + ((31 - g) * blendEVY / 16));
+	b = (b + ((31 - b) * blendEVY / 16));
+	
+	return r | (g << 5) | (b << 10);
+}
+
+FORCEINLINE u16 GPUEngineBase::_ColorEffectDecreaseBrightness(const u16 col)
+{
+	return this->_currentFadeOutColors[col];
+}
+
+FORCEINLINE u16 GPUEngineBase::_ColorEffectDecreaseBrightness(const u16 col, const u16 blendEVY)
+{
+	u16 r = (col & 0x001F);
+	u16 g = (col & 0x03E0) >>  5;
+	u16 b = (col & 0x7C00) >> 10;
+	
+	r = (r - (r * blendEVY / 16));
+	g = (g - (g * blendEVY / 16));
+	b = (b - (b * blendEVY / 16));
+	
 	return r | (g << 5) | (b << 10);
 }
 
@@ -807,13 +890,6 @@ void GPUEngineBase::SetLayerEnableState(const size_t layerIndex, bool theState)
 //		ROUTINES FOR INSIDE / OUTSIDE WINDOW CHECKS
 /*****************************************************************************/
 
-// check whether (x,y) is within the rectangle (including wraparounds)
-template<int WIN_NUM>
-u8 GPUEngineBase::_WithinRect(const size_t x) const
-{
-	return this->_curr_win[WIN_NUM][x];
-}
-
 template <GPULayerID LAYERID>
 FORCEINLINE void GPUEngineBase::_RenderPixel_CheckWindows(const size_t srcX, bool &didPassWindowTest, bool &enableColorEffect) const
 {
@@ -829,7 +905,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel_CheckWindows(const size_t srcX, boo
 	// Window 0 has the highest priority, so always check this first.
 	if (this->_WIN0_ENABLED)
 	{
-		if (this->_WithinRect<0>(srcX))
+		if (this->_curr_win[0][srcX] == 1)
 		{
 			//INFO("bg%i passed win0 : (%i %i) was within (%i %i)(%i %i)\n", bgnum, x, gpu->_currentScanline, gpu->WIN0H0, gpu->WIN0V0, gpu->WIN0H1, gpu->WIN0V1);
 			switch (LAYERID)
@@ -852,7 +928,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel_CheckWindows(const size_t srcX, boo
 	// Window 1 has medium priority, and is checked after Window 0.
 	if (this->_WIN1_ENABLED)
 	{
-		if (this->_WithinRect<1>(srcX))
+		if (this->_curr_win[1][srcX] == 1)
 		{
 			//INFO("bg%i passed win1 : (%i %i) was within (%i %i)(%i %i)\n", bgnum, x, gpu->_currentScanline, gpu->WIN1H0, gpu->WIN1V0, gpu->WIN1H1, gpu->WIN1V1);
 			switch (LAYERID)
@@ -875,9 +951,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel_CheckWindows(const size_t srcX, boo
 	// Window OBJ has low priority, and is checked after both Window 0 and Window 1.
 	if (this->_WINOBJ_ENABLED)
 	{
-		// it is in winOBJ, do we display ?
-		// low priority
-		if (this->_sprWin[srcX])
+		if (this->_sprWin[srcX] == 1)
 		{
 			switch (LAYERID)
 			{
@@ -917,14 +991,14 @@ FORCEINLINE void GPUEngineBase::_RenderPixel_CheckWindows(const size_t srcX, boo
 //			PIXEL RENDERING
 /*****************************************************************************/
 template <GPULayerID LAYERID, bool ISDEBUGRENDER>
-FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const size_t dstX, const u16 src, const u8 srcAlpha, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine)
+FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const u16 src, const u8 srcAlpha, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine)
 {
 	if (ISDEBUGRENDER)
 	{
 		// If we're rendering pixels to a debugging context, then assume that the pixel
 		// always passes the window test and that the color effect is always disabled.
-		dstColorLine[dstX] = src | 0x8000;
-		dstLayerIDLine[dstX] = LAYERID;
+		*dstColorLine = src | 0x8000;
+		*dstLayerIDLine = LAYERID;
 		return;
 	}
 	
@@ -944,9 +1018,9 @@ FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const size_t dst
 	if (enableColorEffect)
 	{
 		const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
-		const GPULayerID dstLayerID = (GPULayerID)dstLayerIDLine[dstX];
+		const GPULayerID dstLayerID = (GPULayerID)*dstLayerIDLine;
 		bool srcEffectEnable = false;
-		bool dstEffectEnable = (dstLayerID != LAYERID) && this->_blend2[dstLayerID];
+		const bool dstEffectEnable = (dstLayerID != LAYERID) && this->_blend2[dstLayerID];
 		
 		switch (LAYERID)
 		{
@@ -1001,16 +1075,27 @@ FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const size_t dst
 		{
 			selectedEffect = ColorEffect_Blend;
 		}
-		else if (BLDCNT.ColorEffect == ColorEffect_Blend)
+		else if (srcEffectEnable)
 		{
-			// For the Blend effect, both first and second target flags must be checked.
-			if (srcEffectEnable && dstEffectEnable) selectedEffect = (ColorEffect)BLDCNT.ColorEffect;
-		}
-		else if ( (BLDCNT.ColorEffect == ColorEffect_IncreaseBrightness) || (BLDCNT.ColorEffect == ColorEffect_DecreaseBrightness) )
-		{
-			// For the Increase/Decrease Brightness effects, only the first target flag needs to be checked.
-			// Test case: Bomberman Land Touch! dialog boxes will render too dark without this check.
-			if (srcEffectEnable) selectedEffect = (ColorEffect)BLDCNT.ColorEffect;
+			switch ((ColorEffect)BLDCNT.ColorEffect)
+			{
+				// For the Blend effect, both first and second target flags must be checked.
+				case ColorEffect_Blend:
+				{
+					if (dstEffectEnable) selectedEffect = (ColorEffect)BLDCNT.ColorEffect;
+					break;
+				}
+					
+				// For the Increase/Decrease Brightness effects, only the first target flag needs to be checked.
+				// Test case: Bomberman Land Touch! dialog boxes will render too dark without this check.
+				case ColorEffect_IncreaseBrightness:
+				case ColorEffect_DecreaseBrightness:
+					selectedEffect = (ColorEffect)BLDCNT.ColorEffect;
+					break;
+					
+				default:
+					break;
+			}
 		}
 	}
 	
@@ -1024,28 +1109,33 @@ FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const size_t dst
 			break;
 			
 		case ColorEffect_IncreaseBrightness:
-			finalDstColor = this->_currentFadeInColors[src & 0x7FFF];
+			finalDstColor = this->_ColorEffectIncreaseBrightness(src & 0x7FFF);
 			break;
 			
 		case ColorEffect_DecreaseBrightness:
-			finalDstColor = this->_currentFadeOutColors[src & 0x7FFF];
+			finalDstColor = this->_ColorEffectDecreaseBrightness(src & 0x7FFF);
 			break;
 			
 		case ColorEffect_Blend:
-			finalDstColor = this->_ColorEffectBlend(src, dstColorLine[dstX], selectedBlendTable);
+			finalDstColor = this->_ColorEffectBlend(src, *dstColorLine, selectedBlendTable);
 			break;
 	}
 	
-	dstColorLine[dstX] = finalDstColor | 0x8000;
-	dstLayerIDLine[dstX] = LAYERID;
+	*dstColorLine = finalDstColor | 0x8000;
+	*dstLayerIDLine = LAYERID;
 }
 
 // TODO: Unify this method with GPUEngineBase::_RenderPixel().
 // We can't unify this yet because the output framebuffer is in RGBA5551, but the 3D source pixels are in RGBA6665.
 // However, GPUEngineBase::_RenderPixel() takes source pixels in RGB555. In order to unify the methods, all pixels
 // must be processed in RGBA6665.
-FORCEINLINE void GPUEngineBase::_RenderPixel3D(const size_t srcX, const size_t dstX, const FragmentColor src, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine)
+FORCEINLINE void GPUEngineBase::_RenderPixel3D(const size_t srcX, const FragmentColor src, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine)
 {
+	if (src.a == 0)
+	{
+		return;
+	}
+	
 	bool didPassWindowTest = true;
 	bool enableColorEffect = true;
 	
@@ -1056,16 +1146,14 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D(const size_t srcX, const size_t d
 		return;
 	}
 	
-	// TODO: - should we do an alpha==0 -> bail out entirely check here?
-	
 	ColorEffect selectedEffect = ColorEffect_Disable;
 	
 	if (enableColorEffect)
 	{
 		const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
-		const GPULayerID dstLayerID = (GPULayerID)dstLayerIDLine[dstX];
-		bool srcEffectEnable = (this->_IORegisterMap->BLDCNT.BG0_Target1 != 0);
-		bool dstEffectEnable = (dstLayerID != GPULayerID_BG0) && this->_blend2[dstLayerID];
+		const GPULayerID dstLayerID = (GPULayerID)*dstLayerIDLine;
+		const bool srcEffectEnable = (BLDCNT.BG0_Target1 != 0);
+		const bool dstEffectEnable = (dstLayerID != GPULayerID_BG0) && this->_blend2[dstLayerID];
 		
 		// Select the color effect based on the BLDCNT target flags.
 		bool forceBlendEffect = false;
@@ -1079,16 +1167,27 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D(const size_t srcX, const size_t d
 		{
 			selectedEffect = ColorEffect_Blend;
 		}
-		else if (BLDCNT.ColorEffect == ColorEffect_Blend)
+		else if (srcEffectEnable)
 		{
-			// For the Blend effect, both first and second target flags must be checked.
-			if (srcEffectEnable && dstEffectEnable) selectedEffect = (ColorEffect)BLDCNT.ColorEffect;
-		}
-		else if ( (BLDCNT.ColorEffect == ColorEffect_IncreaseBrightness) || (BLDCNT.ColorEffect == ColorEffect_DecreaseBrightness) )
-		{
-			// For the Increase/Decrease Brightness effects, only the first target flag needs to be checked.
-			// Test case: Bomberman Land Touch! dialog boxes will appear too dark without this check.
-			if (srcEffectEnable) selectedEffect = (ColorEffect)BLDCNT.ColorEffect;
+			switch ((ColorEffect)BLDCNT.ColorEffect)
+			{
+				// For the Blend effect, both first and second target flags must be checked.
+				case ColorEffect_Blend:
+				{
+					if (dstEffectEnable) selectedEffect = (ColorEffect)BLDCNT.ColorEffect;
+					break;
+				}
+					
+				// For the Increase/Decrease Brightness effects, only the first target flag needs to be checked.
+				// Test case: Bomberman Land Touch! dialog boxes will render too dark without this check.
+				case ColorEffect_IncreaseBrightness:
+				case ColorEffect_DecreaseBrightness:
+					selectedEffect = (ColorEffect)BLDCNT.ColorEffect;
+					break;
+					
+				default:
+					break;
+			}
 		}
 	}
 	
@@ -1103,39 +1202,20 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D(const size_t srcX, const size_t d
 			break;
 			
 		case ColorEffect_IncreaseBrightness:
-			finalDstColor = this->_currentFadeInColors[srcRGB555];
+			finalDstColor = this->_ColorEffectIncreaseBrightness(srcRGB555);
 			break;
 			
 		case ColorEffect_DecreaseBrightness:
-			finalDstColor = this->_currentFadeOutColors[srcRGB555];
+			finalDstColor = this->_ColorEffectDecreaseBrightness(srcRGB555);
 			break;
 			
 		case ColorEffect_Blend:
-		{
-			if (src.a < 31)
-			{
-				const u8 alpha = src.a + 1;
-				COLOR c2;
-				COLOR cfinal;
-				
-				c2.val = dstColorLine[dstX];
-				
-				cfinal.bits.red = ((src.r * alpha) + ((c2.bits.red<<1) * (32 - alpha)))>>6;
-				cfinal.bits.green = ((src.g * alpha) + ((c2.bits.green<<1) * (32 - alpha)))>>6;
-				cfinal.bits.blue = ((src.b * alpha) + ((c2.bits.blue<<1) * (32 - alpha)))>>6;
-				
-				finalDstColor = cfinal.val;
-			}
-			else
-			{
-				finalDstColor = srcRGB555;
-			}
+			finalDstColor = this->_ColorEffectBlend3D(src, *dstColorLine);
 			break;
-		}
 	}
 	
-	dstColorLine[dstX] = finalDstColor | 0x8000;
-	dstLayerIDLine[dstX] = GPULayerID_BG0;
+	*dstColorLine = finalDstColor | 0x8000;
+	*dstLayerIDLine = GPULayerID_BG0;
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM>
@@ -1156,11 +1236,10 @@ FORCEINLINE void GPUEngineBase::____setFinalColorBck(u16 *__restrict dstColorLin
 				const size_t dstX = _gpuDstPitchIndex[srcX] + p;
 				
 				this->_RenderPixel<LAYERID, ISDEBUGRENDER>(srcX,
-														   dstX,
 														   (USECUSTOMVRAM) ? srcLine[dstX] : color,
 														   0,
-														   dstColorLine,
-														   dstLayerIDLine);
+														   dstColorLine + dstX,
+														   dstLayerIDLine + dstX);
 			}
 			
 			dstColorLine += dispInfo.customWidth;
@@ -1170,11 +1249,10 @@ FORCEINLINE void GPUEngineBase::____setFinalColorBck(u16 *__restrict dstColorLin
 	else
 	{
 		this->_RenderPixel<LAYERID, ISDEBUGRENDER>(srcX,
-												   srcX,
 												   color,
 												   0,
-												   dstColorLine,
-												   this->_dstLayerID);
+												   dstColorLine + srcX,
+												   this->_dstLayerID + srcX);
 	}
 }
 
@@ -1626,7 +1704,7 @@ void GPUEngineBase::_RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *__res
 				colorLo_vec128 = _mm_or_si128( _mm_and_si128(combinedLoCompare, colorLo_vec128), _mm_andnot_si128(combinedLoCompare, _mm_loadu_si128((__m128i *)(dst + sprX))) );
 				colorHi_vec128 = _mm_or_si128( _mm_and_si128(combinedHiCompare, colorHi_vec128), _mm_andnot_si128(combinedHiCompare, _mm_loadu_si128((__m128i *)(dst + sprX + 8))) );
 				const __m128i dstAlpha_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(alpha + 1)), _mm_andnot_si128(combinedPackedCompare, _mm_loadu_si128((__m128i *)(dst_alpha + sprX))) );
-				const __m128i dstTypeTab_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(3)), _mm_andnot_si128(combinedPackedCompare, _mm_loadu_si128((__m128i *)(typeTab + sprX))) );
+				const __m128i dstTypeTab_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(OBJMode_Bitmap)), _mm_andnot_si128(combinedPackedCompare, _mm_loadu_si128((__m128i *)(typeTab + sprX))) );
 				prioTab_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, prio_vec128), _mm_andnot_si128(combinedPackedCompare, prioTab_vec128) );
 				const __m128i sprNum_vec128 = _mm_or_si128( _mm_and_si128(combinedPackedCompare, _mm_set1_epi8(spriteNum)), _mm_andnot_si128(combinedPackedCompare, _mm_loadu_si128((__m128i *)(this->_sprNum + sprX))) );
 				
@@ -2517,10 +2595,10 @@ void GPUEngineBase::ParseReg_BLDALPHA()
 void GPUEngineBase::ParseReg_BLDY()
 {
 	const IOREG_BLDY &BLDY = this->_IORegisterMap->BLDY;
-	const u8 BLDY_EVY = (BLDY.EVY >= 16) ? 16 : BLDY.EVY;
 	
-	this->_currentFadeInColors = &GPUEngineBase::_fadeInColors[BLDY_EVY][0];
-	this->_currentFadeOutColors = &GPUEngineBase::_fadeOutColors[BLDY_EVY][0];
+	this->_BLDALPHA_EVY = (BLDY.EVY >= 16) ? 16 : BLDY.EVY;
+	this->_currentFadeInColors = &GPUEngineBase::_fadeInColors[this->_BLDALPHA_EVY][0];
+	this->_currentFadeOutColors = &GPUEngineBase::_fadeOutColors[this->_BLDALPHA_EVY][0];
 }
 
 template<size_t WINNUM>
@@ -2765,23 +2843,19 @@ void GPUEngineA::ParseReg_DISPCAPCNT()
 	
 	switch (DISPCAPCNT.CaptureSize)
 	{
-		case 0:
-			this->_dispCapCnt.capx = DISPCAPCNT_parsed::_128;
+		case DisplayCaptureSize_128x128:
 			this->_dispCapCnt.capy = 128;
 			break;
 			
-		case 1:
-			this->_dispCapCnt.capx = DISPCAPCNT_parsed::_256;
+		case DisplayCaptureSize_256x64:
 			this->_dispCapCnt.capy = 64;
 			break;
 			
-		case 2:
-			this->_dispCapCnt.capx = DISPCAPCNT_parsed::_256;
+		case DisplayCaptureSize_256x128:
 			this->_dispCapCnt.capy = 128;
 			break;
 			
-		case 3:
-			this->_dispCapCnt.capx = DISPCAPCNT_parsed::_256;
+		case DisplayCaptureSize_256x192:
 			this->_dispCapCnt.capy = 192;
 			break;
 			
@@ -2791,7 +2865,7 @@ void GPUEngineA::ParseReg_DISPCAPCNT()
 	
 	/*INFO("Capture 0x%X:\n EVA=%i, EVB=%i, wBlock=%i, wOffset=%i, capX=%i, capY=%i\n rBlock=%i, rOffset=%i, srcCap=%i, dst=0x%X, src=0x%X\n srcA=%i, srcB=%i\n\n",
 	 val, this->_dispCapCnt.EVA, this->_dispCapCnt.EVB, this->_dispCapCnt.writeBlock, this->_dispCapCnt.writeOffset,
-	 this->_dispCapCnt.capx, this->_dispCapCnt.capy, this->_dispCapCnt.readBlock, this->_dispCapCnt.readOffset,
+	 this->_dispCapCnt.capy, this->_dispCapCnt.readBlock, this->_dispCapCnt.readOffset,
 	 this->_dispCapCnt.capSrc, this->_dispCapCnt.dst - MMU.ARM9_LCD, this->_dispCapCnt.src - MMU.ARM9_LCD,
 	 this->_dispCapCnt.srcA, this->_dispCapCnt.srcB);*/
 }
@@ -2890,7 +2964,7 @@ void GPUEngineA::RenderLine(const u16 l)
 	//(is that even legal? i think so)
 	if ((DISPCAPCNT.CaptureEnable != 0) && (vramConfiguration.banks[DISPCAPCNT.VRAMWriteBlock].purpose == VramConfiguration::LCDC) && (l < this->_dispCapCnt.capy))
 	{
-		if (this->_dispCapCnt.capx == DISPCAPCNT_parsed::_128)
+		if (DISPCAPCNT.CaptureSize == DisplayCaptureSize_128x128)
 		{
 			this->_RenderLine_DisplayCapture<ISCUSTOMRENDERINGNEEDED, GPU_FRAMEBUFFER_NATIVE_WIDTH/2>(renderedDstColorLine, l);
 		}
@@ -2960,29 +3034,50 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 						// Test case: Blowing up large objects in Nanostray 2 will cause the main screen to shake horizontally.
 						const u16 hofs = (u16)( ((float)this->_BGLayer[GPULayerID_BG0].xOffset * customWidthScale) + 0.5f );
 						
-						for (size_t line = 0; line < dstLineCount; line++)
+						if (hofs == 0)
 						{
-							for (size_t dstX = 0; dstX < dstLineWidth; dstX++)
+							for (size_t line = 0; line < dstLineCount; line++)
 							{
-								size_t srcX = dstX + hofs;
-								if (srcX >= dstLineWidth * 2)
+								for (size_t dstX = 0; dstX < dstLineWidth; dstX++)
 								{
-									srcX -= dstLineWidth * 2;
+									const size_t srcX = dstX;
+									
+									this->_RenderPixel3D(_gpuDstToSrcIndex[dstX],
+														 srcLine[srcX],
+														 dstColorLinePtr + dstX,
+														 layerIDLine + dstX);
 								}
 								
-								if (srcX >= dstLineWidth || srcLine[srcX].a == 0)
-									continue;
-								
-								this->_RenderPixel3D(_gpuDstToSrcIndex[dstX],
-													 dstX,
-													 srcLine[srcX],
-													 dstColorLinePtr,
-													 layerIDLine);
+								srcLine += dstLineWidth;
+								dstColorLinePtr += dstLineWidth;
+								layerIDLine += dstLineWidth;
 							}
-							
-							srcLine += dstLineWidth;
-							dstColorLinePtr += dstLineWidth;
-							layerIDLine += dstLineWidth;
+						}
+						else
+						{
+							for (size_t line = 0; line < dstLineCount; line++)
+							{
+								for (size_t dstX = 0; dstX < dstLineWidth; dstX++)
+								{
+									size_t srcX = dstX + hofs;
+									if (srcX >= dstLineWidth * 2)
+									{
+										srcX -= dstLineWidth * 2;
+									}
+									
+									if (srcX >= dstLineWidth || srcLine[srcX].a == 0)
+										continue;
+									
+									this->_RenderPixel3D(_gpuDstToSrcIndex[dstX],
+														 srcLine[srcX],
+														 dstColorLinePtr + dstX,
+														 layerIDLine + dstX);
+								}
+								
+								srcLine += dstLineWidth;
+								dstColorLinePtr += dstLineWidth;
+								layerIDLine += dstLineWidth;
+							}
 						}
 						
 						continue;
@@ -3042,11 +3137,10 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 							const size_t dstX = _gpuDstPitchIndex[srcX] + p;
 							
 							this->_RenderPixel<GPULayerID_OBJ, false>(srcX,
-																	  dstX,
 																	  (useCustomVRAM) ? srcLine[dstX] : this->_sprColor[srcX],
 																	  this->_sprAlpha[srcX],
-																	  dstColorLinePtr,
-																	  layerIDLine);
+																	  dstColorLinePtr + dstX,
+																	  layerIDLine + dstX);
 						}
 					}
 					
@@ -3062,11 +3156,10 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 					const size_t srcX = item->PixelsX[i];
 					
 					this->_RenderPixel<GPULayerID_OBJ, false>(srcX,
-															  srcX,
 															  this->_sprColor[srcX],
 															  this->_sprAlpha[srcX],
-															  dstColorLinePtr,
-															  layerIDLine);
+															  dstColorLinePtr + srcX,
+															  layerIDLine + srcX);
 				}
 			}
 		}
@@ -3906,11 +3999,10 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 							const size_t dstX = _gpuDstPitchIndex[srcX] + p;
 							
 							this->_RenderPixel<GPULayerID_OBJ, false>(srcX,
-																	  dstX,
 																	  (useCustomVRAM) ? srcLine[dstX] : this->_sprColor[srcX],
 																	  this->_sprAlpha[srcX],
-																	  dstColorLinePtr,
-																	  layerIDLine);
+																	  dstColorLinePtr + dstX,
+																	  layerIDLine + dstX);
 						}
 					}
 					
@@ -3926,11 +4018,10 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 					const size_t srcX = item->PixelsX[i];
 					
 					this->_RenderPixel<GPULayerID_OBJ, false>(srcX,
-															  srcX,
 															  this->_sprColor[srcX],
 															  this->_sprAlpha[srcX],
-															  dstColorLinePtr,
-															  layerIDLine);
+															  dstColorLinePtr + srcX,
+															  layerIDLine + srcX);
 				}
 			}
 		}
