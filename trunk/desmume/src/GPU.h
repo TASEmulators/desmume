@@ -1234,6 +1234,16 @@ protected:
 	FORCEINLINE u16 _ColorEffectDecreaseBrightness(const u16 col);
 	FORCEINLINE u16 _ColorEffectDecreaseBrightness(const u16 col, const u16 blendEVY);
 	
+#ifdef ENABLE_SSE2
+	FORCEINLINE __m128i _ColorEffectBlend(const __m128i &colA, const __m128i &colB, const __m128i &blendEVA, const __m128i &blendEVB);
+	FORCEINLINE __m128i _ColorEffectBlend3D(const __m128i &colA_Lo, const __m128i &colA_Hi, const __m128i &colB);
+	FORCEINLINE __m128i _ColorEffectIncreaseBrightness(const __m128i &col, const __m128i &blendEVY);
+	FORCEINLINE __m128i _ColorEffectDecreaseBrightness(const __m128i &col, const __m128i &blendEVY);
+	template<GPULayerID LAYERID, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel_CheckWindows_SSE2(const size_t dstX, __m128i &didPassWindowTest, __m128i &enableColorEffect) const;
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel_SSE2(const size_t srcX, const u16 *__restrict src, const u8 *__restrict srcAlpha, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
+	template<bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel3D_SSE2(const size_t srcX, const FragmentColor *__restrict src, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
+#endif
+	
 	template<bool ISDEBUGRENDER> void _RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
 	template<bool ISDEBUGRENDER> void _RenderSprite256(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
 	template<bool ISDEBUGRENDER> void _RenderSprite16(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
