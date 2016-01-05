@@ -2815,20 +2815,13 @@ void GPUEngineBase::ApplyMasterBrightness()
 				size_t i = 0;
 				
 #ifdef ENABLE_SSE2
+				__m128i intensity_vec128 = _mm_set1_epi16(intensity);
+				
 				const size_t ssePixCount = pixCount - (pixCount % 8);
 				for (; i < ssePixCount; i += 8)
 				{
 					__m128i dstColor_vec128 = _mm_load_si128((__m128i *)(dst + i));
-					dstColor_vec128 = _mm_and_si128(dstColor_vec128, _mm_set1_epi16(0x7FFF));
-					
-					dst[i+7] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 7) ];
-					dst[i+6] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 6) ];
-					dst[i+5] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 5) ];
-					dst[i+4] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 4) ];
-					dst[i+3] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 3) ];
-					dst[i+2] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 2) ];
-					dst[i+1] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 1) ];
-					dst[i+0] = GPUEngineBase::_fadeInColors[intensity][ _mm_extract_epi16(dstColor_vec128, 0) ];
+					_mm_store_si128( (__m128i *)(dst + i), this->_ColorEffectIncreaseBrightness(dstColor_vec128, intensity_vec128) );
 				}
 #endif
 				for (; i < pixCount; i++)
@@ -2851,20 +2844,13 @@ void GPUEngineBase::ApplyMasterBrightness()
 				size_t i = 0;
 				
 #ifdef ENABLE_SSE2
+				__m128i intensity_vec128 = _mm_set1_epi16(intensity);
+				
 				const size_t ssePixCount = pixCount - (pixCount % 8);
 				for (; i < ssePixCount; i += 8)
 				{
 					__m128i dstColor_vec128 = _mm_load_si128((__m128i *)(dst + i));
-					dstColor_vec128 = _mm_and_si128(dstColor_vec128, _mm_set1_epi16(0x7FFF));
-					
-					dst[i+7] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 7) ];
-					dst[i+6] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 6) ];
-					dst[i+5] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 5) ];
-					dst[i+4] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 4) ];
-					dst[i+3] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 3) ];
-					dst[i+2] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 2) ];
-					dst[i+1] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 1) ];
-					dst[i+0] = GPUEngineBase::_fadeOutColors[intensity][ _mm_extract_epi16(dstColor_vec128, 0) ];
+					_mm_store_si128( (__m128i *)(dst + i), this->_ColorEffectDecreaseBrightness(dstColor_vec128, intensity_vec128) );
 				}
 #endif
 				for (; i < pixCount; i++)
