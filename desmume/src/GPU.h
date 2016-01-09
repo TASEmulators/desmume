@@ -1198,7 +1198,9 @@ protected:
 	template<rot_fun fun, bool WRAP> void _rot_scale_op(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG, const s32 wh, const s32 ht, const u32 map, const u32 tile, const u16 *__restrict pal);
 	template<GPULayerID LAYERID, rot_fun fun> void _apply_rot_fun(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG, const u32 map, const u32 tile, const u16 *__restrict pal);
 	
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_TextBG(u16 *__restrict dstColorLine, const u16 lineIndex, u16 XBG, u16 YBG, u16 LG);
+	TILEENTRY _GetTileEntry(const u32 tileMapAddress, const u16 xOffset, const u16 layerWidthMask);
+	
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_TextBG(u16 *__restrict dstColorLine, const u16 lineIndex, const u16 XBG, const u16 YBG, const u16 LG);
 	
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _RotBG2(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG);
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _ExtRotBG2(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG);
@@ -1240,7 +1242,7 @@ protected:
 	FORCEINLINE __m128i _ColorEffectIncreaseBrightness(const __m128i &col, const __m128i &blendEVY);
 	FORCEINLINE __m128i _ColorEffectDecreaseBrightness(const __m128i &col, const __m128i &blendEVY);
 	template<GPULayerID LAYERID, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel_CheckWindows_SSE2(const size_t dstX, __m128i &didPassWindowTest, __m128i &enableColorEffect) const;
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel_SSE2(const size_t srcX, const u16 *__restrict src, const u8 *__restrict srcAlpha, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel_SSE2(const size_t dstX, const __m128i &srcColorHi_vec128, const __m128i &srcColorLo_vec128, const __m128i &srcOpaqueMask, const u8 *__restrict srcAlpha, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
 	template<bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel3D_SSE2(const size_t srcX, const FragmentColor *__restrict src, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
 #endif
 	
