@@ -118,7 +118,7 @@ const CACHE_ALIGN u8 GPUEngineBase::_winEmpty[GPU_FRAMEBUFFER_NATIVE_WIDTH] = {
 //			BACKGROUND RENDERING -ROTOSCALE-
 /*****************************************************************************/
 
-template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
+template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
 FORCEINLINE void rot_tiled_8bit_entry(GPUEngineBase *gpu, u16 *__restrict dstColorLine, const u16 lineIndex, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *__restrict pal, const size_t i)
 {
 	const u16 tileindex = *(u8*)MMU_gpu_map(map + ((auxX>>3) + (auxY>>3) * (lg>>3)));
@@ -127,10 +127,10 @@ FORCEINLINE void rot_tiled_8bit_entry(GPUEngineBase *gpu, u16 *__restrict dstCol
 	const u8 palette_entry = *(u8*)MMU_gpu_map(tile + ((tileindex<<6)+(y<<3)+x));
 	const u16 color = LE_TO_LOCAL_16( pal[palette_entry] );
 	
-	gpu->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, i, (palette_entry != 0));
+	gpu->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, i, (palette_entry != 0));
 }
 
-template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool extPal, bool ISCUSTOMRENDERINGNEEDED>
+template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool COLOREFFECTDISABLEDHINT, bool EXTPAL, bool ISCUSTOMRENDERINGNEEDED>
 FORCEINLINE void rot_tiled_16bit_entry(GPUEngineBase *gpu, u16 *__restrict dstColorLine, const u16 lineIndex, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *__restrict pal, const size_t i)
 {
 	TILEENTRY tileentry;
@@ -139,26 +139,26 @@ FORCEINLINE void rot_tiled_16bit_entry(GPUEngineBase *gpu, u16 *__restrict dstCo
 	const u16 x = ((tileentry.bits.HFlip) ? 7 - (auxX) : (auxX)) & 7;
 	const u16 y = ((tileentry.bits.VFlip) ? 7 - (auxY) : (auxY)) & 7;
 	const u8 palette_entry = *(u8*)MMU_gpu_map(tile + ((tileentry.bits.TileNum<<6)+(y<<3)+x));
-	const u16 color = LE_TO_LOCAL_16( pal[(palette_entry + (extPal ? (tileentry.bits.Palette<<8) : 0))] );
+	const u16 color = LE_TO_LOCAL_16( pal[(palette_entry + (EXTPAL ? (tileentry.bits.Palette<<8) : 0))] );
 	
-	gpu->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, i, (palette_entry != 0));
+	gpu->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, i, (palette_entry != 0));
 }
 
-template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
+template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
 FORCEINLINE void rot_256_map(GPUEngineBase *gpu, u16 *__restrict dstColorLine, const u16 lineIndex, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *__restrict pal, const size_t i)
 {
 	const u8 palette_entry = *(u8*)MMU_gpu_map((map) + ((auxX + auxY * lg)));
 	const u16 color = LE_TO_LOCAL_16( pal[palette_entry] );
 	
-	gpu->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, i, (palette_entry != 0));
+	gpu->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, i, (palette_entry != 0));
 }
 
-template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM>
+template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM>
 FORCEINLINE void rot_BMP_map(GPUEngineBase *gpu, u16 *__restrict dstColorLine, const u16 lineIndex, const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *__restrict pal, const size_t i)
 {
 	const u16 color = LE_TO_LOCAL_16( *(u16 *)MMU_gpu_map((map) + ((auxX + auxY * lg) << 1)) );
 	
-	gpu->___setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED, USECUSTOMVRAM>(dstColorLine, lineIndex, color, i, ((color & 0x8000) != 0));
+	gpu->___setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, USECUSTOMVRAM>(dstColorLine, lineIndex, color, i, ((color & 0x8000) != 0));
 }
 
 void gpu_savestate(EMUFILE* os)
@@ -1251,7 +1251,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel_CheckWindows_SSE2(const size_t dstX
 /*****************************************************************************/
 //			PIXEL RENDERING
 /*****************************************************************************/
-template <GPULayerID LAYERID, bool ISDEBUGRENDER>
+template <GPULayerID LAYERID, bool ISDEBUGRENDER, bool COLOREFFECTDISABLEDHINT>
 FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const u16 src, const u8 srcAlpha, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine)
 {
 	if (ISDEBUGRENDER)
@@ -1273,12 +1273,20 @@ FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const u16 src, c
 		return;
 	}
 	
+	const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
+	
+	if ((LAYERID != GPULayerID_OBJ) && COLOREFFECTDISABLEDHINT)
+	{
+		*dstColorLine = src | 0x8000;
+		*dstLayerIDLine = LAYERID;
+		return;
+	}
+	
 	ColorEffect selectedEffect = ColorEffect_Disable;
 	TBlendTable *selectedBlendTable = this->_blendTable;
 	
 	if (enableColorEffect)
 	{
-		const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
 		const GPULayerID dstLayerID = (GPULayerID)*dstLayerIDLine;
 		bool srcEffectEnable = false;
 		const bool dstEffectEnable = (dstLayerID != LAYERID) && this->_blend2[dstLayerID];
@@ -1735,7 +1743,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D_SSE2(const size_t dstX,
 
 #endif
 
-template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM>
+template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM>
 FORCEINLINE void GPUEngineBase::____setFinalColorBck(u16 *__restrict dstColorLine, const u16 lineIndex, const u16 color, const size_t srcX)
 {
 	if (ISCUSTOMRENDERINGNEEDED)
@@ -1752,11 +1760,11 @@ FORCEINLINE void GPUEngineBase::____setFinalColorBck(u16 *__restrict dstColorLin
 			{
 				const size_t dstX = _gpuDstPitchIndex[srcX] + p;
 				
-				this->_RenderPixel<LAYERID, ISDEBUGRENDER>(srcX,
-														   (USECUSTOMVRAM) ? srcLine[dstX] : color,
-														   0,
-														   dstColorLine + dstX,
-														   dstLayerIDLine + dstX);
+				this->_RenderPixel<LAYERID, ISDEBUGRENDER, COLOREFFECTDISABLEDHINT>(srcX,
+																					(USECUSTOMVRAM) ? srcLine[dstX] : color,
+																					0,
+																					dstColorLine + dstX,
+																					dstLayerIDLine + dstX);
 			}
 			
 			dstColorLine += dispInfo.customWidth;
@@ -1765,17 +1773,17 @@ FORCEINLINE void GPUEngineBase::____setFinalColorBck(u16 *__restrict dstColorLin
 	}
 	else
 	{
-		this->_RenderPixel<LAYERID, ISDEBUGRENDER>(srcX,
-												   color,
-												   0,
-												   dstColorLine + srcX,
-												   this->_dstLayerID + srcX);
+		this->_RenderPixel<LAYERID, ISDEBUGRENDER, COLOREFFECTDISABLEDHINT>(srcX,
+																			color,
+																			0,
+																			dstColorLine + srcX,
+																			this->_dstLayerID + srcX);
 	}
 }
 
 //this was forced inline because most of the time it just falls through to setFinalColorBck() and the function call
 //overhead was ridiculous and terrible
-template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM>
+template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, bool USECUSTOMVRAM>
 FORCEINLINE void GPUEngineBase::___setFinalColorBck(u16 *dstColorLine, const u16 lineIndex, u16 color, const size_t srcX, const bool opaque)
 {
 	//due to this early out, we will get incorrect behavior in cases where 
@@ -1784,7 +1792,7 @@ FORCEINLINE void GPUEngineBase::___setFinalColorBck(u16 *dstColorLine, const u16
 	{
 		if (opaque)
 		{
-			this->____setFinalColorBck<LAYERID, ISDEBUGRENDER, ISCUSTOMRENDERINGNEEDED, USECUSTOMVRAM>(dstColorLine, lineIndex, color, srcX);
+			this->____setFinalColorBck<LAYERID, ISDEBUGRENDER, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, USECUSTOMVRAM>(dstColorLine, lineIndex, color, srcX);
 		}
 	}
 	else
@@ -1806,15 +1814,15 @@ FORCEINLINE void GPUEngineBase::___setFinalColorBck(u16 *dstColorLine, const u16
 		
 		if (color != 0xFFFF)
 		{
-			this->____setFinalColorBck<LAYERID, ISDEBUGRENDER, ISCUSTOMRENDERINGNEEDED, USECUSTOMVRAM>(dstColorLine, lineIndex, color, srcX);
+			this->____setFinalColorBck<LAYERID, ISDEBUGRENDER, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, USECUSTOMVRAM>(dstColorLine, lineIndex, color, srcX);
 		}
 	}
 }
 
-template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
+template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
 FORCEINLINE void GPUEngineBase::__setFinalColorBck(u16 *dstColorLine, const u16 lineIndex, const u16 color, const size_t srcX, const bool opaque)
 {
-	return ___setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED, false>(dstColorLine, lineIndex, color, srcX, opaque);
+	return ___setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, false>(dstColorLine, lineIndex, color, srcX, opaque);
 }
 
 //this is fantastically inaccurate.
@@ -1935,7 +1943,7 @@ TILEENTRY GPUEngineBase::_GetTileEntry(const u32 tileMapAddress, const u16 xOffs
 //			BACKGROUND RENDERING -TEXT-
 /*****************************************************************************/
 // render a text background to the combined pixelbuffer
-template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
+template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_RenderLine_TextBG(u16 *__restrict dstColorLine, const u16 lineIndex, const u16 XBG, const u16 YBG, const u16 LG)
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
@@ -1979,7 +1987,7 @@ void GPUEngineBase::_RenderLine_TextBG(u16 *__restrict dstColorLine, const u16 l
 					{
 						offset = *line >> 4;
 						const u16 color = LE_TO_LOCAL_16( pal[offset + tilePalette] );
-						this->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, x, (offset != 0));
+						this->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, x, (offset != 0));
 						x++; xoff++;
 					}
 					
@@ -1987,7 +1995,7 @@ void GPUEngineBase::_RenderLine_TextBG(u16 *__restrict dstColorLine, const u16 l
 					{
 						offset = *line & 0xF;
 						const u16 color = LE_TO_LOCAL_16( pal[offset + tilePalette] );
-						this->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, x, (offset != 0));
+						this->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, x, (offset != 0));
 						x++; xoff++;
 					}
 				}
@@ -2001,7 +2009,7 @@ void GPUEngineBase::_RenderLine_TextBG(u16 *__restrict dstColorLine, const u16 l
 					{
 						offset = *line & 0xF;
 						const u16 color = LE_TO_LOCAL_16( pal[offset + tilePalette] );
-						this->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, x, (offset != 0));
+						this->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, x, (offset != 0));
 						x++; xoff++;
 					}
 					
@@ -2009,7 +2017,7 @@ void GPUEngineBase::_RenderLine_TextBG(u16 *__restrict dstColorLine, const u16 l
 					{
 						offset = *line >> 4;
 						const u16 color = LE_TO_LOCAL_16( pal[offset + tilePalette] );
-						this->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, x, (offset != 0));
+						this->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, x, (offset != 0));
 						x++; xoff++;
 					}
 				}
@@ -2043,7 +2051,7 @@ void GPUEngineBase::_RenderLine_TextBG(u16 *__restrict dstColorLine, const u16 l
 			while (x < xfin)
 			{
 				const u16 color = LE_TO_LOCAL_16(tilePal[*line]);
-				this->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, x, (*line != 0));
+				this->__setFinalColorBck<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, color, x, (*line != 0));
 				
 				x++;
 				xoff++;
@@ -2053,14 +2061,14 @@ void GPUEngineBase::_RenderLine_TextBG(u16 *__restrict dstColorLine, const u16 l
 	}
 }
 
-template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
+template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_RotBG2(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG)
 {
 //	printf("rot mode\n");
-	this->_apply_rot_fun< LAYERID, rot_tiled_8bit_entry<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].tileMapAddress, this->_BGLayer[LAYERID].tileEntryAddress, this->_paletteBG);
+	this->_apply_rot_fun< LAYERID, rot_tiled_8bit_entry<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].tileMapAddress, this->_BGLayer[LAYERID].tileEntryAddress, this->_paletteBG);
 }
 
-template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
+template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_ExtRotBG2(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u16 LG)
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
@@ -2074,34 +2082,34 @@ void GPUEngineBase::_ExtRotBG2(u16 *__restrict dstColorLine, const u16 lineIndex
 			if (DISPCNT.ExBGxPalette_Enable)
 			{
 				pal = *(this->_BGLayer[LAYERID].extPalette);
-				this->_apply_rot_fun< LAYERID, rot_tiled_16bit_entry<LAYERID, ISDEBUGRENDER, MOSAIC, true, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].tileMapAddress, this->_BGLayer[LAYERID].tileEntryAddress, pal);
+				this->_apply_rot_fun< LAYERID, rot_tiled_16bit_entry<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, true, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].tileMapAddress, this->_BGLayer[LAYERID].tileEntryAddress, pal);
 			}
 			else
 			{
-				this->_apply_rot_fun< LAYERID, rot_tiled_16bit_entry<LAYERID, ISDEBUGRENDER, MOSAIC, false, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].tileMapAddress, this->_BGLayer[LAYERID].tileEntryAddress, pal);
+				this->_apply_rot_fun< LAYERID, rot_tiled_16bit_entry<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, false, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].tileMapAddress, this->_BGLayer[LAYERID].tileEntryAddress, pal);
 			}
 			break;
 		}
 			
 		case BGType_AffineExt_256x1: // 256 colors
-			this->_apply_rot_fun< LAYERID, rot_256_map<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].BMPAddress, 0, pal);
+			this->_apply_rot_fun< LAYERID, rot_256_map<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].BMPAddress, 0, pal);
 			break;
 			
 		case BGType_AffineExt_Direct: // direct colors / BMP
 		{
 			if (ISCUSTOMRENDERINGNEEDED && (LAYERID == this->vramBGLayer))
 			{
-				this->_apply_rot_fun< LAYERID, rot_BMP_map<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED, true> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].BMPAddress, 0, pal);
+				this->_apply_rot_fun< LAYERID, rot_BMP_map<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, true> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].BMPAddress, 0, pal);
 			}
 			else
 			{
-				this->_apply_rot_fun< LAYERID, rot_BMP_map<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED, false> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].BMPAddress, 0, pal);
+				this->_apply_rot_fun< LAYERID, rot_BMP_map<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, false> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].BMPAddress, 0, pal);
 			}
 			break;
 		}
 			
 		case BGType_Large8bpp: // large screen 256 colors
-			this->_apply_rot_fun< LAYERID, rot_256_map<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].largeBMPAddress, 0, pal);
+			this->_apply_rot_fun< LAYERID, rot_256_map<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED> >(dstColorLine, lineIndex, param, LG, this->_BGLayer[LAYERID].largeBMPAddress, 0, pal);
 			break;
 			
 		default:
@@ -2113,50 +2121,50 @@ void GPUEngineBase::_ExtRotBG2(u16 *__restrict dstColorLine, const u16 lineIndex
 //			BACKGROUND RENDERING -HELPER FUNCTIONS-
 /*****************************************************************************/
 
-template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
+template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_LineText(u16 *__restrict dstColorLine, const u16 lineIndex)
 {
 	if (ISDEBUGRENDER)
 	{
-		this->_RenderLine_TextBG<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, 0, lineIndex, this->_BGLayer[LAYERID].size.width);
+		this->_RenderLine_TextBG<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, 0, lineIndex, this->_BGLayer[LAYERID].size.width);
 	}
 	else
 	{
-		this->_RenderLine_TextBG<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, this->_BGLayer[LAYERID].xOffset, lineIndex + this->_BGLayer[LAYERID].yOffset, 256);
+		this->_RenderLine_TextBG<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, this->_BGLayer[LAYERID].xOffset, lineIndex + this->_BGLayer[LAYERID].yOffset, 256);
 	}
 }
 
-template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
+template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_LineRot(u16 *__restrict dstColorLine, const u16 lineIndex)
 {
 	if (ISDEBUGRENDER)
 	{
 		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, (s16)(lineIndex*GPU_FRAMEBUFFER_NATIVE_WIDTH)};
-		this->_RotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, debugParams, this->_BGLayer[LAYERID].size.width);
+		this->_RotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, debugParams, this->_BGLayer[LAYERID].size.width);
 	}
 	else
 	{
 		IOREG_BGnParameter *__restrict bgParams = (LAYERID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
 		
-		this->_RotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, *bgParams, 256);
+		this->_RotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, *bgParams, 256);
 		bgParams->BGnX.value += bgParams->BGnPB.value;
 		bgParams->BGnY.value += bgParams->BGnPD.value;
 	}
 }
 
-template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
+template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_LineExtRot(u16 *__restrict dstColorLine, const u16 lineIndex)
 {
 	if (ISDEBUGRENDER)
 	{
 		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, (s16)(lineIndex*GPU_FRAMEBUFFER_NATIVE_WIDTH)};
-		this->_ExtRotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, debugParams, this->_BGLayer[LAYERID].size.width);
+		this->_ExtRotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, debugParams, this->_BGLayer[LAYERID].size.width);
 	}
 	else
 	{
 		IOREG_BGnParameter *__restrict bgParams = (LAYERID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
 		
-		this->_ExtRotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, *bgParams, 256);
+		this->_ExtRotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, *bgParams, 256);
 		bgParams->BGnX.value += bgParams->BGnPB.value;
 		bgParams->BGnY.value += bgParams->BGnPD.value;
 	}
@@ -3012,17 +3020,37 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex,
 template <GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_RenderLine_LayerBG(u16 *dstColorLine, const u16 lineIndex)
 {
-	switch (GPUEngineBase::_mode2type[this->_IORegisterMap->DISPCNT.BG_Mode][LAYERID])
+	const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
+	
+	if (BLDCNT.ColorEffect == ColorEffect_Disable)
 	{
-		case BGType_Text: this->_LineText<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex); break;
-		case BGType_Affine: this->_LineRot<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex); break;
-		case BGType_AffineExt: this->_LineExtRot<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex); break;
-		case BGType_Large8bpp: this->_LineExtRot<LAYERID, ISDEBUGRENDER, MOSAIC, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex); break;
-		case BGType_Invalid: 
-			PROGINFO("Attempting to render an invalid BG type\n");
-			break;
-		default:
-			break;
+		switch (GPUEngineBase::_mode2type[this->_IORegisterMap->DISPCNT.BG_Mode][LAYERID])
+		{
+			case BGType_Text: this->_LineText<LAYERID, ISDEBUGRENDER, MOSAIC, true, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex); break;
+			case BGType_Affine: this->_LineRot<LAYERID, ISDEBUGRENDER, MOSAIC, true, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex); break;
+			case BGType_AffineExt: this->_LineExtRot<LAYERID, ISDEBUGRENDER, MOSAIC, true, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex); break;
+			case BGType_Large8bpp: this->_LineExtRot<LAYERID, ISDEBUGRENDER, MOSAIC, true, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex); break;
+			case BGType_Invalid:
+				PROGINFO("Attempting to render an invalid BG type\n");
+				break;
+			default:
+				break;
+		}
+	}
+	else
+	{
+		switch (GPUEngineBase::_mode2type[this->_IORegisterMap->DISPCNT.BG_Mode][LAYERID])
+		{
+			case BGType_Text: this->_LineText<LAYERID, ISDEBUGRENDER, MOSAIC, false, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex); break;
+			case BGType_Affine: this->_LineRot<LAYERID, ISDEBUGRENDER, MOSAIC, false, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex); break;
+			case BGType_AffineExt: this->_LineExtRot<LAYERID, ISDEBUGRENDER, MOSAIC, false, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex); break;
+			case BGType_Large8bpp: this->_LineExtRot<LAYERID, ISDEBUGRENDER, MOSAIC, false, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex); break;
+			case BGType_Invalid:
+				PROGINFO("Attempting to render an invalid BG type\n");
+				break;
+			default:
+				break;
+		}
 	}
 }
 
@@ -3647,11 +3675,11 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 						{
 							const size_t dstX = _gpuDstPitchIndex[srcX] + p;
 							
-							this->_RenderPixel<GPULayerID_OBJ, false>(srcX,
-																	  (useCustomVRAM) ? srcLine[dstX] : this->_sprColor[srcX],
-																	  this->_sprAlpha[srcX],
-																	  dstColorLinePtr + dstX,
-																	  layerIDLine + dstX);
+							this->_RenderPixel<GPULayerID_OBJ, false, false>(srcX,
+																			 (useCustomVRAM) ? srcLine[dstX] : this->_sprColor[srcX],
+																			 this->_sprAlpha[srcX],
+																			 dstColorLinePtr + dstX,
+																			 layerIDLine + dstX);
 						}
 					}
 					
@@ -3666,11 +3694,11 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 				{
 					const size_t srcX = item->PixelsX[i];
 					
-					this->_RenderPixel<GPULayerID_OBJ, false>(srcX,
-															  this->_sprColor[srcX],
-															  this->_sprAlpha[srcX],
-															  dstColorLinePtr + srcX,
-															  layerIDLine + srcX);
+					this->_RenderPixel<GPULayerID_OBJ, false, false>(srcX,
+																	 this->_sprColor[srcX],
+																	 this->_sprAlpha[srcX],
+																	 dstColorLinePtr + srcX,
+																	 layerIDLine + srcX);
 				}
 			}
 		}
@@ -4509,11 +4537,11 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 						{
 							const size_t dstX = _gpuDstPitchIndex[srcX] + p;
 							
-							this->_RenderPixel<GPULayerID_OBJ, false>(srcX,
-																	  (useCustomVRAM) ? srcLine[dstX] : this->_sprColor[srcX],
-																	  this->_sprAlpha[srcX],
-																	  dstColorLinePtr + dstX,
-																	  layerIDLine + dstX);
+							this->_RenderPixel<GPULayerID_OBJ, false, false>(srcX,
+																			 (useCustomVRAM) ? srcLine[dstX] : this->_sprColor[srcX],
+																			 this->_sprAlpha[srcX],
+																			 dstColorLinePtr + dstX,
+																			 layerIDLine + dstX);
 						}
 					}
 					
@@ -4528,11 +4556,11 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 				{
 					const size_t srcX = item->PixelsX[i];
 					
-					this->_RenderPixel<GPULayerID_OBJ, false>(srcX,
-															  this->_sprColor[srcX],
-															  this->_sprAlpha[srcX],
-															  dstColorLinePtr + srcX,
-															  layerIDLine + srcX);
+					this->_RenderPixel<GPULayerID_OBJ, false, false>(srcX,
+																	 this->_sprColor[srcX],
+																	 this->_sprAlpha[srcX],
+																	 dstColorLinePtr + srcX,
+																	 layerIDLine + srcX);
 				}
 			}
 		}
