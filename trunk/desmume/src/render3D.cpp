@@ -529,26 +529,11 @@ Render3DError Render3D_SSE2::FlushFramebuffer(FragmentColor *__restrict dstRGBA6
 		
 		__m128i a = _mm_and_si128(color, _mm_set1_epi32(0xFF000000));	// Read from A
 		a = _mm_cmpeq_epi32(a, zero_vec128);							// Determine A
+		a = _mm_andnot_si128(a, _mm_set1_epi16(0x00008000));			// Retrieve the alpha bit
 		
-		// From here on, we're going to do an SSE2 trick to pack 32-bit down to unsigned
-		// 16-bit. Since SSE2 only has packssdw (signed 16-bit pack), then the alpha bit
-		// may be undefined. Now if we were using SSE4.1's packusdw (unsigned 16-bit pack),
-		// we  wouldn't have to go through this hassle. But not everyone has an SSE4.1-capable
-		// CPU, so doing this the SSE2 way is more guaranteed to work an everyone's CPU.
-		//
-		// To use packssdw, we take a bit one position lower for the alpha bit, run
-		// packssdw, then shift the bit back to its original position. Then we por the
-		// alpha vector with the post-packed color vector to get the final color.
-		
-		a = _mm_andnot_si128(a, _mm_set1_epi32(0x00004000));			// Mask out the bit before A
-		a = _mm_packs_epi32(a, zero_vec128);							// Pack 32-bit down to 16-bit
-		a = _mm_slli_epi16(a, 1);										// Shift the A bit back to where it needs to be
-		
-		// Assemble the RGB colors, pack the 32-bit color into a signed 16-bit color, then por the alpha bit back in.
-		color = _mm_or_si128(_mm_or_si128(r, g), b);
+		// Assemble, pack, and store the color.
+		color = _mm_or_si128(_mm_or_si128(_mm_or_si128(r, g), b), a);
 		color = _mm_packs_epi32(color, zero_vec128);
-		color = _mm_or_si128(color, a);
-		
 		_mm_storel_epi64((__m128i *)(dstRGBA5551 + i), color);
 	}
 	
