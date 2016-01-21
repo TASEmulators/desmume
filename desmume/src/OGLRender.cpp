@@ -938,10 +938,7 @@ Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA
 			a = _mm_andnot_si128(a, _mm_set1_epi32(0x00008000));			// Mask to A
 			
 			color = _mm_or_si128(_mm_or_si128(_mm_or_si128(b, g), r), a);
-			
-			// All the colors are currently placed every other 16 bits, so we need to swizzle them
-			// to the lower 64 bits of our vector before we store them back to memory.
-			color = _mm_shuffle_epi8(color, _mm_set_epi8(15, 14, 11, 10, 7, 6, 3, 2, 13, 12, 9, 8, 5, 4, 1, 0));
+			color = _mm_packs_epi32(color, _mm_setzero_si128());
 			_mm_storel_epi64((__m128i *)(dstRGBA5551 + iw), color);
 		}
 #endif // defined(ENABLE_SSSE3) && defined(LOCAL_LE)
