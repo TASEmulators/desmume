@@ -2297,11 +2297,14 @@ void GPUEngineBase::_RenderPixelsCustom(u16 *__restrict dstColorLine, u8 *__rest
 			const __m128i mosaicHeightMask = _mm_cmpeq_epi16(_mm_set1_epi16(this->_mosaicHeightBG[lineIndex].begin), _mm_setzero_si128());
 			const __m128i mosaicMask = _mm_or_si128(mosaicWidthMask, mosaicHeightMask);
 			
-			for (size_t i = 0, m = x; i < 8; i++, m++)
-			{
-				const u16 mosaicColor = (_mm_extract_epi16(mosaicMask, i) != 0) ? this->_mosaicColors.bg[LAYERID][this->_mosaicWidthBG[m].trunc] : _mm_extract_epi16(tmpColor_vec128, i);
-				this->_mosaicColors.bg[LAYERID][m] = mosaicColor;
-			}
+			this->_mosaicColors.bg[LAYERID][x+0] = (_mm_extract_epi16(mosaicMask, 0) != 0) ? this->_mosaicColors.bg[LAYERID][this->_mosaicWidthBG[x+0].trunc] : _mm_extract_epi16(tmpColor_vec128, 0);
+			this->_mosaicColors.bg[LAYERID][x+1] = (_mm_extract_epi16(mosaicMask, 1) != 0) ? this->_mosaicColors.bg[LAYERID][this->_mosaicWidthBG[x+1].trunc] : _mm_extract_epi16(tmpColor_vec128, 1);
+			this->_mosaicColors.bg[LAYERID][x+2] = (_mm_extract_epi16(mosaicMask, 2) != 0) ? this->_mosaicColors.bg[LAYERID][this->_mosaicWidthBG[x+2].trunc] : _mm_extract_epi16(tmpColor_vec128, 2);
+			this->_mosaicColors.bg[LAYERID][x+3] = (_mm_extract_epi16(mosaicMask, 3) != 0) ? this->_mosaicColors.bg[LAYERID][this->_mosaicWidthBG[x+3].trunc] : _mm_extract_epi16(tmpColor_vec128, 3);
+			this->_mosaicColors.bg[LAYERID][x+4] = (_mm_extract_epi16(mosaicMask, 4) != 0) ? this->_mosaicColors.bg[LAYERID][this->_mosaicWidthBG[x+4].trunc] : _mm_extract_epi16(tmpColor_vec128, 4);
+			this->_mosaicColors.bg[LAYERID][x+5] = (_mm_extract_epi16(mosaicMask, 5) != 0) ? this->_mosaicColors.bg[LAYERID][this->_mosaicWidthBG[x+5].trunc] : _mm_extract_epi16(tmpColor_vec128, 5);
+			this->_mosaicColors.bg[LAYERID][x+6] = (_mm_extract_epi16(mosaicMask, 6) != 0) ? this->_mosaicColors.bg[LAYERID][this->_mosaicWidthBG[x+6].trunc] : _mm_extract_epi16(tmpColor_vec128, 6);
+			this->_mosaicColors.bg[LAYERID][x+7] = (_mm_extract_epi16(mosaicMask, 7) != 0) ? this->_mosaicColors.bg[LAYERID][this->_mosaicWidthBG[x+7].trunc] : _mm_extract_epi16(tmpColor_vec128, 7);
 			
 			const __m128i mosaicColor_vec128 = _mm_loadu_si128((__m128i *)(this->_mosaicColors.bg[LAYERID] + x));
 			const __m128i mosaicColorMask = _mm_cmpeq_epi16(mosaicColor_vec128, _mm_set1_epi16(0xFFFF));
@@ -2704,7 +2707,7 @@ void GPUEngineBase::_LineRot(u16 *__restrict dstColorLine, const u16 lineIndex)
 {
 	if (ISDEBUGRENDER)
 	{
-		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, (s16)(lineIndex*GPU_FRAMEBUFFER_NATIVE_WIDTH)};
+		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, lineIndex*GPU_FRAMEBUFFER_NATIVE_WIDTH};
 		this->_RotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, debugParams, this->_BGLayer[LAYERID].size.width);
 	}
 	else
@@ -2722,7 +2725,7 @@ void GPUEngineBase::_LineExtRot(u16 *__restrict dstColorLine, const u16 lineInde
 {
 	if (ISDEBUGRENDER)
 	{
-		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, (s16)(lineIndex*GPU_FRAMEBUFFER_NATIVE_WIDTH)};
+		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, lineIndex*GPU_FRAMEBUFFER_NATIVE_WIDTH};
 		this->_ExtRotBG2<LAYERID, ISDEBUGRENDER, MOSAIC, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, debugParams, this->_BGLayer[LAYERID].size.width);
 	}
 	else
