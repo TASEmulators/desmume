@@ -1293,7 +1293,6 @@ public:
 	void FramebufferPostprocess();
 	
 	bool isCustomRenderingNeeded;
-	bool is3DEnabled;
 	u8 vramBGLayer;
 	u8 vramBlockBGIndex;
 	u8 vramBlockOBJIndex;
