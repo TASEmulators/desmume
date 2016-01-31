@@ -26,14 +26,6 @@
 #include <algorithm>
 #include <iostream>
 
-#ifdef ENABLE_SSE2
-#include <emmintrin.h>
-#endif
-
-#ifdef ENABLE_SSSE3
-#include <tmmintrin.h>
-#endif
-
 #include "common.h"
 #include "MMU.h"
 #include "FIFO.h"
@@ -447,6 +439,10 @@ void GPUEngineBase::_Reset_Base()
 	this->_blend2[GPULayerID_BG3] = false;
 	this->_blend2[GPULayerID_OBJ] = false;
 	this->_blend2[GPULayerID_Backdrop] = false;
+	
+#ifdef ENABLE_SSSE3
+	this->_blend2_SSSE3 = _mm_setzero_si128();
+#endif
 	
 	this->_isMasterBrightFullIntensity = false;
 	
@@ -1636,6 +1632,10 @@ FORCEINLINE void GPUEngineBase::_RenderPixel16_SSE2(const size_t dstX,
 			break;
 	}
 	const __m128i srcEffectEnableMask = _mm_cmpeq_epi8(_mm_set1_epi8(srcEffectEnableValue), _mm_set1_epi8(1));
+	
+#ifdef ENABLE_SSSE3
+	__m128i dstEffectEnableMask = _mm_shuffle_epi8(this->_blend2_SSSE3, dstLayerID_vec128);
+#else
 	__m128i dstEffectEnableMask = _mm_set_epi8(this->_blend2[dstLayerIDLine[15]],
 											   this->_blend2[dstLayerIDLine[14]],
 											   this->_blend2[dstLayerIDLine[13]],
@@ -1652,6 +1652,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel16_SSE2(const size_t dstX,
 											   this->_blend2[dstLayerIDLine[ 2]],
 											   this->_blend2[dstLayerIDLine[ 1]],
 											   this->_blend2[dstLayerIDLine[ 0]]);
+#endif
 	
 	dstEffectEnableMask = _mm_and_si128(_mm_xor_si128(_mm_cmpeq_epi8(dstLayerID_vec128, _mm_set1_epi8(LAYERID)), _mm_set1_epi32(0xFFFFFFFF)),
 										_mm_xor_si128(_mm_cmpeq_epi8(dstEffectEnableMask, _mm_setzero_si128()), _mm_set1_epi32(0xFFFFFFFF)) );
@@ -1800,6 +1801,10 @@ FORCEINLINE void GPUEngineBase::_RenderPixel8_SSE2(const size_t dstX,
 			break;
 	}
 	const __m128i srcEffectEnableMask = _mm_cmpeq_epi16(_mm_set1_epi16(srcEffectEnableValue), _mm_set1_epi16(1));
+	
+#ifdef ENABLE_SSSE3
+	__m128i dstEffectEnableMask = _mm_unpacklo_epi8( _mm_shuffle_epi8(this->_blend2_SSSE3, dstLayerID_vec128), _mm_setzero_si128() );
+#else
 	__m128i dstEffectEnableMask = _mm_set_epi16(this->_blend2[dstLayerIDLine[7]],
 												this->_blend2[dstLayerIDLine[6]],
 												this->_blend2[dstLayerIDLine[5]],
@@ -1808,6 +1813,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel8_SSE2(const size_t dstX,
 												this->_blend2[dstLayerIDLine[2]],
 												this->_blend2[dstLayerIDLine[1]],
 												this->_blend2[dstLayerIDLine[0]]);
+#endif
 	
 	dstEffectEnableMask = _mm_and_si128( _mm_xor_si128(_mm_cmpeq_epi16(_mm_unpacklo_epi8(dstLayerID_vec128, _mm_setzero_si128()), _mm_set1_epi16(LAYERID)), _mm_set1_epi32(0xFFFFFFFF)),
 										 _mm_xor_si128(_mm_cmpeq_epi16(dstEffectEnableMask, _mm_setzero_si128()), _mm_set1_epi32(0xFFFFFFFF)) );
@@ -2008,6 +2014,10 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D_SSE2(const size_t dstX,
 	
 	const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
 	const __m128i srcEffectEnableMask = _mm_cmpeq_epi8(_mm_set1_epi8(BLDCNT.BG0_Target1), _mm_set1_epi8(1));
+	
+#ifdef ENABLE_SSSE3
+	__m128i dstEffectEnableMask = _mm_shuffle_epi8(this->_blend2_SSSE3, dstLayerID_vec128);
+#else
 	__m128i dstEffectEnableMask = _mm_set_epi8(this->_blend2[dstLayerIDLine[15]],
 											   this->_blend2[dstLayerIDLine[14]],
 											   this->_blend2[dstLayerIDLine[13]],
@@ -2024,6 +2034,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D_SSE2(const size_t dstX,
 											   this->_blend2[dstLayerIDLine[ 2]],
 											   this->_blend2[dstLayerIDLine[ 1]],
 											   this->_blend2[dstLayerIDLine[ 0]]);
+#endif
 	
 	dstEffectEnableMask = _mm_and_si128(_mm_xor_si128(_mm_cmpeq_epi8(dstLayerID_vec128, _mm_set1_epi8(GPULayerID_BG0)), _mm_set1_epi32(0xFFFFFFFF)),
 										_mm_xor_si128(_mm_cmpeq_epi8(dstEffectEnableMask, _mm_setzero_si128()), _mm_set1_epi32(0xFFFFFFFF)) );
@@ -3676,6 +3687,16 @@ void GPUEngineBase::ParseReg_BLDCNT()
 	this->_blend2[GPULayerID_BG3] = (BLDCNT.BG3_Target2 != 0);
 	this->_blend2[GPULayerID_OBJ] = (BLDCNT.OBJ_Target2 != 0);
 	this->_blend2[GPULayerID_Backdrop] = (BLDCNT.Backdrop_Target2 != 0);
+	
+#ifdef ENABLE_SSSE3
+	this->_blend2_SSSE3 = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+									   BLDCNT.Backdrop_Target2,
+									   BLDCNT.OBJ_Target2,
+									   BLDCNT.BG3_Target2,
+									   BLDCNT.BG2_Target2,
+									   BLDCNT.BG1_Target2,
+									   BLDCNT.BG0_Target2);
+#endif
 }
 
 void GPUEngineBase::ParseReg_BLDALPHA()
