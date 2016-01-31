@@ -30,6 +30,10 @@
 #include <emmintrin.h>
 #endif
 
+#ifdef ENABLE_SSSE3
+#include <tmmintrin.h>
+#endif
+
 class GPUEngineBase;
 class EMUFILE;
 struct MMU_struct;
@@ -1160,6 +1164,9 @@ protected:
 	u8 _sprBMPBoundary;
 	
 	bool _blend2[6];
+#ifdef ENABLE_SSSE3
+	__m128i _blend2_SSSE3;
+#endif
 	
 	TBlendTable *_blendTable;
 	u16 *_currentFadeInColors;
