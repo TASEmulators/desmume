@@ -21,7 +21,7 @@
 #include "cocoa_globals.h"
 #include "utilities.h"
 
-#define FORCE_AUDIOCOMPONENT_10_5
+//#define FORCE_AUDIOCOMPONENT_10_5
 
 CoreAudioInput::CoreAudioInput()
 {
