@@ -4127,7 +4127,13 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 				const GPULayerID layerID = (GPULayerID)item->BGs[i];
 				if (this->_enableLayer[layerID])
 				{
-					if (layerID == GPULayerID_BG0 && this->is3DEnabled)
+					// When determining whether to render the BG0 layer as a 3D layer, we only need to
+					// check the DISPCNT.BG0_3D flag. There is no need to check the DISPCNT.BG0_Enable
+					// flag here, as this flag could be disabled while the DISPCNT.BG0_3D flag is enabled.
+					//
+					// Test case: During some conversations in Advance Wars: Dual Strike, the minimap
+					// will be rendered as garbage pixels unless the DISPCNT.BG0_Enable flag is ignored.
+					if (layerID == GPULayerID_BG0 && (this->_IORegisterMap->DISPCNT.BG0_3D != 0))
 					{
 						const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 						const float customWidthScale = (float)dispInfo.customWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
