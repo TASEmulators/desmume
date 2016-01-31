@@ -422,7 +422,6 @@ void GPUEngineBase::_Reset_Base()
 	this->_needUpdateWINH[1] = true;
 	
 	this->isCustomRenderingNeeded = false;
-	this->is3DEnabled = false;
 	this->vramBGLayer = VRAM_NO_3D_USAGE;
 	this->vramBlockBGIndex = VRAM_NO_3D_USAGE;
 	this->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
@@ -5273,7 +5272,6 @@ void GPUSubsystem::UpdateVRAM3DUsageProperties()
 	
 	this->_VRAM3DUsage.blockIndexDisplayVRAM = VRAM_NO_3D_USAGE;
 	
-	this->_engineMain->is3DEnabled = (mainDISPCNT.BG0_Enable == 1) && (mainDISPCNT.BG0_3D == 1);
 	this->_engineMain->isCustomRenderingNeeded = false;
 	this->_engineMain->vramBlockBGIndex = VRAM_NO_3D_USAGE;
 	this->_engineMain->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
@@ -5282,7 +5280,6 @@ void GPUSubsystem::UpdateVRAM3DUsageProperties()
 	this->_engineMain->renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	this->_engineMain->renderedBuffer = this->_engineMain->nativeBuffer;
 	
-	this->_engineSub->is3DEnabled = false;
 	this->_engineSub->isCustomRenderingNeeded = false;
 	this->_engineSub->vramBlockBGIndex = VRAM_NO_3D_USAGE;
 	this->_engineSub->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
@@ -5309,7 +5306,7 @@ void GPUSubsystem::UpdateVRAM3DUsageProperties()
 		return;
 	}
 	
-	this->_engineMain->isCustomRenderingNeeded = this->_engineMain->is3DEnabled;
+	this->_engineMain->isCustomRenderingNeeded = (mainDISPCNT.BG0_3D != 0);
 	
 	// Iterate through VRAM banks A-D and determine if they will be used for this frame.
 	for (size_t i = 0; i < 4; i++)
