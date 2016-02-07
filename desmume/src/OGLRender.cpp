@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -893,8 +893,13 @@ void OpenGLRenderer::SetVersion(unsigned int major, unsigned int minor, unsigned
 	this->versionRevision = revision;
 }
 
-Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
+Render3DError OpenGLRenderer::FlushFramebuffer(const FragmentColor *__restrict srcRGBA8888, FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
 {
+	if (srcRGBA8888 == NULL)
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
 	// Convert from 32-bit BGRA8888 format to 32-bit RGBA6665 reversed format. OpenGL
 	// stores pixels using a flipped Y-coordinate, so this needs to be flipped back
 	// to the DS Y-coordinate.
@@ -910,7 +915,7 @@ Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA
 		for (; x < ssePixCount; x += 4, ir += 4, iw += 4)
 		{
 			// Convert to RGBA6665
-			__m128i color = _mm_load_si128((__m128i *)(this->_framebufferColor + ir));
+			__m128i color = _mm_load_si128((__m128i *)(srcRGBA8888 + ir));
 			color = _mm_srli_epi32(color, 2);
 			
 			__m128i a = _mm_srli_epi32(color, 1); // Special handling for 5-bit alpha
@@ -922,7 +927,7 @@ Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA
 			_mm_store_si128((__m128i *)(dstRGBA6665 + iw), color);
 			
 			// Convert to RGBA5551
-			color = _mm_load_si128((__m128i *)(this->_framebufferColor + ir));
+			color = _mm_load_si128((__m128i *)(srcRGBA8888 + ir));
 			
 			__m128i b = _mm_and_si128(color, _mm_set1_epi32(0x000000F8));	// Read from R
 			b = _mm_slli_epi32(b, 7);										// Shift to B
@@ -953,22 +958,27 @@ Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA
 			// Use the correct endian format since OpenGL uses the native endian of
 			// the architecture it is running on.
 #ifdef LOCAL_BE
-			dstRGBA6665[iw].color = BGRA8888_32_To_RGBA6665_32(this->_framebufferColor[ir].color);
-			dstRGBA5551[iw] = R5G5B5TORGB15( (this->_framebufferColor[ir].b >> 3) & 0x1F,
-											 (this->_framebufferColor[ir].g >> 3) & 0x1F,
-											 (this->_framebufferColor[ir].r >> 3) & 0x1F) |
+			dstRGBA6665[iw].color = BGRA8888_32_To_RGBA6665_32(srcRGBA8888[ir].color);
+			dstRGBA5551[iw] = R5G5B5TORGB15( (srcRGBA8888[ir].b >> 3) & 0x1F,
+											 (srcRGBA8888[ir].g >> 3) & 0x1F,
+											 (srcRGBA8888[ir].r >> 3) & 0x1F) |
 											((this->_framebufferColor[ir].a == 0) ? 0x0000 : 0x8000);
 #else
-			dstRGBA6665[iw].color = BGRA8888_32Rev_To_RGBA6665_32Rev(this->_framebufferColor[ir].color);
-			dstRGBA5551[iw] = R5G5B5TORGB15( (this->_framebufferColor[ir].b >> 3) & 0x1F,
-											 (this->_framebufferColor[ir].g >> 3) & 0x1F,
-											 (this->_framebufferColor[ir].r >> 3) & 0x1F) |
-											((this->_framebufferColor[ir].a == 0) ? 0x0000 : 0x8000);
+			dstRGBA6665[iw].color = BGRA8888_32Rev_To_RGBA6665_32Rev(srcRGBA8888[ir].color);
+			dstRGBA5551[iw] = R5G5B5TORGB15( (srcRGBA8888[ir].b >> 3) & 0x1F,
+											 (srcRGBA8888[ir].g >> 3) & 0x1F,
+											 (srcRGBA8888[ir].r >> 3) & 0x1F) |
+											((srcRGBA8888[ir].a == 0) ? 0x0000 : 0x8000);
 #endif
 		}
 	}
 	
 	return RENDER3DERROR_NOERR;
+}
+
+Render3DError OpenGLRenderer::FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
+{
+	return this->FlushFramebuffer(this->_framebufferColor, dstRGBA6665, dstRGBA5551);
 }
 
 OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
@@ -2737,18 +2747,18 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 		const FragmentColor *__restrict mappedBufferPtr = (FragmentColor *__restrict)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
 		if (mappedBufferPtr != NULL)
 		{
-			memcpy(this->_framebufferColor, mappedBufferPtr, this->_framebufferColorSizeBytes);
+			this->FlushFramebuffer(mappedBufferPtr, GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 			glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
 		}
 	}
 	else
 	{
 		glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, this->_framebufferColor);
+		this->FlushFramebuffer(this->_framebufferColor, GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	}
 	
 	ENDGL();
 	
-	this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	this->_pixelReadNeedsFinish = false;
 	
 	GPU->GetEventHandler()->DidRender3DEnd();
@@ -2810,12 +2820,16 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	
 	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
 	FragmentColor *oldFramebufferColor = this->_framebufferColor;
-	FragmentColor *newFramebufferColor = (FragmentColor *)malloc_alignedCacheLine(newFramebufferColorSizeBytes);
-	memset(newFramebufferColor, 0, newFramebufferColorSizeBytes);
+	FragmentColor *newFramebufferColor = NULL;
 	
 	if (this->isPBOSupported)
 	{
-		glBufferData(GL_PIXEL_PACK_BUFFER_ARB, newFramebufferColorSizeBytes, newFramebufferColor, GL_STREAM_READ);
+		glBufferData(GL_PIXEL_PACK_BUFFER_ARB, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ);
+	}
+	else
+	{
+		newFramebufferColor = (FragmentColor *)malloc_alignedCacheLine(newFramebufferColorSizeBytes);
+		memset(newFramebufferColor, 0, newFramebufferColorSizeBytes);
 	}
 	
 	this->_framebufferWidth = w;
@@ -2966,12 +2980,16 @@ Render3DError OpenGLRenderer_1_3::SetFramebufferSize(size_t w, size_t h)
 	
 	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
 	FragmentColor *oldFramebufferColor = this->_framebufferColor;
-	FragmentColor *newFramebufferColor = (FragmentColor *)malloc_alignedCacheLine(newFramebufferColorSizeBytes);
-	memset(newFramebufferColor, 0, newFramebufferColorSizeBytes);
+	FragmentColor *newFramebufferColor = NULL;
 	
 	if (this->isPBOSupported)
 	{
-		glBufferData(GL_PIXEL_PACK_BUFFER_ARB, newFramebufferColorSizeBytes, newFramebufferColor, GL_STREAM_READ);
+		glBufferData(GL_PIXEL_PACK_BUFFER_ARB, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ);
+	}
+	else
+	{
+		newFramebufferColor = (FragmentColor *)malloc_alignedCacheLine(newFramebufferColorSizeBytes);
+		memset(newFramebufferColor, 0, newFramebufferColorSizeBytes);
 	}
 	
 	this->_framebufferWidth = w;
@@ -3307,18 +3325,18 @@ Render3DError OpenGLRenderer_1_5::RenderFinish()
 		const FragmentColor *__restrict mappedBufferPtr = (FragmentColor *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
 		if (mappedBufferPtr != NULL)
 		{
-			memcpy(this->_framebufferColor, mappedBufferPtr, this->_framebufferColorSizeBytes);
+			this->FlushFramebuffer(mappedBufferPtr, GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 			glUnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
 		}
 	}
 	else
 	{
 		glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, this->_framebufferColor);
+		this->FlushFramebuffer(this->_framebufferColor, GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	}
 	
 	ENDGL();
 	
-	this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	this->_pixelReadNeedsFinish = false;
 	
 	GPU->GetEventHandler()->DidRender3DEnd();
@@ -4098,13 +4116,12 @@ Render3DError OpenGLRenderer_2_1::RenderFinish()
 	const FragmentColor *__restrict mappedBufferPtr = (FragmentColor *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 	if (mappedBufferPtr != NULL)
 	{
-		memcpy(this->_framebufferColor, mappedBufferPtr, this->_framebufferColorSizeBytes);
+		this->FlushFramebuffer(mappedBufferPtr, GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 	}
 	
 	ENDGL();
 	
-	this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	this->_pixelReadNeedsFinish = false;
 	
 	GPU->GetEventHandler()->DidRender3DEnd();
