@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2015 DeSmuME team
+	Copyright (C) 2014-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -4589,6 +4589,19 @@ void OGLVideoOutput::RenderOGL()
 	}
 }
 
+void OGLVideoOutput::FinishOGL()
+{
+	for (size_t i = 0; i < _layerList->size(); i++)
+	{
+		OGLVideoLayer *theLayer = (*_layerList)[i];
+		
+		if (theLayer->IsVisible())
+		{
+			theLayer->FinishOGL();
+		}
+	}
+}
+
 #pragma mark -
 
 OGLFilter::OGLFilter()
@@ -4771,10 +4784,10 @@ GLuint OGLFilter::RunFilterOGL(GLuint srcTexID)
 	glUseProgram(this->_program->GetProgramID());
 	glViewport(0, 0, this->_dstWidth, this->_dstHeight);
 	
-	glClear(GL_COLOR_BUFFER_BIT);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, srcTexID);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glClear(GL_COLOR_BUFFER_BIT);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
 	
 	glBindVertexArrayDESMUME(0);
@@ -4855,15 +4868,16 @@ GLuint OGLFilterDeposterize::RunFilterOGL(GLuint srcTexID)
 	glUseProgram(this->_program->GetProgramID());
 	glViewport(0, 0, this->_dstWidth, this->_dstHeight);
 	
-	glClear(GL_COLOR_BUFFER_BIT);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, this->_texIntermediateID, 0);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, srcTexID);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, this->_texIntermediateID, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
 	
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, this->_texDstID, 0);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texIntermediateID);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, this->_texDstID, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
 	
 	glBindVertexArrayDESMUME(0);
@@ -4910,8 +4924,6 @@ OGLImage::OGLImage(OGLInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GL
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
-	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, _vf->GetDstWidth() * _vf->GetDstHeight() * sizeof(uint32_t), _vfMasterDstBuffer);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texVideoInputDataID);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -5566,13 +5578,7 @@ void OGLImage::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		this->_vf->SetDstBufferPtr(newMasterBuffer);
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID);
-		glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, newDstBufferWidth * newDstBufferHeight * sizeof(uint32_t), newMasterBuffer);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
-		
-		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, newDstBufferWidth, newDstBufferHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, newMasterBuffer);
-		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
-		
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 		
 		_vfMasterDstBuffer = newMasterBuffer;
@@ -5593,7 +5599,7 @@ void OGLImage::LoadFrameOGL(const uint32_t *frameData, GLint x, GLint y, GLsizei
 void OGLImage::ProcessOGL()
 {
 	VideoFilter *currentFilter = this->_vf;
-	const bool isUsingCPUPixelScaler = this->_pixelScaler != VideoFilterTypeID_None && !this->_useShaderBasedPixelScaler;
+	const bool isUsingCPUPixelScaler = (this->_pixelScaler != VideoFilterTypeID_None) && !this->_useShaderBasedPixelScaler;
 	
 	// Source
 	if (this->_useDeposterize)
@@ -6230,7 +6236,8 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	_vf[0] = new VideoFilter(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, VideoFilterTypeID_None, 0);
 	_vf[1] = new VideoFilter(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, VideoFilterTypeID_None, 0);
 	
-	_vfMasterDstBuffer = (uint32_t *)calloc(_vf[0]->GetSrcWidth() * (_vf[0]->GetSrcHeight() + _vf[1]->GetSrcHeight()), sizeof(uint32_t));
+	_vfMasterDstBuffer = (uint32_t *)calloc(_vf[0]->GetDstWidth() * (_vf[0]->GetDstHeight() + _vf[1]->GetDstHeight()), sizeof(uint32_t));
+	_vfMasterDstBufferSize = _vf[0]->GetDstWidth() * (_vf[0]->GetDstHeight() + _vf[1]->GetDstHeight()) * sizeof(uint32_t);
 	_vf[0]->SetDstBufferPtr(_vfMasterDstBuffer);
 	_vf[1]->SetDstBufferPtr(_vfMasterDstBuffer + (_vf[0]->GetDstWidth() * _vf[0]->GetDstHeight()));
 	
@@ -6248,6 +6255,15 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	_texLoadedHeight[0] = (GLfloat)GPU_DISPLAY_HEIGHT;
 	_texLoadedHeight[1] = (GLfloat)GPU_DISPLAY_HEIGHT;
 	
+	_videoSrcNativeBuffer[0] = NULL;
+	_videoSrcNativeBuffer[1] = NULL;
+	_videoSrcCustomBuffer[0] = NULL;
+	_videoSrcCustomBuffer[1] = NULL;
+	_videoSrcCustomBufferWidth[0] = GPU_DISPLAY_WIDTH;
+	_videoSrcCustomBufferWidth[1] = GPU_DISPLAY_WIDTH;
+	_videoSrcCustomBufferHeight[0] = GPU_DISPLAY_HEIGHT;
+	_videoSrcCustomBufferHeight[1] = GPU_DISPLAY_HEIGHT;
+	
 	// Set up textures
 	glGenTextures(2, _texCPUFilterDstID);
 	glGenTextures(2, _texVideoInputDataNativeID);
@@ -6260,60 +6276,48 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
-	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, _vf[0]->GetDstWidth() * _vf[0]->GetDstHeight() * sizeof(uint32_t), _vf[0]->GetDstBufferPtr());
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, _vf[0]->GetDstWidth(), _vf[0]->GetDstHeight(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, _vf[0]->GetDstBufferPtr());
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texCPUFilterDstID[1]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
-	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, _vf[1]->GetDstWidth() * _vf[1]->GetDstHeight() * sizeof(uint32_t), _vf[1]->GetDstBufferPtr());
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, _vf[1]->GetDstWidth(), _vf[1]->GetDstHeight(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, _vf[1]->GetDstBufferPtr());
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texVideoInputDataNativeID[0]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _vf[0]->GetSrcBufferPtr());
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texVideoInputDataNativeID[1]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _vf[1]->GetSrcBufferPtr());
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texVideoInputDataCustomID[0]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _vf[0]->GetSrcBufferPtr());
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texVideoInputDataCustomID[1]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _vf[1]->GetSrcBufferPtr());
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+	
+	// Set up fences for DMA texture uploads
+	glGenFencesAPPLE(2, _fenceTexUploadNativeID);
+	glGenFencesAPPLE(2, _fenceTexUploadCustomID);
 	
 	// Set up VBOs
 	glGenBuffersARB(1, &_vboVertexID);
@@ -6418,6 +6422,9 @@ OGLDisplayLayer::~OGLDisplayLayer()
 		_isVAOPresent = false;
 	}
 	
+	glDeleteFencesAPPLE(2, _fenceTexUploadNativeID);
+	glDeleteFencesAPPLE(2, _fenceTexUploadCustomID);
+	
 	glDeleteBuffersARB(1, &this->_vboVertexID);
 	glDeleteBuffersARB(1, &this->_vboTexCoordID);
 	glDeleteBuffersARB(1, &this->_vboElementID);
@@ -6450,6 +6457,7 @@ OGLDisplayLayer::~OGLDisplayLayer()
 	delete this->_vf[0];
 	delete this->_vf[1];
 	free(_vfMasterDstBuffer);
+	_vfMasterDstBufferSize = 0;
 }
 
 void OGLDisplayLayer::UploadHQnxLUTs()
@@ -6494,6 +6502,87 @@ void OGLDisplayLayer::UploadHQnxLUTs()
 	glActiveTexture(GL_TEXTURE0);
 }
 
+void OGLDisplayLayer::DetermineTextureStorageHints(GLint &videoSrcTexStorageHint, GLint &cpuFilterTexStorageHint)
+{
+	const bool isUsingCPUPixelScaler = (this->_pixelScaler != VideoFilterTypeID_None) && !this->_useShaderBasedPixelScaler;
+	videoSrcTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
+	cpuFilterTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
+	
+	glFinish();
+	
+	if (this->_videoSrcBufferHead == NULL)
+	{
+		glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, 0, NULL);
+		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
+	}
+	else
+	{
+		if (isUsingCPUPixelScaler && (this->_vfMasterDstBufferSize >= this->_videoSrcBufferSize))
+		{
+			cpuFilterTexStorageHint = GL_STORAGE_SHARED_APPLE;
+			glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, this->_vfMasterDstBufferSize, this->_vfMasterDstBuffer);
+		}
+		else
+		{
+			videoSrcTexStorageHint = GL_STORAGE_SHARED_APPLE;
+			glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, this->_videoSrcBufferSize, this->_videoSrcBufferHead);
+		}
+		
+		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+	}
+}
+
+void OGLDisplayLayer::SetVideoBuffers(const void *videoBufferHead,
+									  const void *nativeBuffer0,
+									  const void *nativeBuffer1,
+									  const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
+									  const void *customBuffer1, const size_t customWidth1, const size_t customHeight1)
+{
+	GLint videoSrcTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
+	GLint cpuFilterTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
+	
+	this->_videoSrcBufferHead = (uint16_t *)videoBufferHead;
+	this->_videoSrcBufferSize = (GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT * 2 * sizeof(uint16_t)) + (customWidth0 * customHeight0 * sizeof(uint16_t)) + (customWidth1 * customHeight1 * sizeof(uint16_t));
+	this->_videoSrcNativeBuffer[0] = (uint16_t *)nativeBuffer0;
+	this->_videoSrcNativeBuffer[1] = (uint16_t *)nativeBuffer1;
+	this->_videoSrcCustomBuffer[0] = (uint16_t *)customBuffer0;
+	this->_videoSrcCustomBuffer[1] = (uint16_t *)customBuffer1;
+	this->_videoSrcCustomBufferWidth[0] = customWidth0;
+	this->_videoSrcCustomBufferWidth[1] = customWidth1;
+	this->_videoSrcCustomBufferHeight[0] = customHeight0;
+	this->_videoSrcCustomBufferHeight[1] = customHeight1;
+	
+	this->DetermineTextureStorageHints(videoSrcTexStorageHint, cpuFilterTexStorageHint);
+	
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[0]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, cpuFilterTexStorageHint);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, _vf[0]->GetDstWidth(), _vf[0]->GetDstHeight(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, _vf[0]->GetDstBufferPtr());
+	
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[1]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, cpuFilterTexStorageHint);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, _vf[1]->GetDstWidth(), _vf[1]->GetDstHeight(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, _vf[1]->GetDstBufferPtr());
+	
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[0]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcNativeBuffer[0]);
+	
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[1]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcNativeBuffer[1]);
+	
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[0]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_videoSrcCustomBufferWidth[0], this->_videoSrcCustomBufferHeight[0], 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcCustomBuffer[0]);
+	
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[1]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_videoSrcCustomBufferWidth[1], this->_videoSrcCustomBufferHeight[1], 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcCustomBuffer[1]);
+	
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+	
+	glFinish();
+}
+
 bool OGLDisplayLayer::GetFiltersPreferGPU()
 {
 	return this->_filtersPreferGPU;
@@ -6503,6 +6592,25 @@ void OGLDisplayLayer::SetFiltersPreferGPUOGL(bool preferGPU)
 {
 	this->_filtersPreferGPU = preferGPU;
 	this->_useShaderBasedPixelScaler = (preferGPU) ? this->SetGPUPixelScalerOGL(this->_pixelScaler) : false;
+	
+	GLint videoSrcTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
+	GLint cpuFilterTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
+	this->DetermineTextureStorageHints(videoSrcTexStorageHint, cpuFilterTexStorageHint);
+	
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[0]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, cpuFilterTexStorageHint);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[1]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, cpuFilterTexStorageHint);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[0]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[1]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[0]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[1]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
+	
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 }
 
 uint16_t OGLDisplayLayer::GetDisplayWidth()
@@ -6520,23 +6628,6 @@ void OGLDisplayLayer::SetDisplaySize(uint16_t w, uint16_t h)
 	this->_displayWidth = w;
 	this->_displayHeight = h;
 	this->GetNormalSize(this->_normalWidth, this->_normalHeight);
-	
-	uint32_t *emptyBuffer = (uint32_t *)calloc(w * h, sizeof(uint32_t));
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[0]);
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, emptyBuffer);
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[1]);
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, emptyBuffer);
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
-	
-	free(emptyBuffer);
-	
 	this->UpdateVertices();
 }
 
@@ -6708,6 +6799,8 @@ void OGLDisplayLayer::GetNormalSize(double &w, double &h)
 
 void OGLDisplayLayer::ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide)
 {
+	this->FinishOGL();
+	
 	const GLsizei newDstBufferWidth = (srcWidthMain + srcWidthTouch) * scaleMultiply / scaleDivide;
 	const GLsizei newDstBufferHeight = (srcHeightMain + srcHeightTouch) * scaleMultiply / scaleDivide;
 	
@@ -6719,23 +6812,31 @@ void OGLDisplayLayer::ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const s
 	const GLsizei newDstBufferSingleWidth = srcWidthMain * scaleMultiply / scaleDivide;
 	const GLsizei newDstBufferSingleHeight = srcHeightMain * scaleMultiply / scaleDivide;
 	
+	GLint videoSrcTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
+	GLint cpuFilterTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
+	this->DetermineTextureStorageHints(videoSrcTexStorageHint, cpuFilterTexStorageHint);
+	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[0]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
-	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, newDstBufferSingleWidth * newDstBufferSingleHeight * sizeof(uint32_t), newMasterBuffer);
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, cpuFilterTexStorageHint);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, newDstBufferSingleWidth, newDstBufferSingleHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, newMasterBuffer);
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[1]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
-	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, newDstBufferSingleWidth * newDstBufferSingleHeight * sizeof(uint32_t), newMasterBuffer + (newDstBufferSingleWidth * newDstBufferSingleHeight));
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, newDstBufferSingleWidth, newDstBufferSingleHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, newMasterBuffer + (newDstBufferSingleWidth * newDstBufferSingleHeight));
-	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, cpuFilterTexStorageHint);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, srcWidthTouch * scaleMultiply / scaleDivide, srcHeightTouch * scaleMultiply / scaleDivide, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, newMasterBuffer + (newDstBufferSingleWidth * newDstBufferSingleHeight));
+	
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[0]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[1]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[0]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[1]);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
 	_vfMasterDstBuffer = newMasterBuffer;
+	_vfMasterDstBufferSize = newDstBufferWidth * newDstBufferHeight * sizeof(uint32_t);
 	free(oldMasterBuffer);
 }
 
@@ -7138,7 +7239,9 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		
 		if (willUseShaderBasedPixelScaler)
 		{
+			glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 			this->_shaderFilter[i]->SetScaleOGL(vfScale);
+			glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 		}
 	}
 	
@@ -7162,26 +7265,28 @@ void OGLDisplayLayer::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 	this->_vf[1]->ChangeFilterByID(filterID);
 }
 
-void OGLDisplayLayer::LoadFrameOGL(const uint16_t *frameData0, const uint16_t *frameData1, GLsizei w0, GLsizei h0, GLsizei w1, GLsizei h1)
+void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative)
 {
-	const bool isUsingCPUPixelScaler = this->_pixelScaler != VideoFilterTypeID_None && !this->_useShaderBasedPixelScaler;
-	const bool loadMainScreen = (frameData0 != NULL);
-	const bool loadTouchScreen = (frameData1 != NULL);
+	const bool isUsingCPUPixelScaler = (this->_pixelScaler != VideoFilterTypeID_None) && !this->_useShaderBasedPixelScaler;
+	const bool loadMainScreen = (this->_displayMode == DS_DISPLAY_TYPE_MAIN) || (this->_displayMode == DS_DISPLAY_TYPE_DUAL);
+	const bool loadTouchScreen = (this->_displayMode == DS_DISPLAY_TYPE_TOUCH) || (this->_displayMode == DS_DISPLAY_TYPE_DUAL);
 	
-	this->_isTexVideoInputDataNative[0] = ( (w0 == GPU_DISPLAY_WIDTH) && (h0 == GPU_DISPLAY_HEIGHT) );
-	this->_isTexVideoInputDataNative[1] = ( (w1 == GPU_DISPLAY_WIDTH) && (h1 == GPU_DISPLAY_HEIGHT) );
-	this->_texLoadedWidth[0] = (GLfloat)w0;
-	this->_texLoadedHeight[0] = (GLfloat)h0;
-	this->_texLoadedWidth[1] = (GLfloat)w1;
-	this->_texLoadedHeight[1] = (GLfloat)h1;
+	this->_isTexVideoInputDataNative[0] = isMainSizeNative;
+	this->_isTexVideoInputDataNative[1] = isTouchSizeNative;
+	this->_texLoadedWidth[0]  = (this->_isTexVideoInputDataNative[0]) ? (GLfloat)GPU_DISPLAY_WIDTH  : (GLfloat)this->_videoSrcCustomBufferWidth[0];
+	this->_texLoadedHeight[0] = (this->_isTexVideoInputDataNative[0]) ? (GLfloat)GPU_DISPLAY_HEIGHT : (GLfloat)this->_videoSrcCustomBufferHeight[0];
+	this->_texLoadedWidth[1]  = (this->_isTexVideoInputDataNative[1]) ? (GLfloat)GPU_DISPLAY_WIDTH  : (GLfloat)this->_videoSrcCustomBufferWidth[1];
+	this->_texLoadedHeight[1] = (this->_isTexVideoInputDataNative[1]) ? (GLfloat)GPU_DISPLAY_HEIGHT : (GLfloat)this->_videoSrcCustomBufferHeight[1];
 	
 	if (loadMainScreen)
 	{
 		if (this->_useDeposterize && this->_canUseShaderBasedFilters)
 		{
-			if ( (this->_filterDeposterize[0]->GetSrcWidth() != w0) || (this->_filterDeposterize[0]->GetSrcHeight() != h0) )
+			if ( (this->_filterDeposterize[0]->GetSrcWidth() != this->_texLoadedWidth[0]) || (this->_filterDeposterize[0]->GetSrcHeight() != this->_texLoadedHeight[0]) )
 			{
-				this->_filterDeposterize[0]->SetSrcSizeOGL(w0, h0);
+				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
+				this->_filterDeposterize[0]->SetSrcSizeOGL(this->_texLoadedWidth[0], this->_texLoadedHeight[0]);
+				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 			}
 		}
 		
@@ -7189,21 +7294,24 @@ void OGLDisplayLayer::LoadFrameOGL(const uint16_t *frameData0, const uint16_t *f
 		{
 			if (!isUsingCPUPixelScaler || this->_useDeposterize)
 			{
-				
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[0]);
-				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, w0, h0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frameData0);
+				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcNativeBuffer[0]);
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+				glSetFenceAPPLE(this->_fenceTexUploadNativeID[0]);
+				glFlush();
 			}
 			else
 			{
-				RGB555ToBGRA8888Buffer(frameData0, this->_vf[0]->GetSrcBufferPtr(), w0 * h0);
+				RGB555ToBGRA8888Buffer(this->_videoSrcNativeBuffer[0], this->_vf[0]->GetSrcBufferPtr(), GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT);
 			}
 		}
 		else
 		{
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[0]);
-			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, w0, h0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frameData0);
+			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_videoSrcCustomBufferWidth[0], this->_videoSrcCustomBufferHeight[0], GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcCustomBuffer[0]);
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+			glSetFenceAPPLE(this->_fenceTexUploadCustomID[0]);
+			glFlush();
 		}
 	}
 	
@@ -7211,9 +7319,11 @@ void OGLDisplayLayer::LoadFrameOGL(const uint16_t *frameData0, const uint16_t *f
 	{
 		if (this->_useDeposterize && this->_canUseShaderBasedFilters)
 		{
-			if ( (this->_filterDeposterize[1]->GetSrcWidth() != w1) || (this->_filterDeposterize[1]->GetSrcHeight() != h1) )
+			if ( (this->_filterDeposterize[1]->GetSrcWidth() != this->_texLoadedWidth[1]) || (this->_filterDeposterize[1]->GetSrcHeight() != this->_texLoadedHeight[1]) )
 			{
-				this->_filterDeposterize[1]->SetSrcSizeOGL(w1, h1);
+				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
+				this->_filterDeposterize[1]->SetSrcSizeOGL(this->_texLoadedWidth[1], this->_texLoadedHeight[1]);
+				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 			}
 		}
 		
@@ -7221,28 +7331,31 @@ void OGLDisplayLayer::LoadFrameOGL(const uint16_t *frameData0, const uint16_t *f
 		{
 			if (!isUsingCPUPixelScaler || this->_useDeposterize)
 			{
-				
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[1]);
-				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, w1, h1, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frameData1);
+				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcNativeBuffer[1]);
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+				glSetFenceAPPLE(this->_fenceTexUploadNativeID[1]);
+				glFlush();
 			}
 			else
 			{
-				RGB555ToBGRA8888Buffer(frameData1, this->_vf[1]->GetSrcBufferPtr(), w1 * h1);
+				RGB555ToBGRA8888Buffer(this->_videoSrcNativeBuffer[1], this->_vf[1]->GetSrcBufferPtr(), GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT);
 			}
 		}
 		else
 		{
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[1]);
-			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, w1, h1, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, frameData1);
+			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_videoSrcCustomBufferWidth[1], this->_videoSrcCustomBufferHeight[1], GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcCustomBuffer[1]);
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+			glSetFenceAPPLE(this->_fenceTexUploadCustomID[1]);
+			glFlush();
 		}
 	}
 }
 
 void OGLDisplayLayer::ProcessOGL()
 {
-	const bool isUsingCPUPixelScaler = this->_pixelScaler != VideoFilterTypeID_None && !this->_useShaderBasedPixelScaler;
+	const bool isUsingCPUPixelScaler = (this->_pixelScaler != VideoFilterTypeID_None) && !this->_useShaderBasedPixelScaler;
 	const int displayMode = this->GetMode();
 	
 	// Source
@@ -7251,8 +7364,13 @@ void OGLDisplayLayer::ProcessOGL()
 	
 	if (this->_useDeposterize)
 	{
+		// For all shader-based filters, we need to temporarily disable GL_UNPACK_CLIENT_STORAGE_APPLE.
+		// Filtered images are supposed to remain on the GPU for immediate use for further GPU processing,
+		// so using client-backed buffers for filtered images would simply waste memory here.
+		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 		texVideoSourceID[0] = this->_filterDeposterize[0]->RunFilterOGL(texVideoSourceID[0]);
 		texVideoSourceID[1] = this->_filterDeposterize[1]->RunFilterOGL(texVideoSourceID[1]);
+		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 		
 		if (isUsingCPUPixelScaler) // Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
 		{
@@ -7281,7 +7399,10 @@ void OGLDisplayLayer::ProcessOGL()
 		{
 			if (this->_useShaderBasedPixelScaler)
 			{
+				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 				texVideoPixelScalerID[0] = this->_shaderFilter[0]->RunFilterOGL(texVideoSourceID[0]);
+				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+				
 				w0 = this->_shaderFilter[0]->GetDstWidth();
 				h0 = this->_shaderFilter[0]->GetDstHeight();
 			}
@@ -7292,6 +7413,8 @@ void OGLDisplayLayer::ProcessOGL()
 			texVideoPixelScalerID[0] = this->_texCPUFilterDstID[0];
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texVideoPixelScalerID[0]);
 			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_vf[0]->GetDstWidth(), this->_vf[0]->GetDstHeight(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, texData);
+			glSetFenceAPPLE(this->_fenceTexUploadNativeID[0]);
+			glFlush();
 			
 			w0 = this->_vf[0]->GetDstWidth();
 			h0 = this->_vf[0]->GetDstHeight();
@@ -7304,7 +7427,10 @@ void OGLDisplayLayer::ProcessOGL()
 		{
 			if (this->_useShaderBasedPixelScaler)
 			{
+				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 				texVideoPixelScalerID[1] = this->_shaderFilter[1]->RunFilterOGL(texVideoSourceID[1]);
+				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+				
 				w1 = this->_shaderFilter[1]->GetDstWidth();
 				h1 = this->_shaderFilter[1]->GetDstHeight();
 			}
@@ -7315,6 +7441,8 @@ void OGLDisplayLayer::ProcessOGL()
 			texVideoPixelScalerID[1] = this->_texCPUFilterDstID[1];
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texVideoPixelScalerID[1]);
 			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_vf[1]->GetDstWidth(), this->_vf[1]->GetDstHeight(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, texData);
+			glSetFenceAPPLE(this->_fenceTexUploadNativeID[1]);
+			glFlush();
 			
 			w1 = this->_vf[1]->GetDstWidth();
 			h1 = this->_vf[1]->GetDstHeight();
@@ -7380,4 +7508,10 @@ void OGLDisplayLayer::RenderOGL()
 	
 	// Disable vertex attributes
 	glBindVertexArrayDESMUME(0);
+}
+
+void OGLDisplayLayer::FinishOGL()
+{
+	glFinishFenceAPPLE( (this->_fenceTexUploadNativeID[0]) ? this->_fenceTexUploadNativeID[0] : this->_fenceTexUploadCustomID[0] );
+	glFinishFenceAPPLE( (this->_fenceTexUploadNativeID[1]) ? this->_fenceTexUploadNativeID[1] : this->_fenceTexUploadCustomID[1] );
 }
