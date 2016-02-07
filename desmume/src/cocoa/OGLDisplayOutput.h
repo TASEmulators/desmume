@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2015 DeSmuME team
+	Copyright (C) 2014-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -279,6 +279,7 @@ public:
 	
 	virtual void ProcessOGL() = 0;
 	virtual void RenderOGL() = 0;
+	virtual void FinishOGL() {};
 };
 
 typedef struct
@@ -390,7 +391,18 @@ protected:
 	GLfloat _texLoadedWidth[2];
 	GLfloat _texLoadedHeight[2];
 	
+	uint16_t *_videoSrcBufferHead;
+	size_t _videoSrcBufferSize;
+	uint16_t *_videoSrcNativeBuffer[2];
+	uint16_t *_videoSrcCustomBuffer[2];
+	GLsizei _videoSrcCustomBufferWidth[2];
+	GLsizei _videoSrcCustomBufferHeight[2];
+	
+	GLuint _fenceTexUploadNativeID[2];
+	GLuint _fenceTexUploadCustomID[2];
+	
 	uint32_t *_vfMasterDstBuffer;
+	size_t _vfMasterDstBufferSize;
 	VideoFilter *_vf[2];
 	GLuint _texCPUFilterDstID[2];
 	
@@ -423,6 +435,7 @@ protected:
 	GLint _uniformFinalOutputViewSize;
 	
 	void UploadHQnxLUTs();
+	void DetermineTextureStorageHints(GLint &videoSrcTexStorageHint, GLint &cpuFilterTexStorageHint);
 	
 	void ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide);
 	void UploadVerticesOGL();
@@ -436,6 +449,12 @@ public:
 	OGLDisplayLayer() {};
 	OGLDisplayLayer(OGLVideoOutput *oglVO);
 	virtual ~OGLDisplayLayer();
+	
+	void SetVideoBuffers(const void *videoBufferHead,
+						 const void *nativeBuffer0,
+						 const void *nativeBuffer1,
+						 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
+						 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1);
 	
 	bool GetFiltersPreferGPU();
 	void SetFiltersPreferGPUOGL(bool preferGPU);
@@ -465,10 +484,11 @@ public:
 	void SetPixelScalerOGL(const int filterID);
 	bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
-	void LoadFrameOGL(const uint16_t *frameData0, const uint16_t *frameData1, GLsizei w0, GLsizei h0, GLsizei w1, GLsizei h1);
+	void LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative);
 	
 	virtual void ProcessOGL();
 	virtual void RenderOGL();
+	virtual void FinishOGL();
 };
 
 class OGLVideoOutput
@@ -493,6 +513,7 @@ public:
 	void ProcessOGL();
 	void RenderOGL();
 	void SetViewportSizeOGL(GLsizei w, GLsizei h);
+	void FinishOGL();
 };
 
 OGLInfo* OGLInfoCreate_Legacy();

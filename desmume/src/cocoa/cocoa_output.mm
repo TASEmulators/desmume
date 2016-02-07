@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2015 DeSmuME team
+	Copyright (C) 2011-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include "sndOSX.h"
 
 #include "../NDSSystem.h"
+#include "../common.h"
 #include "../GPU.h"
 #include "../gfx3d.h"
 #include "../SPU.h"
@@ -675,6 +676,11 @@
 	[pboard setData:[screenshot TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0f] forType:NSTIFFPboardType];
 }
 
+- (void) finishFrame
+{
+	[(id<CocoaDSDisplayDelegate>)delegate doFinishFrame];
+}
+
 - (void) takeFrameCount
 {
 	OSSpinLockLock(&spinlockReceivedFrameIndex);
@@ -770,6 +776,13 @@
 		return self;
 	}
 	
+	_videoBuffer = NULL;
+	_nativeBuffer[NDSDisplayID_Main]  = NULL;
+	_nativeBuffer[NDSDisplayID_Touch] = NULL;
+	_customBuffer[NDSDisplayID_Main]  = NULL;
+	_customBuffer[NDSDisplayID_Touch] = NULL;
+	[self resetVideoBuffers];
+	
 	[property setValue:[NSNumber numberWithInteger:(NSInteger)VideoFilterTypeID_None] forKey:@"videoFilterType"];
 	[property setValue:[CocoaVideoFilter typeStringByID:VideoFilterTypeID_None] forKey:@"videoFilterTypeString"];
 	
@@ -778,6 +791,12 @@
 
 - (void)dealloc
 {
+	free_aligned(_videoBuffer);
+	_nativeBuffer[NDSDisplayID_Main]  = NULL;
+	_nativeBuffer[NDSDisplayID_Touch] = NULL;
+	_customBuffer[NDSDisplayID_Main]  = NULL;
+	_customBuffer[NDSDisplayID_Touch] = NULL;
+	
 	[super dealloc];
 }
 
@@ -861,11 +880,11 @@
 - (void) handleReceiveGPUFrame
 {
 	[super handleReceiveGPUFrame];
+	[self finishFrame];
 	
 	pthread_rwlock_rdlock(self.rwlockProducer);
 	
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	const NSInteger dispMode = [self displayMode];
 	const uint16_t newGpuWidth = dispInfo.customWidth;
 	const uint16_t newGpuHeight = dispInfo.customHeight;
 	
@@ -880,17 +899,34 @@
 		_gpuCurrentHeight = newGpuHeight;
 	}
 	
-	void *mainFramebuffer = (dispMode == DS_DISPLAY_TYPE_MAIN || dispMode == DS_DISPLAY_TYPE_DUAL) ? dispInfo.renderedBuffer[NDSDisplayID_Main] : NULL;
-	void *touchFramebuffer = (dispMode == DS_DISPLAY_TYPE_TOUCH || dispMode == DS_DISPLAY_TYPE_DUAL) ? dispInfo.renderedBuffer[NDSDisplayID_Touch] : NULL;
+	const bool isMainSizeNative = !dispInfo.didPerformCustomRender[NDSDisplayID_Main];
+	const bool isTouchSizeNative = !dispInfo.didPerformCustomRender[NDSDisplayID_Touch];
 	
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doLoadVideoFrameWithMainBuffer:mainFramebuffer
-																  touchBuffer:touchFramebuffer
-																	mainWidth:dispInfo.renderedWidth[NDSDisplayID_Main]
-																   mainHeight:dispInfo.renderedHeight[NDSDisplayID_Main]
-																   touchWidth:dispInfo.renderedWidth[NDSDisplayID_Touch]
-																  touchHeight:dispInfo.renderedHeight[NDSDisplayID_Touch]];
+	if (isMainSizeNative && isTouchSizeNative)
+	{
+		memcpy(_nativeBuffer[NDSDisplayID_Main], dispInfo.masterNativeBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * sizeof(uint16_t));
+	}
+	else
+	{
+		if (!isMainSizeNative && !isTouchSizeNative)
+		{
+			memcpy(_customBuffer[NDSDisplayID_Main], dispInfo.masterCustomBuffer, dispInfo.customWidth * dispInfo.customHeight * 2 * sizeof(uint16_t));
+		}
+		else if (isTouchSizeNative)
+		{
+			memcpy(_customBuffer[NDSDisplayID_Main], dispInfo.customBuffer[NDSDisplayID_Main], dispInfo.customWidth * dispInfo.customHeight * sizeof(uint16_t));
+			memcpy(_nativeBuffer[NDSDisplayID_Touch], dispInfo.nativeBuffer[NDSDisplayID_Touch], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(uint16_t));
+		}
+		else
+		{
+			memcpy(_nativeBuffer[NDSDisplayID_Main], dispInfo.nativeBuffer[NDSDisplayID_Main], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(uint16_t));
+			memcpy(_customBuffer[NDSDisplayID_Touch], dispInfo.customBuffer[NDSDisplayID_Touch], dispInfo.customWidth * dispInfo.customHeight * sizeof(uint16_t));
+		}
+	}
 	
 	pthread_rwlock_unlock(self.rwlockProducer);
+	
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doLoadVideoFrameWithMainSizeNative:isMainSizeNative touchSizeNative:isTouchSizeNative];
 }
 
 - (void) handleResizeView:(NSData *)rectData
@@ -966,6 +1002,31 @@
 	
 	const float gapScalar = *(float *)[displayGapScalarData bytes];
 	[(id<CocoaDSDisplayVideoDelegate>)delegate doDisplayGapChanged:gapScalar];
+}
+
+- (void) resetVideoBuffers
+{
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	uint16_t *oldVideoBuffer = _videoBuffer;
+	uint16_t *newVideoBuffer = (uint16_t *)malloc_alignedCacheLine( ((GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT) + (dispInfo.customWidth * dispInfo.customHeight)) * 2 * sizeof(uint16_t) );
+	
+	[(id<CocoaDSDisplayVideoDelegate>)delegate doSetVideoBuffers:newVideoBuffer
+												   nativeBuffer0:newVideoBuffer
+												   nativeBuffer1:newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT)
+												   customBuffer0:newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2)
+													customWidth0:dispInfo.customWidth
+												   customHeight0:dispInfo.customHeight
+												   customBuffer1:newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2) + (dispInfo.customWidth * dispInfo.customHeight)
+													customWidth1:dispInfo.customWidth
+												   customHeight1:dispInfo.customHeight];
+	
+	_videoBuffer = newVideoBuffer;
+	_nativeBuffer[NDSDisplayID_Main]  = newVideoBuffer;
+	_nativeBuffer[NDSDisplayID_Touch] = newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+	_customBuffer[NDSDisplayID_Main]  = newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+	_customBuffer[NDSDisplayID_Touch] = newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2) + (dispInfo.customWidth * dispInfo.customHeight);
+	
+	free_aligned(oldVideoBuffer);
 }
 
 @end

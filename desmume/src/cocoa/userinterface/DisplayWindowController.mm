@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2015 DeSmuME team
+	Copyright (C) 2013-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1209,6 +1209,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Set up the video output thread.
 	cdsVideoOutput = [[CocoaDSDisplayVideo alloc] init];
 	[cdsVideoOutput setDelegate:view];
+	[cdsVideoOutput resetVideoBuffers];
 	
 	// Add the video thread to the output list.
 	[emuControl addOutputToCore:cdsVideoOutput];
@@ -1466,14 +1467,14 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Semibold" ofType:@"otf"];
 	oglv->GetHUDLayer()->SetFontUsingPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
 	
-	oglv->GetDisplayLayer()->SetFiltersPreferGPUOGL(true);
-	oglv->GetDisplayLayer()->SetSourceDeposterize(false);
-	oglv->GetDisplayLayer()->SetOutputFilterOGL(OutputFilterTypeID_Bilinear);
-	oglv->GetDisplayLayer()->SetPixelScalerOGL(VideoFilterTypeID_None);
-	CGLSetCurrentContext(prevContext);
-	
 	OGLDisplayLayer *displayLayer = oglv->GetDisplayLayer();
+	displayLayer->SetFiltersPreferGPUOGL(true);
+	displayLayer->SetSourceDeposterize(false);
+	displayLayer->SetOutputFilterOGL(OutputFilterTypeID_Bilinear);
+	displayLayer->SetPixelScalerOGL(VideoFilterTypeID_None);
 	canUseShaderBasedFilters = (displayLayer->CanUseShaderBasedFilters()) ? YES : NO;
+	
+	CGLSetCurrentContext(prevContext);
 	
 	_useVerticalSync = NO;
 	
@@ -2089,19 +2090,46 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// No init needed, so do nothing.
 }
 
-- (void) doLoadVideoFrameWithMainBuffer:(const void *)mainBuffer
-							touchBuffer:(const void *)touchBuffer
-							  mainWidth:(const NSInteger)mainWidth
-							 mainHeight:(const NSInteger)mainHeight
-							 touchWidth:(const NSInteger)touchWidth
-							touchHeight:(const NSInteger)touchHeight
+- (void)doLoadVideoFrameWithMainSizeNative:(bool)isMainSizeNative touchSizeNative:(bool)isTouchSizeNative
 {
 	OGLDisplayLayer *displayLayer = oglv->GetDisplayLayer();
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	displayLayer->LoadFrameOGL((const uint16_t *)mainBuffer, (const uint16_t *)touchBuffer, mainWidth, mainHeight, touchWidth, touchHeight);
+	displayLayer->LoadFrameOGL(isMainSizeNative, isTouchSizeNative);
 	displayLayer->ProcessOGL();
+	CGLUnlockContext(cglDisplayContext);
+}
+
+- (void)doSetVideoBuffers:(const uint16_t *)videoBufferHead
+			nativeBuffer0:(const uint16_t *)nativeBuffer0
+			nativeBuffer1:(const uint16_t *)nativeBuffer1
+			customBuffer0:(const uint16_t *)customBuffer0
+			 customWidth0:(const size_t)customWidth0
+			customHeight0:(const size_t)customHeight0
+			customBuffer1:(const uint16_t *)customBuffer1
+			 customWidth1:(const size_t)customWidth1
+			customHeight1:(const size_t)customHeight1
+{
+	OGLDisplayLayer *displayLayer = oglv->GetDisplayLayer();
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	displayLayer->SetVideoBuffers(videoBufferHead,
+								  nativeBuffer0,
+								  nativeBuffer1,
+								  customBuffer0, customWidth0, customHeight0,
+								  customBuffer1, customWidth1, customHeight1);
+	CGLUnlockContext(cglDisplayContext);
+}
+
+- (void)doFinishFrame
+{
+	OGLDisplayLayer *displayLayer = oglv->GetDisplayLayer();
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	displayLayer->FinishOGL();
 	CGLUnlockContext(cglDisplayContext);
 }
 

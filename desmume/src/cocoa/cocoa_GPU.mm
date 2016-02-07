@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2015 DeSmuME team
+	Copyright (C) 2013-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -59,6 +59,9 @@ public:
 	void FramebufferUnlock();
 	void Render3DLock();
 	void Render3DUnlock();
+	
+	void FrameFinish();
+	void SetVideoBuffers();
 	
 	pthread_rwlock_t* GetFrameRWLock();
 	NSMutableArray* GetOutputList();
@@ -181,9 +184,13 @@ public:
 
 - (void) setGpuDimensions:(NSSize)theDimensions
 {
+	gpuEvent->FrameFinish();
 	gpuEvent->FramebufferLockWrite();
 	gpuEvent->Render3DLock();
+	
 	GPU->SetCustomFramebufferSize(theDimensions.width, theDimensions.height);
+	
+	gpuEvent->SetVideoBuffers();
 	gpuEvent->Render3DUnlock();
 	gpuEvent->FramebufferUnlock();
 }
@@ -778,6 +785,56 @@ void GPUEventHandlerOSX::Render3DLock()
 void GPUEventHandlerOSX::Render3DUnlock()
 {
 	pthread_mutex_unlock(&this->_mutex3DRender);
+}
+
+void GPUEventHandlerOSX::FrameFinish()
+{
+#if !defined(PORT_VERSION_OPENEMU)
+	if (this->_mutexOutputList != NULL)
+	{
+		pthread_mutex_lock(this->_mutexOutputList);
+	}
+	
+	NSMutableArray *outputList = this->_cdsOutputList;
+	
+	for (CocoaDSOutput *cdsOutput in outputList)
+	{
+		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+		{
+			[(CocoaDSDisplay *)cdsOutput finishFrame];
+		}
+	}
+	
+	if (this->_mutexOutputList != NULL)
+	{
+		pthread_mutex_unlock(this->_mutexOutputList);
+	}
+#endif
+}
+
+void GPUEventHandlerOSX::SetVideoBuffers()
+{
+#if !defined(PORT_VERSION_OPENEMU)
+	if (this->_mutexOutputList != NULL)
+	{
+		pthread_mutex_lock(this->_mutexOutputList);
+	}
+	
+	NSMutableArray *outputList = this->_cdsOutputList;
+	
+	for (CocoaDSOutput *cdsOutput in outputList)
+	{
+		if ([cdsOutput isKindOfClass:[CocoaDSDisplayVideo class]])
+		{
+			[(CocoaDSDisplayVideo *)cdsOutput resetVideoBuffers];
+		}
+	}
+	
+	if (this->_mutexOutputList != NULL)
+	{
+		pthread_mutex_unlock(this->_mutexOutputList);
+	}
+#endif
 }
 
 pthread_rwlock_t* GPUEventHandlerOSX::GetFrameRWLock()
