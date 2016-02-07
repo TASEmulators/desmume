@@ -1510,6 +1510,7 @@ public:
 	
 	size_t GetCustomFramebufferWidth() const;
 	size_t GetCustomFramebufferHeight() const;
+	void SetCustomFramebufferSize(size_t w, size_t h, u16 *clientNativeBuffer, u16 *clientCustomBuffer);
 	void SetCustomFramebufferSize(size_t w, size_t h);
 	
 	void UpdateVRAM3DUsageProperties();
