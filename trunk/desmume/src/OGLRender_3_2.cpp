@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1602,23 +1602,17 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	}
 	
 	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
-	FragmentColor *oldFramebufferColor = this->_framebufferColor;
-	FragmentColor *newFramebufferColor = (FragmentColor *)malloc_alignedCacheLine(newFramebufferColorSizeBytes);
-	memset(newFramebufferColor, 0, newFramebufferColorSizeBytes);
-	
-	glBufferData(GL_PIXEL_PACK_BUFFER, newFramebufferColorSizeBytes, newFramebufferColor, GL_STREAM_READ);
+	glBufferData(GL_PIXEL_PACK_BUFFER, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ);
 	
 	this->_framebufferWidth = w;
 	this->_framebufferHeight = h;
 	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
-	this->_framebufferColor = newFramebufferColor;
+	this->_framebufferColor = NULL; // Don't need to make a client-side buffer since we will be reading directly from the PBO.
 	
 	if (oglrender_framebufferDidResizeCallback != NULL)
 	{
 		oglrender_framebufferDidResizeCallback(w, h);
 	}
-	
-	free_aligned(oldFramebufferColor);
 	
 	ENDGL();
 	

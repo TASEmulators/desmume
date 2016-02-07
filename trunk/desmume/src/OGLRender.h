@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -584,6 +584,7 @@ protected:
 	bool _pixelReadNeedsFinish;
 	size_t _currentPolyIndex;
 	
+	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcRGBA8888, FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551);
 	Render3DError FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551);
 	
 	// OpenGL-specific methods
