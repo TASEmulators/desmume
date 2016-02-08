@@ -5752,20 +5752,6 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	
 	assert(_glyphTileSize <= 128);
 	
-	memset(_vtxBuffer, 0, sizeof(_vtxBuffer));
-	memset(_texCoordBuffer, 0, sizeof(_texCoordBuffer));
-	memset(_idxBuffer, 0, sizeof(_idxBuffer));
-	
-	for (size_t i = 0; i < 4096; i++)
-	{
-		_idxBuffer[(i*6)+0] = (i*4)+0;
-		_idxBuffer[(i*6)+1] = (i*4)+1;
-		_idxBuffer[(i*6)+2] = (i*4)+2;
-		_idxBuffer[(i*6)+3] = (i*4)+2;
-		_idxBuffer[(i*6)+4] = (i*4)+3;
-		_idxBuffer[(i*6)+5] = (i*4)+0;
-	}
-	
 	glGenTextures(1, &_texCharMap);
 	
 	// Set up VBOs
@@ -5774,13 +5760,26 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	glGenBuffersARB(1, &_vboElementID);
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLint) * 4096 * (2 * 4), _vtxBuffer, GL_STATIC_DRAW_ARB);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLint) * 4096 * (2 * 4), NULL, GL_STREAM_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * 4096 * (2 * 4), _texCoordBuffer, GL_STATIC_DRAW_ARB);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * 4096 * (2 * 4), NULL, GL_STREAM_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
 	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
-	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLshort) * 4096 * 6, _idxBuffer, GL_STATIC_DRAW_ARB);
+	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLshort) * 4096 * 6, NULL, GL_STATIC_DRAW_ARB);
+	GLshort *idxBufferPtr = (GLshort *)glMapBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+		
+	for (size_t i = 0; i < 4096; i++)
+	{
+		idxBufferPtr[(i*6)+0] = (i*4)+0;
+		idxBufferPtr[(i*6)+1] = (i*4)+1;
+		idxBufferPtr[(i*6)+2] = (i*4)+2;
+		idxBufferPtr[(i*6)+3] = (i*4)+2;
+		idxBufferPtr[(i*6)+4] = (i*4)+3;
+		idxBufferPtr[(i*6)+5] = (i*4)+0;
+	}
+	
+	glUnmapBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB);
 	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 	
 	// Set up VAO
@@ -6111,6 +6110,7 @@ void OGLHUDLayer::_ProcessVerticesOGL()
 	
 	const size_t length = this->_statusString.length();
 	const char *cString = this->_statusString.c_str();
+	const size_t bufferSize = length * (2 * 4) * sizeof(GLint);
 	
 	const GLint leftAlignedPosition = 10 - (this->_viewportWidth / 2);
 	const GLint charSize = (float)this->_glyphSize * 0.80f;
@@ -6118,12 +6118,16 @@ void OGLHUDLayer::_ProcessVerticesOGL()
 	GLint charLocY = (this->_viewportHeight / 2) - charSize - (this->_glyphTileSize - this->_glyphSize);
 	GLint textBoxTop = this->_viewportHeight / 2;
 	
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, bufferSize, NULL, GL_STREAM_DRAW_ARB);
+	GLint *vtxBufferPtr = (GLint *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+	
 	// First, calculate the vertices of the text box.
 	// The text box should always be the first character in the string.
-	this->_vtxBuffer[0] = leftAlignedPosition - 6;						this->_vtxBuffer[1] = textBoxTop - 3;
-	this->_vtxBuffer[2] = leftAlignedPosition + this->_textBoxWidth;	this->_vtxBuffer[3] = textBoxTop - 3;
-	this->_vtxBuffer[4] = leftAlignedPosition + this->_textBoxWidth;	this->_vtxBuffer[5] = textBoxTop - (charSize * this->_textBoxLines) - 8;
-	this->_vtxBuffer[6] = leftAlignedPosition - 6;						this->_vtxBuffer[7] = textBoxTop - (charSize * this->_textBoxLines) - 8;
+	vtxBufferPtr[0] = leftAlignedPosition - 6;						vtxBufferPtr[1] = textBoxTop - 3;
+	vtxBufferPtr[2] = leftAlignedPosition + this->_textBoxWidth;	vtxBufferPtr[3] = textBoxTop - 3;
+	vtxBufferPtr[4] = leftAlignedPosition + this->_textBoxWidth;	vtxBufferPtr[5] = textBoxTop - (charSize * this->_textBoxLines) - 8;
+	vtxBufferPtr[6] = leftAlignedPosition - 6;						vtxBufferPtr[7] = textBoxTop - (charSize * this->_textBoxLines) - 8;
 	
 	// Calculate the vertices of the remaining characters in the string.
 	for (size_t i = 1; i < length; i++)
@@ -6140,15 +6144,14 @@ void OGLHUDLayer::_ProcessVerticesOGL()
 		const GLint glyphWidth = this->_glyphInfo[c].width;
 		const GLint charWidth = (GLfloat)glyphWidth * ((GLfloat)charSize / (GLfloat)this->_glyphTileSize);
 		
-		this->_vtxBuffer[(i*8)+0] = charLocX;				this->_vtxBuffer[(i*8)+1] = charLocY + charSize;	// Top Left
-		this->_vtxBuffer[(i*8)+2] = charLocX + charWidth;	this->_vtxBuffer[(i*8)+3] = charLocY + charSize;	// Top Right
-		this->_vtxBuffer[(i*8)+4] = charLocX + charWidth;	this->_vtxBuffer[(i*8)+5] = charLocY;				// Bottom Right
-		this->_vtxBuffer[(i*8)+6] = charLocX;				this->_vtxBuffer[(i*8)+7] = charLocY;				// Bottom Left
+		vtxBufferPtr[(i*8)+0] = charLocX;				vtxBufferPtr[(i*8)+1] = charLocY + charSize;	// Top Left
+		vtxBufferPtr[(i*8)+2] = charLocX + charWidth;	vtxBufferPtr[(i*8)+3] = charLocY + charSize;	// Top Right
+		vtxBufferPtr[(i*8)+4] = charLocX + charWidth;	vtxBufferPtr[(i*8)+5] = charLocY;				// Bottom Right
+		vtxBufferPtr[(i*8)+6] = charLocX;				vtxBufferPtr[(i*8)+7] = charLocY;				// Bottom Left
 		charLocX += (charWidth + (GLint)(((GLfloat)charSize / 32.0f) + 0.5f));
 	}
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
-	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, length * (2 * 4) * sizeof(GLint), this->_vtxBuffer);
+	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 }
 
@@ -6171,16 +6174,20 @@ void OGLHUDLayer::ProcessOGL()
 	
 	const size_t length = this->_statusString.length();
 	const char *cString = this->_statusString.c_str();
+	const size_t bufferSize = length * (2 * 4) * sizeof(GLfloat);
+	
+	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, bufferSize, NULL, GL_STREAM_DRAW_ARB);
+	GLfloat *texCoordBufferPtr = (GLfloat *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 	
 	for (size_t i = 0; i < length; i++)
 	{
 		const char c = cString[i];
-		GLfloat *texCoord = &this->_texCoordBuffer[i * 8];
+		GLfloat *texCoord = &texCoordBufferPtr[i * 8];
 		memcpy(texCoord, this->_glyphInfo[c].texCoord, sizeof(GLfloat) * 8);
 	}
 	
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
-	glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, length * (2 * 4) * sizeof(GLfloat), this->_texCoordBuffer);
+	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
 	this->_ProcessVerticesOGL();
@@ -6264,6 +6271,10 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	_videoSrcCustomBufferHeight[0] = GPU_DISPLAY_HEIGHT;
 	_videoSrcCustomBufferHeight[1] = GPU_DISPLAY_HEIGHT;
 	
+	// Set up fences for DMA texture uploads
+	glGenFencesAPPLE(2, _fenceTexUploadNativeID);
+	glGenFencesAPPLE(2, _fenceTexUploadCustomID);
+	
 	// Set up textures
 	glGenTextures(2, _texCPUFilterDstID);
 	glGenTextures(2, _texVideoInputDataNativeID);
@@ -6314,10 +6325,6 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _vf[1]->GetSrcBufferPtr());
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
-	
-	// Set up fences for DMA texture uploads
-	glGenFencesAPPLE(2, _fenceTexUploadNativeID);
-	glGenFencesAPPLE(2, _fenceTexUploadCustomID);
 	
 	// Set up VBOs
 	glGenBuffersARB(1, &_vboVertexID);
@@ -6422,9 +6429,6 @@ OGLDisplayLayer::~OGLDisplayLayer()
 		_isVAOPresent = false;
 	}
 	
-	glDeleteFencesAPPLE(2, _fenceTexUploadNativeID);
-	glDeleteFencesAPPLE(2, _fenceTexUploadCustomID);
-	
 	glDeleteBuffersARB(1, &this->_vboVertexID);
 	glDeleteBuffersARB(1, &this->_vboTexCoordID);
 	glDeleteBuffersARB(1, &this->_vboElementID);
@@ -6439,6 +6443,9 @@ OGLDisplayLayer::~OGLDisplayLayer()
 	glDeleteTextures(1, &this->_texHQ3xLUT);
 	glDeleteTextures(1, &this->_texHQ4xLUT);
 	glActiveTexture(GL_TEXTURE0);
+	
+	glDeleteFencesAPPLE(2, _fenceTexUploadNativeID);
+	glDeleteFencesAPPLE(2, _fenceTexUploadCustomID);
 	
 	if (_canUseShaderOutput)
 	{
