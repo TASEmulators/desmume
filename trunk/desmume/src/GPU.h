@@ -1403,6 +1403,9 @@ public:
 	FragmentColor* Get3DFramebufferRGBA6665() const;
 	u16* Get3DFramebufferRGBA5551() const;
 	virtual void SetCustomFramebufferSize(size_t w, size_t h);
+	
+	bool Is3DRenderedLayerNeeded();
+	bool Is3DCapturingNeeded();
 		
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l);
 	void FramebufferPostprocess();
