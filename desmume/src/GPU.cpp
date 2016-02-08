@@ -4089,6 +4089,18 @@ void GPUEngineA::SetCustomFramebufferSize(size_t w, size_t h)
 	free_aligned(oldColorRGBA5551Buffer);
 }
 
+
+bool GPUEngineA::Is3DRenderedLayerNeeded()
+{
+	return ( this->_enableLayer[GPULayerID_BG0] && (this->_IORegisterMap->DISPCNT.BG0_3D != 0) );
+}
+
+bool GPUEngineA::Is3DCapturingNeeded()
+{
+	const IOREG_DISPCAPCNT &DISPCAPCNT = this->_IORegisterMap->DISPCAPCNT;
+	return ( (DISPCAPCNT.CaptureEnable != 0) && (vramConfiguration.banks[DISPCAPCNT.VRAMWriteBlock].purpose == VramConfiguration::LCDC) && (DISPCAPCNT.SrcA != 0) );
+}
+
 template<bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineA::RenderLine(const u16 l)
 {
@@ -5681,7 +5693,10 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 {
 	if (l == 0)
 	{
+		CurrentRenderer->SetFramebufferFlushStates(this->_engineMain->Is3DRenderedLayerNeeded(), this->_engineMain->Is3DCapturingNeeded());
 		CurrentRenderer->RenderFinish();
+		CurrentRenderer->SetFramebufferFlushStates(true, true);
+		
 		this->_event->DidFrameBegin();
 		this->UpdateVRAM3DUsageProperties();
 		

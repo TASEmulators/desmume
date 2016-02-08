@@ -1961,7 +1961,9 @@ Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
 			this->RenderEdgeMarkingAndFog(this->postprocessParam[0]);
 		}
 		
-		this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
+		FragmentColor *framebufferRGBA6665 = (this->_willFlushFramebufferRGBA6665) ? GPU->GetEngineMain()->Get3DFramebufferRGBA6665() : NULL;
+		u16 *framebufferRGBA5551 = (this->_willFlushFramebufferRGBA5551) ? GPU->GetEngineMain()->Get3DFramebufferRGBA5551() : NULL;
+		this->FlushFramebuffer(framebufferRGBA6665, framebufferRGBA5551);
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -2005,7 +2007,9 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 		}
 	}
 	
-	this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
+	FragmentColor *framebufferRGBA6665 = (this->_willFlushFramebufferRGBA6665) ? GPU->GetEngineMain()->Get3DFramebufferRGBA6665() : NULL;
+	u16 *framebufferRGBA5551 = (this->_willFlushFramebufferRGBA5551) ? GPU->GetEngineMain()->Get3DFramebufferRGBA5551() : NULL;
+	this->FlushFramebuffer(framebufferRGBA6665, framebufferRGBA5551);
 	
 	GPU->GetEventHandler()->DidRender3DEnd();
 	return RENDER3DERROR_NOERR;

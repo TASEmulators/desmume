@@ -109,6 +109,9 @@ protected:
 	size_t _framebufferColorSizeBytes;
 	FragmentColor *_framebufferColor;
 	
+	bool _willFlushFramebufferRGBA6665;
+	bool _willFlushFramebufferRGBA5551;
+	
 	CACHE_ALIGN u16 clearImageColor16Buffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN u32 clearImageDepthBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN u8 clearImageFogBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
@@ -155,6 +158,9 @@ public:
 	virtual Render3DError VramReconfigureSignal();		// Called when the emulator reconfigures its VRAM. You may need to invalidate your texture cache.
 	
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);	// Called whenever the output framebuffer size changes.
+	
+	virtual void GetFramebufferFlushStates(bool &willFlushRGBA6665, bool &willFlushRGBA5551);
+	virtual void SetFramebufferFlushStates(bool willFlushRGBA6665, bool willFlushRGBA5551);
 };
 
 #ifdef ENABLE_SSE2
