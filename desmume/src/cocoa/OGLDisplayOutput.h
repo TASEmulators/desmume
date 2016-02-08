@@ -300,11 +300,7 @@ protected:
 	size_t _glyphTileSize;
 	
 	OGLShaderProgram *_program;
-	
-	GLint _vtxBuffer[4096 * (2 * 4)];
-	GLfloat _texCoordBuffer[4096 * (2 * 4)];
-	GLshort _idxBuffer[4096 * 6];
-	
+		
 	bool _isVAOPresent;
 	bool _canUseShaderOutput;
 	
