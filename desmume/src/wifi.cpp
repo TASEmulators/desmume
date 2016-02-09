@@ -77,6 +77,8 @@ WifiHandler *CurrentWifiHandler = &_defaultHandler;
 wifimac_t wifiMac;
 SoftAP_t SoftAP;
 int wifi_lastmode;
+static const u8 _wifiMinRSSI = 10;
+static const u8 _wifiMaxRSSI = 255;
 
 /*******************************************************************************
 
@@ -308,7 +310,11 @@ WifiComInterface* wifiCom;
 // 3: medium logging, for debugging, shows lots of stuff
 // 4: high logging, for debugging, shows almost everything, may slow down
 // 5: highest logging, for debugging, shows everything, may slow down a lot
-#define WIFI_LOGGING_LEVEL 3
+#ifdef EXPERIMENTAL_WIFI_COMM
+	#define WIFI_LOGGING_LEVEL 3
+#else
+	#define WIFI_LOGGING_LEVEL 0
+#endif
 
 #define WIFI_LOG_USE_LOGC 0
 
@@ -777,9 +783,8 @@ INLINE void WIFI_MakeRXHeader(u8* buf, u16 flags, u16 xferRate, u16 len, u8 maxR
 	*(u16*)&buf[6] = xferRate;
 	*(u16*)&buf[8] = len;
 
-	// idk about those, really
-	buf[10] = 0x20;//maxRSSI;
-	buf[11] = 0xA0;//minRSSI;
+	buf[10] = maxRSSI;
+	buf[11] = minRSSI;
 }
 
 static void WIFI_RXPutWord(u16 val)
@@ -1936,7 +1941,7 @@ void Adhoc_msTrigger()
 
 				u8* packet = new u8[12 + packetLen];
 
-				WIFI_MakeRXHeader(packet, WIFI_GetRXFlags(ptr), 20, packetLen, 0, 0);
+				WIFI_MakeRXHeader(packet, WIFI_GetRXFlags(ptr), 20, packetLen, _wifiMinRSSI, _wifiMaxRSSI);
 				memcpy(&packet[12], ptr, packetLen);
 				WIFI_RXQueuePacket(packet, 12+packetLen);
 			}
@@ -2176,7 +2181,7 @@ static void SoftAP_Deauthenticate()
 	if (WIFI_compareMAC(wifiMac.bss.bytes, &packet[12 + 16]))
 		rxflags |= 0x8000;
 
-	WIFI_MakeRXHeader(packet, rxflags, 20, packetLen, 0, 0);
+	WIFI_MakeRXHeader(packet, rxflags, 20, packetLen, _wifiMinRSSI, _wifiMaxRSSI);
 	WIFI_RXQueuePacket(packet, 12 + packetLen);
 
 	SoftAP.status = APStatus_Disconnected;
@@ -2265,7 +2270,7 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 			if (WIFI_compareMAC(wifiMac.bss.bytes, &rpacket[12 + 16]))
 				rxflags |= 0x8000;
 
-			WIFI_MakeRXHeader(rpacket, rxflags, 20, packetLen, 0, 0); // make the RX header
+			WIFI_MakeRXHeader(rpacket, rxflags, 20, packetLen, _wifiMinRSSI, _wifiMaxRSSI); // make the RX header
 			WIFI_RXQueuePacket(rpacket, 12 + packetLen);
 		}
 		break;
@@ -2280,8 +2285,7 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 
 				if (SoftAP_IsDNSRequestToWFC(*(u16*)&packet[30], &packet[32]))
 				{
-					SoftAP_Deauthenticate();
-					return;
+					WIFI_LOG(1, "SoftAP: Requesting Nintendo WFC server...\n");
 				}
 
 				u32 epacketLen = ((len - 30 - 4) + 14);
@@ -2323,7 +2327,7 @@ INLINE void SoftAP_SendBeacon()
 	if (WIFI_compareMAC(wifiMac.bss.bytes, &packet[12 + 16]))
 		rxflags |= 0x8000;
 
-	WIFI_MakeRXHeader(packet, rxflags, 20, packetLen, 0, 0);
+	WIFI_MakeRXHeader(packet, rxflags, 20, packetLen, _wifiMinRSSI, _wifiMaxRSSI);
 	WIFI_RXQueuePacket(packet, 12 + packetLen);
 }
 
@@ -2352,7 +2356,7 @@ static void SoftAP_RXHandler(u_char* user, const struct pcap_pkthdr* h, const u_
 		rxflags |= 0x8000;
 
 	// Make a valid 802.11 frame
-	WIFI_MakeRXHeader(wpacket, rxflags, 20, wpacketLen, 0, 0);
+	WIFI_MakeRXHeader(wpacket, rxflags, 20, wpacketLen, _wifiMinRSSI, _wifiMaxRSSI);
 	*(u16*)&wpacket[12+0] = 0x0208;
 	*(u16*)&wpacket[12+2] = 0x0000;
 	memcpy(&wpacket[12+4], &data[0], 6);
