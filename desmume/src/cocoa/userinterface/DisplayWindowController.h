@@ -68,6 +68,7 @@ class OGLVideoOutput;
 @property (assign) NSInteger outputFilter;
 @property (assign) NSInteger pixelScaler;
 
+- (void) setScaleFactor:(float)theScaleFactor;
 - (void) drawVideoFrame;
 - (NSPoint) dsPointFromEvent:(NSEvent *)theEvent;
 - (NSPoint) convertPointToDS:(NSPoint)clickLoc;
