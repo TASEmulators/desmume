@@ -1205,7 +1205,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Set up the scaling factor if this is a Retina window
 	float scaleFactor = 1.0f;
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-	if ([self respondsToSelector:@selector(backingScaleFactor)])
+	if ([[self window] respondsToSelector:@selector(backingScaleFactor)])
 	{
 		scaleFactor = [[self window] backingScaleFactor];
 	}

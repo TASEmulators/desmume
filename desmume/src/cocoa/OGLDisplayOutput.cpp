@@ -5755,8 +5755,6 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	_lastCpuLoadAvgARM7 = 0;
 	memset(_lastRTCString, 0, sizeof(_lastRTCString));
 	
-	_textBoxLines = 0;
-	_textBoxWidth = 0.0f;
 	//_textBoxScale = 0.65f;
 	_textBoxScale = 1.00f;
 	_textBoxTextOffset = 6.0f;
@@ -5982,47 +5980,25 @@ void OGLHUDLayer::RefreshInfo()
 {
 	std::ostringstream ss;
 	ss << "\x01"; // This represents the text box. It must always be the first character.
-	
-	const GLfloat charSize = (GLfloat)this->_glyphSize;
-	this->_textBoxWidth = 0.0f;
-	
+		
 	if (this->_showVideoFPS)
 	{
 		ss << "Video FPS: " << this->_lastVideoFPS << "\n";
-		this->_textBoxWidth = (charSize * 4.5f) + this->_textBoxTextOffset;
 	}
 	
 	if (this->_showRender3DFPS)
 	{
 		ss << "3D Rendering FPS: " << this->_lastRender3DFPS << "\n";
-		
-		const GLfloat newTextBoxWidth = (charSize * 6.9f) + this->_textBoxTextOffset;
-		if (newTextBoxWidth > this->_textBoxWidth)
-		{
-			this->_textBoxWidth = newTextBoxWidth;
-		}
 	}
 	
 	if (this->_showFrameIndex)
 	{
 		ss << "Frame Index: " << this->_lastFrameIndex << "\n";
-		
-		const GLfloat newTextBoxWidth = (charSize * 7.4f) + this->_textBoxTextOffset;
-		if (newTextBoxWidth > this->_textBoxWidth)
-		{
-			this->_textBoxWidth = newTextBoxWidth;
-		}
 	}
 	
 	if (this->_showLagFrameCount)
 	{
 		ss << "Lag Frame Count: " << this->_lastLagFrameCount << "\n";
-		
-		const GLfloat newTextBoxWidth = (charSize * 9.3f) + this->_textBoxTextOffset;
-		if (newTextBoxWidth > this->_textBoxWidth)
-		{
-			this->_textBoxWidth = newTextBoxWidth;
-		}
 	}
 	
 	if (this->_showCPULoadAverage)
@@ -6032,23 +6008,11 @@ void OGLHUDLayer::RefreshInfo()
 		snprintf(buffer, 25, "CPU Load Avg: %02d%% / %02d%%\n", this->_lastCpuLoadAvgARM9, this->_lastCpuLoadAvgARM7);
 		
 		ss << buffer;
-		
-		const GLfloat newTextBoxWidth = (charSize * 8.7f) + this->_textBoxTextOffset;
-		if (newTextBoxWidth > this->_textBoxWidth)
-		{
-			this->_textBoxWidth = newTextBoxWidth;
-		}
 	}
 	
 	if (this->_showRTC)
 	{
 		ss << "RTC: " << this->_lastRTCString << "\n";
-		
-		const GLfloat newTextBoxWidth = (charSize * 10.0f) + this->_textBoxTextOffset;
-		if (newTextBoxWidth > this->_textBoxWidth)
-		{
-			this->_textBoxWidth = newTextBoxWidth;
-		}
 	}
 	
 	this->_statusString = ss.str();
@@ -6062,15 +6026,6 @@ void OGLHUDLayer::_SetShowInfoItemOGL(bool &infoItemFlag, const bool visibleStat
 	}
 	
 	infoItemFlag = visibleState;
-	if (visibleState)
-	{
-		this->_textBoxLines++;
-	}
-	else
-	{
-		this->_textBoxLines--;
-	}
-	
 	this->RefreshInfo();
 	this->ProcessOGL();
 }
@@ -6137,12 +6092,12 @@ bool OGLHUDLayer::GetShowRTC() const
 
 void OGLHUDLayer::_ProcessVerticesOGL()
 {
-	if (this->_textBoxLines <= 0)
+	const size_t length = this->_statusString.length();
+	if (length <= 1)
 	{
 		return;
 	}
 	
-	const size_t length = this->_statusString.length();
 	const char *cString = this->_statusString.c_str();
 	const size_t bufferSize = length * (2 * 4) * sizeof(GLfloat);
 	
@@ -6150,6 +6105,7 @@ void OGLHUDLayer::_ProcessVerticesOGL()
 	const size_t lineHeight = charSize - (this->_glyphTileSize - this->_glyphSize) + 3.0f;
 	GLfloat charLocX = this->_textBoxTextOffset;
 	GLfloat charLocY = this->_textBoxTextOffset - charSize - (this->_glyphTileSize - this->_glyphSize);
+	GLfloat textBoxWidth = 0.0f;
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, bufferSize, NULL, GL_STREAM_DRAW_ARB);
@@ -6157,10 +6113,10 @@ void OGLHUDLayer::_ProcessVerticesOGL()
 	
 	// First, calculate the vertices of the text box.
 	// The text box should always be the first character in the string.
-	vtxBufferPtr[0] = 0.0f;												vtxBufferPtr[1] = 0.0f;
-	vtxBufferPtr[2] = this->_textBoxTextOffset + this->_textBoxWidth;	vtxBufferPtr[3] = 0.0f;
-	vtxBufferPtr[4] = this->_textBoxTextOffset + this->_textBoxWidth;	vtxBufferPtr[5] = -((GLfloat)(lineHeight * this->_textBoxLines) + this->_textBoxTextOffset);
-	vtxBufferPtr[6] = 0.0f;												vtxBufferPtr[7] = -((GLfloat)(lineHeight * this->_textBoxLines) + this->_textBoxTextOffset);
+	vtxBufferPtr[0] = 0.0f;			vtxBufferPtr[1] = 0.0f;
+	vtxBufferPtr[2] = charLocX;		vtxBufferPtr[3] = 0.0f;
+	vtxBufferPtr[4] = charLocX;		vtxBufferPtr[5] = -this->_textBoxTextOffset;
+	vtxBufferPtr[6] = 0.0f;			vtxBufferPtr[7] = -this->_textBoxTextOffset;
 	
 	// Calculate the vertices of the remaining characters in the string.
 	for (size_t i = 1; i < length; i++)
@@ -6169,6 +6125,14 @@ void OGLHUDLayer::_ProcessVerticesOGL()
 		
 		if (c == '\n')
 		{
+			if (charLocX > textBoxWidth)
+			{
+				textBoxWidth = charLocX;
+			}
+			
+			vtxBufferPtr[5] -= lineHeight;
+			vtxBufferPtr[7] -= lineHeight;
+			
 			charLocX = this->_textBoxTextOffset;
 			charLocY -= lineHeight;
 			continue;
@@ -6198,6 +6162,11 @@ void OGLHUDLayer::_ProcessVerticesOGL()
 	finalTextBoxScale *= this->_scaleFactor;
 	boxOffset *= this->_scaleFactor;
 	
+	// Set the width of the text box
+	vtxBufferPtr[2] += textBoxWidth;
+	vtxBufferPtr[4] += textBoxWidth;
+	
+	// Scale and translate the box
 	for (size_t i = 0; i < (length * 8); i+=2)
 	{
 		// Scale
@@ -6225,12 +6194,12 @@ void OGLHUDLayer::SetViewportSizeOGL(GLsizei w, GLsizei h)
 
 void OGLHUDLayer::ProcessOGL()
 {
-	if (this->_textBoxLines <= 0)
+	const size_t length = this->_statusString.length();
+	if (length <= 1)
 	{
 		return;
 	}
 	
-	const size_t length = this->_statusString.length();
 	const char *cString = this->_statusString.c_str();
 	const size_t bufferSize = length * (2 * 4) * sizeof(GLfloat);
 	
@@ -6253,12 +6222,11 @@ void OGLHUDLayer::ProcessOGL()
 
 void OGLHUDLayer::RenderOGL()
 {
-	if (this->_textBoxLines <= 0)
+	const size_t length = this->_statusString.length();
+	if (length <= 1)
 	{
 		return;
 	}
-	
-	const size_t length = this->_statusString.length();
 	
 	glUseProgram(this->_program->GetProgramID());
 	

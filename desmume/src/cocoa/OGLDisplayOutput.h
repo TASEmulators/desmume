@@ -329,8 +329,6 @@ protected:
 	uint32_t _lastCpuLoadAvgARM7;
 	char _lastRTCString[25];
 	
-	GLint _textBoxLines;
-	GLfloat _textBoxWidth;
 	GLfloat _textBoxScale;
 	GLfloat _textBoxTextOffset;
 	
