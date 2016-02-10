@@ -267,12 +267,15 @@ class OGLVideoLayer
 protected:
 	OGLVideoOutput *_output;
 	bool _isVisible;
+	GLfloat _scaleFactor;
 	GLsizei _viewportWidth;
 	GLsizei _viewportHeight;
 	
 public:
 	virtual ~OGLVideoLayer() {};
 	
+	virtual float GetScaleFactor();
+	virtual void SetScaleFactor(float scaleFactor);
 	virtual bool IsVisible();
 	virtual void SetVisibility(const bool visibleState);
 	virtual void SetViewportSizeOGL(GLsizei w, GLsizei h);
@@ -327,7 +330,9 @@ protected:
 	char _lastRTCString[25];
 	
 	GLint _textBoxLines;
-	GLint _textBoxWidth;
+	GLfloat _textBoxWidth;
+	GLfloat _textBoxScale;
+	GLfloat _textBoxTextOffset;
 	
 	void _SetShowInfoItemOGL(bool &infoItemFlag, const bool visibleState);
 	void _ProcessVerticesOGL();
@@ -368,6 +373,7 @@ protected:
 	bool _useShader150;
 	ShaderSupportTier _shaderSupport;
 	
+	GLboolean _useClientStorage;
 	bool _needUploadVertices;
 	bool _useDeposterize;
 	bool _useShaderBasedPixelScaler;
@@ -491,6 +497,7 @@ class OGLVideoOutput
 {
 protected:
 	OGLInfo *_info;
+	GLfloat _scaleFactor;
 	GLsizei _viewportWidth;
 	GLsizei _viewportHeight;
 	std::vector<OGLVideoLayer *> *_layerList;
@@ -501,6 +508,8 @@ public:
 	
 	void InitLayers();
 	OGLInfo* GetInfo();
+	float GetScaleFactor();
+	void SetScaleFactor(float scaleFactor);
 	GLsizei GetViewportWidth();
 	GLsizei GetViewportHeight();
 	OGLDisplayLayer* GetDisplayLayer();

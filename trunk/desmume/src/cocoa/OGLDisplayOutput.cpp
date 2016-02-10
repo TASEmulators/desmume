@@ -4467,6 +4467,7 @@ bool OGLShaderProgram::LinkOGL()
 OGLVideoOutput::OGLVideoOutput()
 {
 	_info = OGLInfoCreate_Func();
+	_scaleFactor = 1.0f;
 	_layerList = new std::vector<OGLVideoLayer *>;
 	_layerList->reserve(8);
 	
@@ -4518,6 +4519,22 @@ void OGLVideoOutput::InitLayers()
 OGLInfo* OGLVideoOutput::GetInfo()
 {
 	return this->_info;
+}
+
+float OGLVideoOutput::GetScaleFactor()
+{
+	return this->_scaleFactor;
+}
+
+void OGLVideoOutput::SetScaleFactor(float scaleFactor)
+{
+	this->_scaleFactor = scaleFactor;
+	
+	for (size_t i = 0; i < _layerList->size(); i++)
+	{
+		OGLVideoLayer *theLayer = (*_layerList)[i];
+		theLayer->SetScaleFactor(scaleFactor);
+	}
 }
 
 GLsizei OGLVideoOutput::GetViewportWidth()
@@ -5674,6 +5691,17 @@ void OGLImage::RenderOGL()
 }
 
 #pragma mark -
+
+float OGLVideoLayer::GetScaleFactor()
+{
+	return this->_scaleFactor;
+}
+
+void OGLVideoLayer::SetScaleFactor(float scaleFactor)
+{
+	this->_scaleFactor = scaleFactor;
+}
+
 bool OGLVideoLayer::IsVisible()
 {
 	return this->_isVisible;
@@ -5709,6 +5737,8 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 		printf("OGLVideoOutput: FreeType failed to init!\n");
 	}
 	
+	_scaleFactor = oglVO->GetScaleFactor();
+	
 	_isVisible = false;
 	_showVideoFPS = false;
 	_showRender3DFPS = false;
@@ -5724,8 +5754,12 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	_lastCpuLoadAvgARM9 = 0;
 	_lastCpuLoadAvgARM7 = 0;
 	memset(_lastRTCString, 0, sizeof(_lastRTCString));
+	
 	_textBoxLines = 0;
-	_textBoxWidth = 0;
+	_textBoxWidth = 0.0f;
+	//_textBoxScale = 0.65f;
+	_textBoxScale = 1.00f;
+	_textBoxTextOffset = 6.0f;
 	
 	_isVAOPresent = true;
 	_output = oglVO;
@@ -5748,7 +5782,7 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	
 	_statusString = "\x01"; // Char value 0x01 will represent the "text box" character, which will always be first in the string.
 	_glyphTileSize = 32;
-	_glyphSize = (float)_glyphTileSize * 0.90f;
+	_glyphSize = (GLfloat)_glyphTileSize * 0.80f;
 	
 	assert(_glyphTileSize <= 128);
 	
@@ -5760,7 +5794,7 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	glGenBuffersARB(1, &_vboElementID);
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLint) * 4096 * (2 * 4), NULL, GL_STREAM_DRAW_ARB);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * 4096 * (2 * 4), NULL, GL_STREAM_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * 4096 * (2 * 4), NULL, GL_STREAM_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
@@ -5789,9 +5823,9 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	if (oglVO->GetInfo()->IsShaderSupported())
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
-		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
-		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
 		
 		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
@@ -5800,9 +5834,9 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	else
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
-		glVertexPointer(2, GL_INT, 0, 0);
+		glVertexPointer(2, GL_FLOAT, 0, NULL);
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
-		glTexCoordPointer(2, GL_FLOAT, 0, 0);
+		glTexCoordPointer(2, GL_FLOAT, 0, NULL);
 		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
 		
 		glEnableClientState(GL_VERTEX_ARRAY);
@@ -5949,20 +5983,20 @@ void OGLHUDLayer::RefreshInfo()
 	std::ostringstream ss;
 	ss << "\x01"; // This represents the text box. It must always be the first character.
 	
-	const float charSize = (float)this->_glyphSize * 0.80f;
-	this->_textBoxWidth = 0;
+	const GLfloat charSize = (GLfloat)this->_glyphSize;
+	this->_textBoxWidth = 0.0f;
 	
 	if (this->_showVideoFPS)
 	{
 		ss << "Video FPS: " << this->_lastVideoFPS << "\n";
-		this->_textBoxWidth = (GLint)((charSize * 5.2f) + 6.5f);
+		this->_textBoxWidth = (charSize * 4.5f) + this->_textBoxTextOffset;
 	}
 	
 	if (this->_showRender3DFPS)
 	{
 		ss << "3D Rendering FPS: " << this->_lastRender3DFPS << "\n";
 		
-		const GLint newTextBoxWidth = (charSize * 7.2f) + 6.5f;
+		const GLfloat newTextBoxWidth = (charSize * 6.9f) + this->_textBoxTextOffset;
 		if (newTextBoxWidth > this->_textBoxWidth)
 		{
 			this->_textBoxWidth = newTextBoxWidth;
@@ -5973,7 +6007,7 @@ void OGLHUDLayer::RefreshInfo()
 	{
 		ss << "Frame Index: " << this->_lastFrameIndex << "\n";
 		
-		const GLint newTextBoxWidth = (charSize * 7.6f) + 6.5f;
+		const GLfloat newTextBoxWidth = (charSize * 7.4f) + this->_textBoxTextOffset;
 		if (newTextBoxWidth > this->_textBoxWidth)
 		{
 			this->_textBoxWidth = newTextBoxWidth;
@@ -5984,7 +6018,7 @@ void OGLHUDLayer::RefreshInfo()
 	{
 		ss << "Lag Frame Count: " << this->_lastLagFrameCount << "\n";
 		
-		const GLint newTextBoxWidth = (charSize * 8.5f) + 6.5f;
+		const GLfloat newTextBoxWidth = (charSize * 9.3f) + this->_textBoxTextOffset;
 		if (newTextBoxWidth > this->_textBoxWidth)
 		{
 			this->_textBoxWidth = newTextBoxWidth;
@@ -5999,7 +6033,7 @@ void OGLHUDLayer::RefreshInfo()
 		
 		ss << buffer;
 		
-		const GLint newTextBoxWidth = (charSize * 9.2f) + 6.5f;
+		const GLfloat newTextBoxWidth = (charSize * 8.7f) + this->_textBoxTextOffset;
 		if (newTextBoxWidth > this->_textBoxWidth)
 		{
 			this->_textBoxWidth = newTextBoxWidth;
@@ -6010,7 +6044,7 @@ void OGLHUDLayer::RefreshInfo()
 	{
 		ss << "RTC: " << this->_lastRTCString << "\n";
 		
-		const GLint newTextBoxWidth = (charSize * 10.8f) + 6.5f;
+		const GLfloat newTextBoxWidth = (charSize * 10.0f) + this->_textBoxTextOffset;
 		if (newTextBoxWidth > this->_textBoxWidth)
 		{
 			this->_textBoxWidth = newTextBoxWidth;
@@ -6110,24 +6144,23 @@ void OGLHUDLayer::_ProcessVerticesOGL()
 	
 	const size_t length = this->_statusString.length();
 	const char *cString = this->_statusString.c_str();
-	const size_t bufferSize = length * (2 * 4) * sizeof(GLint);
+	const size_t bufferSize = length * (2 * 4) * sizeof(GLfloat);
 	
-	const GLint leftAlignedPosition = 10 - (this->_viewportWidth / 2);
-	const GLint charSize = (float)this->_glyphSize * 0.80f;
-	GLint charLocX = leftAlignedPosition;
-	GLint charLocY = (this->_viewportHeight / 2) - charSize - (this->_glyphTileSize - this->_glyphSize);
-	GLint textBoxTop = this->_viewportHeight / 2;
+	const GLfloat charSize = (GLfloat)this->_glyphSize;
+	const size_t lineHeight = charSize - (this->_glyphTileSize - this->_glyphSize) + 3.0f;
+	GLfloat charLocX = this->_textBoxTextOffset;
+	GLfloat charLocY = this->_textBoxTextOffset - charSize - (this->_glyphTileSize - this->_glyphSize);
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, bufferSize, NULL, GL_STREAM_DRAW_ARB);
-	GLint *vtxBufferPtr = (GLint *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+	GLfloat *vtxBufferPtr = (GLfloat *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 	
 	// First, calculate the vertices of the text box.
 	// The text box should always be the first character in the string.
-	vtxBufferPtr[0] = leftAlignedPosition - 6;						vtxBufferPtr[1] = textBoxTop - 3;
-	vtxBufferPtr[2] = leftAlignedPosition + this->_textBoxWidth;	vtxBufferPtr[3] = textBoxTop - 3;
-	vtxBufferPtr[4] = leftAlignedPosition + this->_textBoxWidth;	vtxBufferPtr[5] = textBoxTop - (charSize * this->_textBoxLines) - 8;
-	vtxBufferPtr[6] = leftAlignedPosition - 6;						vtxBufferPtr[7] = textBoxTop - (charSize * this->_textBoxLines) - 8;
+	vtxBufferPtr[0] = 0.0f;												vtxBufferPtr[1] = 0.0f;
+	vtxBufferPtr[2] = this->_textBoxTextOffset + this->_textBoxWidth;	vtxBufferPtr[3] = 0.0f;
+	vtxBufferPtr[4] = this->_textBoxTextOffset + this->_textBoxWidth;	vtxBufferPtr[5] = -((GLfloat)(lineHeight * this->_textBoxLines) + this->_textBoxTextOffset);
+	vtxBufferPtr[6] = 0.0f;												vtxBufferPtr[7] = -((GLfloat)(lineHeight * this->_textBoxLines) + this->_textBoxTextOffset);
 	
 	// Calculate the vertices of the remaining characters in the string.
 	for (size_t i = 1; i < length; i++)
@@ -6136,19 +6169,44 @@ void OGLHUDLayer::_ProcessVerticesOGL()
 		
 		if (c == '\n')
 		{
-			charLocX = leftAlignedPosition;
-			charLocY -= charSize;
+			charLocX = this->_textBoxTextOffset;
+			charLocY -= lineHeight;
 			continue;
 		}
 		
-		const GLint glyphWidth = this->_glyphInfo[c].width;
-		const GLint charWidth = (GLfloat)glyphWidth * ((GLfloat)charSize / (GLfloat)this->_glyphTileSize);
+		const GLfloat glyphWidth = this->_glyphInfo[c].width;
+		const GLfloat charWidth = glyphWidth * ((charSize / (GLfloat)this->_glyphTileSize) * 0.9f);
 		
 		vtxBufferPtr[(i*8)+0] = charLocX;				vtxBufferPtr[(i*8)+1] = charLocY + charSize;	// Top Left
 		vtxBufferPtr[(i*8)+2] = charLocX + charWidth;	vtxBufferPtr[(i*8)+3] = charLocY + charSize;	// Top Right
 		vtxBufferPtr[(i*8)+4] = charLocX + charWidth;	vtxBufferPtr[(i*8)+5] = charLocY;				// Bottom Right
 		vtxBufferPtr[(i*8)+6] = charLocX;				vtxBufferPtr[(i*8)+7] = charLocY;				// Bottom Left
-		charLocX += (charWidth + (GLint)(((GLfloat)charSize / 32.0f) + 0.5f));
+		charLocX += (charWidth + (charSize / 32.0f) + 0.5f);
+	}
+	
+	GLfloat finalTextBoxScale = this->_textBoxScale;
+	GLfloat boxOffset = this->_textBoxScale * 10.0f;
+	if (boxOffset < 2.0f)
+	{
+		boxOffset = 2.0f;
+	}
+	else if (boxOffset > 10.0f)
+	{
+		boxOffset = 10.0f;
+	}
+	
+	finalTextBoxScale *= this->_scaleFactor;
+	boxOffset *= this->_scaleFactor;
+	
+	for (size_t i = 0; i < (length * 8); i+=2)
+	{
+		// Scale
+		vtxBufferPtr[i+0] *= finalTextBoxScale;
+		vtxBufferPtr[i+1] *= finalTextBoxScale;
+		
+		// Translate
+		vtxBufferPtr[i+0] += boxOffset - (this->_viewportWidth / 2.0f);
+		vtxBufferPtr[i+1] += (this->_viewportHeight / 2.0f) - boxOffset;
 	}
 	
 	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
@@ -6226,6 +6284,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 {
 	_isVisible = true;
 	_output = oglVO;
+	_useClientStorage = GL_FALSE;
 	_needUploadVertices = true;
 	_useDeposterize = false;
 	
@@ -6520,7 +6579,7 @@ void OGLDisplayLayer::DetermineTextureStorageHints(GLint &videoSrcTexStorageHint
 	if (this->_videoSrcBufferHead == NULL)
 	{
 		glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, 0, NULL);
-		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
+		this->_useClientStorage = GL_FALSE;
 	}
 	else
 	{
@@ -6535,8 +6594,10 @@ void OGLDisplayLayer::DetermineTextureStorageHints(GLint &videoSrcTexStorageHint
 			glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, this->_videoSrcBufferSize, this->_videoSrcBufferHead);
 		}
 		
-		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+		this->_useClientStorage = GL_TRUE;
 	}
+	
+	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
 }
 
 void OGLDisplayLayer::SetVideoBuffers(const void *videoBufferHead,
@@ -7248,7 +7309,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 		{
 			glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 			this->_shaderFilter[i]->SetScaleOGL(vfScale);
-			glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+			glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
 		}
 	}
 	
@@ -7293,7 +7354,7 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 			{
 				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 				this->_filterDeposterize[0]->SetSrcSizeOGL(this->_texLoadedWidth[0], this->_texLoadedHeight[0]);
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
 			}
 		}
 		
@@ -7330,7 +7391,7 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 			{
 				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 				this->_filterDeposterize[1]->SetSrcSizeOGL(this->_texLoadedWidth[1], this->_texLoadedHeight[1]);
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
 			}
 		}
 		
@@ -7377,7 +7438,7 @@ void OGLDisplayLayer::ProcessOGL()
 		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 		texVideoSourceID[0] = this->_filterDeposterize[0]->RunFilterOGL(texVideoSourceID[0]);
 		texVideoSourceID[1] = this->_filterDeposterize[1]->RunFilterOGL(texVideoSourceID[1]);
-		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
 		
 		if (isUsingCPUPixelScaler) // Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
 		{
@@ -7408,7 +7469,7 @@ void OGLDisplayLayer::ProcessOGL()
 			{
 				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 				texVideoPixelScalerID[0] = this->_shaderFilter[0]->RunFilterOGL(texVideoSourceID[0]);
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
 				
 				w0 = this->_shaderFilter[0]->GetDstWidth();
 				h0 = this->_shaderFilter[0]->GetDstHeight();
@@ -7436,7 +7497,7 @@ void OGLDisplayLayer::ProcessOGL()
 			{
 				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 				texVideoPixelScalerID[1] = this->_shaderFilter[1]->RunFilterOGL(texVideoSourceID[1]);
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
 				
 				w1 = this->_shaderFilter[1]->GetDstWidth();
 				h1 = this->_shaderFilter[1]->GetDstHeight();

@@ -1202,6 +1202,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[emuControl windowList] addObject:self];
 	[emuControl updateAllWindowTitles];
 	
+	// Set up the scaling factor if this is a Retina window
+	float scaleFactor = 1.0f;
+#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+	if ([self respondsToSelector:@selector(backingScaleFactor)])
+	{
+		scaleFactor = [[self window] backingScaleFactor];
+	}
+#endif
+	[view setScaleFactor:scaleFactor];
+	
 	// Set up some custom UI elements.
 	[microphoneGainMenuItem setView:microphoneGainControlView];
 	[outputVolumeMenuItem setView:outputVolumeControlView];
@@ -1761,6 +1771,18 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 }
 
 #pragma mark Class Methods
+
+- (void) setScaleFactor:(float)theScaleFactor
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	oglv->SetScaleFactor(theScaleFactor);
+	CGLUnlockContext(cglDisplayContext);
+	
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
 
 - (void) drawVideoFrame
 {
