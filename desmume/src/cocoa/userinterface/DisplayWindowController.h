@@ -113,7 +113,9 @@ class OGLVideoOutput;
 	NSUInteger _statusBarHeight;
 	BOOL _isUpdatingDisplayScaleValueOnly;
 	BOOL _useMavericksFullScreen;
-	BOOL _willRestoreStatusBarFromFullScreen;
+	BOOL _masterStatusBarState;
+	NSRect _masterWindowFrame;
+	double _masterWindowScale;
 	
 	OSSpinLock spinlockScale;
 	OSSpinLock spinlockRotation;
@@ -161,6 +163,9 @@ class OGLVideoOutput;
 - (double) maxScalarForContentBoundsWidth:(double)contentBoundsWidth height:(double)contentBoundsHeight;
 - (void) enterFullScreen;
 - (void) exitFullScreen;
+- (BOOL) masterStatusBarState;
+- (NSRect) masterWindowFrame;
+- (double) masterWindowScale;
 
 - (IBAction) copy:(id)sender;
 - (IBAction) changeHardwareMicGain:(id)sender;
