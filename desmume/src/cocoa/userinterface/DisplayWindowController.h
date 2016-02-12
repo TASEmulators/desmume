@@ -168,6 +168,7 @@ class OGLVideoOutput;
 - (IBAction) changeVolume:(id)sender;
 
 - (IBAction) toggleExecutePause:(id)sender;
+- (IBAction) frameAdvance:(id)sender;
 - (IBAction) reset:(id)sender;
 - (IBAction) changeCoreSpeed:(id)sender;
 - (IBAction) openRom:(id)sender;
@@ -194,6 +195,7 @@ class OGLVideoOutput;
 - (IBAction) toggleShowHUDInput:(id)sender;
 - (IBAction) toggleShowHUDCPULoadAverage:(id)sender;
 - (IBAction) toggleShowHUDRealTimeClock:(id)sender;
+- (IBAction) toggleNDSDisplays:(id)sender;
 - (IBAction) toggleKeepMinDisplaySizeAtNormal:(id)sender;
 - (IBAction) toggleStatusBar:(id)sender;
 - (IBAction) toggleFullScreenDisplay:(id)sender;
