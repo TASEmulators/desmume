@@ -823,6 +823,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[emuControl toggleExecutePause:sender];
 }
 
+- (IBAction) frameAdvance:(id)sender
+{
+	[emuControl frameAdvance:sender];
+}
+
 - (IBAction) reset:(id)sender
 {
 	[emuControl reset:sender];
@@ -939,6 +944,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (IBAction) changeVideoPixelScaler:(id)sender
 {
 	[self setVideoPixelScaler:[CocoaDSUtil getIBActionSenderTag:sender]];
+}
+
+- (IBAction) toggleNDSDisplays:(id)sender
+{
+	[self setDisplayOrder:([self displayOrder] == DS_DISPLAY_ORDER_MAIN_FIRST) ? DS_DISPLAY_ORDER_TOUCH_FIRST : DS_DISPLAY_ORDER_MAIN_FIRST];
 }
 
 - (IBAction) writeDefaultsDisplayRotation:(id)sender
@@ -1468,6 +1478,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			[theItem setImage:[emuControl iconPause]];
 		}
     }
+	else if (theAction == @selector(frameAdvance:))
+    {
+		if (![emuControl masterExecuteFlag] ||
+			[emuControl currentRom] == nil ||
+			[emuControl isUserInterfaceBlockingExecution] ||
+			[emuControl executionState] != CORESTATE_PAUSE)
+		{
+			enable = NO;
+		}
+    }
 	else if (theAction == @selector(reset:))
 	{
 		if ([emuControl currentRom] == nil || [emuControl isUserInterfaceBlockingExecution])
@@ -1479,7 +1499,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		NSInteger speedScalar = (NSInteger)([emuControl speedScalar] * 100.0);
 		
-		if (speedScalar == (NSInteger)(SPEED_SCALAR_DOUBLE * 100.0))
+		if (speedScalar != (NSInteger)(SPEED_SCALAR_NORMAL * 100.0))
 		{
 			[theItem setLabel:NSSTRING_TITLE_SPEED_1X];
 			[theItem setTag:100];
@@ -1498,6 +1518,18 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		{
 			enable = NO;
 		}
+	}
+	else if (theAction == @selector(toggleHUDVisibility:))
+	{
+		if ([[self view] isHUDVisible])
+		{
+			[theItem setLabel:NSSTRING_TITLE_DISABLE_HUD];
+		}
+		else
+		{
+			[theItem setLabel:NSSTRING_TITLE_ENABLE_HUD];
+		}
+
 	}
 	
 	return enable;
