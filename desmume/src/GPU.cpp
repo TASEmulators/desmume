@@ -2372,7 +2372,7 @@ void GPUEngineBase::_RenderPixelsCustom(u16 *__restrict dstColorLine, u8 *__rest
 		}
 	}
 #else
-	for (x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
+	for (size_t x = 0, dstIdx = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
 	{
 		if (MOSAIC)
 		{
