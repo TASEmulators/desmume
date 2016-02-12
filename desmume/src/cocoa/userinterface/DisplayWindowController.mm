@@ -114,6 +114,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_isMinSizeNormal = YES;
 	_statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
 	_isUpdatingDisplayScaleValueOnly = NO;
+	_useMavericksFullScreen = IsOSXVersionSupported(10, 9, 0);
+	_willRestoreStatusBarFromFullScreen = NO;
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(saveScreenshotAsFinish:)
@@ -524,7 +526,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		return scalar;
 	}
-		
+	
 	// Convert angle to clockwise-direction degrees.
 	angleDegrees = CLOCKWISE_DEGREES(angleDegrees);
 	
@@ -659,32 +661,39 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void) respondToScreenChange:(NSNotification *)aNotification
 {
-	// This method only applies for displays in full screen mode. For displays in
-	// windowed mode, we don't need to do anything.
-	if ([self assignedScreen] == nil)
+	if (_useMavericksFullScreen)
 	{
 		return;
 	}
-	
-	NSArray *screenList = [NSScreen screens];
-	
-	// If the assigned screen was disconnected, exit full screen mode. Hopefully, the
-	// window will automatically move onto an available screen.
-	if (![screenList containsObject:[self assignedScreen]])
-	{
-		[self exitFullScreen];
-	}
 	else
 	{
-		// There are many other reasons that a screen change would occur, but the only
-		// other one we care about is a resolution change. Let's just assume that a
-		// resolution change occurred and resize the full screen window.
-		NSRect screenRect = [assignedScreen frame];
-		[[self window] setFrame:screenRect display:NO];
+		// This method only applies for displays in full screen mode. For displays in
+		// windowed mode, we don't need to do anything.
+		if ([self assignedScreen] == nil)
+		{
+			return;
+		}
 		
-		screenRect.origin.x = 0.0;
-		screenRect.origin.y = 0.0;
-		[view setFrame:screenRect];
+		NSArray *screenList = [NSScreen screens];
+		
+		// If the assigned screen was disconnected, exit full screen mode. Hopefully, the
+		// window will automatically move onto an available screen.
+		if (![screenList containsObject:[self assignedScreen]])
+		{
+			[self exitFullScreen];
+		}
+		else
+		{
+			// There are many other reasons that a screen change would occur, but the only
+			// other one we care about is a resolution change. Let's just assume that a
+			// resolution change occurred and resize the full screen window.
+			NSRect screenRect = [assignedScreen frame];
+			[[self window] setFrame:screenRect display:NO];
+			
+			screenRect.origin.x = 0.0;
+			screenRect.origin.y = 0.0;
+			[view setFrame:screenRect];
+		}
 	}
 }
 
@@ -790,13 +799,22 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (IBAction) toggleFullScreenDisplay:(id)sender
 {
-	if ([self assignedScreen] == nil)
+#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+	if (_useMavericksFullScreen)
 	{
-		[self enterFullScreen];
+		[masterWindow toggleFullScreen:nil];
 	}
 	else
+#endif
 	{
-		[self exitFullScreen];
+		if ([self assignedScreen] == nil)
+		{
+			[self enterFullScreen];
+		}
+		else
+		{
+			[self exitFullScreen];
+		}
 	}
 }
 
@@ -1295,6 +1313,53 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[view setFrame:newContentFrame];
 }
 
+- (NSRect)windowWillUseStandardFrame:(NSWindow *)window defaultFrame:(NSRect)newFrame
+{
+	if ([self assignedScreen] != nil)
+	{
+		return newFrame;
+	}
+	
+	NSScreen *targetScreen = [window screen];
+	
+	if (newFrame.size.height > [targetScreen visibleFrame].size.height)
+	{
+		newFrame.size.height = [targetScreen visibleFrame].size.height;
+	}
+	
+	if (newFrame.size.width > [targetScreen visibleFrame].size.width)
+	{
+		newFrame.size.width = [targetScreen visibleFrame].size.width;
+	}
+	
+	NSRect currentFrame = [window frame];
+	BOOL isZooming = (newFrame.size.width > currentFrame.size.width) || (newFrame.size.height > currentFrame.size.height);
+	
+	// Get a content Rect so that we can make our comparison.
+	// This will be based on the proposed frameSize.
+	const NSRect frameRect = newFrame;
+	const NSRect contentRect = [window contentRectForFrameRect:frameRect];
+	
+	// Find the maximum scalar we can use for the display view, bounded by the
+	// content Rect.
+	const NSSize normalBounds = [self normalSize];
+	const CGSize checkSize = GetTransformedBounds(normalBounds.width, normalBounds.height, 1.0, [self displayRotation]);
+	const NSSize contentBounds = NSMakeSize(contentRect.size.width, contentRect.size.height - _statusBarHeight);
+	const double maxS = GetMaxScalarInBounds(checkSize.width, checkSize.height, contentBounds.width, contentBounds.height);
+	
+	// Make a new content Rect with our max scalar, and convert it back to a frame Rect.
+	const NSRect finalContentRect = NSMakeRect(0.0f, 0.0f, checkSize.width * maxS, (checkSize.height * maxS) + _statusBarHeight);
+	NSRect finalFrameRect = [window frameRectForContentRect:finalContentRect];
+	
+	if (isZooming)
+	{
+		finalFrameRect.origin.x = ((currentFrame.origin.x) + (currentFrame.size.width / 2.0f)) - (finalFrameRect.size.width / 2.0f);
+	}
+	
+	// Set the final size based on our new frame Rect.
+	return finalFrameRect;
+}
+
 - (BOOL)windowShouldClose:(id)sender
 {
 	BOOL shouldClose = YES;
@@ -1335,6 +1400,48 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[emuControl updateAllWindowTitles];
 	[emuControl updateDisplayPanelTitles];
 }
+
+#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+
+- (NSSize)window:(NSWindow *)window willUseFullScreenContentSize:(NSSize)proposedSize
+{
+	return [[window screen] frame].size;
+}
+
+- (NSApplicationPresentationOptions)window:(NSWindow *)window willUseFullScreenPresentationOptions:(NSApplicationPresentationOptions)proposedOptions
+{
+	[[NSApplication sharedApplication] setPresentationOptions:(NSApplicationPresentationHideDock)];
+	
+	NSApplicationPresentationOptions options = (NSApplicationPresentationHideDock |
+												NSApplicationPresentationAutoHideMenuBar |
+												NSApplicationPresentationFullScreen |
+												NSApplicationPresentationAutoHideToolbar);
+	
+#if defined(MAC_OS_X_VERSION_10_11_2) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
+	options |= NSApplicationPresentationDisableCursorLocationAssistance;
+#endif
+	
+	return options;
+}
+
+- (void)windowWillEnterFullScreen:(NSNotification *)notification
+{
+	_willRestoreStatusBarFromFullScreen = [self isShowingStatusBar];
+	[self setIsShowingStatusBar:NO];
+}
+
+- (void)windowDidEnterFullScreen:(NSNotification *)notification
+{
+	[self setAssignedScreen:[masterWindow screen]];
+}
+
+- (void)windowWillExitFullScreen:(NSNotification *)notification
+{
+	[self setAssignedScreen:nil];
+	[self setIsShowingStatusBar:_willRestoreStatusBarFromFullScreen];
+}
+
+#endif
 
 - (BOOL)validateToolbarItem:(NSToolbarItem *)theItem
 {

@@ -112,6 +112,8 @@ class OGLVideoOutput;
 	BOOL _isMinSizeNormal;
 	NSUInteger _statusBarHeight;
 	BOOL _isUpdatingDisplayScaleValueOnly;
+	BOOL _useMavericksFullScreen;
+	BOOL _willRestoreStatusBarFromFullScreen;
 	
 	OSSpinLock spinlockScale;
 	OSSpinLock spinlockRotation;
