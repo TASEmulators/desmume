@@ -699,7 +699,7 @@
 			if (isInFullScreenMode &&
 				([[NSScreen screens] indexOfObject:[[windowController window] screen]] == screenIndex))
 			{
-				[windowController enterFullScreen];
+				[windowController toggleFullScreenDisplay:self];
 				[[windowController window] makeKeyAndOrderFront:self];
 				[[windowController window] makeMainWindow];
 			}
@@ -722,13 +722,13 @@
 			const BOOL isInFullScreenMode = ([windowController assignedScreen] != nil);
 			const NSUInteger screenIndex = [[NSScreen screens] indexOfObject:[[windowController masterWindow] screen]];
 			
-			const NSRect windowFrame = [[windowController masterWindow] frame];
+			const NSRect windowFrame = [windowController masterWindowFrame];
 			NSString *windowFrameStr = [NSString stringWithFormat:@"%i %i %i %i",
 										(int)windowFrame.origin.x, (int)windowFrame.origin.y, (int)windowFrame.size.width, (int)windowFrame.size.height];
 			
 			NSDictionary *windowProperties = [NSDictionary dictionaryWithObjectsAndKeys:
 											  [NSNumber numberWithInteger:[windowController displayMode]], @"displayMode",
-											  [NSNumber numberWithDouble:[windowController displayScale]], @"displayScale",
+											  [NSNumber numberWithDouble:[windowController masterWindowScale]], @"displayScale",
 											  [NSNumber numberWithDouble:[windowController displayRotation]], @"displayRotation",
 											  [NSNumber numberWithInteger:[windowController displayOrientation]], @"displayOrientation",
 											  [NSNumber numberWithInteger:[windowController displayOrder]], @"displayOrder",
@@ -747,7 +747,7 @@
 											  [NSNumber numberWithBool:[[windowController view] isHUDCPULoadAverageVisible]], @"hudShowCPULoadAverage",
 											  [NSNumber numberWithBool:[[windowController view] isHUDRealTimeClockVisible]], @"hudShowRTC",
 											  [NSNumber numberWithBool:[windowController isMinSizeNormal]], @"isMinSizeNormal",
-											  [NSNumber numberWithBool:[windowController isShowingStatusBar]], @"isShowingStatusBar",
+											  [NSNumber numberWithBool:[windowController masterStatusBarState]], @"isShowingStatusBar",
 											  [NSNumber numberWithBool:isInFullScreenMode], @"isInFullScreenMode",
 											  [NSNumber numberWithUnsignedInteger:screenIndex], @"screenIndex",
 											  windowFrameStr, @"windowFrame",

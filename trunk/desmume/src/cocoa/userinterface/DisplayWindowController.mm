@@ -110,12 +110,14 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_displayMode = DS_DISPLAY_TYPE_DUAL;
 	_displayOrientation = DS_DISPLAY_ORIENTATION_VERTICAL;
 	
-	_minDisplayViewSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_UNSCALED_GAP*_displayGap));
+	_minDisplayViewSize = NSMakeSize(GPU_DISPLAY_WIDTH, (GPU_DISPLAY_HEIGHT*2.0) + (DS_DISPLAY_UNSCALED_GAP*_displayGap));
 	_isMinSizeNormal = YES;
 	_statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
 	_isUpdatingDisplayScaleValueOnly = NO;
 	_useMavericksFullScreen = IsOSXVersionSupported(10, 9, 0);
-	_willRestoreStatusBarFromFullScreen = NO;
+	_masterWindowScale = 1.0;
+	_masterWindowFrame = NSMakeRect(0.0, 0.0, GPU_DISPLAY_WIDTH, (GPU_DISPLAY_HEIGHT*2.0) + (DS_DISPLAY_UNSCALED_GAP*_displayGap));
+	_masterStatusBarState = NO;
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(saveScreenshotAsFinish:)
@@ -1420,7 +1422,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (NSApplicationPresentationOptions)window:(NSWindow *)window willUseFullScreenPresentationOptions:(NSApplicationPresentationOptions)proposedOptions
 {
-	[[NSApplication sharedApplication] setPresentationOptions:(NSApplicationPresentationHideDock)];
+	[[NSApplication sharedApplication] setPresentationOptions:NSApplicationPresentationHideDock];
 	
 	NSApplicationPresentationOptions options = (NSApplicationPresentationHideDock |
 												NSApplicationPresentationAutoHideMenuBar |
@@ -1436,19 +1438,44 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)windowWillEnterFullScreen:(NSNotification *)notification
 {
-	_willRestoreStatusBarFromFullScreen = [self isShowingStatusBar];
+	_masterWindowScale = [self displayScale];
+	_masterWindowFrame = [masterWindow frame];
+	_masterStatusBarState = [self isShowingStatusBar];
 	[self setIsShowingStatusBar:NO];
 }
 
 - (void)windowDidEnterFullScreen:(NSNotification *)notification
 {
-	[self setAssignedScreen:[masterWindow screen]];
+	NSScreen *targetScreen = [masterWindow screen];
+	[self setAssignedScreen:targetScreen];
+	_screenMap[targetScreen] = self;
 }
 
 - (void)windowWillExitFullScreen:(NSNotification *)notification
 {
+	_screenMap.erase([self assignedScreen]);
 	[self setAssignedScreen:nil];
-	[self setIsShowingStatusBar:_willRestoreStatusBarFromFullScreen];
+	[self setIsShowingStatusBar:_masterStatusBarState];
+	
+	if (_screenMap.size() == 0)
+	{
+		[[NSApplication sharedApplication] setPresentationOptions:NSApplicationPresentationDefault];
+	}
+}
+
+- (BOOL) masterStatusBarState
+{
+	return ([self assignedScreen] == nil) ? [self isShowingStatusBar] : _masterStatusBarState;
+}
+
+- (NSRect) masterWindowFrame
+{
+	return ([self assignedScreen] == nil) ? [masterWindow frame] : _masterWindowFrame;
+}
+
+- (double) masterWindowScale
+{
+	return ([self assignedScreen] == nil) ? [self displayScale] : _masterWindowScale;
 }
 
 #endif
@@ -1529,7 +1556,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		{
 			[theItem setLabel:NSSTRING_TITLE_ENABLE_HUD];
 		}
-
 	}
 	
 	return enable;
