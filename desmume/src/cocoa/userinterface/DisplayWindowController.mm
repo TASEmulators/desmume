@@ -2348,9 +2348,20 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	const GLsizei w = (GLsizei)rect.size.width;
 	const GLsizei h = (GLsizei)rect.size.height;
 	
+	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
+	double hudObjectScale = [windowController displayScale];
+	if (hudObjectScale > 2.0)
+	{
+		// If the view scale is <= 2.0, we scale the HUD objects linearly. Otherwise, we scale
+		// the HUD objects logarithmically, up to a maximum scale of 3.0.
+		hudObjectScale = ( -1.0/((1.0/12000.0)*pow(hudObjectScale+4.5438939, 5.0)) ) + 3.0;
+	}
+	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
 	oglv->SetViewportSizeOGL(w, h);
+	oglv->GetHUDLayer()->SetObjectScale(hudObjectScale);
+	oglv->GetHUDLayer()->ProcessVerticesOGL();
 	[self drawVideoFrame];
 	CGLUnlockContext(cglDisplayContext);
 }

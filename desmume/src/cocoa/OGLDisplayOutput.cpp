@@ -5755,9 +5755,7 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	_lastCpuLoadAvgARM7 = 0;
 	memset(_lastRTCString, 0, sizeof(_lastRTCString));
 	
-	//_textBoxScale = 0.65f;
-	_textBoxScale = 1.00f;
-	_textBoxTextOffset = 6.0f;
+	_hudObjectScale = 1.00f;
 	
 	_isVAOPresent = true;
 	_output = oglVO;
@@ -5779,8 +5777,8 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	}
 	
 	_statusString = "\x01"; // Char value 0x01 will represent the "text box" character, which will always be first in the string.
-	_glyphTileSize = 32;
-	_glyphSize = (GLfloat)_glyphTileSize * 0.80f;
+	_glyphTileSize = 32.0f * _scaleFactor;
+	_glyphSize = (GLfloat)_glyphTileSize * 0.75f;
 	
 	assert(_glyphTileSize <= 128);
 	
@@ -5879,6 +5877,8 @@ void OGLHUDLayer::SetFontUsingPath(const char *filePath)
 		return;
 	}
 	
+	_glyphTileSize = 32.0f * _scaleFactor;
+	_glyphSize = (GLfloat)_glyphTileSize * 0.75f;
 	const size_t charMapBufferPixCount = (16 * this->_glyphTileSize) * (16 * this->_glyphTileSize);
 	
 	error = FT_Set_Char_Size(fontFace, this->_glyphSize << 6, this->_glyphSize << 6, 72, 72);
@@ -5933,7 +5933,7 @@ void OGLHUDLayer::SetFontUsingPath(const char *filePath)
 		const uint16_t texSize = this->_glyphTileSize * 16;
 		const GLuint glyphWidth = glyphSlot->bitmap.width;
 		
-		glyphInfo.width = (c != ' ') ? glyphWidth : (GLfloat)this->_glyphTileSize / 4.5f;
+		glyphInfo.width = (c != ' ') ? glyphWidth : (GLfloat)this->_glyphTileSize / 5.0f;
 		
 		glyphInfo.texCoord[0] = (GLfloat)tileOffsetX / (GLfloat)texSize;					glyphInfo.texCoord[1] = (GLfloat)tileOffsetY / (GLfloat)texSize;
 		glyphInfo.texCoord[2] = (GLfloat)(tileOffsetX + glyphWidth) / (GLfloat)texSize;		glyphInfo.texCoord[3] = (GLfloat)tileOffsetY / (GLfloat)texSize;
@@ -5952,6 +5952,7 @@ void OGLHUDLayer::SetFontUsingPath(const char *filePath)
 	}
 	
 	FT_Done_Face(fontFace);
+	this->_lastFontFilePath = filePath;
 	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, this->_texCharMap);
@@ -6030,6 +6031,16 @@ void OGLHUDLayer::_SetShowInfoItemOGL(bool &infoItemFlag, const bool visibleStat
 	this->ProcessOGL();
 }
 
+void OGLHUDLayer::SetObjectScale(float objectScale)
+{
+	this->_hudObjectScale = objectScale;
+}
+
+float OGLHUDLayer::GetObjectScale() const
+{
+	return this->_hudObjectScale;
+}
+
 void OGLHUDLayer::SetShowVideoFPS(const bool visibleState)
 {
 	this->_SetShowInfoItemOGL(this->_showVideoFPS, visibleState);
@@ -6090,7 +6101,7 @@ bool OGLHUDLayer::GetShowRTC() const
 	return this->_showRTC;
 }
 
-void OGLHUDLayer::_ProcessVerticesOGL()
+void OGLHUDLayer::ProcessVerticesOGL()
 {
 	const size_t length = this->_statusString.length();
 	if (length <= 1)
@@ -6102,9 +6113,10 @@ void OGLHUDLayer::_ProcessVerticesOGL()
 	const size_t bufferSize = length * (2 * 4) * sizeof(GLfloat);
 	
 	const GLfloat charSize = (GLfloat)this->_glyphSize;
-	const size_t lineHeight = charSize - (this->_glyphTileSize - this->_glyphSize) + 3.0f;
-	GLfloat charLocX = this->_textBoxTextOffset;
-	GLfloat charLocY = this->_textBoxTextOffset - charSize - (this->_glyphTileSize - this->_glyphSize);
+	const GLfloat lineHeight = charSize * 0.8f;
+	const GLfloat textBoxTextOffset = charSize * 0.25f;
+	GLfloat charLocX = textBoxTextOffset;
+	GLfloat charLocY = -textBoxTextOffset - lineHeight;
 	GLfloat textBoxWidth = 0.0f;
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
@@ -6115,8 +6127,8 @@ void OGLHUDLayer::_ProcessVerticesOGL()
 	// The text box should always be the first character in the string.
 	vtxBufferPtr[0] = 0.0f;			vtxBufferPtr[1] = 0.0f;
 	vtxBufferPtr[2] = charLocX;		vtxBufferPtr[3] = 0.0f;
-	vtxBufferPtr[4] = charLocX;		vtxBufferPtr[5] = -this->_textBoxTextOffset;
-	vtxBufferPtr[6] = 0.0f;			vtxBufferPtr[7] = -this->_textBoxTextOffset;
+	vtxBufferPtr[4] = charLocX;		vtxBufferPtr[5] = -textBoxTextOffset;
+	vtxBufferPtr[6] = 0.0f;			vtxBufferPtr[7] = -textBoxTextOffset;
 	
 	// Calculate the vertices of the remaining characters in the string.
 	for (size_t i = 1; i < length; i++)
@@ -6133,33 +6145,31 @@ void OGLHUDLayer::_ProcessVerticesOGL()
 			vtxBufferPtr[5] -= lineHeight;
 			vtxBufferPtr[7] -= lineHeight;
 			
-			charLocX = this->_textBoxTextOffset;
+			charLocX = textBoxTextOffset;
 			charLocY -= lineHeight;
 			continue;
 		}
 		
-		const GLfloat glyphWidth = this->_glyphInfo[c].width;
-		const GLfloat charWidth = glyphWidth * ((charSize / (GLfloat)this->_glyphTileSize) * 0.9f);
+		const GLfloat charWidth = this->_glyphInfo[c].width * charSize / (GLfloat)this->_glyphTileSize;
 		
 		vtxBufferPtr[(i*8)+0] = charLocX;				vtxBufferPtr[(i*8)+1] = charLocY + charSize;	// Top Left
 		vtxBufferPtr[(i*8)+2] = charLocX + charWidth;	vtxBufferPtr[(i*8)+3] = charLocY + charSize;	// Top Right
 		vtxBufferPtr[(i*8)+4] = charLocX + charWidth;	vtxBufferPtr[(i*8)+5] = charLocY;				// Bottom Right
 		vtxBufferPtr[(i*8)+6] = charLocX;				vtxBufferPtr[(i*8)+7] = charLocY;				// Bottom Left
-		charLocX += (charWidth + (charSize / 32.0f) + 0.5f);
+		charLocX += (charWidth + (charSize * 0.03f) + 0.10f);
 	}
 	
-	GLfloat finalTextBoxScale = this->_textBoxScale;
-	GLfloat boxOffset = this->_textBoxScale * 10.0f;
-	if (boxOffset < 2.0f)
+	GLfloat finalTextBoxScale = HUD_TEXTBOX_BASESCALE * this->_hudObjectScale;
+	GLfloat boxOffset = 8.0f * HUD_TEXTBOX_BASESCALE * this->_hudObjectScale;
+	if (boxOffset < 1.0f)
 	{
-		boxOffset = 2.0f;
+		boxOffset = 1.0f;
 	}
-	else if (boxOffset > 10.0f)
+	else if (boxOffset > 8.0f)
 	{
-		boxOffset = 10.0f;
+		boxOffset = 8.0f;
 	}
 	
-	finalTextBoxScale *= this->_scaleFactor;
 	boxOffset *= this->_scaleFactor;
 	
 	// Set the width of the text box
@@ -6182,6 +6192,17 @@ void OGLHUDLayer::_ProcessVerticesOGL()
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 }
 
+void OGLHUDLayer::SetScaleFactor(float scaleFactor)
+{
+	const bool willChangeScaleFactor = (this->_scaleFactor != scaleFactor);
+	OGLVideoLayer::SetScaleFactor(scaleFactor);
+	
+	if (willChangeScaleFactor)
+	{
+		this->SetFontUsingPath(this->_lastFontFilePath);
+	}
+}
+
 void OGLHUDLayer::SetViewportSizeOGL(GLsizei w, GLsizei h)
 {
 	this->OGLVideoLayer::SetViewportSizeOGL(w, h);
@@ -6189,7 +6210,7 @@ void OGLHUDLayer::SetViewportSizeOGL(GLsizei w, GLsizei h)
 	glUseProgram(this->_program->GetProgramID());
 	glUniform2f(this->_uniformViewSize, this->_viewportWidth, this->_viewportHeight);
 	
-	this->_ProcessVerticesOGL();
+	this->ProcessVerticesOGL();
 };
 
 void OGLHUDLayer::ProcessOGL()
@@ -6210,14 +6231,23 @@ void OGLHUDLayer::ProcessOGL()
 	for (size_t i = 0; i < length; i++)
 	{
 		const char c = cString[i];
-		GLfloat *texCoord = &texCoordBufferPtr[i * 8];
-		memcpy(texCoord, this->_glyphInfo[c].texCoord, sizeof(GLfloat) * 8);
+		GLfloat *glyphTexCoord = this->_glyphInfo[c].texCoord;
+		GLfloat *hudTexCoord = &texCoordBufferPtr[i * 8];
+		
+		hudTexCoord[0] = glyphTexCoord[0];
+		hudTexCoord[1] = glyphTexCoord[1];
+		hudTexCoord[2] = glyphTexCoord[2];
+		hudTexCoord[3] = glyphTexCoord[3];
+		hudTexCoord[4] = glyphTexCoord[4];
+		hudTexCoord[5] = glyphTexCoord[5];
+		hudTexCoord[6] = glyphTexCoord[6];
+		hudTexCoord[7] = glyphTexCoord[7];
 	}
 	
 	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
-	this->_ProcessVerticesOGL();
+	this->ProcessVerticesOGL();
 }
 
 void OGLHUDLayer::RenderOGL()

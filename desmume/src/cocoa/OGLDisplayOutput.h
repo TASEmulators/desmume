@@ -34,6 +34,8 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#define HUD_TEXTBOX_BASESCALE 0.60
+
 class OGLVideoOutput;
 struct NDSFrameInfo;
 
@@ -287,7 +289,7 @@ public:
 
 typedef struct
 {
-	uint32_t width;
+	GLfloat width;
 	GLfloat texCoord[8];
 } GlyphInfo;
 
@@ -295,6 +297,7 @@ class OGLHUDLayer : public OGLVideoLayer
 {
 protected:
 	FT_Library _ftLibrary;
+	const char *_lastFontFilePath;
 	GLuint _texCharMap;	
 	GlyphInfo _glyphInfo[256];
 	
@@ -329,11 +332,9 @@ protected:
 	uint32_t _lastCpuLoadAvgARM7;
 	char _lastRTCString[25];
 	
-	GLfloat _textBoxScale;
-	GLfloat _textBoxTextOffset;
+	GLfloat _hudObjectScale;
 	
 	void _SetShowInfoItemOGL(bool &infoItemFlag, const bool visibleState);
-	void _ProcessVerticesOGL();
 	
 public:
 	OGLHUDLayer(OGLVideoOutput *oglVO);
@@ -343,6 +344,9 @@ public:
 	
 	void SetInfo(const uint32_t videoFPS, const uint32_t render3DFPS, const uint32_t frameIndex, const uint32_t lagFrameCount, const char *rtcString, const uint32_t cpuLoadAvgARM9, const uint32_t cpuLoadAvgARM7);
 	void RefreshInfo();
+	
+	void SetObjectScale(float objectScale);
+	float GetObjectScale() const;
 	
 	void SetShowVideoFPS(const bool visibleState);
 	bool GetShowVideoFPS() const;
@@ -357,6 +361,9 @@ public:
 	void SetShowRTC(const bool visibleState);
 	bool GetShowRTC() const;
 	
+	void ProcessVerticesOGL();
+	
+	virtual void SetScaleFactor(float scaleFactor);
 	virtual void SetViewportSizeOGL(GLsizei w, GLsizei h);
 	virtual void ProcessOGL();
 	virtual void RenderOGL();
