@@ -947,13 +947,14 @@ volatile bool execute = true;
 	NDS_GetCPULoadAverage(loadAvgARM9, loadAvgARM7);
 	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
 	
+	// The timer should fire every 0.5 seconds, so only take the frame
+	// count every other instance the timer fires.
+	_isTimerAtSecond = !_isTimerAtSecond;
+	
 	for (CocoaDSOutput *cdsOutput in cdsOutputList)
 	{
 		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
 		{
-			// The timer should fire every 0.5 seconds, so only take the frame
-			// count every other instance the timer fires.
-			_isTimerAtSecond = !_isTimerAtSecond;
 			if (_isTimerAtSecond)
 			{
 				[(CocoaDSDisplay *)cdsOutput takeFrameCount];
