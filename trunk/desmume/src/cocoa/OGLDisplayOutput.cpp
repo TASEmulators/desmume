@@ -5776,11 +5776,18 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 		_program = NULL;
 	}
 	
+	memset(this->_glyphInfo, 0, sizeof(this->_glyphInfo));
 	_statusString = "\x01"; // Char value 0x01 will represent the "text box" character, which will always be first in the string.
-	_glyphTileSize = 32.0f * _scaleFactor;
+	_glyphTileSize = HUD_TEXTBOX_BASEGLYPHSIZE * _scaleFactor;
 	_glyphSize = (GLfloat)_glyphTileSize * 0.75f;
 	
-	assert(_glyphTileSize <= 128);
+	// Set up the text box, which resides at glyph position 1.
+	GlyphInfo &boxInfo = this->_glyphInfo[1];
+	boxInfo.width = this->_glyphTileSize;
+	boxInfo.texCoord[0] = 1.0f/16.0f;		boxInfo.texCoord[1] = 0.0f;
+	boxInfo.texCoord[2] = 2.0f/16.0f;		boxInfo.texCoord[3] = 0.0f;
+	boxInfo.texCoord[4] = 2.0f/16.0f;		boxInfo.texCoord[5] = 1.0f/16.0f;
+	boxInfo.texCoord[6] = 1.0f/16.0f;		boxInfo.texCoord[7] = 1.0f/16.0f;
 	
 	glGenTextures(1, &_texCharMap);
 	
@@ -5877,91 +5884,86 @@ void OGLHUDLayer::SetFontUsingPath(const char *filePath)
 		return;
 	}
 	
-	_glyphTileSize = 32.0f * _scaleFactor;
-	_glyphSize = (GLfloat)_glyphTileSize * 0.75f;
-	const size_t charMapBufferPixCount = (16 * this->_glyphTileSize) * (16 * this->_glyphTileSize);
-	
-	error = FT_Set_Char_Size(fontFace, this->_glyphSize << 6, this->_glyphSize << 6, 72, 72);
-	if (error)
-	{
-		printf("OGLVideoOutput: FreeType failed to set the font size!\n");
-	}
-	
-	const uint32_t fontColor = 0x00FFFFFF;
-	uint32_t *charMapBuffer = (uint32_t *)malloc(charMapBufferPixCount * 2 * sizeof(uint32_t));
-	for (size_t i = 0; i < charMapBufferPixCount; i++)
-	{
-		charMapBuffer[i] = fontColor;
-	}
-	
-	memset(this->_glyphInfo, 0, sizeof(this->_glyphInfo));
-	
-	FT_GlyphSlot glyphSlot = fontFace->glyph;
-	
-	// Set up the text box, which resides at glyph position 1.
-	GlyphInfo &boxInfo = this->_glyphInfo[1];
-	boxInfo.width = this->_glyphTileSize;
-	boxInfo.texCoord[0] = 1.0f/16.0f;		boxInfo.texCoord[1] = 0.0f;
-	boxInfo.texCoord[2] = 2.0f/16.0f;		boxInfo.texCoord[3] = 0.0f;
-	boxInfo.texCoord[4] = 2.0f/16.0f;		boxInfo.texCoord[5] = 1.0f/16.0f;
-	boxInfo.texCoord[6] = 1.0f/16.0f;		boxInfo.texCoord[7] = 1.0f/16.0f;
-	
-	// Fill the box with a translucent black color.
-	for (size_t rowIndex = 0; rowIndex < this->_glyphTileSize; rowIndex++)
-	{
-		for (size_t pixIndex = 0; pixIndex < this->_glyphTileSize; pixIndex++)
-		{
-			const uint32_t colorRGBA8888 = 0x50000000;
-			charMapBuffer[(this->_glyphTileSize + pixIndex) + (rowIndex * (16 * this->_glyphTileSize))] = colorRGBA8888;
-		}
-	}
-	
-	// Set up the glyphs.
-	for (unsigned char c = 32; c < 255; c++)
-	{
-		error = FT_Load_Char(fontFace, c, FT_LOAD_RENDER);
-		if (error)
-		{
-			continue;
-		}
-		
-		GlyphInfo &glyphInfo = this->_glyphInfo[c];
-		const uint16_t tileOffsetX = (c & 0x0F) * this->_glyphTileSize;
-		const uint16_t tileOffsetY = (c >> 4) * this->_glyphTileSize;
-		const uint16_t tileOffsetY_texture = tileOffsetY - (this->_glyphTileSize - this->_glyphSize + (this->_glyphSize / 16));
-		
-		const uint16_t texSize = this->_glyphTileSize * 16;
-		const GLuint glyphWidth = glyphSlot->bitmap.width;
-		
-		glyphInfo.width = (c != ' ') ? glyphWidth : (GLfloat)this->_glyphTileSize / 5.0f;
-		
-		glyphInfo.texCoord[0] = (GLfloat)tileOffsetX / (GLfloat)texSize;					glyphInfo.texCoord[1] = (GLfloat)tileOffsetY / (GLfloat)texSize;
-		glyphInfo.texCoord[2] = (GLfloat)(tileOffsetX + glyphWidth) / (GLfloat)texSize;		glyphInfo.texCoord[3] = (GLfloat)tileOffsetY / (GLfloat)texSize;
-		glyphInfo.texCoord[4] = (GLfloat)(tileOffsetX + glyphWidth) / (GLfloat)texSize;		glyphInfo.texCoord[5] = (GLfloat)(tileOffsetY + this->_glyphTileSize) / (GLfloat)texSize;
-		glyphInfo.texCoord[6] = (GLfloat)tileOffsetX / (GLfloat)texSize;					glyphInfo.texCoord[7] = (GLfloat)(tileOffsetY + this->_glyphTileSize) / (GLfloat)texSize;
-		
-		// Draw the glyph to the client-side buffer.
-		for (size_t rowIndex = 0; rowIndex < glyphSlot->bitmap.rows; rowIndex++)
-		{
-			for (size_t pixIndex = 0; pixIndex < glyphWidth; pixIndex++)
-			{
-				const uint32_t colorRGBA8888 = fontColor | ((uint32_t)((uint8_t *)(glyphSlot->bitmap.buffer))[pixIndex + (rowIndex * glyphWidth)] << 24);
-				charMapBuffer[(tileOffsetX + pixIndex) + ((tileOffsetY_texture + rowIndex + (this->_glyphTileSize - glyphSlot->bitmap_top)) * (16 * this->_glyphTileSize))] = colorRGBA8888;
-			}
-		}
-	}
-	
-	FT_Done_Face(fontFace);
-	this->_lastFontFilePath = filePath;
-	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, this->_texCharMap);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 16 * this->_glyphTileSize, 16 * this->_glyphTileSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, charMapBuffer);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	
+	for (size_t texLevel = 0, tileSize = this->_glyphTileSize, glyphSize = this->_glyphSize; tileSize >= 4; texLevel++, tileSize >>= 1, glyphSize = (GLfloat)tileSize * 0.75f)
+	{
+		const size_t charMapBufferPixCount = (16 * tileSize) * (16 * tileSize);
+		
+		const uint32_t fontColor = 0x00FFFFFF;
+		uint32_t *charMapBuffer = (uint32_t *)malloc(charMapBufferPixCount * 2 * sizeof(uint32_t));
+		for (size_t i = 0; i < charMapBufferPixCount; i++)
+		{
+			charMapBuffer[i] = fontColor;
+		}
+		
+		error = FT_Set_Char_Size(fontFace, glyphSize << 6, glyphSize << 6, 72, 72);
+		if (error)
+		{
+			printf("OGLVideoOutput: FreeType failed to set the font size!\n");
+		}
+		
+		const FT_GlyphSlot glyphSlot = fontFace->glyph;
+		
+		// Fill the box with a translucent black color.
+		for (size_t rowIndex = 0; rowIndex < tileSize; rowIndex++)
+		{
+			for (size_t pixIndex = 0; pixIndex < tileSize; pixIndex++)
+			{
+				const uint32_t colorRGBA8888 = 0x50000000;
+				charMapBuffer[(tileSize + pixIndex) + (rowIndex * (16 * tileSize))] = colorRGBA8888;
+			}
+		}
+		
+		// Set up the glyphs.
+		for (unsigned char c = 32; c < 255; c++)
+		{
+			error = FT_Load_Char(fontFace, c, FT_LOAD_RENDER);
+			if (error)
+			{
+				continue;
+			}
+			
+			const uint16_t tileOffsetX = (c & 0x0F) * tileSize;
+			const uint16_t tileOffsetY = (c >> 4) * tileSize;
+			const uint16_t tileOffsetY_texture = tileOffsetY - (tileSize - glyphSize + (glyphSize / 16));
+			const uint16_t texSize = tileSize * 16;
+			const GLuint glyphWidth = glyphSlot->bitmap.width;
+			
+			if (tileSize == this->_glyphTileSize)
+			{
+				GlyphInfo &glyphInfo = this->_glyphInfo[c];
+				glyphInfo.width = (c != ' ') ? glyphWidth : (GLfloat)tileSize / 5.0f;
+				glyphInfo.texCoord[0] = (GLfloat)tileOffsetX / (GLfloat)texSize;					glyphInfo.texCoord[1] = (GLfloat)tileOffsetY / (GLfloat)texSize;
+				glyphInfo.texCoord[2] = (GLfloat)(tileOffsetX + glyphWidth) / (GLfloat)texSize;		glyphInfo.texCoord[3] = (GLfloat)tileOffsetY / (GLfloat)texSize;
+				glyphInfo.texCoord[4] = (GLfloat)(tileOffsetX + glyphWidth) / (GLfloat)texSize;		glyphInfo.texCoord[5] = (GLfloat)(tileOffsetY + tileSize) / (GLfloat)texSize;
+				glyphInfo.texCoord[6] = (GLfloat)tileOffsetX / (GLfloat)texSize;					glyphInfo.texCoord[7] = (GLfloat)(tileOffsetY + tileSize) / (GLfloat)texSize;
+			}
+			
+			// Draw the glyph to the client-side buffer.
+			for (size_t rowIndex = 0; rowIndex < glyphSlot->bitmap.rows; rowIndex++)
+			{
+				for (size_t pixIndex = 0; pixIndex < glyphWidth; pixIndex++)
+				{
+					const uint32_t colorRGBA8888 = fontColor | ((uint32_t)((uint8_t *)(glyphSlot->bitmap.buffer))[pixIndex + (rowIndex * glyphWidth)] << 24);
+					charMapBuffer[(tileOffsetX + pixIndex) + ((tileOffsetY_texture + rowIndex + (tileSize - glyphSlot->bitmap_top)) * (16 * tileSize))] = colorRGBA8888;
+				}
+			}
+		}
+		
+		glTexImage2D(GL_TEXTURE_2D, texLevel, GL_RGBA, 16 * tileSize, 16 * tileSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, charMapBuffer);
+	}
+	
+	glGenerateMipmapEXT(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, 0);
+	
+	FT_Done_Face(fontFace);
+	this->_lastFontFilePath = filePath;
 }
 
 void OGLHUDLayer::SetInfo(const uint32_t videoFPS, const uint32_t render3DFPS, const uint32_t frameIndex, const uint32_t lagFrameCount, const char *rtcString, const uint32_t cpuLoadAvgARM9, const uint32_t cpuLoadAvgARM7)
@@ -6159,8 +6161,13 @@ void OGLHUDLayer::ProcessVerticesOGL()
 		charLocX += (charWidth + (charSize * 0.03f) + 0.10f);
 	}
 	
-	GLfloat finalTextBoxScale = HUD_TEXTBOX_BASESCALE * this->_hudObjectScale;
-	GLfloat boxOffset = 8.0f * HUD_TEXTBOX_BASESCALE * this->_hudObjectScale;
+	GLfloat textBoxScale = HUD_TEXTBOX_BASE_SCALE * this->_hudObjectScale;
+	if (textBoxScale < (HUD_TEXTBOX_BASE_SCALE * HUD_TEXTBOX_MIN_SCALE))
+	{
+		textBoxScale = HUD_TEXTBOX_BASE_SCALE * HUD_TEXTBOX_MIN_SCALE;
+	}
+	
+	GLfloat boxOffset = 8.0f * HUD_TEXTBOX_BASE_SCALE * this->_hudObjectScale;
 	if (boxOffset < 1.0f)
 	{
 		boxOffset = 1.0f;
@@ -6180,8 +6187,8 @@ void OGLHUDLayer::ProcessVerticesOGL()
 	for (size_t i = 0; i < (length * 8); i+=2)
 	{
 		// Scale
-		vtxBufferPtr[i+0] *= finalTextBoxScale;
-		vtxBufferPtr[i+1] *= finalTextBoxScale;
+		vtxBufferPtr[i+0] *= textBoxScale;
+		vtxBufferPtr[i+1] *= textBoxScale;
 		
 		// Translate
 		vtxBufferPtr[i+0] += boxOffset - (this->_viewportWidth / 2.0f);
@@ -6199,6 +6206,9 @@ void OGLHUDLayer::SetScaleFactor(float scaleFactor)
 	
 	if (willChangeScaleFactor)
 	{
+		this->_glyphTileSize = HUD_TEXTBOX_BASEGLYPHSIZE * this->_scaleFactor;
+		this->_glyphSize = (GLfloat)this->_glyphTileSize * 0.75f;
+		
 		this->SetFontUsingPath(this->_lastFontFilePath);
 	}
 }
@@ -6260,19 +6270,31 @@ void OGLHUDLayer::RenderOGL()
 	
 	glUseProgram(this->_program->GetProgramID());
 	
-	// Enable vertex attributes
 	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
-	
 	glBindTexture(GL_TEXTURE_2D, this->_texCharMap);
+	
+	// First, draw the backing text box.
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glDrawElements(GL_TRIANGLES, (length - 1) * 6, GL_UNSIGNED_SHORT, (GLvoid *)(6 * sizeof(GLshort)));
-	glBindTexture(GL_TEXTURE_2D, 0);
 	
-	// Disable vertex attributes
+	// Next, draw each character inside the box.
+	const GLfloat textBoxScale = (GLfloat)HUD_TEXTBOX_BASE_SCALE * this->_hudObjectScale;
+	if (textBoxScale >= (2.0/3.0))
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, 0.00f);
+	}
+	else
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -0.50f);
+	}
+	glDrawElements(GL_TRIANGLES, (length - 1) * 6, GL_UNSIGNED_SHORT, (GLvoid *)(6 * sizeof(GLshort)));
+	
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindVertexArrayDESMUME(0);
 }
 
