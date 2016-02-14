@@ -34,7 +34,9 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#define HUD_TEXTBOX_BASESCALE 0.60
+#define HUD_TEXTBOX_BASEGLYPHSIZE 64.0
+#define HUD_TEXTBOX_BASE_SCALE (1.0/3.0)
+#define HUD_TEXTBOX_MIN_SCALE 0.70
 
 class OGLVideoOutput;
 struct NDSFrameInfo;

@@ -1639,7 +1639,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	oglv = new OGLVideoOutput();
 	oglv->InitLayers();
 	
-	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Semibold" ofType:@"otf"];
+	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
 	oglv->GetHUDLayer()->SetFontUsingPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
 	
 	OGLDisplayLayer *displayLayer = oglv->GetDisplayLayer();
