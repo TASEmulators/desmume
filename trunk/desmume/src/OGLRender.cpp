@@ -812,6 +812,8 @@ OpenGLRenderer::OpenGLRenderer()
 
 OpenGLRenderer::~OpenGLRenderer()
 {
+	free_aligned(_framebufferColor);
+	
 	// Destroy OpenGL rendering states
 	delete ref;
 	ref = NULL;
@@ -966,7 +968,7 @@ Render3DError OpenGLRenderer::FlushFramebuffer(const FragmentColor *__restrict s
 				dstRGBA5551[iw] = R5G5B5TORGB15( (srcRGBA8888[ir].b >> 3) & 0x1F,
 				                                 (srcRGBA8888[ir].g >> 3) & 0x1F,
 				                                 (srcRGBA8888[ir].r >> 3) & 0x1F) |
-				                                ((this->_framebufferColor[ir].a == 0) ? 0x0000 : 0x8000);
+				                                ((srcRGBA8888[ir].a == 0) ? 0x0000 : 0x8000);
 #else
 				dstRGBA6665[iw].color = BGRA8888_32Rev_To_RGBA6665_32Rev(srcRGBA8888[ir].color);
 				dstRGBA5551[iw] = R5G5B5TORGB15( (srcRGBA8888[ir].b >> 3) & 0x1F,
@@ -1045,7 +1047,7 @@ Render3DError OpenGLRenderer::FlushFramebuffer(const FragmentColor *__restrict s
 				dstRGBA5551[iw] = R5G5B5TORGB15( (srcRGBA8888[ir].b >> 3) & 0x1F,
 				                                 (srcRGBA8888[ir].g >> 3) & 0x1F,
 				                                 (srcRGBA8888[ir].r >> 3) & 0x1F) |
-				                                ((this->_framebufferColor[ir].a == 0) ? 0x0000 : 0x8000);
+				                                ((srcRGBA8888[ir].a == 0) ? 0x0000 : 0x8000);
 #else
 				dstRGBA5551[iw] = R5G5B5TORGB15( (srcRGBA8888[ir].b >> 3) & 0x1F,
 				                                 (srcRGBA8888[ir].g >> 3) & 0x1F,
