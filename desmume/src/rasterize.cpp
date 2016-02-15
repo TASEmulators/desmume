@@ -1595,7 +1595,7 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable, c
 			
 #define PIXOFFSET(dx,dy) ((dx)+(this->_framebufferWidth*(dy)))
 #define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID > this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET(dx,dy)])
-#define DRAWEDGE(dx,dy) alphaBlend(_framebufferColor[i+PIXOFFSET(dx,dy)], edgeColor)
+#define DRAWEDGE(dx,dy) alphaBlend(this->_framebufferColor[i+PIXOFFSET(dx,dy)], edgeColor)
 			
 			bool upleft    = ISEDGE(-1,-1);
 			bool up        = ISEDGE( 0,-1);
@@ -2022,16 +2022,13 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 		return RENDER3DERROR_NOERR;
 	}
 	
-	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
-	FragmentColor *oldFramebufferColor = this->_framebufferColor;
-	FragmentColor *newFramebufferColor = (FragmentColor *)malloc_alignedCacheLine(newFramebufferColorSizeBytes);
 	FragmentAttributesBuffer *oldFramebufferAttributes = this->_framebufferAttributes;
 	FragmentAttributesBuffer *newFramebufferAttributes = new FragmentAttributesBuffer(w * h);
 	
 	this->_framebufferWidth = w;
 	this->_framebufferHeight = h;
-	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
-	this->_framebufferColor = newFramebufferColor;
+	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
+	this->_framebufferColor = GPU->GetEngineMain()->Get3DFramebufferRGBA6665();
 	this->_framebufferAttributes = newFramebufferAttributes;
 	
 	if (rasterizerCores == 0 || rasterizerCores == 1)
@@ -2050,7 +2047,6 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 		}
 	}
 	
-	free_aligned(oldFramebufferColor);
 	delete oldFramebufferAttributes;
 	
 	return RENDER3DERROR_NOERR;

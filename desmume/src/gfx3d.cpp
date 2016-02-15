@@ -2313,7 +2313,7 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 
 	if (!CommonSettings.showGpu.main)
 	{
-		memset(_gfx3d_colorRGBA6665, 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(FragmentColor));
+		memset(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(FragmentColor));
 		return;
 	}
 	

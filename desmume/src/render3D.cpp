@@ -236,7 +236,7 @@ Render3D::Render3D()
 
 Render3D::~Render3D()
 {
-	free_aligned(_framebufferColor);
+	// Do nothing.
 }
 
 RendererID Render3D::GetRenderID()
@@ -271,16 +271,10 @@ Render3DError Render3D::SetFramebufferSize(size_t w, size_t h)
 		return RENDER3DERROR_NOERR;
 	}
 	
-	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
-	FragmentColor *oldFramebufferColor = this->_framebufferColor;
-	FragmentColor *newFramebufferColor = (FragmentColor *)malloc_alignedCacheLine(newFramebufferColorSizeBytes);
-	
 	this->_framebufferWidth = w;
 	this->_framebufferHeight = h;
-	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
-	this->_framebufferColor = newFramebufferColor;
-	
-	free_aligned(oldFramebufferColor);
+	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
+	this->_framebufferColor = GPU->GetEngineMain()->Get3DFramebufferRGBA6665();
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -324,11 +318,6 @@ Render3DError Render3D::EndRender(const u64 frameCount)
 
 Render3DError Render3D::FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
 {
-	if (dstRGBA6665 != NULL)
-	{
-		memcpy(dstRGBA6665, this->_framebufferColor, this->_framebufferColorSizeBytes);
-	}
-	
 	if (dstRGBA5551 != NULL)
 	{
 		for (size_t i = 0; i < (this->_framebufferWidth * this->_framebufferHeight); i++)
@@ -539,62 +528,7 @@ Render3DError Render3D_SSE2::FlushFramebuffer(FragmentColor *__restrict dstRGBA6
 	const size_t pixCount = this->_framebufferWidth * this->_framebufferHeight;
 	const size_t ssePixCount = pixCount - (pixCount % 4);
 	
-	if ( (dstRGBA6665 != NULL) && (dstRGBA5551 != NULL) )
-	{
-		for (; i < ssePixCount; i += 4)
-		{
-			// Copy the framebufferColor buffer
-			__m128i color = _mm_load_si128((__m128i *)(this->_framebufferColor + i));
-			_mm_store_si128((__m128i *)(dstRGBA6665 + i), color);
-			
-			// Convert to RGBA5551
-			__m128i r = _mm_and_si128(color, _mm_set1_epi32(0x0000003E));	// Read from R
-			r = _mm_srli_epi32(r, 1);										// Shift to R
-			
-			__m128i g = _mm_and_si128(color, _mm_set1_epi32(0x00003E00));	// Read from G
-			g = _mm_srli_epi32(g, 4);										// Shift in G
-			
-			__m128i b = _mm_and_si128(color, _mm_set1_epi32(0x003E0000));	// Read from B
-			b = _mm_srli_epi32(b, 7);										// Shift to B
-			
-			__m128i a = _mm_and_si128(color, _mm_set1_epi32(0xFF000000));	// Read from A
-			a = _mm_cmpeq_epi32(a, zero_vec128);							// Determine A
-			
-			// From here on, we're going to do an SSE2 trick to pack 32-bit down to unsigned
-			// 16-bit. Since SSE2 only has packssdw (signed saturated 16-bit pack), using
-			// packssdw on the alpha bit (0x8000) will result in a value of 0x7FFF, which is
-			// incorrect. Now if we were to use SSE4.1's packusdw (unsigned saturated 16-bit
-			// pack), we  wouldn't have to go through this hassle. But not everyone has an
-			// SSE4.1-capable CPU, so doing this the SSE2 way is more guaranteed to work for
-			// everyone's CPU.
-			//
-			// To use packssdw, we take a bit one position lower for the alpha bit, run
-			// packssdw, then shift the bit back to its original position. Then we por the
-			// alpha vector with the post-packed color vector to get the final color.
-			
-			a = _mm_andnot_si128(a, _mm_set1_epi32(0x00004000));			// Mask out the bit before A
-			a = _mm_packs_epi32(a, zero_vec128);							// Pack 32-bit down to 16-bit
-			a = _mm_slli_epi16(a, 1);										// Shift the A bit back to where it needs to be
-			
-			// Assemble the RGB colors, pack the 32-bit color into a signed 16-bit color, then por the alpha bit back in.
-			color = _mm_or_si128(_mm_or_si128(r, g), b);
-			color = _mm_packs_epi32(color, zero_vec128);
-			color = _mm_or_si128(color, a);
-			
-			_mm_storel_epi64((__m128i *)(dstRGBA5551 + i), color);
-		}
-		
-		for (; i < pixCount; i++)
-		{
-			dstRGBA6665[i] = this->_framebufferColor[i];
-			dstRGBA5551[i] = R6G6B6TORGB15(this->_framebufferColor[i].r, this->_framebufferColor[i].g, this->_framebufferColor[i].b) | ((this->_framebufferColor[i].a == 0) ? 0x0000 : 0x8000);
-		}
-	}
-	else if (dstRGBA6665 != NULL)
-	{
-		memcpy(dstRGBA6665, this->_framebufferColor, this->_framebufferColorSizeBytes);
-	}
-	else
+	if (dstRGBA5551 != NULL)
 	{
 		for (; i < ssePixCount; i += 4)
 		{
