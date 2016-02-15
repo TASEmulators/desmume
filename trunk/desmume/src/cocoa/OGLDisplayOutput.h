@@ -406,10 +406,7 @@ protected:
 	uint16_t *_videoSrcCustomBuffer[2];
 	GLsizei _videoSrcCustomBufferWidth[2];
 	GLsizei _videoSrcCustomBufferHeight[2];
-	
-	GLuint _fenceTexUploadNativeID[2];
-	GLuint _fenceTexUploadCustomID[2];
-	
+		
 	uint32_t *_vfMasterDstBuffer;
 	size_t _vfMasterDstBufferSize;
 	VideoFilter *_vf[2];

@@ -6350,10 +6350,6 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	_videoSrcCustomBufferHeight[0] = GPU_DISPLAY_HEIGHT;
 	_videoSrcCustomBufferHeight[1] = GPU_DISPLAY_HEIGHT;
 	
-	// Set up fences for DMA texture uploads
-	glGenFencesAPPLE(2, _fenceTexUploadNativeID);
-	glGenFencesAPPLE(2, _fenceTexUploadCustomID);
-	
 	// Set up textures
 	glGenTextures(2, _texCPUFilterDstID);
 	glGenTextures(2, _texVideoInputDataNativeID);
@@ -6522,9 +6518,6 @@ OGLDisplayLayer::~OGLDisplayLayer()
 	glDeleteTextures(1, &this->_texHQ3xLUT);
 	glDeleteTextures(1, &this->_texHQ4xLUT);
 	glActiveTexture(GL_TEXTURE0);
-	
-	glDeleteFencesAPPLE(2, _fenceTexUploadNativeID);
-	glDeleteFencesAPPLE(2, _fenceTexUploadCustomID);
 	
 	if (_canUseShaderOutput)
 	{
@@ -7385,7 +7378,6 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[0]);
 				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcNativeBuffer[0]);
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
-				glSetFenceAPPLE(this->_fenceTexUploadNativeID[0]);
 				glFlush();
 			}
 			else
@@ -7398,7 +7390,6 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[0]);
 			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_videoSrcCustomBufferWidth[0], this->_videoSrcCustomBufferHeight[0], GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcCustomBuffer[0]);
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
-			glSetFenceAPPLE(this->_fenceTexUploadCustomID[0]);
 			glFlush();
 		}
 	}
@@ -7422,7 +7413,6 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[1]);
 				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcNativeBuffer[1]);
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
-				glSetFenceAPPLE(this->_fenceTexUploadNativeID[1]);
 				glFlush();
 			}
 			else
@@ -7435,7 +7425,6 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[1]);
 			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_videoSrcCustomBufferWidth[1], this->_videoSrcCustomBufferHeight[1], GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcCustomBuffer[1]);
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
-			glSetFenceAPPLE(this->_fenceTexUploadCustomID[1]);
 			glFlush();
 		}
 	}
@@ -7501,7 +7490,6 @@ void OGLDisplayLayer::ProcessOGL()
 			texVideoPixelScalerID[0] = this->_texCPUFilterDstID[0];
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texVideoPixelScalerID[0]);
 			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_vf[0]->GetDstWidth(), this->_vf[0]->GetDstHeight(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, texData);
-			glSetFenceAPPLE(this->_fenceTexUploadNativeID[0]);
 			glFlush();
 			
 			w0 = this->_vf[0]->GetDstWidth();
@@ -7529,7 +7517,6 @@ void OGLDisplayLayer::ProcessOGL()
 			texVideoPixelScalerID[1] = this->_texCPUFilterDstID[1];
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texVideoPixelScalerID[1]);
 			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_vf[1]->GetDstWidth(), this->_vf[1]->GetDstHeight(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, texData);
-			glSetFenceAPPLE(this->_fenceTexUploadNativeID[1]);
 			glFlush();
 			
 			w1 = this->_vf[1]->GetDstWidth();
@@ -7600,6 +7587,7 @@ void OGLDisplayLayer::RenderOGL()
 
 void OGLDisplayLayer::FinishOGL()
 {
-	glFinishFenceAPPLE( (this->_fenceTexUploadNativeID[0]) ? this->_fenceTexUploadNativeID[0] : this->_fenceTexUploadCustomID[0] );
-	glFinishFenceAPPLE( (this->_fenceTexUploadNativeID[1]) ? this->_fenceTexUploadNativeID[1] : this->_fenceTexUploadCustomID[1] );
+	const bool isUsingCPUPixelScaler = (this->_pixelScaler != VideoFilterTypeID_None) && !this->_useShaderBasedPixelScaler;
+	glFinishObjectAPPLE(GL_TEXTURE_RECTANGLE_ARB, (isUsingCPUPixelScaler) ? this->_texCPUFilterDstID[0] : ( (this->_isTexVideoInputDataNative[0]) ? this->_texVideoInputDataNativeID[0] : this->_texVideoInputDataCustomID[0]) );
+	glFinishObjectAPPLE(GL_TEXTURE_RECTANGLE_ARB, (isUsingCPUPixelScaler) ? this->_texCPUFilterDstID[1] : ( (this->_isTexVideoInputDataNative[1]) ? this->_texVideoInputDataNativeID[1] : this->_texVideoInputDataCustomID[1]) );
 }
