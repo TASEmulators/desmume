@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <string>
 
 #include "types.h"
+#include "ROMReader.h"
 
 class BaseDriver;
 class CFIRMWARE;
@@ -312,7 +313,8 @@ struct RomBanner
 
 struct GameInfo
 {
-	FILE *fROM;
+	void *fROM;
+	ROMReader_struct *reader;
 	u8	*romdata;
 	u32 romsize;
 	u32 cardSize;
