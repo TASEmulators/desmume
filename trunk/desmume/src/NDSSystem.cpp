@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "NDSSystem.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -34,7 +33,7 @@
 #include "armcpu.h"
 #include "render3D.h"
 #include "MMU.h"
-#include "ROMReader.h"
+#include "NDSSystem.h"
 #include "gfx3d.h"
 #include "GPU.h"
 #include "cp15.h"
@@ -424,15 +423,16 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 
 	closeROM();
 
-	fROM = fopen(fname.c_str(), "rb");
+	char *noext = strdup(fname.c_str());
+	reader = ROMReaderInit(&noext); free(noext);
+	fROM = reader->Init(fname.c_str());
 	if (!fROM) return false;
 
 	headerOffset = (type == ROM_DSGBA)?DSGBA_LOADER_SIZE:0;
-	fseek(fROM, 0, SEEK_END);
-	romsize = ftell(fROM) - headerOffset;
-	fseek(fROM, headerOffset, SEEK_SET);
+	romsize = reader->Size(fROM) - headerOffset;
+	reader->Seek(fROM, headerOffset, SEEK_SET);
 
-	bool res = (fread(&header, 1, sizeof(header), fROM) == sizeof(header));
+	bool res = (reader->Read(fROM, &header, sizeof(header)) == sizeof(header));
 
 	if (res)
 	{
@@ -523,16 +523,16 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 
 		if (type == ROM_NDS)
 		{
-			fseek(fROM, 0x4000 + headerOffset, SEEK_SET);
-			fread(&secureArea[0], 1, 0x4000, fROM);
+			reader->Seek(fROM, 0x4000 + headerOffset, SEEK_SET);
+			reader->Read(fROM, &secureArea[0], 0x4000);
 		}
 
 		if (CommonSettings.loadToMemory)
 		{
-			fseek(fROM, headerOffset, SEEK_SET);
+			reader->Seek(fROM, headerOffset, SEEK_SET);
 			
 			romdata = new u8[romsize + 4];
-			if (fread(romdata, 1, romsize, fROM) != romsize)
+			if (reader->Read(fROM, romdata, romsize) != romsize)
 			{
 				delete [] romdata; romdata = NULL;
 				romsize = 0;
@@ -554,14 +554,14 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 			}
 
 			_isDSiEnhanced = (LE_TO_LOCAL_32(*(u32*)(romdata + 0x180) == 0x8D898581U) && LE_TO_LOCAL_32(*(u32*)(romdata + 0x184) == 0x8C888480U));
-			fclose(fROM); fROM = NULL;
+			reader->DeInit(fROM); fROM = NULL;
 			return true;
 		}
 		_isDSiEnhanced = ((readROM(0x180) == 0x8D898581U) && (readROM(0x184) == 0x8C888480U));
 		if (hasRomBanner())
 		{
-			fseek(fROM, header.IconOff + headerOffset, SEEK_SET);
-			fread(&banner, 1, sizeof(RomBanner), fROM);
+			reader->Seek(fROM, header.IconOff + headerOffset, SEEK_SET);
+			reader->Read(fROM, &banner, sizeof(RomBanner));
 			
 			banner.version = LE_TO_LOCAL_16(banner.version);
 			banner.crc16 = LE_TO_LOCAL_16(banner.crc16);
@@ -571,20 +571,20 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 				banner.palette[i] = LE_TO_LOCAL_16(banner.palette[i]);
 			}
 		}
-		fseek(fROM, headerOffset, SEEK_SET);
+		reader->Seek(fROM, headerOffset, SEEK_SET);
 		lastReadPos = 0;
 		return true;
 	}
 
 	romsize = 0;
-	fclose(fROM); fROM = NULL;
+	reader->DeInit(fROM); fROM = NULL;
 	return false;
 }
 
 void GameInfo::closeROM()
 {
 	if (fROM)
-		fclose(fROM);
+		reader->DeInit(fROM);
 
 	if (romdata)
 		delete [] romdata;
@@ -602,8 +602,8 @@ u32 GameInfo::readROM(u32 pos)
 	if (!romdata)
 	{
 		if (lastReadPos != pos)
-			fseek(fROM, pos + headerOffset, SEEK_SET);
-		num = fread(&data, 1, 4, fROM);
+			reader->Seek(fROM, pos + headerOffset, SEEK_SET);
+		num = reader->Read(fROM, &data, 4);
 		lastReadPos = (pos + num);
 	}
 	else
@@ -658,6 +658,11 @@ static int rom_init_path(const char *filename, const char *physicalName, const c
 
 	path.init(logicalFilename? logicalFilename : filename);
 
+	if (!strcasecmp(path.extension().c_str(),"zip")
+		|| !strcasecmp(path.extension().c_str(),"gz")) {
+			type = ROM_NDS;
+			gameInfo.loadROM(path.path, type);
+	} else
 	if ( path.isdsgba(path.path)) {
 		type = ROM_DSGBA;
 		gameInfo.loadROM(path.path, type);
