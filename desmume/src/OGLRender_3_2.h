@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -65,6 +65,8 @@ protected:
 	virtual Render3DError InitEdgeMarkProgramShaderLocations();
 	virtual Render3DError InitFogProgramBindings();
 	virtual Render3DError InitFogProgramShaderLocations();
+	virtual Render3DError InitFramebufferOutputProgramBindings();
+	virtual Render3DError InitFramebufferOutputShaderLocations();
 	virtual Render3DError CreateFBOs();
 	virtual void DestroyFBOs();
 	virtual Render3DError CreateMultisampledFBO();
@@ -81,6 +83,7 @@ protected:
 	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
 	virtual Render3DError DownsampleFBO();
+	virtual Render3DError ReadBackPixels();
 	virtual Render3DError BeginRender(const GFX3D &engine);
 	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
 	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);

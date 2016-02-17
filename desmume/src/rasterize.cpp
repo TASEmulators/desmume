@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1961,9 +1961,8 @@ Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
 			this->RenderEdgeMarkingAndFog(this->postprocessParam[0]);
 		}
 		
-		FragmentColor *framebufferRGBA6665 = (this->_willFlushFramebufferRGBA6665) ? GPU->GetEngineMain()->Get3DFramebufferRGBA6665() : NULL;
 		u16 *framebufferRGBA5551 = (this->_willFlushFramebufferRGBA5551) ? GPU->GetEngineMain()->Get3DFramebufferRGBA5551() : NULL;
-		this->FlushFramebuffer(framebufferRGBA6665, framebufferRGBA5551);
+		this->FlushFramebuffer(this->_framebufferColor, NULL, framebufferRGBA5551);
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -2007,9 +2006,8 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 		}
 	}
 	
-	FragmentColor *framebufferRGBA6665 = (this->_willFlushFramebufferRGBA6665) ? GPU->GetEngineMain()->Get3DFramebufferRGBA6665() : NULL;
 	u16 *framebufferRGBA5551 = (this->_willFlushFramebufferRGBA5551) ? GPU->GetEngineMain()->Get3DFramebufferRGBA5551() : NULL;
-	this->FlushFramebuffer(framebufferRGBA6665, framebufferRGBA5551);
+	this->FlushFramebuffer(this->_framebufferColor, NULL, framebufferRGBA5551);
 	
 	GPU->GetEventHandler()->DidRender3DEnd();
 	return RENDER3DERROR_NOERR;
@@ -2017,19 +2015,14 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 
 Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 {
-	if (w < GPU_FRAMEBUFFER_NATIVE_WIDTH || h < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
+	Render3DError error = Render3D::SetFramebufferSize(w, h);
+	if (error != RENDER3DERROR_NOERR)
 	{
 		return RENDER3DERROR_NOERR;
 	}
 	
-	FragmentAttributesBuffer *oldFramebufferAttributes = this->_framebufferAttributes;
-	FragmentAttributesBuffer *newFramebufferAttributes = new FragmentAttributesBuffer(w * h);
-	
-	this->_framebufferWidth = w;
-	this->_framebufferHeight = h;
-	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
-	this->_framebufferColor = GPU->GetEngineMain()->Get3DFramebufferRGBA6665();
-	this->_framebufferAttributes = newFramebufferAttributes;
+	delete this->_framebufferAttributes;
+	this->_framebufferAttributes = new FragmentAttributesBuffer(w * h);
 	
 	if (rasterizerCores == 0 || rasterizerCores == 1)
 	{
@@ -2046,9 +2039,7 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 			postprocessParam[i].endLine = (i < rasterizerCores - 1) ? (i + 1) * linesPerThread : h;
 		}
 	}
-	
-	delete oldFramebufferAttributes;
-	
+		
 	return RENDER3DERROR_NOERR;
 }
 

@@ -4220,9 +4220,15 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 					// will be rendered as garbage pixels unless the DISPCNT.BG0_Enable flag is ignored.
 					if (layerID == GPULayerID_BG0 && (this->_IORegisterMap->DISPCNT.BG0_3D != 0))
 					{
+						const FragmentColor *__restrict framebuffer3D = CurrentRenderer->GetFramebuffer();
+						if (framebuffer3D == NULL)
+						{
+							continue;
+						}
+						
 						const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 						const float customWidthScale = (float)dispInfo.customWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
-						const FragmentColor *__restrict srcLine = this->_3DFramebufferRGBA6665 + (dstLineIndex * dispInfo.customWidth);
+						const FragmentColor *__restrict srcLine = framebuffer3D + (dstLineIndex * dispInfo.customWidth);
 						u16 *__restrict dstColorLinePtr = dstColorLine;
 						u8 *__restrict layerIDLine = this->_dstLayerID;
 						
