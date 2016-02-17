@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -274,7 +274,7 @@ Render3DError Render3D::SetFramebufferSize(size_t w, size_t h)
 	this->_framebufferWidth = w;
 	this->_framebufferHeight = h;
 	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
-	this->_framebufferColor = GPU->GetEngineMain()->Get3DFramebufferRGBA6665();
+	this->_framebufferColor = GPU->GetEngineMain()->Get3DFramebufferRGBA6665(); // Just use the buffer that is already present on the main GPU engine
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -316,13 +316,18 @@ Render3DError Render3D::EndRender(const u64 frameCount)
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
+Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
 {
+	if ( (dstRGBA6665 == NULL) && (dstRGBA5551 == NULL) )
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
 	if (dstRGBA5551 != NULL)
 	{
 		for (size_t i = 0; i < (this->_framebufferWidth * this->_framebufferHeight); i++)
 		{
-			dstRGBA5551[i] = R6G6B6TORGB15(this->_framebufferColor[i].r, this->_framebufferColor[i].g, this->_framebufferColor[i].b) | ((this->_framebufferColor[i].a == 0) ? 0x0000 : 0x8000);
+			dstRGBA5551[i] = R6G6B6TORGB15(srcFramebuffer[i].r, srcFramebuffer[i].g, srcFramebuffer[i].b) | ((srcFramebuffer[i].a == 0) ? 0x0000 : 0x8000);
 		}
 	}
 	
@@ -454,7 +459,6 @@ Render3DError Render3D::Reset()
 	if (this->_framebufferColor != NULL)
 	{
 		memset(this->_framebufferColor, 0, this->_framebufferColorSizeBytes);
-		this->FlushFramebuffer(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), GPU->GetEngineMain()->Get3DFramebufferRGBA5551());
 	}
 	
 	memset(this->clearImageColor16Buffer, 0, sizeof(this->clearImageColor16Buffer));
@@ -515,14 +519,12 @@ Render3DError Render3D::VramReconfigureSignal()
 
 #ifdef ENABLE_SSE2
 
-Render3DError Render3D_SSE2::FlushFramebuffer(FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
+Render3DError Render3D_SSE2::FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
 {
 	if ( (dstRGBA6665 == NULL) && (dstRGBA5551 == NULL) )
 	{
 		return RENDER3DERROR_NOERR;
 	}
-	
-	const __m128i zero_vec128 = _mm_setzero_si128();
 	
 	size_t i = 0;
 	const size_t pixCount = this->_framebufferWidth * this->_framebufferHeight;
@@ -533,18 +535,18 @@ Render3DError Render3D_SSE2::FlushFramebuffer(FragmentColor *__restrict dstRGBA6
 		for (; i < ssePixCount; i += 4)
 		{
 			// Convert to RGBA5551
-			__m128i color = _mm_load_si128((__m128i *)(this->_framebufferColor + i));
-			__m128i r = _mm_and_si128(color, _mm_set1_epi32(0x0000003E));	// Read from R
-			r = _mm_srli_epi32(r, 1);										// Shift to R
+			__m128i color5551 = _mm_load_si128((__m128i *)(srcFramebuffer + i));
+			__m128i r = _mm_and_si128(color5551, _mm_set1_epi32(0x0000003E));	// Read from R
+			r = _mm_srli_epi32(r, 1);											// Shift to R
 			
-			__m128i g = _mm_and_si128(color, _mm_set1_epi32(0x00003E00));	// Read from G
-			g = _mm_srli_epi32(g, 4);										// Shift in G
+			__m128i g = _mm_and_si128(color5551, _mm_set1_epi32(0x00003E00));	// Read from G
+			g = _mm_srli_epi32(g, 4);											// Shift in G
 			
-			__m128i b = _mm_and_si128(color, _mm_set1_epi32(0x003E0000));	// Read from B
-			b = _mm_srli_epi32(b, 7);										// Shift to B
+			__m128i b = _mm_and_si128(color5551, _mm_set1_epi32(0x003E0000));	// Read from B
+			b = _mm_srli_epi32(b, 7);											// Shift to B
 			
-			__m128i a = _mm_and_si128(color, _mm_set1_epi32(0xFF000000));	// Read from A
-			a = _mm_cmpeq_epi32(a, zero_vec128);							// Determine A
+			__m128i a = _mm_and_si128(color5551, _mm_set1_epi32(0xFF000000));	// Read from A
+			a = _mm_cmpeq_epi32(a, _mm_setzero_si128());						// Determine A
 			
 			// From here on, we're going to do an SSE2 trick to pack 32-bit down to unsigned
 			// 16-bit. Since SSE2 only has packssdw (signed saturated 16-bit pack), using
@@ -558,21 +560,21 @@ Render3DError Render3D_SSE2::FlushFramebuffer(FragmentColor *__restrict dstRGBA6
 			// packssdw, then shift the bit back to its original position. Then we por the
 			// alpha vector with the post-packed color vector to get the final color.
 			
-			a = _mm_andnot_si128(a, _mm_set1_epi32(0x00004000));			// Mask out the bit before A
-			a = _mm_packs_epi32(a, zero_vec128);							// Pack 32-bit down to 16-bit
-			a = _mm_slli_epi16(a, 1);										// Shift the A bit back to where it needs to be
+			a = _mm_andnot_si128(a, _mm_set1_epi32(0x00004000));				// Mask out the bit before A
+			a = _mm_packs_epi32(a, _mm_setzero_si128());						// Pack 32-bit down to 16-bit
+			a = _mm_slli_epi16(a, 1);											// Shift the A bit back to where it needs to be
 			
 			// Assemble the RGB colors, pack the 32-bit color into a signed 16-bit color, then por the alpha bit back in.
-			color = _mm_or_si128(_mm_or_si128(r, g), b);
-			color = _mm_packs_epi32(color, zero_vec128);
-			color = _mm_or_si128(color, a);
+			color5551 = _mm_or_si128(_mm_or_si128(r, g), b);
+			color5551 = _mm_packs_epi32(color5551, _mm_setzero_si128());
+			color5551 = _mm_or_si128(color5551, a);
 			
-			_mm_storel_epi64((__m128i *)(dstRGBA5551 + i), color);
+			_mm_storel_epi64((__m128i *)(dstRGBA5551 + i), color5551);
 		}
 		
 		for (; i < pixCount; i++)
 		{
-			dstRGBA5551[i] = R6G6B6TORGB15(this->_framebufferColor[i].r, this->_framebufferColor[i].g, this->_framebufferColor[i].b) | ((this->_framebufferColor[i].a == 0) ? 0x0000 : 0x8000);
+			dstRGBA5551[i] = R6G6B6TORGB15(srcFramebuffer[i].r, srcFramebuffer[i].g, srcFramebuffer[i].b) | ((srcFramebuffer[i].a == 0) ? 0x0000 : 0x8000);
 		}
 	}
 	
