@@ -517,22 +517,22 @@ static const char *FramebufferOutputFragShader_100 = {"\
 
 FORCEINLINE u32 BGRA8888_32_To_RGBA6665_32(const u32 srcPix)
 {
-	const u32 dstPix = (srcPix >> 2) & 0x3F3F3F3F;
+	const u32 dstPix = (srcPix >> 2);
 	
-	return	 (dstPix & 0x0000FF00) << 16 |		// R
-			 (dstPix & 0x00FF0000)       |		// G
-			 (dstPix & 0xFF000000) >> 16 |		// B
-			((dstPix >> 1) & 0x000000FF);		// A
+	return	 (dstPix & 0x00003F00) << 16 |		// R
+			 (dstPix & 0x003F0000)       |		// G
+			 (dstPix & 0x3F000000) >> 16 |		// B
+			((dstPix >> 1) & 0x0000001F);		// A
 }
 
 FORCEINLINE u32 BGRA8888_32Rev_To_RGBA6665_32Rev(const u32 srcPix)
 {
-	const u32 dstPix = (srcPix >> 2) & 0x3F3F3F3F;
+	const u32 dstPix = (srcPix >> 2);
 	
-	return	 (dstPix & 0x00FF0000) >> 16 |		// R
-			 (dstPix & 0x0000FF00)       |		// G
-			 (dstPix & 0x000000FF) << 16 |		// B
-			((dstPix >> 1) & 0xFF000000);		// A
+	return	 (dstPix & 0x003F0000) >> 16 |		// R
+			 (dstPix & 0x00003F00)       |		// G
+			 (dstPix & 0x0000003F) << 16 |		// B
+			((dstPix >> 1) & 0x1F000000);		// A
 }
 
 bool IsVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision)
