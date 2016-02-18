@@ -576,8 +576,11 @@ public:
 		u8 &dstAttributeIsTranslucentPoly	= this->_softRender->_framebufferAttributes->isTranslucentPoly[fragmentIndex];
 		
 		// not sure about the w-buffer depth value: this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
-		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly
-		const u32 newDepth = (gfx3d.renderState.wbuffer) ? u32floor(4096*w) : DS_DEPTH15TO24( u32floor(z*0x7FFF) ) & 0x00FFFFFC;
+		//
+		// When using z-depth, be sure to test against the following test cases:
+		// - The drawing of the overworld map in Dragon Quest IV
+		// - The drawing of all units on the map in Advance Wars: Days of Ruin
+		const u32 newDepth = (gfx3d.renderState.wbuffer) ? u32floor(4096*w) : (u32floor(z*0x7FFF) << 9);
 		
 		// run the depth test
 		if (polyAttr.enableDepthEqualTest)
