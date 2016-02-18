@@ -551,7 +551,6 @@ public:
 					dst.b = modulate_table[mainTexColor.b][toonColor.b];
 					dst.a = modulate_table[GFX3D_5TO6(mainTexColor.a)][GFX3D_5TO6(src.a)] >> 1;
 				}
-				
 			}
 				break;
 				
@@ -1845,14 +1844,7 @@ Render3DError SoftRasterizerRenderer::UpdateToonTable(const u16 *toonTableBuffer
 	//convert the toon colors
 	for (size_t i = 0; i < 32; i++)
 	{
-#ifdef WORDS_BIGENDIAN
-		u32 u32temp = RGB15TO32_NOALPHA(toonTableBuffer[i]);
-		this->toonColor32LUT[i].r = (u32temp >> 2) & 0x3F;
-		this->toonColor32LUT[i].g = (u32temp >> 10) & 0x3F;
-		this->toonColor32LUT[i].b = (u32temp >> 18) & 0x3F;
-#else
 		this->toonColor32LUT[i].color = (RGB15TO32_NOALPHA(toonTableBuffer[i])>>2)&0x3F3F3F3F;
-#endif
 		//printf("%d %d %d %d\n", this->toonColor32LUT[i].r, this->toonColor32LUT[i].g, this->toonColor32LUT[i].b, this->toonColor32LUT[i].a);
 	}
 	

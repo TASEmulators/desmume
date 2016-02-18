@@ -520,7 +520,7 @@ struct POLY {
 #define POLYLIST_SIZE 20000
 struct POLYLIST {
 	POLY list[POLYLIST_SIZE];
-	int count;
+	size_t count;
 };
 
 //just a vert with a 4 float position
@@ -588,7 +588,7 @@ struct VERT {
 #define VERTLIST_SIZE (POLYLIST_SIZE * 4)
 struct VERTLIST {
 	VERT list[VERTLIST_SIZE];
-	int count;
+	size_t count;
 };
 
 #define INDEXLIST_SIZE (POLYLIST_SIZE * 4)
