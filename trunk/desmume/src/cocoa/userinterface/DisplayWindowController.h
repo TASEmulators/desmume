@@ -159,13 +159,13 @@ class OGLVideoOutput;
 - (id)initWithWindowNibName:(NSString *)windowNibName emuControlDelegate:(EmuControllerDelegate *)theEmuController;
 
 - (void) setupUserDefaults;
+- (BOOL) masterStatusBarState;
+- (NSRect) masterWindowFrame;
+- (double) masterWindowScale;
 - (double) resizeWithTransform:(NSSize)normalBounds scalar:(double)scalar rotation:(double)angleDegrees;
 - (double) maxScalarForContentBoundsWidth:(double)contentBoundsWidth height:(double)contentBoundsHeight;
 - (void) enterFullScreen;
 - (void) exitFullScreen;
-- (BOOL) masterStatusBarState;
-- (NSRect) masterWindowFrame;
-- (double) masterWindowScale;
 
 - (IBAction) copy:(id)sender;
 - (IBAction) changeHardwareMicGain:(id)sender;

@@ -522,6 +522,21 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	return normalSize;
 }
 
+- (BOOL) masterStatusBarState
+{
+	return (([self assignedScreen] == nil) || !_useMavericksFullScreen) ? [self isShowingStatusBar] : _masterStatusBarState;
+}
+
+- (NSRect) masterWindowFrame
+{
+	return (([self assignedScreen] == nil) || !_useMavericksFullScreen) ? [masterWindow frame] : _masterWindowFrame;
+}
+
+- (double) masterWindowScale
+{
+	return (([self assignedScreen] == nil) || !_useMavericksFullScreen) ? [self displayScale] : _masterWindowScale;
+}
+
 - (double) resizeWithTransform:(NSSize)normalBounds scalar:(double)scalar rotation:(double)angleDegrees
 {
 	if ([self assignedScreen] != nil)
@@ -1461,21 +1476,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		[[NSApplication sharedApplication] setPresentationOptions:NSApplicationPresentationDefault];
 	}
-}
-
-- (BOOL) masterStatusBarState
-{
-	return ([self assignedScreen] == nil) ? [self isShowingStatusBar] : _masterStatusBarState;
-}
-
-- (NSRect) masterWindowFrame
-{
-	return ([self assignedScreen] == nil) ? [masterWindow frame] : _masterWindowFrame;
-}
-
-- (double) masterWindowScale
-{
-	return ([self assignedScreen] == nil) ? [self displayScale] : _masterWindowScale;
 }
 
 #endif
