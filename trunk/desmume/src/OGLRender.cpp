@@ -1115,7 +1115,7 @@ Render3DError OpenGLRenderer::FlushFramebuffer(const FragmentColor *__restrict s
 
 FragmentColor* OpenGLRenderer::GetFramebuffer()
 {
-	return (this->_mappedFramebuffer != NULL) ? this->_mappedFramebuffer : GPU->GetEngineMain()->Get3DFramebufferRGBA6665();
+	return (this->willConvertFramebufferOnGPU) ? this->_mappedFramebuffer : GPU->GetEngineMain()->Get3DFramebufferRGBA6665();
 }
 
 OpenGLRenderer_1_2::~OpenGLRenderer_1_2()

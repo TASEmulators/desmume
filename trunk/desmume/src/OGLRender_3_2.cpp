@@ -466,9 +466,7 @@ static const char *FramebufferOutputFragShader_150 = {"\
 	\n\
 	void main()\n\
 	{\n\
-		// Note that we swap B and R since pixel readbacks are done in BGRA format for fastest\n\
-		// performance. The final color is still in RGBA format.\n\
-		vec4 colorRGBA6665 = texture(texInFragColor, texCoord).bgra;\n\
+		vec4 colorRGBA6665 = texture(texInFragColor, texCoord);\n\
 		colorRGBA6665     = floor((colorRGBA6665 * 255.0) + 0.5);\n\
 		colorRGBA6665.rgb = floor(colorRGBA6665.rgb / 4.0);\n\
 		colorRGBA6665.a   = floor(colorRGBA6665.a   / 8.0);\n\
@@ -1281,7 +1279,7 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 	
 	// Read back the pixels.
 	glReadBuffer(GL_COLOR_ATTACHMENT2);
-	glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+	glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	
 	// Set the read and draw target buffers back to color attachment 0, which is always the default.
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
