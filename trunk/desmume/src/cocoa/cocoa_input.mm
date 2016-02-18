@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2015 DeSmuME team
+	Copyright (C) 2012-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -543,12 +543,15 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 		avgMicLevel = 0.0f;
 	}
 	
+	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
 	[self setMicLevel:avgMicLevel];
 	
 	if (delegate != nil && [delegate respondsToSelector:@selector(doMicLevelUpdateFromController:)])
 	{
 		[[self delegate] doMicLevelUpdateFromController:self];
 	}
+	
+	[tempPool release];
 }
 
 - (uint8_t) handleMicSampleRead:(CoreAudioInput *)caInput softwareMic:(AudioGenerator *)sampleGenerator
@@ -586,6 +589,8 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 							 isEnabled:(BOOL)isHardwareEnabled
 							  isLocked:(BOOL)isHardwareLocked
 {
+	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
+	
 	if (deviceInfo->objectID == kAudioObjectUnknown)
 	{
 		[self setHardwareMicInfoString:@"No hardware input detected."];
@@ -613,13 +618,17 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 													   isEnabled:isHardwareEnabled
 														isLocked:isHardwareLocked];
 	}
+	
+	[tempPool release];
 }
 
 - (void) handleMicHardwareGainChanged:(float)gainValue
 {
 	if (delegate != nil && [delegate respondsToSelector:@selector(doMicHardwareGainChangedFromController:gain:)])
 	{
+		NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
 		[[self delegate] doMicHardwareGainChangedFromController:self gain:gainValue];
+		[tempPool release];
 	}
 }
 

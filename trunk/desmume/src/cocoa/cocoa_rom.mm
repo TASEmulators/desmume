@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2015 DeSmuME team
+	Copyright (C) 2011-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -273,12 +273,10 @@ static NSMutableDictionary *saveTypeValues = nil;
 	NSString *advscDBPath = [[NSUserDefaults standardUserDefaults] stringForKey:@"Advanscene_DatabasePath"];
 	if (advscDBPath != nil)
 	{
-		NSError *xmlError = [[NSError alloc] init];
 		NSXMLParser *advscDB = [[NSXMLParser alloc] initWithContentsOfURL:[NSURL fileURLWithPath:advscDBPath]];
 		[advscDB setDelegate:self];
 		[advscDB parse];
 		[advscDB release];
-		[xmlError release];
 	}
 	
 	NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithBool:YES], @"DidLoad", self.fileURL, @"URL", nil];
