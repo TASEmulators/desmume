@@ -1401,6 +1401,7 @@ public:
 	virtual void Reset();
 	void ParseReg_DISPCAPCNT();
 	void UpdateSelectedVRAMBlock();
+	u16* GetCustomVRAMBlockPtr(const size_t blockID);
 	FragmentColor* Get3DFramebufferRGBA6665() const;
 	u16* Get3DFramebufferRGBA5551() const;
 	virtual void SetCustomFramebufferSize(size_t w, size_t h);
@@ -1511,6 +1512,7 @@ public:
 	
 	u16* GetCustomVRAMBuffer();
 	u16* GetCustomVRAMBlankBuffer();
+	u16* GetCustomVRAMAddressUsingMappedAddress(const u32 addr);
 	
 	size_t GetCustomFramebufferWidth() const;
 	size_t GetCustomFramebufferHeight() const;
