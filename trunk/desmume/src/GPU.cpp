@@ -361,6 +361,11 @@ void GPUEngineBase::_Reset_Base()
 	this->_BGLayer[GPULayerID_BG2].size = GPUEngineBase::_BGLayerSizeLUT[BGType_Affine][1];
 	this->_BGLayer[GPULayerID_BG3].size = GPUEngineBase::_BGLayerSizeLUT[BGType_Affine][1];
 	
+	this->_BGLayer[GPULayerID_BG0].baseType = BGType_Invalid;
+	this->_BGLayer[GPULayerID_BG1].baseType = BGType_Invalid;
+	this->_BGLayer[GPULayerID_BG2].baseType = BGType_Invalid;
+	this->_BGLayer[GPULayerID_BG3].baseType = BGType_Invalid;
+	
 	this->_BGLayer[GPULayerID_BG0].type = BGType_Invalid;
 	this->_BGLayer[GPULayerID_BG1].type = BGType_Invalid;
 	this->_BGLayer[GPULayerID_BG2].type = BGType_Invalid;
@@ -406,6 +411,7 @@ void GPUEngineBase::_Reset_Base()
 	this->_needUpdateWINH[1] = true;
 	
 	this->isCustomRenderingNeeded = false;
+	this->isCustomOutputSize = false;
 	this->vramBGLayer = VRAM_NO_3D_USAGE;
 	this->vramBlockBGIndex = VRAM_NO_3D_USAGE;
 	this->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
@@ -778,6 +784,8 @@ void GPUEngineBase::ParseReg_BGnCNT()
 	
 	//clarify affine ext modes
 	BGType mode = GPUEngineBase::_mode2type[DISPCNT.BG_Mode][LAYERID];
+	this->_BGLayer[LAYERID].baseType = mode;
+	
 	if (mode == BGType_AffineExt)
 	{
 		//see: http://nocash.emubase.de/gbatek.htm#dsvideobgmodescontrol
@@ -3519,9 +3527,8 @@ void GPUEngineBase::_UpdateWINH()
 
 void GPUEngineBase::UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty)
 {
-	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
-	const bool isBG2UsingVRAM = (DISPCNT.BG2_Enable == 1) && (this->_BGLayer[GPULayerID_BG2].type == BGType_AffineExt_Direct) && (this->_BGLayer[GPULayerID_BG2].size.width == 256) && (this->_BGLayer[GPULayerID_BG2].size.height == 256);
-	const bool isBG3UsingVRAM = (DISPCNT.BG3_Enable == 1) && (this->_BGLayer[GPULayerID_BG3].type == BGType_AffineExt_Direct) && (this->_BGLayer[GPULayerID_BG3].size.width == 256) && (this->_BGLayer[GPULayerID_BG3].size.height == 256);
+	const bool isBG2UsingVRAM = this->_enableLayer[GPULayerID_BG2] && (this->_BGLayer[GPULayerID_BG2].type == BGType_AffineExt_Direct) && (this->_BGLayer[GPULayerID_BG2].size.width == 256) && (this->_BGLayer[GPULayerID_BG2].size.height == 256);
+	const bool isBG3UsingVRAM = this->_enableLayer[GPULayerID_BG3] && (this->_BGLayer[GPULayerID_BG3].type == BGType_AffineExt_Direct) && (this->_BGLayer[GPULayerID_BG3].size.width == 256) && (this->_BGLayer[GPULayerID_BG3].size.height == 256);
 	u8 selectedBGLayer = VRAM_NO_3D_USAGE;
 	
 	if (!isBG2UsingVRAM && !isBG3UsingVRAM)
@@ -3530,15 +3537,15 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex, 
 	}
 	else if (!isBG2UsingVRAM && isBG3UsingVRAM)
 	{
-		selectedBGLayer = (this->_BGLayer[GPULayerID_BG3].priority <= this->_BGLayer[GPULayerID_BG0].priority) ? GPULayerID_BG3 : VRAM_NO_3D_USAGE;
+		selectedBGLayer = GPULayerID_BG3;
 	}
 	else if (isBG2UsingVRAM && !isBG3UsingVRAM)
 	{
-		selectedBGLayer = (this->_BGLayer[GPULayerID_BG2].priority <= this->_BGLayer[GPULayerID_BG0].priority) ? GPULayerID_BG2 : VRAM_NO_3D_USAGE;
+		selectedBGLayer = GPULayerID_BG2;
 	}
 	else if (isBG2UsingVRAM && isBG3UsingVRAM)
 	{
-		selectedBGLayer = (this->_BGLayer[GPULayerID_BG3].priority <= this->_BGLayer[GPULayerID_BG2].priority) ? ((this->_BGLayer[GPULayerID_BG3].priority <= this->_BGLayer[GPULayerID_BG0].priority) ? GPULayerID_BG3 : VRAM_NO_3D_USAGE) : ((this->_BGLayer[GPULayerID_BG2].priority <= this->_BGLayer[GPULayerID_BG0].priority) ? GPULayerID_BG2 : VRAM_NO_3D_USAGE);
+		selectedBGLayer = (this->_BGLayer[GPULayerID_BG3].priority <= this->_BGLayer[GPULayerID_BG2].priority) ? GPULayerID_BG3 : GPULayerID_BG2;
 	}
 	
 	if (selectedBGLayer != VRAM_NO_3D_USAGE)
@@ -3559,14 +3566,13 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex, 
 	}
 	
 	this->vramBGLayer = selectedBGLayer;
-	this->vramBlockBGIndex = bankIndex;
-	this->isCustomRenderingNeeded = (selectedBGLayer != VRAM_NO_3D_USAGE);
+	this->vramBlockBGIndex = (selectedBGLayer != VRAM_NO_3D_USAGE) ? bankIndex : VRAM_NO_3D_USAGE;
 }
 
 void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty)
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
-	if ((DISPCNT.OBJ_Enable != 1) || (DISPCNT.OBJ_BMP_mapping != 0) || (DISPCNT.OBJ_BMP_2D_dim != 1))
+	if (!this->_enableLayer[GPULayerID_OBJ] || (DISPCNT.OBJ_BMP_mapping != 0) || (DISPCNT.OBJ_BMP_2D_dim == 0))
 	{
 		return;
 	}
@@ -3586,7 +3592,6 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex,
 			if( (vramAddress == (DISPCAPCNT.VRAMWriteOffset * ADDRESS_STEP_32KB)) && (sprSize.width == 64) && (sprSize.height == 64) )
 			{
 				this->vramBlockOBJIndex = bankIndex;
-				this->isCustomRenderingNeeded = true;
 				return;
 			}
 		}
@@ -3596,10 +3601,9 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex,
 template <GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_RenderLine_LayerBG_Final(u16 *dstColorLine, const u16 lineIndex)
 {
-	const BGType bgType = GPUEngineBase::_mode2type[this->_IORegisterMap->DISPCNT.BG_Mode][LAYERID];
 	bool useCustomVRAM = false;
 	
-	switch (bgType)
+	switch (this->_BGLayer[LAYERID].baseType)
 	{
 		case BGType_Text: this->_LineText<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex); break;
 		case BGType_Affine: this->_LineRot<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex); break;
@@ -3698,21 +3702,14 @@ void GPUEngineBase::RenderLayerBG(u16 *dstColorBuffer)
 	}
 }
 
-template<bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_HandleDisplayModeOff(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount)
+void GPUEngineBase::_HandleDisplayModeOff(u16 *dstColorLine)
 {
+	// Native rendering only.
 	// In this display mode, the display is cleared to white.
-	if (ISCUSTOMRENDERINGNEEDED)
-	{
-		memset_u16(dstColorLine, 0x7FFF, dstLineWidth * dstLineCount);
-	}
-	else
-	{
-		memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(dstColorLine, 0x7FFF);
-	}
+	memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(dstColorLine, 0x7FFF);
 }
 
-template<bool ISCUSTOMRENDERINGNEEDED>
+template<bool ISCUSTOMOUTPUTSIZE>
 void GPUEngineBase::_HandleDisplayModeNormal(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount)
 {
 	//do nothing: it has already been generated into the right place
@@ -4090,12 +4087,12 @@ void GPUEngineA::SetCustomFramebufferSize(size_t w, size_t h)
 }
 
 
-bool GPUEngineA::Is3DRenderedLayerNeeded()
+bool GPUEngineA::WillRender3DLayer()
 {
-	return ( this->_enableLayer[GPULayerID_BG0] && (this->_IORegisterMap->DISPCNT.BG0_3D != 0) );
+	return ( this->_enableLayer[GPULayerID_BG0] && (this->_IORegisterMap->DISPCNT.BG0_Enable != 0) && (this->_IORegisterMap->DISPCNT.BG0_3D != 0) );
 }
 
-bool GPUEngineA::Is3DCapturingNeeded()
+bool GPUEngineA::WillCapture3DLayerDirect()
 {
 	const IOREG_DISPCAPCNT &DISPCAPCNT = this->_IORegisterMap->DISPCAPCNT;
 	return ( (DISPCAPCNT.CaptureEnable != 0) && (vramConfiguration.banks[DISPCAPCNT.VRAMWriteBlock].purpose == VramConfiguration::LCDC) && (DISPCAPCNT.SrcA != 0) );
@@ -4131,7 +4128,7 @@ void GPUEngineA::RenderLine(const u16 l)
 	switch (displayMode)
 	{
 		case GPUDisplayMode_Off: // Display Off(Display white)
-			this->_HandleDisplayModeOff<ISCUSTOMRENDERINGNEEDED>(dstColorLine, l, dstLineWidth, dstLineCount);
+			this->_HandleDisplayModeOff(dstColorLine);
 			break;
 			
 		case GPUDisplayMode_Normal: // Display BG and OBJ layers
@@ -4143,7 +4140,7 @@ void GPUEngineA::RenderLine(const u16 l)
 			break;
 			
 		case GPUDisplayMode_MainMemory: // Display memory FIFO
-			this->_HandleDisplayModeMainMemory<ISCUSTOMRENDERINGNEEDED>(dstColorLine, l, dstLineWidth, dstLineCount);
+			this->_HandleDisplayModeMainMemory(dstColorLine);
 			break;
 	}
 	
@@ -4212,13 +4209,7 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 				const GPULayerID layerID = (GPULayerID)item->BGs[i];
 				if (this->_enableLayer[layerID])
 				{
-					// When determining whether to render the BG0 layer as a 3D layer, we only need to
-					// check the DISPCNT.BG0_3D flag. There is no need to check the DISPCNT.BG0_Enable
-					// flag here, as this flag could be disabled while the DISPCNT.BG0_3D flag is enabled.
-					//
-					// Test case: During some conversations in Advance Wars: Dual Strike, the minimap
-					// will be rendered as garbage pixels unless the DISPCNT.BG0_Enable flag is ignored.
-					if (layerID == GPULayerID_BG0 && (this->_IORegisterMap->DISPCNT.BG0_3D != 0))
+					if ( (layerID == GPULayerID_BG0) && this->WillRender3DLayer() )
 					{
 						const FragmentColor *__restrict framebuffer3D = CurrentRenderer->GetFramebuffer();
 						if (framebuffer3D == NULL)
@@ -4361,7 +4352,7 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 	}
 }
 
-template<bool ISCUSTOMRENDERINGNEEDED, size_t CAPTURELENGTH>
+template<bool DIDCUSTOMRENDER, size_t CAPTURELENGTH>
 void GPUEngineA::_RenderLine_DisplayCapture(u16 *dstColorLine, const u16 l)
 {
 	assert( (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH/2) || (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH) );
@@ -4370,7 +4361,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(u16 *dstColorLine, const u16 l)
 	const IOREG_DISPCAPCNT &DISPCAPCNT = this->_IORegisterMap->DISPCAPCNT;
 	
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	VRAM3DUsageProperties &vramUsageProperty = GPU->GetVRAM3DUsageProperties();
+	VRAM3DUsageProperties &vramUsageProperty = GPU->GetRenderProperties();
 	const u8 vramWriteBlock = DISPCAPCNT.VRAMWriteBlock;
 	const u8 vramReadBlock = DISPCNT.VRAM_Block;
 	
@@ -4406,19 +4397,19 @@ void GPUEngineA::_RenderLine_DisplayCapture(u16 *dstColorLine, const u16 l)
 				case 0: // Capture screen (BG + OBJ + 3D)
 				{
 					//INFO("Capture screen (BG + OBJ + 3D)\n");
-					this->_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, !ISCUSTOMRENDERINGNEEDED, true>(srcA, cap_dst, CAPTURELENGTH, 1);
+					this->_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, !DIDCUSTOMRENDER, true>(srcA, cap_dst, CAPTURELENGTH, 1);
 					break;
 				}
 					
 				case 1: // Capture 3D
 				{
 					//INFO("Capture 3D\n");
-					this->_RenderLine_DispCapture_Copy<1, CAPTURELENGTH, !ISCUSTOMRENDERINGNEEDED, true>(srcA, cap_dst, CAPTURELENGTH, 1);
+					this->_RenderLine_DispCapture_Copy<1, CAPTURELENGTH, !DIDCUSTOMRENDER, true>(srcA, cap_dst, CAPTURELENGTH, 1);
 					break;
 				}
 			}
 			
-			vramUsageProperty.isBlockUsed[vramWriteBlock] = ISCUSTOMRENDERINGNEEDED;
+			vramUsageProperty.isCustomBlockUsed[vramWriteBlock] = DIDCUSTOMRENDER;
 			break;
 		}
 			
@@ -4429,16 +4420,16 @@ void GPUEngineA::_RenderLine_DisplayCapture(u16 *dstColorLine, const u16 l)
 			{
 				case 0: // Capture VRAM
 				{
-					if (ISCUSTOMRENDERINGNEEDED && vramUsageProperty.isBlockUsed[vramReadBlock])
+					if (vramUsageProperty.isCustomBlockUsed[vramReadBlock])
 					{
 						this->_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, false, true>(srcB, cap_dst, CAPTURELENGTH, 1);
+						vramUsageProperty.isCustomBlockUsed[vramWriteBlock] = true;
 					}
 					else
 					{
 						this->_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, true, true>(srcB, cap_dst, CAPTURELENGTH, 1);
+						vramUsageProperty.isCustomBlockUsed[vramWriteBlock] = false;
 					}
-					
-					vramUsageProperty.isBlockUsed[vramWriteBlock] = vramUsageProperty.isBlockUsed[vramReadBlock];
 					break;
 				}
 					
@@ -4446,42 +4437,37 @@ void GPUEngineA::_RenderLine_DisplayCapture(u16 *dstColorLine, const u16 l)
 				{
 					this->_RenderLine_DispCapture_FIFOToBuffer(fifoLine);
 					this->_RenderLine_DispCapture_Copy<1, CAPTURELENGTH, true, true>(srcB, cap_dst, CAPTURELENGTH, 1);
-					vramUsageProperty.isBlockUsed[vramWriteBlock] = false;
+					vramUsageProperty.isCustomBlockUsed[vramWriteBlock] = false;
 					break;
 				}
 			}
-			
 			break;
 		}
 			
 		default: // Capture source is SourceA+B blended
 		{
 			//INFO("Capture source is SourceA+B blended\n");
-			
-			if (DISPCAPCNT.SrcB == 1)
+			if ( (DISPCAPCNT.SrcB == 0) && vramUsageProperty.isCustomBlockUsed[vramReadBlock] )
 			{
-				// fifo - tested by splinter cell chaos theory thermal view
-				this->_RenderLine_DispCapture_FIFOToBuffer(fifoLine);
-				this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, !ISCUSTOMRENDERINGNEEDED, true, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+				this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, !DIDCUSTOMRENDER, false, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+				vramUsageProperty.isCustomBlockUsed[vramWriteBlock] = true;
 			}
 			else
 			{
-				if (vramUsageProperty.isBlockUsed[vramReadBlock])
+				if (DISPCAPCNT.SrcB != 0)
 				{
-					this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, !ISCUSTOMRENDERINGNEEDED, false, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+					// fifo - tested by splinter cell chaos theory thermal view
+					this->_RenderLine_DispCapture_FIFOToBuffer(fifoLine);
 				}
-				else
-				{
-					this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, !ISCUSTOMRENDERINGNEEDED, true, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
-				}
+				
+				this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, !DIDCUSTOMRENDER, true, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+				vramUsageProperty.isCustomBlockUsed[vramWriteBlock] = DIDCUSTOMRENDER;
 			}
-			
-			vramUsageProperty.isBlockUsed[vramWriteBlock] = ISCUSTOMRENDERINGNEEDED || vramUsageProperty.isBlockUsed[vramReadBlock];
 			break;
 		}
 	}
 	
-	if (ISCUSTOMRENDERINGNEEDED)
+	if (DIDCUSTOMRENDER)
 	{
 		const size_t captureLengthExt = (CAPTURELENGTH) ? dispInfo.customWidth : dispInfo.customWidth / 2;
 		const size_t captureLineCount = _gpuDstLineCount[l];
@@ -4532,7 +4518,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(u16 *dstColorLine, const u16 l)
 				{
 					case 0: // Capture VRAM
 					{
-						if (vramUsageProperty.isBlockUsed[vramReadBlock])
+						if (vramUsageProperty.isCustomBlockUsed[vramReadBlock])
 						{
 							this->_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, false, false>(srcB, cap_dst_ext, captureLengthExt, captureLineCount);
 						}
@@ -4547,13 +4533,12 @@ void GPUEngineA::_RenderLine_DisplayCapture(u16 *dstColorLine, const u16 l)
 						this->_RenderLine_DispCapture_Copy<1, CAPTURELENGTH, true, false>(srcB, cap_dst_ext, captureLengthExt, captureLineCount);
 						break;
 				}
-				
 				break;
 			}
 				
 			default: // Capture source is SourceA+B blended
 			{
-				if (vramUsageProperty.isBlockUsed[vramReadBlock])
+				if ( (DISPCAPCNT.SrcB == 0) && vramUsageProperty.isCustomBlockUsed[vramReadBlock] )
 				{
 					this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, false, false, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
 				}
@@ -4561,7 +4546,6 @@ void GPUEngineA::_RenderLine_DisplayCapture(u16 *dstColorLine, const u16 l)
 				{
 					this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, false, true, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
 				}
-				
 				break;
 			}
 		}
@@ -4893,10 +4877,16 @@ void GPUEngineA::_HandleDisplayModeVRAM(u16 *__restrict dstColorLine, const size
 	}
 	else
 	{
+		// TODO: Get rid of this method's dependence on _engineMain->isCustomRenderingNeeded.
+		//
+		// The reason we need to check this on a per line basis instead of figuring this out at
+		// GPUSubsystem::UpdateRenderProperties() is because GPUSubsystem::UpdateRenderProperties()
+		// is called at line 0, but some games, such as Nanostray 2, might change DISPCNT in the
+		// middle of the frame render. (Nanostray 2 can change DISPCNT at line 1.)
 		const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
-		const VRAM3DUsageProperties &vramUsageProperty = GPU->GetVRAM3DUsageProperties();
+		const VRAM3DUsageProperties &vramUsageProperty = GPU->GetRenderProperties();
 		
-		if (vramUsageProperty.isBlockUsed[DISPCNT.VRAM_Block] && (vramUsageProperty.blockIndexDisplayVRAM == DISPCNT.VRAM_Block))
+		if (vramUsageProperty.isCustomBlockUsed[DISPCNT.VRAM_Block])
 		{
 			const u16 *__restrict src = this->_VRAMaddrCustom + (_gpuDstLineIndex[l] * dstLineWidth);
 #ifdef LOCAL_LE
@@ -4930,9 +4920,10 @@ void GPUEngineA::_HandleDisplayModeVRAM(u16 *__restrict dstColorLine, const size
 	}
 }
 
-template<bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineA::_HandleDisplayModeMainMemory(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount)
+void GPUEngineA::_HandleDisplayModeMainMemory(u16 *dstColorLine)
 {
+	// Native rendering only.
+	//
 	//this has not been tested since the dma timing for dispfifo was changed around the time of
 	//newemuloop. it may not work.
 	
@@ -4950,21 +4941,6 @@ void GPUEngineA::_HandleDisplayModeMainMemory(u16 *dstColorLine, const size_t l,
 		((u32 *)dstColorLine)[i] = DISP_FIFOrecv() & 0x7FFF7FFF;
 	}
 #endif
-	if (ISCUSTOMRENDERINGNEEDED)
-	{
-		for (size_t i = GPU_FRAMEBUFFER_NATIVE_WIDTH - 1; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i--)
-		{
-			for (size_t p = _gpuDstPitchCount[i] - 1; p < _gpuDstPitchCount[i]; p--)
-			{
-				dstColorLine[_gpuDstPitchIndex[i] + p] = dstColorLine[i];
-			}
-		}
-		
-		for (size_t line = 1; line < dstLineCount; line++)
-		{
-			memcpy(dstColorLine + (line * dstLineWidth), dstColorLine, dstLineWidth * sizeof(u16));
-		}
-	}
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
@@ -5065,12 +5041,6 @@ void GPUEngineB::Reset()
 template<bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineB::RenderLine(const u16 l)
 {
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	const size_t dstLineWidth = (ISCUSTOMRENDERINGNEEDED) ? dispInfo.customWidth : GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	const size_t dstLineCount = (ISCUSTOMRENDERINGNEEDED) ? _gpuDstLineCount[l] : 1;
-	const size_t dstLineIndex = (ISCUSTOMRENDERINGNEEDED) ? _gpuDstLineIndex[l] : l;
-	u16 *dstColorLine = (ISCUSTOMRENDERINGNEEDED) ? this->customBuffer + (dstLineIndex * dstLineWidth) : this->nativeBuffer + (dstLineIndex * dstLineWidth);
-	
 	//cache some parameters which are assumed to be stable throughout the rendering of the entire line
 	if (this->_needUpdateWINH[0]) this->_UpdateWINH<0>();
 	if (this->_needUpdateWINH[1]) this->_UpdateWINH<1>();
@@ -5082,14 +5052,22 @@ void GPUEngineB::RenderLine(const u16 l)
 	switch (displayMode)
 	{
 		case GPUDisplayMode_Off: // Display Off(Display white)
-			this->_HandleDisplayModeOff<ISCUSTOMRENDERINGNEEDED>(dstColorLine, l, dstLineWidth, dstLineCount);
+			this->_HandleDisplayModeOff(this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH));
 			break;
-			
+		
 		case GPUDisplayMode_Normal: // Display BG and OBJ layers
+		{
+			const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+			const size_t dstLineWidth = (ISCUSTOMRENDERINGNEEDED) ? dispInfo.customWidth : GPU_FRAMEBUFFER_NATIVE_WIDTH;
+			const size_t dstLineCount = (ISCUSTOMRENDERINGNEEDED) ? _gpuDstLineCount[l] : 1;
+			const size_t dstLineIndex = (ISCUSTOMRENDERINGNEEDED) ? _gpuDstLineIndex[l] : l;
+			u16 *dstColorLine = (ISCUSTOMRENDERINGNEEDED) ? this->customBuffer + (dstLineIndex * dstLineWidth) : this->nativeBuffer + (dstLineIndex * dstLineWidth);
+			
 			this->_RenderLine_Layer<ISCUSTOMRENDERINGNEEDED>(l, dstColorLine, dstLineWidth, dstLineCount);
 			this->_HandleDisplayModeNormal<ISCUSTOMRENDERINGNEEDED>(dstColorLine, l, dstLineWidth, dstLineCount);
 			break;
-			
+		}
+		
 		default:
 			break;
 	}
@@ -5333,23 +5311,19 @@ void GPUSubsystem::Reset()
 	this->_engineMain->Reset();
 	this->_engineSub->Reset();
 	
-	this->_VRAM3DUsage.blockIndexDisplayVRAM = VRAM_NO_3D_USAGE;
-	this->_VRAM3DUsage.isBlockUsed[0] = false;
-	this->_VRAM3DUsage.isBlockUsed[1] = false;
-	this->_VRAM3DUsage.isBlockUsed[2] = false;
-	this->_VRAM3DUsage.isBlockUsed[3] = false;
+	this->_VRAM3DUsage.isCustomBlockUsed[0] = false;
+	this->_VRAM3DUsage.isCustomBlockUsed[1] = false;
+	this->_VRAM3DUsage.isCustomBlockUsed[2] = false;
+	this->_VRAM3DUsage.isCustomBlockUsed[3] = false;
 	
 	DISP_FIFOreset();
 	osd->clear();
 }
 
-void GPUSubsystem::UpdateVRAM3DUsageProperties()
+void GPUSubsystem::UpdateRenderProperties()
 {
-	const IOREG_DISPCNT &mainDISPCNT = this->_engineMain->GetIORegisterMap().DISPCNT;
-	
-	this->_VRAM3DUsage.blockIndexDisplayVRAM = VRAM_NO_3D_USAGE;
-	
 	this->_engineMain->isCustomRenderingNeeded = false;
+	this->_engineMain->isCustomOutputSize = false;
 	this->_engineMain->vramBlockBGIndex = VRAM_NO_3D_USAGE;
 	this->_engineMain->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
 	this->_engineMain->vramBGLayer = VRAM_NO_3D_USAGE;
@@ -5358,6 +5332,7 @@ void GPUSubsystem::UpdateVRAM3DUsageProperties()
 	this->_engineMain->renderedBuffer = this->_engineMain->nativeBuffer;
 	
 	this->_engineSub->isCustomRenderingNeeded = false;
+	this->_engineSub->isCustomOutputSize = false;
 	this->_engineSub->vramBlockBGIndex = VRAM_NO_3D_USAGE;
 	this->_engineSub->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
 	this->_engineSub->vramBGLayer = VRAM_NO_3D_USAGE;
@@ -5383,12 +5358,12 @@ void GPUSubsystem::UpdateVRAM3DUsageProperties()
 		return;
 	}
 	
-	this->_engineMain->isCustomRenderingNeeded = (mainDISPCNT.BG0_3D != 0);
+	this->_engineMain->isCustomRenderingNeeded = this->_engineMain->WillRender3DLayer();
 	
 	// Iterate through VRAM banks A-D and determine if they will be used for this frame.
 	for (size_t i = 0; i < 4; i++)
 	{
-		if (!this->_VRAM3DUsage.isBlockUsed[i])
+		if (!this->_VRAM3DUsage.isCustomBlockUsed[i])
 		{
 			continue;
 		}
@@ -5411,41 +5386,73 @@ void GPUSubsystem::UpdateVRAM3DUsageProperties()
 				this->_engineSub->UpdateVRAM3DUsageProperties_OBJLayer(i, this->_VRAM3DUsage);
 				break;
 				
-			case VramConfiguration::LCDC:
-			{
-				if ((mainDISPCNT.DisplayMode == GPUDisplayMode_VRAM) && (mainDISPCNT.VRAM_Block == i))
-				{
-					this->_VRAM3DUsage.blockIndexDisplayVRAM = i;
-				}
-				break;
-			}
-				
 			default:
-				this->_VRAM3DUsage.isBlockUsed[i] = false;
+				this->_VRAM3DUsage.isCustomBlockUsed[i] = false;
 				break;
 		}
 	}
 	
-	if (this->_engineMain->isCustomRenderingNeeded)
+	this->_engineMain->isCustomRenderingNeeded	=  this->_engineMain->isCustomRenderingNeeded ||
+												  (this->_engineMain->vramBlockBGIndex != VRAM_NO_3D_USAGE) ||
+												  (this->_engineMain->vramBlockOBJIndex != VRAM_NO_3D_USAGE);
+	
+	this->_engineSub->isCustomRenderingNeeded	= (this->_engineSub->vramBlockBGIndex != VRAM_NO_3D_USAGE) ||
+												  (this->_engineSub->vramBlockOBJIndex != VRAM_NO_3D_USAGE);
+	
+	const GPUDisplayMode displayMode[2]	= { (GPUDisplayMode)this->_engineMain->GetIORegisterMap().DISPCNT.DisplayMode,
+										    (GPUDisplayMode)(this->_engineSub->GetIORegisterMap().DISPCNT.DisplayMode & 0x01) };
+	
+	switch (displayMode[GPUEngineID_Main])
+	{
+		case GPUDisplayMode_Off:
+		case GPUDisplayMode_MainMemory:
+			this->_engineMain->isCustomOutputSize = false;
+			break;
+			
+		case GPUDisplayMode_Normal:
+			this->_engineMain->isCustomOutputSize = this->_engineMain->isCustomRenderingNeeded;
+			break;
+			
+		case GPUDisplayMode_VRAM:
+			// TODO: Get rid of this method's dependence on _engineMain->isCustomRenderingNeeded.
+			this->_engineMain->isCustomOutputSize = this->_engineMain->isCustomRenderingNeeded;
+			break;
+	}
+	
+	switch (displayMode[GPUEngineID_Sub])
+	{
+		case GPUDisplayMode_Off:
+			this->_engineSub->isCustomOutputSize = false;
+			break;
+			
+		case GPUDisplayMode_Normal:
+			this->_engineSub->isCustomOutputSize = this->_engineSub->isCustomRenderingNeeded;
+			break;
+			
+		default:
+			break;
+	}
+	
+	if (this->_engineMain->isCustomOutputSize)
 	{
 		this->_engineMain->renderedWidth = this->_displayInfo.customWidth;
 		this->_engineMain->renderedHeight = this->_displayInfo.customHeight;
 		this->_engineMain->renderedBuffer = this->_engineMain->customBuffer;
 	}
 	
-	if (this->_engineSub->isCustomRenderingNeeded)
+	if (this->_engineSub->isCustomOutputSize)
 	{
 		this->_engineSub->renderedWidth = this->_displayInfo.customWidth;
 		this->_engineSub->renderedHeight = this->_displayInfo.customHeight;
 		this->_engineSub->renderedBuffer = this->_engineSub->customBuffer;
 	}
 	
-	this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main] = this->_displayMain->GetEngine()->isCustomRenderingNeeded;
+	this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main] = this->_displayMain->GetEngine()->isCustomOutputSize;
 	this->_displayInfo.renderedBuffer[NDSDisplayID_Main] = this->_displayMain->GetEngine()->renderedBuffer;
 	this->_displayInfo.renderedWidth[NDSDisplayID_Main] = this->_displayMain->GetEngine()->renderedWidth;
 	this->_displayInfo.renderedHeight[NDSDisplayID_Main] = this->_displayMain->GetEngine()->renderedHeight;
 	
-	this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch] = this->_displayTouch->GetEngine()->isCustomRenderingNeeded;
+	this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch] = this->_displayTouch->GetEngine()->isCustomOutputSize;
 	this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = this->_displayTouch->GetEngine()->renderedBuffer;
 	this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = this->_displayTouch->GetEngine()->renderedWidth;
 	this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = this->_displayTouch->GetEngine()->renderedHeight;
@@ -5628,6 +5635,14 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h, u16 *clientNativ
 	this->_displayInfo.customBuffer[NDSDisplayID_Main] = (this->_displayMain->GetEngine()->GetDisplayByID() == NDSDisplayID_Main) ? this->_displayInfo.masterCustomBuffer : this->_displayInfo.masterCustomBuffer + (w * h);
 	this->_displayInfo.customBuffer[NDSDisplayID_Touch] = (this->_displayTouch->GetEngine()->GetDisplayByID() == NDSDisplayID_Main) ? this->_displayInfo.masterCustomBuffer : this->_displayInfo.masterCustomBuffer + (w * h);
 	
+	if (!this->_displayInfo.isCustomSizeRequested)
+	{
+		this->_VRAM3DUsage.isCustomBlockUsed[0] = false;
+		this->_VRAM3DUsage.isCustomBlockUsed[1] = false;
+		this->_VRAM3DUsage.isCustomBlockUsed[2] = false;
+		this->_VRAM3DUsage.isCustomBlockUsed[3] = false;
+	}
+	
 	this->_engineMain->SetCustomFramebufferSize(w, h);
 	this->_engineSub->SetCustomFramebufferSize(w, h);
 	CurrentRenderer->SetFramebufferSize(w, h);
@@ -5680,7 +5695,7 @@ u16* GPUSubsystem::GetCustomVRAMBlankBuffer()
 	return this->_customVRAMBlank;
 }
 
-VRAM3DUsageProperties& GPUSubsystem::GetVRAM3DUsageProperties()
+VRAM3DUsageProperties& GPUSubsystem::GetRenderProperties()
 {
 	return this->_VRAM3DUsage;
 }
@@ -5699,12 +5714,12 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 {
 	if (l == 0)
 	{
-		CurrentRenderer->SetFramebufferFlushStates(this->_engineMain->Is3DRenderedLayerNeeded(), this->_engineMain->Is3DCapturingNeeded());
+		CurrentRenderer->SetFramebufferFlushStates(this->_engineMain->WillRender3DLayer(), this->_engineMain->WillCapture3DLayerDirect());
 		CurrentRenderer->RenderFinish();
 		CurrentRenderer->SetFramebufferFlushStates(true, true);
 		
 		this->_event->DidFrameBegin();
-		this->UpdateVRAM3DUsageProperties();
+		this->UpdateRenderProperties();
 		
 		// Clear displays to black if they are turned off by the user.
 		if (!isFrameSkipRequested)
