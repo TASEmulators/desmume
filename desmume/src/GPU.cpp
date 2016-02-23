@@ -2273,7 +2273,7 @@ void GPUEngineBase::_RenderPixelsCustom(u16 *__restrict dstColorLine, u8 *__rest
 		const size_t lineCount = _gpuDstLineCount[lineIndex];
 		const size_t dstPixCount = this->renderedWidth * lineCount;
 		const size_t ssePixCount = (dstPixCount - (dstPixCount % 8));
-		const u16 *__restrict srcLine = GPU->GetCustomVRAMBuffer() + (this->vramBlockBGIndex * _gpuVRAMBlockOffset) + (_gpuDstLineIndex[lineIndex] * this->renderedWidth);
+		const u16 *__restrict srcLine = GPU->GetCustomVRAMAddressUsingMappedAddress(this->_BGLayer[LAYERID].BMPAddress) + (_gpuDstLineIndex[lineIndex] * this->renderedWidth);
 		
 		size_t i = 0;
 #ifdef ENABLE_SSE2
@@ -4062,6 +4062,11 @@ void GPUEngineA::UpdateSelectedVRAMBlock()
 	this->_VRAMaddrCustom = this->_VRAMCustomBlockPtr[DISPCNT.VRAM_Block];
 }
 
+u16* GPUEngineA::GetCustomVRAMBlockPtr(const size_t blockID)
+{
+	return this->_VRAMCustomBlockPtr[blockID];
+}
+
 void GPUEngineA::SetCustomFramebufferSize(size_t w, size_t h)
 {
 	this->GPUEngineBase::SetCustomFramebufferSize(w, h);
@@ -4085,7 +4090,6 @@ void GPUEngineA::SetCustomFramebufferSize(size_t w, size_t h)
 	free_aligned(oldColorRGBA6665Buffer);
 	free_aligned(oldColorRGBA5551Buffer);
 }
-
 
 bool GPUEngineA::WillRender3DLayer()
 {
@@ -4310,7 +4314,7 @@ void GPUEngineA::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 			if (ISCUSTOMRENDERINGNEEDED)
 			{
 				const bool useCustomVRAM = (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE);
-				const u16 *__restrict srcLine = (useCustomVRAM) ? GPU->GetCustomVRAMBuffer() + (this->vramBlockOBJIndex * _gpuVRAMBlockOffset) + (dstLineIndex * dstLineWidth) : NULL;
+				const u16 *__restrict srcLine = (useCustomVRAM) ? this->_VRAMCustomBlockPtr[this->vramBlockOBJIndex] + (dstLineIndex * dstLineWidth) : NULL;
 				
 				for (size_t line = 0; line < dstLineCount; line++)
 				{
@@ -5143,7 +5147,7 @@ void GPUEngineB::_RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t 
 			if (ISCUSTOMRENDERINGNEEDED)
 			{
 				const bool useCustomVRAM = (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE);
-				const u16 *__restrict srcLine = (useCustomVRAM) ? GPU->GetCustomVRAMBuffer() + (this->vramBlockOBJIndex * _gpuVRAMBlockOffset) + (dstLineIndex * dstLineWidth) : NULL;
+				const u16 *__restrict srcLine = (useCustomVRAM) ? GPU->GetEngineMain()->GetCustomVRAMBlockPtr(this->vramBlockOBJIndex) + (dstLineIndex * dstLineWidth) : NULL;
 				
 				for (size_t line = 0; line < dstLineCount; line++)
 				{
@@ -5693,6 +5697,17 @@ u16* GPUSubsystem::GetCustomVRAMBuffer()
 u16* GPUSubsystem::GetCustomVRAMBlankBuffer()
 {
 	return this->_customVRAMBlank;
+}
+
+u16* GPUSubsystem::GetCustomVRAMAddressUsingMappedAddress(const u32 mappedAddr)
+{
+	const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(mappedAddr) - MMU.ARM9_LCD) / sizeof(u16);
+	const size_t blockID = vramPixel / (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
+	const size_t blockPixel = vramPixel % (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
+	const size_t blockLine = blockPixel / GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	const size_t linePixel = blockPixel % GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	
+	return (this->GetEngineMain()->GetCustomVRAMBlockPtr(blockID) + (_gpuCaptureLineIndex[blockLine] * this->_displayInfo.customWidth) + _gpuDstPitchIndex[linePixel]);
 }
 
 VRAM3DUsageProperties& GPUSubsystem::GetRenderProperties()
