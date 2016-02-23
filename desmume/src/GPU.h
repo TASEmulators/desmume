@@ -1034,8 +1034,7 @@ struct DISPCAPCNT_parsed
 
 typedef struct
 {
-	u8 blockIndexDisplayVRAM;
-	bool isBlockUsed[4];
+	bool isCustomBlockUsed[4];
 } VRAM3DUsageProperties;
 
 typedef struct
@@ -1079,6 +1078,7 @@ typedef struct
 	IOREG_BGnVOFS BGnVOFS;
 	
 	BGLayerSize size;
+	BGType baseType;
 	BGType type;
 	u8 priority;
 	
@@ -1230,8 +1230,8 @@ protected:
 	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_Clear(const u16 clearColor, const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
 	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
 		
-	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeOff(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
-	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeNormal(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
+	void _HandleDisplayModeOff(u16 *dstColorLine);
+	template<bool ISCUSTOMOUTPUTSIZE> void _HandleDisplayModeNormal(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
 	
 	template<size_t WIN_NUM> void _UpdateWINH();
 	template<size_t WIN_NUM> void _SetupWindows(const u16 lineIndex);
@@ -1307,6 +1307,7 @@ public:
 	void FramebufferPostprocess();
 	
 	bool isCustomRenderingNeeded;
+	bool isCustomOutputSize;
 	u8 vramBGLayer;
 	u8 vramBlockBGIndex;
 	u8 vramBlockOBJIndex;
@@ -1372,7 +1373,7 @@ protected:
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineLarge8bpp(u16 *__restrict dstColorLine, const u16 lineIndex);
 	
 	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
-	template<bool ISCUSTOMRENDERINGNEEDED, size_t CAPTURELENGTH> void _RenderLine_DisplayCapture(u16 *dstColorLine, const u16 l);
+	template<bool DIDCUSTOMRENDER, size_t CAPTURELENGTH> void _RenderLine_DisplayCapture(u16 *dstColorLine, const u16 l);
 	void _RenderLine_DispCapture_FIFOToBuffer(u16 *fifoLineBuffer);
 	
 	template<int SOURCESWITCH, size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRC, bool CAPTURETONATIVEDST>
@@ -1391,7 +1392,7 @@ protected:
 	void _RenderLine_DispCapture_Blend(const u16 *__restrict srcA, const u16 *__restrict srcB, u16 *__restrict dst, const size_t captureLengthExt, const size_t l);
 	
 	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeVRAM(u16 *__restrict dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
-	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeMainMemory(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
+	void _HandleDisplayModeMainMemory(u16 *dstColorLine);
 	
 public:
 	static GPUEngineA* Allocate();
@@ -1404,8 +1405,8 @@ public:
 	u16* Get3DFramebufferRGBA5551() const;
 	virtual void SetCustomFramebufferSize(size_t w, size_t h);
 	
-	bool Is3DRenderedLayerNeeded();
-	bool Is3DCapturingNeeded();
+	bool WillRender3DLayer();
+	bool WillCapture3DLayerDirect();
 		
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l);
 	void FramebufferPostprocess();
@@ -1499,7 +1500,7 @@ public:
 	GPUEventHandler* GetEventHandler();
 	
 	void Reset();
-	VRAM3DUsageProperties& GetVRAM3DUsageProperties();
+	VRAM3DUsageProperties& GetRenderProperties();
 	const NDSDisplayInfo& GetDisplayInfo(); // Frontends need to call this whenever they need to read the video buffers from the emulator core
 	void SetDisplayDidCustomRender(NDSDisplayID displayID, bool theState);
 	
@@ -1516,7 +1517,7 @@ public:
 	void SetCustomFramebufferSize(size_t w, size_t h, u16 *clientNativeBuffer, u16 *clientCustomBuffer);
 	void SetCustomFramebufferSize(size_t w, size_t h);
 	
-	void UpdateVRAM3DUsageProperties();
+	void UpdateRenderProperties();
 	
 	// Normally, the GPUs will automatically resolve their native buffers to the master
 	// custom framebuffer at the end of V-blank so that all rendered graphics are contained
