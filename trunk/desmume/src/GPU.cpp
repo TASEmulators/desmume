@@ -927,7 +927,30 @@ void GPUEngineBase::_RenderLine_Clear(const u16 clearColor, const u16 l, u16 *ds
 template<bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::RenderLine(const u16 l)
 {
+	// By default, do nothing.
+	this->UpdatePropertiesWithoutRender(l);
+}
+
+void GPUEngineBase::UpdatePropertiesWithoutRender(const u16 l)
+{
+	// Update BG2/BG3 parameters for Affine and AffineExt modes
+	if (  this->_enableLayer[GPULayerID_BG2] &&
+		((this->_BGLayer[GPULayerID_BG2].baseType == BGType_Affine) || (this->_BGLayer[GPULayerID_BG2].baseType == BGType_AffineExt)) )
+	{
+		IOREG_BG2Parameter &BG2Param = this->_IORegisterMap->BG2Param;
+		
+		BG2Param.BG2X.value += BG2Param.BG2PB.value;
+		BG2Param.BG2Y.value += BG2Param.BG2PD.value;
+	}
 	
+	if (  this->_enableLayer[GPULayerID_BG3] &&
+		((this->_BGLayer[GPULayerID_BG3].baseType == BGType_Affine) || (this->_BGLayer[GPULayerID_BG3].baseType == BGType_AffineExt)) )
+	{
+		IOREG_BG3Parameter &BG3Param = this->_IORegisterMap->BG3Param;
+		
+		BG3Param.BG3X.value += BG3Param.BG3PB.value;
+		BG3Param.BG3Y.value += BG3Param.BG3PD.value;
+	}
 }
 
 void GPUEngineBase::FramebufferPostprocess()
@@ -4093,13 +4116,13 @@ void GPUEngineA::SetCustomFramebufferSize(size_t w, size_t h)
 
 bool GPUEngineA::WillRender3DLayer()
 {
-	return ( this->_enableLayer[GPULayerID_BG0] && (this->_IORegisterMap->DISPCNT.BG0_Enable != 0) && (this->_IORegisterMap->DISPCNT.BG0_3D != 0) );
+	return ( this->_enableLayer[GPULayerID_BG0] && (this->_IORegisterMap->DISPCNT.BG0_3D != 0) );
 }
 
 bool GPUEngineA::WillCapture3DLayerDirect()
 {
 	const IOREG_DISPCAPCNT &DISPCAPCNT = this->_IORegisterMap->DISPCAPCNT;
-	return ( (DISPCAPCNT.CaptureEnable != 0) && (vramConfiguration.banks[DISPCAPCNT.VRAMWriteBlock].purpose == VramConfiguration::LCDC) && (DISPCAPCNT.SrcA != 0) );
+	return ( (DISPCAPCNT.CaptureEnable != 0) && (DISPCAPCNT.SrcA != 0) && (DISPCAPCNT.CaptureSrc != 1) && (vramConfiguration.banks[DISPCAPCNT.VRAMWriteBlock].purpose == VramConfiguration::LCDC) );
 }
 
 template<bool ISCUSTOMRENDERINGNEEDED>
@@ -4162,6 +4185,57 @@ void GPUEngineA::RenderLine(const u16 l)
 		else
 		{
 			this->_RenderLine_DisplayCapture<ISCUSTOMRENDERINGNEEDED, GPU_FRAMEBUFFER_NATIVE_WIDTH>(renderedDstColorLine, l);
+		}
+	}
+}
+
+void GPUEngineA::UpdatePropertiesWithoutRender(const u16 l)
+{
+	GPUEngineBase::UpdatePropertiesWithoutRender(l);
+	
+	// Update display capture properties
+	const IOREG_DISPCAPCNT &DISPCAPCNT = this->_IORegisterMap->DISPCAPCNT;
+	const u8 vramWriteBlock = DISPCAPCNT.VRAMWriteBlock;
+	
+	if ((DISPCAPCNT.CaptureEnable != 0) && (vramConfiguration.banks[vramWriteBlock].purpose == VramConfiguration::LCDC) && (l < this->_dispCapCnt.capy))
+	{
+		const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
+		const u8 vramReadBlock = DISPCNT.VRAM_Block;
+		VRAM3DUsageProperties &vramUsageProperty = GPU->GetRenderProperties();
+		
+		switch (DISPCAPCNT.CaptureSrc)
+		{
+			case 0: // Capture source is SourceA
+				vramUsageProperty.isCustomBlockUsed[vramWriteBlock] = this->isCustomRenderingNeeded;
+				break;
+				
+			case 1: // Capture source is SourceB
+			{
+				switch (DISPCAPCNT.SrcB)
+				{
+					case 0: // Capture VRAM
+						vramUsageProperty.isCustomBlockUsed[vramWriteBlock] = vramUsageProperty.isCustomBlockUsed[vramReadBlock];
+						break;
+						
+					case 1: // Capture FIFO
+						vramUsageProperty.isCustomBlockUsed[vramWriteBlock] = false;
+						break;
+				}
+				break;
+			}
+				
+			default: // Capture source is SourceA+B blended
+			{
+				if ( (DISPCAPCNT.SrcB == 0) && vramUsageProperty.isCustomBlockUsed[vramReadBlock] )
+				{
+					vramUsageProperty.isCustomBlockUsed[vramWriteBlock] = true;
+				}
+				else
+				{
+					vramUsageProperty.isCustomBlockUsed[vramWriteBlock] = this->isCustomRenderingNeeded;
+				}
+				break;
+			}
 		}
 	}
 }
@@ -4573,7 +4647,7 @@ void GPUEngineA::_RenderLine_DispCapture_FIFOToBuffer(u16 *fifoLineBuffer)
 }
 
 template<int SOURCESWITCH, size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRC, bool CAPTURETONATIVEDST>
-void GPUEngineA::_RenderLine_DispCapture_Copy(const u16 *__restrict src, u16 *__restrict dst, const size_t captureLengthExt, const size_t captureLineCount)
+void GPUEngineA::_RenderLine_DispCapture_Copy(const u16 *src, u16 *dst, const size_t captureLengthExt, const size_t captureLineCount)
 {
 	const u16 alphaBit = (SOURCESWITCH == 0) ? 0x8000 : 0x0000;
 	
@@ -4752,7 +4826,7 @@ __m128i GPUEngineA::_RenderLine_DispCapture_BlendFunc_SSE2(__m128i &srcA, __m128
 #endif
 
 template<bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB>
-void GPUEngineA::_RenderLine_DispCapture_BlendToCustomDstBuffer(const u16 *__restrict srcA, const u16 *__restrict srcB, u16 *__restrict dst, const u8 blendEVA, const u8 blendEVB, const size_t length, size_t l)
+void GPUEngineA::_RenderLine_DispCapture_BlendToCustomDstBuffer(const u16 *srcA, const u16 *srcB, u16 *dst, const u8 blendEVA, const u8 blendEVB, const size_t length, size_t l)
 {
 #ifdef ENABLE_SSE2
 	const __m128i blendEVA_vec128 = _mm_set1_epi16(blendEVA);
@@ -4799,7 +4873,7 @@ void GPUEngineA::_RenderLine_DispCapture_BlendToCustomDstBuffer(const u16 *__res
 }
 
 template<size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB, bool CAPTURETONATIVEDST>
-void GPUEngineA::_RenderLine_DispCapture_Blend(const u16 *__restrict srcA, const u16 *__restrict srcB, u16 *__restrict dst, const size_t captureLengthExt, const size_t l)
+void GPUEngineA::_RenderLine_DispCapture_Blend(const u16 *srcA, const u16 *srcB, u16 *dst, const size_t captureLengthExt, const size_t l)
 {
 	const u8 blendEVA = GPU->GetEngineMain()->_dispCapCnt.EVA;
 	const u8 blendEVB = GPU->GetEngineMain()->_dispCapCnt.EVB;
@@ -5728,6 +5802,9 @@ void GPUSubsystem::SetWillAutoResolveToCustomBuffer(const bool willAutoResolve)
 
 void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 {
+	const bool isFramebuffeRenderNeeded[2]	= { CommonSettings.showGpu.main && !(this->_engineMain->GetIsMasterBrightFullIntensity() && (this->_engineMain->GetIORegisterMap().DISPCAPCNT.CaptureEnable == 0)),
+											    CommonSettings.showGpu.sub && !this->_engineSub->GetIsMasterBrightFullIntensity() };
+	
 	if (l == 0)
 	{
 		CurrentRenderer->SetFramebufferFlushStates(this->_engineMain->WillRender3DLayer(), this->_engineMain->WillCapture3DLayerDirect());
@@ -5760,43 +5837,48 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 		}
 	}
 	
-	if (!isFrameSkipRequested)
+	if (isFramebuffeRenderNeeded[GPUEngineID_Main] && !isFrameSkipRequested)
 	{
-		if (CommonSettings.showGpu.main && !(this->_engineMain->GetIsMasterBrightFullIntensity() && (this->_engineMain->GetIORegisterMap().DISPCAPCNT.CaptureEnable == 0)))
+		if (this->_engineMain->isCustomRenderingNeeded)
 		{
-			if (this->_engineMain->isCustomRenderingNeeded)
-			{
-				this->_engineMain->RenderLine<true>(l);
-			}
-			else
-			{
-				this->_engineMain->RenderLine<false>(l);
-			}
+			this->_engineMain->RenderLine<true>(l);
 		}
-		
-		if (CommonSettings.showGpu.sub && !this->_engineSub->GetIsMasterBrightFullIntensity())
+		else
 		{
-			if (this->_engineSub->isCustomRenderingNeeded)
-			{
-				this->_engineSub->RenderLine<true>(l);
-			}
-			else
-			{
-				this->_engineSub->RenderLine<false>(l);
-			}
+			this->_engineMain->RenderLine<false>(l);
 		}
+	}
+	else
+	{
+		this->_engineMain->UpdatePropertiesWithoutRender(l);
+	}
+	
+	if (isFramebuffeRenderNeeded[GPUEngineID_Sub] && !isFrameSkipRequested)
+	{
+		if (this->_engineSub->isCustomRenderingNeeded)
+		{
+			this->_engineSub->RenderLine<true>(l);
+		}
+		else
+		{
+			this->_engineSub->RenderLine<false>(l);
+		}
+	}
+	else
+	{
+		this->_engineSub->UpdatePropertiesWithoutRender(l);
 	}
 	
 	if (l == 191)
 	{
 		if (!isFrameSkipRequested)
 		{
-			if (CommonSettings.showGpu.main && !(this->_engineMain->GetIsMasterBrightFullIntensity() && (this->_engineMain->GetIORegisterMap().DISPCAPCNT.CaptureEnable == 0)))
+			if (isFramebuffeRenderNeeded[GPUEngineID_Main])
 			{
 				this->_engineMain->ApplyMasterBrightness<false>();
 			}
 			
-			if (CommonSettings.showGpu.sub && !this->_engineSub->GetIsMasterBrightFullIntensity())
+			if (isFramebuffeRenderNeeded[GPUEngineID_Sub])
 			{
 				this->_engineSub->ApplyMasterBrightness<false>();
 			}

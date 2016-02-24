@@ -1304,6 +1304,7 @@ public:
 	template<GPUEngineID ENGINEID> void ParseAllRegisters();
 	
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l);
+	void UpdatePropertiesWithoutRender(const u16 l);
 	void FramebufferPostprocess();
 	
 	bool isCustomRenderingNeeded;
@@ -1377,7 +1378,7 @@ protected:
 	void _RenderLine_DispCapture_FIFOToBuffer(u16 *fifoLineBuffer);
 	
 	template<int SOURCESWITCH, size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRC, bool CAPTURETONATIVEDST>
-	void _RenderLine_DispCapture_Copy(const u16 *__restrict src, u16 *__restrict dst, const size_t captureLengthExt, const size_t captureLineCount);
+	void _RenderLine_DispCapture_Copy(const u16 *src, u16 *dst, const size_t captureLengthExt, const size_t captureLineCount); // Do not use restrict pointers, since src and dst can be the same
 	
 	u16 _RenderLine_DispCapture_BlendFunc(const u16 srcA, const u16 srcB, const u8 blendEVA, const u8 blendEVB);
 	
@@ -1386,10 +1387,10 @@ protected:
 #endif
 	
 	template<bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB>
-	void _RenderLine_DispCapture_BlendToCustomDstBuffer(const u16 *__restrict srcA, const u16 *__restrict srcB, u16 *__restrict dst, const u8 blendEVA, const u8 blendEVB, const size_t length, size_t l);
+	void _RenderLine_DispCapture_BlendToCustomDstBuffer(const u16 *srcA, const u16 *srcB, u16 *dst, const u8 blendEVA, const u8 blendEVB, const size_t length, size_t l); // Do not use restrict pointers, since srcB and dst can be the same
 	
 	template<size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB, bool CAPTURETONATIVEDST>
-	void _RenderLine_DispCapture_Blend(const u16 *__restrict srcA, const u16 *__restrict srcB, u16 *__restrict dst, const size_t captureLengthExt, const size_t l);
+	void _RenderLine_DispCapture_Blend(const u16 *srcA, const u16 *srcB, u16 *dst, const size_t captureLengthExt, const size_t l); // Do not use restrict pointers, since srcB and dst can be the same
 	
 	template<bool ISCUSTOMRENDERINGNEEDED> void _HandleDisplayModeVRAM(u16 *__restrict dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
 	void _HandleDisplayModeMainMemory(u16 *dstColorLine);
@@ -1410,6 +1411,7 @@ public:
 	bool WillCapture3DLayerDirect();
 		
 	template<bool ISCUSTOMRENDERINGNEEDED> void RenderLine(const u16 l);
+	void UpdatePropertiesWithoutRender(const u16 l);
 	void FramebufferPostprocess();
 };
 
