@@ -4155,7 +4155,7 @@ void GPUEngineA::RenderLine(const u16 l)
 	switch (displayMode)
 	{
 		case GPUDisplayMode_Off: // Display Off(Display white)
-			this->_HandleDisplayModeOff(dstColorLine);
+			this->_HandleDisplayModeOff(this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH));
 			break;
 			
 		case GPUDisplayMode_Normal: // Display BG and OBJ layers
@@ -4163,11 +4163,11 @@ void GPUEngineA::RenderLine(const u16 l)
 			break;
 			
 		case GPUDisplayMode_VRAM: // Display vram framebuffer
-			this->_HandleDisplayModeVRAM<ISCUSTOMRENDERINGNEEDED>(dstColorLine, l, dstLineWidth, dstLineCount);
+			this->_HandleDisplayModeVRAM(dstColorLine, l, dstLineWidth, dstLineCount);
 			break;
 			
 		case GPUDisplayMode_MainMemory: // Display memory FIFO
-			this->_HandleDisplayModeMainMemory(dstColorLine);
+			this->_HandleDisplayModeMainMemory(this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH));
 			break;
 	}
 	
@@ -4547,7 +4547,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(u16 *dstColorLine, const u16 l)
 	
 	if (DIDCUSTOMRENDER)
 	{
-		const size_t captureLengthExt = (CAPTURELENGTH) ? dispInfo.customWidth : dispInfo.customWidth / 2;
+		const size_t captureLengthExt = (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH) ? dispInfo.customWidth : dispInfo.customWidth / 2;
 		const size_t captureLineCount = _gpuDstLineCount[l];
 		
 		size_t cap_dst_adr_ext = (DISPCAPCNT.VRAMWriteOffset * _gpuCaptureLineIndex[64] * dispInfo.customWidth) + (_gpuCaptureLineIndex[l] * captureLengthExt);
@@ -4938,10 +4938,9 @@ void GPUEngineA::_RenderLine_DispCapture_Blend(const u16 *srcA, const u16 *srcB,
 	}
 }
 
-template<bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineA::_HandleDisplayModeVRAM(u16 *__restrict dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount)
 {
-	if (!ISCUSTOMRENDERINGNEEDED)
+	if (!this->isCustomOutputSize)
 	{
 		const u16 *__restrict src = this->_VRAMaddrNative + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 #ifdef LOCAL_LE
@@ -4955,8 +4954,6 @@ void GPUEngineA::_HandleDisplayModeVRAM(u16 *__restrict dstColorLine, const size
 	}
 	else
 	{
-		// TODO: Get rid of this method's dependence on _engineMain->isCustomRenderingNeeded.
-		//
 		// The reason we need to check this on a per line basis instead of figuring this out at
 		// GPUSubsystem::UpdateRenderProperties() is because GPUSubsystem::UpdateRenderProperties()
 		// is called at line 0, but some games, such as Nanostray 2, might change DISPCNT in the
@@ -4964,7 +4961,7 @@ void GPUEngineA::_HandleDisplayModeVRAM(u16 *__restrict dstColorLine, const size
 		const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
 		const VRAM3DUsageProperties &vramUsageProperty = GPU->GetRenderProperties();
 		
-		if (vramUsageProperty.isCustomBlockUsed[DISPCNT.VRAM_Block])
+		if (vramUsageProperty.isCustomBlockUsed[DISPCNT.VRAM_Block] && (vramUsageProperty.blockIndexDisplayVRAM == DISPCNT.VRAM_Block))
 		{
 			const u16 *__restrict src = this->_VRAMaddrCustom + (_gpuDstLineIndex[l] * dstLineWidth);
 #ifdef LOCAL_LE
@@ -5389,6 +5386,7 @@ void GPUSubsystem::Reset()
 	this->_engineMain->Reset();
 	this->_engineSub->Reset();
 	
+	this->_VRAM3DUsage.blockIndexDisplayVRAM = VRAM_NO_3D_USAGE;
 	this->_VRAM3DUsage.isCustomBlockUsed[0] = false;
 	this->_VRAM3DUsage.isCustomBlockUsed[1] = false;
 	this->_VRAM3DUsage.isCustomBlockUsed[2] = false;
@@ -5400,6 +5398,8 @@ void GPUSubsystem::Reset()
 
 void GPUSubsystem::UpdateRenderProperties()
 {
+	this->_VRAM3DUsage.blockIndexDisplayVRAM = VRAM_NO_3D_USAGE;
+	
 	this->_engineMain->isCustomRenderingNeeded = false;
 	this->_engineMain->isCustomOutputSize = false;
 	this->_engineMain->vramBlockBGIndex = VRAM_NO_3D_USAGE;
@@ -5464,6 +5464,17 @@ void GPUSubsystem::UpdateRenderProperties()
 				this->_engineSub->UpdateVRAM3DUsageProperties_OBJLayer(i, this->_VRAM3DUsage);
 				break;
 				
+			case VramConfiguration::LCDC:
+			{
+				const IOREG_DISPCNT &mainDISPCNT = this->GetEngineMain()->GetIORegisterMap().DISPCNT;
+				
+				if ((mainDISPCNT.DisplayMode == GPUDisplayMode_VRAM) && (mainDISPCNT.VRAM_Block == i))
+				{
+					this->_VRAM3DUsage.blockIndexDisplayVRAM = i;
+				}
+				break;
+			}
+				
 			default:
 				this->_VRAM3DUsage.isCustomBlockUsed[i] = false;
 				break;
@@ -5492,8 +5503,7 @@ void GPUSubsystem::UpdateRenderProperties()
 			break;
 			
 		case GPUDisplayMode_VRAM:
-			// TODO: Get rid of this method's dependence on _engineMain->isCustomRenderingNeeded.
-			this->_engineMain->isCustomOutputSize = this->_engineMain->isCustomRenderingNeeded;
+			this->_engineMain->isCustomOutputSize = ((this->_VRAM3DUsage.blockIndexDisplayVRAM != VRAM_NO_3D_USAGE) && this->_VRAM3DUsage.isCustomBlockUsed[this->_VRAM3DUsage.blockIndexDisplayVRAM]);
 			break;
 	}
 	
@@ -5658,7 +5668,7 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h, u16 *clientNativ
 	}
 	
 	const size_t newCustomVRAMBlockSize = _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w;
-	const size_t newCustomVRAMBlankSize = newGpuLargestDstLineCount * w;
+	const size_t newCustomVRAMBlankSize = newGpuLargestDstLineCount * GPU_VRAM_BLANK_REGION_LINES * w;
 	u16 *newCustomVRAM = (u16 *)malloc_alignedCacheLine(((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
 	memset(newCustomVRAM, 0, ((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
 	
@@ -5715,6 +5725,7 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h, u16 *clientNativ
 	
 	if (!this->_displayInfo.isCustomSizeRequested)
 	{
+		this->_VRAM3DUsage.blockIndexDisplayVRAM = VRAM_NO_3D_USAGE;
 		this->_VRAM3DUsage.isCustomBlockUsed[0] = false;
 		this->_VRAM3DUsage.isCustomBlockUsed[1] = false;
 		this->_VRAM3DUsage.isCustomBlockUsed[2] = false;
@@ -5777,6 +5788,11 @@ u16* GPUSubsystem::GetCustomVRAMBlankBuffer()
 u16* GPUSubsystem::GetCustomVRAMAddressUsingMappedAddress(const u32 mappedAddr)
 {
 	const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(mappedAddr) - MMU.ARM9_LCD) / sizeof(u16);
+	if (vramPixel > (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4))
+	{
+		return this->_customVRAMBlank;
+	}
+	
 	const size_t blockID = vramPixel / (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
 	const size_t blockPixel = vramPixel % (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
 	const size_t blockLine = blockPixel / GPU_FRAMEBUFFER_NATIVE_WIDTH;
