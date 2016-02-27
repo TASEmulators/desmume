@@ -142,6 +142,7 @@ public:
 	
 	size_t GetFramebufferWidth();
 	size_t GetFramebufferHeight();
+	bool IsFramebufferNativeSize();
 	
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);

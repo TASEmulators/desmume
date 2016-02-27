@@ -264,6 +264,11 @@ size_t Render3D::GetFramebufferHeight()
 	return this->_framebufferHeight;
 }
 
+bool Render3D::IsFramebufferNativeSize()
+{
+	return ( (this->_framebufferWidth == GPU_FRAMEBUFFER_NATIVE_WIDTH) && (this->_framebufferHeight == GPU_FRAMEBUFFER_NATIVE_HEIGHT) );
+}
+
 Render3DError Render3D::SetFramebufferSize(size_t w, size_t h)
 {
 	if (w < GPU_FRAMEBUFFER_NATIVE_WIDTH || h < GPU_FRAMEBUFFER_NATIVE_HEIGHT)

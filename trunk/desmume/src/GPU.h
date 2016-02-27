@@ -1217,7 +1217,8 @@ protected:
 	
 	TILEENTRY _GetTileEntry(const u32 tileMapAddress, const u16 xOffset, const u16 layerWidthMask);
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixelSingle(u16 *dstColorLine, const u16 lineIndex, u16 color, const size_t srcX, const bool opaque);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool USECUSTOMVRAM> void _RenderPixelsCustom(u16 *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex);
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> void _RenderPixelsCustom(u16 *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex);
+	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> void _RenderPixelsCustomVRAM(u16 *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex);
 	
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_BGText(u16 *__restrict dstColorLine, const u16 lineIndex, const u16 XBG, const u16 YBG);
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_BGAffine(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param);
@@ -1232,8 +1233,8 @@ protected:
 	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_Clear(const u16 clearColor, const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
 	template<bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_Layer(const u16 l, u16 *dstColorLine, const size_t dstLineWidth, const size_t dstLineCount);
 		
-	void _HandleDisplayModeOff(u16 *dstColorLine);
-	template<bool ISCUSTOMOUTPUTSIZE> void _HandleDisplayModeNormal(u16 *dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
+	void _HandleDisplayModeOff(const size_t l);
+	void _HandleDisplayModeNormal(const size_t l);
 	
 	template<size_t WIN_NUM> void _UpdateWINH();
 	template<size_t WIN_NUM> void _SetupWindows(const u16 lineIndex);
@@ -1339,8 +1340,8 @@ public:
 	
 	const BGLayerInfo& GetBGLayerInfoByID(const GPULayerID layerID);
 	
-	void UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
-	void UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex, VRAM3DUsageProperties &outProperty);
+	void UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex);
+	void UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex);
 	
 	void SpriteRenderDebug(const u16 lineIndex, u16 *dst);
 	template<GPULayerID LAYERID> void RenderLayerBG(u16 *dstLineColor);
@@ -1394,8 +1395,8 @@ protected:
 	template<size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB, bool CAPTURETONATIVEDST>
 	void _RenderLine_DispCapture_Blend(const u16 *srcA, const u16 *srcB, u16 *dst, const size_t captureLengthExt, const size_t l); // Do not use restrict pointers, since srcB and dst can be the same
 	
-	void _HandleDisplayModeVRAM(u16 *__restrict dstColorLine, const size_t l, const size_t dstLineWidth, const size_t dstLineCount);
-	void _HandleDisplayModeMainMemory(u16 *dstColorLine);
+	void _HandleDisplayModeVRAM(const size_t l);
+	void _HandleDisplayModeMainMemory(const size_t l);
 	
 public:
 	static GPUEngineA* Allocate();
