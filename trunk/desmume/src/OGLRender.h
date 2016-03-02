@@ -593,6 +593,7 @@ protected:
 	FragmentColor *_mappedFramebuffer;
 	bool _pixelReadNeedsFinish;
 	size_t _currentPolyIndex;
+	std::vector<u8> _shadowPolyID;
 	
 	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551);
 	

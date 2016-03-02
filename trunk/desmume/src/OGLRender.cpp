@@ -842,6 +842,7 @@ OpenGLRenderer::OpenGLRenderer()
 	_mappedFramebuffer = NULL;
 	_pixelReadNeedsFinish = false;
 	_currentPolyIndex = 0;
+	_shadowPolyID.reserve(POLYLIST_SIZE);
 }
 
 OpenGLRenderer::~OpenGLRenderer()
@@ -941,7 +942,10 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 	// to the DS Y-coordinate.
 	
 	const size_t pixCount = this->_framebufferWidth;
+	
+#if defined(ENABLE_SSSE3) && defined(LOCAL_LE)
 	const size_t ssePixCount = pixCount - (pixCount % 4);
+#endif
 	
 	if ( (dstRGBA6665 != NULL) && (dstRGBA5551 != NULL) )
 	{
@@ -2483,7 +2487,6 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 	if (polyCount > 0)
 	{
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_STENCIL_TEST);
 		
 		if(renderState.enableAlphaBlending)
 		{
@@ -2495,6 +2498,26 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 		}
 		
 		this->EnableVertexAttributes();
+		
+		this->_shadowPolyID.clear();
+		for (size_t i = 0; i < polyCount; i++)
+		{
+			const POLY &thePoly = polyList->list[i];
+			
+			if (thePoly.getAttributePolygonMode() != POLYGON_MODE_SHADOW)
+			{
+				continue;
+			}
+			
+			const u8 polyID = thePoly.getAttributePolygonID();
+			
+			if ( (polyID == 0) || (std::find(this->_shadowPolyID.begin(), this->_shadowPolyID.end(), polyID) != this->_shadowPolyID.end()) )
+			{
+				continue;
+			}
+			
+			this->_shadowPolyID.push_back(polyID);
+		}
 		
 		const POLY &firstPoly = polyList->list[indexList->list[0]];
 		u32 lastPolyAttr = firstPoly.polyAttr;
@@ -2704,7 +2727,7 @@ Render3DError OpenGLRenderer_1_2::ClearUsingValues(const FragmentColor &clearCol
 		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT); // texGColorID
 		glClearColor(divide5bitBy31_LUT[clearColor.r], divide5bitBy31_LUT[clearColor.g], divide5bitBy31_LUT[clearColor.b], divide5bitBy31_LUT[clearColor.a]);
 		glClearDepth((GLclampd)clearAttributes.depth / (GLclampd)0x00FFFFFF);
-		glClearStencil(clearAttributes.opaquePolyID);
+		glClearStencil(0xFF);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		
 		glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT); // texGDepthID
@@ -2739,7 +2762,6 @@ void OpenGLRenderer_1_2::SetPolygonIndex(const size_t index)
 
 Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 {
-	OGLRenderRef &OGLRef = *this->ref;
 	const PolygonAttributes attr = thePoly.getAttributes();
 	
 	// Set up depth test mode
@@ -2767,13 +2789,15 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 	// can change this too.
 	if (attr.polygonMode == POLYGON_MODE_SHADOW)
 	{
+		glEnable(GL_STENCIL_TEST);
+		
 		if (attr.polygonID == 0)
 		{
 			//when the polyID is zero, we are writing the shadow mask.
 			//set stencilbuf = 1 where the shadow volume is obstructed by geometry.
 			//do not write color or depth information.
-			glStencilFunc(GL_ALWAYS, 65, 255);
-			glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
+			glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
+			glStencilOp(GL_KEEP, GL_ZERO, GL_KEEP);
 			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 			enableDepthWrite = GL_FALSE;
 		}
@@ -2781,32 +2805,25 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 		{
 			//when the polyid is nonzero, we are drawing the shadow poly.
 			//only draw the shadow poly where the stencilbuf==1.
-			//I am not sure whether to update the depth buffer here--so I chose not to.
-			glStencilFunc(GL_EQUAL, 65, 255);
+			glStencilFunc(GL_EQUAL, 0, 0xFF);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 			enableDepthWrite = GL_TRUE;
 		}
 	}
+	else if ( attr.isTranslucent || (std::find(this->_shadowPolyID.begin(), this->_shadowPolyID.end(), attr.polygonID) == this->_shadowPolyID.end()) )
+	{
+		glDisable(GL_STENCIL_TEST);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		enableDepthWrite = (!attr.isTranslucent || ( (attr.polygonMode == POLYGON_MODE_DECAL) && attr.isOpaque ) || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
+	}
 	else
 	{
-		if (attr.isTranslucent)
-		{
-			glStencilFunc(GL_NOTEQUAL, attr.polygonID, 255);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		}
-		else
-		{
-			glStencilFunc(GL_ALWAYS, 64, 255);
-			glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
-			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		}
-	}
-	
-	if (attr.isTranslucent && !attr.enableAlphaDepthWrite)
-	{
-		enableDepthWrite = GL_FALSE;
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_ALWAYS, 0x80, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		enableDepthWrite = GL_TRUE;
 	}
 	
 	glDepthMask(enableDepthWrite);
@@ -2814,6 +2831,7 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 	// Set up polygon attributes
 	if (this->isShaderSupported)
 	{
+		OGLRenderRef &OGLRef = *this->ref;
 		glUniform1i(OGLRef.uniformPolyMode, attr.polygonMode);
 		glUniform1i(OGLRef.uniformPolyEnableFog, (attr.enableRenderFog) ? GL_TRUE : GL_FALSE);
 		glUniform1f(OGLRef.uniformPolyAlpha, (!attr.isWireframe && attr.isTranslucent) ? divide5bitBy31_LUT[attr.alpha] : 1.0f);
@@ -4285,7 +4303,6 @@ Render3DError OpenGLRenderer_2_0::RenderFog(const u8 *densityTable, const u32 co
 
 Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY &thePoly)
 {
-	OGLRenderRef &OGLRef = *this->ref;
 	const PolygonAttributes attr = thePoly.getAttributes();
 	
 	// Set up depth test mode
@@ -4313,13 +4330,15 @@ Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY &thePoly)
 	// can change this too.
 	if (attr.polygonMode == POLYGON_MODE_SHADOW)
 	{
+		glEnable(GL_STENCIL_TEST);
+		
 		if (attr.polygonID == 0)
 		{
 			//when the polyID is zero, we are writing the shadow mask.
 			//set stencilbuf = 1 where the shadow volume is obstructed by geometry.
 			//do not write color or depth information.
-			glStencilFunc(GL_ALWAYS, 65, 255);
-			glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
+			glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
+			glStencilOp(GL_KEEP, GL_ZERO, GL_KEEP);
 			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 			enableDepthWrite = GL_FALSE;
 		}
@@ -4327,37 +4346,31 @@ Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY &thePoly)
 		{
 			//when the polyid is nonzero, we are drawing the shadow poly.
 			//only draw the shadow poly where the stencilbuf==1.
-			//I am not sure whether to update the depth buffer here--so I chose not to.
-			glStencilFunc(GL_EQUAL, 65, 255);
+			glStencilFunc(GL_EQUAL, 0, 0xFF);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 			enableDepthWrite = GL_TRUE;
 		}
 	}
+	else if ( attr.isTranslucent || (std::find(this->_shadowPolyID.begin(), this->_shadowPolyID.end(), attr.polygonID) == this->_shadowPolyID.end()) )
+	{
+		glDisable(GL_STENCIL_TEST);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		enableDepthWrite = (!attr.isTranslucent || ( (attr.polygonMode == POLYGON_MODE_DECAL) && attr.isOpaque ) || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
+	}
 	else
 	{
-		if (attr.isTranslucent)
-		{
-			glStencilFunc(GL_NOTEQUAL, attr.polygonID, 255);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		}
-		else
-		{
-			glStencilFunc(GL_ALWAYS, 64, 255);
-			glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
-			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		}
-	}
-	
-	if (attr.isTranslucent && !attr.enableAlphaDepthWrite)
-	{
-		enableDepthWrite = GL_FALSE;
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_ALWAYS, 0x80, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		enableDepthWrite = GL_TRUE;
 	}
 	
 	glDepthMask(enableDepthWrite);
 	
 	// Set up polygon attributes
+	OGLRenderRef &OGLRef = *this->ref;
 	glUniform1i(OGLRef.uniformPolyMode, attr.polygonMode);
 	glUniform1i(OGLRef.uniformPolyEnableFog, (attr.enableRenderFog) ? GL_TRUE : GL_FALSE);
 	glUniform1f(OGLRef.uniformPolyAlpha, (!attr.isWireframe && attr.isTranslucent) ? divide5bitBy31_LUT[attr.alpha] : 1.0f);
