@@ -3384,7 +3384,9 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 					ParseReg_DISP3DCNT();
 					return;
 				case REG_DISPA_DISP3DCNT+1:
-					T1WriteByte(MMU.ARM9_REG, 0x0061, val);
+					// TODO: We need to handle acknowledgement flags properly. But for now, just drop the bits.
+					// Test case: The "Planet Rescue: Animal Emergency" title screen will check these flags.
+					T1WriteByte(MMU.ARM9_REG, 0x0061, val & 0xCF);
 					ParseReg_DISP3DCNT();
 					return;
 					
@@ -3876,7 +3878,9 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					return;
 					
 				case REG_DISPA_DISP3DCNT:
-					T1WriteLong(MMU.ARM9_REG, 0x0060, val);
+					// TODO: We need to handle acknowledgement flags properly. But for now, just drop the bits.
+					// Test case: The "Planet Rescue: Animal Emergency" title screen will check these flags.
+					T1WriteWord(MMU.ARM9_REG, 0x0060, val & 0xCFFF);
 					ParseReg_DISP3DCNT();
 					return;
 					
@@ -4439,7 +4443,9 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					return;
 					
 				case REG_DISPA_DISP3DCNT:
-					T1WriteLong(MMU.ARM9_REG, 0x0060, val);
+					// TODO: We need to handle acknowledgement flags properly. But for now, just drop the bits.
+					// Test case: The "Planet Rescue: Animal Emergency" title screen will check these flags.
+					T1WriteLong(MMU.ARM9_REG, 0x0060, val & 0xFFFFCFFF);
 					ParseReg_DISP3DCNT();
 					return;
 					
