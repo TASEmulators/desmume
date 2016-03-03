@@ -4428,25 +4428,11 @@ void GPUEngineA::RenderLine(const u16 l)
 	{
 		if (DISPCAPCNT.CaptureSize == DisplayCaptureSize_128x128)
 		{
-			if (this->isLineRenderNative[l])
-			{
-				this->_RenderLine_DisplayCapture<false, GPU_FRAMEBUFFER_NATIVE_WIDTH/2>(renderLineTarget, l);
-			}
-			else
-			{
-				this->_RenderLine_DisplayCapture<true, GPU_FRAMEBUFFER_NATIVE_WIDTH/2>(renderLineTarget, l);
-			}
+			this->_RenderLine_DisplayCapture<GPU_FRAMEBUFFER_NATIVE_WIDTH/2>(renderLineTarget, l);
 		}
 		else
 		{
-			if (this->isLineRenderNative[l])
-			{
-				this->_RenderLine_DisplayCapture<false, GPU_FRAMEBUFFER_NATIVE_WIDTH>(renderLineTarget, l);
-			}
-			else
-			{
-				this->_RenderLine_DisplayCapture<true, GPU_FRAMEBUFFER_NATIVE_WIDTH>(renderLineTarget, l);
-			}
+			this->_RenderLine_DisplayCapture<GPU_FRAMEBUFFER_NATIVE_WIDTH>(renderLineTarget, l);
 		}
 	}
 }
@@ -4704,7 +4690,7 @@ u16* GPUEngineA::_RenderLine_Layers(const u16 l)
 	return currentRenderLineTarget;
 }
 
-template<bool DIDCUSTOMRENDER, size_t CAPTURELENGTH>
+template<size_t CAPTURELENGTH>
 void GPUEngineA::_RenderLine_DisplayCapture(const u16 *renderedLineSrcA, const u16 l)
 {
 	assert( (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH/2) || (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH) );
@@ -4765,7 +4751,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 *renderedLineSrcA, const u
 				case 0: // Capture screen (BG + OBJ + 3D)
 				{
 					//INFO("Capture screen (BG + OBJ + 3D)\n");
-					if (!DIDCUSTOMRENDER)
+					if (this->isLineRenderNative[l])
 					{
 						this->_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, true, true>(srcA, cap_dst, CAPTURELENGTH, 1);
 					}
@@ -4774,7 +4760,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 *renderedLineSrcA, const u
 						this->_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, false, true>(srcA, cap_dst, CAPTURELENGTH, 1);
 					}
 					
-					newCaptureLineNativeState = !DIDCUSTOMRENDER;
+					newCaptureLineNativeState = this->isLineRenderNative[l];
 					break;
 				}
 					
@@ -4839,7 +4825,15 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 *renderedLineSrcA, const u
 			{
 				if ( (DISPCAPCNT.SrcB == 0) && !this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset] )
 				{
-					this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, !DIDCUSTOMRENDER, false, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+					if (this->isLineRenderNative[l])
+					{
+						this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, true, false, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+					}
+					else
+					{
+						this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, false, false, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+					}
+					
 					newCaptureLineNativeState = false;
 				}
 				else
@@ -4850,8 +4844,16 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 *renderedLineSrcA, const u
 						this->_RenderLine_DispCapture_FIFOToBuffer(fifoLine);
 					}
 					
-					this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, !DIDCUSTOMRENDER, true, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
-					newCaptureLineNativeState = !DIDCUSTOMRENDER;
+					if (this->isLineRenderNative[l])
+					{
+						this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, true, true, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+					}
+					else
+					{
+						this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, false, true, true>(srcA, srcB, cap_dst, CAPTURELENGTH, 1);
+					}
+					
+					newCaptureLineNativeState = this->isLineRenderNative[l];
 				}
 			}
 			else
@@ -4937,7 +4939,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 *renderedLineSrcA, const u
 				{
 					case 0: // Capture screen (BG + OBJ + 3D)
 					{
-						if (!DIDCUSTOMRENDER)
+						if (this->isLineRenderNative[l])
 						{
 							this->_RenderLine_DispCapture_Copy<0, CAPTURELENGTH, true, false>(srcA, cap_dst_ext, captureLengthExt, captureLineCount);
 						}
@@ -4994,11 +4996,25 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 *renderedLineSrcA, const u
 				{
 					if ( (DISPCAPCNT.SrcB == 0) && !this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset] )
 					{
-						this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, !DIDCUSTOMRENDER, false, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
+						if (this->isLineRenderNative[l])
+						{
+							this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, true, false, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
+						}
+						else
+						{
+							this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, false, false, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
+						}
 					}
 					else
 					{
-						this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, !DIDCUSTOMRENDER, true, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
+						if (this->isLineRenderNative[l])
+						{
+							this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, true, true, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
+						}
+						else
+						{
+							this->_RenderLine_DispCapture_Blend<CAPTURELENGTH, false, true, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
+						}
 					}
 				}
 				else
