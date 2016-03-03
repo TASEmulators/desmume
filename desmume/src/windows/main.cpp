@@ -1752,9 +1752,9 @@ static void DD_DoDisplay()
 	if (!ddraw.lock()) return;
 	char* buffer = (char*)ddraw.surfDescBack.lpSurface;
 
-	if(ddraw.surfDescBack.dwWidth != video.width || ddraw.surfDescBack.dwHeight != video.height)
+	if(ddraw.surfDescBack.dwWidth != video.rotatedwidth() || ddraw.surfDescBack.dwHeight != video.rotatedheight())
 	{
-		ddraw.createBackSurface(video.width,video.height);
+		ddraw.createBackSurface(video.rotatedwidth(),video.rotatedheight());
 	}
 
 	switch(ddraw.surfDescBack.ddpfPixelFormat.dwRGBBitCount)
