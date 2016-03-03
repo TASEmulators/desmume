@@ -1385,7 +1385,7 @@ protected:
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineLarge8bpp(u16 *__restrict dstColorLine, const u16 lineIndex);
 	
 	u16* _RenderLine_Layers(const u16 l);
-	template<bool DIDCUSTOMRENDER, size_t CAPTURELENGTH> void _RenderLine_DisplayCapture(const u16 *renderedLineSrcA, const u16 l);
+	template<size_t CAPTURELENGTH> void _RenderLine_DisplayCapture(const u16 *renderedLineSrcA, const u16 l);
 	void _RenderLine_DispCapture_FIFOToBuffer(u16 *fifoLineBuffer);
 	
 	template<int SOURCESWITCH, size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRC, bool CAPTURETONATIVEDST>
