@@ -1423,7 +1423,6 @@ public:
 	bool WillCapture3DLayerDirect();
 	bool VerifyVRAMLineDidChange(const size_t blockID, const size_t l);
 	
-	void UpdatePropertiesWithoutRender(const u16 l);
 	void FramebufferPostprocess();
 	
 	virtual void Reset();
