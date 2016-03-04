@@ -72,6 +72,7 @@ enum VideoFilterTypeID
 	VideoFilterTypeID_5xBRZ,
 	VideoFilterTypeID_HQ3X,
 	VideoFilterTypeID_HQ3XS,
+	VideoFilterTypeID_6xBRZ,
 	
 	VideoFilterTypeIDCount // Make sure this one is always last
 };
