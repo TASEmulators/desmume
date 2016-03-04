@@ -51,3 +51,4 @@ void Render2xBRZ(SSurface Src, SSurface Dst);
 void Render3xBRZ(SSurface Src, SSurface Dst);
 void Render4xBRZ(SSurface Src, SSurface Dst);
 void Render5xBRZ(SSurface Src, SSurface Dst);
+void Render6xBRZ(SSurface Src, SSurface Dst);

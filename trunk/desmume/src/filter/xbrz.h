@@ -1,6 +1,6 @@
 // ****************************************************************************
 // * This file is part of the HqMAME project. It is distributed under         *
-// * GNU General Public License: http://www.gnu.org/licenses/gpl.html         *
+// * GNU General Public License: http://www.gnu.org/licenses/gpl-3.0          *
 // * Copyright (C) Zenju (zenju AT gmx DOT de) - All Rights Reserved          *
 // *                                                                          *
 // * Additionally and as a special exception, the author gives permission     *
@@ -13,6 +13,8 @@
 // * do so, delete this exception statement from your version.                *
 // ****************************************************************************
 
+// 2016-03-04 (rogerman):   Update to XBRZ 1.4.
+//
 // 2014-11-18 (rogerman):	Update to XBRZ 1.1.
 //
 // 2014-02-06 (rogerman):	Modified for use in DeSmuME by removing C++11 code.
@@ -40,16 +42,18 @@ namespace xbrz
 using a modified approach of xBR:
 http://board.byuu.org/viewtopic.php?f=10&t=2248
 - new rule set preserving small image features
+- highly optimized for performance
 - support alpha channel
 - support multithreading
 - support 64-bit architectures
 - support processing image slices
+- support scaling up to 6xBRZ
 */
 
 enum ColorFormat //from high bits -> low bits, 8 bit per channel
 {
-    ColorFormatARGB, //including alpha channel, BGRA byte order on little-endian machines
     ColorFormatRGB,  //8 bit for each red, green, blue, upper 8 bits unused
+    ColorFormatARGB, //including alpha channel, BGRA byte order on little-endian machines
 };
 
 /*
@@ -61,25 +65,25 @@ enum ColorFormat //from high bits -> low bits, 8 bit per channel
    in the target image data if you are using multiple threads for processing each enlarged slice!
 
 THREAD-SAFETY: - parts of the same image may be scaled by multiple threads as long as the [yFirst, yLast) ranges do not overlap!
-               - there is a minor inefficiency for the first row of a slice, so avoid processing single rows only
+               - there is a minor inefficiency for the first row of a slice, so avoid processing single rows only; suggestion: process 8-16 rows at least
 */
 struct ScalerCfg
 {
 	ScalerCfg() :
-	luminanceWeight_(1),
-	equalColorTolerance_(30),
+	luminanceWeight(1),
+	equalColorTolerance(30),
 	dominantDirectionThreshold(3.6),
 	steepDirectionThreshold(2.2),
 	newTestAttribute_(0) {}
 	
-	double luminanceWeight_;
-	double equalColorTolerance_;
+	double luminanceWeight;
+	double equalColorTolerance;
 	double dominantDirectionThreshold;
 	double steepDirectionThreshold;
 	double newTestAttribute_; //unused; test new parameters
 };
 
-void scale(size_t factor, //valid range: 2 - 5
+void scale(size_t factor, //valid range: 2 - 6
            const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight,
            ColorFormat colFmt,
            const ScalerCfg& cfg = ScalerCfg(),
