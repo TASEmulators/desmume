@@ -1,3 +1,6 @@
+//this is meaningless as desmume can't use this for texture filtering. this just disables a compiler-breaking hack which was designed to make multithreaded filtering work
+//#define ENABLE_FOR_TEXTURE_FILTERING
+
 // ****************************************************************************
 // * This file is part of the HqMAME project. It is distributed under         *
 // * GNU General Public License: http://www.gnu.org/licenses/gpl-3.0          *
@@ -228,8 +231,10 @@ struct DistYCbCrBuffer //30% perf boost compared to distYCbCr()!
 public:
     static double dist(uint32_t pix1, uint32_t pix2)
     {
+#ifdef ENABLE_FOR_TEXTURE_FILTERING
 #if defined _MSC_VER && _MSC_VER < 1900
 #error function scope static initialization is not yet thread-safe!
+#endif
 #endif
         static const DistYCbCrBuffer inst;
         return inst.distImpl(pix1, pix2);
