@@ -719,6 +719,7 @@ volatile bool execute = true;
 	pthread_cond_signal(&threadParam.condThreadExecute);
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	
+	[[self cdsGPU] respondToPauseState:(coreState == CORESTATE_PAUSE)];
 	[[self cdsController] setHardwareMicPause:!(coreState == CORESTATE_EXECUTE)];
 }
 
