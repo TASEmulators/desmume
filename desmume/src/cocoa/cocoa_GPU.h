@@ -27,6 +27,7 @@ class GPUEventHandlerOSX;
 	UInt32 gpuStateFlags;
 	uint8_t _gpuScale;
 	BOOL isCPUCoreCountAuto;
+	BOOL _needRestoreRender3DLock;
 	
 	OSSpinLock spinlockGpuState;
 	GPUEventHandlerOSX *gpuEvent;
@@ -65,6 +66,7 @@ class GPUEventHandlerOSX;
 - (BOOL) gpuStateByBit:(const UInt32)stateBit;
 - (NSString *) render3DRenderingEngineString;
 - (void) clearWithColor:(const uint16_t)colorBGRA5551;
+- (void) respondToPauseState:(BOOL)isPaused;
 
 @end
 
