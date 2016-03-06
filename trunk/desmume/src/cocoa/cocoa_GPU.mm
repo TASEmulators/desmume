@@ -49,6 +49,7 @@ private:
 	pthread_mutex_t *_mutexOutputList;
 	NSMutableArray *_cdsOutputList;
 	bool _isRender3DLockHeld;
+	bool _isIn3DRender;
 	
 public:
 	GPUEventHandlerOSX();
@@ -723,6 +724,7 @@ public:
 GPUEventHandlerOSX::GPUEventHandlerOSX()
 {
 	_isRender3DLockHeld = false;
+	_isIn3DRender = false;
 	_mutexOutputList = NULL;
 	pthread_rwlock_init(&_rwlockFrame, NULL);
 	pthread_mutex_init(&_mutex3DRender, NULL);
@@ -778,12 +780,17 @@ void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped)
 
 void GPUEventHandlerOSX::DidRender3DBegin()
 {
+	this->_isIn3DRender = true;
 	this->Render3DLock();
 }
 
 void GPUEventHandlerOSX::DidRender3DEnd()
 {
-	this->Render3DUnlock();
+	if (this->_isIn3DRender)
+	{
+		this->Render3DUnlock();
+		this->_isIn3DRender = false;
+	}
 }
 
 void GPUEventHandlerOSX::FramebufferLockWrite()
@@ -811,8 +818,8 @@ void GPUEventHandlerOSX::Render3DUnlock()
 {
 	if (this->_isRender3DLockHeld)
 	{
-		pthread_mutex_unlock(&this->_mutex3DRender);
 		this->_isRender3DLockHeld = false;
+		pthread_mutex_unlock(&this->_mutex3DRender);
 	}
 }
 
