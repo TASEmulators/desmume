@@ -6100,7 +6100,11 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h, u16 *clientNativ
 	this->_engineMain->SetCustomFramebufferSize(w, h);
 	this->_engineSub->SetCustomFramebufferSize(w, h);
 	BaseRenderer->SetFramebufferSize(w, h); // Since BaseRenderer is persistent, we need to update this manually.
-	CurrentRenderer->SetFramebufferSize(w, h);
+	
+	if (CurrentRenderer != BaseRenderer)
+	{
+		CurrentRenderer->SetFramebufferSize(w, h);
+	}
 	
 	if (this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main])
 	{

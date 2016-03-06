@@ -119,8 +119,9 @@ void Render3DBaseDestroy()
 {
 	if (CurrentRenderer != BaseRenderer)
 	{
-		delete CurrentRenderer;
+		Render3D *oldRenderer = CurrentRenderer;
 		CurrentRenderer = BaseRenderer;
+		delete oldRenderer;
 	}
 }
 

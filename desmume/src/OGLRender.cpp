@@ -786,8 +786,9 @@ static void OpenGLRendererDestroy()
 	
 	if (CurrentRenderer != BaseRenderer)
 	{
-		delete (OpenGLRenderer *)CurrentRenderer;
+		OpenGLRenderer *oldRenderer = (OpenGLRenderer *)CurrentRenderer;
 		CurrentRenderer = BaseRenderer;
+		delete oldRenderer;
 	}
 	
 	ENDGL();

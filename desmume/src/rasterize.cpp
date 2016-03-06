@@ -1146,13 +1146,14 @@ static void SoftRasterizerRendererDestroy()
 	if (CurrentRenderer != BaseRenderer)
 	{
 #if defined(ENABLE_SSSE3)
-		delete (SoftRasterizerRenderer_SSSE3 *)CurrentRenderer;
+		SoftRasterizerRenderer_SSSE3 *oldRenderer = (SoftRasterizerRenderer_SSSE3 *)CurrentRenderer;
 #elif defined(ENABLE_SSE2)
-		delete (SoftRasterizerRenderer_SSE2 *)CurrentRenderer;
+		SoftRasterizerRenderer_SSE2 *oldRenderer = (SoftRasterizerRenderer_SSE2 *)CurrentRenderer;
 #else
-		delete (SoftRasterizerRenderer *)CurrentRenderer;
+		SoftRasterizerRenderer *oldRenderer = (SoftRasterizerRenderer *)CurrentRenderer;
 #endif
 		CurrentRenderer = BaseRenderer;
+		delete oldRenderer;
 	}
 }
 
