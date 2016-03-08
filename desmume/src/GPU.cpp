@@ -6187,16 +6187,22 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 	
 	if (l == 0)
 	{
-		CurrentRenderer->SetFramebufferFlushStates(this->_engineMain->WillRender3DLayer(), this->_engineMain->WillCapture3DLayerDirect());
-		CurrentRenderer->RenderFinish();
-		CurrentRenderer->SetFramebufferFlushStates(true, true);
-		
 		this->_event->DidFrameBegin();
-		this->UpdateRenderProperties();
 		
 		// Clear displays to black if they are turned off by the user.
 		if (!isFrameSkipRequested)
 		{
+			if (CurrentRenderer->GetRenderNeedsFinish())
+			{
+				CurrentRenderer->SetFramebufferFlushStates(this->_engineMain->WillRender3DLayer(), this->_engineMain->WillCapture3DLayerDirect());
+				CurrentRenderer->RenderFinish();
+				CurrentRenderer->SetFramebufferFlushStates(true, true);
+				CurrentRenderer->SetRenderNeedsFinish(false);
+				this->_event->DidRender3DEnd();
+			}
+			
+			this->UpdateRenderProperties();
+			
 			if (!CommonSettings.showGpu.main)
 			{
 				memset(this->_engineMain->renderedBuffer, 0, this->_engineMain->renderedWidth * this->_engineMain->renderedHeight * sizeof(u16));
