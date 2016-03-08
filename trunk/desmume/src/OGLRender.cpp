@@ -2996,9 +2996,8 @@ Render3DError OpenGLRenderer_1_2::Reset()
 
 Render3DError OpenGLRenderer_1_2::RenderFinish()
 {
-	if (!this->_pixelReadNeedsFinish)
+	if (!this->_renderNeedsFinish || !this->_pixelReadNeedsFinish)
 	{
-		GPU->GetEventHandler()->DidRender3DEnd();
 		return OGLERROR_NOERR;
 	}
 	
@@ -3009,7 +3008,6 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 	{
 		if(!BEGINGL())
 		{
-			GPU->GetEventHandler()->DidRender3DEnd();
 			return OGLERROR_BEGINGL_FAILED;
 		}
 		
@@ -3029,7 +3027,6 @@ Render3DError OpenGLRenderer_1_2::RenderFinish()
 	
 	this->_pixelReadNeedsFinish = false;
 	
-	GPU->GetEventHandler()->DidRender3DEnd();
 	return OGLERROR_NOERR;
 }
 
@@ -4495,9 +4492,8 @@ Render3DError OpenGLRenderer_2_1::ReadBackPixels()
 
 Render3DError OpenGLRenderer_2_1::RenderFinish()
 {
-	if (!this->_pixelReadNeedsFinish)
+	if (!this->_renderNeedsFinish || !this->_pixelReadNeedsFinish)
 	{
-		GPU->GetEventHandler()->DidRender3DEnd();
 		return OGLERROR_NOERR;
 	}
 	
@@ -4508,7 +4504,6 @@ Render3DError OpenGLRenderer_2_1::RenderFinish()
 	{
 		if(!BEGINGL())
 		{
-			GPU->GetEventHandler()->DidRender3DEnd();
 			return OGLERROR_BEGINGL_FAILED;
 		}
 		
@@ -4520,6 +4515,5 @@ Render3DError OpenGLRenderer_2_1::RenderFinish()
 	
 	this->_pixelReadNeedsFinish = false;
 	
-	GPU->GetEventHandler()->DidRender3DEnd();
 	return OGLERROR_NOERR;
 }

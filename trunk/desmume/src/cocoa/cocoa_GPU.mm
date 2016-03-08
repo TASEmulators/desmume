@@ -48,8 +48,7 @@ private:
 	pthread_mutex_t _mutex3DRender;
 	pthread_mutex_t *_mutexOutputList;
 	NSMutableArray *_cdsOutputList;
-	bool _isRender3DLockHeld;
-	bool _isIn3DRender;
+	bool _render3DNeedsFinish;
 	
 public:
 	GPUEventHandlerOSX();
@@ -67,7 +66,7 @@ public:
 	pthread_rwlock_t* GetFrameRWLock();
 	NSMutableArray* GetOutputList();
 	void SetOutputList(NSMutableArray *outputList, pthread_mutex_t *theMutex);
-	bool IsRender3DLockHeld();
+	bool GetRender3DNeedsFinish();
 	
 	virtual void DidFrameBegin();
 	virtual void DidFrameEnd(bool isFrameSkipped);
@@ -132,6 +131,7 @@ public:
 					  GPUSTATE_SUB_OBJ_MASK;
 	
 	isCPUCoreCountAuto = NO;
+	_needRestoreFrameLock = NO;
 	_needRestoreRender3DLock = NO;
 		
 	SetOpenGLRendererFunctions(&OSXOpenGLRendererInit,
@@ -188,23 +188,23 @@ public:
 - (void) setGpuDimensions:(NSSize)theDimensions
 {
 	gpuEvent->FrameFinish();
-	gpuEvent->FramebufferLockWrite();
 	gpuEvent->Render3DLock();
+	gpuEvent->FramebufferLockWrite();
 	
 	GPU->SetCustomFramebufferSize(theDimensions.width, theDimensions.height);
 	
 	gpuEvent->SetVideoBuffers();
-	gpuEvent->Render3DUnlock();
 	gpuEvent->FramebufferUnlock();
+	gpuEvent->Render3DUnlock();
 }
 
 - (NSSize) gpuDimensions
 {
-	gpuEvent->FramebufferLockRead();
 	gpuEvent->Render3DLock();
+	gpuEvent->FramebufferLockRead();
 	const NSSize dimensions = NSMakeSize(GPU->GetCustomFramebufferWidth(), GPU->GetCustomFramebufferHeight());
-	gpuEvent->Render3DUnlock();
 	gpuEvent->FramebufferUnlock();
+	gpuEvent->Render3DUnlock();
 	
 	return dimensions;
 }
@@ -362,7 +362,7 @@ public:
 	
 	CommonSettings.num_cores = numberCores;
 	
-	if (renderingEngineID == CORE3DLIST_SWRASTERIZE || renderingEngineID == CORE3DLIST_OPENGL)
+	if (renderingEngineID == CORE3DLIST_SWRASTERIZE)
 	{
 		NDS_3D_ChangeCore(renderingEngineID);
 	}
@@ -703,7 +703,7 @@ public:
 {
 	if (isPaused)
 	{
-		if (gpuEvent->IsRender3DLockHeld())
+		if (!_needRestoreRender3DLock && gpuEvent->GetRender3DNeedsFinish())
 		{
 			gpuEvent->Render3DUnlock();
 			_needRestoreRender3DLock = YES;
@@ -723,8 +723,7 @@ public:
 
 GPUEventHandlerOSX::GPUEventHandlerOSX()
 {
-	_isRender3DLockHeld = false;
-	_isIn3DRender = false;
+	_render3DNeedsFinish = false;
 	_mutexOutputList = NULL;
 	pthread_rwlock_init(&_rwlockFrame, NULL);
 	pthread_mutex_init(&_mutex3DRender, NULL);
@@ -732,12 +731,10 @@ GPUEventHandlerOSX::GPUEventHandlerOSX()
 
 GPUEventHandlerOSX::~GPUEventHandlerOSX()
 {
-	if (this->_isRender3DLockHeld)
+	if (this->_render3DNeedsFinish)
 	{
 		pthread_mutex_unlock(&this->_mutex3DRender);
 	}
-	
-	this->Render3DUnlock();
 	
 	pthread_rwlock_destroy(&this->_rwlockFrame);
 	pthread_mutex_destroy(&this->_mutex3DRender);
@@ -780,17 +777,14 @@ void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped)
 
 void GPUEventHandlerOSX::DidRender3DBegin()
 {
-	this->_isIn3DRender = true;
 	this->Render3DLock();
+	this->_render3DNeedsFinish = true;
 }
 
 void GPUEventHandlerOSX::DidRender3DEnd()
 {
-	if (this->_isIn3DRender)
-	{
-		this->Render3DUnlock();
-		this->_isIn3DRender = false;
-	}
+	this->_render3DNeedsFinish = false;
+	this->Render3DUnlock();
 }
 
 void GPUEventHandlerOSX::FramebufferLockWrite()
@@ -811,16 +805,11 @@ void GPUEventHandlerOSX::FramebufferUnlock()
 void GPUEventHandlerOSX::Render3DLock()
 {
 	pthread_mutex_lock(&this->_mutex3DRender);
-	this->_isRender3DLockHeld = true;
 }
 
 void GPUEventHandlerOSX::Render3DUnlock()
 {
-	if (this->_isRender3DLockHeld)
-	{
-		this->_isRender3DLockHeld = false;
-		pthread_mutex_unlock(&this->_mutex3DRender);
-	}
+	pthread_mutex_unlock(&this->_mutex3DRender);
 }
 
 void GPUEventHandlerOSX::FrameFinish()
@@ -873,9 +862,9 @@ void GPUEventHandlerOSX::SetVideoBuffers()
 #endif
 }
 
-bool GPUEventHandlerOSX::IsRender3DLockHeld()
+bool GPUEventHandlerOSX::GetRender3DNeedsFinish()
 {
-	return this->_isRender3DLockHeld;
+	return this->_render3DNeedsFinish;
 }
 
 pthread_rwlock_t* GPUEventHandlerOSX::GetFrameRWLock()

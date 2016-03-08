@@ -1929,7 +1929,6 @@ Render3DError SoftRasterizerRenderer::Render(const GFX3D &engine)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
-	GPU->GetEventHandler()->DidRender3DBegin();
 	error = this->BeginRender(engine);
 	if (error != RENDER3DERROR_NOERR)
 	{
@@ -1966,9 +1965,8 @@ Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
 
 Render3DError SoftRasterizerRenderer::RenderFinish()
 {
-	if (!this->_renderGeometryNeedsFinish)
+	if (!this->_renderNeedsFinish || !this->_renderGeometryNeedsFinish)
 	{
-		GPU->GetEventHandler()->DidRender3DEnd();
 		return RENDER3DERROR_NOERR;
 	}
 	
@@ -2005,7 +2003,6 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 	u16 *framebufferRGBA5551 = (this->_willFlushFramebufferRGBA5551) ? GPU->GetEngineMain()->Get3DFramebufferRGBA5551() : NULL;
 	this->FlushFramebuffer(this->_framebufferColor, NULL, framebufferRGBA5551);
 	
-	GPU->GetEventHandler()->DidRender3DEnd();
 	return RENDER3DERROR_NOERR;
 }
 

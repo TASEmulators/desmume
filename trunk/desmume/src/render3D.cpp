@@ -83,10 +83,12 @@ bool NDS_3D_ChangeCore(int newCore)
 	// Some resources are shared between renderers, such as the texture cache,
 	// so we need to shut down the current renderer now to ensure that any
 	// shared resources aren't in use.
+	const bool didRenderBegin = CurrentRenderer->GetRenderNeedsFinish();
 	CurrentRenderer->RenderFinish();
 	gpu3D->NDS_3D_Close();
 	gpu3D = &gpu3DNull;
 	cur3DCore = GPU3D_NULL;
+	BaseRenderer->SetRenderNeedsFinish(didRenderBegin);
 	CurrentRenderer = BaseRenderer;
 	
 	Render3D *newRenderer = newRenderInterface->NDS_3D_Init();
@@ -103,6 +105,7 @@ bool NDS_3D_ChangeCore(int newCore)
 	
 	gpu3D = newRenderInterface;
 	cur3DCore = newCore;
+	newRenderer->SetRenderNeedsFinish( BaseRenderer->GetRenderNeedsFinish() );
 	CurrentRenderer = newRenderer;
 	
 	result = true;
@@ -229,6 +232,7 @@ Render3D::Render3D()
 	_framebufferColorSizeBytes = 0;
 	_framebufferColor = NULL;
 	
+	_renderNeedsFinish = false;
 	_willFlushFramebufferRGBA6665 = true;
 	_willFlushFramebufferRGBA5551 = true;
 	
@@ -295,6 +299,16 @@ void Render3D::SetFramebufferFlushStates(bool willFlushRGBA6665, bool willFlushR
 {
 	this->_willFlushFramebufferRGBA6665 = willFlushRGBA6665;
 	this->_willFlushFramebufferRGBA5551 = willFlushRGBA5551;
+}
+
+bool Render3D::GetRenderNeedsFinish() const
+{
+	return this->_renderNeedsFinish;
+}
+
+void Render3D::SetRenderNeedsFinish(const bool renderNeedsFinish)
+{
+	this->_renderNeedsFinish = renderNeedsFinish;
 }
 
 Render3DError Render3D::BeginRender(const GFX3D &engine)
@@ -484,7 +498,6 @@ Render3DError Render3D::Render(const GFX3D &engine)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
-	GPU->GetEventHandler()->DidRender3DBegin();
 	error = this->BeginRender(engine);
 	if (error != RENDER3DERROR_NOERR)
 	{
@@ -513,7 +526,6 @@ Render3DError Render3D::Render(const GFX3D &engine)
 
 Render3DError Render3D::RenderFinish()
 {
-	GPU->GetEventHandler()->DidRender3DEnd();
 	return RENDER3DERROR_NOERR;
 }
 

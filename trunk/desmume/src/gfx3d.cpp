@@ -2318,6 +2318,17 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 		return;
 	}
 	
+	if (CurrentRenderer->GetRenderNeedsFinish())
+	{
+		CurrentRenderer->SetFramebufferFlushStates(false, false);
+		CurrentRenderer->RenderFinish();
+		CurrentRenderer->SetFramebufferFlushStates(true, true);
+		CurrentRenderer->SetRenderNeedsFinish(false);
+		GPU->GetEventHandler()->DidRender3DEnd();
+	}
+	
+	GPU->GetEventHandler()->DidRender3DBegin();
+	CurrentRenderer->SetRenderNeedsFinish(true);
 	CurrentRenderer->Render(gfx3d);
 }
 

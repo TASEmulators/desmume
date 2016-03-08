@@ -109,6 +109,7 @@ protected:
 	size_t _framebufferColorSizeBytes;
 	FragmentColor *_framebufferColor;
 	
+	bool _renderNeedsFinish;
 	bool _willFlushFramebufferRGBA6665;
 	bool _willFlushFramebufferRGBA5551;
 	
@@ -162,6 +163,9 @@ public:
 	virtual FragmentColor* GetFramebuffer();
 	virtual void GetFramebufferFlushStates(bool &willFlushRGBA6665, bool &willFlushRGBA5551);
 	virtual void SetFramebufferFlushStates(bool willFlushRGBA6665, bool willFlushRGBA5551);
+	
+	bool GetRenderNeedsFinish() const;
+	void SetRenderNeedsFinish(const bool renderNeedsFinish);
 };
 
 #ifdef ENABLE_SSE2

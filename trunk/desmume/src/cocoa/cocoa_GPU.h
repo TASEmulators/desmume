@@ -27,6 +27,7 @@ class GPUEventHandlerOSX;
 	UInt32 gpuStateFlags;
 	uint8_t _gpuScale;
 	BOOL isCPUCoreCountAuto;
+	BOOL _needRestoreFrameLock;
 	BOOL _needRestoreRender3DLock;
 	
 	OSSpinLock spinlockGpuState;
