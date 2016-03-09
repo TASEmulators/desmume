@@ -1090,7 +1090,7 @@ void GPUEngineBase::_LineLayerIDCopy(u8 *__restrict dstBuffer, const u8 *__restr
 #if defined(ENABLE_SSE2)
 		MACRODO_N( GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / sizeof(u8)), _mm_stream_si128((__m128i *)dstBuffer + (X), _mm_load_si128((__m128i *)srcBuffer + (X))) );
 #else
-		memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u8));
+		memcpy(dstBuffer, srcBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u8));
 #endif
 	}
 	else if (!NATIVEDST && !NATIVESRC)
@@ -5380,7 +5380,7 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const size_t l)
 	//this has not been tested since the dma timing for dispfifo was changed around the time of
 	//newemuloop. it may not work.
 	
-	const u32 *dstColorLine = (const u32 *)(this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH));
+	u32 *dstColorLine = (u32 *)(this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH));
 	
 #ifdef ENABLE_SSE2
 	const __m128i fifoMask = _mm_set1_epi32(0x7FFF7FFF);
