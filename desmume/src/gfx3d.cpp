@@ -2329,6 +2329,7 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	
 	GPU->GetEventHandler()->DidRender3DBegin();
 	CurrentRenderer->SetRenderNeedsFinish(true);
+	CurrentRenderer->SetTextureProcessingProperties(CommonSettings.GFX3D_Renderer_TextureDeposterize, CommonSettings.GFX3D_Renderer_TextureScalingFactor);
 	CurrentRenderer->Render(gfx3d);
 }
 

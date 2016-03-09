@@ -43,6 +43,8 @@
 #define COLOR_MASK_G	0x0000FF00
 #define COLOR_MASK_B	0x000000FF
 
+#define USE_DESMUME_TEXTURE_UPSCALE_ALPHA_BLEND
+
 namespace
 {
 template <uint32_t N> inline
@@ -87,8 +89,27 @@ uint32_t gradientARGB(uint32_t pixFront, uint32_t pixBack) //find intermediate c
 	const unsigned int weightFront = getAlpha(pixFront) * M;
 	const unsigned int weightBack  = getAlpha(pixBack) * (N - M);
 	const unsigned int weightSum   = weightFront + weightBack;
+	
+#ifdef USE_DESMUME_TEXTURE_UPSCALE_ALPHA_BLEND
 	if (weightSum == 0)
+	{
+		return (pixFront & 0x00FFFFFF);
+	}
+	else if (weightFront == 0)
+	{
+		return pixBack;
+	}
+	else if (weightBack == 0)
+	{
+		return pixFront;
+	}
+#else
+	if (weightSum == 0)
+	{
 		return 0;
+	}
+#endif
+	
 	/*
 	 auto calcColor = [=](unsigned char colFront, unsigned char colBack)
 	 {
@@ -1165,13 +1186,13 @@ struct ColorGradientARGB
 };
 }
 
-
-void xbrz::scale(size_t factor, const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight, ColorFormat colFmt, const xbrz::ScalerCfg& cfg, int yFirst, int yLast)
+template <size_t SCALEFACTOR, xbrz::ColorFormat FORMAT>
+void xbrz::scale(const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight, const xbrz::ScalerCfg& cfg, int yFirst, int yLast)
 {
-    switch (colFmt)
+    switch (FORMAT)
     {
         case ColorFormatARGB:
-            switch (factor)
+            switch (SCALEFACTOR)
             {
                 case 2:
                     return scaleImage<Scaler2x<ColorGradientARGB>, ColorDistanceARGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
@@ -1187,7 +1208,7 @@ void xbrz::scale(size_t factor, const uint32_t* src, uint32_t* trg, int srcWidth
             break;
 
         case ColorFormatRGB:
-            switch (factor)
+            switch (SCALEFACTOR)
             {
                 case 2:
                     return scaleImage<Scaler2x<ColorGradientRGB>, ColorDistanceRGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
@@ -1294,25 +1315,28 @@ void xbrz::nearestNeighborScale(const uint32_t* src, int srcWidth, int srcHeight
 
 void Render2xBRZ(SSurface Src, SSurface Dst)
 {
-	xbrz::scale(2, (const uint32_t *)Src.Surface, (uint32_t *)Dst.Surface, Src.Width, Src.Height, xbrz::ColorFormatRGB);
+	xbrz::scale<2, xbrz::ColorFormatRGB>((const uint32_t *)Src.Surface, (uint32_t *)Dst.Surface, Src.Width, Src.Height);
 }
 
 void Render3xBRZ(SSurface Src, SSurface Dst)
 {
-	xbrz::scale(3, (const uint32_t *)Src.Surface, (uint32_t *)Dst.Surface, Src.Width, Src.Height, xbrz::ColorFormatRGB);
+	xbrz::scale<3, xbrz::ColorFormatRGB>((const uint32_t *)Src.Surface, (uint32_t *)Dst.Surface, Src.Width, Src.Height);
 }
 
 void Render4xBRZ(SSurface Src, SSurface Dst)
 {
-	xbrz::scale(4, (const uint32_t *)Src.Surface, (uint32_t *)Dst.Surface, Src.Width, Src.Height, xbrz::ColorFormatRGB);
+	xbrz::scale<4, xbrz::ColorFormatRGB>((const uint32_t *)Src.Surface, (uint32_t *)Dst.Surface, Src.Width, Src.Height);
 }
 
 void Render5xBRZ(SSurface Src, SSurface Dst)
 {
-	xbrz::scale(5, (const uint32_t *)Src.Surface, (uint32_t *)Dst.Surface, Src.Width, Src.Height, xbrz::ColorFormatRGB);
+	xbrz::scale<5, xbrz::ColorFormatRGB>((const uint32_t *)Src.Surface, (uint32_t *)Dst.Surface, Src.Width, Src.Height);
 }
 
 void Render6xBRZ(SSurface Src, SSurface Dst)
 {
-	xbrz::scale(6, (const uint32_t *)Src.Surface, (uint32_t *)Dst.Surface, Src.Width, Src.Height, xbrz::ColorFormatRGB);
+	xbrz::scale<6, xbrz::ColorFormatRGB>((const uint32_t *)Src.Surface, (uint32_t *)Dst.Surface, Src.Width, Src.Height);
 }
+
+template void xbrz::scale<2, xbrz::ColorFormatARGB>(const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight, const xbrz::ScalerCfg& cfg, int yFirst, int yLast);
+template void xbrz::scale<4, xbrz::ColorFormatARGB>(const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight, const xbrz::ScalerCfg& cfg, int yFirst, int yLast);

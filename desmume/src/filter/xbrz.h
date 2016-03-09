@@ -83,9 +83,8 @@ struct ScalerCfg
 	double newTestAttribute_; //unused; test new parameters
 };
 
-void scale(size_t factor, //valid range: 2 - 6
-           const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight,
-           ColorFormat colFmt,
+template<size_t SCALEFACTOR, xbrz::ColorFormat FORMAT> //valid range: 2 - 6
+void scale(const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight,
            const ScalerCfg& cfg = ScalerCfg(),
            int yFirst = 0, int yLast = std::numeric_limits<int>::max()); //slice of source image
 
