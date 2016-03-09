@@ -103,6 +103,8 @@ public:
 @dynamic render3DThreads;
 @dynamic render3DLineHack;
 @dynamic render3DMultisample;
+@dynamic render3DTextureDeposterize;
+@dynamic render3DTextureScalingFactor;
 @dynamic render3DFragmentSamplingHack;
 
 
@@ -409,6 +411,55 @@ public:
 	gpuEvent->Render3DUnlock();
 	
 	return state;
+}
+
+- (void) setRender3DTextureDeposterize:(BOOL)state
+{
+	gpuEvent->Render3DLock();
+	CommonSettings.GFX3D_Renderer_TextureDeposterize = state ? true : false;
+	gpuEvent->Render3DUnlock();
+}
+
+- (BOOL) render3DTextureDeposterize
+{
+	gpuEvent->Render3DLock();
+	const BOOL state = CommonSettings.GFX3D_Renderer_TextureDeposterize ? YES : NO;
+	gpuEvent->Render3DUnlock();
+	
+	return state;
+}
+
+- (void) setRender3DTextureScalingFactor:(NSUInteger)scalingFactor
+{
+	int newScalingFactor = (int)scalingFactor;
+	
+	if (scalingFactor < 1)
+	{
+		newScalingFactor = 1;
+	}
+	else if (scalingFactor > 4)
+	{
+		newScalingFactor = 4;
+	}
+	
+	gpuEvent->Render3DLock();
+	
+	if (newScalingFactor == 3)
+	{
+		newScalingFactor = (newScalingFactor < CommonSettings.GFX3D_Renderer_TextureScalingFactor) ? 2 : 4;
+	}
+	
+	CommonSettings.GFX3D_Renderer_TextureScalingFactor = newScalingFactor;
+	gpuEvent->Render3DUnlock();
+}
+
+- (NSUInteger) render3DTextureScalingFactor
+{
+	gpuEvent->Render3DLock();
+	const NSUInteger scalingFactor = (NSUInteger)CommonSettings.GFX3D_Renderer_TextureScalingFactor;
+	gpuEvent->Render3DUnlock();
+	
+	return scalingFactor;
 }
 
 - (void) setRender3DFragmentSamplingHack:(BOOL)state

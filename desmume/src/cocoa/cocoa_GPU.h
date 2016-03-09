@@ -61,6 +61,8 @@ class GPUEventHandlerOSX;
 @property (assign) NSUInteger render3DThreads;
 @property (assign) BOOL render3DLineHack;
 @property (assign) BOOL render3DMultisample;
+@property (assign) BOOL render3DTextureDeposterize;
+@property (assign) NSUInteger render3DTextureScalingFactor;
 @property (assign) BOOL render3DFragmentSamplingHack;
 
 - (void) setOutputList:(NSMutableArray *)theOutputList mutexPtr:(pthread_mutex_t *)theMutex;
