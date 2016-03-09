@@ -1671,15 +1671,42 @@ Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, bool enableT
 			OGLRef.freeTextureIDs.pop();
 			
 			glBindTexture(GL_TEXTURE_2D, (GLuint)this->currTexture->texid);
-			
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (params.enableRepeatS ? (params.enableMirroredRepeatS ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 			
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-						 this->currTexture->sizeX, this->currTexture->sizeY, 0,
-						 GL_RGBA, GL_UNSIGNED_BYTE, this->currTexture->decoded);
+			u32 *textureSrc = (u32 *)currTexture->decoded;
+			size_t texWidth = currTexture->sizeX;
+			size_t texHeight = currTexture->sizeY;
+			
+			if (this->_textureDeposterizeBuffer != NULL)
+			{
+				this->TextureDeposterize(textureSrc, texWidth, texHeight);
+				textureSrc = this->_textureDeposterizeBuffer;
+			}
+			
+			switch (this->_textureScalingFactor)
+			{
+				case 2:
+				{
+					this->TextureUpscale<2>(textureSrc, texWidth, texHeight);
+					textureSrc = this->_textureUpscaleBuffer;
+					break;
+				}
+					
+				case 4:
+				{
+					this->TextureUpscale<4>(textureSrc, texWidth, texHeight);
+					textureSrc = this->_textureUpscaleBuffer;
+					break;
+				}
+					
+				default:
+					break;
+			}
+			
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureSrc);
 		}
 		else
 		{
