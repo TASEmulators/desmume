@@ -1467,7 +1467,7 @@ public:
 class GPUEventHandler
 {
 public:
-	virtual void DidFrameBegin() = 0;
+	virtual void DidFrameBegin(bool isFrameSkipRequested) = 0;
 	virtual void DidFrameEnd(bool isFrameSkipped) = 0;
 	virtual void DidRender3DBegin() = 0;
 	virtual void DidRender3DEnd() = 0;
@@ -1479,7 +1479,7 @@ public:
 class GPUEventHandlerDefault : public GPUEventHandler
 {
 public:
-	virtual void DidFrameBegin() {};
+	virtual void DidFrameBegin(bool isFrameSkipRequested) {};
 	virtual void DidFrameEnd(bool isFrameSkipped) {};
 	virtual void DidRender3DBegin() {};
 	virtual void DidRender3DEnd() {};

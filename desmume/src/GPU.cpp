@@ -3560,12 +3560,11 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *__restrict ds
 			}
 			else if (objMode == OBJMode_Bitmap) //sprite is in BMP format
 			{
-				srcadr = this->_SpriteAddressBMP(spriteInfo, sprSize, y);
-
 				//transparent (i think, dont bother to render?) if alpha is 0
 				if (spriteInfo.PaletteIndex == 0)
 					continue;
 				
+				srcadr = this->_SpriteAddressBMP(spriteInfo, sprSize, y);
 				this->_RenderSpriteBMP<ISDEBUGRENDER>(i, lineIndex, dst, srcadr, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo.PaletteIndex);
 			}
 			else if (spriteInfo.PaletteMode == PaletteMode_1x256) //256 colors
@@ -6187,7 +6186,7 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 	
 	if (l == 0)
 	{
-		this->_event->DidFrameBegin();
+		this->_event->DidFrameBegin(isFrameSkipRequested);
 		
 		// Clear displays to black if they are turned off by the user.
 		if (!isFrameSkipRequested)
