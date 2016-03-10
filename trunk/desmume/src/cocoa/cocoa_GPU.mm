@@ -68,7 +68,7 @@ public:
 	void SetOutputList(NSMutableArray *outputList, pthread_mutex_t *theMutex);
 	bool GetRender3DNeedsFinish();
 	
-	virtual void DidFrameBegin();
+	virtual void DidFrameBegin(bool isFrameSkipRequested);
 	virtual void DidFrameEnd(bool isFrameSkipped);
 	virtual void DidRender3DBegin();
 	virtual void DidRender3DEnd();
@@ -791,7 +791,7 @@ GPUEventHandlerOSX::~GPUEventHandlerOSX()
 	pthread_mutex_destroy(&this->_mutex3DRender);
 }
 
-void GPUEventHandlerOSX::DidFrameBegin()
+void GPUEventHandlerOSX::DidFrameBegin(bool isFrameSkipRequested)
 {
 	this->FramebufferLockWrite();
 }
