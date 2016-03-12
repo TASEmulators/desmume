@@ -21,6 +21,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <algorithm>
 
 #include "common.h"
 #include "debug.h"

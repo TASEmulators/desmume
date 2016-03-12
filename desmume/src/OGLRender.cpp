@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <algorithm>
 
 #include "common.h"
 #include "debug.h"
@@ -972,7 +973,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 				_mm_store_si128((__m128i *)(dstRGBA6665 + iw), color6665);
 				
 				// Convert to RGBA5551
-				__m128 color5551 = srcColor;
+				__m128i color5551 = srcColor;
 				
 				__m128i b = _mm_and_si128(color5551, _mm_set1_epi32(0x000000F8));	// Read from R
 				b = _mm_slli_epi32(b, 7);											// Shift to B
