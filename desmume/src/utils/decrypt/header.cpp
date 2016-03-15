@@ -76,6 +76,7 @@ int DetectRomType(const Header &header, char *secure)
 	if (header.arm9_rom_offset < 0x4000) return ROMTYPE_HOMEBREW;
 	else if (data == 0x0000000000000000ULL) return ROMTYPE_MULTIBOOT;
 	else if (data == 0xE7FFDEFFE7FFDEFFULL) return ROMTYPE_NDSDUMPED;
+	else if (data == 0xA5C470B9014A191AULL) return ROMTYPE_NDSDUMPED; //special case for DQ5
 	//TODO
 	//for (int i=0x200; i<0x4000; i++)
 	//	if (romdata[i]) return ROMTYPE_MASKROM;	// found something odd ;)
