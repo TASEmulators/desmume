@@ -9,6 +9,8 @@ Global
 		Debug|x64 = Debug|x64
 		Dev+|Win32 = Dev+|Win32
 		Dev+|x64 = Dev+|x64
+		Release Fastbuild|Win32 = Release Fastbuild|Win32
+		Release Fastbuild|x64 = Release Fastbuild|x64
 		Release|Win32 = Release|Win32
 		Release|x64 = Release|x64
 	EndGlobalSection
@@ -21,6 +23,10 @@ Global
 		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Dev+|Win32.Build.0 = Dev+|Win32
 		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Dev+|x64.ActiveCfg = Dev+|x64
 		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Dev+|x64.Build.0 = Dev+|x64
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release Fastbuild|Win32.ActiveCfg = Release Fastbuild|Win32
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release Fastbuild|Win32.Build.0 = Release Fastbuild|Win32
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release Fastbuild|x64.ActiveCfg = Release Fastbuild|x64
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release Fastbuild|x64.Build.0 = Release Fastbuild|x64
 		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release|Win32.ActiveCfg = Release|Win32
 		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release|Win32.Build.0 = Release|Win32
 		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release|x64.ActiveCfg = Release|x64
