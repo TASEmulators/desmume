@@ -2971,6 +2971,9 @@ int _main()
 
 	CommonSettings.GFX3D_PrescaleHD = GetPrivateProfileInt("3D", "PrescaleHD", 1, IniName);
 	video.SetPrescale(CommonSettings.GFX3D_PrescaleHD, 1);
+
+	CommonSettings.GFX3D_Renderer_TextureScalingFactor = GetPrivateProfileInt("3D", "TextureScalingFactor ", 1, IniName);
+	CommonSettings.GFX3D_Renderer_TextureDeposterize =  GetPrivateProfileBool("3D", "TextureDeposterize ", 1, IniName);
 		
 	lostFocusPause = GetPrivateProfileBool("Focus", "BackgroundPause", false, IniName);
 
@@ -6278,7 +6281,11 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			CheckDlgButton(hw,IDC_3DSETTINGS_ANTIALIASING, CommonSettings.GFX3D_Renderer_Multisample);
 			CheckDlgButton(hw,IDC_TXTHACK, CommonSettings.GFX3D_TXTHack);
 			SetDlgItemInt (hw,IDC_ZELDA_SHADOW_DEPTH_HACK,CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack,FALSE);
-			//CheckDlgButton(hw,IDC_ALTERNATEFLUSH,CommonSettings.gfx3d_flushMode);
+
+			if(CommonSettings.GFX3D_Renderer_TextureScalingFactor == 1) CheckDlgButton(hw,IDC_TEXSCALE_1,CommonSettings.GFX3D_Texture);
+			if(CommonSettings.GFX3D_Renderer_TextureScalingFactor == 2) CheckDlgButton(hw,IDC_TEXSCALE_2,CommonSettings.GFX3D_Texture);
+			if(CommonSettings.GFX3D_Renderer_TextureScalingFactor == 4) CheckDlgButton(hw,IDC_TEXSCALE_4,CommonSettings.GFX3D_Texture);
+			CheckDlgButton(hw,IDC_TEX_DEPOSTERIZE, CommonSettings.GFX3D_Renderer_TextureDeposterize);
 
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(5, 1));
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, CommonSettings.GFX3D_PrescaleHD);
@@ -6306,6 +6313,10 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack  = GetDlgItemInt(hw,IDC_ZELDA_SHADOW_DEPTH_HACK,NULL,FALSE);
 					CommonSettings.GFX3D_TXTHack = IsDlgCheckboxChecked(hw,IDC_TXTHACK);
 					CommonSettings.GFX3D_PrescaleHD = SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_GETPOS, 0, 0);
+					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_1)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 1;
+					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_2)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 2;
+					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_4)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 4;
+					CommonSettings.GFX3D_Renderer_TextureDeposterize = IsDlgCheckboxChecked(hw,IDC_TEX_DEPOSTERIZE);
 
 					{
 						Lock lock(win_backbuffer_sync);
@@ -6327,6 +6338,8 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					WritePrivateProfileInt ("3D", "EnableAntiAliasing", CommonSettings.GFX3D_Renderer_Multisample, IniName);
 					WritePrivateProfileInt ("3D", "EnableTXTHack", CommonSettings.GFX3D_TXTHack, IniName);
 					WritePrivateProfileInt ("3D", "PrescaleHD", CommonSettings.GFX3D_PrescaleHD, IniName);
+					WritePrivateProfileInt ("3D", "TextureScalingFactor", CommonSettings.GFX3D_Renderer_TextureScalingFactor, IniName);
+					WritePrivateProfileBool("3D", "TextureDeposterize", CommonSettings.GFX3D_Renderer_TextureDeposterize, IniName);
 				}
 			case IDCANCEL:
 				{

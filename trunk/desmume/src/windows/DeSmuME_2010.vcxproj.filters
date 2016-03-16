@@ -1642,6 +1642,17 @@
     <None Include="File_Extractor\unrar\acknow.txt">
       <Filter>Windows\File_Extractor\unrar</Filter>
     </None>
+    <None Include="bitmaps\IDB_FRAMEADVANCE.bmp" />
+    <None Include="bitmaps\IDB_OPEN.bmp" />
+    <None Include="bitmaps\IDB_PAUSE.bmp" />
+    <None Include="bitmaps\IDB_PLAY.bmp" />
+    <None Include="bitmaps\IDB_RESET.bmp" />
+    <None Include="bitmaps\IDB_STOP.bmp" />
+    <None Include="bitmaps\IDB_ROTATECCW.bmp" />
+    <None Include="bitmaps\IDB_ROTATECW.bmp" />
+    <None Include="bitmaps\FolderClosed.ico" />
+    <None Include="bitmaps\FolderOpen.ico" />
+    <None Include="bitmaps\FileBinary.ico" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources.rc">

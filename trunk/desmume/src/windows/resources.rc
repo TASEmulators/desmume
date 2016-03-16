@@ -137,8 +137,12 @@ BEGIN
     LTEXT           "Fixes text bugs in some games.(e.g. Etrian Odyssey)",ID_LABEL_TXTHACK1,15,151,165,11
     CONTROL         "Enable TXT Hack",IDC_TXTHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,138,73,10
     GROUPBOX        "OpenGL Renderer Options",IDC_STATIC,7,166,176,33
-    GROUPBOX        "General Options",IDC_STATIC,189,6,176,114
+    GROUPBOX        "General Options",IDC_STATIC,189,6,176,146
     LTEXT           "HD Prescaling:",IDC_STATIC,195,64,48,8
+    CONTROL         "GL TexScale 1x",IDC_TEXSCALE_1,"Button",BS_AUTORADIOBUTTON,193,80,67,10
+    CONTROL         "GL TexScale 2x",IDC_TEXSCALE_2,"Button",BS_AUTORADIOBUTTON,193,90,67,10
+    CONTROL         "GL TexScale 4x",IDC_TEXSCALE_4,"Button",BS_AUTORADIOBUTTON,193,100,67,10
+    CONTROL         "GL Tex Deposterize",IDC_TEX_DEPOSTERIZE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,261,81,79,10
 END
 
 IDD_ABOUT_BOX DIALOGEX 0, 0, 268, 198

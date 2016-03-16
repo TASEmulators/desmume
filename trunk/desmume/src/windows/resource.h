@@ -462,10 +462,14 @@
 #define IDC_TEXT_PRESCALEHD             1062
 #define IDC_STATIC_S3                   1063
 #define IDC_STATIC_S4                   1064
+#define IDC_TEX_DEPOSTERIZE             1064
 #define IDC_EVALUE                      1065
 #define IDC_STATIC_RANGE                1066
+#define IDC_TEXSCALE_1                  1066
+#define IDC_TEXSCALE_2                  1067
 #define IDC_BADD                        1068
 #define IDC_LIST                        1069
+#define IDC_TEXSCALE_4                  1070
 #define IDC_SNUMBER                     1071
 #define IDC_CHECK1                      1074
 #define IDC_CHECK2                      1075
@@ -1061,7 +1065,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
 #define _APS_NEXT_COMMAND_VALUE         40126
-#define _APS_NEXT_CONTROL_VALUE         1063
+#define _APS_NEXT_CONTROL_VALUE         1065
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
