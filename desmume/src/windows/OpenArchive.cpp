@@ -30,6 +30,7 @@
 
 #include "resource.h"
 #include "main.h"
+#include "utils/decrypt/header.h"
 
 static char Str_Tmp[1024];
 
@@ -414,6 +415,15 @@ bool ObtainFile(const char* Name, char *const & LogicalName, char *const & Physi
 
 	while(true)
 	{
+		//before sending to FEX, see if we're known to be an NDS file
+		//(this will stop games beginning with the name ZOO from being mis-recognized as a zoo file)
+		FILE* inf = fopen(PhysicalName,"rb");
+		u8 bytes512[512];
+		bool got512 = fread(bytes512,1,512,inf)==512;
+		fclose(inf);
+		if(got512 && DetectAnyRom(bytes512))
+			return true;
+
 		ArchiveFile archive (PhysicalName);
 		if(!archive.IsCompressed())
 		{
