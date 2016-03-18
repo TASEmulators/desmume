@@ -124,6 +124,9 @@ int HashAndCompareWithList(char *filename, unsigned char sha1[]);
 int DetectRomType(const Header& header, char* secure);
 unsigned short CalcSecureAreaCRC(bool encrypt);
 
+bool CheckLogoCRC(void* bytes512);
+bool DetectAnyRom(void* bytes512);
+
 #define ROMTYPE_HOMEBREW	0
 #define ROMTYPE_MULTIBOOT	1
 #define ROMTYPE_NDSDUMPED	2	// decrypted secure area
