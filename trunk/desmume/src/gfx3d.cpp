@@ -2310,13 +2310,6 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	if (skipFrame) return;
 
 	drawPending = FALSE;
-
-	if (!CommonSettings.showGpu.main)
-	{
-		memset(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(FragmentColor));
-		memset(GPU->GetEngineMain()->Get3DFramebufferRGBA5551(), 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(u16));
-		return;
-	}
 	
 	if (CurrentRenderer->GetRenderNeedsFinish())
 	{
@@ -2328,9 +2321,20 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	}
 	
 	GPU->GetEventHandler()->DidRender3DBegin();
-	CurrentRenderer->SetRenderNeedsFinish(true);
-	CurrentRenderer->SetTextureProcessingProperties(CommonSettings.GFX3D_Renderer_TextureDeposterize, CommonSettings.GFX3D_Renderer_TextureScalingFactor);
-	CurrentRenderer->Render(gfx3d);
+	
+	if (CommonSettings.showGpu.main)
+	{
+		CurrentRenderer->SetRenderNeedsFinish(true);
+		CurrentRenderer->SetTextureProcessingProperties(CommonSettings.GFX3D_Renderer_TextureDeposterize, CommonSettings.GFX3D_Renderer_TextureScalingFactor);
+		CurrentRenderer->Render(gfx3d);
+	}
+	else
+	{
+		memset(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(FragmentColor));
+		memset(GPU->GetEngineMain()->Get3DFramebufferRGBA5551(), 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(u16));
+		CurrentRenderer->SetRenderNeedsFinish(false);
+		GPU->GetEventHandler()->DidRender3DEnd();
+	}
 }
 
 //#define _3D_LOG
