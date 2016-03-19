@@ -159,8 +159,8 @@
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;BETA_VERSION;NOMINMAX;HAVE_LIBZ;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_ZLIB_DEFLATE;DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;BETA_VERSION;NOMINMAX;HAVE_LIBZ;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -198,8 +198,8 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_ZLIB_DEFLATE;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -238,8 +238,8 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>FASTBUILD;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_ZLIB_DEFLATE;FASTBUILD;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -278,8 +278,8 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;FASTBUILD;DEVELOPER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_ZLIB_DEFLATE;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;FASTBUILD;DEVELOPER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -322,8 +322,8 @@
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;BETA_VERSION;NOMINMAX;HAVE_LIBZ;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_ZLIB_DEFLATE;DEBUG;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;BETA_VERSION;NOMINMAX;HAVE_LIBZ;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -365,8 +365,8 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_ZLIB_DEFLATE;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -455,8 +455,8 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;DEVELOPER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_ZLIB_DEFLATE;_CRT_SECURE_NO_DEPRECATE;GLIB_STATIC_COMPILATION;WIN32;HAVE_LIBZ;NOMINMAX;RELEASE;NDEBUG;DEVELOPER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
       <StructMemberAlignment>Default</StructMemberAlignment>
@@ -532,10 +532,22 @@
     <ClCompile Include="..\filter\scanline.cpp" />
     <ClCompile Include="..\filter\xbrz.cpp" />
     <ClCompile Include="..\firmware.cpp" />
+    <ClCompile Include="..\frontend\modules\ImageOut.cpp" />
     <ClCompile Include="..\fs-windows.cpp" />
     <ClCompile Include="..\gfx3d.cpp" />
     <ClCompile Include="..\GPU.cpp" />
     <ClCompile Include="..\GPU_OSD.cpp" />
+    <ClCompile Include="..\libretro-common\compat\compat.c" />
+    <ClCompile Include="..\libretro-common\file\file_extract.c" />
+    <ClCompile Include="..\libretro-common\file\file_path.c" />
+    <ClCompile Include="..\libretro-common\file\nbio\nbio_stdio.c" />
+    <ClCompile Include="..\libretro-common\file\retro_file.c" />
+    <ClCompile Include="..\libretro-common\file\retro_stat.c" />
+    <ClCompile Include="..\libretro-common\formats\bmp\rbmp_encode.c" />
+    <ClCompile Include="..\libretro-common\formats\png\rpng.c" />
+    <ClCompile Include="..\libretro-common\formats\png\rpng_encode.c" />
+    <ClCompile Include="..\libretro-common\rthreads\rthreads.c" />
+    <ClCompile Include="..\libretro-common\string\string_list.c" />
     <ClCompile Include="..\lua-engine.cpp" />
     <ClCompile Include="..\matrix.cpp" />
     <ClCompile Include="..\mc.cpp" />
@@ -786,12 +798,21 @@
     <ClInclude Include="..\filter\lq2x.h" />
     <ClInclude Include="..\filter\xbrz.h" />
     <ClInclude Include="..\firmware.h" />
+    <ClInclude Include="..\frontend\modules\ImageOut.h" />
     <ClInclude Include="..\fs.h" />
     <ClInclude Include="..\gfx3d.h" />
     <ClInclude Include="..\GPU.h" />
     <ClInclude Include="..\GPU_osd.h" />
     <ClInclude Include="..\instructions.h" />
     <ClInclude Include="..\instruction_attributes.h" />
+    <ClInclude Include="..\libretro-common\formats\png\rpng_internal.h" />
+    <ClInclude Include="..\libretro-common\include\boolean.h" />
+    <ClInclude Include="..\libretro-common\include\formats\image.h" />
+    <ClInclude Include="..\libretro-common\include\formats\rbmp.h" />
+    <ClInclude Include="..\libretro-common\include\formats\rpng.h" />
+    <ClInclude Include="..\libretro-common\include\retro_inline.h" />
+    <ClInclude Include="..\libretro-common\include\retro_miscellaneous.h" />
+    <ClInclude Include="..\libretro-common\include\rthreads\rthreads.h" />
     <ClInclude Include="..\lua-engine.h" />
     <ClInclude Include="..\matrix.h" />
     <ClInclude Include="..\mc.h" />

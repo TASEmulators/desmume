@@ -281,7 +281,7 @@ BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 							if (LOWORD(wParam) == ID_EXTRACTALL)
 							{
 								string tmp = (string)tmp_path + (string)path.GetRomNameWithoutExtension() + (string)"\\";
-								mkdir(tmp.c_str());
+								mkdir(tmp.c_str(),0777);
 								HWND progress = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_PROGRESS_WND), NULL, (DLGPROC)ProgressWnd);
 								ShowWindow(progress, SW_SHOW);
 								UpdateWindow(progress);

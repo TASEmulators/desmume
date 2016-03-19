@@ -22,7 +22,7 @@
 #ifdef HOST_WINDOWS 
 #include <direct.h>
 #include <windows.h>
-#define __mkdir(x) mkdir(x)
+#define __mkdir(x) mkdir(x, 0777)
 #else
 #include <unistd.h>
 #include <sys/stat.h>

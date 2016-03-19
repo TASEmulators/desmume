@@ -25,7 +25,6 @@
 #include <sstream>
 #include <stdio.h>
 #include <time.h>
-#include <glib.h>
 #include "debug.h"
 
 #include "aggdraw.h"
@@ -34,6 +33,10 @@
 #include "NDSSystem.h"
 #include "mic.h"
 #include "saves.h"
+
+#ifdef _MSC_VER
+#include <Windows.h>
+#endif
 
 bool HudEditorMode = false;
 OSDCLASS	*osd = NULL;
@@ -511,9 +514,28 @@ static void DrawEditableElementIndicators()
 
 void DrawHUD()
 {
-	GTimeVal time;
-	g_get_current_time(&time);
-	hudTimer = ((s64)time.tv_sec * 1000) + ((s64)time.tv_usec/1000);
+	#ifdef _MSC_VER
+		//code taken from glib's g_get_current_time
+		FILETIME ft;
+		u64 time64;
+		GetSystemTimeAsFileTime (&ft);
+		memmove (&time64, &ft, sizeof (FILETIME));
+
+		/* Convert from 100s of nanoseconds since 1601-01-01
+		* to Unix epoch. Yes, this is Y2038 unsafe.
+		*/
+		time64 -= 116444736000000000LL;
+		time64 /= 10;
+
+		time_t tv_sec = time64 / 1000000;
+		time_t tv_usec = time64 % 1000000;
+		hudTimer = ((s64)tv_sec * 1000) + ((s64)tv_usec/1000);
+	#else
+		time_t t;
+		gettimeofday (&t, NULL);
+		result->tv_sec = r.tv_sec;
+		result->tv_usec = r.tv_usec;
+	#endif
 
 	if (HudEditorMode)
 	{

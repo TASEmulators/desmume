@@ -95,8 +95,7 @@
 #endif
 
 #ifdef _MSC_VER 
-	#define strcasecmp(x,y) _stricmp(x,y)
-	#define strncasecmp(x, y, l) strnicmp(x, y, l)
+	#include <compat/msvc.h>
 
 	#if _MSC_VER < 1900
 		#define snprintf _snprintf

@@ -86,11 +86,6 @@ struct MAKER
 
 std::string getDeveloperNameByID(u16 id);
 
-
-int NDS_WritePNG_16bpp(int width, int height, const u16 *data, const char *fname);
-int NDS_WriteBMP_16bpp(int width, int height, const u16 *data, const char *filename);
-int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
-
 void* malloc_aligned(size_t length, size_t alignment);
 void* malloc_aligned16(size_t length);
 void* malloc_aligned32(size_t length);
