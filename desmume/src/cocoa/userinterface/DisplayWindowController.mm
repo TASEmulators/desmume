@@ -2288,21 +2288,23 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	CGLUnlockContext(cglDisplayContext);
 }
 
-- (void)doSetVideoBuffers:(const uint16_t *)videoBufferHead
-			nativeBuffer0:(const uint16_t *)nativeBuffer0
-			nativeBuffer1:(const uint16_t *)nativeBuffer1
-			customBuffer0:(const uint16_t *)customBuffer0
-			 customWidth0:(const size_t)customWidth0
-			customHeight0:(const size_t)customHeight0
-			customBuffer1:(const uint16_t *)customBuffer1
-			 customWidth1:(const size_t)customWidth1
-			customHeight1:(const size_t)customHeight1
+- (void) doSetVideoBuffersUsingFormat:(const uint32_t)colorFormat
+						   bufferHead:(const void *)videoBufferHead
+						nativeBuffer0:(const void *)nativeBuffer0
+						nativeBuffer1:(const void *)nativeBuffer1
+						customBuffer0:(const void *)customBuffer0
+						 customWidth0:(const size_t)customWidth0
+						customHeight0:(const size_t)customHeight0
+						customBuffer1:(const void *)customBuffer1
+						 customWidth1:(const size_t)customWidth1
+						customHeight1:(const size_t)customHeight1
 {
 	OGLDisplayLayer *displayLayer = oglv->GetDisplayLayer();
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	displayLayer->SetVideoBuffers(videoBufferHead,
+	displayLayer->SetVideoBuffers(colorFormat,
+								  videoBufferHead,
 								  nativeBuffer0,
 								  nativeBuffer1,
 								  customBuffer0, customWidth0, customHeight0,

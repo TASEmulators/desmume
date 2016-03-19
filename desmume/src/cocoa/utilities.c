@@ -171,6 +171,28 @@ inline uint32_t RGB555ToBGRA8888(const uint16_t color16)
 }
 
 /********************************************************************************************
+	RGB888ToBGRA8888() - INLINE
+
+	Converts a color from 24-bit RGB888 format into 32-bit BGRA8888 format.
+
+	Takes:
+		color32 - The pixel in 24-bit RGB888 format.
+
+	Returns:
+		A 32-bit unsigned integer containing the BGRA8888 formatted color.
+
+	Details:
+		The input and output pixels are expected to have little-endian byte order.
+ ********************************************************************************************/
+inline uint32_t RGB888ToBGRA8888(const uint32_t color32)
+{
+	return	((color32 & 0x000000FF) << 16) |
+			((color32 & 0x0000FF00)      ) |
+			((color32 & 0x00FF0000) >> 16) |
+			0xFF000000;
+}
+
+/********************************************************************************************
 	RGBA8888ForceOpaque() - INLINE
 
 	Forces the alpha channel of a 32-bit RGBA8888 color to a value of 0xFF.
@@ -246,6 +268,36 @@ void RGB555ToBGRA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__
 	while (destBuffer < destBufferEnd)
 	{
 		*destBuffer++ = RGB555ToBGRA8888(*srcBuffer++);
+	}
+}
+
+/********************************************************************************************
+	RGB888ToBGRA8888Buffer()
+
+	Copies a 24-bit RGB888 pixel buffer into a 32-bit BGRA8888 pixel buffer.
+
+	Takes:
+		srcBuffer - Pointer to the source 24-bit RGB888 pixel buffer.
+
+		destBuffer - Pointer to the destination 32-bit BGRA8888 pixel buffer.
+
+		pixelCount - The number of pixels to copy.
+
+	Returns:
+		Nothing.
+
+	Details:
+		The source and destination pixels are expected to have little-endian byte order.
+		Also, it is the caller's responsibility to ensure that the source and destination
+		buffers are large enough to accomodate the requested number of pixels.
+ ********************************************************************************************/
+void RGB888ToBGRA8888Buffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount)
+{
+	const uint32_t *__restrict__ destBufferEnd = destBuffer + pixelCount;
+	
+	while (destBuffer < destBufferEnd)
+	{
+		*destBuffer++ = RGB888ToBGRA8888(*srcBuffer++);
 	}
 }
 

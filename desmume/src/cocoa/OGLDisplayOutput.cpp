@@ -6789,6 +6789,8 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	_texLoadedHeight[0] = (GLfloat)GPU_DISPLAY_HEIGHT;
 	_texLoadedHeight[1] = (GLfloat)GPU_DISPLAY_HEIGHT;
 	
+	_videoColorFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
+	_videoSrcBufferHead = NULL;
 	_videoSrcNativeBuffer[0] = NULL;
 	_videoSrcNativeBuffer[1] = NULL;
 	_videoSrcCustomBuffer[0] = NULL;
@@ -7061,7 +7063,8 @@ void OGLDisplayLayer::DetermineTextureStorageHints(GLint &videoSrcTexStorageHint
 	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
 }
 
-void OGLDisplayLayer::SetVideoBuffers(const void *videoBufferHead,
+void OGLDisplayLayer::SetVideoBuffers(const uint32_t colorFormat,
+									  const void *videoBufferHead,
 									  const void *nativeBuffer0,
 									  const void *nativeBuffer1,
 									  const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
@@ -7070,12 +7073,17 @@ void OGLDisplayLayer::SetVideoBuffers(const void *videoBufferHead,
 	GLint videoSrcTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
 	GLint cpuFilterTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
 	
-	this->_videoSrcBufferHead = (uint16_t *)videoBufferHead;
-	this->_videoSrcBufferSize = (GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT * 2 * sizeof(uint16_t)) + (customWidth0 * customHeight0 * sizeof(uint16_t)) + (customWidth1 * customHeight1 * sizeof(uint16_t));
-	this->_videoSrcNativeBuffer[0] = (uint16_t *)nativeBuffer0;
-	this->_videoSrcNativeBuffer[1] = (uint16_t *)nativeBuffer1;
-	this->_videoSrcCustomBuffer[0] = (uint16_t *)customBuffer0;
-	this->_videoSrcCustomBuffer[1] = (uint16_t *)customBuffer1;
+	const u8 bitCount = (colorFormat & 0x0000003F);
+	const GLenum glColorFormat = (bitCount == 5) ? GL_UNSIGNED_SHORT_1_5_5_5_REV : GL_UNSIGNED_INT_8_8_8_8_REV;
+	const size_t pixelBytes = (glColorFormat == GL_UNSIGNED_SHORT_1_5_5_5_REV) ? sizeof(uint16_t) : sizeof(uint32_t);
+	
+	this->_videoColorFormat = glColorFormat;
+	this->_videoSrcBufferHead = videoBufferHead;
+	this->_videoSrcBufferSize = (GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT * 2 * pixelBytes) + (customWidth0 * customHeight0 * pixelBytes) + (customWidth1 * customHeight1 * pixelBytes);
+	this->_videoSrcNativeBuffer[0] = nativeBuffer0;
+	this->_videoSrcNativeBuffer[1] = nativeBuffer1;
+	this->_videoSrcCustomBuffer[0] = customBuffer0;
+	this->_videoSrcCustomBuffer[1] = customBuffer1;
 	this->_videoSrcCustomBufferWidth[0] = customWidth0;
 	this->_videoSrcCustomBufferWidth[1] = customWidth1;
 	this->_videoSrcCustomBufferHeight[0] = customHeight0;
@@ -7093,19 +7101,19 @@ void OGLDisplayLayer::SetVideoBuffers(const void *videoBufferHead,
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[0]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcNativeBuffer[0]);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[0]);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[1]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcNativeBuffer[1]);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[1]);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[0]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_videoSrcCustomBufferWidth[0], this->_videoSrcCustomBufferHeight[0], 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcCustomBuffer[0]);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_videoSrcCustomBufferWidth[0], this->_videoSrcCustomBufferHeight[0], 0, GL_RGBA, this->_videoColorFormat, this->_videoSrcCustomBuffer[0]);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[1]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_videoSrcCustomBufferWidth[1], this->_videoSrcCustomBufferHeight[1], 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcCustomBuffer[1]);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_videoSrcCustomBufferWidth[1], this->_videoSrcCustomBufferHeight[1], 0, GL_RGBA, this->_videoColorFormat, this->_videoSrcCustomBuffer[1]);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
@@ -7837,19 +7845,26 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 			if (!isUsingCPUPixelScaler || this->_useDeposterize)
 			{
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[0]);
-				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcNativeBuffer[0]);
+				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[0]);
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 				glFlush();
 			}
 			else
 			{
-				RGB555ToBGRA8888Buffer(this->_videoSrcNativeBuffer[0], this->_vf[0]->GetSrcBufferPtr(), GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT);
+				if (this->_videoColorFormat == GL_UNSIGNED_SHORT_1_5_5_5_REV)
+				{
+					RGB555ToBGRA8888Buffer((const uint16_t *)this->_videoSrcNativeBuffer[0], this->_vf[0]->GetSrcBufferPtr(), GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT);
+				}
+				else
+				{
+					RGB888ToBGRA8888Buffer((const uint32_t *)this->_videoSrcNativeBuffer[0], this->_vf[0]->GetSrcBufferPtr(), GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT);
+				}
 			}
 		}
 		else
 		{
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[0]);
-			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_videoSrcCustomBufferWidth[0], this->_videoSrcCustomBufferHeight[0], GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcCustomBuffer[0]);
+			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_videoSrcCustomBufferWidth[0], this->_videoSrcCustomBufferHeight[0], GL_RGBA, this->_videoColorFormat, this->_videoSrcCustomBuffer[0]);
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 			glFlush();
 		}
@@ -7872,19 +7887,26 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 			if (!isUsingCPUPixelScaler || this->_useDeposterize)
 			{
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[1]);
-				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcNativeBuffer[1]);
+				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[1]);
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 				glFlush();
 			}
 			else
 			{
-				RGB555ToBGRA8888Buffer(this->_videoSrcNativeBuffer[1], this->_vf[1]->GetSrcBufferPtr(), GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT);
+				if (this->_videoColorFormat == GL_UNSIGNED_SHORT_1_5_5_5_REV)
+				{
+					RGB555ToBGRA8888Buffer((const uint16_t *)this->_videoSrcNativeBuffer[1], this->_vf[1]->GetSrcBufferPtr(), GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT);
+				}
+				else
+				{
+					RGB888ToBGRA8888Buffer((const uint32_t *)this->_videoSrcNativeBuffer[1], this->_vf[1]->GetSrcBufferPtr(), GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT);
+				}
 			}
 		}
 		else
 		{
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[1]);
-			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_videoSrcCustomBufferWidth[1], this->_videoSrcCustomBufferHeight[1], GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, this->_videoSrcCustomBuffer[1]);
+			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_videoSrcCustomBufferWidth[1], this->_videoSrcCustomBufferHeight[1], GL_RGBA, this->_videoColorFormat, this->_videoSrcCustomBuffer[1]);
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 			glFlush();
 		}

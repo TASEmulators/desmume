@@ -1025,6 +1025,61 @@ enum NDSDisplayID
 	NDSDisplayID_Touch				= 1
 };
 
+enum NDSColorFormat
+{
+	// The color format information is packed in a 32-bit value.
+	// The bits are as follows:
+	// FFFOOOOO AAAAAABB BBBBGGGG GGRRRRRR
+	//
+	// F = Flags (see below)
+	// O = Color order (see below)
+	// A = Bit count for alpha [0-63]
+	// B = Bit count for blue  [0-63]
+	// G = Bit count for green [0-63]
+	// R = Bit count for red   [0-63]
+	//
+	// Flags:
+	//   Bit 29: Reverse order flag.
+	//      Set = Bits are in reverse order, usually for little-endian usage.
+	//      Cleared = Bits are in normal order, usually for big-endian usage.
+	//
+	// Color order bits, 24-28:
+	//      0x00 = RGBA, common format
+	//      0x01 = RGAB
+	//      0x02 = RBGA
+	//      0x03 = RBAG
+	//      0x04 = RAGB
+	//      0x05 = RABG
+	//      0x06 = GRBA
+	//      0x07 = GRAB
+	//      0x08 = GBRA
+	//      0x09 = GBAR
+	//      0x0A = GARB
+	//      0x0B = GABR
+	//      0x0C = BRGA
+	//      0x0D = BRAG
+	//      0x0E = BGRA, common format
+	//      0x0F = BGAR
+	//      0x10 = BARG
+	//      0x11 = BAGR
+	//      0x12 = ARGB
+	//      0x13 = ARBG
+	//      0x14 = AGRB
+	//      0x15 = AGBR
+	//      0x16 = ABRG
+	//      0x17 = ABGR
+	
+	// Color formats used for internal processing.
+	//NDSColorFormat_ABGR1555_Rev		= 0x20045145,
+	//NDSColorFormat_ABGR5666_Rev		= 0x20186186,
+	//NDSColorFormat_ABGR8888_Rev		= 0x20208208,
+	
+	// Color formats used by the output framebuffers.
+	NDSColorFormat_BGR555_Rev		= 0x20005145,
+	NDSColorFormat_BGR666_Rev		= 0x20006186,
+	NDSColorFormat_BGR888_Rev		= 0x20008208
+};
+
 struct DISPCAPCNT_parsed
 {
 	u8 EVA;
@@ -1035,33 +1090,37 @@ struct DISPCAPCNT_parsed
 
 typedef struct
 {
-	// User-requested settings. These fields will always remain constant, and can only be changed if
-	// the user calls GPUSubsystem::SetFramebufferSize().
+	// User-requested settings. These fields will always remain constant until changed.
 	
+	// Changed by calling GPUSubsystem::SetColorFormat().
+	// TBD: The color format will always be 2-byte NDSColorFormat_BGR555_Rev until internal rendering in multiple formats is fully supported.
+	NDSColorFormat colorFormat;			// The output color format.
+	size_t pixelBytes;					// The number of bytes per pixel.
+	
+	// Changed by calling GPUSubsystem::SetFramebufferSize().
 	bool isCustomSizeRequested;			// Reports that the call to GPUSubsystem::SetFramebufferSize() resulted in a custom rendering size.
 										//    true - The user requested a custom size.
 										//    false - The user requested the native size.
 	size_t customWidth;					// The requested custom width, measured in pixels.
 	size_t customHeight;				// The requested custom height, measured in pixels.
 	
-	u16 *masterNativeBuffer;			// Pointer to the head of the master native buffer.
-	u16 *masterCustomBuffer;			// Pointer to the head of the master custom buffer.
+	void *masterNativeBuffer;			// Pointer to the head of the master native buffer.
+	void *masterCustomBuffer;			// Pointer to the head of the master custom buffer.
 										// If GPUSubsystem::GetWillAutoResolveToCustomBuffer() would return true, or if
 										// GPUEngineBase::ResolveToCustomFramebuffer() is called, then this buffer is used as the target
 										// buffer for resolving any native-sized renders.
 	
 	
 	// Frame information. These fields will change per frame, depending on how each display was rendered.
-	
-	u16	*nativeBuffer[2];				// Pointer to the display's native size framebuffer.
-	u16 *customBuffer[2];				// Pointer to the display's custom size framebuffer.
+	void *nativeBuffer[2];				// Pointer to the display's native size framebuffer.
+	void *customBuffer[2];				// Pointer to the display's custom size framebuffer.
 	
 	bool didPerformCustomRender[2];		// Reports that the display actually rendered at a custom size for this frame.
 										//    true - The display performed a custom-sized render.
 										//    false - The display performed a native-sized render.
 	size_t renderedWidth[2];			// The display rendered at this width, measured in pixels.
 	size_t renderedHeight[2];			// The display rendered at this height, measured in pixels.
-	u16 *renderedBuffer[2];				// The display rendered to this buffer.
+	void *renderedBuffer[2];			// The display rendered to this buffer.
 } NDSDisplayInfo;
 
 #define VRAM_NO_3D_USAGE 0xFF
@@ -1508,6 +1567,8 @@ private:
 	
 	NDSDisplayInfo _displayInfo;
 	
+	void _AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, size_t h, void *clientNativeBuffer, void *clientCustomBuffer);
+	
 public:
 	static GPUSubsystem* Allocate();
 	void FinalizeAndDeallocate();
@@ -1530,8 +1591,10 @@ public:
 	
 	size_t GetCustomFramebufferWidth() const;
 	size_t GetCustomFramebufferHeight() const;
-	void SetCustomFramebufferSize(size_t w, size_t h, u16 *clientNativeBuffer, u16 *clientCustomBuffer);
+	void SetCustomFramebufferSize(size_t w, size_t h, void *clientNativeBuffer, void *clientCustomBuffer);
 	void SetCustomFramebufferSize(size_t w, size_t h);
+	void SetColorFormat(const NDSColorFormat outputFormat, void *clientNativeBuffer, void *clientCustomBuffer);
+	void SetColorFormat(const NDSColorFormat outputFormat);
 	
 	void UpdateRenderProperties();
 	

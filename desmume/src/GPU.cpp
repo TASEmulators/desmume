@@ -4010,8 +4010,8 @@ void GPUEngineBase::SetDisplayByID(const NDSDisplayID theDisplayID)
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	this->_targetDisplayID = theDisplayID;
-	this->nativeBuffer = dispInfo.nativeBuffer[theDisplayID];
-	this->customBuffer = dispInfo.customBuffer[theDisplayID];
+	this->nativeBuffer = (u16 *)dispInfo.nativeBuffer[theDisplayID];
+	this->customBuffer = (u16 *)dispInfo.customBuffer[theDisplayID];
 }
 
 GPUEngineID GPUEngineBase::GetEngineID() const
@@ -4033,8 +4033,8 @@ void GPUEngineBase::SetCustomFramebufferSize(size_t w, size_t h)
 	
 	this->_internalRenderLineTargetCustom = newWorkingScanline;
 	this->_renderLineLayerIDCustom = newBGPixels;
-	this->nativeBuffer = GPU->GetDisplayInfo().nativeBuffer[this->_targetDisplayID];
-	this->customBuffer = GPU->GetDisplayInfo().customBuffer[this->_targetDisplayID];
+	this->nativeBuffer = (u16 *)GPU->GetDisplayInfo().nativeBuffer[this->_targetDisplayID];
+	this->customBuffer = (u16 *)GPU->GetDisplayInfo().customBuffer[this->_targetDisplayID];
 	this->_bgLayerIndexCustom = newBGLayerIndexCustom;
 	this->_bgLayerColorCustom = newBGLayerColorCustom;
 	
@@ -5700,17 +5700,19 @@ GPUSubsystem::GPUSubsystem()
 	_customVRAMBlank = NULL;
 	_customFramebuffer = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
 	
+	_displayInfo.colorFormat = NDSColorFormat_BGR555_Rev;
+	_displayInfo.pixelBytes = sizeof(u16);
 	_displayInfo.isCustomSizeRequested = false;
 	_displayInfo.customWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	_displayInfo.customHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
 	_displayInfo.masterNativeBuffer = _nativeFramebuffer;
 	_displayInfo.nativeBuffer[NDSDisplayID_Main] = _displayInfo.masterNativeBuffer;
-	_displayInfo.nativeBuffer[NDSDisplayID_Touch] = _displayInfo.masterNativeBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+	_displayInfo.nativeBuffer[NDSDisplayID_Touch] = (u8 *)_displayInfo.masterNativeBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * _displayInfo.pixelBytes);
 	
 	_displayInfo.masterCustomBuffer = _customFramebuffer;
 	_displayInfo.customBuffer[NDSDisplayID_Main] = _displayInfo.masterCustomBuffer;
-	_displayInfo.customBuffer[NDSDisplayID_Touch] = _displayInfo.masterCustomBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+	_displayInfo.customBuffer[NDSDisplayID_Touch] = (u8 *)_displayInfo.masterCustomBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * _displayInfo.pixelBytes);
 	
 	_displayInfo.didPerformCustomRender[NDSDisplayID_Main] = false;
 	_displayInfo.didPerformCustomRender[NDSDisplayID_Touch] = false;
@@ -5788,8 +5790,8 @@ void GPUSubsystem::Reset()
 	this->_displayInfo.renderedBuffer[NDSDisplayID_Main]  = this->_displayInfo.nativeBuffer[NDSDisplayID_Main];
 	
 	this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch] = false;
-	this->_displayInfo.nativeBuffer[NDSDisplayID_Touch]   = this->_displayInfo.masterNativeBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-	this->_displayInfo.customBuffer[NDSDisplayID_Touch]   = this->_displayInfo.masterCustomBuffer + (this->_displayInfo.customWidth * this->_displayInfo.customHeight);
+	this->_displayInfo.nativeBuffer[NDSDisplayID_Touch]   = (u8 *)this->_displayInfo.masterNativeBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * this->_displayInfo.pixelBytes);
+	this->_displayInfo.customBuffer[NDSDisplayID_Touch]   = (u8 *)this->_displayInfo.masterCustomBuffer + (this->_displayInfo.customWidth * this->_displayInfo.customHeight * this->_displayInfo.pixelBytes);
 	this->_displayInfo.renderedWidth[NDSDisplayID_Touch]  = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = this->_displayInfo.nativeBuffer[NDSDisplayID_Touch];
@@ -5942,7 +5944,7 @@ size_t GPUSubsystem::GetCustomFramebufferHeight() const
 	return this->_displayInfo.customHeight;
 }
 
-void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h, u16 *clientNativeBuffer, u16 *clientCustomBuffer)
+void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h, void *clientNativeBuffer, void *clientCustomBuffer)
 {
 	if (w < GPU_FRAMEBUFFER_NATIVE_WIDTH || h < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
 	{
@@ -5955,11 +5957,9 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h, u16 *clientNativ
 	const float customHeightScale = (float)h / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	const float newGpuLargestDstLineCount = (size_t)ceilf(customHeightScale);
 	
-	u16 *oldCustomFramebuffer = this->_customFramebuffer;
 	u16 *oldGpuDstToSrcIndexPtr = _gpuDstToSrcIndex;
 	u8 *oldGpuDstToSrcSSSE3_u8 = _gpuDstToSrcSSSE3_u8;
 	u8 *oldGpuDstToSrcSSSE3_u16 = _gpuDstToSrcSSSE3_u16;
-	u16 *oldCustomVRAM = this->_customVRAM;
 	
 	for (size_t srcX = 0, currentPitchCount = 0; srcX < GPU_FRAMEBUFFER_NATIVE_WIDTH; srcX++)
 	{
@@ -6024,12 +6024,94 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h, u16 *clientNativ
 		newGpuDstToSrcSSSE3_u16[(i << 1) + 1] = value_u16 + 1;
 	}
 	
-	const size_t newCustomVRAMBlockSize = _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w;
-	const size_t newCustomVRAMBlankSize = newGpuLargestDstLineCount * GPU_VRAM_BLANK_REGION_LINES * w;
-	u16 *newCustomVRAM = (u16 *)malloc_alignedCacheLine(((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
-	memset(newCustomVRAM, 0, ((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
+	_gpuLargestDstLineCount = newGpuLargestDstLineCount;
+	_gpuVRAMBlockOffset = _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w;
+	_gpuDstToSrcIndex = newGpuDstToSrcIndex;
+	_gpuDstToSrcSSSE3_u8 = newGpuDstToSrcSSSE3_u8;
+	_gpuDstToSrcSSSE3_u16 = newGpuDstToSrcSSSE3_u16;
 	
-	const size_t nativeFramebufferSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * sizeof(u16);
+	this->_displayInfo.isCustomSizeRequested = ( (w != GPU_FRAMEBUFFER_NATIVE_WIDTH) || (h != GPU_FRAMEBUFFER_NATIVE_HEIGHT) );
+	this->_displayInfo.customWidth = w;
+	this->_displayInfo.customHeight = h;
+	
+	if (!this->_displayInfo.isCustomSizeRequested)
+	{
+		this->_engineMain->nativeLineCaptureCount[0] = GPU_VRAM_BLOCK_LINES;
+		this->_engineMain->nativeLineCaptureCount[1] = GPU_VRAM_BLOCK_LINES;
+		this->_engineMain->nativeLineCaptureCount[2] = GPU_VRAM_BLOCK_LINES;
+		this->_engineMain->nativeLineCaptureCount[3] = GPU_VRAM_BLOCK_LINES;
+		
+		for (size_t l = 0; l < GPU_VRAM_BLOCK_LINES; l++)
+		{
+			this->_engineMain->isLineCaptureNative[0][l] = true;
+			this->_engineMain->isLineCaptureNative[1][l] = true;
+			this->_engineMain->isLineCaptureNative[2][l] = true;
+			this->_engineMain->isLineCaptureNative[3][l] = true;
+		}
+	}
+	
+	if (this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main])
+	{
+		this->_displayInfo.renderedWidth[NDSDisplayID_Main] = this->_displayInfo.customWidth;
+		this->_displayInfo.renderedHeight[NDSDisplayID_Main] = this->_displayInfo.customHeight;
+	}
+	else
+	{
+		this->_displayInfo.renderedWidth[NDSDisplayID_Main] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+		this->_displayInfo.renderedHeight[NDSDisplayID_Main] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	}
+	
+	if (this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch])
+	{
+		this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = this->_displayInfo.customWidth;
+		this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = this->_displayInfo.customHeight;
+	}
+	else
+	{
+		this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+		this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	}
+	
+	this->_AllocateFramebuffers(this->_displayInfo.colorFormat, w, h, clientNativeBuffer, clientCustomBuffer);
+	
+	free_aligned(oldGpuDstToSrcIndexPtr);
+	free_aligned(oldGpuDstToSrcSSSE3_u8);
+	free_aligned(oldGpuDstToSrcSSSE3_u16);
+}
+
+void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h)
+{
+	this->SetCustomFramebufferSize(w, h, NULL, NULL);
+}
+
+void GPUSubsystem::SetColorFormat(const NDSColorFormat outputFormat, void *clientNativeBuffer, void *clientCustomBuffer)
+{
+	// TBD: Multiple color formats aren't supported in the renderer yet. Force the color format to NDSColorFormat_BGR555_Rev until then.
+	//this->_displayInfo.colorFormat = outputFormat;
+	this->_displayInfo.colorFormat = NDSColorFormat_BGR555_Rev;
+	
+	this->_displayInfo.pixelBytes = (outputFormat == NDSColorFormat_BGR555_Rev) ? sizeof(u16) : sizeof(u32);
+	
+	this->_AllocateFramebuffers(this->_displayInfo.colorFormat, this->_displayInfo.customWidth, this->_displayInfo.customHeight, clientNativeBuffer, clientCustomBuffer);
+}
+
+void GPUSubsystem::SetColorFormat(const NDSColorFormat outputFormat)
+{
+	this->SetColorFormat(outputFormat, NULL, NULL);
+}
+
+void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, size_t h, void *clientNativeBuffer, void *clientCustomBuffer)
+{
+	void *oldCustomFramebuffer = this->_customFramebuffer;
+	void *oldCustomVRAM = this->_customVRAM;
+	
+	const size_t pixelBytes = (outputFormat == NDSColorFormat_BGR555_Rev) ? sizeof(u16) : sizeof(FragmentColor);
+	const size_t newCustomVRAMBlockSize = _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w;
+	const size_t newCustomVRAMBlankSize = _gpuLargestDstLineCount * GPU_VRAM_BLANK_REGION_LINES * w;
+	const size_t nativeFramebufferSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * pixelBytes;
+	
+	u16 *newCustomVRAM = (u16 *)malloc_alignedCacheLine(((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * pixelBytes);
+	memset(newCustomVRAM, 0, ((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * pixelBytes);
 	
 	if (clientNativeBuffer != NULL)
 	{
@@ -6058,43 +6140,14 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h, u16 *clientNativ
 	}
 	else
 	{
-		u16 *newCustomFramebuffer = (u16 *)malloc_alignedCacheLine(w * h * 2 * sizeof(u16));
+		u16 *newCustomFramebuffer = (u16 *)malloc_alignedCacheLine(w * h * 2 * pixelBytes);
 		memset_u16(newCustomFramebuffer, 0x8000, w * h * 2);
 		this->_customFramebuffer = newCustomFramebuffer;
 		this->_displayInfo.masterCustomBuffer = newCustomFramebuffer;
 	}
 	
-	_gpuLargestDstLineCount = newGpuLargestDstLineCount;
-	_gpuVRAMBlockOffset = _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w;
-	_gpuDstToSrcIndex = newGpuDstToSrcIndex;
-	_gpuDstToSrcSSSE3_u8 = newGpuDstToSrcSSSE3_u8;
-	_gpuDstToSrcSSSE3_u16 = newGpuDstToSrcSSSE3_u16;
 	this->_customVRAM = newCustomVRAM;
 	this->_customVRAMBlank = newCustomVRAM + (newCustomVRAMBlockSize * 4);
-	
-	this->_displayInfo.isCustomSizeRequested = ( (w != GPU_FRAMEBUFFER_NATIVE_WIDTH) || (h != GPU_FRAMEBUFFER_NATIVE_HEIGHT) );
-	this->_displayInfo.customWidth = w;
-	this->_displayInfo.customHeight = h;
-	this->_displayInfo.nativeBuffer[NDSDisplayID_Main] = (this->_displayMain->GetEngine()->GetDisplayByID() == NDSDisplayID_Main) ? this->_displayInfo.masterNativeBuffer : this->_displayInfo.masterNativeBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-	this->_displayInfo.nativeBuffer[NDSDisplayID_Touch] = (this->_displayTouch->GetEngine()->GetDisplayByID() == NDSDisplayID_Main) ? this->_displayInfo.masterNativeBuffer : this->_displayInfo.masterNativeBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-	this->_displayInfo.customBuffer[NDSDisplayID_Main] = (this->_displayMain->GetEngine()->GetDisplayByID() == NDSDisplayID_Main) ? this->_displayInfo.masterCustomBuffer : this->_displayInfo.masterCustomBuffer + (w * h);
-	this->_displayInfo.customBuffer[NDSDisplayID_Touch] = (this->_displayTouch->GetEngine()->GetDisplayByID() == NDSDisplayID_Main) ? this->_displayInfo.masterCustomBuffer : this->_displayInfo.masterCustomBuffer + (w * h);
-	
-	if (!this->_displayInfo.isCustomSizeRequested)
-	{
-		this->_engineMain->nativeLineCaptureCount[0] = GPU_VRAM_BLOCK_LINES;
-		this->_engineMain->nativeLineCaptureCount[1] = GPU_VRAM_BLOCK_LINES;
-		this->_engineMain->nativeLineCaptureCount[2] = GPU_VRAM_BLOCK_LINES;
-		this->_engineMain->nativeLineCaptureCount[3] = GPU_VRAM_BLOCK_LINES;
-		
-		for (size_t l = 0; l < GPU_VRAM_BLOCK_LINES; l++)
-		{
-			this->_engineMain->isLineCaptureNative[0][l] = true;
-			this->_engineMain->isLineCaptureNative[1][l] = true;
-			this->_engineMain->isLineCaptureNative[2][l] = true;
-			this->_engineMain->isLineCaptureNative[3][l] = true;
-		}
-	}
 	
 	this->_engineMain->SetCustomFramebufferSize(w, h);
 	this->_engineSub->SetCustomFramebufferSize(w, h);
@@ -6105,42 +6158,16 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h, u16 *clientNativ
 		CurrentRenderer->SetFramebufferSize(w, h);
 	}
 	
-	if (this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main])
-	{
-		this->_displayInfo.renderedBuffer[NDSDisplayID_Main] = this->_displayInfo.customBuffer[NDSDisplayID_Main];
-		this->_displayInfo.renderedWidth[NDSDisplayID_Main] = this->_displayInfo.customWidth;
-		this->_displayInfo.renderedHeight[NDSDisplayID_Main] = this->_displayInfo.customHeight;
-	}
-	else
-	{
-		this->_displayInfo.renderedBuffer[NDSDisplayID_Main] = this->_displayInfo.nativeBuffer[NDSDisplayID_Main];
-		this->_displayInfo.renderedWidth[NDSDisplayID_Main] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-		this->_displayInfo.renderedHeight[NDSDisplayID_Main] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	}
+	this->_displayInfo.nativeBuffer[NDSDisplayID_Main]  = (this->_displayMain->GetEngine()->GetDisplayByID()  == NDSDisplayID_Main) ? this->_displayInfo.masterNativeBuffer : (u8 *)this->_displayInfo.masterNativeBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * this->_displayInfo.pixelBytes);
+	this->_displayInfo.nativeBuffer[NDSDisplayID_Touch] = (this->_displayTouch->GetEngine()->GetDisplayByID() == NDSDisplayID_Main) ? this->_displayInfo.masterNativeBuffer : (u8 *)this->_displayInfo.masterNativeBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * this->_displayInfo.pixelBytes);
+	this->_displayInfo.customBuffer[NDSDisplayID_Main]  = (this->_displayMain->GetEngine()->GetDisplayByID()  == NDSDisplayID_Main) ? this->_displayInfo.masterCustomBuffer : (u8 *)this->_displayInfo.masterCustomBuffer + (w * h * this->_displayInfo.pixelBytes);
+	this->_displayInfo.customBuffer[NDSDisplayID_Touch] = (this->_displayTouch->GetEngine()->GetDisplayByID() == NDSDisplayID_Main) ? this->_displayInfo.masterCustomBuffer : (u8 *)this->_displayInfo.masterCustomBuffer + (w * h * this->_displayInfo.pixelBytes);
 	
-	if (this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch])
-	{
-		this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = this->_displayInfo.customBuffer[NDSDisplayID_Touch];
-		this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = this->_displayInfo.customWidth;
-		this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = this->_displayInfo.customHeight;
-	}
-	else
-	{
-		this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = this->_displayInfo.nativeBuffer[NDSDisplayID_Touch];
-		this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-		this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	}
+	this->_displayInfo.renderedBuffer[NDSDisplayID_Main]  = (this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main])  ? this->_displayInfo.customBuffer[NDSDisplayID_Main]  : this->_displayInfo.nativeBuffer[NDSDisplayID_Main];
+	this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = (this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch]) ? this->_displayInfo.customBuffer[NDSDisplayID_Touch] : this->_displayInfo.nativeBuffer[NDSDisplayID_Touch];
 	
 	free_aligned(oldCustomFramebuffer);
-	free_aligned(oldGpuDstToSrcIndexPtr);
-	free_aligned(oldGpuDstToSrcSSSE3_u8);
-	free_aligned(oldGpuDstToSrcSSSE3_u16);
 	free_aligned(oldCustomVRAM);
-}
-
-void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h)
-{
-	this->SetCustomFramebufferSize(w, h, NULL, NULL);
 }
 
 u16* GPUSubsystem::GetCustomVRAMBuffer()
@@ -6294,8 +6321,48 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 
 void GPUSubsystem::ClearWithColor(const u16 colorBGRA5551)
 {
-	memset_u16(this->_displayInfo.masterNativeBuffer, colorBGRA5551, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
-	memset_u16(this->_displayInfo.masterCustomBuffer, colorBGRA5551, this->_displayInfo.customWidth * this->_displayInfo.customHeight * 2);
+	u16 color16 = colorBGRA5551;
+	FragmentColor color32;
+	
+	switch (this->_displayInfo.colorFormat)
+	{
+		case NDSColorFormat_BGR555_Rev:
+			color16 = colorBGRA5551 | 0x8000;
+			break;
+			
+		case NDSColorFormat_BGR666_Rev:
+			color32.r = material_5bit_to_6bit[(colorBGRA5551 & 0x001F)];
+			color32.g = material_5bit_to_6bit[(colorBGRA5551 & 0x03E0) >> 5];
+			color32.b = material_5bit_to_6bit[(colorBGRA5551 & 0x7C00) >> 10];
+			color32.a = 0xFF;
+			break;
+			
+		case NDSColorFormat_BGR888_Rev:
+			color32.r = material_5bit_to_8bit[(colorBGRA5551 & 0x001F)];
+			color32.g = material_5bit_to_8bit[(colorBGRA5551 & 0x03E0) >> 5];
+			color32.b = material_5bit_to_8bit[(colorBGRA5551 & 0x7C00) >> 10];
+			color32.a = 0xFF;
+			break;
+			
+		default:
+			break;
+	}
+	
+	switch (this->_displayInfo.pixelBytes)
+	{
+		case 2:
+			memset_u16(this->_displayInfo.masterNativeBuffer, color16, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+			memset_u16(this->_displayInfo.masterCustomBuffer, color16, this->_displayInfo.customWidth * this->_displayInfo.customHeight * 2);
+			break;
+			
+		case 4:
+			memset_u32(this->_displayInfo.masterNativeBuffer, color32.color, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+			memset_u32(this->_displayInfo.masterCustomBuffer, color32.color, this->_displayInfo.customWidth * this->_displayInfo.customHeight * 2);
+			break;
+			
+		default:
+			break;
+	}
 }
 
 NDSDisplay::NDSDisplay()

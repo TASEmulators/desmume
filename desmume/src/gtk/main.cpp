@@ -1547,7 +1547,7 @@ static inline void RGB555ToBGRA8888Buffer(const uint16_t *__restrict__ srcBuffer
 
 static inline void gpu_screen_to_rgb(u32* dst)
 {
-    RGB555ToRGBA8888Buffer(GPU->GetDisplayInfo().masterNativeBuffer, dst, 256 * 384);
+    RGB555ToRGBA8888Buffer((const uint16_t *)GPU->GetDisplayInfo().masterNativeBuffer, dst, 256 * 384);
 }
 
 static inline void drawScreen(cairo_t* cr, u32* buf, gint w, gint h) {
@@ -1672,7 +1672,7 @@ static gboolean ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpo
 }
 
 static void RedrawScreen() {
-        RGB555ToBGRA8888Buffer(GPU->GetDisplayInfo().masterNativeBuffer, video->GetSrcBufferPtr(), 256 * 384);
+        RGB555ToBGRA8888Buffer((const uint16_t *)GPU->GetDisplayInfo().masterNativeBuffer, video->GetSrcBufferPtr(), 256 * 384);
 #ifdef HAVE_LIBAGG
 	aggDraw.hud->attach((u8*)video->GetSrcBufferPtr(), 256, 384, 1024);
 	osd->update();
@@ -2437,7 +2437,7 @@ gboolean EmuLoop(gpointer data)
     desmume_cycle();    /* Emule ! */
 
     _updateDTools();
-        avout_x264.updateVideo(GPU->GetDisplayInfo().masterNativeBuffer);
+        avout_x264.updateVideo((const uint16_t *)GPU->GetDisplayInfo().masterNativeBuffer);
 	RedrawScreen();
 
     if (!config.fpslimiter || keys_latch & KEYMASK_(KEY_BOOST - 1)) {

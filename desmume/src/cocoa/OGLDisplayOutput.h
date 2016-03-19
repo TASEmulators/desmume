@@ -400,10 +400,11 @@ protected:
 	GLfloat _texLoadedWidth[2];
 	GLfloat _texLoadedHeight[2];
 	
-	uint16_t *_videoSrcBufferHead;
+	GLenum _videoColorFormat;
+	const void *_videoSrcBufferHead;
+	const void *_videoSrcNativeBuffer[2];
+	const void *_videoSrcCustomBuffer[2];
 	size_t _videoSrcBufferSize;
-	uint16_t *_videoSrcNativeBuffer[2];
-	uint16_t *_videoSrcCustomBuffer[2];
 	GLsizei _videoSrcCustomBufferWidth[2];
 	GLsizei _videoSrcCustomBufferHeight[2];
 		
@@ -456,7 +457,8 @@ public:
 	OGLDisplayLayer(OGLVideoOutput *oglVO);
 	virtual ~OGLDisplayLayer();
 	
-	void SetVideoBuffers(const void *videoBufferHead,
+	void SetVideoBuffers(const uint32_t colorFormat,
+						 const void *videoBufferHead,
 						 const void *nativeBuffer0,
 						 const void *nativeBuffer1,
 						 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
