@@ -168,7 +168,7 @@ void FCEUD_MakePathDirs(const char *fname)
 		int off = fptr - fname;
 		strncpy(path, fname, off);
 		path[off] = '\0';
-		mkdir(path);
+		mkdir(path,0);
 
 		div = fptr + 1;
 		

@@ -70,6 +70,48 @@
     <Filter Include="Windows\File_Extractor\unrar">
       <UniqueIdentifier>{6e0c9a80-56da-436a-a32d-d64cf6323ac7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\libretro-common">
+      <UniqueIdentifier>{96d6a2cc-95dd-4cff-aedb-a4fca349e03e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\libretro-common\rthreads">
+      <UniqueIdentifier>{4081af90-0821-41a7-bfa5-a1ea2e2507b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\frontend">
+      <UniqueIdentifier>{9bac6bce-2c43-4ed8-bc81-139766c97d61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\frontend\modules">
+      <UniqueIdentifier>{bf0f0a1c-c47b-485d-88ef-77ec60ed76d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\libretro-common\include">
+      <UniqueIdentifier>{3d685b20-07d6-40cd-9698-092e3956a99b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\libretro-common\include\rthreads">
+      <UniqueIdentifier>{f073b402-2ede-4541-ac04-8374eb50e6da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\libretro-common\formats">
+      <UniqueIdentifier>{c36360aa-3622-438e-9d70-18c859eaeb01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\libretro-common\formats\png">
+      <UniqueIdentifier>{7038db37-0de1-4561-aec4-d628e1d31265}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\libretro-common\formats\bmp">
+      <UniqueIdentifier>{3b266419-458b-493d-9c55-5d5cc6b212ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\libretro-common\file">
+      <UniqueIdentifier>{114f59af-a844-468a-9cb9-2f7faf861035}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\libretro-common\include\formats">
+      <UniqueIdentifier>{9f342479-151c-448b-b5a1-6bf96ec68e4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\libretro-common\file\nbio">
+      <UniqueIdentifier>{59d051e5-34eb-4b72-b6a1-7a893c6592e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\libretro-common\string">
+      <UniqueIdentifier>{0bad36f3-5499-4402-bb16-6ceb744bf080}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\libretro-common\compat">
+      <UniqueIdentifier>{334a6ab8-9fe9-4577-983a-10f3b6fa95b9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\aggdraw.cpp">
@@ -846,6 +888,42 @@
     <ClCompile Include="File_Extractor\unrar\archive.cpp">
       <Filter>Windows\File_Extractor\unrar</Filter>
     </ClCompile>
+    <ClCompile Include="..\libretro-common\rthreads\rthreads.c">
+      <Filter>Core\libretro-common\rthreads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\frontend\modules\ImageOut.cpp">
+      <Filter>Core\frontend\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\formats\png\rpng_encode.c">
+      <Filter>Core\libretro-common\formats\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\formats\png\rpng.c">
+      <Filter>Core\libretro-common\formats\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\formats\bmp\rbmp_encode.c">
+      <Filter>Core\libretro-common\formats\bmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\retro_file.c">
+      <Filter>Core\libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\nbio\nbio_stdio.c">
+      <Filter>Core\libretro-common\file\nbio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\file_extract.c">
+      <Filter>Core\libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\string\string_list.c">
+      <Filter>Core\libretro-common\string</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\compat\compat.c">
+      <Filter>Core\libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\file_path.c">
+      <Filter>Core\libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\retro_stat.c">
+      <Filter>Core\libretro-common\file</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\armcpu.h">
@@ -1591,6 +1669,33 @@
     </ClInclude>
     <ClInclude Include="File_Extractor\unrar\archive.hpp">
       <Filter>Windows\File_Extractor\unrar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libretro-common\include\rthreads\rthreads.h">
+      <Filter>Core\libretro-common\include\rthreads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libretro-common\include\retro_miscellaneous.h">
+      <Filter>Core\libretro-common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libretro-common\include\retro_inline.h">
+      <Filter>Core\libretro-common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libretro-common\include\boolean.h">
+      <Filter>Core\libretro-common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\frontend\modules\ImageOut.h">
+      <Filter>Core\frontend\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libretro-common\formats\png\rpng_internal.h">
+      <Filter>Core\libretro-common\formats\png</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libretro-common\include\formats\rpng.h">
+      <Filter>Core\libretro-common\include\formats</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libretro-common\include\formats\image.h">
+      <Filter>Core\libretro-common\include\formats</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libretro-common\include\formats\rbmp.h">
+      <Filter>Core\libretro-common\include\formats</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

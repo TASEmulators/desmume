@@ -22,7 +22,6 @@
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#include <direct.h>
-	#define mkdir _mkdir
 
 	#ifndef DESMUME_QT
 		#include "windows/winutil.h"

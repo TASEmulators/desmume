@@ -29,6 +29,7 @@
 #include <string.h>
 #include <fcntl.h>
 
+#include <rthreads/rthreads.h>
 #include "../gdbstub.h"
 #include "../types.h"
 #include "../NDSSystem.h"
@@ -47,12 +48,7 @@
 #endif
 #endif // HOST_WINDOWS
 
-#ifndef HOST_WINDOWS
-// to access the CPUs in any way, a thread has to get a lock on this first
-pthread_mutex_t cpu_mutex;
-#else
-HANDLE cpu_mutex;
-#endif
+slock *cpu_mutex;
 
 #ifdef __GNUC__
 #define UNUSED_PARM( parm) parm __attribute__((unused))
@@ -158,47 +154,22 @@ enum target_signal
 
 void gdbstub_mutex_init()
 {
-    #ifndef HOST_WINDOWS
-    pthread_mutex_init(&cpu_mutex, NULL);
-    #else
-#ifdef USE_MUTEX_ON_WINDOWS
-    cpu_mutex = CreateMutex(NULL, FALSE, NULL);
-#endif
-    #endif
+  cpu_mutex = slock_new();
 }
 
 void gdbstub_mutex_destroy()
 {
-    #ifndef HOST_WINDOWS
-    pthread_mutex_destroy(&cpu_mutex);
-    #else
-#ifdef USE_MUTEX_ON_WINDOWS
-    CloseHandle(cpu_mutex);
-#endif
-    #endif
+  slock_free(cpu_mutex);
 }
 
 void gdbstub_mutex_lock()
 {
-#ifndef HOST_WINDOWS
-    pthread_mutex_lock(&cpu_mutex);
-#else
-#ifdef USE_MUTEX_ON_WINDOWS
-    // Maybe we should check the return value, but then again what could we do about it anyway.
-    WaitForSingleObject(cpu_mutex, INFINITE);
-#endif
-#endif
+  slock_lock(cpu_mutex);
 }
 
 void gdbstub_mutex_unlock()
 {
-#ifndef HOST_WINDOWS
-    pthread_mutex_unlock(&cpu_mutex);
-#else
-#ifdef USE_MUTEX_ON_WINDOWS
-    ReleaseMutex(cpu_mutex);
-#endif
-#endif
+  slock_unlock(cpu_mutex);
 }
 
 static void
