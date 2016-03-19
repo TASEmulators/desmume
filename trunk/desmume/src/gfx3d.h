@@ -739,6 +739,7 @@ extern CACHE_ALIGN u16 color_15bit_to_16bit_reverse[32768];
 extern CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 extern CACHE_ALIGN u8 mixTable555[32][32][32];
 extern CACHE_ALIGN const u32 material_5bit_to_31bit[32];
+extern CACHE_ALIGN const u8 material_5bit_to_6bit[32];
 extern CACHE_ALIGN const u8 material_5bit_to_8bit[32];
 extern CACHE_ALIGN const u8 material_3bit_to_5bit[8];
 extern CACHE_ALIGN const u8 material_3bit_to_6bit[8];

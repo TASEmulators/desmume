@@ -371,7 +371,7 @@ resizeWindow( u16 width, u16 height, GLuint *screen_texture) {
 static void
 opengl_Draw( GLuint *texture, int software_convert) {
   GLenum errCode;
-  u16 *gpuFramebuffer = GPU->GetDisplayInfo().masterNativeBuffer;
+  u16 *gpuFramebuffer = (u16 *)GPU->GetDisplayInfo().masterNativeBuffer;
 
   /* Clear The Screen And The Depth Buffer */
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -446,7 +446,7 @@ static void
 Draw( void) {
   SDL_Surface *rawImage;
 
-  rawImage = SDL_CreateRGBSurfaceFrom((void*)GPU->GetDisplayInfo().masterNativeBuffer, 256, 384, 16, 512, 0x001F, 0x03E0, 0x7C00, 0);
+  rawImage = SDL_CreateRGBSurfaceFrom(GPU->GetDisplayInfo().masterNativeBuffer, 256, 384, 16, 512, 0x001F, 0x03E0, 0x7C00, 0);
   if(rawImage == NULL) return;
 
   SDL_BlitSurface(rawImage, 0, surface, 0);

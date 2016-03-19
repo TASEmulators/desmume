@@ -106,7 +106,7 @@ bool Video::setFilter(VideoFilterTypeID filterID) {
 }
 
 unsigned int* Video::runFilter() {
-    RGB555ToRGBA8888Buffer(GPU->GetDisplayInfo().masterNativeBuffer, this->mFilter.GetSrcBufferPtr(), 256 * 384);
+    RGB555ToRGBA8888Buffer((const uint16_t *)GPU->GetDisplayInfo().masterNativeBuffer, this->mFilter.GetSrcBufferPtr(), 256 * 384);
 	unsigned int* buf = this->mFilter.RunFilter();
 	this->screenBufferUpdated(buf, this->getDstSize(), this->getDstScale());
 	return buf;

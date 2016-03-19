@@ -118,15 +118,16 @@ typedef struct
 @required
 - (void) doInitVideoOutput:(NSDictionary *)properties;
 
-- (void) doSetVideoBuffers:(const uint16_t *)videoBufferHead
-			 nativeBuffer0:(const uint16_t *)nativeBuffer0
-			 nativeBuffer1:(const uint16_t *)nativeBuffer1
-			 customBuffer0:(const uint16_t *)customBuffer0
-			  customWidth0:(const size_t)customWidth0
-			 customHeight0:(const size_t)customHeight0
-			 customBuffer1:(const uint16_t *)customBuffer1
-			  customWidth1:(const size_t)customWidth1
-			 customHeight1:(const size_t)customHeight1;
+- (void) doSetVideoBuffersUsingFormat:(const uint32_t)colorFormat
+						   bufferHead:(const void *)videoBufferHead
+						nativeBuffer0:(const void *)nativeBuffer0
+						nativeBuffer1:(const void *)nativeBuffer1
+						customBuffer0:(const void *)customBuffer0
+						 customWidth0:(const size_t)customWidth0
+						customHeight0:(const size_t)customHeight0
+						customBuffer1:(const void *)customBuffer1
+						 customWidth1:(const size_t)customWidth1
+						customHeight1:(const size_t)customHeight1;
 
 - (void) doLoadVideoFrameWithMainSizeNative:(bool)isMainSizeNative touchSizeNative:(bool)isTouchSizeNative;
 
@@ -183,9 +184,9 @@ typedef struct
 
 @interface CocoaDSDisplayVideo : CocoaDSDisplay
 {
-	uint16_t *_videoBuffer;
-	uint16_t *_nativeBuffer[2];
-	uint16_t *_customBuffer[2];
+	void *_videoBuffer;
+	void *_nativeBuffer[2];
+	void *_customBuffer[2];
 }
 
 - (void) handleReceiveGPUFrame;

@@ -419,7 +419,7 @@ void DRV_AviVideoUpdate()
 		return;
 
 	const NDSDisplayInfo& dispInfo = GPU->GetDisplayInfo();
-	const u16* buffer = dispInfo.masterCustomBuffer;
+	const u16* buffer = (const u16 *)dispInfo.masterCustomBuffer;
 
 	//dont do anything if prescale has changed, it's just going to be garbage
 	if(video.prescaleHD != avi_file->prescaleLevel)

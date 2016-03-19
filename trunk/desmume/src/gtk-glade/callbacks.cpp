@@ -221,7 +221,7 @@ static void Printscreen()
         gchar *filename;
         GError *error = NULL;
         u8 *rgb;
-        u16 *gpuFramebuffer = GPU->GetDisplayInfo().masterNativeBuffer;
+        u16 *gpuFramebuffer = (u16 *)GPU->GetDisplayInfo().masterNativeBuffer;
         static int seq = 0;
 
         rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*3);
