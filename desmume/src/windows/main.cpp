@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2006-2015 DeSmuME team
+	Copyright (C) 2006-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -3011,7 +3011,6 @@ int _main()
 
 	//i think we should override the ini file with anything from the commandline
 	CommandLine cmdline;
-	cmdline.loadCommonOptions();
 	if(!cmdline.parse(__argc,__argv)) {
 		cmdline.errorHelp(__argv[0]);
 		return 1;
@@ -3021,7 +3020,7 @@ int _main()
 	
 	// Temporary scanline parameter setting for Windows.
 	// TODO: When videofilter.cpp becomes Windows-friendly, replace the direct setting of
-	// variables with SetFilterParameteri().
+	// variables with SetFilterParameteri()	.
 	//myVideoFilterObject->SetFilterParameteri(VF_PARAM_SCANLINE_A, _scanline_filter_a);
     //myVideoFilterObject->SetFilterParameteri(VF_PARAM_SCANLINE_B, _scanline_filter_b);
     //myVideoFilterObject->SetFilterParameteri(VF_PARAM_SCANLINE_C, _scanline_filter_c);

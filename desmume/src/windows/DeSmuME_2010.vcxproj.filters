@@ -115,6 +115,9 @@
     <Filter Include="Core\libretro-common\hash">
       <UniqueIdentifier>{23ac753a-66cd-40c8-92c3-90f145eaf022}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\libretro-common\include\compat">
+      <UniqueIdentifier>{0e38e634-1de6-4c6e-b1d4-8b3f9e77840a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\aggdraw.cpp">
@@ -1735,6 +1738,12 @@
     </ClInclude>
     <ClInclude Include="..\libretro-common\include\formats\rbmp.h">
       <Filter>Core\libretro-common\include\formats</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libretro-common\include\compat\getopt.h">
+      <Filter>Core\libretro-common\include\compat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libretro-common\include\compat\msvc.h">
+      <Filter>Core\libretro-common\include\compat</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -822,6 +822,8 @@
     <ClInclude Include="..\instruction_attributes.h" />
     <ClInclude Include="..\libretro-common\formats\png\rpng_internal.h" />
     <ClInclude Include="..\libretro-common\include\boolean.h" />
+    <ClInclude Include="..\libretro-common\include\compat\getopt.h" />
+    <ClInclude Include="..\libretro-common\include\compat\msvc.h" />
     <ClInclude Include="..\libretro-common\include\formats\image.h" />
     <ClInclude Include="..\libretro-common\include\formats\rbmp.h" />
     <ClInclude Include="..\libretro-common\include\formats\rpng.h" />

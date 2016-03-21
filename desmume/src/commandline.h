@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2013 DeSmuME team
+	Copyright (C) 2009-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,10 +20,6 @@
 
 #include <string>
 #include "types.h"
-
-//I hate C. we have to forward declare these with more detail than I like
-typedef struct _GOptionContext GOptionContext;
-typedef struct _GError GError;
 
 //hacky commandline options that i didnt want to route through commonoptions
 extern int _commandline_linux_nojoy;
@@ -56,9 +52,6 @@ public:
 	int disable_limiter;
 #endif
 
-	//load up the common commandline options
-	void loadCommonOptions();
-	
 	bool parse(int argc,char **argv);
 
 	//validate the common commandline options
@@ -75,9 +68,6 @@ public:
 
 	CommandLine();
 	~CommandLine();
-
-	GError *error;
-	GOptionContext *ctx;
 
 	int _spu_sync_mode;
 	int _spu_sync_method;

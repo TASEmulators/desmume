@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2013 DeSmuME team
+	Copyright (C) 2009-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 
 //windows note: make sure this file gets compiled with _cdecl
 
-#include <glib.h>
 #include <algorithm>
 #include <stdio.h>
 #include "commandline.h"
@@ -27,6 +26,10 @@
 #include "slot2.h"
 #include "NDSSystem.h"
 #include "utils/xstring.h"
+#include "compat/getopt.h"
+//#include "frontend/modules/mGetOpt.h" //to test with this, make sure global `optind` is initialized to 1
+
+#define printerror(...) fprintf(stderr, __VA_ARGS__)
 
 int _scanline_filter_a = 0, _scanline_filter_b = 2, _scanline_filter_c = 2, _scanline_filter_d = 4;
 int _commandline_linux_nojoy = 0;
@@ -34,8 +37,6 @@ int _commandline_linux_nojoy = 0;
 CommandLine::CommandLine()
 : is_cflash_configured(false)
 , _load_to_memory(-1)
-, error(NULL)
-, ctx(g_option_context_new (""))
 , _play_movie_file(0)
 , _record_movie_file(0)
 , _cflash_image(0)
@@ -74,61 +75,6 @@ CommandLine::CommandLine()
 
 CommandLine::~CommandLine()
 {
-	if(error) g_error_free (error);
-	g_option_context_free (ctx);
-}
-
-void CommandLine::loadCommonOptions()
-{
-	//these options should be available in every port.
-	//my advice is, do not be afraid of using #ifdef here if it makes sense.
-	//but also see the gtk port for an example of how to combine this with other options
-	//(you may need to use ifdefs to cause options to be entered in the desired order)
-	static const GOptionEntry options[] = {
-		{ "load-type", 0, 0, G_OPTION_ARG_INT, &_load_to_memory, "ROM loading method, 0 - stream from disk (like an iso), 1 - load entirely to RAM (default 0)", "LOAD_TYPE"},
-		{ "load-slot", 0, 0, G_OPTION_ARG_INT, &load_slot, "Loads savestate from slot NUM", "NUM"},
-		{ "play-movie", 0, 0, G_OPTION_ARG_FILENAME, &_play_movie_file, "Specifies a dsm format movie to play", "PATH_TO_PLAY_MOVIE"},
-		{ "record-movie", 0, 0, G_OPTION_ARG_FILENAME, &_record_movie_file, "Specifies a path to a new dsm format movie", "PATH_TO_RECORD_MOVIE"},
-		{ "start-paused", 0, 0, G_OPTION_ARG_NONE, &start_paused, "Indicates that emulation should start paused", "START_PAUSED"},
-		{ "cflash-image", 0, 0, G_OPTION_ARG_FILENAME, &_cflash_image, "Requests cflash in gbaslot with fat image at this path", "CFLASH_IMAGE"},
-		{ "cflash-path", 0, 0, G_OPTION_ARG_FILENAME, &_cflash_path, "Requests cflash in gbaslot with filesystem rooted at this path", "CFLASH_PATH"},
-		{ "gbaslot-rom", 0, 0, G_OPTION_ARG_FILENAME, &_gbaslot_rom, "Requests this GBA rom in gbaslot", "GBASLOT_ROM"},
-		{ "bios-arm9", 0, 0, G_OPTION_ARG_FILENAME, &_bios_arm9, "Uses the arm9 bios provided at the specified path", "BIOS_ARM9_PATH"},
-		{ "bios-arm7", 0, 0, G_OPTION_ARG_FILENAME, &_bios_arm7, "Uses the arm7 bios provided at the specified path", "BIOS_ARM7_PATH"},
-		{ "bios-swi", 0, 0, G_OPTION_ARG_INT, &_bios_swi, "Uses SWI from the provided bios files", "BIOS_SWI"},
-		{ "spu-mode", 0, 0, G_OPTION_ARG_INT, &_spu_sync_mode, "Select SPU Synchronization Mode. 0 - Dual SPU Synch/Asynch (traditional), 1 - Synchronous (sometimes needed for streams) (default 0)", "SPU_MODE"},
-		{ "spu-method", 0, 0, G_OPTION_ARG_INT, &_spu_sync_method, "Select SPU Synchronizer Method. 0 - N, 1 - Z, 2 - P (default 0)", "SPU_SYNC_METHOD"},
-		{ "spu-advanced", 0, 0, G_OPTION_ARG_INT, &_spu_advanced, "Uses advanced SPU capture functions", "SPU_ADVANCED"},
-		{ "num-cores", 0, 0, G_OPTION_ARG_INT, &_num_cores, "Override numcores detection and use this many", "NUM_CORES"},
-		{ "scanline-filter-a", 0, 0, G_OPTION_ARG_INT, &_scanline_filter_a, "Intensity of fadeout for scanlines filter (topleft) (default 0)", "SCANLINE_FILTER_A"},
-		{ "scanline-filter-b", 0, 0, G_OPTION_ARG_INT, &_scanline_filter_b, "Intensity of fadeout for scanlines filter (topright) (default 2)", "SCANLINE_FILTER_B"},
-		{ "scanline-filter-c", 0, 0, G_OPTION_ARG_INT, &_scanline_filter_c, "Intensity of fadeout for scanlines filter (bottomleft) (default 2)", "SCANLINE_FILTER_C"},
-		{ "scanline-filter-d", 0, 0, G_OPTION_ARG_INT, &_scanline_filter_d, "Intensity of fadeout for scanlines filter (bottomright) (default 4)", "SCANLINE_FILTER_D"},
-		{ "rigorous-timing", 0, 0, G_OPTION_ARG_INT, &_rigorous_timing, "Use some rigorous timings instead of unrealistically generous (default 0)", "RIGOROUS_TIMING"},
-		{ "advanced-timing", 0, 0, G_OPTION_ARG_INT, &_advanced_timing, "Use advanced BUS-level timing (default 1)", "ADVANCED_TIMING"},
-		{ "slot1", 0, 0, G_OPTION_ARG_STRING, &_slot1, "Device to mount in slot 1 (default retail)", "SLOT1"},
-		{ "slot1-fat-dir", 0, 0, G_OPTION_ARG_STRING, &_slot1_fat_dir, "Directory to scan for slot 1", "SLOT1_DIR"},
-		{ "depth-threshold", 0, 0, G_OPTION_ARG_INT, &depth_threshold, "Depth comparison threshold (default 0)", "DEPTHTHRESHOLD"},
-		{ "console-type", 0, 0, G_OPTION_ARG_STRING, &_console_type, "Select console type: {fat,lite,ique,debug,dsi}", "CONSOLETYPE" },
-		{ "advanscene-import", 0, 0, G_OPTION_ARG_STRING, &_advanscene_import, "Import advanscene, dump .ddb, and exit", "ADVANSCENE_IMPORT" },
-#ifdef HAVE_JIT
-		{ "cpu-mode", 0, 0, G_OPTION_ARG_INT, &_cpu_mode, "ARM CPU emulation mode: 0 - interpreter, 1 - dynarec (default 1)", NULL},
-		{ "jit-size", 0, 0, G_OPTION_ARG_INT, &_jit_size, "ARM JIT block size: 1..100 (1 - accuracy, 100 - faster) (default 100)", NULL},
-#endif
-#ifndef HOST_WINDOWS 
-		{ "disable-sound", 0, 0, G_OPTION_ARG_NONE, &disable_sound, "Disables the sound emulation", NULL},
-		{ "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &disable_limiter, "Disables the 60fps limiter", NULL},
-		{ "nojoy", 0, 0, G_OPTION_ARG_INT, &_commandline_linux_nojoy, "Disables joystick support", "NOJOY"},
-#endif
-#ifdef GDB_STUB
-		{ "arm9gdb", 0, 0, G_OPTION_ARG_INT, &arm9_gdb_port, "Enable the ARM9 GDB stub on the given port", "PORT_NUM"},
-		{ "arm7gdb", 0, 0, G_OPTION_ARG_INT, &arm7_gdb_port, "Enable the ARM7 GDB stub on the given port", "PORT_NUM"},
-#endif
-		{ "autodetect_method", 0, 0, G_OPTION_ARG_INT, &autodetect_method, "Autodetect backup method (0 - internal, 1 - from database)", "AUTODETECT_METHOD"},
-		{ NULL }
-	};
-
-	g_option_context_add_main_entries (ctx, options, "options");
 }
 
 static char mytoupper(char c) { return ::toupper(c); }
@@ -140,29 +86,225 @@ static std::string strtoupper(const std::string& str)
 	return ret;
 }
 
+#define ENDL "\n"
+static const char* help_string = \
+"Arguments affecting overall emulator behaviour: (`user settings`)" ENDL
+" --num-cores N              Override numcores detection and use this many" ENDL
+" --spu-synch                Enable SPU synch (crackles; helps streams; default ON)" ENDL
+" --spu-method N             Select SPU synch method: 0:N, 1:Z, 2:P; default 0" ENDL
+#ifndef HOST_WINDOWS 
+" --disable-sound            Disables the sound output" ENDL
+" --disable-limiter          Disables the 60fps limiter" ENDL
+" --nojoy                    Disables joystick support" ENDL
+#endif
+"Arguments affecting overall emulation parameters (`sync settings`): " ENDL
+#ifdef HAVE_JIT
+" --jit-enable               Formerly --cpu-mode; default OFF" ENDL
+" --jit-size N               JIT block size: 1-100; 1:accurate, 100:fast (default)" ENDL
+#endif
+" --advanced-timing          Use advanced bus-level timing; default ON" ENDL
+" --rigorous-timing          Use more realistic component timings; default OFF" ENDL
+" --spu-advanced             Enable advanced SPU capture functions (reverb)" ENDL
+" --backupmem-db             Use DB for autodetecting backup memory type" ENDL
+"Arguments affecting the emulated requipment:" ENDL
+" console-type [FAT|LITE|IQUE|DEBUG|DSI]"
+"                            Select basic console type; default FAT" ENDL
+" --bios-arm9 BIN_FILE       Uses the ARM9 BIOS provided at the specified path" ENDL
+" --bios-arm7 BIN_FILE       Uses the ARM7 BIOS provided at the specified path" ENDL
+" --bios-swi                 Uses SWI from the provided bios files (otherwise HLE)" ENDL
+"Arguments affecting contents of SLOT-1:" ENDL
+" --slot1 [RETAIL|RETAILAUTO|R4|RETAILNAND|RETAILMCDROM|RETAILDEBUG]" ENDL
+"                            Device type to be used SLOT-1; default RETAILAUTO" ENDL
+" --preload-rom              precache ROM to RAM instead of streaming from disk" ENDL
+" --slot1-fat-dir DIR        Directory to mount for SLOT-1 flash cards" ENDL
+"Arguments affecting contents of SLOT-2:" ENDL
+" --cflash-image IMG_FILE    Mounts cflash in SLOT-2 with specified image file" ENDL
+" --cflash-path DIR          Mounts cflash in SLOT-2 with FS rooted at DIR" ENDL
+" --cflash-path GBA_FILE     Mounts GBA specified rom in SLOT-2" ENDL
+"Commands taking place after ROM is loaded: (be sure to specify a ROM!)" ENDL
+" --start-paused             emulation should start paused" ENDL
+" --load-slot N              loads savestate from slot N (0-9)" ENDL
+" --play-movie DSM_FILE      automatically plays movie" ENDL
+" --record-movie DSM_FILE    begin recording a movie" ENDL
+"Arguments affecting video filters" ENDL
+" --scanline-filter-a N      Fadeout intensity (N/16) (topleft) (default 0)" ENDL
+" --scanline-filter-b N      Fadeout intensity (N/16) (topright) (default 2)" ENDL
+" --scanline-filter-c N      Fadeout intensity (N/16) (bottomleft) (default 2)" ENDL
+" --scanline-filter-d N      Fadeout intensity (N/16) (bottomright) (default 4)" ENDL
+#ifdef GDB_STUB
+"Arguments affecting debugging features" ENDL
+" --arm9gdb                  Enable the ARM9 GDB stub on the given port" ENDL
+" --arm7gdb                  Enable the ARM7 GDB stub on the given port" ENDL
+#endif
+"Utility commands which occur in place of emulation" ENDL
+" --advanscene-import PATH   Import advanscene, dump .ddb, and exit" ENDL
+"" ENDL
+"These arguments may be reorganized/renamed in the future." ENDL
+;
+
+//https://github.com/mono/mono/blob/b7a308f660de8174b64697a422abfc7315d07b8c/eglib/test/driver.c
+
+#define OPT_NUMCORES 1
+#define OPT_SPU_METHOD 2
+#define OPT_JIT_SIZE 100
+
+#define OPT_CONSOLE_TYPE 200
+#define OPT_ARM9 201
+#define OPT_ARM7 202
+
+#define OPT_SLOT1 300
+#define OPT_SLOT1_FAT_DIR 301
+
+#define OPT_LOAD_SLOT 400
+#define OPT_PLAY_MOVIE 410
+#define OPT_RECORD_MOVIE 411
+
+#define OPT_SLOT2_CFLASH_IMAGE 500
+#define OPT_SLOT2_CFLASH_DIR 501
+#define OPT_SLOT2_GBAGAME 502
+
+#define OPT_SCANLINES_A 600
+#define OPT_SCANLINES_B 601
+#define OPT_SCANLINES_C 602
+#define OPT_SCANLINES_D 603
+
+#define OPT_ARM9GDB 700
+#define OPT_ARM7GDB 701
+
+#define OPT_ADVANSCENE 900
+
 bool CommandLine::parse(int argc,char **argv)
 {
-	g_option_context_parse (ctx, &argc, &argv, &error);
-	if (error)
+	int opt_help = 0;
+	int option_index = 0;
+	for(;;)
 	{
-		g_printerr("Error parsing command line arguments: %s\n", error->message);
-		return false;
+		//libretro-common's optional argument is not supported presently
+		static struct option long_options[] =
+		{
+			//stuff
+			{ "help", no_argument, &opt_help, 0 },
+
+			//user settings
+			{ "num-cores", required_argument, nullptr, OPT_NUMCORES },
+			{ "spu-synch", no_argument, &_spu_sync_mode, 0 },
+			{ "spu-method", required_argument, nullptr, OPT_SPU_METHOD },
+			#ifndef HOST_WINDOWS 
+				{ "disable-sound", no_argument, &disable_sound, 0}
+				{ "disable-limiter", no_argument, &disable_limiter, 0}
+				{ "nojoy", no_argument, &_commandline_linux_nojoy, 0}
+			#endif
+
+			//sync settings
+			#ifdef HAVE_JIT
+				{ "jit-enable", no_argument, &_cpu_mode, 0},
+				{ "jit-size", required_argument, &_jit_size}, 
+			#endif
+			{ "rigorous-timing", no_argument, &_spu_advanced, 0},
+			{ "advanced-timing", no_argument, &_rigorous_timing, 0},
+			{ "spu-advanced", no_argument, &_advanced_timing, 0},
+			{ "backupmem-db", no_argument, &autodetect_method, 0},
+
+			//system equipment
+			{ "console-type", required_argument, nullptr, OPT_CONSOLE_TYPE },
+			{ "bios-arm9", required_argument, nullptr, OPT_ARM9},
+			{ "bios-arm7", required_argument, nullptr, OPT_ARM7},
+			{ "bios-swi", required_argument, &_bios_swi, 0},
+
+			//slot-1 contents
+			{ "slot1", required_argument, nullptr, OPT_SLOT1},
+			{ "preload-rom", no_argument, &_load_to_memory, 0},
+			{ "slot1-fat-dir", required_argument, nullptr, OPT_SLOT1_FAT_DIR},
+
+			//slot-2 contents
+			{ "cflash-image", required_argument, nullptr, OPT_SLOT2_CFLASH_IMAGE},
+			{ "cflash-path", required_argument, nullptr, OPT_SLOT2_CFLASH_DIR},
+			{ "gbaslot-rom", required_argument, nullptr, OPT_SLOT2_GBAGAME},
+
+			//commands
+			{ "start-paused", no_argument, &start_paused, 0},
+			{ "load-slot", required_argument, nullptr, OPT_LOAD_SLOT},
+			{ "play-movie", required_argument, nullptr, OPT_PLAY_MOVIE},
+			{ "record-movie", required_argument, nullptr, OPT_RECORD_MOVIE},
+
+			//video filters
+			{ "scanline-filter-a", required_argument, nullptr, OPT_SCANLINES_A},
+			{ "scanline-filter-b", required_argument, nullptr, OPT_SCANLINES_B},
+			{ "scanline-filter-c", required_argument, nullptr, OPT_SCANLINES_C},
+			{ "scanline-filter-d", required_argument, nullptr, OPT_SCANLINES_D},
+
+			//debugging
+			#ifdef GDB_STUB
+				{ "arm9gdb", required_argument, nullptr, OPT_ARM9GDB},
+				{ "arm7gdb", required_argument, nullptr, OPT_ARM7GDB},
+			#endif
+
+			//utilities
+			{ "advanscene-import", required_argument, nullptr, OPT_ADVANSCENE},
+				
+			{0,0,0,0}
+		};
+
+		int c = getopt_long(argc,argv,"",long_options,&option_index);
+		if(c == -1)
+			break;
+
+		switch(c)
+		{
+		case 0: break;
+
+		//user settings
+		case OPT_NUMCORES: _num_cores = atoi(optarg); break;
+		case OPT_SPU_METHOD: _spu_sync_method = atoi(optarg); break;
+
+		//sync settings
+		case OPT_JIT_SIZE: _jit_size = atoi(optarg); break;
+
+		//system equipment
+		case OPT_CONSOLE_TYPE: console_type = optarg; break;
+		case OPT_ARM9: _bios_arm9 = strdup(_bios_arm9); break;
+		case OPT_ARM7: _bios_arm7 = strdup(_bios_arm7); break;
+
+		//slot-1 contents
+		case OPT_SLOT1: slot1 = strtoupper(optarg); break;
+		case OPT_SLOT1_FAT_DIR: slot1_fat_dir = optarg; break;
+
+		//slot-2 contents
+		case OPT_SLOT2_CFLASH_IMAGE: cflash_image = optarg; break;
+		case OPT_SLOT2_CFLASH_DIR: _cflash_path = optarg; break;
+		case OPT_SLOT2_GBAGAME: _gbaslot_rom = optarg; break;
+
+		//commands
+		case OPT_LOAD_SLOT: load_slot = atoi(optarg);  break;
+		case OPT_PLAY_MOVIE: play_movie_file = optarg; break;
+		case OPT_RECORD_MOVIE: record_movie_file = optarg; break;
+
+		//video filters
+		case OPT_SCANLINES_A: _scanline_filter_a = atoi(optarg); break;
+		case OPT_SCANLINES_B: _scanline_filter_b = atoi(optarg); break;
+		case OPT_SCANLINES_C: _scanline_filter_c = atoi(optarg); break;
+		case OPT_SCANLINES_D: _scanline_filter_d = atoi(optarg); break;
+
+		//debugging
+		case OPT_ARM9GDB: arm9_gdb_port = atoi(optarg); break;
+		case OPT_ARM7GDB: arm7_gdb_port = atoi(optarg); break;
+
+		//utilities
+		case OPT_ADVANSCENE: CommonSettings.run_advanscene_import = optarg; break;
+		}
+	} //arg parsing loop
+
+	if(opt_help)
+	{
+		printf(help_string);
+		exit(1);
 	}
 
-	if(_advanscene_import) CommonSettings.run_advanscene_import = _advanscene_import;
-	if(_slot1_fat_dir) slot1_fat_dir = _slot1_fat_dir;
-	if(_slot1) slot1 = _slot1; slot1 = strtoupper(slot1);
-	if(_console_type) console_type = _console_type;
 	if(_load_to_memory != -1) CommonSettings.loadToMemory = (_load_to_memory == 1)?true:false;
-	if(_play_movie_file) play_movie_file = _play_movie_file;
-	if(_record_movie_file) record_movie_file = _record_movie_file;
-	if(_cflash_image) cflash_image = _cflash_image;
-	if(_cflash_path) cflash_path = _cflash_path;
-	if(_gbaslot_rom) gbaslot_rom = _gbaslot_rom;
-
 	if(_num_cores != -1) CommonSettings.num_cores = _num_cores;
 	if(_rigorous_timing) CommonSettings.rigorous_timing = true;
 	if(_advanced_timing != -1) CommonSettings.advanced_timing = _advanced_timing==1;
+
 #ifdef HAVE_JIT
 	if(_cpu_mode != -1) CommonSettings.use_jit = (_cpu_mode==1);
 	if(_jit_size != -1) 
@@ -203,11 +345,17 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_spu_sync_method != -1) CommonSettings.SPU_sync_method = _spu_sync_method;
 	if(_spu_advanced) CommonSettings.spu_advanced = true;
 
-	if (argc == 2)
-		nds_file = argv[1];
-	if (argc > 2)
-		return false;
+	free(_bios_arm9);
+	free(_bios_arm7);
+	_bios_arm9 = _bios_arm7 = nullptr;
 
+	//remaining argument should be an NDS file, and nothing more
+	int remain = argc-optind;
+	if(remain==1)
+		nds_file = argv[optind];
+	else if(remain>1)
+		return false;
+	
 	return true;
 }
 
@@ -216,69 +364,69 @@ bool CommandLine::validate()
 	if(slot1 != "")
 	{
 		if(slot1 != "R4" && slot1 != "RETAIL" && slot1 != "NONE" && slot1 != "RETAILNAND") {
-			g_printerr("Invalid slot1 device specified.\n");
+			printerror("Invalid slot1 device specified.\n");
 			return false;
 		}
 	}
 
 	if (_load_to_memory < -1 || _load_to_memory > 1) {
-		g_printerr("Invalid parameter (0 - stream from disk, 1 - from RAM)\n");
+		printerror("Invalid parameter (0 - stream from disk, 1 - from RAM)\n");
 		return false;
 	}
 
 	if (_spu_sync_mode < -1 || _spu_sync_mode > 1) {
-		g_printerr("Invalid parameter\n");
+		printerror("Invalid parameter\n");
 		return false;
 	}
 
 	if (_spu_sync_method < -1 || _spu_sync_method > 2) {
-		g_printerr("Invalid parameter\n");
+		printerror("Invalid parameter\n");
 		return false;
 	}
 
 	if (load_slot < -1 || load_slot > 10) {
-		g_printerr("I only know how to load from slots 0-10; -1 means 'do not load savegame' and is default\n");
+		printerror("I only know how to load from slots 0-10; -1 means 'do not load savegame' and is default\n");
 		return false;
 	}
 
 	if(play_movie_file != "" && record_movie_file != "") {
-		g_printerr("Cannot both play and record a movie.\n");
+		printerror("Cannot both play and record a movie.\n");
 		return false;
 	}
 
 	if(record_movie_file != "" && load_slot != -1) {
-		g_printerr("Cannot both record a movie and load a savestate.\n");
+		printerror("Cannot both record a movie and load a savestate.\n");
 		return false;
 	}
 
 	if(cflash_path != "" && cflash_image != "") {
-		g_printerr("Cannot specify both cflash-image and cflash-path.\n");
+		printerror("Cannot specify both cflash-image and cflash-path.\n");
 		return false;
 	}
 
 	if((_bios_arm9 && !_bios_arm7) || (_bios_arm7 && !_bios_arm9)) {
-		g_printerr("If either bios-arm7 or bios-arm9 are specified, both must be.\n");
+		printerror("If either bios-arm7 or bios-arm9 are specified, both must be.\n");
 		return false;
 	}
 
 	if(_bios_swi && (!_bios_arm7 || !_bios_arm9)) {
-		g_printerr("If either bios-swi is used, bios-arm9 and bios-arm7 must be specified.\n");
+		printerror("If either bios-swi is used, bios-arm9 and bios-arm7 must be specified.\n");
 	}
 
 	if((_cflash_image && _gbaslot_rom) || (_cflash_path && _gbaslot_rom)) {
-		g_printerr("Cannot specify both cflash and gbaslot rom (both occupy SLOT-2)\n");
+		printerror("Cannot specify both cflash and gbaslot rom (both occupy SLOT-2)\n");
 	}
 
 	if (autodetect_method < -1 || autodetect_method > 1) {
-		g_printerr("Invalid autodetect save method (0 - internal, 1 - from database)\n");
+		printerror("Invalid autodetect save method (0 - internal, 1 - from database)\n");
 	}
 
 #ifdef HAVE_JIT
 	if (_cpu_mode < -1 || _cpu_mode > 1) {
-		g_printerr("Invalid cpu mode emulation (0 - interpreter, 1 - dynarec)\n");
+		printerror("Invalid cpu mode emulation (0 - interpreter, 1 - dynarec)\n");
 	}
 	if (_jit_size < -1 && (_jit_size == 0 || _jit_size > 100)) {
-		g_printerr("Invalid jit block size [1..100]. set to 100\n");
+		printerror("Invalid jit block size [1..100]. set to 100\n");
 	}
 #endif
 
@@ -288,8 +436,8 @@ bool CommandLine::validate()
 void CommandLine::errorHelp(const char* binName)
 {
 	//TODO - strip this down to just the filename
-	g_printerr("USAGE: %s [options] [nds-file]\n", binName);
-	g_printerr("USAGE: %s --help    - for help\n", binName);
+	printerror("USAGE: %s [options] [nds-file]\n", binName);
+	printerror("USAGE: %s --help    - for help\n", binName);
 }
 
 void CommandLine::process_movieCommands()
