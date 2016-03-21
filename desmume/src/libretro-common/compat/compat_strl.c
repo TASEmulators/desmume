@@ -29,7 +29,7 @@
 
 /* Implementation of strlcpy()/strlcat() based on OpenBSD. */
 
-size_t strlcpy_retro__(char *dest, const char *source, size_t size)
+size_t strlcpy(char *dest, const char *source, size_t size)
 {
    size_t src_size = 0;
    size_t n = size;
@@ -46,7 +46,7 @@ size_t strlcpy_retro__(char *dest, const char *source, size_t size)
    return src_size;
 }
 
-size_t strlcat_retro__(char *dest, const char *source, size_t size)
+size_t strlcat(char *dest, const char *source, size_t size)
 {
    size_t len = strlen(dest);
 

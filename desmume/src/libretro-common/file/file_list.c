@@ -23,10 +23,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <retro_common.h>
 #include <file/file_list.h>
 #include <compat/strcasestr.h>
-#include <compat/posix_string.h>
-#include <compat/strl.h>
 
 void file_list_push(file_list_t *list,
       const char *path, const char *label,
