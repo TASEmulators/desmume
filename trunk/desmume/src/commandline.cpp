@@ -88,57 +88,65 @@ static std::string strtoupper(const std::string& str)
 
 #define ENDL "\n"
 static const char* help_string = \
-"Arguments affecting overall emulator behaviour: (`user settings`)" ENDL
+"Arguments affecting overall emulator behaviour: (`user settings`):" ENDL
 " --num-cores N              Override numcores detection and use this many" ENDL
-" --spu-synch                Enable SPU synch (crackles; helps streams; default ON)" ENDL
+" --spu-synch                Use SPU synch (crackles; helps streams; default ON)" ENDL
 " --spu-method N             Select SPU synch method: 0:N, 1:Z, 2:P; default 0" ENDL
 #ifndef HOST_WINDOWS 
 " --disable-sound            Disables the sound output" ENDL
 " --disable-limiter          Disables the 60fps limiter" ENDL
 " --nojoy                    Disables joystick support" ENDL
 #endif
+ENDL
 "Arguments affecting overall emulation parameters (`sync settings`): " ENDL
 #ifdef HAVE_JIT
 " --jit-enable               Formerly --cpu-mode; default OFF" ENDL
-" --jit-size N               JIT block size: 1-100; 1:accurate, 100:fast (default)" ENDL
+" --jit-size N               JIT block size 1-100; 1:accurate 100:fast (default)" ENDL
 #endif
 " --advanced-timing          Use advanced bus-level timing; default ON" ENDL
 " --rigorous-timing          Use more realistic component timings; default OFF" ENDL
 " --spu-advanced             Enable advanced SPU capture functions (reverb)" ENDL
 " --backupmem-db             Use DB for autodetecting backup memory type" ENDL
+ENDL
 "Arguments affecting the emulated requipment:" ENDL
-" console-type [FAT|LITE|IQUE|DEBUG|DSI]"
+" --console-type [FAT|LITE|IQUE|DEBUG|DSI]" ENDL
 "                            Select basic console type; default FAT" ENDL
 " --bios-arm9 BIN_FILE       Uses the ARM9 BIOS provided at the specified path" ENDL
 " --bios-arm7 BIN_FILE       Uses the ARM7 BIOS provided at the specified path" ENDL
-" --bios-swi                 Uses SWI from the provided bios files (otherwise HLE)" ENDL
+" --bios-swi                 Uses SWI from the provided bios files (else HLE)" ENDL
+ENDL
 "Arguments affecting contents of SLOT-1:" ENDL
 " --slot1 [RETAIL|RETAILAUTO|R4|RETAILNAND|RETAILMCDROM|RETAILDEBUG]" ENDL
 "                            Device type to be used SLOT-1; default RETAILAUTO" ENDL
 " --preload-rom              precache ROM to RAM instead of streaming from disk" ENDL
 " --slot1-fat-dir DIR        Directory to mount for SLOT-1 flash cards" ENDL
+ENDL
 "Arguments affecting contents of SLOT-2:" ENDL
 " --cflash-image IMG_FILE    Mounts cflash in SLOT-2 with specified image file" ENDL
 " --cflash-path DIR          Mounts cflash in SLOT-2 with FS rooted at DIR" ENDL
-" --cflash-path GBA_FILE     Mounts GBA specified rom in SLOT-2" ENDL
+" --gbaslot-rom GBA_FILE     Mounts GBA specified rom in SLOT-2" ENDL
+ENDL
 "Commands taking place after ROM is loaded: (be sure to specify a ROM!)" ENDL
 " --start-paused             emulation should start paused" ENDL
 " --load-slot N              loads savestate from slot N (0-9)" ENDL
 " --play-movie DSM_FILE      automatically plays movie" ENDL
 " --record-movie DSM_FILE    begin recording a movie" ENDL
-"Arguments affecting video filters" ENDL
+ENDL
+"Arguments affecting video filters:" ENDL
 " --scanline-filter-a N      Fadeout intensity (N/16) (topleft) (default 0)" ENDL
 " --scanline-filter-b N      Fadeout intensity (N/16) (topright) (default 2)" ENDL
 " --scanline-filter-c N      Fadeout intensity (N/16) (bottomleft) (default 2)" ENDL
 " --scanline-filter-d N      Fadeout intensity (N/16) (bottomright) (default 4)" ENDL
+ENDL
 #ifdef GDB_STUB
-"Arguments affecting debugging features" ENDL
+"Arguments affecting debugging features:" ENDL
 " --arm9gdb                  Enable the ARM9 GDB stub on the given port" ENDL
 " --arm7gdb                  Enable the ARM7 GDB stub on the given port" ENDL
+ENDL
 #endif
-"Utility commands which occur in place of emulation" ENDL
+"Utility commands which occur in place of emulation:" ENDL
 " --advanscene-import PATH   Import advanscene, dump .ddb, and exit" ENDL
-"" ENDL
+ENDL
 "These arguments may be reorganized/renamed in the future." ENDL
 ;
 
