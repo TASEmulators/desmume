@@ -48,7 +48,7 @@
 #endif
 #endif // HOST_WINDOWS
 
-slock *cpu_mutex;
+slock *cpu_mutex = NULL;
 
 #ifdef __GNUC__
 #define UNUSED_PARM( parm) parm __attribute__((unused))
@@ -154,22 +154,34 @@ enum target_signal
 
 void gdbstub_mutex_init()
 {
+  if (cpu_mutex != NULL)
+  {
+    gdbstub_mutex_destroy();
+  }
+	
   cpu_mutex = slock_new();
 }
 
 void gdbstub_mutex_destroy()
 {
   slock_free(cpu_mutex);
+  cpu_mutex = NULL;
 }
 
 void gdbstub_mutex_lock()
 {
-  slock_lock(cpu_mutex);
+  if (cpu_mutex != NULL)
+  {
+    slock_lock(cpu_mutex);
+  }
 }
 
 void gdbstub_mutex_unlock()
 {
-  slock_unlock(cpu_mutex);
+  if (cpu_mutex != NULL)
+  {
+    slock_unlock(cpu_mutex);
+  }
 }
 
 static void
