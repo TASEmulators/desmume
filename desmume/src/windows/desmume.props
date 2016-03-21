@@ -17,8 +17,8 @@
 		<NDS_VisualStudioName Condition="'$(VisualStudioVersion)' == '14.0'">VS2015</NDS_VisualStudioName>
 		<IntDir>$(SolutionDir).obj\$(NDS_VisualStudioName)-$(Platform)-$(Configuration)\</IntDir>
 		<OutDir>$(SolutionDir)__bins\</OutDir>
-		<TargetName Condition="'$(Platform)' == 'x64'">DeSmuME-$(NDS_VisualStudioName)-$(ProjectName)-x64-$(Configuration)</TargetName>
-		<TargetName>DeSmuME-$(NDS_VisualStudioName)-$(Configuration)</TargetName>
+		<TargetName>$(ProjectName)-$(NDS_VisualStudioName)-$(Configuration)</TargetName>
+		<TargetName Condition="'$(Platform)' == 'x64'">$(ProjectName)-$(NDS_VisualStudioName)-x64-$(Configuration)</TargetName>
 		<TargetPath>$(OutDir)$(TargetName).exe</TargetPath>
 	</PropertyGroup>
 
@@ -172,6 +172,7 @@
 	</UsingTask>
 
 	<Target Name="UNDUPOBJ">
+		<message importance="high" text="PLATFORM: $(Platform)"/>
 	  <!-- see stackoverflow topics for discussion on why we need to do some loopy copying stuff here -->
 	  <ItemGroup>
 	    <ClCompileCopy Include="@(ClCompile)"/>
