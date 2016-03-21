@@ -26,70 +26,79 @@
 
 bool string_is_empty(const char *data)
 {
-	char **str = NULL;
+   return data==NULL || *data=='\0';
+}
 
-	if (!data)
-		return true;
+bool string_is_equal(const char *a, const char *b)
+{
+   if (!a || !b)
+      return false;
+   return (strcmp(a, b) == 0);
+}
 
-	str = (char**)&data;
-	if (**str == '\0')
-		return true;
-	return false;
+bool string_is_equal_noncase(const char *a, const char *b)
+{
+   if (!a || !b)
+      return false;
+   return (strcasecmp(a, b) == 0);
 }
 
 char *string_to_upper(char *s)
 {
-   unsigned char *ucs = (unsigned char *)s;
-   for ( ; *ucs != '\0'; ucs++)
-      *ucs = toupper(*ucs);
+   char *cs = (char *)s;
+   for ( ; *cs != '\0'; cs++)
+      *cs = toupper(*cs);
    return s;
 }
 
-char *string_replace_substring(const char *in, const char *pattern, const char *replacement)
+char *string_to_lower(char *s)
 {
-   char *needle           = NULL;
-   char *newstr           = NULL;
-   char *head             = NULL;
-   size_t pattern_len     = 0;
-   size_t replacement_len = 0;
+   char *cs = (char *)s;
+   for ( ; *cs != '\0'; cs++)
+      *cs = tolower(*cs);
+   return s;
+}
 
+char *string_replace_substring(const char *in,
+      const char *pattern, const char *replacement)
+{
+   size_t numhits, pattern_len, replacement_len, outlen;
+   const char *inat;
+   const char *inprev;
+   char *out, *outat;
+   
    /* if either pattern or replacement is NULL,
     * duplicate in and let caller handle it. */
    if (!pattern || !replacement)
       return strdup(in);
-
+   
    pattern_len     = strlen(pattern);
    replacement_len = strlen(replacement);
+   numhits         = 0;
+   inat            = in;
 
-   newstr          = strdup(in);
-   head            = newstr;
-
-   while ((needle = strstr(head, pattern)))
+   while ((inat = strstr(inat, pattern)))
    {
-      char      *oldstr = newstr;
-      size_t oldstr_len = strlen(oldstr);
-
-      newstr = (char*)malloc(oldstr_len - pattern_len + replacement_len + 1);
-
-      if (!newstr)
-      {
-         /* Failed to allocate memory,
-          * free old string and return NULL. */
-         free(oldstr);
-         return NULL;
-      }
-
-      memcpy(newstr, oldstr, needle - oldstr);
-      memcpy(newstr + (needle - oldstr), replacement, replacement_len);
-      memcpy(newstr + (needle - oldstr) + replacement_len,
-            needle + pattern_len,
-            oldstr_len - pattern_len - (needle - oldstr));
-      newstr[oldstr_len - pattern_len + replacement_len] = '\0';
-
-      /* Move back head right after the last replacement. */
-      head = newstr + (needle - oldstr) + replacement_len;
-      free(oldstr);
+      inat += pattern_len;
+      numhits++;
    }
+   
+   outlen          = strlen(in) - pattern_len*numhits + replacement_len*numhits;
+   out             = (char *)malloc(outlen+1);
+   outat           = out;
+   inat            = in;
+   inprev          = in;
 
-   return newstr;
+   while ((inat = strstr(inat, pattern)))
+   {
+      memcpy(outat, inprev, inat-inprev);
+      outat += inat-inprev;
+      memcpy(outat, replacement, replacement_len);
+      outat += replacement_len;
+      inat += pattern_len;
+      inprev = inat;
+   }
+   strcpy(outat, inprev);
+   
+   return out;
 }

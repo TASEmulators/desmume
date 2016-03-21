@@ -112,6 +112,9 @@
     <Filter Include="Core\libretro-common\compat">
       <UniqueIdentifier>{334a6ab8-9fe9-4577-983a-10f3b6fa95b9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\libretro-common\hash">
+      <UniqueIdentifier>{23ac753a-66cd-40c8-92c3-90f145eaf022}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\aggdraw.cpp">
@@ -903,26 +906,59 @@
     <ClCompile Include="..\libretro-common\formats\bmp\rbmp_encode.c">
       <Filter>Core\libretro-common\formats\bmp</Filter>
     </ClCompile>
-    <ClCompile Include="..\libretro-common\file\retro_file.c">
-      <Filter>Core\libretro-common\file</Filter>
-    </ClCompile>
     <ClCompile Include="..\libretro-common\file\nbio\nbio_stdio.c">
       <Filter>Core\libretro-common\file\nbio</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libretro-common\file\file_extract.c">
-      <Filter>Core\libretro-common\file</Filter>
     </ClCompile>
     <ClCompile Include="..\libretro-common\string\string_list.c">
       <Filter>Core\libretro-common\string</Filter>
     </ClCompile>
-    <ClCompile Include="..\libretro-common\compat\compat.c">
+    <ClCompile Include="..\libretro-common\compat\compat_posix_string.c">
       <Filter>Core\libretro-common\compat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libretro-common\file\file_path.c">
+    <ClCompile Include="..\libretro-common\compat\compat_strcasestr.c">
+      <Filter>Core\libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\compat\compat_strl.c">
+      <Filter>Core\libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\compat\compat_getopt.c">
+      <Filter>Core\libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\compat\compat_fnmatch.c">
+      <Filter>Core\libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\retro_file.c">
       <Filter>Core\libretro-common\file</Filter>
     </ClCompile>
     <ClCompile Include="..\libretro-common\file\retro_stat.c">
       <Filter>Core\libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\dir_list.c">
+      <Filter>Core\libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\file_archive.c">
+      <Filter>Core\libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\file_archive_zlib.c">
+      <Filter>Core\libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\file_list.c">
+      <Filter>Core\libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\file_path.c">
+      <Filter>Core\libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\memory_stream.c">
+      <Filter>Core\libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\retro_dirent.c">
+      <Filter>Core\libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\hash\rhash.c">
+      <Filter>Core\libretro-common\hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\rthreads\rsemaphore.c">
+      <Filter>Core\libretro-common\rthreads</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

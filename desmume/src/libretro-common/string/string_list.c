@@ -60,7 +60,7 @@ void string_list_free(struct string_list *list)
 static bool string_list_capacity(struct string_list *list, size_t cap)
 {
    struct string_list_elem *new_data = NULL;
-   rarch_assert(cap > list->size);
+   retro_assert(cap > list->size);
 
    new_data = (struct string_list_elem*)
       realloc(list->elems, cap * sizeof(*new_data));
@@ -142,7 +142,7 @@ void string_list_set(struct string_list *list,
       unsigned idx, const char *str)
 {
    free(list->elems[idx].data);
-   rarch_assert(list->elems[idx].data = strdup(str));
+   retro_assert(list->elems[idx].data = strdup(str));
 }
 
 /**
@@ -160,9 +160,9 @@ void string_list_join_concat(char *buffer, size_t size,
 {
    size_t i, len = strlen(buffer);
 
-   rarch_assert(len < size);
+   retro_assert(len < size);
    buffer += len;
-   size -= len;
+   size   -= len;
 
    for (i = 0; i < list->size; i++)
    {
@@ -225,7 +225,7 @@ error:
  *
  * Returns: true (1) if element could be found, otherwise false (0).
  */
-bool string_list_find_elem(const struct string_list *list, const char *elem)
+int string_list_find_elem(const struct string_list *list, const char *elem)
 {
    size_t i;
 
@@ -235,7 +235,7 @@ bool string_list_find_elem(const struct string_list *list, const char *elem)
    for (i = 0; i < list->size; i++)
    {
       if (strcasecmp(list->elems[i].data, elem) == 0)
-         return true;
+         return i+1;
    }
 
    return false;

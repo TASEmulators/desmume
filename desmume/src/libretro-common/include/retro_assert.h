@@ -23,18 +23,14 @@
 #ifndef __RETRO_ASSERT_H
 #define __RETRO_ASSERT_H
 
-#ifdef RARCH_INTERNAL
-#include <retro_log.h>
-#else
 #include <assert.h>
-#endif
 
 #ifdef RARCH_INTERNAL
-#define rarch_assert(cond) do { \
-   if (!(cond)) { RARCH_ERR("Assertion failed at %s:%d.\n", __FILE__, __LINE__); abort(); } \
+#define retro_assert(cond) do { \
+   if (!(cond)) { printf("Assertion failed at %s:%d.\n", __FILE__, __LINE__); abort(); } \
 } while(0)
 #else
-#define rarch_assert(cond) assert(cond)
+#define retro_assert(cond) assert(cond)
 #endif
 
 #endif
