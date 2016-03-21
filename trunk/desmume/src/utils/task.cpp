@@ -19,11 +19,17 @@
 
 #include "types.h"
 #include "task.h"
-#include "rthreads/rthreads.h"
+#include <rthreads/rthreads.h>
 
 #ifdef HOST_WINDOWS
-#include <windows.h>
-#endif
+	#include <windows.h>
+#else
+	#if defined HOST_LINUX
+		#include <unistd.h>
+	#elif defined HOST_BSD || defined HOST_DARWIN
+		#include <sys/sysctl.h>
+	#endif
+#endif // HOST_WINDOWS
 
 // http://stackoverflow.com/questions/150355/programmatically-find-the-number-of-cores-on-a-machine
 int getOnlineCores (void)
