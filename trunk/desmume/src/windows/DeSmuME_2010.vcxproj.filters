@@ -1838,9 +1838,6 @@
     <CustomBuild Include="directx\directx.7z">
       <Filter>Windows\libs</Filter>
     </CustomBuild>
-    <CustomBuild Include="glib-2.20.1\glib-2.20.1.7z">
-      <Filter>Windows\libs</Filter>
-    </CustomBuild>
     <CustomBuild Include="lua\lua.7z">
       <Filter>Windows\libs</Filter>
     </CustomBuild>

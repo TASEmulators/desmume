@@ -67,10 +67,10 @@
 #include "../utils/advanscene.h"
 
 //other random stuff
+#include "rthreads/rthreads.h"
 #include "recentroms.h"
 #include "resource.h"
 #include "CWindow.h"
-#include "gthread.h"
 #include "version.h"
 #include "inputdx.h"
 #include "console.h"
@@ -1881,8 +1881,8 @@ struct DisplayBuffer
 
 volatile int currDisplayBuffer=-1;
 volatile int newestDisplayBuffer=-2;
-GMutex *display_mutex = NULL;
-GThread *display_thread = NULL;
+slock_t *display_mutex = NULL;
+sthread_t *display_thread = NULL;
 volatile bool display_die = false;
 HANDLE display_wakeup_event = INVALID_HANDLE_VALUE;
 
@@ -1937,7 +1937,7 @@ static void DoDisplay(bool firstTime)
 
 	if(AnyLuaActive())
 	{
-		if(g_thread_self() == display_thread)
+		if(sthread_isself(display_thread))
 		{
 			InvokeOnMainThread((void(*)(DWORD))
 				CallRegisteredLuaFunctions, LUACALL_AFTEREMULATIONGUI);
@@ -1976,13 +1976,13 @@ static void DoDisplay(bool firstTime)
 
 void displayProc()
 {
-	g_mutex_lock(display_mutex);
+	slock_lock(display_mutex);
 
 	//find a buffer to display
 	int todo = newestDisplayBuffer;
 	bool alreadyDisplayed = (todo == currDisplayBuffer);
 
-	g_mutex_unlock(display_mutex);
+	slock_unlock(display_mutex);
 	
 	//something new to display:
 	if(!alreadyDisplayed) {
@@ -2014,7 +2014,7 @@ void KillDisplay()
 {
 	display_die = true;
 	SetEvent(display_wakeup_event);
-	g_thread_join(display_thread);
+	sthread_join(display_thread);
 }
 
 void Display()
@@ -2031,14 +2031,11 @@ void Display()
 	{
 		if(display_thread == NULL)
 		{
-			display_mutex = g_mutex_new();
-			display_thread = g_thread_create( (GThreadFunc)displayThread,
-											 NULL,
-											 TRUE,
-											 NULL);
+			display_mutex = slock_new();
+			display_thread = sthread_create(&displayThread, nullptr);
 		}
 
-		g_mutex_lock(display_mutex);
+		slock_lock(display_mutex);
 
 		if(int diff = (currDisplayBuffer+1)%3 - newestDisplayBuffer)
 			newestDisplayBuffer += diff;
@@ -2054,7 +2051,7 @@ void Display()
 		}
 		memcpy(db.buffer,dispInfo.masterCustomBuffer,targetSize);
 
-		g_mutex_unlock(display_mutex);
+		slock_unlock(display_mutex);
 	}
 }
 
@@ -3479,7 +3476,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		timeBeginPeriod (wmTimerRes);
 	}
 
-	g_thread_init (NULL);
 	hAppInst=hThisInstance;
 
 	GetINIPath();
@@ -6319,13 +6315,13 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 
 					{
 						Lock lock(win_backbuffer_sync);
-						if(display_mutex) g_mutex_lock(display_mutex);
+						if(display_mutex) slock_lock(display_mutex);
 						Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
 						video.SetPrescale(CommonSettings.GFX3D_PrescaleHD,1);
 						GPU->SetCustomFramebufferSize(256*video.prescaleHD,192*video.prescaleHD);
 						ScaleScreen(windowSize, false);
 						UpdateScreenRects();
-						if(display_mutex) g_mutex_unlock(display_mutex);
+						if(display_mutex) slock_unlock(display_mutex);
 					}
 
 					WritePrivateProfileBool("3D", "HighResolutionInterpolateColor", CommonSettings.GFX3D_HighResolutionInterpolateColor, IniName);
