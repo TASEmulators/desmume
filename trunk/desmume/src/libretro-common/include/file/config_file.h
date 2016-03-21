@@ -34,33 +34,23 @@ extern "C" {
 
 #include <boolean.h>
 
-struct config_entry_list
-{
-   /* If we got this from an #include,
-    * do not allow overwrite. */
-   bool readonly;
-   char *key;
-   char *value;
-   uint32_t key_hash;
+#define CONFIG_GET_BOOL_BASE(conf, base, var, key) do { \
+   bool tmp = false; \
+   if (config_get_bool(conf, key, &tmp)) \
+      base->var = tmp; \
+} while(0)
 
-   struct config_entry_list *next;
-};
+#define CONFIG_GET_INT_BASE(conf, base, var, key) do { \
+   int tmp = 0; \
+   if (config_get_int(conf, key, &tmp)) \
+      base->var = tmp; \
+} while(0)
 
-struct config_include_list
-{
-   char *path;
-   struct config_include_list *next;
-};
-
-struct config_file
-{
-   char *path;
-   struct config_entry_list *entries;
-   struct config_entry_list *tail;
-   unsigned include_depth;
-
-   struct config_include_list *includes;
-};
+#define CONFIG_GET_FLOAT_BASE(conf, base, var, key) do { \
+   float tmp = 0.0f; \
+   if (config_get_float(conf, key, &tmp)) \
+      base->var = tmp; \
+} while(0)
 
 typedef struct config_file config_file_t;
 
@@ -117,8 +107,10 @@ bool config_get_int(config_file_t *conf, const char *entry, int *in);
 /* Extracts an uint from config file. */
 bool config_get_uint(config_file_t *conf, const char *entry, unsigned *in);
 
+#if defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
 /* Extracts an uint64 from config file. */
 bool config_get_uint64(config_file_t *conf, const char *entry, uint64_t *in);
+#endif
 
 /* Extracts an unsigned int from config file treating input as hex. */
 bool config_get_hex(config_file_t *conf, const char *entry, unsigned *in);
@@ -132,11 +124,14 @@ bool config_get_char(config_file_t *conf, const char *entry, char *in);
 bool config_get_string(config_file_t *conf, const char *entry, char **in);
 
 /* Extracts a string to a preallocated buffer. Avoid memory allocation. */
-bool config_get_array(config_file_t *conf, const char *entry, char *in, size_t size);
+bool config_get_array(config_file_t *conf, const char *entry, char *s, size_t len);
 
 /* Extracts a string to a preallocated buffer. Avoid memory allocation.
  * Recognized magic like ~/. Similar to config_get_array() otherwise. */
-bool config_get_path(config_file_t *conf, const char *entry, char *in, size_t size);
+bool config_get_path(config_file_t *conf, const char *entry, char *s, size_t len);
+
+/* Extracts a string to a preallocated buffer. Avoid memory allocation. */
+bool config_get_config_path(config_file_t *conf, char *s, size_t len);
 
 /* Extracts a boolean from config.
  * Valid boolean true are "true" and "1". Valid false are "false" and "0".
@@ -152,6 +147,7 @@ void config_set_hex(config_file_t *conf, const char *entry, unsigned val);
 void config_set_uint64(config_file_t *conf, const char *entry, uint64_t val);
 void config_set_char(config_file_t *conf, const char *entry, char val);
 void config_set_string(config_file_t *conf, const char *entry, const char *val);
+void config_unset(config_file_t *conf, const char *key);
 void config_set_path(config_file_t *conf, const char *entry, const char *val);
 void config_set_bool(config_file_t *conf, const char *entry, bool val);
 

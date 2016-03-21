@@ -47,6 +47,34 @@
 
 #define MAX_INCLUDE_DEPTH 16
 
+struct config_entry_list
+{
+   /* If we got this from an #include,
+    * do not allow overwrite. */
+   bool readonly;
+   char *key;
+   char *value;
+   uint32_t key_hash;
+
+   struct config_entry_list *next;
+};
+
+struct config_include_list
+{
+   char *path;
+   struct config_include_list *next;
+};
+
+struct config_file
+{
+   char *path;
+   struct config_entry_list *entries;
+   struct config_entry_list *tail;
+   unsigned include_depth;
+
+   struct config_include_list *includes;
+};
+
 static config_file_t *config_file_new_internal(const char *path, unsigned depth);
 void config_file_free(config_file_t *conf);
 
@@ -496,7 +524,7 @@ config_file_t *config_file_new(const char *path)
 void config_file_free(config_file_t *conf)
 {
    struct config_include_list *inc_tmp = NULL;
-   struct config_entry_list *tmp = NULL;
+   struct config_entry_list *tmp       = NULL;
    if (!conf)
       return;
 
@@ -504,11 +532,19 @@ void config_file_free(config_file_t *conf)
    while (tmp)
    {
       struct config_entry_list *hold = NULL;
-      free(tmp->key);
-      free(tmp->value);
-      hold = tmp;
-      tmp = tmp->next;
-      free(hold);
+      if (tmp->key)
+         free(tmp->key);
+      if (tmp->value)
+         free(tmp->value);
+
+      tmp->value = NULL;
+      tmp->key   = NULL;
+
+      hold       = tmp;
+      tmp        = tmp->next;
+
+      if (hold)
+         free(hold);
    }
 
    inc_tmp = (struct config_include_list*)conf->includes;
@@ -521,7 +557,8 @@ void config_file_free(config_file_t *conf)
       free(hold);
    }
 
-   free(conf->path);
+   if (conf->path)
+      free(conf->path);
    free(conf);
 }
 
@@ -589,6 +626,7 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
    return entry != NULL && errno == 0;
 }
 
+#if defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
 bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
@@ -604,6 +642,7 @@ bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
 
    return entry != NULL && errno == 0;
 }
+#endif
 
 bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
 {
@@ -660,6 +699,14 @@ bool config_get_string(config_file_t *conf, const char *key, char **str)
       *str = strdup(entry->value);
 
    return entry != NULL;
+}
+
+bool config_get_config_path(config_file_t *conf, char *s, size_t len)
+{
+   if (!conf)
+      return false;
+
+   return strlcpy(s, conf->path, len);
 }
 
 bool config_get_array(config_file_t *conf, const char *key,
@@ -735,6 +782,20 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       conf->entries = entry;
 }
 
+void config_unset(config_file_t *conf, const char *key)
+{
+   struct config_entry_list *last  = conf->entries;
+   struct config_entry_list *entry = config_get_entry(conf, key, &last);
+
+   if (!entry)
+      return;
+
+   entry->key   = NULL;
+   entry->value = NULL;
+   free(entry->key);
+   free(entry->value);
+}
+
 void config_set_path(config_file_t *conf, const char *entry, const char *val)
 {
 #if defined(RARCH_CONSOLE)
@@ -751,8 +812,10 @@ void config_set_double(config_file_t *conf, const char *key, double val)
    char buf[128] = {0};
 #ifdef __cplusplus
    snprintf(buf, sizeof(buf), "%f", (float)val);
-#else
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
    snprintf(buf, sizeof(buf), "%lf", val);
+#else
+   snprintf(buf, sizeof(buf), "%f", (float)val);
 #endif
    config_set_string(conf, key, buf);
 }
@@ -835,7 +898,10 @@ void config_file_dump(config_file_t *conf, FILE *file)
    list = (struct config_entry_list*)conf->entries;
    while (list)
    {
-      if (!list->readonly)
+      if (!list)
+         break;
+
+      if (!list->readonly && list->key)
          fprintf(file, "%s = \"%s\"\n", list->key, list->value);
       list = list->next;
    }

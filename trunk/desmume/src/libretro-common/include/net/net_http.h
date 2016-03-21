@@ -36,6 +36,8 @@ bool net_http_connection_done(struct http_connection_t *conn);
 
 void net_http_connection_free(struct http_connection_t *conn);
 
+const char *net_http_connection_url(struct http_connection_t *conn);
+
 struct http_t *net_http_new(struct http_connection_t *conn);
 
 /* You can use this to call net_http_update 
@@ -48,6 +50,8 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total);
 
 /* 200, 404, or whatever.  */
 int net_http_status(struct http_t *state);
+
+bool net_http_error(struct http_t *state);
 
 /* Returns the downloaded data. The returned buffer is owned by the 
  * HTTP handler; it's freed by net_http_delete. 

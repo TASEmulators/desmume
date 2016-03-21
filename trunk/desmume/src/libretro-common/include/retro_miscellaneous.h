@@ -24,6 +24,7 @@
 #define __RARCH_MISCELLANEOUS_H
 
 #include <stdint.h>
+#include <math.h>
 
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <sys/timer.h>
@@ -56,15 +57,23 @@
 #include <retro_inline.h>
 
 #ifndef PATH_MAX_LENGTH
+#if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(GEKKO)
+#define PATH_MAX_LENGTH 512
+#else
 #define PATH_MAX_LENGTH 4096
 #endif
-
-#ifndef max
-#define max(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
-#ifndef min
-#define min(a, b) ((a) < (b) ? (a) : (b))
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327
+#endif
+
+#ifndef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
@@ -136,13 +145,26 @@ static INLINE uint32_t prev_pow2(uint32_t v)
    return v - (v >> 1);
 }
 
+/**
+ * db_to_gain:
+ * @db          : Decibels.
+ *
+ * Converts decibels to voltage gain.
+ *
+ * Returns: voltage gain value.
+ **/
+static INLINE float db_to_gain(float db)
+{
+   return powf(10.0f, db / 20.0f);
+}
+
 /* Helper macros and struct to keep track of many booleans.
  * To check for multiple bits, use &&, not &.
  * For OR, | can be used. */
 typedef struct
 {
    uint32_t data[8];
-} rarch_bits_t;
+} retro_bits_t;
 
 #define BIT_SET(a, bit)   ((a)[(bit) >> 3] |=  (1 << ((bit) & 7)))
 #define BIT_CLEAR(a, bit) ((a)[(bit) >> 3] &= ~(1 << ((bit) & 7)))

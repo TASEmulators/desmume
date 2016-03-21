@@ -48,7 +48,9 @@ static void dword_write_be(uint8_t *buf, uint32_t val)
 static bool png_write_crc(RFILE *file, const uint8_t *data, size_t size)
 {
    uint8_t crc_raw[4] = {0};
-   uint32_t crc = zlib_crc32_calculate(data, size);
+   const struct file_archive_file_backend *stream_backend = 
+      file_archive_get_default_file_backend();
+   uint32_t crc = stream_backend->stream_crc_calculate(0, data, size);
 
    dword_write_be(crc_raw, crc);
    return retro_fwrite(file, crc_raw, sizeof(crc_raw)) == sizeof(crc_raw);
@@ -213,6 +215,7 @@ static bool rpng_save_image(const char *path,
    bool ret = true;
    struct png_ihdr ihdr = {0};
 
+   const struct file_archive_file_backend *stream_backend = NULL;
    size_t encode_buf_size  = 0;
    uint8_t *encode_buf     = NULL;
    uint8_t *deflate_buf    = NULL;
@@ -224,10 +227,11 @@ static bool rpng_save_image(const char *path,
    uint8_t *prev_encoded   = NULL;
    uint8_t *encode_target  = NULL;
    void *stream            = NULL;
-
-   RFILE *file = retro_fopen(path, RFILE_MODE_WRITE, -1);
+   RFILE *file             = retro_fopen(path, RFILE_MODE_WRITE, -1);
    if (!file)
       GOTO_END_ERROR();
+
+   stream_backend = file_archive_get_default_file_backend();
 
    if (retro_fwrite(file, png_magic, sizeof(png_magic)) != sizeof(png_magic))
       GOTO_END_ERROR();
@@ -321,31 +325,31 @@ static bool rpng_save_image(const char *path,
    if (!deflate_buf)
       GOTO_END_ERROR();
 
-   stream = zlib_stream_new();
+   stream = stream_backend->stream_new();
 
    if (!stream)
       GOTO_END_ERROR();
 
-   zlib_set_stream(
+   stream_backend->stream_set(
          stream,
          encode_buf_size,
          encode_buf_size * 2,
          encode_buf,
          deflate_buf + 8);
 
-   zlib_deflate_init(stream, 9);
+   stream_backend->stream_compress_init(stream, 9);
 
-   if (zlib_deflate_data_to_file(stream) != 1)
+   if (stream_backend->stream_compress_data_to_file(stream) != 1)
    {
-      zlib_stream_deflate_free(stream);
+      stream_backend->stream_compress_free(stream);
       GOTO_END_ERROR();
    }
 
-   zlib_stream_deflate_free(stream);
+   stream_backend->stream_compress_free(stream);
 
    memcpy(deflate_buf + 4, "IDAT", 4);
-   dword_write_be(deflate_buf + 0, zlib_stream_get_total_out(stream));
-   if (!png_write_idat(file, deflate_buf, zlib_stream_get_total_out(stream) + 8))
+   dword_write_be(deflate_buf + 0,        stream_backend->stream_get_total_out(stream));
+   if (!png_write_idat(file, deflate_buf, stream_backend->stream_get_total_out(stream) + 8))
       GOTO_END_ERROR();
 
    if (!png_write_iend(file))
@@ -362,7 +366,7 @@ end:
    free(avg_filtered);
    free(paeth_filtered);
 
-   zlib_stream_free(stream);
+   stream_backend->stream_free(stream);
    return ret;
 }
 

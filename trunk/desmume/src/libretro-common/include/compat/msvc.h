@@ -30,6 +30,9 @@
 #ifndef snprintf
 #define snprintf _snprintf
 #endif
+#ifndef vsnprintf
+#define vsnprintf _vsnprintf
+#endif
 #endif
 
 #undef UNICODE /* Do not bother with UNICODE at this time. */
@@ -51,9 +54,9 @@ typedef int ssize_t;
 #define mkdir(dirname, unused) _mkdir(dirname)
 #define strtoull _strtoui64
 #undef strcasecmp
-#define strcasecmp(x,y) _stricmp(x,y)
+#define strcasecmp _stricmp
 #undef strncasecmp
-#define strncasecmp(x, y, l) _strnicmp(x, y, l)
+#define strncasecmp _strnicmp
 
 /* Disable some of the annoying warnings. */
 #pragma warning(disable : 4800)

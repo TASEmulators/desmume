@@ -11,9 +11,10 @@ endif
 SOURCES_C := 	rpng.c \
 					rpng_encode.c \
 					rpng_test.c \
-					../../compat/compat.c \
+					../../compat/compat_strl.c \
 					../../file/nbio/nbio_stdio.c \
-					../../file/file_extract.c \
+					../../file/file_archive.c \
+					../../file/file_archive_zlib.c \
 					../../file/file_path.c \
 					../../file/retro_file.c \
 					../../string/string_list.c

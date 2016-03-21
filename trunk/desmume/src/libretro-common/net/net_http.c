@@ -1,17 +1,23 @@
-/*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2015 - Daniel De Matteis
- *  Copyright (C) 2014-2015 - Alfred Agrell
- * 
- *  RetroArch is free software: you can redistribute it and/or modify it under the terms
- *  of the GNU General Public License as published by the Free Software Found-
- *  ation, either version 3 of the License, or (at your option) any later version.
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
- *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- *  PURPOSE.  See the GNU General Public License for more details.
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (net_http.c).
+ * ---------------------------------------------------------------------------------------
  *
- *  You should have received a copy of the GNU General Public License along with RetroArch.
- *  If not, see <http://www.gnu.org/licenses/>.
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include <stdio.h>
@@ -68,10 +74,16 @@ static int net_http_new_socket(const char *domain, int port)
 {
    int fd;
 #ifndef _WIN32
+#ifndef VITA
    struct timeval timeout;
+#endif
 #endif
    struct addrinfo hints, *addr = NULL;
    char portstr[16] = {0};
+   
+   /* Initialize the network. */
+   if (!network_init())
+      return -1;
 
    snprintf(portstr, sizeof(portstr), "%i", port);
 
@@ -79,8 +91,8 @@ static int net_http_new_socket(const char *domain, int port)
    hints.ai_family   = AF_UNSPEC;
    hints.ai_socktype = SOCK_STREAM;
    hints.ai_flags    = 0;
-
-   if (getaddrinfo_rarch(domain, portstr, &hints, &addr) < 0)
+   
+   if (getaddrinfo_retro(domain, portstr, &hints, &addr) < 0)
       return -1;
    if (!addr)
       return -1;
@@ -88,19 +100,20 @@ static int net_http_new_socket(const char *domain, int port)
    fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 
 #ifndef _WIN32
+#ifndef VITA
    timeout.tv_sec=4;
    timeout.tv_usec=0;
    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof timeout);
 #endif
-
+#endif
    if (connect(fd, addr->ai_addr, addr->ai_addrlen) != 0)
    {
-      freeaddrinfo_rarch(addr);
+      freeaddrinfo_retro(addr);
       socket_close(fd);
       return -1;
    }
 
-   freeaddrinfo_rarch(addr);
+   freeaddrinfo_retro(addr);
 
    if (!socket_nonblock(fd))
    {
@@ -194,8 +207,7 @@ error:
    if (conn->urlcopy)
       free(conn->urlcopy);
    conn->urlcopy = NULL;
-   if (conn)
-      free(conn);
+   free(conn);
    return NULL;
 }
 
@@ -252,6 +264,11 @@ void net_http_connection_free(struct http_connection_t *conn)
       free(conn->urlcopy);
 
    free(conn);
+}
+
+const char *net_http_connection_url(struct http_connection_t *conn)
+{
+   return conn->urlcopy;
 }
 
 struct http_t *net_http_new(struct http_connection_t *conn)
@@ -517,7 +534,7 @@ fail:
       state->status = -1;
    }
 
-   return false;
+   return true;
 }
 
 int net_http_status(struct http_t *state)
@@ -532,8 +549,7 @@ uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error)
    if (!state)
       return NULL;
 
-   if (!accept_error && 
-         (state->error || state->status<200 || state->status>299))
+   if (!accept_error && net_http_error(state))
    {
       if (len)
          *len=0;
@@ -553,7 +569,10 @@ void net_http_delete(struct http_t *state)
 
    if (state->fd != -1)
       socket_close(state->fd);
-   if (state->data)
-      free(state->data);
    free(state);
+}
+
+bool net_http_error(struct http_t *state)
+{
+   return (state->error || state->status<200 || state->status>299);
 }

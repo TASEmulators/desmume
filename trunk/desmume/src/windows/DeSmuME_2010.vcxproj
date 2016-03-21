@@ -537,15 +537,29 @@
     <ClCompile Include="..\gfx3d.cpp" />
     <ClCompile Include="..\GPU.cpp" />
     <ClCompile Include="..\GPU_OSD.cpp" />
-    <ClCompile Include="..\libretro-common\compat\compat.c" />
-    <ClCompile Include="..\libretro-common\file\file_extract.c" />
+    <ClCompile Include="..\libretro-common\compat\compat_fnmatch.c" />
+    <ClCompile Include="..\libretro-common\compat\compat_getopt.c" />
+    <ClCompile Include="..\libretro-common\compat\compat_posix_string.c" />
+    <ClCompile Include="..\libretro-common\compat\compat_strcasestr.c" />
+    <ClCompile Include="..\libretro-common\compat\compat_strl.c" />
+    <ClCompile Include="..\libretro-common\file\dir_list.c" />
+    <ClCompile Include="..\libretro-common\file\file_archive.c" />
+    <ClCompile Include="..\libretro-common\file\file_archive_zlib.c" />
+    <ClCompile Include="..\libretro-common\file\file_list.c">
+      <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PreprocessToFile>
+    </ClCompile>
     <ClCompile Include="..\libretro-common\file\file_path.c" />
+    <ClCompile Include="..\libretro-common\file\memory_stream.c" />
     <ClCompile Include="..\libretro-common\file\nbio\nbio_stdio.c" />
+    <ClCompile Include="..\libretro-common\file\retro_dirent.c" />
     <ClCompile Include="..\libretro-common\file\retro_file.c" />
     <ClCompile Include="..\libretro-common\file\retro_stat.c" />
     <ClCompile Include="..\libretro-common\formats\bmp\rbmp_encode.c" />
     <ClCompile Include="..\libretro-common\formats\png\rpng.c" />
     <ClCompile Include="..\libretro-common\formats\png\rpng_encode.c" />
+    <ClCompile Include="..\libretro-common\hash\rhash.c" />
+    <ClCompile Include="..\libretro-common\rthreads\rsemaphore.c" />
     <ClCompile Include="..\libretro-common\rthreads\rthreads.c" />
     <ClCompile Include="..\libretro-common\string\string_list.c" />
     <ClCompile Include="..\lua-engine.cpp" />
