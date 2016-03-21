@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (rpng.c).
@@ -32,7 +32,7 @@
 #include <boolean.h>
 #include <file/nbio.h>
 #include <formats/rpng.h>
-#include <file/file_archive.h>
+#include <file/archive_file.h>
 
 #include "rpng_internal.h"
 

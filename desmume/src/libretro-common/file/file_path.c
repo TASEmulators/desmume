@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (file_path.c).
@@ -20,16 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
-
-#ifdef __HAIKU__
-#include <kernel/image.h>
-#endif
 
 #include <sys/stat.h>
 
