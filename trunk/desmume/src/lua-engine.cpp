@@ -178,7 +178,9 @@ static std::map<lua_CFunction, const char*> s_cFuncInfoMap;
 	static int name(lua_State* L)
 
 #ifdef _MSC_VER
-	#define snprintf _snprintf
+	#ifndef snprintf
+		#define snprintf _snprintf
+	#endif
 	#define vscprintf _vscprintf
 #else
 	#define stricmp strcasecmp

@@ -960,6 +960,9 @@
     <ClCompile Include="..\libretro-common\rthreads\rsemaphore.c">
       <Filter>Core\libretro-common\rthreads</Filter>
     </ClCompile>
+    <ClCompile Include="..\libretro-common\compat\compat_snprintf.c">
+      <Filter>Core\libretro-common\compat</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\armcpu.h">

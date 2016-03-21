@@ -540,6 +540,7 @@
     <ClCompile Include="..\libretro-common\compat\compat_fnmatch.c" />
     <ClCompile Include="..\libretro-common\compat\compat_getopt.c" />
     <ClCompile Include="..\libretro-common\compat\compat_posix_string.c" />
+    <ClCompile Include="..\libretro-common\compat\compat_snprintf.c" />
     <ClCompile Include="..\libretro-common\compat\compat_strcasestr.c" />
     <ClCompile Include="..\libretro-common\compat\compat_strl.c" />
     <ClCompile Include="..\libretro-common\file\dir_list.c" />
