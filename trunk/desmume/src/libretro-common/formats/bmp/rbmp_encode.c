@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (rbmp_encode.c).
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <retro_file.h>
+#include <streams/file_stream.h>
 #include <formats/rbmp.h>
 
 static bool write_header_bmp(RFILE *file, unsigned width, unsigned height, bool is32bpp)
@@ -138,11 +138,11 @@ static void dump_line_32_to_24(uint8_t *line, const uint32_t *src, unsigned widt
 }
 
 static void dump_content(RFILE *file, const void *frame,
-      int width, int height, int pitch, rbmp_source_type type)
+      int width, int height, int pitch, enum rbmp_source_type type)
 {
    uint8_t *line;
    size_t line_size;
-   int i, j;
+   int j;
    int bytes_per_pixel = (type==RBMP_SOURCE_TYPE_ARGB8888?4:3);
    union
    {
@@ -202,7 +202,7 @@ static void dump_content(RFILE *file, const void *frame,
 
 bool rbmp_save_image(const char *filename, const void *frame,
       unsigned width, unsigned height,
-      unsigned pitch, rbmp_source_type type)
+      unsigned pitch, enum rbmp_source_type type)
 {
    bool ret;
    RFILE *file = retro_fopen(filename, RFILE_MODE_WRITE, -1);

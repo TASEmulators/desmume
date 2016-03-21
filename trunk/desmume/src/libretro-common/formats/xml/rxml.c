@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (rxml.c).
@@ -29,7 +29,7 @@
 #include <ctype.h>
 
 #include <boolean.h>
-#include <retro_file.h>
+#include <streams/file_stream.h>
 #include <compat/posix_string.h>
 
 #include <formats/rxml.h>
