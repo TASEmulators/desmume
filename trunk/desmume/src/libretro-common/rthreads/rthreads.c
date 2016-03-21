@@ -124,7 +124,7 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 
 #ifdef USE_WIN32_THREADS
    thread->thread = CreateThread(NULL, 0, thread_wrap, data, 0, NULL);
-   thread_created = thread->thread;
+   thread_created = !!thread->thread;
 #else
    thread_created = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
 #endif
@@ -222,7 +222,7 @@ slock_t *slock_new(void)
 
 #ifdef USE_WIN32_THREADS
    lock->lock         = CreateMutex(NULL, FALSE, NULL);
-   mutex_created      = lock->lock;
+   mutex_created      = !!lock->lock;
 #else
    mutex_created      = (pthread_mutex_init(&lock->lock, NULL) == 0);
 #endif
@@ -307,7 +307,7 @@ scond_t *scond_new(void)
 
 #ifdef USE_WIN32_THREADS
    cond->event   = CreateEvent(NULL, FALSE, FALSE, NULL);
-   event_created = cond->event;
+   event_created = !!cond->event;
 #else
    event_created = (pthread_cond_init(&cond->cond, NULL) == 0);
 #endif
