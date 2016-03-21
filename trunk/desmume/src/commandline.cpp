@@ -183,37 +183,37 @@ bool CommandLine::parse(int argc,char **argv)
 		static struct option long_options[] =
 		{
 			//stuff
-			{ "help", no_argument, &opt_help, 0 },
+			{ "help", no_argument, &opt_help, 1 },
 
 			//user settings
 			{ "num-cores", required_argument, nullptr, OPT_NUMCORES },
-			{ "spu-synch", no_argument, &_spu_sync_mode, 0 },
+			{ "spu-synch", no_argument, &_spu_sync_mode, 1 },
 			{ "spu-method", required_argument, nullptr, OPT_SPU_METHOD },
 			#ifndef HOST_WINDOWS 
-				{ "disable-sound", no_argument, &disable_sound, 0}
-				{ "disable-limiter", no_argument, &disable_limiter, 0}
-				{ "nojoy", no_argument, &_commandline_linux_nojoy, 0}
+				{ "disable-sound", no_argument, &disable_sound, 1}
+				{ "disable-limiter", no_argument, &disable_limiter, 1}
+				{ "nojoy", no_argument, &_commandline_linux_nojoy, 1}
 			#endif
 
 			//sync settings
 			#ifdef HAVE_JIT
-				{ "jit-enable", no_argument, &_cpu_mode, 0},
+				{ "jit-enable", no_argument, &_cpu_mode, 1},
 				{ "jit-size", required_argument, &_jit_size}, 
 			#endif
-			{ "rigorous-timing", no_argument, &_spu_advanced, 0},
-			{ "advanced-timing", no_argument, &_rigorous_timing, 0},
-			{ "spu-advanced", no_argument, &_advanced_timing, 0},
-			{ "backupmem-db", no_argument, &autodetect_method, 0},
+			{ "rigorous-timing", no_argument, &_spu_advanced, 1},
+			{ "advanced-timing", no_argument, &_rigorous_timing, 1},
+			{ "spu-advanced", no_argument, &_advanced_timing, 1},
+			{ "backupmem-db", no_argument, &autodetect_method, 1},
 
 			//system equipment
 			{ "console-type", required_argument, nullptr, OPT_CONSOLE_TYPE },
 			{ "bios-arm9", required_argument, nullptr, OPT_ARM9},
 			{ "bios-arm7", required_argument, nullptr, OPT_ARM7},
-			{ "bios-swi", required_argument, &_bios_swi, 0},
+			{ "bios-swi", required_argument, &_bios_swi, 1},
 
 			//slot-1 contents
 			{ "slot1", required_argument, nullptr, OPT_SLOT1},
-			{ "preload-rom", no_argument, &_load_to_memory, 0},
+			{ "preload-rom", no_argument, &_load_to_memory, 1},
 			{ "slot1-fat-dir", required_argument, nullptr, OPT_SLOT1_FAT_DIR},
 
 			//slot-2 contents
@@ -222,7 +222,7 @@ bool CommandLine::parse(int argc,char **argv)
 			{ "gbaslot-rom", required_argument, nullptr, OPT_SLOT2_GBAGAME},
 
 			//commands
-			{ "start-paused", no_argument, &start_paused, 0},
+			{ "start-paused", no_argument, &start_paused, 1},
 			{ "load-slot", required_argument, nullptr, OPT_LOAD_SLOT},
 			{ "play-movie", required_argument, nullptr, OPT_PLAY_MOVIE},
 			{ "record-movie", required_argument, nullptr, OPT_RECORD_MOVIE},
