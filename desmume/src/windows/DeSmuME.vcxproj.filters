@@ -118,6 +118,12 @@
     <Filter Include="Core\libretro-common\include\compat">
       <UniqueIdentifier>{0e38e634-1de6-4c6e-b1d4-8b3f9e77840a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\libretro-common\include\streams">
+      <UniqueIdentifier>{2eba95b4-6c79-43a6-bc38-ae9ce1df54dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\libretro-common\lists">
+      <UniqueIdentifier>{18cba3ce-aaa6-441d-8111-408d0fcef7d2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\aggdraw.cpp">
@@ -912,9 +918,6 @@
     <ClCompile Include="..\libretro-common\file\nbio\nbio_stdio.c">
       <Filter>Core\libretro-common\file\nbio</Filter>
     </ClCompile>
-    <ClCompile Include="..\libretro-common\string\string_list.c">
-      <Filter>Core\libretro-common\string</Filter>
-    </ClCompile>
     <ClCompile Include="..\libretro-common\compat\compat_posix_string.c">
       <Filter>Core\libretro-common\compat</Filter>
     </ClCompile>
@@ -930,28 +933,10 @@
     <ClCompile Include="..\libretro-common\compat\compat_fnmatch.c">
       <Filter>Core\libretro-common\compat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libretro-common\file\retro_file.c">
-      <Filter>Core\libretro-common\file</Filter>
-    </ClCompile>
     <ClCompile Include="..\libretro-common\file\retro_stat.c">
       <Filter>Core\libretro-common\file</Filter>
     </ClCompile>
-    <ClCompile Include="..\libretro-common\file\dir_list.c">
-      <Filter>Core\libretro-common\file</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libretro-common\file\file_archive.c">
-      <Filter>Core\libretro-common\file</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libretro-common\file\file_archive_zlib.c">
-      <Filter>Core\libretro-common\file</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libretro-common\file\file_list.c">
-      <Filter>Core\libretro-common\file</Filter>
-    </ClCompile>
     <ClCompile Include="..\libretro-common\file\file_path.c">
-      <Filter>Core\libretro-common\file</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libretro-common\file\memory_stream.c">
       <Filter>Core\libretro-common\file</Filter>
     </ClCompile>
     <ClCompile Include="..\libretro-common\file\retro_dirent.c">
@@ -965,6 +950,27 @@
     </ClCompile>
     <ClCompile Include="..\libretro-common\compat\compat_snprintf.c">
       <Filter>Core\libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\streams\memory_stream.c">
+      <Filter>Core\libretro-common\include\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\streams\file_stream.c">
+      <Filter>Core\libretro-common\include\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\archive_file.c">
+      <Filter>Core\libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\lists\file_list.c">
+      <Filter>Core\libretro-common\lists</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\lists\string_list.c">
+      <Filter>Core\libretro-common\lists</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\lists\dir_list.c">
+      <Filter>Core\libretro-common\lists</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\archive_file_zlib.c">
+      <Filter>Core\libretro-common\file</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -107,26 +107,23 @@
     <ClCompile Include="..\libretro-common\compat\compat_snprintf.c" />
     <ClCompile Include="..\libretro-common\compat\compat_strcasestr.c" />
     <ClCompile Include="..\libretro-common\compat\compat_strl.c" />
-    <ClCompile Include="..\libretro-common\file\dir_list.c" />
-    <ClCompile Include="..\libretro-common\file\file_archive.c" />
-    <ClCompile Include="..\libretro-common\file\file_archive_zlib.c" />
-    <ClCompile Include="..\libretro-common\file\file_list.c">
-      <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </PreprocessToFile>
-    </ClCompile>
+    <ClCompile Include="..\libretro-common\file\archive_file.c" />
+    <ClCompile Include="..\libretro-common\file\archive_file_zlib.c" />
     <ClCompile Include="..\libretro-common\file\file_path.c" />
-    <ClCompile Include="..\libretro-common\file\memory_stream.c" />
     <ClCompile Include="..\libretro-common\file\nbio\nbio_stdio.c" />
     <ClCompile Include="..\libretro-common\file\retro_dirent.c" />
-    <ClCompile Include="..\libretro-common\file\retro_file.c" />
     <ClCompile Include="..\libretro-common\file\retro_stat.c" />
     <ClCompile Include="..\libretro-common\formats\bmp\rbmp_encode.c" />
     <ClCompile Include="..\libretro-common\formats\png\rpng.c" />
     <ClCompile Include="..\libretro-common\formats\png\rpng_encode.c" />
     <ClCompile Include="..\libretro-common\hash\rhash.c" />
+    <ClCompile Include="..\libretro-common\lists\dir_list.c" />
+    <ClCompile Include="..\libretro-common\lists\file_list.c" />
+    <ClCompile Include="..\libretro-common\lists\string_list.c" />
     <ClCompile Include="..\libretro-common\rthreads\rsemaphore.c" />
     <ClCompile Include="..\libretro-common\rthreads\rthreads.c" />
-    <ClCompile Include="..\libretro-common\string\string_list.c" />
+    <ClCompile Include="..\libretro-common\streams\file_stream.c" />
+    <ClCompile Include="..\libretro-common\streams\memory_stream.c" />
     <ClCompile Include="..\lua-engine.cpp" />
     <ClCompile Include="..\matrix.cpp" />
     <ClCompile Include="..\mc.cpp" />
