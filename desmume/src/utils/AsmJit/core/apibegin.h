@@ -18,8 +18,12 @@
 #pragma warning(disable: 4800) // forcing value to bool 'true' or 'false'
 
 // Rename symbols.
+#ifndef vsnprintf
 #define vsnprintf _vsnprintf
+#endif
+#ifndef snprintf
 #define snprintf _snprintf
+#endif
 
 #endif // _MSC_VER
 

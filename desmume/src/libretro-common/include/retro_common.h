@@ -23,10 +23,14 @@
 #ifndef _LIBRETRO_COMMON_RETRO_COMMON_H
 #define _LIBRETRO_COMMON_RETRO_COMMON_H
 
-//This file is designed to normalize the libretro-common compiling environment.
-//It is not to be used in public API headers, as they should be designed as leanly as possible.
+/*
+This file is designed to normalize the libretro-common compiling environment.
+It is not to be used in public API headers, as they should be designed as leanly as possible.
+Nonetheless.. in the meantime, if you do something like use ssize_t, which is not fully portable, 
+in a public API, you may need this.
+*/
 
-//conditional compilation is handled inside here
+/* conditional compilation is handled inside here */
 #include <compat/msvc.h>
 
 #endif

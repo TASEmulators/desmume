@@ -97,9 +97,6 @@
 #ifdef _MSC_VER 
 	#include <compat/msvc.h>
 
-	#if _MSC_VER < 1900
-		#define snprintf _snprintf
-	#endif
 #else
 	#define WINAPI
 #endif
