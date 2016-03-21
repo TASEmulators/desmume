@@ -1,0 +1,186 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="IntegrityChecks" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+<!-- TODO: define how Dev+ should be built (probably a normal release build) and set a property to generally control that while adding only the dev+ flags (not to mention NOSSE) -->
+
+	<!-- FIX MSBUILD -->
+	<PropertyGroup>
+		<!-- warning MSB8027: Two or more files with the name of X.cpp will produce outputs to the same location. This can lead to an incorrect build result. -->
+		<IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
+		<!-- http://sedodream.com/PermaLink,guid,a5894bad-f2a1-441a-a5b2-74f16c6cf8aa.aspx -->
+		<VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+	</PropertyGroup>
+
+	<!-- General project setup -->
+	<PropertyGroup>
+		<NDS_VisualStudioName Condition="'$(VisualStudioVersion)' == '10.0'">VS2010</NDS_VisualStudioName>
+		<NDS_VisualStudioName Condition="'$(VisualStudioVersion)' == '14.0'">VS2015</NDS_VisualStudioName>
+		<IntDir>$(SolutionDir).obj\$(NDS_VisualStudioName)-$(Platform)-$(Configuration)\</IntDir>
+		<OutDir>$(SolutionDir)__bins\</OutDir>
+		<TargetName Condition="'$(Platform)' == 'x64'">DeSmuME-$(NDS_VisualStudioName)-$(ProjectName)-x64-$(Configuration)</TargetName>
+		<TargetName>DeSmuME-$(NDS_VisualStudioName)-$(Configuration)</TargetName>
+		<TargetPath>$(OutDir)$(TargetName).exe</TargetPath>
+	</PropertyGroup>
+
+	<!-- global optimizations -->
+	<PropertyGroup>
+		<WholeProgramOptimization Condition="'$(Configuration)' == 'Release'">true</WholeProgramOptimization>
+	</PropertyGroup>
+
+	<!--==========================================================================-->
+	<!-- ITEM DEFINITIONS (standard build environment) -->
+
+	<ItemDefinitionGroup>
+
+		<PreBuildEvent>
+			<Command>defaultconfig\SubWCRev.bat</Command>
+		</PreBuildEvent>
+
+		<ClCompile>
+
+			<AdditionalIncludeDirectories>.;..;lua\include;glib-2.20.1\build;.\zlib128;.\zziplib;.\winpcap;userconfig;defaultconfig;.\agg\include;.\agg\examples;directx;File_Extractor;..\libretro-common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+
+			<!-- universal definitions -->
+			<PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_ZLIB_DEFLATE;HAVE_LIBZ;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
+			<!-- BETA_VERSION ? -->
+			<PreprocessorDefinitions Condition="'$(Configuration)' == 'Debug'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(Configuration)' == 'Release'">RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(Configuration)' == 'Release FastBuild'">RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
+
+			<!-- These work together -->
+			<MultiProcessorCompilation>true</MultiProcessorCompilation>
+			<MinimalRebuild>false</MinimalRebuild>
+
+			<!-- Optimization control -->
+			<Optimization Condition="'$(Configuration)' == 'Debug'">Disabled</Optimization>
+			<Optimization Condition="'$(Configuration)' == 'Release'">Full</Optimization>
+			<Optimization Condition="'$(Configuration)' == 'Release Fastbuild'">Full</Optimization>
+			<WholeProgramOptimization Condition="'$(Configuration)' == 'Release'">true</WholeProgramOptimization>
+			<FloatingPointModel>Fast</FloatingPointModel>
+			<EnableEnhancedInstructionSet Condition="'$(Platform)' == 'Win32'">StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+
+			<!-- Debugging control -->
+			<BufferSecurityCheck Condition="'$(Configuration)' == 'Debug'">true</BufferSecurityCheck>
+			<BasicRuntimeChecks  Condition="'$(Configuration)' == 'Debug'">EnableFastChecks</BasicRuntimeChecks>
+
+			<!-- Feature we dont use that bloats release builds anyway -->
+			<RuntimeTypeInfo>false</RuntimeTypeInfo>
+
+			<!-- Features theres no sense in having disabled -->
+			<StringPooling>true</StringPooling>
+
+			<!-- Not sure if we need this yet -->
+			<ExceptionHandling>Sync</ExceptionHandling>
+
+			<!-- Not sure why we chose this, study it later -->
+			<CallingConvention>Cdecl</CallingConvention>
+
+
+			<RuntimeLibrary Condition="'$(Configuration)' == 'Debug'">MultiThreadedDebugDll</RuntimeLibrary>
+			<RuntimeLibrary Condition="'$(Configuration)' != 'Debug'">MultiThreadedDll</RuntimeLibrary>
+
+		</ClCompile>
+
+		<Link>
+			<OutputFile>$(TargetPath)</OutputFile>
+
+			<!-- deps config for x64 -->
+			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'x64'">.\zlib128;agg;.libs;.libs\x64</AdditionalLibraryDirectories>
+			<AdditionalDependencies Condition="'$(Platform)' == 'x64'">directx-x64-ddraw-dinput8-dsound-dxerr8-dxguid.lib;zlib-vc8-x64.lib;agg-2.5-x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+
+			<!-- deps config for Win32 -->
+			<AdditionalLibraryDirectories Condition="'$(Platform)' == 'Win32'">.\zlib128;agg;.libs;.libs\win32</AdditionalLibraryDirectories>
+			<AdditionalDependencies Condition="'$(Platform)' == 'Win32'">directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;zlib-vc8-Win32.lib;agg-2.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
+
+			<!-- special deps config for newer VS -->
+			<AdditionalDependencies Label="Configuration" Condition="'$(VisualStudioVersion)' == '14.0'">legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
+
+			<!-- general deps config -->
+			<AdditionalDependencies>lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<!-- (and windows libs) -->
+			<AdditionalDependencies>vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+
+			<DelayLoadDLLs>lua51.dll</DelayLoadDLLs>
+
+			<!-- debugging options -->
+			<GenerateDebugInformation>true</GenerateDebugInformation>
+			<GenerateMapFile>true</GenerateMapFile>
+
+			<!-- optimization options -->
+			<LinkTimeCodeGeneration Condition="'$(Configuration)' == 'Release'">UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+
+			<!-- random configs -->
+			<SubSystem>Windows</SubSystem>
+			<RandomizedBaseAddress>false</RandomizedBaseAddress>
+			<LinkIncremental>true</LinkIncremental>
+			<TargetMachine Condition="'$(Platform)' == 'x64'">MachineX64</TargetMachine>
+
+			<!-- prebuilt zlib is incompatible with this, and it's useless anyway -->
+			<ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+
+		</Link>
+
+		<Manifest>
+			<AdditionalManifestFiles>DeSmuME_$(Platform).manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
+		</Manifest>
+
+	</ItemDefinitionGroup>
+
+	<!-- ================ UNDUPOBJ ================ -->
+	<!-- relevant topics -->
+	<!-- http://stackoverflow.com/questions/3729515/visual-studio-2010-2008-cant-handle-source-files-with-identical-names-in-diff/26935613 -->
+	<!-- http://stackoverflow.com/questions/7033855/msvc10-mp-builds-not-multicore-across-folders-in-a-project -->
+	<!-- http://stackoverflow.com/questions/18304911/how-can-one-modify-an-itemdefinitiongroup-from-an-msbuild-target -->
+	<!-- other maybe related info -->
+	<!-- http://stackoverflow.com/questions/841913/modify-msbuild-itemgroup-metadata -->
+	<UsingTask TaskName="UNDUPOBJ_TASK" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+	  <ParameterGroup>
+	    <OutputDir ParameterType="System.String" Required="true" />
+	    <ItemList ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+	    <OutputItemList ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+	  </ParameterGroup>
+	  <Task>
+	    <Code><![CDATA[
+	            //general outline: for each item (in ClCompile) assign it to a subdirectory of $(IntDir) by allocating subdirectories 0,1,2, etc., as needed to prevent duplicate filenames from clobbering each other
+	            //this minimizes the number of batches that need to be run, since each subdirectory will necessarily be in a distinct batch due to /Fo specifying that output subdirectory
+
+	            var assignmentMap = new Dictionary<string,int>();
+	            foreach( var item in ItemList )
+	            {
+	              //solve bug e.g. Checkbox.cpp vs CheckBox.cpp
+	              var filename = item.GetMetadata("Filename").ToUpperInvariant(); 
+
+	              //assign reused filenames to increasing numbers
+	              //assign previously unused filenames to 0
+	              int assignment = 0;
+	              if(assignmentMap.TryGetValue(filename, out assignment))
+	                assignmentMap[filename] = ++assignment;
+	              else
+	                assignmentMap[filename] = 0;
+
+	              var thisFileOutdir = Path.Combine(OutputDir,assignment.ToString()) + "/"; //take care it ends in / so /Fo knows it's a directory and not a filename
+	              item.SetMetadata( "ObjectFileName", thisFileOutdir );
+	            }
+
+	            OutputItemList = ItemList;
+	            ItemList = new Microsoft.Build.Framework.ITaskItem[0];
+
+	        ]]></Code>
+	  </Task>
+	</UsingTask>
+
+	<Target Name="UNDUPOBJ">
+	  <!-- see stackoverflow topics for discussion on why we need to do some loopy copying stuff here -->
+	  <ItemGroup>
+	    <ClCompileCopy Include="@(ClCompile)"/>
+	    <ClCompile Remove="@(ClCompile)"/>
+	  </ItemGroup>
+	  <UNDUPOBJ_TASK OutputDir="$(IntDir)" ItemList="@(ClCompileCopy)" OutputItemList="@(ClCompile)">
+	    <Output ItemName="ClCompile" TaskParameter="OutputItemList"/>
+	  </UNDUPOBJ_TASK>
+	</Target>
+	<!-- ================ UNDUPOBJ ================ -->
+
+</Project>
