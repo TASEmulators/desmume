@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2015 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (retro_file.h).
+ * The following license statement only applies to this file (compat_snprintf.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,56 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __RETRO_FILE_H
-#define __RETRO_FILE_H
-
-#include <stdint.h>
-#include <stddef.h>
-
-#include <sys/types.h>
+/* THIS FILE HAS NOT BEEN VALIDATED ON PLATFORMS BESIDES MSVC */
 
 #include <retro_common.h>
-#include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <stdarg.h>
 
-typedef struct RFILE RFILE;
+/* http://stackoverflow.com/questions/2915672/snprintf-and-visual-studio-2010 */
 
-enum
+int c99_vsnprintf_retro__(char *outBuf, size_t size, const char *format, va_list ap)
 {
-   RFILE_MODE_READ = 0,
-   RFILE_MODE_WRITE,
-   RFILE_MODE_READ_WRITE,
+   int count = -1;
 
-   /* There is no garantee these requests will be attended. */
-   RFILE_HINT_UNBUFFERED = 1<<8,
-   RFILE_HINT_MMAP       = 1<<9  /* requires RFILE_MODE_READ */
-};
+   if (size != 0)
+       count = _vsnprintf_s(outBuf, size, _TRUNCATE, format, ap);
+   if (count == -1)
+       count = _vscprintf(format, ap);
 
-RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len);
-
-ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence);
-
-ssize_t retro_fread(RFILE *stream, void *s, size_t len);
-
-ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len);
-
-ssize_t retro_ftell(RFILE *stream);
-
-void retro_frewind(RFILE *stream);
-
-int retro_fclose(RFILE *stream);
-
-int retro_read_file(const char *path, void **buf, ssize_t *len);
-
-bool retro_write_file(const char *path, const void *data, ssize_t size);
-
-int retro_get_fd(RFILE *stream);
-
-#ifdef __cplusplus
+   return count;
 }
-#endif
 
-#endif
+int c99_snprintf_retro__(char *outBuf, size_t size, const char *format, ...)
+{
+   int count;
+   va_list ap;
+
+   va_start(ap, format);
+   count = c99_vsnprintf_retro__(outBuf, size, format, ap);
+   va_end(ap);
+
+   return count;
+}
