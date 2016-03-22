@@ -22,12 +22,6 @@
 //analyze microsoft compilers
 #ifdef _MSC_VER
 	#define HOST_WINDOWS
-	
-	//todo - everyone will want to support this eventually, i suppose
-	#ifndef DESMUME_QT
-		#include "config.h"
-	#endif
-
 #endif //_MSC_VER
 
 // Determine CPU architecture for platforms that don't use the autoconf script
@@ -52,8 +46,6 @@
 
 #ifdef HOST_WINDOWS
 	#define HAVE_LIBAGG
-	#define ENABLE_SSE
-	#define ENABLE_SSE2
 	#ifdef DEVELOPER
 		#define HAVE_LUA
 	#endif
@@ -76,22 +68,6 @@
 	#ifdef __SSSE3__
 		#define ENABLE_SSSE3
 	#endif
-#endif
-
-#ifdef NOSSE
-#undef ENABLE_SSE
-#endif
-
-#ifdef NOSSE2
-#undef ENABLE_SSE2
-#endif
-
-#ifndef ENABLE_SSE2
-#undef ENABLE_SSE3
-#endif
-
-#ifndef ENABLE_SSE3
-#undef ENABLE_SSSE3
 #endif
 
 #ifdef _MSC_VER 
@@ -279,9 +255,9 @@ typedef int desmume_BOOL;
 #endif
 
 #ifdef WORDS_BIGENDIAN
-# define LOCAL_BE
+# define LOCAL_BE 1
 #else
-# define LOCAL_LE
+# define LOCAL_LE 1
 #endif
 
 /* little endian (ds' endianess) to local endianess convert macros */

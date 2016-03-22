@@ -59,15 +59,40 @@
 	#define DESMUME_PLATFORM_STRING ""
 #endif
 
-#ifndef ENABLE_SSE2
-	#ifndef ENABLE_SSE
-		#define DESMUME_CPUEXT_STRING " NOSSE"
-	#else
-		#define DESMUME_CPUEXT_STRING " NOSSE2"
-	#endif
-#else
-	#define DESMUME_CPUEXT_STRING ""
+#define DESMUME_SSE_STRING ""
+#define DESMUME_AVX_STRING ""
+
+#ifdef ENABLE_SSE
+	#undef DESMUME_SSE_STRING
+	#define DESMUME_SSE_STRING " SSE"
 #endif
+#ifdef ENABLE_SSE2
+	#undef DESMUME_SSE_STRING
+	#define DESMUME_SSE_STRING " SSE2"
+#endif
+#ifdef ENABLE_SSE3
+	#undef DESMUME_SSE_STRING
+	#define DESMUME_SSE_STRING " SSE3"
+#endif
+#ifdef ENABLE_SSSE3
+	#undef DESMUME_SSE_STRING
+	#define DESMUME_SSE_STRING " SSSE3"
+#endif
+#ifdef ENABLE_SSE4
+	#undef DESMUME_SSE_STRING
+	#define DESMUME_SSE_STRING " SSE4"
+#endif
+#ifdef ENABLE_AVX
+	#undef DESMUME_AVX_STRING
+	#define DESMUME_AVX_STRING "+AVX"
+#endif
+#ifdef ENABLE_AVX2
+	#undef DESMUME_AVX_STRING
+	#define DESMUME_AVX_STRING "+AVX2"
+#endif
+
+#define DESMUME_CPUEXT_STRING DESMUME_SSE_STRING DESMUME_AVX_STRING
+
 
 #ifdef DEVELOPER
 	#define DESMUME_FEATURE_STRING " dev+"
