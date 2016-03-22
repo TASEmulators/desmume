@@ -112,8 +112,9 @@
 			<RuntimeLibrary Condition="'$(Configuration)' != 'Debug'">MultiThreadedDll</RuntimeLibrary>
 
 			<!-- optimizatons / instruction sets -->
-			<EnableEnhancedInstructionSet Condition="'$(SSE_Level)' >= '10'">StreamingSIMDExtensions</EnableEnhancedInstructionSet>
-			<EnableEnhancedInstructionSet Condition="'$(SSE_Level)' >= '20'">StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+			<!-- don't specifically issue SSE1 or SSE2 to vs2015 x64, it doesn't like to see it (SSE1 is impossible on x64 anyway) -->
+			<EnableEnhancedInstructionSet Condition="'$(SSE_Level)' >= '10' AND !('$(NDS_VSVER)' &gt;= '14' AND '$(Platform)' == 'x64')">StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+			<EnableEnhancedInstructionSet Condition="'$(SSE_Level)' >= '20' AND !('$(NDS_VSVER)' &gt;= '14' AND '$(Platform)' == 'x64')">StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
 			<EnableEnhancedInstructionSet Condition="'$(SSE_Level)' >= '30'">StreamingSIMDExtensions3</EnableEnhancedInstructionSet>
 			<EnableEnhancedInstructionSet Condition="'$(AVX_Level)' >= '10'">AdvancedVectorExtensions</EnableEnhancedInstructionSet>
 			<EnableEnhancedInstructionSet Condition="'$(AVX_Level)' >= '20'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
