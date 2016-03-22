@@ -72,13 +72,7 @@
     <ClCompile Include="..\arm_jit.cpp" />
     <ClCompile Include="..\bios.cpp" />
     <ClCompile Include="..\cheatSystem.cpp" />
-    <ClCompile Include="..\commandline.cpp">
-      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Dev+|Win32'">Cdecl</CallingConvention>
-      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
-      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|Win32'">Cdecl</CallingConvention>
-      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Cdecl</CallingConvention>
-      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release Fastbuild|x64'">Cdecl</CallingConvention>
-    </ClCompile>
+    <ClCompile Include="..\commandline.cpp" />
     <ClCompile Include="..\common.cpp" />
     <ClCompile Include="..\cp15.cpp" />
     <ClCompile Include="..\debug.cpp" />
@@ -587,7 +581,6 @@
     <ClInclude Include="throttle.h" />
     <ClInclude Include="winpcap.h" />
     <ClInclude Include="winutil.h" />
-    <ClInclude Include="userconfig\userconfig.h" />
     <ClInclude Include="disView.h" />
     <ClInclude Include="ginfo.h" />
     <ClInclude Include="IORegView.h" />

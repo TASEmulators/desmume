@@ -28,9 +28,6 @@
     <Filter Include="Windows">
       <UniqueIdentifier>{56813aa6-2261-4011-8938-105c0b4b3773}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Windows\userconfig">
-      <UniqueIdentifier>{78bb8fa0-5d56-4cf5-94b3-b020f4f4c290}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Windows\tools">
       <UniqueIdentifier>{947281ba-49a1-4379-ab51-078980176832}</UniqueIdentifier>
     </Filter>
@@ -1231,9 +1228,6 @@
     </ClInclude>
     <ClInclude Include="winutil.h">
       <Filter>Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="userconfig\userconfig.h">
-      <Filter>Windows\userconfig</Filter>
     </ClInclude>
     <ClInclude Include="disView.h">
       <Filter>Windows\tools</Filter>
