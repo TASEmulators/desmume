@@ -322,6 +322,8 @@ CToolBar* MainWindowToolbar;
 
 DWORD hKeyInputTimer;
 bool start_paused;
+extern bool killStylusTopScreen;
+extern bool killStylusOffScreen;
 
 extern LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void InitRamSearch();
@@ -5082,10 +5084,39 @@ DOKEYDOWN:
 				const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUEngineID_Main);
 				if ((video.layout == 2) && ((video.swap == 0) || (video.swap == 2 && isMainGPUFirst) || (video.swap == 3 && !isMainGPUFirst))) return 0;
 				
+				bool untouch = false;
 				ToDSScreenRelativeCoords(x,y,1);
-				if(x<0) x = 0; else if(x>255) x = 255;
-				if(y<0) y = 0; else if(y>192) y = 192;
-				NDS_setTouchPos(x, y);
+				if(x<0) 
+				{
+					x = 0; 
+					untouch |= killStylusOffScreen;
+				}
+				if(x>255)
+				{
+					x = 255;
+					untouch |= killStylusOffScreen;
+				}
+				if(y>191)
+				{
+					y = 191;
+					untouch |= killStylusOffScreen;
+				}
+				if(y<-191)
+				{
+					y = -191;
+					untouch |= killStylusOffScreen;
+				}
+				if(y<0)
+				{
+					y = 0; 
+					untouch |= killStylusTopScreen;
+				}
+
+				if(untouch)
+					NDS_releaseTouch();
+				else
+					NDS_setTouchPos(x, y);
+
 				winLastTouch.x = x;
 				winLastTouch.y = y;
 				userTouchesScreen = true;

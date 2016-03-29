@@ -1267,9 +1267,9 @@ BEGIN
     CONTROL         " ",IDC_UPRIGHT,"InputCustom",WS_TABSTOP,163,81,71,12,WS_EX_CLIENTEDGE
     CONTROL         " ",IDC_DWNRIGHT,"InputCustom",WS_TABSTOP,163,94,71,12,WS_EX_CLIENTEDGE
     CONTROL         " ",IDC_DWNLEFT,"InputCustom",WS_TABSTOP,163,107,71,12,WS_EX_CLIENTEDGE
-    PUSHBUTTON      "OK",IDOK,245,119,41,14
-    PUSHBUTTON      "Cancel",IDCANCEL,293,119,39,14
-    LTEXT           "Blue means the button is already mapped.\nPink means it conflicts with a custom hotkey.\nRed means it's reserved by Windows.\nButtons can be disabled using Escape.",IDC_LABEL_BLUE,246,10,80,88
+    PUSHBUTTON      "OK",IDOK,245,129,41,14
+    PUSHBUTTON      "Cancel",IDCANCEL,293,129,39,14
+    LTEXT           "Blue means the button is already mapped.\nPink means it conflicts with a custom hotkey.\nRed means it's reserved by Windows.\nButtons can be disabled using Escape.",IDC_LABEL_BLUE,246,10,80,69
     RTEXT           "UP",IDC_LABEL_UP,10,18,38,8
     RTEXT           "RIGHT",IDC_LABEL_RIGHT,8,58,41,8
     RTEXT           "LEFT",IDC_LABEL_LEFT,11,31,37,8
@@ -1286,12 +1286,14 @@ BEGIN
     RTEXT           "DN RIGHT",IDC_LABEL_DOWNRIGHT,124,97,36,8
     RTEXT           "UP RIGHT",IDC_LABEL_UPRIGHT,124,84,36,8
     RTEXT           "DN LEFT",IDC_LABEL_DOWNLEFT,129,109,31,8
-    CONTROL         "Allow Left+Rt/Up+Dn",IDC_ALLOWLEFTRIGHT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,245,102,87,11
+    CONTROL         "Allow Left+Rt/Up+Dn",IDC_ALLOWLEFTRIGHT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,245,86,87,11
     GROUPBOX        "Buttons",IDC_STATIC,7,7,234,129,0,WS_EX_TRANSPARENT
     CONTROL         "",IDC_LID,"InputCustom",WS_TABSTOP,52,120,71,12,WS_EX_CLIENTEDGE
     RTEXT           "LID",IDC_LABEL_X2,8,121,39,8
     RTEXT           "DEBUG",IDC_LABEL_X3,127,123,29,8
     CONTROL         " ",IDC_DEBUG,"InputCustom",WS_TABSTOP,163,120,71,12,WS_EX_CLIENTEDGE
+    CONTROL         "Kill stylus on top screen",IDC_KILLSTYLUSTOP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,245,102,87,11
+    CONTROL         "Kill stylus off-screen",IDC_KILLSTYLUSOFF,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,245,114,87,11
 END
 
 IDD_KEYCUSTOM DIALOGEX 0, 0, 382, 180
@@ -1904,6 +1906,10 @@ BEGIN
     IDD_WIFISETTINGS, DIALOG
     BEGIN
         BOTTOMMARGIN, 140
+    END
+
+    IDD_INPUTCONFIG, DIALOG
+    BEGIN
     END
 
     IDD_GBASLOT_PIANO, DIALOG
