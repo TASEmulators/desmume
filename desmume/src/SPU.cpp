@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	Ideas borrowed from Stephane Dallongeville's SCSP core
 
@@ -1555,9 +1555,10 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 	//we used to use master enable here, and do nothing if audio is disabled.
 	//now, master enable is emulated better..
 	//but for a speed optimization we will still do it
+	//is this still a good idea? zeroing the capture buffers is important...
 	if(!SPU->regs.masteren) return;
 
-	bool advanced = CommonSettings.spu_advanced ;
+	bool advanced = CommonSettings.spu_advanced;
 
 	//branch here so that slow computers don't have to take the advanced (slower) codepath.
 	//it remainds to be seen exactly how much slower it is
@@ -1582,7 +1583,44 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 			// Mix audio
 			_SPU_ChanUpdate(!CommonSettings.spu_muteChannels[i] && actuallyMix, SPU, chan);
 		}
-	}
+
+		//zero out capture buffers - effectively transform no-advanced-spu-emulation to capturing-zeroes
+		//this is needed so when the option is changed (or a state with a different setting is loaded)
+		//this code is bulkier and slower than it might otherwise be to reduce the chance of bugs 
+		//IDEALLY the non-advanced codepath would be removed (while the advanced codepath was optimized and improved)
+		//and this code would disappear, to be replaced with code more capable of emitting zeroes at the opportune time.
+		for(int capchan=0;capchan<2;capchan++)
+		{
+			SPU_struct::REGS::CAP& cap = SPU->regs.cap[capchan];
+			if(cap.runtime.running)
+			{
+				for(int samp=0;samp<length;samp++)
+				{
+					u32 last = sputrunc(cap.runtime.sampcnt);
+					cap.runtime.sampcnt += SPU->channels[1+2*capchan].sampinc;
+					u32 curr = sputrunc(cap.runtime.sampcnt);
+					for(u32 j=last;j<curr;j++)
+					{
+						if(cap.bits8)
+						{
+							_MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,0);
+							cap.runtime.curdad++;
+						}
+						else
+						{
+							_MMU_write16<1,MMU_AT_DMA>(cap.runtime.curdad,0);
+							cap.runtime.curdad+=2;
+						}
+
+						if(cap.runtime.curdad>=cap.runtime.maxdad) {
+							cap.runtime.curdad = cap.dad;
+							cap.runtime.sampcnt -= cap.len*(cap.bits8?4:2);
+						}
+					}
+				}
+			}
+		}
+	} //non-advanced branch
 
 	//we used to bail out if speakers were disabled.
 	//this is technically wrong. sound may still be captured, or something.
@@ -1968,6 +2006,11 @@ void spu_savestate(EMUFILE* os)
 
 bool spu_loadstate(EMUFILE* is, int size)
 {
+	//note! if we load a state created with advanced spu logic on a system without it,
+	//there's a high likelihood of captured data existing.
+	//this would get played back forever without being replaced by captured data.
+	//it's been solved by capturing zeroes though even when advanced spu logic is disabled.
+
 	u64 temp64; 
 	
 	//read version
