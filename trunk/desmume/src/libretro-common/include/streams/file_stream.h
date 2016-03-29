@@ -48,25 +48,25 @@ enum
    RFILE_HINT_MMAP       = 1<<9  /* requires RFILE_MODE_READ */
 };
 
-RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len);
+RFILE *filestream_open(const char *path, unsigned mode, ssize_t len);
 
-ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence);
+ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence);
 
-ssize_t retro_fread(RFILE *stream, void *s, size_t len);
+ssize_t filestream_read(RFILE *stream, void *data, size_t len);
 
-ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len);
+ssize_t filestream_write(RFILE *stream, const void *data, size_t len);
 
-ssize_t retro_ftell(RFILE *stream);
+ssize_t filestream_tell(RFILE *stream);
 
-void retro_frewind(RFILE *stream);
+void filestream_rewind(RFILE *stream);
 
-int retro_fclose(RFILE *stream);
+int filestream_close(RFILE *stream);
 
-int retro_read_file(const char *path, void **buf, ssize_t *len);
+int filestream_read_file(const char *path, void **buf, ssize_t *len);
 
-bool retro_write_file(const char *path, const void *data, ssize_t size);
+bool filestream_write_file(const char *path, const void *data, ssize_t size);
 
-int retro_get_fd(RFILE *stream);
+int filestream_get_fd(RFILE *stream);
 
 #ifdef __cplusplus
 }
