@@ -1,7 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" InitialTargets="UNDUPOBJ" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- desmume customization: set PlatformToolset to an uptodate choice for vs2015 and leave it to the default vs2010 toolset for vs2010 -->
-  <PropertyGroup Label="Configuration" Condition="'$(VisualStudioVersion)' == '14.0'">
+  <!-- NOTE: this breaks RC editing in vs2010. UGH. It's also why we can't do ctrl+f7 in vs2010 either. good grief -->
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == '14.0'">
     <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <ItemGroup Label="ProjectConfigurations">
@@ -46,6 +47,9 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Label="ExtensionSettings">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
     <Import Project="desmume.props" />
