@@ -1020,8 +1020,9 @@ BEGIN
     LTEXT           "in synch mode. Hopefully these will improve.",IDC_STATIC,24,146,139,8
     LTEXT           "Synchronous is more 'accurate' but you may prefer the sound of dual mode if you are running far from 60fps.  Beware that dual mode can clip the ends of sound effects and one-shot instruments.",IDC_STATIC,18,39,158,34
     CONTROL         "Advanced SPU Logic (reboot game after changing)",IDC_SPU_ADVANCED,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,197,79,177,10
-    LTEXT           "This will be necessary to emulate sound capture (reverb and music visualization). This is costly, few games use it, and the effect is unnecessary.  Enable it if your system has power to spare; check the Sound Viewer to see if the game is using capture.",IDC_STATIC,196,91,170,44
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,197,74,177,10
+    LTEXT           "This will be necessary to emulate sound capture (reverb and music visualization). This is costly, few games use it, and the effect is unnecessary.  Enable it if your system has power to spare; check the Sound Viewer to see if the game is using capture.",IDC_STATIC,196,86,177,41
+    LTEXT           "Can cause deterministically visible changes to emulation in principle!!!",IDC_STATIC,196,127,177,17
 END
 
 IDD_SOUND_VIEW DIALOGEX 0, 0, 568, 269
