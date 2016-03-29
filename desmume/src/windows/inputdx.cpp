@@ -259,6 +259,8 @@ SPiano DefaultPiano = { false, 'Z', 'S', 'X', 'D', 'C', 'V', 'G', 'B', 'H', 'N',
 SPaddle Paddle;
 SPaddle DefaultPaddle = { false, 'K', 'L' };
 
+bool killStylusTopScreen = false;
+bool killStylusOffScreen = false;
 bool allowUpAndDown = false;
 bool allowBackgroundInput = false;
 
@@ -469,6 +471,7 @@ static void LoadInputConfig()
 
 	allowUpAndDown = GetPrivateProfileInt("Controls","AllowUpAndDown",0,IniName) != 0;
 	allowBackgroundInput = GetPrivateProfileInt("Controls","AllowBackgroundInput",0,IniName) != 0;
+	killStylusTopScreen = GetPrivateProfileInt("Controls","KillStylusTopScreen",0,IniName) != 0;
 }
 
 static void WriteControl(char* name, WORD val)
@@ -488,6 +491,8 @@ static void SaveInputConfig()
 #undef DO
 
 	WritePrivateProfileInt("Controls","AllowUpAndDown",allowUpAndDown?1:0,IniName);
+	WritePrivateProfileInt("Controls","KillStylusTopScreen",killStylusTopScreen?1:0,IniName);
+	WritePrivateProfileInt("Controls","KillStylusOffScreen",killStylusOffScreen?1:0,IniName);
 }
 
 BOOL di_init()
@@ -2208,6 +2213,8 @@ switch(msg)
 		//SendDlgItemMessage(hDlg,IDC_JPTOGGLE,BM_SETCHECK, Joypad[index].Enabled ? (WPARAM)BST_CHECKED : (WPARAM)BST_UNCHECKED, 0);
 		
 		SendDlgItemMessage(hDlg,IDC_ALLOWLEFTRIGHT,BM_SETCHECK, allowUpAndDown ? (WPARAM)BST_CHECKED : (WPARAM)BST_UNCHECKED, 0);
+		SendDlgItemMessage(hDlg,IDC_KILLSTYLUSTOP,BM_SETCHECK, killStylusTopScreen ? (WPARAM)BST_CHECKED : (WPARAM)BST_UNCHECKED, 0);
+		SendDlgItemMessage(hDlg,IDC_KILLSTYLUSOFF,BM_SETCHECK, killStylusOffScreen ? (WPARAM)BST_CHECKED : (WPARAM)BST_UNCHECKED, 0);
 
 		set_buttoninfo(index,hDlg);
 
@@ -2322,6 +2329,8 @@ switch(msg)
 
 		case IDOK:
 			allowUpAndDown = IsDlgButtonChecked(hDlg, IDC_ALLOWLEFTRIGHT) != 0;
+			killStylusTopScreen = IsDlgButtonChecked(hDlg, IDC_KILLSTYLUSTOP) != 0;
+			killStylusOffScreen = IsDlgButtonChecked(hDlg, IDC_KILLSTYLUSOFF) != 0;
 			SaveInputConfig();
 			EndDialog(hDlg,0);
 			break;

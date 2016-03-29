@@ -998,6 +998,9 @@
 #define IDC_LID                         50037
 #define IDD_INPUTCONFIG                 50038
 #define IDC_LABEL_BLUE1                 50039
+#define IDC_KILLSTYLUS                  50039
+#define IDC_KILLSTYLUSTOP               50039
+#define IDC_KILLSTYLUSOFF               50040
 #define IDC_LUASCRIPT_RESERVE_START     58000
 #define IDC_LUASCRIPT_RESERVE_END       58099
 #define IDD_LUARECENT_RESERVE_START     58100
