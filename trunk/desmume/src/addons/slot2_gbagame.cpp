@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2009 CrazyMax
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -359,15 +359,14 @@ public:
 		
 		printf("GBASlot opening ROM: %s\n", GBACartridge_RomPath.c_str());
 		EMUFILE_FILE *inf = new EMUFILE_FILE(GBACartridge_RomPath, "rb");
-		inf->EnablePositionCache();
 		fROM = inf;
 		if (fROM->fail())
 		{
 			printf(" - Failed\n");
 			Close();
-			
 			return;
 		}
+		inf->EnablePositionCache();
 		
 		romSize = fROM->size();
 		printf(" - Success (%u bytes)\n", romSize);
