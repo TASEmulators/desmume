@@ -36,6 +36,8 @@
 
 #ifdef _MSC_VER
 #include <Windows.h>
+#else
+#include <sys/time.h>
 #endif
 
 bool HudEditorMode = false;
@@ -531,10 +533,9 @@ void DrawHUD()
 		time_t tv_usec = time64 % 1000000;
 		hudTimer = ((s64)tv_sec * 1000) + ((s64)tv_usec/1000);
 	#else
-		time_t t;
+		struct timeval t;
 		gettimeofday (&t, NULL);
-		result->tv_sec = r.tv_sec;
-		result->tv_usec = r.tv_usec;
+		hudTimer = ((s64)t.tv_sec * 1000) + ((s64)t.tv_usec/1000);
 	#endif
 
 	if (HudEditorMode)

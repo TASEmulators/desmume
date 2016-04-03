@@ -320,9 +320,9 @@ WifiComInterface* wifiCom;
 
 #if (WIFI_LOGGING_LEVEL >= 1)
 	#if WIFI_LOG_USE_LOGC
-		#define WIFI_LOG(level, ...) if(level <= WIFI_LOGGING_LEVEL) LOGC(8, "WIFI: "__VA_ARGS__);
+		#define WIFI_LOG(level, ...) if(level <= WIFI_LOGGING_LEVEL) LOGC(8, "WIFI: " __VA_ARGS__);
 	#else
-		#define WIFI_LOG(level, ...) if(level <= WIFI_LOGGING_LEVEL) printf("WIFI: "__VA_ARGS__);
+		#define WIFI_LOG(level, ...) if(level <= WIFI_LOGGING_LEVEL) printf("WIFI: " __VA_ARGS__);
 	#endif
 #else
 #define WIFI_LOG(level, ...) {}
