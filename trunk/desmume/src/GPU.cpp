@@ -6218,11 +6218,9 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 		// Clear displays to black if they are turned off by the user.
 		if (!isFrameSkipRequested)
 		{
-			if (CurrentRenderer->GetRenderNeedsFinish())
+			if ( CurrentRenderer->GetRenderNeedsFinish() && (this->_engineMain->WillRender3DLayer() || this->_engineMain->WillCapture3DLayerDirect()) )
 			{
-				CurrentRenderer->SetFramebufferFlushStates(this->_engineMain->WillRender3DLayer(), this->_engineMain->WillCapture3DLayerDirect());
 				CurrentRenderer->RenderFinish();
-				CurrentRenderer->SetFramebufferFlushStates(true, true);
 				CurrentRenderer->SetRenderNeedsFinish(false);
 				this->_event->DidRender3DEnd();
 			}
