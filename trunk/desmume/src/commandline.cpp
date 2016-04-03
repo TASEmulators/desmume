@@ -198,9 +198,9 @@ bool CommandLine::parse(int argc,char **argv)
 			{ "spu-synch", no_argument, &_spu_sync_mode, 1 },
 			{ "spu-method", required_argument, nullptr, OPT_SPU_METHOD },
 			#ifndef HOST_WINDOWS 
-				{ "disable-sound", no_argument, &disable_sound, 1}
-				{ "disable-limiter", no_argument, &disable_limiter, 1}
-				{ "nojoy", no_argument, &_commandline_linux_nojoy, 1}
+				{ "disable-sound", no_argument, &disable_sound, 1},
+				{ "disable-limiter", no_argument, &disable_limiter, 1},
+				{ "nojoy", no_argument, &_commandline_linux_nojoy, 1},
 			#endif
 
 			//sync settings
