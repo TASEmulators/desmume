@@ -1016,43 +1016,27 @@
 
 - (void) resetVideoBuffers
 {
-	size_t pixelBytes = sizeof(uint16_t);
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	
-	switch (dispInfo.colorFormat)
-	{
-		case NDSColorFormat_BGR555_Rev:
-			pixelBytes = sizeof(uint16_t);
-			break;
-			
-		case NDSColorFormat_BGR666_Rev:
-		case NDSColorFormat_BGR888_Rev:
-			pixelBytes = sizeof(uint32_t);
-			break;
-			
-		default:
-			break;
-	}
-	
 	void *oldVideoBuffer = _videoBuffer;
-	uint8_t *newVideoBuffer = (uint8_t *)malloc_alignedCacheLine( ((GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT) + (dispInfo.customWidth * dispInfo.customHeight)) * 2 * pixelBytes );
+	uint8_t *newVideoBuffer = (uint8_t *)malloc_alignedCacheLine( ((GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT) + (dispInfo.customWidth * dispInfo.customHeight)) * 2 * dispInfo.pixelBytes );
 	
 	[(id<CocoaDSDisplayVideoDelegate>)delegate doSetVideoBuffersUsingFormat:dispInfo.colorFormat
 																 bufferHead:newVideoBuffer
 															  nativeBuffer0:newVideoBuffer
-															  nativeBuffer1:newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * pixelBytes)
-															  customBuffer0:newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * pixelBytes)
+															  nativeBuffer1:newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes)
+															  customBuffer0:newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * dispInfo.pixelBytes)
 															   customWidth0:dispInfo.customWidth
 															  customHeight0:dispInfo.customHeight
-															  customBuffer1:newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * pixelBytes) + (dispInfo.customWidth * dispInfo.customHeight * pixelBytes)
+															  customBuffer1:newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * dispInfo.pixelBytes) + (dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes)
 															   customWidth1:dispInfo.customWidth
 															  customHeight1:dispInfo.customHeight];
 	
 	_videoBuffer = newVideoBuffer;
 	_nativeBuffer[NDSDisplayID_Main]  = newVideoBuffer;
-	_nativeBuffer[NDSDisplayID_Touch] = newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * pixelBytes);
-	_customBuffer[NDSDisplayID_Main]  = newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * pixelBytes);
-	_customBuffer[NDSDisplayID_Touch] = newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * pixelBytes) + (dispInfo.customWidth * dispInfo.customHeight * pixelBytes);
+	_nativeBuffer[NDSDisplayID_Touch] = newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes);
+	_customBuffer[NDSDisplayID_Main]  = newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * dispInfo.pixelBytes);
+	_customBuffer[NDSDisplayID_Touch] = newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * dispInfo.pixelBytes) + (dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes);
 	
 	free_aligned(oldVideoBuffer);
 }
