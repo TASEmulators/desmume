@@ -37,6 +37,7 @@ class GPUEventHandlerOSX;
 @property (assign) UInt32 gpuStateFlags;
 @property (assign) NSSize gpuDimensions;
 @property (assign) NSUInteger gpuScale;
+@property (assign) UInt32 gpuColorFormat;
 @property (readonly) pthread_rwlock_t *gpuFrameRWLock;
 
 @property (assign) BOOL layerMainGPU;

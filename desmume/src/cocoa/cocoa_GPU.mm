@@ -79,6 +79,7 @@ public:
 @dynamic gpuStateFlags;
 @dynamic gpuDimensions;
 @dynamic gpuScale;
+@dynamic gpuColorFormat;
 @dynamic gpuFrameRWLock;
 
 @dynamic layerMainGPU;
@@ -220,6 +221,30 @@ public:
 - (NSUInteger) gpuScale
 {
 	return (NSUInteger)_gpuScale;
+}
+
+- (void) setGpuColorFormat:(UInt32)colorFormat
+{
+	gpuEvent->FrameFinish();
+	gpuEvent->Render3DLock();
+	gpuEvent->FramebufferLockWrite();
+	
+	GPU->SetColorFormat((NDSColorFormat)colorFormat);
+	
+	gpuEvent->SetVideoBuffers();
+	gpuEvent->FramebufferUnlock();
+	gpuEvent->Render3DUnlock();
+}
+
+- (UInt32) gpuColorFormat
+{
+	gpuEvent->Render3DLock();
+	gpuEvent->FramebufferLockRead();
+	const UInt32 colorFormat = (UInt32)GPU->GetDisplayInfo().colorFormat;
+	gpuEvent->FramebufferUnlock();
+	gpuEvent->Render3DUnlock();
+	
+	return colorFormat;
 }
 
 - (pthread_rwlock_t *) gpuFrameRWLock
