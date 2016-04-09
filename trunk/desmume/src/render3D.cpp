@@ -99,6 +99,8 @@ bool NDS_3D_ChangeCore(int newCore)
 		return result;
 	}
 	
+	newRenderer->RequestColorFormat(GPU->GetDisplayInfo().colorFormat);
+	
 	Render3DError error = newRenderer->SetFramebufferSize(GPU->GetCustomFramebufferWidth(), GPU->GetCustomFramebufferHeight());
 	if (error != RENDER3DERROR_NOERR)
 	{
@@ -283,6 +285,8 @@ Render3D::Render3D()
 	_framebufferColorSizeBytes = 0;
 	_framebufferColor = NULL;
 	
+	_internalRenderingFormat = NDSColorFormat_BGR666_Rev;
+	_outputFormat = NDSColorFormat_BGR666_Rev;
 	_renderNeedsFinish = false;
 	_willFlushFramebufferRGBA6665 = true;
 	_willFlushFramebufferRGBA5551 = true;
@@ -342,6 +346,17 @@ Render3DError Render3D::SetFramebufferSize(size_t w, size_t h)
 	this->_framebufferColor = GPU->GetEngineMain()->Get3DFramebufferRGBA6665(); // Just use the buffer that is already present on the main GPU engine
 	
 	return RENDER3DERROR_NOERR;
+}
+
+NDSColorFormat Render3D::RequestColorFormat(NDSColorFormat colorFormat)
+{
+	this->_outputFormat = (colorFormat == NDSColorFormat_BGR555_Rev) ? NDSColorFormat_BGR666_Rev : colorFormat;
+	return this->_outputFormat;
+}
+
+NDSColorFormat Render3D::GetColorFormat() const
+{
+	return this->_outputFormat;
 }
 
 void Render3D::GetFramebufferFlushStates(bool &willFlushRGBA6665, bool &willFlushRGBA5551)
@@ -565,16 +580,47 @@ Render3DError Render3D::EndRender(const u64 frameCount)
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
+Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebuffer, u16 *__restrict dstRGBA5551)
 {
-	if ( (dstRGBA6665 == NULL) && (dstRGBA5551 == NULL) )
+	if ( (dstFramebuffer == NULL) && (dstRGBA5551 == NULL) )
 	{
 		return RENDER3DERROR_NOERR;
 	}
 	
+	const size_t pixCount = this->_framebufferWidth * this->_framebufferHeight;
+	
+	if (dstFramebuffer != NULL)
+	{
+		if ( (this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev) )
+		{
+			for (size_t i = 0; i < pixCount; i++)
+			{
+				dstFramebuffer[i].r = srcFramebuffer[i].r >> 2;
+				dstFramebuffer[i].g = srcFramebuffer[i].g >> 2;
+				dstFramebuffer[i].b = srcFramebuffer[i].b >> 2;
+				dstFramebuffer[i].a = srcFramebuffer[i].a >> 3;
+			}
+		}
+		else if ( (this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev) )
+		{
+			for (size_t i = 0; i < pixCount; i++)
+			{
+				dstFramebuffer[i].r = material_6bit_to_8bit[srcFramebuffer[i].r];
+				dstFramebuffer[i].g = material_6bit_to_8bit[srcFramebuffer[i].g];
+				dstFramebuffer[i].b = material_6bit_to_8bit[srcFramebuffer[i].b];
+				dstFramebuffer[i].a = material_5bit_to_8bit[srcFramebuffer[i].a];
+			}
+		}
+		else if ( ((this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev)) ||
+		          ((this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev)) )
+		{
+			memcpy(dstFramebuffer, srcFramebuffer, pixCount * sizeof(FragmentColor));
+		}
+	}
+	
 	if (dstRGBA5551 != NULL)
 	{
-		for (size_t i = 0; i < (this->_framebufferWidth * this->_framebufferHeight); i++)
+		for (size_t i = 0; i < pixCount; i++)
 		{
 			dstRGBA5551[i] = R6G6B6TORGB15(srcFramebuffer[i].r, srcFramebuffer[i].g, srcFramebuffer[i].b) | ((srcFramebuffer[i].a == 0) ? 0x0000 : 0x8000);
 		}
@@ -766,9 +812,9 @@ Render3DError Render3D::VramReconfigureSignal()
 
 #ifdef ENABLE_SSE2
 
-Render3DError Render3D_SSE2::FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551)
+Render3DError Render3D_SSE2::FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebuffer, u16 *__restrict dstRGBA5551)
 {
-	if ( (dstRGBA6665 == NULL) && (dstRGBA5551 == NULL) )
+	if ( (dstFramebuffer == NULL) && (dstRGBA5551 == NULL) )
 	{
 		return RENDER3DERROR_NOERR;
 	}
@@ -776,6 +822,59 @@ Render3DError Render3D_SSE2::FlushFramebuffer(const FragmentColor *__restrict sr
 	size_t i = 0;
 	const size_t pixCount = this->_framebufferWidth * this->_framebufferHeight;
 	const size_t ssePixCount = pixCount - (pixCount % 4);
+	
+	if (dstFramebuffer != NULL)
+	{
+		if ( (this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev) )
+		{
+			for (; i < ssePixCount; i += 4)
+			{
+				// Convert to RGBA6665
+				__m128i color6665 = _mm_load_si128((__m128i *)(srcFramebuffer + i));
+				__m128i a = _mm_srli_epi32(_mm_and_si128(color6665, _mm_set1_epi32(0xF8000000)), 3);
+				color6665 = _mm_srli_epi32(_mm_and_si128(color6665, _mm_set1_epi32(0x00FCFCFC)), 2);
+				
+				color6665 = _mm_or_si128(color6665, a);
+				_mm_store_si128((__m128i *)(dstFramebuffer + i), color6665);
+			}
+			
+			for (; i < pixCount; i++)
+			{
+				dstFramebuffer[i].r = srcFramebuffer[i].r >> 2;
+				dstFramebuffer[i].g = srcFramebuffer[i].g >> 2;
+				dstFramebuffer[i].b = srcFramebuffer[i].b >> 2;
+				dstFramebuffer[i].a = srcFramebuffer[i].a >> 3;
+			}
+		}
+		else if ( (this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev) )
+		{
+			for (; i < ssePixCount; i += 4)
+			{
+				// Convert to RGBA8888:
+				//    RGB   6-bit to 8-bit formula: dstRGB8 = (srcRGB6 << 2) | ((srcRGB6 >> 4) & 0x03)
+				//    Alpha 5-bit to 8-bit formula: dstA8   = (srcA5   << 3) | ((srcA5   >> 2) & 0x07)
+				__m128i color8888 = _mm_load_si128((__m128i *)(srcFramebuffer + i));
+				__m128i a = _mm_or_si128( _mm_and_si128(_mm_slli_epi32(color8888, 3), _mm_set1_epi8(0xF8)), _mm_and_si128(_mm_srli_epi32(color8888, 2), _mm_set1_epi8(0x07)) );
+				color8888 = _mm_or_si128( _mm_and_si128(_mm_slli_epi32(color8888, 2), _mm_set1_epi8(0xFC)), _mm_and_si128(_mm_srli_epi32(color8888, 4), _mm_set1_epi8(0x03)) );
+				
+				color8888 = _mm_or_si128(_mm_and_si128(color8888, _mm_set1_epi32(0x00FFFFFF)), _mm_and_si128(a, _mm_set1_epi32(0xFF000000)));
+				_mm_store_si128((__m128i *)(dstFramebuffer + i), color8888);
+			}
+			
+			for (; i < pixCount; i++)
+			{
+				dstFramebuffer[i].r = material_6bit_to_8bit[srcFramebuffer[i].r];
+				dstFramebuffer[i].g = material_6bit_to_8bit[srcFramebuffer[i].g];
+				dstFramebuffer[i].b = material_6bit_to_8bit[srcFramebuffer[i].b];
+				dstFramebuffer[i].a = material_5bit_to_8bit[srcFramebuffer[i].a];
+			}
+		}
+		else if ( ((this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev)) ||
+		          ((this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev)) )
+		{
+			memcpy(dstFramebuffer, srcFramebuffer, pixCount * sizeof(FragmentColor));
+		}
+	}
 	
 	if (dstRGBA5551 != NULL)
 	{

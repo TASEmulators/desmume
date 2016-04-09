@@ -1956,8 +1956,9 @@ Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
 			this->RenderEdgeMarkingAndFog(this->postprocessParam[0]);
 		}
 		
+		FragmentColor *framebufferMain = (this->_outputFormat == NDSColorFormat_BGR888_Rev) ? GPU->GetEngineMain()->Get3DFramebufferRGBA6665() : NULL;
 		u16 *framebufferRGBA5551 = (this->_willFlushFramebufferRGBA5551) ? GPU->GetEngineMain()->Get3DFramebufferRGBA5551() : NULL;
-		this->FlushFramebuffer(this->_framebufferColor, NULL, framebufferRGBA5551);
+		this->FlushFramebuffer(this->_framebufferColor, framebufferMain, framebufferRGBA5551);
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -2000,8 +2001,9 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 		}
 	}
 	
+	FragmentColor *framebufferMain = (this->_outputFormat == NDSColorFormat_BGR888_Rev) ? GPU->GetEngineMain()->Get3DFramebufferRGBA6665() : NULL;
 	u16 *framebufferRGBA5551 = (this->_willFlushFramebufferRGBA5551) ? GPU->GetEngineMain()->Get3DFramebufferRGBA5551() : NULL;
-	this->FlushFramebuffer(this->_framebufferColor, NULL, framebufferRGBA5551);
+	this->FlushFramebuffer(this->_framebufferColor, framebufferMain, framebufferRGBA5551);
 	
 	return RENDER3DERROR_NOERR;
 }
