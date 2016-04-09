@@ -451,10 +451,12 @@ struct OGLRenderRef
 	GLuint vertexFramebufferOutputShaderID;
 	GLuint fragmentEdgeMarkShaderID;
 	GLuint fragmentFogShaderID;
-	GLuint fragmentFramebufferOutputShaderID;
+	GLuint fragmentFramebufferRGBA6665OutputShaderID;
+	GLuint fragmentFramebufferRGBA8888OutputShaderID;
 	GLuint programEdgeMarkID;
 	GLuint programFogID;
-	GLuint programFramebufferOutputID;
+	GLuint programFramebufferRGBA6665OutputID;
+	GLuint programFramebufferRGBA8888OutputID;
 	
 	GLint uniformFramebufferSize;
 	GLint uniformStateToonShadingMode;
@@ -572,7 +574,7 @@ private:
 	unsigned int versionRevision;
 	
 private:
-	Render3DError _FlushFramebufferConvertOnCPU(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551);
+	Render3DError _FlushFramebufferConvertOnCPU(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebuffer, u16 *__restrict dstRGBA5551);
 	
 protected:
 	// OpenGL-specific References
@@ -585,6 +587,7 @@ protected:
 	bool isMultisampledFBOSupported;
 	bool isShaderSupported;
 	bool isVAOSupported;
+	bool willFlipFramebufferOnGPU;
 	bool willConvertFramebufferOnGPU;
 	
 	// Textures
@@ -595,7 +598,7 @@ protected:
 	size_t _currentPolyIndex;
 	std::vector<u8> _shadowPolyID;
 	
-	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstRGBA6665, u16 *__restrict dstRGBA5551);
+	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebuffer, u16 *__restrict dstRGBA5551);
 	
 	// OpenGL-specific methods
 	virtual Render3DError CreateVBOs() = 0;
@@ -618,7 +621,8 @@ protected:
 													 const std::string &fogVtxShader,
 													 const std::string &fogFragShader,
 													 const std::string &framebufferOutputVtxShader,
-													 const std::string &framebufferOutputFragShader) = 0;
+													 const std::string &framebufferOutputRGBA6665FragShader,
+													 const std::string &framebufferOutputRGBA8888FragShader) = 0;
 	virtual Render3DError DestroyPostprocessingPrograms() = 0;
 	virtual Render3DError InitEdgeMarkProgramBindings() = 0;
 	virtual Render3DError InitEdgeMarkProgramShaderLocations() = 0;
@@ -687,7 +691,8 @@ protected:
 													 const std::string &fogVtxShader,
 													 const std::string &fogFragShader,
 													 const std::string &framebufferOutputVtxShader,
-													 const std::string &framebufferOutputFragShader);
+													 const std::string &framebufferOutputRGBA6665FragShader,
+													 const std::string &framebufferOutputRGBA8888FragShader);
 	virtual Render3DError DestroyPostprocessingPrograms();
 	virtual Render3DError InitEdgeMarkProgramBindings();
 	virtual Render3DError InitEdgeMarkProgramShaderLocations();
@@ -774,7 +779,8 @@ protected:
 													 const std::string &fogVtxShader,
 													 const std::string &fogFragShader,
 													 const std::string &framebufferOutputVtxShader,
-													 const std::string &framebufferOutputFragShader);
+													 const std::string &framebufferOutputRGBA6665FragShader,
+													 const std::string &framebufferOutputRGBA8888FragShader);
 	virtual Render3DError DestroyPostprocessingPrograms();
 	virtual Render3DError InitEdgeMarkProgramBindings();
 	virtual Render3DError InitEdgeMarkProgramShaderLocations();
