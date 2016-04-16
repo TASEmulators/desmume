@@ -336,11 +336,11 @@ void GPUEngineBase::_Reset_Base()
 	memset(&this->_mosaicColors, 0, sizeof(MosaicColor));
 	memset(this->_itemsForPriority, 0, sizeof(this->_itemsForPriority));
 	
-	memset(this->_internalRenderLineTargetNative, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
+	memset(this->_internalRenderLineTargetNative, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(FragmentColor));
 	
 	if (this->_internalRenderLineTargetCustom != NULL)
 	{
-		memset(this->_internalRenderLineTargetCustom, 0, dispInfo.customWidth * _gpuLargestDstLineCount * sizeof(u16));
+		memset(this->_internalRenderLineTargetCustom, 0, dispInfo.customWidth * _gpuLargestDstLineCount * dispInfo.pixelBytes);
 	}
 	if (this->_renderLineLayerIDCustom != NULL)
 	{
@@ -548,6 +548,48 @@ FORCEINLINE u16 GPUEngineBase::_ColorEffectBlend(const u16 colA, const u16 colB,
 	return ra | (ga << 5) | (ba << 10);
 }
 
+template <NDSColorFormat COLORFORMAT>
+FORCEINLINE FragmentColor GPUEngineBase::_ColorEffectBlend(const u16 colA, const FragmentColor colB, const u16 blendEVA, const u16 blendEVB)
+{
+	FragmentColor outColor;
+	
+	u16 rb = colB.r;
+	u16 gb = colB.g;
+	u16 bb = colB.b;
+	
+	if (COLORFORMAT == NDSColorFormat_BGR666_Rev)
+	{
+		u16 ra = material_5bit_to_6bit[(colA >>  0) & 0x001F];
+		u16 ga = material_5bit_to_6bit[(colA >>  5) & 0x001F];
+		u16 ba = material_5bit_to_6bit[(colA >> 10) & 0x001F];
+		
+		ra = ( (ra * blendEVA) + (rb * blendEVB) ) / 16;
+		ga = ( (ga * blendEVA) + (gb * blendEVB) ) / 16;
+		ba = ( (ba * blendEVA) + (bb * blendEVB) ) / 16;
+		
+		outColor.r = (ra > 63) ? 63 : ra;
+		outColor.g = (ga > 63) ? 63 : ga;
+		outColor.b = (ba > 63) ? 63 : ba;
+	}
+	else if (COLORFORMAT == NDSColorFormat_BGR888_Rev)
+	{
+		u16 ra = material_5bit_to_8bit[(colA >>  0) & 0x001F];
+		u16 ga = material_5bit_to_8bit[(colA >>  5) & 0x001F];
+		u16 ba = material_5bit_to_8bit[(colA >> 10) & 0x001F];
+		
+		ra = ( (ra * blendEVA) + (rb * blendEVB) ) / 16;
+		ga = ( (ga * blendEVA) + (gb * blendEVB) ) / 16;
+		ba = ( (ba * blendEVA) + (bb * blendEVB) ) / 16;
+		
+		outColor.r = (ra > 255) ? 255 : ra;
+		outColor.g = (ga > 255) ? 255 : ga;
+		outColor.b = (ba > 255) ? 255 : ba;
+	}
+	
+	outColor.a = 0;
+	return outColor;
+}
+
 FORCEINLINE u16 GPUEngineBase::_ColorEffectBlend(const u16 colA, const u16 colB, const TBlendTable *blendTable)
 {
 	const u8 r = (*blendTable)[ colA        & 0x1F][ colB        & 0x1F];
@@ -573,16 +615,38 @@ FORCEINLINE u16 GPUEngineBase::_ColorEffectBlend3D(const FragmentColor colA, con
 	return cfinal.val;
 }
 
+template <NDSColorFormat COLORFORMATA, NDSColorFormat COLORFORMATB>
 FORCEINLINE FragmentColor GPUEngineBase::_ColorEffectBlend3D(const FragmentColor colA, const FragmentColor colB)
 {
 	FragmentColor blendedColor;
-	const u8 alpha = colA.a + 1;
+	const u16 alpha = colA.a + 1;
 	
-	blendedColor.r = ((colA.r * alpha) + (colB.r * (32 - alpha))) >> 6;
-	blendedColor.g = ((colA.g * alpha) + (colB.g * (32 - alpha))) >> 6;
-	blendedColor.b = ((colA.b * alpha) + (colB.b * (32 - alpha))) >> 6;
+	if ( (COLORFORMATA == NDSColorFormat_BGR666_Rev) && (COLORFORMATB == NDSColorFormat_BGR666_Rev) )
+	{
+		blendedColor.r = ((colA.r * alpha) + (colB.r * (32 - alpha))) >> 5;
+		blendedColor.g = ((colA.g * alpha) + (colB.g * (32 - alpha))) >> 5;
+		blendedColor.b = ((colA.b * alpha) + (colB.b * (32 - alpha))) >> 5;
+	}
+	else if ( (COLORFORMATA == NDSColorFormat_BGR666_Rev) && (COLORFORMATB == NDSColorFormat_BGR888_Rev) )
+	{
+		blendedColor.r = ((material_6bit_to_8bit[colA.r] * alpha) + (colB.r * (32 - alpha))) >> 5;
+		blendedColor.g = ((material_6bit_to_8bit[colA.g] * alpha) + (colB.g * (32 - alpha))) >> 5;
+		blendedColor.b = ((material_6bit_to_8bit[colA.b] * alpha) + (colB.b * (32 - alpha))) >> 5;
+	}
+	else if ( (COLORFORMATA == NDSColorFormat_BGR888_Rev) && (COLORFORMATB == NDSColorFormat_BGR666_Rev) )
+	{
+		blendedColor.r = ((colA.r * alpha) + (material_6bit_to_8bit[colB.r] * (256 - alpha))) >> 8;
+		blendedColor.g = ((colA.g * alpha) + (material_6bit_to_8bit[colB.g] * (256 - alpha))) >> 8;
+		blendedColor.b = ((colA.b * alpha) + (material_6bit_to_8bit[colB.b] * (256 - alpha))) >> 8;
+	}
+	else if ( (COLORFORMATA == NDSColorFormat_BGR888_Rev) && (COLORFORMATB == NDSColorFormat_BGR888_Rev) )
+	{
+		blendedColor.r = ((colA.r * alpha) + (colB.r * (256 - alpha))) >> 8;
+		blendedColor.g = ((colA.g * alpha) + (colB.g * (256 - alpha))) >> 8;
+		blendedColor.b = ((colA.b * alpha) + (colB.b * (256 - alpha))) >> 8;
+	}
+	
 	blendedColor.a = 0;
-	
 	return blendedColor;
 }
 
@@ -604,6 +668,105 @@ FORCEINLINE u16 GPUEngineBase::_ColorEffectIncreaseBrightness(const u16 col, con
 	return r | (g << 5) | (b << 10);
 }
 
+template <NDSColorFormat INPUTFORMAT>
+FORCEINLINE u16 GPUEngineBase::_ColorEffectIncreaseBrightness(const FragmentColor col, const u16 blendEVY)
+{
+	u32 r = col.r;
+	u32 g = col.g;
+	u32 b = col.b;
+	
+	if (INPUTFORMAT == NDSColorFormat_BGR666_Rev)
+	{
+		r = (r + ((63 - r) * blendEVY / 16)) >> 1;
+		g = (g + ((63 - g) * blendEVY / 16)) >> 1;
+		b = (b + ((63 - b) * blendEVY / 16)) >> 1;
+	}
+	else if (INPUTFORMAT == NDSColorFormat_BGR888_Rev)
+	{
+		r = (r + ((255 - r) * blendEVY / 16)) >> 3;
+		g = (g + ((255 - g) * blendEVY / 16)) >> 3;
+		b = (b + ((255 - b) * blendEVY / 16)) >> 3;
+	}
+	
+	return r | (g << 5) | (b << 10);
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+FORCEINLINE FragmentColor GPUEngineBase::_ColorEffectIncreaseBrightness(const u16 col, const u16 blendEVY)
+{
+	FragmentColor newColor;
+	newColor.color = 0;
+	
+	u16 r = (col & 0x001F);
+	u16 g = (col & 0x03E0) >>  5;
+	u16 b = (col & 0x7C00) >> 10;
+	
+	if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
+	{
+		newColor.r = material_5bit_to_6bit[r + ((31 - r) * blendEVY / 16)];
+		newColor.g = material_5bit_to_6bit[g + ((31 - g) * blendEVY / 16)];
+		newColor.b = material_5bit_to_6bit[b + ((31 - b) * blendEVY / 16)];
+	}
+	else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
+	{
+		newColor.r = material_5bit_to_8bit[r + ((31 - r) * blendEVY / 16)];
+		newColor.g = material_5bit_to_8bit[g + ((31 - g) * blendEVY / 16)];
+		newColor.b = material_5bit_to_8bit[b + ((31 - b) * blendEVY / 16)];
+	}
+	
+	return newColor;
+}
+
+template <NDSColorFormat OUTPUTFORMAT, NDSColorFormat INPUTFORMAT>
+FORCEINLINE FragmentColor GPUEngineBase::_ColorEffectIncreaseBrightness(const FragmentColor col, const u16 blendEVY)
+{
+	FragmentColor newColor;
+	newColor.color = 0;
+	
+	if ( (INPUTFORMAT == NDSColorFormat_BGR666_Rev) && (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) )
+	{
+		u32 r = col.r;
+		u32 g = col.g;
+		u32 b = col.b;
+		
+		newColor.r = (r + ((63 - r) * blendEVY / 16));
+		newColor.g = (g + ((63 - g) * blendEVY / 16));
+		newColor.b = (b + ((63 - b) * blendEVY / 16));
+	}
+	else if ( (INPUTFORMAT == NDSColorFormat_BGR666_Rev) && (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) )
+	{
+		u32 r = material_6bit_to_8bit[col.r];
+		u32 g = material_6bit_to_8bit[col.g];
+		u32 b = material_6bit_to_8bit[col.b];
+		
+		newColor.r = (r + ((255 - r) * blendEVY / 16));
+		newColor.g = (g + ((255 - g) * blendEVY / 16));
+		newColor.b = (b + ((255 - b) * blendEVY / 16));
+	}
+	else if ( (INPUTFORMAT == NDSColorFormat_BGR888_Rev) && (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) )
+	{
+		u32 r = col.r >> 2;
+		u32 g = col.g >> 2;
+		u32 b = col.b >> 2;
+		
+		newColor.r = (r + ((63 - r) * blendEVY / 16));
+		newColor.g = (g + ((63 - g) * blendEVY / 16));
+		newColor.b = (b + ((63 - b) * blendEVY / 16));
+	}
+	else if ( (INPUTFORMAT == NDSColorFormat_BGR888_Rev) && (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) )
+	{
+		u32 r = col.r;
+		u32 g = col.g;
+		u32 b = col.b;
+		
+		newColor.r = (r + ((255 - r) * blendEVY / 16));
+		newColor.g = (g + ((255 - g) * blendEVY / 16));
+		newColor.b = (b + ((255 - b) * blendEVY / 16));
+	}
+	
+	return newColor;
+}
+
 FORCEINLINE u16 GPUEngineBase::_ColorEffectDecreaseBrightness(const u16 col)
 {
 	return this->_currentFadeOutColors[col];
@@ -620,6 +783,97 @@ FORCEINLINE u16 GPUEngineBase::_ColorEffectDecreaseBrightness(const u16 col, con
 	b = (b - (b * blendEVY / 16));
 	
 	return r | (g << 5) | (b << 10);
+}
+
+template <NDSColorFormat INPUTFORMAT>
+FORCEINLINE u16 GPUEngineBase::_ColorEffectDecreaseBrightness(const FragmentColor col, const u16 blendEVY)
+{
+	u32 r = col.r;
+	u32 g = col.g;
+	u32 b = col.b;
+	
+	if (INPUTFORMAT == NDSColorFormat_BGR666_Rev)
+	{
+		r = (r - (r * blendEVY / 16)) >> 1;
+		g = (g - (g * blendEVY / 16)) >> 1;
+		b = (b - (b * blendEVY / 16)) >> 1;
+	}
+	else if (INPUTFORMAT == NDSColorFormat_BGR888_Rev)
+	{
+		r = (r - (r * blendEVY / 16)) >> 3;
+		g = (g - (g * blendEVY / 16)) >> 3;
+		b = (b - (b * blendEVY / 16)) >> 3;
+	}
+	
+	return r | (g << 5) | (b << 10);
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+FORCEINLINE FragmentColor GPUEngineBase::_ColorEffectDecreaseBrightness(const u16 col, const u16 blendEVY)
+{
+	FragmentColor newColor;
+	newColor.color = 0;
+	
+	u16 r = (col & 0x001F);
+	u16 g = (col & 0x03E0) >>  5;
+	u16 b = (col & 0x7C00) >> 10;
+	
+	if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
+	{
+		newColor.r = material_5bit_to_6bit[r - (r * blendEVY / 16)];
+		newColor.g = material_5bit_to_6bit[g - (g * blendEVY / 16)];
+		newColor.b = material_5bit_to_6bit[b - (b * blendEVY / 16)];
+	}
+	else if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
+	{
+		newColor.r = material_5bit_to_8bit[r - (r * blendEVY / 16)];
+		newColor.g = material_5bit_to_8bit[g - (g * blendEVY / 16)];
+		newColor.b = material_5bit_to_8bit[b - (b * blendEVY / 16)];
+	}
+	
+	return newColor;
+}
+
+template <NDSColorFormat OUTPUTFORMAT, NDSColorFormat INPUTFORMAT>
+FORCEINLINE FragmentColor GPUEngineBase::_ColorEffectDecreaseBrightness(const FragmentColor col, const u16 blendEVY)
+{
+	FragmentColor newColor;
+	newColor.color = 0;
+	
+	u32 r;
+	u32 g;
+	u32 b;
+	
+	if ( (INPUTFORMAT == NDSColorFormat_BGR666_Rev) && (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) )
+	{
+		r = col.r;
+		g = col.g;
+		b = col.b;
+	}
+	else if ( (INPUTFORMAT == NDSColorFormat_BGR666_Rev) && (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) )
+	{
+		r = material_6bit_to_8bit[col.r];
+		g = material_6bit_to_8bit[col.g];
+		b = material_6bit_to_8bit[col.b];
+	}
+	else if ( (INPUTFORMAT == NDSColorFormat_BGR888_Rev) && (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) )
+	{
+		r = col.r >> 2;
+		g = col.g >> 2;
+		b = col.b >> 2;
+	}
+	else if ( (INPUTFORMAT == NDSColorFormat_BGR888_Rev) && (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) )
+	{
+		r = col.r;
+		g = col.g;
+		b = col.b;
+	}
+	
+	newColor.r = (r - (r * blendEVY / 16));
+	newColor.g = (g - (g * blendEVY / 16));
+	newColor.b = (b - (b * blendEVY / 16));
+	
+	return newColor;
 }
 
 #ifdef ENABLE_SSE2
@@ -886,26 +1140,56 @@ void GPUEngineBase::ParseReg_BGnY()
 	}
 }
 
-void GPUEngineBase::_RenderLine_Clear(const u16 clearColor, const u16 l, u16 *renderLineTarget)
+void GPUEngineBase::_RenderLine_Clear(const u16 clearColor, const u16 l, void *renderLineTarget)
 {
 	// Clear the current line with the clear color
 	const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
 	
-	u16 dstClearColor = clearColor;
+	u16 dstClearColor16 = clearColor;
 	
 	if (BLDCNT.Backdrop_Target1 != 0)
 	{
 		if (BLDCNT.ColorEffect == ColorEffect_IncreaseBrightness)
 		{
-			dstClearColor = this->_currentFadeInColors[clearColor];
+			dstClearColor16 = this->_currentFadeInColors[clearColor];
 		}
 		else if (BLDCNT.ColorEffect == ColorEffect_DecreaseBrightness)
 		{
-			dstClearColor = this->_currentFadeOutColors[clearColor];
+			dstClearColor16 = this->_currentFadeOutColors[clearColor];
 		}
 	}
 	
-	memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(renderLineTarget, dstClearColor);
+	switch (GPU->GetDisplayInfo().colorFormat)
+	{
+		case NDSColorFormat_BGR555_Rev:
+			memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(renderLineTarget, dstClearColor16);
+			break;
+			
+		case NDSColorFormat_BGR666_Rev:
+		{
+			FragmentColor dstClearColor32;
+			dstClearColor32.r = material_5bit_to_6bit[(dstClearColor16 >>  0) & 0x001F];
+			dstClearColor32.g = material_5bit_to_6bit[(dstClearColor16 >>  5) & 0x001F];
+			dstClearColor32.b = material_5bit_to_6bit[(dstClearColor16 >> 10) & 0x001F];
+			dstClearColor32.a = 0;
+			
+			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(renderLineTarget, dstClearColor32.color);
+			break;
+		}
+			
+		case NDSColorFormat_BGR888_Rev:
+		{
+			FragmentColor dstClearColor32;
+			dstClearColor32.r = material_5bit_to_8bit[(dstClearColor16 >>  0) & 0x001F];
+			dstClearColor32.g = material_5bit_to_8bit[(dstClearColor16 >>  5) & 0x001F];
+			dstClearColor32.b = material_5bit_to_8bit[(dstClearColor16 >> 10) & 0x001F];
+			dstClearColor32.a = 0;
+			
+			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(renderLineTarget, dstClearColor32.color);
+			break;
+		}
+	}
+	
 	memset(this->_renderLineLayerIDNative, GPULayerID_Backdrop, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 	
 	// init background color & priorities
@@ -990,29 +1274,36 @@ void GPUEngineBase::SetLayerEnableState(const size_t layerIndex, bool theState)
 	this->_ResortBGLayers();
 }
 
-template <bool NATIVEDST, bool NATIVESRC, bool USELINEINDEX, bool NEEDENDIANSWAP>
-void GPUEngineBase::_LineColorCopy(u16 *__restrict dstBuffer, const u16 *__restrict srcBuffer, const size_t l)
+template <bool NATIVEDST, bool NATIVESRC, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t PIXELBYTES>
+void GPUEngineBase::_LineColorCopy(void *__restrict dstBuffer, const void *__restrict srcBuffer, const size_t l)
 {
 	if (NATIVEDST && NATIVESRC)
 	{
-		u16 *__restrict dst = (USELINEINDEX) ? dstBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) : dstBuffer;
-		const u16 *__restrict src = (USELINEINDEX) ? srcBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) : srcBuffer;
+		void *__restrict dst = (USELINEINDEX) ? (u8 *)dstBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * PIXELBYTES) : (u8 *)dstBuffer;
+		const void *__restrict src = (USELINEINDEX) ? (u8 *)srcBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * PIXELBYTES) : (u8 *)srcBuffer;
 		
 #if defined(ENABLE_SSE2)
-		MACRODO_N( GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / sizeof(u16)), _mm_stream_si128((__m128i *)dst + (X), _mm_load_si128((__m128i *)src + (X))) );
+		MACRODO_N( GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / PIXELBYTES), _mm_stream_si128((__m128i *)dst + (X), _mm_load_si128((__m128i *)src + (X))) );
 #elif LOCAL_LE
-		memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
+		memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * PIXELBYTES);
 #else
 		if (NEEDENDIANSWAP)
 		{
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
 			{
-				dst[i] = LE_TO_LOCAL_16(src[i]);
+				if (PIXELBYTES == 2)
+				{
+					((u16 *)dst)[i] = LE_TO_LOCAL_16( ((u16 *)src)[i] );
+				}
+				else if (PIXELBYTES == 4)
+				{
+					((u32 *)dst)[i] = LE_TO_LOCAL_32( ((u32 *)src)[i] );
+				}
 			}
 		}
 		else
 		{
-			memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
+			memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * PIXELBYTES);
 		}
 #endif
 	}
@@ -1022,22 +1313,29 @@ void GPUEngineBase::_LineColorCopy(u16 *__restrict dstBuffer, const u16 *__restr
 		const size_t lineIndex = _gpuCaptureLineIndex[l];
 		const size_t lineCount = _gpuCaptureLineCount[l];
 		
-		u16 *__restrict dst = (USELINEINDEX) ? dstBuffer + (lineIndex * lineWidth) : dstBuffer;
-		const u16 *__restrict src = (USELINEINDEX) ? srcBuffer + (lineIndex * lineWidth) : srcBuffer;
+		void *__restrict dst = (USELINEINDEX) ? (u8 *)dstBuffer + (lineIndex * lineWidth * PIXELBYTES) : (u8 *)dstBuffer;
+		const void *__restrict src = (USELINEINDEX) ? (u8 *)srcBuffer + (lineIndex * lineWidth * PIXELBYTES) : (u8 *)srcBuffer;
 		
 #if defined(LOCAL_LE)
-		memcpy(dst, src, lineWidth * lineCount * sizeof(u16));
+		memcpy(dst, src, lineWidth * lineCount * PIXELBYTES);
 #else
 		if (NEEDENDIANSWAP)
 		{
 			for (size_t i = 0; i < lineWidth * lineCount; i++)
 			{
-				dst[i] = LE_TO_LOCAL_16(src[i]);
+				if (PIXELBYTES == 2)
+				{
+					((u16 *)dst)[i] = LE_TO_LOCAL_16( ((u16 *)src)[i] );
+				}
+				else if (PIXELBYTES == 4)
+				{
+					((u32 *)dst)[i] = LE_TO_LOCAL_32( ((u32 *)src)[i] );
+				}
 			}
 		}
 		else
 		{
-			memcpy(dst, src, lineWidth * lineCount * sizeof(u16));
+			memcpy(dst, src, lineWidth * lineCount * PIXELBYTES);
 		}
 #endif
 	}
@@ -1046,12 +1344,19 @@ void GPUEngineBase::_LineColorCopy(u16 *__restrict dstBuffer, const u16 *__restr
 		const size_t lineWidth = GPU->GetDisplayInfo().customWidth;
 		const size_t lineIndex = _gpuCaptureLineIndex[l];
 		
-		u16 *__restrict dst = (USELINEINDEX) ? dstBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) : dstBuffer;
-		const u16 *__restrict src = (USELINEINDEX) ? srcBuffer + (lineIndex * lineWidth) : srcBuffer;
+		void *__restrict dst = (USELINEINDEX) ? (u8 *)dstBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * PIXELBYTES) : (u8 *)dstBuffer;
+		const void *__restrict src = (USELINEINDEX) ? (u8 *)srcBuffer + (lineIndex * lineWidth * PIXELBYTES) : (u8 *)srcBuffer;
 		
 		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
 		{
-			dst[i] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16(src[_gpuDstPitchIndex[i]]) : src[_gpuDstPitchIndex[i]];
+			if (PIXELBYTES == 2)
+			{
+				((u16 *)dst)[i] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16( ((u16 *)src)[_gpuDstPitchIndex[i]] ) : ((u16 *)src)[_gpuDstPitchIndex[i]];
+			}
+			else if (PIXELBYTES == 4)
+			{
+				((u32 *)dst)[i] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[_gpuDstPitchIndex[i]] ) : ((u32 *)src)[_gpuDstPitchIndex[i]];
+			}
 		}
 	}
 	else // (!NATIVEDST && NATIVESRC)
@@ -1060,24 +1365,31 @@ void GPUEngineBase::_LineColorCopy(u16 *__restrict dstBuffer, const u16 *__restr
 		const size_t lineIndex = _gpuCaptureLineIndex[l];
 		const size_t lineCount = _gpuCaptureLineCount[l];
 		
-		u16 *dstLinePtr = (USELINEINDEX) ? dstBuffer + (lineIndex * lineWidth) : dstBuffer;
-		u16 *dst = dstLinePtr;
-		const u16 *src = (USELINEINDEX) ? srcBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) : srcBuffer;
+		u8 *dstLinePtr = (USELINEINDEX) ? (u8 *)dstBuffer + (lineIndex * lineWidth * PIXELBYTES) : (u8 *)dstBuffer;
+		u8 *dst = dstLinePtr;
+		const void *src = (USELINEINDEX) ? (u8 *)srcBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * PIXELBYTES) : (u8 *)srcBuffer;
 		
 		for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
 		{
 			for (size_t p = 0; p < _gpuDstPitchCount[x]; p++)
 			{
-				dst[_gpuDstPitchIndex[x] + p] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16(src[x]) : src[x];
+				if (PIXELBYTES == 2)
+				{
+					((u16 *)dst)[_gpuDstPitchIndex[x] + p] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_16( ((u16 *)src)[x] ) : ((u16 *)src)[x];
+				}
+				else if (PIXELBYTES == 4)
+				{
+					((u32 *)dst)[_gpuDstPitchIndex[x] + p] = (NEEDENDIANSWAP) ? LE_TO_LOCAL_32( ((u32 *)src)[x] ) : ((u32 *)src)[x];
+				}
 			}
 		}
 		
-		dst = dstLinePtr + lineWidth;
+		dst = dstLinePtr + (lineWidth * PIXELBYTES);
 		
 		for (size_t line = 1; line < lineCount; line++)
 		{
-			memcpy(dst, dstLinePtr, lineWidth * sizeof(u16));
-			dst += lineWidth;
+			memcpy(dst, dstLinePtr, lineWidth * PIXELBYTES);
+			dst += (lineWidth * PIXELBYTES);
 		}
 	}
 }
@@ -1570,13 +1882,13 @@ FORCEINLINE void GPUEngineBase::_RenderPixel_CheckWindows8_SSE2(const size_t dst
 //			PIXEL RENDERING
 /*****************************************************************************/
 template <GPULayerID LAYERID, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT>
-FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const u16 src, const u8 srcAlpha, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine)
+FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const u16 src, const u8 srcAlpha, void *__restrict dstColorLine, u8 *__restrict dstLayerIDLine)
 {
 	if (ISDEBUGRENDER)
 	{
 		// If we're rendering pixels to a debugging context, then assume that the pixel
 		// always passes the window test and that the color effect is always disabled.
-		*dstColorLine = src | 0x8000;
+		*(u16 *)dstColorLine = src | 0x8000;
 		*dstLayerIDLine = LAYERID;
 		return;
 	}
@@ -1596,7 +1908,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const u16 src, c
 	
 	if ((LAYERID != GPULayerID_OBJ) && COLOREFFECTDISABLEDHINT)
 	{
-		*dstColorLine = src | 0x8000;
+		*(u16 *)dstColorLine = src | 0x8000;
 		*dstLayerIDLine = LAYERID;
 		return;
 	}
@@ -1706,11 +2018,11 @@ FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const u16 src, c
 			break;
 			
 		case ColorEffect_Blend:
-			finalDstColor = this->_ColorEffectBlend(src, *dstColorLine, selectedBlendTable);
+			finalDstColor = this->_ColorEffectBlend(src, *(u16 *)dstColorLine, selectedBlendTable);
 			break;
 	}
 	
-	*dstColorLine = finalDstColor | 0x8000;
+	*(u16 *)dstColorLine = finalDstColor | 0x8000;
 	*dstLayerIDLine = LAYERID;
 }
 
@@ -2052,7 +2364,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel8_SSE2(const size_t dstX,
 // We can't unify this yet because the output framebuffer is in RGBA5551, but the 3D source pixels are in RGBA6665.
 // However, GPUEngineBase::_RenderPixel() takes source pixels in RGB555. In order to unify the methods, all pixels
 // must be processed in RGBA6665.
-FORCEINLINE void GPUEngineBase::_RenderPixel3D(const size_t srcX, const FragmentColor src, u16 *__restrict dstColorLine, u8 *__restrict dstLayerIDLine)
+FORCEINLINE void GPUEngineBase::_RenderPixel3D(const size_t srcX, const FragmentColor src, const NDSColorFormat srcFormat, void *__restrict dstColorLine, u8 *__restrict dstLayerIDLine)
 {
 	if (src.a == 0)
 	{
@@ -2133,11 +2445,11 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D(const size_t srcX, const Fragment
 			break;
 			
 		case ColorEffect_Blend:
-			finalDstColor = this->_ColorEffectBlend3D(src, *dstColorLine);
+			finalDstColor = this->_ColorEffectBlend3D(src, *(u16 *)dstColorLine);
 			break;
 	}
 	
-	*dstColorLine = finalDstColor | 0x8000;
+	*(u16 *)dstColorLine = finalDstColor | 0x8000;
 	*dstLayerIDLine = GPULayerID_BG0;
 }
 
@@ -2397,7 +2709,7 @@ TILEENTRY GPUEngineBase::_GetTileEntry(const u32 tileMapAddress, const u16 xOffs
 }
 
 template <GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT>
-FORCEINLINE void GPUEngineBase::_RenderPixelSingle(u16 *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex, u16 color, const size_t srcX, const bool opaque)
+FORCEINLINE void GPUEngineBase::_RenderPixelSingle(void *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex, u16 color, const size_t srcX, const bool opaque)
 {
 	bool willRenderColor = opaque;
 	
@@ -2424,14 +2736,16 @@ FORCEINLINE void GPUEngineBase::_RenderPixelSingle(u16 *__restrict dstColorLine,
 		this->_RenderPixel<LAYERID, ISDEBUGRENDER, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT>(srcX,
 																								  color,
 																								  0,
-																								  dstColorLine + srcX,
+																								  (GPU->GetDisplayInfo().colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)((u16 *)dstColorLine + srcX) : (void *)((FragmentColor *)dstColorLine + srcX),
 																								  dstLayerID + srcX);
 	}
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT>
-void GPUEngineBase::_RenderPixelsCustom(u16 *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex)
+void GPUEngineBase::_RenderPixelsCustom(void *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex)
 {
+	u16 *__restrict dstColorLine16 = (u16 *)dstColorLine;
+	FragmentColor *__restrict dstColorLine32 = (FragmentColor *)dstColorLine;
 	const size_t lineWidth = GPU->GetDisplayInfo().customWidth;
 	
 #ifdef ENABLE_SSE2
@@ -2551,7 +2865,7 @@ void GPUEngineBase::_RenderPixelsCustom(u16 *__restrict dstColorLine, u8 *__rest
 																												   srcColorLo_vec128,
 																												   srcOpaqueMask,
 																												   NULL,
-																												   dstColorLine + i,
+																												   (GPU->GetDisplayInfo().colorFormat == NDSColorFormat_BGR555_Rev) ? (u16 *)(dstColorLine16 + i) : (u16 *)(dstColorLine32 + i),
 																												   dstLayerID + i);
 		}
 #endif
@@ -2565,26 +2879,30 @@ void GPUEngineBase::_RenderPixelsCustom(u16 *__restrict dstColorLine, u8 *__rest
 			this->_RenderPixel<LAYERID, ISDEBUGRENDER, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT>(_gpuDstToSrcIndex[i],
 																									  this->_bgLayerColorCustom[i],
 																									  0,
-																									  dstColorLine + i,
+																									  (GPU->GetDisplayInfo().colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + i) : (void *)(dstColorLine32 + i),
 																									  dstLayerID + i);
 		}
 		
-		dstColorLine += dstPixCount;
+		dstColorLine16 += dstPixCount;
+		dstColorLine32 += dstPixCount;
 		dstLayerID += dstPixCount;
 	}
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT>
-void GPUEngineBase::_RenderPixelsCustomVRAM(u16 *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex)
+void GPUEngineBase::_RenderPixelsCustomVRAM(void *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex)
 {
 	const size_t lineWidth = GPU->GetDisplayInfo().customWidth;
 	const size_t lineCount = _gpuDstLineCount[lineIndex];
 	const size_t dstPixCount = lineWidth * lineCount;
-	const size_t ssePixCount = (dstPixCount - (dstPixCount % 8));
 	const u16 *__restrict srcLine = GPU->GetCustomVRAMAddressUsingMappedAddress(this->_BGLayer[LAYERID].BMPAddress) + (_gpuDstLineIndex[lineIndex] * lineWidth);
+	u16 *__restrict dstColorLine16 = (u16 *)dstColorLine;
+	FragmentColor *__restrict dstColorLine32 = (FragmentColor *)dstColorLine;
 	
 	size_t i = 0;
+	
 #ifdef ENABLE_SSE2
+	const size_t ssePixCount = (dstPixCount - (dstPixCount % 8));
 	for (; i < ssePixCount; i+=16)
 	{
 		const __m128i srcColorLo_vec128 = _mm_load_si128((__m128i *)(srcLine + i));
@@ -2599,7 +2917,7 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(u16 *__restrict dstColorLine, u8 *__
 																											   srcColorLo_vec128,
 																											   srcOpaqueMask,
 																											   NULL,
-																											   dstColorLine + i,
+																											   (GPU->GetDisplayInfo().colorFormat == NDSColorFormat_BGR555_Rev) ? (u16 *)(dstColorLine16 + i) : (u16 *)(dstColorLine32 + i),
 																											   dstLayerID + i);
 	}
 #endif
@@ -2613,7 +2931,7 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(u16 *__restrict dstColorLine, u8 *__
 		this->_RenderPixel<LAYERID, ISDEBUGRENDER, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT>(_gpuDstToSrcIndex[i],
 																								  srcLine[i],
 																								  0,
-																								  dstColorLine + i,
+																								  (GPU->GetDisplayInfo().colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + i) : (void *)(dstColorLine32 + i),
 																								  dstLayerID + i);
 	}
 }
@@ -2824,7 +3142,7 @@ void GPUEngineBase::_RenderLine_BGAffine(u16 *__restrict dstColorLine, const u16
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
-u16* GPUEngineBase::_RenderLine_BGExtended(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, bool &outUseCustomVRAM)
+void* GPUEngineBase::_RenderLine_BGExtended(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, bool &outUseCustomVRAM)
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
 	
@@ -2865,10 +3183,11 @@ u16* GPUEngineBase::_RenderLine_BGExtended(u16 *__restrict dstColorLine, const u
 					
 					if (GPU->GetEngineMain()->VerifyVRAMLineDidChange(blockID, lineIndex + blockLine))
 					{
-						u16 *newRenderLineTarget = (this->_displayOutputMode == GPUDisplayMode_Normal) ? this->nativeBuffer + (lineIndex * GPU_FRAMEBUFFER_NATIVE_WIDTH) : this->_internalRenderLineTargetNative;
-						this->_LineColorCopy<true, false, false, false>(newRenderLineTarget, dstColorLine, lineIndex);
+						const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+						void *newRenderLineTarget = (this->_displayOutputMode == GPUDisplayMode_Normal) ? (u8 *)this->nativeBuffer + (lineIndex * GPU_FRAMEBUFFER_NATIVE_WIDTH * dispInfo.pixelBytes) : (u8 *)this->_internalRenderLineTargetNative;
+						this->_LineColorCopy<true, false, false, false, 2>(newRenderLineTarget, dstColorLine, lineIndex);
 						this->_LineLayerIDCopy<true, false>(this->_renderLineLayerIDNative, this->_renderLineLayerIDCustom, lineIndex);
-						dstColorLine = newRenderLineTarget;
+						dstColorLine = (u16 *)newRenderLineTarget;
 					}
 					
 					outUseCustomVRAM = !GPU->GetEngineMain()->isLineCaptureNative[blockID][lineIndex + blockLine];
@@ -2891,10 +3210,10 @@ u16* GPUEngineBase::_RenderLine_BGExtended(u16 *__restrict dstColorLine, const u
 					const size_t customLineWidth = dispInfo.customWidth;
 					const size_t customLineIndex = _gpuDstLineIndex[lineIndex];
 					
-					u16 *newRenderLineTarget = (this->_displayOutputMode == GPUDisplayMode_Normal) ? this->customBuffer + (customLineIndex * customLineWidth) : this->_internalRenderLineTargetCustom;
-					this->_LineColorCopy<false, true, false, false>(newRenderLineTarget, dstColorLine, lineIndex);
+					void *newRenderLineTarget = (this->_displayOutputMode == GPUDisplayMode_Normal) ? (u8 *)this->customBuffer + (customLineIndex * customLineWidth * dispInfo.pixelBytes) : (u8 *)this->_internalRenderLineTargetCustom;
+					this->_LineColorCopy<false, true, false, false, 2>(newRenderLineTarget, dstColorLine, lineIndex);
 					this->_LineLayerIDCopy<false, true>(this->_renderLineLayerIDCustom, this->_renderLineLayerIDNative, lineIndex);
-					dstColorLine = newRenderLineTarget;
+					dstColorLine = (u16 *)newRenderLineTarget;
 					
 					this->isLineRenderNative[lineIndex] = false;
 					this->nativeLineRenderCount--;
@@ -2919,30 +3238,30 @@ u16* GPUEngineBase::_RenderLine_BGExtended(u16 *__restrict dstColorLine, const u
 /*****************************************************************************/
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_LineText(u16 *__restrict dstColorLine, const u16 lineIndex)
+void GPUEngineBase::_LineText(void *__restrict dstColorLine, const u16 lineIndex)
 {
 	if (ISDEBUGRENDER)
 	{
-		this->_RenderLine_BGText<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, 0, lineIndex);
+		this->_RenderLine_BGText<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>((u16 *)dstColorLine, lineIndex, 0, lineIndex);
 	}
 	else
 	{
-		this->_RenderLine_BGText<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, this->_BGLayer[LAYERID].xOffset, lineIndex + this->_BGLayer[LAYERID].yOffset);
+		this->_RenderLine_BGText<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>((u16 *)dstColorLine, lineIndex, this->_BGLayer[LAYERID].xOffset, lineIndex + this->_BGLayer[LAYERID].yOffset);
 	}
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_LineRot(u16 *__restrict dstColorLine, const u16 lineIndex)
+void GPUEngineBase::_LineRot(void *__restrict dstColorLine, const u16 lineIndex)
 {
 	if (ISDEBUGRENDER)
 	{
 		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, lineIndex*GPU_FRAMEBUFFER_NATIVE_WIDTH};
-		this->_RenderLine_BGAffine<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, debugParams);
+		this->_RenderLine_BGAffine<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>((u16 *)dstColorLine, lineIndex, debugParams);
 	}
 	else
 	{
 		IOREG_BGnParameter *__restrict bgParams = (LAYERID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
-		this->_RenderLine_BGAffine<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, *bgParams);
+		this->_RenderLine_BGAffine<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>((u16 *)dstColorLine, lineIndex, *bgParams);
 		
 		bgParams->BGnX.value += bgParams->BGnPB.value;
 		bgParams->BGnY.value += bgParams->BGnPD.value;
@@ -2950,17 +3269,17 @@ void GPUEngineBase::_LineRot(u16 *__restrict dstColorLine, const u16 lineIndex)
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
-u16* GPUEngineBase::_LineExtRot(u16 *__restrict dstColorLine, const u16 lineIndex, bool &outUseCustomVRAM)
+void* GPUEngineBase::_LineExtRot(void *__restrict dstColorLine, const u16 lineIndex, bool &outUseCustomVRAM)
 {
 	if (ISDEBUGRENDER)
 	{
 		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, lineIndex*GPU_FRAMEBUFFER_NATIVE_WIDTH};
-		return this->_RenderLine_BGExtended<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, debugParams, outUseCustomVRAM);
+		return this->_RenderLine_BGExtended<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>((u16 *)dstColorLine, lineIndex, debugParams, outUseCustomVRAM);
 	}
 	else
 	{
 		IOREG_BGnParameter *__restrict bgParams = (LAYERID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
-		dstColorLine = this->_RenderLine_BGExtended<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex, *bgParams, outUseCustomVRAM);
+		dstColorLine = this->_RenderLine_BGExtended<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>((u16 *)dstColorLine, lineIndex, *bgParams, outUseCustomVRAM);
 		
 		bgParams->BGnX.value += bgParams->BGnPB.value;
 		bgParams->BGnY.value += bgParams->BGnPD.value;
@@ -3595,20 +3914,23 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *__restrict ds
 	}
 }
 
-u16* GPUEngineBase::_RenderLine_Layers(const u16 l)
+void* GPUEngineBase::_RenderLine_Layers(const u16 l)
 {
-	return (this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH));
+	return ((u8 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU->GetDisplayInfo().pixelBytes));
 }
 
 template <bool ISFULLINTENSITYHINT>
 void GPUEngineBase::ApplyMasterBrightness()
 {
+	const NDSColorFormat outputFormat = GPU->GetDisplayInfo().colorFormat;
+	const size_t pixBytes = GPU->GetDisplayInfo().pixelBytes;
+	
 	const IOREG_MASTER_BRIGHT &MASTER_BRIGHT = this->_IORegisterMap->MASTER_BRIGHT;
 	const u32 intensity = MASTER_BRIGHT.Intensity;
 	
 	if (!ISFULLINTENSITYHINT && (intensity == 0)) return;
 	
-	u16 *dst = this->renderedBuffer;
+	void *dst = this->renderedBuffer;
 	const size_t pixCount = this->renderedWidth * this->renderedHeight;
 	
 	switch (MASTER_BRIGHT.Mode)
@@ -3622,25 +3944,69 @@ void GPUEngineBase::ApplyMasterBrightness()
 			{
 				size_t i = 0;
 				
+				switch (outputFormat)
+				{
+					case NDSColorFormat_BGR555_Rev:
+					{
 #ifdef ENABLE_SSE2
-				const __m128i intensity_vec128 = _mm_set1_epi16(intensity);
-				
-				const size_t ssePixCount = pixCount - (pixCount % 8);
-				for (; i < ssePixCount; i += 8)
-				{
-					const __m128i dstColor_vec128 = _mm_load_si128((__m128i *)(dst + i));
-					_mm_store_si128( (__m128i *)(dst + i), this->_ColorEffectIncreaseBrightness(dstColor_vec128, intensity_vec128) );
-				}
+						const __m128i intensity_vec128 = _mm_set1_epi16(intensity);
+						
+						const size_t ssePixCount = pixCount - (pixCount % 8);
+						for (; i < ssePixCount; i += 8)
+						{
+							const __m128i dstColor_vec128 = _mm_load_si128((__m128i *)((u16 *)dst + i));
+							_mm_store_si128( (__m128i *)((u16 *)dst + i), this->_ColorEffectIncreaseBrightness(dstColor_vec128, intensity_vec128) );
+						}
 #endif
-				for (; i < pixCount; i++)
-				{
-					dst[i] = GPUEngineBase::_fadeInColors[intensity][ dst[i] & 0x7FFF ];
+						for (; i < pixCount; i++)
+						{
+							((u16 *)dst)[i] = GPUEngineBase::_fadeInColors[intensity][ ((u16 *)dst)[i] & 0x7FFF ];
+						}
+						break;
+					}
+						
+					case NDSColorFormat_BGR666_Rev:
+					{
+						for (; i < pixCount; i++)
+						{
+							((FragmentColor *)dst)[i] = this->_ColorEffectIncreaseBrightness<NDSColorFormat_BGR666_Rev, NDSColorFormat_BGR666_Rev>(((FragmentColor *)dst)[i], intensity);
+						}
+						break;
+					}
+						
+					case NDSColorFormat_BGR888_Rev:
+					{
+						for (; i < pixCount; i++)
+						{
+							((FragmentColor *)dst)[i] = this->_ColorEffectIncreaseBrightness<NDSColorFormat_BGR888_Rev, NDSColorFormat_BGR888_Rev>(((FragmentColor *)dst)[i], intensity);
+						}
+						break;
+					}
+						
+					default:
+						break;
 				}
 			}
 			else
 			{
 				// all white (optimization)
-				memset_u16(dst, 0x7FFF, pixCount);
+				switch (outputFormat)
+				{
+					case NDSColorFormat_BGR555_Rev:
+						memset_u16(dst, 0x7FFF, pixCount);
+						break;
+						
+					case NDSColorFormat_BGR666_Rev:
+						memset_u32(dst, 0x003F3F3F, pixCount);
+						break;
+						
+					case NDSColorFormat_BGR888_Rev:
+						memset_u32(dst, 0x00FFFFFF, pixCount);
+						break;
+						
+					default:
+						break;
+				}
 			}
 			break;
 		}
@@ -3651,25 +4017,53 @@ void GPUEngineBase::ApplyMasterBrightness()
 			{
 				size_t i = 0;
 				
+				switch (outputFormat)
+				{
+					case NDSColorFormat_BGR555_Rev:
+					{
 #ifdef ENABLE_SSE2
-				const __m128i intensity_vec128 = _mm_set1_epi16(intensity);
-				
-				const size_t ssePixCount = pixCount - (pixCount % 8);
-				for (; i < ssePixCount; i += 8)
-				{
-					const __m128i dstColor_vec128 = _mm_load_si128((__m128i *)(dst + i));
-					_mm_store_si128( (__m128i *)(dst + i), this->_ColorEffectDecreaseBrightness(dstColor_vec128, intensity_vec128) );
-				}
+						const __m128i intensity_vec128 = _mm_set1_epi16(intensity);
+						
+						const size_t ssePixCount = pixCount - (pixCount % 8);
+						for (; i < ssePixCount; i += 8)
+						{
+							const __m128i dstColor_vec128 = _mm_load_si128((__m128i *)((u16 *)dst + i));
+							_mm_store_si128( (__m128i *)((u16 *)dst + i), this->_ColorEffectDecreaseBrightness(dstColor_vec128, intensity_vec128) );
+						}
 #endif
-				for (; i < pixCount; i++)
-				{
-					dst[i] = GPUEngineBase::_fadeOutColors[intensity][ dst[i] & 0x7FFF ];
+						for (; i < pixCount; i++)
+						{
+							((u16 *)dst)[i] = GPUEngineBase::_fadeOutColors[intensity][ ((u16 *)dst)[i] & 0x7FFF ];
+						}
+						break;
+					}
+						
+					case NDSColorFormat_BGR666_Rev:
+					{
+						for (; i < pixCount; i++)
+						{
+							((FragmentColor *)dst)[i] = this->_ColorEffectDecreaseBrightness<NDSColorFormat_BGR666_Rev, NDSColorFormat_BGR666_Rev>(((FragmentColor *)dst)[i], intensity);
+						}
+						break;
+					}
+						
+					case NDSColorFormat_BGR888_Rev:
+					{
+						for (; i < pixCount; i++)
+						{
+							((FragmentColor *)dst)[i] = this->_ColorEffectDecreaseBrightness<NDSColorFormat_BGR888_Rev, NDSColorFormat_BGR888_Rev>(((FragmentColor *)dst)[i], intensity);
+						}
+						break;
+					}
+						
+					default:
+						break;
 				}
 			}
 			else
 			{
 				// all black (optimization)
-				memset(dst, 0, pixCount * sizeof(u16));
+				memset(dst, 0, pixCount * pixBytes);
 			}
 			break;
 		}
@@ -3812,7 +4206,7 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex)
 }
 
 template <GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
-u16* GPUEngineBase::_RenderLine_LayerBG_Final(u16 *dstColorLine, const u16 lineIndex)
+void* GPUEngineBase::_RenderLine_LayerBG_Final(void *dstColorLine, const u16 lineIndex)
 {
 	bool useCustomVRAM = false;
 	
@@ -3848,13 +4242,13 @@ u16* GPUEngineBase::_RenderLine_LayerBG_Final(u16 *dstColorLine, const u16 lineI
 }
 
 template <GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
-u16* GPUEngineBase::_RenderLine_LayerBG_ApplyColorEffectDisabledHint(u16 *dstColorLine, const u16 lineIndex)
+void* GPUEngineBase::_RenderLine_LayerBG_ApplyColorEffectDisabledHint(void *dstColorLine, const u16 lineIndex)
 {
 	return this->_RenderLine_LayerBG_Final<LAYERID, ISDEBUGRENDER, MOSAIC, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(dstColorLine, lineIndex);
 }
 
 template <GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
-u16* GPUEngineBase::_RenderLine_LayerBG_ApplyNoWindowsEnabledHint(u16 *dstColorLine, const u16 lineIndex)
+void* GPUEngineBase::_RenderLine_LayerBG_ApplyNoWindowsEnabledHint(void *dstColorLine, const u16 lineIndex)
 {
 	const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
 	
@@ -3871,7 +4265,7 @@ u16* GPUEngineBase::_RenderLine_LayerBG_ApplyNoWindowsEnabledHint(u16 *dstColorL
 }
 
 template <GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED>
-u16* GPUEngineBase::_RenderLine_LayerBG_ApplyMosaic(u16 *dstColorLine, const u16 lineIndex)
+void* GPUEngineBase::_RenderLine_LayerBG_ApplyMosaic(void *dstColorLine, const u16 lineIndex)
 {
 	if (this->_isAnyWindowEnabled)
 	{
@@ -3886,7 +4280,7 @@ u16* GPUEngineBase::_RenderLine_LayerBG_ApplyMosaic(u16 *dstColorLine, const u16
 }
 
 template <GPULayerID LAYERID, bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED>
-u16* GPUEngineBase::_RenderLine_LayerBG(u16 *dstColorLine, const u16 lineIndex)
+void* GPUEngineBase::_RenderLine_LayerBG(void *dstColorLine, const u16 lineIndex)
 {
 	if (ISDEBUGRENDER)
 	{
@@ -3927,7 +4321,21 @@ void GPUEngineBase::_HandleDisplayModeOff(const size_t l)
 {
 	// Native rendering only.
 	// In this display mode, the display is cleared to white.
-	memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH), 0x7FFF);
+	
+	switch (GPU->GetDisplayInfo().colorFormat)
+	{
+		case NDSColorFormat_BGR555_Rev:
+			memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>((u16 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH), 0x7FFF);
+			break;
+			
+		case NDSColorFormat_BGR666_Rev:
+			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>((u32 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH), 0x003F3F3F);
+			break;
+			
+		case NDSColorFormat_BGR888_Rev:
+			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>((u32 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH), 0x00FFFFFF);
+			break;
+	}
 }
 
 void GPUEngineBase::_HandleDisplayModeNormal(const size_t l)
@@ -4010,8 +4418,8 @@ void GPUEngineBase::SetDisplayByID(const NDSDisplayID theDisplayID)
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	this->_targetDisplayID = theDisplayID;
-	this->nativeBuffer = (u16 *)dispInfo.nativeBuffer[theDisplayID];
-	this->customBuffer = (u16 *)dispInfo.customBuffer[theDisplayID];
+	this->nativeBuffer = dispInfo.nativeBuffer[theDisplayID];
+	this->customBuffer = dispInfo.customBuffer[theDisplayID];
 }
 
 GPUEngineID GPUEngineBase::GetEngineID() const
@@ -4021,20 +4429,20 @@ GPUEngineID GPUEngineBase::GetEngineID() const
 
 void GPUEngineBase::SetCustomFramebufferSize(size_t w, size_t h)
 {
-	u16 *oldWorkingScanline = this->_internalRenderLineTargetCustom;
+	void *oldWorkingScanline = this->_internalRenderLineTargetCustom;
 	u8 *oldBGPixels = this->_renderLineLayerIDCustom;
 	u8 *oldBGLayerIndexCustom = this->_bgLayerIndexCustom;
 	u16 *oldBGLayerColorCustom = this->_bgLayerColorCustom;
 	
-	u16 *newWorkingScanline = (u16 *)malloc_alignedCacheLine(w * _gpuLargestDstLineCount * sizeof(u16));
+	void *newWorkingScanline = malloc_alignedCacheLine(w * _gpuLargestDstLineCount * GPU->GetDisplayInfo().pixelBytes);
 	u8 *newBGPixels = (u8 *)malloc_alignedCacheLine(w * _gpuLargestDstLineCount * 4 * sizeof(u8)); // yes indeed, this is oversized. map debug tools try to write to it
 	u8 *newBGLayerIndexCustom = (u8 *)malloc_alignedCacheLine(w * _gpuLargestDstLineCount * sizeof(u8));
 	u16 *newBGLayerColorCustom = (u16 *)malloc_alignedCacheLine(w * _gpuLargestDstLineCount * sizeof(u16));
 	
 	this->_internalRenderLineTargetCustom = newWorkingScanline;
 	this->_renderLineLayerIDCustom = newBGPixels;
-	this->nativeBuffer = (u16 *)GPU->GetDisplayInfo().nativeBuffer[this->_targetDisplayID];
-	this->customBuffer = (u16 *)GPU->GetDisplayInfo().customBuffer[this->_targetDisplayID];
+	this->nativeBuffer = GPU->GetDisplayInfo().nativeBuffer[this->_targetDisplayID];
+	this->customBuffer = GPU->GetDisplayInfo().customBuffer[this->_targetDisplayID];
 	this->_bgLayerIndexCustom = newBGLayerIndexCustom;
 	this->_bgLayerColorCustom = newBGLayerColorCustom;
 	
@@ -4061,12 +4469,26 @@ void GPUEngineBase::ResolveCustomRendering()
 	}
 	
 	// Resolve any remaining native lines to the custom buffer
-	for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
+	if (dispInfo.pixelBytes == 2)
 	{
-		if (this->isLineOutputNative[y])
+		for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
 		{
-			this->_LineColorCopy<false, true, true, false>(this->customBuffer, this->nativeBuffer, y);
-			this->isLineOutputNative[y] = false;
+			if (this->isLineOutputNative[y])
+			{
+				this->_LineColorCopy<false, true, true, false, 2>(this->customBuffer, this->nativeBuffer, y);
+				this->isLineOutputNative[y] = false;
+			}
+		}
+	}
+	else if (dispInfo.pixelBytes == 4)
+	{
+		for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
+		{
+			if (this->isLineOutputNative[y])
+			{
+				this->_LineColorCopy<false, true, true, false, 4>(this->customBuffer, this->nativeBuffer, y);
+				this->isLineOutputNative[y] = false;
+			}
 		}
 	}
 	
@@ -4076,23 +4498,66 @@ void GPUEngineBase::ResolveCustomRendering()
 	this->renderedBuffer = this->customBuffer;
 }
 
+void GPUEngineBase::ResolveRGB666ToRGB888()
+{
+	size_t i = 0;
+	const size_t pixCount = this->renderedWidth * this->renderedHeight;
+	FragmentColor *buffer = (FragmentColor *)this->renderedBuffer;
+	
+#ifdef ENABLE_SSE2
+	const size_t ssePixCount = pixCount - (pixCount % 4);
+	for (; i < ssePixCount; i += 4)
+	{
+		// Convert to RGBA8888:
+		//    RGB   6-bit to 8-bit formula: dstRGB8 = (srcRGB6 << 2) | ((srcRGB6 >> 4) & 0x03)
+		//    Alpha 5-bit to 8-bit formula: dstA8   = (srcA5   << 3) | ((srcA5   >> 2) & 0x07)
+		__m128i color8888 = _mm_load_si128((__m128i *)(buffer + i));
+		__m128i a = _mm_or_si128( _mm_and_si128(_mm_slli_epi32(color8888, 3), _mm_set1_epi8(0xF8)), _mm_and_si128(_mm_srli_epi32(color8888, 2), _mm_set1_epi8(0x07)) );
+		color8888 = _mm_or_si128( _mm_and_si128(_mm_slli_epi32(color8888, 2), _mm_set1_epi8(0xFC)), _mm_and_si128(_mm_srli_epi32(color8888, 4), _mm_set1_epi8(0x03)) );
+		
+		color8888 = _mm_or_si128(_mm_and_si128(color8888, _mm_set1_epi32(0x00FFFFFF)), _mm_and_si128(a, _mm_set1_epi32(0xFF000000)));
+		_mm_store_si128((__m128i *)(buffer + i), color8888);
+	}
+#endif
+	
+	for (; i < pixCount; i++)
+	{
+		buffer[i].r = material_6bit_to_8bit[buffer[i].r];
+		buffer[i].g = material_6bit_to_8bit[buffer[i].g];
+		buffer[i].b = material_6bit_to_8bit[buffer[i].b];
+		buffer[i].a = material_5bit_to_8bit[buffer[i].a];
+	}
+}
+
 void GPUEngineBase::ResolveToCustomFramebuffer()
 {
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	
 	if (this->nativeLineOutputCount == 0)
 	{
 		return;
 	}
 	
-	if (GPU->GetDisplayInfo().isCustomSizeRequested)
+	if (dispInfo.isCustomSizeRequested)
 	{
-		for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
+		if (dispInfo.pixelBytes == 2)
 		{
-			this->_LineColorCopy<false, true, true, false>(this->customBuffer, this->nativeBuffer, y);
+			for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
+			{
+				this->_LineColorCopy<false, true, true, false, 2>(this->customBuffer, this->nativeBuffer, y);
+			}
+		}
+		else if (dispInfo.pixelBytes == 4)
+		{
+			for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
+			{
+				this->_LineColorCopy<false, true, true, false, 4>(this->customBuffer, this->nativeBuffer, y);
+			}
 		}
 	}
 	else
 	{
-		memcpy(this->customBuffer, this->nativeBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+		memcpy(this->customBuffer, this->nativeBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes);
 	}
 	
 	GPU->SetDisplayDidCustomRender(this->_targetDisplayID, true);
@@ -4376,7 +4841,7 @@ bool GPUEngineA::VerifyVRAMLineDidChange(const size_t blockID, const size_t l)
 	const bool didVRAMLineChange = (memcmp(currentNativeLine, capturedNativeLine, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16)) != 0);
 	if (didVRAMLineChange)
 	{
-		this->_LineColorCopy<true, true, true, false>(this->_VRAMNativeBlockCaptureCopyPtr[blockID], this->_VRAMNativeBlockPtr[blockID], l);
+		this->_LineColorCopy<true, true, true, false, 2>(this->_VRAMNativeBlockCaptureCopyPtr[blockID], this->_VRAMNativeBlockPtr[blockID], l);
 		this->isLineCaptureNative[blockID][l] = true;
 		this->nativeLineCaptureCount[blockID]++;
 	}
@@ -4396,7 +4861,7 @@ void GPUEngineA::RenderLine(const u16 l)
 	this->_SetupWindows<1>(l);
 	
 	// Render the line
-	u16 *renderLineTarget = this->_RenderLine_Layers(l);
+	void *renderLineTarget = this->_RenderLine_Layers(l);
 	
 	// Fill the display output
 	switch (this->_displayOutputMode)
@@ -4436,7 +4901,7 @@ void GPUEngineA::RenderLine(const u16 l)
 	}
 }
 
-u16* GPUEngineA::_RenderLine_Layers(const u16 l)
+void* GPUEngineA::_RenderLine_Layers(const u16 l)
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	const size_t customLineWidth = dispInfo.customWidth;
@@ -4447,9 +4912,9 @@ u16* GPUEngineA::_RenderLine_Layers(const u16 l)
 	// up displaying anyway. Otherwise, we need to use the working buffer.
 	const bool isDisplayModeNormal = (this->_displayOutputMode == GPUDisplayMode_Normal);
 	
-	u16 *renderLineTargetNative = (isDisplayModeNormal) ? this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) : this->_internalRenderLineTargetNative;
-	u16 *renderLineTargetCustom = (isDisplayModeNormal) ? this->customBuffer + (customLineIndex * customLineWidth) : this->_internalRenderLineTargetCustom;
-	u16 *currentRenderLineTarget = renderLineTargetNative;
+	void *renderLineTargetNative = (isDisplayModeNormal) ? (u8 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * dispInfo.pixelBytes) : (u8 *)this->_internalRenderLineTargetNative;
+	void *renderLineTargetCustom = (isDisplayModeNormal) ? (u8 *)this->customBuffer + (customLineIndex * customLineWidth * dispInfo.pixelBytes) : (u8 *)this->_internalRenderLineTargetCustom;
+	void *currentRenderLineTarget = renderLineTargetNative;
 	
 	const u16 backdropColor = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
 	this->_RenderLine_Clear(backdropColor, l, renderLineTargetNative);
@@ -4502,10 +4967,12 @@ u16* GPUEngineA::_RenderLine_Layers(const u16 l)
 							continue;
 						}
 						
+						const NDSColorFormat framebuffer3DFormat = CurrentRenderer->GetColorFormat();
+						
 						if (this->isLineRenderNative[l] && !CurrentRenderer->IsFramebufferNativeSize())
 						{
-							u16 *newRenderLineTarget = renderLineTargetCustom;
-							this->_LineColorCopy<false, true, false, false>(newRenderLineTarget, currentRenderLineTarget, l);
+							void *newRenderLineTarget = renderLineTargetCustom;
+							this->_LineColorCopy<false, true, false, false, 2>(newRenderLineTarget, currentRenderLineTarget, l);
 							this->_LineLayerIDCopy<false, true>(this->_renderLineLayerIDCustom, this->_renderLineLayerIDNative, l);
 							currentRenderLineTarget = newRenderLineTarget;
 							
@@ -4515,7 +4982,8 @@ u16* GPUEngineA::_RenderLine_Layers(const u16 l)
 						
 						const float customWidthScale = (float)customLineWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 						const FragmentColor *__restrict srcLine = framebuffer3D + (customLineIndex * customLineWidth);
-						u16 *__restrict dstColorLinePtr = currentRenderLineTarget;
+						u16 *__restrict dstColorLine16 = (u16 *)currentRenderLineTarget;
+						FragmentColor *__restrict dstColorLine32 = (FragmentColor *)currentRenderLineTarget;
 						u8 *__restrict dstLayerIDPtr = (this->isLineRenderNative[l]) ? this->_renderLineLayerIDNative : this->_renderLineLayerIDCustom;
 						
 						// Horizontally offset the 3D layer by this amount.
@@ -4533,7 +5001,7 @@ u16* GPUEngineA::_RenderLine_Layers(const u16 l)
 								{
 									this->_RenderPixel3D_SSE2<true>(dstX,
 																	srcLine + dstX,
-																	dstColorLinePtr + dstX,
+																	(dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? (u16 *)(dstColorLine16 + dstX) : (u16 *)(dstColorLine32 + dstX),
 																	dstLayerIDPtr + dstX);
 								}
 #endif
@@ -4543,12 +5011,14 @@ u16* GPUEngineA::_RenderLine_Layers(const u16 l)
 									
 									this->_RenderPixel3D(_gpuDstToSrcIndex[dstX],
 														 srcLine[srcX],
-														 dstColorLinePtr + dstX,
+														 framebuffer3DFormat,
+														 (dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + dstX) : (void *)(dstColorLine32 + dstX),
 														 dstLayerIDPtr + dstX);
 								}
 								
 								srcLine += customLineWidth;
-								dstColorLinePtr += customLineWidth;
+								dstColorLine16 += customLineWidth;
+								dstColorLine32 += customLineWidth;
 								dstLayerIDPtr += customLineWidth;
 							}
 						}
@@ -4569,12 +5039,14 @@ u16* GPUEngineA::_RenderLine_Layers(const u16 l)
 									
 									this->_RenderPixel3D(_gpuDstToSrcIndex[dstX],
 														 srcLine[srcX],
-														 dstColorLinePtr + dstX,
+														 framebuffer3DFormat,
+														 (dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + dstX) : (void *)(dstColorLine32 + dstX),
 														 dstLayerIDPtr + dstX);
 								}
 								
 								srcLine += customLineWidth;
-								dstColorLinePtr += customLineWidth;
+								dstColorLine16 += customLineWidth;
+								dstColorLine32 += customLineWidth;
 								dstLayerIDPtr += customLineWidth;
 							}
 						}
@@ -4619,8 +5091,8 @@ u16* GPUEngineA::_RenderLine_Layers(const u16 l)
 			{
 				if (GPU->GetEngineMain()->VerifyVRAMLineDidChange(this->vramBlockOBJIndex, l))
 				{
-					u16 *newRenderLineTarget = (isDisplayModeNormal) ? this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) : this->_internalRenderLineTargetNative;
-					this->_LineColorCopy<true, false, false, false>(newRenderLineTarget, currentRenderLineTarget, l);
+					void *newRenderLineTarget = (isDisplayModeNormal) ? (u8 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * dispInfo.pixelBytes) : (u8 *)this->_internalRenderLineTargetNative;
+					this->_LineColorCopy<true, false, false, false, 2>(newRenderLineTarget, currentRenderLineTarget, l);
 					this->_LineLayerIDCopy<true, false>(this->_renderLineLayerIDNative, this->_renderLineLayerIDCustom, l);
 					currentRenderLineTarget = newRenderLineTarget;
 				}
@@ -4630,8 +5102,8 @@ u16* GPUEngineA::_RenderLine_Layers(const u16 l)
 			const u16 *__restrict srcLine = (useCustomVRAM) ? GPU->GetEngineMain()->GetCustomVRAMBlockPtr(this->vramBlockOBJIndex) + (customLineIndex * customLineWidth) : NULL;
 			if (this->isLineRenderNative[l] && useCustomVRAM)
 			{
-				u16 *newRenderLineTarget = renderLineTargetCustom;
-				this->_LineColorCopy<false, true, false, false>(newRenderLineTarget, currentRenderLineTarget, l);
+				void *newRenderLineTarget = renderLineTargetCustom;
+				this->_LineColorCopy<false, true, false, false, 2>(newRenderLineTarget, currentRenderLineTarget, l);
 				this->_LineLayerIDCopy<false, true>(this->_renderLineLayerIDCustom, this->_renderLineLayerIDNative, l);
 				currentRenderLineTarget = newRenderLineTarget;
 				
@@ -4639,7 +5111,8 @@ u16* GPUEngineA::_RenderLine_Layers(const u16 l)
 				this->nativeLineRenderCount--;
 			}
 			
-			u16 *__restrict dstColorLinePtr = currentRenderLineTarget;
+			u16 *__restrict dstColorLine16 = (u16 *)currentRenderLineTarget;
+			FragmentColor *__restrict dstColorLine32 = (FragmentColor *)currentRenderLineTarget;
 			
 			if (this->isLineRenderNative[l])
 			{
@@ -4652,7 +5125,7 @@ u16* GPUEngineA::_RenderLine_Layers(const u16 l)
 					this->_RenderPixel<GPULayerID_OBJ, false, false, false>(srcX,
 																			this->_sprColor[srcX],
 																			this->_sprAlpha[srcX],
-																			dstColorLinePtr + srcX,
+																			(dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + srcX) : (void *)(dstColorLine32 + srcX),
 																			dstLayerIDPtr + srcX);
 				}
 			}
@@ -4673,13 +5146,14 @@ u16* GPUEngineA::_RenderLine_Layers(const u16 l)
 							this->_RenderPixel<GPULayerID_OBJ, false, false, false>(srcX,
 																					(useCustomVRAM) ? srcLine[dstX] : this->_sprColor[srcX],
 																					this->_sprAlpha[srcX],
-																					dstColorLinePtr + dstX,
+																					(dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + dstX) : (void *)(dstColorLine32 + dstX),
 																					dstLayerIDPtr + dstX);
 						}
 					}
 					
 					srcLine += customLineWidth;
-					dstColorLinePtr += customLineWidth;
+					dstColorLine16 += customLineWidth;
+					dstColorLine32 += customLineWidth;
 					dstLayerIDPtr += customLineWidth;
 				}
 			}
@@ -4690,7 +5164,7 @@ u16* GPUEngineA::_RenderLine_Layers(const u16 l)
 }
 
 template<size_t CAPTURELENGTH>
-void GPUEngineA::_RenderLine_DisplayCapture(const u16 *renderedLineSrcA, const u16 l)
+void GPUEngineA::_RenderLine_DisplayCapture(const void *renderedLineSrcA, const u16 l)
 {
 	assert( (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH/2) || (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH) );
 	
@@ -4737,7 +5211,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 *renderedLineSrcA, const u
 	}
 	
 	static CACHE_ALIGN u16 fifoLine[GPU_FRAMEBUFFER_NATIVE_WIDTH];
-	const u16 *srcA = (DISPCAPCNT.SrcA == 0) ? renderedLineSrcA : this->_3DFramebufferRGBA5551 + (_gpuDstLineIndex[l] * dispInfo.customWidth);
+	const u16 *srcA = (DISPCAPCNT.SrcA == 0) ? (u16 *)renderedLineSrcA : this->_3DFramebufferRGBA5551 + (_gpuDstLineIndex[l] * dispInfo.customWidth);
 	const u16 *srcB = (DISPCAPCNT.SrcB == 0) ? cap_src : fifoLine;
 	
 	switch (DISPCAPCNT.CaptureSrc)
@@ -5362,11 +5836,85 @@ void GPUEngineA::_HandleDisplayModeVRAM(const size_t l)
 	
 	if (this->isLineCaptureNative[DISPCNT.VRAM_Block][l])
 	{
-		this->_LineColorCopy<true, true, true, true>(this->nativeBuffer, this->_VRAMNativeBlockPtr[DISPCNT.VRAM_Block], l);
+		switch (GPU->GetDisplayInfo().colorFormat)
+		{
+			case NDSColorFormat_BGR555_Rev:
+				this->_LineColorCopy<true, true, true, true, 2>(this->nativeBuffer, this->_VRAMNativeBlockPtr[DISPCNT.VRAM_Block], l);
+				break;
+				
+			case NDSColorFormat_BGR666_Rev:
+			{
+				const u16 *src = this->_VRAMNativeBlockPtr[DISPCNT.VRAM_Block] + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+				FragmentColor *dst = (FragmentColor *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+				
+				for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
+				{
+					dst[i].r = material_5bit_to_6bit[(src[i] >>  0) & 0x001F];
+					dst[i].g = material_5bit_to_6bit[(src[i] >>  5) & 0x001F];
+					dst[i].b = material_5bit_to_6bit[(src[i] >> 10) & 0x001F];
+					dst[i].a = 0;
+				}
+				break;
+			}
+				
+			case NDSColorFormat_BGR888_Rev:
+			{
+				const u16 *src = this->_VRAMNativeBlockPtr[DISPCNT.VRAM_Block] + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+				FragmentColor *dst = (FragmentColor *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+				
+				for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
+				{
+					dst[i].r = material_5bit_to_8bit[(src[i] >>  0) & 0x001F];
+					dst[i].g = material_5bit_to_8bit[(src[i] >>  5) & 0x001F];
+					dst[i].b = material_5bit_to_8bit[(src[i] >> 10) & 0x001F];
+					dst[i].a = 0;
+				}
+				break;
+			}
+		}
 	}
 	else
 	{
-		this->_LineColorCopy<false, false, true, true>(this->customBuffer, this->_VRAMCustomBlockPtr[DISPCNT.VRAM_Block], l);
+		const size_t customWidth = GPU->GetDisplayInfo().customWidth;
+		const size_t customPixCount = customWidth * _gpuDstLineCount[l];
+		
+		switch (GPU->GetDisplayInfo().colorFormat)
+		{
+			case NDSColorFormat_BGR555_Rev:
+				this->_LineColorCopy<false, false, true, true, 2>((u16 *)this->customBuffer, this->_VRAMCustomBlockPtr[DISPCNT.VRAM_Block], l);
+				break;
+				
+			case NDSColorFormat_BGR666_Rev:
+			{
+				const u16 *src = this->_VRAMCustomBlockPtr[DISPCNT.VRAM_Block] + (_gpuDstLineIndex[l] * customWidth);
+				FragmentColor *dst = (FragmentColor *)this->customBuffer + (_gpuDstLineIndex[l] * customWidth);
+				
+				for (size_t i = 0; i < customPixCount; i++)
+				{
+					dst[i].r = material_5bit_to_6bit[(src[i] >>  0) & 0x001F];
+					dst[i].g = material_5bit_to_6bit[(src[i] >>  5) & 0x001F];
+					dst[i].b = material_5bit_to_6bit[(src[i] >> 10) & 0x001F];
+					dst[i].a = 0;
+				}
+				break;
+			}
+				
+			case NDSColorFormat_BGR888_Rev:
+			{
+				const u16 *src = this->_VRAMCustomBlockPtr[DISPCNT.VRAM_Block] + (_gpuDstLineIndex[l] * customWidth);
+				FragmentColor *dst = (FragmentColor *)this->customBuffer + (_gpuDstLineIndex[l] * customWidth);
+				
+				for (size_t i = 0; i < customPixCount; i++)
+				{
+					dst[i].r = material_5bit_to_8bit[(src[i] >>  0) & 0x001F];
+					dst[i].g = material_5bit_to_8bit[(src[i] >>  5) & 0x001F];
+					dst[i].b = material_5bit_to_8bit[(src[i] >> 10) & 0x001F];
+					dst[i].a = 0;
+				}
+				break;
+			}
+		}
+		
 		this->isLineOutputNative[l] = false;
 		this->nativeLineOutputCount--;
 	}
@@ -5379,22 +5927,73 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const size_t l)
 	//this has not been tested since the dma timing for dispfifo was changed around the time of
 	//newemuloop. it may not work.
 	
-	u32 *dstColorLine = (u32 *)(this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH));
+	u32 *dstColorLine = (u32 *)((u16 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH));
 	
+	switch (GPU->GetDisplayInfo().colorFormat)
+	{
+		case NDSColorFormat_BGR555_Rev:
+		{
+			u32 *dst = dstColorLine;
+			
 #ifdef ENABLE_SSE2
-	const __m128i fifoMask = _mm_set1_epi32(0x7FFF7FFF);
-	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(__m128i); i++)
-	{
-		__m128i fifoColor = _mm_set_epi32(DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv());
-		fifoColor = _mm_shuffle_epi32(fifoColor, 0x1B); // We need to shuffle the four FIFO values back into the correct order, since they were originally loaded in reverse order.
-		_mm_store_si128((__m128i *)dstColorLine + i, _mm_and_si128(fifoColor, fifoMask));
-	}
+			const __m128i fifoMask = _mm_set1_epi32(0x7FFF7FFF);
+			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(__m128i); i++)
+			{
+				__m128i fifoColor = _mm_set_epi32(DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv());
+				fifoColor = _mm_shuffle_epi32(fifoColor, 0x1B); // We need to shuffle the four FIFO values back into the correct order, since they were originally loaded in reverse order.
+				_mm_store_si128((__m128i *)dst + i, _mm_and_si128(fifoColor, fifoMask));
+			}
 #else
-	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(u32); i++)
-	{
-		dstColorLine[i] = DISP_FIFOrecv() & 0x7FFF7FFF;
-	}
+			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(u32); i++)
+			{
+				dst[i] = DISP_FIFOrecv() & 0x7FFF7FFF;
+			}
 #endif
+			break;
+		}
+			
+		case NDSColorFormat_BGR666_Rev:
+		{
+			FragmentColor *dst = (FragmentColor *)dstColorLine;
+			
+			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i+=2)
+			{
+				u32 src = DISP_FIFOrecv();
+				
+				dst[i+0].r = material_5bit_to_6bit[(src >>  0) & 0x0000001F];
+				dst[i+0].g = material_5bit_to_6bit[(src >>  5) & 0x0000001F];
+				dst[i+0].b = material_5bit_to_6bit[(src >> 10) & 0x0000001F];
+				dst[i+0].a = 0;
+				
+				dst[i+1].r = material_5bit_to_6bit[(src >> 16) & 0x0000001F];
+				dst[i+1].g = material_5bit_to_6bit[(src >> 21) & 0x0000001F];
+				dst[i+1].b = material_5bit_to_6bit[(src >> 26) & 0x0000001F];
+				dst[i+1].a = 0;
+			}
+			break;
+		}
+			
+		case NDSColorFormat_BGR888_Rev:
+		{
+			FragmentColor *dst = (FragmentColor *)dstColorLine;
+			
+			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i+=2)
+			{
+				u32 src = DISP_FIFOrecv();
+				
+				dst[i+0].r = material_5bit_to_8bit[(src >>  0) & 0x0000001F];
+				dst[i+0].g = material_5bit_to_8bit[(src >>  5) & 0x0000001F];
+				dst[i+0].b = material_5bit_to_8bit[(src >> 10) & 0x0000001F];
+				dst[i+0].a = 0;
+				
+				dst[i+1].r = material_5bit_to_8bit[(src >> 16) & 0x0000001F];
+				dst[i+1].g = material_5bit_to_8bit[(src >> 21) & 0x0000001F];
+				dst[i+1].b = material_5bit_to_8bit[(src >> 26) & 0x0000001F];
+				dst[i+1].a = 0;
+			}
+			break;
+		}
+	}
 }
 
 template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
@@ -5517,14 +6116,14 @@ void GPUEngineB::RenderLine(const u16 l)
 	}
 }
 
-u16* GPUEngineB::_RenderLine_Layers(const u16 l)
+void* GPUEngineB::_RenderLine_Layers(const u16 l)
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	const size_t customLineWidth = dispInfo.customWidth;
 	const size_t customLineCount = _gpuDstLineCount[l];
 	const size_t customLineIndex = _gpuDstLineIndex[l];
 	
-	u16 *currentRenderLineTarget = this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
+	void *currentRenderLineTarget = (u8 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * dispInfo.pixelBytes);
 	itemsForPriority_t *__restrict item;
 	
 	const u16 backdropColor = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
@@ -5605,8 +6204,8 @@ u16* GPUEngineB::_RenderLine_Layers(const u16 l)
 			{
 				if (GPU->GetEngineMain()->VerifyVRAMLineDidChange(this->vramBlockOBJIndex, l))
 				{
-					u16 *newRenderLineTarget = (this->_displayOutputMode == GPUDisplayMode_Normal) ? this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH) : this->_internalRenderLineTargetNative;
-					this->_LineColorCopy<true, false, false, false>(newRenderLineTarget, currentRenderLineTarget, l);
+					void *newRenderLineTarget = (u8 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * dispInfo.pixelBytes);
+					this->_LineColorCopy<true, false, false, false, 2>(newRenderLineTarget, currentRenderLineTarget, l);
 					this->_LineLayerIDCopy<true, false>(this->_renderLineLayerIDNative, this->_renderLineLayerIDCustom, l);
 					currentRenderLineTarget = newRenderLineTarget;
 				}
@@ -5616,8 +6215,8 @@ u16* GPUEngineB::_RenderLine_Layers(const u16 l)
 			const u16 *__restrict srcLine = (useCustomVRAM) ? GPU->GetEngineMain()->GetCustomVRAMBlockPtr(this->vramBlockOBJIndex) + (customLineIndex * customLineWidth) : NULL;
 			if (this->isLineRenderNative[l] && useCustomVRAM)
 			{
-				u16 *newRenderLineTarget = this->customBuffer + (customLineIndex * customLineWidth);
-				this->_LineColorCopy<false, true, false, false>(newRenderLineTarget, currentRenderLineTarget, l);
+				void *newRenderLineTarget = (u8 *)this->customBuffer + (customLineIndex * customLineWidth * dispInfo.pixelBytes);
+				this->_LineColorCopy<false, true, false, false, 2>(newRenderLineTarget, currentRenderLineTarget, l);
 				this->_LineLayerIDCopy<false, true>(this->_renderLineLayerIDCustom, this->_renderLineLayerIDNative, l);
 				currentRenderLineTarget = newRenderLineTarget;
 				
@@ -5625,7 +6224,8 @@ u16* GPUEngineB::_RenderLine_Layers(const u16 l)
 				this->nativeLineRenderCount--;
 			}
 			
-			u16 *__restrict dstColorLinePtr = currentRenderLineTarget;
+			u16 *__restrict dstColorLine16 = (u16 *)currentRenderLineTarget;
+			FragmentColor *__restrict dstColorLine32 = (FragmentColor *)currentRenderLineTarget;
 			
 			if (this->isLineRenderNative[l])
 			{
@@ -5638,7 +6238,7 @@ u16* GPUEngineB::_RenderLine_Layers(const u16 l)
 					this->_RenderPixel<GPULayerID_OBJ, false, false, false>(srcX,
 																			this->_sprColor[srcX],
 																			this->_sprAlpha[srcX],
-																			dstColorLinePtr + srcX,
+																			(dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + srcX) : (void *)(dstColorLine32 + srcX),
 																			dstLayerIDPtr + srcX);
 				}
 			}
@@ -5659,13 +6259,14 @@ u16* GPUEngineB::_RenderLine_Layers(const u16 l)
 							this->_RenderPixel<GPULayerID_OBJ, false, false, false>(srcX,
 																					(useCustomVRAM) ? srcLine[dstX] : this->_sprColor[srcX],
 																					this->_sprAlpha[srcX],
-																					dstColorLinePtr + dstX,
+																					(dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + dstX) : (void *)(dstColorLine32 + dstX),
 																					dstLayerIDPtr + dstX);
 						}
 					}
 					
 					srcLine += customLineWidth;
-					dstColorLinePtr += customLineWidth;
+					dstColorLine16 += customLineWidth;
+					dstColorLine32 += customLineWidth;
 					dstLayerIDPtr += customLineWidth;
 				}
 			}
@@ -5696,15 +6297,15 @@ GPUSubsystem::GPUSubsystem()
 	osd = new OSDCLASS(-1);
 	delete previousOSD;
 	
-	_customVRAM = NULL;
-	_customVRAMBlank = NULL;
-	_customFramebuffer = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
-	
 	_displayInfo.colorFormat = NDSColorFormat_BGR555_Rev;
 	_displayInfo.pixelBytes = sizeof(u16);
 	_displayInfo.isCustomSizeRequested = false;
 	_displayInfo.customWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	_displayInfo.customHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	
+	_customVRAM = NULL;
+	_customVRAMBlank = NULL;
+	_customFramebuffer = malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * _displayInfo.pixelBytes);
 	
 	_displayInfo.masterNativeBuffer = _nativeFramebuffer;
 	_displayInfo.nativeBuffer[NDSDisplayID_Main] = _displayInfo.masterNativeBuffer;
@@ -6134,16 +6735,32 @@ void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, 
 	
 	if (clientCustomBuffer != NULL)
 	{
-		memset_u16(clientCustomBuffer, 0x8000, w * h * 2);
 		this->_customFramebuffer = NULL;
 		this->_displayInfo.masterCustomBuffer = clientCustomBuffer;
 	}
 	else
 	{
-		u16 *newCustomFramebuffer = (u16 *)malloc_alignedCacheLine(w * h * 2 * pixelBytes);
-		memset_u16(newCustomFramebuffer, 0x8000, w * h * 2);
+		void *newCustomFramebuffer = malloc_alignedCacheLine(w * h * 2 * pixelBytes);
 		this->_customFramebuffer = newCustomFramebuffer;
 		this->_displayInfo.masterCustomBuffer = newCustomFramebuffer;
+	}
+	
+	switch (outputFormat)
+	{
+		case NDSColorFormat_BGR555_Rev:
+			memset_u16(this->_displayInfo.masterCustomBuffer, 0x8000, w * h * 2);
+			break;
+			
+		case NDSColorFormat_BGR666_Rev:
+			memset_u32(this->_displayInfo.masterCustomBuffer, 0x1F000000, w * h * 2);
+			break;
+			
+		case NDSColorFormat_BGR888_Rev:
+			memset_u32(this->_displayInfo.masterCustomBuffer, 0xFF000000, w * h * 2);
+			break;
+			
+		default:
+			break;
 	}
 	
 	this->_customVRAM = newCustomVRAM;
@@ -6163,6 +6780,7 @@ void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, 
 	
 	if (CurrentRenderer != BaseRenderer)
 	{
+		CurrentRenderer->RequestColorFormat(outputFormat);
 		CurrentRenderer->SetFramebufferSize(w, h);
 	}
 	
@@ -6229,7 +6847,7 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 			
 			if (!CommonSettings.showGpu.main)
 			{
-				memset(this->_engineMain->renderedBuffer, 0, this->_engineMain->renderedWidth * this->_engineMain->renderedHeight * sizeof(u16));
+				memset(this->_engineMain->renderedBuffer, 0, this->_engineMain->renderedWidth * this->_engineMain->renderedHeight * this->_displayInfo.pixelBytes);
 			}
 			else if (this->_engineMain->GetIsMasterBrightFullIntensity() && (this->_engineMain->GetIORegisterMap().DISPCAPCNT.CaptureEnable == 0))
 			{
@@ -6238,7 +6856,7 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 			
 			if (!CommonSettings.showGpu.sub)
 			{
-				memset(this->_engineSub->renderedBuffer, 0, this->_engineSub->renderedWidth * this->_engineSub->renderedHeight * sizeof(u16));
+				memset(this->_engineSub->renderedBuffer, 0, this->_engineSub->renderedWidth * this->_engineSub->renderedHeight * this->_displayInfo.pixelBytes);
 			}
 			else if (this->_engineSub->GetIsMasterBrightFullIntensity())
 			{
@@ -6293,6 +6911,12 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 			if (isFramebufferRenderNeeded[GPUEngineID_Sub])
 			{
 				this->_engineSub->ApplyMasterBrightness<false>();
+			}
+			
+			if (this->_displayInfo.colorFormat == NDSColorFormat_BGR666_Rev)
+			{
+				this->_engineMain->ResolveRGB666ToRGB888();
+				this->_engineSub->ResolveRGB666ToRGB888();
 			}
 			
 			if (this->_willAutoResolveToCustomBuffer)
