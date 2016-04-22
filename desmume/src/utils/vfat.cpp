@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006 Mic
-	Copyright (C) 2010-2015 DeSmuME team
+	Copyright (C) 2010-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -27,7 +27,9 @@
 #include "../types.h"
 #include "../debug.h"
 #include "../emufile.h"
-#include "../fs.h"
+#include "retro_dirent.h"
+#include "retro_stat.h"
+#include "file/file_path.h"
 
 #include "emufat.h"
 #include "vfat.h"
@@ -38,54 +40,56 @@ enum EListCallbackArg {
 	EListCallbackArg_Item, EListCallbackArg_Pop
 };
 
-typedef void (*ListCallback)(FsEntry* fs, EListCallbackArg);
+typedef void (*ListCallback)(RDIR* rdir, EListCallbackArg);
 
 // List all files and subdirectories recursively
 static void list_files(const char *filepath, ListCallback list_callback)
 {
-	char DirSpec[255+1], SubDir[255+1];
-	FsEntry entry;
 	void * hFind;
 	char *fname;
 	u32 dwError;
 
-	strncpy(DirSpec, filepath, ARRAY_SIZE(DirSpec));
-	DirSpec[255] = 0 ; // hard limit the string here
+	RDIR* rdir = retro_opendir(filepath);
+	if(!rdir) return;
+	if(retro_dirent_error(rdir))
+	{
+		retro_closedir(rdir);
+		return;
+	}
 
-	hFind = FsReadFirst(DirSpec, &entry);
-	if (hFind == NULL) return;
+	for(;;)
+	{
+		if(!retro_readdir(rdir))
+			break;
 
-	do {
-		fname = (strlen(entry.cAlternateFileName)>0) ? entry.cAlternateFileName : entry.cFileName;
-		list_callback(&entry,EListCallbackArg_Item);
-		printf("cflash added %s\n",entry.cFileName);
+		const char* fname = retro_dirent_get_name(rdir);
+		list_callback(rdir,EListCallbackArg_Item);
 
-		if ((entry.flags & FS_IS_DIR) && (strcmp(fname, ".")) && (strcmp(fname, ".."))) 
+		if(retro_dirent_is_dir(rdir) && (strcmp(fname, ".")) && (strcmp(fname, ".."))) 
 		{
-			if (strlen(fname)+strlen(filepath)+2 < 256) 
-			{
-				sprintf(SubDir, "%s%c%s", filepath, FS_SEPARATOR, fname);
-				list_files(SubDir, list_callback);
-				list_callback(&entry, EListCallbackArg_Pop);
-			}
+			std::string subdir = (std::string)filepath + path_default_slash() + fname;
+			list_files(subdir.c_str(), list_callback);
+			list_callback(rdir, EListCallbackArg_Pop);
 		}
-	} while (FsReadNext(hFind, &entry) != 0);
+	}
 
-	dwError = FsError();
-	FsClose(hFind);
-	if (dwError != FS_ERR_NO_MORE_FILES) return;
+	retro_closedir(rdir);
 }
 
 static u64 dataSectors = 0;
-void count_ListCallback(FsEntry* fs, EListCallbackArg arg)
+void count_ListCallback(RDIR* rdir, EListCallbackArg arg)
 {
 	if(arg == EListCallbackArg_Pop) return;
 	u32 sectors = 1;
-	if(fs->flags & FS_IS_DIR)
+	if(retro_dirent_is_dir(rdir))
 	{
 	}
 	else
-		sectors += (fs->fileSize+511)/512 + 1;
+	{
+		//allocate sectors for file
+		int32_t fileSize = path_get_size(retro_dirent_get_name(rdir));
+		sectors += (fileSize+511)/512 + 1;
+	}
 	dataSectors += sectors; 
 }
 
@@ -93,12 +97,9 @@ static std::string currPath;
 static std::stack<std::string> pathStack;
 static std::stack<std::string> virtPathStack;
 static std::string currVirtPath;
-void build_ListCallback(FsEntry* fs, EListCallbackArg arg)
+void build_ListCallback(RDIR* rdir, EListCallbackArg arg)
 {
-	char* fname = (strlen(fs->cAlternateFileName)>0) ? fs->cAlternateFileName : fs->cFileName;
-
-	//we use cFileName always because it is a LFN and we are making sure that we always make a fat32 image
-	fname = fs->cFileName;
+	const char* fname = retro_dirent_get_name(rdir);
 
 	if(arg == EListCallbackArg_Pop) 
 	{
@@ -109,7 +110,7 @@ void build_ListCallback(FsEntry* fs, EListCallbackArg arg)
 		return;
 	}
 	
-	if(fs->flags & FS_IS_DIR)
+	if(retro_dirent_is_dir(rdir))
 	{
 		if(!strcmp(fname,".")) return;
 		if(!strcmp(fname,"..")) return;
@@ -123,12 +124,12 @@ void build_ListCallback(FsEntry* fs, EListCallbackArg arg)
 		if(!ok)
 			printf("ERROR adding dir %s via libfat\n",currVirtPath.c_str());
 
-		currPath = currPath + std::string(1,FS_SEPARATOR) + fname;
+		currPath = currPath + path_default_slash() + fname;
 		return;
 	}
 	else
 	{
-		std::string path = currPath + std::string(1,FS_SEPARATOR) + fname;
+		std::string path = currPath + path_default_slash() + fname;
 
 		FILE* inf = fopen(path.c_str(),"rb");
 		if(inf)
@@ -141,7 +142,7 @@ void build_ListCallback(FsEntry* fs, EListCallbackArg arg)
 			fclose(inf);
 
 			std::string path = currVirtPath + "/" + fname;
-			printf("adding path %s for libfat\n",path.c_str());
+			printf("FAT + (%10.2f KB) %s \n",len/1024.f,path.c_str());
 			bool ok = LIBFAT::WriteFile(path.c_str(),buf,len);
 			if(!ok) 
 				printf("ERROR adding file to fat\n");
