@@ -95,7 +95,6 @@
     <ClCompile Include="..\filter\xbrz.cpp" />
     <ClCompile Include="..\firmware.cpp" />
     <ClCompile Include="..\frontend\modules\ImageOut.cpp" />
-    <ClCompile Include="..\fs-windows.cpp" />
     <ClCompile Include="..\gfx3d.cpp" />
     <ClCompile Include="..\GPU.cpp" />
     <ClCompile Include="..\GPU_OSD.cpp" />
@@ -364,7 +363,6 @@
     <ClInclude Include="..\filter\xbrz.h" />
     <ClInclude Include="..\firmware.h" />
     <ClInclude Include="..\frontend\modules\ImageOut.h" />
-    <ClInclude Include="..\fs.h" />
     <ClInclude Include="..\gfx3d.h" />
     <ClInclude Include="..\GPU.h" />
     <ClInclude Include="..\GPU_osd.h" />

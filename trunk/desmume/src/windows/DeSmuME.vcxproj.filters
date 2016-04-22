@@ -165,9 +165,6 @@
     <ClCompile Include="..\firmware.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\fs-windows.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
     <ClCompile Include="..\gfx3d.cpp">
       <Filter>Core</Filter>
     </ClCompile>
@@ -1008,9 +1005,6 @@
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\firmware.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\fs.h">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\gfx3d.h">
