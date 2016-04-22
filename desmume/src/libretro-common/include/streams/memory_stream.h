@@ -28,7 +28,7 @@
 
 typedef struct memstream memstream_t;
 
-memstream_t *memstream_open(void);
+memstream_t *memstream_open(unsigned writing);
 
 void memstream_close(memstream_t *stream);
 
@@ -38,9 +38,13 @@ size_t memstream_write(memstream_t *stream, const void *data, size_t bytes);
 
 int memstream_getc(memstream_t *stream);
 
+void memstream_putc(memstream_t *stream, int c);
+
 char *memstream_gets(memstream_t *stream, char *buffer, size_t len);
 
 size_t memstream_pos(memstream_t *stream);
+
+void memstream_rewind(memstream_t *stream);
 
 int memstream_seek(memstream_t *stream, int offset, int whence);
 

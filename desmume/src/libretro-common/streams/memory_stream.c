@@ -32,10 +32,18 @@ static size_t last_file_size = 0;
 
 struct memstream
 {
-   uint8_t *m_buf;
-   size_t m_size;
-   size_t m_ptr;
+   uint8_t *buf;
+   size_t size;
+   size_t ptr;
+   size_t max_ptr;
+   unsigned writing;
 };
+
+static void memstream_update_pos(memstream_t *stream)
+{
+   if (stream->ptr > stream->max_ptr)
+      stream->max_ptr = stream->ptr;
+}
 
 void memstream_set_buffer(uint8_t *buffer, size_t size)
 {
@@ -48,21 +56,27 @@ size_t memstream_get_last_size(void)
    return last_file_size;
 }
 
-static void memstream_init(memstream_t *stream, uint8_t *buffer, size_t max_size)
+static void memstream_init(memstream_t *stream,
+      uint8_t *buffer, size_t max_size, unsigned writing)
 {
-   stream->m_buf = buffer;
-   stream->m_size = max_size;
-   stream->m_ptr = 0;
+   if (!stream)
+      return;
+
+   stream->buf     = buffer;
+   stream->size    = max_size;
+   stream->ptr     = 0;
+   stream->max_ptr = 0;
+   stream->writing = writing;
 }
 
-memstream_t *memstream_open(void)
+memstream_t *memstream_open(unsigned writing)
 {
 	memstream_t *stream;
    if (!g_buffer || !g_size)
       return NULL;
 
    stream = (memstream_t*)calloc(1, sizeof(*stream));
-   memstream_init(stream, g_buffer, g_size);
+   memstream_init(stream, g_buffer, g_size, writing);
 
    g_buffer = NULL;
    g_size = 0;
@@ -71,29 +85,44 @@ memstream_t *memstream_open(void)
 
 void memstream_close(memstream_t *stream)
 {
-   last_file_size = stream->m_ptr;
+   if (!stream)
+      return;
+
+   last_file_size = stream->writing ? stream->max_ptr : stream->size;
    free(stream);
 }
 
 size_t memstream_read(memstream_t *stream, void *data, size_t bytes)
 {
-   size_t avail = stream->m_size - stream->m_ptr;
+   size_t avail = 0;
+
+   if (!stream)
+      return 0;
+   
+   avail = stream->size - stream->ptr;
    if (bytes > avail)
       bytes = avail;
 
-   memcpy(data, stream->m_buf + stream->m_ptr, bytes);
-   stream->m_ptr += bytes;
+   memcpy(data, stream->buf + stream->ptr, bytes);
+   stream->ptr += bytes;
+   memstream_update_pos(stream);
    return bytes;
 }
 
 size_t memstream_write(memstream_t *stream, const void *data, size_t bytes)
 {
-   size_t avail = stream->m_size - stream->m_ptr;
+   size_t avail = 0;
+
+   if (!stream)
+      return 0;
+   
+   avail = stream->size - stream->ptr;
    if (bytes > avail)
       bytes = avail;
 
-   memcpy(stream->m_buf + stream->m_ptr, data, bytes);
-   stream->m_ptr += bytes;
+   memcpy(stream->buf + stream->ptr, data, bytes);
+   stream->ptr += bytes;
+   memstream_update_pos(stream);
    return bytes;
 }
 
@@ -107,26 +136,32 @@ int memstream_seek(memstream_t *stream, int offset, int whence)
          ptr = offset;
          break;
       case SEEK_CUR:
-         ptr = stream->m_ptr + offset;
+         ptr = stream->ptr + offset;
          break;
       case SEEK_END:
-         ptr = stream->m_size + offset;
+         ptr = (stream->writing ? stream->max_ptr : stream->size) + offset;
          break;
       default:
          return -1;
    }
 
-   if (ptr <= stream->m_size)
+   if (ptr <= stream->size)
    {
-      stream->m_ptr = ptr;
+      stream->ptr = ptr;
       return 0;
    }
+
    return -1;
+}
+
+void memstream_rewind(memstream_t *stream)
+{
+   memstream_seek(stream, 0L, SEEK_SET);
 }
 
 size_t memstream_pos(memstream_t *stream)
 {
-   return stream->m_ptr;
+   return stream->ptr;
 }
 
 char *memstream_gets(memstream_t *stream, char *buffer, size_t len)
@@ -136,7 +171,20 @@ char *memstream_gets(memstream_t *stream, char *buffer, size_t len)
 
 int memstream_getc(memstream_t *stream)
 {
-   if (stream->m_ptr >= stream->m_size)
+   int ret = 0;
+   if (stream->ptr >= stream->size)
       return EOF;
-   return stream->m_buf[stream->m_ptr++];
+   ret = stream->buf[stream->ptr++];
+
+   memstream_update_pos(stream);
+
+   return ret;
+}
+
+void memstream_putc(memstream_t *stream, int c)
+{
+   if (stream->ptr < stream->size)
+      stream->buf[stream->ptr++] = c;
+
+   memstream_update_pos(stream);
 }

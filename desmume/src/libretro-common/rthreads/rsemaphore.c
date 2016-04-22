@@ -20,6 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef __unix__
+#define _POSIX_C_SOURCE 199309
+#endif
+
 #include <stdlib.h>
 
 #include <rthreads/rthreads.h>
@@ -71,6 +75,21 @@ void ssem_free(ssem_t *semaphore)
    scond_free(semaphore->cond);
    slock_free(semaphore->mutex);
    free((void*)semaphore);
+}
+
+int ssem_get(ssem_t *semaphore)
+{
+   int val = 0;
+   if (!semaphore)
+      return 0;
+
+   slock_lock(semaphore->mutex);
+
+   val = semaphore->value;
+
+   slock_unlock(semaphore->mutex);
+
+   return val;
 }
 
 void ssem_wait(ssem_t *semaphore)
