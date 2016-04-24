@@ -2016,7 +2016,8 @@ void KillDisplay()
 {
 	display_die = true;
 	SetEvent(display_wakeup_event);
-	sthread_join(display_thread);
+	if(display_thread)
+		sthread_join(display_thread);
 }
 
 void Display()
