@@ -4217,8 +4217,7 @@ static LUTValues *_HQ2xLUT = NULL;
 static LUTValues *_HQ3xLUT = NULL;
 static LUTValues *_HQ4xLUT = NULL;
 
-static const GLint filterVtxBuffer[8] = {-1, -1, 1, -1, 1, 1, -1, 1};
-static const GLubyte filterElementBuffer[6] = {0, 1, 2, 2, 3, 0};
+static const GLint filterVtxBuffer[8] = {-1, -1, 1, -1, -1, 1, 1, 1};
 static const GLubyte outputElementBuffer[12] = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
 
 void GetGLVersionOGL(GLint *outMajor, GLint *outMinor, GLint *outRevision)
@@ -5078,7 +5077,6 @@ OGLFilter::~OGLFilter()
 	glDeleteTextures(1, &this->_texDstID);
 	glDeleteBuffers(1, &this->_vboVtxID);
 	glDeleteBuffers(1, &this->_vboTexCoordID);
-	glDeleteBuffers(1, &this->_vboElementID);
 }
 
 void OGLFilter::GetSupport(int vfTypeID, bool *outSupportCPU, bool *outSupportShader)
@@ -5109,9 +5107,9 @@ void OGLFilter::OGLFilterInit(GLsizei srcWidth, GLsizei srcHeight, GLfloat scale
 	_texCoordBuffer[1] = 0;
 	_texCoordBuffer[2] = _srcWidth;
 	_texCoordBuffer[3] = 0;
-	_texCoordBuffer[4] = _srcWidth;
+	_texCoordBuffer[4] = 0;
 	_texCoordBuffer[5] = _srcHeight;
-	_texCoordBuffer[6] = 0;
+	_texCoordBuffer[6] = _srcWidth;
 	_texCoordBuffer[7] = _srcHeight;
 	
 	glGenTextures(1, &_texDstID);
@@ -5130,17 +5128,12 @@ void OGLFilter::OGLFilterInit(GLsizei srcWidth, GLsizei srcHeight, GLfloat scale
 	
 	glGenBuffers(1, &_vboVtxID);
 	glGenBuffers(1, &_vboTexCoordID);
-	glGenBuffers(1, &_vboElementID);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, _vboVtxID);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(filterVtxBuffer), filterVtxBuffer, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, _vboTexCoordID);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(_texCoordBuffer), _texCoordBuffer, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _vboElementID);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(filterElementBuffer), filterElementBuffer, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	
 	glGenVertexArraysDESMUME(1, &_vaoID);
 	glBindVertexArrayDESMUME(_vaoID);
@@ -5149,7 +5142,6 @@ void OGLFilter::OGLFilterInit(GLsizei srcWidth, GLsizei srcHeight, GLfloat scale
 	glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, _vboTexCoordID);
 	glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_INT, GL_FALSE, 0, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _vboElementID);
 	
 	glEnableVertexAttribArray(OGLVertexAttributeID_Position);
 	glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
@@ -5240,7 +5232,7 @@ GLuint OGLFilter::RunFilterOGL(GLuint srcTexID)
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glClear(GL_COLOR_BUFFER_BIT);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	
 	glBindVertexArrayDESMUME(0);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
@@ -5294,8 +5286,8 @@ void OGLFilterDeposterize::SetSrcSizeOGL(GLsizei w, GLsizei h)
 	this->_dstHeight = this->_srcHeight * this->_scale;
 	
 	this->_texCoordBuffer[2] = w;
-	this->_texCoordBuffer[4] = w;
 	this->_texCoordBuffer[5] = h;
+	this->_texCoordBuffer[6] = w;
 	this->_texCoordBuffer[7] = h;
 	
 	glBindBuffer(GL_ARRAY_BUFFER, this->_vboTexCoordID);
@@ -5325,12 +5317,12 @@ GLuint OGLFilterDeposterize::RunFilterOGL(GLuint srcTexID)
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, this->_texIntermediateID, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texIntermediateID);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, this->_texDstID, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	
 	glBindVertexArrayDESMUME(0);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
@@ -5345,8 +5337,6 @@ OGLImage::OGLImage(OGLInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GL
 {
 	_needUploadVertices = true;
 	_useDeposterize = false;
-	
-	_vtxElementPointer = 0;
 	
 	_normalWidth = imageWidth;
 	_normalHeight = imageHeight;
@@ -5388,17 +5378,12 @@ OGLImage::OGLImage(OGLInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GL
 	// Set up VBOs
 	glGenBuffersARB(1, &_vboVertexID);
 	glGenBuffersARB(1, &_vboTexCoordID);
-	glGenBuffersARB(1, &_vboElementID);
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(_vtxBuffer), _vtxBuffer, GL_STATIC_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(_texCoordBuffer), _texCoordBuffer, GL_STATIC_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-	
-	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
-	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLubyte) * 6, outputElementBuffer, GL_STATIC_DRAW_ARB);
-	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 	
 	// Set up VAO
 	glGenVertexArraysDESMUME(1, &_vaoMainStatesID);
@@ -5410,7 +5395,6 @@ OGLImage::OGLImage(OGLInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GL
 		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
 		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
 		
 		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
 		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
@@ -5421,7 +5405,6 @@ OGLImage::OGLImage(OGLInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GL
 		glVertexPointer(2, GL_INT, 0, 0);
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
 		glTexCoordPointer(2, GL_FLOAT, 0, 0);
-		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
 		
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -5486,7 +5469,6 @@ OGLImage::~OGLImage()
 	
 	glDeleteBuffersARB(1, &this->_vboVertexID);
 	glDeleteBuffersARB(1, &this->_vboTexCoordID);
-	glDeleteBuffersARB(1, &this->_vboElementID);
 	glDeleteTextures(1, &this->_texCPUFilterDstID);
 	glDeleteTextures(1, &this->_texVideoInputDataID);
 	
@@ -5584,8 +5566,8 @@ void OGLImage::UpdateVertices()
 	
 	_vtxBuffer[0] = -w/2;	_vtxBuffer[1] =  h/2;
 	_vtxBuffer[2] =  w/2;	_vtxBuffer[3] =  h/2;
-	_vtxBuffer[4] =  w/2;	_vtxBuffer[5] = -h/2;
-	_vtxBuffer[6] = -w/2;	_vtxBuffer[7] = -h/2;
+	_vtxBuffer[4] = -w/2;	_vtxBuffer[5] = -h/2;
+	_vtxBuffer[6] =  w/2;	_vtxBuffer[7] = -h/2;
 	
 	this->_needUploadVertices = true;
 }
@@ -5594,8 +5576,8 @@ void OGLImage::UpdateTexCoords(GLfloat s, GLfloat t)
 {
 	_texCoordBuffer[0] = 0.0f;	_texCoordBuffer[1] = 0.0f;
 	_texCoordBuffer[2] =    s;	_texCoordBuffer[3] = 0.0f;
-	_texCoordBuffer[4] =    s;	_texCoordBuffer[5] =    t;
-	_texCoordBuffer[6] = 0.0f;	_texCoordBuffer[7] =    t;
+	_texCoordBuffer[4] = 0.0f;	_texCoordBuffer[5] =    t;
+	_texCoordBuffer[6] =    s;	_texCoordBuffer[7] =    t;
 }
 
 bool OGLImage::CanUseShaderBasedFilters()
@@ -6131,7 +6113,7 @@ void OGLImage::RenderOGL()
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, this->_vtxElementPointer);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
 	// Disable vertex attributes
