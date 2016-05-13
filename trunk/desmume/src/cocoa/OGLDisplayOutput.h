@@ -136,7 +136,6 @@ protected:
 	GLuint _vaoID;
 	GLuint _vboVtxID;
 	GLuint _vboTexCoordID;
-	GLuint _vboElementID;
 	
 	GLfloat _scale;
 	GLsizei _srcWidth;
@@ -205,9 +204,7 @@ protected:
 	double _normalHeight;
 	GLsizei _viewportWidth;
 	GLsizei _viewportHeight;
-	
-	GLubyte *_vtxElementPointer;
-	
+		
 	GLint _displayTexFilter;
 	GLuint _texCPUFilterDstID;
 	
@@ -226,7 +223,6 @@ protected:
 	GLuint _vaoMainStatesID;
 	GLuint _vboVertexID;
 	GLuint _vboTexCoordID;
-	GLuint _vboElementID;
 	
 	GLint _uniformFinalOutputAngleDegrees;
 	GLint _uniformFinalOutputScalar;
