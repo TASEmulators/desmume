@@ -69,16 +69,14 @@ ROMReader_struct STDROMReader =
 
 void * STDROMReaderInit(const char * filename)
 {
-#ifdef WIN32
-	struct _stat sb;
-#else
+#ifndef _MSC_VER
 	struct stat sb;
-#endif
 	if (stat(filename, &sb) == -1)
 		return 0;
 
  	if ((sb.st_mode & S_IFMT) != S_IFREG)
 		return 0;
+#endif
 
 	return (void *) fopen(filename, "rb");
 }
