@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -96,7 +96,16 @@ void generateAR(HWND dialog, u32 addr, u32 val, u8 size)
 	// Action Replay code generate
 	if (size > 3) size = 3;
 	char buf[64] = {0};
-	sprintf(buf, "%X%07X %08X", 3-size, addr | 0x02000000, val);
+
+	//I don't think this is needed, really
+	//we'll just accurately produce an AR code that faithfully doesn't work
+	//if((addr&0x02000000) != 0x02000000)
+	//{
+	//	SetWindowText(GetDlgItem(dialog, IDC_AR_CODE), "");
+	//	return;
+	//}
+
+	sprintf(buf, "%X%07X %08X", 3-size, addr, val);
 	SetWindowText(GetDlgItem(dialog, IDC_AR_CODE), buf);
 }
 
@@ -177,7 +186,7 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 				memset(editBuf, 0, sizeof(editBuf));
 				memset(&tempCheat, 0, sizeof(tempCheat));
 				saveOldEditProc = oldEditProc;
-				SendMessage(GetDlgItem(dialog, IDC_EDIT1), EM_SETLIMITTEXT, 6, 0);
+				SendMessage(GetDlgItem(dialog, IDC_EDIT1), EM_SETLIMITTEXT, 7, 0);
 				SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETLIMITTEXT, 11, 0);
 				SendMessage(GetDlgItem(dialog, IDC_EDIT3), EM_SETLIMITTEXT, 75, 0);
 				oldEditProcHEX = SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT1), GWLP_WNDPROC, (LONG_PTR)EditValueHEXProc);
@@ -186,8 +195,8 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 				if (searchAddMode == 1 || searchAddMode == 2)
 				{
 					char buf[12];
-					searchAddAddress &= 0x00FFFFFF;
-					wsprintf(buf, "%06X", searchAddAddress);
+					searchAddAddress &= 0x0FFFFFFF;
+					wsprintf(buf, "%07X", searchAddAddress);
 					SetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf);
 					wsprintf(buf, "%i", searchAddValue);
 					SetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf);
@@ -371,7 +380,7 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 				memset(editBuf, 0, sizeof(editBuf));
 				memset(&tempCheat, 0, sizeof(tempCheat));
 				saveOldEditProc = oldEditProc;
-				SendMessage(GetDlgItem(dialog, IDC_EDIT1), EM_SETLIMITTEXT, 6, 0);
+				SendMessage(GetDlgItem(dialog, IDC_EDIT1), EM_SETLIMITTEXT, 7, 0);
 				SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETLIMITTEXT, 10, 0);
 				SendMessage(GetDlgItem(dialog, IDC_EDIT3), EM_SETLIMITTEXT, 75, 0);
 				oldEditProcHEX = SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT1), GWLP_WNDPROC, (LONG_PTR)EditValueHEXProc);
@@ -381,8 +390,8 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 				
 				memset(buf, 0, 100);
 				memset(buf2, 0, 100);
-				tempCheat.code[0][0] &= 0x00FFFFFF;
-				wsprintf(buf, "%06X", tempCheat.code[0][0]);
+				tempCheat.code[0][0] &= 0x0FFFFFFF;
+				wsprintf(buf, "%07X", tempCheat.code[0][0]);
 				SetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf);
 				wsprintf(buf, "%i", tempCheat.code[0][1]);
 				SetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf);
@@ -428,7 +437,7 @@ INT_PTR CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 						
 						u32 val = 0;
 						sscanf_s(editBuf[0], "%x", &val);
-						val &= 0x00FFFFFF;
+						val &= 0x0FFFFFFF;
 						CheatAddVerify(dialog,editBuf[0],editBuf[1],tempCheat.size);
 						tempCheat.code[0][0] = val;
 					}
@@ -710,7 +719,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 					{
 						u32 row = ListView_InsertItem(cheatListView, &lvi);
 						ListView_SetCheckState(cheatListView, row, tempCheat.enabled);
-						wsprintf(buf, "0x02%06X", tempCheat.code[0][0]);
+						wsprintf(buf, "0x0%07X", tempCheat.code[0][0]);
 						ListView_SetItemText(cheatListView, row, 1, buf);
 						ltoa(tempCheat.code[0][1], buf, 10);
 						ListView_SetItemText(cheatListView, row, 2, buf);
@@ -836,7 +845,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 						lvi.iItem = INT_MAX;
 
 						u32 row = ListView_InsertItem(cheatListView, &lvi);
-						wsprintf(buf, "0x02%06X", searchAddAddress);
+						wsprintf(buf, "0x0%07X", searchAddAddress);
 						ListView_SetItemText(cheatListView, row, 1, buf);
 						ltoa(searchAddValue, buf, 10);
 						ListView_SetItemText(cheatListView, row, 2, buf);
@@ -899,7 +908,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 								char buf[256];
 								cheats->get(&tempCheat, cheatEditPos);
 								ListView_SetCheckState(cheatListView, cheatEditPos, tempCheat.enabled);
-								wsprintf(buf, "0x02%06X", tempCheat.code[0][0]);
+								wsprintf(buf, "0x0%07X", tempCheat.code[0][0]);
 								ListView_SetItemText(cheatListView, cheatEditPos, 1, buf);
 								ltoa(tempCheat.code[0][1], buf, 10);
 								ListView_SetItemText(cheatListView, cheatEditPos, 2, buf);
@@ -998,7 +1007,7 @@ void CheatsAddDialog(HWND parentHwnd, u32 address, u32 value, u8 size, const cha
 		//char buf[256];
 		//cheats->get(&tempCheat, cheatEditPos);
 		//ListView_SetCheckState(cheatListView, cheatEditPos, 0, tempCheat.enabled);
-		//wsprintf(buf, "0x02%06X", tempCheat.code[0][0]);
+		//wsprintf(buf, "0x0%07X", tempCheat.code[0][0]);
 		//ListView_SetItemText(cheatListView, cheatEditPos, 1, buf);
 		//ltoa(tempCheat.code[0][1], buf, 10);
 		//ListView_SetItemText(cheatListView, cheatEditPos, 2, buf);
@@ -1157,7 +1166,7 @@ INT_PTR CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM 
 				while (cheatSearch->getList(&address, &val))
 				{
 					char buf[256];
-					wsprintf(buf, "0x02%06X", address);
+					wsprintf(buf, "0x0%07X", address);
 					lvi.pszText= buf;
 					u32 row = SendMessage(searchListView, LVM_INSERTITEM, 0, (LPARAM)&lvi);
 					_ltoa(val, buf, 10);
@@ -1184,7 +1193,7 @@ INT_PTR CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM 
 						u32 pos = ListView_GetNextItem(searchListView, -1, LVNI_SELECTED|LVNI_FOCUSED);
 						ListView_GetItemText(searchListView, pos, 0, buf, 12);
 						sscanf_s(buf, "%x", &val);
-						searchAddAddress = val & 0x00FFFFFF;
+						searchAddAddress = val & 0x0FFFFFFF;
 						ListView_GetItemText(searchListView, pos, 1, buf, 12);
 						searchAddValue = atol(buf);
 						searchAddMode = 1;
@@ -1358,14 +1367,15 @@ void CheatAddVerify(HWND dialog,char* addre, char* valu,u8 size)
 {
 	u32 fix = 0;
 	sscanf_s(addre, "%x", &fix);
-	fix &= 0x00FFFFFF;
+	fix &= 0x0FFFFFFF;
 
 	int parseOffset = 0;
 	if(valu[0] && valu[1] == '-')
 		parseOffset = 1; // typed something in front of -
 	u32 fix2 = strtoul(valu+parseOffset,NULL,10);
 
-	if ( (strlen(addre) < 6) || (!strlen(valu)) || fix > 0x400000
+	if ( (strlen(addre) < 7) || (!strlen(valu))
+		//|| fix > 0x400000 //zero 23-may-2016 - if you want to freeze an address that's nonsense, it's your own funeral
 		|| (fix2 > searchRange[size][1] && !(valu[0] == '-' && u32(-s32(fix2))-1 <= searchRange[size][1]/2)) )
 	{
 		EnableWindow(GetDlgItem(dialog, IDOK), FALSE);

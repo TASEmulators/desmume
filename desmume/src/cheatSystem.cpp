@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ BOOL CHEATS::add(u8 size, u32 address, u32 val, char *description, BOOL enabled)
 {
 	size_t num = list.size();
 	list.push_back(CHEATS_LIST());
-	list[num].code[0][0] = address & 0x00FFFFFF;
+	list[num].code[0][0] = address & 0x0FFFFFFF;
 	list[num].code[0][1] = val;
 	list[num].num = 1;
 	list[num].type = 0;
@@ -63,7 +63,7 @@ BOOL CHEATS::add(u8 size, u32 address, u32 val, char *description, BOOL enabled)
 BOOL CHEATS::update(u8 size, u32 address, u32 val, char *description, BOOL enabled, u32 pos)
 {
 	if (pos >= list.size()) return FALSE;
-	list[pos].code[0][0] = address & 0x00FFFFFF;
+	list[pos].code[0][0] = address & 0x0FFFFFFF;
 	list[pos].code[0][1] = val;
 	list[pos].num = 1;
 	list[pos].type = 0;
@@ -727,7 +727,7 @@ BOOL CHEATS::load()
 			if (tmp_cht.type == 0)
 			{
 				tmp_cht.size = std::min<u32>(3, ((tmp_cht.code[i][0] & 0xF0000000) >> 28));
-				tmp_cht.code[i][0] &= 0x00FFFFFF;
+				tmp_cht.code[i][0] &= 0x0FFFFFFF;
 			}
 			
 			strncpy(tmp_buf, &codeStr[(i * 16) + 8], 8);
@@ -765,8 +765,8 @@ void CHEATS::process(int targetType)
 		{
 			case 0:		// internal cheat system
 			{
-				//INFO("list at 0x02|%06X value %i (size %i)\n",list[i].code[0], list[i].lo[0], list[i].size);
-				u32 addr = list[i].code[0][0] | 0x02000000;
+				//INFO("list at 0x0|%07X value %i (size %i)\n",list[i].code[0], list[i].lo[0], list[i].size);
+				u32 addr = list[i].code[0][0];
 				u32 val = list[i].code[0][1];
 				switch (list[i].size)
 				{
