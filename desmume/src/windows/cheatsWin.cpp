@@ -249,8 +249,11 @@ INT_PTR CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 				{
 					u32 tmp_addr = 0;
 					sscanf_s(editBuf[0], "%x", &tmp_addr);
+
+					s64 val;
+					sscanf(editBuf[1],"%lld",&val);
 					
-					if (cheats->add(searchAddSize, tmp_addr, atol(editBuf[1]), editBuf[2], searchAddFreeze))
+					if (cheats->add(searchAddSize, tmp_addr, (u32)val, editBuf[2], searchAddFreeze))
 					{
 						if ((searchAddMode == 0) || (cheats->save() && (searchAddMode == 1 || searchAddMode == 2)))
 						{
