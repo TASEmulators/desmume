@@ -1,7 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="IntegrityChecks" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-<!-- TODO: define how Dev+ should be built (probably a normal release build) and set a property to generally control that while adding only the dev+ flags (not to mention NOSSE) -->
+	<!-- Debug: typical build with max debugging -->
+	<!-- Release: typical public build with with max performance and slow codegen -->
+	<!-- Release Fastbuild: typical public build with with high performance but a few options which slow down codegen disabled. Good for general development. -->
+	<!-- Dev+: a release build with certain developer features enabled including the GDB stubs -->
 
 	<!-- FIX MSBUILD -->
 	<PropertyGroup>
@@ -22,6 +25,14 @@
 		<NDS_VisualStudioName Condition="'$(NDS_VSVER)' == '14'">VS2015</NDS_VisualStudioName>
 	</PropertyGroup>
 
+	<!-- Generate optimization level property from configuration name -->
+	<PropertyGroup>
+		<NDS_OPT Condition="'$(Configuration)' == 'Debug'">Debug</NDS_OPT>
+		<NDS_OPT Condition="'$(Configuration)' == 'Release'">Release</NDS_OPT>
+		<NDS_OPT Condition="'$(Configuration)' == 'Release FastBuild'">Fastbuild</NDS_OPT>
+		<NDS_OPT Condition="'$(Configuration)' == 'Dev+'">Release</NDS_OPT>
+	</PropertyGroup>
+
 	<!-- General project setup -->
 	<PropertyGroup>
 		<IntDir>$(SolutionDir).obj\$(NDS_VisualStudioName)-$(Platform)-$(Configuration)\</IntDir>
@@ -29,6 +40,12 @@
 		<TargetName>$(ProjectName)-$(NDS_VisualStudioName)-$(Configuration)</TargetName>
 		<TargetName Condition="'$(Platform)' == 'x64'">$(ProjectName)-$(NDS_VisualStudioName)-x64-$(Configuration)</TargetName>
 		<TargetPath>$(OutDir)$(TargetName).exe</TargetPath>
+	</PropertyGroup>
+
+	<!-- some default configurations per build configuration -->
+	<PropertyGroup>
+		<DEVELOPER Condition="'$(Configuration)' == 'Dev+'">true</DEVELOPER>
+		<GDB_STUB Condition="'$(Configuration)' == 'Dev+'">true</GDB_STUB>
 	</PropertyGroup>
 
 	<!-- load user preferences -->
@@ -55,7 +72,7 @@
 
 	<!-- global optimizations -->
 	<PropertyGroup>
-		<WholeProgramOptimization Condition="'$(Configuration)' == 'Release'">true</WholeProgramOptimization>
+		<WholeProgramOptimization Condition="'$(NDS_OPT)' == 'Release'">true</WholeProgramOptimization>
 	</PropertyGroup>
 
 	<!--==========================================================================-->
@@ -75,9 +92,9 @@
 			<PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_ZLIB_DEFLATE;HAVE_LIBZ;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 			<!-- BETA_VERSION ? -->
-			<PreprocessorDefinitions Condition="'$(Configuration)' == 'Debug'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-			<PreprocessorDefinitions Condition="'$(Configuration)' == 'Release'">RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-			<PreprocessorDefinitions Condition="'$(Configuration)' == 'Release FastBuild'">RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(NDS_OPT)' == 'Debug'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(NDS_OPT)' == 'Release'">RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(NDS_OPT)' == 'FastBuild'">RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 
 			<!-- These work together -->
@@ -85,16 +102,16 @@
 			<MinimalRebuild>false</MinimalRebuild>
 
 			<!-- Optimization control -->
-			<Optimization Condition="'$(Configuration)' == 'Debug'">Disabled</Optimization>
-			<Optimization Condition="'$(Configuration)' == 'Release'">Full</Optimization>
-			<Optimization Condition="'$(Configuration)' == 'Release Fastbuild'">Full</Optimization>
-			<WholeProgramOptimization Condition="'$(Configuration)' == 'Release'">true</WholeProgramOptimization>
+			<Optimization Condition="'$(NDS_OPT)' == 'Debug'">Disabled</Optimization>
+			<Optimization Condition="'$(NDS_OPT)' == 'Release'">Full</Optimization>
+			<Optimization Condition="'$(NDS_OPT)' == 'Fastbuild'">Full</Optimization>
+			<WholeProgramOptimization Condition="'$(NDS_OPT)' == 'Release'">true</WholeProgramOptimization>
 			<FloatingPointModel>Fast</FloatingPointModel>
 			<EnableEnhancedInstructionSet Condition="'$(Platform)' == 'Win32'">StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
 
 			<!-- Debugging control -->
-			<BufferSecurityCheck Condition="'$(Configuration)' == 'Debug'">true</BufferSecurityCheck>
-			<BasicRuntimeChecks  Condition="'$(Configuration)' == 'Debug'">EnableFastChecks</BasicRuntimeChecks>
+			<BufferSecurityCheck Condition="'$(NDS_OPT)' == 'Debug'">true</BufferSecurityCheck>
+			<BasicRuntimeChecks  Condition="'$(NDS_OPT)' == 'Debug'">EnableFastChecks</BasicRuntimeChecks>
 
 			<!-- Feature we dont use that bloats release builds anyway -->
 			<RuntimeTypeInfo>false</RuntimeTypeInfo>
@@ -108,8 +125,8 @@
 			<!-- Not sure why we chose this, study it later -->
 			<CallingConvention>Cdecl</CallingConvention>
 
-			<RuntimeLibrary Condition="'$(Configuration)' == 'Debug'">MultiThreadedDebugDll</RuntimeLibrary>
-			<RuntimeLibrary Condition="'$(Configuration)' != 'Debug'">MultiThreadedDll</RuntimeLibrary>
+			<RuntimeLibrary Condition="'$(NDS_OPT)' == 'Debug'">MultiThreadedDebugDll</RuntimeLibrary>
+			<RuntimeLibrary Condition="'$(NDS_OPT)' != 'Debug'">MultiThreadedDll</RuntimeLibrary>
 
 			<!-- optimizatons / instruction sets -->
 			<!-- don't specifically issue SSE1 or SSE2 to vs2015 x64, it doesn't like to see it (SSE1 is impossible on x64 anyway) -->
@@ -160,7 +177,7 @@
 			<GenerateMapFile>true</GenerateMapFile>
 
 			<!-- optimization options -->
-			<LinkTimeCodeGeneration Condition="'$(Configuration)' == 'Release'">UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+			<LinkTimeCodeGeneration Condition="'$(NDS_OPT)' == 'Release'">UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
 
 			<!-- random configs -->
 			<SubSystem>Windows</SubSystem>
