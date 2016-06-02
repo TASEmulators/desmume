@@ -140,8 +140,8 @@ ENDL
 ENDL
 #ifdef GDB_STUB
 "Arguments affecting debugging features:" ENDL
-" --arm9gdb                  Enable the ARM9 GDB stub on the given port" ENDL
-" --arm7gdb                  Enable the ARM7 GDB stub on the given port" ENDL
+" --arm9gdb PORTNUM          Enable the ARM9 GDB stub on the given port" ENDL
+" --arm7gdb PORTNUM          Enable the ARM7 GDB stub on the given port" ENDL
 ENDL
 #endif
 "Utility commands which occur in place of emulation:" ENDL
