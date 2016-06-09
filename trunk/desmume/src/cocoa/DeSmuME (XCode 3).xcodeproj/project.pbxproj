@@ -454,7 +454,6 @@
 		AB2A9A081725F00F0062C1A1 /* file_allocation_table.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF3D1345ACBF00AF11D1 /* file_allocation_table.cpp */; };
 		AB2A9A091725F00F0062C1A1 /* filetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF3F1345ACBF00AF11D1 /* filetime.cpp */; };
 		AB2A9A0A1725F00F0062C1A1 /* firmware.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB11345AC8400AF11D1 /* firmware.cpp */; };
-		AB2A9A0B1725F00F0062C1A1 /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */; };
 		AB2A9A0C1725F00F0062C1A1 /* gfx3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB41345AC8400AF11D1 /* gfx3d.cpp */; };
 		AB2A9A0D1725F00F0062C1A1 /* GPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB71345AC8400AF11D1 /* GPU.cpp */; };
 		AB2A9A0E1725F00F0062C1A1 /* GPU_osd_stub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB51345AC8400AF11D1 /* GPU_osd_stub.cpp */; };
@@ -654,7 +653,6 @@
 		AB2F3BDF15CF9C6000858373 /* file_allocation_table.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF3D1345ACBF00AF11D1 /* file_allocation_table.cpp */; };
 		AB2F3BE015CF9C6000858373 /* filetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF3F1345ACBF00AF11D1 /* filetime.cpp */; };
 		AB2F3BE215CF9C6000858373 /* firmware.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB11345AC8400AF11D1 /* firmware.cpp */; };
-		AB2F3BE315CF9C6000858373 /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */; };
 		AB2F3BE415CF9C6000858373 /* gfx3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB41345AC8400AF11D1 /* gfx3d.cpp */; };
 		AB2F3BE515CF9C6000858373 /* GPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB71345AC8400AF11D1 /* GPU.cpp */; };
 		AB2F3BE615CF9C6000858373 /* GPU_osd_stub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB51345AC8400AF11D1 /* GPU_osd_stub.cpp */; };
@@ -826,6 +824,21 @@
 		AB4C80AC17C5D7A00024D479 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C80A917C5D7A00024D479 /* advanscene.cpp */; };
 		AB4C80AD17C5D7A00024D479 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C80A917C5D7A00024D479 /* advanscene.cpp */; };
 		AB4C80AE17C5D7A00024D479 /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C80A917C5D7A00024D479 /* advanscene.cpp */; };
+		AB50200A1D09E712002FA150 /* file_path.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020071D09E712002FA150 /* file_path.c */; };
+		AB50200B1D09E712002FA150 /* retro_dirent.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020081D09E712002FA150 /* retro_dirent.c */; };
+		AB50200C1D09E712002FA150 /* retro_stat.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020091D09E712002FA150 /* retro_stat.c */; };
+		AB50200D1D09E712002FA150 /* file_path.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020071D09E712002FA150 /* file_path.c */; };
+		AB50200E1D09E712002FA150 /* retro_dirent.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020081D09E712002FA150 /* retro_dirent.c */; };
+		AB50200F1D09E712002FA150 /* retro_stat.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020091D09E712002FA150 /* retro_stat.c */; };
+		AB5020101D09E712002FA150 /* file_path.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020071D09E712002FA150 /* file_path.c */; };
+		AB5020111D09E712002FA150 /* retro_dirent.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020081D09E712002FA150 /* retro_dirent.c */; };
+		AB5020121D09E712002FA150 /* retro_stat.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020091D09E712002FA150 /* retro_stat.c */; };
+		AB5020131D09E712002FA150 /* file_path.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020071D09E712002FA150 /* file_path.c */; };
+		AB5020141D09E712002FA150 /* retro_dirent.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020081D09E712002FA150 /* retro_dirent.c */; };
+		AB5020151D09E712002FA150 /* retro_stat.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020091D09E712002FA150 /* retro_stat.c */; };
+		AB5020161D09E712002FA150 /* file_path.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020071D09E712002FA150 /* file_path.c */; };
+		AB5020171D09E712002FA150 /* retro_dirent.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020081D09E712002FA150 /* retro_dirent.c */; };
+		AB5020181D09E712002FA150 /* retro_stat.c in Sources */ = {isa = PBXBuildFile; fileRef = AB5020091D09E712002FA150 /* retro_stat.c */; };
 		AB53517F18313E3100CCD532 /* slot2_auto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB53517E18313E3100CCD532 /* slot2_auto.cpp */; };
 		AB53518018313E3100CCD532 /* slot2_auto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB53517E18313E3100CCD532 /* slot2_auto.cpp */; };
 		AB53518118313E3100CCD532 /* slot2_auto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB53517E18313E3100CCD532 /* slot2_auto.cpp */; };
@@ -947,7 +960,6 @@
 		AB711F511481C35F009011C8 /* SndOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF7A1345ACFA00AF11D1 /* SndOut.cpp */; };
 		AB711F521481C35F009011C8 /* Timestretcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF9B1345ACFA00AF11D1 /* Timestretcher.cpp */; };
 		AB711F5C1481C35F009011C8 /* datetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */; };
-		AB711F5D1481C35F009011C8 /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */; };
 		AB711F5E1481C35F009011C8 /* mic_ext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD9A46413DB99B300777194 /* mic_ext.cpp */; };
 		AB711F5F1481C35F009011C8 /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEC11345AC8400AF11D1 /* OGLRender.cpp */; };
 		AB711F601481C35F009011C8 /* cocoa_firmware.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE7F53D13EE1C7900FD3A71 /* cocoa_firmware.mm */; };
@@ -1060,7 +1072,6 @@
 		AB73A9CD1507C9F500A310C8 /* file_allocation_table.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF3D1345ACBF00AF11D1 /* file_allocation_table.cpp */; };
 		AB73A9CE1507C9F500A310C8 /* filetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF3F1345ACBF00AF11D1 /* filetime.cpp */; };
 		AB73A9D01507C9F500A310C8 /* firmware.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB11345AC8400AF11D1 /* firmware.cpp */; };
-		AB73A9D11507C9F500A310C8 /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */; };
 		AB73A9D21507C9F500A310C8 /* gfx3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB41345AC8400AF11D1 /* gfx3d.cpp */; };
 		AB73A9D31507C9F500A310C8 /* GPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB71345AC8400AF11D1 /* GPU.cpp */; };
 		AB73A9D41507C9F500A310C8 /* GPU_osd_stub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB51345AC8400AF11D1 /* GPU_osd_stub.cpp */; };
@@ -1293,7 +1304,6 @@
 		ABAD0FD515ACE7A00000EC47 /* file_allocation_table.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF3D1345ACBF00AF11D1 /* file_allocation_table.cpp */; };
 		ABAD0FD615ACE7A00000EC47 /* filetime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF3F1345ACBF00AF11D1 /* filetime.cpp */; };
 		ABAD0FD815ACE7A00000EC47 /* firmware.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB11345AC8400AF11D1 /* firmware.cpp */; };
-		ABAD0FD915ACE7A00000EC47 /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */; };
 		ABAD0FDA15ACE7A00000EC47 /* gfx3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB41345AC8400AF11D1 /* gfx3d.cpp */; };
 		ABAD0FDB15ACE7A00000EC47 /* GPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB71345AC8400AF11D1 /* GPU.cpp */; };
 		ABAD0FDC15ACE7A00000EC47 /* GPU_osd_stub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB51345AC8400AF11D1 /* GPU_osd_stub.cpp */; };
@@ -1872,6 +1882,9 @@
 		AB4C808C17C5D7780024D479 /* slot1comp_rom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = slot1comp_rom.h; sourceTree = "<group>"; };
 		AB4C80A817C5D7A00024D479 /* advanscene.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = advanscene.h; sourceTree = "<group>"; };
 		AB4C80A917C5D7A00024D479 /* advanscene.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = advanscene.cpp; sourceTree = "<group>"; };
+		AB5020071D09E712002FA150 /* file_path.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = file_path.c; path = "../libretro-common/file/file_path.c"; sourceTree = SOURCE_ROOT; };
+		AB5020081D09E712002FA150 /* retro_dirent.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = retro_dirent.c; path = "../libretro-common/file/retro_dirent.c"; sourceTree = SOURCE_ROOT; };
+		AB5020091D09E712002FA150 /* retro_stat.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = retro_stat.c; path = "../libretro-common/file/retro_stat.c"; sourceTree = SOURCE_ROOT; };
 		AB53517E18313E3100CCD532 /* slot2_auto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_auto.cpp; sourceTree = "<group>"; };
 		AB53518418313E4E00CCD532 /* slot2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = slot2.h; path = ../slot2.h; sourceTree = SOURCE_ROOT; };
 		AB53518518313E4E00CCD532 /* slot2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = slot2.cpp; path = ../slot2.cpp; sourceTree = SOURCE_ROOT; };
@@ -1974,7 +1987,6 @@
 		ABD1FE7C1345AC8400AF11D1 /* emufile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = emufile.h; path = ../emufile.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE7D1345AC8400AF11D1 /* FIFO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FIFO.h; path = ../FIFO.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE7E1345AC8400AF11D1 /* firmware.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = firmware.h; path = ../firmware.h; sourceTree = SOURCE_ROOT; };
-		ABD1FE7F1345AC8400AF11D1 /* fs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fs.h; path = ../fs.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE801345AC8400AF11D1 /* gdbstub.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gdbstub.h; path = ../gdbstub.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE811345AC8400AF11D1 /* gfx3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gfx3d.h; path = ../gfx3d.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE821345AC8400AF11D1 /* GPU_osd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GPU_osd.h; path = ../GPU_osd.h; sourceTree = SOURCE_ROOT; };
@@ -2022,7 +2034,6 @@
 		ABD1FEAF1345AC8400AF11D1 /* emufile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = emufile.cpp; path = ../emufile.cpp; sourceTree = SOURCE_ROOT; };
 		ABD1FEB01345AC8400AF11D1 /* FIFO.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FIFO.cpp; path = ../FIFO.cpp; sourceTree = SOURCE_ROOT; };
 		ABD1FEB11345AC8400AF11D1 /* firmware.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = firmware.cpp; path = ../firmware.cpp; sourceTree = SOURCE_ROOT; };
-		ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "fs-linux.cpp"; path = "../fs-linux.cpp"; sourceTree = SOURCE_ROOT; };
 		ABD1FEB41345AC8400AF11D1 /* gfx3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gfx3d.cpp; path = ../gfx3d.cpp; sourceTree = SOURCE_ROOT; };
 		ABD1FEB51345AC8400AF11D1 /* GPU_osd_stub.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GPU_osd_stub.cpp; path = ../GPU_osd_stub.cpp; sourceTree = SOURCE_ROOT; };
 		ABD1FEB61345AC8400AF11D1 /* GPU_osd.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GPU_osd.cpp; path = ../GPU_osd.cpp; sourceTree = SOURCE_ROOT; };
@@ -2471,6 +2482,7 @@
 			isa = PBXGroup;
 			children = (
 				AB05DCA31CA0947E007C656C /* include */,
+				AB5020061D09E6F4002FA150 /* file */,
 				AB05DCF81CA0947E007C656C /* rthreads */,
 			);
 			name = "libretro-common";
@@ -2913,6 +2925,16 @@
 			path = userinterface;
 			sourceTree = "<group>";
 		};
+		AB5020061D09E6F4002FA150 /* file */ = {
+			isa = PBXGroup;
+			children = (
+				AB5020071D09E712002FA150 /* file_path.c */,
+				AB5020081D09E712002FA150 /* retro_dirent.c */,
+				AB5020091D09E712002FA150 /* retro_stat.c */,
+			);
+			name = file;
+			sourceTree = "<group>";
+		};
 		AB85D77414ABE42100286B70 /* App Icons */ = {
 			isa = PBXGroup;
 			children = (
@@ -3054,7 +3076,6 @@
 				ABA93EAF178C7D4200CBF50B /* encrypt.cpp */,
 				ABD1FEB01345AC8400AF11D1 /* FIFO.cpp */,
 				ABD1FEB11345AC8400AF11D1 /* firmware.cpp */,
-				ABD1FEB21345AC8400AF11D1 /* fs-linux.cpp */,
 				ABD1FEB41345AC8400AF11D1 /* gfx3d.cpp */,
 				ABD1FEB71345AC8400AF11D1 /* GPU.cpp */,
 				ABD1FEB61345AC8400AF11D1 /* GPU_osd.cpp */,
@@ -3104,7 +3125,6 @@
 				ABA93EAE178C7D4200CBF50B /* encrypt.h */,
 				ABD1FE7D1345AC8400AF11D1 /* FIFO.h */,
 				ABD1FE7E1345AC8400AF11D1 /* firmware.h */,
-				ABD1FE7F1345AC8400AF11D1 /* fs.h */,
 				ABD1FE801345AC8400AF11D1 /* gdbstub.h */,
 				ABD1FE811345AC8400AF11D1 /* gfx3d.h */,
 				ABD1FE831345AC8400AF11D1 /* GPU.h */,
@@ -4341,7 +4361,6 @@
 				AB2A9A081725F00F0062C1A1 /* file_allocation_table.cpp in Sources */,
 				AB2A9A091725F00F0062C1A1 /* filetime.cpp in Sources */,
 				AB2A9A0A1725F00F0062C1A1 /* firmware.cpp in Sources */,
-				AB2A9A0B1725F00F0062C1A1 /* fs-linux.cpp in Sources */,
 				AB2A9A0C1725F00F0062C1A1 /* gfx3d.cpp in Sources */,
 				AB2A9A0D1725F00F0062C1A1 /* GPU.cpp in Sources */,
 				AB2A9A0E1725F00F0062C1A1 /* GPU_osd_stub.cpp in Sources */,
@@ -4486,6 +4505,9 @@
 				AB05DD0F1CA0947E007C656C /* async_job.c in Sources */,
 				AB05DD101CA0947E007C656C /* rsemaphore.c in Sources */,
 				AB05DD111CA0947E007C656C /* rthreads.c in Sources */,
+				AB50200A1D09E712002FA150 /* file_path.c in Sources */,
+				AB50200B1D09E712002FA150 /* retro_dirent.c in Sources */,
+				AB50200C1D09E712002FA150 /* retro_stat.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4518,7 +4540,6 @@
 				AB2F3BDF15CF9C6000858373 /* file_allocation_table.cpp in Sources */,
 				AB2F3BE015CF9C6000858373 /* filetime.cpp in Sources */,
 				AB2F3BE215CF9C6000858373 /* firmware.cpp in Sources */,
-				AB2F3BE315CF9C6000858373 /* fs-linux.cpp in Sources */,
 				AB2F3BE415CF9C6000858373 /* gfx3d.cpp in Sources */,
 				AB2F3BE515CF9C6000858373 /* GPU.cpp in Sources */,
 				AB2F3BE615CF9C6000858373 /* GPU_osd_stub.cpp in Sources */,
@@ -4663,6 +4684,9 @@
 				AB05DD031CA0947E007C656C /* async_job.c in Sources */,
 				AB05DD041CA0947E007C656C /* rsemaphore.c in Sources */,
 				AB05DD051CA0947E007C656C /* rthreads.c in Sources */,
+				AB5020161D09E712002FA150 /* file_path.c in Sources */,
+				AB5020171D09E712002FA150 /* retro_dirent.c in Sources */,
+				AB5020181D09E712002FA150 /* retro_stat.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4695,7 +4719,6 @@
 				AB711F391481C35F009011C8 /* file_allocation_table.cpp in Sources */,
 				AB711F3A1481C35F009011C8 /* filetime.cpp in Sources */,
 				AB711F0C1481C35F009011C8 /* firmware.cpp in Sources */,
-				AB711F5D1481C35F009011C8 /* fs-linux.cpp in Sources */,
 				AB711F0D1481C35F009011C8 /* gfx3d.cpp in Sources */,
 				AB711F0F1481C35F009011C8 /* GPU.cpp in Sources */,
 				AB711F0E1481C35F009011C8 /* GPU_osd_stub.cpp in Sources */,
@@ -4870,6 +4893,9 @@
 				AB05DCFF1CA0947E007C656C /* async_job.c in Sources */,
 				AB05DD001CA0947E007C656C /* rsemaphore.c in Sources */,
 				AB05DD011CA0947E007C656C /* rthreads.c in Sources */,
+				AB50200D1D09E712002FA150 /* file_path.c in Sources */,
+				AB50200E1D09E712002FA150 /* retro_dirent.c in Sources */,
+				AB50200F1D09E712002FA150 /* retro_stat.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4902,7 +4928,6 @@
 				AB73A9CD1507C9F500A310C8 /* file_allocation_table.cpp in Sources */,
 				AB73A9CE1507C9F500A310C8 /* filetime.cpp in Sources */,
 				AB73A9D01507C9F500A310C8 /* firmware.cpp in Sources */,
-				AB73A9D11507C9F500A310C8 /* fs-linux.cpp in Sources */,
 				AB73A9D21507C9F500A310C8 /* gfx3d.cpp in Sources */,
 				AB73A9D31507C9F500A310C8 /* GPU.cpp in Sources */,
 				AB73A9D41507C9F500A310C8 /* GPU_osd_stub.cpp in Sources */,
@@ -5077,6 +5102,9 @@
 				AB05DD0B1CA0947E007C656C /* async_job.c in Sources */,
 				AB05DD0C1CA0947E007C656C /* rsemaphore.c in Sources */,
 				AB05DD0D1CA0947E007C656C /* rthreads.c in Sources */,
+				AB5020101D09E712002FA150 /* file_path.c in Sources */,
+				AB5020111D09E712002FA150 /* retro_dirent.c in Sources */,
+				AB5020121D09E712002FA150 /* retro_stat.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5109,7 +5137,6 @@
 				ABAD0FD515ACE7A00000EC47 /* file_allocation_table.cpp in Sources */,
 				ABAD0FD615ACE7A00000EC47 /* filetime.cpp in Sources */,
 				ABAD0FD815ACE7A00000EC47 /* firmware.cpp in Sources */,
-				ABAD0FD915ACE7A00000EC47 /* fs-linux.cpp in Sources */,
 				ABAD0FDA15ACE7A00000EC47 /* gfx3d.cpp in Sources */,
 				ABAD0FDB15ACE7A00000EC47 /* GPU.cpp in Sources */,
 				ABAD0FDC15ACE7A00000EC47 /* GPU_osd_stub.cpp in Sources */,
@@ -5254,6 +5281,9 @@
 				AB05DD071CA0947E007C656C /* async_job.c in Sources */,
 				AB05DD081CA0947E007C656C /* rsemaphore.c in Sources */,
 				AB05DD091CA0947E007C656C /* rthreads.c in Sources */,
+				AB5020131D09E712002FA150 /* file_path.c in Sources */,
+				AB5020141D09E712002FA150 /* retro_dirent.c in Sources */,
+				AB5020151D09E712002FA150 /* retro_stat.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
