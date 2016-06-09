@@ -6319,9 +6319,10 @@ void OGLHUDLayer::SetFontUsingPath(const char *filePath)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	
-	for (size_t texLevel = 0, tileSize = this->_glyphTileSize, glyphSize = this->_glyphSize; tileSize >= 4; texLevel++, tileSize >>= 1, glyphSize = (GLfloat)tileSize * 0.75f)
+	GLint texLevel = 0;
+	for (size_t tileSize = this->_glyphTileSize, glyphSize = this->_glyphSize; tileSize >= 4; texLevel++, tileSize >>= 1, glyphSize = (GLfloat)tileSize * 0.75f)
 	{
 		const size_t charMapBufferPixCount = (16 * tileSize) * (16 * tileSize);
 		
@@ -6389,7 +6390,8 @@ void OGLHUDLayer::SetFontUsingPath(const char *filePath)
 		glTexImage2D(GL_TEXTURE_2D, texLevel, GL_RGBA, 16 * tileSize, 16 * tileSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, charMapBuffer);
 	}
 	
-	glGenerateMipmapEXT(GL_TEXTURE_2D);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, texLevel - 1);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
 	FT_Done_Face(fontFace);
@@ -6719,7 +6721,7 @@ void OGLHUDLayer::RenderOGL()
 	else
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -0.50f);
 	}
 	glDrawElements(GL_TRIANGLES, (length - 1) * 6, GL_UNSIGNED_SHORT, (GLvoid *)(6 * sizeof(GLshort)));
