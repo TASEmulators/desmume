@@ -63,6 +63,7 @@ class GPUEventHandlerOSX;
 @property (assign) BOOL render3DLineHack;
 @property (assign) BOOL render3DMultisample;
 @property (assign) BOOL render3DTextureDeposterize;
+@property (assign) BOOL render3DTextureSmoothing;
 @property (assign) NSUInteger render3DTextureScalingFactor;
 @property (assign) BOOL render3DFragmentSamplingHack;
 

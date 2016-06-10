@@ -105,6 +105,7 @@ public:
 @dynamic render3DLineHack;
 @dynamic render3DMultisample;
 @dynamic render3DTextureDeposterize;
+@dynamic render3DTextureSmoothing;
 @dynamic render3DTextureScalingFactor;
 @dynamic render3DFragmentSamplingHack;
 
@@ -449,6 +450,22 @@ public:
 {
 	gpuEvent->Render3DLock();
 	const BOOL state = CommonSettings.GFX3D_Renderer_TextureDeposterize ? YES : NO;
+	gpuEvent->Render3DUnlock();
+	
+	return state;
+}
+
+- (void) setRender3DTextureSmoothing:(BOOL)state
+{
+	gpuEvent->Render3DLock();
+	CommonSettings.GFX3D_Renderer_TextureSmoothing = state ? true : false;
+	gpuEvent->Render3DUnlock();
+}
+
+- (BOOL) render3DTextureSmoothing
+{
+	gpuEvent->Render3DLock();
+	const BOOL state = CommonSettings.GFX3D_Renderer_TextureSmoothing ? YES : NO;
 	gpuEvent->Render3DUnlock();
 	
 	return state;

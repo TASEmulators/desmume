@@ -720,10 +720,12 @@
 	<integer>1</integer>
 	<key>Render3D_Textures</key>
 	<true/>
-	<key>Render3D_TextureDeposterize</key>
-	<false/>
 	<key>Render3D_TextureScalingFactor</key>
 	<integer>1</integer>
+	<key>Render3D_TextureDeposterize</key>
+	<false/>
+	<key>Render3D_TextureSmoothing</key>
+	<false/>
 	<key>Render3D_Threads</key>
 	<integer>0</integer>
 	<key>RomInfoPanel_SectionViewState</key>
