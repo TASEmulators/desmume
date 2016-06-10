@@ -952,8 +952,9 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] render3DThreads] forKey:@"Render3D_Threads"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DLineHack] forKey:@"Render3D_LineHack"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DMultisample] forKey:@"Render3D_Multisample"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DTextureDeposterize] forKey:@"Render3D_TextureDeposterize"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] render3DTextureScalingFactor] forKey:@"Render3D_TextureScalingFactor"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DTextureDeposterize] forKey:@"Render3D_TextureDeposterize"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DTextureSmoothing] forKey:@"Render3D_TextureSmoothing"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DFragmentSamplingHack] forKey:@"Render3D_FragmentSamplingHack"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] gpuScale] forKey:@"Render3D_ScalingFactor"];
 	
@@ -2205,8 +2206,9 @@
 	[[cdsCore cdsGPU] setRender3DDepthComparisonThreshold:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_DepthComparisonThreshold"]];
 	[[cdsCore cdsGPU] setRender3DLineHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_LineHack"]];
 	[[cdsCore cdsGPU] setRender3DMultisample:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Multisample"]];
-	[[cdsCore cdsGPU] setRender3DTextureDeposterize:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_TextureDeposterize"]];
 	[[cdsCore cdsGPU] setRender3DTextureScalingFactor:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_TextureScalingFactor"]];
+	[[cdsCore cdsGPU] setRender3DTextureDeposterize:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_TextureDeposterize"]];
+	[[cdsCore cdsGPU] setRender3DTextureSmoothing:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_TextureSmoothing"]];
 	[[cdsCore cdsGPU] setRender3DFragmentSamplingHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_FragmentSamplingHack"]];
 	[[cdsCore cdsGPU] setGpuScale:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_ScalingFactor"]];
 	
