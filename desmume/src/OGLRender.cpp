@@ -293,10 +293,11 @@ static const char *fragmentShader_100 = {"\
 	uniform int polyMode; \n\
 	uniform bool polyEnableDepthWrite;\n\
 	uniform bool polySetNewDepthForTranslucent;\n\
-	uniform int polyID; \n\
+	uniform int polyID;\n\
 	\n\
-	uniform bool polyEnableTexture; \n\
+	uniform bool polyEnableTexture;\n\
 	uniform bool polyEnableFog;\n\
+	uniform bool texSingleBitAlpha;\n\
 	\n\
 	vec3 packVec3FromFloat(const float value)\n\
 	{\n\
@@ -308,6 +309,20 @@ static const char *fragmentShader_100 = {"\
 	void main() \n\
 	{ \n\
 		vec4 mainTexColor = (polyEnableTexture) ? texture2D(texRenderObject, vtxTexCoord) : vec4(1.0, 1.0, 1.0, 1.0); \n\
+		\n\
+		if (texSingleBitAlpha)\n\
+		{\n\
+			if (mainTexColor.a < 0.500)\n\
+			{\n\
+				mainTexColor.a = 0.0;\n\
+			}\n\
+			else\n\
+			{\n\
+				mainTexColor.rgb = mainTexColor.rgb / mainTexColor.a;\n\
+				mainTexColor.a = 1.0;\n\
+			}\n\
+		}\n\
+		\n\
 		vec4 newFragColor = mainTexColor * vtxColor; \n\
 		\n\
 		if(polyMode == 1) \n\
@@ -328,7 +343,7 @@ static const char *fragmentShader_100 = {"\
 			} \n\
 		} \n\
 		\n\
-		if (newFragColor.a == 0.0 || (stateEnableAlphaTest && newFragColor.a < stateAlphaTestRef)) \n\
+		if (newFragColor.a < 0.001 || (stateEnableAlphaTest && newFragColor.a < stateAlphaTestRef)) \n\
 		{ \n\
 			discard; \n\
 		} \n\
@@ -902,8 +917,15 @@ GPU3DInterface gpu3Dgl_3_2 = {
 
 OpenGLRenderer::OpenGLRenderer()
 {
-	_renderID = RENDERID_OPENGL_AUTO;
-	_renderName = "OpenGL";
+	_deviceInfo.renderID = RENDERID_OPENGL_AUTO;
+	_deviceInfo.renderName = "OpenGL";
+	_deviceInfo.isTexturingSupported = true;
+	_deviceInfo.isEdgeMarkSupported = true;
+	_deviceInfo.isFogSupported = true;
+	_deviceInfo.isTextureSmoothingSupported = true;
+	_deviceInfo.maxAnisotropy = 1.0f;
+	_deviceInfo.maxSamples = 0;
+	
 	_internalRenderingFormat = NDSColorFormat_BGR888_Rev;
 	
 	versionMajor = 0;
@@ -1361,6 +1383,15 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	std::set<std::string> oglExtensionSet;
 	this->GetExtensionSet(&oglExtensionSet);
 	
+	// Get host GPU device properties
+	GLfloat maxAnisotropyOGL = 1.0f;
+	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropyOGL);
+	this->_deviceInfo.maxAnisotropy = maxAnisotropyOGL;
+	
+	GLint maxSamplesOGL = 0;
+	glGetIntegerv(GL_MAX_SAMPLES_EXT, &maxSamplesOGL);
+	this->_deviceInfo.maxSamples = (u8)maxSamplesOGL;
+	
 	// Initialize OpenGL
 	this->InitTables();
 	
@@ -1395,21 +1426,32 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 														 framebufferOutputRGBA8888FragShaderString);
 				if (error != OGLERROR_NOERR)
 				{
+					this->_deviceInfo.isEdgeMarkSupported = false;
+					this->_deviceInfo.isFogSupported = false;
 					INFO("OpenGL: Edge mark and fog require OpenGL v2.0 or later. These features will be disabled.\n");
 				}
 			}
 			else
 			{
+				this->_deviceInfo.isEdgeMarkSupported = false;
+				this->_deviceInfo.isFogSupported = false;
+				this->_deviceInfo.isTextureSmoothingSupported = false;
 				this->isShaderSupported = false;
 			}
 		}
 		else
 		{
+			this->_deviceInfo.isEdgeMarkSupported = false;
+			this->_deviceInfo.isFogSupported = false;
+			this->_deviceInfo.isTextureSmoothingSupported = false;
 			this->isShaderSupported = false;
 		}
 	}
 	else
 	{
+		this->_deviceInfo.isEdgeMarkSupported = false;
+		this->_deviceInfo.isFogSupported = false;
+		this->_deviceInfo.isTextureSmoothingSupported = false;
 		INFO("OpenGL: Shaders are unsupported. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
 	}
 	
@@ -1600,6 +1642,7 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgramShaderLocations()
 	
 	OGLRef.uniformPolyEnableTexture				= glGetUniformLocation(OGLRef.programGeometryID, "polyEnableTexture");
 	OGLRef.uniformPolyEnableFog					= glGetUniformLocation(OGLRef.programGeometryID, "polyEnableFog");
+	OGLRef.uniformTexSingleBitAlpha				= glGetUniformLocation(OGLRef.programGeometryID, "texSingleBitAlpha");
 	
 	return OGLERROR_NOERR;
 }
@@ -2058,8 +2101,7 @@ Render3DError OpenGLRenderer_1_2::CreateMultisampledFBO()
 	// Check the maximum number of samples that the driver supports and use that.
 	// Since our target resolution is only 256x192 pixels, using the most samples
 	// possible is the best thing to do.
-	GLint maxSamples = 0;
-	glGetIntegerv(GL_MAX_SAMPLES_EXT, &maxSamples);
+	GLint maxSamples = (GLint)this->_deviceInfo.maxSamples;
 	
 	if (maxSamples < 2)
 	{
@@ -3071,6 +3113,7 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 		if (this->isShaderSupported)
 		{
 			glUniform1i(OGLRef.uniformPolyEnableTexture, GL_FALSE);
+			glUniform1i(OGLRef.uniformTexSingleBitAlpha, GL_FALSE);
 		}
 		else
 		{
@@ -3084,6 +3127,7 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 	if (this->isShaderSupported)
 	{
 		glUniform1i(OGLRef.uniformPolyEnableTexture, GL_TRUE);
+		glUniform1i(OGLRef.uniformTexSingleBitAlpha, (params.texFormat != TEXMODE_A3I5 && params.texFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
 	}
 	else
 	{
@@ -3108,8 +3152,6 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 			OGLRef.freeTextureIDs.pop();
 			
 			glBindTexture(GL_TEXTURE_2D, (GLuint)this->currTexture->texid);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (params.enableRepeatS ? (params.enableMirroredRepeatS ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 			
@@ -3125,25 +3167,81 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 			
 			switch (this->_textureScalingFactor)
 			{
+				case 1:
+				{
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (this->_textureSmooth) ? GL_LINEAR : GL_NEAREST);
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (this->_textureSmooth) ? GL_LINEAR : GL_NEAREST);
+					glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, (this->_textureSmooth) ? this->_deviceInfo.maxAnisotropy : 1.0f);
+					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureSrc);
+					break;
+				}
+					
 				case 2:
 				{
-					this->TextureUpscale<2>(textureSrc, texWidth, texHeight);
-					textureSrc = this->_textureUpscaleBuffer;
+					if (this->_textureSmooth)
+					{
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
+						glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, this->_deviceInfo.maxAnisotropy);
+						
+						this->TextureUpscale<2>(textureSrc, texWidth, texHeight);
+						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->_textureUpscaleBuffer);
+						
+						glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, currTexture->sizeX, currTexture->sizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureSrc);
+					}
+					else
+					{
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+						glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
+						
+						this->TextureUpscale<2>(textureSrc, texWidth, texHeight);
+						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->_textureUpscaleBuffer);
+					}
 					break;
 				}
 					
 				case 4:
 				{
-					this->TextureUpscale<4>(textureSrc, texWidth, texHeight);
-					textureSrc = this->_textureUpscaleBuffer;
+					if (this->_textureSmooth)
+					{
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 2);
+						glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, this->_deviceInfo.maxAnisotropy);
+						
+						this->TextureUpscale<4>(textureSrc, texWidth, texHeight);
+						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->_textureUpscaleBuffer);
+						
+						texWidth = currTexture->sizeX;
+						texHeight = currTexture->sizeY;
+						this->TextureUpscale<2>(textureSrc, texWidth, texHeight);
+						glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->_textureUpscaleBuffer);
+						
+						glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA, currTexture->sizeX, currTexture->sizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureSrc);
+					}
+					else
+					{
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+						glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
+						
+						this->TextureUpscale<4>(textureSrc, texWidth, texHeight);
+						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->_textureUpscaleBuffer);
+					}
 					break;
 				}
 					
 				default:
 					break;
 			}
-			
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureSrc);
 		}
 		else
 		{
@@ -3313,8 +3411,7 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	
 	if (this->isMultisampledFBOSupported)
 	{
-		GLint maxSamples = 0;
-		glGetIntegerv(GL_MAX_SAMPLES_EXT, &maxSamples);
+		GLint maxSamples = (GLint)this->_deviceInfo.maxSamples;
 		
 		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGColorID);
 		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamples, GL_RGBA, w, h);
@@ -3493,8 +3590,7 @@ Render3DError OpenGLRenderer_1_3::SetFramebufferSize(size_t w, size_t h)
 	
 	if (this->isMultisampledFBOSupported)
 	{
-		GLint maxSamples = 0;
-		glGetIntegerv(GL_MAX_SAMPLES_EXT, &maxSamples);
+		GLint maxSamples = (GLint)this->_deviceInfo.maxSamples;
 		
 		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGColorID);
 		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamples, GL_RGBA, w, h);
@@ -3819,6 +3915,15 @@ Render3DError OpenGLRenderer_2_0::InitExtensions()
 	std::set<std::string> oglExtensionSet;
 	this->GetExtensionSet(&oglExtensionSet);
 	
+	// Get host GPU device properties
+	GLfloat maxAnisotropyOGL = 1.0f;
+	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropyOGL);
+	this->_deviceInfo.maxAnisotropy = maxAnisotropyOGL;
+	
+	GLint maxSamplesOGL = 0;
+	glGetIntegerv(GL_MAX_SAMPLES_EXT, &maxSamplesOGL);
+	this->_deviceInfo.maxSamples = (u8)maxSamplesOGL;
+	
 	// Initialize OpenGL
 	this->InitTables();
 	
@@ -3859,6 +3964,8 @@ Render3DError OpenGLRenderer_2_0::InitExtensions()
 	{
 		this->DestroyGeometryProgram();
 		this->isShaderSupported = false;
+		this->_deviceInfo.isEdgeMarkSupported = false;
+		this->_deviceInfo.isFogSupported = false;
 	}
 	
 	this->isVBOSupported = true;
@@ -4694,10 +4801,12 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 	if (params.texFormat == TEXMODE_NONE || !enableTexturing)
 	{
 		glUniform1i(OGLRef.uniformPolyEnableTexture, GL_FALSE);
+		glUniform1i(OGLRef.uniformTexSingleBitAlpha, GL_FALSE);
 		return OGLERROR_NOERR;
 	}
 	
 	glUniform1i(OGLRef.uniformPolyEnableTexture, GL_TRUE);
+	glUniform1i(OGLRef.uniformTexSingleBitAlpha, (params.texFormat != TEXMODE_A3I5 && params.texFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
 	
 	TexCacheItem *newTexture = TexCache_SetTexture(TexFormat_32bpp, thePoly.texParam, thePoly.texPalette);
 	if(newTexture != this->currTexture)
@@ -4717,8 +4826,6 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 			OGLRef.freeTextureIDs.pop();
 			
 			glBindTexture(GL_TEXTURE_2D, (GLuint)this->currTexture->texid);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (params.enableRepeatS ? (params.enableMirroredRepeatS ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 			
@@ -4734,25 +4841,81 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 			
 			switch (this->_textureScalingFactor)
 			{
+				case 1:
+				{
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (this->_textureSmooth) ? GL_LINEAR : GL_NEAREST);
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (this->_textureSmooth) ? GL_LINEAR : GL_NEAREST);
+					glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, (this->_textureSmooth) ? this->_deviceInfo.maxAnisotropy : 1.0f);
+					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureSrc);
+					break;
+				}
+					
 				case 2:
 				{
-					this->TextureUpscale<2>(textureSrc, texWidth, texHeight);
-					textureSrc = this->_textureUpscaleBuffer;
+					if (this->_textureSmooth)
+					{
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
+						glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, this->_deviceInfo.maxAnisotropy);
+						
+						this->TextureUpscale<2>(textureSrc, texWidth, texHeight);
+						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->_textureUpscaleBuffer);
+						
+						glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, currTexture->sizeX, currTexture->sizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureSrc);
+					}
+					else
+					{
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+						glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
+						
+						this->TextureUpscale<2>(textureSrc, texWidth, texHeight);
+						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->_textureUpscaleBuffer);
+					}
 					break;
 				}
 					
 				case 4:
 				{
-					this->TextureUpscale<4>(textureSrc, texWidth, texHeight);
-					textureSrc = this->_textureUpscaleBuffer;
+					if (this->_textureSmooth)
+					{
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 2);
+						glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, this->_deviceInfo.maxAnisotropy);
+						
+						this->TextureUpscale<4>(textureSrc, texWidth, texHeight);
+						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->_textureUpscaleBuffer);
+						
+						texWidth = currTexture->sizeX;
+						texHeight = currTexture->sizeY;
+						this->TextureUpscale<2>(textureSrc, texWidth, texHeight);
+						glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->_textureUpscaleBuffer);
+						
+						glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA, currTexture->sizeX, currTexture->sizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureSrc);
+					}
+					else
+					{
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+						glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
+						
+						this->TextureUpscale<4>(textureSrc, texWidth, texHeight);
+						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->_textureUpscaleBuffer);
+					}
 					break;
 				}
 					
 				default:
 					break;
 			}
-			
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureSrc);
 		}
 		else
 		{

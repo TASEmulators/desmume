@@ -397,16 +397,21 @@ public:
 
 		//============================================================================ 
 		//Texture conversion
-		//============================================================================ 
+		//============================================================================
+		
+		// Whenever a 1-bit alpha or no-alpha texture is unpacked (this means any texture
+		// format that is not A3I5 or A5I3), set all transparent pixels to 0 so that 3D
+		// renderers can assume that the transparent color is 0 during texture sampling.
 
 		const u8 opaqueColor = (TEXFORMAT == TexFormat_32bpp) ? 0xFF : 0x1F;
 		const u8 palZeroTransparent = ( 1 - ((format>>29) & 1) ) * opaqueColor;
 
 		switch (newitem->mode)
 		{
-		case TEXMODE_A3I5:
+			case TEXMODE_A3I5:
 			{
-				for(int j=0;j<ms.numItems;j++) {
+				for(int j=0;j<ms.numItems;j++)
+				{
 					adr = ms.items[j].ptr;
 					for(u32 x = 0; x < ms.items[j].len; x++)
 					{
@@ -422,71 +427,150 @@ public:
 				break;
 			}
 
-		case TEXMODE_I2:
+			case TEXMODE_I2:
 			{
-				for(int j=0;j<ms.numItems;j++) {
-					adr = ms.items[j].ptr;
-					for(u32 x = 0; x < ms.items[j].len; x++)
+				if (palZeroTransparent == 0)
+				{
+					for(int j=0;j<ms.numItems;j++)
 					{
-						u8 bits;
-						u16 c;
-
-						bits = (*adr)&0x3;
-						c = pal[bits];
-						*dwdst++ = CONVERT(c,(bits == 0) ? palZeroTransparent : opaqueColor);
-
-						bits = ((*adr)>>2)&0x3;
-						c = pal[bits];
-						*dwdst++ = CONVERT(c,(bits == 0) ? palZeroTransparent : opaqueColor);
-
-						bits = ((*adr)>>4)&0x3;
-						c = pal[bits];
-						*dwdst++ = CONVERT(c,(bits == 0) ? palZeroTransparent : opaqueColor);
-
-						bits = ((*adr)>>6)&0x3;
-						c = pal[bits];
-						*dwdst++ = CONVERT(c,(bits == 0) ? palZeroTransparent : opaqueColor);
-
-						adr++;
+						adr = ms.items[j].ptr;
+						for(u32 x = 0; x < ms.items[j].len; x++)
+						{
+							u8 bits;
+							u16 c;
+							
+							bits = (*adr)&0x3;
+							c = pal[bits];
+							*dwdst++ = (bits == 0) ? 0 : CONVERT(c,opaqueColor);
+							
+							bits = ((*adr)>>2)&0x3;
+							c = pal[bits];
+							*dwdst++ = (bits == 0) ? 0 : CONVERT(c,opaqueColor);
+							
+							bits = ((*adr)>>4)&0x3;
+							c = pal[bits];
+							*dwdst++ = (bits == 0) ? 0 : CONVERT(c,opaqueColor);
+							
+							bits = ((*adr)>>6)&0x3;
+							c = pal[bits];
+							*dwdst++ = (bits == 0) ? 0 : CONVERT(c,opaqueColor);
+							
+							adr++;
+						}
+					}
+				}
+				else
+				{
+					for(int j=0;j<ms.numItems;j++)
+					{
+						adr = ms.items[j].ptr;
+						for(u32 x = 0; x < ms.items[j].len; x++)
+						{
+							u8 bits;
+							u16 c;
+							
+							bits = (*adr)&0x3;
+							c = pal[bits];
+							*dwdst++ = CONVERT(c,opaqueColor);
+							
+							bits = ((*adr)>>2)&0x3;
+							c = pal[bits];
+							*dwdst++ = CONVERT(c,opaqueColor);
+							
+							bits = ((*adr)>>4)&0x3;
+							c = pal[bits];
+							*dwdst++ = CONVERT(c,opaqueColor);
+							
+							bits = ((*adr)>>6)&0x3;
+							c = pal[bits];
+							*dwdst++ = CONVERT(c,opaqueColor);
+							
+							adr++;
+						}
 					}
 				}
 				break;
 			}
-		case TEXMODE_I4:
+				
+			case TEXMODE_I4:
 			{
-				for(int j=0;j<ms.numItems;j++) {
-					adr = ms.items[j].ptr;
-					for(u32 x = 0; x < ms.items[j].len; x++)
+				if (palZeroTransparent == 0)
+				{
+					for(int j=0;j<ms.numItems;j++)
 					{
-						u8 bits;
-						u16 c;
-
-						bits = (*adr)&0xF;
-						c = pal[bits];
-						*dwdst++ = CONVERT(c,(bits == 0) ? palZeroTransparent : opaqueColor);
-
-						bits = ((*adr)>>4);
-						c = pal[bits];
-						*dwdst++ = CONVERT(c,(bits == 0) ? palZeroTransparent : opaqueColor);
-						adr++;
+						adr = ms.items[j].ptr;
+						for(u32 x = 0; x < ms.items[j].len; x++)
+						{
+							u8 bits;
+							u16 c;
+							
+							bits = (*adr)&0xF;
+							c = pal[bits];
+							*dwdst++ = (bits == 0) ? 0 : CONVERT(c,opaqueColor);
+							
+							bits = ((*adr)>>4);
+							c = pal[bits];
+							*dwdst++ = (bits == 0) ? 0 : CONVERT(c,opaqueColor);
+							adr++;
+						}
+					}
+				}
+				else
+				{
+					for(int j=0;j<ms.numItems;j++)
+					{
+						adr = ms.items[j].ptr;
+						for(u32 x = 0; x < ms.items[j].len; x++)
+						{
+							u8 bits;
+							u16 c;
+							
+							bits = (*adr)&0xF;
+							c = pal[bits];
+							*dwdst++ = CONVERT(c,opaqueColor);
+							
+							bits = ((*adr)>>4);
+							c = pal[bits];
+							*dwdst++ = CONVERT(c,opaqueColor);
+							adr++;
+						}
 					}
 				}
 				break;
 			}
-		case TEXMODE_I8:
+				
+			case TEXMODE_I8:
 			{
-				for(int j=0;j<ms.numItems;j++) {
-					adr = ms.items[j].ptr;
-					for(u32 x = 0; x < ms.items[j].len; ++x)
+				if (palZeroTransparent == 0)
+				{
+					for(int j=0;j<ms.numItems;j++)
 					{
-						u16 c = pal[*adr];
-						*dwdst++ = CONVERT(c,(*adr == 0) ? palZeroTransparent : opaqueColor);
-						adr++;
+						adr = ms.items[j].ptr;
+						for(u32 x = 0; x < ms.items[j].len; ++x)
+						{
+							u16 c = pal[*adr];
+							*dwdst++ = (*adr == 0) ? 0 : CONVERT(c,opaqueColor);
+							adr++;
+						}
 					}
 				}
+				else
+				{
+					for(int j=0;j<ms.numItems;j++)
+					{
+						adr = ms.items[j].ptr;
+						for(u32 x = 0; x < ms.items[j].len; ++x)
+						{
+							u16 c = pal[*adr];
+							*dwdst++ = CONVERT(c,opaqueColor);
+							adr++;
+						}
+					}
+				}
+				break;
 			}
-			break;
-		case TEXMODE_4X4:
+				
+			case TEXMODE_4X4:
 			{
 				if(ms.numItems != 1) {
 					PROGINFO("Your 4x4 texture has overrun its texture slot.\n");
@@ -544,7 +628,7 @@ public:
 						{
 							case 0:
 								tmp_col[2] = RGB15TO32( PAL4X4(pal1offset+2), 0xFF );
-								tmp_col[3] = RGB15TO32(0x7FFF, 0x00);
+								tmp_col[3] = 0x00000000;
 								break;
 								
 							case 1:
@@ -553,12 +637,12 @@ public:
 											  ( (((tmp_col[0] & 0x00FF0000)      + (tmp_col[1] & 0x00FF0000)) >> 1)  & 0x00FF0000 ) |
 											  ( (((tmp_col[0] & 0x0000FF00)      + (tmp_col[1] & 0x0000FF00)) >> 1)  & 0x0000FF00 ) |
 											  0x000000FF;
-								tmp_col[3]	= 0xFFFFFF00;
+								tmp_col[3]	= 0x00000000;
 #else
 								tmp_col[2]	= ( (((tmp_col[0] & 0x00FF00FF) + (tmp_col[1] & 0x00FF00FF)) >> 1) & 0x00FF00FF ) |
 											  ( (((tmp_col[0] & 0x0000FF00) + (tmp_col[1] & 0x0000FF00)) >> 1) & 0x0000FF00 ) |
 											  0xFF000000;
-								tmp_col[3]	= 0x00FFFFFF;
+								tmp_col[3]	= 0x00000000;
 #endif
 								break;
 								
@@ -634,9 +718,11 @@ public:
 				}
 				break;
 			}
-		case TEXMODE_A5I3:
+				
+			case TEXMODE_A5I3:
 			{
-				for(int j=0;j<ms.numItems;j++) {
+				for(int j=0;j<ms.numItems;j++)
+				{
 					adr = ms.items[j].ptr;
 					for(u32 x = 0; x < ms.items[j].len; ++x)
 					{
@@ -651,16 +737,18 @@ public:
 				}
 				break;
 			}
-		case TEXMODE_16BPP:
+				
+			case TEXMODE_16BPP:
 			{
-				for(int j=0;j<ms.numItems;j++) {
+				for(int j=0;j<ms.numItems;j++)
+				{
 					u16* map = (u16*)ms.items[j].ptr;
 					int len = ms.items[j].len>>1;
+					
 					for(int x = 0; x < len; ++x)
 					{
 						u16 c = map[x];
-						int alpha = ((c&0x8000)?opaqueColor:0);
-						*dwdst++ = CONVERT(c&0x7FFF,alpha);
+						*dwdst++ = (c & 0x8000) ? CONVERT(c&0x7FFF,opaqueColor) : 0;
 					}
 				}
 				break;

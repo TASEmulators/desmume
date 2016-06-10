@@ -2336,7 +2336,9 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	if (CommonSettings.showGpu.main)
 	{
 		CurrentRenderer->SetRenderNeedsFinish(true);
-		CurrentRenderer->SetTextureProcessingProperties(CommonSettings.GFX3D_Renderer_TextureDeposterize, CommonSettings.GFX3D_Renderer_TextureScalingFactor);
+		CurrentRenderer->SetTextureProcessingProperties(CommonSettings.GFX3D_Renderer_TextureScalingFactor,
+														CommonSettings.GFX3D_Renderer_TextureDeposterize,
+														CommonSettings.GFX3D_Renderer_TextureSmoothing);
 		CurrentRenderer->Render(gfx3d);
 	}
 	else

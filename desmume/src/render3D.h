@@ -98,11 +98,24 @@ struct FragmentAttributesBuffer
 	void SetAll(const FragmentAttributes &attr);
 };
 
+struct Render3DDeviceInfo
+{
+	RendererID renderID;
+	std::string renderName;
+	
+	bool isTexturingSupported;
+	bool isEdgeMarkSupported;
+	bool isFogSupported;
+	bool isTextureSmoothingSupported;
+	
+	float maxAnisotropy;
+	u8 maxSamples;
+};
+
 class Render3D
 {
 protected:
-	RendererID _renderID;
-	std::string _renderName;
+	Render3DDeviceInfo _deviceInfo;
 	
 	size_t _framebufferWidth;
 	size_t _framebufferHeight;
@@ -116,6 +129,7 @@ protected:
 	bool _willFlushFramebufferRGBA5551;
 	
 	size_t _textureScalingFactor;
+	bool _textureSmooth;
 	u32 *_textureDeposterizeBuffer;
 	u32 *_textureUpscaleBuffer;
 	
@@ -147,6 +161,7 @@ public:
 	Render3D();
 	~Render3D();
 	
+	const Render3DDeviceInfo& GetDeviceInfo();
 	RendererID GetRenderID();
 	std::string GetName();
 	
@@ -179,7 +194,7 @@ public:
 	bool GetRenderNeedsFinish() const;
 	void SetRenderNeedsFinish(const bool renderNeedsFinish);
 	
-	void SetTextureProcessingProperties(bool willDeposterize, size_t scalingFactor);
+	void SetTextureProcessingProperties(size_t scalingFactor, bool willDeposterize, bool willSmooth);
 };
 
 #ifdef ENABLE_SSE2
