@@ -389,7 +389,7 @@ struct OGLPolyStates
 	
 	union
 	{
-		struct { GLubyte texSizeS, texSizeT, texParamPad[2]; };
+		struct { GLubyte texSizeS, texSizeT, texSingleBitAlpha, texParamPad[1]; };
 		GLubyte texParam[4];
 	};
 };
@@ -481,6 +481,7 @@ struct OGLRenderRef
 	
 	GLint uniformPolyEnableTexture;
 	GLint uniformPolyEnableFog;
+	GLint uniformTexSingleBitAlpha;
 	
 	GLint uniformPolyStateIndex;
 	

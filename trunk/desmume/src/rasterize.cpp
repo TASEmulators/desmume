@@ -1165,8 +1165,14 @@ GPU3DInterface gpu3DRasterize = {
 
 SoftRasterizerRenderer::SoftRasterizerRenderer()
 {
-	_renderID = RENDERID_SOFTRASTERIZER;
-	_renderName = "SoftRasterizer";
+	_deviceInfo.renderID = RENDERID_SOFTRASTERIZER;
+	_deviceInfo.renderName = "SoftRasterizer";
+	_deviceInfo.isTexturingSupported = true;
+	_deviceInfo.isEdgeMarkSupported = true;
+	_deviceInfo.isFogSupported = true;
+	_deviceInfo.isTextureSmoothingSupported = false;
+	_deviceInfo.maxAnisotropy = 1.0f;
+	_deviceInfo.maxSamples = 0;
 	
 	_debug_drawClippedUserPoly = -1;
 	clippedPolys = clipper.clippedPolys = new GFX3D_Clipper::TClippedPoly[POLYLIST_SIZE*2];

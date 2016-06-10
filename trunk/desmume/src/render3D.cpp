@@ -265,8 +265,14 @@ void Render3D::operator delete(void *ptr)
 
 Render3D::Render3D()
 {
-	_renderID = RENDERID_NULL;
-	_renderName = "None";
+	_deviceInfo.renderID = RENDERID_NULL;
+	_deviceInfo.renderName = "None";
+	_deviceInfo.isTexturingSupported = false;
+	_deviceInfo.isEdgeMarkSupported = false;
+	_deviceInfo.isFogSupported = false;
+	_deviceInfo.isTextureSmoothingSupported = false;
+	_deviceInfo.maxAnisotropy = 1.0f;
+	_deviceInfo.maxSamples = 0;
 	
 	static bool needTableInit = true;
 	
@@ -292,6 +298,7 @@ Render3D::Render3D()
 	_willFlushFramebufferRGBA5551 = true;
 	
 	_textureScalingFactor = 1;
+	_textureSmooth = false;
 	_textureDeposterizeBuffer = NULL;
 	_textureUpscaleBuffer = NULL;
 	
@@ -303,14 +310,19 @@ Render3D::~Render3D()
 	// Do nothing.
 }
 
+const Render3DDeviceInfo& Render3D::GetDeviceInfo()
+{
+	return this->_deviceInfo;
+}
+
 RendererID Render3D::GetRenderID()
 {
-	return this->_renderID;
+	return this->_deviceInfo.renderID;
 }
 
 std::string Render3D::GetName()
 {
-	return this->_renderName;
+	return this->_deviceInfo.renderName;
 }
 
 FragmentColor* Render3D::GetFramebuffer()
@@ -381,7 +393,7 @@ void Render3D::SetRenderNeedsFinish(const bool renderNeedsFinish)
 	this->_renderNeedsFinish = renderNeedsFinish;
 }
 
-void Render3D::SetTextureProcessingProperties(bool willDeposterize, size_t scalingFactor)
+void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDeposterize, bool willSmooth)
 {
 	const bool isScaleValid = ( (scalingFactor == 2) || (scalingFactor == 4) );
 	const size_t newScalingFactor = (isScaleValid) ? scalingFactor : 1;
@@ -412,6 +424,13 @@ void Render3D::SetTextureProcessingProperties(bool willDeposterize, size_t scali
 		this->_textureScalingFactor = newScalingFactor;
 		this->_textureUpscaleBuffer = newTextureBuffer;
 		free_aligned(oldTextureBuffer);
+		
+		needTexCacheReset = true;
+	}
+	
+	if (willSmooth != this->_textureSmooth)
+	{
+		this->_textureSmooth = willSmooth;
 		
 		needTexCacheReset = true;
 	}
