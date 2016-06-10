@@ -24,6 +24,7 @@
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#include <GL/gl.h>
+	#include <GL/glext.h>
 	#include <GL/glcorearb.h>
 
 	#define OGLEXT(procPtr, func)		procPtr func = NULL;
@@ -39,6 +40,7 @@
 	#define EXTERNOGLEXT(procPtr, func)
 #else
 	#include <GL/gl.h>
+	#include <GL/glext.h>
 	#include <GL/glx.h>
 	#include "utils/glcorearb.h"
 
