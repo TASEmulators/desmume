@@ -149,7 +149,7 @@ protected:
 	virtual Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebuffer, u16 *__restrict dstRGBA5551);
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
-	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const;
+	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) const;
 	
 	virtual Render3DError SetupPolygon(const POLY &thePoly);
 	virtual Render3DError SetupTexture(const POLY &thePoly, bool enableTexturing);
@@ -201,20 +201,8 @@ public:
 
 class Render3D_SSE2 : public Render3D
 {
-protected:
-	virtual Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebuffer, u16 *__restrict dstRGBA5551);
-	
 public:
 	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
-};
-
-#endif
-
-#ifdef ENABLE_SSSE3
-
-class Render3D_SSSE3 : public Render3D_SSE2
-{
-	
 };
 
 #endif

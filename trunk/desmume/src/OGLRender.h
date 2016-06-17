@@ -522,6 +522,7 @@ extern GPU3DInterface gpu3Dgl_3_2;
 
 extern const GLenum RenderDrawList[4];
 extern CACHE_ALIGN const GLfloat divide5bitBy31_LUT[32];
+extern CACHE_ALIGN const GLfloat divide6bitBy63_LUT[64];
 extern const GLfloat PostprocessVtxBuffer[16];
 extern const GLubyte PostprocessElementBuffer[6];
 
@@ -560,9 +561,7 @@ FORCEINLINE u32 BGRA8888_32_To_RGBA6665_32(const u32 srcPix);
 FORCEINLINE u32 BGRA8888_32Rev_To_RGBA6665_32Rev(const u32 srcPix);
 bool IsVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision);
 
-#if defined(ENABLE_SSSE3)
-class OpenGLRenderer : public Render3D_SSSE3
-#elif defined(ENABLE_SSE2)
+#if defined(ENABLE_SSE2)
 class OpenGLRenderer : public Render3D_SSE2
 #else
 class OpenGLRenderer : public Render3D
@@ -719,7 +718,7 @@ protected:
 	virtual Render3DError EndRender(const u64 frameCount);
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
-	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const;
+	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) const;
 	
 	virtual void SetPolygonIndex(const size_t index);
 	virtual Render3DError SetupPolygon(const POLY &thePoly);

@@ -266,62 +266,8 @@ Viewer3d_State* viewer3d_state = NULL;
 static GFX3D_Clipper boxtestClipper;
 
 //tables that are provided to anyone
-CACHE_ALIGN u32 color_15bit_to_24bit_reverse[32768];
-CACHE_ALIGN u32 color_15bit_to_24bit[32768];
-CACHE_ALIGN u16 color_15bit_to_16bit_reverse[32768];
 CACHE_ALIGN u8 mixTable555[32][32][32];
 CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
-
-//is this a crazy idea? this table spreads 5 bits evenly over 31 from exactly 0 to INT_MAX
-CACHE_ALIGN const u32 material_5bit_to_31bit[] = {
-	0x00000000, 0x04210842, 0x08421084, 0x0C6318C6,
-	0x10842108, 0x14A5294A, 0x18C6318C, 0x1CE739CE,
-	0x21084210, 0x25294A52, 0x294A5294, 0x2D6B5AD6,
-	0x318C6318, 0x35AD6B5A, 0x39CE739C, 0x3DEF7BDE,
-	0x42108421, 0x46318C63, 0x4A5294A5, 0x4E739CE7,
-	0x5294A529, 0x56B5AD6B, 0x5AD6B5AD, 0x5EF7BDEF,
-	0x6318C631, 0x6739CE73, 0x6B5AD6B5, 0x6F7BDEF7,
-	0x739CE739, 0x77BDEF7B, 0x7BDEF7BD, 0x7FFFFFFF
-};
-
-CACHE_ALIGN const u8 material_5bit_to_6bit[] = {
-	0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E,
-	0x10, 0x12, 0x14, 0x16, 0x19, 0x1A, 0x1C, 0x1E,
-	0x21, 0x23, 0x25, 0x27, 0x29, 0x2B, 0x2D, 0x2F,
-	0x31, 0x33, 0x35, 0x37, 0x39, 0x3B, 0x3D, 0x3F
-};
-
-CACHE_ALIGN const u8 material_5bit_to_8bit[] = {
-	0x00, 0x08, 0x10, 0x18, 0x21, 0x29, 0x31, 0x39,
-	0x42, 0x4A, 0x52, 0x5A, 0x63, 0x6B, 0x73, 0x7B,
-	0x84, 0x8C, 0x94, 0x9C, 0xA5, 0xAD, 0xB5, 0xBD,
-	0xC6, 0xCE, 0xD6, 0xDE, 0xE7, 0xEF, 0xF7, 0xFF
-};
-
-CACHE_ALIGN const u8 material_6bit_to_8bit[] = {
-	0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C,
-	0x20, 0x24, 0x28, 0x2C, 0x30, 0x34, 0x38, 0x3C,
-	0x41, 0x45, 0x49, 0x4D, 0x51, 0x55, 0x59, 0x5D,
-	0x61, 0x65, 0x69, 0x6D, 0x71, 0x75, 0x79, 0x7D,
-	0x82, 0x86, 0x8A, 0x8E, 0x92, 0x96, 0x9A, 0x9E,
-	0xA2, 0xA6, 0xAA, 0xAE, 0xB2, 0xB6, 0xBA, 0xBE,
-	0xC3, 0xC7, 0xCB, 0xCF, 0xD3, 0xD7, 0xDB, 0xDF,
-	0xE3, 0xE7, 0xEB, 0xEF, 0xF3, 0xF7, 0xFB, 0xFF
-};
-
-CACHE_ALIGN const u8 material_3bit_to_8bit[] = {
-	0x00, 0x24, 0x49, 0x6D, 0x92, 0xB6, 0xDB, 0xFF
-};
-
-//maybe not very precise
-CACHE_ALIGN const u8 material_3bit_to_5bit[] = {
-	0, 4, 8, 13, 17, 22, 26, 31
-};
-
-//TODO - generate this in the static init method more accurately
-CACHE_ALIGN const u8 material_3bit_to_6bit[] = {
-	0, 8, 16, 26, 34, 44, 52, 63
-};
 
 //private acceleration tables
 static float float16table[65536];
@@ -451,21 +397,11 @@ static BOOL flushPending = FALSE;
 static BOOL drawPending = FALSE;
 //------------------------------------------------------------
 
-static void makeTables() {
-
-	//produce the color bits of a 24bpp color from a DS RGB15 using bit logic (internal use only)
-	#define RGB15TO24_BITLOGIC(col) ( (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[(col)&0x1F] )
-	
-	//produce the color bits of a 24bpp color from a DS RGB15 using bit logic (internal use only). RGB are reverse of usual
-	#define RGB15TO24_BITLOGIC_REVERSE(col) ( (material_5bit_to_8bit[(col)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[((col)>>10)&0x1F] )
-
+static void makeTables()
+{
 	for (size_t i = 0; i < 32768; i++)
 	{
-		color_15bit_to_24bit[i] = LE_TO_LOCAL_32( RGB15TO24_BITLOGIC(i) );
-		color_15bit_to_24bit_reverse[i] = LE_TO_LOCAL_32( RGB15TO24_BITLOGIC_REVERSE(i) );
-		color_15bit_to_16bit_reverse[i] = (((i & 0x001F) << 11) | (material_5bit_to_6bit[(i & 0x03E0) >> 5] << 5) | ((i & 0x7C00) >> 10));
-		
-		// 15-bit to 24-bit depth formula from http://nocash.emubase.de/gbatek.htm#ds3drearplane
+		// 15-bit to 24-bit depth formula from http://problemkaputt.de/gbatek.htm#ds3drearplane
 		dsDepthExtend_15bit_to_24bit[i] = LE_TO_LOCAL_32( (i*0x200)+((i+1)>>15)*0x01FF );
 	}
 
@@ -771,9 +707,9 @@ static void SetVertex()
 	vert.coord[1] = coordTransformed[1]/4096.0f;
 	vert.coord[2] = coordTransformed[2]/4096.0f;
 	vert.coord[3] = coordTransformed[3]/4096.0f;
-	vert.color[0] = GFX3D_5TO6(colorRGB[0]);
-	vert.color[1] = GFX3D_5TO6(colorRGB[1]);
-	vert.color[2] = GFX3D_5TO6(colorRGB[2]);
+	vert.color[0] = GFX3D_5TO6_LOOKUP(colorRGB[0]);
+	vert.color[1] = GFX3D_5TO6_LOOKUP(colorRGB[1]);
+	vert.color[2] = GFX3D_5TO6_LOOKUP(colorRGB[2]);
 	vert.color_to_float();
 	tempVertInfo.map[tempVertInfo.count] = vertlist->count + tempVertInfo.count - continuation;
 	tempVertInfo.count++;

@@ -24,10 +24,6 @@
 #include <emmintrin.h>
 #endif
 
-#ifdef ENABLE_SSSE3
-#include <tmmintrin.h>
-#endif
-
 #include "bits.h"
 #include "common.h"
 #include "gfx3d.h"
@@ -612,23 +608,11 @@ Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFram
 	{
 		if ( (this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev) )
 		{
-			for (size_t i = 0; i < pixCount; i++)
-			{
-				dstFramebuffer[i].r = srcFramebuffer[i].r >> 2;
-				dstFramebuffer[i].g = srcFramebuffer[i].g >> 2;
-				dstFramebuffer[i].b = srcFramebuffer[i].b >> 2;
-				dstFramebuffer[i].a = srcFramebuffer[i].a >> 3;
-			}
+			ConvertColorBuffers8888To6665<false>(srcFramebuffer, dstFramebuffer, pixCount);
 		}
 		else if ( (this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev) )
 		{
-			for (size_t i = 0; i < pixCount; i++)
-			{
-				dstFramebuffer[i].r = material_6bit_to_8bit[srcFramebuffer[i].r];
-				dstFramebuffer[i].g = material_6bit_to_8bit[srcFramebuffer[i].g];
-				dstFramebuffer[i].b = material_6bit_to_8bit[srcFramebuffer[i].b];
-				dstFramebuffer[i].a = material_5bit_to_8bit[srcFramebuffer[i].a];
-			}
+			ConvertColorBuffers6665To8888<false>(srcFramebuffer, dstFramebuffer, pixCount);
 		}
 		else if ( ((this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev)) ||
 		          ((this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev)) )
@@ -639,9 +623,13 @@ Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFram
 	
 	if (dstRGBA5551 != NULL)
 	{
-		for (size_t i = 0; i < pixCount; i++)
+		if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
 		{
-			dstRGBA5551[i] = R6G6B6TORGB15(srcFramebuffer[i].r, srcFramebuffer[i].g, srcFramebuffer[i].b) | ((srcFramebuffer[i].a == 0) ? 0x0000 : 0x8000);
+			ConvertColorBuffers6665To5551<false>(srcFramebuffer, dstRGBA5551, pixCount);
+		}
+		else if (this ->_outputFormat == NDSColorFormat_BGR888_Rev)
+		{
+			ConvertColorBuffers8888To5551<false>(srcFramebuffer, dstRGBA5551, pixCount);
 		}
 	}
 	
@@ -657,20 +645,8 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
-	FragmentColor clearColor;
-	
-#ifdef LOCAL_LE
-	clearColor.r =  renderState.clearColor & 0x1F;
-	clearColor.g = (renderState.clearColor >> 5) & 0x1F;
-	clearColor.b = (renderState.clearColor >> 10) & 0x1F;
-	clearColor.a = (renderState.clearColor >> 16) & 0x1F;
-#else
-	const u32 clearColorSwapped = LE_TO_LOCAL_32(renderState.clearColor);
-	clearColor.r =  clearColorSwapped & 0x1F;
-	clearColor.g = (clearColorSwapped >> 5) & 0x1F;
-	clearColor.b = (clearColorSwapped >> 10) & 0x1F;
-	clearColor.a = (clearColorSwapped >> 16) & 0x1F;
-#endif
+	FragmentColor clearColor6665;
+	clearColor6665.color = COLOR555TO6665(renderState.clearColor & 0x7FFF, (renderState.clearColor >> 16) & 0x1F);
 	
 	FragmentAttributes clearFragment;
 	clearFragment.opaquePolyID = (renderState.clearColor >> 24) & 0x3F;
@@ -732,12 +708,12 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 		error = this->ClearUsingImage(this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 		if (error != RENDER3DERROR_NOERR)
 		{
-			error = this->ClearUsingValues(clearColor, clearFragment);
+			error = this->ClearUsingValues(clearColor6665, clearFragment);
 		}
 	}
 	else
 	{
-		error = this->ClearUsingValues(clearColor, clearFragment);
+		error = this->ClearUsingValues(clearColor6665, clearFragment);
 	}
 	
 	return error;
@@ -748,7 +724,7 @@ Render3DError Render3D::ClearUsingImage(const u16 *__restrict colorBuffer, const
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const
+Render3DError Render3D::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) const
 {
 	return RENDER3DERROR_NOERR;
 }
@@ -831,130 +807,12 @@ Render3DError Render3D::VramReconfigureSignal()
 
 #ifdef ENABLE_SSE2
 
-Render3DError Render3D_SSE2::FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebuffer, u16 *__restrict dstRGBA5551)
-{
-	if ( (dstFramebuffer == NULL) && (dstRGBA5551 == NULL) )
-	{
-		return RENDER3DERROR_NOERR;
-	}
-	
-	size_t i = 0;
-	const size_t pixCount = this->_framebufferWidth * this->_framebufferHeight;
-	const size_t ssePixCount = pixCount - (pixCount % 4);
-	
-	if (dstFramebuffer != NULL)
-	{
-		if ( (this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev) )
-		{
-			for (; i < ssePixCount; i += 4)
-			{
-				// Convert to RGBA6665
-				__m128i color6665 = _mm_load_si128((__m128i *)(srcFramebuffer + i));
-				__m128i a = _mm_srli_epi32(_mm_and_si128(color6665, _mm_set1_epi32(0xF8000000)), 3);
-				color6665 = _mm_srli_epi32(_mm_and_si128(color6665, _mm_set1_epi32(0x00FCFCFC)), 2);
-				
-				color6665 = _mm_or_si128(color6665, a);
-				_mm_store_si128((__m128i *)(dstFramebuffer + i), color6665);
-			}
-			
-			for (; i < pixCount; i++)
-			{
-				dstFramebuffer[i].r = srcFramebuffer[i].r >> 2;
-				dstFramebuffer[i].g = srcFramebuffer[i].g >> 2;
-				dstFramebuffer[i].b = srcFramebuffer[i].b >> 2;
-				dstFramebuffer[i].a = srcFramebuffer[i].a >> 3;
-			}
-		}
-		else if ( (this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev) )
-		{
-			for (; i < ssePixCount; i += 4)
-			{
-				// Convert to RGBA8888:
-				//    RGB   6-bit to 8-bit formula: dstRGB8 = (srcRGB6 << 2) | ((srcRGB6 >> 4) & 0x03)
-				//    Alpha 5-bit to 8-bit formula: dstA8   = (srcA5   << 3) | ((srcA5   >> 2) & 0x07)
-				__m128i color8888 = _mm_load_si128((__m128i *)(srcFramebuffer + i));
-				__m128i a = _mm_or_si128( _mm_and_si128(_mm_slli_epi32(color8888, 3), _mm_set1_epi8(0xF8)), _mm_and_si128(_mm_srli_epi32(color8888, 2), _mm_set1_epi8(0x07)) );
-				color8888 = _mm_or_si128( _mm_and_si128(_mm_slli_epi32(color8888, 2), _mm_set1_epi8(0xFC)), _mm_and_si128(_mm_srli_epi32(color8888, 4), _mm_set1_epi8(0x03)) );
-				
-				color8888 = _mm_or_si128(_mm_and_si128(color8888, _mm_set1_epi32(0x00FFFFFF)), _mm_and_si128(a, _mm_set1_epi32(0xFF000000)));
-				_mm_store_si128((__m128i *)(dstFramebuffer + i), color8888);
-			}
-			
-			for (; i < pixCount; i++)
-			{
-				dstFramebuffer[i].r = material_6bit_to_8bit[srcFramebuffer[i].r];
-				dstFramebuffer[i].g = material_6bit_to_8bit[srcFramebuffer[i].g];
-				dstFramebuffer[i].b = material_6bit_to_8bit[srcFramebuffer[i].b];
-				dstFramebuffer[i].a = material_5bit_to_8bit[srcFramebuffer[i].a];
-			}
-		}
-		else if ( ((this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev)) ||
-		          ((this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev)) )
-		{
-			memcpy(dstFramebuffer, srcFramebuffer, pixCount * sizeof(FragmentColor));
-		}
-	}
-	
-	if (dstRGBA5551 != NULL)
-	{
-		for (; i < ssePixCount; i += 4)
-		{
-			// Convert to RGBA5551
-			__m128i color5551 = _mm_load_si128((__m128i *)(srcFramebuffer + i));
-			__m128i r = _mm_and_si128(color5551, _mm_set1_epi32(0x0000003E));	// Read from R
-			r = _mm_srli_epi32(r, 1);											// Shift to R
-			
-			__m128i g = _mm_and_si128(color5551, _mm_set1_epi32(0x00003E00));	// Read from G
-			g = _mm_srli_epi32(g, 4);											// Shift in G
-			
-			__m128i b = _mm_and_si128(color5551, _mm_set1_epi32(0x003E0000));	// Read from B
-			b = _mm_srli_epi32(b, 7);											// Shift to B
-			
-			__m128i a = _mm_and_si128(color5551, _mm_set1_epi32(0xFF000000));	// Read from A
-			a = _mm_cmpeq_epi32(a, _mm_setzero_si128());						// Determine A
-			
-			// From here on, we're going to do an SSE2 trick to pack 32-bit down to unsigned
-			// 16-bit. Since SSE2 only has packssdw (signed saturated 16-bit pack), using
-			// packssdw on the alpha bit (0x8000) will result in a value of 0x7FFF, which is
-			// incorrect. Now if we were to use SSE4.1's packusdw (unsigned saturated 16-bit
-			// pack), we  wouldn't have to go through this hassle. But not everyone has an
-			// SSE4.1-capable CPU, so doing this the SSE2 way is more guaranteed to work for
-			// everyone's CPU.
-			//
-			// To use packssdw, we take a bit one position lower for the alpha bit, run
-			// packssdw, then shift the bit back to its original position. Then we por the
-			// alpha vector with the post-packed color vector to get the final color.
-			
-			a = _mm_andnot_si128(a, _mm_set1_epi32(0x00004000));				// Mask out the bit before A
-			a = _mm_packs_epi32(a, _mm_setzero_si128());						// Pack 32-bit down to 16-bit
-			a = _mm_slli_epi16(a, 1);											// Shift the A bit back to where it needs to be
-			
-			// Assemble the RGB colors, pack the 32-bit color into a signed 16-bit color, then por the alpha bit back in.
-			color5551 = _mm_or_si128(_mm_or_si128(r, g), b);
-			color5551 = _mm_packs_epi32(color5551, _mm_setzero_si128());
-			color5551 = _mm_or_si128(color5551, a);
-			
-			_mm_storel_epi64((__m128i *)(dstRGBA5551 + i), color5551);
-		}
-		
-		for (; i < pixCount; i++)
-		{
-			dstRGBA5551[i] = R6G6B6TORGB15(srcFramebuffer[i].r, srcFramebuffer[i].g, srcFramebuffer[i].b) | ((srcFramebuffer[i].a == 0) ? 0x0000 : 0x8000);
-		}
-	}
-	
-	return RENDER3DERROR_NOERR;
-}
-
 Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
-	FragmentColor clearColor;
-	clearColor.r =  renderState.clearColor & 0x1F;
-	clearColor.g = (renderState.clearColor >> 5) & 0x1F;
-	clearColor.b = (renderState.clearColor >> 10) & 0x1F;
-	clearColor.a = (renderState.clearColor >> 16) & 0x1F;
+	FragmentColor clearColor6665;
+	clearColor6665.color = COLOR555TO6665(renderState.clearColor & 0x7FFF, (renderState.clearColor >> 16) & 0x1F);
 	
 	FragmentAttributes clearFragment;
 	clearFragment.opaquePolyID = (renderState.clearColor >> 24) & 0x3F;
@@ -1080,12 +938,12 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 		error = this->ClearUsingImage(this->clearImageColor16Buffer, this->clearImageDepthBuffer, this->clearImageFogBuffer, this->clearImagePolyIDBuffer);
 		if (error != RENDER3DERROR_NOERR)
 		{
-			error = this->ClearUsingValues(clearColor, clearFragment);
+			error = this->ClearUsingValues(clearColor6665, clearFragment);
 		}
 	}
 	else
 	{
-		error = this->ClearUsingValues(clearColor, clearFragment);
+		error = this->ClearUsingValues(clearColor6665, clearFragment);
 	}
 	
 	return error;
