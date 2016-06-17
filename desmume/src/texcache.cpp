@@ -37,7 +37,7 @@ using std::max;
 //only dump this from ogl renderer. for now, softrasterizer creates things in an incompatible pixel format
 //#define DEBUG_DUMP_TEXTURE
 
-#define CONVERT(color,alpha) ((TEXFORMAT == TexFormat_32bpp)?(RGB15TO32(color,alpha)):RGB15TO6665(color,alpha))
+#define CONVERT(color) ((TEXFORMAT == TexFormat_32bpp)?(COLOR555TO8888_OPAQUE(color)):COLOR555TO6665_OPAQUE(color))
 
 //This class represents a number of regions of memory which should be viewed as contiguous
 class MemSpan
@@ -403,8 +403,7 @@ public:
 		// format that is not A3I5 or A5I3), set all transparent pixels to 0 so that 3D
 		// renderers can assume that the transparent color is 0 during texture sampling.
 
-		const u8 opaqueColor = (TEXFORMAT == TexFormat_32bpp) ? 0xFF : 0x1F;
-		const u8 palZeroTransparent = ( 1 - ((format>>29) & 1) ) * opaqueColor;
+		const bool isPalZeroTransparent = ( ((format >> 29) & 1) != 0 );
 
 		switch (newitem->mode)
 		{
@@ -415,12 +414,12 @@ public:
 					adr = ms.items[j].ptr;
 					for(u32 x = 0; x < ms.items[j].len; x++)
 					{
-						u16 c = pal[*adr&31];
+						u16 c = pal[*adr&31] & 0x7FFF;
 						u8 alpha = *adr>>5;
 						if(TEXFORMAT == TexFormat_15bpp)
-							*dwdst++ = RGB15TO6665(c,material_3bit_to_5bit[alpha]);
+							*dwdst++ = COLOR555TO6665(c,material_3bit_to_5bit[alpha]);
 						else
-							*dwdst++ = RGB15TO32(c,material_3bit_to_8bit[alpha]);
+							*dwdst++ = COLOR555TO8888(c,material_3bit_to_8bit[alpha]);
 						adr++;
 					}
 				}
@@ -429,7 +428,7 @@ public:
 
 			case TEXMODE_I2:
 			{
-				if (palZeroTransparent == 0)
+				if (isPalZeroTransparent)
 				{
 					for(int j=0;j<ms.numItems;j++)
 					{
@@ -437,23 +436,18 @@ public:
 						for(u32 x = 0; x < ms.items[j].len; x++)
 						{
 							u8 bits;
-							u16 c;
 							
 							bits = (*adr)&0x3;
-							c = pal[bits];
-							*dwdst++ = (bits == 0) ? 0 : CONVERT(c,opaqueColor);
+							*dwdst++ = (bits == 0) ? 0 : CONVERT(pal[bits] & 0x7FFF);
 							
 							bits = ((*adr)>>2)&0x3;
-							c = pal[bits];
-							*dwdst++ = (bits == 0) ? 0 : CONVERT(c,opaqueColor);
+							*dwdst++ = (bits == 0) ? 0 : CONVERT(pal[bits] & 0x7FFF);
 							
 							bits = ((*adr)>>4)&0x3;
-							c = pal[bits];
-							*dwdst++ = (bits == 0) ? 0 : CONVERT(c,opaqueColor);
+							*dwdst++ = (bits == 0) ? 0 : CONVERT(pal[bits] & 0x7FFF);
 							
 							bits = ((*adr)>>6)&0x3;
-							c = pal[bits];
-							*dwdst++ = (bits == 0) ? 0 : CONVERT(c,opaqueColor);
+							*dwdst++ = (bits == 0) ? 0 : CONVERT(pal[bits] & 0x7FFF);
 							
 							adr++;
 						}
@@ -470,20 +464,20 @@ public:
 							u16 c;
 							
 							bits = (*adr)&0x3;
-							c = pal[bits];
-							*dwdst++ = CONVERT(c,opaqueColor);
+							c = pal[bits] & 0x7FFF;
+							*dwdst++ = CONVERT(c);
 							
 							bits = ((*adr)>>2)&0x3;
-							c = pal[bits];
-							*dwdst++ = CONVERT(c,opaqueColor);
+							c = pal[bits] & 0x7FFF;
+							*dwdst++ = CONVERT(c);
 							
 							bits = ((*adr)>>4)&0x3;
-							c = pal[bits];
-							*dwdst++ = CONVERT(c,opaqueColor);
+							c = pal[bits] & 0x7FFF;
+							*dwdst++ = CONVERT(c);
 							
 							bits = ((*adr)>>6)&0x3;
-							c = pal[bits];
-							*dwdst++ = CONVERT(c,opaqueColor);
+							c = pal[bits] & 0x7FFF;
+							*dwdst++ = CONVERT(c);
 							
 							adr++;
 						}
@@ -494,7 +488,7 @@ public:
 				
 			case TEXMODE_I4:
 			{
-				if (palZeroTransparent == 0)
+				if (isPalZeroTransparent)
 				{
 					for(int j=0;j<ms.numItems;j++)
 					{
@@ -502,15 +496,12 @@ public:
 						for(u32 x = 0; x < ms.items[j].len; x++)
 						{
 							u8 bits;
-							u16 c;
 							
 							bits = (*adr)&0xF;
-							c = pal[bits];
-							*dwdst++ = (bits == 0) ? 0 : CONVERT(c,opaqueColor);
+							*dwdst++ = (bits == 0) ? 0 : CONVERT(pal[bits] & 0x7FFF);
 							
 							bits = ((*adr)>>4);
-							c = pal[bits];
-							*dwdst++ = (bits == 0) ? 0 : CONVERT(c,opaqueColor);
+							*dwdst++ = (bits == 0) ? 0 : CONVERT(pal[bits] & 0x7FFF);
 							adr++;
 						}
 					}
@@ -526,12 +517,12 @@ public:
 							u16 c;
 							
 							bits = (*adr)&0xF;
-							c = pal[bits];
-							*dwdst++ = CONVERT(c,opaqueColor);
+							c = pal[bits] & 0x7FFF;
+							*dwdst++ = CONVERT(c);
 							
 							bits = ((*adr)>>4);
-							c = pal[bits];
-							*dwdst++ = CONVERT(c,opaqueColor);
+							c = pal[bits] & 0x7FFF;
+							*dwdst++ = CONVERT(c);
 							adr++;
 						}
 					}
@@ -541,15 +532,14 @@ public:
 				
 			case TEXMODE_I8:
 			{
-				if (palZeroTransparent == 0)
+				if (isPalZeroTransparent)
 				{
 					for(int j=0;j<ms.numItems;j++)
 					{
 						adr = ms.items[j].ptr;
 						for(u32 x = 0; x < ms.items[j].len; ++x)
 						{
-							u16 c = pal[*adr];
-							*dwdst++ = (*adr == 0) ? 0 : CONVERT(c,opaqueColor);
+							*dwdst++ = (*adr == 0) ? 0 : CONVERT(pal[*adr] & 0x7FFF);
 							adr++;
 						}
 					}
@@ -561,8 +551,8 @@ public:
 						adr = ms.items[j].ptr;
 						for(u32 x = 0; x < ms.items[j].len; ++x)
 						{
-							u16 c = pal[*adr];
-							*dwdst++ = CONVERT(c,opaqueColor);
+							const u16 c = pal[*adr] & 0x7FFF;
+							*dwdst++ = CONVERT(c);
 							adr++;
 						}
 					}
@@ -572,13 +562,14 @@ public:
 				
 			case TEXMODE_4X4:
 			{
-				if(ms.numItems != 1) {
+				if (ms.numItems != 1)
+				{
 					PROGINFO("Your 4x4 texture has overrun its texture slot.\n");
 				}
 				//this check isnt necessary since the addressing is tied to the texture data which will also run out:
 				//if(msIndex.numItems != 1) PROGINFO("Your 4x4 texture index has overrun its slot.\n");
 
-	#define PAL4X4(offset) LE_TO_LOCAL_16( *(u16*)( MMU.texInfo.texPalSlot[((paletteAddress + (offset)*2)>>14)&0x7] + ((paletteAddress + (offset)*2)&0x3FFF) ) )
+	#define PAL4X4(offset) ( LE_TO_LOCAL_16( *(u16*)( MMU.texInfo.texPalSlot[((paletteAddress + (offset)*2)>>14)&0x7] + ((paletteAddress + (offset)*2)&0x3FFF) ) ) & 0x7FFF )
 
 				u16* slot1;
 				u32* map = (u32*)ms.items[0].ptr;
@@ -603,31 +594,32 @@ public:
 						((y<<2)+2)*sizeX,((y<<2)+3)*sizeX};
 					for (int x = 0; x < xTmpSize; x ++, d++)
 					{
-						if(d >= limit)
+						if (d >= limit)
 							dead = true;
 
-						if(dead) {
+						if (dead)
+						{
 							for (int sy = 0; sy < 4; sy++)
 							{
-								u32 currentPos = (x<<2) + tmpPos[sy];
+								const u32 currentPos = (x<<2) + tmpPos[sy];
 								dwdst[currentPos] = dwdst[currentPos+1] = dwdst[currentPos+2] = dwdst[currentPos+3] = 0;
 							}
 							continue;
 						}
 
-						u32 currBlock	= LE_TO_LOCAL_32(map[d]);
-						u16 pal1		= LE_TO_LOCAL_16(slot1[d]);
-						u16 pal1offset	= (pal1 & 0x3FFF)<<1;
-						u8  mode		= pal1>>14;
+						const u32 currBlock		= LE_TO_LOCAL_32(map[d]);
+						const u16 pal1			= LE_TO_LOCAL_16(slot1[d]);
+						const u16 pal1offset	= (pal1 & 0x3FFF)<<1;
+						const u8  mode			= pal1>>14;
 						u32 tmp_col[4];
 						
-						tmp_col[0] = RGB15TO32( PAL4X4(pal1offset), 0xFF );
-						tmp_col[1] = RGB15TO32( PAL4X4(pal1offset+1), 0xFF );
+						tmp_col[0] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset) );
+						tmp_col[1] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset+1) );
 
 						switch (mode) 
 						{
 							case 0:
-								tmp_col[2] = RGB15TO32( PAL4X4(pal1offset+2), 0xFF );
+								tmp_col[2] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset+2) );
 								tmp_col[3] = 0x00000000;
 								break;
 								
@@ -647,8 +639,8 @@ public:
 								break;
 								
 							case 2:
-								tmp_col[2] = RGB15TO32( PAL4X4(pal1offset+2), 0xFF );
-								tmp_col[3] = RGB15TO32( PAL4X4(pal1offset+3), 0xFF );
+								tmp_col[2] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset+2) );
+								tmp_col[3] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset+3) );
 								break;
 								
 							case 3:
@@ -676,13 +668,13 @@ public:
 												  ( ((g0*3 + g1*5)>>6) <<  5 ) |
 												  ( ((b0*3 + b1*5)>>6) << 10 );
 
-								tmp_col[2] = RGB15TO32(tmp1, 0xFF);
-								tmp_col[3] = RGB15TO32(tmp2, 0xFF);
+								tmp_col[2] = COLOR555TO8888_OPAQUE(tmp1);
+								tmp_col[3] = COLOR555TO8888_OPAQUE(tmp2);
 								break;
 							}
 						}
 
-						if(TEXFORMAT==TexFormat_15bpp)
+						if (TEXFORMAT==TexFormat_15bpp)
 						{
 							for (size_t i = 0; i < 4; i++)
 							{
@@ -706,8 +698,8 @@ public:
 						for (size_t sy = 0; sy < 4; sy++)
 						{
 							// Texture offset
-							u32 currentPos = (x<<2) + tmpPos[sy];
-							u8 currRow = (u8)((currBlock>>(sy<<3))&0xFF);
+							const u32 currentPos = (x<<2) + tmpPos[sy];
+							const u8 currRow = (u8)((currBlock>>(sy<<3))&0xFF);
 
 							dwdst[currentPos  ] = tmp_col[ currRow    &3];
 							dwdst[currentPos+1] = tmp_col[(currRow>>2)&3];
@@ -721,17 +713,17 @@ public:
 				
 			case TEXMODE_A5I3:
 			{
-				for(int j=0;j<ms.numItems;j++)
+				for (int j = 0; j < ms.numItems; j++)
 				{
 					adr = ms.items[j].ptr;
-					for(u32 x = 0; x < ms.items[j].len; ++x)
+					for (u32 x = 0; x < ms.items[j].len; ++x)
 					{
-						u16 c = pal[*adr&0x07];
-						u8 alpha = (*adr>>3);
-						if(TEXFORMAT == TexFormat_15bpp)
-							*dwdst++ = RGB15TO6665(c,alpha);
+						const u16 c = pal[*adr&0x07] & 0x7FFF;
+						const u8 alpha = (*adr>>3);
+						if (TEXFORMAT == TexFormat_15bpp)
+							*dwdst++ = COLOR555TO6665(c,alpha);
 						else
-							*dwdst++ = RGB15TO32(c,material_5bit_to_8bit[alpha]);
+							*dwdst++ = COLOR555TO8888(c,material_5bit_to_8bit[alpha]);
 						adr++;
 					}
 				}
@@ -740,15 +732,15 @@ public:
 				
 			case TEXMODE_16BPP:
 			{
-				for(int j=0;j<ms.numItems;j++)
+				for (int j = 0; j < ms.numItems; j++)
 				{
-					u16* map = (u16*)ms.items[j].ptr;
-					int len = ms.items[j].len>>1;
+					const u16 *map = (u16*)ms.items[j].ptr;
+					const int len = ms.items[j].len>>1;
 					
-					for(int x = 0; x < len; ++x)
+					for (int x = 0; x < len; ++x)
 					{
-						u16 c = map[x];
-						*dwdst++ = (c & 0x8000) ? CONVERT(c&0x7FFF,opaqueColor) : 0;
+						const u16 c = map[x];
+						*dwdst++ = (c & 0x8000) ? CONVERT(c&0x7FFF) : 0;
 					}
 				}
 				break;

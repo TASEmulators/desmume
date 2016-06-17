@@ -49,10 +49,6 @@
 #include <emmintrin.h>
 #endif
 
-#ifdef ENABLE_SSSE3
-#include <tmmintrin.h>
-#endif
-
 #include "bits.h"
 #include "common.h"
 #include "matrix.h"
@@ -495,7 +491,7 @@ public:
 				dst.r = modulate_table[mainTexColor.r][src.r];
 				dst.g = modulate_table[mainTexColor.g][src.g];
 				dst.b = modulate_table[mainTexColor.b][src.b];
-				dst.a = modulate_table[GFX3D_5TO6(mainTexColor.a)][GFX3D_5TO6(src.a)]>>1;
+				dst.a = modulate_table[GFX3D_5TO6_LOOKUP(mainTexColor.a)][GFX3D_5TO6_LOOKUP(src.a)]>>1;
 				//dst.a = 28;
 				//#ifdef _MSC_VER
 				//if(GetAsyncKeyState(VK_SHIFT)) {
@@ -538,7 +534,7 @@ public:
 					dst.r = modulate_table[mainTexColor.r][src.r];
 					dst.g = modulate_table[mainTexColor.g][src.r];
 					dst.b = modulate_table[mainTexColor.b][src.r];
-					dst.a = modulate_table[GFX3D_5TO6(mainTexColor.a)][GFX3D_5TO6(src.a)] >> 1;
+					dst.a = modulate_table[GFX3D_5TO6_LOOKUP(mainTexColor.a)][GFX3D_5TO6_LOOKUP(src.a)] >> 1;
 					
 					dst.r = min<u8>(0x3F, (dst.r + toonColor.r));
 					dst.g = min<u8>(0x3F, (dst.g + toonColor.g));
@@ -549,7 +545,7 @@ public:
 					dst.r = modulate_table[mainTexColor.r][toonColor.r];
 					dst.g = modulate_table[mainTexColor.g][toonColor.g];
 					dst.b = modulate_table[mainTexColor.b][toonColor.b];
-					dst.a = modulate_table[GFX3D_5TO6(mainTexColor.a)][GFX3D_5TO6(src.a)] >> 1;
+					dst.a = modulate_table[GFX3D_5TO6_LOOKUP(mainTexColor.a)][GFX3D_5TO6_LOOKUP(src.a)] >> 1;
 				}
 			}
 				break;
@@ -1132,9 +1128,7 @@ void _HACK_Viewer_ExecUnit()
 
 static Render3D* SoftRasterizerRendererCreate()
 {
-#if defined(ENABLE_SSSE3)
-	return new SoftRasterizerRenderer_SSSE3;
-#elif defined(ENABLE_SSE2)
+#if defined(ENABLE_SSE2)
 	return new SoftRasterizerRenderer_SSE2;
 #else
 	return new SoftRasterizerRenderer;
@@ -1145,9 +1139,7 @@ static void SoftRasterizerRendererDestroy()
 {
 	if (CurrentRenderer != BaseRenderer)
 	{
-#if defined(ENABLE_SSSE3)
-		SoftRasterizerRenderer_SSSE3 *oldRenderer = (SoftRasterizerRenderer_SSSE3 *)CurrentRenderer;
-#elif defined(ENABLE_SSE2)
+#if defined(ENABLE_SSE2)
 		SoftRasterizerRenderer_SSE2 *oldRenderer = (SoftRasterizerRenderer_SSE2 *)CurrentRenderer;
 #else
 		SoftRasterizerRenderer *oldRenderer = (SoftRasterizerRenderer *)CurrentRenderer;
@@ -1647,11 +1639,7 @@ Render3DError SoftRasterizerRenderer::UpdateEdgeMarkColorTable(const u16 *edgeMa
 	//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
 	for (size_t i = 0; i < 8; i++)
 	{
-		const u16 col = edgeMarkColorTable[i];
-		this->edgeMarkTable[i].color = RGB15TO5555(col, (this->currentRenderState->enableAntialiasing) ? 0x10 : 0x1F);
-		this->edgeMarkTable[i].r = GFX3D_5TO6(this->edgeMarkTable[i].r);
-		this->edgeMarkTable[i].g = GFX3D_5TO6(this->edgeMarkTable[i].g);
-		this->edgeMarkTable[i].b = GFX3D_5TO6(this->edgeMarkTable[i].b);
+		this->edgeMarkTable[i].color = COLOR555TO6665(edgeMarkColorTable[i] & 0x7FFF, (this->currentRenderState->enableAntialiasing) ? 0x10 : 0x1F);
 		
 		//zero 20-jun-2013 - this doesnt make any sense. at least, it should be related to the 0x8000 bit. if this is undocumented behaviour, lets write about which scenario proves it here, or which scenario is requiring this code.
 		//// this seems to be the only thing that selectively disables edge marking
@@ -1735,10 +1723,9 @@ Render3DError SoftRasterizerRenderer::UpdateFogTable(const u8 *fogDensityTable)
 // new multithreaded method.
 Render3DError SoftRasterizerRenderer::RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly)
 {
-	u32 r = GFX3D_5TO6((color)&0x1F);
-	u32 g = GFX3D_5TO6((color>>5)&0x1F);
-	u32 b = GFX3D_5TO6((color>>10)&0x1F);
-	u32 a = (color>>16)&0x1F;
+	FragmentColor fogColor;
+	fogColor.color = COLOR555TO6665( color & 0x7FFF, (color>>16) & 0x1F );
+	
 	const size_t framebufferFragmentCount = this->_framebufferWidth * this->_framebufferHeight;
 	
 	if (!alphaOnly)
@@ -1750,10 +1737,10 @@ Render3DError SoftRasterizerRenderer::RenderFog(const u8 *densityTable, const u3
 			const u8 fog = (this->_framebufferAttributes->isFogged[i] != 0) ? this->fogTable[fogIndex] : 0;
 			
 			FragmentColor &destFragmentColor = this->_framebufferColor[i];
-			destFragmentColor.r = ((128-fog)*destFragmentColor.r + r*fog)>>7;
-			destFragmentColor.g = ((128-fog)*destFragmentColor.g + g*fog)>>7;
-			destFragmentColor.b = ((128-fog)*destFragmentColor.b + b*fog)>>7;
-			destFragmentColor.a = ((128-fog)*destFragmentColor.a + a*fog)>>7;
+			destFragmentColor.r = ((128-fog)*destFragmentColor.r + fogColor.r*fog)>>7;
+			destFragmentColor.g = ((128-fog)*destFragmentColor.g + fogColor.g*fog)>>7;
+			destFragmentColor.b = ((128-fog)*destFragmentColor.b + fogColor.b*fog)>>7;
+			destFragmentColor.a = ((128-fog)*destFragmentColor.a + fogColor.a*fog)>>7;
 		}
 	}
 	else
@@ -1765,7 +1752,7 @@ Render3DError SoftRasterizerRenderer::RenderFog(const u8 *densityTable, const u3
 			const u8 fog = (this->_framebufferAttributes->isFogged[i] != 0) ? this->fogTable[fogIndex] : 0;
 			
 			FragmentColor &destFragmentColor = this->_framebufferColor[i];
-			destFragmentColor.a = ((128-fog)*destFragmentColor.a + a*fog)>>7;
+			destFragmentColor.a = ((128-fog)*destFragmentColor.a + fogColor.a*fog)>>7;
 		}
 	}
 	
@@ -1825,10 +1812,8 @@ END_EDGE_MARK: ;
 			
 			if (param.enableFog)
 			{
-				const u32 r = GFX3D_5TO6( (param.fogColor      ) & 0x1F );
-				const u32 g = GFX3D_5TO6( (param.fogColor >>  5) & 0x1F );
-				const u32 b = GFX3D_5TO6( (param.fogColor >> 10) & 0x1F );
-				const u32 a = (param.fogColor >> 16) & 0x1F;
+				FragmentColor fogColor;
+				fogColor.color = COLOR555TO6665( param.fogColor & 0x7FFF, (param.fogColor>>16) & 0x1F );
 				
 				const size_t fogIndex = depth >> 9;
 				assert(fogIndex < 32768);
@@ -1836,12 +1821,12 @@ END_EDGE_MARK: ;
 				
 				if (!param.fogAlphaOnly)
 				{
-					dstColor.r = ( (128-fog)*dstColor.r + r*fog ) >> 7;
-					dstColor.g = ( (128-fog)*dstColor.g + g*fog ) >> 7;
-					dstColor.b = ( (128-fog)*dstColor.b + b*fog ) >> 7;
+					dstColor.r = ( (128-fog)*dstColor.r + fogColor.r*fog ) >> 7;
+					dstColor.g = ( (128-fog)*dstColor.g + fogColor.g*fog ) >> 7;
+					dstColor.b = ( (128-fog)*dstColor.b + fogColor.b*fog ) >> 7;
 				}
 				
-				dstColor.a = ( (128-fog)*dstColor.a + a*fog ) >> 7;
+				dstColor.a = ( (128-fog)*dstColor.a + fogColor.a*fog ) >> 7;
 			}
 		}
 	}
@@ -1854,7 +1839,7 @@ Render3DError SoftRasterizerRenderer::UpdateToonTable(const u16 *toonTableBuffer
 	//convert the toon colors
 	for (size_t i = 0; i < 32; i++)
 	{
-		this->toonColor32LUT[i].color = (RGB15TO32_NOALPHA(toonTableBuffer[i])>>2)&0x3F3F3F3F;
+		this->toonColor32LUT[i].color = ( COLOR555TO888(toonTableBuffer[i] & 0x7FFF) >> 2 ) & 0x003F3F3F;
 		//printf("%d %d %d %d\n", this->toonColor32LUT[i].r, this->toonColor32LUT[i].g, this->toonColor32LUT[i].b, this->toonColor32LUT[i].a);
 	}
 	
@@ -1874,7 +1859,7 @@ Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colo
 		{
 			const size_t ir = readLine + ((x * xRatio) >> 16);
 			
-			this->_framebufferColor[iw].color = RGB15TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 0x1F);
+			this->_framebufferColor[iw].color = COLOR555TO6665(colorBuffer[ir] & 0x7FFF, (colorBuffer[ir] >> 15) * 0x1F);
 			this->_framebufferAttributes->depth[iw] = depthBuffer[ir];
 			this->_framebufferAttributes->isFogged[iw] = fogBuffer[ir];
 			this->_framebufferAttributes->opaquePolyID[iw] = polyIDBuffer[ir];
@@ -1887,17 +1872,12 @@ Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colo
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError SoftRasterizerRenderer::ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const
+Render3DError SoftRasterizerRenderer::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) const
 {
-	FragmentColor convertedClearColor = clearColor;
-	convertedClearColor.r = GFX3D_5TO6(clearColor.r);
-	convertedClearColor.g = GFX3D_5TO6(clearColor.g);
-	convertedClearColor.b = GFX3D_5TO6(clearColor.b);
-	
 	for (size_t i = 0; i < (this->_framebufferWidth * this->_framebufferHeight); i++)
 	{
 		this->_framebufferAttributes->SetAtIndex(i, clearAttributes);
-		this->_framebufferColor[i] = convertedClearColor;
+		this->_framebufferColor[i] = clearColor6665;
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -2046,14 +2026,9 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 
 #ifdef ENABLE_SSE2
 
-Render3DError SoftRasterizerRenderer_SSE2::ClearUsingValues(const FragmentColor &clearColor, const FragmentAttributes &clearAttributes) const
+Render3DError SoftRasterizerRenderer_SSE2::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) const
 {
-	FragmentColor convertedClearColor = clearColor;
-	convertedClearColor.r = GFX3D_5TO6(clearColor.r);
-	convertedClearColor.g = GFX3D_5TO6(clearColor.g);
-	convertedClearColor.b = GFX3D_5TO6(clearColor.b);
-	
-	const __m128i color_vec128					= _mm_set1_epi32(convertedClearColor.color);
+	const __m128i color_vec128					= _mm_set1_epi32(clearColor6665.color);
 	const __m128i attrDepth_vec128				= _mm_set1_epi32(clearAttributes.depth);
 	const __m128i attrOpaquePolyID_vec128		= _mm_set1_epi8(clearAttributes.opaquePolyID);
 	const __m128i attrTranslucentPolyID_vec128	= _mm_set1_epi8(clearAttributes.translucentPolyID);
@@ -2086,7 +2061,7 @@ Render3DError SoftRasterizerRenderer_SSE2::ClearUsingValues(const FragmentColor 
 	
 	for (; i < pixCount; i++)
 	{
-		this->_framebufferColor[i] = convertedClearColor;
+		this->_framebufferColor[i] = clearColor6665;
 		this->_framebufferAttributes->SetAtIndex(i, clearAttributes);
 	}
 	

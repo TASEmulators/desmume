@@ -1629,11 +1629,258 @@ public:
 extern GPUSubsystem *GPU;
 extern MMU_struct MMU;
 
+extern CACHE_ALIGN const u32 material_5bit_to_31bit[32];
+extern CACHE_ALIGN const u8 material_5bit_to_6bit[32];
+extern CACHE_ALIGN const u8 material_5bit_to_8bit[32];
+extern CACHE_ALIGN const u8 material_6bit_to_8bit[64];
+extern CACHE_ALIGN const u8 material_3bit_to_5bit[8];
+extern CACHE_ALIGN const u8 material_3bit_to_6bit[8];
+extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
+
+extern CACHE_ALIGN u32 color_555_to_6665_opaque[32768];
+extern CACHE_ALIGN u32 color_555_to_666[32768];
+extern CACHE_ALIGN u32 color_555_to_8888_opaque[32768];
+extern CACHE_ALIGN u32 color_555_to_888[32768];
+
+#define COLOR555TO6665_OPAQUE(col) (color_555_to_6665_opaque[(col)])				// Convert a 15-bit color to an opaque sparsely packed 32-bit color containing an RGBA6665 color
+#define COLOR555TO666(col) (color_555_to_666[(col)])								// Convert a 15-bit color to a fully transparent sparsely packed 32-bit color containing an RGBA6665 color
+
+#ifdef LOCAL_LE
+	#define COLOR555TO6665(col,alpha5) (((alpha5)<<24) | color_555_to_666[(col)])	// Convert a 15-bit color to a sparsely packed 32-bit color containing an RGBA6665 color with user-defined alpha, little-endian
+#else
+	#define COLOR555TO6665(col,alpha5) ((alpha5) | color_555_to_666[(col)])			// Convert a 15-bit color to a sparsely packed 32-bit color containing an RGBA6665 color with user-defined alpha, big-endian
+#endif
+
+#define COLOR555TO8888_OPAQUE(col) (color_555_to_8888_opaque[(col)])				// Convert a 15-bit color to an opaque 32-bit color
+#define COLOR555TO888(col) (color_555_to_888[(col)])								// Convert a 15-bit color to an opaque 24-bit color or a fully transparent 32-bit color
+
+#ifdef LOCAL_LE
+	#define COLOR555TO8888(col,alpha8) (((alpha8)<<24) | color_555_to_888[(col)])	// Convert a 15-bit color to a 32-bit color with user-defined alpha, little-endian
+#else
+	#define COLOR555TO8888(col,alpha8) ((alpha8) | color_555_to_888[(col)])			// Convert a 15-bit color to a 32-bit color with user-defined alpha, big-endian
+#endif
+
+//produce a 15bpp color from individual 5bit components
+#define R5G5B5TORGB15(r,g,b) ( (r) | ((g)<<5) | ((b)<<10) )
+
+//produce a 16bpp color from individual 5bit components
+#define R6G6B6TORGB15(r,g,b) ( ((r)>>1) | (((g)&0x3E)<<4) | (((b)&0x3E)<<9) )
+
 inline FragmentColor MakeFragmentColor(const u8 r, const u8 g, const u8 b, const u8 a)
 {
 	FragmentColor ret;
 	ret.r = r; ret.g = g; ret.b = b; ret.a = a;
 	return ret;
 }
+
+template <bool SWAP_RB>
+FORCEINLINE FragmentColor ConvertColor8888To6665(FragmentColor srcColor)
+{
+	FragmentColor outColor;
+	outColor.r = ((SWAP_RB) ? srcColor.b : srcColor.r) >> 2;
+	outColor.g = srcColor.g >> 2;
+	outColor.b = ((SWAP_RB) ? srcColor.r : srcColor.b) >> 2;
+	outColor.a = srcColor.a >> 3;
+	
+	return outColor;
+}
+
+template <bool SWAP_RB>
+FORCEINLINE FragmentColor ConvertColor6665To8888(FragmentColor srcColor)
+{
+	FragmentColor outColor;
+	outColor.r = material_6bit_to_8bit[((SWAP_RB) ? srcColor.b : srcColor.r)];
+	outColor.g = material_6bit_to_8bit[srcColor.g];
+	outColor.b = material_6bit_to_8bit[((SWAP_RB) ? srcColor.r : srcColor.b)];
+	outColor.a = material_5bit_to_8bit[srcColor.a];
+	
+	return outColor;
+}
+
+template <bool SWAP_RB>
+FORCEINLINE u16 ConvertColor8888To5551(FragmentColor srcColor)
+{
+	return R5G5B5TORGB15( ((SWAP_RB) ? srcColor.b : srcColor.r) >> 3, srcColor.g >> 3, ((SWAP_RB) ? srcColor.r : srcColor.b) >> 3) | ((srcColor.a == 0) ? 0x0000 : 0x8000 );
+}
+
+template <bool SWAP_RB>
+FORCEINLINE u16 ConvertColor6665To5551(FragmentColor srcColor)
+{
+	return R6G6B6TORGB15( ((SWAP_RB) ? srcColor.b : srcColor.r), srcColor.g, ((SWAP_RB) ? srcColor.r : srcColor.b)) | ((srcColor.a == 0) ? 0x0000 : 0x8000);
+}
+
+#ifdef ENABLE_SSE2
+
+template <bool SWAP_RB>
+FORCEINLINE __m128i ConvertColor8888To6665(const __m128i src)
+{
+	__m128i rgb;
+	const __m128i a = _mm_and_si128( _mm_srli_epi32(src, 3), _mm_set1_epi32(0x1F000000) );
+	
+	if (SWAP_RB)
+	{
+#ifdef ENABLE_SSSE3
+		rgb = _mm_and_si128( _mm_srli_epi32(src, 2), _mm_set1_epi32(0x003F3F3F) );
+		rgb = _mm_shuffle_epi8( rgb, _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2) );
+#else
+		rgb = _mm_or_si128( _mm_srli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x003F0000)), 18), _mm_or_si128(_mm_srli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x00003F00)), 2), _mm_slli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x0000003F)), 14)) );
+#endif
+	}
+	else
+	{
+		rgb = _mm_and_si128( _mm_srli_epi32(src, 2), _mm_set1_epi32(0x003F3F3F) );
+	}
+	
+	return _mm_or_si128(rgb, a);
+}
+
+template <bool SWAP_RB>
+FORCEINLINE __m128i ConvertColor6665To8888(const __m128i src)
+{
+	// Conversion algorithm:
+	//    RGB   6-bit to 8-bit formula: dstRGB8 = (srcRGB6 << 2) | ((srcRGB6 >> 4) & 0x03)
+	//    Alpha 5-bit to 8-bit formula: dstA8   = (srcA5   << 3) | ((srcA5   >> 2) & 0x07)
+	      __m128i rgb = _mm_or_si128( _mm_and_si128(_mm_slli_epi32(src, 2), _mm_set1_epi32(0x00FCFCFC)), _mm_and_si128(_mm_srli_epi32(src, 4), _mm_set1_epi32(0x00030303)) );
+	const __m128i a   = _mm_or_si128( _mm_and_si128(_mm_slli_epi32(src, 3), _mm_set1_epi32(0xF8000000)), _mm_and_si128(_mm_srli_epi32(src, 2), _mm_set1_epi32(0x07000000)) );
+	
+	if (SWAP_RB)
+	{
+#ifdef ENABLE_SSSE3
+		rgb = _mm_shuffle_epi8( rgb, _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2) );
+#else
+		rgb = _mm_or_si128( _mm_srli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x00FF0000)), 16), _mm_or_si128(_mm_and_si128(src, _mm_set1_epi32(0x0000FF00)), _mm_slli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x000000FF)), 16)) );
+#endif
+	}
+	
+	return _mm_or_si128(rgb, a);
+}
+
+template <NDSColorFormat COLORFORMAT, bool SWAP_RB>
+FORCEINLINE __m128i _ConvertColorBaseTo5551(const __m128i srcLo, const __m128i srcHi)
+{
+	if (COLORFORMAT == NDSColorFormat_BGR555_Rev)
+	{
+		return srcLo;
+	}
+	
+	__m128i rgbLo;
+	__m128i rgbHi;
+	__m128i aLo;
+	__m128i aHi;
+	
+	if (COLORFORMAT == NDSColorFormat_BGR666_Rev)
+	{
+		if (SWAP_RB)
+		{
+			// Convert color from low bits
+			rgbLo =                     _mm_and_si128(_mm_srli_epi32(srcLo, 17), _mm_set1_epi32(0x0000001F));
+			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_srli_epi32(srcLo,  4), _mm_set1_epi32(0x000003E0)) );
+			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_slli_epi32(srcLo,  9), _mm_set1_epi32(0x00007C00)) );
+			
+			// Convert color from high bits
+			rgbHi =                     _mm_and_si128(_mm_srli_epi32(srcHi, 17), _mm_set1_epi32(0x0000001F));
+			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_srli_epi32(srcHi,  4), _mm_set1_epi32(0x000003E0)) );
+			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_slli_epi32(srcHi,  9), _mm_set1_epi32(0x00007C00)) );
+		}
+		else
+		{
+			// Convert color from low bits
+			rgbLo =                     _mm_and_si128(_mm_srli_epi32(srcLo,  1), _mm_set1_epi32(0x0000001F));
+			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_srli_epi32(srcLo,  4), _mm_set1_epi32(0x000003E0)) );
+			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_srli_epi32(srcLo,  7), _mm_set1_epi32(0x00007C00)) );
+			
+			// Convert color from high bits
+			rgbHi =                     _mm_and_si128(_mm_srli_epi32(srcHi,  1), _mm_set1_epi32(0x0000001F));
+			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_srli_epi32(srcHi,  4), _mm_set1_epi32(0x000003E0)) );
+			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_srli_epi32(srcHi,  7), _mm_set1_epi32(0x00007C00)) );
+		}
+	}
+	else if (COLORFORMAT == NDSColorFormat_BGR888_Rev)
+	{
+		if (SWAP_RB)
+		{
+			// Convert color from low bits
+			rgbLo =                     _mm_and_si128(_mm_srli_epi32(srcLo, 19), _mm_set1_epi32(0x0000001F));
+			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_srli_epi32(srcLo,  6), _mm_set1_epi32(0x000003E0)) );
+			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_slli_epi32(srcLo,  7), _mm_set1_epi32(0x00007C00)) );
+			
+			// Convert color from high bits
+			rgbHi =                     _mm_and_si128(_mm_srli_epi32(srcHi, 19), _mm_set1_epi32(0x0000001F));
+			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_srli_epi32(srcHi,  6), _mm_set1_epi32(0x000003E0)) );
+			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_slli_epi32(srcHi,  7), _mm_set1_epi32(0x00007C00)) );
+		}
+		else
+		{
+			// Convert color from low bits
+			rgbLo =                     _mm_and_si128(_mm_srli_epi32(srcLo,  3), _mm_set1_epi32(0x0000001F));
+			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_srli_epi32(srcLo,  6), _mm_set1_epi32(0x000003E0)) );
+			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_srli_epi32(srcLo,  9), _mm_set1_epi32(0x00007C00)) );
+			
+			// Convert color from high bits
+			rgbHi =                     _mm_and_si128(_mm_srli_epi32(srcHi,  3), _mm_set1_epi32(0x0000001F));
+			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_srli_epi32(srcHi,  6), _mm_set1_epi32(0x000003E0)) );
+			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_srli_epi32(srcHi,  9), _mm_set1_epi32(0x00007C00)) );
+		}
+	}
+	
+	// Convert alpha from low bits
+	aLo = _mm_and_si128(srcLo, _mm_set1_epi32(0xFF000000));
+	aLo = _mm_cmpeq_epi32(aLo, _mm_setzero_si128());
+	
+	// Convert alpha from high bits
+	aHi = _mm_and_si128(srcHi, _mm_set1_epi32(0xFF000000));
+	aHi = _mm_cmpeq_epi32(aHi, _mm_setzero_si128());
+	
+#ifdef ENABLE_SSSE3
+	aLo = _mm_andnot_si128(aLo, _mm_set1_epi32(0x00008000));
+	aHi = _mm_andnot_si128(aHi, _mm_set1_epi32(0x00008000));
+	
+	return _mm_shuffle_epi8( _mm_or_si128(_mm_or_si128(rgbLo, aLo), _mm_slli_epi32(_mm_or_si128(rgbHi, aHi), 16)), _mm_set_epi8(15, 14, 11, 10, 7, 6, 3, 2, 13, 12, 9, 8, 5, 4, 1, 0) );
+#else
+	rgbLo = _mm_packs_epi32(rgbLo, _mm_setzero_si128());
+	rgbHi = _mm_packs_epi32(rgbHi, _mm_setzero_si128());
+	
+	// From here on, we're going to do an SSE2 trick to pack 32-bit down to unsigned
+	// 16-bit. Since SSE2 only has packssdw (signed saturated 16-bit pack), using
+	// packssdw on the alpha bit (0x8000) will result in a value of 0x7FFF, which is
+	// incorrect. Now if we were to use SSE4.1's packusdw (unsigned saturated 16-bit
+	// pack), we  wouldn't have to go through this hassle. But not everyone has an
+	// SSE4.1-capable CPU, so doing this the SSE2 way is more guaranteed to work for
+	// everyone's CPU.
+	//
+	// To use packssdw, we take a bit one position lower for the alpha bit, run
+	// packssdw, then shift the bit back to its original position. Then we por the
+	// alpha vector with the post-packed color vector to get the final color.
+	
+	aLo = _mm_andnot_si128(aLo, _mm_set1_epi32(0x00004000));				// Mask out the bit before A
+	aLo = _mm_packs_epi32(aLo, _mm_setzero_si128());						// Pack 32-bit down to 16-bit
+	aLo = _mm_slli_epi16(aLo, 1);											// Shift the A bit back to where it needs to be
+	
+	aHi = _mm_andnot_si128(aHi, _mm_set1_epi32(0x00004000));
+	aHi = _mm_packs_epi32(aHi, _mm_setzero_si128());
+	aHi = _mm_slli_epi16(aHi, 1);
+	
+	return _mm_or_si128( _mm_or_si128(rgbLo, aLo), _mm_slli_epi32(_mm_or_si128(rgbHi, aHi), 16) );
+#endif
+}
+
+template <bool SWAP_RB>
+FORCEINLINE __m128i ConvertColor8888To5551(const __m128i srcLo, const __m128i srcHi)
+{
+	return _ConvertColorBaseTo5551<NDSColorFormat_BGR888_Rev, SWAP_RB>(srcLo, srcHi);
+}
+
+template <bool SWAP_RB>
+FORCEINLINE __m128i ConvertColor6665To5551(const __m128i srcLo, const __m128i srcHi)
+{
+	return _ConvertColorBaseTo5551<NDSColorFormat_BGR666_Rev, SWAP_RB>(srcLo, srcHi);
+}
+
+#endif
+
+template<bool SWAP_RB> void ConvertColorBuffers8888To6665(const FragmentColor *src, FragmentColor *dst, size_t pixCount);
+template<bool SWAP_RB> void ConvertColorBuffers6665To8888(const FragmentColor *src, FragmentColor *dst, size_t pixCount);
+template<bool SWAP_RB> void ConvertColorBuffers8888To5551(const FragmentColor *__restrict src, u16 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB> void ConvertColorBuffers6665To5551(const FragmentColor *__restrict src, u16 *__restrict dst, size_t pixCount);
 
 #endif
