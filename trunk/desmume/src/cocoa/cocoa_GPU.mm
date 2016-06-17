@@ -224,7 +224,7 @@ public:
 	return (NSUInteger)_gpuScale;
 }
 
-- (void) setGpuColorFormat:(UInt32)colorFormat
+- (void) setGpuColorFormat:(NSUInteger)colorFormat
 {
 	gpuEvent->FrameFinish();
 	gpuEvent->Render3DLock();
@@ -237,11 +237,11 @@ public:
 	gpuEvent->Render3DUnlock();
 }
 
-- (UInt32) gpuColorFormat
+- (NSUInteger) gpuColorFormat
 {
 	gpuEvent->Render3DLock();
 	gpuEvent->FramebufferLockRead();
-	const UInt32 colorFormat = (UInt32)GPU->GetDisplayInfo().colorFormat;
+	const NSUInteger colorFormat = (NSUInteger)GPU->GetDisplayInfo().colorFormat;
 	gpuEvent->FramebufferUnlock();
 	gpuEvent->Render3DUnlock();
 	
