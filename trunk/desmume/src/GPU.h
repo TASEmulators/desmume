@@ -1674,7 +1674,28 @@ inline FragmentColor MakeFragmentColor(const u8 r, const u8 g, const u8 b, const
 }
 
 template <bool SWAP_RB>
-FORCEINLINE FragmentColor ConvertColor8888To6665(FragmentColor srcColor)
+FORCEINLINE u32 ConvertColor555To8888Opaque(const u16 src)
+{
+	FragmentColor outColor;
+	outColor.r = material_5bit_to_8bit[((SWAP_RB) ? ((src >> 10) & 0x001F) : ((src >>  0) & 0x001F))];
+	outColor.g = material_5bit_to_8bit[((src >>  5) & 0x001F)];
+	outColor.b = material_5bit_to_8bit[((SWAP_RB) ? ((src >>  0) & 0x001F) : ((src >> 10) & 0x001F))];
+	outColor.a = 0xFF;
+	
+	return outColor.color;
+}
+
+template <bool SWAP_RB>
+FORCEINLINE u32 ConvertColor8888To6665(u32 srcColor)
+{
+	FragmentColor srcColorComponent;
+	srcColorComponent.color = srcColor;
+	
+	return ConvertColor8888To6665<SWAP_RB>(srcColorComponent);
+}
+
+template <bool SWAP_RB>
+FORCEINLINE u32 ConvertColor8888To6665(FragmentColor srcColor)
 {
 	FragmentColor outColor;
 	outColor.r = ((SWAP_RB) ? srcColor.b : srcColor.r) >> 2;
@@ -1682,11 +1703,20 @@ FORCEINLINE FragmentColor ConvertColor8888To6665(FragmentColor srcColor)
 	outColor.b = ((SWAP_RB) ? srcColor.r : srcColor.b) >> 2;
 	outColor.a = srcColor.a >> 3;
 	
-	return outColor;
+	return outColor.color;
 }
 
 template <bool SWAP_RB>
-FORCEINLINE FragmentColor ConvertColor6665To8888(FragmentColor srcColor)
+FORCEINLINE u32 ConvertColor6665To8888(u32 srcColor)
+{
+	FragmentColor srcColorComponent;
+	srcColorComponent.color = srcColor;
+	
+	return ConvertColor6665To8888<SWAP_RB>(srcColorComponent);
+}
+
+template <bool SWAP_RB>
+FORCEINLINE u32 ConvertColor6665To8888(FragmentColor srcColor)
 {
 	FragmentColor outColor;
 	outColor.r = material_6bit_to_8bit[((SWAP_RB) ? srcColor.b : srcColor.r)];
@@ -1694,7 +1724,16 @@ FORCEINLINE FragmentColor ConvertColor6665To8888(FragmentColor srcColor)
 	outColor.b = material_6bit_to_8bit[((SWAP_RB) ? srcColor.r : srcColor.b)];
 	outColor.a = material_5bit_to_8bit[srcColor.a];
 	
-	return outColor;
+	return outColor.color;
+}
+
+template <bool SWAP_RB>
+FORCEINLINE u16 ConvertColor8888To5551(u32 srcColor)
+{
+	FragmentColor srcColorComponent;
+	srcColorComponent.color = srcColor;
+	
+	return ConvertColor8888To5551<SWAP_RB>(srcColorComponent);
 }
 
 template <bool SWAP_RB>
@@ -1704,12 +1743,52 @@ FORCEINLINE u16 ConvertColor8888To5551(FragmentColor srcColor)
 }
 
 template <bool SWAP_RB>
+FORCEINLINE u16 ConvertColor6665To5551(u32 srcColor)
+{
+	FragmentColor srcColorComponent;
+	srcColorComponent.color = srcColor;
+	
+	return ConvertColor6665To5551<SWAP_RB>(srcColorComponent);
+}
+
+template <bool SWAP_RB>
 FORCEINLINE u16 ConvertColor6665To5551(FragmentColor srcColor)
 {
 	return R6G6B6TORGB15( ((SWAP_RB) ? srcColor.b : srcColor.r), srcColor.g, ((SWAP_RB) ? srcColor.r : srcColor.b)) | ((srcColor.a == 0) ? 0x0000 : 0x8000);
 }
 
 #ifdef ENABLE_SSE2
+
+template <bool SWAP_RB>
+FORCEINLINE void ConvertColor555To8888Opaque(const __m128i src, __m128i &dst0, __m128i &dst1)
+{
+	// Conversion algorithm:
+	//    RGB   5-bit to 8-bit formula: dstRGB8 = (srcRGB8 << 3) | ((srcRGB8 >> 2) & 0x07)
+	if (SWAP_RB)
+	{
+		dst0 =                    _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src, 19), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(src, 14), _mm_set1_epi32(0x00070000)));
+		dst0 = _mm_or_si128(dst0, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(src,  1), _mm_set1_epi32(0x00000700))) );
+		dst0 = _mm_or_si128(dst0, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src,  7), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src, 12), _mm_set1_epi32(0x00000007))) );
+		dst0 = _mm_or_si128(dst0, _mm_set1_epi32(0xFF000000));
+		
+		dst1 =                    _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  3), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_srli_epi32(src,  2), _mm_set1_epi32(0x00070000)));
+		dst1 = _mm_or_si128(dst1, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 10), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_srli_epi32(src, 15), _mm_set1_epi32(0x00000700))) );
+		dst1 = _mm_or_si128(dst1, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 23), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src, 28), _mm_set1_epi32(0x00000007))) );
+		dst1 = _mm_or_si128(dst1, _mm_set1_epi32(0xFF000000));
+	}
+	else
+	{
+		dst0 =                    _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  3), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src,  2), _mm_set1_epi32(0x00000007)));
+		dst0 = _mm_or_si128(dst0, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(src,  1), _mm_set1_epi32(0x00000700))) );
+		dst0 = _mm_or_si128(dst0, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  9), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(src,  4), _mm_set1_epi32(0x00070000))) );
+		dst0 = _mm_or_si128(dst0, _mm_set1_epi32(0xFF000000));
+		
+		dst1 =                    _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 13), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src, 18), _mm_set1_epi32(0x00000007)));
+		dst1 = _mm_or_si128(dst1, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 10), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_srli_epi32(src, 15), _mm_set1_epi32(0x00000700))) );
+		dst1 = _mm_or_si128(dst1, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src,  7), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_srli_epi32(src, 12), _mm_set1_epi32(0x00070000))) );
+		dst1 = _mm_or_si128(dst1, _mm_set1_epi32(0xFF000000));
+	}
+}
 
 template <bool SWAP_RB>
 FORCEINLINE __m128i ConvertColor8888To6665(const __m128i src)
@@ -1878,9 +1957,10 @@ FORCEINLINE __m128i ConvertColor6665To5551(const __m128i srcLo, const __m128i sr
 
 #endif
 
-template<bool SWAP_RB> void ConvertColorBuffers8888To6665(const FragmentColor *src, FragmentColor *dst, size_t pixCount);
-template<bool SWAP_RB> void ConvertColorBuffers6665To8888(const FragmentColor *src, FragmentColor *dst, size_t pixCount);
-template<bool SWAP_RB> void ConvertColorBuffers8888To5551(const FragmentColor *__restrict src, u16 *__restrict dst, size_t pixCount);
-template<bool SWAP_RB> void ConvertColorBuffers6665To5551(const FragmentColor *__restrict src, u16 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB> void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB> void ConvertColorBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount);
+template<bool SWAP_RB> void ConvertColorBuffer6665To8888(const u32 *src, u32 *dst, size_t pixCount);
+template<bool SWAP_RB> void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB> void ConvertColorBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
 
 #endif

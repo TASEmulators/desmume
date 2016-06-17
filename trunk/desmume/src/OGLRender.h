@@ -557,8 +557,6 @@ void ENDGL();
 extern void (*OGLLoadEntryPoints_3_2_Func)();
 extern void (*OGLCreateRenderer_3_2_Func)(OpenGLRenderer **rendererPtr);
 
-FORCEINLINE u32 BGRA8888_32_To_RGBA6665_32(const u32 srcPix);
-FORCEINLINE u32 BGRA8888_32Rev_To_RGBA6665_32Rev(const u32 srcPix);
 bool IsVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision);
 
 #if defined(ENABLE_SSE2)

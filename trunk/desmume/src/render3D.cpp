@@ -608,11 +608,11 @@ Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFram
 	{
 		if ( (this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev) )
 		{
-			ConvertColorBuffers8888To6665<false>(srcFramebuffer, dstFramebuffer, pixCount);
+			ConvertColorBuffer8888To6665<false>((u32 *)srcFramebuffer, (u32 *)dstFramebuffer, pixCount);
 		}
 		else if ( (this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev) )
 		{
-			ConvertColorBuffers6665To8888<false>(srcFramebuffer, dstFramebuffer, pixCount);
+			ConvertColorBuffer6665To8888<false>((u32 *)srcFramebuffer, (u32 *)dstFramebuffer, pixCount);
 		}
 		else if ( ((this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev)) ||
 		          ((this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev)) )
@@ -625,11 +625,11 @@ Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFram
 	{
 		if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
 		{
-			ConvertColorBuffers6665To5551<false>(srcFramebuffer, dstRGBA5551, pixCount);
+			ConvertColorBuffer6665To5551<false>((u32 *)srcFramebuffer, dstRGBA5551, pixCount);
 		}
 		else if (this ->_outputFormat == NDSColorFormat_BGR888_Rev)
 		{
-			ConvertColorBuffers8888To5551<false>(srcFramebuffer, dstRGBA5551, pixCount);
+			ConvertColorBuffer8888To5551<false>((u32 *)srcFramebuffer, dstRGBA5551, pixCount);
 		}
 	}
 	
