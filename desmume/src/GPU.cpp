@@ -4561,7 +4561,7 @@ void GPUEngineBase::ResolveCustomRendering()
 
 void GPUEngineBase::ResolveRGB666ToRGB888()
 {
-	ConvertColorBuffers6665To8888<false>((FragmentColor *)this->renderedBuffer, (FragmentColor *)this->renderedBuffer, this->renderedWidth * this->renderedHeight);
+	ConvertColorBuffer6665To8888<false>((u32 *)this->renderedBuffer, (u32 *)this->renderedBuffer, this->renderedWidth * this->renderedHeight);
 }
 
 void GPUEngineBase::ResolveToCustomFramebuffer()
@@ -7079,7 +7079,31 @@ void NDSDisplay::SetEngineByID(const GPUEngineID theID)
 }
 
 template <bool SWAP_RB>
-void ConvertColorBuffers8888To6665(const FragmentColor *src, FragmentColor *dst, size_t pixCount)
+void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *dst, size_t pixCount)
+{
+	size_t i = 0;
+	
+#ifdef ENABLE_SSE2
+	const size_t ssePixCount = pixCount - (pixCount % 8);
+	for (; i < ssePixCount; i += 8)
+	{
+		__m128i src_vec128 = _mm_load_si128((__m128i *)(src + i));
+		__m128i dstConverted0, dstConverted1;		
+		ConvertColor555To8888Opaque<SWAP_RB>(src_vec128, dstConverted0, dstConverted1);
+		
+		_mm_store_si128((__m128i *)(dst + i + 0), dstConverted0);
+		_mm_store_si128((__m128i *)(dst + i + 4), dstConverted1);
+	}
+#endif
+	
+	for (; i < pixCount; i++)
+	{
+		dst[i] = ConvertColor555To8888Opaque<SWAP_RB>(src[i]);
+	}
+}
+
+template <bool SWAP_RB>
+void ConvertColorBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount)
 {
 	size_t i = 0;
 	
@@ -7098,7 +7122,7 @@ void ConvertColorBuffers8888To6665(const FragmentColor *src, FragmentColor *dst,
 }
 
 template <bool SWAP_RB>
-void ConvertColorBuffers6665To8888(const FragmentColor *src, FragmentColor *dst, size_t pixCount)
+void ConvertColorBuffer6665To8888(const u32 *src, u32 *dst, size_t pixCount)
 {
 	size_t i = 0;
 	
@@ -7117,7 +7141,7 @@ void ConvertColorBuffers6665To8888(const FragmentColor *src, FragmentColor *dst,
 }
 
 template <bool SWAP_RB>
-void ConvertColorBuffers8888To5551(const FragmentColor *__restrict src, u16 *__restrict dst, size_t pixCount)
+void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount)
 {
 	size_t i = 0;
 	
@@ -7136,7 +7160,7 @@ void ConvertColorBuffers8888To5551(const FragmentColor *__restrict src, u16 *__r
 }
 
 template <bool SWAP_RB>
-void ConvertColorBuffers6665To5551(const FragmentColor *__restrict src, u16 *__restrict dst, size_t pixCount)
+void ConvertColorBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount)
 {
 	size_t i = 0;
 	
@@ -7190,14 +7214,17 @@ template void GPUEngineBase::RenderLayerBG<GPULayerID_BG1>(u16 *dstColorBuffer);
 template void GPUEngineBase::RenderLayerBG<GPULayerID_BG2>(u16 *dstColorBuffer);
 template void GPUEngineBase::RenderLayerBG<GPULayerID_BG3>(u16 *dstColorBuffer);
 
-template void ConvertColorBuffers8888To6665<true>(const FragmentColor *src, FragmentColor *dst, size_t pixCount);
-template void ConvertColorBuffers8888To6665<false>(const FragmentColor *src, FragmentColor *dst, size_t pixCount);
+template void ConvertColorBuffer555To8888Opaque<true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer555To8888Opaque<false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 
-template void ConvertColorBuffers6665To8888<true>(const FragmentColor *src, FragmentColor *dst, size_t pixCount);
-template void ConvertColorBuffers6665To8888<false>(const FragmentColor *src, FragmentColor *dst, size_t pixCount);
+template void ConvertColorBuffer8888To6665<true>(const u32 *src, u32 *dst, size_t pixCount);
+template void ConvertColorBuffer8888To6665<false>(const u32 *src, u32 *dst, size_t pixCount);
 
-template void ConvertColorBuffers8888To5551<true>(const FragmentColor *__restrict src, u16 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffers8888To5551<false>(const FragmentColor *__restrict src, u16 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer6665To8888<true>(const u32 *src, u32 *dst, size_t pixCount);
+template void ConvertColorBuffer6665To8888<false>(const u32 *src, u32 *dst, size_t pixCount);
 
-template void ConvertColorBuffers6665To5551<true>(const FragmentColor *__restrict src, u16 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffers6665To5551<false>(const FragmentColor *__restrict src, u16 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer8888To5551<true>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer8888To5551<false>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+
+template void ConvertColorBuffer6665To5551<true>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer6665To5551<false>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
