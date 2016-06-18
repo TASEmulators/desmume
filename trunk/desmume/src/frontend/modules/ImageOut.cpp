@@ -34,7 +34,7 @@ static u8* Convert15To24(const u16* src, int width, int height)
 		for(int x=0;x<width;x++)
 		{
 			u32 dst = ConvertColor555To8888Opaque<true>(*src++);
-			*(u32 *)tmp_inc[i] = (dst & 0x00FFFFFF) | (*(u32 *)tmp_inc & 0xFF000000);
+			*(u32 *)tmp_inc[x] = (dst & 0x00FFFFFF) | (*(u32 *)tmp_inc & 0xFF000000);
 			tmp_inc += 3;
 		}
 	}
