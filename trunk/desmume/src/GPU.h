@@ -1758,12 +1758,8 @@ FORCEINLINE u16 ConvertColor6665To5551(FragmentColor srcColor)
 template <bool SWAP_RB>
 FORCEINLINE void ConvertColor555To8888Opaque(const __m128i src, __m128i &dstLo, __m128i &dstHi)
 {
-#if 0
-	// I'm shelving this code until the time when I figure out how to do this conversion faster in SSE2
-	// without using any memory lookups. This code does work, albeit slowly. -- rogerman, 2016-06-17
-	
 	// Conversion algorithm:
-	//    RGB   5-bit to 8-bit formula: dstRGB8 = (srcRGB8 << 3) | ((srcRGB8 >> 2) & 0x07)
+	//    RGB   5-bit to 8-bit formula: dstRGB8 = (srcRGB5 << 3) | ((srcRGB5 >> 2) & 0x07)
 	if (SWAP_RB)
 	{
 		dstLo =                     _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src, 19), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(src, 14), _mm_set1_epi32(0x00070000)));
@@ -1792,35 +1788,6 @@ FORCEINLINE void ConvertColor555To8888Opaque(const __m128i src, __m128i &dstLo, 
 	__m128i tmpDstLo = dstLo;
 	dstLo = _mm_or_si128( _mm_and_si128(_mm_shuffle_epi32(tmpDstLo, 0xD8), _mm_set_epi32(0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF)), _mm_and_si128(_mm_shuffle_epi32(dstHi, 0x72), _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000)) );
 	dstHi = _mm_or_si128( _mm_and_si128(_mm_shuffle_epi32(tmpDstLo, 0x72), _mm_set_epi32(0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF)), _mm_and_si128(_mm_shuffle_epi32(dstHi, 0xD8), _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000)) );
-#else
-	// This code does the same thing as the above, but with memory lookups. It's faster, but kinda
-	// defeats the purpose of using SSE2 due to the memory lookups. -- rogerman, 2016-06-17
-	
-	__m128i srcMasked = _mm_and_si128(src, _mm_set1_epi16(0x7FFF));
-	
-	if (SWAP_RB)
-	{
-		dstHi = _mm_set_epi32(COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 7)),
-							  COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 6)),
-							  COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 5)),
-							  COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 4)));
-		dstLo = _mm_set_epi32(COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 3)),
-							  COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 2)),
-							  COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 1)),
-							  COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 0)));
-	}
-	else
-	{
-		dstHi = _mm_set_epi32(COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 7)),
-							  COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 6)),
-							  COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 5)),
-							  COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 4)));
-		dstLo = _mm_set_epi32(COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 3)),
-							  COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 2)),
-							  COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 1)),
-							  COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 0)));
-	}
-#endif
 }
 
 template <bool SWAP_RB>
