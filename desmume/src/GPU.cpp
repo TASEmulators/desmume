@@ -52,6 +52,7 @@ u32 Render3DFramesPerSecond;
 CACHE_ALIGN u32 color_555_to_6665_opaque[32768];
 CACHE_ALIGN u32 color_555_to_666[32768];
 CACHE_ALIGN u32 color_555_to_8888_opaque[32768];
+CACHE_ALIGN u32 color_555_to_8888_opaque_swap_rb[32768];
 CACHE_ALIGN u32 color_555_to_888[32768];
 
 //is this a crazy idea? this table spreads 5 bits evenly over 31 from exactly 0 to INT_MAX
@@ -6324,13 +6325,15 @@ GPUSubsystem::GPUSubsystem()
 	{
 #define RGB15TO18_BITLOGIC(col) ( (material_5bit_to_6bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_6bit[((col)>>5)&0x1F]<<8) | material_5bit_to_6bit[(col)&0x1F] )
 #define RGB15TO24_BITLOGIC(col) ( (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[(col)&0x1F] )
+#define RGB15TO24_SWAP_RB_BITLOGIC(col) ( material_5bit_to_8bit[((col)>>10)&0x1F] | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | (material_5bit_to_8bit[(col)&0x1F]<<16) )
 		
 		for (size_t i = 0; i < 32768; i++)
 		{
-			color_555_to_666[i]			= LE_TO_LOCAL_32( RGB15TO18_BITLOGIC(i) );
-			color_555_to_6665_opaque[i]	= LE_TO_LOCAL_32( RGB15TO18_BITLOGIC(i) | 0x1F000000 );
-			color_555_to_888[i]			= LE_TO_LOCAL_32( RGB15TO24_BITLOGIC(i) );
-			color_555_to_8888_opaque[i]	= LE_TO_LOCAL_32( RGB15TO24_BITLOGIC(i) | 0xFF000000 );
+			color_555_to_666[i]					= LE_TO_LOCAL_32( RGB15TO18_BITLOGIC(i) );
+			color_555_to_6665_opaque[i]			= LE_TO_LOCAL_32( RGB15TO18_BITLOGIC(i) | 0x1F000000 );
+			color_555_to_888[i]					= LE_TO_LOCAL_32( RGB15TO24_BITLOGIC(i) );
+			color_555_to_8888_opaque[i]			= LE_TO_LOCAL_32( RGB15TO24_BITLOGIC(i) | 0xFF000000 );
+			color_555_to_8888_opaque_swap_rb[i]	= LE_TO_LOCAL_32( RGB15TO24_SWAP_RB_BITLOGIC(i) | 0xFF000000 );
 		}
 		
 		needInitTables = false;
@@ -7088,11 +7091,11 @@ void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *dst, size
 	for (; i < ssePixCount; i += 8)
 	{
 		__m128i src_vec128 = _mm_load_si128((__m128i *)(src + i));
-		__m128i dstConverted0, dstConverted1;		
-		ConvertColor555To8888Opaque<SWAP_RB>(src_vec128, dstConverted0, dstConverted1);
+		__m128i dstConvertedLo, dstConvertedHi;
+		ConvertColor555To8888Opaque<SWAP_RB>(src_vec128, dstConvertedLo, dstConvertedHi);
 		
-		_mm_store_si128((__m128i *)(dst + i + 0), dstConverted0);
-		_mm_store_si128((__m128i *)(dst + i + 4), dstConverted1);
+		_mm_store_si128((__m128i *)(dst + i + 0), dstConvertedLo);
+		_mm_store_si128((__m128i *)(dst + i + 4), dstConvertedHi);
 	}
 #endif
 	

@@ -320,12 +320,9 @@ static void do_video_conversion(AVIFile* avi, const u16* buffer)
 	{
 		for(int x=0;x<width;x++)
 		{
-			u16 col16 = *buffer++;
-			col16 &=0x7FFF;
-			u32 col24 = color_15bit_to_24bit[col16];
-			*outbuf++ = (col24>>16)&0xFF;
-			*outbuf++ = (col24>>8)&0xFF;
-			*outbuf++ = col24&0xFF;
+			u32 dst = ConvertColor555To8888Opaque<true>(*buffer++);
+			*(u32 *)outbuf = (dst & 0x00FFFFFF) | (*(u32 *)outbuf & 0xFF000000);
+			outbuf += 3;
 		}
 
 		outbuf -= width*3*2;

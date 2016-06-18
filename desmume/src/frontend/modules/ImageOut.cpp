@@ -21,7 +21,7 @@
 #include "ImageOut.h"
 #include "formats/rpng.h"
 #include "formats/rbmp.h"
-#include "gfx3d.h"
+#include "GPU.h"
 
 static u8* Convert15To24(const u16* src, int width, int height)
 {
@@ -33,11 +33,9 @@ static u8* Convert15To24(const u16* src, int width, int height)
 	{
 		for(int x=0;x<width;x++)
 		{
-			u16 pixel = *src++;
-			u32 expanded = RGB15TO32_NOALPHA(pixel);
-			*tmp_inc++ = (expanded>>16)&0xFF;
-			*tmp_inc++ = (expanded>>8)&0xFF;
-			*tmp_inc++ = expanded&0xFF;
+			u32 dst = ConvertColor555To8888Opaque<true>(*src++);
+			*(u32 *)tmp_inc[i] = (dst & 0x00FFFFFF) | (*(u32 *)tmp_inc & 0xFF000000);
+			tmp_inc += 3;
 		}
 	}
 	return tmp_buffer;

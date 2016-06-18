@@ -1640,24 +1640,26 @@ extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
 extern CACHE_ALIGN u32 color_555_to_6665_opaque[32768];
 extern CACHE_ALIGN u32 color_555_to_666[32768];
 extern CACHE_ALIGN u32 color_555_to_8888_opaque[32768];
+extern CACHE_ALIGN u32 color_555_to_8888_opaque_swap_rb[32768];
 extern CACHE_ALIGN u32 color_555_to_888[32768];
 
-#define COLOR555TO6665_OPAQUE(col) (color_555_to_6665_opaque[(col)])				// Convert a 15-bit color to an opaque sparsely packed 32-bit color containing an RGBA6665 color
-#define COLOR555TO666(col) (color_555_to_666[(col)])								// Convert a 15-bit color to a fully transparent sparsely packed 32-bit color containing an RGBA6665 color
+#define COLOR555TO6665_OPAQUE(col) (color_555_to_6665_opaque[(col)])					// Convert a 15-bit color to an opaque sparsely packed 32-bit color containing an RGBA6665 color
+#define COLOR555TO666(col) (color_555_to_666[(col)])									// Convert a 15-bit color to a fully transparent sparsely packed 32-bit color containing an RGBA6665 color
 
 #ifdef LOCAL_LE
-	#define COLOR555TO6665(col,alpha5) (((alpha5)<<24) | color_555_to_666[(col)])	// Convert a 15-bit color to a sparsely packed 32-bit color containing an RGBA6665 color with user-defined alpha, little-endian
+	#define COLOR555TO6665(col,alpha5) (((alpha5)<<24) | color_555_to_666[(col)])		// Convert a 15-bit color to a sparsely packed 32-bit color containing an RGBA6665 color with user-defined alpha, little-endian
 #else
-	#define COLOR555TO6665(col,alpha5) ((alpha5) | color_555_to_666[(col)])			// Convert a 15-bit color to a sparsely packed 32-bit color containing an RGBA6665 color with user-defined alpha, big-endian
+	#define COLOR555TO6665(col,alpha5) ((alpha5) | color_555_to_666[(col)])				// Convert a 15-bit color to a sparsely packed 32-bit color containing an RGBA6665 color with user-defined alpha, big-endian
 #endif
 
-#define COLOR555TO8888_OPAQUE(col) (color_555_to_8888_opaque[(col)])				// Convert a 15-bit color to an opaque 32-bit color
-#define COLOR555TO888(col) (color_555_to_888[(col)])								// Convert a 15-bit color to an opaque 24-bit color or a fully transparent 32-bit color
+#define COLOR555TO8888_OPAQUE(col) (color_555_to_8888_opaque[(col)])					// Convert a 15-bit color to an opaque 32-bit color
+#define COLOR555TO8888_OPAQUE_SWAP_RB(col) (color_555_to_8888_opaque_swap_rb[(col)])	// Convert a 15-bit color to an opaque 32-bit color with R and B components swapped
+#define COLOR555TO888(col) (color_555_to_888[(col)])									// Convert a 15-bit color to an opaque 24-bit color or a fully transparent 32-bit color
 
 #ifdef LOCAL_LE
-	#define COLOR555TO8888(col,alpha8) (((alpha8)<<24) | color_555_to_888[(col)])	// Convert a 15-bit color to a 32-bit color with user-defined alpha, little-endian
+	#define COLOR555TO8888(col,alpha8) (((alpha8)<<24) | color_555_to_888[(col)])		// Convert a 15-bit color to a 32-bit color with user-defined alpha, little-endian
 #else
-	#define COLOR555TO8888(col,alpha8) ((alpha8) | color_555_to_888[(col)])			// Convert a 15-bit color to a 32-bit color with user-defined alpha, big-endian
+	#define COLOR555TO8888(col,alpha8) ((alpha8) | color_555_to_888[(col)])				// Convert a 15-bit color to a 32-bit color with user-defined alpha, big-endian
 #endif
 
 //produce a 15bpp color from individual 5bit components
@@ -1676,13 +1678,7 @@ inline FragmentColor MakeFragmentColor(const u8 r, const u8 g, const u8 b, const
 template <bool SWAP_RB>
 FORCEINLINE u32 ConvertColor555To8888Opaque(const u16 src)
 {
-	FragmentColor outColor;
-	outColor.r = material_5bit_to_8bit[((SWAP_RB) ? ((src >> 10) & 0x001F) : ((src >>  0) & 0x001F))];
-	outColor.g = material_5bit_to_8bit[((src >>  5) & 0x001F)];
-	outColor.b = material_5bit_to_8bit[((SWAP_RB) ? ((src >>  0) & 0x001F) : ((src >> 10) & 0x001F))];
-	outColor.a = 0xFF;
-	
-	return outColor.color;
+	return (SWAP_RB) ? COLOR555TO8888_OPAQUE_SWAP_RB(src & 0x7FFF) : COLOR555TO8888_OPAQUE(src & 0x7FFF);
 }
 
 template <bool SWAP_RB>
@@ -1760,34 +1756,71 @@ FORCEINLINE u16 ConvertColor6665To5551(FragmentColor srcColor)
 #ifdef ENABLE_SSE2
 
 template <bool SWAP_RB>
-FORCEINLINE void ConvertColor555To8888Opaque(const __m128i src, __m128i &dst0, __m128i &dst1)
+FORCEINLINE void ConvertColor555To8888Opaque(const __m128i src, __m128i &dstLo, __m128i &dstHi)
 {
+#if 0
+	// I'm shelving this code until the time when I figure out how to do this conversion faster in SSE2
+	// without using any memory lookups. This code does work, albeit slowly. -- rogerman, 2016-06-17
+	
 	// Conversion algorithm:
 	//    RGB   5-bit to 8-bit formula: dstRGB8 = (srcRGB8 << 3) | ((srcRGB8 >> 2) & 0x07)
 	if (SWAP_RB)
 	{
-		dst0 =                    _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src, 19), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(src, 14), _mm_set1_epi32(0x00070000)));
-		dst0 = _mm_or_si128(dst0, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(src,  1), _mm_set1_epi32(0x00000700))) );
-		dst0 = _mm_or_si128(dst0, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src,  7), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src, 12), _mm_set1_epi32(0x00000007))) );
-		dst0 = _mm_or_si128(dst0, _mm_set1_epi32(0xFF000000));
+		dstLo =                     _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src, 19), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(src, 14), _mm_set1_epi32(0x00070000)));
+		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(src,  1), _mm_set1_epi32(0x00000700))) );
+		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src,  7), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src, 12), _mm_set1_epi32(0x00000007))) );
+		dstLo = _mm_or_si128(dstLo, _mm_set1_epi32(0xFF000000));
 		
-		dst1 =                    _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  3), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_srli_epi32(src,  2), _mm_set1_epi32(0x00070000)));
-		dst1 = _mm_or_si128(dst1, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 10), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_srli_epi32(src, 15), _mm_set1_epi32(0x00000700))) );
-		dst1 = _mm_or_si128(dst1, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 23), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src, 28), _mm_set1_epi32(0x00000007))) );
-		dst1 = _mm_or_si128(dst1, _mm_set1_epi32(0xFF000000));
+		dstHi =                     _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  3), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_srli_epi32(src,  2), _mm_set1_epi32(0x00070000)));
+		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 10), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_srli_epi32(src, 15), _mm_set1_epi32(0x00000700))) );
+		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 23), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src, 28), _mm_set1_epi32(0x00000007))) );
+		dstHi = _mm_or_si128(dstHi, _mm_set1_epi32(0xFF000000));
 	}
 	else
 	{
-		dst0 =                    _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  3), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src,  2), _mm_set1_epi32(0x00000007)));
-		dst0 = _mm_or_si128(dst0, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(src,  1), _mm_set1_epi32(0x00000700))) );
-		dst0 = _mm_or_si128(dst0, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  9), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(src,  4), _mm_set1_epi32(0x00070000))) );
-		dst0 = _mm_or_si128(dst0, _mm_set1_epi32(0xFF000000));
+		dstLo =                     _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  3), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src,  2), _mm_set1_epi32(0x00000007)));
+		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(src,  1), _mm_set1_epi32(0x00000700))) );
+		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  9), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(src,  4), _mm_set1_epi32(0x00070000))) );
+		dstLo = _mm_or_si128(dstLo, _mm_set1_epi32(0xFF000000));
 		
-		dst1 =                    _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 13), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src, 18), _mm_set1_epi32(0x00000007)));
-		dst1 = _mm_or_si128(dst1, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 10), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_srli_epi32(src, 15), _mm_set1_epi32(0x00000700))) );
-		dst1 = _mm_or_si128(dst1, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src,  7), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_srli_epi32(src, 12), _mm_set1_epi32(0x00070000))) );
-		dst1 = _mm_or_si128(dst1, _mm_set1_epi32(0xFF000000));
+		dstHi =                     _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 13), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src, 18), _mm_set1_epi32(0x00000007)));
+		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 10), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_srli_epi32(src, 15), _mm_set1_epi32(0x00000700))) );
+		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src,  7), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_srli_epi32(src, 12), _mm_set1_epi32(0x00070000))) );
+		dstHi = _mm_or_si128(dstHi, _mm_set1_epi32(0xFF000000));
 	}
+	
+	__m128i tmpDstLo = dstLo;
+	dstLo = _mm_or_si128( _mm_and_si128(_mm_shuffle_epi32(tmpDstLo, 0xD8), _mm_set_epi32(0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF)), _mm_and_si128(_mm_shuffle_epi32(dstHi, 0x72), _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000)) );
+	dstHi = _mm_or_si128( _mm_and_si128(_mm_shuffle_epi32(tmpDstLo, 0x72), _mm_set_epi32(0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF)), _mm_and_si128(_mm_shuffle_epi32(dstHi, 0xD8), _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000)) );
+#else
+	// This code does the same thing as the above, but with memory lookups. It's faster, but kinda
+	// defeats the purpose of using SSE2 due to the memory lookups. -- rogerman, 2016-06-17
+	
+	__m128i srcMasked = _mm_and_si128(src, _mm_set1_epi16(0x7FFF));
+	
+	if (SWAP_RB)
+	{
+		dstHi = _mm_set_epi32(COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 7)),
+							  COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 6)),
+							  COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 5)),
+							  COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 4)));
+		dstLo = _mm_set_epi32(COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 3)),
+							  COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 2)),
+							  COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 1)),
+							  COLOR555TO8888_OPAQUE_SWAP_RB(_mm_extract_epi16(srcMasked, 0)));
+	}
+	else
+	{
+		dstHi = _mm_set_epi32(COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 7)),
+							  COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 6)),
+							  COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 5)),
+							  COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 4)));
+		dstLo = _mm_set_epi32(COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 3)),
+							  COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 2)),
+							  COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 1)),
+							  COLOR555TO8888_OPAQUE(_mm_extract_epi16(srcMasked, 0)));
+	}
+#endif
 }
 
 template <bool SWAP_RB>
