@@ -1920,7 +1920,7 @@ static void DoDisplay(bool firstTime)
 	//convert pixel format to 32bpp for compositing
 	//why do we do this over and over? well, we are compositing to 
 	//filteredbuffer32bpp, and it needs to get refreshed each frame.
-	ConvertColorBuffer555To8888Opaque<true>((u16 *)video.srcBuffer, video.buffer, video.srcBufferSize / sizeof(u16));
+	ConvertColorBuffer555To8888Opaque<true, false>((u16 *)video.srcBuffer, video.buffer, video.srcBufferSize / sizeof(u16));
 
 	if(firstTime)
 	{
