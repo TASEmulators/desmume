@@ -7814,18 +7814,18 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 	
 	if (loadMainScreen)
 	{
-		if (this->_useDeposterize && this->_canUseShaderBasedFilters)
-		{
-			if ( (this->_filterDeposterize[0]->GetSrcWidth() != this->_texLoadedWidth[0]) || (this->_filterDeposterize[0]->GetSrcHeight() != this->_texLoadedHeight[0]) )
-			{
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
-				this->_filterDeposterize[0]->SetSrcSizeOGL(this->_texLoadedWidth[0], this->_texLoadedHeight[0]);
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
-			}
-		}
-		
 		if (this->_isTexVideoInputDataNative[0])
 		{
+			if (this->_useDeposterize && this->_canUseShaderBasedFilters)
+			{
+				if ( (this->_filterDeposterize[0]->GetSrcWidth() != this->_texLoadedWidth[0]) || (this->_filterDeposterize[0]->GetSrcHeight() != this->_texLoadedHeight[0]) )
+				{
+					glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
+					this->_filterDeposterize[0]->SetSrcSizeOGL(this->_texLoadedWidth[0], this->_texLoadedHeight[0]);
+					glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
+				}
+			}
+			
 			if (!isUsingCPUPixelScaler || this->_useDeposterize)
 			{
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[0]);
@@ -7856,18 +7856,18 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 	
 	if (loadTouchScreen)
 	{
-		if (this->_useDeposterize && this->_canUseShaderBasedFilters)
-		{
-			if ( (this->_filterDeposterize[1]->GetSrcWidth() != this->_texLoadedWidth[1]) || (this->_filterDeposterize[1]->GetSrcHeight() != this->_texLoadedHeight[1]) )
-			{
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
-				this->_filterDeposterize[1]->SetSrcSizeOGL(this->_texLoadedWidth[1], this->_texLoadedHeight[1]);
-				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
-			}
-		}
-		
 		if (this->_isTexVideoInputDataNative[1])
 		{
+			if (this->_useDeposterize && this->_canUseShaderBasedFilters)
+			{
+				if ( (this->_filterDeposterize[1]->GetSrcWidth() != this->_texLoadedWidth[1]) || (this->_filterDeposterize[1]->GetSrcHeight() != this->_texLoadedHeight[1]) )
+				{
+					glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
+					this->_filterDeposterize[1]->SetSrcSizeOGL(this->_texLoadedWidth[1], this->_texLoadedHeight[1]);
+					glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
+				}
+			}
+			
 			if (!isUsingCPUPixelScaler || this->_useDeposterize)
 			{
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[1]);
@@ -7906,32 +7906,7 @@ void OGLDisplayLayer::ProcessOGL()
 	GLuint texVideoSourceID[2]	= { (this->_isTexVideoInputDataNative[0]) ? this->_texVideoInputDataNativeID[0] : this->_texVideoInputDataCustomID[0],
 								    (this->_isTexVideoInputDataNative[1]) ? this->_texVideoInputDataNativeID[1] : this->_texVideoInputDataCustomID[1] };
 	
-	if (this->_useDeposterize)
-	{
-		// For all shader-based filters, we need to temporarily disable GL_UNPACK_CLIENT_STORAGE_APPLE.
-		// Filtered images are supposed to remain on the GPU for immediate use for further GPU processing,
-		// so using client-backed buffers for filtered images would simply waste memory here.
-		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
-		texVideoSourceID[0] = this->_filterDeposterize[0]->RunFilterOGL(texVideoSourceID[0]);
-		texVideoSourceID[1] = this->_filterDeposterize[1]->RunFilterOGL(texVideoSourceID[1]);
-		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
-		
-		if (isUsingCPUPixelScaler) // Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
-		{
-			if ( this->_isTexVideoInputDataNative[0] && ((displayMode == DS_DISPLAY_TYPE_MAIN) || (displayMode == DS_DISPLAY_TYPE_DUAL)) )
-			{
-				this->_filterDeposterize[0]->DownloadDstBufferOGL(this->_vf[0]->GetSrcBufferPtr(), 0, this->_filterDeposterize[0]->GetSrcHeight());
-			}
-			
-			if ( this->_isTexVideoInputDataNative[1] && ((displayMode == DS_DISPLAY_TYPE_TOUCH) || (displayMode == DS_DISPLAY_TYPE_DUAL)) )
-			{
-				this->_filterDeposterize[1]->DownloadDstBufferOGL(this->_vf[1]->GetSrcBufferPtr(), 0, this->_filterDeposterize[1]->GetSrcHeight());
-			}
-		}
-	}
-	
 	// Pixel scaler - only perform on native resolution video input
-	GLuint texVideoPixelScalerID[2] = { texVideoSourceID[0], texVideoSourceID[1] };
 	GLfloat w0 = this->_texLoadedWidth[0];
 	GLfloat h0 = this->_texLoadedHeight[0];
 	GLfloat w1 = this->_texLoadedWidth[1];
@@ -7939,12 +7914,30 @@ void OGLDisplayLayer::ProcessOGL()
 	
 	if (this->_isTexVideoInputDataNative[0] && (displayMode == DS_DISPLAY_TYPE_MAIN || displayMode == DS_DISPLAY_TYPE_DUAL))
 	{
+		if (this->_useDeposterize)
+		{
+			// For all shader-based filters, we need to temporarily disable GL_UNPACK_CLIENT_STORAGE_APPLE.
+			// Filtered images are supposed to remain on the GPU for immediate use for further GPU processing,
+			// so using client-backed buffers for filtered images would simply waste memory here.
+			glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
+			texVideoSourceID[0] = this->_filterDeposterize[0]->RunFilterOGL(texVideoSourceID[0]);
+			glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
+			
+			if (isUsingCPUPixelScaler) // Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
+			{
+				if ( this->_isTexVideoInputDataNative[0] && ((displayMode == DS_DISPLAY_TYPE_MAIN) || (displayMode == DS_DISPLAY_TYPE_DUAL)) )
+				{
+					this->_filterDeposterize[0]->DownloadDstBufferOGL(this->_vf[0]->GetSrcBufferPtr(), 0, this->_filterDeposterize[0]->GetSrcHeight());
+				}
+			}
+		}
+		
 		if (!isUsingCPUPixelScaler)
 		{
 			if (this->_useShaderBasedPixelScaler)
 			{
 				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
-				texVideoPixelScalerID[0] = this->_shaderFilter[0]->RunFilterOGL(texVideoSourceID[0]);
+				texVideoSourceID[0] = this->_shaderFilter[0]->RunFilterOGL(texVideoSourceID[0]);
 				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
 				
 				w0 = this->_shaderFilter[0]->GetDstWidth();
@@ -7954,8 +7947,8 @@ void OGLDisplayLayer::ProcessOGL()
 		else
 		{
 			uint32_t *texData = this->_vf[0]->RunFilter();
-			texVideoPixelScalerID[0] = this->_texCPUFilterDstID[0];
-			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texVideoPixelScalerID[0]);
+			texVideoSourceID[0] = this->_texCPUFilterDstID[0];
+			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texVideoSourceID[0]);
 			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_vf[0]->GetDstWidth(), this->_vf[0]->GetDstHeight(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, texData);
 			glFlush();
 			
@@ -7966,12 +7959,27 @@ void OGLDisplayLayer::ProcessOGL()
 	
 	if (this->_isTexVideoInputDataNative[1] && (displayMode == DS_DISPLAY_TYPE_TOUCH || displayMode == DS_DISPLAY_TYPE_DUAL))
 	{
+		if (this->_useDeposterize)
+		{
+			glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
+			texVideoSourceID[1] = this->_filterDeposterize[1]->RunFilterOGL(texVideoSourceID[1]);
+			glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
+			
+			if (isUsingCPUPixelScaler) // Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
+			{
+				if ( this->_isTexVideoInputDataNative[1] && ((displayMode == DS_DISPLAY_TYPE_TOUCH) || (displayMode == DS_DISPLAY_TYPE_DUAL)) )
+				{
+					this->_filterDeposterize[1]->DownloadDstBufferOGL(this->_vf[1]->GetSrcBufferPtr(), 0, this->_filterDeposterize[1]->GetSrcHeight());
+				}
+			}
+		}
+		
 		if (!isUsingCPUPixelScaler)
 		{
 			if (this->_useShaderBasedPixelScaler)
 			{
 				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
-				texVideoPixelScalerID[1] = this->_shaderFilter[1]->RunFilterOGL(texVideoSourceID[1]);
+				texVideoSourceID[1] = this->_shaderFilter[1]->RunFilterOGL(texVideoSourceID[1]);
 				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, this->_useClientStorage);
 				
 				w1 = this->_shaderFilter[1]->GetDstWidth();
@@ -7981,8 +7989,8 @@ void OGLDisplayLayer::ProcessOGL()
 		else
 		{
 			uint32_t *texData = this->_vf[1]->RunFilter();
-			texVideoPixelScalerID[1] = this->_texCPUFilterDstID[1];
-			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texVideoPixelScalerID[1]);
+			texVideoSourceID[1] = this->_texCPUFilterDstID[1];
+			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texVideoSourceID[1]);
 			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, this->_vf[1]->GetDstWidth(), this->_vf[1]->GetDstHeight(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, texData);
 			glFlush();
 			
@@ -7992,8 +8000,8 @@ void OGLDisplayLayer::ProcessOGL()
 	}
 	
 	// Output
-	this->_texVideoOutputID[0] = texVideoPixelScalerID[0];
-	this->_texVideoOutputID[1] = texVideoPixelScalerID[1];
+	this->_texVideoOutputID[0] = texVideoSourceID[0];
+	this->_texVideoOutputID[1] = texVideoSourceID[1];
 	
 	this->UpdateTexCoords(w0, h0, w1, h1);
 	this->UploadTexCoordsOGL();
