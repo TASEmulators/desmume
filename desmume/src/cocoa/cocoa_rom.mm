@@ -22,6 +22,7 @@
 #import "cocoa_util.h"
 
 #include "../NDSSystem.h"
+#include "../GPU.h"
 #include "../common.h"
 #include "../mc.h"
 #undef BOOL
@@ -691,7 +692,7 @@ void RomIconToRGBA8888(uint32_t *bitmapData)
 	//
 	// The first entry always represents the alpha, so we can just ignore it.
 	clut[0] = 0x00000000;
-	RGB555ToRGBA8888Buffer(iconClutPtr, &clut[1], 15);
+	ConvertColorBuffer555To8888Opaque<false, true>((u16 *)iconClutPtr, &clut[1], 15);
 	
 	// Load the image from the icon pixel data.
 	//

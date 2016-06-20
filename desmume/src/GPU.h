@@ -1638,12 +1638,14 @@ extern CACHE_ALIGN const u8 material_3bit_to_6bit[8];
 extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
 
 extern CACHE_ALIGN u32 color_555_to_6665_opaque[32768];
+extern CACHE_ALIGN u32 color_555_to_6665_opaque_swap_rb[32768];
 extern CACHE_ALIGN u32 color_555_to_666[32768];
 extern CACHE_ALIGN u32 color_555_to_8888_opaque[32768];
 extern CACHE_ALIGN u32 color_555_to_8888_opaque_swap_rb[32768];
 extern CACHE_ALIGN u32 color_555_to_888[32768];
 
 #define COLOR555TO6665_OPAQUE(col) (color_555_to_6665_opaque[(col)])					// Convert a 15-bit color to an opaque sparsely packed 32-bit color containing an RGBA6665 color
+#define COLOR555TO6665_OPAQUE_SWAP_RB(col) (color_555_to_6665_opaque_swap_rb[(col)])	// Convert a 15-bit color to an opaque sparsely packed 32-bit color containing an RGBA6665 color with R and B components swapped
 #define COLOR555TO666(col) (color_555_to_666[(col)])									// Convert a 15-bit color to a fully transparent sparsely packed 32-bit color containing an RGBA6665 color
 
 #ifdef LOCAL_LE
@@ -1679,6 +1681,12 @@ template <bool SWAP_RB>
 FORCEINLINE u32 ConvertColor555To8888Opaque(const u16 src)
 {
 	return (SWAP_RB) ? COLOR555TO8888_OPAQUE_SWAP_RB(src & 0x7FFF) : COLOR555TO8888_OPAQUE(src & 0x7FFF);
+}
+
+template <bool SWAP_RB>
+FORCEINLINE u32 ConvertColor555To6665Opaque(const u16 src)
+{
+	return (SWAP_RB) ? COLOR555TO6665_OPAQUE_SWAP_RB(src & 0x7FFF) : COLOR555TO6665_OPAQUE(src & 0x7FFF);
 }
 
 template <bool SWAP_RB>
@@ -1783,6 +1791,41 @@ FORCEINLINE void ConvertColor555To8888Opaque(const __m128i src, __m128i &dstLo, 
 		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 10), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_srli_epi32(src, 15), _mm_set1_epi32(0x00000700))) );
 		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src,  7), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_srli_epi32(src, 12), _mm_set1_epi32(0x00070000))) );
 		dstHi = _mm_or_si128(dstHi, _mm_set1_epi32(0xFF000000));
+	}
+	
+	__m128i tmpDstLo = dstLo;
+	dstLo = _mm_or_si128( _mm_and_si128(_mm_shuffle_epi32(tmpDstLo, 0xD8), _mm_set_epi32(0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF)), _mm_and_si128(_mm_shuffle_epi32(dstHi, 0x72), _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000)) );
+	dstHi = _mm_or_si128( _mm_and_si128(_mm_shuffle_epi32(tmpDstLo, 0x72), _mm_set_epi32(0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF)), _mm_and_si128(_mm_shuffle_epi32(dstHi, 0xD8), _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000)) );
+}
+
+template <bool SWAP_RB>
+FORCEINLINE void ConvertColor555To6665Opaque(const __m128i src, __m128i &dstLo, __m128i &dstHi)
+{
+	// Conversion algorithm:
+	//    RGB   5-bit to 6-bit formula: dstRGB8 = (srcRGB5 << 1) | ((srcRGB5 >> 4) & 0x01)
+	if (SWAP_RB)
+	{
+		dstLo =                     _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src, 17), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(src, 12), _mm_set1_epi32(0x00010000)));
+		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(src,  1), _mm_set1_epi32(0x00000100))) );
+		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src,  9), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(src, 14), _mm_set1_epi32(0x00000001))) );
+		dstLo = _mm_or_si128(dstLo, _mm_set1_epi32(0x1F000000));
+		
+		dstHi =                     _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  1), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_srli_epi32(src,  4), _mm_set1_epi32(0x00010000)));
+		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 12), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(src, 17), _mm_set1_epi32(0x00000100))) );
+		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 25), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(src, 30), _mm_set1_epi32(0x00000001))) );
+		dstHi = _mm_or_si128(dstHi, _mm_set1_epi32(0x1F000000));
+	}
+	else
+	{
+		dstLo =                     _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  1), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(src,  4), _mm_set1_epi32(0x00000001)));
+		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(src,  1), _mm_set1_epi32(0x00000100))) );
+		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  7), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(src,  2), _mm_set1_epi32(0x00010000))) );
+		dstLo = _mm_or_si128(dstLo, _mm_set1_epi32(0x1F000000));
+		
+		dstHi =                     _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 15), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(src, 20), _mm_set1_epi32(0x00000001)));
+		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 12), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(src, 17), _mm_set1_epi32(0x00000100))) );
+		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src,  9), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_srli_epi32(src, 14), _mm_set1_epi32(0x00010000))) );
+		dstHi = _mm_or_si128(dstHi, _mm_set1_epi32(0x1F000000));
 	}
 	
 	__m128i tmpDstLo = dstLo;
@@ -1957,10 +2000,13 @@ FORCEINLINE __m128i ConvertColor6665To5551(const __m128i srcLo, const __m128i sr
 
 #endif
 
-template<bool SWAP_RB> void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB, bool UNALIGNED> void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB, bool UNALIGNED> void ConvertColorBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+
 template<bool SWAP_RB> void ConvertColorBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount);
 template<bool SWAP_RB> void ConvertColorBuffer6665To8888(const u32 *src, u32 *dst, size_t pixCount);
-template<bool SWAP_RB> void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
-template<bool SWAP_RB> void ConvertColorBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+
+template<bool SWAP_RB, bool UNALIGNED> void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB, bool UNALIGNED> void ConvertColorBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
 
 #endif

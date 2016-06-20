@@ -625,11 +625,11 @@ Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFram
 	{
 		if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
 		{
-			ConvertColorBuffer6665To5551<false>((u32 *)srcFramebuffer, dstRGBA5551, pixCount);
+			ConvertColorBuffer6665To5551<false, false>((u32 *)srcFramebuffer, dstRGBA5551, pixCount);
 		}
 		else if (this ->_outputFormat == NDSColorFormat_BGR888_Rev)
 		{
-			ConvertColorBuffer8888To5551<false>((u32 *)srcFramebuffer, dstRGBA5551, pixCount);
+			ConvertColorBuffer8888To5551<false, false>((u32 *)srcFramebuffer, dstRGBA5551, pixCount);
 		}
 	}
 	

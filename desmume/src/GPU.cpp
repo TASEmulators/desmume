@@ -50,6 +50,7 @@
 u32 Render3DFramesPerSecond;
 
 CACHE_ALIGN u32 color_555_to_6665_opaque[32768];
+CACHE_ALIGN u32 color_555_to_6665_opaque_swap_rb[32768];
 CACHE_ALIGN u32 color_555_to_666[32768];
 CACHE_ALIGN u32 color_555_to_8888_opaque[32768];
 CACHE_ALIGN u32 color_555_to_8888_opaque_swap_rb[32768];
@@ -4387,15 +4388,15 @@ void GPUEngineBase::_HandleDisplayModeOff(const size_t l)
 	switch (GPU->GetDisplayInfo().colorFormat)
 	{
 		case NDSColorFormat_BGR555_Rev:
-			memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>((u16 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH), 0x7FFF);
+			memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>((u16 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH), 0xFFFF);
 			break;
 			
 		case NDSColorFormat_BGR666_Rev:
-			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>((u32 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH), 0x003F3F3F);
+			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>((u32 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH), 0x1F3F3F3F);
 			break;
 			
 		case NDSColorFormat_BGR888_Rev:
-			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>((u32 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH), 0x00FFFFFF);
+			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>((u32 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH), 0xFFFFFFFF);
 			break;
 	}
 }
@@ -5915,11 +5916,7 @@ void GPUEngineA::_HandleDisplayModeVRAM(const size_t l)
 			{
 				const u16 *src = this->_VRAMNativeBlockPtr[DISPCNT.VRAM_Block] + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 				FragmentColor *dst = (FragmentColor *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
-				
-				for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
-				{
-					dst[i].color = COLOR555TO6665_OPAQUE(src[i] & 0x7FFF);
-				}
+				ConvertColorBuffer555To6665Opaque<false, false>(src, (u32 *)dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 				break;
 			}
 				
@@ -5927,11 +5924,7 @@ void GPUEngineA::_HandleDisplayModeVRAM(const size_t l)
 			{
 				const u16 *src = this->_VRAMNativeBlockPtr[DISPCNT.VRAM_Block] + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 				FragmentColor *dst = (FragmentColor *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
-				
-				for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
-				{
-					dst[i].color = COLOR555TO8888_OPAQUE(src[i] & 0x7FFF);
-				}
+				ConvertColorBuffer555To8888Opaque<false, false>(src, (u32 *)dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 				break;
 			}
 		}
@@ -5951,11 +5944,7 @@ void GPUEngineA::_HandleDisplayModeVRAM(const size_t l)
 			{
 				const u16 *src = this->_VRAMCustomBlockPtr[DISPCNT.VRAM_Block] + (_gpuDstLineIndex[l] * customWidth);
 				FragmentColor *dst = (FragmentColor *)this->customBuffer + (_gpuDstLineIndex[l] * customWidth);
-				
-				for (size_t i = 0; i < customPixCount; i++)
-				{
-					dst[i].color = COLOR555TO6665_OPAQUE(src[i] & 0x7FFF);
-				}
+				ConvertColorBuffer555To6665Opaque<false, false>(src, (u32 *)dst, customPixCount);
 				break;
 			}
 				
@@ -5963,11 +5952,7 @@ void GPUEngineA::_HandleDisplayModeVRAM(const size_t l)
 			{
 				const u16 *src = this->_VRAMCustomBlockPtr[DISPCNT.VRAM_Block] + (_gpuDstLineIndex[l] * customWidth);
 				FragmentColor *dst = (FragmentColor *)this->customBuffer + (_gpuDstLineIndex[l] * customWidth);
-				
-				for (size_t i = 0; i < customPixCount; i++)
-				{
-					dst[i].color = COLOR555TO8888_OPAQUE(src[i] & 0x7FFF);
-				}
+				ConvertColorBuffer555To8888Opaque<false, false>(src, (u32 *)dst, customPixCount);
 				break;
 			}
 		}
@@ -5993,17 +5978,17 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const size_t l)
 			u32 *dst = dstColorLine;
 			
 #ifdef ENABLE_SSE2
-			const __m128i fifoMask = _mm_set1_epi32(0x7FFF7FFF);
+			const __m128i alphaBit = _mm_set1_epi16(0x8000);
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(__m128i); i++)
 			{
 				__m128i fifoColor = _mm_set_epi32(DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv(), DISP_FIFOrecv());
 				fifoColor = _mm_shuffle_epi32(fifoColor, 0x1B); // We need to shuffle the four FIFO values back into the correct order, since they were originally loaded in reverse order.
-				_mm_store_si128((__m128i *)dst + i, _mm_and_si128(fifoColor, fifoMask));
+				_mm_store_si128((__m128i *)dst + i, _mm_or_si128(fifoColor, alphaBit));
 			}
 #else
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16) / sizeof(u32); i++)
 			{
-				dst[i] = DISP_FIFOrecv() & 0x7FFF7FFF;
+				dst[i] = DISP_FIFOrecv() | 0x80008000;
 			}
 #endif
 			break;
@@ -6323,14 +6308,17 @@ GPUSubsystem::GPUSubsystem()
 	
 	if (needInitTables)
 	{
-#define RGB15TO18_BITLOGIC(col) ( (material_5bit_to_6bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_6bit[((col)>>5)&0x1F]<<8) | material_5bit_to_6bit[(col)&0x1F] )
-#define RGB15TO24_BITLOGIC(col) ( (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[(col)&0x1F] )
-#define RGB15TO24_SWAP_RB_BITLOGIC(col) ( material_5bit_to_8bit[((col)>>10)&0x1F] | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | (material_5bit_to_8bit[(col)&0x1F]<<16) )
+#define RGB15TO18_BITLOGIC(col)         ( (material_5bit_to_6bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_6bit[((col)>>5)&0x1F]<<8) |  material_5bit_to_6bit[(col)&0x1F] )
+#define RGB15TO18_SWAP_RB_BITLOGIC(col) (  material_5bit_to_6bit[((col)>>10)&0x1F]      | (material_5bit_to_6bit[((col)>>5)&0x1F]<<8) | (material_5bit_to_6bit[(col)&0x1F]<<16) )
+#define RGB15TO24_BITLOGIC(col)         ( (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) |  material_5bit_to_8bit[(col)&0x1F] )
+#define RGB15TO24_SWAP_RB_BITLOGIC(col) (  material_5bit_to_8bit[((col)>>10)&0x1F]      | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | (material_5bit_to_8bit[(col)&0x1F]<<16) )
 		
 		for (size_t i = 0; i < 32768; i++)
 		{
 			color_555_to_666[i]					= LE_TO_LOCAL_32( RGB15TO18_BITLOGIC(i) );
 			color_555_to_6665_opaque[i]			= LE_TO_LOCAL_32( RGB15TO18_BITLOGIC(i) | 0x1F000000 );
+			color_555_to_6665_opaque_swap_rb[i]	= LE_TO_LOCAL_32( RGB15TO18_SWAP_RB_BITLOGIC(i) | 0x1F000000 );
+			
 			color_555_to_888[i]					= LE_TO_LOCAL_32( RGB15TO24_BITLOGIC(i) );
 			color_555_to_8888_opaque[i]			= LE_TO_LOCAL_32( RGB15TO24_BITLOGIC(i) | 0xFF000000 );
 			color_555_to_8888_opaque_swap_rb[i]	= LE_TO_LOCAL_32( RGB15TO24_SWAP_RB_BITLOGIC(i) | 0xFF000000 );
@@ -7081,8 +7069,8 @@ void NDSDisplay::SetEngineByID(const GPUEngineID theID)
 	this->_gpu->SetDisplayByID(this->_ID);
 }
 
-template <bool SWAP_RB>
-void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *dst, size_t pixCount)
+template <bool SWAP_RB, bool UNALIGNED>
+void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount)
 {
 	size_t i = 0;
 	
@@ -7090,18 +7078,58 @@ void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *dst, size
 	const size_t ssePixCount = pixCount - (pixCount % 8);
 	for (; i < ssePixCount; i += 8)
 	{
-		__m128i src_vec128 = _mm_load_si128((__m128i *)(src + i));
+		__m128i src_vec128 = (UNALIGNED) ? _mm_loadu_si128((__m128i *)(src + i)) : _mm_load_si128((__m128i *)(src + i));
 		__m128i dstConvertedLo, dstConvertedHi;
 		ConvertColor555To8888Opaque<SWAP_RB>(src_vec128, dstConvertedLo, dstConvertedHi);
 		
-		_mm_store_si128((__m128i *)(dst + i + 0), dstConvertedLo);
-		_mm_store_si128((__m128i *)(dst + i + 4), dstConvertedHi);
+		if (UNALIGNED)
+		{
+			_mm_storeu_si128((__m128i *)(dst + i + 0), dstConvertedLo);
+			_mm_storeu_si128((__m128i *)(dst + i + 4), dstConvertedHi);
+		}
+		else
+		{
+			_mm_store_si128((__m128i *)(dst + i + 0), dstConvertedLo);
+			_mm_store_si128((__m128i *)(dst + i + 4), dstConvertedHi);
+		}
 	}
 #endif
 	
 	for (; i < pixCount; i++)
 	{
 		dst[i] = ConvertColor555To8888Opaque<SWAP_RB>(src[i]);
+	}
+}
+
+template <bool SWAP_RB, bool UNALIGNED>
+void ConvertColorBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount)
+{
+	size_t i = 0;
+	
+#ifdef ENABLE_SSE2
+	const size_t ssePixCount = pixCount - (pixCount % 8);
+	for (; i < ssePixCount; i += 8)
+	{
+		__m128i src_vec128 = (UNALIGNED) ? _mm_loadu_si128((__m128i *)(src + i)) : _mm_load_si128((__m128i *)(src + i));
+		__m128i dstConvertedLo, dstConvertedHi;
+		ConvertColor555To6665Opaque<SWAP_RB>(src_vec128, dstConvertedLo, dstConvertedHi);
+		
+		if (UNALIGNED)
+		{
+			_mm_storeu_si128((__m128i *)(dst + i + 0), dstConvertedLo);
+			_mm_storeu_si128((__m128i *)(dst + i + 4), dstConvertedHi);
+		}
+		else
+		{
+			_mm_store_si128((__m128i *)(dst + i + 0), dstConvertedLo);
+			_mm_store_si128((__m128i *)(dst + i + 4), dstConvertedHi);
+		}
+	}
+#endif
+	
+	for (; i < pixCount; i++)
+	{
+		dst[i] = ConvertColor555To6665Opaque<SWAP_RB>(src[i]);
 	}
 }
 
@@ -7143,7 +7171,7 @@ void ConvertColorBuffer6665To8888(const u32 *src, u32 *dst, size_t pixCount)
 	}
 }
 
-template <bool SWAP_RB>
+template <bool SWAP_RB, bool UNALIGNED>
 void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount)
 {
 	size_t i = 0;
@@ -7152,7 +7180,14 @@ void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst
 	const size_t ssePixCount = pixCount - (pixCount % 8);
 	for (; i < ssePixCount; i += 8)
 	{
-		_mm_store_si128( (__m128i *)(dst + i), ConvertColor8888To5551<SWAP_RB>(_mm_load_si128((__m128i *)(src + i)), _mm_load_si128((__m128i *)(src + i + 4))) );
+		if (UNALIGNED)
+		{
+			_mm_storeu_si128( (__m128i *)(dst + i), ConvertColor8888To5551<SWAP_RB>(_mm_loadu_si128((__m128i *)(src + i)), _mm_loadu_si128((__m128i *)(src + i + 4))) );
+		}
+		else
+		{
+			_mm_store_si128( (__m128i *)(dst + i), ConvertColor8888To5551<SWAP_RB>(_mm_load_si128((__m128i *)(src + i)), _mm_load_si128((__m128i *)(src + i + 4))) );
+		}
 	}
 #endif
 	
@@ -7162,7 +7197,7 @@ void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst
 	}
 }
 
-template <bool SWAP_RB>
+template <bool SWAP_RB, bool UNALIGNED>
 void ConvertColorBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount)
 {
 	size_t i = 0;
@@ -7171,7 +7206,14 @@ void ConvertColorBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst
 	const size_t ssePixCount = pixCount - (pixCount % 8);
 	for (; i < ssePixCount; i += 8)
 	{
-		_mm_store_si128( (__m128i *)(dst + i), ConvertColor6665To5551<SWAP_RB>(_mm_load_si128((__m128i *)(src + i)), _mm_load_si128((__m128i *)(src + i + 4))) );
+		if (UNALIGNED)
+		{
+			_mm_storeu_si128( (__m128i *)(dst + i), ConvertColor6665To5551<SWAP_RB>(_mm_loadu_si128((__m128i *)(src + i)), _mm_loadu_si128((__m128i *)(src + i + 4))) );
+		}
+		else
+		{
+			_mm_store_si128( (__m128i *)(dst + i), ConvertColor6665To5551<SWAP_RB>(_mm_load_si128((__m128i *)(src + i)), _mm_load_si128((__m128i *)(src + i + 4))) );
+		}
 	}
 #endif
 	
@@ -7217,8 +7259,15 @@ template void GPUEngineBase::RenderLayerBG<GPULayerID_BG1>(u16 *dstColorBuffer);
 template void GPUEngineBase::RenderLayerBG<GPULayerID_BG2>(u16 *dstColorBuffer);
 template void GPUEngineBase::RenderLayerBG<GPULayerID_BG3>(u16 *dstColorBuffer);
 
-template void ConvertColorBuffer555To8888Opaque<true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer555To8888Opaque<false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer555To8888Opaque<true, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer555To8888Opaque<true, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer555To8888Opaque<false, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer555To8888Opaque<false, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+
+template void ConvertColorBuffer555To6665Opaque<true, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer555To6665Opaque<true, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer555To6665Opaque<false, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer555To6665Opaque<false, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 
 template void ConvertColorBuffer8888To6665<true>(const u32 *src, u32 *dst, size_t pixCount);
 template void ConvertColorBuffer8888To6665<false>(const u32 *src, u32 *dst, size_t pixCount);
@@ -7226,8 +7275,12 @@ template void ConvertColorBuffer8888To6665<false>(const u32 *src, u32 *dst, size
 template void ConvertColorBuffer6665To8888<true>(const u32 *src, u32 *dst, size_t pixCount);
 template void ConvertColorBuffer6665To8888<false>(const u32 *src, u32 *dst, size_t pixCount);
 
-template void ConvertColorBuffer8888To5551<true>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer8888To5551<false>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer8888To5551<true, true>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer8888To5551<true, false>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer8888To5551<false, true>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer8888To5551<false, false>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
 
-template void ConvertColorBuffer6665To5551<true>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer6665To5551<false>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer6665To5551<true, true>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer6665To5551<true, false>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer6665To5551<false, true>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template void ConvertColorBuffer6665To5551<false, false>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
