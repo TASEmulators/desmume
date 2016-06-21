@@ -591,12 +591,12 @@ void GPUEngineBase::_ResortBGLayers()
 
 FORCEINLINE u16 GPUEngineBase::_ColorEffectBlend(const u16 colA, const u16 colB, const u16 blendEVA, const u16 blendEVB)
 {
-	u16 ra = (colA & 0x001F);
-	u16 ga = (colA & 0x03E0) >>  5;
-	u16 ba = (colA & 0x7C00) >> 10;
-	u16 rb = (colB & 0x001F);
-	u16 gb = (colB & 0x03E0) >>  5;
-	u16 bb = (colB & 0x7C00) >> 10;
+	u16 ra =  colA        & 0x001F;
+	u16 ga = (colA >>  5) & 0x001F;
+	u16 ba = (colA >> 10) & 0x001F;
+	u16 rb =  colB        & 0x001F;
+	u16 gb = (colB >>  5) & 0x001F;
+	u16 bb = (colB >> 10) & 0x001F;
 	
 	ra = ( (ra * blendEVA) + (rb * blendEVB) ) / 16;
 	if (ra > 31) ra = 31;
@@ -717,9 +717,9 @@ FORCEINLINE u16 GPUEngineBase::_ColorEffectIncreaseBrightness(const u16 col)
 
 FORCEINLINE u16 GPUEngineBase::_ColorEffectIncreaseBrightness(const u16 col, const u16 blendEVY)
 {
-	u16 r = (col & 0x001F);
-	u16 g = (col & 0x03E0) >>  5;
-	u16 b = (col & 0x7C00) >> 10;
+	u16 r =  col        & 0x001F;
+	u16 g = (col >>  5) & 0x001F;
+	u16 b = (col >> 10) & 0x001F;
 	
 	r = (r + ((31 - r) * blendEVY / 16));
 	g = (g + ((31 - g) * blendEVY / 16));
@@ -757,9 +757,9 @@ FORCEINLINE FragmentColor GPUEngineBase::_ColorEffectIncreaseBrightness(const u1
 	FragmentColor newColor;
 	newColor.color = 0;
 	
-	u16 r = (col & 0x001F);
-	u16 g = (col & 0x03E0) >>  5;
-	u16 b = (col & 0x7C00) >> 10;
+	u16 r =  col        & 0x001F;
+	u16 g = (col >>  5) & 0x001F;
+	u16 b = (col >> 10) & 0x001F;
 	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 	{
@@ -834,9 +834,9 @@ FORCEINLINE u16 GPUEngineBase::_ColorEffectDecreaseBrightness(const u16 col)
 
 FORCEINLINE u16 GPUEngineBase::_ColorEffectDecreaseBrightness(const u16 col, const u16 blendEVY)
 {
-	u16 r = (col & 0x001F);
-	u16 g = (col & 0x03E0) >>  5;
-	u16 b = (col & 0x7C00) >> 10;
+	u16 r =  col        & 0x001F;
+	u16 g = (col >>  5) & 0x001F;
+	u16 b = (col >> 10) & 0x001F;
 	
 	r = (r - (r * blendEVY / 16));
 	g = (g - (g * blendEVY / 16));
@@ -874,9 +874,9 @@ FORCEINLINE FragmentColor GPUEngineBase::_ColorEffectDecreaseBrightness(const u1
 	FragmentColor newColor;
 	newColor.color = 0;
 	
-	u16 r = (col & 0x001F);
-	u16 g = (col & 0x03E0) >>  5;
-	u16 b = (col & 0x7C00) >> 10;
+	u16 r =  col        & 0x001F;
+	u16 g = (col >>  5) & 0x001F;
+	u16 b = (col >> 10) & 0x001F;
 	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 	{
@@ -943,9 +943,9 @@ FORCEINLINE FragmentColor GPUEngineBase::_ColorEffectDecreaseBrightness(const Fr
 
 FORCEINLINE __m128i GPUEngineBase::_ColorEffectIncreaseBrightness(const __m128i &col, const __m128i &blendEVY)
 {
-	__m128i r_vec128 = _mm_and_si128( col, _mm_set1_epi16(0x001F) );
-	__m128i g_vec128 = _mm_srli_epi16( _mm_and_si128(col, _mm_set1_epi16(0x03E0)),  5 );
-	__m128i b_vec128 = _mm_srli_epi16( _mm_and_si128(col, _mm_set1_epi16(0x7C00)), 10 );
+	__m128i r_vec128 = _mm_and_si128(                col,      _mm_set1_epi16(0x001F) );
+	__m128i g_vec128 = _mm_and_si128( _mm_srli_epi16(col,  5), _mm_set1_epi16(0x001F) );
+	__m128i b_vec128 = _mm_and_si128( _mm_srli_epi16(col, 10), _mm_set1_epi16(0x001F) );
 	
 	r_vec128 = _mm_add_epi16( r_vec128, _mm_srli_epi16(_mm_mullo_epi16(_mm_sub_epi16(_mm_set1_epi16(31), r_vec128), blendEVY), 4) );
 	g_vec128 = _mm_add_epi16( g_vec128, _mm_srli_epi16(_mm_mullo_epi16(_mm_sub_epi16(_mm_set1_epi16(31), g_vec128), blendEVY), 4) );
@@ -956,9 +956,9 @@ FORCEINLINE __m128i GPUEngineBase::_ColorEffectIncreaseBrightness(const __m128i 
 
 FORCEINLINE __m128i GPUEngineBase::_ColorEffectDecreaseBrightness(const __m128i &col, const __m128i &blendEVY)
 {
-	__m128i r_vec128 = _mm_and_si128( col, _mm_set1_epi16(0x001F) );
-	__m128i g_vec128 = _mm_srli_epi16( _mm_and_si128(col, _mm_set1_epi16(0x03E0)),  5 );
-	__m128i b_vec128 = _mm_srli_epi16( _mm_and_si128(col, _mm_set1_epi16(0x7C00)), 10 );
+	__m128i r_vec128 = _mm_and_si128(                col,      _mm_set1_epi16(0x001F) );
+	__m128i g_vec128 = _mm_and_si128( _mm_srli_epi16(col,  5), _mm_set1_epi16(0x001F) );
+	__m128i b_vec128 = _mm_and_si128( _mm_srli_epi16(col, 10), _mm_set1_epi16(0x001F) );
 	
 	r_vec128 = _mm_sub_epi16( r_vec128, _mm_srli_epi16(_mm_mullo_epi16(r_vec128, blendEVY), 4) );
 	g_vec128 = _mm_sub_epi16( g_vec128, _mm_srli_epi16(_mm_mullo_epi16(g_vec128, blendEVY), 4) );
@@ -969,12 +969,12 @@ FORCEINLINE __m128i GPUEngineBase::_ColorEffectDecreaseBrightness(const __m128i 
 
 FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend(const __m128i &colA, const __m128i &colB, const __m128i &blendEVA, const __m128i &blendEVB)
 {
-	__m128i ra_vec128 = _mm_and_si128( colA, _mm_set1_epi16(0x001F) );
-	__m128i ga_vec128 = _mm_srli_epi16( _mm_and_si128(colA, _mm_set1_epi16(0x03E0)),  5 );
-	__m128i ba_vec128 = _mm_srli_epi16( _mm_and_si128(colA, _mm_set1_epi16(0x7C00)), 10 );
-	__m128i rb_vec128 = _mm_and_si128( colB, _mm_set1_epi16(0x001F) );
-	__m128i gb_vec128 = _mm_srli_epi16( _mm_and_si128(colB, _mm_set1_epi16(0x03E0)),  5 );
-	__m128i bb_vec128 = _mm_srli_epi16( _mm_and_si128(colB, _mm_set1_epi16(0x7C00)), 10 );
+	__m128i ra_vec128 = _mm_and_si128(                colA,      _mm_set1_epi16(0x001F) );
+	__m128i ga_vec128 = _mm_and_si128( _mm_srli_epi16(colA,  5), _mm_set1_epi16(0x001F) );
+	__m128i ba_vec128 = _mm_and_si128( _mm_srli_epi16(colA, 10), _mm_set1_epi16(0x001F) );
+	__m128i rb_vec128 = _mm_and_si128(                colB,      _mm_set1_epi16(0x001F) );
+	__m128i gb_vec128 = _mm_and_si128( _mm_srli_epi16(colB,  5), _mm_set1_epi16(0x001F) );
+	__m128i bb_vec128 = _mm_and_si128( _mm_srli_epi16(colB, 10), _mm_set1_epi16(0x001F) );
 	
 	ra_vec128 = _mm_srli_epi16( _mm_add_epi16( _mm_mullo_epi16(ra_vec128, blendEVA), _mm_mullo_epi16(rb_vec128, blendEVB)), 4 );
 	ra_vec128 = _mm_min_epi16(ra_vec128, _mm_set1_epi16(31));
@@ -990,19 +990,19 @@ FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend(const __m128i &colA, const 
 
 FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend3D(const __m128i &colA_Lo, const __m128i &colA_Hi, const __m128i &colB)
 {
-	__m128i rb = _mm_slli_epi16( _mm_and_si128(_mm_set1_epi16(0x001F), colB), 1);
-	__m128i gb = _mm_srli_epi16( _mm_and_si128(_mm_set1_epi16(0x03E0), colB), 4);
-	__m128i bb = _mm_srli_epi16( _mm_and_si128(_mm_set1_epi16(0x7C00), colB), 9);
+	__m128i rb = _mm_and_si128( _mm_slli_epi16(colB, 1), _mm_set1_epi16(0x003E) );
+	__m128i gb = _mm_and_si128( _mm_srli_epi16(colB, 4), _mm_set1_epi16(0x003E) );
+	__m128i bb = _mm_and_si128( _mm_srli_epi16(colB, 9), _mm_set1_epi16(0x003E) );
 	
-	__m128i ra_lo = _mm_and_si128(_mm_set1_epi32(0x000000FF), colA_Lo);
-	__m128i ga_lo = _mm_srli_epi32( _mm_and_si128(_mm_set1_epi32(0x0000FF00), colA_Lo), 8 );
-	__m128i ba_lo = _mm_srli_epi32( _mm_and_si128(_mm_set1_epi32(0x00FF0000), colA_Lo), 16 );
-	__m128i aa_lo = _mm_srli_epi32( _mm_and_si128(_mm_set1_epi32(0xFF000000), colA_Lo), 24 );
+	__m128i ra_lo = _mm_and_si128(                colA_Lo,      _mm_set1_epi32(0x000000FF) );
+	__m128i ga_lo = _mm_and_si128( _mm_srli_epi32(colA_Lo,  8), _mm_set1_epi32(0x000000FF) );
+	__m128i ba_lo = _mm_and_si128( _mm_srli_epi32(colA_Lo, 16), _mm_set1_epi32(0x000000FF) );
+	__m128i aa_lo = _mm_and_si128( _mm_srli_epi32(colA_Lo, 24), _mm_set1_epi32(0x000000FF) );
 	
-	__m128i ra_hi = _mm_and_si128(_mm_set1_epi32(0x000000FF), colA_Hi);
-	__m128i ga_hi = _mm_srli_epi32( _mm_and_si128(_mm_set1_epi32(0x0000FF00), colA_Hi), 8 );
-	__m128i ba_hi = _mm_srli_epi32( _mm_and_si128(_mm_set1_epi32(0x00FF0000), colA_Hi), 16 );
-	__m128i aa_hi = _mm_srli_epi32( _mm_and_si128(_mm_set1_epi32(0xFF000000), colA_Hi), 24 );
+	__m128i ra_hi = _mm_and_si128(                colA_Hi,      _mm_set1_epi32(0x000000FF) );
+	__m128i ga_hi = _mm_and_si128( _mm_srli_epi32(colA_Hi,  8), _mm_set1_epi32(0x000000FF) );
+	__m128i ba_hi = _mm_and_si128( _mm_srli_epi32(colA_Hi, 16), _mm_set1_epi32(0x000000FF) );
+	__m128i aa_hi = _mm_and_si128( _mm_srli_epi32(colA_Hi, 24), _mm_set1_epi32(0x000000FF) );
 	
 	__m128i ra = _mm_packs_epi32(ra_lo, ra_hi);
 	__m128i ga = _mm_packs_epi32(ga_lo, ga_hi);
