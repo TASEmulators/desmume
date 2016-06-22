@@ -369,7 +369,7 @@ static const char *fragmentShader_100 = {"\
 		gl_FragData[0] = newFragColor;\n\
 		gl_FragData[1] = vec4( packVec3FromFloat(newFragDepth), float(polyEnableDepthWrite && (newFragColor.a > 0.999 || polySetNewDepthForTranslucent)));\n\
 		gl_FragData[2] = vec4(float(polyID)/63.0, 0.0, 0.0, float(newFragColor.a > 0.999));\n\
-		gl_FragData[3] = vec4(float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.0));\n\
+		gl_FragData[3] = vec4(float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5));\n\
 		gl_FragDepth = newFragDepth;\n\
 	} \n\
 "};
