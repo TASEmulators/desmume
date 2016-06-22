@@ -251,7 +251,7 @@ static const char *GeometryFragShader_150 = {"\
 		outFragColor = newFragColor;\n\
 		outFragDepth = vec4( packVec3FromFloat(newFragDepth), float(bool(polyEnableDepthWrite) && (newFragColor.a > 0.999 || bool(polySetNewDepthForTranslucent))));\n\
 		outPolyID = vec4(float(polyID)/63.0, 0.0, 0.0, float(newFragColor.a > 0.999));\n\
-		outFogAttributes = vec4(float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5));\n\
+		outFogAttributes = vec4(float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.0));\n\
 		gl_FragDepth = newFragDepth;\n\
 	} \n\
 "};
@@ -1359,7 +1359,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	state->fogColor.g = divide5bitBy31_LUT[(engine.renderState.fogColor >>  5) & 0x0000001F];
 	state->fogColor.b = divide5bitBy31_LUT[(engine.renderState.fogColor >> 10) & 0x0000001F];
 	state->fogColor.a = divide5bitBy31_LUT[(engine.renderState.fogColor >> 16) & 0x0000001F];
-	state->fogOffset = (GLfloat)engine.renderState.fogOffset / 32767.0f;
+	state->fogOffset = (GLfloat)(engine.renderState.fogOffset & 0x7FFF) / 32767.0f;
 	state->fogStep = (GLfloat)(0x0400 >> engine.renderState.fogShift) / 32767.0f;
 	
 	for (size_t i = 0; i < 32; i++)
@@ -1408,7 +1408,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		
 		polyStates[i].enableTexture = (texParams.texFormat != TEXMODE_NONE && engine.renderState.enableTexturing) ? GL_TRUE : GL_FALSE;
 		polyStates[i].enableFog = (polyAttr.enableRenderFog && !(polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0)) ? GL_TRUE : GL_FALSE;
-		polyStates[i].enableDepthWrite = ((!polyAttr.isTranslucent || polyAttr.enableAlphaDepthWrite) && !(polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0)) ? GL_TRUE : GL_FALSE;
+		polyStates[i].enableDepthWrite = !(polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0) ? GL_TRUE : GL_FALSE;
 		polyStates[i].setNewDepthForTranslucent = (polyAttr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
 		polyStates[i].polyAlpha = (!polyAttr.isWireframe && polyAttr.isTranslucent) ? polyAttr.alpha : 0x1F;
 		polyStates[i].polyMode = polyAttr.polygonMode;
