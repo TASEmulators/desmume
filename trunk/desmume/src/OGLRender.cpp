@@ -369,7 +369,7 @@ static const char *fragmentShader_100 = {"\
 		gl_FragData[0] = newFragColor;\n\
 		gl_FragData[1] = vec4( packVec3FromFloat(newFragDepth), float(polyEnableDepthWrite && (newFragColor.a > 0.999 || polySetNewDepthForTranslucent)));\n\
 		gl_FragData[2] = vec4(float(polyID)/63.0, 0.0, 0.0, float(newFragColor.a > 0.999));\n\
-		gl_FragData[3] = vec4(float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5));\n\
+		gl_FragData[3] = vec4(float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.0));\n\
 		gl_FragDepth = newFragDepth;\n\
 	} \n\
 "};
@@ -2902,10 +2902,10 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 	{
 		OGLRenderRef &OGLRef = *this->ref;
 		glUniform1i(OGLRef.uniformPolyMode, attr.polygonMode);
-		glUniform1i(OGLRef.uniformPolyEnableFog, (attr.enableRenderFog) ? GL_TRUE : GL_FALSE);
+		glUniform1i(OGLRef.uniformPolyEnableFog, (attr.enableRenderFog && !(attr.polygonMode == POLYGON_MODE_SHADOW && attr.polygonID == 0)) ? GL_TRUE : GL_FALSE);
 		glUniform1f(OGLRef.uniformPolyAlpha, (!attr.isWireframe && attr.isTranslucent) ? divide5bitBy31_LUT[attr.alpha] : 1.0f);
 		glUniform1i(OGLRef.uniformPolyID, attr.polygonID);
-		glUniform1i(OGLRef.uniformPolyEnableDepthWrite, enableDepthWrite);
+		glUniform1i(OGLRef.uniformPolyEnableDepthWrite, (!(attr.polygonMode == POLYGON_MODE_SHADOW && attr.polygonID == 0)) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformPolySetNewDepthForTranslucent, (attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	}
 	else
@@ -4457,7 +4457,7 @@ Render3DError OpenGLRenderer_2_0::RenderFog(const u8 *densityTable, const u32 co
 								   divide5bitBy31_LUT[(color >> 10) & 0x0000001F],
 								   divide5bitBy31_LUT[(color >> 16) & 0x0000001F]};
 	
-	const GLfloat oglOffset = (GLfloat)offset / 32767.0f;
+	const GLfloat oglOffset = (GLfloat)(offset & 0x7FFF) / 32767.0f;
 	const GLfloat oglFogStep = (GLfloat)(0x0400 >> shift) / 32767.0f;
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
@@ -4575,10 +4575,10 @@ Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY &thePoly)
 	// Set up polygon attributes
 	OGLRenderRef &OGLRef = *this->ref;
 	glUniform1i(OGLRef.uniformPolyMode, attr.polygonMode);
-	glUniform1i(OGLRef.uniformPolyEnableFog, (attr.enableRenderFog) ? GL_TRUE : GL_FALSE);
+	glUniform1i(OGLRef.uniformPolyEnableFog, (attr.enableRenderFog && !(attr.polygonMode == POLYGON_MODE_SHADOW && attr.polygonID == 0)) ? GL_TRUE : GL_FALSE);
 	glUniform1f(OGLRef.uniformPolyAlpha, (!attr.isWireframe && attr.isTranslucent) ? divide5bitBy31_LUT[attr.alpha] : 1.0f);
 	glUniform1i(OGLRef.uniformPolyID, attr.polygonID);
-	glUniform1i(OGLRef.uniformPolyEnableDepthWrite, enableDepthWrite);
+	glUniform1i(OGLRef.uniformPolyEnableDepthWrite, (!(attr.polygonMode == POLYGON_MODE_SHADOW && attr.polygonID == 0)) ? GL_TRUE : GL_FALSE);
 	glUniform1i(OGLRef.uniformPolySetNewDepthForTranslucent, (attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	
 	return OGLERROR_NOERR;
