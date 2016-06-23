@@ -1802,7 +1802,7 @@ template <bool SWAP_RB>
 FORCEINLINE void ConvertColor555To6665Opaque(const __m128i src, __m128i &dstLo, __m128i &dstHi)
 {
 	// Conversion algorithm:
-	//    RGB   5-bit to 6-bit formula: dstRGB8 = (srcRGB5 << 1) | ((srcRGB5 >> 4) & 0x01)
+	//    RGB   5-bit to 6-bit formula: dstRGB6 = (srcRGB5 << 1) | ((srcRGB5 >> 4) & 0x01)
 	if (SWAP_RB)
 	{
 		dstLo =                     _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src, 17), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(src, 12), _mm_set1_epi32(0x00010000)));
@@ -1836,6 +1836,9 @@ FORCEINLINE void ConvertColor555To6665Opaque(const __m128i src, __m128i &dstLo, 
 template <bool SWAP_RB>
 FORCEINLINE __m128i ConvertColor8888To6665(const __m128i src)
 {
+	// Conversion algorithm:
+	//    RGB   8-bit to 6-bit formula: dstRGB6 = (srcRGB8 >> 2)
+	//    Alpha 8-bit to 6-bit formula: dstA5   = (srcA8   >> 3)
 	__m128i rgb;
 	const __m128i a = _mm_and_si128( _mm_srli_epi32(src, 3), _mm_set1_epi32(0x1F000000) );
 	

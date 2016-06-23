@@ -995,6 +995,10 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 					_mm_store_si128( (__m128i *)(dstRGBA5551 + i), ConvertColor8888To5551<true>(srcColorLo, srcColorHi) );
 				}
 #endif
+				
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 				for (; i < pixCount; i++)
 				{
 					dstFramebuffer[i].color = ConvertColor8888To6665<true>(srcFramebuffer[i]);
@@ -1025,6 +1029,10 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 					_mm_store_si128( (__m128i *)(dstFramebuffer + i + 4), srcColorHi );
 					_mm_store_si128( (__m128i *)(dstRGBA5551 + i), ConvertColor8888To5551<true>(srcColorLo, srcColorHi) );
 				}
+#endif
+				
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
 #endif
 				for (; i < pixCount; i++)
 				{
@@ -1064,6 +1072,10 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 						_mm_store_si128( (__m128i *)(dstFramebuffer + iw + 4), ConvertColor8888To6665<true>(srcColorHi) );
 						_mm_store_si128( (__m128i *)(dstRGBA5551 + iw), ConvertColor8888To5551<true>(srcColorLo, srcColorHi) );
 					}
+#endif
+					
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
 #endif
 					for (; x < pixCount; x++, ir++, iw++)
 					{
@@ -1105,6 +1117,10 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 						_mm_store_si128( (__m128i *)(dstFramebuffer + iw + 4), srcColorHi );
 						_mm_store_si128( (__m128i *)(dstRGBA5551 + iw), ConvertColor8888To5551<true>(srcColorLo, srcColorHi) );
 					}
+#endif
+					
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
 #endif
 					for (; x < pixCount; x++, ir++, iw++)
 					{

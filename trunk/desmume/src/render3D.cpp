@@ -237,6 +237,9 @@ void FragmentAttributesBuffer::SetAll(const FragmentAttributes &attr)
 	}
 #endif
 	
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 	for (; i < count; i++)
 	{
 		this->SetAtIndex(i, attr);
