@@ -35,13 +35,13 @@
 
 //enforce a constraint: gdb stub requires developer
 #if defined(GDB_STUB) && !defined(DEVELOPER)
-#define DEVELOPER
+	#define DEVELOPER
 #endif
 
 #ifdef DEVELOPER
-#define IF_DEVELOPER(X) X
+	#define IF_DEVELOPER(X) X
 #else
-#define IF_DEVELOPER(X)
+	#define IF_DEVELOPER(X)
 #endif
 
 #ifdef HOST_WINDOWS
@@ -96,19 +96,19 @@
 //dont apply these to types without further testing. it only works portably here on declarations of variables
 //cant we find a pattern other people use more successfully?
 #if _MSC_VER >= 1900
-#define DS_ALIGN(X) alignas(X)
+	#define DS_ALIGN(X) alignas(X)
 #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
-#define DS_ALIGN(X) __declspec(align(X))
+	#define DS_ALIGN(X) __declspec(align(X))
 #elif defined(__GNUC__)
-#define DS_ALIGN(X) __attribute__ ((aligned (X)))
+	#define DS_ALIGN(X) __attribute__ ((aligned (X)))
 #else
-#define DS_ALIGN(X)
+	#define DS_ALIGN(X)
 #endif
 
 #ifdef HOST_64
-#define CACHE_ALIGN_SIZE 64
+	#define CACHE_ALIGN_SIZE 64
 #else
-#define CACHE_ALIGN_SIZE 32
+	#define CACHE_ALIGN_SIZE 32
 #endif
 
 //use this for example when you want a byte value to be better-aligned
@@ -117,49 +117,59 @@
 //---------------------------------------------
 
 #ifdef __MINGW32__
-#define FASTCALL __attribute__((fastcall))
-#define ASMJIT_CALL_CONV kX86FuncConvGccFastCall
+	#define FASTCALL __attribute__((fastcall))
+	#define ASMJIT_CALL_CONV kX86FuncConvGccFastCall
 #elif defined (__i386__) && !defined(__clang__)
-#define FASTCALL __attribute__((regparm(3)))
-#define ASMJIT_CALL_CONV kX86FuncConvGccRegParm3
+	#define FASTCALL __attribute__((regparm(3)))
+	#define ASMJIT_CALL_CONV kX86FuncConvGccRegParm3
 #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
-#define FASTCALL
-#define ASMJIT_CALL_CONV kX86FuncConvDefault
+	#define FASTCALL
+	#define ASMJIT_CALL_CONV kX86FuncConvDefault
 #else
-#define FASTCALL
-#define ASMJIT_CALL_CONV kX86FuncConvDefault
+	#define FASTCALL
+	#define ASMJIT_CALL_CONV kX86FuncConvDefault
 #endif
 
 #ifdef _MSC_VER
-#define _CDECL_ __cdecl
+	#define _CDECL_ __cdecl
 #else
-#define _CDECL_
+	#define _CDECL_
 #endif
 
 #ifndef INLINE
-#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
-#define INLINE _inline
-#else
-#define INLINE inline
-#endif
+	#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
+		#define INLINE _inline
+	#else
+		#define INLINE inline
+	#endif
 #endif
 
 #ifndef FORCEINLINE
-#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
-#define FORCEINLINE __forceinline
-#define MSC_FORCEINLINE __forceinline
-#else
-#define FORCEINLINE inline __attribute__((always_inline)) 
-#define MSC_FORCEINLINE
-#endif
+	#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
+		#define FORCEINLINE __forceinline
+		#define MSC_FORCEINLINE __forceinline
+	#else
+		#define FORCEINLINE inline __attribute__((always_inline))
+		#define MSC_FORCEINLINE
+	#endif
 #endif
 
 #ifndef NOINLINE
-#ifdef __GNUC__
-#define NOINLINE __attribute__((noinline))
-#else
-#define NOINLINE
+	#ifdef __GNUC__
+		#define NOINLINE __attribute__((noinline))
+	#else
+		#define NOINLINE
+	#endif
 #endif
+
+#ifndef LOOPVECTORIZE_DISABLE
+	#if defined(_MSC_VER)
+		#define LOOPVECTORIZE_DISABLE loop(no_vector)
+	#elif defined(__clang__)
+		#define LOOPVECTORIZE_DISABLE clang loop vectorize(disable)
+	#else
+		#define LOOPVECTORIZE_DISABLE
+	#endif
 #endif
 
 #if defined(__LP64__)

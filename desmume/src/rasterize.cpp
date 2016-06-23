@@ -2059,6 +2059,9 @@ Render3DError SoftRasterizerRenderer_SSE2::ClearUsingValues(const FragmentColor 
 		_mm_stream_si128((__m128i *)(this->_framebufferAttributes->isTranslucentPoly + i), attrIsTranslucentPoly_vec128);
 	}
 	
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 	for (; i < pixCount; i++)
 	{
 		this->_framebufferColor[i] = clearColor6665;

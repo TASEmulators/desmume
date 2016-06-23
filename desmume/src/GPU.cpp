@@ -2918,6 +2918,10 @@ void GPUEngineBase::_RenderPixelsCustom(void *__restrict dstColorLine, u8 *__res
 																												   dstLayerID + i);
 		}
 #endif
+		
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 		for (; i < dstPixCount; i++)
 		{
 			if (this->_bgLayerIndexCustom[i] == 0)
@@ -2969,6 +2973,10 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(void *__restrict dstColorLine, u8 *_
 																											   (GPU->GetDisplayInfo().colorFormat == NDSColorFormat_BGR555_Rev) ? (u16 *)(dstColorLine16 + i) : (u16 *)(dstColorLine32 + i),
 																											   dstLayerID + i);
 	}
+#endif
+	
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
 #endif
 	for (; i < dstPixCount; i++)
 	{
@@ -4005,6 +4013,10 @@ void GPUEngineBase::ApplyMasterBrightness()
 							_mm_store_si128( (__m128i *)((u16 *)dst + i), this->_ColorEffectIncreaseBrightness(dstColor_vec128, intensity_vec128) );
 						}
 #endif
+						
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 						for (; i < pixCount; i++)
 						{
 							((u16 *)dst)[i] = GPUEngineBase::_fadeInColors[intensity][ ((u16 *)dst)[i] & 0x7FFF ];
@@ -4077,6 +4089,10 @@ void GPUEngineBase::ApplyMasterBrightness()
 							const __m128i dstColor_vec128 = _mm_load_si128((__m128i *)((u16 *)dst + i));
 							_mm_store_si128( (__m128i *)((u16 *)dst + i), this->_ColorEffectDecreaseBrightness(dstColor_vec128, intensity_vec128) );
 						}
+#endif
+						
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
 #endif
 						for (; i < pixCount; i++)
 						{
@@ -5042,6 +5058,10 @@ void* GPUEngineA::_RenderLine_Layers(const u16 l)
 																	dstLayerIDPtr + dstX);
 								}
 #endif
+								
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 								for (; dstX < customLineWidth; dstX++)
 								{
 									const size_t srcX = dstX;
@@ -5670,6 +5690,10 @@ void GPUEngineA::_RenderLine_DispCapture_Copy(const u16 *src, u16 *dst, const si
 					_mm_store_si128((__m128i *)(dst + i), _mm_or_si128( _mm_load_si128( (__m128i *)(src + i)), alpha_vec128 ) );
 				}
 #endif
+				
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 				for (; i < pixCountExt; i++)
 				{
 					dst[i] = LE_TO_LOCAL_16(src[i] | alphaBit);
@@ -5686,6 +5710,10 @@ void GPUEngineA::_RenderLine_DispCapture_Copy(const u16 *src, u16 *dst, const si
 					{
 						_mm_store_si128((__m128i *)(dst + i), _mm_or_si128( _mm_load_si128( (__m128i *)(src + i)), alpha_vec128 ) );
 					}
+#endif
+					
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
 #endif
 					for (; i < captureLengthExt; i++)
 					{
@@ -5824,6 +5852,9 @@ void GPUEngineA::_RenderLine_DispCapture_BlendToCustomDstBuffer(const u16 *srcA,
 	}
 #endif
 	
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 	for (; i < length; i++)
 	{
 		const u16 colorA = (!CAPTUREFROMNATIVESRCA) ? srcA[i] : srcA[offset + i];
@@ -7095,6 +7126,9 @@ void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restric
 	}
 #endif
 	
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 	for (; i < pixCount; i++)
 	{
 		dst[i] = ConvertColor555To8888Opaque<SWAP_RB>(src[i]);
@@ -7127,6 +7161,9 @@ void ConvertColorBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restric
 	}
 #endif
 	
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 	for (; i < pixCount; i++)
 	{
 		dst[i] = ConvertColor555To6665Opaque<SWAP_RB>(src[i]);
@@ -7146,6 +7183,9 @@ void ConvertColorBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount)
 	}
 #endif
 	
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 	for (; i < pixCount; i++)
 	{
 		dst[i] = ConvertColor8888To6665<SWAP_RB>(src[i]);
@@ -7165,6 +7205,9 @@ void ConvertColorBuffer6665To8888(const u32 *src, u32 *dst, size_t pixCount)
 	}
 #endif
 	
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 	for (; i < pixCount; i++)
 	{
 		dst[i] = ConvertColor6665To8888<SWAP_RB>(src[i]);
@@ -7191,6 +7234,9 @@ void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst
 	}
 #endif
 	
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 	for (; i < pixCount; i++)
 	{
 		dst[i] = ConvertColor8888To5551<SWAP_RB>(src[i]);
@@ -7217,6 +7263,9 @@ void ConvertColorBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst
 	}
 #endif
 	
+#ifdef ENABLE_SSE2
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 	for (; i < pixCount; i++)
 	{
 		dst[i] = ConvertColor6665To5551<SWAP_RB>(src[i]);
