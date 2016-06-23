@@ -2,7 +2,7 @@
 <archive type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="7.10">
   <data>
     <int key="IBDocument.SystemTarget">1050</int>
-    <string key="IBDocument.SystemVersion">13F1066</string>
+    <string key="IBDocument.SystemVersion">13F1808</string>
     <string key="IBDocument.InterfaceBuilderVersion">851</string>
     <string key="IBDocument.AppKitVersion">1265.21</string>
     <string key="IBDocument.HIToolboxVersion">698.00</string>
@@ -342,7 +342,7 @@
             <reference ref="522097277"/>
             <reference ref="69604475"/>
           </object>
-          <object class="NSMutableArray" key="NSToolbarIBDefaultItems">
+          <object class="NSArray" key="NSToolbarIBDefaultItems">
             <bool key="EncodedWithXMLCoder">YES</bool>
             <reference ref="298859108"/>
             <reference ref="137384193"/>
@@ -359,7 +359,7 @@
         <string key="NSWindowContentMaxSize">{1.7976931348623157e+308, 1.7976931348623157e+308}</string>
         <string key="NSWindowContentMinSize">{256, 408}</string>
         <object class="NSView" key="NSWindowView" id="1027645320">
-          <nil key="NSNextResponder"/>
+          <reference key="NSNextResponder"/>
           <int key="NSvFlags">256</int>
           <object class="NSMutableArray" key="NSSubviews">
             <bool key="EncodedWithXMLCoder">YES</bool>
@@ -368,6 +368,7 @@
               <int key="NSvFlags">5156</int>
               <string key="NSFrame">{{2, 3}, {16, 16}}</string>
               <reference key="NSSuperview" ref="1027645320"/>
+              <reference key="NSWindow"/>
               <int key="NSpiFlags">28938</int>
               <double key="NSMaxValue">100</double>
             </object>
@@ -376,6 +377,7 @@
               <int key="NSvFlags">294</int>
               <string key="NSFrame">{{17, 5}, {137, 14}}</string>
               <reference key="NSSuperview" ref="1027645320"/>
+              <reference key="NSWindow"/>
               <bool key="NSEnabled">YES</bool>
               <object class="NSTextFieldCell" key="NSCell" id="644649254">
                 <int key="NSCellFlags">68157504</int>
@@ -418,6 +420,7 @@
               </object>
               <string key="NSFrame">{{0, 24}, {256, 384}}</string>
               <reference key="NSSuperview" ref="1027645320"/>
+              <reference key="NSWindow"/>
               <bool key="NSViewCanDrawConcurrently">YES</bool>
               <string key="NSClassName">DisplayView</string>
             </object>
@@ -426,6 +429,7 @@
               <int key="NSvFlags">289</int>
               <string key="NSFrame">{{192, -1}, {40, 26}}</string>
               <reference key="NSSuperview" ref="1027645320"/>
+              <reference key="NSWindow"/>
               <string key="NSReuseIdentifierKey">_NS:791</string>
               <bool key="NSEnabled">YES</bool>
               <object class="NSPopUpButtonCell" key="NSCell" id="1063916850">
@@ -497,6 +501,7 @@
               <int key="NSvFlags">289</int>
               <string key="NSFrame">{{151, -1}, {42, 26}}</string>
               <reference key="NSSuperview" ref="1027645320"/>
+              <reference key="NSWindow"/>
               <string key="NSReuseIdentifierKey">_NS:791</string>
               <bool key="NSEnabled">YES</bool>
               <object class="NSPopUpButtonCell" key="NSCell" id="480563989">
@@ -557,6 +562,8 @@
             </object>
           </object>
           <string key="NSFrameSize">{256, 408}</string>
+          <reference key="NSSuperview"/>
+          <reference key="NSWindow"/>
         </object>
         <string key="NSScreenRect">{{0, 0}, {1920, 1177}}</string>
         <string key="NSMinSize">{256, 477}</string>
@@ -975,26 +982,6 @@
     <object class="IBObjectContainer" key="IBDocument.Objects">
       <object class="NSMutableArray" key="connectionRecords">
         <bool key="EncodedWithXMLCoder">YES</bool>
-        <object class="IBConnectionRecord">
-          <object class="IBBindingConnection" key="connection">
-            <string key="label">enabled: isShowingStatusBar</string>
-            <reference key="source" ref="731708450"/>
-            <reference key="destination" ref="1001"/>
-            <object class="NSNibBindingConnector" key="connector">
-              <reference key="NSSource" ref="731708450"/>
-              <reference key="NSDestination" ref="1001"/>
-              <string key="NSLabel">enabled: isShowingStatusBar</string>
-              <string key="NSBinding">enabled</string>
-              <string key="NSKeyPath">isShowingStatusBar</string>
-              <object class="NSDictionary" key="NSOptions">
-                <string key="NS.key.0">NSValueTransformerName</string>
-                <string key="NS.object.0">NSNegateBoolean</string>
-              </object>
-              <int key="NSNibBindingConnectorVersion">2</int>
-            </object>
-          </object>
-          <int key="connectionID">53</int>
-        </object>
         <object class="IBConnectionRecord">
           <object class="IBBindingConnection" key="connection">
             <string key="label">hidden: isShowingStatusBar</string>
@@ -1519,6 +1506,26 @@
             <reference key="destination" ref="838391207"/>
           </object>
           <int key="connectionID">245</int>
+        </object>
+        <object class="IBConnectionRecord">
+          <object class="IBBindingConnection" key="connection">
+            <string key="label">hidden: isShowingStatusBar</string>
+            <reference key="source" ref="731708450"/>
+            <reference key="destination" ref="1001"/>
+            <object class="NSNibBindingConnector" key="connector">
+              <reference key="NSSource" ref="731708450"/>
+              <reference key="NSDestination" ref="1001"/>
+              <string key="NSLabel">hidden: isShowingStatusBar</string>
+              <string key="NSBinding">hidden</string>
+              <string key="NSKeyPath">isShowingStatusBar</string>
+              <object class="NSDictionary" key="NSOptions">
+                <string key="NS.key.0">NSValueTransformerName</string>
+                <string key="NS.object.0">NSNegateBoolean</string>
+              </object>
+              <int key="NSNibBindingConnectorVersion">2</int>
+            </object>
+          </object>
+          <int key="connectionID">248</int>
         </object>
       </object>
       <object class="IBMutableOrderedSet" key="objectRecords">
@@ -2079,9 +2086,9 @@
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-          <string>{{514, 590}, {256, 408}}</string>
+          <string>{{514, 401}, {256, 408}}</string>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-          <string>{{514, 590}, {256, 408}}</string>
+          <string>{{514, 401}, {256, 408}}</string>
           <boolean value="NO"/>
           <boolean value="YES"/>
           <string>{256, 408}</string>
@@ -2115,7 +2122,7 @@
         </object>
       </object>
       <nil key="sourceID"/>
-      <int key="maxID">245</int>
+      <int key="maxID">248</int>
     </object>
     <object class="IBClassDescriber" key="IBDocument.Classes">
       <object class="NSMutableArray" key="referencedPartialClassDescriptions">
