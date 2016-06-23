@@ -1690,15 +1690,6 @@ FORCEINLINE u32 ConvertColor555To6665Opaque(const u16 src)
 }
 
 template <bool SWAP_RB>
-FORCEINLINE u32 ConvertColor8888To6665(u32 srcColor)
-{
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
-	
-	return ConvertColor8888To6665<SWAP_RB>(srcColorComponent);
-}
-
-template <bool SWAP_RB>
 FORCEINLINE u32 ConvertColor8888To6665(FragmentColor srcColor)
 {
 	FragmentColor outColor;
@@ -1711,12 +1702,12 @@ FORCEINLINE u32 ConvertColor8888To6665(FragmentColor srcColor)
 }
 
 template <bool SWAP_RB>
-FORCEINLINE u32 ConvertColor6665To8888(u32 srcColor)
+FORCEINLINE u32 ConvertColor8888To6665(u32 srcColor)
 {
 	FragmentColor srcColorComponent;
 	srcColorComponent.color = srcColor;
 	
-	return ConvertColor6665To8888<SWAP_RB>(srcColorComponent);
+	return ConvertColor8888To6665<SWAP_RB>(srcColorComponent);
 }
 
 template <bool SWAP_RB>
@@ -1732,12 +1723,12 @@ FORCEINLINE u32 ConvertColor6665To8888(FragmentColor srcColor)
 }
 
 template <bool SWAP_RB>
-FORCEINLINE u16 ConvertColor8888To5551(u32 srcColor)
+FORCEINLINE u32 ConvertColor6665To8888(u32 srcColor)
 {
 	FragmentColor srcColorComponent;
 	srcColorComponent.color = srcColor;
 	
-	return ConvertColor8888To5551<SWAP_RB>(srcColorComponent);
+	return ConvertColor6665To8888<SWAP_RB>(srcColorComponent);
 }
 
 template <bool SWAP_RB>
@@ -1747,18 +1738,27 @@ FORCEINLINE u16 ConvertColor8888To5551(FragmentColor srcColor)
 }
 
 template <bool SWAP_RB>
-FORCEINLINE u16 ConvertColor6665To5551(u32 srcColor)
+FORCEINLINE u16 ConvertColor8888To5551(u32 srcColor)
 {
 	FragmentColor srcColorComponent;
 	srcColorComponent.color = srcColor;
 	
-	return ConvertColor6665To5551<SWAP_RB>(srcColorComponent);
+	return ConvertColor8888To5551<SWAP_RB>(srcColorComponent);
 }
 
 template <bool SWAP_RB>
 FORCEINLINE u16 ConvertColor6665To5551(FragmentColor srcColor)
 {
 	return R6G6B6TORGB15( ((SWAP_RB) ? srcColor.b : srcColor.r), srcColor.g, ((SWAP_RB) ? srcColor.r : srcColor.b)) | ((srcColor.a == 0) ? 0x0000 : 0x8000);
+}
+
+template <bool SWAP_RB>
+FORCEINLINE u16 ConvertColor6665To5551(u32 srcColor)
+{
+	FragmentColor srcColorComponent;
+	srcColorComponent.color = srcColor;
+	
+	return ConvertColor6665To5551<SWAP_RB>(srcColorComponent);
 }
 
 #ifdef ENABLE_SSE2
