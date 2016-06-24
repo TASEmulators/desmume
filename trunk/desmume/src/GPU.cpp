@@ -7100,7 +7100,7 @@ void NDSDisplay::SetEngineByID(const GPUEngineID theID)
 	this->_gpu->SetDisplayByID(this->_ID);
 }
 
-template <bool SWAP_RB, bool UNALIGNED>
+template <bool SWAP_RB, bool IS_UNALIGNED>
 void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount)
 {
 	size_t i = 0;
@@ -7109,11 +7109,11 @@ void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restric
 	const size_t ssePixCount = pixCount - (pixCount % 8);
 	for (; i < ssePixCount; i += 8)
 	{
-		__m128i src_vec128 = (UNALIGNED) ? _mm_loadu_si128((__m128i *)(src + i)) : _mm_load_si128((__m128i *)(src + i));
+		__m128i src_vec128 = (IS_UNALIGNED) ? _mm_loadu_si128((__m128i *)(src + i)) : _mm_load_si128((__m128i *)(src + i));
 		__m128i dstConvertedLo, dstConvertedHi;
 		ConvertColor555To8888Opaque<SWAP_RB>(src_vec128, dstConvertedLo, dstConvertedHi);
 		
-		if (UNALIGNED)
+		if (IS_UNALIGNED)
 		{
 			_mm_storeu_si128((__m128i *)(dst + i + 0), dstConvertedLo);
 			_mm_storeu_si128((__m128i *)(dst + i + 4), dstConvertedHi);
@@ -7135,7 +7135,7 @@ void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restric
 	}
 }
 
-template <bool SWAP_RB, bool UNALIGNED>
+template <bool SWAP_RB, bool IS_UNALIGNED>
 void ConvertColorBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount)
 {
 	size_t i = 0;
@@ -7144,11 +7144,11 @@ void ConvertColorBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restric
 	const size_t ssePixCount = pixCount - (pixCount % 8);
 	for (; i < ssePixCount; i += 8)
 	{
-		__m128i src_vec128 = (UNALIGNED) ? _mm_loadu_si128((__m128i *)(src + i)) : _mm_load_si128((__m128i *)(src + i));
+		__m128i src_vec128 = (IS_UNALIGNED) ? _mm_loadu_si128((__m128i *)(src + i)) : _mm_load_si128((__m128i *)(src + i));
 		__m128i dstConvertedLo, dstConvertedHi;
 		ConvertColor555To6665Opaque<SWAP_RB>(src_vec128, dstConvertedLo, dstConvertedHi);
 		
-		if (UNALIGNED)
+		if (IS_UNALIGNED)
 		{
 			_mm_storeu_si128((__m128i *)(dst + i + 0), dstConvertedLo);
 			_mm_storeu_si128((__m128i *)(dst + i + 4), dstConvertedHi);
@@ -7214,7 +7214,7 @@ void ConvertColorBuffer6665To8888(const u32 *src, u32 *dst, size_t pixCount)
 	}
 }
 
-template <bool SWAP_RB, bool UNALIGNED>
+template <bool SWAP_RB, bool IS_UNALIGNED>
 void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount)
 {
 	size_t i = 0;
@@ -7223,7 +7223,7 @@ void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst
 	const size_t ssePixCount = pixCount - (pixCount % 8);
 	for (; i < ssePixCount; i += 8)
 	{
-		if (UNALIGNED)
+		if (IS_UNALIGNED)
 		{
 			_mm_storeu_si128( (__m128i *)(dst + i), ConvertColor8888To5551<SWAP_RB>(_mm_loadu_si128((__m128i *)(src + i)), _mm_loadu_si128((__m128i *)(src + i + 4))) );
 		}
@@ -7243,7 +7243,7 @@ void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst
 	}
 }
 
-template <bool SWAP_RB, bool UNALIGNED>
+template <bool SWAP_RB, bool IS_UNALIGNED>
 void ConvertColorBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount)
 {
 	size_t i = 0;
@@ -7252,7 +7252,7 @@ void ConvertColorBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst
 	const size_t ssePixCount = pixCount - (pixCount % 8);
 	for (; i < ssePixCount; i += 8)
 	{
-		if (UNALIGNED)
+		if (IS_UNALIGNED)
 		{
 			_mm_storeu_si128( (__m128i *)(dst + i), ConvertColor6665To5551<SWAP_RB>(_mm_loadu_si128((__m128i *)(src + i)), _mm_loadu_si128((__m128i *)(src + i + 4))) );
 		}

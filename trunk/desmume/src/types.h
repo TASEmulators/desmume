@@ -164,7 +164,11 @@
 
 #ifndef LOOPVECTORIZE_DISABLE
 	#if defined(_MSC_VER)
-		#define LOOPVECTORIZE_DISABLE loop(no_vector)
+	#if _MSC_VER >= 1700
+			#define LOOPVECTORIZE_DISABLE loop(no_vector)
+		#else
+			#define LOOPVECTORIZE_DISABLE 
+		#endif
 	#elif defined(__clang__)
 		#define LOOPVECTORIZE_DISABLE clang loop vectorize(disable)
 	#else
