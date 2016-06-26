@@ -2679,7 +2679,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D(const size_t srcX, const Fragment
 				{
 					if (SRCFORMAT == NDSColorFormat_BGR888_Rev)
 					{
-						FragmentColor src666;
+						FragmentColor src666 = src;
 						src666.r >>= 2;
 						src666.g >>= 2;
 						src666.b >>= 2;
@@ -2729,7 +2729,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D(const size_t srcX, const Fragment
 				{
 					if (SRCFORMAT == NDSColorFormat_BGR888_Rev)
 					{
-						FragmentColor src666;
+						FragmentColor src666 = src;
 						src666.r >>= 2;
 						src666.g >>= 2;
 						src666.b >>= 2;
