@@ -33,7 +33,6 @@
 
 #define TEXTURE_DEPOSTERIZE_THRESHOLD 21	// Possible values are [0-255], where lower a value prevents blending and a higher value allows for more blending
 
-static CACHE_ALIGN u32 dsDepthToD24_LUT[32768] = {0};
 int cur3DCore = GPU3D_NULL;
 
 GPU3DInterface gpu3DNull = { 
@@ -272,18 +271,6 @@ Render3D::Render3D()
 	_deviceInfo.isTextureSmoothingSupported = false;
 	_deviceInfo.maxAnisotropy = 1.0f;
 	_deviceInfo.maxSamples = 0;
-	
-	static bool needTableInit = true;
-	
-	if (needTableInit)
-	{
-		for (size_t i = 0; i < 32768; i++)
-		{
-			dsDepthToD24_LUT[i] = (u32)DS_DEPTH15TO24(i);
-		}
-		
-		needTableInit = false;
-	}
 	
 	_framebufferWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	_framebufferHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
@@ -677,7 +664,7 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT; i++)
 			{
 				this->clearImageColor16Buffer[i] = clearColorBuffer[i];
-				this->clearImageDepthBuffer[i] = dsDepthToD24_LUT[clearDepthBuffer[i] & 0x7FFF];
+				this->clearImageDepthBuffer[i] = DS_DEPTH15TO24(clearDepthBuffer[i]);
 				this->clearImageFogBuffer[i] = BIT15(clearDepthBuffer[i]);
 				this->clearImagePolyIDBuffer[i] = clearFragment.opaquePolyID;
 			}
@@ -700,7 +687,7 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 					
 					//this is tested quite well in the sonic chronicles main map mode
 					//where depth values are used for trees etc you can walk behind
-					this->clearImageDepthBuffer[dstIndex] = dsDepthToD24_LUT[clearDepthBuffer[srcIndex] & 0x7FFF];
+					this->clearImageDepthBuffer[dstIndex] = DS_DEPTH15TO24(clearDepthBuffer[srcIndex]);
 					
 					this->clearImageFogBuffer[dstIndex] = BIT15(clearDepthBuffer[srcIndex]);
 					this->clearImagePolyIDBuffer[dstIndex] = clearFragment.opaquePolyID;
@@ -837,52 +824,48 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 		const u16 scrollBits = T1ReadWord(MMU.ARM9_REG, 0x356); //CLRIMAGE_OFFSET
 		const u8 xScroll = scrollBits & 0xFF;
 		const u8 yScroll = (scrollBits >> 8) & 0xFF;
-				
+		
+		const __m128i opaquePolyID_vec128 = _mm_set1_epi8(clearFragment.opaquePolyID);
+		const __m128i calcDepthConstants = _mm_set1_epi32(0x01FF0200);
+		
 		if (xScroll == 0 && yScroll == 0)
 		{
-			const __m128i depthBitMask_vec128 = _mm_set1_epi16(0x7FFF);
-			const __m128i fogBufferBitMask_vec128 = _mm_set1_epi16(BIT(15));
-			const __m128i opaquePolyID_vec128 = _mm_set1_epi8(clearFragment.opaquePolyID);
-			
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT; i += 16)
 			{
-				// Copy the colors to the color buffer. Since we can only copy 8 elements at once,
-				// we need to load-store twice.
+				// Copy the colors to the color buffer.
+				_mm_store_si128( (__m128i *)(this->clearImageColor16Buffer + i + 0), _mm_load_si128((__m128i *)(clearColorBuffer + i + 0)) );
 				_mm_store_si128( (__m128i *)(this->clearImageColor16Buffer + i + 8), _mm_load_si128((__m128i *)(clearColorBuffer + i + 8)) );
-				_mm_store_si128( (__m128i *)(this->clearImageColor16Buffer + i), _mm_load_si128((__m128i *)(clearColorBuffer + i)) );
 				
-				// Write the depth values to the depth buffer.
-				__m128i clearDepthHi_vec128 = _mm_load_si128((__m128i *)(clearDepthBuffer + i + 8));
-				__m128i clearDepthLo_vec128 = _mm_load_si128((__m128i *)(clearDepthBuffer + i));
-				clearDepthHi_vec128 = _mm_and_si128(clearDepthHi_vec128, depthBitMask_vec128);
-				clearDepthLo_vec128 = _mm_and_si128(clearDepthLo_vec128, depthBitMask_vec128);
+				// Write the depth values to the depth buffer using the following formula from GBATEK.
+				// 15-bit to 24-bit depth formula from http://problemkaputt.de/gbatek.htm#ds3drearplane
+				//    D24 = (D15 * 0x0200) + (((D15 + 1) >> 15) * 0x01FF);
+				const __m128i clearDepthLo = _mm_load_si128((__m128i *)(clearDepthBuffer + i + 0));
+				const __m128i clearDepthHi = _mm_load_si128((__m128i *)(clearDepthBuffer + i + 8));
 				
-				this->clearImageDepthBuffer[i+15] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthHi_vec128, 7)];
-				this->clearImageDepthBuffer[i+14] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthHi_vec128, 6)];
-				this->clearImageDepthBuffer[i+13] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthHi_vec128, 5)];
-				this->clearImageDepthBuffer[i+12] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthHi_vec128, 4)];
-				this->clearImageDepthBuffer[i+11] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthHi_vec128, 3)];
-				this->clearImageDepthBuffer[i+10] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthHi_vec128, 2)];
-				this->clearImageDepthBuffer[i+ 9] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthHi_vec128, 1)];
-				this->clearImageDepthBuffer[i+ 8] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthHi_vec128, 0)];
-				this->clearImageDepthBuffer[i+ 7] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthLo_vec128, 7)];
-				this->clearImageDepthBuffer[i+ 6] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthLo_vec128, 6)];
-				this->clearImageDepthBuffer[i+ 5] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthLo_vec128, 5)];
-				this->clearImageDepthBuffer[i+ 4] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthLo_vec128, 4)];
-				this->clearImageDepthBuffer[i+ 3] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthLo_vec128, 3)];
-				this->clearImageDepthBuffer[i+ 2] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthLo_vec128, 2)];
-				this->clearImageDepthBuffer[i+ 1] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthLo_vec128, 1)];
-				this->clearImageDepthBuffer[i+ 0] = dsDepthToD24_LUT[_mm_extract_epi16(clearDepthLo_vec128, 0)];
+				const __m128i clearDepthValueLo = _mm_and_si128(clearDepthLo, _mm_set1_epi16(0x7FFF));
+				const __m128i clearDepthValueHi = _mm_and_si128(clearDepthHi, _mm_set1_epi16(0x7FFF));
+				const __m128i highestDepthBitLo = _mm_srli_epi16( _mm_adds_epu16(clearDepthValueLo, _mm_set1_epi16(1)), 15);
+				const __m128i highestDepthBitHi = _mm_srli_epi16( _mm_adds_epu16(clearDepthValueHi, _mm_set1_epi16(1)), 15);
+				
+				__m128i calcDepth0 = _mm_unpacklo_epi16(clearDepthValueLo, highestDepthBitLo);
+				__m128i calcDepth1 = _mm_unpackhi_epi16(clearDepthValueLo, highestDepthBitLo);
+				__m128i calcDepth2 = _mm_unpacklo_epi16(clearDepthValueHi, highestDepthBitHi);
+				__m128i calcDepth3 = _mm_unpackhi_epi16(clearDepthValueHi, highestDepthBitHi);
+				
+				calcDepth0 = _mm_madd_epi16(calcDepth0, calcDepthConstants);
+				calcDepth1 = _mm_madd_epi16(calcDepth1, calcDepthConstants);
+				calcDepth2 = _mm_madd_epi16(calcDepth2, calcDepthConstants);
+				calcDepth3 = _mm_madd_epi16(calcDepth3, calcDepthConstants);
+				
+				_mm_store_si128((__m128i *)(this->clearImageDepthBuffer + i +  0), calcDepth0);
+				_mm_store_si128((__m128i *)(this->clearImageDepthBuffer + i +  4), calcDepth1);
+				_mm_store_si128((__m128i *)(this->clearImageDepthBuffer + i +  8), calcDepth2);
+				_mm_store_si128((__m128i *)(this->clearImageDepthBuffer + i + 12), calcDepth3);
 				
 				// Write the fog flags to the fog flag buffer.
-				clearDepthHi_vec128 = _mm_load_si128((__m128i *)(clearDepthBuffer + i + 8));
-				clearDepthLo_vec128 = _mm_load_si128((__m128i *)(clearDepthBuffer + i));
-				clearDepthHi_vec128 = _mm_and_si128(clearDepthHi_vec128, fogBufferBitMask_vec128);
-				clearDepthLo_vec128 = _mm_and_si128(clearDepthLo_vec128, fogBufferBitMask_vec128);
-				clearDepthHi_vec128 = _mm_srli_epi16(clearDepthHi_vec128, 15);
-				clearDepthLo_vec128 = _mm_srli_epi16(clearDepthLo_vec128, 15);
-				
-				_mm_store_si128((__m128i *)(this->clearImageFogBuffer + i), _mm_packus_epi16(clearDepthLo_vec128, clearDepthHi_vec128));
+				const __m128i clearFogLo = _mm_srli_epi16(clearDepthLo, 15);
+				const __m128i clearFogHi = _mm_srli_epi16(clearDepthHi, 15);
+				_mm_store_si128((__m128i *)(this->clearImageFogBuffer + i), _mm_packs_epi16(clearFogLo, clearFogHi));
 				
 				// The one is easy. Just set the values in the polygon ID buffer.
 				_mm_store_si128((__m128i *)(this->clearImagePolyIDBuffer + i), opaquePolyID_vec128);
@@ -890,49 +873,139 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 		}
 		else
 		{
-			const __m128i addrOffset = _mm_set_epi16(7, 6, 5, 4, 3, 2, 1, 0);
-			const __m128i addrRolloverMask = _mm_set1_epi16(0x00FF);
-			const __m128i opaquePolyID_vec128 = _mm_set1_epi8(clearFragment.opaquePolyID);
+			const size_t shiftCount = xScroll & 0x07;
 			
 			for (size_t dstIndex = 0, iy = 0; iy < GPU_FRAMEBUFFER_NATIVE_HEIGHT; iy++)
 			{
 				const size_t y = ((iy + yScroll) & 0xFF) << 8;
-				__m128i y_vec128 = _mm_set1_epi16(y);
 				
 				for (size_t ix = 0; ix < GPU_FRAMEBUFFER_NATIVE_WIDTH; dstIndex += 8, ix += 8)
 				{
-					__m128i addr_vec128 = _mm_set1_epi16(ix + xScroll);
-					addr_vec128 = _mm_add_epi16(addr_vec128, addrOffset);
-					addr_vec128 = _mm_and_si128(addr_vec128, addrRolloverMask);
-					addr_vec128 = _mm_or_si128(addr_vec128, y_vec128);
+					const size_t x = (ix + xScroll) & 0xFF;
 					
-					this->clearImageColor16Buffer[dstIndex+7] = clearColorBuffer[_mm_extract_epi16(addr_vec128, 7)];
-					this->clearImageColor16Buffer[dstIndex+6] = clearColorBuffer[_mm_extract_epi16(addr_vec128, 6)];
-					this->clearImageColor16Buffer[dstIndex+5] = clearColorBuffer[_mm_extract_epi16(addr_vec128, 5)];
-					this->clearImageColor16Buffer[dstIndex+4] = clearColorBuffer[_mm_extract_epi16(addr_vec128, 4)];
-					this->clearImageColor16Buffer[dstIndex+3] = clearColorBuffer[_mm_extract_epi16(addr_vec128, 3)];
-					this->clearImageColor16Buffer[dstIndex+2] = clearColorBuffer[_mm_extract_epi16(addr_vec128, 2)];
-					this->clearImageColor16Buffer[dstIndex+1] = clearColorBuffer[_mm_extract_epi16(addr_vec128, 1)];
-					this->clearImageColor16Buffer[dstIndex+0] = clearColorBuffer[_mm_extract_epi16(addr_vec128, 0)];
+					__m128i clearColor;
+					__m128i clearDepth_vec128;
 					
-					this->clearImageDepthBuffer[dstIndex+7] = dsDepthToD24_LUT[clearDepthBuffer[_mm_extract_epi16(addr_vec128, 7)] & 0x7FFF];
-					this->clearImageDepthBuffer[dstIndex+6] = dsDepthToD24_LUT[clearDepthBuffer[_mm_extract_epi16(addr_vec128, 6)] & 0x7FFF];
-					this->clearImageDepthBuffer[dstIndex+5] = dsDepthToD24_LUT[clearDepthBuffer[_mm_extract_epi16(addr_vec128, 5)] & 0x7FFF];
-					this->clearImageDepthBuffer[dstIndex+4] = dsDepthToD24_LUT[clearDepthBuffer[_mm_extract_epi16(addr_vec128, 4)] & 0x7FFF];
-					this->clearImageDepthBuffer[dstIndex+3] = dsDepthToD24_LUT[clearDepthBuffer[_mm_extract_epi16(addr_vec128, 3)] & 0x7FFF];
-					this->clearImageDepthBuffer[dstIndex+2] = dsDepthToD24_LUT[clearDepthBuffer[_mm_extract_epi16(addr_vec128, 2)] & 0x7FFF];
-					this->clearImageDepthBuffer[dstIndex+1] = dsDepthToD24_LUT[clearDepthBuffer[_mm_extract_epi16(addr_vec128, 1)] & 0x7FFF];
-					this->clearImageDepthBuffer[dstIndex+0] = dsDepthToD24_LUT[clearDepthBuffer[_mm_extract_epi16(addr_vec128, 0)] & 0x7FFF];
+					if (shiftCount == 0)
+					{
+						const size_t srcIndex = y | x;
+						
+						clearColor = _mm_load_si128((__m128i *)(clearColorBuffer + srcIndex));
+						clearDepth_vec128 = _mm_load_si128((__m128i *)(clearDepthBuffer + srcIndex));
+					}
+					else
+					{
+						const size_t x1 = x & 0xF8;
+						const size_t x0 = (x1 == 0) ? (GPU_FRAMEBUFFER_NATIVE_WIDTH - 8) : x1 - 8;
+						const size_t srcIndex0 = y | x0;
+						const size_t srcIndex1 = y | x1;
+						
+						const __m128i clearColor0 = _mm_load_si128((__m128i *)(clearColorBuffer + srcIndex0));
+						const __m128i clearColor1 = _mm_load_si128((__m128i *)(clearColorBuffer + srcIndex1));
+						const __m128i clearDepth0 = _mm_load_si128((__m128i *)(clearDepthBuffer + srcIndex0));
+						const __m128i clearDepth1 = _mm_load_si128((__m128i *)(clearDepthBuffer + srcIndex1));
+#ifdef ENABLE_SSSE3
+						switch (shiftCount)
+						{
+							case 1:
+								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 7 * sizeof(u16));
+								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 7 * sizeof(u16));
+								break;
+								
+							case 2:
+								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 6 * sizeof(u16));
+								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 6 * sizeof(u16));
+								break;
+								
+							case 3:
+								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 5 * sizeof(u16));
+								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 5 * sizeof(u16));
+								break;
+								
+							case 4:
+								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 4 * sizeof(u16));
+								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 4 * sizeof(u16));
+								break;
+								
+							case 5:
+								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 3 * sizeof(u16));
+								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 3 * sizeof(u16));
+								break;
+								
+							case 6:
+								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 2 * sizeof(u16));
+								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 2 * sizeof(u16));
+								break;
+								
+							case 7:
+								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 1 * sizeof(u16));
+								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 1 * sizeof(u16));
+								break;
+								
+							default:
+								clearColor        = _mm_setzero_si128();
+								clearDepth_vec128 = _mm_setzero_si128();
+								break;
+						}
+#else
+						switch (shiftCount)
+						{
+							case 1:
+								clearColor        = _mm_or_si128( _mm_slli_si128(clearColor1, 1 * sizeof(u16)), _mm_srli_si128(clearColor0, 7 * sizeof(u16)) );
+								clearDepth_vec128 = _mm_or_si128( _mm_slli_si128(clearDepth1, 1 * sizeof(u16)), _mm_srli_si128(clearDepth0, 7 * sizeof(u16)) );
+								break;
+								
+							case 2:
+								clearColor        = _mm_or_si128( _mm_slli_si128(clearColor1, 2 * sizeof(u16)), _mm_srli_si128(clearColor0, 6 * sizeof(u16)) );
+								clearDepth_vec128 = _mm_or_si128( _mm_slli_si128(clearDepth1, 2 * sizeof(u16)), _mm_srli_si128(clearDepth0, 6 * sizeof(u16)) );
+								break;
+								
+							case 3:
+								clearColor        = _mm_or_si128( _mm_slli_si128(clearColor1, 3 * sizeof(u16)), _mm_srli_si128(clearColor0, 5 * sizeof(u16)) );
+								clearDepth_vec128 = _mm_or_si128( _mm_slli_si128(clearDepth1, 3 * sizeof(u16)), _mm_srli_si128(clearDepth0, 5 * sizeof(u16)) );
+								break;
+								
+							case 4:
+								clearColor        = _mm_or_si128( _mm_slli_si128(clearColor1, 4 * sizeof(u16)), _mm_srli_si128(clearColor0, 4 * sizeof(u16)) );
+								clearDepth_vec128 = _mm_or_si128( _mm_slli_si128(clearDepth1, 4 * sizeof(u16)), _mm_srli_si128(clearDepth0, 4 * sizeof(u16)) );
+								break;
+								
+							case 5:
+								clearColor        = _mm_or_si128( _mm_slli_si128(clearColor1, 5 * sizeof(u16)), _mm_srli_si128(clearColor0, 3 * sizeof(u16)) );
+								clearDepth_vec128 = _mm_or_si128( _mm_slli_si128(clearDepth1, 5 * sizeof(u16)), _mm_srli_si128(clearDepth0, 3 * sizeof(u16)) );
+								break;
+								
+							case 6:
+								clearColor        = _mm_or_si128( _mm_slli_si128(clearColor1, 6 * sizeof(u16)), _mm_srli_si128(clearColor0, 2 * sizeof(u16)) );
+								clearDepth_vec128 = _mm_or_si128( _mm_slli_si128(clearDepth1, 6 * sizeof(u16)), _mm_srli_si128(clearDepth0, 2 * sizeof(u16)) );
+								break;
+								
+							case 7:
+								clearColor        = _mm_or_si128( _mm_slli_si128(clearColor1, 7 * sizeof(u16)), _mm_srli_si128(clearColor0, 1 * sizeof(u16)) );
+								clearDepth_vec128 = _mm_or_si128( _mm_slli_si128(clearDepth1, 7 * sizeof(u16)), _mm_srli_si128(clearDepth0, 1 * sizeof(u16)) );
+								break;
+								
+							default:
+								clearColor        = _mm_setzero_si128();
+								clearDepth_vec128 = _mm_setzero_si128();
+								break;
+						}
+#endif
+					}
 					
-					this->clearImageFogBuffer[dstIndex+7] = BIT15( clearDepthBuffer[_mm_extract_epi16(addr_vec128, 7)] );
-					this->clearImageFogBuffer[dstIndex+6] = BIT15( clearDepthBuffer[_mm_extract_epi16(addr_vec128, 6)] );
-					this->clearImageFogBuffer[dstIndex+5] = BIT15( clearDepthBuffer[_mm_extract_epi16(addr_vec128, 5)] );
-					this->clearImageFogBuffer[dstIndex+4] = BIT15( clearDepthBuffer[_mm_extract_epi16(addr_vec128, 4)] );
-					this->clearImageFogBuffer[dstIndex+3] = BIT15( clearDepthBuffer[_mm_extract_epi16(addr_vec128, 3)] );
-					this->clearImageFogBuffer[dstIndex+2] = BIT15( clearDepthBuffer[_mm_extract_epi16(addr_vec128, 2)] );
-					this->clearImageFogBuffer[dstIndex+1] = BIT15( clearDepthBuffer[_mm_extract_epi16(addr_vec128, 1)] );
-					this->clearImageFogBuffer[dstIndex+0] = BIT15( clearDepthBuffer[_mm_extract_epi16(addr_vec128, 0)] );
+					const __m128i clearDepthValue = _mm_and_si128(clearDepth_vec128, _mm_set1_epi16(0x7FFF));
+					const __m128i depthPlusOne = _mm_srli_epi16( _mm_adds_epu16(clearDepthValue, _mm_set1_epi16(1)), 15);
+					const __m128i clearFog = _mm_srli_epi16(clearDepth_vec128, 15);
 					
+					__m128i calcDepth0 = _mm_unpacklo_epi16(clearDepthValue, depthPlusOne);
+					__m128i calcDepth1 = _mm_unpackhi_epi16(clearDepthValue, depthPlusOne);
+					calcDepth0 = _mm_madd_epi16(calcDepth0, calcDepthConstants);
+					calcDepth1 = _mm_madd_epi16(calcDepth1, calcDepthConstants);
+					
+					_mm_store_si128((__m128i *)(this->clearImageColor16Buffer + dstIndex), clearColor);
+					_mm_store_si128((__m128i *)(this->clearImageDepthBuffer + dstIndex + 0), calcDepth0);
+					_mm_store_si128((__m128i *)(this->clearImageDepthBuffer + dstIndex + 4), calcDepth1);
+					_mm_storel_epi64((__m128i *)(this->clearImageFogBuffer + dstIndex), _mm_packs_epi16(clearFog, _mm_setzero_si128()));
 					_mm_storel_epi64((__m128i *)(this->clearImagePolyIDBuffer + dstIndex), opaquePolyID_vec128);
 				}
 			}
