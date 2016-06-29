@@ -4896,6 +4896,9 @@ void GPUEngineBase::SetCustomFramebufferSize(size_t w, size_t h)
 	this->_bgLayerIndexCustom = newBGLayerIndexCustom;
 	this->_bgLayerColorCustom = newBGLayerColorCustom;
 	
+	this->_needUpdateWINH[0] = true;
+	this->_needUpdateWINH[1] = true;
+	
 	free_aligned(oldWorkingScanline);
 	free_aligned(oldBGPixels);
 	free_aligned(oldBGLayerIndexCustom);
