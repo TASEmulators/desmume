@@ -7672,7 +7672,7 @@ void GPUSubsystem::SetWillAutoResolveToCustomBuffer(const bool willAutoResolve)
 
 void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 {
-	const bool isFramebufferRenderNeeded[2]	= { CommonSettings.showGpu.main && !(this->_engineMain->GetIsMasterBrightFullIntensity() && (this->_engineMain->GetIORegisterMap().DISPCAPCNT.CaptureEnable == 0)),
+	const bool isFramebufferRenderNeeded[2]	= {(CommonSettings.showGpu.main && !this->_engineMain->GetIsMasterBrightFullIntensity()) || (this->_engineMain->GetIORegisterMap().DISPCAPCNT.CaptureEnable != 0),
 											    CommonSettings.showGpu.sub && !this->_engineSub->GetIsMasterBrightFullIntensity() };
 	
 	if (l == 0)
@@ -7682,13 +7682,6 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 		// Clear displays to black if they are turned off by the user.
 		if (!isFrameSkipRequested)
 		{
-			if ( CurrentRenderer->GetRenderNeedsFinish() && (this->_engineMain->WillRender3DLayer() || this->_engineMain->WillCapture3DLayerDirect()) )
-			{
-				CurrentRenderer->RenderFinish();
-				CurrentRenderer->SetRenderNeedsFinish(false);
-				this->_event->DidRender3DEnd();
-			}
-			
 			this->UpdateRenderProperties();
 			
 			if (!CommonSettings.showGpu.main)
@@ -7713,6 +7706,22 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 	
 	if (isFramebufferRenderNeeded[GPUEngineID_Main] && !isFrameSkipRequested)
 	{
+		// GPUEngineA:WillRender3DLayer() and GPUEngineA:WillCapture3DLayerDirect() both rely on register
+		// states that might change on a per-line basis. Therefore, we need to check these states on a
+		// per-line basis as well. While most games will set up these states by line 0 and keep these
+		// states constant all the way through line 191, this may not always be the case.
+		//
+		// Test case: If a conversation occurs in Advance Wars: Dual Strike where the conversation
+		// originates from the top of the screen, the BG0 layer will only be enabled at line 46. This
+		// means that we need to check the states at that particular time to ensure that the 3D renderer
+		// finishes before we read the 3D framebuffer. Otherwise, the map will render incorrectly.
+		if ( CurrentRenderer->GetRenderNeedsFinish() && (this->_engineMain->WillRender3DLayer() || this->_engineMain->WillCapture3DLayerDirect()) )
+		{
+			CurrentRenderer->RenderFinish();
+			CurrentRenderer->SetRenderNeedsFinish(false);
+			this->_event->DidRender3DEnd();
+		}
+		
 		this->_engineMain->RenderLine(l);
 	}
 	else
