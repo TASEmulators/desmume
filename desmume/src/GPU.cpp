@@ -1684,6 +1684,12 @@ FORCEINLINE void GPUEngineBase::_RenderPixel_CheckWindows16_SSE2(const size_t ds
 		return;
 	}
 	
+	// Since all comparisons are made against values of 1, we will use state values
+	// of 0 and 1 while doing window processing, and then convert to mask values
+	// 0x00 and 0xFF, respectively, once the processing is finished.
+	didPassWindowTest = _mm_set1_epi8(1);
+	enableColorEffect = _mm_set1_epi8(1);
+	
 	u8 didPassValue;
 	__m128i win_vec128;
 	
@@ -1850,6 +1856,8 @@ FORCEINLINE void GPUEngineBase::_RenderPixel_CheckWindows16_SSE2(const size_t ds
 	didPassWindowTest = _mm_or_si128( didPassWindowTest, _mm_and_si128(winOUTHandledMask, _mm_set1_epi8(didPassValue)) );
 	enableColorEffect = _mm_or_si128( enableColorEffect, _mm_and_si128(winOUTHandledMask, _mm_set1_epi8(this->_IORegisterMap->WINOUT.Effect_Enable)) );
 	
+	// Now that we've finished processing, convert the values of 0 and 1 back into
+	// the mask values of 0x00 and 0xFF, respectively.
 	didPassWindowTest = _mm_cmpeq_epi8(didPassWindowTest, _mm_set1_epi8(1));
 	enableColorEffect = _mm_cmpeq_epi8(enableColorEffect, _mm_set1_epi8(1));
 }
@@ -2369,6 +2377,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel16_SSE2(const size_t dstX,
 			srcEffectEnableValue = 0;
 			break;
 	}
+	
 	const __m128i srcEffectEnableMask = _mm_cmpeq_epi8(_mm_set1_epi8(srcEffectEnableValue), _mm_set1_epi8(1));
 	__m128i dstEffectEnableMask;
 	
