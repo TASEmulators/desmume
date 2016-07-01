@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <map>
 
 #include "types.h"
+#include "common.h"
 
 enum TexCache_TexFormat
 {
@@ -57,8 +58,8 @@ public:
 	
 	~TexCacheItem()
 	{
-		delete[] decoded;
-		if(_deleteCallback != NULL) _deleteCallback(this, this->_deleteCallbackParam1, this->_deleteCallbackParam2);
+		free_aligned(this->decoded);
+		if (this->_deleteCallback != NULL) this->_deleteCallback(this, this->_deleteCallbackParam1, this->_deleteCallbackParam2);
 	}
 	u32 decode_len;
 	u32 mode;

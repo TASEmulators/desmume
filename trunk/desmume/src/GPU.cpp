@@ -40,14 +40,6 @@
 #include "matrix.h"
 #include "emufile.h"
 
-// Note: The SSE4.1 version of pblendvb only requires that the MSBs of the 8-bit mask vector are set in order to
-// pass the b byte through. However, our SSE2 substitute of pblendvb requires that all of the bits of the 8-bit
-// mask vector are set. So when using this intrinsic in practice, just set/clear all mask bits together, and it
-// should work fine for both SSE4.1 and SSE2.
-#if !defined(_SMMINTRIN_H) && defined(__EMMINTRIN_H)
-	#define _mm_blendv_epi8(a, b, fullmask) _mm_or_si128(_mm_and_si128((fullmask), (b)), _mm_andnot_si128((fullmask), (a)))
-#endif
-
 #ifdef FASTBUILD
 	#undef FORCEINLINE
 	#define FORCEINLINE
