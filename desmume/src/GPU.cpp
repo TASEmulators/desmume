@@ -7378,8 +7378,12 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 		// originates from the top of the screen, the BG0 layer will only be enabled at line 46. This
 		// means that we need to check the states at that particular time to ensure that the 3D renderer
 		// finishes before we read the 3D framebuffer. Otherwise, the map will render incorrectly.
-		if ( CurrentRenderer->GetRenderNeedsFinish() && (this->_engineMain->WillRender3DLayer() || this->_engineMain->WillCapture3DLayerDirect()) )
+		const bool need3DDisplayFramebuffer = this->_engineMain->WillRender3DLayer();
+		const bool need3DCaptureFramebuffer = this->_engineMain->WillCapture3DLayerDirect();
+
+		if ( CurrentRenderer->GetRenderNeedsFinish() && (need3DDisplayFramebuffer || need3DCaptureFramebuffer) )
 		{
+			CurrentRenderer->SetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
 			CurrentRenderer->RenderFinish();
 			CurrentRenderer->SetRenderNeedsFinish(false);
 			this->_event->DidRender3DEnd();
