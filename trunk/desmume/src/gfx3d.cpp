@@ -2260,9 +2260,13 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	
 	if (CurrentRenderer->GetRenderNeedsFinish())
 	{
+		bool need3DDisplayFramebuffer;
+		bool need3DCaptureFramebuffer;
+		CurrentRenderer->GetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
+		
 		CurrentRenderer->SetFramebufferFlushStates(false, false);
 		CurrentRenderer->RenderFinish();
-		CurrentRenderer->SetFramebufferFlushStates(true, true);
+		CurrentRenderer->SetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
 		CurrentRenderer->SetRenderNeedsFinish(false);
 		GPU->GetEventHandler()->DidRender3DEnd();
 	}
