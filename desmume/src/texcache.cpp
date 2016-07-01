@@ -870,77 +870,36 @@ public:
 						const __m128i palColor0 = _mm_shuffle_epi8(pal_vec128, idx0);
 						const __m128i palColor1 = _mm_shuffle_epi8(pal_vec128, idx1);
 						
-						__m128i tmpColor;
-						__m128i tmpAlpha;
+						__m128i tmpAlpha[2];
 						__m128i convertedColor[4];
 						
 						if (TEXFORMAT == TexFormat_15bpp)
 						{
-							__m128i alpha = _mm_srli_epi16( _mm_and_si128(bits, _mm_set1_epi8(0xF8)), 3 );
-							__m128i alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
-							__m128i alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
+							const __m128i alpha = _mm_srli_epi16( _mm_and_si128(bits, _mm_set1_epi8(0xF8)), 3 );
+							const __m128i alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
+							const __m128i alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
 							
-							tmpColor = _mm_unpacklo_epi16(palColor0, _mm_setzero_si128());
-							tmpAlpha = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaLo);
-							convertedColor[0] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(tmpColor, 4), _mm_set1_epi32(0x00000001)));
-							convertedColor[0] = _mm_or_si128( convertedColor[0], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000100))) );
-							convertedColor[0] = _mm_or_si128( convertedColor[0], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 7), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 2), _mm_set1_epi32(0x00010000))) );
-							convertedColor[0] = _mm_or_si128( convertedColor[0], tmpAlpha);
+							tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaLo);
+							tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaLo);
+							ConvertColor555To6665<false>(palColor0, tmpAlpha[0], tmpAlpha[1], convertedColor[0], convertedColor[1]);
 							
-							tmpColor = _mm_unpackhi_epi16(palColor0, _mm_setzero_si128());
-							tmpAlpha = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaLo);
-							convertedColor[1] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(tmpColor, 4), _mm_set1_epi32(0x00000001)));
-							convertedColor[1] = _mm_or_si128( convertedColor[1], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000100))) );
-							convertedColor[1] = _mm_or_si128( convertedColor[1], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 7), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 2), _mm_set1_epi32(0x00010000))) );
-							convertedColor[1] = _mm_or_si128( convertedColor[1], tmpAlpha);
-							
-							tmpColor = _mm_unpacklo_epi16(palColor1, _mm_setzero_si128());
-							tmpAlpha = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaHi);
-							convertedColor[2] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(tmpColor, 4), _mm_set1_epi32(0x00000001)));
-							convertedColor[2] = _mm_or_si128( convertedColor[2], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000100))) );
-							convertedColor[2] = _mm_or_si128( convertedColor[2], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 7), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 2), _mm_set1_epi32(0x00010000))) );
-							convertedColor[2] = _mm_or_si128( convertedColor[2], tmpAlpha);
-							
-							tmpColor = _mm_unpackhi_epi16(palColor1, _mm_setzero_si128());
-							tmpAlpha = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaHi);
-							convertedColor[3] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(tmpColor, 4), _mm_set1_epi32(0x00000001)));
-							convertedColor[3] = _mm_or_si128( convertedColor[3], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000100))) );
-							convertedColor[3] = _mm_or_si128( convertedColor[3], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 7), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 2), _mm_set1_epi32(0x00010000))) );
-							convertedColor[3] = _mm_or_si128( convertedColor[3], tmpAlpha);
+							tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaHi);
+							tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaHi);
+							ConvertColor555To6665<false>(palColor1, tmpAlpha[0], tmpAlpha[1], convertedColor[2], convertedColor[3]);
 						}
 						else
 						{
-							__m128i alpha = _mm_or_si128( _mm_and_si128(bits, _mm_set1_epi8(0xF8)), _mm_srli_epi16(_mm_and_si128(bits, _mm_set1_epi8(0xE0)), 5) );
-							__m128i alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
-							__m128i alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
+							const __m128i alpha = _mm_or_si128( _mm_and_si128(bits, _mm_set1_epi8(0xF8)), _mm_srli_epi16(_mm_and_si128(bits, _mm_set1_epi8(0xE0)), 5) );
+							const __m128i alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
+							const __m128i alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
 							
-							tmpColor = _mm_unpacklo_epi16(palColor0, _mm_setzero_si128());
-							tmpAlpha = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaLo);
-							convertedColor[0] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 3), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(tmpColor, 2), _mm_set1_epi32(0x00000007)));
-							convertedColor[0] = _mm_or_si128( convertedColor[0], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000700))) );
-							convertedColor[0] = _mm_or_si128( convertedColor[0], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 9), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00070000))) );
-							convertedColor[0] = _mm_or_si128( convertedColor[0], tmpAlpha);
+							tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaLo);
+							tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaLo);
+							ConvertColor555To8888<false>(palColor0, tmpAlpha[0], tmpAlpha[1], convertedColor[0], convertedColor[1]);
 							
-							tmpColor = _mm_unpackhi_epi16(palColor0, _mm_setzero_si128());
-							tmpAlpha = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaLo);
-							convertedColor[1] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 3), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(tmpColor, 2), _mm_set1_epi32(0x00000007)));
-							convertedColor[1] = _mm_or_si128( convertedColor[1], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000700))) );
-							convertedColor[1] = _mm_or_si128( convertedColor[1], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 9), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00070000))) );
-							convertedColor[1] = _mm_or_si128( convertedColor[1], tmpAlpha);
-							
-							tmpColor = _mm_unpacklo_epi16(palColor1, _mm_setzero_si128());
-							tmpAlpha = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaHi);
-							convertedColor[2] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 3), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(tmpColor, 2), _mm_set1_epi32(0x00000007)));
-							convertedColor[2] = _mm_or_si128( convertedColor[2], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000700))) );
-							convertedColor[2] = _mm_or_si128( convertedColor[2], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 9), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00070000))) );
-							convertedColor[2] = _mm_or_si128( convertedColor[2], tmpAlpha);
-							
-							tmpColor = _mm_unpackhi_epi16(palColor1, _mm_setzero_si128());
-							tmpAlpha = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaHi);
-							convertedColor[3] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 3), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(tmpColor, 2), _mm_set1_epi32(0x00000007)));
-							convertedColor[3] = _mm_or_si128( convertedColor[3], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000700))) );
-							convertedColor[3] = _mm_or_si128( convertedColor[3], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 9), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00070000))) );
-							convertedColor[3] = _mm_or_si128( convertedColor[3], tmpAlpha);
+							tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaHi);
+							tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaHi);
+							ConvertColor555To8888<false>(palColor1, tmpAlpha[0], tmpAlpha[1], convertedColor[2], convertedColor[3]);
 						}
 						
 						_mm_store_si128((__m128i *)(dwdst +  0), convertedColor[0]);
