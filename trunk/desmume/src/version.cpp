@@ -78,9 +78,13 @@
 	#undef DESMUME_SSE_STRING
 	#define DESMUME_SSE_STRING " SSSE3"
 #endif
-#ifdef ENABLE_SSE4
+#ifdef ENABLE_SSE4_1
 	#undef DESMUME_SSE_STRING
-	#define DESMUME_SSE_STRING " SSE4"
+	#define DESMUME_SSE_STRING " SSE4.1"
+#endif
+#ifdef ENABLE_SSE4_2
+	#undef DESMUME_SSE_STRING
+	#define DESMUME_SSE_STRING " SSE4.2"
 #endif
 #ifdef ENABLE_AVX
 	#undef DESMUME_AVX_STRING

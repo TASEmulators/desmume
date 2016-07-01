@@ -68,6 +68,14 @@
 	#ifdef __SSSE3__
 		#define ENABLE_SSSE3
 	#endif
+
+	#ifdef __SSE4_1__
+		#define ENABLE_SSE4_1
+	#endif
+
+	#ifdef __SSE4_2__
+		#define ENABLE_SSE4_2
+	#endif
 #endif
 
 #ifdef _MSC_VER 
@@ -164,7 +172,7 @@
 
 #ifndef LOOPVECTORIZE_DISABLE
 	#if defined(_MSC_VER)
-	#if _MSC_VER >= 1700
+		#if _MSC_VER >= 1700
 			#define LOOPVECTORIZE_DISABLE loop(no_vector)
 		#else
 			#define LOOPVECTORIZE_DISABLE 
