@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -243,7 +243,7 @@ public:
 		static const int texSizes[] = {0, 4, 1, 2, 4, 1, 4, 8};
 
 		//used to hold a copy of the palette specified for this texture
-		u16 pal[256];
+		CACHE_ALIGN u16 pal[256];
 
 		u32 textureMode = (unsigned short)((format>>26)&0x07);
 		u32 sizeX=(8 << ((format>>20)&0x07));
@@ -374,7 +374,7 @@ public:
 		newitem->invSizeY=1.0f/((float)(sizeY));
 		newitem->decode_len = sizeX*sizeY*4;
 		newitem->mode = textureMode;
-		newitem->decoded = new u8[newitem->decode_len];
+		newitem->decoded = (u8 *)malloc_alignedCacheLine(newitem->decode_len);
 		list_push_front(newitem);
 		//printf("allocating: up to %d with %d items\n",cache_size,index.size());
 
@@ -409,18 +409,14 @@ public:
 		{
 			case TEXMODE_A3I5:
 			{
-				for(int j=0;j<ms.numItems;j++)
+				for (size_t j = 0; j < ms.numItems; j++)
 				{
 					adr = ms.items[j].ptr;
-					for(u32 x = 0; x < ms.items[j].len; x++)
+					for (size_t x = 0; x < ms.items[j].len; x++, adr++)
 					{
-						u16 c = pal[*adr&31] & 0x7FFF;
-						u8 alpha = *adr>>5;
-						if(TEXFORMAT == TexFormat_15bpp)
-							*dwdst++ = COLOR555TO6665(c,material_3bit_to_5bit[alpha]);
-						else
-							*dwdst++ = COLOR555TO8888(c,material_3bit_to_8bit[alpha]);
-						adr++;
+						const u16 c = pal[*adr & 31] & 0x7FFF;
+						const u8 alpha = *adr >> 5;
+						*dwdst++ = (TEXFORMAT == TexFormat_15bpp) ? COLOR555TO6665(c, material_3bit_to_5bit[alpha]) : COLOR555TO8888(c, material_3bit_to_8bit[alpha]);
 					}
 				}
 				break;
@@ -428,59 +424,122 @@ public:
 
 			case TEXMODE_I2:
 			{
+#ifdef ENABLE_SSSE3
+				const __m128i pal_vec128 = _mm_loadl_epi64((__m128i *)pal);
+#endif
 				if (isPalZeroTransparent)
 				{
-					for(int j=0;j<ms.numItems;j++)
+					for (size_t j = 0; j < ms.numItems; j++)
 					{
 						adr = ms.items[j].ptr;
-						for(u32 x = 0; x < ms.items[j].len; x++)
+#ifdef ENABLE_SSSE3
+						for (size_t x = 0; x < ms.items[j].len; x+=4, adr+=4, dwdst+=16)
 						{
-							u8 bits;
+							__m128i idx = _mm_set_epi32(0, 0, 0, *(u32 *)adr);
+							idx = _mm_unpacklo_epi8(idx, idx);
+							idx = _mm_unpacklo_epi8(idx, idx);
+							idx = _mm_or_si128( _mm_or_si128( _mm_or_si128( _mm_and_si128(idx, _mm_set1_epi32(0x00000003)), _mm_and_si128(_mm_srli_epi32(idx, 2), _mm_set1_epi32(0x00000300)) ), _mm_and_si128(_mm_srli_epi32(idx, 4), _mm_set1_epi32(0x00030000)) ), _mm_and_si128(_mm_srli_epi32(idx, 6), _mm_set1_epi32(0x03000000)) );
+							idx = _mm_slli_epi16(idx, 1);
 							
-							bits = (*adr)&0x3;
-							*dwdst++ = (bits == 0) ? 0 : CONVERT(pal[bits] & 0x7FFF);
+							__m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
+							__m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
 							
-							bits = ((*adr)>>2)&0x3;
-							*dwdst++ = (bits == 0) ? 0 : CONVERT(pal[bits] & 0x7FFF);
+							const __m128i palColor0 = _mm_shuffle_epi8(pal_vec128, idx0);
+							const __m128i palColor1 = _mm_shuffle_epi8(pal_vec128, idx1);
 							
-							bits = ((*adr)>>4)&0x3;
-							*dwdst++ = (bits == 0) ? 0 : CONVERT(pal[bits] & 0x7FFF);
+							__m128i convertedColor[4];
 							
-							bits = ((*adr)>>6)&0x3;
-							*dwdst++ = (bits == 0) ? 0 : CONVERT(pal[bits] & 0x7FFF);
+							if (TEXFORMAT == TexFormat_15bpp)
+							{
+								ConvertColor555To6665Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ConvertColor555To6665Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+							}
+							else
+							{
+								ConvertColor555To8888Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ConvertColor555To8888Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+							}
 							
-							adr++;
+							// Set converted colors to 0 if the palette index is 0.
+							idx0 = _mm_cmpeq_epi16(idx0, _mm_set1_epi16(0x0100));
+							idx1 = _mm_cmpeq_epi16(idx1, _mm_set1_epi16(0x0100));
+							convertedColor[0] = _mm_andnot_si128(_mm_unpacklo_epi16(idx0, idx0), convertedColor[0]);
+							convertedColor[1] = _mm_andnot_si128(_mm_unpackhi_epi16(idx0, idx0), convertedColor[1]);
+							convertedColor[2] = _mm_andnot_si128(_mm_unpacklo_epi16(idx1, idx1), convertedColor[2]);
+							convertedColor[3] = _mm_andnot_si128(_mm_unpackhi_epi16(idx1, idx1), convertedColor[3]);
+							
+							_mm_store_si128((__m128i *)(dwdst +  0), convertedColor[0]);
+							_mm_store_si128((__m128i *)(dwdst +  4), convertedColor[1]);
+							_mm_store_si128((__m128i *)(dwdst +  8), convertedColor[2]);
+							_mm_store_si128((__m128i *)(dwdst + 12), convertedColor[3]);
 						}
+#else
+						for (size_t x = 0; x < ms.items[j].len; x++, adr++)
+						{
+							u8 idx;
+							
+							idx =  *adr       & 0x03;
+							*dwdst++ = (idx == 0) ? 0 : CONVERT(pal[idx] & 0x7FFF);
+							
+							idx = (*adr >> 2) & 0x03;
+							*dwdst++ = (idx == 0) ? 0 : CONVERT(pal[idx] & 0x7FFF);
+							
+							idx = (*adr >> 4) & 0x03;
+							*dwdst++ = (idx == 0) ? 0 : CONVERT(pal[idx] & 0x7FFF);
+							
+							idx = (*adr >> 6) & 0x03;
+							*dwdst++ = (idx == 0) ? 0 : CONVERT(pal[idx] & 0x7FFF);
+						}
+#endif
 					}
 				}
 				else
 				{
-					for(int j=0;j<ms.numItems;j++)
+					for (size_t j = 0; j < ms.numItems; j++)
 					{
 						adr = ms.items[j].ptr;
-						for(u32 x = 0; x < ms.items[j].len; x++)
+#ifdef ENABLE_SSSE3
+						for (size_t x = 0; x < ms.items[j].len; x+=4, adr+=4, dwdst+=16)
 						{
-							u8 bits;
-							u16 c;
+							__m128i idx = _mm_set_epi32(0, 0, 0, *(u32 *)adr);
+							idx = _mm_unpacklo_epi8(idx, idx);
+							idx = _mm_unpacklo_epi8(idx, idx);
+							idx = _mm_or_si128( _mm_or_si128( _mm_or_si128( _mm_and_si128(idx, _mm_set1_epi32(0x00000003)), _mm_and_si128(_mm_srli_epi32(idx, 2), _mm_set1_epi32(0x00000300)) ), _mm_and_si128(_mm_srli_epi32(idx, 4), _mm_set1_epi32(0x00030000)) ), _mm_and_si128(_mm_srli_epi32(idx, 6), _mm_set1_epi32(0x03000000)) );
+							idx = _mm_slli_epi16(idx, 1);
 							
-							bits = (*adr)&0x3;
-							c = pal[bits] & 0x7FFF;
-							*dwdst++ = CONVERT(c);
+							const __m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
+							const __m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
 							
-							bits = ((*adr)>>2)&0x3;
-							c = pal[bits] & 0x7FFF;
-							*dwdst++ = CONVERT(c);
+							const __m128i palColor0 = _mm_shuffle_epi8(pal_vec128, idx0);
+							const __m128i palColor1 = _mm_shuffle_epi8(pal_vec128, idx1);
 							
-							bits = ((*adr)>>4)&0x3;
-							c = pal[bits] & 0x7FFF;
-							*dwdst++ = CONVERT(c);
+							__m128i convertedColor[4];
 							
-							bits = ((*adr)>>6)&0x3;
-							c = pal[bits] & 0x7FFF;
-							*dwdst++ = CONVERT(c);
+							if (TEXFORMAT == TexFormat_15bpp)
+							{
+								ConvertColor555To6665Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ConvertColor555To6665Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+							}
+							else
+							{
+								ConvertColor555To8888Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ConvertColor555To8888Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+							}
 							
-							adr++;
+							_mm_store_si128((__m128i *)(dwdst +  0), convertedColor[0]);
+							_mm_store_si128((__m128i *)(dwdst +  4), convertedColor[1]);
+							_mm_store_si128((__m128i *)(dwdst +  8), convertedColor[2]);
+							_mm_store_si128((__m128i *)(dwdst + 12), convertedColor[3]);
 						}
+#else
+						for (size_t x = 0; x < ms.items[j].len; x++, adr++)
+						{
+							*dwdst++ = CONVERT(pal[ *adr       & 0x03] & 0x7FFF);
+							*dwdst++ = CONVERT(pal[(*adr >> 2) & 0x03] & 0x7FFF);
+							*dwdst++ = CONVERT(pal[(*adr >> 4) & 0x03] & 0x7FFF);
+							*dwdst++ = CONVERT(pal[(*adr >> 6) & 0x03] & 0x7FFF);
+						}
+#endif
 					}
 				}
 				break;
@@ -488,43 +547,126 @@ public:
 				
 			case TEXMODE_I4:
 			{
+#ifdef ENABLE_SSSE3
+				const __m128i palLo = _mm_load_si128((__m128i *)pal + 0);
+				const __m128i palHi = _mm_load_si128((__m128i *)pal + 1);
+#endif
 				if (isPalZeroTransparent)
 				{
-					for(int j=0;j<ms.numItems;j++)
+					for (size_t j = 0; j < ms.numItems; j++)
 					{
 						adr = ms.items[j].ptr;
-						for(u32 x = 0; x < ms.items[j].len; x++)
+#ifdef ENABLE_SSSE3
+						for (size_t x = 0; x < ms.items[j].len; x+=8, adr+=8, dwdst+=16)
 						{
-							u8 bits;
+							__m128i idx = _mm_loadl_epi64((__m128i *)adr);
+							idx = _mm_unpacklo_epi8(idx, idx);
+							idx = _mm_or_si128( _mm_and_si128(idx, _mm_set1_epi16(0x000F)), _mm_and_si128(_mm_srli_epi16(idx, 4), _mm_set1_epi16(0x0F00)) );
+							idx = _mm_slli_epi16(idx, 1);
 							
-							bits = (*adr)&0xF;
-							*dwdst++ = (bits == 0) ? 0 : CONVERT(pal[bits] & 0x7FFF);
+							__m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
+							__m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
 							
-							bits = ((*adr)>>4);
-							*dwdst++ = (bits == 0) ? 0 : CONVERT(pal[bits] & 0x7FFF);
-							adr++;
+							const __m128i palMask = _mm_cmpeq_epi8( _mm_and_si128(idx, _mm_set1_epi8(0x10)), _mm_setzero_si128() );
+							const __m128i palColor0A = _mm_shuffle_epi8(palLo, idx0);
+							const __m128i palColor0B = _mm_shuffle_epi8(palHi, idx0);
+							const __m128i palColor1A = _mm_shuffle_epi8(palLo, idx1);
+							const __m128i palColor1B = _mm_shuffle_epi8(palHi, idx1);
+							
+							const __m128i palColor0 = _mm_blendv_epi8( palColor0B, palColor0A, _mm_unpacklo_epi8(palMask, palMask) );
+							const __m128i palColor1 = _mm_blendv_epi8( palColor1B, palColor1A, _mm_unpackhi_epi8(palMask, palMask) );
+							
+							__m128i convertedColor[4];
+							
+							if (TEXFORMAT == TexFormat_15bpp)
+							{
+								ConvertColor555To6665Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ConvertColor555To6665Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+							}
+							else
+							{
+								ConvertColor555To8888Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ConvertColor555To8888Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+							}
+							
+							// Set converted colors to 0 if the palette index is 0.
+							idx0 = _mm_cmpeq_epi16(idx0, _mm_set1_epi16(0x0100));
+							idx1 = _mm_cmpeq_epi16(idx1, _mm_set1_epi16(0x0100));
+							convertedColor[0] = _mm_andnot_si128(_mm_unpacklo_epi16(idx0, idx0), convertedColor[0]);
+							convertedColor[1] = _mm_andnot_si128(_mm_unpackhi_epi16(idx0, idx0), convertedColor[1]);
+							convertedColor[2] = _mm_andnot_si128(_mm_unpacklo_epi16(idx1, idx1), convertedColor[2]);
+							convertedColor[3] = _mm_andnot_si128(_mm_unpackhi_epi16(idx1, idx1), convertedColor[3]);
+							
+							_mm_store_si128((__m128i *)(dwdst +  0), convertedColor[0]);
+							_mm_store_si128((__m128i *)(dwdst +  4), convertedColor[1]);
+							_mm_store_si128((__m128i *)(dwdst +  8), convertedColor[2]);
+							_mm_store_si128((__m128i *)(dwdst + 12), convertedColor[3]);
 						}
+#else
+						for (size_t x = 0; x < ms.items[j].len; x++, adr++)
+						{
+							u8 idx;
+							
+							idx = *adr & 0xF;
+							*dwdst++ = (idx == 0) ? 0 : CONVERT(pal[idx] & 0x7FFF);
+							
+							idx = *adr >> 4;
+							*dwdst++ = (idx == 0) ? 0 : CONVERT(pal[idx] & 0x7FFF);
+						}
+#endif
 					}
+					
 				}
 				else
 				{
-					for(int j=0;j<ms.numItems;j++)
+					for (size_t j = 0; j < ms.numItems; j++)
 					{
 						adr = ms.items[j].ptr;
-						for(u32 x = 0; x < ms.items[j].len; x++)
+#ifdef ENABLE_SSSE3
+						for (size_t x = 0; x < ms.items[j].len; x+=8, adr+=8, dwdst+=16)
 						{
-							u8 bits;
-							u16 c;
+							__m128i idx = _mm_loadl_epi64((__m128i *)adr);
+							idx = _mm_unpacklo_epi8(idx, idx);
+							idx = _mm_or_si128( _mm_and_si128(idx, _mm_set1_epi16(0x000F)), _mm_and_si128(_mm_srli_epi16(idx, 4), _mm_set1_epi16(0x0F00)) );
+							idx = _mm_slli_epi16(idx, 1);
 							
-							bits = (*adr)&0xF;
-							c = pal[bits] & 0x7FFF;
-							*dwdst++ = CONVERT(c);
+							const __m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
+							const __m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
 							
-							bits = ((*adr)>>4);
-							c = pal[bits] & 0x7FFF;
-							*dwdst++ = CONVERT(c);
-							adr++;
+							const __m128i palMask = _mm_cmpeq_epi8( _mm_and_si128(idx, _mm_set1_epi8(0x10)), _mm_setzero_si128() );
+							const __m128i palColor0A = _mm_shuffle_epi8(palLo, idx0);
+							const __m128i palColor0B = _mm_shuffle_epi8(palHi, idx0);
+							const __m128i palColor1A = _mm_shuffle_epi8(palLo, idx1);
+							const __m128i palColor1B = _mm_shuffle_epi8(palHi, idx1);
+							
+							const __m128i palColor0 = _mm_blendv_epi8( palColor0B, palColor0A, _mm_unpacklo_epi8(palMask, palMask) );
+							const __m128i palColor1 = _mm_blendv_epi8( palColor1B, palColor1A, _mm_unpackhi_epi8(palMask, palMask) );
+							
+							__m128i convertedColor[4];
+							
+							if (TEXFORMAT == TexFormat_15bpp)
+							{
+								ConvertColor555To6665Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ConvertColor555To6665Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+							}
+							else
+							{
+								ConvertColor555To8888Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ConvertColor555To8888Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+							}
+							
+							_mm_store_si128((__m128i *)(dwdst +  0), convertedColor[0]);
+							_mm_store_si128((__m128i *)(dwdst +  4), convertedColor[1]);
+							_mm_store_si128((__m128i *)(dwdst +  8), convertedColor[2]);
+							_mm_store_si128((__m128i *)(dwdst + 12), convertedColor[3]);
 						}
+#else
+						for (size_t x = 0; x < ms.items[j].len; x++, adr++)
+						{
+							*dwdst++ = CONVERT(pal[*adr & 0x0F] & 0x7FFF);
+							*dwdst++ = CONVERT(pal[*adr >> 4] & 0x7FFF);
+						}
+#endif
 					}
 				}
 				break;
@@ -534,26 +676,23 @@ public:
 			{
 				if (isPalZeroTransparent)
 				{
-					for(int j=0;j<ms.numItems;j++)
+					for (size_t j = 0; j < ms.numItems; j++)
 					{
 						adr = ms.items[j].ptr;
-						for(u32 x = 0; x < ms.items[j].len; ++x)
+						for (size_t x = 0; x < ms.items[j].len; x++, adr++)
 						{
 							*dwdst++ = (*adr == 0) ? 0 : CONVERT(pal[*adr] & 0x7FFF);
-							adr++;
 						}
 					}
 				}
 				else
 				{
-					for(int j=0;j<ms.numItems;j++)
+					for (size_t j = 0; j < ms.numItems; j++)
 					{
 						adr = ms.items[j].ptr;
-						for(u32 x = 0; x < ms.items[j].len; ++x)
+						for (size_t x = 0; x < ms.items[j].len; x++, adr++)
 						{
-							const u16 c = pal[*adr] & 0x7FFF;
-							*dwdst++ = CONVERT(c);
-							adr++;
+							*dwdst++ = CONVERT(pal[*adr] & 0x7FFF);
 						}
 					}
 				}
@@ -588,11 +727,11 @@ public:
 				//i am guessing we just generate black in that case
 				bool dead = false;
 
-				for (int y = 0; y < yTmpSize; y ++)
+				for (size_t y = 0; y < yTmpSize; y++)
 				{
 					u32 tmpPos[4]={(y<<2)*sizeX,((y<<2)+1)*sizeX,
 						((y<<2)+2)*sizeX,((y<<2)+3)*sizeX};
-					for (int x = 0; x < xTmpSize; x ++, d++)
+					for (size_t x = 0; x < xTmpSize; x++, d++)
 					{
 						if (d >= limit)
 							dead = true;
@@ -713,34 +852,125 @@ public:
 				
 			case TEXMODE_A5I3:
 			{
-				for (int j = 0; j < ms.numItems; j++)
+#ifdef ENABLE_SSSE3
+				const __m128i pal_vec128 = _mm_load_si128((__m128i *)pal);
+#endif
+				for (size_t j = 0; j < ms.numItems; j++)
 				{
 					adr = ms.items[j].ptr;
-					for (u32 x = 0; x < ms.items[j].len; ++x)
+#ifdef ENABLE_SSSE3
+					for (size_t x = 0; x < ms.items[j].len; x+=16, adr+=16, dwdst+=16)
+					{
+						const __m128i bits = _mm_loadu_si128((__m128i *)adr);
+						
+						const __m128i idx = _mm_slli_epi16( _mm_and_si128(bits, _mm_set1_epi8(0x07)), 1 );
+						const __m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
+						const __m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
+						
+						const __m128i palColor0 = _mm_shuffle_epi8(pal_vec128, idx0);
+						const __m128i palColor1 = _mm_shuffle_epi8(pal_vec128, idx1);
+						
+						__m128i tmpColor;
+						__m128i tmpAlpha;
+						__m128i convertedColor[4];
+						
+						if (TEXFORMAT == TexFormat_15bpp)
+						{
+							__m128i alpha = _mm_srli_epi16( _mm_and_si128(bits, _mm_set1_epi8(0xF8)), 3 );
+							__m128i alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
+							__m128i alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
+							
+							tmpColor = _mm_unpacklo_epi16(palColor0, _mm_setzero_si128());
+							tmpAlpha = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaLo);
+							convertedColor[0] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(tmpColor, 4), _mm_set1_epi32(0x00000001)));
+							convertedColor[0] = _mm_or_si128( convertedColor[0], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000100))) );
+							convertedColor[0] = _mm_or_si128( convertedColor[0], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 7), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 2), _mm_set1_epi32(0x00010000))) );
+							convertedColor[0] = _mm_or_si128( convertedColor[0], tmpAlpha);
+							
+							tmpColor = _mm_unpackhi_epi16(palColor0, _mm_setzero_si128());
+							tmpAlpha = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaLo);
+							convertedColor[1] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(tmpColor, 4), _mm_set1_epi32(0x00000001)));
+							convertedColor[1] = _mm_or_si128( convertedColor[1], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000100))) );
+							convertedColor[1] = _mm_or_si128( convertedColor[1], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 7), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 2), _mm_set1_epi32(0x00010000))) );
+							convertedColor[1] = _mm_or_si128( convertedColor[1], tmpAlpha);
+							
+							tmpColor = _mm_unpacklo_epi16(palColor1, _mm_setzero_si128());
+							tmpAlpha = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaHi);
+							convertedColor[2] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(tmpColor, 4), _mm_set1_epi32(0x00000001)));
+							convertedColor[2] = _mm_or_si128( convertedColor[2], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000100))) );
+							convertedColor[2] = _mm_or_si128( convertedColor[2], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 7), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 2), _mm_set1_epi32(0x00010000))) );
+							convertedColor[2] = _mm_or_si128( convertedColor[2], tmpAlpha);
+							
+							tmpColor = _mm_unpackhi_epi16(palColor1, _mm_setzero_si128());
+							tmpAlpha = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaHi);
+							convertedColor[3] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(tmpColor, 4), _mm_set1_epi32(0x00000001)));
+							convertedColor[3] = _mm_or_si128( convertedColor[3], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000100))) );
+							convertedColor[3] = _mm_or_si128( convertedColor[3], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 7), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 2), _mm_set1_epi32(0x00010000))) );
+							convertedColor[3] = _mm_or_si128( convertedColor[3], tmpAlpha);
+						}
+						else
+						{
+							__m128i alpha = _mm_or_si128( _mm_and_si128(bits, _mm_set1_epi8(0xF8)), _mm_srli_epi16(_mm_and_si128(bits, _mm_set1_epi8(0xE0)), 5) );
+							__m128i alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
+							__m128i alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
+							
+							tmpColor = _mm_unpacklo_epi16(palColor0, _mm_setzero_si128());
+							tmpAlpha = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaLo);
+							convertedColor[0] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 3), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(tmpColor, 2), _mm_set1_epi32(0x00000007)));
+							convertedColor[0] = _mm_or_si128( convertedColor[0], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000700))) );
+							convertedColor[0] = _mm_or_si128( convertedColor[0], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 9), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00070000))) );
+							convertedColor[0] = _mm_or_si128( convertedColor[0], tmpAlpha);
+							
+							tmpColor = _mm_unpackhi_epi16(palColor0, _mm_setzero_si128());
+							tmpAlpha = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaLo);
+							convertedColor[1] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 3), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(tmpColor, 2), _mm_set1_epi32(0x00000007)));
+							convertedColor[1] = _mm_or_si128( convertedColor[1], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000700))) );
+							convertedColor[1] = _mm_or_si128( convertedColor[1], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 9), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00070000))) );
+							convertedColor[1] = _mm_or_si128( convertedColor[1], tmpAlpha);
+							
+							tmpColor = _mm_unpacklo_epi16(palColor1, _mm_setzero_si128());
+							tmpAlpha = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaHi);
+							convertedColor[2] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 3), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(tmpColor, 2), _mm_set1_epi32(0x00000007)));
+							convertedColor[2] = _mm_or_si128( convertedColor[2], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000700))) );
+							convertedColor[2] = _mm_or_si128( convertedColor[2], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 9), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00070000))) );
+							convertedColor[2] = _mm_or_si128( convertedColor[2], tmpAlpha);
+							
+							tmpColor = _mm_unpackhi_epi16(palColor1, _mm_setzero_si128());
+							tmpAlpha = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaHi);
+							convertedColor[3] =                                  _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 3), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(tmpColor, 2), _mm_set1_epi32(0x00000007)));
+							convertedColor[3] = _mm_or_si128( convertedColor[3], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(tmpColor, 1), _mm_set1_epi32(0x00000700))) );
+							convertedColor[3] = _mm_or_si128( convertedColor[3], _mm_or_si128(_mm_and_si128(_mm_slli_epi32(tmpColor, 9), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(tmpColor, 4), _mm_set1_epi32(0x00070000))) );
+							convertedColor[3] = _mm_or_si128( convertedColor[3], tmpAlpha);
+						}
+						
+						_mm_store_si128((__m128i *)(dwdst +  0), convertedColor[0]);
+						_mm_store_si128((__m128i *)(dwdst +  4), convertedColor[1]);
+						_mm_store_si128((__m128i *)(dwdst +  8), convertedColor[2]);
+						_mm_store_si128((__m128i *)(dwdst + 12), convertedColor[3]);
+					}
+#else
+					for (size_t x = 0; x < ms.items[j].len; x++, adr++)
 					{
 						const u16 c = pal[*adr&0x07] & 0x7FFF;
 						const u8 alpha = (*adr>>3);
-						if (TEXFORMAT == TexFormat_15bpp)
-							*dwdst++ = COLOR555TO6665(c,alpha);
-						else
-							*dwdst++ = COLOR555TO8888(c,material_5bit_to_8bit[alpha]);
-						adr++;
+						*dwdst++ = (TEXFORMAT == TexFormat_15bpp) ? COLOR555TO6665(c, alpha) : COLOR555TO8888(c, material_5bit_to_8bit[alpha]);
 					}
+#endif
 				}
 				break;
 			}
 				
 			case TEXMODE_16BPP:
 			{
-				for (int j = 0; j < ms.numItems; j++)
+				for (size_t j = 0; j < ms.numItems; j++)
 				{
 					const u16 *map = (u16*)ms.items[j].ptr;
-					const int len = ms.items[j].len>>1;
+					const size_t len = ms.items[j].len >> 1;
 					
-					for (int x = 0; x < len; ++x)
+					for (size_t x = 0; x < len; x++)
 					{
 						const u16 c = map[x];
-						*dwdst++ = (c & 0x8000) ? CONVERT(c&0x7FFF) : 0;
+						*dwdst++ = (c & 0x8000) ? CONVERT(c & 0x7FFF) : 0;
 					}
 				}
 				break;

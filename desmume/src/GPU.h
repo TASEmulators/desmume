@@ -38,6 +38,14 @@
 #include <smmintrin.h>
 #endif
 
+// Note: The SSE4.1 version of pblendvb only requires that the MSBs of the 8-bit mask vector are set in order to
+// pass the b byte through. However, our SSE2 substitute of pblendvb requires that all of the bits of the 8-bit
+// mask vector are set. So when using this intrinsic in practice, just set/clear all mask bits together, and it
+// should work fine for both SSE4.1 and SSE2.
+#if !defined(_SMMINTRIN_H) && defined(__EMMINTRIN_H)
+	#define _mm_blendv_epi8(a, b, fullmask) _mm_or_si128(_mm_and_si128((fullmask), (b)), _mm_andnot_si128((fullmask), (a)))
+#endif
+
 class GPUEngineBase;
 class EMUFILE;
 struct MMU_struct;
@@ -1777,71 +1785,75 @@ FORCEINLINE u16 ConvertColor6665To5551(u32 srcColor)
 template <bool SWAP_RB>
 FORCEINLINE void ConvertColor555To8888Opaque(const __m128i &src, __m128i &dstLo, __m128i &dstHi)
 {
+	__m128i src32;
+	
 	// Conversion algorithm:
 	//    RGB   5-bit to 8-bit formula: dstRGB8 = (srcRGB5 << 3) | ((srcRGB5 >> 2) & 0x07)
 	if (SWAP_RB)
 	{
-		dstLo =                     _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src, 19), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(src, 14), _mm_set1_epi32(0x00070000)));
-		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(src,  1), _mm_set1_epi32(0x00000700))) );
-		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src,  7), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src, 12), _mm_set1_epi32(0x00000007))) );
-		dstLo = _mm_or_si128(dstLo, _mm_set1_epi32(0xFF000000));
+		src32 = _mm_unpacklo_epi16(src, _mm_setzero_si128());
+		dstLo =                      _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32, 19), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(src32, 14), _mm_set1_epi32(0x00070000)));
+		dstLo = _mm_or_si128( dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(src32,  1), _mm_set1_epi32(0x00000700))) );
+		dstLo = _mm_or_si128( dstLo, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src32,  7), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src32, 12), _mm_set1_epi32(0x00000007))) );
+		dstLo = _mm_or_si128( dstLo, _mm_set1_epi32(0xFF000000) );
 		
-		dstHi =                     _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  3), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_srli_epi32(src,  2), _mm_set1_epi32(0x00070000)));
-		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 10), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_srli_epi32(src, 15), _mm_set1_epi32(0x00000700))) );
-		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 23), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src, 28), _mm_set1_epi32(0x00000007))) );
-		dstHi = _mm_or_si128(dstHi, _mm_set1_epi32(0xFF000000));
+		src32 = _mm_unpackhi_epi16(src, _mm_setzero_si128());
+		dstHi =                      _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32, 19), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(src32, 14), _mm_set1_epi32(0x00070000)));
+		dstHi = _mm_or_si128( dstHi, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(src32,  1), _mm_set1_epi32(0x00000700))) );
+		dstHi = _mm_or_si128( dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src32,  7), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src32, 12), _mm_set1_epi32(0x00000007))) );
+		dstHi = _mm_or_si128( dstHi, _mm_set1_epi32(0xFF000000) );
 	}
 	else
 	{
-		dstLo =                     _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  3), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src,  2), _mm_set1_epi32(0x00000007)));
-		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(src,  1), _mm_set1_epi32(0x00000700))) );
-		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  9), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(src,  4), _mm_set1_epi32(0x00070000))) );
-		dstLo = _mm_or_si128(dstLo, _mm_set1_epi32(0xFF000000));
+		src32 = _mm_unpacklo_epi16(src, _mm_setzero_si128());
+		dstLo =                      _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  3), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src32,  2), _mm_set1_epi32(0x00000007)));
+		dstLo = _mm_or_si128( dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(src32,  1), _mm_set1_epi32(0x00000700))) );
+		dstLo = _mm_or_si128( dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  9), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(src32,  4), _mm_set1_epi32(0x00070000))) );
+		dstLo = _mm_or_si128( dstLo, _mm_set1_epi32(0xFF000000) );
 		
-		dstHi =                     _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 13), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src, 18), _mm_set1_epi32(0x00000007)));
-		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 10), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_srli_epi32(src, 15), _mm_set1_epi32(0x00000700))) );
-		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src,  7), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_srli_epi32(src, 12), _mm_set1_epi32(0x00070000))) );
-		dstHi = _mm_or_si128(dstHi, _mm_set1_epi32(0xFF000000));
+		src32 = _mm_unpackhi_epi16(src, _mm_setzero_si128());
+		dstHi =                      _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  3), _mm_set1_epi32(0x000000F8)), _mm_and_si128(_mm_srli_epi32(src32,  2), _mm_set1_epi32(0x00000007)));
+		dstHi = _mm_or_si128( dstHi, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  6), _mm_set1_epi32(0x0000F800)), _mm_and_si128(_mm_slli_epi32(src32,  1), _mm_set1_epi32(0x00000700))) );
+		dstHi = _mm_or_si128( dstHi, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  9), _mm_set1_epi32(0x00F80000)), _mm_and_si128(_mm_slli_epi32(src32,  4), _mm_set1_epi32(0x00070000))) );
+		dstHi = _mm_or_si128( dstHi, _mm_set1_epi32(0xFF000000) );
 	}
-	
-	__m128i tmpDstLo = dstLo;
-	dstLo = _mm_or_si128( _mm_and_si128(_mm_shuffle_epi32(tmpDstLo, 0xD8), _mm_set_epi32(0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF)), _mm_and_si128(_mm_shuffle_epi32(dstHi, 0x72), _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000)) );
-	dstHi = _mm_or_si128( _mm_and_si128(_mm_shuffle_epi32(tmpDstLo, 0x72), _mm_set_epi32(0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF)), _mm_and_si128(_mm_shuffle_epi32(dstHi, 0xD8), _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000)) );
 }
 
 template <bool SWAP_RB>
 FORCEINLINE void ConvertColor555To6665Opaque(const __m128i &src, __m128i &dstLo, __m128i &dstHi)
 {
+	__m128i src32;
+	
 	// Conversion algorithm:
 	//    RGB   5-bit to 6-bit formula: dstRGB6 = (srcRGB5 << 1) | ((srcRGB5 >> 4) & 0x01)
 	if (SWAP_RB)
 	{
-		dstLo =                     _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src, 17), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(src, 12), _mm_set1_epi32(0x00010000)));
-		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(src,  1), _mm_set1_epi32(0x00000100))) );
-		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src,  9), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(src, 14), _mm_set1_epi32(0x00000001))) );
-		dstLo = _mm_or_si128(dstLo, _mm_set1_epi32(0x1F000000));
+		src32 = _mm_unpacklo_epi16(src, _mm_setzero_si128());
+		dstLo =                      _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32, 17), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(src32, 12), _mm_set1_epi32(0x00010000)));
+		dstLo = _mm_or_si128( dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(src32,  1), _mm_set1_epi32(0x00000100))) );
+		dstLo = _mm_or_si128( dstLo, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src32,  9), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(src32, 14), _mm_set1_epi32(0x00000001))) );
+		dstLo = _mm_or_si128( dstLo, _mm_set1_epi32(0x1F000000) );
 		
-		dstHi =                     _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  1), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_srli_epi32(src,  4), _mm_set1_epi32(0x00010000)));
-		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 12), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(src, 17), _mm_set1_epi32(0x00000100))) );
-		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 25), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(src, 30), _mm_set1_epi32(0x00000001))) );
-		dstHi = _mm_or_si128(dstHi, _mm_set1_epi32(0x1F000000));
+		src32 = _mm_unpackhi_epi16(src, _mm_setzero_si128());
+		dstHi =                      _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32, 17), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(src32, 12), _mm_set1_epi32(0x00010000)));
+		dstHi = _mm_or_si128( dstHi, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(src32,  1), _mm_set1_epi32(0x00000100))) );
+		dstHi = _mm_or_si128( dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src32,  9), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(src32, 14), _mm_set1_epi32(0x00000001))) );
+		dstHi = _mm_or_si128( dstHi, _mm_set1_epi32(0x1F000000) );
 	}
 	else
 	{
-		dstLo =                     _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  1), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(src,  4), _mm_set1_epi32(0x00000001)));
-		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(src,  1), _mm_set1_epi32(0x00000100))) );
-		dstLo = _mm_or_si128(dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src,  7), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(src,  2), _mm_set1_epi32(0x00010000))) );
-		dstLo = _mm_or_si128(dstLo, _mm_set1_epi32(0x1F000000));
+		src32 = _mm_unpacklo_epi16(src, _mm_setzero_si128());
+		dstLo =                      _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  1), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(src32,  4), _mm_set1_epi32(0x00000001)));
+		dstLo = _mm_or_si128( dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(src32,  1), _mm_set1_epi32(0x00000100))) );
+		dstLo = _mm_or_si128( dstLo, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  7), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(src32,  2), _mm_set1_epi32(0x00010000))) );
+		dstLo = _mm_or_si128( dstLo, _mm_set1_epi32(0x1F000000) );
 		
-		dstHi =                     _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 15), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(src, 20), _mm_set1_epi32(0x00000001)));
-		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src, 12), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(src, 17), _mm_set1_epi32(0x00000100))) );
-		dstHi = _mm_or_si128(dstHi, _mm_or_si128(_mm_and_si128(_mm_srli_epi32(src,  9), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_srli_epi32(src, 14), _mm_set1_epi32(0x00010000))) );
-		dstHi = _mm_or_si128(dstHi, _mm_set1_epi32(0x1F000000));
+		src32 = _mm_unpackhi_epi16(src, _mm_setzero_si128());
+		dstHi =                      _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  1), _mm_set1_epi32(0x0000003E)), _mm_and_si128(_mm_srli_epi32(src32,  4), _mm_set1_epi32(0x00000001)));
+		dstHi = _mm_or_si128( dstHi, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  4), _mm_set1_epi32(0x00003E00)), _mm_and_si128(_mm_srli_epi32(src32,  1), _mm_set1_epi32(0x00000100))) );
+		dstHi = _mm_or_si128( dstHi, _mm_or_si128(_mm_and_si128(_mm_slli_epi32(src32,  7), _mm_set1_epi32(0x003E0000)), _mm_and_si128(_mm_slli_epi32(src32,  2), _mm_set1_epi32(0x00010000))) );
+		dstHi = _mm_or_si128( dstHi, _mm_set1_epi32(0x1F000000) );
 	}
-	
-	__m128i tmpDstLo = dstLo;
-	dstLo = _mm_or_si128( _mm_and_si128(_mm_shuffle_epi32(tmpDstLo, 0xD8), _mm_set_epi32(0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF)), _mm_and_si128(_mm_shuffle_epi32(dstHi, 0x72), _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000)) );
-	dstHi = _mm_or_si128( _mm_and_si128(_mm_shuffle_epi32(tmpDstLo, 0x72), _mm_set_epi32(0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF)), _mm_and_si128(_mm_shuffle_epi32(dstHi, 0xD8), _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000)) );
 }
 
 template <bool SWAP_RB>
