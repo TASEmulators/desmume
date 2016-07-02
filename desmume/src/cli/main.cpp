@@ -198,8 +198,7 @@ fill_config( class configured_features *config,
     { NULL }
   };
 
-  config->loadCommonOptions();
-  g_option_context_add_main_entries (config->ctx, options, "options");
+  //g_option_context_add_main_entries (config->ctx, options, "options");
   config->parse(argc,argv);
 
   if(!config->validate())
