@@ -237,7 +237,7 @@ static void my_gl_Texture2D() {
 
 static void
 my_gl_ScreenTex( int software_convert) {
-  u16 *gpuFramebuffer = GPU->GetDisplayInfo().masterNativeBuffer;
+  u16 *gpuFramebuffer = (u16 *)GPU->GetDisplayInfo().masterNativeBuffer;
 
   if ( software_convert) {
     u8 converted[256 * 384 * 3];

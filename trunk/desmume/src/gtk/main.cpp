@@ -694,9 +694,8 @@ fill_configured_features( class configured_features *config,
     { NULL }
   };
 
-  config->loadCommonOptions();
-  g_option_context_add_main_entries (config->ctx, options, "options");
-  g_option_context_add_group (config->ctx, gtk_get_option_group (TRUE));
+  //g_option_context_add_main_entries (config->ctx, options, "options");
+  //g_option_context_add_group (config->ctx, gtk_get_option_group (TRUE));
   config->parse(argc,argv);
 
   if(!config->validate())

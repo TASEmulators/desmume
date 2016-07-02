@@ -2,7 +2,7 @@ include $(top_srcdir)/src/desmume.mk
 
 AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS) $(LIBSOUNDTOUCH_CFLAGS)
 
-EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc fs-linux.cpp fs-windows.cpp cocoa
+EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc cocoa
 if HAVE_GDB_STUB
 SUBDIRS = . gdbstub $(UI_DIR)
 else
@@ -21,7 +21,6 @@ libdesmume_a_SOURCES = \
 	Disassembler.cpp Disassembler.h \
 	emufile.h emufile.cpp emufile_types.h encrypt.h encrypt.cpp FIFO.cpp FIFO.h \
 	firmware.cpp firmware.h GPU.cpp GPU.h \
-	fs.h \
 	GPU_osd.h \
 	instructions.h \
 	mem.h mc.cpp mc.h \
@@ -100,7 +99,14 @@ libdesmume_a_SOURCES = \
 	filter/videofilter.cpp filter/videofilter.h \
 	filter/xbrz.cpp filter/xbrz.h \
 	version.cpp version.h \
-	desmume_config.cpp desmume_config.h
+	desmume_config.cpp desmume_config.h \
+	libretro-common/compat/compat_getopt.c \
+	libretro-common/file/file_path.c \
+	libretro-common/file/retro_dirent.c \
+	libretro-common/file/retro_stat.c \
+	libretro-common/rthreads/async_job.c \
+	libretro-common/rthreads/rsemaphore.c \
+	libretro-common/rthreads/rthreads.c
 
 if HAVE_JIT
 libdesmume_a_SOURCES += \
@@ -205,4 +211,3 @@ endif
 if HAVE_GDB_STUB
 libdesmume_a_SOURCES += gdbstub.h
 endif
-libdesmume_a_LIBADD = fs-$(desmume_arch).$(OBJEXT)
