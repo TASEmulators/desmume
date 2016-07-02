@@ -26,7 +26,7 @@
 #include "slot2.h"
 #include "NDSSystem.h"
 #include "utils/xstring.h"
-#include "compat/getopt.h"
+#include <compat/getopt.h>
 //#include "frontend/modules/mGetOpt.h" //to test with this, make sure global `optind` is initialized to 1
 
 #define printerror(...) fprintf(stderr, __VA_ARGS__)
@@ -194,9 +194,9 @@ bool CommandLine::parse(int argc,char **argv)
 			{ "help", no_argument, &opt_help, 1 },
 
 			//user settings
-			{ "num-cores", required_argument, nullptr, OPT_NUMCORES },
+			{ "num-cores", required_argument, NULL, OPT_NUMCORES },
 			{ "spu-synch", no_argument, &_spu_sync_mode, 1 },
-			{ "spu-method", required_argument, nullptr, OPT_SPU_METHOD },
+			{ "spu-method", required_argument, NULL, OPT_SPU_METHOD },
 			#ifndef HOST_WINDOWS 
 				{ "disable-sound", no_argument, &disable_sound, 1},
 				{ "disable-limiter", no_argument, &disable_limiter, 1},
@@ -214,41 +214,41 @@ bool CommandLine::parse(int argc,char **argv)
 			{ "backupmem-db", no_argument, &autodetect_method, 1},
 
 			//system equipment
-			{ "console-type", required_argument, nullptr, OPT_CONSOLE_TYPE },
-			{ "bios-arm9", required_argument, nullptr, OPT_ARM9},
-			{ "bios-arm7", required_argument, nullptr, OPT_ARM7},
+			{ "console-type", required_argument, NULL, OPT_CONSOLE_TYPE },
+			{ "bios-arm9", required_argument, NULL, OPT_ARM9},
+			{ "bios-arm7", required_argument, NULL, OPT_ARM7},
 			{ "bios-swi", required_argument, &_bios_swi, 1},
 
 			//slot-1 contents
-			{ "slot1", required_argument, nullptr, OPT_SLOT1},
+			{ "slot1", required_argument, NULL, OPT_SLOT1},
 			{ "preload-rom", no_argument, &_load_to_memory, 1},
-			{ "slot1-fat-dir", required_argument, nullptr, OPT_SLOT1_FAT_DIR},
+			{ "slot1-fat-dir", required_argument, NULL, OPT_SLOT1_FAT_DIR},
 
 			//slot-2 contents
-			{ "cflash-image", required_argument, nullptr, OPT_SLOT2_CFLASH_IMAGE},
-			{ "cflash-path", required_argument, nullptr, OPT_SLOT2_CFLASH_DIR},
-			{ "gbaslot-rom", required_argument, nullptr, OPT_SLOT2_GBAGAME},
+			{ "cflash-image", required_argument, NULL, OPT_SLOT2_CFLASH_IMAGE},
+			{ "cflash-path", required_argument, NULL, OPT_SLOT2_CFLASH_DIR},
+			{ "gbaslot-rom", required_argument, NULL, OPT_SLOT2_GBAGAME},
 
 			//commands
 			{ "start-paused", no_argument, &start_paused, 1},
-			{ "load-slot", required_argument, nullptr, OPT_LOAD_SLOT},
-			{ "play-movie", required_argument, nullptr, OPT_PLAY_MOVIE},
-			{ "record-movie", required_argument, nullptr, OPT_RECORD_MOVIE},
+			{ "load-slot", required_argument, NULL, OPT_LOAD_SLOT},
+			{ "play-movie", required_argument, NULL, OPT_PLAY_MOVIE},
+			{ "record-movie", required_argument, NULL, OPT_RECORD_MOVIE},
 
 			//video filters
-			{ "scanline-filter-a", required_argument, nullptr, OPT_SCANLINES_A},
-			{ "scanline-filter-b", required_argument, nullptr, OPT_SCANLINES_B},
-			{ "scanline-filter-c", required_argument, nullptr, OPT_SCANLINES_C},
-			{ "scanline-filter-d", required_argument, nullptr, OPT_SCANLINES_D},
+			{ "scanline-filter-a", required_argument, NULL, OPT_SCANLINES_A},
+			{ "scanline-filter-b", required_argument, NULL, OPT_SCANLINES_B},
+			{ "scanline-filter-c", required_argument, NULL, OPT_SCANLINES_C},
+			{ "scanline-filter-d", required_argument, NULL, OPT_SCANLINES_D},
 
 			//debugging
 			#ifdef GDB_STUB
-				{ "arm9gdb", required_argument, nullptr, OPT_ARM9GDB},
-				{ "arm7gdb", required_argument, nullptr, OPT_ARM7GDB},
+				{ "arm9gdb", required_argument, NULL, OPT_ARM9GDB},
+				{ "arm7gdb", required_argument, NULL, OPT_ARM7GDB},
 			#endif
 
 			//utilities
-			{ "advanscene-import", required_argument, nullptr, OPT_ADVANSCENE},
+			{ "advanscene-import", required_argument, NULL, OPT_ADVANSCENE},
 				
 			{0,0,0,0}
 		};
@@ -355,7 +355,7 @@ bool CommandLine::parse(int argc,char **argv)
 
 	free(_bios_arm9);
 	free(_bios_arm7);
-	_bios_arm9 = _bios_arm7 = nullptr;
+	_bios_arm9 = _bios_arm7 = NULL;
 
 	//remaining argument should be an NDS file, and nothing more
 	int remain = argc-optind;

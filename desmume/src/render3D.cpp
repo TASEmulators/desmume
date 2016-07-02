@@ -904,42 +904,42 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 						const __m128i clearColor1 = _mm_load_si128((__m128i *)(clearColorBuffer + srcIndex1));
 						const __m128i clearDepth0 = _mm_load_si128((__m128i *)(clearDepthBuffer + srcIndex0));
 						const __m128i clearDepth1 = _mm_load_si128((__m128i *)(clearDepthBuffer + srcIndex1));
-#ifdef ENABLE_SSSE3
+						
 						switch (shiftCount)
 						{
 							case 1:
-								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 7 * sizeof(u16));
-								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 7 * sizeof(u16));
+								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 14);
+								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 14);
 								break;
 								
 							case 2:
-								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 6 * sizeof(u16));
-								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 6 * sizeof(u16));
+								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 12);
+								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 12);
 								break;
 								
 							case 3:
-								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 5 * sizeof(u16));
-								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 5 * sizeof(u16));
+								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 10);
+								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 10);
 								break;
 								
 							case 4:
-								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 4 * sizeof(u16));
-								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 4 * sizeof(u16));
+								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 8);
+								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 8);
 								break;
 								
 							case 5:
-								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 3 * sizeof(u16));
-								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 3 * sizeof(u16));
+								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 6);
+								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 6);
 								break;
 								
 							case 6:
-								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 2 * sizeof(u16));
-								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 2 * sizeof(u16));
+								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 4);
+								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 4);
 								break;
 								
 							case 7:
-								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 1 * sizeof(u16));
-								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 1 * sizeof(u16));
+								clearColor        = _mm_alignr_epi8(clearColor1, clearColor0, 2);
+								clearDepth_vec128 = _mm_alignr_epi8(clearDepth1, clearDepth0, 2);
 								break;
 								
 							default:
@@ -947,50 +947,6 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 								clearDepth_vec128 = _mm_setzero_si128();
 								break;
 						}
-#else
-						switch (shiftCount)
-						{
-							case 1:
-								clearColor        = _mm_or_si128( _mm_slli_si128(clearColor1, 1 * sizeof(u16)), _mm_srli_si128(clearColor0, 7 * sizeof(u16)) );
-								clearDepth_vec128 = _mm_or_si128( _mm_slli_si128(clearDepth1, 1 * sizeof(u16)), _mm_srli_si128(clearDepth0, 7 * sizeof(u16)) );
-								break;
-								
-							case 2:
-								clearColor        = _mm_or_si128( _mm_slli_si128(clearColor1, 2 * sizeof(u16)), _mm_srli_si128(clearColor0, 6 * sizeof(u16)) );
-								clearDepth_vec128 = _mm_or_si128( _mm_slli_si128(clearDepth1, 2 * sizeof(u16)), _mm_srli_si128(clearDepth0, 6 * sizeof(u16)) );
-								break;
-								
-							case 3:
-								clearColor        = _mm_or_si128( _mm_slli_si128(clearColor1, 3 * sizeof(u16)), _mm_srli_si128(clearColor0, 5 * sizeof(u16)) );
-								clearDepth_vec128 = _mm_or_si128( _mm_slli_si128(clearDepth1, 3 * sizeof(u16)), _mm_srli_si128(clearDepth0, 5 * sizeof(u16)) );
-								break;
-								
-							case 4:
-								clearColor        = _mm_or_si128( _mm_slli_si128(clearColor1, 4 * sizeof(u16)), _mm_srli_si128(clearColor0, 4 * sizeof(u16)) );
-								clearDepth_vec128 = _mm_or_si128( _mm_slli_si128(clearDepth1, 4 * sizeof(u16)), _mm_srli_si128(clearDepth0, 4 * sizeof(u16)) );
-								break;
-								
-							case 5:
-								clearColor        = _mm_or_si128( _mm_slli_si128(clearColor1, 5 * sizeof(u16)), _mm_srli_si128(clearColor0, 3 * sizeof(u16)) );
-								clearDepth_vec128 = _mm_or_si128( _mm_slli_si128(clearDepth1, 5 * sizeof(u16)), _mm_srli_si128(clearDepth0, 3 * sizeof(u16)) );
-								break;
-								
-							case 6:
-								clearColor        = _mm_or_si128( _mm_slli_si128(clearColor1, 6 * sizeof(u16)), _mm_srli_si128(clearColor0, 2 * sizeof(u16)) );
-								clearDepth_vec128 = _mm_or_si128( _mm_slli_si128(clearDepth1, 6 * sizeof(u16)), _mm_srli_si128(clearDepth0, 2 * sizeof(u16)) );
-								break;
-								
-							case 7:
-								clearColor        = _mm_or_si128( _mm_slli_si128(clearColor1, 7 * sizeof(u16)), _mm_srli_si128(clearColor0, 1 * sizeof(u16)) );
-								clearDepth_vec128 = _mm_or_si128( _mm_slli_si128(clearDepth1, 7 * sizeof(u16)), _mm_srli_si128(clearDepth0, 1 * sizeof(u16)) );
-								break;
-								
-							default:
-								clearColor        = _mm_setzero_si128();
-								clearDepth_vec128 = _mm_setzero_si128();
-								break;
-						}
-#endif
 					}
 					
 					const __m128i clearDepthValue = _mm_and_si128(clearDepth_vec128, _mm_set1_epi16(0x7FFF));
