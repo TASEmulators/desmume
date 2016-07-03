@@ -1673,7 +1673,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel_CheckWindows(const size_t srcX, boo
 #ifdef ENABLE_SSE2
 
 template <GPULayerID LAYERID, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_RenderPixel_CheckWindows16_SSE2(const size_t dstX, __m128i &didPassWindowTest, __m128i &enableColorEffect) const
+FORCEINLINE void GPUEngineBase::_RenderPixel_CheckWindows16_SSE2(const size_t dstX, __m128i &didPassWindowTest, __m128i &enableColorEffect) const
 {
 	// If no windows are enabled, then we don't need to perform any window tests.
 	// In this case, the pixel always passes and the color effect is always processed.
