@@ -928,7 +928,7 @@ public:
 					
 					for (size_t x = 0; x < len; x++)
 					{
-						const u16 c = map[x];
+						const u16 c = LOCAL_TO_LE_16(map[x]);
 						*dwdst++ = (c & 0x8000) ? CONVERT(c & 0x7FFF) : 0;
 					}
 				}
