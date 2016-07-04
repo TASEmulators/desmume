@@ -1839,8 +1839,7 @@ Render3DError SoftRasterizerRenderer::UpdateToonTable(const u16 *toonTableBuffer
 	//convert the toon colors
 	for (size_t i = 0; i < 32; i++)
 	{
-		this->toonColor32LUT[i].color = ( COLOR555TO888(toonTableBuffer[i] & 0x7FFF) >> 2 ) & 0x003F3F3F;
-		//printf("%d %d %d %d\n", this->toonColor32LUT[i].r, this->toonColor32LUT[i].g, this->toonColor32LUT[i].b, this->toonColor32LUT[i].a);
+		this->toonColor32LUT[i].color = COLOR555TO666(toonTableBuffer[i] & 0x7FFF);
 	}
 	
 	return RENDER3DERROR_NOERR;

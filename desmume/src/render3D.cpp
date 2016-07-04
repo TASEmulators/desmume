@@ -635,11 +635,12 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
+	const u32 clearColorSwapped = LE_TO_LOCAL_32(renderState.clearColor);
 	FragmentColor clearColor6665;
-	clearColor6665.color = COLOR555TO6665(renderState.clearColor & 0x7FFF, (renderState.clearColor >> 16) & 0x1F);
+	clearColor6665.color = COLOR555TO6665(clearColorSwapped & 0x7FFF, (clearColorSwapped >> 16) & 0x1F);
 	
 	FragmentAttributes clearFragment;
-	clearFragment.opaquePolyID = (renderState.clearColor >> 24) & 0x3F;
+	clearFragment.opaquePolyID = (clearColorSwapped >> 24) & 0x3F;
 	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
 	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
 	//but in spiderman2 some fires with polyid 0 try to render on top of the background
@@ -647,7 +648,7 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 	clearFragment.depth = renderState.clearDepth;
 	clearFragment.stencil = 0;
 	clearFragment.isTranslucentPoly = 0;
-	clearFragment.isFogged = BIT15(renderState.clearColor);
+	clearFragment.isFogged = BIT15(clearColorSwapped);
 	
 	if (renderState.enableClearImage)
 	{
