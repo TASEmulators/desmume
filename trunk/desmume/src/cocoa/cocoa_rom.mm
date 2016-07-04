@@ -719,28 +719,28 @@ void RomIconToRGBA8888(uint32_t *bitmapData)
 				// Set the RGBA8888 bitmap pixels using our CLUT from earlier.
 				
 #ifdef __BIG_ENDIAN__
-				*bitmapPixPtr = clut[(pixRowColors & 0x0F000000) >> 24];
+				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x0F000000) >> 24]);
 				
 				bitmapPixPtr++;
-				*bitmapPixPtr = clut[(pixRowColors & 0xF0000000) >> 28];
+				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0xF0000000) >> 28]);
 				
 				bitmapPixPtr++;
-				*bitmapPixPtr = clut[(pixRowColors & 0x000F0000) >> 16];
+				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x000F0000) >> 16]);
 				
 				bitmapPixPtr++;
-				*bitmapPixPtr = clut[(pixRowColors & 0x00F00000) >> 20];
+				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x00F00000) >> 20]);
 				
 				bitmapPixPtr++;
-				*bitmapPixPtr = clut[(pixRowColors & 0x00000F00) >> 8];
+				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x00000F00) >> 8]);
 				
 				bitmapPixPtr++;
-				*bitmapPixPtr = clut[(pixRowColors & 0x0000F000) >> 12];
+				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x0000F000) >> 12]);
 				
 				bitmapPixPtr++;
-				*bitmapPixPtr = clut[(pixRowColors & 0x0000000F)];
+				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x0000000F)]);
 				
 				bitmapPixPtr++;
-				*bitmapPixPtr = clut[(pixRowColors & 0x000000F0) >> 4];
+				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x000000F0) >> 4]);
 				
 #else
 				
