@@ -305,13 +305,19 @@ typedef IOREG_BGnPA IOREG_BGnPD;			// 0x400x026, 0x400x036: BGn rotation/scaling
 
 typedef union
 {
-	u32 value;
+	s32 value;
 	
 	struct
 	{
+#ifdef LOCAL_LE
 		u32 Fraction:8;
 		s32 Integer:20;
-		u32 :4;
+		s32 :4;
+#else
+		s32 :4;
+		s32 Integer:20;
+		u32 Fraction:8;
+#endif
 	};
 } IOREG_BGnX;								// 0x400x028, 0x400x038: BGn X-coordinate (Engine A+B)
 typedef IOREG_BGnX IOREG_BGnY;				// 0x400x02C, 0x400x03C: BGn Y-coordinate (Engine A+B)
