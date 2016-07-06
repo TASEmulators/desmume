@@ -2589,14 +2589,25 @@ template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENAB
 void GPUEngineBase::_RenderPixelIterate_Final(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal)
 {
 	const u16 lineWidth = (ISDEBUGRENDER) ? this->_BGLayer[LAYERID].size.width : GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	IOREG_BGnX x = param.BGnX;
-	IOREG_BGnY y = param.BGnY;
-	const s32 dx = (s32)param.BGnPA.value;
-	const s32 dy = (s32)param.BGnPC.value;
+	const s16 dx = (s16)LOCAL_TO_LE_16(param.BGnPA.value);
+	const s16 dy = (s16)LOCAL_TO_LE_16(param.BGnPC.value);
 	const s32 wh = this->_BGLayer[LAYERID].size.width;
 	const s32 ht = this->_BGLayer[LAYERID].size.height;
 	const s32 wmask = wh - 1;
 	const s32 hmask = ht - 1;
+	
+	IOREG_BGnX x = param.BGnX;
+	IOREG_BGnY y = param.BGnY;
+	
+#ifdef LOCAL_BE
+	// This only seems to work in the unrotated/unscaled case. I'm not too sure
+	// about how these bits should really be arranged on big-endian, but at
+	// least this arrangement fixes a bunch of games that use affine or extended
+	// layers, just as long as they don't perform any rotation/scaling.
+	// - rogerman, 2016-07-05
+	x.value = ((x.value & 0x00FFFFFF) << 8) | ((x.value & 0xFF000000) >> 24);
+	y.value = ((y.value & 0x00FFFFFF) << 8) | ((y.value & 0xFF000000) >> 24);
+#endif
 	
 	u8 index;
 	u16 color;
@@ -2608,7 +2619,7 @@ void GPUEngineBase::_RenderPixelIterate_Final(u16 *__restrict dstColorLine, cons
 		s32 auxX = (WRAP) ? (x.Integer & wmask) : x.Integer;
 		const s32 auxY = (WRAP) ? (y.Integer & hmask) : y.Integer;
 		
-		if (WRAP || (auxX + lineWidth < wh && auxX >= 0 && auxY < ht && auxY >= 0))
+		if ( WRAP || ((auxX >= 0) && (auxX + lineWidth <= wh) && (auxY >= 0) && (auxY < ht)) )
 		{
 			for (size_t i = 0; i < lineWidth; i++)
 			{
@@ -2627,14 +2638,16 @@ void GPUEngineBase::_RenderPixelIterate_Final(u16 *__restrict dstColorLine, cons
 				auxX++;
 				
 				if (WRAP)
-					auxX = auxX & wmask;
+				{
+					auxX &= wmask;
+				}
 			}
 			
 			return;
 		}
 	}
 	
-	for (size_t i = 0; i < lineWidth; i++, x.value += dx, y.value += dy)
+	for (size_t i = 0; i < lineWidth; i++, x.value+=dx, y.value+=dy)
 	{
 		const s32 auxX = (WRAP) ? (x.Integer & wmask) : x.Integer;
 		const s32 auxY = (WRAP) ? (y.Integer & hmask) : y.Integer;
@@ -2828,7 +2841,9 @@ void GPUEngineBase::_RenderPixelsCustom(void *__restrict dstColorLine, u8 *__res
 	
 	const NDSColorFormat outputFormat = GPU->GetDisplayInfo().colorFormat;
 	const size_t dstPixCount = lineWidth;
+#ifdef ENABLE_SSE2
 	const size_t ssePixCount = (dstPixCount - (dstPixCount % 8));
+#endif
 	const size_t lineCount = _gpuDstLineCount[lineIndex];
 	
 	for (size_t l = 0; l < lineCount; l++)
