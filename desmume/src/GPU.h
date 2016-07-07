@@ -1342,15 +1342,15 @@ protected:
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_LayerBG(void *dstColorLine, const u16 lineIndex);
 			
 	template<NDSColorFormat OUTPUTFORMAT, GPULayerID LAYERID, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixel(const size_t srcX, const u16 src, const u8 srcAlpha, void *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
-	FORCEINLINE void _RenderPixel3D(const NDSColorFormat srcFormat, const FragmentColor src, u16 &dstColor, u8 &dstLayerID, bool enableColorEffect);
-	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _RenderPixel3D(const NDSColorFormat srcFormat, const FragmentColor src, FragmentColor &dstColor, u8 &dstLayerID, bool enableColorEffect);
+	FORCEINLINE void _RenderPixel3D(const FragmentColor src, u16 &dstColor, u8 &dstLayerID, bool enableColorEffect);
+	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _RenderPixel3D(const FragmentColor src, FragmentColor &dstColor, u8 &dstLayerID, bool enableColorEffect);
 	
 	FORCEINLINE u16 _ColorEffectBlend(const u16 colA, const u16 colB, const u16 blendEVA, const u16 blendEVB);
 	FORCEINLINE u16 _ColorEffectBlend(const u16 colA, const u16 colB, const TBlendTable *blendTable);
 	template<NDSColorFormat COLORFORMAT> FORCEINLINE FragmentColor _ColorEffectBlend(const FragmentColor colA, const FragmentColor colB, const u16 blendEVA, const u16 blendEVB);
 	
-	template<NDSColorFormat COLORFORMATA> FORCEINLINE u16 _ColorEffectBlend3D(const FragmentColor colA, const u16 colB);
-	template<NDSColorFormat COLORFORMAT> FORCEINLINE FragmentColor _ColorEffectBlend3D(const FragmentColor colA, const FragmentColor colB);
+	FORCEINLINE u16 _ColorEffectBlend3D(const FragmentColor colA, const u16 colB);
+	template<NDSColorFormat COLORFORMATB> FORCEINLINE FragmentColor _ColorEffectBlend3D(const FragmentColor colA, const FragmentColor colB);
 	
 	FORCEINLINE u16 _ColorEffectIncreaseBrightness(const u16 col);
 	FORCEINLINE u16 _ColorEffectIncreaseBrightness(const u16 col, const u16 blendEVY);
@@ -1362,12 +1362,12 @@ protected:
 	
 #ifdef ENABLE_SSE2
 	template<NDSColorFormat COLORFORMAT> FORCEINLINE __m128i _ColorEffectBlend(const __m128i &colA, const __m128i &colB, const __m128i &blendEVA, const __m128i &blendEVB);
-	template<NDSColorFormat COLORFORMATA, NDSColorFormat COLORFORMATB> FORCEINLINE __m128i _ColorEffectBlend3D(const __m128i &colA_Lo, const __m128i &colA_Hi, const __m128i &colB);
+	template<NDSColorFormat COLORFORMATB> FORCEINLINE __m128i _ColorEffectBlend3D(const __m128i &colA_Lo, const __m128i &colA_Hi, const __m128i &colB);
 	template<NDSColorFormat COLORFORMAT> FORCEINLINE __m128i _ColorEffectIncreaseBrightness(const __m128i &col, const __m128i &blendEVY);
 	template<NDSColorFormat COLORFORMAT> FORCEINLINE __m128i _ColorEffectDecreaseBrightness(const __m128i &col, const __m128i &blendEVY);
 	template<GPULayerID LAYERID, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel_CheckWindows16_SSE2(const size_t dstX, __m128i &didPassWindowTest, __m128i &enableColorEffect) const;
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel16_SSE2(const size_t dstX, const __m128i &srcColorHi_vec128, const __m128i &srcColorLo_vec128, const u8 *__restrict srcAlpha, void *__restrict dstColorLine, u8 *__restrict dstLayerIDLine, __m128i &passMask8);
-	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _RenderPixel3D_SSE2(const NDSColorFormat srcFormat, const __m128i &passMask8, const __m128i &enableColorEffectMask, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID);
+	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _RenderPixel3D_SSE2(const __m128i &passMask8, const __m128i &enableColorEffectMask, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID);
 #endif
 	
 	template<bool ISDEBUGRENDER> void _RenderSpriteBMP(const u8 spriteNum, const u16 l, u16 *__restrict dst, const u32 srcadr, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);

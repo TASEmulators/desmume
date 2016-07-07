@@ -664,7 +664,6 @@ FORCEINLINE u16 GPUEngineBase::_ColorEffectBlend(const u16 colA, const u16 colB,
 	return r | (g << 5) | (b << 10);
 }
 
-template <NDSColorFormat COLORFORMATA>
 FORCEINLINE u16 GPUEngineBase::_ColorEffectBlend3D(const FragmentColor colA, const u16 colB)
 {
 	const u16 alpha = colA.a + 1;
@@ -673,37 +672,27 @@ FORCEINLINE u16 GPUEngineBase::_ColorEffectBlend3D(const FragmentColor colA, con
 	
 	c2.val = colB;
 	
-	if (COLORFORMATA == NDSColorFormat_BGR666_Rev)
-	{
-		cfinal.bits.red   = ((colA.r * alpha) + ((c2.bits.red   << 1) * (32 - alpha))) >> 6;
-		cfinal.bits.green = ((colA.g * alpha) + ((c2.bits.green << 1) * (32 - alpha))) >> 6;
-		cfinal.bits.blue  = ((colA.b * alpha) + ((c2.bits.blue  << 1) * (32 - alpha))) >> 6;
-		cfinal.bits.alpha = 0;
-	}
-	else if (COLORFORMATA == NDSColorFormat_BGR888_Rev)
-	{
-		cfinal.bits.red   = ((colA.r * alpha) + ((c2.bits.red   << 1) * (256 - alpha))) >> 9;
-		cfinal.bits.green = ((colA.g * alpha) + ((c2.bits.green << 1) * (256 - alpha))) >> 9;
-		cfinal.bits.blue  = ((colA.b * alpha) + ((c2.bits.blue  << 1) * (256 - alpha))) >> 9;
-		cfinal.bits.alpha = 0;
-	}
+	cfinal.bits.red   = ((colA.r * alpha) + ((c2.bits.red   << 1) * (32 - alpha))) >> 6;
+	cfinal.bits.green = ((colA.g * alpha) + ((c2.bits.green << 1) * (32 - alpha))) >> 6;
+	cfinal.bits.blue  = ((colA.b * alpha) + ((c2.bits.blue  << 1) * (32 - alpha))) >> 6;
+	cfinal.bits.alpha = 0;
 	
 	return cfinal.val;
 }
 
-template <NDSColorFormat COLORFORMAT>
+template <NDSColorFormat COLORFORMATB>
 FORCEINLINE FragmentColor GPUEngineBase::_ColorEffectBlend3D(const FragmentColor colA, const FragmentColor colB)
 {
 	FragmentColor blendedColor;
 	const u16 alpha = colA.a + 1;
 	
-	if (COLORFORMAT == NDSColorFormat_BGR666_Rev)
+	if (COLORFORMATB == NDSColorFormat_BGR666_Rev)
 	{
 		blendedColor.r = ((colA.r * alpha) + (colB.r * (32 - alpha))) >> 5;
 		blendedColor.g = ((colA.g * alpha) + (colB.g * (32 - alpha))) >> 5;
 		blendedColor.b = ((colA.b * alpha) + (colB.b * (32 - alpha))) >> 5;
 	}
-	else if (COLORFORMAT == NDSColorFormat_BGR888_Rev)
+	else if (COLORFORMATB == NDSColorFormat_BGR888_Rev)
 	{
 		blendedColor.r = ((colA.r * alpha) + (colB.r * (256 - alpha))) >> 8;
 		blendedColor.g = ((colA.g * alpha) + (colB.g * (256 - alpha))) >> 8;
@@ -935,12 +924,13 @@ FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend(const __m128i &colA, const 
 	}
 }
 
-template <NDSColorFormat COLORFORMATA, NDSColorFormat COLORFORMATB>
+template <NDSColorFormat COLORFORMATB>
 FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend3D(const __m128i &colA_Lo, const __m128i &colA_Hi, const __m128i &colB)
 {
 	if (COLORFORMATB == NDSColorFormat_BGR555_Rev)
 	{
-		// If the second color format is 555, then the colA_Hi parameter is required.
+		// If the color format of B is 555, then the colA_Hi parameter is required.
+		// The color format of A is assumed to be RGB666.
 		__m128i ra_lo = _mm_and_si128(                colA_Lo,      _mm_set1_epi32(0x000000FF) );
 		__m128i ga_lo = _mm_and_si128( _mm_srli_epi32(colA_Lo,  8), _mm_set1_epi32(0x000000FF) );
 		__m128i ba_lo = _mm_and_si128( _mm_srli_epi32(colA_Lo, 16), _mm_set1_epi32(0x000000FF) );
@@ -961,11 +951,8 @@ FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend3D(const __m128i &colA_Lo, c
 		ga = _mm_or_si128( ga, _mm_and_si128(_mm_slli_epi16(colB, 4), _mm_set1_epi16(0x3E00)) );
 		ba = _mm_or_si128( ba, _mm_and_si128(_mm_srli_epi16(colB, 1), _mm_set1_epi16(0x3E00)) );
 		
-		// Note that in the case of an 8-bit alpha, we're not subtracting the color B alpha from 256 here
-		// since we're limited to a value range of [0:255]. This change shouldn't really make a huge
-		// difference in the grand scheme of things.
-		aa = _mm_adds_epu8(aa, _mm_set1_epi16(1)); // Note the value limit of 255 in the case of an 8-bit alpha.
-		aa = _mm_or_si128( aa, _mm_slli_epi16(_mm_subs_epu16(_mm_set1_epi8((COLORFORMATA == NDSColorFormat_BGR888_Rev) ? 255 : 32), aa), 8) );
+		aa = _mm_adds_epu8(aa, _mm_set1_epi16(1));
+		aa = _mm_or_si128( aa, _mm_slli_epi16(_mm_subs_epu16(_mm_set1_epi8(32), aa), 8) );
 		
 		ra = _mm_maddubs_epi16(ra, aa);
 		ga = _mm_maddubs_epi16(ga, aa);
@@ -975,54 +962,26 @@ FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend3D(const __m128i &colA_Lo, c
 		__m128i rb = _mm_and_si128( _mm_slli_epi16(colB, 1), _mm_set1_epi16(0x003E) );
 		__m128i gb = _mm_and_si128( _mm_srli_epi16(colB, 4), _mm_set1_epi16(0x003E) );
 		__m128i bb = _mm_and_si128( _mm_srli_epi16(colB, 9), _mm_set1_epi16(0x003E) );
-		__m128i ab = _mm_subs_epu16( _mm_set1_epi16((COLORFORMATA == NDSColorFormat_BGR888_Rev) ? 256 : 32), aa );
+		__m128i ab = _mm_subs_epu16( _mm_set1_epi16(32), aa );
 		
 		ra = _mm_add_epi16( _mm_mullo_epi16(ra, aa), _mm_mullo_epi16(rb, ab) );
 		ga = _mm_add_epi16( _mm_mullo_epi16(ga, aa), _mm_mullo_epi16(gb, ab) );
 		ba = _mm_add_epi16( _mm_mullo_epi16(ba, aa), _mm_mullo_epi16(bb, ab) );
 #endif
 		
-		if (COLORFORMATA == NDSColorFormat_BGR666_Rev)
-		{
-			ra = _mm_srli_epi16(ra, 6);
-			ga = _mm_srli_epi16(ga, 6);
-			ba = _mm_srli_epi16(ba, 6);
-		}
-		else if (COLORFORMATA == NDSColorFormat_BGR888_Rev)
-		{
-			ra = _mm_srli_epi16(ra, 9);
-			ga = _mm_srli_epi16(ga, 9);
-			ba = _mm_srli_epi16(ba, 9);
-		}
+		ra = _mm_srli_epi16(ra, 6);
+		ga = _mm_srli_epi16(ga, 6);
+		ba = _mm_srli_epi16(ba, 6);
 		
 		return _mm_or_si128( _mm_or_si128(ra, _mm_slli_epi16(ga, 5)), _mm_slli_epi16(ba, 10) );
 	}
 	else
 	{
-		// If the second color format is 666 or 888, then the colA_Hi parameter is ignored.
+		// If the color format of B is 666 or 888, then the colA_Hi parameter is ignored.
+		// The color format of A is assumed to match the color format of B.
 #ifdef ENABLE_SSSE3
-		__m128i rgbALo;
-		__m128i rgbAHi;
-		
-		if (COLORFORMATA == COLORFORMATB)
-		{
-			rgbALo = _mm_unpacklo_epi8(colA_Lo, colB);
-			rgbAHi = _mm_unpackhi_epi8(colA_Lo, colB);
-		}
-		else if ( (COLORFORMATA == NDSColorFormat_BGR666_Rev) && (COLORFORMATB == NDSColorFormat_BGR888_Rev) )
-		{
-			__m128i rgbA = _mm_or_si128( _mm_slli_epi32(colA_Lo, 2), _mm_and_si128(_mm_srli_epi32(colA_Lo, 4), _mm_set1_epi32(0x00030303)) );
-			
-			rgbALo = _mm_unpacklo_epi8(rgbA, colB);
-			rgbAHi = _mm_unpackhi_epi8(rgbA, colB);
-		}
-		else if ( (COLORFORMATA == NDSColorFormat_BGR888_Rev) && (COLORFORMATB == NDSColorFormat_BGR666_Rev) )
-		{
-			__m128i rgbB = _mm_or_si128( _mm_slli_epi32(colB, 2), _mm_and_si128(_mm_srli_epi32(colB, 4), _mm_set1_epi32(0x00030303)) );
-			
-			rgbALo = _mm_unpacklo_epi8(colA_Lo, rgbB);
-			rgbAHi = _mm_unpackhi_epi8(colA_Lo, rgbB);
-		}
+		__m128i rgbALo = _mm_unpacklo_epi8(colA_Lo, colB);
+		__m128i rgbAHi = _mm_unpackhi_epi8(colA_Lo, colB);
 		
 		__m128i alpha = _mm_and_si128( _mm_srli_epi32(colA_Lo, 24), _mm_set1_epi32(0x000000FF) );
 		alpha = _mm_or_si128( alpha, _mm_or_si128(_mm_slli_epi32(alpha, 8), _mm_slli_epi32(alpha, 16)) );
@@ -1031,15 +990,15 @@ FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend3D(const __m128i &colA_Lo, c
 		__m128i alphaLo = _mm_unpacklo_epi8(alpha, _mm_setzero_si128());
 		__m128i alphaHi = _mm_unpackhi_epi8(alpha, _mm_setzero_si128());
 		
-		if (COLORFORMATA == NDSColorFormat_BGR666_Rev)
+		if (COLORFORMATB == NDSColorFormat_BGR666_Rev)
 		{
 			alphaLo = _mm_or_si128(alphaLo, _mm_slli_epi16(_mm_sub_epi16(_mm_set1_epi16(32), alphaLo), 8));
 			alphaHi = _mm_or_si128(alphaHi, _mm_slli_epi16(_mm_sub_epi16(_mm_set1_epi16(32), alphaHi), 8));
 		}
-		else if (COLORFORMATA == NDSColorFormat_BGR888_Rev)
+		else if (COLORFORMATB == NDSColorFormat_BGR888_Rev)
 		{
 			// Note that we're not subtracting the color B alpha from 256 here since we're limited to a
-			// value range of [0:255]. This change shouldn't really make a huge difference in the grand
+			// value range of [0-255]. This change shouldn't really make a huge difference in the grand
 			// scheme of things.
 			alphaLo = _mm_or_si128(alphaLo, _mm_slli_epi16(_mm_sub_epi16(_mm_set1_epi16(255), alphaLo), 8));
 			alphaHi = _mm_or_si128(alphaHi, _mm_slli_epi16(_mm_sub_epi16(_mm_set1_epi16(255), alphaHi), 8));
@@ -1053,17 +1012,6 @@ FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend3D(const __m128i &colA_Lo, c
 		__m128i rgbBLo = _mm_unpacklo_epi8(colB, _mm_setzero_si128());
 		__m128i rgbBHi = _mm_unpackhi_epi8(colB, _mm_setzero_si128());
 		
-		if ( (COLORFORMATA == NDSColorFormat_BGR666_Rev) && (COLORFORMATB == NDSColorFormat_BGR888_Rev) )
-		{
-			rgbALo = _mm_or_si128( _mm_slli_epi16(rgbALo, 2), _mm_srli_epi16(rgbALo, 4) );
-			rgbAHi = _mm_or_si128( _mm_slli_epi16(rgbAHi, 2), _mm_srli_epi16(rgbAHi, 4) );
-		}
-		else if ( (COLORFORMATA == NDSColorFormat_BGR888_Rev) && (COLORFORMATB == NDSColorFormat_BGR666_Rev) )
-		{
-			rgbBLo = _mm_or_si128( _mm_slli_epi16(rgbBLo, 2), _mm_srli_epi16(rgbBLo, 4) );
-			rgbBHi = _mm_or_si128( _mm_slli_epi16(rgbBHi, 2), _mm_srli_epi16(rgbBHi, 4) );
-		}
-		
 		__m128i alpha = _mm_and_si128( _mm_srli_epi32(colA_Lo, 24), _mm_set1_epi32(0x000000FF) );
 		alpha = _mm_or_si128( alpha, _mm_or_si128(_mm_slli_epi32(alpha, 8), _mm_slli_epi32(alpha, 16)) );
 		
@@ -1072,24 +1020,24 @@ FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend3D(const __m128i &colA_Lo, c
 		alphaLo = _mm_add_epi16(alphaLo, _mm_set1_epi16(1));
 		alphaHi = _mm_add_epi16(alphaHi, _mm_set1_epi16(1));
 		
-		if (COLORFORMATA == NDSColorFormat_BGR666_Rev)
+		if (COLORFORMATB == NDSColorFormat_BGR666_Rev)
 		{
 			rgbALo = _mm_add_epi16( _mm_mullo_epi16(rgbALo, alphaLo), _mm_mullo_epi16(rgbBLo, _mm_sub_epi16(alphaLo, _mm_set1_epi16(32))) );
 			rgbAHi = _mm_add_epi16( _mm_mullo_epi16(rgbAHi, alphaHi), _mm_mullo_epi16(rgbBHi, _mm_sub_epi16(alphaHi, _mm_set1_epi16(32))) );
 		}
-		else if (COLORFORMATA == NDSColorFormat_BGR888_Rev)
+		else if (COLORFORMATB == NDSColorFormat_BGR888_Rev)
 		{
 			rgbALo = _mm_add_epi16( _mm_mullo_epi16(rgbALo, alphaLo), _mm_mullo_epi16(rgbBLo, _mm_sub_epi16(alphaLo, _mm_set1_epi16(256))) );
 			rgbAHi = _mm_add_epi16( _mm_mullo_epi16(rgbAHi, alphaHi), _mm_mullo_epi16(rgbBHi, _mm_sub_epi16(alphaHi, _mm_set1_epi16(256))) );
 		}
 #endif
 		
-		if (COLORFORMATA == NDSColorFormat_BGR666_Rev)
+		if (COLORFORMATB == NDSColorFormat_BGR666_Rev)
 		{
 			rgbALo = _mm_srli_epi16(rgbALo, 5);
 			rgbAHi = _mm_srli_epi16(rgbAHi, 5);
 		}
-		else if (COLORFORMATA == NDSColorFormat_BGR888_Rev)
+		else if (COLORFORMATB == NDSColorFormat_BGR888_Rev)
 		{
 			rgbALo = _mm_srli_epi16(rgbALo, 8);
 			rgbAHi = _mm_srli_epi16(rgbAHi, 8);
@@ -2297,7 +2245,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel16_SSE2(const size_t dstX,
 // We can't unify this yet because the output framebuffer is in RGBA5551, but the 3D source pixels are in RGBA6665.
 // However, GPUEngineBase::_RenderPixel() takes source pixels in RGB555. In order to unify the methods, all pixels
 // must be processed in RGBA6665.
-FORCEINLINE void GPUEngineBase::_RenderPixel3D(const NDSColorFormat srcFormat, const FragmentColor src, u16 &dstColor, u8 &dstLayerID, bool enableColorEffect)
+FORCEINLINE void GPUEngineBase::_RenderPixel3D(const FragmentColor src, u16 &dstColor, u8 &dstLayerID, bool enableColorEffect)
 {
 	ColorEffect selectedEffect = ColorEffect_Disable;
 	
@@ -2344,7 +2292,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D(const NDSColorFormat srcFormat, c
 	}
 	
 	// Render the pixel using the selected color effect.
-	u16 convertedSrc = (srcFormat == NDSColorFormat_BGR888_Rev) ? R5G5B5TORGB15(src.r >> 3, src.g >> 3, src.b >> 3) : R6G6B6TORGB15(src.r, src.g, src.b);
+	u16 convertedSrc = R6G6B6TORGB15(src.r, src.g, src.b);
 	
 	switch (selectedEffect)
 	{
@@ -2360,7 +2308,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D(const NDSColorFormat srcFormat, c
 			break;
 			
 		case ColorEffect_Blend:
-			convertedSrc = (srcFormat == NDSColorFormat_BGR888_Rev) ? this->_ColorEffectBlend3D<NDSColorFormat_BGR888_Rev>(src, dstColor) : this->_ColorEffectBlend3D<NDSColorFormat_BGR666_Rev>(src, dstColor);
+			convertedSrc = this->_ColorEffectBlend3D(src, dstColor);
 			break;
 	}
 	
@@ -2369,7 +2317,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D(const NDSColorFormat srcFormat, c
 }
 
 template<NDSColorFormat OUTPUTFORMAT>
-FORCEINLINE void GPUEngineBase::_RenderPixel3D(const NDSColorFormat srcFormat, const FragmentColor src, FragmentColor &dstColor, u8 &dstLayerID, bool enableColorEffect)
+FORCEINLINE void GPUEngineBase::_RenderPixel3D(const FragmentColor src, FragmentColor &dstColor, u8 &dstLayerID, bool enableColorEffect)
 {
 	ColorEffect selectedEffect = ColorEffect_Disable;
 	
@@ -2416,49 +2364,32 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D(const NDSColorFormat srcFormat, c
 	}
 	
 	// Render the pixel using the selected color effect.
-	FragmentColor convertedSrc;
-	
-	if (srcFormat == OUTPUTFORMAT)
-	{
-		convertedSrc = src;
-	}
-	else if ( (srcFormat == NDSColorFormat_BGR666_Rev) && (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) )
-	{
-		convertedSrc.color = ConvertColor6665To8888<false>(src);
-	}
-	else if ( (srcFormat == NDSColorFormat_BGR888_Rev) && (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) )
-	{
-		convertedSrc.color = ConvertColor8888To6665<false>(src);
-	}
-	
 	switch (selectedEffect)
 	{
 		case ColorEffect_Disable:
 			break;
 			
 		case ColorEffect_IncreaseBrightness:
-			convertedSrc = this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(convertedSrc, this->_BLDALPHA_EVY);
+			dstColor = this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(dstColor, this->_BLDALPHA_EVY);
 			break;
 			
 		case ColorEffect_DecreaseBrightness:
-			convertedSrc = this->_ColorEffectDecreaseBrightness(convertedSrc, this->_BLDALPHA_EVY);
+			dstColor = this->_ColorEffectDecreaseBrightness(dstColor, this->_BLDALPHA_EVY);
 			break;
 			
 		case ColorEffect_Blend:
-			convertedSrc = this->_ColorEffectBlend3D<OUTPUTFORMAT>(convertedSrc, dstColor);
+			dstColor = this->_ColorEffectBlend3D<OUTPUTFORMAT>(dstColor, dstColor);
 			break;
 	}
 	
-	convertedSrc.a = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? 0xFF : 0x1F;
-	dstColor = convertedSrc;
+	dstColor.a = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? 0xFF : 0x1F;
 	dstLayerID = GPULayerID_BG0;
 }
 
 #ifdef ENABLE_SSE2
 
 template <NDSColorFormat OUTPUTFORMAT>
-FORCEINLINE void GPUEngineBase::_RenderPixel3D_SSE2(const NDSColorFormat srcFormat,
-													const __m128i &passMask8,
+FORCEINLINE void GPUEngineBase::_RenderPixel3D_SSE2(const __m128i &passMask8,
 													const __m128i &enableColorEffectMask,
 													const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0,
 													__m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0,
@@ -2592,7 +2523,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D_SSE2(const NDSColorFormat srcForm
 	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 	{
-		const __m128i blendSrc16[2] = { this->_ColorEffectBlend3D<NDSColorFormat_BGR666_Rev, OUTPUTFORMAT>(src0, src1, dst0), this->_ColorEffectBlend3D<NDSColorFormat_BGR666_Rev, OUTPUTFORMAT>(src2, src3, dst1) };
+		const __m128i blendSrc16[2] = { this->_ColorEffectBlend3D<OUTPUTFORMAT>(src0, src1, dst0), this->_ColorEffectBlend3D<OUTPUTFORMAT>(src2, src3, dst1) };
 		tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc16[0], blendMask16[0]);
 		tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc16[1], blendMask16[1]);
 		
@@ -2605,46 +2536,27 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D_SSE2(const NDSColorFormat srcForm
 	}
 	else
 	{
-		__m128i blendSrc32[4];
-		__m128i blendMask32[4] = { _mm_unpacklo_epi16(blendMask16[0], blendMask16[0]),
-		                           _mm_unpackhi_epi16(blendMask16[0], blendMask16[0]),
-		                           _mm_unpacklo_epi16(blendMask16[1], blendMask16[1]),
-		                           _mm_unpackhi_epi16(blendMask16[1], blendMask16[1]) };
+		const __m128i blendSrc32[4] = { this->_ColorEffectBlend3D<OUTPUTFORMAT>(src0, src0, dst0),
+		                                this->_ColorEffectBlend3D<OUTPUTFORMAT>(src1, src1, dst1),
+		                                this->_ColorEffectBlend3D<OUTPUTFORMAT>(src2, src2, dst2),
+		                                this->_ColorEffectBlend3D<OUTPUTFORMAT>(src3, src3, dst3) };
 		
-		if (srcFormat == NDSColorFormat_BGR666_Rev)
-		{
-			blendSrc32[0] = this->_ColorEffectBlend3D<NDSColorFormat_BGR666_Rev, OUTPUTFORMAT>(src0, src0, dst0);
-			blendSrc32[1] = this->_ColorEffectBlend3D<NDSColorFormat_BGR666_Rev, OUTPUTFORMAT>(src1, src1, dst1);
-			blendSrc32[2] = this->_ColorEffectBlend3D<NDSColorFormat_BGR666_Rev, OUTPUTFORMAT>(src2, src2, dst2);
-			blendSrc32[3] = this->_ColorEffectBlend3D<NDSColorFormat_BGR666_Rev, OUTPUTFORMAT>(src3, src3, dst3);
-			
-			tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc32[0], blendMask32[0]);
-			tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc32[1], blendMask32[1]);
-			tmpSrc[2] = _mm_blendv_epi8(tmpSrc[2], blendSrc32[2], blendMask32[2]);
-			tmpSrc[3] = _mm_blendv_epi8(tmpSrc[3], blendSrc32[3], blendMask32[3]);
-			
-			tmpSrc[0] = _mm_or_si128(tmpSrc[0], _mm_set1_epi32(0x1F000000));
-			tmpSrc[1] = _mm_or_si128(tmpSrc[1], _mm_set1_epi32(0x1F000000));
-			tmpSrc[2] = _mm_or_si128(tmpSrc[2], _mm_set1_epi32(0x1F000000));
-			tmpSrc[3] = _mm_or_si128(tmpSrc[3], _mm_set1_epi32(0x1F000000));
-		}
-		else
-		{
-			blendSrc32[0] = this->_ColorEffectBlend3D<NDSColorFormat_BGR888_Rev, OUTPUTFORMAT>(src0, src0, dst0);
-			blendSrc32[1] = this->_ColorEffectBlend3D<NDSColorFormat_BGR888_Rev, OUTPUTFORMAT>(src1, src1, dst1);
-			blendSrc32[2] = this->_ColorEffectBlend3D<NDSColorFormat_BGR888_Rev, OUTPUTFORMAT>(src2, src2, dst2);
-			blendSrc32[3] = this->_ColorEffectBlend3D<NDSColorFormat_BGR888_Rev, OUTPUTFORMAT>(src3, src3, dst3);
-			
-			tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc32[0], blendMask32[0]);
-			tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc32[1], blendMask32[1]);
-			tmpSrc[2] = _mm_blendv_epi8(tmpSrc[2], blendSrc32[2], blendMask32[2]);
-			tmpSrc[3] = _mm_blendv_epi8(tmpSrc[3], blendSrc32[3], blendMask32[3]);
-			
-			tmpSrc[0] = _mm_or_si128(tmpSrc[0], _mm_set1_epi32(0xFF000000));
-			tmpSrc[1] = _mm_or_si128(tmpSrc[1], _mm_set1_epi32(0xFF000000));
-			tmpSrc[2] = _mm_or_si128(tmpSrc[2], _mm_set1_epi32(0xFF000000));
-			tmpSrc[3] = _mm_or_si128(tmpSrc[3], _mm_set1_epi32(0xFF000000));
-		}
+		const __m128i blendMask32[4] = { _mm_unpacklo_epi16(blendMask16[0], blendMask16[0]),
+		                                 _mm_unpackhi_epi16(blendMask16[0], blendMask16[0]),
+		                                 _mm_unpacklo_epi16(blendMask16[1], blendMask16[1]),
+		                                 _mm_unpackhi_epi16(blendMask16[1], blendMask16[1]) };
+		
+		const __m128i alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
+		
+		tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc32[0], blendMask32[0]);
+		tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc32[1], blendMask32[1]);
+		tmpSrc[2] = _mm_blendv_epi8(tmpSrc[2], blendSrc32[2], blendMask32[2]);
+		tmpSrc[3] = _mm_blendv_epi8(tmpSrc[3], blendSrc32[3], blendMask32[3]);
+		
+		tmpSrc[0] = _mm_or_si128(tmpSrc[0], alphaBits);
+		tmpSrc[1] = _mm_or_si128(tmpSrc[1], alphaBits);
+		tmpSrc[2] = _mm_or_si128(tmpSrc[2], alphaBits);
+		tmpSrc[3] = _mm_or_si128(tmpSrc[3], alphaBits);
 		
 		dst0 = _mm_blendv_epi8(dst0, tmpSrc[0], passMask32[0]);
 		dst1 = _mm_blendv_epi8(dst1, tmpSrc[1], passMask32[1]);
@@ -5204,8 +5116,6 @@ void* GPUEngineA::_RenderLine_Layers(const u16 l)
 							continue;
 						}
 						
-						const NDSColorFormat framebuffer3DFormat = CurrentRenderer->GetColorFormat();
-						
 						if (this->isLineRenderNative[l] && !CurrentRenderer->IsFramebufferNativeSize())
 						{
 							void *newRenderLineTarget = renderLineTargetCustom;
@@ -5299,8 +5209,7 @@ void* GPUEngineA::_RenderLine_Layers(const u16 l)
 									{
 										case NDSColorFormat_BGR555_Rev:
 										{
-											this->_RenderPixel3D_SSE2<NDSColorFormat_BGR555_Rev>(framebuffer3DFormat,
-																								 passMask8,
+											this->_RenderPixel3D_SSE2<NDSColorFormat_BGR555_Rev>(passMask8,
 																								 enableColorEffectMask,
 																								 src[3], src[2], src[1], src[0],
 																								 dst[3], dst[2], dst[1], dst[0],
@@ -5310,8 +5219,7 @@ void* GPUEngineA::_RenderLine_Layers(const u16 l)
 											
 										case NDSColorFormat_BGR666_Rev:
 										{
-											this->_RenderPixel3D_SSE2<NDSColorFormat_BGR666_Rev>(framebuffer3DFormat,
-																								 passMask8,
+											this->_RenderPixel3D_SSE2<NDSColorFormat_BGR666_Rev>(passMask8,
 																								 enableColorEffectMask,
 																								 src[3], src[2], src[1], src[0],
 																								 dst[3], dst[2], dst[1], dst[0],
@@ -5321,8 +5229,7 @@ void* GPUEngineA::_RenderLine_Layers(const u16 l)
 											
 										case NDSColorFormat_BGR888_Rev:
 										{
-											this->_RenderPixel3D_SSE2<NDSColorFormat_BGR888_Rev>(framebuffer3DFormat,
-																								 passMask8,
+											this->_RenderPixel3D_SSE2<NDSColorFormat_BGR888_Rev>(passMask8,
 																								 enableColorEffectMask,
 																								 src[3], src[2], src[1], src[0],
 																								 dst[3], dst[2], dst[1], dst[0],
@@ -5369,8 +5276,7 @@ void* GPUEngineA::_RenderLine_Layers(const u16 l)
 									{
 										case NDSColorFormat_BGR555_Rev:
 										{
-											this->_RenderPixel3D(framebuffer3DFormat,
-																 srcLine[dstX],
+											this->_RenderPixel3D(srcLine[dstX],
 																 dstColorLine16[dstX],
 																 dstLayerIDPtr[dstX],
 																 enableColorEffect);
@@ -5379,8 +5285,7 @@ void* GPUEngineA::_RenderLine_Layers(const u16 l)
 											
 										case NDSColorFormat_BGR666_Rev:
 										{
-											this->_RenderPixel3D<NDSColorFormat_BGR666_Rev>(framebuffer3DFormat,
-																							srcLine[dstX],
+											this->_RenderPixel3D<NDSColorFormat_BGR666_Rev>(srcLine[dstX],
 																							dstColorLine32[dstX],
 																							dstLayerIDPtr[dstX],
 																							enableColorEffect);
@@ -5389,8 +5294,7 @@ void* GPUEngineA::_RenderLine_Layers(const u16 l)
 											
 										case NDSColorFormat_BGR888_Rev:
 										{
-											this->_RenderPixel3D<NDSColorFormat_BGR888_Rev>(framebuffer3DFormat,
-																							srcLine[dstX],
+											this->_RenderPixel3D<NDSColorFormat_BGR888_Rev>(srcLine[dstX],
 																							dstColorLine32[dstX],
 																							dstLayerIDPtr[dstX],
 																							enableColorEffect);
@@ -5436,8 +5340,7 @@ void* GPUEngineA::_RenderLine_Layers(const u16 l)
 									{
 										case NDSColorFormat_BGR555_Rev:
 										{
-											this->_RenderPixel3D(framebuffer3DFormat,
-																 srcLine[srcX],
+											this->_RenderPixel3D(srcLine[srcX],
 																 dstColorLine16[dstX],
 																 dstLayerIDPtr[dstX],
 																 enableColorEffect);
@@ -5446,8 +5349,7 @@ void* GPUEngineA::_RenderLine_Layers(const u16 l)
 											
 										case NDSColorFormat_BGR666_Rev:
 										{
-											this->_RenderPixel3D<NDSColorFormat_BGR666_Rev>(framebuffer3DFormat,
-																							srcLine[srcX],
+											this->_RenderPixel3D<NDSColorFormat_BGR666_Rev>(srcLine[srcX],
 																							dstColorLine32[dstX],
 																							dstLayerIDPtr[dstX],
 																							enableColorEffect);
@@ -5456,8 +5358,7 @@ void* GPUEngineA::_RenderLine_Layers(const u16 l)
 											
 										case NDSColorFormat_BGR888_Rev:
 										{
-											this->_RenderPixel3D<NDSColorFormat_BGR888_Rev>(framebuffer3DFormat,
-																							srcLine[srcX],
+											this->_RenderPixel3D<NDSColorFormat_BGR888_Rev>(srcLine[srcX],
 																							dstColorLine32[dstX],
 																							dstLayerIDPtr[dstX],
 																							enableColorEffect);

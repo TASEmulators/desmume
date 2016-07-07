@@ -184,8 +184,16 @@ public:
 	
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);	// Called whenever the output framebuffer size changes.
 	
-	virtual NDSColorFormat RequestColorFormat(NDSColorFormat colorFormat);
-	virtual NDSColorFormat GetColorFormat() const;
+	virtual NDSColorFormat RequestColorFormat(NDSColorFormat colorFormat);	// Called whenever the output framebuffer color format changes. The framebuffer
+																			// output by the 3D renderer is expected to match the requested format. If the
+																			// internal color format of the 3D renderer doesn't natively match the requested
+																			// format, then a colorspace conversion will be required in order to match. The
+																			// only exception to this rule is if the requested output format is RGBA5551. In
+																			// this particular case, the 3D renderer is expected to output a framebuffer in
+																			// RGBA6665 color format. Again, if the internal color format does not match this,
+																			// then a colorspace conversion will be required for RGBA6665.
+	
+	virtual NDSColorFormat GetColorFormat() const;							// The output color format of the 3D renderer.
 	
 	virtual FragmentColor* GetFramebuffer();
 	virtual void GetFramebufferFlushStates(bool &willFlushRGBA6665, bool &willFlushRGBA5551);
