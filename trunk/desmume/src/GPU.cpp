@@ -979,58 +979,61 @@ FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend3D(const __m128i &colA_Lo, c
 	{
 		// If the color format of B is 666 or 888, then the colA_Hi parameter is ignored.
 		// The color format of A is assumed to match the color format of B.
+		__m128i rgbALo;
+		__m128i rgbAHi;
+		
 #ifdef ENABLE_SSSE3
-		__m128i rgbALo = _mm_unpacklo_epi8(colA_Lo, colB);
-		__m128i rgbAHi = _mm_unpackhi_epi8(colA_Lo, colB);
-		
-		__m128i alpha = _mm_and_si128( _mm_srli_epi32(colA_Lo, 24), _mm_set1_epi32(0x000000FF) );
-		alpha = _mm_or_si128( alpha, _mm_or_si128(_mm_slli_epi32(alpha, 8), _mm_slli_epi32(alpha, 16)) );
-		alpha = _mm_adds_epu8(alpha, _mm_set1_epi8(1)); // Note the value limit of 255 in the case of an 8-bit alpha.
-		
-		__m128i alphaLo = _mm_unpacklo_epi8(alpha, _mm_setzero_si128());
-		__m128i alphaHi = _mm_unpackhi_epi8(alpha, _mm_setzero_si128());
-		
 		if (COLORFORMATB == NDSColorFormat_BGR666_Rev)
 		{
-			alphaLo = _mm_or_si128(alphaLo, _mm_slli_epi16(_mm_sub_epi16(_mm_set1_epi16(32), alphaLo), 8));
-			alphaHi = _mm_or_si128(alphaHi, _mm_slli_epi16(_mm_sub_epi16(_mm_set1_epi16(32), alphaHi), 8));
+			// Does not work for RGBA8888 color format. The reason is because this
+			// algorithm depends on the pmaddubsw instruction, which multiplies
+			// two unsigned 8-bit integers into an intermediate signed 16-bit
+			// integer. This means that we can overrun the signed 16-bit value
+			// range, which would be limited to [-32767 - 32767]. For example, a
+			// color component of value 255 multiplied by an alpha value of 255
+			// would equal 65025, which is greater than the upper range of a signed
+			// 16-bit value.
+			rgbALo = _mm_unpacklo_epi8(colA_Lo, colB);
+			rgbAHi = _mm_unpackhi_epi8(colA_Lo, colB);
+			
+			__m128i alpha = _mm_and_si128( _mm_srli_epi32(colA_Lo, 24), _mm_set1_epi32(0x0000001F) );
+			alpha = _mm_or_si128( alpha, _mm_or_si128(_mm_slli_epi32(alpha, 8), _mm_slli_epi32(alpha, 16)) );
+			alpha = _mm_adds_epu8(alpha, _mm_set1_epi8(1));
+			
+			__m128i invAlpha = _mm_subs_epu8(_mm_set1_epi8(32), alpha);
+			__m128i alphaLo = _mm_unpacklo_epi8(alpha, invAlpha);
+			__m128i alphaHi = _mm_unpackhi_epi8(alpha, invAlpha);
+			
+			rgbALo = _mm_maddubs_epi16(rgbALo, alphaLo);
+			rgbAHi = _mm_maddubs_epi16(rgbAHi, alphaHi);
 		}
-		else if (COLORFORMATB == NDSColorFormat_BGR888_Rev)
-		{
-			// Note that we're not subtracting the color B alpha from 256 here since we're limited to a
-			// value range of [0-255]. This change shouldn't really make a huge difference in the grand
-			// scheme of things.
-			alphaLo = _mm_or_si128(alphaLo, _mm_slli_epi16(_mm_sub_epi16(_mm_set1_epi16(255), alphaLo), 8));
-			alphaHi = _mm_or_si128(alphaHi, _mm_slli_epi16(_mm_sub_epi16(_mm_set1_epi16(255), alphaHi), 8));
-		}
-		
-		rgbALo = _mm_maddubs_epi16(rgbALo, alphaLo);
-		rgbAHi = _mm_maddubs_epi16(rgbAHi, alphaHi);
-#else
-		__m128i rgbALo = _mm_unpacklo_epi8(colA_Lo, _mm_setzero_si128());
-		__m128i rgbAHi = _mm_unpackhi_epi8(colA_Lo, _mm_setzero_si128());
-		__m128i rgbBLo = _mm_unpacklo_epi8(colB, _mm_setzero_si128());
-		__m128i rgbBHi = _mm_unpackhi_epi8(colB, _mm_setzero_si128());
-		
-		__m128i alpha = _mm_and_si128( _mm_srli_epi32(colA_Lo, 24), _mm_set1_epi32(0x000000FF) );
-		alpha = _mm_or_si128( alpha, _mm_or_si128(_mm_slli_epi32(alpha, 8), _mm_slli_epi32(alpha, 16)) );
-		
-		__m128i alphaLo = _mm_unpacklo_epi8(alpha, _mm_setzero_si128());
-		__m128i alphaHi = _mm_unpackhi_epi8(alpha, _mm_setzero_si128());
-		alphaLo = _mm_add_epi16(alphaLo, _mm_set1_epi16(1));
-		alphaHi = _mm_add_epi16(alphaHi, _mm_set1_epi16(1));
-		
-		if (COLORFORMATB == NDSColorFormat_BGR666_Rev)
-		{
-			rgbALo = _mm_add_epi16( _mm_mullo_epi16(rgbALo, alphaLo), _mm_mullo_epi16(rgbBLo, _mm_sub_epi16(alphaLo, _mm_set1_epi16(32))) );
-			rgbAHi = _mm_add_epi16( _mm_mullo_epi16(rgbAHi, alphaHi), _mm_mullo_epi16(rgbBHi, _mm_sub_epi16(alphaHi, _mm_set1_epi16(32))) );
-		}
-		else if (COLORFORMATB == NDSColorFormat_BGR888_Rev)
-		{
-			rgbALo = _mm_add_epi16( _mm_mullo_epi16(rgbALo, alphaLo), _mm_mullo_epi16(rgbBLo, _mm_sub_epi16(alphaLo, _mm_set1_epi16(256))) );
-			rgbAHi = _mm_add_epi16( _mm_mullo_epi16(rgbAHi, alphaHi), _mm_mullo_epi16(rgbBHi, _mm_sub_epi16(alphaHi, _mm_set1_epi16(256))) );
-		}
+		else
 #endif
+		{
+			rgbALo = _mm_unpacklo_epi8(colA_Lo, _mm_setzero_si128());
+			rgbAHi = _mm_unpackhi_epi8(colA_Lo, _mm_setzero_si128());
+			__m128i rgbBLo = _mm_unpacklo_epi8(colB, _mm_setzero_si128());
+			__m128i rgbBHi = _mm_unpackhi_epi8(colB, _mm_setzero_si128());
+			
+			__m128i alpha = _mm_and_si128( _mm_srli_epi32(colA_Lo, 24), _mm_set1_epi32(0x000000FF) );
+			alpha = _mm_or_si128( alpha, _mm_or_si128(_mm_slli_epi32(alpha, 8), _mm_slli_epi32(alpha, 16)) );
+			
+			__m128i alphaLo = _mm_unpacklo_epi8(alpha, _mm_setzero_si128());
+			__m128i alphaHi = _mm_unpackhi_epi8(alpha, _mm_setzero_si128());
+			alphaLo = _mm_add_epi16(alphaLo, _mm_set1_epi16(1));
+			alphaHi = _mm_add_epi16(alphaHi, _mm_set1_epi16(1));
+			
+			if (COLORFORMATB == NDSColorFormat_BGR666_Rev)
+			{
+				rgbALo = _mm_add_epi16( _mm_mullo_epi16(rgbALo, alphaLo), _mm_mullo_epi16(rgbBLo, _mm_sub_epi16(_mm_set1_epi16(32), alphaLo)) );
+				rgbAHi = _mm_add_epi16( _mm_mullo_epi16(rgbAHi, alphaHi), _mm_mullo_epi16(rgbBHi, _mm_sub_epi16(_mm_set1_epi16(32), alphaHi)) );
+			}
+			else if (COLORFORMATB == NDSColorFormat_BGR888_Rev)
+			{
+				rgbALo = _mm_add_epi16( _mm_mullo_epi16(rgbALo, alphaLo), _mm_mullo_epi16(rgbBLo, _mm_sub_epi16(_mm_set1_epi16(256), alphaLo)) );
+				rgbAHi = _mm_add_epi16( _mm_mullo_epi16(rgbAHi, alphaHi), _mm_mullo_epi16(rgbBHi, _mm_sub_epi16(_mm_set1_epi16(256), alphaHi)) );
+			}
+		}
 		
 		if (COLORFORMATB == NDSColorFormat_BGR666_Rev)
 		{
@@ -2075,29 +2078,44 @@ FORCEINLINE void GPUEngineBase::_RenderPixel(const size_t srcX, const u16 src, c
 
 #ifdef ENABLE_SSE2
 
-template <GPULayerID LAYERID, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
+template <NDSColorFormat OUTPUTFORMAT, GPULayerID LAYERID, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
 FORCEINLINE void GPUEngineBase::_RenderPixel16_SSE2(const size_t dstX,
-													const __m128i &srcColorHi_vec128,
-													const __m128i &srcColorLo_vec128,
-													const u8 *__restrict srcAlpha,
-													void *__restrict dstColorLine,
-													u8 *__restrict dstLayerIDLine,
+													const ColorEffect colorEffect,
+													const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0,
+													const __m128i &srcAlpha,
+													const __m128i &srcEffectEnableMask,
+													__m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0,
+													__m128i &dstLayerID,
 													__m128i &passMask8)
 {
-	const __m128i dstColorLo_vec128 = _mm_load_si128((__m128i *)dstColorLine + 0);
-	const __m128i dstColorHi_vec128 = _mm_load_si128((__m128i *)dstColorLine + 1);
-	const __m128i dstLayerID_vec128 = _mm_load_si128((__m128i *)dstLayerIDLine);
-	
 	__m128i passMask16[2]	= { _mm_unpacklo_epi8(passMask8, passMask8),
 							    _mm_unpackhi_epi8(passMask8, passMask8) };
+	
+	__m128i passMask32[4] = { _mm_unpacklo_epi16(passMask16[0], passMask16[0]),
+	                          _mm_unpackhi_epi16(passMask16[0], passMask16[0]),
+	                          _mm_unpacklo_epi16(passMask16[1], passMask16[1]),
+	                          _mm_unpackhi_epi16(passMask16[1], passMask16[1]) };
 	
 	if (ISDEBUGRENDER)
 	{
 		// If we're rendering pixels to a debugging context, then assume that the pixel
 		// always passes the window test and that the color effect is always disabled.
-		_mm_store_si128( (__m128i *)dstColorLine + 0, _mm_blendv_epi8(dstColorLo_vec128, _mm_or_si128(srcColorLo_vec128, _mm_set1_epi16(0x8000)), passMask16[0]) );
-		_mm_store_si128( (__m128i *)dstColorLine + 1, _mm_blendv_epi8(dstColorHi_vec128, _mm_or_si128(srcColorHi_vec128, _mm_set1_epi16(0x8000)), passMask16[1]) );
-		_mm_store_si128( (__m128i *)dstLayerIDLine, _mm_blendv_epi8(dstLayerID_vec128, _mm_set1_epi8(LAYERID), passMask8) );
+		if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+		{
+			const __m128i alphaBits = _mm_set1_epi16(0x8000);
+			dst0 = _mm_blendv_epi8(dst0, _mm_or_si128(src0, alphaBits), passMask16[0]);
+			dst1 = _mm_blendv_epi8(dst1, _mm_or_si128(src1, alphaBits), passMask16[1]);
+		}
+		else
+		{
+			const __m128i alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
+			dst0 = _mm_blendv_epi8(dst0, _mm_or_si128(src0, alphaBits), passMask32[0]);
+			dst1 = _mm_blendv_epi8(dst1, _mm_or_si128(src1, alphaBits), passMask32[1]);
+			dst2 = _mm_blendv_epi8(dst2, _mm_or_si128(src2, alphaBits), passMask32[2]);
+			dst3 = _mm_blendv_epi8(dst3, _mm_or_si128(src3, alphaBits), passMask32[3]);
+		}
+		
+		dstLayerID = _mm_blendv_epi8(dstLayerID, _mm_set1_epi8(LAYERID), passMask8);
 		return;
 	}
 	
@@ -2116,47 +2134,29 @@ FORCEINLINE void GPUEngineBase::_RenderPixel16_SSE2(const size_t dstX,
 	
 	if ((LAYERID != GPULayerID_OBJ) && COLOREFFECTDISABLEDHINT)
 	{
-		_mm_store_si128( (__m128i *)dstColorLine + 0, _mm_blendv_epi8(dstColorLo_vec128, _mm_or_si128(srcColorLo_vec128, _mm_set1_epi16(0x8000)), passMask16[0]) );
-		_mm_store_si128( (__m128i *)dstColorLine + 1, _mm_blendv_epi8(dstColorHi_vec128, _mm_or_si128(srcColorHi_vec128, _mm_set1_epi16(0x8000)), passMask16[1]) );
-		_mm_store_si128( (__m128i *)dstLayerIDLine, _mm_blendv_epi8(dstLayerID_vec128, _mm_set1_epi8(LAYERID), passMask8) );
+		if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+		{
+			const __m128i alphaBits = _mm_set1_epi16(0x8000);
+			dst0 = _mm_blendv_epi8(dst0, _mm_or_si128(src0, alphaBits), passMask16[0]);
+			dst1 = _mm_blendv_epi8(dst1, _mm_or_si128(src1, alphaBits), passMask16[1]);
+		}
+		else
+		{
+			const __m128i alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
+			dst0 = _mm_blendv_epi8(dst0, _mm_or_si128(src0, alphaBits), passMask32[0]);
+			dst1 = _mm_blendv_epi8(dst1, _mm_or_si128(src1, alphaBits), passMask32[1]);
+			dst2 = _mm_blendv_epi8(dst2, _mm_or_si128(src2, alphaBits), passMask32[2]);
+			dst3 = _mm_blendv_epi8(dst3, _mm_or_si128(src3, alphaBits), passMask32[3]);
+		}
+		
+		dstLayerID = _mm_blendv_epi8(dstLayerID, _mm_set1_epi8(LAYERID), passMask8);
 		return;
 	}
 	
-	const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
-	u8 srcEffectEnableValue;
-	
-	switch (LAYERID)
-	{
-		case GPULayerID_BG0:
-			srcEffectEnableValue = BLDCNT.BG0_Target1;
-			break;
-			
-		case GPULayerID_BG1:
-			srcEffectEnableValue = BLDCNT.BG1_Target1;
-			break;
-			
-		case GPULayerID_BG2:
-			srcEffectEnableValue = BLDCNT.BG2_Target1;
-			break;
-			
-		case GPULayerID_BG3:
-			srcEffectEnableValue = BLDCNT.BG3_Target1;
-			break;
-			
-		case GPULayerID_OBJ:
-			srcEffectEnableValue = BLDCNT.OBJ_Target1;
-			break;
-			
-		default:
-			srcEffectEnableValue = 0;
-			break;
-	}
-	
-	const __m128i srcEffectEnableMask = _mm_cmpeq_epi8(_mm_set1_epi8(srcEffectEnableValue), _mm_set1_epi8(1));
 	__m128i dstEffectEnableMask;
 	
 #ifdef ENABLE_SSSE3
-	dstEffectEnableMask = _mm_shuffle_epi8(this->_blend2_SSSE3, dstLayerID_vec128);
+	dstEffectEnableMask = _mm_shuffle_epi8(this->_blend2_SSSE3, dstLayerID);
 	dstEffectEnableMask = _mm_xor_si128( _mm_cmpeq_epi8(dstEffectEnableMask, _mm_setzero_si128()), _mm_set1_epi32(0xFFFFFFFF) );
 #else
 	dstEffectEnableMask =                                   _mm_and_si128(_mm_cmpeq_epi8(dstLayerID_vec128, _mm_set1_epi8(GPULayerID_BG0)), this->_blend2_SSE2[GPULayerID_BG0]);
@@ -2167,20 +2167,11 @@ FORCEINLINE void GPUEngineBase::_RenderPixel16_SSE2(const size_t dstX,
 	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID_vec128, _mm_set1_epi8(GPULayerID_Backdrop)), this->_blend2_SSE2[GPULayerID_Backdrop]) );
 #endif
 	
-	dstEffectEnableMask = _mm_andnot_si128( _mm_cmpeq_epi8(dstLayerID_vec128, _mm_set1_epi8(LAYERID)), dstEffectEnableMask );
+	dstEffectEnableMask = _mm_andnot_si128( _mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(LAYERID)), dstEffectEnableMask );
 	
 	// Select the color effect based on the BLDCNT target flags.
 	__m128i forceBlendEffectMask = _mm_setzero_si128();
-	__m128i colorEffect_vec128;
-	
-	if (NOWINDOWSENABLEDHINT)
-	{
-		colorEffect_vec128 = _mm_set1_epi8(BLDCNT.ColorEffect);
-	}
-	else
-	{
-		colorEffect_vec128 = _mm_blendv_epi8(_mm_set1_epi8(ColorEffect_Disable), _mm_set1_epi8(BLDCNT.ColorEffect), enableColorEffectMask);
-	}
+	const __m128i colorEffect_vec128 = (NOWINDOWSENABLEDHINT) ? _mm_set1_epi8(colorEffect) : _mm_blendv_epi8(_mm_set1_epi8(ColorEffect_Disable), _mm_set1_epi8(colorEffect), enableColorEffectMask);
 	
 	__m128i eva_vec128 = _mm_set1_epi16(this->_BLDALPHA_EVA);
 	__m128i evb_vec128 = _mm_set1_epi16(this->_BLDALPHA_EVB);
@@ -2192,32 +2183,63 @@ FORCEINLINE void GPUEngineBase::_RenderPixel16_SSE2(const size_t dstX,
 		const __m128i isObjTranslucentMask = _mm_and_si128( dstEffectEnableMask, _mm_or_si128(_mm_cmpeq_epi8(objMode_vec128, _mm_set1_epi8(OBJMode_Transparent)), _mm_cmpeq_epi8(objMode_vec128, _mm_set1_epi8(OBJMode_Bitmap))) );
 		forceBlendEffectMask = isObjTranslucentMask;
 		
-		const __m128i srcAlpha_vec128 = _mm_loadu_si128((__m128i *)(srcAlpha + dstX));
-		const __m128i srcAlphaMask = _mm_andnot_si128(_mm_cmpeq_epi8(srcAlpha_vec128, _mm_set1_epi8(0xFF)), isObjTranslucentMask);
+		const __m128i srcAlphaMask = _mm_andnot_si128(_mm_cmpeq_epi8(srcAlpha, _mm_set1_epi8(0xFF)), isObjTranslucentMask);
 		
-		eva_vec128 = _mm_blendv_epi8(eva_vec128, srcAlpha_vec128, srcAlphaMask);
-		evb_vec128 = _mm_blendv_epi8(evb_vec128, _mm_sub_epi8(_mm_set1_epi8(16), srcAlpha_vec128), srcAlphaMask);
+		eva_vec128 = _mm_blendv_epi8(eva_vec128, srcAlpha, srcAlphaMask);
+		evb_vec128 = _mm_blendv_epi8(evb_vec128, _mm_sub_epi8(_mm_set1_epi8(16), srcAlpha), srcAlphaMask);
 	}
 	
-	__m128i finalDst[2];
-	finalDst[0] = srcColorLo_vec128;
-	finalDst[1] = srcColorHi_vec128;
+	__m128i tmpSrc[4] = {src0, src1, src2, src3};
 	
-	switch (BLDCNT.ColorEffect)
+	switch (colorEffect)
 	{
 		case ColorEffect_IncreaseBrightness:
 		{
-			const __m128i brightnessMask = _mm_andnot_si128( forceBlendEffectMask, _mm_and_si128(srcEffectEnableMask, _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_IncreaseBrightness))) );
-			finalDst[0] = _mm_blendv_epi8( finalDst[0], this->_ColorEffectIncreaseBrightness<NDSColorFormat_BGR555_Rev>(srcColorLo_vec128, evy_vec128), _mm_unpacklo_epi8(brightnessMask, brightnessMask) );
-			finalDst[1] = _mm_blendv_epi8( finalDst[1], this->_ColorEffectIncreaseBrightness<NDSColorFormat_BGR555_Rev>(srcColorHi_vec128, evy_vec128), _mm_unpackhi_epi8(brightnessMask, brightnessMask) );
+			const __m128i brightnessMask8 = _mm_andnot_si128( forceBlendEffectMask, _mm_and_si128(srcEffectEnableMask, _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_IncreaseBrightness))) );
+			const __m128i brightnessMask16[2] = {_mm_unpacklo_epi8(brightnessMask8, brightnessMask8), _mm_unpackhi_epi8(brightnessMask8, brightnessMask8)};
+			
+			if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+			{
+				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(tmpSrc[0], evy_vec128), brightnessMask16[0] );
+				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(tmpSrc[1], evy_vec128), brightnessMask16[1] );
+			}
+			else
+			{
+				const __m128i brightnessMask32[4] = { _mm_unpacklo_epi16(brightnessMask16[0], brightnessMask16[0]),
+				                                      _mm_unpackhi_epi16(brightnessMask16[0], brightnessMask16[0]),
+				                                      _mm_unpacklo_epi16(brightnessMask16[1], brightnessMask16[1]),
+				                                      _mm_unpackhi_epi16(brightnessMask16[1], brightnessMask16[1]) };
+				
+				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(tmpSrc[0], evy_vec128), brightnessMask32[0] );
+				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(tmpSrc[1], evy_vec128), brightnessMask32[1] );
+				tmpSrc[2] = _mm_blendv_epi8( tmpSrc[2], this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(tmpSrc[2], evy_vec128), brightnessMask32[2] );
+				tmpSrc[3] = _mm_blendv_epi8( tmpSrc[3], this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(tmpSrc[3], evy_vec128), brightnessMask32[3] );
+			}
 			break;
 		}
 			
 		case ColorEffect_DecreaseBrightness:
 		{
-			const __m128i brightnessMask = _mm_andnot_si128( forceBlendEffectMask, _mm_and_si128(srcEffectEnableMask, _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_DecreaseBrightness))) );
-			finalDst[0] = _mm_blendv_epi8( finalDst[0], this->_ColorEffectDecreaseBrightness<NDSColorFormat_BGR555_Rev>(srcColorLo_vec128, evy_vec128), _mm_unpacklo_epi8(brightnessMask, brightnessMask) );
-			finalDst[1] = _mm_blendv_epi8( finalDst[1], this->_ColorEffectDecreaseBrightness<NDSColorFormat_BGR555_Rev>(srcColorHi_vec128, evy_vec128), _mm_unpackhi_epi8(brightnessMask, brightnessMask) );
+			const __m128i brightnessMask8 = _mm_andnot_si128( forceBlendEffectMask, _mm_and_si128(srcEffectEnableMask, _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_DecreaseBrightness))) );
+			const __m128i brightnessMask16[2] = {_mm_unpacklo_epi8(brightnessMask8, brightnessMask8), _mm_unpackhi_epi8(brightnessMask8, brightnessMask8)};
+			
+			if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+			{
+				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(tmpSrc[0], evy_vec128), brightnessMask16[0] );
+				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(tmpSrc[1], evy_vec128), brightnessMask16[1] );
+			}
+			else
+			{
+				const __m128i brightnessMask32[4] = { _mm_unpacklo_epi16(brightnessMask16[0], brightnessMask16[0]),
+				                                      _mm_unpackhi_epi16(brightnessMask16[0], brightnessMask16[0]),
+				                                      _mm_unpacklo_epi16(brightnessMask16[1], brightnessMask16[1]),
+				                                      _mm_unpackhi_epi16(brightnessMask16[1], brightnessMask16[1]) };
+				
+				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(tmpSrc[0], evy_vec128), brightnessMask32[0] );
+				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(tmpSrc[1], evy_vec128), brightnessMask32[1] );
+				tmpSrc[2] = _mm_blendv_epi8( tmpSrc[2], this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(tmpSrc[2], evy_vec128), brightnessMask32[2] );
+				tmpSrc[3] = _mm_blendv_epi8( tmpSrc[3], this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(tmpSrc[3], evy_vec128), brightnessMask32[3] );
+			}
 			break;
 		}
 			
@@ -2226,17 +2248,53 @@ FORCEINLINE void GPUEngineBase::_RenderPixel16_SSE2(const size_t dstX,
 	}
 	
 	// Render the pixel using the selected color effect.
-	const __m128i blendMask = _mm_or_si128( forceBlendEffectMask, _mm_and_si128(_mm_and_si128(srcEffectEnableMask, dstEffectEnableMask), _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_Blend))) );
-	finalDst[0] = _mm_blendv_epi8( finalDst[0], this->_ColorEffectBlend<NDSColorFormat_BGR555_Rev>(srcColorLo_vec128, dstColorLo_vec128, eva_vec128, evb_vec128), _mm_unpacklo_epi8(blendMask, blendMask) );
-	finalDst[1] = _mm_blendv_epi8( finalDst[1], this->_ColorEffectBlend<NDSColorFormat_BGR555_Rev>(srcColorHi_vec128, dstColorHi_vec128, eva_vec128, evb_vec128), _mm_unpackhi_epi8(blendMask, blendMask) );
+	const __m128i blendMask8 = _mm_or_si128( forceBlendEffectMask, _mm_and_si128(_mm_and_si128(srcEffectEnableMask, dstEffectEnableMask), _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_Blend))) );
+	const __m128i blendMask16[2] = {_mm_unpacklo_epi8(blendMask8, blendMask8), _mm_unpackhi_epi8(blendMask8, blendMask8)};
 	
-	// Combine the final colors.
-	finalDst[0] = _mm_or_si128(finalDst[0], _mm_set1_epi16(0x8000));
-	finalDst[1] = _mm_or_si128(finalDst[1], _mm_set1_epi16(0x8000));
+	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+	{
+		const __m128i blendSrc16[2] = { this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[0], dst0, eva_vec128, evb_vec128), this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[1], dst1, eva_vec128, evb_vec128) };
+		tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc16[0], blendMask16[0]);
+		tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc16[1], blendMask16[1]);
+		
+		// Combine the final colors.
+		tmpSrc[0] = _mm_or_si128(tmpSrc[0], _mm_set1_epi16(0x8000));
+		tmpSrc[1] = _mm_or_si128(tmpSrc[1], _mm_set1_epi16(0x8000));
+		
+		dst0 = _mm_blendv_epi8(dst0, tmpSrc[0], passMask16[0]);
+		dst1 = _mm_blendv_epi8(dst1, tmpSrc[1], passMask16[1]);
+	}
+	else
+	{
+		const __m128i blendSrc32[4] = { this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[0], dst0, eva_vec128, evb_vec128),
+		                                this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[1], dst1, eva_vec128, evb_vec128),
+		                                this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[2], dst2, eva_vec128, evb_vec128),
+		                                this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[3], dst3, eva_vec128, evb_vec128) };
+		
+		const __m128i blendMask32[4] = { _mm_unpacklo_epi16(blendMask16[0], blendMask16[0]),
+		                                 _mm_unpackhi_epi16(blendMask16[0], blendMask16[0]),
+		                                 _mm_unpacklo_epi16(blendMask16[1], blendMask16[1]),
+		                                 _mm_unpackhi_epi16(blendMask16[1], blendMask16[1]) };
+		
+		const __m128i alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
+		
+		tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc32[0], blendMask32[0]);
+		tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc32[1], blendMask32[1]);
+		tmpSrc[2] = _mm_blendv_epi8(tmpSrc[2], blendSrc32[2], blendMask32[2]);
+		tmpSrc[3] = _mm_blendv_epi8(tmpSrc[3], blendSrc32[3], blendMask32[3]);
+		
+		tmpSrc[0] = _mm_or_si128(tmpSrc[0], alphaBits);
+		tmpSrc[1] = _mm_or_si128(tmpSrc[1], alphaBits);
+		tmpSrc[2] = _mm_or_si128(tmpSrc[2], alphaBits);
+		tmpSrc[3] = _mm_or_si128(tmpSrc[3], alphaBits);
+		
+		dst0 = _mm_blendv_epi8(dst0, tmpSrc[0], passMask32[0]);
+		dst1 = _mm_blendv_epi8(dst1, tmpSrc[1], passMask32[1]);
+		dst2 = _mm_blendv_epi8(dst2, tmpSrc[2], passMask32[2]);
+		dst3 = _mm_blendv_epi8(dst3, tmpSrc[3], passMask32[3]);
+	}
 	
-	_mm_store_si128( (__m128i *)dstColorLine + 0, _mm_blendv_epi8(dstColorLo_vec128, finalDst[0], passMask16[0]) );
-	_mm_store_si128( (__m128i *)dstColorLine + 1, _mm_blendv_epi8(dstColorHi_vec128, finalDst[1], passMask16[1]) );
-	_mm_store_si128( (__m128i *)dstLayerIDLine, _mm_blendv_epi8(dstLayerID_vec128, _mm_set1_epi8(LAYERID), passMask8) );
+	dstLayerID = _mm_blendv_epi8(dstLayerID, _mm_set1_epi8(LAYERID), passMask8);
 }
 
 #endif
@@ -2868,32 +2926,117 @@ void GPUEngineBase::_RenderPixelsCustom(void *__restrict dstColorLine, u8 *__res
 	
 	const NDSColorFormat outputFormat = GPU->GetDisplayInfo().colorFormat;
 	const size_t dstPixCount = lineWidth;
+	const size_t lineCount = _gpuDstLineCount[lineIndex];
+	
 #ifdef ENABLE_SSE2
 	const size_t ssePixCount = (dstPixCount - (dstPixCount % 8));
+	
+	const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
+	u8 srcEffectEnableValue;
+	
+	switch (LAYERID)
+	{
+		case GPULayerID_BG0:
+			srcEffectEnableValue = BLDCNT.BG0_Target1;
+			break;
+			
+		case GPULayerID_BG1:
+			srcEffectEnableValue = BLDCNT.BG1_Target1;
+			break;
+			
+		case GPULayerID_BG2:
+			srcEffectEnableValue = BLDCNT.BG2_Target1;
+			break;
+			
+		case GPULayerID_BG3:
+			srcEffectEnableValue = BLDCNT.BG3_Target1;
+			break;
+			
+		case GPULayerID_OBJ:
+			srcEffectEnableValue = BLDCNT.OBJ_Target1;
+			break;
+			
+		default:
+			srcEffectEnableValue = 0;
+			break;
+	}
+	
+	const __m128i srcEffectEnableMask = _mm_cmpeq_epi8(_mm_set1_epi8(srcEffectEnableValue), _mm_set1_epi8(1));
 #endif
-	const size_t lineCount = _gpuDstLineCount[lineIndex];
 	
 	for (size_t l = 0; l < lineCount; l++)
 	{
 		size_t i = 0;
 		
 #ifdef ENABLE_SSE2
-		if (outputFormat == NDSColorFormat_BGR555_Rev)
+		for (; i < ssePixCount; i+=16)
 		{
-			for (; i < ssePixCount; i+=16)
+			__m128i src[4];
+			
+			if (outputFormat == NDSColorFormat_BGR555_Rev)
 			{
-				const __m128i srcColorLo_vec128 = _mm_load_si128((__m128i *)(this->_bgLayerColorCustom + i));
-				const __m128i srcColorHi_vec128 = _mm_load_si128((__m128i *)(this->_bgLayerColorCustom + i + 8));
-				__m128i passMask8 = _mm_xor_si128( _mm_cmpeq_epi8(_mm_load_si128((__m128i *)(this->_bgLayerIndexCustom + i)), _mm_setzero_si128()), _mm_set1_epi32(0xFFFFFFFF) );
-				
-				this->_RenderPixel16_SSE2<LAYERID, ISDEBUGRENDER, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, true>(i,
-																													   srcColorHi_vec128,
-																													   srcColorLo_vec128,
-																													   NULL,
-																													   (outputFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + i) : (void *)(dstColorLine32 + i),
-																													   dstLayerID + i,
-																													   passMask8);
+				src[0] = _mm_load_si128((__m128i *)(this->_bgLayerColorCustom + i + 0));
+				src[1] = _mm_load_si128((__m128i *)(this->_bgLayerColorCustom + i + 8));
+				src[2] = _mm_setzero_si128();
+				src[3] = _mm_setzero_si128();
 			}
+			else
+			{
+				const __m128i src16[2] = { _mm_load_si128((__m128i *)(this->_bgLayerColorCustom + i + 0)),
+										   _mm_load_si128((__m128i *)(this->_bgLayerColorCustom + i + 8)) };
+				
+				if (outputFormat == NDSColorFormat_BGR666_Rev)
+				{
+					ConvertColor555To6665Opaque<false>(src16[0], src[0], src[1]);
+					ConvertColor555To6665Opaque<false>(src16[1], src[2], src[3]);
+				}
+				else
+				{
+					ConvertColor555To8888Opaque<false>(src16[0], src[0], src[1]);
+					ConvertColor555To8888Opaque<false>(src16[1], src[2], src[3]);
+				}
+			}
+			
+			const __m128i srcAlpha = _mm_setzero_si128();
+			
+			__m128i dstLayerID_vec128 = _mm_load_si128((__m128i *)(dstLayerID + i));
+			__m128i passMask8 = _mm_xor_si128( _mm_cmpeq_epi8(_mm_load_si128((__m128i *)(this->_bgLayerIndexCustom + i)), _mm_setzero_si128()), _mm_set1_epi32(0xFFFFFFFF) );
+			
+			const void *dstColorLinePtr = (outputFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + i) : (void *)(dstColorLine32 + i);
+			
+			__m128i dst[4];
+			dst[0] = _mm_load_si128((__m128i *)dstColorLinePtr + 0);
+			dst[1] = _mm_load_si128((__m128i *)dstColorLinePtr + 1);
+			
+			if (outputFormat == NDSColorFormat_BGR555_Rev)
+			{
+				dst[2] = _mm_setzero_si128();
+				dst[3] = _mm_setzero_si128();
+			}
+			else
+			{
+				dst[2] = _mm_load_si128((__m128i *)dstColorLinePtr + 2);
+				dst[3] = _mm_load_si128((__m128i *)dstColorLinePtr + 3);
+			}
+			
+			this->_RenderPixel16_SSE2<NDSColorFormat_BGR555_Rev, LAYERID, ISDEBUGRENDER, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, true>(i,
+																																			  (ColorEffect)BLDCNT.ColorEffect,
+																																			  src[3], src[2], src[1], src[0],
+																																			  srcAlpha,
+																																			  srcEffectEnableMask,
+																																			  dst[3], dst[2], dst[1], dst[0],
+																																			  dstLayerID_vec128,
+																																			  passMask8);
+			_mm_store_si128((__m128i *)dstColorLinePtr + 0, dst[0]);
+			_mm_store_si128((__m128i *)dstColorLinePtr + 1, dst[1]);
+			
+			if (outputFormat != NDSColorFormat_BGR555_Rev)
+			{
+				_mm_store_si128((__m128i *)dstColorLinePtr + 2, dst[2]);
+				_mm_store_si128((__m128i *)dstColorLinePtr + 3, dst[3]);
+			}
+			
+			_mm_store_si128((__m128i *)(dstLayerID + i), dstLayerID_vec128);
 		}
 #endif
 		
@@ -2934,24 +3077,107 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(void *__restrict dstColorLine, u8 *_
 	size_t i = 0;
 	
 #ifdef ENABLE_SSE2
-	if (outputFormat == NDSColorFormat_BGR555_Rev)
+	const IOREG_BLDCNT &BLDCNT = this->_IORegisterMap->BLDCNT;
+	u8 srcEffectEnableValue;
+	
+	switch (LAYERID)
 	{
-		const size_t ssePixCount = (dstPixCount - (dstPixCount % 8));
-		for (; i < ssePixCount; i+=16)
-		{
-			const __m128i srcColorLo_vec128 = _mm_load_si128((__m128i *)(srcLine + i));
-			const __m128i srcColorHi_vec128 = _mm_load_si128((__m128i *)(srcLine + i + 8));
-			__m128i passMask8 = _mm_packus_epi16( _mm_srli_epi16(srcColorLo_vec128, 15), _mm_srli_epi16(srcColorHi_vec128, 15) );
-			passMask8 = _mm_cmpeq_epi8(passMask8, _mm_set1_epi8(1));
+		case GPULayerID_BG0:
+			srcEffectEnableValue = BLDCNT.BG0_Target1;
+			break;
 			
-			this->_RenderPixel16_SSE2<LAYERID, ISDEBUGRENDER, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, true>(i,
-																												   srcColorHi_vec128,
-																												   srcColorLo_vec128,
-																												   NULL,
-																												   (outputFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + i) : (void *)(dstColorLine32 + i),
-																												   dstLayerID + i,
-																												   passMask8);
+		case GPULayerID_BG1:
+			srcEffectEnableValue = BLDCNT.BG1_Target1;
+			break;
+			
+		case GPULayerID_BG2:
+			srcEffectEnableValue = BLDCNT.BG2_Target1;
+			break;
+			
+		case GPULayerID_BG3:
+			srcEffectEnableValue = BLDCNT.BG3_Target1;
+			break;
+			
+		case GPULayerID_OBJ:
+			srcEffectEnableValue = BLDCNT.OBJ_Target1;
+			break;
+			
+		default:
+			srcEffectEnableValue = 0;
+			break;
+	}
+	
+	const __m128i srcEffectEnableMask = _mm_cmpeq_epi8(_mm_set1_epi8(srcEffectEnableValue), _mm_set1_epi8(1));
+	
+	const size_t ssePixCount = (dstPixCount - (dstPixCount % 8));
+	for (; i < ssePixCount; i+=16)
+	{
+		__m128i src[4];
+		
+		if (outputFormat == NDSColorFormat_BGR555_Rev)
+		{
+			src[0] = _mm_load_si128((__m128i *)(srcLine + i + 0));
+			src[1] = _mm_load_si128((__m128i *)(srcLine + i + 8));
+			src[2] = _mm_setzero_si128();
+			src[3] = _mm_setzero_si128();
 		}
+		else
+		{
+			const __m128i src16[2] = { _mm_load_si128((__m128i *)(srcLine + i + 0)),
+									   _mm_load_si128((__m128i *)(srcLine + i + 8)) };
+			
+			if (outputFormat == NDSColorFormat_BGR666_Rev)
+			{
+				ConvertColor555To6665Opaque<false>(src16[0], src[0], src[1]);
+				ConvertColor555To6665Opaque<false>(src16[1], src[2], src[3]);
+			}
+			else
+			{
+				ConvertColor555To8888Opaque<false>(src16[0], src[0], src[1]);
+				ConvertColor555To8888Opaque<false>(src16[1], src[2], src[3]);
+			}
+		}
+		
+		const __m128i srcAlpha = _mm_setzero_si128();
+		
+		__m128i dstLayerID_vec128 = _mm_load_si128((__m128i *)(dstLayerID + i));
+		__m128i passMask8 = _mm_packs_epi16( _mm_srli_epi16(src[0], 15), _mm_srli_epi16(src[1], 15) );
+		passMask8 = _mm_cmpeq_epi8(passMask8, _mm_set1_epi8(1));
+		
+		const void *dstColorLinePtr = (outputFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + i) : (void *)(dstColorLine32 + i);
+		__m128i dst[4];
+		dst[0] = _mm_load_si128((__m128i *)dstColorLinePtr + 0);
+		dst[1] = _mm_load_si128((__m128i *)dstColorLinePtr + 1);
+		
+		if (outputFormat == NDSColorFormat_BGR555_Rev)
+		{
+			dst[2] = _mm_setzero_si128();
+			dst[3] = _mm_setzero_si128();
+		}
+		else
+		{
+			dst[2] = _mm_load_si128((__m128i *)dstColorLinePtr + 2);
+			dst[3] = _mm_load_si128((__m128i *)dstColorLinePtr + 3);
+		}
+		
+		this->_RenderPixel16_SSE2<NDSColorFormat_BGR555_Rev, LAYERID, ISDEBUGRENDER, NOWINDOWSENABLEDHINT, COLOREFFECTDISABLEDHINT, true>(i,
+																																		  (ColorEffect)BLDCNT.ColorEffect,
+																																		  src[3], src[2], src[1], src[0],
+																																		  srcAlpha,
+																																		  srcEffectEnableMask,
+																																		  dst[3], dst[2], dst[1], dst[0],
+																																		  dstLayerID_vec128,
+																																		  passMask8);
+		_mm_store_si128((__m128i *)dstColorLinePtr + 0, dst[0]);
+		_mm_store_si128((__m128i *)dstColorLinePtr + 1, dst[1]);
+		
+		if (outputFormat != NDSColorFormat_BGR555_Rev)
+		{
+			_mm_store_si128((__m128i *)dstColorLinePtr + 2, dst[2]);
+			_mm_store_si128((__m128i *)dstColorLinePtr + 3, dst[3]);
+		}
+		
+		_mm_store_si128((__m128i *)(dstLayerID + i), dstLayerID_vec128);
 	}
 #endif
 	
