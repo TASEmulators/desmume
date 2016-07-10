@@ -245,7 +245,7 @@ public:
 		//used to hold a copy of the palette specified for this texture
 		CACHE_ALIGN u16 pal[256];
 
-		u32 textureMode = (unsigned short)((format>>26)&0x07);
+		NDSTextureFormat textureMode = (NDSTextureFormat)((format>>26)&0x07);
 		u32 sizeX=(8 << ((format>>20)&0x07));
 		u32 sizeY=(8 << ((format>>23)&0x07));
 		u32 imageSize = sizeX*sizeY;
@@ -256,18 +256,19 @@ public:
 
 		switch (textureMode)
 		{
-		case TEXMODE_I2:
-			paletteAddress = texpal<<3;
-			break;
-		case TEXMODE_A3I5: //a3i5
-		case TEXMODE_I4: //i4
-		case TEXMODE_I8: //i8
-		case TEXMODE_A5I3: //a5i3
-		case TEXMODE_16BPP: //16bpp
-		case TEXMODE_4X4: //4x4
-		default:
-			paletteAddress = texpal<<4;
-			break;
+			case TEXMODE_I2:
+				paletteAddress = texpal<<3;
+				break;
+				
+			case TEXMODE_A3I5:
+			case TEXMODE_I4:
+			case TEXMODE_I8:
+			case TEXMODE_A5I3:
+			case TEXMODE_16BPP:
+			case TEXMODE_4X4:
+			default:
+				paletteAddress = texpal<<4;
+				break;
 		}
 
 		//analyze the texture memory mapping and the specifications of this texture
@@ -373,7 +374,7 @@ public:
 		newitem->invSizeX=1.0f/((float)(sizeX));
 		newitem->invSizeY=1.0f/((float)(sizeY));
 		newitem->decode_len = sizeX*sizeY*4;
-		newitem->mode = textureMode;
+		newitem->format = textureMode;
 		newitem->decoded = (u8 *)malloc_alignedCacheLine(newitem->decode_len);
 		list_push_front(newitem);
 		//printf("allocating: up to %d with %d items\n",cache_size,index.size());
@@ -405,7 +406,7 @@ public:
 
 		const bool isPalZeroTransparent = ( ((format >> 29) & 1) != 0 );
 
-		switch (newitem->mode)
+		switch (newitem->format)
 		{
 			case TEXMODE_A3I5:
 			{
@@ -934,6 +935,9 @@ public:
 				}
 				break;
 			}
+				
+			default:
+				break;
 		} //switch(texture format)
 
 #ifdef DO_DEBUG_DUMP_TEXTURE
@@ -953,19 +957,19 @@ public:
 		//but this will work for now
 		MemSpan mspal = MemSpan_TexPalette(0,PALETTE_DUMP_SIZE,true);
 		bool paletteDirty = mspal.memcmp(paletteDump);
-		if(paletteDirty)
+		if (paletteDirty)
 		{
 			mspal.dump(paletteDump);
 		}
 
-		for(TTexCacheItemMultimap::iterator it(index.begin()); it != index.end(); ++it)
+		for (TTexCacheItemMultimap::iterator it(index.begin()); it != index.end(); ++it)
 		{
 			it->second->suspectedInvalid = true;
 			
 			//when the palette changes, we assume all 4x4 textures are dirty.
 			//this is because each 4x4 item doesnt carry along with it a copy of the entire palette, for verification
 			//instead, we just use the one paletteDump for verifying of all 4x4 textures; and if paletteDirty is set, verification has failed
-			if(it->second->getTextureMode() == TEXMODE_4X4 && paletteDirty)
+			if( (it->second->GetTextureFormat() == TEXMODE_4X4) && paletteDirty )
 			{
 				it->second->assumedInvalid = true;
 			}

@@ -185,7 +185,7 @@ enum
 };
 
 // TEXTURE PARAMETERS - FORMAT ID
-enum
+enum NDSTextureFormat
 {
 	TEXMODE_NONE								= 0,
 	TEXMODE_A3I5								= 1,

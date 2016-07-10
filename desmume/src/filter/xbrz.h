@@ -54,6 +54,7 @@ enum ColorFormat //from high bits -> low bits, 8 bit per channel
 {
     ColorFormatRGB,  //8 bit for each red, green, blue, upper 8 bits unused
     ColorFormatARGB, //including alpha channel, BGRA byte order on little-endian machines
+    ColorFormatARGB_1bitAlpha // special alpha blending mode for NDS 1-bit alpha textures
 };
 
 /*

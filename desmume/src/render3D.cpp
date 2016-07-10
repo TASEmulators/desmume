@@ -546,14 +546,21 @@ Render3DError Render3D::TextureDeposterize(const u32 *src, const size_t srcTexWi
 }
 
 template <size_t SCALEFACTOR>
-Render3DError Render3D::TextureUpscale(const u32 *src, size_t &outTexWidth, size_t &outTexHeight)
+Render3DError Render3D::TextureUpscale(const NDSTextureFormat texFormat, const u32 *src, size_t &outTexWidth, size_t &outTexHeight)
 {
 	if ( (SCALEFACTOR != 2) && (SCALEFACTOR != 4) )
 	{
 		return RENDER3DERROR_NOERR;
 	}
 	
-	xbrz::scale<SCALEFACTOR, xbrz::ColorFormatARGB>(src, this->_textureUpscaleBuffer, outTexWidth, outTexHeight);
+	if (texFormat == TEXMODE_A3I5 || texFormat == TEXMODE_A5I3)
+	{
+		xbrz::scale<SCALEFACTOR, xbrz::ColorFormatARGB>(src, this->_textureUpscaleBuffer, outTexWidth, outTexHeight);
+	}
+	else
+	{
+		xbrz::scale<SCALEFACTOR, xbrz::ColorFormatARGB_1bitAlpha>(src, this->_textureUpscaleBuffer, outTexWidth, outTexHeight);
+	}
 	
 	outTexWidth *= SCALEFACTOR;
 	outTexHeight *= SCALEFACTOR;
@@ -984,5 +991,5 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 
 #endif // ENABLE_SSE2
 
-template Render3DError Render3D::TextureUpscale<2>(const u32 *src, size_t &outTexWidth, size_t &outTexHeight);
-template Render3DError Render3D::TextureUpscale<4>(const u32 *src, size_t &outTexWidth, size_t &outTexHeight);
+template Render3DError Render3D::TextureUpscale<2>(const NDSTextureFormat texFormat, const u32 *src, size_t &outTexWidth, size_t &outTexHeight);
+template Render3DError Render3D::TextureUpscale<4>(const NDSTextureFormat texFormat, const u32 *src, size_t &outTexWidth, size_t &outTexHeight);
