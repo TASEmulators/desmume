@@ -105,10 +105,8 @@ uint32_t gradientARGB(uint32_t pixFront, uint32_t pixBack) //find intermediate c
 }
 
 template <unsigned int M, unsigned int N> inline
-uint32_t gradientARGB_1bitAlpha(uint32_t pixFront, uint32_t pixBack) //find intermediate color between two colors with alpha channels (=> NO alpha blending!!!)
+uint32_t gradientARGB_1bitAlpha(uint32_t pixFront, uint32_t pixBack) //special blending mode for NDS textures -- assumes that the alpha component value is either 0x00 or 0xFF
 {
-	//static_assert(0 < M && M < N && N <= 1000, "");
-	
 	const unsigned int weightFront = getAlpha(pixFront) * M;
 	const unsigned int weightBack  = getAlpha(pixBack) * (N - M);
 	const unsigned int weightSum   = weightFront + weightBack;
@@ -126,16 +124,11 @@ uint32_t gradientARGB_1bitAlpha(uint32_t pixFront, uint32_t pixBack) //find inte
 		return pixFront;
 	}
 	
-	/*
-	 auto calcColor = [=](unsigned char colFront, unsigned char colBack)
-	 {
-	 return static_cast<unsigned char>((colFront * weightFront + colBack * weightBack) / weightSum);
-	 };
-	 */
-	return makePixel(static_cast<unsigned char>(weightSum / N),
-					 gradientARGB_calcColor(getRed  (pixFront), getRed  (pixBack), weightFront, weightBack, weightSum),
-					 gradientARGB_calcColor(getGreen(pixFront), getGreen(pixBack), weightFront, weightBack, weightSum),
-					 gradientARGB_calcColor(getBlue (pixFront), getBlue (pixBack), weightFront, weightBack, weightSum));
+	// At this point, we know that both pixels must be opaque, so treat them as such.
+	return makePixel(0xFF,
+					 gradientRGB_calcColor<M, N>(getRed  (pixFront), getRed  (pixBack)),
+					 gradientRGB_calcColor<M, N>(getGreen(pixFront), getGreen(pixBack)),
+					 gradientRGB_calcColor<M, N>(getBlue (pixFront), getBlue (pixBack)));
 }
 
 //inline
@@ -1219,15 +1212,15 @@ void xbrz::scale(const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight
             switch (SCALEFACTOR)
             {
                 case 2:
-                    return scaleImage<Scaler2x<ColorGradientARGB_1bitAlpha>, ColorDistanceRGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+                    return scaleImage<Scaler2x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
                 case 3:
-                    return scaleImage<Scaler3x<ColorGradientARGB_1bitAlpha>, ColorDistanceRGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+                    return scaleImage<Scaler3x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
                 case 4:
-                    return scaleImage<Scaler4x<ColorGradientARGB_1bitAlpha>, ColorDistanceRGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+                    return scaleImage<Scaler4x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
                 case 5:
-                    return scaleImage<Scaler5x<ColorGradientARGB_1bitAlpha>, ColorDistanceRGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+                    return scaleImage<Scaler5x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
                 case 6:
-                    return scaleImage<Scaler6x<ColorGradientARGB_1bitAlpha>, ColorDistanceRGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+                    return scaleImage<Scaler6x<ColorGradientARGB_1bitAlpha>, ColorDistanceARGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
             }
             break;
 
@@ -1272,6 +1265,7 @@ bool xbrz::equalColorTest(uint32_t col1, uint32_t col2, ColorFormat colFmt, doub
     switch (colFmt)
     {
         case ColorFormatARGB:
+		case ColorFormatARGB_1bitAlpha:
             return ColorDistanceARGB::dist(col1, col2, luminanceWeight) < equalColorTolerance;
 
         case ColorFormatRGB:
