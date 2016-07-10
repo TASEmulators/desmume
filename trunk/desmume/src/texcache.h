@@ -24,6 +24,7 @@
 
 #include "types.h"
 #include "common.h"
+#include "gfx3d.h"
 
 enum TexCache_TexFormat
 {
@@ -62,13 +63,13 @@ public:
 		if (this->_deleteCallback != NULL) this->_deleteCallback(this, this->_deleteCallbackParam1, this->_deleteCallbackParam2);
 	}
 	u32 decode_len;
-	u32 mode;
+	NDSTextureFormat format;
 	u8* decoded; //decoded texture data
 	bool suspectedInvalid;
 	bool assumedInvalid;
 	TTexCacheItemMultimap::iterator iterator;
 
-	int getTextureMode() const { return (int)((texformat>>26)&0x07); }
+	NDSTextureFormat GetTextureFormat() const { return this->format; }
 
 	u32 texformat, texpal;
 	u32 sizeX, sizeY;

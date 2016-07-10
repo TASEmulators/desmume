@@ -43,8 +43,6 @@
 #define COLOR_MASK_G	0x0000FF00
 #define COLOR_MASK_B	0x000000FF
 
-#define USE_DESMUME_TEXTURE_UPSCALE_ALPHA_BLEND
-
 namespace
 {
 template <uint32_t N> inline
@@ -80,7 +78,6 @@ uint32_t gradientRGB(uint32_t pixFront, uint32_t pixBack) //blend front color wi
 					 gradientRGB_calcColor<M, N>(getBlue (pixFront), getBlue (pixBack)));
 }
 
-
 template <unsigned int M, unsigned int N> inline
 uint32_t gradientARGB(uint32_t pixFront, uint32_t pixBack) //find intermediate color between two colors with alpha channels (=> NO alpha blending!!!)
 {
@@ -90,25 +87,10 @@ uint32_t gradientARGB(uint32_t pixFront, uint32_t pixBack) //find intermediate c
 	const unsigned int weightBack  = getAlpha(pixBack) * (N - M);
 	const unsigned int weightSum   = weightFront + weightBack;
 	
-#ifdef USE_DESMUME_TEXTURE_UPSCALE_ALPHA_BLEND
-	if (weightSum == 0)
-	{
-		return (pixFront & 0x00FFFFFF);
-	}
-	else if (weightFront == 0)
-	{
-		return pixBack;
-	}
-	else if (weightBack == 0)
-	{
-		return pixFront;
-	}
-#else
 	if (weightSum == 0)
 	{
 		return 0;
 	}
-#endif
 	
 	/*
 	 auto calcColor = [=](unsigned char colFront, unsigned char colBack)
@@ -122,6 +104,39 @@ uint32_t gradientARGB(uint32_t pixFront, uint32_t pixBack) //find intermediate c
 					 gradientARGB_calcColor(getBlue (pixFront), getBlue (pixBack), weightFront, weightBack, weightSum));
 }
 
+template <unsigned int M, unsigned int N> inline
+uint32_t gradientARGB_1bitAlpha(uint32_t pixFront, uint32_t pixBack) //find intermediate color between two colors with alpha channels (=> NO alpha blending!!!)
+{
+	//static_assert(0 < M && M < N && N <= 1000, "");
+	
+	const unsigned int weightFront = getAlpha(pixFront) * M;
+	const unsigned int weightBack  = getAlpha(pixBack) * (N - M);
+	const unsigned int weightSum   = weightFront + weightBack;
+	
+	if (weightSum == 0)
+	{
+		return (pixFront & 0x00FFFFFF);
+	}
+	else if (weightFront == 0)
+	{
+		return pixBack;
+	}
+	else if (weightBack == 0)
+	{
+		return pixFront;
+	}
+	
+	/*
+	 auto calcColor = [=](unsigned char colFront, unsigned char colBack)
+	 {
+	 return static_cast<unsigned char>((colFront * weightFront + colBack * weightBack) / weightSum);
+	 };
+	 */
+	return makePixel(static_cast<unsigned char>(weightSum / N),
+					 gradientARGB_calcColor(getRed  (pixFront), getRed  (pixBack), weightFront, weightBack, weightSum),
+					 gradientARGB_calcColor(getGreen(pixFront), getGreen(pixBack), weightFront, weightBack, weightSum),
+					 gradientARGB_calcColor(getBlue (pixFront), getBlue (pixBack), weightFront, weightBack, weightSum));
+}
 
 //inline
 //double fastSqrt(double n)
@@ -1184,6 +1199,15 @@ struct ColorGradientARGB
         pixBack = gradientARGB<M, N>(pixFront, pixBack);
     }
 };
+	
+struct ColorGradientARGB_1bitAlpha
+{
+	template <unsigned int M, unsigned int N>
+	static void alphaGrad(uint32_t& pixBack, uint32_t pixFront)
+	{
+		pixBack = gradientARGB_1bitAlpha<M, N>(pixFront, pixBack);
+	}
+};
 }
 
 template <size_t SCALEFACTOR, xbrz::ColorFormat FORMAT>
@@ -1191,6 +1215,22 @@ void xbrz::scale(const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight
 {
     switch (FORMAT)
     {
+        case ColorFormatARGB_1bitAlpha:
+            switch (SCALEFACTOR)
+            {
+                case 2:
+                    return scaleImage<Scaler2x<ColorGradientARGB_1bitAlpha>, ColorDistanceRGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+                case 3:
+                    return scaleImage<Scaler3x<ColorGradientARGB_1bitAlpha>, ColorDistanceRGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+                case 4:
+                    return scaleImage<Scaler4x<ColorGradientARGB_1bitAlpha>, ColorDistanceRGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+                case 5:
+                    return scaleImage<Scaler5x<ColorGradientARGB_1bitAlpha>, ColorDistanceRGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+                case 6:
+                    return scaleImage<Scaler6x<ColorGradientARGB_1bitAlpha>, ColorDistanceRGB>(src, trg, srcWidth, srcHeight, cfg, yFirst, yLast);
+            }
+            break;
+
         case ColorFormatARGB:
             switch (SCALEFACTOR)
             {
@@ -1340,3 +1380,5 @@ void Render6xBRZ(SSurface Src, SSurface Dst)
 
 template void xbrz::scale<2, xbrz::ColorFormatARGB>(const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight, const xbrz::ScalerCfg& cfg, int yFirst, int yLast);
 template void xbrz::scale<4, xbrz::ColorFormatARGB>(const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight, const xbrz::ScalerCfg& cfg, int yFirst, int yLast);
+template void xbrz::scale<2, xbrz::ColorFormatARGB_1bitAlpha>(const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight, const xbrz::ScalerCfg& cfg, int yFirst, int yLast);
+template void xbrz::scale<4, xbrz::ColorFormatARGB_1bitAlpha>(const uint32_t* src, uint32_t* trg, int srcWidth, int srcHeight, const xbrz::ScalerCfg& cfg, int yFirst, int yLast);
