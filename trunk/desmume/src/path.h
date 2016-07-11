@@ -374,7 +374,7 @@ public:
 				else if (strchr(strftimeArgs, *p))
 				{
 					char tmp[MAX_PATH];
-					char format[] = { '%', *p, NULL };
+					char format[] = { '%', *p, '\0' };
 					strftime(tmp, MAX_PATH, format, time_struct);
 					file.append(tmp);
 		}
