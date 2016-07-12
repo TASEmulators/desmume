@@ -2623,11 +2623,7 @@ static T interpolate(const float ratio, const T& x0, const T& x1)
 }
 
 //http://www.cs.berkeley.edu/~ug/slide/pipeline/assignments/as6/discussion.shtml
-#ifdef OPTIMIZED_CLIPPING_METHOD
 template<int coord, int which> static FORCEINLINE VERT clipPoint(bool hirez, const VERT *inside, const VERT *outside)
-#else
-static FORCEINLINE VERT clipPoint(const VERT *inside, const VERT *outside, int coord, int which)
-#endif
 {
 	VERT ret;
 	const float coord_inside = inside->coord[coord];
@@ -2660,8 +2656,6 @@ static FORCEINLINE VERT clipPoint(const VERT *inside, const VERT *outside, int c
 
 	return ret;
 }
-
-#ifdef OPTIMIZED_CLIPPING_METHOD
 
 #define MAX_SCRATCH_CLIP_VERTS (4*6 + 40)
 static VERT scratchClipVerts [MAX_SCRATCH_CLIP_VERTS];
@@ -2827,106 +2821,3 @@ void GFX3D_Clipper::clipPolyVsPlane(const int coord, int which)
 	assert(0);
 }
 
-#else // if not OPTIMIZED_CLIPPING_METHOD:
-
-FORCEINLINE void GFX3D_Clipper::clipSegmentVsPlane(VERT** verts, const int coord, int which)
-{
-	const bool out0 = (which == -1) ? (verts[0]->coord[coord] < -verts[0]->coord[3]) : (verts[0]->coord[coord] > verts[0]->coord[3]);
-	const bool out1 = (which == -1) ? (verts[1]->coord[coord] < -verts[1]->coord[3]) : (verts[1]->coord[coord] > verts[1]->coord[3]);
-
-	//CONSIDER: should we try and clip things behind the eye? does this code even successfully do it? not sure.
-	//if(coord==2 && which==1) {
-	//	out0 = verts[0]->coord[2] < 0;
-	//	out1 = verts[1]->coord[2] < 0;
-	//}
-
-	//both outside: insert no points
-	if (out0 && out1)
-	{
-		CLIPLOG(" both outside\n");
-	}
-
-	//both inside: insert the first point
-	if (!out0 && !out1)
-	{
-		CLIPLOG(" both inside\n");
-		outClippedPoly.clipVerts[outClippedPoly.type++] = *verts[1];
-	}
-
-	//exiting volume: insert the clipped point and the first (interior) point
-	if (!out0 && out1)
-	{
-		CLIPLOG(" exiting\n");
-		outClippedPoly.clipVerts[outClippedPoly.type++] = clipPoint(verts[0],verts[1], coord, which);
-	}
-
-	//entering volume: insert clipped point
-	if (out0 && !out1)
-	{
-		CLIPLOG(" entering\n");
-		outClippedPoly.clipVerts[outClippedPoly.type++] = clipPoint(verts[1],verts[0], coord, which);
-		outClippedPoly.clipVerts[outClippedPoly.type++] = *verts[1];
-	}
-}
-
-FORCEINLINE void GFX3D_Clipper::clipPolyVsPlane(const int coord, int which)
-{
-	outClippedPoly.type = 0;
-	CLIPLOG2("Clipping coord %d against %f\n",coord,x);
-	for (size_t i = 0; i < tempClippedPoly.type; i++)
-	{
-		VERT *testverts[2] = { &tempClippedPoly.clipVerts[i], &tempClippedPoly.clipVerts[(i+1)%tempClippedPoly.type] };
-		clipSegmentVsPlane(testverts, coord, which);
-	}
-
-	//this doesnt seem to help any. leaving it until i decide to get rid of it
-	//int j = index_start_table[tempClippedPoly.type-3];
-	//for(int i=0;i<tempClippedPoly.type;i++,j+=2)
-	//{
-	//	VERT* testverts[2] = {&tempClippedPoly.clipVerts[index_lookup_table[j]],&tempClippedPoly.clipVerts[index_lookup_table[j+1]]};
-	//	clipSegmentVsPlane(testverts, coord, which);
-	//}
-
-	tempClippedPoly = outClippedPoly;
-}
-
-
-void GFX3D_Clipper::clipPoly(const POLY &poly, const VERT **verts)
-{
-	const PolygonType type = poly.type;
-
-	CLIPLOG("==Begin poly==\n");
-
-	tempClippedPoly.clipVerts[0] = *verts[0];
-	tempClippedPoly.clipVerts[1] = *verts[1];
-	tempClippedPoly.clipVerts[2] = *verts[2];
-	if(type==4)
-		tempClippedPoly.clipVerts[3] = *verts[3];
-
-	
-	tempClippedPoly.type = type;
-
-	clipPolyVsPlane(0, -1); 
-	clipPolyVsPlane(0, 1);
-	clipPolyVsPlane(1, -1);
-	clipPolyVsPlane(1, 1);
-	clipPolyVsPlane(2, -1);
-	clipPolyVsPlane(2, 1);
-	//TODO - we need to parameterize back plane clipping
-
-	
-	if (tempClippedPoly.type < POLYGON_TYPE_TRIANGLE)
-	{
-		//a totally clipped poly. discard it.
-		//or, a degenerate poly. we're not handling these right now
-	}
-	else
-	{
-		//TODO - build right in this list instead of copying
-		clippedPolys[clippedPolyCounter] = tempClippedPoly;
-		clippedPolys[clippedPolyCounter].poly = &poly;
-		clippedPolyCounter++;
-	}
-}
-
-#endif
