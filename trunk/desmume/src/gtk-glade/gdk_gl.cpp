@@ -1,6 +1,6 @@
 /* gdk_gl.cpp - this file is part of DeSmuME
  *
- * Copyright (C) 2007-2015 DeSmuME Team
+ * Copyright (C) 2007-2016 DeSmuME Team
  * Copyright (C) 2007 Damien Nozay (damdoum)
  * Author: damdoum at users.sourceforge.net
  *
@@ -50,18 +50,6 @@ static int gtk_glade_use_software_colour_convert;
 #undef _DUP4
 #undef _DUP2
 
-/* FIXME: Purpose of this code?  */
-/*static BOOL _fun_gl_Begin (int screen) { return FALSE; }
-static void _fun_gl_End (int screen) { }
-
-fun_gl_Begin Open_GL_beg = _fun_gl_Begin;
-fun_gl_End   Open_GL_end = _fun_gl_End;
-
-void register_gl_fun(fun_gl_Begin beg,fun_gl_End end) {
-	Open_GL_beg = beg;
-	Open_GL_end = end;
-}*/
-
 /************************************************/
 /* BEGIN & END                                  */
 /************************************************/
@@ -89,34 +77,12 @@ void my_gl_Identity() {
 	glLoadIdentity();
 }
 
-void my_gl_DrawBeautifulQuad( void) {
-	// beautiful quad
-	glBegin(GL_QUADS);
-		glColor3ub(255,0,0);    glVertex2d(-0.75,-0.75);
-		glColor3ub(128,255,0);  glVertex2d(-0.75, 0.75);
-		glColor3ub(0,255,128);  glVertex2d( 0.75, 0.75);
-		glColor3ub(0,0,255);    glVertex2d( 0.75,-0.75);
-	glEnd();
-	glColor3ub(255,255,255);
-}
-
-#if 0 /* not used */
-static void my_gl_DrawLogo() {
-	
-
-}
-#endif
-
-
 void my_gl_Clear(int screen) {
 	if (!my_gl_Begin(screen)) return;
 	
 	/* Set the background black */
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClearDepth(1.0);
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-	my_gl_DrawBeautifulQuad();
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
 
 	my_gl_End(screen);
 }
@@ -196,7 +162,7 @@ void init_GL_capabilities(  int use_software_convert) {
 
         /* Generate The Texture */
 	glBindTexture( GL_TEXTURE_2D, Textures[0]);
-	memset(blank_texture, 0x001f, sizeof(blank_texture));
+    memset(blank_texture, 0, sizeof(blank_texture));
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, 256, 512,
 		      0, GL_RGBA,
 		      GL_UNSIGNED_SHORT_1_5_5_5_REV,
@@ -264,6 +230,8 @@ my_gl_ScreenTex( int software_convert) {
 
 static void my_gl_ScreenTexApply(int screen) {
 	float off = (screen)?0.375:0;
+
+    glColor4ub(255,255,255,255);
 	glBegin(GL_QUADS);
 		// texcoords 0.375 means 192, 1 means 256
 		glTexCoord2f(0.0, off+0.000); glVertex2d(-1.0, 1.0);
@@ -310,22 +278,8 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 		}
 	}
 	
-	// make sure current color is ok
-	glColor4ub(255,255,255,255);
 	// apply part of the texture
 	my_gl_ScreenTexApply(screen);
-	glDisable(GL_TEXTURE_2D);
-
-	// master bright (bis)
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-	glBegin(GL_QUADS);
-		glVertex2d(-1.0, 1.0);
-		glVertex2d( 1.0, 1.0);
-		glVertex2d( 1.0,-1.0);
-		glVertex2d(-1.0,-1.0);
-	glEnd();
-	glDisable(GL_BLEND);
 
 	my_gl_End(viewportscreen);
 	return TRUE;
