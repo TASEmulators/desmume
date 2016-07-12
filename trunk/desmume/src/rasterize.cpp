@@ -75,8 +75,6 @@ template<typename T> T _max(T a, T b, T c, T d) { return max(_max(a,b,d),c); }
 
 static u8 modulate_table[64][64];
 static u8 decal_table[32][64][64];
-static u8 index_lookup_table[65];
-static u8 index_start_table[8];
 
 ////optimized float floor useful in limited cases
 ////from http://www.stereopsis.com/FPU.html#convert
@@ -1263,21 +1261,6 @@ Render3DError SoftRasterizerRenderer::InitTables()
 				modulate_table[i][j] = ((i+1) * (j+1) - 1) >> 6;
 				for (size_t a = 0; a < 32; a++)
 					decal_table[a][i][j] = ((i*a) + (j*(31-a))) >> 5;
-			}
-		}
-		
-		//these tables are used to increment through vert lists without having to do wrapping logic/math
-		u8 idx = 0;
-		for (u8 i = 3; i <= 8; i++)
-		{
-			index_start_table[i-3] = idx;
-			for (u8 j = 0; j < i; j++)
-			{
-				u8 a = j;
-				u8 b = j+1;
-				if (b == i) b = 0;
-				index_lookup_table[idx++] = a;
-				index_lookup_table[idx++] = b;
 			}
 		}
 		
