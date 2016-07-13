@@ -555,7 +555,7 @@ public:
 		}
 	}
 	
-	template<bool isShadowPolygon>
+	template<bool ISSHADOWPOLYGON>
 	FORCEINLINE void pixel(const PolygonAttributes &polyAttr, const size_t fragmentIndex, FragmentColor &dstColor, float r, float g, float b, float invu, float invv, float w, float z)
 	{
 		FragmentColor srcColor;
@@ -596,7 +596,7 @@ public:
 		}
 		
 		//handle shadow polys
-		if (isShadowPolygon)
+		if (ISSHADOWPOLYGON)
 		{
 			if (polyAttr.polygonID == 0)
 			{
@@ -680,19 +680,19 @@ public:
 
 		goto done;
 		depth_fail:
-		if (isShadowPolygon && polyAttr.polygonID == 0)
+		if (ISSHADOWPOLYGON && polyAttr.polygonID == 0)
 			dstAttributeStencil++;
 		
 		rejected_fragment:
 		done:
 		;
 
-		if (isShadowPolygon && polyAttr.polygonID != 0 && dstAttributeStencil)
+		if (ISSHADOWPOLYGON && polyAttr.polygonID != 0 && dstAttributeStencil)
 			dstAttributeStencil--;
 	}
 
 	//draws a single scanline
-	template <bool isShadowPolygon>
+	template <bool ISSHADOWPOLYGON>
 	FORCEINLINE void drawscanline(const PolygonAttributes &polyAttr, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight, bool lineHack)
 	{
 		int XStart = pLeft->X;
@@ -779,7 +779,7 @@ public:
 		
 		while (width-- > 0)
 		{
-			pixel<isShadowPolygon>(polyAttr, adr, dstColor[adr], color[0], color[1], color[2], u, v, 1.0f/invw, z);
+			pixel<ISSHADOWPOLYGON>(polyAttr, adr, dstColor[adr], color[0], color[1], color[2], u, v, 1.0f/invw, z);
 			adr++;
 			x++;
 
@@ -794,7 +794,7 @@ public:
 	}
 
 	//runs several scanlines, until an edge is finished
-	template<bool SLI, bool isShadowPolygon>
+	template<bool SLI, bool ISSHADOWPOLYGON>
 	void runscanlines(const PolygonAttributes &polyAttr, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *left, edge_fx_fl *right, bool horizontal, bool lineHack)
 	{
 		//oh lord, hack city for edge drawing
@@ -807,13 +807,13 @@ public:
 		if (lineHack && left->Height == 0 && right->Height == 0 && left->Y<framebufferHeight && left->Y>=0)
 		{
 			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
-			if(draw) drawscanline<isShadowPolygon>(polyAttr, dstColor, framebufferWidth, framebufferHeight, left,right,lineHack);
+			if(draw) drawscanline<ISSHADOWPOLYGON>(polyAttr, dstColor, framebufferWidth, framebufferHeight, left,right,lineHack);
 		}
 
 		while(Height--)
 		{
 			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
-			if(draw) drawscanline<isShadowPolygon>(polyAttr, dstColor, framebufferWidth, framebufferHeight, left,right,lineHack);
+			if(draw) drawscanline<ISSHADOWPOLYGON>(polyAttr, dstColor, framebufferWidth, framebufferHeight, left,right,lineHack);
 			const int xl = left->X;
 			const int xr = right->X;
 			const int y = left->Y;
@@ -886,39 +886,39 @@ public:
 
 	
 	//rotates verts counterclockwise
-	template<int type>
+	template<int TYPE>
 	INLINE void rot_verts()
 	{
-		#define ROTSWAP(X) if(type>X) swap(verts[X-1],verts[X]);
+		#define ROTSWAP(X) if(TYPE>X) swap(verts[X-1],verts[X]);
 		ROTSWAP(1); ROTSWAP(2); ROTSWAP(3); ROTSWAP(4);
 		ROTSWAP(5); ROTSWAP(6); ROTSWAP(7); ROTSWAP(8); ROTSWAP(9);
 	}
 
 	//rotate verts until vert0.y is minimum, and then vert0.x is minimum in case of ties
 	//this is a necessary precondition for our shape engine
-	template<int type>
+	template<int TYPE>
 	void sort_verts(bool backwards)
 	{
 		//if the verts are backwards, reorder them first
 		if (backwards)
-			for (size_t i = 0; i < type/2; i++)
-				swap(verts[i],verts[type-i-1]);
+			for (size_t i = 0; i < TYPE/2; i++)
+				swap(verts[i],verts[TYPE-i-1]);
 
 		for (;;)
 		{
 			//this was the only way we could get this to unroll
-			#define CHECKY(X) if(type>X) if(verts[0]->y > verts[X]->y) goto doswap;
+			#define CHECKY(X) if(TYPE>X) if(verts[0]->y > verts[X]->y) goto doswap;
 			CHECKY(1); CHECKY(2); CHECKY(3); CHECKY(4);
 			CHECKY(5); CHECKY(6); CHECKY(7); CHECKY(8); CHECKY(9);
 			break;
 			
 		doswap:
-			rot_verts<type>();
+			rot_verts<TYPE>();
 		}
 		
 		while (verts[0]->y == verts[1]->y && verts[0]->x > verts[1]->x)
 		{
-			rot_verts<type>();
+			rot_verts<TYPE>();
 			// hack for VC++ 2010 (bug in compiler optimization?)
 			// freeze on 3D
 			// TODO: study it
@@ -933,7 +933,7 @@ public:
 	//verts must be clockwise.
 	//I didnt reference anything for this algorithm but it seems like I've seen it somewhere before.
 	//Maybe it is like crow's algorithm
-	template<bool SLI, bool isShadowPolygon>
+	template<bool SLI, bool ISSHADOWPOLYGON>
 	void shape_engine(const PolygonAttributes &polyAttr, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type, const bool backwards, bool lineHack)
 	{
 		bool failure = false;
@@ -974,7 +974,7 @@ public:
 				return;
 
 			bool horizontal = left.Y == right.Y;
-			runscanlines<SLI, isShadowPolygon>(polyAttr, dstColor, framebufferWidth, framebufferHeight, &left, &right, horizontal, lineHack);
+			runscanlines<SLI, ISSHADOWPOLYGON>(polyAttr, dstColor, framebufferWidth, framebufferHeight, &left, &right, horizontal, lineHack);
 
 			//if we ran out of an edge, step to the next one
 			if (right.Height == 0)
@@ -1270,7 +1270,7 @@ Render3DError SoftRasterizerRenderer::InitTables()
 	return RENDER3DERROR_NOERR;
 }
 
-template<bool useHiResInterpolate>
+template<bool USEHIRESINTERPOLATE>
 size_t SoftRasterizerRenderer::performClipping(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
 {
 	//submit all polys to clipper
@@ -1287,7 +1287,7 @@ size_t SoftRasterizerRenderer::performClipping(const VERTLIST *vertList, const P
 			:NULL
 		};
 		
-		clipper.clipPoly<useHiResInterpolate>(poly, clipVerts);
+		clipper.clipPoly<USEHIRESINTERPOLATE>(poly, clipVerts);
 	}
 	
 	return clipper.clippedPolyCounter;

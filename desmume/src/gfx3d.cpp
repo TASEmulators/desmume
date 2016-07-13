@@ -2623,13 +2623,14 @@ static T interpolate(const float ratio, const T& x0, const T& x1)
 }
 
 //http://www.cs.berkeley.edu/~ug/slide/pipeline/assignments/as6/discussion.shtml
-template<int coord, int which> static FORCEINLINE VERT clipPoint(bool hirez, const VERT *inside, const VERT *outside)
+template<int COORD, int WHICH>
+static FORCEINLINE VERT clipPoint(bool hirez, const VERT *inside, const VERT *outside)
 {
 	VERT ret;
-	const float coord_inside = inside->coord[coord];
-	const float coord_outside = outside->coord[coord];
-	const float w_inside = (which == -1) ? -inside->coord[3] : inside->coord[3];
-	const float w_outside = (which == -1) ? -outside->coord[3] : outside->coord[3];
+	const float coord_inside = inside->coord[COORD];
+	const float coord_outside = outside->coord[COORD];
+	const float w_inside = (WHICH == -1) ? -inside->coord[3] : inside->coord[3];
+	const float w_outside = (WHICH == -1) ? -outside->coord[3] : outside->coord[3];
 	const float t = (coord_inside - w_inside) / ((w_outside-w_inside) - (coord_outside-coord_inside));
 	
 #define INTERP(X) ret . X = interpolate(t, inside-> X ,outside-> X )
@@ -2649,10 +2650,10 @@ template<int coord, int which> static FORCEINLINE VERT clipPoint(bool hirez, con
 
 	//this seems like a prudent measure to make sure that math doesnt make a point pop back out
 	//of the clip volume through interpolation
-	if (which == -1)
-		ret.coord[coord] = -ret.coord[3];
+	if (WHICH == -1)
+		ret.coord[COORD] = -ret.coord[3];
 	else
-		ret.coord[coord] = ret.coord[3];
+		ret.coord[COORD] = ret.coord[3];
 
 	return ret;
 }
@@ -2661,11 +2662,11 @@ template<int coord, int which> static FORCEINLINE VERT clipPoint(bool hirez, con
 static VERT scratchClipVerts [MAX_SCRATCH_CLIP_VERTS];
 static int numScratchClipVerts = 0;
 
-template <int coord, int which, class Next>
+template <int COORD, int WHICH, class NEXT>
 class ClipperPlane
 {
 public:
-	ClipperPlane(Next& next) : m_next(next) {}
+	ClipperPlane(NEXT& next) : m_next(next) {}
 
 	void init(VERT* verts)
 	{
@@ -2693,14 +2694,14 @@ public:
 private:
 	VERT* m_prevVert;
 	VERT* m_firstVert;
-	Next& m_next;
+	NEXT& m_next;
 	
 	FORCEINLINE void clipSegmentVsPlane(bool hirez, const VERT *vert0, const VERT *vert1)
 	{
 		const float *vert0coord = vert0->coord;
 		const float *vert1coord = vert1->coord;
-		const bool out0 = (which == -1) ? (vert0coord[coord] < -vert0coord[3]) : (vert0coord[coord] > vert0coord[3]);
-		const bool out1 = (which == -1) ? (vert1coord[coord] < -vert1coord[3]) : (vert1coord[coord] > vert1coord[3]);
+		const bool out0 = (WHICH == -1) ? (vert0coord[COORD] < -vert0coord[3]) : (vert0coord[COORD] > vert0coord[3]);
+		const bool out1 = (WHICH == -1) ? (vert1coord[COORD] < -vert1coord[3]) : (vert1coord[COORD] > vert1coord[3]);
 		
 		//CONSIDER: should we try and clip things behind the eye? does this code even successfully do it? not sure.
 		//if(coord==2 && which==1) {
@@ -2726,7 +2727,7 @@ private:
 		{
 			CLIPLOG(" exiting\n");
 			assert((u32)numScratchClipVerts < MAX_SCRATCH_CLIP_VERTS);
-			scratchClipVerts[numScratchClipVerts] = clipPoint<coord, which>(hirez, vert0, vert1);
+			scratchClipVerts[numScratchClipVerts] = clipPoint<COORD, WHICH>(hirez, vert0, vert1);
 			m_next.clipVert(hirez, &scratchClipVerts[numScratchClipVerts++]);
 		}
 
@@ -2735,7 +2736,7 @@ private:
 		{
 			CLIPLOG(" entering\n");
 			assert((u32)numScratchClipVerts < MAX_SCRATCH_CLIP_VERTS);
-			scratchClipVerts[numScratchClipVerts] = clipPoint<coord, which>(hirez, vert1, vert0);
+			scratchClipVerts[numScratchClipVerts] = clipPoint<COORD, WHICH>(hirez, vert1, vert0);
 			m_next.clipVert(hirez, &scratchClipVerts[numScratchClipVerts++]);
 			m_next.clipVert(hirez, vert1);
 		}
@@ -2778,7 +2779,7 @@ typedef ClipperPlane<1,-1,Stage4> Stage3;        static Stage3 clipper3 (clipper
 typedef ClipperPlane<0, 1,Stage3> Stage2;        static Stage2 clipper2 (clipper3); // right plane
 typedef ClipperPlane<0,-1,Stage2> Stage1;        static Stage1 clipper  (clipper2); // left plane
 
-template<bool useHiResInterpolate>
+template<bool USEHIRESINTERPOLATE>
 void GFX3D_Clipper::clipPoly(const POLY &poly, const VERT **verts)
 {
 	CLIPLOG("==Begin poly==\n");
@@ -2788,9 +2789,9 @@ void GFX3D_Clipper::clipPoly(const POLY &poly, const VERT **verts)
 
 	clipper.init(clippedPolys[clippedPolyCounter].clipVerts);
 	for (size_t i = 0; i < type; i++)
-		clipper.clipVert(useHiResInterpolate, verts[i]);
+		clipper.clipVert(USEHIRESINTERPOLATE, verts[i]);
 	
-	const PolygonType outType = (PolygonType)clipper.finish(useHiResInterpolate);
+	const PolygonType outType = (PolygonType)clipper.finish(USEHIRESINTERPOLATE);
 
 	assert((u32)outType < MAX_CLIPPED_VERTS);
 	if (outType < POLYGON_TYPE_TRIANGLE)
