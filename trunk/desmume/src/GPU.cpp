@@ -7687,22 +7687,28 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 		{
 			this->UpdateRenderProperties();
 			
-			if (!CommonSettings.showGpu.main)
+			if (!isFramebufferRenderNeeded[GPUEngineID_Main])
 			{
-				memset(this->_engineMain->renderedBuffer, 0, this->_engineMain->renderedWidth * this->_engineMain->renderedHeight * this->_displayInfo.pixelBytes);
-			}
-			else if (this->_engineMain->GetIsMasterBrightFullIntensity() && (this->_engineMain->GetIORegisterMap().DISPCAPCNT.CaptureEnable == 0))
-			{
-				this->_engineMain->ApplyMasterBrightness<true>();
+				if (!CommonSettings.showGpu.main)
+				{
+					memset(this->_engineMain->renderedBuffer, 0, this->_engineMain->renderedWidth * this->_engineMain->renderedHeight * this->_displayInfo.pixelBytes);
+				}
+				else if (this->_engineMain->GetIsMasterBrightFullIntensity())
+				{
+					this->_engineMain->ApplyMasterBrightness<true>();
+				}
 			}
 			
-			if (!CommonSettings.showGpu.sub)
+			if (!isFramebufferRenderNeeded[GPUEngineID_Sub])
 			{
-				memset(this->_engineSub->renderedBuffer, 0, this->_engineSub->renderedWidth * this->_engineSub->renderedHeight * this->_displayInfo.pixelBytes);
-			}
-			else if (this->_engineSub->GetIsMasterBrightFullIntensity())
-			{
-				this->_engineSub->ApplyMasterBrightness<true>();
+				if (!CommonSettings.showGpu.sub)
+				{
+					memset(this->_engineSub->renderedBuffer, 0, this->_engineSub->renderedWidth * this->_engineSub->renderedHeight * this->_displayInfo.pixelBytes);
+				}
+				else if (this->_engineSub->GetIsMasterBrightFullIntensity())
+				{
+					this->_engineSub->ApplyMasterBrightness<true>();
+				}
 			}
 		}
 	}
@@ -7718,15 +7724,19 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 		// originates from the top of the screen, the BG0 layer will only be enabled at line 46. This
 		// means that we need to check the states at that particular time to ensure that the 3D renderer
 		// finishes before we read the 3D framebuffer. Otherwise, the map will render incorrectly.
-		const bool need3DDisplayFramebuffer = this->_engineMain->WillRender3DLayer();
-		const bool need3DCaptureFramebuffer = this->_engineMain->WillCapture3DLayerDirect();
-
-		if ( CurrentRenderer->GetRenderNeedsFinish() && (need3DDisplayFramebuffer || need3DCaptureFramebuffer) )
+		
+		if (CurrentRenderer->GetRenderNeedsFinish())
 		{
-			CurrentRenderer->SetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
-			CurrentRenderer->RenderFinish();
-			CurrentRenderer->SetRenderNeedsFinish(false);
-			this->_event->DidRender3DEnd();
+			const bool need3DDisplayFramebuffer = this->_engineMain->WillRender3DLayer();
+			const bool need3DCaptureFramebuffer = this->_engineMain->WillCapture3DLayerDirect();
+			
+			if (need3DDisplayFramebuffer || need3DCaptureFramebuffer)
+			{
+				CurrentRenderer->SetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
+				CurrentRenderer->RenderFinish();
+				CurrentRenderer->SetRenderNeedsFinish(false);
+				this->_event->DidRender3DEnd();
+			}
 		}
 		
 		this->_engineMain->RenderLine(l);
