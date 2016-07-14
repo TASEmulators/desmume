@@ -475,9 +475,6 @@ void GPUEngineBase::_Reset_Base()
 	this->_needUpdateWINH[0] = true;
 	this->_needUpdateWINH[1] = true;
 	
-	this->isCustomRenderingNeeded = false;
-	this->vramBGLayer = VRAM_NO_3D_USAGE;
-	this->vramBlockBGIndex = VRAM_NO_3D_USAGE;
 	this->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
 	
 	this->nativeLineRenderCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
@@ -4179,9 +4176,220 @@ void GPUEngineBase::_SpriteRenderPerform(const u16 lineIndex, u16 *__restrict ds
 	}
 }
 
+template <NDSColorFormat OUTPUTFORMAT>
 void* GPUEngineBase::_RenderLine_Layers(const u16 l)
 {
-	return ((u8 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU->GetDisplayInfo().pixelBytes));
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	itemsForPriority_t *item;
+	
+	// Optimization: For normal display mode, render straight to the output buffer when that is what we are going to end
+	// up displaying anyway. Otherwise, we need to use the working buffer.
+	void *currentRenderLineTarget = (this->_displayOutputMode == GPUDisplayMode_Normal) ? (u8 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * dispInfo.pixelBytes) : (u8 *)this->_internalRenderLineTargetNative;
+	
+	const u16 backdropColor = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
+	this->_RenderLine_Clear(backdropColor, l, currentRenderLineTarget);
+	
+	// for all the pixels in the line
+	if (this->_enableLayer[GPULayerID_OBJ])
+	{
+		this->_RenderLine_SetupSprites(backdropColor, l);
+	}
+	
+	// paint lower priorities first
+	// then higher priorities on top
+	for (size_t prio = NB_PRIORITIES; prio > 0; )
+	{
+		prio--;
+		item = &(this->_itemsForPriority[prio]);
+		// render BGs
+		if (this->_isAnyBGLayerEnabled)
+		{
+			for (size_t i = 0; i < item->nbBGs; i++)
+			{
+				const GPULayerID layerID = (GPULayerID)item->BGs[i];
+				if (this->_enableLayer[layerID])
+				{
+					if (this->_engineID == GPUEngineID_Main)
+					{
+						if ( (layerID == GPULayerID_BG0) && GPU->GetEngineMain()->WillRender3DLayer() )
+						{
+							currentRenderLineTarget = GPU->GetEngineMain()->RenderLine_Layer3D<OUTPUTFORMAT>(currentRenderLineTarget, l);
+							continue;
+						}
+					}
+					
+					if (this->isLineRenderNative[l])
+					{
+						switch (layerID)
+						{
+							case GPULayerID_BG0: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG0, false, false>(currentRenderLineTarget, l); break;
+							case GPULayerID_BG1: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG1, false, false>(currentRenderLineTarget, l); break;
+							case GPULayerID_BG2: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG2, false, false>(currentRenderLineTarget, l); break;
+							case GPULayerID_BG3: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG3, false, false>(currentRenderLineTarget, l); break;
+								
+							default:
+								break;
+						}
+					}
+					else
+					{
+						switch (layerID)
+						{
+							case GPULayerID_BG0: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG0, false, true>(currentRenderLineTarget, l); break;
+							case GPULayerID_BG1: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG1, false, true>(currentRenderLineTarget, l); break;
+							case GPULayerID_BG2: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG2, false, true>(currentRenderLineTarget, l); break;
+							case GPULayerID_BG3: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG3, false, true>(currentRenderLineTarget, l); break;
+								
+							default:
+								break;
+						}
+					}
+				} //layer enabled
+			}
+		}
+		
+		// render sprite Pixels
+		if ( this->_enableLayer[GPULayerID_OBJ] && (item->nbPixelsX > 0) )
+		{
+			currentRenderLineTarget = this->_RenderLine_LayerOBJ<OUTPUTFORMAT>(item, currentRenderLineTarget, l);
+		}
+	}
+	
+	return currentRenderLineTarget;
+}
+
+void GPUEngineBase::_RenderLine_SetupSprites(const u16 backdropColor, const u16 lineIndex)
+{
+	itemsForPriority_t *item;
+	
+	//n.b. - this is clearing the sprite line buffer to the background color,
+	memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(this->_sprColor, backdropColor);
+	memset(this->_sprAlpha, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+	memset(this->_sprType, OBJMode_Normal, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+	memset(this->_sprPrio, 0x7F, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+	
+	//zero 06-may-09: I properly supported window color effects for backdrop, but I am not sure
+	//how it interacts with this. I wish we knew why we needed this
+	
+	this->_SpriteRender<false>(lineIndex, this->_sprColor, this->_sprAlpha, this->_sprType, this->_sprPrio);
+	this->_MosaicSpriteLine(lineIndex, this->_sprColor, this->_sprAlpha, this->_sprType, this->_sprPrio);
+	
+	for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
+	{
+		// assign them to the good priority item
+		const size_t prio = this->_sprPrio[i];
+		if (prio >= 4) continue;
+		
+		item = &(this->_itemsForPriority[prio]);
+		item->PixelsX[item->nbPixelsX] = i;
+		item->nbPixelsX++;
+	}
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+void* GPUEngineBase::_RenderLine_LayerOBJ(itemsForPriority_t *__restrict item, void *__restrict dstColorLine, const u16 lineIndex)
+{
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	const size_t customLineWidth = dispInfo.customWidth;
+	const size_t customLineCount = _gpuDstLineCount[lineIndex];
+	const size_t customLineIndex = _gpuDstLineIndex[lineIndex];
+	
+	if (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE)
+	{
+		if (GPU->GetEngineMain()->VerifyVRAMLineDidChange(this->vramBlockOBJIndex, lineIndex))
+		{
+			void *newRenderLineTarget = (this->_displayOutputMode == GPUDisplayMode_Normal) ? (u8 *)this->nativeBuffer + (lineIndex * GPU_FRAMEBUFFER_NATIVE_WIDTH * dispInfo.pixelBytes) : (u8 *)this->_internalRenderLineTargetNative;
+			
+			switch (OUTPUTFORMAT)
+			{
+				case NDSColorFormat_BGR555_Rev:
+					this->_LineColorCopy<true, false, false, false, 2>(newRenderLineTarget, dstColorLine, lineIndex);
+					break;
+					
+				case NDSColorFormat_BGR666_Rev:
+				case NDSColorFormat_BGR888_Rev:
+					this->_LineColorCopy<true, false, false, false, 4>(newRenderLineTarget, dstColorLine, lineIndex);
+					break;
+			}
+			
+			this->_LineLayerIDCopy<true, false>(this->_renderLineLayerIDNative, this->_renderLineLayerIDCustom, lineIndex);
+			dstColorLine = newRenderLineTarget;
+		}
+	}
+	
+	const bool useCustomVRAM = (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE) && !GPU->GetEngineMain()->isLineCaptureNative[this->vramBlockOBJIndex][lineIndex];
+	const u16 *__restrict srcLine = (useCustomVRAM) ? GPU->GetEngineMain()->GetCustomVRAMBlockPtr(this->vramBlockOBJIndex) + (customLineIndex * customLineWidth) : NULL;
+	if (this->isLineRenderNative[lineIndex] && useCustomVRAM)
+	{
+		void *newRenderLineTarget = (this->_displayOutputMode == GPUDisplayMode_Normal) ? (u8 *)this->customBuffer + (customLineIndex * customLineWidth * dispInfo.pixelBytes) : (u8 *)this->_internalRenderLineTargetCustom;
+		
+		switch (OUTPUTFORMAT)
+		{
+			case NDSColorFormat_BGR555_Rev:
+				this->_LineColorCopy<false, true, false, false, 2>(newRenderLineTarget, dstColorLine, lineIndex);
+				break;
+				
+			case NDSColorFormat_BGR666_Rev:
+			case NDSColorFormat_BGR888_Rev:
+				this->_LineColorCopy<false, true, false, false, 4>(newRenderLineTarget, dstColorLine, lineIndex);
+				break;
+		}
+		
+		this->_LineLayerIDCopy<false, true>(this->_renderLineLayerIDCustom, this->_renderLineLayerIDNative, lineIndex);
+		dstColorLine = newRenderLineTarget;
+		
+		this->isLineRenderNative[lineIndex] = false;
+		this->nativeLineRenderCount--;
+	}
+	
+	u16 *__restrict dstColorLine16 = (u16 *)dstColorLine;
+	FragmentColor *__restrict dstColorLine32 = (FragmentColor *)dstColorLine;
+	
+	if (this->isLineRenderNative[lineIndex])
+	{
+		u8 *__restrict dstLayerIDPtr = this->_renderLineLayerIDNative;
+		
+		for (size_t i = 0; i < item->nbPixelsX; i++)
+		{
+			const size_t srcX = item->PixelsX[i];
+			
+			this->_RenderPixel<OUTPUTFORMAT, GPULayerID_OBJ, false, false, false>(srcX,
+																				  this->_sprColor[srcX],
+																				  this->_sprAlpha[srcX],
+																				  (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + srcX) : (void *)(dstColorLine32 + srcX),
+																				  dstLayerIDPtr + srcX);
+		}
+	}
+	else
+	{
+		u8 *__restrict dstLayerIDPtr = this->_renderLineLayerIDCustom;
+		
+		for (size_t line = 0; line < customLineCount; line++)
+		{
+			for (size_t i = 0; i < item->nbPixelsX; i++)
+			{
+				const size_t srcX = item->PixelsX[i];
+				
+				for (size_t p = 0; p < _gpuDstPitchCount[srcX]; p++)
+				{
+					const size_t dstX = _gpuDstPitchIndex[srcX] + p;
+					
+					this->_RenderPixel<OUTPUTFORMAT, GPULayerID_OBJ, false, false, false>(srcX,
+																						  (useCustomVRAM) ? srcLine[dstX] : this->_sprColor[srcX],
+																						  this->_sprAlpha[srcX],
+																						  (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + dstX) : (void *)(dstColorLine32 + dstX),
+																						  dstLayerIDPtr + dstX);
+				}
+			}
+			
+			srcLine += customLineWidth;
+			dstColorLine16 += customLineWidth;
+			dstColorLine32 += customLineWidth;
+			dstLayerIDPtr += customLineWidth;
+		}
+	}
+	
+	return dstColorLine;
 }
 
 template <bool ISFULLINTENSITYHINT>
@@ -4505,50 +4713,6 @@ void GPUEngineBase::_UpdateWINH()
 		this->_windowRightCustom_SSE2[WIN_NUM] = _mm_set1_epi16(this->_windowRightCustom[WIN_NUM]);
 #endif
 	}
-}
-
-void GPUEngineBase::UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex)
-{
-	const bool isBG2UsingVRAM = this->_enableLayer[GPULayerID_BG2] && (this->_BGLayer[GPULayerID_BG2].type == BGType_AffineExt_Direct) && (this->_BGLayer[GPULayerID_BG2].size.width == 256) && (this->_BGLayer[GPULayerID_BG2].size.height == 256);
-	const bool isBG3UsingVRAM = this->_enableLayer[GPULayerID_BG3] && (this->_BGLayer[GPULayerID_BG3].type == BGType_AffineExt_Direct) && (this->_BGLayer[GPULayerID_BG3].size.width == 256) && (this->_BGLayer[GPULayerID_BG3].size.height == 256);
-	u8 selectedBGLayer = VRAM_NO_3D_USAGE;
-	
-	if (!isBG2UsingVRAM && !isBG3UsingVRAM)
-	{
-		return;
-	}
-	else if (!isBG2UsingVRAM && isBG3UsingVRAM)
-	{
-		selectedBGLayer = GPULayerID_BG3;
-	}
-	else if (isBG2UsingVRAM && !isBG3UsingVRAM)
-	{
-		selectedBGLayer = GPULayerID_BG2;
-	}
-	else if (isBG2UsingVRAM && isBG3UsingVRAM)
-	{
-		selectedBGLayer = (this->_BGLayer[GPULayerID_BG3].priority <= this->_BGLayer[GPULayerID_BG2].priority) ? GPULayerID_BG3 : GPULayerID_BG2;
-	}
-	
-	if (selectedBGLayer != VRAM_NO_3D_USAGE)
-	{
-		const IOREG_BGnParameter *bgParams = (selectedBGLayer == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
-		const IOREG_BGnX &savedBGnX = (selectedBGLayer == GPULayerID_BG2) ? this->savedBG2X : this->savedBG3X;
-		const IOREG_BGnY &savedBGnY = (selectedBGLayer == GPULayerID_BG2) ? this->savedBG2Y : this->savedBG3Y;
-		
-		if ( (bgParams->BGnPA.value != 0x100) ||
-		     (bgParams->BGnPB.value !=     0) ||
-		     (bgParams->BGnPC.value !=     0) ||
-		     (bgParams->BGnPD.value != 0x100) ||
-		     (savedBGnX.value       !=     0) ||
-		     (savedBGnY.value       !=     0) )
-		{
-			selectedBGLayer = VRAM_NO_3D_USAGE;
-		}
-	}
-	
-	this->vramBGLayer = selectedBGLayer;
-	this->vramBlockBGIndex = (selectedBGLayer != VRAM_NO_3D_USAGE) ? bankIndex : VRAM_NO_3D_USAGE;
 }
 
 void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex)
@@ -5221,7 +5385,7 @@ void GPUEngineA::RenderLine(const u16 l)
 	this->_SetupWindows<1>(l);
 	
 	// Render the line
-	void *renderLineTarget = this->_RenderLine_Layers(l);
+	void *renderLineTarget = this->_RenderLine_Layers<NDSColorFormat_BGR555_Rev>(l);
 	
 	// Fill the display output
 	switch (this->_displayOutputMode)
@@ -5261,457 +5425,226 @@ void GPUEngineA::RenderLine(const u16 l)
 	}
 }
 
-void* GPUEngineA::_RenderLine_Layers(const u16 l)
+template <NDSColorFormat OUTPUTFORMAT>
+void* GPUEngineA::RenderLine_Layer3D(void *dstColorLine, const u16 lineIndex)
 {
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	const size_t customLineWidth = dispInfo.customWidth;
-	const size_t customLineCount = _gpuDstLineCount[l];
-	const size_t customLineIndex = _gpuDstLineIndex[l];
-	
-	// Optimization: For normal display mode, render straight to the output buffer when that is what we are going to end
-	// up displaying anyway. Otherwise, we need to use the working buffer.
-	const bool isDisplayModeNormal = (this->_displayOutputMode == GPUDisplayMode_Normal);
-	
-	void *renderLineTargetNative = (isDisplayModeNormal) ? (u8 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * dispInfo.pixelBytes) : (u8 *)this->_internalRenderLineTargetNative;
-	void *renderLineTargetCustom = (isDisplayModeNormal) ? (u8 *)this->customBuffer + (customLineIndex * customLineWidth * dispInfo.pixelBytes) : (u8 *)this->_internalRenderLineTargetCustom;
-	void *currentRenderLineTarget = renderLineTargetNative;
-	
-	const u16 backdropColor = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
-	this->_RenderLine_Clear(backdropColor, l, renderLineTargetNative);
-	
-	itemsForPriority_t *__restrict item;
-	
-	// for all the pixels in the line
-	if (this->_enableLayer[GPULayerID_OBJ])
+	const FragmentColor *__restrict framebuffer3D = CurrentRenderer->GetFramebuffer();
+	if (framebuffer3D == NULL)
 	{
-		//n.b. - this is clearing the sprite line buffer to the background color,
-		memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(this->_sprColor, backdropColor);
-		memset(this->_sprAlpha, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH);
-		memset(this->_sprType, OBJMode_Normal, GPU_FRAMEBUFFER_NATIVE_WIDTH);
-		memset(this->_sprPrio, 0x7F, GPU_FRAMEBUFFER_NATIVE_WIDTH);
-		
-		//zero 06-may-09: I properly supported window color effects for backdrop, but I am not sure
-		//how it interacts with this. I wish we knew why we needed this
-		
-		this->_SpriteRender<false>(l, this->_sprColor, this->_sprAlpha, this->_sprType, this->_sprPrio);
-		this->_MosaicSpriteLine(l, this->_sprColor, this->_sprAlpha, this->_sprType, this->_sprPrio);
-		
-		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
-		{
-			// assign them to the good priority item
-			const size_t prio = this->_sprPrio[i];
-			if (prio >= 4) continue;
-			
-			item = &(this->_itemsForPriority[prio]);
-			item->PixelsX[item->nbPixelsX] = i;
-			item->nbPixelsX++;
-		}
+		return dstColorLine;
 	}
 	
-	// paint lower priorities first
-	// then higher priorities on top
-	for (size_t prio = NB_PRIORITIES; prio > 0; )
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	const size_t customLineWidth = dispInfo.customWidth;
+	const size_t customLineCount = _gpuDstLineCount[lineIndex];
+	const size_t customLineIndex = _gpuDstLineIndex[lineIndex];
+	
+	if (this->isLineRenderNative[lineIndex] && !CurrentRenderer->IsFramebufferNativeSize())
 	{
-		prio--;
-		item = &(this->_itemsForPriority[prio]);
-		// render BGs
-		if (this->_isAnyBGLayerEnabled)
+		void *newRenderLineTarget = (this->_displayOutputMode == GPUDisplayMode_Normal) ? (u8 *)this->customBuffer + (customLineIndex * customLineWidth * dispInfo.pixelBytes) : (u8 *)this->_internalRenderLineTargetCustom;
+		
+		switch (OUTPUTFORMAT)
 		{
-			for (size_t i = 0; i < item->nbBGs; i++)
-			{
-				const GPULayerID layerID = (GPULayerID)item->BGs[i];
-				if (this->_enableLayer[layerID])
-				{
-					if ( (layerID == GPULayerID_BG0) && this->WillRender3DLayer() )
-					{
-						const FragmentColor *__restrict framebuffer3D = CurrentRenderer->GetFramebuffer();
-						if (framebuffer3D == NULL)
-						{
-							continue;
-						}
-						
-						if (this->isLineRenderNative[l] && !CurrentRenderer->IsFramebufferNativeSize())
-						{
-							void *newRenderLineTarget = renderLineTargetCustom;
-							
-							switch (dispInfo.colorFormat)
-							{
-								case NDSColorFormat_BGR555_Rev:
-									this->_LineColorCopy<false, true, false, false, 2>(newRenderLineTarget, currentRenderLineTarget, l);
-									break;
-									
-								case NDSColorFormat_BGR666_Rev:
-								case NDSColorFormat_BGR888_Rev:
-									this->_LineColorCopy<false, true, false, false, 4>(newRenderLineTarget, currentRenderLineTarget, l);
-									break;
-							}
-							
-							this->_LineLayerIDCopy<false, true>(this->_renderLineLayerIDCustom, this->_renderLineLayerIDNative, l);
-							currentRenderLineTarget = newRenderLineTarget;
-							
-							this->isLineRenderNative[l] = false;
-							this->nativeLineRenderCount--;
-						}
-						
-						const float customWidthScale = (float)customLineWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
-						const FragmentColor *__restrict srcLinePtr = framebuffer3D + (customLineIndex * customLineWidth);
-						void *__restrict dstColorLinePtr = currentRenderLineTarget;
-						u8 *__restrict dstLayerIDPtr = (this->isLineRenderNative[l]) ? this->_renderLineLayerIDNative : this->_renderLineLayerIDCustom;
-						
-						// Horizontally offset the 3D layer by this amount.
-						// Test case: Blowing up large objects in Nanostray 2 will cause the main screen to shake horizontally.
-						const u16 hofs = (u16)( ((float)this->_BGLayer[GPULayerID_BG0].xOffset * customWidthScale) + 0.5f );
-						
-						if (hofs == 0)
-						{
-							for (size_t line = 0; line < customLineCount; line++)
-							{
-								size_t dstX = 0;
+			case NDSColorFormat_BGR555_Rev:
+				this->_LineColorCopy<false, true, false, false, 2>(newRenderLineTarget, dstColorLine, lineIndex);
+				break;
+				
+			case NDSColorFormat_BGR666_Rev:
+			case NDSColorFormat_BGR888_Rev:
+				this->_LineColorCopy<false, true, false, false, 4>(newRenderLineTarget, dstColorLine, lineIndex);
+				break;
+		}
+		
+		this->_LineLayerIDCopy<false, true>(this->_renderLineLayerIDCustom, this->_renderLineLayerIDNative, lineIndex);
+		dstColorLine = newRenderLineTarget;
+		
+		this->isLineRenderNative[lineIndex] = false;
+		this->nativeLineRenderCount--;
+	}
+	
+	const float customWidthScale = (float)customLineWidth / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	const FragmentColor *__restrict srcLinePtr = framebuffer3D + (customLineIndex * customLineWidth);
+	void *__restrict dstColorLinePtr = dstColorLine;
+	u8 *__restrict dstLayerIDPtr = (this->isLineRenderNative[lineIndex]) ? this->_renderLineLayerIDNative : this->_renderLineLayerIDCustom;
+	
+	// Horizontally offset the 3D layer by this amount.
+	// Test case: Blowing up large objects in Nanostray 2 will cause the main screen to shake horizontally.
+	const u16 hofs = (u16)( ((float)this->_BGLayer[GPULayerID_BG0].xOffset * customWidthScale) + 0.5f );
+	
+	if (hofs == 0)
+	{
+		for (size_t line = 0; line < customLineCount; line++)
+		{
+			size_t dstX = 0;
 #ifdef ENABLE_SSE2
-								const size_t ssePixCount = customLineWidth - (customLineWidth % 16);
-								
-								for (; dstX < ssePixCount; dstX+=16, srcLinePtr+=16, dstLayerIDPtr+=16, dstColorLinePtr = (dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)((u16 *)dstColorLinePtr + 16) : (void *)((FragmentColor *)dstColorLinePtr + 16))
-								{
-									const __m128i src[4]	= { _mm_load_si128((__m128i *)srcLinePtr + 0),
-									                            _mm_load_si128((__m128i *)srcLinePtr + 1),
-									                            _mm_load_si128((__m128i *)srcLinePtr + 2),
-									                            _mm_load_si128((__m128i *)srcLinePtr + 3) };
-									
-									// Determine which pixels pass by doing the alpha test and the window test.
-									const __m128i srcAlpha = _mm_packs_epi16( _mm_packs_epi32(_mm_srli_epi32(src[0], 24), _mm_srli_epi32(src[1], 24)),
-									                                          _mm_packs_epi32(_mm_srli_epi32(src[2], 24), _mm_srli_epi32(src[3], 24)) );
-									
-									// Do the window test.
-									__m128i passMask8;
-									__m128i enableColorEffectMask;
-									this->_RenderPixel_CheckWindows16_SSE2<GPULayerID_BG0, true>(dstX, passMask8, enableColorEffectMask);
-									
-									// Do the alpha test. Pixels with an alpha value of 0 are rejected.
-									passMask8 = _mm_andnot_si128(_mm_cmpeq_epi8(srcAlpha, _mm_setzero_si128()), passMask8);
-									
-									// If none of the pixels within the vector pass, then reject them all at once.
-									if (_mm_movemask_epi8(passMask8) == 0)
-									{
-										continue;
-									}
-									
-									// Perform the blending function.
-									__m128i dstLayerID_vec128 = _mm_load_si128((__m128i *)dstLayerIDPtr);
-									
-									__m128i dst[4];
-									dst[0] = _mm_load_si128((__m128i *)dstColorLinePtr + 0);
-									dst[1] = _mm_load_si128((__m128i *)dstColorLinePtr + 1);
-									
-									if (dispInfo.colorFormat == NDSColorFormat_BGR555_Rev)
-									{
-										// Instead of letting these vectors go to waste, let's convert the src colors to 16-bit now and
-										// then pack the converted 16-bit colors into these vectors.
-										dst[2] = _mm_packs_epi32( _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[0], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[0], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[0], _mm_set1_epi32(0x003E0000)), 7)),
-										                          _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x003E0000)), 7)) );
-										dst[3] = _mm_packs_epi32( _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x003E0000)), 7)),
-										                          _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[3], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[3], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[3], _mm_set1_epi32(0x003E0000)), 7)) );
-									}
-									else
-									{
-										dst[2] = _mm_load_si128((__m128i *)dstColorLinePtr + 2);
-										dst[3] = _mm_load_si128((__m128i *)dstColorLinePtr + 3);
-									}
-									
-									switch (dispInfo.colorFormat)
-									{
-										case NDSColorFormat_BGR555_Rev:
-										{
-											this->_RenderPixel3D_SSE2<NDSColorFormat_BGR555_Rev>(passMask8,
-																								 enableColorEffectMask,
-																								 src[3], src[2], src[1], src[0],
-																								 dst[3], dst[2], dst[1], dst[0],
-																								 dstLayerID_vec128);
-											break;
-										}
-											
-										case NDSColorFormat_BGR666_Rev:
-										{
-											this->_RenderPixel3D_SSE2<NDSColorFormat_BGR666_Rev>(passMask8,
-																								 enableColorEffectMask,
-																								 src[3], src[2], src[1], src[0],
-																								 dst[3], dst[2], dst[1], dst[0],
-																								 dstLayerID_vec128);
-											break;
-										}
-											
-										case NDSColorFormat_BGR888_Rev:
-										{
-											this->_RenderPixel3D_SSE2<NDSColorFormat_BGR888_Rev>(passMask8,
-																								 enableColorEffectMask,
-																								 src[3], src[2], src[1], src[0],
-																								 dst[3], dst[2], dst[1], dst[0],
-																								 dstLayerID_vec128);
-											break;
-										}
-									}
-									
-									_mm_store_si128((__m128i *)dstColorLinePtr + 0, dst[0]);
-									_mm_store_si128((__m128i *)dstColorLinePtr + 1, dst[1]);
-									
-									if (dispInfo.colorFormat != NDSColorFormat_BGR555_Rev)
-									{
-										_mm_store_si128((__m128i *)dstColorLinePtr + 2, dst[2]);
-										_mm_store_si128((__m128i *)dstColorLinePtr + 3, dst[3]);
-									}
-									
-									_mm_store_si128((__m128i *)dstLayerIDPtr, dstLayerID_vec128);
-								}
+			const size_t ssePixCount = customLineWidth - (customLineWidth % 16);
+			
+			for (; dstX < ssePixCount; dstX+=16, srcLinePtr+=16, dstLayerIDPtr+=16, dstColorLinePtr = (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev) ? (void *)((u16 *)dstColorLinePtr + 16) : (void *)((FragmentColor *)dstColorLinePtr + 16))
+			{
+				const __m128i src[4]	= { _mm_load_si128((__m128i *)srcLinePtr + 0),
+					_mm_load_si128((__m128i *)srcLinePtr + 1),
+					_mm_load_si128((__m128i *)srcLinePtr + 2),
+					_mm_load_si128((__m128i *)srcLinePtr + 3) };
+				
+				// Determine which pixels pass by doing the alpha test and the window test.
+				const __m128i srcAlpha = _mm_packs_epi16( _mm_packs_epi32(_mm_srli_epi32(src[0], 24), _mm_srli_epi32(src[1], 24)),
+														  _mm_packs_epi32(_mm_srli_epi32(src[2], 24), _mm_srli_epi32(src[3], 24)) );
+				
+				// Do the window test.
+				__m128i passMask8;
+				__m128i enableColorEffectMask;
+				this->_RenderPixel_CheckWindows16_SSE2<GPULayerID_BG0, true>(dstX, passMask8, enableColorEffectMask);
+				
+				// Do the alpha test. Pixels with an alpha value of 0 are rejected.
+				passMask8 = _mm_andnot_si128(_mm_cmpeq_epi8(srcAlpha, _mm_setzero_si128()), passMask8);
+				
+				// If none of the pixels within the vector pass, then reject them all at once.
+				if (_mm_movemask_epi8(passMask8) == 0)
+				{
+					continue;
+				}
+				
+				// Perform the blending function.
+				__m128i dstLayerID_vec128 = _mm_load_si128((__m128i *)dstLayerIDPtr);
+				
+				__m128i dst[4];
+				dst[0] = _mm_load_si128((__m128i *)dstColorLinePtr + 0);
+				dst[1] = _mm_load_si128((__m128i *)dstColorLinePtr + 1);
+				
+				if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+				{
+					// Instead of letting these vectors go to waste, let's convert the src colors to 16-bit now and
+					// then pack the converted 16-bit colors into these vectors.
+					dst[2] = _mm_packs_epi32( _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[0], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[0], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[0], _mm_set1_epi32(0x003E0000)), 7)),
+											  _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x003E0000)), 7)) );
+					dst[3] = _mm_packs_epi32( _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x003E0000)), 7)),
+											  _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[3], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[3], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[3], _mm_set1_epi32(0x003E0000)), 7)) );
+				}
+				else
+				{
+					dst[2] = _mm_load_si128((__m128i *)dstColorLinePtr + 2);
+					dst[3] = _mm_load_si128((__m128i *)dstColorLinePtr + 3);
+				}
+				
+				this->_RenderPixel3D_SSE2<OUTPUTFORMAT>(passMask8,
+														enableColorEffectMask,
+														src[3], src[2], src[1], src[0],
+														dst[3], dst[2], dst[1], dst[0],
+														dstLayerID_vec128);
+				
+				_mm_store_si128((__m128i *)dstColorLinePtr + 0, dst[0]);
+				_mm_store_si128((__m128i *)dstColorLinePtr + 1, dst[1]);
+				
+				if (OUTPUTFORMAT != NDSColorFormat_BGR555_Rev)
+				{
+					_mm_store_si128((__m128i *)dstColorLinePtr + 2, dst[2]);
+					_mm_store_si128((__m128i *)dstColorLinePtr + 3, dst[3]);
+				}
+				
+				_mm_store_si128((__m128i *)dstLayerIDPtr, dstLayerID_vec128);
+			}
 #endif
-								
+			
 #ifdef ENABLE_SSE2
 #pragma LOOPVECTORIZE_DISABLE
 #endif
-								
-								for (; dstX < customLineWidth; dstX++, srcLinePtr++, dstLayerIDPtr++, dstColorLinePtr = (dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)((u16 *)dstColorLinePtr + 1) : (void *)((FragmentColor *)dstColorLinePtr + 1))
-								{
-									if (srcLinePtr->a == 0)
-									{
-										continue;
-									}
-									
-									bool didPassWindowTest = true;
-									bool enableColorEffect = true;
-									
-									this->_RenderPixel_CheckWindows<GPULayerID_BG0>(_gpuDstToSrcIndex[dstX], didPassWindowTest, enableColorEffect);
-									
-									if (!didPassWindowTest)
-									{
-										continue;
-									}
-									
-									switch (dispInfo.colorFormat)
-									{
-										case NDSColorFormat_BGR555_Rev:
-										{
-											this->_RenderPixel3D(*srcLinePtr,
-																 *(u16 *)dstColorLinePtr,
-																 *dstLayerIDPtr,
-																 enableColorEffect);
-											break;
-										}
-											
-										case NDSColorFormat_BGR666_Rev:
-										{
-											this->_RenderPixel3D<NDSColorFormat_BGR666_Rev>(*srcLinePtr,
-																							*(FragmentColor *)dstColorLinePtr,
-																							*dstLayerIDPtr,
-																							enableColorEffect);
-											break;
-										}
-											
-										case NDSColorFormat_BGR888_Rev:
-										{
-											this->_RenderPixel3D<NDSColorFormat_BGR888_Rev>(*srcLinePtr,
-																							*(FragmentColor *)dstColorLinePtr,
-																							*dstLayerIDPtr,
-																							enableColorEffect);
-											break;
-										}
-									}
-								}
-							}
-						}
-						else
-						{
-							for (size_t line = 0; line < customLineCount; line++)
-							{
-								for (size_t dstX = 0; dstX < customLineWidth; dstX++, dstLayerIDPtr++, dstColorLinePtr = (dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)((u16 *)dstColorLinePtr + 1) : (void *)((FragmentColor *)dstColorLinePtr + 1))
-								{
-									size_t srcX = dstX + hofs;
-									if (srcX >= customLineWidth * 2)
-									{
-										srcX -= customLineWidth * 2;
-									}
-									
-									if (srcX >= customLineWidth || srcLinePtr[srcX].a == 0)
-									{
-										continue;
-									}
-									
-									bool didPassWindowTest = true;
-									bool enableColorEffect = true;
-									
-									this->_RenderPixel_CheckWindows<GPULayerID_BG0>(_gpuDstToSrcIndex[dstX], didPassWindowTest, enableColorEffect);
-									
-									if (!didPassWindowTest)
-									{
-										continue;
-									}
-									
-									switch (dispInfo.colorFormat)
-									{
-										case NDSColorFormat_BGR555_Rev:
-										{
-											this->_RenderPixel3D(srcLinePtr[srcX],
-																 *(u16 *)dstColorLinePtr,
-																 *dstLayerIDPtr,
-																 enableColorEffect);
-											break;
-										}
-											
-										case NDSColorFormat_BGR666_Rev:
-										{
-											this->_RenderPixel3D<NDSColorFormat_BGR666_Rev>(srcLinePtr[srcX],
-																							*(FragmentColor *)dstColorLinePtr,
-																							*dstLayerIDPtr,
-																							enableColorEffect);
-											break;
-										}
-											
-										case NDSColorFormat_BGR888_Rev:
-										{
-											this->_RenderPixel3D<NDSColorFormat_BGR888_Rev>(srcLinePtr[srcX],
-																							*(FragmentColor *)dstColorLinePtr,
-																							*dstLayerIDPtr,
-																							enableColorEffect);
-											break;
-										}
-									}
-								}
-								
-								srcLinePtr += customLineWidth;
-							}
-						}
-						
-						continue;
-					}
-					
-					if (this->isLineRenderNative[l])
-					{
-						switch (layerID)
-						{
-							case GPULayerID_BG0: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG0, false, false>(currentRenderLineTarget, l); break;
-							case GPULayerID_BG1: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG1, false, false>(currentRenderLineTarget, l); break;
-							case GPULayerID_BG2: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG2, false, false>(currentRenderLineTarget, l); break;
-							case GPULayerID_BG3: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG3, false, false>(currentRenderLineTarget, l); break;
-								
-							default:
-								break;
-						}
-					}
-					else
-					{
-						switch (layerID)
-						{
-							case GPULayerID_BG0: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG0, false, true>(currentRenderLineTarget, l); break;
-							case GPULayerID_BG1: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG1, false, true>(currentRenderLineTarget, l); break;
-							case GPULayerID_BG2: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG2, false, true>(currentRenderLineTarget, l); break;
-							case GPULayerID_BG3: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG3, false, true>(currentRenderLineTarget, l); break;
-								
-							default:
-								break;
-						}
-					}
-				} //layer enabled
-			}
-		}
-		
-		// render sprite Pixels
-		if ( this->_enableLayer[GPULayerID_OBJ] && (item->nbPixelsX > 0) )
-		{
-			if (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE)
-			{
-				if (GPU->GetEngineMain()->VerifyVRAMLineDidChange(this->vramBlockOBJIndex, l))
-				{
-					void *newRenderLineTarget = (void *)renderLineTargetNative;
-					
-					switch (dispInfo.colorFormat)
-					{
-						case NDSColorFormat_BGR555_Rev:
-							this->_LineColorCopy<true, false, false, false, 2>(newRenderLineTarget, currentRenderLineTarget, l);
-							break;
-							
-						case NDSColorFormat_BGR666_Rev:
-						case NDSColorFormat_BGR888_Rev:
-							this->_LineColorCopy<true, false, false, false, 4>(newRenderLineTarget, currentRenderLineTarget, l);
-							break;
-					}
-					
-					this->_LineLayerIDCopy<true, false>(this->_renderLineLayerIDNative, this->_renderLineLayerIDCustom, l);
-					currentRenderLineTarget = newRenderLineTarget;
-				}
-			}
 			
-			const bool useCustomVRAM = (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE) && !GPU->GetEngineMain()->isLineCaptureNative[this->vramBlockOBJIndex][l];
-			const u16 *__restrict srcLine = (useCustomVRAM) ? GPU->GetEngineMain()->GetCustomVRAMBlockPtr(this->vramBlockOBJIndex) + (customLineIndex * customLineWidth) : NULL;
-			if (this->isLineRenderNative[l] && useCustomVRAM)
+			for (; dstX < customLineWidth; dstX++, srcLinePtr++, dstLayerIDPtr++, dstColorLinePtr = (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev) ? (void *)((u16 *)dstColorLinePtr + 1) : (void *)((FragmentColor *)dstColorLinePtr + 1))
 			{
-				void *newRenderLineTarget = renderLineTargetCustom;
+				if (srcLinePtr->a == 0)
+				{
+					continue;
+				}
 				
-				switch (dispInfo.colorFormat)
+				bool didPassWindowTest = true;
+				bool enableColorEffect = true;
+				
+				this->_RenderPixel_CheckWindows<GPULayerID_BG0>(_gpuDstToSrcIndex[dstX], didPassWindowTest, enableColorEffect);
+				
+				if (!didPassWindowTest)
+				{
+					continue;
+				}
+				
+				switch (OUTPUTFORMAT)
 				{
 					case NDSColorFormat_BGR555_Rev:
-						this->_LineColorCopy<false, true, false, false, 2>(newRenderLineTarget, currentRenderLineTarget, l);
+					{
+						this->_RenderPixel3D(*srcLinePtr,
+											 *(u16 *)dstColorLinePtr,
+											 *dstLayerIDPtr,
+											 enableColorEffect);
 						break;
+					}
 						
 					case NDSColorFormat_BGR666_Rev:
 					case NDSColorFormat_BGR888_Rev:
-						this->_LineColorCopy<false, true, false, false, 4>(newRenderLineTarget, currentRenderLineTarget, l);
-						break;
-				}
-				
-				this->_LineLayerIDCopy<false, true>(this->_renderLineLayerIDCustom, this->_renderLineLayerIDNative, l);
-				currentRenderLineTarget = newRenderLineTarget;
-				
-				this->isLineRenderNative[l] = false;
-				this->nativeLineRenderCount--;
-			}
-			
-			u16 *__restrict dstColorLine16 = (u16 *)currentRenderLineTarget;
-			FragmentColor *__restrict dstColorLine32 = (FragmentColor *)currentRenderLineTarget;
-			
-			if (this->isLineRenderNative[l])
-			{
-				u8 *__restrict dstLayerIDPtr = this->_renderLineLayerIDNative;
-				
-				for (size_t i = 0; i < item->nbPixelsX; i++)
-				{
-					const size_t srcX = item->PixelsX[i];
-					
-					this->_RenderPixel<NDSColorFormat_BGR555_Rev, GPULayerID_OBJ, false, false, false>(srcX,
-																									   this->_sprColor[srcX],
-																									   this->_sprAlpha[srcX],
-																									   (dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + srcX) : (void *)(dstColorLine32 + srcX),
-																									   dstLayerIDPtr + srcX);
-				}
-			}
-			else
-			{
-				u8 *__restrict dstLayerIDPtr = this->_renderLineLayerIDCustom;
-				
-				for (size_t line = 0; line < customLineCount; line++)
-				{
-					for (size_t i = 0; i < item->nbPixelsX; i++)
 					{
-						const size_t srcX = item->PixelsX[i];
-						
-						for (size_t p = 0; p < _gpuDstPitchCount[srcX]; p++)
-						{
-							const size_t dstX = _gpuDstPitchIndex[srcX] + p;
-							
-							this->_RenderPixel<NDSColorFormat_BGR555_Rev, GPULayerID_OBJ, false, false, false>(srcX,
-																											   (useCustomVRAM) ? srcLine[dstX] : this->_sprColor[srcX],
-																											   this->_sprAlpha[srcX],
-																											   (dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + dstX) : (void *)(dstColorLine32 + dstX),
-																											   dstLayerIDPtr + dstX);
-						}
+						this->_RenderPixel3D<OUTPUTFORMAT>(*srcLinePtr,
+														   *(FragmentColor *)dstColorLinePtr,
+														   *dstLayerIDPtr,
+														   enableColorEffect);
+						break;
 					}
-					
-					srcLine += customLineWidth;
-					dstColorLine16 += customLineWidth;
-					dstColorLine32 += customLineWidth;
-					dstLayerIDPtr += customLineWidth;
 				}
 			}
 		}
 	}
+	else
+	{
+		for (size_t line = 0; line < customLineCount; line++)
+		{
+			for (size_t dstX = 0; dstX < customLineWidth; dstX++, dstLayerIDPtr++, dstColorLinePtr = (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev) ? (void *)((u16 *)dstColorLinePtr + 1) : (void *)((FragmentColor *)dstColorLinePtr + 1))
+			{
+				size_t srcX = dstX + hofs;
+				if (srcX >= customLineWidth * 2)
+				{
+					srcX -= customLineWidth * 2;
+				}
+				
+				if (srcX >= customLineWidth || srcLinePtr[srcX].a == 0)
+				{
+					continue;
+				}
+				
+				bool didPassWindowTest = true;
+				bool enableColorEffect = true;
+				
+				this->_RenderPixel_CheckWindows<GPULayerID_BG0>(_gpuDstToSrcIndex[dstX], didPassWindowTest, enableColorEffect);
+				
+				if (!didPassWindowTest)
+				{
+					continue;
+				}
+				
+				switch (OUTPUTFORMAT)
+				{
+					case NDSColorFormat_BGR555_Rev:
+					{
+						this->_RenderPixel3D(srcLinePtr[srcX],
+											 *(u16 *)dstColorLinePtr,
+											 *dstLayerIDPtr,
+											 enableColorEffect);
+						break;
+					}
+						
+					case NDSColorFormat_BGR666_Rev:
+					case NDSColorFormat_BGR888_Rev:
+					{
+						this->_RenderPixel3D<OUTPUTFORMAT>(srcLinePtr[srcX],
+														   *(FragmentColor *)dstColorLinePtr,
+														   *dstLayerIDPtr,
+														   enableColorEffect);
+						break;
+					}
+				}
+			}
+			
+			srcLinePtr += customLineWidth;
+		}
+	}
 	
-	return currentRenderLineTarget;
+	return dstColorLine;
 }
 
 template<size_t CAPTURELENGTH>
@@ -6902,204 +6835,13 @@ void GPUEngineB::RenderLine(const u16 l)
 			break;
 		
 		case GPUDisplayMode_Normal: // Display BG and OBJ layers
-			this->_RenderLine_Layers(l);
+			this->_RenderLine_Layers<NDSColorFormat_BGR555_Rev>(l);
 			this->_HandleDisplayModeNormal(l);
 			break;
 		
 		default:
 			break;
 	}
-}
-
-void* GPUEngineB::_RenderLine_Layers(const u16 l)
-{
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	const size_t customLineWidth = dispInfo.customWidth;
-	const size_t customLineCount = _gpuDstLineCount[l];
-	const size_t customLineIndex = _gpuDstLineIndex[l];
-	
-	void *currentRenderLineTarget = (u8 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * dispInfo.pixelBytes);
-	itemsForPriority_t *__restrict item;
-	
-	const u16 backdropColor = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
-	this->_RenderLine_Clear(backdropColor, l, currentRenderLineTarget);
-	
-	// for all the pixels in the line
-	if (this->_enableLayer[GPULayerID_OBJ])
-	{
-		//n.b. - this is clearing the sprite line buffer to the background color,
-		memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(this->_sprColor, backdropColor);
-		memset(this->_sprAlpha, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH);
-		memset(this->_sprType, OBJMode_Normal, GPU_FRAMEBUFFER_NATIVE_WIDTH);
-		memset(this->_sprPrio, 0x7F, GPU_FRAMEBUFFER_NATIVE_WIDTH);
-		
-		//zero 06-may-09: I properly supported window color effects for backdrop, but I am not sure
-		//how it interacts with this. I wish we knew why we needed this
-		
-		this->_SpriteRender<false>(l, this->_sprColor, this->_sprAlpha, this->_sprType, this->_sprPrio);
-		this->_MosaicSpriteLine(l, this->_sprColor, this->_sprAlpha, this->_sprType, this->_sprPrio);
-		
-		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
-		{
-			// assign them to the good priority item
-			const size_t prio = this->_sprPrio[i];
-			if (prio >= 4) continue;
-			
-			item = &(this->_itemsForPriority[prio]);
-			item->PixelsX[item->nbPixelsX] = i;
-			item->nbPixelsX++;
-		}
-	}
-	
-	// paint lower priorities first
-	// then higher priorities on top
-	for (size_t prio = NB_PRIORITIES; prio > 0; )
-	{
-		prio--;
-		item = &(this->_itemsForPriority[prio]);
-		// render BGs
-		if (this->_isAnyBGLayerEnabled)
-		{
-			for (size_t i = 0; i < item->nbBGs; i++)
-			{
-				const GPULayerID layerID = (GPULayerID)item->BGs[i];
-				if (this->_enableLayer[layerID])
-				{
-					if (this->isLineRenderNative[l])
-					{
-						switch (layerID)
-						{
-							case GPULayerID_BG0: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG0, false, false>(currentRenderLineTarget, l); break;
-							case GPULayerID_BG1: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG1, false, false>(currentRenderLineTarget, l); break;
-							case GPULayerID_BG2: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG2, false, false>(currentRenderLineTarget, l); break;
-							case GPULayerID_BG3: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG3, false, false>(currentRenderLineTarget, l); break;
-								
-							default:
-								break;
-						}
-					}
-					else
-					{
-						switch (layerID)
-						{
-							case GPULayerID_BG0: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG0, false, true>(currentRenderLineTarget, l); break;
-							case GPULayerID_BG1: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG1, false, true>(currentRenderLineTarget, l); break;
-							case GPULayerID_BG2: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG2, false, true>(currentRenderLineTarget, l); break;
-							case GPULayerID_BG3: currentRenderLineTarget = this->_RenderLine_LayerBG<GPULayerID_BG3, false, true>(currentRenderLineTarget, l); break;
-								
-							default:
-								break;
-						}
-					}
-				} //layer enabled
-			}
-		}
-		
-		// render sprite Pixels
-		if ( this->_enableLayer[GPULayerID_OBJ] && (item->nbPixelsX > 0) )
-		{
-			if (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE)
-			{
-				if (GPU->GetEngineMain()->VerifyVRAMLineDidChange(this->vramBlockOBJIndex, l))
-				{
-					void *newRenderLineTarget;
-					
-					switch (dispInfo.colorFormat)
-					{
-						case NDSColorFormat_BGR555_Rev:
-							newRenderLineTarget = (u8 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
-							this->_LineColorCopy<true, false, false, false, 2>(newRenderLineTarget, currentRenderLineTarget, l);
-							break;
-							
-						case NDSColorFormat_BGR666_Rev:
-						case NDSColorFormat_BGR888_Rev:
-							newRenderLineTarget = (u8 *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(FragmentColor));
-							this->_LineColorCopy<true, false, false, false, 4>(newRenderLineTarget, currentRenderLineTarget, l);
-							break;
-					}
-					
-					this->_LineLayerIDCopy<true, false>(this->_renderLineLayerIDNative, this->_renderLineLayerIDCustom, l);
-					currentRenderLineTarget = newRenderLineTarget;
-				}
-			}
-			
-			const bool useCustomVRAM = (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE) && !GPU->GetEngineMain()->isLineCaptureNative[this->vramBlockOBJIndex][l];
-			const u16 *__restrict srcLine = (useCustomVRAM) ? GPU->GetEngineMain()->GetCustomVRAMBlockPtr(this->vramBlockOBJIndex) + (customLineIndex * customLineWidth) : NULL;
-			if (this->isLineRenderNative[l] && useCustomVRAM)
-			{
-				void *newRenderLineTarget;
-				
-				switch (dispInfo.colorFormat)
-				{
-					case NDSColorFormat_BGR555_Rev:
-						newRenderLineTarget = (u8 *)this->customBuffer + (customLineIndex * customLineWidth * sizeof(u16));
-						this->_LineColorCopy<false, true, false, false, 2>(newRenderLineTarget, currentRenderLineTarget, l);
-						break;
-						
-					case NDSColorFormat_BGR666_Rev:
-					case NDSColorFormat_BGR888_Rev:
-						newRenderLineTarget = (u8 *)this->customBuffer + (customLineIndex * customLineWidth * sizeof(FragmentColor));
-						this->_LineColorCopy<false, true, false, false, 4>(newRenderLineTarget, currentRenderLineTarget, l);
-						break;
-				}
-				
-				this->_LineLayerIDCopy<false, true>(this->_renderLineLayerIDCustom, this->_renderLineLayerIDNative, l);
-				currentRenderLineTarget = newRenderLineTarget;
-				
-				this->isLineRenderNative[l] = false;
-				this->nativeLineRenderCount--;
-			}
-			
-			u16 *__restrict dstColorLine16 = (u16 *)currentRenderLineTarget;
-			FragmentColor *__restrict dstColorLine32 = (FragmentColor *)currentRenderLineTarget;
-			
-			if (this->isLineRenderNative[l])
-			{
-				u8 *__restrict dstLayerIDPtr = this->_renderLineLayerIDNative;
-				
-				for (size_t i = 0; i < item->nbPixelsX; i++)
-				{
-					const size_t srcX = item->PixelsX[i];
-					
-					this->_RenderPixel<NDSColorFormat_BGR555_Rev, GPULayerID_OBJ, false, false, false>(srcX,
-																									   this->_sprColor[srcX],
-																									   this->_sprAlpha[srcX],
-																									   (dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + srcX) : (void *)(dstColorLine32 + srcX),
-																									   dstLayerIDPtr + srcX);
-				}
-			}
-			else
-			{
-				u8 *__restrict dstLayerIDPtr = this->_renderLineLayerIDCustom;
-				
-				for (size_t line = 0; line < customLineCount; line++)
-				{
-					for (size_t i = 0; i < item->nbPixelsX; i++)
-					{
-						const size_t srcX = item->PixelsX[i];
-						
-						for (size_t p = 0; p < _gpuDstPitchCount[srcX]; p++)
-						{
-							const size_t dstX = _gpuDstPitchIndex[srcX] + p;
-							
-							this->_RenderPixel<NDSColorFormat_BGR555_Rev, GPULayerID_OBJ, false, false, false>(srcX,
-																											   (useCustomVRAM) ? srcLine[dstX] : this->_sprColor[srcX],
-																											   this->_sprAlpha[srcX],
-																											   (dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? (void *)(dstColorLine16 + dstX) : (void *)(dstColorLine32 + dstX),
-																											   dstLayerIDPtr + dstX);
-						}
-					}
-					
-					srcLine += customLineWidth;
-					dstColorLine16 += customLineWidth;
-					dstColorLine32 += customLineWidth;
-					dstLayerIDPtr += customLineWidth;
-				}
-			}
-		}
-	}
-	
-	return currentRenderLineTarget;
 }
 
 GPUSubsystem::GPUSubsystem()
@@ -7259,18 +7001,12 @@ void GPUSubsystem::Reset()
 
 void GPUSubsystem::UpdateRenderProperties()
 {
-	this->_engineMain->isCustomRenderingNeeded = false;
-	this->_engineMain->vramBlockBGIndex = VRAM_NO_3D_USAGE;
 	this->_engineMain->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
-	this->_engineMain->vramBGLayer = VRAM_NO_3D_USAGE;
 	this->_engineMain->renderedWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	this->_engineMain->renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	this->_engineMain->renderedBuffer = this->_engineMain->nativeBuffer;
 	
-	this->_engineSub->isCustomRenderingNeeded = false;
-	this->_engineSub->vramBlockBGIndex = VRAM_NO_3D_USAGE;
 	this->_engineSub->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
-	this->_engineSub->vramBGLayer = VRAM_NO_3D_USAGE;
 	this->_engineSub->renderedWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	this->_engineSub->renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	this->_engineSub->renderedBuffer = this->_engineSub->nativeBuffer;
@@ -7316,11 +7052,8 @@ void GPUSubsystem::UpdateRenderProperties()
 		switch (vramConfiguration.banks[i].purpose)
 		{
 			case VramConfiguration::ABG:
-				this->_engineMain->UpdateVRAM3DUsageProperties_BGLayer(i);
-				break;
-				
 			case VramConfiguration::BBG:
-				this->_engineSub->UpdateVRAM3DUsageProperties_BGLayer(i);
+			case VramConfiguration::LCDC:
 				break;
 				
 			case VramConfiguration::AOBJ:
@@ -7329,9 +7062,6 @@ void GPUSubsystem::UpdateRenderProperties()
 				
 			case VramConfiguration::BOBJ:
 				this->_engineSub->UpdateVRAM3DUsageProperties_OBJLayer(i);
-				break;
-				
-			case VramConfiguration::LCDC:
 				break;
 				
 			default:
@@ -7345,13 +7075,6 @@ void GPUSubsystem::UpdateRenderProperties()
 			}
 		}
 	}
-	
-	this->_engineMain->isCustomRenderingNeeded	= (this->_engineMain->WillRender3DLayer() && !CurrentRenderer->IsFramebufferNativeSize()) ||
-												  (this->_engineMain->vramBlockBGIndex != VRAM_NO_3D_USAGE) ||
-												  (this->_engineMain->vramBlockOBJIndex != VRAM_NO_3D_USAGE);
-	
-	this->_engineSub->isCustomRenderingNeeded	= (this->_engineSub->vramBlockBGIndex != VRAM_NO_3D_USAGE) ||
-												  (this->_engineSub->vramBlockOBJIndex != VRAM_NO_3D_USAGE);
 }
 
 const NDSDisplayInfo& GPUSubsystem::GetDisplayInfo()
