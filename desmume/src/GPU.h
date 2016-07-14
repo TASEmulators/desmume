@@ -1324,10 +1324,11 @@ protected:
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineRot(void *__restrict dstColorLine, const u16 lineIndex);
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void* _LineExtRot(void *__restrict dstColorLine, const u16 lineIndex, bool &outUseCustomVRAM);
 	
-	template <GPULayerID LAYERID> void _RenderPixel_CheckWindows(const size_t srcX, bool &didPassWindowTest, bool &enableColorEffect) const;
+	template<GPULayerID LAYERID> void _RenderPixel_CheckWindows(const size_t srcX, bool &didPassWindowTest, bool &enableColorEffect) const;
 	
 	void _RenderLine_Clear(const u16 clearColor, const u16 l, void *renderLineTarget);
-	void* _RenderLine_Layers(const u16 l);
+	void _RenderLine_SetupSprites(const u16 backdropColor, const u16 lineIndex);
+	template<NDSColorFormat OUTPUTFORMAT> void* _RenderLine_Layers(const u16 l);
 	
 	void _HandleDisplayModeOff(const size_t l);
 	void _HandleDisplayModeNormal(const size_t l);
@@ -1340,6 +1341,8 @@ protected:
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_LayerBG_ApplyNoWindowsEnabledHint(void *dstColorLine, const u16 lineIndex);
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_LayerBG_ApplyMosaic(void *dstColorLine, const u16 lineIndex);
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_LayerBG(void *dstColorLine, const u16 lineIndex);
+	
+	template<NDSColorFormat OUTPUTFORMAT> void* _RenderLine_LayerOBJ(itemsForPriority_t *__restrict item, void *__restrict dstColorLine, const u16 lineIndex);
 			
 	template<NDSColorFormat OUTPUTFORMAT, GPULayerID LAYERID, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixel(const size_t srcX, const u16 src, const u8 srcAlpha, void *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
 	FORCEINLINE void _RenderPixel3D(const FragmentColor src, u16 &dstColor, u8 &dstLayerID, bool enableColorEffect);
@@ -1408,9 +1411,6 @@ public:
 	void UpdatePropertiesWithoutRender(const u16 l);
 	void FramebufferPostprocess();
 	
-	bool isCustomRenderingNeeded;
-	u8 vramBGLayer;
-	u8 vramBlockBGIndex;
 	u8 vramBlockOBJIndex;
 	
 	size_t nativeLineRenderCount;
@@ -1443,7 +1443,6 @@ public:
 	
 	const BGLayerInfo& GetBGLayerInfoByID(const GPULayerID layerID);
 	
-	void UpdateVRAM3DUsageProperties_BGLayer(const size_t bankIndex);
 	void UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex);
 	
 	void SpriteRenderDebug(const u16 lineIndex, u16 *dst);
@@ -1482,7 +1481,6 @@ protected:
 	
 	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineLarge8bpp(u16 *__restrict dstColorLine, const u16 lineIndex);
 	
-	void* _RenderLine_Layers(const u16 l);
 	template<size_t CAPTURELENGTH> void _RenderLine_DisplayCapture(const void *renderedLineSrcA, const u16 l);
 	void _RenderLine_DispCapture_FIFOToBuffer(u16 *fifoLineBuffer);
 	
@@ -1526,6 +1524,8 @@ public:
 	
 	virtual void Reset();
 	virtual void RenderLine(const u16 l);
+	
+	template<NDSColorFormat OUTPUTFORMAT> void* RenderLine_Layer3D(void *dstColorLine, const u16 lineIndex);
 };
 
 class GPUEngineB : public GPUEngineBase
@@ -1533,9 +1533,6 @@ class GPUEngineB : public GPUEngineBase
 private:
 	GPUEngineB();
 	~GPUEngineB();
-	
-protected:
-	void* _RenderLine_Layers(const u16 l);
 	
 public:
 	static GPUEngineB* Allocate();
