@@ -1323,7 +1323,20 @@ static void execHardware_hblank()
 	//scroll regs for the next scanline
 	if(nds.VCount<192)
 	{
-		GPU->RenderLine(nds.VCount, frameSkipper.ShouldSkip2D());
+		switch (GPU->GetDisplayInfo().colorFormat)
+		{
+			case NDSColorFormat_BGR555_Rev:
+				GPU->RenderLine<NDSColorFormat_BGR555_Rev>(nds.VCount, frameSkipper.ShouldSkip2D());
+				break;
+				
+			case NDSColorFormat_BGR666_Rev:
+				GPU->RenderLine<NDSColorFormat_BGR666_Rev>(nds.VCount, frameSkipper.ShouldSkip2D());
+				break;
+				
+			case NDSColorFormat_BGR888_Rev:
+				GPU->RenderLine<NDSColorFormat_BGR888_Rev>(nds.VCount, frameSkipper.ShouldSkip2D());
+				break;
+		}
 		
 		//trigger hblank dmas
 		//but notice, we do that just after we finished drawing the line
