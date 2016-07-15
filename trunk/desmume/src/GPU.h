@@ -997,6 +997,8 @@ typedef struct
 #define MMU_BOBJ	0x06600000
 #define MMU_LCDC	0x06800000
 
+#define WINDOWCONTROL_EFFECTFLAG	5
+
 enum GPULayerID
 {
 	GPULayerID_BG0					= 0,
@@ -1244,12 +1246,26 @@ protected:
 	u8 _sprBoundary;
 	u8 _sprBMPBoundary;
 	
-	bool _blend2[6];
+	bool _srcBlendEnable[6];
+	bool _dstBlendEnable[6];
+#ifdef ENABLE_SSE2
+	__m128i _srcBlendEnable_SSE2[6];
+#ifdef ENABLE_SSSE3
+	__m128i _dstBlendEnable_SSSE3;
+#else
+	__m128i _dstBlendEnable_SSE2[6];
+#endif
+#endif // ENABLE_SSE2
 	
-#if defined(ENABLE_SSSE3)
-	__m128i _blend2_SSSE3;
-#elif defined(ENABLE_SSE2)
-	__m128i _blend2_SSE2[6];
+	bool _WIN0_enable[6];
+	bool _WIN1_enable[6];
+	bool _WINOUT_enable[6];
+	bool _WINOBJ_enable[6];
+#if defined(ENABLE_SSE2)
+	__m128i _WIN0_enable_SSE2[6];
+	__m128i _WIN1_enable_SSE2[6];
+	__m128i _WINOUT_enable_SSE2[6];
+	__m128i _WINOBJ_enable_SSE2[6];
 #endif
 	
 	TBlendTable *_blendTable;
@@ -1307,24 +1323,24 @@ protected:
 	void _MosaicSpriteLinePixel(const size_t x, u16 l, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
 	void _MosaicSpriteLine(u16 l, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
 	
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc, bool WRAP> void _RenderPixelIterate_Final(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc, bool WRAP> void _RenderPixelIterate_ApplyWrap(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc> void _RenderPixelIterate(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc, bool WRAP> void _RenderPixelIterate_Final(const GPULayerID srcLayerID, u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc, bool WRAP> void _RenderPixelIterate_ApplyWrap(const GPULayerID srcLayerID, u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc> void _RenderPixelIterate(const GPULayerID srcLayerID, u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal);
 	
 	TILEENTRY _GetTileEntry(const u32 tileMapAddress, const u16 xOffset, const u16 layerWidthMask);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixelSingle(void *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex, u16 color, const size_t srcX, const bool opaque);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> void _RenderPixelsCustom(void *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> void _RenderPixelsCustomVRAM(void *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixelSingle(const GPULayerID srcLayerID, void *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex, u16 color, const size_t srcX, const bool opaque);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> void _RenderPixelsCustom(const GPULayerID srcLayerID, void *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> void _RenderPixelsCustomVRAM(const GPULayerID srcLayerID, void *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex);
 	
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_BGText(u16 *__restrict dstColorLine, const u16 lineIndex, const u16 XBG, const u16 YBG);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_BGAffine(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_BGExtended(u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, bool &outUseCustomVRAM);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_BGText(const GPULayerID srcLayerID, u16 *__restrict dstColorLine, const u16 lineIndex, const u16 XBG, const u16 YBG);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_BGAffine(const GPULayerID srcLayerID, u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_BGExtended(const GPULayerID srcLayerID, u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, bool &outUseCustomVRAM);
 	
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineText(void *__restrict dstColorLine, const u16 lineIndex);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineRot(void *__restrict dstColorLine, const u16 lineIndex);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void* _LineExtRot(void *__restrict dstColorLine, const u16 lineIndex, bool &outUseCustomVRAM);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineText(const GPULayerID srcLayerID, void *__restrict dstColorLine, const u16 lineIndex);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineRot(const GPULayerID srcLayerID, void *__restrict dstColorLine, const u16 lineIndex);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void* _LineExtRot(const GPULayerID srcLayerID, void *__restrict dstColorLine, const u16 lineIndex, bool &outUseCustomVRAM);
 	
-	template<GPULayerID LAYERID> void _RenderPixel_CheckWindows(const size_t srcX, bool &didPassWindowTest, bool &enableColorEffect) const;
+	void _RenderPixel_CheckWindows(const size_t srcX, const GPULayerID srcLayerID, bool &didPassWindowTest, bool &enableColorEffect) const;
 	
 	void _RenderLine_Clear(const u16 clearColor, const u16 l, void *renderLineTarget);
 	void _RenderLine_SetupSprites(const u16 backdropColor, const u16 lineIndex);
@@ -1336,15 +1352,15 @@ protected:
 	template<size_t WIN_NUM> void _UpdateWINH();
 	template<size_t WIN_NUM> void _SetupWindows(const u16 lineIndex);
 	
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_LayerBG_Final(void *dstColorLine, const u16 lineIndex);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_LayerBG_ApplyColorEffectDisabledHint(void *dstColorLine, const u16 lineIndex);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_LayerBG_ApplyNoWindowsEnabledHint(void *dstColorLine, const u16 lineIndex);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_LayerBG_ApplyMosaic(void *dstColorLine, const u16 lineIndex);
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_LayerBG(void *dstColorLine, const u16 lineIndex);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_LayerBG_Final(const GPULayerID srcLayerID, void *dstColorLine, const u16 lineIndex);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_LayerBG_ApplyColorEffectDisabledHint(const GPULayerID srcLayerID, void *dstColorLine, const u16 lineIndex);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_LayerBG_ApplyNoWindowsEnabledHint(const GPULayerID srcLayerID, void *dstColorLine, const u16 lineIndex);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_LayerBG_ApplyMosaic(const GPULayerID srcLayerID, void *dstColorLine, const u16 lineIndex);
+	template<bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED> void* _RenderLine_LayerBG(const GPULayerID srcLayerID, void *dstColorLine, const u16 lineIndex);
 	
 	template<NDSColorFormat OUTPUTFORMAT> void* _RenderLine_LayerOBJ(itemsForPriority_t *__restrict item, void *__restrict dstColorLine, const u16 lineIndex);
 			
-	template<NDSColorFormat OUTPUTFORMAT, GPULayerID LAYERID, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixel(const size_t srcX, const u16 src, const u8 srcAlpha, void *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
+	template<NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixel(const size_t srcX, const u16 srcColor, const u8 srcAlpha, const GPULayerID srcLayerID, void *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
 	FORCEINLINE void _RenderPixel3D(const FragmentColor src, u16 &dstColor, u8 &dstLayerID, bool enableColorEffect);
 	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _RenderPixel3D(const FragmentColor src, FragmentColor &dstColor, u8 &dstLayerID, bool enableColorEffect);
 	
@@ -1368,8 +1384,8 @@ protected:
 	template<NDSColorFormat COLORFORMATB> FORCEINLINE __m128i _ColorEffectBlend3D(const __m128i &colA_Lo, const __m128i &colA_Hi, const __m128i &colB);
 	template<NDSColorFormat COLORFORMAT> FORCEINLINE __m128i _ColorEffectIncreaseBrightness(const __m128i &col, const __m128i &blendEVY);
 	template<NDSColorFormat COLORFORMAT> FORCEINLINE __m128i _ColorEffectDecreaseBrightness(const __m128i &col, const __m128i &blendEVY);
-	template<GPULayerID LAYERID, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel_CheckWindows16_SSE2(const size_t dstX, __m128i &didPassWindowTest, __m128i &enableColorEffect) const;
-	template<NDSColorFormat OUTPUTFORMAT, GPULayerID LAYERID, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel16_SSE2(const size_t dstX, const ColorEffect colorEffect, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, const __m128i &srcAlpha, const __m128i &srcEffectEnableMask, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID, __m128i &passMask8);
+	template<bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel_CheckWindows16_SSE2(const size_t dstX, const GPULayerID srcLayerID, __m128i &didPassWindowTest, __m128i &enableColorEffect) const;
+	template<NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel16_SSE2(const size_t dstX, const ColorEffect colorEffect, const GPULayerID srcLayerID, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, const __m128i &srcAlpha, const __m128i &srcEffectEnableMask, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID, __m128i &passMask8);
 	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _RenderPixel3D_SSE2(const __m128i &passMask8, const __m128i &enableColorEffectMask, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID);
 #endif
 	
@@ -1393,20 +1409,22 @@ public:
 	
 	void RefreshAffineStartRegs();
 	
-	template<GPUEngineID ENGINEID> void ParseReg_DISPCNT();
-	template<GPUEngineID ENGINEID, GPULayerID LAYERID> void ParseReg_BGnCNT();
+	void ParseReg_DISPCNT();
+	void ParseReg_BGnCNT(const GPULayerID layerID);
 	template<GPULayerID LAYERID> void ParseReg_BGnHOFS();
 	template<GPULayerID LAYERID> void ParseReg_BGnVOFS();
 	template<GPULayerID LAYERID> void ParseReg_BGnX();
 	template<GPULayerID LAYERID> void ParseReg_BGnY();
 	template<size_t WINNUM> void ParseReg_WINnH();
+	void ParseReg_WININ();
+	void ParseReg_WINOUT();
 	void ParseReg_MOSAIC();
 	void ParseReg_BLDCNT();
 	void ParseReg_BLDALPHA();
 	void ParseReg_BLDY();
 	void ParseReg_MASTER_BRIGHT();
 	
-	template<GPUEngineID ENGINEID> void ParseAllRegisters();
+	void ParseAllRegisters();
 	
 	void UpdatePropertiesWithoutRender(const u16 l);
 	void FramebufferPostprocess();
@@ -1446,7 +1464,7 @@ public:
 	void UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex);
 	
 	void SpriteRenderDebug(const u16 lineIndex, u16 *dst);
-	template<GPULayerID LAYERID> void RenderLayerBG(u16 *dstLineColor);
+	void RenderLayerBG(const GPULayerID layerID, u16 *dstLineColor);
 
 	NDSDisplayID GetDisplayByID() const;
 	void SetDisplayByID(const NDSDisplayID theDisplayID);
@@ -1479,7 +1497,7 @@ protected:
 	
 	DISPCAPCNT_parsed _dispCapCnt;
 	
-	template<GPULayerID LAYERID, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineLarge8bpp(u16 *__restrict dstColorLine, const u16 lineIndex);
+	template<bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineLarge8bpp(const GPULayerID srcLayerID, u16 *__restrict dstColorLine, const u16 lineIndex);
 	
 	template<size_t CAPTURELENGTH> void _RenderLine_DisplayCapture(const void *renderedLineSrcA, const u16 l);
 	void _RenderLine_DispCapture_FIFOToBuffer(u16 *fifoLineBuffer);

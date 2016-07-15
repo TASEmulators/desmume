@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2015 DeSmuME team
+	Copyright (C) 2006-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -43,19 +43,9 @@ struct mapview_struct
 	void render()
 	{
 		GPUEngineBase *gpu = (engineID == GPUEngineID_Main) ? (GPUEngineBase *)GPU->GetEngineMain() : (GPUEngineBase *)GPU->GetEngineSub();
-
-		memset(bitmap,0,sizeof(bitmap));
-
-		switch (layerID)
-		{
-			case GPULayerID_BG0: gpu->RenderLayerBG<GPULayerID_BG0>(bitmap); break;
-			case GPULayerID_BG1: gpu->RenderLayerBG<GPULayerID_BG1>(bitmap); break;
-			case GPULayerID_BG2: gpu->RenderLayerBG<GPULayerID_BG2>(bitmap); break;
-			case GPULayerID_BG3: gpu->RenderLayerBG<GPULayerID_BG3>(bitmap); break;
-
-			default:
-				break;
-		}
+		memset(bitmap, 0, sizeof(bitmap));
+		
+		gpu->RenderLayerBG(layerID, bitmap);
 	}
 };
 
