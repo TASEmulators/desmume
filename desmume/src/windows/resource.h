@@ -464,6 +464,8 @@
 #define IDC_STATIC_S4                   1064
 #define IDC_TEX_DEPOSTERIZE             1064
 #define IDC_EVALUE                      1065
+#define IDC_TEX_DEPOSTERIZE2            1065
+#define IDC_TEX_SMOOTH                  1065
 #define IDC_STATIC_RANGE                1066
 #define IDC_TEXSCALE_1                  1066
 #define IDC_TEXSCALE_2                  1067
