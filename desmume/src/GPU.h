@@ -1327,9 +1327,9 @@ protected:
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc> void _RenderPixelIterate(const GPULayerID srcLayerID, u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal);
 	
 	TILEENTRY _GetTileEntry(const u32 tileMapAddress, const u16 xOffset, const u16 layerWidthMask);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixelSingle(const GPULayerID srcLayerID, void *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex, u16 color, const size_t srcX, const bool opaque);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> void _RenderPixelsCustom(const GPULayerID srcLayerID, void *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> void _RenderPixelsCustomVRAM(const GPULayerID srcLayerID, void *__restrict dstColorLine, u8 *__restrict dstLayerID, const size_t lineIndex);
+	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixelSingle(const size_t lineIndex, const size_t srcX, u16 srcColor16, const GPULayerID srcLayerID, void *__restrict dstColorLine, u8 *__restrict dstLayerIDLine, const bool opaque);
+	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> void _RenderPixelsCustom(const size_t lineIndex, const GPULayerID srcLayerID, void *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
+	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> void _RenderPixelsCustomVRAM(const size_t lineIndex, const GPULayerID srcLayerID, void *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
 	
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_BGText(const GPULayerID srcLayerID, u16 *__restrict dstColorLine, const u16 lineIndex, const u16 XBG, const u16 YBG);
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_BGAffine(const GPULayerID srcLayerID, u16 *__restrict dstColorLine, const u16 lineIndex, const IOREG_BGnParameter &param);
@@ -1359,9 +1359,8 @@ protected:
 	
 	template<NDSColorFormat OUTPUTFORMAT> void* _RenderLine_LayerOBJ(itemsForPriority_t *__restrict item, void *__restrict dstColorLine, const u16 lineIndex);
 			
-	template<NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixel(const size_t srcX, const u16 srcColor, const u8 srcAlpha, const GPULayerID srcLayerID, void *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
-	FORCEINLINE void _RenderPixel3D(const FragmentColor src, u16 &dstColor, u8 &dstLayerID, bool enableColorEffect);
-	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _RenderPixel3D(const FragmentColor src, FragmentColor &dstColor, u8 &dstLayerID, bool enableColorEffect);
+	template<NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixel(const size_t srcX, const u16 srcColor16, const u8 srcAlpha, const GPULayerID srcLayerID, void *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
+	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _RenderPixel3D(const bool enableColorEffect, const FragmentColor srcColor32, void *__restrict dstColorLine, u8 *__restrict dstLayerIDLine);
 	
 	FORCEINLINE u16 _ColorEffectBlend(const u16 colA, const u16 colB, const u16 blendEVA, const u16 blendEVB);
 	FORCEINLINE u16 _ColorEffectBlend(const u16 colA, const u16 colB, const TBlendTable *blendTable);
