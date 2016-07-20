@@ -377,7 +377,7 @@ protected:
 	ShaderSupportTier _shaderSupport;
 	
 	GLboolean _useClientStorage;
-	bool _needUploadVertices;
+	bool _needUpdateVertices;
 	bool _useDeposterize;
 	bool _useShaderBasedPixelScaler;
 	bool _filtersPreferGPU;
@@ -424,10 +424,6 @@ protected:
 	GLuint _texHQ3xLUT;
 	GLuint _texHQ4xLUT;
 	
-	GLint vtxBuffer[4 * 8];
-	GLfloat texCoordBuffer[2 * 8];
-	size_t _vtxBufferOffset;
-	
 	GLuint _vaoMainStatesID;
 	GLuint _vboVertexID;
 	GLuint _vboTexCoordID;
@@ -441,12 +437,9 @@ protected:
 	void DetermineTextureStorageHints(GLint &videoSrcTexStorageHint, GLint &cpuFilterTexStorageHint);
 	
 	void ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide);
-	void UploadVerticesOGL();
-	void UploadTexCoordsOGL();
 	void UploadTransformationOGL();
 	
-	void UpdateVertices();
-	void UpdateTexCoords(GLfloat s0, GLfloat t0, GLfloat s1, GLfloat t1);
+	void UpdateVerticesOGL();
 	
 public:
 	OGLDisplayLayer() {};
