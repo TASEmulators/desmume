@@ -4672,7 +4672,7 @@ void GPUEngineBase::ParseReg_WININ()
 	this->_WIN1_enable[GPULayerID_BG2] = (this->_IORegisterMap->WIN1IN.BG2_Enable != 0);
 	this->_WIN1_enable[GPULayerID_BG3] = (this->_IORegisterMap->WIN1IN.BG3_Enable != 0);
 	this->_WIN1_enable[GPULayerID_OBJ] = (this->_IORegisterMap->WIN1IN.OBJ_Enable != 0);
-	this->_WIN1_enable[WINDOWCONTROL_EFFECTFLAG] = (this->_IORegisterMap->WIN0IN.Effect_Enable != 0);
+	this->_WIN1_enable[WINDOWCONTROL_EFFECTFLAG] = (this->_IORegisterMap->WIN1IN.Effect_Enable != 0);
 	
 #if defined(ENABLE_SSE2)
 	this->_WIN0_enable_SSE2[GPULayerID_BG0] = _mm_set1_epi8((this->_IORegisterMap->WIN0IN.BG0_Enable != 0) ? 0xFF : 0x00);
@@ -4698,14 +4698,14 @@ void GPUEngineBase::ParseReg_WINOUT()
 	this->_WINOUT_enable[GPULayerID_BG2] = (this->_IORegisterMap->WINOUT.BG2_Enable != 0);
 	this->_WINOUT_enable[GPULayerID_BG3] = (this->_IORegisterMap->WINOUT.BG3_Enable != 0);
 	this->_WINOUT_enable[GPULayerID_OBJ] = (this->_IORegisterMap->WINOUT.OBJ_Enable != 0);
-	this->_WINOUT_enable[WINDOWCONTROL_EFFECTFLAG] = (this->_IORegisterMap->WIN0IN.Effect_Enable != 0);
+	this->_WINOUT_enable[WINDOWCONTROL_EFFECTFLAG] = (this->_IORegisterMap->WINOUT.Effect_Enable != 0);
 	
 	this->_WINOBJ_enable[GPULayerID_BG0] = (this->_IORegisterMap->WINOBJ.BG0_Enable != 0);
 	this->_WINOBJ_enable[GPULayerID_BG1] = (this->_IORegisterMap->WINOBJ.BG1_Enable != 0);
 	this->_WINOBJ_enable[GPULayerID_BG2] = (this->_IORegisterMap->WINOBJ.BG2_Enable != 0);
 	this->_WINOBJ_enable[GPULayerID_BG3] = (this->_IORegisterMap->WINOBJ.BG3_Enable != 0);
 	this->_WINOBJ_enable[GPULayerID_OBJ] = (this->_IORegisterMap->WINOBJ.OBJ_Enable != 0);
-	this->_WINOBJ_enable[WINDOWCONTROL_EFFECTFLAG] = (this->_IORegisterMap->WIN0IN.Effect_Enable != 0);
+	this->_WINOBJ_enable[WINDOWCONTROL_EFFECTFLAG] = (this->_IORegisterMap->WINOBJ.Effect_Enable != 0);
 	
 #if defined(ENABLE_SSE2)
 	this->_WINOUT_enable_SSE2[GPULayerID_BG0] = _mm_set1_epi8((this->_IORegisterMap->WINOUT.BG0_Enable != 0) ? 0xFF : 0x00);
