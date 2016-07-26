@@ -254,7 +254,8 @@ bool CommandLine::parse(int argc,char **argv)
 		};
 
 		int c = getopt_long(argc,argv,"",long_options,&option_index);
-		if(c == -1)
+		if(c == -1) break;
+		if(c == '?') 
 			break;
 
 		switch(c)
@@ -361,8 +362,7 @@ bool CommandLine::parse(int argc,char **argv)
 	int remain = argc-optind;
 	if(remain==1)
 		nds_file = argv[optind];
-	else if(remain>1)
-		return false;
+	else if(remain>1) return false;
 	
 	return true;
 }
@@ -443,9 +443,7 @@ bool CommandLine::validate()
 
 void CommandLine::errorHelp(const char* binName)
 {
-	//TODO - strip this down to just the filename
-	printerror("USAGE: %s [options] [nds-file]\n", binName);
-	printerror("USAGE: %s --help    - for help\n", binName);
+	printerror(help_string);
 }
 
 void CommandLine::process_movieCommands()
