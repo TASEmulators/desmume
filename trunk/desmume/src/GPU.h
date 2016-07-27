@@ -1236,7 +1236,6 @@ protected:
 	static const CACHE_ALIGN SpriteSize _sprSizeTab[4][4];
 	static const CACHE_ALIGN BGLayerSize _BGLayerSizeLUT[8][4];
 	static const CACHE_ALIGN BGType _mode2type[8][4];
-	static const CACHE_ALIGN u8 _winEmpty[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	
 	static struct MosaicLookup {
 		
@@ -1262,8 +1261,16 @@ protected:
 	CACHE_ALIGN u8 _sprPrio[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	CACHE_ALIGN u8 _sprWin[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	
+	CACHE_ALIGN u8 _didPassWindowTestNative[5][GPU_FRAMEBUFFER_NATIVE_WIDTH];
+	CACHE_ALIGN u8 _enableColorEffectNative[5][GPU_FRAMEBUFFER_NATIVE_WIDTH];
+	
 	CACHE_ALIGN u8 _bgLayerIndex[GPU_FRAMEBUFFER_NATIVE_WIDTH * 4];
 	CACHE_ALIGN u16 _bgLayerColor[GPU_FRAMEBUFFER_NATIVE_WIDTH * 4];
+	
+	u8 *_didPassWindowTestCustomMasterPtr;
+	u8 *_enableColorEffectCustomMasterPtr;
+	u8 *_didPassWindowTestCustom[5];
+	u8 *_enableColorEffectCustom[5];
 	
 	GPUEngineCompositorInfo _currentCompositorState;
 	
@@ -1305,10 +1312,10 @@ protected:
 #endif
 #endif // ENABLE_SSE2
 	
-	bool _WIN0_enable[6];
-	bool _WIN1_enable[6];
-	bool _WINOUT_enable[6];
-	bool _WINOBJ_enable[6];
+	u8 _WIN0_enable[6];
+	u8 _WIN1_enable[6];
+	u8 _WINOUT_enable[6];
+	u8 _WINOBJ_enable[6];
 #if defined(ENABLE_SSE2)
 	__m128i _WIN0_enable_SSE2[6];
 	__m128i _WIN1_enable_SSE2[6];
@@ -1328,7 +1335,6 @@ protected:
 	
 	CACHE_ALIGN u8 _sprNum[256];
 	CACHE_ALIGN u8 _h_win[2][GPU_FRAMEBUFFER_NATIVE_WIDTH];
-	const u8 *_curr_win[2];
 	
 	NDSDisplayID _targetDisplayID;
 	SpriteRenderMode _spriteRenderMode;
@@ -1345,14 +1351,6 @@ protected:
 	bool _WIN1_ENABLED;
 	bool _WINOBJ_ENABLED;
 	bool _isAnyWindowEnabled;
-	bool _isWindowInsideVerticalRange[2];
-	
-#ifdef ENABLE_SSE2
-	u16 _windowLeftCustom[2];
-	u16 _windowRightCustom[2];
-	__m128i _windowLeftCustom_SSE2[2];
-	__m128i _windowRightCustom_SSE2[2];
-#endif
 	
 	MosaicLookup::TableEntry *_mosaicWidthBG;
 	MosaicLookup::TableEntry *_mosaicHeightBG;
@@ -1369,8 +1367,8 @@ protected:
 	void _Reset_Base();
 	void _ResortBGLayers();
 	
-	template <bool NATIVEDST, bool NATIVESRC, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t PIXELBYTES> void _LineColorCopy(void *__restrict dstBuffer, const void *__restrict srcBuffer, const size_t l);
-	template <bool NATIVEDST, bool NATIVESRC> void _LineLayerIDCopy(u8 *__restrict dstBuffer, const u8 *__restrict srcBuffer, const size_t l);
+	template<bool NATIVEDST, bool NATIVESRC, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t PIXELBYTES> void _LineColorCopy(void *__restrict dstBuffer, const void *__restrict srcBuffer, const size_t l);
+	template<bool NATIVEDST, bool NATIVESRC> void _LineLayerIDCopy(u8 *__restrict dstBuffer, const u8 *__restrict srcBuffer, const size_t l);
 	
 	void _MosaicSpriteLinePixel(GPUEngineCompositorInfo &compState, const size_t x, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
 	void _MosaicSpriteLine(GPUEngineCompositorInfo &compState, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
@@ -1391,24 +1389,22 @@ protected:
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineText(GPUEngineCompositorInfo &compState);
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineRot(GPUEngineCompositorInfo &compState);
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineExtRot(GPUEngineCompositorInfo &compState, bool &outUseCustomVRAM);
-	
-	void _RenderPixel_CheckWindows(GPUEngineCompositorInfo &compState, bool &didPassWindowTest, bool &enableColorEffect) const;
-	
+		
 	template<NDSColorFormat OUTPUTFORMAT> void _RenderLine_Clear(GPUEngineCompositorInfo &compState);
 	void _RenderLine_SetupSprites(GPUEngineCompositorInfo &compState);
-	template<NDSColorFormat OUTPUTFORMAT> void _RenderLine_Layers(const size_t l);
+	template<NDSColorFormat OUTPUTFORMAT, bool NOWINDOWSENABLEDHINT> void _RenderLine_Layers(const size_t l);
 	
 	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeOff(const size_t l);
 	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeNormal(const size_t l);
 	
 	template<size_t WIN_NUM> void _UpdateWINH();
-	template<size_t WIN_NUM> void _SetupWindows(GPUEngineCompositorInfo &compState);
+	template<size_t WIN_NUM> bool _IsWindowInsideVerticalRange(GPUEngineCompositorInfo &compState);
+	void _PerformWindowTesting(GPUEngineCompositorInfo &compState);
 	
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG_Final(GPUEngineCompositorInfo &compState);
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG_ApplyColorEffectDisabledHint(GPUEngineCompositorInfo &compState);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG_ApplyNoWindowsEnabledHint(GPUEngineCompositorInfo &compState);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG_ApplyMosaic(GPUEngineCompositorInfo &compState);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG(GPUEngineCompositorInfo &compState);
+	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool NOWINDOWSENABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG_ApplyMosaic(GPUEngineCompositorInfo &compState);
+	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG(GPUEngineCompositorInfo &compState);
 	
 	template<NDSColorFormat OUTPUTFORMAT> void _RenderLine_LayerOBJ(GPUEngineCompositorInfo &compState, itemsForPriority_t *__restrict item);
 			
@@ -1434,7 +1430,7 @@ protected:
 	template<NDSColorFormat COLORFORMAT> FORCEINLINE __m128i _ColorEffectIncreaseBrightness(const __m128i &col, const __m128i &blendEVY);
 	template<NDSColorFormat COLORFORMAT> FORCEINLINE __m128i _ColorEffectDecreaseBrightness(const __m128i &col, const __m128i &blendEVY);
 	template<bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel_CheckWindows16_SSE2(GPUEngineCompositorInfo &compState, const size_t dstX, __m128i &didPassWindowTest, __m128i &enableColorEffect) const;
-	template<NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel16_SSE2(GPUEngineCompositorInfo &compState, const size_t dstX, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, const __m128i &srcAlpha, const __m128i &srcEffectEnableMask, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID, __m128i &passMask8);
+	template<NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool ISDEBUGRENDER, bool NOWINDOWSENABLEDHINT, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel16_SSE2(GPUEngineCompositorInfo &compState, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, const __m128i &srcAlpha, const __m128i &srcEffectEnableMask, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID, __m128i &passMask8);
 	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _RenderPixel3D_SSE2(GPUEngineCompositorInfo &compState, const __m128i &passMask8, const __m128i &enableColorEffectMask, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID);
 #endif
 	
@@ -1522,7 +1518,7 @@ public:
 	GPUEngineID GetEngineID() const;
 	
 	virtual void SetCustomFramebufferSize(size_t w, size_t h);
-	void ResolveCustomRendering();
+	template<NDSColorFormat OUTPUTFORMAT> void ResolveCustomRendering();
 	void ResolveRGB666ToRGB888();
 	void ResolveToCustomFramebuffer();
 	
@@ -1585,7 +1581,8 @@ public:
 	virtual void SetCustomFramebufferSize(size_t w, size_t h);
 	
 	bool WillRender3DLayer();
-	bool WillCapture3DLayerDirect();
+	bool WillCapture3DLayerDirect(const size_t l);
+	bool WillDisplayCapture(const size_t l);
 	bool VerifyVRAMLineDidChange(const size_t blockID, const size_t l);
 	
 	void FramebufferPostprocess();
@@ -1593,7 +1590,7 @@ public:
 	virtual void Reset();
 	
 	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const u16 l);
-	template<NDSColorFormat OUTPUTFORMAT> void RenderLine_Layer3D(GPUEngineCompositorInfo &compState);
+	template<NDSColorFormat OUTPUTFORMAT, bool NOWINDOWSENABLEDHINT> void RenderLine_Layer3D(GPUEngineCompositorInfo &compState);
 };
 
 class GPUEngineB : public GPUEngineBase
