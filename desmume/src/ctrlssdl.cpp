@@ -370,7 +370,7 @@ do_process_joystick_events( u16 *keypad, SDL_Event *event) {
          Note: button constants have a 1bit offset. */
     case SDL_JOYAXISMOTION:
       key_code = ((event->jaxis.which & 15) << 12) | JOY_AXIS << 8 | ((event->jaxis.axis & 127) << 1);
-      if( (u32)(abs(event->jaxis.value) >> 14) != 0 )
+      if( ((u32)abs(event->jaxis.value) >> 14) != 0 )
         {
           if (event->jaxis.value > 0)
             key_code |= 1;
