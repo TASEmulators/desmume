@@ -6227,16 +6227,16 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	glGenBuffersARB(1, &_vboElementID);
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * 4096 * (2 * 4), NULL, GL_STREAM_DRAW_ARB);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * 4096 * (2 * 4), NULL, GL_STREAM_DRAW_ARB);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
 	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
-	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLshort) * 4096 * 6, NULL, GL_STATIC_DRAW_ARB);
+	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLshort) * HUD_MAX_CHARACTERS * 6, NULL, GL_STATIC_DRAW_ARB);
 	GLshort *idxBufferPtr = (GLshort *)glMapBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 		
-	for (size_t i = 0; i < 4096; i++)
+	for (size_t i = 0; i < HUD_MAX_CHARACTERS; i++)
 	{
 		idxBufferPtr[(i*6)+0] = (i*4)+0;
 		idxBufferPtr[(i*6)+1] = (i*4)+1;
@@ -6544,8 +6544,6 @@ void OGLHUDLayer::ProcessVerticesOGL()
 	}
 	
 	const char *cString = this->_statusString.c_str();
-	const size_t bufferSize = length * (2 * 4) * sizeof(GLfloat);
-	
 	const GLfloat charSize = (GLfloat)this->_glyphSize;
 	const GLfloat lineHeight = charSize * 0.8f;
 	const GLfloat textBoxTextOffset = charSize * 0.25f;
@@ -6554,7 +6552,7 @@ void OGLHUDLayer::ProcessVerticesOGL()
 	GLfloat textBoxWidth = 0.0f;
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, bufferSize, NULL, GL_STREAM_DRAW_ARB);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW_ARB);
 	GLfloat *vtxBufferPtr = (GLfloat *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 	
 	// First, calculate the vertices of the text box.
@@ -6664,10 +6662,9 @@ void OGLHUDLayer::ProcessOGL()
 	}
 	
 	const char *cString = this->_statusString.c_str();
-	const size_t bufferSize = length * (2 * 4) * sizeof(GLfloat);
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, bufferSize, NULL, GL_STREAM_DRAW_ARB);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW_ARB);
 	GLfloat *texCoordBufferPtr = (GLfloat *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 	
 	for (size_t i = 0; i < length; i++)
