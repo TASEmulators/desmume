@@ -6636,8 +6636,8 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const size_t l)
 template<bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineA::_LineLarge8bpp(GPUEngineCompositorInfo &compState)
 {
-	u16 XBG = this->_IORegisterMap->BGnOFS[compState.selectedLayerID].BGnHOFS.Offset;
-	u16 YBG = compState.lineIndexNative + this->_IORegisterMap->BGnOFS[compState.selectedLayerID].BGnVOFS.Offset;
+	u16 XBG = compState.selectedBGLayer->xOffset;
+	u16 YBG = compState.lineIndexNative + compState.selectedBGLayer->yOffset;
 	u16 lg = compState.selectedBGLayer->size.width;
 	u16 ht = compState.selectedBGLayer->size.height;
 	u16 wmask = (lg-1);
