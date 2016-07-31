@@ -2666,12 +2666,12 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compState)
 		{
 			u16 tmpColor = (this->_bgLayerIndex[x] == 0) ? 0xFFFF : this->_bgLayerColor[x] & 0x7FFF;
 			
-			if (!this->_mosaicWidthBG[x].begin || !this->_mosaicHeightBG[lineIndex].begin)
+			if (!this->_mosaicWidthBG[x].begin || !this->_mosaicHeightBG[compState.lineIndexNative].begin)
 			{
-				tmpColor = this->_mosaicColors.bg[LAYERID][this->_mosaicWidthBG[x].trunc];
+				tmpColor = this->_mosaicColors.bg[compState.selectedLayerID][this->_mosaicWidthBG[x].trunc];
 			}
 			
-			this->_mosaicColors.bg[LAYERID][x] = tmpColor;
+			this->_mosaicColors.bg[compState.selectedLayerID][x] = tmpColor;
 			
 			if (tmpColor == 0xFFFF)
 			{
