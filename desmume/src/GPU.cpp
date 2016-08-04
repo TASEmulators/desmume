@@ -2171,11 +2171,11 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D(GPUEngineCompositorInfo &compStat
 				break;
 				
 			case ColorEffect_IncreaseBrightness:
-				dstColor16 = compState.brightnessUpTable555[srcColor16];
+				dstColor16 = compState.brightnessUpTable555[srcColor16 & 0x7FFF];
 				break;
 				
 			case ColorEffect_DecreaseBrightness:
-				dstColor16 = compState.brightnessDownTable555[srcColor16];
+				dstColor16 = compState.brightnessDownTable555[srcColor16 & 0x7FFF];
 				break;
 				
 			case ColorEffect_Blend:
