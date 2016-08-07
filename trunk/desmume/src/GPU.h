@@ -1567,11 +1567,11 @@ protected:
 	template<NDSColorFormat COLORFORMAT> __m128i _RenderLine_DispCapture_BlendFunc_SSE2(const __m128i &srcA, const __m128i &srcB, const __m128i &blendEVA, const __m128i &blendEVB);
 #endif
 	
-	template<bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB>
-	void _RenderLine_DispCapture_BlendToCustomDstBuffer(const u16 *srcA, const u16 *srcB, u16 *dst, const u8 blendEVA, const u8 blendEVB, const size_t length, size_t l); // Do not use restrict pointers, since srcB and dst can be the same
+	template<NDSColorFormat OUTPUTFORMAT, bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB>
+	void _RenderLine_DispCapture_BlendToCustomDstBuffer(const void *srcA, const void *srcB, void *dst, const u8 blendEVA, const u8 blendEVB, const size_t length, size_t l); // Do not use restrict pointers, since srcB and dst can be the same
 	
-	template<size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB, bool CAPTURETONATIVEDST>
-	void _RenderLine_DispCapture_Blend(const u16 *srcA, const u16 *srcB, u16 *dst, const size_t captureLengthExt, const size_t l); // Do not use restrict pointers, since srcB and dst can be the same
+	template<NDSColorFormat OUTPUTFORMAT, size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB, bool CAPTURETONATIVEDST>
+	void _RenderLine_DispCapture_Blend(const void *srcA, const void *srcB, void *dst, const size_t captureLengthExt, const size_t l); // Do not use restrict pointers, since srcB and dst can be the same
 	
 	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeVRAM(const size_t l);
 	template<NDSColorFormat OUTPUTFORMAT> void _HandleDisplayModeMainMemory(const size_t l);
