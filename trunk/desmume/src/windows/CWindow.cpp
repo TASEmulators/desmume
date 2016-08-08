@@ -621,7 +621,8 @@ static void MyAdjustWindowRectEx(RECT* rect, HWND hwnd)
 	ZeroMemory(&mbi, sizeof(mbi));
 	mbi.cbSize = sizeof(mbi);
 	GetMenuBarInfo(hwnd, OBJID_MENU, 0, &mbi);
-	int menuHeight = (mbi.rcBar.bottom - mbi.rcBar.top + 1);
+	//int menuHeight = (mbi.rcBar.bottom - mbi.rcBar.top + 1); //zero 07-aug-2016 - why did I do this? it isn't normal in windows and in the case of no menu bar it was making a 1 instead of a 0 (r3184 in 2009)
+	int menuHeight = (mbi.rcBar.bottom - mbi.rcBar.top);
 
 	rect->bottom -= cymenu;
 	rect->bottom += menuHeight;
@@ -656,9 +657,13 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, LONG keepRatio)
 	_minWidth = adjr.right-adjr.left;
 	_minHeight = adjr.bottom-adjr.top + tbheight;
 
-	/* Clamp the size to the minimum size (256x384) */
-	rect->right = (rect->left + std::max(_minWidth, (int)(rect->right - rect->left)));
-	rect->bottom = (rect->top + std::max(_minHeight, (int)(rect->bottom - rect->top)));
+	//zero 07-aug-2016 - this was really old code. Maybe it isn't needed anymore
+	//it effectively let the content overshoot the window size.
+	//really we simply should let the window not overshoot the content size (but that restriction is waived for fullscreen mode)
+	//SIDE EFFECT: window can now be shrunk under the minimum size, which people have been wanting to do anyway
+	////Clamp the size to the minimum size (256x384)
+	//rect->right = (rect->left + std::max(_minWidth, (int)(rect->right - rect->left)));
+	//rect->bottom = (rect->top + std::max(_minHeight, (int)(rect->bottom - rect->top)));
 
 	bool horizontalDrag = (wParam == WMSZ_LEFT) || (wParam == WMSZ_RIGHT);
 	bool verticalDrag = (wParam == WMSZ_TOP) || (wParam == WMSZ_BOTTOM);
