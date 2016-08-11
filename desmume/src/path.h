@@ -23,10 +23,8 @@
 	#include <windows.h>
 	#include <direct.h>
 
-	#ifndef DESMUME_QT
 		#include "windows/winutil.h"
 		#include "windows/resource.h"
-	#endif
 #elif !defined(DESMUME_COCOA)
 	#include <glib.h>
 #endif /* HOST_WINDOWS */
@@ -143,13 +141,11 @@ public:
 		while (p >= pathToModule && *p != DIRECTORY_DELIMITER_CHAR) p--;
 		if (++p >= pathToModule) *p = 0;
 
-#ifndef DESMUME_QT
 		extern char* _hack_alternateModulePath;
 		if(_hack_alternateModulePath)
 		{
 			strcpy(pathToModule,_hack_alternateModulePath);
 		}
-#endif
 #elif defined(DESMUME_COCOA)
 		std::string pathStr = Path::GetFileDirectoryPath(path);
 
