@@ -13,7 +13,7 @@ case $host in
 esac
 AC_SUBST(desmume_arch)
 
-AM_INIT_AUTOMAKE([1.10 subdir-objects tar-pax])
+AM_INIT_AUTOMAKE([1.10 subdir-objects tar-pax foreign])
 
 dnl -- make sure we have a c++ compiler
 AC_PROG_CXX
@@ -376,7 +376,6 @@ AC_CONFIG_FILES([Makefile
                  src/gtk/doc/Makefile
                  src/gtk-glade/Makefile
                  src/gtk-glade/doc/Makefile
-		 src/gdbstub/Makefile
-		 autopackage/default.apspec
+                 src/gdbstub/Makefile
 ])
 AC_OUTPUT
