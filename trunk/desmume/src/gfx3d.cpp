@@ -1496,8 +1496,9 @@ static void gfx3d_glViewPort(u32 v)
 static BOOL gfx3d_glBoxTest(u32 v)
 {
 	//printf("boxtest\n");
-	MMU_new.gxstat.tr = 0;		// clear boxtest bit
-	MMU_new.gxstat.tb = 1;		// busy
+
+	//clear result flag. busy flag has been set by fifo component already
+	MMU_new.gxstat.tr = 0;		
 
 	BTcoords[BTind++] = v & 0xFFFF;
 	BTcoords[BTind++] = v >> 16;
@@ -1505,8 +1506,10 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	if (BTind < 5) return FALSE;
 	BTind = 0;
 
-	MMU_new.gxstat.tb = 0;		// clear busy
 	GFX_DELAY(103);
+
+	//now that we're executing this, we're not busy anymore
+	MMU_new.gxstat.tb = 0;
 
 #if 0
 	INFO("BoxTEST: x %f y %f width %f height %f depth %f\n", 
@@ -1620,27 +1623,31 @@ static BOOL gfx3d_glBoxTest(u32 v)
 		//if any portion of this poly was retained, then the test passes.
 		if (boxtestClipper.clippedPolyCounter > 0)
 		{
-			//printf("%06d PASS %d\n",boxcounter,gxFIFO.size);
+			//printf("%06d PASS %d\n",gxFIFO.size, i);
 			MMU_new.gxstat.tr = 1;
 			break;
 		}
+		else
+		{
+		}
+
+		//if(i==5) printf("%06d FAIL\n",gxFIFO.size);
 	}
 
-	if (MMU_new.gxstat.tr == 0)
-	{
-		//printf("%06d FAIL %d\n",boxcounter,gxFIFO.size);
-	}
-	
+	//printf("%06d RESULT %d\n",gxFIFO.size, MMU_new.gxstat.tr);
+
 	return TRUE;
 }
 
 static BOOL gfx3d_glPosTest(u32 v)
 {
-	//printf("postest\n");
 	//this is apparently tested by transformers decepticons and ultimate spiderman
 
-	//printf("POSTEST\n");
-	MMU_new.gxstat.tb = 1;
+	//clear result flag. busy flag has been set by fifo component already
+	MMU_new.gxstat.tr = 0;
+
+	//now that we're executing this, we're not busy anymore
+	MMU_new.gxstat.tb = 0;
 
 	PTcoords[PTind++] = float16table[v & 0xFFFF];
 	PTcoords[PTind++] = float16table[v >> 16];
