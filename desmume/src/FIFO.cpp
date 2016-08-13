@@ -237,6 +237,15 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 	if(IsMatrixStackCommand(cmd))
 		gxFIFO.matrix_stack_op_size++;
 
+	//along the same lines:
+	//american girls julie finds a way will put a bunch of stuff and then a box test into the fifo and then immediately test the busy flag
+	//so we need to set the busy flag here.
+	//does it expect the fifo to be running then? well, it's definitely jammed -- making it unjammed at one point did fix this bug.
+	//it's still not clear whether we're handling the immediate vs fifo commands properly at all :(
+	//anyway, here we go, similar treatment. consider this a hack.
+	if(cmd == 0x70) MMU_new.gxstat.tb = 1; //just set the flag--youre insane if you queue more than one of these anyway
+	if(cmd == 0x71) MMU_new.gxstat.tb = 1;
+
 	if(gxFIFO.size>=HACK_GXIFO_SIZE) {
 		printf("--FIFO FULL-- : %d\n",gxFIFO.size);
 	}
