@@ -1,6 +1,6 @@
 /*	
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -659,12 +659,23 @@ static void SetVertex()
 			return;
 	if(polylist->count >= POLYLIST_SIZE) 
 			return;
-	
-	//TODO - think about keeping the clip matrix concatenated,
-	//so that we only have to multiply one matrix here
-	//(we could lazy cache the concatenated clip matrix and only generate it
-	//when we need to)
-	MatrixMultVec4x4_M2(mtxCurrent[0], coordTransformed);
+
+	//games will definitely count on overflowing the matrix math
+	//scenarios to balance here:
+	//+ spectrobes beyond the portals excavation blower and drill tools: sets very large overflowing +x,+y in the modelview matrix to push things offscreen
+	//morover in some conditions there will be vertical glitched lines sometimes when drilling at the top center of the screen.
+	//+ kingdom hearts re-coded: first conversation with cast characters will place them oddly with something overflowing to about 0xA???????
+	//+ SM64: skybox
+	//+ TBD other things, probably, dragon quest worldmaps?
+	//At first I tried saturating the math elsewhere, but that couldn't fix all cases
+	//So after some fooling around, I found this nicely aesthetic way of balancing all the cases. I don't doubt that it's still inaccurate, however
+	//Note, if <<3 seems weird, it's reasonable if you assume the goal is to end up with 16 integer bits and a sign bit.
+	MatrixMultVec4x4(mtxCurrent[1],coordTransformed); //modelview
+	for(int i=0;i<4;i++) coordTransformed[i] = (((s32)coordTransformed[i])<<3>>3); //balances everything ok
+	//for(int i=0;i<4;i++) coordTransformed[i] = (((s32)coordTransformed[i])<<4>>4); //breaks SM64 skyboxes
+	//for(int i=0;i<4;i++) coordTransformed[i] = (((u32)coordTransformed[i])<<4>>4)|(((s32)(coordTransformed[i]&0x80000000))>>3); //another way generally to drop precision (but breaks spectrobes which does seem to need some kind of buggy wrap-around behaviour)
+	MatrixMultVec4x4(mtxCurrent[0],coordTransformed); //projection
+	for(int i=0;i<4;i++) coordTransformed[i] = (((s32)coordTransformed[i])<<3>>3); //no proof this is needed, but suspected to be similar based on above
 
 	//printf("%f %f %f\n",s16coord[0]/4096.0f,s16coord[1]/4096.0f,s16coord[2]/4096.0f);
 	//printf("x %f %f %f %f\n",mtxCurrent[0][0]/4096.0f,mtxCurrent[0][1]/4096.0f,mtxCurrent[0][2]/4096.0f,mtxCurrent[0][3]/4096.0f);
