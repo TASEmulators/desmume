@@ -628,6 +628,53 @@ FORCEINLINE s32 vec3dot_fixed32(const s32* a, const s32* b) {
 	return fx32_shiftdown(fx32_mul(a[0],b[0]) + fx32_mul(a[1],b[1]) + fx32_mul(a[2],b[2]));
 }
 
+//---------------
+//I'm going to start name these functions GE for GEOMETRY ENGINE MATH.
+//Pretty much any math function in this file should be explicit about how it's handling precision.
+//Handling that stuff generically globally is not a winning proposition.
+
+FORCEINLINE s64 GEM_Mul32x32To64(const s32 a, const s32 b)
+{
+#ifdef _MSC_VER
+	return __emul(a,b);
+#else
+	return ((s64)a)*((s64)b);
+#endif
+}
+
+static s32 GEM_SaturateAndShiftdown36To32(const s64 val)
+{
+	if(val>0x000007FFFFFFFFFFLL) return 0x7FFFFFFF;
+	if(val<0xFFFFF80000000000LL) return 0x80000000;
+
+	return fx32_shiftdown(val);
+}
+
+static void GEM_TransformVertex(const s32 *matrix, s32 *vecPtr)
+{
+	const s32 x = vecPtr[0];
+	const s32 y = vecPtr[1];
+	const s32 z = vecPtr[2];
+	const s32 w = vecPtr[3];
+
+	//saturation logic is most carefully tested by:
+	//+ spectrobes beyond the portals excavation blower and drill tools: sets very large overflowing +x,+y in the modelview matrix to push things offscreen
+	//You can see this happening quite clearly: vertices will get translated to extreme values and overflow from a 7FFF-like to an 8000-like
+	//but if it's done wrongly, you can get bugs in:
+	//+ kingdom hearts re-coded: first conversation with cast characters will place them oddly with something overflowing to about 0xA???????
+	
+	//other test cases that cropped up during this development, but are probably not actually related to this after all
+	//+ SM64: outside castle skybox
+	//+ NSMB: mario head screen wipe
+
+	vecPtr[0] = GEM_SaturateAndShiftdown36To32(GEM_Mul32x32To64(x,matrix[0]) + GEM_Mul32x32To64(y,matrix[4]) + GEM_Mul32x32To64(z,matrix [8]) + GEM_Mul32x32To64(w,matrix[12]));
+	vecPtr[1] = GEM_SaturateAndShiftdown36To32(GEM_Mul32x32To64(x,matrix[1]) + GEM_Mul32x32To64(y,matrix[5]) + GEM_Mul32x32To64(z,matrix[ 9]) + GEM_Mul32x32To64(w,matrix[13]));
+	vecPtr[2] = GEM_SaturateAndShiftdown36To32(GEM_Mul32x32To64(x,matrix[2]) + GEM_Mul32x32To64(y,matrix[6]) + GEM_Mul32x32To64(z,matrix[10]) + GEM_Mul32x32To64(w,matrix[14]));
+	vecPtr[3] = GEM_SaturateAndShiftdown36To32(GEM_Mul32x32To64(x,matrix[3]) + GEM_Mul32x32To64(y,matrix[7]) + GEM_Mul32x32To64(z,matrix[11]) + GEM_Mul32x32To64(w,matrix[15]));
+}
+//---------------
+
+
 #define SUBMITVERTEX(ii, nn) polylist->list[polylist->count].vertIndexes[ii] = tempVertInfo.map[nn];
 //Submit a vertex to the GE
 static void SetVertex()
@@ -660,26 +707,8 @@ static void SetVertex()
 	if(polylist->count >= POLYLIST_SIZE) 
 			return;
 
-	//games will definitely count on overflowing the matrix math
-	//scenarios to balance here:
-	//+ spectrobes beyond the portals excavation blower and drill tools: sets very large overflowing +x,+y in the modelview matrix to push things offscreen
-	//morover in some conditions there will be vertical glitched lines sometimes when drilling at the top center of the screen.
-	//+ kingdom hearts re-coded: first conversation with cast characters will place them oddly with something overflowing to about 0xA???????
-	//+ SM64: skybox
-	//+ TBD other things, probably, dragon quest worldmaps?
-	//At first I tried saturating the math elsewhere, but that couldn't fix all cases
-	//So after some fooling around, I found this nicely aesthetic way of balancing all the cases. I don't doubt that it's still inaccurate, however
-	//Note, if <<3 seems weird, it's reasonable if you assume the goal is to end up with 16 integer bits and a sign bit.
-	MatrixMultVec4x4(mtxCurrent[1],coordTransformed); //modelview
-	for(int i=0;i<4;i++) coordTransformed[i] = (((s32)coordTransformed[i])<<3>>3); //balances everything ok
-	//for(int i=0;i<4;i++) coordTransformed[i] = (((s32)coordTransformed[i])<<4>>4); //breaks SM64 skyboxes
-	//for(int i=0;i<4;i++) coordTransformed[i] = (((u32)coordTransformed[i])<<4>>4)|(((s32)(coordTransformed[i]&0x80000000))>>3); //another way generally to drop precision (but breaks spectrobes which does seem to need some kind of buggy wrap-around behaviour)
-	MatrixMultVec4x4(mtxCurrent[0],coordTransformed); //projection
-	for(int i=0;i<4;i++) coordTransformed[i] = (((s32)coordTransformed[i])<<3>>3); //no proof this is needed, but suspected to be similar based on above
-
-	//printf("%f %f %f\n",s16coord[0]/4096.0f,s16coord[1]/4096.0f,s16coord[2]/4096.0f);
-	//printf("x %f %f %f %f\n",mtxCurrent[0][0]/4096.0f,mtxCurrent[0][1]/4096.0f,mtxCurrent[0][2]/4096.0f,mtxCurrent[0][3]/4096.0f);
-	//printf(" = %f %f %f %f\n",coordTransformed[0]/4096.0f,coordTransformed[1]/4096.0f,coordTransformed[2]/4096.0f,coordTransformed[3]/4096.0f);
+	GEM_TransformVertex(mtxCurrent[1],coordTransformed); //modelview
+	GEM_TransformVertex(mtxCurrent[0],coordTransformed); //projection
 
 	//TODO - culling should be done here.
 	//TODO - viewport transform?
