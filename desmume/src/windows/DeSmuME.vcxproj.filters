@@ -121,6 +121,9 @@
     <Filter Include="Core\libretro-common\lists">
       <UniqueIdentifier>{18cba3ce-aaa6-441d-8111-408d0fcef7d2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\libretro-common\features">
+      <UniqueIdentifier>{37e11fb9-8dec-43bd-8242-a721d69a740f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\aggdraw.cpp">
@@ -445,9 +448,6 @@
       <Filter>Core\utils</Filter>
     </ClCompile>
     <ClCompile Include="..\utils\libfat\partition.cpp">
-      <Filter>Core\utils\libfat</Filter>
-    </ClCompile>
-    <ClCompile Include="..\utils\libfat\cache.cpp">
       <Filter>Core\utils\libfat</Filter>
     </ClCompile>
     <ClCompile Include="..\utils\libfat\directory.cpp">
@@ -965,6 +965,15 @@
     </ClCompile>
     <ClCompile Include="..\libretro-common\file\archive_file_zlib.c">
       <Filter>Core\libretro-common\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\utils\libfat\cache.cpp">
+      <Filter>Core\utils\libfat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro-common\features\features_cpu.c">
+      <Filter>Core\libretro-common\features</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Database.cpp">
+      <Filter>Core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1721,9 +1730,6 @@
     <ClInclude Include="..\frontend\modules\ImageOut.h">
       <Filter>Core\frontend\modules</Filter>
     </ClInclude>
-    <ClInclude Include="..\libretro-common\formats\png\rpng_internal.h">
-      <Filter>Core\libretro-common\formats\png</Filter>
-    </ClInclude>
     <ClInclude Include="..\libretro-common\include\formats\rpng.h">
       <Filter>Core\libretro-common\include\formats</Filter>
     </ClInclude>
@@ -1738,6 +1744,9 @@
     </ClInclude>
     <ClInclude Include="..\libretro-common\include\compat\msvc.h">
       <Filter>Core\libretro-common\include\compat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Database.h">
+      <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

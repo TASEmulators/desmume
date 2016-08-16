@@ -56,6 +56,7 @@
 #include "slot2.h"
 #include "SPU.h"
 #include "wifi.h"
+#include "Database.h"
 
 #ifdef GDB_STUB
 #include "gdbstub.h"
@@ -357,27 +358,7 @@ bool GameInfo::ValidateHeader()
 
 void GameInfo::populate()
 {
-	const char regions_index[] = "JPFSEODIRKHXVWUC";
-	const char *regions[] = {
-					"???",
-					"JPN",		// J
-					"EUR",		// P
-					"FRA",		// F
-					"ESP",		// S
-					"USA",		// E
-					"INT",		// O
-					"NOE",		// D
-					"ITA",		// I
-					"RUS",		// R
-					"KOR",		// K
-					"HOL",		// H
-					"EUU",		// X
-					"EUU",		// V
-					"EUU",		// W
-					"AUS",		// U
-					"CHN",		// C
 
-	};
 	
 	//set or build as appropriate ROMserial
 	if(isHomebrew())
@@ -393,13 +374,8 @@ void GameInfo::populate()
 			strcpy(ROMserial,"NTR-    -");
 		memcpy(ROMserial+4, header.gameCode, 4);
 
-		u32 regions_num = ARRAY_SIZE(regions);
-		u32 region = (u32)(std::max<s32>(strchr(regions_index,header.gameCode[3]) - regions_index + 1, 0));
-
-		if (region < regions_num)
-			strcat(ROMserial, regions[region]);
-		else
-			strcat(ROMserial, "???");
+		const char* rgn = Database::RegionXXXForCode(header.gameCode[3],true);
+		strcat(ROMserial, rgn);
 	}
 
 	//rom name is probably set even in homebrew, so do it regardless
@@ -751,7 +727,9 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 		INFO("ROM internal name: %s\n", gameInfo.ROMname);
 		if (gameInfo.isDSiEnhanced()) INFO("ROM DSi Enhanced\n");
 	}
-	INFO("ROM developer: %s\n", ((gameInfo.header.makerCode == 0) && gameInfo.isHomebrew())?"Homebrew":getDeveloperNameByID(gameInfo.header.makerCode).c_str());
+
+	const char *makerName = Database::MakerNameForMakerCode(gameInfo.header.makerCode,true);
+	INFO("ROM developer: %s\n", ((gameInfo.header.makerCode == 0) && gameInfo.isHomebrew())?"Homebrew":makerName);
 
 	buf[0] = gameInfo.header.gameCode[0];
 	buf[1] = gameInfo.header.gameCode[1];

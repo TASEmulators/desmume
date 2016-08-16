@@ -1129,9 +1129,7 @@ static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 
 	if (haveInfo)
 	{
-		char buf[14] = {0};
-		memset(&buf[0], 0, sizeof(buf));
-		memcpy(buf, header.gameTile, sizeof(header.gameTile));
+
 		printf("Savestate info:\n");
 		if (version_major | version_minor | version_build)
 		{
@@ -1147,14 +1145,19 @@ static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 			DateTime tm = save_time;
 			printf("\tSave created: %04d-%03s-%02d %s %02d:%02d:%02d\n", tm.get_Year(), DateTime::GetNameOfMonth(tm.get_Month()), tm.get_Day(), wday[tm.get_DayOfWeek()%7], tm.get_Hour(), tm.get_Minute(), tm.get_Second());
 		}
-		printf("\tGame title: %s\n", buf);
-		printf("\tGame code: %c%c%c%c\n", header.gameCode[0], header.gameCode[1], header.gameCode[2], header.gameCode[3]);
-		printf("\tMaker code: %c%c (0x%04X) - %s\n", header.makerCode & 0xFF, header.makerCode >> 8, header.makerCode, getDeveloperNameByID(header.makerCode).c_str());
-		printf("\tDevice capacity: %dMb (real size %dMb)\n", ((128 * 1024) << header.cardSize) / (1024 * 1024), romsize / (1024 * 1024));
-		printf("\tCRC16: %04Xh\n", header.CRC16);
-		printf("\tHeader CRC16: %04Xh\n", header.headerCRC16);
-		printf("\tSlot1: %s\n", slot1_List[slot1Type]->info()->name());
-		printf("\tSlot2: %s\n", slot2_List[slot2Type]->info()->name());
+
+		//nope. create a common method elsewhere for printing this.
+		//char buf[14] = {0};
+		//memset(&buf[0], 0, sizeof(buf));
+		//memcpy(buf, header.gameTile, sizeof(header.gameTile));
+		//printf("\tGame title: %s\n", buf);
+		//printf("\tGame code: %c%c%c%c\n", header.gameCode[0], header.gameCode[1], header.gameCode[2], header.gameCode[3]);
+		//const char *makerName = Database::MakerNameForMakerCode(header.makerCode);
+		//makerName = makerName ? makerName : "Unknown";
+		//printf("\tMaker code: %c%c (0x%04X) - %s\n", header.makerCode & 0xFF, header.makerCode >> 8, header.makerCode, makerName);
+		//printf("\tDevice capacity: %dMb (real size %dMb)\n", ((128 * 1024) << header.cardSize) / (1024 * 1024), romsize / (1024 * 1024));
+		//printf("\tCRC16: %04Xh\n", header.CRC16);
+		//printf("\tHeader CRC16: %04Xh\n", header.headerCRC16);
 
 		if (gameInfo.romsize != romsize || memcmp(&gameInfo.header, &header, sizeof(header)) != 0)
 			msgbox->warn("The savestate you are loading does not match the ROM you are running.\nYou should find the correct ROM");

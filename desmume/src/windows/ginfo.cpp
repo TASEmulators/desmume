@@ -28,6 +28,7 @@
 #include "resource.h"
 #include "FirmConfig.h"
 #include "main.h"
+#include "Database.h"
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -117,14 +118,12 @@ LRESULT GInfo_Paint(HWND hDlg, WPARAM wParam, LPARAM lParam)
 	text[12] = '\0';
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_GAMETITLE), text);
 
-	memcpy(text, ((u8*)&gameInfo.header+0xC), 4);
-	text[4] = '\0';
-	SetWindowText(GetDlgItem(hDlg, IDC_GI_GAMECODE), text);
+	SetDlgItemText(hDlg, IDC_GI_GAMECODE, gameInfo.ROMserial);
 
 	memcpy(text, ((u8*)&gameInfo.header+0x10), 2);
 	text[2] = '\0';
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_MAKERCODE), text);
-	SetWindowText(GetDlgItem(hDlg, IDC_SDEVELOPER), getDeveloperNameByID(T1ReadWord((u8*)&gameInfo.header, 0x10)).c_str());
+	SetWindowText(GetDlgItem(hDlg, IDC_SDEVELOPER), Database::MakerNameForMakerCode(T1ReadWord((u8*)&gameInfo.header, 0x10),true));
 
 	val = T1ReadByte((u8*)&gameInfo.header, 0x14);
 	sprintf(text, "%i kilobytes", (0x80 << val));

@@ -18,7 +18,7 @@ libdesmume_a_SOURCES = \
 	commandline.h commandline.cpp \
 	common.cpp common.h \
 	debug.cpp debug.h \
-	Disassembler.cpp Disassembler.h \
+	Database.cpp Database.h Disassembler.cpp Disassembler.h \
 	emufile.h emufile.cpp encrypt.h encrypt.cpp FIFO.cpp FIFO.h \
 	firmware.cpp firmware.h GPU.cpp GPU.h \
 	GPU_osd.h \

@@ -42,14 +42,7 @@ extern msgBoxInterface *msgbox;
 // ===============================================================================
 // Maker codes
 // ===============================================================================
-
-struct MAKER
-{
-	u16 code;
-	const char* name;
-};
-
-std::string getDeveloperNameByID(u16 id);
+//
 
 void* malloc_aligned(size_t length, size_t alignment);
 void* malloc_aligned16(size_t length);
