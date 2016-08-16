@@ -3283,6 +3283,13 @@ int _main()
 		cur3DCore = GPU3D_NULL;
 	else if(cur3DCore == GPU3D_NULL) // this value shouldn't be saved anymore
 		cur3DCore = GPU3D_DEFAULT;
+
+	if(cmdline.render3d == COMMANDLINE_RENDER3D_NONE) cur3DCore = GPU3D_NULL;
+	if(cmdline.render3d == COMMANDLINE_RENDER3D_SW) cur3DCore = GPU3D_SWRAST;
+	if(cmdline.render3d == COMMANDLINE_RENDER3D_OLDGL) cur3DCore = GPU3D_OPENGL_OLD;
+	if(cmdline.render3d == COMMANDLINE_RENDER3D_GL) cur3DCore = GPU3D_OPENGL_3_2; //no way of forcing it, at least not right now. I dont care.
+	if(cmdline.render3d == COMMANDLINE_RENDER3D_AUTOGL) cur3DCore = GPU3D_OPENGL_3_2; //this will fallback i guess
+
 	CommonSettings.GFX3D_HighResolutionInterpolateColor = GetPrivateProfileBool("3D", "HighResolutionInterpolateColor", 1, IniName);
 	CommonSettings.GFX3D_EdgeMark = GetPrivateProfileBool("3D", "EnableEdgeMark", 1, IniName);
 	CommonSettings.GFX3D_Fog = GetPrivateProfileBool("3D", "EnableFog", 1, IniName);
