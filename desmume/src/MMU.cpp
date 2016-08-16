@@ -57,7 +57,8 @@
 _KEY2 key2;
 
 //http://home.utah.edu/~nahaj/factoring/isqrt.c.html
-static u64 isqrt (u64 x) {
+static u64 isqrt (u64 x)
+{
   u64   squaredbit, remainder, root;
 
    if (x<1) return 0;
@@ -93,7 +94,9 @@ u32 _MMU_MAIN_MEM_MASK = 0x3FFFFF;
 u32 _MMU_MAIN_MEM_MASK16 = 0x3FFFFF & ~1;
 u32 _MMU_MAIN_MEM_MASK32 = 0x3FFFFF & ~3;
 
-//#define	_MMU_DEBUG
+#if 0
+#define	_MMU_DEBUG
+#endif
 
 #ifdef _MMU_DEBUG
 
@@ -272,17 +275,17 @@ u32 MMU_struct::MMU_MASK[2][256] = {
 //-------------
 //(Everything is mapped through to ARM9_LCD in blocks of 16KB)
 
-//for all of the below, values = 41 indicate unmapped memory
+/* for all of the below, values = 41 indicate unmapped memory */
 #define VRAM_PAGE_UNMAPPED 41
 
 #define VRAM_LCDC_PAGES 41
 u8 vram_lcdc_map[VRAM_LCDC_PAGES];
 
-//in the range of 0x06000000 - 0x06800000 in 16KB pages (the ARM9 vram mappable area)
-//this maps to 16KB pages in the LCDC buffer which is what will actually contain the data
+/*in the range of 0x06000000 - 0x06800000 in 16KB pages (the ARM9 vram mappable area)
+ *this maps to 16KB pages in the LCDC buffer which is what will actually contain the data */
 u8 vram_arm9_map[VRAM_ARM9_PAGES];
 
-//this chooses which banks are mapped in the 128K banks starting at 0x06000000 in ARM7
+/* this chooses which banks are mapped in the 128K banks starting at 0x06000000 in ARM7 */
 u8 vram_arm7_map[2];
 
 //----->
@@ -317,8 +320,9 @@ static const TVramBankInfo vram_bank_info[VRAM_BANK_COUNT] = {
 	{40,1}
 };
 
-//this is to remind you that the LCDC mapping returns a strange value (not 0x06800000) as you would expect
-//in order to play nicely with the MMU address and mask tables
+/* this is to remind you that the LCDC mapping returns a 
+ * strange value (not 0x06800000) as you would expect
+ * in order to play nicely with the MMU address and mask tables */
 #define LCDC_HACKY_LOCATION 0x06000000
 
 #define ARM7_HACKY_IWRAM_LOCATION 0x03800000
@@ -334,7 +338,7 @@ template<int PROCNUM>
 static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped, bool& restricted)
 {
 	unmapped = false;
-	restricted = false; //this will track whether 8bit writes are allowed
+	restricted = false; /* This will track whether 8bit writes are allowed */
 
 	//handle SIWRAM and non-shared IWRAM in here too, since it is quite similar to vram.
 	//in fact it is probably implemented with the same pieces of hardware.
@@ -452,8 +456,8 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped, bool& restricted)
 		unmapped = true;
 		return 0;
 	}
-	else
-		return LCDC_HACKY_LOCATION + (vram_page<<14) + ofs;
+
+   return LCDC_HACKY_LOCATION + (vram_page<<14) + ofs;
 }
 
 
@@ -462,37 +466,59 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped, bool& restricted)
 VramConfiguration vramConfiguration;
 
 std::string VramConfiguration::describePurpose(Purpose p) {
-	switch(p) {
-		case OFF: return "OFF";
-		case INVALID: return "INVALID";
-		case ABG: return "ABG";
-		case BBG: return "BBG";
-		case AOBJ: return "AOBJ";
-		case BOBJ: return "BOBJ";
-		case LCDC: return "LCDC";
-		case ARM7: return "ARM7";
-		case TEX: return "TEX";
-		case TEXPAL: return "TEXPAL";
-		case ABGEXTPAL: return "ABGEXTPAL";
-		case BBGEXTPAL: return "BBGEXTPAL";
-		case AOBJEXTPAL: return "AOBJEXTPAL";
-		case BOBJEXTPAL: return "BOBJEXTPAL";
-		default: return "UNHANDLED CASE";
-	}
+   switch(p)
+   {
+      case OFF:
+         return "OFF";
+      case INVALID:
+         return "INVALID";
+      case ABG:
+         return "ABG";
+      case BBG:
+         return "BBG";
+      case AOBJ:
+         return "AOBJ";
+      case BOBJ:
+         return "BOBJ";
+      case LCDC:
+         return "LCDC";
+      case ARM7:
+         return "ARM7";
+      case TEX:
+         return "TEX";
+      case TEXPAL:
+         return "TEXPAL";
+      case ABGEXTPAL:
+         return "ABGEXTPAL";
+      case BBGEXTPAL:
+         return "BBGEXTPAL";
+      case AOBJEXTPAL:
+         return "AOBJEXTPAL";
+      case BOBJEXTPAL:
+         return "BOBJEXTPAL";
+      default: 
+         break;
+   }
+   
+   return "UNHANDLED CASE";
 }
 
-std::string VramConfiguration::describe() {
+std::string VramConfiguration::describe()
+{
+   unsigned i;
 	std::stringstream ret;
-	for(int i=0;i<VRAM_BANK_COUNT;i++) {
+	for(i=0;i<VRAM_BANK_COUNT;i++)
+   {
 		ret << (char)(i+'A') << ": " << banks[i].ofs << " " << describePurpose(banks[i].purpose) << std::endl;
 	}
 	return ret.str();
 }
 
 //maps the specified bank to LCDC
-static inline void MMU_vram_lcdc(const int bank)
+static INLINE void MMU_vram_lcdc(const int bank)
 {
-	for(int i=0;i<vram_bank_info[bank].num_pages;i++)
+   unsigned i;
+	for(i=0;i<vram_bank_info[bank].num_pages;i++)
 	{
 		int page = vram_bank_info[bank].page_addr+i;
 		vram_lcdc_map[page] = page;
@@ -500,63 +526,66 @@ static inline void MMU_vram_lcdc(const int bank)
 }
 
 //maps the specified bank to ARM9 at the provided page offset
-static inline void MMU_vram_arm9(const int bank, const int offset)
+static INLINE void MMU_vram_arm9(const int bank, const int offset)
 {
-	for(int i=0;i<vram_bank_info[bank].num_pages;i++)
+   unsigned i;
+	for(i=0;i<vram_bank_info[bank].num_pages;i++)
 	{
 		int page = vram_bank_info[bank].page_addr+i;
 		vram_arm9_map[i+offset] = page;
 	}
 }
 
-static inline u8* MMU_vram_physical(const int page)
+static INLINE u8* MMU_vram_physical(const int page)
 {
 	return MMU.ARM9_LCD + (page*ADDRESS_STEP_16KB);
 }
 
 template <VRAMBankID VRAMBANK>
-static inline void MMU_VRAMmapRefreshBank()
+static INLINE void MMU_VRAMmapRefreshBank()
 {
 	const size_t block = (VRAMBANK >= VRAM_BANK_H) ? VRAMBANK + 1 : VRAMBANK;
 	
 	VRAMCNT VRAMBankCnt;
 	VRAMBankCnt.value = T1ReadByte(MMU.ARM9_REG, 0x240 + block);
 	
-	//do nothing if the bank isnt enabled
-	if(VRAMBankCnt.Enable == 0) return;
+	/* do nothing if the bank isnt enabled */
+	if(VRAMBankCnt.Enable == 0)
+      return;
 
-	switch(VRAMBANK) {
+	switch(VRAMBANK)
+   {
 		case VRAM_BANK_A:
 		case VRAM_BANK_B:
 			assert(VRAMBankCnt.MST == VRAMBankCnt.MST_ABHI);
 			switch(VRAMBankCnt.MST_ABHI)
-			{
-			case 0: //LCDC
-				vramConfiguration.banks[VRAMBANK].purpose = VramConfiguration::LCDC;
-				MMU_vram_lcdc(VRAMBANK);
-				if(VRAMBankCnt.OFS != 0) PROGINFO("Bank %i: MST %i OFS %i\n", VRAMBankCnt.MST_ABHI, VRAMBankCnt.OFS);
-				break;
-			case 1: //ABG
-				vramConfiguration.banks[VRAMBANK].purpose = VramConfiguration::ABG;
-				MMU_vram_arm9(VRAMBANK,VRAM_PAGE_ABG+VRAMBankCnt.OFS*8);
-				break;
-			case 2: //AOBJ
-				vramConfiguration.banks[VRAMBANK].purpose = VramConfiguration::AOBJ;
-				switch(VRAMBankCnt.OFS) {
-				case 0:
-				case 1:
-					MMU_vram_arm9(VRAMBANK,VRAM_PAGE_AOBJ+VRAMBankCnt.OFS*8);
-					break;
-				default:
-					PROGINFO("Unsupported ofs setting %d for engine A OBJ vram bank %c\n", VRAMBankCnt.OFS, 'A'+VRAMBANK);
-				}
-				break;
-			case 3: //texture
-				vramConfiguration.banks[VRAMBANK].purpose = VramConfiguration::TEX;
-				MMU.texInfo.textureSlotAddr[VRAMBankCnt.OFS] = MMU_vram_physical(vram_bank_info[VRAMBANK].page_addr);
-				break;
-			default: goto unsupported_mst;
-			}
+         {
+            case 0: //LCDC
+               vramConfiguration.banks[VRAMBANK].purpose = VramConfiguration::LCDC;
+               MMU_vram_lcdc(VRAMBANK);
+               if(VRAMBankCnt.OFS != 0) PROGINFO("Bank %i: MST %i OFS %i\n", VRAMBankCnt.MST_ABHI, VRAMBankCnt.OFS);
+               break;
+            case 1: //ABG
+               vramConfiguration.banks[VRAMBANK].purpose = VramConfiguration::ABG;
+               MMU_vram_arm9(VRAMBANK,VRAM_PAGE_ABG+VRAMBankCnt.OFS*8);
+               break;
+            case 2: //AOBJ
+               vramConfiguration.banks[VRAMBANK].purpose = VramConfiguration::AOBJ;
+               switch(VRAMBankCnt.OFS) {
+                  case 0:
+                  case 1:
+                     MMU_vram_arm9(VRAMBANK,VRAM_PAGE_AOBJ+VRAMBankCnt.OFS*8);
+                     break;
+                  default:
+                     PROGINFO("Unsupported ofs setting %d for engine A OBJ vram bank %c\n", VRAMBankCnt.OFS, 'A'+VRAMBANK);
+               }
+               break;
+            case 3: //texture
+               vramConfiguration.banks[VRAMBANK].purpose = VramConfiguration::TEX;
+               MMU.texInfo.textureSlotAddr[VRAMBankCnt.OFS] = MMU_vram_physical(vram_bank_info[VRAMBANK].page_addr);
+               break;
+            default: goto unsupported_mst;
+         }
 			break;
 
 		case VRAM_BANK_C:
@@ -742,7 +771,7 @@ static inline void MMU_VRAMmapRefreshBank()
 			break;
 
 			
-	} //switch(VRAMBANK)
+	}
 
 	vramConfiguration.banks[VRAMBANK].ofs = VRAMBankCnt.OFS;
 
@@ -783,7 +812,7 @@ void MMU_VRAM_unmap_all()
 		MMU.texInfo.textureSlotAddr[i] = MMU.blank_memory;
 }
 
-static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
+static INLINE void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 {
 	//handle WRAM, first of all
 	if(block == 7)
@@ -1168,47 +1197,58 @@ u16 DSI_TSC::read16()
 {
 	u8 page = registers[0];
 	switch(page)
-	{
-	case 3: //page 3
-		switch(reg_selection)
-		{
-		case 9:
-			if(nds.isTouch) 
-				return 0;
-			else return 0x40;
-			break;
-		case 14:
-			if(nds.isTouch) 
-				return 0;
-			else return 0x02;
-			break;
-		}
-		break;
+   {
+      case 3: //page 3
+         switch(reg_selection)
+         {
+            case 9:
+               if(nds.isTouch) 
+                  return 0;
+               return 0x40;
+            case 14:
+               if(nds.isTouch) 
+                  return 0;
+               return 0x02;
+         }
+         break;
 
-	case 252: //page 252
-		switch(reg_selection)
-		{
-		//high byte of X:
-		case 1: case 3: case 5: case 7: case 9:
-			return (nds.scr_touchX>>8)&0xFF;
+      case 252: //page 252
+         switch(reg_selection)
+         {
+               /* high byte of X: */
+            case 1:
+            case 3:
+            case 5:
+            case 7:
+            case 9:
+               return (nds.scr_touchX>>8)&0xFF;
+               /* low byte of X: */
+            case 2:
+            case 4:
+            case 6:
+            case 8:
+            case 10:
+               return nds.scr_touchX&0xFF;
+               /* high byte of Y: */
+            case 11:
+            case 13:
+            case 15:
+            case 17:
+            case 19:
+               return (nds.scr_touchY>>8)&0xFF;
+               /* low byte of Y: */
+            case 12:
+            case 14:
+            case 16:
+            case 18:
+            case 20:
+               return nds.scr_touchY&0xFF;
 
-		//low byte of X:
-		case 2: case 4: case 6: case 8: case 10:
-			return nds.scr_touchX&0xFF;
-
-		//high byte of Y:
-		case 11: case 13: case 15: case 17: case 19:
-			return (nds.scr_touchY>>8)&0xFF;
-
-		//low byte of Y:
-		case 12: case 14: case 16: case 18: case 20:
-			return nds.scr_touchY&0xFF;
-		
-		default:
-			return 0xFF;
-		}
-		break;
-	} //switch(page)
+            default:
+               break;
+         }
+         break;
+   }
 
 	//unknown page or register
 	return 0xFF;
@@ -1376,9 +1416,7 @@ u32 MMU_readFromGC()
 	//update transfer counter and complete the transfer if necessary
 	card.transfer_count -= 4;	
 	if(card.transfer_count <= 0)
-	{
 		MMU_GC_endTransfer(PROCNUM);
-	}
 
 	return val;
 }
@@ -1444,7 +1482,7 @@ void FASTCALL MMU_writeToSPIData(u16 val)
 		PM_SOUND_MUTE		= BIT(1),    /*!< \brief   Mute the main speakers, headphone output will still work. */
 		PM_BACKLIGHT_BOTTOM	= BIT(2),    /*!< \brief   Enable the top backlight if set */
 		PM_BACKLIGHT_TOP	= BIT(3)  ,  /*!< \brief   Enable the bottom backlight if set */
-		PM_SYSTEM_PWR		= BIT(6) ,   /*!< \brief  Turn the power *off* if set */
+		PM_SYSTEM_PWR		= BIT(6)     /*!< \brief  Turn the power *off* if set */
 	};
 
 	if (val !=0)
@@ -1997,8 +2035,8 @@ bool TGXSTAT::loadstate(EMUFILE *f)
 void MMU_struct_new::write_dma(const int proc, const int size, const u32 _adr, const u32 val)
 {
 	//printf("%08lld -- write_dma: %d %d %08X %08X\n",nds_timer,proc,size,_adr,val);
-	const u32 adr = _adr - _REG_DMA_CONTROL_MIN;
-	const u32 chan = adr/12;
+	const u32 adr    = _adr - _REG_DMA_CONTROL_MIN;
+	const u32 chan   = adr/12;
 	const u32 regnum = (adr - chan*12)>>2;
 
 	MMU_new.dma[proc][chan].regs[regnum]->write(size,adr,val);
@@ -2008,11 +2046,11 @@ void MMU_struct_new::write_dma(const int proc, const int size, const u32 _adr, c
 //this could be inlined...
 u32 MMU_struct_new::read_dma(const int proc, const int size, const u32 _adr)
 {
-	const u32 adr = _adr - _REG_DMA_CONTROL_MIN;
-	const u32 chan = adr/12;
+	const u32 adr    = _adr - _REG_DMA_CONTROL_MIN;
+	const u32 chan   = adr/12;
 	const u32 regnum = (adr - chan*12)>>2;
 
-	const u32 temp = MMU_new.dma[proc][chan].regs[regnum]->read(size,adr);
+	const u32 temp   = MMU_new.dma[proc][chan].regs[regnum]->read(size,adr);
 	//printf("%08lld --  read_dma: %d %d %08X = %08X\n",nds_timer,proc,size,_adr,temp);
 
 	return temp;
@@ -2025,11 +2063,15 @@ bool MMU_struct_new::is_dma(const u32 adr)
 
 MMU_struct_new::MMU_struct_new()
 {
-	for(int i=0;i<2;i++)
-		for(int j=0;j<4;j++) {
+   unsigned i, j;
+	for(i=0;i<2;i++)
+   {
+		for(j=0;j<4;j++)
+      {
 			dma[i][j].procnum = i;
 			dma[i][j].chan = j;
 		}
+   }
 }
 
 void DivController::savestate(EMUFILE* os)
@@ -2534,7 +2576,8 @@ bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 			case REG_AUXSPICNT:
 			case REG_AUXSPIDATA:
 			case REG_GCROMCTRL:
-			case REG_GCCMDOUT + 0x00: case REG_GCCMDOUT + 0x04:
+			case REG_GCCMDOUT + 0x00:
+         case REG_GCCMDOUT + 0x04:
 			case REG_ENCSEED0L:
 			case REG_ENCSEED1L:
 			case REG_ENCSEED0H:
@@ -2558,13 +2601,18 @@ bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 
 			// Math
 			case REG_DIVCNT:
-			case REG_DIVNUMER + 0x00: case REG_DIVNUMER + 0x04:
-			case REG_DIVDENOM + 0x00: case REG_DIVDENOM + 0x04:
-			case REG_DIVRESULT + 0x00: case REG_DIVRESULT + 0x04:
-			case REG_DIVREMRESULT + 0x00: case REG_DIVREMRESULT + 0x04:
+			case REG_DIVNUMER + 0x00:
+         case REG_DIVNUMER + 0x04:
+			case REG_DIVDENOM + 0x00:
+         case REG_DIVDENOM + 0x04:
+			case REG_DIVRESULT + 0x00:
+         case REG_DIVRESULT + 0x04:
+			case REG_DIVREMRESULT + 0x00:
+         case REG_DIVREMRESULT + 0x04:
 			case REG_SQRTCNT:
 			case REG_SQRTRESULT:
-			case REG_SQRTPARAM + 0x00: case REG_SQRTPARAM + 0x04:
+			case REG_SQRTPARAM + 0x00:
+         case REG_SQRTPARAM + 0x04:
 
 			// Other 
 			case REG_POSTFLG:
@@ -2574,23 +2622,56 @@ bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 			//R case eng_3D_RDLINES_COUNT:
 
 			// 3D ===============================================================
-			case eng_3D_EDGE_COLOR + 0x00: case eng_3D_EDGE_COLOR + 0x04: case eng_3D_EDGE_COLOR + 0x08: case eng_3D_EDGE_COLOR + 0x0C:
+			case eng_3D_EDGE_COLOR + 0x00:
+         case eng_3D_EDGE_COLOR + 0x04:
+         case eng_3D_EDGE_COLOR + 0x08:
+         case eng_3D_EDGE_COLOR + 0x0C:
 			case eng_3D_ALPHA_TEST_REF:
 			case eng_3D_CLEAR_COLOR:
 			case eng_3D_CLEAR_DEPTH:
 			case eng_3D_CLRIMAGE_OFFSET:
 			case eng_3D_FOG_COLOR:
 			case eng_3D_FOG_OFFSET:
-			case eng_3D_FOG_TABLE + 0x00: case eng_3D_FOG_TABLE + 0x04: case eng_3D_FOG_TABLE + 0x08: case eng_3D_FOG_TABLE + 0x0C:
-			case eng_3D_FOG_TABLE + 0x10: case eng_3D_FOG_TABLE + 0x14: case eng_3D_FOG_TABLE + 0x18: case eng_3D_FOG_TABLE + 0x1C:
-			case eng_3D_TOON_TABLE + 0x00: case eng_3D_TOON_TABLE + 0x04: case eng_3D_TOON_TABLE + 0x08: case eng_3D_TOON_TABLE + 0x0C:
-			case eng_3D_TOON_TABLE + 0x10: case eng_3D_TOON_TABLE + 0x14: case eng_3D_TOON_TABLE + 0x18: case eng_3D_TOON_TABLE + 0x1C:
-			case eng_3D_TOON_TABLE + 0x20: case eng_3D_TOON_TABLE + 0x24: case eng_3D_TOON_TABLE + 0x28: case eng_3D_TOON_TABLE + 0x2C:
-			case eng_3D_TOON_TABLE + 0x30: case eng_3D_TOON_TABLE + 0x34: case eng_3D_TOON_TABLE + 0x38: case eng_3D_TOON_TABLE + 0x3C:
-			case eng_3D_GXFIFO + 0x00: case eng_3D_GXFIFO + 0x04: case eng_3D_GXFIFO + 0x08: case eng_3D_GXFIFO + 0x0C:
-			case eng_3D_GXFIFO + 0x10: case eng_3D_GXFIFO + 0x14: case eng_3D_GXFIFO + 0x18: case eng_3D_GXFIFO + 0x1C:
-			case eng_3D_GXFIFO + 0x20: case eng_3D_GXFIFO + 0x24: case eng_3D_GXFIFO + 0x28: case eng_3D_GXFIFO + 0x2C:
-			case eng_3D_GXFIFO + 0x30: case eng_3D_GXFIFO + 0x34: case eng_3D_GXFIFO + 0x38: case eng_3D_GXFIFO + 0x3C:
+			case eng_3D_FOG_TABLE + 0x00:
+         case eng_3D_FOG_TABLE + 0x04:
+         case eng_3D_FOG_TABLE + 0x08:
+         case eng_3D_FOG_TABLE + 0x0C:
+			case eng_3D_FOG_TABLE + 0x10:
+         case eng_3D_FOG_TABLE + 0x14:
+         case eng_3D_FOG_TABLE + 0x18:
+         case eng_3D_FOG_TABLE + 0x1C:
+			case eng_3D_TOON_TABLE + 0x00:
+         case eng_3D_TOON_TABLE + 0x04:
+         case eng_3D_TOON_TABLE + 0x08:
+         case eng_3D_TOON_TABLE + 0x0C:
+			case eng_3D_TOON_TABLE + 0x10:
+         case eng_3D_TOON_TABLE + 0x14:
+         case eng_3D_TOON_TABLE + 0x18:
+         case eng_3D_TOON_TABLE + 0x1C:
+			case eng_3D_TOON_TABLE + 0x20:
+         case eng_3D_TOON_TABLE + 0x24:
+         case eng_3D_TOON_TABLE + 0x28:
+         case eng_3D_TOON_TABLE + 0x2C:
+			case eng_3D_TOON_TABLE + 0x30:
+         case eng_3D_TOON_TABLE + 0x34:
+         case eng_3D_TOON_TABLE + 0x38:
+         case eng_3D_TOON_TABLE + 0x3C:
+			case eng_3D_GXFIFO + 0x00:
+         case eng_3D_GXFIFO + 0x04:
+         case eng_3D_GXFIFO + 0x08:
+         case eng_3D_GXFIFO + 0x0C:
+			case eng_3D_GXFIFO + 0x10:
+         case eng_3D_GXFIFO + 0x14:
+         case eng_3D_GXFIFO + 0x18:
+         case eng_3D_GXFIFO + 0x1C:
+			case eng_3D_GXFIFO + 0x20:
+         case eng_3D_GXFIFO + 0x24:
+         case eng_3D_GXFIFO + 0x28:
+         case eng_3D_GXFIFO + 0x2C:
+			case eng_3D_GXFIFO + 0x30:
+         case eng_3D_GXFIFO + 0x34:
+         case eng_3D_GXFIFO + 0x38:
+         case eng_3D_GXFIFO + 0x3C:
 
 				// 3d commands
 			case cmd_3D_MTX_MODE:
@@ -4886,21 +4967,39 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 				break;
 
 			//these aren't readable
-			case REG_DISPA_BG0HOFS: case REG_DISPA_BG1HOFS: case REG_DISPA_BG2HOFS: case REG_DISPA_BG3HOFS:
-			case REG_DISPB_BG0HOFS: case REG_DISPB_BG1HOFS: case REG_DISPB_BG2HOFS: case REG_DISPB_BG3HOFS:
-			case REG_DISPA_BG0VOFS: case REG_DISPA_BG1VOFS: case REG_DISPA_BG2VOFS: case REG_DISPA_BG3VOFS:
-			case REG_DISPB_BG0VOFS: case REG_DISPB_BG1VOFS: case REG_DISPB_BG2VOFS: case REG_DISPB_BG3VOFS:
+			case REG_DISPA_BG0HOFS:
+         case REG_DISPA_BG1HOFS:
+         case REG_DISPA_BG2HOFS:
+         case REG_DISPA_BG3HOFS:
+			case REG_DISPB_BG0HOFS:
+         case REG_DISPB_BG1HOFS:
+         case REG_DISPB_BG2HOFS:
+         case REG_DISPB_BG3HOFS:
+			case REG_DISPA_BG0VOFS:
+         case REG_DISPA_BG1VOFS:
+         case REG_DISPA_BG2VOFS:
+         case REG_DISPA_BG3VOFS:
+			case REG_DISPB_BG0VOFS:
+         case REG_DISPB_BG1VOFS:
+         case REG_DISPB_BG2VOFS:
+         case REG_DISPB_BG3VOFS:
 				return 0;
 
-			case REG_SQRTCNT: return MMU_new.sqrt.read16();
-			//sqrtcnt isnt big enough for this to exist. but it'd probably return 0 so its ok
-			case REG_SQRTCNT+2: printf("ERROR 16bit SQRTCNT+2 READ\n"); return 0;
+			case REG_SQRTCNT:
+            return MMU_new.sqrt.read16();
+			/*sqrtcnt isnt big enough for this to exist. but it'd probably return 0 so its ok */
+			case REG_SQRTCNT+2:
+            printf("ERROR 16bit SQRTCNT+2 READ\n");
+            return 0;
+			case REG_DIVCNT:
+            return MMU_new.div.read16();
+			/*divcnt isnt big enough for this to exist. but it'd probably return 0 so its ok */
+			case REG_DIVCNT+2:
+            printf("ERROR 16bit DIVCNT+2 READ\n");
+            return 0;
 
-			case REG_DIVCNT: return MMU_new.div.read16();
-			//divcnt isnt big enough for this to exist. but it'd probably return 0 so its ok
-			case REG_DIVCNT+2: printf("ERROR 16bit DIVCNT+2 READ\n"); return 0;
-
-			case eng_3D_GXSTAT: return MMU_new.gxstat.read(16,adr);
+			case eng_3D_GXSTAT:
+            return MMU_new.gxstat.read(16,adr);
 
 			case REG_DISPA_VCOUNT:
 				if(nds.ensataEmulation && nds.ensataHandshake == ENSATA_HANDSHAKE_query)
@@ -4908,8 +5007,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 					nds.ensataHandshake = ENSATA_HANDSHAKE_ack;
 					return 270;
 				} 
-				else 
-					return nds.VCount;
+            return nds.VCount;
 
 			// ============================================= 3D
 			case eng_3D_RAM_COUNT:
@@ -4930,8 +5028,10 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case REG_IE + 2 :
 				return (u16)(MMU.reg_IE[ARMCPU_ARM9]>>16);
 				
-			case REG_IF: return MMU.gen_IF<ARMCPU_ARM9>();
-			case REG_IF+2: return MMU.gen_IF<ARMCPU_ARM9>()>>16;
+			case REG_IF:
+            return MMU.gen_IF<ARMCPU_ARM9>();
+			case REG_IF+2:
+            return MMU.gen_IF<ARMCPU_ARM9>()>>16;
 
 			case REG_TM0CNTL :
 			case REG_TM1CNTL :
@@ -4951,10 +5051,22 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 				break;
 
 			//fog table: write only
-			case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x02: case eng_3D_FOG_TABLE+0x04: case eng_3D_FOG_TABLE+0x06:
-			case eng_3D_FOG_TABLE+0x08: case eng_3D_FOG_TABLE+0x0A: case eng_3D_FOG_TABLE+0x0C: case eng_3D_FOG_TABLE+0x0E:
-			case eng_3D_FOG_TABLE+0x10: case eng_3D_FOG_TABLE+0x12: case eng_3D_FOG_TABLE+0x14: case eng_3D_FOG_TABLE+0x16:
-			case eng_3D_FOG_TABLE+0x18: case eng_3D_FOG_TABLE+0x1A: case eng_3D_FOG_TABLE+0x1C: case eng_3D_FOG_TABLE+0x1E:
+			case eng_3D_FOG_TABLE+0x00:
+         case eng_3D_FOG_TABLE+0x02:
+         case eng_3D_FOG_TABLE+0x04:
+         case eng_3D_FOG_TABLE+0x06:
+			case eng_3D_FOG_TABLE+0x08:
+         case eng_3D_FOG_TABLE+0x0A:
+         case eng_3D_FOG_TABLE+0x0C:
+         case eng_3D_FOG_TABLE+0x0E:
+			case eng_3D_FOG_TABLE+0x10:
+         case eng_3D_FOG_TABLE+0x12:
+         case eng_3D_FOG_TABLE+0x14:
+         case eng_3D_FOG_TABLE+0x16:
+			case eng_3D_FOG_TABLE+0x18:
+         case eng_3D_FOG_TABLE+0x1A:
+         case eng_3D_FOG_TABLE+0x1C:
+         case eng_3D_FOG_TABLE+0x1E:
 				return 0;
 		}
 
@@ -5079,7 +5191,8 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			case REG_IE :
 				return MMU.reg_IE[ARMCPU_ARM9];
 			
-			case REG_IF: return MMU.gen_IF<ARMCPU_ARM9>();
+			case REG_IF:
+            return MMU.gen_IF<ARMCPU_ARM9>();
 
 			case REG_IPCFIFORECV :
 				return IPC_FIFOrecv(ARMCPU_ARM9);
@@ -5095,7 +5208,8 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			case REG_GCDATAIN: 
 				return MMU_readFromGC<ARMCPU_ARM9>();
 
-			case REG_POWCNT1: return readreg_POWCNT1(32,adr);
+			case REG_POWCNT1:
+            return readreg_POWCNT1(32,adr);
 
 			case REG_KEYINPUT:
 				LagFrameFlag=0;
@@ -5121,7 +5235,8 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 
 	mmu_log_debug_ARM7(adr, "(write08) 0x%02X", val);
 
-	if (adr < 0x02000000) return; //can't write to bios or entire area below main memory
+	if (adr < 0x02000000)
+      return; /*can't write to bios or entire area below main memory */
 
 	if (slot2_write<ARMCPU_ARM7, u8>(adr, val))
 		return;
@@ -5132,18 +5247,18 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 		return;
 	}
 
+   /* is wifi hardware, dont intermix with regular hardware registers
+    * 8-bit writes to wifi I/O and RAM are ignored
+    * Reference: http://nocash.emubase.de/gbatek.htm#dswifiiomap
+    */
 	if ((adr & 0xFFFF0000) == 0x04800000)
-	{
-		/* is wifi hardware, dont intermix with regular hardware registers */
-		// 8-bit writes to wifi I/O and RAM are ignored
-		// Reference: http://nocash.emubase.de/gbatek.htm#dswifiiomap
 		return;
-	}
 
-	// Address is an IO register
+	/* Address is an IO register */
 	if ((adr >> 24) == 4)
 	{
-		if (!validateIORegsWrite<ARMCPU_ARM7>(adr, 8, val)) return;
+		if (!validateIORegsWrite<ARMCPU_ARM7>(adr, 8, val))
+         return;
 
 		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM7,8,adr,val); return; }
 
@@ -5521,13 +5636,12 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 			return 0xFF;
 	}
 
-	// wifi mac access 
+	/* WiFi MAC access  */
 	if ((adr & 0xFFFF0000) == 0x04800000)
 	{
 		if (adr & 1)
 			return (WIFI_read16(adr-1) >> 8) & 0xFF;
-		else
-			return WIFI_read16(adr) & 0xFF;
+      return WIFI_read16(adr) & 0xFF;
 	}
 
 	u8 slot2_val;
@@ -5535,9 +5649,7 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 		return slot2_val;
 
 	if (SPU_core->isSPU(adr))
-	{
 		return SPU_ReadByte(adr);
-	}
 
 	// Address is an IO register
 	if ((adr >> 24) == 4)
@@ -5548,16 +5660,22 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 
 		switch(adr)
 		{
-			case REG_RTC: return (u8)rtcRead();
-			case REG_IF: return MMU.gen_IF<ARMCPU_ARM7>();
-			case REG_IF+1: return (MMU.gen_IF<ARMCPU_ARM7>()>>8);
-			case REG_IF+2: return (MMU.gen_IF<ARMCPU_ARM7>()>>16);
-			case REG_IF+3: return (MMU.gen_IF<ARMCPU_ARM7>()>>24);
-
-			case REG_DISPx_VCOUNT: return nds.VCount&0xFF;
-			case REG_DISPx_VCOUNT+1: return (nds.VCount>>8)&0xFF;
-
-			case REG_WRAMSTAT: return MMU.WRAMCNT;
+			case REG_RTC:
+            return (u8)rtcRead();
+			case REG_IF:
+            return MMU.gen_IF<ARMCPU_ARM7>();
+			case REG_IF+1:
+            return (MMU.gen_IF<ARMCPU_ARM7>()>>8);
+			case REG_IF+2:
+            return (MMU.gen_IF<ARMCPU_ARM7>()>>16);
+			case REG_IF+3:
+            return (MMU.gen_IF<ARMCPU_ARM7>()>>24);
+			case REG_DISPx_VCOUNT:
+            return nds.VCount&0xFF;
+			case REG_DISPx_VCOUNT+1:
+            return (nds.VCount>>8)&0xFF;
+			case REG_WRAMSTAT:
+            return MMU.WRAMCNT;
 		}
 
 		return MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]];
@@ -5582,7 +5700,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 			return 0xFFFF;
 	}
 
-	//wifi mac access
+	/* WiFi MAC access */
 	if ((adr & 0xFFFF0000) == 0x04800000)
 		return WIFI_read16(adr) ;
 
@@ -5591,11 +5709,9 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 		return slot2_val;
 
     if (SPU_core->isSPU(adr))
-    {
         return SPU_ReadWord(adr);
-    }
 
-	// Address is an IO register
+	/* Address is an IO register */
 	if ((adr >> 24) == 4)
 	{
 		VALIDATE_IO_REGS_READ(ARMCPU_ARM7, 16);
@@ -5612,38 +5728,36 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 				return ret;
 			}
 
-			case REG_DISPx_VCOUNT: return nds.VCount;
-			case REG_RTC: return rtcRead();
-			case REG_IME: return (u16)MMU.reg_IME[ARMCPU_ARM7];
-				
+			case REG_DISPx_VCOUNT:
+            return nds.VCount;
+			case REG_RTC:
+            return rtcRead();
+			case REG_IME:
+            return (u16)MMU.reg_IME[ARMCPU_ARM7];
 			case REG_IE:
 				return (u16)MMU.reg_IE[ARMCPU_ARM7];
 			case REG_IE + 2:
 				return (u16)(MMU.reg_IE[ARMCPU_ARM7]>>16);
-				
-			case REG_IF: return MMU.gen_IF<ARMCPU_ARM7>();
-			case REG_IF+2: return MMU.gen_IF<ARMCPU_ARM7>()>>16;
-
+			case REG_IF:
+            return MMU.gen_IF<ARMCPU_ARM7>();
+			case REG_IF+2:
+            return MMU.gen_IF<ARMCPU_ARM7>()>>16;
 			case REG_TM0CNTL :
 			case REG_TM1CNTL :
 			case REG_TM2CNTL :
 			case REG_TM3CNTL :
 				return read_timer(ARMCPU_ARM7,(adr&0xF)>>2);
-
 			case REG_VRAMSTAT:
 				//make sure WRAMSTAT is stashed and then fallthrough to return the value from memory. i know, gross.
 				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, MMU.WRAMCNT);
 				break;
-
 			case REG_AUXSPICNT:
 				return MMU.AUX_SPI_CNT;
-
 			case REG_KEYINPUT:
 				//here is an example of what not to do:
 				//since the arm7 polls this (and EXTKEYIN) every frame, we shouldnt count this as an input check
 				//LagFrameFlag=0;
 				break;
-
 			case REG_EXTKEYIN:
 				{
 					//this is gross. we should generate this whole reg instead of poking it in ndssystem
@@ -5682,7 +5796,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 			return 0xFFFFFFFF;
 	}
 
-	//wifi mac access
+	/* WiFi MAC access */
 	if ((adr & 0xFFFF0000) == 0x04800000)
 		return (WIFI_read16(adr) | (WIFI_read16(adr+2) << 16));
 
@@ -5691,27 +5805,28 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 		return slot2_val;
 
     if (SPU_core->isSPU(adr))
-    {
         return SPU_ReadLong(adr);
-    }
 
 	// Address is an IO register
 	if ((adr >> 24) == 4)
 	{
 		VALIDATE_IO_REGS_READ(ARMCPU_ARM7, 32);
 		
-		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM7,32,adr); 
+		if(MMU_new.is_dma(adr))
+         return MMU_new.read_dma(ARMCPU_ARM7,32,adr); 
 		
 		switch(adr)
 		{
-			case REG_RTC: return (u32)rtcRead();
-			case REG_DISPx_VCOUNT: return nds.VCount;
-
+			case REG_RTC:
+            return (u32)rtcRead();
+			case REG_DISPx_VCOUNT:
+            return nds.VCount;
 			case REG_IME : 
 				return MMU.reg_IME[ARMCPU_ARM7];
 			case REG_IE :
 				return MMU.reg_IE[ARMCPU_ARM7];
-			case REG_IF: return MMU.gen_IF<ARMCPU_ARM7>();
+			case REG_IF:
+            return MMU.gen_IF<ARMCPU_ARM7>();
 			case REG_IPCFIFORECV :
 				return IPC_FIFOrecv(ARMCPU_ARM7);
 			case REG_TM0CNTL :
@@ -5722,14 +5837,17 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 				u32 val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], (adr + 2) & 0xFFF);
 				return MMU.timer[ARMCPU_ARM7][(adr&0xF)>>2] | (val<<16);
 			}	
-			//case REG_GCROMCTRL:
-			//	return MMU_readFromGCControl<ARMCPU_ARM7>();
+#if 0
+			case REG_GCROMCTRL:
+				return MMU_readFromGCControl<ARMCPU_ARM7>();
+#endif
 
 			case REG_GCDATAIN:
 				return MMU_readFromGC<ARMCPU_ARM7>();
 
 			case REG_VRAMSTAT:
-				//make sure WRAMSTAT is stashed and then fallthrough return the value from memory. i know, gross.
+				/*make sure WRAMSTAT is stashed and then fallthrough 
+             * return the value from memory. i know, gross. */
 				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, MMU.WRAMCNT);
 				break;
 		}
@@ -5739,10 +5857,11 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 
 	bool unmapped, restricted;
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
-	if(unmapped) return 0;
+	if(unmapped)
+      return 0;
 
-	//Returns data from memory
-	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [zeromus, inspired by shash]
+	/* Returns data from memory
+	 * Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [zeromus, inspired by shash] */
 	return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]);
 }
 
@@ -5754,8 +5873,7 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 
 	if(proc==0) 
 		return _MMU_ARM9_read32(adr);
-	else
-		return _MMU_ARM7_read32(adr);
+   return _MMU_ARM7_read32(adr);
 }
 
 u16 FASTCALL MMU_read16(u32 proc, u32 adr) 
@@ -5764,16 +5882,14 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 
 	if(proc==0)
 		return _MMU_ARM9_read16(adr);
-	else 
-		return _MMU_ARM7_read16(adr);
+   return _MMU_ARM7_read16(adr);
 }
 
 u8 FASTCALL MMU_read8(u32 proc, u32 adr) 
 {
 	if(proc==0) 
 		return _MMU_ARM9_read08(adr);
-	else 
-		return _MMU_ARM7_read08(adr);
+   return _MMU_ARM7_read08(adr);
 }
 
 void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
@@ -5810,13 +5926,11 @@ void FASTCALL MMU_DumpMemBlock(u8 proc, u32 address, u32 size, u8 *buffer)
 	u32 curaddr;
 
 	for(i = 0, curaddr = address; i < size; i++, curaddr++)
-	{
 		buffer[i] = _MMU_read08(proc,MMU_AT_DEBUG,curaddr);
-	}
 }
 
 
-//these templates needed to be instantiated manually
+/* these templates needed to be instantiated manually */
 template u32 MMU_struct::gen_IF<ARMCPU_ARM9>();
 template u32 MMU_struct::gen_IF<ARMCPU_ARM7>();
 
