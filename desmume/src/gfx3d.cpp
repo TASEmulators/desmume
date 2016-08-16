@@ -621,11 +621,11 @@ inline float vec3dot(float* a, float* b) {
 
 FORCEINLINE s32 mul_fixed32(s32 a, s32 b)
 {
-	return fx32_shiftdown(fx32_mul(a,b));
+	return sfx32_shiftdown(fx32_mul(a,b));
 }
 
 FORCEINLINE s32 vec3dot_fixed32(const s32* a, const s32* b) {
-	return fx32_shiftdown(fx32_mul(a[0],b[0]) + fx32_mul(a[1],b[1]) + fx32_mul(a[2],b[2]));
+	return sfx32_shiftdown(fx32_mul(a[0],b[0]) + fx32_mul(a[1],b[1]) + fx32_mul(a[2],b[2]));
 }
 
 #define SUBMITVERTEX(ii, nn) polylist->list[polylist->count].vertIndexes[ii] = tempVertInfo.map[nn];

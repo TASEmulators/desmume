@@ -21,6 +21,7 @@
 
 #include <retro_miscellaneous.h>
 #include <retro_inline.h>
+#include <math/fxp.h>
 
 //analyze microsoft compilers
 #ifdef _MSC_VER
@@ -458,47 +459,30 @@ template<typename T> inline void reconstruct(T* t) {
 	new(t) T();
 }
 
-//-------------fixed point speedup macros
+/* fixed point speedup macros */
 
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
-
-FORCEINLINE s64 fx32_mul(const s32 a, const s32 b)
+FORCEINLINE s32 sfx32_shiftdown(const s64 a)
 {
-#ifdef _MSC_VER
-	return __emul(a,b);
-#else
-	return ((s64)a)*((s64)b);
-#endif
-}
+	s64 shifted = fx32_shiftdown(a);
 
-FORCEINLINE s32 fx32_shiftdown(const s64 a)
-{
-	s64 shifted;
-#ifdef _MSC_VER
-	shifted = __ll_rshift(a,12);
-#else
-	shifted = (a>>12);
-#endif
-	//either matrix math is happening at higher precision (an extra bit would suffice, I think), or the sums sent to this are saturated.
-	//tested by: spectrobes beyond the portals excavation blower
-	//(it sets very large +x,+y in the modelview matrix to push things offscreen, but the +y will overflow and become negative if we're not careful)
-	//I didnt think very hard about what would be fastest here on 32bit systems
-	//NOTE: this was intended for use in MatrixMultVec4x4_M2; it may not be appropriate for other uses of fx32_shiftdown.
-	//if this causes problems we should refactor the math routines a bit to take care of saturating in another function
-	if(shifted>(s32)0x7FFFFFFF) return 0x7FFFFFFF;
-	else if(shifted<=(s32)0x80000000) return 0x80000000;
-	else return shifted;
-}
-
-FORCEINLINE s64 fx32_shiftup(const s32 a)
-{
-#ifdef _MSC_VER
-	return __ll_lshift(a,12);
-#else
-	return ((s64)a)<<12;
-#endif
+   /*either matrix math is happening at higher precision (an extra bit would suffice, 
+    * I think), or the sums sent to this are saturated.
+    *
+    *tested by: spectrobes beyond the portals excavation blower
+    *(it sets very large +x,+y in the modelview matrix to push things offscreen, 
+    *but the +y will overflow and become negative if we're not careful)
+    *
+    *I didnt think very hard about what would be fastest here on 32bit systems
+    *NOTE: this was intended for use in MatrixMultVec4x4_M2; it may not be appropriate for 
+    * other uses of fx32_shiftdown.
+    *if this causes problems we should refactor the math routines a bit to take care of 
+    * saturating in another function
+    */
+	if(shifted>(s32)0x7FFFFFFF)
+      return 0x7FFFFFFF;
+	if(shifted<=(s32)0x80000000)
+      return 0x80000000;
+   return shifted;
 }
 
 #endif
