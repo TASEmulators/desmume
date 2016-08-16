@@ -27,20 +27,22 @@
 #include "../types.h"
 #include "../debug.h"
 #include "../emufile.h"
-#include "retro_dirent.h"
-#include "retro_stat.h"
-#include "file/file_path.h"
 
 #include "emufat.h"
 #include "vfat.h"
 #include "libfat/libfat_public_api.h"
 
+#include <retro_dirent.h>
+#include <retro_stat.h>
+#include <file/file_path.h>
+
+static char retro_dir[PATH_MAX_LENGTH];
 
 enum EListCallbackArg {
 	EListCallbackArg_Item, EListCallbackArg_Pop
 };
 
-typedef void (*ListCallback)(RDIR* rdir, EListCallbackArg);
+typedef void (*ListCallback)(RDIR *rdir, EListCallbackArg);
 
 // List all files and subdirectories recursively
 static void list_files(const char *filepath, ListCallback list_callback)
@@ -49,47 +51,48 @@ static void list_files(const char *filepath, ListCallback list_callback)
 	char *fname;
 	u32 dwError;
 
-	RDIR* rdir = retro_opendir(filepath);
-	if(!rdir) return;
-	if(retro_dirent_error(rdir))
-	{
-		retro_closedir(rdir);
-		return;
-	}
+   RDIR *rdir = retro_opendir(filepath);
+   if (!rdir)
+      return;
+   strcpy(retro_dir, filepath);
+   if (retro_dirent_error(rdir))
+      goto end;
 
-	for(;;)
-	{
-		if(!retro_readdir(rdir))
-			break;
+   for (;;)
+   {
+      const char *name = NULL;
+      if (!retro_readdir(rdir))
+         break;
 
-		const char* fname = retro_dirent_get_name(rdir);
-		list_callback(rdir,EListCallbackArg_Item);
+      const char *fname = retro_dirent_get_name(rdir);
+      list_callback(rdir,EListCallbackArg_Item);
 
-		if(retro_dirent_is_dir(rdir) && (strcmp(fname, ".")) && (strcmp(fname, ".."))) 
-		{
-			std::string subdir = (std::string)filepath + path_default_slash() + fname;
-			list_files(subdir.c_str(), list_callback);
-			list_callback(rdir, EListCallbackArg_Pop);
+      if (retro_dirent_is_dir(rdir, filepath) && (strcmp(fname, ".")) && strcmp(fname, ".."))
+      {
+         std::string subdir = (std::string)filepath + path_default_slash() + fname;
+         list_files(subdir.c_str(), list_callback);
+         list_callback(rdir, EListCallbackArg_Pop);
 		}
 	}
 
-	retro_closedir(rdir);
+end:
+   retro_closedir(rdir);
 }
 
-static u64 dataSectors = 0;
-void count_ListCallback(RDIR* rdir, EListCallbackArg arg)
+static unsigned long dataSectors = 0;
+void count_ListCallback(RDIR *rdir, EListCallbackArg arg)
 {
-	if(arg == EListCallbackArg_Pop) return;
+	if(arg == EListCallbackArg_Pop)
+      return;
 	u32 sectors = 1;
-	if(retro_dirent_is_dir(rdir))
-	{
-	}
-	else
-	{
-		//allocate sectors for file
-		int32_t fileSize = path_get_size(retro_dirent_get_name(rdir));
-		sectors += (fileSize+511)/512 + 1;
-	}
+   if (!retro_dirent_is_dir(rdir, retro_dir))
+   {
+      const char *path = retro_dirent_get_name(rdir);
+      /* allocate sectors for file */
+      int32_t fileSize = path_get_size(path);
+      sectors += (fileSize+511)/512 + 1;
+   }
+
 	dataSectors += sectors; 
 }
 
@@ -97,9 +100,9 @@ static std::string currPath;
 static std::stack<std::string> pathStack;
 static std::stack<std::string> virtPathStack;
 static std::string currVirtPath;
-void build_ListCallback(RDIR* rdir, EListCallbackArg arg)
+void build_ListCallback(RDIR *rdir, EListCallbackArg arg)
 {
-	const char* fname = retro_dirent_get_name(rdir);
+   const char *fname = retro_dirent_get_name(rdir);
 
 	if(arg == EListCallbackArg_Pop) 
 	{
@@ -110,7 +113,7 @@ void build_ListCallback(RDIR* rdir, EListCallbackArg arg)
 		return;
 	}
 	
-	if(retro_dirent_is_dir(rdir))
+   if (retro_dirent_is_dir(rdir, retro_dir))
 	{
 		if(!strcmp(fname,".")) return;
 		if(!strcmp(fname,"..")) return;
@@ -134,22 +137,31 @@ void build_ListCallback(RDIR* rdir, EListCallbackArg arg)
 		FILE* inf = fopen(path.c_str(),"rb");
 		if(inf)
 		{
-			fseek(inf,0,SEEK_END);
-			long len = ftell(inf);
-			fseek(inf,0,SEEK_SET);
-			u8 *buf = new u8[len];
-			fread(buf,1,len,inf);
+			u8 * buf;
+			size_t elements_read;
+			long len;
+
+			fseek(inf, 0, SEEK_END);
+			len = ftell(inf);
+			fseek(inf, 0, SEEK_SET);
+			buf = new u8[len];
+			elements_read = fread(buf, 1, len, inf);
+			if (elements_read != len)
+				printf(
+					"libfat:  %lu bytes read instead of %l.\n",
+					elements_read,
+					len
+				);
 			fclose(inf);
 
 			std::string path = currVirtPath + "/" + fname;
-			printf("FAT + (%10.2f KB) %s \n",len/1024.f,path.c_str());
+         printf("FAT + (%10.2f KB) %s \n",len/1024.f,path.c_str());
 			bool ok = LIBFAT::WriteFile(path.c_str(),buf,len);
 			if(!ok) 
 				printf("ERROR adding file to fat\n");
 			delete[] buf;
 		} else printf("ERROR opening file for fat\n");
 	}
-		
 }
 
 
@@ -173,7 +185,10 @@ bool VFAT::build(const char* path, int extra_MB)
 
 	if(dataSectors>=(0x80000000>>9))
 	{
-		printf("error allocating memory for fat (%d KBytes)\n",(dataSectors*512)/1024);
+		printf(
+			"error allocating memory for fat (%lu KBytes)\n",
+			(dataSectors*512) / 1024
+		);
 		printf("total fat sizes > 2GB are never going to work\n");
 	}
 	
@@ -184,7 +199,10 @@ bool VFAT::build(const char* path, int extra_MB)
 	}
 	catch(std::bad_alloc)
 	{
-		printf("error allocating memory for fat (%d KBytes)\n",(dataSectors*512)/1024);
+		printf(
+			"error allocating memory for fat (%lu KBytes)\n",
+			(dataSectors*512) / 1024
+		);
 		printf("(out of memory)\n");
 		return false;
 	}
