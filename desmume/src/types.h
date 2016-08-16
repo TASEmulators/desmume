@@ -20,6 +20,7 @@
 #define TYPES_HPP
 
 #include <retro_miscellaneous.h>
+#include <retro_inline.h>
 
 //analyze microsoft compilers
 #ifdef _MSC_VER
@@ -144,14 +145,6 @@
 	#define _CDECL_ __cdecl
 #else
 	#define _CDECL_
-#endif
-
-#ifndef INLINE
-	#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
-		#define INLINE _inline
-	#else
-		#define INLINE inline
-	#endif
 #endif
 
 #ifndef FORCEINLINE
@@ -403,16 +396,6 @@ inline u16 de16lsb(u8 *morp)
 {
 	return morp[0]|(morp[1]<<8);
 }
-
-#ifndef ARRAY_SIZE
-//taken from winnt.h
-extern "C++" // templates cannot be declared to have 'C' linkage
-template <typename T, size_t N>
-char (*BLAHBLAHBLAH( UNALIGNED T (&)[N] ))[N];
-
-#define ARRAY_SIZE(A) (sizeof(*BLAHBLAHBLAH(A)))
-#endif
-
 
 //fairly standard for loop macros
 #define MACRODO1(TRICK,TODO) { const size_t X = TRICK; TODO; }
