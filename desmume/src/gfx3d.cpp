@@ -527,7 +527,7 @@ void gfx3d_deinit()
 
 void gfx3d_reset()
 {
-	CurrentRenderer->RenderFinish();
+	GPU->ForceRender3DFinishAndFlush(false);
 	
 #ifdef _SHOW_VTX_COUNTERS
 	max_polys = max_verts = 0;
@@ -2300,23 +2300,12 @@ void gfx3d_VBlankSignal()
 
 void gfx3d_VBlankEndSignal(bool skipFrame)
 {
+	GPU->ForceRender3DFinishAndFlush(false);
+	
 	if (!drawPending) return;
 	if (skipFrame) return;
-
-	drawPending = FALSE;
 	
-	if (CurrentRenderer->GetRenderNeedsFinish())
-	{
-		bool need3DDisplayFramebuffer;
-		bool need3DCaptureFramebuffer;
-		CurrentRenderer->GetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
-		
-		CurrentRenderer->SetFramebufferFlushStates(false, false);
-		CurrentRenderer->RenderFinish();
-		CurrentRenderer->SetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
-		CurrentRenderer->SetRenderNeedsFinish(false);
-		GPU->GetEventHandler()->DidRender3DEnd();
-	}
+	drawPending = FALSE;
 	
 	GPU->GetEventHandler()->DidRender3DBegin();
 	
@@ -2534,7 +2523,7 @@ void gfx3d_Update3DFramebuffers(FragmentColor *framebufferRGBA6665, u16 *framebu
 //-------------savestate
 void gfx3d_savestate(EMUFILE* os)
 {
-	CurrentRenderer->RenderFinish();
+	GPU->ForceRender3DFinishAndFlush(true);
 	
 	//version
 	write32le(4,os);

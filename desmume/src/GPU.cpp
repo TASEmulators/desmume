@@ -6879,6 +6879,22 @@ void GPUSubsystem::Reset()
 	osd->clear();
 }
 
+void GPUSubsystem::ForceRender3DFinishAndFlush(bool willFlush)
+{
+	if (CurrentRenderer->GetRenderNeedsFinish())
+	{
+		bool need3DDisplayFramebuffer;
+		bool need3DCaptureFramebuffer;
+		CurrentRenderer->GetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
+		
+		CurrentRenderer->SetFramebufferFlushStates(willFlush, willFlush);
+		CurrentRenderer->RenderFinish();
+		CurrentRenderer->SetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
+		CurrentRenderer->SetRenderNeedsFinish(false);
+		this->_event->DidRender3DEnd();
+	}
+}
+
 void GPUSubsystem::UpdateRenderProperties()
 {
 	this->_engineMain->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
@@ -7004,7 +7020,7 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h, void *clientNati
 		return;
 	}
 	
-	CurrentRenderer->RenderFinish();
+	GPU->ForceRender3DFinishAndFlush(false);
 	
 	const float customWidthScale = (float)w / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	const float customHeightScale = (float)h / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
@@ -7146,7 +7162,7 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h)
 
 void GPUSubsystem::SetColorFormat(const NDSColorFormat outputFormat, void *clientNativeBuffer, void *clientCustomBuffer)
 {
-	CurrentRenderer->RenderFinish();
+	GPU->ForceRender3DFinishAndFlush(false);
 	
 	this->_displayInfo.colorFormat = outputFormat;
 	this->_displayInfo.pixelBytes = (outputFormat == NDSColorFormat_BGR555_Rev) ? sizeof(u16) : sizeof(FragmentColor);
