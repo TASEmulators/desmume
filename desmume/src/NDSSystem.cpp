@@ -55,6 +55,7 @@
 #include "path.h"
 #include "slot1.h"
 #include "slot2.h"
+#include "emufile.h"
 #include "SPU.h"
 #include "wifi.h"
 #include "Database.h"

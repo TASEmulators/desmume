@@ -23,7 +23,6 @@
 #include "mem.h"
 #include "MMU.h"
 #include "debug.h"
-#include "utils/xstring.h"
 
 #ifndef _MSC_VER 
 #include <stdint.h>

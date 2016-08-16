@@ -2,7 +2,7 @@
 	Copyright (C) 2006 Normmatt
 	Copyright (C) 2006 Theo Berkau
 	Copyright (C) 2007 Pascal Giard
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 #include "driver.h"
 #include "saves.h"
 #include "MMU.h"
+#include "emufile.h"
 #include "NDSSystem.h"
 #include "render3D.h"
 #include "cp15.h"

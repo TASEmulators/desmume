@@ -3,7 +3,7 @@
 	licensed under the terms supplied at the end of this file (for the terms are very long!)
 	Differences from that baseline version are:
 
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,17 +21,17 @@
 
 #include "hotkey.h"
 
-#include "../NDSSystem.h"
-#include "../saves.h"
-#include "../render3D.h"
-#include "../arm_jit.h"
-#include "../mic.h"
-#include "../movie.h"
-#include "../SPU.h"
-#include "../GPU.h"
-#include "../GPU_osd.h"
-#include "../path.h"
-#include "../frontend/modules/ImageOut.h"
+#include "NDSSystem.h"
+#include "saves.h"
+#include "render3D.h"
+#include "arm_jit.h"
+#include "mic.h"
+#include "movie.h"
+#include "SPU.h"
+#include "GPU.h"
+#include "GPU_osd.h"
+#include "path.h"
+#include "frontend/modules/ImageOut.h"
 
 #include "main.h"
 #include "CheatsWin.h"
@@ -45,6 +45,7 @@
 #include "video.h"
 #include "winutil.h"
 #include "windriver.h"
+#include "utils/xstring.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 

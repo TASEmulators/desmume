@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2011 DeSmuME team
+	Copyright (C) 2009-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,10 +15,13 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "types.h"
-
-#include "path.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "types.h"
+#include "path.h"
+#include "utils/xstring.h"
 
 
 //-----------------------------------
@@ -181,3 +184,76 @@ void FCEUD_MakePathDirs(const char *fname)
 }
 #endif
 //------------------------------
+
+void PathInfo::init(const char *filename) 
+{
+	path = std::string(filename);
+
+	//extract the internal part of the logical rom name
+	std::vector<std::string> parts = tokenize_str(filename,"|");
+	SetRomName(parts[parts.size()-1].c_str());
+	LoadModulePath();
+#if !defined(WIN32) && !defined(DESMUME_COCOA)
+	ReadPathSettings();
+#endif
+		
+}
+
+void PathInfo::formatname(char *output)
+{
+	// Except 't' for tick and 'r' for random.
+	const char* strftimeArgs = "AbBcCdDeFgGhHIjmMnpRStTuUVwWxXyYzZ%";
+
+	std::string file;
+	time_t now = time(NULL);
+	tm *time_struct = localtime(&now);
+
+	srand((unsigned)now);
+
+	for (char*  p = screenshotFormat,
+			*end = p + sizeof(screenshotFormat); p < end; p++)
+		{
+		if (*p != '%')
+			{
+			file.append(1, *p);
+		}
+		else
+		{
+			p++;
+
+			if (*p == 'f')
+			{
+				file.append(GetRomNameWithoutExtension());
+			}
+			else if (*p == 'r')
+			{
+				file.append(stditoa(rand()));
+		}
+			else if (*p == 't')
+		{
+				file.append(stditoa(clock() >> 5));
+		}
+			else if (strchr(strftimeArgs, *p))
+			{
+				char tmp[MAX_PATH];
+				char format[] = { '%', *p, '\0' };
+				strftime(tmp, MAX_PATH, format, time_struct);
+				file.append(tmp);
+	}
+		}
+	}
+
+#ifdef WIN32
+	// Replace invalid file name character.
+	{
+		const char* invalids = "\\/:*?\"<>|";
+		size_t pos = 0;
+		while ((pos = file.find_first_of(invalids, pos)) != std::string::npos)
+		{
+			file[pos] = '-';
+		}
+	}
+#endif
+
+	strncpy(output, file.c_str(), MAX_PATH);
+}

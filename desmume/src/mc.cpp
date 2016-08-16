@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 thoduv
 	Copyright (C) 2006-2007 Theo Berkau
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 #include "NDSSystem.h"
 #include "path.h"
 #include "utils/advanscene.h"
+#include "emufile.h"
 
 //#define _DONT_SAVE_BACKUP
 //#define _MCLOG
