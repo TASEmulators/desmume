@@ -26,6 +26,7 @@
 
 #include <net/net_http.h>
 #include <net/net_compat.h>
+#include <net/net_socket.h>
 #include <compat/strl.h>
 
 enum
@@ -47,17 +48,17 @@ enum
 
 struct http_t
 {
-	int fd;
-	int status;
-	
-	char part;
-	char bodytype;
-	bool error;
-	
-	size_t pos;
-	size_t len;
-	size_t buflen;
-	char * data;
+   int fd;
+   int status;
+   
+   char part;
+   char bodytype;
+   bool error;
+   
+   size_t pos;
+   size_t len;
+   size_t buflen;
+   char * data;
 };
 
 struct http_connection_t
@@ -72,111 +73,74 @@ struct http_connection_t
 
 static int net_http_new_socket(const char *domain, int port)
 {
-   int fd;
-#ifndef _WIN32
-#ifndef VITA
-   struct timeval timeout;
-#endif
-#endif
-   struct addrinfo hints, *addr = NULL;
-   char portstr[16] = {0};
-   
-   /* Initialize the network. */
-   if (!network_init())
+   int ret;
+   struct addrinfo *addr = NULL;
+   int fd = socket_init((void**)&addr, port, domain, SOCKET_TYPE_STREAM);
+   if (fd < 0)
       return -1;
 
-   snprintf(portstr, sizeof(portstr), "%i", port);
-
-   memset(&hints, 0, sizeof(hints));
-   hints.ai_family   = AF_UNSPEC;
-   hints.ai_socktype = SOCK_STREAM;
-   hints.ai_flags    = 0;
-   
-   if (getaddrinfo_retro(domain, portstr, &hints, &addr) < 0)
-      return -1;
-   if (!addr)
-      return -1;
-
-   fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-
-#ifndef _WIN32
-#ifndef VITA
-   timeout.tv_sec=4;
-   timeout.tv_usec=0;
-   setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof timeout);
-#endif
-#endif
-   if (connect(fd, addr->ai_addr, addr->ai_addrlen) != 0)
-   {
-      freeaddrinfo_retro(addr);
-      socket_close(fd);
-      return -1;
-   }
+   ret = socket_connect(fd, (void*)addr, true);
 
    freeaddrinfo_retro(addr);
 
+   if (ret < 0)
+      goto error;
+
    if (!socket_nonblock(fd))
-   {
-      socket_close(fd);
-      return -1;
-   }
+      goto error;
 
    return fd;
-}
 
-static void net_http_send(int fd, bool * error,
-      const char * data, size_t len)
-{
-   if (*error)
-      return;
-
-   while (len)
-   {
-      ssize_t thislen = send(fd, data, len, MSG_NOSIGNAL);
-
-      if (thislen <= 0)
-      {
-         if (!isagain(thislen))
-            continue;
-
-         *error=true;
-         return;
-      }
-
-      data += thislen;
-      len  -= thislen;
-   }
+error:
+   socket_close(fd);
+   return -1;
 }
 
 static void net_http_send_str(int fd, bool *error, const char *text)
 {
-   net_http_send(fd, error, text, strlen(text));
+   if (*error)
+      return;
+
+   if (!socket_send_all_blocking(fd, text, strlen(text), true))
+      *error = true;
 }
 
-static ssize_t net_http_recv(int fd, bool *error,
-      uint8_t *data, size_t maxlen)
+static char* urlencode(const char* url)
 {
-   ssize_t bytes;
+   unsigned i;
+   unsigned outpos = 0;
+   unsigned outlen = 0;
+   char *ret       = NULL;
 
-   if (*error)
-      return -1;
-
-   bytes = recv(fd, (char*)data, maxlen, 0);
-
-   if (bytes > 0)
-      return bytes;
-   else if (bytes == 0)
-      return -1;
-   else if (isagain(bytes))
-      return 0;
-
-   *error=true;
-   return -1;
+   for (i = 0; url[i] != '\0'; i++)
+   {
+      outlen++;
+      if (url[i] == ' ')
+         outlen += 2;
+   }
+   
+   ret = (char*)malloc(outlen + 1);
+   if (!ret)
+      return NULL;
+   
+   for (i = 0; url[i]; i++)
+   {
+      if (url[i] == ' ')
+      {
+         ret[outpos++] = '%';
+         ret[outpos++] = '2';
+         ret[outpos++] = '0';
+      }
+      else
+         ret[outpos++] = url[i];
+   }
+   ret[outpos] = '\0';
+   
+   return ret;
 }
 
 struct http_connection_t *net_http_connection_new(const char *url)
 {
-   size_t length;
    char **domain = NULL;
    struct http_connection_t *conn = (struct http_connection_t*)calloc(1, 
          sizeof(struct http_connection_t));
@@ -184,22 +148,17 @@ struct http_connection_t *net_http_connection_new(const char *url)
    if (!conn)
       return NULL;
 
-   length             = strlen(url) + 1;
-   conn->urlcopy      = (char*)malloc(length);
+   conn->urlcopy = urlencode(url);
 
    if (!conn->urlcopy)
       goto error;
-
-   strlcpy(conn->urlcopy, url, length);
 
    if (strncmp(url, "http://", strlen("http://")) != 0)
       goto error;
 
    conn->scan    = conn->urlcopy + strlen("http://");
-
    domain        = &conn->domain;
-
-   *domain = conn->scan;
+   *domain       = conn->scan;
 
    return conn;
 
@@ -215,11 +174,10 @@ bool net_http_connection_iterate(struct http_connection_t *conn)
 {
    if (!conn)
       return false;
-   if (*conn->scan != '/' && *conn->scan != ':' && *conn->scan != '\0')
-   {
+
+   while (*conn->scan != '/' && *conn->scan != ':' && *conn->scan != '\0')
       conn->scan++;
-      return false;
-   }
+
    return true;
 }
 
@@ -230,17 +188,16 @@ bool net_http_connection_done(struct http_connection_t *conn)
    if (!conn)
       return false;
 
-   location = &conn->location;
+   location     = &conn->location;
 
    if (*conn->scan == '\0')
       return false;
 
-   *conn->scan   = '\0';
+   *conn->scan  = '\0';
    conn->port   = 80;
 
    if (*conn->scan == ':')
    {
-
       if (!isdigit((int)conn->scan[1]))
          return false;
 
@@ -273,18 +230,18 @@ const char *net_http_connection_url(struct http_connection_t *conn)
 
 struct http_t *net_http_new(struct http_connection_t *conn)
 {
-   bool error;
-   int fd = -1;
-   struct http_t *state      = NULL;
+   bool error            = false;
+   int fd                = -1;
+   struct http_t *state  = NULL;
 
    if (!conn)
       goto error;
 
    fd = net_http_new_socket(conn->domain, conn->port);
-   if (fd == -1)
+   if (fd < 0)
       goto error;
 
-   error=false;
+   error = false;
 
    /* This is a bit lazy, but it works. */
    net_http_send_str(fd, &error, "GET /");
@@ -327,15 +284,17 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    return state;
 
 error:
-   if (fd != -1)
+   if (fd >= 0)
       socket_close(fd);
+   if (state)
+      free(state);
    return NULL;
 }
 
 int net_http_fd(struct http_t *state)
 {
    if (!state)
-      return 0;
+      return -1;
    return state->fd;
 }
 
@@ -348,8 +307,11 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 
    if (state->part < P_BODY)
    {
-      newlen = net_http_recv(state->fd, &state->error,
-            (uint8_t*)state->data + state->pos, state->buflen - state->pos);
+      if (state->error)
+         newlen = -1;
+      else
+         newlen = socket_receive_all_nonblocking(state->fd, &state->error,
+               (uint8_t*)state->data + state->pos, state->buflen - state->pos);
 
       if (newlen < 0)
          goto fail;
@@ -414,9 +376,14 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    {
       if (!newlen)
       {
-         newlen = net_http_recv(state->fd, &state->error,
-               (uint8_t*)state->data + state->pos,
-               state->buflen - state->pos);
+         if (state->error)
+            newlen = -1;
+         else
+            newlen = socket_receive_all_nonblocking(
+                  state->fd,
+                  &state->error,
+                  (uint8_t*)state->data + state->pos,
+                  state->buflen - state->pos);
 
          if (newlen < 0)
          {
@@ -451,8 +418,8 @@ parse_again:
                 */
 
                char *fullend = state->data + state->pos;
-               char *end     = (char*)memchr(state->data + state->len + 2,
-                     '\n', state->pos - state->len - 2);
+               char *end     = (char*)memchr(state->data + state->len + 2, '\n',
+                                             state->pos - state->len - 2);
 
                if (end)
                {
@@ -539,9 +506,9 @@ fail:
 
 int net_http_status(struct http_t *state)
 {
-   if (state)
-      return state->status;
-   return -1;
+   if (!state)
+      return -1;
+   return state->status;
 }
 
 uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error)
@@ -567,7 +534,7 @@ void net_http_delete(struct http_t *state)
    if (!state)
       return;
 
-   if (state->fd != -1)
+   if (state->fd >= 0)
       socket_close(state->fd);
    free(state);
 }

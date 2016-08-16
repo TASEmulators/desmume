@@ -38,27 +38,25 @@
 #    include <direct.h>
 #    include <windows.h>
 #  endif
-#elif defined(VITA)
-#  include <psp2/io/fcntl.h>
-#  include <psp2/io/dirent.h>
-
-#define PSP_O_RDONLY PSP2_O_RDONLY
-#define PSP_O_RDWR   PSP2_O_RDWR
-#define PSP_O_CREAT  PSP2_O_CREAT
-#define PSP_O_WRONLY PSP2_O_WRONLY
-#define PSP_O_TRUNC  PSP2_O_TRUNC
 #else
 #  if defined(PSP)
 #    include <pspiofilemgr.h>
 #  endif
 #  include <sys/types.h>
 #  include <sys/stat.h>
+#  if !defined(VITA)
 #  include <dirent.h>
+#  endif
 #  include <unistd.h>
 #endif
 
 #ifdef __CELLOS_LV2__
 #include <cell/cell_fs.h>
+#define O_RDONLY CELL_FS_O_RDONLY
+#define O_WRONLY CELL_FS_O_WRONLY
+#define O_CREAT CELL_FS_O_CREAT
+#define O_TRUNC CELL_FS_O_TRUNC
+#define O_RDWR CELL_FS_O_RDWR
 #else
 #include <fcntl.h>
 #endif
@@ -69,10 +67,8 @@
 struct RFILE
 {
    unsigned hints;
-#if defined(PSP) || defined(VITA)
+#if defined(PSP)
    SceUID fd;
-#elif defined(__CELLOS_LV2__)
-   int fd;
 #else
 
 #define HAVE_BUFFERED_IO 1
@@ -126,13 +122,23 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 
    switch (mode & 0xff)
    {
-      case RFILE_MODE_READ:
-#if defined(VITA) || defined(PSP)
-         mode_int = 0777;
+      case RFILE_MODE_READ_TEXT:
+#if  defined(PSP)
+         mode_int = 0666;
          flags    = PSP_O_RDONLY;
-#elif defined(__CELLOS_LV2__)
-         mode_int = 0777;
-         flags    = CELL_FS_O_RDONLY;
+#else
+#if defined(HAVE_BUFFERED_IO)
+         if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+            mode_str = "r";
+#endif
+         /* No "else" here */
+         flags    = O_RDONLY;
+#endif
+         break;
+      case RFILE_MODE_READ:
+#if  defined(PSP)
+         mode_int = 0666;
+         flags    = PSP_O_RDONLY;
 #else
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -143,12 +149,9 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #endif
          break;
       case RFILE_MODE_WRITE:
-#if defined(VITA) || defined(PSP)
-         mode_int = 0777;
+#if  defined(PSP)
+         mode_int = 0666;
          flags    = PSP_O_CREAT | PSP_O_WRONLY | PSP_O_TRUNC;
-#elif defined(__CELLOS_LV2__)
-         mode_int = 0777;
-         flags    = CELL_FS_O_CREAT | CELL_FS_O_WRONLY | CELL_FS_O_TRUNC;
 #else
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -164,12 +167,9 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #endif
          break;
       case RFILE_MODE_READ_WRITE:
-#if defined(VITA) || defined(PSP)
-         mode_int = 0777;
+#if  defined(PSP)
+         mode_int = 0666;
          flags    = PSP_O_RDWR;
-#elif defined(__CELLOS_LV2__)
-         mode_int = 0777;
-         flags    = CELL_FS_O_RDWR;
 #else
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -186,10 +186,8 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
          break;
    }
 
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
    stream->fd = sceIoOpen(path, flags, mode_int);
-#elif defined(__CELLOS_LV2__)
-   cellFsOpen(path, flags, &stream->fd, NULL, 0);
 #else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -226,7 +224,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    }
 #endif
 
-#if defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
+#if  defined(PSP)
    if (stream->fd == -1)
       goto error;
 #endif
@@ -238,19 +236,80 @@ error:
    return NULL;
 }
 
+char *filestream_getline(RFILE *stream)
+{
+   char* newline     = (char*)malloc(9);
+   char* newline_tmp = NULL;
+   size_t cur_size   = 8;
+   size_t idx        = 0;
+   int in            = filestream_getc(stream);
+
+   if (!newline)
+      return NULL;
+
+   while (in != EOF && in != '\n')
+   {
+      if (idx == cur_size)
+      {
+         cur_size *= 2;
+         newline_tmp = (char*)realloc(newline, cur_size + 1);
+
+         if (!newline_tmp)
+         {
+            free(newline);
+            return NULL;
+         }
+
+         newline = newline_tmp;
+      }
+
+      newline[idx++] = in;
+      in             = filestream_getc(stream);
+   }
+
+   newline[idx] = '\0';
+   return newline; 
+}
+
+char *filestream_gets(RFILE *stream, char *s, size_t len)
+{
+   if (!stream)
+      return NULL;
+#if defined(HAVE_BUFFERED_IO)
+   return fgets(s, len, stream->fp);
+#elif  defined(PSP)
+   if(filestream_read(stream,s,len)==len)
+      return s;
+   return NULL;
+#else
+   return gets(s);
+#endif
+}
+
+int filestream_getc(RFILE *stream)
+{
+   char c = 0;
+   (void)c;
+   if (!stream)
+      return 0;
+#if defined(HAVE_BUFFERED_IO)
+    return fgetc(stream->fp);
+#elif  defined(PSP)
+    if(filestream_read(stream, &c, 1) == 1)
+       return (int)c;
+    return EOF;
+#else
+   return getc(stream->fd);
+#endif
+}
+
 ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 {
-#if defined(__CELLOS_LV2__)
-   uint64_t pos = 0;
-#endif
    if (!stream)
       goto error;
 
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
    if (sceIoLseek(stream->fd, (SceOff)offset, whence) == -1)
-      goto error;
-#elif defined(__CELLOS_LV2__)
-   if (cellFsLseek(stream->fd, offset, whence, &pos) != CELL_FS_SUCCEEDED)
       goto error;
 #else
 
@@ -305,19 +364,25 @@ error:
    return -1;
 }
 
+int filestream_eof(RFILE *stream)
+{
+   size_t current_position = filestream_tell(stream);
+   size_t end_position     = filestream_seek(stream, 0, SEEK_END);
+
+   filestream_seek(stream, current_position, SEEK_SET);
+
+   if (current_position >= end_position)
+      return 1;
+   return 0;
+}
+
 ssize_t filestream_tell(RFILE *stream)
 {
-#if defined(__CELLOS_LV2__)
-   uint64_t pos = 0;
-#endif
    if (!stream)
       goto error;
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
   if (sceIoLseek(stream->fd, 0, SEEK_CUR) < 0)
      goto error;
-#elif defined(__CELLOS_LV2__)
-   if (cellFsLseek(stream->fd, 0, CELL_FS_SEEK_CUR, &pos) != CELL_FS_SUCCEEDED)
-      goto error;
 #else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -348,13 +413,8 @@ ssize_t filestream_read(RFILE *stream, void *s, size_t len)
 {
    if (!stream || !s)
       goto error;
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
    return sceIoRead(stream->fd, s, len);
-#elif defined(__CELLOS_LV2__)
-   uint64_t bytes_written;
-   if (cellFsRead(stream->fd, s, len, &bytes_written) != CELL_FS_SUCCEEDED)
-      goto error;
-   return bytes_written;
 #else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -386,13 +446,8 @@ ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
 {
    if (!stream)
       goto error;
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
    return sceIoWrite(stream->fd, s, len);
-#elif defined(__CELLOS_LV2__)
-   uint64_t bytes_written;
-   if (cellFsWrite(stream->fd, s, len, &bytes_written) != CELL_FS_SUCCEEDED)
-      goto error;
-   return bytes_written;
 #else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -427,12 +482,9 @@ int filestream_close(RFILE *stream)
    if (!stream)
       goto error;
 
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
    if (stream->fd > 0)
       sceIoClose(stream->fd);
-#elif defined(__CELLOS_LV2__)
-   if (stream->fd > 0)
-      cellFsClose(stream->fd);
 #else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -477,11 +529,7 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len)
 
    if (!file)
    {
-#if __STDC_VERSION__ >= 199901L
-      fprintf(stderr, "%s: Failed to open %s: %s\n", __FUNCTION__, path, strerror(errno));
-#else
       fprintf(stderr, "Failed to open %s: %s\n", path, strerror(errno));
-#endif
       goto error;
    }
 
@@ -502,11 +550,7 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len)
    ret = filestream_read(file, content_buf, content_buf_size);
    if (ret < 0)
    {
-#if __STDC_VERSION__ >= 199901L
-      fprintf(stderr, "%s: Failed to read %s: %s\n", __FUNCTION__, path, strerror(errno));
-#else
       fprintf(stderr, "Failed to read %s: %s\n", path, strerror(errno));
-#endif
       goto error;
    }
 

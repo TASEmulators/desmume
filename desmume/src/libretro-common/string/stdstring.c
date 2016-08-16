@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdint.h>
 #include <ctype.h>
 
 #include <string/stdstring.h>
@@ -57,6 +58,21 @@ char *string_to_lower(char *s)
    for ( ; *cs != '\0'; cs++)
       *cs = tolower(*cs);
    return s;
+}
+
+char *string_ucwords(char *s)
+{
+  char *cs = (char *)s;
+  for ( ; *cs != '\0'; cs++)
+  {
+    if (*cs == ' ')
+    {
+      *(cs+1) = toupper(*(cs+1));
+    }
+  }
+
+  s[0] = toupper(s[0]);
+  return s;
 }
 
 char *string_replace_substring(const char *in,
@@ -101,4 +117,53 @@ char *string_replace_substring(const char *in,
    strcpy(outat, inprev);
    
    return out;
+}
+
+/* Non-GPL licensed versions of whitespace trimming:
+ * http://stackoverflow.com/questions/656542/trim-a-string-in-c
+ */
+
+/* Remove leading whitespaces */
+char *string_trim_whitespace_left(char *const s)
+{
+   if(s && *s)
+   {
+      size_t len = strlen(s);
+      char *cur  = s;
+
+      while(*cur && isspace(*cur))
+         ++cur, --len;
+
+      if(s != cur)
+         memmove(s, cur, len + 1);
+
+   }
+
+   return s;
+}
+
+/* Remove trailing whitespaces */
+char *string_trim_whitespace_right(char *const s)
+{
+   if(s && *s)
+   {
+      size_t len = strlen(s);
+      char  *cur = s + len - 1;
+
+      while(cur != s && isspace(*cur))
+         --cur, --len;
+
+      cur[isspace(*cur) ? 0 : 1] = '\0';
+   }
+
+   return s;
+}
+
+/* Remove leading and trailing whitespaces */
+char *string_trim_whitespace(char *const s)
+{
+   string_trim_whitespace_right(s);  /* order matters */
+   string_trim_whitespace_left(s);
+
+   return s;
 }

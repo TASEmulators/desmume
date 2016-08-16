@@ -43,10 +43,14 @@
 #include "gx_pthread.h"
 #elif defined(PSP)
 #include "psp_pthread.h"
+#elif defined(__CELLOS_LV2__)
+#include <pthread.h>
+#include <sys/sys_time.h>
 #else
 #include <pthread.h>
 #include <time.h>
 #endif
+
 
 #ifdef __MACH__
 #include <mach/clock.h>
@@ -219,25 +223,23 @@ bool sthread_isself(sthread_t *thread)
  **/
 slock_t *slock_new(void)
 {
-   bool mutex_created = false;
    slock_t      *lock = (slock_t*)calloc(1, sizeof(*lock));
    if (!lock)
       return NULL;
 
 #ifdef USE_WIN32_THREADS
    lock->lock         = CreateMutex(NULL, FALSE, NULL);
-   mutex_created      = !!lock->lock;
-#else
-   mutex_created      = (pthread_mutex_init(&lock->lock, NULL) == 0);
-#endif
-
-   if (!mutex_created)
+   if (!lock->lock)
       goto error;
+#else
+   if ((pthread_mutex_init(&lock->lock, NULL) < 0))
+      goto error;
+#endif
 
    return lock;
 
 error:
-   free(lock);
+   slock_free(lock);
    return NULL;
 }
 

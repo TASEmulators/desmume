@@ -25,9 +25,9 @@
 
 #include <glsm/glsm.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 /* deprecated old FF-style GL symbols */
 #define glTexCoord2f                rglTexCoord2f
@@ -72,6 +72,8 @@ extern "C" {
 #define glEnableVertexAttribArray   rglEnableVertexAttribArray
 #define glDisableVertexAttribArray  rglDisableVertexAttribArray
 #define glVertexAttribPointer       rglVertexAttribPointer
+#define glVertexAttribIPointer      rglVertexAttribIPointer
+#define glVertexAttribLPointer      rglVertexAttribLPointer
 #define glGetUniformLocation        rglGetUniformLocation
 #define glGenBuffers                rglGenBuffers
 #define glDisable(T)                rglDisable(S##T)
@@ -93,8 +95,14 @@ extern "C" {
 #define glUniform2fv                rglUniform2fv
 #define glUniform3f                 rglUniform3f
 #define glUniform3fv                rglUniform3fv
+#define glUniform4i                 rglUniform4i
 #define glUniform4f                 rglUniform4f
 #define glUniform4fv                rglUniform4fv
+#define glUniform1ui                rglUniform1ui
+#define glUniform2ui                rglUniform2ui
+#define glUniform3ui                rglUniform3ui
+#define glUniform4ui                rglUniform4ui
+#define glGetActiveUniform          rglGetActiveUniform
 #define glBlendFunc                 rglBlendFunc
 #define glBlendFuncSeparate         rglBlendFuncSeparate
 #define glDepthFunc                 rglDepthFunc
@@ -119,7 +127,104 @@ extern "C" {
 #define glBindVertexArray           rglBindVertexArray
 #define glBlendEquation             rglBlendEquation
 #define glBlendColor                rglBlendColor
+#define glBlendEquationSeparate     rglBlendEquationSeparate
+#define glCopyImageSubData          rglCopyImageSubData
+#define glMapBuffer                 rglMapBuffer
+#define glUnmapBuffer               rglUnmapBuffer
+#define glMapBufferRange            rglMapBufferRange
+#define glUniformBlockBinding       rglUniformBlockBinding
+#define glGetUniformBlockIndex      rglGetUniformBlockIndex
+#define glGetActiveUniformBlockiv   rglGetActiveUniformBlockiv
+#define glBindBufferBase            rglBindBufferBase 
+#define glGetUniformIndices         rglGetUniformIndices
+#define glGetActiveUniformsiv       rglGetActiveUniformsiv
+#define glGetError                  rglGetError
+#define glClear                     rglClear
+#define glPolygonMode               rglPolygonMode
+#define glLineWidth                 rglLineWidth
+#define glTexImage2DMultisample     rglTexImage2DMultisample
+#define glTexStorage2DMultisample   rglTexStorage2DMultisample
+#define glMemoryBarrier             rglMemoryBarrier
+#define glBindImageTexture          rglBindImageTexture
+#define glProgramBinary             rglProgramBinary
+#define glGetProgramBinary          rglGetProgramBinary
+#define glProgramParameteri         rglProgramParameteri
+#define glTexSubImage2D             rglTexSubImage2D
+#define glDeleteVertexArrays        rglDeleteVertexArrays
+#define glRenderbufferStorageMultisample rglRenderbufferStorageMultisample
+#define glUniform1iv                rglUniform1iv
+#define glUniform1fv                rglUniform1fv
+#define glValidateProgram           rglValidateProgram
+#define glGetStringi                rglGetStringi
+#define glTexBuffer                 rglTexBuffer
+#define glClearBufferfv             rglClearBufferfv
+#define glClearBufferfi             rglClearBufferfi
+#define glWaitSync                  rglWaitSync
+#define glFenceSync                 rglFenceSync
 
+const GLubyte* rglGetStringi(GLenum name, GLuint index);
+void rglTexBuffer(GLenum target, GLenum internalFormat, GLuint buffer);
+void rglClearBufferfv( 	GLenum buffer,
+  	GLint drawBuffer,
+  	const GLfloat * value);
+void rglClearBufferfi( 	GLenum buffer,
+  	GLint drawBuffer,
+  	GLfloat depth,
+  	GLint stencil);
+void rglValidateProgram(GLuint program);
+void rglRenderbufferStorageMultisample( 	GLenum target,
+  	GLsizei samples,
+  	GLenum internalformat,
+  	GLsizei width,
+  	GLsizei height);
+void rglUniform1iv(GLint location,  GLsizei count,  const GLint *value);
+void rglUniform1fv(GLint location,  GLsizei count,  const GLfloat *value);
+void rglProgramParameteri( 	GLuint program,
+  	GLenum pname,
+  	GLint value);
+void rglGetProgramBinary( 	GLuint program,
+  	GLsizei bufsize,
+  	GLsizei *length,
+  	GLenum *binaryFormat,
+  	void *binary);
+void rglProgramBinary(GLuint program,
+  	GLenum binaryFormat,
+  	const void *binary,
+  	GLsizei length);
+void rglBindImageTexture( 	GLuint unit,
+  	GLuint texture,
+  	GLint level,
+  	GLboolean layered,
+  	GLint layer,
+  	GLenum access,
+  	GLenum format);
+void rglTexStorage2DMultisample(GLenum target, GLsizei samples,
+      GLenum internalformat, GLsizei width, GLsizei height,
+      GLboolean fixedsamplelocations);
+void rglGetActiveUniformsiv( 	GLuint program,
+  	GLsizei uniformCount,
+  	const GLuint *uniformIndices,
+  	GLenum pname,
+  	GLint *params);
+void rglGetUniformIndices( 	GLuint program,
+  	GLsizei uniformCount,
+  	const GLchar **uniformNames,
+  	GLuint *uniformIndices);
+void rglBindBufferBase( 	GLenum target,
+  	GLuint index,
+  	GLuint buffer);
+void rglGetActiveUniformBlockiv( 	GLuint program,
+  	GLuint uniformBlockIndex,
+  	GLenum pname,
+  	GLint *params);
+GLuint rglGetUniformBlockIndex( 	GLuint program,
+  	const GLchar *uniformBlockName);
+void * rglMapBuffer(	GLenum target, GLenum access);
+void *rglMapBufferRange( 	GLenum target,
+  	GLintptr offset,
+  	GLsizeiptr length,
+  	GLbitfield access);
+GLboolean rglUnmapBuffer( 	GLenum target);
 void rglBlendColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void rglBlendEquation(GLenum mode);
 void rglGenVertexArrays(GLsizei n, GLuint *arrays);
@@ -194,6 +299,7 @@ void rglUniform2i(GLint location, GLint v0, GLint v1);
 void rglUniform2fv(GLint location, GLsizei count, const GLfloat *value);
 void rglUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
 void rglUniform3fv(GLint location, GLsizei count, const GLfloat *value);
+void rglUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3);
 void rglUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
 void rglUniform4fv(GLint location, GLsizei count, const GLfloat *value);
 void rglBlendFunc(GLenum sfactor, GLenum dfactor);
@@ -231,8 +337,67 @@ GLint rglGetAttribLocation(GLuint program, const GLchar *name);
 void rglDrawBuffers(GLsizei n, const GLenum *bufs);
 void rglBindVertexArray(GLuint array);
 
-#ifdef __cplusplus
-}
-#endif
+void rglGetActiveUniform(GLuint program, GLuint index, GLsizei bufsize,
+      GLsizei *length, GLint *size, GLenum *type, GLchar *name);
+void rglUniform1ui(GLint location, GLuint v);
+void rglUniform2ui(GLint location, GLuint v0, GLuint v1);
+void rglUniform3ui(GLint location, GLuint v0, GLuint v1, GLuint v2);
+void rglUniform4ui(GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3);
+void rglBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha);
+void rglCopyImageSubData( 	GLuint srcName,
+  	GLenum srcTarget,
+  	GLint srcLevel,
+  	GLint srcX,
+  	GLint srcY,
+  	GLint srcZ,
+  	GLuint dstName,
+  	GLenum dstTarget,
+  	GLint dstLevel,
+  	GLint dstX,
+  	GLint dstY,
+  	GLint dstZ,
+  	GLsizei srcWidth,
+  	GLsizei srcHeight,
+  	GLsizei srcDepth);
+void rglVertexAttribIPointer(
+      GLuint index,
+      GLint size,
+      GLenum type,
+      GLsizei stride,
+      const GLvoid * pointer);
+void rglVertexAttribLPointer(
+      GLuint index,
+      GLint size,
+      GLenum type,
+      GLsizei stride,
+      const GLvoid * pointer);
+void rglUniformBlockBinding( 	GLuint program,
+  	GLuint uniformBlockIndex,
+  	GLuint uniformBlockBinding);
+GLenum rglGetError(void);
+void rglClear(GLbitfield mask);
+void rglPolygonMode(GLenum face, GLenum mode);
+void rglLineWidth(GLfloat width);
+void rglTexImage2DMultisample( 	GLenum target,
+  	GLsizei samples,
+  	GLenum internalformat,
+  	GLsizei width,
+  	GLsizei height,
+  	GLboolean fixedsamplelocations);
+void rglMemoryBarrier( 	GLbitfield barriers);
+void rglTexSubImage2D( 	GLenum target,
+  	GLint level,
+  	GLint xoffset,
+  	GLint yoffset,
+  	GLsizei width,
+  	GLsizei height,
+  	GLenum format,
+  	GLenum type,
+  	const GLvoid * pixels);
+void rglDeleteVertexArrays(GLsizei n, const GLuint *arrays);
+void *rglFenceSync(GLenum condition, GLbitfield flags);
+void rglWaitSync(void *sync, GLbitfield flags, uint64_t timeout);
+
+RETRO_END_DECLS
 
 #endif

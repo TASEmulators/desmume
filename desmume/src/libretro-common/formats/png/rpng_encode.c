@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include <streams/file_stream.h>
+#include <file/archive_file.h>
 
 #include "rpng_internal.h"
 
@@ -34,8 +35,6 @@
    ret = false; \
    goto end; \
 } while(0)
-
-#ifdef HAVE_ZLIB_DEFLATE
 
 static void dword_write_be(uint8_t *buf, uint32_t val)
 {
@@ -348,8 +347,8 @@ static bool rpng_save_image(const char *path,
    stream_backend->stream_compress_free(stream);
 
    memcpy(deflate_buf + 4, "IDAT", 4);
-   dword_write_be(deflate_buf + 0,        stream_backend->stream_get_total_out(stream));
-   if (!png_write_idat(file, deflate_buf, stream_backend->stream_get_total_out(stream) + 8))
+   dword_write_be(deflate_buf + 0,        ((uint32_t)stream_backend->stream_get_total_out(stream)));
+   if (!png_write_idat(file, deflate_buf, ((size_t)stream_backend->stream_get_total_out(stream) + 8)))
       GOTO_END_ERROR();
 
    if (!png_write_iend(file))
@@ -366,7 +365,8 @@ end:
    free(avg_filtered);
    free(paeth_filtered);
 
-   stream_backend->stream_free(stream);
+   if (stream_backend)
+      stream_backend->stream_free(stream);
    return ret;
 }
 
@@ -383,5 +383,3 @@ bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
    return rpng_save_image(path, (const uint8_t*)data,
          width, height, pitch, 3);
 }
-
-#endif

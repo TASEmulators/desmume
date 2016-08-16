@@ -38,7 +38,7 @@
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool file_list_capacity(file_list_t *list, size_t cap)
+static struct item_file *realloc_file_list_capacity(file_list_t *list, size_t cap)
 {
    struct item_file *new_data = NULL;
    retro_assert(cap > list->size);
@@ -47,15 +47,47 @@ static bool file_list_capacity(file_list_t *list, size_t cap)
          cap * sizeof(struct item_file));
 
    if (!new_data)
-      return false;
+      return NULL;
 
    if (cap > list->capacity)
       memset(&new_data[list->capacity], 0,
             sizeof(*new_data) * (cap - list->capacity));
 
-   list->list     = new_data;
-   list->capacity = cap;
+   return new_data;
+}
 
+static void file_list_add(file_list_t *list, unsigned idx,
+      const char *path, const char *label,
+      unsigned type, size_t directory_ptr,
+      size_t entry_idx)
+{
+   memset(&list->list[idx], 0, sizeof(*list->list));
+
+   list->list[idx].type          = type;
+   list->list[idx].directory_ptr = directory_ptr;
+   list->list[idx].entry_idx     = entry_idx;
+
+   if (label)
+      list->list[idx].label      = strdup(label);
+   if (path)
+      list->list[idx].path       = strdup(path);
+
+   list->size++;
+}
+
+static bool file_list_expand_if_needed(file_list_t *list)
+{
+   if (list->size >= list->capacity)
+   {
+      size_t new_capacity     = list->capacity * 2 + 1;
+      struct item_file *items = realloc_file_list_capacity(
+            list, new_capacity);
+
+      if (!items)
+         return false;
+      list->list     = items;
+      list->capacity = new_capacity;
+   }
    return true;
 }
 
@@ -65,15 +97,14 @@ bool file_list_prepend(file_list_t *list,
       size_t entry_idx)
 {
    unsigned i;
-   if (list->size >= list->capacity &&
-      !file_list_capacity(list, list->capacity * 2 + 1))
-         return false;
+   
+   if (!file_list_expand_if_needed(list))
+      return false;
 
-   list->size++;
-
-   for (i = list->size -1; i > 0; i--)
+   for (i = list->size; i > 0; i--)
    {
-      struct item_file *copy = calloc(1, sizeof(struct item_file));
+      struct item_file *copy = (struct item_file*)
+         calloc(1, sizeof(struct item_file));
       
       memcpy(copy, &list->list[i-1], sizeof(struct item_file));
 
@@ -83,21 +114,8 @@ bool file_list_prepend(file_list_t *list,
       free(copy);
    }
 
-   memset(&list->list[0], 0, sizeof(file_list_t));
-
-   list->list[0].label         = NULL;
-   list->list[0].path          = NULL;
-   list->list[0].alt           = NULL;
-   list->list[0].userdata      = NULL;
-   list->list[0].actiondata    = NULL;
-   list->list[0].type          = type;
-   list->list[0].directory_ptr = directory_ptr;
-   list->list[0].entry_idx     = entry_idx;
-
-   if (label)
-      list->list[0].label      = strdup(label);
-   if (path)
-      list->list[0].path       = strdup(path);
+   file_list_add(list, 0, path, label, type,
+         directory_ptr, entry_idx);
 
    return true;
 }
@@ -107,25 +125,11 @@ bool file_list_append(file_list_t *list,
       unsigned type, size_t directory_ptr,
       size_t entry_idx)
 {
-   if (list->size >= list->capacity &&
-      !file_list_capacity(list, list->capacity * 2 + 1))
-         return false;
+   if (!file_list_expand_if_needed(list))
+      return false;
 
-   list->list[list->size].label         = NULL;
-   list->list[list->size].path          = NULL;
-   list->list[list->size].alt           = NULL;
-   list->list[list->size].userdata      = NULL;
-   list->list[list->size].actiondata    = NULL;
-   list->list[list->size].type          = type;
-   list->list[list->size].directory_ptr = directory_ptr;
-   list->list[list->size].entry_idx     = entry_idx;
-
-   if (label)
-      list->list[list->size].label      = strdup(label);
-   if (path)
-      list->list[list->size].path       = strdup(path);
-
-   list->size++;
+   file_list_add(list, list->size, path, label, type,
+         directory_ptr, entry_idx);
 
    return true;
 }

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2015 - Daniel De Matteis
+ *  Copyright (C) 2011-2016 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -18,11 +18,12 @@
 #define __RARCH_IMAGE_CONTEXT_H
 
 #include <stdint.h>
+
+#include <retro_common_api.h>
+
 #include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum image_process_code
 {
@@ -39,18 +40,50 @@ struct texture_image
    uint32_t *pixels;
 };
 
-bool video_texture_image_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
+enum image_type_enum
+{
+   IMAGE_TYPE_NONE = 0,
+   IMAGE_TYPE_PNG,
+   IMAGE_TYPE_JPEG,
+   IMAGE_TYPE_BMP,
+   IMAGE_TYPE_TGA
+};
+
+bool image_texture_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
       unsigned *b_shift, unsigned *a_shift);
 
-bool video_texture_image_color_convert(unsigned r_shift,
+bool image_texture_color_convert(unsigned r_shift,
       unsigned g_shift, unsigned b_shift, unsigned a_shift,
       struct texture_image *out_img);
 
-bool video_texture_image_load(struct texture_image *img, const char *path);
-void video_texture_image_free(struct texture_image *img);
+bool image_texture_load(struct texture_image *img, const char *path);
+void image_texture_free(struct texture_image *img);
+void image_texture_set_rgba(void);
+void image_texture_unset_rgba(void);
 
-#ifdef __cplusplus
-}
-#endif
+/* Image transfer */
+
+void image_transfer_free(void *data, enum image_type_enum type);
+
+void *image_transfer_new(enum image_type_enum type);
+
+bool image_transfer_start(void *data, enum image_type_enum type);
+
+void image_transfer_set_buffer_ptr(
+      void *data,
+      enum image_type_enum type,
+      void *ptr);
+
+int image_transfer_process(
+      void *data,
+      enum image_type_enum type,
+      uint32_t **buf, size_t size,
+      unsigned *width, unsigned *height);
+
+bool image_transfer_iterate(void *data, enum image_type_enum type);
+
+bool image_transfer_is_valid(void *data, enum image_type_enum type);
+
+RETRO_END_DECLS
 
 #endif

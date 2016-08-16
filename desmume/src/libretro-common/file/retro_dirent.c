@@ -158,7 +158,7 @@ const char *retro_dirent_get_name(struct RDIR *rdir)
  * Returns: true if directory listing entry is
  * a directory, false if not.
  */
-bool retro_dirent_is_dir(struct RDIR *rdir)
+bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
 {
 #if defined(_WIN32)
    const WIN32_FIND_DATA *entry = (const WIN32_FIND_DATA*)&rdir->entry;
@@ -168,7 +168,7 @@ bool retro_dirent_is_dir(struct RDIR *rdir)
 #if defined(PSP)
    return (entry->d_stat.st_attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
 #elif defined(VITA)
-   return PSP2_S_ISDIR(entry->d_stat.st_mode);
+   return SCE_S_ISDIR(entry->d_stat.st_mode);
 #endif
 #elif defined(__CELLOS_LV2__)
    CellFsDirent *entry = (CellFsDirent*)&rdir->entry;
@@ -178,13 +178,11 @@ bool retro_dirent_is_dir(struct RDIR *rdir)
    if (entry->d_type == DT_DIR)
       return true;
    /* This can happen on certain file systems. */
-   const char *path = retro_dirent_get_name(rdir);
    if (entry->d_type == DT_UNKNOWN || entry->d_type == DT_LNK)
       return path_is_directory(path);
    return false;
 #else
    /* dirent struct doesn't have d_type, do it the slow way ... */
-   const char *path = retro_dirent_get_name(rdir);
    return path_is_directory(path);
 #endif
 }

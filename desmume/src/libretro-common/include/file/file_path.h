@@ -28,12 +28,12 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+#include <retro_common_api.h>
+
 #include <boolean.h>
 #include <retro_inline.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 /* Order in this enum is equivalent to negative sort order in filelist
  *  (i.e. DIRECTORY is on top of PLAIN_FILE) */
@@ -212,6 +212,16 @@ void fill_pathname_noext(char *out_path, const char *in_path,
       const char *replace, size_t size);
 
 /**
+ * find_last_slash:
+ * @str : input path
+ *
+ * Gets a pointer to the last slash in the input path.
+ *
+ * Returns: a pointer to the last slash in the input path.
+ **/
+char *find_last_slash(const char *str);
+
+/**
  * fill_pathname_dir:
  * @in_dir             : input directory path
  * @in_basename        : input basename to be appended to @in_dir
@@ -241,6 +251,13 @@ void fill_pathname_dir(char *in_dir, const char *in_basename,
  **/
 void fill_pathname_base(char *out_path, const char *in_path, size_t size);
 
+void fill_pathname_base_noext(char *out_dir,
+      const char *in_path, size_t size);
+
+void fill_pathname_base_ext(char *out,
+      const char *in_path, const char *ext,
+      size_t size);
+
 /**
  * fill_pathname_basedir:
  * @out_dir            : output directory        
@@ -252,6 +269,9 @@ void fill_pathname_base(char *out_path, const char *in_path, size_t size);
  * @out_path will get path "./".
  **/
 void fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
+
+void fill_pathname_basedir_noext(char *out_dir,
+      const char *in_path, size_t size);
 
 /**
  * fill_pathname_parent_dir:
@@ -294,18 +314,18 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath,
 void fill_pathname_join(char *out_path, const char *dir,
       const char *path, size_t size);
 
-/**
- * fill_string_join:
- * @out_path           : output path
- * @path               : path
- * @size               : size of output path
- *
- * Joins a string (@out_path) and path (@append) together.
- * Makes sure not to get  two consecutive slashes 
- * between directory and path.
- **/
-void fill_string_join(char *out_path,
-      const char *path, size_t size);
+void fill_pathname_join_special_ext(char *out_path,
+      const char *dir,  const char *path,
+      const char *last, const char *ext,
+      size_t size);
+
+void fill_pathname_join_concat(char *out_path,
+      const char *dir, const char *path, 
+      const char *concat,
+      size_t size);
+
+void fill_pathname_join_noext(char *out_path,
+      const char *dir, const char *path, size_t size);
 
 /**
  * fill_pathname_join_delim:
@@ -320,6 +340,10 @@ void fill_string_join(char *out_path,
  **/
 void fill_pathname_join_delim(char *out_path, const char *dir,
       const char *path, const char delim, size_t size);
+
+void fill_pathname_join_delim_concat(char *out_path, const char *dir,
+      const char *path, const char delim, const char *concat,
+      size_t size);
 
 /**
  * fill_short_pathname_representation:
@@ -337,6 +361,9 @@ void fill_pathname_join_delim(char *out_path, const char *dir,
  *       "/path/to/myarchive.7z#folder/to/game.img" -> game.img
  */
 void fill_short_pathname_representation(char* out_rep,
+      const char *in_path, size_t size);
+
+void fill_short_pathname_representation_noext(char* out_rep,
       const char *in_path, size_t size);
 
 void fill_pathname_expand_special(char *out_path,
@@ -402,8 +429,6 @@ void fill_pathname_application_path(char *buf, size_t size);
  **/
 bool path_mkdir(const char *dir);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

@@ -74,18 +74,18 @@
 #define listen sceNetListen
 #define send sceNetSend
 #define recv sceNetRecv
-#define MSG_DONTWAIT PSP2_NET_MSG_DONTWAIT
-#define AF_INET PSP2_NET_AF_INET
+#define MSG_DONTWAIT SCE_NET_MSG_DONTWAIT
+#define AF_INET SCE_NET_AF_INET
 #define AF_UNSPEC 0
-#define INADDR_ANY PSP2_NET_INADDR_ANY
+#define INADDR_ANY SCE_NET_INADDR_ANY
 #define INADDR_NONE 0xffffffff
-#define SOCK_STREAM PSP2_NET_SOCK_STREAM
-#define SOCK_DGRAM PSP2_NET_SOCK_DGRAM
-#define SOL_SOCKET PSP2_NET_SOL_SOCKET
-#define SO_REUSEADDR PSP2_NET_SO_REUSEADDR
-#define SO_SNDBUF PSP2_NET_SO_SNDBUF
-#define SO_SNDTIMEO PSP2_NET_SO_SNDTIMEO
-#define SO_NBIO PSP2_NET_SO_NBIO
+#define SOCK_STREAM SCE_NET_SOCK_STREAM
+#define SOCK_DGRAM SCE_NET_SOCK_DGRAM
+#define SOL_SOCKET SCE_NET_SOL_SOCKET
+#define SO_REUSEADDR SCE_NET_SO_REUSEADDR
+#define SO_SNDBUF SCE_NET_SO_SNDBUF
+#define SO_SNDTIMEO SCE_NET_SO_SNDTIMEO
+#define SO_NBIO SCE_NET_SO_NBIO
 #define htonl sceNetHtonl
 #define ntohl sceNetNtohl
 #define htons sceNetHtons
@@ -136,14 +136,6 @@ struct hostent
 #ifdef GEKKO
 #define sendto(s, msg, len, flags, addr, tolen) net_sendto(s, msg, len, 0, addr, 8)
 #define socket(domain, type, protocol) net_socket(domain, type, protocol)
-
-static INLINE int inet_pton(int af, const char *src, void *dst)
-{
-   if (af != AF_INET)
-      return -1;
-
-   return inet_aton (src, dst);
-}
 #endif
 
 static INLINE bool isagain(int bytes)
@@ -155,7 +147,7 @@ static INLINE bool isagain(int bytes)
       return false;
    return true;
 #elif defined(VITA)
-	 return (bytes<0 && (bytes == PSP2_NET_ERROR_EAGAIN || bytes == PSP2_NET_ERROR_EWOULDBLOCK));
+	 return (bytes<0 && (bytes == SCE_NET_ERROR_EAGAIN || bytes == SCE_NET_ERROR_EWOULDBLOCK));
 #else
    return (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK));
 #endif
@@ -211,22 +203,14 @@ struct addrinfo
 
 #endif
 
+uint16_t inet_htons(uint16_t hostshort);
+
+int inet_ptrton(int af, const char *src, void *dst);
+
 int getaddrinfo_retro(const char *node, const char *service,
-      const struct addrinfo *hints,
-      struct addrinfo **res);
+      struct addrinfo *hints, struct addrinfo **res);
 
 void freeaddrinfo_retro(struct addrinfo *res);
-
-bool socket_nonblock(int fd);
-
-int socket_close(int fd);
-
-int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
-      fd_set *errorfds, struct timeval *timeout);
-
-int socket_send_all_blocking(int fd, const void *data_, size_t size);
-
-int socket_receive_all_blocking(int fd, void *data_, size_t size);
 
 /**
  * network_init:

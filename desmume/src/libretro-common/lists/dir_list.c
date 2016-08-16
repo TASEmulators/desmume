@@ -181,14 +181,14 @@ struct string_list *dir_list_new(const char *dir,
 
    while (retro_readdir(entry))
    {
-      char file_path[PATH_MAX_LENGTH];
-      bool is_dir;
+      bool is_dir                     = false;
+      char file_path[PATH_MAX_LENGTH] = {0};
       int ret                         = 0;
       const char *name                = retro_dirent_get_name(entry);
       const char *file_ext            = path_get_extension(name);
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
-      is_dir = retro_dirent_is_dir(entry);
+      is_dir = retro_dirent_is_dir(entry, file_path);
 
       ret    = parse_dir_entry(name, file_path, is_dir,
             include_dirs, include_compressed, list, ext_list, file_ext);

@@ -218,8 +218,7 @@ void fill_pathname(char *out_path, const char *in_path,
    if ((tok = (char*)strrchr(path_basename(tmp_path), '.')))
       *tok = '\0';
 
-   retro_assert(strlcpy(out_path, tmp_path, size) < size);
-   retro_assert(strlcat(out_path, replace, size) < size);
+   fill_pathname_noext(out_path, tmp_path, replace, size);
 }
 
 /**
@@ -243,9 +242,9 @@ void fill_pathname_noext(char *out_path, const char *in_path,
    retro_assert(strlcat(out_path, replace, size) < size);
 }
 
-static char *find_last_slash(const char *str)
+char *find_last_slash(const char *str)
 {
-   const char *slash = strrchr(str, '/');
+   const char *slash     = strrchr(str, '/');
 #ifdef _WIN32
    const char *backslash = strrchr(str, '\\');
 
@@ -346,6 +345,19 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
    retro_assert(strlcpy(out, ptr, size) < size);
 }
 
+void fill_pathname_base_noext(char *out, const char *in_path, size_t size)
+{
+   fill_pathname_base(out, in_path, size);
+   path_remove_extension(out);
+}
+
+void fill_pathname_base_ext(char *out, const char *in_path, const char *ext,
+      size_t size)
+{
+   fill_pathname_base_noext(out, in_path, size);
+   strlcat(out, ext, size);
+}
+
 /**
  * fill_pathname_basedir:
  * @out_dir            : output directory
@@ -362,6 +374,13 @@ void fill_pathname_basedir(char *out_dir,
    if (out_dir != in_path)
       retro_assert(strlcpy(out_dir, in_path, size) < size);
    path_basedir(out_dir);
+}
+
+void fill_pathname_basedir_noext(char *out_dir,
+      const char *in_path, size_t size)
+{
+   fill_pathname_basedir(out_dir, in_path, size);
+   path_remove_extension(out_dir);
 }
 
 /**
@@ -505,7 +524,7 @@ bool path_is_absolute(const char *path)
 void path_resolve_realpath(char *buf, size_t size)
 {
 #ifndef RARCH_CONSOLE
-   char tmp[PATH_MAX_LENGTH];
+   char tmp[PATH_MAX_LENGTH] = {0};
 
    strlcpy(tmp, buf, sizeof(tmp));
 
@@ -546,8 +565,7 @@ void fill_pathname_resolve_relative(char *out_path,
       return;
    }
 
-   retro_assert(strlcpy(out_path, in_refpath, size) < size);
-   path_basedir(out_path);
+   fill_pathname_basedir(out_path, in_refpath, size);
    retro_assert(strlcat(out_path, in_path, size) < size);
 }
 
@@ -574,7 +592,7 @@ void fill_pathname_join(char *out_path,
    retro_assert(strlcat(out_path, path, size) < size);
 }
 
-void fill_string_join(char *out_path,
+static void fill_string_join(char *out_path,
       const char *append, size_t size)
 {
    if (*out_path)
@@ -582,6 +600,33 @@ void fill_string_join(char *out_path,
 
    retro_assert(strlcat(out_path, append, size) < size);
 }
+
+void fill_pathname_join_special_ext(char *out_path,
+      const char *dir,  const char *path,
+      const char *last, const char *ext,
+      size_t size)
+{
+   fill_pathname_join(out_path, dir, path, size);
+   fill_string_join(out_path, last, size);
+   strlcat(out_path, ext, size);
+}
+
+void fill_pathname_join_concat(char *out_path,
+      const char *dir, const char *path, 
+      const char *concat,
+      size_t size)
+{
+   fill_pathname_join(out_path, dir, path, size);
+   strlcat(out_path, concat, size);
+}
+
+void fill_pathname_join_noext(char *out_path,
+      const char *dir, const char *path, size_t size)
+{
+   fill_pathname_join(out_path, dir, path, size);
+   path_remove_extension(out_path);
+}
+
 
 /**
  * fill_pathname_join_delim:
@@ -606,6 +651,14 @@ void fill_pathname_join_delim(char *out_path, const char *dir,
    retro_assert(strlcat(out_path, path, size) < size);
 }
 
+void fill_pathname_join_delim_concat(char *out_path, const char *dir,
+      const char *path, const char delim, const char *concat,
+      size_t size)
+{
+   fill_pathname_join_delim(out_path, dir, path, delim, size);
+   strlcat(out_path, concat, size);
+}
+
 /**
  * fill_short_pathname_representation:
  * @out_rep            : output representation
@@ -625,11 +678,14 @@ void fill_short_pathname_representation(char* out_rep,
       const char *in_path, size_t size)
 {
    char path_short[PATH_MAX_LENGTH] = {0};
+#ifdef HAVE_COMPRESSION
    char *last_hash                  = NULL;
+#endif
 
    fill_pathname(path_short, path_basename(in_path), "",
             sizeof(path_short));
 
+#ifdef HAVE_COMPRESSION
    last_hash = (char*)strchr(path_short,'#');
    if(last_hash != NULL)
    {
@@ -644,5 +700,13 @@ void fill_short_pathname_representation(char* out_rep,
       strlcpy(out_rep, last_hash + 1, size);
    }
    else
+#endif
       strlcpy(out_rep, path_short, size);
+}
+
+void fill_short_pathname_representation_noext(char* out_rep,
+      const char *in_path, size_t size)
+{
+   fill_short_pathname_representation(out_rep, in_path, size);
+   path_remove_extension(out_rep);
 }
