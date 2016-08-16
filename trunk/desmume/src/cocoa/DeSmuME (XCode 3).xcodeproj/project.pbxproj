@@ -740,6 +740,14 @@
 		AB2F56F11704C86900E28885 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F56EF1704C86900E28885 /* utilities.c */; };
 		AB2F56F21704C86900E28885 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F56EF1704C86900E28885 /* utilities.c */; };
 		AB2F56F31704C86900E28885 /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = AB2F56EF1704C86900E28885 /* utilities.c */; };
+		AB37E3741D6188BC004A2C0D /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB37E36C1D6188BC004A2C0D /* colorspacehandler.cpp */; };
+		AB37E3771D6188BC004A2C0D /* colorspacehandler_SSE2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB37E3721D6188BC004A2C0D /* colorspacehandler_SSE2.cpp */; };
+		AB37E3781D6188BC004A2C0D /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB37E36C1D6188BC004A2C0D /* colorspacehandler.cpp */; };
+		AB37E37B1D6188BC004A2C0D /* colorspacehandler_SSE2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB37E3721D6188BC004A2C0D /* colorspacehandler_SSE2.cpp */; };
+		AB37E37C1D6188BC004A2C0D /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB37E36C1D6188BC004A2C0D /* colorspacehandler.cpp */; };
+		AB37E37D1D6188BC004A2C0D /* colorspacehandler_AltiVec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB37E36E1D6188BC004A2C0D /* colorspacehandler_AltiVec.cpp */; };
+		AB37E3801D6188BC004A2C0D /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB37E36C1D6188BC004A2C0D /* colorspacehandler.cpp */; };
+		AB37E38A1D61895F004A2C0D /* colorspacehandler_AltiVec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB37E36E1D6188BC004A2C0D /* colorspacehandler_AltiVec.cpp */; };
 		AB3ACB7814C2361100D7D192 /* appDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6714C2361100D7D192 /* appDelegate.mm */; };
 		AB3ACB7914C2361100D7D192 /* cheatWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */; };
 		AB3ACB7C14C2361100D7D192 /* inputPrefsView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */; };
@@ -1156,6 +1164,8 @@
 		AB73AA2E1507C9F500A310C8 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		AB73AA2F1507C9F500A310C8 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		AB75226F14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB75226D14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns */; };
+		AB7BB17F1D62C8CC00A7A6E2 /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB37E36C1D6188BC004A2C0D /* colorspacehandler.cpp */; };
+		AB7BB1801D62C8CF00A7A6E2 /* colorspacehandler_AltiVec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB37E36E1D6188BC004A2C0D /* colorspacehandler_AltiVec.cpp */; };
 		AB7DDA6D173DC38F004F3D07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
 		AB7DDA6E173DC399004F3D07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
 		AB7DDA6F173DC39E004F3D07 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
@@ -1835,6 +1845,12 @@
 		AB2F56EF1704C86900E28885 /* utilities.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = utilities.c; sourceTree = "<group>"; };
 		AB350BA41478AC96007165AC /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		AB350D38147A1D8D007165AC /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = English; path = translations/English.lproj/HID_usage_strings.plist; sourceTree = "<group>"; };
+		AB37E36C1D6188BC004A2C0D /* colorspacehandler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler.cpp; sourceTree = "<group>"; };
+		AB37E36D1D6188BC004A2C0D /* colorspacehandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = colorspacehandler.h; sourceTree = "<group>"; };
+		AB37E36E1D6188BC004A2C0D /* colorspacehandler_AltiVec.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler_AltiVec.cpp; sourceTree = "<group>"; };
+		AB37E36F1D6188BC004A2C0D /* colorspacehandler_AltiVec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_AltiVec.h; sourceTree = "<group>"; };
+		AB37E3721D6188BC004A2C0D /* colorspacehandler_SSE2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler_SSE2.cpp; sourceTree = "<group>"; };
+		AB37E3731D6188BC004A2C0D /* colorspacehandler_SSE2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_SSE2.h; sourceTree = "<group>"; };
 		AB3ACB6614C2361100D7D192 /* appDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = appDelegate.h; sourceTree = "<group>"; };
 		AB3ACB6714C2361100D7D192 /* appDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = appDelegate.mm; sourceTree = "<group>"; };
 		AB3ACB6814C2361100D7D192 /* cheatWindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cheatWindowDelegate.h; sourceTree = "<group>"; };
@@ -2894,6 +2910,19 @@
 			path = src;
 			sourceTree = "<group>";
 		};
+		AB37E36B1D6188BC004A2C0D /* colorspacehandler */ = {
+			isa = PBXGroup;
+			children = (
+				AB37E36C1D6188BC004A2C0D /* colorspacehandler.cpp */,
+				AB37E36D1D6188BC004A2C0D /* colorspacehandler.h */,
+				AB37E36E1D6188BC004A2C0D /* colorspacehandler_AltiVec.cpp */,
+				AB37E36F1D6188BC004A2C0D /* colorspacehandler_AltiVec.h */,
+				AB37E3721D6188BC004A2C0D /* colorspacehandler_SSE2.cpp */,
+				AB37E3731D6188BC004A2C0D /* colorspacehandler_SSE2.h */,
+			);
+			path = colorspacehandler;
+			sourceTree = "<group>";
+		};
 		AB3ACB6514C2361100D7D192 /* userinterface */ = {
 			isa = PBXGroup;
 			children = (
@@ -3207,6 +3236,7 @@
 			isa = PBXGroup;
 			children = (
 				ABBCE2A115ACB29100A2C965 /* AsmJit */,
+				AB37E36B1D6188BC004A2C0D /* colorspacehandler */,
 				ABD1FF211345ACBF00AF11D1 /* decrypt */,
 				ABD1FF2E1345ACBF00AF11D1 /* libfat */,
 				ABE670241415DE6C00E8E4C9 /* tinyxml */,
@@ -4508,6 +4538,8 @@
 				AB50200A1D09E712002FA150 /* file_path.c in Sources */,
 				AB50200B1D09E712002FA150 /* retro_dirent.c in Sources */,
 				AB50200C1D09E712002FA150 /* retro_stat.c in Sources */,
+				AB7BB17F1D62C8CC00A7A6E2 /* colorspacehandler.cpp in Sources */,
+				AB7BB1801D62C8CF00A7A6E2 /* colorspacehandler_AltiVec.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4687,6 +4719,8 @@
 				AB5020161D09E712002FA150 /* file_path.c in Sources */,
 				AB5020171D09E712002FA150 /* retro_dirent.c in Sources */,
 				AB5020181D09E712002FA150 /* retro_stat.c in Sources */,
+				AB37E3801D6188BC004A2C0D /* colorspacehandler.cpp in Sources */,
+				AB37E38A1D61895F004A2C0D /* colorspacehandler_AltiVec.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4896,6 +4930,8 @@
 				AB50200D1D09E712002FA150 /* file_path.c in Sources */,
 				AB50200E1D09E712002FA150 /* retro_dirent.c in Sources */,
 				AB50200F1D09E712002FA150 /* retro_stat.c in Sources */,
+				AB37E3741D6188BC004A2C0D /* colorspacehandler.cpp in Sources */,
+				AB37E3771D6188BC004A2C0D /* colorspacehandler_SSE2.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5105,6 +5141,8 @@
 				AB5020101D09E712002FA150 /* file_path.c in Sources */,
 				AB5020111D09E712002FA150 /* retro_dirent.c in Sources */,
 				AB5020121D09E712002FA150 /* retro_stat.c in Sources */,
+				AB37E3781D6188BC004A2C0D /* colorspacehandler.cpp in Sources */,
+				AB37E37B1D6188BC004A2C0D /* colorspacehandler_SSE2.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5284,6 +5322,8 @@
 				AB5020131D09E712002FA150 /* file_path.c in Sources */,
 				AB5020141D09E712002FA150 /* retro_dirent.c in Sources */,
 				AB5020151D09E712002FA150 /* retro_stat.c in Sources */,
+				AB37E37C1D6188BC004A2C0D /* colorspacehandler.cpp in Sources */,
+				AB37E37D1D6188BC004A2C0D /* colorspacehandler_AltiVec.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

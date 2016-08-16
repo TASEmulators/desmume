@@ -76,6 +76,18 @@
 	#ifdef __SSE4_2__
 		#define ENABLE_SSE4_2
 	#endif
+
+	#ifdef __AVX__
+		#define ENABLE_AVX
+	#endif
+
+	#ifdef __AVX2__
+		#define ENABLE_AVX2
+	#endif
+
+	#ifdef __ALTIVEC__
+		#define ENABLE_ALTIVEC
+	#endif
 #endif
 
 #ifdef _MSC_VER 
@@ -221,6 +233,38 @@ typedef u16 uint16;
 typedef u32 uint32;
 #else
 #define uint32 u32 //uint32 is defined in Leopard somewhere, avoid conflicts
+#endif
+
+#ifdef ENABLE_ALTIVEC
+	#ifndef __APPLE_ALTIVEC__
+		#include <altivec.h>
+	#endif
+typedef vector unsigned char v128u8;
+typedef vector signed char v128s8;
+typedef vector unsigned short v128u16;
+typedef vector signed short v128s16;
+typedef vector unsigned int v128u32;
+typedef vector signed int v128s32;
+#endif
+
+#ifdef ENABLE_SSE2
+#include <emmintrin.h>
+typedef __m128i v128u8;
+typedef __m128i v128s8;
+typedef __m128i v128u16;
+typedef __m128i v128s16;
+typedef __m128i v128u32;
+typedef __m128i v128s32;
+#endif
+
+#ifdef ENABLE_AVX2
+#include <immintrin.h>
+typedef __m256i v256u8;
+typedef __m256i v256s8;
+typedef __m256i v256u16;
+typedef __m256i v256s16;
+typedef __m256i v256u32;
+typedef __m256i v256s32;
 #endif
 
 /*---------- GPU3D fixed-points types -----------*/

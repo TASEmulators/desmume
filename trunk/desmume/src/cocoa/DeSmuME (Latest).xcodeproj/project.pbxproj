@@ -243,6 +243,8 @@
 		AB564915186E6F67002740F4 /* Image_Piano.png in Resources */ = {isa = PBXBuildFile; fileRef = AB56490B186E6F67002740F4 /* Image_Piano.png */; };
 		AB5785FD17176AFC002C5FC7 /* OpenEmuBase.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB5785FC17176AFC002C5FC7 /* OpenEmuBase.framework */; };
 		AB58F32D1364F44B0074C376 /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB58F32C1364F44B0074C376 /* cocoa_file.mm */; };
+		AB5FDDAC1D62C89E0094617C /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */; };
+		AB5FDDAD1D62C8A00094617C /* colorspacehandler_SSE2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBFFF751D5FD2ED003CD598 /* colorspacehandler_SSE2.cpp */; };
 		AB64987C13ECC73800EE7DD2 /* FileTypeInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB64987B13ECC73800EE7DD2 /* FileTypeInfo.plist */; };
 		AB68101B187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681013187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png */; };
 		AB68101C187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = AB681013187D4AEF0049F2C2 /* Icon_GuitarGrip_Button_Blue_512x512.png */; };
@@ -974,6 +976,12 @@
 		ABB97878144E89CC00793FA3 /* Icon_DeSmuME_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB97875144E89CC00793FA3 /* Icon_DeSmuME_32x32.png */; };
 		ABBC0F8D1394B1AA0028B6BD /* DefaultUserPrefs.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABBC0F8C1394B1AA0028B6BD /* DefaultUserPrefs.plist */; };
 		ABBF04A514B515F300E505A0 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04A414B515F300E505A0 /* AppIcon_ROMCheats.icns */; };
+		ABBFFF851D6283C0003CD598 /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */; };
+		ABBFFF861D6283C1003CD598 /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */; };
+		ABBFFF871D6283C1003CD598 /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */; };
+		ABBFFF891D6283D2003CD598 /* colorspacehandler_SSE2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBFFF751D5FD2ED003CD598 /* colorspacehandler_SSE2.cpp */; };
+		ABBFFF8A1D6283D3003CD598 /* colorspacehandler_SSE2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBFFF751D5FD2ED003CD598 /* colorspacehandler_SSE2.cpp */; };
+		ABBFFF8B1D6283D3003CD598 /* colorspacehandler_SSE2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBFFF751D5FD2ED003CD598 /* colorspacehandler_SSE2.cpp */; };
 		ABC3AF2F14B7F06900D5B13D /* Icon_VolumeFull_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC3AF2B14B7F06900D5B13D /* Icon_VolumeFull_16x16.png */; };
 		ABC3AF3014B7F06900D5B13D /* Icon_VolumeMute_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */; };
 		ABC3AF3114B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC3AF2D14B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png */; };
@@ -1534,6 +1542,14 @@
 		ABBB421516B4A5F30012E5AB /* OGLRender_3_2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OGLRender_3_2.h; path = ../OGLRender_3_2.h; sourceTree = "<group>"; };
 		ABBC0F8C1394B1AA0028B6BD /* DefaultUserPrefs.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = DefaultUserPrefs.plist; sourceTree = "<group>"; };
 		ABBF04A414B515F300E505A0 /* AppIcon_ROMCheats.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon_ROMCheats.icns; sourceTree = "<group>"; };
+		ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler.cpp; sourceTree = "<group>"; };
+		ABBFFF701D5F9C52003CD598 /* colorspacehandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = colorspacehandler.h; sourceTree = "<group>"; };
+		ABBFFF751D5FD2ED003CD598 /* colorspacehandler_SSE2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler_SSE2.cpp; sourceTree = "<group>"; };
+		ABBFFF761D5FD2ED003CD598 /* colorspacehandler_SSE2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_SSE2.h; sourceTree = "<group>"; };
+		ABBFFF7B1D610457003CD598 /* colorspacehandler_AVX2.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler_AVX2.cpp; sourceTree = "<group>"; };
+		ABBFFF7C1D610457003CD598 /* colorspacehandler_AVX2.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_AVX2.h; sourceTree = "<group>"; };
+		ABBFFF811D611A36003CD598 /* colorspacehandler_AltiVec.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler_AltiVec.cpp; sourceTree = "<group>"; };
+		ABBFFF821D611A36003CD598 /* colorspacehandler_AltiVec.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_AltiVec.h; sourceTree = "<group>"; };
 		ABC3AF2B14B7F06900D5B13D /* Icon_VolumeFull_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeFull_16x16.png; path = images/Icon_VolumeFull_16x16.png; sourceTree = "<group>"; };
 		ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeMute_16x16.png; path = images/Icon_VolumeMute_16x16.png; sourceTree = "<group>"; };
 		ABC3AF2D14B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeOneThird_16x16.png; path = images/Icon_VolumeOneThird_16x16.png; sourceTree = "<group>"; };
@@ -2508,6 +2524,21 @@
 			path = openemu;
 			sourceTree = "<group>";
 		};
+		ABBFFF6E1D5F9C10003CD598 /* colorspacehandler */ = {
+			isa = PBXGroup;
+			children = (
+				ABBFFF811D611A36003CD598 /* colorspacehandler_AltiVec.cpp */,
+				ABBFFF7B1D610457003CD598 /* colorspacehandler_AVX2.cpp */,
+				ABBFFF751D5FD2ED003CD598 /* colorspacehandler_SSE2.cpp */,
+				ABBFFF6F1D5F9C52003CD598 /* colorspacehandler.cpp */,
+				ABBFFF821D611A36003CD598 /* colorspacehandler_AltiVec.h */,
+				ABBFFF7C1D610457003CD598 /* colorspacehandler_AVX2.h */,
+				ABBFFF761D5FD2ED003CD598 /* colorspacehandler_SSE2.h */,
+				ABBFFF701D5F9C52003CD598 /* colorspacehandler.h */,
+			);
+			path = colorspacehandler;
+			sourceTree = "<group>";
+		};
 		ABC2ECD613B1C87000FAAA2A /* Images */ = {
 			isa = PBXGroup;
 			children = (
@@ -2759,6 +2790,7 @@
 				ABD1FF211345ACBF00AF11D1 /* decrypt */,
 				ABD1FF2E1345ACBF00AF11D1 /* libfat */,
 				ABE670241415DE6C00E8E4C9 /* tinyxml */,
+				ABBFFF6E1D5F9C10003CD598 /* colorspacehandler */,
 				ABD1FF1D1345ACBF00AF11D1 /* ConvertUTF.c */,
 				AB9038A517C5ECFD00F410BD /* advanscene.cpp */,
 				ABD1FF1F1345ACBF00AF11D1 /* datetime.cpp */,
@@ -3770,6 +3802,7 @@
 				ABE6840D189E33BC007FD69C /* OGLDisplayOutput.cpp in Sources */,
 				ABD1FF121345AC9C00AF11D1 /* slot2_none.cpp in Sources */,
 				ABD1FF131345AC9C00AF11D1 /* slot2_paddle.cpp in Sources */,
+				ABBFFF8A1D6283D3003CD598 /* colorspacehandler_SSE2.cpp in Sources */,
 				ABD1FF141345AC9C00AF11D1 /* slot2_piano.cpp in Sources */,
 				ABD1FF151345AC9C00AF11D1 /* slot2_rumblepak.cpp in Sources */,
 				ABD1041F1346652500AF11D1 /* sndOSX.cpp in Sources */,
@@ -3864,6 +3897,7 @@
 				AB40565E169F5DBB0016AC3E /* virtualmemory.cpp in Sources */,
 				AB405661169F5DBB0016AC3E /* zonememory.cpp in Sources */,
 				AB405679169F5DCC0016AC3E /* x86assembler.cpp in Sources */,
+				ABBFFF861D6283C1003CD598 /* colorspacehandler.cpp in Sources */,
 				AB40567C169F5DCC0016AC3E /* x86compiler.cpp in Sources */,
 				ABFEA8A41BB4EC1100B08C25 /* sfnt.c in Sources */,
 				ABA731691BB51FDC00B26147 /* type1cid.c in Sources */,
@@ -4017,6 +4051,7 @@
 				AB796D4315CDCBA200C59155 /* version.cpp in Sources */,
 				ABFEA82B1BB4EC1100B08C25 /* ftinit.c in Sources */,
 				AB796D4415CDCBA200C59155 /* vfat.cpp in Sources */,
+				AB5FDDAC1D62C89E0094617C /* colorspacehandler.cpp in Sources */,
 				AB796D4515CDCBA200C59155 /* videofilter.cpp in Sources */,
 				AB796D4615CDCBA200C59155 /* WavFile.cpp in Sources */,
 				AB796D4715CDCBA200C59155 /* wifi.cpp in Sources */,
@@ -4096,6 +4131,7 @@
 				AB26D87C16B5253D00A2305C /* OGLRender_3_2.cpp in Sources */,
 				AB3A655E16CC5421001F5D4A /* EmuControllerDelegate.mm in Sources */,
 				AB3A656116CC5438001F5D4A /* cocoa_GPU.mm in Sources */,
+				AB5FDDAD1D62C8A00094617C /* colorspacehandler_SSE2.cpp in Sources */,
 				AB8967D916D2ED0700F826F1 /* DisplayWindowController.mm in Sources */,
 				AB29B33116D4BEBF000EF671 /* InputManager.mm in Sources */,
 				AB8B7AAC17CE8C440051CEBF /* slot1comp_protocol.cpp in Sources */,
@@ -4272,6 +4308,7 @@
 				AB2ABA401C9F9CFA00173B15 /* rsemaphore.c in Sources */,
 				AB8F3CF01A53AC2600A80BF6 /* ringbuffer.cpp in Sources */,
 				AB8F3CF11A53AC2600A80BF6 /* arm_jit.cpp in Sources */,
+				ABBFFF891D6283D2003CD598 /* colorspacehandler_SSE2.cpp in Sources */,
 				AB8F3CF21A53AC2600A80BF6 /* troubleshootingWindowDelegate.mm in Sources */,
 				AB8F3CF31A53AC2600A80BF6 /* assembler.cpp in Sources */,
 				AB8F3CF41A53AC2600A80BF6 /* assert.cpp in Sources */,
@@ -4295,6 +4332,7 @@
 				AB8F3D041A53AC2600A80BF6 /* virtualmemory.cpp in Sources */,
 				AB8F3D051A53AC2600A80BF6 /* zonememory.cpp in Sources */,
 				AB8F3D061A53AC2600A80BF6 /* x86assembler.cpp in Sources */,
+				ABBFFF851D6283C0003CD598 /* colorspacehandler.cpp in Sources */,
 				AB8F3D071A53AC2600A80BF6 /* x86compiler.cpp in Sources */,
 				AB8F3D081A53AC2600A80BF6 /* x86compilercontext.cpp in Sources */,
 				AB8F3D091A53AC2600A80BF6 /* x86compilerfunc.cpp in Sources */,
@@ -4367,6 +4405,7 @@
 				ABB3C6911501C04F00E0C22E /* SoundTouch.cpp in Sources */,
 				ABB3C6921501C04F00E0C22E /* sse_optimized.cpp in Sources */,
 				ABB3C6931501C04F00E0C22E /* TDStretch.cpp in Sources */,
+				ABBFFF871D6283C1003CD598 /* colorspacehandler.cpp in Sources */,
 				ABB3C6941501C04F00E0C22E /* WavFile.cpp in Sources */,
 				ABB3C6951501C04F00E0C22E /* metaspu.cpp in Sources */,
 				ABB3C6961501C04F00E0C22E /* SndOut.cpp in Sources */,
@@ -4436,6 +4475,7 @@
 				ABB3C6D11501C04F00E0C22E /* slot1.cpp in Sources */,
 				ABB3C6D31501C04F00E0C22E /* SPU.cpp in Sources */,
 				ABB3C6D41501C04F00E0C22E /* texcache.cpp in Sources */,
+				ABBFFF8B1D6283D3003CD598 /* colorspacehandler_SSE2.cpp in Sources */,
 				AB9038BA17C5ED2200F410BD /* slot1comp_rom.cpp in Sources */,
 				ABB3C6D51501C04F00E0C22E /* thumb_instructions.cpp in Sources */,
 				AB2EE13317D57F5000F68622 /* fsnitro.cpp in Sources */,
