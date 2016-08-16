@@ -202,7 +202,7 @@ u32 ADVANsCEne::convertDB(const char *in_filename, EMUFILE* output)
 
 		// CRC32
 		el_crc32 = el->FirstChildElement("files"); 
-		sscanf_s(el_crc32->FirstChildElement("romCRC")->GetText(), "%x", &crc32);
+		sscanf(el_crc32->FirstChildElement("romCRC")->GetText(), "%x", &crc32);
 		output->fwrite(&crc32, sizeof(u32));
 		
 		// Save type

@@ -32,38 +32,6 @@
 
 static std::map<void *, void *> _alignedPtrList; // Key: Aligned pointer / Value: Original pointer
 
-char *trim(char *s, int len)
-{
-	char *ptr = NULL;
-	if (!s) return NULL;
-	if (!*s) return s;
-	
-	if(len==-1)
-		ptr = s + strlen(s) - 1;
-	else ptr = s+len - 1;
-	for (; (ptr >= s) && (!*ptr || isspace((u8)*ptr)) ; ptr--);
-	ptr[1] = '\0';
-	return s;
-}
-
-char *removeSpecialChars(char *s)
-{
-	char	*buf = s;
-	if (!s) return NULL;
-	if (!*s) return s;
-
-	for (u32 i = 0; i < strlen(s); i++)
-	{
-		if (isspace((u8)s[i]) && (s[i] != 0x20))
-			*buf = 0x20;
-		else
-			*buf = s[i];
-		buf++;
-	}
-	*buf = 0;
-	return s;
-}
-
 static MAKER makerCodes[] = {
 	{ 0x3130, "Nintendo" },
 	{ 0x3230, "Rocket Games, Ajinomoto" },

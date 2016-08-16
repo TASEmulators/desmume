@@ -325,7 +325,7 @@ struct GameInfo
 	u32	romType;
 	u32 headerOffset;
 	char ROMserial[20];
-	char ROMname[20];
+	char ROMname[13];
 	bool _isDSiEnhanced;
 	NDS_header header;
 	//a copy of the pristine secure area from the rom

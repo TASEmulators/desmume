@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,30 +24,6 @@
 #include <string.h>
 #include <string>
 #include "types.h"
-
-#if defined(WIN32)
-	#define CLASSNAME "DeSmuME"
-#else		// non Windows
-	#define sscanf_s sscanf
-#endif
-
-template<typename T>
-T reverseBits(T x)
-{
-	T h = 0;
-	T i = 0;
-
-	for (i = 0; i < sizeof(T)*8; i++)
-	{
-		h = (h << 1) + (x & 1); 
-		x >>= 1; 
-	}
-
-	return h;
-}
-
-extern char *trim(char *s, int len=-1);
-extern char *removeSpecialChars(char *s);
 
 // ===============================================================================
 // Message dialogs

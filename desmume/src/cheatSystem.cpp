@@ -561,6 +561,22 @@ void CHEATS::setDescription(const char *description, u32 pos)
 	list[pos].description[sizeof(list[pos].description) - 1] = '\0';
 }
 
+
+static char *trim(char *s, int len = -1)
+{
+	char *ptr = NULL;
+	if (!s) return NULL;
+	if (!*s) return s;
+	
+	if(len==-1)
+		ptr = s + strlen(s) - 1;
+	else ptr = s+len - 1;
+	for (; (ptr >= s) && (!*ptr || isspace((u8)*ptr)) ; ptr--);
+	ptr[1] = '\0';
+	return s;
+}
+
+
 BOOL CHEATS::save()
 {
 	const char	*types[] = {"DS", "AR", "CB"};
@@ -722,7 +738,7 @@ BOOL CHEATS::load()
 			char tmp_buf[9] = {0};
 
 			strncpy(tmp_buf, &codeStr[i * 16], 8);
-			sscanf_s(tmp_buf, "%x", &tmp_cht.code[i][0]);
+			sscanf(tmp_buf, "%x", &tmp_cht.code[i][0]);
 
 			if (tmp_cht.type == 0)
 			{
@@ -731,7 +747,7 @@ BOOL CHEATS::load()
 			}
 			
 			strncpy(tmp_buf, &codeStr[(i * 16) + 8], 8);
-			sscanf_s(tmp_buf, "%x", &tmp_cht.code[i][1]);
+			sscanf(tmp_buf, "%x", &tmp_cht.code[i][1]);
 		}
 
 		list.push_back(tmp_cht);

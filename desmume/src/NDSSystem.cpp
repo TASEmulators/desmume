@@ -379,9 +379,7 @@ void GameInfo::populate()
 
 	};
 	
-	memset(ROMserial, 0, sizeof(ROMserial));
-	memset(ROMname, 0, sizeof(ROMname));
-
+	//set or build as appropriate ROMserial
 	if(isHomebrew())
 	{
 		//we can't really make a serial for a homebrew game that hasnt set a game code
@@ -405,9 +403,8 @@ void GameInfo::populate()
 	}
 
 	//rom name is probably set even in homebrew, so do it regardless
-	memset(ROMname, 0, sizeof(ROMname));
 	memcpy(ROMname, header.gameTile, 12);
-	trim(ROMname,20);
+	ROMname[12] = 0;
 
 		/*if(header.IconOff < romsize)
 		{
