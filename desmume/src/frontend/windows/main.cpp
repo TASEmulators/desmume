@@ -39,7 +39,6 @@
 #include <stdio.h>
 
 //emulator core
-#include "common.h" //wtf this needs to disappear
 #include "MMU.h"
 #include "armcpu.h"
 #include "NDSSystem.h"

@@ -24,9 +24,9 @@
 	typedef HMENU PlatformMenu;    // hMenu
 	#define MAX_MENU_COUNT (IDC_LUAMENU_RESERVE_END - IDC_LUAMENU_RESERVE_START + 1)
 
-	#include "windows/main.h"
-	#include "windows/video.h"
-	#include "windows/resource.h"
+	#include "frontend/windows/main.h"
+	#include "frontend/windows/video.h"
+	#include "frontend/windows/resource.h"
 #else
 	// TODO: define appropriate types for menu
 	typedef void* PlatformMenu;

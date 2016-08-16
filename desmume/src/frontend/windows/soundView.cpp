@@ -23,7 +23,6 @@
 #include <windowsx.h>
 #include <algorithm>
 
-#include "common.h"
 #include "NDSSystem.h"
 #include "debug.h"
 #include "matrix.h"

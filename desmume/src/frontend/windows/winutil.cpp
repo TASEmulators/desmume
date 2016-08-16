@@ -15,7 +15,6 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "common.h"
 #include "path.h"
 #include "winutil.h"
 #include <stdio.h>

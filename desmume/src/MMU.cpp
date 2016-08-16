@@ -25,7 +25,6 @@
 
 #include "utils/bits.h"
 #include "armcpu.h"
-#include "common.h"
 #include "debug.h"
 #include "driver.h"
 #include "NDSSystem.h"

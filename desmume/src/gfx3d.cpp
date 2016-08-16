@@ -37,7 +37,6 @@
 #include <queue>
 
 #include "armcpu.h"
-#include "common.h"
 #include "debug.h"
 #include "driver.h"
 #include "emufile.h"

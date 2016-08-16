@@ -17,7 +17,6 @@
 */
 
 
-#include "common.h"
 #include <windowsx.h>
 #include <shlwapi.h>
 #include <shlobj.h>

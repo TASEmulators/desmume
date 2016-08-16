@@ -20,13 +20,12 @@
 // TODO: interrupt handler
 
 #include "rtc.h"
-#include "common.h"
 #include "debug.h"
 #include "armcpu.h"
 #include <string.h>
 #include "saves.h"
 #ifdef WIN32
-#include "windows/main.h"
+#include "frontend/windows/main.h"
 #endif
 #include "movie.h"
 

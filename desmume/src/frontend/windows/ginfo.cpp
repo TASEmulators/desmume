@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <commctrl.h>
 
-#include "common.h"
 #include "MMU.h"
 #include "NDSSystem.h"
 

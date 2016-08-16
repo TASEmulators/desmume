@@ -21,7 +21,6 @@
 #include <string>
 #include <shlwapi.h>
 
-#include "common.h"
 
 #include "resource.h"
 #include "winutil.h"

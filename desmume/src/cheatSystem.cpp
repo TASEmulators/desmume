@@ -19,7 +19,6 @@
 #include "utils/bits.h"
 
 #include "NDSSystem.h"
-#include "common.h"
 #include "mem.h"
 #include "MMU.h"
 #include "debug.h"

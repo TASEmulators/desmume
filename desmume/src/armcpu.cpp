@@ -22,7 +22,6 @@
 #include <algorithm>
 
 #include "armcpu.h"
-#include "common.h"
 #include "instructions.h"
 #include "cp15.h"
 #include "bios.h"

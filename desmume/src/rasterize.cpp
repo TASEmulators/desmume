@@ -49,7 +49,6 @@
 #include <emmintrin.h>
 #endif
 
-#include "common.h"
 #include "matrix.h"
 #include "render3D.h"
 #include "gfx3d.h"

@@ -55,7 +55,6 @@
 #include <list>
 #include <vector>
 
-#include "common.h"
 #include "NDSSystem.h"
 #include "MMU.h"
 

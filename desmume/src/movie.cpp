@@ -34,7 +34,6 @@
 #include "debug.h"
 #include "driver.h"
 #include "rtc.h"
-#include "common.h"
 #include "mic.h"
 #include "version.h"
 #include "GPU_osd.h"

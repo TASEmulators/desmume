@@ -22,7 +22,6 @@
 #include <windowsx.h>
 #include <commctrl.h>
 
-#include "common.h"
 #include "NDSSystem.h"
 #include "emufile.h"
 #include "MMU.h"

@@ -42,7 +42,6 @@
 #endif
 
 #include "types.h"
-#include "common.h"
 #include "NDSSystem.h"
 #include "slot2.h"
 #include "debug.h"
