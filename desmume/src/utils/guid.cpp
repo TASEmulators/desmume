@@ -16,8 +16,36 @@
 */
 
 #include <stdlib.h>
+#include <retro_inline.h>
 #include "guid.h"
 #include "../types.h"
+
+/* stores a 32bit value into the provided byte array in guaranteed little endian form */
+static INLINE void en32lsb(u8 *buf, u32 morp)
+{ 
+	buf[0]=(u8)(morp);
+	buf[1]=(u8)(morp>>8);
+	buf[2]=(u8)(morp>>16);
+	buf[3]=(u8)(morp>>24);
+} 
+
+static INLINE void en16lsb(u8* buf, u16 morp)
+{
+	buf[0]=(u8)morp;
+	buf[1]=(u8)(morp>>8);
+}
+
+/* unpacks a 32bit little endian value from the provided byte array into host byte order */
+static INLINE u32 de32lsb(u8 *morp)
+{
+	return morp[0]|(morp[1]<<8)|(morp[2]<<16)|(morp[3]<<24);
+}
+
+/* unpacks a 16bit little endian value from the provided byte array into host byte order */
+static INLINE u16 de16lsb(u8 *morp)
+{
+	return morp[0]|(morp[1]<<8);
+}
 
 void Desmume_Guid::newGuid()
 {

@@ -312,39 +312,6 @@ inline double u64_to_double(u64 u) {
 	return fuxor.b;
 }
 
-///stores a 32bit value into the provided byte array in guaranteed little endian form
-inline void en32lsb(u8 *buf, u32 morp)
-{ 
-	buf[0]=(u8)(morp);
-	buf[1]=(u8)(morp>>8);
-	buf[2]=(u8)(morp>>16);
-	buf[3]=(u8)(morp>>24);
-} 
-
-inline void en16lsb(u8* buf, u16 morp)
-{
-	buf[0]=(u8)morp;
-	buf[1]=(u8)(morp>>8);
-}
-
-///unpacks a 64bit little endian value from the provided byte array into host byte order
-inline u64 de64lsb(u8 *morp)
-{
-	return morp[0]|(morp[1]<<8)|(morp[2]<<16)|(morp[3]<<24)|((u64)morp[4]<<32)|((u64)morp[5]<<40)|((u64)morp[6]<<48)|((u64)morp[7]<<56);
-}
-
-///unpacks a 32bit little endian value from the provided byte array into host byte order
-inline u32 de32lsb(u8 *morp)
-{
-	return morp[0]|(morp[1]<<8)|(morp[2]<<16)|(morp[3]<<24);
-}
-
-///unpacks a 16bit little endian value from the provided byte array into host byte order
-inline u16 de16lsb(u8 *morp)
-{
-	return morp[0]|(morp[1]<<8);
-}
-
 //fairly standard for loop macros
 #define MACRODO1(TRICK,TODO) { const size_t X = TRICK; TODO; }
 #define MACRODO2(X,TODO)   { MACRODO1((X),TODO)   MACRODO1(((X)+1),TODO) }
