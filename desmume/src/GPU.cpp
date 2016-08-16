@@ -18,6 +18,14 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef FASTBUILD
+	#undef FORCEINLINE
+	#define FORCEINLINE
+	//compilation speed hack (cuts time exactly in half by cutting out permutations)
+	#define DISABLE_MOSAIC
+	#define DISABLE_COLOREFFECTDISABLEHINT
+#endif
+
 #include "GPU.h"
 
 #include <assert.h>
@@ -40,74 +48,7 @@
 #include "matrix.h"
 #include "emufile.h"
 
-#ifdef FASTBUILD
-	#undef FORCEINLINE
-	#define FORCEINLINE
-	//compilation speed hack (cuts time exactly in half by cutting out permutations)
-	#define DISABLE_MOSAIC
-#endif
-
 u32 Render3DFramesPerSecond;
-
-CACHE_ALIGN u32 color_555_to_6665_opaque[32768];
-CACHE_ALIGN u32 color_555_to_6665_opaque_swap_rb[32768];
-CACHE_ALIGN u32 color_555_to_666[32768];
-CACHE_ALIGN u32 color_555_to_8888_opaque[32768];
-CACHE_ALIGN u32 color_555_to_8888_opaque_swap_rb[32768];
-CACHE_ALIGN u32 color_555_to_888[32768];
-
-//is this a crazy idea? this table spreads 5 bits evenly over 31 from exactly 0 to INT_MAX
-CACHE_ALIGN const u32 material_5bit_to_31bit[] = {
-	0x00000000, 0x04210842, 0x08421084, 0x0C6318C6,
-	0x10842108, 0x14A5294A, 0x18C6318C, 0x1CE739CE,
-	0x21084210, 0x25294A52, 0x294A5294, 0x2D6B5AD6,
-	0x318C6318, 0x35AD6B5A, 0x39CE739C, 0x3DEF7BDE,
-	0x42108421, 0x46318C63, 0x4A5294A5, 0x4E739CE7,
-	0x5294A529, 0x56B5AD6B, 0x5AD6B5AD, 0x5EF7BDEF,
-	0x6318C631, 0x6739CE73, 0x6B5AD6B5, 0x6F7BDEF7,
-	0x739CE739, 0x77BDEF7B, 0x7BDEF7BD, 0x7FFFFFFF
-};
-
-// 5-bit to 6-bit conversions use this formula -- dst = (src == 0) ? 0 : (2*src) + 1
-// Reference GBATEK: http://problemkaputt.de/gbatek.htm#ds3dtextureblending
-CACHE_ALIGN const u8 material_5bit_to_6bit[] = {
-	0x00, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x0F,
-	0x11, 0x13, 0x15, 0x17, 0x19, 0x1B, 0x1D, 0x1F,
-	0x21, 0x23, 0x25, 0x27, 0x29, 0x2B, 0x2D, 0x2F,
-	0x31, 0x33, 0x35, 0x37, 0x39, 0x3B, 0x3D, 0x3F
-};
-
-CACHE_ALIGN const u8 material_5bit_to_8bit[] = {
-	0x00, 0x08, 0x10, 0x18, 0x21, 0x29, 0x31, 0x39,
-	0x42, 0x4A, 0x52, 0x5A, 0x63, 0x6B, 0x73, 0x7B,
-	0x84, 0x8C, 0x94, 0x9C, 0xA5, 0xAD, 0xB5, 0xBD,
-	0xC6, 0xCE, 0xD6, 0xDE, 0xE7, 0xEF, 0xF7, 0xFF
-};
-
-CACHE_ALIGN const u8 material_6bit_to_8bit[] = {
-	0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C,
-	0x20, 0x24, 0x28, 0x2C, 0x30, 0x34, 0x38, 0x3C,
-	0x41, 0x45, 0x49, 0x4D, 0x51, 0x55, 0x59, 0x5D,
-	0x61, 0x65, 0x69, 0x6D, 0x71, 0x75, 0x79, 0x7D,
-	0x82, 0x86, 0x8A, 0x8E, 0x92, 0x96, 0x9A, 0x9E,
-	0xA2, 0xA6, 0xAA, 0xAE, 0xB2, 0xB6, 0xBA, 0xBE,
-	0xC3, 0xC7, 0xCB, 0xCF, 0xD3, 0xD7, 0xDB, 0xDF,
-	0xE3, 0xE7, 0xEB, 0xEF, 0xF3, 0xF7, 0xFB, 0xFF
-};
-
-CACHE_ALIGN const u8 material_3bit_to_8bit[] = {
-	0x00, 0x24, 0x49, 0x6D, 0x92, 0xB6, 0xDB, 0xFF
-};
-
-//maybe not very precise
-CACHE_ALIGN const u8 material_3bit_to_5bit[] = {
-	0, 4, 8, 13, 17, 22, 26, 31
-};
-
-//TODO - generate this in the static init method more accurately
-CACHE_ALIGN const u8 material_3bit_to_6bit[] = {
-	0, 8, 16, 26, 34, 44, 52, 63
-};
 
 //instantiate static instance
 u16 GPUEngineBase::_brightnessUpTable555[17][0x8000];
@@ -167,7 +108,7 @@ const CACHE_ALIGN BGLayerSize GPUEngineBase::_BGLayerSizeLUT[8][4] = {
 	{{128,128}, {256,256}, {512,256}, {512,512}}, //affine ext direct
 };
 
-static void ExpandLine8(u8 *__restrict dst, const u8 *__restrict src, size_t dstLength)
+static FORCEINLINE void ExpandLine8(u8 *__restrict dst, const u8 *__restrict src, size_t dstLength)
 {
 #ifdef ENABLE_SSSE3
 	const bool isIntegerScale = ((dstLength % GPU_FRAMEBUFFER_NATIVE_WIDTH) == 0);
@@ -1655,11 +1596,11 @@ FORCEINLINE void GPUEngineBase::_RenderPixel(GPUEngineCompositorInfo &compInfo, 
 				break;
 				
 			case NDSColorFormat_BGR666_Rev:
-				dstColor32.color = ConvertColor555To6665Opaque<false>(srcColor16);
+				dstColor32.color = ColorspaceConvert555To6665Opaque<false>(srcColor16);
 				break;
 				
 			case NDSColorFormat_BGR888_Rev:
-				dstColor32.color = ConvertColor555To8888Opaque<false>(srcColor16);
+				dstColor32.color = ColorspaceConvert555To8888Opaque<false>(srcColor16);
 				break;
 		}
 		
@@ -1682,11 +1623,11 @@ FORCEINLINE void GPUEngineBase::_RenderPixel(GPUEngineCompositorInfo &compInfo, 
 				break;
 				
 			case NDSColorFormat_BGR666_Rev:
-				dstColor32.color = ConvertColor555To6665Opaque<false>(srcColor16);
+				dstColor32.color = ColorspaceConvert555To6665Opaque<false>(srcColor16);
 				break;
 				
 			case NDSColorFormat_BGR888_Rev:
-				dstColor32.color = ConvertColor555To8888Opaque<false>(srcColor16);
+				dstColor32.color = ColorspaceConvert555To8888Opaque<false>(srcColor16);
 				break;
 		}
 		
@@ -1767,11 +1708,11 @@ FORCEINLINE void GPUEngineBase::_RenderPixel(GPUEngineCompositorInfo &compInfo, 
 					break;
 					
 				case NDSColorFormat_BGR666_Rev:
-					dstColor32.color = ConvertColor555To6665Opaque<false>(srcColor16);
+					dstColor32.color = ColorspaceConvert555To6665Opaque<false>(srcColor16);
 					break;
 					
 				case NDSColorFormat_BGR888_Rev:
-					dstColor32.color = ConvertColor555To8888Opaque<false>(srcColor16);
+					dstColor32.color = ColorspaceConvert555To8888Opaque<false>(srcColor16);
 					break;
 			}
 			break;
@@ -1833,13 +1774,13 @@ FORCEINLINE void GPUEngineBase::_RenderPixel(GPUEngineCompositorInfo &compInfo, 
 					break;
 					
 				case NDSColorFormat_BGR666_Rev:
-					srcColor32.color = ConvertColor555To6665Opaque<false>(srcColor16);
+					srcColor32.color = ColorspaceConvert555To6665Opaque<false>(srcColor16);
 					dstColor32 = this->_ColorEffectBlend<OUTPUTFORMAT>(srcColor32, dstColor32, blendEVA, blendEVB);
 					dstColor32.a = 0x1F;
 					break;
 					
 				case NDSColorFormat_BGR888_Rev:
-					srcColor32.color = ConvertColor555To8888Opaque<false>(srcColor16);
+					srcColor32.color = ColorspaceConvert555To8888Opaque<false>(srcColor16);
 					dstColor32 = this->_ColorEffectBlend<OUTPUTFORMAT>(srcColor32, dstColor32, blendEVA, blendEVB);
 					dstColor32.a = 0xFF;
 					break;
@@ -2132,7 +2073,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D(GPUEngineCompositorInfo &compInfo
 	// Render the pixel using the selected color effect.
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 	{
-		const u16 srcColor16 = ConvertColor6665To5551<false>(srcColor32);
+		const u16 srcColor16 = ColorspaceConvert6665To5551<false>(srcColor32);
 		
 		switch (selectedEffect)
 		{
@@ -2695,13 +2636,13 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 				
 				if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 				{
-					ConvertColor555To6665Opaque<false>(src16[0], src[0], src[1]);
-					ConvertColor555To6665Opaque<false>(src16[1], src[2], src[3]);
+					ColorspaceConvert555To6665Opaque_SSE2<false>(src16[0], src[0], src[1]);
+					ColorspaceConvert555To6665Opaque_SSE2<false>(src16[1], src[2], src[3]);
 				}
 				else
 				{
-					ConvertColor555To8888Opaque<false>(src16[0], src[0], src[1]);
-					ConvertColor555To8888Opaque<false>(src16[1], src[2], src[3]);
+					ColorspaceConvert555To8888Opaque_SSE2<false>(src16[0], src[0], src[1]);
+					ColorspaceConvert555To8888Opaque_SSE2<false>(src16[1], src[2], src[3]);
 				}
 			}
 			
@@ -2796,13 +2737,13 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
 		{
 			if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 			{
-				ConvertColor555To6665Opaque<false>(src16[0], src[0], src[1]);
-				ConvertColor555To6665Opaque<false>(src16[1], src[2], src[3]);
+				ColorspaceConvert555To6665Opaque_SSE2<false>(src16[0], src[0], src[1]);
+				ColorspaceConvert555To6665Opaque_SSE2<false>(src16[1], src[2], src[3]);
 			}
 			else
 			{
-				ConvertColor555To8888Opaque<false>(src16[0], src[0], src[1]);
-				ConvertColor555To8888Opaque<false>(src16[1], src[2], src[3]);
+				ColorspaceConvert555To8888Opaque_SSE2<false>(src16[0], src[0], src[1]);
+				ColorspaceConvert555To8888Opaque_SSE2<false>(src16[1], src[2], src[3]);
 			}
 		}
 		
@@ -4502,7 +4443,7 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex)
 }
 
 template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_RenderLine_LayerBG_Final(GPUEngineCompositorInfo &compInfo)
+FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG_Final(GPUEngineCompositorInfo &compInfo)
 {
 	bool useCustomVRAM = false;
 	
@@ -4538,26 +4479,28 @@ void GPUEngineBase::_RenderLine_LayerBG_Final(GPUEngineCompositorInfo &compInfo)
 }
 
 template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_RenderLine_LayerBG_ApplyColorEffectDisabledHint(GPUEngineCompositorInfo &compInfo)
+FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG_ApplyColorEffectDisabledHint(GPUEngineCompositorInfo &compInfo)
 {
 	this->_RenderLine_LayerBG_Final<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(compInfo);
 }
 
 template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_RenderLine_LayerBG_ApplyMosaic(GPUEngineCompositorInfo &compInfo)
+FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG_ApplyMosaic(GPUEngineCompositorInfo &compInfo)
 {
+#ifndef DISABLE_COLOREFFECTDISABLEHINT
 	if (compInfo.renderState.colorEffect == ColorEffect_Disable)
 	{
 		this->_RenderLine_LayerBG_ApplyColorEffectDisabledHint<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, true, ISCUSTOMRENDERINGNEEDED>(compInfo);
 	}
 	else
+#endif
 	{
 		this->_RenderLine_LayerBG_ApplyColorEffectDisabledHint<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, false, ISCUSTOMRENDERINGNEEDED>(compInfo);
 	}
 }
 
 template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
-void GPUEngineBase::_RenderLine_LayerBG(GPUEngineCompositorInfo &compInfo)
+FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG(GPUEngineCompositorInfo &compInfo)
 {
 	if (ISDEBUGRENDER)
 	{
@@ -4951,7 +4894,7 @@ void GPUEngineBase::ResolveCustomRendering()
 
 void GPUEngineBase::ResolveRGB666ToRGB888()
 {
-	ConvertColorBuffer6665To8888<false>((u32 *)this->renderedBuffer, (u32 *)this->renderedBuffer, this->renderedWidth * this->renderedHeight);
+	ColorspaceConvertBuffer6665To8888<false, false>((u32 *)this->renderedBuffer, (u32 *)this->renderedBuffer, this->renderedWidth * this->renderedHeight);
 }
 
 void GPUEngineBase::ResolveToCustomFramebuffer()
@@ -5575,12 +5518,12 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 				
 			case NDSColorFormat_BGR666_Rev:
 				renderedLineSrcA16 = (u16 *)malloc_alignedCacheLine(compInfo.line.pixelCount * sizeof(u16));
-				ConvertColorBuffer6665To5551<false, false>((u32 *)compInfo.target.lineColorHead, renderedLineSrcA16, compInfo.line.pixelCount);
+				ColorspaceConvertBuffer6665To5551<false, false>((u32 *)compInfo.target.lineColorHead, renderedLineSrcA16, compInfo.line.pixelCount);
 				break;
 				
 			case NDSColorFormat_BGR888_Rev:
 				renderedLineSrcA16 = (u16 *)malloc_alignedCacheLine(compInfo.line.pixelCount * sizeof(u16));
-				ConvertColorBuffer8888To5551<false, false>((u32 *)compInfo.target.lineColorHead, renderedLineSrcA16, compInfo.line.pixelCount);
+				ColorspaceConvertBuffer8888To5551<false, false>((u32 *)compInfo.target.lineColorHead, renderedLineSrcA16, compInfo.line.pixelCount);
 				break;
 		}
 	}
@@ -6570,7 +6513,7 @@ void GPUEngineA::_HandleDisplayModeVRAM(const size_t l)
 			{
 				const u16 *src = this->_VRAMNativeBlockPtr[DISPCNT.VRAM_Block] + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 				FragmentColor *dst = (FragmentColor *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
-				ConvertColorBuffer555To6665Opaque<false, false>(src, (u32 *)dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+				ColorspaceConvertBuffer555To6665Opaque<false, false>(src, (u32 *)dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 				break;
 			}
 				
@@ -6578,7 +6521,7 @@ void GPUEngineA::_HandleDisplayModeVRAM(const size_t l)
 			{
 				const u16 *src = this->_VRAMNativeBlockPtr[DISPCNT.VRAM_Block] + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 				FragmentColor *dst = (FragmentColor *)this->nativeBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
-				ConvertColorBuffer555To8888Opaque<false, false>(src, (u32 *)dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+				ColorspaceConvertBuffer555To8888Opaque<false, false>(src, (u32 *)dst, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 				break;
 			}
 		}
@@ -6598,7 +6541,7 @@ void GPUEngineA::_HandleDisplayModeVRAM(const size_t l)
 			{
 				const u16 *src = this->_VRAMCustomBlockPtr[DISPCNT.VRAM_Block] + (_gpuDstLineIndex[l] * customWidth);
 				FragmentColor *dst = (FragmentColor *)this->customBuffer + (_gpuDstLineIndex[l] * customWidth);
-				ConvertColorBuffer555To6665Opaque<false, false>(src, (u32 *)dst, customPixCount);
+				ColorspaceConvertBuffer555To6665Opaque<false, false>(src, (u32 *)dst, customPixCount);
 				break;
 			}
 				
@@ -6606,7 +6549,7 @@ void GPUEngineA::_HandleDisplayModeVRAM(const size_t l)
 			{
 				const u16 *src = this->_VRAMCustomBlockPtr[DISPCNT.VRAM_Block] + (_gpuDstLineIndex[l] * customWidth);
 				FragmentColor *dst = (FragmentColor *)this->customBuffer + (_gpuDstLineIndex[l] * customWidth);
-				ConvertColorBuffer555To8888Opaque<false, false>(src, (u32 *)dst, customPixCount);
+				ColorspaceConvertBuffer555To8888Opaque<false, false>(src, (u32 *)dst, customPixCount);
 				break;
 			}
 		}
@@ -6802,28 +6745,7 @@ void GPUEngineB::RenderLine(const u16 l)
 
 GPUSubsystem::GPUSubsystem()
 {
-	static bool needInitTables = true;
-	
-	if (needInitTables)
-	{
-#define RGB15TO18_BITLOGIC(col)         ( (material_5bit_to_6bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_6bit[((col)>>5)&0x1F]<<8) |  material_5bit_to_6bit[(col)&0x1F] )
-#define RGB15TO18_SWAP_RB_BITLOGIC(col) (  material_5bit_to_6bit[((col)>>10)&0x1F]      | (material_5bit_to_6bit[((col)>>5)&0x1F]<<8) | (material_5bit_to_6bit[(col)&0x1F]<<16) )
-#define RGB15TO24_BITLOGIC(col)         ( (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) |  material_5bit_to_8bit[(col)&0x1F] )
-#define RGB15TO24_SWAP_RB_BITLOGIC(col) (  material_5bit_to_8bit[((col)>>10)&0x1F]      | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | (material_5bit_to_8bit[(col)&0x1F]<<16) )
-		
-		for (size_t i = 0; i < 32768; i++)
-		{
-			color_555_to_666[i]					= LE_TO_LOCAL_32( RGB15TO18_BITLOGIC(i) );
-			color_555_to_6665_opaque[i]			= LE_TO_LOCAL_32( RGB15TO18_BITLOGIC(i) | 0x1F000000 );
-			color_555_to_6665_opaque_swap_rb[i]	= LE_TO_LOCAL_32( RGB15TO18_SWAP_RB_BITLOGIC(i) | 0x1F000000 );
-			
-			color_555_to_888[i]					= LE_TO_LOCAL_32( RGB15TO24_BITLOGIC(i) );
-			color_555_to_8888_opaque[i]			= LE_TO_LOCAL_32( RGB15TO24_BITLOGIC(i) | 0xFF000000 );
-			color_555_to_8888_opaque_swap_rb[i]	= LE_TO_LOCAL_32( RGB15TO24_SWAP_RB_BITLOGIC(i) | 0xFF000000 );
-		}
-		
-		needInitTables = false;
-	}
+	ColorspaceHandlerInit();
 	
 	_defaultEventHandler = new GPUEventHandlerDefault;
 	_event = _defaultEventHandler;
@@ -7581,178 +7503,6 @@ void NDSDisplay::SetEngineByID(const GPUEngineID theID)
 	this->_gpu->SetDisplayByID(this->_ID);
 }
 
-template <bool SWAP_RB, bool IS_UNALIGNED>
-void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount)
-{
-	size_t i = 0;
-	
-#ifdef ENABLE_SSE2
-	const size_t ssePixCount = pixCount - (pixCount % 8);
-	for (; i < ssePixCount; i += 8)
-	{
-		__m128i src_vec128 = (IS_UNALIGNED) ? _mm_loadu_si128((__m128i *)(src + i)) : _mm_load_si128((__m128i *)(src + i));
-		__m128i dstConvertedLo, dstConvertedHi;
-		ConvertColor555To8888Opaque<SWAP_RB>(src_vec128, dstConvertedLo, dstConvertedHi);
-		
-		if (IS_UNALIGNED)
-		{
-			_mm_storeu_si128((__m128i *)(dst + i + 0), dstConvertedLo);
-			_mm_storeu_si128((__m128i *)(dst + i + 4), dstConvertedHi);
-		}
-		else
-		{
-			_mm_store_si128((__m128i *)(dst + i + 0), dstConvertedLo);
-			_mm_store_si128((__m128i *)(dst + i + 4), dstConvertedHi);
-		}
-	}
-#endif
-	
-#ifdef ENABLE_SSE2
-#pragma LOOPVECTORIZE_DISABLE
-#endif
-	for (; i < pixCount; i++)
-	{
-		dst[i] = ConvertColor555To8888Opaque<SWAP_RB>(src[i]);
-	}
-}
-
-template <bool SWAP_RB, bool IS_UNALIGNED>
-void ConvertColorBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount)
-{
-	size_t i = 0;
-	
-#ifdef ENABLE_SSE2
-	const size_t ssePixCount = pixCount - (pixCount % 8);
-	for (; i < ssePixCount; i += 8)
-	{
-		__m128i src_vec128 = (IS_UNALIGNED) ? _mm_loadu_si128((__m128i *)(src + i)) : _mm_load_si128((__m128i *)(src + i));
-		__m128i dstConvertedLo, dstConvertedHi;
-		ConvertColor555To6665Opaque<SWAP_RB>(src_vec128, dstConvertedLo, dstConvertedHi);
-		
-		if (IS_UNALIGNED)
-		{
-			_mm_storeu_si128((__m128i *)(dst + i + 0), dstConvertedLo);
-			_mm_storeu_si128((__m128i *)(dst + i + 4), dstConvertedHi);
-		}
-		else
-		{
-			_mm_store_si128((__m128i *)(dst + i + 0), dstConvertedLo);
-			_mm_store_si128((__m128i *)(dst + i + 4), dstConvertedHi);
-		}
-	}
-#endif
-	
-#ifdef ENABLE_SSE2
-#pragma LOOPVECTORIZE_DISABLE
-#endif
-	for (; i < pixCount; i++)
-	{
-		dst[i] = ConvertColor555To6665Opaque<SWAP_RB>(src[i]);
-	}
-}
-
-template <bool SWAP_RB>
-void ConvertColorBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount)
-{
-	size_t i = 0;
-	
-#ifdef ENABLE_SSE2
-	const size_t ssePixCount = pixCount - (pixCount % 4);
-	for (; i < ssePixCount; i += 4)
-	{
-		_mm_store_si128( (__m128i *)(dst + i), ConvertColor8888To6665<SWAP_RB>(_mm_load_si128((__m128i *)(src + i))) );
-	}
-#endif
-	
-#ifdef ENABLE_SSE2
-#pragma LOOPVECTORIZE_DISABLE
-#endif
-	for (; i < pixCount; i++)
-	{
-		dst[i] = ConvertColor8888To6665<SWAP_RB>(src[i]);
-	}
-}
-
-template <bool SWAP_RB>
-void ConvertColorBuffer6665To8888(const u32 *src, u32 *dst, size_t pixCount)
-{
-	size_t i = 0;
-	
-#ifdef ENABLE_SSE2
-	const size_t ssePixCount = pixCount - (pixCount % 4);
-	for (; i < ssePixCount; i += 4)
-	{
-		_mm_store_si128( (__m128i *)(dst + i), ConvertColor6665To8888<SWAP_RB>(_mm_load_si128((__m128i *)(src + i))) );
-	}
-#endif
-	
-#ifdef ENABLE_SSE2
-#pragma LOOPVECTORIZE_DISABLE
-#endif
-	for (; i < pixCount; i++)
-	{
-		dst[i] = ConvertColor6665To8888<SWAP_RB>(src[i]);
-	}
-}
-
-template <bool SWAP_RB, bool IS_UNALIGNED>
-void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount)
-{
-	size_t i = 0;
-	
-#ifdef ENABLE_SSE2
-	const size_t ssePixCount = pixCount - (pixCount % 8);
-	for (; i < ssePixCount; i += 8)
-	{
-		if (IS_UNALIGNED)
-		{
-			_mm_storeu_si128( (__m128i *)(dst + i), ConvertColor8888To5551<SWAP_RB>(_mm_loadu_si128((__m128i *)(src + i)), _mm_loadu_si128((__m128i *)(src + i + 4))) );
-		}
-		else
-		{
-			_mm_store_si128( (__m128i *)(dst + i), ConvertColor8888To5551<SWAP_RB>(_mm_load_si128((__m128i *)(src + i)), _mm_load_si128((__m128i *)(src + i + 4))) );
-		}
-	}
-#endif
-	
-#ifdef ENABLE_SSE2
-#pragma LOOPVECTORIZE_DISABLE
-#endif
-	for (; i < pixCount; i++)
-	{
-		dst[i] = ConvertColor8888To5551<SWAP_RB>(src[i]);
-	}
-}
-
-template <bool SWAP_RB, bool IS_UNALIGNED>
-void ConvertColorBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount)
-{
-	size_t i = 0;
-	
-#ifdef ENABLE_SSE2
-	const size_t ssePixCount = pixCount - (pixCount % 8);
-	for (; i < ssePixCount; i += 8)
-	{
-		if (IS_UNALIGNED)
-		{
-			_mm_storeu_si128( (__m128i *)(dst + i), ConvertColor6665To5551<SWAP_RB>(_mm_loadu_si128((__m128i *)(src + i)), _mm_loadu_si128((__m128i *)(src + i + 4))) );
-		}
-		else
-		{
-			_mm_store_si128( (__m128i *)(dst + i), ConvertColor6665To5551<SWAP_RB>(_mm_load_si128((__m128i *)(src + i)), _mm_load_si128((__m128i *)(src + i + 4))) );
-		}
-	}
-#endif
-	
-#ifdef ENABLE_SSE2
-#pragma LOOPVECTORIZE_DISABLE
-#endif
-	for (; i < pixCount; i++)
-	{
-		dst[i] = ConvertColor6665To5551<SWAP_RB>(src[i]);
-	}
-}
-
 template void GPUEngineBase::ParseReg_BGnHOFS<GPULayerID_BG0>();
 template void GPUEngineBase::ParseReg_BGnHOFS<GPULayerID_BG1>();
 template void GPUEngineBase::ParseReg_BGnHOFS<GPULayerID_BG2>();
@@ -7774,29 +7524,3 @@ template void GPUEngineBase::ParseReg_BGnY<GPULayerID_BG3>();
 template void GPUSubsystem::RenderLine<NDSColorFormat_BGR555_Rev>(const u16 l, bool skip);
 template void GPUSubsystem::RenderLine<NDSColorFormat_BGR666_Rev>(const u16 l, bool skip);
 template void GPUSubsystem::RenderLine<NDSColorFormat_BGR888_Rev>(const u16 l, bool skip);
-
-template void ConvertColorBuffer555To8888Opaque<true, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer555To8888Opaque<true, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer555To8888Opaque<false, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer555To8888Opaque<false, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-
-template void ConvertColorBuffer555To6665Opaque<true, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer555To6665Opaque<true, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer555To6665Opaque<false, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer555To6665Opaque<false, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-
-template void ConvertColorBuffer8888To6665<true>(const u32 *src, u32 *dst, size_t pixCount);
-template void ConvertColorBuffer8888To6665<false>(const u32 *src, u32 *dst, size_t pixCount);
-
-template void ConvertColorBuffer6665To8888<true>(const u32 *src, u32 *dst, size_t pixCount);
-template void ConvertColorBuffer6665To8888<false>(const u32 *src, u32 *dst, size_t pixCount);
-
-template void ConvertColorBuffer8888To5551<true, true>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer8888To5551<true, false>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer8888To5551<false, true>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer8888To5551<false, false>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
-
-template void ConvertColorBuffer6665To5551<true, true>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer6665To5551<true, false>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer6665To5551<false, true>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
-template void ConvertColorBuffer6665To5551<false, false>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);

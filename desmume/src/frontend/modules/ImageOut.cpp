@@ -29,16 +29,14 @@ static u8* Convert15To24(const u16* src, int width, int height)
 	u8 *tmp_inc;
 	tmp_inc = tmp_buffer = (u8 *)malloc(width * height * 3);
 
-	for(int y=0;y<height;y++)
+	for (int i = 0; i < width*height; i++)
 	{
-		for(int x=0;x<width;x++)
-		{
-			u32 dst = ConvertColor555To8888Opaque<true>(*src++);
-			*tmp_inc++ = dst&0xFF;
-			*tmp_inc++ = (dst>>8)&0xFF;
-			*tmp_inc++ = (dst>>16)&0xFF;
-		}
+		u32 dst = ColorspaceConvert555To8888Opaque<true>(*src++);
+		*tmp_inc++ = dst & 0xFF;
+		*tmp_inc++ = (dst >> 8) & 0xFF;
+		*tmp_inc++ = (dst >> 16) & 0xFF;
 	}
+
 	return tmp_buffer;
 }
 

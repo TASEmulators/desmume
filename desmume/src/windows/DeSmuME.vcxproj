@@ -171,6 +171,8 @@
     <ClCompile Include="..\utils\AsmJit\x86\x86func.cpp" />
     <ClCompile Include="..\utils\AsmJit\x86\x86operand.cpp" />
     <ClCompile Include="..\utils\AsmJit\x86\x86util.cpp" />
+    <ClCompile Include="..\utils\colorspacehandler\colorspacehandler.cpp" />
+    <ClCompile Include="..\utils\colorspacehandler\colorspacehandler_SSE2.cpp" />
     <ClCompile Include="..\utils\datetime.cpp" />
     <ClCompile Include="..\utils\dlditool.cpp" />
     <ClCompile Include="..\utils\emufat.cpp" />
@@ -442,6 +444,8 @@
     <ClInclude Include="..\utils\AsmJit\x86\x86func.h" />
     <ClInclude Include="..\utils\AsmJit\x86\x86operand.h" />
     <ClInclude Include="..\utils\AsmJit\x86\x86util.h" />
+    <ClInclude Include="..\utils\colorspacehandler\colorspacehandler.h" />
+    <ClInclude Include="..\utils\colorspacehandler\colorspacehandler_SSE2.h" />
     <ClInclude Include="..\utils\datetime.h" />
     <ClInclude Include="..\utils\emufat.h" />
     <ClInclude Include="..\utils\emufat_types.h" />

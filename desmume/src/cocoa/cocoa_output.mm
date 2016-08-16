@@ -754,7 +754,7 @@
 	
 	if (dispInfo.pixelBytes == 2)
 	{
-		ConvertColorBuffer555To8888Opaque<false, false>((u16 *)displayBuffer, bitmapData, (w * h));
+		ColorspaceConvertBuffer555To8888Opaque<false, false>((u16 *)displayBuffer, bitmapData, (w * h));
 	}
 	else if (dispInfo.pixelBytes == 4)
 	{
