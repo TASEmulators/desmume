@@ -1,5 +1,11 @@
 /desmume/src/windows/.libs
 /desmume/src/windows/.obj
 /desmume/src/windows/__bins
+/desmume/src/windows/*.tlog
+/desmume/src/windows/*.aps
 *.user
 *.suo
+*.o
+.deps
+*.dirstamp
+Makefile.in
