@@ -179,11 +179,11 @@ enum Mode
 	SYS = 0x1F
 };
 
-#ifdef MSB_FIRST
 typedef union
 {
 	struct
 	{
+#ifdef MSB_FIRST
 		u32 N : 1,
 		Z : 1,
 		C : 1,
@@ -193,16 +193,9 @@ typedef union
 		I : 1,
 		F : 1,
 		T : 1,
-                mode : 5;
-	} bits;
-        u32 val;
-} Status_Reg;
+      mode : 5;
 #else
-typedef union
-{
-	struct
-	{
-                u32 mode : 5,
+      u32 mode : 5,
 		T : 1,
 		F : 1,
 		I : 1,
@@ -212,10 +205,10 @@ typedef union
 		C : 1,
 		Z : 1,
 		N : 1;
-	} bits;
-        u32 val;
-} Status_Reg;
 #endif
+	} bits;
+   u32 val;
+} Status_Reg;
 
 /**
  * The control interface to a CPU
