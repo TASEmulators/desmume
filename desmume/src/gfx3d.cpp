@@ -644,8 +644,8 @@ FORCEINLINE s64 GEM_Mul32x32To64(const s32 a, const s32 b)
 
 static s32 GEM_SaturateAndShiftdown36To32(const s64 val)
 {
-	if(val>0x000007FFFFFFFFFFLL) return 0x7FFFFFFF;
-	if(val<0xFFFFF80000000000LL) return 0x80000000;
+	if(val>(s64)0x000007FFFFFFFFFFULL) return (s32)0x7FFFFFFFU;
+	if(val<(s64)0xFFFFF80000000000ULL) return (s32)0x80000000U;
 
 	return fx32_shiftdown(val);
 }
