@@ -35,9 +35,6 @@ fi
 AC_DEFINE_UNQUOTED([SVN_REV], [$REVISION], [subversion revision number])
 AC_DEFINE_UNQUOTED([SVN_REV_STR], ["$REVISION"], [subversion revision number string])
 
-dnl - Check for intltool/gettext macros
-IT_PROG_INTLTOOL
-
 dnl - Check for zlib
 AC_CHECK_LIB(z, gzopen, [], [AC_MSG_ERROR([zlib was not found, we can't go further. Please install it or specify the location where it's installed.])])
 
@@ -231,9 +228,7 @@ if test "x$HAVE_ALSA" = "xno"; then
    fi
 fi
 
-dnl - Determine which UIs to build and if po/ should be included
-PO_DIR="po"
-PO_MAKEFILE="po/Makefile.in"
+dnl - Determine which UIs to build
 UI_DIR="cli $UI_DIR"
 if test "x$HAVE_GTK" = "xyes"; then
   UI_DIR="gtk $UI_DIR"
@@ -368,14 +363,11 @@ AC_SUBST(USE_MAINTAINER_MODE)
 
 dnl --- Finally, output all the makefiles
 AC_CONFIG_FILES([Makefile
-                 ${PO_MAKEFILE}
                  src/Makefile
                  src/cli/Makefile
                  src/cli/doc/Makefile
                  src/gtk/Makefile
                  src/gtk/doc/Makefile
-                 src/gtk-glade/Makefile
-                 src/gtk-glade/doc/Makefile
                  src/gdbstub/Makefile
 ])
 AC_OUTPUT
