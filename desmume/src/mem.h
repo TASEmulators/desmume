@@ -29,9 +29,9 @@ enum MMU_ACCESS_TYPE
 {
 	MMU_AT_CODE, //used for cpu prefetches
 	MMU_AT_DATA, //used for cpu read/write
-	MMU_AT_GPU, //used for gpu read/write
-	MMU_AT_DMA, //used for dma read/write (blocks access to TCM)
-	MMU_AT_DEBUG, //used for emulator debugging functions (bypasses some debug handling)
+	MMU_AT_GPU,  //used for gpu read/write
+	MMU_AT_DMA,  //used for dma read/write (blocks access to TCM)
+	MMU_AT_DEBUG //used for emulator debugging functions (bypasses some debug handling)
 };
 
 static INLINE u8 T1ReadByte(u8* const mem, const u32 addr)

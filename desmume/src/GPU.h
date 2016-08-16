@@ -80,7 +80,7 @@ enum PaletteMode
 enum OBJMode
 {
 	OBJMode_Normal			= 0,
-	OBJMode_Transparent		= 1,
+	OBJMode_Transparent	= 1,
 	OBJMode_Window			= 2,
 	OBJMode_Bitmap			= 3
 };
@@ -89,7 +89,7 @@ enum OBJShape
 {
 	OBJShape_Square			= 0,
 	OBJShape_Horizontal		= 1,
-	OBJShape_Vertical		= 2,
+	OBJShape_Vertical	   	= 2,
 	OBJShape_Prohibited		= 3
 };
 
@@ -98,7 +98,7 @@ enum DisplayCaptureSize
 	DisplayCaptureSize_128x128	= 0,
 	DisplayCaptureSize_256x64	= 1,
 	DisplayCaptureSize_256x128	= 2,
-	DisplayCaptureSize_256x192	= 3,
+	DisplayCaptureSize_256x192	= 3
 };
 
 union FragmentColor
@@ -774,15 +774,15 @@ typedef struct
 
 enum ColorEffect
 {
-	ColorEffect_Disable					= 0,
-	ColorEffect_Blend					= 1,
+	ColorEffect_Disable					   = 0,
+	ColorEffect_Blend					      = 1,
 	ColorEffect_IncreaseBrightness		= 2,
 	ColorEffect_DecreaseBrightness		= 3
 };
 
 enum GPUEngineID
 {
-	GPUEngineID_Main	= 0,
+	GPUEngineID_Main	   = 0,
 	GPUEngineID_Sub		= 1
 };
 
@@ -1007,7 +1007,7 @@ enum GPULayerID
 	GPULayerID_BG2					= 2,
 	GPULayerID_BG3					= 3,
 	GPULayerID_OBJ					= 4,
-	GPULayerID_Backdrop				= 5
+	GPULayerID_Backdrop			= 5
 };
 
 enum BGType
@@ -1018,9 +1018,9 @@ enum BGType
 	BGType_Large8bpp				= 3,
 	
 	BGType_AffineExt				= 4,
-	BGType_AffineExt_256x16			= 5,
-	BGType_AffineExt_256x1			= 6,
-	BGType_AffineExt_Direct			= 7
+	BGType_AffineExt_256x16		= 5,
+	BGType_AffineExt_256x1		= 6,
+	BGType_AffineExt_Direct		= 7
 };
 
 enum GPUDisplayMode
@@ -1033,7 +1033,7 @@ enum GPUDisplayMode
 
 enum GPUMasterBrightMode
 {
-	GPUMasterBrightMode_Disable		= 0,
+	GPUMasterBrightMode_Disable	= 0,
 	GPUMasterBrightMode_Up			= 1,
 	GPUMasterBrightMode_Down		= 2,
 	GPUMasterBrightMode_Reserved	= 3
@@ -1044,12 +1044,12 @@ enum GPULayerType
 {
 	GPULayerType_3D					= 0,
 	GPULayerType_BG					= 1,
-	GPULayerType_OBJ				= 2
+	GPULayerType_OBJ				   = 2
 };
 
 enum NDSDisplayID
 {
-	NDSDisplayID_Main				= 0,
+	NDSDisplayID_Main				   = 0,
 	NDSDisplayID_Touch				= 1
 };
 

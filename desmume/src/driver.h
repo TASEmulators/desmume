@@ -46,8 +46,8 @@ public:
 	enum eStepMainLoopResult
 	{
 		ESTEP_NOT_IMPLEMENTED = -1,
-		ESTEP_CALL_AGAIN = 0,
-		ESTEP_DONE = 1,
+		ESTEP_CALL_AGAIN      = 0,
+		ESTEP_DONE            = 1
 	};
 	virtual eStepMainLoopResult EMU_StepMainLoop(bool allowSleep, bool allowPause, int frameSkip, bool disableUser, bool disableCore) { return ESTEP_NOT_IMPLEMENTED; } // -1 frameSkip == useCurrentDefault
 	virtual void EMU_PauseEmulation(bool pause) {}

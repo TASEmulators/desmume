@@ -28,9 +28,9 @@
 
 enum TexCache_TexFormat
 {
-	TexFormat_None, //used when nothing yet is cached
-	TexFormat_32bpp, //used by ogl renderer
-	TexFormat_15bpp //used by rasterizer
+	TexFormat_None    = 0, //used when nothing yet is cached
+	TexFormat_32bpp,       //used by ogl renderer
+	TexFormat_15bpp        //used by rasterizer
 };
 
 class TexCacheItem;

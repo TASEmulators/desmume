@@ -43,16 +43,16 @@ typedef const u8 TWaitState;
 
 enum EDMAMode
 {
-	EDMAMode_Immediate = 0,
-	EDMAMode_VBlank = 1,
-	EDMAMode_HBlank = 2,
-	EDMAMode_HStart = 3,
-	EDMAMode_MemDisplay = 4,
-	EDMAMode_Card = 5,
-	EDMAMode_GBASlot = 6,
-	EDMAMode_GXFifo = 7,
-	EDMAMode7_Wifi = 8,
-	EDMAMode7_GBASlot = 9,
+	EDMAMode_Immediate   = 0,
+	EDMAMode_VBlank      = 1,
+	EDMAMode_HBlank      = 2,
+	EDMAMode_HStart      = 3,
+	EDMAMode_MemDisplay  = 4,
+	EDMAMode_Card        = 5,
+	EDMAMode_GBASlot     = 6,
+	EDMAMode_GXFifo      = 7,
+	EDMAMode7_Wifi       = 8,
+	EDMAMode7_GBASlot    = 9
 };
 
 enum EDMABitWidth
@@ -65,16 +65,16 @@ enum EDMASourceUpdate
 {
 	EDMASourceUpdate_Increment = 0,
 	EDMASourceUpdate_Decrement = 1,
-	EDMASourceUpdate_Fixed = 2,
-	EDMASourceUpdate_Invalid = 3,
+	EDMASourceUpdate_Fixed     = 2,
+	EDMASourceUpdate_Invalid   = 3
 };
 
 enum EDMADestinationUpdate
 {
-	EDMADestinationUpdate_Increment = 0,
-	EDMADestinationUpdate_Decrement = 1,
-	EDMADestinationUpdate_Fixed = 2,
-	EDMADestinationUpdate_IncrementReload = 3,
+	EDMADestinationUpdate_Increment        = 0,
+	EDMADestinationUpdate_Decrement        = 1,
+	EDMADestinationUpdate_Fixed            = 2,
+	EDMADestinationUpdate_IncrementReload  = 3
 };
 
 //TODO

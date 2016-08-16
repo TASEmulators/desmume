@@ -47,7 +47,7 @@ FORCEINLINE s32 spumuldiv7(s32 val, u8 multiplier) {
 
 enum SPUInterpolationMode
 {
-	SPUInterpolation_None = 0,
+	SPUInterpolation_None   = 0,
 	SPUInterpolation_Linear = 1,
 	SPUInterpolation_Cosine = 2
 };
