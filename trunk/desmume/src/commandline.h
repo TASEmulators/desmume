@@ -24,17 +24,29 @@
 //hacky commandline options that i didnt want to route through commonoptions
 extern int _commandline_linux_nojoy;
 
+#define COMMANDLINE_RENDER3D_DEFAULT 0
+#define COMMANDLINE_RENDER3D_NONE 1
+#define COMMANDLINE_RENDER3D_SW 2
+#define COMMANDLINE_RENDER3D_OLDGL 3
+#define COMMANDLINE_RENDER3D_GL 4
+#define COMMANDLINE_RENDER3D_AUTOGL 5
+
 //this class will also eventually try to take over the responsibility of using the args that it handles
 //for example: preparing the emulator run by loading the rom, savestate, and/or movie in the correct pattern.
 //it should also populate CommonSettings with its initial values
+//EDIT: not really. combining this with what a frontend wants to do is complicated. 
+//you might design the API so that the frontend sets all those up, but I'm not sure I like that
+//Really, this should be a passive structure that just collects the results provided by the shared command line processing, to be used later as appropriate
+//(and the CommonSettings setup REMOVED or at least refactored into a separate method)
 
 class CommandLine
 {
 public:
-	//actual options: these may move to another sturct
+	//actual options: these may move to another struct
 	int load_slot;
 	int depth_threshold;
 	int autodetect_method;
+	int render3d;
 	std::string nds_file;
 	std::string play_movie_file;
 	std::string record_movie_file;
