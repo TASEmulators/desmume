@@ -32,21 +32,6 @@
 #include "../emufile.h"
 
 
-//definitions for str_strip() flags
-#define STRIP_SP	0x01 // space
-#define STRIP_TAB	0x02 // tab
-#define STRIP_CR	0x04 // carriage return
-#define STRIP_LF	0x08 // line feed
-
-
-int str_ucase(char *str);
-int str_lcase(char *str);
-int str_ltrim(char *str, int flags);
-int str_rtrim(char *str, int flags);
-int str_strip(char *str, int flags);
-int chr_replace(char *str, char search, char replace);
-int str_replace(char *str, char *search, char *replace);
-
 std::string strsub(const std::string& str, int pos, int len);
 std::string strmid(const std::string& str, int pos, int len);
 std::string strleft(const std::string& str, int len);
@@ -60,19 +45,8 @@ std::string BytesToString(const void* data, int len);
 bool StringToBytes(const std::string& str, void* data, int len);
 
 std::vector<std::string> tokenize_str(const std::string & str,const std::string & delims);
-void splitpath(const char* path, char* drv, char* dir, char* name, char* ext);
-
-uint16 FastStrToU16(char* s, bool& valid);
-char *U16ToDecStr(uint16 a);
-char *U32ToDecStr(uint32 a);
-char *U32ToDecStr(char* buf, uint32 a);
-char *U8ToDecStr(uint8 a);
-char *U8ToHexStr(uint8 a);
-char *U16ToHexStr(uint16 a);
 
 std::string stditoa(int n);
-
-std::string readNullTerminatedAscii(std::istream* is);
 
 //extracts a decimal uint from an istream
 template<typename T> T templateIntegerDecFromIstream(EMUFILE* is)
@@ -130,11 +104,6 @@ std::string mass_replace(const std::string &source, const std::string &victim, c
 
 std::wstring mbstowcs(std::string str);
 std::string wcstombs(std::wstring str);
-
-
-
-//TODO - dont we already have another  function that can do this
-std::string getExtension(const char* input);
 
 
 #endif
