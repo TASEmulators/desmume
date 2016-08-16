@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 
 #include "../mic.h"
 
+#include <mmsystem.h>
 #include <windows.h>
 #include <string.h>
 #include <vector>

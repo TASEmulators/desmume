@@ -1,6 +1,6 @@
-/*	snddx.cpp
+/*	
 	Copyright (C) 2005-2007 Theo Berkau
-	Copyright (C) 2006-2015 DeSmuME team
+	Copyright (C) 2006-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <Windows.h>
+#include <mmsystem.h>
 #include "directx/dsound.h"
 
 #ifdef __MINGW32__
