@@ -386,6 +386,29 @@ SFORMAT reserveChunks[] = {
 	{ 0 }
 };
 
+#ifdef MSB_FIRST
+/* endian-flips count bytes.  count should be even and nonzero. */
+static INLINE void FlipByteOrder(u8 *src, u32 count)
+{
+	u8 *start=src;
+	u8 *end=src+count-1;
+
+	if((count&1) || !count)
+      return;         /* This shouldn't happen. */
+
+	while(count--)
+	{
+		u8 tmp;
+
+		tmp=*end;
+		*end=*start;
+		*start=tmp;
+		end--;
+		start++;
+	}
+}
+#endif
+
 static bool s_slot1_loadstate(EMUFILE* is, int size)
 {
 	u32 version = is->read32le();

@@ -294,28 +294,6 @@ typedef enum
 	ARM7 = 1
 } cpu_id_t;
 
-///endian-flips count bytes.  count should be even and nonzero.
-inline void FlipByteOrder(u8 *src, u32 count)
-{
-	u8 *start=src;
-	u8 *end=src+count-1;
-
-	if((count&1) || !count)        return;         /* This shouldn't happen. */
-
-	while(count--)
-	{
-		u8 tmp;
-
-		tmp=*end;
-		*end=*start;
-		*start=tmp;
-		end--;
-		start++;
-	}
-}
-
-
-
 inline u64 double_to_u64(double d) {
 	union {
 		u64 a;
