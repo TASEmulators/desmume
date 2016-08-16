@@ -19,6 +19,8 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
+#include <retro_miscellaneous.h>
+
 //analyze microsoft compilers
 #ifdef _MSC_VER
 	#define HOST_WINDOWS
@@ -302,8 +304,6 @@ typedef int desmume_BOOL;
 // kilobytes and megabytes macro
 #define MB(x) ((x)*1024*1024)
 #define KB(x) ((x)*1024)
-
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 #define CPU_STR(c) ((c==ARM9)?"ARM9":"ARM7")
 typedef enum

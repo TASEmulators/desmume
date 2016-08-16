@@ -277,8 +277,6 @@ static int interp_32_diff(u32 p1, u32 p2)
 #define INTERP_LIMIT2 (96000)
 //#define ABS(x) ((x) < 0 ? -(x) : (x))
 static FORCEINLINE u32 ABS(s32 x) { return (x+(x>>31))^(x>>31); } // faster
-#define MAX(x,y) ((x) > (y) ? (x) : (y))
-#define MIN(x,y) ((x) < (y) ? (x) : (y))
 //
 //static int interp_16_diff2(u16 p1, u16 p2)
 //{
