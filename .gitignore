@@ -1,4 +1,5 @@
 /desmume/src/windows/.libs
 /desmume/src/windows/.obj
 /desmume/src/windows/__bins
-/desmume/src/windows/*.user
+*.user
+*.suo
