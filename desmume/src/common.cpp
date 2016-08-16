@@ -376,16 +376,13 @@ static MAKER makerCodes[] = {
 	{ 0x4849, "Yojigen" },
 };
 
-#define makerNum sizeof(makerCodes) / sizeof(makerCodes[0])
-
 std::string getDeveloperNameByID(u16 id)
 {
-	for (u32 i = 0; i < makerNum; i++)
+   u32 i;
+	for (i = 0; i < ARRAY_SIZE(makerCodes); i++)
 	{
 		if (makerCodes[i].code == id)
-		{
 			return makerCodes[i].name;
-		}
 	}
 	return "Unknown";
 }
