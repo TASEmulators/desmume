@@ -124,6 +124,12 @@
     <Filter Include="Core\libretro-common\features">
       <UniqueIdentifier>{37e11fb9-8dec-43bd-8242-a721d69a740f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\libretro-common\encodings">
+      <UniqueIdentifier>{fcb28aeb-7aa7-4e91-9592-692ec23b5ed4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\libretro-common\include\encodings">
+      <UniqueIdentifier>{dc595f38-b67d-4b99-93b5-d2e9628ef712}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\aggdraw.cpp">
@@ -254,9 +260,6 @@
     </ClCompile>
     <ClCompile Include="..\..\gdbstub\gdbstub.cpp">
       <Filter>Core\gdbstub</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\utils\ConvertUTF.c">
-      <Filter>Core\utils</Filter>
     </ClCompile>
     <ClCompile Include="..\..\utils\guid.cpp">
       <Filter>Core\utils</Filter>
@@ -975,6 +978,9 @@
     <ClCompile Include="mic-win.cpp">
       <Filter>Windows</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\libretro-common\encodings\encoding_utf.c">
+      <Filter>Core\libretro-common\encodings</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\armcpu.h">
@@ -1096,9 +1102,6 @@
     </ClInclude>
     <ClInclude Include="..\..\gdbstub.h">
       <Filter>Core\gdbstub</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\utils\ConvertUTF.h">
-      <Filter>Core\utils</Filter>
     </ClInclude>
     <ClInclude Include="..\..\utils\guid.h">
       <Filter>Core\utils</Filter>
@@ -1747,6 +1750,9 @@
     </ClInclude>
     <ClInclude Include="..\..\utils\xstring.h">
       <Filter>Core\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libretro-common\include\encodings\utf.h">
+      <Filter>Core\libretro-common\include\encodings</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

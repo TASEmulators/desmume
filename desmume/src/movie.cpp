@@ -26,7 +26,6 @@
 #include "utils/guid.h"
 #include "utils/xstring.h"
 #include "utils/datetime.h"
-#include "utils/ConvertUTF.h"
 
 #include "MMU.h"
 #include "NDSSystem.h"
@@ -39,6 +38,8 @@
 #include "GPU_osd.h"
 #include "path.h"
 #include "emufile.h"
+
+#include "encodings/utf.h"
 
 using namespace std;
 bool freshMovie = false;	  //True when a movie loads, false when movie is altered.  Used to determine if a movie has been altered since opening
@@ -300,17 +301,14 @@ int MovieData::dump(EMUFILE* fp, bool binary)
 		fp->fprintf("bootFromFirmware %d\n", CommonSettings.BootFromFirmware?1:0);
 	}
 	else {
-		UTF8 fwNicknameUTF8[MAX_FW_NICKNAME_LENGTH*4];
-		UTF8 *fwNicknameUTF8Start = fwNicknameUTF8;
-		const UTF16 *fwNicknameUTF16 = (const UTF16 *)CommonSettings.fw_config.nickname;
+		u8 fwNicknameUTF8[MAX_FW_NICKNAME_LENGTH*4];
 		memset(fwNicknameUTF8, 0, sizeof(fwNicknameUTF8));
-		ConvertUTF16toUTF8(&fwNicknameUTF16, fwNicknameUTF16 + CommonSettings.fw_config.nickname_len, &fwNicknameUTF8Start, fwNicknameUTF8Start + sizeof(fwNicknameUTF8), strictConversion);
+		size_t junk;
+		utf16_conv_utf8(fwNicknameUTF8,&junk,CommonSettings.fw_config.nickname,CommonSettings.fw_config.nickname_len);
 		
-		UTF8 fwMessageUTF8[MAX_FW_MESSAGE_LENGTH*4];
-		UTF8 *fwMessageUTF8Start = fwMessageUTF8;
-		const UTF16 *fwMessageUTF16 = (const UTF16 *)CommonSettings.fw_config.message;
+		u8 fwMessageUTF8[MAX_FW_MESSAGE_LENGTH*4];
 		memset(fwMessageUTF8, 0, sizeof(fwMessageUTF8));
-		ConvertUTF16toUTF8(&fwMessageUTF16, fwMessageUTF16 + CommonSettings.fw_config.message_len, &fwMessageUTF8Start, fwMessageUTF8Start + sizeof(fwMessageUTF8), strictConversion);
+		utf16_conv_utf8(fwMessageUTF8,&junk,CommonSettings.fw_config.message,CommonSettings.fw_config.message_len);
 		
 		fp->fprintf("firmNickname %s\n", fwNicknameUTF8);
 		fp->fprintf("firmMessage %s\n", fwMessageUTF8);
