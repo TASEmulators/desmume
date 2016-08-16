@@ -46,17 +46,6 @@ T reverseBits(T x)
 	return h;
 }
 
-template<typename T>
-char *intToBin(T val)
-{
-	char buf[256] = {0};
-	for (int i = sizeof(T)*8, t = 0;  i > 0; --i, t++)
-	{
-		buf[i-1] = (val & (1<<t))?'1':'0';
-	}
-	return strdup(buf);
-}
-
 extern char *trim(char *s, int len=-1);
 extern char *removeSpecialChars(char *s);
 

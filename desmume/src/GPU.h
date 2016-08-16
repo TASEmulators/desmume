@@ -2067,13 +2067,13 @@ FORCEINLINE __m128i ConvertColor6665To5551(const __m128i &srcLo, const __m128i &
 
 #endif
 
-template<bool SWAP_RB, bool UNALIGNED> void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template<bool SWAP_RB, bool UNALIGNED> void ConvertColorBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB, bool IS_UNALIGNED> void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB, bool IS_UNALIGNED> void ConvertColorBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 
 template<bool SWAP_RB> void ConvertColorBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount);
 template<bool SWAP_RB> void ConvertColorBuffer6665To8888(const u32 *src, u32 *dst, size_t pixCount);
 
-template<bool SWAP_RB, bool UNALIGNED> void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
-template<bool SWAP_RB, bool UNALIGNED> void ConvertColorBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB, bool IS_UNALIGNED> void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB, bool IS_UNALIGNED> void ConvertColorBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
 
 #endif

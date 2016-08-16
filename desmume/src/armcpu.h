@@ -335,7 +335,6 @@ template<int PROCNUM, bool jit> u32 armcpu_exec();
 #endif
 
 void setIF(int PROCNUM, u32 flag);
-char* decodeIntruction(bool thumb_mode, u32 instr);
 
 static INLINE void NDS_makeIrq(int PROCNUM, u32 num)
 {

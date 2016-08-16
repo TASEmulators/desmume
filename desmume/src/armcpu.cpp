@@ -570,7 +570,7 @@ BOOL armcpu_irqException(armcpu_t *armcpu)
 
 u32 TRAPUNDEF(armcpu_t* cpu)
 {
-	INFO("ARM%c: Undefined instruction: 0x%08X (%s) PC=0x%08X\n", cpu->proc_ID?'7':'9', cpu->instruction, decodeIntruction(false, cpu->instruction), cpu->instruct_adr);
+	INFO("ARM%c: Undefined instruction: 0x%08X PC=0x%08X\n", cpu->proc_ID?'7':'9', cpu->instruction, cpu->instruct_adr);
 
 	if (((cpu->intVector != 0) ^ (cpu->proc_ID == ARMCPU_ARM9)))
 	{
@@ -755,23 +755,6 @@ void setIF(int PROCNUM, u32 flag)
 	MMU.reg_IF_bits[PROCNUM] |= flag;
 	
 	NDS_Reschedule();
-}
-
-char* decodeIntruction(bool thumb_mode, u32 instr)
-{
-	char txt[20] = {0};
-	u32 tmp = 0;
-	if (thumb_mode == true)
-	{
-		tmp = (instr >> 6);
-		strcpy(txt, intToBin((u16)tmp)+6);
-	}
-	else
-	{
-		tmp = ((instr >> 16) & 0x0FF0) | ((instr >> 4) & 0x0F);
-		strcpy(txt, intToBin((u32)tmp)+20);
-	}
-	return strdup(txt);
 }
 
 const armcpu_ctrl_iface arm_default_ctrl_iface = {
