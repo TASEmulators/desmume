@@ -35,7 +35,7 @@ THE SOFTWARE.
 #include <string>
 #include <stdarg.h>
 
-#include "emufile_types.h"
+#include "types.h"
 
 #ifdef HOST_WINDOWS 
 #include <io.h>

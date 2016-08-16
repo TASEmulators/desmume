@@ -1572,7 +1572,6 @@
 		ABD1FE781345AC8400AF11D1 /* desmume_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = desmume_config.h; path = ../desmume_config.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE791345AC8400AF11D1 /* Disassembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Disassembler.h; path = ../Disassembler.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE7A1345AC8400AF11D1 /* driver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = driver.h; path = ../driver.h; sourceTree = SOURCE_ROOT; };
-		ABD1FE7B1345AC8400AF11D1 /* emufile_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = emufile_types.h; path = ../emufile_types.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE7C1345AC8400AF11D1 /* emufile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = emufile.h; path = ../emufile.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE7D1345AC8400AF11D1 /* FIFO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FIFO.h; path = ../FIFO.h; sourceTree = SOURCE_ROOT; };
 		ABD1FE7E1345AC8400AF11D1 /* firmware.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = firmware.h; path = ../firmware.h; sourceTree = SOURCE_ROOT; };
@@ -2669,7 +2668,6 @@
 				ABD1FE791345AC8400AF11D1 /* Disassembler.h */,
 				ABD1FE7A1345AC8400AF11D1 /* driver.h */,
 				ABD1FE7C1345AC8400AF11D1 /* emufile.h */,
-				ABD1FE7B1345AC8400AF11D1 /* emufile_types.h */,
 				ABCFA9F2178BDE920030C8BA /* encrypt.h */,
 				ABD1FE7D1345AC8400AF11D1 /* FIFO.h */,
 				ABD1FE7E1345AC8400AF11D1 /* firmware.h */,
