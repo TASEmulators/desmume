@@ -30,6 +30,7 @@
 #include "utils/decrypt/header.h"
 #include "utils/advanscene.h"
 #include "utils/task.h"
+#include "utils/bits.h"
 
 #include "common.h"
 #include "armcpu.h"

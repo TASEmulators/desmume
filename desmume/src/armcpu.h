@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2015 DeSmuME team
+	Copyright (C) 2006-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,16 +16,21 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ARM_CPU
-#define ARM_CPU
+#ifndef DESMUME_ARMCPU_H
+#define DESMUME_ARMCPU_H
+
+//half of this stuff is arm cpu internals
+//half is public API
+//really a mess
 
 #include "types.h"
-#include "bits.h"
 #include "MMU.h"
 
-#define CODE(i)     (((i)>>25)&0x7)
-#define OPCODE(i)   (((i)>>21)&0xF)
-#define SIGNEBIT(i) BIT_N(i,20)
+#define CONDITION(i) ((i)>>28)
+#define REG_POS(i,n) (((i)>>n)&0xF)
+#define CODE(i) (((i)>>25)&0x7)
+#define OPCODE(i) (((i)>>21)&0xF)
+#define SIGNEBIT(i) (((i)>>20)&1)
 
 #define EXCEPTION_RESET 0x00
 #define EXCEPTION_UNDEFINED_INSTRUCTION 0x04

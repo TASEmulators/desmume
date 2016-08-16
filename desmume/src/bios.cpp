@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 	
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include "debug.h"
 #include "registers.h"
 #include "NDSSystem.h"
+#include "utils/bits.h"
 
 #define cpu (&ARMPROC)
 #define TEMPLATE template<int PROCNUM>

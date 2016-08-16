@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 #include "Disassembler.h"
 #include "NDSSystem.h"
 #include "MMU_timing.h"
+#include "utils/bits.h"
 #ifdef HAVE_LUA
 #include "lua-engine.h"
 #endif

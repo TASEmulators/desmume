@@ -37,8 +37,5 @@
 #define BIT30(i)     BIT_N(i,30)
 #define BIT31(i)    ((i)>>31)
 
-#define CONDITION(i)  (i)>>28
-
-#define REG_POS(i,n)         (((i)>>n)&0xF)
 
 #endif

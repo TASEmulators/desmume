@@ -315,7 +315,7 @@
     <ClCompile Include="inputdx.cpp" />
     <ClCompile Include="luaconsole.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="mic.cpp" />
+    <ClCompile Include="mic-win.cpp" />
     <ClCompile Include="ogl.cpp" />
     <ClCompile Include="OpenArchive.cpp" />
     <ClCompile Include="pathsettings.cpp" />
@@ -347,7 +347,6 @@
     <ClInclude Include="..\armcpu.h" />
     <ClInclude Include="..\arm_jit.h" />
     <ClInclude Include="..\bios.h" />
-    <ClInclude Include="..\bits.h" />
     <ClInclude Include="..\cheatSystem.h" />
     <ClInclude Include="..\commandline.h" />
     <ClInclude Include="..\common.h" />
@@ -444,6 +443,7 @@
     <ClInclude Include="..\utils\AsmJit\x86\x86func.h" />
     <ClInclude Include="..\utils\AsmJit\x86\x86operand.h" />
     <ClInclude Include="..\utils\AsmJit\x86\x86util.h" />
+    <ClInclude Include="..\utils\bits.h" />
     <ClInclude Include="..\utils\datetime.h" />
     <ClInclude Include="..\utils\emufat.h" />
     <ClInclude Include="..\utils\emufat_types.h" />

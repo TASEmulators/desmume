@@ -360,9 +360,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Windows</Filter>
     </ClCompile>
-    <ClCompile Include="mic.cpp">
-      <Filter>Windows</Filter>
-    </ClCompile>
     <ClCompile Include="ogl.cpp">
       <Filter>Windows</Filter>
     </ClCompile>
@@ -975,15 +972,15 @@
     <ClCompile Include="..\Database.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="mic-win.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\armcpu.h">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\bios.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\bits.h">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\cheatSystem.h">
@@ -1747,6 +1744,9 @@
     </ClInclude>
     <ClInclude Include="..\Database.h">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\bits.h">
+      <Filter>Core\utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

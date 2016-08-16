@@ -1,6 +1,6 @@
 /*	Copyright (C) 2006 yopyop
 	Copyright (C) 2011 Loren Merritt
-	Copyright (C) 2012-2015 DeSmuME team
+	Copyright (C) 2012-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -33,13 +33,14 @@
 #define HAVE_STATIC_CODE_BUFFER
 #endif
 
+#include "utils/bits.h"
+#include "utils/AsmJit/AsmJit.h"
 #include "armcpu.h"
 #include "instructions.h"
 #include "instruction_attributes.h"
 #include "Disassembler.h"
 #include "MMU.h"
 #include "MMU_timing.h"
-#include "utils/AsmJit/AsmJit.h"
 #include "arm_jit.h"
 #include "bios.h"
 

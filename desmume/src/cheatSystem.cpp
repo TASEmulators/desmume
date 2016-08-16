@@ -16,7 +16,7 @@
 */
 
 #include "cheatSystem.h"
-#include "bits.h"
+#include "utils/bits.h"
 
 #include "NDSSystem.h"
 #include "common.h"

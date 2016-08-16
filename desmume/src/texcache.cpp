@@ -24,7 +24,6 @@
 
 #include "texcache.h"
 
-#include "bits.h"
 #include "common.h"
 #include "debug.h"
 #include "gfx3d.h"

@@ -1,6 +1,6 @@
 /*	
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -43,7 +43,6 @@
 #include "emufile.h"
 #include "matrix.h"
 #include "GPU.h"
-#include "bits.h"
 #include "MMU.h"
 #include "render3D.h"
 #include "mem.h"
@@ -52,6 +51,7 @@
 #include "NDSSystem.h"
 #include "readwrite.h"
 #include "FIFO.h"
+#include "utils/bits.h"
 #include "movie.h" //only for currframecounter which really ought to be moved into the core emu....
 
 //#define _SHOW_VTX_COUNTERS	// show polygon/vertex counters on screen

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2012 DeSmuME team
+	Copyright (C) 2006-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,7 +19,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "Disassembler.h"
-#include "bits.h"
+#include "utils/bits.h"
+#include "armcpu.h"
 
 #define ROR(i, j)   ((((u32)(i))>>(j)) | (((u32)(i))<<(32-(j))))
 
