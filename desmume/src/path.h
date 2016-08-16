@@ -25,8 +25,8 @@
 	#include <windows.h>
 	#include <direct.h>
 
-		#include "windows/winutil.h"
-		#include "windows/resource.h"
+		#include "frontend/windows/winutil.h"
+		#include "frontend/windows/resource.h"
 #elif !defined(DESMUME_COCOA)
 	#include <glib.h>
 #endif /* HOST_WINDOWS */

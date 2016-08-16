@@ -1,5 +1,5 @@
 /*
-	Copyright 2008-2015 DeSmuME team
+	Copyright 2008-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ bool autoMovieBackup = true;
 #define MOVIE_VERSION 1
 
 #ifdef WIN32
-#include ".\windows\main.h"
+#include "frontend/windows/main.h"
 #endif
 
 //----movie engine main state

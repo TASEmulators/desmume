@@ -1,8 +1,8 @@
-/desmume/src/windows/.libs
-/desmume/src/windows/.obj
-/desmume/src/windows/__bins
-/desmume/src/windows/*.tlog
-/desmume/src/windows/*.aps
+/desmume/src/frontend/windows/.libs
+/desmume/src/frontend/windows/.obj
+/desmume/src/frontend/windows/__bins
+/desmume/src/frontend/windows/*.tlog
+/desmume/src/frontend/windows/*.aps
 *.user
 *.suo
 *.o

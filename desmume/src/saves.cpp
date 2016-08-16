@@ -57,7 +57,7 @@
 #include "path.h"
 
 #ifdef HOST_WINDOWS
-#include "windows/main.h"
+#include "frontend/windows/main.h"
 #endif
 
 int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load functions
