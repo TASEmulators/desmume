@@ -23,6 +23,8 @@
 #include <math.h>
 #include <zlib.h>
 
+#include <features/features_cpu.h>
+
 #include "utils/decrypt/decrypt.h"
 #include "utils/decrypt/crc.h"
 #include "utils/decrypt/header.h"
@@ -116,7 +118,8 @@ void Desmume_InitOnce()
 
 int NDS_GetCPUCoreCount()
 {
-	return getOnlineCores();
+   int amount = cpu_features_get_core_amount();
+   return amount;
 }
 
 void NDS_SetupDefaultFirmware()

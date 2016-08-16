@@ -102,6 +102,8 @@ libdesmume_a_SOURCES = \
 	desmume_config.cpp desmume_config.h \
 	libretro-common/compat/compat_getopt.c \
 	libretro-common/file/file_path.c \
+	libretro-common/compat/compat_strl.c \
+	libretro-common/features/features_cpu.c \
 	libretro-common/file/retro_dirent.c \
 	libretro-common/file/retro_stat.c \
 	libretro-common/rthreads/async_job.c \

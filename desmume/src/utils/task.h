@@ -45,6 +45,4 @@ public:
 
 };
 
-int getOnlineCores (void);
-
 #endif
