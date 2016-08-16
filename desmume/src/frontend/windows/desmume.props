@@ -91,9 +91,6 @@
 			<!-- universal definitions -->
 			<PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_ZLIB_DEFLATE;HAVE_LIBZ;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
-			<!-- libretro-common definitions. HAVE_UTF8 is kind of not specific enough... -->
-			<PreprocessorDefinitions>HAVE_UTF8;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-
 			<!-- BETA_VERSION ? -->
 			<PreprocessorDefinitions Condition="'$(NDS_OPT)' == 'Debug'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<PreprocessorDefinitions Condition="'$(NDS_OPT)' == 'Release'">RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>

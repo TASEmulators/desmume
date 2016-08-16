@@ -2,7 +2,7 @@
 //subsequently modified for desmume
 
 /*
-	Copyright (C) 2008-2016 DeSmuME team
+	Copyright (C) 2008-2009 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,14 +18,8 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-//WARNING: utf8/utf16 conversion is presently UNTESTED
-//requires libretro-common's HAVE_UTF8 defined
-//this is all very sad. why do we need this at all?
-
-#include <string>
-
-#include "encodings/utf.h"
 #include "xstring.h"
+#include <string>
 
 //a vc-style substring operation (very kind and lenient)
 std::string strsub(const std::string& str, int pos, int len) {
@@ -289,31 +283,111 @@ std::string mass_replace(const std::string &source, const std::string &victim, c
 	return answer;
 }
 
+//http://www.codeproject.com/KB/string/UtfConverter.aspx
+#include "ConvertUTF.h"
+namespace UtfConverter
+{
+    static std::wstring FromUtf8(const std::string& utf8string)
+    {
+        size_t widesize = utf8string.length();
+        if (sizeof(wchar_t) == 2)
+        {
+            wchar_t* widestringnative = new wchar_t[widesize+1];
+            const UTF8* sourcestart = reinterpret_cast<const UTF8*>(utf8string.c_str());
+            const UTF8* sourceend = sourcestart + widesize;
+            UTF16* targetstart = reinterpret_cast<UTF16*>(widestringnative);
+            UTF16* targetend = targetstart + widesize+1;
+            ConversionResult res = ConvertUTF8toUTF16(&sourcestart, sourceend, &targetstart, targetend, strictConversion);
+            if (res != conversionOK)
+            {
+                delete [] widestringnative;
+                throw std::exception();
+            }
+            *targetstart = 0;
+            std::wstring resultstring(widestringnative);
+            delete [] widestringnative;
+            return resultstring;
+        }
+        else if (sizeof(wchar_t) == 4)
+        {
+            wchar_t* widestringnative = new wchar_t[widesize+1];
+            const UTF8* sourcestart = reinterpret_cast<const UTF8*>(utf8string.c_str());
+            const UTF8* sourceend = sourcestart + widesize;
+            UTF32* targetstart = reinterpret_cast<UTF32*>(widestringnative);
+            UTF32* targetend = targetstart + widesize+1;
+            ConversionResult res = ConvertUTF8toUTF32(&sourcestart, sourceend, &targetstart, targetend, strictConversion);
+            if (res != conversionOK)
+            {
+                delete [] widestringnative;
+                throw std::exception();
+            }
+            *targetstart = 0;
+            std::wstring resultstring(widestringnative);
+            delete [] widestringnative;
+            return resultstring;
+        }
+        else
+        {
+            throw std::exception();
+        }
+        return L"";
+    }
+
+    static std::string ToUtf8(const std::wstring& widestring)
+    {
+        size_t widesize = widestring.length();
+
+        if (sizeof(wchar_t) == 2)
+        {
+            size_t utf8size = 3 * widesize + 1;
+            char* utf8stringnative = new char[utf8size];
+            const UTF16* sourcestart = reinterpret_cast<const UTF16*>(widestring.c_str());
+            const UTF16* sourceend = sourcestart + widesize;
+            UTF8* targetstart = reinterpret_cast<UTF8*>(utf8stringnative);
+            UTF8* targetend = targetstart + utf8size;
+            ConversionResult res = ConvertUTF16toUTF8(&sourcestart, sourceend, &targetstart, targetend, strictConversion);
+            if (res != conversionOK)
+            {
+                delete [] utf8stringnative;
+                throw std::exception();
+            }
+            *targetstart = 0;
+            std::string resultstring(utf8stringnative);
+            delete [] utf8stringnative;
+            return resultstring;
+        }
+        else if (sizeof(wchar_t) == 4)
+        {
+            size_t utf8size = 4 * widesize + 1;
+            char* utf8stringnative = new char[utf8size];
+            const UTF32* sourcestart = reinterpret_cast<const UTF32*>(widestring.c_str());
+            const UTF32* sourceend = sourcestart + widesize;
+            UTF8* targetstart = reinterpret_cast<UTF8*>(utf8stringnative);
+            UTF8* targetend = targetstart + utf8size;
+            ConversionResult res = ConvertUTF32toUTF8(&sourcestart, sourceend, &targetstart, targetend, strictConversion);
+            if (res != conversionOK)
+            {
+                delete [] utf8stringnative;
+                throw std::exception();
+            }
+            *targetstart = 0;
+            std::string resultstring(utf8stringnative);
+            delete [] utf8stringnative;
+            return resultstring;
+        }
+        else
+        {
+            throw std::exception();
+        }
+        return "";
+    }
+}
+  
 //convert a std::string to std::wstring
 std::wstring mbstowcs(std::string str)
 {
 	try {
-
-		//BAD!
-
-		//i wish we had 8-to-16 converting
-		//WAIT! better yet, 8-to-wchar converting (so we dont have `seriously` and `naive` below
-		size_t len = utf8len(str.c_str());
-		u32 *buffer32 = new u32[len+1];
-		utf8_conv_utf32(buffer32, len, str.c_str(), str.size());
-		u16 *buffer16 = new u16[len+1];
-		//NAIVE!
-		for(int i=0;i<len;i++)
-			buffer16[i] = buffer32[i];
-		buffer16[len] = 0;
-
-		CTASSERT(sizeof(wchar_t)==2); //seriously, what can we do if we can't even count on this?
-
-		std::wstring ret = (wchar_t*)buffer16;
-		delete[] buffer16;
-		delete[] buffer32;
-		return ret;
-
+		return UtfConverter::FromUtf8(str);
 	} catch(std::exception) {
 		return L"(failed UTF-8 conversion)";
 	}
@@ -321,14 +395,6 @@ std::wstring mbstowcs(std::string str)
 
 std::string wcstombs(std::wstring str)
 {
-	CTASSERT(sizeof(wchar_t)==2); //seriously, what can we do if we can't even count on this?
-	size_t len = str.size();
-	u8* buffer = new u8[len*3+1];
-	size_t chars;
-	utf16_conv_utf8(buffer,&chars,(u16*)str.c_str(),len);
-	buffer[chars]=0;
-	std::string ret = (char*)buffer;
-	delete[] buffer;
-	return ret;
+	return UtfConverter::ToUtf8(str);
 }
 

@@ -44,7 +44,7 @@ libdesmume_a_SOURCES = \
 	PACKED.h PACKED_END.h \
 	utils/advanscene.cpp utils/advanscene.h \
 	utils/datetime.cpp utils/datetime.h \
-	utils/guid.cpp utils/guid.h \
+	utils/ConvertUTF.c utils/ConvertUTF.h utils/guid.cpp utils/guid.h \
 	utils/emufat.cpp utils/emufat.h utils/emufat_types.h \
 	utils/fsnitro.cpp utils/fsnitro.h \
 	utils/md5.cpp utils/md5.h utils/valuearray.h utils/xstring.cpp utils/xstring.h \
