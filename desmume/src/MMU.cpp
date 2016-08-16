@@ -20,8 +20,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include <assert.h>
 #include <sstream>
+
+#include <retro_assert.h>
 
 #include "utils/bits.h"
 #include "armcpu.h"
@@ -46,12 +47,6 @@
 #include "encrypt.h"
 #include "GPU.h"
 #include "SPU.h"
-
-#ifdef DO_ASSERT_UNALIGNED
-#define ASSERT_UNALIGNED(x) assert(x)
-#else
-#define ASSERT_UNALIGNED(x)
-#endif
 
 //TODO - do we need these here?
 _KEY2 key2;
@@ -5869,7 +5864,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 
 u32 FASTCALL MMU_read32(u32 proc, u32 adr) 
 {
-	ASSERT_UNALIGNED((adr&3)==0);
+	retro_assert((adr&3)==0);
 
 	if(proc==0) 
 		return _MMU_ARM9_read32(adr);
@@ -5878,7 +5873,7 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 
 u16 FASTCALL MMU_read16(u32 proc, u32 adr) 
 {
-	ASSERT_UNALIGNED((adr&1)==0);
+	retro_assert((adr&1)==0);
 
 	if(proc==0)
 		return _MMU_ARM9_read16(adr);
@@ -5894,7 +5889,7 @@ u8 FASTCALL MMU_read8(u32 proc, u32 adr)
 
 void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 {
-	ASSERT_UNALIGNED((adr&3)==0);
+	retro_assert((adr&3)==0);
 
 	if(proc==0)
 		_MMU_ARM9_write32(adr, val);
@@ -5904,7 +5899,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 
 void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 {
-	ASSERT_UNALIGNED((adr&1)==0);
+	retro_assert((adr&1)==0);
 
 	if(proc==0)
 		_MMU_ARM9_write16(adr, val);
