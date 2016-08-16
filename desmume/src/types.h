@@ -265,20 +265,8 @@ typedef int desmume_BOOL;
 #define FALSE 0
 #endif
 
-#ifdef __BIG_ENDIAN__
-#ifndef WORDS_BIGENDIAN
-#define WORDS_BIGENDIAN
-#endif
-#endif
-
-#ifdef WORDS_BIGENDIAN
-# define LOCAL_BE 1
-#else
-# define LOCAL_LE 1
-#endif
-
 /* little endian (ds' endianess) to local endianess convert macros */
-#ifdef LOCAL_BE	/* local arch is big endian */
+#ifdef MSB_FIRST	/* local arch is big endian */
 # define LE_TO_LOCAL_16(x) ((((x)&0xff)<<8)|(((x)>>8)&0xff))
 # define LE_TO_LOCAL_32(x) ((((x)&0xff)<<24)|(((x)&0xff00)<<8)|(((x)>>8)&0xff00)|(((x)>>24)&0xff))
 # define LE_TO_LOCAL_64(x) ((((x)&0xff)<<56)|(((x)&0xff00)<<40)|(((x)&0xff0000)<<24)|(((x)&0xff000000)<<8)|(((x)>>8)&0xff000000)|(((x)>>24)&0xff0000)|(((x)>>40)&0xff00)|(((x)>>56)&0xff))

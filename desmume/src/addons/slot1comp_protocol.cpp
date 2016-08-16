@@ -99,10 +99,10 @@ void Slot1Comp_Protocol::write_command_KEY1(GC_Command command)
 			
 			//TODO - more endian-safe way of doing this (theres examples in R4)
 			{
-#ifdef LOCAL_LE
-				u64 cmd64 = bswap64(*(u64*)command.bytes);
-#else
+#ifdef MSB_FIRST
 				u64 cmd64 = *(u64*)command.bytes;
+#else
+				u64 cmd64 = bswap64(*(u64*)command.bytes);
 #endif
 				//todo - parse into blocknumber
 				u32 blocknumber = (cmd64>>44)&0xFFFF;
@@ -142,10 +142,10 @@ void Slot1Comp_Protocol::write_command_NORMAL(GC_Command command)
 			operation = eSlot1Operation_B7_Read;
 
 			//TODO - more endian-safe way of doing this (theres examples in R4)
-#ifdef LOCAL_LE
-			u64 cmd64 = bswap64(*(u64*)command.bytes);
-#else
+#ifdef MSB_FIRST
 			u64 cmd64 = *(u64*)command.bytes;
+#else
+			u64 cmd64 = bswap64(*(u64*)command.bytes);
 #endif
 			address = (u32)((cmd64 >> 24));
 			length = 0x200;

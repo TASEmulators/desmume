@@ -1314,10 +1314,10 @@ void GPUEngineBase::ParseReg_BGnHOFS()
 	const IOREG_BGnHOFS &BGnHOFS = this->_IORegisterMap->BGnOFS[LAYERID].BGnHOFS;
 	this->_BGLayer[LAYERID].BGnHOFS = BGnHOFS;
 	
-#ifdef LOCAL_LE
-	this->_BGLayer[LAYERID].xOffset = BGnHOFS.Offset;
-#else
+#ifdef MSB_FIRST
 	this->_BGLayer[LAYERID].xOffset = LOCAL_TO_LE_16(BGnHOFS.value) & 0x01FF;
+#else
+	this->_BGLayer[LAYERID].xOffset = BGnHOFS.Offset;
 #endif
 }
 
@@ -1327,10 +1327,10 @@ void GPUEngineBase::ParseReg_BGnVOFS()
 	const IOREG_BGnVOFS &BGnVOFS = this->_IORegisterMap->BGnOFS[LAYERID].BGnVOFS;
 	this->_BGLayer[LAYERID].BGnVOFS = BGnVOFS;
 	
-#ifdef LOCAL_LE
-	this->_BGLayer[LAYERID].yOffset = BGnVOFS.Offset;
-#else
+#ifdef MSB_FIRST
 	this->_BGLayer[LAYERID].yOffset = LOCAL_TO_LE_16(BGnVOFS.value) & 0x01FF;
+#else
+	this->_BGLayer[LAYERID].yOffset = BGnVOFS.Offset;
 #endif
 }
 
@@ -1483,9 +1483,7 @@ void GPUEngineBase::_LineColorCopy(void *__restrict dstBuffer, const void *__res
 		
 #if defined(ENABLE_SSE2)
 		MACRODO_N( GPU_FRAMEBUFFER_NATIVE_WIDTH / (sizeof(__m128i) / PIXELBYTES), _mm_stream_si128((__m128i *)dst + (X), _mm_load_si128((__m128i *)src + (X))) );
-#elif LOCAL_LE
-		memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * PIXELBYTES);
-#else
+#elif MSB_FIRST
 		if (NEEDENDIANSWAP)
 		{
 			for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH; i++)
@@ -1504,6 +1502,8 @@ void GPUEngineBase::_LineColorCopy(void *__restrict dstBuffer, const void *__res
 		{
 			memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * PIXELBYTES);
 		}
+#else
+		memcpy(dst, src, GPU_FRAMEBUFFER_NATIVE_WIDTH * PIXELBYTES);
 #endif
 	}
 	else if (!NATIVEDST && !NATIVESRC)
@@ -1515,9 +1515,7 @@ void GPUEngineBase::_LineColorCopy(void *__restrict dstBuffer, const void *__res
 		void *__restrict dst = (USELINEINDEX) ? (u8 *)dstBuffer + (lineIndex * lineWidth * PIXELBYTES) : (u8 *)dstBuffer;
 		const void *__restrict src = (USELINEINDEX) ? (u8 *)srcBuffer + (lineIndex * lineWidth * PIXELBYTES) : (u8 *)srcBuffer;
 		
-#if defined(LOCAL_LE)
-		memcpy(dst, src, lineWidth * lineCount * PIXELBYTES);
-#else
+#if defined(MSB_FIRST)
 		if (NEEDENDIANSWAP)
 		{
 			for (size_t i = 0; i < lineWidth * lineCount; i++)
@@ -1536,6 +1534,8 @@ void GPUEngineBase::_LineColorCopy(void *__restrict dstBuffer, const void *__res
 		{
 			memcpy(dst, src, lineWidth * lineCount * PIXELBYTES);
 		}
+#else
+		memcpy(dst, src, lineWidth * lineCount * PIXELBYTES);
 #endif
 	}
 	else if (NATIVEDST && !NATIVESRC)
@@ -2422,7 +2422,7 @@ void GPUEngineBase::_RenderPixelIterate_Final(GPUEngineCompositorInfo &compInfo,
 	IOREG_BGnX x = param.BGnX;
 	IOREG_BGnY y = param.BGnY;
 	
-#ifdef LOCAL_BE
+#ifdef MSB_FIRST
 	// This only seems to work in the unrotated/unscaled case. I'm not too sure
 	// about how these bits should really be arranged on big-endian, but at
 	// least this arrangement fixes a bunch of games that use affine or extended

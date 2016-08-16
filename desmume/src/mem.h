@@ -42,7 +42,7 @@ static INLINE u8 T1ReadByte(u8* const mem, const u32 addr)
 static INLINE u16 T1ReadWord_guaranteedAligned(void* const mem, const u32 addr)
 {
 	assert((addr&1)==0);
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
    return (((u8*)mem)[addr + 1] << 8) | ((u8*)mem)[addr];
 #else
    return *(u16*)((u8*)mem + addr);
@@ -51,7 +51,7 @@ static INLINE u16 T1ReadWord_guaranteedAligned(void* const mem, const u32 addr)
 
 static INLINE u16 T1ReadWord(void* const mem, const u32 addr)
 {
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
    return (((u8*)mem)[addr + 1] << 8) | ((u8*)mem)[addr];
 #else
    return *((u16 *) ((u8*)mem + addr));
@@ -61,7 +61,7 @@ static INLINE u16 T1ReadWord(void* const mem, const u32 addr)
 static INLINE u32 T1ReadLong_guaranteedAligned(u8* const  mem, const u32 addr)
 {
 	assert((addr&3)==0);
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
    return (mem[addr + 3] << 24 | mem[addr + 2] << 16 |
            mem[addr + 1] << 8 | mem[addr]);
 #else
@@ -73,7 +73,7 @@ static INLINE u32 T1ReadLong_guaranteedAligned(u8* const  mem, const u32 addr)
 static INLINE u32 T1ReadLong(u8* const  mem, u32 addr)
 {
    addr &= ~3;
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
    return (mem[addr + 3] << 24 | mem[addr + 2] << 16 |
            mem[addr + 1] << 8 | mem[addr]);
 #else
@@ -83,7 +83,7 @@ static INLINE u32 T1ReadLong(u8* const  mem, u32 addr)
 
 static INLINE u64 T1ReadQuad(u8* const mem, const u32 addr)
 {
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
    return (u64(mem[addr + 7]) << 56 | u64(mem[addr + 6]) << 48 |
            u64(mem[addr + 5]) << 40 | u64(mem[addr + 4]) << 32 |
            u64(mem[addr + 3]) << 24 | u64(mem[addr + 2]) << 16 |
@@ -100,7 +100,7 @@ static INLINE void T1WriteByte(u8* const mem, const u32 addr, const u8 val)
 
 static INLINE void T1WriteWord(u8* const mem, const u32 addr, const u16 val)
 {
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
    mem[addr + 1] = val >> 8;
    mem[addr] = val & 0xFF;
 #else
@@ -110,7 +110,7 @@ static INLINE void T1WriteWord(u8* const mem, const u32 addr, const u16 val)
 
 static INLINE void T1WriteLong(u8* const mem, const u32 addr, const u32 val)
 {
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
    mem[addr + 3] = val >> 24;
    mem[addr + 2] = (val >> 16) & 0xFF;
    mem[addr + 1] = (val >> 8) & 0xFF;
@@ -122,7 +122,7 @@ static INLINE void T1WriteLong(u8* const mem, const u32 addr, const u32 val)
 
 static INLINE void T1WriteQuad(u8* const mem, const u32 addr, const u64 val)
 {
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
 	mem[addr + 7] = (val >> 56);
 	mem[addr + 6] = (val >> 48) & 0xFF;
 	mem[addr + 5] = (val >> 40) & 0xFF;
@@ -138,7 +138,7 @@ static INLINE void T1WriteQuad(u8* const mem, const u32 addr, const u64 val)
 
 //static INLINE u8 T2ReadByte(u8* const  mem, const u32 addr)
 //{
-//#ifdef WORDS_BIGENDIAN
+//#ifdef MSB_FIRST
 //   return mem[addr ^ 1];
 //#else
 //   return mem[addr];
@@ -154,7 +154,7 @@ static INLINE u16 HostReadWord(u8* const mem, const u32 addr)
 //
 //static INLINE u32 T2ReadLong(u8* const mem, const u32 addr)
 //{
-//#ifdef WORDS_BIGENDIAN
+//#ifdef MSB_FIRST
 //   return *((u16 *) (mem + addr + 2)) << 16 | *((u16 *) (mem + addr));
 //#else
 //   return *((u32 *) (mem + addr));
@@ -163,7 +163,7 @@ static INLINE u16 HostReadWord(u8* const mem, const u32 addr)
 //
 //static INLINE void T2WriteByte(u8* const mem, const u32 addr, const u8 val)
 //{
-//#ifdef WORDS_BIGENDIAN
+//#ifdef MSB_FIRST
 //   mem[addr ^ 1] = val;
 //#else
 //   mem[addr] = val;
@@ -183,7 +183,7 @@ static INLINE void HostWriteLong(u8* const mem, const u32 addr, const u32 val)
 
 static INLINE void HostWriteTwoWords(u8* const mem, const u32 addr, const u32 val)
 {
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
    *((u16 *) (mem + addr + 2)) = val >> 16;
    *((u16 *) (mem + addr)) = val & 0xFFFF;
 #else

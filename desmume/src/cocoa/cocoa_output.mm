@@ -763,7 +763,7 @@
 	
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
-#ifdef __BIG_ENDIAN__
+#ifdef MSB_FIRST
 	uint32_t *bitmapDataEnd = bitmapData + (w * h);
 	while (bitmapData < bitmapDataEnd)
 	{

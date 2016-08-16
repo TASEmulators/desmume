@@ -436,7 +436,7 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 
 	if (res)
 	{
-#ifndef LOCAL_LE
+#ifdef MSB_FIRST
 		//endian swap necessary fields. It would be better if we made accessors for these. I wonder if you could make a macro for a field accessor that would take the bitsize and do the swap on the fly
 		struct FieldSwap {
 			const size_t offset;
@@ -2760,7 +2760,7 @@ void NDS_setTouchPos(u16 x, u16 y)
 	if(movieMode != MOVIEMODE_INACTIVE && movieMode != MOVIEMODE_FINISHED)
 	{
 		// just in case, since the movie only stores 8 bits per touch coord
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
 		rawUserInput.touch.touchX &= 0xF00F;
 		rawUserInput.touch.touchY &= 0xF00F;
 #else

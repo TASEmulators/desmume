@@ -342,7 +342,7 @@ u16 get_keypad( void)
   u16 keypad;
   keypad = ~MMU.ARM7_REG[0x136];
   keypad = (keypad & 0x3) << 10;
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
   keypad |= ~(MMU.ARM9_REG[0x130] | (MMU.ARM9_REG[0x131] << 8)) & 0x3FF;
 #else
   keypad |= ~((u16 *)MMU.ARM9_REG)[0x130>>1] & 0x3FF;

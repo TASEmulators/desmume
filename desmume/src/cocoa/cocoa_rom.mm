@@ -435,7 +435,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
 	RomIconToRGBA8888(bitmapData);
 	
-#ifdef __BIG_ENDIAN__
+#ifdef MSB_FIRST
 	uint32_t *bitmapDataEnd = bitmapData + (w * h);
 	while (bitmapData < bitmapDataEnd)
 	{
@@ -718,7 +718,7 @@ void RomIconToRGBA8888(uint32_t *bitmapData)
 				
 				// Set the RGBA8888 bitmap pixels using our CLUT from earlier.
 				
-#ifdef __BIG_ENDIAN__
+#ifdef MSB_FIRST
 				*bitmapPixPtr = LOCAL_TO_LE_32(clut[(pixRowColors & 0x0F000000) >> 24]);
 				
 				bitmapPixPtr++;

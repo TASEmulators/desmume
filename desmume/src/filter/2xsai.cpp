@@ -247,7 +247,7 @@ void Super2xSaI (u8 *srcPtr, u32 srcPitch,
             else
               product1a = color5;
 
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
           product1a = (product1a << 16) | product1b;
           product2a = (product2a << 16) | product2b;
 #else
@@ -505,7 +505,7 @@ void SuperEagle (u8 *srcPtr, u32 srcPitch, u8 * /* deltaPtr */,
           //                    product2a = color2;
           //                    product2b = color3;
         }
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
         product1a = (product1a << 16) | product1b;
         product2a = (product2a << 16) | product2b;
 #else
@@ -790,7 +790,7 @@ void _2xSaI (u8 *srcPtr, u32 srcPitch, u8 * /* deltaPtr */,
           }
         }
 
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
         product = (colorA << 16) | product ;
         product1 = (product1 << 16) | product2 ;
 #else

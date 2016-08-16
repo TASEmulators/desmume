@@ -29,22 +29,7 @@ FORCEINLINE void ScanLine32( uint32 *lpDst, uint32 *lpSrc, unsigned int Width, i
 {
 	while(Width--)
 	{
-#ifdef LOCAL_LE
-		u8* u8dst = (u8*)lpDst;
-		u8* u8src = (u8*)lpSrc;
-		*u8dst++ = *u8src++ * fac_left / 16;
-		*u8dst++ = *u8src++ * fac_left / 16;
-		*u8dst++ = *u8src++ * fac_left / 16;
-		 u8dst++;
-		
-		u8src = (u8*)lpSrc;
-		*u8dst++ = *u8src++ * fac_right / 16;
-		*u8dst++ = *u8src++ * fac_right / 16;
-		*u8dst++ = *u8src++ * fac_right / 16;
-		 u8dst++;   u8src++;
-		lpDst+=2; 
-		lpSrc++;
-#else
+#ifdef MSB_FIRST
 		u8* u8dst = (u8*)lpDst;
 		u8* u8src = (u8*)lpSrc;
 		 u8dst++;   u8src++;
@@ -58,6 +43,21 @@ FORCEINLINE void ScanLine32( uint32 *lpDst, uint32 *lpSrc, unsigned int Width, i
 		*u8dst++ = *u8src++ * fac_right / 16;
 		*u8dst++ = *u8src++ * fac_right / 16;
 		lpDst+=2;
+		lpSrc++;
+#else
+		u8* u8dst = (u8*)lpDst;
+		u8* u8src = (u8*)lpSrc;
+		*u8dst++ = *u8src++ * fac_left / 16;
+		*u8dst++ = *u8src++ * fac_left / 16;
+		*u8dst++ = *u8src++ * fac_left / 16;
+		 u8dst++;
+		
+		u8src = (u8*)lpSrc;
+		*u8dst++ = *u8src++ * fac_right / 16;
+		*u8dst++ = *u8src++ * fac_right / 16;
+		*u8dst++ = *u8src++ * fac_right / 16;
+		 u8dst++;   u8src++;
+		lpDst+=2; 
 		lpSrc++;
 #endif
 	}

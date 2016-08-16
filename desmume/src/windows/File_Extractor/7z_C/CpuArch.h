@@ -52,7 +52,7 @@ If MY_CPU_LE_UNALIGN is not defined, we don't know about these properties of pla
 #define MY_CPU_LE
 #endif
 
-#if defined(__BIG_ENDIAN__)
+#if defined(MSB_FIRST)
 #define MY_CPU_BE
 #endif
 

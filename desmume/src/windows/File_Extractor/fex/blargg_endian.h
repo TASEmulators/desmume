@@ -36,7 +36,7 @@
 	#define BLARGG_LITTLE_ENDIAN 1
 #endif
 
-#if defined (MSB_FIRST)     || defined (__BIG_ENDIAN__) || defined (WORDS_BIGENDIAN) || \
+#if defined (MSB_FIRST)     || defined (__BIG_ENDIAN__) || \
 	defined (__sparc__)     ||  BLARGG_CPU_POWERPC || \
 	(defined (BIG_ENDIAN) && BIG_ENDIAN+0 != 4321)
 	#define BLARGG_BIG_ENDIAN 1

@@ -84,7 +84,7 @@ static u8 decal_table[32][64][64];
 //	const double _double2fixmagic = 68719476736.0*1.5;     //2^36 * 1.5,  (52-_shiftamt=36) uses limited precisicion to floor
 //	const int _shiftamt        = 16;                    //16.16 fixed point representation,
 //
-//	#ifdef WORDS_BIGENDIAN
+//	#ifdef MSB_FIRST
 //		#define iman_				1
 //	#else
 //		#define iman_				0

@@ -296,7 +296,7 @@ public:
 		//dump the palette to a temp buffer, so that we don't have to worry about memory mapping.
 		//this isnt such a problem with texture memory, because we read sequentially from it.
 		//however, we read randomly from palette memory, so the mapping is more costly.
-		#ifdef WORDS_BIGENDIAN
+		#ifdef MSB_FIRST
 			mspal.dump16(pal);
 		#else
 			mspal.dump(pal);
@@ -764,7 +764,7 @@ public:
 								break;
 								
 							case 1:
-#ifdef LOCAL_BE
+#ifdef MSB_FIRST
 								tmp_col[2]	= ( (((tmp_col[0] & 0xFF000000) >> 1)+((tmp_col[1] & 0xFF000000)  >> 1)) & 0xFF000000 ) |
 											  ( (((tmp_col[0] & 0x00FF0000)      + (tmp_col[1] & 0x00FF0000)) >> 1)  & 0x00FF0000 ) |
 											  ( (((tmp_col[0] & 0x0000FF00)      + (tmp_col[1] & 0x0000FF00)) >> 1)  & 0x0000FF00 ) |
@@ -785,7 +785,7 @@ public:
 								
 							case 3:
 							{
-#ifdef LOCAL_BE
+#ifdef MSB_FIRST
 								const u32 r0	= (tmp_col[0]>>24) & 0x000000FF;
 								const u32 r1	= (tmp_col[1]>>24) & 0x000000FF;
 								const u32 g0	= (tmp_col[0]>>16) & 0x000000FF;
@@ -818,7 +818,7 @@ public:
 						{
 							for (size_t i = 0; i < 4; i++)
 							{
-#ifdef LOCAL_BE
+#ifdef MSB_FIRST
 								const u32 a = (tmp_col[i] >> 3) & 0x0000001F;
 								tmp_col[i] >>= 2;
 								tmp_col[i] &= 0x3F3F3F00;

@@ -777,10 +777,7 @@ static bool ReadStateChunk(EMUFILE* is, const SFORMAT *sf, int size)
 
 		if((tmp=CheckS(guessSF,sf,sz,count,toa)))
 		{
-		#ifdef LOCAL_LE
-			// no need to ever loop one at a time if not flipping byte order
-			is->fread((char *)tmp->v,sz*count);
-		#else
+		#ifdef MSB_FIRST
 			if(sz == 1) {
 				//special case: read a huge byte array
 				is->fread((char *)tmp->v,count);
@@ -791,6 +788,9 @@ static bool ReadStateChunk(EMUFILE* is, const SFORMAT *sf, int size)
                     FlipByteOrder((u8*)tmp->v + i*sz,sz);
 				}
 			}
+		#else
+			// no need to ever loop one at a time if not flipping byte order
+			is->fread((char *)tmp->v,sz*count);
 		#endif
 			guessSF = tmp + 1;
 		}
@@ -863,10 +863,7 @@ static int SubWrite(EMUFILE* os, const SFORMAT *sf)
 			#endif
 
 
-		#ifdef LOCAL_LE
-			// no need to ever loop one at a time if not flipping byte order
-			os->fwrite((char *)sf->v,size*count);
-		#else
+		#ifdef MSB_FIRST
 			if(size == 1) {
 				//special case: write a huge byte array
 				os->fwrite((char *)sf->v,count);
@@ -878,6 +875,9 @@ static int SubWrite(EMUFILE* os, const SFORMAT *sf)
 					FlipByteOrder((u8*)sf->v + i*size, size);
 				}
 			}
+		#else
+			// no need to ever loop one at a time if not flipping byte order
+			os->fwrite((char *)sf->v,size*count);
 		#endif
 		}
 		sf++;

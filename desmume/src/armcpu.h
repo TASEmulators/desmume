@@ -179,7 +179,7 @@ enum Mode
 	SYS = 0x1F
 };
 
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
 typedef union
 {
 	struct
