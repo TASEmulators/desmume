@@ -18,9 +18,8 @@ desmume_SOURCES = \
 	desmume.h desmume.cpp \
 	dTool.h dToolsList.cpp \
 	tools/ioregsView.cpp tools/ioregsView.h \
-	../../../sndsdl.cpp \
-	../../../ctrlssdl.h ../../../ctrlssdl.cpp \
-	../../../driver.h ../../../driver.cpp \
+	../shared/sndsdl.cpp \
+	../shared/ctrlssdl.h ../shared/ctrlssdl.cpp \
 	osmesa_3Demu.cpp osmesa_3Demu.h \
 	glx_3Demu.cpp glx_3Demu.h \
 	cheatsGTK.h cheatsGTK.cpp \

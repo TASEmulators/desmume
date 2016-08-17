@@ -24,7 +24,7 @@
 
 #include "../NDSSystem.h"
 #include "../SPU.h"
-#include "../sndsdl.h"
+#include "../shared/sndsdl.h"
 #include "../movie.h"
 
 volatile bool execute = false;

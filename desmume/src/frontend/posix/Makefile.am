@@ -28,6 +28,7 @@ libdesmume_a_SOURCES = \
 	../../commandline.h ../../commandline.cpp \
 	../../common.cpp ../../common.h \
 	../../debug.cpp ../../debug.h \
+	../../driver.cpp ../../driver.h \
 	../../Database.cpp ../../Database.h ../../Disassembler.cpp ../../Disassembler.h \
 	../../emufile.h ../../emufile.cpp ../../encrypt.h ../../encrypt.cpp ../../FIFO.cpp ../../FIFO.h \
 	../../firmware.cpp ../../firmware.h ../../GPU.cpp ../../GPU.h \
@@ -109,7 +110,6 @@ libdesmume_a_SOURCES = \
 	../../filter/videofilter.cpp ../../filter/videofilter.h \
 	../../filter/xbrz.cpp ../../filter/xbrz.h \
 	../../version.cpp ../../version.h \
-	../../desmume_config.cpp ../../desmume_config.h \
 	../../libretro-common/compat/compat_getopt.c \
 	../../libretro-common/file/file_path.c \
 	../../libretro-common/compat/compat_strl.c \
@@ -193,15 +193,17 @@ libdesmume_a_SOURCES += \
 	../../utils/AsmJit/x86/x86util.h
 endif
 
+libdesmume_a_SOURCES += shared/desmume_config.cpp shared/desmume_config.h
+
 if HAVE_GL
 libdesmume_a_SOURCES += ../../OGLRender.cpp ../../OGLRender_3_2.cpp
 endif
 
 if HAVE_OPENAL
-libdesmume_a_SOURCES += ../../mic_openal.cpp
+libdesmume_a_SOURCES += shared/mic_openal.cpp
 else
 if HAVE_ALSA
-libdesmume_a_SOURCES += ../../mic_alsa.cpp
+libdesmume_a_SOURCES += shared/mic_alsa.cpp
 else
 libdesmume_a_SOURCES += ../../mic.cpp
 endif
