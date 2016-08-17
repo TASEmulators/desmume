@@ -13,6 +13,8 @@ case $host in
 esac
 AC_SUBST(desmume_arch)
 
+AC_CONFIG_AUX_DIR([.])
+
 AM_INIT_AUTOMAKE([1.10 subdir-objects tar-pax foreign])
 
 dnl -- make sure we have a c++ compiler
@@ -360,14 +362,15 @@ dnl -- set maintainer mode
 AM_MAINTAINER_MODE
 AC_SUBST(USE_MAINTAINER_MODE)
 
+dnl -- TODO: readd gdbstub. just do it as sources, no autotools cruft
 
 dnl --- Finally, output all the makefiles
 AC_CONFIG_FILES([Makefile
-                 src/Makefile
-                 src/cli/Makefile
-                 src/cli/doc/Makefile
-                 src/gtk/Makefile
-                 src/gtk/doc/Makefile
-                 src/gdbstub/Makefile
+                 cli/Makefile
+                 cli/doc/Makefile
+                 gtk/Makefile
+                 gtk/doc/Makefile
 ])
 AC_OUTPUT
+
+

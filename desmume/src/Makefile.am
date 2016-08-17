@@ -1,14 +1,14 @@
-include $(top_srcdir)/src/desmume.mk
+include desmume.mk
 
 AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS) $(LIBSOUNDTOUCH_CFLAGS)
 
-EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc cocoa
+EXTRA_DIST = instruction_tabdef.inc thumb_tabdef.inc cocoa
 if HAVE_GDB_STUB
 SUBDIRS = . gdbstub $(UI_DIR)
 else
 SUBDIRS = . $(UI_DIR)
 endif
-DIST_SUBDIRS = . gdbstub cli gtk gtk-glade
+#DIST_SUBDIRS = . gdbstub cli gtk gtk-glade
 noinst_LIBRARIES = libdesmume.a
 libdesmume_a_SOURCES = \
 	armcpu.cpp armcpu.h \
