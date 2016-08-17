@@ -57,6 +57,7 @@
 	<Import Project="$(UserProps_Path)" />
 
 	<!-- some defaults and validation of user prefs -->
+	<!-- TODO: throw errors here instead -->
 	<PropertyGroup>
 		<SSE_Level Condition="'$(SSE_Level)' == ''">20</SSE_Level>
 		<AVX_Level Condition="'$(AVX_Level)' == ''">0</AVX_Level>
