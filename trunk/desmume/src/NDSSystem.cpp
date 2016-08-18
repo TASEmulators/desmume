@@ -1411,8 +1411,8 @@ static void execHardware_hstart_vblankStart()
 	triggerDma(EDMAMode_VBlank);
 
 	//tracking for arm9 load average
-	nds.runCycleCollector[0][nds.idleFrameCounter] = 1120380-nds.idleCycles[0];
-	nds.runCycleCollector[1][nds.idleFrameCounter] = 1120380-nds.idleCycles[1];
+	nds.runCycleCollector[ARMCPU_ARM9][nds.idleFrameCounter] = 1120380-nds.idleCycles[0];
+	nds.runCycleCollector[ARMCPU_ARM7][nds.idleFrameCounter] = 1120380-nds.idleCycles[1];
 	nds.idleFrameCounter++;
 	nds.idleFrameCounter &= 15;
 	nds.idleCycles[0] = 0;
@@ -2973,9 +2973,12 @@ void NDS_swapScreen()
 }
 
 
-void emu_halt() {
+void emu_halt()
+{
 	//printf("halting emu: ARM9 PC=%08X/%08X, ARM7 PC=%08X/%08X\n", NDS_ARM9.R[15], NDS_ARM9.instruct_adr, NDS_ARM7.R[15], NDS_ARM7.instruct_adr);
 	execute = false;
+	GPU->ForceFrameStop();
+	
 #ifdef LOG_ARM9
 	if (fp_dis9)
 	{
