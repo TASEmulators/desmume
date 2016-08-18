@@ -1608,6 +1608,7 @@ private:
 	NDSDisplay *_displayMain;
 	NDSDisplay *_displayTouch;
 	
+	bool _frameNeedsFinish;
 	bool _willAutoResolveToCustomBuffer;
 	u16 *_customVRAM;
 	u16 *_customVRAMBlank;
@@ -1628,6 +1629,8 @@ public:
 	
 	void Reset();
 	void ForceRender3DFinishAndFlush(bool willFlush);
+	void ForceFrameStop();
+	
 	const NDSDisplayInfo& GetDisplayInfo(); // Frontends need to call this whenever they need to read the video buffers from the emulator core
 	void SetDisplayDidCustomRender(NDSDisplayID displayID, bool theState);
 	
