@@ -48,14 +48,6 @@
 	#define IF_DEVELOPER(X)
 #endif
 
-#ifdef HOST_WINDOWS
-	#define HAVE_LIBAGG
-	#ifdef DEVELOPER
-		#define HAVE_LUA
-	#endif
-	#define HAVE_JIT
-#endif
-
 #ifdef __GNUC__
 	#ifdef __SSE__
 		#define ENABLE_SSE

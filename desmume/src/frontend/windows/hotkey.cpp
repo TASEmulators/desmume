@@ -29,8 +29,8 @@
 #include "movie.h"
 #include "SPU.h"
 #include "GPU.h"
-#include "GPU_osd.h"
 #include "path.h"
+#include "driver.h"
 #include "frontend/modules/ImageOut.h"
 
 #include "main.h"
@@ -108,7 +108,7 @@ void HK_CpuMode(int, bool justPressed)
 
 	char tmp[256];
 	sprintf(tmp,"CPU mode: %s", CommonSettings.use_jit?"JIT":"Interpreter");
-	osd->addLine(tmp);
+	driver->AddLine(tmp);
 	//WritePrivateProfileInt("Emulation", "CpuMode", CommonSettings.use_jit, IniName)
 }
 
@@ -120,7 +120,7 @@ void HK_JitBlockSizeDec(int, bool justPressed)
 	CommonSettings.jit_max_block_size--;
 	char tmp[256];
 	sprintf(tmp,"JIT block size changed to: %u", CommonSettings.jit_max_block_size);
-	osd->addLine(tmp);
+	driver->AddLine(tmp);
 	arm_jit_reset(CommonSettings.use_jit, true);
 }
 
@@ -132,7 +132,7 @@ void HK_JitBlockSizeInc(int, bool justPressed)
 	CommonSettings.jit_max_block_size++;
 	char tmp[256];
 	sprintf(tmp,"JIT block size changed to: %u", CommonSettings.jit_max_block_size);
-	osd->addLine(tmp);
+	driver->AddLine(tmp);
 	arm_jit_reset(CommonSettings.use_jit, true);
 }
 #endif
@@ -278,7 +278,7 @@ void HK_StateSetSlot(int num, bool justPressed)
 	if (romloaded)
 	{
 		lastSaveState = num;
-		osd->addLine("State %i selected", num);
+		driver->AddLine("State %i selected", num);
 	}
 }
 
@@ -370,12 +370,12 @@ void HK_ToggleReadOnly(int, bool justPressed) {
 	if(movieMode == MOVIEMODE_FINISHED)
 		pMsg += sprintf(pMsg, " (finished)");
 	if(movieMode == MOVIEMODE_INACTIVE)
-		osd->setLineColor(255,0,0);
+		driver->SetLineColor(255,0,0);
 	else if(movieMode == MOVIEMODE_FINISHED)
-		osd->setLineColor(255,255,0);
+		driver->SetLineColor(255,255,0);
 	else
-		osd->setLineColor(255,255,255);
-	osd->addLine(msg);
+		driver->SetLineColor(255,255,255);
+	driver->AddLine(msg);
 }
 
 void HK_PlayMovie(int, bool justPressed) 
@@ -454,7 +454,7 @@ void HK_NextSaveSlot(int, bool justPressed) {
 	lastSaveState++; 
 	if(lastSaveState>9) 
 		lastSaveState=0; 
-	osd->addLine("State %i selected", lastSaveState);
+	driver->AddLine("State %i selected", lastSaveState);
 }
 
 void HK_PreviousSaveSlot(int, bool justPressed) { 
@@ -463,7 +463,7 @@ void HK_PreviousSaveSlot(int, bool justPressed) {
 		lastSaveState=9; 
 	else
 		lastSaveState--;
-	osd->addLine("State %i selected", lastSaveState);
+	driver->AddLine("State %i selected", lastSaveState);
 }
 
 void HK_Pause(int, bool justPressed) { if(justPressed) TogglePause(); }
@@ -491,18 +491,18 @@ void HK_ToggleRasterizer(int, bool justPressed) {
 void HK_IncreasePressure(int, bool justPressed) {
 	CommonSettings.StylusPressure += 10;
 	if(CommonSettings.StylusPressure>100) CommonSettings.StylusPressure = 100;
-	osd->addLine("Stylus Pressure to %d%%",CommonSettings.StylusPressure);
+	driver->AddLine("Stylus Pressure to %d%%",CommonSettings.StylusPressure);
 }
 void HK_DecreasePressure(int, bool justPressed) {
 	CommonSettings.StylusPressure -= 10;
 	if(CommonSettings.StylusPressure<0) CommonSettings.StylusPressure = 0;
-	osd->addLine("Stylus Pressure to %d%%",CommonSettings.StylusPressure);
+	driver->AddLine("Stylus Pressure to %d%%",CommonSettings.StylusPressure);
 }
 void HK_ToggleStylusJitter(int, bool justPressed) {
 	CommonSettings.StylusJitter = !CommonSettings.StylusJitter;
 	nds.stylusJitter = CommonSettings.StylusJitter;
 	WritePrivateProfileBool("Emulation", "StylusJitter", CommonSettings.StylusJitter, IniName);
-	osd->addLine("Stylus Jitter %s",CommonSettings.StylusJitter ? "On" : "Off");
+	driver->AddLine("Stylus Jitter %s",CommonSettings.StylusJitter ? "On" : "Off");
 }
 
 void HK_Rotate0(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 0);}

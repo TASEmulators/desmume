@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -35,6 +35,10 @@
 	#include <unistd.h>
 #endif
 
+#if HAVE_LIBAGG
+#include "frontend/modules/osd/agg/agg_osd.h"
+#endif
+
 #include <assert.h>
 #include <vector>
 #include <map>
@@ -49,7 +53,6 @@
 #include "movie.h"
 #include "MMU.h"
 #include "GPU.h"
-#include "GPU_osd.h"
 #include "SPU.h"
 #include "saves.h"
 #include "emufile.h"
@@ -2603,6 +2606,7 @@ static void prepare_drawing()
 }
 static void prepare_reading()
 {
+#if HAVE_LIBAGG
 	curGuiData = GetCurrentInfo().guiData;
 	u32* buf = (u32*)aggDraw.screen->buf().buf();
 	if(buf)
@@ -2618,6 +2622,7 @@ static void prepare_reading()
 		curGuiData.stridePix = 256;
 #endif
 	}
+#endif
 }
 
 // note: prepare_drawing or prepare_reading must be called,
@@ -4170,8 +4175,6 @@ int dontworry(LuaContextInfo& info)
 
 //agg basic shapes
 //TODO polygon and polyline, maybe the overloads for roundedRect and curve
-
-#include "aggdraw.h"
 
 static int line(lua_State *L) {
 

@@ -51,7 +51,7 @@
 #include "dTool.h"
 #include "../shared/desmume_config.h"
 #include "cheatsGTK.h"
-#include "GPU_osd.h"
+#include "frontend/modules/osd/agg/agg_osd.h"
 
 #include "avout_x264.h"
 #include "avout_flac.h"
@@ -2706,10 +2706,10 @@ static void ToggleAudio (GtkToggleAction *action)
     config.audio_enabled = gtk_toggle_action_get_active(action);
     if (config.audio_enabled) {
         SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
-        osd->addLine("Audio enabled");
+        driver->AddLine("Audio enabled");
     } else {
         SPU_ChangeSoundCore(0, 0);
-        osd->addLine("Audio disabled");
+        driver->AddLine("Audio disabled");
     }
     RedrawScreen();
 }
@@ -2721,9 +2721,9 @@ static void ToggleMicNoise (GtkToggleAction *action)
 
     Mic_DoNoise(doNoise);
     if (doNoise)
-       osd->addLine("Fake mic enabled");
+       driver->AddLine("Fake mic enabled");
     else
-       osd->addLine("Fake mic disabled");
+       driver->AddLine("Fake mic disabled");
     RedrawScreen();
 }
 #endif
@@ -2733,9 +2733,9 @@ static void ToggleFpsLimiter (GtkToggleAction *action)
     config.fpslimiter = (BOOL)gtk_toggle_action_get_active(action);
 
     if (config.fpslimiter)
-       osd->addLine("Fps limiter enabled");
+       driver->AddLine("Fps limiter enabled");
     else
-       osd->addLine("Fps limiter disabled");
+       driver->AddLine("Fps limiter disabled");
     RedrawScreen();
 }
 
@@ -2746,11 +2746,11 @@ static void ToggleAutoFrameskip (GtkToggleAction *action)
     if (config.autoframeskip) {
         autoframeskip = true;
         Frameskip = 0;
-        osd->addLine("Auto frameskip enabled");
+        driver->AddLine("Auto frameskip enabled");
     } else {
         autoframeskip = false;
         Frameskip = autoFrameskipMax;
-        osd->addLine("Auto frameskip disabled");
+        driver->AddLine("Auto frameskip disabled");
     }
     RedrawScreen();
 }

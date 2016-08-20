@@ -22,6 +22,10 @@
 #include "gfx3d.h"
 #include "texcache.h"
 
+#if HAVE_LIBAGG
+#include "frontend/modules/osd/agg/agg_osd.h"
+#endif
+
 
 static VIEW3D_Driver nullView3d;
 BaseDriver::BaseDriver()
@@ -50,3 +54,15 @@ void BaseDriver::USR_InfoMessage(const char *message)
 	LOG("%s\n", message);
 }
 
+void BaseDriver::AddLine(const char *fmt, ...)
+{
+#if HAVE_LIBAGG
+	osd->addLine(fmt);
+#endif
+}
+void BaseDriver::SetLineColor(u8 r, u8 b, u8 g)
+{
+#if HAVE_LIBAGG
+	osd->setLineColor(r,b,g);
+#endif
+}

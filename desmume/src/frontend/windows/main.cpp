@@ -48,7 +48,6 @@
 #include "slot1.h"
 #include "slot2.h"
 #include "GPU.h"
-#include "GPU_osd.h"
 #include "SPU.h"
 #include "OGLRender.h"
 #include "OGLRender_3_2.h"
@@ -83,8 +82,9 @@
 #include "utils/xstring.h"
 #include "directx/ddraw.h"
 #include "video.h"
-#include "aggdraw.h"
-#include "agg2d.h"
+#include "frontend/modules/osd/agg/agg_osd.h"
+#include "frontend/modules/osd/agg/aggdraw.h"
+#include "frontend/modules/osd/agg/agg2d.h"
 #include "winutil.h"
 #include "ogl.h"
 
@@ -2769,6 +2769,8 @@ class WinDriver : public BaseDriver
 		return inFrameBoundary;
 	}
 
+
+
 	virtual eStepMainLoopResult EMU_StepMainLoop(bool allowSleep, bool allowPause, int frameSkip, bool disableUser, bool disableCore)
 	{
 		// this bit is here to handle calls through LUACALL_BEFOREEMULATION and in case Lua errors out while we're processing input
@@ -3196,7 +3198,9 @@ int _main()
 
 	CommonSettings.wifi.mode = GetPrivateProfileInt("Wifi", "Mode", 0, IniName);
 	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
-	
+
+	osd = new OSDCLASS(-1);
+
 	NDS_Init();
 	GPU->SetCustomFramebufferSize(256*video.prescaleHD,192*video.prescaleHD);
 	//GPU->SetWillAutoBlitNativeToCustomBuffer(false); //we need to do this right now, because we depend on having one solitary framebuffer

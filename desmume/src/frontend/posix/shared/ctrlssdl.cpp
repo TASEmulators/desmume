@@ -21,10 +21,14 @@
 #include "SPU.h"
 #include "commandline.h"
 #include "NDSSystem.h"
-#include "GPU_osd.h"
+#include "frontend/modules/osd/agg/agg_osd.h"
+#include "driver.h"
+
 #ifdef FAKE_MIC
 #include "mic.h"
 #endif
+
+
 
 u16 keyboard_cfg[NB_KEYS];
 u16 joypad_cfg[NB_KEYS];
@@ -481,7 +485,7 @@ process_ctrls_event( SDL_Event& event,
           if (event.active.gain) {
             cfg->focused = 1;
             SPU_Pause(0);
-            osd->addLine("Auto pause disabled");
+            driver->AddLine("Auto pause disabled");
           } else {
             cfg->focused = 0;
             SPU_Pause(1);
@@ -515,18 +519,18 @@ process_ctrls_event( SDL_Event& event,
                 cfg->fake_mic = !cfg->fake_mic;
                 Mic_DoNoise(cfg->fake_mic);
                 if (cfg->fake_mic)
-                  osd->addLine("Fake mic enabled");
+                  driver->AddLine("Fake mic enabled");
                 else
-                  osd->addLine("Fake mic disabled");
+                  driver->AddLine("Fake mic disabled");
                 break;
 #endif
 
             case SDLK_o:
                 cfg->boost = !cfg->boost;
                 if (cfg->boost)
-                  osd->addLine("Boost mode enabled");
+                  driver->AddLine("Boost mode enabled");
                 else
-                  osd->addLine("Boost mode disabled");
+                  driver->AddLine("Boost mode disabled");
                 break;
 
             case SDLK_LSHIFT:

@@ -16,7 +16,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "GPU_osd.h"
+#include "agg_osd.h"
 #include "driver.h"
 #include "GPU.h"
 #include "mem.h"

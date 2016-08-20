@@ -26,8 +26,8 @@
 #include "types.h"
 #include "debug.h"
 #include "console.h"
-#include "GPU_osd.h"
-
+#include "driver.h"
+#include "NDSSystem.h"
 #include "winutil.h"
 
 int FastForward=0;
@@ -60,7 +60,7 @@ void IncreaseSpeed(void) {
 	desiredfps = core_desiredfps * desiredFpsScaler / 256;
 	desiredspf = 65536.0f / desiredfps;
 	printf("Throttle fps scaling increased to: %f\n",desiredFpsScaler/256.0);
-	osd->addLine("Target FPS up to %2.04f",desiredFpsScaler/256.0);
+	driver->AddLine("Target FPS up to %2.04f",desiredFpsScaler/256.0);
 	WritePrivateProfileInt("Video","FPS Scaler Index", desiredFpsScalerIndex, IniName);
 }
 
@@ -72,7 +72,7 @@ void DecreaseSpeed(void) {
 	desiredfps = core_desiredfps * desiredFpsScaler / 256;
 	desiredspf = 65536.0f / desiredfps;
 	printf("Throttle fps scaling decreased to: %f\n",desiredFpsScaler/256.0);
-	osd->addLine("Target FPS down to %2.04f",desiredFpsScaler/256.0);
+	driver->AddLine("Target FPS down to %2.04f",desiredFpsScaler/256.0);
 	WritePrivateProfileInt("Video","FPS Scaler Index", desiredFpsScalerIndex, IniName);
 }
 

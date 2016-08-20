@@ -70,6 +70,9 @@ public:
 	VIEW3D_Driver* view3d;
 	void VIEW3D_Shutdown();
 	void VIEW3D_Init();
+
+	virtual void AddLine(const char *fmt, ...);
+	virtual void SetLineColor(u8 r, u8 b, u8 g);
 };
 
 #endif //_DRIVER_H_

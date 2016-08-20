@@ -215,9 +215,7 @@ libdesmume_a_SOURCES += ../../metaspu/SndOut.cpp ../../metaspu/SndOut.h ../../me
 endif
 
 if HAVE_LIBAGG
-libdesmume_a_SOURCES += ../../aggdraw.cpp ../../aggdraw.h ../../GPU_osd.cpp
-else
-libdesmume_a_SOURCES += ../../GPU_osd_stub.cpp
+libdesmume_a_SOURCES += ../../frontend/modules/osd/agg/aggdraw.cpp ../../frontend/modules/osd/agg/aggdraw.h ../../frontend/modules/osd/agg/agg_osd.cpp
 endif
 if HAVE_LUA
 AM_CPPFLAGS += $(LUA_CFLAGS)

@@ -53,7 +53,7 @@
 #include "../render3D.h"
 #include "../rasterize.h"
 #include "../saves.h"
-#include "../GPU_osd.h"
+#include "../frontend/modules/osd/agg/agg_osd.h"
 #include "../shared/desmume_config.h"
 #include "../commandline.h"
 #include "../slot2.h"
@@ -765,8 +765,11 @@ int main(int argc, char ** argv) {
   while(!ctrls_cfg.sdl_quit) {
     desmume_cycle(&ctrls_cfg);
 
+#ifdef HAVE_LIBAGG
     osd->update();
     DrawHUD();
+#endif
+
 #ifdef INCLUDE_OPENGL_2D
     if ( my_config.opengl_2d) {
       opengl_Draw( screen_texture, my_config.soft_colour_convert);
@@ -775,7 +778,10 @@ int main(int argc, char ** argv) {
     else
 #endif
       Draw();
+
+#ifdef HAVE_LIBAGG
     osd->clear();
+#endif
 
     for ( int i = 0; i < my_config.frameskip; i++ ) {
         NDS_SkipNextFrame();

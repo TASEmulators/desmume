@@ -25,12 +25,13 @@
 #include "debug.h"
 #include "console.h"
 #include "gfx3d.h"
-#include "GPU_osd.h"
 #include "SPU.h"
 
 #include "video.h"
 #include "windriver.h"
 #include "main.h"
+#include "driver.h"
+#include "NDSSystem.h"
 
 extern VideoInfo video;
 
@@ -397,7 +398,7 @@ bool DRV_AviBegin(const char* fname)
 	// Don't display at file splits
 	if(!avi_segnum) {
 		EMU_PrintMessage("AVI recording started.");
-		osd->addLine("AVI recording started.");
+		driver->AddLine("AVI recording started.");
 	}
 
 	strncpy(saved_cur_avi_fnameandext,fname,MAX_PATH);
@@ -483,7 +484,7 @@ void DRV_AviEnd()
 	// Don't display if we're just starting another segment
 	if(avi_file->tBytes <= 2097152000) {
 		EMU_PrintMessage("AVI recording ended.");
-		osd->addLine("AVI recording ended.");
+		driver->AddLine("AVI recording ended.");
 	}
 
 	avi_destroy(&avi_file);

@@ -42,7 +42,6 @@
 #include "registers.h"
 #include "gfx3d.h"
 #include "debug.h"
-#include "GPU_osd.h"
 #include "NDSSystem.h"
 #include "readwrite.h"
 #include "matrix.h"
@@ -6762,9 +6761,10 @@ GPUSubsystem::GPUSubsystem()
 	
 	_willAutoResolveToCustomBuffer = true;
 	
-	OSDCLASS *previousOSD = osd;
-	osd = new OSDCLASS(-1);
-	delete previousOSD;
+	//TODO OSD
+	//OSDCLASS *previousOSD = osd;
+	//osd = new OSDCLASS(-1);
+	//delete previousOSD;
 	
 	_displayInfo.colorFormat = NDSColorFormat_BGR555_Rev;
 	_displayInfo.pixelBytes = sizeof(u16);
@@ -6798,8 +6798,9 @@ GPUSubsystem::GPUSubsystem()
 
 GPUSubsystem::~GPUSubsystem()
 {
-	delete osd;
-	osd = NULL;
+	//TODO OSD
+	//delete osd;
+	//osd = NULL;
 	
 	free_aligned(this->_customFramebuffer);
 	free_aligned(this->_customVRAM);
@@ -6876,7 +6877,9 @@ void GPUSubsystem::Reset()
 	this->_engineSub->Reset();
 	
 	DISP_FIFOreset();
-	osd->clear();
+
+	//historically, we reset the OSD here. maybe because we would want a clean drawing surface? anyway this is not the right point to be doing OSD work
+	//osd->clear();
 }
 
 void GPUSubsystem::ForceRender3DFinishAndFlush(bool willFlush)
