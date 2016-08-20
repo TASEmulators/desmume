@@ -2185,7 +2185,7 @@ static void StepRunLoop_User()
 	const int kFramesPerToolUpdate = 1;
 
 	Hud.fps = mainLoopData.fps;
-	Hud.fps3d = Render3DFramesPerSecond;
+	Hud.fps3d = GPU->GetFPSRender3D();
 
 	Display();
 

@@ -48,7 +48,6 @@
 #include "matrix.h"
 #include "emufile.h"
 
-u32 Render3DFramesPerSecond;
 
 //instantiate static instance
 u16 GPUEngineBase::_brightnessUpTable555[17][0x8000];
@@ -6760,6 +6759,8 @@ GPUSubsystem::GPUSubsystem()
 	_displayTouch = new NDSDisplay(NDSDisplayID_Touch);
 	_displayTouch->SetEngine(_engineSub);
 	
+	_videoFrameCount = 0;
+	_render3DFrameCount = 0;
 	_frameNeedsFinish = false;
 	_willAutoResolveToCustomBuffer = true;
 	
@@ -6852,6 +6853,9 @@ void GPUSubsystem::Reset()
 	{
 		this->SetCustomFramebufferSize(this->_displayInfo.customWidth, this->_displayInfo.customHeight);
 	}
+	
+	this->_videoFrameCount = 0;
+	this->_render3DFrameCount = 0;
 	
 	this->ClearWithColor(0xFFFF);
 	
@@ -6988,6 +6992,11 @@ void GPUSubsystem::UpdateRenderProperties()
 const NDSDisplayInfo& GPUSubsystem::GetDisplayInfo()
 {
 	return this->_displayInfo;
+}
+
+u32 GPUSubsystem::GetFPSRender3D() const
+{
+	return this->_render3DFrameCount;
 }
 
 void GPUSubsystem::SetDisplayDidCustomRender(NDSDisplayID displayID, bool theState)
@@ -7325,30 +7334,6 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 		if (!isFrameSkipRequested)
 		{
 			this->UpdateRenderProperties();
-			
-			if (!isFramebufferRenderNeeded[GPUEngineID_Main])
-			{
-				if (!CommonSettings.showGpu.main)
-				{
-					memset(this->_engineMain->renderedBuffer, 0, this->_engineMain->renderedWidth * this->_engineMain->renderedHeight * this->_displayInfo.pixelBytes);
-				}
-				else if (this->_engineMain->GetIsMasterBrightFullIntensity())
-				{
-					this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, true>();
-				}
-			}
-			
-			if (!isFramebufferRenderNeeded[GPUEngineID_Sub])
-			{
-				if (!CommonSettings.showGpu.sub)
-				{
-					memset(this->_engineSub->renderedBuffer, 0, this->_engineSub->renderedWidth * this->_engineSub->renderedHeight * this->_displayInfo.pixelBytes);
-				}
-				else if (this->_engineSub->GetIsMasterBrightFullIntensity())
-				{
-					this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, true>();
-				}
-			}
 		}
 	}
 	
@@ -7399,6 +7384,14 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 		this->_engineMain->FramebufferPostprocess();
 		this->_engineSub->FramebufferPostprocess();
 		
+		this->_videoFrameCount++;
+		if (this->_videoFrameCount == 60)
+		{
+			this->_render3DFrameCount = gfx3d.render3DFrameCount;
+			gfx3d.render3DFrameCount = 0;
+			this->_videoFrameCount = 0;
+		}
+		
 		if (!isFrameSkipRequested)
 		{
 			if (this->_displayInfo.isCustomSizeRequested)
@@ -7421,10 +7414,32 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 			{
 				this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, false>();
 			}
+			else
+			{
+				if (!CommonSettings.showGpu.main)
+				{
+					memset(this->_engineMain->renderedBuffer, 0, this->_engineMain->renderedWidth * this->_engineMain->renderedHeight * this->_displayInfo.pixelBytes);
+				}
+				else if (this->_engineMain->GetIsMasterBrightFullIntensity())
+				{
+					this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, true>();
+				}
+			}
 			
 			if (isFramebufferRenderNeeded[GPUEngineID_Sub])
 			{
 				this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, false>();
+			}
+			else
+			{
+				if (!CommonSettings.showGpu.sub)
+				{
+					memset(this->_engineSub->renderedBuffer, 0, this->_engineSub->renderedWidth * this->_engineSub->renderedHeight * this->_displayInfo.pixelBytes);
+				}
+				else if (this->_engineSub->GetIsMasterBrightFullIntensity())
+				{
+					this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, true>();
+				}
 			}
 			
 			if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
@@ -7438,14 +7453,6 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 				this->_engineMain->ResolveToCustomFramebuffer();
 				this->_engineSub->ResolveToCustomFramebuffer();
 			}
-		}
-		
-		gfx3d._videoFrameCount++;
-		if (gfx3d._videoFrameCount == 60)
-		{
-			Render3DFramesPerSecond = gfx3d.render3DFrameCount;
-			gfx3d.render3DFrameCount = 0;
-			gfx3d._videoFrameCount = 0;
 		}
 		
 		if (this->_frameNeedsFinish)

@@ -667,7 +667,6 @@ struct GFX3D
 	GFX3D()
 		: polylist(0)
 		, vertlist(0)
-		, _videoFrameCount(0)
 		, render3DFrameCount(0) {
 	}
 
@@ -681,11 +680,9 @@ struct GFX3D
 	VERTLIST* vertlist;
 	INDEXLIST indexlist;
 	
-	u32 _videoFrameCount;			// Internal variable that increments when a video frame is completed. Resets every 60 video frames.
 	u32 render3DFrameCount;			// Increments when gfx3d_doFlush() is called. Resets every 60 video frames.
 };
 extern GFX3D gfx3d;
-extern u32 Render3DFramesPerSecond;	// save the current 3D rendering frame count to here every 60 video frames
 
 //---------------------
 

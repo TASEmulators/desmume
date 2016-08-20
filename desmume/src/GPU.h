@@ -1608,6 +1608,8 @@ private:
 	NDSDisplay *_displayMain;
 	NDSDisplay *_displayTouch;
 	
+	u32 _videoFrameCount;			// Internal variable that increments when a video frame is completed. Resets every 60 video frames.
+	u32 _render3DFrameCount;		// The current 3D rendering frame count, saved to this variable once every 60 video frames.
 	bool _frameNeedsFinish;
 	bool _willAutoResolveToCustomBuffer;
 	u16 *_customVRAM;
@@ -1632,6 +1634,8 @@ public:
 	void ForceFrameStop();
 	
 	const NDSDisplayInfo& GetDisplayInfo(); // Frontends need to call this whenever they need to read the video buffers from the emulator core
+	u32 GetFPSRender3D() const;
+	
 	void SetDisplayDidCustomRender(NDSDisplayID displayID, bool theState);
 	
 	GPUEngineA* GetEngineMain();

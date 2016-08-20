@@ -2413,7 +2413,7 @@ gboolean EmuLoop(gpointer data)
 
 	// HUD display things (copied from Windows main.cpp)
 #ifdef HAVE_LIBAGG
-	Hud.fps3d = Render3DFramesPerSecond;
+	Hud.fps3d = GPU->GetFPSRender3D();
 	
 	if(nds.idleFrameCounter==0 || oneSecond) 
 	{
@@ -2446,7 +2446,7 @@ gboolean EmuLoop(gpointer data)
             for (i = 0; i < Frameskip; i++) {
                 NDS_SkipNextFrame();
 #ifdef HAVE_LIBAGG
-                Hud.fps3d = Render3DFramesPerSecond;
+                Hud.fps3d = GPU->GetFPSRender3D();
 #endif
                 desmume_cycle();
                 skipped_frames++;
@@ -2459,7 +2459,7 @@ gboolean EmuLoop(gpointer data)
             for (i = 0; i < Frameskip; i++) {
                 NDS_SkipNextFrame();
 #ifdef HAVE_LIBAGG
-                Hud.fps3d = Render3DFramesPerSecond;
+                Hud.fps3d = GPU->GetFPSRender3D();
 #endif
                 desmume_cycle();
                 skipped_frames++;
@@ -2481,7 +2481,7 @@ gboolean EmuLoop(gpointer data)
                 // Aggressively skip frames to avoid delay
                 NDS_SkipNextFrame();
 #ifdef HAVE_LIBAGG
-                Hud.fps3d = Render3DFramesPerSecond;
+                Hud.fps3d = GPU->GetFPSRender3D();
 #endif
                 desmume_cycle();
                 skipped_frames++;
