@@ -302,6 +302,15 @@ AS_CASE([$host_cpu],
 		[AC_DEFINE(HOST_32)]
 )
 
+AC_CHECK_DECL([__SSE2__])
+AM_CONDITIONAL([SUPPORT_SSE2], [test "x$ac_cv_have_decl___SSE2__" = xyes])
+
+AC_CHECK_DECL([__AVX2__])
+AM_CONDITIONAL([SUPPORT_AVX2], [test "x$ac_cv_have_decl___AVX2__" = xyes])
+
+AC_CHECK_DECL([__ALTIVEC__])
+AM_CONDITIONAL([SUPPORT_ALTIVEC], [test "x$ac_cv_have_decl___ALTIVEC__" = xyes])
+
 AC_SUBST(UI_DIR)
 AC_SUBST(PO_DIR)
 
