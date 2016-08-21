@@ -80,7 +80,11 @@ struct slock
 struct scond
 {
 #ifdef USE_WIN32_THREADS
+   /* this might could be done with a semaphore? I'm not sure. */
    HANDLE event;
+   int waiters;
+   bool waiting_ack;
+   HANDLE ack;
 #else
    pthread_cond_t cond;
 #endif
@@ -311,6 +315,9 @@ scond_t *scond_new(void)
 
 #ifdef USE_WIN32_THREADS
    cond->event   = CreateEvent(NULL, FALSE, FALSE, NULL);
+   cond->waiters = 0;
+   cond->ack = CreateEvent(NULL, FALSE, FALSE, NULL);
+   cond->waiting_ack = false;
    event_created = !!cond->event;
 #else
    event_created = (pthread_cond_init(&cond->cond, NULL) == 0);
@@ -339,6 +346,7 @@ void scond_free(scond_t *cond)
 
 #ifdef USE_WIN32_THREADS
    CloseHandle(cond->event);
+   CloseHandle(cond->ack);
 #else
    pthread_cond_destroy(&cond->cond);
 #endif
@@ -355,10 +363,22 @@ void scond_free(scond_t *cond)
 void scond_wait(scond_t *cond, slock_t *lock)
 {
 #ifdef USE_WIN32_THREADS
-   WaitForSingleObject(cond->event, 0);
-   
-   SignalObjectAndWait(lock->lock, cond->event, INFINITE, FALSE);
-   slock_lock(lock);
+   /* remember: we currently have mutex so this will be safe */
+   cond->waiters++;
+   ReleaseMutex(lock->lock);
+
+   /* wait for a signaller */
+   WaitForSingleObject(cond->event, INFINITE);
+   /* the algorithm hinges on this uncontrolled variable access. It's too hard to explain why it's safe. (..erm.. I hope it is) */
+   cond->waiting_ack = false;
+
+   /* reacquire mutex and finish up */
+   WaitForSingleObject(lock->lock, INFINITE);
+   cond->waiters--;
+
+   /* only when the waiter is COMPLETELY FINISHED do we ack a signaller */
+   SetEvent(cond->ack);
+
 #else
    pthread_cond_wait(&cond->cond, &lock->lock);
 #endif
@@ -393,7 +413,23 @@ int scond_broadcast(scond_t *cond)
 void scond_signal(scond_t *cond)
 {
 #ifdef USE_WIN32_THREADS
+
+   /* remember: we currently have mutex */
+   if(cond->waiters == 0) return;
+
+   /* OK, someone is waiting for a signal */
+
+   /* if we're waiting for an ack, we can't proceed until we receive an ack (signifies cond->event is freed up) */
+   if(cond->waiting_ack)
+      WaitForSingleObject(cond->ack,INFINITE);
+
+   /* so someone set the ack event; a waiter is proceeding. we can wait for another ack now... */
+   cond->waiting_ack = true;
+
+   /* ...and set an event to wake up a waiter so he can actually set that ack... */
+   /* but definitely not right now, since we still have the mutex. So it may take a while */
    SetEvent(cond->event);
+
 #else
    pthread_cond_signal(&cond->cond);
 #endif
