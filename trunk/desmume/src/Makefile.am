@@ -108,18 +108,18 @@ libdesmume_a_SOURCES = \
 	libretro-common/rthreads/async_job.c \
 	libretro-common/rthreads/rsemaphore.c \
 	libretro-common/rthreads/rthreads.c
-	
-if SUPPORT_SSE2 += \
+
+if SUPPORT_SSE2
 libdesmume_a_SOURCES += \
 	utils/colorspacehandler/colorspacehandler_SSE2.cpp
 endif
 
-if SUPPORT_AVX2 += \
+if SUPPORT_AVX2
 libdesmume_a_SOURCES += \
 	utils/colorspacehandler/colorspacehandler_AVX2.cpp
 endif
 
-if SUPPORT_ALTIVEC += \
+if SUPPORT_ALTIVEC
 libdesmume_a_SOURCES += \
 	utils/colorspacehandler/colorspacehandler_AltiVec.cpp
 endif
