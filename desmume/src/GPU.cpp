@@ -6762,6 +6762,8 @@ GPUSubsystem::GPUSubsystem()
 	_videoFrameCount = 0;
 	_render3DFrameCount = 0;
 	_frameNeedsFinish = false;
+	_willAutoApplyMasterBrightness = true;
+	_willAutoConvertRGB666ToRGB888 = true;
 	_willAutoResolveToCustomBuffer = true;
 	
 	OSDCLASS *previousOSD = osd;
@@ -7305,6 +7307,26 @@ u16* GPUSubsystem::GetCustomVRAMAddressUsingMappedAddress(const u32 mappedAddr)
 	return (this->GetEngineMain()->GetCustomVRAMBlockPtr(blockID) + (_gpuCaptureLineIndex[blockLine] * this->_displayInfo.customWidth) + _gpuDstPitchIndex[linePixel]);
 }
 
+bool GPUSubsystem::GetWillAutoApplyMasterBrightness() const
+{
+	return this->_willAutoApplyMasterBrightness;
+}
+
+void GPUSubsystem::SetWillAutoApplyMasterBrightness(const bool willAutoApply)
+{
+	this->_willAutoApplyMasterBrightness = willAutoApply;
+}
+
+bool GPUSubsystem::GetWillAutoConvertRGB666ToRGB888() const
+{
+	return this->_willAutoConvertRGB666ToRGB888;
+}
+
+void GPUSubsystem::SetWillAutoConvertRGB666ToRGB888(const bool willAutoConvert)
+{
+	this->_willAutoConvertRGB666ToRGB888 = willAutoConvert;
+}
+
 bool GPUSubsystem::GetWillAutoResolveToCustomBuffer() const
 {
 	return this->_willAutoResolveToCustomBuffer;
@@ -7319,7 +7341,7 @@ template <NDSColorFormat OUTPUTFORMAT>
 void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 {
 	const bool isDisplayCaptureNeeded = this->_engineMain->WillDisplayCapture(l);
-	const bool isFramebufferRenderNeeded[2]	= {(CommonSettings.showGpu.main && !this->_engineMain->GetIsMasterBrightFullIntensity()) || isDisplayCaptureNeeded,
+	const bool isFramebufferRenderNeeded[2]	= { CommonSettings.showGpu.main && !this->_engineMain->GetIsMasterBrightFullIntensity(),
 											    CommonSettings.showGpu.sub && !this->_engineSub->GetIsMasterBrightFullIntensity() };
 	
 	if (!this->_frameNeedsFinish)
@@ -7337,7 +7359,7 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 		}
 	}
 	
-	if (isFramebufferRenderNeeded[GPUEngineID_Main] && !isFrameSkipRequested)
+	if ( (isFramebufferRenderNeeded[GPUEngineID_Main] || isDisplayCaptureNeeded) && !isFrameSkipRequested )
 	{
 		// GPUEngineA:WillRender3DLayer() and GPUEngineA:WillCapture3DLayerDirect() both rely on register
 		// states that might change on a per-line basis. Therefore, we need to check these states on a
@@ -7410,39 +7432,42 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 			this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = this->_displayTouch->GetEngine()->renderedWidth;
 			this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = this->_displayTouch->GetEngine()->renderedHeight;
 			
-			if (isFramebufferRenderNeeded[GPUEngineID_Main])
+			if (this->_willAutoApplyMasterBrightness)
 			{
-				this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, false>();
-			}
-			else
-			{
-				if (!CommonSettings.showGpu.main)
+				if (CommonSettings.showGpu.main)
+				{
+					if (this->_engineMain->GetIsMasterBrightFullIntensity())
+					{
+						this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, true>();
+					}
+					else
+					{
+						this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, false>();
+					}
+				}
+				else
 				{
 					memset(this->_engineMain->renderedBuffer, 0, this->_engineMain->renderedWidth * this->_engineMain->renderedHeight * this->_displayInfo.pixelBytes);
 				}
-				else if (this->_engineMain->GetIsMasterBrightFullIntensity())
+				
+				if (CommonSettings.showGpu.sub)
 				{
-					this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, true>();
+					if (this->_engineSub->GetIsMasterBrightFullIntensity())
+					{
+						this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, true>();
+					}
+					else
+					{
+						this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, false>();
+					}
 				}
-			}
-			
-			if (isFramebufferRenderNeeded[GPUEngineID_Sub])
-			{
-				this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, false>();
-			}
-			else
-			{
-				if (!CommonSettings.showGpu.sub)
+				else
 				{
 					memset(this->_engineSub->renderedBuffer, 0, this->_engineSub->renderedWidth * this->_engineSub->renderedHeight * this->_displayInfo.pixelBytes);
 				}
-				else if (this->_engineSub->GetIsMasterBrightFullIntensity())
-				{
-					this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, true>();
-				}
 			}
 			
-			if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
+			if ( (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) && this->_willAutoConvertRGB666ToRGB888 )
 			{
 				this->_engineMain->ResolveRGB666ToRGB888();
 				this->_engineSub->ResolveRGB666ToRGB888();
