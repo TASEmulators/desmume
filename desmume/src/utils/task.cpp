@@ -159,8 +159,8 @@ void Task::Impl::shutdown()
 	if(!started) return;
 
 	//nobody should shutdown while a task is still running;
-	//it would imply that we're in some kind of shutdown pricess, and datastructures might be getting freed while someone is still working on it
-	//nonetheless, _troublingly_, it seems like we do that now, so for now let's try to let that work finish instead of blowing up when it isn't finished
+	//it would imply that we're in some kind of shutdown process, and datastructures might be getting freed while a worker is still working on it.
+	//nonetheless, _troublingly_, it seems like we do that now, so for now let's try to let that work finish instead of blowing up when it isn't finished.
 	//assert(!workFunc);
 	finish();
 
