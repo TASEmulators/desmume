@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 */
 
 #include <stdio.h>
+#include <assert.h>
 
 #include "types.h"
 #include "task.h"
@@ -71,11 +72,10 @@ public:
 
 	slock_t *mutex;
 	scond_t *workCond;
-	bool workFlag, finishFlag;
-	TWork workFunc;
-	void *workFuncParam;
-	void *ret;
-	bool exitThread;
+	volatile bool workFlag, finishFlag, exitFlag;
+	volatile TWork workFunc;
+	void * volatile workFuncParam;
+	void * volatile ret;
 	bool started;
 };
 
@@ -102,21 +102,20 @@ void Task::Impl::taskProc()
 
 		slock_unlock(mutex);
 
-		if(exitThread)
+		if(exitFlag)
 			break;
 	}
 }
 
 static void* killTask(void* task)
 {
-	((Task::Impl*)task)->exitThread = true;
-	return 0;
+	((Task::Impl*)task)->exitFlag = true;
+	return NULL;
 }
 
 Task::Impl::Impl()
 	: started(false)
 {
-
 }
 
 Task::Impl::~Impl()
@@ -129,16 +128,20 @@ void Task::Impl::initialize()
 	thread = NULL;
 	workFunc = NULL;
 	workCond = NULL;
-	workFlag = finishFlag = false;
 	workFunc = NULL;
 	workFuncParam = NULL;
+	workFlag = finishFlag = exitFlag = false;
 	ret = NULL;
-	exitThread = false;
 	started = false;
 }
 
 void Task::Impl::start(bool spinlock)
 {
+	//check user error
+	assert(!started);
+
+	if(started) shutdown();
+
 	initialize();
 	mutex = slock_new();
 	workCond = scond_new();
@@ -155,20 +158,26 @@ void Task::Impl::shutdown()
 {
 	if(!started) return;
 
-	finish(); // Ensure that any previous tasks are finished before calling killTask().
+	//nobody should shutdown while a task is still running;
+	//it would imply that we're in some kind of shutdown pricess, and datastructures might be getting freed while someone is still working on it
+	//nonetheless, _troublingly_, it seems like we do that now, so for now let's try to let that work finish instead of blowing up when it isn't finished
+	//assert(!workFunc);
+	finish();
+
+	//a new task which sets the kill flag
 	execute(killTask,this);
 	finish();
 	
 	started = false;
 
 	sthread_join(thread);
-	slock_free(mutex);
 	scond_free(workCond);
+	slock_free(mutex);
 }
 
 void* Task::Impl::finish()
 {
-	//no work running; nothing to do (it's kind of lame that we call this under the circumstances)
+	//no work running; nothing to do
 	if(!workFunc)
 		return NULL;
 
@@ -197,15 +206,10 @@ void Task::Impl::execute(const TWork &work, void *param)
 	slock_unlock(this->mutex);
 }
 
-
-
 void Task::start(bool spinlock) { impl->start(spinlock); }
 void Task::shutdown() { impl->shutdown(); }
 Task::Task() : impl(new Task::Impl()) {}
-Task::~Task() 
-{
-	delete impl;
-}
+Task::~Task() { delete impl; }
 void Task::execute(const TWork &work, void* param) { impl->execute(work,param); }
 void* Task::finish() { return impl->finish(); }
 
