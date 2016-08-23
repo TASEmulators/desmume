@@ -77,7 +77,7 @@ public:
 	bool started;
 };
 
-static void thunkTaskProc(void *arg)
+void thunkTaskProc(void *arg)
 {
 	Task::Impl *ctx = (Task::Impl *)arg;
 	ctx->taskProc();
