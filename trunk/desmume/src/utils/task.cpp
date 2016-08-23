@@ -53,9 +53,10 @@ int getOnlineCores (void)
 
 class Task::Impl {
 private:
-	sthread_t* _thread;
-	bool _isThreadRunning;
-	
+	sthread_t* thread;
+	friend void thunkTaskProc(void* arg);
+	void taskProc();
+
 public:
 	Impl();
 	~Impl();
@@ -64,142 +65,144 @@ public:
 	void execute(const TWork &work, void *param);
 	void* finish();
 	void shutdown();
+	void initialize();
 
 	slock_t *mutex;
-	scond_t *condWork;
+	scond_t *workCond;
+	bool workFlag, finishFlag;
 	TWork workFunc;
 	void *workFuncParam;
 	void *ret;
 	bool exitThread;
+	bool started;
 };
 
-static void taskProc(void *arg)
+static void thunkTaskProc(void *arg)
 {
 	Task::Impl *ctx = (Task::Impl *)arg;
+	ctx->taskProc();
+}
 
-	do {
-		slock_lock(ctx->mutex);
+void Task::Impl::taskProc()
+{
+	for(;;)
+	{
+		slock_lock(mutex);
 
-		while (ctx->workFunc == NULL && !ctx->exitThread) {
-			scond_wait(ctx->condWork, ctx->mutex);
-		}
+		if(!workFlag)
+			scond_wait(workCond, mutex);
+		workFlag = false;
 
-		if (ctx->workFunc != NULL) {
-			ctx->ret = ctx->workFunc(ctx->workFuncParam);
-		} else {
-			ctx->ret = NULL;
-		}
+		ret = workFunc(workFuncParam);
 
-		ctx->workFunc = NULL;
-		scond_signal(ctx->condWork);
+		finishFlag = true;
+		scond_signal(workCond);
 
-		slock_unlock(ctx->mutex);
+		slock_unlock(mutex);
 
-	} while(!ctx->exitThread);
+		if(exitThread)
+			break;
+	}
+}
+
+static void* killTask(void* task)
+{
+	((Task::Impl*)task)->exitThread = true;
+	return 0;
 }
 
 Task::Impl::Impl()
+	: started(false)
 {
-	_isThreadRunning = false;
-	workFunc = NULL;
-	workFuncParam = NULL;
-	ret = NULL;
-	exitThread = false;
 
-	mutex = slock_new();
-	condWork = scond_new();
 }
 
 Task::Impl::~Impl()
 {
 	shutdown();
-	slock_free(mutex);
-	scond_free(condWork);
+}
+
+void Task::Impl::initialize()
+{
+	thread = NULL;
+	workFunc = NULL;
+	workCond = NULL;
+	workFlag = finishFlag = false;
+	workFunc = NULL;
+	workFuncParam = NULL;
+	ret = NULL;
+	exitThread = false;
+	started = false;
 }
 
 void Task::Impl::start(bool spinlock)
 {
-	slock_lock(this->mutex);
+	initialize();
+	mutex = slock_new();
+	workCond = scond_new();
 
-	if (this->_isThreadRunning) {
-		slock_unlock(this->mutex);
-		return;
-	}
+	slock_lock(mutex);
 
-	this->workFunc = NULL;
-	this->workFuncParam = NULL;
-	this->ret = NULL;
-	this->exitThread = false;
-	this->_thread = sthread_create(&taskProc,this);
-	this->_isThreadRunning = true;
+	thread = sthread_create(&thunkTaskProc,this);
+	started = true;
+
+	slock_unlock(mutex);
+}
+
+void Task::Impl::shutdown()
+{
+	if(!started) return;
+
+	execute(killTask,this);
+	finish();
+	
+	started = false;
+
+	sthread_join(thread);
+	slock_free(mutex);
+	scond_free(workCond);
+}
+
+void* Task::Impl::finish()
+{
+	//no work running; nothing to do (it's kind of lame that we call this under the circumstances)
+	if(!workFunc)
+		return NULL;
+
+	slock_lock(mutex);
+
+	if(!finishFlag)
+		scond_wait(workCond, mutex);
+	finishFlag = false;
 
 	slock_unlock(this->mutex);
+
+	workFunc = NULL;
+
+	return ret;
 }
 
 void Task::Impl::execute(const TWork &work, void *param)
 {
 	slock_lock(this->mutex);
 
-	if (work == NULL || !this->_isThreadRunning) {
-		slock_unlock(this->mutex);
-		return;
-	}
-
-	this->workFunc = work;
-	this->workFuncParam = param;
-	scond_signal(this->condWork);
+	workFunc = work;
+	workFuncParam = param;
+	workFlag = true;
+	scond_signal(workCond);
 
 	slock_unlock(this->mutex);
 }
 
-void* Task::Impl::finish()
-{
-	void *returnValue = NULL;
 
-	slock_lock(this->mutex);
-
-	if (!this->_isThreadRunning) {
-		slock_unlock(this->mutex);
-		return returnValue;
-	}
-
-	while (this->workFunc != NULL) {
-		scond_wait(this->condWork, this->mutex);
-	}
-
-	returnValue = this->ret;
-
-	slock_unlock(this->mutex);
-
-	return returnValue;
-}
-
-void Task::Impl::shutdown()
-{
-	slock_lock(this->mutex);
-
-	if (!this->_isThreadRunning) {
-		slock_unlock(this->mutex);
-		return;
-	}
-
-	this->workFunc = NULL;
-	this->exitThread = true;
-	scond_signal(this->condWork);
-
-	slock_unlock(this->mutex);
-
-	sthread_join(this->_thread);
-
-	slock_lock(this->mutex);
-	this->_isThreadRunning = false;
-	slock_unlock(this->mutex);
-}
 
 void Task::start(bool spinlock) { impl->start(spinlock); }
 void Task::shutdown() { impl->shutdown(); }
 Task::Task() : impl(new Task::Impl()) {}
-Task::~Task() { delete impl; }
+Task::~Task() 
+{
+	delete impl;
+}
 void Task::execute(const TWork &work, void* param) { impl->execute(work,param); }
 void* Task::finish() { return impl->finish(); }
 
