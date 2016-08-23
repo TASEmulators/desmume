@@ -51,6 +51,8 @@ int getOnlineCores (void)
 #endif
 }
 
+static void thunkTaskProc(void *arg);
+
 class Task::Impl {
 private:
 	sthread_t* thread;
@@ -77,7 +79,7 @@ public:
 	bool started;
 };
 
-void thunkTaskProc(void *arg)
+static void thunkTaskProc(void *arg)
 {
 	Task::Impl *ctx = (Task::Impl *)arg;
 	ctx->taskProc();
@@ -153,6 +155,7 @@ void Task::Impl::shutdown()
 {
 	if(!started) return;
 
+	finish(); // Ensure that any previous tasks are finished before calling killTask().
 	execute(killTask,this);
 	finish();
 	
