@@ -81,9 +81,6 @@ struct scond
 {
 #ifdef USE_WIN32_THREADS
    HANDLE event;
-   volatile int waiters;
-   volatile bool waiting_ack;
-   HANDLE ack;
 #else
    pthread_cond_t cond;
 #endif
@@ -313,13 +310,7 @@ scond_t *scond_new(void)
       return NULL;
 
 #ifdef USE_WIN32_THREADS
-   /* this is very complex because recreating condition variable semantics with win32 parts is not easy (or maybe it is and I just havent seen how) */
-   /* the main problem is that a condition variable can be used to wake up a thread, but only if the thread is already waiting. */
-   /* whereas a win32 event will 'wake up' a thread in advance (the event will be set in advance, so a 'waiter' wont even have to wait on it) */
-   cond->event = CreateEvent(NULL, FALSE, FALSE, NULL);
-   cond->ack = CreateEvent(NULL, FALSE, FALSE, NULL);
-   cond->waiters = 0;
-   cond->waiting_ack = false;
+   cond->event   = CreateEvent(NULL, FALSE, FALSE, NULL);
    event_created = !!cond->event;
 #else
    event_created = (pthread_cond_init(&cond->cond, NULL) == 0);
@@ -348,7 +339,6 @@ void scond_free(scond_t *cond)
 
 #ifdef USE_WIN32_THREADS
    CloseHandle(cond->event);
-   CloseHandle(cond->ack);
 #else
    pthread_cond_destroy(&cond->cond);
 #endif
@@ -365,33 +355,9 @@ void scond_free(scond_t *cond)
 void scond_wait(scond_t *cond, slock_t *lock)
 {
 #ifdef USE_WIN32_THREADS
-   /* remember: we currently have mutex so this will be safe */
-   cond->waiters++;
-   if(cond->waiting_ack)
-      WaitForSingleObject(cond->ack,INFINITE);
-
-   ReleaseMutex(lock->lock);
-
-   /* wait for a signaller */
+   slock_unlock(lock);
    WaitForSingleObject(cond->event, INFINITE);
-
-   /* the algorithm hinges on this doing this stuff outside of the mutex */
-   /* suppose several people signal right now. Actually, only one of them can. He'll be waiting on an ack signal! *inside the mutex* */
-   /* we need to clear waiting_ack before we release him, otherwise it might race to set it to true and beat us */
-   /* also: suppose several people are waiting right now (in the above wait on `event`). */
-   /* well, only one of them is going to get freed by a signal; it must have been us */
-   /* notice that both of the waits for ack are inside the mutex; this guarantees only one of them can be waiting at a time */
-   /* that's essential for making this safe */
-   //if(cond->waiting_ack)
-   {
-      cond->waiting_ack = false;
-      SetEvent(cond->ack);
-   }
-
-   /* reacquire mutex and finish up */
-   WaitForSingleObject(lock->lock, INFINITE);
-   cond->waiters--;
-
+   slock_lock(lock);
 #else
    pthread_cond_wait(&cond->cond, &lock->lock);
 #endif
@@ -426,22 +392,7 @@ int scond_broadcast(scond_t *cond)
 void scond_signal(scond_t *cond)
 {
 #ifdef USE_WIN32_THREADS
-
-   /* remember: we currently have mutex */
-   if(cond->waiters == 0) return;
-
-   /* OK, someone is waiting for a signal */
-
-   /* if we're waiting for an ack, we can't proceed until we receive an ack (signifies that the event is freed up from the waiter destined to be waked by it) */
-   if(cond->waiting_ack)
-      WaitForSingleObject(cond->ack,INFINITE);
-
-   /* before any further waits or signals, we'll need to wait for a waiter to wake up */
-   cond->waiting_ack = true;
-
-   /* the main wakeup event. the winning waiter definitely won't wake up this moment since we're in a mutex. */
    SetEvent(cond->event);
-
 #else
    pthread_cond_signal(&cond->cond);
 #endif
