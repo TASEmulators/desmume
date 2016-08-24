@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
 */
 
 #include <stdio.h>
-#include <assert.h>
 
 #include "types.h"
 #include "task.h"
@@ -52,14 +51,11 @@ int getOnlineCores (void)
 #endif
 }
 
-static void thunkTaskProc(void *arg);
-
 class Task::Impl {
 private:
-	sthread_t* thread;
-	friend void thunkTaskProc(void* arg);
-	void taskProc();
-
+	sthread_t* _thread;
+	bool _isThreadRunning;
+	
 public:
 	Impl();
 	~Impl();
@@ -68,141 +64,135 @@ public:
 	void execute(const TWork &work, void *param);
 	void* finish();
 	void shutdown();
-	void initialize();
 
 	slock_t *mutex;
-	scond_t *workCond;
-	volatile bool workFlag, finishFlag, exitFlag;
-	volatile TWork workFunc;
-	void * volatile workFuncParam;
-	void * volatile ret;
-	bool started;
+	scond_t *condWork;
+	TWork workFunc;
+	void *workFuncParam;
+	void *ret;
+	bool exitThread;
 };
 
-static void thunkTaskProc(void *arg)
+static void taskProc(void *arg)
 {
 	Task::Impl *ctx = (Task::Impl *)arg;
-	ctx->taskProc();
-}
 
-void Task::Impl::taskProc()
-{
-	for(;;)
-	{
-		slock_lock(mutex);
+	do {
+		slock_lock(ctx->mutex);
 
-		if(!workFlag)
-			scond_wait(workCond, mutex);
-		workFlag = false;
+		while (ctx->workFunc == NULL && !ctx->exitThread) {
+			scond_wait(ctx->condWork, ctx->mutex);
+		}
 
-		ret = workFunc(workFuncParam);
+		if (ctx->workFunc != NULL) {
+			ctx->ret = ctx->workFunc(ctx->workFuncParam);
+		} else {
+			ctx->ret = NULL;
+		}
 
-		finishFlag = true;
-		scond_signal(workCond);
+		ctx->workFunc = NULL;
+		scond_signal(ctx->condWork);
 
-		slock_unlock(mutex);
+		slock_unlock(ctx->mutex);
 
-		if(exitFlag)
-			break;
-	}
-}
-
-static void* killTask(void* task)
-{
-	((Task::Impl*)task)->exitFlag = true;
-	return NULL;
+	} while(!ctx->exitThread);
 }
 
 Task::Impl::Impl()
-	: started(false)
 {
+	_isThreadRunning = false;
+	workFunc = NULL;
+	workFuncParam = NULL;
+	ret = NULL;
+	exitThread = false;
+
+	mutex = slock_new();
+	condWork = scond_new();
 }
 
 Task::Impl::~Impl()
 {
 	shutdown();
-}
-
-void Task::Impl::initialize()
-{
-	thread = NULL;
-	workFunc = NULL;
-	workCond = NULL;
-	workFunc = NULL;
-	workFuncParam = NULL;
-	workFlag = finishFlag = exitFlag = false;
-	ret = NULL;
-	started = false;
+	slock_free(mutex);
+	scond_free(condWork);
 }
 
 void Task::Impl::start(bool spinlock)
 {
-	//check user error
-	assert(!started);
+	slock_lock(this->mutex);
 
-	if(started) shutdown();
+	if (this->_isThreadRunning) {
+		slock_unlock(this->mutex);
+		return;
+	}
 
-	initialize();
-	mutex = slock_new();
-	workCond = scond_new();
-
-	slock_lock(mutex);
-
-	thread = sthread_create(&thunkTaskProc,this);
-	started = true;
-
-	slock_unlock(mutex);
-}
-
-void Task::Impl::shutdown()
-{
-	if(!started) return;
-
-	//nobody should shutdown while a task is still running;
-	//it would imply that we're in some kind of shutdown process, and datastructures might be getting freed while a worker is still working on it.
-	//nonetheless, _troublingly_, it seems like we do that now, so for now let's try to let that work finish instead of blowing up when it isn't finished.
-	//assert(!workFunc);
-	finish();
-
-	//a new task which sets the kill flag
-	execute(killTask,this);
-	finish();
-	
-	started = false;
-
-	sthread_join(thread);
-	scond_free(workCond);
-	slock_free(mutex);
-}
-
-void* Task::Impl::finish()
-{
-	//no work running; nothing to do
-	if(!workFunc)
-		return NULL;
-
-	slock_lock(mutex);
-
-	if(!finishFlag)
-		scond_wait(workCond, mutex);
-	finishFlag = false;
+	this->workFunc = NULL;
+	this->workFuncParam = NULL;
+	this->ret = NULL;
+	this->exitThread = false;
+	this->_thread = sthread_create(&taskProc,this);
+	this->_isThreadRunning = true;
 
 	slock_unlock(this->mutex);
-
-	workFunc = NULL;
-
-	return ret;
 }
 
 void Task::Impl::execute(const TWork &work, void *param)
 {
 	slock_lock(this->mutex);
 
-	workFunc = work;
-	workFuncParam = param;
-	workFlag = true;
-	scond_signal(workCond);
+	if (work == NULL || !this->_isThreadRunning) {
+		slock_unlock(this->mutex);
+		return;
+	}
 
+	this->workFunc = work;
+	this->workFuncParam = param;
+	scond_signal(this->condWork);
+
+	slock_unlock(this->mutex);
+}
+
+void* Task::Impl::finish()
+{
+	void *returnValue = NULL;
+
+	slock_lock(this->mutex);
+
+	if (!this->_isThreadRunning) {
+		slock_unlock(this->mutex);
+		return returnValue;
+	}
+
+	while (this->workFunc != NULL) {
+		scond_wait(this->condWork, this->mutex);
+	}
+
+	returnValue = this->ret;
+
+	slock_unlock(this->mutex);
+
+	return returnValue;
+}
+
+void Task::Impl::shutdown()
+{
+	slock_lock(this->mutex);
+
+	if (!this->_isThreadRunning) {
+		slock_unlock(this->mutex);
+		return;
+	}
+
+	this->workFunc = NULL;
+	this->exitThread = true;
+	scond_signal(this->condWork);
+
+	slock_unlock(this->mutex);
+
+	sthread_join(this->_thread);
+
+	slock_lock(this->mutex);
+	this->_isThreadRunning = false;
 	slock_unlock(this->mutex);
 }
 
