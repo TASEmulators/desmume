@@ -71,7 +71,6 @@ public:
 	void *workFuncParam;
 	void *ret;
 	bool exitThread;
-	bool isTaskWaiting;
 };
 
 static void taskProc(void *arg)
@@ -82,9 +81,7 @@ static void taskProc(void *arg)
 		slock_lock(ctx->mutex);
 
 		while (ctx->workFunc == NULL && !ctx->exitThread) {
-			ctx->isTaskWaiting = true;
 			scond_wait(ctx->condWork, ctx->mutex);
-			ctx->isTaskWaiting = false;
 		}
 
 		if (ctx->workFunc != NULL) {
@@ -104,7 +101,6 @@ static void taskProc(void *arg)
 Task::Impl::Impl()
 {
 	_isThreadRunning = false;
-	isTaskWaiting = false;
 	workFunc = NULL;
 	workFuncParam = NULL;
 	ret = NULL;
@@ -134,7 +130,6 @@ void Task::Impl::start(bool spinlock)
 	this->workFuncParam = NULL;
 	this->ret = NULL;
 	this->exitThread = false;
-	this->isTaskWaiting = false;
 	this->_thread = sthread_create(&taskProc,this);
 	this->_isThreadRunning = true;
 
@@ -168,41 +163,6 @@ void* Task::Impl::finish()
 		slock_unlock(this->mutex);
 		return returnValue;
 	}
-
-	// As a last resort, we need to ensure that taskProc() actually executed, and if
-	// it didn't, do something about it right now.
-	//
-	// Normally, calling execute() will wake up taskProc(), but on certain systems,
-	// the signal from execute() might get missed by taskProc(). If this signal is
-	// missed, then this method's scond_wait() will hang, since taskProc() will never
-	// clear workFunc and signal back when its finished (taskProc() was never woken
-	// up in the first place).
-	//
-	// This situation is only possible on systems where scond_wait() does not have
-	// immediate lock/unlock mechanics with the wait state, such as on Windows.
-	// Signals can get lost in scond_wait() since a thread's wait state might start
-	// at a much later time from releasing the mutex, causing the signalling thread
-	// to send its signal before the wait state is set. All of this is possible
-	// because of the fact that switching the wait state and switching the mutex
-	// state are performed as two separate operations. In common parlance, this is
-	// known as the "lost wakeup problem".
-	//
-	// On systems that do have immediate lock/unlock mechanics with the wait state,
-	// such as systems that natively support pthread_cond_wait(), it is impossible
-	// for this situation to occur since both the thread wait state and the mutex
-	// state will switch simultaneously, thus never missing a signal due to the
-	// constant protection of the mutex.
-#if defined(WIN32)
-	if (this->isTaskWaiting)
-	{
-		// In the event where the signal was missed by taskProc(), just do the work
-		// right now in this thread. Hopefully, signal misses don't happen to often,
-		// because if they do, it would completely defeat the purpose of having the
-		// extra task thread in the first place.
-		this->ret = this->workFunc(workFuncParam);
-		this->workFunc = NULL;
-	}
-#endif
 
 	while (this->workFunc != NULL)
 	{
