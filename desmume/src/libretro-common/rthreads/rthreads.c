@@ -411,42 +411,22 @@ void scond_wait(scond_t *cond, slock_t *lock)
    /* solution: win32 events make this easy. the event will sit there enabled */
    /* 2. a signaller can rush in and signal, and then turn right around and wait */
    /* solution: the signaller will get queued behind the waiter, who's enqueued before he releases the mutex */
-   
-   for(;;)
+
+   /* It's my turn if I'm the head of the queue. Check to see if it's my turn. */
+   while (cond->head != &myentry)
    {
-      /* We're always in the mutex here*/
+      /* As long as someone is even going to be able to wake up when they receive the potato, keep it going round */
+      if (cond->wakens > 0)
+         SetEvent(cond->hot_potato);
 
-      /* It's my turn if I'm the head of the queue */
-      bool myturn = (cond->head == &myentry);
-
-      if(!myturn)
-      {
-         /* As long as someone is even going to be able to wake up when they receive the potato, keep it going round */
-         if(cond->wakens>0)
-            SetEvent(cond->hot_potato); 
-      }
-
-      /* If it's my turn, I hold the potato */
-
-      ReleaseMutex(lock->lock);
-
-      if(myturn)
-      {
-         WaitForSingleObject(cond->event, INFINITE);
-         break;
-      }
-      else
-      {
-         /* Wait to catch the hot potato before checking for my turn again */
-         WaitForSingleObject(cond->hot_potato, INFINITE);
-
-         /* Re-acquire the mutex just for interrogating the queue */
-         WaitForSingleObject(lock->lock, INFINITE);
-      }
+      /* Wait to catch the hot potato before checking for my turn again */
+      SignalObjectAndWait(lock->lock, cond->hot_potato, INFINITE, FALSE);
+      slock_lock(lock);
    }
-
-   /* Reacquire the main mutex */
-   WaitForSingleObject(lock->lock, INFINITE);
+	
+   /* It's my turn now -- I hold the potato */
+   SignalObjectAndWait(lock->lock, cond->event, INFINITE, FALSE);
+   slock_lock(lock);
 
    /* Remove ourselves from the queue */
    cond->head = myentry.next;
