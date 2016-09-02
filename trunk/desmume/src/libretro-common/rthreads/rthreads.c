@@ -396,11 +396,11 @@ void scond_wait(scond_t *cond, slock_t *lock)
    
    /* add ourselves to a queue of waiting threads */
    struct QueueEntry myentry;
-   myentry.next = NULL;
-   struct QueueEntry**  ptr = &cond->head;
+   struct QueueEntry** ptr = &cond->head;
    while(*ptr) /* walk to the end of the linked list */
       ptr = &((*ptr)->next);
    *ptr = &myentry;
+   myentry.next = NULL;
 
    cond->waiters++;
 
