@@ -18,14 +18,6 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef FASTBUILD
-	#undef FORCEINLINE
-	#define FORCEINLINE
-	//compilation speed hack (cuts time exactly in half by cutting out permutations)
-	#define DISABLE_MOSAIC
-	#define DISABLE_COLOREFFECTDISABLEHINT
-#endif
-
 #include "GPU.h"
 
 #include <assert.h>
@@ -48,6 +40,13 @@
 #include "matrix.h"
 #include "emufile.h"
 
+#ifdef FASTBUILD
+	#undef FORCEINLINE
+	#define FORCEINLINE
+	//compilation speed hack (cuts time exactly in half by cutting out permutations)
+	#define DISABLE_MOSAIC
+	#define DISABLE_COLOREFFECTDISABLEHINT
+#endif
 
 //instantiate static instance
 u16 GPUEngineBase::_brightnessUpTable555[17][0x8000];
