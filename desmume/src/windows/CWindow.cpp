@@ -621,8 +621,10 @@ static void MyAdjustWindowRectEx(RECT* rect, HWND hwnd)
 	ZeroMemory(&mbi, sizeof(mbi));
 	mbi.cbSize = sizeof(mbi);
 	GetMenuBarInfo(hwnd, OBJID_MENU, 0, &mbi);
-	//int menuHeight = (mbi.rcBar.bottom - mbi.rcBar.top + 1); //zero 07-aug-2016 - why did I do this? it isn't normal in windows and in the case of no menu bar it was making a 1 instead of a 0 (r3184 in 2009)
+	
+	//if the menubar exists, its height is off by 1 (frame between bar and client area?)
 	int menuHeight = (mbi.rcBar.bottom - mbi.rcBar.top);
+	if(menuHeight != 0) menuHeight++;
 
 	rect->bottom -= cymenu;
 	rect->bottom += menuHeight;
