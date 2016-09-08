@@ -67,7 +67,7 @@ CommandLine::CommandLine()
 , start_paused(FALSE)
 , autodetect_method(-1)
 , render3d(COMMANDLINE_RENDER3D_DEFAULT)
-, language(-1)
+, language(1) //english by default
 {
 #ifndef HOST_WINDOWS 
 	disable_sound = 0;
@@ -118,7 +118,9 @@ ENDL
 " --bios-arm9 BIN_FILE       Uses the ARM9 BIOS provided at the specified path" ENDL
 " --bios-arm7 BIN_FILE       Uses the ARM7 BIOS provided at the specified path" ENDL
 " --bios-swi                 Uses SWI from the provided bios files (else HLE)" ENDL
-" --lang N                   Pick firmware language (can affect game translations)" ENDL
+" --lang N                   Firmware language (can affect game translations)" ENDL
+"                            0 = Japanese, 1 = English (default), 2 = French" ENDL
+"                            3 = German, 4 = Italian, 5 = Spanish" ENDL
 ENDL
 "Arguments affecting contents of SLOT-1:" ENDL
 " --slot1 [RETAIL|RETAILAUTO|R4|RETAILNAND|RETAILMCDROM|RETAILDEBUG]" ENDL
