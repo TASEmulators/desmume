@@ -3383,6 +3383,9 @@ int _main()
 		}
 	}
 
+	if(cmdline.language != -1)
+		CommonSettings.fw_config.language = cmdline.language;
+
 	cmdline.process_movieCommands();
 	
 	if(cmdline.load_slot != -1)
