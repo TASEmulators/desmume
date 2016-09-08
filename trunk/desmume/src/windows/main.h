@@ -57,15 +57,6 @@ extern bool ShowLagFrameCounter;
 #define GPU3D_SWRAST 2
 #define GPU3D_OPENGL_OLD 3
 
-static const int LANGUAGE_ENGLISH = 0;
-static const int LANGUAGE_FRENCH = 1;
-static const int LANGUAGE_CHINESE = 3;
-static const int LANGUAGE_ITALIAN = 4;
-static const int LANGUAGE_JAPANESE = 5;
-static const int LANGUAGE_SPANISH = 6;
-static const int LANGUAGE_KOREAN = 7;
-static const int LANGUAGE_BRAZILIAN = 8;
-
 extern void Change3DCoreWithFallbackAndSave(int newCore);
 
 extern int backupmemorytype;

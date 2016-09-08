@@ -3383,8 +3383,8 @@ int _main()
 		}
 	}
 
-	if(cmdline.language != -1)
-		CommonSettings.fw_config.language = cmdline.language;
+	//not supported; use the GUI
+	//if(cmdline.language != -1) CommonSettings.fw_config.language = cmdline.language;
 
 	cmdline.process_movieCommands();
 	
