@@ -4577,13 +4577,13 @@
 			buildSettings = {
 				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_UNROLL_LOOPS = YES;
+				LLVM_LTO = YES_THIN;
 			};
 			name = Debug;
 		};
 		AB796D6F15CDCBA200C59155 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_UNROLL_LOOPS = YES;
 				LLVM_LTO = YES;
 			};
