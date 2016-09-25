@@ -280,6 +280,7 @@ private:
 	{
 		mPositionCacheEnabled = false;
 		mCondition = eCondition_Clean;
+		mFilePosition = 0;
 		fp = fopen(fname,mode);
 		if(!fp)
 			failbit = true;

@@ -294,7 +294,9 @@ BackupDevice::BackupDevice()
 						else
 						{
 							printf("BackupDevice: Converting old raw .sav file.\n");
-							sz = trim(buf, sz);
+							//dont TRIM this! it will wreck the searchFileSaveType below.
+							//was this intended for egregiously over-sized save files? too bad.
+							//sz = trim(buf, sz);
 						}
 
 						if (fpOut->fwrite(buf, sz) == sz)
@@ -305,6 +307,7 @@ BackupDevice::BackupDevice()
 								info.type = (res + 1);
 								addr_size = info.addr_size = save_types[info.type].addr_size;
 								info.size = fsize = sz;
+								fpMC = fpOut; //so ensure() works
 								ensure(sz, fpOut);
 								fsize = 0;
 							}
@@ -1069,8 +1072,10 @@ bool BackupDevice::importData(const char *filename, u32 force_size)
 	bool res = false;
 	if (strlen(filename) < 4) return res;
 
-	if ((memcmp(filename + strlen(filename) - 4, ".duc", 4) == 0) ||
-		(memcmp(filename + strlen(filename) - 4, ".dss", 4) == 0))
+	std::string ext = strright(filename,4);
+	bool isDuc = strncasecmp(ext.c_str(), ".duc", 4) == 0;
+	bool isDss = strncasecmp(ext.c_str(), ".dss", 4) == 0;
+	if(isDuc || isDss)
 		res = import_duc(filename, force_size);
 	else
 		if (import_no_gba(filename, force_size))
