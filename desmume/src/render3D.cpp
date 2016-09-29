@@ -29,6 +29,7 @@
 #include "gfx3d.h"
 #include "MMU.h"
 #include "texcache.h"
+#include "./filter/filter.h"
 #include "./filter/xbrz.h"
 
 #define TEXTURE_DEPOSTERIZE_THRESHOLD 21	// Possible values are [0-255], where lower a value prevents blending and a higher value allows for more blending
@@ -125,55 +126,6 @@ void Render3DBaseDestroy()
 		CurrentRenderer = BaseRenderer;
 		delete oldRenderer;
 	}
-}
-
-static u32 TextureDeposterize_InterpLTE(const u32 pixA, const u32 pixB, const u32 threshold)
-{
-	const u32 aB = (pixB & 0xFF000000) >> 24;
-	if (aB == 0)
-	{
-		return pixA;
-	}
-	
-	const u32 rA = (pixA & 0x000000FF);
-	const u32 gA = (pixA & 0x0000FF00) >> 8;
-	const u32 bA = (pixA & 0x00FF0000) >> 16;
-	const u32 aA = (pixA & 0xFF000000) >> 24;
-	
-	const u32 rB = (pixB & 0x000000FF);
-	const u32 gB = (pixB & 0x0000FF00) >> 8;
-	const u32 bB = (pixB & 0x00FF0000) >> 16;
-	
-	const u32 rC = ( (rB - rA <= threshold) || (rA - rB <= threshold) ) ? ( ((rA+rB)>>1)  ) : rA;
-	const u32 gC = ( (gB - gA <= threshold) || (gA - gB <= threshold) ) ? ( ((gA+gB)>>1)  ) : gA;
-	const u32 bC = ( (bB - bA <= threshold) || (bA - bB <= threshold) ) ? ( ((bA+bB)>>1)  ) : bA;
-	const u32 aC = ( (bB - aA <= threshold) || (aA - aB <= threshold) ) ? ( ((aA+aB)>>1)  ) : aA;
-	
-	return (rC | (gC << 8) | (bC << 16) | (aC << 24));
-}
-
-static u32 TextureDeposterize_Blend(const u32 pixA, const u32 pixB, const u32 weightA, const u32 weightB)
-{
-	const u32  aB = (pixB & 0xFF000000) >> 24;
-	if (aB == 0)
-	{
-		return pixA;
-	}
-	
-	const u32 weightSum = weightA + weightB;
-	
-	const u32 rbA =  pixA & 0x00FF00FF;
-	const u32  gA =  pixA & 0x0000FF00;
-	const u32  aA = (pixA & 0xFF000000) >> 24;
-	
-	const u32 rbB =  pixB & 0x00FF00FF;
-	const u32  gB =  pixB & 0x0000FF00;
-	
-	const u32 rbC = ( ((rbA * weightA) + (rbB * weightB)) / weightSum ) & 0x00FF00FF;
-	const u32  gC = ( (( gA * weightA) + ( gB * weightB)) / weightSum ) & 0x0000FF00;
-	const u32  aC = ( (( aA * weightA) + ( aB * weightB)) / weightSum ) << 24;
-	
-	return (rbC | gC | aC);
 }
 
 FragmentAttributesBuffer::FragmentAttributesBuffer(size_t newCount)
@@ -285,15 +237,28 @@ Render3D::Render3D()
 	
 	_textureScalingFactor = 1;
 	_textureSmooth = false;
-	_textureDeposterizeBuffer = NULL;
 	_textureUpscaleBuffer = NULL;
+	_textureDeposterizeThreshold = TEXTURE_DEPOSTERIZE_THRESHOLD;
+	
+	memset(&_textureDeposterizeSrcSurface, 0, sizeof(_textureDeposterizeSrcSurface));
+	memset(&_textureDeposterizeDstSurface, 0, sizeof(_textureDeposterizeDstSurface));
+	
+	_textureDeposterizeSrcSurface.Width = _textureDeposterizeDstSurface.Width = 1;
+	_textureDeposterizeSrcSurface.Height = _textureDeposterizeDstSurface.Height = 1;
+	_textureDeposterizeSrcSurface.Pitch = _textureDeposterizeDstSurface.Pitch = 1;
+	_textureDeposterizeDstSurface.userData = &_textureDeposterizeThreshold;
 	
 	Reset();
 }
 
 Render3D::~Render3D()
 {
-	// Do nothing.
+	if (this->_textureDeposterizeDstSurface.Surface != NULL)
+	{
+		free_aligned(this->_textureDeposterizeDstSurface.Surface);
+		this->_textureDeposterizeDstSurface.Surface = NULL;
+		this->_textureDeposterizeDstSurface.workingSurface[0] = NULL;
+	}
 }
 
 const Render3DDeviceInfo& Render3D::GetDeviceInfo()
@@ -385,20 +350,24 @@ void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDep
 	const size_t newScalingFactor = (isScaleValid) ? scalingFactor : 1;
 	bool needTexCacheReset = false;
 	
-	if ( willDeposterize && (this->_textureDeposterizeBuffer == NULL) )
+	if ( willDeposterize && (this->_textureDeposterizeDstSurface.Surface == NULL) )
 	{
 		// 1024x1024 texels is the largest possible texture size.
 		// We need two buffers, one for each deposterize stage.
 		const size_t bufferSize = 1024 * 1024 * 2 * sizeof(u32);
-		this->_textureDeposterizeBuffer = (u32 *)malloc_alignedCacheLine(bufferSize);
-		memset(this->_textureDeposterizeBuffer, 0, bufferSize);
+		
+		this->_textureDeposterizeDstSurface.Surface = (unsigned char *)malloc_alignedCacheLine(bufferSize);
+		this->_textureDeposterizeDstSurface.workingSurface[0] = (unsigned char *)((u32 *)this->_textureDeposterizeDstSurface.Surface + (1024 * 1024));
+		
+		memset(this->_textureDeposterizeDstSurface.Surface, 0, bufferSize);
 		
 		needTexCacheReset = true;
 	}
-	else if ( !willDeposterize && (this->_textureDeposterizeBuffer != NULL) )
+	else if ( !willDeposterize && (this->_textureDeposterizeDstSurface.Surface != NULL) )
 	{
-		free_aligned(this->_textureDeposterizeBuffer);
-		this->_textureDeposterizeBuffer = NULL;
+		free_aligned(this->_textureDeposterizeDstSurface.Surface);
+		this->_textureDeposterizeDstSurface.Surface = NULL;
+		this->_textureDeposterizeDstSurface.workingSurface[0] = NULL;
 		
 		needTexCacheReset = true;
 	}
@@ -429,118 +398,11 @@ void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDep
 
 Render3DError Render3D::TextureDeposterize(const u32 *src, const size_t srcTexWidth, const size_t srcTexHeight)
 {
-	//---------------------------------------\n\
-	// Input Pixel Mapping:  06|07|08
-	//                       05|00|01
-	//                       04|03|02
-	//
-	// Output Pixel Mapping:    00
+	this->_textureDeposterizeSrcSurface.Width = this->_textureDeposterizeDstSurface.Width = srcTexWidth;
+	this->_textureDeposterizeSrcSurface.Height = this->_textureDeposterizeDstSurface.Height = srcTexHeight;
+	this->_textureDeposterizeSrcSurface.Surface = (unsigned char *)src;
 	
-	const int w = srcTexWidth;
-	const int h = srcTexHeight;
-	
-	u32 color[9];
-	u32 blend[9];
-	u32 *dst = this->_textureDeposterizeBuffer + (1024 * 1024);
-	u32 *finalDst = this->_textureDeposterizeBuffer;
-	
-	size_t i = 0;
-	for (int y = 0; y < h; y++)
-	{
-		for (int x = 0; x < w; x++, i++)
-		{
-			if ((src[i] & 0xFF000000) == 0)
-			{
-				dst[i] = src[i];
-				continue;
-			}
-			
-			color[0] = src[i];
-			color[1] =  (x < w-1)				? src[i+1]   : src[i];
-			color[2] = ((x < w-1) && (y < h-1))	? src[i+w+1] : src[i];
-			color[3] =               (y < h-1)	? src[i+w]   : src[i];
-			color[4] = ((x > 0)   && (y < h-1))	? src[i+w-1] : src[i];
-			color[5] =  (x > 0)					? src[i-1]   : src[i];
-			color[6] = ((x > 0)   && (y > 0))	? src[i-w-1] : src[i];
-			color[7] =               (y > 0)	? src[i-w]   : src[i];
-			color[8] = ((x < w-1) && (y > 0))	? src[i-w+1] : src[i];
-			
-			blend[0] = color[0];
-			blend[1] = TextureDeposterize_InterpLTE(color[0], color[1], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			blend[2] = TextureDeposterize_InterpLTE(color[0], color[2], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			blend[3] = TextureDeposterize_InterpLTE(color[0], color[3], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			blend[4] = TextureDeposterize_InterpLTE(color[0], color[4], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			blend[5] = TextureDeposterize_InterpLTE(color[0], color[5], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			blend[6] = TextureDeposterize_InterpLTE(color[0], color[6], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			blend[7] = TextureDeposterize_InterpLTE(color[0], color[7], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			blend[8] = TextureDeposterize_InterpLTE(color[0], color[8], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			
-			dst[i] = TextureDeposterize_Blend(TextureDeposterize_Blend(TextureDeposterize_Blend(TextureDeposterize_Blend(blend[0], blend[5], 1, 7),
-																								TextureDeposterize_Blend(blend[0], blend[1], 1, 7),
-																								1, 1),
-																	   TextureDeposterize_Blend(TextureDeposterize_Blend(blend[0], blend[7], 1, 7),
-																								TextureDeposterize_Blend(blend[0], blend[3], 1, 7),
-																								1, 1),
-																	   1, 1),
-											  TextureDeposterize_Blend(TextureDeposterize_Blend(TextureDeposterize_Blend(blend[0], blend[6], 7, 9),
-																								TextureDeposterize_Blend(blend[0], blend[2], 7, 9),
-																								1, 1),
-																	   TextureDeposterize_Blend(TextureDeposterize_Blend(blend[0], blend[8], 7, 9),
-																								TextureDeposterize_Blend(blend[0], blend[4], 7, 9),
-																								1, 1),
-																	   1, 1),
-											  3, 1);
-		}
-	}
-	
-	i = 0;
-	for (int y = 0; y < h; y++)
-	{
-		for (int x = 0; x < w; x++, i++)
-		{
-			if ((src[i] & 0xFF000000) == 0)
-			{
-				finalDst[i] = src[i];
-				continue;
-			}
-			
-			color[0] = dst[i];
-			color[1] =  (x < w-1)				? dst[i+1]   : dst[i];
-			color[2] = ((x < w-1) && (y < h-1))	? dst[i+w+1] : dst[i];
-			color[3] =               (y < h-1)	? dst[i+w]   : dst[i];
-			color[4] = ((x > 0)   && (y < h-1))	? dst[i+w-1] : dst[i];
-			color[5] =  (x > 0)					? dst[i-1]   : dst[i];
-			color[6] = ((x > 0)   && (y > 0))	? dst[i-w-1] : dst[i];
-			color[7] =               (y > 0)	? dst[i-w]   : dst[i];
-			color[8] = ((x < w-1) && (y > 0))	? dst[i-w+1] : dst[i];
-			
-			blend[0] = color[0];
-			blend[1] = TextureDeposterize_InterpLTE(color[0], color[1], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			blend[2] = TextureDeposterize_InterpLTE(color[0], color[2], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			blend[3] = TextureDeposterize_InterpLTE(color[0], color[3], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			blend[4] = TextureDeposterize_InterpLTE(color[0], color[4], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			blend[5] = TextureDeposterize_InterpLTE(color[0], color[5], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			blend[6] = TextureDeposterize_InterpLTE(color[0], color[6], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			blend[7] = TextureDeposterize_InterpLTE(color[0], color[7], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			blend[8] = TextureDeposterize_InterpLTE(color[0], color[8], TEXTURE_DEPOSTERIZE_THRESHOLD);
-			
-			finalDst[i] = TextureDeposterize_Blend(TextureDeposterize_Blend(TextureDeposterize_Blend(TextureDeposterize_Blend(blend[0], blend[5], 1, 7),
-																									 TextureDeposterize_Blend(blend[0], blend[1], 1, 7),
-																									 1, 1),
-																			TextureDeposterize_Blend(TextureDeposterize_Blend(blend[0], blend[7], 1, 7),
-																									 TextureDeposterize_Blend(blend[0], blend[3], 1, 7),
-																									 1, 1),
-																			1, 1),
-												   TextureDeposterize_Blend(TextureDeposterize_Blend(TextureDeposterize_Blend(blend[0], blend[6], 7, 9),
-																									 TextureDeposterize_Blend(blend[0], blend[2], 7, 9),
-																									 1, 1),
-																			TextureDeposterize_Blend(TextureDeposterize_Blend(blend[0], blend[8], 7, 9),
-																									 TextureDeposterize_Blend(blend[0], blend[4], 7, 9),
-																									 1, 1),
-																			1, 1),
-												   3, 1);
-		}
-	}
+	RenderDeposterize(this->_textureDeposterizeSrcSurface, this->_textureDeposterizeDstSurface);
 	
 	return RENDER3DERROR_NOERR;
 }

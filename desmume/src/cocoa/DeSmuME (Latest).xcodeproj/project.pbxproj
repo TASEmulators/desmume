@@ -112,6 +112,10 @@
 		AB2EE13117D57F5000F68622 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB2EE13017D57F5000F68622 /* fsnitro.cpp */; };
 		AB2EE13217D57F5000F68622 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB2EE13017D57F5000F68622 /* fsnitro.cpp */; };
 		AB2EE13317D57F5000F68622 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB2EE13017D57F5000F68622 /* fsnitro.cpp */; };
+		AB301BDF1D9C8BAC00246A93 /* deposterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB301BDE1D9C8BAC00246A93 /* deposterize.cpp */; };
+		AB301BE01D9C8BCD00246A93 /* deposterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB301BDE1D9C8BAC00246A93 /* deposterize.cpp */; };
+		AB301BE11D9C8BCE00246A93 /* deposterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB301BDE1D9C8BAC00246A93 /* deposterize.cpp */; };
+		AB301BE21D9C8BCF00246A93 /* deposterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB301BDE1D9C8BAC00246A93 /* deposterize.cpp */; };
 		AB350BA51478AC96007165AC /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
 		AB350D3B147A1D93007165AC /* HID_usage_strings.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB350D3A147A1D93007165AC /* HID_usage_strings.plist */; };
 		AB3701E5173A3FBF006E573E /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB74EC891738499C0026C41E /* Carbon.framework */; };
@@ -1323,6 +1327,7 @@
 		AB2EE12B17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_mcrom_debug.cpp; sourceTree = "<group>"; };
 		AB2EE12F17D57F5000F68622 /* fsnitro.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fsnitro.h; sourceTree = "<group>"; };
 		AB2EE13017D57F5000F68622 /* fsnitro.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fsnitro.cpp; sourceTree = "<group>"; };
+		AB301BDE1D9C8BAC00246A93 /* deposterize.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = deposterize.cpp; sourceTree = "<group>"; };
 		AB350BA41478AC96007165AC /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		AB350D38147A1D8D007165AC /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = English; path = translations/English.lproj/HID_usage_strings.plist; sourceTree = "<group>"; };
 		AB3A655C16CC5416001F5D4A /* EmuControllerDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EmuControllerDelegate.h; sourceTree = "<group>"; };
@@ -2926,6 +2931,7 @@
 			children = (
 				ABFE14FA14C92FF5005D6699 /* 2xsai.cpp */,
 				ABFE14FB14C92FF5005D6699 /* bilinear.cpp */,
+				AB301BDE1D9C8BAC00246A93 /* deposterize.cpp */,
 				ABFE14FC14C92FF5005D6699 /* epx.cpp */,
 				ABFE14FE14C92FF5005D6699 /* hq2x.cpp */,
 				AB4C81E31B21676C00ACECD5 /* hq3x.cpp */,
@@ -3847,6 +3853,7 @@
 				ABD1041C1346652500AF11D1 /* cocoa_input.mm in Sources */,
 				AB3E34C9134AF4500056477A /* cocoa_output.mm in Sources */,
 				ABFEA8CB1BB4EC1100B08C25 /* smooth.c in Sources */,
+				AB301BE11D9C8BCE00246A93 /* deposterize.cpp in Sources */,
 				ABD1041E1346652500AF11D1 /* cocoa_rom.mm in Sources */,
 				AB80E04D142BC4A800A52038 /* cocoa_util.mm in Sources */,
 				ABE5DFE5143FB1DA00835AD8 /* cocoa_videofilter.mm in Sources */,
@@ -3951,6 +3958,7 @@
 				AB796CF815CDCBA200C59155 /* cp15.cpp in Sources */,
 				AB796CF915CDCBA200C59155 /* cpu_detect_x86_gcc.cpp in Sources */,
 				AB796CFA15CDCBA200C59155 /* crc.cpp in Sources */,
+				AB301BDF1D9C8BAC00246A93 /* deposterize.cpp in Sources */,
 				AB796CFB15CDCBA200C59155 /* datetime.cpp in Sources */,
 				AB796CFC15CDCBA200C59155 /* debug.cpp in Sources */,
 				ABFEA82E1BB4EC1100B08C25 /* ftlcdfil.c in Sources */,
@@ -4157,6 +4165,7 @@
 				ABFEA8361BB4EC1100B08C25 /* ftmm.c in Sources */,
 				ABFEA81E1BB4EC1000B08C25 /* ftfstype.c in Sources */,
 				ABA731601BB51E7000B26147 /* pshinter.c in Sources */,
+				AB301BE01D9C8BCD00246A93 /* deposterize.cpp in Sources */,
 				ABFEA8211BB4EC1000B08C25 /* ftgasp.c in Sources */,
 				ABFEA83C1BB4EC1100B08C25 /* ftotval.c in Sources */,
 				ABFEA8181BB4EC1000B08C25 /* ftdebug.c in Sources */,
@@ -4448,6 +4457,7 @@
 				ABB3C6B81501C04F00E0C22E /* common.cpp in Sources */,
 				ABB3C6B91501C04F00E0C22E /* cp15.cpp in Sources */,
 				AB407F371A6206FB00313213 /* xbrz.cpp in Sources */,
+				AB301BE21D9C8BCF00246A93 /* deposterize.cpp in Sources */,
 				ABB3C6BA1501C04F00E0C22E /* debug.cpp in Sources */,
 				ABB3C6BB1501C04F00E0C22E /* Disassembler.cpp in Sources */,
 				ABB3C6BC1501C04F00E0C22E /* driver.cpp in Sources */,
