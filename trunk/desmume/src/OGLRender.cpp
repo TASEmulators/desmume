@@ -2993,10 +2993,10 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 			size_t texWidth = this->currTexture->sizeX;
 			size_t texHeight = this->currTexture->sizeY;
 			
-			if (this->_textureDeposterizeBuffer != NULL)
+			if (this->_textureDeposterizeDstSurface.Surface != NULL)
 			{
 				this->TextureDeposterize(textureSrc, texWidth, texHeight);
-				textureSrc = this->_textureDeposterizeBuffer;
+				textureSrc = (u32 *)this->_textureDeposterizeDstSurface.Surface;
 			}
 			
 			switch (this->_textureScalingFactor)
@@ -4644,10 +4644,10 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 			size_t texWidth = this->currTexture->sizeX;
 			size_t texHeight = this->currTexture->sizeY;
 			
-			if (this->_textureDeposterizeBuffer != NULL)
+			if (this->_textureDeposterizeDstSurface.Surface != NULL)
 			{
 				this->TextureDeposterize(textureSrc, texWidth, texHeight);
-				textureSrc = this->_textureDeposterizeBuffer;
+				textureSrc = (u32 *)this->_textureDeposterizeDstSurface.Surface;
 			}
 			
 			switch (this->_textureScalingFactor)

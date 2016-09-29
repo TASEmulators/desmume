@@ -21,6 +21,7 @@
 
 #include "gfx3d.h"
 #include "types.h"
+#include "./filter/filter.h"
 
 #define kUnsetTranslucentPolyID 255
 
@@ -130,7 +131,12 @@ protected:
 	
 	size_t _textureScalingFactor;
 	bool _textureSmooth;
-	u32 *_textureDeposterizeBuffer;
+	
+	SSurface _textureDeposterizeSrcSurface;
+	SSurface _textureDeposterizeDstSurface;
+	u32 _textureDeposterizeThreshold;
+	
+	//u32 *_textureDeposterizeBuffer;
 	u32 *_textureUpscaleBuffer;
 	
 	CACHE_ALIGN u16 clearImageColor16Buffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
