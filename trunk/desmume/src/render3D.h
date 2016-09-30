@@ -134,9 +134,7 @@ protected:
 	
 	SSurface _textureDeposterizeSrcSurface;
 	SSurface _textureDeposterizeDstSurface;
-	u32 _textureDeposterizeThreshold;
 	
-	//u32 *_textureDeposterizeBuffer;
 	u32 *_textureUpscaleBuffer;
 	
 	CACHE_ALIGN u16 clearImageColor16Buffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];

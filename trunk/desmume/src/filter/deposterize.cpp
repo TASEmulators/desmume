@@ -18,7 +18,10 @@
 #include "../types.h"
 #include "filter.h"
 
-static u32 Deposterize_InterpLTE(const u32 pixA, const u32 pixB, const u32 threshold)
+#define DEPOSTERIZE_THRESHOLD 23	// Possible values are [0-255], where lower a value prevents blending and a higher value allows for more blending
+
+
+static u32 Deposterize_InterpLTE(const u32 pixA, const u32 pixB)
 {
 	const u32 aB = (pixB & 0xFF000000) >> 24;
 	if (aB == 0)
@@ -35,10 +38,10 @@ static u32 Deposterize_InterpLTE(const u32 pixA, const u32 pixB, const u32 thres
 	const u32 gB = (pixB & 0x0000FF00) >> 8;
 	const u32 bB = (pixB & 0x00FF0000) >> 16;
 	
-	const u32 rC = ( (rB - rA <= threshold) || (rA - rB <= threshold) ) ? ( ((rA+rB)>>1)  ) : rA;
-	const u32 gC = ( (gB - gA <= threshold) || (gA - gB <= threshold) ) ? ( ((gA+gB)>>1)  ) : gA;
-	const u32 bC = ( (bB - bA <= threshold) || (bA - bB <= threshold) ) ? ( ((bA+bB)>>1)  ) : bA;
-	const u32 aC = ( (bB - aA <= threshold) || (aA - aB <= threshold) ) ? ( ((aA+aB)>>1)  ) : aA;
+	const u32 rC = ( (rB - rA <= DEPOSTERIZE_THRESHOLD) || (rA - rB <= DEPOSTERIZE_THRESHOLD) ) ? ( ((rA+rB)>>1)  ) : rA;
+	const u32 gC = ( (gB - gA <= DEPOSTERIZE_THRESHOLD) || (gA - gB <= DEPOSTERIZE_THRESHOLD) ) ? ( ((gA+gB)>>1)  ) : gA;
+	const u32 bC = ( (bB - bA <= DEPOSTERIZE_THRESHOLD) || (bA - bB <= DEPOSTERIZE_THRESHOLD) ) ? ( ((bA+bB)>>1)  ) : bA;
+	const u32 aC = ( (bB - aA <= DEPOSTERIZE_THRESHOLD) || (aA - aB <= DEPOSTERIZE_THRESHOLD) ) ? ( ((aA+aB)>>1)  ) : aA;
 	
 	return (rC | (gC << 8) | (bC << 16) | (aC << 24));
 }
@@ -84,7 +87,6 @@ void RenderDeposterize(SSurface Src, SSurface Dst)
 	u32 *src = (u32 *)Src.Surface;
 	u32 *workingDst = (u32 *)Dst.workingSurface[0];
 	u32 *finalDst = (u32 *)Dst.Surface;
-	u32 threshold = *(u32 *)Dst.userData;
 	
 	int i = 0;
 	for (int y = 0; y < h; y++)
@@ -108,14 +110,14 @@ void RenderDeposterize(SSurface Src, SSurface Dst)
 			color[8] = ((x < w-1) && (y > 0))	? src[i-w+1] : src[i];
 			
 			blend[0] = color[0];
-			blend[1] = Deposterize_InterpLTE(color[0], color[1], threshold);
-			blend[2] = Deposterize_InterpLTE(color[0], color[2], threshold);
-			blend[3] = Deposterize_InterpLTE(color[0], color[3], threshold);
-			blend[4] = Deposterize_InterpLTE(color[0], color[4], threshold);
-			blend[5] = Deposterize_InterpLTE(color[0], color[5], threshold);
-			blend[6] = Deposterize_InterpLTE(color[0], color[6], threshold);
-			blend[7] = Deposterize_InterpLTE(color[0], color[7], threshold);
-			blend[8] = Deposterize_InterpLTE(color[0], color[8], threshold);
+			blend[1] = Deposterize_InterpLTE(color[0], color[1]);
+			blend[2] = Deposterize_InterpLTE(color[0], color[2]);
+			blend[3] = Deposterize_InterpLTE(color[0], color[3]);
+			blend[4] = Deposterize_InterpLTE(color[0], color[4]);
+			blend[5] = Deposterize_InterpLTE(color[0], color[5]);
+			blend[6] = Deposterize_InterpLTE(color[0], color[6]);
+			blend[7] = Deposterize_InterpLTE(color[0], color[7]);
+			blend[8] = Deposterize_InterpLTE(color[0], color[8]);
 			
 			workingDst[i] = Deposterize_Blend(Deposterize_Blend(Deposterize_Blend(Deposterize_Blend(blend[0], blend[5], 1, 7),
 																				  Deposterize_Blend(blend[0], blend[1], 1, 7),
@@ -157,14 +159,14 @@ void RenderDeposterize(SSurface Src, SSurface Dst)
 			color[8] = ((x < w-1) && (y > 0))	? workingDst[i-w+1] : workingDst[i];
 			
 			blend[0] = color[0];
-			blend[1] = Deposterize_InterpLTE(color[0], color[1], threshold);
-			blend[2] = Deposterize_InterpLTE(color[0], color[2], threshold);
-			blend[3] = Deposterize_InterpLTE(color[0], color[3], threshold);
-			blend[4] = Deposterize_InterpLTE(color[0], color[4], threshold);
-			blend[5] = Deposterize_InterpLTE(color[0], color[5], threshold);
-			blend[6] = Deposterize_InterpLTE(color[0], color[6], threshold);
-			blend[7] = Deposterize_InterpLTE(color[0], color[7], threshold);
-			blend[8] = Deposterize_InterpLTE(color[0], color[8], threshold);
+			blend[1] = Deposterize_InterpLTE(color[0], color[1]);
+			blend[2] = Deposterize_InterpLTE(color[0], color[2]);
+			blend[3] = Deposterize_InterpLTE(color[0], color[3]);
+			blend[4] = Deposterize_InterpLTE(color[0], color[4]);
+			blend[5] = Deposterize_InterpLTE(color[0], color[5]);
+			blend[6] = Deposterize_InterpLTE(color[0], color[6]);
+			blend[7] = Deposterize_InterpLTE(color[0], color[7]);
+			blend[8] = Deposterize_InterpLTE(color[0], color[8]);
 			
 			finalDst[i] = Deposterize_Blend(Deposterize_Blend(Deposterize_Blend(Deposterize_Blend(blend[0], blend[5], 1, 7),
 																				Deposterize_Blend(blend[0], blend[1], 1, 7),
