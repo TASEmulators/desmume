@@ -32,7 +32,6 @@
 #include "./filter/filter.h"
 #include "./filter/xbrz.h"
 
-#define TEXTURE_DEPOSTERIZE_THRESHOLD 21	// Possible values are [0-255], where lower a value prevents blending and a higher value allows for more blending
 
 int cur3DCore = GPU3D_NULL;
 
@@ -238,7 +237,6 @@ Render3D::Render3D()
 	_textureScalingFactor = 1;
 	_textureSmooth = false;
 	_textureUpscaleBuffer = NULL;
-	_textureDeposterizeThreshold = TEXTURE_DEPOSTERIZE_THRESHOLD;
 	
 	memset(&_textureDeposterizeSrcSurface, 0, sizeof(_textureDeposterizeSrcSurface));
 	memset(&_textureDeposterizeDstSurface, 0, sizeof(_textureDeposterizeDstSurface));
@@ -246,7 +244,6 @@ Render3D::Render3D()
 	_textureDeposterizeSrcSurface.Width = _textureDeposterizeDstSurface.Width = 1;
 	_textureDeposterizeSrcSurface.Height = _textureDeposterizeDstSurface.Height = 1;
 	_textureDeposterizeSrcSurface.Pitch = _textureDeposterizeDstSurface.Pitch = 1;
-	_textureDeposterizeDstSurface.userData = &_textureDeposterizeThreshold;
 	
 	Reset();
 }
