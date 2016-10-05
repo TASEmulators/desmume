@@ -1504,7 +1504,7 @@ u32 BackupDevice::get_save_duc_size(const char* fname)
 bool BackupDevice::import_duc(const char* filename, u32 force_size)
 {
 	u32 size;
-	u8 id16[16] = {0}, id4[4] = {0}, id2[2] = {0};
+	u8 id16[16] = {0}, id4[4] = {0}, id3[3] = {0};
 	FILE* file = fopen(filename, "rb");
 
 	if(!file) return false;
@@ -1516,12 +1516,13 @@ bool BackupDevice::import_duc(const char* filename, u32 force_size)
 	if(!memcmp(id16, "ARDS000000000001", 16)) version = 1;
 
 	//ID version 2
-	fseek(file,0xA2,SEEK_SET);
-	fread(id2,1,2,file);
-	if(!memcmp(id16,"\0\0\0\0",4) && !memcmp(id2,"\x04\xC0",2)) version = 2;
+	fseek(file,0xA1,SEEK_SET);
+	fread(id3,1,3,file);
+	if(!memcmp(id16,"\0\0\0\0",4) && id3[2] == 0xC0) version = 2;
 
 	if(version == 0)
 	{
+	INVALID_DUC:
 		printf("Not recognized as a valid DUC file\n");
 		fclose(file);
 		return false;
@@ -1540,6 +1541,11 @@ bool BackupDevice::import_duc(const char* filename, u32 force_size)
 	{
 		size -= 0xA4;
 		fseek(file, 0xA4, SEEK_SET);
+
+		//validate size
+		int specifiedSize = (id3[0]<<8)+(id3[1]<<16);
+		if(specifiedSize != size)
+			goto INVALID_DUC;
 	}
 
 	u32 left = 0;
