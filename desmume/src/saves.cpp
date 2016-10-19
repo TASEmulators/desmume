@@ -412,21 +412,18 @@ static bool s_slot1_loadstate(EMUFILE* is, int size)
 {
 	u32 version = is->read32le();
 
-	//version 0:
-	if(version >= 0)
-	{
-		u8 slotID = is->read32le();
-		slot1Type = NDS_SLOT1_RETAIL_AUTO;
-		if (version >= 1)
-			slot1_getTypeByID(slotID, slot1Type);
+	/* version 0: */
+   u8 slotID = is->read32le();
+   slot1Type = NDS_SLOT1_RETAIL_AUTO;
+   if (version >= 1)
+      slot1_getTypeByID(slotID, slot1Type);
 
-		slot1_Change(slot1Type);
+   slot1_Change(slot1Type);
 
-		EMUFILE_MEMORY temp;
-		is->readMemoryStream(&temp);
-		temp.fseek(0,SEEK_SET);
-		slot1_Loadstate(&temp);
-	}
+   EMUFILE_MEMORY temp;
+   is->readMemoryStream(&temp);
+   temp.fseek(0,SEEK_SET);
+   slot1_Loadstate(&temp);
 
 	return true;
 }
@@ -448,20 +445,17 @@ static bool s_slot2_loadstate(EMUFILE* is, int size)
 {
 	u32 version = is->read32le();
 
-	//version 0:
-	if(version >= 0)
-	{
-		slot2Type = NDS_SLOT2_AUTO;
-		u8 slotID = is->read32le();
-		if (version == 0)
-			slot2_getTypeByID(slotID, slot2Type);
-		slot2_Change(slot2Type);
+	/* version 0: */
+   slot2Type = NDS_SLOT2_AUTO;
+   u8 slotID = is->read32le();
+   if (version == 0)
+      slot2_getTypeByID(slotID, slot2Type);
+   slot2_Change(slot2Type);
 
-		EMUFILE_MEMORY temp;
-		is->readMemoryStream(&temp);
-		temp.fseek(0,SEEK_SET);
-		slot2_Loadstate(&temp);
-	}
+   EMUFILE_MEMORY temp;
+   is->readMemoryStream(&temp);
+   temp.fseek(0,SEEK_SET);
+   slot2_Loadstate(&temp);
 
 	return true;
 }

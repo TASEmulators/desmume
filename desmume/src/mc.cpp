@@ -162,17 +162,16 @@ bool BackupDevice::load_state(EMUFILE* is)
 	std::vector<u8> data;
 
 	if(read32le(&version,is)!=1) return false;
-	if(version>=0)
-	{
-		readbool(&write_enable,is);
-		read32le(&com,is);
-		read32le(&addr_size,is);
-		read32le(&addr_counter,is);
-		read32le(&temp,is);
-		state = (STATE)temp;
-		readbuffer(data,is);
-		readbuffer(data_autodetect,is);
-	}
+
+   readbool(&write_enable,is);
+   read32le(&com,is);
+   read32le(&addr_size,is);
+   read32le(&addr_counter,is);
+   read32le(&temp,is);
+   state = (STATE)temp;
+   readbuffer(data,is);
+   readbuffer(data_autodetect,is);
+
 	if(version>=1)
 		read32le(&addr,is);
 	
