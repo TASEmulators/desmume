@@ -53,6 +53,7 @@ private:
 class ISlot1Interface
 {
 public:
+   virtual ~ISlot1Interface() {}
 	//called to get info about device (description)
 	virtual Slot1Info const* info() = 0;
 

@@ -54,6 +54,7 @@ private:
 class ISlot2Interface
 {
 public:
+   virtual ~ISlot2Interface() {}
 	//called to get info about device (description)
 	virtual Slot2Info const* info() = 0;
 
