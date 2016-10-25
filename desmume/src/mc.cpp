@@ -632,6 +632,7 @@ void BackupDevice::reset()
 		else if(!memcmp(gameInfo.header.gameCode,"AH5", 3)) addr_size = 1; //over the hedge
 		else if(!memcmp(gameInfo.header.gameCode,"AVH", 3)) addr_size = 1; //over the hedge - Hammy Goes Nuts!
 		else if(!memcmp(gameInfo.header.gameCode,"AQ3", 3)) addr_size = 1; //spider-man 3
+		else if(!memcmp(gameInfo.header.gameCode,"BPV", 3)) addr_size = 2; //puzzler world (should be eeprom 64KBits)
 		
 		//if we found a whitelist match, we dont need to run detection
 		if(addr_size) state = RUNNING;
