@@ -26,6 +26,14 @@
 #include "common.h"
 #include "gfx3d.h"
 
+//this ought to be enough for anyone
+//#define TEXCACHE_MAX_SIZE (64*1024*1024);
+//changed by zeromus on 15-dec. I couldnt find any games that were getting anywhere NEAR 64
+//metal slug burns through sprites so fast, it can test it pretty quickly though
+#define TEXCACHE_MAX_SIZE (16*1024*1024)
+
+#define PALETTE_DUMP_SIZE ((64+16+16)*1024)
+
 enum TexCache_TexFormat
 {
 	TexFormat_None, //used when nothing yet is cached
@@ -33,10 +41,30 @@ enum TexCache_TexFormat
 	TexFormat_15bpp //used by rasterizer
 };
 
+class MemSpan;
 class TexCacheItem;
 
 typedef std::multimap<u32,TexCacheItem*> TTexCacheItemMultimap;
 typedef void (*TexCacheItemDeleteCallback)(TexCacheItem *texItem, void *param1, void *param2);
+
+class TexCache
+{
+public:
+	TexCache();
+	
+	TTexCacheItemMultimap index;
+	u32 cache_size; //this is not really precise, it is off by a constant factor
+	u8 paletteDump[PALETTE_DUMP_SIZE];
+	
+	void list_remove(TexCacheItem *item);
+	void list_push_front(TexCacheItem *item);
+	
+	void Invalidate();
+	void Evict(u32 target);
+	void Reset();
+	
+	TexCacheItem* GetTexture(TexCache_TexFormat texCacheFormat, u32 texAttributes, u32 palAttributes);
+};
 
 class TexCacheItem
 {
@@ -46,65 +74,68 @@ private:
 	void *_deleteCallbackParam2;
 	
 public:
-	TexCacheItem() 
-		: decode_len(0)
-		, decoded(NULL)
-		, suspectedInvalid(false)
-		, assumedInvalid(false)
-		, _deleteCallback(NULL)
-		, _deleteCallbackParam1(NULL)
-		, _deleteCallbackParam2(NULL)
-		, cacheFormat(TexFormat_None)
-	{}
+	TexCacheItem();
+	~TexCacheItem();
 	
-	~TexCacheItem()
-	{
-		free_aligned(this->decoded);
-		if (this->_deleteCallback != NULL) this->_deleteCallback(this, this->_deleteCallbackParam1, this->_deleteCallbackParam2);
-	}
-	u32 decode_len;
-	NDSTextureFormat format;
-	u8* decoded; //decoded texture data
+	NDSTextureFormat packFormat;
+	u32 packSize;
+	u8 *packData;
+	u16 *paletteColorTable;
+	
+	TexCache_TexFormat unpackFormat;
+	u32 unpackSize;
+	u32 *unpackData;
+	
 	bool suspectedInvalid;
 	bool assumedInvalid;
 	TTexCacheItemMultimap::iterator iterator;
 
-	NDSTextureFormat GetTextureFormat() const { return this->format; }
-
-	u32 texformat, texpal;
-	u32 sizeX, sizeY;
-	float invSizeX, invSizeY;
-
-	u32 texid; //used by ogl renderer for the texid
-	TexCache_TexFormat cacheFormat;
-
-	struct Dump {
-		~Dump() {
-			delete[] texture;
-		}
-		int textureSize, indexSize;
-		static const int maxTextureSize=128*1024;
-		u8* texture;
-		u8 palette[256*2];
-	} dump;
+	u32 textureAttributes;
+	u32 paletteAttributes;
+	u32 paletteAddress;
+	u32 paletteSize;
+	u32 sizeX;
+	u32 sizeY;
+	float invSizeX;
+	float invSizeY;
 	
-	TexCacheItemDeleteCallback GetDeleteCallback()
-	{
-		return this->_deleteCallback;
-	}
+	// Only used by 4x4 formatted textures
+	u8 *packIndexData;
+	u32 packSizeFirstSlot;
+	u32 packIndexSize;
 	
-	void SetDeleteCallback(TexCacheItemDeleteCallback callbackFunc, void *inParam1, void *inParam2)
-	{
-		this->_deleteCallback = callbackFunc;
-		this->_deleteCallbackParam1 = inParam1;
-		this->_deleteCallbackParam2 = inParam2;
-	}
+	// Only used by the OpenGL renderer for the texture ID
+	u32 texid;
+	
+	TexCacheItemDeleteCallback GetDeleteCallback() const;
+	void SetDeleteCallback(TexCacheItemDeleteCallback callbackFunc, void *inParam1, void *inParam2);
+	
+	NDSTextureFormat GetTextureFormat() const;
+	void SetTextureData(const u32 attr, const MemSpan &packedData, const MemSpan &packedIndexData);
+	void SetTexturePalette(const u32 attr, const u16 *paletteBuffer);
+	
+	template<TexCache_TexFormat TEXCACHEFORMAT> void Unpack(const MemSpan &packedData);
+	
+	void DebugDump();
 };
 
-void TexCache_Invalidate();
-void TexCache_Reset();
-void TexCache_EvictFrame();
+// TODO: Delete these MemSpan based functions after testing confirms that using the dumped texture data works properly.
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackI2(const MemSpan &ms, const u16 *pal, const bool isPalZeroTransparent, u32 *dstBuffer);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackI4(const MemSpan &ms, const u16 *pal, const bool isPalZeroTransparent, u32 *dstBuffer);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackI8(const MemSpan &ms, const u16 *pal, const bool isPalZeroTransparent, u32 *dstBuffer);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackA3I5(const MemSpan &ms, const u16 *pal, u32 *dstBuffer);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackA5I3(const MemSpan &ms, const u16 *pal, u32 *dstBuffer);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpack4x4(const MemSpan &ms, const u32 palAddress, const u32 texAttributes, const u32 sizeX, const u32 sizeY, u32 *dstBuffer);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackDirect16Bit(const MemSpan &ms, u32 *dstBuffer);
 
-TexCacheItem* TexCache_SetTexture(TexCache_TexFormat TEXFORMAT, u32 format, u32 texpal);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackI2(const size_t srcSize, const u8 *srcData, const u16 *srcPal, const bool isPalZeroTransparent, u32 *dstBuffer);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackI4(const size_t srcSize, const u8 *srcData, const u16 *srcPal, const bool isPalZeroTransparent, u32 *dstBuffer);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackI8(const size_t srcSize, const u8 *srcData, const u16 *srcPal, const bool isPalZeroTransparent, u32 *dstBuffer);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackA3I5(const size_t srcSize, const u8 *srcData, const u16 *srcPal, u32 *dstBuffer);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *srcData, const u16 *srcPal, u32 *dstBuffer);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpack4x4(const size_t srcSize, const u8 *srcData, const u8 *srcIndex, const u32 palAddress, const u32 texAttributes, const u32 sizeX, const u32 sizeY, u32 *dstBuffer);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u8 *srcData, u32 *dstBuffer);
+
+extern TexCache texCache;
 
 #endif
