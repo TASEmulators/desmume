@@ -461,7 +461,7 @@ public:
 		
 		sampler.dowrap(iu, iv);
 		FragmentColor color;
-		color.color = ((u32*)lastTexKey->decoded)[(iv<<sampler.wshift)+iu];
+		color.color = lastTexKey->unpackData[(iv<<sampler.wshift)+iu];
 		return color;
 	}
 
@@ -1373,7 +1373,7 @@ void SoftRasterizerRenderer::setupTextures()
 	const POLY &firstPoly = *firstClippedPoly.poly;
 	u32 lastTexParams = firstPoly.texParam;
 	u32 lastTexPalette = firstPoly.texPalette;
-	TexCacheItem *lastTexKey = TexCache_SetTexture(TexFormat_15bpp, firstPoly.texParam, firstPoly.texPalette);
+	TexCacheItem *lastTexKey = texCache.GetTexture(TexFormat_15bpp, firstPoly.texParam, firstPoly.texPalette);
 	
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
@@ -1386,7 +1386,7 @@ void SoftRasterizerRenderer::setupTextures()
 		//and then it won't be safe.
 		if (lastTexParams != thePoly.texParam || lastTexPalette != thePoly.texPalette)
 		{
-			lastTexKey = TexCache_SetTexture(TexFormat_15bpp, thePoly.texParam, thePoly.texPalette);
+			lastTexKey = texCache.GetTexture(TexFormat_15bpp, thePoly.texParam, thePoly.texPalette);
 			lastTexParams = thePoly.texParam;
 			lastTexPalette = thePoly.texPalette;
 		}
@@ -1537,7 +1537,7 @@ Render3DError SoftRasterizerRenderer::RenderGeometry(const GFX3D_State &renderSt
 	{
 		rasterizerUnit[0].mainLoop<false>();
 		this->_renderGeometryNeedsFinish = false;
-		TexCache_EvictFrame(); // Since we're finishing geometry rendering here and now, also check the texture cache now.
+		texCache.Evict(TEXCACHE_MAX_SIZE); // Since we're finishing geometry rendering here and now, also check the texture cache now.
 	}
 	
 	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
@@ -1888,7 +1888,7 @@ Render3DError SoftRasterizerRenderer::Reset()
 	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
 	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
 	
-	TexCache_Reset();
+	texCache.Reset();
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -1947,7 +1947,7 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 	}
 	
 	// Now that geometry rendering is finished on all threads, check the texture cache.
-	TexCache_EvictFrame();
+	texCache.Evict(TEXCACHE_MAX_SIZE);
 	
 	// Do multithreaded post-processing.
 	if (this->currentRenderState->enableEdgeMarking || this->currentRenderState->enableFog)

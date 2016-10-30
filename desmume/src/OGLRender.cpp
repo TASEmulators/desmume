@@ -1196,7 +1196,8 @@ OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 	DestroyMultisampledFBO();
 	
 	// Kill the texture cache now before all of our texture IDs disappear.
-	TexCache_Reset();
+	texCache.Reset();
+	texCache.Reset();
 	
 	while(!ref->freeTextureIDs.empty())
 	{
@@ -2694,7 +2695,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 Render3DError OpenGLRenderer_1_2::EndRender(const u64 frameCount)
 {
 	//needs to happen before endgl because it could free some textureids for expired cache items
-	TexCache_EvictFrame();
+	texCache.Evict(TEXCACHE_MAX_SIZE);
 	
 	this->ReadBackPixels();
 	
@@ -2967,21 +2968,21 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 		glEnable(GL_TEXTURE_2D);
 	}
 	
-	TexCacheItem *newTexture = TexCache_SetTexture(TexFormat_32bpp, thePoly.texParam, thePoly.texPalette);
-	if(newTexture != this->currTexture)
+	TexCacheItem *newTexture = texCache.GetTexture(TexFormat_32bpp, thePoly.texParam, thePoly.texPalette);
+	if (newTexture != this->currTexture)
 	{
 		this->currTexture = newTexture;
 		//has the ogl renderer initialized the texture?
-		if(this->currTexture->GetDeleteCallback() == NULL)
+		if (this->currTexture->GetDeleteCallback() == NULL)
 		{
 			this->currTexture->SetDeleteCallback(&texDeleteCallback, this, NULL);
 			
-			if(OGLRef.freeTextureIDs.empty())
+			if (OGLRef.freeTextureIDs.empty())
 			{
 				this->ExpandFreeTextures();
 			}
 			
-			this->currTexture->texid = (u64)OGLRef.freeTextureIDs.front();
+			this->currTexture->texid = (u32)OGLRef.freeTextureIDs.front();
 			OGLRef.freeTextureIDs.pop();
 			
 			glBindTexture(GL_TEXTURE_2D, (GLuint)this->currTexture->texid);
@@ -2989,7 +2990,7 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 			
 			const NDSTextureFormat texFormat = this->currTexture->GetTextureFormat();
-			const u32 *textureSrc = (u32 *)this->currTexture->decoded;
+			const u32 *textureSrc = this->currTexture->unpackData;
 			size_t texWidth = this->currTexture->sizeX;
 			size_t texHeight = this->currTexture->sizeY;
 			
@@ -3133,7 +3134,7 @@ Render3DError OpenGLRenderer_1_2::Reset()
 	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
 	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
 	
-	TexCache_Reset();
+	texCache.Reset();
 	
 	return OGLERROR_NOERR;
 }
@@ -4618,21 +4619,21 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 	glUniform1i(OGLRef.uniformPolyEnableTexture, GL_TRUE);
 	glUniform1i(OGLRef.uniformTexSingleBitAlpha, (params.texFormat != TEXMODE_A3I5 && params.texFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
 	
-	TexCacheItem *newTexture = TexCache_SetTexture(TexFormat_32bpp, thePoly.texParam, thePoly.texPalette);
-	if(newTexture != this->currTexture)
+	TexCacheItem *newTexture = texCache.GetTexture(TexFormat_32bpp, thePoly.texParam, thePoly.texPalette);
+	if (newTexture != this->currTexture)
 	{
 		this->currTexture = newTexture;
 		//has the ogl renderer initialized the texture?
-		if(this->currTexture->GetDeleteCallback() == NULL)
+		if (this->currTexture->GetDeleteCallback() == NULL)
 		{
 			this->currTexture->SetDeleteCallback(&texDeleteCallback, this, NULL);
 			
-			if(OGLRef.freeTextureIDs.empty())
+			if (OGLRef.freeTextureIDs.empty())
 			{
 				this->ExpandFreeTextures();
 			}
 			
-			this->currTexture->texid = (u64)OGLRef.freeTextureIDs.front();
+			this->currTexture->texid = (u32)OGLRef.freeTextureIDs.front();
 			OGLRef.freeTextureIDs.pop();
 			
 			glBindTexture(GL_TEXTURE_2D, (GLuint)this->currTexture->texid);
@@ -4640,7 +4641,7 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 			
 			const NDSTextureFormat texFormat = this->currTexture->GetTextureFormat();
-			const u32 *textureSrc = (u32 *)this->currTexture->decoded;
+			const u32 *textureSrc = this->currTexture->unpackData;
 			size_t texWidth = this->currTexture->sizeX;
 			size_t texHeight = this->currTexture->sizeY;
 			

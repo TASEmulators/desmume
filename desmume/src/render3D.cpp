@@ -389,7 +389,7 @@ void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDep
 	
 	if (needTexCacheReset)
 	{
-		TexCache_Reset();
+		texCache.Reset();
 	}
 }
 
@@ -616,7 +616,7 @@ Render3DError Render3D::Reset()
 	this->_willFlushFramebufferRGBA6665 = true;
 	this->_willFlushFramebufferRGBA5551 = true;
 	
-	TexCache_Reset();
+	texCache.Reset();
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -658,7 +658,7 @@ Render3DError Render3D::RenderFinish()
 
 Render3DError Render3D::VramReconfigureSignal()
 {
-	TexCache_Invalidate();	
+	texCache.Invalidate();
 	return RENDER3DERROR_NOERR;
 }
 
