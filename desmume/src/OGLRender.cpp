@@ -1197,7 +1197,6 @@ OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 	
 	// Kill the texture cache now before all of our texture IDs disappear.
 	texCache.Reset();
-	texCache.Reset();
 	
 	while(!ref->freeTextureIDs.empty())
 	{
@@ -2968,7 +2967,12 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 		glEnable(GL_TEXTURE_2D);
 	}
 	
-	TexCacheItem *newTexture = texCache.GetTexture(TexFormat_32bpp, thePoly.texParam, thePoly.texPalette);
+	TexCacheItem *newTexture = texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
+	if (newTexture->unpackFormat != TexFormat_32bpp)
+	{
+		newTexture->Unpack<TexFormat_32bpp>();
+	}
+	
 	if (newTexture != this->currTexture)
 	{
 		this->currTexture = newTexture;
@@ -4619,7 +4623,12 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 	glUniform1i(OGLRef.uniformPolyEnableTexture, GL_TRUE);
 	glUniform1i(OGLRef.uniformTexSingleBitAlpha, (params.texFormat != TEXMODE_A3I5 && params.texFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
 	
-	TexCacheItem *newTexture = texCache.GetTexture(TexFormat_32bpp, thePoly.texParam, thePoly.texPalette);
+	TexCacheItem *newTexture = texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
+	if (newTexture->unpackFormat != TexFormat_32bpp)
+	{
+		newTexture->Unpack<TexFormat_32bpp>();
+	}
+	
 	if (newTexture != this->currTexture)
 	{
 		this->currTexture = newTexture;

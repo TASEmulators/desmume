@@ -202,19 +202,22 @@ TexCache texCache;
 
 TexCache::TexCache()
 {
+	cacheTable.clear();
 	cache_size = 0;
 	memset(paletteDump, 0, sizeof(paletteDump));
 }
 
 void TexCache::list_remove(TexCacheItem *item)
 {
-	this->index.erase(item->iterator);
+	const TexCacheKey key = TexCache::GenerateKey(item->textureAttributes, item->paletteAttributes);
+	this->cacheTable.erase(key);
 	this->cache_size -= item->unpackSize;
 }
 
 void TexCache::list_push_front(TexCacheItem *item)
 {
-	item->iterator = this->index.insert(std::make_pair(item->textureAttributes, item));
+	const TexCacheKey key = TexCache::GenerateKey(item->textureAttributes, item->paletteAttributes);
+	this->cacheTable[key] = item;
 	this->cache_size += item->unpackSize;
 }
 
@@ -224,13 +227,13 @@ void TexCache::Invalidate()
 	//TODO - we should handle this instead by setting dirty flags in the vram memory mapping and noting whether palette memory was dirty.
 	//but this will work for now
 	MemSpan mspal = MemSpan_TexPalette(0, PALETTE_DUMP_SIZE, true);
-	bool paletteDirty = mspal.memcmp(paletteDump);
+	bool paletteDirty = mspal.memcmp(this->paletteDump);
 	if (paletteDirty)
 	{
-		mspal.dump(paletteDump);
+		mspal.dump(this->paletteDump);
 	}
 	
-	for (TTexCacheItemMultimap::iterator it(this->index.begin()); it != this->index.end(); ++it)
+	for (TexCacheTable::iterator it(this->cacheTable.begin()); it != this->cacheTable.end(); ++it)
 	{
 		it->second->suspectedInvalid = true;
 		
@@ -259,9 +262,9 @@ void TexCache::Evict(u32 target)
 	//TODO - do this based on age and not arbitrarily
 	while (this->cache_size > target)
 	{
-		if (this->index.size() == 0) break; //just in case.. doesnt seem possible, cache_size wouldve been 0
+		if (this->cacheTable.size() == 0) break; //just in case.. doesnt seem possible, cache_size wouldve been 0
 		
-		TexCacheItem *item = this->index.begin()->second;
+		TexCacheItem *item = this->cacheTable.begin()->second;
 		this->list_remove(item);
 		//printf("evicting! totalsize:%d\n",cache_size);
 		delete item;
@@ -273,15 +276,54 @@ void TexCache::Reset()
 	this->Evict(0);
 }
 
-TexCacheItem* TexCache::GetTexture(TexCache_TexFormat texCacheFormat, u32 texAttributes, u32 palAttributes)
+TexCacheItem* TexCache::GetTexture(u32 texAttributes, u32 palAttributes)
 {
 	//for each texformat, multiplier from numtexels to numbytes (fixed point 30.2)
 	static const int texSizes[] = {0, 4, 1, 2, 4, 1, 4, 8};
 	
-	NDSTextureFormat texPackFormat = (NDSTextureFormat)((texAttributes>>26)&0x07);
-	u32 sizeX = (8 << ((texAttributes>>20)&0x07));
-	u32 sizeY = (8 << ((texAttributes>>23)&0x07));
-	u32 imageSize = sizeX*sizeY;
+	bool needLoadTexData = false;
+	bool needLoadPalette = false;
+	
+	//conditions where we reject matches:
+	//when the teximage or texpal params dont match
+	//(this is our key for identifying textures in the cache)
+	TexCacheItem *theTexture = NULL;
+	const TexCacheKey key = TexCache::GenerateKey(texAttributes, palAttributes);
+	const TexCacheTable::iterator cachedTexture = this->cacheTable.find(key);
+	
+	if (cachedTexture == this->cacheTable.end())
+	{
+		needLoadTexData = true;
+		needLoadPalette = true;
+	}
+	else
+	{
+		theTexture = cachedTexture->second;
+		
+		//if the texture is assumed invalid, reject it
+		if (theTexture->assumedInvalid)
+		{
+			needLoadTexData = true;
+			needLoadPalette = true;
+		}
+		
+		//the texture matches params, but isnt suspected invalid. accept it.
+		if (!theTexture->suspectedInvalid)
+		{
+			return theTexture;
+		}
+	}
+	
+	//we suspect the texture may be invalid. we need to do a byte-for-byte comparison to re-establish that it is valid:
+	const NDSTextureFormat texPackFormat = (NDSTextureFormat)((texAttributes>>26)&0x07);
+	const u32 sizeX = (8 << ((texAttributes>>20)&0x07));
+	const u32 sizeY = (8 << ((texAttributes>>23)&0x07));
+	const u32 imageSize = sizeX*sizeY;
+	
+	//dump the palette to a temp buffer, so that we don't have to worry about memory mapping.
+	//this isnt such a problem with texture memory, because we read sequentially from it.
+	//however, we read randomly from palette memory, so the mapping is more costly.
+	const u32 palSize = paletteSizeList[texPackFormat] * sizeof(u16);
 	u32 palAddress;
 	
 	switch (texPackFormat)
@@ -301,14 +343,6 @@ TexCacheItem* TexCache::GetTexture(TexCache_TexFormat texCacheFormat, u32 texAtt
 			break;
 	}
 	
-	//analyze the texture memory mapping and the specifications of this texture
-	u32 texSize = (imageSize*texSizes[texPackFormat]) >> 2; //shifted because the texSizes multiplier is fixed point
-	MemSpan currentPackedTexDataMS = MemSpan_TexMem((texAttributes&0xFFFF)<<3, texSize);
-	
-	//dump the palette to a temp buffer, so that we don't have to worry about memory mapping.
-	//this isnt such a problem with texture memory, because we read sequentially from it.
-	//however, we read randomly from palette memory, so the mapping is more costly.
-	u32 palSize = paletteSizeList[texPackFormat] * sizeof(u16);
 	MemSpan currentPaletteMS = MemSpan_TexPalette(palAddress, palSize, false);
 	
 	CACHE_ALIGN u16 currentPalette[256];
@@ -318,100 +352,96 @@ TexCacheItem* TexCache::GetTexture(TexCache_TexFormat texCacheFormat, u32 texAtt
 	currentPaletteMS.dump(currentPalette);
 #endif
 	
-	//determine the location for 4x4 index data
-	u32 indexBase;
-	if ((texAttributes & 0xc000) == 0x8000) indexBase = 0x30000;
-	else indexBase = 0x20000;
+	//when the palettes dont match:
+	//note that we are considering 4x4 textures to have a palette size of 0.
+	//they really have a potentially HUGE palette, too big for us to handle like a normal palette,
+	//so they go through a different system
+	if (theTexture != NULL)
+	{
+		if ( (palSize > 0) && memcmp(theTexture->paletteColorTable, currentPalette, palSize) )
+		{
+			needLoadPalette = true;
+		}
+	}
 	
-	u32 indexOffset = (texAttributes & 0x3FFF) << 2;
-	int indexSize = 0;
+	//analyze the texture memory mapping and the specifications of this texture
+	const u32 texSize = (imageSize*texSizes[texPackFormat]) >> 2; //shifted because the texSizes multiplier is fixed point
+	MemSpan currentPackedTexDataMS = MemSpan_TexMem((texAttributes&0xFFFF)<<3, texSize);
+	
+	//when the texture data doesn't match
+	if (theTexture != NULL)
+	{
+		if (currentPackedTexDataMS.memcmp(theTexture->packData, theTexture->packSize))
+		{
+			needLoadTexData = true;
+		}
+	}
+	
+	//if the texture is 4x4 then the index data must match
 	MemSpan currentPackedTexIndexMS;
 	if (texPackFormat == TEXMODE_4X4)
 	{
-		indexSize = imageSize >> 3;
+		//determine the location for 4x4 index data
+		const u32 indexBase = ((texAttributes & 0xc000) == 0x8000) ? 0x30000 : 0x20000;
+		const u32 indexOffset = (texAttributes & 0x3FFF) << 2;
+		const int indexSize = imageSize >> 3;
+		
 		currentPackedTexIndexMS = MemSpan_TexMem(indexOffset+indexBase, indexSize);
+		
+		if (theTexture != NULL)
+		{
+			if (currentPackedTexIndexMS.memcmp(theTexture->packIndexData, theTexture->packIndexSize))
+			{
+				needLoadTexData = true;
+				needLoadPalette = true;
+			}
+		}
 	}
 	
-	//TODO - as a special optimization, keep the last item returned and check it first
-	
-	TexCacheItem *cachedTexture = NULL;
-	
-	for(std::pair<TTexCacheItemMultimap::iterator,TTexCacheItemMultimap::iterator>
-		iters = index.equal_range(texAttributes);
-		iters.first != iters.second;
-		++iters.first)
+	if (needLoadTexData || needLoadPalette)
 	{
-		cachedTexture = iters.first->second;
-		
-		//conditions where we reject matches:
-		//when the teximage or texpal params dont match
-		//(this is our key for identifying textures in the cache)
-		//NEW: due to using format as a key we dont need to check this anymore
-		//if(curr->texAttributes != texAttributes) continue;
-		if (cachedTexture->paletteAttributes != palAttributes) continue;
-		
-		//we're being asked for a different format than what we had cached.
-		//TODO - this could be done at the entire cache level instead of checking repeatedly
-		if (cachedTexture->unpackFormat != texCacheFormat) goto REJECT;
-		
-		//if the texture is assumed invalid, reject it
-		if (cachedTexture->assumedInvalid) goto REJECT;
-		
-		//the texture matches params, but isnt suspected invalid. accept it.
-		if (!cachedTexture->suspectedInvalid) return cachedTexture;
-		
-		//we suspect the texture may be invalid. we need to do a byte-for-byte comparison to re-establish that it is valid:
-		
-		//when the palettes dont match:
-		//note that we are considering 4x4 textures to have a palette size of 0.
-		//they really have a potentially HUGE palette, too big for us to handle like a normal palette,
-		//so they go through a different system
-		if (currentPaletteMS.size != 0 && memcmp(cachedTexture->paletteColorTable, currentPalette, currentPaletteMS.size)) goto REJECT;
-		
-		//when the texture data doesn't match
-		if (currentPackedTexDataMS.memcmp(cachedTexture->packData, cachedTexture->packSize)) goto REJECT;
-		
-		//if the texture is 4x4 then the index data must match
-		if (texPackFormat == TEXMODE_4X4)
+		if (theTexture != NULL)
 		{
-			if (currentPackedTexIndexMS.memcmp(cachedTexture->packIndexData, cachedTexture->packIndexSize)) goto REJECT;
+			//we found a cached item for the current address, but the data is stale.
+			//for a variety of complicated reasons, we need to throw it out right this instant.
+			this->list_remove(theTexture);
+			delete theTexture;
+			theTexture = NULL;
 		}
 		
-		//we found a match. just return it
-		//REMINDER to make it primary/newest when we have smarter code
-		//list_remove(curr);
-		//list_push_front(curr);
-		cachedTexture->suspectedInvalid = false;
-		return cachedTexture;
+		//item was not found. recruit an existing one (the oldest), or create a new one
+		//evict(); //reduce the size of the cache if necessary
+		//TODO - as a peculiarity of the texcache, eviction must happen after the entire 3d frame runs
+		//to support separate cache and read passes
+		TexCacheItem *newTexture = new TexCacheItem();
+		newTexture->SetTextureData(texAttributes, currentPackedTexDataMS, currentPackedTexIndexMS);
+		newTexture->SetTexturePalette(palAttributes, currentPalette);
 		
-	REJECT:
-		//we found a cached item for the current address, but the data is stale.
-		//for a variety of complicated reasons, we need to throw it out right this instant.
-		this->list_remove(cachedTexture);
-		delete cachedTexture;
-		break;
+		this->list_push_front(newTexture);
+		//printf("allocating: up to %d with %d items\n",cache_size,index.size());
+		
+		theTexture = newTexture;
 	}
-	
-	//item was not found. recruit an existing one (the oldest), or create a new one
-	//evict(); //reduce the size of the cache if necessary
-	//TODO - as a peculiarity of the texcache, eviction must happen after the entire 3d frame runs
-	//to support separate cache and read passes
-	TexCacheItem *newTexture = new TexCacheItem();
-	newTexture->SetTextureData(texAttributes, currentPackedTexDataMS, currentPackedTexIndexMS);
-	newTexture->SetTexturePalette(palAttributes, currentPalette);
-	newTexture->unpackFormat = texCacheFormat;
-	
-	this->list_push_front(newTexture);
-	//printf("allocating: up to %d with %d items\n",cache_size,index.size());
-	
-	switch (texCacheFormat)
+	else
 	{
-		case TexFormat_32bpp: newTexture->Unpack<TexFormat_32bpp>(currentPackedTexDataMS); break;
-		case TexFormat_15bpp: newTexture->Unpack<TexFormat_15bpp>(currentPackedTexDataMS); break;
-		default: assert(false); return NULL;
+		if (theTexture != NULL)
+		{
+			//we found a match. just return it
+			//REMINDER to make it primary/newest when we have smarter code
+			//list_remove(curr);
+			//list_push_front(curr);
+			theTexture->suspectedInvalid = false;
+		}
 	}
 	
-	return newTexture;
+	return theTexture;
+}
+
+TexCacheKey TexCache::GenerateKey(const u32 texAttributes, const u32 palAttributes)
+{
+	// Since the repeat, flip, and coordinate transformation modes are render settings
+	// and not data settings, we can mask out those bits to help reduce duplicate entries.
+	return (TexCacheKey)( ((u64)palAttributes << 32) | (u64)(texAttributes & 0x3FF0FFFF) );
 }
 
 TexCacheItem::TexCacheItem()
@@ -424,6 +454,7 @@ TexCacheItem::TexCacheItem()
 	packSize = 0;
 	packData = NULL;
 	paletteColorTable = NULL;
+	isPalZeroTransparent = false;
 	
 	unpackFormat = TexFormat_None;
 	unpackSize = 0;
@@ -476,10 +507,8 @@ NDSTextureFormat TexCacheItem::GetTextureFormat() const
 
 void TexCacheItem::SetTextureData(const u32 attr, const MemSpan &packedData, const MemSpan &packedIndexData)
 {
-	u8 *oldPackData = this->packData;
-	u32 *oldUnpackData = this->unpackData;
-	u32 w = (8 << ((attr >> 20) & 0x07));
-	u32 h = (8 << ((attr >> 23) & 0x07));
+	const u32 w = (8 << ((attr >> 20) & 0x07));
+	const u32 h = (8 << ((attr >> 23) & 0x07));
 	
 	this->textureAttributes = attr;
 	this->packFormat = (NDSTextureFormat)((attr >> 26) & 0x07);
@@ -488,66 +517,87 @@ void TexCacheItem::SetTextureData(const u32 attr, const MemSpan &packedData, con
 	this->sizeY = h;
 	this->invSizeX = 1.0f / (float)w;
 	this->invSizeY = 1.0f / (float)h;
-	this->unpackSize = w * h * sizeof(u32);
-	this->unpackData = (u32 *)malloc_alignedCacheLine(this->unpackSize);
 	
 	//dump texture and 4x4 index data for cache keying
-	this->packSize = packedData.size;
-	this->packIndexSize = packedIndexData.size;
-	this->packData = (u8 *)malloc_alignedCacheLine(this->packSize);
 	this->packSizeFirstSlot = packedData.items[0].len;
+	
+	if (this->packSize != packedData.size)
+	{
+		u8 *oldPackData = this->packData;
+		this->packSize = packedData.size;
+		this->packData = (u8 *)malloc_alignedCacheLine(this->packSize);
+		free_aligned(oldPackData);
+	}
 	
 	packedData.dump(this->packData);
 	
-	if (this->packFormat == TEXMODE_4X4)
+	if ( (this->packFormat == TEXMODE_I2) || (this->packFormat == TEXMODE_I4) || (this->packFormat == TEXMODE_I8) )
 	{
-		u8 *oldPackIndexData = this->packIndexData;
-		this->packIndexData = (u8 *)malloc_alignedCacheLine(this->packIndexSize);
-		packedIndexData.dump(this->packIndexData, this->packIndexSize);
-		free_aligned(oldPackIndexData);
+		this->isPalZeroTransparent = ( ((attr >> 29) & 1) != 0 );
+	}
+	else
+	{
+		this->isPalZeroTransparent = false;
+		
+		if (this->packFormat == TEXMODE_4X4)
+		{
+			if (this->packIndexSize != packedIndexData.size)
+			{
+				u8 *oldPackIndexData = this->packIndexData;
+				this->packIndexSize = packedIndexData.size;
+				this->packIndexData = (u8 *)malloc_alignedCacheLine(this->packIndexSize);
+				free_aligned(oldPackIndexData);
+			}
+			
+			packedIndexData.dump(this->packIndexData, this->packIndexSize);
+		}
 	}
 	
-	free_aligned(oldPackData);
-	free_aligned(oldUnpackData);
+	const u32 currentUnpackSize = w * h * sizeof(u32);
+	if (this->unpackSize != currentUnpackSize)
+	{
+		u32 *oldUnpackData = this->unpackData;
+		this->unpackSize = currentUnpackSize;
+		this->unpackData = (u32 *)malloc_alignedCacheLine(currentUnpackSize);
+		free_aligned(oldUnpackData);
+	}
 }
 
 void TexCacheItem::SetTexturePalette(const u32 attr, const u16 *paletteBuffer)
 {
-	const u32 oldPaletteSize = this->paletteSize;
+	const u32 newPaletteSize = paletteSizeList[this->packFormat] * sizeof(u16);
 	
 	this->paletteAttributes = attr;
 	this->paletteAddress = (this->packFormat == TEXMODE_I2) ? attr << 3 : attr << 4;
-	this->paletteSize = paletteSizeList[this->packFormat] * sizeof(u16);
 	
-	if (this->paletteSize > 0)
+	if (newPaletteSize > 0)
 	{
-		if (this->paletteSize != oldPaletteSize)
+		if (this->paletteSize != newPaletteSize)
 		{
 			u16 *oldPaletteColorTable = this->paletteColorTable;
-			this->paletteColorTable = (u16 *)malloc_alignedCacheLine(this->paletteSize);
-			memcpy(this->paletteColorTable, paletteBuffer, this->paletteSize);
+			this->paletteSize = newPaletteSize;
+			this->paletteColorTable = (u16 *)malloc_alignedCacheLine(newPaletteSize);
 			free_aligned(oldPaletteColorTable);
 		}
-		else
-		{
-			memcpy(this->paletteColorTable, paletteBuffer, this->paletteSize);
-		}
+		
+		memcpy(this->paletteColorTable, paletteBuffer, newPaletteSize);
 	}
 	else
 	{
 		free_aligned(this->paletteColorTable);
+		this->paletteSize = 0;
 		this->paletteColorTable = NULL;
 	}
 }
 
 template <TexCache_TexFormat TEXCACHEFORMAT>
-void TexCacheItem::Unpack(const MemSpan &packedData)
+void TexCacheItem::Unpack()
 {
+	this->unpackFormat = TEXCACHEFORMAT;
+	
 	// Whenever a 1-bit alpha or no-alpha texture is unpacked (this means any texture
 	// format that is not A3I5 or A5I3), set all transparent pixels to 0 so that 3D
 	// renderers can assume that the transparent color is 0 during texture sampling.
-	
-	bool isPalZeroTransparent;
 	
 	switch (this->packFormat)
 	{
@@ -556,18 +606,15 @@ void TexCacheItem::Unpack(const MemSpan &packedData)
 			break;
 			
 		case TEXMODE_I2:
-			isPalZeroTransparent = ( ((this->textureAttributes >> 29) & 1) != 0 );
-			NDSTextureUnpackI2<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, isPalZeroTransparent, this->unpackData);
+			NDSTextureUnpackI2<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, this->isPalZeroTransparent, this->unpackData);
 			break;
 			
 		case TEXMODE_I4:
-			isPalZeroTransparent = ( ((this->textureAttributes >> 29) & 1) != 0 );
-			NDSTextureUnpackI4<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, isPalZeroTransparent, this->unpackData);
+			NDSTextureUnpackI4<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, this->isPalZeroTransparent, this->unpackData);
 			break;
 			
 		case TEXMODE_I8:
-			isPalZeroTransparent = ( ((this->textureAttributes >> 29) & 1) != 0 );
-			NDSTextureUnpackI8<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, isPalZeroTransparent, this->unpackData);
+			NDSTextureUnpackI8<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, this->isPalZeroTransparent, this->unpackData);
 			break;
 			
 		case TEXMODE_4X4:
@@ -1149,7 +1196,7 @@ void NDSTextureUnpackDirect16Bit(const MemSpan &ms, u32 *dstBuffer)
 }
 
 template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpackI2(const size_t srcSize, const u8 *srcData, const u16 *srcPal, const bool isPalZeroTransparent, u32 *dstBuffer)
+void NDSTextureUnpackI2(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, const bool isPalZeroTransparent, u32 *__restrict dstBuffer)
 {
 #ifdef ENABLE_SSSE3
 	const __m128i pal_vec128 = _mm_loadl_epi64((__m128i *)srcPal);
@@ -1264,7 +1311,7 @@ void NDSTextureUnpackI2(const size_t srcSize, const u8 *srcData, const u16 *srcP
 }
 
 template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpackI4(const size_t srcSize, const u8 *srcData, const u16 *srcPal, const bool isPalZeroTransparent, u32 *dstBuffer)
+void NDSTextureUnpackI4(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, const bool isPalZeroTransparent, u32 *__restrict dstBuffer)
 {
 #ifdef ENABLE_SSSE3
 	const __m128i palLo = _mm_load_si128((__m128i *)srcPal + 0);
@@ -1382,7 +1429,7 @@ void NDSTextureUnpackI4(const size_t srcSize, const u8 *srcData, const u16 *srcP
 }
 
 template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpackI8(const size_t srcSize, const u8 *srcData, const u16 *srcPal, const bool isPalZeroTransparent, u32 *dstBuffer)
+void NDSTextureUnpackI8(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, const bool isPalZeroTransparent, u32 *__restrict dstBuffer)
 {
 	if (isPalZeroTransparent)
 	{
@@ -1402,7 +1449,7 @@ void NDSTextureUnpackI8(const size_t srcSize, const u8 *srcData, const u16 *srcP
 }
 
 template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpackA3I5(const size_t srcSize, const u8 *srcData, const u16 *srcPal, u32 *dstBuffer)
+void NDSTextureUnpackA3I5(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
 {
 	for (size_t i = 0; i < srcSize; i++, srcData++)
 	{
@@ -1413,7 +1460,7 @@ void NDSTextureUnpackA3I5(const size_t srcSize, const u8 *srcData, const u16 *sr
 }
 
 template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *srcData, const u16 *srcPal, u32 *dstBuffer)
+void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer)
 {
 #ifdef ENABLE_SSSE3
 	const __m128i pal_vec128 = _mm_load_si128((__m128i *)srcPal);
@@ -1477,7 +1524,7 @@ void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *srcData, const u16 *sr
 }
 
 template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpack4x4(const size_t srcSize, const u8 *srcData, const u8 *srcIndex, const u32 palAddress, const u32 texAttributes, const u32 sizeX, const u32 sizeY, u32 *dstBuffer)
+void NDSTextureUnpack4x4(const size_t srcSize, const u8 *__restrict srcData, const u8 *__restrict srcIndex, const u32 palAddress, const u32 texAttributes, const u32 sizeX, const u32 sizeY, u32 *__restrict dstBuffer)
 {
 	u16 *slot1;
 	u32 *map = (u32 *)srcData;
@@ -1619,7 +1666,7 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u8 *srcData, const u8 *srcI
 }
 
 template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u8 *srcData, u32 *dstBuffer)
+void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u8 *__restrict srcData, u32 *__restrict dstBuffer)
 {
 	const u16 *srcData16 = (const u16 *)srcData;
 	const size_t pixCount = srcSize >> 1;
@@ -1656,3 +1703,6 @@ void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u8 *srcData, u32 *d
 		*dstBuffer++ = (c & 0x8000) ? CONVERT(c & 0x7FFF) : 0;
 	}
 }
+
+template void TexCacheItem::Unpack<TexFormat_15bpp>();
+template void TexCacheItem::Unpack<TexFormat_32bpp>();

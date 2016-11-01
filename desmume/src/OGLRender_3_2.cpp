@@ -1695,7 +1695,12 @@ Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, bool enableT
 		return OGLERROR_NOERR;
 	}
 	
-	TexCacheItem *newTexture = texCache.GetTexture(TexFormat_32bpp, thePoly.texParam, thePoly.texPalette);
+	TexCacheItem *newTexture = texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
+	if (newTexture->unpackFormat != TexFormat_32bpp)
+	{
+		newTexture->Unpack<TexFormat_32bpp>();
+	}
+	
 	if (newTexture != this->currTexture)
 	{
 		this->currTexture = newTexture;
