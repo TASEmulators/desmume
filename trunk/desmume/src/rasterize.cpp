@@ -1373,7 +1373,12 @@ void SoftRasterizerRenderer::setupTextures()
 	const POLY &firstPoly = *firstClippedPoly.poly;
 	u32 lastTexParams = firstPoly.texParam;
 	u32 lastTexPalette = firstPoly.texPalette;
-	TexCacheItem *lastTexKey = texCache.GetTexture(TexFormat_15bpp, firstPoly.texParam, firstPoly.texPalette);
+	
+	TexCacheItem *lastTexItem = texCache.GetTexture(firstPoly.texParam, firstPoly.texPalette);
+	if (lastTexItem->unpackFormat != TexFormat_15bpp)
+	{
+		lastTexItem->Unpack<TexFormat_15bpp>();
+	}
 	
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
@@ -1386,13 +1391,18 @@ void SoftRasterizerRenderer::setupTextures()
 		//and then it won't be safe.
 		if (lastTexParams != thePoly.texParam || lastTexPalette != thePoly.texPalette)
 		{
-			lastTexKey = texCache.GetTexture(TexFormat_15bpp, thePoly.texParam, thePoly.texPalette);
+			lastTexItem = texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
+			if (lastTexItem->unpackFormat != TexFormat_15bpp)
+			{
+				lastTexItem->Unpack<TexFormat_15bpp>();
+			}
+			
 			lastTexParams = thePoly.texParam;
 			lastTexPalette = thePoly.texPalette;
 		}
 		
 		//printf("%08X %d\n",poly->texParam,rasterizerUnit[0].textures.currentNum);
-		polyTexKeys[i] = lastTexKey;
+		polyTexKeys[i] = lastTexItem;
 	}
 }
 
