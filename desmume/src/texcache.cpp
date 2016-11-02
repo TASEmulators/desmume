@@ -469,17 +469,9 @@ TexCacheItem::TexCacheItem(const u32 texAttributes, const u32 palAttributes)
 		isPalZeroTransparent = false;
 	}
 	
+	paletteAddress = (packFormat == TEXMODE_I2) ? palAttributes << 3 : palAttributes << 4;
 	paletteSize = paletteSizeList[packFormat] * sizeof(u16);
-	if (paletteSize > 0)
-	{
-		paletteAddress = (packFormat == TEXMODE_I2) ? palAttributes << 3 : palAttributes << 4;
-		paletteColorTable = (u16 *)malloc_alignedCacheLine(paletteSize);
-	}
-	else
-	{
-		paletteAddress = 0;
-		paletteColorTable = NULL;
-	}
+	paletteColorTable = (paletteSize > 0) ? (u16 *)malloc_alignedCacheLine(paletteSize) : NULL;
 	
 	unpackFormat = TexFormat_None;
 	unpackSize = 0;
