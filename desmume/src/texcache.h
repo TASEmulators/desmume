@@ -27,10 +27,15 @@
 #include "gfx3d.h"
 
 //this ought to be enough for anyone
-//#define TEXCACHE_MAX_SIZE (64*1024*1024);
+//#define TEXCACHE_MAX_SIZE (64*1024*1024)
+
 //changed by zeromus on 15-dec. I couldnt find any games that were getting anywhere NEAR 64
 //metal slug burns through sprites so fast, it can test it pretty quickly though
-#define TEXCACHE_MAX_SIZE (16*1024*1024)
+//#define TEXCACHE_MAX_SIZE (16*1024*1024)
+
+// rogerman, 2016-11-02: Increase this to 32MB for games that use many large textures, such
+// as Umihara Kawase Shun, which can cache over 20MB in the first level.
+#define TEXCACHE_MAX_SIZE (32*1024*1024)
 
 #define PALETTE_DUMP_SIZE ((64+16+16)*1024)
 
