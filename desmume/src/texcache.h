@@ -78,34 +78,39 @@ private:
 	
 public:
 	TexCacheItem();
+	TexCacheItem(const u32 texAttributes, const u32 palAttributes);
 	~TexCacheItem();
 	
+	u32 textureAttributes;
+	u32 paletteAttributes;
+	
+	u32 sizeX;
+	u32 sizeY;
+	float invSizeX;
+	float invSizeY;
+	bool isPalZeroTransparent;
+	
+	bool suspectedInvalid;
+	bool assumedInvalid;
+	
 	NDSTextureFormat packFormat;
+	u32 packAddress;
 	u32 packSize;
 	u8 *packData;
+	
+	u32 paletteAddress;
+	u32 paletteSize;
 	u16 *paletteColorTable;
-	bool isPalZeroTransparent;
 	
 	TexCache_TexFormat unpackFormat;
 	u32 unpackSize;
 	u32 *unpackData;
 	
-	bool suspectedInvalid;
-	bool assumedInvalid;
-	
-	u32 textureAttributes;
-	u32 paletteAttributes;
-	u32 paletteAddress;
-	u32 paletteSize;
-	u32 sizeX;
-	u32 sizeY;
-	float invSizeX;
-	float invSizeY;
-	
 	// Only used by 4x4 formatted textures
+	u32 packIndexAddress;
+	u32 packIndexSize;
 	u8 *packIndexData;
 	u32 packSizeFirstSlot;
-	u32 packIndexSize;
 	
 	// Only used by the OpenGL renderer for the texture ID
 	u32 texid;
@@ -114,30 +119,21 @@ public:
 	void SetDeleteCallback(TexCacheItemDeleteCallback callbackFunc, void *inParam1, void *inParam2);
 	
 	NDSTextureFormat GetTextureFormat() const;
-	void SetTextureData(const u32 attr, const MemSpan &packedData, const MemSpan &packedIndexData);
-	void SetTexturePalette(const u32 attr, const u16 *paletteBuffer);
+	void SetTextureData(const MemSpan &packedData, const MemSpan &packedIndexData);
+	void SetTexturePalette(const u16 *paletteBuffer);
 	
 	template<TexCache_TexFormat TEXCACHEFORMAT> void Unpack();
 	
 	void DebugDump();
 };
 
-// TODO: Delete these MemSpan based functions after testing confirms that using the dumped texture data works properly.
-template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackI2(const MemSpan &ms, const u16 *pal, const bool isPalZeroTransparent, u32 *dstBuffer);
-template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackI4(const MemSpan &ms, const u16 *pal, const bool isPalZeroTransparent, u32 *dstBuffer);
-template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackI8(const MemSpan &ms, const u16 *pal, const bool isPalZeroTransparent, u32 *dstBuffer);
-template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackA3I5(const MemSpan &ms, const u16 *pal, u32 *dstBuffer);
-template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackA5I3(const MemSpan &ms, const u16 *pal, u32 *dstBuffer);
-template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpack4x4(const MemSpan &ms, const u32 palAddress, const u32 texAttributes, const u32 sizeX, const u32 sizeY, u32 *dstBuffer);
-template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackDirect16Bit(const MemSpan &ms, u32 *dstBuffer);
-
 template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackI2(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, const bool isPalZeroTransparent, u32 *__restrict dstBuffer);
 template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackI4(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, const bool isPalZeroTransparent, u32 *__restrict dstBuffer);
 template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackI8(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, const bool isPalZeroTransparent, u32 *__restrict dstBuffer);
 template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackA3I5(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer);
 template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer);
-template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpack4x4(const size_t srcSize, const u8 *__restrict srcData, const u8 *__restrict srcIndex, const u32 palAddress, const u32 texAttributes, const u32 sizeX, const u32 sizeY, u32 *__restrict dstBuffer);
-template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u8 *__restrict srcData, u32 *__restrict dstBuffer);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, const u16 *__restrict srcIndex, const u32 palAddress, const u32 texAttributes, const u32 sizeX, const u32 sizeY, u32 *__restrict dstBuffer);
+template<TexCache_TexFormat TEXCACHEFORMAT> void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u16 *__restrict srcData, u32 *__restrict dstBuffer);
 
 extern TexCache texCache;
 
