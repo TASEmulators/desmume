@@ -1695,102 +1695,132 @@ Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, bool enableT
 		return OGLERROR_NOERR;
 	}
 	
-	TexCacheItem *newTexture = texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
-	if (newTexture->unpackFormat != TexFormat_32bpp)
+	TexCacheItem *theTexture = texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
+	if (theTexture->unpackFormat != TexFormat_32bpp)
 	{
-		newTexture->Unpack<TexFormat_32bpp>();
-	}
-	
-	if (newTexture != this->currTexture)
-	{
-		this->currTexture = newTexture;
+		theTexture->Unpack<TexFormat_32bpp>();
+		
 		//has the ogl renderer initialized the texture?
-		if (this->currTexture->GetDeleteCallback() == NULL)
+		const bool isNewTexture = (theTexture->GetDeleteCallback() == NULL);
+		if (isNewTexture)
 		{
-			this->currTexture->SetDeleteCallback(&texDeleteCallback, this, NULL);
+			theTexture->SetDeleteCallback(&texDeleteCallback, this, NULL);
 			
 			if (OGLRef.freeTextureIDs.empty())
 			{
 				this->ExpandFreeTextures();
 			}
 			
-			this->currTexture->texid = (u32)OGLRef.freeTextureIDs.front();
+			theTexture->texid = (u32)OGLRef.freeTextureIDs.front();
 			OGLRef.freeTextureIDs.pop();
-			
-			glBindTexture(GL_TEXTURE_2D, (GLuint)this->currTexture->texid);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (params.enableRepeatS ? (params.enableMirroredRepeatS ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
-			
-			const NDSTextureFormat texFormat = this->currTexture->GetTextureFormat();
-			const u32 *textureSrc = this->currTexture->unpackData;
-			size_t texWidth = this->currTexture->sizeX;
-			size_t texHeight = this->currTexture->sizeY;
-			
-			if (this->_textureDeposterizeDstSurface.Surface != NULL)
+		}
+		
+		glBindTexture(GL_TEXTURE_2D, (GLuint)theTexture->texid);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (params.enableRepeatS ? (params.enableMirroredRepeatS ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+		
+		const NDSTextureFormat texFormat = theTexture->GetTextureFormat();
+		const u32 *textureSrc = theTexture->unpackData;
+		size_t texWidth = theTexture->sizeX;
+		size_t texHeight = theTexture->sizeY;
+		
+		if (this->_textureDeposterizeDstSurface.Surface != NULL)
+		{
+			this->TextureDeposterize(textureSrc, texWidth, texHeight);
+			textureSrc = (u32 *)this->_textureDeposterizeDstSurface.Surface;
+		}
+		
+		switch (this->_textureScalingFactor)
+		{
+			case 1:
 			{
-				this->TextureDeposterize(textureSrc, texWidth, texHeight);
-				textureSrc = (u32 *)this->_textureDeposterizeDstSurface.Surface;
-			}
-			
-			switch (this->_textureScalingFactor)
-			{
-				case 1:
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureSrc);
-					break;
-					
-				case 2:
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+				
+				if (isNewTexture)
 				{
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
-					
-					this->TextureUpscale<2>(texFormat, textureSrc, texWidth, texHeight);
-					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->_textureUpscaleBuffer);
-					
-					glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, this->currTexture->sizeX, this->currTexture->sizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureSrc);
-					break;
+					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
 				}
-					
-				case 4:
+				else
 				{
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 2);
-					
-					this->TextureUpscale<4>(texFormat, textureSrc, texWidth, texHeight);
-					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->_textureUpscaleBuffer);
-					
-					texWidth = this->currTexture->sizeX;
-					texHeight = this->currTexture->sizeY;
-					this->TextureUpscale<2>(texFormat, textureSrc, texWidth, texHeight);
-					glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->_textureUpscaleBuffer);
-					
-					glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA, this->currTexture->sizeX, this->currTexture->sizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureSrc);
-					break;
+					glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texWidth, texHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
 				}
+				break;
+			}
+				
+			case 2:
+			{
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
+				
+				this->TextureUpscale<2>(texFormat, textureSrc, texWidth, texHeight);
+				
+				if (isNewTexture)
+				{
+					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
+					glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, theTexture->sizeX, theTexture->sizeY, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+				}
+				else
+				{
+					glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texWidth, texHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
+					glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, theTexture->sizeX, theTexture->sizeY, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+				}
+				break;
+			}
+				
+			case 4:
+			{
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 2);
+				
+				this->TextureUpscale<4>(texFormat, textureSrc, texWidth, texHeight);
+				
+				if (isNewTexture)
+				{
+					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
 					
-				default:
-					break;
+					texWidth = theTexture->sizeX;
+					texHeight = theTexture->sizeY;
+					this->TextureUpscale<2>(texFormat, textureSrc, texWidth, texHeight);
+					glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
+					
+					glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA, theTexture->sizeX, theTexture->sizeY, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+				}
+				else
+				{
+					glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texWidth, texHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
+					
+					texWidth = theTexture->sizeX;
+					texHeight = theTexture->sizeY;
+					this->TextureUpscale<2>(texFormat, textureSrc, texWidth, texHeight);
+					glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, texWidth, texHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
+					
+					glTexSubImage2D(GL_TEXTURE_2D, 2, 0, 0, theTexture->sizeX, theTexture->sizeY, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+				}
+				break;
 			}
-			
-			if (this->_textureSmooth)
-			{
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (this->_textureScalingFactor > 1) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, this->_deviceInfo.maxAnisotropy);
-			}
-			else
-			{
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
-			}
+				
+			default:
+				break;
+		}
+		
+		if (this->_textureSmooth)
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (this->_textureScalingFactor > 1) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, this->_deviceInfo.maxAnisotropy);
 		}
 		else
 		{
-			//otherwise, just bind it
-			glBindTexture(GL_TEXTURE_2D, (GLuint)this->currTexture->texid);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
 		}
+	}
+	else
+	{
+		//otherwise, just bind it
+		glBindTexture(GL_TEXTURE_2D, (GLuint)theTexture->texid);
 	}
 	
 	return OGLERROR_NOERR;

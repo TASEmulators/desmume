@@ -195,9 +195,6 @@ static MemSpan MemSpan_TexPalette(u32 ofs, u32 len, bool silent)
 	return ret;
 }
 
-//for each texformat, number of palette entries
-static const u32 paletteSizeList[] = {0, 32, 4, 16, 256, 0, 8, 0};
-
 TexCache texCache;
 
 TexCache::TexCache()
@@ -278,21 +275,21 @@ void TexCache::Reset()
 
 TexCacheItem* TexCache::GetTexture(u32 texAttributes, u32 palAttributes)
 {
-	//for each texformat, multiplier from numtexels to numbytes (fixed point 30.2)
-	static const int texSizes[] = {0, 4, 1, 2, 4, 1, 4, 8};
-	
+	TexCacheItem *theTexture = NULL;
+	bool didCreateNewTexture = false;
 	bool needLoadTexData = false;
 	bool needLoadPalette = false;
 	
 	//conditions where we reject matches:
 	//when the teximage or texpal params dont match
 	//(this is our key for identifying textures in the cache)
-	TexCacheItem *theTexture = NULL;
 	const TexCacheKey key = TexCache::GenerateKey(texAttributes, palAttributes);
 	const TexCacheTable::iterator cachedTexture = this->cacheTable.find(key);
 	
 	if (cachedTexture == this->cacheTable.end())
 	{
+		theTexture = new TexCacheItem(texAttributes, palAttributes);
+		didCreateNewTexture = true;
 		needLoadTexData = true;
 		needLoadPalette = true;
 	}
@@ -315,35 +312,11 @@ TexCacheItem* TexCache::GetTexture(u32 texAttributes, u32 palAttributes)
 	}
 	
 	//we suspect the texture may be invalid. we need to do a byte-for-byte comparison to re-establish that it is valid:
-	const NDSTextureFormat texPackFormat = (NDSTextureFormat)((texAttributes>>26)&0x07);
-	const u32 sizeX = (8 << ((texAttributes>>20)&0x07));
-	const u32 sizeY = (8 << ((texAttributes>>23)&0x07));
-	const u32 imageSize = sizeX*sizeY;
 	
 	//dump the palette to a temp buffer, so that we don't have to worry about memory mapping.
 	//this isnt such a problem with texture memory, because we read sequentially from it.
 	//however, we read randomly from palette memory, so the mapping is more costly.
-	const u32 palSize = paletteSizeList[texPackFormat] * sizeof(u16);
-	u32 palAddress;
-	
-	switch (texPackFormat)
-	{
-		case TEXMODE_I2:
-			palAddress = palAttributes << 3;
-			break;
-			
-		case TEXMODE_A3I5:
-		case TEXMODE_I4:
-		case TEXMODE_I8:
-		case TEXMODE_A5I3:
-		case TEXMODE_16BPP:
-		case TEXMODE_4X4:
-		default:
-			palAddress = palAttributes << 4;
-			break;
-	}
-	
-	MemSpan currentPaletteMS = MemSpan_TexPalette(palAddress, palSize, false);
+	MemSpan currentPaletteMS = MemSpan_TexPalette(theTexture->paletteAddress, theTexture->paletteSize, false);
 	
 	CACHE_ALIGN u16 currentPalette[256];
 #ifdef WORDS_BIGENDIAN
@@ -356,84 +329,61 @@ TexCacheItem* TexCache::GetTexture(u32 texAttributes, u32 palAttributes)
 	//note that we are considering 4x4 textures to have a palette size of 0.
 	//they really have a potentially HUGE palette, too big for us to handle like a normal palette,
 	//so they go through a different system
-	if (theTexture != NULL)
+	if ( !didCreateNewTexture && (theTexture->paletteSize > 0) && memcmp(theTexture->paletteColorTable, currentPalette, theTexture->paletteSize) )
 	{
-		if ( (palSize > 0) && memcmp(theTexture->paletteColorTable, currentPalette, palSize) )
-		{
-			needLoadPalette = true;
-		}
+		needLoadPalette = true;
 	}
 	
 	//analyze the texture memory mapping and the specifications of this texture
-	const u32 texSize = (imageSize*texSizes[texPackFormat]) >> 2; //shifted because the texSizes multiplier is fixed point
-	MemSpan currentPackedTexDataMS = MemSpan_TexMem((texAttributes&0xFFFF)<<3, texSize);
+	MemSpan currentPackedTexDataMS = MemSpan_TexMem(theTexture->packAddress, theTexture->packSize);
 	
 	//when the texture data doesn't match
-	if (theTexture != NULL)
+	if ( !didCreateNewTexture && (theTexture->packSize > 0) && currentPackedTexDataMS.memcmp(theTexture->packData, theTexture->packSize) )
 	{
-		if (currentPackedTexDataMS.memcmp(theTexture->packData, theTexture->packSize))
-		{
-			needLoadTexData = true;
-		}
+		needLoadTexData = true;
 	}
 	
 	//if the texture is 4x4 then the index data must match
 	MemSpan currentPackedTexIndexMS;
-	if (texPackFormat == TEXMODE_4X4)
+	if (theTexture->packFormat == TEXMODE_4X4)
 	{
 		//determine the location for 4x4 index data
-		const u32 indexBase = ((texAttributes & 0xc000) == 0x8000) ? 0x30000 : 0x20000;
-		const u32 indexOffset = (texAttributes & 0x3FFF) << 2;
-		const int indexSize = imageSize >> 3;
+		currentPackedTexIndexMS = MemSpan_TexMem(theTexture->packIndexAddress, theTexture->packIndexSize);
 		
-		currentPackedTexIndexMS = MemSpan_TexMem(indexOffset+indexBase, indexSize);
-		
-		if (theTexture != NULL)
+		if ( !didCreateNewTexture && (theTexture->packIndexSize > 0) && currentPackedTexIndexMS.memcmp(theTexture->packIndexData, theTexture->packIndexSize) )
 		{
-			if (currentPackedTexIndexMS.memcmp(theTexture->packIndexData, theTexture->packIndexSize))
-			{
-				needLoadTexData = true;
-				needLoadPalette = true;
-			}
+			needLoadTexData = true;
+			needLoadPalette = true;
 		}
 	}
 	
-	if (needLoadTexData || needLoadPalette)
+	if (!needLoadTexData && !needLoadPalette)
 	{
-		if (theTexture != NULL)
-		{
-			//we found a cached item for the current address, but the data is stale.
-			//for a variety of complicated reasons, we need to throw it out right this instant.
-			this->list_remove(theTexture);
-			delete theTexture;
-			theTexture = NULL;
-		}
-		
-		//item was not found. recruit an existing one (the oldest), or create a new one
-		//evict(); //reduce the size of the cache if necessary
-		//TODO - as a peculiarity of the texcache, eviction must happen after the entire 3d frame runs
-		//to support separate cache and read passes
-		TexCacheItem *newTexture = new TexCacheItem();
-		newTexture->SetTextureData(texAttributes, currentPackedTexDataMS, currentPackedTexIndexMS);
-		newTexture->SetTexturePalette(palAttributes, currentPalette);
-		
-		this->list_push_front(newTexture);
+		//we found a match. just return it
+		theTexture->suspectedInvalid = false;
+		return theTexture;
+	}
+	
+	if (needLoadTexData)
+	{
+		theTexture->SetTextureData(currentPackedTexDataMS, currentPackedTexIndexMS);
+		theTexture->unpackFormat = TexFormat_None;
+	}
+	
+	if (needLoadPalette)
+	{
+		theTexture->SetTexturePalette(currentPalette);
+		theTexture->unpackFormat = TexFormat_None;
+	}
+	
+	if (didCreateNewTexture)
+	{
+		this->list_push_front(theTexture);
 		//printf("allocating: up to %d with %d items\n",cache_size,index.size());
-		
-		theTexture = newTexture;
-	}
-	else
-	{
-		if (theTexture != NULL)
-		{
-			//we found a match. just return it
-			//REMINDER to make it primary/newest when we have smarter code
-			//list_remove(curr);
-			//list_push_front(curr);
-			theTexture->suspectedInvalid = false;
-		}
 	}
 	
+	theTexture->assumedInvalid = false;
+	theTexture->suspectedInvalid = false;
 	return theTexture;
 }
 
@@ -450,33 +400,110 @@ TexCacheItem::TexCacheItem()
 	_deleteCallbackParam1 = NULL;
 	_deleteCallbackParam2 = NULL;
 	
+	textureAttributes = 0;
+	paletteAttributes = 0;
+	
+	sizeX = 0;
+	sizeY = 0;
+	invSizeX = 0.0f;
+	invSizeY = 0.0f;
+	isPalZeroTransparent = false;
+	
+	suspectedInvalid = false;
+	assumedInvalid = false;
+	
 	packFormat = TEXMODE_NONE;
+	packAddress = 0;
 	packSize = 0;
 	packData = NULL;
+	
+	paletteAddress = 0;
+	paletteSize = 0;
 	paletteColorTable = NULL;
-	isPalZeroTransparent = false;
 	
 	unpackFormat = TexFormat_None;
 	unpackSize = 0;
 	unpackData = NULL;
 	
-	suspectedInvalid = false;
-	assumedInvalid = false;
-	
-	textureAttributes = 0;
-	paletteAttributes = 0;
-	paletteAddress = 0;
-	paletteSize = 0;
-	sizeX = 0;
-	sizeY = 0;
-	invSizeX = 0.0f;
-	invSizeY = 0.0f;
-	
+	packIndexAddress = 0;
+	packIndexSize = 0;
 	packIndexData = NULL;
 	packSizeFirstSlot = 0;
-	packIndexSize = 0;
 	
 	texid = 0;
+}
+
+TexCacheItem::TexCacheItem(const u32 texAttributes, const u32 palAttributes)
+{
+	//for each texformat, multiplier from numtexels to numbytes (fixed point 30.2)
+	static const u32 texSizes[] = {0, 4, 1, 2, 4, 1, 4, 8};
+	
+	//for each texformat, number of palette entries
+	static const u32 paletteSizeList[] = {0, 32, 4, 16, 256, 0, 8, 0};
+	
+	_deleteCallback = NULL;
+	_deleteCallbackParam1 = NULL;
+	_deleteCallbackParam2 = NULL;
+	
+	texid = 0;
+	
+	textureAttributes = texAttributes;
+	paletteAttributes = palAttributes;
+	
+	sizeX = (8 << ((texAttributes >> 20) & 0x07));
+	sizeY = (8 << ((texAttributes >> 23) & 0x07));
+	invSizeX = 1.0f / (float)sizeX;
+	invSizeY = 1.0f / (float)sizeY;
+	
+	packFormat = (NDSTextureFormat)((texAttributes >> 26) & 0x07);
+	packAddress = (texAttributes & 0xFFFF) << 3;
+	packSize = (sizeX*sizeY*texSizes[packFormat]) >> 2; //shifted because the texSizes multiplier is fixed point
+	packData = (u8 *)malloc_alignedCacheLine(packSize);
+	
+	if ( (packFormat == TEXMODE_I2) || (packFormat == TEXMODE_I4) || (packFormat == TEXMODE_I8) )
+	{
+		isPalZeroTransparent = ( ((texAttributes >> 29) & 1) != 0 );
+	}
+	else
+	{
+		isPalZeroTransparent = false;
+	}
+	
+	paletteSize = paletteSizeList[packFormat] * sizeof(u16);
+	if (paletteSize > 0)
+	{
+		paletteAddress = (packFormat == TEXMODE_I2) ? palAttributes << 3 : palAttributes << 4;
+		paletteColorTable = (u16 *)malloc_alignedCacheLine(paletteSize);
+	}
+	else
+	{
+		paletteAddress = 0;
+		paletteColorTable = NULL;
+	}
+	
+	unpackFormat = TexFormat_None;
+	unpackSize = 0;
+	unpackData = NULL;
+	
+	if (packFormat == TEXMODE_4X4)
+	{
+		const u32 indexBase = ((texAttributes & 0xC000) == 0x8000) ? 0x30000 : 0x20000;
+		const u32 indexOffset = (texAttributes & 0x3FFF) << 2;
+		packIndexAddress = indexBase + indexOffset;
+		packIndexSize = (sizeX * sizeY) >> 3;
+		packIndexData = (u8 *)malloc_alignedCacheLine(packIndexSize);
+		packSizeFirstSlot = 0;
+	}
+	else
+	{
+		packIndexAddress = 0;
+		packIndexSize = 0;
+		packIndexData = NULL;
+		packSizeFirstSlot = 0;
+	}
+	
+	suspectedInvalid = true;
+	assumedInvalid = true;
 }
 
 TexCacheItem::~TexCacheItem()
@@ -505,55 +532,19 @@ NDSTextureFormat TexCacheItem::GetTextureFormat() const
 	return this->packFormat;
 }
 
-void TexCacheItem::SetTextureData(const u32 attr, const MemSpan &packedData, const MemSpan &packedIndexData)
+void TexCacheItem::SetTextureData(const MemSpan &packedData, const MemSpan &packedIndexData)
 {
-	const u32 w = (8 << ((attr >> 20) & 0x07));
-	const u32 h = (8 << ((attr >> 23) & 0x07));
-	
-	this->textureAttributes = attr;
-	this->packFormat = (NDSTextureFormat)((attr >> 26) & 0x07);
-	
-	this->sizeX = w;
-	this->sizeY = h;
-	this->invSizeX = 1.0f / (float)w;
-	this->invSizeY = 1.0f / (float)h;
-	
 	//dump texture and 4x4 index data for cache keying
 	this->packSizeFirstSlot = packedData.items[0].len;
 	
-	if (this->packSize != packedData.size)
-	{
-		u8 *oldPackData = this->packData;
-		this->packSize = packedData.size;
-		this->packData = (u8 *)malloc_alignedCacheLine(this->packSize);
-		free_aligned(oldPackData);
-	}
-	
 	packedData.dump(this->packData);
 	
-	if ( (this->packFormat == TEXMODE_I2) || (this->packFormat == TEXMODE_I4) || (this->packFormat == TEXMODE_I8) )
+	if (this->packFormat == TEXMODE_4X4)
 	{
-		this->isPalZeroTransparent = ( ((attr >> 29) & 1) != 0 );
-	}
-	else
-	{
-		this->isPalZeroTransparent = false;
-		
-		if (this->packFormat == TEXMODE_4X4)
-		{
-			if (this->packIndexSize != packedIndexData.size)
-			{
-				u8 *oldPackIndexData = this->packIndexData;
-				this->packIndexSize = packedIndexData.size;
-				this->packIndexData = (u8 *)malloc_alignedCacheLine(this->packIndexSize);
-				free_aligned(oldPackIndexData);
-			}
-			
-			packedIndexData.dump(this->packIndexData, this->packIndexSize);
-		}
+		packedIndexData.dump(this->packIndexData, this->packIndexSize);
 	}
 	
-	const u32 currentUnpackSize = w * h * sizeof(u32);
+	const u32 currentUnpackSize = this->sizeX * this->sizeY * sizeof(u32);
 	if (this->unpackSize != currentUnpackSize)
 	{
 		u32 *oldUnpackData = this->unpackData;
@@ -563,30 +554,11 @@ void TexCacheItem::SetTextureData(const u32 attr, const MemSpan &packedData, con
 	}
 }
 
-void TexCacheItem::SetTexturePalette(const u32 attr, const u16 *paletteBuffer)
+void TexCacheItem::SetTexturePalette(const u16 *paletteBuffer)
 {
-	const u32 newPaletteSize = paletteSizeList[this->packFormat] * sizeof(u16);
-	
-	this->paletteAttributes = attr;
-	this->paletteAddress = (this->packFormat == TEXMODE_I2) ? attr << 3 : attr << 4;
-	
-	if (newPaletteSize > 0)
+	if (this->paletteSize > 0)
 	{
-		if (this->paletteSize != newPaletteSize)
-		{
-			u16 *oldPaletteColorTable = this->paletteColorTable;
-			this->paletteSize = newPaletteSize;
-			this->paletteColorTable = (u16 *)malloc_alignedCacheLine(newPaletteSize);
-			free_aligned(oldPaletteColorTable);
-		}
-		
-		memcpy(this->paletteColorTable, paletteBuffer, newPaletteSize);
-	}
-	else
-	{
-		free_aligned(this->paletteColorTable);
-		this->paletteSize = 0;
-		this->paletteColorTable = NULL;
+		memcpy(this->paletteColorTable, paletteBuffer, this->paletteSize);
 	}
 }
 
@@ -624,7 +596,7 @@ void TexCacheItem::Unpack()
 				PROGINFO("Your 4x4 texture has overrun its texture slot.\n");
 			}
 			
-			NDSTextureUnpack4x4<TEXCACHEFORMAT>(this->packSizeFirstSlot, this->packData, this->packIndexData, this->paletteAddress, this->textureAttributes, this->sizeX, this->sizeY, this->unpackData);
+			NDSTextureUnpack4x4<TEXCACHEFORMAT>(this->packSizeFirstSlot, (u32 *)this->packData, (u16 *)this->packIndexData, this->paletteAddress, this->textureAttributes, this->sizeX, this->sizeY, this->unpackData);
 			break;
 		}
 			
@@ -633,7 +605,7 @@ void TexCacheItem::Unpack()
 			break;
 			
 		case TEXMODE_16BPP:
-			NDSTextureUnpackDirect16Bit<TEXCACHEFORMAT>(this->packSize, this->packData, this->unpackData);
+			NDSTextureUnpackDirect16Bit<TEXCACHEFORMAT>(this->packSize, (u16 *)this->packData, this->unpackData);
 			break;
 			
 		default:
@@ -656,544 +628,6 @@ void TexCacheItem::DebugDump()
 	NDS_WriteBMP_32bppBuffer(this->sizeX, this->sizeY, this->unpackData, fname);
 }
 #endif
-
-// TODO: Delete these MemSpan based functions after testing confirms that using the dumped texture data works properly.
-template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpackI2(const MemSpan &ms, const u16 *pal, const bool isPalZeroTransparent, u32 *dstBuffer)
-{
-	u8 *adr;
-	
-#ifdef ENABLE_SSSE3
-	const __m128i pal_vec128 = _mm_loadl_epi64((__m128i *)pal);
-#endif
-	if (isPalZeroTransparent)
-	{
-		for (size_t j = 0; j < ms.numItems; j++)
-		{
-			adr = ms.items[j].ptr;
-#ifdef ENABLE_SSSE3
-			for (size_t x = 0; x < ms.items[j].len; x+=4, adr+=4, dstBuffer+=16)
-			{
-				__m128i idx = _mm_set_epi32(0, 0, 0, *(u32 *)adr);
-				idx = _mm_unpacklo_epi8(idx, idx);
-				idx = _mm_unpacklo_epi8(idx, idx);
-				idx = _mm_or_si128( _mm_or_si128( _mm_or_si128( _mm_and_si128(idx, _mm_set1_epi32(0x00000003)), _mm_and_si128(_mm_srli_epi32(idx, 2), _mm_set1_epi32(0x00000300)) ), _mm_and_si128(_mm_srli_epi32(idx, 4), _mm_set1_epi32(0x00030000)) ), _mm_and_si128(_mm_srli_epi32(idx, 6), _mm_set1_epi32(0x03000000)) );
-				idx = _mm_slli_epi16(idx, 1);
-				
-				__m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-				__m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-				
-				const __m128i palColor0 = _mm_shuffle_epi8(pal_vec128, idx0);
-				const __m128i palColor1 = _mm_shuffle_epi8(pal_vec128, idx1);
-				
-				__m128i convertedColor[4];
-				
-				if (TEXCACHEFORMAT == TexFormat_15bpp)
-				{
-					ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-					ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-				}
-				else
-				{
-					ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-					ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-				}
-				
-				// Set converted colors to 0 if the palette index is 0.
-				idx0 = _mm_cmpeq_epi16(idx0, _mm_set1_epi16(0x0100));
-				idx1 = _mm_cmpeq_epi16(idx1, _mm_set1_epi16(0x0100));
-				convertedColor[0] = _mm_andnot_si128(_mm_unpacklo_epi16(idx0, idx0), convertedColor[0]);
-				convertedColor[1] = _mm_andnot_si128(_mm_unpackhi_epi16(idx0, idx0), convertedColor[1]);
-				convertedColor[2] = _mm_andnot_si128(_mm_unpacklo_epi16(idx1, idx1), convertedColor[2]);
-				convertedColor[3] = _mm_andnot_si128(_mm_unpackhi_epi16(idx1, idx1), convertedColor[3]);
-				
-				_mm_store_si128((__m128i *)(dstBuffer +  0), convertedColor[0]);
-				_mm_store_si128((__m128i *)(dstBuffer +  4), convertedColor[1]);
-				_mm_store_si128((__m128i *)(dstBuffer +  8), convertedColor[2]);
-				_mm_store_si128((__m128i *)(dstBuffer + 12), convertedColor[3]);
-			}
-#else
-			for (size_t x = 0; x < ms.items[j].len; x++, adr++)
-			{
-				u8 idx;
-				
-				idx =  *adr       & 0x03;
-				*dstBuffer++ = (idx == 0) ? 0 : CONVERT(pal[idx] & 0x7FFF);
-				
-				idx = (*adr >> 2) & 0x03;
-				*dstBuffer++ = (idx == 0) ? 0 : CONVERT(pal[idx] & 0x7FFF);
-				
-				idx = (*adr >> 4) & 0x03;
-				*dstBuffer++ = (idx == 0) ? 0 : CONVERT(pal[idx] & 0x7FFF);
-				
-				idx = (*adr >> 6) & 0x03;
-				*dstBuffer++ = (idx == 0) ? 0 : CONVERT(pal[idx] & 0x7FFF);
-			}
-#endif
-		}
-	}
-	else
-	{
-		for (size_t j = 0; j < ms.numItems; j++)
-		{
-			adr = ms.items[j].ptr;
-#ifdef ENABLE_SSSE3
-			for (size_t x = 0; x < ms.items[j].len; x+=4, adr+=4, dstBuffer+=16)
-			{
-				__m128i idx = _mm_set_epi32(0, 0, 0, *(u32 *)adr);
-				idx = _mm_unpacklo_epi8(idx, idx);
-				idx = _mm_unpacklo_epi8(idx, idx);
-				idx = _mm_or_si128( _mm_or_si128( _mm_or_si128( _mm_and_si128(idx, _mm_set1_epi32(0x00000003)), _mm_and_si128(_mm_srli_epi32(idx, 2), _mm_set1_epi32(0x00000300)) ), _mm_and_si128(_mm_srli_epi32(idx, 4), _mm_set1_epi32(0x00030000)) ), _mm_and_si128(_mm_srli_epi32(idx, 6), _mm_set1_epi32(0x03000000)) );
-				idx = _mm_slli_epi16(idx, 1);
-				
-				const __m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-				const __m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-				
-				const __m128i palColor0 = _mm_shuffle_epi8(pal_vec128, idx0);
-				const __m128i palColor1 = _mm_shuffle_epi8(pal_vec128, idx1);
-				
-				__m128i convertedColor[4];
-				
-				if (TEXCACHEFORMAT == TexFormat_15bpp)
-				{
-					ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-					ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-				}
-				else
-				{
-					ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-					ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-				}
-				
-				_mm_store_si128((__m128i *)(dstBuffer +  0), convertedColor[0]);
-				_mm_store_si128((__m128i *)(dstBuffer +  4), convertedColor[1]);
-				_mm_store_si128((__m128i *)(dstBuffer +  8), convertedColor[2]);
-				_mm_store_si128((__m128i *)(dstBuffer + 12), convertedColor[3]);
-			}
-#else
-			for (size_t x = 0; x < ms.items[j].len; x++, adr++)
-			{
-				*dstBuffer++ = CONVERT(pal[ *adr       & 0x03] & 0x7FFF);
-				*dstBuffer++ = CONVERT(pal[(*adr >> 2) & 0x03] & 0x7FFF);
-				*dstBuffer++ = CONVERT(pal[(*adr >> 4) & 0x03] & 0x7FFF);
-				*dstBuffer++ = CONVERT(pal[(*adr >> 6) & 0x03] & 0x7FFF);
-			}
-#endif
-		}
-	}
-}
-
-template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpackI4(const MemSpan &ms, const u16 *pal, const bool isPalZeroTransparent, u32 *dstBuffer)
-{
-	u8 *adr;
-	
-#ifdef ENABLE_SSSE3
-	const __m128i palLo = _mm_load_si128((__m128i *)pal + 0);
-	const __m128i palHi = _mm_load_si128((__m128i *)pal + 1);
-#endif
-	if (isPalZeroTransparent)
-	{
-		for (size_t j = 0; j < ms.numItems; j++)
-		{
-			adr = ms.items[j].ptr;
-#ifdef ENABLE_SSSE3
-			for (size_t x = 0; x < ms.items[j].len; x+=8, adr+=8, dstBuffer+=16)
-			{
-				__m128i idx = _mm_loadl_epi64((__m128i *)adr);
-				idx = _mm_unpacklo_epi8(idx, idx);
-				idx = _mm_or_si128( _mm_and_si128(idx, _mm_set1_epi16(0x000F)), _mm_and_si128(_mm_srli_epi16(idx, 4), _mm_set1_epi16(0x0F00)) );
-				idx = _mm_slli_epi16(idx, 1);
-				
-				__m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-				__m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-				
-				const __m128i palMask = _mm_cmpeq_epi8( _mm_and_si128(idx, _mm_set1_epi8(0x10)), _mm_setzero_si128() );
-				const __m128i palColor0A = _mm_shuffle_epi8(palLo, idx0);
-				const __m128i palColor0B = _mm_shuffle_epi8(palHi, idx0);
-				const __m128i palColor1A = _mm_shuffle_epi8(palLo, idx1);
-				const __m128i palColor1B = _mm_shuffle_epi8(palHi, idx1);
-				
-				const __m128i palColor0 = _mm_blendv_epi8( palColor0B, palColor0A, _mm_unpacklo_epi8(palMask, palMask) );
-				const __m128i palColor1 = _mm_blendv_epi8( palColor1B, palColor1A, _mm_unpackhi_epi8(palMask, palMask) );
-				
-				__m128i convertedColor[4];
-				
-				if (TEXCACHEFORMAT == TexFormat_15bpp)
-				{
-					ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-					ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-				}
-				else
-				{
-					ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-					ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-				}
-				
-				// Set converted colors to 0 if the palette index is 0.
-				idx0 = _mm_cmpeq_epi16(idx0, _mm_set1_epi16(0x0100));
-				idx1 = _mm_cmpeq_epi16(idx1, _mm_set1_epi16(0x0100));
-				convertedColor[0] = _mm_andnot_si128(_mm_unpacklo_epi16(idx0, idx0), convertedColor[0]);
-				convertedColor[1] = _mm_andnot_si128(_mm_unpackhi_epi16(idx0, idx0), convertedColor[1]);
-				convertedColor[2] = _mm_andnot_si128(_mm_unpacklo_epi16(idx1, idx1), convertedColor[2]);
-				convertedColor[3] = _mm_andnot_si128(_mm_unpackhi_epi16(idx1, idx1), convertedColor[3]);
-				
-				_mm_store_si128((__m128i *)(dstBuffer +  0), convertedColor[0]);
-				_mm_store_si128((__m128i *)(dstBuffer +  4), convertedColor[1]);
-				_mm_store_si128((__m128i *)(dstBuffer +  8), convertedColor[2]);
-				_mm_store_si128((__m128i *)(dstBuffer + 12), convertedColor[3]);
-			}
-#else
-			for (size_t x = 0; x < ms.items[j].len; x++, adr++)
-			{
-				u8 idx;
-				
-				idx = *adr & 0xF;
-				*dstBuffer++ = (idx == 0) ? 0 : CONVERT(pal[idx] & 0x7FFF);
-				
-				idx = *adr >> 4;
-				*dstBuffer++ = (idx == 0) ? 0 : CONVERT(pal[idx] & 0x7FFF);
-			}
-#endif
-		}
-	}
-	else
-	{
-		for (size_t j = 0; j < ms.numItems; j++)
-		{
-			adr = ms.items[j].ptr;
-#ifdef ENABLE_SSSE3
-			for (size_t x = 0; x < ms.items[j].len; x+=8, adr+=8, dstBuffer+=16)
-			{
-				__m128i idx = _mm_loadl_epi64((__m128i *)adr);
-				idx = _mm_unpacklo_epi8(idx, idx);
-				idx = _mm_or_si128( _mm_and_si128(idx, _mm_set1_epi16(0x000F)), _mm_and_si128(_mm_srli_epi16(idx, 4), _mm_set1_epi16(0x0F00)) );
-				idx = _mm_slli_epi16(idx, 1);
-				
-				const __m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-				const __m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-				
-				const __m128i palMask = _mm_cmpeq_epi8( _mm_and_si128(idx, _mm_set1_epi8(0x10)), _mm_setzero_si128() );
-				const __m128i palColor0A = _mm_shuffle_epi8(palLo, idx0);
-				const __m128i palColor0B = _mm_shuffle_epi8(palHi, idx0);
-				const __m128i palColor1A = _mm_shuffle_epi8(palLo, idx1);
-				const __m128i palColor1B = _mm_shuffle_epi8(palHi, idx1);
-				
-				const __m128i palColor0 = _mm_blendv_epi8( palColor0B, palColor0A, _mm_unpacklo_epi8(palMask, palMask) );
-				const __m128i palColor1 = _mm_blendv_epi8( palColor1B, palColor1A, _mm_unpackhi_epi8(palMask, palMask) );
-				
-				__m128i convertedColor[4];
-				
-				if (TEXCACHEFORMAT == TexFormat_15bpp)
-				{
-					ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-					ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-				}
-				else
-				{
-					ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
-					ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
-				}
-				
-				_mm_store_si128((__m128i *)(dstBuffer +  0), convertedColor[0]);
-				_mm_store_si128((__m128i *)(dstBuffer +  4), convertedColor[1]);
-				_mm_store_si128((__m128i *)(dstBuffer +  8), convertedColor[2]);
-				_mm_store_si128((__m128i *)(dstBuffer + 12), convertedColor[3]);
-			}
-#else
-			for (size_t x = 0; x < ms.items[j].len; x++, adr++)
-			{
-				*dstBuffer++ = CONVERT(pal[*adr & 0x0F] & 0x7FFF);
-				*dstBuffer++ = CONVERT(pal[*adr >> 4] & 0x7FFF);
-			}
-#endif
-		}
-	}
-}
-
-template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpackI8(const MemSpan &ms, const u16 *srcPal, const bool isPalZeroTransparent, u32 *dstBuffer)
-{
-	u8 *adr;
-	
-	if (isPalZeroTransparent)
-	{
-		for (size_t j = 0; j < ms.numItems; j++)
-		{
-			adr = ms.items[j].ptr;
-			for (size_t x = 0; x < ms.items[j].len; x++, adr++)
-			{
-				*dstBuffer++ = (*adr == 0) ? 0 : CONVERT(srcPal[*adr] & 0x7FFF);
-			}
-		}
-	}
-	else
-	{
-		for (size_t j = 0; j < ms.numItems; j++)
-		{
-			adr = ms.items[j].ptr;
-			for (size_t x = 0; x < ms.items[j].len; x++, adr++)
-			{
-				*dstBuffer++ = CONVERT(srcPal[*adr] & 0x7FFF);
-			}
-		}
-	}
-}
-
-template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpackA3I5(const MemSpan &ms, const u16 *pal, u32 *dstBuffer)
-{
-	u8 *adr;
-	
-	for (size_t j = 0; j < ms.numItems; j++)
-	{
-		adr = ms.items[j].ptr;
-		for (size_t x = 0; x < ms.items[j].len; x++, adr++)
-		{
-			const u16 c = pal[*adr & 0x1F] & 0x7FFF;
-			const u8 alpha = *adr >> 5;
-			*dstBuffer++ = (TEXCACHEFORMAT == TexFormat_15bpp) ? COLOR555TO6665(c, material_3bit_to_5bit[alpha]) : COLOR555TO8888(c, material_3bit_to_8bit[alpha]);
-		}
-	}
-}
-
-template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpackA5I3(const MemSpan &ms, const u16 *pal, u32 *dstBuffer)
-{
-	u8 *adr;
-	
-#ifdef ENABLE_SSSE3
-	const __m128i pal_vec128 = _mm_load_si128((__m128i *)pal);
-#endif
-	for (size_t j = 0; j < ms.numItems; j++)
-	{
-		adr = ms.items[j].ptr;
-#ifdef ENABLE_SSSE3
-		for (size_t x = 0; x < ms.items[j].len; x+=16, adr+=16, dstBuffer+=16)
-		{
-			const __m128i bits = _mm_loadu_si128((__m128i *)adr);
-			
-			const __m128i idx = _mm_slli_epi16( _mm_and_si128(bits, _mm_set1_epi8(0x07)), 1 );
-			const __m128i idx0 = _mm_add_epi8( _mm_unpacklo_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-			const __m128i idx1 = _mm_add_epi8( _mm_unpackhi_epi8(idx, idx), _mm_set1_epi16(0x0100) );
-			
-			const __m128i palColor0 = _mm_shuffle_epi8(pal_vec128, idx0);
-			const __m128i palColor1 = _mm_shuffle_epi8(pal_vec128, idx1);
-			
-			__m128i tmpAlpha[2];
-			__m128i convertedColor[4];
-			
-			if (TEXCACHEFORMAT == TexFormat_15bpp)
-			{
-				const __m128i alpha = _mm_srli_epi16( _mm_and_si128(bits, _mm_set1_epi8(0xF8)), 3 );
-				const __m128i alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
-				const __m128i alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
-				
-				tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaLo);
-				tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaLo);
-				ColorspaceConvert555To6665_SSE2<false>(palColor0, tmpAlpha[0], tmpAlpha[1], convertedColor[0], convertedColor[1]);
-				
-				tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaHi);
-				tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaHi);
-				ColorspaceConvert555To6665_SSE2<false>(palColor1, tmpAlpha[0], tmpAlpha[1], convertedColor[2], convertedColor[3]);
-			}
-			else
-			{
-				const __m128i alpha = _mm_or_si128( _mm_and_si128(bits, _mm_set1_epi8(0xF8)), _mm_srli_epi16(_mm_and_si128(bits, _mm_set1_epi8(0xE0)), 5) );
-				const __m128i alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
-				const __m128i alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
-				
-				tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaLo);
-				tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaLo);
-				ColorspaceConvert555To8888_SSE2<false>(palColor0, tmpAlpha[0], tmpAlpha[1], convertedColor[0], convertedColor[1]);
-				
-				tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaHi);
-				tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaHi);
-				ColorspaceConvert555To8888_SSE2<false>(palColor1, tmpAlpha[0], tmpAlpha[1], convertedColor[2], convertedColor[3]);
-			}
-			
-			_mm_store_si128((__m128i *)(dstBuffer +  0), convertedColor[0]);
-			_mm_store_si128((__m128i *)(dstBuffer +  4), convertedColor[1]);
-			_mm_store_si128((__m128i *)(dstBuffer +  8), convertedColor[2]);
-			_mm_store_si128((__m128i *)(dstBuffer + 12), convertedColor[3]);
-		}
-#else
-		for (size_t x = 0; x < ms.items[j].len; x++, adr++)
-		{
-			const u16 c = pal[*adr&0x07] & 0x7FFF;
-			const u8 alpha = (*adr>>3);
-			*dstBuffer++ = (TEXCACHEFORMAT == TexFormat_15bpp) ? COLOR555TO6665(c, alpha) : COLOR555TO8888(c, material_5bit_to_8bit[alpha]);
-		}
-#endif
-	}
-}
-
-#define PAL4X4(offset) ( LE_TO_LOCAL_16( *(u16*)( MMU.texInfo.texPalSlot[((palAddress + (offset)*2)>>14)&0x7] + ((palAddress + (offset)*2)&0x3FFF) ) ) & 0x7FFF )
-
-template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpack4x4(const MemSpan &ms, const u32 palAddress, const u32 texAttributes, const u32 sizeX, const u32 sizeY, u32 *dstBuffer)
-{
-	if (ms.numItems != 1)
-	{
-		PROGINFO("Your 4x4 texture has overrun its texture slot.\n");
-	}
-	//this check isnt necessary since the addressing is tied to the texture data which will also run out:
-	//if(msIndex.numItems != 1) PROGINFO("Your 4x4 texture index has overrun its slot.\n");
-	
-	u16* slot1;
-	u32* map = (u32*)ms.items[0].ptr;
-	u32 limit = ms.items[0].len<<2;
-	u32 d = 0;
-	if ( (texAttributes & 0xc000) == 0x8000)
-		// texel are in slot 2
-		slot1=(u16*)&MMU.texInfo.textureSlotAddr[1][((texAttributes & 0x3FFF)<<2)+0x010000];
-	else
-		slot1=(u16*)&MMU.texInfo.textureSlotAddr[1][(texAttributes & 0x3FFF)<<2];
-	
-	u16 yTmpSize = (sizeY>>2);
-	u16 xTmpSize = (sizeX>>2);
-	
-	//this is flagged whenever a 4x4 overruns its slot.
-	//i am guessing we just generate black in that case
-	bool dead = false;
-	
-	for (size_t y = 0; y < yTmpSize; y++)
-	{
-		u32 tmpPos[4]={(y<<2)*sizeX,((y<<2)+1)*sizeX,
-			((y<<2)+2)*sizeX,((y<<2)+3)*sizeX};
-		for (size_t x = 0; x < xTmpSize; x++, d++)
-		{
-			if (d >= limit)
-				dead = true;
-			
-			if (dead)
-			{
-				for (int sy = 0; sy < 4; sy++)
-				{
-					const u32 currentPos = (x<<2) + tmpPos[sy];
-					dstBuffer[currentPos] = dstBuffer[currentPos+1] = dstBuffer[currentPos+2] = dstBuffer[currentPos+3] = 0;
-				}
-				continue;
-			}
-			
-			const u32 currBlock		= LE_TO_LOCAL_32(map[d]);
-			const u16 pal1			= LE_TO_LOCAL_16(slot1[d]);
-			const u16 pal1offset	= (pal1 & 0x3FFF)<<1;
-			const u8  mode			= pal1>>14;
-			u32 tmp_col[4];
-			
-			tmp_col[0] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset) );
-			tmp_col[1] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset+1) );
-			
-			switch (mode)
-			{
-				case 0:
-					tmp_col[2] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset+2) );
-					tmp_col[3] = 0x00000000;
-					break;
-					
-				case 1:
-#ifdef LOCAL_BE
-					tmp_col[2]	= ( (((tmp_col[0] & 0xFF000000) >> 1)+((tmp_col[1] & 0xFF000000)  >> 1)) & 0xFF000000 ) |
-					              ( (((tmp_col[0] & 0x00FF0000)      + (tmp_col[1] & 0x00FF0000)) >> 1)  & 0x00FF0000 ) |
-					              ( (((tmp_col[0] & 0x0000FF00)      + (tmp_col[1] & 0x0000FF00)) >> 1)  & 0x0000FF00 ) |
-					              0x000000FF;
-					tmp_col[3]	= 0x00000000;
-#else
-					tmp_col[2]	= ( (((tmp_col[0] & 0x00FF00FF) + (tmp_col[1] & 0x00FF00FF)) >> 1) & 0x00FF00FF ) |
-					              ( (((tmp_col[0] & 0x0000FF00) + (tmp_col[1] & 0x0000FF00)) >> 1) & 0x0000FF00 ) |
-					              0xFF000000;
-					tmp_col[3]	= 0x00000000;
-#endif
-					break;
-					
-				case 2:
-					tmp_col[2] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset+2) );
-					tmp_col[3] = COLOR555TO8888_OPAQUE( PAL4X4(pal1offset+3) );
-					break;
-					
-				case 3:
-				{
-#ifdef LOCAL_BE
-					const u32 r0	= (tmp_col[0]>>24) & 0x000000FF;
-					const u32 r1	= (tmp_col[1]>>24) & 0x000000FF;
-					const u32 g0	= (tmp_col[0]>>16) & 0x000000FF;
-					const u32 g1	= (tmp_col[1]>>16) & 0x000000FF;
-					const u32 b0	= (tmp_col[0]>> 8) & 0x000000FF;
-					const u32 b1	= (tmp_col[1]>> 8) & 0x000000FF;
-#else
-					const u32 r0	=  tmp_col[0]      & 0x000000FF;
-					const u32 r1	=  tmp_col[1]      & 0x000000FF;
-					const u32 g0	= (tmp_col[0]>> 8) & 0x000000FF;
-					const u32 g1	= (tmp_col[1]>> 8) & 0x000000FF;
-					const u32 b0	= (tmp_col[0]>>16) & 0x000000FF;
-					const u32 b1	= (tmp_col[1]>>16) & 0x000000FF;
-#endif
-					
-					const u16 tmp1	= (  (r0*5 + r1*3)>>6) |
-					                  ( ((g0*5 + g1*3)>>6) <<  5 ) |
-					                  ( ((b0*5 + b1*3)>>6) << 10 );
-					const u16 tmp2	= (  (r0*3 + r1*5)>>6) |
-					                  ( ((g0*3 + g1*5)>>6) <<  5 ) |
-					                  ( ((b0*3 + b1*5)>>6) << 10 );
-					
-					tmp_col[2] = COLOR555TO8888_OPAQUE(tmp1);
-					tmp_col[3] = COLOR555TO8888_OPAQUE(tmp2);
-					break;
-				}
-			}
-			
-			if (TEXCACHEFORMAT == TexFormat_15bpp)
-			{
-				for (size_t i = 0; i < 4; i++)
-				{
-#ifdef LOCAL_BE
-					const u32 a = (tmp_col[i] >> 3) & 0x0000001F;
-					tmp_col[i] >>= 2;
-					tmp_col[i] &= 0x3F3F3F00;
-					tmp_col[i] |= a;
-#else
-					const u32 a = (tmp_col[i] >> 3) & 0x1F000000;
-					tmp_col[i] >>= 2;
-					tmp_col[i] &= 0x003F3F3F;
-					tmp_col[i] |= a;
-#endif
-				}
-			}
-			
-			//TODO - this could be more precise for 32bpp mode (run it through the color separation table)
-			
-			//set all 16 texels
-			for (size_t sy = 0; sy < 4; sy++)
-			{
-				// Texture offset
-				const u32 currentPos = (x<<2) + tmpPos[sy];
-				const u8 currRow = (u8)((currBlock>>(sy<<3))&0xFF);
-				
-				dstBuffer[currentPos  ] = tmp_col[ currRow    &3];
-				dstBuffer[currentPos+1] = tmp_col[(currRow>>2)&3];
-				dstBuffer[currentPos+2] = tmp_col[(currRow>>4)&3];
-				dstBuffer[currentPos+3] = tmp_col[(currRow>>6)&3];
-			}
-		}
-	}
-}
-
-template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpackDirect16Bit(const MemSpan &ms, u32 *dstBuffer)
-{
-	for (size_t j = 0; j < ms.numItems; j++)
-	{
-		const u16 *map = (u16 *)ms.items[j].ptr;
-		const size_t len = ms.items[j].len >> 1;
-		
-		for (size_t x = 0; x < len; x++)
-		{
-			const u16 c = LOCAL_TO_LE_16(map[x]);
-			*dstBuffer++ = (c & 0x8000) ? CONVERT(c & 0x7FFF) : 0;
-		}
-	}
-}
 
 template <TexCache_TexFormat TEXCACHEFORMAT>
 void NDSTextureUnpackI2(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, const bool isPalZeroTransparent, u32 *__restrict dstBuffer)
@@ -1523,27 +957,20 @@ void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *__restrict srcData, co
 #endif
 }
 
+#define PAL4X4(offset) ( LE_TO_LOCAL_16( *(u16*)( MMU.texInfo.texPalSlot[((palAddress + (offset)*2)>>14)&0x7] + ((palAddress + (offset)*2)&0x3FFF) ) ) & 0x7FFF )
+
 template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpack4x4(const size_t srcSize, const u8 *__restrict srcData, const u8 *__restrict srcIndex, const u32 palAddress, const u32 texAttributes, const u32 sizeX, const u32 sizeY, u32 *__restrict dstBuffer)
+void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, const u16 *__restrict srcIndex, const u32 palAddress, const u32 texAttributes, const u32 sizeX, const u32 sizeY, u32 *__restrict dstBuffer)
 {
-	u16 *slot1;
-	u32 *map = (u32 *)srcData;
-	u32 limit = srcSize * sizeof(u32);
-	u32 d = 0;
-	if ( (texAttributes & 0xc000) == 0x8000)
-		// texel are in slot 2
-		slot1 = (u16 *)&MMU.texInfo.textureSlotAddr[1][((texAttributes & 0x3FFF)<<2)+0x010000];
-	else
-		slot1 = (u16 *)&MMU.texInfo.textureSlotAddr[1][(texAttributes & 0x3FFF)<<2];
-	
-	u16 xTmpSize = sizeX >> 2;
-	u16 yTmpSize = sizeY >> 2;
+	const u32 limit = srcSize * sizeof(u32);
+	const u16 xTmpSize = sizeX >> 2;
+	const u16 yTmpSize = sizeY >> 2;
 	
 	//this is flagged whenever a 4x4 overruns its slot.
 	//i am guessing we just generate black in that case
 	bool dead = false;
 	
-	for (size_t y = 0; y < yTmpSize; y++)
+	for (size_t y = 0, d = 0; y < yTmpSize; y++)
 	{
 		u32 tmpPos[4]={(y<<2)*sizeX,((y<<2)+1)*sizeX,
 			((y<<2)+2)*sizeX,((y<<2)+3)*sizeX};
@@ -1562,8 +989,8 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u8 *__restrict srcData, con
 				continue;
 			}
 			
-			const u32 currBlock		= LE_TO_LOCAL_32(map[d]);
-			const u16 pal1			= LE_TO_LOCAL_16(slot1[d]);
+			const u32 currBlock		= LE_TO_LOCAL_32(srcData[d]);
+			const u16 pal1			= LE_TO_LOCAL_16(srcIndex[d]);
 			const u16 pal1offset	= (pal1 & 0x3FFF)<<1;
 			const u8  mode			= pal1>>14;
 			u32 tmp_col[4];
@@ -1666,17 +1093,16 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u8 *__restrict srcData, con
 }
 
 template <TexCache_TexFormat TEXCACHEFORMAT>
-void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u8 *__restrict srcData, u32 *__restrict dstBuffer)
+void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u16 *__restrict srcData, u32 *__restrict dstBuffer)
 {
-	const u16 *srcData16 = (const u16 *)srcData;
 	const size_t pixCount = srcSize >> 1;
 	size_t i = 0;
 	
 #ifdef ENABLE_SSE2
 	const size_t pixCountVec128 = pixCount - (pixCount % 8);
-	for (; i < pixCountVec128; i+=8, srcData16+=8, dstBuffer+=8)
+	for (; i < pixCountVec128; i+=8, srcData+=8, dstBuffer+=8)
 	{
-		const v128u16 c = _mm_load_si128((v128u16 *)srcData16);
+		const v128u16 c = _mm_load_si128((v128u16 *)srcData);
 		const v128u16 alpha = _mm_cmpeq_epi16(_mm_srli_epi16(c, 15), _mm_set1_epi16(1));
 		v128u32 convertedColor[2];
 		
@@ -1697,9 +1123,9 @@ void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u8 *__restrict srcD
 	}
 #endif
 	
-	for (; i < pixCount; i++, srcData16++)
+	for (; i < pixCount; i++, srcData++)
 	{
-		const u16 c = LOCAL_TO_LE_16(*srcData16);
+		const u16 c = LOCAL_TO_LE_16(*srcData);
 		*dstBuffer++ = (c & 0x8000) ? CONVERT(c & 0x7FFF) : 0;
 	}
 }

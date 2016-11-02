@@ -587,10 +587,7 @@ protected:
 	bool isVAOSupported;
 	bool willFlipFramebufferOnGPU;
 	bool willConvertFramebufferOnGPU;
-	
-	// Textures
-	TexCacheItem *currTexture;
-	
+		
 	FragmentColor *_mappedFramebuffer;
 	bool _pixelReadNeedsFinish;
 	size_t _currentPolyIndex;
