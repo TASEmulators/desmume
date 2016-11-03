@@ -59,14 +59,11 @@ public:
 	TexCache();
 	
 	TexCacheTable cacheTable;
-	u32 cache_size; //this is not really precise, it is off by a constant factor
+	size_t cache_size; //this is not really precise, it is off by a constant factor
 	u8 paletteDump[PALETTE_DUMP_SIZE];
-	
-	void list_remove(TexCacheItem *item);
-	void list_push_front(TexCacheItem *item);
-	
+		
 	void Invalidate();
-	void Evict(u32 target);
+	void Evict(size_t target);
 	void Reset();
 	
 	TexCacheItem* GetTexture(u32 texAttributes, u32 palAttributes);
@@ -127,7 +124,8 @@ public:
 	void SetTextureData(const MemSpan &packedData, const MemSpan &packedIndexData);
 	void SetTexturePalette(const u16 *paletteBuffer);
 	
-	template<TexCache_TexFormat TEXCACHEFORMAT> void Unpack();
+	size_t GetUnpackSizeUsingFormat(const TexCache_TexFormat texCacheFormat) const;
+	template<TexCache_TexFormat TEXCACHEFORMAT> void Unpack(u32 *unpackBuffer);
 	
 	void DebugDump();
 };

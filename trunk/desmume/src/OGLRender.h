@@ -526,7 +526,7 @@ extern CACHE_ALIGN const GLfloat divide6bitBy63_LUT[64];
 extern const GLfloat PostprocessVtxBuffer[16];
 extern const GLubyte PostprocessElementBuffer[6];
 
-extern void texDeleteCallback(TexCacheItem *texItem, void *param1, void *param2);
+extern void OGLTextureDeleteCallback(TexCacheItem *texItem, void *param1, void *param2);
 
 //This is called by OGLRender whenever it initializes.
 //Platforms, please be sure to set this up.
@@ -589,6 +589,7 @@ protected:
 	bool willConvertFramebufferOnGPU;
 		
 	FragmentColor *_mappedFramebuffer;
+	FragmentColor *_workingTextureUnpackBuffer;
 	bool _pixelReadNeedsFinish;
 	size_t _currentPolyIndex;
 	std::vector<u8> _shadowPolyID;

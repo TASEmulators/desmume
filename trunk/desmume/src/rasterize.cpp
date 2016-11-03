@@ -1147,6 +1147,12 @@ static void SoftRasterizerRendererDestroy()
 	}
 }
 
+void SoftRasterizerTextureDeleteCallback(TexCacheItem *texItem, void *param1, void *param2)
+{
+	free_aligned(texItem->unpackData);
+	texCache.cache_size -= texItem->unpackSize;
+}
+
 GPU3DInterface gpu3DRasterize = {
 	"SoftRasterizer",
 	SoftRasterizerRendererCreate,
@@ -1377,7 +1383,16 @@ void SoftRasterizerRenderer::setupTextures()
 	TexCacheItem *lastTexItem = texCache.GetTexture(firstPoly.texParam, firstPoly.texPalette);
 	if (lastTexItem->unpackFormat != TexFormat_15bpp)
 	{
-		lastTexItem->Unpack<TexFormat_15bpp>();
+		const bool isNewTexture = (lastTexItem->GetDeleteCallback() == NULL);
+		if (isNewTexture)
+		{
+			lastTexItem->SetDeleteCallback(&SoftRasterizerTextureDeleteCallback, this, NULL);
+			lastTexItem->unpackSize = lastTexItem->GetUnpackSizeUsingFormat(TexFormat_15bpp);
+			lastTexItem->unpackData = (u32 *)malloc_alignedCacheLine(lastTexItem->unpackSize);
+			texCache.cache_size += lastTexItem->unpackSize;
+		}
+		
+		lastTexItem->Unpack<TexFormat_15bpp>(lastTexItem->unpackData);
 	}
 	
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
@@ -1394,7 +1409,16 @@ void SoftRasterizerRenderer::setupTextures()
 			lastTexItem = texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
 			if (lastTexItem->unpackFormat != TexFormat_15bpp)
 			{
-				lastTexItem->Unpack<TexFormat_15bpp>();
+				const bool isNewTexture = (lastTexItem->GetDeleteCallback() == NULL);
+				if (isNewTexture)
+				{
+					lastTexItem->SetDeleteCallback(&SoftRasterizerTextureDeleteCallback, this, NULL);
+					lastTexItem->unpackSize = lastTexItem->GetUnpackSizeUsingFormat(TexFormat_15bpp);
+					lastTexItem->unpackData = (u32 *)malloc_alignedCacheLine(lastTexItem->unpackSize);
+					texCache.cache_size += lastTexItem->unpackSize;
+				}
+				
+				lastTexItem->Unpack<TexFormat_15bpp>(lastTexItem->unpackData);
 			}
 			
 			lastTexParams = thePoly.texParam;
