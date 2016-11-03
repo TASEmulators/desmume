@@ -636,7 +636,7 @@ static void OGLGetDriverVersion(const char *oglVersionString,
 	}
 }
 
-void texDeleteCallback(TexCacheItem *texItem, void *param1, void *param2)
+void OGLTextureDeleteCallback(TexCacheItem *texItem, void *param1, void *param2)
 {
 	OpenGLRenderer *oglRenderer = (OpenGLRenderer *)param1;
 	oglRenderer->DeleteTexture(texItem);
@@ -872,6 +872,7 @@ OpenGLRenderer::OpenGLRenderer()
 	ref->selectedRenderingFBO = 0;
 	
 	_mappedFramebuffer = NULL;
+	_workingTextureUnpackBuffer = (FragmentColor *)malloc_alignedCacheLine(1024 * 1024 * sizeof(FragmentColor));
 	_pixelReadNeedsFinish = false;
 	_currentPolyIndex = 0;
 	_shadowPolyID.reserve(POLYLIST_SIZE);
@@ -880,6 +881,7 @@ OpenGLRenderer::OpenGLRenderer()
 OpenGLRenderer::~OpenGLRenderer()
 {
 	free_aligned(_framebufferColor);
+	free_aligned(_workingTextureUnpackBuffer);
 	
 	// Destroy OpenGL rendering states
 	delete ref;
@@ -2417,6 +2419,7 @@ Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 Render3DError OpenGLRenderer_1_2::DeleteTexture(const TexCacheItem *item)
 {
 	this->ref->freeTextureIDs.push((GLuint)item->texid);
+	texCache.cache_size -= item->unpackSize;
 	
 	return OGLERROR_NOERR;
 }
@@ -2970,13 +2973,11 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 	
 	if (theTexture->unpackFormat != TexFormat_32bpp)
 	{
-		theTexture->Unpack<TexFormat_32bpp>();
-		
 		//has the ogl renderer initialized the texture?
 		const bool isNewTexture = (theTexture->GetDeleteCallback() == NULL);
 		if (isNewTexture)
 		{
-			theTexture->SetDeleteCallback(&texDeleteCallback, this, NULL);
+			theTexture->SetDeleteCallback(&OGLTextureDeleteCallback, this, NULL);
 			
 			if (OGLRef.freeTextureIDs.empty())
 			{
@@ -2985,14 +2986,19 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 			
 			theTexture->texid = (u32)OGLRef.freeTextureIDs.front();
 			OGLRef.freeTextureIDs.pop();
+			
+			theTexture->unpackSize = theTexture->GetUnpackSizeUsingFormat(TexFormat_32bpp);
+			texCache.cache_size += theTexture->unpackSize;
 		}
+		
+		theTexture->Unpack<TexFormat_32bpp>((u32 *)this->_workingTextureUnpackBuffer);
 		
 		glBindTexture(GL_TEXTURE_2D, (GLuint)theTexture->texid);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (params.enableRepeatS ? (params.enableMirroredRepeatS ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 		
 		const NDSTextureFormat texFormat = theTexture->GetTextureFormat();
-		const u32 *textureSrc = theTexture->unpackData;
+		const u32 *textureSrc = (u32 *)this->_workingTextureUnpackBuffer;
 		size_t texWidth = theTexture->sizeX;
 		size_t texHeight = theTexture->sizeY;
 		
@@ -4646,13 +4652,11 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 	
 	if (theTexture->unpackFormat != TexFormat_32bpp)
 	{
-		theTexture->Unpack<TexFormat_32bpp>();
-		
 		//has the ogl renderer initialized the texture?
 		const bool isNewTexture = (theTexture->GetDeleteCallback() == NULL);
 		if (isNewTexture)
 		{
-			theTexture->SetDeleteCallback(&texDeleteCallback, this, NULL);
+			theTexture->SetDeleteCallback(&OGLTextureDeleteCallback, this, NULL);
 			
 			if (OGLRef.freeTextureIDs.empty())
 			{
@@ -4661,14 +4665,19 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 			
 			theTexture->texid = (u32)OGLRef.freeTextureIDs.front();
 			OGLRef.freeTextureIDs.pop();
+			
+			theTexture->unpackSize = theTexture->GetUnpackSizeUsingFormat(TexFormat_32bpp);
+			texCache.cache_size += theTexture->unpackSize;
 		}
+		
+		theTexture->Unpack<TexFormat_32bpp>((u32 *)this->_workingTextureUnpackBuffer);
 		
 		glBindTexture(GL_TEXTURE_2D, (GLuint)theTexture->texid);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (params.enableRepeatS ? (params.enableMirroredRepeatS ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 		
 		const NDSTextureFormat texFormat = theTexture->GetTextureFormat();
-		const u32 *textureSrc = theTexture->unpackData;
+		const u32 *textureSrc = (u32 *)this->_workingTextureUnpackBuffer;
 		size_t texWidth = theTexture->sizeX;
 		size_t texHeight = theTexture->sizeY;
 		

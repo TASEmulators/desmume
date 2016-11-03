@@ -204,20 +204,6 @@ TexCache::TexCache()
 	memset(paletteDump, 0, sizeof(paletteDump));
 }
 
-void TexCache::list_remove(TexCacheItem *item)
-{
-	const TexCacheKey key = TexCache::GenerateKey(item->textureAttributes, item->paletteAttributes);
-	this->cacheTable.erase(key);
-	this->cache_size -= item->unpackSize;
-}
-
-void TexCache::list_push_front(TexCacheItem *item)
-{
-	const TexCacheKey key = TexCache::GenerateKey(item->textureAttributes, item->paletteAttributes);
-	this->cacheTable[key] = item;
-	this->cache_size += item->unpackSize;
-}
-
 void TexCache::Invalidate()
 {
 	//check whether the palette memory changed
@@ -244,7 +230,7 @@ void TexCache::Invalidate()
 	}
 }
 
-void TexCache::Evict(u32 target)
+void TexCache::Evict(size_t target)
 {
 	//debug print
 	//printf("%d %d/%d\n",index.size(),cache_size/1024,target/1024);
@@ -262,7 +248,9 @@ void TexCache::Evict(u32 target)
 		if (this->cacheTable.size() == 0) break; //just in case.. doesnt seem possible, cache_size wouldve been 0
 		
 		TexCacheItem *item = this->cacheTable.begin()->second;
-		this->list_remove(item);
+		const TexCacheKey key = TexCache::GenerateKey(item->textureAttributes, item->paletteAttributes);
+		this->cacheTable.erase(key);
+		
 		//printf("evicting! totalsize:%d\n",cache_size);
 		delete item;
 	}
@@ -270,7 +258,15 @@ void TexCache::Evict(u32 target)
 
 void TexCache::Reset()
 {
-	this->Evict(0);
+	for (TexCacheTable::iterator it(this->cacheTable.begin()); it != this->cacheTable.end(); ++it)
+	{
+		TexCacheItem *item = it->second;
+		delete item;
+	}
+	
+	this->cacheTable.clear();
+	this->cache_size = 0;
+	memset(this->paletteDump, 0, sizeof(paletteDump));
 }
 
 TexCacheItem* TexCache::GetTexture(u32 texAttributes, u32 palAttributes)
@@ -378,7 +374,7 @@ TexCacheItem* TexCache::GetTexture(u32 texAttributes, u32 palAttributes)
 	
 	if (didCreateNewTexture)
 	{
-		this->list_push_front(theTexture);
+		this->cacheTable[key] = theTexture;
 		//printf("allocating: up to %d with %d items\n",cache_size,index.size());
 	}
 	
@@ -501,7 +497,6 @@ TexCacheItem::TexCacheItem(const u32 texAttributes, const u32 palAttributes)
 TexCacheItem::~TexCacheItem()
 {
 	free_aligned(this->packData);
-	free_aligned(this->unpackData);
 	free_aligned(this->paletteColorTable);
 	free_aligned(this->packIndexData);
 	if (this->_deleteCallback != NULL) this->_deleteCallback(this, this->_deleteCallbackParam1, this->_deleteCallbackParam2);
@@ -535,15 +530,6 @@ void TexCacheItem::SetTextureData(const MemSpan &packedData, const MemSpan &pack
 	{
 		packedIndexData.dump(this->packIndexData, this->packIndexSize);
 	}
-	
-	const u32 currentUnpackSize = this->sizeX * this->sizeY * sizeof(u32);
-	if (this->unpackSize != currentUnpackSize)
-	{
-		u32 *oldUnpackData = this->unpackData;
-		this->unpackSize = currentUnpackSize;
-		this->unpackData = (u32 *)malloc_alignedCacheLine(currentUnpackSize);
-		free_aligned(oldUnpackData);
-	}
 }
 
 void TexCacheItem::SetTexturePalette(const u16 *paletteBuffer)
@@ -554,8 +540,13 @@ void TexCacheItem::SetTexturePalette(const u16 *paletteBuffer)
 	}
 }
 
+size_t TexCacheItem::GetUnpackSizeUsingFormat(const TexCache_TexFormat texCacheFormat) const
+{
+	return (this->sizeX * this->sizeY * sizeof(u32));
+}
+
 template <TexCache_TexFormat TEXCACHEFORMAT>
-void TexCacheItem::Unpack()
+void TexCacheItem::Unpack(u32 *unpackBuffer)
 {
 	this->unpackFormat = TEXCACHEFORMAT;
 	
@@ -566,19 +557,19 @@ void TexCacheItem::Unpack()
 	switch (this->packFormat)
 	{
 		case TEXMODE_A3I5:
-			NDSTextureUnpackA3I5<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, this->unpackData);
+			NDSTextureUnpackA3I5<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, unpackBuffer);
 			break;
 			
 		case TEXMODE_I2:
-			NDSTextureUnpackI2<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, this->isPalZeroTransparent, this->unpackData);
+			NDSTextureUnpackI2<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, this->isPalZeroTransparent, unpackBuffer);
 			break;
 			
 		case TEXMODE_I4:
-			NDSTextureUnpackI4<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, this->isPalZeroTransparent, this->unpackData);
+			NDSTextureUnpackI4<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, this->isPalZeroTransparent, unpackBuffer);
 			break;
 			
 		case TEXMODE_I8:
-			NDSTextureUnpackI8<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, this->isPalZeroTransparent, this->unpackData);
+			NDSTextureUnpackI8<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, this->isPalZeroTransparent, unpackBuffer);
 			break;
 			
 		case TEXMODE_4X4:
@@ -588,16 +579,16 @@ void TexCacheItem::Unpack()
 				PROGINFO("Your 4x4 texture has overrun its texture slot.\n");
 			}
 			
-			NDSTextureUnpack4x4<TEXCACHEFORMAT>(this->packSizeFirstSlot, (u32 *)this->packData, (u16 *)this->packIndexData, this->paletteAddress, this->textureAttributes, this->sizeX, this->sizeY, this->unpackData);
+			NDSTextureUnpack4x4<TEXCACHEFORMAT>(this->packSizeFirstSlot, (u32 *)this->packData, (u16 *)this->packIndexData, this->paletteAddress, this->textureAttributes, this->sizeX, this->sizeY, unpackBuffer);
 			break;
 		}
 			
 		case TEXMODE_A5I3:
-			NDSTextureUnpackA5I3<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, this->unpackData);
+			NDSTextureUnpackA5I3<TEXCACHEFORMAT>(this->packSize, this->packData, this->paletteColorTable, unpackBuffer);
 			break;
 			
 		case TEXMODE_16BPP:
-			NDSTextureUnpackDirect16Bit<TEXCACHEFORMAT>(this->packSize, (u16 *)this->packData, this->unpackData);
+			NDSTextureUnpackDirect16Bit<TEXCACHEFORMAT>(this->packSize, (u16 *)this->packData, unpackBuffer);
 			break;
 			
 		default:
@@ -1122,5 +1113,5 @@ void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u16 *__restrict src
 	}
 }
 
-template void TexCacheItem::Unpack<TexFormat_15bpp>();
-template void TexCacheItem::Unpack<TexFormat_32bpp>();
+template void TexCacheItem::Unpack<TexFormat_15bpp>(u32 *unpackBuffer);
+template void TexCacheItem::Unpack<TexFormat_32bpp>(u32 *unpackBuffer);
