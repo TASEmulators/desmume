@@ -795,8 +795,11 @@ void SPU_struct::WriteByte(u32 addr, u8 val)
 			regs.ctl_ch1bypass = (val >> 4) & 1;
 			regs.ctl_ch3bypass = (val >> 5) & 1;
 			regs.masteren = (val >> 7) & 1;
-			for(u8 i=0; i<16; i++)
-				KeyProbe(i);
+			//from r4925 - after changing 'masteren', we retrigger any sounds? doubtful. 
+			//maybe we STOP sounds here, but we don't enable them (this would retrigger any previous sounds that had finished; glitched AC:WW)
+			//(probably broken in r3299)
+			//after commenting this out, I checked bug #1356. seems unrelated.
+			//for(int i=0; i<16; i++) KeyProbe(i);
 		break;
 		
 		//SOUNDBIAS
