@@ -43,6 +43,9 @@ enum EListCallbackArg {
 typedef void (*ListCallback)(RDIR* rdir, EListCallbackArg);
 
 // List all files and subdirectories recursively
+//TODO: clunky architecture. we've combined the callbacks into one handler.
+//we could merge the callback and list_files function, or refactor the callback into one for each enum which receives a unit of work after 
+//the more detailed recursing logic (caused by libretro-common integration) is handled in the lister
 static void list_files(const char *filepath, ListCallback list_callback)
 {
 	void * hFind;
@@ -64,6 +67,7 @@ static void list_files(const char *filepath, ListCallback list_callback)
 
 		const char* fname = retro_dirent_get_name(rdir);
 		list_callback(rdir,EListCallbackArg_Item);
+		printf("cflash added %s\n",fname);
 
 		if(retro_dirent_is_dir(rdir) && (strcmp(fname, ".")) && (strcmp(fname, ".."))) 
 		{
@@ -76,28 +80,24 @@ static void list_files(const char *filepath, ListCallback list_callback)
 	retro_closedir(rdir);
 }
 
-static u64 dataSectors = 0;
-void count_ListCallback(RDIR* rdir, EListCallbackArg arg)
+enum eCallbackType
 {
-	if(arg == EListCallbackArg_Pop) return;
-	u32 sectors = 1;
-	if(retro_dirent_is_dir(rdir))
-	{
-	}
-	else
-	{
-		//allocate sectors for file
-		int32_t fileSize = path_get_size(retro_dirent_get_name(rdir));
-		sectors += (fileSize+511)/512 + 1;
-	}
-	dataSectors += sectors; 
-}
+	eCallbackType_Count, eCallbackType_Build
+};
 
+static eCallbackType callbackType;
+
+//for eCallbackType_Count:
+static bool count_failed = false;
+static u64 dataSectors = 0;
+
+//recursing related.. really ought to be merged with list_files functionality
 static std::string currPath;
 static std::stack<std::string> pathStack;
 static std::stack<std::string> virtPathStack;
 static std::string currVirtPath;
-void build_ListCallback(RDIR* rdir, EListCallbackArg arg)
+
+static void DirectoryListCallback(RDIR* rdir, EListCallbackArg arg)
 {
 	const char* fname = retro_dirent_get_name(rdir);
 
@@ -119,10 +119,18 @@ void build_ListCallback(RDIR* rdir, EListCallbackArg arg)
 		virtPathStack.push(currVirtPath);
 
 		currVirtPath = currVirtPath + "/" + fname;
-		bool ok = LIBFAT::MkDir(currVirtPath.c_str());
 
-		if(!ok)
-			printf("ERROR adding dir %s via libfat\n",currVirtPath.c_str());
+		if(callbackType == eCallbackType_Build)
+		{
+			bool ok = LIBFAT::MkDir(currVirtPath.c_str());
+
+			if(!ok)
+				printf("ERROR adding dir %s via libfat\n",currVirtPath.c_str());
+		}
+		else
+		{
+			dataSectors++; //directories take one sector
+		}
 
 		currPath = currPath + path_default_slash() + fname;
 		return;
@@ -131,37 +139,55 @@ void build_ListCallback(RDIR* rdir, EListCallbackArg arg)
 	{
 		std::string path = currPath + path_default_slash() + fname;
 
-		FILE* inf = fopen(path.c_str(),"rb");
-		if(inf)
+		if(callbackType == eCallbackType_Build)
 		{
-			fseek(inf,0,SEEK_END);
-			long len = ftell(inf);
-			fseek(inf,0,SEEK_SET);
-			u8 *buf = new u8[len];
-			fread(buf,1,len,inf);
-			fclose(inf);
+			FILE* inf = fopen(path.c_str(),"rb");
+			if(inf)
+			{
+				fseek(inf,0,SEEK_END);
+				long len = ftell(inf);
+				fseek(inf,0,SEEK_SET);
+				u8 *buf = new u8[len];
+				fread(buf,1,len,inf);
+				fclose(inf);
 
-			std::string path = currVirtPath + "/" + fname;
-			printf("FAT + (%10.2f KB) %s \n",len/1024.f,path.c_str());
-			bool ok = LIBFAT::WriteFile(path.c_str(),buf,len);
-			if(!ok) 
-				printf("ERROR adding file to fat\n");
-			delete[] buf;
-		} else printf("ERROR opening file for fat\n");
+				std::string path = currVirtPath + "/" + fname;
+				printf("FAT + (%10.2f KB) %s \n",len/1024.f,path.c_str());
+				bool ok = LIBFAT::WriteFile(path.c_str(),buf,len);
+				if(!ok) 
+					printf("ERROR adding file to fat\n");
+				delete[] buf;
+			} else printf("ERROR opening file for fat\n");
+		}
+		else
+		{
+			//allocate sectors for file
+			int32_t fileSize = path_get_size(path.c_str());
+			if(fileSize == -1) { count_failed = true; dataSectors = 0; }
+			else dataSectors += (fileSize+511)/512 + 1;
+		}
 	}
 		
 }
-
-
 
 bool VFAT::build(const char* path, int extra_MB)
 {
 	dataSectors = 0;
 	currVirtPath = "";
 	currPath = path;
-	list_files(path, count_ListCallback);
+
+	count_failed = false;
+	callbackType = eCallbackType_Count;
+	list_files(path, DirectoryListCallback);
+
+	if(count_failed)
+	{
+		printf("FAILED enumerating files for fat\n");
+		return false;
+	}
 
 	dataSectors += 8; //a few for reserved sectors, etc.
+
 
 	dataSectors += extra_MB*1024*1024/512; //add extra write space
 	//dataSectors += 16*1024*1024/512; //add 16MB worth of write space. this is probably enough for anyone, but maybe it should be configurable.
@@ -170,6 +196,8 @@ bool VFAT::build(const char* path, int extra_MB)
 	//this seems to be the minimum size that will turn into a solid fat32
 	if(dataSectors<36*1024*1024/512)
 		dataSectors = 36*1024*1024/512;
+
+	printf("dataSectors: %lld\n",dataSectors);
 
 	if(dataSectors>=(0x80000000>>9))
 	{
@@ -207,7 +235,8 @@ bool VFAT::build(const char* path, int extra_MB)
 
 	//setup libfat and write all the files through it
 	LIBFAT::Init(memf->buf(),memf->size());
-	list_files(path, build_ListCallback);
+	callbackType = eCallbackType_Build;
+	list_files(path, DirectoryListCallback);
 	LIBFAT::Shutdown();
 
 	return true;
