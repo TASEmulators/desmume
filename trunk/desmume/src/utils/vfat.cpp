@@ -197,8 +197,6 @@ bool VFAT::build(const char* path, int extra_MB)
 	if(dataSectors<36*1024*1024/512)
 		dataSectors = 36*1024*1024/512;
 
-	printf("dataSectors: %lld\n",dataSectors);
-
 	if(dataSectors>=(0x80000000>>9))
 	{
 		printf("error allocating memory for fat (%d KBytes)\n",(dataSectors*512)/1024);
