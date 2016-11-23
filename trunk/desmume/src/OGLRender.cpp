@@ -636,10 +636,42 @@ static void OGLGetDriverVersion(const char *oglVersionString,
 	}
 }
 
-void OGLTextureDeleteCallback(TexCacheItem *texItem, void *param1, void *param2)
+OpenGLTexture::OpenGLTexture()
 {
-	OpenGLRenderer *oglRenderer = (OpenGLRenderer *)param1;
-	oglRenderer->DeleteTexture(texItem);
+	_cacheSize = GetUnpackSizeUsingFormat(TexFormat_32bpp);
+	_invSizeS = 0.0f;
+	_invSizeT = 0.0f;
+	
+	glGenTextures(1, &_texID);
+}
+
+OpenGLTexture::OpenGLTexture(u32 texAttributes, u32 palAttributes) : TextureStore(texAttributes, palAttributes)
+{
+	_cacheSize = GetUnpackSizeUsingFormat(TexFormat_32bpp);
+	_invSizeS = 1.0f / (float)_sizeS;
+	_invSizeT = 1.0f / (float)_sizeT;
+	
+	glGenTextures(1, &_texID);
+}
+
+OpenGLTexture::~OpenGLTexture()
+{
+	glDeleteTextures(1, &this->_texID);
+}
+
+GLuint OpenGLTexture::GetID() const
+{
+	return this->_texID;
+}
+
+GLfloat OpenGLTexture::GetInvWidth() const
+{
+	return this->_invSizeS;
+}
+
+GLfloat OpenGLTexture::GetInvHeight() const
+{
+	return this->_invSizeT;
 }
 
 template<bool require_profile, bool enable_3_2>
@@ -1199,13 +1231,6 @@ OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 	// Kill the texture cache now before all of our texture IDs disappear.
 	texCache.Reset();
 	
-	while(!ref->freeTextureIDs.empty())
-	{
-		GLuint temp = ref->freeTextureIDs.front();
-		ref->freeTextureIDs.pop();
-		glDeleteTextures(1, &temp);
-	}
-	
 	glFinish();
 }
 
@@ -1352,7 +1377,6 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		INFO("OpenGL: Multisampled FBOs are unsupported. Multisample antialiasing will be disabled.\n");
 	}
 	
-	this->InitTextures();
 	this->InitFinalRenderStates(&oglExtensionSet); // This must be done last
 	
 	return OGLERROR_NOERR;
@@ -2063,13 +2087,6 @@ Render3DError OpenGLRenderer_1_2::InitFinalRenderStates(const std::set<std::stri
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::InitTextures()
-{
-	this->ExpandFreeTextures();
-	
-	return OGLERROR_NOERR;
-}
-
 Render3DError OpenGLRenderer_1_2::InitTables()
 {
 	static bool needTableInit = true;
@@ -2226,20 +2243,6 @@ void OpenGLRenderer_1_2::GetExtensionSet(std::set<std::string> *oglExtensionSet)
 		std::string extensionName = oglExtensionString.substr(extStringStartLoc, oglExtensionString.length() - extStringStartLoc);
 		oglExtensionSet->insert(extensionName);
 	}
-}
-
-Render3DError OpenGLRenderer_1_2::ExpandFreeTextures()
-{
-	static const GLsizei kInitTextures = 128;
-	GLuint oglTempTextureID[kInitTextures];
-	glGenTextures(kInitTextures, oglTempTextureID);
-	
-	for(GLsizei i = 0; i < kInitTextures; i++)
-	{
-		this->ref->freeTextureIDs.push(oglTempTextureID[i]);
-	}
-	
-	return OGLERROR_NOERR;
 }
 
 Render3DError OpenGLRenderer_1_2::EnableVertexAttributes()
@@ -2413,14 +2416,6 @@ Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 	}
 	
 	this->_pixelReadNeedsFinish = true;
-	return OGLERROR_NOERR;
-}
-
-Render3DError OpenGLRenderer_1_2::DeleteTexture(const TexCacheItem *item)
-{
-	this->ref->freeTextureIDs.push((GLuint)item->texid);
-	texCache.cache_size -= item->unpackSize;
-	
 	return OGLERROR_NOERR;
 }
 
@@ -2692,7 +2687,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 Render3DError OpenGLRenderer_1_2::EndRender(const u64 frameCount)
 {
 	//needs to happen before endgl because it could free some textureids for expired cache items
-	texCache.Evict(TEXCACHE_MAX_SIZE);
+	texCache.Evict();
 	
 	this->ReadBackPixels();
 	
@@ -2953,54 +2948,44 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 		
 		return OGLERROR_NOERR;
 	}
+		
+	OpenGLTexture *theTexture = (OpenGLTexture *)texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
+	const bool isNewTexture = (theTexture == NULL);
 	
-	TexCacheItem *theTexture = texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
+	if (isNewTexture)
+	{
+		theTexture = new OpenGLTexture(thePoly.texParam, thePoly.texPalette);
+		texCache.Add(theTexture);
+	}
+	
+	const NDSTextureFormat packFormat = theTexture->GetPackFormat();
 	
 	// Enable textures if they weren't already enabled
 	if (this->isShaderSupported)
 	{
 		glUniform1i(OGLRef.uniformPolyEnableTexture, GL_TRUE);
-		glUniform1i(OGLRef.uniformTexSingleBitAlpha, (theTexture->packFormat != TEXMODE_A3I5 && theTexture->packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
-		glUniform2f(OGLRef.uniformPolyTexScale, theTexture->invSizeX, theTexture->invSizeY);
+		glUniform1i(OGLRef.uniformTexSingleBitAlpha, (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
+		glUniform2f(OGLRef.uniformPolyTexScale, theTexture->GetInvWidth(), theTexture->GetInvHeight());
 	}
 	else
 	{
 		glEnable(GL_TEXTURE_2D);
 		glMatrixMode(GL_TEXTURE);
 		glLoadIdentity();
-		glScalef(theTexture->invSizeX, theTexture->invSizeY, 1.0f);
+		glScalef(theTexture->GetInvWidth(), theTexture->GetInvHeight(), 1.0f);
 	}
 	
-	if (theTexture->unpackFormat != TexFormat_32bpp)
+	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (params.enableRepeatS ? (params.enableMirroredRepeatS ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+	
+	if (theTexture->IsLoadNeeded())
 	{
-		//has the ogl renderer initialized the texture?
-		const bool isNewTexture = (theTexture->GetDeleteCallback() == NULL);
-		if (isNewTexture)
-		{
-			theTexture->SetDeleteCallback(&OGLTextureDeleteCallback, this, NULL);
-			
-			if (OGLRef.freeTextureIDs.empty())
-			{
-				this->ExpandFreeTextures();
-			}
-			
-			theTexture->texid = (u32)OGLRef.freeTextureIDs.front();
-			OGLRef.freeTextureIDs.pop();
-			
-			theTexture->unpackSize = theTexture->GetUnpackSizeUsingFormat(TexFormat_32bpp);
-			texCache.cache_size += theTexture->unpackSize;
-		}
-		
 		theTexture->Unpack<TexFormat_32bpp>((u32 *)this->_workingTextureUnpackBuffer);
 		
-		glBindTexture(GL_TEXTURE_2D, (GLuint)theTexture->texid);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (params.enableRepeatS ? (params.enableMirroredRepeatS ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
-		
-		const NDSTextureFormat texFormat = theTexture->GetTextureFormat();
 		const u32 *textureSrc = (u32 *)this->_workingTextureUnpackBuffer;
-		size_t texWidth = theTexture->sizeX;
-		size_t texHeight = theTexture->sizeY;
+		size_t texWidth = theTexture->GetWidth();
+		size_t texHeight = theTexture->GetHeight();
 		
 		if (this->_textureDeposterizeDstSurface.Surface != NULL)
 		{
@@ -3031,17 +3016,17 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
 				
-				this->TextureUpscale<2>(texFormat, textureSrc, texWidth, texHeight);
+				this->TextureUpscale<2>(packFormat, textureSrc, texWidth, texHeight);
 				
 				if (isNewTexture)
 				{
 					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
-					glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, theTexture->sizeX, theTexture->sizeY, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+					glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, theTexture->GetWidth(), theTexture->GetHeight(), 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
 				}
 				else
 				{
 					glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texWidth, texHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
-					glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, theTexture->sizeX, theTexture->sizeY, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+					glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, theTexture->GetWidth(), theTexture->GetHeight(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
 				}
 				break;
 			}
@@ -3051,29 +3036,29 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 2);
 				
-				this->TextureUpscale<4>(texFormat, textureSrc, texWidth, texHeight);
+				this->TextureUpscale<4>(packFormat, textureSrc, texWidth, texHeight);
 				
 				if (isNewTexture)
 				{
 					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
 					
-					texWidth = theTexture->sizeX;
-					texHeight = theTexture->sizeY;
-					this->TextureUpscale<2>(texFormat, textureSrc, texWidth, texHeight);
+					texWidth = theTexture->GetWidth();
+					texHeight = theTexture->GetHeight();
+					this->TextureUpscale<2>(packFormat, textureSrc, texWidth, texHeight);
 					glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
 					
-					glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA, theTexture->sizeX, theTexture->sizeY, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+					glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA, theTexture->GetWidth(), theTexture->GetHeight(), 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
 				}
 				else
 				{
 					glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texWidth, texHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
 					
-					texWidth = theTexture->sizeX;
-					texHeight = theTexture->sizeY;
-					this->TextureUpscale<2>(texFormat, textureSrc, texWidth, texHeight);
+					texWidth = theTexture->GetWidth();
+					texHeight = theTexture->GetHeight();
+					this->TextureUpscale<2>(packFormat, textureSrc, texWidth, texHeight);
 					glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, texWidth, texHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
 					
-					glTexSubImage2D(GL_TEXTURE_2D, 2, 0, 0, theTexture->sizeX, theTexture->sizeY, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+					glTexSubImage2D(GL_TEXTURE_2D, 2, 0, 0, theTexture->GetWidth(), theTexture->GetHeight(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
 				}
 				break;
 			}
@@ -3095,11 +3080,9 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
 		}
 	}
-	else
-	{
-		//otherwise, just bind it
-		glBindTexture(GL_TEXTURE_2D, (GLuint)theTexture->texid);
-	}
+	
+	theTexture->ResetCacheAge();
+	theTexture->IncreaseCacheUsageCount(1);
 	
 	return OGLERROR_NOERR;
 }
@@ -3867,7 +3850,6 @@ Render3DError OpenGLRenderer_2_0::InitExtensions()
 		INFO("OpenGL: Multisampled FBOs are unsupported. Multisample antialiasing will be disabled.\n");
 	}
 	
-	this->InitTextures();
 	this->InitFinalRenderStates(&oglExtensionSet); // This must be done last
 	
 	return OGLERROR_NOERR;
@@ -4644,42 +4626,32 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 		return OGLERROR_NOERR;
 	}
 	
-	TexCacheItem *theTexture = texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
+	OpenGLTexture *theTexture = (OpenGLTexture *)texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
+	const bool isNewTexture = (theTexture == NULL);
+	
+	if (isNewTexture)
+	{
+		theTexture = new OpenGLTexture(thePoly.texParam, thePoly.texPalette);
+		texCache.Add(theTexture);
+	}
+	
+	const NDSTextureFormat packFormat = theTexture->GetPackFormat();
 	
 	glUniform1i(OGLRef.uniformPolyEnableTexture, GL_TRUE);
-	glUniform1i(OGLRef.uniformTexSingleBitAlpha, (theTexture->packFormat != TEXMODE_A3I5 && theTexture->packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
-	glUniform2f(OGLRef.uniformPolyTexScale, theTexture->invSizeX, theTexture->invSizeY);
+	glUniform1i(OGLRef.uniformTexSingleBitAlpha, (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
+	glUniform2f(OGLRef.uniformPolyTexScale, theTexture->GetInvWidth(), theTexture->GetInvHeight());
 	
-	if (theTexture->unpackFormat != TexFormat_32bpp)
+	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (params.enableRepeatS ? (params.enableMirroredRepeatS ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+	
+	if (theTexture->IsLoadNeeded())
 	{
-		//has the ogl renderer initialized the texture?
-		const bool isNewTexture = (theTexture->GetDeleteCallback() == NULL);
-		if (isNewTexture)
-		{
-			theTexture->SetDeleteCallback(&OGLTextureDeleteCallback, this, NULL);
-			
-			if (OGLRef.freeTextureIDs.empty())
-			{
-				this->ExpandFreeTextures();
-			}
-			
-			theTexture->texid = (u32)OGLRef.freeTextureIDs.front();
-			OGLRef.freeTextureIDs.pop();
-			
-			theTexture->unpackSize = theTexture->GetUnpackSizeUsingFormat(TexFormat_32bpp);
-			texCache.cache_size += theTexture->unpackSize;
-		}
-		
 		theTexture->Unpack<TexFormat_32bpp>((u32 *)this->_workingTextureUnpackBuffer);
 		
-		glBindTexture(GL_TEXTURE_2D, (GLuint)theTexture->texid);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (params.enableRepeatS ? (params.enableMirroredRepeatS ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
-		
-		const NDSTextureFormat texFormat = theTexture->GetTextureFormat();
 		const u32 *textureSrc = (u32 *)this->_workingTextureUnpackBuffer;
-		size_t texWidth = theTexture->sizeX;
-		size_t texHeight = theTexture->sizeY;
+		size_t texWidth = theTexture->GetWidth();
+		size_t texHeight = theTexture->GetHeight();
 		
 		if (this->_textureDeposterizeDstSurface.Surface != NULL)
 		{
@@ -4710,15 +4682,17 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
 				
+				this->TextureUpscale<2>(packFormat, textureSrc, texWidth, texHeight);
+				
 				if (isNewTexture)
 				{
 					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
-					glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, theTexture->sizeX, theTexture->sizeY, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+					glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, theTexture->GetWidth(), theTexture->GetHeight(), 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
 				}
 				else
 				{
 					glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texWidth, texHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
-					glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, theTexture->sizeX, theTexture->sizeY, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+					glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, theTexture->GetWidth(), theTexture->GetHeight(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
 				}
 				break;
 			}
@@ -4728,29 +4702,29 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 2);
 				
-				this->TextureUpscale<4>(texFormat, textureSrc, texWidth, texHeight);
+				this->TextureUpscale<4>(packFormat, textureSrc, texWidth, texHeight);
 				
 				if (isNewTexture)
 				{
 					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
 					
-					texWidth = theTexture->sizeX;
-					texHeight = theTexture->sizeY;
-					this->TextureUpscale<2>(texFormat, textureSrc, texWidth, texHeight);
+					texWidth = theTexture->GetWidth();
+					texHeight = theTexture->GetHeight();
+					this->TextureUpscale<2>(packFormat, textureSrc, texWidth, texHeight);
 					glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
 					
-					glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA, theTexture->sizeX, theTexture->sizeY, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+					glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA, theTexture->GetWidth(), theTexture->GetHeight(), 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
 				}
 				else
 				{
 					glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texWidth, texHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
 					
-					texWidth = theTexture->sizeX;
-					texHeight = theTexture->sizeY;
-					this->TextureUpscale<2>(texFormat, textureSrc, texWidth, texHeight);
+					texWidth = theTexture->GetWidth();
+					texHeight = theTexture->GetHeight();
+					this->TextureUpscale<2>(packFormat, textureSrc, texWidth, texHeight);
 					glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, texWidth, texHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_textureUpscaleBuffer);
 					
-					glTexSubImage2D(GL_TEXTURE_2D, 2, 0, 0, theTexture->sizeX, theTexture->sizeY, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+					glTexSubImage2D(GL_TEXTURE_2D, 2, 0, 0, theTexture->GetWidth(), theTexture->GetHeight(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
 				}
 				break;
 			}
@@ -4772,11 +4746,9 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
 		}
 	}
-	else
-	{
-		//otherwise, just bind it
-		glBindTexture(GL_TEXTURE_2D, (GLuint)theTexture->texid);
-	}
+	
+	theTexture->ResetCacheAge();
+	theTexture->IncreaseCacheUsageCount(1);
 	
 	return OGLERROR_NOERR;
 }

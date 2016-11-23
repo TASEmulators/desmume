@@ -24,6 +24,7 @@
 #include <set>
 #include <string>
 #include "render3D.h"
+#include "texcache.h"
 #include "types.h"
 
 #ifndef OGLRENDER_3_2_H
@@ -491,9 +492,6 @@ struct OGLRenderRef
 	GLuint vaoGeometryStatesID;
 	GLuint vaoPostprocessStatesID;
 	
-	// Textures
-	std::queue<GLuint> freeTextureIDs;
-	
 	// Client-side Buffers
 	GLfloat *color4fBuffer;
 	GLushort *vertIndexBuffer;
@@ -526,8 +524,6 @@ extern CACHE_ALIGN const GLfloat divide6bitBy63_LUT[64];
 extern const GLfloat PostprocessVtxBuffer[16];
 extern const GLubyte PostprocessElementBuffer[6];
 
-extern void OGLTextureDeleteCallback(TexCacheItem *texItem, void *param1, void *param2);
-
 //This is called by OGLRender whenever it initializes.
 //Platforms, please be sure to set this up.
 //return true if you successfully init.
@@ -558,6 +554,23 @@ extern void (*OGLLoadEntryPoints_3_2_Func)();
 extern void (*OGLCreateRenderer_3_2_Func)(OpenGLRenderer **rendererPtr);
 
 bool IsVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision);
+
+class OpenGLTexture : public TextureStore
+{
+private:
+	GLuint _texID;
+	GLfloat _invSizeS;
+	GLfloat _invSizeT;
+	
+public:
+	OpenGLTexture();
+	OpenGLTexture(u32 texAttributes, u32 palAttributes);
+	virtual ~OpenGLTexture();
+	
+	GLuint GetID() const;
+	GLfloat GetInvWidth() const;
+	GLfloat GetInvHeight() const;
+};
 
 #if defined(ENABLE_SSE2)
 class OpenGLRenderer : public Render3D_SSE2
@@ -609,7 +622,6 @@ protected:
 	virtual void DestroyGeometryProgram() = 0;
 	virtual Render3DError CreateVAOs() = 0;
 	virtual void DestroyVAOs() = 0;
-	virtual Render3DError InitTextures() = 0;
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet) = 0;
 	virtual Render3DError InitTables() = 0;
 	virtual Render3DError InitPostprocessingPrograms(const std::string &edgeMarkVtxShader,
@@ -635,7 +647,6 @@ protected:
 	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 *__restrict polyIDBuffer) = 0;
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet) = 0;
-	virtual Render3DError ExpandFreeTextures() = 0;
 	virtual Render3DError EnableVertexAttributes() = 0;
 	virtual Render3DError DisableVertexAttributes() = 0;
 	virtual Render3DError DownsampleFBO() = 0;
@@ -648,7 +659,6 @@ public:
 	virtual ~OpenGLRenderer();
 	
 	virtual Render3DError InitExtensions() = 0;
-	virtual Render3DError DeleteTexture(const TexCacheItem *item) = 0;
 	
 	bool IsExtensionPresent(const std::set<std::string> *oglExtensionSet, const std::string extensionName) const;
 	bool ValidateShaderCompile(GLuint theShader) const;
@@ -673,7 +683,6 @@ protected:
 	virtual void DestroyMultisampledFBO();
 	virtual Render3DError CreateVAOs();
 	virtual void DestroyVAOs();
-	virtual Render3DError InitTextures();
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
 	virtual Render3DError InitTables();
 	
@@ -702,7 +711,6 @@ protected:
 	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
 	
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
-	virtual Render3DError ExpandFreeTextures();
 	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
 	virtual Render3DError DownsampleFBO();
@@ -729,8 +737,6 @@ public:
 	virtual Render3DError Reset();
 	virtual Render3DError RenderFinish();
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
-	
-	virtual Render3DError DeleteTexture(const TexCacheItem *item);
 };
 
 class OpenGLRenderer_1_3 : public OpenGLRenderer_1_2

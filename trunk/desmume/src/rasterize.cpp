@@ -54,7 +54,6 @@
 #include "matrix.h"
 #include "render3D.h"
 #include "gfx3d.h"
-#include "texcache.h"
 #include "MMU.h"
 #include "NDSSystem.h"
 #include "utils/task.h"
@@ -331,7 +330,7 @@ class RasterizerUnit
 {
 protected:
 	SoftRasterizerRenderer *_softRender;
-	TexCacheItem *lastTexKey;
+	SoftRasterizerTexture *lastTexKey;
 	VERT* verts[MAX_CLIPPED_VERTS];
 	int polynum;
 	
@@ -351,19 +350,16 @@ public:
 		int width, height;
 		s32 wmask, hmask;
 		int wrap;
-		int wshift;
-		int texFormat;
 		
-		void setup(u32 texParam)
+		void setup(SoftRasterizerTexture *theTexture, u32 texParam)
 		{
-			texFormat = (texParam>>26)&7;
-			wshift = ((texParam>>20)&0x07) + 3;
-			width=(1 << wshift);
-			height=(8 << ((texParam>>23)&0x07));
-			wmask = width-1;
-			hmask = height-1;
+			width = theTexture->GetRenderWidth();
+			height = theTexture->GetRenderHeight();
+			wmask = theTexture->GetRenderWidthMask();
+			hmask = theTexture->GetRenderHeightMask();
+			
 			wrap = (texParam>>16)&0xF;
-			enabled = gfx3d.renderState.enableTexturing && (texFormat!=0);
+			enabled = gfx3d.renderState.enableTexturing && (theTexture->GetPackFormat() != TEXMODE_NONE);
 		}
 		
 		FORCEINLINE void clamp(s32 &val, const int size, const s32 sizemask)
@@ -461,7 +457,10 @@ public:
 		
 		sampler.dowrap(iu, iv);
 		FragmentColor color;
-		color.color = lastTexKey->unpackData[(iv<<sampler.wshift)+iu];
+		const u32 *textureData = lastTexKey->GetUnpackData();
+		
+		color.color = textureData[( iv << lastTexKey->GetRenderWidthShift() ) + iu];
+		
 		return color;
 	}
 
@@ -1006,15 +1005,15 @@ public:
 		const size_t dstWidth = this->_softRender->GetFramebufferWidth();
 		const size_t dstHeight = this->_softRender->GetFramebufferHeight();
 		
-		lastTexKey = NULL;
-		
 		const GFX3D_Clipper::TClippedPoly &firstClippedPoly = this->_softRender->clippedPolys[0];
 		const POLY &firstPoly = *firstClippedPoly.poly;
 		PolygonAttributes polyAttr = firstPoly.getAttributes();
 		u32 lastPolyAttr = firstPoly.polyAttr;
 		u32 lastTexParams = firstPoly.texParam;
 		u32 lastTexPalette = firstPoly.texPalette;
-		sampler.setup(firstPoly.texParam);
+		
+		lastTexKey = this->_softRender->polyTexKeys[0];
+		sampler.setup(lastTexKey, firstPoly.texParam);
 
 		//iterate over polys
 		for (size_t i = 0; i < polyCount; i++)
@@ -1035,12 +1034,14 @@ public:
 			
 			if (lastTexParams != thePoly.texParam || lastTexPalette != thePoly.texPalette)
 			{
-				sampler.setup(thePoly.texParam);
 				lastTexParams = thePoly.texParam;
 				lastTexPalette = thePoly.texPalette;
+				
+				lastTexKey = this->_softRender->polyTexKeys[i];
+				sampler.setup(lastTexKey, thePoly.texParam);
+				lastTexKey->ResetCacheAge();
+				lastTexKey->IncreaseCacheUsageCount(1);
 			}
-			
-			lastTexKey = this->_softRender->polyTexKeys[i];
 			
 			for (int j = 0; j < type; j++)
 				this->verts[j] = &clippedPoly.clipVerts[j];
@@ -1147,10 +1148,58 @@ static void SoftRasterizerRendererDestroy()
 	}
 }
 
-void SoftRasterizerTextureDeleteCallback(TexCacheItem *texItem, void *param1, void *param2)
+SoftRasterizerTexture::SoftRasterizerTexture(u32 texAttributes, u32 palAttributes) : TextureStore(texAttributes, palAttributes)
 {
-	free_aligned(texItem->unpackData);
-	texCache.cache_size -= texItem->unpackSize;
+	_cacheSize = GetUnpackSizeUsingFormat(TexFormat_15bpp);
+	_unpackData = (u32 *)malloc_alignedCacheLine(_cacheSize);
+	_renderWidth = _sizeS;
+	_renderHeight = _sizeT;
+	_renderWidthMask = _renderWidth - 1;
+	_renderHeightMask = _renderHeight - 1;
+	
+	_renderWidthShift = 0;
+	
+	u32 tempWidth = _renderWidth;
+	while ( (tempWidth & 1) == 0)
+	{
+		tempWidth >>= 1;
+		_renderWidthShift++;
+	}
+}
+
+SoftRasterizerTexture::~SoftRasterizerTexture()
+{
+	free_aligned(this->_unpackData);
+}
+
+u32* SoftRasterizerTexture::GetUnpackData()
+{
+	return this->_unpackData;
+}
+
+u32 SoftRasterizerTexture::GetRenderWidth() const
+{
+	return this->_renderWidth;
+}
+
+u32 SoftRasterizerTexture::GetRenderHeight() const
+{
+	return this->_renderHeight;
+}
+
+u32 SoftRasterizerTexture::GetRenderWidthMask() const
+{
+	return this->_renderWidthMask;
+}
+
+u32 SoftRasterizerTexture::GetRenderHeightMask() const
+{
+	return this->_renderHeightMask;
+}
+
+u32 SoftRasterizerTexture::GetRenderWidthShift() const
+{
+	return this->_renderWidthShift;
 }
 
 GPU3DInterface gpu3DRasterize = {
@@ -1380,19 +1429,16 @@ void SoftRasterizerRenderer::setupTextures()
 	u32 lastTexParams = firstPoly.texParam;
 	u32 lastTexPalette = firstPoly.texPalette;
 	
-	TexCacheItem *lastTexItem = texCache.GetTexture(firstPoly.texParam, firstPoly.texPalette);
-	if (lastTexItem->unpackFormat != TexFormat_15bpp)
+	SoftRasterizerTexture *lastTexItem = (SoftRasterizerTexture *)texCache.GetTexture(firstPoly.texParam, firstPoly.texPalette);
+	if (lastTexItem == NULL)
 	{
-		const bool isNewTexture = (lastTexItem->GetDeleteCallback() == NULL);
-		if (isNewTexture)
-		{
-			lastTexItem->SetDeleteCallback(&SoftRasterizerTextureDeleteCallback, this, NULL);
-			lastTexItem->unpackSize = lastTexItem->GetUnpackSizeUsingFormat(TexFormat_15bpp);
-			lastTexItem->unpackData = (u32 *)malloc_alignedCacheLine(lastTexItem->unpackSize);
-			texCache.cache_size += lastTexItem->unpackSize;
-		}
-		
-		lastTexItem->Unpack<TexFormat_15bpp>(lastTexItem->unpackData);
+		lastTexItem = new SoftRasterizerTexture(firstPoly.texParam, firstPoly.texPalette);
+		texCache.Add(lastTexItem);
+	}
+	
+	if (lastTexItem->IsLoadNeeded())
+	{
+		lastTexItem->Unpack<TexFormat_15bpp>(lastTexItem->GetUnpackData());
 	}
 	
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
@@ -1406,19 +1452,16 @@ void SoftRasterizerRenderer::setupTextures()
 		//and then it won't be safe.
 		if (lastTexParams != thePoly.texParam || lastTexPalette != thePoly.texPalette)
 		{
-			lastTexItem = texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
-			if (lastTexItem->unpackFormat != TexFormat_15bpp)
+			lastTexItem = (SoftRasterizerTexture *)texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
+			if (lastTexItem == NULL)
 			{
-				const bool isNewTexture = (lastTexItem->GetDeleteCallback() == NULL);
-				if (isNewTexture)
-				{
-					lastTexItem->SetDeleteCallback(&SoftRasterizerTextureDeleteCallback, this, NULL);
-					lastTexItem->unpackSize = lastTexItem->GetUnpackSizeUsingFormat(TexFormat_15bpp);
-					lastTexItem->unpackData = (u32 *)malloc_alignedCacheLine(lastTexItem->unpackSize);
-					texCache.cache_size += lastTexItem->unpackSize;
-				}
-				
-				lastTexItem->Unpack<TexFormat_15bpp>(lastTexItem->unpackData);
+				lastTexItem = new SoftRasterizerTexture(thePoly.texParam, thePoly.texPalette);
+				texCache.Add(lastTexItem);
+			}
+			
+			if (lastTexItem->IsLoadNeeded())
+			{
+				lastTexItem->Unpack<TexFormat_15bpp>(lastTexItem->GetUnpackData());
 			}
 			
 			lastTexParams = thePoly.texParam;
@@ -1571,7 +1614,7 @@ Render3DError SoftRasterizerRenderer::RenderGeometry(const GFX3D_State &renderSt
 	{
 		rasterizerUnit[0].mainLoop<false>();
 		this->_renderGeometryNeedsFinish = false;
-		texCache.Evict(TEXCACHE_MAX_SIZE); // Since we're finishing geometry rendering here and now, also check the texture cache now.
+		texCache.Evict(); // Since we're finishing geometry rendering here and now, also check the texture cache now.
 	}
 	
 	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
@@ -1981,7 +2024,7 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 	}
 	
 	// Now that geometry rendering is finished on all threads, check the texture cache.
-	texCache.Evict(TEXCACHE_MAX_SIZE);
+	texCache.Evict();
 	
 	// Do multithreaded post-processing.
 	if (this->currentRenderState->enableEdgeMarking || this->currentRenderState->enableFog)
