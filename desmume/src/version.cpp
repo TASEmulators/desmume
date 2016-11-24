@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -31,12 +31,15 @@
 	#define TOSTRING(x) STRINGIFY(x)
 #endif
 
-//todo - everyone will want to support this eventually, i suppose
-#if defined(HOST_WINDOWS) || defined(DESMUME_COCOA)
+//TODO - it isn't possible to build a core without a frontend, so really this belongs with frontend modules
+//the only stuff that belongs in the core is major/minor/build versions which are (in principle) used for versioning savestates and movies and such..
+#if defined(HOST_WINDOWS)
+	#include "scmrev.h"
+	#define SVN_REV_STR SCM_DESC_STR
+#elif defined(DESMUME_COCOA)
 	#include "svnrev.h"
 #else
 	#ifndef SVN_REV
-		#define SVN_REV 0
 		#define SVN_REV_STR "0"
 	#endif
 #endif
@@ -106,7 +109,7 @@
 #elif defined(PUBLIC_RELEASE)
 	#define DESMUME_SUBVERSION_STRING ""
 #else
-	#define DESMUME_SUBVERSION_STRING " svn" SVN_REV_STR
+	#define DESMUME_SUBVERSION_STRING " git#" SVN_REV_STR
 #endif
 
 #ifdef __INTEL_COMPILER
@@ -140,12 +143,6 @@
 	#define DESMUME_JIT ""
 #endif
 
-#ifdef PUBLIC_RELEASE
-const u32 DESMUME_SUBVERSION_NUMERIC = 0xFFFFFFFF;
-#else
-const u32 DESMUME_SUBVERSION_NUMERIC = SVN_REV;
-#endif
-
 const u8 DESMUME_VERSION_MAJOR = 0;
 const u8 DESMUME_VERSION_MINOR = 9;
 const u8 DESMUME_VERSION_BUILD = 12;
@@ -155,7 +152,6 @@ const u8 DESMUME_VERSION_BUILD = 12;
 #define DESMUME_NAME_AND_VERSION DESMUME_NAME DESMUME_VERSION_STRING
 
 u32 EMU_DESMUME_VERSION_NUMERIC() { return DESMUME_VERSION_NUMERIC; }
-u32 EMU_DESMUME_SUBVERSION_NUMERIC() { return DESMUME_SUBVERSION_NUMERIC; }
 const char* EMU_DESMUME_VERSION_STRING() { return DESMUME_VERSION_STRING; }
 const char* EMU_DESMUME_SUBVERSION_STRING() { return DESMUME_SUBVERSION_STRING; }
 const char* EMU_DESMUME_NAME_AND_VERSION() { return DESMUME_NAME_AND_VERSION; }

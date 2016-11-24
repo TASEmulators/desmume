@@ -82,7 +82,7 @@
 	<ItemDefinitionGroup>
 
 		<PreBuildEvent>
-			<Command>defaultconfig\SubWCRev.bat</Command>
+			<Command>"%windir%\Sysnative\cscript" /nologo /E:JScript "defaultconfig\make_scmrev.h.js"</Command>
 		</PreBuildEvent>
 
 		<ClCompile>

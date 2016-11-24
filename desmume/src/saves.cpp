@@ -66,7 +66,7 @@ int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load
 #define SS_INDIRECT            0x80000000
 
 u32 _DESMUME_version = EMU_DESMUME_VERSION_NUMERIC();
-u32 svn_rev = EMU_DESMUME_SUBVERSION_NUMERIC();
+u32 svn_rev = 0; //EMU_DESMUME_VERSION_NUMERIC(); //sorry, not using this now
 s64 save_time = 0;
 NDS_SLOT1_TYPE slot1Type = NDS_SLOT1_RETAIL_AUTO;
 NDS_SLOT2_TYPE slot2Type = NDS_SLOT2_AUTO;
@@ -1044,7 +1044,7 @@ bool savestate_save (const char *file_name)
 static void writechunks(EMUFILE* os) {
 
 	DateTime tm = DateTime::get_Now();
-	svn_rev = EMU_DESMUME_SUBVERSION_NUMERIC();
+	svn_rev = 0;
 
 	save_time = tm.get_Ticks();
 
