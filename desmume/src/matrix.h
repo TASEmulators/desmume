@@ -276,13 +276,6 @@ FORCEINLINE void MatrixMultVec4x4(const float *matrix, float *vecPtr)
 	_mm_store_ps(vecPtr,_util_MatrixMultVec4x4_((SSE_MATRIX)matrix,_mm_load_ps(vecPtr)));
 }
 
-FORCEINLINE void MatrixMultVec4x4_M2(const float *matrix, float *vecPtr)
-{
-	//there are hardly any gains from merging these manually
-	MatrixMultVec4x4(matrix+16,vecPtr);
-	MatrixMultVec4x4(matrix,vecPtr);
-}
-
 FORCEINLINE void MatrixMultVec3x3(const float * matrix, float * vecPtr)
 {
 	const __m128 vec = _mm_load_ps(vecPtr);
@@ -355,13 +348,6 @@ void MatrixMultiply(float * matrix, const float * rightMatrix);
 void MatrixTranslate(float *matrix, const float *ptr);
 void MatrixScale(float * matrix, const float * ptr);
 
-FORCEINLINE void MatrixMultVec4x4_M2(const float *matrix, float *vecPtr)
-{
-	//there are hardly any gains from merging these manually
-	MatrixMultVec4x4(matrix+16,vecPtr);
-	MatrixMultVec4x4(matrix,vecPtr);
-}
-
 template<int NUM_ROWS>
 FORCEINLINE void vector_fix2float(float* matrix, const float divisor)
 {
@@ -372,8 +358,6 @@ FORCEINLINE void vector_fix2float(float* matrix, const float divisor)
 #endif //switched SSE functions
 
 void MatrixMultVec4x4 (const s32 *matrix, s32 *vecPtr);
-
-void MatrixMultVec4x4_M2(const s32 *matrix, s32 *vecPtr);
 
 void MatrixMultiply(s32* matrix, const s32* rightMatrix);
 void MatrixScale(s32 *matrix, const s32 *ptr);

@@ -526,7 +526,7 @@ void gfx3d_deinit()
 
 void gfx3d_reset()
 {
-	CurrentRenderer->RenderFinish();
+	GPU->ForceRender3DFinishAndFlush(false);
 	
 #ifdef _SHOW_VTX_COUNTERS
 	max_polys = max_verts = 0;
@@ -627,6 +627,53 @@ FORCEINLINE s32 vec3dot_fixed32(const s32* a, const s32* b) {
 	return sfx32_shiftdown(fx32_mul(a[0],b[0]) + fx32_mul(a[1],b[1]) + fx32_mul(a[2],b[2]));
 }
 
+//---------------
+//I'm going to start name these functions GE for GEOMETRY ENGINE MATH.
+//Pretty much any math function in this file should be explicit about how it's handling precision.
+//Handling that stuff generically globally is not a winning proposition.
+
+FORCEINLINE s64 GEM_Mul32x32To64(const s32 a, const s32 b)
+{
+#ifdef _MSC_VER
+	return __emul(a,b);
+#else
+	return ((s64)a)*((s64)b);
+#endif
+}
+
+static s32 GEM_SaturateAndShiftdown36To32(const s64 val)
+{
+	if(val>(s64)0x000007FFFFFFFFFFULL) return (s32)0x7FFFFFFFU;
+	if(val<(s64)0xFFFFF80000000000ULL) return (s32)0x80000000U;
+
+	return fx32_shiftdown(val);
+}
+
+static void GEM_TransformVertex(const s32 *matrix, s32 *vecPtr)
+{
+	const s32 x = vecPtr[0];
+	const s32 y = vecPtr[1];
+	const s32 z = vecPtr[2];
+	const s32 w = vecPtr[3];
+
+	//saturation logic is most carefully tested by:
+	//+ spectrobes beyond the portals excavation blower and drill tools: sets very large overflowing +x,+y in the modelview matrix to push things offscreen
+	//You can see this happening quite clearly: vertices will get translated to extreme values and overflow from a 7FFF-like to an 8000-like
+	//but if it's done wrongly, you can get bugs in:
+	//+ kingdom hearts re-coded: first conversation with cast characters will place them oddly with something overflowing to about 0xA???????
+	
+	//other test cases that cropped up during this development, but are probably not actually related to this after all
+	//+ SM64: outside castle skybox
+	//+ NSMB: mario head screen wipe
+
+	vecPtr[0] = GEM_SaturateAndShiftdown36To32(GEM_Mul32x32To64(x,matrix[0]) + GEM_Mul32x32To64(y,matrix[4]) + GEM_Mul32x32To64(z,matrix [8]) + GEM_Mul32x32To64(w,matrix[12]));
+	vecPtr[1] = GEM_SaturateAndShiftdown36To32(GEM_Mul32x32To64(x,matrix[1]) + GEM_Mul32x32To64(y,matrix[5]) + GEM_Mul32x32To64(z,matrix[ 9]) + GEM_Mul32x32To64(w,matrix[13]));
+	vecPtr[2] = GEM_SaturateAndShiftdown36To32(GEM_Mul32x32To64(x,matrix[2]) + GEM_Mul32x32To64(y,matrix[6]) + GEM_Mul32x32To64(z,matrix[10]) + GEM_Mul32x32To64(w,matrix[14]));
+	vecPtr[3] = GEM_SaturateAndShiftdown36To32(GEM_Mul32x32To64(x,matrix[3]) + GEM_Mul32x32To64(y,matrix[7]) + GEM_Mul32x32To64(z,matrix[11]) + GEM_Mul32x32To64(w,matrix[15]));
+}
+//---------------
+
+
 #define SUBMITVERTEX(ii, nn) polylist->list[polylist->count].vertIndexes[ii] = tempVertInfo.map[nn];
 //Submit a vertex to the GE
 static void SetVertex()
@@ -658,16 +705,9 @@ static void SetVertex()
 			return;
 	if(polylist->count >= POLYLIST_SIZE) 
 			return;
-	
-	//TODO - think about keeping the clip matrix concatenated,
-	//so that we only have to multiply one matrix here
-	//(we could lazy cache the concatenated clip matrix and only generate it
-	//when we need to)
-	MatrixMultVec4x4_M2(mtxCurrent[0], coordTransformed);
 
-	//printf("%f %f %f\n",s16coord[0]/4096.0f,s16coord[1]/4096.0f,s16coord[2]/4096.0f);
-	//printf("x %f %f %f %f\n",mtxCurrent[0][0]/4096.0f,mtxCurrent[0][1]/4096.0f,mtxCurrent[0][2]/4096.0f,mtxCurrent[0][3]/4096.0f);
-	//printf(" = %f %f %f %f\n",coordTransformed[0]/4096.0f,coordTransformed[1]/4096.0f,coordTransformed[2]/4096.0f,coordTransformed[3]/4096.0f);
+	GEM_TransformVertex(mtxCurrent[1],coordTransformed); //modelview
+	GEM_TransformVertex(mtxCurrent[0],coordTransformed); //projection
 
 	//TODO - culling should be done here.
 	//TODO - viewport transform?
@@ -1484,8 +1524,9 @@ static void gfx3d_glViewPort(u32 v)
 static BOOL gfx3d_glBoxTest(u32 v)
 {
 	//printf("boxtest\n");
-	MMU_new.gxstat.tr = 0;		// clear boxtest bit
-	MMU_new.gxstat.tb = 1;		// busy
+
+	//clear result flag. busy flag has been set by fifo component already
+	MMU_new.gxstat.tr = 0;		
 
 	BTcoords[BTind++] = v & 0xFFFF;
 	BTcoords[BTind++] = v >> 16;
@@ -1493,8 +1534,10 @@ static BOOL gfx3d_glBoxTest(u32 v)
 	if (BTind < 5) return FALSE;
 	BTind = 0;
 
-	MMU_new.gxstat.tb = 0;		// clear busy
 	GFX_DELAY(103);
+
+	//now that we're executing this, we're not busy anymore
+	MMU_new.gxstat.tb = 0;
 
 #if 0
 	INFO("BoxTEST: x %f y %f width %f height %f depth %f\n", 
@@ -1608,27 +1651,31 @@ static BOOL gfx3d_glBoxTest(u32 v)
 		//if any portion of this poly was retained, then the test passes.
 		if (boxtestClipper.clippedPolyCounter > 0)
 		{
-			//printf("%06d PASS %d\n",boxcounter,gxFIFO.size);
+			//printf("%06d PASS %d\n",gxFIFO.size, i);
 			MMU_new.gxstat.tr = 1;
 			break;
 		}
+		else
+		{
+		}
+
+		//if(i==5) printf("%06d FAIL\n",gxFIFO.size);
 	}
 
-	if (MMU_new.gxstat.tr == 0)
-	{
-		//printf("%06d FAIL %d\n",boxcounter,gxFIFO.size);
-	}
-	
+	//printf("%06d RESULT %d\n",gxFIFO.size, MMU_new.gxstat.tr);
+
 	return TRUE;
 }
 
 static BOOL gfx3d_glPosTest(u32 v)
 {
-	//printf("postest\n");
 	//this is apparently tested by transformers decepticons and ultimate spiderman
 
-	//printf("POSTEST\n");
-	MMU_new.gxstat.tb = 1;
+	//clear result flag. busy flag has been set by fifo component already
+	MMU_new.gxstat.tr = 0;
+
+	//now that we're executing this, we're not busy anymore
+	MMU_new.gxstat.tb = 0;
 
 	PTcoords[PTind++] = float16table[v & 0xFFFF];
 	PTcoords[PTind++] = float16table[v >> 16];
@@ -2252,23 +2299,12 @@ void gfx3d_VBlankSignal()
 
 void gfx3d_VBlankEndSignal(bool skipFrame)
 {
+	GPU->ForceRender3DFinishAndFlush(false);
+	
 	if (!drawPending) return;
 	if (skipFrame) return;
-
-	drawPending = FALSE;
 	
-	if (CurrentRenderer->GetRenderNeedsFinish())
-	{
-		bool need3DDisplayFramebuffer;
-		bool need3DCaptureFramebuffer;
-		CurrentRenderer->GetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
-		
-		CurrentRenderer->SetFramebufferFlushStates(false, false);
-		CurrentRenderer->RenderFinish();
-		CurrentRenderer->SetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
-		CurrentRenderer->SetRenderNeedsFinish(false);
-		GPU->GetEventHandler()->DidRender3DEnd();
-	}
+	drawPending = FALSE;
 	
 	GPU->GetEventHandler()->DidRender3DBegin();
 	
@@ -2486,7 +2522,7 @@ void gfx3d_Update3DFramebuffers(FragmentColor *framebufferRGBA6665, u16 *framebu
 //-------------savestate
 void gfx3d_savestate(EMUFILE* os)
 {
-	CurrentRenderer->RenderFinish();
+	GPU->ForceRender3DFinishAndFlush(true);
 	
 	//version
 	write32le(4,os);

@@ -66,6 +66,7 @@ CommandLine::CommandLine()
 , arm7_gdb_port(0)
 , start_paused(FALSE)
 , autodetect_method(-1)
+, render3d(COMMANDLINE_RENDER3D_DEFAULT)
 {
 #ifndef HOST_WINDOWS 
 	disable_sound = 0;
@@ -92,6 +93,8 @@ static const char* help_string = \
 " --num-cores N              Override numcores detection and use this many" ENDL
 " --spu-synch                Use SPU synch (crackles; helps streams; default ON)" ENDL
 " --spu-method N             Select SPU synch method: 0:N, 1:Z, 2:P; default 0" ENDL
+" --3d-render [SW|AUTOGL|GL|OLDGL]" ENDL
+"                            Select 3d renderer; default SW" ENDL
 #ifndef HOST_WINDOWS 
 " --disable-sound            Disables the sound output" ENDL
 " --disable-limiter          Disables the 60fps limiter" ENDL
@@ -154,6 +157,7 @@ ENDL
 
 #define OPT_NUMCORES 1
 #define OPT_SPU_METHOD 2
+#define OPT_3D_RENDER 3
 #define OPT_JIT_SIZE 100
 
 #define OPT_CONSOLE_TYPE 200
@@ -183,6 +187,8 @@ ENDL
 
 bool CommandLine::parse(int argc,char **argv)
 {
+	std::string _render3d;
+
 	int opt_help = 0;
 	int option_index = 0;
 	for(;;)
@@ -197,6 +203,7 @@ bool CommandLine::parse(int argc,char **argv)
 			{ "num-cores", required_argument, NULL, OPT_NUMCORES },
 			{ "spu-synch", no_argument, &_spu_sync_mode, 1 },
 			{ "spu-method", required_argument, NULL, OPT_SPU_METHOD },
+			{ "3d-render", required_argument, NULL, OPT_3D_RENDER },
 			#ifndef HOST_WINDOWS 
 				{ "disable-sound", no_argument, &disable_sound, 1},
 				{ "disable-limiter", no_argument, &disable_limiter, 1},
@@ -265,6 +272,7 @@ bool CommandLine::parse(int argc,char **argv)
 		//user settings
 		case OPT_NUMCORES: _num_cores = atoi(optarg); break;
 		case OPT_SPU_METHOD: _spu_sync_method = atoi(optarg); break;
+		case OPT_3D_RENDER: _render3d = optarg; break;
 
 		//sync settings
 		case OPT_JIT_SIZE: _jit_size = atoi(optarg); break;
@@ -342,6 +350,14 @@ bool CommandLine::parse(int argc,char **argv)
 		CommonSettings.ConsoleType = NDS_CONSOLE_TYPE_FAT;
 		CommonSettings.DebugConsole = true;
 	}
+
+	//process 3d renderer 
+	_render3d = strtoupper(_render3d);
+	if(_render3d == "NONE") render3d = COMMANDLINE_RENDER3D_NONE;
+	if(_render3d == "SW") render3d = COMMANDLINE_RENDER3D_SW;
+	if(_render3d == "OLDGL") render3d = COMMANDLINE_RENDER3D_OLDGL;
+	if(_render3d == "AUTOGL") render3d = COMMANDLINE_RENDER3D_AUTOGL;
+	if(_render3d == "GL") render3d = COMMANDLINE_RENDER3D_GL;
 
 	if (autodetect_method != -1)
 		CommonSettings.autodetectBackupMethod = autodetect_method;

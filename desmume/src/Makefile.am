@@ -52,6 +52,7 @@ libdesmume_a_SOURCES = \
 	utils/decrypt/decrypt.h utils/decrypt/header.cpp utils/decrypt/header.h \
 	utils/task.cpp utils/task.h \
 	utils/vfat.h utils/vfat.cpp \
+	utils/colorspacehandler/colorspacehandler.cpp \
 	utils/dlditool.cpp \
 	utils/libfat/bit_ops.h \
 	utils/libfat/cache.cpp \
@@ -109,6 +110,21 @@ libdesmume_a_SOURCES = \
 	libretro-common/rthreads/async_job.c \
 	libretro-common/rthreads/rsemaphore.c \
 	libretro-common/rthreads/rthreads.c
+	
+if SUPPORT_SSE2 += \
+libdesmume_a_SOURCES += \
+	utils/colorspacehandler/colorspacehandler_SSE2.cpp
+endif
+
+if SUPPORT_AVX2 += \
+libdesmume_a_SOURCES += \
+	utils/colorspacehandler/colorspacehandler_AVX2.cpp
+endif
+
+if SUPPORT_ALTIVEC += \
+libdesmume_a_SOURCES += \
+	utils/colorspacehandler/colorspacehandler_AltiVec.cpp
+endif
 
 if HAVE_JIT
 libdesmume_a_SOURCES += \

@@ -427,8 +427,3 @@ void MatrixTranslate(s32 *matrix, const s32 *ptr)
 	});
 }
 
-void MatrixMultVec4x4_M2(const s32 *matrix, s32 *vecPtr)
-{
-	MatrixMultVec4x4(matrix+16,vecPtr);
-	MatrixMultVec4x4(matrix,vecPtr);
-}

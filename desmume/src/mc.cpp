@@ -619,6 +619,21 @@ void BackupDevice::reset()
 		ensure((u32)savesize); //expand properly if necessary
 		addr_size = addr_size_for_old_save_type(savetype);
 	}
+
+	//automatically detect these hardcodes
+	if(state == DETECTING)
+	{
+		if(!memcmp(gameInfo.header.gameCode,"ASMK", 4)) addr_size = 1; //super mario 64 ds (KOR, which is different somehow)
+		else if(!memcmp(gameInfo.header.gameCode,"ASM", 3)) addr_size = 2; //super mario 64 ds
+		else if(!memcmp(gameInfo.header.gameCode,"BDE", 3)) addr_size = 2; // Dementium II
+		else if(!memcmp(gameInfo.header.gameCode,"AL3", 3)) addr_size = 1; //spongebob atlantis squarepantis.
+		else if(!memcmp(gameInfo.header.gameCode,"AH5", 3)) addr_size = 1; //over the hedge
+		else if(!memcmp(gameInfo.header.gameCode,"AVH", 3)) addr_size = 1; //over the hedge - Hammy Goes Nuts!
+		else if(!memcmp(gameInfo.header.gameCode,"AQ3", 3)) addr_size = 1; //spider-man 3
+		
+		//if we found a whitelist match, we dont need to run detection
+		if(addr_size) state = RUNNING;
+	}
 }
 
 void BackupDevice::close_rom()
@@ -662,36 +677,33 @@ void BackupDevice::detect()
 				addr_size = 1; //choose 1 just to keep the busted savefile from growing too big
 				msgbox->error("Catastrophic error while autodetecting save type.\nIt will need to be specified manually\n");
 				break;
+
 			case 2:
 				 //the modern typical case for small eeproms
 				addr_size = 1;
 				break;
+
 			case 3:
 				//another modern typical case..
 				//but unfortunately we select this case on accident sometimes when what it meant to do was present the archaic 1+2 case
 				//(the archaic 1+2 case is: specifying one address byte, and then reading the first two bytes, instead of the first one byte, as most other games would do.)
 				//so, we're gonna hack in checks for the games that are doing this
 				addr_size = 2;
-
-				// TODO: will study a deep, why this happens (wrong detect size)
-				if(!memcmp(gameInfo.header.gameCode,"AL3", 3)) addr_size = 1; //spongebob atlantis squarepantis.
-				if(!memcmp(gameInfo.header.gameCode,"AH5", 3)) addr_size = 1; //over the hedge
-				if(!memcmp(gameInfo.header.gameCode,"AVH", 3)) addr_size = 1; //over the hedge - Hammy Goes Nuts!
-				if(!memcmp(gameInfo.header.gameCode,"AQ3", 3)) addr_size = 1; //spider-man 3
-
 				break;
+
 			case 4:
 				//a modern typical case
 				addr_size = 3;
-				if(!memcmp(gameInfo.header.gameCode,"ASM", 3)) addr_size = 2; //super mario 64 ds
+
 				break;
 			default:
 				//the archaic case: write the address and then some modulo-4 number of bytes
 				//why modulo 4? who knows.
-				//SM64 (KOR) makes it here with autodetect_size=11 and nothing interesting in the buffer
 				addr_size = autodetect_size & 3;
 
-				if(!memcmp(gameInfo.header.gameCode,"BDE", 3)) addr_size = 2; // Dementium II
+				//SM64 (KOR) makes it here with autodetect_size=11 and nothing interesting in the buffer
+				//we whitelisted it earlier though
+
 				break;
 		}
 

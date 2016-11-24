@@ -25,9 +25,11 @@
 #include <iosfwd>
 
 #include "types.h"
+#include "./utils/colorspacehandler/colorspacehandler.h"
 
 #ifdef ENABLE_SSE2
 #include <emmintrin.h>
+#include "./utils/colorspacehandler/colorspacehandler_SSE2.h"
 #endif
 
 #ifdef ENABLE_SSSE3
@@ -80,7 +82,7 @@ enum PaletteMode
 enum OBJMode
 {
 	OBJMode_Normal			= 0,
-	OBJMode_Transparent	= 1,
+	OBJMode_Transparent		= 1,
 	OBJMode_Window			= 2,
 	OBJMode_Bitmap			= 3
 };
@@ -89,7 +91,7 @@ enum OBJShape
 {
 	OBJShape_Square			= 0,
 	OBJShape_Horizontal		= 1,
-	OBJShape_Vertical	   	= 2,
+	OBJShape_Vertical		= 2,
 	OBJShape_Prohibited		= 3
 };
 
@@ -98,16 +100,7 @@ enum DisplayCaptureSize
 	DisplayCaptureSize_128x128	= 0,
 	DisplayCaptureSize_256x64	= 1,
 	DisplayCaptureSize_256x128	= 2,
-	DisplayCaptureSize_256x192	= 3
-};
-
-union FragmentColor
-{
-	u32 color;
-	struct
-	{
-		u8 r,g,b,a;
-	};
+	DisplayCaptureSize_256x192	= 3,
 };
 
 typedef union
@@ -116,38 +109,7 @@ typedef union
 	
 	struct
 	{
-#ifdef MSB_FIRST
-		u8 ForceBlank:1;					//     7: A+B;
-		u8 OBJ_BMP_mapping:1;				//     6: A+B; 0=2D (128KB), 1=1D (128..256KB)
-		u8 OBJ_BMP_2D_dim:1;				//     5: A+B; 0=128x512,    1=256x256 pixels
-		u8 OBJ_Tile_mapping:1;				//     4: A+B; 0=2D (32KB),  1=1D (32..256KB)
-		u8 BG0_3D:1;						//     3: A  ; 0=2D,         1=3D
-		u8 BG_Mode:3;						//  0- 2: A+B;
-		
-		u8 WinOBJ_Enable:1;					//    15: A+B; 0=Disable, 1=Enable
-		u8 Win1_Enable:1;					//    14: A+B; 0=Disable, 1=Enable
-		u8 Win0_Enable:1;					//    13: A+B; 0=Disable, 1=Enable
-		u8 OBJ_Enable:1;					//    12: A+B; 0=Disable, 1=Enable
-		u8 BG3_Enable:1;					//    11: A+B; 0=Disable, 1=Enable
-		u8 BG2_Enable:1;					//    10: A+B; 0=Disable, 1=Enable
-		u8 BG1_Enable:1;					//     9: A+B; 0=Disable, 1=Enable
-		u8 BG0_Enable:1;					//     8: A+B; 0=Disable, 1=Enable
-		
-		u8 OBJ_HBlank_process:1;			//    23: A+B; OBJ processed during HBlank (GBA bit5)
-		u8 OBJ_BMP_1D_Bound:1;				//    22: A  ;
-		u8 OBJ_Tile_1D_Bound:2;				// 20-21: A+B;
-		u8 VRAM_Block:2;					// 18-19: A  ; VRAM block (0..3=A..D)
-		u8 DisplayMode:2;					// 16-17: A+B; coreA(0..3) coreB(0..1) GBA(Green Swap)
-											//        0=off (white screen)
-											//        1=on (normal BG & OBJ layers)
-											//        2=VRAM display (coreA only)
-											//        3=RAM display (coreA only, DMA transfers)
-		
-		u8 ExOBJPalette_Enable:1;			//    31: A+B; 0=Disable, 1=Enable OBJ extended Palette
-		u8 ExBGxPalette_Enable:1;			//    30: A+B; 0=Disable, 1=Enable BG extended Palette
-		u8 ScreenBase_Block:3;				// 27-29: A  ; Screen Base (64K step)
-		u8 CharacBase_Block:3;				// 24-26: A  ; Character Base (64K step)
-#else
+#ifdef LOCAL_LE
 		u8 BG_Mode:3;						//  0- 2: A+B;
 		u8 BG0_3D:1;						//     3: A  ; 0=2D,         1=3D
 		u8 OBJ_Tile_mapping:1;				//     4: A+B; 0=2D (32KB),  1=1D (32..256KB)
@@ -178,6 +140,37 @@ typedef union
 		u8 ScreenBase_Block:3;				// 27-29: A  ; Screen Base (64K step)
 		u8 ExBGxPalette_Enable:1;			//    30: A+B; 0=Disable, 1=Enable BG extended Palette
 		u8 ExOBJPalette_Enable:1;			//    31: A+B; 0=Disable, 1=Enable OBJ extended Palette
+#else
+		u8 ForceBlank:1;					//     7: A+B;
+		u8 OBJ_BMP_mapping:1;				//     6: A+B; 0=2D (128KB), 1=1D (128..256KB)
+		u8 OBJ_BMP_2D_dim:1;				//     5: A+B; 0=128x512,    1=256x256 pixels
+		u8 OBJ_Tile_mapping:1;				//     4: A+B; 0=2D (32KB),  1=1D (32..256KB)
+		u8 BG0_3D:1;						//     3: A  ; 0=2D,         1=3D
+		u8 BG_Mode:3;						//  0- 2: A+B;
+		
+		u8 WinOBJ_Enable:1;					//    15: A+B; 0=Disable, 1=Enable
+		u8 Win1_Enable:1;					//    14: A+B; 0=Disable, 1=Enable
+		u8 Win0_Enable:1;					//    13: A+B; 0=Disable, 1=Enable
+		u8 OBJ_Enable:1;					//    12: A+B; 0=Disable, 1=Enable
+		u8 BG3_Enable:1;					//    11: A+B; 0=Disable, 1=Enable
+		u8 BG2_Enable:1;					//    10: A+B; 0=Disable, 1=Enable
+		u8 BG1_Enable:1;					//     9: A+B; 0=Disable, 1=Enable
+		u8 BG0_Enable:1;					//     8: A+B; 0=Disable, 1=Enable
+		
+		u8 OBJ_HBlank_process:1;			//    23: A+B; OBJ processed during HBlank (GBA bit5)
+		u8 OBJ_BMP_1D_Bound:1;				//    22: A  ;
+		u8 OBJ_Tile_1D_Bound:2;				// 20-21: A+B;
+		u8 VRAM_Block:2;					// 18-19: A  ; VRAM block (0..3=A..D)
+		u8 DisplayMode:2;					// 16-17: A+B; coreA(0..3) coreB(0..1) GBA(Green Swap)
+											//        0=off (white screen)
+											//        1=on (normal BG & OBJ layers)
+											//        2=VRAM display (coreA only)
+											//        3=RAM display (coreA only, DMA transfers)
+		
+		u8 ExOBJPalette_Enable:1;			//    31: A+B; 0=Disable, 1=Enable OBJ extended Palette
+		u8 ExBGxPalette_Enable:1;			//    30: A+B; 0=Disable, 1=Enable BG extended Palette
+		u8 ScreenBase_Block:3;				// 27-29: A  ; Screen Base (64K step)
+		u8 CharacBase_Block:3;				// 24-26: A  ; Character Base (64K step)
 #endif
 	};
 } IOREG_DISPCNT;							// 0x400x000: Display control (Engine A+B)
@@ -222,37 +215,36 @@ typedef union
 	
 	struct
 	{
-#ifdef MSB_FIRST
-		u8 PaletteMode:1;					//     7: Color/palette mode; 0=16 palettes of 16 colors each, 1=Single palette of 256 colors
-		u8 Mosaic:1;						//     6: Mosaic render: 0=Disable, 1=Enable
-		u8 CharacBase_Block:4;				//  2- 5: individual character base offset (n*16KB)
+#ifdef LOCAL_LE
 		u8 Priority:2;						//  0- 1: Rendering priority; 0...3, where 0 is highest priority and 3 is lowest priority
+		u8 CharacBase_Block:4;				//  2- 5: individual character base offset (n*16KB)
+		u8 Mosaic:1;						//     6: Mosaic render: 0=Disable, 1=Enable
+		u8 PaletteMode:1;					//     7: Color/palette mode; 0=16 palettes of 16 colors each, 1=Single palette of 256 colors
 		
-		u8 ScreenSize:2;					// 14-15: text    : 256x256 512x256 256x512 512x512
-											//        x/rot/s : 128x128 256x256 512x512 1024x1024
-											//        bmp     : 128x128 256x256 512x256 512x512
-											//        large   : 512x1024 1024x512 - -
+		u8 ScreenBase_Block:5;				//  8-12: individual screen base offset (text n*2KB, BMP n*16KB)
 		u8 PaletteSet_Wrap:1;				//    13: BG0 extended palette set 0=set0, 1=set2
 											//        BG1 extended palette set 0=set1, 1=set3
 											//        BG2 overflow area wraparound 0=off, 1=wrap
 											//        BG3 overflow area wraparound 0=off, 1=wrap
-		u8 ScreenBase_Block:5;				//  8-12: individual screen base offset (text n*2KB, BMP n*16KB)
+		u8 ScreenSize:2;					// 14-15: text    : 256x256 512x256 256x512 512x512
+											//        x/rot/s : 128x128 256x256 512x512 1024x1024
+											//        bmp     : 128x128 256x256 512x256 512x512
+											//        large   : 512x1024 1024x512 - -
 #else
-
-		u8 Priority:2;						//  0- 1: Rendering priority; 0...3, where 0 is highest priority and 3 is lowest priority
-		u8 CharacBase_Block:4;				//  2- 5: individual character base offset (n*16KB)
-		u8 Mosaic:1;						//     6: Mosaic render: 0=Disable, 1=Enable
 		u8 PaletteMode:1;					//     7: Color/palette mode; 0=16 palettes of 16 colors each, 1=Single palette of 256 colors
+		u8 Mosaic:1;						//     6: Mosaic render: 0=Disable, 1=Enable
+		u8 CharacBase_Block:4;				//  2- 5: individual character base offset (n*16KB)
+		u8 Priority:2;						//  0- 1: Rendering priority; 0...3, where 0 is highest priority and 3 is lowest priority
 		
-		u8 ScreenBase_Block:5;				//  8-12: individual screen base offset (text n*2KB, BMP n*16KB)
-		u8 PaletteSet_Wrap:1;				//    13: BG0 extended palette set 0=set0, 1=set2
-											//        BG1 extended palette set 0=set1, 1=set3
-											//        BG2 overflow area wraparound 0=off, 1=wrap
-											//        BG3 overflow area wraparound 0=off, 1=wrap
 		u8 ScreenSize:2;					// 14-15: text    : 256x256 512x256 256x512 512x512
 											//        x/rot/s : 128x128 256x256 512x512 1024x1024
 											//        bmp     : 128x128 256x256 512x256 512x512
 											//        large   : 512x1024 1024x512 - -
+		u8 PaletteSet_Wrap:1;				//    13: BG0 extended palette set 0=set0, 1=set2
+											//        BG1 extended palette set 0=set1, 1=set3
+											//        BG2 overflow area wraparound 0=off, 1=wrap
+											//        BG3 overflow area wraparound 0=off, 1=wrap
+		u8 ScreenBase_Block:5;				//  8-12: individual screen base offset (text n*2KB, BMP n*16KB)
 #endif
 	};
 } IOREG_BGnCNT;								// 0x400x008, 0x400x00A, 0x400x00C, 0x400x00E: BGn layer control (Engine A+B)
@@ -310,14 +302,14 @@ typedef union
 	
 	struct
 	{
-#ifdef MSB_FIRST
-		s32 :4;
-		s32 Integer:20;
+#ifdef LOCAL_LE
 		u32 Fraction:8;
+		s32 Integer:20;
+		s32 :4;
 #else
-		u32 Fraction:8;
-		s32 Integer:20;
 		s32 :4;
+		s32 Integer:20;
+		u32 Fraction:8;
 #endif
 	};
 } IOREG_BGnX;								// 0x400x028, 0x400x038: BGn X-coordinate (Engine A+B)
@@ -409,22 +401,22 @@ typedef union
 	
 	struct
 	{
-#ifdef MSB_FIRST
-		u8 :2;								//  6- 7: Unused bits
-		u8 Effect_Enable:1;					//     5: Color special effect; 0=Disable, 1=Enable
-		u8 OBJ_Enable:1;					//     4: Layer OBJ display; 0=Disable, 1=Enable
-		u8 BG3_Enable:1;					//     3: Layer BG3 display; 0=Disable, 1=Enable
-		u8 BG2_Enable:1;					//     2: Layer BG2 display; 0=Disable, 1=Enable
-		u8 BG1_Enable:1;					//     1: Layer BG1 display; 0=Disable, 1=Enable
+#ifdef LOCAL_LE
 		u8 BG0_Enable:1;					//     0: Layer BG0 display; 0=Disable, 1=Enable
+		u8 BG1_Enable:1;					//     1: Layer BG1 display; 0=Disable, 1=Enable
+		u8 BG2_Enable:1;					//     2: Layer BG2 display; 0=Disable, 1=Enable
+		u8 BG3_Enable:1;					//     3: Layer BG3 display; 0=Disable, 1=Enable
+		u8 OBJ_Enable:1;					//     4: Layer OBJ display; 0=Disable, 1=Enable
+		u8 Effect_Enable:1;					//     5: Color special effect; 0=Disable, 1=Enable
+		u8 :2;								//  6- 7: Unused bits
 #else
-		u8 BG0_Enable:1;					//     0: Layer BG0 display; 0=Disable, 1=Enable
-		u8 BG1_Enable:1;					//     1: Layer BG1 display; 0=Disable, 1=Enable
-		u8 BG2_Enable:1;					//     2: Layer BG2 display; 0=Disable, 1=Enable
-		u8 BG3_Enable:1;					//     3: Layer BG3 display; 0=Disable, 1=Enable
-		u8 OBJ_Enable:1;					//     4: Layer OBJ display; 0=Disable, 1=Enable
-		u8 Effect_Enable:1;					//     5: Color special effect; 0=Disable, 1=Enable
 		u8 :2;								//  6- 7: Unused bits
+		u8 Effect_Enable:1;					//     5: Color special effect; 0=Disable, 1=Enable
+		u8 OBJ_Enable:1;					//     4: Layer OBJ display; 0=Disable, 1=Enable
+		u8 BG3_Enable:1;					//     3: Layer BG3 display; 0=Disable, 1=Enable
+		u8 BG2_Enable:1;					//     2: Layer BG2 display; 0=Disable, 1=Enable
+		u8 BG1_Enable:1;					//     1: Layer BG1 display; 0=Disable, 1=Enable
+		u8 BG0_Enable:1;					//     0: Layer BG0 display; 0=Disable, 1=Enable
 #endif
 	};
 } IOREG_WIN0IN;								// 0x400x048: Control of inside of Window 0 (highest priority)
@@ -438,18 +430,18 @@ typedef union
 	
 	struct
 	{
-#ifdef MSB_FIRST
-		u32 BG_MosaicV:4;					//  4- 7: Mosaic pixel height for BG layers; 0...15
+#ifdef LOCAL_LE
 		u32 BG_MosaicH:4;					//  0- 3: Mosaic pixel width for BG layers; 0...15
+		u32 BG_MosaicV:4;					//  4- 7: Mosaic pixel height for BG layers; 0...15
 		
-		u32 OBJ_MosaicV:4;					// 12-15: Mosaic pixel height for OBJ layer; 0...15
 		u32 OBJ_MosaicH:4;					//  8-11: Mosaic pixel width for OBJ layer; 0...15
+		u32 OBJ_MosaicV:4;					// 12-15: Mosaic pixel height for OBJ layer; 0...15
 #else
-		u32 BG_MosaicH:4;					//  0- 3: Mosaic pixel width for BG layers; 0...15
 		u32 BG_MosaicV:4;					//  4- 7: Mosaic pixel height for BG layers; 0...15
+		u32 BG_MosaicH:4;					//  0- 3: Mosaic pixel width for BG layers; 0...15
 		
-		u32 OBJ_MosaicH:4;					//  8-11: Mosaic pixel width for OBJ layer; 0...15
 		u32 OBJ_MosaicV:4;					// 12-15: Mosaic pixel height for OBJ layer; 0...15
+		u32 OBJ_MosaicH:4;					//  8-11: Mosaic pixel width for OBJ layer; 0...15
 #endif
 		
 		u32 :16;							// 16-31: Unused bits
@@ -462,46 +454,46 @@ typedef union
 	
 	struct
 	{
-#ifdef MSB_FIRST
+#ifdef LOCAL_LE
+		u16 BG0_Target1:1;					//     0: Select layer BG0 for 1st target; 0=Disable, 1=Enable
+		u16 BG1_Target1:1;					//     1: Select layer BG1 for 1st target; 0=Disable, 1=Enable
+		u16 BG2_Target1:1;					//     2: Select layer BG2 for 1st target; 0=Disable, 1=Enable
+		u16 BG3_Target1:1;					//     3: Select layer BG3 for 1st target; 0=Disable, 1=Enable
+		u16 OBJ_Target1:1;					//     4: Select layer OBJ for 1st target; 0=Disable, 1=Enable
+		u16 Backdrop_Target1:1;				//     5: Select backdrop for 1st target; 0=Disable, 1=Enable
 		u16 ColorEffect:2;					//  6- 7: Color effect mode;
 											//        0=Disable
 											//        1=Alpha blend 1st and 2nd target, interacts with BLDALPHA (0x400x052)
 											//        2=Increase brightness, interacts with BLDY (0x400x054)
 											//        3=Decrease brightness, interacts with BLDY (0x400x054)
-		u16 Backdrop_Target1:1;				//     5: Select backdrop for 1st target; 0=Disable, 1=Enable
-		u16 OBJ_Target1:1;					//     4: Select layer OBJ for 1st target; 0=Disable, 1=Enable
-		u16 BG3_Target1:1;					//     3: Select layer BG3 for 1st target; 0=Disable, 1=Enable
-		u16 BG2_Target1:1;					//     2: Select layer BG2 for 1st target; 0=Disable, 1=Enable
-		u16 BG1_Target1:1;					//     1: Select layer BG1 for 1st target; 0=Disable, 1=Enable
-		u16 BG0_Target1:1;					//     0: Select layer BG0 for 1st target; 0=Disable, 1=Enable
 		
-		u16 :2;								// 14-15: Unused bits
-		u16 Backdrop_Target2:1;				//    13: Select backdrop for 2nd target; 0=Disable, 1=Enable
-		u16 OBJ_Target2:1;					//    12: Select layer OBJ for 2nd target; 0=Disable, 1=Enable
-		u16 BG3_Target2:1;					//    11: Select layer BG3 for 2nd target; 0=Disable, 1=Enable
-		u16 BG2_Target2:1;					//    10: Select layer BG2 for 2nd target; 0=Disable, 1=Enable
-		u16 BG1_Target2:1;					//     9: Select layer BG1 for 2nd target; 0=Disable, 1=Enable
 		u16 BG0_Target2:1;					//     8: Select layer BG0 for 2nd target; 0=Disable, 1=Enable
+		u16 BG1_Target2:1;					//     9: Select layer BG1 for 2nd target; 0=Disable, 1=Enable
+		u16 BG2_Target2:1;					//    10: Select layer BG2 for 2nd target; 0=Disable, 1=Enable
+		u16 BG3_Target2:1;					//    11: Select layer BG3 for 2nd target; 0=Disable, 1=Enable
+		u16 OBJ_Target2:1;					//    12: Select layer OBJ for 2nd target; 0=Disable, 1=Enable
+		u16 Backdrop_Target2:1;				//    13: Select backdrop for 2nd target; 0=Disable, 1=Enable
+		u16 :2;								// 14-15: Unused bits
 #else
-		u16 BG0_Target1:1;					//     0: Select layer BG0 for 1st target; 0=Disable, 1=Enable
-		u16 BG1_Target1:1;					//     1: Select layer BG1 for 1st target; 0=Disable, 1=Enable
-		u16 BG2_Target1:1;					//     2: Select layer BG2 for 1st target; 0=Disable, 1=Enable
-		u16 BG3_Target1:1;					//     3: Select layer BG3 for 1st target; 0=Disable, 1=Enable
-		u16 OBJ_Target1:1;					//     4: Select layer OBJ for 1st target; 0=Disable, 1=Enable
-		u16 Backdrop_Target1:1;				//     5: Select backdrop for 1st target; 0=Disable, 1=Enable
 		u16 ColorEffect:2;					//  6- 7: Color effect mode;
 											//        0=Disable
 											//        1=Alpha blend 1st and 2nd target, interacts with BLDALPHA (0x400x052)
 											//        2=Increase brightness, interacts with BLDY (0x400x054)
 											//        3=Decrease brightness, interacts with BLDY (0x400x054)
+		u16 Backdrop_Target1:1;				//     5: Select backdrop for 1st target; 0=Disable, 1=Enable
+		u16 OBJ_Target1:1;					//     4: Select layer OBJ for 1st target; 0=Disable, 1=Enable
+		u16 BG3_Target1:1;					//     3: Select layer BG3 for 1st target; 0=Disable, 1=Enable
+		u16 BG2_Target1:1;					//     2: Select layer BG2 for 1st target; 0=Disable, 1=Enable
+		u16 BG1_Target1:1;					//     1: Select layer BG1 for 1st target; 0=Disable, 1=Enable
+		u16 BG0_Target1:1;					//     0: Select layer BG0 for 1st target; 0=Disable, 1=Enable
 		
-		u16 BG0_Target2:1;					//     8: Select layer BG0 for 2nd target; 0=Disable, 1=Enable
-		u16 BG1_Target2:1;					//     9: Select layer BG1 for 2nd target; 0=Disable, 1=Enable
-		u16 BG2_Target2:1;					//    10: Select layer BG2 for 2nd target; 0=Disable, 1=Enable
-		u16 BG3_Target2:1;					//    11: Select layer BG3 for 2nd target; 0=Disable, 1=Enable
-		u16 OBJ_Target2:1;					//    12: Select layer OBJ for 2nd target; 0=Disable, 1=Enable
-		u16 Backdrop_Target2:1;				//    13: Select backdrop for 2nd target; 0=Disable, 1=Enable
 		u16 :2;								// 14-15: Unused bits
+		u16 Backdrop_Target2:1;				//    13: Select backdrop for 2nd target; 0=Disable, 1=Enable
+		u16 OBJ_Target2:1;					//    12: Select layer OBJ for 2nd target; 0=Disable, 1=Enable
+		u16 BG3_Target2:1;					//    11: Select layer BG3 for 2nd target; 0=Disable, 1=Enable
+		u16 BG2_Target2:1;					//    10: Select layer BG2 for 2nd target; 0=Disable, 1=Enable
+		u16 BG1_Target2:1;					//     9: Select layer BG1 for 2nd target; 0=Disable, 1=Enable
+		u16 BG0_Target2:1;					//     8: Select layer BG0 for 2nd target; 0=Disable, 1=Enable
 #endif
 	};
 } IOREG_BLDCNT;								// 0x400x050: Color effects selection (Engine A+B)
@@ -512,18 +504,18 @@ typedef union
 	
 	struct
 	{
-#ifdef MSB_FIRST
-		u16 :3;								//  5- 7: Unused bits
+#ifdef LOCAL_LE
 		u16 EVA:5;							//  0- 4: Blending coefficient for 1st target; 0...31 (clamped to 16)
+		u16 :3;								//  5- 7: Unused bits
 		
-		u16 :3;								// 13-15: Unused bits
 		u16 EVB:5;							//  8-12: Blending coefficient for 2nd target; 0...31 (clamped to 16)
+		u16 :3;								// 13-15: Unused bits
 #else
-		u16 EVA:5;							//  0- 4: Blending coefficient for 1st target; 0...31 (clamped to 16)
 		u16 :3;								//  5- 7: Unused bits
+		u16 EVA:5;							//  0- 4: Blending coefficient for 1st target; 0...31 (clamped to 16)
 		
-		u16 EVB:5;							//  8-12: Blending coefficient for 2nd target; 0...31 (clamped to 16)
 		u16 :3;								// 13-15: Unused bits
+		u16 EVB:5;							//  8-12: Blending coefficient for 2nd target; 0...31 (clamped to 16)
 #endif
 	};
 } IOREG_BLDALPHA;							// 0x400x052: Color effects selection, interacts with BLDCNT (0x400x050) (Engine A+B)
@@ -534,12 +526,12 @@ typedef union
 	
 	struct
 	{
-#ifdef MSB_FIRST
-		u16 :3;								//  5- 7: Unused bits
+#ifdef LOCAL_LE
 		u16 EVY:5;							//  0- 4: Blending coefficient for increase/decrease brightness; 0...31 (clamped to 16)
+		u16 :3;								//  5- 7: Unused bits
 #else
-		u16 EVY:5;							//  0- 4: Blending coefficient for increase/decrease brightness; 0...31 (clamped to 16)
 		u16 :3;								//  5- 7: Unused bits
+		u16 EVY:5;							//  0- 4: Blending coefficient for increase/decrease brightness; 0...31 (clamped to 16)
 #endif
 		u16 :8;								//  8-15: Unused bits
 	};
@@ -551,42 +543,42 @@ typedef union
 	
 	struct
 	{
-#ifdef MSB_FIRST
+#ifdef LOCAL_LE
+		u8 EnableTexMapping:1;				//     0: Apply textures; 0=Disable, 1=Enable
+		u8 PolygonShading:1;				//     1: Polygon shading mode, interacts with POLYGON_ATTR (0x40004A4); 0=Toon Shading, 1=Highlight Shading
+		u8 EnableAlphaTest:1;				//     2: Perform alpha test, interacts with ALPHA_TEST_REF (0x4000340); 0=Disable, 1=Enable
+		u8 EnableAlphaBlending:1;			//     3: Perform alpha blending, interacts with POLYGON_ATTR (0x40004A4); 0=Disable, 1=Enable
+		u8 EnableAntiAliasing:1;			//     4: Render polygon edges with antialiasing; 0=Disable, 1=Enable
+		u8 EnableEdgeMarking:1;				//     5: Perform polygon edge marking, interacts with EDGE_COLOR (0x4000330); 0=Disable, 1=Enable
+		u8 FogOnlyAlpha:1;					//     6: Apply fog to the alpha channel only, interacts with FOG_COLOR (0x4000358) / FOG_TABLE (0x4000360); 0=Color+Alpha, 1=Alpha
 		u8 EnableFog:1;						//     7: Perform fog rendering, interacts with FOG_COLOR (0x4000358) / FOG_OFFSET (0x400035C) / FOG_TABLE (0x4000360);
 											//        0=Disable, 1=Enable
-		u8 FogOnlyAlpha:1;					//     6: Apply fog to the alpha channel only, interacts with FOG_COLOR (0x4000358) / FOG_TABLE (0x4000360); 0=Color+Alpha, 1=Alpha
-		u8 EnableEdgeMarking:1;				//     5: Perform polygon edge marking, interacts with EDGE_COLOR (0x4000330); 0=Disable, 1=Enable
-		u8 EnableAntiAliasing:1;			//     4: Render polygon edges with antialiasing; 0=Disable, 1=Enable
-		u8 EnableAlphaBlending:1;			//     3: Perform alpha blending, interacts with POLYGON_ATTR (0x40004A4); 0=Disable, 1=Enable
-		u8 EnableAlphaTest:1;				//     2: Perform alpha test, interacts with ALPHA_TEST_REF (0x4000340); 0=Disable, 1=Enable
-		u8 PolygonShading:1;				//     1: Polygon shading mode, interacts with POLYGON_ATTR (0x40004A4); 0=Toon Shading, 1=Highlight Shading
-		u8 EnableTexMapping:1;				//     0: Apply textures; 0=Disable, 1=Enable
 		
-		u8 :1;								//    15: Unused bits
+		u8 FogShiftSHR:4;					//  8-11: SHR-Divider, interacts with FOG_OFFSET (0x400035C); 0...10
+		u8 AckColorBufferUnderflow:1;		//    12: Color Buffer RDLINES Underflow; 0=None, 1=Underflow/Acknowledge
+		u8 AckVertexRAMOverflow:1;			//    13: Polygon/Vertex RAM Overflow; 0=None, 1=Overflow/Acknowledge
 		u8 RearPlaneMode:1;					//    14: Use clear image, interacts with CLEAR_COLOR (0x4000350) / CLEAR_DEPTH (0x4000354) / CLRIMAGE_OFFSET (0x4000356);
 											//        0=Blank, 1=Bitmap
-		u8 AckVertexRAMOverflow:1;			//    13: Polygon/Vertex RAM Overflow; 0=None, 1=Overflow/Acknowledge
-		u8 AckColorBufferUnderflow:1;		//    12: Color Buffer RDLINES Underflow; 0=None, 1=Underflow/Acknowledge
-		u8 FogShiftSHR:4;					//  8-11: SHR-Divider, interacts with FOG_OFFSET (0x400035C); 0...10
+		u8 :1;								//    15: Unused bits
 		
 		u16 :16;							// 16-31: Unused bits
 #else
-		u8 EnableTexMapping:1;				//     0: Apply textures; 0=Disable, 1=Enable
-		u8 PolygonShading:1;				//     1: Polygon shading mode, interacts with POLYGON_ATTR (0x40004A4); 0=Toon Shading, 1=Highlight Shading
-		u8 EnableAlphaTest:1;				//     2: Perform alpha test, interacts with ALPHA_TEST_REF (0x4000340); 0=Disable, 1=Enable
-		u8 EnableAlphaBlending:1;			//     3: Perform alpha blending, interacts with POLYGON_ATTR (0x40004A4); 0=Disable, 1=Enable
-		u8 EnableAntiAliasing:1;			//     4: Render polygon edges with antialiasing; 0=Disable, 1=Enable
-		u8 EnableEdgeMarking:1;				//     5: Perform polygon edge marking, interacts with EDGE_COLOR (0x4000330); 0=Disable, 1=Enable
-		u8 FogOnlyAlpha:1;					//     6: Apply fog to the alpha channel only, interacts with FOG_COLOR (0x4000358) / FOG_TABLE (0x4000360); 0=Color+Alpha, 1=Alpha
 		u8 EnableFog:1;						//     7: Perform fog rendering, interacts with FOG_COLOR (0x4000358) / FOG_OFFSET (0x400035C) / FOG_TABLE (0x4000360);
 											//        0=Disable, 1=Enable
+		u8 FogOnlyAlpha:1;					//     6: Apply fog to the alpha channel only, interacts with FOG_COLOR (0x4000358) / FOG_TABLE (0x4000360); 0=Color+Alpha, 1=Alpha
+		u8 EnableEdgeMarking:1;				//     5: Perform polygon edge marking, interacts with EDGE_COLOR (0x4000330); 0=Disable, 1=Enable
+		u8 EnableAntiAliasing:1;			//     4: Render polygon edges with antialiasing; 0=Disable, 1=Enable
+		u8 EnableAlphaBlending:1;			//     3: Perform alpha blending, interacts with POLYGON_ATTR (0x40004A4); 0=Disable, 1=Enable
+		u8 EnableAlphaTest:1;				//     2: Perform alpha test, interacts with ALPHA_TEST_REF (0x4000340); 0=Disable, 1=Enable
+		u8 PolygonShading:1;				//     1: Polygon shading mode, interacts with POLYGON_ATTR (0x40004A4); 0=Toon Shading, 1=Highlight Shading
+		u8 EnableTexMapping:1;				//     0: Apply textures; 0=Disable, 1=Enable
 		
-		u8 FogShiftSHR:4;					//  8-11: SHR-Divider, interacts with FOG_OFFSET (0x400035C); 0...10
-		u8 AckColorBufferUnderflow:1;		//    12: Color Buffer RDLINES Underflow; 0=None, 1=Underflow/Acknowledge
-		u8 AckVertexRAMOverflow:1;			//    13: Polygon/Vertex RAM Overflow; 0=None, 1=Overflow/Acknowledge
+		u8 :1;								//    15: Unused bits
 		u8 RearPlaneMode:1;					//    14: Use clear image, interacts with CLEAR_COLOR (0x4000350) / CLEAR_DEPTH (0x4000354) / CLRIMAGE_OFFSET (0x4000356);
 											//        0=Blank, 1=Bitmap
-		u8 :1;								//    15: Unused bits
+		u8 AckVertexRAMOverflow:1;			//    13: Polygon/Vertex RAM Overflow; 0=None, 1=Overflow/Acknowledge
+		u8 AckColorBufferUnderflow:1;		//    12: Color Buffer RDLINES Underflow; 0=None, 1=Underflow/Acknowledge
+		u8 FogShiftSHR:4;					//  8-11: SHR-Divider, interacts with FOG_OFFSET (0x400035C); 0...10
 		
 		u16 :16;							// 16-31: Unused bits
 #endif
@@ -599,46 +591,46 @@ typedef union
 	
 	struct
 	{
-#ifdef MSB_FIRST
-		unsigned :3;						//  5- 7: Unused bits
+#ifdef LOCAL_LE
 		unsigned EVA:5;						//  0- 4: Blending coefficient for SrcA; 0...31 (clamped to 16)
+		unsigned :3;						//  5- 7: Unused bits
 		
-		unsigned :3;						// 13-15: Unused bits
 		unsigned EVB:5;						//  8-12: Blending coefficient for SrcB; 0...31 (clamped to 16)
+		unsigned :3;						// 13-15: Unused bits
 		
-		unsigned :2;						// 22-23: Unused bits
-		unsigned CaptureSize:2;				// 20-21: Display capture dimensions; 0=128x128, 1=256x64, 2=256x128, 3=256x192
-		unsigned VRAMWriteOffset:2;			// 18-19: VRAM write target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
 		unsigned VRAMWriteBlock:2;			// 16-17: VRAM write target block; 0=Block A, 1=Block B, 2=Block C, 3=Block D
+		unsigned VRAMWriteOffset:2;			// 18-19: VRAM write target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
+		unsigned CaptureSize:2;				// 20-21: Display capture dimensions; 0=128x128, 1=256x64, 2=256x128, 3=256x192
+		unsigned :2;						// 22-23: Unused bits
 		
-		unsigned CaptureEnable:1;			//    31: Display capture status; 0=Disable/Ready 1=Enable/Busy
-		unsigned CaptureSrc:2;				// 29-30: Select capture target; 0=SrcA, 1=SrcB, 2=SrcA+SrcB blend, 3=SrcA+SrcB blend
-		unsigned :1;						//    28: Unused bit
-		unsigned VRAMReadOffset:2;			// 26-27: VRAM read target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
+		unsigned SrcA:1;					//    24: SrcA target; 0=Current framebuffer, 1=3D render buffer
 		unsigned SrcB:1;					//    25: SrcB target;
 											//        0=VRAM block, interacts with DISPCNT (0x4000000)
 											//        1=Main memory FIFO, interacts with DISP_MMEM_FIFO (0x4000068)
-		unsigned SrcA:1;					//    24: SrcA target; 0=Current framebuffer, 1=3D render buffer
+		unsigned VRAMReadOffset:2;			// 26-27: VRAM read target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
+		unsigned :1;						//    28: Unused bit
+		unsigned CaptureSrc:2;				// 29-30: Select capture target; 0=SrcA, 1=SrcB, 2=SrcA+SrcB blend, 3=SrcA+SrcB blend
+		unsigned CaptureEnable:1;			//    31: Display capture status; 0=Disable/Ready 1=Enable/Busy
 #else
-		unsigned EVA:5;						//  0- 4: Blending coefficient for SrcA; 0...31 (clamped to 16)
 		unsigned :3;						//  5- 7: Unused bits
+		unsigned EVA:5;						//  0- 4: Blending coefficient for SrcA; 0...31 (clamped to 16)
 		
-		unsigned EVB:5;						//  8-12: Blending coefficient for SrcB; 0...31 (clamped to 16)
 		unsigned :3;						// 13-15: Unused bits
+		unsigned EVB:5;						//  8-12: Blending coefficient for SrcB; 0...31 (clamped to 16)
 		
-		unsigned VRAMWriteBlock:2;			// 16-17: VRAM write target block; 0=Block A, 1=Block B, 2=Block C, 3=Block D
-		unsigned VRAMWriteOffset:2;			// 18-19: VRAM write target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
-		unsigned CaptureSize:2;				// 20-21: Display capture dimensions; 0=128x128, 1=256x64, 2=256x128, 3=256x192
 		unsigned :2;						// 22-23: Unused bits
+		unsigned CaptureSize:2;				// 20-21: Display capture dimensions; 0=128x128, 1=256x64, 2=256x128, 3=256x192
+		unsigned VRAMWriteOffset:2;			// 18-19: VRAM write target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
+		unsigned VRAMWriteBlock:2;			// 16-17: VRAM write target block; 0=Block A, 1=Block B, 2=Block C, 3=Block D
 		
-		unsigned SrcA:1;					//    24: SrcA target; 0=Current framebuffer, 1=3D render buffer
+		unsigned CaptureEnable:1;			//    31: Display capture status; 0=Disable/Ready 1=Enable/Busy
+		unsigned CaptureSrc:2;				// 29-30: Select capture target; 0=SrcA, 1=SrcB, 2=SrcA+SrcB blend, 3=SrcA+SrcB blend
+		unsigned :1;						//    28: Unused bit
+		unsigned VRAMReadOffset:2;			// 26-27: VRAM read target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
 		unsigned SrcB:1;					//    25: SrcB target;
 											//        0=VRAM block, interacts with DISPCNT (0x4000000)
 											//        1=Main memory FIFO, interacts with DISP_MMEM_FIFO (0x4000068)
-		unsigned VRAMReadOffset:2;			// 26-27: VRAM read target offset; 0=0KB, 1=32KB, 2=64KB, 3=96KB
-		unsigned :1;						//    28: Unused bit
-		unsigned CaptureSrc:2;				// 29-30: Select capture target; 0=SrcA, 1=SrcB, 2=SrcA+SrcB blend, 3=SrcA+SrcB blend
-		unsigned CaptureEnable:1;			//    31: Display capture status; 0=Disable/Ready 1=Enable/Busy
+		unsigned SrcA:1;					//    24: SrcA target; 0=Current framebuffer, 1=3D render buffer
 #endif
 	};
 	
@@ -652,20 +644,20 @@ typedef union
 	
 	struct
 	{
-#ifdef MSB_FIRST
-		u32 :3;								//  5- 7: Unused bits
+#ifdef LOCAL_LE
 		u32 Intensity:5;					//  0- 4: Brightness coefficient for increase/decrease brightness; 0...31 (clamped to 16)
+		u32 :3;								//  5- 7: Unused bits
 		
-		u32 Mode:2;							// 14-15: Brightness mode; 0=Disable, 1=Increase, 2=Decrease, 3=Reserved
 		u32 :6;								//  8-13: Unused bits
+		u32 Mode:2;							// 14-15: Brightness mode; 0=Disable, 1=Increase, 2=Decrease, 3=Reserved
 		
 		u32 :16;							// 16-31: Unused bits
 #else
-		u32 Intensity:5;					//  0- 4: Brightness coefficient for increase/decrease brightness; 0...31 (clamped to 16)
 		u32 :3;								//  5- 7: Unused bits
+		u32 Intensity:5;					//  0- 4: Brightness coefficient for increase/decrease brightness; 0...31 (clamped to 16)
 		
-		u32 :6;								//  8-13: Unused bits
 		u32 Mode:2;							// 14-15: Brightness mode; 0=Disable, 1=Increase, 2=Decrease, 3=Reserved
+		u32 :6;								//  8-13: Unused bits
 		
 		u32 :16;							// 16-31: Unused bits
 #endif
@@ -774,15 +766,15 @@ typedef struct
 
 enum ColorEffect
 {
-	ColorEffect_Disable					   = 0,
-	ColorEffect_Blend					      = 1,
+	ColorEffect_Disable					= 0,
+	ColorEffect_Blend					= 1,
 	ColorEffect_IncreaseBrightness		= 2,
 	ColorEffect_DecreaseBrightness		= 3
 };
 
 enum GPUEngineID
 {
-	GPUEngineID_Main	   = 0,
+	GPUEngineID_Main	= 0,
 	GPUEngineID_Sub		= 1
 };
 
@@ -800,7 +792,7 @@ enum GPUEngineID
 #define ADDRESS_STEP_512KB	   0x80000
 #define ADDRESS_MASK_256KB	   (ADDRESS_STEP_256KB-1)
 
-#ifdef MSB_FIRST
+#ifdef LOCAL_BE
 struct _TILEENTRY
 {
 /*14*/	unsigned Palette:4;
@@ -831,7 +823,7 @@ typedef union
 */
 
 struct _COLOR { // abgr x555
-#ifdef MSB_FIRST
+#ifdef LOCAL_BE
 	unsigned alpha:1;    // sometimes it is unused (pad)
 	unsigned blue:5;
 	unsigned green:5;
@@ -868,7 +860,47 @@ typedef union
 	
 	struct
 	{
-#ifdef MSB_FIRST
+#ifdef LOCAL_LE
+		union
+		{
+			u16 attr0;
+			
+			struct
+			{
+				u16 Y:8;					//  0- 7: Sprite Y-coordinate; 0...255
+				u16 RotScale:1;				//     8: Perform rotation/scaling; 0=Disable, 1=Enable
+				u16 Disable:1;				//     9: OBJ disable flag, only if Bit8 is cleared; 0=Perform render, 1=Do not perform render
+				u16 Mode:2;					// 10-11: OBJ mode; 0=Normal, 1=Transparent, 2=Window, 3=Bitmap
+				u16 Mosaic:1;				//    12: Mosaic render: 0=Disable, 1=Enable
+				u16 PaletteMode:1;			//    13: Color/palette select; 0=16 palettes of 16 colors each, 1=Single palette of 256 colors
+				u16 Shape:2;				// 14-15: OBJ shape; 0=Square, 1=Horizontal, 2=Vertical, 3=Prohibited
+			};
+			
+			struct
+			{
+				u16 :8;
+				u16 :1;
+				u16 DoubleSize:1;			//     9: Perform double-size render, only if Bit8 is set; 0=Disable, 1=Enable
+				u16 :6;
+			};
+		};
+		
+		s16 X:9;							// 16-24: Sprite X-coordinate; 0...511
+		u16 RotScaleIndex:3;				// 25-27: Rotation/scaling parameter selection; 0...31
+		u16 HFlip:1;						//    28: Flip sprite horizontally; 0=Normal, 1=Flip
+		u16 VFlip:1;						//    29: Flip sprite vertically; 0=Normal, 1=Flip
+		u16 Size:2;							// 30-31: OBJ size, interacts with Bit 14-15
+											//
+											//        Size| Square | Horizontal | Vertical
+											//           0:   8x8       16x8        8x16
+											//           1:  16x16      32x8        8x32
+											//           2:  32x32      32x16      16x32
+											//           3:  64x64      64x32      32x64
+		u16 TileIndex:10;					// 32-41: Tile index; 0...1023
+		
+		u16 Priority:2;						// 42-43: Rendering priority; 0...3, where 0 is highest priority and 3 is lowest priority
+		u16 PaletteIndex:4;					// 44-47: Palette index; 0...15
+#else
 		union
 		{
 			u16 attr0;
@@ -910,46 +942,6 @@ typedef union
 		u16 PaletteIndex:4;					// 44-47: Palette index; 0...15
 		u16 Priority:2;						// 42-43: Rendering priority; 0...3, where 0 is highest priority and 3 is lowest priority
 		u16 TileIndex:10;					// 32-41: Tile index; 0...1023
-#else
-		union
-		{
-			u16 attr0;
-			
-			struct
-			{
-				u16 Y:8;					//  0- 7: Sprite Y-coordinate; 0...255
-				u16 RotScale:1;				//     8: Perform rotation/scaling; 0=Disable, 1=Enable
-				u16 Disable:1;				//     9: OBJ disable flag, only if Bit8 is cleared; 0=Perform render, 1=Do not perform render
-				u16 Mode:2;					// 10-11: OBJ mode; 0=Normal, 1=Transparent, 2=Window, 3=Bitmap
-				u16 Mosaic:1;				//    12: Mosaic render: 0=Disable, 1=Enable
-				u16 PaletteMode:1;			//    13: Color/palette select; 0=16 palettes of 16 colors each, 1=Single palette of 256 colors
-				u16 Shape:2;				// 14-15: OBJ shape; 0=Square, 1=Horizontal, 2=Vertical, 3=Prohibited
-			};
-			
-			struct
-			{
-				u16 :8;
-				u16 :1;
-				u16 DoubleSize:1;			//     9: Perform double-size render, only if Bit8 is set; 0=Disable, 1=Enable
-				u16 :6;
-			};
-		};
-		
-		s16 X:9;							// 16-24: Sprite X-coordinate; 0...511
-		u16 RotScaleIndex:3;				// 25-27: Rotation/scaling parameter selection; 0...31
-		u16 HFlip:1;						//    28: Flip sprite horizontally; 0=Normal, 1=Flip
-		u16 VFlip:1;						//    29: Flip sprite vertically; 0=Normal, 1=Flip
-		u16 Size:2;							// 30-31: OBJ size, interacts with Bit 14-15
-											//
-											//        Size| Square | Horizontal | Vertical
-											//           0:   8x8       16x8        8x16
-											//           1:  16x16      32x8        8x32
-											//           2:  32x32      32x16      16x32
-											//           3:  64x64      64x32      32x64
-		u16 TileIndex:10;					// 32-41: Tile index; 0...1023
-		
-		u16 Priority:2;						// 42-43: Rendering priority; 0...3, where 0 is highest priority and 3 is lowest priority
-		u16 PaletteIndex:4;					// 44-47: Palette index; 0...15
 #endif
 		
 		u16 attr3:16;						// 48-63: Whenever this is used, you will need to explicitly convert endianness.
@@ -1007,7 +999,7 @@ enum GPULayerID
 	GPULayerID_BG2					= 2,
 	GPULayerID_BG3					= 3,
 	GPULayerID_OBJ					= 4,
-	GPULayerID_Backdrop			= 5
+	GPULayerID_Backdrop				= 5
 };
 
 enum BGType
@@ -1018,9 +1010,9 @@ enum BGType
 	BGType_Large8bpp				= 3,
 	
 	BGType_AffineExt				= 4,
-	BGType_AffineExt_256x16		= 5,
-	BGType_AffineExt_256x1		= 6,
-	BGType_AffineExt_Direct		= 7
+	BGType_AffineExt_256x16			= 5,
+	BGType_AffineExt_256x1			= 6,
+	BGType_AffineExt_Direct			= 7
 };
 
 enum GPUDisplayMode
@@ -1033,7 +1025,7 @@ enum GPUDisplayMode
 
 enum GPUMasterBrightMode
 {
-	GPUMasterBrightMode_Disable	= 0,
+	GPUMasterBrightMode_Disable		= 0,
 	GPUMasterBrightMode_Up			= 1,
 	GPUMasterBrightMode_Down		= 2,
 	GPUMasterBrightMode_Reserved	= 3
@@ -1044,68 +1036,13 @@ enum GPULayerType
 {
 	GPULayerType_3D					= 0,
 	GPULayerType_BG					= 1,
-	GPULayerType_OBJ				   = 2
+	GPULayerType_OBJ				= 2
 };
 
 enum NDSDisplayID
 {
-	NDSDisplayID_Main				   = 0,
+	NDSDisplayID_Main				= 0,
 	NDSDisplayID_Touch				= 1
-};
-
-enum NDSColorFormat
-{
-	// The color format information is packed in a 32-bit value.
-	// The bits are as follows:
-	// FFFOOOOO AAAAAABB BBBBGGGG GGRRRRRR
-	//
-	// F = Flags (see below)
-	// O = Color order (see below)
-	// A = Bit count for alpha [0-63]
-	// B = Bit count for blue  [0-63]
-	// G = Bit count for green [0-63]
-	// R = Bit count for red   [0-63]
-	//
-	// Flags:
-	//   Bit 29: Reverse order flag.
-	//      Set = Bits are in reverse order, usually for little-endian usage.
-	//      Cleared = Bits are in normal order, usually for big-endian usage.
-	//
-	// Color order bits, 24-28:
-	//      0x00 = RGBA, common format
-	//      0x01 = RGAB
-	//      0x02 = RBGA
-	//      0x03 = RBAG
-	//      0x04 = RAGB
-	//      0x05 = RABG
-	//      0x06 = GRBA
-	//      0x07 = GRAB
-	//      0x08 = GBRA
-	//      0x09 = GBAR
-	//      0x0A = GARB
-	//      0x0B = GABR
-	//      0x0C = BRGA
-	//      0x0D = BRAG
-	//      0x0E = BGRA, common format
-	//      0x0F = BGAR
-	//      0x10 = BARG
-	//      0x11 = BAGR
-	//      0x12 = ARGB
-	//      0x13 = ARBG
-	//      0x14 = AGRB
-	//      0x15 = AGBR
-	//      0x16 = ABRG
-	//      0x17 = ABGR
-	
-	// Color formats used for internal processing.
-	//NDSColorFormat_ABGR1555_Rev		= 0x20045145,
-	//NDSColorFormat_ABGR5666_Rev		= 0x20186186,
-	//NDSColorFormat_ABGR8888_Rev		= 0x20208208,
-	
-	// Color formats used by the output framebuffers.
-	NDSColorFormat_BGR555_Rev		= 0x20005145,
-	NDSColorFormat_BGR666_Rev		= 0x20006186,
-	NDSColorFormat_BGR888_Rev		= 0x20008208
 };
 
 struct DISPCAPCNT_parsed
@@ -1411,9 +1348,9 @@ protected:
 	template<size_t WIN_NUM> bool _IsWindowInsideVerticalRange(GPUEngineCompositorInfo &compInfo);
 	void _PerformWindowTesting(GPUEngineCompositorInfo &compInfo);
 	
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG_Final(GPUEngineCompositorInfo &compInfo);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG_ApplyColorEffectDisabledHint(GPUEngineCompositorInfo &compInfo);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG_ApplyMosaic(GPUEngineCompositorInfo &compInfo);
+	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderLine_LayerBG_Final(GPUEngineCompositorInfo &compInfo);
+	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderLine_LayerBG_ApplyColorEffectDisabledHint(GPUEngineCompositorInfo &compInfo);
+	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderLine_LayerBG_ApplyMosaic(GPUEngineCompositorInfo &compInfo);
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG(GPUEngineCompositorInfo &compInfo);
 	
 	template<NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, itemsForPriority_t *__restrict item);
@@ -1690,6 +1627,7 @@ public:
 	GPUEventHandler* GetEventHandler();
 	
 	void Reset();
+	void ForceRender3DFinishAndFlush(bool willFlush);
 	const NDSDisplayInfo& GetDisplayInfo(); // Frontends need to call this whenever they need to read the video buffers from the emulator core
 	void SetDisplayDidCustomRender(NDSDisplayID displayID, bool theState);
 	
@@ -1733,347 +1671,5 @@ public:
 
 extern GPUSubsystem *GPU;
 extern MMU_struct MMU;
-
-extern CACHE_ALIGN const u32 material_5bit_to_31bit[32];
-extern CACHE_ALIGN const u8 material_5bit_to_6bit[32];
-extern CACHE_ALIGN const u8 material_5bit_to_8bit[32];
-extern CACHE_ALIGN const u8 material_6bit_to_8bit[64];
-extern CACHE_ALIGN const u8 material_3bit_to_5bit[8];
-extern CACHE_ALIGN const u8 material_3bit_to_6bit[8];
-extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
-
-extern CACHE_ALIGN u32 color_555_to_6665_opaque[32768];
-extern CACHE_ALIGN u32 color_555_to_6665_opaque_swap_rb[32768];
-extern CACHE_ALIGN u32 color_555_to_666[32768];
-extern CACHE_ALIGN u32 color_555_to_8888_opaque[32768];
-extern CACHE_ALIGN u32 color_555_to_8888_opaque_swap_rb[32768];
-extern CACHE_ALIGN u32 color_555_to_888[32768];
-
-#define COLOR555TO6665_OPAQUE(col) (color_555_to_6665_opaque[(col)])					// Convert a 15-bit color to an opaque sparsely packed 32-bit color containing an RGBA6665 color
-#define COLOR555TO6665_OPAQUE_SWAP_RB(col) (color_555_to_6665_opaque_swap_rb[(col)])	// Convert a 15-bit color to an opaque sparsely packed 32-bit color containing an RGBA6665 color with R and B components swapped
-#define COLOR555TO666(col) (color_555_to_666[(col)])									// Convert a 15-bit color to a fully transparent sparsely packed 32-bit color containing an RGBA6665 color
-
-#ifdef MSB_FIRST
-	#define COLOR555TO6665(col,alpha5) ((alpha5) | color_555_to_666[(col)])				// Convert a 15-bit color to a sparsely packed 32-bit color containing an RGBA6665 color with user-defined alpha, big-endian
-#else
-	#define COLOR555TO6665(col,alpha5) (((alpha5)<<24) | color_555_to_666[(col)])		// Convert a 15-bit color to a sparsely packed 32-bit color containing an RGBA6665 color with user-defined alpha, little-endian
-#endif
-
-#define COLOR555TO8888_OPAQUE(col) (color_555_to_8888_opaque[(col)])					// Convert a 15-bit color to an opaque 32-bit color
-#define COLOR555TO8888_OPAQUE_SWAP_RB(col) (color_555_to_8888_opaque_swap_rb[(col)])	// Convert a 15-bit color to an opaque 32-bit color with R and B components swapped
-#define COLOR555TO888(col) (color_555_to_888[(col)])									// Convert a 15-bit color to an opaque 24-bit color or a fully transparent 32-bit color
-
-#ifdef MSB_FIRST
-	#define COLOR555TO8888(col,alpha8) ((alpha8) | color_555_to_888[(col)])				// Convert a 15-bit color to a 32-bit color with user-defined alpha, big-endian
-#else
-	#define COLOR555TO8888(col,alpha8) (((alpha8)<<24) | color_555_to_888[(col)])		// Convert a 15-bit color to a 32-bit color with user-defined alpha, little-endian
-#endif
-
-//produce a 15bpp color from individual 5bit components
-#define R5G5B5TORGB15(r,g,b) ( (r) | ((g)<<5) | ((b)<<10) )
-
-//produce a 16bpp color from individual 5bit components
-#define R6G6B6TORGB15(r,g,b) ( ((r)>>1) | (((g)&0x3E)<<4) | (((b)&0x3E)<<9) )
-
-inline FragmentColor MakeFragmentColor(const u8 r, const u8 g, const u8 b, const u8 a)
-{
-	FragmentColor ret;
-	ret.r = r; ret.g = g; ret.b = b; ret.a = a;
-	return ret;
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u32 ConvertColor555To8888Opaque(const u16 src)
-{
-	return (SWAP_RB) ? COLOR555TO8888_OPAQUE_SWAP_RB(src & 0x7FFF) : COLOR555TO8888_OPAQUE(src & 0x7FFF);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u32 ConvertColor555To6665Opaque(const u16 src)
-{
-	return (SWAP_RB) ? COLOR555TO6665_OPAQUE_SWAP_RB(src & 0x7FFF) : COLOR555TO6665_OPAQUE(src & 0x7FFF);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u32 ConvertColor8888To6665(FragmentColor srcColor)
-{
-	FragmentColor outColor;
-	outColor.r = ((SWAP_RB) ? srcColor.b : srcColor.r) >> 2;
-	outColor.g = srcColor.g >> 2;
-	outColor.b = ((SWAP_RB) ? srcColor.r : srcColor.b) >> 2;
-	outColor.a = srcColor.a >> 3;
-	
-	return outColor.color;
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u32 ConvertColor8888To6665(u32 srcColor)
-{
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
-	
-	return ConvertColor8888To6665<SWAP_RB>(srcColorComponent);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u32 ConvertColor6665To8888(FragmentColor srcColor)
-{
-	FragmentColor outColor;
-	outColor.r = material_6bit_to_8bit[((SWAP_RB) ? srcColor.b : srcColor.r)];
-	outColor.g = material_6bit_to_8bit[srcColor.g];
-	outColor.b = material_6bit_to_8bit[((SWAP_RB) ? srcColor.r : srcColor.b)];
-	outColor.a = material_5bit_to_8bit[srcColor.a];
-	
-	return outColor.color;
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u32 ConvertColor6665To8888(u32 srcColor)
-{
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
-	
-	return ConvertColor6665To8888<SWAP_RB>(srcColorComponent);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u16 ConvertColor8888To5551(FragmentColor srcColor)
-{
-	return R5G5B5TORGB15( ((SWAP_RB) ? srcColor.b : srcColor.r) >> 3, srcColor.g >> 3, ((SWAP_RB) ? srcColor.r : srcColor.b) >> 3) | ((srcColor.a == 0) ? 0x0000 : 0x8000 );
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u16 ConvertColor8888To5551(u32 srcColor)
-{
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
-	
-	return ConvertColor8888To5551<SWAP_RB>(srcColorComponent);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u16 ConvertColor6665To5551(FragmentColor srcColor)
-{
-	return R6G6B6TORGB15( ((SWAP_RB) ? srcColor.b : srcColor.r), srcColor.g, ((SWAP_RB) ? srcColor.r : srcColor.b)) | ((srcColor.a == 0) ? 0x0000 : 0x8000);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u16 ConvertColor6665To5551(u32 srcColor)
-{
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
-	
-	return ConvertColor6665To5551<SWAP_RB>(srcColorComponent);
-}
-
-#ifdef ENABLE_SSE2
-
-template <bool SWAP_RB>
-FORCEINLINE void ConvertColor555To8888(const __m128i &srcColor, const __m128i &srcAlphaBits32Lo, const __m128i &srcAlphaBits32Hi, __m128i &dstLo, __m128i &dstHi)
-{
-	__m128i src32;
-	
-	// Conversion algorithm:
-	//    RGB   5-bit to 8-bit formula: dstRGB8 = (srcRGB5 << 3) | ((srcRGB5 >> 2) & 0x07)
-	src32 = _mm_unpacklo_epi16(srcColor, _mm_setzero_si128());
-	dstLo = (SWAP_RB) ? _mm_or_si128(_mm_slli_epi32(src32, 19), _mm_srli_epi32(src32, 7)) : _mm_or_si128(_mm_slli_epi32(src32, 3), _mm_slli_epi32(src32, 9));
-	dstLo = _mm_and_si128( dstLo, _mm_set1_epi32(0x00F800F8) );
-	dstLo = _mm_or_si128( dstLo, _mm_and_si128(_mm_slli_epi32(src32, 6), _mm_set1_epi32(0x0000F800)) );
-	dstLo = _mm_or_si128( dstLo, _mm_and_si128(_mm_srli_epi32(dstLo, 5), _mm_set1_epi32(0x00070707)) );
-	dstLo = _mm_or_si128( dstLo, srcAlphaBits32Lo );
-	
-	src32 = _mm_unpackhi_epi16(srcColor, _mm_setzero_si128());
-	dstHi = (SWAP_RB) ? _mm_or_si128(_mm_slli_epi32(src32, 19), _mm_srli_epi32(src32, 7)) : _mm_or_si128(_mm_slli_epi32(src32, 3), _mm_slli_epi32(src32, 9));
-	dstHi = _mm_and_si128( dstHi, _mm_set1_epi32(0x00F800F8) );
-	dstHi = _mm_or_si128( dstHi, _mm_and_si128(_mm_slli_epi32(src32, 6), _mm_set1_epi32(0x0000F800)) );
-	dstHi = _mm_or_si128( dstHi, _mm_and_si128(_mm_srli_epi32(dstHi, 5), _mm_set1_epi32(0x00070707)) );
-	dstHi = _mm_or_si128( dstHi, srcAlphaBits32Hi );
-}
-
-template <bool SWAP_RB>
-FORCEINLINE void ConvertColor555To6665(const __m128i &srcColor, const __m128i &srcAlphaBits32Lo, const __m128i &srcAlphaBits32Hi, __m128i &dstLo, __m128i &dstHi)
-{
-	__m128i src32;
-	
-	// Conversion algorithm:
-	//    RGB   5-bit to 6-bit formula: dstRGB6 = (srcRGB5 << 1) | ((srcRGB5 >> 4) & 0x01)
-	src32 = _mm_unpacklo_epi16(srcColor, _mm_setzero_si128());
-	dstLo = (SWAP_RB) ? _mm_or_si128(_mm_slli_epi32(src32, 17), _mm_srli_epi32(src32, 9)) : _mm_or_si128(_mm_slli_epi32(src32, 1), _mm_slli_epi32(src32, 7));
-	dstLo = _mm_and_si128( dstLo, _mm_set1_epi32(0x003E003E) );
-	dstLo = _mm_or_si128( dstLo, _mm_and_si128(_mm_slli_epi32(src32, 4), _mm_set1_epi32(0x00003E00)) );
-	dstLo = _mm_or_si128( dstLo, _mm_and_si128(_mm_srli_epi32(dstLo, 5), _mm_set1_epi32(0x00010101)) );
-	dstLo = _mm_or_si128( dstLo, srcAlphaBits32Lo );
-	
-	src32 = _mm_unpackhi_epi16(srcColor, _mm_setzero_si128());
-	dstHi = (SWAP_RB) ? _mm_or_si128(_mm_slli_epi32(src32, 17), _mm_srli_epi32(src32, 9)) : _mm_or_si128(_mm_slli_epi32(src32, 1), _mm_slli_epi32(src32, 7));
-	dstHi = _mm_and_si128( dstHi, _mm_set1_epi32(0x003E003E) );
-	dstHi = _mm_or_si128( dstHi, _mm_and_si128(_mm_slli_epi32(src32, 4), _mm_set1_epi32(0x00003E00)) );
-	dstHi = _mm_or_si128( dstHi, _mm_and_si128(_mm_srli_epi32(dstHi, 5), _mm_set1_epi32(0x00010101)) );
-	dstHi = _mm_or_si128( dstHi, srcAlphaBits32Hi );
-}
-
-template <bool SWAP_RB>
-FORCEINLINE void ConvertColor555To8888Opaque(const __m128i &srcColor, __m128i &dstLo, __m128i &dstHi)
-{
-	const __m128i srcAlphaBits32 = _mm_set1_epi32(0xFF000000);
-	ConvertColor555To8888<SWAP_RB>(srcColor, srcAlphaBits32, srcAlphaBits32, dstLo, dstHi);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE void ConvertColor555To6665Opaque(const __m128i &srcColor, __m128i &dstLo, __m128i &dstHi)
-{
-	const __m128i srcAlphaBits32 = _mm_set1_epi32(0x1F000000);
-	ConvertColor555To6665<SWAP_RB>(srcColor, srcAlphaBits32, srcAlphaBits32, dstLo, dstHi);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE __m128i ConvertColor8888To6665(const __m128i &src)
-{
-	// Conversion algorithm:
-	//    RGB   8-bit to 6-bit formula: dstRGB6 = (srcRGB8 >> 2)
-	//    Alpha 8-bit to 6-bit formula: dstA5   = (srcA8   >> 3)
-	__m128i rgb;
-	const __m128i a = _mm_and_si128( _mm_srli_epi32(src, 3), _mm_set1_epi32(0x1F000000) );
-	
-	if (SWAP_RB)
-	{
-#ifdef ENABLE_SSSE3
-		rgb = _mm_and_si128( _mm_srli_epi32(src, 2), _mm_set1_epi32(0x003F3F3F) );
-		rgb = _mm_shuffle_epi8( rgb, _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2) );
-#else
-		rgb = _mm_or_si128( _mm_srli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x003F0000)), 18), _mm_or_si128(_mm_srli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x00003F00)), 2), _mm_slli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x0000003F)), 14)) );
-#endif
-	}
-	else
-	{
-		rgb = _mm_and_si128( _mm_srli_epi32(src, 2), _mm_set1_epi32(0x003F3F3F) );
-	}
-	
-	return _mm_or_si128(rgb, a);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE __m128i ConvertColor6665To8888(const __m128i &src)
-{
-	// Conversion algorithm:
-	//    RGB   6-bit to 8-bit formula: dstRGB8 = (srcRGB6 << 2) | ((srcRGB6 >> 4) & 0x03)
-	//    Alpha 5-bit to 8-bit formula: dstA8   = (srcA5   << 3) | ((srcA5   >> 2) & 0x07)
-	      __m128i rgb = _mm_or_si128( _mm_and_si128(_mm_slli_epi32(src, 2), _mm_set1_epi32(0x00FCFCFC)), _mm_and_si128(_mm_srli_epi32(src, 4), _mm_set1_epi32(0x00030303)) );
-	const __m128i a   = _mm_or_si128( _mm_and_si128(_mm_slli_epi32(src, 3), _mm_set1_epi32(0xF8000000)), _mm_and_si128(_mm_srli_epi32(src, 2), _mm_set1_epi32(0x07000000)) );
-	
-	if (SWAP_RB)
-	{
-#ifdef ENABLE_SSSE3
-		rgb = _mm_shuffle_epi8( rgb, _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2) );
-#else
-		rgb = _mm_or_si128( _mm_srli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x00FF0000)), 16), _mm_or_si128(_mm_and_si128(src, _mm_set1_epi32(0x0000FF00)), _mm_slli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x000000FF)), 16)) );
-#endif
-	}
-	
-	return _mm_or_si128(rgb, a);
-}
-
-template <NDSColorFormat COLORFORMAT, bool SWAP_RB>
-FORCEINLINE __m128i _ConvertColorBaseTo5551(const __m128i &srcLo, const __m128i &srcHi)
-{
-	if (COLORFORMAT == NDSColorFormat_BGR555_Rev)
-	{
-		return srcLo;
-	}
-	
-	__m128i rgbLo;
-	__m128i rgbHi;
-	__m128i alpha;
-	
-	if (COLORFORMAT == NDSColorFormat_BGR666_Rev)
-	{
-		if (SWAP_RB)
-		{
-			// Convert color from low bits
-			rgbLo =                     _mm_and_si128(_mm_srli_epi32(srcLo, 17), _mm_set1_epi32(0x0000001F));
-			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_srli_epi32(srcLo,  4), _mm_set1_epi32(0x000003E0)) );
-			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_slli_epi32(srcLo,  9), _mm_set1_epi32(0x00007C00)) );
-			
-			// Convert color from high bits
-			rgbHi =                     _mm_and_si128(_mm_srli_epi32(srcHi, 17), _mm_set1_epi32(0x0000001F));
-			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_srli_epi32(srcHi,  4), _mm_set1_epi32(0x000003E0)) );
-			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_slli_epi32(srcHi,  9), _mm_set1_epi32(0x00007C00)) );
-		}
-		else
-		{
-			// Convert color from low bits
-			rgbLo =                     _mm_and_si128(_mm_srli_epi32(srcLo,  1), _mm_set1_epi32(0x0000001F));
-			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_srli_epi32(srcLo,  4), _mm_set1_epi32(0x000003E0)) );
-			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_srli_epi32(srcLo,  7), _mm_set1_epi32(0x00007C00)) );
-			
-			// Convert color from high bits
-			rgbHi =                     _mm_and_si128(_mm_srli_epi32(srcHi,  1), _mm_set1_epi32(0x0000001F));
-			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_srli_epi32(srcHi,  4), _mm_set1_epi32(0x000003E0)) );
-			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_srli_epi32(srcHi,  7), _mm_set1_epi32(0x00007C00)) );
-		}
-		
-		// Convert alpha
-		alpha = _mm_packs_epi32( _mm_and_si128(_mm_srli_epi32(srcLo, 24), _mm_set1_epi32(0x0000001F)), _mm_and_si128(_mm_srli_epi32(srcHi, 24), _mm_set1_epi32(0x0000001F)) );
-		alpha = _mm_cmpgt_epi16(alpha, _mm_setzero_si128());
-		alpha = _mm_and_si128(alpha, _mm_set1_epi16(0x8000));
-	}
-	else if (COLORFORMAT == NDSColorFormat_BGR888_Rev)
-	{
-		if (SWAP_RB)
-		{
-			// Convert color from low bits
-			rgbLo =                     _mm_and_si128(_mm_srli_epi32(srcLo, 19), _mm_set1_epi32(0x0000001F));
-			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_srli_epi32(srcLo,  6), _mm_set1_epi32(0x000003E0)) );
-			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_slli_epi32(srcLo,  7), _mm_set1_epi32(0x00007C00)) );
-			
-			// Convert color from high bits
-			rgbHi =                     _mm_and_si128(_mm_srli_epi32(srcHi, 19), _mm_set1_epi32(0x0000001F));
-			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_srli_epi32(srcHi,  6), _mm_set1_epi32(0x000003E0)) );
-			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_slli_epi32(srcHi,  7), _mm_set1_epi32(0x00007C00)) );
-		}
-		else
-		{
-			// Convert color from low bits
-			rgbLo =                     _mm_and_si128(_mm_srli_epi32(srcLo,  3), _mm_set1_epi32(0x0000001F));
-			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_srli_epi32(srcLo,  6), _mm_set1_epi32(0x000003E0)) );
-			rgbLo = _mm_or_si128(rgbLo, _mm_and_si128(_mm_srli_epi32(srcLo,  9), _mm_set1_epi32(0x00007C00)) );
-			
-			// Convert color from high bits
-			rgbHi =                     _mm_and_si128(_mm_srli_epi32(srcHi,  3), _mm_set1_epi32(0x0000001F));
-			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_srli_epi32(srcHi,  6), _mm_set1_epi32(0x000003E0)) );
-			rgbHi = _mm_or_si128(rgbHi, _mm_and_si128(_mm_srli_epi32(srcHi,  9), _mm_set1_epi32(0x00007C00)) );
-		}
-		
-		// Convert alpha
-		alpha = _mm_packs_epi32( _mm_and_si128(_mm_srli_epi32(srcLo, 24), _mm_set1_epi32(0x000000FF)), _mm_and_si128(_mm_srli_epi32(srcHi, 24), _mm_set1_epi32(0x000000FF)) );
-		alpha = _mm_cmpgt_epi16(alpha, _mm_setzero_si128());
-		alpha = _mm_and_si128(alpha, _mm_set1_epi16(0x8000));
-	}
-	
-	return _mm_or_si128(_mm_packs_epi32(rgbLo, rgbHi), alpha);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE __m128i ConvertColor8888To5551(const __m128i &srcLo, const __m128i &srcHi)
-{
-	return _ConvertColorBaseTo5551<NDSColorFormat_BGR888_Rev, SWAP_RB>(srcLo, srcHi);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE __m128i ConvertColor6665To5551(const __m128i &srcLo, const __m128i &srcHi)
-{
-	return _ConvertColorBaseTo5551<NDSColorFormat_BGR666_Rev, SWAP_RB>(srcLo, srcHi);
-}
-
-#endif
-
-template<bool SWAP_RB, bool IS_UNALIGNED> void ConvertColorBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-template<bool SWAP_RB, bool IS_UNALIGNED> void ConvertColorBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
-
-template<bool SWAP_RB> void ConvertColorBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount);
-template<bool SWAP_RB> void ConvertColorBuffer6665To8888(const u32 *src, u32 *dst, size_t pixCount);
-
-template<bool SWAP_RB, bool IS_UNALIGNED> void ConvertColorBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
-template<bool SWAP_RB, bool IS_UNALIGNED> void ConvertColorBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
 
 #endif

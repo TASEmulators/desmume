@@ -94,7 +94,7 @@
 			<!-- BETA_VERSION ? -->
 			<PreprocessorDefinitions Condition="'$(NDS_OPT)' == 'Debug'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<PreprocessorDefinitions Condition="'$(NDS_OPT)' == 'Release'">RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-			<PreprocessorDefinitions Condition="'$(NDS_OPT)' == 'FastBuild'">RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions Condition="'$(NDS_OPT)' == 'FastBuild'">FASTBUILD;RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 
 			<!-- These work together -->

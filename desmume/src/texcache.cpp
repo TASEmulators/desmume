@@ -30,6 +30,10 @@
 #include "MMU.h"
 #include "NDSSystem.h"
 
+#ifdef ENABLE_SSE2
+#include "./utils/colorspacehandler/colorspacehandler_SSE2.h"
+#endif
+
 using std::min;
 using std::max;
 
@@ -451,13 +455,13 @@ public:
 							
 							if (TEXFORMAT == TexFormat_15bpp)
 							{
-								ConvertColor555To6665Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
-								ConvertColor555To6665Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+								ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
 							}
 							else
 							{
-								ConvertColor555To8888Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
-								ConvertColor555To8888Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+								ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
 							}
 							
 							// Set converted colors to 0 if the palette index is 0.
@@ -517,13 +521,13 @@ public:
 							
 							if (TEXFORMAT == TexFormat_15bpp)
 							{
-								ConvertColor555To6665Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
-								ConvertColor555To6665Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+								ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
 							}
 							else
 							{
-								ConvertColor555To8888Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
-								ConvertColor555To8888Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+								ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
 							}
 							
 							_mm_store_si128((__m128i *)(dwdst +  0), convertedColor[0]);
@@ -580,13 +584,13 @@ public:
 							
 							if (TEXFORMAT == TexFormat_15bpp)
 							{
-								ConvertColor555To6665Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
-								ConvertColor555To6665Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+								ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
 							}
 							else
 							{
-								ConvertColor555To8888Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
-								ConvertColor555To8888Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+								ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
 							}
 							
 							// Set converted colors to 0 if the palette index is 0.
@@ -646,13 +650,13 @@ public:
 							
 							if (TEXFORMAT == TexFormat_15bpp)
 							{
-								ConvertColor555To6665Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
-								ConvertColor555To6665Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+								ColorspaceConvert555To6665Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ColorspaceConvert555To6665Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
 							}
 							else
 							{
-								ConvertColor555To8888Opaque<false>(palColor0, convertedColor[0], convertedColor[1]);
-								ConvertColor555To8888Opaque<false>(palColor1, convertedColor[2], convertedColor[3]);
+								ColorspaceConvert555To8888Opaque_SSE2<false>(palColor0, convertedColor[0], convertedColor[1]);
+								ColorspaceConvert555To8888Opaque_SSE2<false>(palColor1, convertedColor[2], convertedColor[3]);
 							}
 							
 							_mm_store_si128((__m128i *)(dwdst +  0), convertedColor[0]);
@@ -881,11 +885,11 @@ public:
 							
 							tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaLo);
 							tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaLo);
-							ConvertColor555To6665<false>(palColor0, tmpAlpha[0], tmpAlpha[1], convertedColor[0], convertedColor[1]);
+							ColorspaceConvert555To6665_SSE2<false>(palColor0, tmpAlpha[0], tmpAlpha[1], convertedColor[0], convertedColor[1]);
 							
 							tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaHi);
 							tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaHi);
-							ConvertColor555To6665<false>(palColor1, tmpAlpha[0], tmpAlpha[1], convertedColor[2], convertedColor[3]);
+							ColorspaceConvert555To6665_SSE2<false>(palColor1, tmpAlpha[0], tmpAlpha[1], convertedColor[2], convertedColor[3]);
 						}
 						else
 						{
@@ -895,11 +899,11 @@ public:
 							
 							tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaLo);
 							tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaLo);
-							ConvertColor555To8888<false>(palColor0, tmpAlpha[0], tmpAlpha[1], convertedColor[0], convertedColor[1]);
+							ColorspaceConvert555To8888_SSE2<false>(palColor0, tmpAlpha[0], tmpAlpha[1], convertedColor[0], convertedColor[1]);
 							
 							tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaHi);
 							tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaHi);
-							ConvertColor555To8888<false>(palColor1, tmpAlpha[0], tmpAlpha[1], convertedColor[2], convertedColor[3]);
+							ColorspaceConvert555To8888_SSE2<false>(palColor1, tmpAlpha[0], tmpAlpha[1], convertedColor[2], convertedColor[3]);
 						}
 						
 						_mm_store_si128((__m128i *)(dwdst +  0), convertedColor[0]);
