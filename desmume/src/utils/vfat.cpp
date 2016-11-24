@@ -69,7 +69,7 @@ static void list_files(const char *filepath, ListCallback list_callback)
 		list_callback(rdir,EListCallbackArg_Item);
 		printf("cflash added %s\n",fname);
 
-		if(retro_dirent_is_dir(rdir) && (strcmp(fname, ".")) && (strcmp(fname, ".."))) 
+		if (retro_dirent_is_dir(rdir, filepath) && (strcmp(fname, ".")) && strcmp(fname, ".."))
 		{
 			std::string subdir = (std::string)filepath + path_default_slash() + fname;
 			list_files(subdir.c_str(), list_callback);
@@ -109,8 +109,8 @@ static void DirectoryListCallback(RDIR* rdir, EListCallbackArg arg)
 		virtPathStack.pop();
 		return;
 	}
-	
-	if(retro_dirent_is_dir(rdir))
+
+	if(retro_dirent_is_dir(rdir,currVirtPath.c_str()))
 	{
 		if(!strcmp(fname,".")) return;
 		if(!strcmp(fname,"..")) return;

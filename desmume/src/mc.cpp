@@ -31,6 +31,7 @@
 #include "NDSSystem.h"
 #include "path.h"
 #include "utils/advanscene.h"
+#include "utils/xstring.h"
 #include "emufile.h"
 
 //#define _DONT_SAVE_BACKUP
