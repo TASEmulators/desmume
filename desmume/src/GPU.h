@@ -109,7 +109,7 @@ typedef union
 	
 	struct
 	{
-#ifdef LOCAL_LE
+#ifndef MSB_FIRST
 		u8 BG_Mode:3;						//  0- 2: A+B;
 		u8 BG0_3D:1;						//     3: A  ; 0=2D,         1=3D
 		u8 OBJ_Tile_mapping:1;				//     4: A+B; 0=2D (32KB),  1=1D (32..256KB)
@@ -215,7 +215,7 @@ typedef union
 	
 	struct
 	{
-#ifdef LOCAL_LE
+#ifndef MSB_FIRST
 		u8 Priority:2;						//  0- 1: Rendering priority; 0...3, where 0 is highest priority and 3 is lowest priority
 		u8 CharacBase_Block:4;				//  2- 5: individual character base offset (n*16KB)
 		u8 Mosaic:1;						//     6: Mosaic render: 0=Disable, 1=Enable
@@ -302,7 +302,7 @@ typedef union
 	
 	struct
 	{
-#ifdef LOCAL_LE
+#ifndef MSB_FIRST
 		u32 Fraction:8;
 		s32 Integer:20;
 		s32 :4;
@@ -401,7 +401,7 @@ typedef union
 	
 	struct
 	{
-#ifdef LOCAL_LE
+#ifndef MSB_FIRST
 		u8 BG0_Enable:1;					//     0: Layer BG0 display; 0=Disable, 1=Enable
 		u8 BG1_Enable:1;					//     1: Layer BG1 display; 0=Disable, 1=Enable
 		u8 BG2_Enable:1;					//     2: Layer BG2 display; 0=Disable, 1=Enable
@@ -430,7 +430,7 @@ typedef union
 	
 	struct
 	{
-#ifdef LOCAL_LE
+#ifndef MSB_FIRST
 		u32 BG_MosaicH:4;					//  0- 3: Mosaic pixel width for BG layers; 0...15
 		u32 BG_MosaicV:4;					//  4- 7: Mosaic pixel height for BG layers; 0...15
 		
@@ -454,7 +454,7 @@ typedef union
 	
 	struct
 	{
-#ifdef LOCAL_LE
+#ifndef MSB_FIRST
 		u16 BG0_Target1:1;					//     0: Select layer BG0 for 1st target; 0=Disable, 1=Enable
 		u16 BG1_Target1:1;					//     1: Select layer BG1 for 1st target; 0=Disable, 1=Enable
 		u16 BG2_Target1:1;					//     2: Select layer BG2 for 1st target; 0=Disable, 1=Enable
@@ -504,7 +504,7 @@ typedef union
 	
 	struct
 	{
-#ifdef LOCAL_LE
+#ifndef MSB_FIRST
 		u16 EVA:5;							//  0- 4: Blending coefficient for 1st target; 0...31 (clamped to 16)
 		u16 :3;								//  5- 7: Unused bits
 		
@@ -526,7 +526,7 @@ typedef union
 	
 	struct
 	{
-#ifdef LOCAL_LE
+#ifndef MSB_FIRST
 		u16 EVY:5;							//  0- 4: Blending coefficient for increase/decrease brightness; 0...31 (clamped to 16)
 		u16 :3;								//  5- 7: Unused bits
 #else
@@ -543,7 +543,7 @@ typedef union
 	
 	struct
 	{
-#ifdef LOCAL_LE
+#ifndef MSB_FIRST
 		u8 EnableTexMapping:1;				//     0: Apply textures; 0=Disable, 1=Enable
 		u8 PolygonShading:1;				//     1: Polygon shading mode, interacts with POLYGON_ATTR (0x40004A4); 0=Toon Shading, 1=Highlight Shading
 		u8 EnableAlphaTest:1;				//     2: Perform alpha test, interacts with ALPHA_TEST_REF (0x4000340); 0=Disable, 1=Enable
@@ -591,7 +591,7 @@ typedef union
 	
 	struct
 	{
-#ifdef LOCAL_LE
+#ifndef MSB_FIRST
 		unsigned EVA:5;						//  0- 4: Blending coefficient for SrcA; 0...31 (clamped to 16)
 		unsigned :3;						//  5- 7: Unused bits
 		
@@ -644,7 +644,7 @@ typedef union
 	
 	struct
 	{
-#ifdef LOCAL_LE
+#ifndef MSB_FIRST
 		u32 Intensity:5;					//  0- 4: Brightness coefficient for increase/decrease brightness; 0...31 (clamped to 16)
 		u32 :3;								//  5- 7: Unused bits
 		
@@ -860,7 +860,7 @@ typedef union
 	
 	struct
 	{
-#ifdef LOCAL_LE
+#ifndef MSB_FIRST
 		union
 		{
 			u16 attr0;
