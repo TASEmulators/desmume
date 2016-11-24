@@ -869,7 +869,7 @@
 	[super handleEmuFrameProcessed];
 	
 	NDSFrameInfo frameInfo;
-	frameInfo.render3DFPS = Render3DFramesPerSecond;
+	frameInfo.render3DFPS = GPU->GetFPSRender3D();
 	frameInfo.frameIndex = currFrameCounter;
 	frameInfo.lagFrameCount = TotalLagFrames;
 	

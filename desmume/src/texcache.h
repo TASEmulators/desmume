@@ -21,90 +21,169 @@
 #define _TEXCACHE_H_
 
 #include <map>
+#include <vector>
 
 #include "types.h"
 #include "common.h"
 #include "gfx3d.h"
 
-enum TexCache_TexFormat
+//this ought to be enough for anyone
+//#define TEXCACHE_DEFAULT_THRESHOLD (64*1024*1024)
+
+//changed by zeromus on 15-dec. I couldnt find any games that were getting anywhere NEAR 64
+//metal slug burns through sprites so fast, it can test it pretty quickly though
+//#define TEXCACHE_DEFAULT_THRESHOLD (16*1024*1024)
+
+// rogerman, 2016-11-02: Increase this to 32MB for games that use many large textures, such
+// as Umihara Kawase Shun, which can cache over 20MB in the first level.
+#define TEXCACHE_DEFAULT_THRESHOLD (32*1024*1024)
+
+#define PALETTE_DUMP_SIZE ((64+16+16)*1024)
+
+enum TextureStoreUnpackFormat
 {
 	TexFormat_None    = 0, //used when nothing yet is cached
 	TexFormat_32bpp,       //used by ogl renderer
 	TexFormat_15bpp        //used by rasterizer
 };
 
-class TexCacheItem;
+class MemSpan;
+class TextureStore;
 
-typedef std::multimap<u32,TexCacheItem*> TTexCacheItemMultimap;
-typedef void (*TexCacheItemDeleteCallback)(TexCacheItem *texItem, void *param1, void *param2);
+typedef u64 TextureCacheKey;
+typedef std::map<TextureCacheKey, TextureStore *> TextureCacheMap; // Key = A TextureCacheKey that includes a combination of the texture's NDS texture attributes and palette attributes; Value = Pointer to the texture item
+typedef std::vector<TextureStore *> TextureCacheList;
+//typedef u32 TextureFingerprint;
 
-class TexCacheItem
+class TextureCache
 {
-private:
-	TexCacheItemDeleteCallback _deleteCallback;
-	void *_deleteCallbackParam1;
-	void *_deleteCallbackParam2;
+protected:
+	TextureCacheMap _texCacheMap;		// Used to quickly find a texture item by using a key of type TextureCacheKey
+	TextureCacheList _texCacheList;		// Used to sort existing texture items for various operations
+	size_t _actualCacheSize;
+	size_t _cacheSizeThreshold;
+	u8 _paletteDump[PALETTE_DUMP_SIZE];
 	
 public:
-	TexCacheItem() 
-		: decode_len(0)
-		, decoded(NULL)
-		, suspectedInvalid(false)
-		, assumedInvalid(false)
-		, _deleteCallback(NULL)
-		, _deleteCallbackParam1(NULL)
-		, _deleteCallbackParam2(NULL)
-		, cacheFormat(TexFormat_None)
-	{}
+	TextureCache();
 	
-	~TexCacheItem()
-	{
-		free_aligned(this->decoded);
-		if (this->_deleteCallback != NULL) this->_deleteCallback(this, this->_deleteCallbackParam1, this->_deleteCallbackParam2);
-	}
-	u32 decode_len;
-	NDSTextureFormat format;
-	u8* decoded; //decoded texture data
-	bool suspectedInvalid;
-	bool assumedInvalid;
-	TTexCacheItemMultimap::iterator iterator;
-
-	NDSTextureFormat GetTextureFormat() const { return this->format; }
-
-	u32 texformat, texpal;
-	u32 sizeX, sizeY;
-	float invSizeX, invSizeY;
-
-	u32 texid; //used by ogl renderer for the texid
-	TexCache_TexFormat cacheFormat;
-
-	struct Dump {
-		~Dump() {
-			delete[] texture;
-		}
-		int textureSize, indexSize;
-		static const int maxTextureSize=128*1024;
-		u8* texture;
-		u8 palette[256*2];
-	} dump;
+	size_t GetActualCacheSize() const;
+	size_t GetCacheSizeThreshold() const;
+	void SetCacheSizeThreshold(size_t newThreshold);
 	
-	TexCacheItemDeleteCallback GetDeleteCallback()
-	{
-		return this->_deleteCallback;
-	}
+	void Invalidate();
+	void Evict();
+	void Reset();
 	
-	void SetDeleteCallback(TexCacheItemDeleteCallback callbackFunc, void *inParam1, void *inParam2)
-	{
-		this->_deleteCallback = callbackFunc;
-		this->_deleteCallbackParam1 = inParam1;
-		this->_deleteCallbackParam2 = inParam2;
-	}
+	TextureStore* GetTexture(u32 texAttributes, u32 palAttributes);
+	
+	void Add(TextureStore *texItem);
+	void Remove(TextureStore *texItem);
+	
+	static TextureCacheKey GenerateKey(const u32 texAttributes, const u32 palAttributes);
 };
 
-void TexCache_Invalidate();
-void TexCache_Reset();
-void TexCache_EvictFrame();
+class TextureStore
+{
+protected:
+	u32 _textureAttributes;
+	u32 _paletteAttributes;
+	
+	u32 _sizeS;
+	u32 _sizeT;
+	bool _isPalZeroTransparent;
+	
+	NDSTextureFormat _packFormat;
+	u32 _packAddress;
+	u32 _packSize;
+	u8 *_packData;
+	
+	u32 _paletteAddress;
+	u32 _paletteSize;
+	u16 *_paletteColorTable;
+	
+	// Only used by 4x4 formatted textures
+	u32 _packIndexAddress;
+	u32 _packIndexSize;
+	u8 *_packIndexData;
+	u32 _packSizeFirstSlot;
+	
+	bool _suspectedInvalid;
+	bool _assumedInvalid;
+	bool _isLoadNeeded;
+	
+	TextureCacheKey _cacheKey;
+	size_t _cacheSize;
+	size_t _cacheAge; // A value of 0 means the texture was just used. The higher this value, the older the texture.
+	size_t _cacheUsageCount;
+	
+public:
+	TextureStore();
+	TextureStore(const u32 texAttributes, const u32 palAttributes);
+	virtual ~TextureStore();
+	
+	u32 GetTextureAttributes() const;
+	u32 GetPaletteAttributes() const;
+	
+	u32 GetWidth() const;
+	u32 GetHeight() const;
+	bool IsPalZeroTransparent() const;
+	
+	NDSTextureFormat GetPackFormat() const;
+	u32 GetPackAddress() const;
+	u32 GetPackSize() const;
+	u8* GetPackData();
+	
+	u32 GetPaletteAddress() const;
+	u32 GetPaletteSize() const;
+	u16* GetPaletteColorTable() const;
+	
+	u32 GetPackIndexAddress() const;
+	u32 GetPackIndexSize() const;
+	u8* GetPackIndexData();
+	
+	void SetTextureData(const MemSpan &packedData, const MemSpan &packedIndexData);
+	void SetTexturePalette(const MemSpan &packedPalette);
+	void SetTexturePalette(const u16 *paletteBuffer);
+	
+	size_t GetUnpackSizeUsingFormat(const TextureStoreUnpackFormat texCacheFormat) const;
+	template<TextureStoreUnpackFormat TEXCACHEFORMAT> void Unpack(u32 *unpackBuffer);
+	
+	bool IsSuspectedInvalid() const;
+	void SetSuspectedInvalid();
+	
+	bool IsAssumedInvalid() const;
+	void SetAssumedInvalid();
+	
+	void SetLoadNeeded();
+	bool IsLoadNeeded() const;
+	
+	TextureCacheKey GetCacheKey() const;
+	
+	size_t GetCacheSize() const;
+	void SetCacheSize(size_t cacheSize);
+	
+	size_t GetCacheAge() const;
+	void IncreaseCacheAge(const size_t ageAmount);
+	void ResetCacheAge();
+	
+	size_t GetCacheUseCount() const;
+	void IncreaseCacheUsageCount(const size_t usageCount);
+	void ResetCacheUsageCount();
+	
+	void Update();
+	void VRAMCompareAndUpdate();
+	void DebugDump();
+};
 
-TexCacheItem* TexCache_SetTexture(TexCache_TexFormat TEXFORMAT, u32 format, u32 texpal);
+template<TextureStoreUnpackFormat TEXCACHEFORMAT> void NDSTextureUnpackI2(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, const bool isPalZeroTransparent, u32 *__restrict dstBuffer);
+template<TextureStoreUnpackFormat TEXCACHEFORMAT> void NDSTextureUnpackI4(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, const bool isPalZeroTransparent, u32 *__restrict dstBuffer);
+template<TextureStoreUnpackFormat TEXCACHEFORMAT> void NDSTextureUnpackI8(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, const bool isPalZeroTransparent, u32 *__restrict dstBuffer);
+template<TextureStoreUnpackFormat TEXCACHEFORMAT> void NDSTextureUnpackA3I5(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer);
+template<TextureStoreUnpackFormat TEXCACHEFORMAT> void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer);
+template<TextureStoreUnpackFormat TEXCACHEFORMAT> void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, const u16 *__restrict srcIndex, const u32 palAddress, const u32 texAttributes, const u32 sizeX, const u32 sizeY, u32 *__restrict dstBuffer);
+template<TextureStoreUnpackFormat TEXCACHEFORMAT> void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u16 *__restrict srcData, u32 *__restrict dstBuffer);
+
+extern TextureCache texCache;
 
 #endif

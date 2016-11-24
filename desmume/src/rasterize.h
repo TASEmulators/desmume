@@ -20,6 +20,7 @@
 
 #include "render3D.h"
 #include "gfx3d.h"
+#include "texcache.h"
 
 #define SOFTRASTERIZER_DEPTH_EQUAL_TEST_TOLERANCE 0x200
 
@@ -37,6 +38,28 @@ struct SoftRasterizerPostProcessParams
 	bool enableFog;
 	u32 fogColor;
 	bool fogAlphaOnly;
+};
+
+class SoftRasterizerTexture : public TextureStore
+{
+protected:
+	u32 *_unpackData;
+	u32 _renderWidth;
+	u32 _renderHeight;
+	u32 _renderWidthMask;
+	u32 _renderHeightMask;
+	u32 _renderWidthShift;
+	
+public:
+	SoftRasterizerTexture(u32 texAttributes, u32 palAttributes);
+	virtual ~SoftRasterizerTexture();
+	
+	u32* GetUnpackData();
+	u32 GetRenderWidth() const;
+	u32 GetRenderHeight() const;
+	u32 GetRenderWidthMask() const;
+	u32 GetRenderHeightMask() const;
+	u32 GetRenderWidthShift() const;
 };
 
 #if defined(ENABLE_SSE2)
@@ -75,7 +98,7 @@ public:
 	FragmentColor toonColor32LUT[32];
 	GFX3D_Clipper::TClippedPoly *clippedPolys;
 	FragmentAttributesBuffer *_framebufferAttributes;
-	TexCacheItem *polyTexKeys[POLYLIST_SIZE];
+	SoftRasterizerTexture *polyTexKeys[POLYLIST_SIZE];
 	bool polyVisible[POLYLIST_SIZE];
 	bool polyBackfacing[POLYLIST_SIZE];
 	GFX3D_State *currentRenderState;

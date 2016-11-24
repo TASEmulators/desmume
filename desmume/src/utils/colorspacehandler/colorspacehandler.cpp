@@ -142,90 +142,6 @@ void ColorspaceHandlerInit()
 	}
 }
 
-template <bool SWAP_RB>
-FORCEINLINE u32 ColorspaceConvert555To8888Opaque(const u16 src)
-{
-	return (SWAP_RB) ? COLOR555TO8888_OPAQUE_SWAP_RB(src & 0x7FFF) : COLOR555TO8888_OPAQUE(src & 0x7FFF);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u32 ColorspaceConvert555To6665Opaque(const u16 src)
-{
-	return (SWAP_RB) ? COLOR555TO6665_OPAQUE_SWAP_RB(src & 0x7FFF) : COLOR555TO6665_OPAQUE(src & 0x7FFF);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u32 ColorspaceConvert8888To6665(FragmentColor srcColor)
-{
-	FragmentColor outColor;
-	outColor.r = ((SWAP_RB) ? srcColor.b : srcColor.r) >> 2;
-	outColor.g = srcColor.g >> 2;
-	outColor.b = ((SWAP_RB) ? srcColor.r : srcColor.b) >> 2;
-	outColor.a = srcColor.a >> 3;
-	
-	return outColor.color;
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u32 ColorspaceConvert8888To6665(u32 srcColor)
-{
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
-	
-	return ColorspaceConvert8888To6665<SWAP_RB>(srcColorComponent);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u32 ColorspaceConvert6665To8888(FragmentColor srcColor)
-{
-	FragmentColor outColor;
-	outColor.r = material_6bit_to_8bit[((SWAP_RB) ? srcColor.b : srcColor.r)];
-	outColor.g = material_6bit_to_8bit[srcColor.g];
-	outColor.b = material_6bit_to_8bit[((SWAP_RB) ? srcColor.r : srcColor.b)];
-	outColor.a = material_5bit_to_8bit[srcColor.a];
-	
-	return outColor.color;
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u32 ColorspaceConvert6665To8888(u32 srcColor)
-{
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
-	
-	return ColorspaceConvert6665To8888<SWAP_RB>(srcColorComponent);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u16 ColorspaceConvert8888To5551(FragmentColor srcColor)
-{
-	return R5G5B5TORGB15( ((SWAP_RB) ? srcColor.b : srcColor.r) >> 3, srcColor.g >> 3, ((SWAP_RB) ? srcColor.r : srcColor.b) >> 3) | ((srcColor.a == 0) ? 0x0000 : 0x8000 );
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u16 ColorspaceConvert8888To5551(u32 srcColor)
-{
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
-	
-	return ColorspaceConvert8888To5551<SWAP_RB>(srcColorComponent);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u16 ColorspaceConvert6665To5551(FragmentColor srcColor)
-{
-	return R6G6B6TORGB15( ((SWAP_RB) ? srcColor.b : srcColor.r), srcColor.g, ((SWAP_RB) ? srcColor.r : srcColor.b)) | ((srcColor.a == 0) ? 0x0000 : 0x8000);
-}
-
-template <bool SWAP_RB>
-FORCEINLINE u16 ColorspaceConvert6665To5551(u32 srcColor)
-{
-	FragmentColor srcColorComponent;
-	srcColorComponent.color = srcColor;
-	
-	return ColorspaceConvert6665To5551<SWAP_RB>(srcColorComponent);
-}
-
 template <bool SWAP_RB, bool IS_UNALIGNED>
 void ColorspaceConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount)
 {
@@ -717,36 +633,6 @@ size_t ColorspaceHandler::ConvertBuffer6665To5551_SwapRB_IsUnaligned(const u32 *
 {
 	return this->ColorspaceHandler::ConvertBuffer6665To5551_SwapRB(src, dst, pixCount);
 }
-
-template u32 ColorspaceConvert555To8888Opaque<true>(const u16 src);
-template u32 ColorspaceConvert555To8888Opaque<false>(const u16 src);
-
-template u32 ColorspaceConvert555To6665Opaque<true>(const u16 src);
-template u32 ColorspaceConvert555To6665Opaque<false>(const u16 src);
-
-template u32 ColorspaceConvert8888To6665<true>(FragmentColor srcColor);
-template u32 ColorspaceConvert8888To6665<false>(FragmentColor srcColor);
-
-template u32 ColorspaceConvert8888To6665<true>(u32 srcColor);
-template u32 ColorspaceConvert8888To6665<false>(u32 srcColor);
-
-template u32 ColorspaceConvert6665To8888<true>(FragmentColor srcColor);
-template u32 ColorspaceConvert6665To8888<false>(FragmentColor srcColor);
-
-template u32 ColorspaceConvert6665To8888<true>(u32 srcColor);
-template u32 ColorspaceConvert6665To8888<false>(u32 srcColor);
-
-template u16 ColorspaceConvert8888To5551<true>(FragmentColor srcColor);
-template u16 ColorspaceConvert8888To5551<false>(FragmentColor srcColor);
-
-template u16 ColorspaceConvert8888To5551<true>(u32 srcColor);
-template u16 ColorspaceConvert8888To5551<false>(u32 srcColor);
-
-template u16 ColorspaceConvert6665To5551<true>(FragmentColor srcColor);
-template u16 ColorspaceConvert6665To5551<false>(FragmentColor srcColor);
-
-template u16 ColorspaceConvert6665To5551<true>(u32 srcColor);
-template u16 ColorspaceConvert6665To5551<false>(u32 srcColor);
 
 template void ColorspaceConvertBuffer555To8888Opaque<true, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 template void ColorspaceConvertBuffer555To8888Opaque<true, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);

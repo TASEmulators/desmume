@@ -88,15 +88,45 @@ libdesmume_a_SOURCES = \
 	utils/tinyxml/tinyxmlerror.cpp \
 	utils/tinyxml/tinyxmlparser.cpp \
 	utils/glcorearb.h \
-	addons/slot2_auto.cpp addons/slot2_mpcf.cpp addons/slot2_paddle.cpp addons/slot2_gbagame.cpp addons/slot2_none.cpp addons/slot2_rumblepak.cpp addons/slot2_guitarGrip.cpp addons/slot2_expMemory.cpp addons/slot2_piano.cpp addons/slot2_passme.cpp addons/slot1_none.cpp addons/slot1_r4.cpp addons/slot1_retail_nand.cpp addons/slot1_retail_auto.cpp addons/slot1_retail_mcrom.cpp addons/slot1_retail_mcrom_debug.cpp addons/slot1comp_mc.cpp addons/slot1comp_mc.h addons/slot1comp_rom.h addons/slot1comp_rom.cpp addons/slot1comp_protocol.h addons/slot1comp_protocol.cpp \
+	addons/slot2_auto.cpp \
+	addons/slot2_mpcf.cpp \
+	addons/slot2_paddle.cpp \
+	addons/slot2_gbagame.cpp \
+	addons/slot2_none.cpp \
+	addons/slot2_rumblepak.cpp \
+	addons/slot2_guitarGrip.cpp \
+	addons/slot2_expMemory.cpp \
+	addons/slot2_piano.cpp \
+	addons/slot2_passme.cpp \
+	addons/slot1_none.cpp \
+	addons/slot1_r4.cpp \
+	addons/slot1_retail_nand.cpp \
+	addons/slot1_retail_auto.cpp \
+	addons/slot1_retail_mcrom.cpp \
+	addons/slot1_retail_mcrom_debug.cpp \
+	addons/slot1comp_mc.cpp \
+	addons/slot1comp_mc.h \
+	addons/slot1comp_rom.h \
+	addons/slot1comp_rom.cpp \
+	addons/slot1comp_protocol.h \
+	addons/slot1comp_protocol.cpp \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	metaspu/metaspu.cpp metaspu/metaspu.h \
-	filter/2xsai.cpp filter/bilinear.cpp filter/epx.cpp filter/filter.h \
-	filter/hq2x.cpp filter/hq2x.h \
-	filter/hq3x.cpp filter/hq3x.dat \
-	filter/hq4x.cpp filter/hq4x.dat \
-	filter/interp.h filter/lq2x.cpp filter/lq2x.h filter/scanline.cpp \
+	filter/2xsai.cpp \
+	filter/bilinear.cpp \
+	filter/deposterize.cpp \
+	filter/epx.cpp \
+	filter/filter.h \
+	filter/hq2x.cpp \
+	filter/hq2x.h \
+	filter/hq3x.cpp \
+	filter/hq3x.dat \
+	filter/hq4x.cpp \
+	filter/hq4x.dat \
+	filter/interp.h \
+	filter/lq2x.cpp filter/lq2x.h \
+	filter/scanline.cpp \
 	filter/videofilter.cpp filter/videofilter.h \
 	filter/xbrz.cpp filter/xbrz.h \
 	version.cpp version.h \
@@ -110,18 +140,18 @@ libdesmume_a_SOURCES = \
 	libretro-common/rthreads/async_job.c \
 	libretro-common/rthreads/rsemaphore.c \
 	libretro-common/rthreads/rthreads.c
-	
-if SUPPORT_SSE2 += \
+
+if SUPPORT_SSE2
 libdesmume_a_SOURCES += \
 	utils/colorspacehandler/colorspacehandler_SSE2.cpp
 endif
 
-if SUPPORT_AVX2 += \
+if SUPPORT_AVX2
 libdesmume_a_SOURCES += \
 	utils/colorspacehandler/colorspacehandler_AVX2.cpp
 endif
 
-if SUPPORT_ALTIVEC += \
+if SUPPORT_ALTIVEC
 libdesmume_a_SOURCES += \
 	utils/colorspacehandler/colorspacehandler_AltiVec.cpp
 endif

@@ -1608,6 +1608,11 @@ private:
 	NDSDisplay *_displayMain;
 	NDSDisplay *_displayTouch;
 	
+	u32 _videoFrameCount;			// Internal variable that increments when a video frame is completed. Resets every 60 video frames.
+	u32 _render3DFrameCount;		// The current 3D rendering frame count, saved to this variable once every 60 video frames.
+	bool _frameNeedsFinish;
+	bool _willAutoApplyMasterBrightness;
+	bool _willAutoConvertRGB666ToRGB888;
 	bool _willAutoResolveToCustomBuffer;
 	u16 *_customVRAM;
 	u16 *_customVRAMBlank;
@@ -1628,7 +1633,11 @@ public:
 	
 	void Reset();
 	void ForceRender3DFinishAndFlush(bool willFlush);
+	void ForceFrameStop();
+	
 	const NDSDisplayInfo& GetDisplayInfo(); // Frontends need to call this whenever they need to read the video buffers from the emulator core
+	u32 GetFPSRender3D() const;
+	
 	void SetDisplayDidCustomRender(NDSDisplayID displayID, bool theState);
 	
 	GPUEngineA* GetEngineMain();
@@ -1648,6 +1657,26 @@ public:
 	void SetColorFormat(const NDSColorFormat outputFormat);
 	
 	void UpdateRenderProperties();
+	
+	// By default, the output framebuffer will have the master brightness applied before
+	// the DidFrameEnd event. The master brightness is applied using the CPU.
+	//
+	// To turn off this behavior, call SetWillAutoApplyMasterBrightness() and pass a value
+	// of "false". This can be useful if the client wants to apply the master brightness
+	// itself, for example, if a client applies it on the GPU.
+	bool GetWillAutoApplyMasterBrightness() const;
+	void SetWillAutoApplyMasterBrightness(const bool willAutoApply);
+	
+	// By default, if the output framebuffer is in RGB666 format, then the framebuffers will
+	// automatically be converted to the much more common RGB888 format. This conversion is
+	// performed on the CPU.
+	//
+	// To turn off this behavior, call SetWillAutoConvertRGB666ToRGB888() and pass a value
+	// of "false". This can be useful if the client wants to do its own post-processing
+	// while the color format is still RGB666, or if the client wants to do its own custom
+	// conversion (such as converting the framebuffer later on the GPU).
+	bool GetWillAutoConvertRGB666ToRGB888() const;
+	void SetWillAutoConvertRGB666ToRGB888(const bool willAutoConvert);
 	
 	// Normally, the GPUs will automatically resolve their native buffers to the master
 	// custom framebuffer at the end of V-blank so that all rendered graphics are contained

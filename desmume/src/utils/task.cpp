@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -110,7 +110,8 @@ void Task::Impl::execute(const TWork &work, void *param)
 {
 	slock_lock(this->mutex);
 
-	if (work == NULL || !this->_isThreadRunning) {
+	if ((work == NULL) || (this->workFunc != NULL) || !this->_isThreadRunning)
+	{
 		slock_unlock(this->mutex);
 		return;
 	}
@@ -128,12 +129,13 @@ void* Task::Impl::finish()
 
 	slock_lock(this->mutex);
 
-	if (!this->_isThreadRunning) {
+	if ((this->workFunc == NULL) || !this->_isThreadRunning) {
 		slock_unlock(this->mutex);
 		return returnValue;
 	}
 
-	while (this->workFunc != NULL) {
+	while (this->workFunc != NULL)
+	{
 		scond_wait(this->condWork, this->mutex);
 	}
 

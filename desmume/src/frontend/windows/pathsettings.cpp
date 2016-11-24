@@ -184,14 +184,17 @@ BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 	ti.uFlags = TTF_SUBCLASS | TTF_IDISHWND;
 	ti.uId = (UINT_PTR)hwnd;
 	ti.lpszText =
-		"The format a screenshot should be saved in.\r\n"
+		"The string format a screenshot should be saved with (google strftime).\r\n"
 		"%f\t\tFilename\r\n"
 		"%r\t\tRandom: 0 ~ RAND_MAX\r\n"
 		"%t\t\tTick: Reset on startup\r\n"
 		"%Y\t\tYear:Four Digit\r\n"
+		"%y\t\tYear:Two Digit\r\n"
 		"%m\t\tMonth:Two Digit\r\n"
-		"%D\t\tDay:Two Digit\r\n"
-		"%H\t\tHour:Two Digit\r\n"
+		"%d\t\tDay:Two Digit\r\n"
+		"%H\t\tHour (24):Two Digit\r\n"
+		"%I\t\tHour (12):Two Digit\r\n"
+		"%p\t\tAM/PM\r\n"
 		"%M\t\tMinute: Two Digit\r\n"
 		"%S\t\tSecond: Two Digit\r\n";
 	GetClientRect(hwnd, &ti.rect);

@@ -294,7 +294,9 @@ BackupDevice::BackupDevice()
 						else
 						{
 							printf("BackupDevice: Converting old raw .sav file.\n");
-							sz = trim(buf, sz);
+							//dont TRIM this! it will wreck the searchFileSaveType below.
+							//was this intended for egregiously over-sized save files? too bad.
+							//sz = trim(buf, sz);
 						}
 
 						if (fpOut->fwrite(buf, sz) == sz)
@@ -305,6 +307,7 @@ BackupDevice::BackupDevice()
 								info.type = (res + 1);
 								addr_size = info.addr_size = save_types[info.type].addr_size;
 								info.size = fsize = sz;
+								fpMC = fpOut; //so ensure() works
 								ensure(sz, fpOut);
 								fsize = 0;
 							}
@@ -629,6 +632,7 @@ void BackupDevice::reset()
 		else if(!memcmp(gameInfo.header.gameCode,"AH5", 3)) addr_size = 1; //over the hedge
 		else if(!memcmp(gameInfo.header.gameCode,"AVH", 3)) addr_size = 1; //over the hedge - Hammy Goes Nuts!
 		else if(!memcmp(gameInfo.header.gameCode,"AQ3", 3)) addr_size = 1; //spider-man 3
+		else if(!memcmp(gameInfo.header.gameCode,"BPV", 3)) addr_size = 2; //puzzler world (should be eeprom 64KBits)
 		
 		//if we found a whitelist match, we dont need to run detection
 		if(addr_size) state = RUNNING;
@@ -1069,8 +1073,10 @@ bool BackupDevice::importData(const char *filename, u32 force_size)
 	bool res = false;
 	if (strlen(filename) < 4) return res;
 
-	if ((memcmp(filename + strlen(filename) - 4, ".duc", 4) == 0) ||
-		(memcmp(filename + strlen(filename) - 4, ".dss", 4) == 0))
+	std::string ext = strright(filename,4);
+	bool isDuc = strncasecmp(ext.c_str(), ".duc", 4) == 0;
+	bool isDss = strncasecmp(ext.c_str(), ".dss", 4) == 0;
+	if(isDuc || isDss)
 		res = import_duc(filename, force_size);
 	else
 		if (import_no_gba(filename, force_size))
@@ -1499,26 +1505,49 @@ u32 BackupDevice::get_save_duc_size(const char* fname)
 bool BackupDevice::import_duc(const char* filename, u32 force_size)
 {
 	u32 size;
-	char id[16];
+	u8 id16[16] = {0}, id4[4] = {0}, id3[3] = {0};
 	FILE* file = fopen(filename, "rb");
 
 	if(!file) return false;
 
-	fseek(file, 0, SEEK_END);
-	size = (u32)ftell(file) - 500;
-	fseek(file, 0, SEEK_SET);
+	int version = 0;
 
-	// Make sure we really have the right file
-	fread((void *)id, sizeof(char), 16, file);
+	//ID version 1
+	fread(id16, 1, 16, file);
+	if(!memcmp(id16, "ARDS000000000001", 16)) version = 1;
 
-	if (memcmp(id, "ARDS000000000001", 16) != 0)
+	//ID version 2
+	fseek(file,0xA1,SEEK_SET);
+	fread(id3,1,3,file);
+	if(!memcmp(id16,"\0\0\0\0",4) && id3[2] == 0xC0) version = 2;
+
+	if(version == 0)
 	{
+	INVALID_DUC:
 		printf("Not recognized as a valid DUC file\n");
 		fclose(file);
 		return false;
 	}
-	// Skip the rest of the header since we don't need it
-	fseek(file, 500, SEEK_SET);
+
+	fseek(file, 0, SEEK_END);
+	size = (u32)ftell(file);
+
+	//skip to raw data
+	if(version == 1)
+	{
+		size -= 500;
+		fseek(file, 500, SEEK_SET);
+	}
+	if(version == 2)
+	{
+		size -= 0xA4;
+		fseek(file, 0xA4, SEEK_SET);
+
+		//validate size
+		int specifiedSize = (id3[0]<<8)+(id3[1]<<16);
+		if(specifiedSize != size)
+			goto INVALID_DUC;
+	}
 
 	u32 left = 0;
 	if (force_size > 0)

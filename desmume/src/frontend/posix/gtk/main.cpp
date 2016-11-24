@@ -1,6 +1,6 @@
 /* main.cpp - this file is part of DeSmuME
  *
- * Copyright (C) 2006-2015 DeSmuME Team
+ * Copyright (C) 2006-2016 DeSmuME Team
  * Copyright (C) 2007 Pascal Giard (evilynux)
  *
  * This file is free software; you can redistribute it and/or modify
@@ -649,24 +649,30 @@ public:
 };
 
 static void
-init_configured_features( class configured_features *config)
+init_configured_features( class configured_features *config	)
 {
-  config->engine_3d = 1;
+  if(config->render3d == COMMANDLINE_RENDER3D_GL || config->render3d == COMMANDLINE_RENDER3D_OLDGL || config->render3d == COMMANDLINE_RENDER3D_AUTOGL)
+    config->engine_3d = 2;
+  else
+    config->engine_3d = 1;	
 
   config->savetype = 0;
 
   config->timeout = 0;
 
   /* use the default language */
-  config->firmware_language = -1;
+  config->firmware_language = -1; 
+
+  /* If specified by --lang option the lang will change to choosed one */
+  config->firmware_language = config->language;
 }
 
 static int
 fill_configured_features( class configured_features *config,
-                          int argc, char ** argv)
+                          char ** argv)
 {
   GOptionEntry options[] = {
-    { "3d-engine", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3d rendering engine. Available engines:\n"
+    { "3d-render", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3D rendering engine. Available engines:\n"
         "\t\t\t\t  0 = 3d disabled\n"
         "\t\t\t\t  1 = internal rasterizer (default)\n"
 #if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
@@ -696,7 +702,6 @@ fill_configured_features( class configured_features *config,
 
   //g_option_context_add_main_entries (config->ctx, options, "options");
   //g_option_context_add_group (config->ctx, gtk_get_option_group (TRUE));
-  config->parse(argc,argv);
 
   if(!config->validate())
     goto error;
@@ -2413,7 +2418,7 @@ gboolean EmuLoop(gpointer data)
 
 	// HUD display things (copied from Windows main.cpp)
 #ifdef HAVE_LIBAGG
-	Hud.fps3d = Render3DFramesPerSecond;
+	Hud.fps3d = GPU->GetFPSRender3D();
 	
 	if(nds.idleFrameCounter==0 || oneSecond) 
 	{
@@ -2446,7 +2451,7 @@ gboolean EmuLoop(gpointer data)
             for (i = 0; i < Frameskip; i++) {
                 NDS_SkipNextFrame();
 #ifdef HAVE_LIBAGG
-                Hud.fps3d = Render3DFramesPerSecond;
+                Hud.fps3d = GPU->GetFPSRender3D();
 #endif
                 desmume_cycle();
                 skipped_frames++;
@@ -2459,7 +2464,7 @@ gboolean EmuLoop(gpointer data)
             for (i = 0; i < Frameskip; i++) {
                 NDS_SkipNextFrame();
 #ifdef HAVE_LIBAGG
-                Hud.fps3d = Render3DFramesPerSecond;
+                Hud.fps3d = GPU->GetFPSRender3D();
 #endif
                 desmume_cycle();
                 skipped_frames++;
@@ -2481,7 +2486,7 @@ gboolean EmuLoop(gpointer data)
                 // Aggressively skip frames to avoid delay
                 NDS_SkipNextFrame();
 #ifdef HAVE_LIBAGG
-                Hud.fps3d = Render3DFramesPerSecond;
+                Hud.fps3d = GPU->GetFPSRender3D();
 #endif
                 desmume_cycle();
                 skipped_frames++;
@@ -3252,6 +3257,7 @@ int main (int argc, char *argv[])
   // The global menu screws up the window size...
   unsetenv("UBUNTU_MENUPROXY");
 
+  my_config.parse(argc, argv);
   init_configured_features( &my_config);
 
   if (!g_thread_supported())
@@ -3259,7 +3265,7 @@ int main (int argc, char *argv[])
 
   gtk_init(&argc, &argv);
 
-  if ( !fill_configured_features( &my_config, argc, argv)) {
+  if ( !fill_configured_features( &my_config, argv)) {
     exit(0);
   }
 

@@ -503,9 +503,7 @@ void gfx3d_init()
 	gfx3d.state.fogDensityTable = MMU.ARM9_REG+0x0360;
 	gfx3d.state.edgeMarkColorTable = (u16 *)(MMU.ARM9_REG+0x0330);
 	
-	gfx3d._videoFrameCount = 0;
 	gfx3d.render3DFrameCount = 0;
-	Render3DFramesPerSecond = 0;
 	
 	makeTables();
 	Render3D_Init();
@@ -526,7 +524,10 @@ void gfx3d_deinit()
 
 void gfx3d_reset()
 {
-	GPU->ForceRender3DFinishAndFlush(false);
+	if (CurrentRenderer->GetRenderNeedsFinish())
+	{
+		GPU->ForceRender3DFinishAndFlush(false);
+	}
 	
 #ifdef _SHOW_VTX_COUNTERS
 	max_polys = max_verts = 0;
@@ -603,9 +604,7 @@ void gfx3d_reset()
 	GFX_PIPEclear();
 	GFX_FIFOclear();
 	
-	gfx3d._videoFrameCount = 0;
 	gfx3d.render3DFrameCount = 0;
-	Render3DFramesPerSecond = 0;
 	
 	CurrentRenderer->Reset();
 }
@@ -2299,7 +2298,12 @@ void gfx3d_VBlankSignal()
 
 void gfx3d_VBlankEndSignal(bool skipFrame)
 {
-	GPU->ForceRender3DFinishAndFlush(false);
+	if (CurrentRenderer->GetRenderNeedsFinish())
+	{
+		GPU->ForceRender3DFinishAndFlush(false);
+		CurrentRenderer->SetRenderNeedsFinish(false);
+		GPU->GetEventHandler()->DidRender3DEnd();
+	}
 	
 	if (!drawPending) return;
 	if (skipFrame) return;
@@ -2307,10 +2311,10 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	drawPending = FALSE;
 	
 	GPU->GetEventHandler()->DidRender3DBegin();
+	CurrentRenderer->SetRenderNeedsFinish(true);
 	
 	if (CommonSettings.showGpu.main)
 	{
-		CurrentRenderer->SetRenderNeedsFinish(true);
 		CurrentRenderer->SetTextureProcessingProperties(CommonSettings.GFX3D_Renderer_TextureScalingFactor,
 														CommonSettings.GFX3D_Renderer_TextureDeposterize,
 														CommonSettings.GFX3D_Renderer_TextureSmoothing);
@@ -2522,7 +2526,10 @@ void gfx3d_Update3DFramebuffers(FragmentColor *framebufferRGBA6665, u16 *framebu
 //-------------savestate
 void gfx3d_savestate(EMUFILE* os)
 {
-	GPU->ForceRender3DFinishAndFlush(true);
+	if (CurrentRenderer->GetRenderNeedsFinish())
+	{
+		GPU->ForceRender3DFinishAndFlush(true);
+	}
 	
 	//version
 	write32le(4,os);
@@ -2555,6 +2562,10 @@ bool gfx3d_loadstate(EMUFILE* is, int size)
 	if (read32le(&version,is) != 1) return false;
 	if (size == 8) version = 0;
 
+	if (CurrentRenderer->GetRenderNeedsFinish())
+	{
+		GPU->ForceRender3DFinishAndFlush(false);
+	}
 
 	gfx3d_glPolygonAttrib_cache();
 	gfx3d_glTexImage_cache();

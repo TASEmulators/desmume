@@ -1418,6 +1418,11 @@
 		ABB9212317CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */; };
 		ABB9212417CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */; };
 		ABB9212517CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */; };
+		ABBB4ACD1D9C927C00794E08 /* deposterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBB4ACC1D9C927C00794E08 /* deposterize.cpp */; };
+		ABBB4ACE1D9C927C00794E08 /* deposterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBB4ACC1D9C927C00794E08 /* deposterize.cpp */; };
+		ABBB4ACF1D9C927C00794E08 /* deposterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBB4ACC1D9C927C00794E08 /* deposterize.cpp */; };
+		ABBB4AD01D9C927C00794E08 /* deposterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBB4ACC1D9C927C00794E08 /* deposterize.cpp */; };
+		ABBB4AD11D9C927C00794E08 /* deposterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBB4ACC1D9C927C00794E08 /* deposterize.cpp */; };
 		ABBCE29715ACB1FF00A2C965 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBCE29515ACB1FF00A2C965 /* arm_jit.cpp */; };
 		ABBCE29815ACB1FF00A2C965 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABBCE29515ACB1FF00A2C965 /* arm_jit.cpp */; };
 		ABBF04A614B515F300E505A0 /* AppIcon_ROMCheats.icns in Resources */ = {isa = PBXBuildFile; fileRef = ABBF04A414B515F300E505A0 /* AppIcon_ROMCheats.icns */; };
@@ -1953,6 +1958,7 @@
 		ABB97873144E89CC00793FA3 /* Icon_ActionReplay_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ActionReplay_32x32.png; path = Images/Icon_ActionReplay_32x32.png; sourceTree = "<group>"; };
 		ABB97874144E89CC00793FA3 /* Icon_CodeBreaker_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_CodeBreaker_32x32.png; path = Images/Icon_CodeBreaker_32x32.png; sourceTree = "<group>"; };
 		ABB97875144E89CC00793FA3 /* Icon_DeSmuME_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_DeSmuME_32x32.png; path = Images/Icon_DeSmuME_32x32.png; sourceTree = "<group>"; };
+		ABBB4ACC1D9C927C00794E08 /* deposterize.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = deposterize.cpp; sourceTree = "<group>"; };
 		ABBC0F8C1394B1AA0028B6BD /* DefaultUserPrefs.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = DefaultUserPrefs.plist; sourceTree = "<group>"; };
 		ABBCE29415ACB1E600A2C965 /* arm_jit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = arm_jit.h; path = ../arm_jit.h; sourceTree = SOURCE_ROOT; };
 		ABBCE29515ACB1FF00A2C965 /* arm_jit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arm_jit.cpp; path = ../arm_jit.cpp; sourceTree = SOURCE_ROOT; };
@@ -3451,6 +3457,7 @@
 			children = (
 				ABFE14FA14C92FF5005D6699 /* 2xsai.cpp */,
 				ABFE14FB14C92FF5005D6699 /* bilinear.cpp */,
+				ABBB4ACC1D9C927C00794E08 /* deposterize.cpp */,
 				ABFE14FC14C92FF5005D6699 /* epx.cpp */,
 				ABFE14FE14C92FF5005D6699 /* hq2x.cpp */,
 				ABAAEFFE1B22361800E1269D /* hq3x.cpp */,
@@ -4538,6 +4545,7 @@
 				AB50200C1D09E712002FA150 /* retro_stat.c in Sources */,
 				AB7BB17F1D62C8CC00A7A6E2 /* colorspacehandler.cpp in Sources */,
 				AB7BB1801D62C8CF00A7A6E2 /* colorspacehandler_AltiVec.cpp in Sources */,
+				ABBB4AD11D9C927C00794E08 /* deposterize.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4719,6 +4727,7 @@
 				AB5020181D09E712002FA150 /* retro_stat.c in Sources */,
 				AB37E3801D6188BC004A2C0D /* colorspacehandler.cpp in Sources */,
 				AB37E38A1D61895F004A2C0D /* colorspacehandler_AltiVec.cpp in Sources */,
+				ABBB4AD01D9C927C00794E08 /* deposterize.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4930,6 +4939,7 @@
 				AB50200F1D09E712002FA150 /* retro_stat.c in Sources */,
 				AB37E3741D6188BC004A2C0D /* colorspacehandler.cpp in Sources */,
 				AB37E3771D6188BC004A2C0D /* colorspacehandler_SSE2.cpp in Sources */,
+				ABBB4ACD1D9C927C00794E08 /* deposterize.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5141,6 +5151,7 @@
 				AB5020121D09E712002FA150 /* retro_stat.c in Sources */,
 				AB37E3781D6188BC004A2C0D /* colorspacehandler.cpp in Sources */,
 				AB37E37B1D6188BC004A2C0D /* colorspacehandler_SSE2.cpp in Sources */,
+				ABBB4ACE1D9C927C00794E08 /* deposterize.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5322,6 +5333,7 @@
 				AB5020151D09E712002FA150 /* retro_stat.c in Sources */,
 				AB37E37C1D6188BC004A2C0D /* colorspacehandler.cpp in Sources */,
 				AB37E37D1D6188BC004A2C0D /* colorspacehandler_AltiVec.cpp in Sources */,
+				ABBB4ACF1D9C927C00794E08 /* deposterize.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

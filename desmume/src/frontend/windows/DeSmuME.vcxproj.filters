@@ -975,23 +975,8 @@
     <ClCompile Include="..\utils\colorspacehandler\colorspacehandler_SSE2.cpp">
       <Filter>Core\utils\colorspacehandler</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\utils\colorspacehandler\colorspacehandler_AVX2.cpp">
-      <Filter>Core\utils\colorspacehandler</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\utils\colorspacehandler\colorspacehandler_AltiVec.cpp">
-      <Filter>Core\utils\colorspacehandler</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\utils\colorspacehandler\colorspacehandler_AVX2.cpp">
-      <Filter>Core\utils\colorspacehandler</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\utils\colorspacehandler\colorspacehandler_AltiVec.cpp">
-      <Filter>Core\utils\colorspacehandler</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\utils\colorspacehandler\colorspacehandler_AVX2.cpp">
-      <Filter>Core\utils\colorspacehandler</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\utils\colorspacehandler\colorspacehandler_AltiVec.cpp">
-      <Filter>Core\utils\colorspacehandler</Filter>
+    <ClCompile Include="..\filter\deposterize.cpp">
+      <Filter>Core\filter</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1770,24 +1755,6 @@
       <Filter>Core\utils\colorspacehandler</Filter>
     </ClInclude>
     <ClInclude Include="..\utils\colorspacehandler\colorspacehandler_SSE2.h">
-      <Filter>Core\utils\colorspacehandler</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler_AltiVec.h">
-      <Filter>Core\utils\colorspacehandler</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler_AVX2.h">
-      <Filter>Core\utils\colorspacehandler</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler_AltiVec.h">
-      <Filter>Core\utils\colorspacehandler</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler_AVX2.h">
-      <Filter>Core\utils\colorspacehandler</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler_AltiVec.h">
-      <Filter>Core\utils\colorspacehandler</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler_AVX2.h">
       <Filter>Core\utils\colorspacehandler</Filter>
     </ClInclude>
   </ItemGroup>

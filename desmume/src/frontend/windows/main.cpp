@@ -2184,7 +2184,7 @@ static void StepRunLoop_User()
 	const int kFramesPerToolUpdate = 1;
 
 	Hud.fps = mainLoopData.fps;
-	Hud.fps3d = Render3DFramesPerSecond;
+	Hud.fps3d = GPU->GetFPSRender3D();
 
 	Display();
 
@@ -3385,6 +3385,9 @@ int _main()
 			romloaded = TRUE;
 		}
 	}
+
+	//not supported; use the GUI
+	//if(cmdline.language != -1) CommonSettings.fw_config.language = cmdline.language;
 
 	cmdline.process_movieCommands();
 	

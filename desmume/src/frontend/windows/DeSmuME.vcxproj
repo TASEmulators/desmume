@@ -87,6 +87,7 @@
     <ClCompile Include="..\FIFO.cpp" />
     <ClCompile Include="..\filter\2xsai.cpp" />
     <ClCompile Include="..\filter\bilinear.cpp" />
+    <ClCompile Include="..\filter\deposterize.cpp" />
     <ClCompile Include="..\filter\epx.cpp" />
     <ClCompile Include="..\filter\hq2x.cpp" />
     <ClCompile Include="..\filter\hq4x.cpp" />

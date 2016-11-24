@@ -18,14 +18,6 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef FASTBUILD
-	#undef FORCEINLINE
-	#define FORCEINLINE
-	//compilation speed hack (cuts time exactly in half by cutting out permutations)
-	#define DISABLE_MOSAIC
-	#define DISABLE_COLOREFFECTDISABLEHINT
-#endif
-
 #include "GPU.h"
 
 #include <assert.h>
@@ -47,7 +39,13 @@
 #include "matrix.h"
 #include "emufile.h"
 
-u32 Render3DFramesPerSecond;
+#ifdef FASTBUILD
+	#undef FORCEINLINE
+	#define FORCEINLINE
+	//compilation speed hack (cuts time exactly in half by cutting out permutations)
+	#define DISABLE_MOSAIC
+	#define DISABLE_COLOREFFECTDISABLEHINT
+#endif
 
 //instantiate static instance
 u16 GPUEngineBase::_brightnessUpTable555[17][0x8000];
@@ -6759,6 +6757,11 @@ GPUSubsystem::GPUSubsystem()
 	_displayTouch = new NDSDisplay(NDSDisplayID_Touch);
 	_displayTouch->SetEngine(_engineSub);
 	
+	_videoFrameCount = 0;
+	_render3DFrameCount = 0;
+	_frameNeedsFinish = false;
+	_willAutoApplyMasterBrightness = true;
+	_willAutoConvertRGB666ToRGB888 = true;
 	_willAutoResolveToCustomBuffer = true;
 	
 	//TODO OSD
@@ -6853,6 +6856,9 @@ void GPUSubsystem::Reset()
 		this->SetCustomFramebufferSize(this->_displayInfo.customWidth, this->_displayInfo.customHeight);
 	}
 	
+	this->_videoFrameCount = 0;
+	this->_render3DFrameCount = 0;
+	
 	this->ClearWithColor(0xFFFF);
 	
 	this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main]  = false;
@@ -6884,17 +6890,28 @@ void GPUSubsystem::Reset()
 
 void GPUSubsystem::ForceRender3DFinishAndFlush(bool willFlush)
 {
+	bool need3DDisplayFramebuffer;
+	bool need3DCaptureFramebuffer;
+	CurrentRenderer->GetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
+	
+	CurrentRenderer->SetFramebufferFlushStates(willFlush, willFlush);
+	CurrentRenderer->RenderFinish();
+	CurrentRenderer->SetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
+}
+
+void GPUSubsystem::ForceFrameStop()
+{
 	if (CurrentRenderer->GetRenderNeedsFinish())
 	{
-		bool need3DDisplayFramebuffer;
-		bool need3DCaptureFramebuffer;
-		CurrentRenderer->GetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
-		
-		CurrentRenderer->SetFramebufferFlushStates(willFlush, willFlush);
-		CurrentRenderer->RenderFinish();
-		CurrentRenderer->SetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
+		this->ForceRender3DFinishAndFlush(true);
 		CurrentRenderer->SetRenderNeedsFinish(false);
 		this->_event->DidRender3DEnd();
+	}
+	
+	if (this->_frameNeedsFinish)
+	{
+		this->_frameNeedsFinish = false;
+		this->_event->DidFrameEnd(false);
 	}
 }
 
@@ -6981,6 +6998,11 @@ const NDSDisplayInfo& GPUSubsystem::GetDisplayInfo()
 	return this->_displayInfo;
 }
 
+u32 GPUSubsystem::GetFPSRender3D() const
+{
+	return this->_render3DFrameCount;
+}
+
 void GPUSubsystem::SetDisplayDidCustomRender(NDSDisplayID displayID, bool theState)
 {
 	this->_displayInfo.didPerformCustomRender[displayID] = theState;
@@ -7022,8 +7044,6 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h, void *clientNati
 	{
 		return;
 	}
-	
-	GPU->ForceRender3DFinishAndFlush(false);
 	
 	const float customWidthScale = (float)w / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	const float customHeightScale = (float)h / (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
@@ -7165,8 +7185,6 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h)
 
 void GPUSubsystem::SetColorFormat(const NDSColorFormat outputFormat, void *clientNativeBuffer, void *clientCustomBuffer)
 {
-	GPU->ForceRender3DFinishAndFlush(false);
-	
 	this->_displayInfo.colorFormat = outputFormat;
 	this->_displayInfo.pixelBytes = (outputFormat == NDSColorFormat_BGR555_Rev) ? sizeof(u16) : sizeof(FragmentColor);
 	
@@ -7291,6 +7309,26 @@ u16* GPUSubsystem::GetCustomVRAMAddressUsingMappedAddress(const u32 mappedAddr)
 	return (this->GetEngineMain()->GetCustomVRAMBlockPtr(blockID) + (_gpuCaptureLineIndex[blockLine] * this->_displayInfo.customWidth) + _gpuDstPitchIndex[linePixel]);
 }
 
+bool GPUSubsystem::GetWillAutoApplyMasterBrightness() const
+{
+	return this->_willAutoApplyMasterBrightness;
+}
+
+void GPUSubsystem::SetWillAutoApplyMasterBrightness(const bool willAutoApply)
+{
+	this->_willAutoApplyMasterBrightness = willAutoApply;
+}
+
+bool GPUSubsystem::GetWillAutoConvertRGB666ToRGB888() const
+{
+	return this->_willAutoConvertRGB666ToRGB888;
+}
+
+void GPUSubsystem::SetWillAutoConvertRGB666ToRGB888(const bool willAutoConvert)
+{
+	this->_willAutoConvertRGB666ToRGB888 = willAutoConvert;
+}
+
 bool GPUSubsystem::GetWillAutoResolveToCustomBuffer() const
 {
 	return this->_willAutoResolveToCustomBuffer;
@@ -7305,45 +7343,25 @@ template <NDSColorFormat OUTPUTFORMAT>
 void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 {
 	const bool isDisplayCaptureNeeded = this->_engineMain->WillDisplayCapture(l);
-	const bool isFramebufferRenderNeeded[2]	= {(CommonSettings.showGpu.main && !this->_engineMain->GetIsMasterBrightFullIntensity()) || isDisplayCaptureNeeded,
+	const bool isFramebufferRenderNeeded[2]	= { CommonSettings.showGpu.main && !this->_engineMain->GetIsMasterBrightFullIntensity(),
 											    CommonSettings.showGpu.sub && !this->_engineSub->GetIsMasterBrightFullIntensity() };
+	
+	if (!this->_frameNeedsFinish)
+	{
+		this->_event->DidFrameBegin(isFrameSkipRequested);
+		this->_frameNeedsFinish = true;
+	}
 	
 	if (l == 0)
 	{
-		this->_event->DidFrameBegin(isFrameSkipRequested);
-		
 		// Clear displays to black if they are turned off by the user.
 		if (!isFrameSkipRequested)
 		{
 			this->UpdateRenderProperties();
-			
-			if (!isFramebufferRenderNeeded[GPUEngineID_Main])
-			{
-				if (!CommonSettings.showGpu.main)
-				{
-					memset(this->_engineMain->renderedBuffer, 0, this->_engineMain->renderedWidth * this->_engineMain->renderedHeight * this->_displayInfo.pixelBytes);
-				}
-				else if (this->_engineMain->GetIsMasterBrightFullIntensity())
-				{
-					this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, true>();
-				}
-			}
-			
-			if (!isFramebufferRenderNeeded[GPUEngineID_Sub])
-			{
-				if (!CommonSettings.showGpu.sub)
-				{
-					memset(this->_engineSub->renderedBuffer, 0, this->_engineSub->renderedWidth * this->_engineSub->renderedHeight * this->_displayInfo.pixelBytes);
-				}
-				else if (this->_engineSub->GetIsMasterBrightFullIntensity())
-				{
-					this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, true>();
-				}
-			}
 		}
 	}
 	
-	if (isFramebufferRenderNeeded[GPUEngineID_Main] && !isFrameSkipRequested)
+	if ( (isFramebufferRenderNeeded[GPUEngineID_Main] || isDisplayCaptureNeeded) && !isFrameSkipRequested )
 	{
 		// GPUEngineA:WillRender3DLayer() and GPUEngineA:WillCapture3DLayerDirect() both rely on register
 		// states that might change on a per-line basis. Therefore, we need to check these states on a
@@ -7387,6 +7405,17 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 	
 	if (l == 191)
 	{
+		this->_engineMain->FramebufferPostprocess();
+		this->_engineSub->FramebufferPostprocess();
+		
+		this->_videoFrameCount++;
+		if (this->_videoFrameCount == 60)
+		{
+			this->_render3DFrameCount = gfx3d.render3DFrameCount;
+			gfx3d.render3DFrameCount = 0;
+			this->_videoFrameCount = 0;
+		}
+		
 		if (!isFrameSkipRequested)
 		{
 			if (this->_displayInfo.isCustomSizeRequested)
@@ -7405,17 +7434,42 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 			this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = this->_displayTouch->GetEngine()->renderedWidth;
 			this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = this->_displayTouch->GetEngine()->renderedHeight;
 			
-			if (isFramebufferRenderNeeded[GPUEngineID_Main])
+			if (this->_willAutoApplyMasterBrightness)
 			{
-				this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, false>();
+				if (CommonSettings.showGpu.main)
+				{
+					if (this->_engineMain->GetIsMasterBrightFullIntensity())
+					{
+						this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, true>();
+					}
+					else
+					{
+						this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, false>();
+					}
+				}
+				else
+				{
+					memset(this->_engineMain->renderedBuffer, 0, this->_engineMain->renderedWidth * this->_engineMain->renderedHeight * this->_displayInfo.pixelBytes);
+				}
+				
+				if (CommonSettings.showGpu.sub)
+				{
+					if (this->_engineSub->GetIsMasterBrightFullIntensity())
+					{
+						this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, true>();
+					}
+					else
+					{
+						this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, false>();
+					}
+				}
+				else
+				{
+					memset(this->_engineSub->renderedBuffer, 0, this->_engineSub->renderedWidth * this->_engineSub->renderedHeight * this->_displayInfo.pixelBytes);
+				}
 			}
 			
-			if (isFramebufferRenderNeeded[GPUEngineID_Sub])
-			{
-				this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, false>();
-			}
-			
-			if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
+			if ( (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) && this->_willAutoConvertRGB666ToRGB888 )
 			{
 				this->_engineMain->ResolveRGB666ToRGB888();
 				this->_engineSub->ResolveRGB666ToRGB888();
@@ -7428,18 +7482,11 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 			}
 		}
 		
-		this->_engineMain->FramebufferPostprocess();
-		this->_engineSub->FramebufferPostprocess();
-		
-		gfx3d._videoFrameCount++;
-		if (gfx3d._videoFrameCount == 60)
+		if (this->_frameNeedsFinish)
 		{
-			Render3DFramesPerSecond = gfx3d.render3DFrameCount;
-			gfx3d.render3DFrameCount = 0;
-			gfx3d._videoFrameCount = 0;
+			this->_frameNeedsFinish = false;
+			this->_event->DidFrameEnd(isFrameSkipRequested);
 		}
-		
-		this->_event->DidFrameEnd(isFrameSkipRequested);
 	}
 }
 

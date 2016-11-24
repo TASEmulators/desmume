@@ -67,6 +67,7 @@ CommandLine::CommandLine()
 , start_paused(FALSE)
 , autodetect_method(-1)
 , render3d(COMMANDLINE_RENDER3D_DEFAULT)
+, language(1) //english by default
 {
 #ifndef HOST_WINDOWS 
 	disable_sound = 0;
@@ -117,6 +118,9 @@ ENDL
 " --bios-arm9 BIN_FILE       Uses the ARM9 BIOS provided at the specified path" ENDL
 " --bios-arm7 BIN_FILE       Uses the ARM7 BIOS provided at the specified path" ENDL
 " --bios-swi                 Uses SWI from the provided bios files (else HLE)" ENDL
+" --lang N                   Firmware language (can affect game translations)" ENDL
+"                            0 = Japanese, 1 = English (default), 2 = French" ENDL
+"                            3 = German, 4 = Italian, 5 = Spanish" ENDL
 ENDL
 "Arguments affecting contents of SLOT-1:" ENDL
 " --slot1 [RETAIL|RETAILAUTO|R4|RETAILNAND|RETAILMCDROM|RETAILDEBUG]" ENDL
@@ -163,6 +167,7 @@ ENDL
 #define OPT_CONSOLE_TYPE 200
 #define OPT_ARM9 201
 #define OPT_ARM7 202
+#define OPT_LANGUAGE   203
 
 #define OPT_SLOT1 300
 #define OPT_SLOT1_FAT_DIR 301
@@ -224,7 +229,8 @@ bool CommandLine::parse(int argc,char **argv)
 			{ "console-type", required_argument, NULL, OPT_CONSOLE_TYPE },
 			{ "bios-arm9", required_argument, NULL, OPT_ARM9},
 			{ "bios-arm7", required_argument, NULL, OPT_ARM7},
-			{ "bios-swi", required_argument, &_bios_swi, 1},
+			{ "bios-swi", no_argument, &_bios_swi, 1},
+			{ "lang", required_argument, NULL, OPT_LANGUAGE},
 
 			//slot-1 contents
 			{ "slot1", required_argument, NULL, OPT_SLOT1},
@@ -308,6 +314,7 @@ bool CommandLine::parse(int argc,char **argv)
 
 		//utilities
 		case OPT_ADVANSCENE: CommonSettings.run_advanscene_import = optarg; break;
+		case OPT_LANGUAGE: language = atoi(optarg); break;
 		}
 	} //arg parsing loop
 
@@ -354,10 +361,10 @@ bool CommandLine::parse(int argc,char **argv)
 	//process 3d renderer 
 	_render3d = strtoupper(_render3d);
 	if(_render3d == "NONE") render3d = COMMANDLINE_RENDER3D_NONE;
-	if(_render3d == "SW") render3d = COMMANDLINE_RENDER3D_SW;
-	if(_render3d == "OLDGL") render3d = COMMANDLINE_RENDER3D_OLDGL;
-	if(_render3d == "AUTOGL") render3d = COMMANDLINE_RENDER3D_AUTOGL;
-	if(_render3d == "GL") render3d = COMMANDLINE_RENDER3D_GL;
+	else if(_render3d == "SW") render3d = COMMANDLINE_RENDER3D_SW;
+	else if(_render3d == "OLDGL") render3d = COMMANDLINE_RENDER3D_OLDGL;
+	else if(_render3d == "AUTOGL") render3d = COMMANDLINE_RENDER3D_AUTOGL;
+	else if(_render3d == "GL") render3d = COMMANDLINE_RENDER3D_GL;
 
 	if (autodetect_method != -1)
 		CommonSettings.autodetectBackupMethod = autodetect_method;
