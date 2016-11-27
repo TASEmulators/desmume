@@ -18,13 +18,10 @@
 #include "colorspacehandler.h"
 
 #if defined(ENABLE_AVX2)
-	#include "colorspacehandler_AVX2.h"
 	#include "colorspacehandler_AVX2.cpp"
 #elif defined(ENABLE_SSE2)
-	#include "colorspacehandler_SSE2.h"
 	#include "colorspacehandler_SSE2.cpp"
 #elif defined(ENABLE_ALTIVEC)
-	#include "colorspacehandler_AltiVec.h"
 	#include "colorspacehandler_AltiVec.cpp"
 #endif
 

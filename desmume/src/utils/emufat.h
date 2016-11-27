@@ -73,7 +73,7 @@ static const u8 BOOTSIG1 = 0XAA;
 static void (*dateTime_)(u16* date, u16* time) = NULL;
 
 
-#include "PACKED.h"
+#include "../PACKED.h"
 
 //A partition table entry for a MBR formatted storage device.
 //The MBR partition table has four entries.
@@ -262,7 +262,7 @@ struct __PACKED TFat32BootSector {
 	u8 boot_sign[2];
 };
 
-#include "PACKED_END.h"
+#include "../PACKED_END.h"
 
 // End Of Chain values for FAT entries
 //FAT16 end of chain value used by Microsoft. 

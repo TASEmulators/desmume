@@ -34,7 +34,7 @@ enum FNT_TYPES
 	FS_RESERVED = 3,
 };
 
-#include "PACKED.h"
+#include "../PACKED.h"
 struct FAT_NITRO
 {
 	FAT_NITRO()
@@ -91,7 +91,7 @@ struct OVR_NITRO
 	u32 fileID;
 	u32 reserved;
 };
-#include "PACKED_END.h"
+#include "../PACKED_END.h"
 
 class FS_NITRO
 {
