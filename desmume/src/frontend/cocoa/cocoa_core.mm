@@ -28,13 +28,13 @@
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 
-#include "../movie.h"
-#include "../NDSSystem.h"
-#include "../armcpu.h"
-#include "../driver.h"
-#include "../gdbstub.h"
-#include "../slot1.h"
-#include "../slot2.h"
+#include "../../movie.h"
+#include "../../NDSSystem.h"
+#include "../../armcpu.h"
+#include "../../driver.h"
+#include "../../gdbstub.h"
+#include "../../slot1.h"
+#include "../../slot2.h"
 #undef BOOL
 
 // Need to include assert.h this way so that GDB stub will work

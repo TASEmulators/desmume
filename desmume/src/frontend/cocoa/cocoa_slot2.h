@@ -16,7 +16,7 @@
  */
 
 #import <Cocoa/Cocoa.h>
-#include "../slot2.h"
+#include "../../slot2.h"
 #undef BOOL
 
 @interface CocoaDSSlot2Device : NSObject

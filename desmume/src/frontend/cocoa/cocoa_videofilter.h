@@ -17,7 +17,7 @@
 */
 
 #import <Foundation/Foundation.h>
-#include "../filter/videofilter.h"
+#include "../../filter/videofilter.h"
 #undef BOOL
 
 @class NSImage;

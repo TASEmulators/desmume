@@ -18,7 +18,7 @@
 #include "OGLDisplayOutput.h"
 #include "cocoa_globals.h"
 #include "utilities.h"
-#include "../filter/videofilter.h"
+#include "../../filter/videofilter.h"
 
 #include <sstream>
 
@@ -4363,7 +4363,7 @@ static void InitHQnxLUTs()
 		{
 			switch (pattern)
 			{
-				#include "../filter/lq2x.h"
+				#include "../../filter/lq2x.h"
 			}
 		}
 	}
@@ -4382,7 +4382,7 @@ static void InitHQnxLUTs()
 		{
 			switch (pattern)
 			{
-				#include "../filter/hq2x.h"
+				#include "../../filter/hq2x.h"
 			}
 		}
 	}
@@ -4401,7 +4401,7 @@ static void InitHQnxLUTs()
 		{
 			switch (pattern)
 			{
-#include "../filter/hq3x.dat"
+				#include "../../filter/hq3x.dat"
 			}
 		}
 	}
@@ -4420,7 +4420,7 @@ static void InitHQnxLUTs()
 		{
 			switch (pattern)
 			{
-				#include "../filter/hq4x.dat"
+				#include "../../filter/hq4x.dat"
 			}
 		}
 	}

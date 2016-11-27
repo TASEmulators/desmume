@@ -17,8 +17,8 @@
 */
 
 #import "cocoa_firmware.h"
-#include "../NDSSystem.h"
-#include "../firmware.h"
+#include "../../NDSSystem.h"
+#include "../../firmware.h"
 #undef BOOL
 
 

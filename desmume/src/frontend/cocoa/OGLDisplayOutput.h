@@ -29,7 +29,7 @@
 
 #include <set>
 #include <string>
-#include "../filter/videofilter.h"
+#include "../../filter/videofilter.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H

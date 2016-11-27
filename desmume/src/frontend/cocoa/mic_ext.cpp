@@ -18,8 +18,8 @@
 
 #import "cocoa_globals.h"
 #include "mic_ext.h"
-#include "../emufile.h"
-#include "../readwrite.h"
+#include "../../emufile.h"
+#include "../../readwrite.h"
 
 
 MicResetCallback _micResetCallback = &Mic_DefaultResetCallback;

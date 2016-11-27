@@ -20,7 +20,7 @@
 #define _OSXSOUNDINTERFACE_
 
 #include <pthread.h>
-#include "../SPU.h"
+#include "../../SPU.h"
 #undef BOOL
 
 #define SNDCORE_OSX 58325 //hopefully this is unique number

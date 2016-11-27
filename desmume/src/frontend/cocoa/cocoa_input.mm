@@ -22,8 +22,8 @@
 #include "mic_ext.h"
 #include "coreaudiosound.h"
 #include "audiosamplegenerator.h"
-#include "../NDSSystem.h"
-#include "../slot2.h"
+#include "../../NDSSystem.h"
+#include "../../slot2.h"
 #undef BOOL
 
 NullGenerator nullSampleGenerator;

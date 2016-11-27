@@ -20,14 +20,14 @@
 #import "cocoa_globals.h"
 #include "utilities.h"
 
-#include "../NDSSystem.h"
-#include "../GPU.h"
-#include "../rasterize.h"
+#include "../../NDSSystem.h"
+#include "../../GPU.h"
+#include "../../rasterize.h"
 
 #ifdef MAC_OS_X_VERSION_10_7
-#include "../OGLRender_3_2.h"
+#include "../../OGLRender_3_2.h"
 #else
-#include "../OGLRender.h"
+#include "../../OGLRender.h"
 #endif
 
 #include <OpenGL/OpenGL.h>

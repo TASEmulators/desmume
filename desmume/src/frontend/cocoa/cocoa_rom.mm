@@ -21,10 +21,10 @@
 #import "cocoa_globals.h"
 #import "cocoa_util.h"
 
-#include "../NDSSystem.h"
-#include "../GPU.h"
-#include "../common.h"
-#include "../mc.h"
+#include "../../NDSSystem.h"
+#include "../../GPU.h"
+#include "../../Database.h"
+#include "../../mc.h"
 #undef BOOL
 
 
@@ -349,7 +349,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 		return nil;
 	}
 	
-	return [NSString stringWithCString:getDeveloperNameByID(ndsRomHeader->makerCode).c_str() encoding:NSUTF8StringEncoding];
+	return [NSString stringWithCString:(Database::MakerNameForMakerCode(ndsRomHeader->makerCode, true)) encoding:NSUTF8StringEncoding];
 }
 
 - (NSString *) developerNameAndCode
@@ -360,7 +360,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 		return nil;
 	}
 	
-	return [NSString stringWithFormat:@"%s [0x%04X]", getDeveloperNameByID(ndsRomHeader->makerCode).c_str(), ndsRomHeader->makerCode];
+	return [NSString stringWithFormat:@"%s [0x%04X]", Database::MakerNameForMakerCode(ndsRomHeader->makerCode, true), ndsRomHeader->makerCode];
 }
 
 - (NSString *) unitCodeStringUsingID:(NSInteger)unitCodeID

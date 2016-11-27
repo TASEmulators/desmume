@@ -21,11 +21,11 @@
 #import "cocoa_globals.h"
 #import "cocoa_util.h"
 
-#include "../NDSSystem.h"
-#include "../MMU.h"
-#include "../movie.h"
-#include "../path.h"
-#include "../saves.h"
+#include "../../NDSSystem.h"
+#include "../../MMU.h"
+#include "../../movie.h"
+#include "../../path.h"
+#include "../../saves.h"
 #undef BOOL
 
 @implementation CocoaDSFile

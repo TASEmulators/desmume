@@ -23,14 +23,14 @@
 #import "cocoa_core.h"
 #include "sndOSX.h"
 
-#include "../NDSSystem.h"
-#include "../common.h"
-#include "../GPU.h"
-#include "../gfx3d.h"
-#include "../SPU.h"
-#include "../movie.h"
-#include "../metaspu/metaspu.h"
-#include "../rtc.h"
+#include "../../NDSSystem.h"
+#include "../../common.h"
+#include "../../GPU.h"
+#include "../../gfx3d.h"
+#include "../../SPU.h"
+#include "../../movie.h"
+#include "../../metaspu/metaspu.h"
+#include "../../rtc.h"
 
 #import <Cocoa/Cocoa.h>
 

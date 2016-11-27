@@ -23,7 +23,7 @@
 
 #include <sys/types.h>
 #include <sys/sysctl.h>
-#include "../version.h"
+#include "../../version.h"
 
 #undef BOOL
 

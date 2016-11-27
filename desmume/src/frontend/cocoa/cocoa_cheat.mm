@@ -20,8 +20,8 @@
 #import "cocoa_globals.h"
 #import "cocoa_util.h"
 
-#include "../cheatSystem.h"
-#include "../MMU.h"
+#include "../../cheatSystem.h"
+#include "../../MMU.h"
 #undef BOOL
 
 @implementation CocoaDSCheatItem
