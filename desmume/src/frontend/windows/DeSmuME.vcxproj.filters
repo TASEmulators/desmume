@@ -159,9 +159,6 @@
     <ClCompile Include="..\..\utils\guid.cpp">
       <Filter>utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\utils\md5.cpp">
-      <Filter>utils</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\utils\task.cpp">
       <Filter>utils</Filter>
     </ClCompile>
@@ -923,13 +920,7 @@
     <ClInclude Include="..\utils\guid.h">
       <Filter>utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\md5.h">
-      <Filter>utils</Filter>
-    </ClInclude>
     <ClInclude Include="..\utils\task.h">
-      <Filter>utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\utils\valuearray.h">
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="..\utils\decrypt\crc.h">

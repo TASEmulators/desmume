@@ -59,7 +59,7 @@ libdesmume_a_SOURCES = \
 	../../utils/ConvertUTF.c ../../utils/ConvertUTF.h ../../utils/guid.cpp ../../utils/guid.h \
 	../../utils/emufat.cpp ../../utils/emufat.h utils/emufat_types.h \
 	../../utils/fsnitro.cpp ../../utils/fsnitro.h \
-	../../utils/md5.cpp ../../utils/md5.h utils/valuearray.h ../../utils/xstring.cpp ../../utils/xstring.h \
+	../../utils/xstring.cpp ../../utils/xstring.h \
 	../../utils/decrypt/crc.cpp ../../utils/decrypt/crc.h ../../utils/decrypt/decrypt.cpp \
 	../../utils/decrypt/decrypt.h ../../utils/decrypt/header.cpp ../../utils/decrypt/header.h \
 	../../utils/task.cpp ../../utils/task.h \
