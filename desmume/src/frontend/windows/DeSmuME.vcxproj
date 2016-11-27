@@ -80,7 +80,6 @@
     <ClCompile Include="..\..\cp15.cpp" />
     <ClCompile Include="..\..\Database.cpp" />
     <ClCompile Include="..\..\debug.cpp" />
-    <ClCompile Include="..\..\Disassembler.cpp" />
     <ClCompile Include="..\..\driver.cpp" />
     <ClCompile Include="..\..\emufile.cpp" />
     <ClCompile Include="..\..\encrypt.cpp" />
@@ -224,6 +223,7 @@
     <ClCompile Include="..\..\metaspu\SoundTouch\sse_optimized.cpp" />
     <ClCompile Include="..\..\metaspu\SoundTouch\TDStretch.cpp" />
     <ClCompile Include="..\..\metaspu\SoundTouch\WavFile.cpp" />
+    <ClCompile Include="..\modules\Disassembler.cpp" />
     <ClCompile Include="..\modules\osd\agg\aggdraw.cpp" />
     <ClCompile Include="..\modules\osd\agg\agg_osd.cpp" />
     <ClCompile Include="AboutBox.cpp" />
@@ -347,6 +347,7 @@
     <ClInclude Include="..\..\libretro-common\include\features\features_cpu.h" />
     <ClInclude Include="..\..\types.h" />
     <ClInclude Include="..\..\utils\xstring.h" />
+    <ClInclude Include="..\..\version.h" />
     <ClInclude Include="..\addons\slot1comp_mc.h" />
     <ClInclude Include="..\addons\slot1comp_protocol.h" />
     <ClInclude Include="..\addons\slot1comp_rom.h" />
@@ -359,7 +360,6 @@
     <ClInclude Include="..\common.h" />
     <ClInclude Include="..\cp15.h" />
     <ClInclude Include="..\debug.h" />
-    <ClInclude Include="..\Disassembler.h" />
     <ClInclude Include="..\driver.h" />
     <ClInclude Include="..\emufile.h" />
     <ClInclude Include="..\encrypt.h" />
@@ -392,6 +392,7 @@
     <ClInclude Include="..\mic.h" />
     <ClInclude Include="..\MMU.h" />
     <ClInclude Include="..\MMU_timing.h" />
+    <ClInclude Include="..\modules\Disassembler.h" />
     <ClInclude Include="..\modules\osd\agg\agg2d.h" />
     <ClInclude Include="..\modules\osd\agg\aggdraw.h" />
     <ClInclude Include="..\modules\osd\agg\agg_osd.h" />
@@ -475,7 +476,6 @@
     <ClInclude Include="..\utils\tinyxml\tinystr.h" />
     <ClInclude Include="..\utils\tinyxml\tinyxml.h" />
     <ClInclude Include="..\utils\vfat.h" />
-    <ClInclude Include="..\version.h" />
     <ClInclude Include="..\wifi.h" />
     <ClInclude Include="..\utils\xstring.h" />
     <ClInclude Include="..\gdbstub.h" />
