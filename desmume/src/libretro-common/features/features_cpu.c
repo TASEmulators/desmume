@@ -85,8 +85,8 @@
 #define CLOCK_REALTIME 0
 #endif
 
-#if __IPHONE_OS_VERSION_MAX_ALLOWED < 100000
-// this function is part of iOS 10 now
+#if (__MAC_OS_X_VERSION_MAX_ALLOWED < 101200) && (__IPHONE_OS_VERSION_MAX_ALLOWED < 100000)
+// this function is part of macOS 10.12 and iOS 10 now
 static int clock_gettime(int clk_ik, struct timespec *t)
 {
    struct timeval now;
