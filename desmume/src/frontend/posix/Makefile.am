@@ -56,7 +56,7 @@ libdesmume_a_SOURCES = \
 	../../frontend/modules/Disassembler.cpp ../../frontend/modules/Disassembler.h \
 	../../utils/advanscene.cpp ../../utils/advanscene.h \
 	../../utils/datetime.cpp ../../utils/datetime.h \
-	../../utils/ConvertUTF.c ../../utils/ConvertUTF.h ../../utils/guid.cpp ../../utils/guid.h \
+	../../utils/guid.cpp ../../utils/guid.h \
 	../../utils/emufat.cpp ../../utils/emufat.h utils/emufat_types.h \
 	../../utils/fsnitro.cpp ../../utils/fsnitro.h \
 	../../utils/xstring.cpp ../../utils/xstring.h \

@@ -61,9 +61,6 @@
     <Filter Include="libretro-common\file\nbio">
       <UniqueIdentifier>{59d051e5-34eb-4b72-b6a1-7a893c6592e2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libretro-common\string">
-      <UniqueIdentifier>{0bad36f3-5499-4402-bb16-6ceb744bf080}</UniqueIdentifier>
-    </Filter>
     <Filter Include="libretro-common\compat">
       <UniqueIdentifier>{334a6ab8-9fe9-4577-983a-10f3b6fa95b9}</UniqueIdentifier>
     </Filter>
@@ -133,6 +130,12 @@
     <Filter Include="frontend\Windows\File_Extractor\unrar">
       <UniqueIdentifier>{6e0c9a80-56da-436a-a32d-d64cf6323ac7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libretro-common\encodings">
+      <UniqueIdentifier>{f411c88e-4cf5-43ea-9af7-96030fbb4839}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libretro-common\include\encodings">
+      <UniqueIdentifier>{c3763fed-6836-4ede-be25-d6d35bbad418}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\addons\slot2_expMemory.cpp">
@@ -152,9 +155,6 @@
     </ClCompile>
     <ClCompile Include="..\..\gdbstub\gdbstub.cpp">
       <Filter>gdbstub</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\utils\ConvertUTF.c">
-      <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\..\utils\guid.cpp">
       <Filter>utils</Filter>
@@ -909,13 +909,13 @@
     <ClCompile Include="..\modules\Disassembler.cpp">
       <Filter>frontend\modules</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\libretro-common\encodings\encoding_utf.c">
+      <Filter>libretro-common\encodings</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\gdbstub.h">
       <Filter>gdbstub</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\utils\ConvertUTF.h">
-      <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="..\..\utils\guid.h">
       <Filter>utils</Filter>
@@ -1601,6 +1601,13 @@
     <ClInclude Include="..\wifi.h" />
     <ClInclude Include="..\modules\Disassembler.h">
       <Filter>frontend\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\utils\xstring.h" />
+    <ClInclude Include="..\..\libretro-common\include\libretro.h">
+      <Filter>libretro-common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libretro-common\include\encodings\utf.h">
+      <Filter>libretro-common\include\encodings</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

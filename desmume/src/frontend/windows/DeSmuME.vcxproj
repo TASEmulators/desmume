@@ -103,6 +103,7 @@
     <ClCompile Include="..\..\libretro-common\compat\compat_snprintf.c" />
     <ClCompile Include="..\..\libretro-common\compat\compat_strcasestr.c" />
     <ClCompile Include="..\..\libretro-common\compat\compat_strl.c" />
+    <ClCompile Include="..\..\libretro-common\encodings\encoding_utf.c" />
     <ClCompile Include="..\..\libretro-common\features\features_cpu.c" />
     <ClCompile Include="..\..\libretro-common\file\archive_file.c" />
     <ClCompile Include="..\..\libretro-common\file\archive_file_zlib.c" />
@@ -200,7 +201,6 @@
     <ClCompile Include="..\..\addons\slot2_none.cpp" />
     <ClCompile Include="..\..\addons\slot2_rumblepak.cpp" />
     <ClCompile Include="..\..\gdbstub\gdbstub.cpp" />
-    <ClCompile Include="..\..\utils\ConvertUTF.c" />
     <ClCompile Include="..\..\utils\guid.cpp" />
     <ClCompile Include="..\..\utils\task.cpp" />
     <ClCompile Include="..\..\utils\xstring.cpp" />
@@ -343,7 +343,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Database.h" />
+    <ClInclude Include="..\..\libretro-common\include\encodings\utf.h" />
     <ClInclude Include="..\..\libretro-common\include\features\features_cpu.h" />
+    <ClInclude Include="..\..\libretro-common\include\libretro.h" />
     <ClInclude Include="..\..\types.h" />
     <ClInclude Include="..\..\utils\xstring.h" />
     <ClInclude Include="..\..\version.h" />
@@ -478,7 +480,6 @@
     <ClInclude Include="..\wifi.h" />
     <ClInclude Include="..\..\utils\xstring.h" />
     <ClInclude Include="..\gdbstub.h" />
-    <ClInclude Include="..\..\utils\ConvertUTF.h" />
     <ClInclude Include="..\..\utils\guid.h" />
     <ClInclude Include="..\..\utils\task.h" />
     <ClInclude Include="..\..\utils\decrypt\crc.h" />
