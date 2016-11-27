@@ -914,22 +914,22 @@
     <ClInclude Include="..\gdbstub.h">
       <Filter>gdbstub</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\ConvertUTF.h">
+    <ClInclude Include="..\..\utils\ConvertUTF.h">
       <Filter>utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\guid.h">
+    <ClInclude Include="..\..\utils\guid.h">
       <Filter>utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\task.h">
+    <ClInclude Include="..\..\utils\task.h">
       <Filter>utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\decrypt\crc.h">
+    <ClInclude Include="..\..\utils\decrypt\crc.h">
       <Filter>utils\decrypt</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\decrypt\decrypt.h">
+    <ClInclude Include="..\..\utils\decrypt\decrypt.h">
       <Filter>utils\decrypt</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\decrypt\header.h">
+    <ClInclude Include="..\..\utils\decrypt\header.h">
       <Filter>utils\decrypt</Filter>
     </ClInclude>
     <ClInclude Include="..\metaspu\metaspu.h">
@@ -1076,70 +1076,70 @@
     <ClInclude Include="tileView.h">
       <Filter>frontend\Windows\tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\datetime.h">
+    <ClInclude Include="..\..\utils\datetime.h">
       <Filter>utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\partition.h">
+    <ClInclude Include="..\..\utils\libfat\partition.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\bit_ops.h">
+    <ClInclude Include="..\..\utils\libfat\bit_ops.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\cache.h">
+    <ClInclude Include="..\..\utils\libfat\cache.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\common.h">
+    <ClInclude Include="..\..\utils\libfat\common.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\directory.h">
+    <ClInclude Include="..\..\utils\libfat\directory.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\disc.h">
+    <ClInclude Include="..\..\utils\libfat\disc.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\disc_io.h">
+    <ClInclude Include="..\..\utils\libfat\disc_io.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\fat.h">
+    <ClInclude Include="..\..\utils\libfat\fat.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\fatdir.h">
+    <ClInclude Include="..\..\utils\libfat\fatdir.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\fatfile.h">
+    <ClInclude Include="..\..\utils\libfat\fatfile.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\file_allocation_table.h">
+    <ClInclude Include="..\..\utils\libfat\file_allocation_table.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\filetime.h">
+    <ClInclude Include="..\..\utils\libfat\filetime.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\libfat_pc.h">
+    <ClInclude Include="..\..\utils\libfat\libfat_pc.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\libfat_public_api.h">
+    <ClInclude Include="..\..\utils\libfat\libfat_public_api.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\lock.h">
+    <ClInclude Include="..\..\utils\libfat\lock.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\libfat\mem_allocate.h">
+    <ClInclude Include="..\..\utils\libfat\mem_allocate.h">
       <Filter>utils\libfat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\vfat.h">
+    <ClInclude Include="..\..\utils\vfat.h">
       <Filter>utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\emufat.h">
+    <ClInclude Include="..\..\utils\emufat.h">
       <Filter>utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\emufat_types.h">
+    <ClInclude Include="..\..\utils\emufat_types.h">
       <Filter>utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\tinyxml\tinystr.h">
+    <ClInclude Include="..\..\utils\tinyxml\tinystr.h">
       <Filter>utils\tinyxml</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\tinyxml\tinyxml.h">
+    <ClInclude Include="..\..\utils\tinyxml\tinyxml.h">
       <Filter>utils\tinyxml</Filter>
     </ClInclude>
     <ClInclude Include="..\filter\filter.h">
@@ -1160,121 +1160,121 @@
     <ClInclude Include="FEX_Interface.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\asmjit.h">
+    <ClInclude Include="..\..\utils\AsmJit\asmjit.h">
       <Filter>utils\AsmJit</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\config.h">
+    <ClInclude Include="..\..\utils\AsmJit\config.h">
       <Filter>utils\AsmJit</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core.h">
+    <ClInclude Include="..\..\utils\AsmJit\core.h">
       <Filter>utils\AsmJit</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\x86.h">
+    <ClInclude Include="..\..\utils\AsmJit\x86.h">
       <Filter>utils\AsmJit</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\apibegin.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\apibegin.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\apiend.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\apiend.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\assembler.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\assembler.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\assert.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\assert.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\buffer.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\buffer.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\build.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\build.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\compiler.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\compiler.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\compilercontext.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\compilercontext.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\compilerfunc.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\compilerfunc.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\compileritem.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\compileritem.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\context.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\context.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\cpuinfo.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\cpuinfo.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\defs.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\defs.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\func.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\func.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\intutil.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\intutil.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\lock.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\lock.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\logger.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\logger.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\memorymanager.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\memorymanager.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\memorymarker.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\memorymarker.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\operand.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\operand.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\podvector.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\podvector.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\stringbuilder.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\stringbuilder.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\stringutil.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\stringutil.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\virtualmemory.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\virtualmemory.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\core\zonememory.h">
+    <ClInclude Include="..\..\utils\AsmJit\core\zonememory.h">
       <Filter>utils\AsmJit\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\x86\x86assembler.h">
+    <ClInclude Include="..\..\utils\AsmJit\x86\x86assembler.h">
       <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\x86\x86compiler.h">
+    <ClInclude Include="..\..\utils\AsmJit\x86\x86compiler.h">
       <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\x86\x86compilercontext.h">
+    <ClInclude Include="..\..\utils\AsmJit\x86\x86compilercontext.h">
       <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\x86\x86compilerfunc.h">
+    <ClInclude Include="..\..\utils\AsmJit\x86\x86compilerfunc.h">
       <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\x86\x86compileritem.h">
+    <ClInclude Include="..\..\utils\AsmJit\x86\x86compileritem.h">
       <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\x86\x86cpuinfo.h">
+    <ClInclude Include="..\..\utils\AsmJit\x86\x86cpuinfo.h">
       <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\x86\x86defs.h">
+    <ClInclude Include="..\..\utils\AsmJit\x86\x86defs.h">
       <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\x86\x86func.h">
+    <ClInclude Include="..\..\utils\AsmJit\x86\x86func.h">
       <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\x86\x86operand.h">
+    <ClInclude Include="..\..\utils\AsmJit\x86\x86operand.h">
       <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\AsmJit\x86\x86util.h">
+    <ClInclude Include="..\..\utils\AsmJit\x86\x86util.h">
       <Filter>utils\AsmJit\x86</Filter>
     </ClInclude>
     <ClInclude Include="sndxa2.h">
@@ -1286,13 +1286,13 @@
     <ClInclude Include="..\addons\slot1comp_rom.h">
       <Filter>addons</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\advanscene.h">
+    <ClInclude Include="..\..\utils\advanscene.h">
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="..\addons\slot1comp_protocol.h">
       <Filter>addons</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\fsnitro.h">
+    <ClInclude Include="..\..\utils\fsnitro.h">
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="fsnitroView.h">
@@ -1535,7 +1535,7 @@
     <ClInclude Include="..\libretro-common\include\compat\msvc.h">
       <Filter>libretro-common\include\compat</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\colorspacehandler\colorspacehandler.h">
+    <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler.h">
       <Filter>utils\colorspacehandler</Filter>
     </ClInclude>
     <ClInclude Include="..\modules\osd\agg\agg2d.h">
@@ -1553,7 +1553,7 @@
     <ClInclude Include="..\..\libretro-common\include\features\features_cpu.h">
       <Filter>libretro-common\include\features</Filter>
     </ClInclude>
-    <ClInclude Include="..\utils\xstring.h" />
+    <ClInclude Include="..\..\utils\xstring.h" />
     <ClInclude Include="..\arm_jit.h" />
     <ClInclude Include="..\armcpu.h" />
     <ClInclude Include="..\bios.h" />
@@ -1613,7 +1613,7 @@
     <None Include="..\filter\hq4x.dat">
       <Filter>filter</Filter>
     </None>
-    <None Include="..\utils\AsmJit\COPYING.txt">
+    <None Include="..\..\utils\AsmJit\COPYING.txt">
       <Filter>utils\AsmJit</Filter>
     </None>
     <None Include="File_Extractor\7z_C\7zC.txt">
