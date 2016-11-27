@@ -1708,7 +1708,7 @@ Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, bool enableT
 	
 	if (theTexture->IsLoadNeeded())
 	{
-		theTexture->Unpack<TexFormat_32bpp>((u32 *)this->_workingTextureUnpackBuffer);
+		theTexture->Load(this->_workingTextureUnpackBuffer);
 		
 		const u32 *textureSrc = (u32 *)this->_workingTextureUnpackBuffer;
 		const NDSTextureFormat packFormat = theTexture->GetPackFormat();

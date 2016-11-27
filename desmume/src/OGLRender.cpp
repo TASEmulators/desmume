@@ -2981,7 +2981,7 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, bool enableT
 	
 	if (theTexture->IsLoadNeeded())
 	{
-		theTexture->Unpack<TexFormat_32bpp>((u32 *)this->_workingTextureUnpackBuffer);
+		theTexture->Load(this->_workingTextureUnpackBuffer);
 		
 		const u32 *textureSrc = (u32 *)this->_workingTextureUnpackBuffer;
 		size_t texWidth = theTexture->GetWidth();
@@ -4647,7 +4647,7 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, bool enableT
 	
 	if (theTexture->IsLoadNeeded())
 	{
-		theTexture->Unpack<TexFormat_32bpp>((u32 *)this->_workingTextureUnpackBuffer);
+		theTexture->Load(this->_workingTextureUnpackBuffer);
 		
 		const u32 *textureSrc = (u32 *)this->_workingTextureUnpackBuffer;
 		size_t texWidth = theTexture->GetWidth();

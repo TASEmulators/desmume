@@ -1170,6 +1170,11 @@ SoftRasterizerTexture::~SoftRasterizerTexture()
 	free_aligned(this->_unpackData);
 }
 
+void SoftRasterizerTexture::Load(void *targetBuffer)
+{
+	this->Unpack<TexFormat_15bpp>((u32 *)targetBuffer);
+}
+
 u32* SoftRasterizerTexture::GetUnpackData()
 {
 	return this->_unpackData;
@@ -1436,7 +1441,7 @@ void SoftRasterizerRenderer::setupTextures()
 	
 	if (lastTexItem->IsLoadNeeded())
 	{
-		lastTexItem->Unpack<TexFormat_15bpp>(lastTexItem->GetUnpackData());
+		lastTexItem->Load(lastTexItem->GetUnpackData());
 	}
 	
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
@@ -1459,7 +1464,7 @@ void SoftRasterizerRenderer::setupTextures()
 			
 			if (lastTexItem->IsLoadNeeded())
 			{
-				lastTexItem->Unpack<TexFormat_15bpp>(lastTexItem->GetUnpackData());
+				lastTexItem->Load(lastTexItem->GetUnpackData());
 			}
 			
 			lastTexParams = thePoly.texParam;

@@ -149,6 +149,8 @@ public:
 	size_t GetUnpackSizeUsingFormat(const TextureStoreUnpackFormat texCacheFormat) const;
 	template<TextureStoreUnpackFormat TEXCACHEFORMAT> void Unpack(u32 *unpackBuffer);
 	
+	virtual void Load(void *targetBuffer);
+	
 	bool IsSuspectedInvalid() const;
 	void SetSuspectedInvalid();
 	

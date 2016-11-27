@@ -655,6 +655,11 @@ void TextureStore::Unpack(u32 *unpackBuffer)
 	this->_isLoadNeeded = false;
 }
 
+void TextureStore::Load(void *targetBuffer)
+{
+	this->Unpack<TexFormat_32bpp>((u32 *)targetBuffer);
+}
+
 bool TextureStore::IsSuspectedInvalid() const
 {
 	return this->_suspectedInvalid;

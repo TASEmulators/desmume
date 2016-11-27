@@ -54,6 +54,8 @@ public:
 	SoftRasterizerTexture(u32 texAttributes, u32 palAttributes);
 	virtual ~SoftRasterizerTexture();
 	
+	virtual void Load(void *targetBuffer);
+	
 	u32* GetUnpackData();
 	u32 GetRenderWidth() const;
 	u32 GetRenderHeight() const;
