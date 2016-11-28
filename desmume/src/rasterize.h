@@ -20,13 +20,11 @@
 
 #include "render3D.h"
 #include "gfx3d.h"
-#include "texcache.h"
 
 #define SOFTRASTERIZER_DEPTH_EQUAL_TEST_TOLERANCE 0x200
 
 extern GPU3DInterface gpu3DRasterize;
 
-class TexCacheItem;
 class SoftRasterizerRenderer;
 
 struct SoftRasterizerPostProcessParams
@@ -40,7 +38,7 @@ struct SoftRasterizerPostProcessParams
 	bool fogAlphaOnly;
 };
 
-class SoftRasterizerTexture : public TextureStore
+class SoftRasterizerTexture : public Render3DTexture
 {
 protected:
 	u32 *_unpackData;
@@ -52,14 +50,7 @@ protected:
 	u32 _renderHeightMask;
 	u32 _renderWidthShift;
 	
-	bool _useDeposterize;
-	size_t _scalingFactor;
 	u32 *_customBuffer;
-	
-	SSurface _deposterizeSrcSurface;
-	SSurface _deposterizeDstSurface;
-	
-	template<size_t SCALEFACTOR> void _Upscale();
 	
 public:
 	SoftRasterizerTexture(u32 texAttributes, u32 palAttributes);
@@ -76,10 +67,7 @@ public:
 	u32 GetRenderHeightMask() const;
 	u32 GetRenderWidthShift() const;
 	
-	bool IsUsingDeposterize() const;
 	void SetUseDeposterize(bool willDeposterize);
-	
-	size_t GetScalingFactor() const;
 	void SetScalingFactor(size_t scalingFactor);
 };
 

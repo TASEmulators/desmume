@@ -25,9 +25,7 @@
 #endif
 
 #include "utils/bits.h"
-#include "gfx3d.h"
 #include "MMU.h"
-#include "texcache.h"
 #include "./filter/filter.h"
 #include "./filter/xbrz.h"
 
@@ -194,6 +192,60 @@ void FragmentAttributesBuffer::SetAll(const FragmentAttributes &attr)
 		this->SetAtIndex(i, attr);
 	}
 }
+
+Render3DTexture::Render3DTexture(u32 texAttributes, u32 palAttributes) : TextureStore(texAttributes, palAttributes)
+{
+	_useDeposterize = false;
+	_scalingFactor = 1;
+	
+	memset(&_deposterizeSrcSurface, 0, sizeof(_deposterizeSrcSurface));
+	memset(&_deposterizeDstSurface, 0, sizeof(_deposterizeDstSurface));
+	
+	_deposterizeSrcSurface.Width = _deposterizeDstSurface.Width = _sizeS;
+	_deposterizeSrcSurface.Height = _deposterizeDstSurface.Height = _sizeT;
+	_deposterizeSrcSurface.Pitch = _deposterizeDstSurface.Pitch = 1;
+}
+
+template <size_t SCALEFACTOR>
+void Render3DTexture::_Upscale(const u32 *__restrict src, u32 *__restrict dst)
+{
+	if ( (SCALEFACTOR != 2) && (SCALEFACTOR != 4) )
+	{
+		return;
+	}
+	
+	if ( (this->_packFormat == TEXMODE_A3I5) || (this->_packFormat == TEXMODE_A5I3) )
+	{
+		xbrz::scale<SCALEFACTOR, xbrz::ColorFormatARGB>(src, dst, this->_sizeS, this->_sizeT);
+	}
+	else
+	{
+		xbrz::scale<SCALEFACTOR, xbrz::ColorFormatARGB_1bitAlpha>(src, dst, this->_sizeS, this->_sizeT);
+	}
+}
+
+bool Render3DTexture::IsUsingDeposterize() const
+{
+	return this->_useDeposterize;
+}
+
+void Render3DTexture::SetUseDeposterize(bool willDeposterize)
+{
+	this->_useDeposterize = willDeposterize;
+}
+
+size_t Render3DTexture::GetScalingFactor() const
+{
+	return this->_scalingFactor;
+}
+
+void Render3DTexture::SetScalingFactor(size_t scalingFactor)
+{
+	this->_scalingFactor = ( (scalingFactor == 2) || (scalingFactor == 4) ) ? scalingFactor : 1;
+}
+
+template void Render3DTexture::_Upscale<2>(const u32 *__restrict src, u32 *__restrict dst);
+template void Render3DTexture::_Upscale<4>(const u32 *__restrict src, u32 *__restrict dst);
 
 void* Render3D::operator new(size_t size)
 {

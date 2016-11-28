@@ -26,9 +26,7 @@
 
 #include "common.h"
 #include "debug.h"
-#include "gfx3d.h"
 #include "NDSSystem.h"
-#include "texcache.h"
 
 #include "./filter/filter.h"
 #include "./filter/xbrz.h"
@@ -639,21 +637,11 @@ static void OGLGetDriverVersion(const char *oglVersionString,
 	}
 }
 
-OpenGLTexture::OpenGLTexture(u32 texAttributes, u32 palAttributes) : TextureStore(texAttributes, palAttributes)
+OpenGLTexture::OpenGLTexture(u32 texAttributes, u32 palAttributes) : Render3DTexture(texAttributes, palAttributes)
 {
 	_cacheSize = GetUnpackSizeUsingFormat(TexFormat_32bpp);
 	_invSizeS = 1.0f / (float)_sizeS;
 	_invSizeT = 1.0f / (float)_sizeT;
-	
-	_useDeposterize = false;
-	_scalingFactor = 1;
-	
-	memset(&_deposterizeSrcSurface, 0, sizeof(_deposterizeSrcSurface));
-	memset(&_deposterizeDstSurface, 0, sizeof(_deposterizeDstSurface));
-	
-	_deposterizeSrcSurface.Width = _deposterizeDstSurface.Width = _sizeS;
-	_deposterizeSrcSurface.Height = _deposterizeDstSurface.Height = _sizeT;
-	_deposterizeSrcSurface.Pitch = _deposterizeDstSurface.Pitch = 1;
 	
 	_upscaleBuffer = NULL;
 	
@@ -663,26 +651,6 @@ OpenGLTexture::OpenGLTexture(u32 texAttributes, u32 palAttributes) : TextureStor
 OpenGLTexture::~OpenGLTexture()
 {
 	glDeleteTextures(1, &this->_texID);
-}
-
-template <size_t SCALEFACTOR>
-void OpenGLTexture::_Upscale()
-{
-	if ( (SCALEFACTOR != 2) && (SCALEFACTOR != 4) )
-	{
-		return;
-	}
-	
-	u32 *src = (u32 *)this->_deposterizeSrcSurface.Surface;
-	
-	if ( (this->_packFormat == TEXMODE_A3I5) || (this->_packFormat == TEXMODE_A5I3) )
-	{
-		xbrz::scale<SCALEFACTOR, xbrz::ColorFormatARGB>(src, this->_upscaleBuffer, this->_sizeS, this->_sizeT);
-	}
-	else
-	{
-		xbrz::scale<SCALEFACTOR, xbrz::ColorFormatARGB_1bitAlpha>(src, this->_upscaleBuffer, this->_sizeS, this->_sizeT);
-	}
 }
 
 void OpenGLTexture::Load(bool isNewTexture)
@@ -721,7 +689,7 @@ void OpenGLTexture::Load(bool isNewTexture)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
 			
-			this->_Upscale<2>();
+			this->_Upscale<2>(textureSrc, this->_upscaleBuffer);
 			
 			if (isNewTexture)
 			{
@@ -741,13 +709,13 @@ void OpenGLTexture::Load(bool isNewTexture)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 2);
 			
-			this->_Upscale<4>();
+			this->_Upscale<4>(textureSrc, this->_upscaleBuffer);
 			
 			if (isNewTexture)
 			{
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_sizeS*4, this->_sizeT*4, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_upscaleBuffer);
 				
-				this->_Upscale<2>();
+				this->_Upscale<2>(textureSrc, this->_upscaleBuffer);
 				glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, this->_sizeS*2, this->_sizeT*2, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_upscaleBuffer);
 				
 				glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA, this->_sizeS*1, this->_sizeT*1, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
@@ -756,7 +724,7 @@ void OpenGLTexture::Load(bool isNewTexture)
 			{
 				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->_sizeS*4, this->_sizeT*4, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_upscaleBuffer);
 				
-				this->_Upscale<2>();
+				this->_Upscale<2>(textureSrc, this->_upscaleBuffer);
 				glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, this->_sizeS*2, this->_sizeT*2, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_upscaleBuffer);
 				
 				glTexSubImage2D(GL_TEXTURE_2D, 2, 0, 0, this->_sizeS*1, this->_sizeT*1, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
@@ -782,26 +750,6 @@ GLfloat OpenGLTexture::GetInvWidth() const
 GLfloat OpenGLTexture::GetInvHeight() const
 {
 	return this->_invSizeT;
-}
-
-bool OpenGLTexture::IsUsingDeposterize() const
-{
-	return this->_useDeposterize;
-}
-
-void OpenGLTexture::SetUseDeposterize(bool willDeposterize)
-{
-	this->_useDeposterize = willDeposterize;
-}
-
-size_t OpenGLTexture::GetScalingFactor() const
-{
-	return this->_scalingFactor;
-}
-
-void OpenGLTexture::SetScalingFactor(size_t scalingFactor)
-{
-	this->_scalingFactor = ( (scalingFactor == 2) || (scalingFactor == 4) ) ? scalingFactor : 1;
 }
 
 void OpenGLTexture::SetUnpackBuffer(void *unpackBuffer)

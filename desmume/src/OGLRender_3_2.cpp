@@ -25,9 +25,7 @@
 
 #include "common.h"
 #include "debug.h"
-#include "gfx3d.h"
 #include "NDSSystem.h"
-#include "texcache.h"
 
 //------------------------------------------------------------
 

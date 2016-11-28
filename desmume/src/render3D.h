@@ -19,8 +19,9 @@
 #ifndef RENDER3D_H
 #define RENDER3D_H
 
-#include "gfx3d.h"
 #include "types.h"
+#include "gfx3d.h"
+#include "texcache.h"
 #include "./filter/filter.h"
 
 #define kUnsetTranslucentPolyID 255
@@ -111,6 +112,26 @@ struct Render3DDeviceInfo
 	
 	float maxAnisotropy;
 	u8 maxSamples;
+};
+
+class Render3DTexture : public TextureStore
+{
+protected:
+	bool _useDeposterize;
+	size_t _scalingFactor;
+	SSurface _deposterizeSrcSurface;
+	SSurface _deposterizeDstSurface;
+	
+	template<size_t SCALEFACTOR> void _Upscale(const u32 *__restrict src, u32 *__restrict dst);
+	
+public:
+	Render3DTexture(u32 texAttributes, u32 palAttributes);
+		
+	bool IsUsingDeposterize() const;
+	void SetUseDeposterize(bool willDeposterize);
+	
+	size_t GetScalingFactor() const;
+	void SetScalingFactor(size_t scalingFactor);
 };
 
 class Render3D

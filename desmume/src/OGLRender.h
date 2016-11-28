@@ -24,7 +24,6 @@
 #include <set>
 #include <string>
 #include "render3D.h"
-#include "texcache.h"
 #include "types.h"
 
 #ifndef OGLRENDER_3_2_H
@@ -511,7 +510,6 @@ struct VERTLIST;
 struct POLYLIST;
 struct INDEXLIST;
 struct POLY;
-class TexCacheItem;
 class OpenGLRenderer;
 
 extern GPU3DInterface gpu3Dgl;
@@ -555,21 +553,14 @@ extern void (*OGLCreateRenderer_3_2_Func)(OpenGLRenderer **rendererPtr);
 
 bool IsVersionSupported(unsigned int checkVersionMajor, unsigned int checkVersionMinor, unsigned int checkVersionRevision);
 
-class OpenGLTexture : public TextureStore
+class OpenGLTexture : public Render3DTexture
 {
-private:
+protected:
 	GLuint _texID;
 	GLfloat _invSizeS;
 	GLfloat _invSizeT;
-	
-	bool _useDeposterize;
-	size_t _scalingFactor;
-	
-	SSurface _deposterizeSrcSurface;
-	SSurface _deposterizeDstSurface;
+		
 	u32 *_upscaleBuffer;
-	
-	template<size_t SCALEFACTOR> void _Upscale();
 	
 public:
 	OpenGLTexture(u32 texAttributes, u32 palAttributes);
@@ -580,12 +571,6 @@ public:
 	GLuint GetID() const;
 	GLfloat GetInvWidth() const;
 	GLfloat GetInvHeight() const;
-	
-	bool IsUsingDeposterize() const;
-	void SetUseDeposterize(bool willDeposterize);
-	
-	size_t GetScalingFactor() const;
-	void SetScalingFactor(size_t scalingFactor);
 	
 	void SetUnpackBuffer(void *unpackBuffer);
 	void SetDeposterizeBuffer(void *dstBuffer, void *workingBuffer);
