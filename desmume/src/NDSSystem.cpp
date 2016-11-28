@@ -44,7 +44,6 @@
 #include "debug.h"
 #include "cheatSystem.h"
 #include "movie.h"
-#include "Disassembler.h"
 #include "FIFO.h"
 #include "readwrite.h"
 #include "registers.h"

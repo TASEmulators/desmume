@@ -244,6 +244,7 @@ enum retro_language
    RETRO_LANGUAGE_CHINESE_SIMPLIFIED  = 11,
    RETRO_LANGUAGE_ESPERANTO           = 12,
    RETRO_LANGUAGE_POLISH              = 13,
+   RETRO_LANGUAGE_VIETNAMESE          = 14,
    RETRO_LANGUAGE_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */
@@ -976,6 +977,37 @@ struct retro_hw_render_context_negotiation_interface
                                             * so it will be used after SET_HW_RENDER, but before the context_reset callback.
                                             */
 
+/* Serialized state is incomplete in some way. Set if serialization is
+ * usable in typical end-user cases but should not be relied upon to
+ * implement frame-sensitive frontend features such as netplay or
+ * rerecording. */
+#define RETRO_SERIALIZATION_QUIRK_INCOMPLETE (1 << 0)
+/* The core must spend some time initializing before serialization is
+ * supported. retro_serialize() will initially fail; retro_unserialize()
+ * and retro_serialize_size() may or may not work correctly either. */
+#define RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE (1 << 1)
+/* Serialization size may change within a session. */
+#define RETRO_SERIALIZATION_QUIRK_CORE_VARIABLE_SIZE (1 << 2)
+/* Set by the frontend to acknowledge that it supports variable-sized
+ * states. */
+#define RETRO_SERIALIZATION_QUIRK_FRONT_VARIABLE_SIZE (1 << 3)
+/* Serialized state can only be loaded during the same session. */
+#define RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION (1 << 4)
+/* Serialized state cannot be loaded on an architecture with a different
+ * endianness from the one it was saved on. */
+#define RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT (1 << 5)
+/* Serialized state cannot be loaded on a different platform from the one it
+ * was saved on for reasons other than endianness, such as word size
+ * dependence */
+#define RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT (1 << 6)
+
+#define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 44
+                                           /* uint64_t * --
+                                            * Sets quirk flags associated with serialization. The frontend will zero any flags it doesn't
+                                            * recognize or support. Should be set in either retro_init or retro_load_game, but not both.
+                                            */
+
+
 #define RETRO_MEMDESC_CONST     (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
 #define RETRO_MEMDESC_BIGENDIAN (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
 #define RETRO_MEMDESC_ALIGN_2   (1 << 16)  /* All memory access in this area is aligned to their own size, or 2, whichever is smaller. */
@@ -1284,6 +1316,8 @@ struct retro_log_callback
 #define RETRO_SIMD_VFPV4    (1 << 17)
 #define RETRO_SIMD_POPCNT   (1 << 18)
 #define RETRO_SIMD_MOVBE    (1 << 19)
+#define RETRO_SIMD_CMOV     (1 << 20)
+#define RETRO_SIMD_ASIMD    (1 << 21)
 
 typedef uint64_t retro_perf_tick_t;
 typedef int64_t retro_time_t;
@@ -1657,7 +1691,8 @@ struct retro_hw_render_callback
     * be providing preallocated framebuffers. */
    retro_hw_get_current_framebuffer_t get_current_framebuffer;
 
-   /* Set by frontend. */
+   /* Set by frontend.
+    * Can return all relevant functions, including glClear on Windows. */
    retro_hw_get_proc_address_t get_proc_address;
 
    /* Set if render buffers should have depth component attached.

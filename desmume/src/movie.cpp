@@ -22,11 +22,12 @@
 #include <limits.h>
 #include <ctype.h>
 #include <time.h>
+#include <string>
 
 #include "utils/guid.h"
 #include "utils/xstring.h"
 #include "utils/datetime.h"
-#include "utils/ConvertUTF.h"
+#include "encodings/utf.h"
 
 #include "MMU.h"
 #include "NDSSystem.h"
@@ -299,20 +300,14 @@ int MovieData::dump(EMUFILE* fp, bool binary)
 		fp->fprintf("bootFromFirmware %d\n", CommonSettings.BootFromFirmware?1:0);
 	}
 	else {
-		UTF8 fwNicknameUTF8[MAX_FW_NICKNAME_LENGTH*4];
-		UTF8 *fwNicknameUTF8Start = fwNicknameUTF8;
-		const UTF16 *fwNicknameUTF16 = (const UTF16 *)CommonSettings.fw_config.nickname;
-		memset(fwNicknameUTF8, 0, sizeof(fwNicknameUTF8));
-		ConvertUTF16toUTF8(&fwNicknameUTF16, fwNicknameUTF16 + CommonSettings.fw_config.nickname_len, &fwNicknameUTF8Start, fwNicknameUTF8Start + sizeof(fwNicknameUTF8), strictConversion);
+		std::wstring wnick((wchar_t*)CommonSettings.fw_config.nickname,CommonSettings.fw_config.nickname_len);
+		std::string nick = wcstombs(wnick);
 		
-		UTF8 fwMessageUTF8[MAX_FW_MESSAGE_LENGTH*4];
-		UTF8 *fwMessageUTF8Start = fwMessageUTF8;
-		const UTF16 *fwMessageUTF16 = (const UTF16 *)CommonSettings.fw_config.message;
-		memset(fwMessageUTF8, 0, sizeof(fwMessageUTF8));
-		ConvertUTF16toUTF8(&fwMessageUTF16, fwMessageUTF16 + CommonSettings.fw_config.message_len, &fwMessageUTF8Start, fwMessageUTF8Start + sizeof(fwMessageUTF8), strictConversion);
+		std::wstring wmessage((wchar_t*)CommonSettings.fw_config.message,CommonSettings.fw_config.message_len);
+		std::string message = wcstombs(wmessage);
 		
-		fp->fprintf("firmNickname %s\n", fwNicknameUTF8);
-		fp->fprintf("firmMessage %s\n", fwMessageUTF8);
+		fp->fprintf("firmNickname %s\n", nick.c_str());
+		fp->fprintf("firmMessage %s\n", message.c_str());
 		fp->fprintf("firmFavColour %d\n", CommonSettings.fw_config.fav_colour);
 		fp->fprintf("firmBirthMonth %d\n", CommonSettings.fw_config.birth_month);
 		fp->fprintf("firmBirthDay %d\n", CommonSettings.fw_config.birth_day);

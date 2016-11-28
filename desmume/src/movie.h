@@ -38,7 +38,7 @@ typedef struct
 	u32 rerecord_count;
 	bool poweron;
 	u32 emu_version_used;
-	MD5DATA md5_of_rom_used;
+	//MD5DATA md5_of_rom_used;
 	std::string name_of_rom_used;
 
 	std::vector<std::wstring> comments;

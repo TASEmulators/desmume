@@ -21,7 +21,22 @@
 #include <string>
 #include <cstdio>
 #include "../types.h"
-#include "valuearray.h"
+
+template<typename T, int N>
+struct ValueArray
+{
+	T data[N];
+	T &operator[](int index) { return data[index]; }
+	static const int size = N;
+	bool operator!=(ValueArray<T,N> &other) { return !operator==(other); }
+	bool operator==(ValueArray<T,N> &other)
+	{
+		for(int i=0;i<size;i++)
+			if(data[i] != other[i])
+				return false;
+		return true;
+	}
+};
 
 struct Desmume_Guid : public ValueArray<u8,16>
 {

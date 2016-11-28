@@ -44,6 +44,11 @@ size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars);
 
 const char *utf8skip(const char *str, size_t chars);
 
+uint32_t utf8_walk(const char **string);
+
+
+bool utf16_to_char_string(const uint16_t *in, char *s, size_t len);
+
 RETRO_END_DECLS
 
 #endif

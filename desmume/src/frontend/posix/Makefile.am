@@ -29,7 +29,7 @@ libdesmume_a_SOURCES = \
 	../../common.cpp ../../common.h \
 	../../debug.cpp ../../debug.h \
 	../../driver.cpp ../../driver.h \
-	../../Database.cpp ../../Database.h ../../Disassembler.cpp ../../Disassembler.h \
+	../../Database.cpp ../../Database.h \
 	../../emufile.h ../../emufile.cpp ../../encrypt.h ../../encrypt.cpp ../../FIFO.cpp ../../FIFO.h \
 	../../firmware.cpp ../../firmware.h ../../GPU.cpp ../../GPU.h \
 	../../GPU_osd.h \
@@ -53,12 +53,13 @@ libdesmume_a_SOURCES = \
 	../../thumb_instructions.cpp ../../types.h \
 	../../movie.cpp ../../movie.h \
 	../../PACKED.h ../../PACKED_END.h \
+	../../frontend/modules/Disassembler.cpp ../../frontend/modules/Disassembler.h \
 	../../utils/advanscene.cpp ../../utils/advanscene.h \
 	../../utils/datetime.cpp ../../utils/datetime.h \
-	../../utils/ConvertUTF.c ../../utils/ConvertUTF.h ../../utils/guid.cpp ../../utils/guid.h \
+	../../utils/guid.cpp ../../utils/guid.h \
 	../../utils/emufat.cpp ../../utils/emufat.h utils/emufat_types.h \
 	../../utils/fsnitro.cpp ../../utils/fsnitro.h \
-	../../utils/md5.cpp ../../utils/md5.h utils/valuearray.h ../../utils/xstring.cpp ../../utils/xstring.h \
+	../../utils/xstring.cpp ../../utils/xstring.h \
 	../../utils/decrypt/crc.cpp ../../utils/decrypt/crc.h ../../utils/decrypt/decrypt.cpp \
 	../../utils/decrypt/decrypt.h ../../utils/decrypt/header.cpp ../../utils/decrypt/header.h \
 	../../utils/task.cpp ../../utils/task.h \

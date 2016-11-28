@@ -73,6 +73,16 @@
 #include <ogc/lwp_watchdog.h>
 #endif
 
+#ifdef WIIU
+#include <coreinit/time.h>
+#include "wiiu/system/wiiu.h"
+#endif
+
+#if defined(_3DS)
+#include <3ds/svc.h>
+#include <3ds/os.h>
+#endif
+
 /* iOS/OSX specific. Lacks clock_gettime(), so implement it. */
 #ifdef __MACH__
 #include <sys/time.h>
@@ -85,9 +95,8 @@
 #define CLOCK_REALTIME 0
 #endif
 
-#if (__MAC_OS_X_VERSION_MAX_ALLOWED < 101200) && (__IPHONE_OS_VERSION_MAX_ALLOWED < 100000)
-// this function is part of macOS 10.12 and iOS 10 now
-static int clock_gettime(int clk_ik, struct timespec *t)
+/* this function is part of iOS 10 now */
+static int ra_clock_gettime(int clk_ik, struct timespec *t)
 {
    struct timeval now;
    int rv = gettimeofday(&now, NULL);
@@ -98,7 +107,12 @@ static int clock_gettime(int clk_ik, struct timespec *t)
    return 0;
 }
 #endif
+
+#if defined(__MACH__) && (__MAC_OS_X_VERSION_MAX_ALLOWED < 101200) && (__IPHONE_OS_VERSION_MAX_ALLOWED < 100000)
+#else
+#define ra_clock_gettime clock_gettime
 #endif
+
 
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
@@ -136,8 +150,8 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    tv_usec    = (long)(system_time.wMilliseconds * 1000);
    time_ticks = (1000000 * tv_sec + tv_usec);
 #elif defined(__linux__) || defined(__QNX__) || defined(__MACH__)
-   struct timespec tv;
-   if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
+   struct timespec tv = {0};
+   if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
       time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
          (retro_perf_tick_t)tv.tv_nsec;
 
@@ -153,10 +167,14 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = __mftb();
 #elif defined(GEKKO)
    time_ticks = gettime();
-#elif defined(PSP) || defined(VITA)
-   sceRtcGetCurrentTick(&time_ticks);
+#elif defined(PSP) 
+   sceRtcGetCurrentTick((uint64_t*)&time_ticks);
+#elif defined(VITA)
+   sceRtcGetCurrentTick((SceRtcTick*)&time_ticks);
 #elif defined(_3DS)
    time_ticks = svcGetSystemTick();
+#elif defined(WIIU)
+   time_ticks = OSGetSystemTime();
 #elif defined(__mips__)
    struct timeval tv;
    gettimeofday(&tv,NULL);
@@ -192,7 +210,7 @@ retro_time_t cpu_features_get_time_usec(void)
    return ticks_to_microsecs(gettime());
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
    struct timespec tv = {0};
-   if (clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
+   if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
 #elif defined(EMSCRIPTEN)
@@ -205,6 +223,8 @@ retro_time_t cpu_features_get_time_usec(void)
    return osGetTime() * 1000;
 #elif defined(VITA)
    return sceKernelGetProcessTimeWide();
+#elif defined(WIIU)
+   return ticks_to_us(OSGetSystemTime());
 #else
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif
@@ -271,7 +291,7 @@ static uint64_t xgetbv_x86(uint32_t idx)
 }
 #endif
 
-#if defined(__ARM_NEON__)  
+#if defined(__ARM_NEON__)
 static void arm_enable_runfast_mode(void)
 {
    /* RunFast mode. Enables flush-to-zero and some
@@ -448,6 +468,8 @@ unsigned cpu_features_get_core_amount(void)
    return 4;
 #elif defined(_3DS)
    return 1;
+#elif defined(WIIU)
+   return 3;
 #elif defined(_SC_NPROCESSORS_ONLN)
    /* Linux, most UNIX-likes. */
    long ret = sysconf(_SC_NPROCESSORS_ONLN);
@@ -513,7 +535,7 @@ uint64_t cpu_features_get(void)
 {
    int flags[4];
    int vendor_shuffle[3];
-   char vendor[13]     = {0};
+   char vendor[13];
    size_t len          = 0;
    uint64_t cpu_flags  = 0;
    uint64_t cpu        = 0;
@@ -540,6 +562,12 @@ uint64_t cpu_features_get(void)
    {
       cpu |= RETRO_SIMD_MMX;
       cpu |= RETRO_SIMD_MMXEXT;
+   }
+
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.floatingpoint", NULL, &len, NULL, 0) == 0)
+   {
+      cpu |= RETRO_SIMD_CMOV;
    }
 
    len            = sizeof(size_t);
@@ -593,6 +621,8 @@ uint64_t cpu_features_get(void)
    vendor_shuffle[0] = flags[1];
    vendor_shuffle[1] = flags[3];
    vendor_shuffle[2] = flags[2];
+
+   vendor[0]         = '\0';
    memcpy(vendor, vendor_shuffle, sizeof(vendor_shuffle));
 
    /* printf("[CPUID]: Vendor: %s\n", vendor); */
@@ -607,6 +637,9 @@ uint64_t cpu_features_get(void)
       return 0;
 
    x86_cpuid(1, flags);
+
+   if (flags[3] & (1 << 15))
+      cpu |= RETRO_SIMD_CMOV;
 
    if (flags[3] & (1 << 23))
       cpu |= RETRO_SIMD_MMX;
@@ -682,6 +715,15 @@ uint64_t cpu_features_get(void)
    if (check_arm_cpu_feature("vfpv4"))
       cpu |= RETRO_SIMD_VFPV4;
 
+   if (check_arm_cpu_feature("asimd"))
+   {
+      cpu |= RETRO_SIMD_ASIMD;
+#ifdef __ARM_NEON__
+      cpu |= RETRO_SIMD_NEON;
+      arm_enable_runfast_mode();
+#endif
+   }
+
 #if 0
     check_arm_cpu_feature("swp");
     check_arm_cpu_feature("half");
@@ -726,6 +768,7 @@ uint64_t cpu_features_get(void)
    if (cpu & RETRO_SIMD_VMX128) strlcat(buf, " VMX128", sizeof(buf));
    if (cpu & RETRO_SIMD_VFPU)   strlcat(buf, " VFPU", sizeof(buf));
    if (cpu & RETRO_SIMD_PS)     strlcat(buf, " PS", sizeof(buf));
+   if (cpu & RETRO_SIMD_ASIMD)  strlcat(buf, " ASIMD", sizeof(buf));
 
    return cpu;
 }

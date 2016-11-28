@@ -24,7 +24,7 @@
 #include <stdio.h>
 
 #include "MMU.h"
-#include "Disassembler.h"
+#include "frontend/modules/Disassembler.h"
 #include "NDSSystem.h"
 #include "armcpu.h"
 
