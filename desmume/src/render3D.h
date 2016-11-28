@@ -130,6 +130,7 @@ protected:
 	bool _willFlushFramebufferRGBA5551;
 	
 	size_t _textureScalingFactor;
+	bool _textureDeposterize;
 	bool _textureSmooth;
 	
 	SSurface _textureDeposterizeSrcSurface;

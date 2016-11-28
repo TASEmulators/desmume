@@ -55,6 +55,8 @@
 #include "MMU.h"
 #include "NDSSystem.h"
 #include "utils/task.h"
+#include "filter/filter.h"
+#include "filter/xbrz.h"
 
 //#undef FORCEINLINE
 //#define FORCEINLINE
@@ -444,8 +446,8 @@ public:
 		
 		if (!CommonSettings.GFX3D_TXTHack)
 		{
-			iu = s32floor(u);
-			iv = s32floor(v);
+			iu = s32floor(u * (float)lastTexKey->GetRenderWidth() / (float)lastTexKey->GetWidth());
+			iv = s32floor(v * (float)lastTexKey->GetRenderHeight() / (float)lastTexKey->GetHeight());
 		}
 		else
 		{
@@ -455,7 +457,7 @@ public:
 		
 		sampler.dowrap(iu, iv);
 		FragmentColor color;
-		const u32 *textureData = lastTexKey->GetUnpackData();
+		const u32 *textureData = lastTexKey->GetRenderData();
 		
 		color.color = textureData[( iv << lastTexKey->GetRenderWidthShift() ) + iu];
 		
@@ -1150,12 +1152,25 @@ SoftRasterizerTexture::SoftRasterizerTexture(u32 texAttributes, u32 palAttribute
 {
 	_cacheSize = GetUnpackSizeUsingFormat(TexFormat_15bpp);
 	_unpackData = (u32 *)malloc_alignedCacheLine(_cacheSize);
+	
+	_useDeposterize = false;
+	_scalingFactor = 1;
+	_customBuffer = NULL;
+	
+	_renderData = _unpackData;
 	_renderWidth = _sizeS;
 	_renderHeight = _sizeT;
 	_renderWidthMask = _renderWidth - 1;
 	_renderHeightMask = _renderHeight - 1;
-	
 	_renderWidthShift = 0;
+	
+	memset(&_deposterizeSrcSurface, 0, sizeof(_deposterizeSrcSurface));
+	memset(&_deposterizeDstSurface, 0, sizeof(_deposterizeDstSurface));
+	
+	_deposterizeSrcSurface.Width = _deposterizeDstSurface.Width = _sizeS;
+	_deposterizeSrcSurface.Height = _deposterizeDstSurface.Height = _sizeT;
+	_deposterizeSrcSurface.Pitch = _deposterizeDstSurface.Pitch = 1;
+	_deposterizeSrcSurface.Surface = (unsigned char *)_unpackData;
 	
 	u32 tempWidth = _renderWidth;
 	while ( (tempWidth & 1) == 0)
@@ -1168,16 +1183,71 @@ SoftRasterizerTexture::SoftRasterizerTexture(u32 texAttributes, u32 palAttribute
 SoftRasterizerTexture::~SoftRasterizerTexture()
 {
 	free_aligned(this->_unpackData);
+	free_aligned(this->_deposterizeDstSurface.Surface);
+	free_aligned(this->_customBuffer);
 }
 
-void SoftRasterizerTexture::Load(void *targetBuffer)
+template <size_t SCALEFACTOR>
+void SoftRasterizerTexture::_Upscale()
 {
-	this->Unpack<TexFormat_15bpp>((u32 *)targetBuffer);
+	if ( (SCALEFACTOR != 2) && (SCALEFACTOR != 4) )
+	{
+		return;
+	}
+	
+	u32 *src = (this->_useDeposterize) ? (u32 *)this->_deposterizeDstSurface.Surface : this->_unpackData;
+	
+	if (this->_packFormat == TEXMODE_A3I5 || this->_packFormat == TEXMODE_A5I3)
+	{
+		xbrz::scale<SCALEFACTOR, xbrz::ColorFormatARGB>(src, this->_customBuffer, this->_sizeS, this->_sizeT);
+	}
+	else
+	{
+		xbrz::scale<SCALEFACTOR, xbrz::ColorFormatARGB_1bitAlpha>(src, this->_customBuffer, this->_sizeS, this->_sizeT);
+	}
+}
+
+void SoftRasterizerTexture::Load()
+{
+	if (this->_scalingFactor == 1 && !this->_useDeposterize)
+	{
+		this->Unpack<TexFormat_15bpp>((u32 *)this->_renderData);
+	}
+	else
+	{
+		this->Unpack<TexFormat_32bpp>((u32 *)this->_unpackData);
+		
+		if (this->_useDeposterize)
+		{
+			RenderDeposterize(this->_deposterizeSrcSurface, this->_deposterizeDstSurface);
+		}
+		
+		switch (this->_scalingFactor)
+		{
+			case 2:
+				this->_Upscale<2>();
+				break;
+				
+			case 4:
+				this->_Upscale<4>();
+				break;
+				
+			default:
+				break;
+		}
+		
+		ColorspaceConvertBuffer8888To6665<false, false>(this->_renderData, this->_renderData, this->_renderWidth * this->_renderHeight);
+	}
 }
 
 u32* SoftRasterizerTexture::GetUnpackData()
 {
 	return this->_unpackData;
+}
+
+u32* SoftRasterizerTexture::GetRenderData()
+{
+	return this->_renderData;
 }
 
 u32 SoftRasterizerTexture::GetRenderWidth() const
@@ -1203,6 +1273,96 @@ u32 SoftRasterizerTexture::GetRenderHeightMask() const
 u32 SoftRasterizerTexture::GetRenderWidthShift() const
 {
 	return this->_renderWidthShift;
+}
+
+bool SoftRasterizerTexture::IsUsingDeposterize() const
+{
+	return this->_useDeposterize;
+}
+
+void SoftRasterizerTexture::SetUseDeposterize(bool willDeposterize)
+{
+	this->_useDeposterize = willDeposterize;
+	
+	if ( (this->_deposterizeDstSurface.Surface == NULL) && willDeposterize )
+	{
+		this->_deposterizeDstSurface.Surface = (unsigned char *)malloc_alignedCacheLine(this->_cacheSize * 2);
+		this->_deposterizeDstSurface.workingSurface[0] = this->_deposterizeDstSurface.Surface + this->_cacheSize;
+	}
+	else if ( (this->_deposterizeDstSurface.Surface != NULL) && !willDeposterize )
+	{
+		free_aligned(this->_deposterizeDstSurface.Surface);
+		this->_deposterizeDstSurface.Surface = NULL;
+	}
+	
+	if (this->_scalingFactor == 1)
+	{
+		if (this->_useDeposterize)
+		{
+			this->_renderData = (u32 *)this->_deposterizeDstSurface.Surface;
+		}
+		else
+		{
+			this->_renderData = this->_unpackData;
+		}
+	}
+	else
+	{
+		this->_renderData = this->_customBuffer;
+	}
+}
+
+size_t SoftRasterizerTexture::GetScalingFactor() const
+{
+	return this->_scalingFactor;
+}
+
+void SoftRasterizerTexture::SetScalingFactor(size_t scalingFactor)
+{
+	if (  (scalingFactor != 2) && (scalingFactor != 4) )
+	{
+		scalingFactor = 1;
+	}
+	
+	u32 newWidth = this->_sizeS * scalingFactor;
+	u32 newHeight = this->_sizeT * scalingFactor;
+	
+	if (this->_renderWidth != newWidth || this->_renderHeight != newHeight)
+	{
+		u32 *oldBuffer = this->_customBuffer;
+		this->_customBuffer = (u32 *)malloc_alignedCacheLine(newWidth * newHeight * sizeof(u32));
+		free_aligned(oldBuffer);
+	}
+	
+	this->_scalingFactor = scalingFactor;
+	this->_renderWidth = newWidth;
+	this->_renderHeight = newHeight;
+	this->_renderWidthMask = newWidth - 1;
+	this->_renderHeightMask = newHeight - 1;
+	this->_renderWidthShift = 0;
+	
+	u32 tempWidth = newWidth;
+	while ( (tempWidth & 1) == 0)
+	{
+		tempWidth >>= 1;
+		this->_renderWidthShift++;
+	}
+	
+	if (this->_scalingFactor == 1)
+	{
+		if (this->_useDeposterize)
+		{
+			this->_renderData = (u32 *)this->_deposterizeDstSurface.Surface;
+		}
+		else
+		{
+			this->_renderData = this->_unpackData;
+		}
+	}
+	else
+	{
+		this->_renderData = this->_customBuffer;
+	}
 }
 
 GPU3DInterface gpu3DRasterize = {
@@ -1441,7 +1601,9 @@ void SoftRasterizerRenderer::setupTextures()
 	
 	if (lastTexItem->IsLoadNeeded())
 	{
-		lastTexItem->Load(lastTexItem->GetUnpackData());
+		lastTexItem->SetUseDeposterize(this->_textureDeposterize);
+		lastTexItem->SetScalingFactor(this->_textureScalingFactor);
+		lastTexItem->Load();
 	}
 	
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
@@ -1464,7 +1626,9 @@ void SoftRasterizerRenderer::setupTextures()
 			
 			if (lastTexItem->IsLoadNeeded())
 			{
-				lastTexItem->Load(lastTexItem->GetUnpackData());
+				lastTexItem->SetUseDeposterize(this->_textureDeposterize);
+				lastTexItem->SetScalingFactor(this->_textureScalingFactor);
+				lastTexItem->Load();
 			}
 			
 			lastTexParams = thePoly.texParam;

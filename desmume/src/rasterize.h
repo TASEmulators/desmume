@@ -44,24 +44,43 @@ class SoftRasterizerTexture : public TextureStore
 {
 protected:
 	u32 *_unpackData;
+	
+	u32 *_renderData;
 	u32 _renderWidth;
 	u32 _renderHeight;
 	u32 _renderWidthMask;
 	u32 _renderHeightMask;
 	u32 _renderWidthShift;
 	
+	bool _useDeposterize;
+	size_t _scalingFactor;
+	u32 *_customBuffer;
+	
+	SSurface _deposterizeSrcSurface;
+	SSurface _deposterizeDstSurface;
+	
+	template<size_t SCALEFACTOR> void _Upscale();
+	
 public:
 	SoftRasterizerTexture(u32 texAttributes, u32 palAttributes);
 	virtual ~SoftRasterizerTexture();
 	
-	virtual void Load(void *targetBuffer);
+	virtual void Load();
 	
 	u32* GetUnpackData();
+	
+	u32* GetRenderData();
 	u32 GetRenderWidth() const;
 	u32 GetRenderHeight() const;
 	u32 GetRenderWidthMask() const;
 	u32 GetRenderHeightMask() const;
 	u32 GetRenderWidthShift() const;
+	
+	bool IsUsingDeposterize() const;
+	void SetUseDeposterize(bool willDeposterize);
+	
+	size_t GetScalingFactor() const;
+	void SetScalingFactor(size_t scalingFactor);
 };
 
 #if defined(ENABLE_SSE2)

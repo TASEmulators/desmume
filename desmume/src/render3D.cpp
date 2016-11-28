@@ -234,6 +234,7 @@ Render3D::Render3D()
 	_willFlushFramebufferRGBA5551 = true;
 	
 	_textureScalingFactor = 1;
+	_textureDeposterize = false;
 	_textureSmooth = false;
 	_textureUpscaleBuffer = NULL;
 	
@@ -346,7 +347,7 @@ void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDep
 	const size_t newScalingFactor = (isScaleValid) ? scalingFactor : 1;
 	bool needTexCacheReset = false;
 	
-	if ( willDeposterize && (this->_textureDeposterizeDstSurface.Surface == NULL) )
+	if ( willDeposterize && !this->_textureDeposterize)
 	{
 		// 1024x1024 texels is the largest possible texture size.
 		// We need two buffers, one for each deposterize stage.
@@ -357,14 +358,16 @@ void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDep
 		
 		memset(this->_textureDeposterizeDstSurface.Surface, 0, bufferSize);
 		
+		this->_textureDeposterize = true;
 		needTexCacheReset = true;
 	}
-	else if ( !willDeposterize && (this->_textureDeposterizeDstSurface.Surface != NULL) )
+	else if (!willDeposterize && this->_textureDeposterize)
 	{
 		free_aligned(this->_textureDeposterizeDstSurface.Surface);
 		this->_textureDeposterizeDstSurface.Surface = NULL;
 		this->_textureDeposterizeDstSurface.workingSurface[0] = NULL;
 		
+		this->_textureDeposterize = false;
 		needTexCacheReset = true;
 	}
 	
