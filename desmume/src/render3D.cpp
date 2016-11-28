@@ -382,50 +382,12 @@ void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDep
 		needTexCacheReset = true;
 	}
 	
-	if (willSmooth != this->_textureSmooth)
-	{
-		this->_textureSmooth = willSmooth;
-		
-		needTexCacheReset = true;
-	}
+	this->_textureSmooth = willSmooth;
 	
 	if (needTexCacheReset)
 	{
 		texCache.Reset();
 	}
-}
-
-Render3DError Render3D::TextureDeposterize(const u32 *src, const size_t srcTexWidth, const size_t srcTexHeight)
-{
-	this->_textureDeposterizeSrcSurface.Width = this->_textureDeposterizeDstSurface.Width = srcTexWidth;
-	this->_textureDeposterizeSrcSurface.Height = this->_textureDeposterizeDstSurface.Height = srcTexHeight;
-	this->_textureDeposterizeSrcSurface.Surface = (unsigned char *)src;
-	
-	RenderDeposterize(this->_textureDeposterizeSrcSurface, this->_textureDeposterizeDstSurface);
-	
-	return RENDER3DERROR_NOERR;
-}
-
-template <size_t SCALEFACTOR>
-Render3DError Render3D::TextureUpscale(const NDSTextureFormat texFormat, const u32 *src, size_t &outTexWidth, size_t &outTexHeight)
-{
-	if ( (SCALEFACTOR != 2) && (SCALEFACTOR != 4) )
-	{
-		return RENDER3DERROR_NOERR;
-	}
-	
-	if (texFormat == TEXMODE_A3I5 || texFormat == TEXMODE_A5I3)
-	{
-		xbrz::scale<SCALEFACTOR, xbrz::ColorFormatARGB>(src, this->_textureUpscaleBuffer, outTexWidth, outTexHeight);
-	}
-	else
-	{
-		xbrz::scale<SCALEFACTOR, xbrz::ColorFormatARGB_1bitAlpha>(src, this->_textureUpscaleBuffer, outTexWidth, outTexHeight);
-	}
-	
-	outTexWidth *= SCALEFACTOR;
-	outTexHeight *= SCALEFACTOR;
-	return RENDER3DERROR_NOERR;
 }
 
 Render3DError Render3D::BeginRender(const GFX3D &engine)
@@ -851,6 +813,3 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 }
 
 #endif // ENABLE_SSE2
-
-template Render3DError Render3D::TextureUpscale<2>(const NDSTextureFormat texFormat, const u32 *src, size_t &outTexWidth, size_t &outTexHeight);
-template Render3DError Render3D::TextureUpscale<4>(const NDSTextureFormat texFormat, const u32 *src, size_t &outTexWidth, size_t &outTexHeight);

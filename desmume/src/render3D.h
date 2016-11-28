@@ -142,10 +142,7 @@ protected:
 	CACHE_ALIGN u32 clearImageDepthBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN u8 clearImageFogBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN u8 clearImagePolyIDBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
-	
-	Render3DError TextureDeposterize(const u32 *src, const size_t srcTexWidth, const size_t srcTexHeight);
-	template<size_t SCALEFACTOR> Render3DError TextureUpscale(const NDSTextureFormat texFormat, const u32 *src, size_t &outTexWidth, size_t &outTexHeight);
-	
+		
 	virtual Render3DError BeginRender(const GFX3D &engine);
 	virtual Render3DError RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList);
 	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);

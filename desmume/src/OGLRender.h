@@ -562,14 +562,34 @@ private:
 	GLfloat _invSizeS;
 	GLfloat _invSizeT;
 	
+	bool _useDeposterize;
+	size_t _scalingFactor;
+	
+	SSurface _deposterizeSrcSurface;
+	SSurface _deposterizeDstSurface;
+	u32 *_upscaleBuffer;
+	
+	template<size_t SCALEFACTOR> void _Upscale();
+	
 public:
-	OpenGLTexture();
 	OpenGLTexture(u32 texAttributes, u32 palAttributes);
 	virtual ~OpenGLTexture();
+	
+	virtual void Load(bool isNewTexture);
 	
 	GLuint GetID() const;
 	GLfloat GetInvWidth() const;
 	GLfloat GetInvHeight() const;
+	
+	bool IsUsingDeposterize() const;
+	void SetUseDeposterize(bool willDeposterize);
+	
+	size_t GetScalingFactor() const;
+	void SetScalingFactor(size_t scalingFactor);
+	
+	void SetUnpackBuffer(void *unpackBuffer);
+	void SetDeposterizeBuffer(void *dstBuffer, void *workingBuffer);
+	void SetUpscalingBuffer(void *upscaleBuffer);
 };
 
 #if defined(ENABLE_SSE2)
