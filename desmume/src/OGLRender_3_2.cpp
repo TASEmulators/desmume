@@ -1400,19 +1400,6 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	{
 		const POLY *thePoly = &engine.polylist->list[engine.indexlist.list[i]];
 		const size_t polyType = thePoly->type;
-		PolygonAttributes polyAttr = thePoly->getAttributes();
-		PolygonTexParams texParams = thePoly->getTexParams();
-		
-		polyStates[i].enableTexture = (texParams.texFormat != TEXMODE_NONE && engine.renderState.enableTexturing) ? GL_TRUE : GL_FALSE;
-		polyStates[i].enableFog = (polyAttr.enableRenderFog && !(polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0)) ? GL_TRUE : GL_FALSE;
-		polyStates[i].enableDepthWrite = !(polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0) ? GL_TRUE : GL_FALSE;
-		polyStates[i].setNewDepthForTranslucent = (polyAttr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
-		polyStates[i].polyAlpha = (!polyAttr.isWireframe && polyAttr.isTranslucent) ? polyAttr.alpha : 0x1F;
-		polyStates[i].polyMode = polyAttr.polygonMode;
-		polyStates[i].polyID = polyAttr.polygonID;
-		polyStates[i].texSizeS = texParams.sizeS;
-		polyStates[i].texSizeT = texParams.sizeT;
-		polyStates[i].texSingleBitAlpha = (texParams.texFormat != TEXMODE_A3I5 && texParams.texFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE;
 		
 		for (size_t j = 0; j < polyType; j++)
 		{
@@ -1435,6 +1422,23 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 				}
 			}
 		}
+		
+		this->_textureList[i] = this->GetLoadedTextureFromPolygon(*thePoly, engine.renderState.enableTexturing);
+		
+		const NDSTextureFormat packFormat = this->_textureList[i]->GetPackFormat();
+		const PolygonAttributes polyAttr = thePoly->getAttributes();
+		const PolygonTexParams texParams = thePoly->getTexParams();
+		
+		polyStates[i].enableTexture = (packFormat != TEXMODE_NONE && engine.renderState.enableTexturing) ? GL_TRUE : GL_FALSE;
+		polyStates[i].enableFog = (polyAttr.enableRenderFog && !(polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0)) ? GL_TRUE : GL_FALSE;
+		polyStates[i].enableDepthWrite = !(polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0) ? GL_TRUE : GL_FALSE;
+		polyStates[i].setNewDepthForTranslucent = (polyAttr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
+		polyStates[i].polyAlpha = (!polyAttr.isWireframe && polyAttr.isTranslucent) ? polyAttr.alpha : 0x1F;
+		polyStates[i].polyMode = polyAttr.polygonMode;
+		polyStates[i].polyID = polyAttr.polygonID;
+		polyStates[i].texSizeS = texParams.sizeS; // Note that we are using the packed version of sizeS
+		polyStates[i].texSizeT = texParams.sizeT; // Note that we are using the packed version of sizeT
+		polyStates[i].texSingleBitAlpha = (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE;
 	}
 	
 	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
@@ -1681,39 +1685,21 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, bool enableTexturing)
+Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, size_t polyRenderIndex, bool enableTexturing)
 {
-	const PolygonTexParams params = thePoly.getTexParams();
+	OpenGLTexture *theTexture = this->_textureList[polyRenderIndex];
 	
 	// Check if we need to use textures
-	if (params.texFormat == TEXMODE_NONE || !enableTexturing)
+	if (theTexture->GetPackFormat() == TEXMODE_NONE || !enableTexturing)
 	{
 		return OGLERROR_NOERR;
 	}
 	
-	OpenGLTexture *theTexture = (OpenGLTexture *)texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
-	const bool isNewTexture = (theTexture == NULL);
-	
-	if (isNewTexture)
-	{
-		theTexture = new OpenGLTexture(thePoly.texParam, thePoly.texPalette);
-		theTexture->SetUnpackBuffer(this->_workingTextureUnpackBuffer);
-		theTexture->SetDeposterizeBuffer(this->_workingTextureUnpackBuffer, this->_textureDeposterizeDstSurface.workingSurface[0]);
-		theTexture->SetUpscalingBuffer(this->_textureUpscaleBuffer);
-		
-		texCache.Add(theTexture);
-	}
-	
-	if (theTexture->IsLoadNeeded())
-	{
-		theTexture->SetUseDeposterize(this->_textureDeposterize);
-		theTexture->SetScalingFactor(this->_textureScalingFactor);
-		theTexture->Load(isNewTexture);
-	}
+	PolygonTexParams texParams = thePoly.getTexParams();
 	
 	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (params.enableRepeatS ? (params.enableMirroredRepeatS ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (params.enableRepeatT ? (params.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (texParams.enableRepeatS ? (texParams.enableMirroredRepeatS ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (texParams.enableRepeatT ? (texParams.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	
 	if (this->_textureSmooth)
 	{

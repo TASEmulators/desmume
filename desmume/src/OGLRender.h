@@ -611,8 +611,10 @@ protected:
 	bool _pixelReadNeedsFinish;
 	size_t _currentPolyIndex;
 	std::vector<u8> _shadowPolyID;
+	OpenGLTexture *_textureList[POLYLIST_SIZE];
 	
 	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebuffer, u16 *__restrict dstRGBA5551);
+	OpenGLTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
 	
 	// OpenGL-specific methods
 	virtual Render3DError CreateVBOs() = 0;
@@ -731,7 +733,7 @@ protected:
 	
 	virtual void SetPolygonIndex(const size_t index);
 	virtual Render3DError SetupPolygon(const POLY &thePoly);
-	virtual Render3DError SetupTexture(const POLY &thePoly, bool enableTexturing);
+	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex, bool enableTexturing);
 	virtual Render3DError SetupViewport(const u32 viewportValue);
 	
 public:
@@ -804,7 +806,7 @@ protected:
 	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
 	
 	virtual Render3DError SetupPolygon(const POLY &thePoly);
-	virtual Render3DError SetupTexture(const POLY &thePoly, bool enableTexturing);
+	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex, bool enableTexturing);
 };
 
 class OpenGLRenderer_2_1 : public OpenGLRenderer_2_0

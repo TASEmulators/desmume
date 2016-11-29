@@ -175,7 +175,7 @@ protected:
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) const;
 	
 	virtual Render3DError SetupPolygon(const POLY &thePoly);
-	virtual Render3DError SetupTexture(const POLY &thePoly, bool enableTexturing);
+	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex, bool enableTexturing);
 	virtual Render3DError SetupViewport(const u32 viewportValue);
 	
 public:
