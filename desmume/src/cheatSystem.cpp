@@ -78,6 +78,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 {
 	//primary organizational source (seems to be referenced by cheaters the most) - http://doc.kodewerx.org/hacking_nds.html
 	//secondary clarification and details (for programmers) - http://problemkaputt.de/gbatek.htm#dscartcheatactionreplayds
+	//more here: http://www.kodewerx.org/forum/viewtopic.php?t=98
 
 	//general note: gbatek is more precise with the maths; it does not indicate any special wraparound/masking behaviour so it's assumed to be standard 32bit masking
 	//general note: <gbatek>  For all word/halfword accesses, the address should be aligned accordingly -- OR ELSE WHAT? (probably the default behaviour of our MMU interface)
@@ -86,7 +87,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 	//TODO: v154 special stuff
 
 	bool v154 = false; //not supported yet
-	
+
 	struct {
 		//LSB is 
 		u32 status;
@@ -310,6 +311,31 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			st.loop.status = st.status;
 			break;
 
+		case 0xC4:
+			//Rewrite Code (v1.54 only) (trainer toolkit codes)
+			//<gbatek> offset = address of the C4000000 code
+			//it seems this lets us rewrite the code at runtime. /his will be very difficult to emulate. 
+			//But it would be possible: we could copy whenever it's activated and allow that to be rewritten
+			//we would try to select a special sentinel pointer which couldn't be confused for a useful address
+			if(!v154) break;
+			CHEATLOG("Unsupported C4 code");
+			break;
+
+		case 0xC5:
+			//If Counter  (trainer toolkit codes)
+			//counter=counter+1, IF (counter AND YYYY) = XXXX ;v1.54
+			//http://www.kodewerx.org/forum/viewtopic.php?t=98 has more details, but this can't be executed readily without adding something to the cheat engine
+			if(!v154) break;
+			CHEATLOG("Unsupported C5 code");
+			break;
+
+		case 0xC6:
+			//Store Offset  (trainer toolkit codes)
+			//<gbatek> C6000000 XXXXXXXX   [XXXXXXXX]=offset  
+			if(!v154) break;
+			x = lo;
+			_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(x, st.offset);
+			break;
 
 		case 0xD0:
 			//Terminator (Special Codes)
