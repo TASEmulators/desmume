@@ -914,9 +914,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\gdbstub.h">
-      <Filter>gdbstub</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\utils\guid.h">
       <Filter>utils</Filter>
     </ClInclude>
@@ -932,46 +929,46 @@
     <ClInclude Include="..\..\utils\decrypt\header.h">
       <Filter>utils\decrypt</Filter>
     </ClInclude>
-    <ClInclude Include="..\metaspu\metaspu.h">
+    <ClInclude Include="..\..\metaspu\metaspu.h">
       <Filter>metaspu</Filter>
     </ClInclude>
-    <ClInclude Include="..\metaspu\SndOut.h">
+    <ClInclude Include="..\..\metaspu\SndOut.h">
       <Filter>metaspu</Filter>
     </ClInclude>
-    <ClInclude Include="..\metaspu\win32\Dialogs.h">
+    <ClInclude Include="..\..\metaspu\win32\Dialogs.h">
       <Filter>metaspu\win32</Filter>
     </ClInclude>
-    <ClInclude Include="..\metaspu\SoundTouch\AAFilter.h">
+    <ClInclude Include="..\..\metaspu\SoundTouch\AAFilter.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
-    <ClInclude Include="..\metaspu\SoundTouch\BPMDetect.h">
+    <ClInclude Include="..\..\metaspu\SoundTouch\BPMDetect.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
-    <ClInclude Include="..\metaspu\SoundTouch\cpu_detect.h">
+    <ClInclude Include="..\..\metaspu\SoundTouch\cpu_detect.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
-    <ClInclude Include="..\metaspu\SoundTouch\FIFOSampleBuffer.h">
+    <ClInclude Include="..\..\metaspu\SoundTouch\FIFOSampleBuffer.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
-    <ClInclude Include="..\metaspu\SoundTouch\FIFOSamplePipe.h">
+    <ClInclude Include="..\..\metaspu\SoundTouch\FIFOSamplePipe.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
     <ClInclude Include="..\metaspu\SoundTouch\FIRFilter.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
-    <ClInclude Include="..\metaspu\SoundTouch\RateTransposer.h">
+    <ClInclude Include="..\..\metaspu\SoundTouch\RateTransposer.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
-    <ClInclude Include="..\metaspu\SoundTouch\SoundTouch.h">
+    <ClInclude Include="..\..\metaspu\SoundTouch\SoundTouch.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
-    <ClInclude Include="..\metaspu\SoundTouch\STTypes.h">
+    <ClInclude Include="..\..\metaspu\SoundTouch\STTypes.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
-    <ClInclude Include="..\metaspu\SoundTouch\TDStretch.h">
+    <ClInclude Include="..\..\metaspu\SoundTouch\TDStretch.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
-    <ClInclude Include="..\metaspu\SoundTouch\WavFile.h">
+    <ClInclude Include="..\..\metaspu\SoundTouch\WavFile.h">
       <Filter>metaspu\SoundTouch</Filter>
     </ClInclude>
     <ClInclude Include="AboutBox.h">
@@ -1142,18 +1139,6 @@
     <ClInclude Include="..\..\utils\tinyxml\tinyxml.h">
       <Filter>utils\tinyxml</Filter>
     </ClInclude>
-    <ClInclude Include="..\filter\filter.h">
-      <Filter>filter</Filter>
-    </ClInclude>
-    <ClInclude Include="..\filter\hq2x.h">
-      <Filter>filter</Filter>
-    </ClInclude>
-    <ClInclude Include="..\filter\interp.h">
-      <Filter>filter</Filter>
-    </ClInclude>
-    <ClInclude Include="..\filter\lq2x.h">
-      <Filter>filter</Filter>
-    </ClInclude>
     <ClInclude Include="importSave.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
@@ -1280,26 +1265,14 @@
     <ClInclude Include="sndxa2.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
-    <ClInclude Include="..\addons\slot1comp_mc.h">
-      <Filter>addons</Filter>
-    </ClInclude>
-    <ClInclude Include="..\addons\slot1comp_rom.h">
-      <Filter>addons</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\utils\advanscene.h">
       <Filter>utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\addons\slot1comp_protocol.h">
-      <Filter>addons</Filter>
     </ClInclude>
     <ClInclude Include="..\..\utils\fsnitro.h">
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="fsnitroView.h">
       <Filter>frontend\Windows\tools</Filter>
-    </ClInclude>
-    <ClInclude Include="..\filter\xbrz.h">
-      <Filter>filter</Filter>
     </ClInclude>
     <ClInclude Include="File_Extractor\7z_C\win32\Threads.h">
       <Filter>frontend\Windows\File_Extractor\7z_C</Filter>
@@ -1502,50 +1475,8 @@
     <ClInclude Include="File_Extractor\unrar\archive.hpp">
       <Filter>frontend\Windows\File_Extractor\unrar</Filter>
     </ClInclude>
-    <ClInclude Include="..\libretro-common\include\rthreads\rthreads.h">
-      <Filter>libretro-common\include\rthreads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libretro-common\include\retro_miscellaneous.h">
-      <Filter>libretro-common\include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libretro-common\include\retro_inline.h">
-      <Filter>libretro-common\include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libretro-common\include\boolean.h">
-      <Filter>libretro-common\include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\frontend\modules\ImageOut.h">
-      <Filter>frontend\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libretro-common\formats\png\rpng_internal.h">
-      <Filter>libretro-common\formats\png</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libretro-common\include\formats\rpng.h">
-      <Filter>libretro-common\include\formats</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libretro-common\include\formats\image.h">
-      <Filter>libretro-common\include\formats</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libretro-common\include\formats\rbmp.h">
-      <Filter>libretro-common\include\formats</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libretro-common\include\compat\getopt.h">
-      <Filter>libretro-common\include\compat</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libretro-common\include\compat\msvc.h">
-      <Filter>libretro-common\include\compat</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler.h">
       <Filter>utils\colorspacehandler</Filter>
-    </ClInclude>
-    <ClInclude Include="..\modules\osd\agg\agg2d.h">
-      <Filter>frontend\modules\osd\agg</Filter>
-    </ClInclude>
-    <ClInclude Include="..\modules\osd\agg\aggdraw.h">
-      <Filter>frontend\modules\osd\agg</Filter>
-    </ClInclude>
-    <ClInclude Include="..\modules\osd\agg\agg_osd.h">
-      <Filter>frontend\modules\osd\agg</Filter>
     </ClInclude>
     <ClInclude Include="..\..\utils\xstring.h">
       <Filter>utils</Filter>
@@ -1554,54 +1485,46 @@
       <Filter>libretro-common\include\features</Filter>
     </ClInclude>
     <ClInclude Include="..\..\utils\xstring.h" />
-    <ClInclude Include="..\arm_jit.h" />
-    <ClInclude Include="..\armcpu.h" />
-    <ClInclude Include="..\bios.h" />
-    <ClInclude Include="..\bits.h" />
-    <ClInclude Include="..\cheatSystem.h" />
-    <ClInclude Include="..\commandline.h" />
-    <ClInclude Include="..\common.h" />
-    <ClInclude Include="..\cp15.h" />
-    <ClInclude Include="..\..\Database.h" />
-    <ClInclude Include="..\debug.h" />
-    <ClInclude Include="..\driver.h" />
-    <ClInclude Include="..\emufile.h" />
-    <ClInclude Include="..\encrypt.h" />
-    <ClInclude Include="..\FIFO.h" />
-    <ClInclude Include="..\firmware.h" />
-    <ClInclude Include="..\gfx3d.h" />
-    <ClInclude Include="..\GPU.h" />
-    <ClInclude Include="..\instruction_attributes.h" />
-    <ClInclude Include="..\instructions.h" />
-    <ClInclude Include="..\lua-engine.h" />
-    <ClInclude Include="..\matrix.h" />
-    <ClInclude Include="..\mc.h" />
-    <ClInclude Include="..\mem.h" />
-    <ClInclude Include="..\mic.h" />
-    <ClInclude Include="..\MMU.h" />
-    <ClInclude Include="..\MMU_timing.h" />
-    <ClInclude Include="..\movie.h" />
-    <ClInclude Include="..\NDSSystem.h" />
-    <ClInclude Include="..\OGLRender.h" />
-    <ClInclude Include="..\OGLRender_3_2.h" />
-    <ClInclude Include="..\path.h" />
-    <ClInclude Include="..\rasterize.h" />
-    <ClInclude Include="..\readwrite.h" />
-    <ClInclude Include="..\registers.h" />
-    <ClInclude Include="..\render3D.h" />
-    <ClInclude Include="..\ROMReader.h" />
-    <ClInclude Include="..\rtc.h" />
-    <ClInclude Include="..\saves.h" />
-    <ClInclude Include="..\slot1.h" />
-    <ClInclude Include="..\slot2.h" />
-    <ClInclude Include="..\SPU.h" />
-    <ClInclude Include="..\texcache.h" />
-    <ClInclude Include="..\..\types.h" />
-    <ClInclude Include="..\..\version.h" />
-    <ClInclude Include="..\wifi.h" />
-    <ClInclude Include="..\modules\Disassembler.h">
-      <Filter>frontend\modules</Filter>
-    </ClInclude>
+    <ClInclude Include="..\..\arm_jit.h" />
+    <ClInclude Include="..\..\armcpu.h" />
+    <ClInclude Include="..\..\bios.h" />
+    <ClInclude Include="..\..\cheatSystem.h" />
+    <ClInclude Include="..\..\commandline.h" />
+    <ClInclude Include="..\..\common.h" />
+    <ClInclude Include="..\..\cp15.h" />
+    <ClInclude Include="..\..\debug.h" />
+    <ClInclude Include="..\..\driver.h" />
+    <ClInclude Include="..\..\emufile.h" />
+    <ClInclude Include="..\..\encrypt.h" />
+    <ClInclude Include="..\..\FIFO.h" />
+    <ClInclude Include="..\..\firmware.h" />
+    <ClInclude Include="..\..\gfx3d.h" />
+    <ClInclude Include="..\..\GPU.h" />
+    <ClInclude Include="..\..\instruction_attributes.h" />
+    <ClInclude Include="..\..\instructions.h" />
+    <ClInclude Include="..\..\lua-engine.h" />
+    <ClInclude Include="..\..\matrix.h" />
+    <ClInclude Include="..\..\mc.h" />
+    <ClInclude Include="..\..\mem.h" />
+    <ClInclude Include="..\..\mic.h" />
+    <ClInclude Include="..\..\MMU.h" />
+    <ClInclude Include="..\..\MMU_timing.h" />
+    <ClInclude Include="..\..\movie.h" />
+    <ClInclude Include="..\..\NDSSystem.h" />
+    <ClInclude Include="..\..\OGLRender.h" />
+    <ClInclude Include="..\..\OGLRender_3_2.h" />
+    <ClInclude Include="..\..\path.h" />
+    <ClInclude Include="..\..\rasterize.h" />
+    <ClInclude Include="..\..\readwrite.h" />
+    <ClInclude Include="..\..\registers.h" />
+    <ClInclude Include="..\..\render3D.h" />
+    <ClInclude Include="..\..\ROMReader.h" />
+    <ClInclude Include="..\..\rtc.h" />
+    <ClInclude Include="..\..\saves.h" />
+    <ClInclude Include="..\..\slot1.h" />
+    <ClInclude Include="..\..\slot2.h" />
+    <ClInclude Include="..\..\SPU.h" />
+    <ClInclude Include="..\..\texcache.h" />
     <ClInclude Include="..\..\utils\xstring.h" />
     <ClInclude Include="..\..\libretro-common\include\libretro.h">
       <Filter>libretro-common\include</Filter>
@@ -1609,6 +1532,48 @@
     <ClInclude Include="..\..\libretro-common\include\encodings\utf.h">
       <Filter>libretro-common\include\encodings</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\utils\xstring.h" />
+    <ClInclude Include="..\..\addons\slot1comp_mc.h">
+      <Filter>addons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\addons\slot1comp_protocol.h">
+      <Filter>addons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\addons\slot1comp_rom.h">
+      <Filter>addons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Database.h" />
+    <ClInclude Include="..\..\types.h" />
+    <ClInclude Include="..\..\version.h" />
+    <ClInclude Include="..\..\filter\filter.h" />
+    <ClInclude Include="..\..\filter\hq2x.h" />
+    <ClInclude Include="..\..\filter\interp.h" />
+    <ClInclude Include="..\..\filter\lq2x.h" />
+    <ClInclude Include="..\..\filter\xbrz.h" />
+    <ClInclude Include="..\..\frontend\modules\ImageOut.h" />
+    <ClInclude Include="..\..\libretro-common\formats\png\rpng_internal.h" />
+    <ClInclude Include="..\..\libretro-common\include\boolean.h" />
+    <ClInclude Include="..\..\libretro-common\include\compat\getopt.h" />
+    <ClInclude Include="..\..\libretro-common\include\compat\msvc.h" />
+    <ClInclude Include="..\..\libretro-common\include\formats\image.h" />
+    <ClInclude Include="..\..\libretro-common\include\formats\rbmp.h" />
+    <ClInclude Include="..\..\libretro-common\include\formats\rpng.h" />
+    <ClInclude Include="..\..\libretro-common\include\retro_inline.h" />
+    <ClInclude Include="..\..\libretro-common\include\retro_miscellaneous.h" />
+    <ClInclude Include="..\..\libretro-common\include\rthreads\rthreads.h" />
+    <ClInclude Include="..\..\wifi.h" />
+    <ClInclude Include="..\..\utils\xstring.h" />
+    <ClInclude Include="..\..\utils\bits.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\Disassembler.h">
+      <Filter>frontend\modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\osd\agg\agg2d.h" />
+    <ClInclude Include="..\modules\osd\agg\aggdraw.h" />
+    <ClInclude Include="..\modules\osd\agg\agg_osd.h" />
+    <ClInclude Include="..\..\utils\xstring.h" />
+    <ClInclude Include="..\..\gdbstub.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="bitmap1.bmp">
