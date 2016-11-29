@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,14 +17,9 @@
 
 #ifndef _FS_NITRO_H_
 #define _FS_NITRO_H_
-#include <string>
-#ifndef _MSC_VER
-#include <stdint.h>
-#include <string.h>
-#endif
-#include "../types.h"
 
-using namespace std;
+#include <string>
+#include "types.h"
 
 enum FNT_TYPES
 {
@@ -56,7 +51,7 @@ struct FAT_NITRO
 	bool file;
 	u32 sizeFile;
 	u16 parentID;
-	string filename;
+	std::string filename;
 };
 
 struct FNT_MAIN
@@ -77,7 +72,7 @@ struct FNT_NITRO
 	u32 offset;
 	u16 firstID;
 	u16 parentID;
-	string filename;
+	std::string filename;
 };
 
 struct OVR_NITRO
@@ -132,7 +127,7 @@ private:
 	FNT_TYPES getFNTType(u8 type);
 	bool loadFileTables();
 
-	bool extract(u16 id, string to);
+	bool extract(u16 id, std::string to);
 	void destroy();
 
 public:
@@ -142,11 +137,11 @@ public:
 	bool getFileIdByAddr(u32 addr, u16 &id);
 	bool getFileIdByAddr(u32 addr, u16 &id, u32 &offset);
 	
-	string getDirNameByID(u16 id);
+	std::string getDirNameByID(u16 id);
 	u16 getDirParrentByID(u16 id);
 
-	string getFileNameByID(u16 id);
-	string getFullPathByFileID(u16 id, bool addRoot = true);
+	std::string getFileNameByID(u16 id);
+	std::string getFullPathByFileID(u16 id, bool addRoot = true);
 	
 	u16 getFileParentById(u16 id);
 	u32 getFileSizeById(u16 id);
@@ -158,12 +153,12 @@ public:
 	bool isARM7(u32 addr) { return ((addr >= ARM7exeStart) && (addr < ARM7exeEnd)); }
 	bool isFAT(u32 addr) { return ((addr >= FATOff) && (addr < FATEnd)); }
 	
-	bool rebuildFAT(u32 addr, u32 size, string pathData);
-	bool rebuildFAT(string pathData);
+	bool rebuildFAT(u32 addr, u32 size, std::string pathData);
+	bool rebuildFAT(std::string pathData);
 	u32 getFATRecord(u32 addr);
 
-	bool extractFile(u16 id, string to);
-	bool extractAll(string to, void (*callback)(u32 current, u32 num) = NULL);
+	bool extractFile(u16 id, std::string to);
+	bool extractAll(std::string to, void (*callback)(u32 current, u32 num) = NULL);
 	
 	u32 getNumDirs() { return numDirs; }
 	u32 getNumFiles() { return numFiles; }

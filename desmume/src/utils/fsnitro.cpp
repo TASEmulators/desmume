@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,30 +15,12 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "types.h"
-
 #include <stdio.h>
 #include <string>
-#ifdef HOST_WINDOWS 
-#include <direct.h>
-#include <windows.h>
-#define __mkdir(x) mkdir(x, 0777)
-#else
-#include <unistd.h>
-#include <sys/stat.h>
-#include <string.h>
-#include <stdint.h>
-#define __mkdir(x) mkdir(x, 0777)
-#endif
+
+#include "types.h"
 #include "fsnitro.h"
-
-using namespace std;
-
-#ifdef HOST_WINDOWS
-#define FS_DIRECTORY_DELIMITER_CHAR	"\\"
-#else
-#define FS_DIRECTORY_DELIMITER_CHAR	"/"
-#endif
+#include "file/file_path.h"
 
 FS_NITRO::FS_NITRO(u8 *cart_rom)
 {
@@ -215,7 +197,7 @@ bool FS_NITRO::loadFileTables()
 	if (!store) return false;
 	memset(store, 0, sizeof(uintptr_t) * numDirs);
 
-	fnt[0].filename = FS_DIRECTORY_DELIMITER_CHAR;
+	fnt[0].filename = path_default_slash();
 	fnt[0].parentID = 0xF000;
 
 	//printf("FNT F000: Sub:%08Xh, 1st ID:%04xh, parentID:%04Xh <%s>\n", fnt[0].offset, fnt[0].firstID, fnt[0].parentID, fnt[0].filename);
@@ -278,7 +260,7 @@ bool FS_NITRO::loadFileTables()
 }
 
 // ======================= tools
-bool FS_NITRO::rebuildFAT(u32 addr, u32 size, string pathData)
+bool FS_NITRO::rebuildFAT(u32 addr, u32 size, std::string pathData)
 {
 	if (!inited) return false;
 	if (size == 0) return false;
@@ -294,7 +276,7 @@ bool FS_NITRO::rebuildFAT(u32 addr, u32 size, string pathData)
 	for (u32 i = startID; i < endID; i++)
 	{
 		if (i >= numFiles) break;
-		string path = pathData + getFullPathByFileID(i);
+		std::string path = pathData + getFullPathByFileID(i);
 		//printf("%04Xh - %s (%d)\n", i, path.c_str(), fat[i].size);
 		fat[i].file = false;
 		FILE *fp = fopen(path.c_str(), "rb");
@@ -317,7 +299,7 @@ bool FS_NITRO::rebuildFAT(u32 addr, u32 size, string pathData)
 	return true;
 }
 
-bool FS_NITRO::rebuildFAT(string pathData)
+bool FS_NITRO::rebuildFAT(std::string pathData)
 {
 	return rebuildFAT(FATOff, FATSize, pathData);
 }
@@ -390,7 +372,7 @@ bool FS_NITRO::getFileIdByAddr(u32 addr, u16 &id, u32 &offset)
 	return false;
 }
 
-string FS_NITRO::getDirNameByID(u16 id)
+std::string FS_NITRO::getDirNameByID(u16 id)
 {
 	if (!inited) return "";
 	if ((id & 0xF000) != 0xF000) return "|file|";
@@ -408,7 +390,7 @@ u16 FS_NITRO::getDirParrentByID(u16 id)
 	return fnt[id & 0x0FFF].parentID;
 }
 
-string FS_NITRO::getFileNameByID(u16 id)
+std::string FS_NITRO::getFileNameByID(u16 id)
 {
 	if (!inited) return "";
 	if ((id & 0xF000) == 0xF000) return "<directory>";
@@ -426,27 +408,27 @@ u16 FS_NITRO::getFileParentById(u16 id)
 	return fat[id].parentID;
 }
 
-string FS_NITRO::getFullPathByFileID(u16 id, bool addRoot)
+std::string FS_NITRO::getFullPathByFileID(u16 id, bool addRoot)
 {
 	if (!inited) return "";
 	if (id > numFiles) return "<!ERROR invalid id>";
-	string res = "";
+	std::string res = "";
 
 	if (!fat[id].isOverlay)
 	{
 		u32 parentID = (fat[id].parentID & 0x0FFF);
 		while (parentID)
 		{
-			res = fnt[parentID].filename + string(FS_DIRECTORY_DELIMITER_CHAR) + res;
+			res = fnt[parentID].filename + path_default_slash() + res;
 			parentID = (fnt[parentID].parentID & 0x0FFF);
 		}
 		if (addRoot)
-			res = string(FS_DIRECTORY_DELIMITER_CHAR) + string("data") + string(FS_DIRECTORY_DELIMITER_CHAR) + res;
+			res = (std::string)path_default_slash() + "data" + path_default_slash() + res;
 	}
 	else
 	{
 		if (addRoot)
-			res = string(FS_DIRECTORY_DELIMITER_CHAR) + string("overlay") + string(FS_DIRECTORY_DELIMITER_CHAR);
+			res = (std::string)path_default_slash() + "overlay" + path_default_slash();
 	}
 
 	res += fat[id].filename;
@@ -477,7 +459,7 @@ u32 FS_NITRO::getEndAddrById(u16 id)
 	return (fat[id].end);
 }
 
-bool FS_NITRO::extract(u16 id, string to)
+bool FS_NITRO::extract(u16 id, std::string to)
 {
 	printf("Extract to %s\n", to.c_str());
 
@@ -492,7 +474,7 @@ bool FS_NITRO::extract(u16 id, string to)
 	return false;
 }
 
-bool FS_NITRO::extractFile(u16 id, string to)
+bool FS_NITRO::extractFile(u16 id, std::string to)
 {
 	if (!inited) return false;
 	if (id > numFiles) return false;
@@ -506,14 +488,14 @@ bool FS_NITRO::extractFile(u16 id, string to)
 	return true;
 }
 
-bool FS_NITRO::extractAll(string to, void (*callback)(u32 current, u32 num))
+bool FS_NITRO::extractAll(std::string to, void (*callback)(u32 current, u32 num))
 {
 	if (!inited) return false;
 
-	string dataDir = to + "data" + FS_DIRECTORY_DELIMITER_CHAR;
-	string overlayDir = to + "overlay" + FS_DIRECTORY_DELIMITER_CHAR;
-	__mkdir(dataDir.c_str());
-	__mkdir(overlayDir.c_str());
+	std::string dataDir = to + "data" + path_default_slash();
+	std::string overlayDir = to + "overlay" + path_default_slash();
+	path_mkdir(dataDir.c_str());
+	path_mkdir(overlayDir.c_str());
 
 	char curr_dir[MAX_PATH] = {0};
 	getcwd(curr_dir, sizeof(curr_dir));
@@ -521,22 +503,22 @@ bool FS_NITRO::extractAll(string to, void (*callback)(u32 current, u32 num))
 
 	for (u32 i = 0; i < numDirs; i++)
 	{
-		string tmp = fnt[i].filename;
+		std::string tmp = fnt[i].filename;
 		u16 parent = (fnt[i].parentID) & 0x0FFF;
 
 		while (parent)
 		{
-			tmp = fnt[parent].filename + string(FS_DIRECTORY_DELIMITER_CHAR) + tmp;
+			tmp = fnt[parent].filename + path_default_slash() + tmp;
 			parent = (fnt[parent].parentID) & 0x0FFF;
 		}
-		__mkdir(tmp.c_str());
+		path_mkdir(tmp.c_str());
 	}
 
 	chdir(dataDir.c_str());
 	for (u32 i = 0; i < numFiles; i++)
 	{
 		if (fat[i].isOverlay) continue;
-		string fname = getFullPathByFileID(i, false);
+		std::string fname = getFullPathByFileID(i, false);
 		extract(i, fname);
 		if (callback)
 			callback(i, numFiles);

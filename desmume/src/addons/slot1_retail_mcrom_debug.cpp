@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2015 DeSmuME team
+	Copyright (C) 2013-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,6 +15,11 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+//This module implements a device which is capable of building a nitro FS on the fly
+//(and REBUILDING it! -- Q: under what conditions?)
+//so that you can test your homebrew games and patches without having to rebuild the ROM and restart it.
+//Q. can it handle resized files?
+
 #include "slot1comp_mc.h"
 #include "slot1comp_rom.h"
 #include "slot1comp_protocol.h"
@@ -27,12 +32,6 @@
 #include "../NDSSystem.h"
 #include "../utils/fsnitro.h"
 
-//quick architecture overview:
-//MCROM receives GC bus commands from MMU.cpp
-//those are passed on to the protocol component for parsing
-//protocol calls back into MCROM via ISlot1Comp_Protocol_Client interface for things the protocol doesnt know about (the contents of the rom, chiefly)
-//MCROM utilizes the rom component for address logic and delivering data
-
 class Slot1_Retail_DEBUG : public ISlot1Interface, public ISlot1Comp_Protocol_Client
 {
 private:
@@ -41,7 +40,7 @@ private:
 	FILE	*fpROM;
 	FS_NITRO *fs;
 	u16		curr_file_id;
-	string	pathData;
+	std::string	pathData;
 
 public:
 
@@ -131,7 +130,7 @@ public:
 				{
 					if (file_id != curr_file_id)
 					{
-						string tmp = fs->getFullPathByFileID(file_id);
+						std::string tmp = fs->getFullPathByFileID(file_id);
 						printf("%04X:[%08X, ofs %08X] %s\n", file_id, protocol.address, offset, tmp.c_str());
 						
 						if (fpROM)
