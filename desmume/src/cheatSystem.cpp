@@ -71,338 +71,452 @@ BOOL CHEATS::update(u8 size, u32 address, u32 val, char *description, BOOL enabl
 	return TRUE;
 }
 
+#define CHEATLOG(...) 
+//#define CHEATLOG(...) printf(__VA_ARGS__)
+
 void CHEATS::ARparser(CHEATS_LIST& list)
 {
-	u8	type = 0;
-	u8	subtype = 0;
-	u32	hi = 0;
-	u32	lo = 0;
-	u32	addr = 0;
-	u32	val = 0;
-	// AR temporary vars & flags
-	u32	offset = 0;
-	u32	datareg = 0;
-	u32	loopcount = 0;
-	u32	counter = 0;
-	u32	if_flag = 0;
-	s32 loopbackline = 0;
-	u32 loop_flag = 0;
+	//primary organizational source (seems to be referenced by cheaters the most) - http://doc.kodewerx.org/hacking_nds.html
+	//secondary clarification and details (for programmers) - http://problemkaputt.de/gbatek.htm#dscartcheatactionreplayds
+
+	//general note: gbatek is more precise with the maths; it does not indicate any special wraparound/masking behaviour so it's assumed to be standard 32bit masking
+	//general note: <gbatek>  For all word/halfword accesses, the address should be aligned accordingly -- OR ELSE WHAT? (probably the default behaviour of our MMU interface)
+
+	//TODO: "Code Hacks" from kodewerx (seems frail, but we should at least detect them and print some diagnostics
+	//TODO: v154 special stuff
+
+	bool v154 = false; //not supported yet
 	
-	for (int i=0; i < list.num; i++)
+	struct {
+		//LSB is 
+		u32 status;
+
+		struct {
+			//backup copy of status managed by loop commands
+			u32 status;
+
+			//loop counter index
+			u32 idx;
+
+			//loop iterations goal (runs rpt+1 times generally)
+			u32 iterations;
+		
+			//target of loop
+			u32 top;
+		} loop;
+
+		//registers
+		u32 offset, data;
+
+	} st;
+
+	memset(&st,0,sizeof(st));
+
+	CHEATLOG("-----------------------------------\n");
+
+	for (u32 i=0; i < list.num; i++)
 	{
-		type = list.code[i][0] >> 28;
-		subtype = (list.code[i][0] >> 24) & 0x0F;
+		const u32 hi = list.code[i][0];
+		const u32 lo = list.code[i][1];
 
-		hi = list.code[i][0] & 0x0FFFFFFF;
-		lo = list.code[i][1];
+		CHEATLOG("executing [%02d] %08X %08X (ofs=%08X)\n",i, hi,lo, st.offset);
 
-		if (if_flag > 0) 
+		//parse codes into types by kodewerx standards
+		u32 type = list.code[i][0] >> 28;
+		//these two are broken down into subtypes
+		if(type == 0x0C || type == 0x0D)
+			type = list.code[i][0] >> 24;
+
+		//process current execution status:
+		u32 statusSkip = st.status & 1;
+		//<gbatek> The condition register is checked, for all code types but the D0, D1 and D2 code type
+		//<gbatek> and for the C5 code type it's checked AFTER the counter has been incremented (so the counter is always incremented)
+		//but first: we must run this for IFs regardless of the condition flag to track the nest level
+		if(type >= 0x03 && type <= 0x0A)
 		{
-			if (type == 0x0E) i += ((lo + 7) / 8);
-			if ( (type == 0x0D) && (subtype == 0)) if_flag--;	// ENDIF
-			if ( (type == 0x0D) && (subtype == 2))				// NEXT & Flush
-			{
-				if (loop_flag)
-					i = (loopbackline-1);
-				else
-				{
-					offset = 0;
-					datareg = 0;
-					loopcount = 0;
-					counter = 0;
-					if_flag = 0;
-					loop_flag = 0;
-				}
+			//pretty wild guess as to how this is implemented (I could be off by one)
+			//we begin by assuming the current status is disabled, since we wont have a chance to correct if this IF is not supposed to be evaluated
+			st.status = (st.status<<1) | 1;
+		}
+		if(type == 0xD0 || type == 0xD1 || type == 0xD2) {}
+		else if(type == 0xC5) {}
+		else
+		{
+			if(statusSkip) {
+				CHEATLOG(" (skip!)\n");
+				continue;
 			}
-			continue;
 		}
 
-		switch (type)
+		u32 operand,x,y,z,addr;
+
+		switch(type)
 		{
-			case 0x00:
+		case 0x00:
+			//(hi == 0x00000000) implies: "manual hook code" -- sometimes
+			//maybe a type "M" code -- impossible to enter into desmume? not supported right now.
+			//otherwise:
+
+			//32-bit (Constant RAM Writes)
+			//0XXXXXXX YYYYYYYY
+			//Writes word YYYYYYYY to [XXXXXXX+offset].
+			x = hi & 0x0FFFFFFF;
+			y = lo;
+			addr = x + st.offset;
+			_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, y);
+			break;
+		
+		case 0x01:
+			//16-bit (Constant RAM Writes)
+			//1XXXXXXX 0000YYYY
+			//Writes halfword YYYY to [XXXXXXX+offset].
+			x = hi & 0x0FFFFFFF;
+			y = lo & 0xFFFF;
+			addr = x + st.offset;
+			_MMU_write16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, y);
+			break;
+
+		case 0x02:
+			//8-bit (Constant RAM Writes)
+			//2XXXXXXX 000000YY
+			//Writes byte YY to [XXXXXXX+offset].
+			x = hi & 0x0FFFFFFF;
+			y = lo & 0xFF;
+			addr = x + st.offset;
+			_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, y);
+			break;
+
+		case 0x03:
+			//Greater Than (Conditional 32-Bit Code Types)
+			//3XXXXXXX YYYYYYYY
+			//Checks if YYYYYYYY > (word at [XXXXXXX])
+			//If not, the code(s) following this one are not executed (ie. execution status is set to false) until a code type D0 or D2 is encountered, or until the end of the code list is reached.
+			x = hi & 0x0FFFFFFF;
+			y = lo;
+			if(v154) if(x == 0) x = st.offset;
+			operand = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			if(y > operand) st.status &= ~1;
+			break;
+
+		case 0x04:
+			//Less Than (Conditional 32-Bit Code Types)
+			//4XXXXXXX YYYYYYYY
+			//Checks if YYYYYYYY < (word at [XXXXXXX])
+			//If not, the code(s) following this one are not executed (ie. execution status is set to false) until a code type D0 or D2 is encountered, or until the end of the code list is reached.
+			x = hi & 0x0FFFFFFF;
+			y = lo;
+			if(v154) if(x == 0) x = st.offset;
+			operand = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			if(y < operand) st.status &= ~1;
+			break;
+
+		case 0x05:
+			//Equal To (Conditional 32-Bit Code Types)
+			//5XXXXXXX YYYYYYYY
+			//Checks if YYYYYYYY == (word at [XXXXXXX])
+			//If not, the code(s) following this one are not executed (ie. execution status is set to false) until a code type D0 or D2 is encountered, or until the end of the code list is reached.
+			x = hi & 0x0FFFFFFF;
+			y = lo;
+			if(v154) if(x == 0) x = st.offset;
+			operand = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			if(y == operand) st.status &= ~1;
+			break;
+
+		case 0x06:
+			//Not Equal To (Conditional 32-Bit Code Types)
+			//6XXXXXXX YYYYYYYY
+			//Checks if YYYYYYYY != (word at [XXXXXXX])
+			//If not, the code(s) following this one are not executed (ie. execution status is set to false) until a code type D0 or D2 is encountered, or until the end of the code list is reached.
+			x = hi & 0x0FFFFFFF;
+			y = lo;
+			if(v154) if(x == 0) x = st.offset;
+			operand = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			if(y != operand) st.status &= ~1;
+			break;
+
+		case 0x07:
+			//Greater Than (Conditional 16-Bit + Masking RAM Writes)
+			//7XXXXXXX ZZZZYYYY
+			//Checks if (YYYY) > (not (ZZZZ) & halfword at [XXXX]).
+			//If not, the code(s) following this one are not executed (ie. execution status is set to false) until a code type D0 or D2 is encountered, or until the end of the code list is reached.
+			x = hi & 0x0FFFFFFF;
+			y = lo&0xFFFF;
+			z = lo>>16;
+			if(v154) if(x == 0) x = st.offset;
+			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			if(y > ( (~z) & operand) )  st.status &= ~1;
+			break;
+
+		case 0x08:
+			//Less Than (Conditional 16-Bit + Masking RAM Writes)
+			//8XXXXXXX ZZZZYYYY
+			//Checks if (YYYY) < (not (ZZZZ) & halfword at [XXXX]).
+			//If not, the code(s) following this one are not executed (ie. execution status is set to false) until a code type D0 or D2 is encountered, or until the end of the code list is reached.
+			x = hi & 0x0FFFFFFF;
+			y = lo&0xFFFF;
+			z = lo>>16;
+			if(v154) if(x == 0) x = st.offset;
+			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			if(y < ( (~z) & operand) )  st.status &= ~1;
+			break;
+
+		case 0x09:
+			//Equal To (Conditional 16-Bit + Masking RAM Writes)
+			//9XXXXXXX ZZZZYYYY
+			//Checks if (YYYY) == (not (ZZZZ) & halfword at [XXXX]).
+			//If not, the code(s) following this one are not executed (ie. execution status is set to false) until a code type D0 or D2 is encountered, or until the end of the code list is reached.
+			x = hi & 0x0FFFFFFF;
+			y = lo&0xFFFF;
+			z = lo>>16;
+			if(v154) if(x == 0) x = st.offset;
+			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			if(y == ( (~z) & operand) )  st.status &= ~1;
+			break;
+
+		case 0x0A:
+			//Not Equal To (Conditional 16-Bit + Masking RAM Writes)
+			//AXXXXXXX ZZZZYYYY
+			//Checks if (YYYY) != (not (ZZZZ) & halfword at [XXXX]).
+			//If not, the code(s) following this one are not executed (ie. execution status is set to false) until a code type D0 or D2 is encountered, or until the end of the code list is reached.
+			x = hi & 0x0FFFFFFF;
+			y = lo&0xFFFF;
+			z = lo>>16;
+			if(v154) if(x == 0) x = st.offset;
+			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			if(y != ( (~z) & operand) )  st.status &= ~1;
+			break;
+
+		case 0x0B:
+			//Load offset (Offset Codes)
+			//BXXXXXXX 00000000
+			//Loads the 32-bit value into the 'offset'.
+			//Offset = word at [0XXXXXXX + offset].
+			x = hi & 0x0FFFFFFF;
+			addr = x + st.offset;
+			st.offset = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
+			break;
+
+		case 0xC0:
+			//(Loop Code)
+			//C0000000 YYYYYYYY 
+			//This sets the 'Dx repeat value' to YYYYYYYY and saves the 'Dx nextcode to be executed' and the 'Dx execution status'. Repeat will be executed when a D1/D2 code is encountered.
+			//When repeat is executed, the AR reloads the 'next code to be executed' and the 'execution status' from the Dx registers.
+			//<gbatek> FOR loopcount=0 to YYYYYYYY  ;execute Y+1 times
+			y = lo;
+			st.loop.idx = 0; //<gbatek> any FOR statement does forcefully terminate any prior loop
+			st.loop.iterations = y;
+			st.loop.top = i; //current instruction is saved as top for branching back up
+			//<gbatek> FOR does backup the current IF condidition flags, and NEXT does restore these flags
+			st.loop.status = st.status;
+			break;
+
+
+		case 0xD0:
+			//Terminator (Special Codes)
+			//D0000000 00000000
+			//Loads the previous execution status. If none exists, the execution status stays at 'execute codes'
+			
+			//wild guess as to fine details of how this is implemented
+			st.status >>= 1;
+			//"If none exists, the execution status stays at 'execute codes'." 
+			//0 will be shifted in, so execution will always proceed
+			//in other words, a stack underflow results in the original state of execution
+
+			break;
+
+		case 0xD1:
+			//Loop execute variant (Special Codes)
+			//D1000000 00000000 
+			//Executes the next block of codes 'n' times (specified by the 0x0C codetype), but doesn't clear the Dx register upon completion.
+			//<gbatek> FOR does backup the current IF condidition flags, and NEXT does restore these flags
+			st.status = st.loop.status;
+			if(st.loop.idx < st.loop.iterations)
 			{
-				if (hi==0)
+				st.loop.idx++;
+				i = st.loop.top;
+			}
+			break;
+
+		case 0xD2:
+			//Loop Execute Variant/ Full Terminator (Special Codes)
+			//D2000000 00000000 
+			//Executes the next block of codes 'n' times (specified by the 0x0C codetype), and clears all temporary data. (i.e. execution status, offsets, code C settings, etc.)
+			//This code can also be used as a full terminator, giving the same effects to any block of code. 
+			//<gbatek> FOR does backup the current IF condidition flags, and NEXT does restore these flags
+			st.status = st.loop.status;
+			if(st.loop.idx < st.loop.iterations)
+			{
+				st.loop.idx++;
+				i = st.loop.top;
+			}
+			else
+			{
+				//<gbatek> The NEXT+FLUSH command does (after finishing the loop) reset offset=0, datareg=0, and does clear all condition flags, so further ENDIF(s) aren't required after the loop.
+				memset(&st,0,sizeof(st));
+			}
+			break;
+
+		case 0xD3: 
+			//Set offset (Offset Codes)
+			//D3000000 XXXXXXXX
+			//Sets the offset value to XXXXXXXX.
+			x = lo;
+			st.offset = x;
+			break;
+
+		case 0xD4:
+			//Add Value (Data Register Codes)
+			//D4000000 XXXXXXXX 
+			//Adds 'XXXXXXXX' to the data register used by codetypes 0xD6 - 0xDB.
+			//<gbatek> datareg = datareg + XXXXXXXX
+			x = lo;
+			st.data += x;
+			break;
+
+		case 0xD5:
+			//Set Value (Data Register Codes)
+			//D5000000 XXXXXXXX 
+			//Set 'XXXXXXXX' to the data register used by code types 0xD6 - 0xD8.
+			x = lo;
+			st.data = x;
+			break;
+
+		case 0xD6:
+			//32-Bit Incrementive Write (Data Register Codes)
+			//D6000000 XXXXXXXX 
+			//Writes the 'Dx data' word to [XXXXXXXX+offset], and increments the offset by 4.
+			//<gbatek> word[XXXXXXXX+offset]=datareg, offset=offset+4
+			x = lo;
+			addr = x + st.offset;
+			_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, st.data);
+			st.offset += 4;
+			break;
+
+		case 0xD7:
+			//16-Bit Incrementive Write (Data Register Codes)
+			//D7000000 XXXXXXXX 
+			//Writes the 'Dx data' halfword to [XXXXXXXX+offset], and increments the offset by 2.
+			//<gbatek> half[XXXXXXXX+offset]=datareg, offset=offset+2
+			x = lo;
+			addr = x + st.offset;
+			_MMU_write16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, st.data);
+			st.offset += 2;
+			break;
+
+		case 0xD8:
+			//8-Bit Incrementive Write (Data Register Codes)
+			//D8000000 XXXXXXXX 
+			//Writes the 'Dx data' byte to [XXXXXXXX+offset], and increments the offset by 1.
+			//<gbatek> byte[XXXXXXXX+offset]=datareg, offset=offset+1
+			x = lo;
+			addr = x + st.offset;
+			_MMU_write16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, st.data);
+			st.offset += 1;
+			break;
+
+		case 0xD9:
+			//32-Bit Load (Data Register Codes)
+			//D9000000 XXXXXXXX 
+			//Loads the word at [XXXXXXXX+offset] and stores it in the'Dx data register'.
+			x = lo;
+			addr = x + st.offset;
+			st.data = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
+			break;
+
+		case 0xDA:
+			//16-Bit Load (Data Register Codes)
+			//DA000000 XXXXXXXX 
+			//Loads the halfword at [XXXXXXXX+offset] and stores it in the'Dx data register'.
+			x = lo;
+			addr = x + st.offset;
+			st.data = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
+			break;
+
+		case 0xDB:
+			//8-Bit Load (Data Register Codes)
+			//DB000000 XXXXXXXX 
+			//Loads the byte at [XXXXXXXX+offset] and stores it in the'Dx data register'.
+			//This is a bugged code type. Check 'AR Hack #0' for the fix. 
+			x = lo;
+			addr = x + st.offset;
+			st.data = _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
+			//<gbatek> Before v1.54, the DB000000 code did accidently set offset=offset+XXXXXXX after execution of the code
+			if(!v154)
+				st.offset = addr;
+			break;
+
+		case 0xDC: 
+			//Set offset (Offset Codes)
+			//DC000000 XXXXXXXX
+			//Adds an offset to the current offset. (Dual Offset)
+			x = lo;
+			st.offset += x;
+			break;
+
+		case 0x0E:
+			//Patch Code (Miscellaneous Memory Manipulation Codes)
+			//EXXXXXXX YYYYYYYY 
+			//Copies YYYYYYYY bytes from (current code location + 8) to [XXXXXXXX + offset].
+			//<gbatek> Copy YYYYYYYY parameter bytes to [XXXXXXXX+offset...]
+			//<gbatek> For the COPY commands, addresses should be aligned by four (all data is copied with ldr/str, except, on odd lengths, the last 1..3 bytes do use ldrb/strb).
+			//attempting to emulate logic the way they may have implemented it, just in case
+			x = hi & 0x0FFFFFFF;
+			y = lo;
+			addr = x + st.offset;
+
+			{
+				u32 j=0,t=0,b=0;
+				while(y>=4)
 				{
-					//manual hook
+					u32 tmp = list.code[i][t];
+					if(t==1) i++;
+					t ^= 1;
+					_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr,tmp);
+					addr += 4;
+					y -= 4;
 				}
-				else
-				if ((hi==0x0000AA99) && (lo==0))	// 0000AA99 00000000   parameter bytes 9..10 for above code (padded with 00s)
+				while(y>0)
 				{
-					//parameter bytes 9..10 for above code (padded with 00s)
-				}
-				else	// 0XXXXXXX YYYYYYYY   word[XXXXXXX+offset] = YYYYYYYY
-				{
-					addr = hi + offset;
-					_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, lo);
+					u32 tmp = list.code[i][t]>>b;
+					_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr,tmp);
+					addr += 1;
+					y -= 1;
+					b += 4;
 				}
 			}
 			break;
 
-			case 0x01:	// 1XXXXXXX 0000YYYY   half[XXXXXXX+offset] = YYYY
-				addr = hi + offset;
-				_MMU_write16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, lo);
-			break;
-
-			case 0x02:	// 2XXXXXXX 000000YY   byte[XXXXXXX+offset] = YY
-				addr = hi + offset;
-				_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, lo);
-			break;
-
-			case 0x03:	// 3XXXXXXX YYYYYYYY   IF YYYYYYYY > word[XXXXXXX]   ;unsigned
-				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
-				if ( lo > val )
-				{
-					if (if_flag > 0) if_flag--;
-				}
-				else
-				{
-					if_flag++;
-				}
-			break;
-
-			case 0x04:	// 4XXXXXXX YYYYYYYY   IF YYYYYYYY < word[XXXXXXX]   ;unsigned
-				if ((hi == 0x04332211) && (lo == 88776655))	//44332211 88776655   parameter bytes 1..8 for above code  (example)
-				{
-					break;
-				}
-				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
-				if ( lo < val )
-				{
-					if (if_flag > 0) if_flag--;
-				}
-				else
-				{
-					if_flag++;
-				}
-			break;
-
-			case 0x05:	// 5XXXXXXX YYYYYYYY   IF YYYYYYYY = word[XXXXXXX]
-				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
-				if ( lo == val )
-				{
-					if (if_flag > 0) if_flag--;
-				}
-				else
-				{
-					if_flag++;
-				}
-			break;
-
-			case 0x06:	// 6XXXXXXX YYYYYYYY   IF YYYYYYYY <> word[XXXXXXX]
-				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
-				if ( lo != val )
-				{
-					if (if_flag > 0) if_flag--;
-				}
-				else
-				{
-					if_flag++;
-				}
-			break;
-
-			case 0x07:	// 7XXXXXXX ZZZZYYYY   IF YYYY > ((not ZZZZ) AND half[XXXXXXX])
-				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
-				if ( (lo & 0xFFFF) > ( (~(lo >> 16)) & val) )
-				{
-					if (if_flag > 0) if_flag--;
-				}
-				else
-				{
-					if_flag++;
-				}
-			break;
-
-			case 0x08:	// 8XXXXXXX ZZZZYYYY   IF YYYY < ((not ZZZZ) AND half[XXXXXXX])
-				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
-				if ( (lo & 0xFFFF) < ( (~(lo >> 16)) & val) )
-				{
-					if (if_flag > 0) if_flag--;
-				}
-				else
-				{
-					if_flag++;
-				}
-			break;
-
-			case 0x09:	// 9XXXXXXX ZZZZYYYY   IF YYYY = ((not ZZZZ) AND half[XXXXXXX])
-				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
-				if ( (lo & 0xFFFF) == ( (~(lo >> 16)) & val) )
-				{
-					if (if_flag > 0) if_flag--;
-				}
-				else
-				{
-					if_flag++;
-				}
-			break;
-
-			case 0x0A:	// AXXXXXXX ZZZZYYYY   IF YYYY <> ((not ZZZZ) AND half[XXXXXXX])
-				if (hi == 0) hi = offset;	// V1.54+
-				val = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(hi);
-				if ( (lo & 0xFFFF) != ( (~(lo >> 16)) & val) )
-				{
-					if (if_flag > 0) if_flag--;
-				}
-				else
-				{
-					if_flag++;
-				}
-			break;
-
-			case 0x0B:	// BXXXXXXX 00000000   offset = word[XXXXXXX+offset]
-				addr = hi + offset;
-				offset = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);;
-			break;
-
-			case 0x0C:
-				switch (subtype)
-				{
-					case 0x0:	// C0000000 YYYYYYYY   FOR loopcount=0 to YYYYYYYY  ;execute Y+1 times
-						if (loopcount < (lo+1))
-							loop_flag = 1;
-						else
-							loop_flag = 0;
-						loopcount++;
-						loopbackline = i;
-					break;
-
-					case 0x4:	// C4000000 00000000   offset = address of the C4000000 code ; V1.54
-						printf("AR: untested code C4\n");
-					break;
-
-					case 0x5:	// C5000000 XXXXYYYY   counter=counter+1, IF (counter AND YYYY) = XXXX ; V1.54
-						counter++;
-						if ( (counter & (lo & 0xFFFF)) == ((lo >> 8) & 0xFFFF) )
-						{
-							if (if_flag > 0) if_flag--;
-						}
-						else
-						{
-							if_flag++;
-						}
-					break;
-
-					case 0x6:	// C6000000 XXXXXXXX   [XXXXXXXX]=offset ; V1.54
-						_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(lo, offset);
-					break;
-				}
-			break;
-
-			case 0x0D:
+		case 0x0F:
+			//Memory Copy Code (Miscellaneous Memory Manipulation Codes)
+			//FXXXXXXX YYYYYYYY 
+			//<gbatek> Copy YYYYYYYY bytes from [offset..] to [XXXXXXX...]
+			//<gbatek> For the COPY commands, addresses should be aligned by four (all data is copied with ldr/str, except, on odd lengths, the last 1..3 bytes do use ldrb/strb).
+			//attempting to emulate logic the way they may have implemented it, just in case
+			x = hi & 0x0FFFFFFF;
+			y = lo;
+			addr = x;
+			while(y>=4)
 			{
-				switch (subtype)
-				{
-					case 0x0:	// D0000000 00000000   ENDIF
-					break;
-
-					case 0x1:	// D1000000 00000000   NEXT loopcount
-						if (loop_flag)
-							i = (loopbackline-1);
-					break;
-
-					case 0x2:	// D2000000 00000000   NEXT loopcount, and then FLUSH everything
-						if (loop_flag)
-							i = (loopbackline-1);
-						else
-						{
-							offset = 0;
-							datareg = 0;
-							loopcount = 0;
-							counter = 0;
-							if_flag = 0;
-							loop_flag = 0;
-						}
-					break;
-
-					case 0x3:	// D3000000 XXXXXXXX   offset = XXXXXXXX
-						offset = lo;
-					break;
-
-					case 0x4:	// D4000000 XXXXXXXX   datareg = datareg + XXXXXXXX
-						datareg += lo;
-					break;
-
-					case 0x5:	// D5000000 XXXXXXXX   datareg = XXXXXXXX
-						datareg = lo;
-					break;
-
-					case 0x6:	// D6000000 XXXXXXXX   word[XXXXXXXX+offset]=datareg, offset=offset+4
-						addr = lo + offset;
-						_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, datareg);
-						offset += 4;
-					break;
-
-					case 0x7:	// D7000000 XXXXXXXX   half[XXXXXXXX+offset]=datareg, offset=offset+2
-						addr = lo + offset;
-						_MMU_write16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, datareg);
-						offset += 2;
-					break;
-
-					case 0x8:	// D8000000 XXXXXXXX   byte[XXXXXXXX+offset]=datareg, offset=offset+1
-						addr = lo + offset;
-						_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, datareg);
-						offset += 1;
-					break;
-
-					case 0x9:	// D9000000 XXXXXXXX   datareg = word[XXXXXXXX+offset]
-						addr = lo + offset;
-						datareg = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
-					break;
-
-					case 0xA:	// DA000000 XXXXXXXX   datareg = half[XXXXXXXX+offset]
-						addr = lo + offset;
-						datareg = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
-					break;
-
-					case 0xB:	// DB000000 XXXXXXXX   datareg = byte[XXXXXXXX+offset] ;bugged on pre-v1.54
-						addr = lo + offset;
-						datareg = _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
-					break;
-
-					case 0xC:	// DC000000 XXXXXXXX   offset = offset + XXXXXXXX
-						offset += lo;
-					break;
-				}
+				u32 tmp = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
+				_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(y,tmp);
+				addr += 4;
+				y -= 4;
+			}
+			while(y>0)
+			{
+				u8 tmp = _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
+				_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(y,tmp);
+				addr += 1;
+				y -= 1;
 			}
 			break;
 
-			case 0xE:		// EXXXXXXX YYYYYYYY   Copy YYYYYYYY parameter bytes to [XXXXXXXX+offset...]
-			{
-				u8	*tmp_code = (u8*)(list.code[i+1]);
-				u32 addr = hi+offset;
-				u32 maxByteReadLocation = ((2 * 4) * (MAX_XX_CODE - i - 1)) - 1; // 2 = 2 array dimensions, 4 = 4 bytes per array element
-				
-				if (lo <= maxByteReadLocation)
-				{
-					for (u32 t = 0; t < lo; t++)
-					{
-						u8	tmp = tmp_code[t];
-						_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, tmp);
-						addr++;
-					}
-				}
-				
-				i += ((lo + 7) / 8);
-			}
+		default:
+			printf("AR: ERROR unknown command %08X %08X\n", hi, lo);
 			break;
-
-			case 0xF:		// FXXXXXXX YYYYYYYY   Copy YYYYYYYY bytes from [offset..] to [XXXXXXX...]
-				for (u32 t = 0; t < lo; t++)
-				{
-					u8 tmp = _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(offset+t);
-					_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(hi+t, tmp);
-				}
-			break;
-			default: PROGINFO("AR: ERROR unknown command 0x%2X at %08X:%08X\n", type, hi, lo); break;
 		}
 	}
+
 }
 
 BOOL CHEATS::add_AR_Direct(CHEATS_LIST cheat)
