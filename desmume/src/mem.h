@@ -69,7 +69,6 @@ static INLINE u32 T1ReadLong_guaranteedAligned(u8* const  mem, const u32 addr)
 #endif
 }
 
-
 static INLINE u32 T1ReadLong(u8* const  mem, u32 addr)
 {
    addr &= ~3;
@@ -136,45 +135,15 @@ static INLINE void T1WriteQuad(u8* const mem, const u32 addr, const u64 val)
 #endif
 }
 
-//static INLINE u8 T2ReadByte(u8* const  mem, const u32 addr)
-//{
-//#ifdef MSB_FIRST
-//   return mem[addr ^ 1];
-//#else
-//   return mem[addr];
-//#endif
-//}
-//
-
 static INLINE u16 HostReadWord(u8* const mem, const u32 addr)
 {
    return *((u16 *) (mem + addr));
 }
 
-//
-//static INLINE u32 T2ReadLong(u8* const mem, const u32 addr)
-//{
-//#ifdef MSB_FIRST
-//   return *((u16 *) (mem + addr + 2)) << 16 | *((u16 *) (mem + addr));
-//#else
-//   return *((u32 *) (mem + addr));
-//#endif
-//}
-//
-//static INLINE void T2WriteByte(u8* const mem, const u32 addr, const u8 val)
-//{
-//#ifdef MSB_FIRST
-//   mem[addr ^ 1] = val;
-//#else
-//   mem[addr] = val;
-//#endif
-//}
-
 static INLINE void HostWriteWord(u8* const mem, const u32 addr, const u16 val)
 {
    *((u16 *) (mem + addr)) = val;
 }
-
 
 static INLINE void HostWriteLong(u8* const mem, const u32 addr, const u32 val)
 {

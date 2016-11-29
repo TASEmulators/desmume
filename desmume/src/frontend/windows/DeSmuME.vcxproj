@@ -346,13 +346,21 @@
     <ClInclude Include="..\..\addons\slot1comp_protocol.h" />
     <ClInclude Include="..\..\addons\slot1comp_rom.h" />
     <ClInclude Include="..\..\Database.h" />
+    <ClInclude Include="..\..\filter\filter.h" />
+    <ClInclude Include="..\..\filter\xbrz.h" />
     <ClInclude Include="..\..\gdbstub.h" />
+    <ClInclude Include="..\..\libretro-common\include\compat\getopt.h" />
+    <ClInclude Include="..\..\libretro-common\include\compat\msvc.h" />
     <ClInclude Include="..\..\libretro-common\include\encodings\utf.h" />
     <ClInclude Include="..\..\libretro-common\include\features\features_cpu.h" />
+    <ClInclude Include="..\..\libretro-common\include\formats\image.h" />
+    <ClInclude Include="..\..\libretro-common\include\formats\rbmp.h" />
+    <ClInclude Include="..\..\libretro-common\include\formats\rpng.h" />
     <ClInclude Include="..\..\libretro-common\include\libretro.h" />
+    <ClInclude Include="..\..\libretro-common\include\rthreads\rthreads.h" />
+    <ClInclude Include="..\..\metaspu\SoundTouch\FIRFilter.h" />
     <ClInclude Include="..\..\types.h" />
     <ClInclude Include="..\..\utils\bits.h" />
-    <ClInclude Include="..\..\utils\xstring.h" />
     <ClInclude Include="..\..\version.h" />
     <ClInclude Include="..\..\armcpu.h" />
     <ClInclude Include="..\..\arm_jit.h" />
@@ -366,27 +374,15 @@
     <ClInclude Include="..\..\emufile.h" />
     <ClInclude Include="..\..\encrypt.h" />
     <ClInclude Include="..\..\FIFO.h" />
-    <ClInclude Include="..\..\filter\filter.h" />
-    <ClInclude Include="..\..\filter\hq2x.h" />
-    <ClInclude Include="..\..\filter\interp.h" />
-    <ClInclude Include="..\..\filter\lq2x.h" />
-    <ClInclude Include="..\..\filter\xbrz.h" />
     <ClInclude Include="..\..\firmware.h" />
     <ClInclude Include="..\..\frontend\modules\ImageOut.h" />
     <ClInclude Include="..\..\gfx3d.h" />
     <ClInclude Include="..\..\GPU.h" />
     <ClInclude Include="..\..\instructions.h" />
     <ClInclude Include="..\..\instruction_attributes.h" />
-    <ClInclude Include="..\..\libretro-common\formats\png\rpng_internal.h" />
     <ClInclude Include="..\..\libretro-common\include\boolean.h" />
-    <ClInclude Include="..\..\libretro-common\include\compat\getopt.h" />
-    <ClInclude Include="..\..\libretro-common\include\compat\msvc.h" />
-    <ClInclude Include="..\..\libretro-common\include\formats\image.h" />
-    <ClInclude Include="..\..\libretro-common\include\formats\rbmp.h" />
-    <ClInclude Include="..\..\libretro-common\include\formats\rpng.h" />
     <ClInclude Include="..\..\libretro-common\include\retro_inline.h" />
     <ClInclude Include="..\..\libretro-common\include\retro_miscellaneous.h" />
-    <ClInclude Include="..\..\libretro-common\include\rthreads\rthreads.h" />
     <ClInclude Include="..\..\lua-engine.h" />
     <ClInclude Include="..\..\matrix.h" />
     <ClInclude Include="..\..\mc.h" />
@@ -479,7 +475,6 @@
     <ClInclude Include="..\..\utils\vfat.h" />
     <ClInclude Include="..\modules\Disassembler.h" />
     <ClInclude Include="..\..\wifi.h" />
-    <ClInclude Include="..\..\utils\xstring.h" />
     <ClInclude Include="..\..\utils\guid.h" />
     <ClInclude Include="..\..\utils\task.h" />
     <ClInclude Include="..\..\utils\decrypt\crc.h" />
@@ -493,7 +488,6 @@
     <ClInclude Include="..\..\metaspu\SoundTouch\cpu_detect.h" />
     <ClInclude Include="..\..\metaspu\SoundTouch\FIFOSampleBuffer.h" />
     <ClInclude Include="..\..\metaspu\SoundTouch\FIFOSamplePipe.h" />
-    <ClInclude Include="..\..\metaspu\SoundTouch\FIRFilter.h" />
     <ClInclude Include="..\..\metaspu\SoundTouch\RateTransposer.h" />
     <ClInclude Include="..\..\metaspu\SoundTouch\SoundTouch.h" />
     <ClInclude Include="..\..\metaspu\SoundTouch\STTypes.h" />
@@ -606,7 +600,6 @@
     <ClInclude Include="tileView.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\filter\hq4x.dat" />
     <None Include="..\instruction_tabdef.inc" />
     <None Include="..\modules\osd\agg\agg2d.inl" />
     <None Include="..\thumb_tabdef.inc" />
