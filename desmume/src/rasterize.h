@@ -122,7 +122,6 @@ public:
 	FragmentColor toonColor32LUT[32];
 	GFX3D_Clipper::TClippedPoly *clippedPolys;
 	FragmentAttributesBuffer *_framebufferAttributes;
-	SoftRasterizerTexture *_textureList[POLYLIST_SIZE];
 	bool polyVisible[POLYLIST_SIZE];
 	bool polyBackfacing[POLYLIST_SIZE];
 	GFX3D_State *currentRenderState;

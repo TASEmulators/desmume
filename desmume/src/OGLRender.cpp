@@ -3056,7 +3056,7 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 
 Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, size_t polyRenderIndex)
 {
-	OpenGLTexture *theTexture = this->_textureList[polyRenderIndex];
+	OpenGLTexture *theTexture = (OpenGLTexture *)this->_textureList[polyRenderIndex];
 	const NDSTextureFormat packFormat = theTexture->GetPackFormat();
 	const OGLRenderRef &OGLRef = *this->ref;
 	
@@ -4650,7 +4650,7 @@ Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY &thePoly)
 
 Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, size_t polyRenderIndex)
 {
-	OpenGLTexture *theTexture = this->_textureList[polyRenderIndex];
+	OpenGLTexture *theTexture = (OpenGLTexture *)this->_textureList[polyRenderIndex];
 	const NDSTextureFormat packFormat = theTexture->GetPackFormat();
 	const OGLRenderRef &OGLRef = *this->ref;
 	

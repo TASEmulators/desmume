@@ -611,7 +611,6 @@ protected:
 	bool _pixelReadNeedsFinish;
 	size_t _currentPolyIndex;
 	std::vector<u8> _shadowPolyID;
-	OpenGLTexture *_textureList[POLYLIST_SIZE];
 	
 	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebuffer, u16 *__restrict dstRGBA5551);
 	OpenGLTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);

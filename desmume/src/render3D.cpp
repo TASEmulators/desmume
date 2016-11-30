@@ -453,6 +453,11 @@ void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDep
 	}
 }
 
+Render3DTexture* Render3D::GetTextureByPolygonRenderIndex(size_t polyRenderIndex) const
+{
+	return this->_textureList[polyRenderIndex];
+}
+
 Render3DError Render3D::BeginRender(const GFX3D &engine)
 {
 	return RENDER3DERROR_NOERR;

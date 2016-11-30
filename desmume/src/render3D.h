@@ -162,6 +162,7 @@ protected:
 	SSurface _textureDeposterizeDstSurface;
 	
 	u32 *_textureUpscaleBuffer;
+	Render3DTexture *_textureList[POLYLIST_SIZE];
 	
 	CACHE_ALIGN u16 clearImageColor16Buffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN u32 clearImageDepthBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
@@ -230,6 +231,7 @@ public:
 	void SetRenderNeedsFinish(const bool renderNeedsFinish);
 	
 	void SetTextureProcessingProperties(size_t scalingFactor, bool willDeposterize, bool willSmooth);
+	Render3DTexture* GetTextureByPolygonRenderIndex(size_t polyRenderIndex) const;
 };
 
 #ifdef ENABLE_SSE2

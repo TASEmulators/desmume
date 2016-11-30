@@ -1687,7 +1687,7 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 
 Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, size_t polyRenderIndex)
 {
-	OpenGLTexture *theTexture = this->_textureList[polyRenderIndex];
+	OpenGLTexture *theTexture = (OpenGLTexture *)this->_textureList[polyRenderIndex];
 	
 	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
 	

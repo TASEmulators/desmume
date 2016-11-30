@@ -345,7 +345,7 @@ public:
 	
 	Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex)
 	{
-		SoftRasterizerTexture *theTexture = this->_softRender->_textureList[polyRenderIndex];
+		SoftRasterizerTexture *theTexture = (SoftRasterizerTexture *)this->_softRender->GetTextureByPolygonRenderIndex(polyRenderIndex);
 		this->currentTexture = theTexture;
 		
 		if (!theTexture->IsSamplingEnabled())
