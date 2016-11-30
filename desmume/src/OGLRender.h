@@ -733,7 +733,7 @@ protected:
 	
 	virtual void SetPolygonIndex(const size_t index);
 	virtual Render3DError SetupPolygon(const POLY &thePoly);
-	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex, bool enableTexturing);
+	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
 	virtual Render3DError SetupViewport(const u32 viewportValue);
 	
 public:
@@ -806,7 +806,7 @@ protected:
 	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
 	
 	virtual Render3DError SetupPolygon(const POLY &thePoly);
-	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex, bool enableTexturing);
+	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
 };
 
 class OpenGLRenderer_2_1 : public OpenGLRenderer_2_0

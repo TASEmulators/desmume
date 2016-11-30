@@ -1429,7 +1429,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		const PolygonAttributes polyAttr = thePoly->getAttributes();
 		const PolygonTexParams texParams = thePoly->getTexParams();
 		
-		polyStates[i].enableTexture = (packFormat != TEXMODE_NONE && engine.renderState.enableTexturing) ? GL_TRUE : GL_FALSE;
+		polyStates[i].enableTexture = (this->_textureList[i]->IsSamplingEnabled()) ? GL_TRUE : GL_FALSE;
 		polyStates[i].enableFog = (polyAttr.enableRenderFog && !(polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0)) ? GL_TRUE : GL_FALSE;
 		polyStates[i].enableDepthWrite = !(polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0) ? GL_TRUE : GL_FALSE;
 		polyStates[i].setNewDepthForTranslucent = (polyAttr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
@@ -1685,19 +1685,20 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, size_t polyRenderIndex, bool enableTexturing)
+Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, size_t polyRenderIndex)
 {
 	OpenGLTexture *theTexture = this->_textureList[polyRenderIndex];
 	
+	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
+	
 	// Check if we need to use textures
-	if (theTexture->GetPackFormat() == TEXMODE_NONE || !enableTexturing)
+	if (!theTexture->IsSamplingEnabled())
 	{
 		return OGLERROR_NOERR;
 	}
 	
 	PolygonTexParams texParams = thePoly.getTexParams();
 	
-	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (texParams.enableRepeatS ? (texParams.enableMirroredRepeatS ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (texParams.enableRepeatT ? (texParams.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	

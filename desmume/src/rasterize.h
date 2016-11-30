@@ -63,8 +63,6 @@ protected:
 	u32 _renderWidthShift;
 	u8 _renderWrapMode;
 	
-	bool _renderEnabled;
-	
 public:
 	SoftRasterizerTexture(u32 texAttributes, u32 palAttributes);
 	virtual ~SoftRasterizerTexture();
@@ -81,8 +79,6 @@ public:
 	u32 GetRenderWidthShift() const;
 	u8 GetRenderWrapMode() const;
 	void SetRenderWrapMode(u32 texParam);
-	bool IsRenderEnabled() const;
-	void SetRenderEnabled(bool isEnabled);
 	
 	void GetRenderSamplerCoordinates(s32 &iu, s32 &iv) const;
 	

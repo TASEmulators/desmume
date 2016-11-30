@@ -348,7 +348,7 @@ public:
 		SoftRasterizerTexture *theTexture = this->_softRender->_textureList[polyRenderIndex];
 		this->currentTexture = theTexture;
 		
-		if (!theTexture->IsRenderEnabled())
+		if (!theTexture->IsSamplingEnabled())
 		{
 			return RENDER3DERROR_NOERR;
 		}
@@ -403,7 +403,7 @@ public:
 	FORCEINLINE void shade(const PolygonMode polygonMode, const FragmentColor src, FragmentColor &dst, const float texCoordU, const float texCoordV)
 	{
 		static const FragmentColor colorWhite = MakeFragmentColor(0x3F, 0x3F, 0x3F, 0x1F);
-		const FragmentColor mainTexColor = (this->currentTexture->IsRenderEnabled()) ? sample(texCoordU, texCoordV) : colorWhite;
+		const FragmentColor mainTexColor = (this->currentTexture->IsSamplingEnabled()) ? sample(texCoordU, texCoordV) : colorWhite;
 		
 		switch (polygonMode)
 		{
@@ -428,7 +428,7 @@ public:
 				
 			case POLYGON_MODE_DECAL:
 			{
-				if (this->currentTexture->IsRenderEnabled())
+				if (this->currentTexture->IsSamplingEnabled())
 				{
 					dst.r = decal_table[mainTexColor.a][mainTexColor.r][src.r];
 					dst.g = decal_table[mainTexColor.a][mainTexColor.g][src.g];
@@ -1080,7 +1080,6 @@ SoftRasterizerTexture::SoftRasterizerTexture(u32 texAttributes, u32 palAttribute
 	_renderHeightMask = _renderHeight - 1;
 	_renderWidthShift = 0;
 	_renderWrapMode = 0;
-	_renderEnabled = false;
 	
 	_deposterizeSrcSurface.Surface = (unsigned char *)_unpackData;
 	
@@ -1225,16 +1224,6 @@ u8 SoftRasterizerTexture::GetRenderWrapMode() const
 void SoftRasterizerTexture::SetRenderWrapMode(u32 texParam)
 {
 	this->_renderWrapMode = (texParam >> 16) & 0x0F;
-}
-
-bool SoftRasterizerTexture::IsRenderEnabled() const
-{
-	return this->_renderEnabled;
-}
-
-void SoftRasterizerTexture::SetRenderEnabled(bool isEnabled)
-{
-	this->_renderEnabled = isEnabled;
 }
 
 FORCEINLINE void SoftRasterizerTexture::GetRenderSamplerCoordinates(s32 &iu, s32 &iv) const
@@ -2012,7 +2001,7 @@ SoftRasterizerTexture* SoftRasterizerRenderer::GetLoadedTextureFromPolygon(const
 	const NDSTextureFormat packFormat = theTexture->GetPackFormat();
 	const bool isTextureEnabled = ( (packFormat != TEXMODE_NONE) && enableTexturing );
 	
-	theTexture->SetRenderEnabled(isTextureEnabled);
+	theTexture->SetSamplingEnabled(isTextureEnabled);
 	
 	if (theTexture->IsLoadNeeded() && isTextureEnabled)
 	{

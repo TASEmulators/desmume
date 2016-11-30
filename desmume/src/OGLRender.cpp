@@ -1320,6 +1320,8 @@ OpenGLTexture* OpenGLRenderer::GetLoadedTextureFromPolygon(const POLY &thePoly, 
 	const NDSTextureFormat packFormat = theTexture->GetPackFormat();
 	const bool isTextureEnabled = ( (packFormat != TEXMODE_NONE) && enableTexturing );
 	
+	theTexture->SetSamplingEnabled(isTextureEnabled);
+	
 	if (theTexture->IsLoadNeeded() && isTextureEnabled)
 	{
 		theTexture->SetUseDeposterize(this->_textureDeposterize);
@@ -2729,7 +2731,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 		u32 lastViewport = firstPoly.viewport;
 		
 		this->SetupPolygon(firstPoly);
-		this->SetupTexture(firstPoly, 0, renderState.enableTexturing);
+		this->SetupTexture(firstPoly, 0);
 		this->SetupViewport(lastViewport);
 		
 		GLsizei vertIndexCount = 0;
@@ -2752,7 +2754,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 			{
 				lastTexParams = thePoly.texParam;
 				lastTexPalette = thePoly.texPalette;
-				this->SetupTexture(thePoly, i, renderState.enableTexturing);
+				this->SetupTexture(thePoly, i);
 			}
 			
 			// Set up the viewport if it changed
@@ -3052,19 +3054,22 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, size_t polyRenderIndex, bool enableTexturing)
+Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, size_t polyRenderIndex)
 {
 	OpenGLTexture *theTexture = this->_textureList[polyRenderIndex];
 	const NDSTextureFormat packFormat = theTexture->GetPackFormat();
 	const OGLRenderRef &OGLRef = *this->ref;
 	
+	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
+	
 	// Check if we need to use textures
-	if (packFormat == TEXMODE_NONE || !enableTexturing)
+	if (!theTexture->IsSamplingEnabled())
 	{
 		if (this->isShaderSupported)
 		{
 			glUniform1i(OGLRef.uniformPolyEnableTexture, GL_FALSE);
 			glUniform1i(OGLRef.uniformTexSingleBitAlpha, GL_FALSE);
+			glUniform2f(OGLRef.uniformPolyTexScale, theTexture->GetInvWidth(), theTexture->GetInvHeight());
 		}
 		else
 		{
@@ -3091,7 +3096,6 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, size_t polyR
 		glScalef(theTexture->GetInvWidth(), theTexture->GetInvHeight(), 1.0f);
 	}
 	
-	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (texParams.enableRepeatS ? (texParams.enableMirroredRepeatS ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (texParams.enableRepeatT ? (texParams.enableMirroredRepeatT ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	
@@ -4644,14 +4648,17 @@ Render3DError OpenGLRenderer_2_0::SetupPolygon(const POLY &thePoly)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, size_t polyRenderIndex, bool enableTexturing)
+Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, size_t polyRenderIndex)
 {
 	OpenGLTexture *theTexture = this->_textureList[polyRenderIndex];
 	const NDSTextureFormat packFormat = theTexture->GetPackFormat();
 	const OGLRenderRef &OGLRef = *this->ref;
 	
+	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
+	glUniform2f(OGLRef.uniformPolyTexScale, theTexture->GetInvWidth(), theTexture->GetInvHeight());
+	
 	// Check if we need to use textures
-	if (packFormat == TEXMODE_NONE || !enableTexturing)
+	if (!theTexture->IsSamplingEnabled())
 	{
 		glUniform1i(OGLRef.uniformPolyEnableTexture, GL_FALSE);
 		glUniform1i(OGLRef.uniformTexSingleBitAlpha, GL_FALSE);
@@ -4662,9 +4669,7 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, size_t polyR
 	
 	glUniform1i(OGLRef.uniformPolyEnableTexture, GL_TRUE);
 	glUniform1i(OGLRef.uniformTexSingleBitAlpha, (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE);
-	glUniform2f(OGLRef.uniformPolyTexScale, theTexture->GetInvWidth(), theTexture->GetInvHeight());
 	
-	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (texParams.enableRepeatS ? (texParams.enableMirroredRepeatS ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (texParams.enableRepeatT ? (texParams.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	

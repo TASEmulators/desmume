@@ -117,6 +117,7 @@ struct Render3DDeviceInfo
 class Render3DTexture : public TextureStore
 {
 protected:
+	bool _isSamplingEnabled;
 	bool _useDeposterize;
 	size_t _scalingFactor;
 	SSurface _deposterizeSrcSurface;
@@ -126,6 +127,9 @@ protected:
 	
 public:
 	Render3DTexture(u32 texAttributes, u32 palAttributes);
+	
+	bool IsSamplingEnabled() const;
+	void SetSamplingEnabled(bool isEnabled);
 		
 	bool IsUsingDeposterize() const;
 	void SetUseDeposterize(bool willDeposterize);
@@ -175,7 +179,7 @@ protected:
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) const;
 	
 	virtual Render3DError SetupPolygon(const POLY &thePoly);
-	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex, bool enableTexturing);
+	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
 	virtual Render3DError SetupViewport(const u32 viewportValue);
 	
 public:

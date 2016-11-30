@@ -195,6 +195,7 @@ void FragmentAttributesBuffer::SetAll(const FragmentAttributes &attr)
 
 Render3DTexture::Render3DTexture(u32 texAttributes, u32 palAttributes) : TextureStore(texAttributes, palAttributes)
 {
+	_isSamplingEnabled = true;
 	_useDeposterize = false;
 	_scalingFactor = 1;
 	
@@ -222,6 +223,16 @@ void Render3DTexture::_Upscale(const u32 *__restrict src, u32 *__restrict dst)
 	{
 		xbrz::scale<SCALEFACTOR, xbrz::ColorFormatARGB_1bitAlpha>(src, dst, this->_sizeS, this->_sizeT);
 	}
+}
+
+bool Render3DTexture::IsSamplingEnabled() const
+{
+	return this->_isSamplingEnabled;
+}
+
+void Render3DTexture::SetSamplingEnabled(bool isEnabled)
+{
+	this->_isSamplingEnabled = isEnabled;
 }
 
 bool Render3DTexture::IsUsingDeposterize() const
@@ -607,7 +618,7 @@ Render3DError Render3D::SetupPolygon(const POLY &thePoly)
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::SetupTexture(const POLY &thePoly, size_t polyRenderIndex, bool enableTexturing)
+Render3DError Render3D::SetupTexture(const POLY &thePoly, size_t polyRenderIndex)
 {
 	return RENDER3DERROR_NOERR;
 }
