@@ -329,7 +329,7 @@ class RasterizerUnit
 {
 protected:
 	SoftRasterizerRenderer *_softRender;
-	SoftRasterizerTexture *lastTexKey;
+	SoftRasterizerTexture *currentTexture;
 	VERT* verts[MAX_CLIPPED_VERTS];
 	int polynum;
 	
@@ -342,99 +342,23 @@ public:
 	{
 		this->_softRender = theRenderer;
 	}
-
-	struct Sampler
+	
+	Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex)
 	{
-		bool enabled;
-		int width, height;
-		s32 wmask, hmask;
-		int wrap;
+		SoftRasterizerTexture *theTexture = this->_softRender->_textureList[polyRenderIndex];
+		this->currentTexture = theTexture;
 		
-		void setup(SoftRasterizerTexture *theTexture, u32 texParam)
+		if (!theTexture->IsRenderEnabled())
 		{
-			width = theTexture->GetRenderWidth();
-			height = theTexture->GetRenderHeight();
-			wmask = theTexture->GetRenderWidthMask();
-			hmask = theTexture->GetRenderHeightMask();
-			
-			wrap = (texParam>>16)&0xF;
-			enabled = gfx3d.renderState.enableTexturing && (theTexture->GetPackFormat() != TEXMODE_NONE);
+			return RENDER3DERROR_NOERR;
 		}
 		
-		FORCEINLINE void clamp(s32 &val, const int size, const s32 sizemask)
-		{
-			if(val<0) val = 0;
-			if(val>sizemask) val = sizemask;
-		}
+		theTexture->SetRenderWrapMode(thePoly.texParam);
+		theTexture->ResetCacheAge();
+		theTexture->IncreaseCacheUsageCount(1);
 		
-		FORCEINLINE void hclamp(s32 &val)
-		{
-			clamp(val,width,wmask);
-		}
-		
-		FORCEINLINE void vclamp(s32 &val)
-		{
-			clamp(val,height,hmask);
-		}
-		
-		FORCEINLINE void repeat(s32 &val, const int size, const s32 sizemask)
-		{
-			val &= sizemask;
-		}
-		
-		FORCEINLINE void hrepeat(s32 &val)
-		{
-			repeat(val,width,wmask);
-		}
-		
-		FORCEINLINE void vrepeat(s32 &val)
-		{
-			repeat(val,height,hmask);
-		}
-		
-		FORCEINLINE void flip(s32 &val, const int size, const s32 sizemask)
-		{
-			val &= ((size<<1)-1);
-			if(val>=size) val = (size<<1)-val-1;
-		}
-		
-		FORCEINLINE void hflip(s32 &val)
-		{
-			flip(val,width,wmask);
-		}
-		
-		FORCEINLINE void vflip(s32 &val)
-		{
-			flip(val,height,hmask);
-		}
-		
-		FORCEINLINE void dowrap(s32 &iu, s32 &iv)
-		{
-			switch (wrap)
-			{
-				//flip none
-				case 0x0: hclamp(iu); vclamp(iv); break;
-				case 0x1: hrepeat(iu); vclamp(iv); break;
-				case 0x2: hclamp(iu); vrepeat(iv); break;
-				case 0x3: hrepeat(iu); vrepeat(iv); break;
-				//flip S
-				case 0x4: hclamp(iu); vclamp(iv); break;
-				case 0x5: hflip(iu); vclamp(iv); break;
-				case 0x6: hclamp(iu); vrepeat(iv); break;
-				case 0x7: hflip(iu); vrepeat(iv); break;
-				//flip T
-				case 0x8: hclamp(iu); vclamp(iv); break;
-				case 0x9: hrepeat(iu); vclamp(iv); break;
-				case 0xA: hclamp(iu); vflip(iv); break;
-				case 0xB: hrepeat(iu); vflip(iv); break;
-				//flip both
-				case 0xC: hclamp(iu); vclamp(iv); break;
-				case 0xD: hflip(iu); vclamp(iv); break;
-				case 0xE: hclamp(iu); vflip(iv); break;
-				case 0xF: hflip(iu); vflip(iv); break;
-			}
-		}
-	} sampler;
+		return RENDER3DERROR_NOERR;
+	}
 
 	FORCEINLINE FragmentColor sample(const float u, const float v)
 	{
@@ -445,8 +369,8 @@ public:
 		
 		if (!CommonSettings.GFX3D_TXTHack)
 		{
-			iu = s32floor(u * (float)lastTexKey->GetRenderWidth() / (float)lastTexKey->GetWidth());
-			iv = s32floor(v * (float)lastTexKey->GetRenderHeight() / (float)lastTexKey->GetHeight());
+			iu = s32floor(u * (float)this->currentTexture->GetRenderWidth()  / (float)this->currentTexture->GetWidth());
+			iv = s32floor(v * (float)this->currentTexture->GetRenderHeight() / (float)this->currentTexture->GetHeight());
 		}
 		else
 		{
@@ -454,11 +378,11 @@ public:
 			iv = round_s(v);
 		}
 		
-		sampler.dowrap(iu, iv);
-		FragmentColor color;
-		const u32 *textureData = lastTexKey->GetRenderData();
+		const u32 *textureData = this->currentTexture->GetRenderData();
+		this->currentTexture->GetRenderSamplerCoordinates(iu, iv);
 		
-		color.color = textureData[( iv << lastTexKey->GetRenderWidthShift() ) + iu];
+		FragmentColor color;
+		color.color = textureData[( iv << this->currentTexture->GetRenderWidthShift() ) + iu];
 		
 		return color;
 	}
@@ -479,7 +403,7 @@ public:
 	FORCEINLINE void shade(const PolygonMode polygonMode, const FragmentColor src, FragmentColor &dst, const float texCoordU, const float texCoordV)
 	{
 		static const FragmentColor colorWhite = MakeFragmentColor(0x3F, 0x3F, 0x3F, 0x1F);
-		const FragmentColor mainTexColor = (sampler.enabled) ? sample(texCoordU, texCoordV) : colorWhite;
+		const FragmentColor mainTexColor = (this->currentTexture->IsRenderEnabled()) ? sample(texCoordU, texCoordV) : colorWhite;
 		
 		switch (polygonMode)
 		{
@@ -504,7 +428,7 @@ public:
 				
 			case POLYGON_MODE_DECAL:
 			{
-				if (sampler.enabled)
+				if (this->currentTexture->IsRenderEnabled())
 				{
 					dst.r = decal_table[mainTexColor.a][mainTexColor.r][src.r];
 					dst.g = decal_table[mainTexColor.a][mainTexColor.g][src.g];
@@ -1011,8 +935,7 @@ public:
 		u32 lastTexParams = firstPoly.texParam;
 		u32 lastTexPalette = firstPoly.texPalette;
 		
-		lastTexKey = this->_softRender->polyTexKeys[0];
-		sampler.setup(lastTexKey, firstPoly.texParam);
+		this->SetupTexture(firstPoly, 0);
 
 		//iterate over polys
 		for (size_t i = 0; i < polyCount; i++)
@@ -1035,11 +958,7 @@ public:
 			{
 				lastTexParams = thePoly.texParam;
 				lastTexPalette = thePoly.texPalette;
-				
-				lastTexKey = this->_softRender->polyTexKeys[i];
-				sampler.setup(lastTexKey, thePoly.texParam);
-				lastTexKey->ResetCacheAge();
-				lastTexKey->IncreaseCacheUsageCount(1);
+				this->SetupTexture(thePoly, i);
 			}
 			
 			for (int j = 0; j < type; j++)
@@ -1085,10 +1004,10 @@ static void* SoftRasterizer_RunCalculateVertices(void *arg)
 	return NULL;
 }
 
-static void* SoftRasterizer_RunSetupTextures(void *arg)
+static void* SoftRasterizer_RunGetAndLoadAllTextures(void *arg)
 {
 	SoftRasterizerRenderer *softRender = (SoftRasterizerRenderer *)arg;
-	softRender->setupTextures();
+	softRender->GetAndLoadAllTextures();
 	
 	return NULL;
 }
@@ -1160,6 +1079,8 @@ SoftRasterizerTexture::SoftRasterizerTexture(u32 texAttributes, u32 palAttribute
 	_renderWidthMask = _renderWidth - 1;
 	_renderHeightMask = _renderHeight - 1;
 	_renderWidthShift = 0;
+	_renderWrapMode = 0;
+	_renderEnabled = false;
 	
 	_deposterizeSrcSurface.Surface = (unsigned char *)_unpackData;
 	
@@ -1176,6 +1097,53 @@ SoftRasterizerTexture::~SoftRasterizerTexture()
 	free_aligned(this->_unpackData);
 	free_aligned(this->_deposterizeDstSurface.Surface);
 	free_aligned(this->_customBuffer);
+}
+
+FORCEINLINE void SoftRasterizerTexture::_clamp(s32 &val, const int size, const s32 sizemask) const
+{
+	if(val<0) val = 0;
+	if(val>sizemask) val = sizemask;
+}
+
+FORCEINLINE void SoftRasterizerTexture::_hclamp(s32 &val) const
+{
+	_clamp(val, this->_renderWidth, this->_renderWidthMask);
+}
+
+FORCEINLINE void SoftRasterizerTexture::_vclamp(s32 &val) const
+{
+	_clamp(val, this->_renderHeight, this->_renderHeightMask);
+}
+
+FORCEINLINE void SoftRasterizerTexture::_repeat(s32 &val, const int size, const s32 sizemask) const
+{
+	val &= sizemask;
+}
+
+FORCEINLINE void SoftRasterizerTexture::_hrepeat(s32 &val) const
+{
+	_repeat(val, this->_renderWidth, this->_renderWidthMask);
+}
+
+FORCEINLINE void SoftRasterizerTexture::_vrepeat(s32 &val) const
+{
+	_repeat(val, this->_renderHeight, this->_renderHeightMask);
+}
+
+FORCEINLINE void SoftRasterizerTexture::_flip(s32 &val, const int size, const s32 sizemask) const
+{
+	val &= ((size<<1)-1);
+	if(val>=size) val = (size<<1)-val-1;
+}
+
+FORCEINLINE void SoftRasterizerTexture::_hflip(s32 &val) const
+{
+	_flip(val, this->_renderWidth, this->_renderWidthMask);
+}
+
+FORCEINLINE void SoftRasterizerTexture::_vflip(s32 &val) const
+{
+	_flip(val, this->_renderHeight, this->_renderHeightMask);
 }
 
 void SoftRasterizerTexture::Load()
@@ -1224,22 +1192,22 @@ u32* SoftRasterizerTexture::GetRenderData()
 	return this->_renderData;
 }
 
-u32 SoftRasterizerTexture::GetRenderWidth() const
+s32 SoftRasterizerTexture::GetRenderWidth() const
 {
 	return this->_renderWidth;
 }
 
-u32 SoftRasterizerTexture::GetRenderHeight() const
+s32 SoftRasterizerTexture::GetRenderHeight() const
 {
 	return this->_renderHeight;
 }
 
-u32 SoftRasterizerTexture::GetRenderWidthMask() const
+s32 SoftRasterizerTexture::GetRenderWidthMask() const
 {
 	return this->_renderWidthMask;
 }
 
-u32 SoftRasterizerTexture::GetRenderHeightMask() const
+s32 SoftRasterizerTexture::GetRenderHeightMask() const
 {
 	return this->_renderHeightMask;
 }
@@ -1247,6 +1215,53 @@ u32 SoftRasterizerTexture::GetRenderHeightMask() const
 u32 SoftRasterizerTexture::GetRenderWidthShift() const
 {
 	return this->_renderWidthShift;
+}
+
+u8 SoftRasterizerTexture::GetRenderWrapMode() const
+{
+	return this->_renderWrapMode;
+}
+
+void SoftRasterizerTexture::SetRenderWrapMode(u32 texParam)
+{
+	this->_renderWrapMode = (texParam >> 16) & 0x0F;
+}
+
+bool SoftRasterizerTexture::IsRenderEnabled() const
+{
+	return this->_renderEnabled;
+}
+
+void SoftRasterizerTexture::SetRenderEnabled(bool isEnabled)
+{
+	this->_renderEnabled = isEnabled;
+}
+
+FORCEINLINE void SoftRasterizerTexture::GetRenderSamplerCoordinates(s32 &iu, s32 &iv) const
+{
+	switch (this->_renderWrapMode)
+	{
+		//flip none
+		case 0x0: _hclamp(iu);  _vclamp(iv);  break;
+		case 0x1: _hrepeat(iu); _vclamp(iv);  break;
+		case 0x2: _hclamp(iu);  _vrepeat(iv); break;
+		case 0x3: _hrepeat(iu); _vrepeat(iv); break;
+		//flip S
+		case 0x4: _hclamp(iu);  _vclamp(iv);  break;
+		case 0x5: _hflip(iu);   _vclamp(iv);  break;
+		case 0x6: _hclamp(iu);  _vrepeat(iv); break;
+		case 0x7: _hflip(iu);   _vrepeat(iv); break;
+		//flip T
+		case 0x8: _hclamp(iu);  _vclamp(iv);  break;
+		case 0x9: _hrepeat(iu); _vclamp(iv);  break;
+		case 0xA: _hclamp(iu);  _vflip(iv);   break;
+		case 0xB: _hrepeat(iu); _vflip(iv);   break;
+		//flip both
+		case 0xC: _hclamp(iu);  _vclamp(iv);  break;
+		case 0xD: _hflip(iu);   _vclamp(iv);  break;
+		case 0xE: _hclamp(iu);  _vflip(iv);   break;
+		case 0xF: _hflip(iu);   _vflip(iv);   break;
+	}
 }
 
 void SoftRasterizerTexture::SetUseDeposterize(bool willDeposterize)
@@ -1485,7 +1500,7 @@ template<bool CUSTOM> void SoftRasterizerRenderer::performViewportTransforms()
 	//viewport transforms
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
-		GFX3D_Clipper::TClippedPoly &poly = clippedPolys[i];
+		GFX3D_Clipper::TClippedPoly &poly = this->clippedPolys[i];
 		for (size_t j = 0; j < poly.type; j++)
 		{
 			VERT &vert = poly.clipVerts[j];
@@ -1531,7 +1546,7 @@ void SoftRasterizerRenderer::performCoordAdjustment()
 {
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
-		GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
+		GFX3D_Clipper::TClippedPoly &clippedPoly = this->clippedPolys[i];
 		const PolygonType type = clippedPoly.type;
 		VERT *verts = &clippedPoly.clipVerts[0];
 		
@@ -1544,63 +1559,23 @@ void SoftRasterizerRenderer::performCoordAdjustment()
 	}
 }
 
-void SoftRasterizerRenderer::setupTextures()
+void SoftRasterizerRenderer::GetAndLoadAllTextures()
 {
 	if (this->_clippedPolyCount == 0)
 	{
 		return;
 	}
 	
-	const GFX3D_Clipper::TClippedPoly &firstClippedPoly = this->clippedPolys[0];
-	const POLY &firstPoly = *firstClippedPoly.poly;
-	u32 lastTexParams = firstPoly.texParam;
-	u32 lastTexPalette = firstPoly.texPalette;
-	
-	SoftRasterizerTexture *lastTexItem = (SoftRasterizerTexture *)texCache.GetTexture(firstPoly.texParam, firstPoly.texPalette);
-	if (lastTexItem == NULL)
-	{
-		lastTexItem = new SoftRasterizerTexture(firstPoly.texParam, firstPoly.texPalette);
-		texCache.Add(lastTexItem);
-	}
-	
-	if (lastTexItem->IsLoadNeeded())
-	{
-		lastTexItem->SetUseDeposterize(this->_textureDeposterize);
-		lastTexItem->SetScalingFactor(this->_textureScalingFactor);
-		lastTexItem->Load();
-	}
-	
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
-		const GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
+		const GFX3D_Clipper::TClippedPoly &clippedPoly = this->clippedPolys[i];
 		const POLY &thePoly = *clippedPoly.poly;
 		
 		//make sure all the textures we'll need are cached
 		//(otherwise on a multithreaded system there will be multiple writers--
 		//this SHOULD be read-only, although some day the texcache may collect statistics or something
 		//and then it won't be safe.
-		if (lastTexParams != thePoly.texParam || lastTexPalette != thePoly.texPalette)
-		{
-			lastTexItem = (SoftRasterizerTexture *)texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
-			if (lastTexItem == NULL)
-			{
-				lastTexItem = new SoftRasterizerTexture(thePoly.texParam, thePoly.texPalette);
-				texCache.Add(lastTexItem);
-			}
-			
-			if (lastTexItem->IsLoadNeeded())
-			{
-				lastTexItem->SetUseDeposterize(this->_textureDeposterize);
-				lastTexItem->SetScalingFactor(this->_textureScalingFactor);
-				lastTexItem->Load();
-			}
-			
-			lastTexParams = thePoly.texParam;
-			lastTexPalette = thePoly.texPalette;
-		}
-		
-		//printf("%08X %d\n",poly->texParam,rasterizerUnit[0].textures.currentNum);
-		polyTexKeys[i] = lastTexItem;
+		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, gfx3d.renderState.enableTexturing);
 	}
 }
 
@@ -1631,7 +1606,7 @@ void SoftRasterizerRenderer::performBackfaceTests()
 {
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
 	{
-		const GFX3D_Clipper::TClippedPoly &clippedPoly = clippedPolys[i];
+		const GFX3D_Clipper::TClippedPoly &clippedPoly = this->clippedPolys[i];
 		const POLY &thePoly = *clippedPoly.poly;
 		const PolygonType type = clippedPoly.type;
 		const VERT *verts = &clippedPoly.clipVerts[0];
@@ -1688,7 +1663,7 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 	if (rasterizerCores >= 4)
 	{
 		rasterizerUnitTask[0].execute(&SoftRasterizer_RunCalculateVertices, this);
-		rasterizerUnitTask[1].execute(&SoftRasterizer_RunSetupTextures, this);
+		rasterizerUnitTask[1].execute(&SoftRasterizer_RunGetAndLoadAllTextures, this);
 		rasterizerUnitTask[2].execute(&SoftRasterizer_RunUpdateTables, this);
 		rasterizerUnitTask[3].execute(&SoftRasterizer_RunClearFramebuffer, this);
 		this->_stateSetupNeedsFinish = true;
@@ -1698,7 +1673,7 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 		this->performViewportTransforms<false>();
 		this->performBackfaceTests();
 		this->performCoordAdjustment();
-		this->setupTextures();
+		this->GetAndLoadAllTextures();
 		this->UpdateToonTable(engine.renderState.u16ToonTable);
 		
 		if (this->currentRenderState->enableEdgeMarking)
@@ -2023,6 +1998,30 @@ END_EDGE_MARK: ;
 	}
 	
 	return RENDER3DERROR_NOERR;
+}
+
+SoftRasterizerTexture* SoftRasterizerRenderer::GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing)
+{
+	SoftRasterizerTexture *theTexture = (SoftRasterizerTexture *)texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
+	if (theTexture == NULL)
+	{
+		theTexture = new SoftRasterizerTexture(thePoly.texParam, thePoly.texPalette);
+		texCache.Add(theTexture);
+	}
+	
+	const NDSTextureFormat packFormat = theTexture->GetPackFormat();
+	const bool isTextureEnabled = ( (packFormat != TEXMODE_NONE) && enableTexturing );
+	
+	theTexture->SetRenderEnabled(isTextureEnabled);
+	
+	if (theTexture->IsLoadNeeded() && isTextureEnabled)
+	{
+		theTexture->SetUseDeposterize(this->_textureDeposterize);
+		theTexture->SetScalingFactor(this->_textureScalingFactor);
+		theTexture->Load();
+	}
+	
+	return theTexture;
 }
 
 Render3DError SoftRasterizerRenderer::UpdateToonTable(const u16 *toonTableBuffer)

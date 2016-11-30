@@ -40,17 +40,30 @@ struct SoftRasterizerPostProcessParams
 
 class SoftRasterizerTexture : public Render3DTexture
 {
+private:
+	void _clamp(s32 &val, const int size, const s32 sizemask) const;
+	void _hclamp(s32 &val) const;
+	void _vclamp(s32 &val) const;
+	void _repeat(s32 &val, const int size, const s32 sizemask) const;
+	void _hrepeat(s32 &val) const;
+	void _vrepeat(s32 &val) const;
+	void _flip(s32 &val, const int size, const s32 sizemask) const;
+	void _hflip(s32 &val) const;
+	void _vflip(s32 &val) const;
+	
 protected:
 	u32 *_unpackData;
+	u32 *_customBuffer;
 	
 	u32 *_renderData;
-	u32 _renderWidth;
-	u32 _renderHeight;
-	u32 _renderWidthMask;
-	u32 _renderHeightMask;
+	s32 _renderWidth;
+	s32 _renderHeight;
+	s32 _renderWidthMask;
+	s32 _renderHeightMask;
 	u32 _renderWidthShift;
+	u8 _renderWrapMode;
 	
-	u32 *_customBuffer;
+	bool _renderEnabled;
 	
 public:
 	SoftRasterizerTexture(u32 texAttributes, u32 palAttributes);
@@ -61,11 +74,17 @@ public:
 	u32* GetUnpackData();
 	
 	u32* GetRenderData();
-	u32 GetRenderWidth() const;
-	u32 GetRenderHeight() const;
-	u32 GetRenderWidthMask() const;
-	u32 GetRenderHeightMask() const;
+	s32 GetRenderWidth() const;
+	s32 GetRenderHeight() const;
+	s32 GetRenderWidthMask() const;
+	s32 GetRenderHeightMask() const;
 	u32 GetRenderWidthShift() const;
+	u8 GetRenderWrapMode() const;
+	void SetRenderWrapMode(u32 texParam);
+	bool IsRenderEnabled() const;
+	void SetRenderEnabled(bool isEnabled);
+	
+	void GetRenderSamplerCoordinates(s32 &iu, s32 &iv) const;
 	
 	void SetUseDeposterize(bool willDeposterize);
 	void SetScalingFactor(size_t scalingFactor);
@@ -107,7 +126,7 @@ public:
 	FragmentColor toonColor32LUT[32];
 	GFX3D_Clipper::TClippedPoly *clippedPolys;
 	FragmentAttributesBuffer *_framebufferAttributes;
-	SoftRasterizerTexture *polyTexKeys[POLYLIST_SIZE];
+	SoftRasterizerTexture *_textureList[POLYLIST_SIZE];
 	bool polyVisible[POLYLIST_SIZE];
 	bool polyBackfacing[POLYLIST_SIZE];
 	GFX3D_State *currentRenderState;
@@ -119,10 +138,12 @@ public:
 	template<bool CUSTOM> void performViewportTransforms();
 	void performBackfaceTests();
 	void performCoordAdjustment();
-	void setupTextures();
+	void GetAndLoadAllTextures();
 	Render3DError UpdateEdgeMarkColorTable(const u16 *edgeMarkColorTable);
 	Render3DError UpdateFogTable(const u8 *fogDensityTable);
 	Render3DError RenderEdgeMarkingAndFog(const SoftRasterizerPostProcessParams &param);
+	
+	SoftRasterizerTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
 	
 	// Base rendering methods
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
