@@ -2600,9 +2600,9 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 	}
 #endif
 	
-	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHead;
-	compInfo.target.lineColor32 = (FragmentColor *)compInfo.target.lineColorHead;
-	compInfo.target.lineLayerID = compInfo.target.lineLayerIDHead;
+	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHeadCustom;
+	compInfo.target.lineColor32 = (FragmentColor *)compInfo.target.lineColorHeadCustom;
+	compInfo.target.lineLayerID = compInfo.target.lineLayerIDHeadCustom;
 	
 #ifdef ENABLE_SSE2
 	const size_t ssePixCount = (compInfo.line.widthCustom - (compInfo.line.widthCustom % 16));
@@ -2707,9 +2707,9 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
 	
 	compInfo.target.xNative = 0;
 	compInfo.target.xCustom = 0;
-	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHead;
-	compInfo.target.lineColor32 = (FragmentColor *)compInfo.target.lineColorHead;
-	compInfo.target.lineLayerID = compInfo.target.lineLayerIDHead;
+	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHeadCustom;
+	compInfo.target.lineColor32 = (FragmentColor *)compInfo.target.lineColorHeadCustom;
+	compInfo.target.lineLayerID = compInfo.target.lineLayerIDHeadCustom;
 	
 	size_t i = 0;
 	
@@ -3881,10 +3881,14 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 					
 					if (this->isLineRenderNative[compInfo.line.indexNative])
 					{
+						compInfo.target.lineColorHead = compInfo.target.lineColorHeadNative;
+						compInfo.target.lineLayerIDHead = compInfo.target.lineLayerIDHeadNative;
 						this->_RenderLine_LayerBG<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST, false>(compInfo);
 					}
 					else
 					{
+						compInfo.target.lineColorHead = compInfo.target.lineColorHeadCustom;
+						compInfo.target.lineLayerIDHead = compInfo.target.lineLayerIDHeadCustom;
 						this->_RenderLine_LayerBG<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST, true>(compInfo);
 					}
 				} //layer enabled
@@ -4462,8 +4466,6 @@ FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG_Final(GPUEngineCompositorInf
 	// up into separate steps. If rendering at a custom size, do the pixel rendering step now.
 	if ( !ISDEBUGRENDER && (ISCUSTOMRENDERINGNEEDED || !this->isLineRenderNative[compInfo.line.indexNative]) )
 	{
-		compInfo.target.lineLayerID = compInfo.target.lineLayerIDHeadCustom;
-		
 		if (useCustomVRAM)
 		{
 			this->_RenderPixelsCustomVRAM<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT>(compInfo);
