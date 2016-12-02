@@ -7360,6 +7360,16 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 		if (!isFrameSkipRequested)
 		{
 			this->UpdateRenderProperties();
+			
+			if (CommonSettings.showGpu.main && this->_engineMain->GetIsMasterBrightFullIntensity())
+			{
+				this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, true>();
+			}
+			
+			if (CommonSettings.showGpu.sub && this->_engineSub->GetIsMasterBrightFullIntensity())
+			{
+				this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, true>();
+			}
 		}
 	}
 	
@@ -7440,11 +7450,7 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 			{
 				if (CommonSettings.showGpu.main)
 				{
-					if (this->_engineMain->GetIsMasterBrightFullIntensity())
-					{
-						this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, true>();
-					}
-					else
+					if (!this->_engineMain->GetIsMasterBrightFullIntensity())
 					{
 						this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, false>();
 					}
@@ -7456,11 +7462,7 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 				
 				if (CommonSettings.showGpu.sub)
 				{
-					if (this->_engineSub->GetIsMasterBrightFullIntensity())
-					{
-						this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, true>();
-					}
-					else
+					if (!this->_engineSub->GetIsMasterBrightFullIntensity())
 					{
 						this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, false>();
 					}
