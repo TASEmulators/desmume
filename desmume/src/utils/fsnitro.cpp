@@ -17,6 +17,11 @@
 
 #include <stdio.h>
 #include <string>
+#include <cstring>
+
+#ifndef HOST_WINDOWS
+#include <unistd.h>
+#endif
 
 #include "types.h"
 #include "fsnitro.h"
