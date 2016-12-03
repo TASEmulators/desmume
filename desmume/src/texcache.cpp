@@ -397,6 +397,8 @@ TextureStore::TextureStore()
 	_packIndexData = NULL;
 	_packSizeFirstSlot = 0;
 	
+	_packTotalSize = 0;
+	
 	_suspectedInvalid = false;
 	_assumedInvalid = false;
 	_isLoadNeeded = false;
@@ -444,7 +446,9 @@ TextureStore::TextureStore(const u32 texAttributes, const u32 palAttributes)
 		_packIndexAddress = indexBase + indexOffset;
 		_packIndexSize = (_sizeS * _sizeT) >> 3;
 		
-		_packData = (u8 *)malloc_alignedCacheLine(_packSize + _packIndexSize + _paletteSize);
+		_packTotalSize = _packSize + _packIndexSize + _paletteSize;
+		
+		_packData = (u8 *)malloc_alignedCacheLine(_packTotalSize);
 		_packIndexData = _packData + _packSize;
 		_paletteColorTable = (u16 *)(_packData + _packSize + _packIndexSize);
 		
@@ -457,10 +461,14 @@ TextureStore::TextureStore(const u32 texAttributes, const u32 palAttributes)
 		_packIndexSize = 0;
 		_packIndexData = NULL;
 		
-		_packData = (u8 *)malloc_alignedCacheLine(_packSize + _paletteSize);
+		_packTotalSize = _packSize + _paletteSize;
+		
+		_packData = (u8 *)malloc_alignedCacheLine(_packTotalSize);
 		_packIndexData = NULL;
 		_paletteColorTable = (u16 *)(_packData + _packSize);
 	}
+	
+	_workingData = (u8 *)malloc_alignedCacheLine(_packTotalSize);
 	
 	if (_paletteSize > 0)
 	{
@@ -485,13 +493,14 @@ TextureStore::TextureStore(const u32 texAttributes, const u32 palAttributes)
 	_assumedInvalid = false;
 	_isLoadNeeded = true;
 	
-	_cacheSize = _packSize + _paletteSize + _packIndexSize;
+	_cacheSize = _packTotalSize;
 	_cacheAge = 0;
 	_cacheUsageCount = 0;
 }
 
 TextureStore::~TextureStore()
 {
+	free_aligned(this->_workingData);
 	free_aligned(this->_packData);
 }
 
@@ -746,11 +755,10 @@ void TextureStore::Update()
 {
 	MemSpan currentPaletteMS = MemSpan_TexPalette(this->_paletteAddress, this->_paletteSize, false);
 	MemSpan currentPackedTexDataMS = MemSpan_TexMem(this->_packAddress, this->_packSize);
-	
 	MemSpan currentPackedTexIndexMS;
+	
 	if (this->_packFormat == TEXMODE_4X4)
 	{
-		//determine the location for 4x4 index data
 		currentPackedTexIndexMS = MemSpan_TexMem(this->_packIndexAddress, this->_packIndexSize);
 	}
 	
@@ -764,62 +772,50 @@ void TextureStore::Update()
 
 void TextureStore::VRAMCompareAndUpdate()
 {
-	bool needUpdateTexData = false;
-	bool needUpdatePalette = false;
-	
-	//dump the palette to a temp buffer, so that we don't have to worry about memory mapping.
-	//this isnt such a problem with texture memory, because we read sequentially from it.
-	//however, we read randomly from palette memory, so the mapping is more costly.
 	MemSpan currentPaletteMS = MemSpan_TexPalette(this->_paletteAddress, this->_paletteSize, false);
+	MemSpan currentPackedTexDataMS = MemSpan_TexMem(this->_packAddress, this->_packSize);
+	MemSpan currentPackedTexIndexMS;
 	
-	CACHE_ALIGN u16 currentPalette[256];
+	currentPackedTexDataMS.dump(this->_workingData);
+	this->_packSizeFirstSlot = currentPackedTexDataMS.items[0].len;
+	
+	if (this->_packFormat == TEXMODE_4X4)
+	{
+		currentPackedTexIndexMS = MemSpan_TexMem(this->_packIndexAddress, this->_packIndexSize);
+		currentPackedTexIndexMS.dump(this->_workingData + this->_packSize);
+	}
+	
 #ifdef WORDS_BIGENDIAN
-	currentPaletteMS.dump16(currentPalette);
+	currentPaletteMS.dump16(this->_workingData + this->_packSize + this->_packIndexSize);
 #else
-	currentPaletteMS.dump(currentPalette);
+	currentPaletteMS.dump(this->_workingData + this->_packSize + this->_packIndexSize);
 #endif
 	
-	//when the palettes dont match:
-	//note that we are considering 4x4 textures to have a palette size of 0.
-	//they really have a potentially HUGE palette, too big for us to handle like a normal palette,
-	//so they go through a different system
-	if ( (this->_paletteSize > 0) && memcmp(this->_paletteColorTable, currentPalette, this->_paletteSize) )
+	// Compare the texture's packed data with what's being read from VRAM.
+	//
+	// Note that we are considering 4x4 textures to have a palette size of 0.
+	// They really have a potentially HUGE palette, too big for us to handle
+	// like a normal palette, so they go through a different system.
+	if (memcmp(this->_packData, this->_workingData, this->_packTotalSize))
 	{
-		needUpdatePalette = true;
-	}
-	
-	//analyze the texture memory mapping and the specifications of this texture
-	MemSpan currentPackedTexDataMS = MemSpan_TexMem(this->_packAddress, this->_packSize);
-	
-	//when the texture data doesn't match
-	if ( (this->_packSize > 0) && currentPackedTexDataMS.memcmp(this->_packData, this->_packSize) )
-	{
-		needUpdateTexData = true;
-	}
-	
-	//if the texture is 4x4 then the index data must match
-	MemSpan currentPackedTexIndexMS;
-	if (this->GetPackFormat() == TEXMODE_4X4)
-	{
-		//determine the location for 4x4 index data
-		currentPackedTexIndexMS = MemSpan_TexMem(this->_packIndexAddress, this->_packIndexSize);
+		// If the packed data is different from VRAM, then swap pointers with
+		// the working buffer and flag this texture for reload.
+		u8 *tempDataPtr = this->_packData;
 		
-		if ( (this->_packIndexSize > 0) && currentPackedTexIndexMS.memcmp(this->_packIndexData, this->_packIndexSize) )
+		this->_packData = this->_workingData;
+		
+		if (this->_packIndexSize == 0)
 		{
-			needUpdateTexData = true;
-			needUpdatePalette = true;
+			this->_packIndexData = NULL;
+			this->_paletteColorTable = (u16 *)(this->_packData + this->_packSize);
 		}
-	}
-	
-	if (needUpdateTexData)
-	{
-		this->SetTextureData(currentPackedTexDataMS, currentPackedTexIndexMS);
-		this->_isLoadNeeded = true;
-	}
-	
-	if (needUpdatePalette)
-	{
-		this->SetTexturePalette(currentPalette);
+		else
+		{
+			this->_packIndexData = this->_packData + this->_packSize;
+			this->_paletteColorTable = (u16 *)(this->_packData + this->_packSize + this->_packIndexSize);
+		}
+		
+		this->_workingData = tempDataPtr;
 		this->_isLoadNeeded = true;
 	}
 	

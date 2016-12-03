@@ -109,9 +109,12 @@ protected:
 	u8 *_packIndexData;
 	u32 _packSizeFirstSlot;
 	
+	size_t _packTotalSize;
+	
 	bool _suspectedInvalid;
 	bool _assumedInvalid;
 	bool _isLoadNeeded;
+	u8 *_workingData;
 	
 	TextureCacheKey _cacheKey;
 	size_t _cacheSize;
