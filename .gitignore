@@ -29,6 +29,9 @@ Makefile.in
 /desmume/src/frontend/posix/gtk/Makefile
 /desmume/src/frontend/posix/gtk/desmume
 /desmume/src/frontend/posix/gtk/doc/Makefile
+/desmume/src/frontend/posix/gtk-glade/Makefile
+/desmume/src/frontend/posix/gtk-glade/desmume-glade
+/desmume/src/frontend/posix/gtk-glade/doc/Makefile
 /desmume/src/frontend/posix/install-sh
 
 # Xcode

@@ -1,5 +1,5 @@
 SUBDIRS = doc
-include $(top_srcdir)/src/desmume.mk
+include ../desmume.mk
 
 AM_CPPFLAGS += $(SDL_CFLAGS) $(GTKGLEXT_CFLAGS) $(LIBGLADE_CFLAGS) \
 		$(GTHREAD_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS) \
@@ -27,8 +27,8 @@ desmume_glade_SOURCES =  \
 	dTools/callbacks_dtools.h \
 	dTools/dTools_display.h \
 	gdk_3Demu.cpp gdk_3Demu.h \
-	../sndsdl.h ../sndsdl.cpp ../ctrlssdl.h ../ctrlssdl.cpp \
-	../driver.h ../driver.cpp
+	../shared/sndsdl.h ../shared/sndsdl.cpp ../shared/ctrlssdl.h ../shared/ctrlssdl.cpp \
+	../../../driver.h ../../../driver.cpp
 
 desmume_glade_LDADD = ../libdesmume.a \
 			$(SDL_LIBS) $(GTKGLEXT_LIBS) $(LIBGLADE_LIBS) \
