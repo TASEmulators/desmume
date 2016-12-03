@@ -735,6 +735,8 @@ void OpenGLTexture::Load(bool isNewTexture)
 		default:
 			break;
 	}
+	
+	this->_isLoadNeeded = false;
 }
 
 GLuint OpenGLTexture::GetID() const
@@ -1311,8 +1313,6 @@ OpenGLTexture* OpenGLRenderer::GetLoadedTextureFromPolygon(const POLY &thePoly, 
 	{
 		theTexture = new OpenGLTexture(thePoly.texParam, thePoly.texPalette);
 		theTexture->SetUnpackBuffer(this->_workingTextureUnpackBuffer);
-		theTexture->SetDeposterizeBuffer(this->_workingTextureUnpackBuffer, this->_textureDeposterizeDstSurface.workingSurface[0]);
-		theTexture->SetUpscalingBuffer(this->_textureUpscaleBuffer);
 		
 		texCache.Add(theTexture);
 	}
@@ -1324,9 +1324,15 @@ OpenGLTexture* OpenGLRenderer::GetLoadedTextureFromPolygon(const POLY &thePoly, 
 	
 	if (theTexture->IsLoadNeeded() && isTextureEnabled)
 	{
+		const size_t previousScalingFactor = theTexture->GetScalingFactor();
+		
+		theTexture->SetDeposterizeBuffer(this->_workingTextureUnpackBuffer, this->_textureDeposterizeDstSurface.workingSurface[0]);
+		theTexture->SetUpscalingBuffer(this->_textureUpscaleBuffer);
+		
 		theTexture->SetUseDeposterize(this->_textureDeposterize);
 		theTexture->SetScalingFactor(this->_textureScalingFactor);
-		theTexture->Load(isNewTexture);
+		
+		theTexture->Load(isNewTexture || (previousScalingFactor != this->_textureScalingFactor));
 	}
 	
 	return theTexture;

@@ -74,6 +74,7 @@ public:
 	void Invalidate();
 	void Evict();
 	void Reset();
+	void ForceReloadAllTextures();
 	
 	TextureStore* GetTexture(u32 texAttributes, u32 palAttributes);
 	

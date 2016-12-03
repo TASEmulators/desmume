@@ -1179,6 +1179,8 @@ void SoftRasterizerTexture::Load()
 		
 		ColorspaceConvertBuffer8888To6665<false, false>(this->_renderData, this->_renderData, this->_renderWidth * this->_renderHeight);
 	}
+	
+	this->_isLoadNeeded = false;
 }
 
 u32* SoftRasterizerTexture::GetUnpackData()

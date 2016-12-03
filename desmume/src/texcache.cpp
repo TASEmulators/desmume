@@ -315,6 +315,14 @@ void TextureCache::Reset()
 	memset(this->_paletteDump, 0, sizeof(this->_paletteDump));
 }
 
+void TextureCache::ForceReloadAllTextures()
+{
+	for (TextureCacheMap::iterator it(this->_texCacheMap.begin()); it != this->_texCacheMap.end(); ++it)
+	{
+		it->second->SetLoadNeeded();
+	}
+}
+
 TextureStore* TextureCache::GetTexture(u32 texAttributes, u32 palAttributes)
 {
 	TextureStore *theTexture = NULL;
@@ -602,7 +610,7 @@ size_t TextureStore::GetUnpackSizeUsingFormat(const TextureStoreUnpackFormat tex
 
 template <TextureStoreUnpackFormat TEXCACHEFORMAT>
 void TextureStore::Unpack(u32 *unpackBuffer)
-{	
+{
 	// Whenever a 1-bit alpha or no-alpha texture is unpacked (this means any texture
 	// format that is not A3I5 or A5I3), set all transparent pixels to 0 so that 3D
 	// renderers can assume that the transparent color is 0 during texture sampling.
@@ -651,13 +659,12 @@ void TextureStore::Unpack(u32 *unpackBuffer)
 #ifdef DO_DEBUG_DUMP_TEXTURE
 	this->DebugDump();
 #endif
-	
-	this->_isLoadNeeded = false;
 }
 
 void TextureStore::Load(void *targetBuffer)
 {
 	this->Unpack<TexFormat_32bpp>((u32 *)targetBuffer);
+	this->_isLoadNeeded = false;
 }
 
 bool TextureStore::IsSuspectedInvalid() const

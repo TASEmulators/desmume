@@ -408,7 +408,7 @@ void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDep
 {
 	const bool isScaleValid = ( (scalingFactor == 2) || (scalingFactor == 4) );
 	const size_t newScalingFactor = (isScaleValid) ? scalingFactor : 1;
-	bool needTexCacheReset = false;
+	bool needTextureReload = false;
 	
 	if ( willDeposterize && !this->_textureDeposterize)
 	{
@@ -422,7 +422,7 @@ void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDep
 		memset(this->_textureDeposterizeDstSurface.Surface, 0, bufferSize);
 		
 		this->_textureDeposterize = true;
-		needTexCacheReset = true;
+		needTextureReload = true;
 	}
 	else if (!willDeposterize && this->_textureDeposterize)
 	{
@@ -431,7 +431,7 @@ void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDep
 		this->_textureDeposterizeDstSurface.workingSurface[0] = NULL;
 		
 		this->_textureDeposterize = false;
-		needTexCacheReset = true;
+		needTextureReload = true;
 	}
 	
 	if (newScalingFactor != this->_textureScalingFactor)
@@ -442,14 +442,14 @@ void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDep
 		this->_textureUpscaleBuffer = newTextureBuffer;
 		free_aligned(oldTextureBuffer);
 		
-		needTexCacheReset = true;
+		needTextureReload = true;
 	}
 	
 	this->_textureSmooth = willSmooth;
 	
-	if (needTexCacheReset)
+	if (needTextureReload)
 	{
-		texCache.Reset();
+		texCache.ForceReloadAllTextures();
 	}
 }
 
