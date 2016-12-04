@@ -353,6 +353,8 @@ GPUEngineBase::GPUEngineBase()
 	_enableColorEffectCustom[GPULayerID_BG2] = NULL;
 	_enableColorEffectCustom[GPULayerID_BG3] = NULL;
 	_enableColorEffectCustom[GPULayerID_OBJ] = NULL;
+	
+	_willApplyMasterBrightnessPerScanline = true;
 }
 
 GPUEngineBase::~GPUEngineBase()
@@ -490,6 +492,9 @@ void GPUEngineBase::_Reset_Base()
 	renderState.blendEVA = 0;
 	renderState.blendEVB = 0;
 	renderState.blendEVY = 0;
+	renderState.masterBrightnessMode = GPUMasterBrightMode_Disable;
+	renderState.masterBrightnessIntensity = 0;
+	renderState.masterBrightnessIsFullIntensity = false;
 	renderState.blendTable555 = (TBlendTable *)&GPUEngineBase::_blendTable555[renderState.blendEVA][renderState.blendEVB][0][0];
 	renderState.brightnessUpTable555 = &GPUEngineBase::_brightnessUpTable555[renderState.blendEVY][0];
 	renderState.brightnessUpTable666 = &GPUEngineBase::_brightnessUpTable666[renderState.blendEVY][0];
@@ -604,8 +609,6 @@ void GPUEngineBase::_Reset_Base()
 	renderState.spriteRenderMode = SpriteRenderMode_Sprite1D;
 	renderState.spriteBoundary = 0;
 	renderState.spriteBMPBoundary = 0;
-	
-	this->_isMasterBrightFullIntensity = false;
 	
 	this->savedBG2X.value = 0;
 	this->savedBG2Y.value = 0;
@@ -1117,14 +1120,18 @@ FORCEINLINE __m128i GPUEngineBase::_ColorEffectBlend3D(const __m128i &colA_Lo, c
 
 void GPUEngineBase::ParseReg_MASTER_BRIGHT()
 {
+	const IOREG_MASTER_BRIGHT &MASTER_BRIGHT = this->_IORegisterMap->MASTER_BRIGHT;
+	GPUEngineRenderState &renderState = this->_currentRenderState;
+	
 	if (!nds.isInVblank())
 	{
 		PROGINFO("Changing master brightness outside of vblank, line=%d\n", nds.VCount);
 	}
 	
-	const IOREG_MASTER_BRIGHT &MASTER_BRIGHT = this->_IORegisterMap->MASTER_BRIGHT;
-	this->_isMasterBrightFullIntensity = ( (MASTER_BRIGHT.Intensity >= 16) && ((MASTER_BRIGHT.Mode == GPUMasterBrightMode_Up) || (MASTER_BRIGHT.Mode == GPUMasterBrightMode_Down)) );
-	//printf("MASTER BRIGHTNESS %d to %d at %d\n",this->core,MASTER_BRIGHT.Intensity,nds.VCount);
+	renderState.masterBrightnessIntensity = (MASTER_BRIGHT.Intensity >= 16) ? 16 : MASTER_BRIGHT.Intensity;
+	renderState.masterBrightnessMode = (GPUMasterBrightMode)MASTER_BRIGHT.Mode;
+	renderState.masterBrightnessIsFullIntensity = ( (MASTER_BRIGHT.Intensity >= 16) && ((MASTER_BRIGHT.Mode == GPUMasterBrightMode_Up) || (MASTER_BRIGHT.Mode == GPUMasterBrightMode_Down)) );
+	//printf("MASTER BRIGHTNESS %d to %d at %d\n", this->_engineID, MASTER_BRIGHT.Intensity, nds.VCount);
 }
 
 //Sets up LCD control variables for Display Engines A and B for quick reading
@@ -1342,8 +1349,16 @@ void GPUEngineBase::_RenderLine_Clear(GPUEngineCompositorInfo &compInfo)
 	this->_itemsForPriority[3].nbPixelsX = 0;
 }
 
+void GPUEngineBase::UpdateRenderStates(const size_t l)
+{
+	GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[l];
+	
+	this->_currentRenderState.backdropColor16 = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
+	compInfo.renderState = this->_currentRenderState;
+}
+
 template <NDSColorFormat OUTPUTFORMAT>
-void GPUEngineBase::RenderLine(const u16 l)
+void GPUEngineBase::RenderLine(const size_t l)
 {
 	// By default, do nothing.
 	this->UpdatePropertiesWithoutRender(l);
@@ -1383,7 +1398,18 @@ const GPU_IOREG& GPUEngineBase::GetIORegisterMap() const
 
 bool GPUEngineBase::GetIsMasterBrightFullIntensity() const
 {
-	return this->_isMasterBrightFullIntensity;
+	return this->_currentRenderState.masterBrightnessIsFullIntensity;
+}
+
+bool GPUEngineBase::IsMasterBrightFullIntensityAtLineZero() const
+{
+	return this->_currentCompositorInfo[0].renderState.masterBrightnessIsFullIntensity;
+}
+
+void GPUEngineBase::GetMasterBrightnessAtLineZero(GPUMasterBrightMode &outMode, u8 &outIntensity)
+{
+	outMode = this->_currentCompositorInfo[0].renderState.masterBrightnessMode;
+	outIntensity = this->_currentCompositorInfo[0].renderState.masterBrightnessIntensity;
 }
 
 /*****************************************************************************/
@@ -3442,6 +3468,8 @@ void GPUEngineBase::SpriteRenderDebug(const u16 lineIndex, u16 *dst)
 	compInfo.renderState.displayOutputMode = GPUDisplayMode_Normal;
 	compInfo.renderState.selectedLayerID = GPULayerID_OBJ;
 	compInfo.renderState.colorEffect = ColorEffect_Disable;
+	compInfo.renderState.masterBrightnessMode = GPUMasterBrightMode_Disable;
+	compInfo.renderState.masterBrightnessIsFullIntensity = false;
 	compInfo.renderState.spriteRenderMode = this->_currentRenderState.spriteRenderMode;
 	compInfo.renderState.spriteBoundary = this->_currentRenderState.spriteBoundary;
 	compInfo.renderState.spriteBMPBoundary = this->_currentRenderState.spriteBMPBoundary;
@@ -3818,10 +3846,7 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	itemsForPriority_t *item;
 	
-	this->_currentRenderState.backdropColor16 = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
-	
 	GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[l];
-	compInfo.renderState = this->_currentRenderState;
 	
 	// Optimization: For normal display mode, render straight to the output buffer when that is what we are going to end
 	// up displaying anyway. Otherwise, we need to use the working buffer.
@@ -4039,25 +4064,46 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT, bool ISFULLINTENSITYHINT>
-void GPUEngineBase::ApplyMasterBrightness()
+template <NDSColorFormat OUTPUTFORMAT>
+void GPUEngineBase::_RenderLine_MasterBrightness(const size_t l)
 {
-	const IOREG_MASTER_BRIGHT &MASTER_BRIGHT = this->_IORegisterMap->MASTER_BRIGHT;
-	const u32 intensity = MASTER_BRIGHT.Intensity;
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	const GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[l];
+	void *dstColorLine = (this->isLineRenderNative[l]) ? ((u8 *)this->nativeBuffer + (compInfo.line.blockOffsetNative * dispInfo.pixelBytes)) : ((u8 *)this->customBuffer + (compInfo.line.blockOffsetCustom * dispInfo.pixelBytes));
+	const size_t pixCount = (this->isLineRenderNative[l]) ? GPU_FRAMEBUFFER_NATIVE_WIDTH : compInfo.line.pixelCount;
 	
+	this->ApplyMasterBrightness<OUTPUTFORMAT, false>(dstColorLine,
+													 pixCount,
+													 compInfo.renderState.masterBrightnessMode,
+													 compInfo.renderState.masterBrightnessIntensity);
+}
+
+bool GPUEngineBase::WillApplyMasterBrightnessPerScanline() const
+{
+	return this->_willApplyMasterBrightnessPerScanline;
+}
+
+void GPUEngineBase::SetWillApplyMasterBrightnessPerScanline(bool willApply)
+{
+	this->_willApplyMasterBrightnessPerScanline = willApply;
+}
+
+template <NDSColorFormat OUTPUTFORMAT, bool ISFULLINTENSITYHINT>
+void GPUEngineBase::ApplyMasterBrightness(void *dst, const size_t pixCount, const GPUMasterBrightMode mode, const u8 intensity)
+{
 	if (!ISFULLINTENSITYHINT && (intensity == 0)) return;
 	
-	void *dst = this->renderedBuffer;
-	const size_t pixCount = this->renderedWidth * this->renderedHeight;
+	const bool isFullIntensity = (intensity >= 16);
+	const u8 intensityClamped = (isFullIntensity) ? 16 : intensity;
 	
-	switch (MASTER_BRIGHT.Mode)
+	switch (mode)
 	{
 		case GPUMasterBrightMode_Disable:
 			break;
 			
 		case GPUMasterBrightMode_Up:
 		{
-			if (!ISFULLINTENSITYHINT && !this->_isMasterBrightFullIntensity)
+			if (!ISFULLINTENSITYHINT && !isFullIntensity)
 			{
 				size_t i = 0;
 				
@@ -4066,7 +4112,7 @@ void GPUEngineBase::ApplyMasterBrightness()
 					case NDSColorFormat_BGR555_Rev:
 					{
 #ifdef ENABLE_SSE2
-						const __m128i intensity_vec128 = _mm_set1_epi16(intensity);
+						const __m128i intensity_vec128 = _mm_set1_epi16(intensityClamped);
 						
 						const size_t ssePixCount = pixCount - (pixCount % 8);
 						for (; i < ssePixCount; i += 8)
@@ -4083,7 +4129,7 @@ void GPUEngineBase::ApplyMasterBrightness()
 #endif
 						for (; i < pixCount; i++)
 						{
-							((u16 *)dst)[i] = GPUEngineBase::_brightnessUpTable555[intensity][ ((u16 *)dst)[i] & 0x7FFF ] | 0x8000;
+							((u16 *)dst)[i] = GPUEngineBase::_brightnessUpTable555[intensityClamped][ ((u16 *)dst)[i] & 0x7FFF ] | 0x8000;
 						}
 						break;
 					}
@@ -4092,7 +4138,7 @@ void GPUEngineBase::ApplyMasterBrightness()
 					case NDSColorFormat_BGR888_Rev:
 					{
 #ifdef ENABLE_SSE2
-						const __m128i intensity_vec128 = _mm_set1_epi16(intensity);
+						const __m128i intensity_vec128 = _mm_set1_epi16(intensityClamped);
 						
 						const size_t ssePixCount = pixCount - (pixCount % 4);
 						for (; i < ssePixCount; i += 4)
@@ -4109,7 +4155,7 @@ void GPUEngineBase::ApplyMasterBrightness()
 #endif
 						for (; i < pixCount; i++)
 						{
-							((FragmentColor *)dst)[i] = this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(((FragmentColor *)dst)[i], intensity);
+							((FragmentColor *)dst)[i] = this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(((FragmentColor *)dst)[i], intensityClamped);
 							((FragmentColor *)dst)[i].a = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F : 0xFF;
 						}
 						break;
@@ -4145,7 +4191,7 @@ void GPUEngineBase::ApplyMasterBrightness()
 			
 		case GPUMasterBrightMode_Down:
 		{
-			if (!ISFULLINTENSITYHINT && !this->_isMasterBrightFullIntensity)
+			if (!ISFULLINTENSITYHINT && !isFullIntensity)
 			{
 				size_t i = 0;
 				
@@ -4154,7 +4200,7 @@ void GPUEngineBase::ApplyMasterBrightness()
 					case NDSColorFormat_BGR555_Rev:
 					{
 #ifdef ENABLE_SSE2
-						const __m128i intensity_vec128 = _mm_set1_epi16(intensity);
+						const __m128i intensity_vec128 = _mm_set1_epi16(intensityClamped);
 						
 						const size_t ssePixCount = pixCount - (pixCount % 8);
 						for (; i < ssePixCount; i += 8)
@@ -4171,7 +4217,7 @@ void GPUEngineBase::ApplyMasterBrightness()
 #endif
 						for (; i < pixCount; i++)
 						{
-							((u16 *)dst)[i] = GPUEngineBase::_brightnessDownTable555[intensity][ ((u16 *)dst)[i] & 0x7FFF ] | 0x8000;
+							((u16 *)dst)[i] = GPUEngineBase::_brightnessDownTable555[intensityClamped][ ((u16 *)dst)[i] & 0x7FFF ] | 0x8000;
 						}
 						break;
 					}
@@ -4180,7 +4226,7 @@ void GPUEngineBase::ApplyMasterBrightness()
 					case NDSColorFormat_BGR888_Rev:
 					{
 #ifdef ENABLE_SSE2
-						const __m128i intensity_vec128 = _mm_set1_epi16(intensity);
+						const __m128i intensity_vec128 = _mm_set1_epi16(intensityClamped);
 						
 						const size_t ssePixCount = pixCount - (pixCount % 4);
 						for (; i < ssePixCount; i += 4)
@@ -4197,7 +4243,7 @@ void GPUEngineBase::ApplyMasterBrightness()
 #endif
 						for (; i < pixCount; i++)
 						{
-							((FragmentColor *)dst)[i] = this->_ColorEffectDecreaseBrightness(((FragmentColor *)dst)[i], intensity);
+							((FragmentColor *)dst)[i] = this->_ColorEffectDecreaseBrightness(((FragmentColor *)dst)[i], intensityClamped);
 							((FragmentColor *)dst)[i].a = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F : 0xFF;
 						}
 						break;
@@ -4529,6 +4575,8 @@ void GPUEngineBase::RenderLayerBG(const GPULayerID layerID, u16 *dstColorBuffer)
 	compInfo.renderState.selectedLayerID = layerID;
 	compInfo.renderState.selectedBGLayer = &this->_BGLayer[layerID];
 	compInfo.renderState.colorEffect = ColorEffect_Disable;
+	compInfo.renderState.masterBrightnessMode = GPUMasterBrightMode_Disable;
+	compInfo.renderState.masterBrightnessIsFullIntensity = false;
 	compInfo.renderState.spriteRenderMode = this->_currentRenderState.spriteRenderMode;
 	compInfo.renderState.spriteBoundary = this->_currentRenderState.spriteBoundary;
 	compInfo.renderState.spriteBMPBoundary = this->_currentRenderState.spriteBMPBoundary;
@@ -5223,15 +5271,16 @@ bool GPUEngineA::VerifyVRAMLineDidChange(const size_t blockID, const size_t l)
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
-void GPUEngineA::RenderLine(const u16 l)
+void GPUEngineA::RenderLine(const size_t l)
 {
 	const IOREG_DISPCAPCNT &DISPCAPCNT = this->_IORegisterMap->DISPCAPCNT;
 	const bool isDisplayCaptureNeeded = this->WillDisplayCapture(l);
+	const GPUEngineRenderState &renderState = this->_currentCompositorInfo[l].renderState;
 	
 	// Render the line
-	if ( (this->_currentRenderState.displayOutputMode == GPUDisplayMode_Normal) || isDisplayCaptureNeeded )
+	if ( (renderState.displayOutputMode == GPUDisplayMode_Normal) || isDisplayCaptureNeeded )
 	{
-		if (this->_currentRenderState.isAnyWindowEnabled)
+		if (renderState.isAnyWindowEnabled)
 		{
 			this->_RenderLine_Layers<OUTPUTFORMAT, true>(l);
 		}
@@ -5242,7 +5291,7 @@ void GPUEngineA::RenderLine(const u16 l)
 	}
 	
 	// Fill the display output
-	switch (this->_currentRenderState.displayOutputMode)
+	switch (renderState.displayOutputMode)
 	{
 		case GPUDisplayMode_Off: // Display Off(Display white)
 			this->_HandleDisplayModeOff<OUTPUTFORMAT>(l);
@@ -5276,6 +5325,11 @@ void GPUEngineA::RenderLine(const u16 l)
 		{
 			this->_RenderLine_DisplayCapture<OUTPUTFORMAT, GPU_FRAMEBUFFER_NATIVE_WIDTH>(l);
 		}
+	}
+	
+	if (this->_willApplyMasterBrightnessPerScanline)
+	{
+		this->_RenderLine_MasterBrightness<OUTPUTFORMAT>(l);
 	}
 }
 
@@ -6714,9 +6768,11 @@ void GPUEngineB::Reset()
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
-void GPUEngineB::RenderLine(const u16 l)
+void GPUEngineB::RenderLine(const size_t l)
 {
-	switch (this->_currentRenderState.displayOutputMode)
+	const GPUEngineRenderState &renderState = this->_currentCompositorInfo[l].renderState;
+	
+	switch (renderState.displayOutputMode)
 	{
 		case GPUDisplayMode_Off: // Display Off(Display white)
 			this->_HandleDisplayModeOff<OUTPUTFORMAT>(l);
@@ -6724,7 +6780,7 @@ void GPUEngineB::RenderLine(const u16 l)
 		
 		case GPUDisplayMode_Normal: // Display BG and OBJ layers
 		{
-			if (this->_currentRenderState.isAnyWindowEnabled)
+			if (renderState.isAnyWindowEnabled)
 			{
 				this->_RenderLine_Layers<OUTPUTFORMAT, true>(l);
 			}
@@ -6739,6 +6795,11 @@ void GPUEngineB::RenderLine(const u16 l)
 			
 		default:
 			break;
+	}
+	
+	if (this->_willApplyMasterBrightnessPerScanline)
+	{
+		this->_RenderLine_MasterBrightness<OUTPUTFORMAT>(l);
 	}
 }
 
@@ -7342,34 +7403,26 @@ void GPUSubsystem::SetWillAutoResolveToCustomBuffer(const bool willAutoResolve)
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
-void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
+void GPUSubsystem::RenderLine(const size_t l, bool isFrameSkipRequested)
 {
-	const bool isDisplayCaptureNeeded = this->_engineMain->WillDisplayCapture(l);
-	const bool isFramebufferRenderNeeded[2]	= { CommonSettings.showGpu.main && !this->_engineMain->GetIsMasterBrightFullIntensity(),
-											    CommonSettings.showGpu.sub && !this->_engineSub->GetIsMasterBrightFullIntensity() };
-	
 	if (!this->_frameNeedsFinish)
 	{
 		this->_event->DidFrameBegin(isFrameSkipRequested);
 		this->_frameNeedsFinish = true;
 	}
 	
+	this->_engineMain->UpdateRenderStates(l);
+	this->_engineSub->UpdateRenderStates(l);
+	
+	const bool isDisplayCaptureNeeded = this->_engineMain->WillDisplayCapture(l);
+	const bool isFramebufferRenderNeeded[2]	= { CommonSettings.showGpu.main && ( !this->_engineMain->IsMasterBrightFullIntensityAtLineZero() || this->_engineMain->WillApplyMasterBrightnessPerScanline() ),
+											    CommonSettings.showGpu.sub && ( !this->_engineSub->IsMasterBrightFullIntensityAtLineZero() || this->_engineSub->WillApplyMasterBrightnessPerScanline() ) };
+	
 	if (l == 0)
 	{
-		// Clear displays to black if they are turned off by the user.
 		if (!isFrameSkipRequested)
 		{
 			this->UpdateRenderProperties();
-			
-			if (CommonSettings.showGpu.main && this->_engineMain->GetIsMasterBrightFullIntensity())
-			{
-				this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, true>();
-			}
-			
-			if (CommonSettings.showGpu.sub && this->_engineSub->GetIsMasterBrightFullIntensity())
-			{
-				this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, true>();
-			}
 		}
 	}
 	
@@ -7450,9 +7503,16 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 			{
 				if (CommonSettings.showGpu.main)
 				{
-					if (!this->_engineMain->GetIsMasterBrightFullIntensity())
+					if (!this->_engineMain->WillApplyMasterBrightnessPerScanline())
 					{
-						this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, false>();
+						GPUMasterBrightMode mode;
+						u8 intensity;
+						
+						this->_engineMain->GetMasterBrightnessAtLineZero(mode, intensity);
+						this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, false>(this->_engineMain->renderedBuffer,
+																					  this->_engineMain->renderedWidth * this->_engineMain->renderedHeight,
+																					  mode,
+																					  intensity);
 					}
 				}
 				else
@@ -7462,9 +7522,16 @@ void GPUSubsystem::RenderLine(const u16 l, bool isFrameSkipRequested)
 				
 				if (CommonSettings.showGpu.sub)
 				{
-					if (!this->_engineSub->GetIsMasterBrightFullIntensity())
+					if (!this->_engineSub->WillApplyMasterBrightnessPerScanline())
 					{
-						this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, false>();
+						GPUMasterBrightMode mode;
+						u8 intensity;
+						
+						this->_engineSub->GetMasterBrightnessAtLineZero(mode, intensity);
+						this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, false>(this->_engineSub->renderedBuffer,
+																					 this->_engineSub->renderedWidth * this->_engineSub->renderedHeight,
+																					 mode,
+																					 intensity);
 					}
 				}
 				else
@@ -7591,6 +7658,6 @@ template void GPUEngineBase::ParseReg_BGnY<GPULayerID_BG2>();
 template void GPUEngineBase::ParseReg_BGnX<GPULayerID_BG3>();
 template void GPUEngineBase::ParseReg_BGnY<GPULayerID_BG3>();
 
-template void GPUSubsystem::RenderLine<NDSColorFormat_BGR555_Rev>(const u16 l, bool skip);
-template void GPUSubsystem::RenderLine<NDSColorFormat_BGR666_Rev>(const u16 l, bool skip);
-template void GPUSubsystem::RenderLine<NDSColorFormat_BGR888_Rev>(const u16 l, bool skip);
+template void GPUSubsystem::RenderLine<NDSColorFormat_BGR555_Rev>(const size_t l, bool skip);
+template void GPUSubsystem::RenderLine<NDSColorFormat_BGR666_Rev>(const size_t l, bool skip);
+template void GPUSubsystem::RenderLine<NDSColorFormat_BGR888_Rev>(const size_t l, bool skip);
