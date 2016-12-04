@@ -86,7 +86,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 	//TODO: "Code Hacks" from kodewerx (seems frail, but we should at least detect them and print some diagnostics
 	//TODO: v154 special stuff
 
-	bool v154 = false; //not supported yet
+	bool v154 = true; //on advice of power users, v154 is so old, we can assume all cheats use it
 
 	struct {
 		//LSB is 
@@ -245,7 +245,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			z = lo>>16;
 			if(v154) if(x == 0) x = st.offset;
 			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
-			if(y > ( (~z) & operand) )  st.status &= ~1;
+			if(y > ( (~z) & operand) ) st.status &= ~1;
 			break;
 
 		case 0x08:
@@ -258,7 +258,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			z = lo>>16;
 			if(v154) if(x == 0) x = st.offset;
 			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
-			if(y < ( (~z) & operand) )  st.status &= ~1;
+			if(y < ( (~z) & operand) ) st.status &= ~1;
 			break;
 
 		case 0x09:
@@ -271,7 +271,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			z = lo>>16;
 			if(v154) if(x == 0) x = st.offset;
 			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
-			if(y == ( (~z) & operand) )  st.status &= ~1;
+			if(y == ( (~z) & operand) ) st.status &= ~1;
 			break;
 
 		case 0x0A:
@@ -284,7 +284,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			z = lo>>16;
 			if(v154) if(x == 0) x = st.offset;
 			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
-			if(y != ( (~z) & operand) )  st.status &= ~1;
+			if(y != ( (~z) & operand) ) st.status &= ~1;
 			break;
 
 		case 0x0B:
@@ -492,6 +492,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 
 			{
 				u32 j=0,t=0,b=0;
+				if(y>0) i++; //skip over the current code
 				while(y>=4)
 				{
 					u32 tmp = list.code[i][t];
@@ -520,19 +521,22 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//attempting to emulate logic the way they may have implemented it, just in case
 			x = hi & 0x0FFFFFFF;
 			y = lo;
-			addr = x;
+			addr = st.offset;
+			operand = x; //mis-use of this variable to store dst
 			while(y>=4)
 			{
 				u32 tmp = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
-				_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(y,tmp);
+				_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(operand,tmp);
 				addr += 4;
+				operand += 4;
 				y -= 4;
 			}
 			while(y>0)
 			{
 				u8 tmp = _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
-				_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(y,tmp);
+				_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(operand,tmp);
 				addr += 1;
+				operand += 1;
 				y -= 1;
 			}
 			break;
