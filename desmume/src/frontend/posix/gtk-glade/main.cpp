@@ -29,7 +29,7 @@
 #include "rasterize.h"
 #include "desmume.h"
 #include "firmware.h"
-#include "desmume_config.h"
+#include "../shared/desmume_config.h"
 
 #ifdef GDB_STUB
 #include "../armcpu.h"

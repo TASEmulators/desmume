@@ -104,7 +104,7 @@ libdesmume_a_SOURCES = \
 	../../cheatSystem.cpp ../../cheatSystem.h \
 	../../texcache.cpp ../../texcache.h ../../rasterize.cpp ../../rasterize.h \
 	../../metaspu/metaspu.cpp ../../metaspu/metaspu.h \
-	../../filter/2xsai.cpp ../../filter/bilinear.cpp ../../filter/epx.cpp ../../filter/filter.h \
+	../../filter/2xsai.cpp ../../filter/bilinear.cpp ../../filter/deposterize.cpp ../../filter/epx.cpp ../../filter/filter.h \
 	../../filter/hq2x.cpp ../../filter/hq2x.h \
 	../../filter/hq3x.cpp ../../filter/hq3x.dat \
 	../../filter/hq4x.cpp ../../filter/hq4x.dat \
@@ -120,7 +120,23 @@ libdesmume_a_SOURCES = \
 	../../libretro-common/file/retro_stat.c \
 	../../libretro-common/rthreads/async_job.c \
 	../../libretro-common/rthreads/rsemaphore.c \
-	../../libretro-common/rthreads/rthreads.c
+	../../libretro-common/rthreads/rthreads.c \
+	../../libretro-common/encodings/encoding_utf.c
+
+if SUPPORT_SSE2
+libdesmume_a_SOURCES += \
+	../../utils/colorspacehandler/colorspacehandler_SSE2.cpp ../../utils/colorspacehandler/colorspacehandler_SSE2.h
+endif
+
+if SUPPORT_AVX2
+libdesmume_a_SOURCES += \
+	../../utils/colorspacehandler/colorspacehandler_AVX2.cpp ../../utils/colorspacehandler/colorspacehandler_AVX2.h
+endif
+
+if SUPPORT_ALTIVEC
+libdesmume_a_SOURCES += \
+	../../utils/colorspacehandler/colorspacehandler_AltiVec.cpp ../../utils/colorspacehandler/colorspacehandler_AltiVec.h
+endif
 
 if HAVE_JIT
 libdesmume_a_SOURCES += \

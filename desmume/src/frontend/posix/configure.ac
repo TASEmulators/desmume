@@ -379,6 +379,8 @@ AC_CONFIG_FILES([Makefile
                  cli/doc/Makefile
                  gtk/Makefile
                  gtk/doc/Makefile
+                 gtk-glade/Makefile
+                 gtk-glade/doc/Makefile
 ])
 AC_OUTPUT
 
