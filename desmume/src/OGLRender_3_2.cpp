@@ -1688,9 +1688,7 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, size_t polyRenderIndex)
 {
 	OpenGLTexture *theTexture = (OpenGLTexture *)this->_textureList[polyRenderIndex];
-	
-	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
-	
+		
 	// Check if we need to use textures
 	if (!theTexture->IsSamplingEnabled())
 	{
@@ -1699,6 +1697,7 @@ Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, size_t polyR
 	
 	PolygonTexParams texParams = thePoly.getTexParams();
 	
+	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (texParams.enableRepeatS ? (texParams.enableMirroredRepeatS ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (texParams.enableRepeatT ? (texParams.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	
