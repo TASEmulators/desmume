@@ -236,7 +236,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			break;
 
 		case 0x07:
-			//Greater Than (Conditional 16-Bit + Masking RAM Writes)
+			//Greater Than (Conditional 16-Bit + Masking RAM "Writes") (but WRITING has nothing to do with this)
 			//7XXXXXXX ZZZZYYYY
 			//Checks if (YYYY) > (not (ZZZZ) & halfword at [XXXX]).
 			//If not, the code(s) following this one are not executed (ie. execution status is set to false) until a code type D0 or D2 is encountered, or until the end of the code list is reached.
@@ -245,11 +245,11 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			z = lo>>16;
 			if(v154) if(x == 0) x = st.offset;
 			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
-			if(y > ( (~z) & operand) ) st.status &= ~1;
+			if(y > (u16)( (~z) & operand) ) st.status &= ~1;
 			break;
 
 		case 0x08:
-			//Less Than (Conditional 16-Bit + Masking RAM Writes)
+			//Less Than (Conditional 16-Bit + Masking RAM "Writes") (but WRITING has nothing to do with this)
 			//8XXXXXXX ZZZZYYYY
 			//Checks if (YYYY) < (not (ZZZZ) & halfword at [XXXX]).
 			//If not, the code(s) following this one are not executed (ie. execution status is set to false) until a code type D0 or D2 is encountered, or until the end of the code list is reached.
@@ -258,11 +258,11 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			z = lo>>16;
 			if(v154) if(x == 0) x = st.offset;
 			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
-			if(y < ( (~z) & operand) ) st.status &= ~1;
+			if(y < (u16)( (~z) & operand) ) st.status &= ~1;
 			break;
 
 		case 0x09:
-			//Equal To (Conditional 16-Bit + Masking RAM Writes)
+			//Equal To (Conditional 16-Bit + Masking RAM "Writes") (but WRITING has nothing to do with this)
 			//9XXXXXXX ZZZZYYYY
 			//Checks if (YYYY) == (not (ZZZZ) & halfword at [XXXX]).
 			//If not, the code(s) following this one are not executed (ie. execution status is set to false) until a code type D0 or D2 is encountered, or until the end of the code list is reached.
@@ -271,11 +271,11 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			z = lo>>16;
 			if(v154) if(x == 0) x = st.offset;
 			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
-			if(y == ( (~z) & operand) ) st.status &= ~1;
+			if(y == (u16)( (~z) & operand) ) st.status &= ~1;
 			break;
 
 		case 0x0A:
-			//Not Equal To (Conditional 16-Bit + Masking RAM Writes)
+			//Not Equal To (Conditional 16-Bit + Masking RAM "Writes") (but WRITING has nothing to do with this)
 			//AXXXXXXX ZZZZYYYY
 			//Checks if (YYYY) != (not (ZZZZ) & halfword at [XXXX]).
 			//If not, the code(s) following this one are not executed (ie. execution status is set to false) until a code type D0 or D2 is encountered, or until the end of the code list is reached.
@@ -284,7 +284,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			z = lo>>16;
 			if(v154) if(x == 0) x = st.offset;
 			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
-			if(y != ( (~z) & operand) ) st.status &= ~1;
+			if(y != (u16)( (~z) & operand) ) st.status &= ~1;
 			break;
 
 		case 0x0B:
