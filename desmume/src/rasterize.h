@@ -77,10 +77,8 @@ public:
 	s32 GetRenderWidthMask() const;
 	s32 GetRenderHeightMask() const;
 	u32 GetRenderWidthShift() const;
-	u8 GetRenderWrapMode() const;
-	void SetRenderWrapMode(u32 texParam);
 	
-	void GetRenderSamplerCoordinates(s32 &iu, s32 &iv) const;
+	void GetRenderSamplerCoordinates(const u8 wrapMode, s32 &iu, s32 &iv) const;
 	
 	void SetUseDeposterize(bool willDeposterize);
 	void SetScalingFactor(size_t scalingFactor);

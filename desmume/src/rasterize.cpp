@@ -332,6 +332,7 @@ protected:
 	SoftRasterizerTexture *currentTexture;
 	VERT* verts[MAX_CLIPPED_VERTS];
 	int polynum;
+	u8 _textureWrapMode;
 	
 public:
 	bool _debug_thisPoly;
@@ -353,7 +354,8 @@ public:
 			return RENDER3DERROR_NOERR;
 		}
 		
-		theTexture->SetRenderWrapMode(thePoly.texParam);
+		this->_textureWrapMode = (thePoly.texParam >> 16) & 0x0F;
+		
 		theTexture->ResetCacheAge();
 		theTexture->IncreaseCacheUsageCount(1);
 		
@@ -379,7 +381,7 @@ public:
 		}
 		
 		const u32 *textureData = this->currentTexture->GetRenderData();
-		this->currentTexture->GetRenderSamplerCoordinates(iu, iv);
+		this->currentTexture->GetRenderSamplerCoordinates(this->_textureWrapMode, iu, iv);
 		
 		FragmentColor color;
 		color.color = textureData[( iv << this->currentTexture->GetRenderWidthShift() ) + iu];
@@ -1218,19 +1220,9 @@ u32 SoftRasterizerTexture::GetRenderWidthShift() const
 	return this->_renderWidthShift;
 }
 
-u8 SoftRasterizerTexture::GetRenderWrapMode() const
+FORCEINLINE void SoftRasterizerTexture::GetRenderSamplerCoordinates(const u8 wrapMode, s32 &iu, s32 &iv) const
 {
-	return this->_renderWrapMode;
-}
-
-void SoftRasterizerTexture::SetRenderWrapMode(u32 texParam)
-{
-	this->_renderWrapMode = (texParam >> 16) & 0x0F;
-}
-
-FORCEINLINE void SoftRasterizerTexture::GetRenderSamplerCoordinates(s32 &iu, s32 &iv) const
-{
-	switch (this->_renderWrapMode)
+	switch (wrapMode)
 	{
 		//flip none
 		case 0x0: _hclamp(iu);  _vclamp(iv);  break;
