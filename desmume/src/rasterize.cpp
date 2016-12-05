@@ -1081,7 +1081,6 @@ SoftRasterizerTexture::SoftRasterizerTexture(u32 texAttributes, u32 palAttribute
 	_renderWidthMask = _renderWidth - 1;
 	_renderHeightMask = _renderHeight - 1;
 	_renderWidthShift = 0;
-	_renderWrapMode = 0;
 	
 	_deposterizeSrcSurface.Surface = (unsigned char *)_unpackData;
 	

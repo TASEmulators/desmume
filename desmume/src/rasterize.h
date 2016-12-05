@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2016 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -61,7 +61,6 @@ protected:
 	s32 _renderWidthMask;
 	s32 _renderHeightMask;
 	u32 _renderWidthShift;
-	u8 _renderWrapMode;
 	
 public:
 	SoftRasterizerTexture(u32 texAttributes, u32 palAttributes);
