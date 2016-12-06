@@ -23,10 +23,6 @@
 #include "fsnitro.h"
 #include "file/file_path.h"
 
-#ifndef HOST_WINDOWS
-#include <unistd.h>
-#endif
-
 FS_NITRO::FS_NITRO(u8 *cart_rom)
 {
 	inited = false;
@@ -484,11 +480,7 @@ bool FS_NITRO::extractFile(u16 id, std::string to)
 	if (!inited) return false;
 	if (id > numFiles) return false;
 
-	char curr_dir[MAX_PATH] = {0};
-	getcwd(curr_dir, sizeof(curr_dir));
-	chdir(to.c_str());
-	extract(id, fat[id].filename);
-	chdir(curr_dir);
+	extract(id, (to + path_default_slash() + fat[id].filename));
 
 	return true;
 }
@@ -502,10 +494,6 @@ bool FS_NITRO::extractAll(std::string to, void (*callback)(u32 current, u32 num)
 	path_mkdir(dataDir.c_str());
 	path_mkdir(overlayDir.c_str());
 
-	char curr_dir[MAX_PATH] = {0};
-	getcwd(curr_dir, sizeof(curr_dir));
-	chdir(dataDir.c_str());
-
 	for (u32 i = 0; i < numDirs; i++)
 	{
 		std::string tmp = fnt[i].filename;
@@ -516,27 +504,24 @@ bool FS_NITRO::extractAll(std::string to, void (*callback)(u32 current, u32 num)
 			tmp = fnt[parent].filename + path_default_slash() + tmp;
 			parent = (fnt[parent].parentID) & 0x0FFF;
 		}
-		path_mkdir(tmp.c_str());
+
+		path_mkdir((dataDir + path_default_slash() + tmp).c_str());
 	}
 
-	chdir(dataDir.c_str());
 	for (u32 i = 0; i < numFiles; i++)
 	{
 		if (fat[i].isOverlay) continue;
 		std::string fname = getFullPathByFileID(i, false);
-		extract(i, fname);
+		extract(i, (dataDir + path_default_slash() + fname));
 		if (callback)
 			callback(i, numFiles);
 	}
 
-	chdir(overlayDir.c_str());
 	for (u32 i = 0; i < numFiles; i++)
 	{
 		if (!fat[i].isOverlay) continue;
-		extract(i, fat[i].filename);
+		extract(i, (overlayDir + path_default_slash() + fat[i].filename));
 	}
-
-	chdir(curr_dir);
 
 	return true;
 }
