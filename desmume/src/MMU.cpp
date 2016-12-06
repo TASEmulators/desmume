@@ -5643,16 +5643,6 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 				//since the arm7 polls this (and EXTKEYIN) every frame, we shouldnt count this as an input check
 				//LagFrameFlag=0;
 				break;
-
-			case REG_EXTKEYIN:
-				{
-					//this is gross. we should generate this whole reg instead of poking it in ndssystem
-					u16 ret = MMU.ARM7_REG[0x136];
-					if(nds.isTouch) 
-						ret &= ~64;
-					else ret |= 64;
-					return ret;
-				}
 		}
 		return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]); 
 	}

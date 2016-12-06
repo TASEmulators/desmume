@@ -2881,16 +2881,14 @@ static void NDS_applyFinalInput()
 			countLid--;
 	}
 
-	u16 padExt = ((input.buttons.X ? 0 : 0x80) >> 7) |
-		((input.buttons.Y ? 0 : 0x80) >> 6) |
-		((input.buttons.G ? 0 : 0x80) >> 4) |
-		((LidClosed) << 7) |
-		0x0034;
-
-	padExt = LOCAL_TO_LE_16(padExt);
-	padExt |= (((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0070);
+	u16 padExt = (1<<2)|(1<<4)|(1<<5);
+	if(input.buttons.X) padExt |= 1<<0;
+	if(input.buttons.Y) padExt |= 1<<1;
+	if(input.buttons.G) padExt |= 1<<3; //debug button
+	if(!nds.isTouch)    padExt |= 1<<6; //~touch
+	if(LidClosed)       padExt |= 1<<7;
 	
-	((u16 *)MMU.ARM7_REG)[0x136>>1] = (u16)padExt;
+	((u16 *)MMU.ARM7_REG)[0x136>>1] = padExt;
 
 	InputDisplayString=MakeInputDisplayString(padExt, pad);
 
