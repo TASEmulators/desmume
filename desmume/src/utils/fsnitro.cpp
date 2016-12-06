@@ -19,13 +19,13 @@
 #include <string>
 #include <cstring>
 
-#ifndef HOST_WINDOWS
-#include <unistd.h>
-#endif
-
 #include "types.h"
 #include "fsnitro.h"
 #include "file/file_path.h"
+
+#ifndef HOST_WINDOWS
+#include <unistd.h>
+#endif
 
 FS_NITRO::FS_NITRO(u8 *cart_rom)
 {
