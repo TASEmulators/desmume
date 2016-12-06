@@ -4846,6 +4846,23 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 			case eng_3D_GXSTAT:
 				return MMU_new.gxstat.read(8,adr);
 
+			case REG_TM0CNTL+0: return _MMU_ARM9_read16(adr);
+			case REG_TM0CNTL+1: return _MMU_ARM9_read16(adr-1)>>8;
+			case REG_TM0CNTL+2: return _MMU_ARM9_read16(adr);
+			case REG_TM0CNTL+3: return _MMU_ARM9_read16(adr-1)>>8;
+			case REG_TM1CNTL+0: return _MMU_ARM9_read16(adr);
+			case REG_TM1CNTL+1: return _MMU_ARM9_read16(adr-1)>>8;
+			case REG_TM1CNTL+2: return _MMU_ARM9_read16(adr);
+			case REG_TM1CNTL+3: return _MMU_ARM9_read16(adr-1)>>8;
+			case REG_TM2CNTL+0: return _MMU_ARM9_read16(adr);
+			case REG_TM2CNTL+1: return _MMU_ARM9_read16(adr-1)>>8;
+			case REG_TM2CNTL+2: return _MMU_ARM9_read16(adr);
+			case REG_TM2CNTL+3: return _MMU_ARM9_read16(adr-1)>>8;
+			case REG_TM3CNTL+0: return _MMU_ARM9_read16(adr);
+			case REG_TM3CNTL+1: return _MMU_ARM9_read16(adr-1)>>8;
+			case REG_TM3CNTL+2: return _MMU_ARM9_read16(adr);
+			case REG_TM3CNTL+3: return _MMU_ARM9_read16(adr-1)>>8;
+
 			case REG_KEYINPUT:
 				LagFrameFlag=0;
 				break;
@@ -5083,15 +5100,16 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 
 			case REG_IPCFIFORECV :
 				return IPC_FIFOrecv(ARMCPU_ARM9);
+
 			case REG_TM0CNTL :
 			case REG_TM1CNTL :
 			case REG_TM2CNTL :
 			case REG_TM3CNTL :
 				{
-					u32 val = T1ReadWord(MMU.ARM9_REG, (adr + 2) & 0xFFF);
-					return MMU.timer[ARMCPU_ARM9][(adr&0xF)>>2] | (val<<16);
+					u32 hi = T1ReadWord(MMU.ARM9_REG, (adr + 2) & 0xFF);
+					return (hi<<16)|read_timer(ARMCPU_ARM9,(adr&0xF)>>2);
 				}	
-     
+
 			case REG_GCDATAIN: 
 				return MMU_readFromGC<ARMCPU_ARM9>();
 
@@ -5186,6 +5204,13 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 			case REG_AUXSPICNT:
 			case REG_AUXSPICNT+1:
 				write_auxspicnt(ARMCPU_ARM7, 8, adr & 1, val);
+				return;
+
+			case REG_TM0CNTL+0: case REG_TM0CNTL+1: case REG_TM0CNTL+2: case REG_TM0CNTL+3:
+			case REG_TM1CNTL+0: case REG_TM1CNTL+1: case REG_TM1CNTL+2: case REG_TM1CNTL+3:
+			case REG_TM2CNTL+0: case REG_TM2CNTL+1: case REG_TM2CNTL+2: case REG_TM2CNTL+3:
+			case REG_TM3CNTL+0: case REG_TM3CNTL+1: case REG_TM3CNTL+2: case REG_TM3CNTL+3:
+				printf("Unsupported 8bit write to timer registers");
 				return;
 
 			case REG_AUXSPIDATA:
@@ -5361,10 +5386,10 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				IPC_FIFOcnt(ARMCPU_ARM7, val);
 				return;
 
-            case REG_TM0CNTL :
-            case REG_TM1CNTL :
-            case REG_TM2CNTL :
-            case REG_TM3CNTL :
+			case REG_TM0CNTL :
+			case REG_TM1CNTL :
+			case REG_TM2CNTL :
+			case REG_TM3CNTL :
 				MMU.timerReload[ARMCPU_ARM7][(adr>>2)&3] = val;
 				return;
 			case REG_TM0CNTH :
@@ -5453,17 +5478,17 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 			
 			case REG_IF: REG_IF_WriteLong<ARMCPU_ARM7>(val); return;
 
-            case REG_TM0CNTL:
-            case REG_TM1CNTL:
-            case REG_TM2CNTL:
-            case REG_TM3CNTL:
-			{
-				int timerIndex = (adr>>2)&0x3;
-				MMU.timerReload[ARMCPU_ARM7][timerIndex] = (u16)val;
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr & 0xFFF, val);
-				write_timer(ARMCPU_ARM7, timerIndex, val>>16);
-				return;
-			}
+			case REG_TM0CNTL:
+			case REG_TM1CNTL:
+			case REG_TM2CNTL:
+			case REG_TM3CNTL:
+				{
+					int timerIndex = (adr>>2)&0x3;
+					MMU.timerReload[ARMCPU_ARM7][timerIndex] = (u16)val;
+					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr & 0xFFF, val);
+					write_timer(ARMCPU_ARM7, timerIndex, val>>16);
+					return;
+				}
 
 
 			case REG_IPCSYNC:
@@ -5558,6 +5583,23 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 			case REG_DISPx_VCOUNT+1: return (nds.VCount>>8)&0xFF;
 
 			case REG_WRAMSTAT: return MMU.WRAMCNT;
+
+			case REG_TM0CNTL+0: return _MMU_ARM7_read16(adr);
+			case REG_TM0CNTL+1: return _MMU_ARM7_read16(adr-1)>>8;
+			case REG_TM0CNTL+2: return _MMU_ARM7_read16(adr);
+			case REG_TM0CNTL+3: return _MMU_ARM7_read16(adr-1)>>8;
+			case REG_TM1CNTL+0: return _MMU_ARM7_read16(adr);
+			case REG_TM1CNTL+1: return _MMU_ARM7_read16(adr-1)>>8;
+			case REG_TM1CNTL+2: return _MMU_ARM7_read16(adr);
+			case REG_TM1CNTL+3: return _MMU_ARM7_read16(adr-1)>>8;
+			case REG_TM2CNTL+0: return _MMU_ARM7_read16(adr);
+			case REG_TM2CNTL+1: return _MMU_ARM7_read16(adr-1)>>8;
+			case REG_TM2CNTL+2: return _MMU_ARM7_read16(adr);
+			case REG_TM2CNTL+3: return _MMU_ARM7_read16(adr-1)>>8;
+			case REG_TM3CNTL+0: return _MMU_ARM7_read16(adr);
+			case REG_TM3CNTL+1: return _MMU_ARM7_read16(adr-1)>>8;
+			case REG_TM3CNTL+2: return _MMU_ARM7_read16(adr);
+			case REG_TM3CNTL+3: return _MMU_ARM7_read16(adr-1)>>8;
 		}
 
 		return MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]];
@@ -5704,14 +5746,16 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 			case REG_IF: return MMU.gen_IF<ARMCPU_ARM7>();
 			case REG_IPCFIFORECV :
 				return IPC_FIFOrecv(ARMCPU_ARM7);
+
 			case REG_TM0CNTL :
 			case REG_TM1CNTL :
 			case REG_TM2CNTL :
 			case REG_TM3CNTL :
-			{
-				u32 val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], (adr + 2) & 0xFFF);
-				return MMU.timer[ARMCPU_ARM7][(adr&0xF)>>2] | (val<<16);
-			}	
+				{
+					u32 hi = T1ReadWord(MMU.ARM9_REG, (adr + 2) & 0xFF);
+					return (hi<<16)|read_timer(ARMCPU_ARM9,(adr&0xF)>>2);
+				}	
+
 			//case REG_GCROMCTRL:
 			//	return MMU_readFromGCControl<ARMCPU_ARM7>();
 
