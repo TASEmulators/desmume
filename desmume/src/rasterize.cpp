@@ -366,18 +366,20 @@ public:
 	{
 		//finally, we can use floor here. but, it is slower than we want.
 		//the best solution is probably to wait until the pipeline is full of fixed point
+		const float fu = u * (float)this->currentTexture->GetRenderWidth()  / (float)this->currentTexture->GetWidth();
+		const float fv = v * (float)this->currentTexture->GetRenderHeight() / (float)this->currentTexture->GetHeight();
 		s32 iu = 0;
 		s32 iv = 0;
 		
 		if (!CommonSettings.GFX3D_TXTHack)
 		{
-			iu = s32floor(u * (float)this->currentTexture->GetRenderWidth()  / (float)this->currentTexture->GetWidth());
-			iv = s32floor(v * (float)this->currentTexture->GetRenderHeight() / (float)this->currentTexture->GetHeight());
+			iu = s32floor(fu);
+			iv = s32floor(fv);
 		}
 		else
 		{
-			iu = round_s(u);
-			iv = round_s(v);
+			iu = round_s(fu);
+			iv = round_s(fv);
 		}
 		
 		const u32 *textureData = this->currentTexture->GetRenderData();
