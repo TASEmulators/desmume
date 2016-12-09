@@ -1214,6 +1214,7 @@ void UpdateWndRects(HWND hwnd)
 		ClientToScreen(hwnd, &ptClient);
 		MainScreenRect.right = ptClient.x;
 		MainScreenRect.bottom = ptClient.y;
+		SetRectEmpty(&SubScreenRect);
 	}
 	else
 	if (video.layout == 0) //vertical
@@ -1699,7 +1700,6 @@ static void OGL_DoDisplay()
 
 		for(int i=0;i<2;i++)
 		{
-
 			//none of this makes any goddamn sense. dont even try.
 			int idx = i;
 			int ofs = 0;
