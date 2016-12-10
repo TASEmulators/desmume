@@ -47,6 +47,8 @@ public:
 	int depth_threshold;
 	int autodetect_method;
 	int render3d;
+	int texture_upscale;
+	int gpu_resolution_multiplier;
 	int language;
 	std::string nds_file;
 	std::string play_movie_file;
@@ -97,6 +99,8 @@ private:
 	int _num_cores;
 	int _rigorous_timing;
 	int _advanced_timing;
+	int _texture_deposterize;
+	int _texture_smooth;
 #ifdef HAVE_JIT
 	int _cpu_mode;
 	int _jit_size;

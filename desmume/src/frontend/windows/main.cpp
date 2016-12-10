@@ -2968,8 +2968,6 @@ int _main()
 	CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack = GetPrivateProfileInt("3D", "ZeldaShadowDepthHack", 0, IniName);
 
 	CommonSettings.GFX3D_PrescaleHD = GetPrivateProfileInt("3D", "PrescaleHD", 1, IniName);
-	video.SetPrescale(CommonSettings.GFX3D_PrescaleHD, 1);
-
 	CommonSettings.GFX3D_Renderer_TextureScalingFactor = GetPrivateProfileInt("3D", "TextureScalingFactor ", 1, IniName);
 	CommonSettings.GFX3D_Renderer_TextureDeposterize =  GetPrivateProfileBool("3D", "TextureDeposterize ", 1, IniName);
 	CommonSettings.GFX3D_Renderer_TextureSmoothing =  GetPrivateProfileBool("3D", "TextureSmooth ", 1, IniName);
@@ -3073,10 +3071,6 @@ int _main()
 	}
 
 	SetStyle(style);
-
-	SetMinWindowSize();
-
-	ScaleScreen(windowSize, false);
 
 	DragAcceptFiles(MainWindow->getHWnd(), TRUE);
 
@@ -3202,9 +3196,24 @@ int _main()
 	osd = new OSDCLASS(-1);
 
 	NDS_Init();
+
+	if (cmdline.texture_upscale != -1)
+	{
+		CommonSettings.GFX3D_Renderer_TextureScalingFactor = cmdline.texture_upscale;
+	}
+
+	if (cmdline.gpu_resolution_multiplier != -1)
+	{
+		CommonSettings.GFX3D_PrescaleHD = cmdline.gpu_resolution_multiplier;
+	}
+
+	video.SetPrescale(CommonSettings.GFX3D_PrescaleHD, 1);
 	GPU->SetCustomFramebufferSize(256*video.prescaleHD,192*video.prescaleHD);
 	//GPU->SetWillAutoBlitNativeToCustomBuffer(false); //we need to do this right now, because we depend on having one solitary framebuffer
 	GPU->ClearWithColor(0xFFFF);
+
+	SetMinWindowSize();
+	ScaleScreen(windowSize, false);
 	
 #ifdef GDB_STUB
     gdbstub_mutex_init();

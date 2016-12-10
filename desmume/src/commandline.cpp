@@ -51,6 +51,8 @@ CommandLine::CommandLine()
 , _num_cores(-1)
 , _rigorous_timing(0)
 , _advanced_timing(-1)
+, _texture_deposterize(-1)
+, _texture_smooth(-1)
 , _slot1(NULL)
 , _slot1_fat_dir(NULL)
 , _slot1_fat_dir_type(false)
@@ -67,6 +69,8 @@ CommandLine::CommandLine()
 , start_paused(FALSE)
 , autodetect_method(-1)
 , render3d(COMMANDLINE_RENDER3D_DEFAULT)
+, texture_upscale(-1)
+, gpu_resolution_multiplier(-1)
 , language(1) //english by default
 {
 #ifndef HOST_WINDOWS 
@@ -96,7 +100,20 @@ static const char* help_string = \
 " --spu-method N             Select SPU synch method: 0:N, 1:Z, 2:P; default 0" ENDL
 " --3d-render [SW|AUTOGL|GL|OLDGL]" ENDL
 "                            Select 3d renderer; default SW" ENDL
-#ifndef HOST_WINDOWS 
+#ifdef HOST_WINDOWS
+" --3d-texture-deposterize-enable" ENDL
+"                            Enables texture deposterization." ENDL
+" --3d-texture-upscale [1|2|4]" ENDL
+"                            Automatically upscales textures by the specified" ENDL
+"                            amount; 1:No scaling (default), 2:2x upscaling," ENDL
+"                            4:4x upscaling" ENDL
+" --3d-texture-smoothing-enable" ENDL
+"                            Enables smooth texture sampling while rendering." ENDL
+" --gpu-resolution-multiplier N" ENDL
+"                            Increases the resolution of GPU rendering by this" ENDL
+"                            multipler; 1:256x192 (default), 2:512x384," ENDL
+"                            3:768x576, 4:1024x768, 5:1280x960" ENDL
+#else
 " --disable-sound            Disables the sound output" ENDL
 " --disable-limiter          Disables the 60fps limiter" ENDL
 " --nojoy                    Disables joystick support" ENDL
@@ -154,7 +171,7 @@ ENDL
 "Utility commands which occur in place of emulation:" ENDL
 " --advanscene-import PATH   Import advanscene, dump .ddb, and exit" ENDL
 ENDL
-"These arguments may be reorganized/renamed in the future." ENDL
+"These arguments may be reorganized/renamed in the future." ENDL ENDL
 ;
 
 //https://github.com/mono/mono/blob/b7a308f660de8174b64697a422abfc7315d07b8c/eglib/test/driver.c
@@ -162,6 +179,8 @@ ENDL
 #define OPT_NUMCORES 1
 #define OPT_SPU_METHOD 2
 #define OPT_3D_RENDER 3
+#define OPT_3D_TEXTURE_UPSCALE 81
+#define OPT_GPU_RESOLUTION_MULTIPLIER 82
 #define OPT_JIT_SIZE 100
 
 #define OPT_CONSOLE_TYPE 200
@@ -209,7 +228,13 @@ bool CommandLine::parse(int argc,char **argv)
 			{ "spu-synch", no_argument, &_spu_sync_mode, 1 },
 			{ "spu-method", required_argument, NULL, OPT_SPU_METHOD },
 			{ "3d-render", required_argument, NULL, OPT_3D_RENDER },
-			#ifndef HOST_WINDOWS 
+			
+			#ifdef HOST_WINDOWS
+				{ "3d-texture-deposterize-enable", no_argument, &_texture_deposterize, 1 },
+				{ "3d-texture-upscale", required_argument, NULL, OPT_3D_TEXTURE_UPSCALE },
+				{ "3d-texture-smoothing-enable", no_argument, &_texture_smooth, 1 },
+				{ "gpu-resolution-multiplier", required_argument, NULL, OPT_GPU_RESOLUTION_MULTIPLIER },
+			#else
 				{ "disable-sound", no_argument, &disable_sound, 1},
 				{ "disable-limiter", no_argument, &disable_limiter, 1},
 				{ "nojoy", no_argument, &_commandline_linux_nojoy, 1},
@@ -279,6 +304,8 @@ bool CommandLine::parse(int argc,char **argv)
 		case OPT_NUMCORES: _num_cores = atoi(optarg); break;
 		case OPT_SPU_METHOD: _spu_sync_method = atoi(optarg); break;
 		case OPT_3D_RENDER: _render3d = optarg; break;
+		case OPT_3D_TEXTURE_UPSCALE: texture_upscale = atoi(optarg); break;
+		case OPT_GPU_RESOLUTION_MULTIPLIER: gpu_resolution_multiplier = atoi(optarg); break;
 
 		//sync settings
 		case OPT_JIT_SIZE: _jit_size = atoi(optarg); break;
@@ -366,6 +393,9 @@ bool CommandLine::parse(int argc,char **argv)
 	else if(_render3d == "AUTOGL") render3d = COMMANDLINE_RENDER3D_AUTOGL;
 	else if(_render3d == "GL") render3d = COMMANDLINE_RENDER3D_GL;
 
+	if (_texture_deposterize != -1) CommonSettings.GFX3D_Renderer_TextureDeposterize = (_texture_deposterize == 1);
+	if (_texture_smooth != -1) CommonSettings.GFX3D_Renderer_TextureSmoothing = (_texture_smooth == 1);
+
 	if (autodetect_method != -1)
 		CommonSettings.autodetectBackupMethod = autodetect_method;
 
@@ -450,6 +480,16 @@ bool CommandLine::validate()
 
 	if (autodetect_method < -1 || autodetect_method > 1) {
 		printerror("Invalid autodetect save method (0 - internal, 1 - from database)\n");
+	}
+
+	if ( (texture_upscale != -1) && (texture_upscale != 1) && (texture_upscale != 2) && (texture_upscale != 4) ) {
+		printerror("Invalid texture upscaling value [1|2|4]. Ignoring command line setting.\n");
+		texture_upscale = -1;
+	}
+
+	if ( (gpu_resolution_multiplier != -1) && ((gpu_resolution_multiplier < 1) || (gpu_resolution_multiplier > 5)) ) {
+		printerror("Invalid GPU resolution multiplier [1..5]. Ignoring command line setting.\n");
+		gpu_resolution_multiplier = -1;
 	}
 
 #ifdef HAVE_JIT
