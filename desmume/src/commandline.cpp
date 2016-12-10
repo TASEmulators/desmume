@@ -72,11 +72,9 @@ CommandLine::CommandLine()
 , texture_upscale(-1)
 , gpu_resolution_multiplier(-1)
 , language(1) //english by default
+, disable_sound(0)
+, disable_limiter(0)
 {
-#ifndef HOST_WINDOWS 
-	disable_sound = 0;
-	disable_limiter = 0;
-#endif
 }
 
 CommandLine::~CommandLine()
@@ -114,10 +112,10 @@ static const char* help_string = \
 "                            multipler; 1:256x192 (default), 2:512x384," ENDL
 "                            3:768x576, 4:1024x768, 5:1280x960" ENDL
 #else
-" --disable-sound            Disables the sound output" ENDL
-" --disable-limiter          Disables the 60fps limiter" ENDL
 " --nojoy                    Disables joystick support" ENDL
 #endif
+" --disable-sound            Disables the sound output" ENDL
+" --disable-limiter          Disables the 60fps limiter" ENDL
 ENDL
 "Arguments affecting overall emulation parameters (`sync settings`): " ENDL
 #ifdef HAVE_JIT
@@ -234,10 +232,10 @@ bool CommandLine::parse(int argc,char **argv)
 			#ifdef HOST_WINDOWS
 				{ "gpu-resolution-multiplier", required_argument, NULL, OPT_GPU_RESOLUTION_MULTIPLIER },
 			#else
-				{ "disable-sound", no_argument, &disable_sound, 1},
-				{ "disable-limiter", no_argument, &disable_limiter, 1},
 				{ "nojoy", no_argument, &_commandline_linux_nojoy, 1},
 			#endif
+			{ "disable-sound", no_argument, &disable_sound, 1},
+			{ "disable-limiter", no_argument, &disable_limiter, 1},
 
 			//sync settings
 			#ifdef HAVE_JIT

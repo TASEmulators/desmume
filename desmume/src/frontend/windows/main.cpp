@@ -2958,7 +2958,6 @@ int _main()
 	video.screengap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
 	SeparationBorderDrag = GetPrivateProfileBool("Display", "Window Split Border Drag", true, IniName);
 	ScreenGapColor = GetPrivateProfileInt("Display", "ScreenGapColor", 0xFFFFFF, IniName);
-	FrameLimit = GetPrivateProfileBool("FrameLimit", "FrameLimit", true, IniName);
 	CommonSettings.showGpu.main = GetPrivateProfileInt("Display", "MainGpu", 1, IniName) != 0;
 	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
 	CommonSettings.spu_advanced = GetPrivateProfileBool("Sound", "SpuAdvanced", false, IniName);
@@ -3014,6 +3013,8 @@ int _main()
 	}
 	cmdline.validate();
 	start_paused = cmdline.start_paused!=0;
+	
+	FrameLimit = (cmdline.disable_limiter == 1) ? false : GetPrivateProfileBool("FrameLimit", "FrameLimit", true, IniName);
 	
 	// Temporary scanline parameter setting for Windows.
 	// TODO: When videofilter.cpp becomes Windows-friendly, replace the direct setting of
@@ -3316,10 +3317,15 @@ int _main()
 	EnableMenuItem (mainMenu, IDM_SUBMITBUGREPORT, MF_GRAYED);
 #endif
 	LOG("Init sound core\n");
-	sndcoretype = GetPrivateProfileInt("Sound","SoundCore2", SNDCORE_DIRECTX, IniName);
+	sndcoretype = (cmdline.disable_sound == 1) ? SNDCORE_DUMMY : GetPrivateProfileInt("Sound","SoundCore2", SNDCORE_DIRECTX, IniName);
 	sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize2", DESMUME_SAMPLE_RATE*8/60, IniName);
 	CommonSettings.spuInterpolationMode = (SPUInterpolationMode)GetPrivateProfileInt("Sound","SPUInterpolation", 1, IniName);
 
+	if (cmdline._spu_sync_mode == -1)
+		CommonSettings.SPU_sync_mode = GetPrivateProfileInt("Sound","SynchMode",0,IniName);
+	if (cmdline._spu_sync_method == -1)
+		CommonSettings.SPU_sync_method = GetPrivateProfileInt("Sound","SynchMethod",0,IniName);
+	
 	EnterCriticalSection(&win_execute_sync);
 	int spu_ret = SPU_ChangeSoundCore(sndcoretype, sndbuffersize);
 	LeaveCriticalSection(&win_execute_sync);
@@ -3331,11 +3337,6 @@ int _main()
 
 	sndvolume = GetPrivateProfileInt("Sound","Volume",100, IniName);
 	SPU_SetVolume(sndvolume);
-
-	if (cmdline._spu_sync_mode == -1)
-		CommonSettings.SPU_sync_mode = GetPrivateProfileInt("Sound","SynchMode",0,IniName);
-	if (cmdline._spu_sync_method == -1)
-		CommonSettings.SPU_sync_method = GetPrivateProfileInt("Sound","SynchMethod",0,IniName);	
 	
 	CommonSettings.DebugConsole = GetPrivateProfileBool("Emulation", "DebugConsole", false, IniName);
 	CommonSettings.EnsataEmulation = GetPrivateProfileBool("Emulation", "EnsataEmulation", false, IniName);
