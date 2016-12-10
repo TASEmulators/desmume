@@ -100,7 +100,6 @@ static const char* help_string = \
 " --spu-method N             Select SPU synch method: 0:N, 1:Z, 2:P; default 0" ENDL
 " --3d-render [SW|AUTOGL|GL|OLDGL]" ENDL
 "                            Select 3d renderer; default SW" ENDL
-#ifdef HOST_WINDOWS
 " --3d-texture-deposterize-enable" ENDL
 "                            Enables texture deposterization." ENDL
 " --3d-texture-upscale [1|2|4]" ENDL
@@ -109,6 +108,7 @@ static const char* help_string = \
 "                            4:4x upscaling" ENDL
 " --3d-texture-smoothing-enable" ENDL
 "                            Enables smooth texture sampling while rendering." ENDL
+#ifdef HOST_WINDOWS
 " --gpu-resolution-multiplier N" ENDL
 "                            Increases the resolution of GPU rendering by this" ENDL
 "                            multipler; 1:256x192 (default), 2:512x384," ENDL
@@ -228,11 +228,10 @@ bool CommandLine::parse(int argc,char **argv)
 			{ "spu-synch", no_argument, &_spu_sync_mode, 1 },
 			{ "spu-method", required_argument, NULL, OPT_SPU_METHOD },
 			{ "3d-render", required_argument, NULL, OPT_3D_RENDER },
-			
+			{ "3d-texture-deposterize-enable", no_argument, &_texture_deposterize, 1 },
+			{ "3d-texture-upscale", required_argument, NULL, OPT_3D_TEXTURE_UPSCALE },
+			{ "3d-texture-smoothing-enable", no_argument, &_texture_smooth, 1 },
 			#ifdef HOST_WINDOWS
-				{ "3d-texture-deposterize-enable", no_argument, &_texture_deposterize, 1 },
-				{ "3d-texture-upscale", required_argument, NULL, OPT_3D_TEXTURE_UPSCALE },
-				{ "3d-texture-smoothing-enable", no_argument, &_texture_smooth, 1 },
 				{ "gpu-resolution-multiplier", required_argument, NULL, OPT_GPU_RESOLUTION_MULTIPLIER },
 			#else
 				{ "disable-sound", no_argument, &disable_sound, 1},
