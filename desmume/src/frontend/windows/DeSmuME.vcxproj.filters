@@ -912,6 +912,15 @@
     <ClCompile Include="..\..\libretro-common\encodings\encoding_utf.c">
       <Filter>libretro-common\encodings</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\utils\colorspacehandler\colorspacehandler_AVX2.cpp">
+      <Filter>utils\colorspacehandler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\utils\colorspacehandler\colorspacehandler_SSE2.cpp">
+      <Filter>utils\colorspacehandler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\utils\colorspacehandler\colorspacehandler_AltiVec.cpp">
+      <Filter>utils\colorspacehandler</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\utils\guid.h">
@@ -1591,6 +1600,15 @@
     </ClInclude>
     <ClInclude Include="..\..\libretro-common\include\compat\getopt.h">
       <Filter>libretro-common\include\compat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler_AltiVec.h">
+      <Filter>utils\colorspacehandler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler_AVX2.h">
+      <Filter>utils\colorspacehandler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler_SSE2.h">
+      <Filter>utils\colorspacehandler</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

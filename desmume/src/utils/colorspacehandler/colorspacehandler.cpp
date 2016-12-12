@@ -19,6 +19,7 @@
 
 #if defined(ENABLE_AVX2)
 	#include "colorspacehandler_AVX2.cpp"
+	#include "colorspacehandler_SSE2.cpp"
 #elif defined(ENABLE_SSE2)
 	#include "colorspacehandler_SSE2.cpp"
 #elif defined(ENABLE_ALTIVEC)
