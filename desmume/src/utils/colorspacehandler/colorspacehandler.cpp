@@ -26,12 +26,10 @@
 	#include "colorspacehandler_AltiVec.cpp"
 #endif
 
-#if defined(ENABLE_SSE2) || defined(ENABLE_ALTIVEC)
-	#define USEVECTORSIZE_128
-#endif
-
 #if defined(ENABLE_AVX2)
 	#define USEVECTORSIZE_256
+#elif defined(ENABLE_SSE2) || defined(ENABLE_ALTIVEC)
+	#define USEVECTORSIZE_128
 #endif
 
 // By default, the hand-coded vectorized code will be used instead of a compiler's built-in
@@ -147,12 +145,12 @@ void ColorspaceConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__re
 	
 #ifdef USEMANUALVECTORIZATION
 	
-#if defined(USEVECTORSIZE_128)
-	const size_t pixCountVector = pixCount - (pixCount % 8);
+#if defined(USEVECTORSIZE_512)
+	const size_t pixCountVector = pixCount - (pixCount % 32);
 #elif defined(USEVECTORSIZE_256)
 	const size_t pixCountVector = pixCount - (pixCount % 16);
-#elif defined(USEVECTORSIZE_512)
-	const size_t pixCountVector = pixCount - (pixCount % 32);
+#elif defined(USEVECTORSIZE_128)
+	const size_t pixCountVector = pixCount - (pixCount % 8);
 #endif
 	
 	if (SWAP_RB)
@@ -195,12 +193,12 @@ void ColorspaceConvertBuffer555To6665Opaque(const u16 *__restrict src, u32 *__re
 	
 #ifdef USEMANUALVECTORIZATION
 	
-#if defined(USEVECTORSIZE_128)
-	const size_t pixCountVector = pixCount - (pixCount % 8);
+#if defined(USEVECTORSIZE_512)
+	const size_t pixCountVector = pixCount - (pixCount % 32);
 #elif defined(USEVECTORSIZE_256)
 	const size_t pixCountVector = pixCount - (pixCount % 16);
-#elif defined(USEVECTORSIZE_512)
-	const size_t pixCountVector = pixCount - (pixCount % 32);
+#elif defined(USEVECTORSIZE_128)
+	const size_t pixCountVector = pixCount - (pixCount % 8);
 #endif
 	
 	if (SWAP_RB)
@@ -243,12 +241,12 @@ void ColorspaceConvertBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount
 	
 #ifdef USEMANUALVECTORIZATION
 	
-#if defined(USEVECTORSIZE_128)
-	const size_t pixCountVector = pixCount - (pixCount % 4);
+#if defined(USEVECTORSIZE_512)
+	const size_t pixCountVector = pixCount - (pixCount % 16);
 #elif defined(USEVECTORSIZE_256)
 	const size_t pixCountVector = pixCount - (pixCount % 8);
-#elif defined(USEVECTORSIZE_512)
-	const size_t pixCountVector = pixCount - (pixCount % 16);
+#elif defined(USEVECTORSIZE_128)
+	const size_t pixCountVector = pixCount - (pixCount % 4);
 #endif
 	
 	if (SWAP_RB)
@@ -291,12 +289,12 @@ void ColorspaceConvertBuffer6665To8888(const u32 *src, u32 *dst, size_t pixCount
 	
 #ifdef USEMANUALVECTORIZATION
 	
-#if defined(USEVECTORSIZE_128)
-	const size_t pixCountVector = pixCount - (pixCount % 4);
+#if defined(USEVECTORSIZE_512)
+	const size_t pixCountVector = pixCount - (pixCount % 16);
 #elif defined(USEVECTORSIZE_256)
 	const size_t pixCountVector = pixCount - (pixCount % 8);
-#elif defined(USEVECTORSIZE_512)
-	const size_t pixCountVector = pixCount - (pixCount % 16);
+#elif defined(USEVECTORSIZE_128)
+	const size_t pixCountVector = pixCount - (pixCount % 4);
 #endif
 	
 	if (SWAP_RB)
@@ -339,12 +337,12 @@ void ColorspaceConvertBuffer8888To5551(const u32 *__restrict src, u16 *__restric
 	
 #ifdef USEMANUALVECTORIZATION
 	
-#if defined(USEVECTORSIZE_128)
-	const size_t pixCountVector = pixCount - (pixCount % 8);
+#if defined(USEVECTORSIZE_512)
+	const size_t pixCountVector = pixCount - (pixCount % 32);
 #elif defined(USEVECTORSIZE_256)
 	const size_t pixCountVector = pixCount - (pixCount % 16);
-#elif defined(USEVECTORSIZE_512)
-	const size_t pixCountVector = pixCount - (pixCount % 32);
+#elif defined(USEVECTORSIZE_128)
+	const size_t pixCountVector = pixCount - (pixCount % 8);
 #endif
 	
 	if (SWAP_RB)
@@ -387,12 +385,12 @@ void ColorspaceConvertBuffer6665To5551(const u32 *__restrict src, u16 *__restric
 	
 #ifdef USEMANUALVECTORIZATION
 	
-#if defined(USEVECTORSIZE_128)
-	const size_t pixCountVector = pixCount - (pixCount % 8);
+#if defined(USEVECTORSIZE_512)
+	const size_t pixCountVector = pixCount - (pixCount % 32);
 #elif defined(USEVECTORSIZE_256)
 	const size_t pixCountVector = pixCount - (pixCount % 16);
-#elif defined(USEVECTORSIZE_512)
-	const size_t pixCountVector = pixCount - (pixCount % 32);
+#elif defined(USEVECTORSIZE_128)
+	const size_t pixCountVector = pixCount - (pixCount % 8);
 #endif
 		
 	if (SWAP_RB)

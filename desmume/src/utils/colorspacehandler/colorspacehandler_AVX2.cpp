@@ -30,14 +30,14 @@ FORCEINLINE void ColorspaceConvert555To8888_AVX2(const v256u16 &srcColor, const 
 	
 	// Conversion algorithm:
 	//    RGB   5-bit to 8-bit formula: dstRGB8 = (srcRGB5 << 3) | ((srcRGB5 >> 2) & 0x07)
-	src32 = _mm256_unpacklo_epi16(srcColor, _mm256_setzero_si256());
+	src32 = _mm256_cvtepu16_epi32( _mm256_extracti128_si256(srcColor, 0) );
 	dstLo = (SWAP_RB) ? _mm256_or_si256(_mm256_slli_epi32(src32, 19), _mm256_srli_epi32(src32, 7)) : _mm256_or_si256(_mm256_slli_epi32(src32, 3), _mm256_slli_epi32(src32, 9));
 	dstLo = _mm256_and_si256( dstLo, _mm256_set1_epi32(0x00F800F8) );
 	dstLo = _mm256_or_si256( dstLo, _mm256_and_si256(_mm256_slli_epi32(src32, 6), _mm256_set1_epi32(0x0000F800)) );
 	dstLo = _mm256_or_si256( dstLo, _mm256_and_si256(_mm256_srli_epi32(dstLo, 5), _mm256_set1_epi32(0x00070707)) );
 	dstLo = _mm256_or_si256( dstLo, srcAlphaBits32Lo );
 	
-	src32 = _mm256_unpackhi_epi16(srcColor, _mm256_setzero_si256());
+	src32 = _mm256_cvtepu16_epi32( _mm256_extracti128_si256(srcColor, 1) );
 	dstHi = (SWAP_RB) ? _mm256_or_si256(_mm256_slli_epi32(src32, 19), _mm256_srli_epi32(src32, 7)) : _mm256_or_si256(_mm256_slli_epi32(src32, 3), _mm256_slli_epi32(src32, 9));
 	dstHi = _mm256_and_si256( dstHi, _mm256_set1_epi32(0x00F800F8) );
 	dstHi = _mm256_or_si256( dstHi, _mm256_and_si256(_mm256_slli_epi32(src32, 6), _mm256_set1_epi32(0x0000F800)) );
@@ -52,14 +52,14 @@ FORCEINLINE void ColorspaceConvert555To6665_AVX2(const v256u16 &srcColor, const 
 	
 	// Conversion algorithm:
 	//    RGB   5-bit to 6-bit formula: dstRGB6 = (srcRGB5 << 1) | ((srcRGB5 >> 4) & 0x01)
-	src32 = _mm256_unpacklo_epi16(srcColor, _mm256_setzero_si256());
+	src32 = _mm256_cvtepu16_epi32( _mm256_extracti128_si256(srcColor, 0) );
 	dstLo = (SWAP_RB) ? _mm256_or_si256(_mm256_slli_epi32(src32, 17), _mm256_srli_epi32(src32, 9)) : _mm256_or_si256(_mm256_slli_epi32(src32, 1), _mm256_slli_epi32(src32, 7));
 	dstLo = _mm256_and_si256( dstLo, _mm256_set1_epi32(0x003E003E) );
 	dstLo = _mm256_or_si256( dstLo, _mm256_and_si256(_mm256_slli_epi32(src32, 4), _mm256_set1_epi32(0x00003E00)) );
 	dstLo = _mm256_or_si256( dstLo, _mm256_and_si256(_mm256_srli_epi32(dstLo, 5), _mm256_set1_epi32(0x00010101)) );
 	dstLo = _mm256_or_si256( dstLo, srcAlphaBits32Lo );
 	
-	src32 = _mm256_unpackhi_epi16(srcColor, _mm256_setzero_si256());
+	src32 = _mm256_cvtepu16_epi32( _mm256_extracti128_si256(srcColor, 1) );
 	dstHi = (SWAP_RB) ? _mm256_or_si256(_mm256_slli_epi32(src32, 17), _mm256_srli_epi32(src32, 9)) : _mm256_or_si256(_mm256_slli_epi32(src32, 1), _mm256_slli_epi32(src32, 7));
 	dstHi = _mm256_and_si256( dstHi, _mm256_set1_epi32(0x003E003E) );
 	dstHi = _mm256_or_si256( dstHi, _mm256_and_si256(_mm256_slli_epi32(src32, 4), _mm256_set1_epi32(0x00003E00)) );

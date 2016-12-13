@@ -27,6 +27,10 @@
 #include <tmmintrin.h>
 #endif
 
+#ifdef ENABLE_SSE4_1
+#include <smmintrin.h>
+#endif
+
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert555To8888_SSE2(const v128u16 &srcColor, const v128u32 &srcAlphaBits32Lo, const v128u32 &srcAlphaBits32Hi, v128u32 &dstLo, v128u32 &dstHi)
 {
@@ -34,14 +38,25 @@ FORCEINLINE void ColorspaceConvert555To8888_SSE2(const v128u16 &srcColor, const 
 	
 	// Conversion algorithm:
 	//    RGB   5-bit to 8-bit formula: dstRGB8 = (srcRGB5 << 3) | ((srcRGB5 >> 2) & 0x07)
+	
+#ifdef ENABLE_SSE4_1
+	src32 = _mm_cvtepu16_epi32(srcColor);
+#else
 	src32 = _mm_unpacklo_epi16(srcColor, _mm_setzero_si128());
+#endif
+	
 	dstLo = (SWAP_RB) ? _mm_or_si128(_mm_slli_epi32(src32, 19), _mm_srli_epi32(src32, 7)) : _mm_or_si128(_mm_slli_epi32(src32, 3), _mm_slli_epi32(src32, 9));
 	dstLo = _mm_and_si128( dstLo, _mm_set1_epi32(0x00F800F8) );
 	dstLo = _mm_or_si128( dstLo, _mm_and_si128(_mm_slli_epi32(src32, 6), _mm_set1_epi32(0x0000F800)) );
 	dstLo = _mm_or_si128( dstLo, _mm_and_si128(_mm_srli_epi32(dstLo, 5), _mm_set1_epi32(0x00070707)) );
 	dstLo = _mm_or_si128( dstLo, srcAlphaBits32Lo );
 	
+#ifdef ENABLE_SSE4_1
+	src32 = _mm_cvtepu16_epi32( _mm_srli_si128(srcColor, 8) );
+#else
 	src32 = _mm_unpackhi_epi16(srcColor, _mm_setzero_si128());
+#endif
+	
 	dstHi = (SWAP_RB) ? _mm_or_si128(_mm_slli_epi32(src32, 19), _mm_srli_epi32(src32, 7)) : _mm_or_si128(_mm_slli_epi32(src32, 3), _mm_slli_epi32(src32, 9));
 	dstHi = _mm_and_si128( dstHi, _mm_set1_epi32(0x00F800F8) );
 	dstHi = _mm_or_si128( dstHi, _mm_and_si128(_mm_slli_epi32(src32, 6), _mm_set1_epi32(0x0000F800)) );
@@ -56,14 +71,25 @@ FORCEINLINE void ColorspaceConvert555To6665_SSE2(const v128u16 &srcColor, const 
 	
 	// Conversion algorithm:
 	//    RGB   5-bit to 6-bit formula: dstRGB6 = (srcRGB5 << 1) | ((srcRGB5 >> 4) & 0x01)
+	
+#ifdef ENABLE_SSE4_1
+	src32 = _mm_cvtepu16_epi32(srcColor);
+#else
 	src32 = _mm_unpacklo_epi16(srcColor, _mm_setzero_si128());
+#endif
+	
 	dstLo = (SWAP_RB) ? _mm_or_si128(_mm_slli_epi32(src32, 17), _mm_srli_epi32(src32, 9)) : _mm_or_si128(_mm_slli_epi32(src32, 1), _mm_slli_epi32(src32, 7));
 	dstLo = _mm_and_si128( dstLo, _mm_set1_epi32(0x003E003E) );
 	dstLo = _mm_or_si128( dstLo, _mm_and_si128(_mm_slli_epi32(src32, 4), _mm_set1_epi32(0x00003E00)) );
 	dstLo = _mm_or_si128( dstLo, _mm_and_si128(_mm_srli_epi32(dstLo, 5), _mm_set1_epi32(0x00010101)) );
 	dstLo = _mm_or_si128( dstLo, srcAlphaBits32Lo );
 	
+#ifdef ENABLE_SSE4_1
+	src32 = _mm_cvtepu16_epi32( _mm_srli_si128(srcColor, 8) );
+#else
 	src32 = _mm_unpackhi_epi16(srcColor, _mm_setzero_si128());
+#endif
+	
 	dstHi = (SWAP_RB) ? _mm_or_si128(_mm_slli_epi32(src32, 17), _mm_srli_epi32(src32, 9)) : _mm_or_si128(_mm_slli_epi32(src32, 1), _mm_slli_epi32(src32, 7));
 	dstHi = _mm_and_si128( dstHi, _mm_set1_epi32(0x003E003E) );
 	dstHi = _mm_or_si128( dstHi, _mm_and_si128(_mm_slli_epi32(src32, 4), _mm_set1_epi32(0x00003E00)) );
