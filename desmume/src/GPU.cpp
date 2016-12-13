@@ -495,6 +495,7 @@ void GPUEngineBase::_Reset_Base()
 	renderState.masterBrightnessMode = GPUMasterBrightMode_Disable;
 	renderState.masterBrightnessIntensity = 0;
 	renderState.masterBrightnessIsFullIntensity = false;
+	renderState.masterBrightnessIsMaxOrMin = true;
 	renderState.blendTable555 = (TBlendTable *)&GPUEngineBase::_blendTable555[renderState.blendEVA][renderState.blendEVB][0][0];
 	renderState.brightnessUpTable555 = &GPUEngineBase::_brightnessUpTable555[renderState.blendEVY][0];
 	renderState.brightnessUpTable666 = &GPUEngineBase::_brightnessUpTable666[renderState.blendEVY][0];
@@ -1123,15 +1124,10 @@ void GPUEngineBase::ParseReg_MASTER_BRIGHT()
 	const IOREG_MASTER_BRIGHT &MASTER_BRIGHT = this->_IORegisterMap->MASTER_BRIGHT;
 	GPUEngineRenderState &renderState = this->_currentRenderState;
 	
-	if (!nds.isInVblank())
-	{
-		PROGINFO("Changing master brightness outside of vblank, line=%d\n", nds.VCount);
-	}
-	
 	renderState.masterBrightnessIntensity = (MASTER_BRIGHT.Intensity >= 16) ? 16 : MASTER_BRIGHT.Intensity;
 	renderState.masterBrightnessMode = (GPUMasterBrightMode)MASTER_BRIGHT.Mode;
 	renderState.masterBrightnessIsFullIntensity = ( (MASTER_BRIGHT.Intensity >= 16) && ((MASTER_BRIGHT.Mode == GPUMasterBrightMode_Up) || (MASTER_BRIGHT.Mode == GPUMasterBrightMode_Down)) );
-	//printf("MASTER BRIGHTNESS %d to %d at %d\n", this->_engineID, MASTER_BRIGHT.Intensity, nds.VCount);
+	renderState.masterBrightnessIsMaxOrMin = ( (MASTER_BRIGHT.Intensity >= 16) || (MASTER_BRIGHT.Intensity == 0) );
 }
 
 //Sets up LCD control variables for Display Engines A and B for quick reading
@@ -1396,9 +1392,14 @@ const GPU_IOREG& GPUEngineBase::GetIORegisterMap() const
 	return *this->_IORegisterMap;
 }
 
-bool GPUEngineBase::GetIsMasterBrightFullIntensity() const
+bool GPUEngineBase::IsMasterBrightFullIntensity() const
 {
 	return this->_currentRenderState.masterBrightnessIsFullIntensity;
+}
+
+bool GPUEngineBase::IsMasterBrightMaxOrMin() const
+{
+	return this->_currentRenderState.masterBrightnessIsMaxOrMin;
 }
 
 bool GPUEngineBase::IsMasterBrightFullIntensityAtLineZero() const
@@ -3470,6 +3471,7 @@ void GPUEngineBase::SpriteRenderDebug(const u16 lineIndex, u16 *dst)
 	compInfo.renderState.colorEffect = ColorEffect_Disable;
 	compInfo.renderState.masterBrightnessMode = GPUMasterBrightMode_Disable;
 	compInfo.renderState.masterBrightnessIsFullIntensity = false;
+	compInfo.renderState.masterBrightnessIsMaxOrMin = true;
 	compInfo.renderState.spriteRenderMode = this->_currentRenderState.spriteRenderMode;
 	compInfo.renderState.spriteBoundary = this->_currentRenderState.spriteBoundary;
 	compInfo.renderState.spriteBMPBoundary = this->_currentRenderState.spriteBMPBoundary;
@@ -4577,6 +4579,7 @@ void GPUEngineBase::RenderLayerBG(const GPULayerID layerID, u16 *dstColorBuffer)
 	compInfo.renderState.colorEffect = ColorEffect_Disable;
 	compInfo.renderState.masterBrightnessMode = GPUMasterBrightMode_Disable;
 	compInfo.renderState.masterBrightnessIsFullIntensity = false;
+	compInfo.renderState.masterBrightnessIsMaxOrMin = true;
 	compInfo.renderState.spriteRenderMode = this->_currentRenderState.spriteRenderMode;
 	compInfo.renderState.spriteBoundary = this->_currentRenderState.spriteBoundary;
 	compInfo.renderState.spriteBMPBoundary = this->_currentRenderState.spriteBMPBoundary;

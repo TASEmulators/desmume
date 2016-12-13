@@ -1149,6 +1149,7 @@ typedef struct
 	GPUMasterBrightMode masterBrightnessMode;
 	u8 masterBrightnessIntensity;
 	bool masterBrightnessIsFullIntensity;
+	bool masterBrightnessIsMaxOrMin;
 	
 	TBlendTable *blendTable555;
 	u16 *brightnessUpTable555;
@@ -1450,7 +1451,8 @@ public:
 	
 	const GPU_IOREG& GetIORegisterMap() const;
 	
-	bool GetIsMasterBrightFullIntensity() const;
+	bool IsMasterBrightFullIntensity() const;
+	bool IsMasterBrightMaxOrMin() const;
 	bool IsMasterBrightFullIntensityAtLineZero() const;
 	void GetMasterBrightnessAtLineZero(GPUMasterBrightMode &outMode, u8 &outIntensity);
 	
