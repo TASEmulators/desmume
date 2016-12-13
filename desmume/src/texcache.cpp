@@ -69,18 +69,18 @@ public:
 
 	//this MemSpan shall be considered the first argument to a standard memcmp
 	//the length shall be as specified in this MemSpan, unless you specify otherwise
-	int memcmp(void* buf2, int size=-1)
+	int memcmp(void* buf2, int cmpSize=-1)
 	{
-		if(size==-1) size = this->size;
-		size = min(this->size,size);
+		if(cmpSize==-1) cmpSize = this->size;
+		cmpSize = min(this->size,cmpSize);
 		for(int i=0;i<numItems;i++)
 		{
 			Item &item = items[i];
-			int todo = min((int)item.len,size);
-			size -= todo;
+			int todo = min((int)item.len,cmpSize);
+			cmpSize -= todo;
 			int temp = ::memcmp(item.ptr,((u8*)buf2)+item.ofs,todo);
 			if(temp) return temp;
-			if(size == 0) break;
+			if(cmpSize == 0) break;
 		}
 		return 0;
 	}
@@ -89,21 +89,21 @@ public:
 
 	//dumps the memspan to the specified buffer
 	//you may set size to limit the size to be copied
-	int dump(void* buf, int size=-1) const
+	int dump(void* buf, int dumpSize=-1) const
 	{
-		if(size==-1) size = this->size;
-		size = min(this->size,size);
+		if(dumpSize==-1) dumpSize = this->size;
+		dumpSize = min(this->size,dumpSize);
 		u8* bufptr = (u8*)buf;
 		int done = 0;
 		for(int i=0;i<numItems;i++)
 		{
 			Item item = items[i];
-			int todo = min((int)item.len,size);
-			size -= todo;
+			int todo = min((int)item.len,dumpSize);
+			dumpSize -= todo;
 			done += todo;
 			memcpy(bufptr,item.ptr,todo);
 			bufptr += todo;
-			if(size==0) return done;
+			if(dumpSize==0) return done;
 		}
 		return done;
 	}
@@ -111,18 +111,18 @@ public:
 	// this function does the same than dump
 	// but works for both little and big endian
 	// when buf is an u16 array
-	int dump16(void* buf, int size=-1) const
+	int dump16(void* buf, int dumpSize=-1) const
 	{
-		if(size==-1) size = this->size;
-		size = min(this->size,size);
+		if(dumpSize==-1) dumpSize = this->size;
+		dumpSize = min(this->size,dumpSize);
 		u16* bufptr = (u16*)buf;
 		int done = 0;
 		for(int i=0;i<numItems;i++)
 		{
 			Item item = items[i];
 			u8 * src = (u8 *) item.ptr;
-			int todo = min((int)item.len,size);
-			size -= todo;
+			int todo = min((int)item.len,dumpSize);
+			dumpSize -= todo;
 			done += todo;
 			for(int j = 0;j < todo / 2;j++)
 			{
@@ -131,7 +131,7 @@ public:
 				tmp |= *(src++) << 8;
 				*bufptr++ = tmp;
 			}
-			if(size==0) return done;
+			if(dumpSize==0) return done;
 		}
 		return done;
 	}
