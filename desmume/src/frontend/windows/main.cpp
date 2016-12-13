@@ -2968,8 +2968,8 @@ int _main()
 
 	CommonSettings.GFX3D_PrescaleHD = GetPrivateProfileInt("3D", "PrescaleHD", 1, IniName);
 	CommonSettings.GFX3D_Renderer_TextureScalingFactor = GetPrivateProfileInt("3D", "TextureScalingFactor ", 1, IniName);
-	CommonSettings.GFX3D_Renderer_TextureDeposterize =  GetPrivateProfileBool("3D", "TextureDeposterize ", 1, IniName);
-	CommonSettings.GFX3D_Renderer_TextureSmoothing =  GetPrivateProfileBool("3D", "TextureSmooth ", 1, IniName);
+	CommonSettings.GFX3D_Renderer_TextureDeposterize =  GetPrivateProfileBool("3D", "TextureDeposterize ", 0, IniName);
+	CommonSettings.GFX3D_Renderer_TextureSmoothing =  GetPrivateProfileBool("3D", "TextureSmooth ", 0, IniName);
 		
 	lostFocusPause = GetPrivateProfileBool("Focus", "BackgroundPause", false, IniName);
 
