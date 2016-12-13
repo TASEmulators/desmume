@@ -2694,10 +2694,15 @@ bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 				return true;
 
 			default:
+			{
 #ifdef DEVELOPER
-				printf("MMU9 write%02d to undefined register %08Xh = %08Xh (PC:%08X)\n", size, addr, val, ARMPROC.instruct_adr);
+				if (val != 0)
+				{
+					printf("MMU9 write%02d to undefined register %08Xh = %08Xh (PC:%08X)\n", size, addr, val, ARMPROC.instruct_adr);
+				}
 #endif
 				return false;
+			}
 		}
 	}
 
@@ -2790,10 +2795,15 @@ bool validateIORegsWrite(u32 addr, u8 size, u32 val)
 				return true;
 
 			default:
+			{
 #ifdef DEVELOPER
-				printf("MMU7 write%02d to undefined register %08Xh = %08Xh (PC:%08X)\n", size, addr, val, ARMPROC.instruct_adr);
+				if (val != 0)
+				{
+					printf("MMU7 write%02d to undefined register %08Xh = %08Xh (PC:%08X)\n", size, addr, val, ARMPROC.instruct_adr);
+				}
 #endif
 				return false;
+			}
 		}
 	}
 
