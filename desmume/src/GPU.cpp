@@ -1659,63 +1659,56 @@ FORCEINLINE void GPUEngineBase::_RenderPixel(GPUEngineCompositorInfo &compInfo, 
 		return;
 	}
 	
-	ColorEffect selectedEffect = ColorEffect_Disable;
 	TBlendTable *selectedBlendTable = compInfo.renderState.blendTable555;
 	u8 blendEVA = compInfo.renderState.blendEVA;
 	u8 blendEVB = compInfo.renderState.blendEVB;
 	
-	if (enableColorEffect)
+	const bool dstEffectEnable = (dstLayerID != compInfo.renderState.selectedLayerID) && compInfo.renderState.dstBlendEnable[dstLayerID];
+	bool forceBlendEffect = false;
+	
+	if (ISSRCLAYEROBJ && enableColorEffect)
 	{
-		const bool dstEffectEnable = (dstLayerID != compInfo.renderState.selectedLayerID) && compInfo.renderState.dstBlendEnable[dstLayerID];
-		
-		// Select the color effect based on the BLDCNT target flags.
-		bool forceBlendEffect = false;
-		
-		if (ISSRCLAYEROBJ)
+		//translucent-capable OBJ are forcing the function to blend when the second target is satisfied
+		const OBJMode objMode = (OBJMode)this->_sprType[compInfo.target.xNative];
+		const bool isObjTranslucentType = (objMode == OBJMode_Transparent) || (objMode == OBJMode_Bitmap);
+		if (isObjTranslucentType && dstEffectEnable)
 		{
-			//translucent-capable OBJ are forcing the function to blend when the second target is satisfied
-			const OBJMode objMode = (OBJMode)this->_sprType[compInfo.target.xNative];
-			const bool isObjTranslucentType = (objMode == OBJMode_Transparent) || (objMode == OBJMode_Bitmap);
-			if (isObjTranslucentType && dstEffectEnable)
+			//obj without fine-grained alpha are using EVA/EVB for blending. this is signified by receiving 0xFF in the alpha
+			//it's tested by the spriteblend demo and the glory of heracles title screen
+			if (srcAlpha != 0xFF)
 			{
-				//obj without fine-grained alpha are using EVA/EVB for blending. this is signified by receiving 0xFF in the alpha
-				//it's tested by the spriteblend demo and the glory of heracles title screen
-				if (srcAlpha != 0xFF)
-				{
-					blendEVA = srcAlpha;
-					blendEVB = 16 - srcAlpha;
-					selectedBlendTable = &GPUEngineBase::_blendTable555[blendEVA][blendEVB];
-				}
+				blendEVA = srcAlpha;
+				blendEVB = 16 - srcAlpha;
+				selectedBlendTable = &GPUEngineBase::_blendTable555[blendEVA][blendEVB];
+			}
+			
+			forceBlendEffect = true;
+		}
+	}
+	
+	ColorEffect selectedEffect = (forceBlendEffect) ? ColorEffect_Blend : ColorEffect_Disable;
+	
+	// If we're not forcing blending, then select the color effect based on the BLDCNT target flags.
+	if (!forceBlendEffect && enableColorEffect && compInfo.renderState.srcBlendEnable[compInfo.renderState.selectedLayerID])
+	{
+		switch (compInfo.renderState.colorEffect)
+		{
+			// For the Blend effect, both first and second target flags must be checked.
+			case ColorEffect_Blend:
+			{
+				if (dstEffectEnable) selectedEffect = compInfo.renderState.colorEffect;
+				break;
+			}
 				
-				forceBlendEffect = true;
-			}
-		}
-		
-		if (forceBlendEffect)
-		{
-			selectedEffect = ColorEffect_Blend;
-		}
-		else if (compInfo.renderState.srcBlendEnable[compInfo.renderState.selectedLayerID])
-		{
-			switch (compInfo.renderState.colorEffect)
-			{
-				// For the Blend effect, both first and second target flags must be checked.
-				case ColorEffect_Blend:
-				{
-					if (dstEffectEnable) selectedEffect = compInfo.renderState.colorEffect;
-					break;
-				}
-					
-				// For the Increase/Decrease Brightness effects, only the first target flag needs to be checked.
-				// Test case: Bomberman Land Touch! dialog boxes will render too dark without this check.
-				case ColorEffect_IncreaseBrightness:
-				case ColorEffect_DecreaseBrightness:
-					selectedEffect = compInfo.renderState.colorEffect;
-					break;
-					
-				default:
-					break;
-			}
+			// For the Increase/Decrease Brightness effects, only the first target flag needs to be checked.
+			// Test case: Bomberman Land Touch! dialog boxes will render too dark without this check.
+			case ColorEffect_IncreaseBrightness:
+			case ColorEffect_DecreaseBrightness:
+				selectedEffect = compInfo.renderState.colorEffect;
+				break;
+				
+			default:
+				break;
 		}
 	}
 	
@@ -1923,7 +1916,7 @@ FORCEINLINE void GPUEngineBase::_RenderPixel16_SSE2(GPUEngineCompositorInfo &com
 	if (ISSRCLAYEROBJ)
 	{
 		const __m128i objMode_vec128 = _mm_loadu_si128((__m128i *)(this->_sprType + compInfo.target.xNative));
-		const __m128i isObjTranslucentMask = _mm_and_si128( dstEffectEnableMask, _mm_or_si128(_mm_cmpeq_epi8(objMode_vec128, _mm_set1_epi8(OBJMode_Transparent)), _mm_cmpeq_epi8(objMode_vec128, _mm_set1_epi8(OBJMode_Bitmap))) );
+		const __m128i isObjTranslucentMask = _mm_and_si128( _mm_and_si128(enableColorEffectMask, dstEffectEnableMask), _mm_or_si128(_mm_cmpeq_epi8(objMode_vec128, _mm_set1_epi8(OBJMode_Transparent)), _mm_cmpeq_epi8(objMode_vec128, _mm_set1_epi8(OBJMode_Bitmap))) );
 		forceBlendEffectMask = isObjTranslucentMask;
 		
 		const __m128i srcAlphaMask = _mm_andnot_si128(_mm_cmpeq_epi8(srcAlpha, _mm_set1_epi8(0xFF)), isObjTranslucentMask);
@@ -2052,45 +2045,40 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D(GPUEngineCompositorInfo &compInfo
 	u16 &dstColor16 = *compInfo.target.lineColor16;
 	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
-	ColorEffect selectedEffect = ColorEffect_Disable;
 	
-	if (enableColorEffect)
+	const bool dstEffectEnable = (dstLayerID != GPULayerID_BG0) && compInfo.renderState.dstBlendEnable[dstLayerID];
+	
+	// 3D rendering has a special override: If the destination pixel is set to blend, then always blend.
+	// Test case: When starting a stage in Super Princess Peach, the screen will be solid black unless
+	// blending is forced here.
+	//
+	// This behavior must take priority over checking for the window color effect enable flag.
+	// Test case: Dialogue boxes in Front Mission will be rendered with blending disabled unless
+	// blend forcing takes priority.
+	bool forceBlendEffect = dstEffectEnable;
+	ColorEffect selectedEffect = (forceBlendEffect) ? ColorEffect_Blend : ColorEffect_Disable;
+	
+	// If we're not forcing blending, then select the color effect based on the BLDCNT target flags.
+	if (!forceBlendEffect && enableColorEffect && compInfo.renderState.srcBlendEnable[GPULayerID_BG0])
 	{
-		const bool dstEffectEnable = (dstLayerID != GPULayerID_BG0) && compInfo.renderState.dstBlendEnable[dstLayerID];
-		
-		// Select the color effect based on the BLDCNT target flags.
-		bool forceBlendEffect = false;
-		
-		// 3D rendering has a special override: If the destination pixel is set to blend, then always blend.
-		// Test case: When starting a stage in Super Princess Peach, the screen will be solid black unless
-		// blending is forced here.
-		forceBlendEffect = dstEffectEnable;
-		
-		if (forceBlendEffect)
+		switch (compInfo.renderState.colorEffect)
 		{
-			selectedEffect = ColorEffect_Blend;
-		}
-		else if (compInfo.renderState.srcBlendEnable[GPULayerID_BG0])
-		{
-			switch (compInfo.renderState.colorEffect)
+			// For the Blend effect, both first and second target flags must be checked.
+			case ColorEffect_Blend:
 			{
-				// For the Blend effect, both first and second target flags must be checked.
-				case ColorEffect_Blend:
-				{
-					if (dstEffectEnable) selectedEffect = compInfo.renderState.colorEffect;
-					break;
-				}
-					
-				// For the Increase/Decrease Brightness effects, only the first target flag needs to be checked.
-				// Test case: Bomberman Land Touch! dialog boxes will render too dark without this check.
-				case ColorEffect_IncreaseBrightness:
-				case ColorEffect_DecreaseBrightness:
-					selectedEffect = compInfo.renderState.colorEffect;
-					break;
-					
-				default:
-					break;
+				if (dstEffectEnable) selectedEffect = compInfo.renderState.colorEffect;
+				break;
 			}
+				
+			// For the Increase/Decrease Brightness effects, only the first target flag needs to be checked.
+			// Test case: Bomberman Land Touch! dialog boxes will render too dark without this check.
+			case ColorEffect_IncreaseBrightness:
+			case ColorEffect_DecreaseBrightness:
+				selectedEffect = compInfo.renderState.colorEffect;
+				break;
+				
+			default:
+				break;
 		}
 	}
 	
@@ -2164,7 +2152,24 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D_SSE2(GPUEngineCompositorInfo &com
 									_mm_unpacklo_epi16(passMask16[1], passMask16[1]),
 									_mm_unpackhi_epi16(passMask16[1], passMask16[1]) };
 	
-	if (_mm_movemask_epi8(enableColorEffectMask) == 0)
+	__m128i dstEffectEnableMask;
+	
+#ifdef ENABLE_SSSE3
+	dstEffectEnableMask = _mm_shuffle_epi8(compInfo.renderState.dstBlendEnable_SSSE3, dstLayerID);
+	dstEffectEnableMask = _mm_xor_si128( _mm_cmpeq_epi8(dstEffectEnableMask, _mm_setzero_si128()), _mm_set1_epi32(0xFFFFFFFF) );
+#else
+	dstEffectEnableMask =                                   _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG0)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG0]);
+	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG1)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG1]) );
+	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG2)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG2]) );
+	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG3)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG3]) );
+	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_OBJ)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_OBJ]) );
+	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_Backdrop)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_Backdrop]) );
+#endif
+	
+	dstEffectEnableMask = _mm_andnot_si128( _mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG0)), dstEffectEnableMask );
+	const __m128i forceBlendEffectMask = dstEffectEnableMask;
+	
+	if (_mm_movemask_epi8( _mm_or_si128(forceBlendEffectMask, enableColorEffectMask) ) == 0)
 	{
 		if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 		{
@@ -2200,26 +2205,9 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D_SSE2(GPUEngineCompositorInfo &com
 		tmpSrc[3] = src3;
 	}
 	
-	const __m128i srcEffectEnableMask = compInfo.renderState.srcBlendEnable_SSE2[GPULayerID_BG0];
-	__m128i dstEffectEnableMask;
-	
-#ifdef ENABLE_SSSE3
-	dstEffectEnableMask = _mm_shuffle_epi8(compInfo.renderState.dstBlendEnable_SSSE3, dstLayerID);
-	dstEffectEnableMask = _mm_xor_si128( _mm_cmpeq_epi8(dstEffectEnableMask, _mm_setzero_si128()), _mm_set1_epi32(0xFFFFFFFF) );
-#else
-	dstEffectEnableMask =                                   _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG0)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG0]);
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG1)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG1]) );
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG2)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG2]) );
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG3)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG3]) );
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_OBJ)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_OBJ]) );
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_Backdrop)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_Backdrop]) );
-#endif
-	
-	dstEffectEnableMask = _mm_andnot_si128( _mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG0)), dstEffectEnableMask );
-	
 	// Select the color effect based on the BLDCNT target flags.
+	const __m128i srcEffectEnableMask = compInfo.renderState.srcBlendEnable_SSE2[GPULayerID_BG0];
 	const __m128i colorEffect_vec128 = _mm_blendv_epi8(_mm_set1_epi8(ColorEffect_Disable), _mm_set1_epi8(compInfo.renderState.colorEffect), enableColorEffectMask);
-	const __m128i forceBlendEffectMask = _mm_and_si128(enableColorEffectMask, dstEffectEnableMask);
 	const __m128i evy_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVY);
 	
 	switch (compInfo.renderState.colorEffect)
