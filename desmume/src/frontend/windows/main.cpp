@@ -35,8 +35,11 @@
 #include <commctrl.h>
 #include <commdlg.h>
 #include <tchar.h>
-
 #include <stdio.h>
+
+#include <GL/gl.h>
+#include <GL/glext.h>
+#include <GL/wglext.h>
 
 //emulator core
 #include "MMU.h"
@@ -881,32 +884,7 @@ const u32 DWS_DISPMETHODS =  (DWS_DDRAW_SW|DWS_DDRAW_HW|DWS_OPENGL);
 const u32 DWS_FILTER = 128;
 
 static u32 currWindowStyle = DWS_NORMAL;
-static void SetStyle(u32 dws)
-{
-	//pokefan's suggestion, there are a number of ways we could do this.
-	//i sort of like this because it is very visually indicative of being locked down
-	DWORD ws = GetWindowLong(MainWindow->getHWnd(),GWL_STYLE);
-	ws &= ~(WS_CAPTION | WS_POPUP | WS_THICKFRAME | WS_DLGFRAME );
-	if(dws & DWS_LOCKDOWN)
-		ws |= WS_POPUP | WS_DLGFRAME;
-	else if(!(dws&DWS_FULLSCREEN)) 
-		ws |= WS_CAPTION | WS_THICKFRAME;
-
-	SetWindowLong(MainWindow->getHWnd(),GWL_STYLE, ws);
-
-
-	if((dws&DWS_FULLSCREEN)) 
-		SetMenu(MainWindow->getHWnd(),NULL);
-	else 
-		SetMenu(MainWindow->getHWnd(),mainMenu);
-
-	currWindowStyle = dws;
-	HWND insertAfter = HWND_NOTOPMOST;
-	if(dws & DWS_ALWAYSONTOP) 
-		insertAfter = HWND_TOPMOST;
-	SetWindowPos(MainWindow->getHWnd(), insertAfter, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
-}
-
+void SetStyle(u32 dws);
 static u32 GetStyle() { return currWindowStyle; }
 
 static void ToggleFullscreen()
@@ -1527,9 +1505,14 @@ struct GLDISPLAY
 	HGLRC privateContext;
 	HDC privateDC;
 	bool init;
+	bool active;
+	bool wantVsync, haveVsync;
 
 	GLDISPLAY()
 		: init(false)
+		, active(false)
+		, wantVsync(false)
+		, haveVsync(false)
 	{
 	}
 
@@ -1538,6 +1521,7 @@ struct GLDISPLAY
 		//do we need to use another HDC?
 		if(init) return true;
 		init = initContext(MainWindow->getHWnd(),&privateContext);
+		setvsync(!!(GetStyle()&DWS_VSYNC));
 		return init;
 	}
 
@@ -1546,6 +1530,7 @@ struct GLDISPLAY
 		if(!init) return;
 		wglDeleteContext(privateContext);
 		privateContext = NULL;
+		haveVsync = false;
 		init = false;
 	}
 
@@ -1564,7 +1549,12 @@ struct GLDISPLAY
 
 		privateDC = GetDC(MainWindow->getHWnd());
 		wglMakeCurrent(privateDC,privateContext);
-		return true;
+
+		//go ahead and sync the vsync setting while we have the context
+		if (wantVsync != haveVsync)
+			_setvsync();
+
+		return active = true;
 	}
 
 	void end()
@@ -1572,16 +1562,63 @@ struct GLDISPLAY
 		wglMakeCurrent(NULL,privateContext);
 		ReleaseDC(MainWindow->getHWnd(),privateDC);
 		privateDC = NULL;
+		active = false;
+	}
+
+
+
+	//http://stackoverflow.com/questions/589064/how-to-enable-vertical-sync-in-opengl
+	bool WGLExtensionSupported(const char *extension_name)
+	{
+		// this is pointer to function which returns pointer to string with list of all wgl extensions
+		PFNWGLGETEXTENSIONSSTRINGEXTPROC _wglGetExtensionsStringEXT = NULL;
+
+		// determine pointer to wglGetExtensionsStringEXT function
+		_wglGetExtensionsStringEXT = (PFNWGLGETEXTENSIONSSTRINGEXTPROC)wglGetProcAddress("wglGetExtensionsStringEXT");
+
+		if (strstr(_wglGetExtensionsStringEXT(), extension_name) == NULL)
+		{
+			// string was not found
+			return false;
+		}
+
+		// extension is supported
+		return true;
+	}
+
+	void setvsync(bool vsync)
+	{
+		wantVsync = vsync;
+	}
+
+	void _setvsync()
+	{
+		//even if it doesn't work, we'll track it
+		haveVsync = wantVsync;
+
+		if (!WGLExtensionSupported("WGL_EXT_swap_control")) return;
+
+		//http://stackoverflow.com/questions/589064/how-to-enable-vertical-sync-in-opengl
+		PFNWGLSWAPINTERVALEXTPROC       wglSwapIntervalEXT = NULL;
+		PFNWGLGETSWAPINTERVALEXTPROC    wglGetSwapIntervalEXT = NULL;
+		{
+			// Extension is supported, init pointers.
+			wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
+
+			// this is another function from WGL_EXT_swap_control extension
+			wglGetSwapIntervalEXT = (PFNWGLGETSWAPINTERVALEXTPROC)wglGetProcAddress("wglGetSwapIntervalEXT");
+		}
+
+		wglSwapIntervalEXT(wantVsync ? 1 : 0);
 	}
 
 	void showPage()
 	{
-			SwapBuffers(privateDC);
+		SwapBuffers(privateDC);
 	}
 } gldisplay;
 
-#include <GL/gl.h>
-#include <GL/glext.h>
+
 static void OGL_DoDisplay()
 {
 	if(!gldisplay.begin()) return;
@@ -7222,7 +7259,13 @@ const char* OpenLuaScript(const char* filename, const char* extraDirToCheck, boo
 		}
 		else
 		{
+		#pragma warning( push )  
+			//'type cast': pointer truncation from 'HWND' to 'int'
+			//it's just a hash key. it's probably safe
+			#pragma warning( disable : 4311 )  
 			RequestAbortLuaScript((int)scriptHWnd, "terminated to restart because of a call to emu.openscript");
+		#pragma warning( pop )  
+
 			SendMessage(scriptHWnd, WM_COMMAND, IDC_BUTTON_LUARUN, 0);
 		}
 	}
@@ -7414,4 +7457,30 @@ bool DDRAW::blt(LPRECT dst, LPRECT src)
 	return true;
 }
 
-//vs2015 hacks
+void SetStyle(u32 dws)
+{
+	//pokefan's suggestion, there are a number of ways we could do this.
+	//i sort of like this because it is very visually indicative of being locked down
+	DWORD ws = GetWindowLong(MainWindow->getHWnd(), GWL_STYLE);
+	ws &= ~(WS_CAPTION | WS_POPUP | WS_THICKFRAME | WS_DLGFRAME);
+	if (dws & DWS_LOCKDOWN)
+		ws |= WS_POPUP | WS_DLGFRAME;
+	else if (!(dws&DWS_FULLSCREEN))
+		ws |= WS_CAPTION | WS_THICKFRAME;
+
+	SetWindowLong(MainWindow->getHWnd(), GWL_STYLE, ws);
+
+
+	if ((dws&DWS_FULLSCREEN))
+		SetMenu(MainWindow->getHWnd(), NULL);
+	else
+		SetMenu(MainWindow->getHWnd(), mainMenu);
+
+	currWindowStyle = dws;
+	HWND insertAfter = HWND_NOTOPMOST;
+	if (dws & DWS_ALWAYSONTOP)
+		insertAfter = HWND_TOPMOST;
+	SetWindowPos(MainWindow->getHWnd(), insertAfter, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+
+	gldisplay.setvsync(!!(GetStyle()&DWS_VSYNC));
+}
