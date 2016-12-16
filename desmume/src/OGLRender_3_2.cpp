@@ -1669,7 +1669,7 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 	{
 		glDisable(GL_STENCIL_TEST);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		enableDepthWrite = (!attr.isTranslucent || ( (attr.polygonMode == POLYGON_MODE_DECAL) && attr.isOpaque ) || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
+		enableDepthWrite = (!attr.isTranslucent || attr.isOpaque || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
 	}
 	else
 	{
