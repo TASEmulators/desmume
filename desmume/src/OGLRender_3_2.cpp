@@ -116,7 +116,7 @@ static const char *GeometryVtxShader_150 = {"\
 	out vec4 vtxColor; \n\
 	flat out uint polyEnableTexture;\n\
 	flat out uint polyEnableFog;\n\
-	flat out uint polyEnableDepthWrite;\n\
+	flat out uint polySetupShadow;\n\
 	flat out uint polySetNewDepthForTranslucent;\n\
 	flat out uint polyMode;\n\
 	flat out uint polyID;\n\
@@ -133,7 +133,7 @@ static const char *GeometryVtxShader_150 = {"\
 		\n\
 		polyEnableTexture = polyStateFlags[0];\n\
 		polyEnableFog = polyStateFlags[1];\n\
-		polyEnableDepthWrite = polyStateFlags[2];\n\
+		polySetupShadow = polyStateFlags[2];\n\
 		polySetNewDepthForTranslucent = polyStateFlags[3];\n\
 		polyMode = polyStateValues[1];\n\
 		polyID = polyStateValues[2];\n\
@@ -154,12 +154,12 @@ static const char *GeometryVtxShader_150 = {"\
 static const char *GeometryFragShader_150 = {"\
 	#version 150 \n\
 	\n\
-	in vec4 vtxPosition; \n\
-	in vec2 vtxTexCoord; \n\
-	in vec4 vtxColor; \n\
+	in vec4 vtxPosition;\n\
+	in vec2 vtxTexCoord;\n\
+	in vec4 vtxColor;\n\
 	flat in uint polyEnableTexture;\n\
 	flat in uint polyEnableFog;\n\
-	flat in uint polyEnableDepthWrite;\n\
+	flat in uint polySetupShadow;\n\
 	flat in uint polySetNewDepthForTranslucent;\n\
 	flat in uint polyMode;\n\
 	flat in uint polyID;\n\
@@ -184,7 +184,7 @@ static const char *GeometryFragShader_150 = {"\
 		vec4 toonColor[32];\n\
 	} state;\n\
 	\n\
-	uniform sampler2D texRenderObject; \n\
+	uniform sampler2D texRenderObject;\n\
 	uniform usamplerBuffer PolyStates;\n\
 	uniform int polyIndex;\n\
 	\n\
@@ -200,58 +200,67 @@ static const char *GeometryFragShader_150 = {"\
 		return packedValue;\n\
 	}\n\
 	\n\
-	void main() \n\
-	{ \n\
-		vec4 mainTexColor = bool(polyEnableTexture) ? texture(texRenderObject, vtxTexCoord) : vec4(1.0, 1.0, 1.0, 1.0);\n\
+	void main()\n\
+	{\n\
+		vec4 newFragColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
+		vec4 newPolyID = vec4(0.0, 0.0, 0.0, 0.0);\n\
+		vec4 newFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
+		vec4 newFragDepth = vec4(0.0, 0.0, 0.0, 0.0);\n\
 		\n\
-		if (bool(texSingleBitAlpha))\n\
-		{\n\
-			if (mainTexColor.a < 0.500)\n\
-			{\n\
-				mainTexColor.a = 0.0;\n\
-			}\n\
-			else\n\
-			{\n\
-				mainTexColor.rgb = mainTexColor.rgb / mainTexColor.a;\n\
-				mainTexColor.a = 1.0;\n\
-			}\n\
-		}\n\
-		\n\
-		vec4 newFragColor = mainTexColor * vtxColor; \n\
-		\n\
-		if (polyMode == 1u) \n\
-		{ \n\
-			newFragColor.rgb = bool(polyEnableTexture) ? mix(vtxColor.rgb, mainTexColor.rgb, mainTexColor.a) : vtxColor.rgb;\n\
-			newFragColor.a = vtxColor.a; \n\
-		} \n\
-		else if (polyMode == 2u) \n\
-		{ \n\
-			vec3 newToonColor = state.toonColor[int((vtxColor.r * 31.0) + 0.5)].rgb;\n\
-			newFragColor.rgb = (state.toonShadingMode == 0) ? mainTexColor.rgb * newToonColor.rgb : min((mainTexColor.rgb * vtxColor.r) + newToonColor.rgb, 1.0); \n\
-		} \n\
-		else if (polyMode == 3u) \n\
-		{ \n\
-			if (polyID != 0u) \n\
-			{ \n\
-				newFragColor = vtxColor; \n\
-			} \n\
-		} \n\
-		\n\
-		if (newFragColor.a < 0.001 || (state.enableAlphaTest && newFragColor.a < state.alphaTestRef))\n\
-		{\n\
-			discard;\n\
-		}\n\
-		\n\
-		float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w; \n\
+		float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w;\n\
 		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-		float newFragDepth = (state.useWDepth) ? vtxPosition.w/4096.0 : clamp( (floor((((vtxPosition.z/vertW) * 0.5 + 0.5) * 16777215.0) / 4.0) * 4.0) / 16777215.0, 0.0, 1.0); \n\
+		float newFragDepthValue = (state.useWDepth) ? vtxPosition.w/4096.0 : clamp( (floor((((vtxPosition.z/vertW) * 0.5 + 0.5) * 16777215.0) / 4.0) * 4.0) / 16777215.0, 0.0, 1.0);\n\
+		\n\
+		if (!bool(polySetupShadow))\n\
+		{\n\
+			vec4 mainTexColor = bool(polyEnableTexture) ? texture(texRenderObject, vtxTexCoord) : vec4(1.0, 1.0, 1.0, 1.0);\n\
+			\n\
+			if (bool(texSingleBitAlpha))\n\
+			{\n\
+				if (mainTexColor.a < 0.500)\n\
+				{\n\
+					mainTexColor.a = 0.0;\n\
+				}\n\
+				else\n\
+				{\n\
+					mainTexColor.rgb = mainTexColor.rgb / mainTexColor.a;\n\
+					mainTexColor.a = 1.0;\n\
+				}\n\
+			}\n\
+			\n\
+			newFragColor = mainTexColor * vtxColor;\n\
+			\n\
+			if (polyMode == 1u)\n\
+			{\n\
+				newFragColor.rgb = bool(polyEnableTexture) ? mix(vtxColor.rgb, mainTexColor.rgb, mainTexColor.a) : vtxColor.rgb;\n\
+				newFragColor.a = vtxColor.a;\n\
+			}\n\
+			else if (polyMode == 2u)\n\
+			{\n\
+				vec3 newToonColor = state.toonColor[int((vtxColor.r * 31.0) + 0.5)].rgb;\n\
+				newFragColor.rgb = (state.toonShadingMode == 0) ? mainTexColor.rgb * newToonColor.rgb : min((mainTexColor.rgb * vtxColor.r) + newToonColor.rgb, 1.0);\n\
+			}\n\
+			else if (polyMode == 3u)\n\
+			{\n\
+				newFragColor = vtxColor;\n\
+			}\n\
+			\n\
+			if (newFragColor.a < 0.001 || (state.enableAlphaTest && newFragColor.a < state.alphaTestRef))\n\
+			{\n\
+				discard;\n\
+			}\n\
+			\n\
+			newFragDepth = vec4( packVec3FromFloat(newFragDepthValue), float((newFragColor.a > 0.999) || bool(polySetNewDepthForTranslucent)) );\n\
+			newPolyID = vec4(float(polyID)/63.0, 0.0, 0.0, float(newFragColor.a > 0.999));\n\
+			newFogAttributes = vec4(float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5));\n\
+		}\n\
 		\n\
 		outFragColor = newFragColor;\n\
-		outFragDepth = vec4( packVec3FromFloat(newFragDepth), float(bool(polyEnableDepthWrite) && (newFragColor.a > 0.999 || bool(polySetNewDepthForTranslucent))));\n\
-		outPolyID = vec4(float(polyID)/63.0, 0.0, 0.0, float(newFragColor.a > 0.999));\n\
-		outFogAttributes = vec4(float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5));\n\
-		gl_FragDepth = newFragDepth;\n\
-	} \n\
+		outFragDepth = newFragDepth;\n\
+		outPolyID = newPolyID;\n\
+		outFogAttributes = newFogAttributes;\n\
+		gl_FragDepth = newFragDepthValue;\n\
+	}\n\
 "};
 
 // Vertex shader for applying edge marking, GLSL 1.50
@@ -1431,7 +1440,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		
 		polyStates[i].enableTexture = (this->_textureList[i]->IsSamplingEnabled()) ? GL_TRUE : GL_FALSE;
 		polyStates[i].enableFog = (polyAttr.enableRenderFog && !(polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0)) ? GL_TRUE : GL_FALSE;
-		polyStates[i].enableDepthWrite = !(polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0) ? GL_TRUE : GL_FALSE;
+		polyStates[i].setupShadowPoly = (polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0) ? GL_TRUE : GL_FALSE;
 		polyStates[i].setNewDepthForTranslucent = (polyAttr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
 		polyStates[i].polyAlpha = (!polyAttr.isWireframe && polyAttr.isTranslucent) ? polyAttr.alpha : 0x1F;
 		polyStates[i].polyMode = polyAttr.polygonMode;
@@ -1623,24 +1632,40 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 	glDepthFunc(oglDepthFunc[attr.enableDepthEqualTest]);
 	
 	// Set up culling mode
-	static const GLenum oglCullingMode[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
-	GLenum cullingMode = oglCullingMode[attr.surfaceCullingMode];
-	
-	if (cullingMode == 0)
+	if ( (attr.polygonMode == POLYGON_MODE_SHADOW) && (attr.polygonID != 0) )
 	{
-		glDisable(GL_CULL_FACE);
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
 	}
 	else
 	{
-		glEnable(GL_CULL_FACE);
-		glCullFace(cullingMode);
+		static const GLenum oglCullingMode[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
+		GLenum cullingMode = oglCullingMode[attr.surfaceCullingMode];
+		
+		if (cullingMode == 0)
+		{
+			glDisable(GL_CULL_FACE);
+		}
+		else
+		{
+			glEnable(GL_CULL_FACE);
+			glCullFace(cullingMode);
+		}
 	}
 	
-	// Set up depth write
-	GLboolean enableDepthWrite = GL_TRUE;
+	// Set up color and depth write
+	if ( (attr.polygonMode == POLYGON_MODE_SHADOW) && (attr.polygonID == 0) )
+	{
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+		glDepthMask(GL_FALSE);
+	}
+	else
+	{
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glDepthMask(GL_TRUE);
+	}
 	
-	// Handle shadow polys. Do this after checking for depth write, since shadow polys
-	// can change this too.
+	// Set up stencil testing
 	if (attr.polygonMode == POLYGON_MODE_SHADOW)
 	{
 		glEnable(GL_STENCIL_TEST);
@@ -1652,8 +1677,6 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 			//do not write color or depth information.
 			glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 			glStencilOp(GL_KEEP, GL_ZERO, GL_KEEP);
-			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-			enableDepthWrite = GL_FALSE;
 		}
 		else
 		{
@@ -1661,26 +1684,18 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 			//only draw the shadow poly where the stencilbuf==1.
 			glStencilFunc(GL_EQUAL, 0, 0xFF);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-			enableDepthWrite = GL_TRUE;
 		}
 	}
 	else if ( attr.isTranslucent || (std::find(this->_shadowPolyID.begin(), this->_shadowPolyID.end(), attr.polygonID) == this->_shadowPolyID.end()) )
 	{
 		glDisable(GL_STENCIL_TEST);
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		enableDepthWrite = (!attr.isTranslucent || attr.isOpaque || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
 	}
 	else
 	{
 		glEnable(GL_STENCIL_TEST);
 		glStencilFunc(GL_ALWAYS, 0x80, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		enableDepthWrite = GL_TRUE;
 	}
-	
-	glDepthMask(enableDepthWrite);
 	
 	return OGLERROR_NOERR;
 }

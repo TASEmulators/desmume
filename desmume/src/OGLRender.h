@@ -377,7 +377,7 @@ struct OGLPolyStates
 {
 	union
 	{
-		struct { GLubyte enableTexture, enableFog, enableDepthWrite, setNewDepthForTranslucent; };
+		struct { GLubyte enableTexture, enableFog, setupShadowPoly, setNewDepthForTranslucent; };
 		GLubyte flags[4];
 	};
 	
@@ -474,7 +474,7 @@ struct OGLRenderRef
 	
 	GLint uniformPolyTexScale;
 	GLint uniformPolyMode;
-	GLint uniformPolyEnableDepthWrite;
+	GLint uniformPolySetupShadow;
 	GLint uniformPolySetNewDepthForTranslucent;
 	GLint uniformPolyAlpha;
 	GLint uniformPolyID;
