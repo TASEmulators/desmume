@@ -377,7 +377,7 @@ struct OGLPolyStates
 {
 	union
 	{
-		struct { GLubyte enableTexture, enableFog, setupShadowPoly, setNewDepthForTranslucent; };
+		struct { GLubyte enableTexture, enableFog, enableDepthWrite, setNewDepthForTranslucent; };
 		GLubyte flags[4];
 	};
 	
@@ -474,7 +474,7 @@ struct OGLRenderRef
 	
 	GLint uniformPolyTexScale;
 	GLint uniformPolyMode;
-	GLint uniformPolySetupShadow;
+	GLint uniformPolyEnableDepthWrite;
 	GLint uniformPolySetNewDepthForTranslucent;
 	GLint uniformPolyAlpha;
 	GLint uniformPolyID;
@@ -484,6 +484,7 @@ struct OGLRenderRef
 	GLint uniformTexSingleBitAlpha;
 	
 	GLint uniformPolyStateIndex;
+	GLint uniformPolyDrawShadow;
 	
 	GLuint texToonTableID;
 	
@@ -610,7 +611,6 @@ protected:
 	FragmentColor *_workingTextureUnpackBuffer;
 	bool _pixelReadNeedsFinish;
 	size_t _currentPolyIndex;
-	std::vector<u8> _shadowPolyID;
 	
 	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebuffer, u16 *__restrict dstRGBA5551);
 	OpenGLTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
@@ -658,6 +658,7 @@ protected:
 	virtual Render3DError DownsampleFBO() = 0;
 	virtual Render3DError ReadBackPixels() = 0;
 	
+	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const GLboolean enableDepthWrite, const u8 opaquePolyID) = 0;
 	virtual void SetPolygonIndex(const size_t index) = 0;
 	
 public:
@@ -735,6 +736,8 @@ protected:
 	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
 	virtual Render3DError SetupViewport(const u32 viewportValue);
 	
+	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const GLboolean enableDepthWrite, const u8 opaquePolyID);
+	
 public:
 	~OpenGLRenderer_1_2();
 	
@@ -804,7 +807,6 @@ protected:
 	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
 	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
 	
-	virtual Render3DError SetupPolygon(const POLY &thePoly);
 	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
 };
 

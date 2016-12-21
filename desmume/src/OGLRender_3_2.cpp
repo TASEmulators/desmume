@@ -116,7 +116,7 @@ static const char *GeometryVtxShader_150 = {"\
 	out vec4 vtxColor; \n\
 	flat out uint polyEnableTexture;\n\
 	flat out uint polyEnableFog;\n\
-	flat out uint polySetupShadow;\n\
+	flat out uint polyEnableDepthWrite;\n\
 	flat out uint polySetNewDepthForTranslucent;\n\
 	flat out uint polyMode;\n\
 	flat out uint polyID;\n\
@@ -133,7 +133,7 @@ static const char *GeometryVtxShader_150 = {"\
 		\n\
 		polyEnableTexture = polyStateFlags[0];\n\
 		polyEnableFog = polyStateFlags[1];\n\
-		polySetupShadow = polyStateFlags[2];\n\
+		polyEnableDepthWrite = polyStateFlags[2];\n\
 		polySetNewDepthForTranslucent = polyStateFlags[3];\n\
 		polyMode = polyStateValues[1];\n\
 		polyID = polyStateValues[2];\n\
@@ -159,7 +159,7 @@ static const char *GeometryFragShader_150 = {"\
 	in vec4 vtxColor;\n\
 	flat in uint polyEnableTexture;\n\
 	flat in uint polyEnableFog;\n\
-	flat in uint polySetupShadow;\n\
+	flat in uint polyEnableDepthWrite;\n\
 	flat in uint polySetNewDepthForTranslucent;\n\
 	flat in uint polyMode;\n\
 	flat in uint polyID;\n\
@@ -186,6 +186,7 @@ static const char *GeometryFragShader_150 = {"\
 	\n\
 	uniform sampler2D texRenderObject;\n\
 	uniform usamplerBuffer PolyStates;\n\
+	uniform bool polyDrawShadow;\n\
 	uniform int polyIndex;\n\
 	\n\
 	out vec4 outFragColor;\n\
@@ -211,7 +212,7 @@ static const char *GeometryFragShader_150 = {"\
 		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
 		float newFragDepthValue = (state.useWDepth) ? vtxPosition.w/4096.0 : clamp( (floor((((vtxPosition.z/vertW) * 0.5 + 0.5) * 16777215.0) / 4.0) * 4.0) / 16777215.0, 0.0, 1.0);\n\
 		\n\
-		if (!bool(polySetupShadow))\n\
+		if ((polyMode != 3u) || polyDrawShadow)\n\
 		{\n\
 			vec4 mainTexColor = bool(polyEnableTexture) ? texture(texRenderObject, vtxTexCoord) : vec4(1.0, 1.0, 1.0, 1.0);\n\
 			\n\
@@ -250,7 +251,11 @@ static const char *GeometryFragShader_150 = {"\
 				discard;\n\
 			}\n\
 			\n\
-			newFragDepth = vec4( packVec3FromFloat(newFragDepthValue), float((newFragColor.a > 0.999) || bool(polySetNewDepthForTranslucent)) );\n\
+			if ( bool(polyEnableDepthWrite) && ((newFragColor.a > 0.999) || bool(polySetNewDepthForTranslucent)) )\n\
+			{\n\
+				newFragDepth = vec4(packVec3FromFloat(newFragDepthValue), 1.0);\n\
+			}\n\
+			\n\
 			newPolyID = vec4(float(polyID)/63.0, 0.0, 0.0, float(newFragColor.a > 0.999));\n\
 			newFogAttributes = vec4(float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5));\n\
 		}\n\
@@ -1189,6 +1194,7 @@ Render3DError OpenGLRenderer_3_2::InitGeometryProgramShaderLocations()
 	glUniform1i(uniformTexRenderObject, 0);
 	glUniform1i(uniformTexBufferPolyStates, OGLTextureUnitID_PolyStates);
 	
+	OGLRef.uniformPolyDrawShadow			= glGetUniformLocation(OGLRef.programGeometryID, "polyDrawShadow");
 	OGLRef.uniformPolyStateIndex			= glGetUniformLocation(OGLRef.programGeometryID, "polyIndex");
 	
 	return OGLERROR_NOERR;
@@ -1439,10 +1445,10 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		const PolygonTexParams texParams = thePoly->getTexParams();
 		
 		polyStates[i].enableTexture = (this->_textureList[i]->IsSamplingEnabled()) ? GL_TRUE : GL_FALSE;
-		polyStates[i].enableFog = (polyAttr.enableRenderFog && !(polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0)) ? GL_TRUE : GL_FALSE;
-		polyStates[i].setupShadowPoly = (polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID == 0) ? GL_TRUE : GL_FALSE;
+		polyStates[i].enableFog = (polyAttr.enableRenderFog) ? GL_TRUE : GL_FALSE;
+		polyStates[i].enableDepthWrite =  ( (polyAttr.polygonMode != POLYGON_MODE_SHADOW) && (polyAttr.isOpaque || polyAttr.isWireframe || polyAttr.enableAlphaDepthWrite) ) ? GL_TRUE : GL_FALSE;
 		polyStates[i].setNewDepthForTranslucent = (polyAttr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
-		polyStates[i].polyAlpha = (!polyAttr.isWireframe && polyAttr.isTranslucent) ? polyAttr.alpha : 0x1F;
+		polyStates[i].polyAlpha = (polyAttr.isWireframe) ? 0x1F : polyAttr.alpha;
 		polyStates[i].polyMode = polyAttr.polygonMode;
 		polyStates[i].polyID = polyAttr.polygonID;
 		polyStates[i].texSizeS = texParams.sizeS; // Note that we are using the packed version of sizeS
@@ -1459,6 +1465,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	glUnmapBuffer(GL_ARRAY_BUFFER);
 	
 	glUseProgram(OGLRef.programGeometryID);
+	glUniform1i(OGLRef.uniformPolyDrawShadow, GL_FALSE);
 	
 	return OGLERROR_NOERR;
 }
@@ -1601,6 +1608,7 @@ Render3DError OpenGLRenderer_3_2::ClearUsingValues(const FragmentColor &clearCol
 	OGLRef.selectedRenderingFBO = (CommonSettings.GFX3D_Renderer_Multisample) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
 	glDrawBuffers(4, RenderDrawList);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask(GL_TRUE);
 	
 	const GLfloat oglColor[4] = {divide6bitBy63_LUT[clearColor6665.r], divide6bitBy63_LUT[clearColor6665.g], divide6bitBy63_LUT[clearColor6665.b], divide5bitBy31_LUT[clearColor6665.a]};
@@ -1608,7 +1616,7 @@ Render3DError OpenGLRenderer_3_2::ClearUsingValues(const FragmentColor &clearCol
 	const GLfloat oglPolyID[4] = {(GLfloat)clearAttributes.opaquePolyID/63.0f, 0.0f, 0.0f, 1.0f};
 	const GLfloat oglFogAttr[4] = {(GLfloat)clearAttributes.isFogged, 0.0f, 0.0f, 1.0f};
 	
-	glClearBufferfi(GL_DEPTH_STENCIL, 0, (GLfloat)clearAttributes.depth / (GLfloat)0x00FFFFFF, 0xFF);
+	glClearBufferfi(GL_DEPTH_STENCIL, 0, (GLfloat)clearAttributes.depth / (GLfloat)0x00FFFFFF, clearAttributes.opaquePolyID);
 	glClearBufferfv(GL_COLOR, 0, oglColor); // texGColorID
 	glClearBufferfv(GL_COLOR, 1, oglDepth); // texGDepthID
 	glClearBufferfv(GL_COLOR, 2, oglPolyID); // texGPolyID
@@ -1653,48 +1661,45 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 		}
 	}
 	
-	// Set up color and depth write
-	if ( (attr.polygonMode == POLYGON_MODE_SHADOW) && (attr.polygonID == 0) )
+	// Handle drawing states for the polygon
+	if (attr.polygonMode == POLYGON_MODE_SHADOW)
 	{
+		// Set up shadow polygon states.
+		//
+		// See comments in DrawShadowPolygon() for more information about
+		// how this 4-pass process works in OpenGL.
+		if (attr.polygonID == 0)
+		{
+			// 1st pass: Mark stencil buffer bits (0x40) with the shadow polygon volume.
+			// Bits are only marked on depth-fail.
+			glStencilFunc(GL_ALWAYS, 0x40, 0xC0);
+			glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
+			glStencilMask(0xC0);
+		}
+		else
+		{
+			// 2nd pass: Mark stencil buffer bits (0x80) with the result of the polygon ID
+			// check. Bits are marked if the polygon ID of this polygon differs from the
+			// one in the stencil buffer.
+			glStencilFunc(GL_NOTEQUAL, 0x80 | attr.polygonID, 0x3F);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+			glStencilMask(0x80);
+		}
+		
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glDepthMask(GL_FALSE);
 	}
 	else
 	{
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glDepthMask(GL_TRUE);
-	}
-	
-	// Set up stencil testing
-	if (attr.polygonMode == POLYGON_MODE_SHADOW)
-	{
-		glEnable(GL_STENCIL_TEST);
+		const u8 texFormat = thePoly.getTexParamTexFormat();
+		const bool handlePolyAsTranslucent = (!attr.isWireframe && !attr.isOpaque)/* || ((texFormat == TEXMODE_A5I3) || (texFormat == TEXMODE_A3I5))*/;
 		
-		if (attr.polygonID == 0)
-		{
-			//when the polyID is zero, we are writing the shadow mask.
-			//set stencilbuf = 1 where the shadow volume is obstructed by geometry.
-			//do not write color or depth information.
-			glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
-			glStencilOp(GL_KEEP, GL_ZERO, GL_KEEP);
-		}
-		else
-		{
-			//when the polyid is nonzero, we are drawing the shadow poly.
-			//only draw the shadow poly where the stencilbuf==1.
-			glStencilFunc(GL_EQUAL, 0, 0xFF);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-		}
-	}
-	else if ( attr.isTranslucent || (std::find(this->_shadowPolyID.begin(), this->_shadowPolyID.end(), attr.polygonID) == this->_shadowPolyID.end()) )
-	{
-		glDisable(GL_STENCIL_TEST);
-	}
-	else
-	{
-		glEnable(GL_STENCIL_TEST);
-		glStencilFunc(GL_ALWAYS, 0x80, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glStencilFunc(GL_ALWAYS, attr.polygonID, 0x3F);
+		glStencilOp(GL_KEEP, GL_KEEP, (handlePolyAsTranslucent) ? GL_KEEP : GL_REPLACE);
+		glStencilMask(0xFF); // Drawing non-shadow polygons will implicitly reset the stencil buffer bits
+		
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glDepthMask((!handlePolyAsTranslucent || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	}
 	
 	return OGLERROR_NOERR;
