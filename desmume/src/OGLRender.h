@@ -377,7 +377,7 @@ struct OGLPolyStates
 {
 	union
 	{
-		struct { GLubyte enableTexture, enableFog, enableDepthWrite, setNewDepthForTranslucent; };
+		struct { GLubyte enableTexture, enableFog, isTranslucent, setNewDepthForTranslucent; };
 		GLubyte flags[4];
 	};
 	
@@ -474,7 +474,7 @@ struct OGLRenderRef
 	
 	GLint uniformPolyTexScale;
 	GLint uniformPolyMode;
-	GLint uniformPolyEnableDepthWrite;
+	GLint uniformPolyIsTranslucent;
 	GLint uniformPolySetNewDepthForTranslucent;
 	GLint uniformPolyAlpha;
 	GLint uniformPolyID;
@@ -482,6 +482,7 @@ struct OGLRenderRef
 	GLint uniformPolyEnableTexture;
 	GLint uniformPolyEnableFog;
 	GLint uniformTexSingleBitAlpha;
+	GLint uniformTexDrawOpaque;
 	
 	GLint uniformPolyStateIndex;
 	GLint uniformPolyDrawShadow;
@@ -658,6 +659,7 @@ protected:
 	virtual Render3DError DownsampleFBO() = 0;
 	virtual Render3DError ReadBackPixels() = 0;
 	
+	virtual Render3DError DrawAlphaTextureOpaqueFragments(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const GLboolean enableDepthWrite) = 0;
 	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const GLboolean enableDepthWrite, const u8 opaquePolyID) = 0;
 	virtual void SetPolygonIndex(const size_t index) = 0;
 	
@@ -736,6 +738,7 @@ protected:
 	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
 	virtual Render3DError SetupViewport(const u32 viewportValue);
 	
+	virtual Render3DError DrawAlphaTextureOpaqueFragments(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const GLboolean enableDepthWrite);
 	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const GLboolean enableDepthWrite, const u8 opaquePolyID);
 	
 public:

@@ -307,12 +307,13 @@ static const char *fragmentShader_100 = {"\
 	uniform float stateAlphaTestRef;\n\
 	\n\
 	uniform int polyMode;\n\
-	uniform bool polyEnableDepthWrite;\n\
+	uniform bool polyIsTranslucent;\n\
 	uniform bool polySetNewDepthForTranslucent;\n\
 	uniform int polyID;\n\
 	\n\
 	uniform bool polyEnableTexture;\n\
 	uniform bool polyEnableFog;\n\
+	uniform bool texDrawOpaque;\n\
 	uniform bool texSingleBitAlpha;\n\
 	\n\
 	uniform bool polyDrawShadow;\n\
@@ -351,6 +352,23 @@ static const char *fragmentShader_100 = {"\
 					mainTexColor.a = 1.0;\n\
 				}\n\
 			}\n\
+			else\n\
+			{\n\
+				if (texDrawOpaque)\n\
+				{\n\
+					if ( (polyMode != 1) && (mainTexColor.a <= 0.999) )\n\
+					{\n\
+						discard;\n\
+					}\n\
+				}\n\
+				else\n\
+				{\n\
+					if ( ((polyMode != 1) && (mainTexColor.a * vtxColor.a > 0.999)) || ((polyMode == 1) && (vtxColor.a > 0.999)) )\n\
+					{\n\
+						discard;\n\
+					}\n\
+				}\n\
+			}\n\
 			\n\
 			vec4 newFragColor = mainTexColor * vtxColor;\n\
 			\n\
@@ -374,7 +392,7 @@ static const char *fragmentShader_100 = {"\
 				discard;\n\
 			}\n\
 			\n\
-			if (polyEnableDepthWrite && ((newFragColor.a > 0.999) || polySetNewDepthForTranslucent))\n\
+			if ( (newFragColor.a > 0.999) || polySetNewDepthForTranslucent )\n\
 			{\n\
 				newFragDepth = vec4(packVec3FromFloat(newFragDepthValue), 1.0);\n\
 			}\n\
@@ -1637,7 +1655,7 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgramShaderLocations()
 	
 	OGLRef.uniformPolyTexScale					= glGetUniformLocation(OGLRef.programGeometryID, "polyTexScale");
 	OGLRef.uniformPolyMode						= glGetUniformLocation(OGLRef.programGeometryID, "polyMode");
-	OGLRef.uniformPolyEnableDepthWrite			= glGetUniformLocation(OGLRef.programGeometryID, "polyEnableDepthWrite");
+	OGLRef.uniformPolyIsTranslucent				= glGetUniformLocation(OGLRef.programGeometryID, "polyIsTranslucent");
 	OGLRef.uniformPolySetNewDepthForTranslucent	= glGetUniformLocation(OGLRef.programGeometryID, "polySetNewDepthForTranslucent");
 	OGLRef.uniformPolyAlpha						= glGetUniformLocation(OGLRef.programGeometryID, "polyAlpha");
 	OGLRef.uniformPolyID						= glGetUniformLocation(OGLRef.programGeometryID, "polyID");
@@ -1646,6 +1664,7 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgramShaderLocations()
 	OGLRef.uniformPolyEnableFog					= glGetUniformLocation(OGLRef.programGeometryID, "polyEnableFog");
 	OGLRef.uniformTexSingleBitAlpha				= glGetUniformLocation(OGLRef.programGeometryID, "texSingleBitAlpha");
 	
+	OGLRef.uniformTexDrawOpaque					= glGetUniformLocation(OGLRef.programGeometryID, "texDrawOpaque");
 	OGLRef.uniformPolyDrawShadow				= glGetUniformLocation(OGLRef.programGeometryID, "polyDrawShadow");
 	
 	return OGLERROR_NOERR;
@@ -2803,7 +2822,12 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 			this->SetPolygonIndex(i);
 			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 			
-			if ( (thePoly.getAttributePolygonMode() == POLYGON_MODE_SHADOW) && (thePoly.getAttributePolygonID() != 0) )
+			if ( ((thePoly.getTexParamTexFormat() == TEXMODE_A3I5) || (thePoly.getTexParamTexFormat() == TEXMODE_A5I3)) && (thePoly.getAttributePolygonMode() != POLYGON_MODE_SHADOW) && (thePoly.isOpaque() || thePoly.isWireframe()) )
+			{
+				const GLboolean enableDepthWrite = ( (thePoly.getAttributePolygonMode() == POLYGON_MODE_DECAL && thePoly.isOpaque()) || thePoly.getAttributeEnableAlphaDepthWrite() ) ? GL_TRUE : GL_FALSE;
+				this->DrawAlphaTextureOpaqueFragments(polyPrimitive, vertIndexCount, indexBufferPtr, enableDepthWrite);
+			}
+			else if ( (thePoly.getAttributePolygonMode() == POLYGON_MODE_SHADOW) && (thePoly.getAttributePolygonID() != 0) )
 			{
 				const GLboolean enableDepthWrite = ( thePoly.isOpaque() || thePoly.getAttributeEnableAlphaDepthWrite() ) ? GL_TRUE : GL_FALSE;
 				this->DrawShadowPolygon(polyPrimitive, vertIndexCount, indexBufferPtr, enableDepthWrite, (thePoly.isOpaque()) ? thePoly.getAttributePolygonID() : 0);
@@ -2982,6 +3006,7 @@ void OpenGLRenderer_1_2::SetPolygonIndex(const size_t index)
 Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 {
 	const PolygonAttributes attr = thePoly.getAttributes();
+	const bool isOpaqueDecal = ((attr.polygonMode == POLYGON_MODE_DECAL) && attr.isOpaque);
 	
 	// Set up depth test mode
 	static const GLenum oglDepthFunc[2] = {GL_LESS, GL_EQUAL};
@@ -3039,15 +3064,12 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 	}
 	else
 	{
-		const u8 texFormat = thePoly.getTexParamTexFormat();
-		const bool handlePolyAsTranslucent = (!attr.isWireframe && !attr.isOpaque)/* || ((texFormat == TEXMODE_A5I3) || (texFormat == TEXMODE_A3I5))*/;
-		
 		glStencilFunc(GL_ALWAYS, attr.polygonID, 0x3F);
-		glStencilOp(GL_KEEP, GL_KEEP, (handlePolyAsTranslucent) ? GL_KEEP : GL_REPLACE);
+		glStencilOp(GL_KEEP, GL_KEEP, (attr.isTranslucent && !isOpaqueDecal) ? GL_KEEP : GL_REPLACE);
 		glStencilMask(0xFF); // Drawing non-shadow polygons will implicitly reset the stencil buffer bits
 		
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glDepthMask((!handlePolyAsTranslucent || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
+		glDepthMask((!attr.isTranslucent || isOpaqueDecal || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	}
 	
 	// Set up polygon attributes
@@ -3058,7 +3080,7 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 		glUniform1i(OGLRef.uniformPolyEnableFog, (attr.enableRenderFog) ? GL_TRUE : GL_FALSE);
 		glUniform1f(OGLRef.uniformPolyAlpha, (attr.isWireframe) ? 1.0f : divide5bitBy31_LUT[attr.alpha]);
 		glUniform1i(OGLRef.uniformPolyID, attr.polygonID);
-		glUniform1i(OGLRef.uniformPolyEnableDepthWrite, ( (attr.polygonMode != POLYGON_MODE_SHADOW) && (attr.isOpaque || attr.isWireframe || attr.enableAlphaDepthWrite) ) ? GL_TRUE : GL_FALSE);
+		glUniform1i(OGLRef.uniformPolyIsTranslucent, (attr.isTranslucent && !isOpaqueDecal) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformPolySetNewDepthForTranslucent, (attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	}
 	else
@@ -3142,6 +3164,30 @@ Render3DError OpenGLRenderer_1_2::SetupViewport(const u32 viewportValue)
 	VIEWPORT viewport;
 	viewport.decode(viewportValue);
 	glViewport(viewport.x * wScalar, viewport.y * hScalar, viewport.width * wScalar, viewport.height * hScalar);
+	
+	return OGLERROR_NOERR;
+}
+
+Render3DError OpenGLRenderer_1_2::DrawAlphaTextureOpaqueFragments(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const GLboolean enableDepthWrite)
+{
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glDepthMask(GL_TRUE);
+	
+	if (this->isShaderSupported)
+	{
+		const OGLRenderRef &OGLRef = *this->ref;
+		
+		glUniform1i(OGLRef.uniformTexDrawOpaque, GL_TRUE);
+		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+		glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
+	}
+	else
+	{
+		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+	}
+	
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glDepthMask(enableDepthWrite);
 	
 	return OGLERROR_NOERR;
 }

@@ -116,7 +116,7 @@ static const char *GeometryVtxShader_150 = {"\
 	out vec4 vtxColor; \n\
 	flat out uint polyEnableTexture;\n\
 	flat out uint polyEnableFog;\n\
-	flat out uint polyEnableDepthWrite;\n\
+	flat out uint polyIsTranslucent;\n\
 	flat out uint polySetNewDepthForTranslucent;\n\
 	flat out uint polyMode;\n\
 	flat out uint polyID;\n\
@@ -133,7 +133,7 @@ static const char *GeometryVtxShader_150 = {"\
 		\n\
 		polyEnableTexture = polyStateFlags[0];\n\
 		polyEnableFog = polyStateFlags[1];\n\
-		polyEnableDepthWrite = polyStateFlags[2];\n\
+		polyIsTranslucent = polyStateFlags[2];\n\
 		polySetNewDepthForTranslucent = polyStateFlags[3];\n\
 		polyMode = polyStateValues[1];\n\
 		polyID = polyStateValues[2];\n\
@@ -159,7 +159,7 @@ static const char *GeometryFragShader_150 = {"\
 	in vec4 vtxColor;\n\
 	flat in uint polyEnableTexture;\n\
 	flat in uint polyEnableFog;\n\
-	flat in uint polyEnableDepthWrite;\n\
+	flat in uint polyIsTranslucent;\n\
 	flat in uint polySetNewDepthForTranslucent;\n\
 	flat in uint polyMode;\n\
 	flat in uint polyID;\n\
@@ -186,6 +186,7 @@ static const char *GeometryFragShader_150 = {"\
 	\n\
 	uniform sampler2D texRenderObject;\n\
 	uniform usamplerBuffer PolyStates;\n\
+	uniform bool texDrawOpaque;\n\
 	uniform bool polyDrawShadow;\n\
 	uniform int polyIndex;\n\
 	\n\
@@ -228,6 +229,23 @@ static const char *GeometryFragShader_150 = {"\
 					mainTexColor.a = 1.0;\n\
 				}\n\
 			}\n\
+			else\n\
+			{\n\
+				if (texDrawOpaque)\n\
+				{\n\
+					if ( (polyMode != 1u) && (mainTexColor.a <= 0.999) )\n\
+					{\n\
+						discard;\n\
+					}\n\
+				}\n\
+				else\n\
+				{\n\
+					if ( ((polyMode != 1u) && (mainTexColor.a * vtxColor.a > 0.999)) || ((polyMode == 1u) && (vtxColor.a > 0.999)) )\n\
+					{\n\
+						discard;\n\
+					}\n\
+				}\n\
+			}\n\
 			\n\
 			newFragColor = mainTexColor * vtxColor;\n\
 			\n\
@@ -251,7 +269,7 @@ static const char *GeometryFragShader_150 = {"\
 				discard;\n\
 			}\n\
 			\n\
-			if ( bool(polyEnableDepthWrite) && ((newFragColor.a > 0.999) || bool(polySetNewDepthForTranslucent)) )\n\
+			if ( (newFragColor.a > 0.999) || bool(polySetNewDepthForTranslucent) )\n\
 			{\n\
 				newFragDepth = vec4(packVec3FromFloat(newFragDepthValue), 1.0);\n\
 			}\n\
@@ -1194,6 +1212,7 @@ Render3DError OpenGLRenderer_3_2::InitGeometryProgramShaderLocations()
 	glUniform1i(uniformTexRenderObject, 0);
 	glUniform1i(uniformTexBufferPolyStates, OGLTextureUnitID_PolyStates);
 	
+	OGLRef.uniformTexDrawOpaque				= glGetUniformLocation(OGLRef.programGeometryID, "texDrawOpaque");
 	OGLRef.uniformPolyDrawShadow			= glGetUniformLocation(OGLRef.programGeometryID, "polyDrawShadow");
 	OGLRef.uniformPolyStateIndex			= glGetUniformLocation(OGLRef.programGeometryID, "polyIndex");
 	
@@ -1446,7 +1465,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		
 		polyStates[i].enableTexture = (this->_textureList[i]->IsSamplingEnabled()) ? GL_TRUE : GL_FALSE;
 		polyStates[i].enableFog = (polyAttr.enableRenderFog) ? GL_TRUE : GL_FALSE;
-		polyStates[i].enableDepthWrite =  ( (polyAttr.polygonMode != POLYGON_MODE_SHADOW) && (polyAttr.isOpaque || polyAttr.isWireframe || polyAttr.enableAlphaDepthWrite) ) ? GL_TRUE : GL_FALSE;
+		polyStates[i].isTranslucent = (polyAttr.isTranslucent && !((polyAttr.polygonMode == POLYGON_MODE_DECAL) && polyAttr.isOpaque)) ? GL_TRUE : GL_FALSE;
 		polyStates[i].setNewDepthForTranslucent = (polyAttr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
 		polyStates[i].polyAlpha = (polyAttr.isWireframe) ? 0x1F : polyAttr.alpha;
 		polyStates[i].polyMode = polyAttr.polygonMode;
@@ -1465,6 +1484,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	glUnmapBuffer(GL_ARRAY_BUFFER);
 	
 	glUseProgram(OGLRef.programGeometryID);
+	glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
 	glUniform1i(OGLRef.uniformPolyDrawShadow, GL_FALSE);
 	
 	return OGLERROR_NOERR;
@@ -1691,15 +1711,14 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 	}
 	else
 	{
-		const u8 texFormat = thePoly.getTexParamTexFormat();
-		const bool handlePolyAsTranslucent = (!attr.isWireframe && !attr.isOpaque)/* || ((texFormat == TEXMODE_A5I3) || (texFormat == TEXMODE_A3I5))*/;
+		const bool isOpaqueDecal = ((attr.polygonMode == POLYGON_MODE_DECAL) && attr.isOpaque);
 		
 		glStencilFunc(GL_ALWAYS, attr.polygonID, 0x3F);
-		glStencilOp(GL_KEEP, GL_KEEP, (handlePolyAsTranslucent) ? GL_KEEP : GL_REPLACE);
+		glStencilOp(GL_KEEP, GL_KEEP, (attr.isTranslucent && !isOpaqueDecal) ? GL_KEEP : GL_REPLACE);
 		glStencilMask(0xFF); // Drawing non-shadow polygons will implicitly reset the stencil buffer bits
 		
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glDepthMask((!handlePolyAsTranslucent || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
+		glDepthMask((!attr.isTranslucent || isOpaqueDecal || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	}
 	
 	return OGLERROR_NOERR;
