@@ -4054,20 +4054,6 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT>
-void GPUEngineBase::_RenderLine_MasterBrightness(const size_t l)
-{
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	const GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[l];
-	void *dstColorLine = (this->isLineOutputNative[l]) ? ((u8 *)this->nativeBuffer + (compInfo.line.blockOffsetNative * dispInfo.pixelBytes)) : ((u8 *)this->customBuffer + (compInfo.line.blockOffsetCustom * dispInfo.pixelBytes));
-	const size_t pixCount = (this->isLineOutputNative[l]) ? GPU_FRAMEBUFFER_NATIVE_WIDTH : compInfo.line.pixelCount;
-	
-	this->ApplyMasterBrightness<OUTPUTFORMAT, false>(dstColorLine,
-													 pixCount,
-													 compInfo.renderState.masterBrightnessMode,
-													 compInfo.renderState.masterBrightnessIntensity);
-}
-
 bool GPUEngineBase::WillApplyMasterBrightnessPerScanline() const
 {
 	return this->_willApplyMasterBrightnessPerScanline;
@@ -4076,6 +4062,37 @@ bool GPUEngineBase::WillApplyMasterBrightnessPerScanline() const
 void GPUEngineBase::SetWillApplyMasterBrightnessPerScanline(bool willApply)
 {
 	this->_willApplyMasterBrightnessPerScanline = willApply;
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+void GPUEngineBase::ApplyMasterBrightness()
+{
+	if (this->_willApplyMasterBrightnessPerScanline)
+	{
+		const bool isNativeSize = (this->nativeLineOutputCount == GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+		
+		for (size_t line = 0; line < GPU_FRAMEBUFFER_NATIVE_HEIGHT; line++)
+		{
+			const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+			const GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[line];
+			void *dstColorLine = (isNativeSize) ? ((u8 *)this->nativeBuffer + (compInfo.line.blockOffsetNative * dispInfo.pixelBytes)) : ((u8 *)this->customBuffer + (compInfo.line.blockOffsetCustom * dispInfo.pixelBytes));
+			const size_t pixCount = (isNativeSize) ? GPU_FRAMEBUFFER_NATIVE_WIDTH : compInfo.line.pixelCount;
+			
+			this->ApplyMasterBrightness<OUTPUTFORMAT, false>(dstColorLine,
+															 pixCount,
+															 compInfo.renderState.masterBrightnessMode,
+															 compInfo.renderState.masterBrightnessIntensity);
+		}
+	}
+	else
+	{
+		const GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[0];
+		
+		this->ApplyMasterBrightness<OUTPUTFORMAT, false>(this->renderedBuffer,
+														 this->renderedWidth * this->renderedHeight,
+														 compInfo.renderState.masterBrightnessMode,
+														 compInfo.renderState.masterBrightnessIntensity);
+	}
 }
 
 template <NDSColorFormat OUTPUTFORMAT, bool ISFULLINTENSITYHINT>
@@ -5316,11 +5333,6 @@ void GPUEngineA::RenderLine(const size_t l)
 		{
 			this->_RenderLine_DisplayCapture<OUTPUTFORMAT, GPU_FRAMEBUFFER_NATIVE_WIDTH>(l);
 		}
-	}
-	
-	if (this->_willApplyMasterBrightnessPerScanline)
-	{
-		this->_RenderLine_MasterBrightness<OUTPUTFORMAT>(l);
 	}
 }
 
@@ -6787,11 +6799,6 @@ void GPUEngineB::RenderLine(const size_t l)
 		default:
 			break;
 	}
-	
-	if (this->_willApplyMasterBrightnessPerScanline)
-	{
-		this->_RenderLine_MasterBrightness<OUTPUTFORMAT>(l);
-	}
 }
 
 GPUSubsystem::GPUSubsystem()
@@ -7494,17 +7501,7 @@ void GPUSubsystem::RenderLine(const size_t l, bool isFrameSkipRequested)
 			{
 				if (CommonSettings.showGpu.main)
 				{
-					if (!this->_engineMain->WillApplyMasterBrightnessPerScanline())
-					{
-						GPUMasterBrightMode mode;
-						u8 intensity;
-						
-						this->_engineMain->GetMasterBrightnessAtLineZero(mode, intensity);
-						this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT, false>(this->_engineMain->renderedBuffer,
-																					  this->_engineMain->renderedWidth * this->_engineMain->renderedHeight,
-																					  mode,
-																					  intensity);
-					}
+					this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT>();
 				}
 				else
 				{
@@ -7513,17 +7510,7 @@ void GPUSubsystem::RenderLine(const size_t l, bool isFrameSkipRequested)
 				
 				if (CommonSettings.showGpu.sub)
 				{
-					if (!this->_engineSub->WillApplyMasterBrightnessPerScanline())
-					{
-						GPUMasterBrightMode mode;
-						u8 intensity;
-						
-						this->_engineSub->GetMasterBrightnessAtLineZero(mode, intensity);
-						this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT, false>(this->_engineSub->renderedBuffer,
-																					 this->_engineSub->renderedWidth * this->_engineSub->renderedHeight,
-																					 mode,
-																					 intensity);
-					}
+					this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT>();
 				}
 				else
 				{

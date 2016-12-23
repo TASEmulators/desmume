@@ -1359,9 +1359,7 @@ protected:
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG(GPUEngineCompositorInfo &compInfo);
 	
 	template<NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, itemsForPriority_t *__restrict item);
-	
-	template<NDSColorFormat OUTPUTFORMAT> void _RenderLine_MasterBrightness(const size_t l);
-	
+		
 	template<NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool ISDEBUGRENDER, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixel(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const u8 srcAlpha);
 	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _RenderPixel3D(GPUEngineCompositorInfo &compInfo, const bool enableColorEffect, const FragmentColor srcColor32);
 	
@@ -1477,6 +1475,7 @@ public:
 	bool WillApplyMasterBrightnessPerScanline() const;
 	void SetWillApplyMasterBrightnessPerScanline(bool willApply);
 	
+	template<NDSColorFormat OUTPUTFORMAT> void ApplyMasterBrightness();
 	template<NDSColorFormat OUTPUTFORMAT, bool ISFULLINTENSITYHINT> void ApplyMasterBrightness(void *dst, const size_t pixCount, const GPUMasterBrightMode mode, const u8 intensity);
 	
 	const BGLayerInfo& GetBGLayerInfoByID(const GPULayerID layerID);
