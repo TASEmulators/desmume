@@ -4059,8 +4059,8 @@ void GPUEngineBase::_RenderLine_MasterBrightness(const size_t l)
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	const GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[l];
-	void *dstColorLine = (this->isLineRenderNative[l]) ? ((u8 *)this->nativeBuffer + (compInfo.line.blockOffsetNative * dispInfo.pixelBytes)) : ((u8 *)this->customBuffer + (compInfo.line.blockOffsetCustom * dispInfo.pixelBytes));
-	const size_t pixCount = (this->isLineRenderNative[l]) ? GPU_FRAMEBUFFER_NATIVE_WIDTH : compInfo.line.pixelCount;
+	void *dstColorLine = (this->isLineOutputNative[l]) ? ((u8 *)this->nativeBuffer + (compInfo.line.blockOffsetNative * dispInfo.pixelBytes)) : ((u8 *)this->customBuffer + (compInfo.line.blockOffsetCustom * dispInfo.pixelBytes));
+	const size_t pixCount = (this->isLineOutputNative[l]) ? GPU_FRAMEBUFFER_NATIVE_WIDTH : compInfo.line.pixelCount;
 	
 	this->ApplyMasterBrightness<OUTPUTFORMAT, false>(dstColorLine,
 													 pixCount,
