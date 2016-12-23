@@ -1648,6 +1648,7 @@ private:
 	
 	NDSDisplayInfo _displayInfo;
 	
+	void _UpdateFPSRender3D();
 	void _AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, size_t h, void *clientNativeBuffer, void *clientCustomBuffer);
 	
 public:

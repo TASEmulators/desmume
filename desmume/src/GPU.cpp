@@ -6900,6 +6900,17 @@ void GPUSubsystem::FinalizeAndDeallocate()
 	free_aligned(this);
 }
 
+void GPUSubsystem::_UpdateFPSRender3D()
+{
+	this->_videoFrameCount++;
+	if (this->_videoFrameCount == 60)
+	{
+		this->_render3DFrameCount = gfx3d.render3DFrameCount;
+		gfx3d.render3DFrameCount = 0;
+		this->_videoFrameCount = 0;
+	}
+}
+
 void GPUSubsystem::SetEventHandler(GPUEventHandler *eventHandler)
 {
 	this->_event = eventHandler;
@@ -7471,13 +7482,7 @@ void GPUSubsystem::RenderLine(const size_t l, bool isFrameSkipRequested)
 		this->_engineMain->FramebufferPostprocess();
 		this->_engineSub->FramebufferPostprocess();
 		
-		this->_videoFrameCount++;
-		if (this->_videoFrameCount == 60)
-		{
-			this->_render3DFrameCount = gfx3d.render3DFrameCount;
-			gfx3d.render3DFrameCount = 0;
-			this->_videoFrameCount = 0;
-		}
+		this->_UpdateFPSRender3D();
 		
 		if (!isFrameSkipRequested)
 		{
