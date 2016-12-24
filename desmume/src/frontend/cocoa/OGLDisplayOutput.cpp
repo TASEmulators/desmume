@@ -4218,7 +4218,6 @@ static LUTValues *_HQ3xLUT = NULL;
 static LUTValues *_HQ4xLUT = NULL;
 
 static const GLint filterVtxBuffer[8] = {-1, -1, 1, -1, -1, 1, 1, 1};
-static const GLubyte outputElementBuffer[12] = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
 
 void GetGLVersionOGL(GLint *outMajor, GLint *outMinor, GLint *outRevision)
 {
@@ -6831,17 +6830,12 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	// Set up VBOs
 	glGenBuffersARB(1, &_vboVertexID);
 	glGenBuffersARB(1, &_vboTexCoordID);
-	glGenBuffersARB(1, &_vboElementID);
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLint) * (2 * 8), NULL, GL_STATIC_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * (2 * 8), NULL, GL_STREAM_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-	
-	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
-	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLubyte) * 12, outputElementBuffer, GL_STATIC_DRAW_ARB);
-	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 	
 	// Set up VAO
 	glGenVertexArraysDESMUME(1, &this->_vaoMainStatesID);
@@ -6853,7 +6847,6 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
 		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
 		
 		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
 		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
@@ -6864,7 +6857,6 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 		glVertexPointer(2, GL_INT, 0, 0);
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
 		glTexCoordPointer(2, GL_FLOAT, 0, 0);
-		glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
 		
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -6933,7 +6925,6 @@ OGLDisplayLayer::~OGLDisplayLayer()
 	
 	glDeleteBuffersARB(1, &this->_vboVertexID);
 	glDeleteBuffersARB(1, &this->_vboTexCoordID);
-	glDeleteBuffersARB(1, &this->_vboElementID);
 	glDeleteTextures(2, this->_texCPUFilterDstID);
 	glDeleteTextures(2, this->_texVideoInputDataNativeID);
 	glDeleteTextures(2, this->_texVideoInputDataCustomID);
@@ -7229,33 +7220,33 @@ void OGLDisplayLayer::UpdateVerticesOGL()
 		{
 			vtxBufferPtr[0+f]	= -w/2;			vtxBufferPtr[1+f]		= h+gap;	// Top display, top left
 			vtxBufferPtr[2+f]	= w/2;			vtxBufferPtr[3+f]		= h+gap;	// Top display, top right
-			vtxBufferPtr[4+f]	= w/2;			vtxBufferPtr[5+f]		= gap;		// Top display, bottom right
-			vtxBufferPtr[6+f]	= -w/2;			vtxBufferPtr[7+f]		= gap;		// Top display, bottom left
+			vtxBufferPtr[4+f]	= -w/2;			vtxBufferPtr[5+f]		= gap;		// Top display, bottom left
+			vtxBufferPtr[6+f]	= w/2;			vtxBufferPtr[7+f]		= gap;		// Top display, bottom right
 			
 			vtxBufferPtr[8-f]	= -w/2;			vtxBufferPtr[9-f]		= -gap;		// Bottom display, top left
 			vtxBufferPtr[10-f]	= w/2;			vtxBufferPtr[11-f]		= -gap;		// Bottom display, top right
-			vtxBufferPtr[12-f]	= w/2;			vtxBufferPtr[13-f]		= -(h+gap);	// Bottom display, bottom right
-			vtxBufferPtr[14-f]	= -w/2;			vtxBufferPtr[15-f]		= -(h+gap);	// Bottom display, bottom left
+			vtxBufferPtr[12-f]	= -w/2;			vtxBufferPtr[13-f]		= -(h+gap);	// Bottom display, bottom left
+			vtxBufferPtr[14-f]	= w/2;			vtxBufferPtr[15-f]		= -(h+gap);	// Bottom display, bottom right
 		}
 		else // displayOrientationID == DS_DISPLAY_ORIENTATION_HORIZONTAL
 		{
 			vtxBufferPtr[0+f]	= -(w+gap);		vtxBufferPtr[1+f]		= h/2;		// Left display, top left
 			vtxBufferPtr[2+f]	= -gap;			vtxBufferPtr[3+f]		= h/2;		// Left display, top right
-			vtxBufferPtr[4+f]	= -gap;			vtxBufferPtr[5+f]		= -h/2;		// Left display, bottom right
-			vtxBufferPtr[6+f]	= -(w+gap);		vtxBufferPtr[7+f]		= -h/2;		// Left display, bottom left
+			vtxBufferPtr[4+f]	= -(w+gap);		vtxBufferPtr[5+f]		= -h/2;		// Left display, bottom left
+			vtxBufferPtr[6+f]	= -gap;			vtxBufferPtr[7+f]		= -h/2;		// Left display, bottom right
 			
 			vtxBufferPtr[8-f]	= gap;			vtxBufferPtr[9-f]		= h/2;		// Right display, top left
 			vtxBufferPtr[10-f]	= w+gap;		vtxBufferPtr[11-f]		= h/2;		// Right display, top right
-			vtxBufferPtr[12-f]	= w+gap;		vtxBufferPtr[13-f]		= -h/2;		// Right display, bottom right
-			vtxBufferPtr[14-f]	= gap;			vtxBufferPtr[15-f]		= -h/2;		// Right display, bottom left
+			vtxBufferPtr[12-f]	= gap;			vtxBufferPtr[13-f]		= -h/2;		// Right display, bottom left
+			vtxBufferPtr[14-f]	= w+gap;		vtxBufferPtr[15-f]		= -h/2;		// Right display, bottom right
 		}
 	}
 	else // displayModeID == DS_DISPLAY_TYPE_MAIN || displayModeID == DS_DISPLAY_TYPE_TOUCH
 	{
 		vtxBufferPtr[0]	= -w/2;		vtxBufferPtr[1]		= h/2;		// First display, top left
 		vtxBufferPtr[2]	= w/2;		vtxBufferPtr[3]		= h/2;		// First display, top right
-		vtxBufferPtr[4]	= w/2;		vtxBufferPtr[5]		= -h/2;		// First display, bottom right
-		vtxBufferPtr[6]	= -w/2;		vtxBufferPtr[7]		= -h/2;		// First display, bottom left
+		vtxBufferPtr[4]	= -w/2;		vtxBufferPtr[5]		= -h/2;		// First display, bottom left
+		vtxBufferPtr[6]	= w/2;		vtxBufferPtr[7]		= -h/2;		// First display, bottom right
 		
 		memcpy(vtxBufferPtr + (1 * 8), vtxBufferPtr + (0 * 8), sizeof(GLint) * (1 * 8));	// Second display
 	}
@@ -7967,13 +7958,13 @@ void OGLDisplayLayer::ProcessOGL()
 	
 	texCoordBufferPtr[0]	= 0.0f;		texCoordBufferPtr[1]	=   0.0f;
 	texCoordBufferPtr[2]	=   w0;		texCoordBufferPtr[3]	=   0.0f;
-	texCoordBufferPtr[4]	=   w0;		texCoordBufferPtr[5]	=     h0;
-	texCoordBufferPtr[6]	= 0.0f;		texCoordBufferPtr[7]	=     h0;
+	texCoordBufferPtr[4]	= 0.0f;		texCoordBufferPtr[5]	=     h0;
+	texCoordBufferPtr[6]	=   w0;		texCoordBufferPtr[7]	=     h0;
 	
 	texCoordBufferPtr[8]	= 0.0f;		texCoordBufferPtr[9]	=   0.0f;
 	texCoordBufferPtr[10]	=   w1;		texCoordBufferPtr[11]	=   0.0f;
-	texCoordBufferPtr[12]	=   w1;		texCoordBufferPtr[13]	=     h1;
-	texCoordBufferPtr[14]	= 0.0f;		texCoordBufferPtr[15]	=     h1;
+	texCoordBufferPtr[12]	= 0.0f;		texCoordBufferPtr[13]	=     h1;
+	texCoordBufferPtr[14]	=   w1;		texCoordBufferPtr[15]	=     h1;
 	
 	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
@@ -8000,26 +7991,26 @@ void OGLDisplayLayer::RenderOGL()
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[0]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[0]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[0]);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 			break;
 			
 		case DS_DISPLAY_TYPE_TOUCH:
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[1]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[1]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[1]);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (GLubyte *)(6 * sizeof(GLubyte)));
+			glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
 			break;
 			
 		case DS_DISPLAY_TYPE_DUAL:
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[0]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[0]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[0]);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 			
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[1]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[1]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[1]);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (GLubyte *)(6 * sizeof(GLubyte)));
+			glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
 			break;
 			
 		default:

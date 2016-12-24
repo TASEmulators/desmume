@@ -429,7 +429,6 @@ protected:
 	GLuint _vaoMainStatesID;
 	GLuint _vboVertexID;
 	GLuint _vboTexCoordID;
-	GLuint _vboElementID;
 	
 	GLint _uniformFinalOutputAngleDegrees;
 	GLint _uniformFinalOutputScalar;
