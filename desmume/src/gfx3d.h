@@ -477,6 +477,7 @@ struct POLY {
 struct POLYLIST {
 	POLY list[POLYLIST_SIZE];
 	size_t count;
+	size_t opaqueCount;
 };
 
 //just a vert with a 4 float position

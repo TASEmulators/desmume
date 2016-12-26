@@ -389,6 +389,7 @@ static void twiddleLists()
 	polylist = &polylists[listTwiddle];
 	vertlist = &vertlists[listTwiddle];
 	polylist->count = 0;
+	polylist->opaqueCount = 0;
 	vertlist->count = 0;
 }
 
@@ -2241,7 +2242,8 @@ static void gfx3d_doFlush()
 		if (!poly.isTranslucent())
 			gfx3d.indexlist.list[ctr++] = i;
 	}
-	const size_t opaqueCount = ctr;
+	
+	polylist->opaqueCount = ctr;
 	
 	//then look for translucent polys
 	for (size_t i = 0; i < polycount; i++)
@@ -2259,13 +2261,13 @@ static void gfx3d_doFlush()
 	//now we have to sort the opaque polys by y-value.
 	//(test case: harvest moon island of happiness character cretor UI)
 	//should this be done after clipping??
-	std::stable_sort(gfx3d.indexlist.list, gfx3d.indexlist.list + opaqueCount, gfx3d_ysort_compare);
+	std::stable_sort(gfx3d.indexlist.list, gfx3d.indexlist.list + polylist->opaqueCount, gfx3d_ysort_compare);
 	
 	if (!gfx3d.state.sortmode)
 	{
 		//if we are autosorting translucent polys, we need to do this also
 		//TODO - this is unverified behavior. need a test case
-		std::stable_sort(gfx3d.indexlist.list + opaqueCount, gfx3d.indexlist.list + polycount, gfx3d_ysort_compare);
+		std::stable_sort(gfx3d.indexlist.list + polylist->opaqueCount, gfx3d.indexlist.list + polycount, gfx3d_ysort_compare);
 	}
 
 	//switch to the new lists
