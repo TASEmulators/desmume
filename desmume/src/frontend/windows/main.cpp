@@ -2059,7 +2059,7 @@ void Display()
 
 	if(CommonSettings.single_core())
 	{
-		video.srcBuffer = (u8*)dispInfo.masterNativeBuffer;
+		video.srcBuffer = (u8*)dispInfo.masterCustomBuffer;
 		video.srcBufferSize = dispInfo.customWidth*dispInfo.customHeight*2*2;
 		DoDisplay(true);
 	}
@@ -2209,7 +2209,7 @@ static void StepRunLoop_Paused()
 	// periodically update single-core OSD when paused and in the foreground
 	if(CommonSettings.single_core() && GetActiveWindow() == mainLoopData.hwnd)
 	{
-		video.srcBuffer = (u8*)GPU->GetDisplayInfo().masterNativeBuffer;
+		video.srcBuffer = (u8*)GPU->GetDisplayInfo().masterCustomBuffer;
 		DoDisplay(true);
 	}
 
@@ -5025,7 +5025,7 @@ DOKEYDOWN:
 				if(CommonSettings.single_core())
 				{
 					const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-					video.srcBuffer = (u8*)dispInfo.masterNativeBuffer;
+					video.srcBuffer = (u8*)dispInfo.masterCustomBuffer;
 					DoDisplay(true);
 				}
 			}
