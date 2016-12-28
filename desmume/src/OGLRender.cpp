@@ -334,7 +334,7 @@ static const char *fragmentShader_100 = {"\
 		\n\
 		float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w;\n\
 		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-		float newFragDepth = (stateUseWDepth) ? vtxPosition.w/4096.0 : clamp( (floor((((vtxPosition.z/vertW) * 0.5 + 0.5) * 16777215.0) / 4.0) * 4.0) / 16777215.0, 0.0, 1.0);\n\
+		float newFragDepthValue = (stateUseWDepth) ? vtxPosition.w/4096.0 : clamp( (floor((((vtxPosition.z/vertW) * 0.5 + 0.5) * 16777215.0) / 4.0) * 4.0) / 16777215.0, 0.0, 1.0);\n\
 		\n\
 		if ((polyMode != 3) || polyDrawShadow)\n\
 		{\n\
@@ -405,7 +405,7 @@ static const char *fragmentShader_100 = {"\
 		gl_FragData[1] = newFragDepth;\n\
 		gl_FragData[2] = newPolyID;\n\
 		gl_FragData[3] = newFogAttributes;\n\
-		gl_FragDepth = newFragDepth;\n\
+		gl_FragDepth = newFragDepthValue;\n\
 	}\n\
 "};
 
