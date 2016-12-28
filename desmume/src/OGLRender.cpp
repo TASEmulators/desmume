@@ -361,16 +361,9 @@ static const char *fragmentShader_100 = {"\
 						discard;\n\
 					}\n\
 				}\n\
-				else\n\
-				{\n\
-					if ( ((polyMode != 1) && (mainTexColor.a * vtxColor.a > 0.999)) || ((polyMode == 1) && (vtxColor.a > 0.999)) )\n\
-					{\n\
-						discard;\n\
-					}\n\
-				}\n\
 			}\n\
 			\n\
-			vec4 newFragColor = mainTexColor * vtxColor;\n\
+			newFragColor = mainTexColor * vtxColor;\n\
 			\n\
 			if(polyMode == 1)\n\
 			{\n\
@@ -1506,7 +1499,7 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	if (this->isFBOSupported)
 	{
 		this->willFlipFramebufferOnGPU = true;
-		this->willConvertFramebufferOnGPU = (this->isShaderSupported && this->isVAOSupported && this->isPBOSupported && this->isFBOSupported);
+		this->willConvertFramebufferOnGPU = false; // Only support this on OpenGL v2.0 or later.
 		
 		error = this->CreateFBOs();
 		if (error != OGLERROR_NOERR)
@@ -1519,9 +1512,8 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		INFO("OpenGL: FBOs are unsupported. Some emulation features will be disabled.\n");
 	}
 	
-	// Set these again after FBO creation just in case FBO creation fails.
+	// Set this again after FBO creation just in case FBO creation fails.
 	this->willFlipFramebufferOnGPU = this->isFBOSupported;
-	this->willConvertFramebufferOnGPU = (this->isShaderSupported && this->isVAOSupported && this->isPBOSupported && this->isFBOSupported);
 	
 	// Don't use ARB versions since we're using the EXT versions for backwards compatibility.
 	this->isMultisampledFBOSupported	= this->isFBOSupported &&
@@ -1605,6 +1597,12 @@ void OpenGLRenderer_1_2::DestroyPBOs()
 	if (!this->isPBOSupported)
 	{
 		return;
+	}
+	
+	if (this->_mappedFramebuffer != NULL)
+	{
+		glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
+		this->_mappedFramebuffer = NULL;
 	}
 	
 	glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
@@ -2602,6 +2600,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (engine.renderState.enableEdgeMarking) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformStateUseWDepth, (engine.renderState.wbuffer) ? GL_TRUE : GL_FALSE);
 		glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
+		glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
 		glUniform1i(OGLRef.uniformPolyDrawShadow, GL_FALSE);
 	}
 	else
@@ -3835,6 +3834,7 @@ Render3DError OpenGLRenderer_1_5::BeginRender(const GFX3D &engine)
 		glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (engine.renderState.enableEdgeMarking) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformStateUseWDepth, (engine.renderState.wbuffer) ? GL_TRUE : GL_FALSE);
 		glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
+		glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
 		glUniform1i(OGLRef.uniformPolyDrawShadow, GL_FALSE);
 	}
 	else
@@ -4510,6 +4510,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (engine.renderState.enableEdgeMarking) ? GL_TRUE : GL_FALSE);
 	glUniform1i(OGLRef.uniformStateUseWDepth, (engine.renderState.wbuffer) ? GL_TRUE : GL_FALSE);
 	glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
+	glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
 	glUniform1i(OGLRef.uniformPolyDrawShadow, GL_FALSE);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboGeometryVtxID);
