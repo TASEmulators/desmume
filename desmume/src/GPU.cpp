@@ -3878,14 +3878,10 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 					
 					if (this->isLineRenderNative[compInfo.line.indexNative])
 					{
-						compInfo.target.lineColorHead = compInfo.target.lineColorHeadNative;
-						compInfo.target.lineLayerIDHead = compInfo.target.lineLayerIDHeadNative;
 						this->_RenderLine_LayerBG<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST, false>(compInfo);
 					}
 					else
 					{
-						compInfo.target.lineColorHead = compInfo.target.lineColorHeadCustom;
-						compInfo.target.lineLayerIDHead = compInfo.target.lineLayerIDHeadCustom;
 						this->_RenderLine_LayerBG<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST, true>(compInfo);
 					}
 				} //layer enabled
@@ -5836,56 +5832,46 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 				
 			default: // Capture source is SourceA+B blended
 			{
+				u16 *srcA_ext = (u16 *)srcA;
+				u16 *srcB_ext = (u16 *)srcB;
+				
+				if ( (DISPCAPCNT.SrcB != 0) || this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset] )
+				{
+					srcB_ext = (u16 *)malloc_alignedCacheLine(compInfo.line.pixelCount * sizeof(u16));
+					this->_LineColorCopy<false, true, false, false, 2>(srcB_ext, srcB, l);
+				}
+				
 				if (DISPCAPCNT.SrcA == 0)
 				{
-					if ( (DISPCAPCNT.SrcB == 0) && !this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset] )
+					if (this->isLineRenderNative[l])
 					{
-						if (this->isLineRenderNative[l])
-						{
-							this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, true, false, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
-						}
-						else
-						{
-							this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, false, false, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
-						}
+						srcA_ext = (u16 *)malloc_alignedCacheLine(compInfo.line.pixelCount * sizeof(u16));
+						this->_LineColorCopy<false, true, false, false, 2>(srcA_ext, srcA, l);
 					}
-					else
-					{
-						if (this->isLineRenderNative[l])
-						{
-							this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, true, true, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
-						}
-						else
-						{
-							this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, false, true, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
-						}
-					}
+					
+					this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, false, false, false>(srcA_ext, srcB_ext, cap_dst_ext, captureLengthExt, captureLineCount);
 				}
 				else
 				{
 					if (is3DFramebufferNativeSize)
 					{
-						if ( (DISPCAPCNT.SrcB == 0) && !this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset] )
-						{
-							this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, true, false, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
-						}
-						else
-						{
-							this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, true, true, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
-						}
+						srcA_ext = (u16 *)malloc_alignedCacheLine(compInfo.line.pixelCount * sizeof(u16));
+						this->_LineColorCopy<false, true, false, false, 2>(srcA_ext, srcA, l);
 					}
-					else
-					{
-						if ( (DISPCAPCNT.SrcB == 0) && !this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset] )
-						{
-							this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, false, false, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
-						}
-						else
-						{
-							this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, false, true, false>(srcA, srcB, cap_dst_ext, captureLengthExt, captureLineCount);
-						}
-					}
+					
+					this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, false, false, false>(srcA_ext, srcB_ext, cap_dst_ext, captureLengthExt, captureLineCount);
 				}
+				
+				if (srcA_ext != srcA)
+				{
+					free_aligned(srcA_ext);
+				}
+				
+				if (srcB_ext != srcB)
+				{
+					free_aligned(srcB_ext);
+				}
+				
 				break;
 			}
 		}
@@ -6319,7 +6305,7 @@ __m128i GPUEngineA::_RenderLine_DispCapture_BlendFunc_SSE2(const __m128i &srcA, 
 }
 #endif
 
-template <NDSColorFormat OUTPUTFORMAT, bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB>
+template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineA::_RenderLine_DispCapture_BlendToCustomDstBuffer(const void *srcA, const void *srcB, void *dst, const u8 blendEVA, const u8 blendEVB, const size_t length, size_t l)
 {
 #ifdef ENABLE_SSE2
@@ -6327,29 +6313,20 @@ void GPUEngineA::_RenderLine_DispCapture_BlendToCustomDstBuffer(const void *srcA
 	const __m128i blendEVB_vec128 = _mm_set1_epi16(blendEVB);
 #endif
 	
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	size_t offset = _gpuDstToSrcIndex[_gpuDstLineIndex[l] * dispInfo.customWidth] - (l * GPU_FRAMEBUFFER_NATIVE_WIDTH);
 	size_t i = 0;
 	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
 	{
-		const u32 *srcA_32 = (const u32 *)srcA;
-		const u32 *srcB_32 = (const u32 *)srcB;
+		const FragmentColor *srcA_32 = (const FragmentColor *)srcA;
+		const FragmentColor *srcB_32 = (const FragmentColor *)srcB;
 		FragmentColor *dst32 = (FragmentColor *)dst;
 		
 #ifdef ENABLE_SSE2
 		const size_t ssePixCount = length - (length % 4);
 		for (; i < ssePixCount; i+=4)
 		{
-			__m128i srcA_vec128 = (!CAPTUREFROMNATIVESRCA) ? _mm_load_si128((__m128i *)(srcA_32 + i)) : _mm_set_epi32(srcA_32[offset + i + 3],
-																													  srcA_32[offset + i + 2],
-																													  srcA_32[offset + i + 1],
-																													  srcA_32[offset + i + 0]);
-			
-			__m128i srcB_vec128 = (!CAPTUREFROMNATIVESRCB) ? _mm_load_si128((__m128i *)(srcB_32 + i)) : _mm_set_epi32(srcB_32[offset + i + 3],
-																													  srcB_32[offset + i + 2],
-																													  srcB_32[offset + i + 1],
-																													  srcB_32[offset + i + 0]);
+			const __m128i srcA_vec128 = _mm_load_si128((__m128i *)(srcA_32 + i));
+			const __m128i srcB_vec128 = _mm_load_si128((__m128i *)(srcB_32 + i));
 			
 			_mm_store_si128( (__m128i *)(dst32 + i), this->_RenderLine_DispCapture_BlendFunc_SSE2<OUTPUTFORMAT>(srcA_vec128, srcB_vec128, blendEVA_vec128, blendEVB_vec128) );
 		}
@@ -6360,10 +6337,10 @@ void GPUEngineA::_RenderLine_DispCapture_BlendToCustomDstBuffer(const void *srcA
 #endif
 		for (; i < length; i++)
 		{
-			const FragmentColor colorA = (!CAPTUREFROMNATIVESRCA) ? ((const FragmentColor *)srcA)[i] : ((const FragmentColor *)srcA)[offset + i];
-			const FragmentColor colorB = (!CAPTUREFROMNATIVESRCB) ? ((const FragmentColor *)srcB)[i] : ((const FragmentColor *)srcB)[offset + i];
+			const FragmentColor colorA = srcA_32[i];
+			const FragmentColor colorB = srcB_32[i];
 			
-			((FragmentColor *)dst)[i] = this->_RenderLine_DispCapture_BlendFunc<OUTPUTFORMAT>(colorA, colorB, blendEVA, blendEVB);
+			dst32[i] = this->_RenderLine_DispCapture_BlendFunc<OUTPUTFORMAT>(colorA, colorB, blendEVA, blendEVB);
 		}
 	}
 	else
@@ -6376,23 +6353,8 @@ void GPUEngineA::_RenderLine_DispCapture_BlendToCustomDstBuffer(const void *srcA
 		const size_t ssePixCount = length - (length % 8);
 		for (; i < ssePixCount; i+=8)
 		{
-			__m128i srcA_vec128 = (!CAPTUREFROMNATIVESRCA) ? _mm_load_si128((__m128i *)(srcA_16 + i)) : _mm_set_epi16(srcA_16[offset + i + 7],
-																													  srcA_16[offset + i + 6],
-																													  srcA_16[offset + i + 5],
-																													  srcA_16[offset + i + 4],
-																													  srcA_16[offset + i + 3],
-																													  srcA_16[offset + i + 2],
-																													  srcA_16[offset + i + 1],
-																													  srcA_16[offset + i + 0]);
-			
-			__m128i srcB_vec128 = (!CAPTUREFROMNATIVESRCB) ? _mm_load_si128((__m128i *)(srcB_16 + i)) : _mm_set_epi16(srcB_16[offset + i + 7],
-																													  srcB_16[offset + i + 6],
-																													  srcB_16[offset + i + 5],
-																													  srcB_16[offset + i + 4],
-																													  srcB_16[offset + i + 3],
-																													  srcB_16[offset + i + 2],
-																													  srcB_16[offset + i + 1],
-																													  srcB_16[offset + i + 0]);
+			const __m128i srcA_vec128 = _mm_load_si128((__m128i *)(srcA_16 + i));
+			const __m128i srcB_vec128 = _mm_load_si128((__m128i *)(srcB_16 + i));
 			
 			_mm_store_si128( (__m128i *)(dst16 + i), this->_RenderLine_DispCapture_BlendFunc_SSE2<NDSColorFormat_BGR555_Rev>(srcA_vec128, srcB_vec128, blendEVA_vec128, blendEVB_vec128) );
 		}
@@ -6403,8 +6365,8 @@ void GPUEngineA::_RenderLine_DispCapture_BlendToCustomDstBuffer(const void *srcA
 #endif
 		for (; i < length; i++)
 		{
-			const u16 colorA = (!CAPTUREFROMNATIVESRCA) ? srcA_16[i] : srcA_16[offset + i];
-			const u16 colorB = (!CAPTUREFROMNATIVESRCB) ? srcB_16[i] : srcB_16[offset + i];
+			const u16 colorA = srcA_16[i];
+			const u16 colorB = srcB_16[i];
 			
 			dst16[i] = this->_RenderLine_DispCapture_BlendFunc(colorA, colorB, blendEVA, blendEVB);
 		}
@@ -6500,13 +6462,13 @@ void GPUEngineA::_RenderLine_DispCapture_Blend(const void *srcA, const void *src
 		
 		if (CAPTURELENGTH == GPU_FRAMEBUFFER_NATIVE_WIDTH)
 		{
-			this->_RenderLine_DispCapture_BlendToCustomDstBuffer<OUTPUTFORMAT, CAPTUREFROMNATIVESRCA, CAPTUREFROMNATIVESRCB>(srcA, srcB, dst, blendEVA, blendEVB, captureLengthExt * captureLineCount, l);
+			this->_RenderLine_DispCapture_BlendToCustomDstBuffer<OUTPUTFORMAT>(srcA, srcB, dst, blendEVA, blendEVB, captureLengthExt * captureLineCount, l);
 		}
 		else
 		{
 			for (size_t line = 0; line < captureLineCount; line++)
 			{
-				this->_RenderLine_DispCapture_BlendToCustomDstBuffer<OUTPUTFORMAT, CAPTUREFROMNATIVESRCA, CAPTUREFROMNATIVESRCB>(srcA, srcB, dst, blendEVA, blendEVB, captureLengthExt, l);
+				this->_RenderLine_DispCapture_BlendToCustomDstBuffer<OUTPUTFORMAT>(srcA, srcB, dst, blendEVA, blendEVB, captureLengthExt, l);
 				srcA = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? (void *)((FragmentColor *)srcA + lineWidth) : (void *)((u16 *)srcA + lineWidth);
 				srcB = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? (void *)((FragmentColor *)srcB + lineWidth) : (void *)((u16 *)srcB + lineWidth);
 				dst = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? (void *)((FragmentColor *)dst + lineWidth) : (void *)((u16 *)dst + lineWidth);

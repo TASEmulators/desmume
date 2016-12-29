@@ -1531,7 +1531,7 @@ protected:
 	template<NDSColorFormat COLORFORMAT> __m128i _RenderLine_DispCapture_BlendFunc_SSE2(const __m128i &srcA, const __m128i &srcB, const __m128i &blendEVA, const __m128i &blendEVB);
 #endif
 	
-	template<NDSColorFormat OUTPUTFORMAT, bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB>
+	template<NDSColorFormat OUTPUTFORMAT>
 	void _RenderLine_DispCapture_BlendToCustomDstBuffer(const void *srcA, const void *srcB, void *dst, const u8 blendEVA, const u8 blendEVB, const size_t length, size_t l); // Do not use restrict pointers, since srcB and dst can be the same
 	
 	template<NDSColorFormat OUTPUTFORMAT, size_t CAPTURELENGTH, bool CAPTUREFROMNATIVESRCA, bool CAPTUREFROMNATIVESRCB, bool CAPTURETONATIVEDST>
