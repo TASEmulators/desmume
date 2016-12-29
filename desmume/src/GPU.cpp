@@ -3047,46 +3047,28 @@ void GPUEngineBase::_RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, co
 			
 		case BGType_AffineExt_Direct: // direct colors / BMP
 		{
+			outUseCustomVRAM = false;
+			
 			if (!MOSAIC)
 			{
-				const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(compInfo.renderState.selectedBGLayer->BMPAddress) - MMU.ARM9_LCD) / sizeof(u16);
-				
-				if (vramPixel >= (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4))
+				const bool isRotationScaled = ( (param.BGnPA.value != 0x100) ||
+				                                (param.BGnPC.value !=     0) ||
+				                                (param.BGnX.value  !=     0) ||
+				                                (param.BGnY.value  !=     0) );
+				if (!isRotationScaled)
 				{
-					outUseCustomVRAM = false;
-				}
-				else
-				{
-					const size_t blockID = vramPixel / (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
-					const size_t blockPixel = vramPixel % (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
-					const size_t blockLine = blockPixel / GPU_FRAMEBUFFER_NATIVE_WIDTH;
+					const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(compInfo.renderState.selectedBGLayer->BMPAddress) - MMU.ARM9_LCD) / sizeof(u16);
 					
-					if (GPU->GetEngineMain()->VerifyVRAMLineDidChange(blockID, compInfo.line.indexNative + blockLine))
+					if (vramPixel < (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4))
 					{
-						switch (OUTPUTFORMAT)
-						{
-							case NDSColorFormat_BGR555_Rev:
-								this->_LineColorCopy<true, false, false, false, 2>(compInfo.target.lineColorHeadNative, compInfo.target.lineColorHeadCustom, compInfo.line.indexNative);
-								break;
-								
-							case NDSColorFormat_BGR666_Rev:
-							case NDSColorFormat_BGR888_Rev:
-								this->_LineColorCopy<true, false, false, false, 4>(compInfo.target.lineColorHeadNative, compInfo.target.lineColorHeadCustom, compInfo.line.indexNative);
-								break;
-						}
+						const size_t blockID = vramPixel / (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
+						const size_t blockPixel = vramPixel % (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
+						const size_t blockLine = blockPixel / GPU_FRAMEBUFFER_NATIVE_WIDTH;
 						
-						this->_LineLayerIDCopy<true, false>(compInfo.target.lineLayerIDHeadNative, compInfo.target.lineLayerIDHeadCustom, compInfo.line.indexNative);
-						
-						compInfo.target.lineColorHead = compInfo.target.lineColorHeadNative;
-						compInfo.target.lineLayerIDHead = compInfo.target.lineLayerIDHeadNative;
+						GPU->GetEngineMain()->VerifyVRAMLineDidChange(blockID, compInfo.line.indexNative + blockLine);
+						outUseCustomVRAM = !GPU->GetEngineMain()->isLineCaptureNative[blockID][compInfo.line.indexNative + blockLine];
 					}
-					
-					outUseCustomVRAM = !GPU->GetEngineMain()->isLineCaptureNative[blockID][compInfo.line.indexNative + blockLine];
 				}
-			}
-			else
-			{
-				outUseCustomVRAM = false;
 			}
 			
 			if (!outUseCustomVRAM)
@@ -3953,25 +3935,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 {
 	if (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE)
 	{
-		if (GPU->GetEngineMain()->VerifyVRAMLineDidChange(this->vramBlockOBJIndex, compInfo.line.indexNative))
-		{
-			switch (OUTPUTFORMAT)
-			{
-				case NDSColorFormat_BGR555_Rev:
-					this->_LineColorCopy<true, false, false, false, 2>(compInfo.target.lineColorHeadNative, compInfo.target.lineColorHeadCustom, compInfo.line.indexNative);
-					break;
-					
-				case NDSColorFormat_BGR666_Rev:
-				case NDSColorFormat_BGR888_Rev:
-					this->_LineColorCopy<true, false, false, false, 4>(compInfo.target.lineColorHeadNative, compInfo.target.lineColorHeadCustom, compInfo.line.indexNative);
-					break;
-			}
-			
-			this->_LineLayerIDCopy<true, false>(compInfo.target.lineLayerIDHeadNative, compInfo.target.lineLayerIDHeadCustom, compInfo.line.indexNative);
-			
-			compInfo.target.lineColorHead = compInfo.target.lineColorHeadNative;
-			compInfo.target.lineLayerIDHead = compInfo.target.lineLayerIDHeadNative;
-		}
+		GPU->GetEngineMain()->VerifyVRAMLineDidChange(this->vramBlockOBJIndex, compInfo.line.indexNative);
 	}
 	
 	const bool useCustomVRAM = (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE) && !GPU->GetEngineMain()->isLineCaptureNative[this->vramBlockOBJIndex][compInfo.line.indexNative];
