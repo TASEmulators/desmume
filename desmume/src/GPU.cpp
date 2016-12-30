@@ -3054,7 +3054,7 @@ void GPUEngineBase::_RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, co
 				const bool isRotationScaled = ( (param.BGnPA.value != 0x100) ||
 				                                (param.BGnPC.value !=     0) ||
 				                                (param.BGnX.value  !=     0) ||
-				                                (param.BGnY.value  !=     0) );
+				                                (param.BGnY.value  != (0x100 * compInfo.line.indexNative)) );
 				if (!isRotationScaled)
 				{
 					const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(compInfo.renderState.selectedBGLayer->BMPAddress) - MMU.ARM9_LCD) / sizeof(u16);
