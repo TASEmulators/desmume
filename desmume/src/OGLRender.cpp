@@ -3012,25 +3012,17 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 	glDepthFunc(oglDepthFunc[attr.enableDepthEqualTest]);
 	
 	// Set up culling mode
-	if ( (attr.polygonMode == POLYGON_MODE_SHADOW) && (attr.polygonID != 0) )
+	static const GLenum oglCullingMode[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
+	GLenum cullingMode = oglCullingMode[attr.surfaceCullingMode];
+	
+	if (cullingMode == 0)
 	{
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
+		glDisable(GL_CULL_FACE);
 	}
 	else
 	{
-		static const GLenum oglCullingMode[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
-		GLenum cullingMode = oglCullingMode[attr.surfaceCullingMode];
-		
-		if (cullingMode == 0)
-		{
-			glDisable(GL_CULL_FACE);
-		}
-		else
-		{
-			glEnable(GL_CULL_FACE);
-			glCullFace(cullingMode);
-		}
+		glEnable(GL_CULL_FACE);
+		glCullFace(cullingMode);
 	}
 	
 	// Handle drawing states for the polygon

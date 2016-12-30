@@ -1565,14 +1565,36 @@ void SoftRasterizerRenderer::GetAndLoadAllTextures()
 
 bool PolygonIsVisible(const PolygonAttributes &polyAttr, const bool backfacing)
 {
-	//this was added after adding multi-bit stencil buffer
-	//it seems that we also need to prevent drawing back faces of shadow polys for rendering
+	// Force backface culling when drawing shadow polygons.
 	if (polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID != 0) return !backfacing;
 	
+	// 2009/08/02 initial comments:
+	//this was added after adding multi-bit stencil buffer
+	//it seems that we also need to prevent drawing back faces of shadow polys for rendering
+	//
 	//another reasonable possibility is that we should be forcing back faces to draw (mariokart doesnt use them)
 	//and then only using a single bit buffer (but a cursory test of this doesnt actually work)
 	//
 	//this code needs to be here for shadows in wizard of oz to work.
+	
+	// 2016/12/30 update:
+	// According to GBATEK, there really shouldn't be any special case for forcing backface culling on shadow
+	// polygons. All polygons, regardless of what they are, should always respect the culling mode. This is
+	// necessary for Mario Kart DS, where shadow polygons will fail to render under the Karts during Kart select
+	// if backface culling is forced (only fails for 150cc MIRROR, but works on the normal 150cc). Apparently,
+	// Mario Kart does use the backfaces of shadow polygons, but only for 150cc MIRROR and not the normal 150cc!
+	//
+	// However, there are a number of test cases where forcing backface culling is beneficial for the proper
+	// rendering of shadows, including:
+	// 1. The Wizard of Oz: Beyond the Yellow Brick Road -- shadows under Dorothy and Toto
+	// 2. Kingdom Hearts Re:coded -- shadow under Sora
+	// 3. Golden Sun: Dark Dawn -- shadow under the main character
+	//
+	// Based on these tests, we will need to rework shadow polygon handling at some point to pass all of these
+	// conditions. To note, the OpenGL renderer does render shadow polygons properly, without forced backface
+	// culling, for every one of these test cases.
+	//
+	// TODO: Rework shadow polygon handling in SoftRasterizer.
 	
 	switch (polyAttr.surfaceCullingMode)
 	{
