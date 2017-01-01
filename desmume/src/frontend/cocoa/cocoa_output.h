@@ -108,9 +108,6 @@ typedef struct
 - (void) doFinishFrame;
 - (void) doDisplayModeChanged:(NSInteger)displayModeID;
 
-@optional
-- (void) doDisplaySizeChanged:(NSSize)displaySize;
-
 @end
 
 @protocol CocoaDSDisplayVideoDelegate <CocoaDSDisplayDelegate>
@@ -149,8 +146,6 @@ typedef struct
 	id <CocoaDSDisplayDelegate> delegate;
 	NSSize displaySize;
 	NSInteger displayMode;
-	size_t _gpuCurrentWidth;
-	size_t _gpuCurrentHeight;
 	
 	uint32_t _receivedFrameIndex;
 	uint32_t _currentReceivedFrameIndex;

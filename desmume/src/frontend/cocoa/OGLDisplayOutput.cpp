@@ -5584,7 +5584,7 @@ bool OGLImage::CanUseShaderBasedFilters()
 	return this->_canUseShaderBasedFilters;
 }
 
-void OGLImage::GetNormalSize(double &w, double &h)
+void OGLImage::GetNormalSize(double &w, double &h) const
 {
 	w = this->_normalWidth;
 	h = this->_normalHeight;
@@ -6736,16 +6736,14 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	_needUpdateVertices = true;
 	_useDeposterize = false;
 	
-	_displayWidth = GPU_DISPLAY_WIDTH;
-	_displayHeight = GPU_DISPLAY_HEIGHT;
-	_displayMode = DS_DISPLAY_TYPE_DUAL;
-	_displayOrder = DS_DISPLAY_ORDER_MAIN_FIRST;
-	_displayOrientation = DS_DISPLAY_ORIENTATION_VERTICAL;
+	_displayMode = ClientDisplayMode_Dual;
+	_displayOrder = ClientDisplayOrder_MainFirst;
+	_displayOrientation = ClientDisplayLayout_Vertical;
 	
 	_gapScalar = 0.0f;
 	_rotation = 0.0f;
-	_normalWidth = _displayWidth;
-	_normalHeight = _displayHeight*2.0 + ((_displayHeight * DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO) * _gapScalar);
+	_normalWidth = GPU_DISPLAY_WIDTH;
+	_normalHeight = GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_UNSCALED_GAP*_gapScalar);
 	
 	_vf[0] = new VideoFilter(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, VideoFilterTypeID_None, 0);
 	_vf[1] = new VideoFilter(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, VideoFilterTypeID_None, 0);
@@ -6832,9 +6830,9 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	glGenBuffersARB(1, &_vboTexCoordID);
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLint) * (2 * 8), NULL, GL_STATIC_DRAW_ARB);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * (4 * 8), NULL, GL_STATIC_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * (2 * 8), NULL, GL_STREAM_DRAW_ARB);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(GLfloat) * (4 * 8), NULL, GL_STREAM_DRAW_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
 	// Set up VAO
@@ -6844,7 +6842,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	if (this->_output->GetInfo()->IsShaderSupported())
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
-		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, 0);
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
 		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 		
@@ -6854,7 +6852,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	else
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
-		glVertexPointer(2, GL_INT, 0, 0);
+		glVertexPointer(2, GL_FLOAT, 0, 0);
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
 		glTexCoordPointer(2, GL_FLOAT, 0, 0);
 		
@@ -7118,66 +7116,48 @@ void OGLDisplayLayer::SetFiltersPreferGPUOGL(bool preferGPU)
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 }
 
-uint16_t OGLDisplayLayer::GetDisplayWidth()
-{
-	return this->_displayWidth;
-}
-
-uint16_t OGLDisplayLayer::GetDisplayHeight()
-{
-	return this->_displayHeight;
-}
-
-void OGLDisplayLayer::SetDisplaySize(uint16_t w, uint16_t h)
-{
-	this->_displayWidth = w;
-	this->_displayHeight = h;
-	this->GetNormalSize(this->_normalWidth, this->_normalHeight);
-	this->_needUpdateVertices = true;
-}
-
-int OGLDisplayLayer::GetMode()
+ClientDisplayMode OGLDisplayLayer::GetMode() const
 {
 	return this->_displayMode;
 }
 
-void OGLDisplayLayer::SetMode(int dispMode)
+void OGLDisplayLayer::SetMode(const ClientDisplayMode dispMode)
 {
 	this->_displayMode = dispMode;
-	this->GetNormalSize(this->_normalWidth, this->_normalHeight);
+	OGLDisplayLayer::CalculateNormalSize(this->_displayMode, this->_displayOrientation, this->_gapScalar, this->_normalWidth, this->_normalHeight);
 	this->_needUpdateVertices = true;
 }
 
-int OGLDisplayLayer::GetOrientation()
+ClientDisplayLayout OGLDisplayLayer::GetOrientation() const
 {
 	return this->_displayOrientation;
 }
 
-void OGLDisplayLayer::SetOrientation(int dispOrientation)
+void OGLDisplayLayer::SetOrientation(ClientDisplayLayout dispOrientation)
 {
 	this->_displayOrientation = dispOrientation;
-	this->GetNormalSize(this->_normalWidth, this->_normalHeight);
+	OGLDisplayLayer::CalculateNormalSize(this->_displayMode, this->_displayOrientation, this->_gapScalar, this->_normalWidth, this->_normalHeight);
 	this->_needUpdateVertices = true;
 }
 
-GLfloat OGLDisplayLayer::GetGapScalar()
+double OGLDisplayLayer::GetGapScalar() const
 {
 	return this->_gapScalar;
 }
 
-void OGLDisplayLayer::SetGapScalar(GLfloat theScalar)
+void OGLDisplayLayer::SetGapScalar(double theScalar)
 {
 	this->_gapScalar = theScalar;
-	this->GetNormalSize(this->_normalWidth, this->_normalHeight);
+	OGLDisplayLayer::CalculateNormalSize(this->_displayMode, this->_displayOrientation, this->_gapScalar, this->_normalWidth, this->_normalHeight);
 	this->_needUpdateVertices = true;
 }
 
-GLfloat OGLDisplayLayer::GetRotation()
+double OGLDisplayLayer::GetRotation() const
 {
 	return this->_rotation;
 }
 
-void OGLDisplayLayer::SetRotation(GLfloat theRotation)
+void OGLDisplayLayer::SetRotation(double theRotation)
 {
 	this->_rotation = theRotation;
 }
@@ -7192,12 +7172,12 @@ void OGLDisplayLayer::SetSourceDeposterize(bool useDeposterize)
 	this->_useDeposterize = (this->_canUseShaderBasedFilters) ? useDeposterize : false;
 }
 
-int OGLDisplayLayer::GetOrder()
+ClientDisplayOrder OGLDisplayLayer::GetOrder() const
 {
 	return this->_displayOrder;
 }
 
-void OGLDisplayLayer::SetOrder(int dispOrder)
+void OGLDisplayLayer::SetOrder(ClientDisplayOrder dispOrder)
 {
 	this->_displayOrder = dispOrder;
 	this->_needUpdateVertices = true;
@@ -7205,50 +7185,129 @@ void OGLDisplayLayer::SetOrder(int dispOrder)
 
 void OGLDisplayLayer::UpdateVerticesOGL()
 {
-	const size_t f = (this->_displayOrder == DS_DISPLAY_ORDER_MAIN_FIRST) ? 0 : 8;
-	const GLfloat w = this->_displayWidth;
-	const GLfloat h = this->_displayHeight;
-	const GLfloat gap = (h * DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO) * this->_gapScalar / 2.0;
+	const GLfloat w = this->_normalWidth / 2.0f;
+	const GLfloat h = this->_normalHeight / 2.0f;
+	const size_t f = (this->_displayOrder == ClientDisplayOrder_MainFirst) ? 0 : 8;
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
-	GLint *vtxBufferPtr = (GLint *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+	GLfloat *vtxBufferPtr = (GLfloat *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 	
-	if (this->_displayMode == DS_DISPLAY_TYPE_DUAL)
+	if (this->_displayMode == ClientDisplayMode_Dual)
 	{
-		// displayOrder == DS_DISPLAY_ORDER_MAIN_FIRST
-		if (this->_displayOrientation == DS_DISPLAY_ORIENTATION_VERTICAL)
+		switch (this->_displayOrientation)
 		{
-			vtxBufferPtr[0+f]	= -w/2;			vtxBufferPtr[1+f]		= h+gap;	// Top display, top left
-			vtxBufferPtr[2+f]	= w/2;			vtxBufferPtr[3+f]		= h+gap;	// Top display, top right
-			vtxBufferPtr[4+f]	= -w/2;			vtxBufferPtr[5+f]		= gap;		// Top display, bottom left
-			vtxBufferPtr[6+f]	= w/2;			vtxBufferPtr[7+f]		= gap;		// Top display, bottom right
-			
-			vtxBufferPtr[8-f]	= -w/2;			vtxBufferPtr[9-f]		= -gap;		// Bottom display, top left
-			vtxBufferPtr[10-f]	= w/2;			vtxBufferPtr[11-f]		= -gap;		// Bottom display, top right
-			vtxBufferPtr[12-f]	= -w/2;			vtxBufferPtr[13-f]		= -(h+gap);	// Bottom display, bottom left
-			vtxBufferPtr[14-f]	= w/2;			vtxBufferPtr[15-f]		= -(h+gap);	// Bottom display, bottom right
-		}
-		else // displayOrientationID == DS_DISPLAY_ORIENTATION_HORIZONTAL
-		{
-			vtxBufferPtr[0+f]	= -(w+gap);		vtxBufferPtr[1+f]		= h/2;		// Left display, top left
-			vtxBufferPtr[2+f]	= -gap;			vtxBufferPtr[3+f]		= h/2;		// Left display, top right
-			vtxBufferPtr[4+f]	= -(w+gap);		vtxBufferPtr[5+f]		= -h/2;		// Left display, bottom left
-			vtxBufferPtr[6+f]	= -gap;			vtxBufferPtr[7+f]		= -h/2;		// Left display, bottom right
-			
-			vtxBufferPtr[8-f]	= gap;			vtxBufferPtr[9-f]		= h/2;		// Right display, top left
-			vtxBufferPtr[10-f]	= w+gap;		vtxBufferPtr[11-f]		= h/2;		// Right display, top right
-			vtxBufferPtr[12-f]	= gap;			vtxBufferPtr[13-f]		= -h/2;		// Right display, bottom left
-			vtxBufferPtr[14-f]	= w+gap;		vtxBufferPtr[15-f]		= -h/2;		// Right display, bottom right
+			case ClientDisplayLayout_Horizontal:
+			{
+				vtxBufferPtr[0+f]	= -w;									vtxBufferPtr[1+f]	=  h;						// Left display, top left
+				vtxBufferPtr[2+f]	=  0.0f;								vtxBufferPtr[3+f]	=  h;						// Left display, top right
+				vtxBufferPtr[4+f]	= -w;									vtxBufferPtr[5+f]	= -h;						// Left display, bottom left
+				vtxBufferPtr[6+f]	=  0.0f;								vtxBufferPtr[7+f]	= -h;						// Left display, bottom right
+				
+				vtxBufferPtr[8-f]	=  0.0f;								vtxBufferPtr[9-f]	=  h;						// Right display, top left
+				vtxBufferPtr[10-f]	=  w;									vtxBufferPtr[11-f]	=  h;						// Right display, top right
+				vtxBufferPtr[12-f]	=  0.0f;								vtxBufferPtr[13-f]	= -h;						// Right display, bottom left
+				vtxBufferPtr[14-f]	=  w;									vtxBufferPtr[15-f]	= -h;						// Right display, bottom right
+				
+				memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(GLfloat) * (2 * 8));							// Unused displays
+				break;
+			}
+				
+			case ClientDisplayLayout_Hybrid_3_2:
+			{
+				vtxBufferPtr[0]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[1]		= -h + (96.0f * 2.0f);		// Minor top display, top left
+				vtxBufferPtr[2]		=  w;									vtxBufferPtr[3]		= -h + (96.0f * 2.0f);		// Minor top display, top right
+				vtxBufferPtr[4]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[5]		= -h + 96.0f;				// Minor top display, bottom left
+				vtxBufferPtr[6]		=  w;									vtxBufferPtr[7]		= -h + 96.0f;				// Minor top display, bottom right
+				
+				vtxBufferPtr[8]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[9]		= -h + 96.0f;				// Minor bottom display, top left
+				vtxBufferPtr[10]	=  w;									vtxBufferPtr[11]	= -h + 96.0f;				// Minor bottom display, top right
+				vtxBufferPtr[12]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
+				vtxBufferPtr[14]	=  w;									vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
+				
+				vtxBufferPtr[16]	= -w;									vtxBufferPtr[17]	=  h;						// Major display, top left
+				vtxBufferPtr[18]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
+				vtxBufferPtr[20]	= -w;									vtxBufferPtr[21]	= -h;						// Major display, bottom left
+				vtxBufferPtr[22]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
+				
+				memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (2 * 8), sizeof(GLfloat) * (1 * 8));							// Major display (bottom screen)
+				break;
+			}
+				
+			case ClientDisplayLayout_Hybrid_16_9:
+			{
+				const GLfloat g = (GLfloat)DS_DISPLAY_UNSCALED_GAP * this->_gapScalar * (this->_normalWidth - (GLfloat)GPU_DISPLAY_WIDTH) / (GLfloat)GPU_DISPLAY_WIDTH;
+				
+				vtxBufferPtr[0]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[1]		= -h + g + (64.0f * 2.0f);	// Minor top display, top left
+				vtxBufferPtr[2]		=  w;									vtxBufferPtr[3]		= -h + g + (64.0f * 2.0f);	// Minor top display, top right
+				vtxBufferPtr[4]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[5]		= -h + g + 64.0f;			// Minor top display, bottom left
+				vtxBufferPtr[6]		=  w;									vtxBufferPtr[7]		= -h + g + 64.0f;			// Minor top display, bottom right
+				
+				vtxBufferPtr[8]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[9]		= -h + 64.0f;				// Minor bottom display, top left
+				vtxBufferPtr[10]	=  w;									vtxBufferPtr[11]	= -h + 64.0f;				// Minor bottom display, top right
+				vtxBufferPtr[12]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
+				vtxBufferPtr[14]	=  w;									vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
+				
+				vtxBufferPtr[16]	= -w;									vtxBufferPtr[17]	=  h;						// Major display, top left
+				vtxBufferPtr[18]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
+				vtxBufferPtr[20]	= -w;									vtxBufferPtr[21]	= -h;						// Major display, bottom left
+				vtxBufferPtr[22]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
+				
+				memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (2 * 8), sizeof(GLfloat) * (1 * 8));							// Major display (bottom screen)
+				break;
+			}
+				
+			case ClientDisplayLayout_Hybrid_16_10:
+			{
+				const GLfloat g = (GLfloat)DS_DISPLAY_UNSCALED_GAP * this->_gapScalar * (this->_normalWidth - (GLfloat)GPU_DISPLAY_WIDTH) / (GLfloat)GPU_DISPLAY_WIDTH;
+				
+				vtxBufferPtr[0]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[1]		= -h + g + (38.4f * 2.0f);	// Minor top display, top left
+				vtxBufferPtr[2]		=  w;									vtxBufferPtr[3]		= -h + g + (38.4f * 2.0f);	// Minor top display, top right
+				vtxBufferPtr[4]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[5]		= -h + g + 38.4f;			// Minor top display, bottom left
+				vtxBufferPtr[6]		=  w;									vtxBufferPtr[7]		= -h + g + 38.4f;			// Minor top display, bottom right
+				
+				vtxBufferPtr[8]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[9]		= -h + 38.4f;				// Minor bottom display, top left
+				vtxBufferPtr[10]	=  w;									vtxBufferPtr[11]	= -h + 38.4f;				// Minor bottom display, top right
+				vtxBufferPtr[12]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
+				vtxBufferPtr[14]	=  w;									vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
+				
+				vtxBufferPtr[16]	= -w;									vtxBufferPtr[17]	=  h;						// Major display, top left
+				vtxBufferPtr[18]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
+				vtxBufferPtr[20]	= -w;									vtxBufferPtr[21]	= -h;						// Major display, bottom left
+				vtxBufferPtr[22]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
+				
+				memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (2 * 8), sizeof(GLfloat) * (1 * 8));							// Major display (bottom screen)
+				break;
+			}
+				
+			default: // Default to vertical orientation.
+			{
+				const GLfloat g = (GLfloat)DS_DISPLAY_UNSCALED_GAP * this->_gapScalar;
+				
+				vtxBufferPtr[0+f]	= -w;									vtxBufferPtr[1+f]	=  h;						// Top display, top left
+				vtxBufferPtr[2+f]	=  w;									vtxBufferPtr[3+f]	=  h;						// Top display, top right
+				vtxBufferPtr[4+f]	= -w;									vtxBufferPtr[5+f]	=  g/2.0f;					// Top display, bottom left
+				vtxBufferPtr[6+f]	=  w;									vtxBufferPtr[7+f]	=  g/2.0f;					// Top display, bottom right
+				
+				vtxBufferPtr[8-f]	= -w;									vtxBufferPtr[9-f]	= -g/2.0f;					// Bottom display, top left
+				vtxBufferPtr[10-f]	=  w;									vtxBufferPtr[11-f]	= -g/2.0f;					// Bottom display, top right
+				vtxBufferPtr[12-f]	= -w;									vtxBufferPtr[13-f]	= -h;						// Bottom display, bottom left
+				vtxBufferPtr[14-f]	=  w;									vtxBufferPtr[15-f]	= -h;						// Bottom display, bottom right
+				
+				memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(GLfloat) * (2 * 8));							// Unused displays
+				break;
+			}
 		}
 	}
-	else // displayModeID == DS_DISPLAY_TYPE_MAIN || displayModeID == DS_DISPLAY_TYPE_TOUCH
+	else // displayModeID == ClientDisplayMode_Main || displayModeID == ClientDisplayMode_Touch
 	{
-		vtxBufferPtr[0]	= -w/2;		vtxBufferPtr[1]		= h/2;		// First display, top left
-		vtxBufferPtr[2]	= w/2;		vtxBufferPtr[3]		= h/2;		// First display, top right
-		vtxBufferPtr[4]	= -w/2;		vtxBufferPtr[5]		= -h/2;		// First display, bottom left
-		vtxBufferPtr[6]	= w/2;		vtxBufferPtr[7]		= -h/2;		// First display, bottom right
+		vtxBufferPtr[0]	= -w;										vtxBufferPtr[1]	=  h;							// First display, top left
+		vtxBufferPtr[2]	=  w;										vtxBufferPtr[3]	=  h;							// First display, top right
+		vtxBufferPtr[4]	= -w;										vtxBufferPtr[5]	= -h;							// First display, bottom left
+		vtxBufferPtr[6]	=  w;										vtxBufferPtr[7]	= -h;							// First display, bottom right
 		
-		memcpy(vtxBufferPtr + (1 * 8), vtxBufferPtr + (0 * 8), sizeof(GLint) * (1 * 8));	// Second display
+		memcpy(vtxBufferPtr + (1 * 8), vtxBufferPtr + (0 * 8), sizeof(GLfloat) * (1 * 8));							// Second display
+		memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(GLfloat) * (1 * 8));							// Unused display
+		memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (0 * 8), sizeof(GLfloat) * (1 * 8));							// Unused display
 	}
 	
 	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
@@ -7262,23 +7321,10 @@ bool OGLDisplayLayer::CanUseShaderBasedFilters()
 	return this->_canUseShaderBasedFilters;
 }
 
-void OGLDisplayLayer::GetNormalSize(double &w, double &h)
+void OGLDisplayLayer::GetNormalSize(double &outWidth, double &outHeight) const
 {
-	if (this->_displayMode != DS_DISPLAY_TYPE_DUAL)
-	{
-		w = this->_displayWidth;
-		h = this->_displayHeight;
-	}
-	else if (this->_displayOrientation == DS_DISPLAY_ORIENTATION_VERTICAL)
-	{
-		w = this->_displayWidth;
-		h = this->_displayHeight * 2.0 + ((this->_displayHeight * DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO) * this->_gapScalar);
-	}
-	else
-	{
-		w = this->_displayWidth * 2.0 + ((this->_displayHeight * DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO) * this->_gapScalar);
-		h = this->_displayHeight;
-	}
+	outWidth = this->_normalWidth;
+	outHeight = this->_normalHeight;
 }
 
 void OGLDisplayLayer::ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide)
@@ -7350,6 +7396,7 @@ void OGLDisplayLayer::UploadTransformationOGL()
 	}
 	
 	glViewport(0, 0, this->_viewportWidth, this->_viewportHeight);
+	this->_needUpdateVertices = true;
 }
 
 int OGLDisplayLayer::GetOutputFilter()
@@ -7750,8 +7797,8 @@ void OGLDisplayLayer::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative)
 {
 	const bool isUsingCPUPixelScaler = (this->_pixelScaler != VideoFilterTypeID_None) && !this->_useShaderBasedPixelScaler;
-	const bool loadMainScreen = (this->_displayMode == DS_DISPLAY_TYPE_MAIN) || (this->_displayMode == DS_DISPLAY_TYPE_DUAL);
-	const bool loadTouchScreen = (this->_displayMode == DS_DISPLAY_TYPE_TOUCH) || (this->_displayMode == DS_DISPLAY_TYPE_DUAL);
+	const bool loadMainScreen = (this->_displayMode == ClientDisplayMode_Main) || (this->_displayMode == ClientDisplayMode_Dual);
+	const bool loadTouchScreen = (this->_displayMode == ClientDisplayMode_Touch) || (this->_displayMode == ClientDisplayMode_Dual);
 	
 	this->_isTexVideoInputDataNative[0] = isMainSizeNative;
 	this->_isTexVideoInputDataNative[1] = isTouchSizeNative;
@@ -7860,7 +7907,7 @@ void OGLDisplayLayer::ProcessOGL()
 	GLfloat w1 = this->_texLoadedWidth[1];
 	GLfloat h1 = this->_texLoadedHeight[1];
 	
-	if (this->_isTexVideoInputDataNative[0] && (displayMode == DS_DISPLAY_TYPE_MAIN || displayMode == DS_DISPLAY_TYPE_DUAL))
+	if (this->_isTexVideoInputDataNative[0] && (displayMode == ClientDisplayMode_Main || displayMode == ClientDisplayMode_Dual))
 	{
 		if (this->_useDeposterize)
 		{
@@ -7873,7 +7920,7 @@ void OGLDisplayLayer::ProcessOGL()
 			
 			if (isUsingCPUPixelScaler) // Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
 			{
-				if ( this->_isTexVideoInputDataNative[0] && ((displayMode == DS_DISPLAY_TYPE_MAIN) || (displayMode == DS_DISPLAY_TYPE_DUAL)) )
+				if ( this->_isTexVideoInputDataNative[0] && ((displayMode == ClientDisplayMode_Main) || (displayMode == ClientDisplayMode_Dual)) )
 				{
 					this->_filterDeposterize[0]->DownloadDstBufferOGL(this->_vf[0]->GetSrcBufferPtr(), 0, this->_filterDeposterize[0]->GetSrcHeight());
 				}
@@ -7905,7 +7952,7 @@ void OGLDisplayLayer::ProcessOGL()
 		}
 	}
 	
-	if (this->_isTexVideoInputDataNative[1] && (displayMode == DS_DISPLAY_TYPE_TOUCH || displayMode == DS_DISPLAY_TYPE_DUAL))
+	if (this->_isTexVideoInputDataNative[1] && (displayMode == ClientDisplayMode_Touch || displayMode == ClientDisplayMode_Dual))
 	{
 		if (this->_useDeposterize)
 		{
@@ -7915,7 +7962,7 @@ void OGLDisplayLayer::ProcessOGL()
 			
 			if (isUsingCPUPixelScaler) // Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
 			{
-				if ( this->_isTexVideoInputDataNative[1] && ((displayMode == DS_DISPLAY_TYPE_TOUCH) || (displayMode == DS_DISPLAY_TYPE_DUAL)) )
+				if ( this->_isTexVideoInputDataNative[1] && ((displayMode == ClientDisplayMode_Touch) || (displayMode == ClientDisplayMode_Dual)) )
 				{
 					this->_filterDeposterize[1]->DownloadDstBufferOGL(this->_vf[1]->GetSrcBufferPtr(), 0, this->_filterDeposterize[1]->GetSrcHeight());
 				}
@@ -7953,7 +8000,7 @@ void OGLDisplayLayer::ProcessOGL()
 	
 	// Update the texture coordinates
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
-	glBufferDataARB(GL_ARRAY_BUFFER_ARB, (2 * 8) * sizeof(GLfloat), NULL, GL_STREAM_DRAW_ARB);
+	glBufferDataARB(GL_ARRAY_BUFFER_ARB, (4 * 8) * sizeof(GLfloat), NULL, GL_STREAM_DRAW_ARB);
 	GLfloat *texCoordBufferPtr = (GLfloat *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 	
 	texCoordBufferPtr[0]	= 0.0f;		texCoordBufferPtr[1]	=   0.0f;
@@ -7965,6 +8012,8 @@ void OGLDisplayLayer::ProcessOGL()
 	texCoordBufferPtr[10]	=   w1;		texCoordBufferPtr[11]	=   0.0f;
 	texCoordBufferPtr[12]	= 0.0f;		texCoordBufferPtr[13]	=     h1;
 	texCoordBufferPtr[14]	=   w1;		texCoordBufferPtr[15]	=     h1;
+	
+	memcpy(texCoordBufferPtr + (2 * 8), texCoordBufferPtr + (0 * 8), sizeof(GLfloat) * (2 * 8));
 	
 	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
@@ -7985,23 +8034,42 @@ void OGLDisplayLayer::RenderOGL()
 	// Enable vertex attributes
 	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
 	
-	switch (this->GetMode())
+	switch (this->_displayMode)
 	{
-		case DS_DISPLAY_TYPE_MAIN:
+		case ClientDisplayMode_Main:
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[0]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[0]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[0]);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 			break;
 			
-		case DS_DISPLAY_TYPE_TOUCH:
+		case ClientDisplayMode_Touch:
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[1]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[1]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[1]);
 			glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
 			break;
 			
-		case DS_DISPLAY_TYPE_DUAL:
+		case ClientDisplayMode_Dual:
+		{
+			const size_t majorDisplayTex = (this->_displayOrder == ClientDisplayOrder_MainFirst) ? 0 : 1;
+			const size_t majorDisplayVtx = (this->_displayOrder == ClientDisplayOrder_MainFirst) ? 8 : 12;
+			
+			switch (this->_displayOrientation)
+			{
+				case ClientDisplayLayout_Hybrid_3_2:
+				case ClientDisplayLayout_Hybrid_16_9:
+				case ClientDisplayLayout_Hybrid_16_10:
+					glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[majorDisplayTex]);
+					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[majorDisplayTex]);
+					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[majorDisplayTex]);
+					glDrawArrays(GL_TRIANGLE_STRIP, majorDisplayVtx, 4);
+					break;
+					
+				default:
+					break;
+			}
+			
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[0]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[0]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[0]);
@@ -8011,7 +8079,7 @@ void OGLDisplayLayer::RenderOGL()
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[1]);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[1]);
 			glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
-			break;
+		}
 			
 		default:
 			break;
@@ -8028,4 +8096,43 @@ void OGLDisplayLayer::FinishOGL()
 	const bool isUsingCPUPixelScaler = (this->_pixelScaler != VideoFilterTypeID_None) && !this->_useShaderBasedPixelScaler;
 	glFinishObjectAPPLE(GL_TEXTURE_RECTANGLE_ARB, (isUsingCPUPixelScaler) ? this->_texCPUFilterDstID[0] : ( (this->_isTexVideoInputDataNative[0]) ? this->_texVideoInputDataNativeID[0] : this->_texVideoInputDataCustomID[0]) );
 	glFinishObjectAPPLE(GL_TEXTURE_RECTANGLE_ARB, (isUsingCPUPixelScaler) ? this->_texCPUFilterDstID[1] : ( (this->_isTexVideoInputDataNative[1]) ? this->_texVideoInputDataNativeID[1] : this->_texVideoInputDataCustomID[1]) );
+}
+
+void OGLDisplayLayer::CalculateNormalSize(const ClientDisplayMode mode, const ClientDisplayLayout layout, const double gapScalar, double &outWidth, double &outHeight)
+{
+	if (mode == ClientDisplayMode_Dual)
+	{
+		switch (layout)
+		{
+			case ClientDisplayLayout_Horizontal:
+				outWidth  = GPU_DISPLAY_WIDTH*2.0;
+				outHeight = GPU_DISPLAY_HEIGHT;
+				break;
+				
+			case ClientDisplayLayout_Hybrid_3_2:
+				outWidth  = (float)GPU_DISPLAY_WIDTH + (128.0);
+				outHeight = GPU_DISPLAY_HEIGHT;
+				break;
+				
+			case ClientDisplayLayout_Hybrid_16_9:
+				outWidth  = (float)GPU_DISPLAY_WIDTH + (64.0 * 4.0 / 3.0);
+				outHeight = GPU_DISPLAY_HEIGHT;
+				break;
+				
+			case ClientDisplayLayout_Hybrid_16_10:
+				outWidth  = (float)GPU_DISPLAY_WIDTH + (51.2);
+				outHeight = GPU_DISPLAY_HEIGHT;
+				break;
+				
+			default: // Default to vertical orientation.
+				outWidth  = GPU_DISPLAY_WIDTH;
+				outHeight = GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_UNSCALED_GAP*gapScalar);
+				break;
+		}
+	}
+	else
+	{
+		outWidth  = GPU_DISPLAY_WIDTH;
+		outHeight = GPU_DISPLAY_HEIGHT;
+	}
 }

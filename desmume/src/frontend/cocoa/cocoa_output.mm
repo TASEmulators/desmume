@@ -32,6 +32,8 @@
 #include "../../metaspu/metaspu.h"
 #include "../../rtc.h"
 
+#include "OGLDisplayOutput.h"
+
 #import <Cocoa/Cocoa.h>
 
 #undef BOOL
@@ -520,9 +522,7 @@
 	spinlockCPULoadAverage = OS_SPINLOCK_INIT;
 	
 	delegate = nil;
-	displayMode = DS_DISPLAY_TYPE_DUAL;
-	_gpuCurrentWidth = GPU_DISPLAY_WIDTH;
-	_gpuCurrentHeight = GPU_DISPLAY_HEIGHT;
+	displayMode = ClientDisplayMode_Dual;
 	
 	_receivedFrameIndex = 0;
 	_currentReceivedFrameIndex = 0;
@@ -547,7 +547,7 @@
 - (NSSize) displaySize
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	NSSize size = NSMakeSize((CGFloat)GPU->GetCustomFramebufferWidth(), (displayMode == DS_DISPLAY_TYPE_DUAL) ? (CGFloat)(GPU->GetCustomFramebufferHeight() * 2): (CGFloat)GPU->GetCustomFramebufferHeight());
+	NSSize size = NSMakeSize((CGFloat)GPU->GetCustomFramebufferWidth(), (displayMode == ClientDisplayMode_Dual) ? (CGFloat)(GPU->GetCustomFramebufferHeight() * 2): (CGFloat)GPU->GetCustomFramebufferHeight());
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return size;
@@ -559,15 +559,15 @@
 	
 	switch (displayModeID)
 	{
-		case DS_DISPLAY_TYPE_MAIN:
+		case ClientDisplayMode_Main:
 			newDispString = NSSTRING_DISPLAYMODE_MAIN;
 			break;
 			
-		case DS_DISPLAY_TYPE_TOUCH:
+		case ClientDisplayMode_Touch:
 			newDispString = NSSTRING_DISPLAYMODE_TOUCH;
 			break;
 			
-		case DS_DISPLAY_TYPE_DUAL:
+		case ClientDisplayMode_Dual:
 			newDispString = NSSTRING_DISPLAYMODE_DUAL;
 			break;
 			
@@ -726,7 +726,7 @@
 	const NSInteger dispMode = [self displayMode];
 	
 	NSUInteger w = (NSUInteger)dispInfo.customWidth;
-	NSUInteger h = (dispMode == DS_DISPLAY_TYPE_DUAL) ? (NSUInteger)(dispInfo.customHeight * 2) : (NSUInteger)dispInfo.customHeight;
+	NSUInteger h = (dispMode == ClientDisplayMode_Dual) ? (NSUInteger)(dispInfo.customHeight * 2) : (NSUInteger)dispInfo.customHeight;
 	
 	NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
 																		 pixelsWide:w
@@ -895,20 +895,6 @@
 	pthread_rwlock_rdlock(self.rwlockProducer);
 	
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	const uint16_t newGpuWidth = dispInfo.customWidth;
-	const uint16_t newGpuHeight = dispInfo.customHeight;
-	
-	if (newGpuWidth != _gpuCurrentWidth || newGpuHeight != _gpuCurrentHeight)
-	{
-		if (delegate != nil && [delegate respondsToSelector:@selector(doDisplaySizeChanged:)])
-		{
-			[(id<CocoaDSDisplayDelegate>)delegate doDisplaySizeChanged:NSMakeSize(newGpuWidth, newGpuHeight)];
-		}
-		
-		_gpuCurrentWidth = newGpuWidth;
-		_gpuCurrentHeight = newGpuHeight;
-	}
-	
 	const bool isMainSizeNative = !dispInfo.didPerformCustomRender[NDSDisplayID_Main];
 	const bool isTouchSizeNative = !dispInfo.didPerformCustomRender[NDSDisplayID_Touch];
 	

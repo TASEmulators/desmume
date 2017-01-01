@@ -114,7 +114,7 @@ volatile bool execute = true;
 	SPU_SetVolume(100);
     
 	// Set up the DS display
-	displayMode = DS_DISPLAY_TYPE_DUAL;
+	displayMode = ClientDisplayMode_Dual;
 	displayRect = OEIntRectMake(0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2);
 	displayAspectRatio = OEIntSizeMake(2, 3);
 	
@@ -153,17 +153,17 @@ volatile bool execute = true;
 	
 	switch (theMode)
 	{
-		case DS_DISPLAY_TYPE_MAIN:
+		case ClientDisplayMode_Main:
 			newDisplayRect = OEIntRectMake(0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT);
 			newDisplayAspectRatio = OEIntSizeMake(4, 3);
 			break;
 			
-		case DS_DISPLAY_TYPE_TOUCH:
+		case ClientDisplayMode_Touch:
 			newDisplayRect = OEIntRectMake(0, GPU_DISPLAY_HEIGHT + 1, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT);
 			newDisplayAspectRatio = OEIntSizeMake(4, 3);
 			break;
 			
-		case DS_DISPLAY_TYPE_DUAL:
+		case ClientDisplayMode_Dual:
 			newDisplayRect = OEIntRectMake(0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2);
 			newDisplayAspectRatio = OEIntSizeMake(2, 3);
 			break;
@@ -312,16 +312,16 @@ volatile bool execute = true;
 {
 	switch (displayMode)
     {
-        case DS_DISPLAY_TYPE_MAIN:
-            [self setDisplayMode:DS_DISPLAY_TYPE_TOUCH];
+        case ClientDisplayMode_Main:
+            [self setDisplayMode:ClientDisplayMode_Touch];
             break;
 			
-        case DS_DISPLAY_TYPE_TOUCH:
-            [self setDisplayMode:DS_DISPLAY_TYPE_DUAL];
+        case ClientDisplayMode_Touch:
+            [self setDisplayMode:ClientDisplayMode_Dual];
             break;
 			
-        case DS_DISPLAY_TYPE_DUAL:
-            [self setDisplayMode:DS_DISPLAY_TYPE_MAIN];
+        case ClientDisplayMode_Dual:
+            [self setDisplayMode:ClientDisplayMode_Main];
             break;
 			
         default:
@@ -386,15 +386,15 @@ volatile bool execute = true;
 	
 	switch (dispMode)
 	{
-		case DS_DISPLAY_TYPE_MAIN:
+		case ClientDisplayMode_Main:
 			isTouchPressed = NO; // Reject touch input if showing only the main screen.
 			break;
 			
-		case DS_DISPLAY_TYPE_TOUCH:
+		case ClientDisplayMode_Touch:
 			isTouchPressed = YES;
 			break;
 			
-		case DS_DISPLAY_TYPE_DUAL:
+		case ClientDisplayMode_Dual:
 			isTouchPressed = YES;
 			aPoint.y -= GPU_DISPLAY_HEIGHT; // Normalize the y-coordinate to the DS.
 			break;

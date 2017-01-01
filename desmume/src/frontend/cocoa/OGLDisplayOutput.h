@@ -43,7 +43,29 @@
 class OGLVideoOutput;
 struct NDSFrameInfo;
 
-enum
+enum ClientDisplayMode
+{
+	ClientDisplayMode_Main = 0,
+	ClientDisplayMode_Touch,
+	ClientDisplayMode_Dual
+};
+
+enum ClientDisplayLayout
+{
+	ClientDisplayLayout_Vertical		= 0,
+	ClientDisplayLayout_Horizontal		= 1,
+	ClientDisplayLayout_Hybrid_3_2		= 1000,
+	ClientDisplayLayout_Hybrid_16_9		= 1001,
+	ClientDisplayLayout_Hybrid_16_10	= 1002
+};
+
+enum ClientDisplayOrder
+{
+	ClientDisplayOrder_MainFirst = 0,
+	ClientDisplayOrder_TouchFirst
+};
+
+enum OutputFilterTypeID
 {
 	OutputFilterTypeID_NearestNeighbor	= 0,
 	OutputFilterTypeID_Bilinear			= 1,
@@ -251,7 +273,7 @@ public:
 	void SetSourceDeposterize(bool useDeposterize);
 	
 	bool CanUseShaderBasedFilters();
-	void GetNormalSize(double &w, double &h);
+	void GetNormalSize(double &w, double &h) const;
 	
 	int GetOutputFilter();
 	virtual void SetOutputFilterOGL(const int filterID);
@@ -411,15 +433,13 @@ protected:
 	VideoFilter *_vf[2];
 	GLuint _texCPUFilterDstID[2];
 	
-	uint16_t _displayWidth;
-	uint16_t _displayHeight;
-	int _displayMode;
-	int _displayOrder;
-	int _displayOrientation;
+	ClientDisplayMode _displayMode;
+	ClientDisplayOrder _displayOrder;
+	ClientDisplayLayout _displayOrientation;
 	double _normalWidth;
 	double _normalHeight;
-	GLfloat _gapScalar;
-	GLfloat _rotation;
+	double _gapScalar;
+	double _rotation;
 	
 	GLuint _texLQ2xLUT;
 	GLuint _texHQ2xLUT;
@@ -457,24 +477,21 @@ public:
 	bool GetFiltersPreferGPU();
 	void SetFiltersPreferGPUOGL(bool preferGPU);
 	
-	uint16_t GetDisplayWidth();
-	uint16_t GetDisplayHeight();
-	void SetDisplaySize(uint16_t w, uint16_t h);
-	int GetMode();
-	void SetMode(int dispMode);
-	int GetOrientation();
-	void SetOrientation(int dispOrientation);
-	int GetOrder();
-	void SetOrder(int dispOrder);
-	GLfloat GetGapScalar();
-	void SetGapScalar(GLfloat theScalar);
-	GLfloat GetRotation();
-	void SetRotation(GLfloat theRotation);
+	ClientDisplayMode GetMode() const;
+	void SetMode(ClientDisplayMode dispMode);
+	ClientDisplayLayout GetOrientation() const;
+	void SetOrientation(ClientDisplayLayout dispOrientation);
+	ClientDisplayOrder GetOrder() const;
+	void SetOrder(ClientDisplayOrder dispOrder);
+	double GetGapScalar() const;
+	void SetGapScalar(double theScalar);
+	double GetRotation() const;
+	void SetRotation(double theRotation);
 	bool GetSourceDeposterize();
 	void SetSourceDeposterize(bool useDeposterize);
 	
 	bool CanUseShaderBasedFilters();
-	void GetNormalSize(double &w, double &h);
+	void GetNormalSize(double &w, double &h) const;
 	
 	int GetOutputFilter();
 	virtual void SetOutputFilterOGL(const int filterID);
@@ -487,6 +504,8 @@ public:
 	virtual void ProcessOGL();
 	virtual void RenderOGL();
 	virtual void FinishOGL();
+	
+	static void CalculateNormalSize(const ClientDisplayMode mode, const ClientDisplayLayout layout, const double gapScalar, double &outWidth, double &outHeight);
 };
 
 class OGLVideoOutput

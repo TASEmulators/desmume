@@ -18,6 +18,7 @@
 #import <Cocoa/Cocoa.h>
 #import <OpenGL/OpenGL.h>
 #include <libkern/OSAtomic.h>
+#include <map>
 
 #import "InputManager.h"
 #import "cocoa_output.h"
@@ -26,6 +27,7 @@
 @class EmuControllerDelegate;
 class OGLVideoOutput;
 
+typedef std::map<int, bool> InitialTouchPressMap;  // Key = An ID number of the host input, Value = Flag that indicates if the initial touch press was in the major display
 
 // Subclass NSWindow for full screen windows so that we can override some methods.
 @interface DisplayFullScreenWindow : NSWindow
@@ -35,8 +37,8 @@ class OGLVideoOutput;
 @interface DisplayView : NSView <CocoaDSDisplayVideoDelegate, InputHIDManagerTarget>
 {
 	InputManager *inputManager;
+	InitialTouchPressMap *_initialTouchInMajorDisplay;
 	OGLVideoOutput *oglv;
-	CGFloat _displayRotation;
 	BOOL canUseShaderBasedFilters;
 	
 	BOOL _useVerticalSync;
@@ -54,6 +56,7 @@ class OGLVideoOutput;
 }
 
 @property (retain) InputManager *inputManager;
+@property (readonly) NSSize normalSize;
 @property (readonly) BOOL canUseShaderBasedFilters;
 @property (assign) BOOL isHUDVisible;
 @property (assign) BOOL isHUDVideoFPSVisible;
@@ -70,11 +73,13 @@ class OGLVideoOutput;
 
 - (void) setScaleFactor:(float)theScaleFactor;
 - (void) drawVideoFrame;
-- (NSPoint) dsPointFromEvent:(NSEvent *)theEvent;
-- (NSPoint) convertPointToDS:(NSPoint)clickLoc;
+- (NSPoint) dsPointFromEvent:(NSEvent *)theEvent inputID:(const NSInteger)inputID;
+- (NSPoint) convertPointToDS:(NSPoint)clickLoc inputID:(const NSInteger)inputID initialTouchPress:(BOOL)isInitialTouchPress;
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
 - (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed;
 - (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType;
+
++ (NSSize) calculateNormalSizeUsingMode:(const NSInteger)mode layout:(const NSInteger)layout gapScalar:(const double)gapScalar;
 
 @end
 

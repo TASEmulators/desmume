@@ -107,8 +107,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	// These need to be initialized first since there are dependencies on these.
 	_displayGap = 0.0;
-	_displayMode = DS_DISPLAY_TYPE_DUAL;
-	_displayOrientation = DS_DISPLAY_ORIENTATION_VERTICAL;
+	_displayMode = ClientDisplayMode_Dual;
+	_displayOrientation = ClientDisplayLayout_Vertical;
 	
 	_minDisplayViewSize = NSMakeSize(GPU_DISPLAY_WIDTH, (GPU_DISPLAY_HEIGHT*2.0) + (DS_DISPLAY_UNSCALED_GAP*_displayGap));
 	_isMinSizeNormal = YES;
@@ -202,7 +202,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	// Resize the window.
 	const NSSize oldBounds = [theWindow frame].size;
-	const double constrainedScale = [self resizeWithTransform:[self normalSize] scalar:[self displayScale] rotation:newAngleDegrees];
+	const NSSize newNormalSize = [DisplayView calculateNormalSizeUsingMode:[self displayMode] layout:[self displayOrientation] gapScalar:[self displayGap]];
+	const double constrainedScale = [self resizeWithTransform:newNormalSize scalar:[self displayScale] rotation:newAngleDegrees];
 	const NSSize newBounds = [theWindow frame].size;
 	
 	OSSpinLockLock(&spinlockScale);
@@ -243,15 +244,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	switch (displayModeID)
 	{
-		case DS_DISPLAY_TYPE_MAIN:
+		case ClientDisplayMode_Main:
 			modeString = NSSTRING_DISPLAYMODE_MAIN;
 			break;
 			
-		case DS_DISPLAY_TYPE_TOUCH:
+		case ClientDisplayMode_Touch:
 			modeString = NSSTRING_DISPLAYMODE_TOUCH;
 			break;
 			
-		case DS_DISPLAY_TYPE_DUAL:
+		case ClientDisplayMode_Dual:
 			modeString = NSSTRING_DISPLAYMODE_DUAL;
 			break;
 			
@@ -263,8 +264,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_displayMode = displayModeID;
 	OSSpinLockUnlock(&spinlockDisplayMode);
 	
+	const NSSize newNormalSize = [DisplayView calculateNormalSizeUsingMode:[self displayMode] layout:[self displayOrientation] gapScalar:[self displayGap]];
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
-	[self resizeWithTransform:[self normalSize] scalar:[self displayScale] rotation:[self displayRotation]];
+	[self resizeWithTransform:newNormalSize scalar:[self displayScale] rotation:[self displayRotation]];
 	
 	[CocoaDSUtil messageSendOneWayWithInteger:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_CHANGE_DISPLAY_TYPE integerValue:displayModeID];
 }
@@ -284,10 +286,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_displayOrientation = theOrientation;
 	OSSpinLockUnlock(&spinlockDisplayOrientation);
 	
-	if ([self displayMode] == DS_DISPLAY_TYPE_DUAL)
+	if ([self displayMode] == ClientDisplayMode_Dual)
 	{
+		const NSSize newNormalSize = [DisplayView calculateNormalSizeUsingMode:[self displayMode] layout:[self displayOrientation] gapScalar:[self displayGap]];
 		[self setIsMinSizeNormal:[self isMinSizeNormal]];
-		[self resizeWithTransform:[self normalSize] scalar:[self displayScale] rotation:[self displayRotation]];
+		[self resizeWithTransform:newNormalSize scalar:[self displayScale] rotation:[self displayRotation]];
 	}
 	
 	[CocoaDSUtil messageSendOneWayWithInteger:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_CHANGE_DISPLAY_ORIENTATION integerValue:theOrientation];
@@ -326,10 +329,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_displayGap = gapScalar;
 	OSSpinLockUnlock(&spinlockDisplayGap);
 	
-	if ([self displayMode] == DS_DISPLAY_TYPE_DUAL)
+	if ([self displayMode] == ClientDisplayMode_Dual)
 	{
+		const NSSize newNormalSize = [DisplayView calculateNormalSizeUsingMode:[self displayMode] layout:[self displayOrientation] gapScalar:[self displayGap]];
 		[self setIsMinSizeNormal:[self isMinSizeNormal]];
-		[self resizeWithTransform:[self normalSize] scalar:[self displayScale] rotation:[self displayRotation]];
+		[self resizeWithTransform:newNormalSize scalar:[self displayScale] rotation:[self displayRotation]];
 	}
 	
 	[CocoaDSUtil messageSendOneWayWithFloat:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_CHANGE_DISPLAY_GAP floatValue:(float)gapScalar];
@@ -390,30 +394,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void) setIsMinSizeNormal:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockDisplayGap);
-	const double gapScalar = _displayGap;
-	OSSpinLockUnlock(&spinlockDisplayGap);
-	
 	_isMinSizeNormal = theState;
-	
-	if ([self displayMode] == DS_DISPLAY_TYPE_DUAL)
-	{
-		if ([self displayOrientation] == DS_DISPLAY_ORIENTATION_HORIZONTAL)
-		{
-			_minDisplayViewSize.width = GPU_DISPLAY_WIDTH*2.0 + (DS_DISPLAY_UNSCALED_GAP*gapScalar);
-			_minDisplayViewSize.height = GPU_DISPLAY_HEIGHT;
-		}
-		else
-		{
-			_minDisplayViewSize.width = GPU_DISPLAY_WIDTH;
-			_minDisplayViewSize.height = GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_UNSCALED_GAP*gapScalar);
-		}
-	}
-	else
-	{
-		_minDisplayViewSize.width = GPU_DISPLAY_WIDTH;
-		_minDisplayViewSize.height = GPU_DISPLAY_HEIGHT;
-	}
+	_minDisplayViewSize = [DisplayView calculateNormalSizeUsingMode:[self displayMode] layout:[self displayOrientation] gapScalar:[self displayGap]];
 	
 	if (!_isMinSizeNormal)
 	{
@@ -505,21 +487,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (NSSize) normalSize
 {
-	NSSize normalSize = NSMakeSize(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT);
-	
-	if ([self displayMode] == DS_DISPLAY_TYPE_DUAL)
-	{
-		if ([self displayOrientation] == DS_DISPLAY_ORIENTATION_VERTICAL)
-		{
-			normalSize.height = GPU_DISPLAY_HEIGHT * 2.0 + (DS_DISPLAY_UNSCALED_GAP * _displayGap);
-		}
-		else
-		{
-			normalSize.width = GPU_DISPLAY_WIDTH * 2.0 + (DS_DISPLAY_UNSCALED_GAP * _displayGap);
-		}
-	}
-	
-	return normalSize;
+	return [[self view] normalSize];
 }
 
 - (BOOL) masterStatusBarState
@@ -965,7 +933,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (IBAction) toggleNDSDisplays:(id)sender
 {
-	[self setDisplayOrder:([self displayOrder] == DS_DISPLAY_ORDER_MAIN_FIRST) ? DS_DISPLAY_ORDER_TOUCH_FIRST : DS_DISPLAY_ORDER_MAIN_FIRST];
+	[self setDisplayOrder:([self displayOrder] == ClientDisplayOrder_MainFirst) ? ClientDisplayOrder_TouchFirst : ClientDisplayOrder_MainFirst];
 }
 
 - (IBAction) writeDefaultsDisplayRotation:(id)sender
@@ -1597,6 +1565,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 #endif
 	
 	inputManager = nil;
+	_initialTouchInMajorDisplay = new InitialTouchPressMap;
 	
 	// Initialize the OpenGL context
 	NSOpenGLPixelFormatAttribute attributes[] = {
@@ -1670,6 +1639,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	delete oglv;
 	CGLSetCurrentContext(prevContext);
 	
+	delete _initialTouchInMajorDisplay;
 	[self setInputManager:nil];
 	[context clearDrawable];
 	[context release];
@@ -1678,6 +1648,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 }
 
 #pragma mark Dynamic Property Methods
+
+- (NSSize) normalSize
+{
+	double w;
+	double h;
+	
+	oglv->GetDisplayLayer()->GetNormalSize(w, h);
+	
+	return NSMakeSize(w, h);
+}
 
 - (void) setIsHUDVisible:(BOOL)theState
 {
@@ -1955,18 +1935,21 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	CGLFlushDrawable(cglDisplayContext);
 }
 
-- (NSPoint) dsPointFromEvent:(NSEvent *)theEvent
+- (NSPoint) dsPointFromEvent:(NSEvent *)theEvent inputID:(const NSInteger)inputID
 {
+	const NSEventType eventType = [theEvent type];
+	const BOOL isInitialMouseDown = (eventType == NSLeftMouseDown) || (eventType == NSRightMouseDown) || (eventType == NSOtherMouseDown);
+	
 	// Convert the clicked location from window coordinates, to view coordinates,
 	// and finally to DS touchscreen coordinates.
 	NSPoint touchLoc = [theEvent locationInWindow];
 	touchLoc = [self convertPoint:touchLoc fromView:nil];
-	touchLoc = [self convertPointToDS:touchLoc];
+	touchLoc = [self convertPointToDS:touchLoc inputID:inputID initialTouchPress:isInitialMouseDown];
 	
 	return touchLoc;
 }
 
-- (NSPoint) convertPointToDS:(NSPoint)clickLoc
+- (NSPoint) convertPointToDS:(NSPoint)clickLoc inputID:(const NSInteger)inputID initialTouchPress:(BOOL)isInitialTouchPress
 {
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 	
@@ -1978,7 +1961,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	const NSSize normalBounds = [windowController normalSize];
 	const NSSize viewSize = [self bounds].size;
-	const CGSize transformBounds = GetTransformedBounds(normalBounds.width, normalBounds.height, 1.0, _displayRotation);
+	const CGSize transformBounds = GetTransformedBounds(normalBounds.width, normalBounds.height, 1.0, oglv->GetDisplayLayer()->GetRotation());
 	const double s = GetMaxScalarInBounds(transformBounds.width, transformBounds.height, viewSize.width, viewSize.height);
 	
 	CGPoint touchLoc = GetNormalPointFromTransformedPoint(clickLoc.x, clickLoc.y,
@@ -1988,19 +1971,51 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 														  viewAngle);
 	
 	// Normalize the touch location to the DS.
-	if ([windowController displayMode] == DS_DISPLAY_TYPE_DUAL)
+	if ([windowController displayMode] == ClientDisplayMode_Dual)
 	{
-		const NSInteger theOrientation = [windowController displayOrientation];
-		const NSInteger theOrder = [windowController displayOrder];
-		const double gap = DS_DISPLAY_UNSCALED_GAP * [windowController displayGap];
+		const ClientDisplayLayout theOrientation = (ClientDisplayLayout)[windowController displayOrientation];
+		const ClientDisplayOrder theOrder = (ClientDisplayOrder)[windowController displayOrder];
 		
-		if (theOrientation == DS_DISPLAY_ORIENTATION_VERTICAL && theOrder == DS_DISPLAY_ORDER_TOUCH_FIRST)
+		switch (theOrientation)
 		{
-			touchLoc.y -= (GPU_DISPLAY_HEIGHT+gap);
-		}
-		else if (theOrientation == DS_DISPLAY_ORIENTATION_HORIZONTAL && theOrder == DS_DISPLAY_ORDER_MAIN_FIRST)
-		{
-			touchLoc.x -= (GPU_DISPLAY_WIDTH+gap);
+			case ClientDisplayLayout_Horizontal:
+			{
+				if (theOrder == ClientDisplayOrder_MainFirst)
+				{
+					touchLoc.x -= GPU_DISPLAY_WIDTH;
+				}
+				break;
+			}
+				
+			case ClientDisplayLayout_Hybrid_3_2:
+			case ClientDisplayLayout_Hybrid_16_9:
+			case ClientDisplayLayout_Hybrid_16_10:
+			{
+				if (isInitialTouchPress)
+				{
+					const bool isClickWithinMajorDisplay = (theOrder == ClientDisplayOrder_TouchFirst) && (touchLoc.x >= 0.0) && (touchLoc.x < 256.0);
+					(*_initialTouchInMajorDisplay)[(int)inputID] = isClickWithinMajorDisplay;
+				}
+				
+				const bool handleClickInMajorDisplay = (*_initialTouchInMajorDisplay)[(int)inputID];
+				if (!handleClickInMajorDisplay)
+				{
+					const double minorDisplayScale = (normalBounds.width - (GLfloat)GPU_DISPLAY_WIDTH) / (GLfloat)GPU_DISPLAY_WIDTH;
+					touchLoc.x = (touchLoc.x - GPU_DISPLAY_WIDTH) / minorDisplayScale;
+					touchLoc.y = touchLoc.y / minorDisplayScale;
+				}
+				break;
+			}
+				
+			default: // Default to vertical orientation.
+			{
+				if (theOrder == ClientDisplayOrder_TouchFirst)
+				{
+					const double gap = DS_DISPLAY_UNSCALED_GAP * [windowController displayGap];
+					touchLoc.y -= (GPU_DISPLAY_HEIGHT+gap);
+				}
+				break;
+			}
 		}
 	}
 	
@@ -2097,12 +2112,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	// Convert the clicked location from window coordinates, to view coordinates,
 	// and finally to DS touchscreen coordinates.
-	const NSPoint touchLoc = (displayModeID == DS_DISPLAY_TYPE_MAIN) ? NSMakePoint(0.0, 0.0) : [self dsPointFromEvent:theEvent];
-	const InputAttributes inputAttr = InputManagerEncodeMouseButtonInput([theEvent buttonNumber], touchLoc, buttonPressed);
+	const NSInteger buttonNumber = [theEvent buttonNumber];
+	const NSPoint touchLoc = (displayModeID == ClientDisplayMode_Main) ? NSMakePoint(0.0, 0.0) : [self dsPointFromEvent:theEvent inputID:buttonNumber];
+	const InputAttributes inputAttr = InputManagerEncodeMouseButtonInput(buttonNumber, touchLoc, buttonPressed);
 	
 	if (buttonPressed && [theEvent window] != nil)
 	{
-		NSString *newStatusText = (displayModeID == DS_DISPLAY_TYPE_MAIN) ? [NSString stringWithFormat:@"%s:%s", inputAttr.deviceName, inputAttr.elementName] : [NSString stringWithFormat:@"%s:%s X:%i Y:%i", inputAttr.deviceName, inputAttr.elementName, (int)inputAttr.intCoordX, (int)inputAttr.intCoordY];
+		NSString *newStatusText = (displayModeID == ClientDisplayMode_Main) ? [NSString stringWithFormat:@"%s:%s", inputAttr.deviceName, inputAttr.elementName] : [NSString stringWithFormat:@"%s:%s X:%i Y:%i", inputAttr.deviceName, inputAttr.elementName, (int)inputAttr.intCoordX, (int)inputAttr.intCoordY];
 		[[windowController emuControl] setStatusText:newStatusText];
 	}
 	
@@ -2369,9 +2385,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 }
 
 - (void)doTransformView:(const DisplayOutputTransformData *)transformData
-{
-	_displayRotation = (GLfloat)transformData->rotation;
-	
+{	
 	OGLDisplayLayer *display = oglv->GetDisplayLayer();
 	display->SetRotation((GLfloat)transformData->rotation);
 	[self doRedraw];
@@ -2385,26 +2399,19 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	CGLUnlockContext(cglDisplayContext);
 }
 
-- (void)doDisplaySizeChanged:(NSSize)displaySize
-{
-	OGLDisplayLayer *display = oglv->GetDisplayLayer();
-	display->SetDisplaySize((uint16_t)displaySize.width, (uint16_t)displaySize.height);
-	[self doRedraw];
-}
-
 - (void)doDisplayModeChanged:(NSInteger)displayModeID
 {
 	OGLDisplayLayer *display = oglv->GetDisplayLayer();
-	display->SetMode(displayModeID);
+	display->SetMode((ClientDisplayMode)displayModeID);
 	[self doRedraw];
 }
 
 - (void)doDisplayOrientationChanged:(NSInteger)displayOrientationID
 {
 	OGLDisplayLayer *display = oglv->GetDisplayLayer();
-	display->SetOrientation(displayOrientationID);
+	display->SetOrientation((ClientDisplayLayout)displayOrientationID);
 	
-	if (display->GetMode() == DS_DISPLAY_TYPE_DUAL)
+	if (display->GetMode() == ClientDisplayMode_Dual)
 	{
 		[self doRedraw];
 	}
@@ -2413,9 +2420,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void)doDisplayOrderChanged:(NSInteger)displayOrderID
 {
 	OGLDisplayLayer *display = oglv->GetDisplayLayer();
-	display->SetOrder(displayOrderID);
+	display->SetOrder((ClientDisplayOrder)displayOrderID);
 	
-	if (display->GetMode() == DS_DISPLAY_TYPE_DUAL)
+	if (display->GetMode() == ClientDisplayMode_Dual)
 	{
 		[self doRedraw];
 	}
@@ -2426,10 +2433,20 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	OGLDisplayLayer *display = oglv->GetDisplayLayer();
 	display->SetGapScalar((GLfloat)displayGapScalar);
 	
-	if (display->GetMode() == DS_DISPLAY_TYPE_DUAL)
+	if (display->GetMode() == ClientDisplayMode_Dual)
 	{
 		[self doRedraw];
 	}
+}
+
++ (NSSize) calculateNormalSizeUsingMode:(const NSInteger)mode layout:(const NSInteger)layout gapScalar:(const double)gapScalar
+{
+	double w;
+	double h;
+	
+	OGLDisplayLayer::CalculateNormalSize((ClientDisplayMode)mode, (ClientDisplayLayout)layout, gapScalar, w, h);
+	
+	return NSMakeSize(w, h);
 }
 
 @end

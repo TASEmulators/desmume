@@ -32,6 +32,7 @@
 #import "cocoa_rom.h"
 #import "cocoa_slot2.h"
 
+#include "../OGLDisplayOutput.h"
 
 @implementation EmuControllerDelegate
 
@@ -1272,24 +1273,24 @@
 		const NSInteger displayMode = [theWindow displayMode];
 		switch (displayMode)
 		{
-			case DS_DISPLAY_TYPE_MAIN:
-				[theWindow setDisplayMode:DS_DISPLAY_TYPE_TOUCH];
+			case ClientDisplayMode_Main:
+				[theWindow setDisplayMode:ClientDisplayMode_Touch];
 				break;
 				
-			case DS_DISPLAY_TYPE_TOUCH:
-				[theWindow setDisplayMode:DS_DISPLAY_TYPE_MAIN];
+			case ClientDisplayMode_Touch:
+				[theWindow setDisplayMode:ClientDisplayMode_Main];
 				break;
 				
-			case DS_DISPLAY_TYPE_DUAL:
+			case ClientDisplayMode_Dual:
 			{
 				const NSInteger displayOrder = [theWindow displayOrder];
-				if (displayOrder == DS_DISPLAY_ORDER_MAIN_FIRST)
+				if (displayOrder == ClientDisplayOrder_MainFirst)
 				{
-					[theWindow setDisplayOrder:DS_DISPLAY_ORDER_TOUCH_FIRST];
+					[theWindow setDisplayOrder:ClientDisplayOrder_TouchFirst];
 				}
 				else
 				{
-					[theWindow setDisplayOrder:DS_DISPLAY_ORDER_MAIN_FIRST];
+					[theWindow setDisplayOrder:ClientDisplayOrder_MainFirst];
 				}
 				break;
 			}
