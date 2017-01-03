@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2015 DeSmuME Team
+	Copyright (C) 2012-2017 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -184,13 +184,6 @@
 #define MAX_BRIGHTNESS								100.0f
 
 #define CHEAT_DESCRIPTION_LENGTH					1024
-
-#define GPU_DISPLAY_WIDTH							256
-#define GPU_DISPLAY_HEIGHT							192
-#define GPU_DISPLAY_COLOR_DEPTH						sizeof(UInt16)
-
-#define DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO		(21.0/46.0) // Based on the official DS specification: 21mm/46mm
-#define DS_DISPLAY_UNSCALED_GAP						(GPU_DISPLAY_HEIGHT * DS_DISPLAY_VERTICAL_GAP_TO_HEIGHT_RATIO)
 
 #define WINDOW_STATUS_BAR_HEIGHT					24		// Height of an emulation window status bar in pixels.
 

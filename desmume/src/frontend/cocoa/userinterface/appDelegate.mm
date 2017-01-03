@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2016 DeSmuME Team
+	Copyright (C) 2011-2017 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -647,24 +647,24 @@
 			
 			int frameX = 0;
 			int frameY = 0;
-			int frameWidth = GPU_DISPLAY_WIDTH;
-			int frameHeight = GPU_DISPLAY_HEIGHT;
+			int frameWidth = 256;
+			int frameHeight = 192;
 			const char *frameCStr = [windowFrameStr cStringUsingEncoding:NSUTF8StringEncoding];
 			sscanf(frameCStr, "%i %i %i %i", &frameX, &frameY, &frameWidth, &frameHeight);
 			
-			[windowController setIsMinSizeNormal:isMinSizeNormal];
 			[windowController setIsShowingStatusBar:isShowingStatusBar];
 			[windowController setVideoFiltersPreferGPU:videoFiltersPreferGPU];
 			[windowController setVideoSourceDeposterize:videoSourceDeposterize];
 			[windowController setVideoPixelScaler:videoPixelScaler];
 			[windowController setVideoOutputFilter:videoOutputFilter];
 			[windowController setDisplayMode:displayMode];
-			[windowController setDisplayRotation:displayRotation];
 			[windowController setDisplayOrientation:displayOrientation];
 			[windowController setDisplayOrder:displayOrder];
 			[windowController setDisplayGap:displayGap];
-			[windowController setScreenshotFileFormat:screenshotFileFormat];
+			[windowController setIsMinSizeNormal:isMinSizeNormal];
+			[windowController setDisplayRotation:displayRotation];
 			[windowController setDisplayScale:displayScale];
+			[windowController setScreenshotFileFormat:screenshotFileFormat];
 			[[windowController view] setUseVerticalSync:useVerticalSync];
 			[[windowController view] setIsHUDVisible:hudEnable];
 			[[windowController view] setIsHUDVideoFPSVisible:hudShowVideoFPS];

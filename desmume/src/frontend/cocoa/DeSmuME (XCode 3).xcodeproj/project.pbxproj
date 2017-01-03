@@ -262,6 +262,11 @@
 		AB081A091B4E64AE008CE1EC /* Icon_VolumeMute_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0819E61B4E64AE008CE1EC /* Icon_VolumeMute_16x16@2x.png */; };
 		AB081A0A1B4E64AE008CE1EC /* Icon_VolumeOneThird_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0819E71B4E64AE008CE1EC /* Icon_VolumeOneThird_16x16@2x.png */; };
 		AB081A0B1B4E64AE008CE1EC /* Icon_VolumeTwoThird_16x16@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0819E81B4E64AE008CE1EC /* Icon_VolumeTwoThird_16x16@2x.png */; };
+		AB0F13921E1B7C320075684F /* ClientDisplayView.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB0F13911E1B7C320075684F /* ClientDisplayView.cpp */; };
+		AB0F13931E1B7C320075684F /* ClientDisplayView.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB0F13911E1B7C320075684F /* ClientDisplayView.cpp */; };
+		AB0F13941E1B7C320075684F /* ClientDisplayView.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB0F13911E1B7C320075684F /* ClientDisplayView.cpp */; };
+		AB0F13951E1B7C320075684F /* ClientDisplayView.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB0F13911E1B7C320075684F /* ClientDisplayView.cpp */; };
+		AB0F13961E1B7C320075684F /* ClientDisplayView.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB0F13911E1B7C320075684F /* ClientDisplayView.cpp */; };
 		AB0F290614BE6E68009ABC6F /* Icon_Execute_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F28FE14BE6E68009ABC6F /* Icon_Execute_420x420.png */; };
 		AB0F290714BE6E68009ABC6F /* Icon_Pause_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F28FF14BE6E68009ABC6F /* Icon_Pause_420x420.png */; };
 		AB0F290814BE6E68009ABC6F /* Icon_Speed1x_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F290014BE6E68009ABC6F /* Icon_Speed1x_420x420.png */; };
@@ -1782,6 +1787,8 @@
 		AB0819E71B4E64AE008CE1EC /* Icon_VolumeOneThird_16x16@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_VolumeOneThird_16x16@2x.png"; path = "images/Icon_VolumeOneThird_16x16@2x.png"; sourceTree = "<group>"; };
 		AB0819E81B4E64AE008CE1EC /* Icon_VolumeTwoThird_16x16@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "Icon_VolumeTwoThird_16x16@2x.png"; path = "images/Icon_VolumeTwoThird_16x16@2x.png"; sourceTree = "<group>"; };
 		AB0A0D1914AACA9600E83E91 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
+		AB0F13901E1B7C320075684F /* ClientDisplayView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientDisplayView.h; sourceTree = "<group>"; };
+		AB0F13911E1B7C320075684F /* ClientDisplayView.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClientDisplayView.cpp; sourceTree = "<group>"; };
 		AB0F28FE14BE6E68009ABC6F /* Icon_Execute_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Execute_420x420.png; path = images/Icon_Execute_420x420.png; sourceTree = "<group>"; };
 		AB0F28FF14BE6E68009ABC6F /* Icon_Pause_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Pause_420x420.png; path = images/Icon_Pause_420x420.png; sourceTree = "<group>"; };
 		AB0F290014BE6E68009ABC6F /* Icon_Speed1x_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speed1x_420x420.png; path = images/Icon_Speed1x_420x420.png; sourceTree = "<group>"; };
@@ -2345,12 +2352,14 @@
 				AB3ACB6514C2361100D7D192 /* userinterface */,
 				AB2F56EF1704C86900E28885 /* utilities.c */,
 				AB2145221714DFF4006DDB0F /* audiosamplegenerator.cpp */,
+				AB0F13911E1B7C320075684F /* ClientDisplayView.cpp */,
 				ABD0A5341501AA5A0074A094 /* coreaudiosound.cpp */,
 				ABD9A46413DB99B300777194 /* mic_ext.cpp */,
 				ABECB51318A460910052D52A /* OGLDisplayOutput.cpp */,
 				ABD0A5351501AA5A0074A094 /* ringbuffer.cpp */,
 				ABD104141346652500AF11D1 /* sndOSX.cpp */,
 				AB2145211714DFF4006DDB0F /* audiosamplegenerator.h */,
+				AB0F13901E1B7C320075684F /* ClientDisplayView.h */,
 				ABA6574914511EC90077E5E9 /* cocoa_cheat.h */,
 				ABD103FE1346652500AF11D1 /* cocoa_core.h */,
 				AB58F32B1364F44B0074C376 /* cocoa_file.h */,
@@ -4529,6 +4538,7 @@
 				ABD21B5C1DE900D3001D2DFA /* Database.cpp in Sources */,
 				ABD21B631DE9010B001D2DFA /* features_cpu.c in Sources */,
 				AB2C25081DEBFBD400706BFC /* encoding_utf.c in Sources */,
+				AB0F13931E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4710,6 +4720,7 @@
 				ABD21B5D1DE900D3001D2DFA /* Database.cpp in Sources */,
 				ABD21B641DE9010B001D2DFA /* features_cpu.c in Sources */,
 				AB2C25091DEBFBD400706BFC /* encoding_utf.c in Sources */,
+				AB0F13941E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4921,6 +4932,7 @@
 				ABD21B5B1DE900D3001D2DFA /* Database.cpp in Sources */,
 				ABD21B621DE9010B001D2DFA /* features_cpu.c in Sources */,
 				AB2C25071DEBFBD400706BFC /* encoding_utf.c in Sources */,
+				AB0F13921E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5132,6 +5144,7 @@
 				ABD21B5F1DE900D3001D2DFA /* Database.cpp in Sources */,
 				ABD21B661DE9010B001D2DFA /* features_cpu.c in Sources */,
 				AB2C250B1DEBFBD400706BFC /* encoding_utf.c in Sources */,
+				AB0F13961E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5313,6 +5326,7 @@
 				ABD21B5E1DE900D3001D2DFA /* Database.cpp in Sources */,
 				ABD21B651DE9010B001D2DFA /* features_cpu.c in Sources */,
 				AB2C250A1DEBFBD400706BFC /* encoding_utf.c in Sources */,
+				AB0F13951E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

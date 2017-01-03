@@ -115,7 +115,7 @@ volatile bool execute = true;
     
 	// Set up the DS display
 	displayMode = ClientDisplayMode_Dual;
-	displayRect = OEIntRectMake(0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2);
+	displayRect = OEIntRectMake(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
 	displayAspectRatio = OEIntSizeMake(2, 3);
 	
 	return self;
@@ -154,17 +154,17 @@ volatile bool execute = true;
 	switch (theMode)
 	{
 		case ClientDisplayMode_Main:
-			newDisplayRect = OEIntRectMake(0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT);
+			newDisplayRect = OEIntRectMake(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 			newDisplayAspectRatio = OEIntSizeMake(4, 3);
 			break;
 			
 		case ClientDisplayMode_Touch:
-			newDisplayRect = OEIntRectMake(0, GPU_DISPLAY_HEIGHT + 1, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT);
+			newDisplayRect = OEIntRectMake(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT + 1, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 			newDisplayAspectRatio = OEIntSizeMake(4, 3);
 			break;
 			
 		case ClientDisplayMode_Dual:
-			newDisplayRect = OEIntRectMake(0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2);
+			newDisplayRect = OEIntRectMake(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
 			newDisplayAspectRatio = OEIntSizeMake(2, 3);
 			break;
 			
@@ -280,7 +280,7 @@ volatile bool execute = true;
 
 - (OEIntSize)bufferSize
 {
-	return OEIntSizeMake(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT * 2);
+	return OEIntSizeMake(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
 }
 
 - (const void *)videoBuffer
@@ -396,7 +396,7 @@ volatile bool execute = true;
 			
 		case ClientDisplayMode_Dual:
 			isTouchPressed = YES;
-			aPoint.y -= GPU_DISPLAY_HEIGHT; // Normalize the y-coordinate to the DS.
+			aPoint.y -= GPU_FRAMEBUFFER_NATIVE_HEIGHT; // Normalize the y-coordinate to the DS.
 			break;
 			
 		default:
@@ -409,18 +409,18 @@ volatile bool execute = true;
 	{
 		aPoint.x = 0;
 	}
-	else if (aPoint.x > (GPU_DISPLAY_WIDTH - 1))
+	else if (aPoint.x > (GPU_FRAMEBUFFER_NATIVE_WIDTH - 1))
 	{
-		aPoint.x = (GPU_DISPLAY_WIDTH - 1);
+		aPoint.x = (GPU_FRAMEBUFFER_NATIVE_WIDTH - 1);
 	}
 	
 	if (aPoint.y < 0)
 	{
 		aPoint.y = 0;
 	}
-	else if (aPoint.y > (GPU_DISPLAY_HEIGHT - 1))
+	else if (aPoint.y > (GPU_FRAMEBUFFER_NATIVE_HEIGHT - 1))
 	{
-		aPoint.y = (GPU_DISPLAY_HEIGHT - 1);
+		aPoint.y = (GPU_FRAMEBUFFER_NATIVE_HEIGHT - 1);
 	}
 	
 	touchLocation = NSMakePoint(aPoint.x, aPoint.y);

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2016 DeSmuME team
+	Copyright (C) 2014-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -5609,7 +5609,7 @@ void OGLImage::UploadTransformationOGL()
 {
 	const double w = this->_viewportWidth;
 	const double h = this->_viewportHeight;
-	const GLdouble s = GetMaxScalarInBounds(this->_normalWidth, this->_normalHeight, w, h);
+	const GLdouble s = ClientDisplayView::GetMaxScalarWithinBounds(this->_normalWidth, this->_normalHeight, w, h);
 	
 	if (this->_canUseShaderOutput)
 	{
@@ -6742,11 +6742,11 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	
 	_gapScalar = 0.0f;
 	_rotation = 0.0f;
-	_normalWidth = GPU_DISPLAY_WIDTH;
-	_normalHeight = GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_UNSCALED_GAP*_gapScalar);
+	_normalWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_normalHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT*2.0 + (DS_DISPLAY_UNSCALED_GAP*_gapScalar);
 	
-	_vf[0] = new VideoFilter(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, VideoFilterTypeID_None, 0);
-	_vf[1] = new VideoFilter(GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, VideoFilterTypeID_None, 0);
+	_vf[0] = new VideoFilter(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, VideoFilterTypeID_None, 0);
+	_vf[1] = new VideoFilter(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, VideoFilterTypeID_None, 0);
 	
 	_vfMasterDstBuffer = (uint32_t *)calloc(_vf[0]->GetDstWidth() * (_vf[0]->GetDstHeight() + _vf[1]->GetDstHeight()), sizeof(uint32_t));
 	_vfMasterDstBufferSize = _vf[0]->GetDstWidth() * (_vf[0]->GetDstHeight() + _vf[1]->GetDstHeight()) * sizeof(uint32_t);
@@ -6758,10 +6758,10 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	
 	_isTexVideoInputDataNative[0] = true;
 	_isTexVideoInputDataNative[1] = true;
-	_texLoadedWidth[0] = (GLfloat)GPU_DISPLAY_WIDTH;
-	_texLoadedWidth[1] = (GLfloat)GPU_DISPLAY_WIDTH;
-	_texLoadedHeight[0] = (GLfloat)GPU_DISPLAY_HEIGHT;
-	_texLoadedHeight[1] = (GLfloat)GPU_DISPLAY_HEIGHT;
+	_texLoadedWidth[0] = (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_texLoadedWidth[1] = (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_texLoadedHeight[0] = (GLfloat)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	_texLoadedHeight[1] = (GLfloat)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
 	_videoColorFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	_videoSrcBufferHead = NULL;
@@ -6769,10 +6769,10 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	_videoSrcNativeBuffer[1] = NULL;
 	_videoSrcCustomBuffer[0] = NULL;
 	_videoSrcCustomBuffer[1] = NULL;
-	_videoSrcCustomBufferWidth[0] = GPU_DISPLAY_WIDTH;
-	_videoSrcCustomBufferWidth[1] = GPU_DISPLAY_WIDTH;
-	_videoSrcCustomBufferHeight[0] = GPU_DISPLAY_HEIGHT;
-	_videoSrcCustomBufferHeight[1] = GPU_DISPLAY_HEIGHT;
+	_videoSrcCustomBufferWidth[0] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_videoSrcCustomBufferWidth[1] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_videoSrcCustomBufferHeight[0] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	_videoSrcCustomBufferHeight[1] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
 	// Set up textures
 	glGenTextures(2, _texCPUFilterDstID);
@@ -6800,28 +6800,28 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _vf[0]->GetSrcBufferPtr());
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _vf[0]->GetSrcBufferPtr());
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texVideoInputDataNativeID[1]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _vf[1]->GetSrcBufferPtr());
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _vf[1]->GetSrcBufferPtr());
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texVideoInputDataCustomID[0]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _vf[0]->GetSrcBufferPtr());
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _vf[0]->GetSrcBufferPtr());
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texVideoInputDataCustomID[1]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _vf[1]->GetSrcBufferPtr());
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, _vf[1]->GetSrcBufferPtr());
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
@@ -7045,7 +7045,7 @@ void OGLDisplayLayer::SetVideoBuffers(const uint32_t colorFormat,
 	
 	this->_videoColorFormat = glColorFormat;
 	this->_videoSrcBufferHead = videoBufferHead;
-	this->_videoSrcBufferSize = (GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT * 2 * pixelBytes) + (customWidth0 * customHeight0 * pixelBytes) + (customWidth1 * customHeight1 * pixelBytes);
+	this->_videoSrcBufferSize = (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * pixelBytes) + (customWidth0 * customHeight0 * pixelBytes) + (customWidth1 * customHeight1 * pixelBytes);
 	this->_videoSrcNativeBuffer[0] = nativeBuffer0;
 	this->_videoSrcNativeBuffer[1] = nativeBuffer1;
 	this->_videoSrcCustomBuffer[0] = customBuffer0;
@@ -7067,11 +7067,11 @@ void OGLDisplayLayer::SetVideoBuffers(const uint32_t colorFormat,
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[0]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[0]);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[0]);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[1]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, 0, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[1]);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[1]);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataCustomID[0]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, videoSrcTexStorageHint);
@@ -7124,7 +7124,7 @@ ClientDisplayMode OGLDisplayLayer::GetMode() const
 void OGLDisplayLayer::SetMode(const ClientDisplayMode dispMode)
 {
 	this->_displayMode = dispMode;
-	OGLDisplayLayer::CalculateNormalSize(this->_displayMode, this->_displayOrientation, this->_gapScalar, this->_normalWidth, this->_normalHeight);
+	ClientDisplayView::CalculateNormalSize(this->_displayMode, this->_displayOrientation, this->_gapScalar, this->_normalWidth, this->_normalHeight);
 	this->_needUpdateVertices = true;
 }
 
@@ -7136,7 +7136,7 @@ ClientDisplayLayout OGLDisplayLayer::GetOrientation() const
 void OGLDisplayLayer::SetOrientation(ClientDisplayLayout dispOrientation)
 {
 	this->_displayOrientation = dispOrientation;
-	OGLDisplayLayer::CalculateNormalSize(this->_displayMode, this->_displayOrientation, this->_gapScalar, this->_normalWidth, this->_normalHeight);
+	ClientDisplayView::CalculateNormalSize(this->_displayMode, this->_displayOrientation, this->_gapScalar, this->_normalWidth, this->_normalHeight);
 	this->_needUpdateVertices = true;
 }
 
@@ -7148,7 +7148,7 @@ double OGLDisplayLayer::GetGapScalar() const
 void OGLDisplayLayer::SetGapScalar(double theScalar)
 {
 	this->_gapScalar = theScalar;
-	OGLDisplayLayer::CalculateNormalSize(this->_displayMode, this->_displayOrientation, this->_gapScalar, this->_normalWidth, this->_normalHeight);
+	ClientDisplayView::CalculateNormalSize(this->_displayMode, this->_displayOrientation, this->_gapScalar, this->_normalWidth, this->_normalHeight);
 	this->_needUpdateVertices = true;
 }
 
@@ -7214,20 +7214,20 @@ void OGLDisplayLayer::UpdateVerticesOGL()
 				
 			case ClientDisplayLayout_Hybrid_3_2:
 			{
-				vtxBufferPtr[0]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[1]		= -h + (96.0f * 2.0f);		// Minor top display, top left
+				vtxBufferPtr[0]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[1]		= -h + (96.0f * 2.0f);		// Minor top display, top left
 				vtxBufferPtr[2]		=  w;									vtxBufferPtr[3]		= -h + (96.0f * 2.0f);		// Minor top display, top right
-				vtxBufferPtr[4]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[5]		= -h + 96.0f;				// Minor top display, bottom left
+				vtxBufferPtr[4]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[5]		= -h + 96.0f;				// Minor top display, bottom left
 				vtxBufferPtr[6]		=  w;									vtxBufferPtr[7]		= -h + 96.0f;				// Minor top display, bottom right
 				
-				vtxBufferPtr[8]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[9]		= -h + 96.0f;				// Minor bottom display, top left
+				vtxBufferPtr[8]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[9]		= -h + 96.0f;				// Minor bottom display, top left
 				vtxBufferPtr[10]	=  w;									vtxBufferPtr[11]	= -h + 96.0f;				// Minor bottom display, top right
-				vtxBufferPtr[12]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
+				vtxBufferPtr[12]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
 				vtxBufferPtr[14]	=  w;									vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
 				
 				vtxBufferPtr[16]	= -w;									vtxBufferPtr[17]	=  h;						// Major display, top left
-				vtxBufferPtr[18]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
+				vtxBufferPtr[18]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
 				vtxBufferPtr[20]	= -w;									vtxBufferPtr[21]	= -h;						// Major display, bottom left
-				vtxBufferPtr[22]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
+				vtxBufferPtr[22]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
 				
 				memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (2 * 8), sizeof(GLfloat) * (1 * 8));							// Major display (bottom screen)
 				break;
@@ -7235,22 +7235,22 @@ void OGLDisplayLayer::UpdateVerticesOGL()
 				
 			case ClientDisplayLayout_Hybrid_16_9:
 			{
-				const GLfloat g = (GLfloat)DS_DISPLAY_UNSCALED_GAP * this->_gapScalar * (this->_normalWidth - (GLfloat)GPU_DISPLAY_WIDTH) / (GLfloat)GPU_DISPLAY_WIDTH;
+				const GLfloat g = (GLfloat)DS_DISPLAY_UNSCALED_GAP * this->_gapScalar * (this->_normalWidth - (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 				
-				vtxBufferPtr[0]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[1]		= -h + g + (64.0f * 2.0f);	// Minor top display, top left
+				vtxBufferPtr[0]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[1]		= -h + g + (64.0f * 2.0f);	// Minor top display, top left
 				vtxBufferPtr[2]		=  w;									vtxBufferPtr[3]		= -h + g + (64.0f * 2.0f);	// Minor top display, top right
-				vtxBufferPtr[4]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[5]		= -h + g + 64.0f;			// Minor top display, bottom left
+				vtxBufferPtr[4]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[5]		= -h + g + 64.0f;			// Minor top display, bottom left
 				vtxBufferPtr[6]		=  w;									vtxBufferPtr[7]		= -h + g + 64.0f;			// Minor top display, bottom right
 				
-				vtxBufferPtr[8]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[9]		= -h + 64.0f;				// Minor bottom display, top left
+				vtxBufferPtr[8]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[9]		= -h + 64.0f;				// Minor bottom display, top left
 				vtxBufferPtr[10]	=  w;									vtxBufferPtr[11]	= -h + 64.0f;				// Minor bottom display, top right
-				vtxBufferPtr[12]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
+				vtxBufferPtr[12]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
 				vtxBufferPtr[14]	=  w;									vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
 				
 				vtxBufferPtr[16]	= -w;									vtxBufferPtr[17]	=  h;						// Major display, top left
-				vtxBufferPtr[18]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
+				vtxBufferPtr[18]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
 				vtxBufferPtr[20]	= -w;									vtxBufferPtr[21]	= -h;						// Major display, bottom left
-				vtxBufferPtr[22]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
+				vtxBufferPtr[22]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
 				
 				memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (2 * 8), sizeof(GLfloat) * (1 * 8));							// Major display (bottom screen)
 				break;
@@ -7258,22 +7258,22 @@ void OGLDisplayLayer::UpdateVerticesOGL()
 				
 			case ClientDisplayLayout_Hybrid_16_10:
 			{
-				const GLfloat g = (GLfloat)DS_DISPLAY_UNSCALED_GAP * this->_gapScalar * (this->_normalWidth - (GLfloat)GPU_DISPLAY_WIDTH) / (GLfloat)GPU_DISPLAY_WIDTH;
+				const GLfloat g = (GLfloat)DS_DISPLAY_UNSCALED_GAP * this->_gapScalar * (this->_normalWidth - (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 				
-				vtxBufferPtr[0]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[1]		= -h + g + (38.4f * 2.0f);	// Minor top display, top left
+				vtxBufferPtr[0]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[1]		= -h + g + (38.4f * 2.0f);	// Minor top display, top left
 				vtxBufferPtr[2]		=  w;									vtxBufferPtr[3]		= -h + g + (38.4f * 2.0f);	// Minor top display, top right
-				vtxBufferPtr[4]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[5]		= -h + g + 38.4f;			// Minor top display, bottom left
+				vtxBufferPtr[4]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[5]		= -h + g + 38.4f;			// Minor top display, bottom left
 				vtxBufferPtr[6]		=  w;									vtxBufferPtr[7]		= -h + g + 38.4f;			// Minor top display, bottom right
 				
-				vtxBufferPtr[8]		= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[9]		= -h + 38.4f;				// Minor bottom display, top left
+				vtxBufferPtr[8]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[9]		= -h + 38.4f;				// Minor bottom display, top left
 				vtxBufferPtr[10]	=  w;									vtxBufferPtr[11]	= -h + 38.4f;				// Minor bottom display, top right
-				vtxBufferPtr[12]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
+				vtxBufferPtr[12]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
 				vtxBufferPtr[14]	=  w;									vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
 				
 				vtxBufferPtr[16]	= -w;									vtxBufferPtr[17]	=  h;						// Major display, top left
-				vtxBufferPtr[18]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
+				vtxBufferPtr[18]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
 				vtxBufferPtr[20]	= -w;									vtxBufferPtr[21]	= -h;						// Major display, bottom left
-				vtxBufferPtr[22]	= -w + (GLfloat)GPU_DISPLAY_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
+				vtxBufferPtr[22]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
 				
 				memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (2 * 8), sizeof(GLfloat) * (1 * 8));							// Major display (bottom screen)
 				break;
@@ -7374,8 +7374,11 @@ void OGLDisplayLayer::UploadTransformationOGL()
 {
 	const GLdouble w = this->_viewportWidth;
 	const GLdouble h = this->_viewportHeight;
-	const CGSize checkSize = GetTransformedBounds(this->_normalWidth, this->_normalHeight, 1.0, this->_rotation);
-	const GLdouble s = GetMaxScalarInBounds(checkSize.width, checkSize.height, w, h);
+	
+	double checkWidth = this->_normalWidth;
+	double checkHeight = this->_normalHeight;
+	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, this->_rotation, checkWidth, checkHeight);
+	const GLdouble s = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, w, h);
 	
 	if (this->_output->GetInfo()->IsShaderSupported())
 	{
@@ -7391,7 +7394,7 @@ void OGLDisplayLayer::UploadTransformationOGL()
 		
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		glRotatef(CLOCKWISE_DEGREES(this->_rotation), 0.0f, 0.0f, 1.0f);
+		glRotatef(this->_rotation, 0.0f, 0.0f, 1.0f);
 		glScalef(s, s, 1.0f);
 	}
 	
@@ -7802,10 +7805,10 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 	
 	this->_isTexVideoInputDataNative[0] = isMainSizeNative;
 	this->_isTexVideoInputDataNative[1] = isTouchSizeNative;
-	this->_texLoadedWidth[0]  = (this->_isTexVideoInputDataNative[0]) ? (GLfloat)GPU_DISPLAY_WIDTH  : (GLfloat)this->_videoSrcCustomBufferWidth[0];
-	this->_texLoadedHeight[0] = (this->_isTexVideoInputDataNative[0]) ? (GLfloat)GPU_DISPLAY_HEIGHT : (GLfloat)this->_videoSrcCustomBufferHeight[0];
-	this->_texLoadedWidth[1]  = (this->_isTexVideoInputDataNative[1]) ? (GLfloat)GPU_DISPLAY_WIDTH  : (GLfloat)this->_videoSrcCustomBufferWidth[1];
-	this->_texLoadedHeight[1] = (this->_isTexVideoInputDataNative[1]) ? (GLfloat)GPU_DISPLAY_HEIGHT : (GLfloat)this->_videoSrcCustomBufferHeight[1];
+	this->_texLoadedWidth[0]  = (this->_isTexVideoInputDataNative[0]) ? (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH  : (GLfloat)this->_videoSrcCustomBufferWidth[0];
+	this->_texLoadedHeight[0] = (this->_isTexVideoInputDataNative[0]) ? (GLfloat)GPU_FRAMEBUFFER_NATIVE_HEIGHT : (GLfloat)this->_videoSrcCustomBufferHeight[0];
+	this->_texLoadedWidth[1]  = (this->_isTexVideoInputDataNative[1]) ? (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH  : (GLfloat)this->_videoSrcCustomBufferWidth[1];
+	this->_texLoadedHeight[1] = (this->_isTexVideoInputDataNative[1]) ? (GLfloat)GPU_FRAMEBUFFER_NATIVE_HEIGHT : (GLfloat)this->_videoSrcCustomBufferHeight[1];
 	
 	if (loadMainScreen)
 	{
@@ -7824,7 +7827,7 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 			if (!isUsingCPUPixelScaler || this->_useDeposterize)
 			{
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[0]);
-				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[0]);
+				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[0]);
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 				glFlush();
 			}
@@ -7832,11 +7835,11 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 			{
 				if (this->_videoColorFormat == GL_UNSIGNED_SHORT_1_5_5_5_REV)
 				{
-					RGB555ToBGRA8888Buffer((const uint16_t *)this->_videoSrcNativeBuffer[0], this->_vf[0]->GetSrcBufferPtr(), GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT);
+					RGB555ToBGRA8888Buffer((const uint16_t *)this->_videoSrcNativeBuffer[0], this->_vf[0]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				}
 				else
 				{
-					RGB888ToBGRA8888Buffer((const uint32_t *)this->_videoSrcNativeBuffer[0], this->_vf[0]->GetSrcBufferPtr(), GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT);
+					RGB888ToBGRA8888Buffer((const uint32_t *)this->_videoSrcNativeBuffer[0], this->_vf[0]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				}
 			}
 		}
@@ -7866,7 +7869,7 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 			if (!isUsingCPUPixelScaler || this->_useDeposterize)
 			{
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[1]);
-				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_DISPLAY_WIDTH, GPU_DISPLAY_HEIGHT, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[1]);
+				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[1]);
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 				glFlush();
 			}
@@ -7874,11 +7877,11 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 			{
 				if (this->_videoColorFormat == GL_UNSIGNED_SHORT_1_5_5_5_REV)
 				{
-					RGB555ToBGRA8888Buffer((const uint16_t *)this->_videoSrcNativeBuffer[1], this->_vf[1]->GetSrcBufferPtr(), GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT);
+					RGB555ToBGRA8888Buffer((const uint16_t *)this->_videoSrcNativeBuffer[1], this->_vf[1]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				}
 				else
 				{
-					RGB888ToBGRA8888Buffer((const uint32_t *)this->_videoSrcNativeBuffer[1], this->_vf[1]->GetSrcBufferPtr(), GPU_DISPLAY_WIDTH * GPU_DISPLAY_HEIGHT);
+					RGB888ToBGRA8888Buffer((const uint32_t *)this->_videoSrcNativeBuffer[1], this->_vf[1]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				}
 			}
 		}
@@ -8096,43 +8099,4 @@ void OGLDisplayLayer::FinishOGL()
 	const bool isUsingCPUPixelScaler = (this->_pixelScaler != VideoFilterTypeID_None) && !this->_useShaderBasedPixelScaler;
 	glFinishObjectAPPLE(GL_TEXTURE_RECTANGLE_ARB, (isUsingCPUPixelScaler) ? this->_texCPUFilterDstID[0] : ( (this->_isTexVideoInputDataNative[0]) ? this->_texVideoInputDataNativeID[0] : this->_texVideoInputDataCustomID[0]) );
 	glFinishObjectAPPLE(GL_TEXTURE_RECTANGLE_ARB, (isUsingCPUPixelScaler) ? this->_texCPUFilterDstID[1] : ( (this->_isTexVideoInputDataNative[1]) ? this->_texVideoInputDataNativeID[1] : this->_texVideoInputDataCustomID[1]) );
-}
-
-void OGLDisplayLayer::CalculateNormalSize(const ClientDisplayMode mode, const ClientDisplayLayout layout, const double gapScalar, double &outWidth, double &outHeight)
-{
-	if (mode == ClientDisplayMode_Dual)
-	{
-		switch (layout)
-		{
-			case ClientDisplayLayout_Horizontal:
-				outWidth  = GPU_DISPLAY_WIDTH*2.0;
-				outHeight = GPU_DISPLAY_HEIGHT;
-				break;
-				
-			case ClientDisplayLayout_Hybrid_3_2:
-				outWidth  = (float)GPU_DISPLAY_WIDTH + (128.0);
-				outHeight = GPU_DISPLAY_HEIGHT;
-				break;
-				
-			case ClientDisplayLayout_Hybrid_16_9:
-				outWidth  = (float)GPU_DISPLAY_WIDTH + (64.0 * 4.0 / 3.0);
-				outHeight = GPU_DISPLAY_HEIGHT;
-				break;
-				
-			case ClientDisplayLayout_Hybrid_16_10:
-				outWidth  = (float)GPU_DISPLAY_WIDTH + (51.2);
-				outHeight = GPU_DISPLAY_HEIGHT;
-				break;
-				
-			default: // Default to vertical orientation.
-				outWidth  = GPU_DISPLAY_WIDTH;
-				outHeight = GPU_DISPLAY_HEIGHT*2.0 + (DS_DISPLAY_UNSCALED_GAP*gapScalar);
-				break;
-		}
-	}
-	else
-	{
-		outWidth  = GPU_DISPLAY_WIDTH;
-		outHeight = GPU_DISPLAY_HEIGHT;
-	}
 }

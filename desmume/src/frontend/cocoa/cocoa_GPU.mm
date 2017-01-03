@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2016 DeSmuME team
+	Copyright (C) 2013-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -216,7 +216,7 @@ public:
 - (void) setGpuScale:(NSUInteger)theScale
 {
 	_gpuScale = (uint8_t)theScale;
-	[self setGpuDimensions:NSMakeSize(GPU_DISPLAY_WIDTH * theScale, GPU_DISPLAY_HEIGHT * theScale)];
+	[self setGpuDimensions:NSMakeSize(GPU_FRAMEBUFFER_NATIVE_WIDTH * theScale, GPU_FRAMEBUFFER_NATIVE_HEIGHT * theScale)];
 }
 
 - (NSUInteger) gpuScale

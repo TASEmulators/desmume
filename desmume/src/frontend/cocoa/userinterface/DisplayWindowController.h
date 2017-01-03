@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2015 DeSmuME team
+	Copyright (C) 2013-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,11 +23,12 @@
 #import "InputManager.h"
 #import "cocoa_output.h"
 
+#include "../ClientDisplayView.h"
+#undef BOOL
+
 @class CocoaDSController;
 @class EmuControllerDelegate;
 class OGLVideoOutput;
-
-typedef std::map<int, bool> InitialTouchPressMap;  // Key = An ID number of the host input, Value = Flag that indicates if the initial touch press was in the major display
 
 // Subclass NSWindow for full screen windows so that we can override some methods.
 @interface DisplayFullScreenWindow : NSWindow
@@ -37,7 +38,7 @@ typedef std::map<int, bool> InitialTouchPressMap;  // Key = An ID number of the 
 @interface DisplayView : NSView <CocoaDSDisplayVideoDelegate, InputHIDManagerTarget>
 {
 	InputManager *inputManager;
-	InitialTouchPressMap *_initialTouchInMajorDisplay;
+	ClientDisplayView *_cdv;
 	OGLVideoOutput *oglv;
 	BOOL canUseShaderBasedFilters;
 	
@@ -56,7 +57,6 @@ typedef std::map<int, bool> InitialTouchPressMap;  // Key = An ID number of the 
 }
 
 @property (retain) InputManager *inputManager;
-@property (readonly) NSSize normalSize;
 @property (readonly) BOOL canUseShaderBasedFilters;
 @property (assign) BOOL isHUDVisible;
 @property (assign) BOOL isHUDVideoFPSVisible;
@@ -74,12 +74,9 @@ typedef std::map<int, bool> InitialTouchPressMap;  // Key = An ID number of the 
 - (void) setScaleFactor:(float)theScaleFactor;
 - (void) drawVideoFrame;
 - (NSPoint) dsPointFromEvent:(NSEvent *)theEvent inputID:(const NSInteger)inputID;
-- (NSPoint) convertPointToDS:(NSPoint)clickLoc inputID:(const NSInteger)inputID initialTouchPress:(BOOL)isInitialTouchPress;
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
 - (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed;
 - (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType;
-
-+ (NSSize) calculateNormalSizeUsingMode:(const NSInteger)mode layout:(const NSInteger)layout gapScalar:(const double)gapScalar;
 
 @end
 
@@ -92,6 +89,7 @@ typedef std::map<int, bool> InitialTouchPressMap;  // Key = An ID number of the 
 	NSObject *dummyObject;
 	
 	DisplayView *view;
+	ClientDisplayViewProperties _localViewProps;
 	NSView *saveScreenshotPanelAccessoryView;
 	NSView *outputVolumeControlView;
 	NSView *microphoneGainControlView;
@@ -105,12 +103,6 @@ typedef std::map<int, bool> InitialTouchPressMap;  // Key = An ID number of the 
 	NSScreen *assignedScreen;
 	NSWindow *masterWindow;
 	
-	double _displayScale;
-	double _displayRotation;
-	NSInteger _displayMode;
-	NSInteger _displayOrientation;
-	NSInteger _displayOrder;
-	double _displayGap;
 	NSInteger screenshotFileFormat;
 	
 	NSSize _minDisplayViewSize;
@@ -146,7 +138,6 @@ typedef std::map<int, bool> InitialTouchPressMap;  // Key = An ID number of the 
 @property (assign) NSScreen *assignedScreen;
 @property (retain) NSWindow *masterWindow;
 
-@property (readonly) NSSize normalSize;
 @property (assign) double displayScale;
 @property (assign) double displayRotation;
 @property (assign) BOOL videoFiltersPreferGPU;
@@ -167,7 +158,7 @@ typedef std::map<int, bool> InitialTouchPressMap;  // Key = An ID number of the 
 - (BOOL) masterStatusBarState;
 - (NSRect) masterWindowFrame;
 - (double) masterWindowScale;
-- (double) resizeWithTransform:(NSSize)normalBounds scalar:(double)scalar rotation:(double)angleDegrees;
+- (void) resizeWithTransform;
 - (double) maxScalarForContentBoundsWidth:(double)contentBoundsWidth height:(double)contentBoundsHeight;
 - (void) enterFullScreen;
 - (void) exitFullScreen;

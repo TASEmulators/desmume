@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -37,19 +37,6 @@ void RGB555ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__
 void RGB555ToBGRA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount);
 void RGB888ToBGRA8888Buffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount);
 void RGBA8888ForceOpaqueBuffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount);
-
-CGSize GetTransformedBounds(const double normalBoundsWidth, const double normalBoundsHeight,
-							const double scalar,
-							const double angleDegrees);
-
-double GetMaxScalarInBounds(const double normalBoundsWidth, const double normalBoundsHeight,
-							const double keepInBoundsWidth, const double keepInBoundsHeight);
-
-CGPoint GetNormalPointFromTransformedPoint(const double transformedPointX, const double transformedPointY,
-										   const double normalBoundsWidth, const double normalBoundsHeight,
-										   const double transformBoundsWidth, const double transformBoundsHeight,
-										   const double scalar,
-										   const double angleDegrees);
 	
 uint32_t GetNearestPositivePOT(uint32_t value);
 

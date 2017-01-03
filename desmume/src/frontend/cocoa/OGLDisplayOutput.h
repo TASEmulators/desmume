@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2016 DeSmuME team
+	Copyright (C) 2014-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@
 #include <string>
 #include "../../filter/videofilter.h"
 
+#include "ClientDisplayView.h"
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
@@ -42,28 +44,6 @@
 
 class OGLVideoOutput;
 struct NDSFrameInfo;
-
-enum ClientDisplayMode
-{
-	ClientDisplayMode_Main = 0,
-	ClientDisplayMode_Touch,
-	ClientDisplayMode_Dual
-};
-
-enum ClientDisplayLayout
-{
-	ClientDisplayLayout_Vertical		= 0,
-	ClientDisplayLayout_Horizontal		= 1,
-	ClientDisplayLayout_Hybrid_3_2		= 1000,
-	ClientDisplayLayout_Hybrid_16_9		= 1001,
-	ClientDisplayLayout_Hybrid_16_10	= 1002
-};
-
-enum ClientDisplayOrder
-{
-	ClientDisplayOrder_MainFirst = 0,
-	ClientDisplayOrder_TouchFirst
-};
 
 enum OutputFilterTypeID
 {
@@ -504,8 +484,6 @@ public:
 	virtual void ProcessOGL();
 	virtual void RenderOGL();
 	virtual void FinishOGL();
-	
-	static void CalculateNormalSize(const ClientDisplayMode mode, const ClientDisplayLayout layout, const double gapScalar, double &outWidth, double &outHeight);
 };
 
 class OGLVideoOutput
