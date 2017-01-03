@@ -1933,22 +1933,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	CGLFlushDrawable(cglDisplayContext);
 }
 
-- (NSPoint) dsPointFromEvent:(NSEvent *)theEvent inputID:(const NSInteger)inputID
-{
-	const NSEventType eventType = [theEvent type];
-	const BOOL isInitialMouseDown = (eventType == NSLeftMouseDown) || (eventType == NSRightMouseDown) || (eventType == NSOtherMouseDown);
-	
-	// Convert the clicked location from window coordinates, to view coordinates,
-	// and finally to DS touchscreen coordinates.
-	NSPoint touchLoc = [theEvent locationInWindow];
-	touchLoc = [self convertPoint:touchLoc fromView:nil];
-	
-	u8 x, y;
-	_cdv->GetNDSPoint((int)inputID, (isInitialMouseDown) ? true : false, touchLoc.x, touchLoc.y, x, y);
-	
-	return NSMakePoint(x, y);
-}
-
 #pragma mark InputHIDManagerTarget Protocol
 - (BOOL) handleHIDQueue:(IOHIDQueueRef)hidQueue hidManager:(InputHIDManager *)hidManager
 {
@@ -2014,17 +1998,29 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 {
 	BOOL isHandled = NO;
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	const NSInteger displayModeID = [windowController displayMode];
+	const ClientDisplayMode displayMode = _cdv->GetMode();
 	
 	// Convert the clicked location from window coordinates, to view coordinates,
 	// and finally to DS touchscreen coordinates.
 	const NSInteger buttonNumber = [theEvent buttonNumber];
-	const NSPoint touchLoc = (displayModeID == ClientDisplayMode_Main) ? NSMakePoint(0.0, 0.0) : [self dsPointFromEvent:theEvent inputID:buttonNumber];
-	const InputAttributes inputAttr = InputManagerEncodeMouseButtonInput(buttonNumber, touchLoc, buttonPressed);
+	uint8_t x = 0;
+	uint8_t y = 0;
+	
+	if (displayMode != ClientDisplayMode_Main)
+	{
+		const NSEventType eventType = [theEvent type];
+		const bool isInitialMouseDown = (eventType == NSLeftMouseDown) || (eventType == NSRightMouseDown) || (eventType == NSOtherMouseDown);
+		
+		// Convert the clicked location from window coordinates, to view coordinates, and finally to NDS touchscreen coordinates.
+		const NSPoint clientLoc = [self convertPoint:[theEvent locationInWindow] fromView:nil];
+		_cdv->GetNDSPoint((int)buttonNumber, isInitialMouseDown, clientLoc.x, clientLoc.y, x, y);
+	}
+	
+	const InputAttributes inputAttr = InputManagerEncodeMouseButtonInput(buttonNumber, NSMakePoint(x, y), buttonPressed);
 	
 	if (buttonPressed && [theEvent window] != nil)
 	{
-		NSString *newStatusText = (displayModeID == ClientDisplayMode_Main) ? [NSString stringWithFormat:@"%s:%s", inputAttr.deviceName, inputAttr.elementName] : [NSString stringWithFormat:@"%s:%s X:%i Y:%i", inputAttr.deviceName, inputAttr.elementName, (int)inputAttr.intCoordX, (int)inputAttr.intCoordY];
+		NSString *newStatusText = (displayMode == ClientDisplayMode_Main) ? [NSString stringWithFormat:@"%s:%s", inputAttr.deviceName, inputAttr.elementName] : [NSString stringWithFormat:@"%s:%s X:%i Y:%i", inputAttr.deviceName, inputAttr.elementName, (int)inputAttr.intCoordX, (int)inputAttr.intCoordY];
 		[[windowController emuControl] setStatusText:newStatusText];
 	}
 	

@@ -73,7 +73,6 @@ class OGLVideoOutput;
 
 - (void) setScaleFactor:(float)theScaleFactor;
 - (void) drawVideoFrame;
-- (NSPoint) dsPointFromEvent:(NSEvent *)theEvent inputID:(const NSInteger)inputID;
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
 - (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed;
 - (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType;
