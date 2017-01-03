@@ -35,7 +35,7 @@ enum ClientDisplayLayout
 {
 	ClientDisplayLayout_Vertical		= 0,
 	ClientDisplayLayout_Horizontal		= 1,
-	ClientDisplayLayout_Hybrid_3_2		= 1000,
+	ClientDisplayLayout_Hybrid_2_1		= 1000,
 	ClientDisplayLayout_Hybrid_16_9		= 1001,
 	ClientDisplayLayout_Hybrid_16_10	= 1002
 };

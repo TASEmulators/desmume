@@ -7212,24 +7212,24 @@ void OGLDisplayLayer::UpdateVerticesOGL()
 				break;
 			}
 				
-			case ClientDisplayLayout_Hybrid_3_2:
+			case ClientDisplayLayout_Hybrid_2_1:
 			{
-				vtxBufferPtr[0]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[1]		= -h + (96.0f * 2.0f);		// Minor top display, top left
-				vtxBufferPtr[2]		=  w;									vtxBufferPtr[3]		= -h + (96.0f * 2.0f);		// Minor top display, top right
-				vtxBufferPtr[4]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[5]		= -h + 96.0f;				// Minor top display, bottom left
-				vtxBufferPtr[6]		=  w;									vtxBufferPtr[7]		= -h + 96.0f;				// Minor top display, bottom right
+				vtxBufferPtr[0]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[1]		= -h + (96.0f * 2.0f);		// Minor top display, top left
+				vtxBufferPtr[2]		=  w;											vtxBufferPtr[3]		= -h + (96.0f * 2.0f);		// Minor top display, top right
+				vtxBufferPtr[4]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[5]		= -h + 96.0f;				// Minor top display, bottom left
+				vtxBufferPtr[6]		=  w;											vtxBufferPtr[7]		= -h + 96.0f;				// Minor top display, bottom right
 				
-				vtxBufferPtr[8]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[9]		= -h + 96.0f;				// Minor bottom display, top left
-				vtxBufferPtr[10]	=  w;									vtxBufferPtr[11]	= -h + 96.0f;				// Minor bottom display, top right
-				vtxBufferPtr[12]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
-				vtxBufferPtr[14]	=  w;									vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
+				vtxBufferPtr[8]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[9]		= -h + 96.0f;				// Minor bottom display, top left
+				vtxBufferPtr[10]	=  w;											vtxBufferPtr[11]	= -h + 96.0f;				// Minor bottom display, top right
+				vtxBufferPtr[12]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
+				vtxBufferPtr[14]	=  w;											vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
 				
-				vtxBufferPtr[16]	= -w;									vtxBufferPtr[17]	=  h;						// Major display, top left
-				vtxBufferPtr[18]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
-				vtxBufferPtr[20]	= -w;									vtxBufferPtr[21]	= -h;						// Major display, bottom left
-				vtxBufferPtr[22]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
+				vtxBufferPtr[16]	= -w;											vtxBufferPtr[17]	=  h;						// Major display, top left
+				vtxBufferPtr[18]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[19]	=  h;						// Major display, top right
+				vtxBufferPtr[20]	= -w;											vtxBufferPtr[21]	= -h;						// Major display, bottom left
+				vtxBufferPtr[22]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[23]	= -h;						// Major display, bottom right
 				
-				memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (2 * 8), sizeof(GLfloat) * (1 * 8));							// Major display (bottom screen)
+				memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (2 * 8), sizeof(GLfloat) * (1 * 8));									// Major display (bottom screen)
 				break;
 			}
 				
@@ -7237,22 +7237,22 @@ void OGLDisplayLayer::UpdateVerticesOGL()
 			{
 				const GLfloat g = (GLfloat)DS_DISPLAY_UNSCALED_GAP * this->_gapScalar * (this->_normalWidth - (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 				
-				vtxBufferPtr[0]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[1]		= -h + g + (64.0f * 2.0f);	// Minor top display, top left
-				vtxBufferPtr[2]		=  w;									vtxBufferPtr[3]		= -h + g + (64.0f * 2.0f);	// Minor top display, top right
-				vtxBufferPtr[4]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[5]		= -h + g + 64.0f;			// Minor top display, bottom left
-				vtxBufferPtr[6]		=  w;									vtxBufferPtr[7]		= -h + g + 64.0f;			// Minor top display, bottom right
+				vtxBufferPtr[0]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[1]		= -h + g + (64.0f * 2.0f);	// Minor top display, top left
+				vtxBufferPtr[2]		=  w;											vtxBufferPtr[3]		= -h + g + (64.0f * 2.0f);	// Minor top display, top right
+				vtxBufferPtr[4]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[5]		= -h + g + 64.0f;			// Minor top display, bottom left
+				vtxBufferPtr[6]		=  w;											vtxBufferPtr[7]		= -h + g + 64.0f;			// Minor top display, bottom right
 				
-				vtxBufferPtr[8]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[9]		= -h + 64.0f;				// Minor bottom display, top left
-				vtxBufferPtr[10]	=  w;									vtxBufferPtr[11]	= -h + 64.0f;				// Minor bottom display, top right
-				vtxBufferPtr[12]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
-				vtxBufferPtr[14]	=  w;									vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
+				vtxBufferPtr[8]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[9]		= -h + 64.0f;				// Minor bottom display, top left
+				vtxBufferPtr[10]	=  w;											vtxBufferPtr[11]	= -h + 64.0f;				// Minor bottom display, top right
+				vtxBufferPtr[12]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
+				vtxBufferPtr[14]	=  w;											vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
 				
-				vtxBufferPtr[16]	= -w;									vtxBufferPtr[17]	=  h;						// Major display, top left
-				vtxBufferPtr[18]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
-				vtxBufferPtr[20]	= -w;									vtxBufferPtr[21]	= -h;						// Major display, bottom left
-				vtxBufferPtr[22]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
+				vtxBufferPtr[16]	= -w;											vtxBufferPtr[17]	=  h;						// Major display, top left
+				vtxBufferPtr[18]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[19]	=  h;						// Major display, top right
+				vtxBufferPtr[20]	= -w;											vtxBufferPtr[21]	= -h;						// Major display, bottom left
+				vtxBufferPtr[22]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[23]	= -h;						// Major display, bottom right
 				
-				memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (2 * 8), sizeof(GLfloat) * (1 * 8));							// Major display (bottom screen)
+				memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (2 * 8), sizeof(GLfloat) * (1 * 8));									// Major display (bottom screen)
 				break;
 			}
 				
@@ -7260,20 +7260,20 @@ void OGLDisplayLayer::UpdateVerticesOGL()
 			{
 				const GLfloat g = (GLfloat)DS_DISPLAY_UNSCALED_GAP * this->_gapScalar * (this->_normalWidth - (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 				
-				vtxBufferPtr[0]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[1]		= -h + g + (38.4f * 2.0f);	// Minor top display, top left
-				vtxBufferPtr[2]		=  w;									vtxBufferPtr[3]		= -h + g + (38.4f * 2.0f);	// Minor top display, top right
-				vtxBufferPtr[4]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[5]		= -h + g + 38.4f;			// Minor top display, bottom left
-				vtxBufferPtr[6]		=  w;									vtxBufferPtr[7]		= -h + g + 38.4f;			// Minor top display, bottom right
+				vtxBufferPtr[0]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[1]		= -h + g + (38.4f * 2.0f);	// Minor top display, top left
+				vtxBufferPtr[2]		=  w;											vtxBufferPtr[3]		= -h + g + (38.4f * 2.0f);	// Minor top display, top right
+				vtxBufferPtr[4]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[5]		= -h + g + 38.4f;			// Minor top display, bottom left
+				vtxBufferPtr[6]		=  w;											vtxBufferPtr[7]		= -h + g + 38.4f;			// Minor top display, bottom right
 				
-				vtxBufferPtr[8]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[9]		= -h + 38.4f;				// Minor bottom display, top left
-				vtxBufferPtr[10]	=  w;									vtxBufferPtr[11]	= -h + 38.4f;				// Minor bottom display, top right
-				vtxBufferPtr[12]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
-				vtxBufferPtr[14]	=  w;									vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
+				vtxBufferPtr[8]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[9]		= -h + 38.4f;				// Minor bottom display, top left
+				vtxBufferPtr[10]	=  w;											vtxBufferPtr[11]	= -h + 38.4f;				// Minor bottom display, top right
+				vtxBufferPtr[12]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
+				vtxBufferPtr[14]	=  w;											vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
 				
-				vtxBufferPtr[16]	= -w;									vtxBufferPtr[17]	=  h;						// Major display, top left
-				vtxBufferPtr[18]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
-				vtxBufferPtr[20]	= -w;									vtxBufferPtr[21]	= -h;						// Major display, bottom left
-				vtxBufferPtr[22]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
+				vtxBufferPtr[16]	= -w;											vtxBufferPtr[17]	=  h;						// Major display, top left
+				vtxBufferPtr[18]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[19]	=  h;						// Major display, top right
+				vtxBufferPtr[20]	= -w;											vtxBufferPtr[21]	= -h;						// Major display, bottom left
+				vtxBufferPtr[22]	= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[23]	= -h;						// Major display, bottom right
 				
 				memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (2 * 8), sizeof(GLfloat) * (1 * 8));							// Major display (bottom screen)
 				break;
@@ -8060,7 +8060,7 @@ void OGLDisplayLayer::RenderOGL()
 			
 			switch (this->_displayOrientation)
 			{
-				case ClientDisplayLayout_Hybrid_3_2:
+				case ClientDisplayLayout_Hybrid_2_1:
 				case ClientDisplayLayout_Hybrid_16_9:
 				case ClientDisplayLayout_Hybrid_16_10:
 					glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[majorDisplayTex]);

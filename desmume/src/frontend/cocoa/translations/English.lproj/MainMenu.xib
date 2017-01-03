@@ -1130,7 +1130,7 @@
                 </object>
                 <object class="NSMenuItem" id="993127302">
                   <reference key="NSMenu" ref="466310130"/>
-                  <string key="NSTitle">Display Orientation</string>
+                  <string key="NSTitle">Display Layout</string>
                   <string key="NSKeyEquiv"/>
                   <int key="NSMnemonicLoc">2147483647</int>
                   <reference key="NSOnImage" ref="396634170"/>
@@ -1138,7 +1138,7 @@
                   <string key="NSAction">submenuAction:</string>
                   <reference key="NSTarget" ref="696122360"/>
                   <object class="NSMenu" key="NSSubmenu" id="696122360">
-                    <string key="NSTitle">Display Orientation</string>
+                    <string key="NSTitle">Display Layout</string>
                     <object class="NSMutableArray" key="NSMenuItems">
                       <bool key="EncodedWithXMLCoder">YES</bool>
                       <object class="NSMenuItem" id="172785222">
@@ -1160,7 +1160,7 @@
                       </object>
                       <object class="NSMenuItem" id="495023019">
                         <reference key="NSMenu" ref="696122360"/>
-                        <string key="NSTitle">Hybrid (3:2)</string>
+                        <string key="NSTitle">Hybrid (2:1)</string>
                         <string key="NSKeyEquiv"/>
                         <int key="NSMnemonicLoc">2147483647</int>
                         <reference key="NSOnImage" ref="396634170"/>
@@ -4629,7 +4629,7 @@ QXBwbGUgQ29tcHV0ZXIsIEluYy4sIDIwMDUAAAAAA</bytes>
                                         <object class="NSButtonCell" id="830803978">
                                           <int key="NSCellFlags">67108864</int>
                                           <int key="NSCellFlags2">0</int>
-                                          <string key="NSContents">Hybrid (3:2)</string>
+                                          <string key="NSContents">Hybrid (2:1)</string>
                                           <reference key="NSSupport" ref="462791774"/>
                                           <reference key="NSControlView" ref="534073839"/>
                                           <int key="NSTag">1000</int>
@@ -4795,7 +4795,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
                               <object class="NSTextFieldCell" key="NSTitleCell">
                                 <int key="NSCellFlags">67108864</int>
                                 <int key="NSCellFlags2">0</int>
-                                <string key="NSContents">Display Orientation</string>
+                                <string key="NSContents">Layout</string>
                                 <reference key="NSSupport" ref="26"/>
                                 <reference key="NSBackgroundColor" ref="527409595"/>
                                 <reference key="NSTextColor" ref="353533534"/>
@@ -5079,7 +5079,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
                               <object class="NSTextFieldCell" key="NSTitleCell">
                                 <int key="NSCellFlags">67108864</int>
                                 <int key="NSCellFlags2">0</int>
-                                <string key="NSContents">Display Order</string>
+                                <string key="NSContents">Order</string>
                                 <reference key="NSSupport" ref="26"/>
                                 <reference key="NSBackgroundColor" ref="527409595"/>
                                 <reference key="NSTextColor" ref="353533534"/>
@@ -61537,7 +61537,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
             <object class="IBToolTipAttribute" key="NS.object.0">
               <string key="name">ToolTip</string>
               <reference key="object" ref="830803978"/>
-              <string key="toolTip">By default, arranges the NDS screens where the top and bottom screens are displayed on the right side, along with a larger major screen on the left side. This display orientation does not use the display separation setting. It is best suited for users who want a balanced size ratio between the minor screens and the major screen.</string>
+              <string key="toolTip">By default, arranges the NDS screens where the top and bottom screens are displayed on the right side, along with a larger major screen on the left side. This display layout does not use the display separation setting. It is best suited for users who want a balanced size ratio between the minor screens and the major screen.</string>
             </object>
           </object>
           <object class="NSMutableDictionary">
@@ -61545,7 +61545,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
             <object class="IBToolTipAttribute" key="NS.object.0">
               <string key="name">ToolTip</string>
               <reference key="object" ref="17957965"/>
-              <string key="toolTip">By default, arranges the NDS screens where the top and bottom screens are displayed on the right side, along with a larger major screen on the left side. This display orientation uses the display separation setting. It is best suited for host displays running a 16:9 resolution.</string>
+              <string key="toolTip">By default, arranges the NDS screens where the top and bottom screens are displayed on the right side, along with a larger major screen on the left side. This display layout uses the display separation setting. It is best suited for host displays running a 16:9 resolution.</string>
             </object>
           </object>
           <object class="NSMutableDictionary">
@@ -61553,7 +61553,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
             <object class="IBToolTipAttribute" key="NS.object.0">
               <string key="name">ToolTip</string>
               <reference key="object" ref="114580774"/>
-              <string key="toolTip">By default, arranges the NDS screens where the top and bottom screens are displayed on the right side, along with a larger major screen on the left side. This display orientation uses the display separation setting. It is best suited for host displays running a 16:10 resolution.</string>
+              <string key="toolTip">By default, arranges the NDS screens where the top and bottom screens are displayed on the right side, along with a larger major screen on the left side. This display layout uses the display separation setting. It is best suited for host displays running a 16:10 resolution.</string>
             </object>
           </object>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -61647,7 +61647,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-          <string>{{585, 358}, {489, 437}}</string>
+          <string>{{616, 186}, {489, 437}}</string>
           <string>{796.5, 896.5}</string>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
           <object class="NSMutableDictionary">
@@ -63313,7 +63313,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
             <object class="IBToolTipAttribute" key="NS.object.0">
               <string key="name">ToolTip</string>
               <reference key="object" ref="863837355"/>
-              <string key="toolTip">By default, arranges the NDS screens where one screen is to the left of the other screen. This display orientation does not use the display separation setting.</string>
+              <string key="toolTip">By default, arranges the NDS screens where one screen is to the left of the other screen. This display layout does not use the display separation setting.</string>
             </object>
           </object>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -63322,7 +63322,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
             <object class="IBToolTipAttribute" key="NS.object.0">
               <string key="name">ToolTip</string>
               <reference key="object" ref="777091208"/>
-              <string key="toolTip">By default, arranges the NDS screens where one screen is above the other screen, just like a hardware NDS. This display orientation uses the display separation setting.</string>
+              <string key="toolTip">By default, arranges the NDS screens where one screen is above the other screen, just like a hardware NDS. This display layout uses the display separation setting.</string>
             </object>
           </object>
           <string>com.apple.InterfaceBuilder.CocoaPlugin</string>

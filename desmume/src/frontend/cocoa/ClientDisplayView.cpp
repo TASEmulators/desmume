@@ -172,7 +172,7 @@ void ClientDisplayView::GetNDSPoint(const int inputID, const bool isInitialTouch
 				break;
 			}
 				
-			case ClientDisplayLayout_Hybrid_3_2:
+			case ClientDisplayLayout_Hybrid_2_1:
 			case ClientDisplayLayout_Hybrid_16_9:
 			case ClientDisplayLayout_Hybrid_16_10:
 			{
@@ -479,7 +479,7 @@ void ClientDisplayView::CalculateNormalSize(const ClientDisplayMode mode, const 
 				outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 				break;
 				
-			case ClientDisplayLayout_Hybrid_3_2:
+			case ClientDisplayLayout_Hybrid_2_1:
 				outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH + (128.0);
 				outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 				break;
