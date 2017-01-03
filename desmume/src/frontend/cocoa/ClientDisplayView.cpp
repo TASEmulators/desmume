@@ -155,7 +155,7 @@ void ClientDisplayView::GetNDSPoint(const int inputID, const bool isInitialTouch
 	ClientDisplayView::ConvertClientToNormalPoint(this->_property.normalWidth, this->_property.normalHeight,
 												  this->_property.clientWidth, this->_property.clientHeight,
 												  s,
-												  360.0 - this->_property.rotation,
+												  this->_property.rotation,
 												  x, y);
 	
 	// Normalize the touch location to the DS.

@@ -112,6 +112,7 @@ class OGLVideoOutput;
 	BOOL _masterStatusBarState;
 	NSRect _masterWindowFrame;
 	double _masterWindowScale;
+	double _localRotation;
 	
 	OSSpinLock spinlockScale;
 	OSSpinLock spinlockRotation;

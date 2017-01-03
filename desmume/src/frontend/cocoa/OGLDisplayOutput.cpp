@@ -71,8 +71,8 @@ static const char *Sample1x1OutputVertShader_100 = {"\
 		mat2 projection	= mat2(	vec2(2.0/viewSize.x,            0.0), \n\
 								vec2(           0.0, 2.0/viewSize.y)); \n\
 		\n\
-		mat2 rotation	= mat2(	vec2(cos(angleRadians), -sin(angleRadians)), \n\
-								vec2(sin(angleRadians),  cos(angleRadians))); \n\
+		mat2 rotation	= mat2(	vec2( cos(angleRadians), sin(angleRadians)), \n\
+								vec2(-sin(angleRadians), cos(angleRadians))); \n\
 		\n\
 		mat2 scale		= mat2(	vec2(scalar,    0.0), \n\
 								vec2(   0.0, scalar)); \n\
@@ -105,8 +105,8 @@ static const char *BicubicSample4x4Output_VertShader_110 = {"\
 		mat2 projection	= mat2(	vec2(2.0/viewSize.x,            0.0), \n\
 								vec2(           0.0, 2.0/viewSize.y)); \n\
 		\n\
-		mat2 rotation	= mat2(	vec2(cos(angleRadians), -sin(angleRadians)), \n\
-								vec2(sin(angleRadians),  cos(angleRadians))); \n\
+		mat2 rotation	= mat2(	vec2( cos(angleRadians), sin(angleRadians)), \n\
+								vec2(-sin(angleRadians), cos(angleRadians))); \n\
 		\n\
 		mat2 scale		= mat2(	vec2(scalar,    0.0), \n\
 								vec2(   0.0, scalar)); \n\
@@ -161,8 +161,8 @@ static const char *BicubicSample5x5Output_VertShader_110 = {"\
 		mat2 projection	= mat2(	vec2(2.0/viewSize.x,            0.0), \n\
 								vec2(           0.0, 2.0/viewSize.y)); \n\
 		\n\
-		mat2 rotation	= mat2(	vec2(cos(angleRadians), -sin(angleRadians)), \n\
-								vec2(sin(angleRadians),  cos(angleRadians))); \n\
+		mat2 rotation	= mat2(	vec2( cos(angleRadians), sin(angleRadians)), \n\
+								vec2(-sin(angleRadians), cos(angleRadians))); \n\
 		\n\
 		mat2 scale		= mat2(	vec2(scalar,    0.0), \n\
 								vec2(   0.0, scalar)); \n\
@@ -228,8 +228,8 @@ static const char *BicubicSample6x6Output_VertShader_110 = {"\
 		mat2 projection	= mat2(	vec2(2.0/viewSize.x,            0.0), \n\
 								vec2(           0.0, 2.0/viewSize.y)); \n\
 		\n\
-		mat2 rotation	= mat2(	vec2(cos(angleRadians), -sin(angleRadians)), \n\
-								vec2(sin(angleRadians),  cos(angleRadians))); \n\
+		mat2 rotation	= mat2(	vec2( cos(angleRadians), sin(angleRadians)), \n\
+								vec2(-sin(angleRadians), cos(angleRadians))); \n\
 		\n\
 		mat2 scale		= mat2(	vec2(scalar,    0.0), \n\
 								vec2(   0.0, scalar)); \n\

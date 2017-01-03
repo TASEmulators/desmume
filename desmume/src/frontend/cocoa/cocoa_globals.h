@@ -209,8 +209,6 @@
 #define SPU_SAMPLE_SIZE								((SPU_SAMPLE_RESOLUTION / 8) * SPU_NUMBER_CHANNELS) // Bytes per sample, multiplied by the number of channels
 #define SPU_BUFFER_BYTES							((SPU_SAMPLE_RATE / DS_FRAMES_PER_SECOND) * SPU_SAMPLE_SIZE) // Note that this value may be returned as floating point
 
-#define CLOCKWISE_DEGREES(x)						(360.0 - x) // Converts an angle in degrees from normal-direction to clockwise-direction.
-
 #define VOLUME_THRESHOLD_LOW						35.0f
 #define VOLUME_THRESHOLD_HIGH						75.0f
 

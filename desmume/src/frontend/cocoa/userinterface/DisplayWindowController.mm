@@ -117,6 +117,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_localViewProps.layout = ClientDisplayLayout_Vertical;
 	_localViewProps.order = ClientDisplayOrder_MainFirst;
 	
+	_localRotation = 0.0;
 	_minDisplayViewSize = NSMakeSize(_localViewProps.clientWidth, _localViewProps.clientHeight + _localViewProps.gapDistance);
 	_isMinSizeNormal = YES;
 	_statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
@@ -192,15 +193,18 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	
 	OSSpinLockLock(&spinlockRotation);
-	_localViewProps.rotation = newAngleDegrees;
+	_localRotation = newAngleDegrees;
 	OSSpinLockUnlock(&spinlockRotation);
+	
+	// Convert angle to clockwise-direction degrees (left-handed Cartesian coordinate system).
+	_localViewProps.rotation = 360.0 - newAngleDegrees;
 	
 	NSWindow *theWindow = [self window];
 	
 	// Set the minimum content size for the window, since this will change based on rotation.
 	double contentMinWidth = _minDisplayViewSize.width;
 	double contentMinHeight = _minDisplayViewSize.height;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, CLOCKWISE_DEGREES(newAngleDegrees), contentMinWidth, contentMinHeight);
+	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, contentMinWidth, contentMinHeight);
 	contentMinHeight += _statusBarHeight;
 	[theWindow setContentMinSize:NSMakeSize(contentMinWidth, contentMinHeight)];
 	
@@ -218,7 +222,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	
 	DisplayOutputTransformData transformData	= { _localViewProps.viewScale,
-												    newAngleDegrees,
+												    _localViewProps.rotation,
 												    0.0,
 												    0.0,
 												    0.0 };
@@ -231,7 +235,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (double) displayRotation
 {
 	OSSpinLockLock(&spinlockRotation);
-	const double angleDegrees = _localViewProps.rotation;
+	const double angleDegrees = _localRotation;
 	OSSpinLockUnlock(&spinlockRotation);
 	
 	return angleDegrees;
@@ -408,7 +412,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Set the minimum content size, keeping the display rotation in mind.
 	double transformedMinWidth = _minDisplayViewSize.width;
 	double transformedMinHeight = _minDisplayViewSize.height;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, CLOCKWISE_DEGREES([self displayRotation]), transformedMinWidth, transformedMinHeight);
+	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
 	[[self window] setContentMinSize:NSMakeSize(transformedMinWidth, transformedMinHeight + _statusBarHeight)];
 }
 
@@ -510,13 +514,10 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		return;
 	}
 	
-	// Convert angle to clockwise-direction degrees.
-	const double angleDegrees = CLOCKWISE_DEGREES(_localViewProps.rotation);
-	
 	// Get the maximum scalar size within drawBounds. Constrain scalar to maxScalar if necessary.
 	double checkWidth = _localViewProps.normalWidth;
 	double checkHeight = _localViewProps.normalHeight;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, angleDegrees, checkWidth, checkHeight);
+	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
 	
 	const double constrainedScale = [self maxScalarForContentBoundsWidth:checkWidth height:checkHeight];
 	if (_localViewProps.viewScale > constrainedScale)
@@ -529,7 +530,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Get the new bounds for the window's content view based on the transformed draw bounds.
 	double transformedWidth = _localViewProps.normalWidth;
 	double transformedHeight = _localViewProps.normalHeight;
-	ClientDisplayView::ConvertNormalToTransformedBounds(_localViewProps.viewScale, angleDegrees, transformedWidth, transformedHeight);
+	ClientDisplayView::ConvertNormalToTransformedBounds(_localViewProps.viewScale, _localViewProps.rotation, transformedWidth, transformedHeight);
 	
 	// Get the center of the content view in screen coordinates.
 	const NSRect windowContentRect = [[masterWindow contentView] bounds];
@@ -759,7 +760,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		// Set the minimum content size, keeping the display rotation in mind.
 		double transformedMinWidth = _minDisplayViewSize.width;
 		double transformedMinHeight = _minDisplayViewSize.height;
-		ClientDisplayView::ConvertNormalToTransformedBounds(1.0, CLOCKWISE_DEGREES([self displayRotation]), transformedMinWidth, transformedMinHeight);
+		ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
 		transformedMinHeight += _statusBarHeight;
 		
 		// Resize the window if it's smaller than the minimum content size.
@@ -1275,7 +1276,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// content Rect.
 	double checkWidth = _localViewProps.normalWidth;
 	double checkHeight = _localViewProps.normalHeight;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, [self displayRotation], checkWidth, checkHeight);
+	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
 	const NSSize contentBounds = NSMakeSize(contentRect.size.width, contentRect.size.height - _statusBarHeight);
 	const double constrainedScale = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, contentBounds.width, contentBounds.height);
 	
@@ -1297,7 +1298,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Get the max scalar within the window's current content bounds.
 	double checkWidth = _localViewProps.normalWidth;
 	double checkHeight = _localViewProps.normalHeight;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, [self displayRotation], checkWidth, checkHeight);
+	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
 	
 	NSSize contentBounds = [[[self window] contentView] bounds].size;
 	contentBounds.height -= _statusBarHeight;
@@ -1346,7 +1347,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// content Rect.
 	double checkWidth = _localViewProps.normalWidth;
 	double checkHeight = _localViewProps.normalHeight;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, [self displayRotation], checkWidth, checkHeight);
+	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
 	const NSSize contentBounds = NSMakeSize(contentRect.size.width, contentRect.size.height - _statusBarHeight);
 	const double maxS = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, contentBounds.width, contentBounds.height);
 	
