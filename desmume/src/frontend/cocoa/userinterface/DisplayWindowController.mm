@@ -59,6 +59,7 @@
 @synthesize microphoneGainSlider;
 @synthesize microphoneMuteButton;
 
+@dynamic isFullScreen;
 @dynamic displayScale;
 @dynamic displayRotation;
 @dynamic videoFiltersPreferGPU;
@@ -152,6 +153,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 #pragma mark Dynamic Property Methods
 
+- (BOOL) isFullScreen
+{
+	return ([self assignedScreen] != nil);
+}
+
 - (void) setDisplayScale:(double)s
 {
 	// There are two ways that this property is used:
@@ -199,37 +205,29 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Convert angle to clockwise-direction degrees (left-handed Cartesian coordinate system).
 	_localViewProps.rotation = 360.0 - newAngleDegrees;
 	
-	NSWindow *theWindow = [self window];
-	
 	// Set the minimum content size for the window, since this will change based on rotation.
-	double contentMinWidth = _minDisplayViewSize.width;
-	double contentMinHeight = _minDisplayViewSize.height;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, contentMinWidth, contentMinHeight);
-	contentMinHeight += _statusBarHeight;
-	[theWindow setContentMinSize:NSMakeSize(contentMinWidth, contentMinHeight)];
+	[self setIsMinSizeNormal:[self isMinSizeNormal]];
 	
-	// Resize the window.
-	const NSSize oldBounds = [theWindow frame].size;
-	[self resizeWithTransform];
-	const NSSize newBounds = [theWindow frame].size;
-	
-	// If the window size didn't change, it is possible that the old and new rotation angles
-	// are 180 degrees offset from each other. In this case, we'll need to force the
-	// display view to update itself.
-	if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
+	if ([self isFullScreen])
 	{
-		[view setNeedsDisplay:YES];
+		[view commitViewProperties:_localViewProps];
 	}
-	
-	DisplayOutputTransformData transformData	= { _localViewProps.viewScale,
-												    _localViewProps.rotation,
-												    0.0,
-												    0.0,
-												    0.0 };
-	
-	[CocoaDSUtil messageSendOneWayWithData:[[self cdsVideoOutput] receivePort]
-									 msgID:MESSAGE_TRANSFORM_VIEW
-									  data:[NSData dataWithBytes:&transformData length:sizeof(DisplayOutputTransformData)]];
+	else
+	{
+		// Resize the window.
+		NSWindow *theWindow = [self window];
+		const NSSize oldBounds = [theWindow frame].size;
+		[self resizeWithTransform];
+		const NSSize newBounds = [theWindow frame].size;
+		
+		// If the window size didn't change, it is possible that the old and new rotation angles
+		// are 180 degrees offset from each other. In this case, we'll need to force the
+		// display view to update itself.
+		if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
+		{
+			[view commitViewProperties:_localViewProps];
+		}
+	}
 }
 
 - (double) displayRotation
@@ -243,35 +241,21 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void) setDisplayMode:(NSInteger)displayModeID
 {
-	NSString *modeString = @"Unknown";
-	
-	switch (displayModeID)
-	{
-		case ClientDisplayMode_Main:
-			modeString = NSSTRING_DISPLAYMODE_MAIN;
-			break;
-			
-		case ClientDisplayMode_Touch:
-			modeString = NSSTRING_DISPLAYMODE_TOUCH;
-			break;
-			
-		case ClientDisplayMode_Dual:
-			modeString = NSSTRING_DISPLAYMODE_DUAL;
-			break;
-			
-		default:
-			break;
-	}
-	
 	OSSpinLockLock(&spinlockDisplayMode);
 	_localViewProps.mode = (ClientDisplayMode)displayModeID;
 	OSSpinLockUnlock(&spinlockDisplayMode);
 	
-	ClientDisplayView::CalculateNormalSize((ClientDisplayMode)[self displayMode], (ClientDisplayLayout)[self displayOrientation], [self displayGap], _localViewProps.normalWidth, _localViewProps.normalHeight);
+	ClientDisplayView::CalculateNormalSize((ClientDisplayMode)displayModeID, (ClientDisplayLayout)[self displayOrientation], [self displayGap], _localViewProps.normalWidth, _localViewProps.normalHeight);
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
-	[self resizeWithTransform];
 	
-	[CocoaDSUtil messageSendOneWayWithInteger:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_CHANGE_DISPLAY_TYPE integerValue:displayModeID];
+	if ([self isFullScreen])
+	{
+		[view commitViewProperties:_localViewProps];
+	}
+	else if ([self displayMode] == ClientDisplayMode_Dual)
+	{
+		[self resizeWithTransform];
+	}
 }
 
 - (NSInteger) displayMode
@@ -289,15 +273,17 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_localViewProps.layout = (ClientDisplayLayout)theOrientation;
 	OSSpinLockUnlock(&spinlockDisplayOrientation);
 	
-	ClientDisplayView::CalculateNormalSize((ClientDisplayMode)[self displayMode], (ClientDisplayLayout)[self displayOrientation], [self displayGap], _localViewProps.normalWidth, _localViewProps.normalHeight);
+	ClientDisplayView::CalculateNormalSize((ClientDisplayMode)[self displayMode], (ClientDisplayLayout)theOrientation, [self displayGap], _localViewProps.normalWidth, _localViewProps.normalHeight);
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
 	
-	if ([self displayMode] == ClientDisplayMode_Dual)
+	if ([self isFullScreen])
+	{
+		[view commitViewProperties:_localViewProps];
+	}
+	else if ([self displayMode] == ClientDisplayMode_Dual)
 	{
 		[self resizeWithTransform];
 	}
-	
-	[CocoaDSUtil messageSendOneWayWithInteger:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_CHANGE_DISPLAY_ORIENTATION integerValue:theOrientation];
 }
 
 - (NSInteger) displayOrientation
@@ -315,7 +301,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_localViewProps.order = (ClientDisplayOrder)theOrder;
 	OSSpinLockUnlock(&spinlockDisplayOrder);
 	
-	[CocoaDSUtil messageSendOneWayWithInteger:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_CHANGE_DISPLAY_ORDER integerValue:theOrder];
+	[view commitViewProperties:_localViewProps];
 }
 
 - (NSInteger) displayOrder
@@ -333,15 +319,31 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_localViewProps.gapScale = gapScalar;
 	OSSpinLockUnlock(&spinlockDisplayGap);
 	
-	ClientDisplayView::CalculateNormalSize((ClientDisplayMode)[self displayMode], (ClientDisplayLayout)[self displayOrientation], [self displayGap], _localViewProps.normalWidth, _localViewProps.normalHeight);
+	ClientDisplayView::CalculateNormalSize((ClientDisplayMode)[self displayMode], (ClientDisplayLayout)[self displayOrientation], gapScalar, _localViewProps.normalWidth, _localViewProps.normalHeight);
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
 	
-	if ([self displayMode] == ClientDisplayMode_Dual)
+	if ([self isFullScreen])
 	{
-		[self resizeWithTransform];
+		[view commitViewProperties:_localViewProps];
 	}
-	
-	[CocoaDSUtil messageSendOneWayWithFloat:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_CHANGE_DISPLAY_GAP floatValue:(float)gapScalar];
+	else if ([self displayMode] == ClientDisplayMode_Dual)
+	{
+		switch ([self displayOrientation])
+		{
+			case ClientDisplayLayout_Hybrid_16_9:
+			case ClientDisplayLayout_Hybrid_16_10:
+				[view commitViewProperties:_localViewProps];
+				break;
+				
+			case ClientDisplayLayout_Horizontal:
+			case ClientDisplayLayout_Hybrid_2_1:
+				break;
+				
+			default:
+				[self resizeWithTransform];
+				break;
+		}
+	}
 }
 
 - (double) displayGap
@@ -464,18 +466,75 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 #pragma mark Class Methods
 
+- (ClientDisplayViewProperties &) localViewProperties
+{
+	return _localViewProps;
+}
+
+- (void) setDisplayMode:(ClientDisplayMode)mode
+				 layout:(ClientDisplayLayout)layout
+				  order:(ClientDisplayOrder)order
+			   rotation:(double)rotation
+			  viewScale:(double)viewScale
+			   gapScale:(double)gapScale
+		isMinSizeNormal:(BOOL)isMinSizeNormal
+	 isShowingStatusBar:(BOOL)isShowingStatusBar
+{
+	_statusBarHeight = (isShowingStatusBar) ? WINDOW_STATUS_BAR_HEIGHT : 0;
+	
+	_localRotation = fmod(rotation, 360.0);
+	if (_localRotation < 0.0)
+	{
+		_localRotation = 360.0 + _localRotation;
+	}
+	
+	if (_localRotation == 360.0)
+	{
+		_localRotation = 0.0;
+	}
+	
+	_localViewProps.mode		= mode;
+	_localViewProps.layout		= layout;
+	_localViewProps.order		= order;
+	_localViewProps.viewScale	= viewScale;
+	_localViewProps.gapScale	= gapScale;
+	_localViewProps.gapDistance	= DS_DISPLAY_UNSCALED_GAP * gapScale;
+	_localViewProps.rotation	= 360.0 - _localRotation;
+	
+	ClientDisplayView::CalculateNormalSize(mode, layout, gapScale, _localViewProps.normalWidth, _localViewProps.normalHeight);
+	
+	// Set the minimum content size.
+	_isMinSizeNormal = isMinSizeNormal;
+	_minDisplayViewSize.width = _localViewProps.normalWidth;
+	_minDisplayViewSize.height = _localViewProps.normalHeight;
+	
+	if (!_isMinSizeNormal)
+	{
+		_minDisplayViewSize.width /= 4.0;
+		_minDisplayViewSize.height /= 4.0;
+	}
+	
+	double transformedMinWidth = _minDisplayViewSize.width;
+	double transformedMinHeight = _minDisplayViewSize.height;
+	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
+	[[self window] setContentMinSize:NSMakeSize(transformedMinWidth, transformedMinHeight + _statusBarHeight)];
+	
+	// Set the client size and resize the windows.
+	NSRect newWindowFrame = [self updateViewProperties];
+	[masterWindow setFrame:newWindowFrame display:YES animate:NO];
+}
+
 - (void) setupUserDefaults
 {
-	// Set the display window per user preferences.
-	[self setIsShowingStatusBar:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"]];
+	[self setDisplayMode:(ClientDisplayMode)[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"]
+				  layout:(ClientDisplayLayout)[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Orientation"]
+				   order:(ClientDisplayOrder)[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"]
+				rotation:[[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Rotation"]
+			   viewScale:([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Size"] / 100.0)
+				gapScale:([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayViewCombo_Gap"] / 100.0)
+		 isMinSizeNormal:[self isMinSizeNormal]
+	  isShowingStatusBar:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"]];
 	
-	// Set the display settings per user preferences.
-	[self setDisplayGap:([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayViewCombo_Gap"] / 100.0)];
-	[self setDisplayMode:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"]];
-	[self setDisplayOrientation:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Orientation"]];
-	[self setDisplayOrder:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"]];
-	[self setDisplayScale:([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Size"] / 100.0)];
-	[self setDisplayRotation:[[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Rotation"]];
 	[self setVideoFiltersPreferGPU:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_FiltersPreferGPU"]];
 	[self setVideoSourceDeposterize:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_Deposterize"]];
 	[self setVideoOutputFilter:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"]];
@@ -494,27 +553,22 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (BOOL) masterStatusBarState
 {
-	return (([self assignedScreen] == nil) || !_useMavericksFullScreen) ? [self isShowingStatusBar] : _masterStatusBarState;
+	return (![self isFullScreen] || !_useMavericksFullScreen) ? [self isShowingStatusBar] : _masterStatusBarState;
 }
 
 - (NSRect) masterWindowFrame
 {
-	return (([self assignedScreen] == nil) || !_useMavericksFullScreen) ? [masterWindow frame] : _masterWindowFrame;
+	return (![self isFullScreen] || !_useMavericksFullScreen) ? [masterWindow frame] : _masterWindowFrame;
 }
 
 - (double) masterWindowScale
 {
-	return (([self assignedScreen] == nil) || !_useMavericksFullScreen) ? [self displayScale] : _masterWindowScale;
+	return (![self isFullScreen] || !_useMavericksFullScreen) ? [self displayScale] : _masterWindowScale;
 }
 
-- (void) resizeWithTransform
+- (NSRect) updateViewProperties
 {
-	if ([self assignedScreen] != nil)
-	{
-		return;
-	}
-	
-	// Get the maximum scalar size within drawBounds. Constrain scalar to maxScalar if necessary.
+	// Get the maximum scalar size within drawBounds.
 	double checkWidth = _localViewProps.normalWidth;
 	double checkHeight = _localViewProps.normalHeight;
 	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
@@ -522,9 +576,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	const double constrainedScale = [self maxScalarForContentBoundsWidth:checkWidth height:checkHeight];
 	if (_localViewProps.viewScale > constrainedScale)
 	{
-		_isUpdatingDisplayScaleValueOnly = YES;
-		[self setDisplayScale:constrainedScale];
-		_isUpdatingDisplayScaleValueOnly = NO;
+		_localViewProps.viewScale = constrainedScale;
 	}
 	
 	// Get the new bounds for the window's content view based on the transformed draw bounds.
@@ -540,7 +592,22 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Resize the window.
 	const NSRect windowFrame = [masterWindow frame];
 	const NSRect newFrame = [masterWindow frameRectForContentRect:NSMakeRect(windowFrame.origin.x + translationX, windowFrame.origin.y + translationY, transformedWidth, transformedHeight + _statusBarHeight)];
-	[masterWindow setFrame:newFrame display:YES animate:NO];
+	
+	_localViewProps.clientWidth = newFrame.size.width;
+	_localViewProps.clientHeight = newFrame.size.height;
+	
+	return newFrame;
+}
+
+- (void) resizeWithTransform
+{
+	if ([self isFullScreen])
+	{
+		return;
+	}
+	
+	NSRect newWindowFrame = [self updateViewProperties];
+	[masterWindow setFrame:newWindowFrame display:YES animate:NO];
 }
 
 - (double) maxScalarForContentBoundsWidth:(double)contentBoundsWidth height:(double)contentBoundsHeight
@@ -657,7 +724,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		// This method only applies for displays in full screen mode. For displays in
 		// windowed mode, we don't need to do anything.
-		if ([self assignedScreen] == nil)
+		if (![self isFullScreen])
 		{
 			return;
 		}
@@ -797,13 +864,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	else
 #endif
 	{
-		if ([self assignedScreen] == nil)
+		if ([self isFullScreen])
 		{
-			[self enterFullScreen];
+			[self exitFullScreen];
 		}
 		else
 		{
-			[self exitFullScreen];
+			[self enterFullScreen];
 		}
 	}
 }
@@ -1173,7 +1240,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			[(NSMenuItem *)theItem setTitle:([self isShowingStatusBar]) ? NSSTRING_TITLE_HIDE_STATUS_BAR : NSSTRING_TITLE_SHOW_STATUS_BAR];
 		}
 		
-		if ([self assignedScreen] != nil)
+		if ([self isFullScreen])
 		{
 			enable = NO;
 		}
@@ -1182,7 +1249,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setTitle:([self assignedScreen] != nil) ? NSSTRING_TITLE_EXIT_FULL_SCREEN : NSSTRING_TITLE_ENTER_FULL_SCREEN];
+			[(NSMenuItem *)theItem setTitle:([self isFullScreen]) ? NSSTRING_TITLE_EXIT_FULL_SCREEN : NSSTRING_TITLE_ENTER_FULL_SCREEN];
 		}
 	}
 	else if (theAction == @selector(toggleKeepMinDisplaySizeAtNormal:))
@@ -1192,7 +1259,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			[(NSMenuItem *)theItem setState:([self isMinSizeNormal]) ? NSOnState : NSOffState];
 		}
 		
-		if ([self assignedScreen] != nil)
+		if ([self isFullScreen])
 		{
 			enable = NO;
 		}
@@ -1262,7 +1329,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)frameSize
 {
-	if ([self assignedScreen] != nil)
+	if ([self isFullScreen])
 	{
 		return frameSize;
 	}
@@ -1290,7 +1357,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)windowDidResize:(NSNotification *)notification
 {
-	if ([self assignedScreen] != nil)
+	if ([self isFullScreen])
 	{
 		return;
 	}
@@ -1318,7 +1385,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (NSRect)windowWillUseStandardFrame:(NSWindow *)window defaultFrame:(NSRect)newFrame
 {
-	if ([self assignedScreen] != nil)
+	if ([self isFullScreen])
 	{
 		return newFrame;
 	}
@@ -1574,7 +1641,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 #endif
 	
 	inputManager = nil;
-	_cdv = new ClientDisplayView();
 	
 	// Initialize the OpenGL context
 	NSOpenGLPixelFormatAttribute attributes[] = {
@@ -1614,18 +1680,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv = new OGLVideoOutput();
-	oglv->InitLayers();
+	_cdv = new MacOGLDisplayView(cglDisplayContext);
+	_cdv->Init();
 	
 	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
-	oglv->GetHUDLayer()->SetFontUsingPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
+	_cdv->SetHUDFontUsingPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
 	
-	OGLDisplayLayer *displayLayer = oglv->GetDisplayLayer();
-	displayLayer->SetFiltersPreferGPUOGL(true);
-	displayLayer->SetSourceDeposterize(false);
-	displayLayer->SetOutputFilterOGL(OutputFilterTypeID_Bilinear);
-	displayLayer->SetPixelScalerOGL(VideoFilterTypeID_None);
-	canUseShaderBasedFilters = (displayLayer->CanUseShaderBasedFilters()) ? YES : NO;
+	canUseShaderBasedFilters = (_cdv->CanFilterOnGPU()) ? YES : NO;
 	
 	CGLSetCurrentContext(prevContext);
 	
@@ -1638,6 +1699,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	spinlockSourceDeposterize = OS_SPINLOCK_INIT;
 	spinlockPixelScaler = OS_SPINLOCK_INIT;
 	
+	spinlockViewProperties = OS_SPINLOCK_INIT;
+	
 	return self;
 }
 
@@ -1645,10 +1708,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 {
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
-	delete oglv;
+	delete _cdv;
 	CGLSetCurrentContext(prevContext);
 	
-	delete _cdv;
 	[self setInputManager:nil];
 	[context clearDrawable];
 	[context release];
@@ -1664,8 +1726,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->GetHUDLayer()->SetVisibility((theState) ? true : false);
-	[self drawVideoFrame];
+	_cdv->SetHUDVisibility((theState) ? true : false);
+	_cdv->FrameRenderAndFlush();
 	CGLUnlockContext(cglDisplayContext);
 	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
@@ -1674,7 +1736,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (BOOL) isHUDVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (oglv->GetHUDLayer()->IsVisible()) ? YES : NO;
+	const BOOL theState = (_cdv->GetHUDVisibility()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -1686,8 +1748,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->GetHUDLayer()->SetShowVideoFPS((theState) ? true : false);
-	[self drawVideoFrame];
+	_cdv->SetHUDShowVideoFPS((theState) ? true : false);
+	_cdv->FrameRenderAndFlush();
 	CGLUnlockContext(cglDisplayContext);
 	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
@@ -1696,7 +1758,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (BOOL) isHUDVideoFPSVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (oglv->GetHUDLayer()->GetShowVideoFPS()) ? YES : NO;
+	const BOOL theState = (_cdv->GetHUDShowVideoFPS()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -1708,8 +1770,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->GetHUDLayer()->SetShowRender3DFPS((theState) ? true : false);
-	[self drawVideoFrame];
+	_cdv->SetHUDShowRender3DFPS((theState) ? true : false);
+	_cdv->FrameRenderAndFlush();
 	CGLUnlockContext(cglDisplayContext);
 	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
@@ -1718,7 +1780,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (BOOL) isHUDRender3DFPSVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (oglv->GetHUDLayer()->GetShowRender3DFPS()) ? YES : NO;
+	const BOOL theState = (_cdv->GetHUDShowRender3DFPS()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -1730,8 +1792,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->GetHUDLayer()->SetShowFrameIndex((theState) ? true : false);
-	[self drawVideoFrame];
+	_cdv->SetHUDShowFrameIndex((theState) ? true : false);
+	_cdv->FrameRenderAndFlush();
 	CGLUnlockContext(cglDisplayContext);
 	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
@@ -1740,7 +1802,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (BOOL) isHUDFrameIndexVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (oglv->GetHUDLayer()->GetShowFrameIndex()) ? YES : NO;
+	const BOOL theState = (_cdv->GetHUDShowFrameIndex()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -1752,8 +1814,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->GetHUDLayer()->SetShowLagFrameCount((theState) ? true : false);
-	[self drawVideoFrame];
+	_cdv->SetHUDShowLagFrameCount((theState) ? true : false);
+	_cdv->FrameRenderAndFlush();
 	CGLUnlockContext(cglDisplayContext);
 	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
@@ -1762,7 +1824,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (BOOL) isHUDLagFrameCountVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (oglv->GetHUDLayer()->GetShowLagFrameCount()) ? YES : NO;
+	const BOOL theState = (_cdv->GetHUDShowLagFrameCount()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -1774,8 +1836,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->GetHUDLayer()->SetShowCPULoadAverage((theState) ? true : false);
-	[self drawVideoFrame];
+	_cdv->SetHUDShowCPULoadAverage((theState) ? true : false);
+	_cdv->FrameRenderAndFlush();
 	CGLUnlockContext(cglDisplayContext);
 	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
@@ -1784,7 +1846,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (BOOL) isHUDCPULoadAverageVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (oglv->GetHUDLayer()->GetShowCPULoadAverage()) ? YES : NO;
+	const BOOL theState = (_cdv->GetHUDShowCPULoadAverage()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -1796,8 +1858,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->GetHUDLayer()->SetShowRTC((theState) ? true : false);
-	[self drawVideoFrame];
+	_cdv->SetHUDShowRTC((theState) ? true : false);
+	_cdv->FrameRenderAndFlush();
 	CGLUnlockContext(cglDisplayContext);
 	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
@@ -1806,7 +1868,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (BOOL) isHUDRealTimeClockVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (oglv->GetHUDLayer()->GetShowRTC()) ? YES : NO;
+	const BOOL theState = (_cdv->GetHUDShowRTC()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -1841,7 +1903,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->GetDisplayLayer()->SetFiltersPreferGPUOGL((theState) ? true : false);
+	_cdv->SetFiltersPreferGPU((theState) ? true : false);
 	CGLUnlockContext(cglDisplayContext);
 	
 	OSSpinLockUnlock(&spinlockVideoFiltersPreferGPU);
@@ -1850,7 +1912,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (BOOL) videoFiltersPreferGPU
 {
 	OSSpinLockLock(&spinlockVideoFiltersPreferGPU);
-	const BOOL theState = (oglv->GetDisplayLayer()->GetFiltersPreferGPU()) ? YES : NO;
+	const BOOL theState = (_cdv->GetFiltersPreferGPU()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockVideoFiltersPreferGPU);
 	
 	return theState;
@@ -1859,14 +1921,14 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setSourceDeposterize:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockSourceDeposterize);
-	oglv->GetDisplayLayer()->SetSourceDeposterize((theState) ? true : false);
+	_cdv->SetSourceDeposterize((theState) ? true : false);
 	OSSpinLockUnlock(&spinlockSourceDeposterize);
 }
 
 - (BOOL) sourceDeposterize
 {
 	OSSpinLockLock(&spinlockSourceDeposterize);
-	const BOOL theState = (oglv->GetDisplayLayer()->GetSourceDeposterize()) ? YES : NO;
+	const BOOL theState = (_cdv->GetSourceDeposterize()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockSourceDeposterize);
 	
 	return theState;
@@ -1878,7 +1940,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->GetDisplayLayer()->SetOutputFilterOGL(filterID);
+	_cdv->SetOutputFilter((OutputFilterTypeID)filterID);
 	CGLUnlockContext(cglDisplayContext);
 	
 	OSSpinLockUnlock(&spinlockOutputFilter);
@@ -1887,7 +1949,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (NSInteger) outputFilter
 {
 	OSSpinLockLock(&spinlockOutputFilter);
-	const NSInteger filterID = oglv->GetDisplayLayer()->GetOutputFilter();
+	const NSInteger filterID = _cdv->GetOutputFilter();
 	OSSpinLockUnlock(&spinlockOutputFilter);
 	
 	return filterID;
@@ -1899,7 +1961,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->GetDisplayLayer()->SetPixelScalerOGL(filterID);
+	_cdv->SetPixelScaler((VideoFilterTypeID)filterID);
 	CGLUnlockContext(cglDisplayContext);
 	
 	OSSpinLockUnlock(&spinlockPixelScaler);
@@ -1908,7 +1970,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (NSInteger) pixelScaler
 {
 	OSSpinLockLock(&spinlockPixelScaler);
-	const NSInteger filterID = oglv->GetDisplayLayer()->GetPixelScaler();
+	const NSInteger filterID = _cdv->GetPixelScaler();
 	OSSpinLockUnlock(&spinlockPixelScaler);
 	
 	return filterID;
@@ -1922,16 +1984,33 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	oglv->SetScaleFactor(theScaleFactor);
+	_cdv->SetScaleFactor(theScaleFactor);
 	CGLUnlockContext(cglDisplayContext);
 	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 }
 
-- (void) drawVideoFrame
+- (void) commitViewProperties:(const ClientDisplayViewProperties &)viewProps
 {
-	oglv->RenderOGL();
-	CGLFlushDrawable(cglDisplayContext);
+	OSSpinLockLock(&spinlockViewProperties);
+	_intermediateViewProps = viewProps;
+	OSSpinLockUnlock(&spinlockViewProperties);
+	
+	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
+	[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_CHANGE_VIEW_PROPERTIES];
+}
+
+- (void) setupViewProperties
+{
+	OSSpinLockLock(&spinlockViewProperties);
+	_cdv->CommitViewProperties(_intermediateViewProps);
+	OSSpinLockUnlock(&spinlockViewProperties);
+	
+	CGLLockContext(cglDisplayContext);
+	CGLSetCurrentContext(cglDisplayContext);
+	_cdv->SetupViewProperties();
+	_cdv->FrameRenderAndFlush();
+	CGLUnlockContext(cglDisplayContext);
 }
 
 #pragma mark InputHIDManagerTarget Protocol
@@ -2081,7 +2160,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 #else
 		const NSRect newViewportRect = rect;
 #endif
-		[CocoaDSUtil messageSendOneWayWithRect:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RESIZE_VIEW rect:newViewportRect];
+		
+		ClientDisplayViewProperties &props = [windowController localViewProperties];
+		props.clientWidth = newViewportRect.size.width;
+		props.clientHeight = newViewportRect.size.height;
+		[self commitViewProperties:props];
 	}
 }
 
@@ -2198,12 +2281,10 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)doLoadVideoFrameWithMainSizeNative:(bool)isMainSizeNative touchSizeNative:(bool)isTouchSizeNative
 {
-	OGLDisplayLayer *displayLayer = oglv->GetDisplayLayer();
-	
 	CGLLockContext(cglDisplayContext);
 	CGLSetCurrentContext(cglDisplayContext);
-	displayLayer->LoadFrameOGL(isMainSizeNative, isTouchSizeNative);
-	displayLayer->ProcessOGL();
+	_cdv->FrameLoadGPU(isMainSizeNative, isTouchSizeNative);
+	_cdv->FrameProcessGPU();
 	CGLUnlockContext(cglDisplayContext);
 }
 
@@ -2218,139 +2299,32 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 						 customWidth1:(const size_t)customWidth1
 						customHeight1:(const size_t)customHeight1
 {
-	OGLDisplayLayer *displayLayer = oglv->GetDisplayLayer();
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	displayLayer->SetVideoBuffers(colorFormat,
-								  videoBufferHead,
-								  nativeBuffer0,
-								  nativeBuffer1,
-								  customBuffer0, customWidth0, customHeight0,
-								  customBuffer1, customWidth1, customHeight1);
-	CGLUnlockContext(cglDisplayContext);
+	_cdv->SetVideoBuffers(colorFormat,
+						  videoBufferHead,
+						  nativeBuffer0,
+						  nativeBuffer1,
+						  customBuffer0, customWidth0, customHeight0,
+						  customBuffer1, customWidth1, customHeight1);
 }
 
 - (void)doFinishFrame
 {
-	OGLDisplayLayer *displayLayer = oglv->GetDisplayLayer();
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	displayLayer->FinishOGL();
-	CGLUnlockContext(cglDisplayContext);
+	_cdv->FrameFinish();
 }
 
 - (void)doProcessVideoFrameWithInfo:(const NDSFrameInfo &)frameInfo
 {
-	OGLHUDLayer *hudLayer = oglv->GetHUDLayer();
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	
-	if (hudLayer->IsVisible())
-	{
-		hudLayer->SetInfo(frameInfo.videoFPS,
-						  frameInfo.render3DFPS,
-						  frameInfo.frameIndex,
-						  frameInfo.lagFrameCount,
-						  frameInfo.rtcString,
-						  frameInfo.cpuLoadAvgARM9,
-						  frameInfo.cpuLoadAvgARM7);
-		hudLayer->ProcessOGL();
-	}
-	
-	[self drawVideoFrame];
-	CGLUnlockContext(cglDisplayContext);
+	_cdv->SetHUDInfo(frameInfo);
 }
 
-- (void)doResizeView:(NSRect)rect
+- (void)doViewPropertiesChanged
 {
-	const GLsizei w = (GLsizei)rect.size.width;
-	const GLsizei h = (GLsizei)rect.size.height;
-	
-	_cdv->SetClientSize(rect.size.width, rect.size.height);
-	
-	double hudObjectScale = _cdv->GetViewScale();
-	if (hudObjectScale > 2.0)
-	{
-		// If the view scale is <= 2.0, we scale the HUD objects linearly. Otherwise, we scale
-		// the HUD objects logarithmically, up to a maximum scale of 3.0.
-		hudObjectScale = ( -1.0/((1.0/12000.0)*pow(hudObjectScale+4.5438939, 5.0)) ) + 3.0;
-	}
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	oglv->SetViewportSizeOGL(w, h);
-	oglv->GetHUDLayer()->SetObjectScale(hudObjectScale);
-	oglv->GetHUDLayer()->ProcessVerticesOGL();
-	[self drawVideoFrame];
-	CGLUnlockContext(cglDisplayContext);
-}
-
-- (void)doTransformView:(const DisplayOutputTransformData *)transformData
-{
-	_cdv->SetRotation(transformData->rotation);
-	
-	OGLDisplayLayer *display = oglv->GetDisplayLayer();
-	display->SetRotation((GLfloat)transformData->rotation);
-	[self doRedraw];
+	[self setupViewProperties];
 }
 
 - (void)doRedraw
 {
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	[self drawVideoFrame];
-	CGLUnlockContext(cglDisplayContext);
-}
-
-- (void)doDisplayModeChanged:(NSInteger)displayModeID
-{
-	_cdv->SetMode((ClientDisplayMode)displayModeID);
-	
-	OGLDisplayLayer *display = oglv->GetDisplayLayer();
-	display->SetMode((ClientDisplayMode)displayModeID);
-	[self doRedraw];
-}
-
-- (void)doDisplayOrientationChanged:(NSInteger)displayOrientationID
-{
-	_cdv->SetLayout((ClientDisplayLayout)displayOrientationID);
-	
-	OGLDisplayLayer *display = oglv->GetDisplayLayer();
-	display->SetOrientation((ClientDisplayLayout)displayOrientationID);
-	
-	if (display->GetMode() == ClientDisplayMode_Dual)
-	{
-		[self doRedraw];
-	}
-}
-
-- (void)doDisplayOrderChanged:(NSInteger)displayOrderID
-{
-	_cdv->SetOrder((ClientDisplayOrder)displayOrderID);
-	
-	OGLDisplayLayer *display = oglv->GetDisplayLayer();
-	display->SetOrder((ClientDisplayOrder)displayOrderID);
-	
-	if (display->GetMode() == ClientDisplayMode_Dual)
-	{
-		[self doRedraw];
-	}
-}
-
-- (void)doDisplayGapChanged:(float)displayGapScalar
-{
-	_cdv->SetGapWithScalar(displayGapScalar);
-	
-	OGLDisplayLayer *display = oglv->GetDisplayLayer();
-	display->SetGapScalar((GLfloat)displayGapScalar);
-	
-	if (display->GetMode() == ClientDisplayMode_Dual)
-	{
-		[self doRedraw];
-	}
+	_cdv->UpdateView();
 }
 
 @end

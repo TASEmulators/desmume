@@ -648,22 +648,26 @@
 			int frameX = 0;
 			int frameY = 0;
 			int frameWidth = 256;
-			int frameHeight = 192;
+			int frameHeight = 192*2;
 			const char *frameCStr = [windowFrameStr cStringUsingEncoding:NSUTF8StringEncoding];
 			sscanf(frameCStr, "%i %i %i %i", &frameX, &frameY, &frameWidth, &frameHeight);
 			
-			[windowController setIsShowingStatusBar:isShowingStatusBar];
+			// Force the window to load now so that we can overwrite its internal defaults with the user's defaults.
+			[windowController window];
+			
+			[windowController setDisplayMode:(ClientDisplayMode)displayMode
+									  layout:(ClientDisplayLayout)displayOrientation
+									   order:(ClientDisplayOrder)displayOrder
+									rotation:displayRotation
+								   viewScale:displayScale
+									gapScale:displayGap
+							 isMinSizeNormal:isMinSizeNormal
+						  isShowingStatusBar:isShowingStatusBar];
+			
 			[windowController setVideoFiltersPreferGPU:videoFiltersPreferGPU];
 			[windowController setVideoSourceDeposterize:videoSourceDeposterize];
 			[windowController setVideoPixelScaler:videoPixelScaler];
 			[windowController setVideoOutputFilter:videoOutputFilter];
-			[windowController setDisplayMode:displayMode];
-			[windowController setDisplayOrientation:displayOrientation];
-			[windowController setDisplayOrder:displayOrder];
-			[windowController setDisplayGap:displayGap];
-			[windowController setIsMinSizeNormal:isMinSizeNormal];
-			[windowController setDisplayRotation:displayRotation];
-			[windowController setDisplayScale:displayScale];
 			[windowController setScreenshotFileFormat:screenshotFileFormat];
 			[[windowController view] setUseVerticalSync:useVerticalSync];
 			[[windowController view] setIsHUDVisible:hudEnable];
@@ -719,7 +723,6 @@
 		
 		for (DisplayWindowController *windowController in windowList)
 		{
-			const BOOL isInFullScreenMode = ([windowController assignedScreen] != nil);
 			const NSUInteger screenIndex = [[NSScreen screens] indexOfObject:[[windowController masterWindow] screen]];
 			
 			const NSRect windowFrame = [windowController masterWindowFrame];
@@ -748,7 +751,7 @@
 											  [NSNumber numberWithBool:[[windowController view] isHUDRealTimeClockVisible]], @"hudShowRTC",
 											  [NSNumber numberWithBool:[windowController isMinSizeNormal]], @"isMinSizeNormal",
 											  [NSNumber numberWithBool:[windowController masterStatusBarState]], @"isShowingStatusBar",
-											  [NSNumber numberWithBool:isInFullScreenMode], @"isInFullScreenMode",
+											  [NSNumber numberWithBool:[windowController isFullScreen]], @"isInFullScreenMode",
 											  [NSNumber numberWithUnsignedInteger:screenIndex], @"screenIndex",
 											  windowFrameStr, @"windowFrame",
 											  nil];

@@ -21,6 +21,7 @@
 #if defined(__APPLE__)
 	#include <OpenGL/gl3.h>
 	#include <OpenGL/gl3ext.h>
+	#include <OpenGL/OpenGL.h>
 #endif
 
 #include "OGLDisplayOutput.h"

@@ -17,155 +17,440 @@
 
 #include "ClientDisplayView.h"
 
+#include <sstream>
+
 ClientDisplayView::ClientDisplayView()
 {
-	_property.normalWidth	= GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	_property.normalHeight	= GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2.0;
-	_property.clientWidth	= _property.normalWidth;
-	_property.clientHeight	= _property.normalHeight;
-	_property.rotation		= 0.0;
-	_property.viewScale		= 1.0;
-	_property.gapScale		= 0.0;
-	_property.gapDistance	= DS_DISPLAY_UNSCALED_GAP * _property.gapScale;
-	_property.mode			= ClientDisplayMode_Dual;
-	_property.layout		= ClientDisplayLayout_Vertical;
-	_property.order			= ClientDisplayOrder_MainFirst;
+	ClientDisplayViewProperties defaultProperty;
+	defaultProperty.normalWidth		= GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	defaultProperty.normalHeight	= GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2.0;
+	defaultProperty.clientWidth		= defaultProperty.normalWidth;
+	defaultProperty.clientHeight	= defaultProperty.normalHeight;
+	defaultProperty.rotation		= 0.0;
+	defaultProperty.viewScale		= 1.0;
+	defaultProperty.gapScale		= 0.0;
+	defaultProperty.gapDistance		= DS_DISPLAY_UNSCALED_GAP * defaultProperty.gapScale;
+	defaultProperty.mode			= ClientDisplayMode_Dual;
+	defaultProperty.layout			= ClientDisplayLayout_Vertical;
+	defaultProperty.order			= ClientDisplayOrder_MainFirst;
 	
-	_initialTouchInMajorDisplay = new InitialTouchPressMap;
+	__InstanceInit(defaultProperty);
 }
 
-ClientDisplayView::ClientDisplayView(const ClientDisplayViewProperties props)
+ClientDisplayView::ClientDisplayView(const ClientDisplayViewProperties &props)
 {
-	_property = props;
-	_initialTouchInMajorDisplay = new InitialTouchPressMap;
+	__InstanceInit(props);
 }
 
 ClientDisplayView::~ClientDisplayView()
 {
 	delete _initialTouchInMajorDisplay;
-}
-
-ClientDisplayViewProperties ClientDisplayView::GetProperties() const
-{
-	return this->_property;
-}
-
-void ClientDisplayView::SetProperties(const ClientDisplayViewProperties props)
-{
-	this->_property = props;
 	
-	ClientDisplayView::CalculateNormalSize(props.mode, props.layout, props.gapScale, this->_property.normalWidth, this->_property.normalHeight);
+	FT_Done_FreeType(this->_ftLibrary);
 }
 
-void ClientDisplayView::SetClientSize(const double w, const double h)
+void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 {
-	this->_property.clientWidth = w;
-	this->_property.clientHeight = h;
-	this->_property.viewScale = ClientDisplayView::GetMaxScalarWithinBounds(this->_property.normalWidth, this->_property.normalHeight, w, h);
+	_stagedProperty = props;
+	_renderProperty = _stagedProperty;
+	_initialTouchInMajorDisplay = new InitialTouchPressMap;
+	
+	_useDeposterize = false;
+	_pixelScaler = VideoFilterTypeID_None;
+	_outputFilter = OutputFilterTypeID_Bilinear;
+	
+	_scaleFactor = 1.0;
+	
+	_hudObjectScale = 1.0;
+	_isHUDVisible = true;
+	_showVideoFPS = true;
+	_showRender3DFPS = false;
+	_showFrameIndex = false;
+	_showLagFrameCount = false;
+	_showCPULoadAverage = false;
+	_showRTC = false;
+	
+	memset(&_frameInfo, 0, sizeof(_frameInfo));
+	_hudString = "\x01"; // Char value 0x01 will represent the "text box" character, which will always be first in the string.
+	
+	FT_Error error = FT_Init_FreeType(&_ftLibrary);
+	if (error)
+	{
+		printf("ClientDisplayView: FreeType failed to init!\n");
+	}
+	
+	memset(_glyphInfo, 0, sizeof(_glyphInfo));
+	_glyphTileSize = ((double)HUD_TEXTBOX_BASEGLYPHSIZE * _scaleFactor) + 0.0001;
+	_glyphSize = ((double)_glyphTileSize * 0.75) + 0.0001;
+	
+	// Set up the text box, which resides at glyph position 1.
+	GlyphInfo &boxInfo = _glyphInfo[1];
+	boxInfo.width = _glyphTileSize;
+	boxInfo.texCoord[0] = 1.0f/16.0f;		boxInfo.texCoord[1] = 0.0f;
+	boxInfo.texCoord[2] = 2.0f/16.0f;		boxInfo.texCoord[3] = 0.0f;
+	boxInfo.texCoord[4] = 2.0f/16.0f;		boxInfo.texCoord[5] = 1.0f/16.0f;
+	boxInfo.texCoord[6] = 1.0f/16.0f;		boxInfo.texCoord[7] = 1.0f/16.0f;
+}
+
+void ClientDisplayView::_UpdateHUDString()
+{
+	std::ostringstream ss;
+	ss << "\x01"; // This represents the text box. It must always be the first character.
+	
+	if (this->_showVideoFPS)
+	{
+		ss << "Video FPS: " << this->_frameInfo.videoFPS << "\n";
+	}
+	
+	if (this->_showRender3DFPS)
+	{
+		ss << "3D Rendering FPS: " << this->_frameInfo.render3DFPS << "\n";
+	}
+	
+	if (this->_showFrameIndex)
+	{
+		ss << "Frame Index: " << this->_frameInfo.frameIndex << "\n";
+	}
+	
+	if (this->_showLagFrameCount)
+	{
+		ss << "Lag Frame Count: " << this->_frameInfo.lagFrameCount << "\n";
+	}
+	
+	if (this->_showCPULoadAverage)
+	{
+		static char buffer[32];
+		memset(buffer, 0, sizeof(buffer));
+		snprintf(buffer, 25, "CPU Load Avg: %02d%% / %02d%%\n", this->_frameInfo.cpuLoadAvgARM9, this->_frameInfo.cpuLoadAvgARM7);
+		
+		ss << buffer;
+	}
+	
+	if (this->_showRTC)
+	{
+		ss << "RTC: " << this->_frameInfo.rtcString << "\n";
+	}
+	
+	this->_hudString = ss.str();
+}
+
+void ClientDisplayView::_SetHUDShowInfoItem(bool &infoItemFlag, const bool visibleState)
+{
+	if (infoItemFlag == visibleState)
+	{
+		return;
+	}
+	
+	infoItemFlag = visibleState;
+	this->_UpdateHUDString();
+	this->FrameProcessHUD();
+}
+
+void ClientDisplayView::Init()
+{
+	// Do nothing. This is implementation dependent.
+}
+
+double ClientDisplayView::GetScaleFactor() const
+{
+	return this->_scaleFactor;
+}
+
+void ClientDisplayView::SetScaleFactor(const double scaleFactor)
+{
+	this->_scaleFactor = scaleFactor;
+	
+	const bool willChangeScaleFactor = (this->_scaleFactor != scaleFactor);
+	if (willChangeScaleFactor)
+	{
+		this->_glyphTileSize = (double)HUD_TEXTBOX_BASEGLYPHSIZE * scaleFactor;
+		this->_glyphSize = (double)this->_glyphTileSize * 0.75;
+		
+		this->SetHUDFontUsingPath(this->_lastFontFilePath);
+	}
+}
+
+void ClientDisplayView::_UpdateViewScale()
+{
+	double checkWidth = this->_renderProperty.normalWidth;
+	double checkHeight = this->_renderProperty.normalHeight;
+	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, this->_renderProperty.rotation, checkWidth, checkHeight);
+	this->_renderProperty.viewScale = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, this->_renderProperty.clientWidth, this->_renderProperty.clientHeight);
+	
+	this->_hudObjectScale = this->_renderProperty.clientWidth / this->_renderProperty.normalWidth;
+	if (this->_hudObjectScale > 2.0)
+	{
+		// If the view scale is <= 2.0, we scale the HUD objects linearly. Otherwise, we scale
+		// the HUD objects logarithmically, up to a maximum scale of 3.0.
+		this->_hudObjectScale = ( -1.0/((1.0/12000.0)*pow(this->_hudObjectScale+4.5438939, 5.0)) ) + 3.0;
+	}
+}
+
+// NDS screen layout
+const ClientDisplayViewProperties& ClientDisplayView::GetViewProperties() const
+{
+	return this->_renderProperty;
+}
+
+void ClientDisplayView::CommitViewProperties(const ClientDisplayViewProperties &props)
+{
+	this->_stagedProperty = props;
+}
+
+void ClientDisplayView::SetupViewProperties()
+{
+	// Validate the staged properties.
+	this->_stagedProperty.gapDistance = (double)DS_DISPLAY_UNSCALED_GAP * this->_stagedProperty.gapScale;
+	ClientDisplayView::CalculateNormalSize(this->_stagedProperty.mode, this->_stagedProperty.layout, this->_stagedProperty.gapScale, this->_stagedProperty.normalWidth, this->_stagedProperty.normalHeight);
+	
+	const bool didNormalSizeChange = (this->_renderProperty.mode != this->_stagedProperty.mode) ||
+	(this->_renderProperty.layout != this->_stagedProperty.layout) ||
+	(this->_renderProperty.gapScale != this->_stagedProperty.gapScale);
+	
+	const bool didOrderChange = (this->_renderProperty.order != this->_stagedProperty.order);
+	const bool didRotationChange = (this->_renderProperty.rotation != this->_stagedProperty.rotation);
+	const bool didClientSizeChange = (this->_renderProperty.clientWidth != this->_stagedProperty.clientWidth) || (this->_renderProperty.clientHeight != this->_stagedProperty.clientHeight);
+	
+	// Copy the staged properties to the current rendering properties.
+	this->_renderProperty = this->_stagedProperty;
+	
+	// Update internal states based on the new render properties
+	this->_UpdateViewScale();
+	
+	if (didNormalSizeChange)
+	{
+		this->_UpdateNormalSize();
+	}
+	
+	if (didOrderChange)
+	{
+		this->_UpdateOrder();
+	}
+	
+	if (didRotationChange)
+	{
+		this->_UpdateRotation();
+	}
+	
+	if (didClientSizeChange)
+	{
+		this->_UpdateClientSize();
+	}
 }
 
 double ClientDisplayView::GetRotation() const
 {
-	return this->_property.rotation;
-}
-
-void ClientDisplayView::SetRotation(const double r)
-{
-	this->_property.rotation = r;
-	
-	double checkWidth = this->_property.normalWidth;
-	double checkHeight = this->_property.normalHeight;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, r, checkWidth, checkHeight);
-	this->_property.viewScale = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, this->_property.clientWidth, this->_property.clientHeight);
+	return this->_renderProperty.rotation;
 }
 
 double ClientDisplayView::GetViewScale() const
 {
-	return this->_property.viewScale;
+	return this->_renderProperty.viewScale;
 }
 
 ClientDisplayMode ClientDisplayView::GetMode() const
 {
-	return this->_property.mode;
-}
-
-void ClientDisplayView::SetMode(const ClientDisplayMode mode)
-{
-	this->_property.mode = mode;
-	ClientDisplayView::CalculateNormalSize(this->_property.mode, this->_property.layout, this->_property.gapScale, this->_property.normalWidth, this->_property.normalHeight);
-	this->_property.viewScale = ClientDisplayView::GetMaxScalarWithinBounds(this->_property.normalWidth, this->_property.normalHeight, this->_property.clientWidth, this->_property.clientHeight);
+	return this->_renderProperty.mode;
 }
 
 ClientDisplayLayout ClientDisplayView::GetLayout() const
 {
-	return this->_property.layout;
-}
-
-void ClientDisplayView::SetLayout(const ClientDisplayLayout layout)
-{
-	this->_property.layout = layout;
-	ClientDisplayView::CalculateNormalSize(this->_property.mode, this->_property.layout, this->_property.gapScale, this->_property.normalWidth, this->_property.normalHeight);
-	this->_property.viewScale = ClientDisplayView::GetMaxScalarWithinBounds(this->_property.normalWidth, this->_property.normalHeight, this->_property.clientWidth, this->_property.clientHeight);
+	return this->_renderProperty.layout;
 }
 
 ClientDisplayOrder ClientDisplayView::GetOrder() const
 {
-	return this->_property.order;
-}
-
-void ClientDisplayView::SetOrder(const ClientDisplayOrder order)
-{
-	this->_property.order = order;
+	return this->_renderProperty.order;
 }
 
 double ClientDisplayView::GetGapScale() const
 {
-	return this->_property.gapScale;
-}
-
-void ClientDisplayView::SetGapWithScalar(const double gapScale)
-{
-	this->_property.gapScale = gapScale;
-	this->_property.gapDistance = (double)DS_DISPLAY_UNSCALED_GAP * gapScale;
+	return this->_renderProperty.gapScale;
 }
 
 double ClientDisplayView::GetGapDistance() const
 {
-	return this->_property.gapDistance;
+	return this->_renderProperty.gapDistance;
 }
 
-void ClientDisplayView::SetGapWithDistance(const double gapDistance)
+// NDS screen filters
+bool ClientDisplayView::GetSourceDeposterize()
 {
-	this->_property.gapScale = gapDistance / (double)DS_DISPLAY_UNSCALED_GAP;
-	this->_property.gapDistance = gapDistance;
+	return this->_useDeposterize;
 }
 
+void ClientDisplayView::SetSourceDeposterize(const bool useDeposterize)
+{
+	this->_useDeposterize = useDeposterize;
+}
+
+OutputFilterTypeID ClientDisplayView::GetOutputFilter() const
+{
+	return this->_outputFilter;
+}
+
+void ClientDisplayView::SetOutputFilter(const OutputFilterTypeID filterID)
+{
+	this->_outputFilter = filterID;
+}
+
+VideoFilterTypeID ClientDisplayView::GetPixelScaler() const
+{
+	return this->_pixelScaler;
+}
+
+void ClientDisplayView::SetPixelScaler(const VideoFilterTypeID filterID)
+{
+	this->_pixelScaler = filterID;
+}
+
+// HUD appearance
+void ClientDisplayView::SetHUDFontUsingPath(const char *filePath)
+{
+	FT_Face fontFace;
+	FT_Error error = FT_Err_Ok;
+	
+	error = FT_New_Face(this->_ftLibrary, filePath, 0, &fontFace);
+	if (error == FT_Err_Unknown_File_Format)
+	{
+		printf("ClientDisplayView: FreeType failed to load font face because it is in an unknown format from:\n%s\n", filePath);
+		return;
+	}
+	else if (error)
+	{
+		printf("ClientDisplayView: FreeType failed to load font face with an unknown error from:\n%s\n", filePath);
+		return;
+	}
+	
+	this->CopyHUDFont(fontFace, this->_glyphSize, this->_glyphTileSize, this->_glyphInfo);
+	
+	FT_Done_Face(fontFace);
+	this->_lastFontFilePath = filePath;
+}
+
+void ClientDisplayView::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo)
+{
+	// Do nothing. This is implementation dependent.
+}
+
+void ClientDisplayView::SetHUDInfo(const NDSFrameInfo &frameInfo)
+{
+	this->_frameInfo = frameInfo;
+	this->_UpdateHUDString();
+}
+
+const std::string& ClientDisplayView::GetHUDString() const
+{
+	return this->_hudString;
+}
+
+float ClientDisplayView::GetHUDObjectScale() const
+{
+	return this->_hudObjectScale;
+}
+
+void ClientDisplayView::SetHUDObjectScale(float objectScale)
+{
+	this->_hudObjectScale = objectScale;
+}
+
+bool ClientDisplayView::GetHUDVisibility() const
+{
+	return this->_isHUDVisible;
+}
+
+void ClientDisplayView::SetHUDVisibility(const bool visibleState)
+{
+	this->_isHUDVisible = visibleState;
+}
+
+bool ClientDisplayView::GetHUDShowVideoFPS() const
+{
+	return this->_showVideoFPS;
+}
+
+void ClientDisplayView::SetHUDShowVideoFPS(const bool visibleState)
+{
+	this->_SetHUDShowInfoItem(this->_showVideoFPS, visibleState);
+}
+
+bool ClientDisplayView::GetHUDShowRender3DFPS() const
+{
+	return this->_showRender3DFPS;
+}
+
+void ClientDisplayView::SetHUDShowRender3DFPS(const bool visibleState)
+{
+	this->_SetHUDShowInfoItem(this->_showRender3DFPS, visibleState);
+}
+
+bool ClientDisplayView::GetHUDShowFrameIndex() const
+{
+	return this->_showFrameIndex;
+}
+
+void ClientDisplayView::SetHUDShowFrameIndex(const bool visibleState)
+{
+	this->_SetHUDShowInfoItem(this->_showFrameIndex, visibleState);
+}
+
+bool ClientDisplayView::GetHUDShowLagFrameCount() const
+{
+	return this->_showLagFrameCount;
+}
+
+void ClientDisplayView::SetHUDShowLagFrameCount(const bool visibleState)
+{
+	this->_SetHUDShowInfoItem(this->_showLagFrameCount, visibleState);
+}
+
+bool ClientDisplayView::GetHUDShowCPULoadAverage() const
+{
+	return this->_showCPULoadAverage;
+}
+
+void ClientDisplayView::SetHUDShowCPULoadAverage(const bool visibleState)
+{
+	this->_SetHUDShowInfoItem(this->_showCPULoadAverage, visibleState);
+}
+
+bool ClientDisplayView::GetHUDShowRTC() const
+{
+	return this->_showRTC;
+}
+
+void ClientDisplayView::SetHUDShowRTC(const bool visibleState)
+{
+	this->_SetHUDShowInfoItem(this->_showRTC, visibleState);
+}
+
+// Touch screen input handling
 void ClientDisplayView::GetNDSPoint(const int inputID, const bool isInitialTouchPress,
 									const double clientX, const double clientY,
 									u8 &outX, u8 &outY) const
 {
 	double x = clientX;
 	double y = clientY;
-	double w = this->_property.normalWidth;
-	double h = this->_property.normalHeight;
+	double w = this->_renderProperty.normalWidth;
+	double h = this->_renderProperty.normalHeight;
 	
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, this->_property.rotation, w, h);
-	const double s = ClientDisplayView::GetMaxScalarWithinBounds(w, h, this->_property.clientWidth, this->_property.clientHeight);
+	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, this->_renderProperty.rotation, w, h);
+	const double s = ClientDisplayView::GetMaxScalarWithinBounds(w, h, this->_renderProperty.clientWidth, this->_renderProperty.clientHeight);
 	
-	ClientDisplayView::ConvertClientToNormalPoint(this->_property.normalWidth, this->_property.normalHeight,
-												  this->_property.clientWidth, this->_property.clientHeight,
+	ClientDisplayView::ConvertClientToNormalPoint(this->_renderProperty.normalWidth, this->_renderProperty.normalHeight,
+												  this->_renderProperty.clientWidth, this->_renderProperty.clientHeight,
 												  s,
-												  this->_property.rotation,
+												  this->_renderProperty.rotation,
 												  x, y);
 	
 	// Normalize the touch location to the DS.
-	if (this->_property.mode == ClientDisplayMode_Dual)
+	if (this->_renderProperty.mode == ClientDisplayMode_Dual)
 	{
-		switch (this->_property.layout)
+		switch (this->_renderProperty.layout)
 		{
 			case ClientDisplayLayout_Horizontal:
 			{
-				if (this->_property.order == ClientDisplayOrder_MainFirst)
+				if (this->_renderProperty.order == ClientDisplayOrder_MainFirst)
 				{
 					x -= GPU_FRAMEBUFFER_NATIVE_WIDTH;
 				}
@@ -178,14 +463,14 @@ void ClientDisplayView::GetNDSPoint(const int inputID, const bool isInitialTouch
 			{
 				if (isInitialTouchPress)
 				{
-					const bool isClickWithinMajorDisplay = (this->_property.order == ClientDisplayOrder_TouchFirst) && (x >= 0.0) && (x < 256.0);
+					const bool isClickWithinMajorDisplay = (this->_renderProperty.order == ClientDisplayOrder_TouchFirst) && (x >= 0.0) && (x < 256.0);
 					(*_initialTouchInMajorDisplay)[inputID] = isClickWithinMajorDisplay;
 				}
 				
 				const bool handleClickInMajorDisplay = (*_initialTouchInMajorDisplay)[inputID];
 				if (!handleClickInMajorDisplay)
 				{
-					const double minorDisplayScale = (this->_property.normalWidth - (double)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+					const double minorDisplayScale = (this->_renderProperty.normalWidth - (double)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 					x = (x - GPU_FRAMEBUFFER_NATIVE_WIDTH) / minorDisplayScale;
 					y = y / minorDisplayScale;
 				}
@@ -194,9 +479,9 @@ void ClientDisplayView::GetNDSPoint(const int inputID, const bool isInitialTouch
 				
 			default: // Default to vertical orientation.
 			{
-				if (this->_property.order == ClientDisplayOrder_TouchFirst)
+				if (this->_renderProperty.order == ClientDisplayOrder_TouchFirst)
 				{
-					y -= ((double)GPU_FRAMEBUFFER_NATIVE_HEIGHT + this->_property.gapDistance);
+					y -= ((double)GPU_FRAMEBUFFER_NATIVE_HEIGHT + this->_renderProperty.gapDistance);
 				}
 				break;
 			}
@@ -505,4 +790,46 @@ void ClientDisplayView::CalculateNormalSize(const ClientDisplayMode mode, const 
 		outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 		outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	}
+}
+
+ClientDisplay3DView::ClientDisplay3DView()
+{
+	_canFilterOnGPU = false;
+	_willFilterOnGPU = false;
+	_filtersPreferGPU = false;
+}
+
+bool ClientDisplay3DView::CanFilterOnGPU() const
+{
+	return this->_canFilterOnGPU;
+}
+
+bool ClientDisplay3DView::WillFilterOnGPU() const
+{
+	return this->_willFilterOnGPU;
+}
+
+bool ClientDisplay3DView::GetFiltersPreferGPU() const
+{
+	return this->_filtersPreferGPU;
+}
+
+void ClientDisplay3DView::SetFiltersPreferGPU(const bool preferGPU)
+{
+	this->_filtersPreferGPU = preferGPU;
+}
+
+void ClientDisplay3DView::SetSourceDeposterize(bool useDeposterize)
+{
+	this->_useDeposterize = (this->_canFilterOnGPU) ? useDeposterize : false;
+}
+
+void ClientDisplay3DView::SetVideoBuffers(const uint32_t colorFormat,
+										  const void *videoBufferHead,
+										  const void *nativeBuffer0,
+										  const void *nativeBuffer1,
+										  const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
+										  const void *customBuffer1, const size_t customWidth1, const size_t customHeight1)
+{
+	// Do nothing. This is implementation dependent.
 }

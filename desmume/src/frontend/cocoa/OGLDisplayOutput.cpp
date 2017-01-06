@@ -4459,6 +4459,7 @@ OGLInfo::OGLInfo()
 	_useShader150 = false;
 	
 	_isVBOSupported = false;
+	_isVAOSupported = false;
 	_isPBOSupported = false;
 	_isFBOSupported = false;
 }
@@ -4476,6 +4477,11 @@ bool OGLInfo::IsUsingShader150()
 bool OGLInfo::IsVBOSupported()
 {
 	return this->_isVBOSupported;
+}
+
+bool OGLInfo::IsVAOSupported()
+{
+	return this->_isVAOSupported;
 }
 
 bool OGLInfo::IsPBOSupported()
@@ -4576,6 +4582,11 @@ OGLInfo_Legacy::OGLInfo_Legacy()
 			}
 		}
 	}
+	
+	_isVAOSupported =   isShaderSupported &&
+	                   _isVBOSupported &&
+	                  (this->IsExtensionPresent(oglExtensionSet, "GL_ARB_vertex_array_object") ||
+	                   this->IsExtensionPresent(oglExtensionSet, "GL_APPLE_vertex_array_object"));
 	
 	_isPBOSupported	= this->IsExtensionPresent(oglExtensionSet, "GL_ARB_vertex_buffer_object") &&
 					 (this->IsExtensionPresent(oglExtensionSet, "GL_ARB_pixel_buffer_object") ||
@@ -4899,10 +4910,89 @@ bool OGLShaderProgram::LinkOGL()
 
 OGLVideoOutput::OGLVideoOutput()
 {
-	_info = OGLInfoCreate_Func();
-	_scaleFactor = 1.0f;
+	_needUpdateViewport = true;
 	_layerList = new std::vector<OGLVideoLayer *>;
 	_layerList->reserve(8);
+}
+
+OGLVideoOutput::~OGLVideoOutput()
+{
+	for (size_t i = 0; i < _layerList->size(); i++)
+	{
+		delete (*_layerList)[i];
+	}
+	
+	delete _layerList;
+	delete _info;
+}
+
+void OGLVideoOutput::_UpdateNormalSize()
+{
+	this->GetDisplayLayer()->SetNeedsUpdateVertices();
+}
+
+void OGLVideoOutput::_UpdateOrder()
+{
+	this->GetDisplayLayer()->SetNeedsUpdateVertices();
+}
+
+void OGLVideoOutput::_UpdateRotation()
+{
+	this->GetDisplayLayer()->SetNeedsUpdateRotationScale();
+}
+
+void OGLVideoOutput::_UpdateClientSize()
+{
+	this->_viewportWidth  = (GLsizei)(this->_renderProperty.clientWidth  + 0.0015);
+	this->_viewportHeight = (GLsizei)(this->_renderProperty.clientHeight + 0.0015);
+	this->_needUpdateViewport = true;
+	
+	this->GetHUDLayer()->SetNeedsUpdateVertices();
+}
+
+void OGLVideoOutput::_UpdateViewScale()
+{
+	this->ClientDisplayView::_UpdateViewScale();
+	this->GetDisplayLayer()->SetNeedsUpdateRotationScale();
+}
+
+void OGLVideoOutput::_UpdateViewport()
+{
+	glViewport(0, 0, this->_viewportWidth, this->_viewportHeight);
+	
+	for (size_t i = 0; i < _layerList->size(); i++)
+	{
+		OGLVideoLayer *theLayer = (*_layerList)[i];
+		
+		if (theLayer->IsVisible())
+		{
+			theLayer->UpdateViewportOGL();
+		}
+	}
+	
+	this->_needUpdateViewport = false;
+}
+
+OGLInfo* OGLVideoOutput::GetInfo()
+{
+	return this->_info;
+}
+
+void OGLVideoOutput::Init()
+{
+	this->_info = OGLInfoCreate_Func();
+	this->_canFilterOnGPU = ( this->_info->IsShaderSupported() && this->_info->IsFBOSupported() );
+	this->_filtersPreferGPU = this->_canFilterOnGPU;
+	this->_willFilterOnGPU = false;
+	
+	for (size_t i = 0; i < _layerList->size(); i++)
+	{
+		delete (*_layerList)[i];
+	}
+	
+	this->_layerList->clear();
+	this->_layerList->push_back(new OGLDisplayLayer(this));
+	this->_layerList->push_back(new OGLHUDLayer(this));
 	
 	// Render State Setup (common to both shaders and fixed-function pipeline)
 	glEnable(GL_BLEND);
@@ -4926,48 +5016,54 @@ OGLVideoOutput::OGLVideoOutput()
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
-OGLVideoOutput::~OGLVideoOutput()
+void OGLVideoOutput::SetOutputFilter(const OutputFilterTypeID filterID)
 {
-	for (size_t i = 0; i < _layerList->size(); i++)
-	{
-		delete (*_layerList)[i];
-	}
+	this->_outputFilter = this->GetDisplayLayer()->SetOutputFilterOGL(filterID);
+	this->GetDisplayLayer()->SetNeedsUpdateRotationScale();
+	this->_needUpdateViewport = true;
+}
+
+void OGLVideoOutput::SetPixelScaler(const VideoFilterTypeID filterID)
+{
+	std::string cpuTypeIDString = std::string( VideoFilter::GetTypeStringByID(filterID) );
+	const VideoFilterTypeID newFilterID = (cpuTypeIDString != std::string(VIDEOFILTERTYPE_UNKNOWN_STRING)) ? filterID : VideoFilterTypeID_None;
 	
-	delete _layerList;
-	delete _info;
-}
-
-void OGLVideoOutput::InitLayers()
-{
-	for (size_t i = 0; i < _layerList->size(); i++)
-	{
-		delete (*_layerList)[i];
-	}
+	this->GetDisplayLayer()->SetCPUPixelScalerOGL(newFilterID);
 	
-	this->_layerList->clear();
-	this->_layerList->push_back(new OGLDisplayLayer(this));
-	this->_layerList->push_back(new OGLHUDLayer(this));
+	this->_pixelScaler = newFilterID;
+	this->_willFilterOnGPU = (this->GetFiltersPreferGPU()) ? this->GetDisplayLayer()->SetGPUPixelScalerOGL(newFilterID) : false;
 }
 
-OGLInfo* OGLVideoOutput::GetInfo()
+void OGLVideoOutput::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo)
 {
-	return this->_info;
+	this->GetHUDLayer()->CopyHUDFont(fontFace, glyphSize, glyphTileSize, glyphInfo);
 }
 
-float OGLVideoOutput::GetScaleFactor()
+void OGLVideoOutput::SetHUDVisibility(const bool visibleState)
 {
-	return this->_scaleFactor;
+	this->ClientDisplay3DView::SetHUDVisibility(visibleState);
+	this->GetHUDLayer()->SetVisibility(visibleState);
 }
 
-void OGLVideoOutput::SetScaleFactor(float scaleFactor)
+void OGLVideoOutput::SetFiltersPreferGPU(const bool preferGPU)
 {
-	this->_scaleFactor = scaleFactor;
+	this->_filtersPreferGPU = preferGPU;
+	this->_willFilterOnGPU = (preferGPU) ? this->GetDisplayLayer()->SetGPUPixelScalerOGL(this->_pixelScaler) : false;
 	
-	for (size_t i = 0; i < _layerList->size(); i++)
-	{
-		OGLVideoLayer *theLayer = (*_layerList)[i];
-		theLayer->SetScaleFactor(scaleFactor);
-	}
+	this->GetDisplayLayer()->SetFiltersPreferGPUOGL();
+}
+
+void OGLVideoOutput::SetVideoBuffers(const uint32_t colorFormat,
+									 const void *videoBufferHead,
+									 const void *nativeBuffer0,
+									 const void *nativeBuffer1,
+									 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
+									 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1)
+{
+	this->GetDisplayLayer()->SetVideoBuffers(colorFormat, videoBufferHead,
+											 nativeBuffer0, nativeBuffer1,
+											 customBuffer0, customWidth0, customHeight0,
+											 customBuffer1, customWidth1, customHeight1);
 }
 
 GLsizei OGLVideoOutput::GetViewportWidth()
@@ -4990,42 +5086,35 @@ OGLHUDLayer* OGLVideoOutput::GetHUDLayer()
 	return (OGLHUDLayer *)this->_layerList->at(1);
 }
 
-void OGLVideoOutput::SetViewportSizeOGL(GLsizei w, GLsizei h)
+void OGLVideoOutput::FrameLoadGPU(bool isMainSizeNative, bool isTouchSizeNative)
 {
-	this->_viewportWidth = w;
-	this->_viewportHeight = h;
-	glViewport(0, 0, w, h);
+	this->GetDisplayLayer()->LoadFrameOGL(isMainSizeNative, isTouchSizeNative);
+}
+
+void OGLVideoOutput::FrameProcessGPU()
+{
+	OGLDisplayLayer *displayLayer = this->GetDisplayLayer();
+	if (displayLayer->IsVisible())
+	{
+		displayLayer->ProcessOGL();
+	}
+}
+
+void OGLVideoOutput::FrameProcessHUD()
+{	
+	if (this->GetHUDVisibility())
+	{
+		this->GetHUDLayer()->ProcessOGL();
+	}
+}
+
+void OGLVideoOutput::FrameRender()
+{
+	if (this->_needUpdateViewport)
+	{
+		this->_UpdateViewport();
+	}
 	
-	for (size_t i = 0; i < _layerList->size(); i++)
-	{
-		OGLVideoLayer *theLayer = (*_layerList)[i];
-		
-		if (theLayer->IsVisible())
-		{
-			theLayer->SetViewportSizeOGL(w, h);
-		}
-		else
-		{
-			theLayer->OGLVideoLayer::SetViewportSizeOGL(w, h);
-		}
-	}
-}
-
-void OGLVideoOutput::ProcessOGL()
-{
-	for (size_t i = 0; i < _layerList->size(); i++)
-	{
-		OGLVideoLayer *theLayer = (*_layerList)[i];
-		
-		if (theLayer->IsVisible())
-		{
-			theLayer->ProcessOGL();
-		}
-	}
-}
-
-void OGLVideoOutput::RenderOGL()
-{
 	glClear(GL_COLOR_BUFFER_BIT);
 	
 	for (size_t i = 0; i < _layerList->size(); i++)
@@ -5039,7 +5128,7 @@ void OGLVideoOutput::RenderOGL()
 	}
 }
 
-void OGLVideoOutput::FinishOGL()
+void OGLVideoOutput::FrameFinish()
 {
 	for (size_t i = 0; i < _layerList->size(); i++)
 	{
@@ -6121,14 +6210,9 @@ void OGLImage::RenderOGL()
 
 #pragma mark -
 
-float OGLVideoLayer::GetScaleFactor()
+void OGLVideoLayer::SetNeedsUpdateVertices()
 {
-	return this->_scaleFactor;
-}
-
-void OGLVideoLayer::SetScaleFactor(float scaleFactor)
-{
-	this->_scaleFactor = scaleFactor;
+	this->_needUpdateVertices = true;
 }
 
 bool OGLVideoLayer::IsVisible()
@@ -6141,7 +6225,7 @@ void OGLVideoLayer::SetVisibility(const bool visibleState)
 	if (!this->_isVisible && visibleState)
 	{
 		this->_isVisible = visibleState;
-		this->SetViewportSizeOGL(this->_viewportWidth, this->_viewportHeight);
+		this->UpdateViewportOGL();
 		this->ProcessOGL();
 		
 		return;
@@ -6150,47 +6234,19 @@ void OGLVideoLayer::SetVisibility(const bool visibleState)
 	this->_isVisible = visibleState;
 }
 
-void OGLVideoLayer::SetViewportSizeOGL(GLsizei w, GLsizei h)
-{
-	this->_viewportWidth = w;
-	this->_viewportHeight = h;
-};
-
 #pragma mark -
 
 OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 {
-	FT_Error error = FT_Init_FreeType(&_ftLibrary);
-	if (error)
-	{
-		printf("OGLVideoOutput: FreeType failed to init!\n");
-	}
-	
-	_scaleFactor = oglVO->GetScaleFactor();
-	
+	_needUpdateVertices = true;
 	_isVisible = false;
-	_showVideoFPS = false;
-	_showRender3DFPS = false;
-	_showFrameIndex = false;
-	_showLagFrameCount = false;
-	_showCPULoadAverage = false;
-	_showRTC = false;
-	
-	_lastVideoFPS = 0;
-	_lastRender3DFPS = 0;
-	_lastFrameIndex = 0;
-	_lastLagFrameCount = 0;
-	_lastCpuLoadAvgARM9 = 0;
-	_lastCpuLoadAvgARM7 = 0;
-	memset(_lastRTCString, 0, sizeof(_lastRTCString));
-	
-	_hudObjectScale = 1.00f;
-	
-	_isVAOPresent = true;
 	_output = oglVO;
-	_canUseShaderOutput = oglVO->GetInfo()->IsShaderSupported();
 	
-	if (_canUseShaderOutput)
+	_glyphInfo = NULL;
+	_glyphSize = 0.0f;
+	_glyphTileSize = 0.0f;
+	
+	if (_output->GetInfo()->IsShaderSupported())
 	{
 		_program = new OGLShaderProgram;
 		_program->SetShaderSupport(oglVO->GetInfo()->GetShaderSupport());
@@ -6204,19 +6260,6 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	{
 		_program = NULL;
 	}
-	
-	memset(this->_glyphInfo, 0, sizeof(this->_glyphInfo));
-	_statusString = "\x01"; // Char value 0x01 will represent the "text box" character, which will always be first in the string.
-	_glyphTileSize = HUD_TEXTBOX_BASEGLYPHSIZE * _scaleFactor;
-	_glyphSize = (GLfloat)_glyphTileSize * 0.75f;
-	
-	// Set up the text box, which resides at glyph position 1.
-	GlyphInfo &boxInfo = this->_glyphInfo[1];
-	boxInfo.width = this->_glyphTileSize;
-	boxInfo.texCoord[0] = 1.0f/16.0f;		boxInfo.texCoord[1] = 0.0f;
-	boxInfo.texCoord[2] = 2.0f/16.0f;		boxInfo.texCoord[3] = 0.0f;
-	boxInfo.texCoord[4] = 2.0f/16.0f;		boxInfo.texCoord[5] = 1.0f/16.0f;
-	boxInfo.texCoord[6] = 1.0f/16.0f;		boxInfo.texCoord[7] = 1.0f/16.0f;
 	
 	glGenTextures(1, &_texCharMap);
 	
@@ -6280,7 +6323,7 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 
 OGLHUDLayer::~OGLHUDLayer()
 {
-	if (_canUseShaderOutput)
+	if (_output->GetInfo()->IsShaderSupported())
 	{
 		glUseProgram(0);
 		delete this->_program;
@@ -6292,26 +6335,15 @@ OGLHUDLayer::~OGLHUDLayer()
 	glDeleteBuffersARB(1, &this->_vboElementID);
 	
 	glDeleteTextures(1, &this->_texCharMap);
-	
-	FT_Done_FreeType(this->_ftLibrary);
 }
 
-void OGLHUDLayer::SetFontUsingPath(const char *filePath)
+void OGLHUDLayer::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo)
 {
-	FT_Face fontFace;
 	FT_Error error = FT_Err_Ok;
 	
-	error = FT_New_Face(this->_ftLibrary, filePath, 0, &fontFace);
-	if (error == FT_Err_Unknown_File_Format)
-	{
-		printf("OGLVideoOutput: FreeType failed to load font face because it is in an unknown format from:\n%s\n", filePath);
-		return;
-	}
-	else if (error)
-	{
-		printf("OGLVideoOutput: FreeType failed to load font face with an unknown error from:\n%s\n", filePath);
-		return;
-	}
+	this->_glyphInfo = glyphInfo;
+	this->_glyphSize = (GLfloat)glyphSize;
+	this->_glyphTileSize = (GLfloat)glyphTileSize;
 	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, this->_texCharMap);
@@ -6321,7 +6353,7 @@ void OGLHUDLayer::SetFontUsingPath(const char *filePath)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	
 	GLint texLevel = 0;
-	for (size_t tileSize = this->_glyphTileSize, glyphSize = this->_glyphSize; tileSize >= 4; texLevel++, tileSize >>= 1, glyphSize = (GLfloat)tileSize * 0.75f)
+	for (size_t tileSize = glyphTileSize, gSize = glyphSize; tileSize >= 4; texLevel++, tileSize >>= 1, gSize = (GLfloat)tileSize * 0.75f)
 	{
 		const size_t charMapBufferPixCount = (16 * tileSize) * (16 * tileSize);
 		
@@ -6332,7 +6364,7 @@ void OGLHUDLayer::SetFontUsingPath(const char *filePath)
 			charMapBuffer[i] = fontColor;
 		}
 		
-		error = FT_Set_Char_Size(fontFace, glyphSize << 6, glyphSize << 6, 72, 72);
+		error = FT_Set_Char_Size(fontFace, gSize << 6, gSize << 6, 72, 72);
 		if (error)
 		{
 			printf("OGLVideoOutput: FreeType failed to set the font size!\n");
@@ -6361,18 +6393,18 @@ void OGLHUDLayer::SetFontUsingPath(const char *filePath)
 			
 			const uint16_t tileOffsetX = (c & 0x0F) * tileSize;
 			const uint16_t tileOffsetY = (c >> 4) * tileSize;
-			const uint16_t tileOffsetY_texture = tileOffsetY - (tileSize - glyphSize + (glyphSize / 16));
+			const uint16_t tileOffsetY_texture = tileOffsetY - (tileSize - gSize + (gSize / 16));
 			const uint16_t texSize = tileSize * 16;
 			const GLuint glyphWidth = glyphSlot->bitmap.width;
 			
-			if (tileSize == this->_glyphTileSize)
+			if (tileSize == glyphTileSize)
 			{
-				GlyphInfo &glyphInfo = this->_glyphInfo[c];
-				glyphInfo.width = (c != ' ') ? glyphWidth : (GLfloat)tileSize / 5.0f;
-				glyphInfo.texCoord[0] = (GLfloat)tileOffsetX / (GLfloat)texSize;					glyphInfo.texCoord[1] = (GLfloat)tileOffsetY / (GLfloat)texSize;
-				glyphInfo.texCoord[2] = (GLfloat)(tileOffsetX + glyphWidth) / (GLfloat)texSize;		glyphInfo.texCoord[3] = (GLfloat)tileOffsetY / (GLfloat)texSize;
-				glyphInfo.texCoord[4] = (GLfloat)(tileOffsetX + glyphWidth) / (GLfloat)texSize;		glyphInfo.texCoord[5] = (GLfloat)(tileOffsetY + tileSize) / (GLfloat)texSize;
-				glyphInfo.texCoord[6] = (GLfloat)tileOffsetX / (GLfloat)texSize;					glyphInfo.texCoord[7] = (GLfloat)(tileOffsetY + tileSize) / (GLfloat)texSize;
+				GlyphInfo &gi = glyphInfo[c];
+				gi.width = (c != ' ') ? glyphWidth : (GLfloat)tileSize / 5.0f;
+				gi.texCoord[0] = (GLfloat)tileOffsetX / (GLfloat)texSize;					gi.texCoord[1] = (GLfloat)tileOffsetY / (GLfloat)texSize;
+				gi.texCoord[2] = (GLfloat)(tileOffsetX + glyphWidth) / (GLfloat)texSize;	gi.texCoord[3] = (GLfloat)tileOffsetY / (GLfloat)texSize;
+				gi.texCoord[4] = (GLfloat)(tileOffsetX + glyphWidth) / (GLfloat)texSize;	gi.texCoord[5] = (GLfloat)(tileOffsetY + tileSize) / (GLfloat)texSize;
+				gi.texCoord[6] = (GLfloat)tileOffsetX / (GLfloat)texSize;					gi.texCoord[7] = (GLfloat)(tileOffsetY + tileSize) / (GLfloat)texSize;
 			}
 			
 			// Draw the glyph to the client-side buffer.
@@ -6392,158 +6424,19 @@ void OGLHUDLayer::SetFontUsingPath(const char *filePath)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, texLevel - 1);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	
-	FT_Done_Face(fontFace);
-	this->_lastFontFilePath = filePath;
 }
 
-void OGLHUDLayer::SetInfo(const uint32_t videoFPS, const uint32_t render3DFPS, const uint32_t frameIndex, const uint32_t lagFrameCount, const char *rtcString, const uint32_t cpuLoadAvgARM9, const uint32_t cpuLoadAvgARM7)
+void OGLHUDLayer::_UpdateVerticesOGL()
 {
-	this->_lastVideoFPS = videoFPS;
-	this->_lastRender3DFPS = render3DFPS;
-	this->_lastFrameIndex = frameIndex;
-	this->_lastLagFrameCount = lagFrameCount;
-	this->_lastCpuLoadAvgARM9 = cpuLoadAvgARM9;
-	this->_lastCpuLoadAvgARM7 = cpuLoadAvgARM7;
-	memcpy(this->_lastRTCString, rtcString, sizeof(this->_lastRTCString));
-	
-	this->RefreshInfo();
-}
-
-void OGLHUDLayer::RefreshInfo()
-{
-	std::ostringstream ss;
-	ss << "\x01"; // This represents the text box. It must always be the first character.
-		
-	if (this->_showVideoFPS)
-	{
-		ss << "Video FPS: " << this->_lastVideoFPS << "\n";
-	}
-	
-	if (this->_showRender3DFPS)
-	{
-		ss << "3D Rendering FPS: " << this->_lastRender3DFPS << "\n";
-	}
-	
-	if (this->_showFrameIndex)
-	{
-		ss << "Frame Index: " << this->_lastFrameIndex << "\n";
-	}
-	
-	if (this->_showLagFrameCount)
-	{
-		ss << "Lag Frame Count: " << this->_lastLagFrameCount << "\n";
-	}
-	
-	if (this->_showCPULoadAverage)
-	{
-		static char buffer[32];
-		memset(buffer, 0, sizeof(buffer));
-		snprintf(buffer, 25, "CPU Load Avg: %02d%% / %02d%%\n", this->_lastCpuLoadAvgARM9, this->_lastCpuLoadAvgARM7);
-		
-		ss << buffer;
-	}
-	
-	if (this->_showRTC)
-	{
-		ss << "RTC: " << this->_lastRTCString << "\n";
-	}
-	
-	this->_statusString = ss.str();
-}
-
-void OGLHUDLayer::_SetShowInfoItemOGL(bool &infoItemFlag, const bool visibleState)
-{
-	if (infoItemFlag == visibleState)
-	{
-		return;
-	}
-	
-	infoItemFlag = visibleState;
-	this->RefreshInfo();
-	this->ProcessOGL();
-}
-
-void OGLHUDLayer::SetObjectScale(float objectScale)
-{
-	this->_hudObjectScale = objectScale;
-}
-
-float OGLHUDLayer::GetObjectScale() const
-{
-	return this->_hudObjectScale;
-}
-
-void OGLHUDLayer::SetShowVideoFPS(const bool visibleState)
-{
-	this->_SetShowInfoItemOGL(this->_showVideoFPS, visibleState);
-}
-
-bool OGLHUDLayer::GetShowVideoFPS() const
-{
-	return this->_showVideoFPS;
-}
-
-void OGLHUDLayer::SetShowRender3DFPS(const bool visibleState)
-{
-	this->_SetShowInfoItemOGL(this->_showRender3DFPS, visibleState);
-}
-
-bool OGLHUDLayer::GetShowRender3DFPS() const
-{
-	return this->_showRender3DFPS;
-}
-
-void OGLHUDLayer::SetShowFrameIndex(const bool visibleState)
-{
-	this->_SetShowInfoItemOGL(this->_showFrameIndex, visibleState);
-}
-
-bool OGLHUDLayer::GetShowFrameIndex() const
-{
-	return this->_showFrameIndex;
-}
-
-void OGLHUDLayer::SetShowLagFrameCount(const bool visibleState)
-{
-	this->_SetShowInfoItemOGL(this->_showLagFrameCount, visibleState);
-}
-
-bool OGLHUDLayer::GetShowLagFrameCount() const
-{
-	return this->_showLagFrameCount;
-}
-
-void OGLHUDLayer::SetShowCPULoadAverage(const bool visibleState)
-{
-	this->_SetShowInfoItemOGL(this->_showCPULoadAverage, visibleState);
-}
-
-bool OGLHUDLayer::GetShowCPULoadAverage() const
-{
-	return this->_showCPULoadAverage;
-}
-
-void OGLHUDLayer::SetShowRTC(const bool visibleState)
-{
-	this->_SetShowInfoItemOGL(this->_showRTC, visibleState);
-}
-
-bool OGLHUDLayer::GetShowRTC() const
-{
-	return this->_showRTC;
-}
-
-void OGLHUDLayer::ProcessVerticesOGL()
-{
-	const size_t length = this->_statusString.length();
+	const size_t length = this->_output->GetHUDString().length();
 	if (length <= 1)
 	{
+		this->_needUpdateVertices = false;
 		return;
 	}
 	
-	const char *cString = this->_statusString.c_str();
-	const GLfloat charSize = (GLfloat)this->_glyphSize;
+	const char *cString = this->_output->GetHUDString().c_str();
+	const GLfloat charSize = this->_glyphSize;
 	const GLfloat lineHeight = charSize * 0.8f;
 	const GLfloat textBoxTextOffset = charSize * 0.25f;
 	GLfloat charLocX = textBoxTextOffset;
@@ -6581,7 +6474,7 @@ void OGLHUDLayer::ProcessVerticesOGL()
 			continue;
 		}
 		
-		const GLfloat charWidth = this->_glyphInfo[c].width * charSize / (GLfloat)this->_glyphTileSize;
+		const GLfloat charWidth = this->_glyphInfo[c].width * charSize / this->_glyphTileSize;
 		
 		vtxBufferPtr[(i*8)+0] = charLocX;				vtxBufferPtr[(i*8)+1] = charLocY + charSize;	// Top Left
 		vtxBufferPtr[(i*8)+2] = charLocX + charWidth;	vtxBufferPtr[(i*8)+3] = charLocY + charSize;	// Top Right
@@ -6590,13 +6483,13 @@ void OGLHUDLayer::ProcessVerticesOGL()
 		charLocX += (charWidth + (charSize * 0.03f) + 0.10f);
 	}
 	
-	GLfloat textBoxScale = HUD_TEXTBOX_BASE_SCALE * this->_hudObjectScale;
+	GLfloat textBoxScale = HUD_TEXTBOX_BASE_SCALE * this->_output->GetHUDObjectScale();
 	if (textBoxScale < (HUD_TEXTBOX_BASE_SCALE * HUD_TEXTBOX_MIN_SCALE))
 	{
 		textBoxScale = HUD_TEXTBOX_BASE_SCALE * HUD_TEXTBOX_MIN_SCALE;
 	}
 	
-	GLfloat boxOffset = 8.0f * HUD_TEXTBOX_BASE_SCALE * this->_hudObjectScale;
+	GLfloat boxOffset = 8.0f * HUD_TEXTBOX_BASE_SCALE * this->_output->GetHUDObjectScale();
 	if (boxOffset < 1.0f)
 	{
 		boxOffset = 1.0f;
@@ -6606,7 +6499,7 @@ void OGLHUDLayer::ProcessVerticesOGL()
 		boxOffset = 8.0f;
 	}
 	
-	boxOffset *= this->_scaleFactor;
+	boxOffset *= this->_output->GetScaleFactor();
 	
 	// Set the width of the text box
 	vtxBufferPtr[2] += textBoxWidth;
@@ -6620,47 +6513,31 @@ void OGLHUDLayer::ProcessVerticesOGL()
 		vtxBufferPtr[i+1] *= textBoxScale;
 		
 		// Translate
-		vtxBufferPtr[i+0] += boxOffset - (this->_viewportWidth / 2.0f);
-		vtxBufferPtr[i+1] += (this->_viewportHeight / 2.0f) - boxOffset;
+		vtxBufferPtr[i+0] += boxOffset - (this->_output->GetViewportWidth() / 2.0f);
+		vtxBufferPtr[i+1] += (this->_output->GetViewportHeight() / 2.0f) - boxOffset;
 	}
 	
 	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	
+	this->_needUpdateVertices = false;
 }
 
-void OGLHUDLayer::SetScaleFactor(float scaleFactor)
+void OGLHUDLayer::UpdateViewportOGL()
 {
-	const bool willChangeScaleFactor = (this->_scaleFactor != scaleFactor);
-	OGLVideoLayer::SetScaleFactor(scaleFactor);
-	
-	if (willChangeScaleFactor)
-	{
-		this->_glyphTileSize = HUD_TEXTBOX_BASEGLYPHSIZE * this->_scaleFactor;
-		this->_glyphSize = (GLfloat)this->_glyphTileSize * 0.75f;
-		
-		this->SetFontUsingPath(this->_lastFontFilePath);
-	}
-}
-
-void OGLHUDLayer::SetViewportSizeOGL(GLsizei w, GLsizei h)
-{
-	this->OGLVideoLayer::SetViewportSizeOGL(w, h);
-	
 	glUseProgram(this->_program->GetProgramID());
-	glUniform2f(this->_uniformViewSize, this->_viewportWidth, this->_viewportHeight);
-	
-	this->ProcessVerticesOGL();
+	glUniform2f(this->_uniformViewSize, this->_output->GetViewProperties().clientWidth, this->_output->GetViewProperties().clientHeight);
 };
 
 void OGLHUDLayer::ProcessOGL()
 {
-	const size_t length = this->_statusString.length();
+	const size_t length = this->_output->GetHUDString().length();
 	if (length <= 1)
 	{
 		return;
 	}
 	
-	const char *cString = this->_statusString.c_str();
+	const char *cString = this->_output->GetHUDString().c_str();
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW_ARB);
@@ -6669,7 +6546,7 @@ void OGLHUDLayer::ProcessOGL()
 	for (size_t i = 0; i < length; i++)
 	{
 		const char c = cString[i];
-		GLfloat *glyphTexCoord = this->_glyphInfo[c].texCoord;
+		const float *glyphTexCoord = this->_glyphInfo[c].texCoord;
 		GLfloat *hudTexCoord = &texCoordBufferPtr[i * 8];
 		
 		hudTexCoord[0] = glyphTexCoord[0];
@@ -6685,18 +6562,26 @@ void OGLHUDLayer::ProcessOGL()
 	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
-	this->ProcessVerticesOGL();
+	this->_needUpdateVertices = true;
 }
 
 void OGLHUDLayer::RenderOGL()
 {
-	const size_t length = this->_statusString.length();
+	const size_t length = this->_output->GetHUDString().length();
 	if (length <= 1)
 	{
 		return;
 	}
 	
-	glUseProgram(this->_program->GetProgramID());
+	if (this->_output->GetInfo()->IsShaderSupported())
+	{
+		glUseProgram(this->_program->GetProgramID());
+	}
+	
+	if (this->_needUpdateVertices)
+	{
+		this->_UpdateVerticesOGL();
+	}
 	
 	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
 	glBindTexture(GL_TEXTURE_2D, this->_texCharMap);
@@ -6707,7 +6592,7 @@ void OGLHUDLayer::RenderOGL()
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	
 	// Next, draw each character inside the box.
-	const GLfloat textBoxScale = (GLfloat)HUD_TEXTBOX_BASE_SCALE * this->_hudObjectScale;
+	const GLfloat textBoxScale = (GLfloat)HUD_TEXTBOX_BASE_SCALE * this->_output->GetHUDObjectScale();
 	if (textBoxScale >= (2.0/3.0))
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -6733,17 +6618,8 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	_isVisible = true;
 	_output = oglVO;
 	_useClientStorage = GL_FALSE;
+	_needUpdateRotationScale = true;
 	_needUpdateVertices = true;
-	_useDeposterize = false;
-	
-	_displayMode = ClientDisplayMode_Dual;
-	_displayOrder = ClientDisplayOrder_MainFirst;
-	_displayOrientation = ClientDisplayLayout_Vertical;
-	
-	_gapScalar = 0.0f;
-	_rotation = 0.0f;
-	_normalWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	_normalHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT*2.0 + (DS_DISPLAY_UNSCALED_GAP*_gapScalar);
 	
 	_vf[0] = new VideoFilter(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, VideoFilterTypeID_None, 0);
 	_vf[1] = new VideoFilter(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, VideoFilterTypeID_None, 0);
@@ -6861,13 +6737,10 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	}
 	
 	glBindVertexArrayDESMUME(0);
-	_isVAOPresent = true;
 	
-	_pixelScaler = VideoFilterTypeID_None;
 	_useShader150 = _output->GetInfo()->IsUsingShader150();
 	_shaderSupport = _output->GetInfo()->GetShaderSupport();
-	_canUseShaderOutput = _output->GetInfo()->IsShaderSupported();
-	if (_canUseShaderOutput)
+	if (_output->GetInfo()->IsShaderSupported())
 	{
 		_finalOutputProgram = new OGLShaderProgram;
 		_finalOutputProgram->SetShaderSupport(_shaderSupport);
@@ -6885,8 +6758,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 		_finalOutputProgram = NULL;
 	}
 	
-	_canUseShaderBasedFilters = (_canUseShaderOutput && _output->GetInfo()->IsFBOSupported());
-	if (_canUseShaderBasedFilters)
+	if (_output->CanFilterOnGPU())
 	{
 		for (size_t i = 0; i < 2; i++)
 		{
@@ -6907,18 +6779,13 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 		_shaderFilter[0] = NULL;
 		_shaderFilter[1] = NULL;
 	}
-	
-	_useShaderBasedPixelScaler = false;
-	_filtersPreferGPU = true;
-	_outputFilter = OutputFilterTypeID_Bilinear;
 }
 
 OGLDisplayLayer::~OGLDisplayLayer()
 {
-	if (_isVAOPresent)
+	if (_output->GetInfo()->IsVAOSupported())
 	{
 		glDeleteVertexArraysDESMUME(1, &this->_vaoMainStatesID);
-		_isVAOPresent = false;
 	}
 	
 	glDeleteBuffersARB(1, &this->_vboVertexID);
@@ -6935,13 +6802,13 @@ OGLDisplayLayer::~OGLDisplayLayer()
 	glDeleteTextures(1, &this->_texHQ4xLUT);
 	glActiveTexture(GL_TEXTURE0);
 	
-	if (_canUseShaderOutput)
+	if (_output->GetInfo()->IsShaderSupported())
 	{
 		glUseProgram(0);
 		delete this->_finalOutputProgram;
 	}
 	
-	if (_canUseShaderBasedFilters)
+	if (_output->CanFilterOnGPU())
 	{
 		delete this->_filterDeposterize[0];
 		delete this->_filterDeposterize[1];
@@ -6999,7 +6866,7 @@ void OGLDisplayLayer::UploadHQnxLUTs()
 
 void OGLDisplayLayer::DetermineTextureStorageHints(GLint &videoSrcTexStorageHint, GLint &cpuFilterTexStorageHint)
 {
-	const bool isUsingCPUPixelScaler = (this->_pixelScaler != VideoFilterTypeID_None) && !this->_useShaderBasedPixelScaler;
+	const bool isUsingCPUPixelScaler = (this->_output->GetPixelScaler() != VideoFilterTypeID_None) && !this->_output->WillFilterOnGPU();
 	videoSrcTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
 	cpuFilterTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
 	
@@ -7086,16 +6953,13 @@ void OGLDisplayLayer::SetVideoBuffers(const uint32_t colorFormat,
 	glFinish();
 }
 
-bool OGLDisplayLayer::GetFiltersPreferGPU()
+void OGLDisplayLayer::SetNeedsUpdateRotationScale()
 {
-	return this->_filtersPreferGPU;
+	this->_needUpdateRotationScale = true;
 }
 
-void OGLDisplayLayer::SetFiltersPreferGPUOGL(bool preferGPU)
+void OGLDisplayLayer::SetFiltersPreferGPUOGL()
 {
-	this->_filtersPreferGPU = preferGPU;
-	this->_useShaderBasedPixelScaler = (preferGPU) ? this->SetGPUPixelScalerOGL(this->_pixelScaler) : false;
-	
 	GLint videoSrcTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
 	GLint cpuFilterTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
 	this->DetermineTextureStorageHints(videoSrcTexStorageHint, cpuFilterTexStorageHint);
@@ -7116,85 +6980,43 @@ void OGLDisplayLayer::SetFiltersPreferGPUOGL(bool preferGPU)
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 }
 
-ClientDisplayMode OGLDisplayLayer::GetMode() const
+void OGLDisplayLayer::_UpdateRotationScaleOGL()
 {
-	return this->_displayMode;
+	const ClientDisplayViewProperties &cdv = this->_output->GetViewProperties();
+	
+	const double r = cdv.rotation;
+	const double s = cdv.viewScale;
+	
+	if (this->_output->GetInfo()->IsShaderSupported())
+	{
+		glUniform1f(this->_uniformFinalOutputAngleDegrees, r);
+		glUniform1f(this->_uniformFinalOutputScalar, s);
+	}
+	else
+	{
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glRotatef(r, 0.0f, 0.0f, 1.0f);
+		glScalef(s, s, 1.0f);
+	}
+	
+	//this->_needUpdateRotationScale = false;
 }
 
-void OGLDisplayLayer::SetMode(const ClientDisplayMode dispMode)
+void OGLDisplayLayer::_UpdateVerticesOGL()
 {
-	this->_displayMode = dispMode;
-	ClientDisplayView::CalculateNormalSize(this->_displayMode, this->_displayOrientation, this->_gapScalar, this->_normalWidth, this->_normalHeight);
-	this->_needUpdateVertices = true;
-}
-
-ClientDisplayLayout OGLDisplayLayer::GetOrientation() const
-{
-	return this->_displayOrientation;
-}
-
-void OGLDisplayLayer::SetOrientation(ClientDisplayLayout dispOrientation)
-{
-	this->_displayOrientation = dispOrientation;
-	ClientDisplayView::CalculateNormalSize(this->_displayMode, this->_displayOrientation, this->_gapScalar, this->_normalWidth, this->_normalHeight);
-	this->_needUpdateVertices = true;
-}
-
-double OGLDisplayLayer::GetGapScalar() const
-{
-	return this->_gapScalar;
-}
-
-void OGLDisplayLayer::SetGapScalar(double theScalar)
-{
-	this->_gapScalar = theScalar;
-	ClientDisplayView::CalculateNormalSize(this->_displayMode, this->_displayOrientation, this->_gapScalar, this->_normalWidth, this->_normalHeight);
-	this->_needUpdateVertices = true;
-}
-
-double OGLDisplayLayer::GetRotation() const
-{
-	return this->_rotation;
-}
-
-void OGLDisplayLayer::SetRotation(double theRotation)
-{
-	this->_rotation = theRotation;
-}
-
-bool OGLDisplayLayer::GetSourceDeposterize()
-{
-	return this->_useDeposterize;
-}
-
-void OGLDisplayLayer::SetSourceDeposterize(bool useDeposterize)
-{
-	this->_useDeposterize = (this->_canUseShaderBasedFilters) ? useDeposterize : false;
-}
-
-ClientDisplayOrder OGLDisplayLayer::GetOrder() const
-{
-	return this->_displayOrder;
-}
-
-void OGLDisplayLayer::SetOrder(ClientDisplayOrder dispOrder)
-{
-	this->_displayOrder = dispOrder;
-	this->_needUpdateVertices = true;
-}
-
-void OGLDisplayLayer::UpdateVerticesOGL()
-{
-	const GLfloat w = this->_normalWidth / 2.0f;
-	const GLfloat h = this->_normalHeight / 2.0f;
-	const size_t f = (this->_displayOrder == ClientDisplayOrder_MainFirst) ? 0 : 8;
+	const ClientDisplayViewProperties &cdv = this->_output->GetViewProperties();
+	
+	const GLfloat w = cdv.normalWidth / 2.0f;
+	const GLfloat h = cdv.normalHeight / 2.0f;
+	const size_t f = (cdv.order == ClientDisplayOrder_MainFirst) ? 0 : 8;
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
 	GLfloat *vtxBufferPtr = (GLfloat *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 	
-	if (this->_displayMode == ClientDisplayMode_Dual)
+	if (cdv.mode == ClientDisplayMode_Dual)
 	{
-		switch (this->_displayOrientation)
+		switch (cdv.layout)
 		{
 			case ClientDisplayLayout_Horizontal:
 			{
@@ -7235,7 +7057,7 @@ void OGLDisplayLayer::UpdateVerticesOGL()
 				
 			case ClientDisplayLayout_Hybrid_16_9:
 			{
-				const GLfloat g = (GLfloat)DS_DISPLAY_UNSCALED_GAP * this->_gapScalar * (this->_normalWidth - (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				const GLfloat g = (GLfloat)cdv.gapDistance * (cdv.normalWidth - (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 				
 				vtxBufferPtr[0]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[1]		= -h + g + (64.0f * 2.0f);	// Minor top display, top left
 				vtxBufferPtr[2]		=  w;											vtxBufferPtr[3]		= -h + g + (64.0f * 2.0f);	// Minor top display, top right
@@ -7258,7 +7080,7 @@ void OGLDisplayLayer::UpdateVerticesOGL()
 				
 			case ClientDisplayLayout_Hybrid_16_10:
 			{
-				const GLfloat g = (GLfloat)DS_DISPLAY_UNSCALED_GAP * this->_gapScalar * (this->_normalWidth - (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				const GLfloat g = (GLfloat)cdv.gapDistance * (cdv.normalWidth - (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 				
 				vtxBufferPtr[0]		= -w + (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;	vtxBufferPtr[1]		= -h + g + (38.4f * 2.0f);	// Minor top display, top left
 				vtxBufferPtr[2]		=  w;											vtxBufferPtr[3]		= -h + g + (38.4f * 2.0f);	// Minor top display, top right
@@ -7281,7 +7103,7 @@ void OGLDisplayLayer::UpdateVerticesOGL()
 				
 			default: // Default to vertical orientation.
 			{
-				const GLfloat g = (GLfloat)DS_DISPLAY_UNSCALED_GAP * this->_gapScalar;
+				const GLfloat g = (GLfloat)cdv.gapDistance;
 				
 				vtxBufferPtr[0+f]	= -w;									vtxBufferPtr[1+f]	=  h;						// Top display, top left
 				vtxBufferPtr[2+f]	=  w;									vtxBufferPtr[3+f]	=  h;						// Top display, top right
@@ -7313,18 +7135,7 @@ void OGLDisplayLayer::UpdateVerticesOGL()
 	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
-	this->_needUpdateVertices = false;
-}
-
-bool OGLDisplayLayer::CanUseShaderBasedFilters()
-{
-	return this->_canUseShaderBasedFilters;
-}
-
-void OGLDisplayLayer::GetNormalSize(double &outWidth, double &outHeight) const
-{
-	outWidth = this->_normalWidth;
-	outHeight = this->_normalHeight;
+	//this->_needUpdateVertices = false;
 }
 
 void OGLDisplayLayer::ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide)
@@ -7370,51 +7181,16 @@ void OGLDisplayLayer::ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const s
 	free(oldMasterBuffer);
 }
 
-void OGLDisplayLayer::UploadTransformationOGL()
+OutputFilterTypeID OGLDisplayLayer::SetOutputFilterOGL(const OutputFilterTypeID filterID)
 {
-	const GLdouble w = this->_viewportWidth;
-	const GLdouble h = this->_viewportHeight;
+	OutputFilterTypeID outputFilter = OutputFilterTypeID_NearestNeighbor;
 	
-	double checkWidth = this->_normalWidth;
-	double checkHeight = this->_normalHeight;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, this->_rotation, checkWidth, checkHeight);
-	const GLdouble s = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, w, h);
-	
-	if (this->_output->GetInfo()->IsShaderSupported())
-	{
-		glUniform2f(this->_uniformFinalOutputViewSize, w, h);
-		glUniform1f(this->_uniformFinalOutputAngleDegrees, this->_rotation);
-		glUniform1f(this->_uniformFinalOutputScalar, s);
-	}
-	else
-	{
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(-w/2.0, -w/2.0 + w, -h/2.0, -h/2.0 + h, -1.0, 1.0);
-		
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glRotatef(this->_rotation, 0.0f, 0.0f, 1.0f);
-		glScalef(s, s, 1.0f);
-	}
-	
-	glViewport(0, 0, this->_viewportWidth, this->_viewportHeight);
-	this->_needUpdateVertices = true;
-}
-
-int OGLDisplayLayer::GetOutputFilter()
-{
-	return this->_outputFilter;
-}
-
-void OGLDisplayLayer::SetOutputFilterOGL(const int filterID)
-{
 	this->_displayTexFilter[0] = GL_NEAREST;
 	this->_displayTexFilter[1] = GL_NEAREST;
 	
-	if (this->_canUseShaderBasedFilters)
+	if (this->_output->CanFilterOnGPU())
 	{
-		this->_outputFilter = filterID;
+		outputFilter = filterID;
 		
 		switch (filterID)
 		{
@@ -7459,7 +7235,7 @@ void OGLDisplayLayer::SetOutputFilterOGL(const int filterID)
 				
 			default:
 				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, PassthroughOutputFragShader_110, _useShader150);
-				this->_outputFilter = OutputFilterTypeID_NearestNeighbor;
+				outputFilter = OutputFilterTypeID_NearestNeighbor;
 				break;
 		}
 	}
@@ -7469,35 +7245,18 @@ void OGLDisplayLayer::SetOutputFilterOGL(const int filterID)
 		{
 			this->_displayTexFilter[0] = GL_LINEAR;
 			this->_displayTexFilter[1] = GL_LINEAR;
-			this->_outputFilter = filterID;
-		}
-		else
-		{
-			this->_outputFilter = OutputFilterTypeID_NearestNeighbor;
+			outputFilter = filterID;
 		}
 	}
-}
-
-int OGLDisplayLayer::GetPixelScaler()
-{
-	return (int)this->_pixelScaler;
-}
-
-void OGLDisplayLayer::SetPixelScalerOGL(const int filterID)
-{
-	std::string cpuTypeIDString = std::string( VideoFilter::GetTypeStringByID((VideoFilterTypeID)filterID) );
-	const VideoFilterTypeID newFilterID = (cpuTypeIDString != std::string(VIDEOFILTERTYPE_UNKNOWN_STRING)) ? (VideoFilterTypeID)filterID : VideoFilterTypeID_None;
 	
-	this->SetCPUPixelScalerOGL(newFilterID);
-	this->_useShaderBasedPixelScaler = (this->GetFiltersPreferGPU()) ? this->SetGPUPixelScalerOGL(newFilterID) : false;
-	this->_pixelScaler = newFilterID;
+	return outputFilter;
 }
 
 bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 {
 	bool willUseShaderBasedPixelScaler = true;
 	
-	if (!this->_canUseShaderBasedFilters || filterID == VideoFilterTypeID_None)
+	if (!this->_output->CanFilterOnGPU() || filterID == VideoFilterTypeID_None)
 	{
 		willUseShaderBasedPixelScaler = false;
 		return willUseShaderBasedPixelScaler;
@@ -7799,9 +7558,12 @@ void OGLDisplayLayer::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 
 void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative)
 {
-	const bool isUsingCPUPixelScaler = (this->_pixelScaler != VideoFilterTypeID_None) && !this->_useShaderBasedPixelScaler;
-	const bool loadMainScreen = (this->_displayMode == ClientDisplayMode_Main) || (this->_displayMode == ClientDisplayMode_Dual);
-	const bool loadTouchScreen = (this->_displayMode == ClientDisplayMode_Touch) || (this->_displayMode == ClientDisplayMode_Dual);
+	const ClientDisplayMode mode = this->_output->GetViewProperties().mode;
+	const bool canFilterOnGPU = this->_output->CanFilterOnGPU();
+	const bool useDeposterize = this->_output->GetSourceDeposterize();
+	const bool isUsingCPUPixelScaler = (this->_output->GetPixelScaler() != VideoFilterTypeID_None) && !this->_output->WillFilterOnGPU();
+	const bool loadMainScreen = (mode == ClientDisplayMode_Main) || (mode == ClientDisplayMode_Dual);
+	const bool loadTouchScreen = (mode == ClientDisplayMode_Touch) || (mode == ClientDisplayMode_Dual);
 	
 	this->_isTexVideoInputDataNative[0] = isMainSizeNative;
 	this->_isTexVideoInputDataNative[1] = isTouchSizeNative;
@@ -7814,7 +7576,7 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 	{
 		if (this->_isTexVideoInputDataNative[0])
 		{
-			if (this->_useDeposterize && this->_canUseShaderBasedFilters)
+			if (useDeposterize && canFilterOnGPU)
 			{
 				if ( (this->_filterDeposterize[0]->GetSrcWidth() != this->_texLoadedWidth[0]) || (this->_filterDeposterize[0]->GetSrcHeight() != this->_texLoadedHeight[0]) )
 				{
@@ -7824,7 +7586,7 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 				}
 			}
 			
-			if (!isUsingCPUPixelScaler || this->_useDeposterize)
+			if (!isUsingCPUPixelScaler || useDeposterize)
 			{
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[0]);
 				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[0]);
@@ -7856,7 +7618,7 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 	{
 		if (this->_isTexVideoInputDataNative[1])
 		{
-			if (this->_useDeposterize && this->_canUseShaderBasedFilters)
+			if (useDeposterize && canFilterOnGPU)
 			{
 				if ( (this->_filterDeposterize[1]->GetSrcWidth() != this->_texLoadedWidth[1]) || (this->_filterDeposterize[1]->GetSrcHeight() != this->_texLoadedHeight[1]) )
 				{
@@ -7866,7 +7628,7 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 				}
 			}
 			
-			if (!isUsingCPUPixelScaler || this->_useDeposterize)
+			if (!isUsingCPUPixelScaler || useDeposterize)
 			{
 				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoInputDataNativeID[1]);
 				glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[1]);
@@ -7895,10 +7657,32 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 	}
 }
 
+void OGLDisplayLayer::UpdateViewportOGL()
+{
+	const ClientDisplayViewProperties &cdv = this->_output->GetViewProperties();
+	
+	const double w = cdv.clientWidth;
+	const double h = cdv.clientHeight;
+	
+	if (this->_output->GetInfo()->IsShaderSupported())
+	{
+		glUseProgram(this->_finalOutputProgram->GetProgramID());
+		glUniform2f(this->_uniformFinalOutputViewSize, w, h);
+	}
+	else
+	{
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(-w/2.0, -w/2.0 + w, -h/2.0, -h/2.0 + h, -1.0, 1.0);
+	}
+}
+
 void OGLDisplayLayer::ProcessOGL()
 {
-	const bool isUsingCPUPixelScaler = (this->_pixelScaler != VideoFilterTypeID_None) && !this->_useShaderBasedPixelScaler;
-	const int displayMode = this->GetMode();
+	const bool willFilterOnGPU = this->_output->WillFilterOnGPU();
+	const bool useDeposterize = this->_output->GetSourceDeposterize();
+	const bool isUsingCPUPixelScaler = (this->_output->GetPixelScaler() != VideoFilterTypeID_None) && !willFilterOnGPU;
+	const ClientDisplayMode mode = this->_output->GetViewProperties().mode;
 	
 	// Source
 	GLuint texVideoSourceID[2]	= { (this->_isTexVideoInputDataNative[0]) ? this->_texVideoInputDataNativeID[0] : this->_texVideoInputDataCustomID[0],
@@ -7910,9 +7694,9 @@ void OGLDisplayLayer::ProcessOGL()
 	GLfloat w1 = this->_texLoadedWidth[1];
 	GLfloat h1 = this->_texLoadedHeight[1];
 	
-	if (this->_isTexVideoInputDataNative[0] && (displayMode == ClientDisplayMode_Main || displayMode == ClientDisplayMode_Dual))
+	if (this->_isTexVideoInputDataNative[0] && (mode == ClientDisplayMode_Main || mode == ClientDisplayMode_Dual))
 	{
-		if (this->_useDeposterize)
+		if (useDeposterize)
 		{
 			// For all shader-based filters, we need to temporarily disable GL_UNPACK_CLIENT_STORAGE_APPLE.
 			// Filtered images are supposed to remain on the GPU for immediate use for further GPU processing,
@@ -7923,7 +7707,7 @@ void OGLDisplayLayer::ProcessOGL()
 			
 			if (isUsingCPUPixelScaler) // Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
 			{
-				if ( this->_isTexVideoInputDataNative[0] && ((displayMode == ClientDisplayMode_Main) || (displayMode == ClientDisplayMode_Dual)) )
+				if ( this->_isTexVideoInputDataNative[0] && ((mode == ClientDisplayMode_Main) || (mode == ClientDisplayMode_Dual)) )
 				{
 					this->_filterDeposterize[0]->DownloadDstBufferOGL(this->_vf[0]->GetSrcBufferPtr(), 0, this->_filterDeposterize[0]->GetSrcHeight());
 				}
@@ -7932,7 +7716,7 @@ void OGLDisplayLayer::ProcessOGL()
 		
 		if (!isUsingCPUPixelScaler)
 		{
-			if (this->_useShaderBasedPixelScaler)
+			if (willFilterOnGPU)
 			{
 				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 				texVideoSourceID[0] = this->_shaderFilter[0]->RunFilterOGL(texVideoSourceID[0]);
@@ -7955,9 +7739,9 @@ void OGLDisplayLayer::ProcessOGL()
 		}
 	}
 	
-	if (this->_isTexVideoInputDataNative[1] && (displayMode == ClientDisplayMode_Touch || displayMode == ClientDisplayMode_Dual))
+	if (this->_isTexVideoInputDataNative[1] && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual))
 	{
-		if (this->_useDeposterize)
+		if (useDeposterize)
 		{
 			glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 			texVideoSourceID[1] = this->_filterDeposterize[1]->RunFilterOGL(texVideoSourceID[1]);
@@ -7965,7 +7749,7 @@ void OGLDisplayLayer::ProcessOGL()
 			
 			if (isUsingCPUPixelScaler) // Hybrid CPU/GPU-based path (may cause a performance hit on pixel download)
 			{
-				if ( this->_isTexVideoInputDataNative[1] && ((displayMode == ClientDisplayMode_Touch) || (displayMode == ClientDisplayMode_Dual)) )
+				if ( this->_isTexVideoInputDataNative[1] && ((mode == ClientDisplayMode_Touch) || (mode == ClientDisplayMode_Dual)) )
 				{
 					this->_filterDeposterize[1]->DownloadDstBufferOGL(this->_vf[1]->GetSrcBufferPtr(), 0, this->_filterDeposterize[1]->GetSrcHeight());
 				}
@@ -7974,7 +7758,7 @@ void OGLDisplayLayer::ProcessOGL()
 		
 		if (!isUsingCPUPixelScaler)
 		{
-			if (this->_useShaderBasedPixelScaler)
+			if (willFilterOnGPU)
 			{
 				glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 				texVideoSourceID[1] = this->_shaderFilter[1]->RunFilterOGL(texVideoSourceID[1]);
@@ -8022,22 +7806,30 @@ void OGLDisplayLayer::ProcessOGL()
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+	glViewport(0, 0, this->_output->GetViewportWidth(), this->_output->GetViewportHeight());
 }
 
 void OGLDisplayLayer::RenderOGL()
 {
-	glUseProgram(this->_finalOutputProgram->GetProgramID());
-	this->UploadTransformationOGL();
+	if (this->_output->GetInfo()->IsShaderSupported())
+	{
+		glUseProgram(this->_finalOutputProgram->GetProgramID());
+	}
+	
+	if (this->_needUpdateRotationScale)
+	{
+		this->_UpdateRotationScaleOGL();
+	}
 	
 	if (this->_needUpdateVertices)
 	{
-		this->UpdateVerticesOGL();
+		this->_UpdateVerticesOGL();
 	}
 	
 	// Enable vertex attributes
 	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
 	
-	switch (this->_displayMode)
+	switch (this->_output->GetViewProperties().mode)
 	{
 		case ClientDisplayMode_Main:
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[0]);
@@ -8055,10 +7847,10 @@ void OGLDisplayLayer::RenderOGL()
 			
 		case ClientDisplayMode_Dual:
 		{
-			const size_t majorDisplayTex = (this->_displayOrder == ClientDisplayOrder_MainFirst) ? 0 : 1;
-			const size_t majorDisplayVtx = (this->_displayOrder == ClientDisplayOrder_MainFirst) ? 8 : 12;
+			const size_t majorDisplayTex = (this->_output->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? 0 : 1;
+			const size_t majorDisplayVtx = (this->_output->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
 			
-			switch (this->_displayOrientation)
+			switch (this->_output->GetViewProperties().layout)
 			{
 				case ClientDisplayLayout_Hybrid_2_1:
 				case ClientDisplayLayout_Hybrid_16_9:
@@ -8096,7 +7888,83 @@ void OGLDisplayLayer::RenderOGL()
 
 void OGLDisplayLayer::FinishOGL()
 {
-	const bool isUsingCPUPixelScaler = (this->_pixelScaler != VideoFilterTypeID_None) && !this->_useShaderBasedPixelScaler;
+	const bool isUsingCPUPixelScaler = (this->_output->GetPixelScaler() != VideoFilterTypeID_None) && !this->_output->WillFilterOnGPU();
+	
 	glFinishObjectAPPLE(GL_TEXTURE_RECTANGLE_ARB, (isUsingCPUPixelScaler) ? this->_texCPUFilterDstID[0] : ( (this->_isTexVideoInputDataNative[0]) ? this->_texVideoInputDataNativeID[0] : this->_texVideoInputDataCustomID[0]) );
 	glFinishObjectAPPLE(GL_TEXTURE_RECTANGLE_ARB, (isUsingCPUPixelScaler) ? this->_texCPUFilterDstID[1] : ( (this->_isTexVideoInputDataNative[1]) ? this->_texVideoInputDataNativeID[1] : this->_texVideoInputDataCustomID[1]) );
+}
+
+#pragma mark -
+
+MacOGLDisplayView::MacOGLDisplayView(CGLContextObj context)
+{
+	this->_context = context;
+}
+
+CGLContextObj MacOGLDisplayView::GetContext() const
+{
+	return this->_context;
+}
+
+void MacOGLDisplayView::SetContext(CGLContextObj context)
+{
+	this->_context = context;
+}
+
+void MacOGLDisplayView::SetHUDInfo(const NDSFrameInfo &frameInfo)
+{
+	this->OGLVideoOutput::SetHUDInfo(frameInfo);
+	
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->FrameProcessHUD();
+	this->FrameRenderAndFlush();
+	CGLUnlockContext(this->_context);
+}
+
+void MacOGLDisplayView::SetVideoBuffers(const uint32_t colorFormat,
+										const void *videoBufferHead,
+										const void *nativeBuffer0,
+										const void *nativeBuffer1,
+										const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
+										const void *customBuffer1, const size_t customWidth1, const size_t customHeight1)
+{
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	
+	this->OGLVideoOutput::SetVideoBuffers(colorFormat,
+										  videoBufferHead,
+										  nativeBuffer0,
+										  nativeBuffer1,
+										  customBuffer0, customWidth0, customHeight0,
+										  customBuffer1, customWidth1, customHeight1);
+	
+	CGLUnlockContext(this->_context);
+}
+
+void MacOGLDisplayView::FrameFinish()
+{
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->OGLVideoOutput::FrameFinish();
+	CGLUnlockContext(this->_context);
+}
+
+void MacOGLDisplayView::FrameFlush()
+{
+	CGLFlushDrawable(this->_context);
+}
+
+void MacOGLDisplayView::FrameRenderAndFlush()
+{
+	this->FrameRender();
+	this->FrameFlush();
+}
+
+void MacOGLDisplayView::UpdateView()
+{
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->FrameRenderAndFlush();
+	CGLUnlockContext(this->_context);
 }

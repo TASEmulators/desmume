@@ -47,6 +47,7 @@ OGLInfo_3_2::OGLInfo_3_2()
 {
 	_useShader150 = true;
 	_isVBOSupported = true;
+	_isVAOSupported = true;
 	_isPBOSupported = true;
 	_isFBOSupported = true;
 	

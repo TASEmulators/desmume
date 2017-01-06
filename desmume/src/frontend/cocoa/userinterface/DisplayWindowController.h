@@ -38,8 +38,8 @@ class OGLVideoOutput;
 @interface DisplayView : NSView <CocoaDSDisplayVideoDelegate, InputHIDManagerTarget>
 {
 	InputManager *inputManager;
-	ClientDisplayView *_cdv;
-	OGLVideoOutput *oglv;
+	ClientDisplay3DView *_cdv;
+	ClientDisplayViewProperties _intermediateViewProps;
 	BOOL canUseShaderBasedFilters;
 	
 	BOOL _useVerticalSync;
@@ -50,6 +50,8 @@ class OGLVideoOutput;
 	OSSpinLock spinlockOutputFilter;
 	OSSpinLock spinlockSourceDeposterize;
 	OSSpinLock spinlockPixelScaler;
+	
+	OSSpinLock spinlockViewProperties;
 	
 	// OpenGL context
 	NSOpenGLContext *context;
@@ -72,7 +74,8 @@ class OGLVideoOutput;
 @property (assign) NSInteger pixelScaler;
 
 - (void) setScaleFactor:(float)theScaleFactor;
-- (void) drawVideoFrame;
+- (void) commitViewProperties:(const ClientDisplayViewProperties &)viewProps;
+- (void) setupViewProperties;
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
 - (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed;
 - (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType;
@@ -138,6 +141,7 @@ class OGLVideoOutput;
 @property (assign) NSScreen *assignedScreen;
 @property (retain) NSWindow *masterWindow;
 
+@property (readonly, nonatomic) BOOL isFullScreen;
 @property (assign) double displayScale;
 @property (assign) double displayRotation;
 @property (assign) BOOL videoFiltersPreferGPU;
@@ -154,10 +158,21 @@ class OGLVideoOutput;
 
 - (id)initWithWindowNibName:(NSString *)windowNibName emuControlDelegate:(EmuControllerDelegate *)theEmuController;
 
+- (ClientDisplayViewProperties &) localViewProperties;
+- (void) setDisplayMode:(ClientDisplayMode)mode
+				 layout:(ClientDisplayLayout)layout
+				  order:(ClientDisplayOrder)order
+			   rotation:(double)rotation
+			  viewScale:(double)viewScale
+			   gapScale:(double)gapScale
+		isMinSizeNormal:(BOOL)isMinSizeNormal
+	 isShowingStatusBar:(BOOL)isShowingStatusBar;
+
 - (void) setupUserDefaults;
 - (BOOL) masterStatusBarState;
 - (NSRect) masterWindowFrame;
 - (double) masterWindowScale;
+- (NSRect) updateViewProperties;
 - (void) resizeWithTransform;
 - (double) maxScalarForContentBoundsWidth:(double)contentBoundsWidth height:(double)contentBoundsHeight;
 - (void) enterFullScreen;

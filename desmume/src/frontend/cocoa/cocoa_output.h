@@ -21,20 +21,13 @@
 #include <libkern/OSAtomic.h>
 
 #import "cocoa_util.h"
+#include "ClientDisplayView.h"
+#undef BOOL
 
 @class NSImage;
 @class NSBitmapImageRep;
 
 struct NDSFrameInfo;
-
-typedef struct
-{
-	double	scale;
-	double	rotation;		// Angle is in degrees
-	double	translationX;
-	double	translationY;
-	double	translationZ;
-} DisplayOutputTransformData;
 
 @interface CocoaDSOutput : CocoaDSThread
 {
@@ -106,7 +99,7 @@ typedef struct
 
 @required
 - (void) doFinishFrame;
-- (void) doDisplayModeChanged:(NSInteger)displayModeID;
+- (void) doViewPropertiesChanged;
 
 @end
 
@@ -131,12 +124,7 @@ typedef struct
 - (void) doProcessVideoFrameWithInfo:(const NDSFrameInfo &)frameInfo;
 
 @optional
-- (void) doResizeView:(NSRect)rect;
-- (void) doTransformView:(const DisplayOutputTransformData *)transformData;
 - (void) doRedraw;
-- (void) doDisplayOrientationChanged:(NSInteger)displayOrientationID;
-- (void) doDisplayOrderChanged:(NSInteger)displayOrderID;
-- (void) doDisplayGapChanged:(float)displayGapScalar;
 
 @end
 
@@ -145,7 +133,7 @@ typedef struct
 {
 	id <CocoaDSDisplayDelegate> delegate;
 	NSSize displaySize;
-	NSInteger displayMode;
+	ClientDisplayMode displayMode;
 	
 	uint32_t _receivedFrameIndex;
 	uint32_t _currentReceivedFrameIndex;
@@ -161,11 +149,10 @@ typedef struct
 
 @property (retain) id <CocoaDSDisplayDelegate> delegate;
 @property (readonly) NSSize displaySize;
-@property (assign) NSInteger displayMode;
+@property (assign) ClientDisplayMode displayMode;
 
 - (void) doReceiveGPUFrame;
 - (void) handleReceiveGPUFrame;
-- (void) handleChangeDisplayMode:(NSData *)displayModeData;
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData;
 - (void) handleCopyToPasteboard;
 
@@ -185,14 +172,9 @@ typedef struct
 }
 
 - (void) handleReceiveGPUFrame;
-- (void) handleResizeView:(NSData *)rectData;
-- (void) handleTransformView:(NSData *)transformData;
 - (void) handleRedrawView;
 - (void) handleReloadAndRedraw;
 - (void) handleReprocessAndRedraw;
-- (void) handleChangeDisplayOrientation:(NSData *)displayOrientationIdData;
-- (void) handleChangeDisplayOrder:(NSData *)displayOrderIdData;
-- (void) handleChangeDisplayGap:(NSData *)displayGapScalarData;
 
 - (void) resetVideoBuffers;
 

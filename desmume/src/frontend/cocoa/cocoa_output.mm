@@ -32,8 +32,6 @@
 #include "../../metaspu/metaspu.h"
 #include "../../rtc.h"
 
-#include "OGLDisplayOutput.h"
-
 #import <Cocoa/Cocoa.h>
 
 #undef BOOL
@@ -84,7 +82,6 @@
 - (void)handlePortMessage:(NSPortMessage *)portMessage
 {
 	NSInteger message = (NSInteger)[portMessage msgid];
-	NSArray *messageComponents = [portMessage components];
 	
 	switch (message)
 	{
@@ -553,7 +550,7 @@
 	return size;
 }
 
-- (void) setDisplayMode:(NSInteger)displayModeID
+- (void) setDisplayMode:(ClientDisplayMode)displayModeID
 {
 	NSString *newDispString = nil;
 	
@@ -583,10 +580,10 @@
 	OSSpinLockUnlock(&spinlockDisplayType);
 }
 
-- (NSInteger) displayMode
+- (ClientDisplayMode) displayMode
 {
 	OSSpinLockLock(&spinlockDisplayType);
-	NSInteger displayModeID = displayMode;
+	ClientDisplayMode displayModeID = displayMode;
 	OSSpinLockUnlock(&spinlockDisplayType);
 	
 	return displayModeID;
@@ -608,8 +605,8 @@
 			[self handleReceiveGPUFrame];
 			break;
 			
-		case MESSAGE_CHANGE_DISPLAY_TYPE:
-			[self handleChangeDisplayMode:[messageComponents objectAtIndex:0]];
+		case MESSAGE_CHANGE_VIEW_PROPERTIES:
+			[self handleChangeViewProperties];
 			break;
 			
 		case MESSAGE_REQUEST_SCREENSHOT:
@@ -633,16 +630,9 @@
 	OSSpinLockUnlock(&spinlockReceivedFrameIndex);
 }
 
-- (void) handleChangeDisplayMode:(NSData *)displayModeData
+- (void) handleChangeViewProperties
 {
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayModeChanged:)])
-	{
-		return;
-	}
-	
-	const NSInteger displayModeID = *(NSInteger *)[displayModeData bytes];
-	[self setDisplayMode:displayModeID];
-	[(id<CocoaDSDisplayDelegate>)delegate doDisplayModeChanged:displayModeID];
+	[(id<CocoaDSDisplayDelegate>)delegate doViewPropertiesChanged];
 }
 
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData
@@ -822,7 +812,6 @@
 - (void)handlePortMessage:(NSPortMessage *)portMessage
 {
 	NSInteger message = (NSInteger)[portMessage msgid];
-	NSArray *messageComponents = [portMessage components];
 	
 	switch (message)
 	{
@@ -834,28 +823,8 @@
 			[self handleReprocessAndRedraw];
 			break;
 			
-		case MESSAGE_RESIZE_VIEW:
-			[self handleResizeView:[messageComponents objectAtIndex:0]];
-			break;
-			
-		case MESSAGE_TRANSFORM_VIEW:
-			[self handleTransformView:[messageComponents objectAtIndex:0]];
-			break;
-			
 		case MESSAGE_REDRAW_VIEW:
 			[self handleRedrawView];
-			break;
-			
-		case MESSAGE_CHANGE_DISPLAY_ORIENTATION:
-			[self handleChangeDisplayOrientation:[messageComponents objectAtIndex:0]];
-			break;
-			
-		case MESSAGE_CHANGE_DISPLAY_ORDER:
-			[self handleChangeDisplayOrder:[messageComponents objectAtIndex:0]];
-			break;
-			
-		case MESSAGE_CHANGE_DISPLAY_GAP:
-			[self handleChangeDisplayGap:[messageComponents objectAtIndex:0]];
 			break;
 			
 		default:
@@ -925,27 +894,6 @@
 	[(id<CocoaDSDisplayVideoDelegate>)delegate doLoadVideoFrameWithMainSizeNative:isMainSizeNative touchSizeNative:isTouchSizeNative];
 }
 
-- (void) handleResizeView:(NSData *)rectData
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doResizeView:)])
-	{
-		return;
-	}
-	
-	const NSRect resizeRect = *(NSRect *)[rectData bytes];
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doResizeView:resizeRect];
-}
-
-- (void) handleTransformView:(NSData *)transformData
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doTransformView:)])
-	{
-		return;
-	}
-	
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doTransformView:(DisplayOutputTransformData *)[transformData bytes]];
-}
-
 - (void) handleRedrawView
 {
 	if (delegate == nil || ![delegate respondsToSelector:@selector(doRedraw)])
@@ -965,39 +913,6 @@
 - (void) handleReprocessAndRedraw
 {
 	[self handleEmuFrameProcessed];
-}
-
-- (void) handleChangeDisplayOrientation:(NSData *)displayOrientationIdData
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayOrientationChanged:)])
-	{
-		return;
-	}
-	
-	const NSInteger theOrientation = *(NSInteger *)[displayOrientationIdData bytes];
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doDisplayOrientationChanged:theOrientation];
-}
-
-- (void) handleChangeDisplayOrder:(NSData *)displayOrderIdData
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayOrderChanged:)])
-	{
-		return;
-	}
-	
-	const NSInteger theOrder = *(NSInteger *)[displayOrderIdData bytes];
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doDisplayOrderChanged:theOrder];
-}
-
-- (void) handleChangeDisplayGap:(NSData *)displayGapScalarData
-{
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doDisplayGapChanged:)])
-	{
-		return;
-	}
-	
-	const float gapScalar = *(float *)[displayGapScalarData bytes];
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doDisplayGapChanged:gapScalar];
 }
 
 - (void) resetVideoBuffers

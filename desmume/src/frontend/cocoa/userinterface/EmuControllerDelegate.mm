@@ -32,8 +32,6 @@
 #import "cocoa_rom.h"
 #import "cocoa_slot2.h"
 
-#include "../OGLDisplayOutput.h"
-
 @implementation EmuControllerDelegate
 
 @synthesize inputManager;

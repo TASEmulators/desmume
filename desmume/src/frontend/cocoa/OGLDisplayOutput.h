@@ -23,6 +23,7 @@
 #if defined(__APPLE__)
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glext.h>
+	#include <OpenGL/OpenGL.h>
 #endif
 
 #endif // _OGLDISPLAYOUTPUT_3_2_H_
@@ -33,27 +34,10 @@
 
 #include "ClientDisplayView.h"
 
-#include <ft2build.h>
-#include FT_FREETYPE_H
-
-#define HUD_MAX_CHARACTERS 2048
 #define HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE (sizeof(GLfloat) * HUD_MAX_CHARACTERS * (2 * 4))
-#define HUD_TEXTBOX_BASEGLYPHSIZE 64.0
-#define HUD_TEXTBOX_BASE_SCALE (1.0/3.0)
-#define HUD_TEXTBOX_MIN_SCALE 0.70
 
 class OGLVideoOutput;
 struct NDSFrameInfo;
-
-enum OutputFilterTypeID
-{
-	OutputFilterTypeID_NearestNeighbor	= 0,
-	OutputFilterTypeID_Bilinear			= 1,
-	OutputFilterTypeID_BicubicBSpline	= 2,
-	OutputFilterTypeID_BicubicMitchell	= 3,
-	OutputFilterTypeID_Lanczos2			= 4,
-	OutputFilterTypeID_Lanczos3			= 5
-};
 
 enum ShaderSupportTier
 {
@@ -76,6 +60,7 @@ protected:
 	bool _useShader150;
 	
 	bool _isVBOSupported;
+	bool _isVAOSupported;
 	bool _isPBOSupported;
 	bool _isFBOSupported;
 	
@@ -85,6 +70,7 @@ public:
 		
 	bool IsUsingShader150();
 	bool IsVBOSupported();
+	bool IsVAOSupported();
 	bool IsPBOSupported();
 	bool IsShaderSupported();
 	bool IsFBOSupported();
@@ -271,102 +257,49 @@ class OGLVideoLayer
 protected:
 	OGLVideoOutput *_output;
 	bool _isVisible;
-	GLfloat _scaleFactor;
-	GLsizei _viewportWidth;
-	GLsizei _viewportHeight;
+	bool _needUpdateRotationScale;
+	bool _needUpdateVertices;
 	
 public:
 	virtual ~OGLVideoLayer() {};
 	
-	virtual float GetScaleFactor();
-	virtual void SetScaleFactor(float scaleFactor);
+	void SetNeedsUpdateVertices();
+	
 	virtual bool IsVisible();
 	virtual void SetVisibility(const bool visibleState);
-	virtual void SetViewportSizeOGL(GLsizei w, GLsizei h);
 	
+	virtual void UpdateViewportOGL() {};
 	virtual void ProcessOGL() = 0;
 	virtual void RenderOGL() = 0;
 	virtual void FinishOGL() {};
 };
 
-typedef struct
-{
-	GLfloat width;
-	GLfloat texCoord[8];
-} GlyphInfo;
-
 class OGLHUDLayer : public OGLVideoLayer
 {
 protected:
-	FT_Library _ftLibrary;
-	const char *_lastFontFilePath;
-	GLuint _texCharMap;	
-	GlyphInfo _glyphInfo[256];
-	
-	std::string _statusString;
-	size_t _glyphSize;
-	size_t _glyphTileSize;
-	
 	OGLShaderProgram *_program;
-		
-	bool _isVAOPresent;
-	bool _canUseShaderOutput;
-	
 	GLint _uniformViewSize;
 	
 	GLuint _vaoMainStatesID;
 	GLuint _vboVertexID;
 	GLuint _vboTexCoordID;
 	GLuint _vboElementID;
+	GLuint _texCharMap;
 	
-	bool _showVideoFPS;
-	bool _showRender3DFPS;
-	bool _showFrameIndex;
-	bool _showLagFrameCount;
-	bool _showCPULoadAverage;
-	bool _showRTC;
-	
-	uint32_t _lastVideoFPS;
-	uint32_t _lastRender3DFPS;
-	uint32_t _lastFrameIndex;
-	uint32_t _lastLagFrameCount;
-	uint32_t _lastCpuLoadAvgARM9;
-	uint32_t _lastCpuLoadAvgARM7;
-	char _lastRTCString[25];
-	
-	GLfloat _hudObjectScale;
+	GlyphInfo *_glyphInfo;
+	GLfloat _glyphSize;
+	GLfloat _glyphTileSize;
 	
 	void _SetShowInfoItemOGL(bool &infoItemFlag, const bool visibleState);
+	void _UpdateVerticesOGL();
 	
 public:
 	OGLHUDLayer(OGLVideoOutput *oglVO);
 	virtual ~OGLHUDLayer();
 	
-	void SetFontUsingPath(const char *filePath);
+	void CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo);
 	
-	void SetInfo(const uint32_t videoFPS, const uint32_t render3DFPS, const uint32_t frameIndex, const uint32_t lagFrameCount, const char *rtcString, const uint32_t cpuLoadAvgARM9, const uint32_t cpuLoadAvgARM7);
-	void RefreshInfo();
-	
-	void SetObjectScale(float objectScale);
-	float GetObjectScale() const;
-	
-	void SetShowVideoFPS(const bool visibleState);
-	bool GetShowVideoFPS() const;
-	void SetShowRender3DFPS(const bool visibleState);
-	bool GetShowRender3DFPS() const;
-	void SetShowFrameIndex(const bool visibleState);
-	bool GetShowFrameIndex() const;
-	void SetShowLagFrameCount(const bool visibleState);
-	bool GetShowLagFrameCount() const;
-	void SetShowCPULoadAverage(const bool visibleState);
-	bool GetShowCPULoadAverage() const;
-	void SetShowRTC(const bool visibleState);
-	bool GetShowRTC() const;
-	
-	void ProcessVerticesOGL();
-	
-	virtual void SetScaleFactor(float scaleFactor);
-	virtual void SetViewportSizeOGL(GLsizei w, GLsizei h);
+	virtual void UpdateViewportOGL();
 	virtual void ProcessOGL();
 	virtual void RenderOGL();
 };
@@ -374,19 +307,9 @@ public:
 class OGLDisplayLayer : public OGLVideoLayer
 {
 protected:
-	bool _isVAOPresent;
-	bool _canUseShaderBasedFilters;
-	bool _canUseShaderOutput;
 	bool _useShader150;
 	ShaderSupportTier _shaderSupport;
-	
 	GLboolean _useClientStorage;
-	bool _needUpdateVertices;
-	bool _useDeposterize;
-	bool _useShaderBasedPixelScaler;
-	bool _filtersPreferGPU;
-	int _outputFilter;
-	VideoFilterTypeID _pixelScaler;
 	
 	OGLShaderProgram *_finalOutputProgram;
 	OGLFilter *_filterDeposterize[2];
@@ -413,14 +336,6 @@ protected:
 	VideoFilter *_vf[2];
 	GLuint _texCPUFilterDstID[2];
 	
-	ClientDisplayMode _displayMode;
-	ClientDisplayOrder _displayOrder;
-	ClientDisplayLayout _displayOrientation;
-	double _normalWidth;
-	double _normalHeight;
-	double _gapScalar;
-	double _rotation;
-	
 	GLuint _texLQ2xLUT;
 	GLuint _texHQ2xLUT;
 	GLuint _texHQ3xLUT;
@@ -438,9 +353,9 @@ protected:
 	void DetermineTextureStorageHints(GLint &videoSrcTexStorageHint, GLint &cpuFilterTexStorageHint);
 	
 	void ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide);
-	void UploadTransformationOGL();
 	
-	void UpdateVerticesOGL();
+	void _UpdateRotationScaleOGL();
+	void _UpdateVerticesOGL();
 	
 public:
 	OGLDisplayLayer() {};
@@ -454,64 +369,100 @@ public:
 						 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
 						 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1);
 	
-	bool GetFiltersPreferGPU();
-	void SetFiltersPreferGPUOGL(bool preferGPU);
-	
-	ClientDisplayMode GetMode() const;
-	void SetMode(ClientDisplayMode dispMode);
-	ClientDisplayLayout GetOrientation() const;
-	void SetOrientation(ClientDisplayLayout dispOrientation);
-	ClientDisplayOrder GetOrder() const;
-	void SetOrder(ClientDisplayOrder dispOrder);
-	double GetGapScalar() const;
-	void SetGapScalar(double theScalar);
-	double GetRotation() const;
-	void SetRotation(double theRotation);
-	bool GetSourceDeposterize();
-	void SetSourceDeposterize(bool useDeposterize);
+	void SetNeedsUpdateRotationScale();
+	void SetFiltersPreferGPUOGL();
 	
 	bool CanUseShaderBasedFilters();
-	void GetNormalSize(double &w, double &h) const;
 	
-	int GetOutputFilter();
-	virtual void SetOutputFilterOGL(const int filterID);
-	int GetPixelScaler();
-	void SetPixelScalerOGL(const int filterID);
+	OutputFilterTypeID SetOutputFilterOGL(const OutputFilterTypeID filterID);
 	bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	void LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative);
 	
+	virtual void UpdateViewportOGL();
 	virtual void ProcessOGL();
 	virtual void RenderOGL();
 	virtual void FinishOGL();
 };
 
-class OGLVideoOutput
+class OGLVideoOutput : public ClientDisplay3DView
 {
 protected:
 	OGLInfo *_info;
-	GLfloat _scaleFactor;
 	GLsizei _viewportWidth;
 	GLsizei _viewportHeight;
+	bool _needUpdateViewport;
 	std::vector<OGLVideoLayer *> *_layerList;
+	
+	void _UpdateViewport();
+	
+	virtual void _UpdateNormalSize();
+	virtual void _UpdateOrder();
+	virtual void _UpdateRotation();
+	virtual void _UpdateClientSize();
+	virtual void _UpdateViewScale();
 	
 public:
 	OGLVideoOutput();
 	~OGLVideoOutput();
 	
-	void InitLayers();
 	OGLInfo* GetInfo();
-	float GetScaleFactor();
-	void SetScaleFactor(float scaleFactor);
+	
 	GLsizei GetViewportWidth();
 	GLsizei GetViewportHeight();
 	OGLDisplayLayer* GetDisplayLayer();
 	OGLHUDLayer* GetHUDLayer();
+	
+	virtual void Init();
+	
+	virtual void SetOutputFilter(const OutputFilterTypeID filterID);
+	virtual void SetPixelScaler(const VideoFilterTypeID filterID);
+	
+	virtual void CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo);
+	virtual void SetHUDVisibility(const bool visibleState);
+	
+	virtual void SetFiltersPreferGPU(const bool preferGPU);
+	
+	virtual void SetVideoBuffers(const uint32_t colorFormat,
+								 const void *videoBufferHead,
+								 const void *nativeBuffer0,
+								 const void *nativeBuffer1,
+								 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
+								 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1);
+	
+	virtual void FrameLoadGPU(bool isMainSizeNative, bool isTouchSizeNative);
+	virtual void FrameProcessGPU();
+	virtual void FrameProcessHUD();
+	virtual void FrameRender();
+	virtual void FrameFinish();
+};
+
+class MacOGLDisplayView : public OGLVideoOutput
+{
+protected:
+	CGLContextObj _context;
+	
+public:
+	MacOGLDisplayView(CGLContextObj context);
+	
+	CGLContextObj GetContext() const;
+	void SetContext(CGLContextObj context);
 		
-	void ProcessOGL();
-	void RenderOGL();
-	void SetViewportSizeOGL(GLsizei w, GLsizei h);
-	void FinishOGL();
+	virtual void SetHUDInfo(const NDSFrameInfo &frameInfo);
+	
+	virtual void SetVideoBuffers(const uint32_t colorFormat,
+								 const void *videoBufferHead,
+								 const void *nativeBuffer0,
+								 const void *nativeBuffer1,
+								 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
+								 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1);
+	
+	virtual void FrameFinish();
+	
+	virtual void FrameFlush();
+	virtual void FrameRenderAndFlush();
+	
+	virtual void UpdateView();
 };
 
 OGLInfo* OGLInfoCreate_Legacy();

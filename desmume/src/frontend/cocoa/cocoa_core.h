@@ -45,19 +45,6 @@ typedef struct
 	pthread_rwlock_t rwlockCoreExecute;
 } CoreThreadParam;
 
-struct NDSFrameInfo
-{
-	uint32_t videoFPS;
-	uint32_t render3DFPS;
-	uint32_t frameIndex;
-	uint32_t lagFrameCount;
-	uint32_t cpuLoadAvgARM9;
-	uint32_t cpuLoadAvgARM7;
-	char rtcString[25];
-};
-
-typedef struct NDSFrameInfo NDSFrameInfo;
-
 @interface CocoaDSCore : NSObject
 {
 	CocoaDSController *cdsController;
