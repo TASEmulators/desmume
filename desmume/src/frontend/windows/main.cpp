@@ -513,7 +513,6 @@ int lastskiprate=0;
 int emu_paused = 0;
 bool frameAdvance = false;
 bool continuousframeAdvancing = false;
-bool staterewindingenabled = false;
 
 unsigned short windowSize = 0;
 
@@ -2186,16 +2185,6 @@ static void StepRunLoop_Core()
 	}
 	inFrameBoundary = true;
 	DRV_AviVideoUpdate();
-
-	extern bool rewinding;
-
-	if (staterewindingenabled) {
-
-		if(rewinding)
-			dorewind();
-		else
-			rewindsave();
-	}
 
 	CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
 	ServiceDisplayThreadInvocations();
@@ -4579,8 +4568,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_RENDER_4XBRZ, video.currentfilter == video._4XBRZ );
 			MainWindow->checkMenu(IDM_RENDER_5XBRZ, video.currentfilter == video._5XBRZ );
 
-			MainWindow->checkMenu(IDC_STATEREWINDING, staterewindingenabled == 1 );
-
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_VSYNC, (GetStyle()&DWS_VSYNC)!=0);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWHW, (GetStyle()&DWS_DDRAW_HW)!=0);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWSW, (GetStyle()&DWS_DDRAW_SW)!=0);
@@ -5301,10 +5288,6 @@ DOKEYDOWN:
 				WavRecordTo(WAVMODE_USER);
 			break;
 #endif
-		case IDC_STATEREWINDING:
-			if(staterewindingenabled) staterewindingenabled = false;
-			else staterewindingenabled = true;
-			break;
 		case IDM_RENDER_NORMAL:
 			{
 				Lock lock (win_backbuffer_sync);

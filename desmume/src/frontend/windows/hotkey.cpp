@@ -384,12 +384,6 @@ void HK_PlayMovie(int, bool justPressed)
 		Replay_LoadMovie();
 }
 
-bool rewinding = false;
-
-void HK_RewindKeyDown(int, bool justPressed) {rewinding = true;}
-
-void HK_RewindKeyUp(int){rewinding = false;}
-
 void HK_RecordMovie(int, bool justPressed) 
 {
 	if (romloaded)
@@ -816,14 +810,6 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->TurboStart.name = STRW(ID_LABEL_HK46);
 	keys->TurboStart.page = HOTKEY_PAGE_TURBO;
 	keys->TurboStart.key = NULL;
-
-	// Movie/Tools page -----------------------------------------
-	keys->Rewind.handleKeyDown = HK_RewindKeyDown;
-	keys->Rewind.handleKeyUp = HK_RewindKeyUp;
-	keys->Rewind.code = "Rewind";
-	keys->Rewind.name = STRW(ID_LABEL_HK25);
-	keys->Rewind.page = HOTKEY_PAGE_MOVIE;
-	keys->Rewind.key = NULL;
 
 	keys->NewLuaScript.handleKeyDown = HK_NewLuaScriptDown;
 	keys->NewLuaScript.code = "NewLuaScript";

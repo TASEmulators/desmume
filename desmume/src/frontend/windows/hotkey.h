@@ -92,8 +92,6 @@ struct SCustomKeys
 
 	SCustomKey RecordWAV, RecordAVI;
 
-	SCustomKey Rewind;
-
 	SCustomKey NewLuaScript, CloseLuaScripts, MostRecentLuaScript;
 
 	SCustomKey ToggleFrameCounter;
