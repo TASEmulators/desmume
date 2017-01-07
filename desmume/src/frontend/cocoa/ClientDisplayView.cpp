@@ -204,8 +204,8 @@ void ClientDisplayView::SetupViewProperties()
 	ClientDisplayView::CalculateNormalSize(this->_stagedProperty.mode, this->_stagedProperty.layout, this->_stagedProperty.gapScale, this->_stagedProperty.normalWidth, this->_stagedProperty.normalHeight);
 	
 	const bool didNormalSizeChange = (this->_renderProperty.mode != this->_stagedProperty.mode) ||
-	(this->_renderProperty.layout != this->_stagedProperty.layout) ||
-	(this->_renderProperty.gapScale != this->_stagedProperty.gapScale);
+	                                 (this->_renderProperty.layout != this->_stagedProperty.layout) ||
+	                                 (this->_renderProperty.gapScale != this->_stagedProperty.gapScale);
 	
 	const bool didOrderChange = (this->_renderProperty.order != this->_stagedProperty.order);
 	const bool didRotationChange = (this->_renderProperty.rotation != this->_stagedProperty.rotation);

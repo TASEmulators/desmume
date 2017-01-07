@@ -95,15 +95,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	cdsVideoOutput = nil;
 	assignedScreen = nil;
 	masterWindow = nil;
-	
-	spinlockScale = OS_SPINLOCK_INIT;
-	spinlockRotation = OS_SPINLOCK_INIT;
-	spinlockDisplayMode = OS_SPINLOCK_INIT;
-	spinlockDisplayOrientation = OS_SPINLOCK_INIT;
-	spinlockDisplayOrder = OS_SPINLOCK_INIT;
-	spinlockDisplayGap = OS_SPINLOCK_INIT;
-	
 	screenshotFileFormat = NSTIFFFileType;
+	
+	spinlockRotation = OS_SPINLOCK_INIT;
 	
 	// These need to be initialized first since there are dependencies on these.
 	_localViewProps.normalWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
@@ -165,9 +159,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// 2. Resize the window as a result of setting displayScale
 	//
 	// Use the _isUpdatingDisplayScaleValueOnly flag to control this property's behavior.
-	OSSpinLockLock(&spinlockScale);
 	_localViewProps.viewScale = s;
-	OSSpinLockUnlock(&spinlockScale);
 	
 	if (!_isUpdatingDisplayScaleValueOnly)
 	{
@@ -178,11 +170,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (double) displayScale
 {
-	OSSpinLockLock(&spinlockScale);
-	const double s = _localViewProps.viewScale;
-	OSSpinLockUnlock(&spinlockScale);
-	
-	return s;
+	return _localViewProps.viewScale;
 }
 
 - (void) setDisplayRotation:(double)angleDegrees
@@ -241,118 +229,111 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void) setDisplayMode:(NSInteger)displayModeID
 {
-	OSSpinLockLock(&spinlockDisplayMode);
+	const BOOL willModeChangeSize = ( ((displayModeID == ClientDisplayMode_Main) || (displayModeID == ClientDisplayMode_Touch)) && (_localViewProps.mode == ClientDisplayMode_Dual) ) ||
+	                                ( ((_localViewProps.mode == ClientDisplayMode_Main) || (_localViewProps.mode == ClientDisplayMode_Touch)) && (displayModeID == ClientDisplayMode_Dual) );
 	_localViewProps.mode = (ClientDisplayMode)displayModeID;
-	OSSpinLockUnlock(&spinlockDisplayMode);
 	
 	ClientDisplayView::CalculateNormalSize((ClientDisplayMode)displayModeID, (ClientDisplayLayout)[self displayOrientation], [self displayGap], _localViewProps.normalWidth, _localViewProps.normalHeight);
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
 	
-	if ([self isFullScreen])
-	{
-		[view commitViewProperties:_localViewProps];
-	}
-	else if ([self displayMode] == ClientDisplayMode_Dual)
+	if (![self isFullScreen] && willModeChangeSize)
 	{
 		[self resizeWithTransform];
+	}
+	else
+	{
+		[view commitViewProperties:_localViewProps];
 	}
 }
 
 - (NSInteger) displayMode
 {
-	OSSpinLockLock(&spinlockDisplayMode);
-	const NSInteger displayModeID = _localViewProps.mode;
-	OSSpinLockUnlock(&spinlockDisplayMode);
-	
-	return displayModeID;
+	return _localViewProps.mode;
 }
 
 - (void) setDisplayOrientation:(NSInteger)theOrientation
 {
-	OSSpinLockLock(&spinlockDisplayOrientation);
 	_localViewProps.layout = (ClientDisplayLayout)theOrientation;
-	OSSpinLockUnlock(&spinlockDisplayOrientation);
 	
 	ClientDisplayView::CalculateNormalSize((ClientDisplayMode)[self displayMode], (ClientDisplayLayout)theOrientation, [self displayGap], _localViewProps.normalWidth, _localViewProps.normalHeight);
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
 	
-	if ([self isFullScreen])
+	if ([self displayMode] == ClientDisplayMode_Dual)
 	{
-		[view commitViewProperties:_localViewProps];
-	}
-	else if ([self displayMode] == ClientDisplayMode_Dual)
-	{
-		[self resizeWithTransform];
+		if ([self isFullScreen])
+		{
+			[view commitViewProperties:_localViewProps];
+		}
+		else
+		{
+			[self resizeWithTransform];
+		}
 	}
 }
 
 - (NSInteger) displayOrientation
 {
-	OSSpinLockLock(&spinlockDisplayOrientation);
-	const NSInteger theOrientation = _localViewProps.layout;
-	OSSpinLockUnlock(&spinlockDisplayOrientation);
-	
-	return theOrientation;
+	return _localViewProps.layout;
 }
 
 - (void) setDisplayOrder:(NSInteger)theOrder
 {
-	OSSpinLockLock(&spinlockDisplayOrder);
 	_localViewProps.order = (ClientDisplayOrder)theOrder;
-	OSSpinLockUnlock(&spinlockDisplayOrder);
-	
 	[view commitViewProperties:_localViewProps];
 }
 
 - (NSInteger) displayOrder
 {
-	OSSpinLockLock(&spinlockDisplayOrder);
-	const NSInteger theOrder = _localViewProps.order;
-	OSSpinLockUnlock(&spinlockDisplayOrder);
-	
-	return theOrder;
+	return _localViewProps.order;
 }
 
 - (void) setDisplayGap:(double)gapScalar
 {
-	OSSpinLockLock(&spinlockDisplayGap);
 	_localViewProps.gapScale = gapScalar;
-	OSSpinLockUnlock(&spinlockDisplayGap);
-	
 	ClientDisplayView::CalculateNormalSize((ClientDisplayMode)[self displayMode], (ClientDisplayLayout)[self displayOrientation], gapScalar, _localViewProps.normalWidth, _localViewProps.normalHeight);
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
 	
-	if ([self isFullScreen])
+	if ([self displayMode] == ClientDisplayMode_Dual)
 	{
-		[view commitViewProperties:_localViewProps];
-	}
-	else if ([self displayMode] == ClientDisplayMode_Dual)
-	{
-		switch ([self displayOrientation])
+		if ([self isFullScreen])
 		{
-			case ClientDisplayLayout_Hybrid_16_9:
-			case ClientDisplayLayout_Hybrid_16_10:
-				[view commitViewProperties:_localViewProps];
-				break;
-				
-			case ClientDisplayLayout_Horizontal:
-			case ClientDisplayLayout_Hybrid_2_1:
-				break;
-				
-			default:
-				[self resizeWithTransform];
-				break;
+			switch ([self displayOrientation])
+			{
+				case ClientDisplayLayout_Horizontal:
+				case ClientDisplayLayout_Hybrid_2_1:
+					break;
+					
+				case ClientDisplayLayout_Hybrid_16_9:
+				case ClientDisplayLayout_Hybrid_16_10:
+				default:
+					[view commitViewProperties:_localViewProps];
+					break;
+			}
+		}
+		else
+		{
+			switch ([self displayOrientation])
+			{
+				case ClientDisplayLayout_Hybrid_16_9:
+				case ClientDisplayLayout_Hybrid_16_10:
+					[view commitViewProperties:_localViewProps];
+					break;
+					
+				case ClientDisplayLayout_Horizontal:
+				case ClientDisplayLayout_Hybrid_2_1:
+					break;
+					
+				default:
+					[self resizeWithTransform];
+					break;
+			}
 		}
 	}
 }
 
 - (double) displayGap
 {
-	OSSpinLockLock(&spinlockDisplayGap);
-	const double gapScalar = _localViewProps.gapScale;
-	OSSpinLockUnlock(&spinlockDisplayGap);
-	
-	return gapScalar;
+	return _localViewProps.gapScale;
 }
 
 - (void) setVideoFiltersPreferGPU:(BOOL)theState
@@ -573,10 +554,10 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	double checkHeight = _localViewProps.normalHeight;
 	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
 	
-	const double constrainedScale = [self maxScalarForContentBoundsWidth:checkWidth height:checkHeight];
-	if (_localViewProps.viewScale > constrainedScale)
+	const double maxViewScaleInHostScreen = [self maxViewScaleInHostScreen:checkWidth height:checkHeight];
+	if (_localViewProps.viewScale > maxViewScaleInHostScreen)
 	{
-		_localViewProps.viewScale = constrainedScale;
+		_localViewProps.viewScale = maxViewScaleInHostScreen;
 	}
 	
 	// Get the new bounds for the window's content view based on the transformed draw bounds.
@@ -610,7 +591,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[masterWindow setFrame:newWindowFrame display:YES animate:NO];
 }
 
-- (double) maxScalarForContentBoundsWidth:(double)contentBoundsWidth height:(double)contentBoundsHeight
+- (double) maxViewScaleInHostScreen:(double)contentBoundsWidth height:(double)contentBoundsHeight
 {
 	// Determine the maximum scale based on the visible screen size (which
 	// doesn't include the menu bar or dock).
@@ -1345,10 +1326,10 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	double checkHeight = _localViewProps.normalHeight;
 	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
 	const NSSize contentBounds = NSMakeSize(contentRect.size.width, contentRect.size.height - _statusBarHeight);
-	const double constrainedScale = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, contentBounds.width, contentBounds.height);
+	_localViewProps.viewScale = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, contentBounds.width, contentBounds.height);
 	
 	// Make a new content Rect with our max scalar, and convert it back to a frame Rect.
-	const NSRect finalContentRect = NSMakeRect(0.0f, 0.0f, checkWidth * constrainedScale, (checkHeight * constrainedScale) + _statusBarHeight);
+	const NSRect finalContentRect = NSMakeRect(0.0f, 0.0f, checkWidth * _localViewProps.viewScale, (checkHeight * _localViewProps.viewScale) + _statusBarHeight);
 	const NSRect finalFrameRect = [sender frameRectForContentRect:finalContentRect];
 	
 	// Set the final size based on our new frame Rect.
@@ -1362,21 +1343,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		return;
 	}
 	
-	// Get the max scalar within the window's current content bounds.
-	double checkWidth = _localViewProps.normalWidth;
-	double checkHeight = _localViewProps.normalHeight;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
-	
-	NSSize contentBounds = [[[self window] contentView] bounds].size;
-	contentBounds.height -= _statusBarHeight;
-	const double constrainedScale = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, contentBounds.width, contentBounds.height);
-	
-	// Since we are already resizing, only update the displayScale property here.
-	_isUpdatingDisplayScaleValueOnly = YES;
-	[self setDisplayScale:constrainedScale];
-	_isUpdatingDisplayScaleValueOnly = NO;
-	
-	// Resize the view.
 	NSRect newContentFrame = [[[self window] contentView] bounds];
 	newContentFrame.origin.y = _statusBarHeight;
 	newContentFrame.size.height -= _statusBarHeight;

@@ -117,12 +117,7 @@ class OGLVideoOutput;
 	double _masterWindowScale;
 	double _localRotation;
 	
-	OSSpinLock spinlockScale;
 	OSSpinLock spinlockRotation;
-	OSSpinLock spinlockDisplayMode;
-	OSSpinLock spinlockDisplayOrientation;
-	OSSpinLock spinlockDisplayOrder;
-	OSSpinLock spinlockDisplayGap;
 }
 
 @property (readonly) IBOutlet NSObject *dummyObject;
@@ -142,16 +137,16 @@ class OGLVideoOutput;
 @property (retain) NSWindow *masterWindow;
 
 @property (readonly, nonatomic) BOOL isFullScreen;
-@property (assign) double displayScale;
-@property (assign) double displayRotation;
+@property (assign, nonatomic) NSInteger displayMode;
+@property (assign, nonatomic) NSInteger displayOrientation;
+@property (assign, nonatomic) NSInteger displayOrder;
+@property (assign, nonatomic) double displayGap;
+@property (assign, nonatomic) double displayScale;
+@property (assign, nonatomic) double displayRotation;
 @property (assign) BOOL videoFiltersPreferGPU;
 @property (assign) BOOL videoSourceDeposterize;
 @property (assign) NSInteger videoOutputFilter;
 @property (assign) NSInteger videoPixelScaler;
-@property (assign) NSInteger displayMode;
-@property (assign) NSInteger displayOrientation;
-@property (assign) NSInteger displayOrder;
-@property (assign) double displayGap;
 @property (assign) NSInteger screenshotFileFormat;
 @property (assign) BOOL isMinSizeNormal;
 @property (assign) BOOL isShowingStatusBar;
@@ -174,7 +169,7 @@ class OGLVideoOutput;
 - (double) masterWindowScale;
 - (NSRect) updateViewProperties;
 - (void) resizeWithTransform;
-- (double) maxScalarForContentBoundsWidth:(double)contentBoundsWidth height:(double)contentBoundsHeight;
+- (double) maxViewScaleInHostScreen:(double)contentBoundsWidth height:(double)contentBoundsHeight;
 - (void) enterFullScreen;
 - (void) exitFullScreen;
 
