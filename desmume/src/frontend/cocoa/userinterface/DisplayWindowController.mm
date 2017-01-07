@@ -97,8 +97,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	masterWindow = nil;
 	screenshotFileFormat = NSTIFFFileType;
 	
-	spinlockRotation = OS_SPINLOCK_INIT;
-	
 	// These need to be initialized first since there are dependencies on these.
 	_localViewProps.normalWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	_localViewProps.normalHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2.0;
@@ -112,6 +110,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_localViewProps.layout = ClientDisplayLayout_Vertical;
 	_localViewProps.order = ClientDisplayOrder_MainFirst;
 	
+	_localViewScale = _localViewProps.viewScale;
 	_localRotation = 0.0;
 	_minDisplayViewSize = NSMakeSize(_localViewProps.clientWidth, _localViewProps.clientHeight + _localViewProps.gapDistance);
 	_isMinSizeNormal = YES;
@@ -159,7 +158,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// 2. Resize the window as a result of setting displayScale
 	//
 	// Use the _isUpdatingDisplayScaleValueOnly flag to control this property's behavior.
-	_localViewProps.viewScale = s;
+	_localViewScale = s;
 	
 	if (!_isUpdatingDisplayScaleValueOnly)
 	{
@@ -170,7 +169,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (double) displayScale
 {
-	return _localViewProps.viewScale;
+	return _localViewScale;
 }
 
 - (void) setDisplayRotation:(double)angleDegrees
@@ -186,12 +185,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		newAngleDegrees = 0.0;
 	}
 	
-	OSSpinLockLock(&spinlockRotation);
-	_localRotation = newAngleDegrees;
-	OSSpinLockUnlock(&spinlockRotation);
-	
 	// Convert angle to clockwise-direction degrees (left-handed Cartesian coordinate system).
-	_localViewProps.rotation = 360.0 - newAngleDegrees;
+	_localRotation = newAngleDegrees;
+	_localViewProps.rotation = 360.0 - _localRotation;
 	
 	// Set the minimum content size for the window, since this will change based on rotation.
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
@@ -220,11 +216,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (double) displayRotation
 {
-	OSSpinLockLock(&spinlockRotation);
-	const double angleDegrees = _localRotation;
-	OSSpinLockUnlock(&spinlockRotation);
-	
-	return angleDegrees;
+	return _localRotation;
 }
 
 - (void) setDisplayMode:(NSInteger)displayModeID
@@ -463,6 +455,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 {
 	_statusBarHeight = (isShowingStatusBar) ? WINDOW_STATUS_BAR_HEIGHT : 0;
 	
+	_localViewScale = viewScale;
 	_localRotation = fmod(rotation, 360.0);
 	if (_localRotation < 0.0)
 	{
@@ -477,7 +470,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_localViewProps.mode		= mode;
 	_localViewProps.layout		= layout;
 	_localViewProps.order		= order;
-	_localViewProps.viewScale	= viewScale;
+	_localViewProps.viewScale	= _localViewScale;
 	_localViewProps.gapScale	= gapScale;
 	_localViewProps.gapDistance	= DS_DISPLAY_UNSCALED_GAP * gapScale;
 	_localViewProps.rotation	= 360.0 - _localRotation;
@@ -500,9 +493,19 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
 	[[self window] setContentMinSize:NSMakeSize(transformedMinWidth, transformedMinHeight + _statusBarHeight)];
 	
-	// Set the client size and resize the windows.
-	NSRect newWindowFrame = [self updateViewProperties];
+	// Set the client size and resize the window.
+	const NSRect newWindowFrame = [self updateViewProperties];
+	const NSSize oldBounds = [masterWindow frame].size;
 	[masterWindow setFrame:newWindowFrame display:YES animate:NO];
+	const NSSize newBounds = [masterWindow frame].size;
+	
+	// Just because the window size didn't change doesn't mean that other view properties haven't
+	// changed. Assume that view properties were changed and force them to update, whether the
+	// window size changed or not.
+	if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
+	{
+		[view commitViewProperties:_localViewProps];
+	}
 }
 
 - (void) setupUserDefaults
@@ -555,15 +558,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
 	
 	const double maxViewScaleInHostScreen = [self maxViewScaleInHostScreen:checkWidth height:checkHeight];
-	if (_localViewProps.viewScale > maxViewScaleInHostScreen)
+	if (_localViewScale > maxViewScaleInHostScreen)
 	{
-		_localViewProps.viewScale = maxViewScaleInHostScreen;
+		_localViewScale = maxViewScaleInHostScreen;
 	}
 	
 	// Get the new bounds for the window's content view based on the transformed draw bounds.
 	double transformedWidth = _localViewProps.normalWidth;
 	double transformedHeight = _localViewProps.normalHeight;
-	ClientDisplayView::ConvertNormalToTransformedBounds(_localViewProps.viewScale, _localViewProps.rotation, transformedWidth, transformedHeight);
+	ClientDisplayView::ConvertNormalToTransformedBounds(_localViewScale, _localViewProps.rotation, transformedWidth, transformedHeight);
 	
 	// Get the center of the content view in screen coordinates.
 	const NSRect windowContentRect = [[masterWindow contentView] bounds];
@@ -573,9 +576,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Resize the window.
 	const NSRect windowFrame = [masterWindow frame];
 	const NSRect newFrame = [masterWindow frameRectForContentRect:NSMakeRect(windowFrame.origin.x + translationX, windowFrame.origin.y + translationY, transformedWidth, transformedHeight + _statusBarHeight)];
-	
-	_localViewProps.clientWidth = newFrame.size.width;
-	_localViewProps.clientHeight = newFrame.size.height;
 	
 	return newFrame;
 }
@@ -1320,16 +1320,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	const NSRect frameRect = NSMakeRect(0.0f, 0.0f, frameSize.width, frameSize.height);
 	const NSRect contentRect = [sender contentRectForFrameRect:frameRect];
 	
-	// Find the maximum scalar we can use for the display view, bounded by the
-	// content Rect.
+	// Find the maximum scalar we can use for the display view, bounded by the content Rect.
 	double checkWidth = _localViewProps.normalWidth;
 	double checkHeight = _localViewProps.normalHeight;
 	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
 	const NSSize contentBounds = NSMakeSize(contentRect.size.width, contentRect.size.height - _statusBarHeight);
-	_localViewProps.viewScale = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, contentBounds.width, contentBounds.height);
+	_localViewScale = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, contentBounds.width, contentBounds.height);
 	
 	// Make a new content Rect with our max scalar, and convert it back to a frame Rect.
-	const NSRect finalContentRect = NSMakeRect(0.0f, 0.0f, checkWidth * _localViewProps.viewScale, (checkHeight * _localViewProps.viewScale) + _statusBarHeight);
+	const NSRect finalContentRect = NSMakeRect(0.0f, 0.0f, checkWidth * _localViewScale, (checkHeight * _localViewScale) + _statusBarHeight);
 	const NSRect finalFrameRect = [sender frameRectForContentRect:finalContentRect];
 	
 	// Set the final size based on our new frame Rect.
@@ -2128,8 +2127,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 #endif
 		
 		ClientDisplayViewProperties &props = [windowController localViewProperties];
+		
+		// Calculate the view scale for the given client size.
+		double checkWidth = props.normalWidth;
+		double checkHeight = props.normalHeight;
+		ClientDisplayView::ConvertNormalToTransformedBounds(1.0, props.rotation, checkWidth, checkHeight);
+		
 		props.clientWidth = newViewportRect.size.width;
 		props.clientHeight = newViewportRect.size.height;
+		props.viewScale = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, props.clientWidth, props.clientHeight);
+		
 		[self commitViewProperties:props];
 	}
 }

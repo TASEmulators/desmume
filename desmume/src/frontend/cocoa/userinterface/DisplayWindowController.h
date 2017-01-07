@@ -115,9 +115,8 @@ class OGLVideoOutput;
 	BOOL _masterStatusBarState;
 	NSRect _masterWindowFrame;
 	double _masterWindowScale;
+	double _localViewScale;
 	double _localRotation;
-	
-	OSSpinLock spinlockRotation;
 }
 
 @property (readonly) IBOutlet NSObject *dummyObject;

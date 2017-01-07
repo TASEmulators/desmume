@@ -5379,7 +5379,7 @@ void OGLFilterDeposterize::SetSrcSizeOGL(GLsizei w, GLsizei h)
 	this->_texCoordBuffer[7] = h;
 	
 	glBindBuffer(GL_ARRAY_BUFFER, this->_vboTexCoordID);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(this->_texCoordBuffer) , this->_texCoordBuffer);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(this->_texCoordBuffer), this->_texCoordBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
 	uint32_t *tempDstBuffer = (uint32_t *)calloc(this->_dstWidth * this->_dstHeight, sizeof(uint32_t));
@@ -7000,7 +7000,7 @@ void OGLDisplayLayer::_UpdateRotationScaleOGL()
 		glScalef(s, s, 1.0f);
 	}
 	
-	//this->_needUpdateRotationScale = false;
+	this->_needUpdateRotationScale = false;
 }
 
 void OGLDisplayLayer::_UpdateVerticesOGL()
@@ -7135,7 +7135,7 @@ void OGLDisplayLayer::_UpdateVerticesOGL()
 	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
-	//this->_needUpdateVertices = false;
+	this->_needUpdateVertices = false;
 }
 
 void OGLDisplayLayer::ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide)
