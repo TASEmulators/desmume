@@ -118,6 +118,7 @@ protected:
 	VideoFilterTypeID _pixelScaler;
 	OutputFilterTypeID _outputFilter;
 	
+	bool _useVerticalSync;
 	double _scaleFactor;
 	
 	double _hudObjectScale;
@@ -154,6 +155,8 @@ public:
 	
 	virtual void Init();
 	
+	bool GetUseVerticalSync() const;
+	virtual void SetUseVerticalSync(const bool useVerticalSync);
 	double GetScaleFactor() const;
 	virtual void SetScaleFactor(const double scaleFactor);
 		
@@ -209,6 +212,10 @@ public:
 	virtual void FrameRender() = 0;
 	virtual void FrameFinish() = 0;
 	
+	// Emulator interface
+	virtual void HandleGPUFrameEndEvent(const bool isMainSizeNative, const bool isTouchSizeNative) = 0;
+	virtual void HandleEmulatorFrameEndEvent(const NDSFrameInfo &frameInfo) = 0;
+	
 	// Touch screen input handling
 	void GetNDSPoint(const int inputID, const bool isInitialTouchPress,
 					 const double clientX, const double clientY,
@@ -256,9 +263,11 @@ public:
 								 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
 								 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1) = 0;
 	
-	virtual void FrameFlush() = 0;
-	virtual void FrameRenderAndFlush() = 0;
-	
+	void SetHUDVertices(float viewportWidth, float viewportHeight, float *vtxBufferPtr);
+	void SetHUDTextureCoordinates(float *texCoordBufferPtr);
+	void SetScreenVertices(float *vtxBufferPtr);
+	void SetScreenTextureCoordinates(float w0, float h0, float w1, float h1, float *texCoordBufferPtr);
+		
 	virtual void UpdateView() = 0;
 };
 

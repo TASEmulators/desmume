@@ -40,10 +40,7 @@ class OGLVideoOutput;
 	InputManager *inputManager;
 	ClientDisplay3DView *_cdv;
 	ClientDisplayViewProperties _intermediateViewProps;
-	BOOL canUseShaderBasedFilters;
-	
-	BOOL _useVerticalSync;
-	
+		
 	OSSpinLock spinlockIsHUDVisible;
 	OSSpinLock spinlockUseVerticalSync;
 	OSSpinLock spinlockVideoFiltersPreferGPU;
@@ -75,7 +72,6 @@ class OGLVideoOutput;
 
 - (void) setScaleFactor:(float)theScaleFactor;
 - (void) commitViewProperties:(const ClientDisplayViewProperties &)viewProps;
-- (void) setupViewProperties;
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
 - (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed;
 - (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType;

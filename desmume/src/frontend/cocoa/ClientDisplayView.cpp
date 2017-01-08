@@ -59,6 +59,7 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	_pixelScaler = VideoFilterTypeID_None;
 	_outputFilter = OutputFilterTypeID_Bilinear;
 	
+	_useVerticalSync = false;
 	_scaleFactor = 1.0;
 	
 	_hudObjectScale = 1.0;
@@ -149,6 +150,16 @@ void ClientDisplayView::_SetHUDShowInfoItem(bool &infoItemFlag, const bool visib
 void ClientDisplayView::Init()
 {
 	// Do nothing. This is implementation dependent.
+}
+
+bool ClientDisplayView::GetUseVerticalSync() const
+{
+	return this->_useVerticalSync;
+}
+
+void ClientDisplayView::SetUseVerticalSync(const bool useVerticalSync)
+{
+	this->_useVerticalSync = useVerticalSync;
 }
 
 double ClientDisplayView::GetScaleFactor() const
@@ -832,4 +843,248 @@ void ClientDisplay3DView::SetVideoBuffers(const uint32_t colorFormat,
 										  const void *customBuffer1, const size_t customWidth1, const size_t customHeight1)
 {
 	// Do nothing. This is implementation dependent.
+}
+
+void ClientDisplay3DView::SetHUDVertices(float viewportWidth, float viewportHeight, float *vtxBufferPtr)
+{
+	const char *cString = this->_hudString.c_str();
+	const size_t length = this->_hudString.length();
+	const float charSize = this->_glyphSize;
+	const float lineHeight = charSize * 0.8f;
+	const float textBoxTextOffset = charSize * 0.25f;
+	float charLocX = textBoxTextOffset;
+	float charLocY = -textBoxTextOffset - lineHeight;
+	float textBoxWidth = 0.0f;
+	
+	// First, calculate the vertices of the text box.
+	// The text box should always be the first character in the string.
+	vtxBufferPtr[0] = 0.0f;			vtxBufferPtr[1] = 0.0f;
+	vtxBufferPtr[2] = charLocX;		vtxBufferPtr[3] = 0.0f;
+	vtxBufferPtr[4] = charLocX;		vtxBufferPtr[5] = -textBoxTextOffset;
+	vtxBufferPtr[6] = 0.0f;			vtxBufferPtr[7] = -textBoxTextOffset;
+	
+	// Calculate the vertices of the remaining characters in the string.
+	for (size_t i = 1; i < length; i++)
+	{
+		const char c = cString[i];
+		
+		if (c == '\n')
+		{
+			if (charLocX > textBoxWidth)
+			{
+				textBoxWidth = charLocX;
+			}
+			
+			vtxBufferPtr[5] -= lineHeight;
+			vtxBufferPtr[7] -= lineHeight;
+			
+			charLocX = textBoxTextOffset;
+			charLocY -= lineHeight;
+			continue;
+		}
+		
+		const float charWidth = this->_glyphInfo[c].width * charSize / (float)this->_glyphTileSize;
+		
+		vtxBufferPtr[(i*8)+0] = charLocX;				vtxBufferPtr[(i*8)+1] = charLocY + charSize;	// Top Left
+		vtxBufferPtr[(i*8)+2] = charLocX + charWidth;	vtxBufferPtr[(i*8)+3] = charLocY + charSize;	// Top Right
+		vtxBufferPtr[(i*8)+4] = charLocX + charWidth;	vtxBufferPtr[(i*8)+5] = charLocY;				// Bottom Right
+		vtxBufferPtr[(i*8)+6] = charLocX;				vtxBufferPtr[(i*8)+7] = charLocY;				// Bottom Left
+		charLocX += (charWidth + (charSize * 0.03f) + 0.10f);
+	}
+	
+	float textBoxScale = HUD_TEXTBOX_BASE_SCALE * this->_hudObjectScale;
+	if (textBoxScale < (HUD_TEXTBOX_BASE_SCALE * HUD_TEXTBOX_MIN_SCALE))
+	{
+		textBoxScale = HUD_TEXTBOX_BASE_SCALE * HUD_TEXTBOX_MIN_SCALE;
+	}
+	
+	float boxOffset = 8.0f * HUD_TEXTBOX_BASE_SCALE * this->_hudObjectScale;
+	if (boxOffset < 1.0f)
+	{
+		boxOffset = 1.0f;
+	}
+	else if (boxOffset > 8.0f)
+	{
+		boxOffset = 8.0f;
+	}
+	
+	boxOffset *= this->_scaleFactor;
+	
+	// Set the width of the text box
+	vtxBufferPtr[2] += textBoxWidth;
+	vtxBufferPtr[4] += textBoxWidth;
+	
+	// Scale and translate the box
+	for (size_t i = 0; i < (length * 8); i+=2)
+	{
+		// Scale
+		vtxBufferPtr[i+0] *= textBoxScale;
+		vtxBufferPtr[i+1] *= textBoxScale;
+		
+		// Translate
+		vtxBufferPtr[i+0] += boxOffset - (viewportWidth / 2.0f);
+		vtxBufferPtr[i+1] += (viewportHeight / 2.0f) - boxOffset;
+	}
+}
+
+void ClientDisplay3DView::SetHUDTextureCoordinates(float *texCoordBufferPtr)
+{
+	const char *cString = this->_hudString.c_str();
+	const size_t length = this->_hudString.length();
+	
+	for (size_t i = 0; i < length; i++)
+	{
+		const char c = cString[i];
+		const float *glyphTexCoord = this->_glyphInfo[c].texCoord;
+		float *hudTexCoord = &texCoordBufferPtr[i * 8];
+		
+		hudTexCoord[0] = glyphTexCoord[0];
+		hudTexCoord[1] = glyphTexCoord[1];
+		hudTexCoord[2] = glyphTexCoord[2];
+		hudTexCoord[3] = glyphTexCoord[3];
+		hudTexCoord[4] = glyphTexCoord[4];
+		hudTexCoord[5] = glyphTexCoord[5];
+		hudTexCoord[6] = glyphTexCoord[6];
+		hudTexCoord[7] = glyphTexCoord[7];
+	}
+}
+
+void ClientDisplay3DView::SetScreenVertices(float *vtxBufferPtr)
+{
+	const float w = this->_renderProperty.normalWidth / 2.0f;
+	const float h = this->_renderProperty.normalHeight / 2.0f;
+	const size_t f = (this->_renderProperty.order == ClientDisplayOrder_MainFirst) ? 0 : 8;
+	
+	if (this->_renderProperty.mode == ClientDisplayMode_Dual)
+	{
+		switch (this->_renderProperty.layout)
+		{
+			case ClientDisplayLayout_Horizontal:
+			{
+				vtxBufferPtr[0+f]	= -w;									vtxBufferPtr[1+f]	=  h;						// Left display, top left
+				vtxBufferPtr[2+f]	=  0.0f;								vtxBufferPtr[3+f]	=  h;						// Left display, top right
+				vtxBufferPtr[4+f]	= -w;									vtxBufferPtr[5+f]	= -h;						// Left display, bottom left
+				vtxBufferPtr[6+f]	=  0.0f;								vtxBufferPtr[7+f]	= -h;						// Left display, bottom right
+				
+				vtxBufferPtr[8-f]	=  0.0f;								vtxBufferPtr[9-f]	=  h;						// Right display, top left
+				vtxBufferPtr[10-f]	=  w;									vtxBufferPtr[11-f]	=  h;						// Right display, top right
+				vtxBufferPtr[12-f]	=  0.0f;								vtxBufferPtr[13-f]	= -h;						// Right display, bottom left
+				vtxBufferPtr[14-f]	=  w;									vtxBufferPtr[15-f]	= -h;						// Right display, bottom right
+				
+				memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));							// Unused displays
+				break;
+			}
+				
+			case ClientDisplayLayout_Hybrid_2_1:
+			{
+				vtxBufferPtr[0]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[1]		= -h + (96.0f * 2.0f);		// Minor top display, top left
+				vtxBufferPtr[2]		=  w;											vtxBufferPtr[3]		= -h + (96.0f * 2.0f);		// Minor top display, top right
+				vtxBufferPtr[4]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[5]		= -h + 96.0f;				// Minor top display, bottom left
+				vtxBufferPtr[6]		=  w;											vtxBufferPtr[7]		= -h + 96.0f;				// Minor top display, bottom right
+				
+				vtxBufferPtr[8]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[9]		= -h + 96.0f;				// Minor bottom display, top left
+				vtxBufferPtr[10]	=  w;											vtxBufferPtr[11]	= -h + 96.0f;				// Minor bottom display, top right
+				vtxBufferPtr[12]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
+				vtxBufferPtr[14]	=  w;											vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
+				
+				vtxBufferPtr[16]	= -w;											vtxBufferPtr[17]	=  h;						// Major display, top left
+				vtxBufferPtr[18]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
+				vtxBufferPtr[20]	= -w;											vtxBufferPtr[21]	= -h;						// Major display, bottom left
+				vtxBufferPtr[22]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
+				
+				memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (2 * 8), sizeof(float) * (1 * 8));									// Major display (bottom screen)
+				break;
+			}
+				
+			case ClientDisplayLayout_Hybrid_16_9:
+			{
+				const float g = (float)this->_renderProperty.gapDistance * (this->_renderProperty.normalWidth - (float)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				
+				vtxBufferPtr[0]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[1]		= -h + g + (64.0f * 2.0f);	// Minor top display, top left
+				vtxBufferPtr[2]		=  w;											vtxBufferPtr[3]		= -h + g + (64.0f * 2.0f);	// Minor top display, top right
+				vtxBufferPtr[4]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[5]		= -h + g + 64.0f;			// Minor top display, bottom left
+				vtxBufferPtr[6]		=  w;											vtxBufferPtr[7]		= -h + g + 64.0f;			// Minor top display, bottom right
+				
+				vtxBufferPtr[8]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[9]		= -h + 64.0f;				// Minor bottom display, top left
+				vtxBufferPtr[10]	=  w;											vtxBufferPtr[11]	= -h + 64.0f;				// Minor bottom display, top right
+				vtxBufferPtr[12]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
+				vtxBufferPtr[14]	=  w;											vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
+				
+				vtxBufferPtr[16]	= -w;											vtxBufferPtr[17]	=  h;						// Major display, top left
+				vtxBufferPtr[18]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
+				vtxBufferPtr[20]	= -w;											vtxBufferPtr[21]	= -h;						// Major display, bottom left
+				vtxBufferPtr[22]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
+				
+				memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (2 * 8), sizeof(float) * (1 * 8));									// Major display (bottom screen)
+				break;
+			}
+				
+			case ClientDisplayLayout_Hybrid_16_10:
+			{
+				const float g = (float)this->_renderProperty.gapDistance * (this->_renderProperty.normalWidth - (float)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				
+				vtxBufferPtr[0]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[1]		= -h + g + (38.4f * 2.0f);	// Minor top display, top left
+				vtxBufferPtr[2]		=  w;											vtxBufferPtr[3]		= -h + g + (38.4f * 2.0f);	// Minor top display, top right
+				vtxBufferPtr[4]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[5]		= -h + g + 38.4f;			// Minor top display, bottom left
+				vtxBufferPtr[6]		=  w;											vtxBufferPtr[7]		= -h + g + 38.4f;			// Minor top display, bottom right
+				
+				vtxBufferPtr[8]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[9]		= -h + 38.4f;				// Minor bottom display, top left
+				vtxBufferPtr[10]	=  w;											vtxBufferPtr[11]	= -h + 38.4f;				// Minor bottom display, top right
+				vtxBufferPtr[12]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[13]	= -h;						// Minor bottom display, bottom left
+				vtxBufferPtr[14]	=  w;											vtxBufferPtr[15]	= -h;						// Minor bottom display, bottom right
+				
+				vtxBufferPtr[16]	= -w;											vtxBufferPtr[17]	=  h;						// Major display, top left
+				vtxBufferPtr[18]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[19]	=  h;						// Major display, top right
+				vtxBufferPtr[20]	= -w;											vtxBufferPtr[21]	= -h;						// Major display, bottom left
+				vtxBufferPtr[22]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;		vtxBufferPtr[23]	= -h;						// Major display, bottom right
+				
+				memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (2 * 8), sizeof(float) * (1 * 8));									// Major display (bottom screen)
+				break;
+			}
+				
+			default: // Default to vertical orientation.
+			{
+				const float g = (float)this->_renderProperty.gapDistance;
+				
+				vtxBufferPtr[0+f]	= -w;									vtxBufferPtr[1+f]	=  h;						// Top display, top left
+				vtxBufferPtr[2+f]	=  w;									vtxBufferPtr[3+f]	=  h;						// Top display, top right
+				vtxBufferPtr[4+f]	= -w;									vtxBufferPtr[5+f]	=  g/2.0f;					// Top display, bottom left
+				vtxBufferPtr[6+f]	=  w;									vtxBufferPtr[7+f]	=  g/2.0f;					// Top display, bottom right
+				
+				vtxBufferPtr[8-f]	= -w;									vtxBufferPtr[9-f]	= -g/2.0f;					// Bottom display, top left
+				vtxBufferPtr[10-f]	=  w;									vtxBufferPtr[11-f]	= -g/2.0f;					// Bottom display, top right
+				vtxBufferPtr[12-f]	= -w;									vtxBufferPtr[13-f]	= -h;						// Bottom display, bottom left
+				vtxBufferPtr[14-f]	=  w;									vtxBufferPtr[15-f]	= -h;						// Bottom display, bottom right
+				
+				memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));							// Unused displays
+				break;
+			}
+		}
+	}
+	else // displayModeID == ClientDisplayMode_Main || displayModeID == ClientDisplayMode_Touch
+	{
+		vtxBufferPtr[0]	= -w;										vtxBufferPtr[1]	=  h;							// First display, top left
+		vtxBufferPtr[2]	=  w;										vtxBufferPtr[3]	=  h;							// First display, top right
+		vtxBufferPtr[4]	= -w;										vtxBufferPtr[5]	= -h;							// First display, bottom left
+		vtxBufferPtr[6]	=  w;										vtxBufferPtr[7]	= -h;							// First display, bottom right
+		
+		memcpy(vtxBufferPtr + (1 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (1 * 8));							// Second display
+		memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (1 * 8));							// Unused display
+		memcpy(vtxBufferPtr + (3 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (1 * 8));							// Unused display
+	}
+}
+
+void ClientDisplay3DView::SetScreenTextureCoordinates(float w0, float h0, float w1, float h1, float *texCoordBufferPtr)
+{
+	texCoordBufferPtr[0]  = 0.0f;			texCoordBufferPtr[1]  = 0.0f;
+	texCoordBufferPtr[2]  =   w0;			texCoordBufferPtr[3]  = 0.0f;
+	texCoordBufferPtr[4]  = 0.0f;			texCoordBufferPtr[5]  =   h0;
+	texCoordBufferPtr[6]  =   w0;			texCoordBufferPtr[7]  =   h0;
+	
+	texCoordBufferPtr[8]  = 0.0f;			texCoordBufferPtr[9]  = 0.0f;
+	texCoordBufferPtr[10] =   w1;			texCoordBufferPtr[11] = 0.0f;
+	texCoordBufferPtr[12] = 0.0f;			texCoordBufferPtr[13] =   h1;
+	texCoordBufferPtr[14] =   w1;			texCoordBufferPtr[15] =   h1;
+	
+	memcpy(texCoordBufferPtr + (2 * 8), texCoordBufferPtr + (0 * 8), sizeof(float) * (2 * 8));
 }

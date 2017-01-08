@@ -1576,7 +1576,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 @implementation DisplayView
 
 @synthesize inputManager;
-@synthesize canUseShaderBasedFilters;
+@dynamic canUseShaderBasedFilters;
 @dynamic isHUDVisible;
 @dynamic isHUDVideoFPSVisible;
 @dynamic isHUDRender3DFPSVisible;
@@ -1651,11 +1651,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
 	_cdv->SetHUDFontUsingPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
 	
-	canUseShaderBasedFilters = (_cdv->CanFilterOnGPU()) ? YES : NO;
-	
 	CGLSetCurrentContext(prevContext);
-	
-	_useVerticalSync = NO;
 	
 	spinlockIsHUDVisible = OS_SPINLOCK_INIT;
 	spinlockUseVerticalSync = OS_SPINLOCK_INIT;
@@ -1685,16 +1681,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 #pragma mark Dynamic Property Methods
 
+- (BOOL) canUseShaderBasedFilters
+{
+	return (_cdv->CanFilterOnGPU()) ? YES : NO;
+}
+
 - (void) setIsHUDVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
 	_cdv->SetHUDVisibility((theState) ? true : false);
-	_cdv->FrameRenderAndFlush();
-	CGLUnlockContext(cglDisplayContext);
-	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 }
 
@@ -1710,13 +1705,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setIsHUDVideoFPSVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
 	_cdv->SetHUDShowVideoFPS((theState) ? true : false);
-	_cdv->FrameRenderAndFlush();
-	CGLUnlockContext(cglDisplayContext);
-	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 }
 
@@ -1732,13 +1721,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setIsHUDRender3DFPSVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
 	_cdv->SetHUDShowRender3DFPS((theState) ? true : false);
-	_cdv->FrameRenderAndFlush();
-	CGLUnlockContext(cglDisplayContext);
-	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 }
 
@@ -1754,13 +1737,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setIsHUDFrameIndexVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
 	_cdv->SetHUDShowFrameIndex((theState) ? true : false);
-	_cdv->FrameRenderAndFlush();
-	CGLUnlockContext(cglDisplayContext);
-	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 }
 
@@ -1776,13 +1753,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setIsHUDLagFrameCountVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
 	_cdv->SetHUDShowLagFrameCount((theState) ? true : false);
-	_cdv->FrameRenderAndFlush();
-	CGLUnlockContext(cglDisplayContext);
-	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 }
 
@@ -1798,13 +1769,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setIsHUDCPULoadAverageVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
 	_cdv->SetHUDShowCPULoadAverage((theState) ? true : false);
-	_cdv->FrameRenderAndFlush();
-	CGLUnlockContext(cglDisplayContext);
-	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 }
 
@@ -1820,13 +1785,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setIsHUDRealTimeClockVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
 	_cdv->SetHUDShowRTC((theState) ? true : false);
-	_cdv->FrameRenderAndFlush();
-	CGLUnlockContext(cglDisplayContext);
-	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 }
 
@@ -1842,21 +1801,14 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setUseVerticalSync:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockUseVerticalSync);
-	_useVerticalSync = theState;
+	_cdv->SetUseVerticalSync((theState) ? true : false);
 	OSSpinLockUnlock(&spinlockUseVerticalSync);
-	
-	const GLint swapInt = (theState) ? 1 : 0;
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	CGLSetParameter(cglDisplayContext, kCGLCPSwapInterval, &swapInt);
-	CGLUnlockContext(cglDisplayContext);
 }
 
 - (BOOL) useVerticalSync
 {
 	OSSpinLockLock(&spinlockUseVerticalSync);
-	const BOOL theState = _useVerticalSync;
+	const BOOL theState = (_cdv->GetUseVerticalSync()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockUseVerticalSync);
 	
 	return theState;
@@ -1865,12 +1817,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setVideoFiltersPreferGPU:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockVideoFiltersPreferGPU);
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
 	_cdv->SetFiltersPreferGPU((theState) ? true : false);
-	CGLUnlockContext(cglDisplayContext);
-	
 	OSSpinLockUnlock(&spinlockVideoFiltersPreferGPU);
 }
 
@@ -1902,12 +1849,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setOutputFilter:(NSInteger)filterID
 {
 	OSSpinLockLock(&spinlockOutputFilter);
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
 	_cdv->SetOutputFilter((OutputFilterTypeID)filterID);
-	CGLUnlockContext(cglDisplayContext);
-	
 	OSSpinLockUnlock(&spinlockOutputFilter);
 }
 
@@ -1923,12 +1865,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setPixelScaler:(NSInteger)filterID
 {
 	OSSpinLockLock(&spinlockPixelScaler);
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
 	_cdv->SetPixelScaler((VideoFilterTypeID)filterID);
-	CGLUnlockContext(cglDisplayContext);
-	
 	OSSpinLockUnlock(&spinlockPixelScaler);
 }
 
@@ -1946,12 +1883,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setScaleFactor:(float)theScaleFactor
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
 	_cdv->SetScaleFactor(theScaleFactor);
-	CGLUnlockContext(cglDisplayContext);
-	
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 }
 
@@ -1963,19 +1895,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 	[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_CHANGE_VIEW_PROPERTIES];
-}
-
-- (void) setupViewProperties
-{
-	OSSpinLockLock(&spinlockViewProperties);
-	_cdv->CommitViewProperties(_intermediateViewProps);
-	OSSpinLockUnlock(&spinlockViewProperties);
-	
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	_cdv->SetupViewProperties();
-	_cdv->FrameRenderAndFlush();
-	CGLUnlockContext(cglDisplayContext);
 }
 
 #pragma mark InputHIDManagerTarget Protocol
@@ -2254,11 +2173,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)doLoadVideoFrameWithMainSizeNative:(bool)isMainSizeNative touchSizeNative:(bool)isTouchSizeNative
 {
-	CGLLockContext(cglDisplayContext);
-	CGLSetCurrentContext(cglDisplayContext);
-	_cdv->FrameLoadGPU(isMainSizeNative, isTouchSizeNative);
-	_cdv->FrameProcessGPU();
-	CGLUnlockContext(cglDisplayContext);
+	_cdv->HandleGPUFrameEndEvent(isMainSizeNative, isTouchSizeNative);
 }
 
 - (void) doSetVideoBuffersUsingFormat:(const uint32_t)colorFormat
@@ -2287,12 +2202,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)doProcessVideoFrameWithInfo:(const NDSFrameInfo &)frameInfo
 {
-	_cdv->SetHUDInfo(frameInfo);
+	_cdv->HandleEmulatorFrameEndEvent(frameInfo);
 }
 
 - (void)doViewPropertiesChanged
-{
-	[self setupViewProperties];
+{	
+	OSSpinLockLock(&spinlockViewProperties);
+	_cdv->CommitViewProperties(_intermediateViewProps);
+	OSSpinLockUnlock(&spinlockViewProperties);
+	
+	_cdv->SetupViewProperties();
 }
 
 - (void)doRedraw
