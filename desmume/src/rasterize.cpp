@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -25,6 +25,15 @@
 //this causes us to have to flip the verts for every front-facing poly.
 //a performance improvement would be to change the winding order logic
 //so that this is done less frequently
+
+//Shadow test cases
+// * SM64 -- Standing near signs and blocks. Note: shadows-behind-trees looks bad in that game.
+// * MKDS -- Shadows under cart in kart selector (the shadows in mario kart are complicated concave shapes)
+// * MKDS -- no junk beneath platform in kart selector / no shadow beneath grate floor in bowser stage
+// * MKDS -- 150cc mirror cup turns all the models inside out
+// * The Wizard of Oz: Beyond the Yellow Brick Road -- shadows under Dorothy and Toto
+// * Kingdom Hearts Re:coded -- shadow under Sora
+// * Golden Sun: Dark Dawn -- shadow under the main character
 
 #include "rasterize.h"
 
@@ -503,6 +512,7 @@ public:
 		const u32 newDepth = (gfx3d.renderState.wbuffer) ? u32floor(4096*w) : (u32floor(z*0x7FFF) << 9);
 		
 		// run the depth test
+		bool depthFail = false;
 		if (polyAttr.enableDepthEqualTest)
 		{
 			const u32 minDepth = max<u32>(0x00000000, dstAttributeDepth - SOFTRASTERIZER_DEPTH_EQUAL_TEST_TOLERANCE);
@@ -510,15 +520,23 @@ public:
 			
 			if (newDepth < minDepth || newDepth > maxDepth)
 			{
-				goto depth_fail;
+				depthFail = true;
 			}
 		}
 		else
 		{
 			if (newDepth >= dstAttributeDepth)
 			{
-				goto depth_fail;
+				depthFail = true;
 			}
+		}
+
+		if(depthFail)
+		{
+			//shadow mask polygons set stencil bit here
+			if (ISSHADOWPOLYGON && polyAttr.polygonID == 0)
+				dstAttributeStencil=1;
+			return;
 		}
 		
 		//handle shadow polys
@@ -526,25 +544,30 @@ public:
 		{
 			if (polyAttr.polygonID == 0)
 			{
-				goto rejected_fragment;
+				//shadow mask polygons only affect the stencil buffer, and then only when they fail depth test
+				//if we made it here, the shadow mask polygon fragment needs to be trashed
+				return;
 			}
 			else
 			{
+				//shadow color polygon conditions
 				if (dstAttributeStencil == 0)
 				{
-					goto rejected_fragment;
+					//draw only where stencil bit is set
+					return;
 				}	
-
-				//shadow polys have a special check here to keep from self-shadowing when user
-				//has tried to prevent it from happening
-				//if this isnt here, then the vehicle select in mariokart will look terrible
 				if (dstAttributeOpaquePolyID == polyAttr.polygonID)
 				{
-					goto rejected_fragment;
+					//draw only when polygon ID differs
+					//TODO: are we using the right dst polyID?
+					return;
 				}
+
+				//once drawn, stencil bit is always cleared
+				dstAttributeStencil = 0;
 			}
 		}
-		
+
 		//perspective-correct the colors
 		r = (r * w) + 0.5f;
 		g = (g * w) + 0.5f;
@@ -565,7 +588,7 @@ public:
 		if ( shaderOutput.a == 0 ||
 			(this->_softRender->currentRenderState->enableAlphaTest && shaderOutput.a < this->_softRender->currentRenderState->alphaTestRef) )
 		{
-			goto rejected_fragment;
+			return;
 		}
 		
 		// write pixel values to the framebuffer
@@ -581,7 +604,7 @@ public:
 		{
 			//dont overwrite pixels on translucent polys with the same polyids
 			if (dstAttributeTranslucentPolyID == polyAttr.polygonID)
-				goto rejected_fragment;
+				return;
 			
 			//originally we were using a test case of shadows-behind-trees in sm64ds
 			//but, it looks bad in that game. this is actually correct
@@ -597,24 +620,6 @@ public:
 		//depth writing
 		if (isOpaquePixel || polyAttr.enableAlphaDepthWrite)
 			dstAttributeDepth = newDepth;
-
-		//shadow cases: (need multi-bit stencil buffer to cope with all of these, especially the mariokart complex shadows)
-		//1. sm64 (standing near signs and blocks)
-		//2. mariokart (no glitches in shadow shape in kart selector)
-		//3. mariokart (no junk beneath platform in kart selector / no shadow beneath grate floor in bowser stage)
-		//(specifically, the shadows in mario kart are complicated concave shapes)
-
-		goto done;
-		depth_fail:
-		if (ISSHADOWPOLYGON && polyAttr.polygonID == 0)
-			dstAttributeStencil++;
-		
-		rejected_fragment:
-		done:
-		;
-
-		if (ISSHADOWPOLYGON && polyAttr.polygonID != 0 && dstAttributeStencil)
-			dstAttributeStencil--;
 	}
 
 	//draws a single scanline
@@ -1565,37 +1570,6 @@ void SoftRasterizerRenderer::GetAndLoadAllTextures()
 
 bool PolygonIsVisible(const PolygonAttributes &polyAttr, const bool backfacing)
 {
-	// Force backface culling when drawing shadow polygons.
-	if (polyAttr.polygonMode == POLYGON_MODE_SHADOW && polyAttr.polygonID != 0) return !backfacing;
-	
-	// 2009/08/02 initial comments:
-	//this was added after adding multi-bit stencil buffer
-	//it seems that we also need to prevent drawing back faces of shadow polys for rendering
-	//
-	//another reasonable possibility is that we should be forcing back faces to draw (mariokart doesnt use them)
-	//and then only using a single bit buffer (but a cursory test of this doesnt actually work)
-	//
-	//this code needs to be here for shadows in wizard of oz to work.
-	
-	// 2016/12/30 update:
-	// According to GBATEK, there really shouldn't be any special case for forcing backface culling on shadow
-	// polygons. All polygons, regardless of what they are, should always respect the culling mode. This is
-	// necessary for Mario Kart DS, where shadow polygons will fail to render under the Karts during Kart select
-	// if backface culling is forced (only fails for 150cc MIRROR, but works on the normal 150cc). Apparently,
-	// Mario Kart does use the backfaces of shadow polygons, but only for 150cc MIRROR and not the normal 150cc!
-	//
-	// However, there are a number of test cases where forcing backface culling is beneficial for the proper
-	// rendering of shadows, including:
-	// 1. The Wizard of Oz: Beyond the Yellow Brick Road -- shadows under Dorothy and Toto
-	// 2. Kingdom Hearts Re:coded -- shadow under Sora
-	// 3. Golden Sun: Dark Dawn -- shadow under the main character
-	//
-	// Based on these tests, we will need to rework shadow polygon handling at some point to pass all of these
-	// conditions. To note, the OpenGL renderer does render shadow polygons properly, without forced backface
-	// culling, for every one of these test cases.
-	//
-	// TODO: Rework shadow polygon handling in SoftRasterizer.
-	
 	switch (polyAttr.surfaceCullingMode)
 	{
 		case 0: return false;
