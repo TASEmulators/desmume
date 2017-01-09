@@ -137,6 +137,9 @@
 		AB3ACC4014C24D5400D7D192 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3A14C24D5400D7D192 /* COPYING */; };
 		AB3ACC4114C24D5400D7D192 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3B14C24D5400D7D192 /* README */; };
 		AB3ACC4314C24D5400D7D192 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3D14C24D5400D7D192 /* README.MAC */; };
+		AB3BF4021E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */; };
+		AB3BF4031E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */; };
+		AB3BF4041E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */; };
 		AB3E34C9134AF4500056477A /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
 		AB40562A169F5DBB0016AC3E /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
 		AB40562B169F5DBB0016AC3E /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
@@ -1347,6 +1350,8 @@
 		AB3ACC3A14C24D5400D7D192 /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING; path = ../../../COPYING; sourceTree = SOURCE_ROOT; };
 		AB3ACC3B14C24D5400D7D192 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README; path = ../../../README; sourceTree = SOURCE_ROOT; };
 		AB3ACC3D14C24D5400D7D192 /* README.MAC */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.MAC; path = ../../../README.MAC; sourceTree = SOURCE_ROOT; };
+		AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MacOGLDisplayView.mm; sourceTree = "<group>"; };
+		AB3BF4051E22FEA8003E2B24 /* MacOGLDisplayView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MacOGLDisplayView.h; sourceTree = "<group>"; };
 		AB3E34C7134AF4500056477A /* cocoa_output.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_output.h; sourceTree = "<group>"; };
 		AB3E34C8134AF4500056477A /* cocoa_output.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_output.mm; sourceTree = "<group>"; };
 		AB4055ED169F59380016AC3E /* AsmJit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AsmJit.h; sourceTree = "<group>"; };
@@ -2370,6 +2375,7 @@
 				AB29B32F16D4BEBF000EF671 /* InputManager.h */,
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB01005C170D07AF00D70FBE /* InputProfileController.h */,
+				AB3BF4051E22FEA8003E2B24 /* MacOGLDisplayView.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
 				ABAF0A3F1A96E67200B95B75 /* RomInfoPanel.h */,
 				AB564902186E6EBC002740F4 /* Slot2WindowDelegate.h */,
@@ -2382,6 +2388,7 @@
 				AB29B33016D4BEBF000EF671 /* InputManager.mm */,
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB01005D170D07B000D70FBE /* InputProfileController.mm */,
+				AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
 				ABAF0A401A96E67200B95B75 /* RomInfoPanel.mm */,
 				AB564903186E6EBC002740F4 /* Slot2WindowDelegate.mm */,
@@ -3839,6 +3846,7 @@
 				ABA6574B14511EC90077E5E9 /* cocoa_cheat.mm in Sources */,
 				ABD1041D1346652500AF11D1 /* cocoa_core.mm in Sources */,
 				AB58F32D1364F44B0074C376 /* cocoa_file.mm in Sources */,
+				AB3BF4041E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */,
 				ABE7F53E13EE1C7900FD3A71 /* cocoa_firmware.mm in Sources */,
 				ABD1041C1346652500AF11D1 /* cocoa_input.mm in Sources */,
 				AB3E34C9134AF4500056477A /* cocoa_output.mm in Sources */,
@@ -3983,6 +3991,7 @@
 				AB796D0F15CDCBA200C59155 /* GPU.cpp in Sources */,
 				ABADF11B1DEA4CF700A142B1 /* features_cpu.c in Sources */,
 				AB9038AF17C5ED2200F410BD /* slot1_retail_auto.cpp in Sources */,
+				AB3BF4021E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */,
 				AB796D1115CDCBA200C59155 /* guid.cpp in Sources */,
 				ABFEA8191BB4EC1000B08C25 /* ftfntfmt.c in Sources */,
 				AB796D1215CDCBA200C59155 /* header.cpp in Sources */,
@@ -4183,6 +4192,7 @@
 				ABA7316D1BB51FDC00B26147 /* psaux.c in Sources */,
 				AB8F3C7E1A53AC2600A80BF6 /* cpu_detect_x86_gcc.cpp in Sources */,
 				AB8F3C7F1A53AC2600A80BF6 /* crc.cpp in Sources */,
+				AB3BF4031E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */,
 				AB8F3C801A53AC2600A80BF6 /* datetime.cpp in Sources */,
 				AB8F3C811A53AC2600A80BF6 /* debug.cpp in Sources */,
 				AB8F3C821A53AC2600A80BF6 /* decrypt.cpp in Sources */,

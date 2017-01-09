@@ -35,27 +35,18 @@ class OGLVideoOutput;
 { }
 @end
 
-@interface DisplayView : NSView <CocoaDSDisplayVideoDelegate, InputHIDManagerTarget>
+@interface DisplayView : NSView <InputHIDManagerTarget>
 {
 	InputManager *inputManager;
+	CocoaDSDisplayVideo *cdsVideoOutput;
 	ClientDisplay3DView *_cdv;
-	ClientDisplayViewProperties _intermediateViewProps;
-		
-	OSSpinLock spinlockIsHUDVisible;
-	OSSpinLock spinlockUseVerticalSync;
-	OSSpinLock spinlockVideoFiltersPreferGPU;
-	OSSpinLock spinlockOutputFilter;
-	OSSpinLock spinlockSourceDeposterize;
-	OSSpinLock spinlockPixelScaler;
 	
-	OSSpinLock spinlockViewProperties;
-	
-	// OpenGL context
-	NSOpenGLContext *context;
-	CGLContextObj cglDisplayContext;
+	NSOpenGLContext *localContext;
 }
 
 @property (retain) InputManager *inputManager;
+@property (retain) CocoaDSDisplayVideo *cdsVideoOutput;
+@property (readonly, nonatomic) ClientDisplay3DView *clientDisplay3DView;
 @property (readonly) BOOL canUseShaderBasedFilters;
 @property (assign) BOOL isHUDVisible;
 @property (assign) BOOL isHUDVideoFPSVisible;
@@ -70,8 +61,6 @@ class OGLVideoOutput;
 @property (assign) NSInteger outputFilter;
 @property (assign) NSInteger pixelScaler;
 
-- (void) setScaleFactor:(float)theScaleFactor;
-- (void) commitViewProperties:(const ClientDisplayViewProperties &)viewProps;
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
 - (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed;
 - (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType;
@@ -127,7 +116,7 @@ class OGLVideoOutput;
 @property (readonly) IBOutlet NSButton *microphoneMuteButton;
 
 @property (retain) EmuControllerDelegate *emuControl;
-@property (assign) CocoaDSDisplayVideo *cdsVideoOutput;
+@property (retain) CocoaDSDisplayVideo *cdsVideoOutput;
 @property (assign) NSScreen *assignedScreen;
 @property (retain) NSWindow *masterWindow;
 

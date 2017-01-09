@@ -95,45 +95,11 @@ struct NDSFrameInfo;
 
 @class CocoaVideoFilter;
 
-@protocol CocoaDSDisplayDelegate <NSObject>
-
-@required
-- (void) doFinishFrame;
-- (void) doViewPropertiesChanged;
-
-@end
-
-@protocol CocoaDSDisplayVideoDelegate <CocoaDSDisplayDelegate>
-
-@required
-- (void) doInitVideoOutput:(NSDictionary *)properties;
-
-- (void) doSetVideoBuffersUsingFormat:(const uint32_t)colorFormat
-						   bufferHead:(const void *)videoBufferHead
-						nativeBuffer0:(const void *)nativeBuffer0
-						nativeBuffer1:(const void *)nativeBuffer1
-						customBuffer0:(const void *)customBuffer0
-						 customWidth0:(const size_t)customWidth0
-						customHeight0:(const size_t)customHeight0
-						customBuffer1:(const void *)customBuffer1
-						 customWidth1:(const size_t)customWidth1
-						customHeight1:(const size_t)customHeight1;
-
-- (void) doLoadVideoFrameWithMainSizeNative:(bool)isMainSizeNative touchSizeNative:(bool)isTouchSizeNative;
-
-- (void) doProcessVideoFrameWithInfo:(const NDSFrameInfo &)frameInfo;
-
-@optional
-- (void) doRedraw;
-
-@end
-
-
 @interface CocoaDSDisplay : CocoaDSOutput
 {
-	id <CocoaDSDisplayDelegate> delegate;
+	ClientDisplay3DView *_cdv;
+	ClientDisplayViewProperties _intermediateViewProps;
 	NSSize displaySize;
-	ClientDisplayMode displayMode;
 	
 	uint32_t _receivedFrameIndex;
 	uint32_t _currentReceivedFrameIndex;
@@ -142,17 +108,19 @@ struct NDSFrameInfo;
 	uint32_t _cpuLoadAvgARM9;
 	uint32_t _cpuLoadAvgARM7;
 	
-	OSSpinLock spinlockDisplayType;
 	OSSpinLock spinlockReceivedFrameIndex;
 	OSSpinLock spinlockCPULoadAverage;
+	OSSpinLock spinlockViewProperties;
 }
 
-@property (retain) id <CocoaDSDisplayDelegate> delegate;
+@property (assign, nonatomic) ClientDisplay3DView *clientDisplayView;
 @property (readonly) NSSize displaySize;
-@property (assign) ClientDisplayMode displayMode;
+
+- (void) commitViewProperties:(const ClientDisplayViewProperties &)viewProps;
 
 - (void) doReceiveGPUFrame;
 - (void) handleReceiveGPUFrame;
+- (void) handleChangeViewProperties;
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData;
 - (void) handleCopyToPasteboard;
 
@@ -169,7 +137,28 @@ struct NDSFrameInfo;
 	void *_videoBuffer;
 	void *_nativeBuffer[2];
 	void *_customBuffer[2];
+	
+	OSSpinLock spinlockIsHUDVisible;
+	OSSpinLock spinlockUseVerticalSync;
+	OSSpinLock spinlockVideoFiltersPreferGPU;
+	OSSpinLock spinlockOutputFilter;
+	OSSpinLock spinlockSourceDeposterize;
+	OSSpinLock spinlockPixelScaler;
 }
+
+@property (readonly) BOOL canFilterOnGPU;
+@property (assign) BOOL isHUDVisible;
+@property (assign) BOOL isHUDVideoFPSVisible;
+@property (assign) BOOL isHUDRender3DFPSVisible;
+@property (assign) BOOL isHUDFrameIndexVisible;
+@property (assign) BOOL isHUDLagFrameCountVisible;
+@property (assign) BOOL isHUDCPULoadAverageVisible;
+@property (assign) BOOL isHUDRealTimeClockVisible;
+@property (assign) BOOL useVerticalSync;
+@property (assign) BOOL videoFiltersPreferGPU;
+@property (assign) BOOL sourceDeposterize;
+@property (assign) NSInteger outputFilter;
+@property (assign) NSInteger pixelScaler;
 
 - (void) handleReceiveGPUFrame;
 - (void) handleRedrawView;
@@ -177,5 +166,6 @@ struct NDSFrameInfo;
 - (void) handleReprocessAndRedraw;
 
 - (void) resetVideoBuffers;
+- (void) setScaleFactor:(float)theScaleFactor;
 
 @end

@@ -45,8 +45,13 @@ ClientDisplayView::ClientDisplayView(const ClientDisplayViewProperties &props)
 ClientDisplayView::~ClientDisplayView()
 {
 	delete _initialTouchInMajorDisplay;
+	_initialTouchInMajorDisplay = NULL;
 	
-	FT_Done_FreeType(this->_ftLibrary);
+	if (this->_ftLibrary != NULL)
+	{
+		FT_Done_FreeType(this->_ftLibrary);
+		this->_ftLibrary = NULL;
+	}
 }
 
 void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
@@ -318,6 +323,11 @@ void ClientDisplayView::SetPixelScaler(const VideoFilterTypeID filterID)
 // HUD appearance
 void ClientDisplayView::SetHUDFontUsingPath(const char *filePath)
 {
+	if (filePath == NULL)
+	{
+		return;
+	}
+	
 	FT_Face fontFace;
 	FT_Error error = FT_Err_Ok;
 	

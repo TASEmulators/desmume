@@ -26,11 +26,7 @@
 #import "cocoa_videofilter.h"
 #import "cocoa_util.h"
 
-#ifdef MAC_OS_X_VERSION_10_7
-#include "OGLDisplayOutput_3_2.h"
-#else
-#include "OGLDisplayOutput.h"
-#endif
+#include "MacOGLDisplayView.h"
 
 #include <Carbon/Carbon.h>
 
@@ -140,6 +136,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[self setEmuControl:nil];
 	[self setAssignedScreen:nil];
 	[self setMasterWindow:nil];
+	[self setCdsVideoOutput:nil];
 	
 	[super dealloc];
 }
@@ -194,7 +191,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	if ([self isFullScreen])
 	{
-		[view commitViewProperties:_localViewProps];
+		[[self cdsVideoOutput] commitViewProperties:_localViewProps];
 	}
 	else
 	{
@@ -209,7 +206,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		// display view to update itself.
 		if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
 		{
-			[view commitViewProperties:_localViewProps];
+			[[self cdsVideoOutput] commitViewProperties:_localViewProps];
 		}
 	}
 }
@@ -234,7 +231,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	else
 	{
-		[view commitViewProperties:_localViewProps];
+		[[self cdsVideoOutput] commitViewProperties:_localViewProps];
 	}
 }
 
@@ -254,7 +251,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([self isFullScreen])
 		{
-			[view commitViewProperties:_localViewProps];
+			[[self cdsVideoOutput] commitViewProperties:_localViewProps];
 		}
 		else
 		{
@@ -271,7 +268,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setDisplayOrder:(NSInteger)theOrder
 {
 	_localViewProps.order = (ClientDisplayOrder)theOrder;
-	[view commitViewProperties:_localViewProps];
+	[[self cdsVideoOutput] commitViewProperties:_localViewProps];
 }
 
 - (NSInteger) displayOrder
@@ -298,7 +295,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 				case ClientDisplayLayout_Hybrid_16_9:
 				case ClientDisplayLayout_Hybrid_16_10:
 				default:
-					[view commitViewProperties:_localViewProps];
+					[[self cdsVideoOutput] commitViewProperties:_localViewProps];
 					break;
 			}
 		}
@@ -308,7 +305,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			{
 				case ClientDisplayLayout_Hybrid_16_9:
 				case ClientDisplayLayout_Hybrid_16_10:
-					[view commitViewProperties:_localViewProps];
+					[[self cdsVideoOutput] commitViewProperties:_localViewProps];
 					break;
 					
 				case ClientDisplayLayout_Horizontal:
@@ -331,7 +328,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setVideoFiltersPreferGPU:(BOOL)theState
 {
 	[[self view] setVideoFiltersPreferGPU:theState];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 }
 
 - (BOOL) videoFiltersPreferGPU
@@ -342,7 +339,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setVideoSourceDeposterize:(BOOL)theState
 {
 	[[self view] setSourceDeposterize:theState];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 }
 
 - (BOOL) videoSourceDeposterize
@@ -364,7 +361,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setVideoPixelScaler:(NSInteger)filterID
 {
 	[[self view] setPixelScaler:filterID];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 }
 
 - (NSInteger) videoPixelScaler
@@ -504,7 +501,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// window size changed or not.
 	if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
 	{
-		[view commitViewProperties:_localViewProps];
+		[[self cdsVideoOutput] commitViewProperties:_localViewProps];
 	}
 }
 
@@ -1276,22 +1273,24 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		scaleFactor = [[self window] backingScaleFactor];
 	}
 #endif
-	[view setScaleFactor:scaleFactor];
 	
 	// Set up some custom UI elements.
 	[microphoneGainMenuItem setView:microphoneGainControlView];
 	[outputVolumeMenuItem setView:outputVolumeControlView];
 	
 	// Set up the video output thread.
-	cdsVideoOutput = [[CocoaDSDisplayVideo alloc] init];
-	[cdsVideoOutput setDelegate:view];
-	[cdsVideoOutput resetVideoBuffers];
+	CocoaDSDisplayVideo *newDisplayOutput = [[CocoaDSDisplayVideo alloc] init];
+	[newDisplayOutput setClientDisplayView:[view clientDisplay3DView]];
+	[newDisplayOutput setScaleFactor:scaleFactor];
+	[newDisplayOutput resetVideoBuffers];
+	[self setCdsVideoOutput:newDisplayOutput];
+	[view setCdsVideoOutput:newDisplayOutput];
 	
 	// Add the video thread to the output list.
-	[emuControl addOutputToCore:cdsVideoOutput];
+	[emuControl addOutputToCore:newDisplayOutput];
 	
-	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:cdsVideoOutput withObject:nil];
-	while ([cdsVideoOutput thread] == nil)
+	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:newDisplayOutput withObject:nil];
+	while ([newDisplayOutput thread] == nil)
 	{
 		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
 	}
@@ -1375,8 +1374,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	const NSRect frameRect = newFrame;
 	const NSRect contentRect = [window contentRectForFrameRect:frameRect];
 	
-	// Find the maximum scalar we can use for the display view, bounded by the
-	// content Rect.
+	// Find the maximum scalar we can use for the display view, bounded by the content Rect.
 	double checkWidth = _localViewProps.normalWidth;
 	double checkHeight = _localViewProps.normalHeight;
 	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
@@ -1576,6 +1574,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 @implementation DisplayView
 
 @synthesize inputManager;
+@synthesize cdsVideoOutput;
+@dynamic clientDisplay3DView;
 @dynamic canUseShaderBasedFilters;
 @dynamic isHUDVisible;
 @dynamic isHUDVideoFPSVisible;
@@ -1606,295 +1606,161 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 #endif
 	
 	inputManager = nil;
+	cdsVideoOutput = nil;
 	
-	// Initialize the OpenGL context
-	NSOpenGLPixelFormatAttribute attributes[] = {
-		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
-		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
-		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)0,
-		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)0,
-		NSOpenGLPFADoubleBuffer,
-		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
-		(NSOpenGLPixelFormatAttribute)0 };
-	
-#ifdef _OGLDISPLAYOUTPUT_3_2_H_
-	// If we can support a 3.2 Core Profile context, then request that in our
-	// pixel format attributes.
-	if (IsOSXVersionSupported(10, 7, 0))
-	{
-		attributes[9] = NSOpenGLPFAOpenGLProfile;
-		attributes[10] = NSOpenGLProfileVersion3_2Core;
-		OGLInfoCreate_Func = &OGLInfoCreate_3_2;
-	}
-#endif
-	
-	NSOpenGLPixelFormat *format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
-	if (format == nil)
-	{
-		// If we can't get a 3.2 Core Profile context, then switch to using a
-		// legacy context instead.
-		attributes[9] = (NSOpenGLPixelFormatAttribute)0;
-		attributes[10] = (NSOpenGLPixelFormatAttribute)0;
-		OGLInfoCreate_Func = &OGLInfoCreate_Legacy;
-		format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
-	}
-	
-	context = [[NSOpenGLContext alloc] initWithFormat:format shareContext:nil];
-	[format release];
-	cglDisplayContext = (CGLContextObj)[context CGLContextObj];
-	
-	CGLContextObj prevContext = CGLGetCurrentContext();
-	CGLSetCurrentContext(cglDisplayContext);
-	_cdv = new MacOGLDisplayView(cglDisplayContext);
+	_cdv = new MacOGLDisplayView();
 	_cdv->Init();
 	
 	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
 	_cdv->SetHUDFontUsingPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
 	
-	CGLSetCurrentContext(prevContext);
-	
-	spinlockIsHUDVisible = OS_SPINLOCK_INIT;
-	spinlockUseVerticalSync = OS_SPINLOCK_INIT;
-	spinlockVideoFiltersPreferGPU = OS_SPINLOCK_INIT;
-	spinlockOutputFilter = OS_SPINLOCK_INIT;
-	spinlockSourceDeposterize = OS_SPINLOCK_INIT;
-	spinlockPixelScaler = OS_SPINLOCK_INIT;
-	
-	spinlockViewProperties = OS_SPINLOCK_INIT;
+	localContext = [[NSOpenGLContext alloc] initWithCGLContextObj:((MacOGLDisplayView *)_cdv)->GetContext()];
 	
 	return self;
 }
 
 - (void)dealloc
 {
-	CGLContextObj prevContext = CGLGetCurrentContext();
-	CGLSetCurrentContext(cglDisplayContext);
-	delete _cdv;
-	CGLSetCurrentContext(prevContext);
-	
 	[self setInputManager:nil];
-	[context clearDrawable];
-	[context release];
+	[self setCdsVideoOutput:nil];
+	[localContext clearDrawable];
+	[localContext release];
+	
+	delete _cdv;
 	
 	[super dealloc];
 }
 
 #pragma mark Dynamic Property Methods
 
+- (ClientDisplay3DView *) clientDisplay3DView
+{
+	return _cdv;
+}
+
 - (BOOL) canUseShaderBasedFilters
 {
-	return (_cdv->CanFilterOnGPU()) ? YES : NO;
+	return [[self cdsVideoOutput] canFilterOnGPU];
 }
 
 - (void) setIsHUDVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDVisibility((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	[[self cdsVideoOutput] setIsHUDVisible:theState];
 }
 
 - (BOOL) isHUDVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDVisibility()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
-	
-	return theState;
+	return [[self cdsVideoOutput] isHUDVisible];
 }
 
 - (void) setIsHUDVideoFPSVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDShowVideoFPS((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	[[self cdsVideoOutput] setIsHUDVideoFPSVisible:theState];
 }
 
 - (BOOL) isHUDVideoFPSVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDShowVideoFPS()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
-	
-	return theState;
+	return [[self cdsVideoOutput] isHUDVideoFPSVisible];
 }
 
 - (void) setIsHUDRender3DFPSVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDShowRender3DFPS((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	[[self cdsVideoOutput] setIsHUDRender3DFPSVisible:theState];
 }
 
 - (BOOL) isHUDRender3DFPSVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDShowRender3DFPS()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
-	
-	return theState;
+	return [[self cdsVideoOutput] isHUDRender3DFPSVisible];
 }
 
 - (void) setIsHUDFrameIndexVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDShowFrameIndex((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	[[self cdsVideoOutput] setIsHUDFrameIndexVisible:theState];
 }
 
 - (BOOL) isHUDFrameIndexVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDShowFrameIndex()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
-	
-	return theState;
+	return [[self cdsVideoOutput] isHUDFrameIndexVisible];
 }
 
 - (void) setIsHUDLagFrameCountVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDShowLagFrameCount((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	[[self cdsVideoOutput] setIsHUDLagFrameCountVisible:theState];
 }
 
 - (BOOL) isHUDLagFrameCountVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDShowLagFrameCount()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
-	
-	return theState;
+	return [[self cdsVideoOutput] isHUDLagFrameCountVisible];
 }
 
 - (void) setIsHUDCPULoadAverageVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDShowCPULoadAverage((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	[[self cdsVideoOutput] setIsHUDCPULoadAverageVisible:theState];
 }
 
 - (BOOL) isHUDCPULoadAverageVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDShowCPULoadAverage()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
-	
-	return theState;
+	return [[self cdsVideoOutput] isHUDCPULoadAverageVisible];
 }
 
 - (void) setIsHUDRealTimeClockVisible:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDShowRTC((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	[[self cdsVideoOutput] setIsHUDRealTimeClockVisible:theState];
 }
 
 - (BOOL) isHUDRealTimeClockVisible
 {
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDShowRTC()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
-	
-	return theState;
+	return [[self cdsVideoOutput] isHUDRealTimeClockVisible];
 }
 
 - (void) setUseVerticalSync:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockUseVerticalSync);
-	_cdv->SetUseVerticalSync((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockUseVerticalSync);
+	[[self cdsVideoOutput] setUseVerticalSync:theState];
 }
 
 - (BOOL) useVerticalSync
 {
-	OSSpinLockLock(&spinlockUseVerticalSync);
-	const BOOL theState = (_cdv->GetUseVerticalSync()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockUseVerticalSync);
-	
-	return theState;
+	return [[self cdsVideoOutput] useVerticalSync];
 }
 
 - (void) setVideoFiltersPreferGPU:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockVideoFiltersPreferGPU);
-	_cdv->SetFiltersPreferGPU((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockVideoFiltersPreferGPU);
+	[[self cdsVideoOutput] setVideoFiltersPreferGPU:theState];
 }
 
 - (BOOL) videoFiltersPreferGPU
 {
-	OSSpinLockLock(&spinlockVideoFiltersPreferGPU);
-	const BOOL theState = (_cdv->GetFiltersPreferGPU()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockVideoFiltersPreferGPU);
-	
-	return theState;
+	return [[self cdsVideoOutput] videoFiltersPreferGPU];
 }
 
 - (void) setSourceDeposterize:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockSourceDeposterize);
-	_cdv->SetSourceDeposterize((theState) ? true : false);
-	OSSpinLockUnlock(&spinlockSourceDeposterize);
+	[[self cdsVideoOutput] setSourceDeposterize:theState];
 }
 
 - (BOOL) sourceDeposterize
 {
-	OSSpinLockLock(&spinlockSourceDeposterize);
-	const BOOL theState = (_cdv->GetSourceDeposterize()) ? YES : NO;
-	OSSpinLockUnlock(&spinlockSourceDeposterize);
-	
-	return theState;
+	return [[self cdsVideoOutput] sourceDeposterize];
 }
 
 - (void) setOutputFilter:(NSInteger)filterID
 {
-	OSSpinLockLock(&spinlockOutputFilter);
-	_cdv->SetOutputFilter((OutputFilterTypeID)filterID);
-	OSSpinLockUnlock(&spinlockOutputFilter);
+	[[self cdsVideoOutput] setOutputFilter:filterID];
 }
 
 - (NSInteger) outputFilter
 {
-	OSSpinLockLock(&spinlockOutputFilter);
-	const NSInteger filterID = _cdv->GetOutputFilter();
-	OSSpinLockUnlock(&spinlockOutputFilter);
-	
-	return filterID;
+	return [[self cdsVideoOutput] outputFilter];
 }
 
 - (void) setPixelScaler:(NSInteger)filterID
 {
-	OSSpinLockLock(&spinlockPixelScaler);
-	_cdv->SetPixelScaler((VideoFilterTypeID)filterID);
-	OSSpinLockUnlock(&spinlockPixelScaler);
+	[[self cdsVideoOutput] setPixelScaler:filterID];
 }
 
 - (NSInteger) pixelScaler
 {
-	OSSpinLockLock(&spinlockPixelScaler);
-	const NSInteger filterID = _cdv->GetPixelScaler();
-	OSSpinLockUnlock(&spinlockPixelScaler);
-	
-	return filterID;
-}
-
-#pragma mark Class Methods
-
-- (void) setScaleFactor:(float)theScaleFactor
-{
-	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetScaleFactor(theScaleFactor);
-	OSSpinLockUnlock(&spinlockIsHUDVisible);
-}
-
-- (void) commitViewProperties:(const ClientDisplayViewProperties &)viewProps
-{
-	OSSpinLockLock(&spinlockViewProperties);
-	_intermediateViewProps = viewProps;
-	OSSpinLockUnlock(&spinlockViewProperties);
-	
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_CHANGE_VIEW_PROPERTIES];
+	return [[self cdsVideoOutput] pixelScaler];
 }
 
 #pragma mark InputHIDManagerTarget Protocol
@@ -1999,8 +1865,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	NSData *bitmapImageFileTypeData = [[NSData alloc] initWithBytes:&fileType length:sizeof(NSBitmapImageFileType)];
 	NSArray *messageComponents = [[NSArray alloc] initWithObjects:fileURLStringData, bitmapImageFileTypeData, nil];
 	
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	[CocoaDSUtil messageSendOneWayWithMessageComponents:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_REQUEST_SCREENSHOT array:messageComponents];
+	[CocoaDSUtil messageSendOneWayWithMessageComponents:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REQUEST_SCREENSHOT array:messageComponents];
 	
 	[bitmapImageFileTypeData release];
 	[messageComponents release];
@@ -2017,16 +1882,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 {
 	[super lockFocus];
 	
-	if ([context view] != self)
+	if ([localContext view] != self)
 	{
-		[context setView:self];
+		[localContext setView:self];
 	}
 }
 
 - (void)drawRect:(NSRect)dirtyRect
 {
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_REDRAW_VIEW];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REDRAW_VIEW];
 }
 
 - (void)setFrame:(NSRect)rect
@@ -2036,7 +1900,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	if (rect.size.width != oldFrame.size.width || rect.size.height != oldFrame.size.height)
 	{
-		[context update];
+		[localContext update];
 		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 		
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
@@ -2056,7 +1920,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		props.clientHeight = newViewportRect.size.height;
 		props.viewScale = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, props.clientWidth, props.clientHeight);
 		
-		[self commitViewProperties:props];
+		[[self cdsVideoOutput] commitViewProperties:props];
 	}
 }
 
@@ -2162,61 +2026,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (BOOL)resignFirstResponder
 {
 	return YES;
-}
-
-#pragma mark CocoaDSDisplayVideoDelegate Protocol
-
-- (void)doInitVideoOutput:(NSDictionary *)properties
-{
-	// No init needed, so do nothing.
-}
-
-- (void)doLoadVideoFrameWithMainSizeNative:(bool)isMainSizeNative touchSizeNative:(bool)isTouchSizeNative
-{
-	_cdv->HandleGPUFrameEndEvent(isMainSizeNative, isTouchSizeNative);
-}
-
-- (void) doSetVideoBuffersUsingFormat:(const uint32_t)colorFormat
-						   bufferHead:(const void *)videoBufferHead
-						nativeBuffer0:(const void *)nativeBuffer0
-						nativeBuffer1:(const void *)nativeBuffer1
-						customBuffer0:(const void *)customBuffer0
-						 customWidth0:(const size_t)customWidth0
-						customHeight0:(const size_t)customHeight0
-						customBuffer1:(const void *)customBuffer1
-						 customWidth1:(const size_t)customWidth1
-						customHeight1:(const size_t)customHeight1
-{
-	_cdv->SetVideoBuffers(colorFormat,
-						  videoBufferHead,
-						  nativeBuffer0,
-						  nativeBuffer1,
-						  customBuffer0, customWidth0, customHeight0,
-						  customBuffer1, customWidth1, customHeight1);
-}
-
-- (void)doFinishFrame
-{
-	_cdv->FrameFinish();
-}
-
-- (void)doProcessVideoFrameWithInfo:(const NDSFrameInfo &)frameInfo
-{
-	_cdv->HandleEmulatorFrameEndEvent(frameInfo);
-}
-
-- (void)doViewPropertiesChanged
-{	
-	OSSpinLockLock(&spinlockViewProperties);
-	_cdv->CommitViewProperties(_intermediateViewProps);
-	OSSpinLockUnlock(&spinlockViewProperties);
-	
-	_cdv->SetupViewProperties();
-}
-
-- (void)doRedraw
-{
-	_cdv->UpdateView();
 }
 
 @end

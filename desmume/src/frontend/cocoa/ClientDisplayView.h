@@ -182,7 +182,7 @@ public:
 	virtual void SetPixelScaler(const VideoFilterTypeID filterID);
 	
 	// HUD appearance
-	void SetHUDFontUsingPath(const char *filePath);
+	virtual void SetHUDFontUsingPath(const char *filePath);
 	virtual void CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo);
 	virtual void SetHUDInfo(const NDSFrameInfo &frameInfo);
 	
@@ -267,7 +267,7 @@ public:
 	void SetHUDTextureCoordinates(float *texCoordBufferPtr);
 	void SetScreenVertices(float *vtxBufferPtr);
 	void SetScreenTextureCoordinates(float w0, float h0, float w1, float h1, float *texCoordBufferPtr);
-		
+	
 	virtual void UpdateView() = 0;
 };
 

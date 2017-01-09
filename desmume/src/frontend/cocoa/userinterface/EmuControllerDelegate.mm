@@ -347,7 +347,7 @@
 {
 	DisplayWindowController *newWindowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow" emuControlDelegate:self];
 	
-	[CocoaDSUtil messageSendOneWay:[[newWindowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
+	[CocoaDSUtil messageSendOneWay:[[newWindowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	
 	[[newWindowController window] makeKeyAndOrderFront:self];
 	[[newWindowController window] makeMainWindow];
@@ -1509,7 +1509,7 @@
 	
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
+		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESET];
@@ -1812,7 +1812,7 @@
 	
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
+		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_LOADED];
@@ -1891,7 +1891,7 @@
 	[[cdsCore cdsGPU] clearWithColor:0x8000];
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_AND_REDRAW];
+		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_UNLOADED];

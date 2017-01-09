@@ -757,6 +757,11 @@
 		AB3ACC4614C24D5400D7D192 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3A14C24D5400D7D192 /* COPYING */; };
 		AB3ACC4714C24D5400D7D192 /* README in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3B14C24D5400D7D192 /* README */; };
 		AB3ACC4914C24D5400D7D192 /* README.MAC in Resources */ = {isa = PBXBuildFile; fileRef = AB3ACC3D14C24D5400D7D192 /* README.MAC */; };
+		AB3E69101E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E690F1E231E9900D4CC75 /* MacOGLDisplayView.mm */; };
+		AB3E69111E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E690F1E231E9900D4CC75 /* MacOGLDisplayView.mm */; };
+		AB3E69121E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E690F1E231E9900D4CC75 /* MacOGLDisplayView.mm */; };
+		AB3E69131E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E690F1E231E9900D4CC75 /* MacOGLDisplayView.mm */; };
+		AB3E69141E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E690F1E231E9900D4CC75 /* MacOGLDisplayView.mm */; };
 		AB43527217D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB43527117D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp */; };
 		AB43527317D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB43527117D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp */; };
 		AB43527417D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB43527117D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp */; };
@@ -1874,6 +1879,8 @@
 		AB3ACC3D14C24D5400D7D192 /* README.MAC */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.MAC; path = ../../../README.MAC; sourceTree = SOURCE_ROOT; };
 		AB3E34C7134AF4500056477A /* cocoa_output.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_output.h; sourceTree = "<group>"; };
 		AB3E34C8134AF4500056477A /* cocoa_output.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_output.mm; sourceTree = "<group>"; };
+		AB3E690E1E231E9900D4CC75 /* MacOGLDisplayView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacOGLDisplayView.h; sourceTree = "<group>"; };
+		AB3E690F1E231E9900D4CC75 /* MacOGLDisplayView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MacOGLDisplayView.mm; sourceTree = "<group>"; };
 		AB43527117D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_mcrom_debug.cpp; sourceTree = "<group>"; };
 		AB43528517D5BA95007417C8 /* fsnitro.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fsnitro.h; sourceTree = "<group>"; };
 		AB43528617D5BA95007417C8 /* fsnitro.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fsnitro.cpp; sourceTree = "<group>"; };
@@ -2947,6 +2954,7 @@
 				AB5A795616D5A56000ED84B7 /* InputManager.h */,
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB213D43170CB141006DDB0F /* InputProfileController.h */,
+				AB3E690E1E231E9900D4CC75 /* MacOGLDisplayView.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
 				ABC3DEBB1A96EA96009EC345 /* RomInfoPanel.h */,
 				ABAE2F7918682B6C00C92F4F /* Slot2WindowDelegate.h */,
@@ -2959,6 +2967,7 @@
 				AB5A795716D5A56000ED84B7 /* InputManager.mm */,
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB213D44170CB141006DDB0F /* InputProfileController.mm */,
+				AB3E690F1E231E9900D4CC75 /* MacOGLDisplayView.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
 				ABC3DEBC1A96EA96009EC345 /* RomInfoPanel.mm */,
 				ABAE2F7A18682B6C00C92F4F /* Slot2WindowDelegate.mm */,
@@ -4539,6 +4548,7 @@
 				ABD21B631DE9010B001D2DFA /* features_cpu.c in Sources */,
 				AB2C25081DEBFBD400706BFC /* encoding_utf.c in Sources */,
 				AB0F13931E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
+				AB3E69111E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4721,6 +4731,7 @@
 				ABD21B641DE9010B001D2DFA /* features_cpu.c in Sources */,
 				AB2C25091DEBFBD400706BFC /* encoding_utf.c in Sources */,
 				AB0F13941E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
+				AB3E69121E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4933,6 +4944,7 @@
 				ABD21B621DE9010B001D2DFA /* features_cpu.c in Sources */,
 				AB2C25071DEBFBD400706BFC /* encoding_utf.c in Sources */,
 				AB0F13921E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
+				AB3E69101E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5145,6 +5157,7 @@
 				ABD21B661DE9010B001D2DFA /* features_cpu.c in Sources */,
 				AB2C250B1DEBFBD400706BFC /* encoding_utf.c in Sources */,
 				AB0F13961E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
+				AB3E69141E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5327,6 +5340,7 @@
 				ABD21B651DE9010B001D2DFA /* features_cpu.c in Sources */,
 				AB2C250A1DEBFBD400706BFC /* encoding_utf.c in Sources */,
 				AB0F13951E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
+				AB3E69131E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

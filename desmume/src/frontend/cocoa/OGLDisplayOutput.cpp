@@ -4917,13 +4917,19 @@ OGLVideoOutput::OGLVideoOutput()
 
 OGLVideoOutput::~OGLVideoOutput()
 {
-	for (size_t i = 0; i < _layerList->size(); i++)
+	if (this->_layerList != NULL)
 	{
-		delete (*_layerList)[i];
+		for (size_t i = 0; i < _layerList->size(); i++)
+		{
+			delete (*this->_layerList)[i];
+		}
+		
+		delete this->_layerList;
+		this->_layerList = NULL;
 	}
 	
-	delete _layerList;
-	delete _info;
+	delete this->_info;
+	this->_info = NULL;
 }
 
 void OGLVideoOutput::_UpdateNormalSize()
@@ -6449,8 +6455,11 @@ void OGLHUDLayer::_UpdateVerticesOGL()
 
 void OGLHUDLayer::UpdateViewportOGL()
 {
-	glUseProgram(this->_program->GetProgramID());
-	glUniform2f(this->_uniformViewSize, this->_output->GetViewProperties().clientWidth, this->_output->GetViewProperties().clientHeight);
+	if (this->_output->GetInfo()->IsShaderSupported())
+	{
+		glUseProgram(this->_program->GetProgramID());
+		glUniform2f(this->_uniformViewSize, this->_output->GetViewProperties().clientWidth, this->_output->GetViewProperties().clientHeight);
+	}
 	
 	this->_needUpdateVertices = true;
 };
@@ -7670,198 +7679,4 @@ void OGLDisplayLayer::FinishOGL()
 	
 	glFinishObjectAPPLE(GL_TEXTURE_RECTANGLE_ARB, (isUsingCPUPixelScaler) ? this->_texCPUFilterDstID[0] : ( (this->_isTexVideoInputDataNative[0]) ? this->_texVideoInputDataNativeID[0] : this->_texVideoInputDataCustomID[0]) );
 	glFinishObjectAPPLE(GL_TEXTURE_RECTANGLE_ARB, (isUsingCPUPixelScaler) ? this->_texCPUFilterDstID[1] : ( (this->_isTexVideoInputDataNative[1]) ? this->_texVideoInputDataNativeID[1] : this->_texVideoInputDataCustomID[1]) );
-}
-
-#pragma mark -
-
-MacOGLDisplayView::MacOGLDisplayView(CGLContextObj context)
-{
-	this->_context = context;
-}
-
-void MacOGLDisplayView::_FrameRenderAndFlush()
-{
-	this->FrameRender();
-	CGLFlushDrawable(this->_context);
-}
-
-CGLContextObj MacOGLDisplayView::GetContext() const
-{
-	return this->_context;
-}
-
-void MacOGLDisplayView::SetContext(CGLContextObj context)
-{
-	this->_context = context;
-}
-
-void MacOGLDisplayView::SetVideoBuffers(const uint32_t colorFormat,
-										const void *videoBufferHead,
-										const void *nativeBuffer0,
-										const void *nativeBuffer1,
-										const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
-										const void *customBuffer1, const size_t customWidth1, const size_t customHeight1)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	
-	this->OGLVideoOutput::SetVideoBuffers(colorFormat,
-										  videoBufferHead,
-										  nativeBuffer0,
-										  nativeBuffer1,
-										  customBuffer0, customWidth0, customHeight0,
-										  customBuffer1, customWidth1, customHeight1);
-	
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetUseVerticalSync(const bool useVerticalSync)
-{
-	const GLint swapInt = (useVerticalSync) ? 1 : 0;
-	
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	CGLSetParameter(this->_context, kCGLCPSwapInterval, &swapInt);
-	this->OGLVideoOutput::SetUseVerticalSync(useVerticalSync);
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetScaleFactor(const double scaleFactor)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetScaleFactor(scaleFactor);
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetupViewProperties()
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetupViewProperties();
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetFiltersPreferGPU(const bool preferGPU)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetFiltersPreferGPU(preferGPU);
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetOutputFilter(const OutputFilterTypeID filterID)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetOutputFilter(filterID);
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetPixelScaler(const VideoFilterTypeID filterID)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetPixelScaler(filterID);
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetHUDVisibility(const bool visibleState)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDVisibility(visibleState);
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetHUDShowVideoFPS(const bool visibleState)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDShowVideoFPS(visibleState);
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetHUDShowRender3DFPS(const bool visibleState)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDShowRender3DFPS(visibleState);
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetHUDShowFrameIndex(const bool visibleState)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDShowFrameIndex(visibleState);
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetHUDShowLagFrameCount(const bool visibleState)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDShowLagFrameCount(visibleState);
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetHUDShowCPULoadAverage(const bool visibleState)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDShowCPULoadAverage(visibleState);
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetHUDShowRTC(const bool visibleState)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDShowRTC(visibleState);
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::FrameFinish()
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::FrameFinish();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::HandleGPUFrameEndEvent(const bool isMainSizeNative, const bool isTouchSizeNative)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->FrameLoadGPU(isMainSizeNative, isTouchSizeNative);
-	this->FrameProcessGPU();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::HandleEmulatorFrameEndEvent(const NDSFrameInfo &frameInfo)
-{
-	this->SetHUDInfo(frameInfo);
-	
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->FrameProcessHUD();
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::UpdateView()
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
 }

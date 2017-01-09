@@ -501,10 +501,8 @@
 
 @implementation CocoaDSDisplay
 
-@synthesize delegate;
+@dynamic clientDisplayView;
 @dynamic displaySize;
-@dynamic displayMode;
-
 
 - (id)init
 {
@@ -514,12 +512,11 @@
 		return self;
 	}
 	
-	spinlockDisplayType = OS_SPINLOCK_INIT;
 	spinlockReceivedFrameIndex = OS_SPINLOCK_INIT;
 	spinlockCPULoadAverage = OS_SPINLOCK_INIT;
+	spinlockViewProperties = OS_SPINLOCK_INIT;
 	
-	delegate = nil;
-	displayMode = ClientDisplayMode_Dual;
+	_cdv = NULL;
 	
 	_receivedFrameIndex = 0;
 	_currentReceivedFrameIndex = 0;
@@ -527,66 +524,41 @@
 	
 	_cpuLoadAvgARM9 = 0;
 	_cpuLoadAvgARM7 = 0;
-	
-	[property setValue:[NSNumber numberWithInteger:displayMode] forKey:@"displayMode"];
-	[property setValue:NSSTRING_DISPLAYMODE_MAIN forKey:@"displayModeString"];
-	
+		
 	return self;
 }
 
 - (void)dealloc
 {
-	[self setDelegate:nil];
-	
 	[super dealloc];
+}
+
+- (void) setClientDisplayView:(ClientDisplay3DView *)clientDisplayView
+{
+	_cdv = clientDisplayView;
+}
+
+- (ClientDisplay3DView *) clientDisplayView
+{
+	return _cdv;
+}
+
+- (void) commitViewProperties:(const ClientDisplayViewProperties &)viewProps
+{
+	OSSpinLockLock(&spinlockViewProperties);
+	_intermediateViewProps = viewProps;
+	OSSpinLockUnlock(&spinlockViewProperties);
+	
+	[CocoaDSUtil messageSendOneWay:[self receivePort] msgID:MESSAGE_CHANGE_VIEW_PROPERTIES];
 }
 
 - (NSSize) displaySize
 {
 	pthread_rwlock_rdlock(self.rwlockProducer);
-	NSSize size = NSMakeSize((CGFloat)GPU->GetCustomFramebufferWidth(), (displayMode == ClientDisplayMode_Dual) ? (CGFloat)(GPU->GetCustomFramebufferHeight() * 2): (CGFloat)GPU->GetCustomFramebufferHeight());
+	NSSize size = NSMakeSize((CGFloat)GPU->GetCustomFramebufferWidth(), (_cdv->GetMode() == ClientDisplayMode_Dual) ? (CGFloat)(GPU->GetCustomFramebufferHeight() * 2): (CGFloat)GPU->GetCustomFramebufferHeight());
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	return size;
-}
-
-- (void) setDisplayMode:(ClientDisplayMode)displayModeID
-{
-	NSString *newDispString = nil;
-	
-	switch (displayModeID)
-	{
-		case ClientDisplayMode_Main:
-			newDispString = NSSTRING_DISPLAYMODE_MAIN;
-			break;
-			
-		case ClientDisplayMode_Touch:
-			newDispString = NSSTRING_DISPLAYMODE_TOUCH;
-			break;
-			
-		case ClientDisplayMode_Dual:
-			newDispString = NSSTRING_DISPLAYMODE_DUAL;
-			break;
-			
-		default:
-			return;
-			break;
-	}
-	
-	OSSpinLockLock(&spinlockDisplayType);
-	displayMode = displayModeID;
-	[property setValue:[NSNumber numberWithInteger:displayModeID] forKey:@"displayMode"];
-	[property setValue:newDispString forKey:@"displayModeString"];
-	OSSpinLockUnlock(&spinlockDisplayType);
-}
-
-- (ClientDisplayMode) displayMode
-{
-	OSSpinLockLock(&spinlockDisplayType);
-	ClientDisplayMode displayModeID = displayMode;
-	OSSpinLockUnlock(&spinlockDisplayType);
-	
-	return displayModeID;
 }
 
 - (void) doReceiveGPUFrame
@@ -632,7 +604,11 @@
 
 - (void) handleChangeViewProperties
 {
-	[(id<CocoaDSDisplayDelegate>)delegate doViewPropertiesChanged];
+	OSSpinLockLock(&spinlockViewProperties);
+	_cdv->CommitViewProperties(_intermediateViewProps);
+	OSSpinLockUnlock(&spinlockViewProperties);
+	
+	_cdv->SetupViewProperties();
 }
 
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData
@@ -668,7 +644,7 @@
 
 - (void) finishFrame
 {
-	[(id<CocoaDSDisplayDelegate>)delegate doFinishFrame];
+	_cdv->FrameFinish();
 }
 
 - (void) takeFrameCount
@@ -713,10 +689,8 @@
 - (NSBitmapImageRep *) bitmapImageRep
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	const NSInteger dispMode = [self displayMode];
-	
 	NSUInteger w = (NSUInteger)dispInfo.customWidth;
-	NSUInteger h = (dispMode == ClientDisplayMode_Dual) ? (NSUInteger)(dispInfo.customHeight * 2) : (NSUInteger)dispInfo.customHeight;
+	NSUInteger h = (_cdv->GetMode() == ClientDisplayMode_Dual) ? (NSUInteger)(dispInfo.customHeight * 2) : (NSUInteger)dispInfo.customHeight;
 	
 	NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
 																		 pixelsWide:w
@@ -768,6 +742,20 @@
 
 @implementation CocoaDSDisplayVideo
 
+@dynamic canFilterOnGPU;
+@dynamic isHUDVisible;
+@dynamic isHUDVideoFPSVisible;
+@dynamic isHUDRender3DFPSVisible;
+@dynamic isHUDFrameIndexVisible;
+@dynamic isHUDLagFrameCountVisible;
+@dynamic isHUDCPULoadAverageVisible;
+@dynamic isHUDRealTimeClockVisible;
+@dynamic useVerticalSync;
+@dynamic videoFiltersPreferGPU;
+@dynamic sourceDeposterize;
+@dynamic outputFilter;
+@dynamic pixelScaler;
+
 - (id)init
 {
 	self = [super init];
@@ -781,11 +769,14 @@
 	_nativeBuffer[NDSDisplayID_Touch] = NULL;
 	_customBuffer[NDSDisplayID_Main]  = NULL;
 	_customBuffer[NDSDisplayID_Touch] = NULL;
-	[self resetVideoBuffers];
 	
-	[property setValue:[NSNumber numberWithInteger:(NSInteger)VideoFilterTypeID_None] forKey:@"videoFilterType"];
-	[property setValue:[CocoaVideoFilter typeStringByID:VideoFilterTypeID_None] forKey:@"videoFilterTypeString"];
-	
+	spinlockIsHUDVisible = OS_SPINLOCK_INIT;
+	spinlockUseVerticalSync = OS_SPINLOCK_INIT;
+	spinlockVideoFiltersPreferGPU = OS_SPINLOCK_INIT;
+	spinlockOutputFilter = OS_SPINLOCK_INIT;
+	spinlockSourceDeposterize = OS_SPINLOCK_INIT;
+	spinlockPixelScaler = OS_SPINLOCK_INIT;
+		
 	return self;
 }
 
@@ -800,13 +791,201 @@
 	[super dealloc];
 }
 
-- (void) runThread:(id)object
+- (BOOL) canFilterOnGPU
 {
-	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doInitVideoOutput:self.property];
-	[tempPool release];
+	return (_cdv->CanFilterOnGPU()) ? YES : NO;
+}
+
+- (void) setIsHUDVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDVisibility((theState) ? true : false);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (_cdv->GetHUDVisibility()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
-	[super runThread:object];
+	return theState;
+}
+
+- (void) setIsHUDVideoFPSVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDShowVideoFPS((theState) ? true : false);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDVideoFPSVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (_cdv->GetHUDShowVideoFPS()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
+
+- (void) setIsHUDRender3DFPSVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDShowRender3DFPS((theState) ? true : false);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDRender3DFPSVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (_cdv->GetHUDShowRender3DFPS()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
+
+- (void) setIsHUDFrameIndexVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDShowFrameIndex((theState) ? true : false);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDFrameIndexVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (_cdv->GetHUDShowFrameIndex()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
+
+- (void) setIsHUDLagFrameCountVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDShowLagFrameCount((theState) ? true : false);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDLagFrameCountVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (_cdv->GetHUDShowLagFrameCount()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
+
+- (void) setIsHUDCPULoadAverageVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDShowCPULoadAverage((theState) ? true : false);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDCPULoadAverageVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (_cdv->GetHUDShowCPULoadAverage()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
+
+- (void) setIsHUDRealTimeClockVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDShowRTC((theState) ? true : false);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDRealTimeClockVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (_cdv->GetHUDShowRTC()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
+
+- (void) setUseVerticalSync:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockUseVerticalSync);
+	_cdv->SetUseVerticalSync((theState) ? true : false);
+	OSSpinLockUnlock(&spinlockUseVerticalSync);
+}
+
+- (BOOL) useVerticalSync
+{
+	OSSpinLockLock(&spinlockUseVerticalSync);
+	const BOOL theState = (_cdv->GetUseVerticalSync()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockUseVerticalSync);
+	
+	return theState;
+}
+
+- (void) setVideoFiltersPreferGPU:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockVideoFiltersPreferGPU);
+	_cdv->SetFiltersPreferGPU((theState) ? true : false);
+	OSSpinLockUnlock(&spinlockVideoFiltersPreferGPU);
+}
+
+- (BOOL) videoFiltersPreferGPU
+{
+	OSSpinLockLock(&spinlockVideoFiltersPreferGPU);
+	const BOOL theState = (_cdv->GetFiltersPreferGPU()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockVideoFiltersPreferGPU);
+	
+	return theState;
+}
+
+- (void) setSourceDeposterize:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockSourceDeposterize);
+	_cdv->SetSourceDeposterize((theState) ? true : false);
+	OSSpinLockUnlock(&spinlockSourceDeposterize);
+}
+
+- (BOOL) sourceDeposterize
+{
+	OSSpinLockLock(&spinlockSourceDeposterize);
+	const BOOL theState = (_cdv->GetSourceDeposterize()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockSourceDeposterize);
+	
+	return theState;
+}
+
+- (void) setOutputFilter:(NSInteger)filterID
+{
+	OSSpinLockLock(&spinlockOutputFilter);
+	_cdv->SetOutputFilter((OutputFilterTypeID)filterID);
+	OSSpinLockUnlock(&spinlockOutputFilter);
+}
+
+- (NSInteger) outputFilter
+{
+	OSSpinLockLock(&spinlockOutputFilter);
+	const NSInteger filterID = _cdv->GetOutputFilter();
+	OSSpinLockUnlock(&spinlockOutputFilter);
+	
+	return filterID;
+}
+
+- (void) setPixelScaler:(NSInteger)filterID
+{
+	OSSpinLockLock(&spinlockPixelScaler);
+	_cdv->SetPixelScaler((VideoFilterTypeID)filterID);
+	OSSpinLockUnlock(&spinlockPixelScaler);
+}
+
+- (NSInteger) pixelScaler
+{
+	OSSpinLockLock(&spinlockPixelScaler);
+	const NSInteger filterID = _cdv->GetPixelScaler();
+	OSSpinLockUnlock(&spinlockPixelScaler);
+	
+	return filterID;
 }
 
 - (void)handlePortMessage:(NSPortMessage *)portMessage
@@ -815,7 +994,7 @@
 	
 	switch (message)
 	{
-		case MESSAGE_RELOAD_AND_REDRAW:
+		case MESSAGE_RELOAD_REPROCESS_REDRAW:
 			[self handleReloadAndRedraw];
 			break;
 			
@@ -853,7 +1032,7 @@
 	
 	rtcGetTimeAsString(frameInfo.rtcString);
 	
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doProcessVideoFrameWithInfo:frameInfo];
+	_cdv->HandleEmulatorFrameEndEvent(frameInfo);
 }
 
 - (void) handleReceiveGPUFrame
@@ -891,17 +1070,12 @@
 	
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doLoadVideoFrameWithMainSizeNative:isMainSizeNative touchSizeNative:isTouchSizeNative];
+	_cdv->HandleGPUFrameEndEvent(isMainSizeNative, isTouchSizeNative);
 }
 
 - (void) handleRedrawView
 {
-	if (delegate == nil || ![delegate respondsToSelector:@selector(doRedraw)])
-	{
-		return;
-	}
-	
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doRedraw];
+	_cdv->UpdateView();
 }
 
 - (void) handleReloadAndRedraw
@@ -922,16 +1096,16 @@
 	void *oldVideoBuffer = _videoBuffer;
 	uint8_t *newVideoBuffer = (uint8_t *)malloc_alignedCacheLine( ((GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT) + (dispInfo.customWidth * dispInfo.customHeight)) * 2 * dispInfo.pixelBytes );
 	
-	[(id<CocoaDSDisplayVideoDelegate>)delegate doSetVideoBuffersUsingFormat:dispInfo.colorFormat
-																 bufferHead:newVideoBuffer
-															  nativeBuffer0:newVideoBuffer
-															  nativeBuffer1:newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes)
-															  customBuffer0:newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * dispInfo.pixelBytes)
-															   customWidth0:dispInfo.customWidth
-															  customHeight0:dispInfo.customHeight
-															  customBuffer1:newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * dispInfo.pixelBytes) + (dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes)
-															   customWidth1:dispInfo.customWidth
-															  customHeight1:dispInfo.customHeight];
+	_cdv->SetVideoBuffers(dispInfo.colorFormat,
+						  newVideoBuffer,
+						  newVideoBuffer,
+						  newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes),
+						  newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * dispInfo.pixelBytes),
+						  dispInfo.customWidth,
+						  dispInfo.customHeight,
+						  newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * dispInfo.pixelBytes) + (dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes),
+						  dispInfo.customWidth,
+						  dispInfo.customHeight);
 	
 	_videoBuffer = newVideoBuffer;
 	_nativeBuffer[NDSDisplayID_Main]  = newVideoBuffer;
@@ -940,6 +1114,13 @@
 	_customBuffer[NDSDisplayID_Touch] = newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * dispInfo.pixelBytes) + (dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes);
 	
 	free_aligned(oldVideoBuffer);
+}
+
+- (void) setScaleFactor:(float)theScaleFactor
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetScaleFactor(theScaleFactor);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
 }
 
 @end

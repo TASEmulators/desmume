@@ -437,50 +437,6 @@ public:
 	virtual void FrameFinish();
 };
 
-class MacOGLDisplayView : public OGLVideoOutput
-{
-protected:
-	CGLContextObj _context;
-	
-	void _FrameRenderAndFlush();
-	
-public:
-	MacOGLDisplayView(CGLContextObj context);
-	
-	CGLContextObj GetContext() const;
-	void SetContext(CGLContextObj context);
-	
-	virtual void SetVideoBuffers(const uint32_t colorFormat,
-								 const void *videoBufferHead,
-								 const void *nativeBuffer0,
-								 const void *nativeBuffer1,
-								 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
-								 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1);
-	
-	virtual void SetUseVerticalSync(const bool useVerticalSync);
-	virtual void SetScaleFactor(const double scaleFactor);
-	
-	virtual void SetupViewProperties();
-	
-	virtual void SetFiltersPreferGPU(const bool preferGPU);
-	virtual void SetOutputFilter(const OutputFilterTypeID filterID);
-	virtual void SetPixelScaler(const VideoFilterTypeID filterID);
-	
-	virtual void SetHUDVisibility(const bool visibleState);
-	virtual void SetHUDShowVideoFPS(const bool visibleState);
-	virtual void SetHUDShowRender3DFPS(const bool visibleState);
-	virtual void SetHUDShowFrameIndex(const bool visibleState);
-	virtual void SetHUDShowLagFrameCount(const bool visibleState);
-	virtual void SetHUDShowCPULoadAverage(const bool visibleState);
-	virtual void SetHUDShowRTC(const bool visibleState);
-	
-	virtual void FrameFinish();
-	virtual void HandleGPUFrameEndEvent(const bool isMainSizeNative, const bool isTouchSizeNative);
-	virtual void HandleEmulatorFrameEndEvent(const NDSFrameInfo &frameInfo);
-	
-	virtual void UpdateView();
-};
-
 OGLInfo* OGLInfoCreate_Legacy();
 
 extern OGLInfo* (*OGLInfoCreate_Func)();
