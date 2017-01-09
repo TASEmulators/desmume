@@ -43,9 +43,16 @@
 #include "gx_pthread.h"
 #elif defined(PSP)
 #include "psp_pthread.h"
+#elif defined(__CELLOS_LV2__)
+#include <pthread.h>
+#include <sys/sys_time.h>
 #else
 #include <pthread.h>
 #include <time.h>
+#endif
+
+#if defined(VITA)
+#include <sys/time.h>
 #endif
 
 #ifdef __MACH__
@@ -155,7 +162,14 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    thread->thread = CreateThread(NULL, 0, thread_wrap, data, 0, NULL);
    thread_created = !!thread->thread;
 #else
+#if defined(VITA)
+   pthread_attr_t thread_attr;
+   pthread_attr_init(&thread_attr);
+   pthread_attr_setstacksize(&thread_attr , 0x10000 );
+   thread_created = pthread_create(&thread->id, &thread_attr, thread_wrap, data) == 0;
+#else
    thread_created = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
+#endif
 #endif
 
    if (!thread_created)
@@ -172,11 +186,11 @@ error:
 
 /**
  * sthread_detach:
- * @thread                  : pointer to thread object 
+ * @thread                  : pointer to thread object
  *
  * Detach a thread. When a detached thread terminates, its
  * resource sare automatically released back to the system
- * without the need for another thread to join with the 
+ * without the need for another thread to join with the
  * terminated thread.
  *
  * Returns: 0 on success, otherwise it returns a non-zero error number.
@@ -194,13 +208,13 @@ int sthread_detach(sthread_t *thread)
 
 /**
  * sthread_join:
- * @thread                  : pointer to thread object 
+ * @thread                  : pointer to thread object
  *
  * Join with a terminated thread. Waits for the thread specified by
  * @thread to terminate. If that thread has already terminated, then
  * it will return immediately. The thread specified by @thread must
  * be joinable.
- * 
+ *
  * Returns: 0 on success, otherwise it returns a non-zero error number.
  */
 void sthread_join(sthread_t *thread)
@@ -216,17 +230,15 @@ void sthread_join(sthread_t *thread)
 
 /**
  * sthread_isself:
- * @thread                  : pointer to thread object 
+ * @thread                  : pointer to thread object
  *
- * Join with a terminated thread. Waits for the thread specified by
- * @thread to terminate. If that thread has already terminated, then
- * it will return immediately. The thread specified by @thread must
- * be joinable.
- * 
  * Returns: true (1) if calling thread is the specified thread
  */
 bool sthread_isself(sthread_t *thread)
 {
+  /* This thread can't possibly be a null thread */
+  if (!thread) return false;
+
 #ifdef USE_WIN32_THREADS
    return GetCurrentThread() == thread->thread;
 #else
@@ -268,7 +280,7 @@ error:
 
 /**
  * slock_free:
- * @lock                    : pointer to mutex object 
+ * @lock                    : pointer to mutex object
  *
  * Frees a mutex.
  **/
@@ -287,7 +299,7 @@ void slock_free(slock_t *lock)
 
 /**
  * slock_lock:
- * @lock                    : pointer to mutex object 
+ * @lock                    : pointer to mutex object
  *
  * Locks a mutex. If a mutex is already locked by
  * another thread, the calling thread shall block until
@@ -295,6 +307,8 @@ void slock_free(slock_t *lock)
 **/
 void slock_lock(slock_t *lock)
 {
+   if (!lock)
+      return;
 #ifdef USE_WIN32_THREADS
    WaitForSingleObject(lock->lock, INFINITE);
 #else
@@ -304,12 +318,14 @@ void slock_lock(slock_t *lock)
 
 /**
  * slock_unlock:
- * @lock                    : pointer to mutex object 
+ * @lock                    : pointer to mutex object
  *
  * Unlocks a mutex.
  **/
 void slock_unlock(slock_t *lock)
 {
+   if (!lock)
+      return;
 #ifdef USE_WIN32_THREADS
    ReleaseMutex(lock->lock);
 #else
@@ -365,7 +381,7 @@ error:
 
 /**
  * scond_free:
- * @cond                    : pointer to condition variable object 
+ * @cond                    : pointer to condition variable object
  *
  * Frees a condition variable.
 **/
@@ -385,10 +401,10 @@ void scond_free(scond_t *cond)
 
 /**
  * scond_wait:
- * @cond                    : pointer to condition variable object 
- * @lock                    : pointer to mutex object 
+ * @cond                    : pointer to condition variable object
+ * @lock                    : pointer to mutex object
  *
- * Block on a condition variable (i.e. wait on a condition). 
+ * Block on a condition variable (i.e. wait on a condition).
  **/
 void scond_wait(scond_t *cond, slock_t *lock)
 {
@@ -450,10 +466,10 @@ void scond_wait(scond_t *cond, slock_t *lock)
 
 /**
  * scond_broadcast:
- * @cond                    : pointer to condition variable object 
+ * @cond                    : pointer to condition variable object
  *
  * Broadcast a condition. Unblocks all threads currently blocked
- * on the specified condition variable @cond. 
+ * on the specified condition variable @cond.
  **/
 int scond_broadcast(scond_t *cond)
 {
@@ -477,10 +493,10 @@ int scond_broadcast(scond_t *cond)
 
 /**
  * scond_signal:
- * @cond                    : pointer to condition variable object 
+ * @cond                    : pointer to condition variable object
  *
  * Signal a condition. Unblocks at least one of the threads currently blocked
- * on the specified condition variable @cond. 
+ * on the specified condition variable @cond.
  **/
 void scond_signal(scond_t *cond)
 {
@@ -503,8 +519,8 @@ void scond_signal(scond_t *cond)
 
 /**
  * scond_wait_timeout:
- * @cond                    : pointer to condition variable object 
- * @lock                    : pointer to mutex object 
+ * @cond                    : pointer to condition variable object
+ * @lock                    : pointer to mutex object
  * @timeout_us              : timeout (in microseconds)
  *
  * Try to block on a condition variable (i.e. wait on a condition) until
@@ -547,7 +563,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    sys_time_get_current_time(&s, &n);
    now.tv_sec  = s;
    now.tv_nsec = n;
-#elif defined(__mips__)
+#elif defined(__mips__) || defined(VITA)
    struct timeval tm;
 
    gettimeofday(&tm, NULL);
@@ -570,3 +586,41 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    return (ret == 0);
 #endif
 }
+
+#ifdef HAVE_THREAD_STORAGE
+bool sthread_tls_create(sthread_tls_t *tls)
+{
+#ifdef USE_WIN32_THREADS
+   return (*tls = TlsAlloc()) != TLS_OUT_OF_INDEXES;
+#else
+   return pthread_key_create((pthread_key_t*)tls, NULL) == 0;
+#endif
+}
+
+bool sthread_tls_delete(sthread_tls_t *tls)
+{
+#ifdef USE_WIN32_THREADS
+   return TlsFree(*tls) != 0;
+#else
+   return pthread_key_delete(*tls) == 0;
+#endif
+}
+
+void *sthread_tls_get(sthread_tls_t *tls)
+{
+#ifdef USE_WIN32_THREADS
+   return TlsGetValue(*tls);
+#else
+   return pthread_getspecific(*tls);
+#endif
+}
+
+bool sthread_tls_set(sthread_tls_t *tls, const void *data)
+{
+#ifdef USE_WIN32_THREADS
+   return TlsSetValue(*tls, (void*)data) != 0;
+#else
+   return pthread_setspecific(*tls, data) == 0;
+#endif
+}
+#endif
