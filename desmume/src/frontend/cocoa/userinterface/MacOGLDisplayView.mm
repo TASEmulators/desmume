@@ -51,7 +51,7 @@ MacOGLDisplayView::MacOGLDisplayView()
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	// If we can support a 3.2 Core Profile context, then request that in our
 	// pixel format attributes.
-	useContext_3_2 = IsOSXVersionSupported(10, 70, 0);
+	useContext_3_2 = IsOSXVersionSupported(10, 7, 0);
 	if (useContext_3_2)
 	{
 		attributes[9] = kCGLPFAOpenGLProfile;
