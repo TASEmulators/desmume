@@ -36,6 +36,7 @@ protected:
 	
 public:
 	void operator delete(void *ptr);
+	MacOGLDisplayView();
 	
 	virtual void Init();
 	

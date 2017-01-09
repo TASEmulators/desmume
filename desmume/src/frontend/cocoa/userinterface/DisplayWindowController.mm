@@ -1261,9 +1261,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[self setMasterWindow:[self window]];
 	[masterWindow setTitle:(NSString *)[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"]];
 	[masterWindow setInitialFirstResponder:view];
-	[view setInputManager:[emuControl inputManager]];
 	[[emuControl windowList] addObject:self];
 	[emuControl updateAllWindowTitles];
+	
+	[view initContext];
+	[view setInputManager:[emuControl inputManager]];
 	
 	// Set up the scaling factor if this is a Retina window
 	float scaleFactor = 1.0f;
@@ -1609,11 +1611,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	cdsVideoOutput = nil;
 	
 	_cdv = new MacOGLDisplayView();
-	_cdv->Init();
-	
-	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
-	_cdv->SetHUDFontUsingPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
-	
 	localContext = [[NSOpenGLContext alloc] initWithCGLContextObj:((MacOGLDisplayView *)_cdv)->GetContext()];
 	
 	return self;
@@ -1761,6 +1758,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (NSInteger) pixelScaler
 {
 	return [[self cdsVideoOutput] pixelScaler];
+}
+
+#pragma mark Class Methods
+- (void) initContext
+{
+	[localContext setView:self];
+	_cdv->Init();
+	
+	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
+	_cdv->SetHUDFontUsingPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
 }
 
 #pragma mark InputHIDManagerTarget Protocol

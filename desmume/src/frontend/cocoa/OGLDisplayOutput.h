@@ -50,7 +50,7 @@ enum ShaderSupportTier
 	ShaderSupport_FutureTier	= 6,
 };
 
-class OGLInfo
+class OGLContextInfo
 {
 protected:
 	GLint _versionMajor;
@@ -65,8 +65,8 @@ protected:
 	bool _isFBOSupported;
 	
 public:
-	OGLInfo();
-	virtual ~OGLInfo() {};
+	OGLContextInfo();
+	virtual ~OGLContextInfo() {};
 		
 	bool IsUsingShader150();
 	bool IsVBOSupported();
@@ -80,10 +80,10 @@ public:
 	virtual bool IsExtensionPresent(const std::set<std::string> &oglExtensionSet, const std::string &extensionName) const = 0;
 };
 
-class OGLInfo_Legacy : public OGLInfo
+class OGLContextInfo_Legacy : public OGLContextInfo
 {
 public:
-	OGLInfo_Legacy();
+	OGLContextInfo_Legacy();
 	
 	virtual void GetExtensionSetOGL(std::set<std::string> *oglExtensionSet);
 	virtual bool IsExtensionPresent(const std::set<std::string> &oglExtensionSet, const std::string &extensionName) const;
@@ -229,7 +229,7 @@ protected:
 	
 public:
 	OGLImage() {};
-	OGLImage(OGLInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GLsizei viewportWidth, GLsizei viewportHeight);
+	OGLImage(OGLContextInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GLsizei viewportWidth, GLsizei viewportHeight);
 	virtual ~OGLImage();
 	
 	bool GetFiltersPreferGPU();
@@ -388,7 +388,7 @@ public:
 class OGLVideoOutput : public ClientDisplay3DView
 {
 protected:
-	OGLInfo *_info;
+	OGLContextInfo *_contextInfo;
 	GLsizei _viewportWidth;
 	GLsizei _viewportHeight;
 	bool _needUpdateViewport;
@@ -406,7 +406,7 @@ public:
 	OGLVideoOutput();
 	~OGLVideoOutput();
 	
-	OGLInfo* GetInfo();
+	OGLContextInfo* GetContextInfo();
 	
 	GLsizei GetViewportWidth();
 	GLsizei GetViewportHeight();
@@ -437,9 +437,6 @@ public:
 	virtual void FrameFinish();
 };
 
-OGLInfo* OGLInfoCreate_Legacy();
-
-extern OGLInfo* (*OGLInfoCreate_Func)();
 extern void (*glBindVertexArrayDESMUME)(GLuint id);
 extern void (*glDeleteVertexArraysDESMUME)(GLsizei n, const GLuint *ids);
 extern void (*glGenVertexArraysDESMUME)(GLsizei n, GLuint *ids);

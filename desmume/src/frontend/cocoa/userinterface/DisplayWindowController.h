@@ -61,6 +61,7 @@ class OGLVideoOutput;
 @property (assign) NSInteger outputFilter;
 @property (assign) NSInteger pixelScaler;
 
+- (void) initContext;
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
 - (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed;
 - (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType;

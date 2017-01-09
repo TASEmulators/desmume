@@ -26,15 +26,13 @@
 
 #include "OGLDisplayOutput.h"
 
-class OGLInfo_3_2 : public OGLInfo
+class OGLContextInfo_3_2 : public OGLContextInfo
 {
 public:
-	OGLInfo_3_2();
+	OGLContextInfo_3_2();
 	
 	virtual void GetExtensionSetOGL(std::set<std::string> *oglExtensionSet);
 	virtual bool IsExtensionPresent(const std::set<std::string> &oglExtensionSet, const std::string &extensionName) const;
 };
-
-OGLInfo* OGLInfoCreate_3_2();
 
 #endif

@@ -4281,11 +4281,6 @@ void GetGLVersionOGL(GLint *outMajor, GLint *outMinor, GLint *outRevision)
 	}
 }
 
-OGLInfo* OGLInfoCreate_Legacy()
-{
-	return new OGLInfo_Legacy;
-}
-
 void glBindVertexArray_LegacyAPPLE(GLuint vaoID)
 {
 	glBindVertexArrayAPPLE(vaoID);
@@ -4301,7 +4296,6 @@ void glGenVertexArrays_LegacyAPPLE(GLsizei n, GLuint *vaoIDs)
 	glGenVertexArraysAPPLE(n, vaoIDs);
 }
 
-OGLInfo* (*OGLInfoCreate_Func)() = &OGLInfoCreate_Legacy;
 void (*glBindVertexArrayDESMUME)(GLuint id) = &glBindVertexArray_LegacyAPPLE;
 void (*glDeleteVertexArraysDESMUME)(GLsizei n, const GLuint *ids) = &glDeleteVertexArrays_LegacyAPPLE;
 void (*glGenVertexArraysDESMUME)(GLsizei n, GLuint *ids) = &glGenVertexArrays_LegacyAPPLE;
@@ -4452,7 +4446,7 @@ static void InitHQnxLUTs()
 
 #pragma mark -
 
-OGLInfo::OGLInfo()
+OGLContextInfo::OGLContextInfo()
 {
 	GetGLVersionOGL(&_versionMajor, &_versionMinor, &_versionRevision);
 	_shaderSupport = ShaderSupport_Unsupported;
@@ -4464,42 +4458,42 @@ OGLInfo::OGLInfo()
 	_isFBOSupported = false;
 }
 
-ShaderSupportTier OGLInfo::GetShaderSupport()
+ShaderSupportTier OGLContextInfo::GetShaderSupport()
 {
 	return this->_shaderSupport;
 }
 
-bool OGLInfo::IsUsingShader150()
+bool OGLContextInfo::IsUsingShader150()
 {
 	return this->_useShader150;
 }
 
-bool OGLInfo::IsVBOSupported()
+bool OGLContextInfo::IsVBOSupported()
 {
 	return this->_isVBOSupported;
 }
 
-bool OGLInfo::IsVAOSupported()
+bool OGLContextInfo::IsVAOSupported()
 {
 	return this->_isVAOSupported;
 }
 
-bool OGLInfo::IsPBOSupported()
+bool OGLContextInfo::IsPBOSupported()
 {
 	return this->_isPBOSupported;
 }
 
-bool OGLInfo::IsShaderSupported()
+bool OGLContextInfo::IsShaderSupported()
 {
 	return (this->_shaderSupport != ShaderSupport_Unsupported);
 }
 
-bool OGLInfo::IsFBOSupported()
+bool OGLContextInfo::IsFBOSupported()
 {
 	return this->_isFBOSupported;
 }
 
-OGLInfo_Legacy::OGLInfo_Legacy()
+OGLContextInfo_Legacy::OGLContextInfo_Legacy()
 {
 	_shaderSupport = ShaderSupport_Unsupported;
 	_useShader150 = false;
@@ -4595,7 +4589,7 @@ OGLInfo_Legacy::OGLInfo_Legacy()
 	_isFBOSupported	= this->IsExtensionPresent(oglExtensionSet, "GL_EXT_framebuffer_object");
 }
 
-void OGLInfo_Legacy::GetExtensionSetOGL(std::set<std::string> *oglExtensionSet)
+void OGLContextInfo_Legacy::GetExtensionSetOGL(std::set<std::string> *oglExtensionSet)
 {
 	std::string oglExtensionString = std::string((const char *)glGetString(GL_EXTENSIONS));
 	
@@ -4617,7 +4611,7 @@ void OGLInfo_Legacy::GetExtensionSetOGL(std::set<std::string> *oglExtensionSet)
 	}
 }
 
-bool OGLInfo_Legacy::IsExtensionPresent(const std::set<std::string> &oglExtensionSet, const std::string &extensionName) const
+bool OGLContextInfo_Legacy::IsExtensionPresent(const std::set<std::string> &oglExtensionSet, const std::string &extensionName) const
 {
 	if (oglExtensionSet.size() == 0)
 	{
@@ -4910,6 +4904,7 @@ bool OGLShaderProgram::LinkOGL()
 
 OGLVideoOutput::OGLVideoOutput()
 {
+	_contextInfo = NULL;
 	_needUpdateViewport = true;
 	_layerList = new std::vector<OGLVideoLayer *>;
 	_layerList->reserve(8);
@@ -4927,9 +4922,6 @@ OGLVideoOutput::~OGLVideoOutput()
 		delete this->_layerList;
 		this->_layerList = NULL;
 	}
-	
-	delete this->_info;
-	this->_info = NULL;
 }
 
 void OGLVideoOutput::_UpdateNormalSize()
@@ -4979,15 +4971,14 @@ void OGLVideoOutput::_UpdateViewport()
 	this->_needUpdateViewport = false;
 }
 
-OGLInfo* OGLVideoOutput::GetInfo()
+OGLContextInfo* OGLVideoOutput::GetContextInfo()
 {
-	return this->_info;
+	return this->_contextInfo;
 }
 
 void OGLVideoOutput::Init()
 {
-	this->_info = OGLInfoCreate_Func();
-	this->_canFilterOnGPU = ( this->_info->IsShaderSupported() && this->_info->IsFBOSupported() );
+	this->_canFilterOnGPU = ( this->_contextInfo->IsShaderSupported() && this->_contextInfo->IsFBOSupported() );
 	this->_filtersPreferGPU = this->_canFilterOnGPU;
 	this->_willFilterOnGPU = false;
 	
@@ -5009,7 +5000,7 @@ void OGLVideoOutput::Init()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	// Set up fixed-function pipeline render states.
-	if (!this->_info->IsShaderSupported())
+	if (!this->_contextInfo->IsShaderSupported())
 	{
 		glDisable(GL_ALPHA_TEST);
 		glDisable(GL_LIGHTING);
@@ -5427,7 +5418,7 @@ GLuint OGLFilterDeposterize::RunFilterOGL(GLuint srcTexID)
 
 #pragma mark -
 
-OGLImage::OGLImage(OGLInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GLsizei viewportWidth, GLsizei viewportHeight)
+OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imageHeight, GLsizei viewportWidth, GLsizei viewportHeight)
 {
 	_needUploadVertices = true;
 	_useDeposterize = false;
@@ -5483,7 +5474,7 @@ OGLImage::OGLImage(OGLInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GL
 	glGenVertexArraysDESMUME(1, &_vaoMainStatesID);
 	glBindVertexArrayDESMUME(_vaoMainStatesID);
 	
-	if (oglInfo->IsShaderSupported())
+	if (contextInfo->IsShaderSupported())
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
 		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_INT, GL_FALSE, 0, 0);
@@ -5508,10 +5499,10 @@ OGLImage::OGLImage(OGLInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GL
 	_isVAOPresent = true;
 	
 	_pixelScaler = VideoFilterTypeID_None;
-	_useShader150 = oglInfo->IsUsingShader150();
-	_shaderSupport = oglInfo->GetShaderSupport();
+	_useShader150 = contextInfo->IsUsingShader150();
+	_shaderSupport = contextInfo->GetShaderSupport();
 	
-	_canUseShaderOutput = oglInfo->IsShaderSupported();
+	_canUseShaderOutput = contextInfo->IsShaderSupported();
 	if (_canUseShaderOutput)
 	{
 		_finalOutputProgram = new OGLShaderProgram;
@@ -5530,7 +5521,7 @@ OGLImage::OGLImage(OGLInfo *oglInfo, GLsizei imageWidth, GLsizei imageHeight, GL
 		_finalOutputProgram = NULL;
 	}
 	
-	_canUseShaderBasedFilters = (oglInfo->IsShaderSupported() && oglInfo->IsFBOSupported());
+	_canUseShaderBasedFilters = (contextInfo->IsShaderSupported() && contextInfo->IsFBOSupported());
 	if (_canUseShaderBasedFilters)
 	{
 		_filterDeposterize = new OGLFilterDeposterize(_vf->GetSrcWidth(), _vf->GetSrcHeight(), _shaderSupport, _useShader150);
@@ -6252,11 +6243,11 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	_glyphSize = 0.0f;
 	_glyphTileSize = 0.0f;
 	
-	if (_output->GetInfo()->IsShaderSupported())
+	if (_output->GetContextInfo()->IsShaderSupported())
 	{
 		_program = new OGLShaderProgram;
-		_program->SetShaderSupport(oglVO->GetInfo()->GetShaderSupport());
-		_program->SetVertexAndFragmentShaderOGL(HUDOutputVertShader_100, HUDOutputFragShader_110, oglVO->GetInfo()->IsUsingShader150());
+		_program->SetShaderSupport(oglVO->GetContextInfo()->GetShaderSupport());
+		_program->SetVertexAndFragmentShaderOGL(HUDOutputVertShader_100, HUDOutputFragShader_110, oglVO->GetContextInfo()->IsUsingShader150());
 		
 		glUseProgram(_program->GetProgramID());
 		_uniformViewSize = glGetUniformLocation(_program->GetProgramID(), "viewSize");
@@ -6301,7 +6292,7 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	glGenVertexArraysDESMUME(1, &_vaoMainStatesID);
 	glBindVertexArrayDESMUME(_vaoMainStatesID);
 	
-	if (oglVO->GetInfo()->IsShaderSupported())
+	if (oglVO->GetContextInfo()->IsShaderSupported())
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
 		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, NULL);
@@ -6329,7 +6320,7 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 
 OGLHUDLayer::~OGLHUDLayer()
 {
-	if (_output->GetInfo()->IsShaderSupported())
+	if (_output->GetContextInfo()->IsShaderSupported())
 	{
 		glUseProgram(0);
 		delete this->_program;
@@ -6455,7 +6446,7 @@ void OGLHUDLayer::_UpdateVerticesOGL()
 
 void OGLHUDLayer::UpdateViewportOGL()
 {
-	if (this->_output->GetInfo()->IsShaderSupported())
+	if (this->_output->GetContextInfo()->IsShaderSupported())
 	{
 		glUseProgram(this->_program->GetProgramID());
 		glUniform2f(this->_uniformViewSize, this->_output->GetViewProperties().clientWidth, this->_output->GetViewProperties().clientHeight);
@@ -6492,7 +6483,7 @@ void OGLHUDLayer::RenderOGL()
 		return;
 	}
 	
-	if (this->_output->GetInfo()->IsShaderSupported())
+	if (this->_output->GetContextInfo()->IsShaderSupported())
 	{
 		glUseProgram(this->_program->GetProgramID());
 	}
@@ -6634,7 +6625,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	glGenVertexArraysDESMUME(1, &this->_vaoMainStatesID);
 	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
 	
-	if (this->_output->GetInfo()->IsShaderSupported())
+	if (this->_output->GetContextInfo()->IsShaderSupported())
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
 		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, 0);
@@ -6657,9 +6648,9 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	
 	glBindVertexArrayDESMUME(0);
 	
-	_useShader150 = _output->GetInfo()->IsUsingShader150();
-	_shaderSupport = _output->GetInfo()->GetShaderSupport();
-	if (_output->GetInfo()->IsShaderSupported())
+	_useShader150 = _output->GetContextInfo()->IsUsingShader150();
+	_shaderSupport = _output->GetContextInfo()->GetShaderSupport();
+	if (_output->GetContextInfo()->IsShaderSupported())
 	{
 		_finalOutputProgram = new OGLShaderProgram;
 		_finalOutputProgram->SetShaderSupport(_shaderSupport);
@@ -6702,7 +6693,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 
 OGLDisplayLayer::~OGLDisplayLayer()
 {
-	if (_output->GetInfo()->IsVAOSupported())
+	if (_output->GetContextInfo()->IsVAOSupported())
 	{
 		glDeleteVertexArraysDESMUME(1, &this->_vaoMainStatesID);
 	}
@@ -6721,7 +6712,7 @@ OGLDisplayLayer::~OGLDisplayLayer()
 	glDeleteTextures(1, &this->_texHQ4xLUT);
 	glActiveTexture(GL_TEXTURE0);
 	
-	if (_output->GetInfo()->IsShaderSupported())
+	if (_output->GetContextInfo()->IsShaderSupported())
 	{
 		glUseProgram(0);
 		delete this->_finalOutputProgram;
@@ -6906,7 +6897,7 @@ void OGLDisplayLayer::_UpdateRotationScaleOGL()
 	const double r = cdv.rotation;
 	const double s = cdv.viewScale;
 	
-	if (this->_output->GetInfo()->IsShaderSupported())
+	if (this->_output->GetContextInfo()->IsShaderSupported())
 	{
 		glUniform1f(this->_uniformFinalOutputAngleDegrees, r);
 		glUniform1f(this->_uniformFinalOutputScalar, s);
@@ -7461,7 +7452,7 @@ void OGLDisplayLayer::UpdateViewportOGL()
 	const double w = cdv.clientWidth;
 	const double h = cdv.clientHeight;
 	
-	if (this->_output->GetInfo()->IsShaderSupported())
+	if (this->_output->GetContextInfo()->IsShaderSupported())
 	{
 		glUseProgram(this->_finalOutputProgram->GetProgramID());
 		glUniform2f(this->_uniformFinalOutputViewSize, w, h);
@@ -7598,7 +7589,7 @@ void OGLDisplayLayer::ProcessOGL()
 
 void OGLDisplayLayer::RenderOGL()
 {
-	if (this->_output->GetInfo()->IsShaderSupported())
+	if (this->_output->GetContextInfo()->IsShaderSupported())
 	{
 		glUseProgram(this->_finalOutputProgram->GetProgramID());
 	}

@@ -23,11 +23,6 @@ enum OGLVertexAttributeID
 	OGLVertexAttributeID_TexCoord0 = 8
 };
 
-OGLInfo* OGLInfoCreate_3_2()
-{
-	return new OGLInfo_3_2;
-}
-
 void glBindVertexArray_3_2(GLuint vaoID)
 {
 	glBindVertexArray(vaoID);
@@ -43,7 +38,7 @@ void glGenVertexArrays_3_2(GLsizei n, GLuint *vaoIDs)
 	glGenVertexArrays(n, vaoIDs);
 }
 
-OGLInfo_3_2::OGLInfo_3_2()
+OGLContextInfo_3_2::OGLContextInfo_3_2()
 {
 	_useShader150 = true;
 	_isVBOSupported = true;
@@ -70,7 +65,7 @@ OGLInfo_3_2::OGLInfo_3_2()
 	}
 }
 
-void OGLInfo_3_2::GetExtensionSetOGL(std::set<std::string> *oglExtensionSet)
+void OGLContextInfo_3_2::GetExtensionSetOGL(std::set<std::string> *oglExtensionSet)
 {
 	GLint extensionCount = 0;
 	
@@ -82,7 +77,7 @@ void OGLInfo_3_2::GetExtensionSetOGL(std::set<std::string> *oglExtensionSet)
 	}
 }
 
-bool OGLInfo_3_2::IsExtensionPresent(const std::set<std::string> &oglExtensionSet, const std::string &extensionName) const
+bool OGLContextInfo_3_2::IsExtensionPresent(const std::set<std::string> &oglExtensionSet, const std::string &extensionName) const
 {
 	if (oglExtensionSet.size() == 0)
 	{

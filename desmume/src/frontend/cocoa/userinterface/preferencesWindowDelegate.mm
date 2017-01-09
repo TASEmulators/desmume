@@ -60,6 +60,7 @@
 	isPreviewImageLoaded = false;
 		
 	// Initialize the OpenGL context
+	bool useContext_3_2 = false;
 	NSOpenGLPixelFormatAttribute attributes[] = {
 		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
 		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
@@ -71,11 +72,11 @@
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	// If we can support a 3.2 Core Profile context, then request that in our
 	// pixel format attributes.
-	if (IsOSXVersionSupported(10, 7, 0))
+	useContext_3_2 = IsOSXVersionSupported(10, 7, 0);
+	if (useContext_3_2)
 	{
 		attributes[8] = NSOpenGLPFAOpenGLProfile;
 		attributes[9] = NSOpenGLProfileVersion3_2Core;
-		OGLInfoCreate_Func = &OGLInfoCreate_3_2;
 	}
 #endif
 	
@@ -84,9 +85,9 @@
 	{
 		// If we can't get a 3.2 Core Profile context, then switch to using a
 		// legacy context instead.
+		useContext_3_2 = false;
 		attributes[8] = (NSOpenGLPixelFormatAttribute)0;
 		attributes[9] = (NSOpenGLPixelFormatAttribute)0;
-		OGLInfoCreate_Func = &OGLInfoCreate_Legacy;
 		format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 	}
 	
@@ -103,8 +104,20 @@
 	const NSRect newViewportRect = frameRect;
 #endif
 	
-	OGLInfo *oglInfo = OGLInfoCreate_Func();
-	oglImage = new OGLImage(oglInfo, 64, 64, newViewportRect.size.width, newViewportRect.size.height);
+	OGLContextInfo *contextInfo = NULL;
+	
+#ifdef _OGLDISPLAYOUTPUT_3_2_H_
+	if (useContext_3_2)
+	{
+		contextInfo = new OGLContextInfo_3_2;
+	}
+	else
+#endif
+	{
+		contextInfo = new OGLContextInfo_Legacy;
+	}
+	
+	oglImage = new OGLImage(contextInfo, 64, 64, newViewportRect.size.width, newViewportRect.size.height);
 	oglImage->SetFiltersPreferGPUOGL(true);
 	oglImage->SetSourceDeposterize(false);
 	oglImage->SetOutputFilterOGL(OutputFilterTypeID_Bilinear);

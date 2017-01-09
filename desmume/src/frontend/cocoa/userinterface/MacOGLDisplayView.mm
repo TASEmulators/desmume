@@ -21,18 +21,24 @@
 void MacOGLDisplayView::operator delete(void *ptr)
 {
 	CGLContextObj context = ((MacOGLDisplayView *)ptr)->GetContext();
+	OGLContextInfo *contextInfo = ((MacOGLDisplayView *)ptr)->GetContextInfo();
 	
-	CGLContextObj prevContext = CGLGetCurrentContext();
-	CGLSetCurrentContext(context);
-	::operator delete(ptr);
-	CGLSetCurrentContext(prevContext);
-	
-	CGLReleaseContext(context);
+	if (context != NULL)
+	{
+		CGLContextObj prevContext = CGLGetCurrentContext();
+		CGLSetCurrentContext(context);
+		::operator delete(ptr);
+		CGLSetCurrentContext(prevContext);
+		
+		delete contextInfo;
+		CGLReleaseContext(context);
+	}
 }
 
-void MacOGLDisplayView::Init()
+MacOGLDisplayView::MacOGLDisplayView()
 {
 	// Initialize the OpenGL context
+	bool useContext_3_2 = false;
 	CGLPixelFormatAttribute attributes[] = {
 		kCGLPFAColorSize, (CGLPixelFormatAttribute)24,
 		kCGLPFAAlphaSize, (CGLPixelFormatAttribute)8,
@@ -42,16 +48,14 @@ void MacOGLDisplayView::Init()
 		(CGLPixelFormatAttribute)0, (CGLPixelFormatAttribute)0,
 		(CGLPixelFormatAttribute)0 };
 	
-	OGLInfoCreate_Func = &OGLInfoCreate_Legacy;
-	
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	// If we can support a 3.2 Core Profile context, then request that in our
 	// pixel format attributes.
-	if (IsOSXVersionSupported(10, 7, 0))
+	useContext_3_2 = IsOSXVersionSupported(10, 70, 0);
+	if (useContext_3_2)
 	{
 		attributes[9] = kCGLPFAOpenGLProfile;
 		attributes[10] = (CGLPixelFormatAttribute)kCGLOGLPVersion_3_2_Core;
-		OGLInfoCreate_Func = &OGLInfoCreate_3_2;
 	}
 #endif
 	
@@ -63,15 +67,34 @@ void MacOGLDisplayView::Init()
 	{
 		// If we can't get a 3.2 Core Profile context, then switch to using a
 		// legacy context instead.
+		useContext_3_2 = false;
 		attributes[9] = (CGLPixelFormatAttribute)0;
 		attributes[10] = (CGLPixelFormatAttribute)0;
-		OGLInfoCreate_Func = &OGLInfoCreate_Legacy;
 		CGLChoosePixelFormat(attributes, &cglPixFormat, &virtualScreenCount);
 	}
 	
 	CGLCreateContext(cglPixFormat, NULL, &this->_context);
 	CGLReleasePixelFormat(cglPixFormat);
 	
+	CGLContextObj prevContext = CGLGetCurrentContext();
+	CGLSetCurrentContext(this->_context);
+	
+#ifdef _OGLDISPLAYOUTPUT_3_2_H_
+	if (useContext_3_2)
+	{
+		this->_contextInfo = new OGLContextInfo_3_2;
+	}
+	else
+#endif
+	{
+		this->_contextInfo = new OGLContextInfo_Legacy;
+	}
+	
+	CGLSetCurrentContext(prevContext);
+}
+
+void MacOGLDisplayView::Init()
+{
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(this->_context);
 	this->OGLVideoOutput::Init();
