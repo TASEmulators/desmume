@@ -1885,6 +1885,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	return YES;
 }
 
+- (BOOL)wantsDefaultClipping
+{
+	return NO;
+}
+
 - (void)lockFocus
 {
 	[super lockFocus];
