@@ -18,7 +18,6 @@
 #ifndef _COCOA_PORT_UTILITIES_
 #define _COCOA_PORT_UTILITIES_
 
-#include <ApplicationServices/ApplicationServices.h>
 #include <stdbool.h>
 #include <stdint.h>
 

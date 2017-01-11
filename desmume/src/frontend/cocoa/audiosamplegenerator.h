@@ -19,6 +19,7 @@
 #define _AUDIO_SAMPLE_GENERATOR_
 
 #include <stdint.h>
+#include <stdlib.h>
 
 
 class AudioGenerator

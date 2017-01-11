@@ -22,6 +22,7 @@
 
 #include "audiosamplegenerator.h"
 #include <math.h>
+#include <string.h>
 #include "cocoa_globals.h"
 
 #define NUM_INTERNAL_NOISE_SAMPLES 32
