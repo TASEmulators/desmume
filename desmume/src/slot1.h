@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2010-2015 DeSmuME team
+	Copyright (C) 2010-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -95,6 +95,7 @@ public:
 
 typedef ISlot1Interface* TISlot1InterfaceConstructor();
 
+//wtf do these IDs mean, anyway?
 enum NDS_SLOT1_TYPE
 {
 	NDS_SLOT1_NONE          = 0,			// 0xFF - None
@@ -103,6 +104,7 @@ enum NDS_SLOT1_TYPE
 	NDS_SLOT1_RETAIL_NAND,	            // 0x02 - Made in Ore/WarioWare D.I.Y.
 	NDS_SLOT1_RETAIL_MCROM,	            // 0x01 - a standard MC (eeprom, flash, fram) -bearing retail card. Also supports motion, for now, because that's the way we originally coded it
 	NDS_SLOT1_RETAIL_DEBUG,	            // 0x04 - for romhacking and fan-made translations
+	NDS_SLOT1_POWERSAVES,	            // 0x05
 	NDS_SLOT1_COUNT			            //use to count addons - MUST BE LAST!!!
 };
 

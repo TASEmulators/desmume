@@ -102,12 +102,18 @@ void slot1_Init()
 	extern TISlot1InterfaceConstructor construct_Slot1_Retail_NAND;
 	extern TISlot1InterfaceConstructor construct_Slot1_Retail_MCROM;
 	extern TISlot1InterfaceConstructor construct_Slot1_Retail_DEBUG;
+	extern TISlot1InterfaceConstructor construct_Slot1_PowerSaves;
 	slot1_List[NDS_SLOT1_NONE] = construct_Slot1_None();
 	slot1_List[NDS_SLOT1_RETAIL_AUTO] = construct_Slot1_Retail_Auto();
 	slot1_List[NDS_SLOT1_R4] = construct_Slot1_R4();
 	slot1_List[NDS_SLOT1_RETAIL_NAND] = construct_Slot1_Retail_NAND();
 	slot1_List[NDS_SLOT1_RETAIL_MCROM] = construct_Slot1_Retail_MCROM();
 	slot1_List[NDS_SLOT1_RETAIL_DEBUG] = construct_Slot1_Retail_DEBUG();
+
+	//optional, since this requires hidapi
+#ifdef HAVE_POWERSAVES
+	slot1_List[NDS_SLOT1_POWERSAVES] = construct_Slot1_PowerSaves();
+#endif
 }
 
 void slot1_Shutdown()
@@ -170,6 +176,7 @@ bool slot1_getTypeByID(u8 ID, NDS_SLOT1_TYPE &type)
 {
 	for (u8 i = 0; i < NDS_SLOT1_COUNT; i++)
 	{
+		if(slot1_List[i])
 		if (slot1_List[i]->info()->id() == ID)
 		{
 			type = (NDS_SLOT1_TYPE)i;

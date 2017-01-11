@@ -857,6 +857,7 @@
 #define IDD_SLOT1_R4                    10012
 #define IDD_SLOT1_DEBUG                 10013
 #define IDD_GBASLOT_PADDLE              10014
+#define IDD_SLOT1_POWERSAVES            10015
 #define IDM_FILE_STOPAVI                40000
 #define IDM_SCREENSEP_NONE              40000
 #define IDM_FILE_STOPWAV                40001

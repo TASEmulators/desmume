@@ -59,6 +59,7 @@
     <ClCompile Include="..\..\addons\slot1comp_mc.cpp" />
     <ClCompile Include="..\..\addons\slot1comp_protocol.cpp" />
     <ClCompile Include="..\..\addons\slot1comp_rom.cpp" />
+    <ClCompile Include="..\..\addons\slot1_powersaves.cpp" />
     <ClCompile Include="..\..\addons\slot1_retail_auto.cpp" />
     <ClCompile Include="..\..\addons\slot1_retail_mcrom.cpp" />
     <ClCompile Include="..\..\addons\slot1_retail_mcrom_debug.cpp" />
@@ -341,6 +342,7 @@
     <ClCompile Include="FirmConfig.cpp" />
     <ClCompile Include="fsnitroView.cpp" />
     <ClCompile Include="gbaslot_config.cpp" />
+    <ClCompile Include="hidapi\hid.c" />
     <ClCompile Include="hotkey.cpp" />
     <ClCompile Include="importSave.cpp" />
     <ClCompile Include="inputdx.cpp" />
@@ -630,6 +632,7 @@
     <ClInclude Include="FirmConfig.h" />
     <ClInclude Include="fsnitroView.h" />
     <ClInclude Include="gbaslot_config.h" />
+    <ClInclude Include="hidapi\hidapi.h" />
     <ClInclude Include="hotkey.h" />
     <ClInclude Include="importSave.h" />
     <ClInclude Include="inputdx.h" />

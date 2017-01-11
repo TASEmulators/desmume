@@ -209,6 +209,7 @@ u32	Slot1_IDDs[NDS_SLOT1_COUNT] = {
 	IDD_SLOT1_NONE,				// NDS_SLOT1_RETAIL_NAND	- Made in Ore/WarioWare D.I.Y.
 	IDD_SLOT1_NONE,				// NDS_SLOT1_RETAIL_MCROM	- a standard MC (eeprom, flash, fram)
 	IDD_SLOT1_DEBUG,			// NDS_SLOT1_RETAIL_DEBUG	- for romhacking and fan-made translations
+	IDD_SLOT1_NONE,			// NDS_SLOT1_POWERSAVES
 };
 
 DLGPROC Slot1_Procs[NDS_SLOT1_COUNT] = {
@@ -217,7 +218,8 @@ DLGPROC Slot1_Procs[NDS_SLOT1_COUNT] = {
 	Slot1R4,					// NDS_SLOT1_R4,			- R4 flash card
 	Slot1None,  				// NDS_SLOT1_RETAIL_NAND	- Made in Ore/WarioWare D.I.Y.
 	Slot1None,					// NDS_SLOT1_RETAIL_MCROM	- a standard MC (eeprom, flash, fram)
-	Slot1Debug					// NDS_SLOT1_RETAIL_DEBUG	- for romhacking and fan-made translations
+	Slot1Debug,					// NDS_SLOT1_RETAIL_DEBUG	- for romhacking and fan-made translations
+	Slot1None,					// NDS_SLOT1_POWERSAVES -
 };
 
 
@@ -230,7 +232,10 @@ BOOL CALLBACK Slot1Box_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 		{
 			OKbutton_slot1 = GetDlgItem(dialog, IDOK);
 			for(int i = 0; i < NDS_SLOT1_COUNT; i++)
+			{
+				printf("%d %s\n",i,slot1_List[i]->info()->name());
 				ComboBox_AddString(GetDlgItem(dialog, IDC_ADDONS_LIST), slot1_List[i]->info()->name());
+			}
 			ComboBox_SetCurSel(GetDlgItem(dialog, IDC_ADDONS_LIST), temp_type_slot1);
 			SetWindowText(GetDlgItem(dialog, IDC_ADDONS_INFO), slot1_List[temp_type_slot1]->info()->descr());
 
@@ -348,6 +353,8 @@ void slot1Dialog(HWND hwnd)
 					path.setpath(path.SLOT1D, tmp_fs_path);
 					WritePrivateProfileString(SECTION, SLOT1DKEY, path.pathToSlot1D, IniName);
 				}
+				break;
+			case NDS_SLOT1_POWERSAVES:
 				break;
 			default:
 				return;

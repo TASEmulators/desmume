@@ -150,7 +150,7 @@
 			<PreprocessorDefinitions Condition="'$(EXPERIMENTAL_WIFI_COMM)' == 'true'">EXPERIMENTAL_WIFI_COMM=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 			<!-- desmume configuration: features we always have in windows -->
-			<PreprocessorDefinitions>HAVE_LIBAGG=1;HAVE_JIT=1;HAVE_LUA=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>HAVE_LIBAGG=1;HAVE_JIT=1;HAVE_LUA=1;HAVE_POWERSAVES=1%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 		</ClCompile>
 
@@ -172,7 +172,7 @@
 			<!-- general deps config -->
 			<AdditionalDependencies>lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
 			<!-- (and windows libs) -->
-			<AdditionalDependencies>vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalDependencies>vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;shell32.lib;comdlg32.lib;shlwapi.lib;comctl32.lib;setupapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<DelayLoadDLLs>lua51.dll</DelayLoadDLLs>
 

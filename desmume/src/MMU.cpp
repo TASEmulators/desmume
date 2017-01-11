@@ -1256,7 +1256,7 @@ void MMU_GC_endTransfer(u32 PROCNUM)
 
 void GC_Command::print()
 {
-	GCLOG("%02X%02X%02X%02X%02X%02X%02X%02X\n",bytes[0],bytes[1],bytes[2],bytes[3],bytes[4],bytes[5],bytes[6],bytes[7]);
+	printf("%02X%02X%02X%02X%02X%02X%02X%02X\n",bytes[0],bytes[1],bytes[2],bytes[3],bytes[4],bytes[5],bytes[6],bytes[7]);
 }
 
 void GC_Command::toCryptoBuffer(u32 buf[2])
@@ -1290,6 +1290,7 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 	GCBUS_Controller& card = MMU.dscard[PROCNUM];
 
 	//....pick apart the fields....
+	//(TODO - store these somewhere instead of grabbing them out elsewhere)
 	int keylength = (val&0x1FFF); //key1length high gcromctrl[21:16] ??
 	u8 key2_encryptdata = (val>>13)&1;
 	u8 bit15 = (val>>14)&1;
@@ -1318,6 +1319,8 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 	//pluck out the command registers into a more convenient format
 	GC_Command rawcmd = *(GC_Command*)&MMU.MMU_MEM[PROCNUM][0x40][0x1A8];
 
+	T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val & 0x7F7FFFFF);
+
 	//when writing a 1 to the start bit, a command runs.
 	//the command is transferred to the GC during the next 8 clocks
 	if(start)
@@ -1334,12 +1337,12 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 	}
 	else
 	{
-		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val & 0x7F7FFFFF);
 		GCLOG("SCUTTLE????\n");
 		return;
 	}
 
 	//the transfer size is determined by the specification here in GCROMCTRL, not any logic private to the card.
+	//we do need to know it for powersaves, but we'll figure it out inside there
 	card.transfer_count = blocksize;
 
 	//if there was nothing to be done here, go ahead and flag it as done

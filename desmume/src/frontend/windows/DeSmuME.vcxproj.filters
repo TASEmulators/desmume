@@ -136,6 +136,9 @@
     <Filter Include="libretro-common\include\encodings">
       <UniqueIdentifier>{c3763fed-6836-4ede-be25-d6d35bbad418}</UniqueIdentifier>
     </Filter>
+    <Filter Include="frontend\Windows\hidapi">
+      <UniqueIdentifier>{2977c753-096b-4c2d-a9fa-0fdb7fd0fe7d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\addons\slot2_expMemory.cpp">
@@ -921,6 +924,12 @@
     <ClCompile Include="..\..\utils\colorspacehandler\colorspacehandler_AltiVec.cpp">
       <Filter>utils\colorspacehandler</Filter>
     </ClCompile>
+    <ClCompile Include="hidapi\hid.c">
+      <Filter>frontend\Windows\hidapi</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\addons\slot1_powersaves.cpp">
+      <Filter>addons</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\utils\guid.h">
@@ -1609,6 +1618,9 @@
     </ClInclude>
     <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler_SSE2.h">
       <Filter>utils\colorspacehandler</Filter>
+    </ClInclude>
+    <ClInclude Include="hidapi\hidapi.h">
+      <Filter>frontend\Windows\hidapi</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
