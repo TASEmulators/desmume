@@ -21,15 +21,28 @@
 #import <Cocoa/Cocoa.h>
 #import <OpenGL/OpenGL.h>
 
+#import "DisplayViewCALayer.h"
+
 #ifdef MAC_OS_X_VERSION_10_7
 	#include "../OGLDisplayOutput_3_2.h"
 #else
 	#include "../OGLDisplayOutput.h"
 #endif
 
-class MacOGLDisplayView : public OGLVideoOutput
+#undef BOOL
+
+class MacOGLDisplayView;
+
+@interface DisplayViewOpenGLLayer : CAOpenGLLayer <DisplayViewCALayer>
+{
+	MacOGLDisplayView *_cdv;
+}
+@end
+
+class MacOGLDisplayView : public OGLVideoOutput, public DisplayViewCALayerInterface
 {
 protected:
+	CGLPixelFormatObj _pixelFormat;
 	CGLContextObj _context;
 	
 	void _FrameRenderAndFlush();
@@ -40,9 +53,9 @@ public:
 	
 	virtual void Init();
 	
+	CGLPixelFormatObj GetPixelFormat() const;
 	CGLContextObj GetContext() const;
-	void SetContext(CGLContextObj context);
-	
+		
 	virtual void SetHUDFontUsingPath(const char *filePath);
 	
 	virtual void SetVideoBuffers(const uint32_t colorFormat,

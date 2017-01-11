@@ -1264,7 +1264,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[emuControl windowList] addObject:self];
 	[emuControl updateAllWindowTitles];
 	
-	[view initContext];
 	[view setInputManager:[emuControl inputManager]];
 	
 	// Set up the scaling factor if this is a Retina window
@@ -1610,8 +1609,15 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	inputManager = nil;
 	cdsVideoOutput = nil;
 	
-	_cdv = new MacOGLDisplayView();
-	localContext = [[NSOpenGLContext alloc] initWithCGLContextObj:((MacOGLDisplayView *)_cdv)->GetContext()];
+	localLayer = [[DisplayViewOpenGLLayer alloc] init];
+	
+	ClientDisplay3DView *cdv = [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
+	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
+	cdv->SetHUDFontUsingPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
+	
+	[self setLayer:localLayer];
+	[self setWantsLayer:YES];
+	[self setLayerContentsRedrawPolicy:NSViewLayerContentsRedrawNever];
 	
 	return self;
 }
@@ -1620,10 +1626,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 {
 	[self setInputManager:nil];
 	[self setCdsVideoOutput:nil];
-	[localContext clearDrawable];
-	[localContext release];
+	[self setLayer:nil];
 	
-	delete _cdv;
+	[localLayer release];
 	
 	[super dealloc];
 }
@@ -1632,7 +1637,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (ClientDisplay3DView *) clientDisplay3DView
 {
-	return _cdv;
+	return [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
 }
 
 - (BOOL) canUseShaderBasedFilters
@@ -1760,16 +1765,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	return [[self cdsVideoOutput] pixelScaler];
 }
 
-#pragma mark Class Methods
-- (void) initContext
-{
-	[localContext setView:self];
-	_cdv->Init();
-	
-	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
-	_cdv->SetHUDFontUsingPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
-}
-
 #pragma mark InputHIDManagerTarget Protocol
 - (BOOL) handleHIDQueue:(IOHIDQueueRef)hidQueue hidManager:(InputHIDManager *)hidManager
 {
@@ -1835,7 +1830,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 {
 	BOOL isHandled = NO;
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	const ClientDisplayMode displayMode = _cdv->GetMode();
+	ClientDisplayView *cdv = [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
+	const ClientDisplayMode displayMode = cdv->GetMode();
 	
 	// Convert the clicked location from window coordinates, to view coordinates,
 	// and finally to DS touchscreen coordinates.
@@ -1850,7 +1846,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		
 		// Convert the clicked location from window coordinates, to view coordinates, and finally to NDS touchscreen coordinates.
 		const NSPoint clientLoc = [self convertPoint:[theEvent locationInWindow] fromView:nil];
-		_cdv->GetNDSPoint((int)buttonNumber, isInitialMouseDown, clientLoc.x, clientLoc.y, x, y);
+		cdv->GetNDSPoint((int)buttonNumber, isInitialMouseDown, clientLoc.x, clientLoc.y, x, y);
 	}
 	
 	const InputAttributes inputAttr = InputManagerEncodeMouseButtonInput(buttonNumber, NSMakePoint(x, y), buttonPressed);
@@ -1890,19 +1886,21 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	return NO;
 }
 
-- (void)lockFocus
+- (BOOL)wantsUpdateLayer
 {
-	[super lockFocus];
-	
-	if ([localContext view] != self)
-	{
-		[localContext setView:self];
-	}
+	return YES;
+}
+
+- (void)updateLayer
+{
+	ClientDisplay3DView *cdv = [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
+	cdv->UpdateView();
 }
 
 - (void)drawRect:(NSRect)dirtyRect
 {
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REDRAW_VIEW];
+	ClientDisplay3DView *cdv = [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
+	cdv->UpdateView();
 }
 
 - (void)setFrame:(NSRect)rect
@@ -1912,7 +1910,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	if (rect.size.width != oldFrame.size.width || rect.size.height != oldFrame.size.height)
 	{
-		[localContext update];
 		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 		
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)

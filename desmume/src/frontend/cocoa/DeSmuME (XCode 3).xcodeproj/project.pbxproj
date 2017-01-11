@@ -762,6 +762,16 @@
 		AB3E69121E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E690F1E231E9900D4CC75 /* MacOGLDisplayView.mm */; };
 		AB3E69131E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E690F1E231E9900D4CC75 /* MacOGLDisplayView.mm */; };
 		AB3E69141E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E690F1E231E9900D4CC75 /* MacOGLDisplayView.mm */; };
+		AB3E69451E25FB8400D4CC75 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3E69441E25FB8400D4CC75 /* QuartzCore.framework */; };
+		AB3E697D1E25FB9600D4CC75 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3E69441E25FB8400D4CC75 /* QuartzCore.framework */; };
+		AB3E697E1E25FB9700D4CC75 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3E69441E25FB8400D4CC75 /* QuartzCore.framework */; };
+		AB3E697F1E25FB9700D4CC75 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3E69441E25FB8400D4CC75 /* QuartzCore.framework */; };
+		AB3E69801E25FB9800D4CC75 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3E69441E25FB8400D4CC75 /* QuartzCore.framework */; };
+		AB3E69831E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E69821E25FBBF00D4CC75 /* DisplayViewCALayer.mm */; };
+		AB3E69841E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E69821E25FBBF00D4CC75 /* DisplayViewCALayer.mm */; };
+		AB3E69851E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E69821E25FBBF00D4CC75 /* DisplayViewCALayer.mm */; };
+		AB3E69861E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E69821E25FBBF00D4CC75 /* DisplayViewCALayer.mm */; };
+		AB3E69871E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E69821E25FBBF00D4CC75 /* DisplayViewCALayer.mm */; };
 		AB43527217D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB43527117D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp */; };
 		AB43527317D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB43527117D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp */; };
 		AB43527417D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB43527117D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp */; };
@@ -1881,6 +1891,9 @@
 		AB3E34C8134AF4500056477A /* cocoa_output.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_output.mm; sourceTree = "<group>"; };
 		AB3E690E1E231E9900D4CC75 /* MacOGLDisplayView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacOGLDisplayView.h; sourceTree = "<group>"; };
 		AB3E690F1E231E9900D4CC75 /* MacOGLDisplayView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MacOGLDisplayView.mm; sourceTree = "<group>"; };
+		AB3E69441E25FB8400D4CC75 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		AB3E69811E25FBBF00D4CC75 /* DisplayViewCALayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DisplayViewCALayer.h; sourceTree = "<group>"; };
+		AB3E69821E25FBBF00D4CC75 /* DisplayViewCALayer.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = DisplayViewCALayer.mm; sourceTree = "<group>"; };
 		AB43527117D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_mcrom_debug.cpp; sourceTree = "<group>"; };
 		AB43528517D5BA95007417C8 /* fsnitro.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fsnitro.h; sourceTree = "<group>"; };
 		AB43528617D5BA95007417C8 /* fsnitro.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fsnitro.cpp; sourceTree = "<group>"; };
@@ -2271,6 +2284,7 @@
 				AB2A9A741725F00F0062C1A1 /* libz.dylib in Frameworks */,
 				AB2A9A731725F00F0062C1A1 /* OpenGL.framework in Frameworks */,
 				AB1CC8001AA509C2008B0A16 /* CoreAudio.framework in Frameworks */,
+				AB3E69801E25FB9800D4CC75 /* QuartzCore.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2290,6 +2304,7 @@
 				AB2F3C4115CF9C6000858373 /* libz.dylib in Frameworks */,
 				AB2F3C4015CF9C6000858373 /* OpenGL.framework in Frameworks */,
 				AB1CC80A1AA509DF008B0A16 /* CoreAudio.framework in Frameworks */,
+				AB3E697F1E25FB9700D4CC75 /* QuartzCore.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2309,6 +2324,7 @@
 				ABC3AFCF14B8D16700D5B13D /* libz.dylib in Frameworks */,
 				AB711F761481C35F009011C8 /* OpenGL.framework in Frameworks */,
 				AB1CC80D1AA509E1008B0A16 /* CoreAudio.framework in Frameworks */,
+				AB3E69451E25FB8400D4CC75 /* QuartzCore.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2328,6 +2344,7 @@
 				AB73AA2F1507C9F500A310C8 /* libz.dylib in Frameworks */,
 				AB73AA2E1507C9F500A310C8 /* OpenGL.framework in Frameworks */,
 				AB1CC80C1AA509E0008B0A16 /* CoreAudio.framework in Frameworks */,
+				AB3E697D1E25FB9600D4CC75 /* QuartzCore.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2347,6 +2364,7 @@
 				ABAD104515ACE7A00000EC47 /* libz.dylib in Frameworks */,
 				ABAD104415ACE7A00000EC47 /* OpenGL.framework in Frameworks */,
 				AB1CC80B1AA509E0008B0A16 /* CoreAudio.framework in Frameworks */,
+				AB3E697E1E25FB9700D4CC75 /* QuartzCore.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2414,6 +2432,7 @@
 				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
 				AB350BA41478AC96007165AC /* IOKit.framework */,
 				ABC570D4134431DA00E7B0B1 /* OpenGL.framework */,
+				AB3E69441E25FB8400D4CC75 /* QuartzCore.framework */,
 				AB0A0D1914AACA9600E83E91 /* libz.dylib */,
 			);
 			name = "Linked Frameworks";
@@ -2948,6 +2967,7 @@
 			children = (
 				AB3ACB6614C2361100D7D192 /* appDelegate.h */,
 				AB3ACB6814C2361100D7D192 /* cheatWindowDelegate.h */,
+				AB3E69811E25FBBF00D4CC75 /* DisplayViewCALayer.h */,
 				AB700DDC16CDE4C300FBD336 /* DisplayWindowController.h */,
 				AB6A187A16C9951C00384EED /* EmuControllerDelegate.h */,
 				ABAAFBE8172122B6005DDDBE /* FileMigrationDelegate.h */,
@@ -2961,6 +2981,7 @@
 				ABA0356E169127BB00817C69 /* troubleshootingWindowDelegate.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
+				AB3E69821E25FBBF00D4CC75 /* DisplayViewCALayer.mm */,
 				AB700DDD16CDE4C300FBD336 /* DisplayWindowController.mm */,
 				AB6A187B16C9951C00384EED /* EmuControllerDelegate.mm */,
 				ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */,
@@ -4549,6 +4570,7 @@
 				AB2C25081DEBFBD400706BFC /* encoding_utf.c in Sources */,
 				AB0F13931E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 				AB3E69111E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
+				AB3E69841E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4732,6 +4754,7 @@
 				AB2C25091DEBFBD400706BFC /* encoding_utf.c in Sources */,
 				AB0F13941E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 				AB3E69121E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
+				AB3E69851E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4945,6 +4968,7 @@
 				AB2C25071DEBFBD400706BFC /* encoding_utf.c in Sources */,
 				AB0F13921E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 				AB3E69101E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
+				AB3E69831E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5158,6 +5182,7 @@
 				AB2C250B1DEBFBD400706BFC /* encoding_utf.c in Sources */,
 				AB0F13961E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 				AB3E69141E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
+				AB3E69871E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5341,6 +5366,7 @@
 				AB2C250A1DEBFBD400706BFC /* encoding_utf.c in Sources */,
 				AB0F13951E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 				AB3E69131E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
+				AB3E69861E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -18,8 +18,69 @@
 #include "MacOGLDisplayView.h"
 #include "../utilities.h"
 
+@implementation DisplayViewOpenGLLayer
+
+- (id)init
+{
+	self = [super init];
+	if(self == nil)
+	{
+		return nil;
+	}
+	
+	_cdv = new MacOGLDisplayView();
+	_cdv->SetFrontendLayer(self);
+	_cdv->Init();
+	
+	[self setAsynchronous:NO];
+	[self setOpaque:YES];
+	
+	return self;
+}
+
+- (void)dealloc
+{
+	delete _cdv;
+	
+	[super dealloc];
+}
+
+- (OGLContextInfo *) contextInfo
+{
+	return _cdv->GetContextInfo();
+}
+
+- (ClientDisplay3DView *)clientDisplay3DView
+{
+	return _cdv;
+}
+
+- (BOOL)isAsynchronous
+{
+	return NO;
+}
+
+- (CGLPixelFormatObj)copyCGLPixelFormatForDisplayMask:(uint32_t)mask
+{
+	return _cdv->GetPixelFormat();
+}
+
+- (CGLContextObj)copyCGLContextForPixelFormat:(CGLPixelFormatObj)pixelFormat
+{
+	return _cdv->GetContext();
+}
+
+- (void)drawInCGLContext:(CGLContextObj)glContext pixelFormat:(CGLPixelFormatObj)pixelFormat forLayerTime:(CFTimeInterval)timeInterval displayTime:(const CVTimeStamp *)timeStamp
+{
+	_cdv->FrameRender();
+	[super drawInCGLContext:glContext pixelFormat:pixelFormat forLayerTime:timeInterval displayTime:timeStamp];
+}
+
+@end
+
 void MacOGLDisplayView::operator delete(void *ptr)
 {
+	CGLPixelFormatObj pixelFormat = ((MacOGLDisplayView *)ptr)->GetPixelFormat();
 	CGLContextObj context = ((MacOGLDisplayView *)ptr)->GetContext();
 	OGLContextInfo *contextInfo = ((MacOGLDisplayView *)ptr)->GetContextInfo();
 	
@@ -32,6 +93,7 @@ void MacOGLDisplayView::operator delete(void *ptr)
 		
 		delete contextInfo;
 		CGLReleaseContext(context);
+		CGLReleasePixelFormat(pixelFormat);
 	}
 }
 
@@ -46,7 +108,8 @@ MacOGLDisplayView::MacOGLDisplayView()
 		kCGLPFAStencilSize, (CGLPixelFormatAttribute)0,
 		kCGLPFADoubleBuffer,
 		(CGLPixelFormatAttribute)0, (CGLPixelFormatAttribute)0,
-		(CGLPixelFormatAttribute)0 };
+		(CGLPixelFormatAttribute)0
+	};
 	
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	// If we can support a 3.2 Core Profile context, then request that in our
@@ -59,35 +122,33 @@ MacOGLDisplayView::MacOGLDisplayView()
 	}
 #endif
 	
-	CGLPixelFormatObj cglPixFormat = NULL;
 	GLint virtualScreenCount = 0;
-	CGLChoosePixelFormat(attributes, &cglPixFormat, &virtualScreenCount);
+	CGLChoosePixelFormat(attributes, &_pixelFormat, &virtualScreenCount);
 	
-	if (cglPixFormat == NULL)
+	if (_pixelFormat == NULL)
 	{
 		// If we can't get a 3.2 Core Profile context, then switch to using a
 		// legacy context instead.
 		useContext_3_2 = false;
 		attributes[9] = (CGLPixelFormatAttribute)0;
 		attributes[10] = (CGLPixelFormatAttribute)0;
-		CGLChoosePixelFormat(attributes, &cglPixFormat, &virtualScreenCount);
+		CGLChoosePixelFormat(attributes, &_pixelFormat, &virtualScreenCount);
 	}
 	
-	CGLCreateContext(cglPixFormat, NULL, &this->_context);
-	CGLReleasePixelFormat(cglPixFormat);
+	CGLCreateContext(_pixelFormat, NULL, &_context);
 	
 	CGLContextObj prevContext = CGLGetCurrentContext();
-	CGLSetCurrentContext(this->_context);
+	CGLSetCurrentContext(_context);
 	
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	if (useContext_3_2)
 	{
-		this->_contextInfo = new OGLContextInfo_3_2;
+		_contextInfo = new OGLContextInfo_3_2;
 	}
 	else
 #endif
 	{
-		this->_contextInfo = new OGLContextInfo_Legacy;
+		_contextInfo = new OGLContextInfo_Legacy;
 	}
 	
 	CGLSetCurrentContext(prevContext);
@@ -103,18 +164,17 @@ void MacOGLDisplayView::Init()
 
 void MacOGLDisplayView::_FrameRenderAndFlush()
 {
-	this->FrameRender();
-	CGLFlushDrawable(this->_context);
+	this->CALayerDisplay();
+}
+
+CGLPixelFormatObj MacOGLDisplayView::GetPixelFormat() const
+{
+	return this->_pixelFormat;
 }
 
 CGLContextObj MacOGLDisplayView::GetContext() const
 {
 	return this->_context;
-}
-
-void MacOGLDisplayView::SetContext(CGLContextObj context)
-{
-	this->_context = context;
 }
 
 void MacOGLDisplayView::SetHUDFontUsingPath(const char *filePath)

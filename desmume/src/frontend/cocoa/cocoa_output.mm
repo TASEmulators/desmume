@@ -549,7 +549,7 @@
 	_intermediateViewProps = viewProps;
 	OSSpinLockUnlock(&spinlockViewProperties);
 	
-	[CocoaDSUtil messageSendOneWay:[self receivePort] msgID:MESSAGE_CHANGE_VIEW_PROPERTIES];
+	[self handleChangeViewProperties];
 }
 
 - (NSSize) displaySize
@@ -995,15 +995,15 @@
 	switch (message)
 	{
 		case MESSAGE_RELOAD_REPROCESS_REDRAW:
-			[self handleReloadAndRedraw];
+			[self handleReloadReprocessRedraw];
 			break;
 			
 		case MESSAGE_REPROCESS_AND_REDRAW:
-			[self handleReprocessAndRedraw];
+			[self handleReprocessRedraw];
 			break;
 			
 		case MESSAGE_REDRAW_VIEW:
-			[self handleRedrawView];
+			[self handleRedraw];
 			break;
 			
 		default:
@@ -1073,20 +1073,20 @@
 	_cdv->HandleGPUFrameEndEvent(isMainSizeNative, isTouchSizeNative);
 }
 
-- (void) handleRedrawView
-{
-	_cdv->UpdateView();
-}
-
-- (void) handleReloadAndRedraw
+- (void) handleReloadReprocessRedraw
 {
 	[self handleReceiveGPUFrame];
 	[self handleEmuFrameProcessed];
 }
 
-- (void) handleReprocessAndRedraw
+- (void) handleReprocessRedraw
 {
 	[self handleEmuFrameProcessed];
+}
+
+- (void) handleRedraw
+{
+	_cdv->UpdateView();
 }
 
 - (void) resetVideoBuffers

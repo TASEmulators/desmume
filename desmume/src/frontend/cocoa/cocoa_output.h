@@ -161,9 +161,9 @@ struct NDSFrameInfo;
 @property (assign) NSInteger pixelScaler;
 
 - (void) handleReceiveGPUFrame;
-- (void) handleRedrawView;
-- (void) handleReloadAndRedraw;
-- (void) handleReprocessAndRedraw;
+- (void) handleReloadReprocessRedraw;
+- (void) handleReprocessRedraw;
+- (void) handleRedraw;
 
 - (void) resetVideoBuffers;
 - (void) setScaleFactor:(float)theScaleFactor;

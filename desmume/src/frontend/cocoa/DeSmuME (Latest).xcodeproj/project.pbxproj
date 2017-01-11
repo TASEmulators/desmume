@@ -140,6 +140,12 @@
 		AB3BF4021E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */; };
 		AB3BF4031E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */; };
 		AB3BF4041E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */; };
+		AB3BF4331E2562F2003E2B24 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4321E2562F2003E2B24 /* QuartzCore.framework */; };
+		AB3BF4341E256309003E2B24 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4321E2562F2003E2B24 /* QuartzCore.framework */; };
+		AB3BF4351E256309003E2B24 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4321E2562F2003E2B24 /* QuartzCore.framework */; };
+		AB3BF4381E25D9AE003E2B24 /* DisplayViewCALayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4371E25D9AE003E2B24 /* DisplayViewCALayer.mm */; };
+		AB3BF4391E25D9AE003E2B24 /* DisplayViewCALayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4371E25D9AE003E2B24 /* DisplayViewCALayer.mm */; };
+		AB3BF43A1E25D9AE003E2B24 /* DisplayViewCALayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4371E25D9AE003E2B24 /* DisplayViewCALayer.mm */; };
 		AB3E34C9134AF4500056477A /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
 		AB40562A169F5DBB0016AC3E /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
 		AB40562B169F5DBB0016AC3E /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
@@ -1352,6 +1358,9 @@
 		AB3ACC3D14C24D5400D7D192 /* README.MAC */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.MAC; path = ../../../README.MAC; sourceTree = SOURCE_ROOT; };
 		AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MacOGLDisplayView.mm; sourceTree = "<group>"; };
 		AB3BF4051E22FEA8003E2B24 /* MacOGLDisplayView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MacOGLDisplayView.h; sourceTree = "<group>"; };
+		AB3BF4321E2562F2003E2B24 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		AB3BF4361E25D6B4003E2B24 /* DisplayViewCALayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DisplayViewCALayer.h; sourceTree = "<group>"; };
+		AB3BF4371E25D9AE003E2B24 /* DisplayViewCALayer.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = DisplayViewCALayer.mm; sourceTree = "<group>"; };
 		AB3E34C7134AF4500056477A /* cocoa_output.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_output.h; sourceTree = "<group>"; };
 		AB3E34C8134AF4500056477A /* cocoa_output.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_output.mm; sourceTree = "<group>"; };
 		AB4055ED169F59380016AC3E /* AsmJit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AsmJit.h; sourceTree = "<group>"; };
@@ -1894,6 +1903,7 @@
 				ABC572101344347000E7B0B1 /* Foundation.framework in Frameworks */,
 				AB350BA51478AC96007165AC /* IOKit.framework in Frameworks */,
 				ABC570D5134431DA00E7B0B1 /* OpenGL.framework in Frameworks */,
+				AB3BF4341E256309003E2B24 /* QuartzCore.framework in Frameworks */,
 				AB4676F314AB12D60002FF94 /* libz.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1913,6 +1923,7 @@
 				AB796D6915CDCBA200C59155 /* Foundation.framework in Frameworks */,
 				AB796D6A15CDCBA200C59155 /* IOKit.framework in Frameworks */,
 				AB796D6B15CDCBA200C59155 /* OpenGL.framework in Frameworks */,
+				AB3BF4331E2562F2003E2B24 /* QuartzCore.framework in Frameworks */,
 				AB796D6C15CDCBA200C59155 /* libz.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1932,6 +1943,7 @@
 				AB8F3D261A53AC2600A80BF6 /* Foundation.framework in Frameworks */,
 				AB8F3D271A53AC2600A80BF6 /* IOKit.framework in Frameworks */,
 				AB8F3D281A53AC2600A80BF6 /* OpenGL.framework in Frameworks */,
+				AB3BF4351E256309003E2B24 /* QuartzCore.framework in Frameworks */,
 				AB8F3D291A53AC2600A80BF6 /* libz.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2021,6 +2033,7 @@
 				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
 				AB350BA41478AC96007165AC /* IOKit.framework */,
 				ABC570D4134431DA00E7B0B1 /* OpenGL.framework */,
+				AB3BF4321E2562F2003E2B24 /* QuartzCore.framework */,
 				AB0A0D1914AACA9600E83E91 /* libz.dylib */,
 			);
 			name = "Linked Frameworks";
@@ -2369,6 +2382,7 @@
 			children = (
 				AB3ACB6614C2361100D7D192 /* appDelegate.h */,
 				AB3ACB6814C2361100D7D192 /* cheatWindowDelegate.h */,
+				AB3BF4361E25D6B4003E2B24 /* DisplayViewCALayer.h */,
 				AB8967D716D2ED0700F826F1 /* DisplayWindowController.h */,
 				AB3A655C16CC5416001F5D4A /* EmuControllerDelegate.h */,
 				ABD42045172319D1006A9B46 /* FileMigrationDelegate.h */,
@@ -2382,6 +2396,7 @@
 				ABF2B9F81690412A000FF7C0 /* troubleshootingWindowDelegate.h */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
+				AB3BF4371E25D9AE003E2B24 /* DisplayViewCALayer.mm */,
 				AB8967D816D2ED0700F826F1 /* DisplayWindowController.mm */,
 				AB3A655D16CC5421001F5D4A /* EmuControllerDelegate.mm */,
 				ABD42046172319D1006A9B46 /* FileMigrationDelegate.mm */,
@@ -3762,6 +3777,7 @@
 				ABD1FEE01345AC8400AF11D1 /* firmware.cpp in Sources */,
 				AB2ABA3D1C9F9CFA00173B15 /* async_job.c in Sources */,
 				ABD1FEE31345AC8400AF11D1 /* gfx3d.cpp in Sources */,
+				AB3BF43A1E25D9AE003E2B24 /* DisplayViewCALayer.mm in Sources */,
 				ABD1FEE61345AC8400AF11D1 /* GPU.cpp in Sources */,
 				ABD1FF5A1345ACBF00AF11D1 /* guid.cpp in Sources */,
 				ABD1FF571345ACBF00AF11D1 /* header.cpp in Sources */,
@@ -3970,6 +3986,7 @@
 				AB796D0115CDCBA200C59155 /* dlditool.cpp in Sources */,
 				AB796D0215CDCBA200C59155 /* driver.cpp in Sources */,
 				AB796D0315CDCBA200C59155 /* emufat.cpp in Sources */,
+				AB3BF4381E25D9AE003E2B24 /* DisplayViewCALayer.mm in Sources */,
 				AB564904186E6EBC002740F4 /* Slot2WindowDelegate.mm in Sources */,
 				AB9038B217C5ED2200F410BD /* slot1_retail_mcrom.cpp in Sources */,
 				AB796D0415CDCBA200C59155 /* emufile.cpp in Sources */,
@@ -4202,6 +4219,7 @@
 				ABAF0A431A96E67200B95B75 /* RomInfoPanel.mm in Sources */,
 				AB2ABA3C1C9F9CFA00173B15 /* async_job.c in Sources */,
 				AB8F3C851A53AC2600A80BF6 /* disc.cpp in Sources */,
+				AB3BF4391E25D9AE003E2B24 /* DisplayViewCALayer.mm in Sources */,
 				AB8F3C861A53AC2600A80BF6 /* dlditool.cpp in Sources */,
 				AB8F3C871A53AC2600A80BF6 /* driver.cpp in Sources */,
 				AB8F3C881A53AC2600A80BF6 /* emufat.cpp in Sources */,

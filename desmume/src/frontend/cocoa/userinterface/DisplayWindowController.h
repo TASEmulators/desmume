@@ -39,9 +39,7 @@ class OGLVideoOutput;
 {
 	InputManager *inputManager;
 	CocoaDSDisplayVideo *cdsVideoOutput;
-	ClientDisplay3DView *_cdv;
-	
-	NSOpenGLContext *localContext;
+	CALayer *localLayer;
 }
 
 @property (retain) InputManager *inputManager;
@@ -61,7 +59,6 @@ class OGLVideoOutput;
 @property (assign) NSInteger outputFilter;
 @property (assign) NSInteger pixelScaler;
 
-- (void) initContext;
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
 - (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed;
 - (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType;
