@@ -214,12 +214,34 @@ FORCEINLINE u16 ColorspaceConvert6665To5551(u32 srcColor)
 	return ColorspaceConvert6665To5551<SWAP_RB>(srcColorComponent);
 }
 
+template <bool SWAP_RB>
+FORCEINLINE u32 ColorspaceConvert888XTo8888Opaque(FragmentColor srcColor)
+{
+	FragmentColor outColor;
+	outColor.r = (SWAP_RB) ? srcColor.b : srcColor.r;
+	outColor.g = srcColor.g;
+	outColor.b = (SWAP_RB) ? srcColor.r : srcColor.b;
+	outColor.a = 0xFF;
+	
+	return outColor.color;
+}
+
+template <bool SWAP_RB>
+FORCEINLINE u32 ColorspaceConvert888XTo8888Opaque(u32 srcColor)
+{
+	FragmentColor srcColorComponent;
+	srcColorComponent.color = srcColor;
+	
+	return ColorspaceConvert888XTo8888Opaque<SWAP_RB>(srcColorComponent);
+}
+
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount);
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer6665To8888(const u32 *src, u32 *dst, size_t pixCount);
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer8888To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer888XTo8888Opaque(const u32 *src, u32 *dst, size_t pixCount);
 
 class ColorspaceHandler
 {
@@ -255,6 +277,11 @@ public:
 	size_t ConvertBuffer6665To5551_SwapRB(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount) const;
 	size_t ConvertBuffer6665To5551_IsUnaligned(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount) const;
 	size_t ConvertBuffer6665To5551_SwapRB_IsUnaligned(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount) const;
+	
+	size_t ConvertBuffer888XTo8888Opaque(const u32 *src, u32 *dst, size_t pixCount) const;
+	size_t ConvertBuffer888XTo8888Opaque_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const;
+	size_t ConvertBuffer888XTo8888Opaque_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const;
+	size_t ConvertBuffer888XTo8888Opaque_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const;
 };
 
 FORCEINLINE FragmentColor MakeFragmentColor(const u8 r, const u8 g, const u8 b, const u8 a)

@@ -426,6 +426,54 @@ void ColorspaceConvertBuffer6665To5551(const u32 *__restrict src, u16 *__restric
 	}
 }
 
+template <bool SWAP_RB, bool IS_UNALIGNED>
+void ColorspaceConvertBuffer888XTo8888Opaque(const u32 *src, u32 *dst, size_t pixCount)
+{
+	size_t i = 0;
+	
+#ifdef USEMANUALVECTORIZATION
+	
+#if defined(USEVECTORSIZE_512)
+	const size_t pixCountVector = pixCount - (pixCount % 32);
+#elif defined(USEVECTORSIZE_256)
+	const size_t pixCountVector = pixCount - (pixCount % 16);
+#elif defined(USEVECTORSIZE_128)
+	const size_t pixCountVector = pixCount - (pixCount % 8);
+#endif
+		
+	if (SWAP_RB)
+	{
+		if (IS_UNALIGNED)
+		{
+			i = csh.ConvertBuffer888XTo8888Opaque_SwapRB_IsUnaligned(src, dst, pixCountVector);
+		}
+		else
+		{
+			i = csh.ConvertBuffer888XTo8888Opaque_SwapRB(src, dst, pixCountVector);
+		}
+	}
+	else
+	{
+		if (IS_UNALIGNED)
+		{
+			i = csh.ConvertBuffer888XTo8888Opaque_IsUnaligned(src, dst, pixCountVector);
+		}
+		else
+		{
+			i = csh.ConvertBuffer888XTo8888Opaque(src, dst, pixCountVector);
+		}
+	}
+	
+#pragma LOOPVECTORIZE_DISABLE
+	
+#endif // USEMANUALVECTORIZATION
+	
+	for (; i < pixCount; i++)
+	{
+		dst[i] = ColorspaceConvert888XTo8888Opaque<SWAP_RB>(src[i]);
+	}
+}
+
 size_t ColorspaceHandler::ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	size_t i = 0;
@@ -612,7 +660,7 @@ size_t ColorspaceHandler::ConvertBuffer6665To5551_SwapRB(const u32 *__restrict s
 {
 	size_t i = 0;
 	
-	for (;i < pixCount; i++)
+	for (; i < pixCount; i++)
 	{
 		dst[i] = ColorspaceConvert6665To5551<true>(src[i]);
 	}
@@ -628,6 +676,40 @@ size_t ColorspaceHandler::ConvertBuffer6665To5551_IsUnaligned(const u32 *__restr
 size_t ColorspaceHandler::ConvertBuffer6665To5551_SwapRB_IsUnaligned(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount) const
 {
 	return this->ColorspaceHandler::ConvertBuffer6665To5551_SwapRB(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler::ConvertBuffer888XTo8888Opaque(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	size_t i = 0;
+	
+	for (; i < pixCount; i++)
+	{
+		dst[i] = ColorspaceConvert888XTo8888Opaque<false>(src[i]);
+	}
+	
+	return i;
+}
+
+size_t ColorspaceHandler::ConvertBuffer888XTo8888Opaque_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	size_t i = 0;
+	
+	for (; i < pixCount; i++)
+	{
+		dst[i] = ColorspaceConvert888XTo8888Opaque<true>(src[i]);
+	}
+	
+	return i;
+}
+
+size_t ColorspaceHandler::ConvertBuffer888XTo8888Opaque_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return this->ConvertBuffer888XTo8888Opaque(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler::ConvertBuffer888XTo8888Opaque_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return this->ConvertBuffer888XTo8888Opaque_SwapRB(src, dst, pixCount);
 }
 
 template void ColorspaceConvertBuffer555To8888Opaque<true, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
@@ -659,3 +741,8 @@ template void ColorspaceConvertBuffer6665To5551<true, true>(const u32 *__restric
 template void ColorspaceConvertBuffer6665To5551<true, false>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
 template void ColorspaceConvertBuffer6665To5551<false, true>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
 template void ColorspaceConvertBuffer6665To5551<false, false>(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
+
+template void ColorspaceConvertBuffer888XTo8888Opaque<true, true>(const u32 *src, u32 *dst, size_t pixCount);
+template void ColorspaceConvertBuffer888XTo8888Opaque<true, false>(const u32 *src, u32 *dst, size_t pixCount);
+template void ColorspaceConvertBuffer888XTo8888Opaque<false, true>(const u32 *src, u32 *dst, size_t pixCount);
+template void ColorspaceConvertBuffer888XTo8888Opaque<false, false>(const u32 *src, u32 *dst, size_t pixCount);

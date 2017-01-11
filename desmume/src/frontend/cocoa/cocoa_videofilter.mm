@@ -18,7 +18,7 @@
 
 #import "cocoa_videofilter.h"
 #import <Cocoa/Cocoa.h>
-#include "utilities.h"
+#include "../../utils/colorspacehandler/colorspacehandler.h"
 
 @implementation CocoaVideoFilter
 
@@ -139,7 +139,7 @@
 	}
 	
 	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
-	RGBA8888ForceOpaqueBuffer((const uint32_t *)[self runFilter], bitmapData, (w * h));
+	ColorspaceConvertBuffer888XTo8888Opaque<false, true>((const uint32_t *)[self runFilter], bitmapData, w * h);
 	
 #ifdef MSB_FIRST
 	uint32_t *bitmapDataEnd = bitmapData + (w * h);

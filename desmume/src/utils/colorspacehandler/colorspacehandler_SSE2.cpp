@@ -250,6 +250,21 @@ FORCEINLINE v128u16 ColorspaceConvert6665To5551_SSE2(const v128u32 &srcLo, const
 	return _ConvertColorBaseTo5551_SSE2<NDSColorFormat_BGR666_Rev, SWAP_RB>(srcLo, srcHi);
 }
 
+template <bool SWAP_RB>
+FORCEINLINE v128u32 ColorspaceConvert888XTo8888Opaque_SSE2(const v128u32 &src)
+{
+	if (SWAP_RB)
+	{
+#ifdef ENABLE_SSSE3
+		return _mm_or_si128( _mm_shuffle_epi8(src, _mm_set_epi8(15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2)), _mm_set1_epi32(0xFF000000) );
+#else
+		return _mm_or_si128( _mm_or_si128(_mm_srli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x00FF0000)), 16), _mm_or_si128(_mm_and_si128(src, _mm_set1_epi32(0x0000FF00)), _mm_slli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x000000FF)), 16))), _mm_set1_epi32(0xFF000000) );
+#endif
+	}
+	
+	return _mm_or_si128(src, _mm_set1_epi32(0xFF000000));
+}
+
 template <bool SWAP_RB, bool IS_UNALIGNED>
 static size_t ColorspaceConvertBuffer555To8888Opaque_SSE2(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec128)
 {
@@ -382,6 +397,26 @@ size_t ColorspaceConvertBuffer6665To5551_SSE2(const u32 *__restrict src, u16 *__
 	return i;
 }
 
+template <bool SWAP_RB, bool IS_UNALIGNED>
+size_t ColorspaceConvertBuffer888XTo8888Opaque_SSE2(const u32 *src, u32 *dst, size_t pixCountVec128)
+{
+	size_t i = 0;
+	
+	for (; i < pixCountVec128; i+=4)
+	{
+		if (IS_UNALIGNED)
+		{
+			_mm_storeu_si128( (v128u32 *)(dst+i), ColorspaceConvert888XTo8888Opaque_SSE2<SWAP_RB>(_mm_loadu_si128((v128u32 *)(src+i))) );
+		}
+		else
+		{
+			_mm_store_si128( (v128u32 *)(dst+i), ColorspaceConvert888XTo8888Opaque_SSE2<SWAP_RB>(_mm_load_si128((v128u32 *)(src+i))) );
+		}
+	}
+	
+	return i;
+}
+
 size_t ColorspaceHandler_SSE2::ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To8888Opaque_SSE2<false, false>(src, dst, pixCount);
@@ -502,6 +537,26 @@ size_t ColorspaceHandler_SSE2::ConvertBuffer6665To5551_SwapRB_IsUnaligned(const 
 	return ColorspaceConvertBuffer6665To5551_SSE2<true, true>(src, dst, pixCount);
 }
 
+size_t ColorspaceHandler_SSE2::ConvertBuffer888XTo8888Opaque(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer888XTo8888Opaque_SSE2<false, false>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_SSE2::ConvertBuffer888XTo8888Opaque_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer888XTo8888Opaque_SSE2<true, false>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_SSE2::ConvertBuffer888XTo8888Opaque_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer888XTo8888Opaque_SSE2<false, true>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_SSE2::ConvertBuffer888XTo8888Opaque_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer888XTo8888Opaque_SSE2<true, true>(src, dst, pixCount);
+}
+
 template void ColorspaceConvert555To8888_SSE2<true>(const v128u16 &srcColor, const v128u32 &srcAlphaBits32Lo, const v128u32 &srcAlphaBits32Hi, v128u32 &dstLo, v128u32 &dstHi);
 template void ColorspaceConvert555To8888_SSE2<false>(const v128u16 &srcColor, const v128u32 &srcAlphaBits32Lo, const v128u32 &srcAlphaBits32Hi, v128u32 &dstLo, v128u32 &dstHi);
 
@@ -525,5 +580,8 @@ template v128u16 ColorspaceConvert8888To5551_SSE2<false>(const v128u32 &srcLo, c
 
 template v128u16 ColorspaceConvert6665To5551_SSE2<true>(const v128u32 &srcLo, const v128u32 &srcHi);
 template v128u16 ColorspaceConvert6665To5551_SSE2<false>(const v128u32 &srcLo, const v128u32 &srcHi);
+
+template v128u32 ColorspaceConvert888XTo8888Opaque_SSE2<true>(const v128u32 &src);
+template v128u32 ColorspaceConvert888XTo8888Opaque_SSE2<false>(const v128u32 &src);
 
 #endif // ENABLE_SSE2

@@ -173,6 +173,17 @@ FORCEINLINE v128u16 ColorspaceConvert6665To5551_AltiVec(const v128u32 &srcLo, co
 }
 
 template <bool SWAP_RB>
+FORCEINLINE v128u32 ColorspaceConvert888XTo8888Opaque_AltiVec(const v128u32 &src)
+{
+	if (SWAP_RB)
+	{
+		return vec_or( vec_perm(src, src, ((v128u8){2,1,0,3,  6,5,4,7,  10,9,8,11,  14,13,12,15})), vec_splat_u32(0xFF000000) );
+	}
+	
+	return vec_or(src, vec_splat_u32(0xFF000000));
+}
+
+template <bool SWAP_RB>
 static size_t ColorspaceConvertBuffer555To8888Opaque_AltiVec(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec128)
 {
 	size_t i = 0;
@@ -258,6 +269,19 @@ size_t ColorspaceConvertBuffer6665To5551_AltiVec(const u32 *__restrict src, u16 
 	return i;
 }
 
+template <bool SWAP_RB>
+size_t ColorspaceConvertBuffer888XTo8888Opaque_AltiVec(const u32 *src, u32 *dst, size_t pixCountVec128)
+{
+	size_t i = 0;
+	
+	for (; i < pixCountVec128; i+=4)
+	{
+		vec_st( ColorspaceConvert888XTo8888Opaque_AltiVec<SWAP_RB>(vec_ld(0, src+i)), 0, dst+i );
+	}
+	
+	return i;
+}
+
 size_t ColorspaceHandler_AltiVec::ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To8888Opaque_AltiVec<false>(src, dst, pixCount);
@@ -318,6 +342,16 @@ size_t ColorspaceHandler_AltiVec::ConvertBuffer6665To5551_SwapRB(const u32 *__re
 	return ColorspaceConvertBuffer6665To5551_AltiVec<true>(src, dst, pixCount);
 }
 
+size_t ColorspaceHandler_AltiVec::ConvertBuffer888XTo8888Opaque(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer888XTo8888Opaque_AltiVec<false>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AltiVec::ConvertBuffer888XTo8888Opaque_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer888XTo8888Opaque_AltiVec<true>(src, dst, pixCount);
+}
+
 template void ColorspaceConvert555To8888_AltiVec<true>(const v128u16 &srcColor, const v128u32 &srcAlphaBits32Lo, const v128u32 &srcAlphaBits32Hi, v128u32 &dstLo, v128u32 &dstHi);
 template void ColorspaceConvert555To8888_AltiVec<false>(const v128u16 &srcColor, const v128u32 &srcAlphaBits32Lo, const v128u32 &srcAlphaBits32Hi, v128u32 &dstLo, v128u32 &dstHi);
 
@@ -341,5 +375,8 @@ template v128u16 ColorspaceConvert8888To5551_AltiVec<false>(const v128u32 &srcLo
 
 template v128u16 ColorspaceConvert6665To5551_AltiVec<true>(const v128u32 &srcLo, const v128u32 &srcHi);
 template v128u16 ColorspaceConvert6665To5551_AltiVec<false>(const v128u32 &srcLo, const v128u32 &srcHi);
+
+template v128u32 ColorspaceConvert888XTo8888Opaque_AltiVec<true>(const v128u32 &src);
+template v128u32 ColorspaceConvert888XTo8888Opaque_AltiVec<false>(const v128u32 &src);
 
 #endif // ENABLE_SSE2

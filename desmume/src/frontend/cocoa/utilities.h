@@ -27,17 +27,7 @@ extern "C"
 {
 #endif
 
-bool IsOSXVersionSupported(const unsigned int major, const unsigned int minor, const unsigned int revision);
-
-uint32_t RGB555ToRGBA8888(const uint16_t color16);
-uint32_t RGB555ToBGRA8888(const uint16_t color16);
-uint32_t RGB888ToBGRA8888(const uint32_t color32);
-uint32_t RGBA8888ForceOpaque(const uint32_t color32);
-void RGB555ToRGBA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount);
-void RGB555ToBGRA8888Buffer(const uint16_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount);
-void RGB888ToBGRA8888Buffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount);
-void RGBA8888ForceOpaqueBuffer(const uint32_t *__restrict__ srcBuffer, uint32_t *__restrict__ destBuffer, size_t pixelCount);
-	
+bool IsOSXVersionSupported(const unsigned int major, const unsigned int minor, const unsigned int revision);	
 uint32_t GetNearestPositivePOT(uint32_t value);
 
 #ifdef __cplusplus

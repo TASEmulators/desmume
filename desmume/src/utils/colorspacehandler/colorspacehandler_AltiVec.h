@@ -32,6 +32,7 @@ template<bool SWAP_RB> v128u32 ColorspaceConvert8888To6665_AltiVec(const v128u32
 template<bool SWAP_RB> v128u32 ColorspaceConvert6665To8888_AltiVec(const v128u32 &src);
 template<bool SWAP_RB> v128u16 ColorspaceConvert8888To5551_AltiVec(const v128u32 &srcLo, const v128u32 &srcHi);
 template<bool SWAP_RB> v128u16 ColorspaceConvert6665To5551_AltiVec(const v128u32 &srcLo, const v128u32 &srcHi);
+template<bool SWAP_RB> v128u32 ColorspaceConvert888XTo8888Opaque_AltiVec(const v128u32 &src);
 
 // AltiVec has very poor support for dealing with unaligned addresses (it's possible, just
 // very obtuse), so we're not even going to bother dealing with any unaligned addresses.
@@ -57,6 +58,9 @@ public:
 	
 	size_t ConvertBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount) const;
 	size_t ConvertBuffer6665To5551_SwapRB(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount) const;
+	
+	size_t ConvertBuffer888XTo8888Opaque(const u32 *src, u32 *dst, size_t pixCount) const;
+	size_t ConvertBuffer888XTo8888Opaque_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const;
 };
 
 #endif // ENABLE_ALTIVEC

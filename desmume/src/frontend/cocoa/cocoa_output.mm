@@ -718,11 +718,11 @@
 	
 	if (dispInfo.pixelBytes == 2)
 	{
-		ColorspaceConvertBuffer555To8888Opaque<false, false>((u16 *)displayBuffer, bitmapData, (w * h));
+		ColorspaceConvertBuffer555To8888Opaque<false, true>((u16 *)displayBuffer, bitmapData, (w * h));
 	}
 	else if (dispInfo.pixelBytes == 4)
 	{
-		RGBA8888ForceOpaqueBuffer((u32 *)displayBuffer, bitmapData, (w * h));
+		memcpy(bitmapData, displayBuffer, w * h * sizeof(uint32_t));
 	}
 	
 	pthread_rwlock_unlock(self.rwlockProducer);

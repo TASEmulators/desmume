@@ -212,6 +212,17 @@ FORCEINLINE v256u16 ColorspaceConvert6665To5551_AVX2(const v256u32 &srcLo, const
 	return _ConvertColorBaseTo5551_AVX2<NDSColorFormat_BGR666_Rev, SWAP_RB>(srcLo, srcHi);
 }
 
+template <bool SWAP_RB>
+FORCEINLINE v256u32 ColorspaceConvert888XTo8888Opaque_AVX2(const v256u32 &src)
+{
+	if (SWAP_RB)
+	{
+		return _mm256_or_si256( _mm256_shuffle_epi8(src, _mm256_set_epi8(31,28,29,30,  27,24,25,26,  23,20,21,22,  19,16,17,18,  15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2)), _mm256_set1_epi32(0xFF000000) );
+	}
+	
+	return _mm256_or_si256(src, _mm256_set1_epi32(0xFF000000));
+}
+
 template <bool SWAP_RB, bool IS_UNALIGNED>
 static size_t ColorspaceConvertBuffer555To8888Opaque_AVX2(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec256)
 {
@@ -344,6 +355,26 @@ size_t ColorspaceConvertBuffer6665To5551_AVX2(const u32 *__restrict src, u16 *__
 	return i;
 }
 
+template <bool SWAP_RB, bool IS_UNALIGNED>
+size_t ColorspaceConvertBuffer888XTo8888Opaque_AVX2(const u32 *src, u32 *dst, size_t pixCountVec256)
+{
+	size_t i = 0;
+	
+	for (; i < pixCountVec256; i+=8)
+	{
+		if (IS_UNALIGNED)
+		{
+			_mm256_storeu_si256( (v256u32 *)(dst+i), ColorspaceConvert888XTo8888Opaque_AVX2<SWAP_RB>(_mm256_loadu_si256((v256u32 *)(src+i))) );
+		}
+		else
+		{
+			_mm256_store_si256( (v256u32 *)(dst+i), ColorspaceConvert888XTo8888Opaque_AVX2<SWAP_RB>(_mm256_load_si256((v256u32 *)(src+i))) );
+		}
+	}
+	
+	return i;
+}
+
 size_t ColorspaceHandler_AVX2::ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To8888Opaque_AVX2<false, false>(src, dst, pixCount);
@@ -464,6 +495,26 @@ size_t ColorspaceHandler_AVX2::ConvertBuffer6665To5551_SwapRB_IsUnaligned(const 
 	return ColorspaceConvertBuffer6665To5551_AVX2<true, true>(src, dst, pixCount);
 }
 
+size_t ColorspaceHandler_AVX2::ConvertBuffer888XTo8888Opaque(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer888XTo8888Opaque_AVX2<false, false>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AVX2::ConvertBuffer888XTo8888Opaque_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer888XTo8888Opaque_AVX2<true, false>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AVX2::ConvertBuffer888XTo8888Opaque_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer888XTo8888Opaque_AVX2<false, true>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AVX2::ConvertBuffer888XTo8888Opaque_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer888XTo8888Opaque_AVX2<true, true>(src, dst, pixCount);
+}
+
 template void ColorspaceConvert555To8888_AVX2<true>(const v256u16 &srcColor, const v256u32 &srcAlphaBits32Lo, const v256u32 &srcAlphaBits32Hi, v256u32 &dstLo, v256u32 &dstHi);
 template void ColorspaceConvert555To8888_AVX2<false>(const v256u16 &srcColor, const v256u32 &srcAlphaBits32Lo, const v256u32 &srcAlphaBits32Hi, v256u32 &dstLo, v256u32 &dstHi);
 
@@ -487,5 +538,8 @@ template v256u16 ColorspaceConvert8888To5551_AVX2<false>(const v256u32 &srcLo, c
 
 template v256u16 ColorspaceConvert6665To5551_AVX2<true>(const v256u32 &srcLo, const v256u32 &srcHi);
 template v256u16 ColorspaceConvert6665To5551_AVX2<false>(const v256u32 &srcLo, const v256u32 &srcHi);
+
+template v256u32 ColorspaceConvert888XTo8888Opaque_AVX2<true>(const v256u32 &src);
+template v256u32 ColorspaceConvert888XTo8888Opaque_AVX2<false>(const v256u32 &src);
 
 #endif // ENABLE_AVX2

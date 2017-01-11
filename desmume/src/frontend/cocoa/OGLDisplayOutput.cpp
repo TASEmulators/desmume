@@ -18,6 +18,7 @@
 #include "OGLDisplayOutput.h"
 #include "cocoa_globals.h"
 #include "utilities.h"
+#include "../../utils/colorspacehandler/colorspacehandler.h"
 #include "../../filter/videofilter.h"
 
 #include <sstream>
@@ -7384,11 +7385,11 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 			{
 				if (this->_videoColorFormat == GL_UNSIGNED_SHORT_1_5_5_5_REV)
 				{
-					RGB555ToBGRA8888Buffer((const uint16_t *)this->_videoSrcNativeBuffer[0], this->_vf[0]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+					ColorspaceConvertBuffer555To8888Opaque<true, false>((const uint16_t *)this->_videoSrcNativeBuffer[0], this->_vf[0]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				}
 				else
 				{
-					RGB888ToBGRA8888Buffer((const uint32_t *)this->_videoSrcNativeBuffer[0], this->_vf[0]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+					ColorspaceConvertBuffer888XTo8888Opaque<true, false>((const uint32_t *)this->_videoSrcNativeBuffer[0], this->_vf[0]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				}
 			}
 		}
@@ -7426,11 +7427,11 @@ void OGLDisplayLayer::LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative
 			{
 				if (this->_videoColorFormat == GL_UNSIGNED_SHORT_1_5_5_5_REV)
 				{
-					RGB555ToBGRA8888Buffer((const uint16_t *)this->_videoSrcNativeBuffer[1], this->_vf[1]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+					ColorspaceConvertBuffer555To8888Opaque<true, false>((const uint16_t *)this->_videoSrcNativeBuffer[1], this->_vf[1]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				}
 				else
 				{
-					RGB888ToBGRA8888Buffer((const uint32_t *)this->_videoSrcNativeBuffer[1], this->_vf[1]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+					ColorspaceConvertBuffer888XTo8888Opaque<true, false>((const uint32_t *)this->_videoSrcNativeBuffer[1], this->_vf[1]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 				}
 			}
 		}
