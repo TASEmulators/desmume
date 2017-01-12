@@ -1634,6 +1634,12 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		}
 		else
 		{
+#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+			if ([self respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
+			{
+				[self setWantsBestResolutionOpenGLSurface:YES];
+			}
+#endif
 			localOGLContext = [[NSOpenGLContext alloc] initWithCGLContextObj:macOGLCDV->GetContext()];
 			macOGLCDV->SetRenderToCALayer(false);
 		}
