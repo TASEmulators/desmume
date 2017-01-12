@@ -152,6 +152,8 @@ MacOGLDisplayView::MacOGLDisplayView()
 	}
 	
 	CGLSetCurrentContext(prevContext);
+	
+	_willRenderToCALayer = false;
 }
 
 void MacOGLDisplayView::Init()
@@ -164,7 +166,15 @@ void MacOGLDisplayView::Init()
 
 void MacOGLDisplayView::_FrameRenderAndFlush()
 {
-	this->CALayerDisplay();
+	if (this->_willRenderToCALayer)
+	{
+		this->CALayerDisplay();
+	}
+	else
+	{
+		this->FrameRender();
+		CGLFlushDrawable(this->_context);
+	}
 }
 
 CGLPixelFormatObj MacOGLDisplayView::GetPixelFormat() const
@@ -175,6 +185,16 @@ CGLPixelFormatObj MacOGLDisplayView::GetPixelFormat() const
 CGLContextObj MacOGLDisplayView::GetContext() const
 {
 	return this->_context;
+}
+
+bool MacOGLDisplayView::GetRenderToCALayer() const
+{
+	return this->_willRenderToCALayer;
+}
+
+void MacOGLDisplayView::SetRenderToCALayer(const bool renderToLayer)
+{
+	this->_willRenderToCALayer = renderToLayer;
 }
 
 void MacOGLDisplayView::SetHUDFontUsingPath(const char *filePath)

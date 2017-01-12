@@ -27,7 +27,11 @@
 #import "cocoa_util.h"
 
 #include "MacOGLDisplayView.h"
-
+/*
+#if defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
+#include "MacMetalDisplayView.h"
+#endif
+*/
 #include <Carbon/Carbon.h>
 
 #if defined(__ppc__) || defined(__ppc64__)
@@ -1599,25 +1603,45 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		return self;
 	}
 	
-#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-	if ([self respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
-	{
-		[self setWantsBestResolutionOpenGLSurface:YES];
-	}
-#endif
-	
 	inputManager = nil;
 	cdsVideoOutput = nil;
 	
-	localLayer = [[DisplayViewOpenGLLayer alloc] init];
+/*#if defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
+	if (IsOSXVersionSupported(10, 11, 0))
+	{
+		localLayer = [[DisplayViewMetalLayer alloc] init];
+	}
+	else
+#endif*/
+	{
+		localLayer = [[DisplayViewOpenGLLayer alloc] init];
+		MacOGLDisplayView *macOGLCDV = (MacOGLDisplayView *)[(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
+		
+		if (IsOSXVersionSupported(10, 8, 0))
+		{
+			localOGLContext = nil;
+			macOGLCDV->SetRenderToCALayer(true);
+			
+			[self setLayer:localLayer];
+			[self setWantsLayer:YES];
+			
+#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
+			if ([self respondsToSelector:@selector(setLayerContentsRedrawPolicy:)])
+			{
+				[self setLayerContentsRedrawPolicy:NSViewLayerContentsRedrawNever];
+			}
+#endif
+		}
+		else
+		{
+			localOGLContext = [[NSOpenGLContext alloc] initWithCGLContextObj:macOGLCDV->GetContext()];
+			macOGLCDV->SetRenderToCALayer(false);
+		}
+	}
 	
 	ClientDisplay3DView *cdv = [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
 	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
 	cdv->SetHUDFontUsingPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
-	
-	[self setLayer:localLayer];
-	[self setWantsLayer:YES];
-	[self setLayerContentsRedrawPolicy:NSViewLayerContentsRedrawNever];
 	
 	return self;
 }
@@ -1627,6 +1651,12 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[self setInputManager:nil];
 	[self setCdsVideoOutput:nil];
 	[self setLayer:nil];
+	
+	if (localOGLContext != nil)
+	{
+		[localOGLContext clearDrawable];
+		[localOGLContext release];
+	}
 	
 	[localLayer release];
 	
@@ -1876,6 +1906,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 #pragma mark NSView Methods
 
+- (void)lockFocus
+{
+	[super lockFocus];
+	
+	if ( (localOGLContext != nil) && ([localOGLContext view] != self) )
+	{
+		[localOGLContext setView:self];
+	}
+}
+
 - (BOOL)isOpaque
 {
 	return YES;
@@ -1886,6 +1926,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	return NO;
 }
 
+#if defined(MAC_OS_X_VERSION_10_8) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_8)
 - (BOOL)wantsUpdateLayer
 {
 	return YES;
@@ -1896,6 +1937,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	ClientDisplay3DView *cdv = [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
 	cdv->UpdateView();
 }
+#endif
 
 - (void)drawRect:(NSRect)dirtyRect
 {
@@ -1910,15 +1952,21 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	if (rect.size.width != oldFrame.size.width || rect.size.height != oldFrame.size.height)
 	{
+		if (localOGLContext != nil)
+		{
+			[localOGLContext update];
+		}
+		
 		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
+		ClientDisplayViewProperties &props = [windowController localViewProperties];
+		NSRect newViewportRect = rect;
 		
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-		const NSRect newViewportRect = [self convertRectToBacking:rect];
-#else
-		const NSRect newViewportRect = rect;
+		if ([self respondsToSelector:@selector(convertRectToBacking:)])
+		{
+			newViewportRect = [self convertRectToBacking:rect];
+		}
 #endif
-		
-		ClientDisplayViewProperties &props = [windowController localViewProperties];
 		
 		// Calculate the view scale for the given client size.
 		double checkWidth = props.normalWidth;

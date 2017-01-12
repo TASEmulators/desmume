@@ -40,6 +40,7 @@ class OGLVideoOutput;
 	InputManager *inputManager;
 	CocoaDSDisplayVideo *cdsVideoOutput;
 	CALayer *localLayer;
+	NSOpenGLContext *localOGLContext;
 }
 
 @property (retain) InputManager *inputManager;

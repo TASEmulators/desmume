@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2015 DeSmuME Team
+	Copyright (C) 2012-2017 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -98,10 +98,12 @@
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(cglDisplayContext);
 	
+	NSRect newViewportRect = frameRect;
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-	const NSRect newViewportRect = [self convertRectToBacking:frameRect];
-#else
-	const NSRect newViewportRect = frameRect;
+	if ([self respondsToSelector:@selector(convertRectToBacking:)])
+	{
+		newViewportRect = [self convertRectToBacking:frameRect];
+	}
 #endif
 	
 	OGLContextInfo *contextInfo = NULL;

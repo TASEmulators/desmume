@@ -44,6 +44,7 @@ class MacOGLDisplayView : public OGLVideoOutput, public DisplayViewCALayerInterf
 protected:
 	CGLPixelFormatObj _pixelFormat;
 	CGLContextObj _context;
+	bool _willRenderToCALayer;
 	
 	void _FrameRenderAndFlush();
 	
@@ -55,6 +56,9 @@ public:
 	
 	CGLPixelFormatObj GetPixelFormat() const;
 	CGLContextObj GetContext() const;
+	
+	bool GetRenderToCALayer() const;
+	void SetRenderToCALayer(const bool renderToLayer);
 		
 	virtual void SetHUDFontUsingPath(const char *filePath);
 	
