@@ -309,8 +309,8 @@ bool CommandLine::parse(int argc,char **argv)
 
 		//system equipment
 		case OPT_CONSOLE_TYPE: console_type = optarg; break;
-		case OPT_ARM9: _bios_arm9 = strdup(_bios_arm9); break;
-		case OPT_ARM7: _bios_arm7 = strdup(_bios_arm7); break;
+		case OPT_ARM9: _bios_arm9 = strdup(optarg); break;
+		case OPT_ARM7: _bios_arm7 = strdup(optarg); break;
 
 		//slot-1 contents
 		case OPT_SLOT1: slot1 = strtoupper(optarg); break;
