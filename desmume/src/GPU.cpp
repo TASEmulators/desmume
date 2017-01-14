@@ -275,9 +275,9 @@ void GPUEngineBase::_InitLUTs()
 	i'll add that so you can check back.
 	*/
 	
-	for (size_t i = 0; i <= 16; i++)
+	for (u16 i = 0; i <= 16; i++)
 	{
-		for (size_t j = 0x0000; j < 0x8000; j++)
+		for (u16 j = 0x0000; j < 0x8000; j++)
 		{
 			COLOR cur;
 
@@ -3134,7 +3134,7 @@ void GPUEngineBase::_LineRot(GPUEngineCompositorInfo &compInfo)
 {
 	if (ISDEBUGRENDER)
 	{
-		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, compInfo.line.blockOffsetNative};
+		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, (s32)compInfo.line.blockOffsetNative};
 		this->_RenderLine_BGAffine<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(compInfo, debugParams);
 	}
 	else
@@ -3152,7 +3152,7 @@ void GPUEngineBase::_LineExtRot(GPUEngineCompositorInfo &compInfo, bool &outUseC
 {
 	if (ISDEBUGRENDER)
 	{
-		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, compInfo.line.blockOffsetNative};
+		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, (s32)compInfo.line.blockOffsetNative};
 		this->_RenderLine_BGExtended<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(compInfo, debugParams, outUseCustomVRAM);
 	}
 	else
@@ -3254,7 +3254,7 @@ void GPUEngineBase::_RenderSprite256(GPUEngineCompositorInfo &compInfo, const u8
 {
 	for (size_t i = 0; i < lg; i++, ++sprX, x += xdir)
 	{
-		const u32 adr = srcadr + (x & 0x7) + ((x & 0xFFF8) << 3);
+		const u32 adr = srcadr + (u32)( (x & 0x7) + ((x & 0xFFF8) << 3) );
 		const u8 *__restrict src = (u8 *)MMU_gpu_map(adr);
 		const u8 palette_entry = *src;
 
@@ -3329,7 +3329,7 @@ void GPUEngineBase::_RenderSpriteWin(const u8 *src, const bool col256, const siz
 	{
 		for (size_t i = 0; i < lg; i++, sprX++, x += xdir)
 		{
-			const s32 x1 = x >> 1;
+			const size_t x1 = x >> 1;
 			const u8 palette = src[(x1 & 0x3) + ((x1 & 0xFFFC) << 3)];
 			const u8 palette_entry = (x & 1) ? palette >> 4 : palette & 0xF;
 			
@@ -5509,7 +5509,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 	{
 		if (this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset])
 		{
-			u32 cap_src_adr = readLineIndexWithOffset * GPU_FRAMEBUFFER_NATIVE_WIDTH;
+			size_t cap_src_adr = readLineIndexWithOffset * GPU_FRAMEBUFFER_NATIVE_WIDTH;
 			cap_src_adr &= 0x0000FFFF;
 			cap_src = this->_VRAMNativeBlockPtr[vramReadBlock] + cap_src_adr;
 		}
@@ -5602,7 +5602,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 					{
 						if (vramConfiguration.banks[vramReadBlock].purpose == VramConfiguration::LCDC)
 						{
-							u32 cap_src_adr = readLineIndexWithOffset * GPU_FRAMEBUFFER_NATIVE_WIDTH;
+							size_t cap_src_adr = readLineIndexWithOffset * GPU_FRAMEBUFFER_NATIVE_WIDTH;
 							cap_src_adr &= 0x0000FFFF;
 							cap_src = this->_VRAMNativeBlockPtr[vramReadBlock] + cap_src_adr;
 						}
@@ -5648,7 +5648,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 				{
 					if (vramConfiguration.banks[vramReadBlock].purpose == VramConfiguration::LCDC)
 					{
-						u32 cap_src_adr = readLineIndexWithOffset * GPU_FRAMEBUFFER_NATIVE_WIDTH;
+						size_t cap_src_adr = readLineIndexWithOffset * GPU_FRAMEBUFFER_NATIVE_WIDTH;
 						cap_src_adr &= 0x0000FFFF;
 						cap_src = this->_VRAMNativeBlockPtr[vramReadBlock] + cap_src_adr;
 					}
