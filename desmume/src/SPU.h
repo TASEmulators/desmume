@@ -123,7 +123,7 @@ struct channel_struct
    u32 lastsampcnt;
    s16 pcm16b, pcm16b_last;
    s16 loop_pcm16b;
-   int index;
+   s32 index;
    int loop_index;
    u16 x;
    s16 psgnoise_last;
