@@ -6407,7 +6407,7 @@ void OGLHUDLayer::RenderOGL()
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	
 	// Next, draw each character inside the box.
-	const GLfloat textBoxScale = (GLfloat)HUD_TEXTBOX_BASE_SCALE * this->_output->GetHUDObjectScale();
+	const GLfloat textBoxScale = (GLfloat)HUD_TEXTBOX_BASE_SCALE * this->_output->GetHUDObjectScale() / this->_output->GetScaleFactor();
 	if (textBoxScale >= (2.0/3.0))
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

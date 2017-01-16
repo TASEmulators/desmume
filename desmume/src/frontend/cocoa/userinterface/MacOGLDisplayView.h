@@ -60,7 +60,7 @@ public:
 	bool GetRenderToCALayer() const;
 	void SetRenderToCALayer(const bool renderToLayer);
 		
-	virtual void SetHUDFontUsingPath(const char *filePath);
+	virtual void LoadHUDFont();
 	
 	virtual void SetVideoBuffers(const uint32_t colorFormat,
 								 const void *videoBufferHead,

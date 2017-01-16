@@ -95,7 +95,7 @@ class OGLVideoOutput;
 	BOOL _isMinSizeNormal;
 	NSUInteger _statusBarHeight;
 	BOOL _isUpdatingDisplayScaleValueOnly;
-	BOOL _useMavericksFullScreen;
+	BOOL _canUseMavericksFullScreen;
 	BOOL _masterStatusBarState;
 	NSRect _masterWindowFrame;
 	double _masterWindowScale;

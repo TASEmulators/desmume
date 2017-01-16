@@ -116,7 +116,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_isMinSizeNormal = YES;
 	_statusBarHeight = WINDOW_STATUS_BAR_HEIGHT;
 	_isUpdatingDisplayScaleValueOnly = NO;
-	_useMavericksFullScreen = IsOSXVersionSupported(10, 9, 0);
+	_canUseMavericksFullScreen = IsOSXVersionSupported(10, 9, 0);
 	_masterWindowScale = 1.0;
 	_masterWindowFrame = NSMakeRect(0.0, 0.0, _localViewProps.clientWidth, _localViewProps.clientHeight + _localViewProps.gapDistance);
 	_masterStatusBarState = NO;
@@ -538,17 +538,17 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (BOOL) masterStatusBarState
 {
-	return (![self isFullScreen] || !_useMavericksFullScreen) ? [self isShowingStatusBar] : _masterStatusBarState;
+	return (![self isFullScreen] || !_canUseMavericksFullScreen) ? [self isShowingStatusBar] : _masterStatusBarState;
 }
 
 - (NSRect) masterWindowFrame
 {
-	return (![self isFullScreen] || !_useMavericksFullScreen) ? [masterWindow frame] : _masterWindowFrame;
+	return (![self isFullScreen] || !_canUseMavericksFullScreen) ? [masterWindow frame] : _masterWindowFrame;
 }
 
 - (double) masterWindowScale
 {
-	return (![self isFullScreen] || !_useMavericksFullScreen) ? [self displayScale] : _masterWindowScale;
+	return (![self isFullScreen] || !_canUseMavericksFullScreen) ? [self displayScale] : _masterWindowScale;
 }
 
 - (NSRect) updateViewProperties
@@ -698,7 +698,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void) respondToScreenChange:(NSNotification *)aNotification
 {
-	if (_useMavericksFullScreen)
+	if (_canUseMavericksFullScreen)
 	{
 		return;
 	}
@@ -839,7 +839,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (IBAction) toggleFullScreenDisplay:(id)sender
 {
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-	if (_useMavericksFullScreen)
+	if (_canUseMavericksFullScreen)
 	{
 		[masterWindow toggleFullScreen:nil];
 	}
@@ -1286,7 +1286,20 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Set up the video output thread.
 	CocoaDSDisplayVideo *newDisplayOutput = [[CocoaDSDisplayVideo alloc] init];
 	[newDisplayOutput setClientDisplayView:[view clientDisplay3DView]];
-	[newDisplayOutput setScaleFactor:scaleFactor];
+	
+	ClientDisplayView *cdv = [newDisplayOutput clientDisplayView];
+	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
+	cdv->SetHUDFontPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
+	
+	if (scaleFactor != 1.0f)
+	{
+		[newDisplayOutput setScaleFactor:scaleFactor];
+	}
+	else
+	{
+		cdv->LoadHUDFont();
+	}
+	
 	[newDisplayOutput resetVideoBuffers];
 	[self setCdsVideoOutput:newDisplayOutput];
 	[view setCdsVideoOutput:newDisplayOutput];
@@ -1644,10 +1657,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			macOGLCDV->SetRenderToCALayer(false);
 		}
 	}
-	
-	ClientDisplay3DView *cdv = [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
-	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
-	cdv->SetHUDFontUsingPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
 	
 	return self;
 }

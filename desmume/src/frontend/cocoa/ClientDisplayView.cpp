@@ -174,15 +174,15 @@ double ClientDisplayView::GetScaleFactor() const
 
 void ClientDisplayView::SetScaleFactor(const double scaleFactor)
 {
+	const bool willChangeScaleFactor = (this->_scaleFactor != scaleFactor);
 	this->_scaleFactor = scaleFactor;
 	
-	const bool willChangeScaleFactor = (this->_scaleFactor != scaleFactor);
 	if (willChangeScaleFactor)
 	{
 		this->_glyphTileSize = (double)HUD_TEXTBOX_BASEGLYPHSIZE * scaleFactor;
 		this->_glyphSize = (double)this->_glyphTileSize * 0.75;
 		
-		this->SetHUDFontUsingPath(this->_lastFontFilePath);
+		this->LoadHUDFont();
 	}
 }
 
@@ -321,9 +321,19 @@ void ClientDisplayView::SetPixelScaler(const VideoFilterTypeID filterID)
 }
 
 // HUD appearance
-void ClientDisplayView::SetHUDFontUsingPath(const char *filePath)
+const char* ClientDisplayView::GetHUDFontPath() const
 {
-	if (filePath == NULL)
+	return this->_lastFontFilePath;
+}
+
+void ClientDisplayView::SetHUDFontPath(const char *filePath)
+{
+	this->_lastFontFilePath = filePath;
+}
+
+void ClientDisplayView::LoadHUDFont()
+{
+	if (this->_lastFontFilePath == NULL)
 	{
 		return;
 	}
@@ -331,22 +341,21 @@ void ClientDisplayView::SetHUDFontUsingPath(const char *filePath)
 	FT_Face fontFace;
 	FT_Error error = FT_Err_Ok;
 	
-	error = FT_New_Face(this->_ftLibrary, filePath, 0, &fontFace);
+	error = FT_New_Face(this->_ftLibrary, this->_lastFontFilePath, 0, &fontFace);
 	if (error == FT_Err_Unknown_File_Format)
 	{
-		printf("ClientDisplayView: FreeType failed to load font face because it is in an unknown format from:\n%s\n", filePath);
+		printf("ClientDisplayView: FreeType failed to load font face because it is in an unknown format from:\n%s\n", this->_lastFontFilePath);
 		return;
 	}
 	else if (error)
 	{
-		printf("ClientDisplayView: FreeType failed to load font face with an unknown error from:\n%s\n", filePath);
+		printf("ClientDisplayView: FreeType failed to load font face with an unknown error from:\n%s\n", this->_lastFontFilePath);
 		return;
 	}
 	
 	this->CopyHUDFont(fontFace, this->_glyphSize, this->_glyphTileSize, this->_glyphInfo);
 	
 	FT_Done_Face(fontFace);
-	this->_lastFontFilePath = filePath;
 }
 
 void ClientDisplayView::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo)
@@ -443,6 +452,17 @@ bool ClientDisplayView::GetHUDShowRTC() const
 void ClientDisplayView::SetHUDShowRTC(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showRTC, visibleState);
+}
+
+// NDS GPU Interface
+void ClientDisplayView::FrameProcessGPU()
+{
+	// Do nothing. This is implementation dependent.
+}
+
+void ClientDisplayView::FrameProcessHUD()
+{
+	// Do nothing. This is implementation dependent.
 }
 
 // Touch screen input handling
@@ -907,6 +927,8 @@ void ClientDisplay3DView::SetHUDVertices(float viewportWidth, float viewportHeig
 	{
 		textBoxScale = HUD_TEXTBOX_BASE_SCALE * HUD_TEXTBOX_MIN_SCALE;
 	}
+	
+	textBoxScale /= this->_scaleFactor;
 	
 	float boxOffset = 8.0f * HUD_TEXTBOX_BASE_SCALE * this->_hudObjectScale;
 	if (boxOffset < 1.0f)

@@ -182,7 +182,9 @@ public:
 	virtual void SetPixelScaler(const VideoFilterTypeID filterID);
 	
 	// HUD appearance
-	virtual void SetHUDFontUsingPath(const char *filePath);
+	const char* GetHUDFontPath() const;
+	void SetHUDFontPath(const char *filePath);
+	virtual void LoadHUDFont();
 	virtual void CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo);
 	virtual void SetHUDInfo(const NDSFrameInfo &frameInfo);
 	
@@ -207,8 +209,8 @@ public:
 	
 	// NDS GPU interface
 	virtual void FrameLoadGPU(bool isMainSizeNative, bool isTouchSizeNative) = 0;
-	virtual void FrameProcessGPU() = 0;
-	virtual void FrameProcessHUD() = 0;
+	virtual void FrameProcessGPU();
+	virtual void FrameProcessHUD();
 	virtual void FrameRender() = 0;
 	virtual void FrameFinish() = 0;
 	
@@ -261,7 +263,7 @@ public:
 								 const void *nativeBuffer0,
 								 const void *nativeBuffer1,
 								 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
-								 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1) = 0;
+								 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1);
 	
 	void SetHUDVertices(float viewportWidth, float viewportHeight, float *vtxBufferPtr);
 	void SetHUDTextureCoordinates(float *texCoordBufferPtr);

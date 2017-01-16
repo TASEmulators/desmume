@@ -197,11 +197,11 @@ void MacOGLDisplayView::SetRenderToCALayer(const bool renderToLayer)
 	this->_willRenderToCALayer = renderToLayer;
 }
 
-void MacOGLDisplayView::SetHUDFontUsingPath(const char *filePath)
+void MacOGLDisplayView::LoadHUDFont()
 {
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDFontUsingPath(filePath);
+	this->OGLVideoOutput::LoadHUDFont();
 	CGLUnlockContext(this->_context);
 }
 
