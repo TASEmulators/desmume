@@ -912,8 +912,7 @@ static const char *Scalar2xScanlineFragShader_110 = {"\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
 		float w = mix( mix(1.000, 0.875, f.x), mix(0.875, 0.750, f.x), f.y );\n\
 		\n\
-		OUT_FRAG_COLOR.rgb = SAMPLE3_TEX_RECT(tex, texCoord[0]) * w;\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		OUT_FRAG_COLOR = vec4(SAMPLE3_TEX_RECT(tex, texCoord[0]) * w, 1.0);\n\
 	}\n\
 "};
 
@@ -931,8 +930,8 @@ static const char *Scalar2xEPXFragShader_110 = {"\
 	//                       05|00|01\n\
 	//                       --|03|--\n\
 	//\n\
-	// Output Pixel Mapping:   A|B\n\
-	//                         C|D\n\
+	// Output Pixel Mapping:   0|1\n\
+	//                         2|3\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -941,19 +940,22 @@ static const char *Scalar2xEPXFragShader_110 = {"\
 		vec3 src0 = SAMPLE3_TEX_RECT(tex, texCoord[0]);\n\
 		vec3 src1 = SAMPLE3_TEX_RECT(tex, texCoord[1]);\n\
 		vec3 src3 = SAMPLE3_TEX_RECT(tex, texCoord[3]);\n\
+		\n\
 		float v7 = reduce(src7);\n\
 		float v5 = reduce(src5);\n\
 		float v1 = reduce(src1);\n\
 		float v3 = reduce(src3);\n\
 		\n\
 		bool pixCompare = (v5 != v1) && (v7 != v3);\n\
-		vec3 outA = (pixCompare && (v7 == v5)) ? src7 : src0;\n\
-		vec3 outB = (pixCompare && (v1 == v7)) ? src1 : src0;\n\
-		vec3 outC = (pixCompare && (v5 == v3)) ? src5 : src0;\n\
-		vec3 outD = (pixCompare && (v3 == v1)) ? src3 : src0;\n\
+		\n\
+		vec3 newFragColor[4];\n\
+		newFragColor[0] = (pixCompare && (v7 == v5)) ? src7 : src0;\n\
+		newFragColor[1] = (pixCompare && (v1 == v7)) ? src1 : src0;\n\
+		newFragColor[2] = (pixCompare && (v5 == v3)) ? src5 : src0;\n\
+		newFragColor[3] = (pixCompare && (v3 == v1)) ? src3 : src0;\n\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		OUT_FRAG_COLOR.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
+		OUT_FRAG_COLOR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
 		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
@@ -972,8 +974,8 @@ static const char *Scalar2xEPXPlusFragShader_110 = {"\
 	//                       05|00|01\n\
 	//                       --|03|--\n\
 	//\n\
-	// Output Pixel Mapping:   A|B\n\
-	//                         C|D\n\
+	// Output Pixel Mapping:   0|1\n\
+	//                         2|3\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -983,13 +985,14 @@ static const char *Scalar2xEPXPlusFragShader_110 = {"\
 		vec3 src1 = SAMPLE3_TEX_RECT(tex, texCoord[1]);\n\
 		vec3 src3 = SAMPLE3_TEX_RECT(tex, texCoord[3]);\n\
 		\n\
-		vec3 outA = ( dist(src5, src7) < min(dist(src5, src3), dist(src1, src7)) ) ? mix(src5, src7, 0.5) : src0;\n\
-		vec3 outB = ( dist(src1, src7) < min(dist(src5, src7), dist(src1, src3)) ) ? mix(src1, src7, 0.5) : src0;\n\
-		vec3 outC = ( dist(src5, src3) < min(dist(src5, src7), dist(src1, src3)) ) ? mix(src5, src3, 0.5) : src0;\n\
-		vec3 outD = ( dist(src1, src3) < min(dist(src5, src3), dist(src1, src7)) ) ? mix(src1, src3, 0.5) : src0;\n\
+		vec3 newFragColor[4];\n\
+		newFragColor[0] = ( dist(src5, src7) < min(dist(src5, src3), dist(src1, src7)) ) ? mix(src5, src7, 0.5) : src0;\n\
+		newFragColor[1] = ( dist(src1, src7) < min(dist(src5, src7), dist(src1, src3)) ) ? mix(src1, src7, 0.5) : src0;\n\
+		newFragColor[2] = ( dist(src5, src3) < min(dist(src5, src7), dist(src1, src3)) ) ? mix(src5, src3, 0.5) : src0;\n\
+		newFragColor[3] = ( dist(src1, src3) < min(dist(src5, src3), dist(src1, src7)) ) ? mix(src1, src3, 0.5) : src0;\n\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		OUT_FRAG_COLOR.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
+		OUT_FRAG_COLOR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
 		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
@@ -1015,8 +1018,8 @@ static const char *Scalar2xSaIFragShader_110 = {"\
 	//                       04|03|02|11\n\
 	//                       15|14|13|12\n\
 	//\n\
-	// Output Pixel Mapping:     A|B\n\
-	//                           C|D\n\
+	// Output Pixel Mapping:     0|1\n\
+	//                           2|3\n\
 	\n\
 	//---------------------------------------\n\
 	// 2xSaI Pixel Mapping:    I|E|F|J\n\
@@ -1026,8 +1029,6 @@ static const char *Scalar2xSaIFragShader_110 = {"\
 	\n\
 	void main()\n\
 	{\n\
-		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		\n\
 		float Iv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[6]).rgb );\n\
 		float Ev = reduce( SAMPLE3_TEX_RECT(tex, texCoord[7]).rgb );\n\
 		float Fv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[8]).rgb );\n\
@@ -1048,41 +1049,43 @@ static const char *Scalar2xSaIFragShader_110 = {"\
 		float Ov = reduce( SAMPLE3_TEX_RECT(tex, texCoord[13]).rgb );\n\
 		// Pv is unused, so skip this one.\n\
 		\n\
-		vec3 outA = Ac;\n\
-		vec3 outB = Ac;\n\
-		vec3 outC = Ac;\n\
-		vec3 outD = Ac;\n\
-		\n\
 		bool compAD = (Av == Dv);\n\
 		bool compBC = (Bv == Cv);\n\
 		\n\
+		vec3 newFragColor[4];\n\
+		newFragColor[0] = Ac;\n\
+		newFragColor[1] = Ac;\n\
+		newFragColor[2] = Ac;\n\
+		newFragColor[3] = Ac;\n\
+		\n\
 		if (compAD && !compBC)\n\
 		{\n\
-			outB = ((Av == Ev) && (Bv == Lv)) || ((Av == Cv) && (Av == Fv) && (Bv != Ev) && (Bv == Jv)) ? Ac : mix(Ac, Bc, 0.5);\n\
-			outC = ((Av == Gv) && (Cv == Ov)) || ((Av == Bv) && (Av == Hv) && (Cv != Gv) && (Cv == Mv)) ? Ac : mix(Ac, Cc, 0.5);\n\
+			newFragColor[1] = ((Av == Ev) && (Bv == Lv)) || ((Av == Cv) && (Av == Fv) && (Bv != Ev) && (Bv == Jv)) ? Ac : mix(Ac, Bc, 0.5);\n\
+			newFragColor[2] = ((Av == Gv) && (Cv == Ov)) || ((Av == Bv) && (Av == Hv) && (Cv != Gv) && (Cv == Mv)) ? Ac : mix(Ac, Cc, 0.5);\n\
 		}\n\
 		else if (!compAD && compBC)\n\
 		{\n\
-			outB = ((Bv == Fv) && (Av == Hv)) || ((Bv == Ev) && (Bv == Dv) && (Av != Fv) && (Av == Iv)) ? Bc : mix(Ac, Bc, 0.5);\n\
-			outC = ((Cv == Hv) && (Av == Fv)) || ((Cv == Gv) && (Cv == Dv) && (Av != Hv) && (Av == Iv)) ? Cc : mix(Ac, Cc, 0.5);\n\
-			outD = Bc;\n\
+			newFragColor[1] = ((Bv == Fv) && (Av == Hv)) || ((Bv == Ev) && (Bv == Dv) && (Av != Fv) && (Av == Iv)) ? Bc : mix(Ac, Bc, 0.5);\n\
+			newFragColor[2] = ((Cv == Hv) && (Av == Fv)) || ((Cv == Gv) && (Cv == Dv) && (Av != Hv) && (Av == Iv)) ? Cc : mix(Ac, Cc, 0.5);\n\
+			newFragColor[3] = Bc;\n\
 		}\n\
 		else if (compAD && compBC)\n\
 		{\n\
-			outB = (Av == Bv) ? Ac : mix(Ac, Bc, 0.5);\n\
-			outC = (Av == Bv) ? Ac : mix(Ac, Cc, 0.5);\n\
+			newFragColor[1] = (Av == Bv) ? Ac : mix(Ac, Bc, 0.5);\n\
+			newFragColor[2] = (Av == Bv) ? Ac : mix(Ac, Cc, 0.5);\n\
 			\n\
 			float r = (Av == Bv) ? 1.0 : GetResult(Av, Bv, Gv, Ev) - GetResult(Bv, Av, Kv, Fv) - GetResult(Bv, Av, Hv, Nv) + GetResult(Av, Bv, Lv, Ov);\n\
-			outD = (r > 0.0) ? Ac : ( (r < 0.0) ? Bc : mix( mix(Ac, Bc, 0.5), mix(Cc, Dc, 0.5), 0.5) );\n\
+			newFragColor[3] = (r > 0.0) ? Ac : ( (r < 0.0) ? Bc : mix( mix(Ac, Bc, 0.5), mix(Cc, Dc, 0.5), 0.5) );\n\
 		}\n\
 		else\n\
 		{\n\
-			outB = ((Av == Cv) && (Av == Fv) && (Bv != Ev) && (Bv == Jv)) ? Ac : ( ((Bv == Ev) && (Bv == Dv) && (Av != Fv) && (Av == Iv)) ? Bc : mix(Ac, Bc, 0.5) );\n\
-			outC = ((Av == Bv) && (Av == Hv) && (Cv != Gv) && (Cv == Mv)) ? Ac : ( ((Cv == Gv) && (Cv == Dv) && (Av != Hv) && (Av == Iv)) ? Cc : mix(Ac, Cc, 0.5) );\n\
-			outD = mix( mix(Ac, Bc, 0.5), mix(Cc, Dc, 0.5), 0.5 );\n\
+			newFragColor[1] = ((Av == Cv) && (Av == Fv) && (Bv != Ev) && (Bv == Jv)) ? Ac : ( ((Bv == Ev) && (Bv == Dv) && (Av != Fv) && (Av == Iv)) ? Bc : mix(Ac, Bc, 0.5) );\n\
+			newFragColor[2] = ((Av == Bv) && (Av == Hv) && (Cv != Gv) && (Cv == Mv)) ? Ac : ( ((Cv == Gv) && (Cv == Dv) && (Av != Hv) && (Av == Iv)) ? Cc : mix(Ac, Cc, 0.5) );\n\
+			newFragColor[3] = mix( mix(Ac, Bc, 0.5), mix(Cc, Dc, 0.5), 0.5 );\n\
 		}\n\
 		\n\
-		OUT_FRAG_COLOR.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
+		vec2 f = step(0.5, fract(texCoord[0]));\n\
+		OUT_FRAG_COLOR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
 		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
@@ -1120,8 +1123,6 @@ static const char *ScalarSuper2xSaIFragShader_110 = {"\
 	\n\
 	void main()\n\
 	{\n\
-		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		\n\
 		float Iv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[6]).rgb );\n\
 		float Ev = reduce( SAMPLE3_TEX_RECT(tex, texCoord[7]).rgb );\n\
 		float Fv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[8]).rgb );\n\
@@ -1145,31 +1146,33 @@ static const char *ScalarSuper2xSaIFragShader_110 = {"\
 		bool compAD = (Av == Dv);\n\
 		bool compBC = (Bv == Cv);\n\
 		\n\
-		vec3 outA = ( (compBC && !compAD && (Hv == Cv) && (Cv != Fv)) || ((Gv == Cv) && (Dv == Cv) && (Hv != Av) && (Cv != Iv)) ) ? mix(Ac, Cc, 0.5) : Ac;\n\
-		vec3 outB = Bc;\n\
-		vec3 outC = ( (compAD && !compBC && (Gv == Av) && (Av != Ov)) || ((Av == Hv) && (Av == Bv) && (Gv != Cv) && (Av != Mv)) ) ? mix(Ac, Cc, 0.5) : Cc;\n\
-		vec3 outD = Dc;\n\
+		vec3 newFragColor[4];\n\
+		newFragColor[0] = ( (compBC && !compAD && (Hv == Cv) && (Cv != Fv)) || ((Gv == Cv) && (Dv == Cv) && (Hv != Av) && (Cv != Iv)) ) ? mix(Ac, Cc, 0.5) : Ac;\n\
+		newFragColor[1] = Bc;\n\
+		newFragColor[2] = ( (compAD && !compBC && (Gv == Av) && (Av != Ov)) || ((Av == Hv) && (Av == Bv) && (Gv != Cv) && (Av != Mv)) ) ? mix(Ac, Cc, 0.5) : Cc;\n\
+		newFragColor[3] = Dc;\n\
 		\n\
 		if (compBC && !compAD)\n\
 		{\n\
-			outB = outD = Cc;\n\
+			newFragColor[1] = newFragColor[3] = Cc;\n\
 		}\n\
 		else if (!compBC && compAD)\n\
 		{\n\
-			outB = outD = Ac;\n\
+			newFragColor[1] = newFragColor[3] = Ac;\n\
 		}\n\
 		else if (compBC && compAD)\n\
 		{\n\
 			float r = GetResult(Bv, Av, Hv, Nv) + GetResult(Bv, Av, Gv, Ev) + GetResult(Bv, Av, Ov, Lv) + GetResult(Bv, Av, Fv, Kv);\n\
-			outB = outD = (r > 0.0) ? Bc : ( (r < 0.0) ? Ac : mix(Ac, Bc, 0.5) );\n\
+			newFragColor[1] = newFragColor[3] = (r > 0.0) ? Bc : ( (r < 0.0) ? Ac : mix(Ac, Bc, 0.5) );\n\
 		}\n\
 		else\n\
 		{\n\
-			outB = ( (Bv == Dv) && (Bv == Ev) && (Av != Fv) && (Bv != Iv) ) ? mix(Ac, Bc, 0.75) : ( ( (Av == Cv) && (Av == Fv) && (Ev != Bv) && (Av != Jv) ) ? mix(Ac, Bc, 0.25) : mix(Ac, Bc, 0.5) );\n\
-			outD = ( (Bv == Dv) && (Dv == Nv) && (Cv != Ov) && (Dv != Mv) ) ? mix(Cc, Dc, 0.75) : ( ( (Av == Cv) && (Cv == Ov) && (Nv != Dv) && (Cv != Pv) ) ? mix(Cc, Dc, 0.25) : mix(Cc, Dc, 0.5) );\n\
+			newFragColor[1] = ( (Bv == Dv) && (Bv == Ev) && (Av != Fv) && (Bv != Iv) ) ? mix(Ac, Bc, 0.75) : ( ( (Av == Cv) && (Av == Fv) && (Ev != Bv) && (Av != Jv) ) ? mix(Ac, Bc, 0.25) : mix(Ac, Bc, 0.5) );\n\
+			newFragColor[3] = ( (Bv == Dv) && (Dv == Nv) && (Cv != Ov) && (Dv != Mv) ) ? mix(Cc, Dc, 0.75) : ( ( (Av == Cv) && (Cv == Ov) && (Nv != Dv) && (Cv != Pv) ) ? mix(Cc, Dc, 0.25) : mix(Cc, Dc, 0.5) );\n\
 		}\n\
 		\n\
-		OUT_FRAG_COLOR.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
+		vec2 f = step(0.5, fract(texCoord[0]));\n\
+		OUT_FRAG_COLOR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
 		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
@@ -1196,8 +1199,8 @@ static const char *ScalarSuperEagle2xFragShader_110 = {"\
 	//                       04|03|02|11\n\
 	//                       --|14|13|--\n\
 	//\n\
-	// Output Pixel Mapping:     A|B\n\
-	//                           C|D\n\
+	// Output Pixel Mapping:     0|1\n\
+	//                           2|3\n\
 	\n\
 	//---------------------------------------\n\
 	// SEagle Pixel Mapping:   -|E|F|-\n\
@@ -1207,8 +1210,6 @@ static const char *ScalarSuperEagle2xFragShader_110 = {"\
 	\n\
 	void main()\n\
 	{\n\
-		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		\n\
 		float Ev = reduce( SAMPLE3_TEX_RECT(tex, texCoord[7]).rgb );\n\
 		float Fv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[8]).rgb );\n\
 		\n\
@@ -1225,62 +1226,64 @@ static const char *ScalarSuperEagle2xFragShader_110 = {"\
 		float Nv = reduce( SAMPLE3_TEX_RECT(tex, texCoord[14]).rgb );\n\
 		float Ov = reduce( SAMPLE3_TEX_RECT(tex, texCoord[13]).rgb );\n\
 		\n\
-		vec3 outA = Ac;\n\
-		vec3 outB = Bc;\n\
-		vec3 outC = Cc;\n\
-		vec3 outD = Dc;\n\
 		bool compAD = (Av == Dv);\n\
 		bool compBC = (Bv == Cv);\n\
 		\n\
+		vec3 newFragColor[4];\n\
+		newFragColor[0] = Ac;\n\
+		newFragColor[1] = Bc;\n\
+		newFragColor[2] = Cc;\n\
+		newFragColor[3] = Dc;\n\
+		\n\
 		if (compBC && !compAD)\n\
 		{\n\
-			outA = (Cv == Hv || Bv == Fv) ? mix(Ac, Cc, 0.75) : mix(Ac, Bc, 0.5);\n\
-			//outA = mix( mix(Ac, Bc, 0.5), mix(Ac, Cc, 0.75), float(Cv == Hv || Bv == Fv) );\n\
-			outB = Cc;\n\
-			//outC = Cc;\n\
-			outD = mix( mix(Dc, Cc, 0.5), mix(Dc, Cc, 0.75), float(Bv == Kv || Cv == Nv) );\n\
+			newFragColor[0] = (Cv == Hv || Bv == Fv) ? mix(Ac, Cc, 0.75) : mix(Ac, Bc, 0.5);\n\
+			newFragColor[1] = Cc;\n\
+			//newFragColor[2] = Cc;\n\
+			newFragColor[3] = mix( mix(Dc, Cc, 0.5), mix(Dc, Cc, 0.75), float(Bv == Kv || Cv == Nv) );\n\
 		}\n\
 		else if (!compBC && compAD)\n\
 		{\n\
-			//outA = Ac;\n\
-			outB = mix( mix(Ac, Bc, 0.5), mix(Ac, Bc, 0.25), float(Av == Ev || Dv == Lv) );\n\
-			outC = mix( mix(Cc, Dc, 0.5), mix(Ac, Cc, 0.25), float(Dv == Ov || Av == Gv) );\n\
-			outD = Ac;\n\
+			//newFragColor[0] = Ac;\n\
+			newFragColor[1] = mix( mix(Ac, Bc, 0.5), mix(Ac, Bc, 0.25), float(Av == Ev || Dv == Lv) );\n\
+			newFragColor[2] = mix( mix(Cc, Dc, 0.5), mix(Ac, Cc, 0.25), float(Dv == Ov || Av == Gv) );\n\
+			newFragColor[3] = Ac;\n\
 		}\n\
 		else if (compBC && compAD)\n\
 		{\n\
 			float r = GetResult(Bv, Av, Hv, Nv) + GetResult(Bv, Av, Gv, Ev) + GetResult(Bv, Av, Ov, Lv) + GetResult(Bv, Av, Fv, Kv);\n\
 			if (r > 0.0)\n\
 			{\n\
-				outA = mix(Ac, Bc, 0.5);\n\
-				outB = Cc;\n\
-				//outC = Cc;\n\
-				outD = outA;\n\
+				newFragColor[0] = mix(Ac, Bc, 0.5);\n\
+				newFragColor[1] = Cc;\n\
+				//newFragColor[2] = Cc;\n\
+				newFragColor[3] = newFragColor[0];\n\
 			}\n\
 			else if (r < 0.0)\n\
 			{\n\
-				//outA = Ac;\n\
-				outB = mix(Ac, Bc, 0.5);\n\
-				outC = outB;\n\
-				outD = Ac;\n\
+				//newFragColor[0] = Ac;\n\
+				newFragColor[1] = mix(Ac, Bc, 0.5);\n\
+				newFragColor[2] = newFragColor[1];\n\
+				newFragColor[3] = Ac;\n\
 			}\n\
 			else\n\
 			{\n\
-				//outA = Ac;\n\
-				outB = Cc;\n\
-				//outC = Cc;\n\
-				outD = Ac;\n\
+				//newFragColor[0] = Ac;\n\
+				newFragColor[1] = Cc;\n\
+				//newFragColor[2] = Cc;\n\
+				newFragColor[3] = Ac;\n\
 			}\n\
 		}\n\
 		else\n\
 		{\n\
-			outA = mix(mix(Bc, Cc, 0.5), Ac, 0.75);\n\
-			outB = mix(mix(Ac, Dc, 0.5), Bc, 0.75);\n\
-			outC = mix(mix(Ac, Dc, 0.5), Cc, 0.75);\n\
-			outD = mix(mix(Bc, Cc, 0.5), Dc, 0.75);\n\
+			newFragColor[0] = mix(mix(Bc, Cc, 0.5), Ac, 0.75);\n\
+			newFragColor[1] = mix(mix(Ac, Dc, 0.5), Bc, 0.75);\n\
+			newFragColor[2] = mix(mix(Ac, Dc, 0.5), Cc, 0.75);\n\
+			newFragColor[3] = mix(mix(Bc, Cc, 0.5), Dc, 0.75);\n\
 		}\n\
 		\n\
-		OUT_FRAG_COLOR.rgb = mix( mix(outA, outB, f.x), mix(outC, outD, f.x), f.y );\n\
+		vec2 f = step(0.5, fract(texCoord[0]));\n\
+		OUT_FRAG_COLOR.rgb = mix( mix(newFragColor[0], newFragColor[1], f.x), mix(newFragColor[2], newFragColor[3], f.x), f.y );\n\
 		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
@@ -2187,69 +2190,61 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 		if (IsBlendingNeeded(blendResult))\n\
 		{\n\
 #if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
-			float dist_01_04 = DistYCbCr(src[1], src[4]);\n\
-			float dist_03_08 = DistYCbCr(src[3], src[8]);\n\
-			bool haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[4]) && (v[5] != v[4]);\n\
-			bool haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[8]) && (v[7] != v[8]);\n\
-			bool needBlend = (blendResult[2] != BLEND_NONE);\n\
-			bool doLineBlend = (  blendResult[2] >= BLEND_DOMINANT ||\n\
+			vec4 dist_01_04 = vec4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );\n\
+			vec4 dist_03_08 = vec4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );\n\
+			bvec4 haveShallowLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_01_04, dist_03_08);\n\
+			bvec4 haveSteepLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_03_08, dist_01_04);\n\
+			bvec4 needBlend = notEqual( blendResult.zyxw, ivec4(BLEND_NONE) );\n\
+			bvec4 doLineBlend = greaterThanEqual( blendResult.zyxw, ivec4(BLEND_DOMINANT) );\n\
+			vec3 blendPix[4];\n\
+			\n\
+			haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
+			haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
+			doLineBlend[0] = (  doLineBlend[0] ||\n\
 							   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
 								 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
 								 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
+			blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
 			\n\
-			vec3 blendPix = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
-			dst[1] = mix(dst[1], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.25 : 0.00);\n\
-			dst[2] = mix(dst[2], blendPix, (needBlend) ? ((doLineBlend) ? ((haveShallowLine) ? ((haveSteepLine) ? 5.0/6.0 : 0.75) : ((haveSteepLine) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
-			dst[3] = mix(dst[3], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.25 : 0.00);\n\
+			dst[1] = mix(dst[1], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.25 : 0.00);\n\
+			dst[2] = mix(dst[2], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveShallowLine[0]) ? ((haveSteepLine[0]) ? 5.0/6.0 : 0.75) : ((haveSteepLine[0]) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
+			dst[3] = mix(dst[3], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.25 : 0.00);\n\
 			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[7], src[2]);\n\
-			dist_03_08 = DistYCbCr(src[1], src[6]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[2]) && (v[3] != v[2]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[6]) && (v[5] != v[6]);\n\
-			needBlend = (blendResult[1] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[1] >= BLEND_DOMINANT ||\n\
+			haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
+			haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
+			doLineBlend[1] = (  doLineBlend[1] ||\n\
 						  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
 							(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
 							(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
+			blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
 			\n\
-			blendPix = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
-			dst[0] = mix(dst[0], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.25 : 0.00);\n\
-			dst[1] = mix(dst[1], blendPix, (needBlend) ? ((doLineBlend) ? ((haveShallowLine) ? ((haveSteepLine) ? 5.0/6.0 : 0.75) : ((haveSteepLine) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
-			dst[2] = mix(dst[2], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.25 : 0.00);\n\
+			dst[0] = mix(dst[0], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.25 : 0.00);\n\
+			dst[1] = mix(dst[1], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveShallowLine[1]) ? ((haveSteepLine[1]) ? 5.0/6.0 : 0.75) : ((haveSteepLine[1]) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
+			dst[2] = mix(dst[2], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.25 : 0.00);\n\
 			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[5], src[8]);\n\
-			dist_03_08 = DistYCbCr(src[7], src[4]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[8]) && (v[1] != v[8]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[4]) && (v[3] != v[4]);\n\
-			needBlend = (blendResult[0] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[0] >= BLEND_DOMINANT ||\n\
+			haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
+			haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
+			doLineBlend[2] = (  doLineBlend[2] ||\n\
 						  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
 							(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
 							(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
+			blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
 			\n\
-			blendPix = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
-			dst[3] = mix(dst[3], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.25 : 0.00);\n\
-			dst[0] = mix(dst[0], blendPix, (needBlend) ? ((doLineBlend) ? ((haveShallowLine) ? ((haveSteepLine) ? 5.0/6.0 : 0.75) : ((haveSteepLine) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
-			dst[1] = mix(dst[1], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.25 : 0.00);\n\
+			dst[3] = mix(dst[3], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.25 : 0.00);\n\
+			dst[0] = mix(dst[0], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveShallowLine[2]) ? ((haveSteepLine[2]) ? 5.0/6.0 : 0.75) : ((haveSteepLine[2]) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
+			dst[1] = mix(dst[1], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.25 : 0.00);\n\
 			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[3], src[6]);\n\
-			dist_03_08 = DistYCbCr(src[5], src[2]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[6]) && (v[7] != v[6]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[2]) && (v[1] != v[2]);\n\
-			needBlend = (blendResult[3] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[3] >= BLEND_DOMINANT ||\n\
+			haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
+			haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
+			doLineBlend[3] = (  doLineBlend[3] ||\n\
 						  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
 							(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
 							(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
+			blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
 			\n\
-			blendPix = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
-			dst[2] = mix(dst[2], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.25 : 0.00);\n\
-			dst[3] = mix(dst[3], blendPix, (needBlend) ? ((doLineBlend) ? ((haveShallowLine) ? ((haveSteepLine) ? 5.0/6.0 : 0.75) : ((haveSteepLine) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
-			dst[0] = mix(dst[0], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.25 : 0.00);\n\
-			\n\
+			dst[2] = mix(dst[2], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.25 : 0.00);\n\
+			dst[3] = mix(dst[3], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveShallowLine[3]) ? ((haveSteepLine[3]) ? 5.0/6.0 : 0.75) : ((haveSteepLine[3]) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
+			dst[0] = mix(dst[0], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.25 : 0.00);\n\
 #else\n\
 			vec3 k[9];\n\
 			vec3 tempDst3;\n\
@@ -2639,77 +2634,69 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 		if (IsBlendingNeeded(blendResult))\n\
 		{\n\
 #if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
-			float dist_01_04 = DistYCbCr(src[1], src[4]);\n\
-			float dist_03_08 = DistYCbCr(src[3], src[8]);\n\
-			bool haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[4]) && (v[5] != v[4]);\n\
-			bool haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[8]) && (v[7] != v[8]);\n\
-			bool needBlend = (blendResult[2] != BLEND_NONE);\n\
-			bool doLineBlend = (  blendResult[2] >= BLEND_DOMINANT ||\n\
+			vec4 dist_01_04 = vec4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );\n\
+			vec4 dist_03_08 = vec4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );\n\
+			bvec4 haveShallowLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_01_04, dist_03_08);\n\
+			bvec4 haveSteepLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_03_08, dist_01_04);\n\
+			bvec4 needBlend = notEqual( blendResult.zyxw, ivec4(BLEND_NONE) );\n\
+			bvec4 doLineBlend = greaterThanEqual( blendResult.zyxw, ivec4(BLEND_DOMINANT) );\n\
+			vec3 blendPix[4];\n\
+			\n\
+			haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
+			haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
+			doLineBlend[0] = (  doLineBlend[0] ||\n\
 							   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
 								 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
 								 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
+			blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
 			\n\
-			vec3 blendPix = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
-			dst[1] = mix(dst[1], blendPix, (needBlend && doLineBlend) ? ((haveSteepLine) ? 0.750 : ((haveShallowLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[2] = mix(dst[2], blendPix, (needBlend) ? ((doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
-			dst[3] = mix(dst[3], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? 0.750 : ((haveSteepLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[4] = mix(dst[4], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[8] = mix(dst[8], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
+			dst[1] = mix(dst[1], blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveSteepLine[0]) ? 0.750 : ((haveShallowLine[0]) ? 0.250 : 0.125)) : 0.000);\n\
+			dst[2] = mix(dst[2], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((!haveShallowLine[0] && !haveSteepLine[0]) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
+			dst[3] = mix(dst[3], blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? 0.750 : ((haveSteepLine[0]) ? 0.250 : 0.125)) : 0.000);\n\
+			dst[4] = mix(dst[4], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250 : 0.000);\n\
+			dst[8] = mix(dst[8], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250 : 0.000);\n\
 			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[7], src[2]);\n\
-			dist_03_08 = DistYCbCr(src[1], src[6]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[2]) && (v[3] != v[2]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[6]) && (v[5] != v[6]);\n\
-			needBlend = (blendResult[1] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[1] >= BLEND_DOMINANT ||\n\
+			haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
+			haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
+			doLineBlend[1] = (  doLineBlend[1] ||\n\
 						  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
 							(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
 							(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
+			blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
 			\n\
-			blendPix = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
-			dst[7] = mix(dst[7], blendPix, (needBlend && doLineBlend) ? ((haveSteepLine) ? 0.750 : ((haveShallowLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[8] = mix(dst[8], blendPix, (needBlend) ? ((doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
-			dst[1] = mix(dst[1], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? 0.750 : ((haveSteepLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[2] = mix(dst[2], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[6] = mix(dst[6], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
+			dst[7] = mix(dst[7], blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveSteepLine[1]) ? 0.750 : ((haveShallowLine[1]) ? 0.250 : 0.125)) : 0.000);\n\
+			dst[8] = mix(dst[8], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((!haveShallowLine[1] && !haveSteepLine[1]) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
+			dst[1] = mix(dst[1], blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? 0.750 : ((haveSteepLine[1]) ? 0.250 : 0.125)) : 0.000);\n\
+			dst[2] = mix(dst[2], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250 : 0.000);\n\
+			dst[6] = mix(dst[6], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250 : 0.000);\n\
 			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[5], src[8]);\n\
-			dist_03_08 = DistYCbCr(src[7], src[4]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[8]) && (v[1] != v[8]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[4]) && (v[3] != v[4]);\n\
-			needBlend = (blendResult[0] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[0] >= BLEND_DOMINANT ||\n\
+			haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
+			haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
+			doLineBlend[2] = (  doLineBlend[2] ||\n\
 						  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
 							(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
 							(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
+			blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
 			\n\
-			blendPix = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
-			dst[5] = mix(dst[5], blendPix, (needBlend && doLineBlend) ? ((haveSteepLine) ? 0.750 : ((haveShallowLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[6] = mix(dst[6], blendPix, (needBlend) ? ((doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
-			dst[7] = mix(dst[7], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? 0.750 : ((haveSteepLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[8] = mix(dst[8], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[4] = mix(dst[4], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
+			dst[5] = mix(dst[5], blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveSteepLine[2]) ? 0.750 : ((haveShallowLine[2]) ? 0.250 : 0.125)) : 0.000);\n\
+			dst[6] = mix(dst[6], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((!haveShallowLine[2] && !haveSteepLine[2]) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
+			dst[7] = mix(dst[7], blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? 0.750 : ((haveSteepLine[2]) ? 0.250 : 0.125)) : 0.000);\n\
+			dst[8] = mix(dst[8], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250 : 0.000);\n\
+			dst[4] = mix(dst[4], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250 : 0.000);\n\
 			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[3], src[6]);\n\
-			dist_03_08 = DistYCbCr(src[5], src[2]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[6]) && (v[7] != v[6]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[2]) && (v[1] != v[2]);\n\
-			needBlend = (blendResult[3] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[3] >= BLEND_DOMINANT ||\n\
+			haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
+			haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
+			doLineBlend[3] = (  doLineBlend[3] ||\n\
 						  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
 							(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
 							(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
+			blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
 			\n\
-			blendPix = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
-			dst[3] = mix(dst[3], blendPix, (needBlend && doLineBlend) ? ((haveSteepLine) ? 0.750 : ((haveShallowLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[4] = mix(dst[4], blendPix, (needBlend) ? ((doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
-			dst[5] = mix(dst[5], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? 0.750 : ((haveSteepLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[6] = mix(dst[6], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[2] = mix(dst[2], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			\n\
+			dst[3] = mix(dst[3], blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveSteepLine[3]) ? 0.750 : ((haveShallowLine[3]) ? 0.250 : 0.125)) : 0.000);\n\
+			dst[4] = mix(dst[4], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((!haveShallowLine[3] && !haveSteepLine[3]) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
+			dst[5] = mix(dst[5], blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? 0.750 : ((haveSteepLine[3]) ? 0.250 : 0.125)) : 0.000);\n\
+			dst[6] = mix(dst[6], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250 : 0.000);\n\
+			dst[2] = mix(dst[2], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250 : 0.000);\n\
 #else\n\
 			vec3 k[9];\n\
 			vec3 tempDst8;\n\
@@ -2819,11 +2806,13 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 	#define DOMINANT_DIRECTION_THRESHOLD 3.6\n\
 	#define M_PI 3.1415926535897932384626433832795\n\
 	\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
+	// Let's not even bother trying to support GPUs below Mid-tier.\n\
+	// The xBRZ pixel scalers are already pretty hefty as-is, and\n\
+	// this shader, having to calculate 16 pixel locations, is the\n\
+	// heftiest of all of them. Trust me -- older GPUs just can't\n\
+	// handle this one.\n\
+	\n\
 	VARYING vec2 texCoord[25];\n\
-#else\n\
-	VARYING vec2 texCoord[16];\n\
-#endif\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	float reduce(const vec3 color)\n\
@@ -2854,7 +2843,8 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 		return any(notEqual(blend, ivec4(BLEND_NONE)));\n\
 	}\n\
 	\n\
-#if GPU_TIER < SHADERSUPPORT_MID_TIER\n\
+	// Let's keep xBRZ's original blending logic around for reference.\n\
+	/*\n\
 	void ScalePixel(const ivec4 blend, const vec3 k[9], inout vec3 dst[16])\n\
 	{\n\
 		// This is the optimized version of xBRZ's blending logic. It's behavior\n\
@@ -2885,8 +2875,6 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 		dst[14] = mix(dst[14], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.75 : 0.00);\n\
 		dst[15] = mix(dst[15], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.25 : 0.00);\n\
 		\n\
-		// Let's keep xBRZ's original blending logic around for reference.\n\
-		/*\n\
 		if (blend[2] == BLEND_NONE)\n\
 		{\n\
 			return;\n\
@@ -2960,9 +2948,8 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 			dst[13] = mix(dst[13], blendPix, 0.08677704501);\n\
 			dst[11] = mix(dst[11], blendPix, 0.08677704501);\n\
 		}\n\
-		*/\n\
 	}\n\
-#endif\n\
+	*/\n\
 	\n\
 	//---------------------------------------\n\
 	// Input Pixel Mapping:  --|21|22|23|--\n\
@@ -2971,14 +2958,13 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 	//                       17|04|03|02|11\n\
 	//                       --|15|14|13|--\n\
 	//\n\
-	// Output Pixel Mapping:  06|07|08|09\n\
-	//                        05|00|01|10\n\
-	//                        04|03|02|11\n\
-	//                        15|14|13|12\n\
+	// Output Pixel Mapping:  00|01|02|03\n\
+	//                        04|05|06|07\n\
+	//                        08|09|10|11\n\
+	//                        12|13|14|15\n\
 	\n\
 	void main()\n\
 	{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 		vec3 src[25];\n\
 		src[ 0] = SAMPLE3_TEX_RECT(tex, texCoord[ 0]).rgb;\n\
 		src[ 1] = SAMPLE3_TEX_RECT(tex, texCoord[ 1]).rgb;\n\
@@ -3005,25 +2991,6 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 		src[22] = SAMPLE3_TEX_RECT(tex, texCoord[22]).rgb;\n\
 		src[23] = SAMPLE3_TEX_RECT(tex, texCoord[23]).rgb;\n\
 		src[24] = SAMPLE3_TEX_RECT(tex, texCoord[24]).rgb;\n\
-#else\n\
-		vec3 src[16];\n\
-		src[ 0] = SAMPLE3_TEX_RECT(tex, texCoord[ 0]).rgb;\n\
-		src[ 1] = SAMPLE3_TEX_RECT(tex, texCoord[ 1]).rgb;\n\
-		src[ 2] = SAMPLE3_TEX_RECT(tex, texCoord[ 2]).rgb;\n\
-		src[ 3] = SAMPLE3_TEX_RECT(tex, texCoord[ 3]).rgb;\n\
-		src[ 4] = SAMPLE3_TEX_RECT(tex, texCoord[ 4]).rgb;\n\
-		src[ 5] = SAMPLE3_TEX_RECT(tex, texCoord[ 5]).rgb;\n\
-		src[ 6] = SAMPLE3_TEX_RECT(tex, texCoord[ 6]).rgb;\n\
-		src[ 7] = SAMPLE3_TEX_RECT(tex, texCoord[ 7]).rgb;\n\
-		src[ 8] = SAMPLE3_TEX_RECT(tex, texCoord[ 8]).rgb;\n\
-		src[ 9] = SAMPLE3_TEX_RECT(tex, texCoord[ 9]).rgb;\n\
-		src[10] = SAMPLE3_TEX_RECT(tex, texCoord[10]).rgb;\n\
-		src[11] = SAMPLE3_TEX_RECT(tex, texCoord[11]).rgb;\n\
-		src[12] = SAMPLE3_TEX_RECT(tex, texCoord[12]).rgb;\n\
-		src[13] = SAMPLE3_TEX_RECT(tex, texCoord[13]).rgb;\n\
-		src[14] = SAMPLE3_TEX_RECT(tex, texCoord[14]).rgb;\n\
-		src[15] = SAMPLE3_TEX_RECT(tex, texCoord[15]).rgb;\n\
-#endif\n\
 		\n\
 		float v[9];\n\
 		v[0] = reduce(src[0]);\n\
@@ -3063,15 +3030,8 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 		// Corner (0, 1)\n\
 		if ( !((v[5] == v[0] && v[4] == v[3]) || (v[5] == v[4] && v[0] == v[3])) )\n\
 		{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 			float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
 			float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
-#else\n\
-			vec3 src17 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, 1.0)).rgb;\n\
-			vec3 src18 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, 0.0)).rgb;\n\
-			float dist_04_00 = DistYCbCr(src17  , src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
-			float dist_05_03 = DistYCbCr(src18  , src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
-#endif\n\
 			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_03) < dist_04_00;\n\
 			blendResult[3] = ((dist_04_00 > dist_05_03) && (v[0] != v[5]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
 		}\n\
@@ -3084,15 +3044,8 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 		// Corner (1, 0)\n\
 		if ( !((v[7] == v[8] && v[0] == v[1]) || (v[7] == v[0] && v[8] == v[1])) )\n\
 		{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 			float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
 			float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
-#else\n\
-			vec3 src22 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(0.0, -2.0)).rgb;\n\
-			vec3 src23 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(1.0, -2.0)).rgb;\n\
-			float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src23  ) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
-			float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src22  , src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
-#endif\n\
 			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_07_01) < dist_00_08;\n\
 			blendResult[1] = ((dist_00_08 > dist_07_01) && (v[0] != v[7]) && (v[0] != v[1])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
 		}\n\
@@ -3105,265 +3058,142 @@ static const char *Scaler4xBRZFragShader_110 = {"\
 		// Corner (0, 0)\n\
 		if ( !((v[6] == v[7] && v[5] == v[0]) || (v[6] == v[5] && v[7] == v[0])) )\n\
 		{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 			float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
 			float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
-#else\n\
-			vec3 src18 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0,  0.0)).rgb;\n\
-			vec3 src19 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, -1.0)).rgb;\n\
-			vec3 src21 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-1.0, -2.0)).rgb;\n\
-			vec3 src22 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2( 0.0, -2.0)).rgb;\n\
-			float dist_05_07 = DistYCbCr(src18  , src[ 6]) + DistYCbCr(src[ 6], src22  ) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
-			float dist_06_00 = DistYCbCr(src19  , src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src21  , src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
-#endif\n\
 			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_07) < dist_06_00;\n\
 			blendResult[0] = ((dist_05_07 < dist_06_00) && (v[0] != v[5]) && (v[0] != v[7])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
 		}\n\
 		\n\
-		vec3 dst[16];\n\
-		dst[ 0] = src[0];\n\
-		dst[ 1] = src[0];\n\
-		dst[ 2] = src[0];\n\
-		dst[ 3] = src[0];\n\
-		dst[ 4] = src[0];\n\
-		dst[ 5] = src[0];\n\
-		dst[ 6] = src[0];\n\
-		dst[ 7] = src[0];\n\
-		dst[ 8] = src[0];\n\
-		dst[ 9] = src[0];\n\
-		dst[10] = src[0];\n\
-		dst[11] = src[0];\n\
-		dst[12] = src[0];\n\
-		dst[13] = src[0];\n\
-		dst[14] = src[0];\n\
-		dst[15] = src[0];\n\
+		vec3 newFragColor = src[0];\n\
 		\n\
 		// Scale pixel\n\
 		if (IsBlendingNeeded(blendResult))\n\
 		{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
-			float dist_01_04 = DistYCbCr(src[1], src[4]);\n\
-			float dist_03_08 = DistYCbCr(src[3], src[8]);\n\
-			bool haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[4]) && (v[5] != v[4]);\n\
-			bool haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[8]) && (v[7] != v[8]);\n\
-			bool needBlend = (blendResult[2] != BLEND_NONE);\n\
-			bool doLineBlend = (  blendResult[2] >= BLEND_DOMINANT ||\n\
+			vec4 dist_01_04 = vec4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );\n\
+			vec4 dist_03_08 = vec4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );\n\
+			bvec4 haveShallowLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_01_04, dist_03_08);\n\
+			bvec4 haveSteepLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_03_08, dist_01_04);\n\
+			bvec4 needBlend = notEqual( blendResult.zyxw, ivec4(BLEND_NONE) );\n\
+			bvec4 doLineBlend = greaterThanEqual( blendResult.zyxw, ivec4(BLEND_DOMINANT) );\n\
+			vec3 blendPix[4];\n\
+			\n\
+			haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
+			haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
+			doLineBlend[0] = (  doLineBlend[0] ||\n\
 							   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
 								 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
 								 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
+			blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
 			\n\
-			vec3 blendPix = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
-			dst[ 2] = mix(dst[ 2], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? ((haveSteepLine) ? 1.0/3.0 : 0.25) : ((haveSteepLine) ? 0.25 : 0.00)) : 0.00);\n\
-			dst[ 9] = mix(dst[ 9], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.25 : 0.00);\n\
-			dst[10] = mix(dst[10], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.75 : 0.00);\n\
-			dst[11] = mix(dst[11], blendPix, (needBlend) ? ((doLineBlend) ? ((haveSteepLine) ? 1.00 : ((haveShallowLine) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
-			dst[12] = mix(dst[12], blendPix, (needBlend) ? ((doLineBlend) ? 1.00 : 0.6848532563) : 0.00);\n\
-			dst[13] = mix(dst[13], blendPix, (needBlend) ? ((doLineBlend) ? ((haveShallowLine) ? 1.00 : ((haveSteepLine) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
-			dst[14] = mix(dst[14], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.75 : 0.00);\n\
-			dst[15] = mix(dst[15], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.25 : 0.00);\n\
-			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[7], src[2]);\n\
-			dist_03_08 = DistYCbCr(src[1], src[6]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[2]) && (v[3] != v[2]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[6]) && (v[5] != v[6]);\n\
-			needBlend = (blendResult[1] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[1] >= BLEND_DOMINANT ||\n\
+			haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
+			haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
+			doLineBlend[1] = (  doLineBlend[1] ||\n\
 						  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
 							(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
 							(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
+			blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
 			\n\
-			blendPix = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
-			dst[ 1] = mix(dst[ 1], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? ((haveSteepLine) ? 1.0/3.0 : 0.25) : ((haveSteepLine) ? 0.25 : 0.00)) : 0.00);\n\
-			dst[ 6] = mix(dst[ 6], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.25 : 0.00);\n\
-			dst[ 7] = mix(dst[ 7], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.75 : 0.00);\n\
-			dst[ 8] = mix(dst[ 8], blendPix, (needBlend) ? ((doLineBlend) ? ((haveSteepLine) ? 1.00 : ((haveShallowLine) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
-			dst[ 9] = mix(dst[ 9], blendPix, (needBlend) ? ((doLineBlend) ? 1.00 : 0.6848532563) : 0.00);\n\
-			dst[10] = mix(dst[10], blendPix, (needBlend) ? ((doLineBlend) ? ((haveShallowLine) ? 1.00 : ((haveSteepLine) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
-			dst[11] = mix(dst[11], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.75 : 0.00);\n\
-			dst[12] = mix(dst[12], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.25 : 0.00);\n\
-			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[5], src[8]);\n\
-			dist_03_08 = DistYCbCr(src[7], src[4]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[8]) && (v[1] != v[8]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[4]) && (v[3] != v[4]);\n\
-			needBlend = (blendResult[0] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[0] >= BLEND_DOMINANT ||\n\
+			haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
+			haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
+			doLineBlend[2] = (  doLineBlend[2] ||\n\
 						  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
 							(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
 							(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
+			blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
 			\n\
-			blendPix = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
-			dst[ 0] = mix(dst[ 0], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? ((haveSteepLine) ? 1.0/3.0 : 0.25) : ((haveSteepLine) ? 0.25 : 0.00)) : 0.00);\n\
-			dst[15] = mix(dst[15], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.25 : 0.00);\n\
-			dst[ 4] = mix(dst[ 4], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.75 : 0.00);\n\
-			dst[ 5] = mix(dst[ 5], blendPix, (needBlend) ? ((doLineBlend) ? ((haveSteepLine) ? 1.00 : ((haveShallowLine) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
-			dst[ 6] = mix(dst[ 6], blendPix, (needBlend) ? ((doLineBlend) ? 1.00 : 0.6848532563) : 0.00);\n\
-			dst[ 7] = mix(dst[ 7], blendPix, (needBlend) ? ((doLineBlend) ? ((haveShallowLine) ? 1.00 : ((haveSteepLine) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
-			dst[ 8] = mix(dst[ 8], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.75 : 0.00);\n\
-			dst[ 9] = mix(dst[ 9], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.25 : 0.00);\n\
-			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[3], src[6]);\n\
-			dist_03_08 = DistYCbCr(src[5], src[2]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[6]) && (v[7] != v[6]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[2]) && (v[1] != v[2]);\n\
-			needBlend = (blendResult[3] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[3] >= BLEND_DOMINANT ||\n\
+			haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
+			haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
+			doLineBlend[3] = (  doLineBlend[3] ||\n\
 						  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
 							(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
 							(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
+			blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
 			\n\
-			blendPix = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
-			dst[ 3] = mix(dst[ 3], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? ((haveSteepLine) ? 1.0/3.0 : 0.25) : ((haveSteepLine) ? 0.25 : 0.00)) : 0.00);\n\
-			dst[12] = mix(dst[12], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.25 : 0.00);\n\
-			dst[13] = mix(dst[13], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.75 : 0.00);\n\
-			dst[14] = mix(dst[14], blendPix, (needBlend) ? ((doLineBlend) ? ((haveSteepLine) ? 1.00 : ((haveShallowLine) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
-			dst[15] = mix(dst[15], blendPix, (needBlend) ? ((doLineBlend) ? 1.00 : 0.6848532563) : 0.00);\n\
-			dst[ 4] = mix(dst[ 4], blendPix, (needBlend) ? ((doLineBlend) ? ((haveShallowLine) ? 1.00 : ((haveSteepLine) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
-			dst[ 5] = mix(dst[ 5], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.75 : 0.00);\n\
-			dst[ 6] = mix(dst[ 6], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.25 : 0.00);\n\
+			int i = int( dot(floor(fract(texCoord[0]) * 4.05), vec2(1.05, 4.05)) );\n\
 			\n\
-#else\n\
-			vec3 k[9];\n\
-			vec3 tempDst15;\n\
-			vec3 tempDst14;\n\
-			vec3 tempDst13;\n\
-			vec3 tempDst3;\n\
-			\n\
-			k[8] = src[8];\n\
-			k[7] = src[7];\n\
-			k[6] = src[6];\n\
-			k[5] = src[5];\n\
-			k[4] = src[4];\n\
-			k[3] = src[3];\n\
-			k[2] = src[2];\n\
-			k[1] = src[1];\n\
-			k[0] = src[0];\n\
-			ScalePixel(blendResult.xyzw, k, dst);\n\
-			\n\
-			k[8] = src[6];\n\
-			k[7] = src[5];\n\
-			k[6] = src[4];\n\
-			k[5] = src[3];\n\
-			k[4] = src[2];\n\
-			k[3] = src[1];\n\
-			k[2] = src[8];\n\
-			k[1] = src[7];\n\
-			tempDst15 = dst[15];\n\
-			tempDst14 = dst[14];\n\
-			tempDst13 = dst[13];\n\
-			tempDst3  = dst[ 3];\n\
-			dst[15] = dst[12];\n\
-			dst[14] = dst[11];\n\
-			dst[13] = dst[10];\n\
-			dst[12] = dst[ 9];\n\
-			dst[11] = dst[ 8];\n\
-			dst[10] = dst[ 7];\n\
-			dst[ 9] = dst[ 6];\n\
-			dst[ 8] = dst[ 5];\n\
-			dst[ 7] = dst[ 4];\n\
-			dst[ 6] = tempDst15;\n\
-			dst[ 5] = tempDst14;\n\
-			dst[ 4] = tempDst13;\n\
-			dst[ 3] = dst[ 2];\n\
-			dst[ 2] = dst[ 1];\n\
-			dst[ 1] = dst[ 0];\n\
-			dst[ 0] = tempDst3;\n\
-			ScalePixel(blendResult.wxyz, k, dst);\n\
-			\n\
-			k[8] = src[4];\n\
-			k[7] = src[3];\n\
-			k[6] = src[2];\n\
-			k[5] = src[1];\n\
-			k[4] = src[8];\n\
-			k[3] = src[7];\n\
-			k[2] = src[6];\n\
-			k[1] = src[5];\n\
-			tempDst15 = dst[15];\n\
-			tempDst14 = dst[14];\n\
-			tempDst13 = dst[13];\n\
-			tempDst3  = dst[ 3];\n\
-			dst[15] = dst[12];\n\
-			dst[14] = dst[11];\n\
-			dst[13] = dst[10];\n\
-			dst[12] = dst[ 9];\n\
-			dst[11] = dst[ 8];\n\
-			dst[10] = dst[ 7];\n\
-			dst[ 9] = dst[ 6];\n\
-			dst[ 8] = dst[ 5];\n\
-			dst[ 7] = dst[ 4];\n\
-			dst[ 6] = tempDst15;\n\
-			dst[ 5] = tempDst14;\n\
-			dst[ 4] = tempDst13;\n\
-			dst[ 3] = dst[ 2];\n\
-			dst[ 2] = dst[ 1];\n\
-			dst[ 1] = dst[ 0];\n\
-			dst[ 0] = tempDst3;\n\
-			ScalePixel(blendResult.zwxy, k, dst);\n\
-			\n\
-			k[8] = src[2];\n\
-			k[7] = src[1];\n\
-			k[6] = src[8];\n\
-			k[5] = src[7];\n\
-			k[4] = src[6];\n\
-			k[3] = src[5];\n\
-			k[2] = src[4];\n\
-			k[1] = src[3];\n\
-			tempDst15 = dst[15];\n\
-			tempDst14 = dst[14];\n\
-			tempDst13 = dst[13];\n\
-			tempDst3  = dst[ 3];\n\
-			dst[15] = dst[12];\n\
-			dst[14] = dst[11];\n\
-			dst[13] = dst[10];\n\
-			dst[12] = dst[ 9];\n\
-			dst[11] = dst[ 8];\n\
-			dst[10] = dst[ 7];\n\
-			dst[ 9] = dst[ 6];\n\
-			dst[ 8] = dst[ 5];\n\
-			dst[ 7] = dst[ 4];\n\
-			dst[ 6] = tempDst15;\n\
-			dst[ 5] = tempDst14;\n\
-			dst[ 4] = tempDst13;\n\
-			dst[ 3] = dst[ 2];\n\
-			dst[ 2] = dst[ 1];\n\
-			dst[ 1] = dst[ 0];\n\
-			dst[ 0] = tempDst3;\n\
-			ScalePixel(blendResult.yzwx, k, dst);\n\
-			\n\
-			// Rotate the destination pixels back to 0 degrees.\n\
-			tempDst15 = dst[15];\n\
-			tempDst14 = dst[14];\n\
-			tempDst13 = dst[13];\n\
-			tempDst3  = dst[ 3];\n\
-			dst[15] = dst[12];\n\
-			dst[14] = dst[11];\n\
-			dst[13] = dst[10];\n\
-			dst[12] = dst[ 9];\n\
-			dst[11] = dst[ 8];\n\
-			dst[10] = dst[ 7];\n\
-			dst[ 9] = dst[ 6];\n\
-			dst[ 8] = dst[ 5];\n\
-			dst[ 7] = dst[ 4];\n\
-			dst[ 6] = tempDst15;\n\
-			dst[ 5] = tempDst14;\n\
-			dst[ 4] = tempDst13;\n\
-			dst[ 3] = dst[ 2];\n\
-			dst[ 2] = dst[ 1];\n\
-			dst[ 1] = dst[ 0];\n\
-			dst[ 0] = tempDst3;\n\
-#endif\n\
+			if (i == 0)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.25 : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.00 : 0.6848532563) : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.25 : 0.00);\n\
+			}\n\
+			else if (i == 1)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.75 : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveShallowLine[2]) ? 1.00 : ((haveSteepLine[2]) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
+			}\n\
+			else if (i == 2)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveSteepLine[1]) ? 1.00 : ((haveShallowLine[1]) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.75 : 0.00);\n\
+			}\n\
+			else if (i == 3)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.25 : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.00 : 0.6848532563) : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.25 : 0.00);\n\
+			}\n\
+			else if (i == 4)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveSteepLine[2]) ? 1.00 : ((haveShallowLine[2]) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.75 : 0.00);\n\
+			}\n\
+			else if (i == 5)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? ((haveSteepLine[2]) ? 1.0/3.0 : 0.25) : ((haveSteepLine[2]) ? 0.25 : 0.00)) : 0.00);\n\
+			}\n\
+			else if (i == 6)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? ((haveSteepLine[1]) ? 1.0/3.0 : 0.25) : ((haveSteepLine[1]) ? 0.25 : 0.00)) : 0.00);\n\
+			}\n\
+			else if (i == 7)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.75 : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveShallowLine[1]) ? 1.00 : ((haveSteepLine[1]) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
+			}\n\
+			else if (i == 8)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.75 : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveShallowLine[3]) ? 1.00 : ((haveSteepLine[3]) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
+			}\n\
+			else if (i == 9)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? ((haveSteepLine[3]) ? 1.0/3.0 : 0.25) : ((haveSteepLine[3]) ? 0.25 : 0.00)) : 0.00);\n\
+			}\n\
+			else if (i == 10)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? ((haveSteepLine[0]) ? 1.0/3.0 : 0.25) : ((haveSteepLine[0]) ? 0.25 : 0.00)) : 0.00);\n\
+			}\n\
+			else if (i == 11)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveSteepLine[0]) ? 1.00 : ((haveShallowLine[0]) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.75 : 0.00);\n\
+			}\n\
+			else if (i == 12)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.25 : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.25 : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.00 : 0.6848532563) : 0.00);\n\
+			}\n\
+			else if (i == 13)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.75 : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveSteepLine[3]) ? 1.00 : ((haveShallowLine[3]) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
+			}\n\
+			else if (i == 14)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveShallowLine[0]) ? 1.00 : ((haveSteepLine[0]) ? 0.75 : 0.50)) : 0.08677704501) : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.75 : 0.00);\n\
+			}\n\
+			else if (i == 15)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.00 : 0.6848532563) : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.25 : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.25 : 0.00);\n\
+			}\n\
 		}\n\
 		\n\
-		vec2 f = fract(texCoord[0]);\n\
-		OUT_FRAG_COLOR.rgb =	mix( mix( mix( mix(dst[ 6], dst[ 7], step(0.25, f.x)), mix(dst[ 8], dst[ 9], step(0.75, f.x)), step(0.50, f.x)),\n\
-							              mix( mix(dst[ 5], dst[ 0], step(0.25, f.x)), mix(dst[ 1], dst[10], step(0.75, f.x)), step(0.50, f.x)), step(0.25, f.y)),\n\
-							         mix( mix( mix(dst[ 4], dst[ 3], step(0.25, f.x)), mix(dst[ 2], dst[11], step(0.75, f.x)), step(0.50, f.x)),\n\
-							              mix( mix(dst[15], dst[14], step(0.25, f.x)), mix(dst[13], dst[12], step(0.75, f.x)), step(0.50, f.x)), step(0.75, f.y)),\n\
-								step(0.50, f.y));\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		OUT_FRAG_COLOR = vec4(newFragColor, 1.0);\n\
 	}\n\
 "};
 
@@ -3513,11 +3343,11 @@ static const char *Scaler5xBRZFragShader_110 = {"\
 	//                       17|04|03|02|11\n\
 	//                       --|15|14|13|--\n\
 	//\n\
-	// Output Pixel Mapping: 20|21|22|23|24\n\
-	//                       19|06|07|08|09\n\
-	//                       18|05|00|01|10\n\
-	//                       17|04|03|02|11\n\
-	//                       16|15|14|13|12\n\
+	// Output Pixel Mapping: 00|01|02|03|04\n\
+	//                       05|06|07|08|09\n\
+	//                       10|11|12|13|14\n\
+	//                       15|16|17|18|19\n\
+	//                       20|21|22|23|24\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -3548,217 +3378,250 @@ static const char *Scaler5xBRZFragShader_110 = {"\
 		src[23] = SAMPLE3_TEX_RECT(tex, texCoord[23]).rgb;\n\
 		src[24] = SAMPLE3_TEX_RECT(tex, texCoord[24]).rgb;\n\
 		\n\
-		float v[9];\n\
-		v[0] = reduce(src[0]);\n\
-		v[1] = reduce(src[1]);\n\
-		v[2] = reduce(src[2]);\n\
-		v[3] = reduce(src[3]);\n\
-		v[4] = reduce(src[4]);\n\
-		v[5] = reduce(src[5]);\n\
-		v[6] = reduce(src[6]);\n\
-		v[7] = reduce(src[7]);\n\
-		v[8] = reduce(src[8]);\n\
+		vec3 newFragColor = src[0];\n\
+		int i = int( dot(floor(fract(texCoord[0]) * 5.05), vec2(1.05, 5.05)) );\n\
 		\n\
-		ivec4 blendResult = ivec4(BLEND_NONE);\n\
-		\n\
-		// Preprocess corners\n\
-		// Pixel Tap Mapping: --|--|--|--|--\n\
-		//                    --|--|07|08|--\n\
-		//                    --|05|00|01|10\n\
-		//                    --|04|03|02|11\n\
-		//                    --|--|14|13|--\n\
-		\n\
-		// Corner (1, 1)\n\
-		if ( !((v[0] == v[1] && v[3] == v[2]) || (v[0] == v[3] && v[1] == v[2])) )\n\
+		if (i != 12)\n\
 		{\n\
-			float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[14], src[ 2]) + DistYCbCr(src[ 2], src[10]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));\n\
-			float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], src[13]) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], src[11]) + (4.0 * DistYCbCr(src[ 0], src[ 2]));\n\
-			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_03_01) < dist_00_02;\n\
-			blendResult[2] = ((dist_03_01 < dist_00_02) && (v[0] != v[1]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			float v[9];\n\
+			v[0] = reduce(src[0]);\n\
+			v[1] = reduce(src[1]);\n\
+			v[2] = reduce(src[2]);\n\
+			v[3] = reduce(src[3]);\n\
+			v[4] = reduce(src[4]);\n\
+			v[5] = reduce(src[5]);\n\
+			v[6] = reduce(src[6]);\n\
+			v[7] = reduce(src[7]);\n\
+			v[8] = reduce(src[8]);\n\
+			\n\
+			ivec4 blendResult = ivec4(BLEND_NONE);\n\
+			\n\
+			// Preprocess corners\n\
+			// Pixel Tap Mapping: --|--|--|--|--\n\
+			//                    --|--|07|08|--\n\
+			//                    --|05|00|01|10\n\
+			//                    --|04|03|02|11\n\
+			//                    --|--|14|13|--\n\
+			\n\
+			// Corner (1, 1)\n\
+			if ( !((v[0] == v[1] && v[3] == v[2]) || (v[0] == v[3] && v[1] == v[2])) )\n\
+			{\n\
+				float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[14], src[ 2]) + DistYCbCr(src[ 2], src[10]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));\n\
+				float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], src[13]) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], src[11]) + (4.0 * DistYCbCr(src[ 0], src[ 2]));\n\
+				bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_03_01) < dist_00_02;\n\
+				blendResult[2] = ((dist_03_01 < dist_00_02) && (v[0] != v[1]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			}\n\
+			\n\
+			\n\
+			// Pixel Tap Mapping: --|--|--|--|--\n\
+			//                    --|06|07|--|--\n\
+			//                    18|05|00|01|--\n\
+			//                    17|04|03|02|--\n\
+			//                    --|15|14|--|--\n\
+			// Corner (0, 1)\n\
+			if ( !((v[5] == v[0] && v[4] == v[3]) || (v[5] == v[4] && v[0] == v[3])) )\n\
+			{\n\
+				float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
+				float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
+				bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_03) < dist_04_00;\n\
+				blendResult[3] = ((dist_04_00 > dist_05_03) && (v[0] != v[5]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			}\n\
+			\n\
+			// Pixel Tap Mapping: --|--|22|23|--\n\
+			//                    --|06|07|08|09\n\
+			//                    --|05|00|01|10\n\
+			//                    --|--|03|02|--\n\
+			//                    --|--|--|--|--\n\
+			// Corner (1, 0)\n\
+			if ( !((v[7] == v[8] && v[0] == v[1]) || (v[7] == v[0] && v[8] == v[1])) )\n\
+			{\n\
+				float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
+				float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
+				bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_07_01) < dist_00_08;\n\
+				blendResult[1] = ((dist_00_08 > dist_07_01) && (v[0] != v[7]) && (v[0] != v[1])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			}\n\
+			\n\
+			// Pixel Tap Mapping: --|21|22|--|--\n\
+			//                    19|06|07|08|--\n\
+			//                    18|05|00|01|--\n\
+			//                    --|04|03|--|--\n\
+			//                    --|--|--|--|--\n\
+			// Corner (0, 0)\n\
+			if ( !((v[6] == v[7] && v[5] == v[0]) || (v[6] == v[5] && v[7] == v[0])) )\n\
+			{\n\
+				float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
+				float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
+				bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_07) < dist_06_00;\n\
+				blendResult[0] = ((dist_05_07 < dist_06_00) && (v[0] != v[5]) && (v[0] != v[7])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			}\n\
+			\n\
+			// Scale pixel\n\
+			if (IsBlendingNeeded(blendResult))\n\
+			{\n\
+				vec4 dist_01_04 = vec4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );\n\
+				vec4 dist_03_08 = vec4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );\n\
+				bvec4 haveShallowLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_01_04, dist_03_08);\n\
+				bvec4 haveSteepLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_03_08, dist_01_04);\n\
+				bvec4 needBlend = notEqual( blendResult.zyxw, ivec4(BLEND_NONE) );\n\
+				bvec4 doLineBlend = greaterThanEqual( blendResult.zyxw, ivec4(BLEND_DOMINANT) );\n\
+				vec3 blendPix[4];\n\
+				\n\
+				haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
+				haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
+				doLineBlend[0] = (  doLineBlend[0] ||\n\
+								   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
+									 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
+									 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
+				blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
+				\n\
+				haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
+				haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
+				doLineBlend[1] = (  doLineBlend[1] ||\n\
+							  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
+								(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
+								(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
+				blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
+				\n\
+				haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
+				haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
+				doLineBlend[2] = (  doLineBlend[2] ||\n\
+							  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
+								(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
+								(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
+				blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
+				\n\
+				haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
+				haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
+				doLineBlend[3] = (  doLineBlend[3] ||\n\
+							  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
+								(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
+								(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
+				blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
+				\n\
+				if (i == 0)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.000 : 0.8631434088) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250 : 0.000);\n\
+				}\n\
+				else if (i == 1)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.750 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((!haveShallowLine[2] && !haveSteepLine[2]) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
+				}\n\
+				else if (i == 2)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveSteepLine[1]) ? 1.000 : ((haveShallowLine[1]) ? 0.250 : 0.125)) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? 1.000 : ((haveSteepLine[2]) ? 0.250 : 0.125)) : 0.000);\n\
+				}\n\
+				else if (i == 3)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((!haveShallowLine[1] && !haveSteepLine[1]) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.750 : 0.000);\n\
+				}\n\
+				else if (i == 4)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.000 : 0.8631434088) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250 : 0.000);\n\
+				}\n\
+				else if (i == 5)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((!haveShallowLine[2] && !haveSteepLine[2]) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.750 : 0.000);\n\
+				}\n\
+				else if (i == 6)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? ((haveSteepLine[2]) ? 2.0/3.0 : 0.750) : ((haveSteepLine[2]) ? 0.750 : 0.125)) : 0.000);\n\
+				}\n\
+				else if (i == 7)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250 : 0.000);\n\
+				}\n\
+				else if (i == 8)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? ((haveSteepLine[1]) ? 2.0/3.0 : 0.750) : ((haveSteepLine[1]) ? 0.750 : 0.125)) : 0.000);\n\
+				}\n\
+				else if (i == 9)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.750 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((!haveShallowLine[1] && !haveSteepLine[1]) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
+				}\n\
+				else if (i == 10)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveSteepLine[2]) ? 1.000 : ((haveShallowLine[2]) ? 0.250 : 0.125)) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? 1.000 : ((haveSteepLine[3]) ? 0.250 : 0.125)) : 0.000);\n\
+				}\n\
+				else if (i == 11)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250 : 0.000);\n\
+				}\n\
+				else if (i == 13)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250 : 0.000);\n\
+				}\n\
+				else if (i == 14)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveSteepLine[0]) ? 1.000 : ((haveShallowLine[0]) ? 0.250 : 0.125)) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? 1.000 : ((haveSteepLine[1]) ? 0.250 : 0.125)) : 0.000);\n\
+				}\n\
+				else if (i == 15)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.750 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((!haveShallowLine[3] && !haveSteepLine[3]) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
+				}\n\
+				else if (i == 16)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? ((haveSteepLine[3]) ? 2.0/3.0 : 0.750) : ((haveSteepLine[3]) ? 0.750 : 0.125)) : 0.000);\n\
+				}\n\
+				else if (i == 17)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250 : 0.000);\n\
+				}\n\
+				else if (i == 18)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? ((haveSteepLine[0]) ? 2.0/3.0 : 0.750) : ((haveSteepLine[0]) ? 0.750 : 0.125)) : 0.000);\n\
+				}\n\
+				else if (i == 19)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((!haveShallowLine[0] && !haveSteepLine[0]) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.750 : 0.000);\n\
+				}\n\
+				else if (i == 20)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.000 : 0.8631434088) : 0.000);\n\
+				}\n\
+				else if (i == 21)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.750 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((!haveShallowLine[3] && !haveSteepLine[3]) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
+				}\n\
+				else if (i == 22)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? 1.000 : ((haveSteepLine[0]) ? 0.250 : 0.125)) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveSteepLine[3]) ? 1.000 : ((haveShallowLine[3]) ? 0.250 : 0.125)) : 0.000);\n\
+				}\n\
+				else if (i == 23)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((!haveShallowLine[0] && !haveSteepLine[0]) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.750 : 0.000);\n\
+				}\n\
+				else if (i == 24)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.000 : 0.8631434088) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250 : 0.000);\n\
+				}\n\
+			}\n\
 		}\n\
 		\n\
-		\n\
-		// Pixel Tap Mapping: --|--|--|--|--\n\
-		//                    --|06|07|--|--\n\
-		//                    18|05|00|01|--\n\
-		//                    17|04|03|02|--\n\
-		//                    --|15|14|--|--\n\
-		// Corner (0, 1)\n\
-		if ( !((v[5] == v[0] && v[4] == v[3]) || (v[5] == v[4] && v[0] == v[3])) )\n\
-		{\n\
-			float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
-			float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
-			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_03) < dist_04_00;\n\
-			blendResult[3] = ((dist_04_00 > dist_05_03) && (v[0] != v[5]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
-		}\n\
-		\n\
-		// Pixel Tap Mapping: --|--|22|23|--\n\
-		//                    --|06|07|08|09\n\
-		//                    --|05|00|01|10\n\
-		//                    --|--|03|02|--\n\
-		//                    --|--|--|--|--\n\
-		// Corner (1, 0)\n\
-		if ( !((v[7] == v[8] && v[0] == v[1]) || (v[7] == v[0] && v[8] == v[1])) )\n\
-		{\n\
-			float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
-			float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
-			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_07_01) < dist_00_08;\n\
-			blendResult[1] = ((dist_00_08 > dist_07_01) && (v[0] != v[7]) && (v[0] != v[1])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
-		}\n\
-		\n\
-		// Pixel Tap Mapping: --|21|22|--|--\n\
-		//                    19|06|07|08|--\n\
-		//                    18|05|00|01|--\n\
-		//                    --|04|03|--|--\n\
-		//                    --|--|--|--|--\n\
-		// Corner (0, 0)\n\
-		if ( !((v[6] == v[7] && v[5] == v[0]) || (v[6] == v[5] && v[7] == v[0])) )\n\
-		{\n\
-			float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
-			float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
-			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_07) < dist_06_00;\n\
-			blendResult[0] = ((dist_05_07 < dist_06_00) && (v[0] != v[5]) && (v[0] != v[7])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
-		}\n\
-		\n\
-		vec3 dst[25];\n\
-		dst[ 0] = src[0];\n\
-		dst[ 1] = src[0];\n\
-		dst[ 2] = src[0];\n\
-		dst[ 3] = src[0];\n\
-		dst[ 4] = src[0];\n\
-		dst[ 5] = src[0];\n\
-		dst[ 6] = src[0];\n\
-		dst[ 7] = src[0];\n\
-		dst[ 8] = src[0];\n\
-		dst[ 9] = src[0];\n\
-		dst[10] = src[0];\n\
-		dst[11] = src[0];\n\
-		dst[12] = src[0];\n\
-		dst[13] = src[0];\n\
-		dst[14] = src[0];\n\
-		dst[15] = src[0];\n\
-		dst[16] = src[0];\n\
-		dst[17] = src[0];\n\
-		dst[18] = src[0];\n\
-		dst[19] = src[0];\n\
-		dst[20] = src[0];\n\
-		dst[21] = src[0];\n\
-		dst[22] = src[0];\n\
-		dst[23] = src[0];\n\
-		dst[24] = src[0];\n\
-		\n\
-		// Scale pixel\n\
-		if (IsBlendingNeeded(blendResult))\n\
-		{\n\
-			float dist_01_04 = DistYCbCr(src[1], src[4]);\n\
-			float dist_03_08 = DistYCbCr(src[3], src[8]);\n\
-			bool haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[4]) && (v[5] != v[4]);\n\
-			bool haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[8]) && (v[7] != v[8]);\n\
-			bool needBlend = (blendResult[2] != BLEND_NONE);\n\
-			bool doLineBlend = (  blendResult[2] >= BLEND_DOMINANT ||\n\
-							   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-								 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-								 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
-			\n\
-			vec3 blendPix = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
-			dst[ 1] = mix(dst[ 1], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			dst[ 2] = mix(dst[ 2], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? ((haveSteepLine) ? 2.0/3.0 : 0.750) : ((haveSteepLine) ? 0.750 : 0.125)) : 0.000);\n\
-			dst[ 3] = mix(dst[ 3], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[ 9] = mix(dst[ 9], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.750 : 0.000);\n\
-			dst[10] = mix(dst[10], blendPix, (needBlend && doLineBlend) ? ((haveSteepLine) ? 1.000 : ((haveShallowLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[11] = mix(dst[11], blendPix, (needBlend) ? ((doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
-			dst[12] = mix(dst[12], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.8631434088) : 0.000);\n\
-			dst[13] = mix(dst[13], blendPix, (needBlend) ? ((doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
-			dst[14] = mix(dst[14], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? 1.000 : ((haveSteepLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[15] = mix(dst[15], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.750 : 0.000);\n\
-			dst[16] = mix(dst[16], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[24] = mix(dst[24], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[7], src[2]);\n\
-			dist_03_08 = DistYCbCr(src[1], src[6]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[2]) && (v[3] != v[2]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[6]) && (v[5] != v[6]);\n\
-			needBlend = (blendResult[1] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[1] >= BLEND_DOMINANT ||\n\
-						  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-							(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-							(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
-			\n\
-			blendPix = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
-			dst[ 7] = mix(dst[ 7], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			dst[ 8] = mix(dst[ 8], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? ((haveSteepLine) ? 2.0/3.0 : 0.750) : ((haveSteepLine) ? 0.750 : 0.125)) : 0.000);\n\
-			dst[ 1] = mix(dst[ 1], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[21] = mix(dst[21], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.750 : 0.000);\n\
-			dst[22] = mix(dst[22], blendPix, (needBlend && doLineBlend) ? ((haveSteepLine) ? 1.000 : ((haveShallowLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[23] = mix(dst[23], blendPix, (needBlend) ? ((doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
-			dst[24] = mix(dst[24], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.8631434088) : 0.000);\n\
-			dst[ 9] = mix(dst[ 9], blendPix, (needBlend) ? ((doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
-			dst[10] = mix(dst[10], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? 1.000 : ((haveSteepLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[11] = mix(dst[11], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.750 : 0.000);\n\
-			dst[12] = mix(dst[12], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[20] = mix(dst[20], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[5], src[8]);\n\
-			dist_03_08 = DistYCbCr(src[7], src[4]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[8]) && (v[1] != v[8]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[4]) && (v[3] != v[4]);\n\
-			needBlend = (blendResult[0] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[0] >= BLEND_DOMINANT ||\n\
-						  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-							(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-							(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
-			\n\
-			blendPix = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
-			dst[ 5] = mix(dst[ 5], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			dst[ 6] = mix(dst[ 6], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? ((haveSteepLine) ? 2.0/3.0 : 0.750) : ((haveSteepLine) ? 0.750 : 0.125)) : 0.000);\n\
-			dst[ 7] = mix(dst[ 7], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[17] = mix(dst[17], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.750 : 0.000);\n\
-			dst[18] = mix(dst[18], blendPix, (needBlend && doLineBlend) ? ((haveSteepLine) ? 1.000 : ((haveShallowLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[19] = mix(dst[19], blendPix, (needBlend) ? ((doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
-			dst[20] = mix(dst[20], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.8631434088) : 0.000);\n\
-			dst[21] = mix(dst[21], blendPix, (needBlend) ? ((doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
-			dst[22] = mix(dst[22], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? 1.000 : ((haveSteepLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[23] = mix(dst[23], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.750 : 0.000);\n\
-			dst[24] = mix(dst[24], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[16] = mix(dst[16], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[3], src[6]);\n\
-			dist_03_08 = DistYCbCr(src[5], src[2]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[6]) && (v[7] != v[6]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[2]) && (v[1] != v[2]);\n\
-			needBlend = (blendResult[3] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[3] >= BLEND_DOMINANT ||\n\
-						  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-							(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-							(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
-			\n\
-			blendPix = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
-			dst[ 3] = mix(dst[ 3], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			dst[ 4] = mix(dst[ 4], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? ((haveSteepLine) ? 2.0/3.0 : 0.750) : ((haveSteepLine) ? 0.750 : 0.125)) : 0.000);\n\
-			dst[ 5] = mix(dst[ 5], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[13] = mix(dst[13], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.750 : 0.000);\n\
-			dst[14] = mix(dst[14], blendPix, (needBlend && doLineBlend) ? ((haveSteepLine) ? 1.000 : ((haveShallowLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[15] = mix(dst[15], blendPix, (needBlend) ? ((doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
-			dst[16] = mix(dst[16], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.8631434088) : 0.000);\n\
-			dst[17] = mix(dst[17], blendPix, (needBlend) ? ((doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.875 : 1.000) : 0.2306749731) : 0.000);\n\
-			dst[18] = mix(dst[18], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? 1.000 : ((haveSteepLine) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[19] = mix(dst[19], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.750 : 0.000);\n\
-			dst[20] = mix(dst[20], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[12] = mix(dst[12], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-		}\n\
-		\n\
-		vec2 f = fract(texCoord[0]);\n\
-		OUT_FRAG_COLOR.rgb =	mix(            mix( dst[20], mix( mix(dst[21], dst[22], step(0.40, f.x)), mix(dst[23], dst[24], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ),\n\
-							         mix ( mix( mix( dst[19], mix( mix(dst[ 6], dst[ 7], step(0.40, f.x)), mix(dst[ 8], dst[ 9], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ),\n\
-							                    mix( dst[18], mix( mix(dst[ 5], dst[ 0], step(0.40, f.x)), mix(dst[ 1], dst[10], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ), step(0.40, f.y)),\n\
-							               mix( mix( dst[17], mix( mix(dst[ 4], dst[ 3], step(0.40, f.x)), mix(dst[ 2], dst[11], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ),\n\
-							                    mix( dst[16], mix( mix(dst[15], dst[14], step(0.40, f.x)), mix(dst[13], dst[12], step(0.80, f.x)), step(0.60, f.x)), step(0.20, f.x) ), step(0.80, f.y)),\n\
-							         step(0.60, f.y)),\n\
-								step(0.20, f.y));\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		OUT_FRAG_COLOR = vec4(newFragColor, 1.0);\n\
 	}\n\
 "};
 
@@ -3774,7 +3637,7 @@ static const char *Scaler6xBRZFragShader_110 = {"\
 	\n\
 	// Let's not even bother trying to support GPUs below Mid-tier.\n\
 	// The xBRZ pixel scalers are already pretty hefty as-is, and\n\
-	// this shader, having to calculate 25 pixel locations, is the\n\
+	// this shader, having to calculate 36 pixel locations, is the\n\
 	// heftiest of all of them. Trust me -- older GPUs just can't\n\
 	// handle this one.\n\
 	\n\
@@ -3920,12 +3783,12 @@ static const char *Scaler6xBRZFragShader_110 = {"\
 	//                         17|04|03|02|11\n\
 	//                         --|15|14|13|--\n\
 	//\n\
-	// Output Pixel Mapping: 20|21|22|23|24|25\n\
-	//                       19|06|07|08|09|26\n\
-	//                       18|05|00|01|10|27\n\
-	//                       17|04|03|02|11|28\n\
-	//                       16|15|14|13|12|29\n\
-	//                       35|34|33|32|31|30\n\
+	// Output Pixel Mapping: 00|01|02|03|04|05\n\
+	//                       06|07|08|09|10|11\n\
+	//                       12|13|14|15|16|17\n\
+	//                       18|19|20|21|22|23\n\
+	//                       24|25|26|27|28|29\n\
+	//                       30|31|32|33|34|35\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -3956,244 +3819,290 @@ static const char *Scaler6xBRZFragShader_110 = {"\
 		src[23] = SAMPLE3_TEX_RECT(tex, texCoord[23]).rgb;\n\
 		src[24] = SAMPLE3_TEX_RECT(tex, texCoord[24]).rgb;\n\
 		\n\
-		float v[9];\n\
-		v[0] = reduce(src[0]);\n\
-		v[1] = reduce(src[1]);\n\
-		v[2] = reduce(src[2]);\n\
-		v[3] = reduce(src[3]);\n\
-		v[4] = reduce(src[4]);\n\
-		v[5] = reduce(src[5]);\n\
-		v[6] = reduce(src[6]);\n\
-		v[7] = reduce(src[7]);\n\
-		v[8] = reduce(src[8]);\n\
+		vec3 newFragColor = src[0];\n\
+		int i = int( dot(floor(fract(texCoord[0]) * 6.05), vec2(1.05, 6.05)) );\n\
 		\n\
-		ivec4 blendResult = ivec4(BLEND_NONE);\n\
-		\n\
-		// Preprocess corners\n\
-		// Pixel Tap Mapping: --|--|--|--|--\n\
-		//                    --|--|07|08|--\n\
-		//                    --|05|00|01|10\n\
-		//                    --|04|03|02|11\n\
-		//                    --|--|14|13|--\n\
-		\n\
-		// Corner (1, 1)\n\
-		if ( !((v[0] == v[1] && v[3] == v[2]) || (v[0] == v[3] && v[1] == v[2])) )\n\
+		if ( (i != 14) && (i != 15) && (i != 20) && (i != 21) )\n\
 		{\n\
-			float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[14], src[ 2]) + DistYCbCr(src[ 2], src[10]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));\n\
-			float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], src[13]) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], src[11]) + (4.0 * DistYCbCr(src[ 0], src[ 2]));\n\
-			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_03_01) < dist_00_02;\n\
-			blendResult[2] = ((dist_03_01 < dist_00_02) && (v[0] != v[1]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			float v[9];\n\
+			v[0] = reduce(src[0]);\n\
+			v[1] = reduce(src[1]);\n\
+			v[2] = reduce(src[2]);\n\
+			v[3] = reduce(src[3]);\n\
+			v[4] = reduce(src[4]);\n\
+			v[5] = reduce(src[5]);\n\
+			v[6] = reduce(src[6]);\n\
+			v[7] = reduce(src[7]);\n\
+			v[8] = reduce(src[8]);\n\
+			\n\
+			ivec4 blendResult = ivec4(BLEND_NONE);\n\
+			\n\
+			// Preprocess corners\n\
+			// Pixel Tap Mapping: --|--|--|--|--\n\
+			//                    --|--|07|08|--\n\
+			//                    --|05|00|01|10\n\
+			//                    --|04|03|02|11\n\
+			//                    --|--|14|13|--\n\
+			\n\
+			// Corner (1, 1)\n\
+			if ( !((v[0] == v[1] && v[3] == v[2]) || (v[0] == v[3] && v[1] == v[2])) )\n\
+			{\n\
+				float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[14], src[ 2]) + DistYCbCr(src[ 2], src[10]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));\n\
+				float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], src[13]) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], src[11]) + (4.0 * DistYCbCr(src[ 0], src[ 2]));\n\
+				bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_03_01) < dist_00_02;\n\
+				blendResult[2] = ((dist_03_01 < dist_00_02) && (v[0] != v[1]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			}\n\
+			\n\
+			\n\
+			// Pixel Tap Mapping: --|--|--|--|--\n\
+			//                    --|06|07|--|--\n\
+			//                    18|05|00|01|--\n\
+			//                    17|04|03|02|--\n\
+			//                    --|15|14|--|--\n\
+			// Corner (0, 1)\n\
+			if ( !((v[5] == v[0] && v[4] == v[3]) || (v[5] == v[4] && v[0] == v[3])) )\n\
+			{\n\
+				float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
+				float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
+				bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_03) < dist_04_00;\n\
+				blendResult[3] = ((dist_04_00 > dist_05_03) && (v[0] != v[5]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			}\n\
+			\n\
+			// Pixel Tap Mapping: --|--|22|23|--\n\
+			//                    --|06|07|08|09\n\
+			//                    --|05|00|01|10\n\
+			//                    --|--|03|02|--\n\
+			//                    --|--|--|--|--\n\
+			// Corner (1, 0)\n\
+			if ( !((v[7] == v[8] && v[0] == v[1]) || (v[7] == v[0] && v[8] == v[1])) )\n\
+			{\n\
+				float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
+				float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
+				bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_07_01) < dist_00_08;\n\
+				blendResult[1] = ((dist_00_08 > dist_07_01) && (v[0] != v[7]) && (v[0] != v[1])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			}\n\
+			\n\
+			// Pixel Tap Mapping: --|21|22|--|--\n\
+			//                    19|06|07|08|--\n\
+			//                    18|05|00|01|--\n\
+			//                    --|04|03|--|--\n\
+			//                    --|--|--|--|--\n\
+			// Corner (0, 0)\n\
+			if ( !((v[6] == v[7] && v[5] == v[0]) || (v[6] == v[5] && v[7] == v[0])) )\n\
+			{\n\
+				float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
+				float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
+				bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_07) < dist_06_00;\n\
+				blendResult[0] = ((dist_05_07 < dist_06_00) && (v[0] != v[5]) && (v[0] != v[7])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			}\n\
+			\n\
+			// Scale pixel\n\
+			if (IsBlendingNeeded(blendResult))\n\
+			{\n\
+				vec4 dist_01_04 = vec4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );\n\
+				vec4 dist_03_08 = vec4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );\n\
+				bvec4 haveShallowLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_01_04, dist_03_08);\n\
+				bvec4 haveSteepLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_03_08, dist_01_04);\n\
+				bvec4 needBlend = notEqual( blendResult.zyxw, ivec4(BLEND_NONE) );\n\
+				bvec4 doLineBlend = greaterThanEqual( blendResult.zyxw, ivec4(BLEND_DOMINANT) );\n\
+				vec3 blendPix[4];\n\
+				\n\
+				haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
+				haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
+				doLineBlend[0] = (  doLineBlend[0] ||\n\
+								   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
+									 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
+									 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
+				blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
+				\n\
+				haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
+				haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
+				doLineBlend[1] = (  doLineBlend[1] ||\n\
+							  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
+								(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
+								(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
+				blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
+				\n\
+				haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
+				haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
+				doLineBlend[2] = (  doLineBlend[2] ||\n\
+							  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
+								(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
+								(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
+				blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
+				\n\
+				haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
+				haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
+				doLineBlend[3] = (  doLineBlend[3] ||\n\
+							  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
+								(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
+								(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
+				blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
+				\n\
+				if (i == 0)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.000 : 0.9711013910) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250 : 0.000);\n\
+				}\n\
+				else if (i == 1)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.750 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.000 : 0.4236372243) : 0.000);\n\
+				}\n\
+				else if (i == 2)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 1.000 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveShallowLine[2]) ? 1.000 : ((haveSteepLine[2]) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
+				}\n\
+				else if (i == 3)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveSteepLine[1]) ? 1.000 : ((haveShallowLine[1]) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 1.000 : 0.000);\n\
+				}\n\
+				else if (i == 4)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.000 : 0.4236372243) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.750 : 0.000);\n\
+				}\n\
+				else if (i == 5)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.000 : 0.9711013910) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250 : 0.000);\n\
+				}\n\
+				else if (i == 6)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.000 : 0.4236372243) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.750 : 0.000);\n\
+				}\n\
+				else if (i == 7)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((!haveShallowLine[2] && !haveSteepLine[2]) ? 0.500 : 1.000) : 0.000);\n\
+				}\n\
+				else if (i == 8)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? 0.750 : ((haveSteepLine[2]) ? 0.250 : 0.000)) : 0.000);\n\
+				}\n\
+				else if (i == 9)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveSteepLine[1]) ? 0.750 : ((haveShallowLine[1]) ? 0.250 : 0.000)) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250 : 0.000);\n\
+				}\n\
+				else if (i == 10)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((!haveShallowLine[1] && !haveSteepLine[1]) ? 0.500 : 1.000) : 0.000);\n\
+				}\n\
+				else if (i == 11)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.750 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.000 : 0.4236372243) : 0.000);\n\
+				}\n\
+				else if (i == 12)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveSteepLine[2]) ? 1.000 : ((haveShallowLine[2]) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 1.000 : 0.000);\n\
+				}\n\
+				else if (i == 13)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveSteepLine[2]) ? 0.750 : ((haveShallowLine[2]) ? 0.250 : 0.000)) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250 : 0.000);\n\
+				}\n\
+				else if (i == 16)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? 0.750 : ((haveSteepLine[1]) ? 0.250 : 0.000)) : 0.000);\n\
+				}\n\
+				else if (i == 17)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 1.000 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveShallowLine[1]) ? 1.000 : ((haveSteepLine[1]) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
+				}\n\
+				else if (i == 18)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 1.000 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveShallowLine[3]) ? 1.000 : ((haveSteepLine[3]) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
+				}\n\
+				else if (i == 19)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? 0.750 : ((haveSteepLine[3]) ? 0.250 : 0.000)) : 0.000);\n\
+				}\n\
+				else if (i == 22)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveSteepLine[0]) ? 0.750 : ((haveShallowLine[0]) ? 0.250 : 0.000)) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250 : 0.000);\n\
+				}\n\
+				else if (i == 23)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveSteepLine[0]) ? 1.000 : ((haveShallowLine[0]) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 1.000 : 0.000);\n\
+				}\n\
+				else if (i == 24)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.750 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.000 : 0.4236372243) : 0.000);\n\
+				}\n\
+				else if (i == 25)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((!haveShallowLine[3] && !haveSteepLine[3]) ? 0.500 : 1.000) : 0.000);\n\
+				}\n\
+				else if (i == 26)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveSteepLine[3]) ? 0.750 : ((haveShallowLine[3]) ? 0.250 : 0.000)) : 0.000);\n\
+				}\n\
+				else if (i == 27)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? 0.750 : ((haveSteepLine[0]) ? 0.250 : 0.000)) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250 : 0.000);\n\
+				}\n\
+				else if (i == 28)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((!haveShallowLine[0] && !haveSteepLine[0]) ? 0.500 : 1.000) : 0.000);\n\
+				}\n\
+				else if (i == 29)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.000 : 0.4236372243) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.750 : 0.000);\n\
+				}\n\
+				else if (i == 30)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.000 : 0.9711013910) : 0.000);\n\
+				}\n\
+				else if (i == 31)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.750 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.000 : 0.4236372243) : 0.000);\n\
+				}\n\
+				else if (i == 32)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 1.000 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveSteepLine[3]) ? 1.000 : ((haveShallowLine[3]) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
+				}\n\
+				else if (i == 33)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveShallowLine[0]) ? 1.000 : ((haveSteepLine[0]) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 1.000 : 0.000);\n\
+				}\n\
+				else if (i == 34)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.000 : 0.4236372243) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.750 : 0.000);\n\
+				}\n\
+				else if (i == 35)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.000 : 0.9711013910) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250 : 0.000);\n\
+				}\n\
+			}\n\
 		}\n\
 		\n\
-		\n\
-		// Pixel Tap Mapping: --|--|--|--|--\n\
-		//                    --|06|07|--|--\n\
-		//                    18|05|00|01|--\n\
-		//                    17|04|03|02|--\n\
-		//                    --|15|14|--|--\n\
-		// Corner (0, 1)\n\
-		if ( !((v[5] == v[0] && v[4] == v[3]) || (v[5] == v[4] && v[0] == v[3])) )\n\
-		{\n\
-			float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
-			float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
-			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_03) < dist_04_00;\n\
-			blendResult[3] = ((dist_04_00 > dist_05_03) && (v[0] != v[5]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
-		}\n\
-		\n\
-		// Pixel Tap Mapping: --|--|22|23|--\n\
-		//                    --|06|07|08|09\n\
-		//                    --|05|00|01|10\n\
-		//                    --|--|03|02|--\n\
-		//                    --|--|--|--|--\n\
-		// Corner (1, 0)\n\
-		if ( !((v[7] == v[8] && v[0] == v[1]) || (v[7] == v[0] && v[8] == v[1])) )\n\
-		{\n\
-			float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
-			float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
-			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_07_01) < dist_00_08;\n\
-			blendResult[1] = ((dist_00_08 > dist_07_01) && (v[0] != v[7]) && (v[0] != v[1])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
-		}\n\
-		\n\
-		// Pixel Tap Mapping: --|21|22|--|--\n\
-		//                    19|06|07|08|--\n\
-		//                    18|05|00|01|--\n\
-		//                    --|04|03|--|--\n\
-		//                    --|--|--|--|--\n\
-		// Corner (0, 0)\n\
-		if ( !((v[6] == v[7] && v[5] == v[0]) || (v[6] == v[5] && v[7] == v[0])) )\n\
-		{\n\
-			float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
-			float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
-			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_07) < dist_06_00;\n\
-			blendResult[0] = ((dist_05_07 < dist_06_00) && (v[0] != v[5]) && (v[0] != v[7])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
-		}\n\
-		\n\
-		vec3 dst[36];\n\
-		dst[ 0] = src[0];\n\
-		dst[ 1] = src[0];\n\
-		dst[ 2] = src[0];\n\
-		dst[ 3] = src[0];\n\
-		dst[ 4] = src[0];\n\
-		dst[ 5] = src[0];\n\
-		dst[ 6] = src[0];\n\
-		dst[ 7] = src[0];\n\
-		dst[ 8] = src[0];\n\
-		dst[ 9] = src[0];\n\
-		dst[10] = src[0];\n\
-		dst[11] = src[0];\n\
-		dst[12] = src[0];\n\
-		dst[13] = src[0];\n\
-		dst[14] = src[0];\n\
-		dst[15] = src[0];\n\
-		dst[16] = src[0];\n\
-		dst[17] = src[0];\n\
-		dst[18] = src[0];\n\
-		dst[19] = src[0];\n\
-		dst[20] = src[0];\n\
-		dst[21] = src[0];\n\
-		dst[22] = src[0];\n\
-		dst[23] = src[0];\n\
-		dst[24] = src[0];\n\
-		dst[25] = src[0];\n\
-		dst[26] = src[0];\n\
-		dst[27] = src[0];\n\
-		dst[28] = src[0];\n\
-		dst[29] = src[0];\n\
-		dst[30] = src[0];\n\
-		dst[31] = src[0];\n\
-		dst[32] = src[0];\n\
-		dst[33] = src[0];\n\
-		dst[34] = src[0];\n\
-		dst[35] = src[0];\n\
-		\n\
-		// Scale pixel\n\
-		if (IsBlendingNeeded(blendResult))\n\
-		{\n\
-			float dist_01_04 = DistYCbCr(src[1], src[4]);\n\
-			float dist_03_08 = DistYCbCr(src[3], src[8]);\n\
-			bool haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[4]) && (v[5] != v[4]);\n\
-			bool haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[8]) && (v[7] != v[8]);\n\
-			bool needBlend = (blendResult[2] != BLEND_NONE);\n\
-			bool doLineBlend = (  blendResult[2] >= BLEND_DOMINANT ||\n\
-							   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-								 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-								 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
-			\n\
-			vec3 blendPix = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
-			dst[10] = mix(dst[10], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			dst[11] = mix(dst[11], blendPix, (needBlend && doLineBlend) ? ((haveSteepLine) ? 0.750 : ((haveShallowLine) ? 0.250 : 0.000)) : 0.000);\n\
-			dst[12] = mix(dst[12], blendPix, (needBlend && doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.500 : 1.000) : 0.000);\n\
-			dst[13] = mix(dst[13], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? 0.750 : ((haveSteepLine) ? 0.250 : 0.000)) : 0.000);\n\
-			dst[14] = mix(dst[14], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[25] = mix(dst[25], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			dst[26] = mix(dst[26], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.750 : 0.000);\n\
-			dst[27] = mix(dst[27], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 1.000 : 0.000);\n\
-			dst[28] = mix(dst[28], blendPix, (needBlend) ? ((doLineBlend) ? ((haveSteepLine) ? 1.000 : ((haveShallowLine) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
-			dst[29] = mix(dst[29], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.4236372243) : 0.000);\n\
-			dst[30] = mix(dst[30], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.9711013910) : 0.000);\n\
-			dst[31] = mix(dst[31], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.4236372243) : 0.000);\n\
-			dst[32] = mix(dst[32], blendPix, (needBlend) ? ((doLineBlend) ? ((haveShallowLine) ? 1.000 : ((haveSteepLine) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
-			dst[33] = mix(dst[33], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 1.000 : 0.000);\n\
-			dst[34] = mix(dst[34], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.750 : 0.000);\n\
-			dst[35] = mix(dst[35], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[7], src[2]);\n\
-			dist_03_08 = DistYCbCr(src[1], src[6]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[2]) && (v[3] != v[2]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[6]) && (v[5] != v[6]);\n\
-			needBlend = (blendResult[1] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[1] >= BLEND_DOMINANT ||\n\
-						  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-							(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-							(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
-			\n\
-			blendPix = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
-			dst[ 7] = mix(dst[ 7], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			dst[ 8] = mix(dst[ 8], blendPix, (needBlend && doLineBlend) ? ((haveSteepLine) ? 0.750 : ((haveShallowLine) ? 0.250 : 0.000)) : 0.000);\n\
-			dst[ 9] = mix(dst[ 9], blendPix, (needBlend && doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.500 : 1.000) : 0.000);\n\
-			dst[10] = mix(dst[10], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? 0.750 : ((haveSteepLine) ? 0.250 : 0.000)) : 0.000);\n\
-			dst[11] = mix(dst[11], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[20] = mix(dst[20], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			dst[21] = mix(dst[21], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.750 : 0.000);\n\
-			dst[22] = mix(dst[22], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 1.000 : 0.000);\n\
-			dst[23] = mix(dst[23], blendPix, (needBlend) ? ((doLineBlend) ? ((haveSteepLine) ? 1.000 : ((haveShallowLine) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
-			dst[24] = mix(dst[24], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.4236372243) : 0.000);\n\
-			dst[25] = mix(dst[25], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.9711013910) : 0.000);\n\
-			dst[26] = mix(dst[26], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.4236372243) : 0.000);\n\
-			dst[27] = mix(dst[27], blendPix, (needBlend) ? ((doLineBlend) ? ((haveShallowLine) ? 1.000 : ((haveSteepLine) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
-			dst[28] = mix(dst[28], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 1.000 : 0.000);\n\
-			dst[29] = mix(dst[29], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.750 : 0.000);\n\
-			dst[30] = mix(dst[30], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[5], src[8]);\n\
-			dist_03_08 = DistYCbCr(src[7], src[4]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[8]) && (v[1] != v[8]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[4]) && (v[3] != v[4]);\n\
-			needBlend = (blendResult[0] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[0] >= BLEND_DOMINANT ||\n\
-						  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-							(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-							(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
-			\n\
-			blendPix = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
-			dst[ 4] = mix(dst[ 4], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			dst[ 5] = mix(dst[ 5], blendPix, (needBlend && doLineBlend) ? ((haveSteepLine) ? 0.750 : ((haveShallowLine) ? 0.250 : 0.000)) : 0.000);\n\
-			dst[ 6] = mix(dst[ 6], blendPix, (needBlend && doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.500 : 1.000) : 0.000);\n\
-			dst[ 7] = mix(dst[ 7], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? 0.750 : ((haveSteepLine) ? 0.250 : 0.000)) : 0.000);\n\
-			dst[ 8] = mix(dst[ 8], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[35] = mix(dst[35], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			dst[16] = mix(dst[16], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.750 : 0.000);\n\
-			dst[17] = mix(dst[17], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 1.000 : 0.000);\n\
-			dst[18] = mix(dst[18], blendPix, (needBlend) ? ((doLineBlend) ? ((haveSteepLine) ? 1.000 : ((haveShallowLine) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
-			dst[19] = mix(dst[19], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.4236372243) : 0.000);\n\
-			dst[20] = mix(dst[20], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.9711013910) : 0.000);\n\
-			dst[21] = mix(dst[21], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.4236372243) : 0.000);\n\
-			dst[22] = mix(dst[22], blendPix, (needBlend) ? ((doLineBlend) ? ((haveShallowLine) ? 1.000 : ((haveSteepLine) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
-			dst[23] = mix(dst[23], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 1.000 : 0.000);\n\
-			dst[24] = mix(dst[24], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.750 : 0.000);\n\
-			dst[25] = mix(dst[25], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			\n\
-			\n\
-			dist_01_04 = DistYCbCr(src[3], src[6]);\n\
-			dist_03_08 = DistYCbCr(src[5], src[2]);\n\
-			haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08) && (v[0] != v[6]) && (v[7] != v[6]);\n\
-			haveSteepLine   = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04) && (v[0] != v[2]) && (v[1] != v[2]);\n\
-			needBlend = (blendResult[3] != BLEND_NONE);\n\
-			doLineBlend = (  blendResult[3] >= BLEND_DOMINANT ||\n\
-						  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-							(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-							(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
-			\n\
-			blendPix = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
-			dst[13] = mix(dst[13], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			dst[14] = mix(dst[14], blendPix, (needBlend && doLineBlend) ? ((haveSteepLine) ? 0.750 : ((haveShallowLine) ? 0.250 : 0.000)) : 0.000);\n\
-			dst[15] = mix(dst[15], blendPix, (needBlend && doLineBlend) ? ((!haveShallowLine && !haveSteepLine) ? 0.500 : 1.000) : 0.000);\n\
-			dst[ 4] = mix(dst[ 4], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? 0.750 : ((haveSteepLine) ? 0.250 : 0.000)) : 0.000);\n\
-			dst[ 5] = mix(dst[ 5], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-			dst[30] = mix(dst[30], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
-			dst[31] = mix(dst[31], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.750 : 0.000);\n\
-			dst[32] = mix(dst[32], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 1.000 : 0.000);\n\
-			dst[33] = mix(dst[33], blendPix, (needBlend) ? ((doLineBlend) ? ((haveSteepLine) ? 1.000 : ((haveShallowLine) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
-			dst[34] = mix(dst[34], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.4236372243) : 0.000);\n\
-			dst[35] = mix(dst[35], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.9711013910) : 0.000);\n\
-			dst[16] = mix(dst[16], blendPix, (needBlend) ? ((doLineBlend) ? 1.000 : 0.4236372243) : 0.000);\n\
-			dst[17] = mix(dst[17], blendPix, (needBlend) ? ((doLineBlend) ? ((haveShallowLine) ? 1.000 : ((haveSteepLine) ? 0.750 : 0.500)) : 0.05652034508) : 0.000);\n\
-			dst[18] = mix(dst[18], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 1.000 : 0.000);\n\
-			dst[19] = mix(dst[19], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.750 : 0.000);\n\
-			dst[20] = mix(dst[20], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
-		}\n\
-		\n\
-		vec2 f = fract(texCoord[0]);\n\
-		OUT_FRAG_COLOR.rgb =	mix( mix( mix( mix( mix( mix(dst[20], dst[21], step(0.16, f.x) ), dst[22], step(0.32, f.x) ), mix( mix(dst[23], dst[24], step(0.66, f.x) ), dst[25], step(0.83, f.x) ), step(0.50, f.x) ),\n\
-								               mix( mix( mix(dst[19], dst[ 6], step(0.16, f.x) ), dst[ 7], step(0.32, f.x) ), mix( mix(dst[ 8], dst[ 9], step(0.66, f.x) ), dst[26], step(0.83, f.x) ), step(0.50, f.x) ), step(0.16, f.y) ),\n\
-								               mix( mix( mix(dst[18], dst[ 5], step(0.16, f.x) ), dst[ 0], step(0.32, f.x) ), mix( mix(dst[ 1], dst[10], step(0.66, f.x) ), dst[27], step(0.83, f.x) ), step(0.50, f.x) ), step(0.32, f.y) ),\n\
-								     mix( mix( mix( mix( mix(dst[17], dst[ 4], step(0.16, f.x) ), dst[ 3], step(0.32, f.x) ), mix( mix(dst[ 2], dst[11], step(0.66, f.x) ), dst[28], step(0.83, f.x) ), step(0.50, f.x) ),\n\
-								               mix( mix( mix(dst[16], dst[15], step(0.16, f.x) ), dst[14], step(0.32, f.x) ), mix( mix(dst[13], dst[12], step(0.66, f.x) ), dst[29], step(0.83, f.x) ), step(0.50, f.x) ), step(0.66, f.y) ),\n\
-								               mix( mix( mix(dst[35], dst[34], step(0.16, f.x) ), dst[33], step(0.32, f.x) ), mix( mix(dst[32], dst[31], step(0.66, f.x) ), dst[30], step(0.83, f.x) ), step(0.50, f.x) ), step(0.83, f.y) ),\n\
-								step(0.50, f.y) );\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		OUT_FRAG_COLOR = vec4(newFragColor, 1.0);\n\
 	}\n\
 "};
 
@@ -6038,10 +5947,6 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			{
 				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler4xBRZFragShader_110, _useShader150);
 			}
-			else if (this->_shaderSupport >= ShaderSupport_LowTier)
-			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler4xBRZFragShader_110, _useShader150);
-			}
 			else
 			{
 				willUseShaderBasedPixelScaler = false;
@@ -7273,10 +7178,6 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 				if (this->_shaderSupport >= ShaderSupport_MidTier)
 				{
 					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler4xBRZFragShader_110, _useShader150);
-				}
-				else if (this->_shaderSupport >= ShaderSupport_LowTier)
-				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler4xBRZFragShader_110, _useShader150);
 				}
 				else
 				{
