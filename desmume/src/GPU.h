@@ -1058,33 +1058,53 @@ typedef struct
 	// User-requested settings. These fields will always remain constant until changed.
 	
 	// Changed by calling GPUSubsystem::SetColorFormat().
-	NDSColorFormat colorFormat;			// The output color format.
-	size_t pixelBytes;					// The number of bytes per pixel.
+	NDSColorFormat colorFormat;					// The output color format.
+	size_t pixelBytes;							// The number of bytes per pixel.
 	
 	// Changed by calling GPUSubsystem::SetFramebufferSize().
-	bool isCustomSizeRequested;			// Reports that the call to GPUSubsystem::SetFramebufferSize() resulted in a custom rendering size.
-										//    true - The user requested a custom size.
-										//    false - The user requested the native size.
-	size_t customWidth;					// The requested custom width, measured in pixels.
-	size_t customHeight;				// The requested custom height, measured in pixels.
+	bool isCustomSizeRequested;					// Reports that the call to GPUSubsystem::SetFramebufferSize() resulted in a custom rendering size.
+												//    true  - The user requested a custom size.
+												//    false - The user requested the native size.
+	size_t customWidth;							// The requested custom width, measured in pixels.
+	size_t customHeight;						// The requested custom height, measured in pixels.
 	
-	void *masterNativeBuffer;			// Pointer to the head of the master native buffer.
-	void *masterCustomBuffer;			// Pointer to the head of the master custom buffer.
-										// If GPUSubsystem::GetWillAutoResolveToCustomBuffer() would return true, or if
-										// GPUEngineBase::ResolveToCustomFramebuffer() is called, then this buffer is used as the target
-										// buffer for resolving any native-sized renders.
+	void *masterNativeBuffer;					// Pointer to the head of the master native buffer.
+	void *masterCustomBuffer;					// Pointer to the head of the master custom buffer.
+												// If GPUSubsystem::GetWillAutoResolveToCustomBuffer() would return true, or if
+												// GPUEngineBase::ResolveToCustomFramebuffer() is called, then this buffer is used as the target
+												// buffer for resolving any native-sized renders.
+	
+	// Changed by calling GPUSubsystem::SetWillAutoApplyMasterBrightness().
+	bool isMasterBrightnessAutoApplyRequested;	// Reports the result of GPUSubsystem::GetWillAutoApplyMasterBrightness().
+												//    true  - The emulator itself will apply the master brightness. This is the default option.
+												//    false - The output framebuffer will not have master brightness applied. Clients will need to
+												//            apply the master brightness themselves in a post-processing pass. Clients should use
+												//            the isMasterBrightnessApplied, masterBrightnessMode, masterBrightnessIntensity and
+												//            isDisplayEnabled properties to determine how to apply the master brightness on their
+												//            end.
+	
+	// Changed by calling GPUEngineBase::SetEnableState().
+	bool isDisplayEnabled[2];					// Reports that a particular display has been enabled or disabled by the user.
+	
 	
 	
 	// Frame information. These fields will change per frame, depending on how each display was rendered.
-	void *nativeBuffer[2];				// Pointer to the display's native size framebuffer.
-	void *customBuffer[2];				// Pointer to the display's custom size framebuffer.
+	void *nativeBuffer[2];						// Pointer to the display's native size framebuffer.
+	void *customBuffer[2];						// Pointer to the display's custom size framebuffer.
 	
-	bool didPerformCustomRender[2];		// Reports that the display actually rendered at a custom size for this frame.
-										//    true - The display performed a custom-sized render.
-										//    false - The display performed a native-sized render.
-	size_t renderedWidth[2];			// The display rendered at this width, measured in pixels.
-	size_t renderedHeight[2];			// The display rendered at this height, measured in pixels.
-	void *renderedBuffer[2];			// The display rendered to this buffer.
+	bool didPerformCustomRender[2];				// Reports that the display actually rendered at a custom size for this frame.
+												//    true  - The display performed a custom-sized render.
+												//    false - The display performed a native-sized render.
+	
+	bool isMasterBrightnessApplied[2];			// Reports if a display has master brightness applied. This will be false if the user requested to
+												// turn off auto-apply via GPUSubsystem::SetWillAutoApplyMasterBrightness(), or if the NDS applied
+												// a master brightness intensity of 0 for all lines.
+	GPUMasterBrightMode masterBrightnessMode[2][GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // The master brightness mode of each display line.
+	u8 masterBrightnessIntensity[2][GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // The master brightness intensity of each display line.
+	
+	size_t renderedWidth[2];					// The display rendered at this width, measured in pixels.
+	size_t renderedHeight[2];					// The display rendered at this height, measured in pixels.
+	void *renderedBuffer[2];					// The display rendered to this buffer.
 } NDSDisplayInfo;
 
 #define VRAM_NO_3D_USAGE 0xFF
