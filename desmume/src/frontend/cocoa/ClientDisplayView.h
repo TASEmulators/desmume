@@ -130,7 +130,8 @@ protected:
 	bool _showCPULoadAverage;
 	bool _showRTC;
 	
-	NDSFrameInfo _frameInfo;
+	NDSDisplayInfo _emuDisplayInfo;
+	NDSFrameInfo _emuFrameInfo;
 	std::string _hudString;
 	
 	FT_Library _ftLibrary;
@@ -147,6 +148,9 @@ protected:
 	virtual void _UpdateRotation() = 0;
 	virtual void _UpdateClientSize() = 0;
 	virtual void _UpdateViewScale();
+	
+	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
+	virtual void _LoadCustomDisplayByID(const NDSDisplayID displayID);
 	
 public:
 	ClientDisplayView();
@@ -208,14 +212,15 @@ public:
 	virtual void SetHUDShowRTC(const bool visibleState);
 	
 	// NDS GPU interface
-	virtual void FrameLoadGPU(bool isMainSizeNative, bool isTouchSizeNative) = 0;
-	virtual void FrameProcessGPU();
+	virtual void LoadDisplays();
+	virtual void ProcessDisplays();
 	virtual void FrameProcessHUD();
 	virtual void FrameRender() = 0;
 	virtual void FrameFinish() = 0;
 	
 	// Emulator interface
-	virtual void HandleGPUFrameEndEvent(const bool isMainSizeNative, const bool isTouchSizeNative) = 0;
+	const NDSDisplayInfo& GetEmuDisplayInfo() const;
+	virtual void HandleGPUFrameEndEvent(const NDSDisplayInfo &ndsDisplayInfo);
 	virtual void HandleEmulatorFrameEndEvent(const NDSFrameInfo &frameInfo) = 0;
 	
 	// Touch screen input handling

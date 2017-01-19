@@ -76,7 +76,8 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	_showCPULoadAverage = false;
 	_showRTC = false;
 	
-	memset(&_frameInfo, 0, sizeof(_frameInfo));
+	memset(&_emuDisplayInfo, 0, sizeof(_emuDisplayInfo));
+	memset(&_emuFrameInfo, 0, sizeof(_emuFrameInfo));
 	_hudString = "\x01"; // Char value 0x01 will represent the "text box" character, which will always be first in the string.
 	
 	FT_Error error = FT_Init_FreeType(&_ftLibrary);
@@ -105,36 +106,36 @@ void ClientDisplayView::_UpdateHUDString()
 	
 	if (this->_showVideoFPS)
 	{
-		ss << "Video FPS: " << this->_frameInfo.videoFPS << "\n";
+		ss << "Video FPS: " << this->_emuFrameInfo.videoFPS << "\n";
 	}
 	
 	if (this->_showRender3DFPS)
 	{
-		ss << "3D Rendering FPS: " << this->_frameInfo.render3DFPS << "\n";
+		ss << "3D Rendering FPS: " << this->_emuFrameInfo.render3DFPS << "\n";
 	}
 	
 	if (this->_showFrameIndex)
 	{
-		ss << "Frame Index: " << this->_frameInfo.frameIndex << "\n";
+		ss << "Frame Index: " << this->_emuFrameInfo.frameIndex << "\n";
 	}
 	
 	if (this->_showLagFrameCount)
 	{
-		ss << "Lag Frame Count: " << this->_frameInfo.lagFrameCount << "\n";
+		ss << "Lag Frame Count: " << this->_emuFrameInfo.lagFrameCount << "\n";
 	}
 	
 	if (this->_showCPULoadAverage)
 	{
 		static char buffer[32];
 		memset(buffer, 0, sizeof(buffer));
-		snprintf(buffer, 25, "CPU Load Avg: %02d%% / %02d%%\n", this->_frameInfo.cpuLoadAvgARM9, this->_frameInfo.cpuLoadAvgARM7);
+		snprintf(buffer, 25, "CPU Load Avg: %02d%% / %02d%%\n", this->_emuFrameInfo.cpuLoadAvgARM9, this->_emuFrameInfo.cpuLoadAvgARM7);
 		
 		ss << buffer;
 	}
 	
 	if (this->_showRTC)
 	{
-		ss << "RTC: " << this->_frameInfo.rtcString << "\n";
+		ss << "RTC: " << this->_emuFrameInfo.rtcString << "\n";
 	}
 	
 	this->_hudString = ss.str();
@@ -365,7 +366,7 @@ void ClientDisplayView::CopyHUDFont(const FT_Face &fontFace, const size_t glyphS
 
 void ClientDisplayView::SetHUDInfo(const NDSFrameInfo &frameInfo)
 {
-	this->_frameInfo = frameInfo;
+	this->_emuFrameInfo = frameInfo;
 	this->_UpdateHUDString();
 }
 
@@ -455,7 +456,47 @@ void ClientDisplayView::SetHUDShowRTC(const bool visibleState)
 }
 
 // NDS GPU Interface
-void ClientDisplayView::FrameProcessGPU()
+void ClientDisplayView::_LoadNativeDisplayByID(const NDSDisplayID displayID)
+{
+	// Do nothing. This is implementation dependent.
+}
+
+void ClientDisplayView::_LoadCustomDisplayByID(const NDSDisplayID displayID)
+{
+	// Do nothing. This is implementation dependent.
+}
+
+void ClientDisplayView::LoadDisplays()
+{
+	const bool loadMainScreen = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main] && ((this->_renderProperty.mode == ClientDisplayMode_Main) || (this->_renderProperty.mode == ClientDisplayMode_Dual));
+	const bool loadTouchScreen = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && ((this->_renderProperty.mode == ClientDisplayMode_Touch) || (this->_renderProperty.mode == ClientDisplayMode_Dual));
+	
+	if (loadMainScreen)
+	{
+		if (!this->_emuDisplayInfo.didPerformCustomRender[NDSDisplayID_Main])
+		{
+			this->_LoadNativeDisplayByID(NDSDisplayID_Main);
+		}
+		else
+		{
+			this->_LoadCustomDisplayByID(NDSDisplayID_Main);
+		}
+	}
+	
+	if (loadTouchScreen)
+	{
+		if (!this->_emuDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch])
+		{
+			this->_LoadNativeDisplayByID(NDSDisplayID_Touch);
+		}
+		else
+		{
+			this->_LoadCustomDisplayByID(NDSDisplayID_Touch);
+		}
+	}
+}
+
+void ClientDisplayView::ProcessDisplays()
 {
 	// Do nothing. This is implementation dependent.
 }
@@ -463,6 +504,16 @@ void ClientDisplayView::FrameProcessGPU()
 void ClientDisplayView::FrameProcessHUD()
 {
 	// Do nothing. This is implementation dependent.
+}
+
+const NDSDisplayInfo& ClientDisplayView::GetEmuDisplayInfo() const
+{
+	return this->_emuDisplayInfo;
+}
+
+void ClientDisplayView::HandleGPUFrameEndEvent(const NDSDisplayInfo &ndsDisplayInfo)
+{
+	this->_emuDisplayInfo = ndsDisplayInfo;
 }
 
 // Touch screen input handling

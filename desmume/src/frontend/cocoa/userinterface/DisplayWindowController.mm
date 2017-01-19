@@ -1618,21 +1618,39 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	inputManager = nil;
 	cdsVideoOutput = nil;
-	
-/*#if defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
+	localLayer = nil;
+	localOGLContext = nil;
+/*
+#if defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
 	if (IsOSXVersionSupported(10, 11, 0))
 	{
 		localLayer = [[DisplayViewMetalLayer alloc] init];
+		
+		if ([(DisplayViewMetalLayer *)localLayer device] == nil)
+		{
+			[localLayer release];
+			localLayer = nil;
+		}
+		else
+		{
+			[self setLayer:localLayer];
+			[self setWantsLayer:YES];
+			
+			if ([self respondsToSelector:@selector(setLayerContentsRedrawPolicy:)])
+			{
+				[self setLayerContentsRedrawPolicy:NSViewLayerContentsRedrawNever];
+			}
+		}
 	}
-	else
-#endif*/
+#endif
+*/
+	if (localLayer == nil)
 	{
 		localLayer = [[DisplayViewOpenGLLayer alloc] init];
 		MacOGLDisplayView *macOGLCDV = (MacOGLDisplayView *)[(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
 		
 		if (IsOSXVersionSupported(10, 8, 0))
 		{
-			localOGLContext = nil;
 			macOGLCDV->SetRenderToCALayer(true);
 			
 			[self setLayer:localLayer];

@@ -348,12 +348,14 @@ void MacOGLDisplayView::FrameFinish()
 	CGLUnlockContext(this->_context);
 }
 
-void MacOGLDisplayView::HandleGPUFrameEndEvent(const bool isMainSizeNative, const bool isTouchSizeNative)
+void MacOGLDisplayView::HandleGPUFrameEndEvent(const NDSDisplayInfo &ndsDisplayInfo)
 {
+	this->OGLVideoOutput::HandleGPUFrameEndEvent(ndsDisplayInfo);
+	
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->FrameLoadGPU(isMainSizeNative, isTouchSizeNative);
-	this->FrameProcessGPU();
+	this->LoadDisplays();
+	this->ProcessDisplays();
 	CGLUnlockContext(this->_context);
 }
 

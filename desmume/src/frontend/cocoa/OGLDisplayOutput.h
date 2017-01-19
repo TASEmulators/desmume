@@ -316,21 +316,16 @@ protected:
 	OGLFilter *_shaderFilter[2];
 	GLint _displayTexFilter[2];
 	
-	bool _isTexVideoInputDataNative[2];
 	GLuint _texVideoInputDataNativeID[2];
 	GLuint _texVideoInputDataCustomID[2];
 	GLuint _texVideoOutputID[2];
-	GLfloat _texLoadedWidth[2];
-	GLfloat _texLoadedHeight[2];
 	
 	GLenum _videoColorFormat;
 	const void *_videoSrcBufferHead;
 	const void *_videoSrcNativeBuffer[2];
 	const void *_videoSrcCustomBuffer[2];
 	size_t _videoSrcBufferSize;
-	GLsizei _videoSrcCustomBufferWidth[2];
-	GLsizei _videoSrcCustomBufferHeight[2];
-		
+	
 	uint32_t *_vfMasterDstBuffer;
 	size_t _vfMasterDstBufferSize;
 	VideoFilter *_vf[2];
@@ -357,6 +352,8 @@ protected:
 	void _UpdateRotationScaleOGL();
 	void _UpdateVerticesOGL();
 	
+	void _ProcessDisplayByID(const NDSDisplayID displayID, GLsizei &inoutWidth, GLsizei &inoutHeight, GLuint &inoutTexID);
+	
 public:
 	OGLDisplayLayer() {};
 	OGLDisplayLayer(OGLVideoOutput *oglVO);
@@ -377,7 +374,9 @@ public:
 	OutputFilterTypeID SetOutputFilterOGL(const OutputFilterTypeID filterID);
 	bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
-	void LoadFrameOGL(bool isMainSizeNative, bool isTouchSizeNative);
+	
+	void LoadNativeDisplayByID_OGL(const NDSDisplayID displayID);
+	void LoadCustomDisplayByID_OGL(const NDSDisplayID displayID);
 	
 	virtual void UpdateViewportOGL();
 	virtual void ProcessOGL();
@@ -401,6 +400,9 @@ protected:
 	virtual void _UpdateRotation();
 	virtual void _UpdateClientSize();
 	virtual void _UpdateViewScale();
+	
+	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
+	virtual void _LoadCustomDisplayByID(const NDSDisplayID displayID);
 	
 public:
 	OGLVideoOutput();
@@ -430,8 +432,7 @@ public:
 								 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
 								 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1);
 	
-	virtual void FrameLoadGPU(bool isMainSizeNative, bool isTouchSizeNative);
-	virtual void FrameProcessGPU();
+	virtual void ProcessDisplays();
 	virtual void FrameProcessHUD();
 	virtual void FrameRender();
 	virtual void FrameFinish();

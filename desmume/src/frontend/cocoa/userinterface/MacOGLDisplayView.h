@@ -87,7 +87,7 @@ public:
 	virtual void SetHUDShowRTC(const bool visibleState);
 	
 	virtual void FrameFinish();
-	virtual void HandleGPUFrameEndEvent(const bool isMainSizeNative, const bool isTouchSizeNative);
+	virtual void HandleGPUFrameEndEvent(const NDSDisplayInfo &ndsDisplayInfo);
 	virtual void HandleEmulatorFrameEndEvent(const NDSFrameInfo &frameInfo);
 	
 	virtual void UpdateView();

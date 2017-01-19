@@ -1070,7 +1070,7 @@
 	
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
-	_cdv->HandleGPUFrameEndEvent(isMainSizeNative, isTouchSizeNative);
+	_cdv->HandleGPUFrameEndEvent(dispInfo);
 }
 
 - (void) handleReloadReprocessRedraw
