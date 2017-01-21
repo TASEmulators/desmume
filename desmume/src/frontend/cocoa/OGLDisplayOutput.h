@@ -257,19 +257,19 @@ class OGLVideoLayer
 protected:
 	OGLVideoOutput *_output;
 	bool _isVisible;
+	bool _needUpdateViewport;
 	bool _needUpdateRotationScale;
 	bool _needUpdateVertices;
 	
 public:
 	virtual ~OGLVideoLayer() {};
 	
+	void SetNeedsUpdateViewport();
 	void SetNeedsUpdateVertices();
 	
 	virtual bool IsVisible();
 	virtual void SetVisibility(const bool visibleState);
 	
-	virtual void UpdateViewportOGL() {};
-	virtual void ProcessOGL() = 0;
 	virtual void RenderOGL() = 0;
 	virtual void FinishOGL() {};
 };
@@ -299,8 +299,6 @@ public:
 	
 	void CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo);
 	
-	virtual void UpdateViewportOGL();
-	virtual void ProcessOGL();
 	virtual void RenderOGL();
 };
 
@@ -378,8 +376,7 @@ public:
 	void LoadNativeDisplayByID_OGL(const NDSDisplayID displayID);
 	void LoadCustomDisplayByID_OGL(const NDSDisplayID displayID);
 	
-	virtual void UpdateViewportOGL();
-	virtual void ProcessOGL();
+	void ProcessOGL();
 	virtual void RenderOGL();
 	virtual void FinishOGL();
 };
@@ -417,6 +414,7 @@ public:
 	
 	virtual void Init();
 	
+	// NDS screen filters
 	virtual void SetOutputFilter(const OutputFilterTypeID filterID);
 	virtual void SetPixelScaler(const VideoFilterTypeID filterID);
 	
@@ -432,10 +430,10 @@ public:
 								 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
 								 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1);
 	
+	// Client view interface
 	virtual void ProcessDisplays();
-	virtual void FrameProcessHUD();
-	virtual void FrameRender();
 	virtual void FrameFinish();
+	virtual void RenderViewOGL();
 };
 
 extern void (*glBindVertexArrayDESMUME)(GLuint id);

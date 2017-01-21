@@ -133,6 +133,7 @@ protected:
 	NDSDisplayInfo _emuDisplayInfo;
 	NDSFrameInfo _emuFrameInfo;
 	std::string _hudString;
+	bool _hudNeedsUpdate;
 	
 	FT_Library _ftLibrary;
 	const char *_lastFontFilePath;
@@ -146,7 +147,7 @@ protected:
 	virtual void _UpdateNormalSize() = 0;
 	virtual void _UpdateOrder() = 0;
 	virtual void _UpdateRotation() = 0;
-	virtual void _UpdateClientSize() = 0;
+	virtual void _UpdateClientSize();
 	virtual void _UpdateViewScale();
 	
 	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
@@ -210,18 +211,19 @@ public:
 	virtual void SetHUDShowCPULoadAverage(const bool visibleState);
 	bool GetHUDShowRTC() const;
 	virtual void SetHUDShowRTC(const bool visibleState);
+	bool HUDNeedsUpdate() const;
+	void ClearHUDNeedsUpdate();
 	
-	// NDS GPU interface
+	// Client view interface
 	virtual void LoadDisplays();
 	virtual void ProcessDisplays();
-	virtual void FrameProcessHUD();
-	virtual void FrameRender() = 0;
+	virtual void UpdateView();
 	virtual void FrameFinish() = 0;
 	
 	// Emulator interface
 	const NDSDisplayInfo& GetEmuDisplayInfo() const;
 	virtual void HandleGPUFrameEndEvent(const NDSDisplayInfo &ndsDisplayInfo);
-	virtual void HandleEmulatorFrameEndEvent(const NDSFrameInfo &frameInfo) = 0;
+	virtual void HandleEmulatorFrameEndEvent(const NDSFrameInfo &frameInfo);
 	
 	// Touch screen input handling
 	void GetNDSPoint(const int inputID, const bool isInitialTouchPress,
@@ -274,8 +276,6 @@ public:
 	void SetHUDTextureCoordinates(float *texCoordBufferPtr);
 	void SetScreenVertices(float *vtxBufferPtr);
 	void SetScreenTextureCoordinates(float w0, float h0, float w1, float h1, float *texCoordBufferPtr);
-	
-	virtual void UpdateView() = 0;
 };
 
 #endif // _CLIENT_DISPLAY_VIEW_H_

@@ -72,7 +72,7 @@
 
 - (void)drawInCGLContext:(CGLContextObj)glContext pixelFormat:(CGLPixelFormatObj)pixelFormat forLayerTime:(CFTimeInterval)timeInterval displayTime:(const CVTimeStamp *)timeStamp
 {
-	_cdv->FrameRender();
+	_cdv->RenderViewOGL();
 	[super drawInCGLContext:glContext pixelFormat:pixelFormat forLayerTime:timeInterval displayTime:timeStamp];
 }
 
@@ -172,7 +172,7 @@ void MacOGLDisplayView::_FrameRenderAndFlush()
 	}
 	else
 	{
-		this->FrameRender();
+		this->RenderViewOGL();
 		CGLFlushDrawable(this->_context);
 	}
 }
@@ -244,15 +244,6 @@ void MacOGLDisplayView::SetScaleFactor(const double scaleFactor)
 	CGLUnlockContext(this->_context);
 }
 
-void MacOGLDisplayView::SetupViewProperties()
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetupViewProperties();
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
 void MacOGLDisplayView::SetFiltersPreferGPU(const bool preferGPU)
 {
 	CGLLockContext(this->_context);
@@ -277,65 +268,10 @@ void MacOGLDisplayView::SetPixelScaler(const VideoFilterTypeID filterID)
 	CGLUnlockContext(this->_context);
 }
 
-void MacOGLDisplayView::SetHUDVisibility(const bool visibleState)
+void MacOGLDisplayView::UpdateView()
 {
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDVisibility(visibleState);
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetHUDShowVideoFPS(const bool visibleState)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDShowVideoFPS(visibleState);
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetHUDShowRender3DFPS(const bool visibleState)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDShowRender3DFPS(visibleState);
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetHUDShowFrameIndex(const bool visibleState)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDShowFrameIndex(visibleState);
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetHUDShowLagFrameCount(const bool visibleState)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDShowLagFrameCount(visibleState);
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetHUDShowCPULoadAverage(const bool visibleState)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDShowCPULoadAverage(visibleState);
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetHUDShowRTC(const bool visibleState)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetHUDShowRTC(visibleState);
 	this->_FrameRenderAndFlush();
 	CGLUnlockContext(this->_context);
 }
@@ -356,24 +292,5 @@ void MacOGLDisplayView::HandleGPUFrameEndEvent(const NDSDisplayInfo &ndsDisplayI
 	CGLSetCurrentContext(this->_context);
 	this->LoadDisplays();
 	this->ProcessDisplays();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::HandleEmulatorFrameEndEvent(const NDSFrameInfo &frameInfo)
-{
-	this->SetHUDInfo(frameInfo);
-	
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->FrameProcessHUD();
-	this->_FrameRenderAndFlush();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::UpdateView()
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->_FrameRenderAndFlush();
 	CGLUnlockContext(this->_context);
 }

@@ -72,25 +72,17 @@ public:
 	virtual void SetUseVerticalSync(const bool useVerticalSync);
 	virtual void SetScaleFactor(const double scaleFactor);
 	
-	virtual void SetupViewProperties();
-	
+	// NDS screen filters
 	virtual void SetFiltersPreferGPU(const bool preferGPU);
 	virtual void SetOutputFilter(const OutputFilterTypeID filterID);
 	virtual void SetPixelScaler(const VideoFilterTypeID filterID);
 	
-	virtual void SetHUDVisibility(const bool visibleState);
-	virtual void SetHUDShowVideoFPS(const bool visibleState);
-	virtual void SetHUDShowRender3DFPS(const bool visibleState);
-	virtual void SetHUDShowFrameIndex(const bool visibleState);
-	virtual void SetHUDShowLagFrameCount(const bool visibleState);
-	virtual void SetHUDShowCPULoadAverage(const bool visibleState);
-	virtual void SetHUDShowRTC(const bool visibleState);
-	
-	virtual void FrameFinish();
-	virtual void HandleGPUFrameEndEvent(const NDSDisplayInfo &ndsDisplayInfo);
-	virtual void HandleEmulatorFrameEndEvent(const NDSFrameInfo &frameInfo);
-	
+	// Client view interface
 	virtual void UpdateView();
+	virtual void FrameFinish();
+	
+	// Emulator interface
+	virtual void HandleGPUFrameEndEvent(const NDSDisplayInfo &ndsDisplayInfo);
 };
 
 #endif // _MAC_OGLDISPLAYOUTPUT_H_

@@ -79,6 +79,7 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	memset(&_emuDisplayInfo, 0, sizeof(_emuDisplayInfo));
 	memset(&_emuFrameInfo, 0, sizeof(_emuFrameInfo));
 	_hudString = "\x01"; // Char value 0x01 will represent the "text box" character, which will always be first in the string.
+	_hudNeedsUpdate = true;
 	
 	FT_Error error = FT_Init_FreeType(&_ftLibrary);
 	if (error)
@@ -139,6 +140,7 @@ void ClientDisplayView::_UpdateHUDString()
 	}
 	
 	this->_hudString = ss.str();
+	this->_hudNeedsUpdate = true;
 }
 
 void ClientDisplayView::_SetHUDShowInfoItem(bool &infoItemFlag, const bool visibleState)
@@ -150,7 +152,6 @@ void ClientDisplayView::_SetHUDShowInfoItem(bool &infoItemFlag, const bool visib
 	
 	infoItemFlag = visibleState;
 	this->_UpdateHUDString();
-	this->FrameProcessHUD();
 }
 
 void ClientDisplayView::Init()
@@ -185,6 +186,11 @@ void ClientDisplayView::SetScaleFactor(const double scaleFactor)
 		
 		this->LoadHUDFont();
 	}
+}
+
+void ClientDisplayView::_UpdateClientSize()
+{
+	this->_hudNeedsUpdate = true;
 }
 
 void ClientDisplayView::_UpdateViewScale()
@@ -253,6 +259,8 @@ void ClientDisplayView::SetupViewProperties()
 	{
 		this->_UpdateClientSize();
 	}
+	
+	this->UpdateView();
 }
 
 double ClientDisplayView::GetRotation() const
@@ -393,6 +401,7 @@ bool ClientDisplayView::GetHUDVisibility() const
 void ClientDisplayView::SetHUDVisibility(const bool visibleState)
 {
 	this->_isHUDVisible = visibleState;
+	this->UpdateView();
 }
 
 bool ClientDisplayView::GetHUDShowVideoFPS() const
@@ -403,6 +412,7 @@ bool ClientDisplayView::GetHUDShowVideoFPS() const
 void ClientDisplayView::SetHUDShowVideoFPS(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showVideoFPS, visibleState);
+	this->UpdateView();
 }
 
 bool ClientDisplayView::GetHUDShowRender3DFPS() const
@@ -413,6 +423,7 @@ bool ClientDisplayView::GetHUDShowRender3DFPS() const
 void ClientDisplayView::SetHUDShowRender3DFPS(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showRender3DFPS, visibleState);
+	this->UpdateView();
 }
 
 bool ClientDisplayView::GetHUDShowFrameIndex() const
@@ -423,6 +434,7 @@ bool ClientDisplayView::GetHUDShowFrameIndex() const
 void ClientDisplayView::SetHUDShowFrameIndex(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showFrameIndex, visibleState);
+	this->UpdateView();
 }
 
 bool ClientDisplayView::GetHUDShowLagFrameCount() const
@@ -433,6 +445,7 @@ bool ClientDisplayView::GetHUDShowLagFrameCount() const
 void ClientDisplayView::SetHUDShowLagFrameCount(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showLagFrameCount, visibleState);
+	this->UpdateView();
 }
 
 bool ClientDisplayView::GetHUDShowCPULoadAverage() const
@@ -443,6 +456,7 @@ bool ClientDisplayView::GetHUDShowCPULoadAverage() const
 void ClientDisplayView::SetHUDShowCPULoadAverage(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showCPULoadAverage, visibleState);
+	this->UpdateView();
 }
 
 bool ClientDisplayView::GetHUDShowRTC() const
@@ -453,6 +467,17 @@ bool ClientDisplayView::GetHUDShowRTC() const
 void ClientDisplayView::SetHUDShowRTC(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showRTC, visibleState);
+	this->UpdateView();
+}
+
+bool ClientDisplayView::HUDNeedsUpdate() const
+{
+	return this->_hudNeedsUpdate;
+}
+
+void ClientDisplayView::ClearHUDNeedsUpdate()
+{
+	this->_hudNeedsUpdate = false;
 }
 
 // NDS GPU Interface
@@ -501,7 +526,7 @@ void ClientDisplayView::ProcessDisplays()
 	// Do nothing. This is implementation dependent.
 }
 
-void ClientDisplayView::FrameProcessHUD()
+void ClientDisplayView::UpdateView()
 {
 	// Do nothing. This is implementation dependent.
 }
@@ -514,6 +539,12 @@ const NDSDisplayInfo& ClientDisplayView::GetEmuDisplayInfo() const
 void ClientDisplayView::HandleGPUFrameEndEvent(const NDSDisplayInfo &ndsDisplayInfo)
 {
 	this->_emuDisplayInfo = ndsDisplayInfo;
+}
+
+void ClientDisplayView::HandleEmulatorFrameEndEvent(const NDSFrameInfo &frameInfo)
+{
+	this->SetHUDInfo(frameInfo);
+	this->UpdateView();
 }
 
 // Touch screen input handling
@@ -945,7 +976,7 @@ void ClientDisplay3DView::SetHUDVertices(float viewportWidth, float viewportHeig
 	vtxBufferPtr[6] = 0.0f;			vtxBufferPtr[7] = -textBoxTextOffset;
 	
 	// Calculate the vertices of the remaining characters in the string.
-	for (size_t i = 1; i < length; i++)
+	for (size_t i = 1, j = 8; i < length; i++, j+=8)
 	{
 		const char c = cString[i];
 		
@@ -966,10 +997,10 @@ void ClientDisplay3DView::SetHUDVertices(float viewportWidth, float viewportHeig
 		
 		const float charWidth = this->_glyphInfo[c].width * charSize / (float)this->_glyphTileSize;
 		
-		vtxBufferPtr[(i*8)+0] = charLocX;				vtxBufferPtr[(i*8)+1] = charLocY + charSize;	// Top Left
-		vtxBufferPtr[(i*8)+2] = charLocX + charWidth;	vtxBufferPtr[(i*8)+3] = charLocY + charSize;	// Top Right
-		vtxBufferPtr[(i*8)+4] = charLocX + charWidth;	vtxBufferPtr[(i*8)+5] = charLocY;				// Bottom Right
-		vtxBufferPtr[(i*8)+6] = charLocX;				vtxBufferPtr[(i*8)+7] = charLocY;				// Bottom Left
+		vtxBufferPtr[j+0] = charLocX;					vtxBufferPtr[j+1] = charLocY + charSize;	// Top Left
+		vtxBufferPtr[j+2] = charLocX + charWidth;		vtxBufferPtr[j+3] = charLocY + charSize;	// Top Right
+		vtxBufferPtr[j+4] = charLocX + charWidth;		vtxBufferPtr[j+5] = charLocY;				// Bottom Right
+		vtxBufferPtr[j+6] = charLocX;					vtxBufferPtr[j+7] = charLocY;				// Bottom Left
 		charLocX += (charWidth + (charSize * 0.03f) + 0.10f);
 	}
 	

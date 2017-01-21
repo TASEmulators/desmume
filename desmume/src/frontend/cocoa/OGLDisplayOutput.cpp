@@ -4856,6 +4856,7 @@ void OGLVideoOutput::_UpdateClientSize()
 	this->_needUpdateViewport = true;
 	
 	this->GetHUDLayer()->SetNeedsUpdateVertices();
+	this->ClientDisplay3DView::_UpdateClientSize();
 }
 
 void OGLVideoOutput::_UpdateViewScale()
@@ -4874,11 +4875,9 @@ void OGLVideoOutput::_UpdateViewport()
 		
 		if (theLayer->IsVisible())
 		{
-			theLayer->UpdateViewportOGL();
+			theLayer->SetNeedsUpdateViewport();
 		}
 	}
-	
-	this->_needUpdateViewport = false;
 }
 
 void OGLVideoOutput::_LoadNativeDisplayByID(const NDSDisplayID displayID)
@@ -4957,8 +4956,8 @@ void OGLVideoOutput::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize
 
 void OGLVideoOutput::SetHUDVisibility(const bool visibleState)
 {
-	this->ClientDisplay3DView::SetHUDVisibility(visibleState);
 	this->GetHUDLayer()->SetVisibility(visibleState);
+	this->ClientDisplay3DView::SetHUDVisibility(visibleState);
 }
 
 void OGLVideoOutput::SetFiltersPreferGPU(const bool preferGPU)
@@ -5011,19 +5010,25 @@ void OGLVideoOutput::ProcessDisplays()
 	}
 }
 
-void OGLVideoOutput::FrameProcessHUD()
-{	
-	if (this->GetHUDVisibility())
+void OGLVideoOutput::FrameFinish()
+{
+	for (size_t i = 0; i < _layerList->size(); i++)
 	{
-		this->GetHUDLayer()->ProcessOGL();
+		OGLVideoLayer *theLayer = (*_layerList)[i];
+		
+		if (theLayer->IsVisible())
+		{
+			theLayer->FinishOGL();
+		}
 	}
 }
 
-void OGLVideoOutput::FrameRender()
+void OGLVideoOutput::RenderViewOGL()
 {
 	if (this->_needUpdateViewport)
 	{
 		this->_UpdateViewport();
+		this->_needUpdateViewport = false;
 	}
 	
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -5035,19 +5040,6 @@ void OGLVideoOutput::FrameRender()
 		if (theLayer->IsVisible())
 		{
 			theLayer->RenderOGL();
-		}
-	}
-}
-
-void OGLVideoOutput::FrameFinish()
-{
-	for (size_t i = 0; i < _layerList->size(); i++)
-	{
-		OGLVideoLayer *theLayer = (*_layerList)[i];
-		
-		if (theLayer->IsVisible())
-		{
-			theLayer->FinishOGL();
 		}
 	}
 }
@@ -6117,6 +6109,11 @@ void OGLImage::RenderOGL()
 
 #pragma mark -
 
+void OGLVideoLayer::SetNeedsUpdateViewport()
+{
+	this->_needUpdateViewport = true;
+}
+
 void OGLVideoLayer::SetNeedsUpdateVertices()
 {
 	this->_needUpdateVertices = true;
@@ -6129,15 +6126,6 @@ bool OGLVideoLayer::IsVisible()
 
 void OGLVideoLayer::SetVisibility(const bool visibleState)
 {
-	if (!this->_isVisible && visibleState)
-	{
-		this->_isVisible = visibleState;
-		this->UpdateViewportOGL();
-		this->ProcessOGL();
-		
-		return;
-	}
-	
 	this->_isVisible = visibleState;
 }
 
@@ -6145,8 +6133,8 @@ void OGLVideoLayer::SetVisibility(const bool visibleState)
 
 OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 {
-	_needUpdateVertices = true;
 	_isVisible = false;
+	_needUpdateViewport = true;
 	_output = oglVO;
 	
 	_glyphInfo = NULL;
@@ -6185,14 +6173,14 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLshort) * HUD_MAX_CHARACTERS * 6, NULL, GL_STATIC_DRAW_ARB);
 	GLshort *idxBufferPtr = (GLshort *)glMapBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 		
-	for (size_t i = 0; i < HUD_MAX_CHARACTERS; i++)
+	for (size_t i = 0, j = 0, k = 0; i < HUD_MAX_CHARACTERS; i++, j+=6, k+=4)
 	{
-		idxBufferPtr[(i*6)+0] = (i*4)+0;
-		idxBufferPtr[(i*6)+1] = (i*4)+1;
-		idxBufferPtr[(i*6)+2] = (i*4)+2;
-		idxBufferPtr[(i*6)+3] = (i*4)+2;
-		idxBufferPtr[(i*6)+4] = (i*4)+3;
-		idxBufferPtr[(i*6)+5] = (i*4)+0;
+		idxBufferPtr[j+0] = k+0;
+		idxBufferPtr[j+1] = k+1;
+		idxBufferPtr[j+2] = k+2;
+		idxBufferPtr[j+3] = k+2;
+		idxBufferPtr[j+4] = k+3;
+		idxBufferPtr[j+5] = k+0;
 	}
 	
 	glUnmapBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB);
@@ -6338,51 +6326,25 @@ void OGLHUDLayer::_UpdateVerticesOGL()
 	const size_t length = this->_output->GetHUDString().length();
 	if (length <= 1)
 	{
-		this->_needUpdateVertices = false;
+		this->_output->ClearHUDNeedsUpdate();
 		return;
 	}
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboVertexID);
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW_ARB);
 	float *vtxBufferPtr = (float *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-	
 	this->_output->SetHUDVertices((float)this->_output->GetViewportWidth(), (float)this->_output->GetViewportHeight(), vtxBufferPtr);
-	
 	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
-	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-	
-	this->_needUpdateVertices = false;
-}
-
-void OGLHUDLayer::UpdateViewportOGL()
-{
-	if (this->_output->GetContextInfo()->IsShaderSupported())
-	{
-		glUseProgram(this->_program->GetProgramID());
-		glUniform2f(this->_uniformViewSize, this->_output->GetViewProperties().clientWidth, this->_output->GetViewProperties().clientHeight);
-	}
-	
-	this->_needUpdateVertices = true;
-};
-
-void OGLHUDLayer::ProcessOGL()
-{
-	const size_t length = this->_output->GetHUDString().length();
-	if (length <= 1)
-	{
-		return;
-	}
 	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE, NULL, GL_STREAM_DRAW_ARB);
 	float *texCoordBufferPtr = (float *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-	
 	this->_output->SetHUDTextureCoordinates(texCoordBufferPtr);
-	
 	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
+	
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
-	this->_needUpdateVertices = true;
+	this->_output->ClearHUDNeedsUpdate();
 }
 
 void OGLHUDLayer::RenderOGL()
@@ -6396,9 +6358,15 @@ void OGLHUDLayer::RenderOGL()
 	if (this->_output->GetContextInfo()->IsShaderSupported())
 	{
 		glUseProgram(this->_program->GetProgramID());
+		
+		if (this->_needUpdateViewport)
+		{
+			glUniform2f(this->_uniformViewSize, this->_output->GetViewProperties().clientWidth, this->_output->GetViewProperties().clientHeight);
+			this->_needUpdateViewport = false;
+		}
 	}
 	
-	if (this->_needUpdateVertices)
+	if (this->_output->HUDNeedsUpdate())
 	{
 		this->_UpdateVerticesOGL();
 	}
@@ -6438,6 +6406,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	_isVisible = true;
 	_output = oglVO;
 	_useClientStorage = GL_FALSE;
+	_needUpdateViewport = true;
 	_needUpdateRotationScale = true;
 	_needUpdateVertices = true;
 	
@@ -6521,15 +6490,15 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
 	// Set up VAO
-	glGenVertexArraysDESMUME(1, &this->_vaoMainStatesID);
-	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
+	glGenVertexArraysDESMUME(1, &_vaoMainStatesID);
+	glBindVertexArrayDESMUME(_vaoMainStatesID);
 	
 	if (this->_output->GetContextInfo()->IsShaderSupported())
 	{
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboVertexID);
-		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, _vboTexCoordID);
-		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 		
 		glEnableVertexAttribArray(OGLVertexAttributeID_Position);
 		glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
@@ -7271,26 +7240,6 @@ void OGLDisplayLayer::LoadCustomDisplayByID_OGL(const NDSDisplayID displayID)
 	glFlush();
 }
 
-void OGLDisplayLayer::UpdateViewportOGL()
-{
-	const ClientDisplayViewProperties &cdv = this->_output->GetViewProperties();
-	
-	const double w = cdv.clientWidth;
-	const double h = cdv.clientHeight;
-	
-	if (this->_output->GetContextInfo()->IsShaderSupported())
-	{
-		glUseProgram(this->_finalOutputProgram->GetProgramID());
-		glUniform2f(this->_uniformFinalOutputViewSize, w, h);
-	}
-	else
-	{
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(-w/2.0, -w/2.0 + w, -h/2.0, -h/2.0 + h, -1.0, 1.0);
-	}
-}
-
 void OGLDisplayLayer::_ProcessDisplayByID(const NDSDisplayID displayID, GLsizei &inoutWidth, GLsizei &inoutHeight, GLuint &inoutTexID)
 {
 	const bool willFilterOnGPU = this->_output->WillFilterOnGPU();
@@ -7387,6 +7336,24 @@ void OGLDisplayLayer::RenderOGL()
 	if (this->_output->GetContextInfo()->IsShaderSupported())
 	{
 		glUseProgram(this->_finalOutputProgram->GetProgramID());
+		
+		if (this->_needUpdateViewport)
+		{
+			glUniform2f(this->_uniformFinalOutputViewSize, this->_output->GetViewportWidth(), this->_output->GetViewportHeight());
+			this->_needUpdateViewport = false;
+		}
+	}
+	
+	if (this->_needUpdateViewport)
+	{
+		const GLdouble w = this->_output->GetViewportWidth();
+		const GLdouble h = this->_output->GetViewportHeight();
+		
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(-w/2.0, -w/2.0 + w, -h/2.0, -h/2.0 + h, -1.0, 1.0);
+		
+		this->_needUpdateViewport = false;
 	}
 	
 	if (this->_needUpdateRotationScale)
