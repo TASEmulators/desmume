@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,93 +20,146 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef u64 uint64;
-
 extern int scanline_filter_a, scanline_filter_b, scanline_filter_c, scanline_filter_d;
 static int fac_a, fac_b, fac_c, fac_d;
 
-FORCEINLINE void ScanLine32( uint32 *lpDst, uint32 *lpSrc, unsigned int Width, int fac_left, int fac_right)
+#if defined(ENABLE_SSE2)
+template <size_t LINEWIDTH>
+FORCEINLINE static void ScanLine32_FastSSE2(u32 *__restrict lpDst, const u32 *__restrict lpSrc, const int fac_left, const int fac_right)
 {
-	while(Width--)
+	const v128u16 weight = _mm_set_epi16(16, fac_right, fac_right, fac_right, 16, fac_left, fac_left, fac_left);
+	
+	for (size_t i = 0; i < LINEWIDTH; i+=4, lpSrc+=4, lpDst+=8)
+	{
+		const v128u32 src = _mm_load_si128((v128u32 *__restrict)lpSrc);
+		const v128u32 srcLo = _mm_unpacklo_epi32(src, src);
+		const v128u32 srcHi = _mm_unpackhi_epi32(src, src);
+		
+		const v128u32 srcLo0 = _mm_srli_epi16( _mm_mullo_epi16(_mm_unpacklo_epi8(srcLo, _mm_setzero_si128()), weight), 4 );
+		const v128u32 srcLo1 = _mm_srli_epi16( _mm_mullo_epi16(_mm_unpackhi_epi8(srcLo, _mm_setzero_si128()), weight), 4 );
+		const v128u32 srcHi0 = _mm_srli_epi16( _mm_mullo_epi16(_mm_unpacklo_epi8(srcHi, _mm_setzero_si128()), weight), 4 );
+		const v128u32 srcHi1 = _mm_srli_epi16( _mm_mullo_epi16(_mm_unpackhi_epi8(srcHi, _mm_setzero_si128()), weight), 4 );
+		
+		_mm_stream_si128( (v128u32 *__restrict)(lpDst + 0), _mm_packus_epi16(srcLo0, srcLo1) );
+		_mm_stream_si128( (v128u32 *__restrict)(lpDst + 4), _mm_packus_epi16(srcHi0, srcHi1) );
+	}
+}
+#endif
+
+FORCEINLINE static void ScanLine32(u32 *__restrict lpDst, const u32 *__restrict lpSrc, const size_t lineWidth, const int fac_left, const int fac_right)
+{
+	const u8 *__restrict src8 = (const u8 *__restrict)lpSrc;
+	u8 *__restrict dst8 = (u8 *__restrict)lpDst;
+	
+	for (size_t i = 0; i < lineWidth; i++, lpSrc++, lpDst+=2)
 	{
 #ifdef MSB_FIRST
-		u8* u8dst = (u8*)lpDst;
-		u8* u8src = (u8*)lpSrc;
-		 u8dst++;   u8src++;
-		*u8dst++ = *u8src++ * fac_left / 16;
-		*u8dst++ = *u8src++ * fac_left / 16;
-		*u8dst++ = *u8src   * fac_left / 16;
+		dst8[(i*8)+1] = src8[(i*4)+1] * fac_left / 16;
+		dst8[(i*8)+2] = src8[(i*4)+2] * fac_left / 16;
+		dst8[(i*8)+3] = src8[(i*4)+3] * fac_left / 16;
 		
-		u8src = (u8*)lpSrc;
-		 u8dst++;   u8src++;
-		*u8dst++ = *u8src++ * fac_right / 16;
-		*u8dst++ = *u8src++ * fac_right / 16;
-		*u8dst++ = *u8src++ * fac_right / 16;
-		lpDst+=2;
-		lpSrc++;
+		dst8[(i*8)+5] = src8[(i*4)+1] * fac_right / 16;
+		dst8[(i*8)+6] = src8[(i*4)+2] * fac_right / 16;
+		dst8[(i*8)+7] = src8[(i*4)+3] * fac_right / 16;
 #else
-		u8* u8dst = (u8*)lpDst;
-		u8* u8src = (u8*)lpSrc;
-		*u8dst++ = *u8src++ * fac_left / 16;
-		*u8dst++ = *u8src++ * fac_left / 16;
-		*u8dst++ = *u8src++ * fac_left / 16;
-		 u8dst++;
+		dst8[(i*8)+0] = src8[(i*4)+0] * fac_left / 16;
+		dst8[(i*8)+1] = src8[(i*4)+1] * fac_left / 16;
+		dst8[(i*8)+2] = src8[(i*4)+2] * fac_left / 16;
 		
-		u8src = (u8*)lpSrc;
-		*u8dst++ = *u8src++ * fac_right / 16;
-		*u8dst++ = *u8src++ * fac_right / 16;
-		*u8dst++ = *u8src++ * fac_right / 16;
-		 u8dst++;   u8src++;
-		lpDst+=2; 
-		lpSrc++;
+		dst8[(i*8)+4] = src8[(i*4)+0] * fac_right / 16;
+		dst8[(i*8)+5] = src8[(i*4)+1] * fac_right / 16;
+		dst8[(i*8)+6] = src8[(i*4)+2] * fac_right / 16;
 #endif
 	}
 }
 
-FORCEINLINE void DoubleLine32( uint32 *lpDst, uint32 *lpSrc, unsigned int Width){
-	while(Width--){
-		*lpDst++ = *lpSrc;
-		*lpDst++ = *lpSrc++;
+template <size_t LINEWIDTH>
+FORCEINLINE static void DoubleLine32_Fast(u32 *__restrict lpDst, const u32 *__restrict lpSrc)
+{
+	for (size_t i = 0; i < LINEWIDTH; i++)
+	{
+		lpDst[(i*2)+0] = lpSrc[i];
+		lpDst[(i*2)+1] = lpSrc[i];
 	}
 }
 
-void RenderScanline( SSurface Src, SSurface Dst)
+FORCEINLINE static void DoubleLine32(u32 *__restrict lpDst, const u32 *__restrict lpSrc, const size_t lineWidth)
+{
+	for (size_t i = 0; i < lineWidth; i++)
+	{
+		lpDst[(i*2)+0] = lpSrc[i];
+		lpDst[(i*2)+1] = lpSrc[i];
+	}
+}
+
+void RenderScanline(SSurface Src, SSurface Dst)
 {
 	fac_a = (16-scanline_filter_a);
 	fac_b = (16-scanline_filter_b);
 	fac_c = (16-scanline_filter_c);
 	fac_d = (16-scanline_filter_d);
-	unsigned int H;
+	size_t dstLineIndex = 0;
 
-	const uint32 srcHeight = Src.Height;
+	const size_t srcHeight = Src.Height;
+	const size_t srcPitch = Src.Pitch >> 1;
+	u32 *lpSrc = (u32 *)Src.Surface;
 
-	const unsigned int srcPitch = Src.Pitch >> 1;
-	u32* lpSrc = (u32*)Src.Surface;
-
-	const unsigned int dstPitch = Dst.Pitch >> 1;
-	u32 *lpDst = (u32*)Dst.Surface;
-	for (H = 0; H < srcHeight; H++, lpSrc += srcPitch)
+	const size_t dstPitch = Dst.Pitch >> 1;
+	u32 *lpDst = (u32 *)Dst.Surface;
+	
+#ifdef ENABLE_SSE2
+	if (Src.Width == 256)
 	{
-		ScanLine32(lpDst, lpSrc, Src.Width, fac_a, fac_b);
-		lpDst += dstPitch;
-		ScanLine32(lpDst, lpSrc, Src.Width, fac_c, fac_d);
-		lpDst += dstPitch;
+		for (; dstLineIndex < srcHeight; dstLineIndex++, lpSrc += srcPitch)
+		{
+			ScanLine32_FastSSE2<256>(lpDst, lpSrc, fac_a, fac_b);
+			lpDst += dstPitch;
+			ScanLine32_FastSSE2<256>(lpDst, lpSrc, fac_c, fac_d);
+			lpDst += dstPitch;
+		}
+	}
+	else
+#endif
+	{
+		for (; dstLineIndex < srcHeight; dstLineIndex++, lpSrc += srcPitch)
+		{
+			ScanLine32(lpDst, lpSrc, Src.Width, fac_a, fac_b);
+			lpDst += dstPitch;
+			ScanLine32(lpDst, lpSrc, Src.Width, fac_c, fac_d);
+			lpDst += dstPitch;
+		}
 	}
 }
 
-void RenderNearest2X (SSurface Src, SSurface Dst)
+void RenderNearest2X(SSurface Src, SSurface Dst)
 {
-	uint32 *lpSrc;
-	unsigned int H;
+	size_t dstLineIndex = 0;
+	
+	const size_t srcHeight = Src.Height;
+	const size_t srcPitch = Src.Pitch >> 1;
+	const u32 *lpSrc = (u32 *)Src.Surface;
 
-	const uint32 srcHeight = Src.Height;
-
-	const unsigned int srcPitch = Src.Pitch >> 1;
-	lpSrc = reinterpret_cast<uint32 *>(Src.Surface);
-
-	const unsigned int dstPitch = Dst.Pitch >> 1;
-	uint32 *lpDst = (uint32*)Dst.Surface;
-	for (H = 0; H < srcHeight; H++, lpSrc += srcPitch)
-		DoubleLine32 (lpDst, lpSrc, Src.Width), lpDst += dstPitch,
-		DoubleLine32 (lpDst, lpSrc, Src.Width), lpDst += dstPitch;
+	const size_t dstPitch = Dst.Pitch >> 1;
+	u32 *lpDst = (u32 *)Dst.Surface;
+	
+	if (Src.Width == 256)
+	{
+		for (; dstLineIndex < srcHeight; dstLineIndex++, lpSrc += srcPitch)
+		{
+			DoubleLine32_Fast<256>(lpDst, lpSrc);
+			lpDst += dstPitch;
+			DoubleLine32_Fast<256>(lpDst, lpSrc);
+			lpDst += dstPitch;
+		}
+	}
+	else
+	{
+		for (; dstLineIndex < srcHeight; dstLineIndex++, lpSrc += srcPitch)
+		{
+			DoubleLine32(lpDst, lpSrc, Src.Width);
+			lpDst += dstPitch;
+			DoubleLine32(lpDst, lpSrc, Src.Width);
+			lpDst += dstPitch;
+		}
+	}
 }
