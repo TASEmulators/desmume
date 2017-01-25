@@ -4880,6 +4880,16 @@ void OGLVideoOutput::_UpdateViewport()
 	}
 }
 
+void OGLVideoOutput::_FetchNativeDisplayByID(const NDSDisplayID displayID)
+{
+	this->GetDisplayLayer()->CopyNativeDisplayByID_OGL(displayID);
+}
+
+void OGLVideoOutput::_FetchCustomDisplayByID(const NDSDisplayID displayID)
+{
+	this->GetDisplayLayer()->CopyCustomDisplayByID_OGL(displayID);
+}
+
 void OGLVideoOutput::_LoadNativeDisplayByID(const NDSDisplayID displayID)
 {
 	this->GetDisplayLayer()->LoadNativeDisplayByID_OGL(displayID);
@@ -6137,10 +6147,6 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	_needUpdateViewport = true;
 	_output = oglVO;
 	
-	_glyphInfo = NULL;
-	_glyphSize = 0.0f;
-	_glyphTileSize = 0.0f;
-	
 	if (_output->GetContextInfo()->IsShaderSupported())
 	{
 		_program = new OGLShaderProgram;
@@ -6235,10 +6241,6 @@ OGLHUDLayer::~OGLHUDLayer()
 void OGLHUDLayer::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo)
 {
 	FT_Error error = FT_Err_Ok;
-	
-	this->_glyphInfo = glyphInfo;
-	this->_glyphSize = (GLfloat)glyphSize;
-	this->_glyphTileSize = (GLfloat)glyphTileSize;
 	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, this->_texCharMap);
@@ -6548,7 +6550,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, _useShader150);
 		}
 		
-		UploadHQnxLUTs();
+		_UploadHQnxLUTs();
 	}
 	else
 	{
@@ -6600,7 +6602,7 @@ OGLDisplayLayer::~OGLDisplayLayer()
 	_vfMasterDstBufferSize = 0;
 }
 
-void OGLDisplayLayer::UploadHQnxLUTs()
+void OGLDisplayLayer::_UploadHQnxLUTs()
 {
 	InitHQnxLUTs();
 	
@@ -6642,7 +6644,7 @@ void OGLDisplayLayer::UploadHQnxLUTs()
 	glActiveTexture(GL_TEXTURE0);
 }
 
-void OGLDisplayLayer::DetermineTextureStorageHints(GLint &videoSrcTexStorageHint, GLint &cpuFilterTexStorageHint)
+void OGLDisplayLayer::_DetermineTextureStorageHints(GLint &videoSrcTexStorageHint, GLint &cpuFilterTexStorageHint)
 {
 	const bool isUsingCPUPixelScaler = (this->_output->GetPixelScaler() != VideoFilterTypeID_None) && !this->_output->WillFilterOnGPU();
 	videoSrcTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
@@ -6691,12 +6693,12 @@ void OGLDisplayLayer::SetVideoBuffers(const uint32_t colorFormat,
 	this->_videoColorFormat = glColorFormat;
 	this->_videoSrcBufferHead = videoBufferHead;
 	this->_videoSrcBufferSize = (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * pixelBytes) + (customWidth0 * customHeight0 * pixelBytes) + (customWidth1 * customHeight1 * pixelBytes);
-	this->_videoSrcNativeBuffer[0] = nativeBuffer0;
-	this->_videoSrcNativeBuffer[1] = nativeBuffer1;
-	this->_videoSrcCustomBuffer[0] = customBuffer0;
-	this->_videoSrcCustomBuffer[1] = customBuffer1;
+	this->_videoSrcNativeBuffer[0] = (void *)nativeBuffer0;
+	this->_videoSrcNativeBuffer[1] = (void *)nativeBuffer1;
+	this->_videoSrcCustomBuffer[0] = (void *)customBuffer0;
+	this->_videoSrcCustomBuffer[1] = (void *)customBuffer1;
 	
-	this->DetermineTextureStorageHints(videoSrcTexStorageHint, cpuFilterTexStorageHint);
+	this->_DetermineTextureStorageHints(videoSrcTexStorageHint, cpuFilterTexStorageHint);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[0]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, cpuFilterTexStorageHint);
@@ -6737,7 +6739,7 @@ void OGLDisplayLayer::SetFiltersPreferGPUOGL()
 {
 	GLint videoSrcTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
 	GLint cpuFilterTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
-	this->DetermineTextureStorageHints(videoSrcTexStorageHint, cpuFilterTexStorageHint);
+	this->_DetermineTextureStorageHints(videoSrcTexStorageHint, cpuFilterTexStorageHint);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[0]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, cpuFilterTexStorageHint);
@@ -6791,7 +6793,7 @@ void OGLDisplayLayer::_UpdateVerticesOGL()
 	this->_needUpdateVertices = false;
 }
 
-void OGLDisplayLayer::ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide)
+void OGLDisplayLayer::_ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide)
 {
 	this->FinishOGL();
 	
@@ -6808,7 +6810,7 @@ void OGLDisplayLayer::ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const s
 	
 	GLint videoSrcTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
 	GLint cpuFilterTexStorageHint = GL_STORAGE_PRIVATE_APPLE;
-	this->DetermineTextureStorageHints(videoSrcTexStorageHint, cpuFilterTexStorageHint);
+	this->_DetermineTextureStorageHints(videoSrcTexStorageHint, cpuFilterTexStorageHint);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[0]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, cpuFilterTexStorageHint);
@@ -7198,11 +7200,40 @@ void OGLDisplayLayer::SetCPUPixelScalerOGL(const VideoFilterTypeID filterID)
 	
 	if (oldDstBufferWidth != newDstBufferWidth || oldDstBufferHeight != newDstBufferHeight)
 	{
-		this->ResizeCPUPixelScalerOGL(this->_vf[0]->GetSrcWidth(), this->_vf[0]->GetSrcHeight(), this->_vf[1]->GetSrcWidth(), this->_vf[1]->GetSrcHeight(), newFilterAttr.scaleMultiply, newFilterAttr.scaleDivide);
+		this->_ResizeCPUPixelScalerOGL(this->_vf[0]->GetSrcWidth(), this->_vf[0]->GetSrcHeight(), this->_vf[1]->GetSrcWidth(), this->_vf[1]->GetSrcHeight(), newFilterAttr.scaleMultiply, newFilterAttr.scaleDivide);
 	}
 	
 	this->_vf[0]->ChangeFilterByID(filterID);
 	this->_vf[1]->ChangeFilterByID(filterID);
+}
+
+void OGLDisplayLayer::CopyNativeDisplayByID_OGL(const NDSDisplayID displayID)
+{
+	const NDSDisplayInfo &emuDisplayInfo = this->_output->GetEmuDisplayInfo();
+	const bool useDeposterize = this->_output->GetSourceDeposterize();
+	const bool isUsingCPUPixelScaler = (this->_output->GetPixelScaler() != VideoFilterTypeID_None) && !this->_output->WillFilterOnGPU();
+	
+	if (!isUsingCPUPixelScaler || useDeposterize)
+	{
+		memcpy(this->_videoSrcNativeBuffer[displayID], emuDisplayInfo.nativeBuffer[displayID], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * emuDisplayInfo.pixelBytes);
+	}
+	else
+	{
+		if (this->_videoColorFormat == GL_UNSIGNED_SHORT_1_5_5_5_REV)
+		{
+			ColorspaceConvertBuffer555To8888Opaque<true, false>((const uint16_t *)emuDisplayInfo.nativeBuffer[displayID], this->_vf[displayID]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+		}
+		else
+		{
+			ColorspaceConvertBuffer888XTo8888Opaque<true, false>((const uint32_t *)emuDisplayInfo.nativeBuffer[displayID], this->_vf[displayID]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+		}
+	}
+}
+
+void OGLDisplayLayer::CopyCustomDisplayByID_OGL(const NDSDisplayID displayID)
+{
+	const NDSDisplayInfo &emuDisplayInfo = this->_output->GetEmuDisplayInfo();
+	memcpy(this->_videoSrcCustomBuffer[displayID], emuDisplayInfo.customBuffer[displayID], emuDisplayInfo.customWidth * emuDisplayInfo.customHeight * emuDisplayInfo.pixelBytes);
 }
 
 void OGLDisplayLayer::LoadNativeDisplayByID_OGL(const NDSDisplayID displayID)
@@ -7216,17 +7247,6 @@ void OGLDisplayLayer::LoadNativeDisplayByID_OGL(const NDSDisplayID displayID)
 		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, this->_videoColorFormat, this->_videoSrcNativeBuffer[displayID]);
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 		glFlush();
-	}
-	else
-	{
-		if (this->_videoColorFormat == GL_UNSIGNED_SHORT_1_5_5_5_REV)
-		{
-			ColorspaceConvertBuffer555To8888Opaque<true, false>((const uint16_t *)this->_videoSrcNativeBuffer[displayID], this->_vf[displayID]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-		}
-		else
-		{
-			ColorspaceConvertBuffer888XTo8888Opaque<true, false>((const uint32_t *)this->_videoSrcNativeBuffer[displayID], this->_vf[displayID]->GetSrcBufferPtr(), GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-		}
 	}
 }
 
@@ -7318,7 +7338,9 @@ void OGLDisplayLayer::ProcessOGL()
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, (4 * 8) * sizeof(GLfloat), NULL, GL_STREAM_DRAW_ARB);
 	float *texCoordPtr = (float *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 	
-	this->_output->SetScreenTextureCoordinates((float)width[NDSDisplayID_Main], (float)height[NDSDisplayID_Main], (float)width[NDSDisplayID_Touch], (float)height[NDSDisplayID_Touch], texCoordPtr);
+	this->_output->SetScreenTextureCoordinates((float)width[NDSDisplayID_Main], (float)height[NDSDisplayID_Main],
+											   (float)width[NDSDisplayID_Touch], (float)height[NDSDisplayID_Touch],
+											   texCoordPtr);
 	
 	glUnmapBufferARB(GL_ARRAY_BUFFER_ARB);
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);

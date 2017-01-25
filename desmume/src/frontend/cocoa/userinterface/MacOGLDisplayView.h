@@ -42,18 +42,20 @@ class MacOGLDisplayView;
 class MacOGLDisplayView : public OGLVideoOutput, public DisplayViewCALayerInterface
 {
 protected:
-	CGLPixelFormatObj _pixelFormat;
+	NSOpenGLContext *_nsContext;
+	NSOpenGLPixelFormat *_nsPixelFormat;
 	CGLContextObj _context;
+	CGLPixelFormatObj _pixelFormat;
 	bool _willRenderToCALayer;
-	
-	void _FrameRenderAndFlush();
-	
+		
 public:
 	void operator delete(void *ptr);
 	MacOGLDisplayView();
 	
 	virtual void Init();
 	
+	NSOpenGLPixelFormat* GetNSPixelFormat() const;
+	NSOpenGLContext* GetNSContext() const;
 	CGLPixelFormatObj GetPixelFormat() const;
 	CGLContextObj GetContext() const;
 	
@@ -78,11 +80,10 @@ public:
 	virtual void SetPixelScaler(const VideoFilterTypeID filterID);
 	
 	// Client view interface
+	virtual void LoadDisplays();
+	virtual void ProcessDisplays();
 	virtual void UpdateView();
 	virtual void FrameFinish();
-	
-	// Emulator interface
-	virtual void HandleGPUFrameEndEvent(const NDSDisplayInfo &ndsDisplayInfo);
 };
 
 #endif // _MAC_OGLDISPLAYOUTPUT_H_

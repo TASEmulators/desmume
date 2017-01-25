@@ -27,6 +27,7 @@
 #include FT_FREETYPE_H
 
 #define HUD_MAX_CHARACTERS							2048
+#define HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE			(sizeof(float) * HUD_MAX_CHARACTERS * (2 * 4))
 #define HUD_TEXTBOX_BASEGLYPHSIZE					64.0
 #define HUD_TEXTBOX_BASE_SCALE						(1.0/3.0)
 #define HUD_TEXTBOX_MIN_SCALE						0.70
@@ -150,6 +151,8 @@ protected:
 	virtual void _UpdateClientSize();
 	virtual void _UpdateViewScale();
 	
+	virtual void _FetchNativeDisplayByID(const NDSDisplayID displayID);
+	virtual void _FetchCustomDisplayByID(const NDSDisplayID displayID);
 	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
 	virtual void _LoadCustomDisplayByID(const NDSDisplayID displayID);
 	
@@ -215,6 +218,7 @@ public:
 	void ClearHUDNeedsUpdate();
 	
 	// Client view interface
+	virtual void FetchDisplays();
 	virtual void LoadDisplays();
 	virtual void ProcessDisplays();
 	virtual void UpdateView();
@@ -222,7 +226,7 @@ public:
 	
 	// Emulator interface
 	const NDSDisplayInfo& GetEmuDisplayInfo() const;
-	virtual void HandleGPUFrameEndEvent(const NDSDisplayInfo &ndsDisplayInfo);
+	void SetEmuDisplayInfo(const NDSDisplayInfo &ndsDisplayInfo);
 	virtual void HandleEmulatorFrameEndEvent(const NDSFrameInfo &frameInfo);
 	
 	// Touch screen input handling

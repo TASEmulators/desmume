@@ -34,7 +34,6 @@
 
 #include "ClientDisplayView.h"
 
-#define HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE (sizeof(GLfloat) * HUD_MAX_CHARACTERS * (2 * 4))
 
 class OGLVideoOutput;
 struct NDSFrameInfo;
@@ -286,11 +285,6 @@ protected:
 	GLuint _vboElementID;
 	GLuint _texCharMap;
 	
-	GlyphInfo *_glyphInfo;
-	GLfloat _glyphSize;
-	GLfloat _glyphTileSize;
-	
-	void _SetShowInfoItemOGL(bool &infoItemFlag, const bool visibleState);
 	void _UpdateVerticesOGL();
 	
 public:
@@ -320,8 +314,8 @@ protected:
 	
 	GLenum _videoColorFormat;
 	const void *_videoSrcBufferHead;
-	const void *_videoSrcNativeBuffer[2];
-	const void *_videoSrcCustomBuffer[2];
+	void *_videoSrcNativeBuffer[2];
+	void *_videoSrcCustomBuffer[2];
 	size_t _videoSrcBufferSize;
 	
 	uint32_t *_vfMasterDstBuffer;
@@ -342,10 +336,10 @@ protected:
 	GLint _uniformFinalOutputScalar;
 	GLint _uniformFinalOutputViewSize;
 	
-	void UploadHQnxLUTs();
-	void DetermineTextureStorageHints(GLint &videoSrcTexStorageHint, GLint &cpuFilterTexStorageHint);
+	void _UploadHQnxLUTs();
+	void _DetermineTextureStorageHints(GLint &videoSrcTexStorageHint, GLint &cpuFilterTexStorageHint);
 	
-	void ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide);
+	void _ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide);
 	
 	void _UpdateRotationScaleOGL();
 	void _UpdateVerticesOGL();
@@ -373,6 +367,8 @@ public:
 	bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	
+	void CopyNativeDisplayByID_OGL(const NDSDisplayID displayID);
+	void CopyCustomDisplayByID_OGL(const NDSDisplayID displayID);
 	void LoadNativeDisplayByID_OGL(const NDSDisplayID displayID);
 	void LoadCustomDisplayByID_OGL(const NDSDisplayID displayID);
 	
@@ -398,6 +394,8 @@ protected:
 	virtual void _UpdateClientSize();
 	virtual void _UpdateViewScale();
 	
+	virtual void _FetchNativeDisplayByID(const NDSDisplayID displayID);
+	virtual void _FetchCustomDisplayByID(const NDSDisplayID displayID);
 	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
 	virtual void _LoadCustomDisplayByID(const NDSDisplayID displayID);
 	

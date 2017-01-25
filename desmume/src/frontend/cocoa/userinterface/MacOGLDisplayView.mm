@@ -32,6 +32,7 @@
 	_cdv->SetFrontendLayer(self);
 	_cdv->Init();
 	
+    [self setBounds:CGRectMake(0.0f, 0.0f, (float)GPU_FRAMEBUFFER_NATIVE_WIDTH, (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
 	[self setAsynchronous:NO];
 	[self setOpaque:YES];
 	
@@ -72,15 +73,17 @@
 
 - (void)drawInCGLContext:(CGLContextObj)glContext pixelFormat:(CGLPixelFormatObj)pixelFormat forLayerTime:(CFTimeInterval)timeInterval displayTime:(const CVTimeStamp *)timeStamp
 {
+	CGLSetCurrentContext(glContext);
+	CGLLockContext(glContext);
 	_cdv->RenderViewOGL();
 	[super drawInCGLContext:glContext pixelFormat:pixelFormat forLayerTime:timeInterval displayTime:timeStamp];
+	CGLUnlockContext(glContext);
 }
 
 @end
 
 void MacOGLDisplayView::operator delete(void *ptr)
 {
-	CGLPixelFormatObj pixelFormat = ((MacOGLDisplayView *)ptr)->GetPixelFormat();
 	CGLContextObj context = ((MacOGLDisplayView *)ptr)->GetContext();
 	OGLContextInfo *contextInfo = ((MacOGLDisplayView *)ptr)->GetContextInfo();
 	
@@ -92,23 +95,28 @@ void MacOGLDisplayView::operator delete(void *ptr)
 		CGLSetCurrentContext(prevContext);
 		
 		delete contextInfo;
-		CGLReleaseContext(context);
-		CGLReleasePixelFormat(pixelFormat);
+		[((MacOGLDisplayView *)ptr)->GetNSContext() release];
+		[((MacOGLDisplayView *)ptr)->GetNSPixelFormat() release];
 	}
 }
 
 MacOGLDisplayView::MacOGLDisplayView()
 {
-	// Initialize the OpenGL context
+	// Initialize the OpenGL context.
+	//
+	// We create an NSOpenGLContext and extract the CGLContextObj from it because
+	// [NSOpenGLContext CGLContextObj] is available on macOS 10.5 Leopard, but
+	// [NSOpenGLContext initWithCGLContextObj:] is only available on macOS 10.6
+	// Snow Leopard.
 	bool useContext_3_2 = false;
-	CGLPixelFormatAttribute attributes[] = {
-		kCGLPFAColorSize, (CGLPixelFormatAttribute)24,
-		kCGLPFAAlphaSize, (CGLPixelFormatAttribute)8,
-		kCGLPFADepthSize, (CGLPixelFormatAttribute)0,
-		kCGLPFAStencilSize, (CGLPixelFormatAttribute)0,
-		kCGLPFADoubleBuffer,
-		(CGLPixelFormatAttribute)0, (CGLPixelFormatAttribute)0,
-		(CGLPixelFormatAttribute)0
+	NSOpenGLPixelFormatAttribute attributes[] = {
+		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
+		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
+		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)0,
+		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)0,
+		NSOpenGLPFADoubleBuffer,
+		(NSOpenGLPixelFormatAttribute)0, (NSOpenGLPixelFormatAttribute)0,
+		(NSOpenGLPixelFormatAttribute)0
 	};
 	
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
@@ -117,25 +125,25 @@ MacOGLDisplayView::MacOGLDisplayView()
 	useContext_3_2 = IsOSXVersionSupported(10, 7, 0);
 	if (useContext_3_2)
 	{
-		attributes[9] = kCGLPFAOpenGLProfile;
-		attributes[10] = (CGLPixelFormatAttribute)kCGLOGLPVersion_3_2_Core;
+		attributes[9] = NSOpenGLPFAOpenGLProfile;
+		attributes[10] = (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion3_2Core;
 	}
 #endif
 	
-	GLint virtualScreenCount = 0;
-	CGLChoosePixelFormat(attributes, &_pixelFormat, &virtualScreenCount);
-	
-	if (_pixelFormat == NULL)
+	_nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+	if (_nsPixelFormat == nil)
 	{
 		// If we can't get a 3.2 Core Profile context, then switch to using a
 		// legacy context instead.
 		useContext_3_2 = false;
-		attributes[9] = (CGLPixelFormatAttribute)0;
-		attributes[10] = (CGLPixelFormatAttribute)0;
-		CGLChoosePixelFormat(attributes, &_pixelFormat, &virtualScreenCount);
+		attributes[9] = (NSOpenGLPixelFormatAttribute)0;
+		attributes[10] = (NSOpenGLPixelFormatAttribute)0;
+		_nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 	}
 	
-	CGLCreateContext(_pixelFormat, NULL, &_context);
+	_nsContext = [[NSOpenGLContext alloc] initWithFormat:_nsPixelFormat shareContext:nil];
+	_context = (CGLContextObj)[_nsContext CGLContextObj];
+	_pixelFormat = (CGLPixelFormatObj)[_nsPixelFormat CGLPixelFormatObj];
 	
 	CGLContextObj prevContext = CGLGetCurrentContext();
 	CGLSetCurrentContext(_context);
@@ -164,17 +172,14 @@ void MacOGLDisplayView::Init()
 	CGLSetCurrentContext(prevContext);
 }
 
-void MacOGLDisplayView::_FrameRenderAndFlush()
+NSOpenGLPixelFormat* MacOGLDisplayView::GetNSPixelFormat() const
 {
-	if (this->_willRenderToCALayer)
-	{
-		this->CALayerDisplay();
-	}
-	else
-	{
-		this->RenderViewOGL();
-		CGLFlushDrawable(this->_context);
-	}
+	return this->_nsPixelFormat;
+}
+
+NSOpenGLContext* MacOGLDisplayView::GetNSContext() const
+{
+	return this->_nsContext;
 }
 
 CGLPixelFormatObj MacOGLDisplayView::GetPixelFormat() const
@@ -268,12 +273,37 @@ void MacOGLDisplayView::SetPixelScaler(const VideoFilterTypeID filterID)
 	CGLUnlockContext(this->_context);
 }
 
-void MacOGLDisplayView::UpdateView()
+// NDS GPU Interface
+void MacOGLDisplayView::LoadDisplays()
 {
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->_FrameRenderAndFlush();
+	this->OGLVideoOutput::LoadDisplays();
 	CGLUnlockContext(this->_context);
+}
+
+void MacOGLDisplayView::ProcessDisplays()
+{
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->OGLVideoOutput::ProcessDisplays();
+	CGLUnlockContext(this->_context);
+}
+
+void MacOGLDisplayView::UpdateView()
+{
+	if (this->_willRenderToCALayer)
+	{
+		this->CALayerDisplay();
+	}
+	else
+	{
+		CGLLockContext(this->_context);
+		CGLSetCurrentContext(this->_context);
+		this->RenderViewOGL();
+		CGLFlushDrawable(this->_context);
+		CGLUnlockContext(this->_context);
+	}
 }
 
 void MacOGLDisplayView::FrameFinish()
@@ -281,16 +311,5 @@ void MacOGLDisplayView::FrameFinish()
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
 	this->OGLVideoOutput::FrameFinish();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::HandleGPUFrameEndEvent(const NDSDisplayInfo &ndsDisplayInfo)
-{
-	this->OGLVideoOutput::HandleGPUFrameEndEvent(ndsDisplayInfo);
-	
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->LoadDisplays();
-	this->ProcessDisplays();
 	CGLUnlockContext(this->_context);
 }

@@ -1043,34 +1043,13 @@
 	pthread_rwlock_rdlock(self.rwlockProducer);
 	
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	const bool isMainSizeNative = !dispInfo.didPerformCustomRender[NDSDisplayID_Main];
-	const bool isTouchSizeNative = !dispInfo.didPerformCustomRender[NDSDisplayID_Touch];
-	
-	if (isMainSizeNative && isTouchSizeNative)
-	{
-		memcpy(_nativeBuffer[NDSDisplayID_Main], dispInfo.masterNativeBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * dispInfo.pixelBytes);
-	}
-	else
-	{
-		if (!isMainSizeNative && !isTouchSizeNative)
-		{
-			memcpy(_customBuffer[NDSDisplayID_Main], dispInfo.masterCustomBuffer, dispInfo.customWidth * dispInfo.customHeight * 2 * dispInfo.pixelBytes);
-		}
-		else if (isTouchSizeNative)
-		{
-			memcpy(_customBuffer[NDSDisplayID_Main], dispInfo.customBuffer[NDSDisplayID_Main], dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes);
-			memcpy(_nativeBuffer[NDSDisplayID_Touch], dispInfo.nativeBuffer[NDSDisplayID_Touch], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes);
-		}
-		else
-		{
-			memcpy(_nativeBuffer[NDSDisplayID_Main], dispInfo.nativeBuffer[NDSDisplayID_Main], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes);
-			memcpy(_customBuffer[NDSDisplayID_Touch], dispInfo.customBuffer[NDSDisplayID_Touch], dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes);
-		}
-	}
+	_cdv->SetEmuDisplayInfo(dispInfo);
+	_cdv->FetchDisplays();
 	
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
-	_cdv->HandleGPUFrameEndEvent(dispInfo);
+	_cdv->LoadDisplays();
+	_cdv->ProcessDisplays();
 }
 
 - (void) handleReloadReprocessRedraw

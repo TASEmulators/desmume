@@ -481,6 +481,16 @@ void ClientDisplayView::ClearHUDNeedsUpdate()
 }
 
 // NDS GPU Interface
+void ClientDisplayView::_FetchNativeDisplayByID(const NDSDisplayID displayID)
+{
+	// Do nothing. This is implementation dependent.
+}
+
+void ClientDisplayView::_FetchCustomDisplayByID(const NDSDisplayID displayID)
+{
+	// Do nothing. This is implementation dependent.
+}
+
 void ClientDisplayView::_LoadNativeDisplayByID(const NDSDisplayID displayID)
 {
 	// Do nothing. This is implementation dependent.
@@ -489,6 +499,36 @@ void ClientDisplayView::_LoadNativeDisplayByID(const NDSDisplayID displayID)
 void ClientDisplayView::_LoadCustomDisplayByID(const NDSDisplayID displayID)
 {
 	// Do nothing. This is implementation dependent.
+}
+
+void ClientDisplayView::FetchDisplays()
+{
+	const bool loadMainScreen = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main] && ((this->_renderProperty.mode == ClientDisplayMode_Main) || (this->_renderProperty.mode == ClientDisplayMode_Dual));
+	const bool loadTouchScreen = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && ((this->_renderProperty.mode == ClientDisplayMode_Touch) || (this->_renderProperty.mode == ClientDisplayMode_Dual));
+	
+	if (loadMainScreen)
+	{
+		if (!this->_emuDisplayInfo.didPerformCustomRender[NDSDisplayID_Main])
+		{
+			this->_FetchNativeDisplayByID(NDSDisplayID_Main);
+		}
+		else
+		{
+			this->_FetchCustomDisplayByID(NDSDisplayID_Main);
+		}
+	}
+	
+	if (loadTouchScreen)
+	{
+		if (!this->_emuDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch])
+		{
+			this->_FetchNativeDisplayByID(NDSDisplayID_Touch);
+		}
+		else
+		{
+			this->_FetchCustomDisplayByID(NDSDisplayID_Touch);
+		}
+	}
 }
 
 void ClientDisplayView::LoadDisplays()
@@ -536,7 +576,7 @@ const NDSDisplayInfo& ClientDisplayView::GetEmuDisplayInfo() const
 	return this->_emuDisplayInfo;
 }
 
-void ClientDisplayView::HandleGPUFrameEndEvent(const NDSDisplayInfo &ndsDisplayInfo)
+void ClientDisplayView::SetEmuDisplayInfo(const NDSDisplayInfo &ndsDisplayInfo)
 {
 	this->_emuDisplayInfo = ndsDisplayInfo;
 }
