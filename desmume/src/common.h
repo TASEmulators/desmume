@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2016 DeSmuME team
+	Copyright (C) 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -49,6 +49,7 @@ void* malloc_aligned16(size_t length);
 void* malloc_aligned32(size_t length);
 void* malloc_aligned64(size_t length);
 void* malloc_alignedCacheLine(size_t length);
+void* malloc_alignedPage(size_t length);
 void free_aligned(void *ptr);
 
 #endif
