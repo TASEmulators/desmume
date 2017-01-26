@@ -124,7 +124,7 @@ static void memset_u16(void *dst, const u16 val, const size_t length)
 {
 	__m128i *dst_vec128 = (__m128i *)dst;
 	const __m128i val_vec128 = _mm_set1_epi16(val);
-	const size_t length_vec128 = length / (sizeof(val_vec128) / sizeof(val));
+	const size_t length_vec128 = length / sizeof(val_vec128);
 	
 	for (size_t i = 0; i < length_vec128; i++)
 		_mm_stream_si128(dst_vec128 + i, val_vec128);
@@ -135,14 +135,14 @@ static void memset_u16_fast(void *dst, const u16 val)
 {
 	__m128i *dst_vec128 = (__m128i *)dst;
 	const __m128i val_vec128 = _mm_set1_epi16(val);
-	MACRODO_N(LENGTH / (sizeof(val_vec128) / sizeof(val)), _mm_store_si128(dst_vec128 + (X), val_vec128));
+	MACRODO_N(LENGTH / sizeof(val_vec128), _mm_store_si128(dst_vec128 + (X), val_vec128));
 }
 
 static void memset_u32(void *dst, const u32 val, const size_t length)
 {
 	__m128i *dst_vec128 = (__m128i *)dst;
 	const __m128i val_vec128 = _mm_set1_epi32(val);
-	const size_t length_vec128 = length / (sizeof(val_vec128) / sizeof(val));
+	const size_t length_vec128 = length / sizeof(val_vec128);
 	
 	for (size_t i = 0; i < length_vec128; i++)
 		_mm_stream_si128(dst_vec128 + i, val_vec128);
@@ -153,7 +153,7 @@ static void memset_u32_fast(void *dst, const u32 val)
 {
 	__m128i *dst_vec128 = (__m128i *)dst;
 	const __m128i val_vec128 = _mm_set1_epi32(val);
-	MACRODO_N(LENGTH / (sizeof(val_vec128) / sizeof(val)), _mm_store_si128(dst_vec128 + (X), val_vec128));
+	MACRODO_N(LENGTH / sizeof(val_vec128), _mm_store_si128(dst_vec128 + (X), val_vec128));
 }
 
 #else //no sse2
@@ -163,7 +163,7 @@ static void memset_u16(void *dst, const u16 val, const size_t length)
 #ifdef HOST_64
 	u64 *dst_u64 = (u64 *)dst;
 	const u64 val_u64 = ((u64)val << 48) | ((u64)val << 32) | ((u64)val << 16) | (u64)val;
-	const size_t length_u64 = length / (sizeof(val_u64) / sizeof(val));
+	const size_t length_u64 = length / sizeof(val_u64);
 	
 	for (size_t i = 0; i < length_u64; i++)
 		dst_u64[i] = val_u64;
@@ -179,7 +179,7 @@ static void memset_u16_fast(void *dst, const u16 val)
 #ifdef HOST_64
 	u64 *dst_u64 = (u64 *)dst;
 	const u64 val_u64 = ((u64)val << 48) | ((u64)val << 32) | ((u64)val << 16) | (u64)val;
-	MACRODO_N(LENGTH / (sizeof(val_u64) / sizeof(val)), (dst_u64[(X)] = val_u64));
+	MACRODO_N(LENGTH / sizeof(val_u64), (dst_u64[(X)] = val_u64));
 #else
 	for (size_t i = 0; i < LENGTH; i++)
 		((u16 *)dst)[i] = val;
@@ -191,7 +191,7 @@ static void memset_u32(void *dst, const u32 val, const size_t length)
 #ifdef HOST_64
 	u64 *dst_u64 = (u64 *)dst;
 	const u64 val_u64 = ((u64)val << 32) | (u64)val;
-	const size_t length_u64 = length / (sizeof(val_u64) / sizeof(val));
+	const size_t length_u64 = length / sizeof(val_u64));
 	
 	for (size_t i = 0; i < length_u64; i++)
 		dst_u64[i] = val_u64;
@@ -207,7 +207,7 @@ static void memset_u32_fast(void *dst, const u32 val)
 #ifdef HOST_64
 	u64 *dst_u64 = (u64 *)dst;
 	const u64 val_u64 = ((u64)val << 32) | (u64)val;
-	MACRODO_N(LENGTH / (sizeof(val_u64) / sizeof(val)), (dst_u64[(X)] = val_u64));
+	MACRODO_N(LENGTH / sizeof(val_u64), (dst_u64[(X)] = val_u64));
 #else
 	for (size_t i = 0; i < LENGTH; i++)
 		((u16 *)dst)[i] = val;
