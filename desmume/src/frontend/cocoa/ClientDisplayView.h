@@ -114,6 +114,7 @@ protected:
 	ClientDisplayViewProperties _renderProperty;
 	ClientDisplayViewProperties _stagedProperty;
 	InitialTouchPressMap *_initialTouchInMajorDisplay;
+	GPUClientFetchObject *_fetchObject;
 	
 	bool _useDeposterize;
 	VideoFilterTypeID _pixelScaler;
@@ -135,6 +136,7 @@ protected:
 	NDSFrameInfo _emuFrameInfo;
 	std::string _hudString;
 	bool _hudNeedsUpdate;
+	bool _allowViewUpdates;
 	
 	FT_Library _ftLibrary;
 	const char *_lastFontFilePath;
@@ -151,8 +153,6 @@ protected:
 	virtual void _UpdateClientSize();
 	virtual void _UpdateViewScale();
 	
-	virtual void _FetchNativeDisplayByID(const NDSDisplayID displayID);
-	virtual void _FetchCustomDisplayByID(const NDSDisplayID displayID);
 	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
 	virtual void _LoadCustomDisplayByID(const NDSDisplayID displayID);
 	
@@ -218,11 +218,16 @@ public:
 	void ClearHUDNeedsUpdate();
 	
 	// Client view interface
-	virtual void FetchDisplays();
+	const GPUClientFetchObject& GetFetchObject() const;
+	void SetFetchObject(GPUClientFetchObject *fetchObject);
+	
+	bool GetAllowViewUpdates() const;
+	void SetAllowViewUpdates(const bool allowUpdates);
+	
 	virtual void LoadDisplays();
 	virtual void ProcessDisplays();
 	virtual void UpdateView();
-	virtual void FrameFinish() = 0;
+	virtual void FinishFrameAtIndex(const u8 bufferIndex) = 0;
 	
 	// Emulator interface
 	const NDSDisplayInfo& GetEmuDisplayInfo() const;
@@ -268,13 +273,6 @@ public:
 	bool WillFilterOnGPU() const;
 	
 	virtual void SetSourceDeposterize(const bool useDeposterize);
-	
-	virtual void SetVideoBuffers(const uint32_t colorFormat,
-								 const void *videoBufferHead,
-								 const void *nativeBuffer0,
-								 const void *nativeBuffer1,
-								 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
-								 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1);
 	
 	void SetHUDVertices(float viewportWidth, float viewportHeight, float *vtxBufferPtr);
 	void SetHUDTextureCoordinates(float *texCoordBufferPtr);

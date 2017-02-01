@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2015 DeSmuME Team
+	Copyright (C) 2013-2017 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -347,8 +347,9 @@
 {
 	DisplayWindowController *newWindowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow" emuControlDelegate:self];
 	
-	[CocoaDSUtil messageSendOneWay:[[newWindowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
-	
+	[newWindowController window]; // Just reference the window to force the nib to load.
+	[[newWindowController view] setAllowViewUpdates:YES];
+	[[newWindowController cdsVideoOutput] handleReloadReprocessRedraw];
 	[[newWindowController window] makeKeyAndOrderFront:self];
 	[[newWindowController window] makeMainWindow];
 }

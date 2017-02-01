@@ -20,6 +20,7 @@
 #import "InputManager.h"
 
 #import "cocoa_core.h"
+#import "cocoa_GPU.h"
 #import "cocoa_file.h"
 #import "cocoa_input.h"
 #import "cocoa_globals.h"
@@ -28,9 +29,7 @@
 
 #include "MacOGLDisplayView.h"
 
-//#define ENABLE_APPLE_METAL
-
-#if defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11) && defined(ENABLE_APPLE_METAL)
+#ifdef ENABLE_APPLE_METAL
 #include "MacMetalDisplayView.h"
 #endif
 
@@ -356,7 +355,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setVideoOutputFilter:(NSInteger)filterID
 {
 	[[self view] setOutputFilter:filterID];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REDRAW_VIEW];
 }
 
 - (NSInteger) videoOutputFilter
@@ -668,6 +667,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Show the full screen window.
 	[self setWindow:newFullScreenWindow];
 	[newFullScreenWindow makeKeyAndOrderFront:self];
+	[newFullScreenWindow makeMainWindow];
 	[newFullScreenWindow display];
 	
 	[self setAssignedScreen:targetScreen];
@@ -697,6 +697,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[masterWindow contentView] addSubview:view];
     [masterWindow setInitialFirstResponder:view];
 	[masterWindow makeKeyAndOrderFront:self];
+	[masterWindow makeMainWindow];
 	[masterWindow display];
 }
 
@@ -1272,7 +1273,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[emuControl windowList] addObject:self];
 	[emuControl updateAllWindowTitles];
 	
-	[view reassignLocalCALayer];
+	[view setupLayer];
 	[view setInputManager:[emuControl inputManager]];
 	
 	// Set up the scaling factor if this is a Retina window
@@ -1305,7 +1306,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		cdv->LoadHUDFont();
 	}
 	
-	[newDisplayOutput resetVideoBuffers];
 	[self setCdsVideoOutput:newDisplayOutput];
 	[view setCdsVideoOutput:newDisplayOutput];
 	
@@ -1600,6 +1600,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 @synthesize cdsVideoOutput;
 @dynamic clientDisplay3DView;
 @dynamic canUseShaderBasedFilters;
+@dynamic allowViewUpdates;
 @dynamic isHUDVisible;
 @dynamic isHUDVideoFPSVisible;
 @dynamic isHUDRender3DFPSVisible;
@@ -1625,45 +1626,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	cdsVideoOutput = nil;
 	localLayer = nil;
 	localOGLContext = nil;
-
-#if defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11) && defined(ENABLE_APPLE_METAL)
-	if (IsOSXVersionSupported(10, 11, 0))
-	{
-		localLayer = [[DisplayViewMetalLayer alloc] init];
-		
-		if ([(DisplayViewMetalLayer *)localLayer device] == nil)
-		{
-			[localLayer release];
-			localLayer = nil;
-		}
-	}
-#endif
-	
-	if (localLayer == nil)
-	{
-		localLayer = [[DisplayViewOpenGLLayer alloc] init];
-		MacOGLDisplayView *macOGLCDV = (MacOGLDisplayView *)[(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
-		
-		// For macOS 10.8 Mountain Lion and later, we can use the CAOpenGLLayer directly. But for
-		// earlier versions of macOS, using the CALayer directly will cause too many strange issues,
-		// so we'll just keep using the old-school NSOpenGLContext for these older macOS versions.
-		if (IsOSXVersionSupported(10, 8, 0))
-		{
-			macOGLCDV->SetRenderToCALayer(true);
-		}
-		else
-		{
-#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-			if ([self respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
-			{
-				[self setWantsBestResolutionOpenGLSurface:YES];
-			}
-#endif
-			localOGLContext = macOGLCDV->GetNSContext();
-			[localOGLContext retain];
-			macOGLCDV->SetRenderToCALayer(false);
-		}
-	}
 	
 	return self;
 }
@@ -1695,6 +1657,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (BOOL) canUseShaderBasedFilters
 {
 	return [[self cdsVideoOutput] canFilterOnGPU];
+}
+
+- (BOOL) allowViewUpdates
+{
+	return ([self clientDisplay3DView]->GetAllowViewUpdates()) ? YES : NO;
+}
+
+- (void) setAllowViewUpdates:(BOOL)allowUpdates
+{
+	[self clientDisplay3DView]->SetAllowViewUpdates((allowUpdates) ? true : false);
 }
 
 - (void) setIsHUDVisible:(BOOL)theState
@@ -1818,8 +1790,59 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 }
 
 #pragma mark Class Methods
-- (void) reassignLocalCALayer
+- (void) setupLayer
 {
+	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
+	CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
+	
+#ifdef ENABLE_APPLE_METAL
+	MacClientSharedObject *macSharedData = [cdsGPU sharedData];
+	if ((macSharedData != nil) && [macSharedData isKindOfClass:[MetalDisplayViewSharedData class]])
+	{
+		localLayer = [[DisplayViewMetalLayer alloc] init];
+		[(DisplayViewMetalLayer *)localLayer setSharedData:(MetalDisplayViewSharedData *)macSharedData];
+		
+		MacMetalDisplayView *cdv = (MacMetalDisplayView *)[(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
+		cdv->SetFetchObject([cdsGPU fetchObject]);
+		cdv->Init();
+		
+		if ([(DisplayViewMetalLayer *)localLayer device] == nil)
+		{
+			[localLayer release];
+			localLayer = nil;
+		}
+	}
+#endif
+	
+	if (localLayer == nil)
+	{
+		localLayer = [[DisplayViewOpenGLLayer alloc] init];
+		MacOGLDisplayView *macOGLCDV = (MacOGLDisplayView *)[(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
+		macOGLCDV->SetFetchObject([cdsGPU fetchObject]);
+		macOGLCDV->Init();
+		
+		// For macOS 10.8 Mountain Lion and later, we can use the CAOpenGLLayer directly. But for
+		// earlier versions of macOS, using the CALayer directly will cause too many strange issues,
+		// so we'll just keep using the old-school NSOpenGLContext for these older macOS versions.
+		if (IsOSXVersionSupported(10, 8, 0))
+		{
+			macOGLCDV->SetRenderToCALayer(true);
+		}
+		else
+		{
+#if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+			if ([self respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
+			{
+				[self setWantsBestResolutionOpenGLSurface:YES];
+			}
+#endif
+			localOGLContext = macOGLCDV->GetNSContext();
+			[localOGLContext retain];
+			macOGLCDV->SetRenderToCALayer(false);
+		}
+	}
+	
 	if (localOGLContext != nil)
 	{
 		// If localOGLContext isn't nil, then we will not assign the local layer
@@ -1978,14 +2001,12 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)updateLayer
 {
-	ClientDisplay3DView *cdv = [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
-	cdv->UpdateView();
+	[self clientDisplay3DView]->UpdateView();
 }
 
 - (void)drawRect:(NSRect)dirtyRect
 {
-	ClientDisplay3DView *cdv = [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
-	cdv->UpdateView();
+	[self clientDisplay3DView]->UpdateView();
 }
 
 - (void)setFrame:(NSRect)rect
@@ -2023,7 +2044,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		{
 			[localLayer setBounds:CGRectMake(0.0f, 0.0f, props.clientWidth, props.clientHeight)];
 		}
-#if defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11) && defined(ENABLE_APPLE_METAL)
+#ifdef ENABLE_APPLE_METAL
 		else if ([[self layer] isKindOfClass:[CAMetalLayer class]])
 		{
 			[(CAMetalLayer *)localLayer setDrawableSize:CGSizeMake(props.clientWidth, props.clientHeight)];

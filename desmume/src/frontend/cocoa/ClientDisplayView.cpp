@@ -21,6 +21,8 @@
 
 ClientDisplayView::ClientDisplayView()
 {
+	_fetchObject = NULL;
+	
 	ClientDisplayViewProperties defaultProperty;
 	defaultProperty.normalWidth		= GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	defaultProperty.normalHeight	= GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2.0;
@@ -80,6 +82,7 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	memset(&_emuFrameInfo, 0, sizeof(_emuFrameInfo));
 	_hudString = "\x01"; // Char value 0x01 will represent the "text box" character, which will always be first in the string.
 	_hudNeedsUpdate = true;
+	_allowViewUpdates = true;
 	
 	FT_Error error = FT_Init_FreeType(&_ftLibrary);
 	if (error)
@@ -481,14 +484,24 @@ void ClientDisplayView::ClearHUDNeedsUpdate()
 }
 
 // NDS GPU Interface
-void ClientDisplayView::_FetchNativeDisplayByID(const NDSDisplayID displayID)
+const GPUClientFetchObject& ClientDisplayView::GetFetchObject() const
 {
-	// Do nothing. This is implementation dependent.
+	return *this->_fetchObject;
 }
 
-void ClientDisplayView::_FetchCustomDisplayByID(const NDSDisplayID displayID)
+void ClientDisplayView::SetFetchObject(GPUClientFetchObject *fetchObject)
 {
-	// Do nothing. This is implementation dependent.
+	this->_fetchObject = fetchObject;
+}
+
+bool ClientDisplayView::GetAllowViewUpdates() const
+{
+	return this->_allowViewUpdates;
+}
+
+void ClientDisplayView::SetAllowViewUpdates(const bool allowUpdates)
+{
+	this->_allowViewUpdates = allowUpdates;
 }
 
 void ClientDisplayView::_LoadNativeDisplayByID(const NDSDisplayID displayID)
@@ -501,38 +514,10 @@ void ClientDisplayView::_LoadCustomDisplayByID(const NDSDisplayID displayID)
 	// Do nothing. This is implementation dependent.
 }
 
-void ClientDisplayView::FetchDisplays()
-{
-	const bool loadMainScreen = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main] && ((this->_renderProperty.mode == ClientDisplayMode_Main) || (this->_renderProperty.mode == ClientDisplayMode_Dual));
-	const bool loadTouchScreen = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && ((this->_renderProperty.mode == ClientDisplayMode_Touch) || (this->_renderProperty.mode == ClientDisplayMode_Dual));
-	
-	if (loadMainScreen)
-	{
-		if (!this->_emuDisplayInfo.didPerformCustomRender[NDSDisplayID_Main])
-		{
-			this->_FetchNativeDisplayByID(NDSDisplayID_Main);
-		}
-		else
-		{
-			this->_FetchCustomDisplayByID(NDSDisplayID_Main);
-		}
-	}
-	
-	if (loadTouchScreen)
-	{
-		if (!this->_emuDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch])
-		{
-			this->_FetchNativeDisplayByID(NDSDisplayID_Touch);
-		}
-		else
-		{
-			this->_FetchCustomDisplayByID(NDSDisplayID_Touch);
-		}
-	}
-}
-
 void ClientDisplayView::LoadDisplays()
 {
+	this->_emuDisplayInfo = this->_fetchObject->GetFetchDisplayInfoForBufferIndex(this->_fetchObject->GetLastFetchIndex());
+	
 	const bool loadMainScreen = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main] && ((this->_renderProperty.mode == ClientDisplayMode_Main) || (this->_renderProperty.mode == ClientDisplayMode_Dual));
 	const bool loadTouchScreen = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && ((this->_renderProperty.mode == ClientDisplayMode_Touch) || (this->_renderProperty.mode == ClientDisplayMode_Dual));
 	
@@ -985,16 +970,6 @@ void ClientDisplay3DView::SetFiltersPreferGPU(const bool preferGPU)
 void ClientDisplay3DView::SetSourceDeposterize(bool useDeposterize)
 {
 	this->_useDeposterize = (this->_canFilterOnGPU) ? useDeposterize : false;
-}
-
-void ClientDisplay3DView::SetVideoBuffers(const uint32_t colorFormat,
-										  const void *videoBufferHead,
-										  const void *nativeBuffer0,
-										  const void *nativeBuffer1,
-										  const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
-										  const void *customBuffer1, const size_t customWidth1, const size_t customHeight1)
-{
-	// Do nothing. This is implementation dependent.
 }
 
 void ClientDisplay3DView::SetHUDVertices(float viewportWidth, float viewportHeight, float *vtxBufferPtr)

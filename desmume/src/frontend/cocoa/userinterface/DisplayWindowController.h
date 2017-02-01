@@ -47,6 +47,7 @@ class OGLVideoOutput;
 @property (retain) CocoaDSDisplayVideo *cdsVideoOutput;
 @property (readonly, nonatomic) ClientDisplay3DView *clientDisplay3DView;
 @property (readonly) BOOL canUseShaderBasedFilters;
+@property (assign, nonatomic) BOOL allowViewUpdates;
 @property (assign) BOOL isHUDVisible;
 @property (assign) BOOL isHUDVideoFPSVisible;
 @property (assign) BOOL isHUDRender3DFPSVisible;
@@ -60,7 +61,7 @@ class OGLVideoOutput;
 @property (assign) NSInteger outputFilter;
 @property (assign) NSInteger pixelScaler;
 
-- (void) reassignLocalCALayer;
+- (void) setupLayer;
 
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
 - (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed;

@@ -22,6 +22,7 @@
 #import <OpenGL/OpenGL.h>
 
 #import "DisplayViewCALayer.h"
+#import "../cocoa_GPU.h"
 
 #ifdef MAC_OS_X_VERSION_10_7
 	#include "../OGLDisplayOutput_3_2.h"
@@ -29,7 +30,9 @@
 	#include "../OGLDisplayOutput.h"
 #endif
 
+#ifdef BOOL
 #undef BOOL
+#endif
 
 class MacOGLDisplayView;
 
@@ -38,6 +41,24 @@ class MacOGLDisplayView;
 	MacOGLDisplayView *_cdv;
 }
 @end
+
+class MacOGLClientFetchObject : public OGLClientFetchObject
+{
+protected:
+	NSOpenGLContext *_nsContext;
+	CGLContextObj _context;
+	
+public:
+	void operator delete(void *ptr);
+	MacOGLClientFetchObject();
+	
+	NSOpenGLContext* GetNSContext() const;
+	CGLContextObj GetContext() const;
+	
+	virtual void Init();
+	virtual void SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo);
+	virtual void FetchFromBufferIndex(const u8 index);
+};
 
 class MacOGLDisplayView : public OGLVideoOutput, public DisplayViewCALayerInterface
 {
@@ -64,13 +85,6 @@ public:
 		
 	virtual void LoadHUDFont();
 	
-	virtual void SetVideoBuffers(const uint32_t colorFormat,
-								 const void *videoBufferHead,
-								 const void *nativeBuffer0,
-								 const void *nativeBuffer1,
-								 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
-								 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1);
-	
 	virtual void SetUseVerticalSync(const bool useVerticalSync);
 	virtual void SetScaleFactor(const double scaleFactor);
 	
@@ -83,7 +97,9 @@ public:
 	virtual void LoadDisplays();
 	virtual void ProcessDisplays();
 	virtual void UpdateView();
-	virtual void FrameFinish();
+	virtual void FinishFrameAtIndex(const u8 bufferIndex);
+	virtual void LockDisplayTextures();
+	virtual void UnlockDisplayTextures();
 };
 
 #endif // _MAC_OGLDISPLAYOUTPUT_H_

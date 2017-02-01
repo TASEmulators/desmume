@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2016 DeSmuME team
+	Copyright (C) 2011-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -561,11 +561,6 @@
 	return size;
 }
 
-- (void) doReceiveGPUFrame
-{
-	[CocoaDSUtil messageSendOneWay:self.receivePort msgID:MESSAGE_RECEIVE_GPU_FRAME];
-}
-
 - (void)handlePortMessage:(NSPortMessage *)portMessage
 {
 	NSInteger message = (NSInteger)[portMessage msgid];
@@ -640,11 +635,6 @@
 	NSPasteboard *pboard = [NSPasteboard generalPasteboard];
 	[pboard declareTypes:[NSArray arrayWithObjects:NSTIFFPboardType, nil] owner:self];
 	[pboard setData:[screenshot TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0f] forType:NSTIFFPboardType];
-}
-
-- (void) finishFrame
-{
-	_cdv->FrameFinish();
 }
 
 - (void) takeFrameCount
@@ -764,12 +754,6 @@
 		return self;
 	}
 	
-	_videoBuffer = NULL;
-	_nativeBuffer[NDSDisplayID_Main]  = NULL;
-	_nativeBuffer[NDSDisplayID_Touch] = NULL;
-	_customBuffer[NDSDisplayID_Main]  = NULL;
-	_customBuffer[NDSDisplayID_Touch] = NULL;
-	
 	spinlockIsHUDVisible = OS_SPINLOCK_INIT;
 	spinlockUseVerticalSync = OS_SPINLOCK_INIT;
 	spinlockVideoFiltersPreferGPU = OS_SPINLOCK_INIT;
@@ -782,12 +766,6 @@
 
 - (void)dealloc
 {
-	free_aligned(_videoBuffer);
-	_nativeBuffer[NDSDisplayID_Main]  = NULL;
-	_nativeBuffer[NDSDisplayID_Touch] = NULL;
-	_customBuffer[NDSDisplayID_Main]  = NULL;
-	_customBuffer[NDSDisplayID_Touch] = NULL;
-	
 	[super dealloc];
 }
 
@@ -1038,15 +1016,6 @@
 - (void) handleReceiveGPUFrame
 {
 	[super handleReceiveGPUFrame];
-	[self finishFrame];
-	
-	pthread_rwlock_rdlock(self.rwlockProducer);
-	
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	_cdv->SetEmuDisplayInfo(dispInfo);
-	_cdv->FetchDisplays();
-	
-	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	_cdv->LoadDisplays();
 	_cdv->ProcessDisplays();
@@ -1054,45 +1023,25 @@
 
 - (void) handleReloadReprocessRedraw
 {
-	[self handleReceiveGPUFrame];
+	GPUClientFetchObject &fetchObjMutable = (GPUClientFetchObject &)_cdv->GetFetchObject();
+	const u8 bufferIndex = fetchObjMutable.GetLastFetchIndex();
+	
+	fetchObjMutable.FetchFromBufferIndex(bufferIndex);
+	_cdv->LoadDisplays();
+	_cdv->ProcessDisplays();
+	
 	[self handleEmuFrameProcessed];
 }
 
 - (void) handleReprocessRedraw
-{
-	[self handleEmuFrameProcessed];
+{	
+	_cdv->ProcessDisplays();
+	_cdv->UpdateView();
 }
 
 - (void) handleRedraw
 {
 	_cdv->UpdateView();
-}
-
-- (void) resetVideoBuffers
-{
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	
-	void *oldVideoBuffer = _videoBuffer;
-	uint8_t *newVideoBuffer = (uint8_t *)malloc_alignedCacheLine( ((GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT) + (dispInfo.customWidth * dispInfo.customHeight)) * 2 * dispInfo.pixelBytes );
-	
-	_cdv->SetVideoBuffers(dispInfo.colorFormat,
-						  newVideoBuffer,
-						  newVideoBuffer,
-						  newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes),
-						  newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * dispInfo.pixelBytes),
-						  dispInfo.customWidth,
-						  dispInfo.customHeight,
-						  newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * dispInfo.pixelBytes) + (dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes),
-						  dispInfo.customWidth,
-						  dispInfo.customHeight);
-	
-	_videoBuffer = newVideoBuffer;
-	_nativeBuffer[NDSDisplayID_Main]  = newVideoBuffer;
-	_nativeBuffer[NDSDisplayID_Touch] = newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes);
-	_customBuffer[NDSDisplayID_Main]  = newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * dispInfo.pixelBytes);
-	_customBuffer[NDSDisplayID_Touch] = newVideoBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * dispInfo.pixelBytes) + (dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes);
-	
-	free_aligned(oldVideoBuffer);
 }
 
 - (void) setScaleFactor:(float)theScaleFactor

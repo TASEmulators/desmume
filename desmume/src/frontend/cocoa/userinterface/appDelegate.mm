@@ -28,6 +28,7 @@
 #import "inputPrefsView.h"
 
 #import "cocoa_core.h"
+#import "cocoa_GPU.h"
 #import "cocoa_file.h"
 #import "cocoa_firmware.h"
 #import "cocoa_globals.h"
@@ -178,6 +179,14 @@
 	
 	// Init the DS emulation core.
 	CocoaDSCore *newCore = [[[CocoaDSCore alloc] init] autorelease];
+	MacClientSharedObject *sharedViewObject = [[newCore cdsGPU] sharedData];
+	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:sharedViewObject withObject:nil];
+	
+	// Wait until the SPU is finished starting up.
+	while ([sharedViewObject thread] == nil)
+	{
+		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+	}
 	
 	// Init the DS controller.
 	CocoaDSController *newController = [[[CocoaDSController alloc] init] autorelease];
@@ -683,6 +692,9 @@
 			// If this is the last window in the list, make this window key and main.
 			// Otherwise, just order the window to the front so that the windows will
 			// stack in a deterministic order.
+			[[windowController view] setAllowViewUpdates:YES];
+			[[windowController cdsVideoOutput] handleReloadReprocessRedraw];
+			
 			if (windowProperties == [windowPropertiesList lastObject])
 			{
 				[[windowController window] makeKeyAndOrderFront:self];
@@ -693,9 +705,6 @@
 				[[windowController window] orderFront:self];
 			}
 			
-			// Draw the display view now so that we guarantee that its drawn at least once.
-			[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
-			
 			// If this window is set to full screen mode, its associated screen index must
 			// exist. If not, this window will not enter full screen mode. This is necessary,
 			// since the user's screen configuration could change in between app launches,
@@ -704,8 +713,6 @@
 				([[NSScreen screens] indexOfObject:[[windowController window] screen]] == screenIndex))
 			{
 				[windowController toggleFullScreenDisplay:self];
-				[[windowController window] makeKeyAndOrderFront:self];
-				[[windowController window] makeMainWindow];
 			}
 		}
 	}

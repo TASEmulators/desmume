@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2015 DeSmuME team
+	Copyright (C) 2013-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,8 +19,38 @@
 #include <pthread.h>
 #include <libkern/OSAtomic.h>
 
+#import "cocoa_util.h"
+#include "../../GPU.h"
+
+#ifdef BOOL
+#undef BOOL
+#endif
+
+#if defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
+//#define ENABLE_APPLE_METAL
+#endif
 
 class GPUEventHandlerOSX;
+
+@interface MacClientSharedObject : CocoaDSThread
+{
+	GPUClientFetchObject *GPUFetchObject;
+	pthread_rwlock_t *_rwlockFramebuffer[2];
+	pthread_mutex_t *_mutexOutputList;
+	NSMutableArray *_cdsOutputList;
+}
+
+@property (assign, nonatomic) GPUClientFetchObject *GPUFetchObject;
+
+- (const NDSDisplayInfo &) fetchDisplayInfoForIndex:(const u8)bufferIndex;
+- (pthread_rwlock_t *) rwlockFramebufferAtIndex:(const u8)bufferIndex;
+- (void) setOutputList:(NSMutableArray *)theOutputList mutex:(pthread_mutex_t *)theMutex;
+- (BOOL) isCPUFilteringNeeded;
+- (void) handleFetchFromBufferIndexAndPushVideo:(NSData *)indexData;
+- (void) pushVideoDataToAllDisplayViews;
+- (void) finishAllDisplayViewsAtIndex:(const u8)bufferIndex;
+
+@end
 
 @interface CocoaDSGPU : NSObject
 {
@@ -32,6 +62,7 @@ class GPUEventHandlerOSX;
 	
 	OSSpinLock spinlockGpuState;
 	GPUEventHandlerOSX *gpuEvent;
+	GPUClientFetchObject *fetchObject;
 }
 
 @property (assign) UInt32 gpuStateFlags;
@@ -39,6 +70,8 @@ class GPUEventHandlerOSX;
 @property (assign) NSUInteger gpuScale;
 @property (assign) NSUInteger gpuColorFormat;
 @property (readonly) pthread_rwlock_t *gpuFrameRWLock;
+@property (readonly, nonatomic) GPUClientFetchObject *fetchObject;
+@property (readonly, nonatomic) MacClientSharedObject *sharedData;
 
 @property (assign) BOOL layerMainGPU;
 @property (assign) BOOL layerMainBG0;

@@ -21,7 +21,6 @@
 #include "utilities.h"
 
 #include "../../NDSSystem.h"
-#include "../../GPU.h"
 #include "../../rasterize.h"
 
 #ifdef MAC_OS_X_VERSION_10_7
@@ -31,8 +30,12 @@
 #endif
 
 #include <OpenGL/OpenGL.h>
+#include "userinterface/MacOGLDisplayView.h"
+#include "userinterface/MacMetalDisplayView.h"
 
+#ifdef BOOL
 #undef BOOL
+#endif
 
 GPU3DInterface *core3DList[] = {
 	&gpu3DNull,
@@ -44,15 +47,18 @@ GPU3DInterface *core3DList[] = {
 class GPUEventHandlerOSX : public GPUEventHandlerDefault
 {
 private:
+	GPUClientFetchObject *_fetchObject;
+	
 	pthread_rwlock_t _rwlockFrame;
 	pthread_mutex_t _mutex3DRender;
-	pthread_mutex_t *_mutexOutputList;
-	NSMutableArray *_cdsOutputList;
 	bool _render3DNeedsFinish;
 	
 public:
 	GPUEventHandlerOSX();
 	~GPUEventHandlerOSX();
+	
+	GPUClientFetchObject* GetFetchObject() const;
+	void SetFetchObject(GPUClientFetchObject *fetchObject);
 	
 	void FramebufferLockWrite();
 	void FramebufferLockRead();
@@ -60,12 +66,7 @@ public:
 	void Render3DLock();
 	void Render3DUnlock();
 	
-	void FrameFinish();
-	void SetVideoBuffers();
-	
 	pthread_rwlock_t* GetFrameRWLock();
-	NSMutableArray* GetOutputList();
-	void SetOutputList(NSMutableArray *outputList, pthread_mutex_t *theMutex);
 	bool GetRender3DNeedsFinish();
 	
 	virtual void DidFrameBegin(bool isFrameSkipRequested, const u8 targetBufferIndex, const size_t line);
@@ -81,6 +82,8 @@ public:
 @dynamic gpuScale;
 @dynamic gpuColorFormat;
 @dynamic gpuFrameRWLock;
+@synthesize fetchObject;
+@dynamic sharedData;
 
 @dynamic layerMainGPU;
 @dynamic layerMainBG0;
@@ -147,6 +150,20 @@ public:
 	GPU->SetEventHandler(gpuEvent);
 	GPU->SetWillAutoResolveToCustomBuffer(false);
 	
+#ifdef ENABLE_APPLE_METAL
+	if (IsOSXVersionSupported(10, 11, 0))
+	{
+		fetchObject = new MacMetalFetchObject;
+	}
+	else
+#endif
+	{
+		fetchObject = new MacOGLClientFetchObject;
+	}
+	
+	fetchObject->Init();
+	gpuEvent->SetFetchObject(fetchObject);
+	
 	return self;
 }
 
@@ -154,9 +171,20 @@ public:
 {
 	DestroyOpenGLRenderer();
 	
+	delete fetchObject;
 	delete gpuEvent;
 	
 	[super dealloc];
+}
+
+- (GPUClientFetchObject *) fetchObject
+{
+	return fetchObject;
+}
+
+- (MacClientSharedObject *) sharedData
+{
+	return (MacClientSharedObject *)fetchObject->GetClientData();
 }
 
 - (void) setGpuStateFlags:(UInt32)flags
@@ -191,13 +219,15 @@ public:
 
 - (void) setGpuDimensions:(NSSize)theDimensions
 {
-	gpuEvent->FrameFinish();
+	[[self sharedData] finishAllDisplayViewsAtIndex:0];
+	[[self sharedData] finishAllDisplayViewsAtIndex:1];
+	
 	gpuEvent->Render3DLock();
 	gpuEvent->FramebufferLockWrite();
 	
 	GPU->SetCustomFramebufferSize(theDimensions.width, theDimensions.height);
+	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
 	
-	gpuEvent->SetVideoBuffers();
 	gpuEvent->FramebufferUnlock();
 	gpuEvent->Render3DUnlock();
 }
@@ -226,13 +256,15 @@ public:
 
 - (void) setGpuColorFormat:(NSUInteger)colorFormat
 {
-	gpuEvent->FrameFinish();
+	[[self sharedData] finishAllDisplayViewsAtIndex:0];
+	[[self sharedData] finishAllDisplayViewsAtIndex:1];
+	
 	gpuEvent->Render3DLock();
 	gpuEvent->FramebufferLockWrite();
 	
 	GPU->SetColorFormat((NDSColorFormat)colorFormat);
+	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
 	
-	gpuEvent->SetVideoBuffers();
 	gpuEvent->FramebufferUnlock();
 	gpuEvent->Render3DUnlock();
 }
@@ -255,7 +287,7 @@ public:
 
 - (void) setOutputList:(NSMutableArray *)theOutputList mutexPtr:(pthread_mutex_t *)theMutex
 {
-	gpuEvent->SetOutputList(theOutputList, theMutex);
+	[(MacClientSharedObject *)fetchObject->GetClientData() setOutputList:theOutputList mutex:theMutex];
 }
 
 - (void) setRender3DRenderingEngine:(NSInteger)methodID
@@ -814,10 +846,196 @@ public:
 
 @end
 
+@implementation MacClientSharedObject
+
+@synthesize GPUFetchObject;
+
+- (id)init
+{
+	self = [super init];
+	if (self == nil)
+	{
+		return self;
+	}
+	
+	_rwlockFramebuffer[0] = (pthread_rwlock_t *)malloc(sizeof(pthread_rwlock_t));
+	_rwlockFramebuffer[1] = (pthread_rwlock_t *)malloc(sizeof(pthread_rwlock_t));
+	
+	pthread_rwlock_init(_rwlockFramebuffer[0], NULL);
+	pthread_rwlock_init(_rwlockFramebuffer[1], NULL);
+	
+	GPUFetchObject = nil;
+	_mutexOutputList = NULL;
+	_cdsOutputList = nil;
+	
+	return self;
+}
+
+- (void)dealloc
+{
+	pthread_mutex_t *currentMutex = _mutexOutputList;
+	
+	if (currentMutex != NULL)
+	{
+		pthread_mutex_lock(currentMutex);
+	}
+	
+	[_cdsOutputList release];
+	
+	if (currentMutex != NULL)
+	{
+		pthread_mutex_unlock(currentMutex);
+	}
+	
+	pthread_rwlock_destroy(_rwlockFramebuffer[0]);
+	pthread_rwlock_destroy(_rwlockFramebuffer[1]);
+	
+	[super dealloc];
+}
+
+- (void)handlePortMessage:(NSPortMessage *)portMessage
+{
+	NSInteger message = (NSInteger)[portMessage msgid];
+	NSArray *messageComponents = [portMessage components];
+	
+	switch (message)
+	{
+		case MESSAGE_FETCH_AND_PUSH_VIDEO:
+			[self handleFetchFromBufferIndexAndPushVideo:[messageComponents objectAtIndex:0]];
+			break;
+			
+		default:
+			[super handlePortMessage:portMessage];
+			break;
+	}
+}
+
+- (void) handleFetchFromBufferIndexAndPushVideo:(NSData *)indexData
+{
+	const NSInteger index = *(NSInteger *)[indexData bytes];
+	
+	GPUFetchObject->FetchFromBufferIndex(index);
+	[self pushVideoDataToAllDisplayViews];
+}
+
+- (const NDSDisplayInfo &) fetchDisplayInfoForIndex:(const u8)bufferIndex
+{
+	return GPUFetchObject->GetFetchDisplayInfoForBufferIndex(bufferIndex);
+}
+
+- (pthread_rwlock_t *) rwlockFramebufferAtIndex:(const u8)bufferIndex
+{
+	return _rwlockFramebuffer[bufferIndex];
+}
+
+- (void) setOutputList:(NSMutableArray *)theOutputList mutex:(pthread_mutex_t *)theMutex
+{
+	pthread_mutex_t *currentMutex = _mutexOutputList;
+	
+	if (currentMutex != NULL)
+	{
+		pthread_mutex_lock(currentMutex);
+	}
+	
+	[_cdsOutputList release];
+	_cdsOutputList = theOutputList;
+	[_cdsOutputList retain];
+	
+	if (currentMutex != NULL)
+	{
+		pthread_mutex_unlock(currentMutex);
+	}
+	
+	_mutexOutputList = theMutex;
+}
+
+- (BOOL) isCPUFilteringNeeded
+{
+	bool useCPUFilterPipeline = NO;
+	pthread_mutex_t *currentMutex = _mutexOutputList;
+	
+	if (currentMutex != NULL)
+	{
+		pthread_mutex_lock(currentMutex);
+	}
+	
+	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
+	{
+		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+		{
+			ClientDisplay3DView *cdv = [(CocoaDSDisplay *)cdsOutput clientDisplayView];
+			
+			if (!cdv->WillFilterOnGPU() && (cdv->GetPixelScaler() != VideoFilterTypeID_None))
+			{
+				useCPUFilterPipeline = YES;
+				break;
+			}
+		}
+	}
+	
+	if (currentMutex != NULL)
+	{
+		pthread_mutex_unlock(currentMutex);
+	}
+	
+	return useCPUFilterPipeline;
+}
+
+- (void) pushVideoDataToAllDisplayViews
+{
+	pthread_mutex_t *currentMutex = _mutexOutputList;
+	
+	if (currentMutex != NULL)
+	{
+		pthread_mutex_lock(currentMutex);
+	}
+	
+	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
+	{
+		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+		{
+			[CocoaDSUtil messageSendOneWay:[cdsOutput receivePort] msgID:MESSAGE_RECEIVE_GPU_FRAME];
+		}
+	}
+	
+	if (currentMutex != NULL)
+	{
+		pthread_mutex_unlock(currentMutex);
+	}
+}
+
+- (void) finishAllDisplayViewsAtIndex:(const u8)bufferIndex
+{
+	pthread_mutex_t *currentMutex = _mutexOutputList;
+	
+	if (currentMutex != NULL)
+	{
+		pthread_mutex_lock(currentMutex);
+	}
+	
+	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
+	{
+		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+		{
+			ClientDisplay3DView *cdv = [(CocoaDSDisplay *)cdsOutput clientDisplayView];
+			cdv->FinishFrameAtIndex(bufferIndex);
+		}
+	}
+	
+	if (currentMutex != NULL)
+	{
+		pthread_mutex_unlock(currentMutex);
+	}
+}
+
+@end
+
+#pragma mark -
+
 GPUEventHandlerOSX::GPUEventHandlerOSX()
 {
+	_fetchObject = nil;
 	_render3DNeedsFinish = false;
-	_mutexOutputList = NULL;
 	pthread_rwlock_init(&_rwlockFrame, NULL);
 	pthread_mutex_init(&_mutex3DRender, NULL);
 }
@@ -833,37 +1051,46 @@ GPUEventHandlerOSX::~GPUEventHandlerOSX()
 	pthread_mutex_destroy(&this->_mutex3DRender);
 }
 
+GPUClientFetchObject* GPUEventHandlerOSX::GetFetchObject() const
+{
+	return this->_fetchObject;
+}
+
+void GPUEventHandlerOSX::SetFetchObject(GPUClientFetchObject *fetchObject)
+{
+	this->_fetchObject = fetchObject;
+}
+
 void GPUEventHandlerOSX::DidFrameBegin(bool isFrameSkipRequested, const u8 targetBufferIndex, const size_t line)
 {
 	this->FramebufferLockWrite();
+	
+#if !defined(PORT_VERSION_OPENEMU)
+	if (!isFrameSkipRequested)
+	{
+		MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_fetchObject->GetClientData();
+		pthread_rwlock_wrlock([sharedViewObject rwlockFramebufferAtIndex:targetBufferIndex]);
+	}
+#endif
 }
 
 void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo)
 {
+#if !defined(PORT_VERSION_OPENEMU)
+	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_fetchObject->GetClientData();
+	if (!isFrameSkipped)
+	{
+		this->_fetchObject->SetFetchDisplayInfo(latestDisplayInfo);
+		pthread_rwlock_unlock([sharedViewObject rwlockFramebufferAtIndex:latestDisplayInfo.bufferIndex]);
+	}
+#endif
+	
 	this->FramebufferUnlock();
 	
 #if !defined(PORT_VERSION_OPENEMU)
 	if (!isFrameSkipped)
 	{
-		if (this->_mutexOutputList != NULL)
-		{
-			pthread_mutex_lock(this->_mutexOutputList);
-		}
-		
-		NSMutableArray *outputList = this->_cdsOutputList;
-		
-		for (CocoaDSOutput *cdsOutput in outputList)
-		{
-			if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
-			{
-				[(CocoaDSDisplay *)cdsOutput doReceiveGPUFrame];
-			}
-		}
-		
-		if (this->_mutexOutputList != NULL)
-		{
-			pthread_mutex_unlock(this->_mutexOutputList);
-		}
+		[CocoaDSUtil messageSendOneWayWithInteger:[sharedViewObject receivePort] msgID:MESSAGE_FETCH_AND_PUSH_VIDEO integerValue:latestDisplayInfo.bufferIndex];
 	}
 #endif
 }
@@ -905,56 +1132,6 @@ void GPUEventHandlerOSX::Render3DUnlock()
 	pthread_mutex_unlock(&this->_mutex3DRender);
 }
 
-void GPUEventHandlerOSX::FrameFinish()
-{
-#if !defined(PORT_VERSION_OPENEMU)
-	if (this->_mutexOutputList != NULL)
-	{
-		pthread_mutex_lock(this->_mutexOutputList);
-	}
-	
-	NSMutableArray *outputList = this->_cdsOutputList;
-	
-	for (CocoaDSOutput *cdsOutput in outputList)
-	{
-		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
-		{
-			[(CocoaDSDisplay *)cdsOutput finishFrame];
-		}
-	}
-	
-	if (this->_mutexOutputList != NULL)
-	{
-		pthread_mutex_unlock(this->_mutexOutputList);
-	}
-#endif
-}
-
-void GPUEventHandlerOSX::SetVideoBuffers()
-{
-#if !defined(PORT_VERSION_OPENEMU)
-	if (this->_mutexOutputList != NULL)
-	{
-		pthread_mutex_lock(this->_mutexOutputList);
-	}
-	
-	NSMutableArray *outputList = this->_cdsOutputList;
-	
-	for (CocoaDSOutput *cdsOutput in outputList)
-	{
-		if ([cdsOutput isKindOfClass:[CocoaDSDisplayVideo class]])
-		{
-			[(CocoaDSDisplayVideo *)cdsOutput resetVideoBuffers];
-		}
-	}
-	
-	if (this->_mutexOutputList != NULL)
-	{
-		pthread_mutex_unlock(this->_mutexOutputList);
-	}
-#endif
-}
-
 bool GPUEventHandlerOSX::GetRender3DNeedsFinish()
 {
 	return this->_render3DNeedsFinish;
@@ -965,16 +1142,7 @@ pthread_rwlock_t* GPUEventHandlerOSX::GetFrameRWLock()
 	return &this->_rwlockFrame;
 }
 
-NSMutableArray* GPUEventHandlerOSX::GetOutputList()
-{
-	return this->_cdsOutputList;
-}
-
-void GPUEventHandlerOSX::SetOutputList(NSMutableArray *outputList, pthread_mutex_t *theMutex)
-{
-	this->_cdsOutputList = outputList;
-	this->_mutexOutputList = theMutex;
-}
+#pragma mark -
 
 CGLContextObj OSXOpenGLRendererContext = NULL;
 

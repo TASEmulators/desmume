@@ -30,6 +30,7 @@
 
 #include <set>
 #include <string>
+#include <pthread.h>
 #include "../../filter/videofilter.h"
 
 #include "ClientDisplayView.h"
@@ -217,8 +218,6 @@ protected:
 	GLint _uniformFinalOutputScalar;
 	GLint _uniformFinalOutputViewSize;
 	
-	void UploadHQnxLUTs();
-	
 	void UploadVerticesOGL();
 	void UploadTexCoordsOGL();
 	void UploadTransformationOGL();
@@ -270,7 +269,7 @@ public:
 	virtual void SetVisibility(const bool visibleState);
 	
 	virtual void RenderOGL() = 0;
-	virtual void FinishOGL() {};
+	virtual void FinishOGL(const u8 bufferIndex) {};
 };
 
 class OGLHUDLayer : public OGLVideoLayer
@@ -301,32 +300,18 @@ class OGLDisplayLayer : public OGLVideoLayer
 protected:
 	bool _useShader150;
 	ShaderSupportTier _shaderSupport;
-	GLboolean _useClientStorage;
 	
 	OGLShaderProgram *_finalOutputProgram;
 	OGLFilter *_filterDeposterize[2];
 	OGLFilter *_shaderFilter[2];
 	GLint _displayTexFilter[2];
 	
-	GLuint _texVideoInputDataNativeID[2];
-	GLuint _texVideoInputDataCustomID[2];
 	GLuint _texVideoOutputID[2];
-	
-	GLenum _videoColorFormat;
-	const void *_videoSrcBufferHead;
-	void *_videoSrcNativeBuffer[2];
-	void *_videoSrcCustomBuffer[2];
-	size_t _videoSrcBufferSize;
 	
 	uint32_t *_vfMasterDstBuffer;
 	size_t _vfMasterDstBufferSize;
 	VideoFilter *_vf[2];
 	GLuint _texCPUFilterDstID[2];
-	
-	GLuint _texLQ2xLUT;
-	GLuint _texHQ2xLUT;
-	GLuint _texHQ3xLUT;
-	GLuint _texHQ4xLUT;
 	
 	GLuint _vaoMainStatesID;
 	GLuint _vboVertexID;
@@ -335,9 +320,6 @@ protected:
 	GLint _uniformFinalOutputAngleDegrees;
 	GLint _uniformFinalOutputScalar;
 	GLint _uniformFinalOutputViewSize;
-	
-	void _UploadHQnxLUTs();
-	void _DetermineTextureStorageHints(GLint &videoSrcTexStorageHint, GLint &cpuFilterTexStorageHint);
 	
 	void _ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide);
 	
@@ -351,30 +333,60 @@ public:
 	OGLDisplayLayer(OGLVideoOutput *oglVO);
 	virtual ~OGLDisplayLayer();
 	
-	void SetVideoBuffers(const uint32_t colorFormat,
-						 const void *videoBufferHead,
-						 const void *nativeBuffer0,
-						 const void *nativeBuffer1,
-						 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
-						 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1);
-	
 	void SetNeedsUpdateRotationScale();
-	void SetFiltersPreferGPUOGL();
-	
-	bool CanUseShaderBasedFilters();
 	
 	OutputFilterTypeID SetOutputFilterOGL(const OutputFilterTypeID filterID);
 	bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	
-	void CopyNativeDisplayByID_OGL(const NDSDisplayID displayID);
-	void CopyCustomDisplayByID_OGL(const NDSDisplayID displayID);
 	void LoadNativeDisplayByID_OGL(const NDSDisplayID displayID);
-	void LoadCustomDisplayByID_OGL(const NDSDisplayID displayID);
 	
 	void ProcessOGL();
 	virtual void RenderOGL();
-	virtual void FinishOGL();
+	virtual void FinishOGL(const u8 bufferIndex);
+};
+
+class OGLClientFetchObject : public GPUClientFetchObject
+{
+protected:
+	OGLContextInfo *_contextInfo;
+	GLenum _fetchColorFormatOGL;
+	GLuint _texDisplayFetchNative[2][2];
+	GLuint _texDisplayFetchCustom[2][2];
+	
+	GLuint _texLQ2xLUT;
+	GLuint _texHQ2xLUT;
+	GLuint _texHQ3xLUT;
+	GLuint _texHQ4xLUT;
+	
+	bool _useCPUFilterPipeline;
+	uint32_t *_srcNativeCloneMaster;
+	uint32_t *_srcNativeClone[2][2];
+	pthread_rwlock_t _srcCloneRWLock[2][2];
+	
+	virtual void _FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
+	virtual void _FetchCustomDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
+	
+public:
+	OGLClientFetchObject();
+	virtual ~OGLClientFetchObject();
+	
+	OGLContextInfo* GetContextInfo() const;
+	uint32_t* GetSrcClone(const NDSDisplayID displayID, const u8 bufferIndex) const;
+	GLuint GetTexNative(const NDSDisplayID displayID, const u8 bufferIndex) const;
+	GLuint GetTexCustom(const NDSDisplayID displayID, const u8 bufferIndex) const;
+	
+	// For lack of a better place, we're putting the HQnx LUTs in the fetch object because
+	// we know that it will be shared for all display views.
+	GLuint GetTexLQ2xLUT() const;
+	GLuint GetTexHQ2xLUT() const;
+	GLuint GetTexHQ3xLUT() const;
+	GLuint GetTexHQ4xLUT() const;
+	
+	void CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex);
+	
+	virtual void Init();
+	virtual void SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo);
 };
 
 class OGLVideoOutput : public ClientDisplay3DView
@@ -394,10 +406,7 @@ protected:
 	virtual void _UpdateClientSize();
 	virtual void _UpdateViewScale();
 	
-	virtual void _FetchNativeDisplayByID(const NDSDisplayID displayID);
-	virtual void _FetchCustomDisplayByID(const NDSDisplayID displayID);
 	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
-	virtual void _LoadCustomDisplayByID(const NDSDisplayID displayID);
 	
 public:
 	OGLVideoOutput();
@@ -421,17 +430,12 @@ public:
 	
 	virtual void SetFiltersPreferGPU(const bool preferGPU);
 	
-	virtual void SetVideoBuffers(const uint32_t colorFormat,
-								 const void *videoBufferHead,
-								 const void *nativeBuffer0,
-								 const void *nativeBuffer1,
-								 const void *customBuffer0, const size_t customWidth0, const size_t customHeight0,
-								 const void *customBuffer1, const size_t customWidth1, const size_t customHeight1);
-	
 	// Client view interface
 	virtual void ProcessDisplays();
-	virtual void FrameFinish();
+	virtual void FinishFrameAtIndex(const u8 bufferIndex);
 	virtual void RenderViewOGL();
+	virtual void LockDisplayTextures();
+	virtual void UnlockDisplayTextures();
 };
 
 extern void (*glBindVertexArrayDESMUME)(GLuint id);

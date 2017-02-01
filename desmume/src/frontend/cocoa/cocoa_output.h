@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2016 DeSmuME team
+	Copyright (C) 2011-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -118,13 +118,11 @@ struct NDSFrameInfo;
 
 - (void) commitViewProperties:(const ClientDisplayViewProperties &)viewProps;
 
-- (void) doReceiveGPUFrame;
 - (void) handleReceiveGPUFrame;
 - (void) handleChangeViewProperties;
 - (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData;
 - (void) handleCopyToPasteboard;
 
-- (void) finishFrame;
 - (void) takeFrameCount;
 - (void) setCPULoadAvgARM9:(uint32_t)loadAvgARM9 ARM7:(uint32_t)loadAvgARM7;
 - (NSImage *) image;
@@ -133,11 +131,7 @@ struct NDSFrameInfo;
 @end
 
 @interface CocoaDSDisplayVideo : CocoaDSDisplay
-{
-	void *_videoBuffer;
-	void *_nativeBuffer[2];
-	void *_customBuffer[2];
-	
+{	
 	OSSpinLock spinlockIsHUDVisible;
 	OSSpinLock spinlockUseVerticalSync;
 	OSSpinLock spinlockVideoFiltersPreferGPU;
@@ -165,7 +159,6 @@ struct NDSFrameInfo;
 - (void) handleReprocessRedraw;
 - (void) handleRedraw;
 
-- (void) resetVideoBuffers;
 - (void) setScaleFactor:(float)theScaleFactor;
 
 @end
