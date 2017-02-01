@@ -173,12 +173,8 @@ int NDS_Init()
 	NDS_ARM7.SetBaseMemoryInterfaceData(NULL);
 	NDS_ARM7.ResetMemoryInterfaceToBase();
 	
-	if (GPU != NULL)
-	{
-		GPU->FinalizeAndDeallocate();
-	}
-	
-	GPU = GPUSubsystem::Allocate();
+	delete GPU;
+	GPU = new GPUSubsystem;
 	
 	if (SPU_Init(SNDCORE_DUMMY, 740) != 0)
 		return -1;
@@ -196,7 +192,7 @@ void NDS_DeInit(void)
 	gameInfo.closeROM();
 	SPU_DeInit();
 	
-	GPU->FinalizeAndDeallocate();
+	delete GPU;
 	GPU = NULL;
 	
 	MMU_DeInit();
@@ -1302,18 +1298,23 @@ static void execHardware_hblank()
 	//scroll regs for the next scanline
 	if(nds.VCount<192)
 	{
+		if (nds.VCount == 0)
+		{
+			GPU->SetWillFrameSkip(frameSkipper.ShouldSkip2D());
+		}
+		
 		switch (GPU->GetDisplayInfo().colorFormat)
 		{
 			case NDSColorFormat_BGR555_Rev:
-				GPU->RenderLine<NDSColorFormat_BGR555_Rev>(nds.VCount, frameSkipper.ShouldSkip2D());
+				GPU->RenderLine<NDSColorFormat_BGR555_Rev>(nds.VCount);
 				break;
 				
 			case NDSColorFormat_BGR666_Rev:
-				GPU->RenderLine<NDSColorFormat_BGR666_Rev>(nds.VCount, frameSkipper.ShouldSkip2D());
+				GPU->RenderLine<NDSColorFormat_BGR666_Rev>(nds.VCount);
 				break;
 				
 			case NDSColorFormat_BGR888_Rev:
-				GPU->RenderLine<NDSColorFormat_BGR888_Rev>(nds.VCount, frameSkipper.ShouldSkip2D());
+				GPU->RenderLine<NDSColorFormat_BGR888_Rev>(nds.VCount);
 				break;
 		}
 		

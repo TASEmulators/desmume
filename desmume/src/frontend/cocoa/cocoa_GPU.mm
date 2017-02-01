@@ -68,8 +68,8 @@ public:
 	void SetOutputList(NSMutableArray *outputList, pthread_mutex_t *theMutex);
 	bool GetRender3DNeedsFinish();
 	
-	virtual void DidFrameBegin(bool isFrameSkipRequested);
-	virtual void DidFrameEnd(bool isFrameSkipped);
+	virtual void DidFrameBegin(bool isFrameSkipRequested, const u8 targetBufferIndex, const size_t line);
+	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo);
 	virtual void DidRender3DBegin();
 	virtual void DidRender3DEnd();
 };
@@ -833,12 +833,12 @@ GPUEventHandlerOSX::~GPUEventHandlerOSX()
 	pthread_mutex_destroy(&this->_mutex3DRender);
 }
 
-void GPUEventHandlerOSX::DidFrameBegin(bool isFrameSkipRequested)
+void GPUEventHandlerOSX::DidFrameBegin(bool isFrameSkipRequested, const u8 targetBufferIndex, const size_t line)
 {
 	this->FramebufferLockWrite();
 }
 
-void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped)
+void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo)
 {
 	this->FramebufferUnlock();
 	

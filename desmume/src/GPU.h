@@ -2,7 +2,7 @@
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 Theo Berkau
 	Copyright (C) 2007 shash
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1067,12 +1067,11 @@ typedef struct
 												//    false - The user requested the native size.
 	size_t customWidth;							// The requested custom width, measured in pixels.
 	size_t customHeight;						// The requested custom height, measured in pixels.
+	size_t framebufferSize;						// The size of a single framebuffer, which includes the native and custom buffers of both displays,
+												// measured in bytes.
 	
-	void *masterNativeBuffer;					// Pointer to the head of the master native buffer.
-	void *masterCustomBuffer;					// Pointer to the head of the master custom buffer.
-												// If GPUSubsystem::GetWillAutoResolveToCustomBuffer() would return true, or if
-												// GPUEngineBase::ResolveToCustomFramebuffer() is called, then this buffer is used as the target
-												// buffer for resolving any native-sized renders.
+	// Changed by calling GPUSubsystem::SetColorFormat() or GPUSubsystem::SetFramebufferSize().
+	void *masterFramebufferHead;				// Pointer to the head of the master framebuffer memory block that encompasses all buffers.
 	
 	// Changed by calling GPUSubsystem::SetWillAutoApplyMasterBrightness().
 	bool isMasterBrightnessAutoApplyRequested;	// Reports the result of GPUSubsystem::GetWillAutoApplyMasterBrightness().
@@ -1089,8 +1088,20 @@ typedef struct
 	
 	
 	// Frame information. These fields will change per frame, depending on how each display was rendered.
+	u8 bufferIndex;								// Index of this frame's buffer set.
+	
+	void *masterNativeBuffer;					// Pointer to the head of the master native buffer.
+	void *masterCustomBuffer;					// Pointer to the head of the master custom buffer.
+												// If GPUSubsystem::GetWillAutoResolveToCustomBuffer() would return true, or if
+												// GPUEngineBase::ResolveToCustomFramebuffer() is called, then this buffer is used as the target
+												// buffer for resolving any native-sized renders.
+	
 	void *nativeBuffer[2];						// Pointer to the display's native size framebuffer.
 	void *customBuffer[2];						// Pointer to the display's custom size framebuffer.
+	
+	size_t renderedWidth[2];					// The display rendered at this width, measured in pixels.
+	size_t renderedHeight[2];					// The display rendered at this height, measured in pixels.
+	void *renderedBuffer[2];					// The display rendered to this buffer.
 	
 	bool didPerformCustomRender[2];				// Reports that the display actually rendered at a custom size for this frame.
 												//    true  - The display performed a custom-sized render.
@@ -1101,10 +1112,6 @@ typedef struct
 												// a master brightness intensity of 0 for all lines.
 	GPUMasterBrightMode masterBrightnessMode[2][GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // The master brightness mode of each display line.
 	u8 masterBrightnessIntensity[2][GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // The master brightness intensity of each display line.
-	
-	size_t renderedWidth[2];					// The display rendered at this width, measured in pixels.
-	size_t renderedHeight[2];					// The display rendered at this height, measured in pixels.
-	void *renderedBuffer[2];					// The display rendered to this buffer.
 } NDSDisplayInfo;
 
 #define VRAM_NO_3D_USAGE 0xFF
@@ -1622,8 +1629,8 @@ public:
 class GPUEventHandler
 {
 public:
-	virtual void DidFrameBegin(bool isFrameSkipRequested) = 0;
-	virtual void DidFrameEnd(bool isFrameSkipped) = 0;
+	virtual void DidFrameBegin(bool isFrameSkipRequested, const u8 targetBufferIndex, const size_t line) = 0;
+	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo) = 0;
 	virtual void DidRender3DBegin() = 0;
 	virtual void DidRender3DEnd() = 0;
 };
@@ -1634,8 +1641,8 @@ public:
 class GPUEventHandlerDefault : public GPUEventHandler
 {
 public:
-	virtual void DidFrameBegin(bool isFrameSkipRequested) {};
-	virtual void DidFrameEnd(bool isFrameSkipped) {};
+	virtual void DidFrameBegin(bool isFrameSkipRequested, const u8 targetBufferIndex, const size_t line) {};
+	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo) {};
 	virtual void DidRender3DBegin() {};
 	virtual void DidRender3DEnd() {};
 };
@@ -1643,9 +1650,6 @@ public:
 class GPUSubsystem
 {
 private:
-	GPUSubsystem();
-	~GPUSubsystem();
-	
 	GPUEventHandlerDefault *_defaultEventHandler;
 	GPUEventHandler *_event;
 	
@@ -1657,23 +1661,23 @@ private:
 	u32 _videoFrameCount;			// Internal variable that increments when a video frame is completed. Resets every 60 video frames.
 	u32 _render3DFrameCount;		// The current 3D rendering frame count, saved to this variable once every 60 video frames.
 	bool _frameNeedsFinish;
+	bool _willFrameSkip;
 	bool _willAutoApplyMasterBrightness;
 	bool _willAutoConvertRGB666ToRGB888;
 	bool _willAutoResolveToCustomBuffer;
 	u16 *_customVRAM;
 	u16 *_customVRAMBlank;
 	
-	CACHE_ALIGN FragmentColor _nativeFramebuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2];
-	void *_customFramebuffer;
+	void *_masterFramebuffer;
 	
 	NDSDisplayInfo _displayInfo;
 	
 	void _UpdateFPSRender3D();
-	void _AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, size_t h, void *clientNativeBuffer, void *clientCustomBuffer);
+	void _AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, size_t h);
 	
 public:
-	static GPUSubsystem* Allocate();
-	void FinalizeAndDeallocate();
+	GPUSubsystem();
+	~GPUSubsystem();
 	
 	void SetEventHandler(GPUEventHandler *eventHandler);
 	GPUEventHandler* GetEventHandler();
@@ -1698,11 +1702,11 @@ public:
 	
 	size_t GetCustomFramebufferWidth() const;
 	size_t GetCustomFramebufferHeight() const;
-	void SetCustomFramebufferSize(size_t w, size_t h, void *clientNativeBuffer, void *clientCustomBuffer);
 	void SetCustomFramebufferSize(size_t w, size_t h);
-	void SetColorFormat(const NDSColorFormat outputFormat, void *clientNativeBuffer, void *clientCustomBuffer);
 	void SetColorFormat(const NDSColorFormat outputFormat);
 	
+	bool GetWillFrameSkip() const;
+	void SetWillFrameSkip(const bool willFrameSkip);
 	void UpdateRenderProperties();
 	
 	// By default, the output framebuffer will have the master brightness applied before
@@ -1741,8 +1745,36 @@ public:
 	bool GetWillAutoResolveToCustomBuffer() const;
 	void SetWillAutoResolveToCustomBuffer(const bool willAutoResolve);
 	
-	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const size_t l, bool skip = false);
+	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const size_t l);
 	void ClearWithColor(const u16 colorBGRA5551);
+};
+
+class GPUClientFetchObject
+{
+protected:
+	NDSDisplayInfo _fetchDisplayInfo[2];
+	volatile u8 _lastFetchIndex;
+	void *_clientData;
+	
+	virtual void _FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
+	virtual void _FetchCustomDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
+	
+public:
+	GPUClientFetchObject();
+	virtual ~GPUClientFetchObject() {};
+	
+	virtual void Init();
+	virtual void SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo);
+	virtual void FetchFromBufferIndex(const u8 index);
+	
+	u8 GetLastFetchIndex() const;
+	void SetLastFetchIndex(const u8 fetchIndex);
+	
+	const NDSDisplayInfo& GetFetchDisplayInfoForBufferIndex(const u8 bufferIndex) const;
+	void SetFetchDisplayInfo(const NDSDisplayInfo &displayInfo);
+	
+	void* GetClientData() const;
+	void SetClientData(void *clientData);
 };
 
 extern GPUSubsystem *GPU;
