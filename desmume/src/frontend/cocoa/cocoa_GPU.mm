@@ -31,7 +31,10 @@
 
 #include <OpenGL/OpenGL.h>
 #include "userinterface/MacOGLDisplayView.h"
+
+#ifdef ENABLE_APPLE_METAL
 #include "userinterface/MacMetalDisplayView.h"
+#endif
 
 #ifdef BOOL
 #undef BOOL
