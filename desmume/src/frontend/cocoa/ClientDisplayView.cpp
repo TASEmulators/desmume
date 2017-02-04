@@ -1217,3 +1217,154 @@ void ClientDisplay3DView::SetScreenTextureCoordinates(float w0, float h0, float 
 	
 	memcpy(texCoordBufferPtr + (2 * 8), texCoordBufferPtr + (0 * 8), sizeof(float) * (2 * 8));
 }
+
+LUTValues *_LQ2xLUT = NULL;
+LUTValues *_HQ2xLUT = NULL;
+LUTValues *_HQ3xLUT = NULL;
+LUTValues *_HQ4xLUT = NULL;
+
+static LUTValues PackLUTValues(const uint8_t p0, const uint8_t p1, const uint8_t p2, const uint8_t w0, const uint8_t w1, const uint8_t w2)
+{
+	const uint8_t wR = 256 / (w0 + w1 + w2);
+	return (LUTValues) {
+		(uint8_t)(p0*31),
+		(uint8_t)(p1*31),
+		(uint8_t)(p2*31),
+		(uint8_t)(0),
+		(uint8_t)((w1 == 0 && w2 == 0) ? 255 : w0*wR),
+		(uint8_t)(w1*wR),
+		(uint8_t)(w2*wR),
+		(uint8_t)(0)
+	};
+}
+
+void InitHQnxLUTs()
+{
+	static bool lutValuesInited = false;
+	
+	if (lutValuesInited)
+	{
+		return;
+	}
+	
+	lutValuesInited = true;
+	
+	_LQ2xLUT = (LUTValues *)malloc(256*(2*2)*16 * sizeof(LUTValues));
+	_HQ2xLUT = (LUTValues *)malloc(256*(2*2)*16 * sizeof(LUTValues));
+	_HQ3xLUT = (LUTValues *)malloc(256*(3*3)*16 * sizeof(LUTValues) + 2);
+	_HQ4xLUT = (LUTValues *)malloc(256*(4*4)*16 * sizeof(LUTValues) + 4); // The bytes fix a mysterious crash that intermittently occurs. Don't know why this works... it just does.
+	
+#define MUR (compare & 0x01) // top-right
+#define MDR (compare & 0x02) // bottom-right
+#define MDL (compare & 0x04) // bottom-left
+#define MUL (compare & 0x08) // top-left
+#define IC(p0)			PackLUTValues(p0, p0, p0,  1, 0, 0)
+#define I11(p0,p1)		PackLUTValues(p0, p1, p0,  1, 1, 0)
+#define I211(p0,p1,p2)	PackLUTValues(p0, p1, p2,  2, 1, 1)
+#define I31(p0,p1)		PackLUTValues(p0, p1, p0,  3, 1, 0)
+#define I332(p0,p1,p2)	PackLUTValues(p0, p1, p2,  3, 3, 2)
+#define I431(p0,p1,p2)	PackLUTValues(p0, p1, p2,  4, 3, 1)
+#define I521(p0,p1,p2)	PackLUTValues(p0, p1, p2,  5, 2, 1)
+#define I53(p0,p1)		PackLUTValues(p0, p1, p0,  5, 3, 0)
+#define I611(p0,p1,p2)	PackLUTValues(p0, p1, p2,  6, 1, 1)
+#define I71(p0,p1)		PackLUTValues(p0, p1, p0,  7, 1, 0)
+#define I772(p0,p1,p2)	PackLUTValues(p0, p1, p2,  7, 7, 2)
+#define I97(p0,p1)		PackLUTValues(p0, p1, p0,  9, 7, 0)
+#define I1411(p0,p1,p2)	PackLUTValues(p0, p1, p2, 14, 1, 1)
+#define I151(p0,p1)		PackLUTValues(p0, p1, p0, 15, 1, 0)
+	
+#define P0 _LQ2xLUT[pattern+(256*0)+(1024*compare)]
+#define P1 _LQ2xLUT[pattern+(256*1)+(1024*compare)]
+#define P2 _LQ2xLUT[pattern+(256*2)+(1024*compare)]
+#define P3 _LQ2xLUT[pattern+(256*3)+(1024*compare)]
+	for (size_t compare = 0; compare < 16; compare++)
+	{
+		for (size_t pattern = 0; pattern < 256; pattern++)
+		{
+			switch (pattern)
+			{
+				#include "../../filter/lq2x.h"
+			}
+		}
+	}
+#undef P0
+#undef P1
+#undef P2
+#undef P3
+
+#define P0 _HQ2xLUT[pattern+(256*0)+(1024*compare)]
+#define P1 _HQ2xLUT[pattern+(256*1)+(1024*compare)]
+#define P2 _HQ2xLUT[pattern+(256*2)+(1024*compare)]
+#define P3 _HQ2xLUT[pattern+(256*3)+(1024*compare)]
+	for (size_t compare = 0; compare < 16; compare++)
+	{
+		for (size_t pattern = 0; pattern < 256; pattern++)
+		{
+			switch (pattern)
+			{
+				#include "../../filter/hq2x.h"
+			}
+		}
+	}
+#undef P0
+#undef P1
+#undef P2
+#undef P3
+
+#define P(a, b)						_HQ3xLUT[pattern+(256*((b*3)+a))+(2304*compare)]
+#define I1(p0)						PackLUTValues(p0, p0, p0,  1,  0,  0)
+#define I2(i0, i1, p0, p1)			PackLUTValues(p0, p1, p0, i0, i1,  0)
+#define I3(i0, i1, i2, p0, p1, p2)	PackLUTValues(p0, p1, p2, i0, i1, i2)
+	for (size_t compare = 0; compare < 16; compare++)
+	{
+		for (size_t pattern = 0; pattern < 256; pattern++)
+		{
+			switch (pattern)
+			{
+				#include "../../filter/hq3x.dat"
+			}
+		}
+	}
+#undef P
+#undef I1
+#undef I2
+#undef I3
+
+#define P(a, b)						_HQ4xLUT[pattern+(256*((b*4)+a))+(4096*compare)]
+#define I1(p0)						PackLUTValues(p0, p0, p0,  1,  0,  0)
+#define I2(i0, i1, p0, p1)			PackLUTValues(p0, p1, p0, i0, i1,  0)
+#define I3(i0, i1, i2, p0, p1, p2)	PackLUTValues(p0, p1, p2, i0, i1, i2)
+	for (size_t compare = 0; compare < 16; compare++)
+	{
+		for (size_t pattern = 0; pattern < 256; pattern++)
+		{
+			switch (pattern)
+			{
+				#include "../../filter/hq4x.dat"
+			}
+		}
+	}
+#undef P
+#undef I1
+#undef I2
+#undef I3
+	
+#undef MUR
+#undef MDR
+#undef MDL
+#undef MUL
+#undef IC
+#undef I11
+#undef I211
+#undef I31
+#undef I332
+#undef I431
+#undef I521
+#undef I53
+#undef I611
+#undef I71
+#undef I772
+#undef I97
+#undef I1411
+#undef I151
+}

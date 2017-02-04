@@ -1429,8 +1429,8 @@ static const char *ScalerLQ2xSFragShader_110 = {"\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
 		float k = (f.y*2.0) + f.x;\n\
-		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/4.0, 0.5/16.0));\n\
-		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/4.0, 0.5/16.0));\n\
+		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/4.0, 0.0));\n\
+		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/4.0, 0.0));\n\
 		\n\
 		vec3 dst[3];\n\
 		dst[0] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.r)), step(7.0*30.95/255.0, p.r)), step(6.0*30.95/255.0, p.r)), step(5.0*30.95/255.0, p.r)), step(4.0*30.95/255.0, p.r)), step(3.0*30.95/255.0, p.r)), step(2.0*30.95/255.0, p.r)), step(1.0*30.95/255.0, p.r));\n\
@@ -1577,8 +1577,8 @@ static const char *ScalerHQ2xSFragShader_110 = {"\
 		\n\
 		vec2 f = step(0.5, fract(texCoord[0]));\n\
 		float k = (f.y*2.0) + f.x;\n\
-		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/4.0, 0.5/16.0));\n\
-		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/4.0, 0.5/16.0));\n\
+		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/4.0, 0.0));\n\
+		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/4.0, 0.0));\n\
 		\n\
 		vec3 dst[3];\n\
 		dst[0] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.r)), step(7.0*30.95/255.0, p.r)), step(6.0*30.95/255.0, p.r)), step(5.0*30.95/255.0, p.r)), step(4.0*30.95/255.0, p.r)), step(3.0*30.95/255.0, p.r)), step(2.0*30.95/255.0, p.r)), step(1.0*30.95/255.0, p.r));\n\
@@ -1616,10 +1616,9 @@ static const char *ScalerHQ3xFragShader_110 = {"\
 	//                        05|00|01\n\
 	//                        04|03|02\n\
 	//\n\
-	// Output Pixel Mapping: 00|01|02|03\n\
-	//                       04|05|06|07\n\
-	//                       08|09|10|11\n\
-	//                       12|13|14|15\n\
+	// Output Pixel Mapping:  00|01|02\n\
+	//                        03|04|05\n\
+	//                        06|07|08\n\
 	\n\
 	//---------------------------------------\n\
 	// HQ3x Pixel Mapping:      0|1|2\n\
@@ -1729,8 +1728,8 @@ static const char *ScalerHQ3xSFragShader_110 = {"\
 		\n\
 		vec2 f = mix( vec2(0.0,0.0), mix(vec2(1.0,1.0), vec2(2.0,2.0), step(0.6, fract(texCoord[0]))), step(0.3, fract(texCoord[0])) );\n\
 		float k = (f.y*3.0) + f.x;\n\
-		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/9.0, 0.5/16.0));\n\
-		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/9.0, 0.5/16.0));\n\
+		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/9.0, 0.0));\n\
+		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/9.0, 0.0));\n\
 		\n\
 		vec3 dst[3];\n\
 		dst[0] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.r)), step(7.0*30.95/255.0, p.r)), step(6.0*30.95/255.0, p.r)), step(5.0*30.95/255.0, p.r)), step(4.0*30.95/255.0, p.r)), step(3.0*30.95/255.0, p.r)), step(2.0*30.95/255.0, p.r)), step(1.0*30.95/255.0, p.r));\n\
@@ -1881,8 +1880,8 @@ static const char *ScalerHQ4xSFragShader_110 = {"\
 		\n\
 		vec2 f = mix( mix(vec2(0.0,0.0), vec2(1.0,1.0), step(0.25, fract(texCoord[0]))), mix(vec2(2.0,2.0), vec2(3.0,3.0), step(0.75, fract(texCoord[0]))), step(0.5, fract(texCoord[0])) );\n\
 		float k = (f.y*4.0) + f.x;\n\
-		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/16.0, 0.5/16.0));\n\
-		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/16.0, 0.5/16.0));\n\
+		vec3 p = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+0.0)+0.5)/512.0, (k+0.5)/16.0, 0.0));\n\
+		vec3 w = SAMPLE3_TEX_3D(lut, vec3(((pattern*2.0+1.0)+0.5)/512.0, (k+0.5)/16.0, 0.0));\n\
 		\n\
 		vec3 dst[3];\n\
 		dst[0] = mix(src[0], mix(src[1], mix(src[2], mix(src[3], mix(src[4], mix(src[5], mix(src[6], mix(src[7], src[8], step(8.0*30.95/255.0, p.r)), step(7.0*30.95/255.0, p.r)), step(6.0*30.95/255.0, p.r)), step(5.0*30.95/255.0, p.r)), step(4.0*30.95/255.0, p.r)), step(3.0*30.95/255.0, p.r)), step(2.0*30.95/255.0, p.r)), step(1.0*30.95/255.0, p.r));\n\
@@ -4113,21 +4112,6 @@ enum OGLVertexAttributeID
 	OGLVertexAttributeID_TexCoord0 = 8
 };
 
-typedef struct
-{
-	uint8_t p0;
-	uint8_t p1;
-	uint8_t p2;
-	uint8_t w0;
-	uint8_t w1;
-	uint8_t w2;
-} LUTValues;
-
-static LUTValues *_LQ2xLUT = NULL;
-static LUTValues *_HQ2xLUT = NULL;
-static LUTValues *_HQ3xLUT = NULL;
-static LUTValues *_HQ4xLUT = NULL;
-
 static const GLint filterVtxBuffer[8] = {-1, -1, 1, -1, -1, 1, 1, 1};
 
 void GetGLVersionOGL(GLint *outMajor, GLint *outMinor, GLint *outRevision)
@@ -4211,151 +4195,7 @@ void (*glBindVertexArrayDESMUME)(GLuint id) = &glBindVertexArray_LegacyAPPLE;
 void (*glDeleteVertexArraysDESMUME)(GLsizei n, const GLuint *ids) = &glDeleteVertexArrays_LegacyAPPLE;
 void (*glGenVertexArraysDESMUME)(GLsizei n, GLuint *ids) = &glGenVertexArrays_LegacyAPPLE;
 
-static LUTValues PackLUTValues(const uint8_t p0, const uint8_t p1, const uint8_t p2, const uint8_t w0, const uint8_t w1, const uint8_t w2)
-{
-	const uint8_t wR = 256 / (w0 + w1 + w2);
-	return (LUTValues) {
-		(uint8_t)(p0*31),
-		(uint8_t)(p1*31),
-		(uint8_t)(p2*31),
-		(uint8_t)((w1 == 0 && w2 == 0) ? 255 : w0*wR),
-		(uint8_t)(w1*wR),
-		(uint8_t)(w2*wR)
-	};
-}
-
-static void InitHQnxLUTs()
-{
-	static bool lutValuesInited = false;
-	
-	if (lutValuesInited)
-	{
-		return;
-	}
-	
-	lutValuesInited = true;
-	
-	_LQ2xLUT = (LUTValues *)malloc(256*(2*2)*16 * sizeof(LUTValues));
-	_HQ2xLUT = (LUTValues *)malloc(256*(2*2)*16 * sizeof(LUTValues));
-	_HQ3xLUT = (LUTValues *)malloc(256*(3*3)*16 * sizeof(LUTValues) + 2);
-	_HQ4xLUT = (LUTValues *)malloc(256*(4*4)*16 * sizeof(LUTValues) + 4); // The bytes fix a mysterious crash that intermittently occurs. Don't know why this works... it just does.
-	
-#define MUR (compare & 0x01) // top-right
-#define MDR (compare & 0x02) // bottom-right
-#define MDL (compare & 0x04) // bottom-left
-#define MUL (compare & 0x08) // top-left
-#define IC(p0)			PackLUTValues(p0, p0, p0,  1, 0, 0)
-#define I11(p0,p1)		PackLUTValues(p0, p1, p0,  1, 1, 0)
-#define I211(p0,p1,p2)	PackLUTValues(p0, p1, p2,  2, 1, 1)
-#define I31(p0,p1)		PackLUTValues(p0, p1, p0,  3, 1, 0)
-#define I332(p0,p1,p2)	PackLUTValues(p0, p1, p2,  3, 3, 2)
-#define I431(p0,p1,p2)	PackLUTValues(p0, p1, p2,  4, 3, 1)
-#define I521(p0,p1,p2)	PackLUTValues(p0, p1, p2,  5, 2, 1)
-#define I53(p0,p1)		PackLUTValues(p0, p1, p0,  5, 3, 0)
-#define I611(p0,p1,p2)	PackLUTValues(p0, p1, p2,  6, 1, 1)
-#define I71(p0,p1)		PackLUTValues(p0, p1, p0,  7, 1, 0)
-#define I772(p0,p1,p2)	PackLUTValues(p0, p1, p2,  7, 7, 2)
-#define I97(p0,p1)		PackLUTValues(p0, p1, p0,  9, 7, 0)
-#define I1411(p0,p1,p2)	PackLUTValues(p0, p1, p2, 14, 1, 1)
-#define I151(p0,p1)		PackLUTValues(p0, p1, p0, 15, 1, 0)
-	
-#define P0 _LQ2xLUT[pattern+(256*0)+(1024*compare)]
-#define P1 _LQ2xLUT[pattern+(256*1)+(1024*compare)]
-#define P2 _LQ2xLUT[pattern+(256*2)+(1024*compare)]
-#define P3 _LQ2xLUT[pattern+(256*3)+(1024*compare)]
-	for (size_t compare = 0; compare < 16; compare++)
-	{
-		for (size_t pattern = 0; pattern < 256; pattern++)
-		{
-			switch (pattern)
-			{
-				#include "../../filter/lq2x.h"
-			}
-		}
-	}
-#undef P0
-#undef P1
-#undef P2
-#undef P3
-
-#define P0 _HQ2xLUT[pattern+(256*0)+(1024*compare)]
-#define P1 _HQ2xLUT[pattern+(256*1)+(1024*compare)]
-#define P2 _HQ2xLUT[pattern+(256*2)+(1024*compare)]
-#define P3 _HQ2xLUT[pattern+(256*3)+(1024*compare)]
-	for (size_t compare = 0; compare < 16; compare++)
-	{
-		for (size_t pattern = 0; pattern < 256; pattern++)
-		{
-			switch (pattern)
-			{
-				#include "../../filter/hq2x.h"
-			}
-		}
-	}
-#undef P0
-#undef P1
-#undef P2
-#undef P3
-
-#define P(a, b)						_HQ3xLUT[pattern+(256*((b*3)+a))+(2304*compare)]
-#define I1(p0)						PackLUTValues(p0, p0, p0,  1,  0,  0)
-#define I2(i0, i1, p0, p1)			PackLUTValues(p0, p1, p0, i0, i1,  0)
-#define I3(i0, i1, i2, p0, p1, p2)	PackLUTValues(p0, p1, p2, i0, i1, i2)
-	for (size_t compare = 0; compare < 16; compare++)
-	{
-		for (size_t pattern = 0; pattern < 256; pattern++)
-		{
-			switch (pattern)
-			{
-				#include "../../filter/hq3x.dat"
-			}
-		}
-	}
-#undef P
-#undef I1
-#undef I2
-#undef I3
-
-#define P(a, b)						_HQ4xLUT[pattern+(256*((b*4)+a))+(4096*compare)]
-#define I1(p0)						PackLUTValues(p0, p0, p0,  1,  0,  0)
-#define I2(i0, i1, p0, p1)			PackLUTValues(p0, p1, p0, i0, i1,  0)
-#define I3(i0, i1, i2, p0, p1, p2)	PackLUTValues(p0, p1, p2, i0, i1, i2)
-	for (size_t compare = 0; compare < 16; compare++)
-	{
-		for (size_t pattern = 0; pattern < 256; pattern++)
-		{
-			switch (pattern)
-			{
-				#include "../../filter/hq4x.dat"
-			}
-		}
-	}
-#undef P
-#undef I1
-#undef I2
-#undef I3
-	
-#undef MUR
-#undef MDR
-#undef MDL
-#undef MUL
-#undef IC
-#undef I11
-#undef I211
-#undef I31
-#undef I332
-#undef I431
-#undef I521
-#undef I53
-#undef I611
-#undef I71
-#undef I772
-#undef I97
-#undef I1411
-#undef I151
-}
-
-void SetupHQnxLUTs(GLenum textureIndex, GLuint &texLQ2xLUT, GLuint &texHQ2xLUT, GLuint &texHQ3xLUT, GLuint &texHQ4xLUT)
+void SetupHQnxLUTs_OGL(GLenum textureIndex, GLuint &texLQ2xLUT, GLuint &texHQ2xLUT, GLuint &texHQ3xLUT, GLuint &texHQ4xLUT)
 {
 	InitHQnxLUTs();
 	
@@ -4370,34 +4210,34 @@ void SetupHQnxLUTs(GLenum textureIndex, GLuint &texLQ2xLUT, GLuint &texHQ2xLUT, 
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 256*2, 4, 16, 0, GL_BGR, GL_UNSIGNED_BYTE, _LQ2xLUT);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 256*2, 4, 16, 0, GL_BGRA, GL_UNSIGNED_BYTE, _LQ2xLUT);
 	
 	glBindTexture(GL_TEXTURE_3D, texHQ2xLUT);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 256*2, 4, 16, 0, GL_BGR, GL_UNSIGNED_BYTE, _HQ2xLUT);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 256*2, 4, 16, 0, GL_BGRA, GL_UNSIGNED_BYTE, _HQ2xLUT);
 	
 	glBindTexture(GL_TEXTURE_3D, texHQ3xLUT);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 256*2, 9, 16, 0, GL_BGR, GL_UNSIGNED_BYTE, _HQ3xLUT);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 256*2, 9, 16, 0, GL_BGRA, GL_UNSIGNED_BYTE, _HQ3xLUT);
 	
 	glBindTexture(GL_TEXTURE_3D, texHQ4xLUT);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 256*2, 16, 16, 0, GL_BGR, GL_UNSIGNED_BYTE, _HQ4xLUT);
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 256*2, 16, 16, 0, GL_BGRA, GL_UNSIGNED_BYTE, _HQ4xLUT);
 	
 	glBindTexture(GL_TEXTURE_3D, 0);
 	glActiveTexture(GL_TEXTURE0);
 }
 
-void DeleteHQnxLUTs(GLenum textureIndex, GLuint &texLQ2xLUT, GLuint &texHQ2xLUT, GLuint &texHQ3xLUT, GLuint &texHQ4xLUT)
+void DeleteHQnxLUTs_OGL(GLenum textureIndex, GLuint &texLQ2xLUT, GLuint &texHQ2xLUT, GLuint &texHQ3xLUT, GLuint &texHQ4xLUT)
 {
 	glActiveTexture(textureIndex);
 	glBindTexture(GL_TEXTURE_3D, 0);
@@ -4889,7 +4729,7 @@ OGLClientFetchObject::~OGLClientFetchObject()
 {
 	if (this->_contextInfo->IsShaderSupported())
 	{
-		DeleteHQnxLUTs(GL_TEXTURE0 + 1, this->_texLQ2xLUT, this->_texHQ2xLUT, this->_texHQ3xLUT, this->_texHQ4xLUT);
+		DeleteHQnxLUTs_OGL(GL_TEXTURE0 + 1, this->_texLQ2xLUT, this->_texHQ2xLUT, this->_texHQ3xLUT, this->_texHQ4xLUT);
 	}
 	
 	glDeleteTextures(4, &this->_texDisplayFetchNative[0][0]);
@@ -5028,7 +4868,7 @@ void OGLClientFetchObject::Init()
 	
 	if (this->_contextInfo->IsShaderSupported())
 	{
-		SetupHQnxLUTs(GL_TEXTURE0 + 1, this->_texLQ2xLUT, this->_texHQ2xLUT, this->_texHQ3xLUT, this->_texHQ4xLUT);
+		SetupHQnxLUTs_OGL(GL_TEXTURE0 + 1, this->_texLQ2xLUT, this->_texHQ2xLUT, this->_texHQ3xLUT, this->_texHQ4xLUT);
 	}
 }
 
@@ -5726,7 +5566,7 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 		shaderFilterProgram->SetShaderSupport(_shaderSupport);
 		shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample1x1_VertShader_110, PassthroughFragShader_110, _useShader150);
 		
-		SetupHQnxLUTs(GL_TEXTURE0 + 1, _texLQ2xLUT, _texHQ2xLUT, _texHQ3xLUT, _texHQ4xLUT);
+		SetupHQnxLUTs_OGL(GL_TEXTURE0 + 1, _texLQ2xLUT, _texHQ2xLUT, _texHQ3xLUT, _texHQ4xLUT);
 	}
 	else
 	{
@@ -5762,7 +5602,7 @@ OGLImage::~OGLImage()
 	{
 		delete this->_filterDeposterize;
 		delete this->_shaderFilter;
-		DeleteHQnxLUTs(GL_TEXTURE0 + 1, this->_texLQ2xLUT, this->_texHQ2xLUT, this->_texHQ3xLUT, this->_texHQ4xLUT);
+		DeleteHQnxLUTs_OGL(GL_TEXTURE0 + 1, this->_texLQ2xLUT, this->_texHQ2xLUT, this->_texHQ3xLUT, this->_texHQ4xLUT);
 	}
 	
 	delete this->_vf;

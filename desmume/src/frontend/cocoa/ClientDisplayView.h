@@ -76,6 +76,19 @@ struct GlyphInfo
 };
 typedef struct GlyphInfo GlyphInfo;
 
+struct LUTValues
+{
+	uint8_t p0;
+	uint8_t p1;
+	uint8_t p2;
+	uint8_t pad0;
+	uint8_t w0;
+	uint8_t w1;
+	uint8_t w2;
+	uint8_t pad1;
+};
+typedef struct LUTValues LUTValues;
+
 struct NDSFrameInfo
 {
 	uint32_t videoFPS;
@@ -104,6 +117,12 @@ struct ClientDisplayViewProperties
 	double gapDistance;
 };
 typedef struct ClientDisplayViewProperties ClientDisplayViewProperties;
+
+extern LUTValues *_LQ2xLUT;
+extern LUTValues *_HQ2xLUT;
+extern LUTValues *_HQ3xLUT;
+extern LUTValues *_HQ4xLUT;
+void InitHQnxLUTs();
 
 class ClientDisplayView
 {
