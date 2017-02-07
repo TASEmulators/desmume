@@ -151,25 +151,28 @@ typedef struct
 class VideoFilter
 {
 private:
-	VideoFilterAttributes _vfAttributes;
-	
-	SSurface _vfSrcSurface;
-	SSurface _vfDstSurface;
-	uint32_t *_vfSrcSurfacePixBuffer;
-	VideoFilterFunc _vfFunc;
-	std::vector<VideoFilterThread> _vfThread;
+	SSurface __vfSrcSurface;
+	SSurface __vfDstSurface;
+	uint32_t *__vfSrcSurfacePixBuffer;
+	VideoFilterFunc __vfFunc;
+	std::vector<VideoFilterThread> __vfThread;
 	bool _useInternalDstBuffer;
 	
-	bool _isFilterRunning;
+	bool __isCPUFilterRunning;
+	ThreadCond __condCPUFilterRunning;
+	
+	void __InstanceInit(size_t srcWidth, size_t srcHeight, VideoFilterTypeID typeID, size_t threadCount);
+	bool __AllocateDstBuffer(const size_t dstWidth, const size_t dstHeight, const size_t workingSurfaceCount);
+	
+protected:
+	VideoFilterAttributes _vfAttributes;
 	ThreadLock _lockSrc;
 	ThreadLock _lockDst;
 	ThreadLock _lockAttributes;
-	ThreadCond _condRunning;
-	
-	bool AllocateDstBuffer(const size_t dstWidth, const size_t dstHeight, const size_t workingSurfaceCount);
-	void SetAttributes(const VideoFilterAttributes &vfAttr);
+	float _pixelScale;
 	
 public:
+	VideoFilter();
 	VideoFilter(size_t srcWidth, size_t srcHeight, VideoFilterTypeID typeID, size_t threadCount);
 	~VideoFilter();
 	
@@ -193,6 +196,7 @@ public:
 	size_t GetSrcHeight();
 	size_t GetDstWidth();
 	size_t GetDstHeight();
+	float GetPixelScale();
 	VideoFilterParamType GetFilterParameterType(VideoFilterParamID paramID) const;
 	int GetFilterParameteri(VideoFilterParamID paramID);
 	unsigned int GetFilterParameterui(VideoFilterParamID paramID);
