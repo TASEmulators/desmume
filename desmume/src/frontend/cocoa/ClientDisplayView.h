@@ -163,6 +163,10 @@ protected:
 	size_t _glyphSize;
 	size_t _glyphTileSize;
 	
+	uint32_t *_vfMasterDstBuffer;
+	size_t _vfMasterDstBufferSize;
+	VideoFilter *_vf[2];
+	
 	void _UpdateHUDString();
 	void _SetHUDShowInfoItem(bool &infoItemFlag, const bool visibleState);
 	
@@ -174,6 +178,8 @@ protected:
 	
 	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
 	virtual void _LoadCustomDisplayByID(const NDSDisplayID displayID);
+	
+	virtual void _ResizeCPUPixelScaler(const VideoFilterTypeID filterID);
 	
 public:
 	ClientDisplayView();
@@ -207,6 +213,7 @@ public:
 	virtual void SetOutputFilter(const OutputFilterTypeID filterID);
 	VideoFilterTypeID GetPixelScaler() const;
 	virtual void SetPixelScaler(const VideoFilterTypeID filterID);
+	VideoFilter* GetPixelScalerObject(const NDSDisplayID displayID);
 	
 	// HUD appearance
 	const char* GetHUDFontPath() const;

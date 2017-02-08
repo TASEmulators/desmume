@@ -301,11 +301,6 @@ protected:
 	
 	GLuint _texVideoOutputID[2];
 	
-	uint32_t *_vfMasterDstBuffer;
-	size_t _vfMasterDstBufferSize;
-	VideoFilter *_vf[2];
-	GLuint _texCPUFilterDstID[2];
-	
 	GLuint _vaoMainStatesID;
 	GLuint _vboVertexID;
 	GLuint _vboTexCoordID;
@@ -313,8 +308,6 @@ protected:
 	GLint _uniformFinalOutputAngleDegrees;
 	GLint _uniformFinalOutputScalar;
 	GLint _uniformFinalOutputViewSize;
-	
-	void _ResizeCPUPixelScalerOGL(const size_t srcWidthMain, const size_t srcHeightMain, const size_t srcWidthTouch, const size_t srcHeightTouch, const size_t scaleMultiply, const size_t scaleDivide);
 	
 	void _UpdateRotationScaleOGL();
 	void _UpdateVerticesOGL();
@@ -330,7 +323,6 @@ public:
 	
 	OutputFilterTypeID SetOutputFilterOGL(const OutputFilterTypeID filterID);
 	bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);
-	void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	
 	void LoadNativeDisplayByID_OGL(const NDSDisplayID displayID);
 	void ProcessOGL();
@@ -388,7 +380,9 @@ protected:
 	GLsizei _viewportWidth;
 	GLsizei _viewportHeight;
 	bool _needUpdateViewport;
+	bool _hasOGLPixelScaler;
 	std::vector<OGLVideoLayer *> *_layerList;
+	GLuint _texCPUFilterDstID[2];
 	
 	void _UpdateViewport();
 	
@@ -399,6 +393,7 @@ protected:
 	virtual void _UpdateViewScale();
 	
 	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
+	virtual void _ResizeCPUPixelScaler(const VideoFilterTypeID filterID);
 	
 public:
 	OGLVideoOutput();
@@ -421,6 +416,8 @@ public:
 	virtual void SetHUDVisibility(const bool visibleState);
 	
 	virtual void SetFiltersPreferGPU(const bool preferGPU);
+	
+	GLuint GetTexCPUFilterDstID(const NDSDisplayID displayID) const;
 	
 	// Client view interface
 	virtual void ProcessDisplays();

@@ -16,6 +16,7 @@
  */
 
 #include "ClientDisplayView.h"
+#include "../../common.h"
 
 #include <sstream>
 
@@ -46,8 +47,13 @@ ClientDisplayView::ClientDisplayView(const ClientDisplayViewProperties &props)
 
 ClientDisplayView::~ClientDisplayView()
 {
-	delete _initialTouchInMajorDisplay;
-	_initialTouchInMajorDisplay = NULL;
+	delete this->_vf[NDSDisplayID_Main];
+	delete this->_vf[NDSDisplayID_Touch];
+	free_aligned(this->_vfMasterDstBuffer);
+	this->_vfMasterDstBufferSize = 0;
+	
+	delete this->_initialTouchInMajorDisplay;
+	this->_initialTouchInMajorDisplay = NULL;
 	
 	if (this->_ftLibrary != NULL)
 	{
@@ -101,6 +107,16 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	boxInfo.texCoord[2] = 2.0f/16.0f;		boxInfo.texCoord[3] = 0.0f;
 	boxInfo.texCoord[4] = 2.0f/16.0f;		boxInfo.texCoord[5] = 1.0f/16.0f;
 	boxInfo.texCoord[6] = 1.0f/16.0f;		boxInfo.texCoord[7] = 1.0f/16.0f;
+	
+	// Set up the CPU pixel scaler objects.
+	_vfMasterDstBufferSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * sizeof(uint32_t);
+	_vfMasterDstBuffer = (uint32_t *)malloc_alignedPage(_vfMasterDstBufferSize);
+	memset(_vfMasterDstBuffer, 0, _vfMasterDstBufferSize);
+	
+	_vf[NDSDisplayID_Main]  = new VideoFilter(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, VideoFilterTypeID_None, 0);
+	_vf[NDSDisplayID_Touch] = new VideoFilter(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, VideoFilterTypeID_None, 0);
+	_vf[NDSDisplayID_Main]->SetDstBufferPtr(_vfMasterDstBuffer);
+	_vf[NDSDisplayID_Touch]->SetDstBufferPtr(_vfMasterDstBuffer + (_vf[NDSDisplayID_Main]->GetDstWidth() * _vf[NDSDisplayID_Main]->GetDstHeight()));
 }
 
 void ClientDisplayView::_UpdateHUDString()
@@ -329,7 +345,31 @@ VideoFilterTypeID ClientDisplayView::GetPixelScaler() const
 
 void ClientDisplayView::SetPixelScaler(const VideoFilterTypeID filterID)
 {
-	this->_pixelScaler = filterID;
+	std::string cpuTypeIDString = std::string( VideoFilter::GetTypeStringByID(filterID) );
+	const VideoFilterTypeID newFilterID = (cpuTypeIDString != std::string(VIDEOFILTERTYPE_UNKNOWN_STRING)) ? filterID : VideoFilterTypeID_None;
+	
+	const VideoFilterAttributes newFilterAttr = VideoFilter::GetAttributesByID(newFilterID);
+	const size_t oldDstBufferWidth  =  this->_vf[NDSDisplayID_Main]->GetDstWidth()  + this->_vf[NDSDisplayID_Touch]->GetDstWidth();
+	const size_t oldDstBufferHeight =  this->_vf[NDSDisplayID_Main]->GetDstHeight() + this->_vf[NDSDisplayID_Touch]->GetDstHeight();
+	const size_t newDstBufferWidth  = (this->_vf[NDSDisplayID_Main]->GetSrcWidth()  + this->_vf[NDSDisplayID_Touch]->GetSrcWidth())  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
+	const size_t newDstBufferHeight = (this->_vf[NDSDisplayID_Main]->GetSrcHeight() + this->_vf[NDSDisplayID_Touch]->GetSrcHeight()) * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
+	
+	if ( (oldDstBufferWidth != newDstBufferWidth) || (oldDstBufferHeight != newDstBufferHeight) )
+	{
+		uint32_t *oldMasterBuffer = this->_vfMasterDstBuffer;
+		this->_ResizeCPUPixelScaler(newFilterID);
+		free_aligned(oldMasterBuffer);
+	}
+	
+	this->_vf[NDSDisplayID_Main]->ChangeFilterByID(newFilterID);
+	this->_vf[NDSDisplayID_Touch]->ChangeFilterByID(newFilterID);
+	
+	this->_pixelScaler = newFilterID;
+}
+
+VideoFilter* ClientDisplayView::GetPixelScalerObject(const NDSDisplayID displayID)
+{
+	return this->_vf[displayID];
 }
 
 // HUD appearance
@@ -544,6 +584,26 @@ void ClientDisplayView::LoadDisplays()
 			this->_LoadCustomDisplayByID(NDSDisplayID_Touch);
 		}
 	}
+}
+
+void ClientDisplayView::_ResizeCPUPixelScaler(const VideoFilterTypeID filterID)
+{
+	const VideoFilterAttributes newFilterAttr = VideoFilter::GetAttributesByID(filterID);
+	const size_t newDstBufferWidth  = (this->_vf[NDSDisplayID_Main]->GetSrcWidth()  + this->_vf[NDSDisplayID_Touch]->GetSrcWidth())  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
+	const size_t newDstBufferHeight = (this->_vf[NDSDisplayID_Main]->GetSrcHeight() + this->_vf[NDSDisplayID_Touch]->GetSrcHeight()) * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
+	
+	size_t newMasterBufferSize = newDstBufferWidth * newDstBufferHeight * sizeof(uint32_t);
+	uint32_t *newMasterBuffer = (uint32_t *)malloc_alignedPage(newMasterBufferSize);
+	memset(newMasterBuffer, 0, newMasterBufferSize);
+	
+	const size_t newDstBufferSingleWidth  = this->_vf[NDSDisplayID_Main]->GetSrcWidth()  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
+	const size_t newDstBufferSingleHeight = this->_vf[NDSDisplayID_Main]->GetSrcHeight() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
+	
+	this->_vf[NDSDisplayID_Main]->SetDstBufferPtr(newMasterBuffer);
+	this->_vf[NDSDisplayID_Touch]->SetDstBufferPtr(newMasterBuffer + (newDstBufferSingleWidth * newDstBufferSingleHeight));
+	
+	this->_vfMasterDstBuffer = newMasterBuffer;
+	this->_vfMasterDstBufferSize = newMasterBufferSize;
 }
 
 void ClientDisplayView::ProcessDisplays()
