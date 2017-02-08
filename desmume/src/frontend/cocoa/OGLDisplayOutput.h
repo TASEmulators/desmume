@@ -143,13 +143,9 @@ public:
 	
 	OGLShaderProgram* GetProgram();
 	GLuint GetDstTexID();
-	GLsizei GetSrcWidth();
-	GLsizei GetSrcHeight();
-	GLsizei GetDstWidth();
-	GLsizei GetDstHeight();
 	virtual void SetSrcSizeOGL(GLsizei w, GLsizei h);
 	GLfloat GetScale();
-	void SetScaleOGL(GLfloat scale);
+	void SetScaleOGL(GLfloat scale, void *buffer);
 	virtual GLuint RunFilterOGL(GLuint srcTexID);
 	void DownloadDstBufferOGL(uint32_t *dstBuffer, size_t lineOffset, size_t readLineCount);
 };
@@ -298,9 +294,6 @@ public:
 class OGLDisplayLayer : public OGLVideoLayer
 {
 protected:
-	bool _useShader150;
-	ShaderSupportTier _shaderSupport;
-	
 	OGLShaderProgram *_finalOutputProgram;
 	OGLFilter *_filterDeposterize[2];
 	OGLFilter *_shaderFilter[2];
@@ -340,7 +333,6 @@ public:
 	void SetCPUPixelScalerOGL(const VideoFilterTypeID filterID);
 	
 	void LoadNativeDisplayByID_OGL(const NDSDisplayID displayID);
-	
 	void ProcessOGL();
 	virtual void RenderOGL();
 	virtual void FinishOGL(const u8 bufferIndex);
