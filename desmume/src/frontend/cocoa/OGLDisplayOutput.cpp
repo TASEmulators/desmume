@@ -5144,7 +5144,7 @@ void OGLVideoOutput::SetHUDVisibility(const bool visibleState)
 
 void OGLVideoOutput::SetFiltersPreferGPU(const bool preferGPU)
 {
-	this->_filtersPreferGPU =  preferGPU;
+	this->_filtersPreferGPU = preferGPU;
 	this->_willFilterOnGPU = (preferGPU) ? this->_hasOGLPixelScaler : false;
 }
 
@@ -6861,7 +6861,7 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 
 void OGLDisplayLayer::LoadNativeDisplayByID_OGL(const NDSDisplayID displayID)
 {
-	if ((this->_output->GetPixelScaler() != VideoFilterTypeID_None) && !this->_output->WillFilterOnGPU())
+	if ((this->_output->GetPixelScaler() != VideoFilterTypeID_None) && !this->_output->WillFilterOnGPU() && !this->_output->GetSourceDeposterize())
 	{
 		OGLClientFetchObject &fetchObjMutable = (OGLClientFetchObject &)this->_output->GetFetchObject();
 		VideoFilter *vf = this->_output->GetPixelScalerObject(displayID);
