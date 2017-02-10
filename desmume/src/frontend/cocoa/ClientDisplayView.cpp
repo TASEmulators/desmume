@@ -619,6 +619,11 @@ void ClientDisplayView::UpdateView()
 	// Do nothing. This is implementation dependent.
 }
 
+void ClientDisplayView::FinishFrameAtIndex(const u8 bufferIndex)
+{
+	// Do nothing. This is implementation dependent.
+}
+
 const NDSDisplayInfo& ClientDisplayView::GetEmuDisplayInfo() const
 {
 	return this->_emuDisplayInfo;

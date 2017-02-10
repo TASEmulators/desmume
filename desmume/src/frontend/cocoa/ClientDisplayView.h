@@ -253,7 +253,7 @@ public:
 	virtual void LoadDisplays();
 	virtual void ProcessDisplays();
 	virtual void UpdateView();
-	virtual void FinishFrameAtIndex(const u8 bufferIndex) = 0;
+	virtual void FinishFrameAtIndex(const u8 bufferIndex);
 	
 	// Emulator interface
 	const NDSDisplayInfo& GetEmuDisplayInfo() const;
