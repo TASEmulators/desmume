@@ -90,6 +90,8 @@
 	<dict/>
 	<key>General_AutoloadROMOption</key>
 	<integer>10000</integer>
+	<key>General_DisplayViewsPreferMetal</key>
+	<true/>
 	<key>General_DisplayWindowRestorableStates</key>
 	<array/>
 	<key>General_DoNotAskMigrate</key>

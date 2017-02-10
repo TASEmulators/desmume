@@ -27,7 +27,7 @@
 #endif
 
 #if defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
-//#define ENABLE_APPLE_METAL
+#define ENABLE_APPLE_METAL
 #endif
 
 class GPUEventHandlerOSX;

@@ -156,7 +156,7 @@ public:
 	fetchObject = NULL;
 	
 #ifdef ENABLE_APPLE_METAL
-	if (IsOSXVersionSupported(10, 11, 0))
+	if (IsOSXVersionSupported(10, 11, 0) && [[NSUserDefaults standardUserDefaults] boolForKey:@"General_DisplayViewsPreferMetal"])
 	{
 		fetchObject = new MacMetalFetchObject;
 		if (fetchObject->GetClientData() == nil)

@@ -146,6 +146,8 @@
 		AB3BF4381E25D9AE003E2B24 /* DisplayViewCALayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4371E25D9AE003E2B24 /* DisplayViewCALayer.mm */; };
 		AB3BF4391E25D9AE003E2B24 /* DisplayViewCALayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4371E25D9AE003E2B24 /* DisplayViewCALayer.mm */; };
 		AB3BF43A1E25D9AE003E2B24 /* DisplayViewCALayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF4371E25D9AE003E2B24 /* DisplayViewCALayer.mm */; };
+		AB3BF43E1E26289E003E2B24 /* MacMetalDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF43B1E26289E003E2B24 /* MacMetalDisplayView.mm */; };
+		AB3BF4421E262959003E2B24 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4401E262943003E2B24 /* Metal.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		AB3E34C9134AF4500056477A /* cocoa_output.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3E34C8134AF4500056477A /* cocoa_output.mm */; };
 		AB40562A169F5DBB0016AC3E /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
 		AB40562B169F5DBB0016AC3E /* assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405600169F5DBB0016AC3E /* assembler.cpp */; };
@@ -245,6 +247,9 @@
 		AB4FCEBD1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
 		AB4FCEBE1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
 		AB4FCEBF1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
+		AB54718B1E27610500508C5C /* MacMetalDisplayViewShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */; };
+		AB54718C1E27610500508C5C /* MacMetalDisplayViewShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */; };
+		AB54718D1E27610500508C5C /* MacMetalDisplayViewShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */; };
 		AB5648FF186E6EA8002740F4 /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */; };
 		AB564900186E6EA8002740F4 /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */; };
 		AB564901186E6EA8002740F4 /* cocoa_slot2.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */; };
@@ -278,6 +283,10 @@
 		AB6FBEF6139B6258007BB045 /* slot1_retail_nand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB6FBEF5139B6258007BB045 /* slot1_retail_nand.cpp */; };
 		AB74EC8A1738499C0026C41E /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB74EC891738499C0026C41E /* Carbon.framework */; };
 		AB75226E14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns in Resources */ = {isa = PBXBuildFile; fileRef = AB75226D14C7BB51009B97B3 /* AppIcon_FirmwareConfig.icns */; };
+		AB78B5C11E384F2100297FED /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4401E262943003E2B24 /* Metal.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		AB78B5C21E384F2200297FED /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4401E262943003E2B24 /* Metal.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		AB78B5C31E384F4F00297FED /* MacMetalDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF43B1E26289E003E2B24 /* MacMetalDisplayView.mm */; };
+		AB78B5C41E384F4F00297FED /* MacMetalDisplayView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3BF43B1E26289E003E2B24 /* MacMetalDisplayView.mm */; };
 		AB796C9C15CDCB0F00C59155 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; };
 		AB796C9F15CDCB0F00C59155 /* arm_jit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB796C9B15CDCB0F00C59155 /* arm_jit.cpp */; };
 		AB796CA715CDCBA200C59155 /* KeyNames.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB02475B13886BF300E9F9AB /* KeyNames.plist */; };
@@ -1361,6 +1370,9 @@
 		AB3BF4321E2562F2003E2B24 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		AB3BF4361E25D6B4003E2B24 /* DisplayViewCALayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DisplayViewCALayer.h; sourceTree = "<group>"; };
 		AB3BF4371E25D9AE003E2B24 /* DisplayViewCALayer.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = DisplayViewCALayer.mm; sourceTree = "<group>"; };
+		AB3BF43B1E26289E003E2B24 /* MacMetalDisplayView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MacMetalDisplayView.mm; sourceTree = "<group>"; };
+		AB3BF43F1E2628B6003E2B24 /* MacMetalDisplayView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MacMetalDisplayView.h; sourceTree = "<group>"; };
+		AB3BF4401E262943003E2B24 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		AB3E34C7134AF4500056477A /* cocoa_output.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_output.h; sourceTree = "<group>"; };
 		AB3E34C8134AF4500056477A /* cocoa_output.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_output.mm; sourceTree = "<group>"; };
 		AB4055ED169F59380016AC3E /* AsmJit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AsmJit.h; sourceTree = "<group>"; };
@@ -1436,6 +1448,7 @@
 		AB47B52C18A3F722009A42AF /* xbrz.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = xbrz.cpp; sourceTree = "<group>"; };
 		AB4C81E31B21676C00ACECD5 /* hq3x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hq3x.cpp; sourceTree = "<group>"; };
 		AB4FCEBC1692AB82000F498F /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = MacMetalDisplayViewShaders.metal; sourceTree = "<group>"; };
 		AB5648FD186E6EA8002740F4 /* cocoa_slot2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_slot2.h; sourceTree = "<group>"; };
 		AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_slot2.mm; sourceTree = "<group>"; };
 		AB564902186E6EBC002740F4 /* Slot2WindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Slot2WindowDelegate.h; sourceTree = "<group>"; };
@@ -1902,6 +1915,7 @@
 				AB564908186E6F1F002740F4 /* ForceFeedback.framework in Frameworks */,
 				ABC572101344347000E7B0B1 /* Foundation.framework in Frameworks */,
 				AB350BA51478AC96007165AC /* IOKit.framework in Frameworks */,
+				AB3BF4421E262959003E2B24 /* Metal.framework in Frameworks */,
 				ABC570D5134431DA00E7B0B1 /* OpenGL.framework in Frameworks */,
 				AB3BF4341E256309003E2B24 /* QuartzCore.framework in Frameworks */,
 				AB4676F314AB12D60002FF94 /* libz.dylib in Frameworks */,
@@ -1922,6 +1936,7 @@
 				AB564907186E6F0C002740F4 /* ForceFeedback.framework in Frameworks */,
 				AB796D6915CDCBA200C59155 /* Foundation.framework in Frameworks */,
 				AB796D6A15CDCBA200C59155 /* IOKit.framework in Frameworks */,
+				AB78B5C21E384F2200297FED /* Metal.framework in Frameworks */,
 				AB796D6B15CDCBA200C59155 /* OpenGL.framework in Frameworks */,
 				AB3BF4331E2562F2003E2B24 /* QuartzCore.framework in Frameworks */,
 				AB796D6C15CDCBA200C59155 /* libz.dylib in Frameworks */,
@@ -1942,6 +1957,7 @@
 				AB8F3D251A53AC2600A80BF6 /* ForceFeedback.framework in Frameworks */,
 				AB8F3D261A53AC2600A80BF6 /* Foundation.framework in Frameworks */,
 				AB8F3D271A53AC2600A80BF6 /* IOKit.framework in Frameworks */,
+				AB78B5C11E384F2100297FED /* Metal.framework in Frameworks */,
 				AB8F3D281A53AC2600A80BF6 /* OpenGL.framework in Frameworks */,
 				AB3BF4351E256309003E2B24 /* QuartzCore.framework in Frameworks */,
 				AB8F3D291A53AC2600A80BF6 /* libz.dylib in Frameworks */,
@@ -2032,6 +2048,7 @@
 				AB564906186E6F0C002740F4 /* ForceFeedback.framework */,
 				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
 				AB350BA41478AC96007165AC /* IOKit.framework */,
+				AB3BF4401E262943003E2B24 /* Metal.framework */,
 				ABC570D4134431DA00E7B0B1 /* OpenGL.framework */,
 				AB3BF4321E2562F2003E2B24 /* QuartzCore.framework */,
 				AB0A0D1914AACA9600E83E91 /* libz.dylib */,
@@ -2389,11 +2406,13 @@
 				AB29B32F16D4BEBF000EF671 /* InputManager.h */,
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB01005C170D07AF00D70FBE /* InputProfileController.h */,
+				AB3BF43F1E2628B6003E2B24 /* MacMetalDisplayView.h */,
 				AB3BF4051E22FEA8003E2B24 /* MacOGLDisplayView.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
 				ABAF0A3F1A96E67200B95B75 /* RomInfoPanel.h */,
 				AB564902186E6EBC002740F4 /* Slot2WindowDelegate.h */,
 				ABF2B9F81690412A000FF7C0 /* troubleshootingWindowDelegate.h */,
+				AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */,
 				AB3ACB6714C2361100D7D192 /* appDelegate.mm */,
 				AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */,
 				AB3BF4371E25D9AE003E2B24 /* DisplayViewCALayer.mm */,
@@ -2403,6 +2422,7 @@
 				AB29B33016D4BEBF000EF671 /* InputManager.mm */,
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB01005D170D07B000D70FBE /* InputProfileController.mm */,
+				AB3BF43B1E26289E003E2B24 /* MacMetalDisplayView.mm */,
 				AB3BF4011E22FE01003E2B24 /* MacOGLDisplayView.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
 				ABAF0A401A96E67200B95B75 /* RomInfoPanel.mm */,
@@ -3856,12 +3876,14 @@
 				ABD1FEFE1345AC8400AF11D1 /* wifi.cpp in Sources */,
 				ABFEA8051BB4EC1000B08C25 /* ftbbox.c in Sources */,
 				AB9038B317C5ED2200F410BD /* slot1_retail_mcrom.cpp in Sources */,
+				AB54718D1E27610500508C5C /* MacMetalDisplayViewShaders.metal in Sources */,
 				ABD1FF691345ACBF00AF11D1 /* xstring.cpp in Sources */,
 				ABD104281346653B00AF11D1 /* main.m in Sources */,
 				AB2ABA411C9F9CFA00173B15 /* rsemaphore.c in Sources */,
 				ABA6574B14511EC90077E5E9 /* cocoa_cheat.mm in Sources */,
 				ABD1041D1346652500AF11D1 /* cocoa_core.mm in Sources */,
 				AB58F32D1364F44B0074C376 /* cocoa_file.mm in Sources */,
+				AB3BF43E1E26289E003E2B24 /* MacMetalDisplayView.mm in Sources */,
 				AB3BF4041E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */,
 				ABE7F53E13EE1C7900FD3A71 /* cocoa_firmware.mm in Sources */,
 				ABD1041C1346652500AF11D1 /* cocoa_input.mm in Sources */,
@@ -4043,6 +4065,7 @@
 				AB2EE12C17D57ED500F68622 /* slot1_retail_mcrom_debug.cpp in Sources */,
 				AB5648FF186E6EA8002740F4 /* cocoa_slot2.mm in Sources */,
 				AB796D2A15CDCBA200C59155 /* slot1_r4.cpp in Sources */,
+				AB78B5C41E384F4F00297FED /* MacMetalDisplayView.mm in Sources */,
 				AB796D2C15CDCBA200C59155 /* slot1_retail_nand.cpp in Sources */,
 				AB35BD8F1DEBF40800844310 /* encoding_utf.c in Sources */,
 				ABE6840C189E33BC007FD69C /* OGLDisplayOutput.cpp in Sources */,
@@ -4101,6 +4124,7 @@
 				AB000DD01CCC6B0700413F02 /* retro_stat.c in Sources */,
 				AB796D5B15CDCBA200C59155 /* 2xsai.cpp in Sources */,
 				ABADF1181DEA4C1200A142B1 /* Database.cpp in Sources */,
+				AB54718B1E27610500508C5C /* MacMetalDisplayViewShaders.metal in Sources */,
 				AB796D5C15CDCBA200C59155 /* bilinear.cpp in Sources */,
 				ABA7316B1BB51FDC00B26147 /* psaux.c in Sources */,
 				AB796D5D15CDCBA200C59155 /* epx.cpp in Sources */,
@@ -4174,6 +4198,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				ABFEA8CC1BB4EC1100B08C25 /* smooth.c in Sources */,
+				AB54718C1E27610500508C5C /* MacMetalDisplayViewShaders.metal in Sources */,
 				ABFEA8421BB4EC1100B08C25 /* ftpatent.c in Sources */,
 				ABFEA8A51BB4EC1100B08C25 /* sfnt.c in Sources */,
 				ABFEA81B1BB4EC1000B08C25 /* ftfntfmt.c in Sources */,
@@ -4236,6 +4261,7 @@
 				AB8F3C921A53AC2600A80BF6 /* firmware.cpp in Sources */,
 				AB8F3C941A53AC2600A80BF6 /* gfx3d.cpp in Sources */,
 				AB000DD41CCC6B3D00413F02 /* retro_dirent.c in Sources */,
+				AB78B5C31E384F4F00297FED /* MacMetalDisplayView.mm in Sources */,
 				AB8F3C951A53AC2600A80BF6 /* GPU.cpp in Sources */,
 				AB8F3C971A53AC2600A80BF6 /* guid.cpp in Sources */,
 				AB8F3C981A53AC2600A80BF6 /* header.cpp in Sources */,
