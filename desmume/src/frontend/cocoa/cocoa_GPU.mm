@@ -153,13 +153,21 @@ public:
 	GPU->SetEventHandler(gpuEvent);
 	GPU->SetWillAutoResolveToCustomBuffer(false);
 	
+	fetchObject = NULL;
+	
 #ifdef ENABLE_APPLE_METAL
 	if (IsOSXVersionSupported(10, 11, 0))
 	{
 		fetchObject = new MacMetalFetchObject;
+		if (fetchObject->GetClientData() == nil)
+		{
+			delete fetchObject;
+			fetchObject = NULL;
+		}
 	}
-	else
 #endif
+	
+	if (fetchObject == NULL)
 	{
 		fetchObject = new MacOGLClientFetchObject;
 	}
@@ -852,6 +860,7 @@ public:
 @implementation MacClientSharedObject
 
 @synthesize GPUFetchObject;
+@synthesize numberViewsUsingCPUFiltering;
 
 - (id)init
 {
@@ -870,6 +879,7 @@ public:
 	GPUFetchObject = nil;
 	_mutexOutputList = NULL;
 	_cdsOutputList = nil;
+	numberViewsUsingCPUFiltering = 0;
 	
 	return self;
 }
@@ -952,36 +962,14 @@ public:
 	_mutexOutputList = theMutex;
 }
 
-- (BOOL) isCPUFilteringNeeded
+- (void) incrementViewsUsingCPUFiltering
 {
-	bool useCPUFilterPipeline = NO;
-	pthread_mutex_t *currentMutex = _mutexOutputList;
-	
-	if (currentMutex != NULL)
-	{
-		pthread_mutex_lock(currentMutex);
-	}
-	
-	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
-	{
-		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
-		{
-			ClientDisplay3DView *cdv = [(CocoaDSDisplay *)cdsOutput clientDisplayView];
-			
-			if (!cdv->WillFilterOnGPU() && (cdv->GetPixelScaler() != VideoFilterTypeID_None))
-			{
-				useCPUFilterPipeline = YES;
-				break;
-			}
-		}
-	}
-	
-	if (currentMutex != NULL)
-	{
-		pthread_mutex_unlock(currentMutex);
-	}
-	
-	return useCPUFilterPipeline;
+	OSAtomicIncrement32(&numberViewsUsingCPUFiltering);
+}
+
+- (void) decrementViewsUsingCPUFiltering
+{
+	OSAtomicDecrement32(&numberViewsUsingCPUFiltering);
 }
 
 - (void) pushVideoDataToAllDisplayViews

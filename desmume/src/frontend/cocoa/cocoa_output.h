@@ -140,7 +140,8 @@ struct NDSFrameInfo;
 	OSSpinLock spinlockPixelScaler;
 }
 
-@property (readonly) BOOL canFilterOnGPU;
+@property (readonly, nonatomic) BOOL canFilterOnGPU;
+@property (readonly, nonatomic) BOOL willFilterOnGPU;
 @property (assign) BOOL isHUDVisible;
 @property (assign) BOOL isHUDVideoFPSVisible;
 @property (assign) BOOL isHUDRender3DFPSVisible;

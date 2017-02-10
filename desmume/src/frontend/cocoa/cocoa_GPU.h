@@ -38,14 +38,17 @@ class GPUEventHandlerOSX;
 	pthread_rwlock_t *_rwlockFramebuffer[2];
 	pthread_mutex_t *_mutexOutputList;
 	NSMutableArray *_cdsOutputList;
+	volatile int32_t numberViewsUsingCPUFiltering;
 }
 
 @property (assign, nonatomic) GPUClientFetchObject *GPUFetchObject;
+@property (readonly, nonatomic) int32_t numberViewsUsingCPUFiltering;
 
 - (const NDSDisplayInfo &) fetchDisplayInfoForIndex:(const u8)bufferIndex;
 - (pthread_rwlock_t *) rwlockFramebufferAtIndex:(const u8)bufferIndex;
 - (void) setOutputList:(NSMutableArray *)theOutputList mutex:(pthread_mutex_t *)theMutex;
-- (BOOL) isCPUFilteringNeeded;
+- (void) incrementViewsUsingCPUFiltering;
+- (void) decrementViewsUsingCPUFiltering;
 - (void) handleFetchFromBufferIndexAndPushVideo:(NSData *)indexData;
 - (void) pushVideoDataToAllDisplayViews;
 - (void) finishAllDisplayViewsAtIndex:(const u8)bufferIndex;

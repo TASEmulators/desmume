@@ -354,17 +354,20 @@ void ClientDisplayView::SetPixelScaler(const VideoFilterTypeID filterID)
 	const size_t newDstBufferWidth  = (this->_vf[NDSDisplayID_Main]->GetSrcWidth()  + this->_vf[NDSDisplayID_Touch]->GetSrcWidth())  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
 	const size_t newDstBufferHeight = (this->_vf[NDSDisplayID_Main]->GetSrcHeight() + this->_vf[NDSDisplayID_Touch]->GetSrcHeight()) * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
 	
+	uint32_t *oldMasterBuffer = NULL;
+	
 	if ( (oldDstBufferWidth != newDstBufferWidth) || (oldDstBufferHeight != newDstBufferHeight) )
 	{
-		uint32_t *oldMasterBuffer = this->_vfMasterDstBuffer;
+		oldMasterBuffer = this->_vfMasterDstBuffer;
 		this->_ResizeCPUPixelScaler(newFilterID);
-		free_aligned(oldMasterBuffer);
 	}
 	
 	this->_vf[NDSDisplayID_Main]->ChangeFilterByID(newFilterID);
 	this->_vf[NDSDisplayID_Touch]->ChangeFilterByID(newFilterID);
 	
 	this->_pixelScaler = newFilterID;
+	
+	free_aligned(oldMasterBuffer);
 }
 
 VideoFilter* ClientDisplayView::GetPixelScalerObject(const NDSDisplayID displayID)

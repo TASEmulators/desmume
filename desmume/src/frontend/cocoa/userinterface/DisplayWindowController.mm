@@ -1751,7 +1751,26 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void) setVideoFiltersPreferGPU:(BOOL)theState
 {
+	const BOOL oldState = (![[self cdsVideoOutput] willFilterOnGPU] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None));
 	[[self cdsVideoOutput] setVideoFiltersPreferGPU:theState];
+	const BOOL newState = (![[self cdsVideoOutput] willFilterOnGPU] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None));
+	
+	if (oldState != newState)
+	{
+		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
+		CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
+		CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
+		MacClientSharedObject *macSharedData = [cdsGPU sharedData];
+		
+		if (newState)
+		{
+			[macSharedData incrementViewsUsingCPUFiltering];
+		}
+		else
+		{
+			[macSharedData decrementViewsUsingCPUFiltering];
+		}
+	}
 }
 
 - (BOOL) videoFiltersPreferGPU
@@ -1781,7 +1800,26 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void) setPixelScaler:(NSInteger)filterID
 {
+	const BOOL oldState = (![[self cdsVideoOutput] willFilterOnGPU] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None));
 	[[self cdsVideoOutput] setPixelScaler:filterID];
+	const BOOL newState = (![[self cdsVideoOutput] willFilterOnGPU] && ([[self cdsVideoOutput] pixelScaler] != VideoFilterTypeID_None));
+	
+	if (oldState != newState)
+	{
+		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
+		CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
+		CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
+		MacClientSharedObject *macSharedData = [cdsGPU sharedData];
+		
+		if (newState)
+		{
+			[macSharedData incrementViewsUsingCPUFiltering];
+		}
+		else
+		{
+			[macSharedData decrementViewsUsingCPUFiltering];
+		}
+	}
 }
 
 - (NSInteger) pixelScaler

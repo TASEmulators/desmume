@@ -733,6 +733,7 @@
 @implementation CocoaDSDisplayVideo
 
 @dynamic canFilterOnGPU;
+@dynamic willFilterOnGPU;
 @dynamic isHUDVisible;
 @dynamic isHUDVideoFPSVisible;
 @dynamic isHUDRender3DFPSVisible;
@@ -772,6 +773,11 @@
 - (BOOL) canFilterOnGPU
 {
 	return (_cdv->CanFilterOnGPU()) ? YES : NO;
+}
+
+- (BOOL) willFilterOnGPU
+{
+	return (_cdv->WillFilterOnGPU()) ? YES : NO;
 }
 
 - (void) setIsHUDVisible:(BOOL)theState
