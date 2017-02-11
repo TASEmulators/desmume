@@ -19,6 +19,8 @@
 #ifndef __GPU_OSD_
 #define __GPU_OSD_
 
+#include <stdarg.h>
+
 #include "types.h"
 
 #ifdef HAVE_LIBAGG
@@ -119,7 +121,8 @@ public:
 	void	clear();
 	void	setListCoord(u16 x, u16 y);
 	void	setLineColor(u8 r, u8 b, u8 g);
-	void	addLine(const char *fmt, ...);
+	void	addLine(const char* fmt);
+	void	addLine(const char* fmt, va_list args);
 	void	addFixed(u16 x, u16 y, const char *fmt, ...);
 	void	border(bool enabled);
 };

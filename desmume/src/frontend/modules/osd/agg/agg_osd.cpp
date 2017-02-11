@@ -721,9 +721,9 @@ void OSDCLASS::setLineColor(u8 r=255, u8 g=255, u8 b=255)
 	lineText_color = AggColor(r,g,b);
 }
 
-void OSDCLASS::addLine(const char *fmt, ...)
+void OSDCLASS::addLine(const char *fmt)
 {
-	va_list list;
+	//yucky copied code from the va_list addline
 
 	if (lastLineText > OSD_MAX_LINES) lastLineText = OSD_MAX_LINES;
 	if (lastLineText == OSD_MAX_LINES)	// full
@@ -737,13 +737,34 @@ void OSDCLASS::addLine(const char *fmt, ...)
 		}
 	}
 
-	va_start(list,fmt);
+	strncpy(lineText[lastLineText],fmt,1023);
+	
+	lineColor[lastLineText] = lineText_color;
+	lineTimer[lastLineText] = time(NULL);
+	needUpdate = true;
+
+	lastLineText++;
+}
+
+void OSDCLASS::addLine(const char *fmt, va_list args)
+{
+	if (lastLineText > OSD_MAX_LINES) lastLineText = OSD_MAX_LINES;
+	if (lastLineText == OSD_MAX_LINES)	// full
+	{
+		lastLineText--;
+		for (int j=0; j < lastLineText; j++)
+		{
+			strcpy(lineText[j], lineText[j+1]);
+			lineTimer[j] = lineTimer[j+1];
+			lineColor[j] = lineColor[j+1];
+		}
+	}
+
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
-		_vsnprintf(lineText[lastLineText],1023,fmt,list);
+		_vsnprintf(lineText[lastLineText],1023,fmt,args);
 #else
-		vsnprintf(lineText[lastLineText],1023,fmt,list);
+		vsnprintf(lineText[lastLineText],1023,fmt,args);
 #endif
-	va_end(list);
 	lineColor[lastLineText] = lineText_color;
 	lineTimer[lastLineText] = time(NULL);
 	needUpdate = true;
