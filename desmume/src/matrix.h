@@ -168,7 +168,7 @@ static void memset_u16(void *dst, const u16 val, const size_t elementCount)
 	for (size_t i = 0; i < length_u64; i++)
 		dst_u64[i] = val_u64;
 #else
-	for (size_t i = 0; i < length; i++)
+	for (size_t i = 0; i < elementCount; i++)
 		((u16 *)dst)[i] = val;
 #endif
 }
@@ -181,7 +181,7 @@ static void memset_u16_fast(void *dst, const u16 val)
 	const u64 val_u64 = ((u64)val << 48) | ((u64)val << 32) | ((u64)val << 16) | (u64)val;
 	MACRODO_N(ELEMENTCOUNT / (sizeof(val_u64) / sizeof(val)), (dst_u64[(X)] = val_u64));
 #else
-	for (size_t i = 0; i < LENGTH; i++)
+	for (size_t i = 0; i < ELEMENTCOUNT; i++)
 		((u16 *)dst)[i] = val;
 #endif
 }
@@ -196,7 +196,7 @@ static void memset_u32(void *dst, const u32 val, const size_t elementCount)
 	for (size_t i = 0; i < length_u64; i++)
 		dst_u64[i] = val_u64;
 #else
-	for (size_t i = 0; i < length; i++)
+	for (size_t i = 0; i < elementCount; i++)
 		((u32 *)dst)[i] = val;
 #endif
 }
@@ -209,7 +209,7 @@ static void memset_u32_fast(void *dst, const u32 val)
 	const u64 val_u64 = ((u64)val << 32) | (u64)val;
 	MACRODO_N(ELEMENTCOUNT / (sizeof(val_u64) / sizeof(val)), (dst_u64[(X)] = val_u64));
 #else
-	for (size_t i = 0; i < LENGTH; i++)
+	for (size_t i = 0; i < ELEMENTCOUNT; i++)
 		((u16 *)dst)[i] = val;
 #endif
 }
