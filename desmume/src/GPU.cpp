@@ -4033,6 +4033,7 @@ void GPUEngineBase::ApplyMasterBrightness()
 	if (this->_willApplyMasterBrightnessPerScanline)
 	{
 		const bool isNativeSize = (this->nativeLineOutputCount == GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+		bool needsApply = false;
 		
 		for (size_t line = 0; line < GPU_FRAMEBUFFER_NATIVE_HEIGHT; line++)
 		{
@@ -4047,16 +4048,20 @@ void GPUEngineBase::ApplyMasterBrightness()
 																 pixCount,
 																 compInfo.renderState.masterBrightnessMode,
 																 compInfo.renderState.masterBrightnessIntensity);
-				
+			}
+			else
+			{
 				if ( (compInfo.renderState.masterBrightnessIntensity != 0) && ((compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Up) || (compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Down)) )
 				{
-					dispInfoMutable.isMasterBrightnessApplied[this->_targetDisplayID] = true;
+					needsApply = true;
 				}
 			}
 			
 			dispInfoMutable.masterBrightnessMode[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessMode;
 			dispInfoMutable.masterBrightnessIntensity[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessIntensity;
 		}
+		
+		dispInfoMutable.needApplyMasterBrightness[this->_targetDisplayID] = dispInfoMutable.needApplyMasterBrightness[this->_targetDisplayID] && needsApply;
 	}
 	else
 	{
@@ -4068,8 +4073,10 @@ void GPUEngineBase::ApplyMasterBrightness()
 															 this->renderedWidth * this->renderedHeight,
 															 compInfo.renderState.masterBrightnessMode,
 															 compInfo.renderState.masterBrightnessIntensity);
-			
-			dispInfoMutable.isMasterBrightnessApplied[this->_targetDisplayID] = (compInfo.renderState.masterBrightnessIntensity != 0) && ((compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Up) || (compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Down));
+		}
+		else
+		{
+			dispInfoMutable.needApplyMasterBrightness[this->_targetDisplayID] = (compInfo.renderState.masterBrightnessIntensity != 0) && ((compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Up) || (compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Down));
 		}
 		
 		for (size_t line = 0; line < GPU_FRAMEBUFFER_NATIVE_HEIGHT; line++)
@@ -6799,6 +6806,7 @@ GPUSubsystem::GPUSubsystem()
 	_displayInfo.isCustomSizeRequested = false;
 	_displayInfo.customWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	_displayInfo.customHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	_displayInfo.isMasterBrightnessAutoApplyRequested = true;
 	
 	_customVRAM = NULL;
 	_customVRAMBlank = NULL;
@@ -7344,6 +7352,7 @@ bool GPUSubsystem::GetWillAutoApplyMasterBrightness() const
 void GPUSubsystem::SetWillAutoApplyMasterBrightness(const bool willAutoApply)
 {
 	this->_willAutoApplyMasterBrightness = willAutoApply;
+	this->_displayInfo.isMasterBrightnessAutoApplyRequested = willAutoApply;
 }
 
 bool GPUSubsystem::GetWillAutoConvertRGB666ToRGB888() const
@@ -7466,8 +7475,8 @@ void GPUSubsystem::RenderLine(const size_t l)
 			
 			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Main] = CommonSettings.showGpu.main;
 			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Touch] = CommonSettings.showGpu.sub;
-			this->_displayInfo.isMasterBrightnessApplied[NDSDisplayID_Main] = false;
-			this->_displayInfo.isMasterBrightnessApplied[NDSDisplayID_Touch] = false;
+			this->_displayInfo.needApplyMasterBrightness[NDSDisplayID_Main] = !this->_displayInfo.isMasterBrightnessAutoApplyRequested;
+			this->_displayInfo.needApplyMasterBrightness[NDSDisplayID_Touch] = !this->_displayInfo.isMasterBrightnessAutoApplyRequested;
 			
 			if (CommonSettings.showGpu.main)
 			{

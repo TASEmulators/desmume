@@ -1078,7 +1078,7 @@ typedef struct
 												//    true  - The emulator itself will apply the master brightness. This is the default option.
 												//    false - The output framebuffer will not have master brightness applied. Clients will need to
 												//            apply the master brightness themselves in a post-processing pass. Clients should use
-												//            the isMasterBrightnessApplied, masterBrightnessMode, masterBrightnessIntensity and
+												//            the needApplyMasterBrightness, masterBrightnessMode, masterBrightnessIntensity and
 												//            isDisplayEnabled properties to determine how to apply the master brightness on their
 												//            end.
 	
@@ -1107,10 +1107,10 @@ typedef struct
 												//    true  - The display performed a custom-sized render.
 												//    false - The display performed a native-sized render.
 	
-	bool isMasterBrightnessApplied[2];			// Reports if a display has master brightness applied. This will be false if the user requested to
-												// turn off auto-apply via GPUSubsystem::SetWillAutoApplyMasterBrightness(), or if the NDS applied
-												// a master brightness intensity of 0 for all lines.
-	GPUMasterBrightMode masterBrightnessMode[2][GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // The master brightness mode of each display line.
+	bool needApplyMasterBrightness[2];			// Reports if a display still needs to apply the master brightness. This will be true if the
+												// isMasterBrightnessAutoApplyRequested flag is false and if the NDS has a master brightness
+												// intensity of non-zero for at least one line.
+	u8 masterBrightnessMode[2][GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // The master brightness mode of each display line.
 	u8 masterBrightnessIntensity[2][GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // The master brightness intensity of each display line.
 } NDSDisplayInfo;
 
