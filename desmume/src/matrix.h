@@ -1,6 +1,6 @@
 /*  
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2012 DeSmuME team
+	Copyright (C) 2007-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ struct MatrixStack
 {
 	MatrixStack(int size, int type);
 	s32		*matrix;
-	s32		position;
+	u32		position;
 	s32		size;
 	u8		type;
 };
@@ -58,8 +58,6 @@ void	MatrixIdentity			(s32 *matrix);
 
 void	MatrixStackInit				(MatrixStack *stack);
 void	MatrixStackSetMaxSize		(MatrixStack *stack, int size);
-void	MatrixStackPushMatrix		(MatrixStack *stack, const s32 *ptr);
-void	MatrixStackPopMatrix		(s32 *mtxCurr, MatrixStack *stack, int size);
 s32*	MatrixStackGetPos			(MatrixStack *stack, const size_t pos);
 s32*	MatrixStackGet				(MatrixStack *stack);
 void	MatrixStackLoadMatrix		(MatrixStack *stack, const size_t pos, const s32 *ptr);

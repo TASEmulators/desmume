@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2012 DeSmuME team
+	Copyright (C) 2007-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -216,7 +216,7 @@ void MatrixStackSetMaxSize (MatrixStack *stack, int size)
 {
 	int i;
 
-	stack->size = (size + 1);
+	stack->size = size;
 
 	if (stack->matrix != NULL) {
 		free (stack->matrix);
@@ -227,8 +227,6 @@ void MatrixStackSetMaxSize (MatrixStack *stack, int size)
 	{
 		MatrixInit (&stack->matrix[i*16]);
 	}
-
-	stack->size--;
 }
 
 
@@ -238,42 +236,10 @@ MatrixStack::MatrixStack(int size, int type)
 	this->type = type;
 }
 
-static void MatrixStackSetStackPosition (MatrixStack *stack, int pos)
-{
-	stack->position += pos;
-
-	if((stack->position < 0) || (stack->position > stack->size))
-		MMU_new.gxstat.se = 1;
-
-	//once upon a time, we tried clamping to the size.
-	//this utterly broke sims 2 apartment pets.
-	//changing to wrap around made it work perfectly
-	stack->position = ((u32)stack->position) & stack->size;
-}
-
-void MatrixStackPushMatrix (MatrixStack *stack, const s32 *ptr)
-{
-	//printf("Push %i pos %i\n", stack->type, stack->position);
-	if ((stack->type == 0) || (stack->type == 3))
-		MatrixCopy (&stack->matrix[0], ptr);
-	else
-		MatrixCopy (&stack->matrix[stack->position*16], ptr);
-	MatrixStackSetStackPosition (stack, 1);
-}
-
-void MatrixStackPopMatrix (s32 *mtxCurr, MatrixStack *stack, int size)
-{
-	//printf("Pop %i pos %i (change %d)\n", stack->type, stack->position, -size);
-	MatrixStackSetStackPosition(stack, -size);
-	if ((stack->type == 0) || (stack->type == 3))
-		MatrixCopy (mtxCurr, &stack->matrix[0]);
-	else
-		MatrixCopy (mtxCurr, &stack->matrix[stack->position*16]);
-}
 
 s32* MatrixStackGetPos(MatrixStack *stack, const size_t pos)
 {
-	assert(pos<31);
+	assert(pos < stack->size);
 	return &stack->matrix[pos*16];
 }
 
@@ -284,7 +250,7 @@ s32* MatrixStackGet (MatrixStack *stack)
 
 void MatrixStackLoadMatrix (MatrixStack *stack, const size_t pos, const s32 *ptr)
 {
-	assert(pos<31);
+	assert(pos < stack->size);
 	MatrixCopy(&stack->matrix[pos*16], ptr);
 }
 

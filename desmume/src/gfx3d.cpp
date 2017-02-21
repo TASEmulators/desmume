@@ -1,6 +1,6 @@
 /*	
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2016 DeSmuME team
+	Copyright (C) 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -27,6 +27,13 @@
 //make up mind once and for all whether fog, toon, etc. should reside in memory buffers (for easier handling in MMU)
 //if they do, then we need to copy them out in doFlush!!!
 //---------------
+
+//old tests of matrix stack:
+//without the mymode==(texture) namco classics galaxian will try to use pos=1 and overrun the stack, corrupting emu
+//according to gbatek, 31 works but sets the stack overflow flag. spider-man 2 tests this on the spiderman model (and elsewhere)
+//see "Tony Hawk's American Sk8land" work from revision 07806eb8364d1eb2d21dd3fe5234c9abe0a8a894 
+//from MatrixStackSetStackPosition: "once upon a time, we tried clamping to the size. this utterly broke sims 2 apartment pets. changing to wrap around made it work perfectly"
+//Water Horse Legend Of The Deep does seem to exercise the texture matrix stack, which does probably need to exist *but I'm not 100% sure)
 
 #include "gfx3d.h"
 
@@ -282,10 +289,11 @@ static FragmentColor *_gfx3d_colorRGBA6665 = NULL;
 static u16 *_gfx3d_colorRGBA5551 = NULL;
 
 // Matrix stack handling
+//TODO: decouple stack pointers from matrix stack type
 CACHE_ALIGN MatrixStack	mtxStack[4] = {
 	MatrixStack(1, 0), // Projection stack
-	MatrixStack(31, 1), // Coordinate stack
-	MatrixStack(31, 2), // Directional stack
+	MatrixStack(32, 1), // Coordinate stack
+	MatrixStack(32, 2), // Directional stack
 	MatrixStack(1, 3), // Texture stack
 };
 
@@ -577,7 +585,6 @@ void gfx3d_reset()
 	MatrixStackInit(&mtxStack[0]);
 	MatrixStackInit(&mtxStack[1]);
 	MatrixStackInit(&mtxStack[2]);
-	MatrixStackInit(&mtxStack[3]);
 
 	clCmd = 0;
 	clInd = 0;
@@ -936,95 +943,128 @@ static void gfx3d_glMatrixMode(u32 v)
 
 static void gfx3d_glPushMatrix()
 {
-	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
-	const MatrixMode mymode = ((mode == MATRIXMODE_POSITION) ? MATRIXMODE_POSITION_VECTOR : mode);
+//in case we're in Position-Vector mode, actually work on the Position matrix first (we'll update the vector matrix secondarily)
+	const MatrixMode mymode = ((mode == MATRIXMODE_POSITION_VECTOR) ? MATRIXMODE_POSITION : mode);
 
-	MatrixStackPushMatrix(&mtxStack[mymode], mtxCurrent[mymode]);
+	//1. apply offset specified by push (well, it's always +1) to internal counter
+	//2. mask that bit off to actually index the matrix for reading
+	//3. SE is set depending on resulting internal counter
+
+	if(mymode == MATRIXMODE_PROJECTION || mymode == MATRIXMODE_TEXTURE)
+	{
+		u32& index = mtxStack[mymode].position;
+		MatrixCopy(MatrixStackGetPos(&mtxStack[mymode], index&1), mtxCurrent[mymode]);
+
+		index += 1;
+		index &= 3;
+		if(index >= 2) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
+	}
+	else
+	{
+		u32& index = mtxStack[MATRIXMODE_POSITION].position;
+		MatrixCopy(MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION], index&31), mtxCurrent[MATRIXMODE_POSITION]);
+
+		if(mode == MATRIXMODE_POSITION_VECTOR)
+			MatrixCopy(MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION_VECTOR], index&31), mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+
+		index += 1;
+		index &= 63;
+		if(index >= 32) MMU_new.gxstat.se = 1;
+	}
 
 	GFX_DELAY(17);
-
-	if (mymode == MATRIXMODE_POSITION_VECTOR)
-		MatrixStackPushMatrix(&mtxStack[1], mtxCurrent[1]);
 }
 
-static void gfx3d_glPopMatrix(s32 i)
+static void gfx3d_glPopMatrix(s32 v)
 {
-	// The stack has only one level (at address 0) in projection mode, 
-	// in that mode, the parameter value is ignored, the offset is always +1 in that mode.
-	if (mode == MATRIXMODE_PROJECTION) i = 1;
+	//in case we're in Position-Vector mode, actually work on the Position matrix first (we'll update the vector matrix secondarily)
+	const MatrixMode mymode = ((mode == MATRIXMODE_POSITION_VECTOR) ? MATRIXMODE_POSITION : mode);
 
-	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
-	const MatrixMode mymode = ((mode == MATRIXMODE_POSITION) ? MATRIXMODE_POSITION_VECTOR : mode);
+	//1. apply offset specified by pop to internal counter
+	//2. SE is set depending on resulting internal counter
+	//3. mask that bit off to actually index the matrix for reading
 
-	//i = (i<<26)>>26;
-	//previously, we sign extended here. that isnt really necessary since the stacks are apparently modularly addressed. so i am somewhat doubtful that this is a real concept.
-	//example:
-	//suppose we had a -30 that would be %100010.
-	//which is the same as adding 34. if our stack was at 17 then one way is 17-30(+32)=19 and the other way is 17+34(-32)=19
-	
-	//please note that our ability to skip treating this as signed is dependent on the modular addressing later. if that ever changes, we need to change this back.
+	if(mymode == MATRIXMODE_PROJECTION || mymode == MATRIXMODE_TEXTURE)
+	{
+		//parameter ignored and treated as sensible, as a pop argument anyway
+		v = 1;
+		
+		u32& index = mtxStack[mymode].position;
 
-	MatrixStackPopMatrix(mtxCurrent[mymode], &mtxStack[mymode], i);
+		index -= v;
+		index &= 3;
+		if(index >= 2) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
+
+		MatrixCopy(mtxCurrent[mymode], MatrixStackGetPos(&mtxStack[mymode], index&1));
+	}
+	else
+	{
+		u32& index = mtxStack[MATRIXMODE_POSITION].position;
+			
+		index -= v;
+		index &= 63;
+		if(index >= 32) MMU_new.gxstat.se = 1; 
+			
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION], index&31));
+
+		if(mode == MATRIXMODE_POSITION_VECTOR)
+			MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION_VECTOR], index&31));
+	}
 
 	GFX_DELAY(36);
-
-	if (mymode == MATRIXMODE_POSITION_VECTOR)
-		MatrixStackPopMatrix(mtxCurrent[1], &mtxStack[1], i);
 }
 
 static void gfx3d_glStoreMatrix(u32 v)
 {
-	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
-	const MatrixMode mymode = ((mode == MATRIXMODE_POSITION) ? MATRIXMODE_POSITION_VECTOR : mode);
+	//in case we're in Position-Vector mode, actually work on the Position matrix first (we'll update the vector matrix secondarily)
+	const MatrixMode mymode = ((mode == MATRIXMODE_POSITION_VECTOR) ? MATRIXMODE_POSITION : mode);
 
-	//limit height of these stacks.
-	//without the mymode==3 namco classics galaxian will try to use pos=1 and overrun the stack, corrupting emu
-	if (mymode == MATRIXMODE_PROJECTION || mymode == MATRIXMODE_TEXTURE)
+	if(mymode == MATRIXMODE_PROJECTION || mymode == MATRIXMODE_TEXTURE)
+	{
+		//parameter ignored and treated as sensible
 		v = 0;
+	}
+	else
+	{
+		//out of bounds function fully properly, but set errors
+		if(v >= 31) MMU_new.gxstat.se = 1;
+	}
 
+	//the counter is [0,63] but only the bottom 5 bits index the stack
 	v &= 31;
-
-	//according to gbatek, 31 works but sets the stack overflow flag
-	//spider-man 2 tests this on the spiderman model (and elsewhere)
-	//i am somewhat skeptical of this, but we'll leave it this way for now.
-	//a test shouldnt be too hard
-	if (v == 31)
-		MMU_new.gxstat.se = 1;
 
 	MatrixStackLoadMatrix(&mtxStack[mymode], v, mtxCurrent[mymode]);
 
-	GFX_DELAY(17);
+	//apply to Position-Vector matrix too, if appropriate
+	if (mode == MATRIXMODE_POSITION_VECTOR)
+		MatrixStackLoadMatrix(&mtxStack[MATRIXMODE_POSITION_VECTOR], v, mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 
-	if (mymode == MATRIXMODE_POSITION_VECTOR)
-		MatrixStackLoadMatrix(&mtxStack[1], v, mtxCurrent[1]);
+	GFX_DELAY(17);
 }
 
 static void gfx3d_glRestoreMatrix(u32 v)
 {
-	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
-	const MatrixMode mymode = ((mode == MATRIXMODE_POSITION) ? MATRIXMODE_POSITION_VECTOR : mode);
+	//in case we're in Position-Vector mode, actually work on the Position matrix first (we'll update the vector matrix secondarily)
+	const MatrixMode mymode = ((mode == MATRIXMODE_POSITION_VECTOR) ? MATRIXMODE_POSITION : mode);
 
-	//limit height of these stacks
-	//without the mymode==3 namco classics galaxian will try to use pos=1 and overrun the stack, corrupting emu
-	if (mymode == MATRIXMODE_PROJECTION || mymode == MATRIXMODE_TEXTURE)
+	if(mymode == MATRIXMODE_PROJECTION || mymode == MATRIXMODE_TEXTURE)
+	{
+		//parameter ignored and treated as sensible
 		v = 0;
-
-	v &= 31;
-
-	//according to gbatek, 31 works but sets the stack overflow flag
-	//spider-man 2 tests this on the spiderman model (and elsewhere)
-	//i am somewhat skeptical of this, but we'll leave it this way for now.
-	//a test shouldnt be too hard
-	if (v == 31)
-		MMU_new.gxstat.se = 1;
-
+	}
+	else
+	{
+		//out of bounds errors function fully properly, but set errors
+		MMU_new.gxstat.se = v>=31;
+	}
 
 	MatrixCopy(mtxCurrent[mymode], MatrixStackGetPos(&mtxStack[mymode], v));
 
-	GFX_DELAY(36);
+	//apply to Position-Vector matrix too, if appropriate
+	if (mode == MATRIXMODE_POSITION_VECTOR)
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION_VECTOR], v));
 
-	if (mymode == MATRIXMODE_POSITION_VECTOR)
-		MatrixCopy(mtxCurrent[1], MatrixStackGetPos(&mtxStack[1], v));
+	GFX_DELAY(36);
 }
 
 static void gfx3d_glLoadIdentity()
@@ -2544,7 +2584,7 @@ void gfx3d_savestate(EMUFILE* os)
 	for (size_t i = 0; i < polylist->count; i++)
 		polylist->list[i].save(os);
 
-	for (size_t i = 0; i < 4; i++)
+	for (size_t i = 0; i < ARRAY_SIZE(mtxStack); i++)
 	{
 		OSWRITE(mtxStack[i].position);
 		for(size_t j = 0; j < mtxStack[i].size*16; j++)
@@ -2595,7 +2635,7 @@ bool gfx3d_loadstate(EMUFILE* is, int size)
 
 	if (version >= 2)
 	{
-		for (size_t i=0; i < 4; i++)
+		for (size_t i=0; i < ARRAY_SIZE(mtxStack); i++)
 		{
 			OSREAD(mtxStack[i].position);
 			for(size_t j = 0; j < mtxStack[i].size*16; j++)
