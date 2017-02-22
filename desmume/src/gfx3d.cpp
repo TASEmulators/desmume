@@ -949,12 +949,12 @@ static void gfx3d_glPushMatrix()
 
 	if(mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
 	{
-		u32& index = mtxStack[mode].position;
-		MatrixCopy(MatrixStackGetPos(&mtxStack[mode], index&1), mtxCurrent[mode]);
+		MatrixCopy(MatrixStackGetPos(&mtxStack[mode], 0), mtxCurrent[mode]);
 
+		u32& index = mtxStack[mode].position;
+		if(index == 1) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
 		index += 1;
-		index &= 3;
-		if(index >= 2) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
+		index &= 1;
 	}
 	else
 	{
@@ -979,16 +979,12 @@ static void gfx3d_glPopMatrix(u32 v)
 
 	if(mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
 	{
-		//parameter ignored and treated as sensible, as a pop argument anyway
-		v = 1;
-		
+		//parameter is ignored and treated as sensible (always 1)
+
 		u32& index = mtxStack[mode].position;
-
-		index -= v;
-		index &= 3;
-		if(index >= 2) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
-
-		MatrixCopy(mtxCurrent[mode], MatrixStackGetPos(&mtxStack[mode], index&1));
+		index ^= 1;
+		if(index == 1) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
+		MatrixCopy(mtxCurrent[mode], MatrixStackGetPos(&mtxStack[mode], 0));
 	}
 	else
 	{
