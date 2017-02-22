@@ -943,17 +943,14 @@ static void gfx3d_glMatrixMode(u32 v)
 
 static void gfx3d_glPushMatrix()
 {
-//in case we're in Position-Vector mode, actually work on the Position matrix first (we'll update the vector matrix secondarily)
-	const MatrixMode mymode = ((mode == MATRIXMODE_POSITION_VECTOR) ? MATRIXMODE_POSITION : mode);
-
 	//1. apply offset specified by push (well, it's always +1) to internal counter
 	//2. mask that bit off to actually index the matrix for reading
 	//3. SE is set depending on resulting internal counter
 
-	if(mymode == MATRIXMODE_PROJECTION || mymode == MATRIXMODE_TEXTURE)
+	if(mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
 	{
-		u32& index = mtxStack[mymode].position;
-		MatrixCopy(MatrixStackGetPos(&mtxStack[mymode], index&1), mtxCurrent[mymode]);
+		u32& index = mtxStack[mode].position;
+		MatrixCopy(MatrixStackGetPos(&mtxStack[mode], index&1), mtxCurrent[mode]);
 
 		index += 1;
 		index &= 3;
@@ -962,10 +959,9 @@ static void gfx3d_glPushMatrix()
 	else
 	{
 		u32& index = mtxStack[MATRIXMODE_POSITION].position;
+		
 		MatrixCopy(MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION], index&31), mtxCurrent[MATRIXMODE_POSITION]);
-
-		if(mode == MATRIXMODE_POSITION_VECTOR)
-			MatrixCopy(MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION_VECTOR], index&31), mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+		MatrixCopy(MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION_VECTOR], index&31), mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 
 		index += 1;
 		index &= 63;
@@ -975,40 +971,35 @@ static void gfx3d_glPushMatrix()
 	GFX_DELAY(17);
 }
 
-static void gfx3d_glPopMatrix(s32 v)
+static void gfx3d_glPopMatrix(u32 v)
 {
-	//in case we're in Position-Vector mode, actually work on the Position matrix first (we'll update the vector matrix secondarily)
-	const MatrixMode mymode = ((mode == MATRIXMODE_POSITION_VECTOR) ? MATRIXMODE_POSITION : mode);
-
 	//1. apply offset specified by pop to internal counter
 	//2. SE is set depending on resulting internal counter
 	//3. mask that bit off to actually index the matrix for reading
 
-	if(mymode == MATRIXMODE_PROJECTION || mymode == MATRIXMODE_TEXTURE)
+	if(mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
 	{
 		//parameter ignored and treated as sensible, as a pop argument anyway
 		v = 1;
 		
-		u32& index = mtxStack[mymode].position;
+		u32& index = mtxStack[mode].position;
 
 		index -= v;
 		index &= 3;
 		if(index >= 2) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
 
-		MatrixCopy(mtxCurrent[mymode], MatrixStackGetPos(&mtxStack[mymode], index&1));
+		MatrixCopy(mtxCurrent[mode], MatrixStackGetPos(&mtxStack[mode], index&1));
 	}
 	else
 	{
 		u32& index = mtxStack[MATRIXMODE_POSITION].position;
 			
-		index -= v;
+		index -= v & 63;
 		index &= 63;
 		if(index >= 32) MMU_new.gxstat.se = 1; 
 			
 		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION], index&31));
-
-		if(mode == MATRIXMODE_POSITION_VECTOR)
-			MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION_VECTOR], index&31));
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION_VECTOR], index&31));
 	}
 
 	GFX_DELAY(36);
@@ -1016,53 +1007,44 @@ static void gfx3d_glPopMatrix(s32 v)
 
 static void gfx3d_glStoreMatrix(u32 v)
 {
-	//in case we're in Position-Vector mode, actually work on the Position matrix first (we'll update the vector matrix secondarily)
-	const MatrixMode mymode = ((mode == MATRIXMODE_POSITION_VECTOR) ? MATRIXMODE_POSITION : mode);
-
-	if(mymode == MATRIXMODE_PROJECTION || mymode == MATRIXMODE_TEXTURE)
+	if(mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
 	{
 		//parameter ignored and treated as sensible
 		v = 0;
+
+		MatrixStackLoadMatrix(&mtxStack[mode], v, mtxCurrent[mode]);
 	}
 	else
 	{
+		v &= 31;
+
 		//out of bounds function fully properly, but set errors
 		if(v >= 31) MMU_new.gxstat.se = 1;
-	}
 
-	//the counter is [0,63] but only the bottom 5 bits index the stack
-	v &= 31;
-
-	MatrixStackLoadMatrix(&mtxStack[mymode], v, mtxCurrent[mymode]);
-
-	//apply to Position-Vector matrix too, if appropriate
-	if (mode == MATRIXMODE_POSITION_VECTOR)
+		MatrixStackLoadMatrix(&mtxStack[MATRIXMODE_POSITION], v, mtxCurrent[MATRIXMODE_POSITION]);
 		MatrixStackLoadMatrix(&mtxStack[MATRIXMODE_POSITION_VECTOR], v, mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+	}
 
 	GFX_DELAY(17);
 }
 
 static void gfx3d_glRestoreMatrix(u32 v)
 {
-	//in case we're in Position-Vector mode, actually work on the Position matrix first (we'll update the vector matrix secondarily)
-	const MatrixMode mymode = ((mode == MATRIXMODE_POSITION_VECTOR) ? MATRIXMODE_POSITION : mode);
-
-	if(mymode == MATRIXMODE_PROJECTION || mymode == MATRIXMODE_TEXTURE)
+	if(mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
 	{
 		//parameter ignored and treated as sensible
 		v = 0;
+	MatrixCopy(mtxCurrent[mode], MatrixStackGetPos(&mtxStack[mode], v));
 	}
 	else
 	{
 		//out of bounds errors function fully properly, but set errors
 		MMU_new.gxstat.se = v>=31;
+
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION], v));
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION_VECTOR], v));
 	}
 
-	MatrixCopy(mtxCurrent[mymode], MatrixStackGetPos(&mtxStack[mymode], v));
-
-	//apply to Position-Vector matrix too, if appropriate
-	if (mode == MATRIXMODE_POSITION_VECTOR)
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION_VECTOR], v));
 
 	GFX_DELAY(36);
 }
