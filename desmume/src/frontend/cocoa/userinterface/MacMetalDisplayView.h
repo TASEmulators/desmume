@@ -48,7 +48,10 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLCommandQueue> commandQueue;
 	id<MTLLibrary> defaultLibrary;
 	
-	id<MTLComputePipelineState> load16To32Pipeline;
+	id<MTLComputePipelineState> _fetch555Pipeline;
+	id<MTLComputePipelineState> _fetch555ConvertOnlyPipeline;
+	id<MTLComputePipelineState> _fetch666Pipeline;
+	id<MTLComputePipelineState> _fetch888Pipeline;
 	id<MTLComputePipelineState> deposterizePipeline;
 	id<MTLRenderPipelineState> hudPipeline;
 	
@@ -61,6 +64,9 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLBuffer> _bufDisplayFetchNative[2][2];
 	id<MTLBuffer> _bufDisplayFetchCustom[2][2];
 	
+	id<MTLBuffer> _bufMasterBrightMode[2];
+	id<MTLBuffer> _bufMasterBrightIntensity[2];
+	
 	id<MTLTexture> texDisplayFetch16NativeMain;
 	id<MTLTexture> texDisplayFetch16NativeTouch;
 	id<MTLTexture> texDisplayFetch32NativeMain;
@@ -70,15 +76,23 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLTexture> texDisplayFetch32CustomMain;
 	id<MTLTexture> texDisplayFetch32CustomTouch;
 	
+	id<MTLTexture> texDisplayPostprocessNativeMain;
+	id<MTLTexture> texDisplayPostprocessCustomMain;
+	id<MTLTexture> texDisplayPostprocessNativeTouch;
+	id<MTLTexture> texDisplayPostprocessCustomTouch;
+	
+	id<MTLTexture> texDisplaySrcTargetMain;
+	id<MTLTexture> texDisplaySrcTargetTouch;
+	
 	id<MTLTexture> texLQ2xLUT;
 	id<MTLTexture> texHQ2xLUT;
 	id<MTLTexture> texHQ3xLUT;
 	id<MTLTexture> texHQ4xLUT;
 	id<MTLTexture> texCurrentHQnxLUT;
 	
-	MTLSize load16To32ThreadsPerGroup;
-	MTLSize load16To32ThreadGroupsPerGridNative;
-	MTLSize load16To32ThreadGroupsPerGridCustom;
+	MTLSize fetchThreadsPerGroup;
+	MTLSize fetchThreadGroupsPerGridNative;
+	MTLSize fetchThreadGroupsPerGridCustom;
 	MTLSize deposterizeThreadsPerGroup;
 	MTLSize deposterizeThreadGroupsPerGrid;
 	
@@ -92,7 +106,6 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (readonly, nonatomic) id<MTLCommandQueue> commandQueue;
 @property (readonly, nonatomic) id<MTLLibrary> defaultLibrary;
 
-@property (readonly, nonatomic) id<MTLComputePipelineState> load16To32Pipeline;
 @property (readonly, nonatomic) id<MTLComputePipelineState> deposterizePipeline;
 @property (readonly, nonatomic) id<MTLRenderPipelineState> hudPipeline;
 @property (readonly, nonatomic) id<MTLSamplerState> samplerHUDBox;
@@ -109,6 +122,14 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (retain) id<MTLTexture> texDisplayFetch32CustomMain;
 @property (retain) id<MTLTexture> texDisplayFetch32CustomTouch;
 
+@property (retain) id<MTLTexture> texDisplayPostprocessNativeMain;
+@property (retain) id<MTLTexture> texDisplayPostprocessCustomMain;
+@property (retain) id<MTLTexture> texDisplayPostprocessNativeTouch;
+@property (retain) id<MTLTexture> texDisplayPostprocessCustomTouch;
+
+@property (retain) id<MTLTexture> texDisplaySrcTargetMain;
+@property (retain) id<MTLTexture> texDisplaySrcTargetTouch;
+
 @property (readonly, nonatomic) id<MTLTexture> texLQ2xLUT;
 @property (readonly, nonatomic) id<MTLTexture> texHQ2xLUT;
 @property (readonly, nonatomic) id<MTLTexture> texHQ3xLUT;
@@ -118,9 +139,9 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (assign) size_t displayFetchNativeBufferSize;
 @property (assign) size_t displayFetchCustomBufferSize;
 
-@property (readonly, nonatomic) MTLSize load16To32ThreadsPerGroup;
-@property (readonly, nonatomic) MTLSize load16To32ThreadGroupsPerGridNative;
-@property (assign) MTLSize load16To32ThreadGroupsPerGridCustom;
+@property (readonly, nonatomic) MTLSize fetchThreadsPerGroup;
+@property (readonly, nonatomic) MTLSize fetchThreadGroupsPerGridNative;
+@property (assign) MTLSize fetchThreadGroupsPerGridCustom;
 @property (readonly, nonatomic) MTLSize deposterizeThreadsPerGroup;
 @property (readonly, nonatomic) MTLSize deposterizeThreadGroupsPerGrid;
 
@@ -128,7 +149,6 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 - (void) fetchFromBufferIndex:(const u8)index;
 - (void) fetchNativeDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex;
 - (void) fetchCustomDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex;
-- (void) convertFetch16To32UsingEncoder:(id<MTLComputeCommandEncoder>)cce isMainNative:(BOOL)isMainNative isTouchNative:(BOOL)isTouchNative;
 
 @end
 
@@ -201,7 +221,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 class MacMetalFetchObject : public GPUClientFetchObject
 {
 protected:
-	bool _useCPUFilterPipeline;
+	bool _useDirectToCPUFilterPipeline;
 	uint32_t *_srcNativeCloneMaster;
 	uint32_t *_srcNativeClone[2][2];
 	pthread_rwlock_t _srcCloneRWLock[2][2];

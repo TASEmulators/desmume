@@ -343,7 +343,7 @@ protected:
 	GLuint _texHQ3xLUT;
 	GLuint _texHQ4xLUT;
 	
-	bool _useCPUFilterPipeline;
+	bool _useDirectToCPUFilterPipeline;
 	uint32_t *_srcNativeCloneMaster;
 	uint32_t *_srcNativeClone[2][2];
 	pthread_rwlock_t _srcCloneRWLock[2][2];

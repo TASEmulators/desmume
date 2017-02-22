@@ -678,9 +678,11 @@
 
 - (NSBitmapImageRep *) bitmapImageRep
 {
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	NSUInteger w = (NSUInteger)dispInfo.customWidth;
-	NSUInteger h = (_cdv->GetMode() == ClientDisplayMode_Dual) ? (NSUInteger)(dispInfo.customHeight * 2) : (NSUInteger)dispInfo.customHeight;
+	GPUClientFetchObject &fetchObjMutable = (GPUClientFetchObject &)_cdv->GetFetchObject();
+	NDSDisplayInfo &displayInfoMutable = (NDSDisplayInfo &)fetchObjMutable.GetFetchDisplayInfoForBufferIndex(fetchObjMutable.GetLastFetchIndex());
+	
+	NSUInteger w = (NSUInteger)displayInfoMutable.customWidth;
+	NSUInteger h = (_cdv->GetMode() == ClientDisplayMode_Dual) ? (NSUInteger)(displayInfoMutable.customHeight * 2) : (NSUInteger)displayInfoMutable.customHeight;
 	
 	NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
 																		 pixelsWide:w
@@ -698,19 +700,21 @@
 		return imageRep;
 	}
 	
-	void *displayBuffer = dispInfo.masterCustomBuffer;
+	void *displayBuffer = displayInfoMutable.masterCustomBuffer;
 	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
 	
-	pthread_rwlock_rdlock(self.rwlockProducer);
+	pthread_rwlock_wrlock(self.rwlockProducer);
 	
-	GPU->GetEngineMain()->ResolveToCustomFramebuffer();
-	GPU->GetEngineSub()->ResolveToCustomFramebuffer();
+	GPU->PostprocessDisplay(NDSDisplayID_Main,  displayInfoMutable);
+	GPU->PostprocessDisplay(NDSDisplayID_Touch, displayInfoMutable);
+	GPU->ResolveDisplayToCustomFramebuffer(NDSDisplayID_Main,  displayInfoMutable);
+	GPU->ResolveDisplayToCustomFramebuffer(NDSDisplayID_Touch, displayInfoMutable);
 	
-	if (dispInfo.pixelBytes == 2)
+	if (displayInfoMutable.pixelBytes == 2)
 	{
 		ColorspaceConvertBuffer555To8888Opaque<false, true>((u16 *)displayBuffer, bitmapData, (w * h));
 	}
-	else if (dispInfo.pixelBytes == 4)
+	else if (displayInfoMutable.pixelBytes == 4)
 	{
 		memcpy(bitmapData, displayBuffer, w * h * sizeof(uint32_t));
 	}

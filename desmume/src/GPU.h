@@ -1073,28 +1073,19 @@ typedef struct
 	// Changed by calling GPUSubsystem::SetColorFormat() or GPUSubsystem::SetFramebufferSize().
 	void *masterFramebufferHead;				// Pointer to the head of the master framebuffer memory block that encompasses all buffers.
 	
-	// Changed by calling GPUSubsystem::SetWillAutoApplyMasterBrightness().
-	bool isMasterBrightnessAutoApplyRequested;	// Reports the result of GPUSubsystem::GetWillAutoApplyMasterBrightness().
-												//    true  - The emulator itself will apply the master brightness. This is the default option.
-												//    false - The output framebuffer will not have master brightness applied. Clients will need to
-												//            apply the master brightness themselves in a post-processing pass. Clients should use
-												//            the needApplyMasterBrightness, masterBrightnessMode, masterBrightnessIntensity and
-												//            isDisplayEnabled properties to determine how to apply the master brightness on their
-												//            end.
-	
 	// Changed by calling GPUEngineBase::SetEnableState().
 	bool isDisplayEnabled[2];					// Reports that a particular display has been enabled or disabled by the user.
 	
 	
 	
-	// Frame information. These fields will change per frame, depending on how each display was rendered.
+	// Frame render state information. These fields will change per frame, depending on how each display was rendered.
 	u8 bufferIndex;								// Index of this frame's buffer set.
 	
 	void *masterNativeBuffer;					// Pointer to the head of the master native buffer.
 	void *masterCustomBuffer;					// Pointer to the head of the master custom buffer.
 												// If GPUSubsystem::GetWillAutoResolveToCustomBuffer() would return true, or if
-												// GPUEngineBase::ResolveToCustomFramebuffer() is called, then this buffer is used as the target
-												// buffer for resolving any native-sized renders.
+												// GPUSubsystem::ResolveDisplayToCustomFramebuffer() is called, then this buffer is used as the
+												// target buffer for resolving any native-sized renders.
 	
 	void *nativeBuffer[2];						// Pointer to the display's native size framebuffer.
 	void *customBuffer[2];						// Pointer to the display's custom size framebuffer.
@@ -1107,11 +1098,15 @@ typedef struct
 												//    true  - The display performed a custom-sized render.
 												//    false - The display performed a native-sized render.
 	
-	bool needApplyMasterBrightness[2];			// Reports if a display still needs to apply the master brightness. This will be true if the
-												// isMasterBrightnessAutoApplyRequested flag is false and if the NDS has a master brightness
-												// intensity of non-zero for at least one line.
 	u8 masterBrightnessMode[2][GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // The master brightness mode of each display line.
 	u8 masterBrightnessIntensity[2][GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // The master brightness intensity of each display line.
+	
+	
+	
+	// Postprocessing information. These fields report the status of each postprocessing step.
+	// Typically, these fields should be modified whenever GPUSubsystem::PostprocessDisplay() is called.
+	bool needConvertColorFormat[2];				// Reports if the display still needs to convert its color format from RGB666 to RGB888.
+	bool needApplyMasterBrightness[2];			// Reports if the display still needs to apply the master brightness.
 } NDSDisplayInfo;
 
 #define VRAM_NO_3D_USAGE 0xFF
@@ -1453,7 +1448,7 @@ public:
 	void ParseAllRegisters();
 	
 	void UpdatePropertiesWithoutRender(const u16 l);
-	void FramebufferPostprocess();
+	void LastLineProcess();
 	
 	u8 vramBlockOBJIndex;
 	
@@ -1502,7 +1497,8 @@ public:
 	bool WillApplyMasterBrightnessPerScanline() const;
 	void SetWillApplyMasterBrightnessPerScanline(bool willApply);
 	
-	template<NDSColorFormat OUTPUTFORMAT> void ApplyMasterBrightness();
+	void UpdateMasterBrightnessDisplayInfo(NDSDisplayInfo &mutableInfo);
+	template<NDSColorFormat OUTPUTFORMAT> void ApplyMasterBrightness(const NDSDisplayInfo &displayInfo);
 	template<NDSColorFormat OUTPUTFORMAT, bool ISFULLINTENSITYHINT> void ApplyMasterBrightness(void *dst, const size_t pixCount, const GPUMasterBrightMode mode, const u8 intensity);
 	
 	const BGLayerInfo& GetBGLayerInfoByID(const GPULayerID layerID);
@@ -1519,8 +1515,7 @@ public:
 	
 	virtual void SetCustomFramebufferSize(size_t w, size_t h);
 	template<NDSColorFormat OUTPUTFORMAT> void ResolveCustomRendering();
-	void ResolveRGB666ToRGB888();
-	void ResolveToCustomFramebuffer();
+	void ResolveToCustomFramebuffer(NDSDisplayInfo &mutableInfo);
 	
 	void REG_DISPx_pack_test();
 };
@@ -1585,7 +1580,7 @@ public:
 	bool WillDisplayCapture(const size_t l);
 	bool VerifyVRAMLineDidChange(const size_t blockID, const size_t l);
 	
-	void FramebufferPostprocess();
+	void LastLineProcess();
 	
 	virtual void Reset();
 	
@@ -1655,15 +1650,13 @@ private:
 	
 	GPUEngineA *_engineMain;
 	GPUEngineB *_engineSub;
-	NDSDisplay *_displayMain;
-	NDSDisplay *_displayTouch;
+	NDSDisplay *_display[2];
 	
 	u32 _videoFrameCount;			// Internal variable that increments when a video frame is completed. Resets every 60 video frames.
 	u32 _render3DFrameCount;		// The current 3D rendering frame count, saved to this variable once every 60 video frames.
 	bool _frameNeedsFinish;
 	bool _willFrameSkip;
-	bool _willAutoApplyMasterBrightness;
-	bool _willAutoConvertRGB666ToRGB888;
+	bool _willPostprocessDisplays;
 	bool _willAutoResolveToCustomBuffer;
 	u16 *_customVRAM;
 	u16 *_customVRAMBlank;
@@ -1689,8 +1682,6 @@ public:
 	const NDSDisplayInfo& GetDisplayInfo(); // Frontends need to call this whenever they need to read the video buffers from the emulator core
 	u32 GetFPSRender3D() const;
 	
-	void SetDisplayDidCustomRender(NDSDisplayID displayID, bool theState);
-	
 	GPUEngineA* GetEngineMain();
 	GPUEngineB* GetEngineSub();
 	NDSDisplay* GetDisplayMain();
@@ -1709,25 +1700,22 @@ public:
 	void SetWillFrameSkip(const bool willFrameSkip);
 	void UpdateRenderProperties();
 	
-	// By default, the output framebuffer will have the master brightness applied before
-	// the DidFrameEnd event. The master brightness is applied using the CPU.
+	// By default, the displays will automatically perform certain postprocessing steps on the
+	// CPU before the DidFrameEnd event.
 	//
-	// To turn off this behavior, call SetWillAutoApplyMasterBrightness() and pass a value
-	// of "false". This can be useful if the client wants to apply the master brightness
-	// itself, for example, if a client applies it on the GPU.
-	bool GetWillAutoApplyMasterBrightness() const;
-	void SetWillAutoApplyMasterBrightness(const bool willAutoApply);
-	
-	// By default, if the output framebuffer is in RGB666 format, then the framebuffers will
-	// automatically be converted to the much more common RGB888 format. This conversion is
-	// performed on the CPU.
+	// To turn off this behavior, call SetWillPostprocessDisplays() and pass a value of "false".
+	// This can be useful if the client wants to perform these postprocessing steps itself, for
+	// example, if a client performs them on another thread or on the GPU.
 	//
-	// To turn off this behavior, call SetWillAutoConvertRGB666ToRGB888() and pass a value
-	// of "false". This can be useful if the client wants to do its own post-processing
-	// while the color format is still RGB666, or if the client wants to do its own custom
-	// conversion (such as converting the framebuffer later on the GPU).
-	bool GetWillAutoConvertRGB666ToRGB888() const;
-	void SetWillAutoConvertRGB666ToRGB888(const bool willAutoConvert);
+	// If automatic postprocessing is turned off, clients can still manually perform the
+	// postprocessing steps on the CPU by calling PostprocessDisplay().
+	//
+	// The postprocessing steps that are performed are:
+	// - Converting an RGB666 formatted framebuffer to RGB888 format.
+	// - Applying the master brightness.
+	bool GetWillPostprocessDisplays() const;
+	void SetWillPostprocessDisplays(const bool willPostprocess);
+	void PostprocessDisplay(const NDSDisplayID displayID, NDSDisplayInfo &mutableInfo);
 	
 	// Normally, the GPUs will automatically resolve their native buffers to the master
 	// custom framebuffer at the end of V-blank so that all rendered graphics are contained
@@ -1736,14 +1724,14 @@ public:
 	// Certain functions, such as taking screenshots, as well as many frontends running
 	// the NDS video displays, require that they read from only a single buffer.
 	//
-	// However, if SetWillAutoResolveToCustomBuffer() is passed "false", then the
-	// frontend becomes responsible for calling GetDisplayInfo() and reading the native
-	// and custom buffers properly for each display. If a single buffer is still needed
-	// for certain cases, then the frontend must manually call
-	// GPUEngineBase::ResolveToCustomFramebuffer() for each engine before reading the
-	// master custom framebuffer.
+	// However, if SetWillAutoResolveToCustomBuffer() is passed "false", then the frontend
+	// becomes responsible for calling GetDisplayInfo() and reading the native and custom buffers
+	// properly for each display. If a single buffer is still needed for certain cases, then the
+	// frontend must manually call ResolveDisplayToCustomFramebuffer() for each display before
+	// reading the master custom framebuffer.
 	bool GetWillAutoResolveToCustomBuffer() const;
 	void SetWillAutoResolveToCustomBuffer(const bool willAutoResolve);
+	void ResolveDisplayToCustomFramebuffer(const NDSDisplayID displayID, NDSDisplayInfo &mutableInfo);
 	
 	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const size_t l);
 	void ClearWithColor(const u16 colorBGRA5551);

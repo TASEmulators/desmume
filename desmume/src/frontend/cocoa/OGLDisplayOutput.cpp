@@ -4709,7 +4709,7 @@ bool OGLShaderProgram::LinkOGL()
 OGLClientFetchObject::OGLClientFetchObject()
 {
 	_contextInfo = NULL;
-	_useCPUFilterPipeline = true;
+	_useDirectToCPUFilterPipeline = true;
 	_fetchColorFormatOGL = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	
 	pthread_rwlock_init(&_srcCloneRWLock[NDSDisplayID_Main][0],  NULL);
@@ -4923,7 +4923,7 @@ void OGLClientFetchObject::SetFetchBuffers(const NDSDisplayInfo &currentDisplayI
 
 void OGLClientFetchObject::_FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex)
 {
-	if (this->_useCPUFilterPipeline)
+	if (this->_useDirectToCPUFilterPipeline)
 	{
 		pthread_rwlock_wrlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 		

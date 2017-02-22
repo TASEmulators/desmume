@@ -58,6 +58,8 @@ float DistYCbCr(const float3 pixA, const float3 pixB);
 bool IsPixEqual(const float3 pixA, const float3 pixB);
 bool IsBlendingNeeded(const int4 blend);
 
+float3 nds_apply_master_brightness(const float3 inColor, const uchar mode, const float intensity);
+
 constexpr sampler genSampler = sampler(coord::pixel, address::clamp_to_edge, filter::nearest);
 constexpr sampler outputSamplerBilinear = sampler(coord::pixel, address::clamp_to_edge, filter::linear);
 
@@ -395,22 +397,104 @@ fragment float4 output_filter_lanczos3(const DisplayVtx vtx [[stage_in]], const 
 	return float4(outFragment.rgb, 1.0f);
 }
 
-#pragma mark Conversion Filters
+#pragma mark NDS Emulation Functions
 
-//---------------------------------------
-// Input Pixel Mapping:    00
-//
-// Output Pixel Mapping:   00
-kernel void src16_unpack_unorm1555_to_unorm8888(const uint2 position [[thread_position_in_grid]],
-												const texture2d<ushort, access::read> inTexture [[texture(0)]],
-												texture2d<float, access::write> outTexture [[texture(1)]])
+kernel void nds_fetch555(const uint2 position [[thread_position_in_grid]],
+						 const constant uchar *brightnessMode [[buffer(0)]],
+						 const constant uchar *brightnessIntensity [[buffer(1)]],
+						 const texture2d<ushort, access::read> inTexture [[texture(0)]],
+						 texture2d<float, access::write> outTexture [[texture(1)]])
+{
+	const uint h = inTexture.get_height();
+	
+	if ( (position.x > inTexture.get_width() - 1) || (position.y > h - 1) )
+	{
+		return;
+	}
+	
+	const float4 inColor = unpack_unorm1555_to_unorm8888( (ushort)inTexture.read(position).r );
+	float3 outColor = inColor.rgb;
+	
+	const uint line = uint(((float)position.y + 0.01f) / ((float)h / 192.0f));
+	outColor = nds_apply_master_brightness(outColor, brightnessMode[line], (float)brightnessIntensity[line] / 16.0f);
+	
+	outTexture.write(float4(outColor, 1.0f), position);
+}
+
+kernel void nds_fetch555ConvertOnly(const uint2 position [[thread_position_in_grid]],
+									const texture2d<ushort, access::read> inTexture [[texture(0)]],
+									texture2d<float, access::write> outTexture [[texture(1)]])
 {
 	if ( (position.x > inTexture.get_width() - 1) || (position.y > inTexture.get_height() - 1) )
 	{
 		return;
 	}
 	
-	outTexture.write( unpack_unorm1555_to_unorm8888( (ushort)inTexture.read(position).r ), position );
+	const float4 outColor = unpack_unorm1555_to_unorm8888( (ushort)inTexture.read(position).r );
+	outTexture.write(float4(outColor.rgb, 1.0f), position);
+}
+
+kernel void nds_fetch666(const uint2 position [[thread_position_in_grid]],
+						 const constant uchar *brightnessMode [[buffer(0)]],
+						 const constant uchar *brightnessIntensity [[buffer(1)]],
+						 const texture2d<float, access::read> inTexture [[texture(0)]],
+						 texture2d<float, access::write> outTexture [[texture(1)]])
+{
+	const uint h = inTexture.get_height();
+	
+	if ( (position.x > inTexture.get_width() - 1) || (position.y > h - 1) )
+	{
+		return;
+	}
+	
+	const float4 inColor = inTexture.read(position);
+	float3 outColor = inColor.rgb * float3(255.0f/63.0f);
+	
+	const uint line = uint(((float)position.y + 0.01f) / ((float)h / 192.0f));
+	outColor = nds_apply_master_brightness(outColor, brightnessMode[line], (float)brightnessIntensity[line] / 16.0f);
+	
+	outTexture.write(float4(outColor, 1.0f), position);
+}
+
+kernel void nds_fetch888(const uint2 position [[thread_position_in_grid]],
+						 const constant uchar *brightnessMode [[buffer(0)]],
+						 const constant uchar *brightnessIntensity [[buffer(1)]],
+						 const texture2d<float, access::read> inTexture [[texture(0)]],
+						 texture2d<float, access::write> outTexture [[texture(1)]])
+{
+	const uint h = inTexture.get_height();
+	
+	if ( (position.x > inTexture.get_width() - 1) || (position.y > h - 1) )
+	{
+		return;
+	}
+	
+	const float4 inColor = inTexture.read(position);
+	float3 outColor = inColor.rgb;
+	
+	const uint line = uint(((float)position.y + 0.01f) / ((float)h / 192.0f));
+	outColor = nds_apply_master_brightness(outColor, brightnessMode[line], (float)brightnessIntensity[line] / 16.0f);
+	
+	outTexture.write(float4(outColor, 1.0f), position);
+}
+
+float3 nds_apply_master_brightness(const float3 inColor, const uchar mode, const float intensity)
+{
+	switch (mode)
+	{
+		case 1:
+			return (inColor + ((1.0f - inColor) * intensity));
+			break;
+			
+		case 2:
+			return (inColor - (inColor * intensity));
+			break;
+			
+		default:
+			break;
+	}
+	
+	return inColor;
 }
 
 #pragma mark Source Filters

@@ -1382,7 +1382,7 @@ void GPUEngineBase::UpdatePropertiesWithoutRender(const u16 l)
 	}
 }
 
-void GPUEngineBase::FramebufferPostprocess()
+void GPUEngineBase::LastLineProcess()
 {
 	this->RefreshAffineStartRegs();
 }
@@ -4024,66 +4024,63 @@ void GPUEngineBase::SetWillApplyMasterBrightnessPerScanline(bool willApply)
 	this->_willApplyMasterBrightnessPerScanline = willApply;
 }
 
-template <NDSColorFormat OUTPUTFORMAT>
-void GPUEngineBase::ApplyMasterBrightness()
+void GPUEngineBase::UpdateMasterBrightnessDisplayInfo(NDSDisplayInfo &mutableInfo)
 {
-	NDSDisplayInfo &dispInfoMutable = (NDSDisplayInfo &)GPU->GetDisplayInfo();
-	const bool isMasterBrightnessAutoApplied = GPU->GetWillAutoApplyMasterBrightness();
-	
 	if (this->_willApplyMasterBrightnessPerScanline)
 	{
-		const bool isNativeSize = (this->nativeLineOutputCount == GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		bool needsApply = false;
 		
 		for (size_t line = 0; line < GPU_FRAMEBUFFER_NATIVE_HEIGHT; line++)
 		{
 			const GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[line];
 			
-			if (isMasterBrightnessAutoApplied)
+			if ( (compInfo.renderState.masterBrightnessIntensity != 0) && ((compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Up) || (compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Down)) )
 			{
-				void *dstColorLine = (isNativeSize) ? ((u8 *)this->nativeBuffer + (compInfo.line.blockOffsetNative * dispInfoMutable.pixelBytes)) : ((u8 *)this->customBuffer + (compInfo.line.blockOffsetCustom * dispInfoMutable.pixelBytes));
-				const size_t pixCount = (isNativeSize) ? GPU_FRAMEBUFFER_NATIVE_WIDTH : compInfo.line.pixelCount;
-				
-				this->ApplyMasterBrightness<OUTPUTFORMAT, false>(dstColorLine,
-																 pixCount,
-																 compInfo.renderState.masterBrightnessMode,
-																 compInfo.renderState.masterBrightnessIntensity);
-			}
-			else
-			{
-				if ( (compInfo.renderState.masterBrightnessIntensity != 0) && ((compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Up) || (compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Down)) )
-				{
-					needsApply = true;
-				}
+				needsApply = true;
 			}
 			
-			dispInfoMutable.masterBrightnessMode[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessMode;
-			dispInfoMutable.masterBrightnessIntensity[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessIntensity;
+			mutableInfo.masterBrightnessMode[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessMode;
+			mutableInfo.masterBrightnessIntensity[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessIntensity;
 		}
 		
-		dispInfoMutable.needApplyMasterBrightness[this->_targetDisplayID] = dispInfoMutable.needApplyMasterBrightness[this->_targetDisplayID] && needsApply;
+		mutableInfo.needApplyMasterBrightness[this->_targetDisplayID] = needsApply;
 	}
 	else
 	{
 		const GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[0];
-		
-		if (isMasterBrightnessAutoApplied)
-		{
-			this->ApplyMasterBrightness<OUTPUTFORMAT, false>(this->renderedBuffer,
-															 this->renderedWidth * this->renderedHeight,
-															 compInfo.renderState.masterBrightnessMode,
-															 compInfo.renderState.masterBrightnessIntensity);
-		}
-		else
-		{
-			dispInfoMutable.needApplyMasterBrightness[this->_targetDisplayID] = (compInfo.renderState.masterBrightnessIntensity != 0) && ((compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Up) || (compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Down));
-		}
+		mutableInfo.needApplyMasterBrightness[this->_targetDisplayID] = (compInfo.renderState.masterBrightnessIntensity != 0) && ((compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Up) || (compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Down));
 		
 		for (size_t line = 0; line < GPU_FRAMEBUFFER_NATIVE_HEIGHT; line++)
 		{
-			dispInfoMutable.masterBrightnessMode[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessMode;
-			dispInfoMutable.masterBrightnessIntensity[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessIntensity;
+			mutableInfo.masterBrightnessMode[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessMode;
+			mutableInfo.masterBrightnessIntensity[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessIntensity;
 		}
+	}
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+void GPUEngineBase::ApplyMasterBrightness(const NDSDisplayInfo &displayInfo)
+{
+	if (this->_willApplyMasterBrightnessPerScanline)
+	{
+		for (size_t line = 0; line < GPU_FRAMEBUFFER_NATIVE_HEIGHT; line++)
+		{
+			const GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[line];
+			void *dstColorLine = (!displayInfo.didPerformCustomRender[this->_targetDisplayID]) ? ((u8 *)displayInfo.nativeBuffer[this->_targetDisplayID] + (compInfo.line.blockOffsetNative * displayInfo.pixelBytes)) : ((u8 *)displayInfo.customBuffer[this->_targetDisplayID] + (compInfo.line.blockOffsetCustom * displayInfo.pixelBytes));
+			const size_t pixCount = (!displayInfo.didPerformCustomRender[this->_targetDisplayID]) ? GPU_FRAMEBUFFER_NATIVE_WIDTH : compInfo.line.pixelCount;
+			
+			this->ApplyMasterBrightness<OUTPUTFORMAT, false>(dstColorLine,
+															 pixCount,
+															 (GPUMasterBrightMode)displayInfo.masterBrightnessMode[this->_targetDisplayID][line],
+															 displayInfo.masterBrightnessIntensity[this->_targetDisplayID][line]);
+		}
+	}
+	else
+	{
+		this->ApplyMasterBrightness<OUTPUTFORMAT, false>(displayInfo.renderedBuffer[this->_targetDisplayID],
+														 displayInfo.renderedWidth[this->_targetDisplayID] * displayInfo.renderedHeight[this->_targetDisplayID],
+														 (GPUMasterBrightMode)displayInfo.masterBrightnessMode[this->_targetDisplayID][0],
+														 displayInfo.masterBrightnessIntensity[this->_targetDisplayID][0]);
 	}
 }
 
@@ -4951,43 +4948,36 @@ void GPUEngineBase::ResolveCustomRendering()
 	this->renderedBuffer = this->customBuffer;
 }
 
-void GPUEngineBase::ResolveRGB666ToRGB888()
+void GPUEngineBase::ResolveToCustomFramebuffer(NDSDisplayInfo &mutableInfo)
 {
-	ColorspaceConvertBuffer6665To8888<false, false>((u32 *)this->renderedBuffer, (u32 *)this->renderedBuffer, this->renderedWidth * this->renderedHeight);
-}
-
-void GPUEngineBase::ResolveToCustomFramebuffer()
-{
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	
-	if (this->nativeLineOutputCount == 0)
+	if (mutableInfo.didPerformCustomRender[this->_targetDisplayID])
 	{
 		return;
 	}
 	
-	if (dispInfo.isCustomSizeRequested)
+	if (mutableInfo.isCustomSizeRequested)
 	{
-		if (dispInfo.pixelBytes == 2)
+		if (mutableInfo.pixelBytes == 2)
 		{
 			for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
 			{
-				this->_LineColorCopy<false, true, true, false, 2>(this->customBuffer, this->nativeBuffer, y);
+				this->_LineColorCopy<false, true, true, false, 2>(mutableInfo.customBuffer[this->_targetDisplayID], mutableInfo.nativeBuffer[this->_targetDisplayID], y);
 			}
 		}
-		else if (dispInfo.pixelBytes == 4)
+		else if (mutableInfo.pixelBytes == 4)
 		{
 			for (size_t y = 0; y < GPU_FRAMEBUFFER_NATIVE_HEIGHT; y++)
 			{
-				this->_LineColorCopy<false, true, true, false, 4>(this->customBuffer, this->nativeBuffer, y);
+				this->_LineColorCopy<false, true, true, false, 4>(mutableInfo.customBuffer[this->_targetDisplayID], mutableInfo.nativeBuffer[this->_targetDisplayID], y);
 			}
 		}
 	}
 	else
 	{
-		memcpy(this->customBuffer, this->nativeBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes);
+		memcpy(mutableInfo.customBuffer[this->_targetDisplayID], mutableInfo.nativeBuffer[this->_targetDisplayID], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * mutableInfo.pixelBytes);
 	}
 	
-	GPU->SetDisplayDidCustomRender(this->_targetDisplayID, true);
+	mutableInfo.didPerformCustomRender[this->_targetDisplayID] = true;
 }
 
 void GPUEngineBase::RefreshAffineStartRegs()
@@ -6679,9 +6669,9 @@ void GPUEngineA::_LineLarge8bpp(GPUEngineCompositorInfo &compInfo)
 	}
 }
 
-void GPUEngineA::FramebufferPostprocess()
+void GPUEngineA::LastLineProcess()
 {
-	this->GPUEngineBase::FramebufferPostprocess();
+	this->GPUEngineBase::LastLineProcess();
 	
 	this->_IORegisterMap->DISPCAPCNT.CaptureEnable = 0;
 	DISP_FIFOreset();
@@ -6783,17 +6773,16 @@ GPUSubsystem::GPUSubsystem()
 	_engineMain = GPUEngineA::Allocate();
 	_engineSub = GPUEngineB::Allocate();
 	
-	_displayMain = new NDSDisplay(NDSDisplayID_Main);
-	_displayMain->SetEngine(_engineMain);
-	_displayTouch = new NDSDisplay(NDSDisplayID_Touch);
-	_displayTouch->SetEngine(_engineSub);
+	_display[NDSDisplayID_Main] = new NDSDisplay(NDSDisplayID_Main);
+	_display[NDSDisplayID_Main]->SetEngine(_engineMain);
+	_display[NDSDisplayID_Touch] = new NDSDisplay(NDSDisplayID_Touch);
+	_display[NDSDisplayID_Touch]->SetEngine(_engineSub);
 	
 	_videoFrameCount = 0;
 	_render3DFrameCount = 0;
 	_frameNeedsFinish = false;
 	_willFrameSkip = false;
-	_willAutoApplyMasterBrightness = true;
-	_willAutoConvertRGB666ToRGB888 = true;
+	_willPostprocessDisplays = true;
 	_willAutoResolveToCustomBuffer = true;
 	
 	//TODO OSD
@@ -6806,7 +6795,6 @@ GPUSubsystem::GPUSubsystem()
 	_displayInfo.isCustomSizeRequested = false;
 	_displayInfo.customWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	_displayInfo.customHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	_displayInfo.isMasterBrightnessAutoApplyRequested = true;
 	
 	_customVRAM = NULL;
 	_customVRAMBlank = NULL;
@@ -6854,8 +6842,8 @@ GPUSubsystem::~GPUSubsystem()
 	free_aligned(_gpuDstToSrcSSSE3_u16_8e);
 	_gpuDstToSrcSSSE3_u16_8e = NULL;
 	
-	delete _displayMain;
-	delete _displayTouch;
+	delete _display[NDSDisplayID_Main];
+	delete _display[NDSDisplayID_Touch];
 	_engineMain->FinalizeAndDeallocate();
 	_engineSub->FinalizeAndDeallocate();
 	
@@ -6912,8 +6900,8 @@ void GPUSubsystem::Reset()
 	this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = this->_displayInfo.nativeBuffer[NDSDisplayID_Touch];
 	
-	this->_displayMain->SetEngineByID(GPUEngineID_Main);
-	this->_displayTouch->SetEngineByID(GPUEngineID_Sub);
+	this->_display[NDSDisplayID_Main]->SetEngineByID(GPUEngineID_Main);
+	this->_display[NDSDisplayID_Touch]->SetEngineByID(GPUEngineID_Sub);
 	
 	gfx3d_reset();
 	this->_engineMain->Reset();
@@ -6999,14 +6987,14 @@ void GPUSubsystem::UpdateRenderProperties()
 	this->_engineSub->renderedWidth   = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	this->_engineSub->renderedHeight  = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
-	GPUEngineBase *mainEngine  = this->_displayMain->GetEngine();
+	GPUEngineBase *mainEngine  = this->_display[NDSDisplayID_Main]->GetEngine();
 	this->_displayInfo.nativeBuffer[NDSDisplayID_Main]    = mainEngine->nativeBuffer;
 	this->_displayInfo.customBuffer[NDSDisplayID_Main]    = mainEngine->customBuffer;
 	this->_displayInfo.renderedBuffer[NDSDisplayID_Main]  = mainEngine->renderedBuffer;
 	this->_displayInfo.renderedWidth[NDSDisplayID_Main]   = mainEngine->renderedWidth;
 	this->_displayInfo.renderedHeight[NDSDisplayID_Main]  = mainEngine->renderedHeight;
 	
-	GPUEngineBase *touchEngine = this->_displayTouch->GetEngine();
+	GPUEngineBase *touchEngine = this->_display[NDSDisplayID_Touch]->GetEngine();
 	this->_displayInfo.nativeBuffer[NDSDisplayID_Touch]   = touchEngine->nativeBuffer;
 	this->_displayInfo.customBuffer[NDSDisplayID_Touch]   = touchEngine->customBuffer;
 	this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = touchEngine->renderedBuffer;
@@ -7067,11 +7055,6 @@ u32 GPUSubsystem::GetFPSRender3D() const
 	return this->_render3DFrameCount;
 }
 
-void GPUSubsystem::SetDisplayDidCustomRender(NDSDisplayID displayID, bool theState)
-{
-	this->_displayInfo.didPerformCustomRender[displayID] = theState;
-}
-
 GPUEngineA* GPUSubsystem::GetEngineMain()
 {
 	return this->_engineMain;
@@ -7084,12 +7067,12 @@ GPUEngineB* GPUSubsystem::GetEngineSub()
 
 NDSDisplay* GPUSubsystem::GetDisplayMain()
 {
-	return this->_displayMain;
+	return this->_display[NDSDisplayID_Main];
 }
 
 NDSDisplay* GPUSubsystem::GetDisplayTouch()
 {
-	return this->_displayTouch;
+	return this->_display[NDSDisplayID_Touch];
 }
 
 size_t GPUSubsystem::GetCustomFramebufferWidth() const
@@ -7275,14 +7258,14 @@ void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, 
 	this->_engineMain->SetCustomFramebufferSize(w, h);
 	this->_engineSub->SetCustomFramebufferSize(w, h);
 	
-	GPUEngineBase *mainEngine  = this->_displayMain->GetEngine();
+	GPUEngineBase *mainEngine  = this->_display[NDSDisplayID_Main]->GetEngine();
 	this->_displayInfo.nativeBuffer[NDSDisplayID_Main]    = mainEngine->nativeBuffer;
 	this->_displayInfo.customBuffer[NDSDisplayID_Main]    = mainEngine->customBuffer;
 	this->_displayInfo.renderedBuffer[NDSDisplayID_Main]  = mainEngine->renderedBuffer;
 	this->_displayInfo.renderedWidth[NDSDisplayID_Main]   = mainEngine->renderedWidth;
 	this->_displayInfo.renderedHeight[NDSDisplayID_Main]  = mainEngine->renderedHeight;
 	
-	GPUEngineBase *touchEngine = this->_displayTouch->GetEngine();
+	GPUEngineBase *touchEngine = this->_display[NDSDisplayID_Touch]->GetEngine();
 	this->_displayInfo.nativeBuffer[NDSDisplayID_Touch]   = touchEngine->nativeBuffer;
 	this->_displayInfo.customBuffer[NDSDisplayID_Touch]   = touchEngine->customBuffer;
 	this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = touchEngine->renderedBuffer;
@@ -7344,25 +7327,75 @@ u16* GPUSubsystem::GetCustomVRAMAddressUsingMappedAddress(const u32 mappedAddr)
 	return (this->GetEngineMain()->GetCustomVRAMBlockPtr(blockID) + (_gpuCaptureLineIndex[blockLine] * this->_displayInfo.customWidth) + _gpuDstPitchIndex[linePixel]);
 }
 
-bool GPUSubsystem::GetWillAutoApplyMasterBrightness() const
+bool GPUSubsystem::GetWillPostprocessDisplays() const
 {
-	return this->_willAutoApplyMasterBrightness;
+	return this->_willPostprocessDisplays;
 }
 
-void GPUSubsystem::SetWillAutoApplyMasterBrightness(const bool willAutoApply)
+void GPUSubsystem::SetWillPostprocessDisplays(const bool willPostprocess)
 {
-	this->_willAutoApplyMasterBrightness = willAutoApply;
-	this->_displayInfo.isMasterBrightnessAutoApplyRequested = willAutoApply;
+	this->_willPostprocessDisplays = willPostprocess;
 }
 
-bool GPUSubsystem::GetWillAutoConvertRGB666ToRGB888() const
+void GPUSubsystem::PostprocessDisplay(const NDSDisplayID displayID, NDSDisplayInfo &mutableInfo)
 {
-	return this->_willAutoConvertRGB666ToRGB888;
+	if (mutableInfo.isDisplayEnabled[displayID])
+	{
+		if (mutableInfo.colorFormat == NDSColorFormat_BGR666_Rev)
+		{
+			if (mutableInfo.needConvertColorFormat[displayID])
+			{
+				ColorspaceConvertBuffer6665To8888<false, false>((u32 *)mutableInfo.renderedBuffer[displayID], (u32 *)mutableInfo.renderedBuffer[displayID], mutableInfo.renderedWidth[displayID] * mutableInfo.renderedHeight[displayID]);
+			}
+			
+			if (mutableInfo.needApplyMasterBrightness[displayID])
+			{
+				this->_display[displayID]->GetEngine()->ApplyMasterBrightness<NDSColorFormat_BGR888_Rev>(mutableInfo);
+			}
+		}
+		else
+		{
+			if (mutableInfo.needApplyMasterBrightness[displayID])
+			{
+				switch (mutableInfo.colorFormat)
+				{
+					case NDSColorFormat_BGR555_Rev:
+						this->_display[displayID]->GetEngine()->ApplyMasterBrightness<NDSColorFormat_BGR555_Rev>(mutableInfo);
+						break;
+						
+					case NDSColorFormat_BGR666_Rev:
+						this->_display[displayID]->GetEngine()->ApplyMasterBrightness<NDSColorFormat_BGR666_Rev>(mutableInfo);
+						break;
+						
+					case NDSColorFormat_BGR888_Rev:
+						this->_display[displayID]->GetEngine()->ApplyMasterBrightness<NDSColorFormat_BGR888_Rev>(mutableInfo);
+						break;
+						
+					default:
+						break;
+				}
+			}
+		}
+	}
+	else
+	{
+		if (mutableInfo.colorFormat == NDSColorFormat_BGR555_Rev)
+		{
+			memset(mutableInfo.renderedBuffer[displayID], 0, mutableInfo.renderedWidth[displayID] * mutableInfo.renderedHeight[displayID] * sizeof(u16));
+		}
+		else
+		{
+			memset(mutableInfo.renderedBuffer[displayID], 0, mutableInfo.renderedWidth[displayID] * mutableInfo.renderedHeight[displayID] * sizeof(u32));
+		}
+	}
+	
+	mutableInfo.needConvertColorFormat[displayID] = false;
+	mutableInfo.needApplyMasterBrightness[displayID] = false;
 }
 
-void GPUSubsystem::SetWillAutoConvertRGB666ToRGB888(const bool willAutoConvert)
+void GPUSubsystem::ResolveDisplayToCustomFramebuffer(const NDSDisplayID displayID, NDSDisplayInfo &mutableInfo)
 {
-	this->_willAutoConvertRGB666ToRGB888 = willAutoConvert;
+	this->_display[displayID]->GetEngine()->ResolveToCustomFramebuffer(mutableInfo);
 }
 
 bool GPUSubsystem::GetWillAutoResolveToCustomBuffer() const
@@ -7450,8 +7483,8 @@ void GPUSubsystem::RenderLine(const size_t l)
 	
 	if (l == 191)
 	{
-		this->_engineMain->FramebufferPostprocess();
-		this->_engineSub->FramebufferPostprocess();
+		this->_engineMain->LastLineProcess();
+		this->_engineSub->LastLineProcess();
 		
 		this->_UpdateFPSRender3D();
 		
@@ -7463,55 +7496,35 @@ void GPUSubsystem::RenderLine(const size_t l)
 				this->_engineSub->ResolveCustomRendering<OUTPUTFORMAT>();
 			}
 			
-			this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main] = (this->_displayMain->GetEngine()->nativeLineOutputCount < GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-			this->_displayInfo.renderedBuffer[NDSDisplayID_Main] = this->_displayMain->GetEngine()->renderedBuffer;
-			this->_displayInfo.renderedWidth[NDSDisplayID_Main] = this->_displayMain->GetEngine()->renderedWidth;
-			this->_displayInfo.renderedHeight[NDSDisplayID_Main] = this->_displayMain->GetEngine()->renderedHeight;
+			this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main] = (this->_display[NDSDisplayID_Main]->GetEngine()->nativeLineOutputCount < GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			this->_displayInfo.renderedBuffer[NDSDisplayID_Main] = this->_display[NDSDisplayID_Main]->GetEngine()->renderedBuffer;
+			this->_displayInfo.renderedWidth[NDSDisplayID_Main] = this->_display[NDSDisplayID_Main]->GetEngine()->renderedWidth;
+			this->_displayInfo.renderedHeight[NDSDisplayID_Main] = this->_display[NDSDisplayID_Main]->GetEngine()->renderedHeight;
 			
-			this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch] = (this->_displayTouch->GetEngine()->nativeLineOutputCount < GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-			this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = this->_displayTouch->GetEngine()->renderedBuffer;
-			this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = this->_displayTouch->GetEngine()->renderedWidth;
-			this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = this->_displayTouch->GetEngine()->renderedHeight;
+			this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch] = (this->_display[NDSDisplayID_Touch]->GetEngine()->nativeLineOutputCount < GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngine()->renderedBuffer;
+			this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngine()->renderedWidth;
+			this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngine()->renderedHeight;
 			
-			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Main] = CommonSettings.showGpu.main;
-			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Touch] = CommonSettings.showGpu.sub;
-			this->_displayInfo.needApplyMasterBrightness[NDSDisplayID_Main] = !this->_displayInfo.isMasterBrightnessAutoApplyRequested;
-			this->_displayInfo.needApplyMasterBrightness[NDSDisplayID_Touch] = !this->_displayInfo.isMasterBrightnessAutoApplyRequested;
+			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Main] = CommonSettings.showGpu.screens[this->_display[NDSDisplayID_Main]->GetEngineID()];
+			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Touch] = CommonSettings.showGpu.screens[this->_display[NDSDisplayID_Touch]->GetEngineID()];
 			
-			if (CommonSettings.showGpu.main)
-			{
-				this->_engineMain->ApplyMasterBrightness<OUTPUTFORMAT>();
-			}
-			else
-			{
-				if (this->_willAutoApplyMasterBrightness)
-				{
-					memset(this->_engineMain->renderedBuffer, 0, this->_engineMain->renderedWidth * this->_engineMain->renderedHeight * this->_displayInfo.pixelBytes);
-				}
-			}
+			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Main] = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
+			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Touch] = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
 			
-			if (CommonSettings.showGpu.sub)
-			{
-				this->_engineSub->ApplyMasterBrightness<OUTPUTFORMAT>();
-			}
-			else
-			{
-				if (this->_willAutoApplyMasterBrightness)
-				{
-					memset(this->_engineSub->renderedBuffer, 0, this->_engineSub->renderedWidth * this->_engineSub->renderedHeight * this->_displayInfo.pixelBytes);
-				}
-			}
+			this->_engineMain->UpdateMasterBrightnessDisplayInfo(this->_displayInfo);
+			this->_engineSub->UpdateMasterBrightnessDisplayInfo(this->_displayInfo);
 			
-			if ( (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) && this->_willAutoConvertRGB666ToRGB888 )
+			if (this->_willPostprocessDisplays)
 			{
-				this->_engineMain->ResolveRGB666ToRGB888();
-				this->_engineSub->ResolveRGB666ToRGB888();
+				this->PostprocessDisplay(NDSDisplayID_Main,  this->_displayInfo);
+				this->PostprocessDisplay(NDSDisplayID_Touch, this->_displayInfo);
 			}
 			
 			if (this->_willAutoResolveToCustomBuffer)
 			{
-				this->_engineMain->ResolveToCustomFramebuffer();
-				this->_engineSub->ResolveToCustomFramebuffer();
+				this->ResolveDisplayToCustomFramebuffer(NDSDisplayID_Main,  this->_displayInfo);
+				this->ResolveDisplayToCustomFramebuffer(NDSDisplayID_Touch, this->_displayInfo);
 			}
 		}
 		

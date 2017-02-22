@@ -159,10 +159,15 @@ public:
 	if (IsOSXVersionSupported(10, 11, 0) && [[NSUserDefaults standardUserDefaults] boolForKey:@"General_DisplayViewsPreferMetal"])
 	{
 		fetchObject = new MacMetalFetchObject;
+		
 		if (fetchObject->GetClientData() == nil)
 		{
 			delete fetchObject;
 			fetchObject = NULL;
+		}
+		else
+		{
+			GPU->SetWillPostprocessDisplays(false);
 		}
 	}
 #endif
@@ -860,7 +865,7 @@ public:
 @implementation MacClientSharedObject
 
 @synthesize GPUFetchObject;
-@synthesize numberViewsUsingCPUFiltering;
+@synthesize numberViewsUsingDirectToCPUFiltering;
 
 - (id)init
 {
@@ -879,7 +884,7 @@ public:
 	GPUFetchObject = nil;
 	_mutexOutputList = NULL;
 	_cdsOutputList = nil;
-	numberViewsUsingCPUFiltering = 0;
+	numberViewsUsingDirectToCPUFiltering = 0;
 	
 	return self;
 }
@@ -962,14 +967,14 @@ public:
 	_mutexOutputList = theMutex;
 }
 
-- (void) incrementViewsUsingCPUFiltering
+- (void) incrementViewsUsingDirectToCPUFiltering
 {
-	OSAtomicIncrement32(&numberViewsUsingCPUFiltering);
+	OSAtomicIncrement32(&numberViewsUsingDirectToCPUFiltering);
 }
 
-- (void) decrementViewsUsingCPUFiltering
+- (void) decrementViewsUsingDirectToCPUFiltering
 {
-	OSAtomicDecrement32(&numberViewsUsingCPUFiltering);
+	OSAtomicDecrement32(&numberViewsUsingDirectToCPUFiltering);
 }
 
 - (void) pushVideoDataToAllDisplayViews

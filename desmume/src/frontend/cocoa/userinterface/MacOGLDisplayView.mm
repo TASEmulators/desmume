@@ -199,7 +199,7 @@ void MacOGLClientFetchObject::SetFetchBuffers(const NDSDisplayInfo &currentDispl
 void MacOGLClientFetchObject::FetchFromBufferIndex(const u8 index)
 {
 	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_clientData;
-	this->_useCPUFilterPipeline = ([sharedViewObject numberViewsUsingCPUFiltering] > 0);
+	this->_useDirectToCPUFilterPipeline = ([sharedViewObject numberViewsUsingDirectToCPUFiltering] > 0);
 	
 	pthread_rwlock_rdlock([sharedViewObject rwlockFramebufferAtIndex:index]);
 	

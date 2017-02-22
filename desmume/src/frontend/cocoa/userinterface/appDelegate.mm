@@ -180,9 +180,8 @@
 	// Init the DS emulation core.
 	CocoaDSCore *newCore = [[[CocoaDSCore alloc] init] autorelease];
 	MacClientSharedObject *sharedViewObject = [[newCore cdsGPU] sharedData];
-	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:sharedViewObject withObject:nil];
 	
-	// Wait until the SPU is finished starting up.
+	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:sharedViewObject withObject:nil];
 	while ([sharedViewObject thread] == nil)
 	{
 		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
@@ -206,8 +205,6 @@
 	
 	// Start up the threads for our outputs.
 	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:newSpeaker withObject:nil];
-	
-	// Wait until the SPU is finished starting up.
 	while ([newSpeaker thread] == nil)
 	{
 		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
