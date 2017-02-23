@@ -1098,6 +1098,9 @@ typedef struct
 												//    true  - The display performed a custom-sized render.
 												//    false - The display performed a native-sized render.
 	
+	bool masterBrightnessDiffersPerLine[2];		// Reports if the master brightness values may differ per scanline. If true, then it will
+												// need to be applied on a per-scanline basis. Otherwise, it can be applied to the entire
+												// framebuffer. For most NDS games, this field will be false.
 	u8 masterBrightnessMode[2][GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // The master brightness mode of each display line.
 	u8 masterBrightnessIntensity[2][GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // The master brightness intensity of each display line.
 	
@@ -1328,7 +1331,6 @@ protected:
 	CACHE_ALIGN u8 _h_win[2][GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	
 	NDSDisplayID _targetDisplayID;
-	bool _willApplyMasterBrightnessPerScanline;
 	
 	CACHE_ALIGN FragmentColor _internalRenderLineTargetNative[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	CACHE_ALIGN u8 _renderLineLayerIDNative[GPU_FRAMEBUFFER_NATIVE_WIDTH];
@@ -1480,22 +1482,6 @@ public:
 	void SetEnableState(bool theState);
 	bool GetLayerEnableState(const size_t layerIndex);
 	void SetLayerEnableState(const size_t layerIndex, bool theState);
-	
-	// By default, the master brightness will be applied on a per-scanline basis. This is
-	// necessary for certain games, such as Mega Man Zero Collection, that purposely change
-	// the the master brightness in the middle of the frame. With this particular game, it
-	// will change the master brightness to 31 on line 0, 0 on line 16, and back to 31 on
-	// line 176. Originally being a GBA game, this is done to disable unused scanlines on
-	// the NDS.
-	//
-	// However, applying the master brightness per scanline is slower than applying it on
-	// the entire framebuffer. To apply the master brightness to the entire framebuffer
-	// instead, call SetWillApplyMasterBrightnessPerScanline() and pass a value of "false".
-	// This should be safe for the vast majority of games, since games usually won't change
-	// the master brightness mid-frame, and even those that do will look fine when using
-	// the master brightness value from line 0.
-	bool WillApplyMasterBrightnessPerScanline() const;
-	void SetWillApplyMasterBrightnessPerScanline(bool willApply);
 	
 	void UpdateMasterBrightnessDisplayInfo(NDSDisplayInfo &mutableInfo);
 	template<NDSColorFormat OUTPUTFORMAT> void ApplyMasterBrightness(const NDSDisplayInfo &displayInfo);

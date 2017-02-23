@@ -353,8 +353,6 @@ GPUEngineBase::GPUEngineBase()
 	_enableColorEffectCustom[GPULayerID_BG2] = NULL;
 	_enableColorEffectCustom[GPULayerID_BG3] = NULL;
 	_enableColorEffectCustom[GPULayerID_OBJ] = NULL;
-	
-	_willApplyMasterBrightnessPerScanline = true;
 }
 
 GPUEngineBase::~GPUEngineBase()
@@ -4014,54 +4012,52 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 	}
 }
 
-bool GPUEngineBase::WillApplyMasterBrightnessPerScanline() const
-{
-	return this->_willApplyMasterBrightnessPerScanline;
-}
-
-void GPUEngineBase::SetWillApplyMasterBrightnessPerScanline(bool willApply)
-{
-	this->_willApplyMasterBrightnessPerScanline = willApply;
-}
-
 void GPUEngineBase::UpdateMasterBrightnessDisplayInfo(NDSDisplayInfo &mutableInfo)
 {
-	if (this->_willApplyMasterBrightnessPerScanline)
+	const GPUEngineCompositorInfo &compInfoZero = this->_currentCompositorInfo[0];
+	bool needsApply = false;
+	bool processPerScanline = false;
+	
+	for (size_t line = 0; line < GPU_FRAMEBUFFER_NATIVE_HEIGHT; line++)
 	{
-		bool needsApply = false;
+		const GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[line];
 		
-		for (size_t line = 0; line < GPU_FRAMEBUFFER_NATIVE_HEIGHT; line++)
+		if ( !needsApply &&
+			 (compInfo.renderState.masterBrightnessIntensity != 0) &&
+			((compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Up) || (compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Down)) )
 		{
-			const GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[line];
-			
-			if ( (compInfo.renderState.masterBrightnessIntensity != 0) && ((compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Up) || (compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Down)) )
-			{
-				needsApply = true;
-			}
-			
-			mutableInfo.masterBrightnessMode[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessMode;
-			mutableInfo.masterBrightnessIntensity[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessIntensity;
+			needsApply = true;
 		}
 		
-		mutableInfo.needApplyMasterBrightness[this->_targetDisplayID] = needsApply;
-	}
-	else
-	{
-		const GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[0];
-		mutableInfo.needApplyMasterBrightness[this->_targetDisplayID] = (compInfo.renderState.masterBrightnessIntensity != 0) && ((compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Up) || (compInfo.renderState.masterBrightnessMode == GPUMasterBrightMode_Down));
+		mutableInfo.masterBrightnessMode[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessMode;
+		mutableInfo.masterBrightnessIntensity[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessIntensity;
 		
-		for (size_t line = 0; line < GPU_FRAMEBUFFER_NATIVE_HEIGHT; line++)
+		if ( !processPerScanline &&
+			((compInfo.renderState.masterBrightnessMode != compInfoZero.renderState.masterBrightnessMode) ||
+			 (compInfo.renderState.masterBrightnessIntensity != compInfoZero.renderState.masterBrightnessIntensity)) )
 		{
-			mutableInfo.masterBrightnessMode[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessMode;
-			mutableInfo.masterBrightnessIntensity[this->_targetDisplayID][line] = compInfo.renderState.masterBrightnessIntensity;
+			processPerScanline = true;
 		}
 	}
+	
+	mutableInfo.masterBrightnessDiffersPerLine[this->_targetDisplayID] = processPerScanline;
+	mutableInfo.needApplyMasterBrightness[this->_targetDisplayID] = needsApply;
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineBase::ApplyMasterBrightness(const NDSDisplayInfo &displayInfo)
 {
-	if (this->_willApplyMasterBrightnessPerScanline)
+	// Most games maintain the exact same master brightness values for all 192 lines, so we
+	// can easily apply the master brightness to the entire framebuffer at once, which is
+	// faster than applying it per scanline.
+	//
+	// However, some games need to have the master brightness values applied on a per-scanline
+	// basis since they can differ for each scanline. For example, Mega Man Zero Collection
+	// purposely changes the master brightness intensity to 31 on line 0, 0 on line 16, and
+	// then back to 31 on line 176. Since the MMZC are originally GBA games, the master
+	// brightness intensity changes are done to disable the unused scanlines on the NDS.
+	
+	if (displayInfo.masterBrightnessDiffersPerLine[this->_targetDisplayID])
 	{
 		for (size_t line = 0; line < GPU_FRAMEBUFFER_NATIVE_HEIGHT; line++)
 		{
@@ -7428,8 +7424,7 @@ void GPUSubsystem::RenderLine(const size_t l)
 	this->_engineSub->UpdateRenderStates(l);
 	
 	const bool isDisplayCaptureNeeded = this->_engineMain->WillDisplayCapture(l);
-	const bool isFramebufferRenderNeeded[2]	= { CommonSettings.showGpu.main && ( !this->_engineMain->IsMasterBrightFullIntensityAtLineZero() || this->_engineMain->WillApplyMasterBrightnessPerScanline() ),
-											    CommonSettings.showGpu.sub && ( !this->_engineSub->IsMasterBrightFullIntensityAtLineZero() || this->_engineSub->WillApplyMasterBrightnessPerScanline() ) };
+	const bool isFramebufferRenderNeeded[2]	= { CommonSettings.showGpu.main, CommonSettings.showGpu.sub };
 	
 	if (l == 0)
 	{
