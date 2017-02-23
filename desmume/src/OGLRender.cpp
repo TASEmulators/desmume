@@ -3149,12 +3149,21 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, size_t polyR
 
 Render3DError OpenGLRenderer_1_2::SetupViewport(const u32 viewportValue)
 {
-	const GLfloat wScalar = this->_framebufferWidth / GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	const GLfloat hScalar = this->_framebufferHeight / GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	const GLfloat wScalar = this->_framebufferWidth  / (GLfloat)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	const GLfloat hScalar = this->_framebufferHeight / (GLfloat)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
 	VIEWPORT viewport;
 	viewport.decode(viewportValue);
-	glViewport(viewport.x * wScalar, viewport.y * hScalar, viewport.width * wScalar, viewport.height * hScalar);
+	
+	// The maximum viewport y-value is 191. Values above 191 need to wrap
+	// around and go negative.
+	//
+	// Test case: The Homie Rollerz character select screen sets the y-value
+	// to 253, which then wraps around to -2.
+	glViewport( viewport.x * wScalar,
+			   (viewport.y > 191) ? (viewport.y - 0xFF) * hScalar : viewport.y * hScalar,
+			    viewport.width  * wScalar,
+			    viewport.height * hScalar);
 	
 	return OGLERROR_NOERR;
 }

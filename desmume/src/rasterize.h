@@ -127,7 +127,7 @@ public:
 	SoftRasterizerRenderer();
 	virtual ~SoftRasterizerRenderer();
 	
-	template<bool CUSTOM> void performViewportTransforms();
+	void performViewportTransforms();
 	void performBackfaceTests();
 	void performCoordAdjustment();
 	void GetAndLoadAllTextures();
