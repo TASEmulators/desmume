@@ -1514,11 +1514,11 @@ template<bool CUSTOM> void SoftRasterizerRenderer::performViewportTransforms()
 			//viewport transformation
 			VIEWPORT viewport;
 			viewport.decode(poly.poly->viewport);
-			vert.coord[0] *= viewport.width * xfactor;
-			vert.coord[0] += viewport.x * xfactor;
-			vert.coord[1] *= viewport.height * yfactor;
-			vert.coord[1] += viewport.y * yfactor;
-			vert.coord[1] = ymax - vert.coord[1];
+			vert.coord[0] *= viewport.width;
+			vert.coord[0] += viewport.x;
+			vert.coord[1] *= viewport.height;
+			vert.coord[1] += viewport.y;
+			vert.coord[1] = 192 - vert.coord[1];
 
 			//this is required to fix Homie Rollerz character select.
 			//this was also a better fix for Princess Debut's giant out of range polys.
@@ -1535,6 +1535,9 @@ template<bool CUSTOM> void SoftRasterizerRenderer::performViewportTransforms()
 			//I do have some evidence that this wrecks the hardware extremely, but nothing's likely to use that effect.
 			//This is a sanity check only.
 			if(vert.coord[1] >= 192) vert.coord[1] = 192;
+
+			vert.coord[0] *= xfactor;
+			vert.coord[1] *= yfactor;
 		}
 	}
 }
