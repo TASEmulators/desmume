@@ -1519,11 +1519,22 @@ template<bool CUSTOM> void SoftRasterizerRenderer::performViewportTransforms()
 			vert.coord[1] *= viewport.height * yfactor;
 			vert.coord[1] += viewport.y * yfactor;
 			vert.coord[1] = ymax - vert.coord[1];
+
+			//this is required to fix Homie Rollerz character select.
+			//this was also a better fix for Princess Debut's giant out of range polys.
+			//Basically, invalid viewports are blithely used here, and the math overflows and wraps around
+			//NOTE: this is a crude approximation of the correct fixed point modular arithmetic
+			if(vert.coord[0] >= 256) vert.coord[0] -= 256;
+			if(vert.coord[1] >= 256) vert.coord[1] -= 256;
+			if(vert.coord[0] < 0) vert.coord[0] += 256;
+			if(vert.coord[1] < 0) vert.coord[1] += 256;
 			
-			//well, i guess we need to do this to keep Princess Debut from rendering huge polys.
-			//there must be something strange going on
-			vert.coord[0] = max(0.0f,min(xmax,vert.coord[0]));
-			vert.coord[1] = max(0.0f,min(ymax,vert.coord[1]));
+			//now, this is really lame. probably the rasterizer should be dealing with this, but 
+			//1. its easier here
+			//2. its more likely reusable in opengl this way (well, this is a bunch more calculations that should be earlier in the pipeline and obligatorily shared)
+			//I do have some evidence that this wrecks the hardware extremely, but nothing's likely to use that effect.
+			//This is a sanity check only.
+			if(vert.coord[1] >= 192) vert.coord[1] = 192;
 		}
 	}
 }

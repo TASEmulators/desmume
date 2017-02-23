@@ -1749,10 +1749,21 @@ static void gfx3d_glVecTest(u32 v)
 
 void VIEWPORT::decode(const u32 v)
 {
-	this->x = (v & 0xFF);
-	this->y = std::min<u8>(191, (v >> 8) & 0xFF);
-	this->width = ((v >> 16) & 0xFF) + 1 - this->x;
-	this->height = std::min<u8>(191, (v >> 24) & 0xFF) + 1 - this->y;
+	//test: homie rollerz character select chooses nonsense for Y. they did the math backwards. their goal was a fullscreen viewport, they just messed up.
+	//they also messed up the width...
+
+	u8 x1 = (v>> 0)&0xFF;
+	u8 y1 = (v>> 8)&0xFF;
+	u8 x2 = (v>>16)&0xFF;
+	u8 y2 = (v>>24)&0xFF;
+
+	//I'm 100% sure this is basically 99% correct
+	//the modular math is right. the details of how the +1 is handled may be wrong (this might should be dealt with in the viewport transformation instead)
+	//Its an off by one error in any event so we may never know
+	width = (u8)(x2-x1)+1;
+	height = (u8)(y2-y1)+1;
+	x = x1;
+	y = y1;
 }
 
 void gfx3d_glFogColor(u32 v)
