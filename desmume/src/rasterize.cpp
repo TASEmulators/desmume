@@ -1524,8 +1524,9 @@ template<bool CUSTOM> void SoftRasterizerRenderer::performViewportTransforms()
 			//this was also a better fix for Princess Debut's giant out of range polys.
 			//Basically, invalid viewports are blithely used here, and the math overflows and wraps around
 			//NOTE: this is a crude approximation of the correct fixed point modular arithmetic
-			if(vert.coord[0] >= 256) vert.coord[0] -= 256;
-			if(vert.coord[1] >= 256) vert.coord[1] -= 256;
+			//NOTE: you'd think we need >= 256 here, but that just isnt the way it works out (on softrasterizer) right now. coordinates @ 256.0 exactly will come in here.
+			if(vert.coord[0] > 256) vert.coord[0] -= 256;
+			if(vert.coord[1] > 256) vert.coord[1] -= 256;
 			if(vert.coord[0] < 0) vert.coord[0] += 256;
 			if(vert.coord[1] < 0) vert.coord[1] += 256;
 			
