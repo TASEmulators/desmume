@@ -333,6 +333,23 @@ static FORCEINLINE void alphaBlend(FragmentColor &dst, const FragmentColor src)
 	}
 }
 
+static FORCEINLINE void EdgeBlend(FragmentColor &dst, const FragmentColor src)
+{
+	if (src.a == 31 || dst.a == 0)
+	{
+		dst = src;
+	}
+	else
+	{
+		const u8 alpha = src.a + 1;
+		const u8 invAlpha = 32 - alpha;
+		dst.r = (alpha*src.r + invAlpha*dst.r) >> 5;
+		dst.g = (alpha*src.g + invAlpha*dst.g) >> 5;
+		dst.b = (alpha*src.b + invAlpha*dst.b) >> 5;
+		dst.a = max(src.a, dst.a);
+	}
+}
+
 template<bool RENDERER>
 class RasterizerUnit
 {
@@ -1750,7 +1767,7 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarking(const u16 *colorTable, c
 			
 #define PIXOFFSET(dx,dy) ((dx)+(this->_framebufferWidth*(dy)))
 #define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID > this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET(dx,dy)])
-#define DRAWEDGE(dx,dy) alphaBlend(this->_framebufferColor[i+PIXOFFSET(dx,dy)], edgeColor)
+#define DRAWEDGE(dx,dy) EdgeBlend(this->_framebufferColor[i+PIXOFFSET(dx,dy)], edgeColor)
 			
 			bool upleft    = ISEDGE(-1,-1);
 			bool up        = ISEDGE( 0,-1);
@@ -1941,7 +1958,7 @@ Render3DError SoftRasterizerRenderer::RenderEdgeMarkingAndFog(const SoftRasteriz
 				
 #define PIXOFFSET(dx,dy) ((dx)+(this->_framebufferWidth*(dy)))
 #define ISEDGE(dx,dy) ((x+(dx) < this->_framebufferWidth) && (y+(dy) < this->_framebufferHeight) && polyID != this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET(dx,dy)] && depth >= this->_framebufferAttributes->depth[i+PIXOFFSET(dx,dy)])
-#define DRAWEDGE(dx,dy) alphaBlend(dstColor, this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET(dx,dy)] >> 3])
+#define DRAWEDGE(dx,dy) EdgeBlend(dstColor, this->edgeMarkTable[this->_framebufferAttributes->opaquePolyID[i+PIXOFFSET(dx,dy)] >> 3])
 				
 				if (this->edgeMarkDisabled[polyID>>3] || this->_framebufferAttributes->isTranslucentPoly[i] != 0)
 					goto END_EDGE_MARK;
