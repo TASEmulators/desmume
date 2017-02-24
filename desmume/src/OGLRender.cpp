@@ -307,7 +307,7 @@ static const char *fragmentShader_100 = {"\
 	uniform float stateAlphaTestRef;\n\
 	\n\
 	uniform int polyMode;\n\
-	uniform bool polyIsTranslucent;\n\
+	uniform bool polyIsWireframe;\n\
 	uniform bool polySetNewDepthForTranslucent;\n\
 	uniform int polyID;\n\
 	\n\
@@ -365,17 +365,17 @@ static const char *fragmentShader_100 = {"\
 			\n\
 			newFragColor = mainTexColor * vtxColor;\n\
 			\n\
-			if(polyMode == 1)\n\
+			if (polyMode == 1)\n\
 			{\n\
 				newFragColor.rgb = (polyEnableTexture) ? mix(vtxColor.rgb, mainTexColor.rgb, mainTexColor.a) : vtxColor.rgb;\n\
 				newFragColor.a = vtxColor.a;\n\
 			}\n\
-			else if(polyMode == 2)\n\
+			else if (polyMode == 2)\n\
 			{\n\
-				vec3 toonColor = vec3(texture1D(texToonTable, vtxColor.r).rgb);\n\
-				newFragColor.rgb = (stateToonShadingMode == 0) ? mainTexColor.rgb * toonColor.rgb : min((mainTexColor.rgb * vtxColor.r) + toonColor.rgb, 1.0);\n\
+				vec3 newToonColor = vec3(texture1D(texToonTable, vtxColor.r).rgb);\n\
+				newFragColor.rgb = (stateToonShadingMode == 0) ? mainTexColor.rgb * newToonColor.rgb : min((mainTexColor.rgb * vtxColor.r) + newToonColor.rgb, 1.0);\n\
 			}\n\
-			else if(polyMode == 3)\n\
+			else if (polyMode == 3)\n\
 			{\n\
 				newFragColor = vtxColor;\n\
 			}\n\
@@ -390,8 +390,8 @@ static const char *fragmentShader_100 = {"\
 				newFragDepth = vec4(packVec3FromFloat(newFragDepthValue), 1.0);\n\
 			}\n\
 			\n\
-			newPolyID = vec4(float(polyID)/63.0, 0.0, 0.0, float(newFragColor.a > 0.999));\n\
-			newFogAttributes = vec4(float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5));\n\
+			newPolyID = vec4( float(polyID)/63.0, float(polyIsWireframe), 0.0, float(newFragColor.a > 0.999) );\n\
+			newFogAttributes = vec4( float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5) );\n\
 		}\n\
 		\n\
 		gl_FragData[0] = newFragColor;\n\
@@ -439,12 +439,26 @@ static const char *EdgeMarkFragShader_100 = {"\
 	\n\
 	void main()\n\
 	{\n\
+		vec4 polyIDInfo[5];\n\
+		polyIDInfo[0] = texture2D(texInPolyID, texCoord[0]);\n\
+		polyIDInfo[1] = texture2D(texInPolyID, texCoord[1]);\n\
+		polyIDInfo[2] = texture2D(texInPolyID, texCoord[2]);\n\
+		polyIDInfo[3] = texture2D(texInPolyID, texCoord[3]);\n\
+		polyIDInfo[4] = texture2D(texInPolyID, texCoord[4]);\n\
+		\n\
 		int polyID[5];\n\
-		polyID[0] = int((texture2D(texInPolyID, texCoord[0]).r * 63.0) + 0.5);\n\
-		polyID[1] = int((texture2D(texInPolyID, texCoord[1]).r * 63.0) + 0.5);\n\
-		polyID[2] = int((texture2D(texInPolyID, texCoord[2]).r * 63.0) + 0.5);\n\
-		polyID[3] = int((texture2D(texInPolyID, texCoord[3]).r * 63.0) + 0.5);\n\
-		polyID[4] = int((texture2D(texInPolyID, texCoord[4]).r * 63.0) + 0.5);\n\
+		polyID[0] = int((polyIDInfo[0].r * 63.0) + 0.5);\n\
+		polyID[1] = int((polyIDInfo[1].r * 63.0) + 0.5);\n\
+		polyID[2] = int((polyIDInfo[2].r * 63.0) + 0.5);\n\
+		polyID[3] = int((polyIDInfo[3].r * 63.0) + 0.5);\n\
+		polyID[4] = int((polyIDInfo[4].r * 63.0) + 0.5);\n\
+		\n\
+		bool isWireframe[5];\n\
+		isWireframe[0] = bool(polyIDInfo[0].g);\n\
+		isWireframe[1] = bool(polyIDInfo[1].g);\n\
+		isWireframe[2] = bool(polyIDInfo[2].g);\n\
+		isWireframe[3] = bool(polyIDInfo[3].g);\n\
+		isWireframe[4] = bool(polyIDInfo[4].g);\n\
 		\n\
 		float depth[5];\n\
 		depth[0] = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord[0]).rgb);\n\
@@ -453,18 +467,21 @@ static const char *EdgeMarkFragShader_100 = {"\
 		depth[3] = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord[3]).rgb);\n\
 		depth[4] = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord[4]).rgb);\n\
 		\n\
-		vec4 edgeColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
+		vec4 newEdgeColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
 		\n\
-		for (int i = 1; i < 5; i++)\n\
+		if (!isWireframe[0])\n\
 		{\n\
-			if (polyID[0] != polyID[i] && depth[0] >= depth[i])\n\
+			for (int i = 1; i < 5; i++)\n\
 			{\n\
-				edgeColor = stateEdgeColor[polyID[i]/8];\n\
-				break;\n\
+				if ( (polyID[0] != polyID[i]) && (depth[0] >= depth[i]) && !isWireframe[i] )\n\
+				{\n\
+					newEdgeColor = stateEdgeColor[polyID[i]/8];\n\
+					break;\n\
+				}\n\
 			}\n\
 		}\n\
 		\n\
-		gl_FragData[0] = edgeColor;\n\
+		gl_FragData[0] = newEdgeColor;\n\
 	}\n\
 "};
 
@@ -1653,7 +1670,7 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgramShaderLocations()
 	
 	OGLRef.uniformPolyTexScale					= glGetUniformLocation(OGLRef.programGeometryID, "polyTexScale");
 	OGLRef.uniformPolyMode						= glGetUniformLocation(OGLRef.programGeometryID, "polyMode");
-	OGLRef.uniformPolyIsTranslucent				= glGetUniformLocation(OGLRef.programGeometryID, "polyIsTranslucent");
+	OGLRef.uniformPolyIsWireframe				= glGetUniformLocation(OGLRef.programGeometryID, "polyIsWireframe");
 	OGLRef.uniformPolySetNewDepthForTranslucent	= glGetUniformLocation(OGLRef.programGeometryID, "polySetNewDepthForTranslucent");
 	OGLRef.uniformPolyAlpha						= glGetUniformLocation(OGLRef.programGeometryID, "polyAlpha");
 	OGLRef.uniformPolyID						= glGetUniformLocation(OGLRef.programGeometryID, "polyID");
@@ -3071,7 +3088,7 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 		glUniform1i(OGLRef.uniformPolyEnableFog, (attr.enableRenderFog) ? GL_TRUE : GL_FALSE);
 		glUniform1f(OGLRef.uniformPolyAlpha, (attr.isWireframe) ? 1.0f : divide5bitBy31_LUT[attr.alpha]);
 		glUniform1i(OGLRef.uniformPolyID, attr.polygonID);
-		glUniform1i(OGLRef.uniformPolyIsTranslucent, (attr.isTranslucent && !isOpaqueDecal) ? GL_TRUE : GL_FALSE);
+		glUniform1i(OGLRef.uniformPolyIsWireframe, (attr.isWireframe) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformPolySetNewDepthForTranslucent, (attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	}
 	else

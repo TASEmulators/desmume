@@ -116,7 +116,7 @@ static const char *GeometryVtxShader_150 = {"\
 	out vec4 vtxColor; \n\
 	flat out uint polyEnableTexture;\n\
 	flat out uint polyEnableFog;\n\
-	flat out uint polyIsTranslucent;\n\
+	flat out uint polyIsWireframe;\n\
 	flat out uint polySetNewDepthForTranslucent;\n\
 	flat out uint polyMode;\n\
 	flat out uint polyID;\n\
@@ -133,7 +133,7 @@ static const char *GeometryVtxShader_150 = {"\
 		\n\
 		polyEnableTexture = polyStateFlags[0];\n\
 		polyEnableFog = polyStateFlags[1];\n\
-		polyIsTranslucent = polyStateFlags[2];\n\
+		polyIsWireframe = polyStateFlags[2];\n\
 		polySetNewDepthForTranslucent = polyStateFlags[3];\n\
 		polyMode = polyStateValues[1];\n\
 		polyID = polyStateValues[2];\n\
@@ -159,7 +159,7 @@ static const char *GeometryFragShader_150 = {"\
 	in vec4 vtxColor;\n\
 	flat in uint polyEnableTexture;\n\
 	flat in uint polyEnableFog;\n\
-	flat in uint polyIsTranslucent;\n\
+	flat in uint polyIsWireframe;\n\
 	flat in uint polySetNewDepthForTranslucent;\n\
 	flat in uint polyMode;\n\
 	flat in uint polyID;\n\
@@ -274,8 +274,8 @@ static const char *GeometryFragShader_150 = {"\
 				newFragDepth = vec4(packVec3FromFloat(newFragDepthValue), 1.0);\n\
 			}\n\
 			\n\
-			newPolyID = vec4(float(polyID)/63.0, 0.0, 0.0, float(newFragColor.a > 0.999));\n\
-			newFogAttributes = vec4(float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5));\n\
+			newPolyID = vec4( float(polyID)/63.0, float(polyIsWireframe == 1u), 0.0, float(newFragColor.a > 0.999) );\n\
+			newFogAttributes = vec4( float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5) );\n\
 		}\n\
 		\n\
 		outFragColor = newFragColor;\n\
@@ -365,12 +365,26 @@ static const char *EdgeMarkFragShader_150 = {"\
 	\n\
 	void main()\n\
 	{\n\
+		vec4 polyIDInfo[5];\n\
+		polyIDInfo[0] = texture(texInPolyID, texCoord[0]);\n\
+		polyIDInfo[1] = texture(texInPolyID, texCoord[1]);\n\
+		polyIDInfo[2] = texture(texInPolyID, texCoord[2]);\n\
+		polyIDInfo[3] = texture(texInPolyID, texCoord[3]);\n\
+		polyIDInfo[4] = texture(texInPolyID, texCoord[4]);\n\
+		\n\
 		int polyID[5];\n\
-		polyID[0] = int((texture(texInPolyID, texCoord[0]).r * 63.0) + 0.5);\n\
-		polyID[1] = int((texture(texInPolyID, texCoord[1]).r * 63.0) + 0.5);\n\
-		polyID[2] = int((texture(texInPolyID, texCoord[2]).r * 63.0) + 0.5);\n\
-		polyID[3] = int((texture(texInPolyID, texCoord[3]).r * 63.0) + 0.5);\n\
-		polyID[4] = int((texture(texInPolyID, texCoord[4]).r * 63.0) + 0.5);\n\
+		polyID[0] = int((polyIDInfo[0].r * 63.0) + 0.5);\n\
+		polyID[1] = int((polyIDInfo[1].r * 63.0) + 0.5);\n\
+		polyID[2] = int((polyIDInfo[2].r * 63.0) + 0.5);\n\
+		polyID[3] = int((polyIDInfo[3].r * 63.0) + 0.5);\n\
+		polyID[4] = int((polyIDInfo[4].r * 63.0) + 0.5);\n\
+		\n\
+		bool isWireframe[5];\n\
+		isWireframe[0] = bool(polyIDInfo[0].g);\n\
+		isWireframe[1] = bool(polyIDInfo[1].g);\n\
+		isWireframe[2] = bool(polyIDInfo[2].g);\n\
+		isWireframe[3] = bool(polyIDInfo[3].g);\n\
+		isWireframe[4] = bool(polyIDInfo[4].g);\n\
 		\n\
 		float depth[5];\n\
 		depth[0] = unpackFloatFromVec3(texture(texInFragDepth, texCoord[0]).rgb);\n\
@@ -381,12 +395,15 @@ static const char *EdgeMarkFragShader_150 = {"\
 		\n\
 		vec4 newEdgeColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
 		\n\
-		for (int i = 1; i < 5; i++)\n\
+		if (!isWireframe[0])\n\
 		{\n\
-			if (polyID[0] != polyID[i] && depth[0] >= depth[i])\n\
+			for (int i = 1; i < 5; i++)\n\
 			{\n\
-				newEdgeColor = state.edgeColor[polyID[i]/8];\n\
-				break;\n\
+				if ( (polyID[0] != polyID[i]) && (depth[0] >= depth[i]) && !isWireframe[i] )\n\
+				{\n\
+					newEdgeColor = state.edgeColor[polyID[i]/8];\n\
+					break;\n\
+				}\n\
 			}\n\
 		}\n\
 		\n\
@@ -1465,7 +1482,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 		
 		polyStates[i].enableTexture = (this->_textureList[i]->IsSamplingEnabled()) ? GL_TRUE : GL_FALSE;
 		polyStates[i].enableFog = (polyAttr.enableRenderFog) ? GL_TRUE : GL_FALSE;
-		polyStates[i].isTranslucent = (polyAttr.isTranslucent && !((polyAttr.polygonMode == POLYGON_MODE_DECAL) && polyAttr.isOpaque)) ? GL_TRUE : GL_FALSE;
+		polyStates[i].isWireframe = (polyAttr.isWireframe) ? GL_TRUE : GL_FALSE;
 		polyStates[i].setNewDepthForTranslucent = (polyAttr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
 		polyStates[i].polyAlpha = (polyAttr.isWireframe) ? 0x1F : polyAttr.alpha;
 		polyStates[i].polyMode = polyAttr.polygonMode;

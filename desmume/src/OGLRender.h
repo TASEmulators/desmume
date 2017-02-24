@@ -377,7 +377,7 @@ struct OGLPolyStates
 {
 	union
 	{
-		struct { GLubyte enableTexture, enableFog, isTranslucent, setNewDepthForTranslucent; };
+		struct { GLubyte enableTexture, enableFog, isWireframe, setNewDepthForTranslucent; };
 		GLubyte flags[4];
 	};
 	
@@ -474,7 +474,7 @@ struct OGLRenderRef
 	
 	GLint uniformPolyTexScale;
 	GLint uniformPolyMode;
-	GLint uniformPolyIsTranslucent;
+	GLint uniformPolyIsWireframe;
 	GLint uniformPolySetNewDepthForTranslucent;
 	GLint uniformPolyAlpha;
 	GLint uniformPolyID;
