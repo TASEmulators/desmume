@@ -297,6 +297,7 @@ enum OGLTextureUnitID
 	OGLTextureUnitID_GColor,
 	OGLTextureUnitID_GDepth,
 	OGLTextureUnitID_GPolyID,
+	OGLTextureUnitID_ZeroAlphaPixelMask,
 	OGLTextureUnitID_FogAttr,
 	OGLTextureUnitID_PolyStates
 };
@@ -424,6 +425,7 @@ struct OGLRenderRef
 	GLuint texGDepthID;
 	GLuint texGFogAttrID;
 	GLuint texGPolyID;
+	GLuint texZeroAlphaPixelMaskID;
 	GLuint texGDepthStencilID;
 	GLuint texPostprocessFogID;
 	GLuint texFinalColorID;
@@ -446,13 +448,16 @@ struct OGLRenderRef
 	GLuint fragmentGeometryShaderID;
 	GLuint programGeometryID;
 	
+	GLuint vertexZeroAlphaPixelMaskShaderID;
 	GLuint vertexEdgeMarkShaderID;
 	GLuint vertexFogShaderID;
 	GLuint vertexFramebufferOutputShaderID;
+	GLuint fragmentZeroAlphaPixelMaskShaderID;
 	GLuint fragmentEdgeMarkShaderID;
 	GLuint fragmentFogShaderID;
 	GLuint fragmentFramebufferRGBA6665OutputShaderID;
 	GLuint fragmentFramebufferRGBA8888OutputShaderID;
+	GLuint programZeroAlphaPixelMaskID;
 	GLuint programEdgeMarkID;
 	GLuint programFogID;
 	GLuint programFramebufferRGBA6665OutputID;
@@ -486,6 +491,7 @@ struct OGLRenderRef
 	
 	GLint uniformPolyStateIndex;
 	GLint uniformPolyDrawShadow;
+	GLint uniformIsAlphaWriteDisabled;
 	
 	GLuint texToonTableID;
 	
@@ -631,7 +637,9 @@ protected:
 	virtual void DestroyVAOs() = 0;
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet) = 0;
 	virtual Render3DError InitTables() = 0;
-	virtual Render3DError InitPostprocessingPrograms(const std::string &edgeMarkVtxShader,
+	virtual Render3DError InitPostprocessingPrograms(const std::string &zeroAlphaPixelMaskVtxShader,
+													 const std::string &zeroAlphaPixelMaskFragShader,
+													 const std::string &edgeMarkVtxShader,
 													 const std::string &edgeMarkFragShader,
 													 const std::string &fogVtxShader,
 													 const std::string &fogFragShader,
@@ -639,6 +647,8 @@ protected:
 													 const std::string &framebufferOutputRGBA6665FragShader,
 													 const std::string &framebufferOutputRGBA8888FragShader) = 0;
 	virtual Render3DError DestroyPostprocessingPrograms() = 0;
+	virtual Render3DError InitZeroAlphaPixelMaskProgramBindings() = 0;
+	virtual Render3DError InitZeroAlphaPixelMaskProgramShaderLocations() = 0;
 	virtual Render3DError InitEdgeMarkProgramBindings() = 0;
 	virtual Render3DError InitEdgeMarkProgramShaderLocations() = 0;
 	virtual Render3DError InitFogProgramBindings() = 0;
@@ -700,7 +710,9 @@ protected:
 	virtual Render3DError InitGeometryProgramBindings();
 	virtual Render3DError InitGeometryProgramShaderLocations();
 	virtual void DestroyGeometryProgram();
-	virtual Render3DError InitPostprocessingPrograms(const std::string &edgeMarkVtxShader,
+	virtual Render3DError InitPostprocessingPrograms(const std::string &zeroAlphaPixelMaskVtxShader,
+													 const std::string &zeroAlphaPixelMaskFragShader,
+													 const std::string &edgeMarkVtxShader,
 													 const std::string &edgeMarkFragShader,
 													 const std::string &fogVtxShader,
 													 const std::string &fogFragShader,
@@ -708,6 +720,8 @@ protected:
 													 const std::string &framebufferOutputRGBA6665FragShader,
 													 const std::string &framebufferOutputRGBA8888FragShader);
 	virtual Render3DError DestroyPostprocessingPrograms();
+	virtual Render3DError InitZeroAlphaPixelMaskProgramBindings();
+	virtual Render3DError InitZeroAlphaPixelMaskProgramShaderLocations();
 	virtual Render3DError InitEdgeMarkProgramBindings();
 	virtual Render3DError InitEdgeMarkProgramShaderLocations();
 	virtual Render3DError InitFogProgramBindings();
@@ -788,7 +802,9 @@ class OpenGLRenderer_2_0 : public OpenGLRenderer_1_5
 protected:
 	virtual Render3DError InitExtensions();
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
-	virtual Render3DError InitPostprocessingPrograms(const std::string &edgeMarkVtxShader,
+	virtual Render3DError InitPostprocessingPrograms(const std::string &zeroAlphaPixelMaskVtxShader,
+													 const std::string &zeroAlphaPixelMaskFragShader,
+													 const std::string &edgeMarkVtxShader,
 													 const std::string &edgeMarkFragShader,
 													 const std::string &fogVtxShader,
 													 const std::string &fogFragShader,
@@ -796,6 +812,8 @@ protected:
 													 const std::string &framebufferOutputRGBA6665FragShader,
 													 const std::string &framebufferOutputRGBA8888FragShader);
 	virtual Render3DError DestroyPostprocessingPrograms();
+	virtual Render3DError InitZeroAlphaPixelMaskProgramBindings();
+	virtual Render3DError InitZeroAlphaPixelMaskProgramShaderLocations();
 	virtual Render3DError InitEdgeMarkProgramBindings();
 	virtual Render3DError InitEdgeMarkProgramShaderLocations();
 	virtual Render3DError InitFogProgramBindings();
