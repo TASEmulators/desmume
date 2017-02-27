@@ -1817,14 +1817,12 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 	}
 	else
 	{
-		const bool isOpaqueDecal = ((attr.polygonMode == POLYGON_MODE_DECAL) && attr.isOpaque);
-		
 		glStencilFunc(GL_ALWAYS, attr.polygonID, 0x3F);
-		glStencilOp(GL_KEEP, GL_KEEP, (attr.isTranslucent && !isOpaqueDecal) ? GL_KEEP : GL_REPLACE);
+		glStencilOp(GL_KEEP, GL_KEEP, (attr.isTranslucent) ? GL_KEEP : GL_REPLACE);
 		glStencilMask(0xFF); // Drawing non-shadow polygons will implicitly reset the stencil buffer bits
 		
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glDepthMask((!attr.isTranslucent || isOpaqueDecal || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
+		glDepthMask((!attr.isTranslucent || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	}
 	
 	return OGLERROR_NOERR;

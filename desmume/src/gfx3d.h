@@ -452,19 +452,24 @@ struct POLY {
 	
 	bool isTranslucent() const
 	{
+		const bool isOpaque = this->isOpaque();
+		
 		// First, check if the polygon is wireframe or opaque.
 		// If neither, then it must be translucent.
-		if (!this->isWireframe() && !this->isOpaque())
+		if (!this->isWireframe() && !isOpaque)
 		{
 			return true;
 		}
 		
 		// Also check for translucent texture format.
-		u8 texFormat = this->getTexParamTexFormat();
+		const u8 texFormat = this->getTexParamTexFormat();
+		const PolygonMode mode = this->getAttributePolygonMode();
 		
 		//a5i3 or a3i5 -> translucent
-		if(texFormat == TEXMODE_A3I5 || texFormat == TEXMODE_A5I3) 
+		if ( (texFormat == TEXMODE_A3I5 || texFormat == TEXMODE_A5I3) && !(isOpaque && (mode == POLYGON_MODE_DECAL || mode == POLYGON_MODE_SHADOW)) )
+		{
 			return true;
+		}
 		
 		return false;
 	}

@@ -2749,7 +2749,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		}
 		else
 		{
-			const GLfloat thePolyAlpha = (!thePoly->isWireframe() && thePoly->isTranslucent()) ? divide5bitBy31_LUT[thePoly->getAttributeAlpha()] : 1.0f;
+			const GLfloat thePolyAlpha = (thePoly->isWireframe()) ? 1.0f : divide5bitBy31_LUT[thePoly->getAttributeAlpha()];
 			
 			for (size_t j = 0; j < polyType; j++)
 			{
@@ -3086,7 +3086,6 @@ void OpenGLRenderer_1_2::SetPolygonIndex(const size_t index)
 Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 {
 	const PolygonAttributes attr = thePoly.getAttributes();
-	const bool isOpaqueDecal = ((attr.polygonMode == POLYGON_MODE_DECAL) && attr.isOpaque);
 	
 	// Set up depth test mode
 	static const GLenum oglDepthFunc[2] = {GL_LESS, GL_EQUAL};
@@ -3137,11 +3136,11 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 	else
 	{
 		glStencilFunc(GL_ALWAYS, attr.polygonID, 0x3F);
-		glStencilOp(GL_KEEP, GL_KEEP, (attr.isTranslucent && !isOpaqueDecal) ? GL_KEEP : GL_REPLACE);
+		glStencilOp(GL_KEEP, GL_KEEP, (attr.isTranslucent) ? GL_KEEP : GL_REPLACE);
 		glStencilMask(0xFF); // Drawing non-shadow polygons will implicitly reset the stencil buffer bits
 		
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glDepthMask((!attr.isTranslucent || isOpaqueDecal || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
+		glDepthMask((!attr.isTranslucent || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	}
 	
 	// Set up polygon attributes
