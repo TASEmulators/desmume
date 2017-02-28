@@ -669,8 +669,8 @@ protected:
 	virtual Render3DError DownsampleFBO() = 0;
 	virtual Render3DError ReadBackPixels() = 0;
 	
-	virtual Render3DError DrawAlphaTextureOpaqueFragments(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const GLboolean enableDepthWrite) = 0;
-	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const GLboolean enableDepthWrite, const u8 opaquePolyID) = 0;
+	virtual Render3DError DrawAlphaTexturePolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const bool canHaveOpaqueFragments) = 0;
+	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID) = 0;
 	virtual void SetPolygonIndex(const size_t index) = 0;
 	
 public:
@@ -752,8 +752,8 @@ protected:
 	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
 	virtual Render3DError SetupViewport(const u32 viewportValue);
 	
-	virtual Render3DError DrawAlphaTextureOpaqueFragments(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const GLboolean enableDepthWrite);
-	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const GLboolean enableDepthWrite, const u8 opaquePolyID);
+	virtual Render3DError DrawAlphaTexturePolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const bool canHaveOpaqueFragments);
+	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID);
 	
 public:
 	~OpenGLRenderer_1_2();

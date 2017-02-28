@@ -2903,17 +2903,18 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 			
 			// Render the polygons
 			this->SetPolygonIndex(i);
-			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 			
-			if ( ((thePoly.getTexParamTexFormat() == TEXMODE_A3I5) || (thePoly.getTexParamTexFormat() == TEXMODE_A5I3)) && (thePoly.getAttributePolygonMode() != POLYGON_MODE_SHADOW) && (thePoly.isOpaque() || thePoly.isWireframe()) )
+			if (thePoly.getAttributePolygonMode() == POLYGON_MODE_SHADOW)
 			{
-				const GLboolean enableDepthWrite = ( (thePoly.getAttributePolygonMode() == POLYGON_MODE_DECAL && thePoly.isOpaque()) || thePoly.getAttributeEnableAlphaDepthWrite() ) ? GL_TRUE : GL_FALSE;
-				this->DrawAlphaTextureOpaqueFragments(polyPrimitive, vertIndexCount, indexBufferPtr, enableDepthWrite);
+				this->DrawShadowPolygon(polyPrimitive, vertIndexCount, indexBufferPtr, thePoly.getAttributeEnableAlphaDepthWrite(), thePoly.isTranslucent(), thePoly.getAttributePolygonID());
 			}
-			else if ( (thePoly.getAttributePolygonMode() == POLYGON_MODE_SHADOW) && (thePoly.getAttributePolygonID() != 0) )
+			else if ( (thePoly.getTexParamTexFormat() == TEXMODE_A3I5) || (thePoly.getTexParamTexFormat() == TEXMODE_A5I3) )
 			{
-				const GLboolean enableDepthWrite = ( thePoly.isOpaque() || thePoly.getAttributeEnableAlphaDepthWrite() ) ? GL_TRUE : GL_FALSE;
-				this->DrawShadowPolygon(polyPrimitive, vertIndexCount, indexBufferPtr, enableDepthWrite, (thePoly.isOpaque()) ? thePoly.getAttributePolygonID() : 0);
+				this->DrawAlphaTexturePolygon(polyPrimitive, vertIndexCount, indexBufferPtr, thePoly.getAttributeEnableAlphaDepthWrite(), thePoly.isTranslucent(), thePoly.isWireframe() || thePoly.isOpaque());
+			}
+			else
+			{
+				glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 			}
 			
 			indexBufferPtr += vertIndexCount;
@@ -3248,34 +3249,51 @@ Render3DError OpenGLRenderer_1_2::SetupViewport(const u32 viewportValue)
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::DrawAlphaTextureOpaqueFragments(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const GLboolean enableDepthWrite)
+Render3DError OpenGLRenderer_1_2::DrawAlphaTexturePolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const bool canHaveOpaqueFragments)
 {
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	glDepthMask(GL_TRUE);
-	
 	if (this->isShaderSupported)
 	{
 		const OGLRenderRef &OGLRef = *this->ref;
 		
-		glUniform1i(OGLRef.uniformTexDrawOpaque, GL_TRUE);
-		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-		glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
+		if (isTranslucent)
+		{
+			// Draw the translucent fragments.
+			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+			
+			// Draw the opaque fragments if they might exist.
+			if (canHaveOpaqueFragments)
+			{
+				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+				glDepthMask(GL_TRUE);
+				
+				glUniform1i(OGLRef.uniformTexDrawOpaque, GL_TRUE);
+				glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+				glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
+				
+				glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+				glDepthMask((enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
+			}
+		}
+		else
+		{
+			// Draw the polygon as completely opaque.
+			glUniform1i(OGLRef.uniformTexDrawOpaque, GL_TRUE);
+			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+			glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
+		}
 	}
 	else
 	{
 		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 	}
 	
-	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-	glDepthMask(enableDepthWrite);
-	
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const GLboolean enableDepthWrite, const u8 opaquePolyID)
+Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID)
 {
 	// Shadow polygons are actually drawn over the course of multiple passes.
-	// Note that the 1st and 2nd passes are performed in SetupPolygon().
+	// Note that the 1st and 2nd passes are performed using states from SetupPolygon().
 	//
 	// 1st pass (NDS driven): The NDS creates the shadow volume and updates only the
 	// stencil buffer, writing to bit 0x40. Color and depth writes are disabled for this
@@ -3299,6 +3317,16 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 	// Since opaque polygons need to update their polygon IDs, we update only the stencil
 	// buffer with the polygon ID. Color and depth values are disabled for this pass.
 	
+	// 1st pass: Create the shadow volume.
+	if (opaquePolyID == 0)
+	{
+		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+		return OGLERROR_NOERR;
+	}
+	
+	// 2nd pass: Do the polygon ID check.
+	glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+	
 	// 3rd pass: Draw the shadow polygon.
 	glStencilFunc(GL_EQUAL, 0xC0, 0xC0);
 	// Technically, a depth-fail result should also reset the stencil buffer bits, but
@@ -3307,7 +3335,7 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 	glStencilOp(GL_ZERO, GL_KEEP, GL_ZERO);
 	glStencilMask(0xC0);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glDepthMask(enableDepthWrite);
+	glDepthMask((!isTranslucent || enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	
 	if (this->isShaderSupported)
 	{
@@ -3328,7 +3356,7 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 	glDepthMask(GL_FALSE);
 	
 	// 4th pass: Update the polygon IDs in the stencil buffer if the shadow polygons are opaque.
-	if (opaquePolyID != 0)
+	if (!isTranslucent)
 	{
 		glStencilFunc(GL_ALWAYS, opaquePolyID, 0x3F);
 		glStencilMask(0x3F);
