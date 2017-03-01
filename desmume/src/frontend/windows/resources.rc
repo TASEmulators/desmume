@@ -434,49 +434,51 @@ BEGIN
     GROUPBOX        "Data Size",IDC_STATIC,94,37,73,44,0,WS_EX_TRANSPARENT
 END
 
-IDD_EMULATIONSETTINGS DIALOGEX 0, 0, 477, 225
+IDD_EMULATIONSETTINGS DIALOGEX 0, 0, 477, 234
 STYLE DS_SETFONT | DS_CENTER | WS_CAPTION | WS_SYSMENU
 CAPTION "Emulation settings"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,366,206,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,419,206,50,14
-    CONTROL         "Use 8MB debugger mode when starting execution",IDC_CHECKBOX_DEBUGGERMODE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,251,79,182,10
-    LTEXT           "If you have to ask, you don't need to change these.",IDC_STATIC,251,68,169,8
-    GROUPBOX        "BIOS",IDC_STATIC,5,4,230,118
-    CONTROL         "Use external BIOS images",IDC_USEEXTBIOS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,19,210,10
-    LTEXT           "ARM9 BIOS image:",IDC_STATIC,15,34,210,8
-    EDITTEXT        IDC_ARM9BIOS,15,44,190,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_ARM9BIOSBROWSE,205,44,20,14
-    LTEXT           "ARM7 BIOS image:",IDC_STATIC,15,64,210,8
-    EDITTEXT        IDC_ARM7BIOS,15,74,190,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_ARM7BIOSBROWSE,205,74,20,14
-    CONTROL         "Emulate SWIs with BIOS images (otherwise, HLE)",IDC_BIOSSWIS,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,94,210,10
-    GROUPBOX        "Firmware",IDC_STATIC,5,127,230,78
-    CONTROL         "Use external firmware image",IDC_USEEXTFIRMWARE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,139,210,10
-    LTEXT           "Firmware image:",IDC_STATIC,15,151,210,8
-    EDITTEXT        IDC_FIRMWARE,15,161,190,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_FIRMWAREBROWSE,205,161,20,14
-    CONTROL         "Boot from firmware (like the NDS)",IDC_FIRMWAREBOOT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,179,210,10
-    GROUPBOX        "Debug",IDC_STATIC,241,57,230,47
+    DEFPUSHBUTTON   "OK",IDOK,368,215,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,421,215,50,14
     CONTROL         "Enable Advanced Bus-Level Timing",IDC_CHECBOX_ADVANCEDTIMING,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,247,16,182,10
-    CONTROL         "Patch DelayLoop SWI (speed hack)",IDC_PATCHSWI3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,108,133,10
-    GROUPBOX        "General",IDC_STATIC,241,3,230,53
-    LTEXT           "This will improve or fix some games, but it is very costly. Disable this if you want more speed, but not if you're TASing. Especially helpful if running at 99% ARM9.",IDC_STATIC,262,27,193,25
-    CONTROL         "Emulate Ensata",IDC_CHECKBOX_ENSATAEMULATION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,251,90,182,10
-    GROUPBOX        "CPU emulation mode",IDC_STATIC,241,107,230,97
-    CONTROL         "Use dynamic recomplier",IDC_CHECKBOX_DYNAREC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,251,122,91,10
-    LTEXT           "This should not be assumed to be deterministic.",IDC_STATIC,250,187,210,8
-    LTEXT           "Block Size [1..100]",IDC_STATIC,268,137,64,11
-    EDITTEXT        IDC_JIT_BLOCK_SIZE,333,135,30,12,ES_NUMBER
-    LTEXT           "(1 - accuracy, 100 - fastest)",IDC_STATIC,368,137,90,12
-    LTEXT           "Enabling this will get you 0-50% speedups. It is optional because it may still contain some small bugs, due mostly merely to newness, which can safely be fixed in time. Furthermore, you may have to tune the block size to prevent some games from breaking.",IDC_STATIC,250,150,210,34
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,15,182,10
+    GROUPBOX        "General",IDC_STATIC,5,2,230,76
+    LTEXT           "Enables game-specific workarounds for buggy games.",IDC_STATIC,32,64,193,10
+    GROUPBOX        "CPU emulation mode",IDC_STATIC,5,80,230,97
+    CONTROL         "Use dynamic recomplier",IDC_CHECKBOX_DYNAREC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,95,91,10
+    LTEXT           "This should not be assumed to be deterministic.",IDC_STATIC,14,160,210,8
+    LTEXT           "Block Size [1..100]",IDC_STATIC,32,110,64,11
+    EDITTEXT        IDC_JIT_BLOCK_SIZE,97,108,30,12,ES_NUMBER
+    LTEXT           "(1 - accuracy, 100 - fastest)",IDC_STATIC,132,110,90,12
+    LTEXT           "Enabling this will get you 0-50% speedups. It is optional because it may still contain some small bugs, due mostly merely to newness, which can safely be fixed in time. Furthermore, you may have to tune the block size to prevent some games from breaking.",IDC_STATIC,14,123,210,34
+    CONTROL         "Enable Pokehax",IDC_CHECKBOX_POKEHAX,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,52,71,10
+    PUSHBUTTON      "...",IDC_ARM9BIOSBROWSE,440,41,20,14
+    GROUPBOX        "BIOS",IDC_STATIC,240,1,230,118
+    PUSHBUTTON      "...",IDC_ARM7BIOSBROWSE,440,70,20,14
+    CONTROL         "Use external BIOS images",IDC_USEEXTBIOS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,250,16,210,10
+    LTEXT           "ARM9 BIOS image:",IDC_STATIC,250,30,210,8
+    PUSHBUTTON      "...",IDC_FIRMWAREBROWSE,440,158,20,14
+    EDITTEXT        IDC_ARM9BIOS,250,41,190,14,ES_AUTOHSCROLL
+    LTEXT           "ARM7 BIOS image:",IDC_STATIC,250,61,210,8
+    EDITTEXT        IDC_ARM7BIOS,250,70,190,14,ES_AUTOHSCROLL
+    CONTROL         "Emulate SWIs with BIOS images (otherwise, HLE)",IDC_BIOSSWIS,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,250,91,210,10
+    GROUPBOX        "Firmware",IDC_STATIC,240,123,230,78
+    CONTROL         "Use external firmware image",IDC_USEEXTFIRMWARE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,250,136,210,10
+    LTEXT           "Firmware image:",IDC_STATIC,250,147,210,8
+    EDITTEXT        IDC_FIRMWARE,250,158,190,14,ES_AUTOHSCROLL
+    CONTROL         "Boot from firmware (like the NDS)",IDC_FIRMWAREBOOT,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,250,176,210,10
+    CONTROL         "Patch DelayLoop SWI (speed hack)",IDC_PATCHSWI3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,250,105,133,10
     CONTROL         "Load User Settings from file",IDC_FIRMWAREEXTUSER,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,191,210,11
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,250,187,210,11
+    LTEXT           "This will improve or fix some games, but it is very costly. Disable this if you want more speed, but not if you're TASing. Especially helpful if running at 99% ARM9.",IDC_STATIC,32,25,193,25
+    CONTROL         "Use 8MB debugger mode when starting execution",IDC_CHECKBOX_DEBUGGERMODE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,204,182,10
+    LTEXT           "If you have to ask, you don't need to change these.",IDC_STATIC,16,193,169,8
+    GROUPBOX        "Debug",IDC_STATIC,6,181,230,48
+    CONTROL         "Emulate Ensata",IDC_CHECKBOX_ENSATAEMULATION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,215,182,10
 END
 
 IDD_FIRMSETTINGS DIALOGEX 0, 0, 161, 145
@@ -1862,12 +1864,7 @@ BEGIN
 
     IDD_EMULATIONSETTINGS, DIALOG
     BEGIN
-        VERTGUIDE, 5
-        VERTGUIDE, 15
-        VERTGUIDE, 225
-        VERTGUIDE, 235
-        BOTTOMMARGIN, 210
-        HORZGUIDE, 220
+        BOTTOMMARGIN, 229
     END
 
     IDD_GBASLOT_CFLASH, DIALOG

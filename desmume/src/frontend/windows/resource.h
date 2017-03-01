@@ -369,6 +369,8 @@
 #define IDC_3DCORE                      1028
 #define IDC_SNDCTRL_ENABLE              1028
 #define IDC_DTP_TIME                    1028
+#define IDC_CHECBOX_POKEHAX             1028
+#define IDC_CHECKBOX_POKEHAX            1028
 #define IDC_TXT_COMPILED                1029
 #define IDC_SNDCTRL_CH1NOMIX            1029
 #define IDC_DTP_DATE2                   1029
