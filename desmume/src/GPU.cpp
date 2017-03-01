@@ -470,6 +470,7 @@ void GPUEngineBase::_Reset_Base()
 	this->_needUpdateWINH[1] = true;
 	
 	this->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
+	this->vramBlockOBJAddress = this->_sprMem;
 	
 	this->nativeLineRenderCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	this->nativeLineOutputCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
@@ -3927,13 +3928,25 @@ void GPUEngineBase::_RenderLine_SetupSprites(GPUEngineCompositorInfo &compInfo)
 template <NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
 void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, itemsForPriority_t *__restrict item)
 {
+	bool useCustomVRAM = false;
+	size_t vramLine = compInfo.line.indexNative;
+	
 	if (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE)
 	{
-		GPU->GetEngineMain()->VerifyVRAMLineDidChange(this->vramBlockOBJIndex, compInfo.line.indexNative);
+		const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(this->vramBlockOBJAddress) - MMU.ARM9_LCD) / sizeof(u16);
+		
+		if (vramPixel < (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4))
+		{
+			const size_t blockID = vramPixel / (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
+			const size_t blockPixel = vramPixel % (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
+			const size_t blockLine = blockPixel / GPU_FRAMEBUFFER_NATIVE_WIDTH;
+			
+			vramLine += blockLine;
+			GPU->GetEngineMain()->VerifyVRAMLineDidChange(blockID, vramLine);
+			useCustomVRAM = !GPU->GetEngineMain()->isLineCaptureNative[blockID][vramLine];
+		}
 	}
 	
-	const bool useCustomVRAM = (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE) && !GPU->GetEngineMain()->isLineCaptureNative[this->vramBlockOBJIndex][compInfo.line.indexNative];
-	const u16 *__restrict srcLine = (useCustomVRAM) ? GPU->GetEngineMain()->GetCustomVRAMBlockPtr(this->vramBlockOBJIndex) + compInfo.line.blockOffsetCustom : NULL;
 	if (this->isLineRenderNative[compInfo.line.indexNative] && useCustomVRAM)
 	{
 		switch (OUTPUTFORMAT)
@@ -3976,6 +3989,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 	}
 	else
 	{
+		const u16 *__restrict srcLine = (useCustomVRAM) ? GPU->GetCustomVRAMAddressUsingMappedAddress(this->vramBlockOBJAddress) + compInfo.line.blockOffsetCustom : NULL;
 		void *__restrict dstColorPtr = compInfo.target.lineColorHead;
 		u8 *__restrict dstLayerIDPtr = compInfo.target.lineLayerIDHead;
 		
@@ -4475,6 +4489,7 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex)
 			if( (vramAddress == (DISPCAPCNT.VRAMWriteOffset * ADDRESS_STEP_32KB)) && (sprSize.width == 64) && (sprSize.height == 64) )
 			{
 				this->vramBlockOBJIndex = bankIndex;
+				this->vramBlockOBJAddress = this->_sprMem + (((spriteInfo.TileIndex & 0x3E0) * 64 + (spriteInfo.TileIndex & 0x1F) * 8) << 1);
 				return;
 			}
 		}

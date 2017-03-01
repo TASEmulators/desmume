@@ -1453,6 +1453,7 @@ public:
 	void LastLineProcess();
 	
 	u8 vramBlockOBJIndex;
+	u32 vramBlockOBJAddress;
 	
 	size_t nativeLineRenderCount;
 	size_t nativeLineOutputCount;
