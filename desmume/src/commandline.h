@@ -97,6 +97,7 @@ private:
 	int _num_cores;
 	int _rigorous_timing;
 	int _advanced_timing;
+	int _pokehax;
 	int _texture_deposterize;
 	int _texture_smooth;
 #ifdef HAVE_JIT

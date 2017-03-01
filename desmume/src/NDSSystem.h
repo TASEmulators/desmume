@@ -176,6 +176,7 @@ struct NDSSystem
 	u64 timerCycle[2][4];
 	u32 VCount;
 	u32 old;
+	u8 overclock;
 
 	//raw adc touch coords for old NDS
 	u16 adc_touchX;
@@ -577,6 +578,7 @@ extern struct TCommonSettings {
 	int num_cores;
 	bool single_core() { return num_cores==1; }
 	bool rigorous_timing;
+	bool pokehax;
 
 	int StylusPressure;
 	bool StylusJitter;

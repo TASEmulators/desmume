@@ -1485,15 +1485,24 @@ static void execHardware_hstart()
 		gfx3d_VBlankEndSignal(frameSkipper.ShouldSkip3D());
 	}
 
+	if(nds.VCount==261)
+		nds.overclock = 0;
+
 	if(nds.VCount==263)
 	{
-		//when the vcount hits 263 it rolls over to 0
-		nds.VCount=0;
+			nds.VCount=0;
 	}
 	else if(nds.VCount==262)
 	{
-		//when the vcount hits 262, vblank ends (oam pre-renders by one scanline)
-		execHardware_hstart_vblankEnd();
+		if(!(NDS_ARM9.waitIRQ) && nds.overclock < 200 && CommonSettings.pokehax) {
+			nds.overclock++;
+			nds.VCount = 261;
+		}
+		else
+		{
+			//when the vcount hits 262, vblank ends (oam pre-renders by one scanline)
+			execHardware_hstart_vblankEnd();
+		}
 	}
 	else if(nds.VCount==192)
 	{
@@ -2515,6 +2524,7 @@ void NDS_Reset()
 	nds.isTouch = 0;
 	nds.isFakeBooted = false;
 	nds.paddle = 0;
+	nds.overclock = 0;
 	nds.ConsoleType = CommonSettings.ConsoleType;
 	nds._DebugConsole = CommonSettings.DebugConsole;
 	nds.ensataEmulation = CommonSettings.EnsataEmulation;

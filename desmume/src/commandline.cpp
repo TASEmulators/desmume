@@ -124,6 +124,7 @@ ENDL
 #endif
 " --advanced-timing          Use advanced bus-level timing; default ON" ENDL
 " --rigorous-timing          Use more realistic component timings; default OFF" ENDL
+" --pokehax                  Use game-specific hacks; default OFF" ENDL
 " --spu-advanced             Enable advanced SPU capture functions (reverb)" ENDL
 " --backupmem-db             Use DB for autodetecting backup memory type" ENDL
 ENDL
@@ -244,6 +245,7 @@ bool CommandLine::parse(int argc,char **argv)
 			#endif
 			{ "rigorous-timing", no_argument, &_rigorous_timing, 1},
 			{ "advanced-timing", no_argument, &_advanced_timing, 1},
+			{ "pokehax", no_argument, &_pokehax, 1},
 			{ "spu-advanced", no_argument, &_spu_advanced, 1},
 			{ "backupmem-db", no_argument, &autodetect_method, 1},
 
@@ -352,6 +354,7 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_num_cores != -1) CommonSettings.num_cores = _num_cores;
 	if(_rigorous_timing) CommonSettings.rigorous_timing = true;
 	if(_advanced_timing != -1) CommonSettings.advanced_timing = _advanced_timing==1;
+	if(_advanced_timing != -1) CommonSettings.pokehax = _pokehax==1;
 
 #ifdef HAVE_JIT
 	if(_cpu_mode != -1) CommonSettings.use_jit = (_cpu_mode==1);

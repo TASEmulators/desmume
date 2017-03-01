@@ -206,6 +206,7 @@ SFORMAT SF_NDS[]={
 	{ "_FBS", 4, 1, &nds.freezeBus},
 	{ "_CEJ", 4, 1, &nds.cardEjected},
 	{ "_PDL", 2, 1, &nds.paddle},
+	{ "_OVR", 1, 1, &nds.overclock},
 	{ "_P00", 1, 1, &nds.power1.lcd},
 	{ "_P01", 1, 1, &nds.power1.gpuMain},
 	{ "_P02", 1, 1, &nds.power1.gfx3d_render},
