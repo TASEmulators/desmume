@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -242,9 +242,9 @@ bool CommandLine::parse(int argc,char **argv)
 				{ "jit-enable", no_argument, &_cpu_mode, 1},
 				{ "jit-size", required_argument, &_jit_size}, 
 			#endif
-			{ "rigorous-timing", no_argument, &_spu_advanced, 1},
-			{ "advanced-timing", no_argument, &_rigorous_timing, 1},
-			{ "spu-advanced", no_argument, &_advanced_timing, 1},
+			{ "rigorous-timing", no_argument, &_rigorous_timing, 1},
+			{ "advanced-timing", no_argument, &_advanced_timing, 1},
+			{ "spu-advanced", no_argument, &_spu_advanced, 1},
 			{ "backupmem-db", no_argument, &autodetect_method, 1},
 
 			//system equipment
