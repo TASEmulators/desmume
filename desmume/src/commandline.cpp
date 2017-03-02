@@ -354,7 +354,7 @@ bool CommandLine::parse(int argc,char **argv)
 	if(_num_cores != -1) CommonSettings.num_cores = _num_cores;
 	if(_rigorous_timing) CommonSettings.rigorous_timing = true;
 	if(_advanced_timing != -1) CommonSettings.advanced_timing = _advanced_timing==1;
-	if(_advanced_timing != -1) CommonSettings.pokehax = _pokehax==1;
+	if(_pokehax != -1) CommonSettings.pokehax = _pokehax==1;
 
 #ifdef HAVE_JIT
 	if(_cpu_mode != -1) CommonSettings.use_jit = (_cpu_mode==1);

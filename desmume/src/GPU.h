@@ -1524,6 +1524,7 @@ protected:
 	u16 *_VRAMCustomBlockPtr[4];
 	
 	DISPCAPCNT_parsed _dispCapCnt;
+	bool _displayCaptureEnable;
 	
 	template<bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineLarge8bpp(GPUEngineCompositorInfo &compInfo);
 	
@@ -1565,6 +1566,8 @@ public:
 	bool WillRender3DLayer();
 	bool WillCapture3DLayerDirect(const size_t l);
 	bool WillDisplayCapture(const size_t l);
+	void SetDisplayCaptureEnable();
+	void ResetDisplayCaptureEnable();
 	bool VerifyVRAMLineDidChange(const size_t blockID, const size_t l);
 	
 	void LastLineProcess();
@@ -1685,6 +1688,8 @@ public:
 	
 	bool GetWillFrameSkip() const;
 	void SetWillFrameSkip(const bool willFrameSkip);
+	void SetDisplayCaptureEnable();
+	void ResetDisplayCaptureEnable();
 	void UpdateRenderProperties();
 	
 	// By default, the displays will automatically perform certain postprocessing steps on the

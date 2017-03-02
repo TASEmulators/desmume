@@ -5122,6 +5122,7 @@ void GPUEngineA::Reset()
 	this->_Reset_Base();
 	
 	memset(&this->_dispCapCnt, 0, sizeof(DISPCAPCNT_parsed));
+	this->_displayCaptureEnable = false;
 	
 	this->_BGLayer[GPULayerID_BG0].BMPAddress = MMU_ABG;
 	this->_BGLayer[GPULayerID_BG1].BMPAddress = MMU_ABG;
@@ -5253,7 +5254,22 @@ bool GPUEngineA::WillCapture3DLayerDirect(const size_t l)
 bool GPUEngineA::WillDisplayCapture(const size_t l)
 {
 	const IOREG_DISPCAPCNT &DISPCAPCNT = this->_IORegisterMap->DISPCAPCNT;
-	return (DISPCAPCNT.CaptureEnable != 0) && (vramConfiguration.banks[DISPCAPCNT.VRAMWriteBlock].purpose == VramConfiguration::LCDC) && (l < this->_dispCapCnt.capy);
+	return this->_displayCaptureEnable && (vramConfiguration.banks[DISPCAPCNT.VRAMWriteBlock].purpose == VramConfiguration::LCDC) && (l < this->_dispCapCnt.capy);
+}
+
+void GPUEngineA::SetDisplayCaptureEnable()
+{
+	this->_displayCaptureEnable = (this->_IORegisterMap->DISPCAPCNT.CaptureEnable != 0);
+}
+
+void GPUEngineA::ResetDisplayCaptureEnable()
+{
+	IOREG_DISPCAPCNT &DISPCAPCNT = this->_IORegisterMap->DISPCAPCNT;
+	if ( this->_displayCaptureEnable && vramConfiguration.banks[DISPCAPCNT.VRAMWriteBlock].purpose == VramConfiguration::LCDC )
+	{
+		DISPCAPCNT.CaptureEnable = 0;
+		this->_displayCaptureEnable = false;
+	}
 }
 
 bool GPUEngineA::VerifyVRAMLineDidChange(const size_t blockID, const size_t l)
@@ -6683,8 +6699,6 @@ void GPUEngineA::_LineLarge8bpp(GPUEngineCompositorInfo &compInfo)
 void GPUEngineA::LastLineProcess()
 {
 	this->GPUEngineBase::LastLineProcess();
-	
-	this->_IORegisterMap->DISPCAPCNT.CaptureEnable = 0;
 	DISP_FIFOreset();
 }
 
@@ -6959,6 +6973,16 @@ bool GPUSubsystem::GetWillFrameSkip() const
 void GPUSubsystem::SetWillFrameSkip(const bool willFrameSkip)
 {
 	this->_willFrameSkip = willFrameSkip;
+}
+
+void GPUSubsystem::SetDisplayCaptureEnable()
+{
+	this->_engineMain->SetDisplayCaptureEnable();
+}
+
+void GPUSubsystem::ResetDisplayCaptureEnable()
+{
+	this->_engineMain->ResetDisplayCaptureEnable();
 }
 
 void GPUSubsystem::UpdateRenderProperties()

@@ -1480,21 +1480,20 @@ static void execHardware_hstart()
 	//this should be 214, but we are going to be generous for games with tight timing
 	//they shouldnt be changing any textures at 262 but they might accidentally still be at 214
 	//so..
-	if((CommonSettings.rigorous_timing && nds.VCount==214) || (!CommonSettings.rigorous_timing && nds.VCount==262))
+	if ( (CommonSettings.rigorous_timing && nds.VCount == 214) || (!CommonSettings.rigorous_timing && nds.VCount == 262) )
 	{
 		gfx3d_VBlankEndSignal(frameSkipper.ShouldSkip3D());
 	}
 
-	if(nds.VCount==261)
-		nds.overclock = 0;
-
-	if(nds.VCount==263)
+	if (nds.VCount == 263)
 	{
-			nds.VCount=0;
+		nds.VCount = 0;
+		GPU->SetDisplayCaptureEnable();
 	}
-	else if(nds.VCount==262)
+	else if (nds.VCount == 262)
 	{
-		if(!(NDS_ARM9.waitIRQ) && nds.overclock < 200 && CommonSettings.pokehax) {
+		if (!(NDS_ARM9.waitIRQ) && nds.overclock < 200 && CommonSettings.pokehax)
+		{
 			nds.overclock++;
 			nds.VCount = 261;
 		}
@@ -1504,8 +1503,14 @@ static void execHardware_hstart()
 			execHardware_hstart_vblankEnd();
 		}
 	}
-	else if(nds.VCount==192)
+	else if (nds.VCount == 261)
 	{
+		nds.overclock = 0;
+	}
+	else if (nds.VCount == 192)
+	{
+		GPU->ResetDisplayCaptureEnable();
+		
 		//turn on vblank status bit
 		T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) | 1);
 		T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
@@ -1541,7 +1546,7 @@ static void execHardware_hstart()
 	//trigger hstart dmas
 	triggerDma(EDMAMode_HStart);
 
-	if(nds.VCount<192)
+	if (nds.VCount < 192)
 	{
 		//this is hacky.
 		//there is a corresponding hack in doDMA.

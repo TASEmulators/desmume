@@ -502,6 +502,7 @@ extern struct TCommonSettings {
 		, cheatsDisable(false)
 		, rigorous_timing(false)
 		, advanced_timing(true)
+		, pokehax(false)
 		, micMode(InternalNoise)
 		, spuInterpolationMode(1)
 		, manualBackupType(0)
