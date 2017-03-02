@@ -649,12 +649,14 @@ void ClientDisplayView::GetNDSPoint(const int inputID, const bool isInitialTouch
 	double y = clientY;
 	double w = this->_renderProperty.normalWidth;
 	double h = this->_renderProperty.normalHeight;
+	const double logicalClientWidth  = this->_renderProperty.clientWidth  / this->_scaleFactor;
+	const double logicalClientHeight = this->_renderProperty.clientHeight / this->_scaleFactor;
 	
 	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, this->_renderProperty.rotation, w, h);
-	const double s = ClientDisplayView::GetMaxScalarWithinBounds(w, h, this->_renderProperty.clientWidth, this->_renderProperty.clientHeight);
+	const double s = ClientDisplayView::GetMaxScalarWithinBounds(w, h, logicalClientWidth, logicalClientHeight);
 	
 	ClientDisplayView::ConvertClientToNormalPoint(this->_renderProperty.normalWidth, this->_renderProperty.normalHeight,
-												  this->_renderProperty.clientWidth, this->_renderProperty.clientHeight,
+												  logicalClientWidth, logicalClientHeight,
 												  s,
 												  this->_renderProperty.rotation,
 												  x, y);
