@@ -20,8 +20,6 @@
 //This handles almost all of the work of 3d rendering, leaving the renderer
 //plugin responsible only for drawing primitives.
 
-//#define FLUSHMODE_HACK
-
 //---------------
 //TODO TODO TODO TODO
 //make up mind once and for all whether fog, toon, etc. should reside in memory buffers (for easier handling in MMU)
@@ -2088,9 +2086,9 @@ void gfx3d_execute3D()
 	u8	cmd = 0;
 	u32	param = 0;
 
-#ifndef FLUSHMODE_HACK
+	//3d engine is locked up, or something.
+	//I dont think this should happen....
 	if (isSwapBuffers) return;
-#endif
 
 	//this is a SPEED HACK
 	//fifo is currently emulated more accurately than it probably needs to be.
@@ -2138,14 +2136,6 @@ void gfx3d_glFlush(u32 v)
 #endif
 	
 	isSwapBuffers = TRUE;
-
-	//printf("%05d:%03d:%12lld: FLUSH\n",currFrameCounter, nds.VCount, nds_timer);
-	
-	//well, the game wanted us to flush.
-	//it may be badly timed. lets just flush it.
-#ifdef FLUSHMODE_HACK
-	gfx3d_doFlush();
-#endif
 
 	GFX_DELAY(1);
 }
@@ -2205,6 +2195,9 @@ static void gfx3d_doFlush()
 	gfx3d.state.sortmode = BIT0(gfx3d.state.activeFlushCommand);
 	gfx3d.state.wbuffer = BIT1(gfx3d.state.activeFlushCommand);
 
+	//latch the current renderer and geometry engine states
+	//NOTE: the geometry lists are copied elsewhere by another operation.
+	//that's pretty annoying.
 	gfx3d.renderState = gfx3d.state;
 	
 	// Override render states per user settings
@@ -2312,9 +2305,7 @@ void gfx3d_VBlankSignal()
 {
 	if (isSwapBuffers)
 	{
-#ifndef FLUSHMODE_HACK
 		gfx3d_doFlush();
-#endif
 		GFX_DELAY(392);
 		isSwapBuffers = FALSE;
 	}
@@ -2347,8 +2338,32 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	else if(nds.power_render && !nds.power1.gfx3d_render)
 		nds.power_render = FALSE;
 	
+	//HACK:
+	//if a clear image is enabled, its contents could switch AT ANY TIME. Even if no scene has been re-rendered. (Monster Trucks depends on this)
+	//therefore we need to continually rerender.
+	//But for that matter, so too could texture data. Do we continually re-render for that?
+	//Well, we have no evidence that anyone does this. (seems useful for an FMV, maybe)
+	//But also, for that matter, so too could CAPTURED DATA. Hopefully nobody does this.
+	//So, for now, we're calling this a hack for the clear iamge only. 
+	//It will increase CPU load for apparently no purpose in some games which switch between heavy 3d and 2d.. and that also use clear images.. that seems unlikely.
+	//This could be a candidate for a per-game hack later if it proves unwieldy.
+	//Logic to determine whether the contents have changed (due to register changes or vram remapping to LCDC) are going to be really messy, but maybe workable if everything else wasn't so messy.
+	//While we're on the subject, a game could set a clear image and never even render anything.
+	//The time to fix this will be when we rearchitect things to have more geometry processing lower-level in GFX3D..
+	//..since we'll be ripping a lot of stuff apart anyway
+	bool forceDraw = false;
+	if(gfx3d.state.enableClearImage) {
+		forceDraw = true;
+		//Well, now this makes it definite HACK caliber
+		//We're using this as a sentinel for whether anything's ever been drawn--since we glitch out and crashing trying to render (if only for the clear image)
+		//when no geometry's ever been swapped in
+		if(!gfx3d.renderState.fogDensityTable)
+			forceDraw = false;
+	}
 	
-	if (!drawPending) return;
+	if (!drawPending && !forceDraw)
+		return;
+
 	if (skipFrame) return;
 
 	drawPending = FALSE;
