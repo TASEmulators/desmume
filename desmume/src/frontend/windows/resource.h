@@ -848,8 +848,6 @@
 #define IDC_CPU                         6002
 #define IDC_R4_FOLDER                   6003
 #define IDC_R4_ROM                      6004
-#define ID_LABEL_ZELDA_SHADOW_DEPTH_HACK 9000
-#define IDC_ZELDA_SHADOW_DEPTH_HACK     9001
 #define ID_LABEL_ZELDA_SHADOW_DEPTH_HACK2 9003
 #define IDD_CHEAT_ADD_XX_CODE           10005
 #define IDD_GBASLOT_GUITARGRIP          10009

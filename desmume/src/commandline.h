@@ -44,7 +44,6 @@ class CommandLine
 public:
 	//actual options: these may move to another struct
 	int load_slot;
-	int depth_threshold;
 	int autodetect_method;
 	int render3d;
 	int texture_upscale;

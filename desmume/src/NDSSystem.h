@@ -484,7 +484,6 @@ extern struct TCommonSettings
 		, GFX3D_Fog(true)
 		, GFX3D_Texture(true)
 		, GFX3D_LineHack(true)
-		, GFX3D_Zelda_Shadow_Depth_Hack(0)
 		, GFX3D_Renderer_Multisample(false)
 		, GFX3D_Renderer_TextureScalingFactor(1) // Possible values: 1, 2, 4
 		, GFX3D_Renderer_TextureDeposterize(false)
@@ -546,7 +545,6 @@ extern struct TCommonSettings
 	bool GFX3D_Fog;
 	bool GFX3D_Texture;
 	bool GFX3D_LineHack;
-	int  GFX3D_Zelda_Shadow_Depth_Hack;
 	bool GFX3D_Renderer_Multisample;
 	int GFX3D_Renderer_TextureScalingFactor;
 	bool GFX3D_Renderer_TextureDeposterize;

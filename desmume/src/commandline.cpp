@@ -63,7 +63,6 @@ CommandLine::CommandLine()
 #endif
 , _console_type(NULL)
 , _advanscene_import(NULL)
-, depth_threshold(-1)
 , load_slot(-1)
 , arm9_gdb_port(0)
 , arm7_gdb_port(0)
@@ -367,9 +366,6 @@ bool CommandLine::parse(int argc,char **argv)
 			CommonSettings.jit_max_block_size = _jit_size;
 	}
 #endif
-	if(depth_threshold != -1)
-		CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack = depth_threshold;
-
 
 	//process console type
 	CommonSettings.DebugConsole = false;

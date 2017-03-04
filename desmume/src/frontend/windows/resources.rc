@@ -121,8 +121,6 @@ BEGIN
     CONTROL         "Enable Edge Marking",IDC_3DSETTINGS_EDGEMARK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,74,84,10
     CONTROL         "Enable Fog",IDC_3DSETTINGS_FOG,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,86,52,10
     CONTROL         "Enable Textures",IDC_3DSETTINGS_TEXTURE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,98,67,10
-    LTEXT           "Depth Comparison Threshold : \n  -0=normal behavior (recommended) \n  -bigger value can help Zelda PH/ST shadow issue",ID_LABEL_ZELDA_SHADOW_DEPTH_HACK,15,111,165,35
-    EDITTEXT        IDC_ZELDA_SHADOW_DEPTH_HACK,113,106,44,12
     CONTROL         "Enable Anti-Aliasing",IDC_3DSETTINGS_ANTIALIASING,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,178,78,10
     EDITTEXT        IDC_TEXT_PRESCALEHD,245,61,20,14,ES_AUTOHSCROLL
