@@ -452,7 +452,7 @@ BEGIN
     EDITTEXT        IDC_JIT_BLOCK_SIZE,97,108,30,12,ES_NUMBER
     LTEXT           "(1 - accuracy, 100 - fastest)",IDC_STATIC,132,110,90,12
     LTEXT           "Enabling this will get you 0-50% speedups. It is optional because it may still contain some small bugs, due mostly merely to newness, which can safely be fixed in time. Furthermore, you may have to tune the block size to prevent some games from breaking.",IDC_STATIC,14,123,210,34
-    CONTROL         "Enable Pokehax",IDC_CHECKBOX_POKEHAX,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,52,71,10
+    CONTROL         "Enable Game Hacks",IDC_CHECKBOX_GAMEHACKS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,52,85,10
     PUSHBUTTON      "...",IDC_ARM9BIOSBROWSE,440,41,20,14
     GROUPBOX        "BIOS",IDC_STATIC,240,1,230,118
     PUSHBUTTON      "...",IDC_ARM7BIOSBROWSE,440,70,20,14

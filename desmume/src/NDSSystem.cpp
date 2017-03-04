@@ -1492,7 +1492,7 @@ static void execHardware_hstart()
 	}
 	else if (nds.VCount == 262)
 	{
-		if (!NDS_ARM9.freeze && nds.overclock < 2 && CommonSettings.pokehax)
+		if (!NDS_ARM9.freeze && nds.overclock < 2 && CommonSettings.gamehacks)
 		{
 			//suspend arm7 during overclocking so much doesn't run out of control
 			//actually, this isn't needed yet.

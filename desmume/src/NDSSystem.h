@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2016 DeSmuME team
+	Copyright (C) 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -502,7 +502,7 @@ extern struct TCommonSettings {
 		, cheatsDisable(false)
 		, rigorous_timing(false)
 		, advanced_timing(true)
-		, pokehax(false)
+		, gamehacks(false)
 		, micMode(InternalNoise)
 		, spuInterpolationMode(1)
 		, manualBackupType(0)
@@ -579,7 +579,7 @@ extern struct TCommonSettings {
 	int num_cores;
 	bool single_core() { return num_cores==1; }
 	bool rigorous_timing;
-	bool pokehax;
+	bool gamehacks;
 
 	int StylusPressure;
 	bool StylusJitter;
