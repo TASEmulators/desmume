@@ -41,8 +41,9 @@ public:
 		NDS_SLOT1_TYPE selection = NDS_SLOT1_RETAIL_MCROM;
 		
 		//check game ID in core emulator and select right implementation
-		if ((memcmp(gameInfo.header.gameCode, "UOR",  3) == 0) ||	// WarioWare - D.I.Y. (U)(E)(EUR) / Made in Ore (J)
-			(memcmp(gameInfo.header.gameCode, "UXBP", 4) == 0) 		// Jam with the Band (EUR)
+		//gamehack: definitely not a game hack, just a lazy way of selecting the right equipment for the game
+		if(gameInfo.IsCode("UOR") || // WarioWare - D.I.Y. (U)(E)(EUR) / Made in Ore (J)
+			gameInfo.IsCode("UXBP") // Jam with the Band (EUR)
 			)
 			selection = NDS_SLOT1_RETAIL_NAND;
 

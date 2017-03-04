@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2015 DeSmuME team
+	Copyright (C) 2013-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -37,5 +37,7 @@ void Slot1Comp_MC::auxspi_reset(int PROCNUM)
 
 void Slot1Comp_MC::connect()
 {
-	if(!memcmp(gameInfo.header.gameCode,"AXBJ", 4)) MMU_new.backupDevice.uninitializedValue = 0x00; // Daigassou! Band Brothers DX (JP)
+	//gamehack: not really a game hack
+	if(gameInfo.IsCode("AXBJ"))
+		MMU_new.backupDevice.uninitializedValue = 0x00; // Daigassou! Band Brothers DX (JP)
 }

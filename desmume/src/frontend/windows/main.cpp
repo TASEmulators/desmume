@@ -2988,7 +2988,7 @@ int _main()
 	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
 	CommonSettings.spu_advanced = GetPrivateProfileBool("Sound", "SpuAdvanced", false, IniName);
 	CommonSettings.advanced_timing = GetPrivateProfileBool("Emulation", "AdvancedTiming", true, IniName);
-	CommonSettings.gamehacks = GetPrivateProfileBool("Emulation", "GameHacks", true, IniName);
+	CommonSettings.gamehacks.en = GetPrivateProfileBool("Emulation", "GameHacks", true, IniName);
 	CommonSettings.StylusJitter = GetPrivateProfileBool("Emulation", "StylusJitter", false, IniName);
 
 	CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack = GetPrivateProfileInt("3D", "ZeldaShadowDepthHack", 0, IniName);
@@ -6447,7 +6447,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 			CheckDlgItem(hDlg,IDC_CHECKBOX_DEBUGGERMODE,CommonSettings.DebugConsole);
 			CheckDlgItem(hDlg,IDC_CHECKBOX_ENSATAEMULATION,CommonSettings.EnsataEmulation);
 			CheckDlgItem(hDlg, IDC_CHECBOX_ADVANCEDTIMING, CommonSettings.advanced_timing);
-			CheckDlgItem(hDlg, IDC_CHECKBOX_GAMEHACKS, CommonSettings.gamehacks);
+			CheckDlgItem(hDlg, IDC_CHECKBOX_GAMEHACKS, CommonSettings.gamehacks.en);
 			CheckDlgItem(hDlg,IDC_USEEXTBIOS,CommonSettings.UseExtBIOS);
 			CheckDlgItem(hDlg, IDC_BIOSSWIS, CommonSettings.SWIFromBIOS);
 			CheckDlgItem(hDlg, IDC_PATCHSWI3, CommonSettings.PatchSWI3);
@@ -6553,7 +6553,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					CommonSettings.DebugConsole = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_DEBUGGERMODE);
 					CommonSettings.EnsataEmulation = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_ENSATAEMULATION);
 					CommonSettings.advanced_timing = IsDlgCheckboxChecked(hDlg, IDC_CHECBOX_ADVANCEDTIMING);
-					CommonSettings.gamehacks = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_GAMEHACKS);
+					CommonSettings.gamehacks.en = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_GAMEHACKS);
 #ifdef HAVE_JIT
 					CommonSettings.use_jit = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_DYNAREC);
 					if (CommonSettings.use_jit)
@@ -6566,7 +6566,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					WritePrivateProfileInt("Emulation", "DebugConsole", ((CommonSettings.DebugConsole == true) ? 1 : 0), IniName);
 					WritePrivateProfileInt("Emulation", "EnsataEmulation", ((CommonSettings.EnsataEmulation == true) ? 1 : 0), IniName);
 					WritePrivateProfileBool("Emulation", "AdvancedTiming", CommonSettings.advanced_timing, IniName);
-					WritePrivateProfileBool("Emulation", "GameHacks", CommonSettings.gamehacks, IniName);
+					WritePrivateProfileBool("Emulation", "GameHacks", CommonSettings.gamehacks.en, IniName);
 					WritePrivateProfileInt("BIOS", "UseExtBIOS", ((CommonSettings.UseExtBIOS == true) ? 1 : 0), IniName);
 					WritePrivateProfileString("BIOS", "ARM9BIOSFile", CommonSettings.ARM9BIOS, IniName);
 					WritePrivateProfileString("BIOS", "ARM7BIOSFile", CommonSettings.ARM7BIOS, IniName);

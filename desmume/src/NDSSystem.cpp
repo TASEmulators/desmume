@@ -304,6 +304,11 @@ bool GameInfo::hasRomBanner()
 	else return true;
 }
 
+bool GameInfo::IsCode(const char* code) const
+{
+	return memcmp(code,header.gameCode,strlen(code));
+}
+
 const RomBanner& GameInfo::getRomBanner()
 {
 	return banner;
@@ -1492,7 +1497,7 @@ static void execHardware_hstart()
 	}
 	else if (nds.VCount == 262)
 	{
-		if (!NDS_ARM9.freeze && nds.overclock < 2 && CommonSettings.gamehacks)
+		if (!NDS_ARM9.freeze && nds.overclock < 2 && CommonSettings.gamehacks.flags.overclock)
 		{
 			//suspend arm7 during overclocking so much doesn't run out of control
 			//actually, this isn't needed yet.
@@ -2507,6 +2512,8 @@ void NDS_Reset()
 {
 	PrepareLogfiles();
 
+	CommonSettings.gamehacks.apply();
+
 	if(movieMode != MOVIEMODE_INACTIVE && !_HACK_DONT_STOPMOVIE)
 		movie_reset_command = true;
 
@@ -3064,3 +3071,16 @@ void NDS_GetCPULoadAverage(u32 &outLoadAvgARM9, u32 &outLoadAvgARM7)
 //these templates needed to be instantiated manually
 template void NDS_exec<FALSE>(s32 nb);
 template void NDS_exec<TRUE>(s32 nb);
+
+void TCommonSettings::GameHacks::apply()
+{
+	clear();
+	if(!en) return;
+
+	flags.overclock = gameInfo.IsCode("IPK") || gameInfo.IsCode("IPG"); //HG/SS
+}
+
+void TCommonSettings::GameHacks::clear()
+{
+	memset(&flags,0,sizeof(flags));
+}

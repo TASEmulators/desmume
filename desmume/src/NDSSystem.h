@@ -353,6 +353,8 @@ struct GameInfo
 
 	~GameInfo() { closeROM(); }
 
+	bool IsCode(const char* code) const;
+
 	bool loadROM(std::string fname, u32 type = ROM_NDS);
 	void closeROM();
 	u32 readROM(u32 pos);
@@ -475,7 +477,8 @@ template<bool FORCE> void NDS_exec(s32 nb = 560190<<1);
 
 extern int lagframecounter;
 
-extern struct TCommonSettings {
+extern struct TCommonSettings
+{
 	TCommonSettings() 
 		: GFX3D_HighResolutionInterpolateColor(true)
 		, GFX3D_EdgeMark(true)
@@ -502,7 +505,6 @@ extern struct TCommonSettings {
 		, cheatsDisable(false)
 		, rigorous_timing(false)
 		, advanced_timing(true)
-		, gamehacks(false)
 		, micMode(InternalNoise)
 		, spuInterpolationMode(1)
 		, manualBackupType(0)
@@ -579,7 +581,22 @@ extern struct TCommonSettings {
 	int num_cores;
 	bool single_core() { return num_cores==1; }
 	bool rigorous_timing;
-	bool gamehacks;
+
+	struct GameHacks {
+		GameHacks()
+			: en(true)
+		{
+			clear();
+		}
+		bool en;
+
+		struct {
+			bool overclock;
+		} flags;
+		
+		void apply();
+		void clear();
+	} gamehacks;
 
 	int StylusPressure;
 	bool StylusJitter;
