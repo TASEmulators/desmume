@@ -401,7 +401,6 @@ static void twiddleLists()
 	vertlist->count = 0;
 }
 
-static BOOL flushPending = FALSE;
 static BOOL drawPending = FALSE;
 //------------------------------------------------------------
 
@@ -549,7 +548,6 @@ void gfx3d_reset()
 	gxf_hardware.reset();
 
 	drawPending = FALSE;
-	flushPending = FALSE;
 	memset(polylists, 0, sizeof(POLYLIST)*2);
 	memset(vertlists, 0, sizeof(VERTLIST)*2);
 	gfx3d.state.invalidateToon = true;
@@ -1781,11 +1779,6 @@ void gfx3d_glClearDepth(u32 v)
 	gfx3d.state.clearDepth = DS_DEPTH15TO24(v);
 }
 
-// Ignored for now
-void gfx3d_glSwapScreen(unsigned int screen)
-{
-}
-
 int gfx3d_GetNumPolys()
 {
 	//so is this in the currently-displayed or currently-built list?
@@ -2335,16 +2328,36 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 		CurrentRenderer->SetRenderNeedsFinish(false);
 		GPU->GetEventHandler()->DidRender3DEnd();
 	}
+
+	//try powering on geometry
+	if(!nds.power_geometry && nds.power1.gfx3d_geometry)
+	{
+		nds.power_geometry = TRUE;
+	}
+	else if(nds.power_geometry && !nds.power1.gfx3d_geometry)
+	{
+		//kill the geometry data when the power goes off
+		reconstruct(&gfx3d.state);
+		nds.power_geometry = FALSE;
+	}
+
+	//try powering on rendering. unclear whether there's anything very special about this
+	if(!nds.power_render && nds.power1.gfx3d_render)
+		nds.power_render = TRUE;
+	else if(nds.power_render && !nds.power1.gfx3d_render)
+		nds.power_render = FALSE;
+	
 	
 	if (!drawPending) return;
 	if (skipFrame) return;
-	
+
 	drawPending = FALSE;
-	
+
 	GPU->GetEventHandler()->DidRender3DBegin();
 	CurrentRenderer->SetRenderNeedsFinish(true);
 	
-	if (CommonSettings.showGpu.main)
+	//the timing of powering on rendering may not be exactly right here.
+	if (CommonSettings.showGpu.main && nds.power_render)
 	{
 		CurrentRenderer->SetTextureProcessingProperties(CommonSettings.GFX3D_Renderer_TextureScalingFactor,
 														CommonSettings.GFX3D_Renderer_TextureDeposterize,
@@ -2514,7 +2527,6 @@ SFORMAT SF_GFX3D[]={
 	{ "GMAM", 2, 1, &dsAmbient},
 	{ "GMSP", 2, 1, &dsSpecular},
 	{ "GMEM", 2, 1, &dsEmission},
-	{ "GFLP", 4, 1, &flushPending},
 	{ "GDRP", 4, 1, &drawPending},
 	{ "GSET", 4, 1, &gfx3d.state.enableTexturing},
 	{ "GSEA", 4, 1, &gfx3d.state.enableAlphaTest},

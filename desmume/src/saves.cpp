@@ -213,6 +213,8 @@ SFORMAT SF_NDS[]={
 	{ "_P05", 1, 1, &nds.power1.dispswap},
 	{ "_P06", 1, 1, &nds.power2.speakers},
 	{ "_P07", 1, 1, &nds.power2.wifi},
+	{ "_P0G", 1, 1, &nds.power_geometry},
+	{ "_P0R", 1, 1, &nds.power_render},
 	{ 0 }
 };
 

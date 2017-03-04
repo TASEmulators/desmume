@@ -238,6 +238,8 @@ struct NDSSystem
 		u8 speakers, wifi /*(initial value=0)*/;
 	} power2; //POWCNT2
 
+	BOOL power_render, power_geometry;
+
 	bool isInVblank() const { return VCount >= 192; } 
 	bool isIn3dVblank() const { return VCount >= 192 && VCount<215; } 
 };

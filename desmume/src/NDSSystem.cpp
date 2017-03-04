@@ -2533,7 +2533,8 @@ void NDS_Reset()
 	nds.sleeping = FALSE;
 	nds.cardEjected = FALSE;
 	nds.freezeBus = 0;
-	nds.power1.lcd = nds.power1.gpuMain = nds.power1.gfx3d_render = nds.power1.gfx3d_geometry = nds.power1.gpuSub = nds.power1.dispswap = 1;
+	nds.power1.lcd = nds.power1.gpuMain = nds.power1.gfx3d_render = nds.power1.gfx3d_geometry = nds.power1.gpuSub = nds.power1.dispswap = 1; //is this proper?
+	nds.power_geometry = nds.power_render = TRUE; //whether this is proper follows from prior
 	nds.power2.speakers = 1;
 	nds.power2.wifi = 0;
 	nds.wifiCycle = 0;
