@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2016 DeSmuME team
+	Copyright (C) 2006-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -40,6 +40,13 @@
 #define EXCEPTION_RESERVED_0x14 0x14
 #define EXCEPTION_IRQ 0x18
 #define EXCEPTION_FAST_IRQ 0x1C
+
+
+#define CPU_FREEZE_NONE 0x00
+#define CPU_FREEZE_WAIT_IRQ 0x01 //waiting for some IRQ to happen, any IRQ
+#define CPU_FREEZE_IE_IF 0x02 //waiting for IE&IF to signal something (probably edge triggered on IRQ too)
+#define CPU_FREEZE_IRQ_IE_IF (CPU_FREEZE_WAIT_IRQ|CPU_FREEZE_IE_IF)
+#define CPU_FREEZE_OVERCLOCK_HACK 0x04
 
 #define INSTRUCTION_INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
 
@@ -287,8 +294,11 @@ struct armcpu_t
 
 	u32 intVector;
 	u8 LDTBit;  //1 : ARMv5 style 0 : non ARMv5 (earlier)
-	BOOL waitIRQ;
-	BOOL halt_IE_and_IF; //the cpu is halted, waiting for IE&IF to signal something
+	
+	u32 freeze;
+	//BOOL waitIRQ;
+	//BOOL halt_IE_and_IF; 
+
 	u8 intrWaitARM_state;
 
 	BOOL BIOS_loaded;

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2016 DeSmuME team
+	Copyright (C) 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1492,13 +1492,20 @@ static void execHardware_hstart()
 	}
 	else if (nds.VCount == 262)
 	{
-		if (!(NDS_ARM9.waitIRQ) && nds.overclock < 200 && CommonSettings.pokehax)
+		if (!NDS_ARM9.freeze && nds.overclock < 2 && CommonSettings.pokehax)
 		{
+			//suspend arm7 during overclocking so much doesn't run out of control
+			//actually, this isn't needed yet.
+			//NDS_ARM7.freeze |= CPU_FREEZE_OVERCLOCK_HACK;
+
 			nds.overclock++;
 			nds.VCount = 261;
 		}
 		else
 		{
+			//overclock arm7 lock is always released here; if it wasn't actiev, this benign
+			NDS_ARM7.freeze &= ~CPU_FREEZE_OVERCLOCK_HACK;
+
 			//when the vcount hits 262, vblank ends (oam pre-renders by one scanline)
 			execHardware_hstart_vblankEnd();
 		}
@@ -1829,7 +1836,7 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 	{
 		if(doarm9 && (!doarm7 || arm9 <= timer))
 		{
-			if(!NDS_ARM9.waitIRQ&&!nds.freezeBus)
+			if(!(NDS_ARM9.freeze & CPU_FREEZE_WAIT_IRQ) && !nds.freezeBus)
 			{
 				arm9log();
 				debug();
@@ -1852,7 +1859,8 @@ static /*donotinline*/ std::pair<s32,s32> armInnerLoop(
 		}
 		if(doarm7 && (!doarm9 || arm7 <= timer))
 		{
-			if(!NDS_ARM7.waitIRQ&&!nds.freezeBus)
+			bool cpufreeze = !!(NDS_ARM7.freeze & (CPU_FREEZE_WAIT_IRQ|CPU_FREEZE_OVERCLOCK_HACK));
+			if(!cpufreeze && !nds.freezeBus)
 			{
 				arm7log();
 #ifdef HAVE_JIT
@@ -2022,12 +2030,12 @@ void NDS_exec(s32 nb)
 
 			//if we were waiting for an irq, don't wait too long:
 			//let's re-analyze it after this hardware event (this rolls back a big burst of irq waiting which may have been interrupted by a resynch)
-			if(NDS_ARM9.waitIRQ)
+			if(NDS_ARM9.freeze & CPU_FREEZE_WAIT_IRQ)
 			{
 				nds.idleCycles[0] -= (s32)(nds_arm9_timer-nds_timer);
 				nds_arm9_timer = nds_timer;
 			}
-			if(NDS_ARM7.waitIRQ)
+			if(NDS_ARM7.freeze & CPU_FREEZE_WAIT_IRQ)
 			{
 				nds.idleCycles[1] -= (s32)(nds_arm7_timer-nds_timer);
 				nds_arm7_timer = nds_timer;
@@ -2063,10 +2071,9 @@ template<int PROCNUM> static void execHardware_interrupts_core()
 	u32 IF = MMU.gen_IF<PROCNUM>();
 	u32 IE = MMU.reg_IE[PROCNUM];
 	u32 masked = IF & IE;
-	if(ARMPROC.halt_IE_and_IF && masked)
+	if((ARMPROC.freeze & CPU_FREEZE_IRQ_IE_IF) && masked)
 	{
-		ARMPROC.halt_IE_and_IF = FALSE;
-		ARMPROC.waitIRQ = FALSE;
+		ARMPROC.freeze &= ~CPU_FREEZE_IRQ_IE_IF;
 	}
 
 	if(masked && MMU.reg_IME[PROCNUM] && !ARMPROC.CPSR.bits.I)

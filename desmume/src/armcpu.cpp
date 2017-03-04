@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -234,8 +234,7 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 	
 	armcpu->LDTBit = (armcpu->proc_ID==0); //set ARMv5 style bit--different for each processor
 	armcpu->intVector = 0xFFFF0000 * (armcpu->proc_ID==0);
-	armcpu->waitIRQ = FALSE;
-	armcpu->halt_IE_and_IF = FALSE;
+	armcpu->freeze = CPU_FREEZE_NONE;
 	armcpu->intrWaitARM_state = 0;
 
 //#ifdef GDB_STUB
@@ -383,8 +382,7 @@ u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode)
 
 u32 armcpu_Wait4IRQ(armcpu_t *cpu)
 {
-	cpu->waitIRQ = TRUE;
-	cpu->halt_IE_and_IF = TRUE;
+	cpu->freeze = (CPU_FREEZE_WAIT_IRQ | CPU_FREEZE_IE_IF);
 	return 1;
 }
 
@@ -544,7 +542,7 @@ BOOL armcpu_irqException(armcpu_t *armcpu)
 	armcpu->CPSR.bits.T = 0;
 	armcpu->CPSR.bits.I = 1;
 	armcpu->next_instruction = armcpu->intVector + 0x18;
-	armcpu->waitIRQ = 0;
+	armcpu->freeze &= ~CPU_FREEZE_IRQ_IE_IF;
 
 	//must retain invariant of having next instruction to be executed prefetched
 	//(yucky)

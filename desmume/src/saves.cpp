@@ -2,7 +2,7 @@
 	Copyright (C) 2006 Normmatt
 	Copyright (C) 2006 Theo Berkau
 	Copyright (C) 2007 Pascal Giard
-	Copyright (C) 2008-2016 DeSmuME team
+	Copyright (C) 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -121,8 +121,7 @@ SFORMAT SF_ARM7[]={
 	{ "7FIQ", 4, 1, &NDS_ARM7.SPSR_fiq },
 	{ "7int", 4, 1, &NDS_ARM7.intVector },
 	{ "7LDT", 1, 1, &NDS_ARM7.LDTBit },
-	{ "7Wai", 4, 1, &NDS_ARM7.waitIRQ },
-	{ "7hef", 4, 1, &NDS_ARM7.halt_IE_and_IF },
+	{ "7FRZ", 4, 1, &NDS_ARM7.freeze },
 	{ "7iws", 1, 1, &NDS_ARM7.intrWaitARM_state },
 	{ 0 }
 };
@@ -158,8 +157,7 @@ SFORMAT SF_ARM9[]={
 	{ "9FIQ", 4, 1, &NDS_ARM9.SPSR_fiq},
 	{ "9int", 4, 1, &NDS_ARM9.intVector},
 	{ "9LDT", 1, 1, &NDS_ARM9.LDTBit},
-	{ "9Wai", 4, 1, &NDS_ARM9.waitIRQ},
-	{ "9hef", 4, 1, &NDS_ARM9.halt_IE_and_IF },
+	{ "9FRZ", 4, 1, &NDS_ARM9.freeze},
 	{ "9iws", 1, 1, &NDS_ARM9.intrWaitARM_state },
 	{ 0 }
 };

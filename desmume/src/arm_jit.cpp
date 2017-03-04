@@ -1,6 +1,7 @@
-/*	Copyright (C) 2006 yopyop
+/*
+	Copyright (C) 2006 yopyop
 	Copyright (C) 2011 Loren Merritt
-	Copyright (C) 2012-2016 DeSmuME team
+	Copyright (C) 2012-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -2658,8 +2659,7 @@ static int OP_MCR(const u32 i)
 			if((CRm==0)&&(opcode1==0)&&((opcode2==4)))
 			{
 				//CP15wait4IRQ;
-				c.mov(cpu_ptr(waitIRQ), true);
-				c.mov(cpu_ptr(halt_IE_and_IF), true);
+				c.mov(cpu_ptr(freeze), CPU_FREEZE_IRQ_IE_IF);
 				//IME set deliberately omitted: only SWI sets IME to 1
 				break;
 			}

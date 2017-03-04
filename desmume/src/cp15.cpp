@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2016 DeSmuME team
+	Copyright (C) 2006-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -410,8 +410,7 @@ BOOL armcp15_t::moveARM2CP(u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2)
 		if((CRm==0)&&(opcode1==0)&&((opcode2==4)))
 		{
 			//CP15wait4IRQ;
-			NDS_ARM9.waitIRQ = TRUE;
-			NDS_ARM9.halt_IE_and_IF = TRUE;
+			NDS_ARM9.freeze = CPU_FREEZE_IRQ_IE_IF;
 			//IME set deliberately omitted: only SWI sets IME to 1
 			return TRUE;
 		}
