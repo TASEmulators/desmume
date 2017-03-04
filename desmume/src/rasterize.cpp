@@ -1593,20 +1593,6 @@ void SoftRasterizerRenderer::GetAndLoadAllTextures()
 	}
 }
 
-bool PolygonIsVisible(const PolygonAttributes &polyAttr, const bool backfacing)
-{
-	switch (polyAttr.surfaceCullingMode)
-	{
-		case 0: return false;
-		case 1: return backfacing;
-		case 2: return !backfacing;
-		case 3: return true;
-		default: assert(false); return false;
-	}
-	
-	return false;
-}
-
 void SoftRasterizerRenderer::performBackfaceTests()
 {
 	for (size_t i = 0; i < this->_clippedPolyCount; i++)
@@ -1615,7 +1601,7 @@ void SoftRasterizerRenderer::performBackfaceTests()
 		const POLY &thePoly = *clippedPoly.poly;
 		const PolygonType type = clippedPoly.type;
 		const VERT *verts = &clippedPoly.clipVerts[0];
-		const PolygonAttributes polyAttr = thePoly.getAttributes();
+		const u8 cullingMode = thePoly.getAttributeEnableFaceCullingFlags();
 		
 		//HACK: backface culling
 		//this should be moved to gfx3d, but first we need to redo the way the lists are built
@@ -1638,7 +1624,14 @@ void SoftRasterizerRenderer::performBackfaceTests()
 			facing += (verts[j+1].y + verts[j].y) * (verts[j+1].x - verts[j].x);
 		
 		polyBackfacing[i] = (facing < 0);
-		polyVisible[i] = PolygonIsVisible(polyAttr, polyBackfacing[i]);
+		
+		static const bool visibleFunction[2][4] = {
+			//always false, backfacing, !backfacing, always true
+			{ false, false, true, true },
+			{ false, true, false, true }
+		};
+		
+		polyVisible[i] = visibleFunction[polyBackfacing[i]][cullingMode];
 	}
 }
 
