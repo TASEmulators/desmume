@@ -5254,7 +5254,7 @@ bool GPUEngineA::WillCapture3DLayerDirect(const size_t l)
 bool GPUEngineA::WillDisplayCapture(const size_t l)
 {
 	const IOREG_DISPCAPCNT &DISPCAPCNT = this->_IORegisterMap->DISPCAPCNT;
-	return this->_displayCaptureEnable && (vramConfiguration.banks[DISPCAPCNT.VRAMWriteBlock].purpose == VramConfiguration::LCDC) && (l < this->_dispCapCnt.capy);
+	return this->_displayCaptureEnable && (l < this->_dispCapCnt.capy);
 }
 
 void GPUEngineA::SetDisplayCaptureEnable()
@@ -5265,7 +5265,7 @@ void GPUEngineA::SetDisplayCaptureEnable()
 void GPUEngineA::ResetDisplayCaptureEnable()
 {
 	IOREG_DISPCAPCNT &DISPCAPCNT = this->_IORegisterMap->DISPCAPCNT;
-	if ( this->_displayCaptureEnable && vramConfiguration.banks[DISPCAPCNT.VRAMWriteBlock].purpose == VramConfiguration::LCDC )
+	if (this->_displayCaptureEnable)
 	{
 		DISPCAPCNT.CaptureEnable = 0;
 		this->_displayCaptureEnable = false;
