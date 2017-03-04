@@ -306,7 +306,7 @@ bool GameInfo::hasRomBanner()
 
 bool GameInfo::IsCode(const char* code) const
 {
-	return memcmp(code,header.gameCode,strlen(code));
+	return memcmp(code,header.gameCode,strlen(code))==0;
 }
 
 const RomBanner& GameInfo::getRomBanner()
@@ -2547,7 +2547,6 @@ void NDS_Reset()
 	nds.ConsoleType = CommonSettings.ConsoleType;
 	nds._DebugConsole = CommonSettings.DebugConsole;
 	nds.ensataEmulation = CommonSettings.EnsataEmulation;
-	nds.stylusJitter = CommonSettings.StylusJitter;
 	nds.ensataHandshake = ENSATA_HANDSHAKE_none;
 	nds.ensataIpcSyncCounter = 0;
 	nds_timer = 0;
@@ -2764,7 +2763,6 @@ void NDS_setTouchPos(u16 x, u16 y)
 	rawUserInput.touch.touchX = x<<4;
 	rawUserInput.touch.touchY = y<<4;
 	rawUserInput.touch.isTouch = true;
-	nds.stylusJitter = CommonSettings.StylusJitter;
 
 	if(movieMode != MOVIEMODE_INACTIVE && movieMode != MOVIEMODE_FINISHED)
 	{
@@ -3078,6 +3076,7 @@ void TCommonSettings::GameHacks::apply()
 	if(!en) return;
 
 	flags.overclock = gameInfo.IsCode("IPK") || gameInfo.IsCode("IPG"); //HG/SS
+	flags.stylusjitter = gameInfo.IsCode("YDM"); //CSI: Dark Motives
 }
 
 void TCommonSettings::GameHacks::clear()

@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2016 DeSmuME team
+	Copyright (C) 2007-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1560,7 +1560,7 @@ void FASTCALL MMU_writeToSPIData(u16 val)
 					if(nds.adc_jitterctr == 25)
 					{
 						nds.adc_jitterctr = 0;
-						if (nds.stylusJitter)
+						if (CommonSettings.gamehacks.flags.stylusjitter)
 						{
 							nds.adc_touchY ^= 16;
 							nds.adc_touchX ^= 16;

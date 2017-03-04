@@ -3,7 +3,7 @@
 	licensed under the terms supplied at the end of this file (for the terms are very long!)
 	Differences from that baseline version are:
 
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -492,12 +492,6 @@ void HK_DecreasePressure(int, bool justPressed) {
 	if(CommonSettings.StylusPressure<0) CommonSettings.StylusPressure = 0;
 	driver->AddLine("Stylus Pressure to %d%%",CommonSettings.StylusPressure);
 }
-void HK_ToggleStylusJitter(int, bool justPressed) {
-	CommonSettings.StylusJitter = !CommonSettings.StylusJitter;
-	nds.stylusJitter = CommonSettings.StylusJitter;
-	WritePrivateProfileBool("Emulation", "StylusJitter", CommonSettings.StylusJitter, IniName);
-	driver->AddLine("Stylus Jitter %s",CommonSettings.StylusJitter ? "On" : "Off");
-}
 
 void HK_Rotate0(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 0);}
 void HK_Rotate90(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 90);}
@@ -638,12 +632,6 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->DecreasePressure.page = HOTKEY_PAGE_MAIN;
 	keys->DecreasePressure.key = VK_OEM_MINUS;
 	keys->DecreasePressure.modifiers = CUSTKEY_SHIFT_MASK;
-	
-	keys->ToggleStylusJitter.handleKeyDown = HK_ToggleStylusJitter;
-	keys->ToggleStylusJitter.code = "ToggleStylusJitter";
-	keys->ToggleStylusJitter.name = STRW(ID_LABEL_HK61);
-	keys->ToggleStylusJitter.page = HOTKEY_PAGE_MAIN;
-	keys->ToggleStylusJitter.key = NULL;
 	
 	keys->Microphone.handleKeyDown = HK_MicrophoneKeyDown;
 	keys->Microphone.handleKeyUp = HK_MicrophoneKeyUp;

@@ -182,7 +182,6 @@ struct NDSSystem
 	u16 adc_touchX;
 	u16 adc_touchY;
 	s32 adc_jitterctr;
-	BOOL stylusJitter;
 
 	//the DSI returns calibrated touch coords from its TSC (?), so we need to save these separately
 	u16 scr_touchX;
@@ -513,7 +512,6 @@ extern struct TCommonSettings
 		, spu_advanced(false)
 		, StylusPressure(50)
 		, ConsoleType(NDS_CONSOLE_TYPE_FAT)
-		, StylusJitter(false)
 		, backupSave(false)
 		, SPU_sync_mode(0)
 		, SPU_sync_method(0)
@@ -592,6 +590,7 @@ extern struct TCommonSettings
 
 		struct {
 			bool overclock;
+			bool stylusjitter;
 		} flags;
 		
 		void apply();
