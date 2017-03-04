@@ -121,8 +121,8 @@ BEGIN
     CONTROL         "Enable Edge Marking",IDC_3DSETTINGS_EDGEMARK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,74,84,10
     CONTROL         "Enable Fog",IDC_3DSETTINGS_FOG,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,86,52,10
     CONTROL         "Enable Textures",IDC_3DSETTINGS_TEXTURE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,98,67,10
-    CONTROL         "Enable Anti-Aliasing",IDC_3DSETTINGS_ANTIALIASING,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,178,78,10
+    CONTROL         "Enable Multisample Antialiasing",IDC_3DSETTINGS_ANTIALIASING,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,178,114,10
     EDITTEXT        IDC_TEXT_PRESCALEHD,245,61,20,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_NUD_PRESCALEHD,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS,264,61,11,14
     PUSHBUTTON      "Default",IDC_DEFAULT,204,187,50,14
@@ -132,8 +132,8 @@ BEGIN
     GROUPBOX        "SoftRasterizer Options",IDC_STATIC,7,50,176,114
     LTEXT           "Fixes some graphical bugs involving lines, but causes some other bugs. Not many games use lines.",ID_LABEL_ZELDA_SHADOW_DEPTH_HACK2,197,31,160,24
     CONTROL         "Enable Line Hack",IDC_3DSETTINGS_LINEHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,193,19,73,10
-    LTEXT           "Fixes text bugs in some games.(e.g. Etrian Odyssey)",ID_LABEL_TXTHACK1,15,151,165,11
-    CONTROL         "Enable TXT Hack",IDC_TXTHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,138,73,10
+    LTEXT           "Fixes text bugs in some games.(e.g. Etrian Odyssey)",ID_LABEL_TXTHACK1,15,119,165,11
+    CONTROL         "Enable TXT Hack",IDC_TXTHACK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,109,73,10
     GROUPBOX        "OpenGL Renderer Options",IDC_STATIC,7,166,176,33
     GROUPBOX        "General Options",IDC_STATIC,189,6,176,146
     LTEXT           "HD Prescaling:",IDC_STATIC,195,64,48,8
@@ -142,6 +142,7 @@ BEGIN
     CONTROL         "TexScale 4x",IDC_TEXSCALE_4,"Button",BS_AUTORADIOBUTTON,193,100,67,10
     CONTROL         "Tex Deposterize",IDC_TEX_DEPOSTERIZE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,261,81,79,10
     CONTROL         "Tex Smoothing",IDC_TEX_SMOOTH,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,261,91,75,10
+    LTEXT           "You may need to toggle off && on by scene.",ID_LABEL_TXTHACK2,16,127,165,11
 END
 
 IDD_ABOUT_BOX DIALOGEX 0, 0, 268, 198

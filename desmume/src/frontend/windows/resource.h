@@ -1060,6 +1060,7 @@
 #define ID_LABEL_TXTHACK1               64003
 #define IDC_3DSETTINGS_ANTIALIASING     64004
 #define IDC_3DSETTINGS_ANTIALIASING1    64005
+#define ID_LABEL_TXTHACK2               64005
 
 // Next default values for new objects
 // 
