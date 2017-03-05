@@ -726,6 +726,8 @@ static inline void MMU_VRAMmapRefreshBank()
 				vramConfiguration.banks[VRAMBANK].purpose = VramConfiguration::BBG;
 				MMU_vram_arm9(VRAMBANK,VRAM_PAGE_BBG+2);
 				MMU_vram_arm9(VRAMBANK,VRAM_PAGE_BBG+3); //unexpected mirroring
+				MMU_vram_arm9(VRAMBANK,VRAM_PAGE_BBG+6); //required for ultimate mortal kombat pause screen
+				MMU_vram_arm9(VRAMBANK,VRAM_PAGE_BBG+7); //(6,7) are mapped similarly to (2,3) [and (6,7) are mapped similarly to H's (4)]
 				break;
 			case 2: //BOBJ
 				vramConfiguration.banks[VRAMBANK].purpose = VramConfiguration::BOBJ;
