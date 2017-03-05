@@ -106,7 +106,6 @@ public:
 @dynamic render3DEdgeMarking;
 @dynamic render3DFog;
 @dynamic render3DTextures;
-@dynamic render3DDepthComparisonThreshold;
 @dynamic render3DThreads;
 @dynamic render3DLineHack;
 @dynamic render3DMultisample;
@@ -384,22 +383,6 @@ public:
 	gpuEvent->Render3DUnlock();
 	
 	return state;
-}
-
-- (void) setRender3DDepthComparisonThreshold:(NSUInteger)threshold
-{
-	gpuEvent->Render3DLock();
-	CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack = threshold;
-	gpuEvent->Render3DUnlock();
-}
-
-- (NSUInteger) render3DDepthComparisonThreshold
-{
-	gpuEvent->Render3DLock();
-	const NSUInteger threshold = (NSUInteger)CommonSettings.GFX3D_Zelda_Shadow_Depth_Hack;
-	gpuEvent->Render3DUnlock();
-	
-	return threshold;
 }
 
 - (void) setRender3DThreads:(NSUInteger)numberThreads

@@ -94,7 +94,6 @@ class GPUEventHandlerOSX;
 @property (assign) BOOL render3DEdgeMarking;
 @property (assign) BOOL render3DFog;
 @property (assign) BOOL render3DTextures;
-@property (assign) NSUInteger render3DDepthComparisonThreshold;
 @property (assign) NSUInteger render3DThreads;
 @property (assign) BOOL render3DLineHack;
 @property (assign) BOOL render3DMultisample;

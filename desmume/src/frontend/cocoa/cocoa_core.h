@@ -121,6 +121,7 @@ typedef struct
 @property (assign) NSUInteger emulationFlags;
 @property (assign) BOOL emuFlagAdvancedBusLevelTiming;
 @property (assign) BOOL emuFlagRigorousTiming;
+@property (assign) BOOL emuFlagUseGameSpecificHacks;
 @property (assign) BOOL emuFlagUseExternalBios;
 @property (assign) BOOL emuFlagEmulateBiosInterrupts;
 @property (assign) BOOL emuFlagPatchDelayLoop;

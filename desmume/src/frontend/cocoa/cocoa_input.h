@@ -99,7 +99,6 @@ typedef struct
 	NSPoint touchLocation;
 	NSInteger paddleAdjust;
 	NSInteger stylusPressure;
-	BOOL stylusEnableJitter;
 	
 	float micLevel;
 	BOOL hardwareMicMute;
@@ -124,7 +123,6 @@ typedef struct
 @property (assign) BOOL autohold;
 @property (assign) NSInteger paddleAdjust;
 @property (assign) NSInteger stylusPressure;
-@property (assign) BOOL stylusEnableJitter;
 @property (readonly) BOOL isHardwareMicAvailable;
 @property (readonly) BOOL isHardwareMicIdle;
 @property (readonly) BOOL isHardwareMicInClip;

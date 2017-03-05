@@ -948,7 +948,6 @@
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DEdgeMarking] forKey:@"Render3D_EdgeMarking"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DFog] forKey:@"Render3D_Fog"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DTextures] forKey:@"Render3D_Textures"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] render3DDepthComparisonThreshold] forKey:@"Render3D_DepthComparisonThreshold"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] render3DThreads] forKey:@"Render3D_Threads"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DLineHack] forKey:@"Render3D_LineHack"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DMultisample] forKey:@"Render3D_Multisample"];
@@ -971,6 +970,7 @@
 	
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagAdvancedBusLevelTiming] forKey:@"Emulation_AdvancedBusLevelTiming"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagRigorousTiming] forKey:@"Emulation_RigorousTiming"];
+	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagUseGameSpecificHacks] forKey:@"Emulation_UseGameSpecificHacks"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore cpuEmulationEngine] forKey:@"Emulation_CPUEmulationEngine"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[cdsCore maxJITBlockSize] forKey:@"Emulation_MaxJITBlockSize"];
 	[[NSUserDefaults standardUserDefaults] setBool:[cdsCore emuFlagUseExternalBios] forKey:@"Emulation_UseExternalBIOSImages"];
@@ -1020,7 +1020,6 @@
 	CocoaDSController *cdsController = [cdsCore cdsController];
 	
 	[[NSUserDefaults standardUserDefaults] setInteger:[cdsController stylusPressure] forKey:@"Emulation_StylusPressure"];
-	[[NSUserDefaults standardUserDefaults] setBool:[cdsController stylusEnableJitter] forKey:@"Emulation_StylusEnableJitter"];
 	
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
@@ -2203,7 +2202,6 @@
 	[[cdsCore cdsGPU] setRender3DEdgeMarking:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_EdgeMarking"]];
 	[[cdsCore cdsGPU] setRender3DFog:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Fog"]];
 	[[cdsCore cdsGPU] setRender3DTextures:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Textures"]];
-	[[cdsCore cdsGPU] setRender3DDepthComparisonThreshold:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_DepthComparisonThreshold"]];
 	[[cdsCore cdsGPU] setRender3DLineHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_LineHack"]];
 	[[cdsCore cdsGPU] setRender3DMultisample:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_Multisample"]];
 	[[cdsCore cdsGPU] setRender3DTextureScalingFactor:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_TextureScalingFactor"]];
@@ -2214,7 +2212,6 @@
 	
 	// Set the stylus options per user preferences.
 	[[cdsCore cdsController] setStylusPressure:[[NSUserDefaults standardUserDefaults] integerForKey:@"Emulation_StylusPressure"]];
-	[[cdsCore cdsController] setStylusEnableJitter:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_StylusEnableJitter"]];
 }
 
 #pragma mark NSUserInterfaceValidations Protocol
@@ -2493,14 +2490,6 @@
 	}
 	
 	return enable;
-}
-
-#pragma mark NSControl Delegate Methods
-
-- (void)controlTextDidEndEditing:(NSNotification *)aNotification
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[[cdsCore cdsGPU] setRender3DDepthComparisonThreshold:[(NSNumber *)[aNotification object] integerValue]];
 }
 
 #pragma mark CocoaDSControllerDelegate Protocol

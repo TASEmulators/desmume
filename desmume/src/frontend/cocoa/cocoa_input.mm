@@ -38,7 +38,6 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 @dynamic autohold;
 @synthesize paddleAdjust;
 @synthesize stylusPressure;
-@synthesize stylusEnableJitter;
 @dynamic isHardwareMicAvailable;
 @dynamic isHardwareMicIdle;
 @dynamic isHardwareMicInClip;
@@ -346,7 +345,6 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 	
 	// Setup the DS touch pad.
 	CommonSettings.StylusPressure = (int)[self stylusPressure];
-	CommonSettings.StylusJitter = ([self stylusEnableJitter]) ? true : false;
 	
 	if (isTouchDown)
 	{

@@ -598,7 +598,6 @@ extern struct TCommonSettings
 	} gamehacks;
 
 	int StylusPressure;
-	bool StylusJitter;
 
 	bool dispLayers[2][5];
 	

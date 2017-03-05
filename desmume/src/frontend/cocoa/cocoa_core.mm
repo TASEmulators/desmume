@@ -98,6 +98,7 @@ volatile bool execute = true;
 @dynamic emulationFlags;
 @synthesize emuFlagAdvancedBusLevelTiming;
 @synthesize emuFlagRigorousTiming;
+@dynamic emuFlagUseGameSpecificHacks;
 @synthesize emuFlagUseExternalBios;
 @synthesize emuFlagEmulateBiosInterrupts;
 @synthesize emuFlagPatchDelayLoop;
@@ -593,6 +594,23 @@ volatile bool execute = true;
 	OSSpinLockUnlock(&spinlockEmulationFlags);
 	
 	return theFlags;
+}
+
+- (void) setEmuFlagUseGameSpecificHacks:(BOOL)useTiming
+{
+	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
+	CommonSettings.gamehacks.en = (useTiming) ? true : false;
+	CommonSettings.gamehacks.apply();
+	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
+}
+
+- (BOOL) emuFlagUseGameSpecificHacks
+{
+	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
+	const BOOL useTiming = (CommonSettings.gamehacks.en) ? YES : NO;
+	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
+	
+	return useTiming;
 }
 
 - (void) setCpuEmulationEngine:(NSInteger)engineID
