@@ -169,7 +169,7 @@
 			<AdditionalDependencies Condition="'$(Platform)' == 'Win32'">directx-win32-ddraw-dinput8-dsound-dxerr8-dxguid.lib;zlib-vc8-Win32.lib;agg-2.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- special deps config for newer VS -->
-			<AdditionalDependencies Label="Configuration" Condition="'$(NDS_VSVER)' == '14'">legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalDependencies Label="Configuration" Condition="'$(NDS_VSVER)' &gt;= '14'">legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
 
 			<!-- general deps config -->
 			<AdditionalDependencies>lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
