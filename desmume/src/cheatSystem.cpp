@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -436,7 +436,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//<gbatek> byte[XXXXXXXX+offset]=datareg, offset=offset+1
 			x = lo;
 			addr = x + st.offset;
-			_MMU_write16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, st.data);
+			_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, st.data);
 			st.offset += 1;
 			break;
 
