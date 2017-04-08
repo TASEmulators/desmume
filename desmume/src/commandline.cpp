@@ -241,7 +241,7 @@ bool CommandLine::parse(int argc,char **argv)
 			//sync settings
 			#ifdef HAVE_JIT
 				{ "jit-enable", no_argument, &_cpu_mode, 1},
-				{ "jit-size", required_argument, &_jit_size}, 
+				{ "jit-size", required_argument, NULL, OPT_JIT_SIZE },
 			#endif
 			{ "rigorous-timing", no_argument, &_rigorous_timing, 1},
 			{ "advanced-timing", no_argument, &_advanced_timing, 1},
