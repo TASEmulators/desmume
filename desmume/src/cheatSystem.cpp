@@ -87,6 +87,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 	//TODO: v154 special stuff
 
 	bool v154 = true; //on advice of power users, v154 is so old, we can assume all cheats use it
+	bool vEmulator = true;
 
 	struct {
 		//LSB is 
@@ -109,9 +110,13 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 		//registers
 		u32 offset, data;
 
+		//nu fake registers
+		int proc;
+
 	} st;
 
 	memset(&st,0,sizeof(st));
+	st.proc = ARMCPU_ARM7;
 
 	CHEATLOG("-----------------------------------\n");
 
@@ -164,7 +169,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			x = hi & 0x0FFFFFFF;
 			y = lo;
 			addr = x + st.offset;
-			_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, y);
+			_MMU_write32(st.proc,MMU_AT_DEBUG,addr, y);
 			break;
 		
 		case 0x01:
@@ -174,7 +179,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			x = hi & 0x0FFFFFFF;
 			y = lo & 0xFFFF;
 			addr = x + st.offset;
-			_MMU_write16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, y);
+			_MMU_write16(st.proc,MMU_AT_DEBUG,addr, y);
 			break;
 
 		case 0x02:
@@ -184,7 +189,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			x = hi & 0x0FFFFFFF;
 			y = lo & 0xFF;
 			addr = x + st.offset;
-			_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, y);
+			_MMU_write08(st.proc,MMU_AT_DEBUG,addr, y);
 			break;
 
 		case 0x03:
@@ -195,7 +200,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			x = hi & 0x0FFFFFFF;
 			y = lo;
 			if(v154) if(x == 0) x = st.offset;
-			operand = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			operand = _MMU_read32(st.proc,MMU_AT_DEBUG,x);
 			if(y > operand) st.status &= ~1;
 			break;
 
@@ -207,7 +212,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			x = hi & 0x0FFFFFFF;
 			y = lo;
 			if(v154) if(x == 0) x = st.offset;
-			operand = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			operand = _MMU_read32(st.proc,MMU_AT_DEBUG,x);
 			if(y < operand) st.status &= ~1;
 			break;
 
@@ -219,7 +224,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			x = hi & 0x0FFFFFFF;
 			y = lo;
 			if(v154) if(x == 0) x = st.offset;
-			operand = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			operand = _MMU_read32(st.proc,MMU_AT_DEBUG,x);
 			if(y == operand) st.status &= ~1;
 			break;
 
@@ -231,7 +236,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			x = hi & 0x0FFFFFFF;
 			y = lo;
 			if(v154) if(x == 0) x = st.offset;
-			operand = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			operand = _MMU_read32(st.proc,MMU_AT_DEBUG,x);
 			if(y != operand) st.status &= ~1;
 			break;
 
@@ -244,7 +249,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			y = lo&0xFFFF;
 			z = lo>>16;
 			if(v154) if(x == 0) x = st.offset;
-			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			operand = _MMU_read16(st.proc,MMU_AT_DEBUG,x);
 			if(y > (u16)( (~z) & operand) ) st.status &= ~1;
 			break;
 
@@ -257,7 +262,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			y = lo&0xFFFF;
 			z = lo>>16;
 			if(v154) if(x == 0) x = st.offset;
-			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			operand = _MMU_read16(st.proc,MMU_AT_DEBUG,x);
 			if(y < (u16)( (~z) & operand) ) st.status &= ~1;
 			break;
 
@@ -270,7 +275,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			y = lo&0xFFFF;
 			z = lo>>16;
 			if(v154) if(x == 0) x = st.offset;
-			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			operand = _MMU_read16(st.proc,MMU_AT_DEBUG,x);
 			if(y == (u16)( (~z) & operand) ) st.status &= ~1;
 			break;
 
@@ -283,7 +288,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			y = lo&0xFFFF;
 			z = lo>>16;
 			if(v154) if(x == 0) x = st.offset;
-			operand = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(x);
+			operand = _MMU_read16(st.proc,MMU_AT_DEBUG,x);
 			if(y != (u16)( (~z) & operand) ) st.status &= ~1;
 			break;
 
@@ -294,7 +299,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//Offset = word at [0XXXXXXX + offset].
 			x = hi & 0x0FFFFFFF;
 			addr = x + st.offset;
-			st.offset = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
+			st.offset = _MMU_read32(st.proc,MMU_AT_DEBUG,addr);
 			break;
 
 		case 0xC0:
@@ -334,7 +339,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//<gbatek> C6000000 XXXXXXXX   [XXXXXXXX]=offset  
 			if(!v154) break;
 			x = lo;
-			_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(x, st.offset);
+			_MMU_write32(st.proc,MMU_AT_DEBUG,x, st.offset);
 			break;
 
 		case 0xD0:
@@ -379,6 +384,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			{
 				//<gbatek> The NEXT+FLUSH command does (after finishing the loop) reset offset=0, datareg=0, and does clear all condition flags, so further ENDIF(s) aren't required after the loop.
 				memset(&st,0,sizeof(st));
+				st.proc = ARMCPU_ARM7;
 			}
 			break;
 
@@ -414,7 +420,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//<gbatek> word[XXXXXXXX+offset]=datareg, offset=offset+4
 			x = lo;
 			addr = x + st.offset;
-			_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, st.data);
+			_MMU_write32(st.proc,MMU_AT_DEBUG,addr, st.data);
 			st.offset += 4;
 			break;
 
@@ -425,7 +431,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//<gbatek> half[XXXXXXXX+offset]=datareg, offset=offset+2
 			x = lo;
 			addr = x + st.offset;
-			_MMU_write16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, st.data);
+			_MMU_write16(st.proc,MMU_AT_DEBUG,addr, st.data);
 			st.offset += 2;
 			break;
 
@@ -436,7 +442,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//<gbatek> byte[XXXXXXXX+offset]=datareg, offset=offset+1
 			x = lo;
 			addr = x + st.offset;
-			_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr, st.data);
+			_MMU_write08(st.proc,MMU_AT_DEBUG,addr, st.data);
 			st.offset += 1;
 			break;
 
@@ -446,7 +452,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//Loads the word at [XXXXXXXX+offset] and stores it in the'Dx data register'.
 			x = lo;
 			addr = x + st.offset;
-			st.data = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
+			st.data = _MMU_read32(st.proc,MMU_AT_DEBUG,addr);
 			break;
 
 		case 0xDA:
@@ -455,7 +461,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//Loads the halfword at [XXXXXXXX+offset] and stores it in the'Dx data register'.
 			x = lo;
 			addr = x + st.offset;
-			st.data = _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
+			st.data = _MMU_read16(st.proc,MMU_AT_DEBUG,addr);
 			break;
 
 		case 0xDB:
@@ -465,7 +471,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//This is a bugged code type. Check 'AR Hack #0' for the fix. 
 			x = lo;
 			addr = x + st.offset;
-			st.data = _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
+			st.data = _MMU_read08(st.proc,MMU_AT_DEBUG,addr);
 			//<gbatek> Before v1.54, the DB000000 code did accidently set offset=offset+XXXXXXX after execution of the code
 			if(!v154)
 				st.offset = addr;
@@ -477,6 +483,18 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//Adds an offset to the current offset. (Dual Offset)
 			x = lo;
 			st.offset += x;
+			break;
+
+		case 0xDF:
+			if(vEmulator)
+			{
+				if(hi == 0xDFFFFFFF) {
+					if(lo == 0x99999999)
+						st.proc = ARMCPU_ARM9;
+					else if(lo == 0x77777777)
+						st.proc = ARMCPU_ARM7;
+				}
+			}
 			break;
 
 		case 0x0E:
@@ -498,14 +516,14 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 					u32 tmp = list.code[i][t];
 					if(t==1) i++;
 					t ^= 1;
-					_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr,tmp);
+					_MMU_write32(st.proc,MMU_AT_DEBUG,addr,tmp);
 					addr += 4;
 					y -= 4;
 				}
 				while(y>0)
 				{
 					u32 tmp = list.code[i][t]>>b;
-					_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr,tmp);
+					_MMU_write08(st.proc,MMU_AT_DEBUG,addr,tmp);
 					addr += 1;
 					y -= 1;
 					b += 4;
@@ -525,16 +543,16 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			operand = x; //mis-use of this variable to store dst
 			while(y>=4)
 			{
-				u32 tmp = _MMU_read32<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
-				_MMU_write32<ARMCPU_ARM7,MMU_AT_DEBUG>(operand,tmp);
+				u32 tmp = _MMU_read32(st.proc,MMU_AT_DEBUG,addr);
+				_MMU_write32(st.proc,MMU_AT_DEBUG,operand,tmp);
 				addr += 4;
 				operand += 4;
 				y -= 4;
 			}
 			while(y>0)
 			{
-				u8 tmp = _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr);
-				_MMU_write08<ARMCPU_ARM7,MMU_AT_DEBUG>(operand,tmp);
+				u8 tmp = _MMU_read08(st.proc,MMU_AT_DEBUG,addr);
+				_MMU_write08(st.proc,MMU_AT_DEBUG,operand,tmp);
 				addr += 1;
 				operand += 1;
 				y -= 1;
