@@ -22,9 +22,11 @@
 #include "commandline.h"
 #include "types.h"
 #include "movie.h"
+#include "rtc.h"
 #include "slot1.h"
 #include "slot2.h"
 #include "NDSSystem.h"
+#include "utils/datetime.h"
 #include "utils/xstring.h"
 #include <compat/getopt.h>
 //#include "frontend/modules/mGetOpt.h" //to test with this, make sure global `optind` is initialized to 1
@@ -74,6 +76,8 @@ CommandLine::CommandLine()
 , language(1) //english by default
 , disable_sound(0)
 , disable_limiter(0)
+, _rtc_day(-1)
+, _rtc_hour(-1)
 {
 }
 
@@ -116,6 +120,8 @@ static const char* help_string = \
 #endif
 " --disable-sound            Disables the sound output" ENDL
 " --disable-limiter          Disables the 60fps limiter" ENDL
+" --rtc-day D                Override RTC day, 0=Sunday, 6=Saturday" ENDL
+" --rtc-hour H               Override RTC hour, 0=midnight, 23=an hour before" ENDL
 ENDL
 "Arguments affecting overall emulation parameters (`sync settings`): " ENDL
 #ifdef HAVE_JIT
@@ -206,6 +212,9 @@ ENDL
 #define OPT_ARM9GDB 700
 #define OPT_ARM7GDB 701
 
+#define OPT_RTC_DAY 800
+#define OPT_RTC_HOUR 801
+
 #define OPT_ADVANSCENE 900
 
 bool CommandLine::parse(int argc,char **argv)
@@ -237,6 +246,8 @@ bool CommandLine::parse(int argc,char **argv)
 			#endif
 			{ "disable-sound", no_argument, &disable_sound, 1},
 			{ "disable-limiter", no_argument, &disable_limiter, 1},
+			{ "rtc-day", required_argument, NULL, OPT_RTC_DAY},
+			{ "rtc-hour", required_argument, NULL, OPT_RTC_HOUR},
 
 			//sync settings
 			#ifdef HAVE_JIT
@@ -305,6 +316,10 @@ bool CommandLine::parse(int argc,char **argv)
 		case OPT_3D_RENDER: _render3d = optarg; break;
 		case OPT_3D_TEXTURE_UPSCALE: texture_upscale = atoi(optarg); break;
 		case OPT_GPU_RESOLUTION_MULTIPLIER: gpu_resolution_multiplier = atoi(optarg); break;
+
+		//RTC settings
+		case OPT_RTC_DAY: _rtc_day = atoi(optarg); break;
+		case OPT_RTC_HOUR: _rtc_hour = atoi(optarg); break;
 
 		//sync settings
 		case OPT_JIT_SIZE: _jit_size = atoi(optarg); break;
@@ -497,6 +512,14 @@ bool CommandLine::validate()
 		printerror("Invalid jit block size [1..100]. set to 100\n");
 	}
 #endif
+        if (_rtc_day < -1 || _rtc_day > 6) {
+                printerror("Invalid rtc day override, valid values are from 0 to 6");
+                return false;
+        }
+        if (_rtc_hour < -1 || _rtc_hour > 23) {
+                printerror("Invalid rtc day override, valid values are from 0 to 23");
+                return false;
+        }
 
 	return true;
 }
@@ -548,5 +571,19 @@ void CommandLine::process_addonCommands()
 			slot1_Change(NDS_SLOT1_RETAIL_MCROM);
 			else if(slot1 == "RETAILDEBUG")
 				slot1_Change(NDS_SLOT1_RETAIL_DEBUG);
+
+        if (_rtc_day != -1 || _rtc_hour != -1) {
+                DateTime now = DateTime::get_Now();
+                int cur_day = now.get_DayOfWeek();
+                int cur_hour = now.get_Hour();
+                int cur_total = cur_day * 24 + cur_hour;
+                int day = (_rtc_day != -1 ? _rtc_day : cur_day);
+                int hour = (_rtc_hour != -1 ? _rtc_hour : cur_hour);
+                int total = day * 24 + hour;
+                int diff = total - cur_total;
+                if (diff < 0)
+                        diff += 24 * 7;
+                rtcHourOverride = diff;
+        }
 }
 

@@ -107,6 +107,8 @@ private:
 	char *_slot1_fat_dir;
 	char* _console_type;
 	char* _advanscene_import;
+	int _rtc_day;
+	int _rtc_hour;
 };
 
 #endif

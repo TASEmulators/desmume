@@ -29,6 +29,7 @@
 #endif
 #include "movie.h"
 
+int rtcHourOverride = 0;
 
 typedef struct
 {
@@ -95,9 +96,8 @@ bool moviemode=false;
 
 DateTime rtcGetTime(void)
 {
-	DateTime tm;
 	if(movieMode == MOVIEMODE_INACTIVE) {
-		return DateTime::get_Now();
+		return DateTime::get_Now().AddHours(rtcHourOverride);
 	}
 	else {
 		//now, you might think it is silly to go through all these conniptions

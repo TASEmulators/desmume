@@ -24,6 +24,8 @@
 #include "types.h"
 #include "utils/datetime.h"
 
+extern int rtcHourOverride;
+
 DateTime rtcGetTime(void);
 void rtcGetTimeAsString(char *buffer);
 
