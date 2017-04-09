@@ -5554,6 +5554,11 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 	const size_t readLineIndexWithOffset = (this->_dispCapCnt.readOffset * 64) + l;
 	bool newCaptureLineNativeState = true;
 	u16 *renderedLineSrcA16 = NULL;
+
+	//we must block captures when the capture dest is not mapped to LCDC.
+	//mario kart does this (maybe due to a programming bug, but maybe emulation timing error) when spamming confirm key during course intro and through black transition
+	if(vramConfiguration.banks[vramWriteBlock].purpose != VramConfiguration::LCDC)
+		return;
 	
 	//128-wide captures should write linearly into memory, with no gaps
 	//this is tested by hotel dusk
