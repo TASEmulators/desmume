@@ -599,8 +599,6 @@ void gfx3d_reset()
 	last_t = 0;
 	last_s = 0;
 	viewport = 0xBFFF0000;
-
-	gfx3d.state.clearDepth = DS_DEPTH15TO24(0x7FFF);
 	
 	clInd2 = 0;
 	isSwapBuffers = FALSE;

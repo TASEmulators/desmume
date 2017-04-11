@@ -73,6 +73,7 @@ class EMUFILE;
 #define GFX3D_5TO6_LOOKUP(x) (material_5bit_to_6bit[(x)])
 
 // 15-bit to 24-bit depth formula from http://nocash.emubase.de/gbatek.htm#ds3drearplane
+extern CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 #define DS_DEPTH15TO24(depth) ( dsDepthExtend_15bit_to_24bit[(depth) & 0x7FFF] )
 
 // MATRIX MODES
@@ -611,7 +612,7 @@ struct GFX3D_State
 		, alphaTestRef(0)
 		, activeFlushCommand(0)
 		, pendingFlushCommand(0)
-		, clearDepth(1)
+		, clearDepth(DS_DEPTH15TO24(0x7FFF))
 		, clearColor(0)
 		, fogColor(0)
 		, fogOffset(0)
