@@ -559,7 +559,6 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 			}
 		}
 		reader->Seek(fROM, headerOffset, SEEK_SET);
-		lastReadPos = 0;
 		return true;
 	}
 
@@ -580,17 +579,16 @@ void GameInfo::closeROM()
 	reader = NULL;
 	romdataForReader = NULL;
 	romsize = 0;
-	lastReadPos = 0xFFFFFFFF;
 }
 
 u32 GameInfo::readROM(u32 pos)
 {
 	u32 num;
 	u32 data;
-	if (lastReadPos != pos)
-		reader->Seek(fROM, pos + headerOffset, SEEK_SET);
+
+	//reader must try to be efficient and not do unneeded seeks
+	reader->Seek(fROM, pos, SEEK_SET);
 	num = reader->Read(fROM, &data, 4);
-	lastReadPos = (pos + num);
 
 	//in case we didn't read enough data, pad the remainder with 0xFF
 	u32 pad = 0;

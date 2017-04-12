@@ -323,7 +323,6 @@ struct GameInfo
 	u32 mask;
 	u32 crc;
 	u32 chipID;
-	u32 lastReadPos;
 	u32	romType;
 	u32 headerOffset;
 	char ROMserial[20];
@@ -342,7 +341,6 @@ struct GameInfo
 					romsize(0),
 					cardSize(0),
 					mask(0),
-					lastReadPos(0xFFFFFFFF),
 					romType(ROM_NDS),
 					headerOffset(0),
 					_isDSiEnhanced(false)

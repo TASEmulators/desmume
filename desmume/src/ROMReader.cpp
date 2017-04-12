@@ -69,7 +69,13 @@ ROMReader_struct STDROMReader =
 	STDROMReaderWrite
 };
 
-void * STDROMReaderInit(const char * filename)
+struct STDROMReaderData
+{
+	FILE* file;
+	long pos;
+};
+
+void* STDROMReaderInit(const char* filename)
 {
 #ifndef _MSC_VER
 	struct stat sb;
@@ -80,13 +86,21 @@ void * STDROMReaderInit(const char * filename)
 		return 0;
 #endif
 
-	return (void *) fopen(filename, "rb");
+	FILE* inf = fopen(filename, "rb");
+	if(!inf) return NULL;
+
+	STDROMReaderData* ret = new STDROMReaderData();
+	ret->file = inf;
+	ret->pos = 0;
+	return (void*)ret;
 }
+
 
 void STDROMReaderDeInit(void * file)
 {
 	if (!file) return ;
-	fclose((FILE*)file);
+	fclose(((STDROMReaderData*)file)->file);
+	delete ((STDROMReaderData*)file);
 }
 
 u32 STDROMReaderSize(void * file)
@@ -95,23 +109,32 @@ u32 STDROMReaderSize(void * file)
 
 	if (!file) return 0;
 
-	fseek((FILE*)file, 0, SEEK_END);
-	size = ftell((FILE*)file);
-	fseek((FILE*)file, 0, SEEK_SET);
+	FILE* inf = ((STDROMReaderData*)file)->file;
+
+	fseek(inf, 0, SEEK_END);
+	size = ftell(inf);
+	fseek(inf, ((STDROMReaderData*)file)->pos, SEEK_SET);
 
 	return size;
 }
 
 int STDROMReaderSeek(void * file, int offset, int whence)
 {
+	//not normal fseek return value meanings. awesome.
 	if (!file) return 0;
-	return fseek((FILE*)file, offset, whence);
+	if(whence == SEEK_SET && offset == ((STDROMReaderData*)file)->pos)
+		return 1;
+	fseek(((STDROMReaderData*)file)->file, offset, whence);
+	((STDROMReaderData*)file)->pos = ftell(((STDROMReaderData*)file)->file);
+	return 1;
 }
 
 int STDROMReaderRead(void * file, void * buffer, u32 size)
 {
 	if (!file) return 0;
-	return fread(buffer, 1, size, (FILE*)file);
+	int read = fread(buffer, 1, size, ((STDROMReaderData*)file)->file);
+	((STDROMReaderData*)file)->pos += read;
+	return read;
 }
 
 int STDROMReaderWrite(void *, void *, u32)
@@ -300,7 +323,9 @@ int MemROMReaderRead(void * file, void * buffer, u32 size)
 	if(remain<todo)
 		todo = remain;
 
-	if(todo==1) *(u8*)buffer = ((u8*)mem.buf)[mem.pos];
+	if(todo<=0)
+		return 0;
+	else if(todo==1) *(u8*)buffer = ((u8*)mem.buf)[mem.pos];
 	else memcpy(buffer,(u8*)mem.buf + mem.pos, todo);
 	mem.pos += todo;
 	return todo;
