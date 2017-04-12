@@ -213,8 +213,8 @@ CMemView::CMemView(MemRegionType memRegion, u32 start_address)
 		s_memoryRegions.push_back(s_arm9Region);
 		s_memoryRegions.push_back(s_arm7Region);
 		s_memoryRegions.push_back(s_firmwareRegion);
-		s_memoryRegions.push_back(s_fullRegion);
 		s_memoryRegions.push_back(s_RomRegion);
+		s_memoryRegions.push_back(s_fullRegion);
 	}
 
 	PostInitialize();
