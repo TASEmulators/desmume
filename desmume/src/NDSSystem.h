@@ -317,7 +317,7 @@ struct GameInfo
 {
 	void *fROM;
 	ROMReader_struct *reader;
-	u8	*romdata;
+	u8 *romdataForReader;
 	u32 romsize;
 	u32 cardSize;
 	u32 mask;
@@ -336,7 +336,7 @@ struct GameInfo
 	const RomBanner& getRomBanner();
 
 	GameInfo() :	fROM(NULL),
-					romdata(NULL),
+					romdataForReader(NULL),
 					crc(0),
 					chipID(0x00000FC2),
 					romsize(0),

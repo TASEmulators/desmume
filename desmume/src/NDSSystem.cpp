@@ -505,36 +505,45 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 			reader->Read(fROM, &secureArea[0], 0x4000);
 		}
 
-		if (CommonSettings.loadToMemory)
+		//for now, we have to do this, because the DLDI patching requires it
+		bool loadToMemory = CommonSettings.loadToMemory;
+		if(isHomebrew())
+			loadToMemory = true;
+
+		//convert to an in-memory reader around a pre-read buffer if that's what's requested
+		if (loadToMemory)
 		{
 			reader->Seek(fROM, headerOffset, SEEK_SET);
 			
-			romdata = new u8[romsize + 4];
-			if (reader->Read(fROM, romdata, romsize) != romsize)
+			romdataForReader = new u8[romsize];
+			if (reader->Read(fROM, romdataForReader, romsize) != romsize)
 			{
-				delete [] romdata; romdata = NULL;
+				delete [] romdataForReader; romdataForReader = NULL;
 				romsize = 0;
 
 				return false;
 			}
 
-			if(hasRomBanner())
-			{
-				memcpy(&banner, romdata + header.IconOff, sizeof(RomBanner));
-				
-				banner.version = LE_TO_LOCAL_16(banner.version);
-				banner.crc16 = LE_TO_LOCAL_16(banner.crc16);
-				
-				for(size_t i = 0; i < ARRAY_SIZE(banner.palette); i++)
-				{
-					banner.palette[i] = LE_TO_LOCAL_16(banner.palette[i]);
-				}
-			}
-
-			_isDSiEnhanced = (LE_TO_LOCAL_32(*(u32*)(romdata + 0x180) == 0x8D898581U) && LE_TO_LOCAL_32(*(u32*)(romdata + 0x184) == 0x8C888480U));
-			reader->DeInit(fROM); fROM = NULL;
-			return true;
+			reader->DeInit(fROM); 
+			fROM = NULL;
+			reader = MemROMReaderRead_TrueInit(romdataForReader, romsize);
+			fROM = reader->Init(NULL);
 		}
+
+		if(hasRomBanner())
+		{
+			reader->Seek(fROM, header.IconOff, SEEK_SET);
+			reader->Read(fROM, &banner, sizeof(RomBanner));
+				
+			banner.version = LE_TO_LOCAL_16(banner.version);
+			banner.crc16 = LE_TO_LOCAL_16(banner.crc16);
+				
+			for(size_t i = 0; i < ARRAY_SIZE(banner.palette); i++)
+			{
+				banner.palette[i] = LE_TO_LOCAL_16(banner.palette[i]);
+			}
+		}
+
 		_isDSiEnhanced = ((readROM(0x180) == 0x8D898581U) && (readROM(0x184) == 0x8C888480U));
 		if (hasRomBanner())
 		{
@@ -561,14 +570,15 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 
 void GameInfo::closeROM()
 {
-	if (fROM)
+	if (reader)
 		reader->DeInit(fROM);
 
-	if (romdata)
-		delete [] romdata;
+	if (romdataForReader)
+		delete [] romdataForReader;
 
 	fROM = NULL;
-	romdata = NULL;
+	reader = NULL;
+	romdataForReader = NULL;
 	romsize = 0;
 	lastReadPos = 0xFFFFFFFF;
 }
@@ -577,36 +587,10 @@ u32 GameInfo::readROM(u32 pos)
 {
 	u32 num;
 	u32 data;
-	if (!romdata)
-	{
-		if (lastReadPos != pos)
-			reader->Seek(fROM, pos + headerOffset, SEEK_SET);
-		num = reader->Read(fROM, &data, 4);
-		lastReadPos = (pos + num);
-	}
-	else
-	{
-		if(pos + 4 <= romsize)
-		{
-			//fast path
-			data = LE_TO_LOCAL_32(*(u32*)(romdata + pos));
-			num = 4;
-		}
-		else
-		{
-			data = 0;
-			num = 0;
-			for(int i=0;i<4;i++)
-			{
-				if(pos >= romsize)
-					break;
-				data |= (romdata[pos]<<(i*8));
-				pos++;
-				num++;
-			}
-		}
-	}
-
+	if (lastReadPos != pos)
+		reader->Seek(fROM, pos + headerOffset, SEEK_SET);
+	num = reader->Read(fROM, &data, 4);
+	lastReadPos = (pos + num);
 
 	//in case we didn't read enough data, pad the remainder with 0xFF
 	u32 pad = 0;
@@ -669,8 +653,16 @@ static int rom_init_path(const char *filename, const char *physicalName, const c
 	return 1;
 }
 
+struct LastRom {
+	std::string filename, physicalName, logicalFilename;
+} lastRom;
+
 int NDS_LoadROM(const char *filename, const char *physicalName, const char *logicalFilename)
 {
+	lastRom.filename = filename;
+	lastRom.physicalName = physicalName;
+	lastRom.logicalFilename = logicalFilename;
+
 	int	ret;
 	char	buf[MAX_PATH];
 
@@ -693,10 +685,15 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	
 	gameInfo.populate();
 	
-	if (CommonSettings.loadToMemory)
-		gameInfo.crc = crc32(0, (u8*)gameInfo.romdata, gameInfo.romsize);
-	else
-		gameInfo.crc = 0;
+	//run crc over the whole buffer (chunk at a time, to avoid coding a streaming crc
+	gameInfo.reader->Seek(gameInfo.fROM, 0, SEEK_SET);
+	gameInfo.crc = 0;
+	for(;;) {
+		u8 buf[4096];
+		int read = gameInfo.reader->Read(gameInfo.fROM,buf,4096);
+		if(read == 0) break;
+		gameInfo.crc = crc32(gameInfo.crc, buf, read);
+	}
 
 	gameInfo.chipID  = 0xC2;														// The Manufacturer ID is defined by JEDEC (C2h = Macronix)
 	if (!gameInfo.isHomebrew())
@@ -720,8 +717,7 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	}
 
 	INFO("\nROM game code: %c%c%c%c\n", gameInfo.header.gameCode[0], gameInfo.header.gameCode[1], gameInfo.header.gameCode[2], gameInfo.header.gameCode[3]);
-	if (gameInfo.crc)
-		INFO("ROM crc: %08X\n", gameInfo.crc);
+	INFO("ROM crc: %08X\n", gameInfo.crc);
 	if (!gameInfo.isHomebrew())
 	{
 		INFO("ROM serial: %s\n", gameInfo.ROMserial);
@@ -762,14 +758,11 @@ int NDS_LoadROM(const char *filename, const char *physicalName, const char *logi
 	//for homebrew, try auto-patching DLDI. should be benign if there is no DLDI or if it fails
 	if(gameInfo.isHomebrew())
 	{
-		if(!CommonSettings.loadToMemory)
-			msgbox->warn("Sorry.. right now, you can't use the default (stream rom from disk) with homebrew due to a bug with DLDI-autopatching");
-		else if (slot1_GetCurrentType() == NDS_SLOT1_R4)
-			DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize, 1);
-		else
-			if (slot2_GetCurrentType() == NDS_SLOT2_CFLASH)
-				DLDI::tryPatch((void*)gameInfo.romdata, gameInfo.romsize, 0);
-
+		//note: gameInfo.romdataForReader is safe here because we made sure to load the rom into memory for isHomebrew
+		if (slot1_GetCurrentType() == NDS_SLOT1_R4)
+			DLDI::tryPatch((void*)gameInfo.romdataForReader, gameInfo.romsize, 1);
+		else if (slot2_GetCurrentType() == NDS_SLOT2_CFLASH)
+			DLDI::tryPatch((void*)gameInfo.romdataForReader, gameInfo.romsize, 0);
 	}
 
 	if (cheats != NULL)
@@ -2510,6 +2503,15 @@ bool NDS_FakeBoot()
 bool _HACK_DONT_STOPMOVIE = false;
 void NDS_Reset()
 {
+	//reload last paths if needed
+	if(!gameInfo.reader)
+	{
+		LastRom stash = lastRom;
+		NDS_LoadROM(stash.filename.c_str(), stash.physicalName.c_str(), stash.logicalFilename.c_str());
+		//yeah, great. LoadROM calls NDS_Reset. Geeze.
+		return;
+	}
+
 	PrepareLogfiles();
 
 	CommonSettings.gamehacks.apply();

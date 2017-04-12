@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2016 DeSmuME team
+	Copyright (C) 2013-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -91,7 +91,8 @@ void refreshQView(HWND hWnd, u16 id)
 		u32 len = std::min<u32>(sizeof(buf), fs->getFileSizeById(id));
 		u32 start = fs->getStartAddrById(id);
 
-		memcpy(&buf[0], &gameInfo.romdata[start], len);
+		gameInfo.reader->Seek(gameInfo.fROM, start, SEEK_SET);
+		gameInfo.reader->Read(gameInfo.fROM, &buf[0], len);
 
 		for (u32 i = 0; i < len; i++)
 			if (buf[i] < 0x20) buf[i] = 0x20;
@@ -108,7 +109,7 @@ BOOL CALLBACK ViewFSNitroProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 	{
 		case WM_INITDIALOG:
 			{
-				fs = new FS_NITRO(gameInfo.romdata);
+				fs = new FS_NITRO();
 
 				if (!fs)
 				{

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2016 DeSmuME team
+	Copyright (C) 2006-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -81,75 +81,8 @@ u8 memRead8 (MemRegionType regionType, HWAddressType address)
 	case MEMVIEW_FIRMWARE:
 		value = MMU.fw.data[address];
 		return value;
-	case MEMVIEW_ROM:
-		if (address < gameInfo.romsize)
-			value = gameInfo.romdata[address];
-		return value;
 	case MEMVIEW_FULL:
 		MMU_DumpMemBlock(0, address, 1, &value);
-		return value;
-	}
-	return 0;
-}
-
-u16 memRead16 (MemRegionType regionType, HWAddressType address)
-{
-	MemViewRegion& region = s_memoryRegions[regionType];
-	if (address < region.hardwareAddress || (address + 1) >= (region.hardwareAddress + region.size))
-	{
-		return 0;
-	}
-
-	u16 value = 0;
-	switch (regionType)
-	{
-	case MEMVIEW_ARM9:
-		MMU_DumpMemBlock(ARMCPU_ARM9, address, 2, (u8*)&value);
-		return value;
-	case MEMVIEW_ARM7:
-		MMU_DumpMemBlock(ARMCPU_ARM7, address, 2, (u8*)&value);
-		return value;
-	case MEMVIEW_FIRMWARE:
-		value = *(u16*)(&MMU.fw.data[address]);
-		return value;
-	case MEMVIEW_ROM:
-		if (address < (gameInfo.romsize - 2))
-			value = T1ReadWord(gameInfo.romdata, address);
-		return value;
-	case MEMVIEW_FULL:
-		MMU_DumpMemBlock(0, address, 2, (u8*)&value);
-		return value;
-	}
-	return 0;
-}
-
-u32 memRead32 (MemRegionType regionType, HWAddressType address)
-{
-	MemViewRegion& region = s_memoryRegions[regionType];
-	if (address < region.hardwareAddress || (address + 3) >= (region.hardwareAddress + region.size))
-	{
-		return 0;
-	}
-
-	u32 value = 0;
-	switch (regionType)
-	{
-	case MEMVIEW_ARM9:
-		MMU_DumpMemBlock(ARMCPU_ARM9, address, 4, (u8*)&value);
-		return value;
-	case MEMVIEW_ARM7:
-		MMU_DumpMemBlock(ARMCPU_ARM7, address, 4, (u8*)&value);
-		return value;
-	case MEMVIEW_FIRMWARE:
-		value = *(u32*)(&MMU.fw.data[address]);
-		return value;
-	case MEMVIEW_ROM:
-		if (address < (gameInfo.romsize - 4))
-			value = T1ReadLong(gameInfo.romdata, address);
-
-		return value;
-	case MEMVIEW_FULL:
-		MMU_DumpMemBlock(0, address, 4, (u8*)&value);
 		return value;
 	}
 	return 0;
@@ -164,6 +97,10 @@ void memRead(u8* buffer, MemRegionType regionType, HWAddressType address, size_t
 		break;
 	case MEMVIEW_ARM7:
 		MMU_DumpMemBlock(ARMCPU_ARM7, address, size, buffer);
+		break;
+	case MEMVIEW_ROM:
+		gameInfo.reader->Seek(gameInfo.fROM, address, SEEK_SET);
+		gameInfo.reader->Read(gameInfo.fROM, buffer, size);
 		break;
 	default:
 		for (size_t i = 0; i < size; i++)
@@ -199,7 +136,8 @@ void memWrite8(MemRegionType regionType, HWAddressType address, u8 value)
 		MMU.fw.data[address] = value;
 		break;
 	case MEMVIEW_ROM:
-		gameInfo.romdata[address] = value;
+		gameInfo.reader->Seek(gameInfo.fROM, address, SEEK_SET);
+		gameInfo.reader->Write(gameInfo.fROM, &value, 1);
 		break;
 	case MEMVIEW_FULL:
 		MMU_write8(ARMCPU_ARM9, address, value);
@@ -222,7 +160,8 @@ void memWrite16(MemRegionType regionType, HWAddressType address, u16 value)
 		*((u16*)&MMU.fw.data[address]) = value;
 		break;
 	case MEMVIEW_ROM:
-		*((u16*)&gameInfo.romdata[address]) = value;
+		gameInfo.reader->Seek(gameInfo.fROM, address, SEEK_SET);
+		gameInfo.reader->Write(gameInfo.fROM, &value, 2);
 		break;
 	case MEMVIEW_FULL:
 		MMU_write16(ARMCPU_ARM9, address, value);
@@ -245,7 +184,8 @@ void memWrite32(MemRegionType regionType, HWAddressType address, u32 value)
 		*((u32*)&MMU.fw.data[address]) = value;
 		break;
 	case MEMVIEW_ROM:
-		*((u32*)&gameInfo.romdata[address]) = value;
+		gameInfo.reader->Seek(gameInfo.fROM, address, SEEK_SET);
+		gameInfo.reader->Write(gameInfo.fROM, &value, 4);
 		break;
 	case MEMVIEW_FULL:
 		MMU_write32(ARMCPU_ARM9, address, value);
@@ -274,8 +214,7 @@ CMemView::CMemView(MemRegionType memRegion, u32 start_address)
 		s_memoryRegions.push_back(s_arm7Region);
 		s_memoryRegions.push_back(s_firmwareRegion);
 		s_memoryRegions.push_back(s_fullRegion);
-		if (CommonSettings.loadToMemory)
-			s_memoryRegions.push_back(s_RomRegion);
+		s_memoryRegions.push_back(s_RomRegion);
 	}
 
 	PostInitialize();

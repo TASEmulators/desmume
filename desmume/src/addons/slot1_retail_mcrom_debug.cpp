@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2016 DeSmuME team
+	Copyright (C) 2013-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -60,15 +60,10 @@ public:
 		fpROM = NULL;
 		fs = NULL;
 
-		if (!CommonSettings.loadToMemory) 
-		{
-			printf("NitroFS: change load type to \"Load to RAM\"\n");
-			return;
-		}
 		pathData = path.getpath(path.SLOT1D) + path.GetRomNameWithoutExtension();
 		printf("Path to Slot1 data: %s\n", pathData.c_str());
 		
-		fs = new FS_NITRO(gameInfo.romdata);
+		fs = new FS_NITRO();
 		fs->rebuildFAT(pathData);
 	}
 

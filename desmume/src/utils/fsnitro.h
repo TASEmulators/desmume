@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2016 DeSmuME team
+	Copyright (C) 2013-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -118,7 +118,6 @@ private:
 
 	u32 currentID;
 
-	u8			*rom;
 	FAT_NITRO	*fat;
 	FNT_NITRO	*fnt;
 	OVR_NITRO	*ovr9;
@@ -131,7 +130,7 @@ private:
 	void destroy();
 
 public:
-	FS_NITRO(u8 *cart_rom);
+	FS_NITRO();
 	~FS_NITRO();
 
 	bool getFileIdByAddr(u32 addr, u16 &id);
