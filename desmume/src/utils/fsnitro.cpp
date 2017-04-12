@@ -200,7 +200,7 @@ bool FS_NITRO::loadFileTables()
 	u32			_endptr = FNameTblOff + FNameTblSize - 1;
 	u16			fileCount = fnt[0].firstID;
 	u16			fntID = 0xF000;
-	uintptr_t	*store = new u32[numDirs];
+	u32	*store = new u32[numDirs];
 	
 	if (!store) return false;
 	memset(store, 0, sizeof(u32) * numDirs);
