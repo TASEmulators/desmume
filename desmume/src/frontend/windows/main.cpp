@@ -1968,7 +1968,7 @@ static void DoDisplay(bool firstTime)
 		//on such lousy computers
 		if(CommonSettings.single_core())
 		{
-			aggDraw.hud->attach((u8*)video.buffer, 256, 384, 1024);
+			aggDraw.hud->attach((u8*)video.buffer, video.width, video.height, video.width*4);
 			DoDisplay_DrawHud();
 		}
 	}
