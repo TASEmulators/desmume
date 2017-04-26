@@ -471,6 +471,7 @@ static void LoadInputConfig()
 	allowUpAndDown = GetPrivateProfileInt("Controls","AllowUpAndDown",0,IniName) != 0;
 	allowBackgroundInput = GetPrivateProfileInt("Controls","AllowBackgroundInput",0,IniName) != 0;
 	killStylusTopScreen = GetPrivateProfileInt("Controls","KillStylusTopScreen",0,IniName) != 0;
+	killStylusOffScreen = GetPrivateProfileInt("Controls","KillStylusOffScreen",0,IniName) != 0;
 }
 
 static void WriteControl(char* name, WORD val)
