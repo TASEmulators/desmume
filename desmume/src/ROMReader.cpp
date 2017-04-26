@@ -221,7 +221,7 @@ ROMReader_struct ZIPROMReader =
 	ZIPROMReaderDeInit,
 	ZIPROMReaderSize,
 	ZIPROMReaderSeek,
-	ZIPROMReaderRead
+	ZIPROMReaderRead,
 	ZIPROMReaderWrite
 };
 
