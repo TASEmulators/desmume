@@ -149,6 +149,7 @@ extern u64 nds_timer;
 void NDS_Reschedule();
 void NDS_RescheduleGXFIFO(u32 cost);
 void NDS_RescheduleDMA();
+void NDS_RescheduleReadSlot1(int size);
 void NDS_RescheduleTimers();
 
 enum ENSATA_HANDSHAKE

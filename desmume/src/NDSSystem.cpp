@@ -1085,6 +1085,31 @@ template<int procnum, int chan> struct TSequenceItem_DMA : public TSequenceItem
 	}
 };
 
+struct TSequenceItem_ReadSlot1 : public TSequenceItem
+{
+	FORCEINLINE bool isTriggered()
+	{
+		return enabled && nds_timer >= timestamp;
+	}
+
+	bool isEnabled() { return this->enabled; }
+
+	FORCEINLINE u64 next()
+	{
+		return timestamp;
+	}
+
+	void exec()
+	{
+		enabled = false;
+		u32 val = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4);
+		val |= 0x00800000;
+		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4, val);
+		triggerDma(EDMAMode_Card);
+	}
+
+};
+
 struct TSequenceItem_divider : public TSequenceItem
 {
 	FORCEINLINE bool isTriggered()
@@ -1150,6 +1175,7 @@ struct Sequencer
 	TSequenceItem_divider divider;
 	TSequenceItem_sqrtunit sqrtunit;
 	TSequenceItem_GXFIFO gxfifo;
+	TSequenceItem_ReadSlot1 readslot1;
 	TSequenceItem_DMA<0,0> dma_0_0; TSequenceItem_DMA<0,1> dma_0_1; 
 	TSequenceItem_DMA<0,2> dma_0_2; TSequenceItem_DMA<0,3> dma_0_3; 
 	TSequenceItem_DMA<1,0> dma_1_0; TSequenceItem_DMA<1,1> dma_1_1; 
@@ -1173,6 +1199,7 @@ struct Sequencer
 		divider.save(os);
 		sqrtunit.save(os);
 		gxfifo.save(os);
+		readslot1.save(os);
 		wifi.save(os);
 #define SAVE(I,X,Y) I##_##X##_##Y .save(os);
 		SAVE(timer,0,0); SAVE(timer,0,1); SAVE(timer,0,2); SAVE(timer,0,3); 
@@ -1191,6 +1218,7 @@ struct Sequencer
 		if(!divider.load(is)) return false;
 		if(!sqrtunit.load(is)) return false;
 		if(!gxfifo.load(is)) return false;
+		if(!readslot1.load(is)) return false;
 		if(version >= 1) if(!wifi.load(is)) return false;
 #define LOAD(I,X,Y) if(!I##_##X##_##Y .load(is)) return false;
 		LOAD(timer,0,0); LOAD(timer,0,1); LOAD(timer,0,2); LOAD(timer,0,3); 
@@ -1220,6 +1248,28 @@ void NDS_RescheduleTimers()
 	check(0,0); check(0,1); check(0,2); check(0,3);
 	check(1,0); check(1,1); check(1,2); check(1,3);
 #undef check
+
+	NDS_Reschedule();
+}
+
+void NDS_RescheduleReadSlot1(int size)
+{
+	u32 gcromctrl = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4);
+	
+	u32 clocks = (gcromctrl & (1<<27)) ? 8 : 5;
+	u32 gap = gcromctrl & 0x1FFF;
+	
+	//time to send 8 command bytes, and then wait for the gap
+	u32 delay = (8+gap)*clocks;
+
+	//if data is to be returned, the first word is read before it's available and irqs and dmas fire
+	if(size != 0) delay += 4;
+
+	//timings are basically 33mhz but internal tracking is 66mhz
+	delay *= 2;
+
+	sequencer.readslot1.timestamp = nds_timer + delay;
+	sequencer.readslot1.enabled = true;
 
 	NDS_Reschedule();
 }
@@ -1604,6 +1654,7 @@ u64 Sequencer::findNext()
 	if(divider.isEnabled()) next = _fast_min(next,divider.next());
 	if(sqrtunit.isEnabled()) next = _fast_min(next,sqrtunit.next());
 	if(gxfifo.enabled) next = _fast_min(next,gxfifo.next());
+	if(readslot1.isEnabled()) next = _fast_min(next,readslot1.next());
 
 #ifdef EXPERIMENTAL_WIFI_COMM
 	next = _fast_min(next,wifi.next());
@@ -1674,6 +1725,7 @@ void Sequencer::execHardware()
 	if(divider.isTriggered()) divider.exec();
 	if(sqrtunit.isTriggered()) sqrtunit.exec();
 	if(gxfifo.isTriggered()) gxfifo.exec();
+	if(readslot1.isTriggered()) readslot1.exec();
 
 
 #define test(X,Y) if(dma_##X##_##Y .isTriggered()) dma_##X##_##Y .exec();

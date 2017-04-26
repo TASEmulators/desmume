@@ -1351,11 +1351,14 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 		return;
 	}
 
-	val |= 0x00800000;
 	T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0x1A4, val);
 
+	//don't do this yet. it needs to be scheduled for the future
+	//val |= 0x00800000;
 	// Launch DMA if start flag was set to "DS Cart"
-	triggerDma(EDMAMode_Card);
+	//triggerDma(EDMAMode_Card);
+
+	NDS_RescheduleReadSlot1(blocksize);
 }
 
 /*template<int PROCNUM>
