@@ -33,6 +33,10 @@ FS_NITRO::FS_NITRO()
 	ovr9 = NULL;
 	ovr7 = NULL;
 
+	//can't load filesystem if no game is loaded
+	if(!gameInfo.reader)
+		return;
+
 	u8 rom[256];
 	gameInfo.reader->Seek(gameInfo.fROM, 0, SEEK_SET);
 	gameInfo.reader->Read(gameInfo.fROM, rom, 256);
