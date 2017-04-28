@@ -62,3 +62,9 @@ xcuserdata/
 *.ipa
 *.dSYM.zip
 *.dSYM
+
+## Eclipse CDT generated files
+/.autotools
+/.cproject
+/config.log
+/.project
