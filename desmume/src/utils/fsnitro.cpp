@@ -146,10 +146,9 @@ bool FS_NITRO::loadFileTables()
 	fnt = new FNT_NITRO[numDirs];
 
 	// ========= FAT (File Allocation Table)
+	gameInfo.reader->Seek(gameInfo.fROM, FATOff, SEEK_SET);
 	for (u32 i = 0; i < numFiles; i++)
 	{
-		const u32 ofs = (i * 2);
-		gameInfo.reader->Seek(gameInfo.fROM, FATOff + ofs, SEEK_SET);
 		gameInfo.reader->Read(gameInfo.fROM, &fat[i].start, 4);
 		gameInfo.reader->Read(gameInfo.fROM, &fat[i].end, 4);
 		fat[i].size	 = fat[i].end - fat[i].start;
