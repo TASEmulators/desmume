@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2016 DeSmuME team
+	Copyright (C) 2006-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include "resource.h"
 #include "main.h"
 #include "IORegView.h"
+#include "windriver.h"
 
 //-----------------------------------------------------------------------------
 //   The Toolkit - Helpers
@@ -862,6 +863,9 @@ DWORD TOOLSCLASS::ThreadFunc()
 	MSG messages;
 	while (GetMessage (&messages, NULL, 0, 0))
 	{
+		//we should not be using a thread here, because it takes too many programmer resources to do anything asynchronously.
+		//but since someone decided to... better put a lock here so that we cant accidentally emulate with NDS_exec while stuff is going on
+		Lock lock; //KLUDGE
 		TranslateMessage(&messages);
 		DispatchMessage(&messages);
 	}
