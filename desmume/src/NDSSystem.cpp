@@ -1101,10 +1101,11 @@ struct TSequenceItem_ReadSlot1 : public TSequenceItem
 
 	void exec()
 	{
+		u32 procnum = param;
 		enabled = false;
-		u32 val = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4);
+		u32 val = T1ReadLong(MMU.MMU_MEM[procnum][0x40], 0x1A4);
 		val |= 0x00800000;
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4, val);
+		T1WriteLong(MMU.MMU_MEM[procnum][0x40], 0x1A4, val);
 		triggerDma(EDMAMode_Card);
 	}
 
@@ -1252,9 +1253,9 @@ void NDS_RescheduleTimers()
 	NDS_Reschedule();
 }
 
-void NDS_RescheduleReadSlot1(int size)
+void NDS_RescheduleReadSlot1(int procnum, int size)
 {
-	u32 gcromctrl = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4);
+	u32 gcromctrl = T1ReadLong(MMU.MMU_MEM[procnum][0x40], 0x1A4);
 	
 	u32 clocks = (gcromctrl & (1<<27)) ? 8 : 5;
 	u32 gap = gcromctrl & 0x1FFF;
@@ -1268,6 +1269,7 @@ void NDS_RescheduleReadSlot1(int size)
 	//timings are basically 33mhz but internal tracking is 66mhz
 	delay *= 2;
 
+	sequencer.readslot1.param = procnum;
 	sequencer.readslot1.timestamp = nds_timer + delay;
 	sequencer.readslot1.enabled = true;
 

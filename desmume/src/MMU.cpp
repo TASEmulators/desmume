@@ -1358,7 +1358,7 @@ void FASTCALL MMU_writeToGCControl(u32 val)
 	// Launch DMA if start flag was set to "DS Cart"
 	//triggerDma(EDMAMode_Card);
 
-	NDS_RescheduleReadSlot1(blocksize);
+	NDS_RescheduleReadSlot1(PROCNUM, blocksize);
 }
 
 /*template<int PROCNUM>
