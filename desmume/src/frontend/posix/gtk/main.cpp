@@ -158,6 +158,11 @@ static void ToggleHudDisplay(GtkToggleAction* action, gpointer data);
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
 static void SelectFirmwareFile();
 #endif
+#ifdef HAVE_JIT
+static void EmulationSettingsDialog();
+static void ToggleJIT();
+static void JITMaxBlockSizeChanged(GtkAdjustment* adj,void *);
+#endif
 
 static const char *ui_description =
 "<ui>"
@@ -296,6 +301,25 @@ static const char *ui_description =
 "      <menuitem action='view_statusbar'/>"
 "    </menu>"
 "    <menu action='ConfigMenu'>"
+"      <menu action='FrameskipMenu'>"
+"        <menuitem action='enablefpslimiter'/>"
+"        <separator/>"
+"        <menuitem action='frameskipA'/>"
+"        <separator/>"
+"        <menuitem action='frameskip0'/>"
+"        <menuitem action='frameskip1'/>"
+"        <menuitem action='frameskip2'/>"
+"        <menuitem action='frameskip3'/>"
+"        <menuitem action='frameskip4'/>"
+"        <menuitem action='frameskip5'/>"
+"        <menuitem action='frameskip6'/>"
+"        <menuitem action='frameskip7'/>"
+"        <menuitem action='frameskip8'/>"
+"        <menuitem action='frameskip9'/>"
+"      </menu>"
+#ifdef HAVE_JIT
+"      <menuitem action='emulationsettings'/>"
+#endif
 "      <menuitem action='enableaudio'/>"
 #ifdef FAKE_MIC
 "      <menuitem action='micnoise'/>"
@@ -312,22 +336,6 @@ static const char *ui_description =
 "        <menuitem action='SPUInterpolationNone'/>"
 "        <menuitem action='SPUInterpolationLinear'/>"
 "        <menuitem action='SPUInterpolationCosine'/>"
-"      </menu>"
-"      <menu action='FrameskipMenu'>"
-"        <menuitem action='enablefpslimiter'/>"
-"        <separator/>"
-"        <menuitem action='frameskipA'/>"
-"        <separator/>"
-"        <menuitem action='frameskip0'/>"
-"        <menuitem action='frameskip1'/>"
-"        <menuitem action='frameskip2'/>"
-"        <menuitem action='frameskip3'/>"
-"        <menuitem action='frameskip4'/>"
-"        <menuitem action='frameskip5'/>"
-"        <menuitem action='frameskip6'/>"
-"        <menuitem action='frameskip7'/>"
-"        <menuitem action='frameskip8'/>"
-"        <menuitem action='frameskip9'/>"
 "      </menu>"
 "      <menu action='CheatMenu'>"
 "        <menuitem action='cheatsearch'/>"
@@ -409,9 +417,12 @@ static const GtkActionEntry action_entries[] = {
 #endif
 
     { "ConfigMenu", NULL, "_Config" },
-      { "SPUModeMenu", NULL, "Audio _Synchronization" },
-      { "SPUInterpolationMenu", NULL, "Audio _Interpolation" },
       { "FrameskipMenu", NULL, "_Frameskip" },
+#ifdef HAVE_JIT
+	  { "emulationsettings",NULL,"Em_ulation Settings",NULL,NULL,EmulationSettingsDialog},
+#endif
+	  { "SPUModeMenu", NULL, "Audio _Synchronization" },
+      { "SPUInterpolationMenu", NULL, "Audio _Interpolation" },
       { "CheatMenu", NULL, "_Cheat" },
         { "cheatsearch",     NULL,      "_Search",        NULL,       NULL,   CheatSearch },
         { "cheatlist",       NULL,      "_List",        NULL,       NULL,   CheatList },
@@ -431,7 +442,7 @@ static const GtkToggleActionEntry toggle_entries[] = {
 #ifdef FAKE_MIC
     { "micnoise", NULL, "Fake mic _noise", NULL, NULL, G_CALLBACK(ToggleMicNoise), FALSE},
 #endif
-    { "enablefpslimiter", NULL, "_Limit to 60 fps", NULL, NULL, G_CALLBACK(ToggleFpsLimiter), TRUE},
+    { "enablefpslimiter", NULL, "_Limit framerate", NULL, NULL, G_CALLBACK(ToggleFpsLimiter), TRUE},
     { "frameskipA", NULL, "_Auto-minimize skipping", NULL, NULL, G_CALLBACK(ToggleAutoFrameskip), TRUE},
     { "gap", NULL, "Screen _Gap", NULL, NULL, G_CALLBACK(ToggleGap), FALSE},
     { "view_menu", NULL, "Show _menu", NULL, NULL, G_CALLBACK(ToggleMenuVisible), TRUE},
@@ -2073,6 +2084,77 @@ static void Modify_JoyKey(GtkWidget* widget, gpointer data)
 
 }
 
+#ifdef HAVE_JIT
+
+static void EmulationSettingsDialog(){
+	GtkWidget *esDialog;
+	GtkWidget *esKey;
+
+	esDialog=gtk_dialog_new_with_buttons("Emulation Settings",
+			GTK_WINDOW(pWindow),
+			GTK_DIALOG_MODAL,
+			GTK_STOCK_OK,GTK_RESPONSE_OK,
+			GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
+			NULL);
+
+    esKey=gtk_label_new("CPU Mode:\n");
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(esDialog)->vbox), esKey,TRUE, FALSE, 0);
+
+	esKey=gtk_check_button_new_with_label("Use dynamic recompiler");
+	gtk_toggle_button_set_active((GtkToggleButton*)esKey,config.use_jit);
+	g_signal_connect(G_OBJECT(esKey),"clicked",G_CALLBACK(ToggleJIT),GINT_TO_POINTER(0));
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(esDialog)->vbox), esKey,TRUE, FALSE, 0);
+
+    esKey=gtk_label_new("Block Size (1 - accuracy, 100 - fastest):");
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(esDialog)->vbox), esKey,TRUE, FALSE, 0);
+
+    GtkAdjustment* JITBlockSizeAdjustment=(GtkAdjustment*)gtk_adjustment_new(config.jit_max_block_size,1,100,1,5,0);
+    esKey=gtk_hscale_new(JITBlockSizeAdjustment);
+    gtk_scale_set_digits((GtkScale*)esKey,0);
+    g_signal_connect(G_OBJECT(JITBlockSizeAdjustment),"value_changed",G_CALLBACK(JITMaxBlockSizeChanged),NULL);
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(esDialog)->vbox), esKey,TRUE, FALSE, 0);
+
+    esKey=gtk_label_new(
+    		"Enabling this will get you 0-50% speedups. It is optional because it\n"
+    		"may still contain small small bugs, due mostly merely to newness, \n"
+    		"which can safely be fixed in time. Furthermore, you may have to \n"
+    		"tune the block size to prevent some games from breaking.\n"
+    		"\n"
+    		"This should not be assumed to be deterministic."
+    		);
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(esDialog)->vbox), esKey,TRUE, FALSE, 0);
+
+	gtk_widget_show_all(GTK_DIALOG(esDialog)->vbox);
+
+	bool prev_use_jit=config.use_jit;
+	int prev_jit_max_block_size=config.jit_max_block_size;
+
+	switch (gtk_dialog_run(GTK_DIALOG(esDialog))) {
+	case GTK_RESPONSE_OK:
+		CommonSettings.jit_max_block_size=config.jit_max_block_size;
+		arm_jit_sync();
+		arm_jit_reset(CommonSettings.use_jit=config.use_jit);
+		break;
+	case GTK_RESPONSE_CANCEL:
+	case GTK_RESPONSE_NONE:
+		config.use_jit=prev_use_jit;
+		config.jit_max_block_size=prev_jit_max_block_size;
+		break;
+	}
+	gtk_widget_destroy(esDialog);
+
+}
+
+static void JITMaxBlockSizeChanged(GtkAdjustment* adj,void * nullPtr){
+	config.jit_max_block_size=(int)adj->value;
+}
+
+static void ToggleJIT(){
+	config.use_jit=!config.use_jit;
+}
+
+#endif
+
 static void Edit_Joystick_Controls()
 {
     GtkWidget *ecDialog;
@@ -3257,6 +3339,7 @@ int main (int argc, char *argv[])
   // The global menu screws up the window size...
   unsetenv("UBUNTU_MENUPROXY");
 
+
   my_config.parse(argc, argv);
   init_configured_features( &my_config);
 
@@ -3268,7 +3351,13 @@ int main (int argc, char *argv[])
   if ( !fill_configured_features( &my_config, argv)) {
     exit(0);
   }
-
+#ifdef HAVE_JIT
+  config.load();
+  CommonSettings.jit_max_block_size=config.jit_max_block_size;
+  CommonSettings.use_jit=config.use_jit;
+  arm_jit_sync();
+  arm_jit_reset(CommonSettings.use_jit);
+#endif
   return common_gtk_main( &my_config);
 }
 
