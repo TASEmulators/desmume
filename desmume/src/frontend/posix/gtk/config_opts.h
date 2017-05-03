@@ -54,6 +54,8 @@ OPT(hud_mic, bool, false, HudDisplay, Mic)
 OPT(fpslimiter, bool, true, Config, FpsLimiter)
 OPT(autoframeskip, bool, true, Config, AudoFrameskip)
 OPT(frameskip, int, 0, Config, Frameskip)
+OPT(use_jit,bool,false,Config,JIT_Enabled)
+OPT(jit_max_block_size,int,100,Config,JITBlockSize)
 
 /* Audio */
 OPT(audio_enabled, bool, true, Audio, Enabled)
