@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -419,6 +419,7 @@ bool ObtainFile(const char* Name, char *const & LogicalName, char *const & Physi
 		//before sending to FEX, see if we're known to be an NDS file
 		//(this will stop games beginning with the name ZOO from being mis-recognized as a zoo file)
 		FILE* inf = fopen(PhysicalName,"rb");
+		if(!inf) return false;
 		u8 bytes512[512];
 		bool got512 = fread(bytes512,1,512,inf)==512;
 		fclose(inf);
