@@ -21,4 +21,5 @@
 #ifdef HAVE_LIBOSMESA
 int  init_osmesa_3Demu(void);
 void deinit_osmesa_3Demu(void);
+bool is_osmesa_initialized(void);
 #endif

@@ -65,4 +65,9 @@ int init_osmesa_3Demu(void)
 
     return true;
 }
+
+bool is_osmesa_initialized(void)
+{
+	return ctx != NULL;
+}
 #endif

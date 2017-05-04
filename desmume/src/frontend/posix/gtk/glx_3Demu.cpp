@@ -29,7 +29,7 @@ static void glx_endOpenGL(void) { }
 static bool glx_init(void) { return true; }
 static int xerror_handler(Display *dpy, XErrorEvent *ev) { return 0; }
 
-static GLXContext ctx;
+static GLXContext ctx = NULL;
 static GLXPbuffer pbuf;
 
 typedef GLXContext (*wtf)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
@@ -44,6 +44,8 @@ int deinit_glx_3Demu(void)
         glXDestroyContext(dpy, ctx);
 
         XCloseDisplay(dpy);
+
+        ctx = NULL;
 
         return true;
     }
@@ -153,6 +155,11 @@ int init_glx_3Demu(void)
     oglrender_endOpenGL = glx_endOpenGL;
 
     return true;
+}
+
+bool is_glx_initialized(void)
+{
+	return ctx != NULL;
 }
 
 #endif // HAVE_GLX
