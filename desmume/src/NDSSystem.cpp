@@ -658,16 +658,8 @@ struct LastRom {
 int NDS_LoadROM(const char *filename, const char *physicalName, const char *logicalFilename)
 {
 	lastRom.filename = filename;
-
-	if (physicalName != NULL )
-	{
-		lastRom.physicalName = physicalName;
-	}
-
-	if (logicalFilename != NULL)
-	{
-		lastRom.logicalFilename = logicalFilename;
-	}
+	lastRom.physicalName = physicalName ? physicalName : "";
+	lastRom.logicalFilename = logicalFilename ? logicalFilename : "";
 
 	int	ret;
 	char	buf[MAX_PATH];
