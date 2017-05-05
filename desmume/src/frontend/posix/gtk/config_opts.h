@@ -56,7 +56,12 @@ OPT(autoframeskip, bool, true, Config, AudoFrameskip)
 OPT(frameskip, int, 0, Config, Frameskip)
 OPT(use_jit,bool,false,Config,JIT_Enabled)
 OPT(jit_max_block_size,int,100,Config,JITBlockSize)
-OPT(core3D,int,1,Config,Core3D)
+OPT(core3D, int, 1, Config, Core3D)
+OPT(textureDeposterize, bool, false, Config, 3DTextureDeposterization)
+OPT(textureSmoothing, bool, false, Config, 3DTextureSmoothing)
+OPT(textureUpscale, int, 1, Config, 3DTextureUpscaling)
+OPT(highColorInterpolation, bool, true, Config, HighResolutionColorInterpolation)
+OPT(multisampling, bool, false, Config, OpenGLMultisampling)
 
 /* Audio */
 OPT(audio_enabled, bool, true, Audio, Enabled)
