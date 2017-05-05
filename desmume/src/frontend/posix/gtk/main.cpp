@@ -163,6 +163,8 @@ static void EmulationSettingsDialog();
 static void ToggleJIT();
 static void JITMaxBlockSizeChanged(GtkAdjustment* adj,void *);
 #endif
+static void GraphicsSettingsDialog();
+
 
 static const char *ui_description =
 "<ui>"
@@ -320,6 +322,7 @@ static const char *ui_description =
 #ifdef HAVE_JIT
 "      <menuitem action='emulationsettings'/>"
 #endif
+"      <menuitem action='graphicssettings'/>"
 "      <menuitem action='enableaudio'/>"
 #ifdef FAKE_MIC
 "      <menuitem action='micnoise'/>"
@@ -421,6 +424,7 @@ static const GtkActionEntry action_entries[] = {
 #ifdef HAVE_JIT
 	  { "emulationsettings",NULL,"Em_ulation Settings",NULL,NULL,EmulationSettingsDialog},
 #endif
+	  { "graphicssettings",NULL,"_Graphics Settings",NULL,NULL, GraphicsSettingsDialog},
 	  { "SPUModeMenu", NULL, "Audio _Synchronization" },
       { "SPUInterpolationMenu", NULL, "Audio _Interpolation" },
       { "CheatMenu", NULL, "_Cheat" },
@@ -664,8 +668,11 @@ init_configured_features( class configured_features *config	)
 {
   if(config->render3d == COMMANDLINE_RENDER3D_GL || config->render3d == COMMANDLINE_RENDER3D_OLDGL || config->render3d == COMMANDLINE_RENDER3D_AUTOGL)
     config->engine_3d = 2;
+  else if (config->render3d == COMMANDLINE_RENDER3D_DEFAULT)
+	  // Setting it to -1 so that common_gtk_main() will ignore it and load it from file or reconfigure it.
+    config->engine_3d = -1;
   else
-    config->engine_3d = 1;	
+	  config->engine_3d = 1;
 
   config->savetype = 0;
 
@@ -727,19 +734,21 @@ fill_configured_features( class configured_features *config,
     goto error;
   }
 
-  if (config->engine_3d != 0 && config->engine_3d != 1
+  // Check if the commandLine argument was actually passed
+	if (config->engine_3d != -1) {
+		if (config->engine_3d != 0 && config->engine_3d != 1
 #if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
-           && config->engine_3d != 2
+				&& config->engine_3d != 2
 #endif
-          ) {
-    g_printerr("Currently available ENGINES: 0, 1"
+						) {
+			g_printerr("Currently available ENGINES: 0, 1"
 #if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
-            ", 2"
+							", 2"
 #endif
-            "\n");
-    goto error;
-  }
-
+					"\n");
+			goto error;
+		}
+	}
 #ifdef GDB_STUB
   if (config->arm9_gdb_port != 0 && (config->arm9_gdb_port < 1 || config->arm9_gdb_port > 65535)) {
     g_printerr("ARM9 GDB stub port must be in the range 1 to 65535\n");
@@ -2194,6 +2203,152 @@ static void Edit_Joystick_Controls()
 
 }
 
+
+static void GraphicsSettingsDialog() {
+	GtkWidget *gsDialog;
+	GtkWidget *gsKey, *coreCombo, *wTable, *wPosterize, *wScale, *wSmoothing, *wMultisample, *wHCInterpolate;
+
+	gsDialog = gtk_dialog_new_with_buttons("Graphics Settings",
+			GTK_WINDOW(pWindow),
+			GTK_DIALOG_MODAL,
+			GTK_STOCK_OK,
+			GTK_RESPONSE_OK,
+			GTK_STOCK_CANCEL,
+			GTK_RESPONSE_CANCEL,
+			NULL);
+
+
+	wTable = gtk_table_new(2 ,2, TRUE);
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(gsDialog)->vbox), wTable, TRUE, FALSE, 0);
+
+	// 3D Core
+	gsKey = gtk_label_new("3D Core:");
+	gtk_misc_set_alignment(GTK_MISC(gsKey), 0.0, 0.5);
+	gtk_table_attach(GTK_TABLE(wTable), gsKey, 0, 1, 0, 1,
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
+
+	coreCombo = gtk_combo_box_text_new();
+	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 0, "Null");
+	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 1, "Software Raserizer");
+#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
+	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 2, "OpenGL");
+#endif
+	gtk_combo_box_set_active(GTK_COMBO_BOX(coreCombo), cur3DCore);
+	gtk_table_attach(GTK_TABLE(wTable), coreCombo, 1, 2, 0, 1,
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
+
+
+	// 3D Texture Upscaling
+	gsKey = gtk_label_new("3D Texture Upscaling:");
+	gtk_misc_set_alignment(GTK_MISC(gsKey), 0.0, 0.5);
+	gtk_table_attach(GTK_TABLE(wTable), gsKey, 0, 1, 1, 2,
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
+
+	wScale = gtk_combo_box_text_new();
+	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wScale), 0, "x1");
+	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wScale), 1, "x2");
+	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(wScale), 2, "x4");
+
+	// The shift it work for scale up to 4. For scaling more than 4, a mapping function is required
+	gtk_combo_box_set_active(GTK_COMBO_BOX(wScale), CommonSettings.GFX3D_Renderer_TextureScalingFactor >> 1);
+	gtk_table_attach(GTK_TABLE(wTable), wScale, 1, 2, 1, 2,
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 5, 0);
+
+
+	// 3D Texture Deposterization
+	wPosterize = gtk_check_button_new_with_label("3D Texture Deposterization");
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wPosterize), CommonSettings.GFX3D_Renderer_TextureDeposterize);
+	gtk_table_attach(GTK_TABLE(wTable), wPosterize, 0, 1, 2, 3,
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 0, 0);
+
+
+	// 3D Texture Smoothing
+	wSmoothing = gtk_check_button_new_with_label("3D Texture Smoothing");
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wSmoothing), CommonSettings.GFX3D_Renderer_TextureSmoothing);
+	gtk_table_attach(GTK_TABLE(wTable), wSmoothing, 0, 1, 3, 4,
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 0, 0);
+
+
+#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
+	// OpenGL Multisample
+	wMultisample = gtk_check_button_new_with_label("Multisample (OpenGL)");
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wMultisample), CommonSettings.GFX3D_Renderer_Multisample);
+	gtk_table_attach(GTK_TABLE(wTable), wMultisample, 1, 2, 2, 3,
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 10, 0);
+#endif
+
+	// SoftwareRasterizer High Color Interpolation
+	wHCInterpolate = gtk_check_button_new_with_label("High Resolution Color Interpolation (SoftwareRasterizer)");
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wHCInterpolate), CommonSettings.GFX3D_HighResolutionInterpolateColor);
+	gtk_table_attach(GTK_TABLE(wTable), wHCInterpolate, 1, 2, 3, 4,
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
+			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 10, 0);
+
+
+	gtk_widget_show_all(GTK_DIALOG(gsDialog)->vbox);
+
+    switch (gtk_dialog_run(GTK_DIALOG(gsDialog))) {
+    case GTK_RESPONSE_OK:
+    // Start: OK Response block
+    {
+    	int sel3DCore = gtk_combo_box_get_active(GTK_COMBO_BOX(coreCombo));
+
+    	// Change only if needed
+		if (sel3DCore != cur3DCore) {
+#if defined(HAVE_LIBOSMESA)
+			if (sel3DCore == 2 && !is_osmesa_initialized()) {
+				init_osmesa_3Demu();
+			}
+#elif defined(HAVE_GL_GLX)
+			if (sel3DCore == 2 && !is_glx_initialized()) {
+				init_glx_3Demu();
+			}
+#endif
+			if (NDS_3D_ChangeCore(sel3DCore)) {
+				config.core3D = sel3DCore;
+			} else {
+				g_printerr("Failed to change the 3D Core!");
+			}
+		}
+
+		size_t scale = 1;
+
+		switch (gtk_combo_box_get_active(GTK_COMBO_BOX(wScale))){
+		case 1:
+			scale = 2;
+			break;
+		case 2:
+			scale = 4;
+			break;
+		default:
+			break;
+		}
+		CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wPosterize));
+		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wSmoothing));
+		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
+		CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wHCInterpolate));
+#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
+		CommonSettings.GFX3D_Renderer_Multisample = config.multisampling = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wMultisample));
+#endif
+    }
+    // End: OK Response Block
+        break;
+    case GTK_RESPONSE_CANCEL:
+    case GTK_RESPONSE_NONE:
+        break;
+    }
+
+	gtk_widget_destroy(gsDialog);
+
+}
+
 static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data)
 {
     guint Layer = GPOINTER_TO_UINT(data);
@@ -3238,10 +3393,24 @@ common_gtk_main( class configured_features *my_config)
     OGLCreateRenderer_3_2_Func = OGLCreateRenderer_3_2;
 
     //Set the 3D emulation to use
-    unsigned core = my_config->engine_3d;
+    int core = my_config->engine_3d;
     // setup the gdk 3D emulation;
+
+    // Check if commandLine argument was passed or not
+    if (core == -1) {
+    	// If it was not passed, then get the Renderer config from the file
+    	core = config.core3D;
+
+    	// Check if it is valid
+    	if (!(core >= 0 && core <= 2)) {
+    		// If it is invalid, reset it to softwareRasterizer
+    		core = 1;
+    	}
+    	//Set this too for clarity
+        my_config->engine_3d = core;
+    }
 #if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
-    if(my_config->engine_3d == 2)
+    if(core == 2)
     {
 #if defined(HAVE_LIBOSMESA)
         core = init_osmesa_3Demu()
@@ -3252,10 +3421,20 @@ common_gtk_main( class configured_features *my_config)
     }
 #endif
     NDS_3D_ChangeCore(core);
-    if(my_config->engine_3d != 0 && gpu3D == &gpu3DNull) {
+    if(core != 0 && gpu3D == &gpu3DNull) {
         g_printerr("Failed to initialise openGL 3D emulation; "
                    "removing 3D support\n");
     }
+
+
+    CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation;
+    CommonSettings.GFX3D_Renderer_Multisample = config.multisampling;
+    CommonSettings.GFX3D_Renderer_TextureDeposterize = config.textureDeposterize;
+    CommonSettings.GFX3D_Renderer_TextureScalingFactor = (config.textureUpscale == 1 ||
+    														config.textureUpscale == 2 ||
+															config.textureUpscale == 4)
+															? config.textureUpscale : 1 ;
+    CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing;
 
     backup_setManualBackupType(my_config->savetype);
 
