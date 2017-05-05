@@ -30,6 +30,8 @@
 CHEATS *cheats = NULL;
 CHEATSEARCH *cheatSearch = NULL;
 
+static bool cheatsResetJit;
+
 void CHEATS::clear()
 {
 	list.resize(0);
@@ -73,6 +75,33 @@ BOOL CHEATS::update(u8 size, u32 address, u32 val, char *description, BOOL enabl
 
 #define CHEATLOG(...) 
 //#define CHEATLOG(...) printf(__VA_ARGS__)
+
+static void CheatWrite(int size, int proc, u32 addr, u32 val)
+{
+	bool dirty = true;
+
+	bool isDangerous = false;
+	if(addr >= 0x02000000 && addr < 0x02400000)
+		isDangerous = true;
+
+	if(isDangerous)
+	{
+		//test dirtiness
+		if(size == 8) dirty = _MMU_read08(proc, MMU_AT_DEBUG, addr) != val;
+		if(size == 16) dirty = _MMU_read16(proc, MMU_AT_DEBUG, addr) != val;
+		if(size == 32) dirty = _MMU_read32(proc, MMU_AT_DEBUG, addr) != val;
+	}
+
+	if(!dirty) return;
+
+	if(size == 8) _MMU_write08(proc, MMU_AT_DEBUG, addr, val);
+	if(size == 16) _MMU_write16(proc, MMU_AT_DEBUG, addr, val);
+	if(size == 32) _MMU_write32(proc, MMU_AT_DEBUG, addr, val);
+
+	if(isDangerous)
+		cheatsResetJit = true;
+}
+
 
 void CHEATS::ARparser(CHEATS_LIST& list)
 {
@@ -169,7 +198,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			x = hi & 0x0FFFFFFF;
 			y = lo;
 			addr = x + st.offset;
-			_MMU_write32(st.proc,MMU_AT_DEBUG,addr, y);
+			CheatWrite(32,st.proc,addr, y);
 			break;
 		
 		case 0x01:
@@ -179,7 +208,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			x = hi & 0x0FFFFFFF;
 			y = lo & 0xFFFF;
 			addr = x + st.offset;
-			_MMU_write16(st.proc,MMU_AT_DEBUG,addr, y);
+			CheatWrite(16,st.proc,addr, y);
 			break;
 
 		case 0x02:
@@ -189,7 +218,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			x = hi & 0x0FFFFFFF;
 			y = lo & 0xFF;
 			addr = x + st.offset;
-			_MMU_write08(st.proc,MMU_AT_DEBUG,addr, y);
+			CheatWrite(8,st.proc,addr, y);
 			break;
 
 		case 0x03:
@@ -339,7 +368,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//<gbatek> C6000000 XXXXXXXX   [XXXXXXXX]=offset  
 			if(!v154) break;
 			x = lo;
-			_MMU_write32(st.proc,MMU_AT_DEBUG,x, st.offset);
+			CheatWrite(32,st.proc,x, st.offset);
 			break;
 
 		case 0xD0:
@@ -420,7 +449,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//<gbatek> word[XXXXXXXX+offset]=datareg, offset=offset+4
 			x = lo;
 			addr = x + st.offset;
-			_MMU_write32(st.proc,MMU_AT_DEBUG,addr, st.data);
+			CheatWrite(32,st.proc,addr, st.data);
 			st.offset += 4;
 			break;
 
@@ -431,7 +460,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//<gbatek> half[XXXXXXXX+offset]=datareg, offset=offset+2
 			x = lo;
 			addr = x + st.offset;
-			_MMU_write16(st.proc,MMU_AT_DEBUG,addr, st.data);
+			CheatWrite(16,st.proc,addr, st.data);
 			st.offset += 2;
 			break;
 
@@ -442,7 +471,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			//<gbatek> byte[XXXXXXXX+offset]=datareg, offset=offset+1
 			x = lo;
 			addr = x + st.offset;
-			_MMU_write08(st.proc,MMU_AT_DEBUG,addr, st.data);
+			CheatWrite(8,st.proc,addr, st.data);
 			st.offset += 1;
 			break;
 
@@ -516,14 +545,14 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 					u32 tmp = list.code[i][t];
 					if(t==1) i++;
 					t ^= 1;
-					_MMU_write32(st.proc,MMU_AT_DEBUG,addr,tmp);
+					CheatWrite(32,st.proc,addr,tmp);
 					addr += 4;
 					y -= 4;
 				}
 				while(y>0)
 				{
 					u32 tmp = list.code[i][t]>>b;
-					_MMU_write08(st.proc,MMU_AT_DEBUG,addr,tmp);
+					CheatWrite(8,st.proc,addr,tmp);
 					addr += 1;
 					y -= 1;
 					b += 4;
@@ -544,7 +573,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			while(y>=4)
 			{
 				u32 tmp = _MMU_read32(st.proc,MMU_AT_DEBUG,addr);
-				_MMU_write32(st.proc,MMU_AT_DEBUG,operand,tmp);
+				CheatWrite(32, st.proc,operand,tmp);
 				addr += 4;
 				operand += 4;
 				y -= 4;
@@ -552,7 +581,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			while(y>0)
 			{
 				u8 tmp = _MMU_read08(st.proc,MMU_AT_DEBUG,addr);
-				_MMU_write08(st.proc,MMU_AT_DEBUG,operand,tmp);
+				CheatWrite(8,st.proc,operand,tmp);
 				addr += 1;
 				operand += 1;
 				y -= 1;
@@ -926,7 +955,11 @@ BOOL CHEATS::load()
 void CHEATS::process(int targetType)
 {
 	if (CommonSettings.cheatsDisable) return;
+
 	if (list.size() == 0) return;
+
+	cheatsResetJit = false;
+
 	size_t num = list.size();
 	for (size_t i = 0; i < num; i++)
 	{
@@ -974,6 +1007,12 @@ void CHEATS::process(int targetType)
 				break;
 			default: continue;
 		}
+	}
+
+	if(cheatsResetJit)
+	{
+		if(CommonSettings.use_jit)
+			arm_jit_reset(true,true);
 	}
 }
 
