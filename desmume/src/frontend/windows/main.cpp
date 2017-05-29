@@ -1627,7 +1627,7 @@ static void OGL_DoDisplay()
 		glGenTextures(1,&tex);
 
 	glBindTexture(GL_TEXTURE_2D,tex);
-	glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA, video.width,video.height,0,GL_RGBA,GL_UNSIGNED_BYTE,video.finalBuffer());
+	glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA, video.width,video.height,0,GL_BGRA,GL_UNSIGNED_BYTE,video.finalBuffer());
 
 	//the ds screen fills the texture entirely, so we dont have garbage at edge to worry about,
 	//but we need to make sure this is clamped for when filtering is selected
@@ -1789,12 +1789,6 @@ static void DD_DoDisplay()
 	if (!ddraw.lock()) return;
 	char* buffer = (char*)ddraw.surfDescBack.lpSurface;
 
-	//yuck, is it safe to edit this? we may need another temp buffer
-	//it seems to work OK...
-	//we have to do this because we couldn't ask the GPU for a swapped color format (it only uses the one 888 format internally)
-	//in openGL we can fix it at the last minute, but in DD we can't.
-	ColorspaceConvertBuffer888XTo8888Opaque<true, false>((u32*)video.finalBuffer(),(u32*)video.finalBuffer(),video.size());
-
 	if(ddraw.surfDescBack.dwWidth != video.rotatedwidth() || ddraw.surfDescBack.dwHeight != video.rotatedheight())
 	{
 		ddraw.createBackSurface(video.rotatedwidth(),video.rotatedheight());
@@ -1918,7 +1912,7 @@ struct DisplayBuffer
 		, size(0)
 	{
 	}
-	u32* buffer;
+	u16* buffer;
 	int size; //[256*192*4];
 } displayBuffers[3];
 
@@ -1958,8 +1952,10 @@ static void DoDisplay(bool firstTime)
 		return;
 	displayNoPostponeNext = false;
 
-	//we have to do a copy here because we're about to draw the OSD onto it. bummer.
-	memcpy(video.buffer, video.srcBuffer, video.srcBufferSize);
+	//convert pixel format to 32bpp for compositing
+	//why do we do this over and over? well, we are compositing to 
+	//filteredbuffer32bpp, and it needs to get refreshed each frame.
+	ColorspaceConvertBuffer555To8888Opaque<true, false>((u16 *)video.srcBuffer, video.buffer, video.srcBufferSize / sizeof(u16));
 
 	if(firstTime)
 	{
@@ -2063,7 +2059,7 @@ void Display()
 	if(CommonSettings.single_core())
 	{
 		video.srcBuffer = (u8*)dispInfo.masterCustomBuffer;
-		video.srcBufferSize = dispInfo.customWidth*dispInfo.customHeight*2*4;
+		video.srcBufferSize = dispInfo.customWidth*dispInfo.customHeight*2*2;
 		DoDisplay(true);
 	}
 	else
@@ -2081,11 +2077,11 @@ void Display()
 		else newestDisplayBuffer = (currDisplayBuffer+2)%3;
 
 		DisplayBuffer& db = displayBuffers[newestDisplayBuffer];
-		int targetSize = 256*192*2*4*video.prescaleHD*video.prescaleHD;
+		int targetSize = 256*192*4*video.prescaleHD*video.prescaleHD;
 		if(db.size != targetSize)
 		{
 			free_aligned(db.buffer);
-			db.buffer = (u32*)malloc_alignedCacheLine(targetSize);
+			db.buffer = (u16*)malloc_alignedCacheLine(targetSize);
 			db.size = targetSize;
 		}
 		memcpy(db.buffer,dispInfo.masterCustomBuffer,targetSize);
@@ -3238,7 +3234,7 @@ int _main()
 
 	video.SetPrescale(CommonSettings.GFX3D_PrescaleHD, 1);
 	GPU->SetCustomFramebufferSize(256*video.prescaleHD,192*video.prescaleHD);
-	GPU->SetColorFormat(NDSColorFormat_BGR888_Rev);
+	//GPU->SetWillAutoBlitNativeToCustomBuffer(false); //we need to do this right now, because we depend on having one solitary framebuffer
 	GPU->ClearWithColor(0xFFFF);
 
 	SetMinWindowSize();
