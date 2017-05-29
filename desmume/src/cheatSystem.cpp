@@ -557,6 +557,10 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 					y -= 1;
 					b += 4;
 				}
+
+				//the main loop will increment to the next cheat, but the loop above may have gone one too far
+				if(t==0)
+					i--;
 			}
 			break;
 
