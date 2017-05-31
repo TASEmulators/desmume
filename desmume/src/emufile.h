@@ -285,7 +285,9 @@ private:
 		if(!fp)
 			failbit = true;
 		this->fname = fname;
-		strcpy(this->mode,mode);
+		if (this->mode != mode) {
+			strcpy(this->mode,mode);
+		}
 	}
 
 public:
