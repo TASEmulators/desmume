@@ -34,23 +34,23 @@ developing DeSmuME.
 You can find our documentation on our online Wiki page. The major pages of
 interest are:
 
-* Official Documentation: http://wiki.desmume.org/index.php?title=Main_Page
+* Official Documentation: https://wiki.desmume.org/index.php?title=Main_Page
 
 This is the main Wiki page that contains all of our official documentation.
 
-* Manuals: http://wiki.desmume.org/index.php?title=Manual
+* Manuals: https://wiki.desmume.org/index.php?title=Manual
 
 The manuals contain detailed information about how to operate DeSmuME for each
 port.
 
-* FAQ: http://wiki.desmume.org/index.php?title=Faq
+* FAQ: https://wiki.desmume.org/index.php?title=Faq
 
 The Frequently Asked Questions (FAQ) page has a lot of useful general
 information about DeSmuME. Do note that some of the information may be platform
 specific, and may not directly apply to your version of DeSmuME.
 
 * Build Instructions:
-http://wiki.desmume.org/index.php?title=Installing_DeSmuME_from_source
+https://wiki.desmume.org/index.php?title=Installing_DeSmuME_from_source
 
 This page contains detailed port-specific instructions about how to make your
 own build of DeSmuME directly from the source code.
@@ -71,10 +71,10 @@ Special thanks go to:
 
 3) Contact Information ________________________________________________________
 
-Official Website:   http://desmume.org
-Public Forum:       http://forums.desmume.org
+Official Website:   https://desmume.org
+Public Forum:       https://forums.desmume.org
 Developer Chat:     irc://irc.freenode.net/desmume
-Bug Reports:        http://sourceforge.net/p/desmume/bugs
+Bug Reports:        https://sourceforge.net/p/desmume/bugs
 
 Please don't ask for ROMs, BIOS files, or any other copyrighted stuff.
 
@@ -91,7 +91,7 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
-this software.  If not, see <http://www.gnu.org/licenses/>.
+this software.  If not, see <https://www.gnu.org/licenses/>.
 
 
     * See the GNU General Public License details in COPYING.

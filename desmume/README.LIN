@@ -2,13 +2,13 @@
 
 DeSmuME is written in C++ using the GTK+ and SDL libraries.
 
-* http://www.gtk.org
-* http://www.libsdl.org/
+* https://www.gtk.org
+* https://www.libsdl.org/
 
 DeSmuME provides another interface based on libglade, to use
 , you'll need glade:
 
-* http://glade.gnome.org/
+* https://glade.gnome.org/
 
 To build, cd to src/frontend/posix and then run ./configure && make
 
@@ -53,4 +53,4 @@ also passing the argument --gdk-gl-force-indirect. This has
 been seen to improve things for Nvidia based graphics cards
 under Linux.
 
-Visit us on the web at http://www.desmume.org
+Visit us on the web at https://www.desmume.org
