@@ -116,6 +116,7 @@ void WritePathSettings()
 	WritePrivateProfileString(SECTION, FIRMWAREKEY, path.pathToFirmware, IniName);
 	WritePrivateProfileString(SECTION, LUAKEY, path.pathToLua, IniName);
 
+	WritePrivateProfileInt(SECTION, DEFAULTFORMATKEY, path.currentimageformat, IniName);
 	WritePrivateProfileString(SECTION, FORMATKEY, path.screenshotFormat, IniName);
 
 	WritePrivateProfileInt(SECTION, LASTVISITKEY, path.savelastromvisit, IniName);
