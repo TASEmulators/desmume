@@ -5253,8 +5253,10 @@ bool GPUEngineA::WillCapture3DLayerDirect(const size_t l)
 
 bool GPUEngineA::WillDisplayCapture(const size_t l)
 {
+	//we must block captures when the capture dest is not mapped to LCDC.
+	//mario kart does this (maybe due to a programming bug, but maybe emulation timing error) when spamming confirm key during course intro and through black transition
 	const IOREG_DISPCAPCNT &DISPCAPCNT = this->_IORegisterMap->DISPCAPCNT;
-	return this->_displayCaptureEnable && (l < this->_dispCapCnt.capy);
+	return this->_displayCaptureEnable && (vramConfiguration.banks[DISPCAPCNT.VRAMWriteBlock].purpose == VramConfiguration::LCDC) && (l < this->_dispCapCnt.capy);
 }
 
 void GPUEngineA::SetDisplayCaptureEnable()
@@ -5554,11 +5556,6 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 	const size_t readLineIndexWithOffset = (this->_dispCapCnt.readOffset * 64) + l;
 	bool newCaptureLineNativeState = true;
 	u16 *renderedLineSrcA16 = NULL;
-
-	//we must block captures when the capture dest is not mapped to LCDC.
-	//mario kart does this (maybe due to a programming bug, but maybe emulation timing error) when spamming confirm key during course intro and through black transition
-	if(vramConfiguration.banks[vramWriteBlock].purpose != VramConfiguration::LCDC)
-		return;
 	
 	//128-wide captures should write linearly into memory, with no gaps
 	//this is tested by hotel dusk
