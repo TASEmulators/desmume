@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2016 DeSmuME team
+	Copyright (C) 2011-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -139,7 +139,7 @@ static NSMutableDictionary *saveTypeValues = nil;
 
 - (BOOL) isDataLoaded
 {
-	return (gameInfo.romdata != NULL);
+	return (gameInfo.romdataForReader != NULL);
 }
 
 - (BOOL) initHeader
@@ -617,9 +617,9 @@ static NSMutableDictionary *saveTypeValues = nil;
 
 + (NSString *) byteSizeStringWithLargerUnit:(NSUInteger)byteSize
 {
-	float kilobyteSize = byteSize / 1024.0;
-	float megabyteSize = kilobyteSize / 1024.0;
-	float gigabyteSize = megabyteSize / 1024.0;
+	const float kilobyteSize = byteSize / 1024.0f;
+	const float megabyteSize = byteSize / 1024.0f / 1024.0f;
+	const float gigabyteSize = byteSize / 1024.0f / 1024.0f / 1024.0f;
 	
 	NSString *byteString = [NSString stringWithFormat:NSSTRING_STATUS_SIZE_BYTES, byteSize];
 	NSString *unitString = byteString;
