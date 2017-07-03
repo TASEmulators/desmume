@@ -256,6 +256,3 @@ if HAVE_LUA
 AM_CPPFLAGS += $(LUA_CFLAGS)
 libdesmume_a_SOURCES += lua-engine.cpp
 endif
-if HAVE_GDB_STUB
-libdesmume_a_SOURCES += gdbstub.h
-endif

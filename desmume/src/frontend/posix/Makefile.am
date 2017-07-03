@@ -1,7 +1,5 @@
 include desmume.mk
 
-# TODO: readd gdbstub. just do it as sources, no autotools cruft
-
 AM_CPPFLAGS += $(SDL_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS) $(LIBSOUNDTOUCH_CFLAGS)
 
 
@@ -239,6 +237,7 @@ AM_CPPFLAGS += $(LUA_CFLAGS)
 libdesmume_a_SOURCES += ../../lua-engine.cpp
 endif
 if HAVE_GDB_STUB
+libdesmume_a_SOURCES += ../../gdbstub/gdbstub.cpp
+libdesmume_a_SOURCES += ../../gdbstub/gdbstub_internal.h
 libdesmume_a_SOURCES += ../../gdbstub.h
-libdesmume_a_SOURCES += ../../gdbstub/gdbstub.h
 endif
