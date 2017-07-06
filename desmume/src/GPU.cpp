@@ -1859,6 +1859,10 @@ FORCEINLINE void GPUEngineBase::_RenderPixel16_SSE2(GPUEngineCompositorInfo &com
 		passMask8 = _mm_and_si128(passMask8, didPassWindowTest);
 		passMask16[0] = _mm_unpacklo_epi8(passMask8, passMask8);
 		passMask16[1] = _mm_unpackhi_epi8(passMask8, passMask8);
+		passMask32[0] = _mm_unpacklo_epi16(passMask16[0], passMask16[0]);
+		passMask32[1] = _mm_unpackhi_epi16(passMask16[0], passMask16[0]);
+		passMask32[2] = _mm_unpacklo_epi16(passMask16[1], passMask16[1]);
+		passMask32[3] = _mm_unpackhi_epi16(passMask16[1], passMask16[1]);
 		
 		enableColorEffectMask = _mm_cmpeq_epi8( _mm_load_si128((__m128i *)(this->_enableColorEffectCustom[compInfo.renderState.selectedLayerID] + compInfo.target.xCustom)), _mm_set1_epi8(1) );
 	}
