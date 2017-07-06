@@ -1521,7 +1521,10 @@ protected:
 	u16 *_3DFramebufferRGBA5551;
 	
 	u16 *_VRAMNativeBlockPtr[4];
-	u16 *_VRAMCustomBlockPtr[4];
+	void *_VRAMCustomBlockPtr[4];
+	
+	u16 *_captureWorkingA16;
+	u16 *_captureWorkingB16;
 	
 	DISPCAPCNT_parsed _dispCapCnt;
 	bool _displayCaptureEnable;
@@ -1558,7 +1561,7 @@ public:
 	bool isLineCaptureNative[4][GPU_VRAM_BLOCK_LINES];
 	
 	void ParseReg_DISPCAPCNT();
-	u16* GetCustomVRAMBlockPtr(const size_t blockID);
+	void* GetCustomVRAMBlockPtr(const size_t blockID);
 	FragmentColor* Get3DFramebufferRGBA6665() const;
 	u16* Get3DFramebufferRGBA5551() const;
 	virtual void SetCustomFramebufferSize(size_t w, size_t h);
@@ -1573,6 +1576,7 @@ public:
 	void LastLineProcess();
 	
 	virtual void Reset();
+	void ResetCaptureLineStates();
 	
 	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const size_t l);
 	template<NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo);
@@ -1648,8 +1652,8 @@ private:
 	bool _willFrameSkip;
 	bool _willPostprocessDisplays;
 	bool _willAutoResolveToCustomBuffer;
-	u16 *_customVRAM;
-	u16 *_customVRAMBlank;
+	void *_customVRAM;
+	void *_customVRAMBlank;
 	
 	void *_masterFramebuffer;
 	
@@ -1677,9 +1681,9 @@ public:
 	NDSDisplay* GetDisplayMain();
 	NDSDisplay* GetDisplayTouch();
 	
-	u16* GetCustomVRAMBuffer();
-	u16* GetCustomVRAMBlankBuffer();
-	u16* GetCustomVRAMAddressUsingMappedAddress(const u32 addr);
+	void* GetCustomVRAMBuffer();
+	void* GetCustomVRAMBlankBuffer();
+	template<NDSColorFormat COLORFORMAT> void* GetCustomVRAMAddressUsingMappedAddress(const u32 addr, const size_t offset);
 	
 	size_t GetCustomFramebufferWidth() const;
 	size_t GetCustomFramebufferHeight() const;
