@@ -6932,8 +6932,8 @@ void OGLDisplayLayer::ProcessOGL()
 	// Run the video source filters and the pixel scalers
 	const bool willFilterOnGPU = this->_output->WillFilterOnGPU();
 	const bool useDeposterize = this->_output->GetSourceDeposterize();
-	const bool needProcessDisplay[2] = { didRenderNative[NDSDisplayID_Main]  && emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main]  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
-	                                     didRenderNative[NDSDisplayID_Touch] && emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual) };
+	const bool needProcessDisplay[2] = { (didRenderNative[NDSDisplayID_Main]  || !emuDisplayInfo.isCustomSizeRequested) && emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main]  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
+	                                     (didRenderNative[NDSDisplayID_Touch] || !emuDisplayInfo.isCustomSizeRequested) && emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual) };
 	const bool needsLock = (willFilterOnGPU || useDeposterize) && (needProcessDisplay[NDSDisplayID_Main] || needProcessDisplay[NDSDisplayID_Touch]);
 	
 	if (needsLock)

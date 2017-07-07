@@ -320,6 +320,12 @@
 	const size_t nativeSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes;
 	const size_t customSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes;
 	
+	id<MTLCommandBuffer> cb = [[self commandQueue] commandBufferWithUnretainedReferences];
+	id<MTLBlitCommandEncoder> dummyEncoder = [cb blitCommandEncoder];
+	[dummyEncoder endEncoding];
+	[cb commit];
+	[cb waitUntilCompleted];
+	
 	_bufDisplayFetchNative[NDSDisplayID_Main][0]  = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead
 																			   length:nativeSize
 																			  options:MTLResourceStorageModeManaged
@@ -362,6 +368,12 @@
 	
 	[self setDisplayFetchNativeBufferSize:nativeSize];
 	[self setDisplayFetchCustomBufferSize:customSize];
+	
+	cb = [[self commandQueue] commandBufferWithUnretainedReferences];
+	dummyEncoder = [cb blitCommandEncoder];
+	[dummyEncoder endEncoding];
+	[cb commit];
+	[cb waitUntilCompleted];
 }
 
 - (void) fetchFromBufferIndex:(const u8)index
@@ -554,7 +566,7 @@
 					[cce setBuffer:_bufMasterBrightMode[NDSDisplayID_Main] offset:0 atIndex:0];
 					[cce setBuffer:_bufMasterBrightIntensity[NDSDisplayID_Main] offset:0 atIndex:1];
 					
-					if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Main])
+					if (texDisplaySrcTarget[NDSDisplayID_Main] == texDisplayFetch32NativeMain)
 					{
 						[cce setTexture:texDisplayFetch32NativeMain atIndex:0];
 						[cce setTexture:[self texDisplayPostprocessNativeMain] atIndex:1];
@@ -584,7 +596,7 @@
 					[cce setBuffer:_bufMasterBrightMode[NDSDisplayID_Touch] offset:0 atIndex:0];
 					[cce setBuffer:_bufMasterBrightIntensity[NDSDisplayID_Touch] offset:0 atIndex:1];
 					
-					if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch])
+					if (texDisplaySrcTarget[NDSDisplayID_Touch] == texDisplayFetch32NativeTouch)
 					{
 						[cce setTexture:texDisplayFetch32NativeTouch atIndex:0];
 						[cce setTexture:[self texDisplayPostprocessNativeTouch] atIndex:1];
@@ -1101,6 +1113,12 @@
 {
 	const VideoFilterAttributes vfAttr = VideoFilter::GetAttributesByID(filterID);
 	
+	id<MTLCommandBuffer> cb = [[sharedData commandQueue] commandBufferWithUnretainedReferences];
+	id<MTLBlitCommandEncoder> dummyEncoder = [cb blitCommandEncoder];
+	[dummyEncoder endEncoding];
+	[cb commit];
+	[cb waitUntilCompleted];
+	
 	VideoFilter *vfMain  = _cdv->GetPixelScalerObject(NDSDisplayID_Main);
 	[self setBufCPUFilterDstMain:[[self device] newBufferWithBytesNoCopy:vfMain->GetDstBufferPtr()
 																  length:(vfMain->GetSrcWidth()  * vfAttr.scaleMultiply / vfAttr.scaleDivide) * (vfMain->GetSrcHeight()  * vfAttr.scaleMultiply / vfAttr.scaleDivide) * sizeof(uint32_t)
@@ -1112,6 +1130,12 @@
 																   length:(vfTouch->GetSrcWidth() * vfAttr.scaleMultiply / vfAttr.scaleDivide) * (vfTouch->GetSrcHeight() * vfAttr.scaleMultiply / vfAttr.scaleDivide) * sizeof(uint32_t)
 																  options:MTLResourceStorageModeManaged
 															  deallocator:nil]];
+	
+	cb = [[sharedData commandQueue] commandBufferWithUnretainedReferences];
+	dummyEncoder = [cb blitCommandEncoder];
+	[dummyEncoder endEncoding];
+	[cb commit];
+	[cb waitUntilCompleted];
 }
 
 - (void) copyHUDFontUsingFace:(const FT_Face &)fontFace
@@ -1223,8 +1247,8 @@
 	if (useDeposterize || (_cdv->GetPixelScaler() != VideoFilterTypeID_None))
 	{
 		const bool willFilterOnGPU = _cdv->WillFilterOnGPU();
-		const bool shouldProcessDisplay[2] = { !fetchDisplayInfo.didPerformCustomRender[NDSDisplayID_Main]  && fetchDisplayInfo.isDisplayEnabled[NDSDisplayID_Main]  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
-		                                       !fetchDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch] && fetchDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual) };
+		const bool shouldProcessDisplay[2] = { (!fetchDisplayInfo.didPerformCustomRender[NDSDisplayID_Main]  || !fetchDisplayInfo.isCustomSizeRequested) && fetchDisplayInfo.isDisplayEnabled[NDSDisplayID_Main]  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
+		                                       (!fetchDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch] || !fetchDisplayInfo.isCustomSizeRequested) && fetchDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual) };
 		
 		VideoFilter *vfMain  = _cdv->GetPixelScalerObject(NDSDisplayID_Main);
 		VideoFilter *vfTouch = _cdv->GetPixelScalerObject(NDSDisplayID_Touch);
