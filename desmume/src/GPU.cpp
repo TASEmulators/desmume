@@ -5108,6 +5108,8 @@ GPUEngineA::GPUEngineA()
 	
 	_3DFramebufferRGBA6665 = (FragmentColor *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(FragmentColor));
 	_3DFramebufferRGBA5551 = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+	_captureWorkingA16 = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
+	_captureWorkingB16 = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
 	gfx3d_Update3DFramebuffers(_3DFramebufferRGBA6665, _3DFramebufferRGBA5551);
 }
 
@@ -5115,6 +5117,8 @@ GPUEngineA::~GPUEngineA()
 {
 	free_aligned(this->_3DFramebufferRGBA6665);
 	free_aligned(this->_3DFramebufferRGBA5551);
+	free_aligned(this->_captureWorkingA16);
+	free_aligned(this->_captureWorkingB16);
 	gfx3d_Update3DFramebuffers(NULL, NULL);
 }
 
@@ -5164,6 +5168,8 @@ void GPUEngineA::Reset()
 	
 	memset(this->_3DFramebufferRGBA6665, 0, dispInfo.customWidth * dispInfo.customHeight * sizeof(FragmentColor));
 	memset(this->_3DFramebufferRGBA5551, 0, dispInfo.customWidth * dispInfo.customHeight * sizeof(u16));
+	memset(this->_captureWorkingA16, 0, dispInfo.customWidth * _gpuLargestDstLineCount * sizeof(u16));
+	memset(this->_captureWorkingB16, 0, dispInfo.customWidth * _gpuLargestDstLineCount * sizeof(u16));
 }
 
 void GPUEngineA::ResetCaptureLineStates()
