@@ -2591,10 +2591,13 @@ void gfx3d_savestate(EMUFILE* os)
 	write32le(4,os);
 
 	//dump the render lists
-	OSWRITE(vertlist->count);
+	const u32 vertListCount32 = (u32)vertlist->count;
+	const u32 polyListCount32 = (u32)polylist->count;
+	
+	OSWRITE(vertListCount32);
 	for (size_t i = 0; i < vertlist->count; i++)
 		vertlist->list[i].save(os);
-	OSWRITE(polylist->count);
+	OSWRITE(polyListCount32);
 	for (size_t i = 0; i < polylist->count; i++)
 		polylist->list[i].save(os);
 
@@ -2639,10 +2642,16 @@ bool gfx3d_loadstate(EMUFILE* is, int size)
 	
 	if (version >= 1)
 	{
-		OSREAD(vertlist->count);
+		u32 vertListCount32 = 0;
+		u32 polyListCount32 = 0;
+		
+		OSREAD(vertListCount32);
+		vertlist->count = vertListCount32;
 		for (size_t i = 0; i < vertlist->count; i++)
 			vertlist->list[i].load(is);
-		OSREAD(polylist->count);
+		
+		OSREAD(polyListCount32);
+		polylist->count = polyListCount32;
 		for (size_t i = 0; i < polylist->count; i++)
 			polylist->list[i].load(is);
 	}
