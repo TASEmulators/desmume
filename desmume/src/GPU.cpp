@@ -5106,17 +5106,17 @@ GPUEngineA::GPUEngineA()
 		isLineCaptureNative[3][l] = true;
 	}
 	
-	_3DFramebufferRGBA6665 = (FragmentColor *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(FragmentColor));
-	_3DFramebufferRGBA5551 = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
+	_3DFramebufferMain = (FragmentColor *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(FragmentColor));
+	_3DFramebuffer16 = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16));
 	_captureWorkingA16 = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
 	_captureWorkingB16 = (u16 *)malloc_alignedCacheLine(GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16));
-	gfx3d_Update3DFramebuffers(_3DFramebufferRGBA6665, _3DFramebufferRGBA5551);
+	gfx3d_Update3DFramebuffers(_3DFramebufferMain, _3DFramebuffer16);
 }
 
 GPUEngineA::~GPUEngineA()
 {
-	free_aligned(this->_3DFramebufferRGBA6665);
-	free_aligned(this->_3DFramebufferRGBA5551);
+	free_aligned(this->_3DFramebufferMain);
+	free_aligned(this->_3DFramebuffer16);
 	free_aligned(this->_captureWorkingA16);
 	free_aligned(this->_captureWorkingB16);
 	gfx3d_Update3DFramebuffers(NULL, NULL);
@@ -5166,8 +5166,8 @@ void GPUEngineA::Reset()
 	this->ResetCaptureLineStates();
 	this->SetDisplayByID(NDSDisplayID_Main);
 	
-	memset(this->_3DFramebufferRGBA6665, 0, dispInfo.customWidth * dispInfo.customHeight * sizeof(FragmentColor));
-	memset(this->_3DFramebufferRGBA5551, 0, dispInfo.customWidth * dispInfo.customHeight * sizeof(u16));
+	memset(this->_3DFramebufferMain, 0, dispInfo.customWidth * dispInfo.customHeight * sizeof(FragmentColor));
+	memset(this->_3DFramebuffer16, 0, dispInfo.customWidth * dispInfo.customHeight * sizeof(u16));
 	memset(this->_captureWorkingA16, 0, dispInfo.customWidth * _gpuLargestDstLineCount * sizeof(u16));
 	memset(this->_captureWorkingB16, 0, dispInfo.customWidth * _gpuLargestDstLineCount * sizeof(u16));
 }
@@ -5226,14 +5226,14 @@ void GPUEngineA::ParseReg_DISPCAPCNT()
 	 this->_dispCapCnt.srcA, this->_dispCapCnt.srcB);*/
 }
 
-FragmentColor* GPUEngineA::Get3DFramebufferRGBA6665() const
+FragmentColor* GPUEngineA::Get3DFramebufferMain() const
 {
-	return this->_3DFramebufferRGBA6665;
+	return this->_3DFramebufferMain;
 }
 
-u16* GPUEngineA::Get3DFramebufferRGBA5551() const
+u16* GPUEngineA::Get3DFramebuffer16() const
 {
-	return this->_3DFramebufferRGBA5551;
+	return this->_3DFramebuffer16;
 }
 
 void* GPUEngineA::GetCustomVRAMBlockPtr(const size_t blockID)
@@ -5245,29 +5245,29 @@ void GPUEngineA::SetCustomFramebufferSize(size_t w, size_t h)
 {
 	this->GPUEngineBase::SetCustomFramebufferSize(w, h);
 	
-	FragmentColor *oldColorRGBA6665Buffer = this->_3DFramebufferRGBA6665;
-	u16 *oldColorRGBA5551Buffer = this->_3DFramebufferRGBA5551;
+	FragmentColor *old3DFramebufferMain = this->_3DFramebufferMain;
+	u16 *old3DFramebuffer16 = this->_3DFramebuffer16;
 	u16 *oldCaptureWorkingA16 = this->_captureWorkingA16;
 	u16 *oldCaptureWorkingB16 = this->_captureWorkingB16;
 	
-	FragmentColor *newColorRGBA6665Buffer = (FragmentColor *)malloc_alignedCacheLine(w * h * sizeof(FragmentColor));
-	u16 *newColorRGBA5551 = (u16 *)malloc_alignedCacheLine(w * h * sizeof(u16));
+	FragmentColor *new3DFramebufferMain = (FragmentColor *)malloc_alignedCacheLine(w * h * sizeof(FragmentColor));
+	u16 *new3DFramebuffer16 = (u16 *)malloc_alignedCacheLine(w * h * sizeof(u16));
 	u16 *newCaptureWorkingA16 = (u16 *)malloc_alignedCacheLine(w * _gpuLargestDstLineCount * sizeof(u16));
 	u16 *newCaptureWorkingB16 = (u16 *)malloc_alignedCacheLine(w * _gpuLargestDstLineCount * sizeof(u16));
 	
-	this->_3DFramebufferRGBA6665 = newColorRGBA6665Buffer;
-	this->_3DFramebufferRGBA5551 = newColorRGBA5551;
+	this->_3DFramebufferMain = new3DFramebufferMain;
+	this->_3DFramebuffer16 = new3DFramebuffer16;
 	this->_captureWorkingA16 = newCaptureWorkingA16;
 	this->_captureWorkingB16 = newCaptureWorkingB16;
-	gfx3d_Update3DFramebuffers(this->_3DFramebufferRGBA6665, this->_3DFramebufferRGBA5551);
+	gfx3d_Update3DFramebuffers(this->_3DFramebufferMain, this->_3DFramebuffer16);
 	
 	this->_VRAMCustomBlockPtr[0] = (u16 *)GPU->GetCustomVRAMBuffer();
 	this->_VRAMCustomBlockPtr[1] = (u16 *)this->_VRAMCustomBlockPtr[0] + (1 * _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w);
 	this->_VRAMCustomBlockPtr[2] = (u16 *)this->_VRAMCustomBlockPtr[0] + (2 * _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w);
 	this->_VRAMCustomBlockPtr[3] = (u16 *)this->_VRAMCustomBlockPtr[0] + (3 * _gpuCaptureLineIndex[GPU_VRAM_BLOCK_LINES] * w);
 	
-	free_aligned(oldColorRGBA6665Buffer);
-	free_aligned(oldColorRGBA5551Buffer);
+	free_aligned(old3DFramebufferMain);
+	free_aligned(old3DFramebuffer16);
 	free_aligned(oldCaptureWorkingA16);
 	free_aligned(oldCaptureWorkingB16);
 }
@@ -5641,7 +5641,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 	}
 	
 	static CACHE_ALIGN u16 fifoLine16[GPU_FRAMEBUFFER_NATIVE_WIDTH];
-	const u16 *srcA16 = (DISPCAPCNT.SrcA == 0) ? ((OUTPUTFORMAT != NDSColorFormat_BGR555_Rev) ? this->_captureWorkingA16 : (u16 *)compInfo.target.lineColorHead) : this->_3DFramebufferRGBA5551 + compInfo.line.blockOffsetCustom;
+	const u16 *srcA16 = (DISPCAPCNT.SrcA == 0) ? ((OUTPUTFORMAT != NDSColorFormat_BGR555_Rev) ? this->_captureWorkingA16 : (u16 *)compInfo.target.lineColorHead) : this->_3DFramebuffer16 + compInfo.line.blockOffsetCustom;
 	const u16 *srcB16 = (DISPCAPCNT.SrcB == 0) ? vram16 : fifoLine16;
 	
 	switch (DISPCAPCNT.CaptureSrc)
@@ -6923,13 +6923,8 @@ void GPUSubsystem::Reset()
 
 void GPUSubsystem::ForceRender3DFinishAndFlush(bool willFlush)
 {
-	bool need3DDisplayFramebuffer;
-	bool need3DCaptureFramebuffer;
-	CurrentRenderer->GetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
-	
-	CurrentRenderer->SetFramebufferFlushStates(willFlush, willFlush);
 	CurrentRenderer->RenderFinish();
-	CurrentRenderer->SetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
+	CurrentRenderer->RenderFlush(willFlush, willFlush);
 }
 
 void GPUSubsystem::ForceFrameStop()
@@ -7463,18 +7458,20 @@ void GPUSubsystem::RenderLine(const size_t l)
 		// means that we need to check the states at that particular time to ensure that the 3D renderer
 		// finishes before we read the 3D framebuffer. Otherwise, the map will render incorrectly.
 		
-		if (CurrentRenderer->GetRenderNeedsFinish())
+		const bool need3DDisplayFramebuffer = this->_engineMain->WillRender3DLayer();
+		const bool need3DCaptureFramebuffer = this->_engineMain->WillCapture3DLayerDirect(l);
+		
+		if (need3DCaptureFramebuffer || need3DDisplayFramebuffer)
 		{
-			const bool need3DDisplayFramebuffer = this->_engineMain->WillRender3DLayer();
-			const bool need3DCaptureFramebuffer = this->_engineMain->WillCapture3DLayerDirect(l);
-			
-			if (need3DDisplayFramebuffer || need3DCaptureFramebuffer)
+			if (CurrentRenderer->GetRenderNeedsFinish())
 			{
-				CurrentRenderer->SetFramebufferFlushStates(need3DDisplayFramebuffer, need3DCaptureFramebuffer);
 				CurrentRenderer->RenderFinish();
 				CurrentRenderer->SetRenderNeedsFinish(false);
 				this->_event->DidRender3DEnd();
 			}
+			
+			CurrentRenderer->RenderFlush(need3DDisplayFramebuffer && CurrentRenderer->GetRenderNeedsFlushMain(),
+			                             need3DCaptureFramebuffer && CurrentRenderer->GetRenderNeedsFlush16());
 		}
 		
 		this->_engineMain->RenderLine<OUTPUTFORMAT>(l);

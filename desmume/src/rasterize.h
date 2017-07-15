@@ -142,6 +142,7 @@ public:
 	virtual Render3DError Reset();
 	virtual Render3DError Render(const GFX3D &engine);
 	virtual Render3DError RenderFinish();
+	virtual Render3DError RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16);
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 

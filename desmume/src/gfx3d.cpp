@@ -283,8 +283,8 @@ static float normalTable[1024];
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
 // Color buffer that is filled by the 3D renderer and is read by the GPU engine.
-static FragmentColor *_gfx3d_colorRGBA6665 = NULL;
-static u16 *_gfx3d_colorRGBA5551 = NULL;
+static FragmentColor *_gfx3d_colorMain = NULL;
+static u16 *_gfx3d_color16 = NULL;
 
 // Matrix stack handling
 //TODO: decouple stack pointers from matrix stack type
@@ -2379,8 +2379,8 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	}
 	else
 	{
-		memset(GPU->GetEngineMain()->Get3DFramebufferRGBA6665(), 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(FragmentColor));
-		memset(GPU->GetEngineMain()->Get3DFramebufferRGBA5551(), 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(u16));
+		memset(GPU->GetEngineMain()->Get3DFramebufferMain(), 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(FragmentColor));
+		memset(GPU->GetEngineMain()->Get3DFramebuffer16(), 0, GPU->GetCustomFramebufferWidth() * GPU->GetCustomFramebufferHeight() * sizeof(u16));
 		CurrentRenderer->SetRenderNeedsFinish(false);
 		GPU->GetEventHandler()->DidRender3DEnd();
 	}
@@ -2569,14 +2569,14 @@ SFORMAT SF_GFX3D[]={
 	{ "GTVC", 4, 1, &tempVertInfo.count},
 	{ "GTVM", 4, 4, tempVertInfo.map},
 	{ "GTVF", 4, 1, &tempVertInfo.first},
-	{ "G3CX", 1, 4*GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT, _gfx3d_colorRGBA6665},
+	{ "G3CX", 1, 4*GPU_FRAMEBUFFER_NATIVE_WIDTH*GPU_FRAMEBUFFER_NATIVE_HEIGHT, _gfx3d_colorMain},
 	{ 0 }
 };
 
-void gfx3d_Update3DFramebuffers(FragmentColor *framebufferRGBA6665, u16 *framebufferRGBA5551)
+void gfx3d_Update3DFramebuffers(FragmentColor *framebufferMain, u16 *framebuffer16)
 {
-	_gfx3d_colorRGBA6665 = framebufferRGBA6665;
-	_gfx3d_colorRGBA5551 = framebufferRGBA5551;
+	_gfx3d_colorMain = framebufferMain;
+	_gfx3d_color16 = framebuffer16;
 }
 
 //-------------savestate

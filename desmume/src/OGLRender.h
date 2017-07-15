@@ -598,7 +598,7 @@ private:
 	unsigned int versionRevision;
 	
 private:
-	Render3DError _FlushFramebufferConvertOnCPU(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebuffer, u16 *__restrict dstRGBA5551);
+	Render3DError _FlushFramebufferConvertOnCPU(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	
 protected:
 	// OpenGL-specific References
@@ -619,7 +619,7 @@ protected:
 	bool _pixelReadNeedsFinish;
 	size_t _currentPolyIndex;
 	
-	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebuffer, u16 *__restrict dstRGBA5551);
+	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	OpenGLTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
 	
 	// OpenGL-specific methods
@@ -762,6 +762,7 @@ public:
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError Reset();
 	virtual Render3DError RenderFinish();
+	virtual Render3DError RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16);
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 
@@ -838,6 +839,7 @@ protected:
 	
 public:
 	virtual Render3DError RenderFinish();
+	virtual Render3DError RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16);
 };
 
 #endif

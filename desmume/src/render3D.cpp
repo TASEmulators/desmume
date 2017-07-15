@@ -293,8 +293,8 @@ Render3D::Render3D()
 	_internalRenderingFormat = NDSColorFormat_BGR666_Rev;
 	_outputFormat = NDSColorFormat_BGR666_Rev;
 	_renderNeedsFinish = false;
-	_willFlushFramebufferRGBA6665 = true;
-	_willFlushFramebufferRGBA5551 = true;
+	_renderNeedsFlushMain = false;
+	_renderNeedsFlush16 = false;
 	
 	_textureScalingFactor = 1;
 	_textureDeposterize = false;
@@ -366,7 +366,7 @@ Render3DError Render3D::SetFramebufferSize(size_t w, size_t h)
 	this->_framebufferWidth = w;
 	this->_framebufferHeight = h;
 	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
-	this->_framebufferColor = GPU->GetEngineMain()->Get3DFramebufferRGBA6665(); // Just use the buffer that is already present on the main GPU engine
+	this->_framebufferColor = GPU->GetEngineMain()->Get3DFramebufferMain(); // Just use the buffer that is already present on the main GPU engine
 	
 	return RENDER3DERROR_NOERR;
 }
@@ -382,18 +382,6 @@ NDSColorFormat Render3D::GetColorFormat() const
 	return this->_outputFormat;
 }
 
-void Render3D::GetFramebufferFlushStates(bool &willFlushRGBA6665, bool &willFlushRGBA5551)
-{
-	willFlushRGBA6665 = this->_willFlushFramebufferRGBA6665;
-	willFlushRGBA5551 = this->_willFlushFramebufferRGBA5551;
-}
-
-void Render3D::SetFramebufferFlushStates(bool willFlushRGBA6665, bool willFlushRGBA5551)
-{
-	this->_willFlushFramebufferRGBA6665 = willFlushRGBA6665;
-	this->_willFlushFramebufferRGBA5551 = willFlushRGBA5551;
-}
-
 bool Render3D::GetRenderNeedsFinish() const
 {
 	return this->_renderNeedsFinish;
@@ -402,6 +390,16 @@ bool Render3D::GetRenderNeedsFinish() const
 void Render3D::SetRenderNeedsFinish(const bool renderNeedsFinish)
 {
 	this->_renderNeedsFinish = renderNeedsFinish;
+}
+
+bool Render3D::GetRenderNeedsFlushMain() const
+{
+	return this->_renderNeedsFlushMain;
+}
+
+bool Render3D::GetRenderNeedsFlush16() const
+{
+	return this->_renderNeedsFlush16;
 }
 
 void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDeposterize, bool willSmooth)
@@ -483,42 +481,46 @@ Render3DError Render3D::EndRender(const u64 frameCount)
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebuffer, u16 *__restrict dstRGBA5551)
+Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16)
 {
-	if ( (dstFramebuffer == NULL) && (dstRGBA5551 == NULL) )
+	if ( (dstFramebufferMain == NULL) && (dstFramebuffer16 == NULL) )
 	{
 		return RENDER3DERROR_NOERR;
 	}
 	
 	const size_t pixCount = this->_framebufferWidth * this->_framebufferHeight;
 	
-	if (dstFramebuffer != NULL)
+	if (dstFramebufferMain != NULL)
 	{
 		if ( (this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev) )
 		{
-			ColorspaceConvertBuffer8888To6665<false, false>((u32 *)srcFramebuffer, (u32 *)dstFramebuffer, pixCount);
+			ColorspaceConvertBuffer8888To6665<false, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, pixCount);
 		}
 		else if ( (this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev) )
 		{
-			ColorspaceConvertBuffer6665To8888<false, false>((u32 *)srcFramebuffer, (u32 *)dstFramebuffer, pixCount);
+			ColorspaceConvertBuffer6665To8888<false, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, pixCount);
 		}
 		else if ( ((this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev)) ||
 		          ((this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev)) )
 		{
-			memcpy(dstFramebuffer, srcFramebuffer, pixCount * sizeof(FragmentColor));
+			memcpy(dstFramebufferMain, srcFramebuffer, pixCount * sizeof(FragmentColor));
 		}
+		
+		this->_renderNeedsFlushMain = false;
 	}
 	
-	if (dstRGBA5551 != NULL)
+	if (dstFramebuffer16 != NULL)
 	{
 		if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvertBuffer6665To5551<false, false>((u32 *)srcFramebuffer, dstRGBA5551, pixCount);
+			ColorspaceConvertBuffer6665To5551<false, false>((u32 *)srcFramebuffer, dstFramebuffer16, pixCount);
 		}
 		else if (this ->_outputFormat == NDSColorFormat_BGR888_Rev)
 		{
-			ColorspaceConvertBuffer8888To5551<false, false>((u32 *)srcFramebuffer, dstRGBA5551, pixCount);
+			ColorspaceConvertBuffer8888To5551<false, false>((u32 *)srcFramebuffer, dstFramebuffer16, pixCount);
 		}
+		
+		this->_renderNeedsFlush16 = false;
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -645,8 +647,9 @@ Render3DError Render3D::Reset()
 	memset(this->clearImagePolyIDBuffer, 0, sizeof(this->clearImagePolyIDBuffer));
 	memset(this->clearImageFogBuffer, 0, sizeof(this->clearImageFogBuffer));
 	
-	this->_willFlushFramebufferRGBA6665 = true;
-	this->_willFlushFramebufferRGBA5551 = true;
+	this->_renderNeedsFinish = false;
+	this->_renderNeedsFlushMain = false;
+	this->_renderNeedsFlush16 = false;
 	
 	texCache.Reset();
 	
@@ -684,6 +687,11 @@ Render3DError Render3D::Render(const GFX3D &engine)
 }
 
 Render3DError Render3D::RenderFinish()
+{
+	return RENDER3DERROR_NOERR;
+}
+
+Render3DError Render3D::RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16)
 {
 	return RENDER3DERROR_NOERR;
 }

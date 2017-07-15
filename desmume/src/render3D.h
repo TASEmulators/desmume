@@ -151,8 +151,8 @@ protected:
 	NDSColorFormat _internalRenderingFormat;
 	NDSColorFormat _outputFormat;
 	bool _renderNeedsFinish;
-	bool _willFlushFramebufferRGBA6665;
-	bool _willFlushFramebufferRGBA5551;
+	bool _renderNeedsFlushMain;
+	bool _renderNeedsFlush16;
 	
 	size_t _textureScalingFactor;
 	bool _textureDeposterize;
@@ -174,7 +174,7 @@ protected:
 	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
 	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
 	virtual Render3DError EndRender(const u64 frameCount);
-	virtual Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebuffer, u16 *__restrict dstRGBA5551);
+	virtual Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) const;
@@ -208,6 +208,10 @@ public:
 														// and only release the block when 3D rendering is finished. (Before reading the 3D layer, be
 														// sure to always call this function.)
 	
+	virtual Render3DError RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16);	// Called whenever the emulator needs the flushed results of the 3D renderer. Before calling this,
+																						// the 3D renderer must be finished using RenderFinish() or confirmed already finished using
+																						// GetRenderNeedsFinish().
+	
 	virtual Render3DError VramReconfigureSignal();		// Called when the emulator reconfigures its VRAM. You may need to invalidate your texture cache.
 	
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);	// Called whenever the output framebuffer size changes.
@@ -224,11 +228,12 @@ public:
 	virtual NDSColorFormat GetColorFormat() const;							// The output color format of the 3D renderer.
 	
 	virtual FragmentColor* GetFramebuffer();
-	virtual void GetFramebufferFlushStates(bool &willFlushRGBA6665, bool &willFlushRGBA5551);
-	virtual void SetFramebufferFlushStates(bool willFlushRGBA6665, bool willFlushRGBA5551);
 	
 	bool GetRenderNeedsFinish() const;
 	void SetRenderNeedsFinish(const bool renderNeedsFinish);
+	
+	bool GetRenderNeedsFlushMain() const;
+	bool GetRenderNeedsFlush16() const;
 	
 	void SetTextureProcessingProperties(size_t scalingFactor, bool willDeposterize, bool willSmooth);
 	Render3DTexture* GetTextureByPolygonRenderIndex(size_t polyRenderIndex) const;
