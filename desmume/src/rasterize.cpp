@@ -2178,7 +2178,7 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 
 Render3DError SoftRasterizerRenderer::RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16)
 {
-	FragmentColor *framebufferMain = (this->_outputFormat == NDSColorFormat_BGR888_Rev) ? GPU->GetEngineMain()->Get3DFramebufferMain() : NULL;
+	FragmentColor *framebufferMain = (willFlushBuffer32 && (this->_outputFormat == NDSColorFormat_BGR888_Rev)) ? GPU->GetEngineMain()->Get3DFramebufferMain() : NULL;
 	u16 *framebuffer16 = (willFlushBuffer16) ? GPU->GetEngineMain()->Get3DFramebuffer16() : NULL;
 	this->FlushFramebuffer(this->_framebufferColor, framebufferMain, framebuffer16);
 	
