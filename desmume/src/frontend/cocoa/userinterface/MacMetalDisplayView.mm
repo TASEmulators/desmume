@@ -619,8 +619,9 @@
 		}
 		
 		[cce endEncoding];
-		[cb commit];
 	}
+	
+	[cb commit];
 	
 	[self setTexDisplaySrcTargetMain:texDisplaySrcTarget[NDSDisplayID_Main]];
 	[self setTexDisplaySrcTargetTouch:texDisplaySrcTarget[NDSDisplayID_Touch]];
@@ -822,6 +823,8 @@
 	
 	[self setSharedData:nil];
 	delete _cdv;
+	
+	dispatch_release(availableResources);
 	
 	[super dealloc];
 }
@@ -1244,7 +1247,7 @@
 	_texDisplayOutput[NDSDisplayID_Main]  = [sharedData texDisplaySrcTargetMain];
 	_texDisplayOutput[NDSDisplayID_Touch] = [sharedData texDisplaySrcTargetTouch];
 	
-	if (useDeposterize || (_cdv->GetPixelScaler() != VideoFilterTypeID_None))
+	if ( (fetchDisplayInfo.pixelBytes != 0) && (useDeposterize || (_cdv->GetPixelScaler() != VideoFilterTypeID_None)) )
 	{
 		const bool willFilterOnGPU = _cdv->WillFilterOnGPU();
 		const bool shouldProcessDisplay[2] = { (!fetchDisplayInfo.didPerformCustomRender[NDSDisplayID_Main]  || !fetchDisplayInfo.isCustomSizeRequested) && fetchDisplayInfo.isDisplayEnabled[NDSDisplayID_Main]  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
@@ -1480,79 +1483,82 @@
 	}
 	
 	// Draw the NDS displays.
-	if ([self needsScreenVerticesUpdate])
+	if (displayInfo.pixelBytes != 0)
 	{
-		_cdv->SetScreenVertices((float *)[_displayVtxPositionBuffer contents]);
-		[_displayVtxPositionBuffer didModifyRange:NSMakeRange(0, sizeof(float) * (4 * 8))];
+		if ([self needsScreenVerticesUpdate])
+		{
+			_cdv->SetScreenVertices((float *)[_displayVtxPositionBuffer contents]);
+			[_displayVtxPositionBuffer didModifyRange:NSMakeRange(0, sizeof(float) * (4 * 8))];
+			
+			[self setNeedsScreenVerticesUpdate:NO];
+		}
 		
-		[self setNeedsScreenVerticesUpdate:NO];
-	}
-	
-	[ce setRenderPipelineState:[self displayOutputPipeline]];
-	[ce setVertexBuffer:_displayVtxPositionBuffer offset:0 atIndex:0];
-	[ce setVertexBuffer:_displayTexCoordBuffer offset:0 atIndex:1];
-	[ce setVertexBuffer:_cdvPropertiesBuffer offset:0 atIndex:2];
-	
-	switch (_cdv->GetViewProperties().mode)
-	{
-		case ClientDisplayMode_Main:
+		[ce setRenderPipelineState:[self displayOutputPipeline]];
+		[ce setVertexBuffer:_displayVtxPositionBuffer offset:0 atIndex:0];
+		[ce setVertexBuffer:_displayTexCoordBuffer offset:0 atIndex:1];
+		[ce setVertexBuffer:_cdvPropertiesBuffer offset:0 atIndex:2];
+		
+		switch (_cdv->GetViewProperties().mode)
 		{
-			if (displayInfo.isDisplayEnabled[NDSDisplayID_Main])
+			case ClientDisplayMode_Main:
 			{
-				[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
-				[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
-			}
-			break;
-		}
-			
-		case ClientDisplayMode_Touch:
-		{
-			if (displayInfo.isDisplayEnabled[NDSDisplayID_Touch])
-			{
-				[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
-				[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
-			}
-			break;
-		}
-			
-		case ClientDisplayMode_Dual:
-		{
-			const NDSDisplayID majorDisplayID = (_cdv->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
-			const size_t majorDisplayVtx = (_cdv->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
-			
-			switch (_cdv->GetViewProperties().layout)
-			{
-				case ClientDisplayLayout_Hybrid_2_1:
-				case ClientDisplayLayout_Hybrid_16_9:
-				case ClientDisplayLayout_Hybrid_16_10:
+				if (displayInfo.isDisplayEnabled[NDSDisplayID_Main])
 				{
-					if (displayInfo.isDisplayEnabled[majorDisplayID])
-					{
-						[ce setFragmentTexture:_texDisplayOutput[majorDisplayID] atIndex:0];
-						[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:majorDisplayVtx vertexCount:4];
-					}
-					break;
+					[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
+					[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
 				}
-					
-				default:
-					break;
+				break;
 			}
-			
-			if (displayInfo.isDisplayEnabled[NDSDisplayID_Main])
+				
+			case ClientDisplayMode_Touch:
 			{
-				[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
-				[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+				if (displayInfo.isDisplayEnabled[NDSDisplayID_Touch])
+				{
+					[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
+					[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
+				}
+				break;
 			}
-			
-			if (displayInfo.isDisplayEnabled[NDSDisplayID_Touch])
+				
+			case ClientDisplayMode_Dual:
 			{
-				[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
-				[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
+				const NDSDisplayID majorDisplayID = (_cdv->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
+				const size_t majorDisplayVtx = (_cdv->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
+				
+				switch (_cdv->GetViewProperties().layout)
+				{
+					case ClientDisplayLayout_Hybrid_2_1:
+					case ClientDisplayLayout_Hybrid_16_9:
+					case ClientDisplayLayout_Hybrid_16_10:
+					{
+						if (displayInfo.isDisplayEnabled[majorDisplayID])
+						{
+							[ce setFragmentTexture:_texDisplayOutput[majorDisplayID] atIndex:0];
+							[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:majorDisplayVtx vertexCount:4];
+						}
+						break;
+					}
+						
+					default:
+						break;
+				}
+				
+				if (displayInfo.isDisplayEnabled[NDSDisplayID_Main])
+				{
+					[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
+					[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+				}
+				
+				if (displayInfo.isDisplayEnabled[NDSDisplayID_Touch])
+				{
+					[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
+					[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
+				}
 			}
+				
+			default:
+				break;
 		}
-			
-		default:
-			break;
 	}
 	
 	// Draw the HUD.

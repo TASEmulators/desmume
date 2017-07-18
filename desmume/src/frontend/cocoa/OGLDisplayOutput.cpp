@@ -6929,31 +6929,34 @@ void OGLDisplayLayer::ProcessOGL()
 	GLsizei width[2]  = { emuDisplayInfo.renderedWidth[NDSDisplayID_Main],  emuDisplayInfo.renderedWidth[NDSDisplayID_Touch] };
 	GLsizei height[2] = { emuDisplayInfo.renderedHeight[NDSDisplayID_Main], emuDisplayInfo.renderedHeight[NDSDisplayID_Touch] };
 	
-	// Run the video source filters and the pixel scalers
-	const bool willFilterOnGPU = this->_output->WillFilterOnGPU();
-	const bool useDeposterize = this->_output->GetSourceDeposterize();
-	const bool needProcessDisplay[2] = { (didRenderNative[NDSDisplayID_Main]  || !emuDisplayInfo.isCustomSizeRequested) && emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main]  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
-	                                     (didRenderNative[NDSDisplayID_Touch] || !emuDisplayInfo.isCustomSizeRequested) && emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual) };
-	const bool needsLock = (willFilterOnGPU || useDeposterize) && (needProcessDisplay[NDSDisplayID_Main] || needProcessDisplay[NDSDisplayID_Touch]);
-	
-	if (needsLock)
+	if (emuDisplayInfo.pixelBytes != 0)
 	{
-		this->_output->LockDisplayTextures();
-	}
-	
-	if (needProcessDisplay[NDSDisplayID_Main])
-	{
-		this->_ProcessDisplayByID(NDSDisplayID_Main,  width[NDSDisplayID_Main],  height[NDSDisplayID_Main],  texVideoSourceID[NDSDisplayID_Main]);
-	}
-	
-	if (needProcessDisplay[NDSDisplayID_Touch])
-	{
-		this->_ProcessDisplayByID(NDSDisplayID_Touch, width[NDSDisplayID_Touch], height[NDSDisplayID_Touch], texVideoSourceID[NDSDisplayID_Touch]);
-	}
-	
-	if (needsLock)
-	{
-		this->_output->UnlockDisplayTextures();
+		// Run the video source filters and the pixel scalers
+		const bool willFilterOnGPU = this->_output->WillFilterOnGPU();
+		const bool useDeposterize = this->_output->GetSourceDeposterize();
+		const bool needProcessDisplay[2] = { (didRenderNative[NDSDisplayID_Main]  || !emuDisplayInfo.isCustomSizeRequested) && emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main]  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
+		                                     (didRenderNative[NDSDisplayID_Touch] || !emuDisplayInfo.isCustomSizeRequested) && emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual) };
+		const bool needsLock = (willFilterOnGPU || useDeposterize) && (needProcessDisplay[NDSDisplayID_Main] || needProcessDisplay[NDSDisplayID_Touch]);
+		
+		if (needsLock)
+		{
+			this->_output->LockDisplayTextures();
+		}
+		
+		if (needProcessDisplay[NDSDisplayID_Main])
+		{
+			this->_ProcessDisplayByID(NDSDisplayID_Main,  width[NDSDisplayID_Main],  height[NDSDisplayID_Main],  texVideoSourceID[NDSDisplayID_Main]);
+		}
+		
+		if (needProcessDisplay[NDSDisplayID_Touch])
+		{
+			this->_ProcessDisplayByID(NDSDisplayID_Touch, width[NDSDisplayID_Touch], height[NDSDisplayID_Touch], texVideoSourceID[NDSDisplayID_Touch]);
+		}
+		
+		if (needsLock)
+		{
+			this->_output->UnlockDisplayTextures();
+		}
 	}
 	
 	// Set the final output texture IDs
@@ -7007,88 +7010,91 @@ void OGLDisplayLayer::RenderOGL()
 		this->_UpdateRotationScaleOGL();
 	}
 	
-	if (this->_needUpdateVertices)
+	if (emuDisplayInfo.pixelBytes != 0)
 	{
-		this->_UpdateVerticesOGL();
-	}
-	
-	this->_output->LockDisplayTextures();
-	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
-	
-	switch (this->_output->GetViewProperties().mode)
-	{
-		case ClientDisplayMode_Main:
+		if (this->_needUpdateVertices)
 		{
-			if (emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main])
-			{
-				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Main]);
-				glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Main]);
-				glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[NDSDisplayID_Main]);
-				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-			}
-			break;
+			this->_UpdateVerticesOGL();
 		}
-			
-		case ClientDisplayMode_Touch:
+		
+		this->_output->LockDisplayTextures();
+		glBindVertexArrayDESMUME(this->_vaoMainStatesID);
+		
+		switch (this->_output->GetViewProperties().mode)
 		{
-			if (emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch])
+			case ClientDisplayMode_Main:
 			{
-				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Touch]);
-				glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Touch]);
-				glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[NDSDisplayID_Touch]);
-				glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
-			}
-			break;
-		}
-			
-		case ClientDisplayMode_Dual:
-		{
-			const NDSDisplayID majorDisplayID = (this->_output->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
-			const size_t majorDisplayVtx = (this->_output->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
-			
-			switch (this->_output->GetViewProperties().layout)
-			{
-				case ClientDisplayLayout_Hybrid_2_1:
-				case ClientDisplayLayout_Hybrid_16_9:
-				case ClientDisplayLayout_Hybrid_16_10:
+				if (emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main])
 				{
-					if (emuDisplayInfo.isDisplayEnabled[majorDisplayID])
-					{
-						glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[majorDisplayID]);
-						glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[majorDisplayID]);
-						glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[majorDisplayID]);
-						glDrawArrays(GL_TRIANGLE_STRIP, majorDisplayVtx, 4);
-					}
-					break;
+					glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Main]);
+					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Main]);
+					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[NDSDisplayID_Main]);
+					glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 				}
-					
-				default:
-					break;
+				break;
 			}
-			
-			if (emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main])
+				
+			case ClientDisplayMode_Touch:
 			{
-				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Main]);
-				glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Main]);
-				glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[NDSDisplayID_Main]);
-				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+				if (emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch])
+				{
+					glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Touch]);
+					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Touch]);
+					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[NDSDisplayID_Touch]);
+					glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+				}
+				break;
 			}
-			
-			if (emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch])
+				
+			case ClientDisplayMode_Dual:
 			{
-				glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Touch]);
-				glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Touch]);
-				glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[NDSDisplayID_Touch]);
-				glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+				const NDSDisplayID majorDisplayID = (this->_output->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
+				const size_t majorDisplayVtx = (this->_output->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
+				
+				switch (this->_output->GetViewProperties().layout)
+				{
+					case ClientDisplayLayout_Hybrid_2_1:
+					case ClientDisplayLayout_Hybrid_16_9:
+					case ClientDisplayLayout_Hybrid_16_10:
+					{
+						if (emuDisplayInfo.isDisplayEnabled[majorDisplayID])
+						{
+							glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[majorDisplayID]);
+							glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[majorDisplayID]);
+							glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[majorDisplayID]);
+							glDrawArrays(GL_TRIANGLE_STRIP, majorDisplayVtx, 4);
+						}
+						break;
+					}
+						
+					default:
+						break;
+				}
+				
+				if (emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main])
+				{
+					glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Main]);
+					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Main]);
+					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[NDSDisplayID_Main]);
+					glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+				}
+				
+				if (emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch])
+				{
+					glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Touch]);
+					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Touch]);
+					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[NDSDisplayID_Touch]);
+					glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+				}
 			}
+				
+			default:
+				break;
 		}
-			
-		default:
-			break;
+		
+		glBindVertexArrayDESMUME(0);
+		this->_output->UnlockDisplayTextures();
 	}
-	
-	glBindVertexArrayDESMUME(0);
-	this->_output->UnlockDisplayTextures();
 }
 
 void OGLDisplayLayer::FinishOGL(const u8 bufferIndex)
