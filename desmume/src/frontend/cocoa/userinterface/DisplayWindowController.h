@@ -140,6 +140,10 @@ class OGLVideoOutput;
 - (id)initWithWindowNibName:(NSString *)windowNibName emuControlDelegate:(EmuControllerDelegate *)theEmuController;
 
 - (ClientDisplayViewProperties &) localViewProperties;
+- (void) setVideoPropertiesWithoutUpdateUsingPreferGPU:(BOOL)preferGPU
+									 sourceDeposterize:(BOOL)useDeposterize
+										  outputFilter:(NSInteger)outputFilterID
+										   pixelScaler:(NSInteger)pixelScalerID;
 - (void) setDisplayMode:(ClientDisplayMode)mode
 				 layout:(ClientDisplayLayout)layout
 				  order:(ClientDisplayOrder)order

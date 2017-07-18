@@ -510,6 +510,17 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 }
 
+- (void) setVideoPropertiesWithoutUpdateUsingPreferGPU:(BOOL)preferGPU
+									 sourceDeposterize:(BOOL)useDeposterize
+										  outputFilter:(NSInteger)outputFilterID
+										   pixelScaler:(NSInteger)pixelScalerID
+{
+	[[self view] setVideoFiltersPreferGPU:preferGPU];
+	[[self view] setSourceDeposterize:useDeposterize];
+	[[self view] setOutputFilter:outputFilterID];
+	[[self view] setPixelScaler:pixelScalerID];
+}
+
 - (void) setupUserDefaults
 {
 	[self setDisplayMode:(ClientDisplayMode)[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"]
@@ -521,10 +532,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		 isMinSizeNormal:[self isMinSizeNormal]
 	  isShowingStatusBar:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"]];
 	
-	[self setVideoFiltersPreferGPU:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_FiltersPreferGPU"]];
-	[self setVideoSourceDeposterize:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_Deposterize"]];
-	[self setVideoOutputFilter:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"]];
-	[self setVideoPixelScaler:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"]];
+	[self setVideoPropertiesWithoutUpdateUsingPreferGPU:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_FiltersPreferGPU"]
+									  sourceDeposterize:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_Deposterize"]
+										   outputFilter:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"]
+											pixelScaler:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"]];
+	
 	[[self view] setUseVerticalSync:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseVerticalSync"]];
 	
 	[[self view] setIsHUDVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_EnableHUD"]];

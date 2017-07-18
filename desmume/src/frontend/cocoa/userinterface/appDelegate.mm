@@ -670,10 +670,11 @@
 							 isMinSizeNormal:isMinSizeNormal
 						  isShowingStatusBar:isShowingStatusBar];
 			
-			[windowController setVideoFiltersPreferGPU:videoFiltersPreferGPU];
-			[windowController setVideoSourceDeposterize:videoSourceDeposterize];
-			[windowController setVideoPixelScaler:videoPixelScaler];
-			[windowController setVideoOutputFilter:videoOutputFilter];
+			[windowController setVideoPropertiesWithoutUpdateUsingPreferGPU:videoFiltersPreferGPU
+														  sourceDeposterize:videoSourceDeposterize
+															   outputFilter:videoOutputFilter
+																pixelScaler:videoPixelScaler];
+			
 			[windowController setScreenshotFileFormat:screenshotFileFormat];
 			[[windowController view] setUseVerticalSync:useVerticalSync];
 			[[windowController view] setIsHUDVisible:hudEnable];
