@@ -349,6 +349,11 @@
 	
 	[newWindowController window]; // Just reference the window to force the nib to load.
 	[[newWindowController view] setAllowViewUpdates:YES];
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	const BOOL useVerticalSync = ([[newWindowController view] layer] != nil) || [cdsCore isFrameSkipEnabled] || (([cdsCore speedScalar] < 1.03f) && [cdsCore isSpeedLimitEnabled]);
+	[[newWindowController view] setUseVerticalSync:useVerticalSync];
+	
 	[[newWindowController cdsVideoOutput] handleReloadReprocessRedraw];
 	[[newWindowController window] makeKeyAndOrderFront:self];
 	[[newWindowController window] makeMainWindow];
@@ -806,6 +811,8 @@
 		const CGFloat newSpeedScalar = (CGFloat)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0f;
 		[self changeCoreSpeedWithDouble:newSpeedScalar];
 	}
+	
+	[self setVerticalSyncForNonLayerBackedViews:sender];
 }
 
 - (IBAction) changeCoreEmuFlags:(id)sender
@@ -901,6 +908,20 @@
 - (IBAction) autoholdClear:(id)sender
 {
 	[inputManager dispatchCommandUsingIBAction:_cmd sender:sender];
+}
+
+- (IBAction) setVerticalSyncForNonLayerBackedViews:(id)sender
+{
+	if ( ([[(DisplayWindowController *)[windowList objectAtIndex:0] view] layer] == nil) && ([windowList count] > 0) )
+	{
+		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+		const BOOL useVerticalSync = [cdsCore isFrameSkipEnabled] || (([cdsCore speedScalar] < 1.03f) && [cdsCore isSpeedLimitEnabled]);
+		
+		for (DisplayWindowController *windowController in windowList)
+		{
+			[[windowController view] setUseVerticalSync:useVerticalSync];
+		}
+	}
 }
 
 - (IBAction) chooseSlot1R4Directory:(id)sender
@@ -1303,10 +1324,11 @@
 {
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
-	const float speedScalar = (cmdAttr.useInputForScalar) ? cmdAttr.input.scalar : cmdAttr.floatValue[0];
+	const float inputSpeedScalar = (cmdAttr.useInputForScalar) ? cmdAttr.input.scalar : cmdAttr.floatValue[0];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
-	[cdsCore setSpeedScalar:(cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) ? lastSetSpeedScalar : speedScalar];
+	[cdsCore setSpeedScalar:(cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) ? lastSetSpeedScalar : inputSpeedScalar];
+	[self setVerticalSyncForNonLayerBackedViews:nil];
 }
 
 - (void) cmdToggleSpeedLimiter:(NSValue *)cmdAttrValue
@@ -1333,6 +1355,8 @@
 		[self setStatusText:NSSTRING_STATUS_SPEED_LIMIT_ENABLED];
 		[[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"CoreControl_EnableSpeedLimit"];
 	}
+	
+	[self setVerticalSyncForNonLayerBackedViews:nil];
 }
 
 - (void) cmdToggleAutoFrameSkip:(NSValue *)cmdAttrValue
@@ -1359,6 +1383,8 @@
 		[self setStatusText:NSSTRING_STATUS_AUTO_FRAME_SKIP_ENABLED];
 		[[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"CoreControl_EnableAutoFrameSkip"];
 	}
+	
+	[self setVerticalSyncForNonLayerBackedViews:nil];
 }
 
 - (void) cmdToggleCheats:(NSValue *)cmdAttrValue

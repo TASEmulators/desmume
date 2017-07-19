@@ -537,8 +537,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 										   outputFilter:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"]
 											pixelScaler:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"]];
 	
-	[[self view] setUseVerticalSync:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_UseVerticalSync"]];
-	
 	[[self view] setIsHUDVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_EnableHUD"]];
 	[[self view] setIsHUDVideoFPSVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowVideoFPS"]];
 	[[self view] setIsHUDRender3DFPSVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRender3DFPS"]];
@@ -977,11 +975,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[self setDisplayGap:(double)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0];
 }
 
-- (IBAction) toggleVerticalSync:(id)sender
-{
-	[[self view] setUseVerticalSync:![[self view] useVerticalSync]];
-}
-
 - (IBAction) toggleVideoFiltersPreferGPU:(id)sender
 {
 	[self setVideoFiltersPreferGPU:![self videoFiltersPreferGPU]];
@@ -1040,7 +1033,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[NSUserDefaults standardUserDefaults] setBool:[self videoSourceDeposterize] forKey:@"DisplayView_Deposterize"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self videoOutputFilter] forKey:@"DisplayView_OutputFilter"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self videoPixelScaler] forKey:@"DisplayView_VideoFilter"];
-	[[NSUserDefaults standardUserDefaults] setBool:[[self view] useVerticalSync] forKey:@"DisplayView_UseVerticalSync"];
 	
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
@@ -1155,13 +1147,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		}
 		
 		enable = [[self view] canUseShaderBasedFilters];
-	}
-	else if (theAction == @selector(toggleVerticalSync:))
-	{
-		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
-		{
-			[(NSMenuItem *)theItem setState:([[self view] useVerticalSync]) ? NSOnState : NSOffState];
-		}
 	}
 	else if (theAction == @selector(toggleVideoFiltersPreferGPU:))
 	{

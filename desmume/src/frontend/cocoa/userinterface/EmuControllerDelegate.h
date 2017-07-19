@@ -207,9 +207,12 @@ class AudioSampleBlockGenerator;
 - (IBAction) toggleAllDisplays:(id)sender;
 
 // Tools Menu
-- (IBAction) autoholdSet:(id)sender;
 - (IBAction) toggleGPUState:(id)sender;
 - (IBAction) toggleGDBStubActivate:(id)sender;
+
+- (IBAction) autoholdSet:(id)sender;
+- (IBAction) autoholdClear:(id)sender;
+- (IBAction) setVerticalSyncForNonLayerBackedViews:(id)sender;
 
 - (IBAction) changeCoreSpeed:(id)sender;
 - (IBAction) changeCoreEmuFlags:(id)sender;

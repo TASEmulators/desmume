@@ -12,6 +12,8 @@
 	<true/>
 	<key>CoreControl_SpeedScalar</key>
 	<real>1</real>
+	<key>Debug_DisableMetal</key>
+	<false/>
 	<key>Debug_GDBStubEnableARM9</key>
 	<false/>
 	<key>Debug_GDBStubEnableARM7</key>
@@ -38,8 +40,6 @@
 	<integer>100</integer>
 	<key>DisplayView_UseBilinearOutput</key>
 	<true/>
-	<key>DisplayView_UseVerticalSync</key>
-	<false/>
 	<key>DisplayView_VideoFilter</key>
 	<integer>0</integer>
 	<key>DisplayViewCombo_Gap</key>
@@ -90,8 +90,6 @@
 	<dict/>
 	<key>General_AutoloadROMOption</key>
 	<integer>10000</integer>
-	<key>General_DisplayViewsPreferMetal</key>
-	<true/>
 	<key>General_DisplayWindowRestorableStates</key>
 	<array/>
 	<key>General_DoNotAskMigrate</key>
