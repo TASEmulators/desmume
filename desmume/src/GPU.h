@@ -1385,6 +1385,7 @@ protected:
 	template<NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, itemsForPriority_t *__restrict item);
 		
 	template<NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool ISDEBUGRENDER, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixel(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const u8 srcAlpha);
+	template<NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool ISDEBUGRENDER, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixel(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32, const u8 srcAlpha);
 	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _RenderPixel3D(GPUEngineCompositorInfo &compInfo, const bool enableColorEffect, const FragmentColor srcColor32);
 	
 	FORCEINLINE u16 _ColorEffectBlend(const u16 colA, const u16 colB, const u16 blendEVA, const u16 blendEVB);
@@ -1525,6 +1526,8 @@ protected:
 	
 	u16 *_captureWorkingA16;
 	u16 *_captureWorkingB16;
+	FragmentColor *_captureWorkingA32;
+	FragmentColor *_captureWorkingB32;
 	
 	DISPCAPCNT_parsed _dispCapCnt;
 	bool _displayCaptureEnable;
