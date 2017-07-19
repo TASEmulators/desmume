@@ -271,6 +271,19 @@ public:
 
 - (void) setGpuColorFormat:(NSUInteger)colorFormat
 {
+	// First check for a valid color format. Abort if the color format is invalid.
+	switch ((NDSColorFormat)colorFormat)
+	{
+		case NDSColorFormat_BGR555_Rev:
+		case NDSColorFormat_BGR666_Rev:
+		case NDSColorFormat_BGR888_Rev:
+			break;
+			
+		default:
+			return;
+	}
+	
+	// Change the color format.
 	[[self sharedData] finishAllDisplayViewsAtIndex:0];
 	[[self sharedData] finishAllDisplayViewsAtIndex:1];
 	

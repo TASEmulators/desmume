@@ -977,6 +977,7 @@
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DTextureSmoothing] forKey:@"Render3D_TextureSmoothing"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsGPU] render3DFragmentSamplingHack] forKey:@"Render3D_FragmentSamplingHack"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] gpuScale] forKey:@"Render3D_ScalingFactor"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[[cdsCore cdsGPU] gpuColorFormat] forKey:@"Render3D_ColorFormat"];
 	
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
@@ -2235,6 +2236,7 @@
 	[[cdsCore cdsGPU] setRender3DTextureSmoothing:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_TextureSmoothing"]];
 	[[cdsCore cdsGPU] setRender3DFragmentSamplingHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_FragmentSamplingHack"]];
 	[[cdsCore cdsGPU] setGpuScale:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_ScalingFactor"]];
+	[[cdsCore cdsGPU] setGpuColorFormat:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_ColorFormat"]];
 	
 	// Set the stylus options per user preferences.
 	[[cdsCore cdsController] setStylusPressure:[[NSUserDefaults standardUserDefaults] integerForKey:@"Emulation_StylusPressure"]];
