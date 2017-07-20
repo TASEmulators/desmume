@@ -1194,6 +1194,7 @@ typedef struct
 	__m128i dstBlendEnable_SSE2[6];
 #endif
 #endif // ENABLE_SSE2
+	bool dstAnyBlendEnable;
 	
 	u8 WIN0_enable[6];
 	u8 WIN1_enable[6];
@@ -1345,6 +1346,7 @@ protected:
 	
 	template<bool NATIVEDST, bool NATIVESRC, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t PIXELBYTES> void _LineColorCopy(void *__restrict dstBuffer, const void *__restrict srcBuffer, const size_t l);
 	template<bool NATIVEDST, bool NATIVESRC> void _LineLayerIDCopy(u8 *__restrict dstBuffer, const u8 *__restrict srcBuffer, const size_t l);
+	template<NDSColorFormat OUTPUTFORMAT> void _TransitionLineNativeToCustom(GPUEngineCompositorInfo &compInfo);
 	
 	void _MosaicSpriteLinePixel(GPUEngineCompositorInfo &compInfo, const size_t x, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
 	void _MosaicSpriteLine(GPUEngineCompositorInfo &compInfo, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
@@ -1382,11 +1384,11 @@ protected:
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderLine_LayerBG_ApplyMosaic(GPUEngineCompositorInfo &compInfo);
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG(GPUEngineCompositorInfo &compInfo);
 	
-	template<NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, itemsForPriority_t *__restrict item);
+	template<NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT> void _RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, itemsForPriority_t *__restrict item);
 		
 	template<NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool ISDEBUGRENDER, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixel(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const u8 srcAlpha);
 	template<NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool ISDEBUGRENDER, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixel(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32, const u8 srcAlpha);
-	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _RenderPixel3D(GPUEngineCompositorInfo &compInfo, const bool enableColorEffect, const FragmentColor srcColor32);
+	template<NDSColorFormat OUTPUTFORMAT, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixel3D(GPUEngineCompositorInfo &compInfo, const bool enableColorEffect, const FragmentColor srcColor32);
 	
 	FORCEINLINE u16 _ColorEffectBlend(const u16 colA, const u16 colB, const u16 blendEVA, const u16 blendEVB);
 	FORCEINLINE u16 _ColorEffectBlend(const u16 colA, const u16 colB, const TBlendTable *blendTable);
@@ -1408,7 +1410,7 @@ protected:
 	template<NDSColorFormat COLORFORMAT> FORCEINLINE __m128i _ColorEffectDecreaseBrightness(const __m128i &col, const __m128i &blendEVY);
 	template<bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel_CheckWindows16_SSE2(GPUEngineCompositorInfo &compInfo, const size_t dstX, __m128i &didPassWindowTest, __m128i &enableColorEffect) const;
 	template<NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool ISDEBUGRENDER, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderPixel16_SSE2(GPUEngineCompositorInfo &compInfo, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, const __m128i &srcAlpha, const __m128i &srcEffectEnableMask, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID, __m128i &passMask8);
-	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _RenderPixel3D_SSE2(GPUEngineCompositorInfo &compInfo, const __m128i &passMask8, const __m128i &enableColorEffectMask, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID);
+	template<NDSColorFormat OUTPUTFORMAT, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixel3D_SSE2(GPUEngineCompositorInfo &compInfo, const __m128i &passMask8, const __m128i &enableColorEffectMask, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID);
 #endif
 	
 	template<bool ISDEBUGRENDER> void _RenderSpriteBMP(GPUEngineCompositorInfo &compInfo, const u8 spriteNum, u16 *__restrict dst, const u32 srcadr, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
@@ -1582,7 +1584,7 @@ public:
 	void ResetCaptureLineStates();
 	
 	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const size_t l);
-	template<NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo);
+	template<NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT> void RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo);
 };
 
 class GPUEngineB : public GPUEngineBase
