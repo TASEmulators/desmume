@@ -2418,15 +2418,17 @@ FORCEINLINE void GPUEngineBase::_RenderPixel3D_SSE2(GPUEngineCompositorInfo &com
 	{
 		if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 		{
-			dst0 = _mm_blendv_epi8(dst0, dst2, passMask16[0]);
-			dst1 = _mm_blendv_epi8(dst1, dst3, passMask16[1]);
+			const __m128i alphaBits = _mm_set1_epi16(0x8000);
+			dst0 = _mm_blendv_epi8(dst0, _mm_or_si128(dst2, alphaBits), passMask16[0]);
+			dst1 = _mm_blendv_epi8(dst1, _mm_or_si128(dst3, alphaBits), passMask16[1]);
 		}
 		else
 		{
-			dst0 = _mm_blendv_epi8(dst0, src0, passMask32[0]);
-			dst1 = _mm_blendv_epi8(dst1, src1, passMask32[1]);
-			dst2 = _mm_blendv_epi8(dst2, src2, passMask32[2]);
-			dst3 = _mm_blendv_epi8(dst3, src3, passMask32[3]);
+			const __m128i alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
+			dst0 = _mm_blendv_epi8(dst0, _mm_or_si128(src0, alphaBits), passMask32[0]);
+			dst1 = _mm_blendv_epi8(dst1, _mm_or_si128(src1, alphaBits), passMask32[1]);
+			dst2 = _mm_blendv_epi8(dst2, _mm_or_si128(src2, alphaBits), passMask32[2]);
+			dst3 = _mm_blendv_epi8(dst3, _mm_or_si128(src3, alphaBits), passMask32[3]);
 		}
 		
 		dstLayerID = _mm_blendv_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG0), passMask8);
