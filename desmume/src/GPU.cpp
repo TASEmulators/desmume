@@ -1792,7 +1792,7 @@ FORCEINLINE void GPUEngineBase::_PixelCopy(GPUEngineCompositorInfo &compInfo, co
 }
 
 template <NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool WILLPERFORMWINDOWTEST>
-FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const u8 srcAlpha)
+FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const u8 spriteAlpha)
 {
 	u16 &dstColor16 = *compInfo.target.lineColor16;
 	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
@@ -1814,12 +1814,15 @@ FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, 
 		const bool isObjTranslucentType = (objMode == OBJMode_Transparent) || (objMode == OBJMode_Bitmap);
 		if (isObjTranslucentType && dstEffectEnable)
 		{
-			//obj without fine-grained alpha are using EVA/EVB for blending. this is signified by receiving 0xFF in the alpha
-			//it's tested by the spriteblend demo and the glory of heracles title screen
-			if (srcAlpha != 0xFF)
+			// OBJ without fine-grained alpha are using EVA/EVB for blending. This is signified by receiving 0xFF in the alpha.
+			// Test cases:
+			// * The spriteblend demo
+			// * Glory of Heracles - fairy on the title screen
+			// * Phoenix Wright: Ace Attorney - character fade-in/fade-out
+			if (spriteAlpha != 0xFF)
 			{
-				blendEVA = srcAlpha;
-				blendEVB = 16 - srcAlpha;
+				blendEVA = spriteAlpha;
+				blendEVB = 16 - spriteAlpha;
 				selectedBlendTable = &GPUEngineBase::_blendTable555[blendEVA][blendEVB];
 			}
 			
@@ -1951,7 +1954,7 @@ FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, 
 }
 
 template <NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool WILLPERFORMWINDOWTEST>
-FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32, const u8 srcAlpha)
+FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32, const u8 spriteAlpha)
 {
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 	{
@@ -1976,12 +1979,15 @@ FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, 
 		const bool isObjTranslucentType = (objMode == OBJMode_Transparent) || (objMode == OBJMode_Bitmap);
 		if (isObjTranslucentType && dstEffectEnable)
 		{
-			//obj without fine-grained alpha are using EVA/EVB for blending. this is signified by receiving 0xFF in the alpha
-			//it's tested by the spriteblend demo and the glory of heracles title screen
-			if (srcAlpha != 0xFF)
+			// OBJ without fine-grained alpha are using EVA/EVB for blending. This is signified by receiving 0xFF in the alpha.
+			// Test cases:
+			// * The spriteblend demo
+			// * Glory of Heracles - fairy on the title screen
+			// * Phoenix Wright: Ace Attorney - character fade-in/fade-out
+			if (spriteAlpha != 0xFF)
 			{
-				blendEVA = srcAlpha;
-				blendEVB = 16 - srcAlpha;
+				blendEVA = spriteAlpha;
+				blendEVB = 16 - spriteAlpha;
 			}
 			
 			forceBlendEffect = true;
@@ -2109,7 +2115,7 @@ template <NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool WILLPERFORMWINDO
 FORCEINLINE void GPUEngineBase::_PixelEffectWithMask16_SSE2(GPUEngineCompositorInfo &compInfo,
 															const __m128i &passMask8,
 															const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0,
-															const __m128i &srcAlpha,
+															const __m128i &spriteAlpha,
 															const __m128i &srcEffectEnableMask,
 															__m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0,
 															__m128i &dstLayerID)
@@ -2155,10 +2161,10 @@ FORCEINLINE void GPUEngineBase::_PixelEffectWithMask16_SSE2(GPUEngineCompositorI
 		const __m128i isObjTranslucentMask = _mm_and_si128( _mm_and_si128(enableColorEffectMask, dstEffectEnableMask), _mm_or_si128(_mm_cmpeq_epi8(objMode_vec128, _mm_set1_epi8(OBJMode_Transparent)), _mm_cmpeq_epi8(objMode_vec128, _mm_set1_epi8(OBJMode_Bitmap))) );
 		forceBlendEffectMask = isObjTranslucentMask;
 		
-		const __m128i srcAlphaMask = _mm_andnot_si128(_mm_cmpeq_epi8(srcAlpha, _mm_set1_epi8(0xFF)), isObjTranslucentMask);
+		const __m128i spriteAlphaMask = _mm_andnot_si128(_mm_cmpeq_epi8(spriteAlpha, _mm_set1_epi8(0xFF)), isObjTranslucentMask);
 		
-		eva_vec128 = _mm_blendv_epi8(eva_vec128, srcAlpha, srcAlphaMask);
-		evb_vec128 = _mm_blendv_epi8(evb_vec128, _mm_sub_epi8(_mm_set1_epi8(16), srcAlpha), srcAlphaMask);
+		eva_vec128 = _mm_blendv_epi8(eva_vec128, spriteAlpha, spriteAlphaMask);
+		evb_vec128 = _mm_blendv_epi8(evb_vec128, _mm_sub_epi8(_mm_set1_epi8(16), spriteAlpha), spriteAlphaMask);
 	}
 	
 	__m128i tmpSrc[4] = {src0, src1, src2, src3};
@@ -2947,12 +2953,12 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 			}
 			else
 			{
-				const __m128i srcAlpha = _mm_setzero_si128();
+				const __m128i spriteAlpha = _mm_setzero_si128();
 				
 				this->_PixelEffectWithMask16_SSE2<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST>(compInfo,
 																							  passMask8,
 																							  src[3], src[2], src[1], src[0],
-																							  srcAlpha,
+																							  spriteAlpha,
 																							  srcEffectEnableMask,
 																							  dst[3], dst[2], dst[1], dst[0],
 																							  dstLayerID_vec128);
@@ -3107,12 +3113,12 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
 		}
 		else
 		{
-			const __m128i srcAlpha = _mm_setzero_si128();
+			const __m128i spriteAlpha = _mm_setzero_si128();
 			
 			this->_PixelEffectWithMask16_SSE2<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST>(compInfo,
 																						  passMask8,
 																						  src[3], src[2], src[1], src[0],
-																						  srcAlpha,
+																						  spriteAlpha,
 																						  srcEffectEnableMask,
 																						  dst[3], dst[2], dst[1], dst[0],
 																						  dstLayerID_vec128);
@@ -4341,7 +4347,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 				}
 				else
 				{
-					this->_PixelEffect<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST>(compInfo, vramColorPtr[srcX], this->_sprAlpha[srcX]);
+					this->_PixelEffect<OUTPUTFORMAT, true, WILLPERFORMWINDOWTEST>(compInfo, vramColorPtr[srcX], this->_sprAlpha[srcX]);
 				}
 			}
 		}
@@ -4368,7 +4374,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 				}
 				else
 				{
-					this->_PixelEffect<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST>(compInfo, this->_sprColor[srcX], this->_sprAlpha[srcX]);
+					this->_PixelEffect<OUTPUTFORMAT, true, WILLPERFORMWINDOWTEST>(compInfo, this->_sprColor[srcX], this->_sprAlpha[srcX]);
 				}
 			}
 		}
@@ -4416,7 +4422,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 							}
 							else
 							{
-								this->_PixelEffect<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST>(compInfo, ((FragmentColor *)vramColorPtr)[dstX], this->_sprAlpha[srcX]);
+								this->_PixelEffect<OUTPUTFORMAT, true, WILLPERFORMWINDOWTEST>(compInfo, ((FragmentColor *)vramColorPtr)[dstX], this->_sprAlpha[srcX]);
 							}
 						}
 						else
@@ -4427,7 +4433,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 							}
 							else
 							{
-								this->_PixelEffect<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST>(compInfo, ((u16 *)vramColorPtr)[dstX], this->_sprAlpha[srcX]);
+								this->_PixelEffect<OUTPUTFORMAT, true, WILLPERFORMWINDOWTEST>(compInfo, ((u16 *)vramColorPtr)[dstX], this->_sprAlpha[srcX]);
 							}
 						}
 					}
@@ -4472,7 +4478,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 						}
 						else
 						{
-							this->_PixelEffect<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST>(compInfo, this->_sprColor[srcX], this->_sprAlpha[srcX]);
+							this->_PixelEffect<OUTPUTFORMAT, true, WILLPERFORMWINDOWTEST>(compInfo, this->_sprColor[srcX], this->_sprAlpha[srcX]);
 						}
 					}
 				}
