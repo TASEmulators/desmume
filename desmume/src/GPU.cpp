@@ -6127,7 +6127,9 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 	//this has not been tested yet (I thought I needed it for hotel dusk, but it was fixed by the above)
 	dstNativeOffset &= 0x0000FFFF;
 	
-	const u16 *vram16 = (this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset]) ? (u16 *)MMU.blank_memory : (u16 *)GPU->GetCustomVRAMBlankBuffer();
+	const u16 *vramNative16 = (u16 *)MMU.blank_memory;
+	const u16 *vramCustom16 = (u16 *)GPU->GetCustomVRAMBlankBuffer();
+	const u32 *vramCustom32 = (u32 *)GPU->GetCustomVRAMBlankBuffer();
 	u16 *dstNative16 = this->_VRAMNativeBlockPtr[vramWriteBlock] + dstNativeOffset;
 	bool readNativeVRAM = true;
 	bool captureLineNativeState32 = newCaptureLineNativeState;
@@ -6153,15 +6155,13 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 	// Convert VRAM for native VRAM capture.
 	if ( (DISPCAPCNT.SrcB == 0) && (DISPCAPCNT.CaptureSrc != 0) && (vramConfiguration.banks[vramReadBlock].purpose == VramConfiguration::LCDC) )
 	{
+		size_t vramNativeOffset = readLineIndexWithOffset * GPU_FRAMEBUFFER_NATIVE_WIDTH;
+		vramNativeOffset &= 0x0000FFFF;
+		vramNative16 = this->_VRAMNativeBlockPtr[vramReadBlock] + vramNativeOffset;
+		
 		this->VerifyVRAMLineDidChange(vramReadBlock, readLineIndexWithOffset);
 		
-		if (this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset])
-		{
-			size_t vramNativeOffset = readLineIndexWithOffset * GPU_FRAMEBUFFER_NATIVE_WIDTH;
-			vramNativeOffset &= 0x0000FFFF;
-			vram16 = this->_VRAMNativeBlockPtr[vramReadBlock] + vramNativeOffset;
-		}
-		else
+		if (!this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset])
 		{
 			size_t vramCustomOffset = ((this->_dispCapCnt.readOffset * _gpuCaptureLineIndex[64]) + _gpuCaptureLineIndex[l]) * dispInfo.customWidth;
 			while (vramCustomOffset >= _gpuVRAMBlockOffset)
@@ -6173,12 +6173,11 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 			{
 				case NDSColorFormat_BGR555_Rev:
 				case NDSColorFormat_BGR666_Rev:
-					vram16 = (u16 *)this->_VRAMCustomBlockPtr[vramReadBlock] + vramCustomOffset;
+					vramCustom16 = (u16 *)this->_VRAMCustomBlockPtr[vramReadBlock] + vramCustomOffset;
 					break;
 					
 				case NDSColorFormat_BGR888_Rev:
-					ColorspaceConvertBuffer8888To5551<false, false>((u32 *)this->_VRAMCustomBlockPtr[vramReadBlock] + vramCustomOffset, this->_captureWorkingB16, compInfo.line.pixelCount);
-					vram16 = this->_captureWorkingB16;
+					vramCustom32 = (u32 *)this->_VRAMCustomBlockPtr[vramReadBlock] + vramCustomOffset;
 					break;
 			}
 			
@@ -6188,7 +6187,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 	
 	static CACHE_ALIGN u16 fifoLine16[GPU_FRAMEBUFFER_NATIVE_WIDTH];
 	const u16 *srcA16 = (DISPCAPCNT.SrcA == 0) ? ((OUTPUTFORMAT != NDSColorFormat_BGR555_Rev) ? this->_captureWorkingA16 : (u16 *)compInfo.target.lineColorHead) : this->_3DFramebuffer16 + compInfo.line.blockOffsetCustom;
-	const u16 *srcB16 = (DISPCAPCNT.SrcB == 0) ? vram16 : fifoLine16;
+	const u16 *srcB16 = (DISPCAPCNT.SrcB == 0) ? vramNative16 : fifoLine16;
 	
 	switch (DISPCAPCNT.CaptureSrc)
 	{
@@ -6239,15 +6238,7 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 			{
 				case 0: // Capture VRAM
 				{
-					if (this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset])
-					{
-						this->_RenderLine_DispCapture_Copy<NDSColorFormat_BGR555_Rev, 0, CAPTURELENGTH, true, true>(srcB16, dstNative16, CAPTURELENGTH, 1);
-					}
-					else
-					{
-						this->_RenderLine_DispCapture_Copy<NDSColorFormat_BGR555_Rev, 0, CAPTURELENGTH, false, true>(srcB16, dstNative16, CAPTURELENGTH, 1);
-					}
-					
+					this->_RenderLine_DispCapture_Copy<NDSColorFormat_BGR555_Rev, 0, CAPTURELENGTH, true, true>(srcB16, dstNative16, CAPTURELENGTH, 1);
 					newCaptureLineNativeState = this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset];
 					break;
 				}
@@ -6266,79 +6257,35 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 		default: // Capture source is SourceA+B blended
 		{
 			//INFO("Capture source is SourceA+B blended\n");
+			if (DISPCAPCNT.SrcB != 0)
+			{
+				// fifo - tested by splinter cell chaos theory thermal view
+				this->_RenderLine_DispCapture_FIFOToBuffer(fifoLine16);
+			}
+			
 			if (DISPCAPCNT.SrcA == 0)
 			{
-				if ( (DISPCAPCNT.SrcB == 0) && !this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset] )
+				if (this->isLineRenderNative[l])
 				{
-					if (this->isLineRenderNative[l])
-					{
-						this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, true, false, true>(srcA16, srcB16, dstNative16, CAPTURELENGTH, 1);
-					}
-					else
-					{
-						this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, false, false, true>(srcA16, srcB16, dstNative16, CAPTURELENGTH, 1);
-					}
-					
-					newCaptureLineNativeState = false;
+					this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, true, true, true>(srcA16, srcB16, dstNative16, CAPTURELENGTH, 1);
 				}
 				else
 				{
-					if (DISPCAPCNT.SrcB != 0)
-					{
-						// fifo - tested by splinter cell chaos theory thermal view
-						this->_RenderLine_DispCapture_FIFOToBuffer(fifoLine16);
-					}
-					
-					if (this->isLineRenderNative[l])
-					{
-						this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, true, true, true>(srcA16, srcB16, dstNative16, CAPTURELENGTH, 1);
-					}
-					else
-					{
-						this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, false, true, true>(srcA16, srcB16, dstNative16, CAPTURELENGTH, 1);
-					}
-					
-					newCaptureLineNativeState = this->isLineRenderNative[l];
+					this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, false, true, true>(srcA16, srcB16, dstNative16, CAPTURELENGTH, 1);
 				}
+				
+				newCaptureLineNativeState = this->isLineRenderNative[l] && ((DISPCAPCNT.SrcB != 0) || this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset]);
 			}
 			else
 			{
 				if (is3DFramebufferNativeSize)
 				{
-					if ( (DISPCAPCNT.SrcB == 0) && !this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset] )
-					{
-						this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, true, false, true>(srcA16, srcB16, dstNative16, CAPTURELENGTH, 1);
-						newCaptureLineNativeState = false;
-					}
-					else
-					{
-						if (DISPCAPCNT.SrcB != 0)
-						{
-							// fifo - tested by splinter cell chaos theory thermal view
-							this->_RenderLine_DispCapture_FIFOToBuffer(fifoLine16);
-						}
-						
-						this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, true, true, true>(srcA16, srcB16, dstNative16, CAPTURELENGTH, 1);
-						newCaptureLineNativeState = true;
-					}
+					this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, true, true, true>(srcA16, srcB16, dstNative16, CAPTURELENGTH, 1);
+					newCaptureLineNativeState = (DISPCAPCNT.SrcB != 0) || this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset];
 				}
 				else
 				{
-					if ( (DISPCAPCNT.SrcB == 0) && !this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset] )
-					{
-						this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, false, false, true>(srcA16, srcB16, dstNative16, CAPTURELENGTH, 1);
-					}
-					else
-					{
-						if (DISPCAPCNT.SrcB != 0)
-						{
-							// fifo - tested by splinter cell chaos theory thermal view
-							this->_RenderLine_DispCapture_FIFOToBuffer(fifoLine16);
-						}
-						
-						this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, false, true, true>(srcA16, srcB16, dstNative16, CAPTURELENGTH, 1);
-					}
-					
+					this->_RenderLine_DispCapture_Blend<NDSColorFormat_BGR555_Rev, CAPTURELENGTH, false, true, true>(srcA16, srcB16, dstNative16, CAPTURELENGTH, 1);
 					newCaptureLineNativeState = false;
 				}
 			}
@@ -6383,7 +6330,6 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 		if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
 		{
 			static CACHE_ALIGN FragmentColor fifoLine32[GPU_FRAMEBUFFER_NATIVE_WIDTH];
-			u32 *vram32 = (u32 *)GPU->GetCustomVRAMBlankBuffer();
 			FragmentColor *dstCustom32 = (FragmentColor *)this->_VRAMCustomBlockPtr[vramWriteBlock] + dstCustomOffset;
 			bool isLineCaptureNative32 = ( (vramWriteBlock == vramReadBlock) && (writeLineIndexWithOffset == readLineIndexWithOffset) ) ? captureLineNativeState32 : this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset];
 			
@@ -6394,22 +6340,14 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 			
 			if ( (DISPCAPCNT.SrcB == 0) && (DISPCAPCNT.CaptureSrc != 0) && (vramConfiguration.banks[vramReadBlock].purpose == VramConfiguration::LCDC) )
 			{
-				size_t vramCustomOffset = ((this->_dispCapCnt.readOffset * _gpuCaptureLineIndex[64]) + _gpuCaptureLineIndex[l]) * dispInfo.customWidth;
-				while (vramCustomOffset >= _gpuVRAMBlockOffset)
-				{
-					vramCustomOffset -= _gpuVRAMBlockOffset;
-				}
-				
-				vram32 = (u32 *)this->_VRAMCustomBlockPtr[vramReadBlock] + vramCustomOffset;
-				
 				if (readNativeVRAM)
 				{
-					ColorspaceConvertBuffer555To8888Opaque<false, false>(vram16, vram32, GPU_FRAMEBUFFER_NATIVE_WIDTH);
+					ColorspaceConvertBuffer555To8888Opaque<false, false>(vramNative16, (u32 *)vramCustom32, GPU_FRAMEBUFFER_NATIVE_WIDTH);
 				}
 			}
 			
 			const u32 *srcA32 = (DISPCAPCNT.SrcA == 0) ? (u32 *)compInfo.target.lineColorHead : (u32 *)CurrentRenderer->GetFramebuffer() + compInfo.line.blockOffsetCustom;
-			const u32 *srcB32 = (DISPCAPCNT.SrcB == 0) ? vram32 : (u32 *)fifoLine32;
+			const u32 *srcB32 = (DISPCAPCNT.SrcB == 0) ? vramCustom32 : (u32 *)fifoLine32;
 			
 			switch (DISPCAPCNT.CaptureSrc)
 			{
@@ -6507,6 +6445,11 @@ void GPUEngineA::_RenderLine_DisplayCapture(const u16 l)
 		}
 		else
 		{
+			if (!this->isLineCaptureNative[vramReadBlock][readLineIndexWithOffset] && (DISPCAPCNT.SrcB == 0))
+			{
+				srcB16 = vramCustom16;
+			}
+			
 			u16 *dstCustom16 = (u16 *)this->_VRAMCustomBlockPtr[vramWriteBlock] + dstCustomOffset;
 			
 			switch (DISPCAPCNT.CaptureSrc)
