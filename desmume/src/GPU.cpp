@@ -1791,8 +1791,8 @@ FORCEINLINE void GPUEngineBase::_PixelCopy(GPUEngineCompositorInfo &compInfo, co
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool WILLPERFORMWINDOWTEST>
-FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const u8 spriteAlpha)
+template <NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE>
+FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const u8 spriteAlpha, const bool enableColorEffect)
 {
 	u16 &dstColor16 = *compInfo.target.lineColor16;
 	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
@@ -1805,9 +1805,7 @@ FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, 
 	const bool dstEffectEnable = (dstLayerID != compInfo.renderState.selectedLayerID) && compInfo.renderState.dstBlendEnable[dstLayerID];
 	bool forceBlendEffect = false;
 	
-	const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
-	
-	if (ISSRCLAYEROBJ && enableColorEffect)
+	if ((LAYERTYPE == GPULayerType_OBJ) && enableColorEffect)
 	{
 		//translucent-capable OBJ are forcing the function to blend when the second target is satisfied
 		const OBJMode objMode = (OBJMode)this->_sprType[compInfo.target.xNative];
@@ -1953,14 +1951,10 @@ FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, 
 	dstLayerID = compInfo.renderState.selectedLayerID;
 }
 
-template <NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool WILLPERFORMWINDOWTEST>
-FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32, const u8 spriteAlpha)
+template <NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE>
+FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32, const u8 spriteAlpha, const bool enableColorEffect)
 {
-	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
-	{
-		return;
-	}
-	
+	u16 &dstColor16 = *compInfo.target.lineColor16;
 	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
 	u8 &dstLayerID = *compInfo.target.lineLayerID;
 	
@@ -1968,11 +1962,17 @@ FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, 
 	u8 blendEVB = compInfo.renderState.blendEVB;
 	
 	const bool dstEffectEnable = (dstLayerID != compInfo.renderState.selectedLayerID) && compInfo.renderState.dstBlendEnable[dstLayerID];
-	bool forceBlendEffect = false;
 	
-	const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+	// 3D rendering has a special override: If the destination pixel is set to blend, then always blend.
+	// Test case: When starting a stage in Super Princess Peach, the screen will be solid black unless
+	// blending is forced here.
+	//
+	// This behavior must take priority over checking for the window color effect enable flag.
+	// Test case: Dialogue boxes in Front Mission will be rendered with blending disabled unless
+	// blend forcing takes priority.
+	bool forceBlendEffect = (LAYERTYPE == GPULayerType_3D) ? dstEffectEnable : false;
 	
-	if (ISSRCLAYEROBJ && enableColorEffect)
+	if ((LAYERTYPE == GPULayerType_OBJ) && enableColorEffect)
 	{
 		//translucent-capable OBJ are forcing the function to blend when the second target is satisfied
 		const OBJMode objMode = (OBJMode)this->_sprType[compInfo.target.xNative];
@@ -2021,26 +2021,55 @@ FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, 
 	}
 	
 	// Render the pixel using the selected color effect.
-	switch (selectedEffect)
+	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 	{
-		case ColorEffect_Disable:
-			dstColor32 = srcColor32;
-			break;
-			
-		case ColorEffect_IncreaseBrightness:
-			dstColor32 = this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(srcColor32, compInfo.renderState.blendEVY);
-			break;
-			
-		case ColorEffect_DecreaseBrightness:
-			dstColor32 = this->_ColorEffectDecreaseBrightness(srcColor32, compInfo.renderState.blendEVY);
-			break;
-			
-		case ColorEffect_Blend:
-			dstColor32 = this->_ColorEffectBlend<OUTPUTFORMAT>(srcColor32, dstColor32, blendEVA, blendEVB);
-			break;
+		const u16 srcColor16 = ColorspaceConvert6665To5551<false>(srcColor32);
+		
+		switch (selectedEffect)
+		{
+			case ColorEffect_Disable:
+				dstColor16 = srcColor16;
+				break;
+				
+			case ColorEffect_IncreaseBrightness:
+				dstColor16 = compInfo.renderState.brightnessUpTable555[srcColor16 & 0x7FFF];
+				break;
+				
+			case ColorEffect_DecreaseBrightness:
+				dstColor16 = compInfo.renderState.brightnessDownTable555[srcColor16 & 0x7FFF];
+				break;
+				
+			case ColorEffect_Blend:
+				dstColor16 = this->_ColorEffectBlend3D(srcColor32, dstColor16);
+				break;
+		}
+		
+		dstColor16 |= 0x8000;
+	}
+	else
+	{
+		switch (selectedEffect)
+		{
+			case ColorEffect_Disable:
+				dstColor32 = srcColor32;
+				break;
+				
+			case ColorEffect_IncreaseBrightness:
+				dstColor32 = this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(srcColor32, compInfo.renderState.blendEVY);
+				break;
+				
+			case ColorEffect_DecreaseBrightness:
+				dstColor32 = this->_ColorEffectDecreaseBrightness(srcColor32, compInfo.renderState.blendEVY);
+				break;
+				
+			case ColorEffect_Blend:
+				dstColor32 = (LAYERTYPE == GPULayerType_3D) ? this->_ColorEffectBlend3D<OUTPUTFORMAT>(srcColor32, dstColor32) : this->_ColorEffectBlend<OUTPUTFORMAT>(srcColor32, dstColor32, blendEVA, blendEVB);
+				break;
+		}
+		
+		dstColor32.a = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? 0xFF : 0x1F;
 	}
 	
-	dstColor32.a = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? 0xFF : 0x1F;
 	dstLayerID = compInfo.renderState.selectedLayerID;
 }
 
@@ -2111,7 +2140,7 @@ FORCEINLINE void GPUEngineBase::_PixelCopyWithMask16_SSE2(GPUEngineCompositorInf
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT, bool ISSRCLAYEROBJ, bool WILLPERFORMWINDOWTEST>
+template <NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST>
 FORCEINLINE void GPUEngineBase::_PixelEffectWithMask16_SSE2(GPUEngineCompositorInfo &compInfo,
 															const __m128i &passMask8,
 															const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0,
@@ -2148,26 +2177,40 @@ FORCEINLINE void GPUEngineBase::_PixelEffectWithMask16_SSE2(GPUEngineCompositorI
 	dstEffectEnableMask = _mm_andnot_si128( _mm_cmpeq_epi8(dstLayerID, srcLayerID_vec128), dstEffectEnableMask );
 	
 	// Select the color effect based on the BLDCNT target flags.
-	__m128i forceBlendEffectMask = _mm_setzero_si128();
-	const __m128i colorEffect_vec128 = (WILLPERFORMWINDOWTEST) ? _mm_blendv_epi8(_mm_set1_epi8(ColorEffect_Disable), _mm_set1_epi8(compInfo.renderState.colorEffect), enableColorEffectMask) : _mm_set1_epi8(compInfo.renderState.colorEffect);
-	
+	const __m128i colorEffect_vec128 = _mm_blendv_epi8(_mm_set1_epi8(ColorEffect_Disable), _mm_set1_epi8(compInfo.renderState.colorEffect), enableColorEffectMask);
+	const __m128i evy_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVY);
 	__m128i eva_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVA);
 	__m128i evb_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVB);
-	const __m128i evy_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVY);
+	__m128i forceBlendEffectMask = (LAYERTYPE == GPULayerType_3D) ? dstEffectEnableMask : _mm_setzero_si128();
 	
-	if (ISSRCLAYEROBJ)
+	if (LAYERTYPE == GPULayerType_OBJ)
 	{
 		const __m128i objMode_vec128 = _mm_loadu_si128((__m128i *)(this->_sprType + compInfo.target.xNative));
 		const __m128i isObjTranslucentMask = _mm_and_si128( _mm_and_si128(enableColorEffectMask, dstEffectEnableMask), _mm_or_si128(_mm_cmpeq_epi8(objMode_vec128, _mm_set1_epi8(OBJMode_Transparent)), _mm_cmpeq_epi8(objMode_vec128, _mm_set1_epi8(OBJMode_Bitmap))) );
 		forceBlendEffectMask = isObjTranslucentMask;
 		
 		const __m128i spriteAlphaMask = _mm_andnot_si128(_mm_cmpeq_epi8(spriteAlpha, _mm_set1_epi8(0xFF)), isObjTranslucentMask);
-		
 		eva_vec128 = _mm_blendv_epi8(eva_vec128, spriteAlpha, spriteAlphaMask);
 		evb_vec128 = _mm_blendv_epi8(evb_vec128, _mm_sub_epi8(_mm_set1_epi8(16), spriteAlpha), spriteAlphaMask);
 	}
 	
-	__m128i tmpSrc[4] = {src0, src1, src2, src3};
+	__m128i tmpSrc[4];
+	
+	if ( (LAYERTYPE == GPULayerType_3D) && (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev) )
+	{
+		// 3D layer blending requires that all src colors are preserved as 32-bit values.
+		// Since dst2 and dst3 are currently unused for RGB555 output, we used these variables
+		// to store the converted 16-bit src colors in a previous step.
+		tmpSrc[0] = dst2;
+		tmpSrc[1] = dst3;
+	}
+	else
+	{
+		tmpSrc[0] = src0;
+		tmpSrc[1] = src1;
+		tmpSrc[2] = src2;
+		tmpSrc[3] = src3;
+	}
 	
 	switch (compInfo.renderState.colorEffect)
 	{
@@ -2231,7 +2274,19 @@ FORCEINLINE void GPUEngineBase::_PixelEffectWithMask16_SSE2(GPUEngineCompositorI
 	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 	{
-		const __m128i blendSrc16[2] = { this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[0], dst0, eva_vec128, evb_vec128), this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[1], dst1, eva_vec128, evb_vec128) };
+		__m128i blendSrc16[2];
+		
+		if (LAYERTYPE == GPULayerType_3D)
+		{
+			blendSrc16[0] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src0, src1, dst0);
+			blendSrc16[1] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src2, src3, dst1);
+		}
+		else
+		{
+			blendSrc16[0] = this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[0], dst0, eva_vec128, evb_vec128);
+			blendSrc16[1] = this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[1], dst1, eva_vec128, evb_vec128);
+		}
+		
 		tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc16[0], blendMask16[0]);
 		tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc16[1], blendMask16[1]);
 		
@@ -2244,10 +2299,22 @@ FORCEINLINE void GPUEngineBase::_PixelEffectWithMask16_SSE2(GPUEngineCompositorI
 	}
 	else
 	{
-		const __m128i blendSrc32[4] = { this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[0], dst0, eva_vec128, evb_vec128),
-		                                this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[1], dst1, eva_vec128, evb_vec128),
-		                                this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[2], dst2, eva_vec128, evb_vec128),
-		                                this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[3], dst3, eva_vec128, evb_vec128) };
+		__m128i blendSrc32[4];
+		
+		if (LAYERTYPE == GPULayerType_3D)
+		{
+			blendSrc32[0] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src0, src0, dst0);
+			blendSrc32[1] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src1, src1, dst1);
+			blendSrc32[2] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src2, src2, dst2);
+			blendSrc32[3] = this->_ColorEffectBlend3D<OUTPUTFORMAT>(src3, src3, dst3);
+		}
+		else
+		{
+			blendSrc32[0] = this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[0], dst0, eva_vec128, evb_vec128);
+			blendSrc32[1] = this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[1], dst1, eva_vec128, evb_vec128);
+			blendSrc32[2] = this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[2], dst2, eva_vec128, evb_vec128);
+			blendSrc32[3] = this->_ColorEffectBlend<OUTPUTFORMAT>(tmpSrc[3], dst3, eva_vec128, evb_vec128);
+		}
 		
 		const __m128i blendMask32[4] = { _mm_unpacklo_epi16(blendMask16[0], blendMask16[0]),
 		                                 _mm_unpackhi_epi16(blendMask16[0], blendMask16[0]),
@@ -2273,269 +2340,6 @@ FORCEINLINE void GPUEngineBase::_PixelEffectWithMask16_SSE2(GPUEngineCompositorI
 	}
 	
 	dstLayerID = _mm_blendv_epi8(dstLayerID, srcLayerID_vec128, passMask8);
-}
-
-#endif
-
-// TODO: Unify this method with GPUEngineBase::_PixelEffect().
-// We can't unify this yet because the output framebuffer is in RGBA5551, but the 3D source pixels are in RGBA6665.
-// However, GPUEngineBase::_PixelEffect() takes source pixels in RGB555. In order to unify the methods, all pixels
-// must be processed in RGBA6665.
-template<NDSColorFormat OUTPUTFORMAT>
-FORCEINLINE void GPUEngineBase::_PixelEffect3D(GPUEngineCompositorInfo &compInfo, const bool enableColorEffect, const FragmentColor srcColor32)
-{
-	u16 &dstColor16 = *compInfo.target.lineColor16;
-	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
-	u8 &dstLayerID = *compInfo.target.lineLayerID;
-	
-	const bool dstEffectEnable = (dstLayerID != GPULayerID_BG0) && compInfo.renderState.dstBlendEnable[dstLayerID];
-	
-	// 3D rendering has a special override: If the destination pixel is set to blend, then always blend.
-	// Test case: When starting a stage in Super Princess Peach, the screen will be solid black unless
-	// blending is forced here.
-	//
-	// This behavior must take priority over checking for the window color effect enable flag.
-	// Test case: Dialogue boxes in Front Mission will be rendered with blending disabled unless
-	// blend forcing takes priority.
-	bool forceBlendEffect = dstEffectEnable;
-	ColorEffect selectedEffect = (forceBlendEffect) ? ColorEffect_Blend : ColorEffect_Disable;
-	
-	// If we're not forcing blending, then select the color effect based on the BLDCNT target flags.
-	if (!forceBlendEffect && enableColorEffect && compInfo.renderState.srcBlendEnable[GPULayerID_BG0])
-	{
-		switch (compInfo.renderState.colorEffect)
-		{
-			// For the Blend effect, both first and second target flags must be checked.
-			case ColorEffect_Blend:
-			{
-				if (dstEffectEnable) selectedEffect = compInfo.renderState.colorEffect;
-				break;
-			}
-				
-			// For the Increase/Decrease Brightness effects, only the first target flag needs to be checked.
-			// Test case: Bomberman Land Touch! dialog boxes will render too dark without this check.
-			case ColorEffect_IncreaseBrightness:
-			case ColorEffect_DecreaseBrightness:
-				selectedEffect = compInfo.renderState.colorEffect;
-				break;
-				
-			default:
-				break;
-		}
-	}
-	
-	// Render the pixel using the selected color effect.
-	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
-	{
-		const u16 srcColor16 = ColorspaceConvert6665To5551<false>(srcColor32);
-		
-		switch (selectedEffect)
-		{
-			case ColorEffect_Disable:
-				dstColor16 = srcColor16;
-				break;
-				
-			case ColorEffect_IncreaseBrightness:
-				dstColor16 = compInfo.renderState.brightnessUpTable555[srcColor16 & 0x7FFF];
-				break;
-				
-			case ColorEffect_DecreaseBrightness:
-				dstColor16 = compInfo.renderState.brightnessDownTable555[srcColor16 & 0x7FFF];
-				break;
-				
-			case ColorEffect_Blend:
-				dstColor16 = this->_ColorEffectBlend3D(srcColor32, dstColor16);
-				break;
-		}
-		
-		dstColor16 |= 0x8000;
-	}
-	else
-	{
-		switch (selectedEffect)
-		{
-			case ColorEffect_Disable:
-				dstColor32 = srcColor32;
-				break;
-				
-			case ColorEffect_IncreaseBrightness:
-				dstColor32 = this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(srcColor32, compInfo.renderState.blendEVY);
-				break;
-				
-			case ColorEffect_DecreaseBrightness:
-				dstColor32 = this->_ColorEffectDecreaseBrightness(srcColor32, compInfo.renderState.blendEVY);
-				break;
-				
-			case ColorEffect_Blend:
-				dstColor32 = this->_ColorEffectBlend3D<OUTPUTFORMAT>(srcColor32, dstColor32);
-				break;
-		}
-		
-		dstColor32.a = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? 0xFF : 0x1F;
-	}
-	
-	dstLayerID = GPULayerID_BG0;
-}
-
-#ifdef ENABLE_SSE2
-
-template <NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
-FORCEINLINE void GPUEngineBase::_Pixel3DEffectWithMask16_SSE2(GPUEngineCompositorInfo &compInfo,
-															  const __m128i &passMask8,
-															  const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0,
-															  __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0,
-															  __m128i &dstLayerID)
-{
-	const __m128i passMask16[2]	= { _mm_unpacklo_epi8(passMask8, passMask8), _mm_unpackhi_epi8(passMask8, passMask8) };
-	
-	const __m128i passMask32[4] = { _mm_unpacklo_epi16(passMask16[0], passMask16[0]),
-									_mm_unpackhi_epi16(passMask16[0], passMask16[0]),
-									_mm_unpacklo_epi16(passMask16[1], passMask16[1]),
-									_mm_unpackhi_epi16(passMask16[1], passMask16[1]) };
-	
-	const __m128i enableColorEffectMask = (WILLPERFORMWINDOWTEST) ? _mm_cmpeq_epi8( _mm_load_si128((__m128i *)(this->_enableColorEffectCustom[compInfo.renderState.selectedLayerID] + compInfo.target.xCustom)), _mm_set1_epi8(1) ) : _mm_set1_epi8(0xFF);
-	
-	__m128i dstEffectEnableMask;
-	
-#ifdef ENABLE_SSSE3
-	dstEffectEnableMask = _mm_shuffle_epi8(compInfo.renderState.dstBlendEnable_SSSE3, dstLayerID);
-	dstEffectEnableMask = _mm_xor_si128( _mm_cmpeq_epi8(dstEffectEnableMask, _mm_setzero_si128()), _mm_set1_epi32(0xFFFFFFFF) );
-#else
-	dstEffectEnableMask =                                   _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG0)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG0]);
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG1)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG1]) );
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG2)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG2]) );
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG3)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG3]) );
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_OBJ)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_OBJ]) );
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_Backdrop)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_Backdrop]) );
-#endif
-	
-	dstEffectEnableMask = _mm_andnot_si128( _mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG0)), dstEffectEnableMask );
-	const __m128i forceBlendEffectMask = dstEffectEnableMask;
-	
-	__m128i tmpSrc[4];
-	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
-	{
-		// Rename our converted 16-bit src colors to reflect what they actually are.
-		tmpSrc[0] = dst2;
-		tmpSrc[1] = dst3;
-	}
-	else
-	{
-		tmpSrc[0] = src0;
-		tmpSrc[1] = src1;
-		tmpSrc[2] = src2;
-		tmpSrc[3] = src3;
-	}
-	
-	// Select the color effect based on the BLDCNT target flags.
-	const __m128i srcEffectEnableMask = compInfo.renderState.srcBlendEnable_SSE2[GPULayerID_BG0];
-	const __m128i colorEffect_vec128 = _mm_blendv_epi8(_mm_set1_epi8(ColorEffect_Disable), _mm_set1_epi8(compInfo.renderState.colorEffect), enableColorEffectMask);
-	const __m128i evy_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVY);
-	
-	switch (compInfo.renderState.colorEffect)
-	{
-		case ColorEffect_IncreaseBrightness:
-		{
-			const __m128i brightnessMask8 = _mm_andnot_si128( forceBlendEffectMask, _mm_and_si128(srcEffectEnableMask, _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_IncreaseBrightness))) );
-			const __m128i brightnessMask16[2] = { _mm_unpacklo_epi8(brightnessMask8, brightnessMask8), _mm_unpackhi_epi8(brightnessMask8, brightnessMask8) };
-			
-			if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
-			{
-				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(tmpSrc[0], evy_vec128), brightnessMask16[0] );
-				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(tmpSrc[1], evy_vec128), brightnessMask16[1] );
-			}
-			else
-			{
-				const __m128i brightnessMask32[4] = { _mm_unpacklo_epi16(brightnessMask16[0], brightnessMask16[0]),
-				                                      _mm_unpackhi_epi16(brightnessMask16[0], brightnessMask16[0]),
-				                                      _mm_unpacklo_epi16(brightnessMask16[1], brightnessMask16[1]),
-				                                      _mm_unpackhi_epi16(brightnessMask16[1], brightnessMask16[1]) };
-				
-				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(tmpSrc[0], evy_vec128), brightnessMask32[0] );
-				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(tmpSrc[1], evy_vec128), brightnessMask32[1] );
-				tmpSrc[2] = _mm_blendv_epi8( tmpSrc[2], this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(tmpSrc[2], evy_vec128), brightnessMask32[2] );
-				tmpSrc[3] = _mm_blendv_epi8( tmpSrc[3], this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(tmpSrc[3], evy_vec128), brightnessMask32[3] );
-			}
-			break;
-		}
-			
-		case ColorEffect_DecreaseBrightness:
-		{
-			const __m128i brightnessMask8 = _mm_andnot_si128( forceBlendEffectMask, _mm_and_si128(srcEffectEnableMask, _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_DecreaseBrightness))) );
-			const __m128i brightnessMask16[2] = { _mm_unpacklo_epi8(brightnessMask8, brightnessMask8), _mm_unpackhi_epi8(brightnessMask8, brightnessMask8) };
-			
-			if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
-			{
-				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(tmpSrc[0], evy_vec128), brightnessMask16[0] );
-				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(tmpSrc[1], evy_vec128), brightnessMask16[1] );
-			}
-			else
-			{
-				const __m128i brightnessMask32[4] = { _mm_unpacklo_epi16(brightnessMask16[0], brightnessMask16[0]),
-				                                      _mm_unpackhi_epi16(brightnessMask16[0], brightnessMask16[0]),
-				                                      _mm_unpacklo_epi16(brightnessMask16[1], brightnessMask16[1]),
-				                                      _mm_unpackhi_epi16(brightnessMask16[1], brightnessMask16[1]) };
-				
-				tmpSrc[0] = _mm_blendv_epi8( tmpSrc[0], this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(tmpSrc[0], evy_vec128), brightnessMask32[0] );
-				tmpSrc[1] = _mm_blendv_epi8( tmpSrc[1], this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(tmpSrc[1], evy_vec128), brightnessMask32[1] );
-				tmpSrc[2] = _mm_blendv_epi8( tmpSrc[2], this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(tmpSrc[2], evy_vec128), brightnessMask32[2] );
-				tmpSrc[3] = _mm_blendv_epi8( tmpSrc[3], this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(tmpSrc[3], evy_vec128), brightnessMask32[3] );
-			}
-			break;
-		}
-			
-		default:
-			break;
-	}
-	
-	// Render the pixel using the selected color effect.
-	const __m128i blendMask8 = _mm_or_si128( forceBlendEffectMask, _mm_and_si128(_mm_and_si128(srcEffectEnableMask, dstEffectEnableMask), _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_Blend))) );
-	const __m128i blendMask16[2] = { _mm_unpacklo_epi8(blendMask8, blendMask8), _mm_unpackhi_epi8(blendMask8, blendMask8) };
-	
-	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
-	{
-		const __m128i blendSrc16[2] = { this->_ColorEffectBlend3D<OUTPUTFORMAT>(src0, src1, dst0), this->_ColorEffectBlend3D<OUTPUTFORMAT>(src2, src3, dst1) };
-		tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc16[0], blendMask16[0]);
-		tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc16[1], blendMask16[1]);
-		
-		// Combine the final colors.
-		tmpSrc[0] = _mm_or_si128(tmpSrc[0], _mm_set1_epi16(0x8000));
-		tmpSrc[1] = _mm_or_si128(tmpSrc[1], _mm_set1_epi16(0x8000));
-		
-		dst0 = _mm_blendv_epi8(dst0, tmpSrc[0], passMask16[0]);
-		dst1 = _mm_blendv_epi8(dst1, tmpSrc[1], passMask16[1]);
-	}
-	else
-	{
-		const __m128i blendSrc32[4] = { this->_ColorEffectBlend3D<OUTPUTFORMAT>(src0, src0, dst0),
-		                                this->_ColorEffectBlend3D<OUTPUTFORMAT>(src1, src1, dst1),
-		                                this->_ColorEffectBlend3D<OUTPUTFORMAT>(src2, src2, dst2),
-		                                this->_ColorEffectBlend3D<OUTPUTFORMAT>(src3, src3, dst3) };
-		
-		const __m128i blendMask32[4] = { _mm_unpacklo_epi16(blendMask16[0], blendMask16[0]),
-		                                 _mm_unpackhi_epi16(blendMask16[0], blendMask16[0]),
-		                                 _mm_unpacklo_epi16(blendMask16[1], blendMask16[1]),
-		                                 _mm_unpackhi_epi16(blendMask16[1], blendMask16[1]) };
-		
-		const __m128i alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
-		
-		tmpSrc[0] = _mm_blendv_epi8(tmpSrc[0], blendSrc32[0], blendMask32[0]);
-		tmpSrc[1] = _mm_blendv_epi8(tmpSrc[1], blendSrc32[1], blendMask32[1]);
-		tmpSrc[2] = _mm_blendv_epi8(tmpSrc[2], blendSrc32[2], blendMask32[2]);
-		tmpSrc[3] = _mm_blendv_epi8(tmpSrc[3], blendSrc32[3], blendMask32[3]);
-		
-		tmpSrc[0] = _mm_or_si128(tmpSrc[0], alphaBits);
-		tmpSrc[1] = _mm_or_si128(tmpSrc[1], alphaBits);
-		tmpSrc[2] = _mm_or_si128(tmpSrc[2], alphaBits);
-		tmpSrc[3] = _mm_or_si128(tmpSrc[3], alphaBits);
-		
-		dst0 = _mm_blendv_epi8(dst0, tmpSrc[0], passMask32[0]);
-		dst1 = _mm_blendv_epi8(dst1, tmpSrc[1], passMask32[1]);
-		dst2 = _mm_blendv_epi8(dst2, tmpSrc[2], passMask32[2]);
-		dst3 = _mm_blendv_epi8(dst3, tmpSrc[3], passMask32[3]);
-	}
-	
-	dstLayerID = _mm_blendv_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG0), passMask8);
 }
 
 #endif
@@ -2743,7 +2547,8 @@ FORCEINLINE void GPUEngineBase::_RenderPixelSingle(GPUEngineCompositorInfo &comp
 	}
 	else
 	{
-		this->_PixelEffect<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST>(compInfo, srcColor16, 0);
+		const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+		this->_PixelEffect<OUTPUTFORMAT, GPULayerType_BG>(compInfo, srcColor16, 0, enableColorEffect);
 	}
 }
 
@@ -2955,13 +2760,13 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 			{
 				const __m128i spriteAlpha = _mm_setzero_si128();
 				
-				this->_PixelEffectWithMask16_SSE2<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST>(compInfo,
-																							  passMask8,
-																							  src[3], src[2], src[1], src[0],
-																							  spriteAlpha,
-																							  srcEffectEnableMask,
-																							  dst[3], dst[2], dst[1], dst[0],
-																							  dstLayerID_vec128);
+				this->_PixelEffectWithMask16_SSE2<OUTPUTFORMAT, GPULayerType_BG, WILLPERFORMWINDOWTEST>(compInfo,
+																										passMask8,
+																										src[3], src[2], src[1], src[0],
+																										spriteAlpha,
+																										srcEffectEnableMask,
+																										dst[3], dst[2], dst[1], dst[0],
+																										dstLayerID_vec128);
 			}
 			
 			_mm_store_si128((__m128i *)*compInfo.target.lineColor + 0, dst[0]);
@@ -2998,7 +2803,8 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 			}
 			else
 			{
-				this->_PixelEffect<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST>(compInfo, this->_bgLayerColorCustom[compInfo.target.xCustom], 0);
+				const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+				this->_PixelEffect<OUTPUTFORMAT, GPULayerType_BG>(compInfo, this->_bgLayerColorCustom[compInfo.target.xCustom], 0, enableColorEffect);
 			}
 		}
 	}
@@ -3115,13 +2921,13 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
 		{
 			const __m128i spriteAlpha = _mm_setzero_si128();
 			
-			this->_PixelEffectWithMask16_SSE2<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST>(compInfo,
-																						  passMask8,
-																						  src[3], src[2], src[1], src[0],
-																						  spriteAlpha,
-																						  srcEffectEnableMask,
-																						  dst[3], dst[2], dst[1], dst[0],
-																						  dstLayerID_vec128);
+			this->_PixelEffectWithMask16_SSE2<OUTPUTFORMAT, GPULayerType_BG, WILLPERFORMWINDOWTEST>(compInfo,
+																									passMask8,
+																									src[3], src[2], src[1], src[0],
+																									spriteAlpha,
+																									srcEffectEnableMask,
+																									dst[3], dst[2], dst[1], dst[0],
+																									dstLayerID_vec128);
 		}
 		
 		_mm_store_si128((__m128i *)*compInfo.target.lineColor + 0, dst[0]);
@@ -3160,7 +2966,8 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
 			}
 			else
 			{
-				this->_PixelEffect<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST>(compInfo, ((u32 *)vramColorPtr)[i], 0);
+				const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+				this->_PixelEffect<OUTPUTFORMAT, GPULayerType_BG>(compInfo, ((u32 *)vramColorPtr)[i], 0, enableColorEffect);
 			}
 		}
 		else
@@ -3176,7 +2983,8 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
 			}
 			else
 			{
-				this->_PixelEffect<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST>(compInfo, ((u16 *)vramColorPtr)[i], 0);
+				const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+				this->_PixelEffect<OUTPUTFORMAT, GPULayerType_BG>(compInfo, ((u16 *)vramColorPtr)[i], 0, enableColorEffect);
 			}
 		}
 	}
@@ -4347,7 +4155,8 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 				}
 				else
 				{
-					this->_PixelEffect<OUTPUTFORMAT, true, WILLPERFORMWINDOWTEST>(compInfo, vramColorPtr[srcX], this->_sprAlpha[srcX]);
+					const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+					this->_PixelEffect<OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, vramColorPtr[srcX], this->_sprAlpha[srcX], enableColorEffect);
 				}
 			}
 		}
@@ -4374,7 +4183,8 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 				}
 				else
 				{
-					this->_PixelEffect<OUTPUTFORMAT, true, WILLPERFORMWINDOWTEST>(compInfo, this->_sprColor[srcX], this->_sprAlpha[srcX]);
+					const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+					this->_PixelEffect<OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, this->_sprColor[srcX], this->_sprAlpha[srcX], enableColorEffect);
 				}
 			}
 		}
@@ -4422,7 +4232,8 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 							}
 							else
 							{
-								this->_PixelEffect<OUTPUTFORMAT, true, WILLPERFORMWINDOWTEST>(compInfo, ((FragmentColor *)vramColorPtr)[dstX], this->_sprAlpha[srcX]);
+								const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+								this->_PixelEffect<OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, ((FragmentColor *)vramColorPtr)[dstX], this->_sprAlpha[srcX], enableColorEffect);
 							}
 						}
 						else
@@ -4433,7 +4244,8 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 							}
 							else
 							{
-								this->_PixelEffect<OUTPUTFORMAT, true, WILLPERFORMWINDOWTEST>(compInfo, ((u16 *)vramColorPtr)[dstX], this->_sprAlpha[srcX]);
+								const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+								this->_PixelEffect<OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, ((u16 *)vramColorPtr)[dstX], this->_sprAlpha[srcX], enableColorEffect);
 							}
 						}
 					}
@@ -4478,7 +4290,8 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 						}
 						else
 						{
-							this->_PixelEffect<OUTPUTFORMAT, true, WILLPERFORMWINDOWTEST>(compInfo, this->_sprColor[srcX], this->_sprAlpha[srcX]);
+							const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+							this->_PixelEffect<OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, this->_sprColor[srcX], this->_sprAlpha[srcX], enableColorEffect);
 						}
 					}
 				}
@@ -5906,13 +5719,17 @@ void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 	
 	if (hofs == 0)
 	{
+#ifdef ENABLE_SSE2
+		const size_t ssePixCount = (compInfo.line.widthCustom - (compInfo.line.widthCustom % 16));
+		const __m128i srcEffectEnableMask = compInfo.renderState.srcBlendEnable_SSE2[compInfo.renderState.selectedLayerID];
+#endif
+		
 		for (size_t line = 0; line < compInfo.line.renderCount; line++)
 		{
 			compInfo.target.xNative = 0;
 			compInfo.target.xCustom = 0;
-#ifdef ENABLE_SSE2
-			const size_t ssePixCount = compInfo.line.widthCustom - (compInfo.line.widthCustom % 16);
 			
+#ifdef ENABLE_SSE2
 			for (; compInfo.target.xCustom < ssePixCount; srcLinePtr+=16, compInfo.target.xCustom+=16, compInfo.target.xNative = _gpuDstToSrcIndex[compInfo.target.xCustom], compInfo.target.lineColor16+=16, compInfo.target.lineColor32+=16, compInfo.target.lineLayerID+=16)
 			{
 				const __m128i src[4]	= { _mm_load_si128((__m128i *)srcLinePtr + 0),
@@ -5952,9 +5769,9 @@ void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 				
 				if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 				{
-					// Instead of letting these vectors go to waste, let's convert the src colors to 16-bit now and
-					// then pack the converted 16-bit colors into these vectors. Note that these are 16-bit source
-					// pixels now.
+					// 3D layer blending requires that all src colors are preserved as 32-bit values.
+					// Since dst2 and dst3 are currently unused for RGB555 output, we using these variables
+					// to store the converted 16-bit src colors.
 					dst[2] = _mm_packs_epi32( _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[0], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[0], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[0], _mm_set1_epi32(0x003E0000)), 7)),
 											  _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x003E0000)), 7)) );
 					dst[3] = _mm_packs_epi32( _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x003E0000)), 7)),
@@ -6018,11 +5835,15 @@ void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 				}
 				else
 				{
-					this->_Pixel3DEffectWithMask16_SSE2<OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo,
-																							 passMask8,
-																							 src[3], src[2], src[1], src[0],
-																							 dst[3], dst[2], dst[1], dst[0],
-																							 dstLayerID_vec128);
+					const __m128i spriteAlpha = _mm_setzero_si128();
+					
+					this->_PixelEffectWithMask16_SSE2<OUTPUTFORMAT, GPULayerType_3D, WILLPERFORMWINDOWTEST>(compInfo,
+																											passMask8,
+																											src[3], src[2], src[1], src[0],
+																											spriteAlpha,
+																											srcEffectEnableMask,
+																											dst[3], dst[2], dst[1], dst[0],
+																											dstLayerID_vec128);
 				}
 				
 				_mm_store_si128((__m128i *)*compInfo.target.lineColor + 0, dst[0]);
@@ -6055,8 +5876,7 @@ void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 				else
 				{
 					const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectCustom[compInfo.renderState.selectedLayerID][compInfo.target.xCustom] != 0) : true;
-					
-					this->_PixelEffect3D<OUTPUTFORMAT>(compInfo, enableColorEffect, *srcLinePtr);
+					this->_PixelEffect<OUTPUTFORMAT, GPULayerType_3D>(compInfo, *srcLinePtr, 0, enableColorEffect);
 				}
 			}
 		}
@@ -6092,8 +5912,7 @@ void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 				else
 				{
 					const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectCustom[compInfo.renderState.selectedLayerID][compInfo.target.xCustom] != 0) : true;
-					
-					this->_PixelEffect3D<OUTPUTFORMAT>(compInfo, enableColorEffect, srcLinePtr[srcX]);
+					this->_PixelEffect<OUTPUTFORMAT, GPULayerType_3D>(compInfo, srcLinePtr[srcX], 0, enableColorEffect);
 				}
 			}
 			
