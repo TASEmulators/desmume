@@ -44,7 +44,7 @@
 	#define FORCEINLINE
 	//compilation speed hack (cuts time exactly in half by cutting out permutations)
 	#define DISABLE_MOSAIC
-	#define DISABLE_COLOREFFECTDISABLEHINT
+	#define DISABLE_COMPOSITOR_FAST_PATHS
 #endif
 
 //instantiate static instance
@@ -1791,8 +1791,106 @@ FORCEINLINE void GPUEngineBase::_PixelCopy(GPUEngineCompositorInfo &compInfo, co
 	}
 }
 
+template <NDSColorFormat OUTPUTFORMAT>
+FORCEINLINE void GPUEngineBase::_PixelBrightnessUp(GPUEngineCompositorInfo &compInfo, const u16 srcColor16)
+{
+	u16 &dstColor16 = *compInfo.target.lineColor16;
+	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
+	u8 &dstLayerID = *compInfo.target.lineLayerID;
+	
+	switch (OUTPUTFORMAT)
+	{
+		case NDSColorFormat_BGR555_Rev:
+			dstColor16 = compInfo.renderState.brightnessUpTable555[srcColor16 & 0x7FFF] | 0x8000;
+			break;
+			
+		case NDSColorFormat_BGR666_Rev:
+			dstColor32 = compInfo.renderState.brightnessUpTable666[srcColor16 & 0x7FFF];
+			dstColor32.a = 0x1F;
+			break;
+			
+		case NDSColorFormat_BGR888_Rev:
+			dstColor32 = compInfo.renderState.brightnessUpTable888[srcColor16 & 0x7FFF];
+			dstColor32.a = 0xFF;
+			break;
+	}
+	
+	dstLayerID = compInfo.renderState.selectedLayerID;
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+FORCEINLINE void GPUEngineBase::_PixelBrightnessUp(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32)
+{
+	u16 &dstColor16 = *compInfo.target.lineColor16;
+	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
+	u8 &dstLayerID = *compInfo.target.lineLayerID;
+	
+	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+	{
+		const u16 srcColor16 = ColorspaceConvert6665To5551<false>(srcColor32);
+		dstColor16 = compInfo.renderState.brightnessUpTable555[srcColor16 & 0x7FFF];
+		dstColor16 = dstColor16 | 0x8000;
+	}
+	else
+	{
+		dstColor32 = this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(srcColor32, compInfo.renderState.blendEVY);
+		dstColor32.a = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? 0xFF : 0x1F;
+	}
+	
+	dstLayerID = compInfo.renderState.selectedLayerID;
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+FORCEINLINE void GPUEngineBase::_PixelBrightnessDown(GPUEngineCompositorInfo &compInfo, const u16 srcColor16)
+{
+	u16 &dstColor16 = *compInfo.target.lineColor16;
+	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
+	u8 &dstLayerID = *compInfo.target.lineLayerID;
+	
+	switch (OUTPUTFORMAT)
+	{
+		case NDSColorFormat_BGR555_Rev:
+			dstColor16 = compInfo.renderState.brightnessDownTable555[srcColor16 & 0x7FFF] | 0x8000;
+			break;
+			
+		case NDSColorFormat_BGR666_Rev:
+			dstColor32 = compInfo.renderState.brightnessDownTable666[srcColor16 & 0x7FFF];
+			dstColor32.a = 0x1F;
+			break;
+			
+		case NDSColorFormat_BGR888_Rev:
+			dstColor32 = compInfo.renderState.brightnessDownTable888[srcColor16 & 0x7FFF];
+			dstColor32.a = 0xFF;
+			break;
+	}
+	
+	dstLayerID = compInfo.renderState.selectedLayerID;
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+FORCEINLINE void GPUEngineBase::_PixelBrightnessDown(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32)
+{
+	u16 &dstColor16 = *compInfo.target.lineColor16;
+	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
+	u8 &dstLayerID = *compInfo.target.lineLayerID;
+	
+	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+	{
+		const u16 srcColor16 = ColorspaceConvert6665To5551<false>(srcColor32);
+		dstColor16 = compInfo.renderState.brightnessDownTable555[srcColor16 & 0x7FFF];
+		dstColor16 = dstColor16 | 0x8000;
+	}
+	else
+	{
+		dstColor32 = this->_ColorEffectDecreaseBrightness(srcColor32, compInfo.renderState.blendEVY);
+		dstColor32.a = (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) ? 0xFF : 0x1F;
+	}
+	
+	dstLayerID = compInfo.renderState.selectedLayerID;
+}
+
 template <NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE>
-FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const u8 spriteAlpha, const bool enableColorEffect)
+FORCEINLINE void GPUEngineBase::_PixelUnknownEffect(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const u8 spriteAlpha, const bool enableColorEffect)
 {
 	u16 &dstColor16 = *compInfo.target.lineColor16;
 	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
@@ -1952,7 +2050,7 @@ FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, 
 }
 
 template <NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE>
-FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32, const u8 spriteAlpha, const bool enableColorEffect)
+FORCEINLINE void GPUEngineBase::_PixelUnknownEffect(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32, const u8 spriteAlpha, const bool enableColorEffect)
 {
 	u16 &dstColor16 = *compInfo.target.lineColor16;
 	FragmentColor &dstColor32 = *compInfo.target.lineColor32;
@@ -2073,6 +2171,60 @@ FORCEINLINE void GPUEngineBase::_PixelEffect(GPUEngineCompositorInfo &compInfo, 
 	dstLayerID = compInfo.renderState.selectedLayerID;
 }
 
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE>
+FORCEINLINE void GPUEngineBase::_PixelComposite(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const u8 spriteAlpha, const bool enableColorEffect)
+{
+	switch (COMPOSITORMODE)
+	{
+		case GPUCompositorMode_Debug:
+			this->_PixelCopy<OUTPUTFORMAT, true>(compInfo, srcColor16);
+			break;
+			
+		case GPUCompositorMode_Copy:
+			this->_PixelCopy<OUTPUTFORMAT, false>(compInfo, srcColor16);
+			break;
+			
+		case GPUCompositorMode_BrightUp:
+			this->_PixelBrightnessUp<OUTPUTFORMAT>(compInfo, srcColor16);
+			break;
+			
+		case GPUCompositorMode_BrightDown:
+			this->_PixelBrightnessDown<OUTPUTFORMAT>(compInfo, srcColor16);
+			break;
+			
+		default:
+			this->_PixelUnknownEffect<OUTPUTFORMAT, LAYERTYPE>(compInfo, srcColor16, spriteAlpha, enableColorEffect);
+			break;
+	}
+}
+
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE>
+FORCEINLINE void GPUEngineBase::_PixelComposite(GPUEngineCompositorInfo &compInfo, FragmentColor srcColor32, const u8 spriteAlpha, const bool enableColorEffect)
+{
+	switch (COMPOSITORMODE)
+	{
+		case GPUCompositorMode_Debug:
+			this->_PixelCopy<OUTPUTFORMAT, true>(compInfo, srcColor32);
+			break;
+			
+		case GPUCompositorMode_Copy:
+			this->_PixelCopy<OUTPUTFORMAT, false>(compInfo, srcColor32);
+			break;
+			
+		case GPUCompositorMode_BrightUp:
+			this->_PixelBrightnessUp<OUTPUTFORMAT>(compInfo, srcColor32);
+			break;
+			
+		case GPUCompositorMode_BrightDown:
+			this->_PixelBrightnessDown<OUTPUTFORMAT>(compInfo, srcColor32);
+			break;
+			
+		default:
+			this->_PixelUnknownEffect<OUTPUTFORMAT, LAYERTYPE>(compInfo, srcColor32, spriteAlpha, enableColorEffect);
+			break;
+	}
+}
+
 #ifdef ENABLE_SSE2
 
 template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER>
@@ -2140,14 +2292,138 @@ FORCEINLINE void GPUEngineBase::_PixelCopyWithMask16_SSE2(GPUEngineCompositorInf
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST>
-FORCEINLINE void GPUEngineBase::_PixelEffectWithMask16_SSE2(GPUEngineCompositorInfo &compInfo,
-															const __m128i &passMask8,
+template <NDSColorFormat OUTPUTFORMAT>
+FORCEINLINE void GPUEngineBase::_PixelBrightnessUp16_SSE2(GPUEngineCompositorInfo &compInfo,
+														  const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0,
+														  __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0,
+														  __m128i &dstLayerID)
+{
+	const __m128i evy_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVY);
+	
+	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+	{
+		const __m128i alphaBits = _mm_set1_epi16(0x8000);
+		dst0 = _mm_or_si128(this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(src0, evy_vec128), alphaBits);
+		dst1 = _mm_or_si128(this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(src1, evy_vec128), alphaBits);
+	}
+	else
+	{
+		const __m128i alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
+		dst0 = _mm_or_si128(this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(src0, evy_vec128), alphaBits);
+		dst1 = _mm_or_si128(this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(src1, evy_vec128), alphaBits);
+		dst2 = _mm_or_si128(this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(src2, evy_vec128), alphaBits);
+		dst3 = _mm_or_si128(this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(src3, evy_vec128), alphaBits);
+	}
+	
+	dstLayerID = _mm_set1_epi8(compInfo.renderState.selectedLayerID);
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+FORCEINLINE void GPUEngineBase::_PixelBrightnessUpWithMask16_SSE2(GPUEngineCompositorInfo &compInfo,
+																  const __m128i &passMask8,
+																  const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0,
+																  __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0,
+																  __m128i &dstLayerID)
+{
+	const __m128i passMask16[2]	= { _mm_unpacklo_epi8(passMask8, passMask8),
+								    _mm_unpackhi_epi8(passMask8, passMask8) };
+	
+	const __m128i evy_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVY);
+	
+	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+	{
+		const __m128i alphaBits = _mm_set1_epi16(0x8000);
+		dst0 = _mm_blendv_epi8(dst0, _mm_or_si128(this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(src0, evy_vec128), alphaBits), passMask16[0]);
+		dst1 = _mm_blendv_epi8(dst1, _mm_or_si128(this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(src1, evy_vec128), alphaBits), passMask16[1]);
+	}
+	else
+	{
+		const __m128i passMask32[4]	= { _mm_unpacklo_epi16(passMask16[0], passMask16[0]),
+									    _mm_unpackhi_epi16(passMask16[0], passMask16[0]),
+									    _mm_unpacklo_epi16(passMask16[1], passMask16[1]),
+									    _mm_unpackhi_epi16(passMask16[1], passMask16[1]) };
+		
+		const __m128i alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
+		dst0 = _mm_blendv_epi8(dst0, _mm_or_si128(this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(src0, evy_vec128), alphaBits), passMask32[0]);
+		dst1 = _mm_blendv_epi8(dst1, _mm_or_si128(this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(src1, evy_vec128), alphaBits), passMask32[1]);
+		dst2 = _mm_blendv_epi8(dst2, _mm_or_si128(this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(src2, evy_vec128), alphaBits), passMask32[2]);
+		dst3 = _mm_blendv_epi8(dst3, _mm_or_si128(this->_ColorEffectIncreaseBrightness<OUTPUTFORMAT>(src3, evy_vec128), alphaBits), passMask32[3]);
+	}
+	
+	const __m128i srcLayerID_vec128 = _mm_set1_epi8(compInfo.renderState.selectedLayerID);
+	dstLayerID = _mm_blendv_epi8(dstLayerID, srcLayerID_vec128, passMask8);
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+FORCEINLINE void GPUEngineBase::_PixelBrightnessDown16_SSE2(GPUEngineCompositorInfo &compInfo,
 															const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0,
-															const __m128i &spriteAlpha,
-															const __m128i &srcEffectEnableMask,
 															__m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0,
 															__m128i &dstLayerID)
+{
+	const __m128i evy_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVY);
+	
+	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+	{
+		const __m128i alphaBits = _mm_set1_epi16(0x8000);
+		dst0 = _mm_or_si128(this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(src0, evy_vec128), alphaBits);
+		dst1 = _mm_or_si128(this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(src1, evy_vec128), alphaBits);
+	}
+	else
+	{
+		const __m128i alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
+		dst0 = _mm_or_si128(this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(src0, evy_vec128), alphaBits);
+		dst1 = _mm_or_si128(this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(src1, evy_vec128), alphaBits);
+		dst2 = _mm_or_si128(this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(src2, evy_vec128), alphaBits);
+		dst3 = _mm_or_si128(this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(src3, evy_vec128), alphaBits);
+	}
+	
+	dstLayerID = _mm_set1_epi8(compInfo.renderState.selectedLayerID);
+}
+
+template <NDSColorFormat OUTPUTFORMAT>
+FORCEINLINE void GPUEngineBase::_PixelBrightnessDownWithMask16_SSE2(GPUEngineCompositorInfo &compInfo,
+																	const __m128i &passMask8,
+																	const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0,
+																	__m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0,
+																	__m128i &dstLayerID)
+{
+	const __m128i passMask16[2]	= { _mm_unpacklo_epi8(passMask8, passMask8),
+								    _mm_unpackhi_epi8(passMask8, passMask8) };
+	
+	const __m128i evy_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVY);
+	
+	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+	{
+		const __m128i alphaBits = _mm_set1_epi16(0x8000);
+		dst0 = _mm_blendv_epi8(dst0, _mm_or_si128(this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(src0, evy_vec128), alphaBits), passMask16[0]);
+		dst1 = _mm_blendv_epi8(dst1, _mm_or_si128(this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(src1, evy_vec128), alphaBits), passMask16[1]);
+	}
+	else
+	{
+		const __m128i passMask32[4]	= { _mm_unpacklo_epi16(passMask16[0], passMask16[0]),
+									    _mm_unpackhi_epi16(passMask16[0], passMask16[0]),
+									    _mm_unpacklo_epi16(passMask16[1], passMask16[1]),
+									    _mm_unpackhi_epi16(passMask16[1], passMask16[1]) };
+		
+		const __m128i alphaBits = _mm_set1_epi32((OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? 0x1F000000 : 0xFF000000);
+		dst0 = _mm_blendv_epi8(dst0, _mm_or_si128(this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(src0, evy_vec128), alphaBits), passMask32[0]);
+		dst1 = _mm_blendv_epi8(dst1, _mm_or_si128(this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(src1, evy_vec128), alphaBits), passMask32[1]);
+		dst2 = _mm_blendv_epi8(dst2, _mm_or_si128(this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(src2, evy_vec128), alphaBits), passMask32[2]);
+		dst3 = _mm_blendv_epi8(dst3, _mm_or_si128(this->_ColorEffectDecreaseBrightness<OUTPUTFORMAT>(src3, evy_vec128), alphaBits), passMask32[3]);
+	}
+	
+	const __m128i srcLayerID_vec128 = _mm_set1_epi8(compInfo.renderState.selectedLayerID);
+	dstLayerID = _mm_blendv_epi8(dstLayerID, srcLayerID_vec128, passMask8);
+}
+
+template <NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST>
+FORCEINLINE void GPUEngineBase::_PixelUnknownEffectWithMask16_SSE2(GPUEngineCompositorInfo &compInfo,
+																   const __m128i &passMask8,
+																   const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0,
+																   const __m128i &spriteAlpha,
+																   const __m128i &srcEffectEnableMask,
+																   __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0,
+																   __m128i &dstLayerID)
 {
 	const __m128i srcLayerID_vec128 = _mm_set1_epi8(compInfo.renderState.selectedLayerID);
 	const __m128i passMask16[2] = { _mm_unpacklo_epi8(passMask8, passMask8),
@@ -2387,10 +2663,10 @@ void GPUEngineBase::_MosaicSpriteLine(GPUEngineCompositorInfo &compInfo, u16 *__
 	}
 }
 
-template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc, bool WRAP>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc, bool WRAP>
 void GPUEngineBase::_RenderPixelIterate_Final(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal)
 {
-	const u16 lineWidth = (ISDEBUGRENDER) ? compInfo.renderState.selectedBGLayer->size.width : GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	const u16 lineWidth = (COMPOSITORMODE == GPUCompositorMode_Debug) ? compInfo.renderState.selectedBGLayer->size.width : GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	const s16 dx = (s16)LOCAL_TO_LE_16(param.BGnPA.value);
 	const s16 dy = (s16)LOCAL_TO_LE_16(param.BGnPC.value);
 	const s32 wh = compInfo.renderState.selectedBGLayer->size.width;
@@ -2434,7 +2710,7 @@ void GPUEngineBase::_RenderPixelIterate_Final(GPUEngineCompositorInfo &compInfo,
 				}
 				else
 				{
-					this->_RenderPixelSingle<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT>(compInfo, i, srcColor, (index != 0));
+					this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, i, srcColor, (index != 0));
 				}
 				
 				auxX++;
@@ -2465,28 +2741,28 @@ void GPUEngineBase::_RenderPixelIterate_Final(GPUEngineCompositorInfo &compInfo,
 			}
 			else
 			{
-				this->_RenderPixelSingle<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT>(compInfo, i, srcColor, (index != 0));
+				this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, i, srcColor, (index != 0));
 			}
 		}
 	}
 }
 
-template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc, bool WRAP>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc, bool WRAP>
 void GPUEngineBase::_RenderPixelIterate_ApplyWrap(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal)
 {
-	this->_RenderPixelIterate_Final<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, GetPixelFunc, WRAP>(compInfo, param, map, tile, pal);
+	this->_RenderPixelIterate_Final<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, GetPixelFunc, WRAP>(compInfo, param, map, tile, pal);
 }
 
-template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc>
 void GPUEngineBase::_RenderPixelIterate(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal)
 {
 	if (compInfo.renderState.selectedBGLayer->isDisplayWrapped)
 	{
-		this->_RenderPixelIterate_ApplyWrap<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, GetPixelFunc, true>(compInfo, param, map, tile, pal);
+		this->_RenderPixelIterate_ApplyWrap<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, GetPixelFunc, true>(compInfo, param, map, tile, pal);
 	}
 	else
 	{
-		this->_RenderPixelIterate_ApplyWrap<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, GetPixelFunc, false>(compInfo, param, map, tile, pal);
+		this->_RenderPixelIterate_ApplyWrap<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, GetPixelFunc, false>(compInfo, param, map, tile, pal);
 	}
 }
 
@@ -2502,7 +2778,7 @@ TILEENTRY GPUEngineBase::_GetTileEntry(const u32 tileMapAddress, const u16 xOffs
 	return theTileEntry;
 }
 
-template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT>
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST>
 FORCEINLINE void GPUEngineBase::_RenderPixelSingle(GPUEngineCompositorInfo &compInfo, const size_t srcX, u16 srcColor16, const bool opaque)
 {
 	bool willRenderColor = opaque;
@@ -2541,18 +2817,11 @@ FORCEINLINE void GPUEngineBase::_RenderPixelSingle(GPUEngineCompositorInfo &comp
 	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHeadNative + srcX;
 	compInfo.target.lineColor32 = (FragmentColor *)compInfo.target.lineColorHeadNative + srcX;
 	
-	if (COLOREFFECTDISABLEDHINT)
-	{
-		this->_PixelCopy<OUTPUTFORMAT, ISDEBUGRENDER>(compInfo, srcColor16);
-	}
-	else
-	{
-		const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
-		this->_PixelEffect<OUTPUTFORMAT, GPULayerType_BG>(compInfo, srcColor16, 0, enableColorEffect);
-	}
+	const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+	this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_BG>(compInfo, srcColor16, 0, enableColorEffect);
 }
 
-template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST>
 void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 {
 #ifdef ENABLE_SSE2
@@ -2724,7 +2993,44 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 			
 			// Read the destination pixels into registers if we're doing a masked pixel write.
 			const bool didAllPixelsPass = (passMaskValue == 0xFFFF);
-			if (!COLOREFFECTDISABLEDHINT || !didAllPixelsPass)
+			
+			if ((COMPOSITORMODE != GPUCompositorMode_Unknown) && didAllPixelsPass)
+			{
+				switch (COMPOSITORMODE)
+				{
+					case GPUCompositorMode_Debug:
+						this->_PixelCopy16_SSE2<OUTPUTFORMAT, true>(compInfo,
+																	src[3], src[2], src[1], src[0],
+																	dst[3], dst[2], dst[1], dst[0],
+																	dstLayerID_vec128);
+						break;
+						
+					case GPUCompositorMode_Copy:
+						this->_PixelCopy16_SSE2<OUTPUTFORMAT, false>(compInfo,
+																	 src[3], src[2], src[1], src[0],
+																	 dst[3], dst[2], dst[1], dst[0],
+																	 dstLayerID_vec128);
+						break;
+						
+					case GPUCompositorMode_BrightUp:
+						this->_PixelBrightnessUp16_SSE2<OUTPUTFORMAT>(compInfo,
+																	  src[3], src[2], src[1], src[0],
+																	  dst[3], dst[2], dst[1], dst[0],
+																	  dstLayerID_vec128);
+						break;
+						
+					case GPUCompositorMode_BrightDown:
+						this->_PixelBrightnessDown16_SSE2<OUTPUTFORMAT>(compInfo,
+																		src[3], src[2], src[1], src[0],
+																		dst[3], dst[2], dst[1], dst[0],
+																		dstLayerID_vec128);
+						break;
+						
+					default:
+						break;
+				}
+			}
+			else
 			{
 				dst[0] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 0);
 				dst[1] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 1);
@@ -2736,37 +3042,55 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 				}
 				
 				dstLayerID_vec128 = _mm_load_si128((__m128i *)compInfo.target.lineLayerID);
-			}
-			
-			if (COLOREFFECTDISABLEDHINT)
-			{
-				if (didAllPixelsPass)
-				{
-					this->_PixelCopy16_SSE2<OUTPUTFORMAT, ISDEBUGRENDER>(compInfo,
-																		 src[3], src[2], src[1], src[0],
-																		 dst[3], dst[2], dst[1], dst[0],
-																		 dstLayerID_vec128);
-				}
-				else
-				{
-					this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, ISDEBUGRENDER>(compInfo,
-																				 passMask8,
-																				 src[3], src[2], src[1], src[0],
-																				 dst[3], dst[2], dst[1], dst[0],
-																				 dstLayerID_vec128);
-				}
-			}
-			else
-			{
-				const __m128i spriteAlpha = _mm_setzero_si128();
 				
-				this->_PixelEffectWithMask16_SSE2<OUTPUTFORMAT, GPULayerType_BG, WILLPERFORMWINDOWTEST>(compInfo,
-																										passMask8,
-																										src[3], src[2], src[1], src[0],
-																										spriteAlpha,
-																										srcEffectEnableMask,
-																										dst[3], dst[2], dst[1], dst[0],
-																										dstLayerID_vec128);
+				switch (COMPOSITORMODE)
+				{
+					case GPUCompositorMode_Debug:
+						this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, true>(compInfo,
+																			passMask8,
+																			src[3], src[2], src[1], src[0],
+																			dst[3], dst[2], dst[1], dst[0],
+																			dstLayerID_vec128);
+						break;
+						
+					case GPUCompositorMode_Copy:
+						this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, false>(compInfo,
+																			 passMask8,
+																			 src[3], src[2], src[1], src[0],
+																			 dst[3], dst[2], dst[1], dst[0],
+																			 dstLayerID_vec128);
+						break;
+						
+					case GPUCompositorMode_BrightUp:
+						this->_PixelBrightnessUpWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
+																			  passMask8,
+																			  src[3], src[2], src[1], src[0],
+																			  dst[3], dst[2], dst[1], dst[0],
+																			  dstLayerID_vec128);
+						break;
+						
+					case GPUCompositorMode_BrightDown:
+						this->_PixelBrightnessDownWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
+																				passMask8,
+																				src[3], src[2], src[1], src[0],
+																				dst[3], dst[2], dst[1], dst[0],
+																				dstLayerID_vec128);
+						break;
+						
+					default:
+					{
+						const __m128i spriteAlpha = _mm_setzero_si128();
+						
+						this->_PixelUnknownEffectWithMask16_SSE2<OUTPUTFORMAT, GPULayerType_BG, WILLPERFORMWINDOWTEST>(compInfo,
+																													   passMask8,
+																													   src[3], src[2], src[1], src[0],
+																													   spriteAlpha,
+																													   srcEffectEnableMask,
+																													   dst[3], dst[2], dst[1], dst[0],
+																													   dstLayerID_vec128);
+						break;
+					}
+				}
 			}
 			
 			_mm_store_si128((__m128i *)*compInfo.target.lineColor + 0, dst[0]);
@@ -2797,20 +3121,13 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 				continue;
 			}
 			
-			if (COLOREFFECTDISABLEDHINT)
-			{
-				this->_PixelCopy<OUTPUTFORMAT, ISDEBUGRENDER>(compInfo, this->_bgLayerColorCustom[compInfo.target.xCustom]);
-			}
-			else
-			{
-				const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
-				this->_PixelEffect<OUTPUTFORMAT, GPULayerType_BG>(compInfo, this->_bgLayerColorCustom[compInfo.target.xCustom], 0, enableColorEffect);
-			}
+			const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+			this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_BG>(compInfo, this->_bgLayerColorCustom[compInfo.target.xCustom], 0, enableColorEffect);
 		}
 	}
 }
 
-template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST>
 void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
 {
 	const void *__restrict vramColorPtr = GPU->GetCustomVRAMAddressUsingMappedAddress<OUTPUTFORMAT>(compInfo.renderState.selectedBGLayer->BMPAddress, compInfo.line.blockOffsetCustom);
@@ -2885,7 +3202,44 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
 		
 		// Read the destination pixels into registers if we're doing a masked pixel write.
 		const bool didAllPixelsPass = (passMaskValue == 0xFFFF);
-		if (!COLOREFFECTDISABLEDHINT || !didAllPixelsPass)
+		
+		if ((COMPOSITORMODE != GPUCompositorMode_Unknown) && didAllPixelsPass)
+		{
+			switch (COMPOSITORMODE)
+			{
+				case GPUCompositorMode_Debug:
+					this->_PixelCopy16_SSE2<OUTPUTFORMAT, true>(compInfo,
+																src[3], src[2], src[1], src[0],
+																dst[3], dst[2], dst[1], dst[0],
+																dstLayerID_vec128);
+					break;
+					
+				case GPUCompositorMode_Copy:
+					this->_PixelCopy16_SSE2<OUTPUTFORMAT, false>(compInfo,
+																 src[3], src[2], src[1], src[0],
+																 dst[3], dst[2], dst[1], dst[0],
+																 dstLayerID_vec128);
+					break;
+					
+				case GPUCompositorMode_BrightUp:
+					this->_PixelBrightnessUp16_SSE2<OUTPUTFORMAT>(compInfo,
+																  src[3], src[2], src[1], src[0],
+																  dst[3], dst[2], dst[1], dst[0],
+																  dstLayerID_vec128);
+					break;
+					
+				case GPUCompositorMode_BrightDown:
+					this->_PixelBrightnessDown16_SSE2<OUTPUTFORMAT>(compInfo,
+																	src[3], src[2], src[1], src[0],
+																	dst[3], dst[2], dst[1], dst[0],
+																	dstLayerID_vec128);
+					break;
+					
+				default:
+					break;
+			}
+		}
+		else
 		{
 			dst[0] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 0);
 			dst[1] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 1);
@@ -2897,37 +3251,55 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
 			}
 			
 			dstLayerID_vec128 = _mm_load_si128((__m128i *)compInfo.target.lineLayerID);
-		}
-		
-		if (COLOREFFECTDISABLEDHINT)
-		{
-			if (didAllPixelsPass)
-			{
-				this->_PixelCopy16_SSE2<OUTPUTFORMAT, ISDEBUGRENDER>(compInfo,
-																	 src[3], src[2], src[1], src[0],
-																	 dst[3], dst[2], dst[1], dst[0],
-																	 dstLayerID_vec128);
-			}
-			else
-			{
-				this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, ISDEBUGRENDER>(compInfo,
-																			 passMask8,
-																			 src[3], src[2], src[1], src[0],
-																			 dst[3], dst[2], dst[1], dst[0],
-																			 dstLayerID_vec128);
-			}
-		}
-		else
-		{
-			const __m128i spriteAlpha = _mm_setzero_si128();
 			
-			this->_PixelEffectWithMask16_SSE2<OUTPUTFORMAT, GPULayerType_BG, WILLPERFORMWINDOWTEST>(compInfo,
-																									passMask8,
-																									src[3], src[2], src[1], src[0],
-																									spriteAlpha,
-																									srcEffectEnableMask,
-																									dst[3], dst[2], dst[1], dst[0],
-																									dstLayerID_vec128);
+			switch (COMPOSITORMODE)
+			{
+				case GPUCompositorMode_Debug:
+					this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, true>(compInfo,
+																		passMask8,
+																		src[3], src[2], src[1], src[0],
+																		dst[3], dst[2], dst[1], dst[0],
+																		dstLayerID_vec128);
+					break;
+					
+				case GPUCompositorMode_Copy:
+					this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, false>(compInfo,
+																		 passMask8,
+																		 src[3], src[2], src[1], src[0],
+																		 dst[3], dst[2], dst[1], dst[0],
+																		 dstLayerID_vec128);
+					break;
+					
+				case GPUCompositorMode_BrightUp:
+					this->_PixelBrightnessUpWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
+																		  passMask8,
+																		  src[3], src[2], src[1], src[0],
+																		  dst[3], dst[2], dst[1], dst[0],
+																		  dstLayerID_vec128);
+					break;
+					
+				case GPUCompositorMode_BrightDown:
+					this->_PixelBrightnessDownWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
+																		 passMask8,
+																		 src[3], src[2], src[1], src[0],
+																		 dst[3], dst[2], dst[1], dst[0],
+																		 dstLayerID_vec128);
+					break;
+					
+				default:
+				{
+					const __m128i spriteAlpha = _mm_setzero_si128();
+					
+					this->_PixelUnknownEffectWithMask16_SSE2<OUTPUTFORMAT, GPULayerType_BG, WILLPERFORMWINDOWTEST>(compInfo,
+																												   passMask8,
+																												   src[3], src[2], src[1], src[0],
+																												   spriteAlpha,
+																												   srcEffectEnableMask,
+																												   dst[3], dst[2], dst[1], dst[0],
+																												   dstLayerID_vec128);
+					break;
+				}
+			}
 		}
 		
 		_mm_store_si128((__m128i *)*compInfo.target.lineColor + 0, dst[0]);
@@ -2960,15 +3332,8 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
 				continue;
 			}
 			
-			if (COLOREFFECTDISABLEDHINT)
-			{
-				this->_PixelCopy<OUTPUTFORMAT, ISDEBUGRENDER>(compInfo, ((u32 *)vramColorPtr)[i]);
-			}
-			else
-			{
-				const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
-				this->_PixelEffect<OUTPUTFORMAT, GPULayerType_BG>(compInfo, ((u32 *)vramColorPtr)[i], 0, enableColorEffect);
-			}
+			const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+			this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_BG>(compInfo, ((u32 *)vramColorPtr)[i], 0, enableColorEffect);
 		}
 		else
 		{
@@ -2977,15 +3342,8 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
 				continue;
 			}
 			
-			if (COLOREFFECTDISABLEDHINT)
-			{
-				this->_PixelCopy<OUTPUTFORMAT, ISDEBUGRENDER>(compInfo, ((u16 *)vramColorPtr)[i]);
-			}
-			else
-			{
-				const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
-				this->_PixelEffect<OUTPUTFORMAT, GPULayerType_BG>(compInfo, ((u16 *)vramColorPtr)[i], 0, enableColorEffect);
-			}
+			const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+			this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_BG>(compInfo, ((u16 *)vramColorPtr)[i], 0, enableColorEffect);
 		}
 	}
 }
@@ -2994,11 +3352,11 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
 //			BACKGROUND RENDERING -TEXT-
 /*****************************************************************************/
 // render a text background to the combined pixelbuffer
-template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const u16 XBG, const u16 YBG)
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
-	const u16 lineWidth = (ISDEBUGRENDER) ? compInfo.renderState.selectedBGLayer->size.width : GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	const u16 lineWidth = (COMPOSITORMODE == GPUCompositorMode_Debug) ? compInfo.renderState.selectedBGLayer->size.width : GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	const u16 lg    = compInfo.renderState.selectedBGLayer->size.width;
 	const u16 ht    = compInfo.renderState.selectedBGLayer->size.height;
 	const u32 tile  = compInfo.renderState.selectedBGLayer->tileEntryAddress;
@@ -3042,7 +3400,7 @@ void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const 
 					{
 						index = *tileColorIdx & 0x0F;
 						color = LE_TO_LOCAL_16(pal[index + tilePalette]);
-						this->_RenderPixelSingle<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT>(compInfo, x, color, (index != 0));
+						this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
 					}
 					
 					x++;
@@ -3061,7 +3419,7 @@ void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const 
 					{
 						index = *tileColorIdx >> 4;
 						color = LE_TO_LOCAL_16(pal[index + tilePalette]);
-						this->_RenderPixelSingle<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT>(compInfo, x, color, (index != 0));
+						this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
 					}
 					
 					x++;
@@ -3078,7 +3436,7 @@ void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const 
 						{
 							index = *tileColorIdx & 0x0F;
 							color = LE_TO_LOCAL_16(pal[index + tilePalette]);
-							this->_RenderPixelSingle<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT>(compInfo, x, color, (index != 0));
+							this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
 						}
 						
 						x++;
@@ -3101,7 +3459,7 @@ void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const 
 					{
 						index = *tileColorIdx >> 4;
 						color = LE_TO_LOCAL_16(pal[index + tilePalette]);
-						this->_RenderPixelSingle<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT>(compInfo, x, color, (index != 0));
+						this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
 					}
 					
 					x++;
@@ -3120,7 +3478,7 @@ void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const 
 					{
 						index = *tileColorIdx & 0x0F;
 						color = LE_TO_LOCAL_16(pal[index + tilePalette]);
-						this->_RenderPixelSingle<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT>(compInfo, x, color, (index != 0));
+						this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
 					}
 					
 					x++;
@@ -3137,7 +3495,7 @@ void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const 
 						{
 							index = *tileColorIdx >> 4;
 							color = LE_TO_LOCAL_16(pal[index + tilePalette]);
-							this->_RenderPixelSingle<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT>(compInfo, x, color, (index != 0));
+							this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
 						}
 						
 						x++;
@@ -3182,20 +3540,20 @@ void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const 
 				{
 					const u8 index = *tileColorIdx;
 					const u16 color = LE_TO_LOCAL_16(tilePal[index]);
-					this->_RenderPixelSingle<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT>(compInfo, x, color, (index != 0));
+					this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
 				}
 			}
 		}
 	}
 }
 
-template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_RenderLine_BGAffine(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param)
 {
-	this->_RenderPixelIterate<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, rot_tiled_8bit_entry>(compInfo, param, compInfo.renderState.selectedBGLayer->tileMapAddress, compInfo.renderState.selectedBGLayer->tileEntryAddress, this->_paletteBG);
+	this->_RenderPixelIterate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, rot_tiled_8bit_entry>(compInfo, param, compInfo.renderState.selectedBGLayer->tileMapAddress, compInfo.renderState.selectedBGLayer->tileEntryAddress, this->_paletteBG);
 }
 
-template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, bool &outUseCustomVRAM)
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
@@ -3206,17 +3564,17 @@ void GPUEngineBase::_RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, co
 		{
 			if (DISPCNT.ExBGxPalette_Enable)
 			{
-				this->_RenderPixelIterate< OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, rot_tiled_16bit_entry<true> >(compInfo, param, compInfo.renderState.selectedBGLayer->tileMapAddress, compInfo.renderState.selectedBGLayer->tileEntryAddress, *(compInfo.renderState.selectedBGLayer->extPalette));
+				this->_RenderPixelIterate< COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, rot_tiled_16bit_entry<true> >(compInfo, param, compInfo.renderState.selectedBGLayer->tileMapAddress, compInfo.renderState.selectedBGLayer->tileEntryAddress, *(compInfo.renderState.selectedBGLayer->extPalette));
 			}
 			else
 			{
-				this->_RenderPixelIterate< OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, rot_tiled_16bit_entry<false> >(compInfo, param, compInfo.renderState.selectedBGLayer->tileMapAddress, compInfo.renderState.selectedBGLayer->tileEntryAddress, this->_paletteBG);
+				this->_RenderPixelIterate< COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, rot_tiled_16bit_entry<false> >(compInfo, param, compInfo.renderState.selectedBGLayer->tileMapAddress, compInfo.renderState.selectedBGLayer->tileEntryAddress, this->_paletteBG);
 			}
 			break;
 		}
 			
 		case BGType_AffineExt_256x1: // 256 colors
-			this->_RenderPixelIterate<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, rot_256_map>(compInfo, param, compInfo.renderState.selectedBGLayer->BMPAddress, 0, this->_paletteBG);
+			this->_RenderPixelIterate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, rot_256_map>(compInfo, param, compInfo.renderState.selectedBGLayer->BMPAddress, 0, this->_paletteBG);
 			break;
 			
 		case BGType_AffineExt_Direct: // direct colors / BMP
@@ -3247,7 +3605,7 @@ void GPUEngineBase::_RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, co
 			
 			if (!outUseCustomVRAM)
 			{
-				this->_RenderPixelIterate<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, rot_BMP_map>(compInfo, param, compInfo.renderState.selectedBGLayer->BMPAddress, 0, this->_paletteBG);
+				this->_RenderPixelIterate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, rot_BMP_map>(compInfo, param, compInfo.renderState.selectedBGLayer->BMPAddress, 0, this->_paletteBG);
 			}
 			else
 			{
@@ -3260,7 +3618,7 @@ void GPUEngineBase::_RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, co
 		}
 			
 		case BGType_Large8bpp: // large screen 256 colors
-			this->_RenderPixelIterate<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED, rot_256_map>(compInfo, param, compInfo.renderState.selectedBGLayer->largeBMPAddress, 0, this->_paletteBG);
+			this->_RenderPixelIterate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, rot_256_map>(compInfo, param, compInfo.renderState.selectedBGLayer->largeBMPAddress, 0, this->_paletteBG);
 			break;
 			
 		default:
@@ -3272,49 +3630,49 @@ void GPUEngineBase::_RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, co
 //			BACKGROUND RENDERING -HELPER FUNCTIONS-
 /*****************************************************************************/
 
-template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_LineText(GPUEngineCompositorInfo &compInfo)
 {
-	if (ISDEBUGRENDER)
+	if (COMPOSITORMODE == GPUCompositorMode_Debug)
 	{
-		this->_RenderLine_BGText<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(compInfo, 0, compInfo.line.indexNative);
+		this->_RenderLine_BGText<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, 0, compInfo.line.indexNative);
 	}
 	else
 	{
-		this->_RenderLine_BGText<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(compInfo, compInfo.renderState.selectedBGLayer->xOffset, compInfo.line.indexNative + compInfo.renderState.selectedBGLayer->yOffset);
+		this->_RenderLine_BGText<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, compInfo.renderState.selectedBGLayer->xOffset, compInfo.line.indexNative + compInfo.renderState.selectedBGLayer->yOffset);
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_LineRot(GPUEngineCompositorInfo &compInfo)
 {
-	if (ISDEBUGRENDER)
+	if (COMPOSITORMODE == GPUCompositorMode_Debug)
 	{
 		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, (s32)compInfo.line.blockOffsetNative};
-		this->_RenderLine_BGAffine<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(compInfo, debugParams);
+		this->_RenderLine_BGAffine<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, debugParams);
 	}
 	else
 	{
 		IOREG_BGnParameter *__restrict bgParams = (compInfo.renderState.selectedLayerID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
-		this->_RenderLine_BGAffine<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(compInfo, *bgParams);
+		this->_RenderLine_BGAffine<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, *bgParams);
 		
 		bgParams->BGnX.value += bgParams->BGnPB.value;
 		bgParams->BGnY.value += bgParams->BGnPD.value;
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineBase::_LineExtRot(GPUEngineCompositorInfo &compInfo, bool &outUseCustomVRAM)
 {
-	if (ISDEBUGRENDER)
+	if (COMPOSITORMODE == GPUCompositorMode_Debug)
 	{
 		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, (s32)compInfo.line.blockOffsetNative};
-		this->_RenderLine_BGExtended<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(compInfo, debugParams, outUseCustomVRAM);
+		this->_RenderLine_BGExtended<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, debugParams, outUseCustomVRAM);
 	}
 	else
 	{
 		IOREG_BGnParameter *__restrict bgParams = (compInfo.renderState.selectedLayerID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
-		this->_RenderLine_BGExtended<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(compInfo, *bgParams, outUseCustomVRAM);
+		this->_RenderLine_BGExtended<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, *bgParams, outUseCustomVRAM);
 		
 		bgParams->BGnX.value += bgParams->BGnPB.value;
 		bgParams->BGnY.value += bgParams->BGnPD.value;
@@ -4027,27 +4385,50 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 					{
 						if ( (layerID == GPULayerID_BG0) && GPU->GetEngineMain()->WillRender3DLayer() )
 						{
+#ifndef DISABLE_COMPOSITOR_FAST_PATHS
 							if ( !compInfo.renderState.dstAnyBlendEnable && (  (compInfo.renderState.colorEffect == ColorEffect_Disable) ||
 																			   !compInfo.renderState.srcBlendEnable[GPULayerID_BG0] ||
 																			 (((compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) || (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness)) && (compInfo.renderState.blendEVY == 0)) ) )
 							{
-								GPU->GetEngineMain()->RenderLine_Layer3D<OUTPUTFORMAT, WILLPERFORMWINDOWTEST, true>(compInfo);
+								GPU->GetEngineMain()->RenderLine_Layer3D<GPUCompositorMode_Copy, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
+							}
+							else if ( !WILLPERFORMWINDOWTEST && !compInfo.renderState.dstAnyBlendEnable && compInfo.renderState.srcBlendEnable[GPULayerID_BG0] && (compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) )
+							{
+								GPU->GetEngineMain()->RenderLine_Layer3D<GPUCompositorMode_BrightUp, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
+							}
+							else if ( !WILLPERFORMWINDOWTEST && !compInfo.renderState.dstAnyBlendEnable && compInfo.renderState.srcBlendEnable[GPULayerID_BG0] && (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness) )
+							{
+								GPU->GetEngineMain()->RenderLine_Layer3D<GPUCompositorMode_BrightDown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 							}
 							else
+#endif
 							{
-								GPU->GetEngineMain()->RenderLine_Layer3D<OUTPUTFORMAT, WILLPERFORMWINDOWTEST, false>(compInfo);
+								GPU->GetEngineMain()->RenderLine_Layer3D<GPUCompositorMode_Unknown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 							}
 							continue;
 						}
 					}
-					
-					if (this->isLineRenderNative[compInfo.line.indexNative])
+										
+#ifndef DISABLE_COMPOSITOR_FAST_PATHS
+					if ( (compInfo.renderState.colorEffect == ColorEffect_Disable) ||
+						 !compInfo.renderState.srcBlendEnable[compInfo.renderState.selectedLayerID] ||
+						((compInfo.renderState.colorEffect == ColorEffect_Blend) && !compInfo.renderState.dstAnyBlendEnable) ||
+						(((compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) || (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness)) && (compInfo.renderState.blendEVY == 0)) )
 					{
-						this->_RenderLine_LayerBG<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST, false>(compInfo);
+						this->_RenderLine_LayerBG<GPUCompositorMode_Copy, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
+					}
+					else if ( !WILLPERFORMWINDOWTEST && compInfo.renderState.srcBlendEnable[compInfo.renderState.selectedLayerID] && (compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) )
+					{
+						this->_RenderLine_LayerBG<GPUCompositorMode_BrightUp, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
+					}
+					else if ( !WILLPERFORMWINDOWTEST && compInfo.renderState.srcBlendEnable[compInfo.renderState.selectedLayerID] && (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness) )
+					{
+						this->_RenderLine_LayerBG<GPUCompositorMode_BrightDown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 					}
 					else
+#endif
 					{
-						this->_RenderLine_LayerBG<OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST, true>(compInfo);
+						this->_RenderLine_LayerBG<GPUCompositorMode_Unknown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 					}
 				} //layer enabled
 			}
@@ -4059,15 +4440,25 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 			compInfo.renderState.selectedLayerID = GPULayerID_OBJ;
 			compInfo.renderState.selectedBGLayer = NULL;
 			
+#ifndef DISABLE_COMPOSITOR_FAST_PATHS
 			if ( !compInfo.renderState.dstAnyBlendEnable && (  (compInfo.renderState.colorEffect == ColorEffect_Disable) ||
 															   !compInfo.renderState.srcBlendEnable[GPULayerID_OBJ] ||
 															 (((compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) || (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness)) && (compInfo.renderState.blendEVY == 0)) ) )
 			{
-				this->_RenderLine_LayerOBJ<OUTPUTFORMAT, WILLPERFORMWINDOWTEST, true>(compInfo, item);
+				this->_RenderLine_LayerOBJ<GPUCompositorMode_Copy, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo, item);
+			}
+			else if ( !WILLPERFORMWINDOWTEST && !compInfo.renderState.dstAnyBlendEnable && compInfo.renderState.srcBlendEnable[GPULayerID_OBJ] && (compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) )
+			{
+				this->_RenderLine_LayerOBJ<GPUCompositorMode_BrightUp, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo, item);
+			}
+			else if ( !WILLPERFORMWINDOWTEST && !compInfo.renderState.dstAnyBlendEnable && compInfo.renderState.srcBlendEnable[GPULayerID_OBJ] && (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness) )
+			{
+				this->_RenderLine_LayerOBJ<GPUCompositorMode_BrightDown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo, item);
 			}
 			else
+#endif
 			{
-				this->_RenderLine_LayerOBJ<OUTPUTFORMAT, WILLPERFORMWINDOWTEST, false>(compInfo, item);
+				this->_RenderLine_LayerOBJ<GPUCompositorMode_Unknown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo, item);
 			}
 		}
 	}
@@ -4101,7 +4492,7 @@ void GPUEngineBase::_RenderLine_SetupSprites(GPUEngineCompositorInfo &compInfo)
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT>
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
 void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, itemsForPriority_t *__restrict item)
 {
 	bool useCustomVRAM = false;
@@ -4149,15 +4540,8 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 				compInfo.target.lineColor32 = (FragmentColor *)compInfo.target.lineColorHead + srcX;
 				compInfo.target.lineLayerID = compInfo.target.lineLayerIDHead + srcX;
 				
-				if (COLOREFFECTDISABLEDHINT)
-				{
-					this->_PixelCopy<OUTPUTFORMAT, false>(compInfo, vramColorPtr[srcX]);
-				}
-				else
-				{
-					const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
-					this->_PixelEffect<OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, vramColorPtr[srcX], this->_sprAlpha[srcX], enableColorEffect);
-				}
+				const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+				this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, vramColorPtr[srcX], this->_sprAlpha[srcX], enableColorEffect);
 			}
 		}
 		else
@@ -4177,15 +4561,8 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 				compInfo.target.lineColor32 = (FragmentColor *)compInfo.target.lineColorHead + srcX;
 				compInfo.target.lineLayerID = compInfo.target.lineLayerIDHead + srcX;
 				
-				if (COLOREFFECTDISABLEDHINT)
-				{
-					this->_PixelCopy<OUTPUTFORMAT, false>(compInfo, this->_sprColor[srcX]);
-				}
-				else
-				{
-					const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
-					this->_PixelEffect<OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, this->_sprColor[srcX], this->_sprAlpha[srcX], enableColorEffect);
-				}
+				const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+				this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, this->_sprColor[srcX], this->_sprAlpha[srcX], enableColorEffect);
 			}
 		}
 	}
@@ -4224,29 +4601,15 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 						compInfo.target.lineColor32 = (FragmentColor *)dstColorPtr + dstX;
 						compInfo.target.lineLayerID = dstLayerIDPtr + dstX;
 						
+						const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+						
 						if (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev)
 						{
-							if (COLOREFFECTDISABLEDHINT)
-							{
-								this->_PixelCopy<OUTPUTFORMAT, false>(compInfo, ((FragmentColor *)vramColorPtr)[dstX]);
-							}
-							else
-							{
-								const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
-								this->_PixelEffect<OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, ((FragmentColor *)vramColorPtr)[dstX], this->_sprAlpha[srcX], enableColorEffect);
-							}
+							this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, ((FragmentColor *)vramColorPtr)[dstX], this->_sprAlpha[srcX], enableColorEffect);
 						}
 						else
 						{
-							if (COLOREFFECTDISABLEDHINT)
-							{
-								this->_PixelCopy<OUTPUTFORMAT, false>(compInfo, ((u16 *)vramColorPtr)[dstX]);
-							}
-							else
-							{
-								const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
-								this->_PixelEffect<OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, ((u16 *)vramColorPtr)[dstX], this->_sprAlpha[srcX], enableColorEffect);
-							}
+							this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, ((u16 *)vramColorPtr)[dstX], this->_sprAlpha[srcX], enableColorEffect);
 						}
 					}
 				}
@@ -4284,15 +4647,8 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 						compInfo.target.lineColor32 = (FragmentColor *)dstColorPtr + dstX;
 						compInfo.target.lineLayerID = dstLayerIDPtr + dstX;
 						
-						if (COLOREFFECTDISABLEDHINT)
-						{
-							this->_PixelCopy<OUTPUTFORMAT, false>(compInfo, this->_sprColor[srcX]);
-						}
-						else
-						{
-							const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
-							this->_PixelEffect<OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, this->_sprColor[srcX], this->_sprAlpha[srcX], enableColorEffect);
-						}
+						const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
+						this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_OBJ>(compInfo, this->_sprColor[srcX], this->_sprAlpha[srcX], enableColorEffect);
 					}
 				}
 				
@@ -4773,17 +5129,17 @@ void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex)
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
 FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG_Final(GPUEngineCompositorInfo &compInfo)
 {
 	bool useCustomVRAM = false;
 	
 	switch (compInfo.renderState.selectedBGLayer->baseType)
 	{
-		case BGType_Text: this->_LineText<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(compInfo); break;
-		case BGType_Affine: this->_LineRot<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(compInfo); break;
-		case BGType_AffineExt: this->_LineExtRot<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(compInfo, useCustomVRAM); break;
-		case BGType_Large8bpp: this->_LineExtRot<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(compInfo, useCustomVRAM); break;
+		case BGType_Text: this->_LineText<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo); break;
+		case BGType_Affine: this->_LineRot<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo); break;
+		case BGType_AffineExt: this->_LineExtRot<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, useCustomVRAM); break;
+		case BGType_Large8bpp: this->_LineExtRot<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, useCustomVRAM); break;
 		case BGType_Invalid:
 			PROGINFO("Attempting to render an invalid BG type\n");
 			break;
@@ -4794,63 +5150,44 @@ FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG_Final(GPUEngineCompositorInf
 	// If rendering at the native size, each pixel is rendered the moment it is gathered.
 	// However, if rendering at a custom size, pixel gathering and pixel rendering are split
 	// up into separate steps. If rendering at a custom size, do the pixel rendering step now.
-	if ( !ISDEBUGRENDER && (ISCUSTOMRENDERINGNEEDED || !this->isLineRenderNative[compInfo.line.indexNative] || (useCustomVRAM && (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) && !GPU->GetDisplayInfo().isCustomSizeRequested)) )
+	if ( (COMPOSITORMODE != GPUCompositorMode_Debug) && (ISCUSTOMRENDERINGNEEDED || !this->isLineRenderNative[compInfo.line.indexNative] || (useCustomVRAM && (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) && !GPU->GetDisplayInfo().isCustomSizeRequested)) )
 	{
 		if (useCustomVRAM)
 		{
-			this->_RenderPixelsCustomVRAM<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT>(compInfo);
+			this->_RenderPixelsCustomVRAM<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo);
 		}
 		else
 		{
-			this->_RenderPixelsCustom<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT>(compInfo);
+			this->_RenderPixelsCustom<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo);
 		}
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
-FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG_ApplyColorEffectDisabledHint(GPUEngineCompositorInfo &compInfo)
-{
-	this->_RenderLine_LayerBG_Final<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT, ISCUSTOMRENDERINGNEEDED>(compInfo);
-}
-
-template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST>
 FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG_ApplyMosaic(GPUEngineCompositorInfo &compInfo)
 {
-#ifndef DISABLE_COLOREFFECTDISABLEHINT
-	if (   ISDEBUGRENDER ||
-		  (compInfo.renderState.colorEffect == ColorEffect_Disable) ||
-		  !compInfo.renderState.srcBlendEnable[compInfo.renderState.selectedLayerID] ||
-		 ((compInfo.renderState.colorEffect == ColorEffect_Blend) && !compInfo.renderState.dstAnyBlendEnable) ||
-		(((compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) || (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness)) && (compInfo.renderState.blendEVY == 0)) )
+	if (this->isLineRenderNative[compInfo.line.indexNative])
 	{
-		this->_RenderLine_LayerBG_ApplyColorEffectDisabledHint<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, true, ISCUSTOMRENDERINGNEEDED>(compInfo);
+		this->_RenderLine_LayerBG_Final<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, false>(compInfo);
 	}
 	else
-#endif
 	{
-		this->_RenderLine_LayerBG_ApplyColorEffectDisabledHint<OUTPUTFORMAT, ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, false, ISCUSTOMRENDERINGNEEDED>(compInfo);
+		this->_RenderLine_LayerBG_Final<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, true>(compInfo);
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
 FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG(GPUEngineCompositorInfo &compInfo)
 {
-	if (ISDEBUGRENDER)
+#ifndef DISABLE_MOSAIC
+	if (compInfo.renderState.selectedBGLayer->isMosaic && compInfo.renderState.isBGMosaicSet)
 	{
-		this->_RenderLine_LayerBG_Final<OUTPUTFORMAT, ISDEBUGRENDER, false, true, true, false>(compInfo);
+		this->_RenderLine_LayerBG_ApplyMosaic<COMPOSITORMODE, OUTPUTFORMAT, true, WILLPERFORMWINDOWTEST>(compInfo);
 	}
 	else
-	{
-#ifndef DISABLE_MOSAIC
-		if (compInfo.renderState.selectedBGLayer->isMosaic && compInfo.renderState.isBGMosaicSet)
-		{
-			this->_RenderLine_LayerBG_ApplyMosaic<OUTPUTFORMAT, ISDEBUGRENDER, true, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo);
-		}
-		else
 #endif
-		{
-			this->_RenderLine_LayerBG_ApplyMosaic<OUTPUTFORMAT, ISDEBUGRENDER, false, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo);
-		}
+	{
+		this->_RenderLine_LayerBG_ApplyMosaic<COMPOSITORMODE, OUTPUTFORMAT, false, WILLPERFORMWINDOWTEST>(compInfo);
 	}
 }
 
@@ -4898,7 +5235,7 @@ void GPUEngineBase::RenderLayerBG(const GPULayerID layerID, u16 *dstColorBuffer)
 		compInfo.target.lineColorHeadNative = compInfo.target.lineColorHead;
 		compInfo.target.lineColorHeadCustom = compInfo.target.lineColorHeadNative;
 		
-		this->_RenderLine_LayerBG<NDSColorFormat_BGR555_Rev, true, true, false>(compInfo);
+		this->_RenderLine_LayerBG_Final<GPUCompositorMode_Debug, NDSColorFormat_BGR555_Rev, false, false, false>(compInfo);
 	}
 }
 
@@ -5692,7 +6029,7 @@ void GPUEngineA::RenderLine(const size_t l)
 	}
 }
 
-template <NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT>
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST>
 void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 {
 	const FragmentColor *__restrict framebuffer3D = CurrentRenderer->GetFramebuffer();
@@ -5767,6 +6104,9 @@ void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 				__m128i dst[4];
 				__m128i dstLayerID_vec128;
 				
+				// Read the destination pixels into registers if we're doing a masked pixel write.
+				const bool didAllPixelsPass = (passMaskValue == 0xFFFF);
+				
 				if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 				{
 					// 3D layer blending requires that all src colors are preserved as 32-bit values.
@@ -5776,74 +6116,194 @@ void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 											  _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x003E0000)), 7)) );
 					dst[3] = _mm_packs_epi32( _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x003E0000)), 7)),
 											  _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[3], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[3], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[3], _mm_set1_epi32(0x003E0000)), 7)) );
-				}
-				
-				// Read the destination pixels into registers if we're doing a masked pixel write.
-				const bool didAllPixelsPass = (passMaskValue == 0xFFFF);
-				if (!COLOREFFECTDISABLEDHINT || !didAllPixelsPass)
-				{
-					dst[0] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 0);
-					dst[1] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 1);
 					
-					if (OUTPUTFORMAT != NDSColorFormat_BGR555_Rev)
+					if ((COMPOSITORMODE != GPUCompositorMode_Unknown) && didAllPixelsPass)
 					{
-						dst[2] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 2);
-						dst[3] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 3);
-					}
-					
-					dstLayerID_vec128 = _mm_load_si128((__m128i *)compInfo.target.lineLayerID);
-				}
-				
-				if (COLOREFFECTDISABLEDHINT)
-				{
-					if (didAllPixelsPass)
-					{
-						if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+						switch (COMPOSITORMODE)
 						{
-							this->_PixelCopy16_SSE2<OUTPUTFORMAT, false>(compInfo,
-																		 src[3], src[2], dst[3], dst[2],
-																		 dst[3], dst[2], dst[1], dst[0],
-																		 dstLayerID_vec128);
-						}
-						else
-						{
-							this->_PixelCopy16_SSE2<OUTPUTFORMAT, false>(compInfo,
-																		 src[3], src[2], src[1], src[0],
-																		 dst[3], dst[2], dst[1], dst[0],
-																		 dstLayerID_vec128);
+							case GPUCompositorMode_Debug:
+								this->_PixelCopy16_SSE2<OUTPUTFORMAT, true>(compInfo,
+																			src[3], src[2], dst[3], dst[2],
+																			dst[3], dst[2], dst[1], dst[0],
+																			dstLayerID_vec128);
+								break;
+								
+							case GPUCompositorMode_Copy:
+								this->_PixelCopy16_SSE2<OUTPUTFORMAT, false>(compInfo,
+																			 src[3], src[2], dst[3], dst[2],
+																			 dst[3], dst[2], dst[1], dst[0],
+																			 dstLayerID_vec128);
+								break;
+								
+							case GPUCompositorMode_BrightUp:
+								this->_PixelBrightnessUp16_SSE2<OUTPUTFORMAT>(compInfo,
+																			  src[3], src[2], dst[3], dst[2],
+																			  dst[3], dst[2], dst[1], dst[0],
+																			  dstLayerID_vec128);
+								break;
+								
+							case GPUCompositorMode_BrightDown:
+								this->_PixelBrightnessDown16_SSE2<OUTPUTFORMAT>(compInfo,
+																				src[3], src[2], dst[3], dst[2],
+																				dst[3], dst[2], dst[1], dst[0],
+																				dstLayerID_vec128);
+								break;
+								
+							default:
+								break;
 						}
 					}
 					else
 					{
-						if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
+						dst[0] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 0);
+						dst[1] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 1);
+						dstLayerID_vec128 = _mm_load_si128((__m128i *)compInfo.target.lineLayerID);
+						
+						switch (COMPOSITORMODE)
 						{
-							this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, false>(compInfo,
-																				 passMask8,
-																				 src[3], src[2], dst[3], dst[2],
-																				 dst[3], dst[2], dst[1], dst[0],
-																				 dstLayerID_vec128);
-						}
-						else
-						{
-							this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, false>(compInfo,
-																				 passMask8,
-																				 src[3], src[2], src[1], src[0],
-																				 dst[3], dst[2], dst[1], dst[0],
-																				 dstLayerID_vec128);
+							case GPUCompositorMode_Debug:
+								this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, true>(compInfo,
+																					passMask8,
+																					src[3], src[2], dst[3], dst[2],
+																					dst[3], dst[2], dst[1], dst[0],
+																					dstLayerID_vec128);
+								break;
+								
+							case GPUCompositorMode_Copy:
+								this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, false>(compInfo,
+																					 passMask8,
+																					 src[3], src[2], dst[3], dst[2],
+																					 dst[3], dst[2], dst[1], dst[0],
+																					 dstLayerID_vec128);
+								break;
+								
+							case GPUCompositorMode_BrightUp:
+								this->_PixelBrightnessUpWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
+																					  passMask8,
+																					  src[3], src[2], dst[3], dst[2],
+																					  dst[3], dst[2], dst[1], dst[0],
+																					  dstLayerID_vec128);
+								break;
+								
+							case GPUCompositorMode_BrightDown:
+								this->_PixelBrightnessDownWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
+																						passMask8,
+																						src[3], src[2], dst[3], dst[2],
+																						dst[3], dst[2], dst[1], dst[0],
+																						dstLayerID_vec128);
+								break;
+								
+							default:
+							{
+								const __m128i spriteAlpha = _mm_setzero_si128();
+								
+								this->_PixelUnknownEffectWithMask16_SSE2<OUTPUTFORMAT, GPULayerType_3D, WILLPERFORMWINDOWTEST>(compInfo,
+																															   passMask8,
+																															   src[3], src[2], src[1], src[0],
+																															   spriteAlpha,
+																															   srcEffectEnableMask,
+																															   dst[3], dst[2], dst[1], dst[0],
+																															   dstLayerID_vec128);
+								break;
+							}
 						}
 					}
 				}
 				else
 				{
-					const __m128i spriteAlpha = _mm_setzero_si128();
-					
-					this->_PixelEffectWithMask16_SSE2<OUTPUTFORMAT, GPULayerType_3D, WILLPERFORMWINDOWTEST>(compInfo,
-																											passMask8,
-																											src[3], src[2], src[1], src[0],
-																											spriteAlpha,
-																											srcEffectEnableMask,
-																											dst[3], dst[2], dst[1], dst[0],
-																											dstLayerID_vec128);
+					if ((COMPOSITORMODE != GPUCompositorMode_Unknown) && didAllPixelsPass)
+					{
+						switch (COMPOSITORMODE)
+						{
+							case GPUCompositorMode_Debug:
+								this->_PixelCopy16_SSE2<OUTPUTFORMAT, true>(compInfo,
+																			src[3], src[2], src[1], src[0],
+																			dst[3], dst[2], dst[1], dst[0],
+																			dstLayerID_vec128);
+								break;
+								
+							case GPUCompositorMode_Copy:
+								this->_PixelCopy16_SSE2<OUTPUTFORMAT, false>(compInfo,
+																			 src[3], src[2], src[1], src[0],
+																			 dst[3], dst[2], dst[1], dst[0],
+																			 dstLayerID_vec128);
+								break;
+								
+							case GPUCompositorMode_BrightUp:
+								this->_PixelBrightnessUp16_SSE2<OUTPUTFORMAT>(compInfo,
+																			  src[3], src[2], src[1], src[0],
+																			  dst[3], dst[2], dst[1], dst[0],
+																			  dstLayerID_vec128);
+								break;
+								
+							case GPUCompositorMode_BrightDown:
+								this->_PixelBrightnessDown16_SSE2<OUTPUTFORMAT>(compInfo,
+																				src[3], src[2], src[1], src[0],
+																				dst[3], dst[2], dst[1], dst[0],
+																				dstLayerID_vec128);
+								break;
+								
+							default:
+								break;
+						}
+					}
+					else
+					{
+						dst[0] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 0);
+						dst[1] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 1);
+						dst[2] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 2);
+						dst[3] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 3);
+						dstLayerID_vec128 = _mm_load_si128((__m128i *)compInfo.target.lineLayerID);
+						
+						switch (COMPOSITORMODE)
+						{
+							case GPUCompositorMode_Debug:
+								this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, true>(compInfo,
+																					passMask8,
+																					src[3], src[2], src[1], src[0],
+																					dst[3], dst[2], dst[1], dst[0],
+																					dstLayerID_vec128);
+								break;
+								
+							case GPUCompositorMode_Copy:
+								this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, false>(compInfo,
+																					 passMask8,
+																					 src[3], src[2], src[1], src[0],
+																					 dst[3], dst[2], dst[1], dst[0],
+																					 dstLayerID_vec128);
+								break;
+								
+							case GPUCompositorMode_BrightUp:
+								this->_PixelBrightnessUpWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
+																					  passMask8,
+																					  src[3], src[2], src[1], src[0],
+																					  dst[3], dst[2], dst[1], dst[0],
+																					  dstLayerID_vec128);
+								break;
+								
+							case GPUCompositorMode_BrightDown:
+								this->_PixelBrightnessDownWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
+																						passMask8,
+																						src[3], src[2], src[1], src[0],
+																						dst[3], dst[2], dst[1], dst[0],
+																						dstLayerID_vec128);
+								break;
+								
+							default:
+							{
+								const __m128i spriteAlpha = _mm_setzero_si128();
+								
+								this->_PixelUnknownEffectWithMask16_SSE2<OUTPUTFORMAT, GPULayerType_3D, WILLPERFORMWINDOWTEST>(compInfo,
+																															   passMask8,
+																															   src[3], src[2], src[1], src[0],
+																															   spriteAlpha,
+																															   srcEffectEnableMask,
+																															   dst[3], dst[2], dst[1], dst[0],
+																															   dstLayerID_vec128);
+								break;
+							}
+						}
+					}
 				}
 				
 				_mm_store_si128((__m128i *)*compInfo.target.lineColor + 0, dst[0]);
@@ -5869,15 +6329,8 @@ void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 					continue;
 				}
 				
-				if (COLOREFFECTDISABLEDHINT)
-				{
-					this->_PixelCopy<OUTPUTFORMAT, false>(compInfo, *srcLinePtr);
-				}
-				else
-				{
-					const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectCustom[compInfo.renderState.selectedLayerID][compInfo.target.xCustom] != 0) : true;
-					this->_PixelEffect<OUTPUTFORMAT, GPULayerType_3D>(compInfo, *srcLinePtr, 0, enableColorEffect);
-				}
+				const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectCustom[compInfo.renderState.selectedLayerID][compInfo.target.xCustom] != 0) : true;
+				this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_3D>(compInfo, *srcLinePtr, 0, enableColorEffect);
 			}
 		}
 	}
@@ -5905,15 +6358,8 @@ void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 				
 				compInfo.target.xNative = _gpuDstToSrcIndex[compInfo.target.xCustom];
 				
-				if (COLOREFFECTDISABLEDHINT)
-				{
-					this->_PixelCopy<OUTPUTFORMAT, false>(compInfo, srcLinePtr[srcX]);
-				}
-				else
-				{
-					const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectCustom[compInfo.renderState.selectedLayerID][compInfo.target.xCustom] != 0) : true;
-					this->_PixelEffect<OUTPUTFORMAT, GPULayerType_3D>(compInfo, srcLinePtr[srcX], 0, enableColorEffect);
-				}
+				const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectCustom[compInfo.renderState.selectedLayerID][compInfo.target.xCustom] != 0) : true;
+				this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_3D>(compInfo, srcLinePtr[srcX], 0, enableColorEffect);
 			}
 			
 			srcLinePtr += compInfo.line.widthCustom;
@@ -7095,7 +7541,7 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const size_t l)
 	}
 }
 
-template<bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
 void GPUEngineA::_LineLarge8bpp(GPUEngineCompositorInfo &compInfo)
 {
 	u16 XBG = compInfo.renderState.selectedBGLayer->xOffset;
@@ -7124,7 +7570,7 @@ void GPUEngineA::_LineLarge8bpp(GPUEngineCompositorInfo &compInfo)
 		{
 			const u8 index = map[XBG];
 			const u16 color = LE_TO_LOCAL_16(this->_paletteBG[index]);
-			this->_RenderPixelSingle<ISDEBUGRENDER, MOSAIC, WILLPERFORMWINDOWTEST, COLOREFFECTDISABLEDHINT>(compInfo, x, color, (color != 0));
+			this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (color != 0));
 		}
 	}
 }

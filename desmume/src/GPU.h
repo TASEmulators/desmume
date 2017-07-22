@@ -1039,6 +1039,15 @@ enum GPULayerType
 	GPULayerType_OBJ				= 2
 };
 
+enum GPUCompositorMode
+{
+	GPUCompositorMode_Debug			= 0,
+	GPUCompositorMode_Copy			= 1,
+	GPUCompositorMode_BrightUp		= 2,
+	GPUCompositorMode_BrightDown	= 3,
+	GPUCompositorMode_Unknown		= 100
+};
+
 enum NDSDisplayID
 {
 	NDSDisplayID_Main				= 0,
@@ -1351,22 +1360,22 @@ protected:
 	void _MosaicSpriteLinePixel(GPUEngineCompositorInfo &compInfo, const size_t x, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
 	void _MosaicSpriteLine(GPUEngineCompositorInfo &compInfo, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
 	
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc, bool WRAP> void _RenderPixelIterate_Final(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc, bool WRAP> void _RenderPixelIterate_ApplyWrap(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc> void _RenderPixelIterate(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc, bool WRAP> void _RenderPixelIterate_Final(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc, bool WRAP> void _RenderPixelIterate_ApplyWrap(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc> void _RenderPixelIterate(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal);
 	
 	TILEENTRY _GetTileEntry(const u32 tileMapAddress, const u16 xOffset, const u16 layerWidthMask);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT> FORCEINLINE void _RenderPixelSingle(GPUEngineCompositorInfo &compInfo, const size_t srcX, u16 srcColor16, const bool opaque);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT> void _RenderPixelsCustom(GPUEngineCompositorInfo &compInfo);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT> void _RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST> FORCEINLINE void _RenderPixelSingle(GPUEngineCompositorInfo &compInfo, const size_t srcX, u16 srcColor16, const bool opaque);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST> void _RenderPixelsCustom(GPUEngineCompositorInfo &compInfo);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST> void _RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo);
 	
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const u16 XBG, const u16 YBG);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_BGAffine(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, bool &outUseCustomVRAM);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const u16 XBG, const u16 YBG);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_BGAffine(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, bool &outUseCustomVRAM);
 	
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineText(GPUEngineCompositorInfo &compInfo);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineRot(GPUEngineCompositorInfo &compInfo);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineExtRot(GPUEngineCompositorInfo &compInfo, bool &outUseCustomVRAM);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> void _LineText(GPUEngineCompositorInfo &compInfo);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> void _LineRot(GPUEngineCompositorInfo &compInfo);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> void _LineExtRot(GPUEngineCompositorInfo &compInfo, bool &outUseCustomVRAM);
 		
 	template<NDSColorFormat OUTPUTFORMAT> void _RenderLine_Clear(GPUEngineCompositorInfo &compInfo);
 	void _RenderLine_SetupSprites(GPUEngineCompositorInfo &compInfo);
@@ -1379,17 +1388,23 @@ protected:
 	template<size_t WIN_NUM> bool _IsWindowInsideVerticalRange(GPUEngineCompositorInfo &compInfo);
 	void _PerformWindowTesting(GPUEngineCompositorInfo &compInfo);
 	
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderLine_LayerBG_Final(GPUEngineCompositorInfo &compInfo);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderLine_LayerBG_ApplyColorEffectDisabledHint(GPUEngineCompositorInfo &compInfo);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderLine_LayerBG_ApplyMosaic(GPUEngineCompositorInfo &compInfo);
-	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> void _RenderLine_LayerBG(GPUEngineCompositorInfo &compInfo);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> FORCEINLINE void _RenderLine_LayerBG_Final(GPUEngineCompositorInfo &compInfo);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST> FORCEINLINE void _RenderLine_LayerBG_ApplyMosaic(GPUEngineCompositorInfo &compInfo);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _RenderLine_LayerBG(GPUEngineCompositorInfo &compInfo);
 	
-	template<NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT> void _RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, itemsForPriority_t *__restrict item);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void _RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, itemsForPriority_t *__restrict item);
 	
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER> FORCEINLINE void _PixelCopy(GPUEngineCompositorInfo &compInfo, const u16 srcColor16);
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER> FORCEINLINE void _PixelCopy(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32);
-	template<NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE> FORCEINLINE void _PixelEffect(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const u8 spriteAlpha, const bool enableColorEffect);
-	template<NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE> FORCEINLINE void _PixelEffect(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32, const u8 spriteAlpha, const bool enableColorEffect);
+	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _PixelBrightnessUp(GPUEngineCompositorInfo &compInfo, const u16 srcColor16);
+	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _PixelBrightnessUp(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32);
+	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _PixelBrightnessDown(GPUEngineCompositorInfo &compInfo, const u16 srcColor16);
+	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _PixelBrightnessDown(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32);
+	template<NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE> FORCEINLINE void _PixelUnknownEffect(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const u8 spriteAlpha, const bool enableColorEffect);
+	template<NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE> FORCEINLINE void _PixelUnknownEffect(GPUEngineCompositorInfo &compInfo, const FragmentColor srcColor32, const u8 spriteAlpha, const bool enableColorEffect);
+	
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE> FORCEINLINE void _PixelComposite(GPUEngineCompositorInfo &compInfo, const u16 srcColor16, const u8 spriteAlpha, const bool enableColorEffect);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE> FORCEINLINE void _PixelComposite(GPUEngineCompositorInfo &compInfo, FragmentColor srcColor32, const u8 spriteAlpha, const bool enableColorEffect);
 	
 	FORCEINLINE u16 _ColorEffectBlend(const u16 colA, const u16 colB, const u16 blendEVA, const u16 blendEVB);
 	FORCEINLINE u16 _ColorEffectBlend(const u16 colA, const u16 colB, const TBlendTable *blendTable);
@@ -1413,7 +1428,11 @@ protected:
 	
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER> void _PixelCopy16_SSE2(GPUEngineCompositorInfo &compInfo, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID);
 	template<NDSColorFormat OUTPUTFORMAT, bool ISDEBUGRENDER> void _PixelCopyWithMask16_SSE2(GPUEngineCompositorInfo &compInfo, const __m128i &passMask8, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID);
-	template<NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST> FORCEINLINE void _PixelEffectWithMask16_SSE2(GPUEngineCompositorInfo &compInfo, const __m128i &passMask8, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, const __m128i &spriteAlpha, const __m128i &srcEffectEnableMask, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID);
+	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _PixelBrightnessUp16_SSE2(GPUEngineCompositorInfo &compInfo, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID);
+	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _PixelBrightnessUpWithMask16_SSE2(GPUEngineCompositorInfo &compInfo, const __m128i &passMask8, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID);
+	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _PixelBrightnessDown16_SSE2(GPUEngineCompositorInfo &compInfo, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID);
+	template<NDSColorFormat OUTPUTFORMAT> FORCEINLINE void _PixelBrightnessDownWithMask16_SSE2(GPUEngineCompositorInfo &compInfo, const __m128i &passMask8, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID);
+	template<NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST> FORCEINLINE void _PixelUnknownEffectWithMask16_SSE2(GPUEngineCompositorInfo &compInfo, const __m128i &passMask8, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, const __m128i &spriteAlpha, const __m128i &srcEffectEnableMask, __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0, __m128i &dstLayerID);
 #endif
 	
 	template<bool ISDEBUGRENDER> void _RenderSpriteBMP(GPUEngineCompositorInfo &compInfo, const u8 spriteNum, u16 *__restrict dst, const u32 srcadr, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
@@ -1537,7 +1556,7 @@ protected:
 	DISPCAPCNT_parsed _dispCapCnt;
 	bool _displayCaptureEnable;
 	
-	template<bool ISDEBUGRENDER, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT, bool ISCUSTOMRENDERINGNEEDED> void _LineLarge8bpp(GPUEngineCompositorInfo &compInfo);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED> void _LineLarge8bpp(GPUEngineCompositorInfo &compInfo);
 	
 	template<NDSColorFormat OUTPUTFORMAT, size_t CAPTURELENGTH> void _RenderLine_DisplayCapture(const u16 l);
 	void _RenderLine_DispCapture_FIFOToBuffer(u16 *fifoLineBuffer);
@@ -1587,7 +1606,7 @@ public:
 	void ResetCaptureLineStates();
 	
 	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const size_t l);
-	template<NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST, bool COLOREFFECTDISABLEDHINT> void RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo);
+	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WILLPERFORMWINDOWTEST> void RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo);
 };
 
 class GPUEngineB : public GPUEngineBase
