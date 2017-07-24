@@ -1534,7 +1534,7 @@ void GPUEngineBase::_LineColorCopy(void *__restrict dstBuffer, const void *__res
 		const void *src = (USELINEINDEX) ? (u8 *)srcBuffer + (l * GPU_FRAMEBUFFER_NATIVE_WIDTH * PIXELBYTES) : (u8 *)srcBuffer;
 		
 #if defined(ENABLE_SSE2)
-		if (lineWidth == (GPU_FRAMEBUFFER_NATIVE_WIDTH * 2) && (lineCount == 2))
+		if (lineWidth == (GPU_FRAMEBUFFER_NATIVE_WIDTH * 2))
 		{
 			for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; )
 			{
@@ -1546,9 +1546,6 @@ void GPUEngineBase::_LineColorCopy(void *__restrict dstBuffer, const void *__res
 					_mm_store_si128((__m128i *)((u16 *)dst + (x * 2) +  0 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 * 0)), src16out[0]);
 					_mm_store_si128((__m128i *)((u16 *)dst + (x * 2) +  8 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 * 0)), src16out[1]);
 					
-					_mm_store_si128((__m128i *)((u16 *)dst + (x * 2) +  0 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 * 1)), src16out[0]);
-					_mm_store_si128((__m128i *)((u16 *)dst + (x * 2) +  8 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 * 1)), src16out[1]);
-					
 					x += 8;
 				}
 				else if (PIXELBYTES == 4)
@@ -1559,14 +1556,41 @@ void GPUEngineBase::_LineColorCopy(void *__restrict dstBuffer, const void *__res
 					_mm_store_si128((__m128i *)((u32 *)dst + (x * 2) +  0 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 * 0)), src32out[0]);
 					_mm_store_si128((__m128i *)((u32 *)dst + (x * 2) +  4 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 * 0)), src32out[1]);
 					
-					_mm_store_si128((__m128i *)((u32 *)dst + (x * 2) +  0 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 * 1)), src32out[0]);
-					_mm_store_si128((__m128i *)((u32 *)dst + (x * 2) +  4 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 * 1)), src32out[1]);
+					x += 4;
+				}
+			}
+		}
+		else if (lineWidth == (GPU_FRAMEBUFFER_NATIVE_WIDTH * 3))
+		{
+			for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; )
+			{
+				if (PIXELBYTES == 2)
+				{
+					const __m128i src16 = _mm_load_si128((__m128i *)((u16 *)src + x));
+					const __m128i src16lo = _mm_shuffle_epi32(src16, 0x88);
+					const __m128i src16hi = _mm_shuffle_epi32(src16, 0xEE);
+					const __m128i src16out[3] = { _mm_shufflehi_epi16(_mm_shufflelo_epi16(src16lo, 0x40), 0xA5), _mm_shufflehi_epi16(_mm_shufflelo_epi16(src16, 0xFE), 0x40), _mm_shufflehi_epi16(_mm_shufflelo_epi16(src16hi, 0xA5), 0xFE) };
+					
+					_mm_store_si128((__m128i *)((u16 *)dst + (x * 3) +  0 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 3 * 0)), src16out[0]);
+					_mm_store_si128((__m128i *)((u16 *)dst + (x * 3) +  8 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 3 * 0)), src16out[1]);
+					_mm_store_si128((__m128i *)((u16 *)dst + (x * 3) + 16 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 3 * 0)), src16out[2]);
+					
+					x += 8;
+				}
+				else if (PIXELBYTES == 4)
+				{
+					const __m128i src32 = _mm_load_si128((__m128i *)((u32 *)src + x));
+					const __m128i src32out[3] = { _mm_shuffle_epi32(src32, 0x40), _mm_shuffle_epi32(src32, 0xA5), _mm_shuffle_epi32(src32, 0xFE) };
+					
+					_mm_store_si128((__m128i *)((u32 *)dst + (x * 3) +  0 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 3 * 0)), src32out[0]);
+					_mm_store_si128((__m128i *)((u32 *)dst + (x * 3) +  4 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 3 * 0)), src32out[1]);
+					_mm_store_si128((__m128i *)((u32 *)dst + (x * 3) +  8 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 3 * 0)), src32out[2]);
 					
 					x += 4;
 				}
 			}
 		}
-		else if (lineWidth == (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4) && (lineCount == 4))
+		else if (lineWidth == (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4))
 		{
 			for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; )
 			{
@@ -1582,21 +1606,6 @@ void GPUEngineBase::_LineColorCopy(void *__restrict dstBuffer, const void *__res
 					_mm_store_si128((__m128i *)((u16 *)dst + (x * 4) + 16 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 0)), src16out[2]);
 					_mm_store_si128((__m128i *)((u16 *)dst + (x * 4) + 24 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 0)), src16out[3]);
 					
-					_mm_store_si128((__m128i *)((u16 *)dst + (x * 4) +  0 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 1)), src16out[0]);
-					_mm_store_si128((__m128i *)((u16 *)dst + (x * 4) +  8 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 1)), src16out[1]);
-					_mm_store_si128((__m128i *)((u16 *)dst + (x * 4) + 16 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 1)), src16out[2]);
-					_mm_store_si128((__m128i *)((u16 *)dst + (x * 4) + 24 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 1)), src16out[3]);
-					
-					_mm_store_si128((__m128i *)((u16 *)dst + (x * 4) +  0 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 2)), src16out[0]);
-					_mm_store_si128((__m128i *)((u16 *)dst + (x * 4) +  8 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 2)), src16out[1]);
-					_mm_store_si128((__m128i *)((u16 *)dst + (x * 4) + 16 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 2)), src16out[2]);
-					_mm_store_si128((__m128i *)((u16 *)dst + (x * 4) + 24 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 2)), src16out[3]);
-					
-					_mm_store_si128((__m128i *)((u16 *)dst + (x * 4) +  0 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 3)), src16out[0]);
-					_mm_store_si128((__m128i *)((u16 *)dst + (x * 4) +  8 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 3)), src16out[1]);
-					_mm_store_si128((__m128i *)((u16 *)dst + (x * 4) + 16 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 3)), src16out[2]);
-					_mm_store_si128((__m128i *)((u16 *)dst + (x * 4) + 24 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 3)), src16out[3]);
-					
 					x += 8;
 				}
 				else if (PIXELBYTES == 4)
@@ -1610,21 +1619,6 @@ void GPUEngineBase::_LineColorCopy(void *__restrict dstBuffer, const void *__res
 					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) +  4 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 0)), src32out[1]);
 					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) +  8 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 0)), src32out[2]);
 					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) + 12 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 0)), src32out[3]);
-					
-					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) +  0 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 1)), src32out[0]);
-					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) +  4 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 1)), src32out[1]);
-					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) +  8 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 1)), src32out[2]);
-					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) + 12 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 1)), src32out[3]);
-					
-					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) +  0 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 2)), src32out[0]);
-					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) +  4 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 2)), src32out[1]);
-					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) +  8 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 2)), src32out[2]);
-					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) + 12 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 2)), src32out[3]);
-					
-					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) +  0 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 3)), src32out[0]);
-					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) +  4 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 3)), src32out[1]);
-					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) +  8 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 3)), src32out[2]);
-					_mm_store_si128((__m128i *)((u32 *)dst + (x * 4) + 12 + (GPU_FRAMEBUFFER_NATIVE_WIDTH * 4 * 3)), src32out[3]);
 					
 					x += 4;
 				}
@@ -1647,14 +1641,14 @@ void GPUEngineBase::_LineColorCopy(void *__restrict dstBuffer, const void *__res
 					}
 				}
 			}
-			
-			dst = dstLinePtr + (lineWidth * PIXELBYTES);
-			
-			for (size_t line = 1; line < lineCount; line++)
-			{
-				memcpy(dst, dstLinePtr, lineWidth * PIXELBYTES);
-				dst += (lineWidth * PIXELBYTES);
-			}
+		}
+		
+		dst = dstLinePtr + (lineWidth * PIXELBYTES);
+		
+		for (size_t line = 1; line < lineCount; line++)
+		{
+			memcpy(dst, dstLinePtr, lineWidth * PIXELBYTES);
+			dst += (lineWidth * PIXELBYTES);
 		}
 	}
 }
@@ -2416,12 +2410,13 @@ FORCEINLINE void GPUEngineBase::_PixelBrightnessDownWithMask16_SSE2(GPUEngineCom
 	dstLayerID = _mm_blendv_epi8(dstLayerID, srcLayerID_vec128, passMask8);
 }
 
-template <NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST>
+template <NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE>
 FORCEINLINE void GPUEngineBase::_PixelUnknownEffectWithMask16_SSE2(GPUEngineCompositorInfo &compInfo,
 																   const __m128i &passMask8,
 																   const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0,
 																   const __m128i &spriteAlpha,
 																   const __m128i &srcEffectEnableMask,
+																   const __m128i &enableColorEffectMask,
 																   __m128i &dst3, __m128i &dst2, __m128i &dst1, __m128i &dst0,
 																   __m128i &dstLayerID)
 {
@@ -2433,8 +2428,6 @@ FORCEINLINE void GPUEngineBase::_PixelUnknownEffectWithMask16_SSE2(GPUEngineComp
 	                                _mm_unpackhi_epi16(passMask16[0], passMask16[0]),
 	                                _mm_unpacklo_epi16(passMask16[1], passMask16[1]),
 	                                _mm_unpackhi_epi16(passMask16[1], passMask16[1]) };
-	
-	const __m128i enableColorEffectMask = (WILLPERFORMWINDOWTEST) ? _mm_cmpeq_epi8( _mm_load_si128((__m128i *)(this->_enableColorEffectCustom[compInfo.renderState.selectedLayerID] + compInfo.target.xCustom)), _mm_set1_epi8(1) ) : _mm_set1_epi8(0xFF);
 	
 	__m128i dstEffectEnableMask;
 	
@@ -2616,6 +2609,142 @@ FORCEINLINE void GPUEngineBase::_PixelUnknownEffectWithMask16_SSE2(GPUEngineComp
 	}
 	
 	dstLayerID = _mm_blendv_epi8(dstLayerID, srcLayerID_vec128, passMask8);
+}
+
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST>
+FORCEINLINE void GPUEngineBase::_PixelComposite16_SSE2(GPUEngineCompositorInfo &compInfo,
+													   const bool didAllPixelsPass,
+													   const __m128i &passMask8,
+													   const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0,
+													   const __m128i &srcEffectEnableMask)
+{
+	const bool is555and3D = (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev) && (LAYERTYPE == GPULayerType_3D);
+	__m128i dst[4];
+	__m128i dstLayerID_vec128;
+	
+	if (is555and3D)
+	{
+		// 3D layer blending requires that all src colors are preserved as 32-bit values.
+		// Since dst2 and dst3 are currently unused for RGB555 output, we using these variables
+		// to store the converted 16-bit src colors.
+		dst[2] = _mm_packs_epi32( _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src0, _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src0, _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src0, _mm_set1_epi32(0x003E0000)), 7)),
+		                          _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src1, _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src1, _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src1, _mm_set1_epi32(0x003E0000)), 7)) );
+		dst[3] = _mm_packs_epi32( _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src2, _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src2, _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src2, _mm_set1_epi32(0x003E0000)), 7)),
+		                          _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src3, _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src3, _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src3, _mm_set1_epi32(0x003E0000)), 7)) );
+	}
+	
+	if ((COMPOSITORMODE != GPUCompositorMode_Unknown) && didAllPixelsPass)
+	{
+		switch (COMPOSITORMODE)
+		{
+			case GPUCompositorMode_Debug:
+				this->_PixelCopy16_SSE2<OUTPUTFORMAT, true>(compInfo,
+															src3, src2, (!is555and3D) ? src1 : dst[3], (!is555and3D) ? src0 : dst[2],
+															dst[3], dst[2], dst[1], dst[0],
+															dstLayerID_vec128);
+				break;
+				
+			case GPUCompositorMode_Copy:
+				this->_PixelCopy16_SSE2<OUTPUTFORMAT, false>(compInfo,
+															 src3, src2, (!is555and3D) ? src1 : dst[3], (!is555and3D) ? src0 : dst[2],
+															 dst[3], dst[2], dst[1], dst[0],
+															 dstLayerID_vec128);
+				break;
+				
+			case GPUCompositorMode_BrightUp:
+				this->_PixelBrightnessUp16_SSE2<OUTPUTFORMAT>(compInfo,
+															  src3, src2, (!is555and3D) ? src1 : dst[3], (!is555and3D) ? src0 : dst[2],
+															  dst[3], dst[2], dst[1], dst[0],
+															  dstLayerID_vec128);
+				break;
+				
+			case GPUCompositorMode_BrightDown:
+				this->_PixelBrightnessDown16_SSE2<OUTPUTFORMAT>(compInfo,
+																src3, src2, (!is555and3D) ? src1 : dst[3], (!is555and3D) ? src0 : dst[2],
+																dst[3], dst[2], dst[1], dst[0],
+																dstLayerID_vec128);
+				break;
+				
+			default:
+				break;
+		}
+	}
+	else
+	{
+		// Read the destination pixels into registers if we're doing a masked pixel write.
+		dst[0] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 0);
+		dst[1] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 1);
+		
+		if (OUTPUTFORMAT != NDSColorFormat_BGR555_Rev)
+		{
+			dst[2] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 2);
+			dst[3] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 3);
+		}
+		
+		dstLayerID_vec128 = _mm_load_si128((__m128i *)compInfo.target.lineLayerID);
+		
+		switch (COMPOSITORMODE)
+		{
+			case GPUCompositorMode_Debug:
+				this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, true>(compInfo,
+																	passMask8,
+																	src3, src2, (!is555and3D) ? src1 : dst[3], (!is555and3D) ? src0 : dst[2],
+																	dst[3], dst[2], dst[1], dst[0],
+																	dstLayerID_vec128);
+				break;
+				
+			case GPUCompositorMode_Copy:
+				this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, false>(compInfo,
+																	 passMask8,
+																	 src3, src2, (!is555and3D) ? src1 : dst[3], (!is555and3D) ? src0 : dst[2],
+																	 dst[3], dst[2], dst[1], dst[0],
+																	 dstLayerID_vec128);
+				break;
+				
+			case GPUCompositorMode_BrightUp:
+				this->_PixelBrightnessUpWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
+																	  passMask8,
+																	  src3, src2, (!is555and3D) ? src1 : dst[3], (!is555and3D) ? src0 : dst[2],
+																	  dst[3], dst[2], dst[1], dst[0],
+																	  dstLayerID_vec128);
+				break;
+				
+			case GPUCompositorMode_BrightDown:
+				this->_PixelBrightnessDownWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
+																		passMask8,
+																		src3, src2, (!is555and3D) ? src1 : dst[3], (!is555and3D) ? src0 : dst[2],
+																		dst[3], dst[2], dst[1], dst[0],
+																		dstLayerID_vec128);
+				break;
+				
+			default:
+			{
+				const __m128i spriteAlpha = _mm_setzero_si128();
+				const __m128i enableColorEffectMask = (WILLPERFORMWINDOWTEST) ? _mm_cmpeq_epi8( _mm_load_si128((__m128i *)(this->_enableColorEffectCustom[compInfo.renderState.selectedLayerID] + compInfo.target.xCustom)), _mm_set1_epi8(1) ) : _mm_set1_epi8(0xFF);
+				
+				this->_PixelUnknownEffectWithMask16_SSE2<OUTPUTFORMAT, LAYERTYPE>(compInfo,
+																				  passMask8,
+																				  src3, src2, src1, src0,
+																				  spriteAlpha,
+																				  srcEffectEnableMask,
+																				  enableColorEffectMask,
+																				  dst[3], dst[2], dst[1], dst[0],
+																				  dstLayerID_vec128);
+				break;
+			}
+		}
+	}
+	
+	_mm_store_si128((__m128i *)*compInfo.target.lineColor + 0, dst[0]);
+	_mm_store_si128((__m128i *)*compInfo.target.lineColor + 1, dst[1]);
+	
+	if (OUTPUTFORMAT != NDSColorFormat_BGR555_Rev)
+	{
+		_mm_store_si128((__m128i *)*compInfo.target.lineColor + 2, dst[2]);
+		_mm_store_si128((__m128i *)*compInfo.target.lineColor + 3, dst[3]);
+	}
+	
+	_mm_store_si128((__m128i *)compInfo.target.lineLayerID, dstLayerID_vec128);
 }
 
 #endif
@@ -2988,121 +3117,12 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 			}
 			
 			// Write out the pixels.
-			__m128i dst[4];
-			__m128i dstLayerID_vec128;
-			
-			// Read the destination pixels into registers if we're doing a masked pixel write.
 			const bool didAllPixelsPass = (passMaskValue == 0xFFFF);
-			
-			if ((COMPOSITORMODE != GPUCompositorMode_Unknown) && didAllPixelsPass)
-			{
-				switch (COMPOSITORMODE)
-				{
-					case GPUCompositorMode_Debug:
-						this->_PixelCopy16_SSE2<OUTPUTFORMAT, true>(compInfo,
-																	src[3], src[2], src[1], src[0],
-																	dst[3], dst[2], dst[1], dst[0],
-																	dstLayerID_vec128);
-						break;
-						
-					case GPUCompositorMode_Copy:
-						this->_PixelCopy16_SSE2<OUTPUTFORMAT, false>(compInfo,
-																	 src[3], src[2], src[1], src[0],
-																	 dst[3], dst[2], dst[1], dst[0],
-																	 dstLayerID_vec128);
-						break;
-						
-					case GPUCompositorMode_BrightUp:
-						this->_PixelBrightnessUp16_SSE2<OUTPUTFORMAT>(compInfo,
-																	  src[3], src[2], src[1], src[0],
-																	  dst[3], dst[2], dst[1], dst[0],
-																	  dstLayerID_vec128);
-						break;
-						
-					case GPUCompositorMode_BrightDown:
-						this->_PixelBrightnessDown16_SSE2<OUTPUTFORMAT>(compInfo,
-																		src[3], src[2], src[1], src[0],
-																		dst[3], dst[2], dst[1], dst[0],
-																		dstLayerID_vec128);
-						break;
-						
-					default:
-						break;
-				}
-			}
-			else
-			{
-				dst[0] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 0);
-				dst[1] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 1);
-				
-				if (OUTPUTFORMAT != NDSColorFormat_BGR555_Rev)
-				{
-					dst[2] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 2);
-					dst[3] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 3);
-				}
-				
-				dstLayerID_vec128 = _mm_load_si128((__m128i *)compInfo.target.lineLayerID);
-				
-				switch (COMPOSITORMODE)
-				{
-					case GPUCompositorMode_Debug:
-						this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, true>(compInfo,
-																			passMask8,
-																			src[3], src[2], src[1], src[0],
-																			dst[3], dst[2], dst[1], dst[0],
-																			dstLayerID_vec128);
-						break;
-						
-					case GPUCompositorMode_Copy:
-						this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, false>(compInfo,
-																			 passMask8,
-																			 src[3], src[2], src[1], src[0],
-																			 dst[3], dst[2], dst[1], dst[0],
-																			 dstLayerID_vec128);
-						break;
-						
-					case GPUCompositorMode_BrightUp:
-						this->_PixelBrightnessUpWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
-																			  passMask8,
-																			  src[3], src[2], src[1], src[0],
-																			  dst[3], dst[2], dst[1], dst[0],
-																			  dstLayerID_vec128);
-						break;
-						
-					case GPUCompositorMode_BrightDown:
-						this->_PixelBrightnessDownWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
-																				passMask8,
-																				src[3], src[2], src[1], src[0],
-																				dst[3], dst[2], dst[1], dst[0],
-																				dstLayerID_vec128);
-						break;
-						
-					default:
-					{
-						const __m128i spriteAlpha = _mm_setzero_si128();
-						
-						this->_PixelUnknownEffectWithMask16_SSE2<OUTPUTFORMAT, GPULayerType_BG, WILLPERFORMWINDOWTEST>(compInfo,
-																													   passMask8,
-																													   src[3], src[2], src[1], src[0],
-																													   spriteAlpha,
-																													   srcEffectEnableMask,
-																													   dst[3], dst[2], dst[1], dst[0],
-																													   dstLayerID_vec128);
-						break;
-					}
-				}
-			}
-			
-			_mm_store_si128((__m128i *)*compInfo.target.lineColor + 0, dst[0]);
-			_mm_store_si128((__m128i *)*compInfo.target.lineColor + 1, dst[1]);
-			
-			if (OUTPUTFORMAT != NDSColorFormat_BGR555_Rev)
-			{
-				_mm_store_si128((__m128i *)*compInfo.target.lineColor + 2, dst[2]);
-				_mm_store_si128((__m128i *)*compInfo.target.lineColor + 3, dst[3]);
-			}
-			
-			_mm_store_si128((__m128i *)compInfo.target.lineLayerID, dstLayerID_vec128);
+			this->_PixelComposite16_SSE2<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_BG, WILLPERFORMWINDOWTEST>(compInfo,
+																											   didAllPixelsPass,
+																											   passMask8,
+																											   src[3], src[2], src[1], src[0],
+																											   srcEffectEnableMask);
 		}
 #endif
 		
@@ -3197,121 +3217,12 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
 		}
 		
 		// Write out the pixels.
-		__m128i dst[4];
-		__m128i dstLayerID_vec128;
-		
-		// Read the destination pixels into registers if we're doing a masked pixel write.
 		const bool didAllPixelsPass = (passMaskValue == 0xFFFF);
-		
-		if ((COMPOSITORMODE != GPUCompositorMode_Unknown) && didAllPixelsPass)
-		{
-			switch (COMPOSITORMODE)
-			{
-				case GPUCompositorMode_Debug:
-					this->_PixelCopy16_SSE2<OUTPUTFORMAT, true>(compInfo,
-																src[3], src[2], src[1], src[0],
-																dst[3], dst[2], dst[1], dst[0],
-																dstLayerID_vec128);
-					break;
-					
-				case GPUCompositorMode_Copy:
-					this->_PixelCopy16_SSE2<OUTPUTFORMAT, false>(compInfo,
-																 src[3], src[2], src[1], src[0],
-																 dst[3], dst[2], dst[1], dst[0],
-																 dstLayerID_vec128);
-					break;
-					
-				case GPUCompositorMode_BrightUp:
-					this->_PixelBrightnessUp16_SSE2<OUTPUTFORMAT>(compInfo,
-																  src[3], src[2], src[1], src[0],
-																  dst[3], dst[2], dst[1], dst[0],
-																  dstLayerID_vec128);
-					break;
-					
-				case GPUCompositorMode_BrightDown:
-					this->_PixelBrightnessDown16_SSE2<OUTPUTFORMAT>(compInfo,
-																	src[3], src[2], src[1], src[0],
-																	dst[3], dst[2], dst[1], dst[0],
-																	dstLayerID_vec128);
-					break;
-					
-				default:
-					break;
-			}
-		}
-		else
-		{
-			dst[0] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 0);
-			dst[1] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 1);
-			
-			if (OUTPUTFORMAT != NDSColorFormat_BGR555_Rev)
-			{
-				dst[2] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 2);
-				dst[3] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 3);
-			}
-			
-			dstLayerID_vec128 = _mm_load_si128((__m128i *)compInfo.target.lineLayerID);
-			
-			switch (COMPOSITORMODE)
-			{
-				case GPUCompositorMode_Debug:
-					this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, true>(compInfo,
-																		passMask8,
-																		src[3], src[2], src[1], src[0],
-																		dst[3], dst[2], dst[1], dst[0],
-																		dstLayerID_vec128);
-					break;
-					
-				case GPUCompositorMode_Copy:
-					this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, false>(compInfo,
-																		 passMask8,
-																		 src[3], src[2], src[1], src[0],
-																		 dst[3], dst[2], dst[1], dst[0],
-																		 dstLayerID_vec128);
-					break;
-					
-				case GPUCompositorMode_BrightUp:
-					this->_PixelBrightnessUpWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
-																		  passMask8,
-																		  src[3], src[2], src[1], src[0],
-																		  dst[3], dst[2], dst[1], dst[0],
-																		  dstLayerID_vec128);
-					break;
-					
-				case GPUCompositorMode_BrightDown:
-					this->_PixelBrightnessDownWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
-																		 passMask8,
-																		 src[3], src[2], src[1], src[0],
-																		 dst[3], dst[2], dst[1], dst[0],
-																		 dstLayerID_vec128);
-					break;
-					
-				default:
-				{
-					const __m128i spriteAlpha = _mm_setzero_si128();
-					
-					this->_PixelUnknownEffectWithMask16_SSE2<OUTPUTFORMAT, GPULayerType_BG, WILLPERFORMWINDOWTEST>(compInfo,
-																												   passMask8,
-																												   src[3], src[2], src[1], src[0],
-																												   spriteAlpha,
-																												   srcEffectEnableMask,
-																												   dst[3], dst[2], dst[1], dst[0],
-																												   dstLayerID_vec128);
-					break;
-				}
-			}
-		}
-		
-		_mm_store_si128((__m128i *)*compInfo.target.lineColor + 0, dst[0]);
-		_mm_store_si128((__m128i *)*compInfo.target.lineColor + 1, dst[1]);
-		
-		if (OUTPUTFORMAT != NDSColorFormat_BGR555_Rev)
-		{
-			_mm_store_si128((__m128i *)*compInfo.target.lineColor + 2, dst[2]);
-			_mm_store_si128((__m128i *)*compInfo.target.lineColor + 3, dst[3]);
-		}
-		
-		_mm_store_si128((__m128i *)compInfo.target.lineLayerID, dstLayerID_vec128);
+		this->_PixelComposite16_SSE2<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_BG, WILLPERFORMWINDOWTEST>(compInfo,
+																										   didAllPixelsPass,
+																										   passMask8,
+																										   src[3], src[2], src[1], src[0],
+																										   srcEffectEnableMask);
 	}
 #endif
 	
@@ -6101,221 +6012,12 @@ void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 				}
 				
 				// Write out the pixels.
-				__m128i dst[4];
-				__m128i dstLayerID_vec128;
-				
-				// Read the destination pixels into registers if we're doing a masked pixel write.
 				const bool didAllPixelsPass = (passMaskValue == 0xFFFF);
-				
-				if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
-				{
-					// 3D layer blending requires that all src colors are preserved as 32-bit values.
-					// Since dst2 and dst3 are currently unused for RGB555 output, we using these variables
-					// to store the converted 16-bit src colors.
-					dst[2] = _mm_packs_epi32( _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[0], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[0], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[0], _mm_set1_epi32(0x003E0000)), 7)),
-											  _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[1], _mm_set1_epi32(0x003E0000)), 7)) );
-					dst[3] = _mm_packs_epi32( _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[2], _mm_set1_epi32(0x003E0000)), 7)),
-											  _mm_or_si128(_mm_or_si128(_mm_srli_epi32(_mm_and_si128(src[3], _mm_set1_epi32(0x0000003E)), 1), _mm_srli_epi32(_mm_and_si128(src[3], _mm_set1_epi32(0x00003E00)), 4)), _mm_srli_epi32(_mm_and_si128(src[3], _mm_set1_epi32(0x003E0000)), 7)) );
-					
-					if ((COMPOSITORMODE != GPUCompositorMode_Unknown) && didAllPixelsPass)
-					{
-						switch (COMPOSITORMODE)
-						{
-							case GPUCompositorMode_Debug:
-								this->_PixelCopy16_SSE2<OUTPUTFORMAT, true>(compInfo,
-																			src[3], src[2], dst[3], dst[2],
-																			dst[3], dst[2], dst[1], dst[0],
-																			dstLayerID_vec128);
-								break;
-								
-							case GPUCompositorMode_Copy:
-								this->_PixelCopy16_SSE2<OUTPUTFORMAT, false>(compInfo,
-																			 src[3], src[2], dst[3], dst[2],
-																			 dst[3], dst[2], dst[1], dst[0],
-																			 dstLayerID_vec128);
-								break;
-								
-							case GPUCompositorMode_BrightUp:
-								this->_PixelBrightnessUp16_SSE2<OUTPUTFORMAT>(compInfo,
-																			  src[3], src[2], dst[3], dst[2],
-																			  dst[3], dst[2], dst[1], dst[0],
-																			  dstLayerID_vec128);
-								break;
-								
-							case GPUCompositorMode_BrightDown:
-								this->_PixelBrightnessDown16_SSE2<OUTPUTFORMAT>(compInfo,
-																				src[3], src[2], dst[3], dst[2],
-																				dst[3], dst[2], dst[1], dst[0],
-																				dstLayerID_vec128);
-								break;
-								
-							default:
-								break;
-						}
-					}
-					else
-					{
-						dst[0] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 0);
-						dst[1] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 1);
-						dstLayerID_vec128 = _mm_load_si128((__m128i *)compInfo.target.lineLayerID);
-						
-						switch (COMPOSITORMODE)
-						{
-							case GPUCompositorMode_Debug:
-								this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, true>(compInfo,
-																					passMask8,
-																					src[3], src[2], dst[3], dst[2],
-																					dst[3], dst[2], dst[1], dst[0],
-																					dstLayerID_vec128);
-								break;
-								
-							case GPUCompositorMode_Copy:
-								this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, false>(compInfo,
-																					 passMask8,
-																					 src[3], src[2], dst[3], dst[2],
-																					 dst[3], dst[2], dst[1], dst[0],
-																					 dstLayerID_vec128);
-								break;
-								
-							case GPUCompositorMode_BrightUp:
-								this->_PixelBrightnessUpWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
-																					  passMask8,
-																					  src[3], src[2], dst[3], dst[2],
-																					  dst[3], dst[2], dst[1], dst[0],
-																					  dstLayerID_vec128);
-								break;
-								
-							case GPUCompositorMode_BrightDown:
-								this->_PixelBrightnessDownWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
-																						passMask8,
-																						src[3], src[2], dst[3], dst[2],
-																						dst[3], dst[2], dst[1], dst[0],
-																						dstLayerID_vec128);
-								break;
-								
-							default:
-							{
-								const __m128i spriteAlpha = _mm_setzero_si128();
-								
-								this->_PixelUnknownEffectWithMask16_SSE2<OUTPUTFORMAT, GPULayerType_3D, WILLPERFORMWINDOWTEST>(compInfo,
-																															   passMask8,
-																															   src[3], src[2], src[1], src[0],
-																															   spriteAlpha,
-																															   srcEffectEnableMask,
-																															   dst[3], dst[2], dst[1], dst[0],
-																															   dstLayerID_vec128);
-								break;
-							}
-						}
-					}
-				}
-				else
-				{
-					if ((COMPOSITORMODE != GPUCompositorMode_Unknown) && didAllPixelsPass)
-					{
-						switch (COMPOSITORMODE)
-						{
-							case GPUCompositorMode_Debug:
-								this->_PixelCopy16_SSE2<OUTPUTFORMAT, true>(compInfo,
-																			src[3], src[2], src[1], src[0],
-																			dst[3], dst[2], dst[1], dst[0],
-																			dstLayerID_vec128);
-								break;
-								
-							case GPUCompositorMode_Copy:
-								this->_PixelCopy16_SSE2<OUTPUTFORMAT, false>(compInfo,
-																			 src[3], src[2], src[1], src[0],
-																			 dst[3], dst[2], dst[1], dst[0],
-																			 dstLayerID_vec128);
-								break;
-								
-							case GPUCompositorMode_BrightUp:
-								this->_PixelBrightnessUp16_SSE2<OUTPUTFORMAT>(compInfo,
-																			  src[3], src[2], src[1], src[0],
-																			  dst[3], dst[2], dst[1], dst[0],
-																			  dstLayerID_vec128);
-								break;
-								
-							case GPUCompositorMode_BrightDown:
-								this->_PixelBrightnessDown16_SSE2<OUTPUTFORMAT>(compInfo,
-																				src[3], src[2], src[1], src[0],
-																				dst[3], dst[2], dst[1], dst[0],
-																				dstLayerID_vec128);
-								break;
-								
-							default:
-								break;
-						}
-					}
-					else
-					{
-						dst[0] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 0);
-						dst[1] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 1);
-						dst[2] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 2);
-						dst[3] = _mm_load_si128((__m128i *)*compInfo.target.lineColor + 3);
-						dstLayerID_vec128 = _mm_load_si128((__m128i *)compInfo.target.lineLayerID);
-						
-						switch (COMPOSITORMODE)
-						{
-							case GPUCompositorMode_Debug:
-								this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, true>(compInfo,
-																					passMask8,
-																					src[3], src[2], src[1], src[0],
-																					dst[3], dst[2], dst[1], dst[0],
-																					dstLayerID_vec128);
-								break;
-								
-							case GPUCompositorMode_Copy:
-								this->_PixelCopyWithMask16_SSE2<OUTPUTFORMAT, false>(compInfo,
-																					 passMask8,
-																					 src[3], src[2], src[1], src[0],
-																					 dst[3], dst[2], dst[1], dst[0],
-																					 dstLayerID_vec128);
-								break;
-								
-							case GPUCompositorMode_BrightUp:
-								this->_PixelBrightnessUpWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
-																					  passMask8,
-																					  src[3], src[2], src[1], src[0],
-																					  dst[3], dst[2], dst[1], dst[0],
-																					  dstLayerID_vec128);
-								break;
-								
-							case GPUCompositorMode_BrightDown:
-								this->_PixelBrightnessDownWithMask16_SSE2<OUTPUTFORMAT>(compInfo,
-																						passMask8,
-																						src[3], src[2], src[1], src[0],
-																						dst[3], dst[2], dst[1], dst[0],
-																						dstLayerID_vec128);
-								break;
-								
-							default:
-							{
-								const __m128i spriteAlpha = _mm_setzero_si128();
-								
-								this->_PixelUnknownEffectWithMask16_SSE2<OUTPUTFORMAT, GPULayerType_3D, WILLPERFORMWINDOWTEST>(compInfo,
-																															   passMask8,
-																															   src[3], src[2], src[1], src[0],
-																															   spriteAlpha,
-																															   srcEffectEnableMask,
-																															   dst[3], dst[2], dst[1], dst[0],
-																															   dstLayerID_vec128);
-								break;
-							}
-						}
-					}
-				}
-				
-				_mm_store_si128((__m128i *)*compInfo.target.lineColor + 0, dst[0]);
-				_mm_store_si128((__m128i *)*compInfo.target.lineColor + 1, dst[1]);
-				
-				if (OUTPUTFORMAT != NDSColorFormat_BGR555_Rev)
-				{
-					_mm_store_si128((__m128i *)*compInfo.target.lineColor + 2, dst[2]);
-					_mm_store_si128((__m128i *)*compInfo.target.lineColor + 3, dst[3]);
-				}
-				
-				_mm_store_si128((__m128i *)compInfo.target.lineLayerID, dstLayerID_vec128);
+				this->_PixelComposite16_SSE2<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_3D, WILLPERFORMWINDOWTEST>(compInfo,
+																												   didAllPixelsPass,
+																												   passMask8,
+																												   src[3], src[2], src[1], src[0],
+																												   srcEffectEnableMask);
 			}
 #endif
 			
