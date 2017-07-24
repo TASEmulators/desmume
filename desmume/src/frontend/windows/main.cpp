@@ -328,6 +328,8 @@ bool start_paused;
 extern bool killStylusTopScreen;
 extern bool killStylusOffScreen;
 
+static int gpu_bpp = 24;
+
 extern LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void InitRamSearch();
 void FilterUpdate(HWND hwnd, bool user=true);
@@ -2872,6 +2874,18 @@ static void RefreshMicSettings()
 	}
 }
 
+static void SyncGpuBpp()
+{
+	//either of these works. 666 must be packed as 888
+	if(gpu_bpp == 18)
+			GPU->SetColorFormat(NDSColorFormat_BGR666_Rev);
+	else
+			GPU->SetColorFormat(NDSColorFormat_BGR888_Rev);
+
+	//555 doesnt work (packed to u16, needs widespread support)
+	//GPU->SetColorFormat(NDSColorFormat_BGR555_Rev);
+}
+
 #define GPU3D_NULL_SAVED -1
 #define GPU3D_DEFAULT  GPU3D_SWRAST
 
@@ -2999,6 +3013,7 @@ int _main()
 	CommonSettings.GFX3D_Renderer_TextureScalingFactor = GetPrivateProfileInt("3D", "TextureScalingFactor ", 1, IniName);
 	CommonSettings.GFX3D_Renderer_TextureDeposterize =  GetPrivateProfileBool("3D", "TextureDeposterize ", 0, IniName);
 	CommonSettings.GFX3D_Renderer_TextureSmoothing =  GetPrivateProfileBool("3D", "TextureSmooth ", 0, IniName);
+	gpu_bpp = GetPrivateProfileInt("3D", "GpuBpp ", 24, IniName);
 		
 	lostFocusPause = GetPrivateProfileBool("Focus", "BackgroundPause", false, IniName);
 
@@ -3239,8 +3254,8 @@ int _main()
 
 	video.SetPrescale(CommonSettings.GFX3D_PrescaleHD, 1);
 	GPU->SetCustomFramebufferSize(256*video.prescaleHD,192*video.prescaleHD);
-	GPU->SetColorFormat(NDSColorFormat_BGR888_Rev);
-	GPU->ClearWithColor(0xFFFF);
+	SyncGpuBpp();
+	GPU->ClearWithColor(0xFFFFFF);
 
 	SetMinWindowSize();
 	ScaleScreen(windowSize, false);
@@ -6350,9 +6365,13 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			CheckDlgButton(hw,IDC_3DSETTINGS_ANTIALIASING, CommonSettings.GFX3D_Renderer_Multisample);
 			CheckDlgButton(hw,IDC_TXTHACK, CommonSettings.GFX3D_TXTHack);
 
-			if(CommonSettings.GFX3D_Renderer_TextureScalingFactor == 1) CheckDlgButton(hw,IDC_TEXSCALE_1,CommonSettings.GFX3D_Texture);
-			if(CommonSettings.GFX3D_Renderer_TextureScalingFactor == 2) CheckDlgButton(hw,IDC_TEXSCALE_2,CommonSettings.GFX3D_Texture);
-			if(CommonSettings.GFX3D_Renderer_TextureScalingFactor == 4) CheckDlgButton(hw,IDC_TEXSCALE_4,CommonSettings.GFX3D_Texture);
+			CheckDlgButton(hw,IDC_TEXSCALE_1, CommonSettings.GFX3D_Renderer_TextureScalingFactor == 1);
+			CheckDlgButton(hw,IDC_TEXSCALE_2, CommonSettings.GFX3D_Renderer_TextureScalingFactor == 2);
+			CheckDlgButton(hw,IDC_TEXSCALE_4, CommonSettings.GFX3D_Renderer_TextureScalingFactor == 4);
+
+			CheckDlgButton(hw, IDC_GPU_24BPP, gpu_bpp == 24);
+			CheckDlgButton(hw, IDC_GPU_18BPP, gpu_bpp == 18);
+
 			CheckDlgButton(hw,IDC_TEX_DEPOSTERIZE, CommonSettings.GFX3D_Renderer_TextureDeposterize);
 			CheckDlgButton(hw,IDC_TEX_SMOOTH, CommonSettings.GFX3D_Renderer_TextureSmoothing);
 
@@ -6384,6 +6403,8 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_1)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 1;
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_2)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 2;
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_4)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 4;
+					if(IsDlgCheckboxChecked(hw,IDC_GPU_18BPP)) gpu_bpp = 18;
+					if(IsDlgCheckboxChecked(hw, IDC_GPU_24BPP)) gpu_bpp = 24;
 					CommonSettings.GFX3D_Renderer_TextureDeposterize = IsDlgCheckboxChecked(hw,IDC_TEX_DEPOSTERIZE);
 					CommonSettings.GFX3D_Renderer_TextureSmoothing = IsDlgCheckboxChecked(hw,IDC_TEX_SMOOTH);
 
@@ -6393,6 +6414,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 						Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
 						video.SetPrescale(CommonSettings.GFX3D_PrescaleHD,1);
 						GPU->SetCustomFramebufferSize(256*video.prescaleHD,192*video.prescaleHD);
+						SyncGpuBpp();
 						ScaleScreen(windowSize, false);
 						UpdateScreenRects();
 						if(display_mutex) slock_unlock(display_mutex);
@@ -6409,6 +6431,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					WritePrivateProfileInt ("3D", "TextureScalingFactor", CommonSettings.GFX3D_Renderer_TextureScalingFactor, IniName);
 					WritePrivateProfileBool("3D", "TextureDeposterize", CommonSettings.GFX3D_Renderer_TextureDeposterize, IniName);
 					WritePrivateProfileBool("3D", "TextureSmooth", CommonSettings.GFX3D_Renderer_TextureSmoothing, IniName);
+					WritePrivateProfileInt ("3D", "GpuBpp", gpu_bpp, IniName);
 				}
 			case IDCANCEL:
 				{
