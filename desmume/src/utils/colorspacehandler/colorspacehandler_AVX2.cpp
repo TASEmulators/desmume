@@ -160,7 +160,8 @@ FORCEINLINE v256u16 _ConvertColorBaseTo5551_AVX2(const v256u32 &srcLo, const v25
 		}
 		
 		// Convert alpha
-		alpha = _mm256_packs_epi32( _mm256_and_si256(_mm256_srli_epi32(srcLo, 24), _mm256_set1_epi32(0x0000001F)), _mm256_and_si256(_mm256_srli_epi32(srcHi, 24), _mm256_set1_epi32(0x0000001F)) );
+		alpha = _mm256_packus_epi32( _mm256_and_si256(_mm256_srli_epi32(srcLo, 24), _mm256_set1_epi32(0x0000001F)), _mm256_and_si256(_mm256_srli_epi32(srcHi, 24), _mm256_set1_epi32(0x0000001F)) );
+		alpha = _mm256_permute4x64_epi64(alpha, 0xD8);
 		alpha = _mm256_cmpgt_epi16(alpha, _mm256_setzero_si256());
 		alpha = _mm256_and_si256(alpha, _mm256_set1_epi16(0x8000));
 	}
@@ -192,12 +193,13 @@ FORCEINLINE v256u16 _ConvertColorBaseTo5551_AVX2(const v256u32 &srcLo, const v25
 		}
 		
 		// Convert alpha
-		alpha = _mm256_packs_epi32( _mm256_srli_epi32(srcLo, 24), _mm256_srli_epi32(srcHi, 24) );
+		alpha = _mm256_packus_epi32( _mm256_srli_epi32(srcLo, 24), _mm256_srli_epi32(srcHi, 24) );
+		alpha = _mm256_permute4x64_epi64(alpha, 0xD8);
 		alpha = _mm256_cmpgt_epi16(alpha, _mm256_setzero_si256());
 		alpha = _mm256_and_si256(alpha, _mm256_set1_epi16(0x8000));
 	}
 	
-	return _mm256_or_si256(_mm256_packs_epi32(rgbLo, rgbHi), alpha);
+	return _mm256_or_si256( _mm256_permute4x64_epi64(_mm256_packus_epi32(rgbLo, rgbHi), 0xD8), alpha );
 }
 
 template <bool SWAP_RB>
