@@ -1716,6 +1716,7 @@ public:
 	size_t GetCustomFramebufferHeight() const;
 	void SetCustomFramebufferSize(size_t w, size_t h);
 	void SetColorFormat(const NDSColorFormat outputFormat);
+	NDSColorFormat GetColorFormat() const;
 	
 	bool GetWillFrameSkip() const;
 	void SetWillFrameSkip(const bool willFrameSkip);

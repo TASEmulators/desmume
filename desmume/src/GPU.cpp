@@ -8125,6 +8125,10 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h)
 
 void GPUSubsystem::SetColorFormat(const NDSColorFormat outputFormat)
 {
+	//check for no-op
+	if(this->_displayInfo.colorFormat == outputFormat)
+		return;
+
 	this->_displayInfo.colorFormat = outputFormat;
 	this->_displayInfo.pixelBytes = (outputFormat == NDSColorFormat_BGR555_Rev) ? sizeof(u16) : sizeof(FragmentColor);
 	
@@ -8134,6 +8138,11 @@ void GPUSubsystem::SetColorFormat(const NDSColorFormat outputFormat)
 	}
 	
 	this->_AllocateFramebuffers(this->_displayInfo.colorFormat, this->_displayInfo.customWidth, this->_displayInfo.customHeight);
+}
+
+NDSColorFormat GPUSubsystem::GetColorFormat() const
+{
+	return this->_displayInfo.colorFormat;
 }
 
 void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, size_t h)
