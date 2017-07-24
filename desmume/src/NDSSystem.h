@@ -547,7 +547,7 @@ extern struct TCommonSettings
 	bool GFX3D_Texture;
 	bool GFX3D_LineHack;
 	bool GFX3D_Renderer_Multisample;
-	int GFX3D_Renderer_TextureScalingFactor;
+	int GFX3D_Renderer_TextureScalingFactor; //must be one of {1,2,4}
 	bool GFX3D_Renderer_TextureDeposterize;
 	bool GFX3D_Renderer_TextureSmoothing;
 	bool GFX3D_TXTHack;
