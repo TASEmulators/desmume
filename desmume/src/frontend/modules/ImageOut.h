@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2015 DeSmuME team
+	Copyright (C) 2015-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,8 +20,12 @@
 
 #include "types.h"
 
+u8* Convert15To24(const u16* src, int width, int height);
+u8* Convert32To32SwapRB(const void* src, int width, int height);
+
 int NDS_WritePNG_15bpp(int width, int height, const u16 *data, const char *fname);
 int NDS_WriteBMP_15bpp(int width, int height, const u16 *data, const char *filename);
+int NDS_WritePNG_32bppBuffer(int width, int height, const void* buf, const char *filename);
 int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
 
 #endif

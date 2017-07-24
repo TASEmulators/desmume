@@ -164,15 +164,22 @@ void HK_QuickScreenShot(int param, bool justPressed)
 	switch(path.imageformat())
 	{
 	case path.PNG:
-		{		
+		{
 			strcat(fname, ".png");
-			NDS_WritePNG_15bpp(dispInfo.customWidth, dispInfo.customHeight*2, (const u16*)dispInfo.masterCustomBuffer, fname);
+			u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
+			ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
+			free_aligned(swapbuf);
+			NDS_WritePNG_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight*2, swapbuf, fname);
+			free_aligned(swapbuf);
 		}
 		break;
 	case path.BMP:
 		{
 			strcat(fname, ".bmp");
-			NDS_WriteBMP_15bpp(dispInfo.customWidth, dispInfo.customHeight *2, (const u16*)dispInfo.masterCustomBuffer, fname);
+			u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
+			ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
+			NDS_WriteBMP_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight *2, swapbuf, fname);
+			free_aligned(swapbuf);
 		}
 		break;
 	}

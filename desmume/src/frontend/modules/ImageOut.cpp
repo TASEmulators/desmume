@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -56,8 +56,14 @@ int NDS_WriteBMP_15bpp(int width, int height, const u16 *data, const char *filen
 	return ok?1:0;
 }
 
+int NDS_WritePNG_32bppBuffer(int width, int height, const void* buf, const char *filename)
+{
+	bool ok = rpng_save_image_argb(filename, (const uint32_t*)buf, width, height, width * 4);
+	return ok ? 1 : 0;
+}
+
 int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename)
 {
-	bool ok = rbmp_save_image(filename,buf,width,height,width*4,RBMP_SOURCE_TYPE_ARGB8888); 
+	bool ok = rbmp_save_image(filename,buf,width,height,width*4,(rbmp_source_type)(RBMP_SOURCE_TYPE_ARGB8888 | RBMP_SOURCE_TYPE_YFLIPPED));
 	return ok?1:0;
 }

@@ -88,6 +88,7 @@
 #include "frontend/modules/osd/agg/agg_osd.h"
 #include "frontend/modules/osd/agg/aggdraw.h"
 #include "frontend/modules/osd/agg/agg2d.h"
+#include "frontend/modules/ImageOut.h"
 #include "winutil.h"
 #include "ogl.h"
 
@@ -4224,16 +4225,19 @@ void ScreenshotToClipboard(bool extraInfo)
 	memset(&bmi, 0, sizeof(bmi));
     bmi.bV4Size = sizeof(bmi);
     bmi.bV4Planes = 1;
-    bmi.bV4BitCount = 16;
-    bmi.bV4V4Compression = BI_RGB | BI_BITFIELDS;
-    bmi.bV4RedMask = 0x001F;
-    bmi.bV4GreenMask = 0x03E0;
-    bmi.bV4BlueMask = 0x7C00;
+    bmi.bV4BitCount = 32;
+    bmi.bV4V4Compression = BI_RGB;
     bmi.bV4Width = width;
     bmi.bV4Height = -height;
 
+
+	u32* swapbuf = (u32*)malloc_alignedCacheLine(width*height*4);
+	ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, width * height);
+
 	FillRect(hMemDC, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
-	SetDIBitsToDevice(hMemDC, 0, 0, width, height, 0, 0, 0, height, dispInfo.masterCustomBuffer, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+	SetDIBitsToDevice(hMemDC, 0, 0, width, height, 0, 0, 0, height, swapbuf, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+
+	free_aligned(swapbuf);
 
 	//center-justify the extra text
 	int xo = (width - 256)/2;
