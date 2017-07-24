@@ -473,9 +473,10 @@
 #define IDC_LIST                        1069
 #define IDC_TEXSCALE_4                  1070
 #define IDC_SNUMBER                     1071
-#define IDC_TEXSCALE_5                  1071
 #define IDC_GPU_24BPP                   1071
 #define IDC_GPU_18BPP                   1072
+#define IDC_GPU_18BPP2                  1073
+#define IDC_GPU_15BPP                   1073
 #define IDC_CHECK1                      1074
 #define IDC_CHECK2                      1075
 #define IDC_CAP0_SRC                    1075

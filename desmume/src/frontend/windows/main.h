@@ -61,6 +61,7 @@ extern void Change3DCoreWithFallbackAndSave(int newCore);
 
 extern int backupmemorytype;
 extern u32 backupmemorysize;
+extern int gpu_bpp;
 
 void WIN_InstallCFlash();
 void WIN_InstallGBACartridge();

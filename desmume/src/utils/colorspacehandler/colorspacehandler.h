@@ -73,6 +73,7 @@ enum NDSColorFormat
 	//NDSColorFormat_ABGR8888_Rev		= 0x20208208,
 	
 	// Color formats used by the output framebuffers.
+	// The 555 format is packed into u16; the 666 and 888 format is packed into u32
 	NDSColorFormat_BGR555_Rev		= 0x20005145,
 	NDSColorFormat_BGR666_Rev		= 0x20006186,
 	NDSColorFormat_BGR888_Rev		= 0x20008208

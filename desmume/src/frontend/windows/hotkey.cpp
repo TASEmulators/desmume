@@ -163,23 +163,37 @@ void HK_QuickScreenShot(int param, bool justPressed)
 
 	switch(path.imageformat())
 	{
-	case path.PNG:
+	case PathInfo::PNG:
 		{
 			strcat(fname, ".png");
-			u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
-			ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
-			free_aligned(swapbuf);
-			NDS_WritePNG_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight*2, swapbuf, fname);
-			free_aligned(swapbuf);
+			if(gpu_bpp == 15)
+			{
+				NDS_WritePNG_15bpp(dispInfo.customWidth, dispInfo.customHeight * 2, (const u16*)dispInfo.masterCustomBuffer, fname);
+			}
+			else
+			{
+				u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
+				ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
+				free_aligned(swapbuf);
+				NDS_WritePNG_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight*2, swapbuf, fname);
+				free_aligned(swapbuf);
+			}
 		}
 		break;
-	case path.BMP:
+	case PathInfo::BMP:
 		{
 			strcat(fname, ".bmp");
-			u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
-			ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
-			NDS_WriteBMP_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight *2, swapbuf, fname);
-			free_aligned(swapbuf);
+			if(gpu_bpp == 15)
+			{
+				NDS_WriteBMP_15bpp(dispInfo.customWidth, dispInfo.customHeight * 2, (const u16*)dispInfo.masterCustomBuffer, fname);
+			}
+			else
+			{
+				u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
+				ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
+				NDS_WriteBMP_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight *2, swapbuf, fname);
+				free_aligned(swapbuf);
+			}
 		}
 		break;
 	}
@@ -212,13 +226,13 @@ void HK_PrintScreen(int param, bool justPressed)
 	path.formatname(file);
 	filename += file;
 
-	if(path.imageformat() == path.PNG)
+	if(path.imageformat() == PathInfo::PNG)
 	{
 		filename += ".png";
 		ofn.lpstrDefExt = "png";
 		ofn.nFilterIndex = 1;
 	}
-	else if(path.imageformat() == path.BMP)
+	else if(path.imageformat() == PathInfo::BMP)
 	{
 		filename += ".bmp";
 		ofn.lpstrDefExt = "bmp";

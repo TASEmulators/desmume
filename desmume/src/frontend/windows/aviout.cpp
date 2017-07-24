@@ -310,6 +310,27 @@ static int avi_open(const char* filename, const BITMAPINFOHEADER* pbmih, const W
 	return result;
 }
 
+//converts 16bpp to 24bpp and flips
+static void do_video_conversion555(AVIFile* avi, const u16* buffer)
+{
+	int width = avi->prescaleLevel * 256;
+	int height = avi->prescaleLevel * 384;
+	u8* outbuf = avi_file->convert_buffer + width*(height - 1) * 3;
+
+	for(int y = 0; y < height; y++)
+	{
+		for(int x = 0; x < width; x++)
+		{
+			u32 dst = ColorspaceConvert555To8888Opaque<true>(*buffer++);
+			*outbuf++ = dst & 0xFF;
+			*outbuf++ = (dst >> 8) & 0xFF;
+			*outbuf++ = (dst >> 16) & 0xFF;
+		}
+
+		outbuf -= width * 3 * 2;
+	}
+}
+
 //converts 32bpp to 24bpp and flips
 static void do_video_conversion(AVIFile* avi, const u32* buffer)
 {
@@ -424,7 +445,10 @@ void DRV_AviVideoUpdate()
 	if(video.prescaleHD != avi_file->prescaleLevel)
 		return;
 
-	do_video_conversion(avi_file, buffer);
+	if(gpu_bpp == 15)
+		do_video_conversion555(avi_file, (u16*)buffer);
+	else 
+		do_video_conversion(avi_file, buffer);
 
     if(FAILED(AVIStreamWrite(avi_file->compressed_streams[VIDEO_STREAM],
                                  avi_file->video_frames, 1, avi_file->convert_buffer,

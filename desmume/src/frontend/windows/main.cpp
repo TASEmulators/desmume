@@ -328,7 +328,7 @@ bool start_paused;
 extern bool killStylusTopScreen;
 extern bool killStylusOffScreen;
 
-static int gpu_bpp = 24;
+int gpu_bpp = 24;
 
 extern LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void InitRamSearch();
@@ -1630,7 +1630,14 @@ static void OGL_DoDisplay()
 		glGenTextures(1,&tex);
 
 	glBindTexture(GL_TEXTURE_2D,tex);
-	glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA, video.width,video.height,0,GL_RGBA,GL_UNSIGNED_BYTE,video.finalBuffer());
+
+	if(gpu_bpp == 15)
+	{
+		//yeah, it's 32bits here still. we've converted it previously, for compositing the HUD
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, video.width, video.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, video.finalBuffer());
+	}
+	else
+		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA, video.width,video.height,0,GL_RGBA,GL_UNSIGNED_BYTE,video.finalBuffer());
 
 	//the ds screen fills the texture entirely, so we dont have garbage at edge to worry about,
 	//but we need to make sure this is clamped for when filtering is selected
@@ -1796,7 +1803,10 @@ static void DD_DoDisplay()
 	//it seems to work OK...
 	//we have to do this because we couldn't ask the GPU for a swapped color format (it only uses the one 888 format internally)
 	//in openGL we can fix it at the last minute, but in DD we can't.
-	ColorspaceConvertBuffer888XTo8888Opaque<true, false>((u32*)video.finalBuffer(),(u32*)video.finalBuffer(),video.size());
+	//if(gpu_bpp == 15)
+	//	ColorspaceConvertBuffer555To8888Opaque<true, false>((u16*)video.finalBuffer(), (u32*)video.finalBuffer(), video.size());
+	//else
+	//	ColorspaceConvertBuffer888XTo8888Opaque<true, false>((u32*)video.finalBuffer(),(u32*)video.finalBuffer(),video.size());
 
 	if(ddraw.surfDescBack.dwWidth != video.rotatedwidth() || ddraw.surfDescBack.dwHeight != video.rotatedheight())
 	{
@@ -1962,7 +1972,10 @@ static void DoDisplay(bool firstTime)
 	displayNoPostponeNext = false;
 
 	//we have to do a copy here because we're about to draw the OSD onto it. bummer.
-	memcpy(video.buffer, video.srcBuffer, video.srcBufferSize);
+	if(gpu_bpp == 15)
+		ColorspaceConvertBuffer555To8888Opaque<true, false>((u16 *)video.srcBuffer, video.buffer, video.srcBufferSize / sizeof(u16));
+	else
+		memcpy(video.buffer, video.srcBuffer, video.srcBufferSize);
 
 	if(firstTime)
 	{
@@ -2063,10 +2076,12 @@ void Display()
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 
+	const int PS = gpu_bpp==15?2:4;
+
 	if(CommonSettings.single_core())
 	{
 		video.srcBuffer = (u8*)dispInfo.masterCustomBuffer;
-		video.srcBufferSize = dispInfo.customWidth*dispInfo.customHeight*2*4;
+		video.srcBufferSize = dispInfo.customWidth*dispInfo.customHeight*2* PS;
 		DoDisplay(true);
 	}
 	else
@@ -2084,7 +2099,7 @@ void Display()
 		else newestDisplayBuffer = (currDisplayBuffer+2)%3;
 
 		DisplayBuffer& db = displayBuffers[newestDisplayBuffer];
-		int targetSize = 256*192*2*4*video.prescaleHD*video.prescaleHD;
+		int targetSize = 256*192*2* PS*video.prescaleHD*video.prescaleHD;
 		if(db.size != targetSize)
 		{
 			free_aligned(db.buffer);
@@ -2878,12 +2893,11 @@ static void SyncGpuBpp()
 {
 	//either of these works. 666 must be packed as 888
 	if(gpu_bpp == 18)
-			GPU->SetColorFormat(NDSColorFormat_BGR666_Rev);
+		GPU->SetColorFormat(NDSColorFormat_BGR666_Rev);
+	else if(gpu_bpp == 15)
+		GPU->SetColorFormat(NDSColorFormat_BGR555_Rev);
 	else
-			GPU->SetColorFormat(NDSColorFormat_BGR888_Rev);
-
-	//555 doesnt work (packed to u16, needs widespread support)
-	//GPU->SetColorFormat(NDSColorFormat_BGR555_Rev);
+		GPU->SetColorFormat(NDSColorFormat_BGR888_Rev);
 }
 
 #define GPU3D_NULL_SAVED -1
@@ -4236,23 +4250,39 @@ void ScreenshotToClipboard(bool extraInfo)
 
 	RECT rc; SetRect(&rc, 0, 0, width, height + exHeight);
 
+	FillRect(hMemDC, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+
 	BITMAPV4HEADER bmi;
 	memset(&bmi, 0, sizeof(bmi));
-    bmi.bV4Size = sizeof(bmi);
-    bmi.bV4Planes = 1;
-    bmi.bV4BitCount = 32;
-    bmi.bV4V4Compression = BI_RGB;
-    bmi.bV4Width = width;
-    bmi.bV4Height = -height;
+	bmi.bV4Size = sizeof(bmi);
+	bmi.bV4Planes = 1;
+	bmi.bV4BitCount = 32;
+	bmi.bV4V4Compression = BI_RGB;
+	bmi.bV4Width = width;
+	bmi.bV4Height = -height;
+	if(gpu_bpp == 15)
+	{
+		bmi.bV4Size = sizeof(bmi);
+		bmi.bV4Planes = 1;
+		bmi.bV4BitCount = 16;
+		bmi.bV4V4Compression = BI_RGB | BI_BITFIELDS;
+		bmi.bV4RedMask = 0x001F;
+		bmi.bV4GreenMask = 0x03E0;
+		bmi.bV4BlueMask = 0x7C00;
+		bmi.bV4Width = width;
+		bmi.bV4Height = -height;
 
+		SetDIBitsToDevice(hMemDC, 0, 0, width, height, 0, 0, 0, height, dispInfo.masterCustomBuffer, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+	}
+	else
+	{
+		u32* swapbuf = (u32*)malloc_alignedCacheLine(width*height * 4);
+		ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, width * height);
 
-	u32* swapbuf = (u32*)malloc_alignedCacheLine(width*height*4);
-	ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, width * height);
+		SetDIBitsToDevice(hMemDC, 0, 0, width, height, 0, 0, 0, height, swapbuf, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
 
-	FillRect(hMemDC, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
-	SetDIBitsToDevice(hMemDC, 0, 0, width, height, 0, 0, 0, height, swapbuf, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
-
-	free_aligned(swapbuf);
+		free_aligned(swapbuf);
+	}
 
 	//center-justify the extra text
 	int xo = (width - 256)/2;
@@ -4275,7 +4305,7 @@ void ScreenshotToClipboard(bool extraInfo)
 		else
 			TextOut(hMemDC, xo + 0, height + 14, nameandver, strlen(nameandver));
 
-		char str[32] = {0};
+		char str[64] = {0};
 		TextOut(hMemDC, xo + 8, height + 14 * (twolinever ? 3:2), gameInfo.ROMname, strlen(gameInfo.ROMname));
 		TextOut(hMemDC, xo + 8, height + 14 * (twolinever ? 4:3), gameInfo.ROMserial, strlen(gameInfo.ROMserial));
 		
@@ -4286,7 +4316,7 @@ void ScreenshotToClipboard(bool extraInfo)
 		sprintf(str, "FPS: %i/%i (%02d%%/%02d%%) | %s", mainLoopData.fps, mainLoopData.fps3d, Hud.cpuload[0], Hud.cpuload[1], paused ? "Paused":"Running");
 		TextOut(hMemDC, xo + 8, height + 14 * (twolinever ? 6:5), str, strlen(str));
 
-		sprintf(str, "3D Render: %s", core3DList[cur3DCore]->name);
+		sprintf(str, "3D %s (%d BPP)", core3DList[cur3DCore]->name, gpu_bpp);
 		TextOut(hMemDC, xo + 8, height + 14 * (twolinever ? 7:6), str, strlen(str));
 	}
 
@@ -6371,6 +6401,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 
 			CheckDlgButton(hw, IDC_GPU_24BPP, gpu_bpp == 24);
 			CheckDlgButton(hw, IDC_GPU_18BPP, gpu_bpp == 18);
+			CheckDlgButton(hw, IDC_GPU_15BPP, gpu_bpp == 15);
 
 			CheckDlgButton(hw,IDC_TEX_DEPOSTERIZE, CommonSettings.GFX3D_Renderer_TextureDeposterize);
 			CheckDlgButton(hw,IDC_TEX_SMOOTH, CommonSettings.GFX3D_Renderer_TextureSmoothing);
@@ -6403,6 +6434,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_1)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 1;
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_2)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 2;
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_4)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 4;
+					if(IsDlgCheckboxChecked(hw, IDC_GPU_15BPP)) gpu_bpp = 15;
 					if(IsDlgCheckboxChecked(hw,IDC_GPU_18BPP)) gpu_bpp = 18;
 					if(IsDlgCheckboxChecked(hw, IDC_GPU_24BPP)) gpu_bpp = 24;
 					CommonSettings.GFX3D_Renderer_TextureDeposterize = IsDlgCheckboxChecked(hw,IDC_TEX_DEPOSTERIZE);
