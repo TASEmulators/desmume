@@ -1353,8 +1353,7 @@ protected:
 	void _Reset_Base();
 	void _ResortBGLayers();
 	
-	template<bool NATIVEDST, bool NATIVESRC, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t PIXELBYTES> void _LineColorCopy(void *__restrict dstBuffer, const void *__restrict srcBuffer, const size_t l);
-	template<bool NATIVEDST, bool NATIVESRC> void _LineLayerIDCopy(u8 *__restrict dstBuffer, const u8 *__restrict srcBuffer, const size_t l);
+	template<s32 INTEGERSCALEHINT, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t ELEMENTSIZE> void _LineCopy(void *__restrict dstBuffer, const void *__restrict srcBuffer, const size_t l);
 	template<NDSColorFormat OUTPUTFORMAT> void _TransitionLineNativeToCustom(GPUEngineCompositorInfo &compInfo);
 	
 	void _MosaicSpriteLinePixel(GPUEngineCompositorInfo &compInfo, const size_t x, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
