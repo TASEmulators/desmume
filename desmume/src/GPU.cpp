@@ -3065,16 +3065,10 @@ FORCEINLINE void GPUEngineBase::_RenderPixelSingle(GPUEngineCompositorInfo &comp
 template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST>
 void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 {
-#ifdef ENABLE_SSE2
-	
-	#ifdef ENABLE_SSSE3
-	const bool isIntegerScale = ((compInfo.line.widthCustom % GPU_FRAMEBUFFER_NATIVE_WIDTH) == 0);
-	const size_t scale = compInfo.line.widthCustom / GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	#endif
-	
-	for (size_t x = 0, dstIdx = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x+=8)
+	if (MOSAIC)
 	{
-		if (MOSAIC)
+#ifdef ENABLE_SSE2
+		for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x+=8)
 		{
 			const __m128i index_vec128 = _mm_loadl_epi64((__m128i *)(this->_bgLayerIndex + x));
 			const __m128i col_vec128 = _mm_load_si128((__m128i *)(this->_bgLayerColor + x));
@@ -3101,41 +3095,8 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 			_mm_storel_epi64( (__m128i *)(this->_bgLayerIndex + x), _mm_andnot_si128(_mm_packs_epi16(mosaicColorMask, _mm_setzero_si128()), index_vec128) );
 			_mm_store_si128( (__m128i *)(this->_bgLayerColor + x), _mm_blendv_epi8(mosaicColor_vec128, col_vec128, mosaicColorMask) );
 		}
-		
-	#ifdef ENABLE_SSSE3
-		if (isIntegerScale)
-		{
-			const __m128i index_vec128 = _mm_loadl_epi64((__m128i *)(this->_bgLayerIndex + x));
-			const __m128i col_vec128 = _mm_load_si128((__m128i *)(this->_bgLayerColor + x));
-			
-			for (size_t s = 0; s < scale; s++)
-			{
-				const __m128i ssse3idx_u8 = _mm_loadl_epi64((__m128i *)(_gpuDstToSrcSSSE3_u8_8e + (s * 8)));
-				const __m128i ssse3idx_u16 = _mm_load_si128((__m128i *)(_gpuDstToSrcSSSE3_u16_8e + (s * 16)));
-				
-				_mm_storel_epi64( (__m128i *)(this->_bgLayerIndexCustom + dstIdx + (s * 8)), _mm_shuffle_epi8(index_vec128, ssse3idx_u8) );
-				_mm_store_si128( (__m128i *)(this->_bgLayerColorCustom + dstIdx + (s * 8)), _mm_shuffle_epi8(col_vec128, ssse3idx_u16) );
-			}
-			
-			dstIdx += (scale * 8);
-		}
-		else
-	#endif
-		{
-			for (size_t i = 0; i < 8; i++)
-			{
-				for (size_t j = 0; j < _gpuDstPitchCount[x]; j++, dstIdx++)
-				{
-					this->_bgLayerIndexCustom[dstIdx] = this->_bgLayerIndex[x+i];
-					this->_bgLayerColorCustom[dstIdx] = this->_bgLayerColor[x+i];
-				}
-			}
-		}
-	}
 #else
-	for (size_t x = 0, dstIdx = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
-	{
-		if (MOSAIC)
+		for (size_t x = 0, dstIdx = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
 		{
 			u16 tmpColor = (this->_bgLayerIndex[x] == 0) ? 0xFFFF : this->_bgLayerColor[x] & 0x7FFF;
 			
@@ -3155,14 +3116,11 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 				this->_bgLayerColor[x] = tmpColor;
 			}
 		}
-		
-		for (size_t j = 0; j < _gpuDstPitchCount[x]; j++, dstIdx++)
-		{
-			this->_bgLayerIndexCustom[dstIdx] = this->_bgLayerIndex[x];
-			this->_bgLayerColorCustom[dstIdx] = this->_bgLayerColor[x];
-		}
-	}
 #endif
+	}
+	
+	CopyLineExpand<0xFFFF, false, 2>(this->_bgLayerColorCustom, this->_bgLayerColor, compInfo.line.widthCustom);
+	CopyLineExpand<0xFFFF, false, 1>(this->_bgLayerIndexCustom, this->_bgLayerIndex, compInfo.line.widthCustom);
 	
 	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHead;
 	compInfo.target.lineColor32 = (FragmentColor *)compInfo.target.lineColorHead;
@@ -5175,6 +5133,19 @@ template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MO
 FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG_Final(GPUEngineCompositorInfo &compInfo)
 {
 	bool useCustomVRAM = false;
+	
+	if (ISCUSTOMRENDERINGNEEDED)
+	{
+		// Because there is no guarantee for any given pixel to be written out, we need
+		// to zero out the deferred index buffer so that unwritten pixels can properly
+		// fail in _RenderPixelsCustom(). If we don't do this, then previously rendered
+		// layers may leave garbage indices for the current layer to mistakenly use if
+		// the current layer just so happens to have unwritten pixels.
+		//
+		// Test case: The score screen in Sonic Rush will be taken over by BG2, filling
+		// the screen with blue, unless this initialization is done each time.
+		memset(this->_bgLayerIndex, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u8));
+	}
 	
 	switch (compInfo.renderState.selectedBGLayer->baseType)
 	{
