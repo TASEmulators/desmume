@@ -1637,7 +1637,7 @@ static void OGL_DoDisplay()
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, video.width, video.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, video.finalBuffer());
 	}
 	else
-		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA, video.width,video.height,0,GL_RGBA,GL_UNSIGNED_BYTE,video.finalBuffer());
+		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA, video.width,video.height,0,GL_BGRA,GL_UNSIGNED_BYTE,video.finalBuffer());
 
 	//the ds screen fills the texture entirely, so we dont have garbage at edge to worry about,
 	//but we need to make sure this is clamped for when filtering is selected
@@ -1798,15 +1798,6 @@ static void DD_DoDisplay()
 {
 	if (!ddraw.lock()) return;
 	char* buffer = (char*)ddraw.surfDescBack.lpSurface;
-
-	//yuck, is it safe to edit this? we may need another temp buffer
-	//it seems to work OK...
-	//we have to do this because we couldn't ask the GPU for a swapped color format (it only uses the one 888 format internally)
-	//in openGL we can fix it at the last minute, but in DD we can't.
-	//if(gpu_bpp == 15)
-	//	ColorspaceConvertBuffer555To8888Opaque<true, false>((u16*)video.finalBuffer(), (u32*)video.finalBuffer(), video.size());
-	//else
-	//	ColorspaceConvertBuffer888XTo8888Opaque<true, false>((u32*)video.finalBuffer(),(u32*)video.finalBuffer(),video.size());
 
 	if(ddraw.surfDescBack.dwWidth != video.rotatedwidth() || ddraw.surfDescBack.dwHeight != video.rotatedheight())
 	{
@@ -1973,9 +1964,9 @@ static void DoDisplay(bool firstTime)
 
 	//we have to do a copy here because we're about to draw the OSD onto it. bummer.
 	if(gpu_bpp == 15)
-		ColorspaceConvertBuffer555To8888Opaque<true, false>((u16 *)video.srcBuffer, video.buffer, video.srcBufferSize / sizeof(u16));
+		ColorspaceConvertBuffer555To8888Opaque<true, false>((u16 *)video.srcBuffer, video.buffer, video.srcBufferSize / 2);
 	else
-		memcpy(video.buffer, video.srcBuffer, video.srcBufferSize);
+		ColorspaceConvertBuffer888XTo8888Opaque<true, false>((u32*)video.srcBuffer, video.buffer, video.srcBufferSize / 4);
 
 	if(firstTime)
 	{
