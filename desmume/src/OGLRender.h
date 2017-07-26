@@ -598,7 +598,7 @@ private:
 	unsigned int versionRevision;
 	
 private:
-	Render3DError _FlushFramebufferConvertOnCPU(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
+	template<bool SWAP_RB> Render3DError _FlushFramebufferConvertOnCPU(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	
 protected:
 	// OpenGL-specific References
@@ -742,6 +742,8 @@ protected:
 	// Base rendering methods
 	virtual Render3DError BeginRender(const GFX3D &engine);
 	virtual Render3DError RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList);
+	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
+	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
 	virtual Render3DError EndRender(const u64 frameCount);
 	
 	virtual Render3DError ClearUsingImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
@@ -801,33 +803,12 @@ public:
 class OpenGLRenderer_2_0 : public OpenGLRenderer_1_5
 {
 protected:
-	virtual Render3DError InitExtensions();
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
-	virtual Render3DError InitPostprocessingPrograms(const std::string &zeroAlphaPixelMaskVtxShader,
-													 const std::string &zeroAlphaPixelMaskFragShader,
-													 const std::string &edgeMarkVtxShader,
-													 const std::string &edgeMarkFragShader,
-													 const std::string &fogVtxShader,
-													 const std::string &fogFragShader,
-													 const std::string &framebufferOutputVtxShader,
-													 const std::string &framebufferOutputRGBA6665FragShader,
-													 const std::string &framebufferOutputRGBA8888FragShader);
-	virtual Render3DError DestroyPostprocessingPrograms();
-	virtual Render3DError InitZeroAlphaPixelMaskProgramBindings();
-	virtual Render3DError InitZeroAlphaPixelMaskProgramShaderLocations();
-	virtual Render3DError InitEdgeMarkProgramBindings();
-	virtual Render3DError InitEdgeMarkProgramShaderLocations();
-	virtual Render3DError InitFogProgramBindings();
-	virtual Render3DError InitFogProgramShaderLocations();
-	virtual Render3DError InitFramebufferOutputProgramBindings();
-	virtual Render3DError InitFramebufferOutputShaderLocations();
 	
 	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
 	
 	virtual Render3DError BeginRender(const GFX3D &engine);
-	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
-	virtual Render3DError RenderFog(const u8 *densityTable, const u32 color, const u32 offset, const u8 shift, const bool alphaOnly);
 	
 	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
 };
