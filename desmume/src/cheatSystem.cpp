@@ -542,6 +542,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 				if(y>0) i++; //skip over the current code
 				while(y>=4)
 				{
+					if(i==list.num) break; //if we erroneously went off the end, bail
 					u32 tmp = list.code[i][t];
 					if(t==1) i++;
 					t ^= 1;
@@ -551,6 +552,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 				}
 				while(y>0)
 				{
+					if(i==list.num) break; //if we erroneously went off the end, bail
 					u32 tmp = list.code[i][t]>>b;
 					CheatWrite(8,st.proc,addr,tmp);
 					addr += 1;
@@ -576,6 +578,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			operand = x; //mis-use of this variable to store dst
 			while(y>=4)
 			{
+				if(i==list.num) break; //if we erroneously went off the end, bail
 				u32 tmp = _MMU_read32(st.proc,MMU_AT_DEBUG,addr);
 				CheatWrite(32, st.proc,operand,tmp);
 				addr += 4;
@@ -584,6 +587,7 @@ void CHEATS::ARparser(CHEATS_LIST& list)
 			}
 			while(y>0)
 			{
+				if(i==list.num) break; //if we erroneously went off the end, bail
 				u8 tmp = _MMU_read08(st.proc,MMU_AT_DEBUG,addr);
 				CheatWrite(8,st.proc,operand,tmp);
 				addr += 1;
