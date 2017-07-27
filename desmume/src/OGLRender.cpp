@@ -1230,20 +1230,29 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 		{
 			if ( (dstFramebufferMain != NULL) && (dstFramebuffer16 != NULL) )
 			{
-#ifdef ENABLE_SSE2
+#ifdef ENABLE_SSSE3
 				const size_t ssePixCount = pixCount - (pixCount % 8);
 				for (; i < ssePixCount; i += 8)
 				{
 					const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + i + 0));
 					const __m128i srcColorHi = _mm_load_si128((__m128i *)(srcFramebuffer + i + 4));
 					
-					_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 0), srcColorLo );
-					_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 4), srcColorHi );
+					if (SWAP_RB)
+					{
+						_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 0), _mm_shuffle_epi8(srcColorLo, _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2)) );
+						_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 4), _mm_shuffle_epi8(srcColorHi, _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2)) );
+					}
+					else
+					{
+						_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 0), srcColorLo);
+						_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 4), srcColorHi);
+					}
+					
 					_mm_store_si128( (__m128i *)(dstFramebuffer16 + i), ColorspaceConvert8888To5551_SSE2<SWAP_RB>(srcColorLo, srcColorHi) );
 				}
 #endif
 				
-#ifdef ENABLE_SSE2
+#ifdef ENABLE_SSSE3
 #pragma LOOPVECTORIZE_DISABLE
 #endif
 				for (; i < pixCount; i++)
@@ -1363,8 +1372,24 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 						const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + ir + 0));
 						const __m128i srcColorHi = _mm_load_si128((__m128i *)(srcFramebuffer + ir + 4));
 						
-						_mm_store_si128( (__m128i *)(dstFramebufferMain + iw + 0), srcColorLo );
-						_mm_store_si128( (__m128i *)(dstFramebufferMain + iw + 4), srcColorHi );
+						if (SWAP_RB)
+						{
+#ifdef ENABLE_SSSE3
+							_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 0), _mm_shuffle_epi8(srcColorLo, _mm_set_epi8(15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2)) );
+							_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 4), _mm_shuffle_epi8(srcColorHi, _mm_set_epi8(15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2)) );
+#else
+							const __m128i swappedLo = _mm_or_si128( _mm_srli_epi32(_mm_and_si128(srcColorLo, _mm_set1_epi32(0x00FF0000)), 16), _mm_or_si128(_mm_and_si128(srcColorLo, _mm_set1_epi32(0x0000FF00)), _mm_slli_epi32(_mm_and_si128(srcColorLo, _mm_set1_epi32(0x000000FF)), 16)) );
+							const __m128i swappedHi = _mm_or_si128( _mm_srli_epi32(_mm_and_si128(srcColorHi, _mm_set1_epi32(0x00FF0000)), 16), _mm_or_si128(_mm_and_si128(srcColorHi, _mm_set1_epi32(0x0000FF00)), _mm_slli_epi32(_mm_and_si128(srcColorHi, _mm_set1_epi32(0x000000FF)), 16)) );
+							_mm_store_si128((__m128i *)(dstFramebufferMain + i + 0), swappedLo);
+							_mm_store_si128((__m128i *)(dstFramebufferMain + i + 4), swappedHi);
+#endif
+						}
+						else
+						{
+							_mm_store_si128((__m128i *)(dstFramebufferMain + i + 0), srcColorLo);
+							_mm_store_si128((__m128i *)(dstFramebufferMain + i + 4), srcColorHi);
+						}
+
 						_mm_store_si128( (__m128i *)(dstFramebuffer16 + iw), ColorspaceConvert8888To5551_SSE2<SWAP_RB>(srcColorLo, srcColorHi) );
 					}
 #endif
@@ -1391,16 +1416,21 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 				{
 					if (SWAP_RB)
 					{
-#ifdef ENABLE_SSSE3
+#ifdef ENABLE_SSE2
 						const size_t ssePixCount = pixCount - (pixCount % 4);
 						for (; i < ssePixCount; i += 4)
 						{
 							const __m128i srcColor = _mm_load_si128((__m128i *)(srcFramebuffer + i));
+#ifdef ENABLE_SSSE3
 							_mm_store_si128( (__m128i *)(dstFramebufferMain + i), _mm_shuffle_epi8(srcColor, _mm_set_epi8(15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2)) );
+#else
+							const __m128i swappedColor = _mm_or_si128(_mm_srli_epi32(_mm_and_si128(srcColor, _mm_set1_epi32(0x00FF0000)), 16), _mm_or_si128(_mm_and_si128(srcColor, _mm_set1_epi32(0x0000FF00)), _mm_slli_epi32(_mm_and_si128(srcColor, _mm_set1_epi32(0x000000FF)), 16)));
+							_mm_store_si128((__m128i *)(dstFramebufferMain + i), swappedColor);
+#endif
 						}
 #endif
 						
-#ifdef ENABLE_SSSE3
+#ifdef ENABLE_SSE2
 #pragma LOOPVECTORIZE_DISABLE
 #endif
 						for (size_t x = 0; x < this->_framebufferWidth; x++)
@@ -4256,7 +4286,7 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_GPolyID);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 		
-		glActiveTexture(GL_TEXTURE0_ARB + OGLTextureUnitID_ZeroAlphaPixelMask);
+		glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_ZeroAlphaPixelMask);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 		
 		glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_FogAttr);
