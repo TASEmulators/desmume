@@ -126,7 +126,7 @@ FORCEINLINE v128u32 ColorspaceConvert8888To6665_SSE2(const v128u32 &src)
 		rgb = _mm_and_si128( _mm_srli_epi32(src, 2), _mm_set1_epi32(0x003F3F3F) );
 		rgb = _mm_shuffle_epi8( rgb, _mm_set_epi8(15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2) );
 #else
-		rgb = _mm_or_si128( _mm_srli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x003F0000)), 18), _mm_or_si128(_mm_srli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x00003F00)), 2), _mm_slli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x0000003F)), 14)) );
+		rgb = _mm_or_si128( _mm_and_si128(_mm_srli_epi32(src, 18), _mm_set1_epi32(0x0000003F)), _mm_or_si128( _mm_and_si128(_mm_srli_epi32(src,  2), _mm_set1_epi32(0x00003F00)), _mm_and_si128(_mm_slli_epi32(src, 14), _mm_set1_epi32(0x003F0000))) );
 #endif
 	}
 	else
