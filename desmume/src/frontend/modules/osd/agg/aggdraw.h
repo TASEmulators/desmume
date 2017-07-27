@@ -220,7 +220,7 @@ namespace agg
 
 typedef PixFormatSetDeclaration<agg::my_pixfmt_rgb555,agg::my_pixfmt_rgb555_pre,agg::span_simple_blur_rgb24<agg::order_rgba> > T_AGG_PF_RGB555;
 #if defined(WIN32) 
-typedef PixFormatSetDeclaration<agg::pixfmt_rgba32,agg::pixfmt_rgba32_pre,agg::span_simple_blur_rgb24<agg::order_bgra> > T_AGG_PF_RGBA;
+typedef PixFormatSetDeclaration<agg::pixfmt_bgra32,agg::pixfmt_bgra32_pre,agg::span_simple_blur_rgb24<agg::order_rgba> > T_AGG_PF_RGBA;
 #else
 typedef PixFormatSetDeclaration<agg::pixfmt_bgra32,agg::pixfmt_bgra32_pre,agg::span_simple_blur_rgb24<agg::order_rgba> > T_AGG_PF_RGBA;
 #endif
