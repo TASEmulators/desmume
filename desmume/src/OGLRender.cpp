@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2016 DeSmuME team
+	Copyright (C) 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1201,9 +1201,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 					_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 4), ColorspaceConvert8888To6665_SSE2<SWAP_RB>(srcColorHi) );
 					_mm_store_si128( (__m128i *)(dstFramebuffer16 + i), ColorspaceConvert8888To5551_SSE2<SWAP_RB>(srcColorLo, srcColorHi) );
 				}
-#endif
 				
-#ifdef ENABLE_SSE2
 #pragma LOOPVECTORIZE_DISABLE
 #endif
 				for (; i < pixCount; i++)
@@ -1230,29 +1228,18 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 		{
 			if ( (dstFramebufferMain != NULL) && (dstFramebuffer16 != NULL) )
 			{
-#ifdef ENABLE_SSSE3
+#ifdef ENABLE_SSE2
 				const size_t ssePixCount = pixCount - (pixCount % 8);
 				for (; i < ssePixCount; i += 8)
 				{
 					const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + i + 0));
 					const __m128i srcColorHi = _mm_load_si128((__m128i *)(srcFramebuffer + i + 4));
 					
-					if (SWAP_RB)
-					{
-						_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 0), _mm_shuffle_epi8(srcColorLo, _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2)) );
-						_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 4), _mm_shuffle_epi8(srcColorHi, _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2)) );
-					}
-					else
-					{
-						_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 0), srcColorLo);
-						_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 4), srcColorHi);
-					}
-					
+					_mm_store_si128((__m128i *)(dstFramebufferMain + i + 0), ColorspaceCopy32_SSE2<SWAP_RB>(srcColorLo));
+					_mm_store_si128((__m128i *)(dstFramebufferMain + i + 4), ColorspaceCopy32_SSE2<SWAP_RB>(srcColorHi));
 					_mm_store_si128( (__m128i *)(dstFramebuffer16 + i), ColorspaceConvert8888To5551_SSE2<SWAP_RB>(srcColorLo, srcColorHi) );
 				}
-#endif
 				
-#ifdef ENABLE_SSSE3
 #pragma LOOPVECTORIZE_DISABLE
 #endif
 				for (; i < pixCount; i++)
@@ -1266,33 +1253,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 			}
 			else if (dstFramebufferMain != NULL)
 			{
-				if (SWAP_RB)
-				{
-#ifdef ENABLE_SSSE3
-					const size_t ssePixCount = pixCount - (pixCount % 4);
-					for (; i < ssePixCount; i += 4)
-					{
-						const __m128i srcColor = _mm_load_si128((__m128i *)(srcFramebuffer + i));
-						_mm_store_si128( (__m128i *)(dstFramebufferMain + i), _mm_shuffle_epi8(srcColor, _mm_set_epi8(15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2)) );
-					}
-#endif
-
-#ifdef ENABLE_SSSE3
-#pragma LOOPVECTORIZE_DISABLE
-#endif
-					for (; i < pixCount; i++)
-					{
-						dstFramebufferMain[i].r = srcFramebuffer[i].b;
-						dstFramebufferMain[i].g = srcFramebuffer[i].g;
-						dstFramebufferMain[i].b = srcFramebuffer[i].r;
-						dstFramebufferMain[i].a = srcFramebuffer[i].a;
-					}
-				}
-				else
-				{
-					memcpy(dstFramebufferMain, srcFramebuffer, this->_framebufferWidth * this->_framebufferHeight * sizeof(FragmentColor));
-				}
-				
+				ColorspaceCopyBuffer32<SWAP_RB, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, pixCount);
 				this->_renderNeedsFlushMain = false;
 			}
 			else
@@ -1324,9 +1285,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 						_mm_store_si128( (__m128i *)(dstFramebufferMain + iw + 4), ColorspaceConvert8888To6665_SSE2<SWAP_RB>(srcColorHi) );
 						_mm_store_si128( (__m128i *)(dstFramebuffer16 + iw), ColorspaceConvert8888To5551_SSE2<SWAP_RB>(srcColorLo, srcColorHi) );
 					}
-#endif
 					
-#ifdef ENABLE_SSE2
 #pragma LOOPVECTORIZE_DISABLE
 #endif
 					for (; x < pixCount; x++, ir++, iw++)
@@ -1372,29 +1331,11 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 						const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + ir + 0));
 						const __m128i srcColorHi = _mm_load_si128((__m128i *)(srcFramebuffer + ir + 4));
 						
-						if (SWAP_RB)
-						{
-#ifdef ENABLE_SSSE3
-							_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 0), _mm_shuffle_epi8(srcColorLo, _mm_set_epi8(15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2)) );
-							_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 4), _mm_shuffle_epi8(srcColorHi, _mm_set_epi8(15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2)) );
-#else
-							const __m128i swappedLo = _mm_or_si128( _mm_srli_epi32(_mm_and_si128(srcColorLo, _mm_set1_epi32(0x00FF0000)), 16), _mm_or_si128(_mm_and_si128(srcColorLo, _mm_set1_epi32(0x0000FF00)), _mm_slli_epi32(_mm_and_si128(srcColorLo, _mm_set1_epi32(0x000000FF)), 16)) );
-							const __m128i swappedHi = _mm_or_si128( _mm_srli_epi32(_mm_and_si128(srcColorHi, _mm_set1_epi32(0x00FF0000)), 16), _mm_or_si128(_mm_and_si128(srcColorHi, _mm_set1_epi32(0x0000FF00)), _mm_slli_epi32(_mm_and_si128(srcColorHi, _mm_set1_epi32(0x000000FF)), 16)) );
-							_mm_store_si128((__m128i *)(dstFramebufferMain + i + 0), swappedLo);
-							_mm_store_si128((__m128i *)(dstFramebufferMain + i + 4), swappedHi);
-#endif
-						}
-						else
-						{
-							_mm_store_si128((__m128i *)(dstFramebufferMain + i + 0), srcColorLo);
-							_mm_store_si128((__m128i *)(dstFramebufferMain + i + 4), srcColorHi);
-						}
-
+						_mm_store_si128((__m128i *)(dstFramebufferMain + iw + 0), ColorspaceCopy32_SSE2<SWAP_RB>(srcColorLo));
+						_mm_store_si128((__m128i *)(dstFramebufferMain + iw + 4), ColorspaceCopy32_SSE2<SWAP_RB>(srcColorHi));
 						_mm_store_si128( (__m128i *)(dstFramebuffer16 + iw), ColorspaceConvert8888To5551_SSE2<SWAP_RB>(srcColorLo, srcColorHi) );
 					}
-#endif
 					
-#ifdef ENABLE_SSE2
 #pragma LOOPVECTORIZE_DISABLE
 #endif
 					for (; x < pixCount; x++, ir++, iw++)
@@ -1409,45 +1350,9 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 			}
 			else if (dstFramebufferMain != NULL)
 			{
-				const FragmentColor *__restrict srcPtr = srcFramebuffer;
-				FragmentColor *__restrict dstPtr = dstFramebufferMain + ((this->_framebufferHeight - 1) * this->_framebufferWidth);
-				
-				for (size_t y = 0; y < this->_framebufferHeight; y++)
+				for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, ir += this->_framebufferWidth, iw -= this->_framebufferWidth)
 				{
-					if (SWAP_RB)
-					{
-#ifdef ENABLE_SSE2
-						const size_t ssePixCount = pixCount - (pixCount % 4);
-						for (; i < ssePixCount; i += 4)
-						{
-							const __m128i srcColor = _mm_load_si128((__m128i *)(srcFramebuffer + i));
-#ifdef ENABLE_SSSE3
-							_mm_store_si128( (__m128i *)(dstFramebufferMain + i), _mm_shuffle_epi8(srcColor, _mm_set_epi8(15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2)) );
-#else
-							const __m128i swappedColor = _mm_or_si128(_mm_srli_epi32(_mm_and_si128(srcColor, _mm_set1_epi32(0x00FF0000)), 16), _mm_or_si128(_mm_and_si128(srcColor, _mm_set1_epi32(0x0000FF00)), _mm_slli_epi32(_mm_and_si128(srcColor, _mm_set1_epi32(0x000000FF)), 16)));
-							_mm_store_si128((__m128i *)(dstFramebufferMain + i), swappedColor);
-#endif
-						}
-#endif
-						
-#ifdef ENABLE_SSE2
-#pragma LOOPVECTORIZE_DISABLE
-#endif
-						for (size_t x = 0; x < this->_framebufferWidth; x++)
-						{
-							dstPtr[x].r = srcPtr[x].b;
-							dstPtr[x].g = srcPtr[x].g;
-							dstPtr[x].b = srcPtr[x].r;
-							dstPtr[x].a = srcPtr[x].a;
-						}
-					}
-					else
-					{
-						memcpy(dstPtr, srcPtr, this->_framebufferWidth * sizeof(FragmentColor));
-					}
-					
-					srcPtr += this->_framebufferWidth;
-					dstPtr -= this->_framebufferWidth;
+					ColorspaceCopyBuffer32<SWAP_RB, false>((u32 *)srcFramebuffer + ir, (u32 *)dstFramebufferMain + iw, pixCount);
 				}
 				
 				this->_renderNeedsFlushMain = false;

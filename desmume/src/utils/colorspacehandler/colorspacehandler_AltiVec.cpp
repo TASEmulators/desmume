@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016 DeSmuME team
+	Copyright (C) 2016-2017 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -184,6 +184,28 @@ FORCEINLINE v128u32 ColorspaceConvert888XTo8888Opaque_AltiVec(const v128u32 &src
 }
 
 template <bool SWAP_RB>
+FORCEINLINE v128u16 ColorspaceCopy16_AltiVec(const v128u16 &src)
+{
+	if (SWAP_RB)
+	{
+		return vec_or( vec_or(vec_sr(vec_and(src, vec_splat_u16(0x7C00)), vec_splat_u16(10)), vec_or(vec_and(src, vec_splat_u16(0x0E30)), vec_sl(vec_and(src, vec_splat_u16(0x001F)), vec_splat_u16(10)))), vec_and(src, vec_splat_u16(0x8000)) );
+	}
+	
+	return src;
+}
+
+template <bool SWAP_RB>
+FORCEINLINE v128u32 ColorspaceCopy32_AltiVec(const v128u32 &src)
+{
+	if (SWAP_RB)
+	{
+		return vec_perm(src, src, ((v128u8){2,1,0,3,  6,5,4,7,  10,9,8,11,  14,13,12,15}));
+	}
+	
+	return src;
+}
+
+template <bool SWAP_RB>
 static size_t ColorspaceConvertBuffer555To8888Opaque_AltiVec(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec128)
 {
 	size_t i = 0;
@@ -282,6 +304,44 @@ size_t ColorspaceConvertBuffer888XTo8888Opaque_AltiVec(const u32 *src, u32 *dst,
 	return i;
 }
 
+template <bool SWAP_RB>
+size_t ColorspaceCopyBuffer16_AltiVec(const u16 *src, u16 *dst, size_t pixCountVec128)
+{
+	if (!SWAP_RB)
+	{
+		memcpy(dst, src, pixCountVec128 * sizeof(u16));
+		return pixCountVec128;
+	}
+	
+	size_t i = 0;
+	
+	for (; i < pixCountVec128; i+=8)
+	{
+		vec_st( ColorspaceCopy16_AltiVec<SWAP_RB>(vec_ld(0, src+i)), 0, dst+i );
+	}
+	
+	return i;
+}
+
+template <bool SWAP_RB>
+size_t ColorspaceCopyBuffer32_AltiVec(const u32 *src, u32 *dst, size_t pixCountVec128)
+{
+	if (!SWAP_RB)
+	{
+		memcpy(dst, src, pixCountVec128 * sizeof(u32));
+		return pixCountVec128;
+	}
+	
+	size_t i = 0;
+	
+	for (; i < pixCountVec128; i+=4)
+	{
+		vec_st( ColorspaceCopy32_AltiVec<SWAP_RB>(vec_ld(0, src+i)), 0, dst+i );
+	}
+	
+	return i;
+}
+
 size_t ColorspaceHandler_AltiVec::ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To8888Opaque_AltiVec<false>(src, dst, pixCount);
@@ -352,6 +412,16 @@ size_t ColorspaceHandler_AltiVec::ConvertBuffer888XTo8888Opaque_SwapRB(const u32
 	return ColorspaceConvertBuffer888XTo8888Opaque_AltiVec<true>(src, dst, pixCount);
 }
 
+size_t ColorspaceHandler_AltiVec::CopyBuffer16_SwapRB(const u16 *src, u16 *dst, size_t pixCount) const
+{
+	return ColorspaceCopyBuffer16_AltiVec<true>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AltiVec::CopyBuffer32_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return ColorspaceCopyBuffer32_AltiVec<true>(src, dst, pixCount);
+}
+
 template void ColorspaceConvert555To8888_AltiVec<true>(const v128u16 &srcColor, const v128u32 &srcAlphaBits32Lo, const v128u32 &srcAlphaBits32Hi, v128u32 &dstLo, v128u32 &dstHi);
 template void ColorspaceConvert555To8888_AltiVec<false>(const v128u16 &srcColor, const v128u32 &srcAlphaBits32Lo, const v128u32 &srcAlphaBits32Hi, v128u32 &dstLo, v128u32 &dstHi);
 
@@ -378,5 +448,11 @@ template v128u16 ColorspaceConvert6665To5551_AltiVec<false>(const v128u32 &srcLo
 
 template v128u32 ColorspaceConvert888XTo8888Opaque_AltiVec<true>(const v128u32 &src);
 template v128u32 ColorspaceConvert888XTo8888Opaque_AltiVec<false>(const v128u32 &src);
+
+template v128u16 ColorspaceCopy16_AltiVec<true>(const v128u16 &src);
+template v128u16 ColorspaceCopy16_AltiVec<false>(const v128u16 &src);
+
+template v128u32 ColorspaceCopy32_AltiVec<true>(const v128u32 &src);
+template v128u32 ColorspaceCopy32_AltiVec<false>(const v128u32 &src);
 
 #endif // ENABLE_SSE2

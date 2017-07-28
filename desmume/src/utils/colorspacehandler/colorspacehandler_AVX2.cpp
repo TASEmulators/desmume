@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016 DeSmuME team
+	Copyright (C) 2016-2017 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -225,6 +225,28 @@ FORCEINLINE v256u32 ColorspaceConvert888XTo8888Opaque_AVX2(const v256u32 &src)
 	return _mm256_or_si256(src, _mm256_set1_epi32(0xFF000000));
 }
 
+template <bool SWAP_RB>
+FORCEINLINE v256u16 ColorspaceCopy16_AVX2(const v256u16 &src)
+{
+	if (SWAP_RB)
+	{
+		return _mm256_or_si256( _mm256_or_si256(_mm256_srli_epi16(_mm256_and_si256(src, _mm256_set1_epi16(0x7C00)), 10), _mm256_or_si256(_mm256_and_si256(src, _mm256_set1_epi16(0x0E30)), _mm256_slli_epi16(_mm256_and_si256(src, _mm256_set1_epi16(0x001F)), 10))), _mm256_and_si256(src, _mm256_set1_epi16(0x8000)) );
+	}
+	
+	return src;
+}
+
+template <bool SWAP_RB>
+FORCEINLINE v256u32 ColorspaceCopy32_AVX2(const v256u32 &src)
+{
+	if (SWAP_RB)
+	{
+		return _mm256_shuffle_epi8(src, _mm256_set_epi8(31,28,29,30,  27,24,25,26,  23,20,21,22,  19,16,17,18,  15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2));
+	}
+	
+	return src;
+}
+
 template <bool SWAP_RB, bool IS_UNALIGNED>
 static size_t ColorspaceConvertBuffer555To8888Opaque_AVX2(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec256)
 {
@@ -377,6 +399,62 @@ size_t ColorspaceConvertBuffer888XTo8888Opaque_AVX2(const u32 *src, u32 *dst, si
 	return i;
 }
 
+template <bool SWAP_RB, bool IS_UNALIGNED>
+size_t ColorspaceCopyBuffer16_AVX2(const u16 *src, u16 *dst, size_t pixCountVec256)
+{
+	if (!SWAP_RB)
+	{
+		memcpy(dst, src, pixCountVec256 * sizeof(u16));
+		return pixCountVec256;
+	}
+	
+	size_t i = 0;
+	
+	for (; i < pixCountVec256; i+=16)
+	{
+		v256u16 src_vec256 = (IS_UNALIGNED) ? _mm256_loadu_si256((v256u16 *)(src+i)) : _mm256_load_si256((v256u16 *)(src+i));
+		
+		if (IS_UNALIGNED)
+		{
+			_mm256_storeu_si256((v256u16 *)(dst+i), ColorspaceCopy16_AVX2<SWAP_RB>(src_vec256));
+		}
+		else
+		{
+			_mm256_store_si256((v256u16 *)(dst+i), ColorspaceCopy16_AVX2<SWAP_RB>(src_vec256));
+		}
+	}
+	
+	return i;
+}
+
+template <bool SWAP_RB, bool IS_UNALIGNED>
+size_t ColorspaceCopyBuffer32_AVX2(const u32 *src, u32 *dst, size_t pixCountVec256)
+{
+	if (!SWAP_RB)
+	{
+		memcpy(dst, src, pixCountVec256 * sizeof(u32));
+		return pixCountVec256;
+	}
+	
+	size_t i = 0;
+	
+	for (; i < pixCountVec256; i+=8)
+	{
+		v256u32 src_vec256 = (IS_UNALIGNED) ? _mm256_loadu_si256((v256u32 *)(src+i)) : _mm256_load_si256((v256u32 *)(src+i));
+		
+		if (IS_UNALIGNED)
+		{
+			_mm256_storeu_si256((v256u32 *)(dst+i), ColorspaceCopy32_AVX2<SWAP_RB>(src_vec256));
+		}
+		else
+		{
+			_mm256_store_si256((v256u32 *)(dst+i), ColorspaceCopy32_AVX2<SWAP_RB>(src_vec256));
+		}
+	}
+	
+	return i;
+}
+
 size_t ColorspaceHandler_AVX2::ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To8888Opaque_AVX2<false, false>(src, dst, pixCount);
@@ -517,6 +595,26 @@ size_t ColorspaceHandler_AVX2::ConvertBuffer888XTo8888Opaque_SwapRB_IsUnaligned(
 	return ColorspaceConvertBuffer888XTo8888Opaque_AVX2<true, true>(src, dst, pixCount);
 }
 
+size_t ColorspaceHandler_AVX2::CopyBuffer16_SwapRB(const u16 *src, u16 *dst, size_t pixCount) const
+{
+	return ColorspaceCopyBuffer16_AVX2<true, false>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AVX2::CopyBuffer16_SwapRB_IsUnaligned(const u16 *src, u16 *dst, size_t pixCount) const
+{
+	return ColorspaceCopyBuffer16_AVX2<true, true>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AVX2::CopyBuffer32_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return ColorspaceCopyBuffer32_AVX2<true, false>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AVX2::CopyBuffer32_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return ColorspaceCopyBuffer32_AVX2<true, true>(src, dst, pixCount);
+}
+
 template void ColorspaceConvert555To8888_AVX2<true>(const v256u16 &srcColor, const v256u32 &srcAlphaBits32Lo, const v256u32 &srcAlphaBits32Hi, v256u32 &dstLo, v256u32 &dstHi);
 template void ColorspaceConvert555To8888_AVX2<false>(const v256u16 &srcColor, const v256u32 &srcAlphaBits32Lo, const v256u32 &srcAlphaBits32Hi, v256u32 &dstLo, v256u32 &dstHi);
 
@@ -543,5 +641,11 @@ template v256u16 ColorspaceConvert6665To5551_AVX2<false>(const v256u32 &srcLo, c
 
 template v256u32 ColorspaceConvert888XTo8888Opaque_AVX2<true>(const v256u32 &src);
 template v256u32 ColorspaceConvert888XTo8888Opaque_AVX2<false>(const v256u32 &src);
+
+template v256u16 ColorspaceCopy16_AVX2<true>(const v256u16 &src);
+template v256u16 ColorspaceCopy16_AVX2<false>(const v256u16 &src);
+
+template v256u32 ColorspaceCopy32_AVX2<true>(const v256u32 &src);
+template v256u32 ColorspaceCopy32_AVX2<false>(const v256u32 &src);
 
 #endif // ENABLE_AVX2

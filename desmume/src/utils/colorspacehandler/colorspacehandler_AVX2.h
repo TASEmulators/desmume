@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016 DeSmuME team
+	Copyright (C) 2016-2017 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -33,6 +33,9 @@ template<bool SWAP_RB> v256u32 ColorspaceConvert6665To8888_AVX2(const v256u32 &s
 template<bool SWAP_RB> v256u16 ColorspaceConvert8888To5551_AVX2(const v256u32 &srcLo, const v256u32 &srcHi);
 template<bool SWAP_RB> v256u16 ColorspaceConvert6665To5551_AVX2(const v256u32 &srcLo, const v256u32 &srcHi);
 template<bool SWAP_RB> v256u32 ColorspaceConvert888XTo8888Opaque_AVX2(const v256u32 &src);
+
+template<bool SWAP_RB> v256u16 ColorspaceCopy16_AVX2(const v256u16 &src);
+template<bool SWAP_RB> v256u32 ColorspaceCopy32_AVX2(const v256u32 &src);
 
 class ColorspaceHandler_AVX2 : public ColorspaceHandler
 {
@@ -73,6 +76,12 @@ public:
 	size_t ConvertBuffer888XTo8888Opaque_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const;
 	size_t ConvertBuffer888XTo8888Opaque_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const;
 	size_t ConvertBuffer888XTo8888Opaque_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const;
+	
+	size_t CopyBuffer16_SwapRB(const u16 *src, u16 *dst, size_t pixCount) const;
+	size_t CopyBuffer16_SwapRB_IsUnaligned(const u16 *src, u16 *dst, size_t pixCount) const;
+	
+	size_t CopyBuffer32_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const;
+	size_t CopyBuffer32_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const;
 };
 
 #endif // ENABLE_AVX2

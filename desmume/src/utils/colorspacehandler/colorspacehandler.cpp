@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016 DeSmuME team
+	Copyright (C) 2016-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 */
 
 #include "colorspacehandler.h"
+#include <string.h>
 
 #if defined(ENABLE_AVX2)
 	#include "colorspacehandler_AVX2.cpp"
@@ -54,6 +55,7 @@
 	static const ColorspaceHandler csh;
 #endif
 
+CACHE_ALIGN u16 color_5551_swap_rb[32768];
 CACHE_ALIGN u32 color_555_to_6665_opaque[32768];
 CACHE_ALIGN u32 color_555_to_6665_opaque_swap_rb[32768];
 CACHE_ALIGN u32 color_555_to_666[32768];
@@ -120,6 +122,7 @@ void ColorspaceHandlerInit()
 	
 	if (needInitTables)
 	{
+#define RGB16_SWAP_RB_BITLOGIC(col)     ( (((col)&0x001F)<<10) | ((col)&0x03E0) | (((col)&0x7C00)>>10) | ((col)&0x8000) )
 #define RGB15TO18_BITLOGIC(col)         ( (material_5bit_to_6bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_6bit[((col)>>5)&0x1F]<<8) |  material_5bit_to_6bit[(col)&0x1F] )
 #define RGB15TO18_SWAP_RB_BITLOGIC(col) (  material_5bit_to_6bit[((col)>>10)&0x1F]      | (material_5bit_to_6bit[((col)>>5)&0x1F]<<8) | (material_5bit_to_6bit[(col)&0x1F]<<16) )
 #define RGB15TO24_BITLOGIC(col)         ( (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) |  material_5bit_to_8bit[(col)&0x1F] )
@@ -127,6 +130,8 @@ void ColorspaceHandlerInit()
 		
 		for (size_t i = 0; i < 32768; i++)
 		{
+			color_5551_swap_rb[i]				= LE_TO_LOCAL_16( RGB16_SWAP_RB_BITLOGIC(i) );
+			
 			color_555_to_666[i]					= LE_TO_LOCAL_32( RGB15TO18_BITLOGIC(i) );
 			color_555_to_6665_opaque[i]			= LE_TO_LOCAL_32( RGB15TO18_BITLOGIC(i) | 0x1F000000 );
 			color_555_to_6665_opaque_swap_rb[i]	= LE_TO_LOCAL_32( RGB15TO18_SWAP_RB_BITLOGIC(i) | 0x1F000000 );
@@ -474,6 +479,86 @@ void ColorspaceConvertBuffer888XTo8888Opaque(const u32 *src, u32 *dst, size_t pi
 	}
 }
 
+template <bool SWAP_RB, bool IS_UNALIGNED>
+void ColorspaceCopyBuffer16(const u16 *src, u16 *dst, size_t pixCount)
+{
+	if (!SWAP_RB)
+	{
+		memcpy(dst, src, pixCount * sizeof(u16));
+		return;
+	}
+	
+	size_t i = 0;
+	
+#ifdef USEMANUALVECTORIZATION
+	
+#if defined(USEVECTORSIZE_512)
+	const size_t pixCountVector = pixCount - (pixCount % 32);
+#elif defined(USEVECTORSIZE_256)
+	const size_t pixCountVector = pixCount - (pixCount % 16);
+#elif defined(USEVECTORSIZE_128)
+	const size_t pixCountVector = pixCount - (pixCount % 8);
+#endif
+	
+	if (IS_UNALIGNED)
+	{
+		i = csh.CopyBuffer16_SwapRB_IsUnaligned(src, dst, pixCountVector);
+	}
+	else
+	{
+		i = csh.CopyBuffer16_SwapRB(src, dst, pixCountVector);
+	}
+	
+#pragma LOOPVECTORIZE_DISABLE
+	
+#endif // USEMANUALVECTORIZATION
+	
+	for (; i < pixCount; i++)
+	{
+		dst[i] = ColorspaceCopy16<SWAP_RB>(src[i]);
+	}
+}
+
+template <bool SWAP_RB, bool IS_UNALIGNED>
+void ColorspaceCopyBuffer32(const u32 *src, u32 *dst, size_t pixCount)
+{
+	if (!SWAP_RB)
+	{
+		memcpy(dst, src, pixCount * sizeof(u32));
+		return;
+	}
+	
+	size_t i = 0;
+	
+#ifdef USEMANUALVECTORIZATION
+	
+#if defined(USEVECTORSIZE_512)
+	const size_t pixCountVector = pixCount - (pixCount % 16);
+#elif defined(USEVECTORSIZE_256)
+	const size_t pixCountVector = pixCount - (pixCount % 8);
+#elif defined(USEVECTORSIZE_128)
+	const size_t pixCountVector = pixCount - (pixCount % 4);
+#endif
+	
+	if (IS_UNALIGNED)
+	{
+		i = csh.CopyBuffer32_SwapRB_IsUnaligned(src, dst, pixCountVector);
+	}
+	else
+	{
+		i = csh.CopyBuffer32_SwapRB(src, dst, pixCountVector);
+	}
+	
+#pragma LOOPVECTORIZE_DISABLE
+	
+#endif // USEMANUALVECTORIZATION
+	
+	for (; i < pixCount; i++)
+	{
+		dst[i] = ColorspaceCopy32<SWAP_RB>(src[i]);
+	}
+}
+
 size_t ColorspaceHandler::ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	size_t i = 0;
@@ -712,6 +797,40 @@ size_t ColorspaceHandler::ConvertBuffer888XTo8888Opaque_SwapRB_IsUnaligned(const
 	return this->ConvertBuffer888XTo8888Opaque_SwapRB(src, dst, pixCount);
 }
 
+size_t ColorspaceHandler::CopyBuffer16_SwapRB(const u16 *src, u16 *dst, size_t pixCount) const
+{
+	size_t i = 0;
+	
+	for (; i < pixCount; i++)
+	{
+		dst[i] = ColorspaceCopy16<true>(src[i]);
+	}
+	
+	return i;
+}
+
+size_t ColorspaceHandler::CopyBuffer16_SwapRB_IsUnaligned(const u16 *src, u16 *dst, size_t pixCount) const
+{
+	return this->CopyBuffer16_SwapRB(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler::CopyBuffer32_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	size_t i = 0;
+	
+	for (; i < pixCount; i++)
+	{
+		dst[i] = ColorspaceCopy32<true>(src[i]);
+	}
+	
+	return i;
+}
+
+size_t ColorspaceHandler::CopyBuffer32_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const
+{
+	return this->CopyBuffer32_SwapRB(src, dst, pixCount);
+}
+
 template void ColorspaceConvertBuffer555To8888Opaque<true, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 template void ColorspaceConvertBuffer555To8888Opaque<true, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 template void ColorspaceConvertBuffer555To8888Opaque<false, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
@@ -746,3 +865,13 @@ template void ColorspaceConvertBuffer888XTo8888Opaque<true, true>(const u32 *src
 template void ColorspaceConvertBuffer888XTo8888Opaque<true, false>(const u32 *src, u32 *dst, size_t pixCount);
 template void ColorspaceConvertBuffer888XTo8888Opaque<false, true>(const u32 *src, u32 *dst, size_t pixCount);
 template void ColorspaceConvertBuffer888XTo8888Opaque<false, false>(const u32 *src, u32 *dst, size_t pixCount);
+
+template void ColorspaceCopyBuffer16<true, true>(const u16 *src, u16 *dst, size_t pixCount);
+template void ColorspaceCopyBuffer16<true, false>(const u16 *src, u16 *dst, size_t pixCount);
+template void ColorspaceCopyBuffer16<false, true>(const u16 *src, u16 *dst, size_t pixCount);
+template void ColorspaceCopyBuffer16<false, false>(const u16 *src, u16 *dst, size_t pixCount);
+
+template void ColorspaceCopyBuffer32<true, true>(const u32 *src, u32 *dst, size_t pixCount);
+template void ColorspaceCopyBuffer32<true, false>(const u32 *src, u32 *dst, size_t pixCount);
+template void ColorspaceCopyBuffer32<false, true>(const u32 *src, u32 *dst, size_t pixCount);
+template void ColorspaceCopyBuffer32<false, false>(const u32 *src, u32 *dst, size_t pixCount);
