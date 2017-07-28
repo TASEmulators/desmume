@@ -463,8 +463,11 @@ void DRV_AviVideoUpdate()
 	avi_file->tBytes += avi_file->ByteBuffer;
 
 	// segment / split AVI when it's almost 2 GB (2000MB, to be precise)
-	if(!(avi_file->video_frames % 60) && avi_file->tBytes > 2097152000)
-		AviNextSegment();
+	//if(!(avi_file->video_frames % 60) && avi_file->tBytes > 2097152000) AviNextSegment();
+	//NOPE: why does it have to break at 1 second? 
+	//we need to support dumping HD stuff here; that means 100s of MBs per second
+	//let's roll this back a bit to 1800MB to give us a nice huge 256MB wiggle room, and get rid of the 1 second check
+	if(avi_file->tBytes > (1800*1024*1024)) AviNextSegment();
 }
 
 bool AVI_IsRecording()
