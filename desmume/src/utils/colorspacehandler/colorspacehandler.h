@@ -96,7 +96,7 @@ extern CACHE_ALIGN const u8 material_3bit_to_5bit[8];
 extern CACHE_ALIGN const u8 material_3bit_to_6bit[8];
 extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
 
-extern CACHE_ALIGN u16 color_5551_swap_rb[32768];
+extern CACHE_ALIGN u16 color_5551_swap_rb[65536];
 extern CACHE_ALIGN u32 color_555_to_6665_opaque[32768];
 extern CACHE_ALIGN u32 color_555_to_6665_opaque_swap_rb[32768];
 extern CACHE_ALIGN u32 color_555_to_666[32768];

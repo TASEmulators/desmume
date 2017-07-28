@@ -55,7 +55,7 @@
 	static const ColorspaceHandler csh;
 #endif
 
-CACHE_ALIGN u16 color_5551_swap_rb[32768];
+CACHE_ALIGN u16 color_5551_swap_rb[65536];
 CACHE_ALIGN u32 color_555_to_6665_opaque[32768];
 CACHE_ALIGN u32 color_555_to_6665_opaque_swap_rb[32768];
 CACHE_ALIGN u32 color_555_to_666[32768];
@@ -122,7 +122,6 @@ void ColorspaceHandlerInit()
 	
 	if (needInitTables)
 	{
-#define RGB16_SWAP_RB_BITLOGIC(col)     ( (((col)&0x001F)<<10) | ((col)&0x03E0) | (((col)&0x7C00)>>10) | ((col)&0x8000) )
 #define RGB15TO18_BITLOGIC(col)         ( (material_5bit_to_6bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_6bit[((col)>>5)&0x1F]<<8) |  material_5bit_to_6bit[(col)&0x1F] )
 #define RGB15TO18_SWAP_RB_BITLOGIC(col) (  material_5bit_to_6bit[((col)>>10)&0x1F]      | (material_5bit_to_6bit[((col)>>5)&0x1F]<<8) | (material_5bit_to_6bit[(col)&0x1F]<<16) )
 #define RGB15TO24_BITLOGIC(col)         ( (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) |  material_5bit_to_8bit[(col)&0x1F] )
@@ -130,8 +129,6 @@ void ColorspaceHandlerInit()
 		
 		for (size_t i = 0; i < 32768; i++)
 		{
-			color_5551_swap_rb[i]				= LE_TO_LOCAL_16( RGB16_SWAP_RB_BITLOGIC(i) );
-			
 			color_555_to_666[i]					= LE_TO_LOCAL_32( RGB15TO18_BITLOGIC(i) );
 			color_555_to_6665_opaque[i]			= LE_TO_LOCAL_32( RGB15TO18_BITLOGIC(i) | 0x1F000000 );
 			color_555_to_6665_opaque_swap_rb[i]	= LE_TO_LOCAL_32( RGB15TO18_SWAP_RB_BITLOGIC(i) | 0x1F000000 );
@@ -139,6 +136,13 @@ void ColorspaceHandlerInit()
 			color_555_to_888[i]					= LE_TO_LOCAL_32( RGB15TO24_BITLOGIC(i) );
 			color_555_to_8888_opaque[i]			= LE_TO_LOCAL_32( RGB15TO24_BITLOGIC(i) | 0xFF000000 );
 			color_555_to_8888_opaque_swap_rb[i]	= LE_TO_LOCAL_32( RGB15TO24_SWAP_RB_BITLOGIC(i) | 0xFF000000 );
+		}
+		
+#define RGB16_SWAP_RB_BITLOGIC(col)     ( (((col)&0x001F)<<10) | ((col)&0x03E0) | (((col)&0x7C00)>>10) | ((col)&0x8000) )
+		
+		for (size_t i = 0; i < 65536; i++)
+		{
+			color_5551_swap_rb[i]				= LE_TO_LOCAL_16( RGB16_SWAP_RB_BITLOGIC(i) );
 		}
 	}
 }
