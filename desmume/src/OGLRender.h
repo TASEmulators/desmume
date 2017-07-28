@@ -311,6 +311,8 @@ enum OGLErrorCode
 {
 	OGLERROR_NOERR = RENDER3DERROR_NOERR,
 	
+	OGLERROR_DRIVER_VERSION_TOO_OLD,
+	
 	OGLERROR_BEGINGL_FAILED,
 	
 	OGLERROR_FEATURE_UNSUPPORTED,
@@ -768,43 +770,9 @@ public:
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 
-class OpenGLRenderer_1_3 : public OpenGLRenderer_1_2
+class OpenGLRenderer_2_0 : public OpenGLRenderer_1_2
 {
 protected:
-	virtual Render3DError CreateToonTable();
-	virtual Render3DError UploadClearImage(const u16 *__restrict colorBuffer, const u32 *__restrict depthBuffer, const u8 *__restrict fogBuffer, const u8 *__restrict polyIDBuffer);
-	
-public:
-	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
-	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
-};
-
-class OpenGLRenderer_1_4 : public OpenGLRenderer_1_3
-{
-protected:
-	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
-};
-
-class OpenGLRenderer_1_5 : public OpenGLRenderer_1_4
-{
-protected:
-	virtual Render3DError CreateVBOs();
-	virtual void DestroyVBOs();
-	virtual Render3DError CreateVAOs();
-	
-	virtual Render3DError EnableVertexAttributes();
-	virtual Render3DError DisableVertexAttributes();
-	virtual Render3DError BeginRender(const GFX3D &engine);
-	
-public:
-	~OpenGLRenderer_1_5();
-};
-
-class OpenGLRenderer_2_0 : public OpenGLRenderer_1_5
-{
-protected:
-	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
-	
 	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
 	
