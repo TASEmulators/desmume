@@ -456,7 +456,7 @@ void DRV_AviVideoUpdate()
                                  avi_file->bitmap_format.biSizeImage, AVIIF_KEYFRAME,
                                  NULL, &avi_file->ByteBuffer)))
 	{
-		avi_file->valid = 0;
+		DRV_AviEnd();
 		return;
 	}
 
@@ -493,7 +493,7 @@ void DRV_AviSoundUpdate(void* soundData, int soundLen)
 		                         avi_file->sound_samples, samplesPerSegment,
 		                         avi_file->audio_buffer, audioSegmentSize, 0, NULL, &avi_file->ByteBuffer)))
 		{
-			avi_file->valid = 0;
+			DRV_AviEnd();
 			return;
 		}
 		avi_file->sound_samples += samplesPerSegment;
