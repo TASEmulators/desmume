@@ -373,8 +373,6 @@ bool DRV_AviBegin(const char* fname)
 {
 	DRV_AviEnd();
 
-	;
-
 	BITMAPINFOHEADER bi;
 	memset(&bi, 0, sizeof(bi));
 	bi.biSize = 0x28;    
@@ -430,6 +428,9 @@ bool DRV_AviBegin(const char* fname)
 		strcpy(saved_avi_ext,dot);
 		dot[0]='\0';
 	}
+
+	avi_segnum = 0;
+
 	return 1;
 }
 
@@ -509,7 +510,7 @@ void DRV_AviEnd()
 		return;
 
 	// Don't display if we're just starting another segment
-	if(avi_file->tBytes <= 2097152000) {
+	if(avi_file->tBytes <= 1800 * 1024 * 1024) {
 		EMU_PrintMessage("AVI recording ended.");
 		driver->AddLine("AVI recording ended.");
 	}
