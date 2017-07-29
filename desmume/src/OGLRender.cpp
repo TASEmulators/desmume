@@ -1153,8 +1153,9 @@ void OpenGLRenderer::SetVersion(unsigned int major, unsigned int minor, unsigned
 	this->versionRevision = revision;
 }
 
-template <bool SWAP_RB>
-Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16)
+Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const FragmentColor *__restrict srcFramebuffer,
+																   FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16,
+																   bool doFramebufferFlip, bool doFramebufferConvert)
 {
 	if ( ((dstFramebufferMain == NULL) && (dstFramebuffer16 == NULL)) || (srcFramebuffer == NULL) )
 	{
@@ -1167,11 +1168,11 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 	
 	size_t i = 0;
 	
-	if (this->willFlipFramebufferOnGPU)
+	if (!doFramebufferFlip)
 	{
 		const size_t pixCount = this->_framebufferWidth * this->_framebufferHeight;
 		
-		if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
+		if (!doFramebufferConvert)
 		{
 			if ( (dstFramebufferMain != NULL) && (dstFramebuffer16 != NULL) )
 			{
@@ -1182,17 +1183,17 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 					const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + i + 0));
 					const __m128i srcColorHi = _mm_load_si128((__m128i *)(srcFramebuffer + i + 4));
 					
-					_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 0), ColorspaceConvert8888To6665_SSE2<SWAP_RB>(srcColorLo) );
-					_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 4), ColorspaceConvert8888To6665_SSE2<SWAP_RB>(srcColorHi) );
-					_mm_store_si128( (__m128i *)(dstFramebuffer16 + i), ColorspaceConvert8888To5551_SSE2<SWAP_RB>(srcColorLo, srcColorHi) );
+					_mm_store_si128((__m128i *)(dstFramebufferMain + i + 0), ColorspaceCopy32_SSE2<false>(srcColorLo));
+					_mm_store_si128((__m128i *)(dstFramebufferMain + i + 4), ColorspaceCopy32_SSE2<false>(srcColorHi));
+					_mm_store_si128( (__m128i *)(dstFramebuffer16 + i), ColorspaceConvert8888To5551_SSE2<false>(srcColorLo, srcColorHi) );
 				}
 				
 #pragma LOOPVECTORIZE_DISABLE
 #endif
 				for (; i < pixCount; i++)
 				{
-					dstFramebufferMain[i].color = ColorspaceConvert8888To6665<SWAP_RB>(srcFramebuffer[i]);
-					dstFramebuffer16[i]         = ColorspaceConvert8888To5551<SWAP_RB>(srcFramebuffer[i]);
+					dstFramebufferMain[i].color = ColorspaceCopy32<false>(srcFramebuffer[i]);
+					dstFramebuffer16[i]         = ColorspaceConvert8888To5551<false>(srcFramebuffer[i]);
 				}
 				
 				this->_renderNeedsFlushMain = false;
@@ -1200,51 +1201,92 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 			}
 			else if (dstFramebufferMain != NULL)
 			{
-				ColorspaceConvertBuffer8888To6665<SWAP_RB, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, pixCount);
+				ColorspaceCopyBuffer32<false, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, pixCount);
 				this->_renderNeedsFlushMain = false;
 			}
 			else
 			{
-				ColorspaceConvertBuffer8888To5551<SWAP_RB, false>((u32 *)srcFramebuffer, dstFramebuffer16, pixCount);
+				ColorspaceConvertBuffer8888To5551<false, false>((u32 *)srcFramebuffer, dstFramebuffer16, pixCount);
 				this->_renderNeedsFlush16 = false;
 			}
 		}
-		else if (this->_outputFormat == NDSColorFormat_BGR888_Rev)
+		else
 		{
-			if ( (dstFramebufferMain != NULL) && (dstFramebuffer16 != NULL) )
+			if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
 			{
-#ifdef ENABLE_SSE2
-				const size_t ssePixCount = pixCount - (pixCount % 8);
-				for (; i < ssePixCount; i += 8)
+				if ( (dstFramebufferMain != NULL) && (dstFramebuffer16 != NULL) )
 				{
-					const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + i + 0));
-					const __m128i srcColorHi = _mm_load_si128((__m128i *)(srcFramebuffer + i + 4));
+#ifdef ENABLE_SSE2
+					const size_t ssePixCount = pixCount - (pixCount % 8);
+					for (; i < ssePixCount; i += 8)
+					{
+						const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + i + 0));
+						const __m128i srcColorHi = _mm_load_si128((__m128i *)(srcFramebuffer + i + 4));
+						
+						_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 0), ColorspaceConvert8888To6665_SSE2<true>(srcColorLo) );
+						_mm_store_si128( (__m128i *)(dstFramebufferMain + i + 4), ColorspaceConvert8888To6665_SSE2<true>(srcColorHi) );
+						_mm_store_si128( (__m128i *)(dstFramebuffer16 + i), ColorspaceConvert8888To5551_SSE2<true>(srcColorLo, srcColorHi) );
+					}
 					
-					_mm_store_si128((__m128i *)(dstFramebufferMain + i + 0), ColorspaceCopy32_SSE2<SWAP_RB>(srcColorLo));
-					_mm_store_si128((__m128i *)(dstFramebufferMain + i + 4), ColorspaceCopy32_SSE2<SWAP_RB>(srcColorHi));
-					_mm_store_si128( (__m128i *)(dstFramebuffer16 + i), ColorspaceConvert8888To5551_SSE2<SWAP_RB>(srcColorLo, srcColorHi) );
-				}
-				
 #pragma LOOPVECTORIZE_DISABLE
 #endif
-				for (; i < pixCount; i++)
-				{
-					dstFramebufferMain[i].color = ColorspaceConvert8888To6665<SWAP_RB>(srcFramebuffer[i]);
-					dstFramebuffer16[i]         = ColorspaceConvert8888To5551<SWAP_RB>(srcFramebuffer[i]);
+					for (; i < pixCount; i++)
+					{
+						dstFramebufferMain[i].color = ColorspaceConvert8888To6665<true>(srcFramebuffer[i]);
+						dstFramebuffer16[i]         = ColorspaceConvert8888To5551<true>(srcFramebuffer[i]);
+					}
+					
+					this->_renderNeedsFlushMain = false;
+					this->_renderNeedsFlush16 = false;
 				}
-				
-				this->_renderNeedsFlushMain = false;
-				this->_renderNeedsFlush16 = false;
+				else if (dstFramebufferMain != NULL)
+				{
+					ColorspaceConvertBuffer8888To6665<true, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, pixCount);
+					this->_renderNeedsFlushMain = false;
+				}
+				else
+				{
+					ColorspaceConvertBuffer8888To5551<true, false>((u32 *)srcFramebuffer, dstFramebuffer16, pixCount);
+					this->_renderNeedsFlush16 = false;
+				}
 			}
-			else if (dstFramebufferMain != NULL)
+			else if (this->_outputFormat == NDSColorFormat_BGR888_Rev)
 			{
-				ColorspaceCopyBuffer32<SWAP_RB, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, pixCount);
-				this->_renderNeedsFlushMain = false;
-			}
-			else
-			{
-				ColorspaceConvertBuffer8888To5551<SWAP_RB, false>((u32 *)srcFramebuffer, dstFramebuffer16, pixCount);
-				this->_renderNeedsFlush16 = false;
+				if ( (dstFramebufferMain != NULL) && (dstFramebuffer16 != NULL) )
+				{
+#ifdef ENABLE_SSE2
+					const size_t ssePixCount = pixCount - (pixCount % 8);
+					for (; i < ssePixCount; i += 8)
+					{
+						const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + i + 0));
+						const __m128i srcColorHi = _mm_load_si128((__m128i *)(srcFramebuffer + i + 4));
+						
+						_mm_store_si128((__m128i *)(dstFramebufferMain + i + 0), ColorspaceCopy32_SSE2<true>(srcColorLo));
+						_mm_store_si128((__m128i *)(dstFramebufferMain + i + 4), ColorspaceCopy32_SSE2<true>(srcColorHi));
+						_mm_store_si128( (__m128i *)(dstFramebuffer16 + i), ColorspaceConvert8888To5551_SSE2<true>(srcColorLo, srcColorHi) );
+					}
+					
+#pragma LOOPVECTORIZE_DISABLE
+#endif
+					for (; i < pixCount; i++)
+					{
+						dstFramebufferMain[i].color = ColorspaceCopy32<true>(srcFramebuffer[i]);
+						dstFramebuffer16[i]         = ColorspaceConvert8888To5551<true>(srcFramebuffer[i]);
+					}
+					
+					this->_renderNeedsFlushMain = false;
+					this->_renderNeedsFlush16 = false;
+				}
+				else if (dstFramebufferMain != NULL)
+				{
+					ColorspaceCopyBuffer32<true, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, pixCount);
+					this->_renderNeedsFlushMain = false;
+				}
+				else
+				{
+					ColorspaceConvertBuffer8888To5551<true, false>((u32 *)srcFramebuffer, dstFramebuffer16, pixCount);
+					this->_renderNeedsFlush16 = false;
+				}
 			}
 		}
 	}
@@ -1252,7 +1294,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 	{
 		const size_t pixCount = this->_framebufferWidth;
 		
-		if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
+		if (!doFramebufferConvert)
 		{
 			if ( (dstFramebufferMain != NULL) && (dstFramebuffer16 != NULL) )
 			{
@@ -1266,17 +1308,17 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 						const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + ir + 0));
 						const __m128i srcColorHi = _mm_load_si128((__m128i *)(srcFramebuffer + ir + 4));
 						
-						_mm_store_si128( (__m128i *)(dstFramebufferMain + iw + 0), ColorspaceConvert8888To6665_SSE2<SWAP_RB>(srcColorLo) );
-						_mm_store_si128( (__m128i *)(dstFramebufferMain + iw + 4), ColorspaceConvert8888To6665_SSE2<SWAP_RB>(srcColorHi) );
-						_mm_store_si128( (__m128i *)(dstFramebuffer16 + iw), ColorspaceConvert8888To5551_SSE2<SWAP_RB>(srcColorLo, srcColorHi) );
+						_mm_store_si128( (__m128i *)(dstFramebufferMain + iw + 0), ColorspaceCopy32_SSE2<false>(srcColorLo) );
+						_mm_store_si128( (__m128i *)(dstFramebufferMain + iw + 4), ColorspaceCopy32_SSE2<false>(srcColorHi) );
+						_mm_store_si128( (__m128i *)(dstFramebuffer16 + iw), ColorspaceConvert8888To5551_SSE2<false>(srcColorLo, srcColorHi) );
 					}
 					
 #pragma LOOPVECTORIZE_DISABLE
 #endif
 					for (; x < pixCount; x++, ir++, iw++)
 					{
-						dstFramebufferMain[iw].color = ColorspaceConvert8888To6665<SWAP_RB>(srcFramebuffer[ir]);
-						dstFramebuffer16[iw]         = ColorspaceConvert8888To5551<SWAP_RB>(srcFramebuffer[ir]);
+						dstFramebufferMain[iw].color = ColorspaceCopy32<false>(srcFramebuffer[ir]);
+						dstFramebuffer16[iw]         = ColorspaceConvert8888To5551<false>(srcFramebuffer[ir]);
 					}
 				}
 				
@@ -1287,7 +1329,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 			{
 				for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, ir += this->_framebufferWidth, iw -= this->_framebufferWidth)
 				{
-					ColorspaceConvertBuffer8888To6665<SWAP_RB, false>((u32 *)srcFramebuffer + ir, (u32 *)dstFramebufferMain + iw, pixCount);
+					ColorspaceCopyBuffer32<false, false>((u32 *)srcFramebuffer + ir, (u32 *)dstFramebufferMain + iw, pixCount);
 				}
 				
 				this->_renderNeedsFlushMain = false;
@@ -1296,60 +1338,113 @@ Render3DError OpenGLRenderer::_FlushFramebufferConvertOnCPU(const FragmentColor 
 			{
 				for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, ir += this->_framebufferWidth, iw -= this->_framebufferWidth)
 				{
-					ColorspaceConvertBuffer8888To5551<SWAP_RB, false>((u32 *)srcFramebuffer + ir, dstFramebuffer16 + iw, pixCount);
+					ColorspaceConvertBuffer8888To5551<false, false>((u32 *)srcFramebuffer + ir, dstFramebuffer16 + iw, pixCount);
 				}
 				
 				this->_renderNeedsFlush16 = false;
 			}
 		}
-		else if (this->_outputFormat == NDSColorFormat_BGR888_Rev)
+		else
 		{
-			if ( (dstFramebufferMain != NULL) && (dstFramebuffer16 != NULL) )
+			if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
 			{
-				for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, ir += this->_framebufferWidth, iw -= this->_framebufferWidth)
+				if ( (dstFramebufferMain != NULL) && (dstFramebuffer16 != NULL) )
 				{
-					size_t x = 0;
-#ifdef ENABLE_SSE2
-					const size_t ssePixCount = pixCount - (pixCount % 8);
-					for (; x < ssePixCount; x += 8, ir += 8, iw += 8)
+					for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, ir += this->_framebufferWidth, iw -= this->_framebufferWidth)
 					{
-						const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + ir + 0));
-						const __m128i srcColorHi = _mm_load_si128((__m128i *)(srcFramebuffer + ir + 4));
+						size_t x = 0;
+#ifdef ENABLE_SSE2
+						const size_t ssePixCount = pixCount - (pixCount % 8);
+						for (; x < ssePixCount; x += 8, ir += 8, iw += 8)
+						{
+							const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + ir + 0));
+							const __m128i srcColorHi = _mm_load_si128((__m128i *)(srcFramebuffer + ir + 4));
+							
+							_mm_store_si128( (__m128i *)(dstFramebufferMain + iw + 0), ColorspaceConvert8888To6665_SSE2<true>(srcColorLo) );
+							_mm_store_si128( (__m128i *)(dstFramebufferMain + iw + 4), ColorspaceConvert8888To6665_SSE2<true>(srcColorHi) );
+							_mm_store_si128( (__m128i *)(dstFramebuffer16 + iw), ColorspaceConvert8888To5551_SSE2<true>(srcColorLo, srcColorHi) );
+						}
 						
-						_mm_store_si128((__m128i *)(dstFramebufferMain + iw + 0), ColorspaceCopy32_SSE2<SWAP_RB>(srcColorLo));
-						_mm_store_si128((__m128i *)(dstFramebufferMain + iw + 4), ColorspaceCopy32_SSE2<SWAP_RB>(srcColorHi));
-						_mm_store_si128( (__m128i *)(dstFramebuffer16 + iw), ColorspaceConvert8888To5551_SSE2<SWAP_RB>(srcColorLo, srcColorHi) );
-					}
-					
 #pragma LOOPVECTORIZE_DISABLE
 #endif
-					for (; x < pixCount; x++, ir++, iw++)
-					{
-						dstFramebufferMain[iw] = srcFramebuffer[ir];
-						dstFramebuffer16[iw]   = ColorspaceConvert8888To5551<SWAP_RB>(srcFramebuffer[ir]);
+						for (; x < pixCount; x++, ir++, iw++)
+						{
+							dstFramebufferMain[iw].color = ColorspaceConvert8888To6665<true>(srcFramebuffer[ir]);
+							dstFramebuffer16[iw]         = ColorspaceConvert8888To5551<true>(srcFramebuffer[ir]);
+						}
 					}
+					
+					this->_renderNeedsFlushMain = false;
+					this->_renderNeedsFlush16 = false;
 				}
-				
-				this->_renderNeedsFlushMain = false;
-				this->_renderNeedsFlush16 = false;
-			}
-			else if (dstFramebufferMain != NULL)
-			{
-				for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, ir += this->_framebufferWidth, iw -= this->_framebufferWidth)
+				else if (dstFramebufferMain != NULL)
 				{
-					ColorspaceCopyBuffer32<SWAP_RB, false>((u32 *)srcFramebuffer + ir, (u32 *)dstFramebufferMain + iw, pixCount);
+					for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, ir += this->_framebufferWidth, iw -= this->_framebufferWidth)
+					{
+						ColorspaceConvertBuffer8888To6665<true, false>((u32 *)srcFramebuffer + ir, (u32 *)dstFramebufferMain + iw, pixCount);
+					}
+					
+					this->_renderNeedsFlushMain = false;
 				}
-				
-				this->_renderNeedsFlushMain = false;
-			}
-			else
-			{
-				for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, ir += this->_framebufferWidth, iw -= this->_framebufferWidth)
+				else
 				{
-					ColorspaceConvertBuffer8888To5551<SWAP_RB, false>((u32 *)srcFramebuffer + ir, dstFramebuffer16 + iw, pixCount);
+					for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, ir += this->_framebufferWidth, iw -= this->_framebufferWidth)
+					{
+						ColorspaceConvertBuffer8888To5551<true, false>((u32 *)srcFramebuffer + ir, dstFramebuffer16 + iw, pixCount);
+					}
+					
+					this->_renderNeedsFlush16 = false;
 				}
-				
-				this->_renderNeedsFlush16 = false;
+			}
+			else if (this->_outputFormat == NDSColorFormat_BGR888_Rev)
+			{
+				if ( (dstFramebufferMain != NULL) && (dstFramebuffer16 != NULL) )
+				{
+					for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, ir += this->_framebufferWidth, iw -= this->_framebufferWidth)
+					{
+						size_t x = 0;
+#ifdef ENABLE_SSE2
+						const size_t ssePixCount = pixCount - (pixCount % 8);
+						for (; x < ssePixCount; x += 8, ir += 8, iw += 8)
+						{
+							const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + ir + 0));
+							const __m128i srcColorHi = _mm_load_si128((__m128i *)(srcFramebuffer + ir + 4));
+							
+							_mm_store_si128((__m128i *)(dstFramebufferMain + iw + 0), ColorspaceCopy32_SSE2<true>(srcColorLo));
+							_mm_store_si128((__m128i *)(dstFramebufferMain + iw + 4), ColorspaceCopy32_SSE2<true>(srcColorHi));
+							_mm_store_si128( (__m128i *)(dstFramebuffer16 + iw), ColorspaceConvert8888To5551_SSE2<true>(srcColorLo, srcColorHi) );
+						}
+						
+#pragma LOOPVECTORIZE_DISABLE
+#endif
+						for (; x < pixCount; x++, ir++, iw++)
+						{
+							dstFramebufferMain[iw].color = ColorspaceCopy32<true>(srcFramebuffer[ir]);
+							dstFramebuffer16[iw]         = ColorspaceConvert8888To5551<true>(srcFramebuffer[ir]);
+						}
+					}
+					
+					this->_renderNeedsFlushMain = false;
+					this->_renderNeedsFlush16 = false;
+				}
+				else if (dstFramebufferMain != NULL)
+				{
+					for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, ir += this->_framebufferWidth, iw -= this->_framebufferWidth)
+					{
+						ColorspaceCopyBuffer32<true, false>((u32 *)srcFramebuffer + ir, (u32 *)dstFramebufferMain + iw, pixCount);
+					}
+					
+					this->_renderNeedsFlushMain = false;
+				}
+				else
+				{
+					for (size_t y = 0, ir = 0, iw = ((this->_framebufferHeight - 1) * this->_framebufferWidth); y < this->_framebufferHeight; y++, ir += this->_framebufferWidth, iw -= this->_framebufferWidth)
+					{
+						ColorspaceConvertBuffer8888To5551<true, false>((u32 *)srcFramebuffer + ir, dstFramebuffer16 + iw, pixCount);
+					}
+					
+					this->_renderNeedsFlush16 = false;
+				}
 			}
 		}
 	}
@@ -1366,14 +1461,9 @@ Render3DError OpenGLRenderer::FlushFramebuffer(const FragmentColor *__restrict s
 	}
 	else
 	{
-		if (this->willConvertFramebufferOnGPU)
-		{
-			return this->_FlushFramebufferConvertOnCPU<false>(srcFramebuffer, dstFramebufferMain, dstFramebuffer16);
-		}
-		else
-		{
-			return this->_FlushFramebufferConvertOnCPU<true>(srcFramebuffer, dstFramebufferMain, dstFramebuffer16);
-		}
+		this->_FlushFramebufferFlipAndConvertOnCPU(srcFramebuffer,
+												   dstFramebufferMain, dstFramebuffer16,
+												   !this->willFlipFramebufferOnGPU, !this->willConvertFramebufferOnGPU);
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -2094,7 +2184,15 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
 	
-	glDrawBuffers(4, RenderDrawList);
+	if (this->isShaderSupported)
+	{
+		glDrawBuffers(4, RenderDrawList);
+	}
+	else
+	{
+		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	}
+	
 	glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
@@ -2137,7 +2235,15 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
 	
-	glDrawBuffers(4, RenderDrawList);
+	if (this->isShaderSupported)
+	{
+		glDrawBuffers(4, RenderDrawList);
+	}
+	else
+	{
+		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	}
+	
 	glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
@@ -3101,6 +3207,8 @@ Render3DError OpenGLRenderer_1_2::DownsampleFBO()
 			// Blit the color buffer
 			glBlitFramebufferEXT(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
+			glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 		}
 	}
 	
@@ -3181,13 +3289,6 @@ Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 	// Read back the pixels in BGRA format, since legacy OpenGL devices may experience a performance
 	// penalty if the readback is in any other format.
 	glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0);
-	
-	// Set the read and draw target buffers back to color attachment 0, which is always the default.
-	if (this->willFlipFramebufferOnGPU || this->willConvertFramebufferOnGPU)
-	{
-		glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
-		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	}
 	
 	this->_pixelReadNeedsFinish = true;
 	return OGLERROR_NOERR;
@@ -3699,6 +3800,8 @@ Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuf
 	{
 		glBlitFramebufferEXT(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
+		glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	}
 	
 	if (this->isMultisampledFBOSupported)
@@ -3742,6 +3845,8 @@ Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuf
 				// Blit the color and depth buffers.
 				glBlitFramebufferEXT(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 				glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.selectedRenderingFBO);
+				glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
+				glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 			}
 		}
 	}
@@ -3783,6 +3888,12 @@ Render3DError OpenGLRenderer_1_2::ClearUsingValues(const FragmentColor &clearCol
 	}
 	else
 	{
+		if (this->isFBOSupported)
+		{
+			glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+		}
+		
 		glClearColor(divide6bitBy63_LUT[clearColor6665.r], divide6bitBy63_LUT[clearColor6665.g], divide6bitBy63_LUT[clearColor6665.b], divide5bitBy31_LUT[clearColor6665.a]);
 		glClearDepth((GLclampd)clearAttributes.depth / (GLclampd)0x00FFFFFF);
 		glClearStencil(clearAttributes.opaquePolyID);
@@ -4431,86 +4542,6 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, size_t polyR
 	theTexture->ResetCacheAge();
 	theTexture->IncreaseCacheUsageCount(1);
 	
-	return OGLERROR_NOERR;
-}
-
-Render3DError OpenGLRenderer_2_1::ReadBackPixels()
-{
-	OGLRenderRef &OGLRef = *this->ref;
-	
-	if (this->_mappedFramebuffer != NULL)
-	{
-		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-		this->_mappedFramebuffer = NULL;
-	}
-	
-	// Flip the framebuffer in Y to match the coordinates of OpenGL and the NDS hardware.
-	if (this->willFlipFramebufferOnGPU)
-	{
-		glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
-		glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
-		glBlitFramebufferEXT(0, this->_framebufferHeight, this->_framebufferWidth, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
-		glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	}
-	
-	if (this->willConvertFramebufferOnGPU)
-	{
-		// Perform the color space conversion while we're still on the GPU so
-		// that we can avoid having to do it on the CPU.
-		const GLuint convertProgramID = (this->_outputFormat == NDSColorFormat_BGR666_Rev) ? OGLRef.programFramebufferRGBA6665OutputID : OGLRef.programFramebufferRGBA8888OutputID;
-		glDrawBuffer(GL_COLOR_ATTACHMENT2_EXT);
-		
-		glUseProgram(convertProgramID);
-		glViewport(0, 0, this->_framebufferWidth, this->_framebufferHeight);
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_STENCIL_TEST);
-		glDisable(GL_BLEND);
-		glDisable(GL_CULL_FACE);
-		
-		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboPostprocessIndexID);
-		
-		if (this->isVAOSupported)
-		{
-			glBindVertexArray(OGLRef.vaoPostprocessStatesID);
-		}
-		else
-		{
-			glEnableVertexAttribArray(OGLVertexAttributeID_Position);
-			glEnableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-			glVertexAttribPointer(OGLVertexAttributeID_Position, 2, GL_FLOAT, GL_FALSE, 0, 0);
-			glVertexAttribPointer(OGLVertexAttributeID_TexCoord0, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)(sizeof(GLfloat) * 8));
-		}
-		
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
-		
-		if (this->isVAOSupported)
-		{
-			glBindVertexArray(0);
-		}
-		else
-		{
-			glDisableVertexAttribArray(OGLVertexAttributeID_Position);
-			glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
-		}
-		
-		// Read back the pixels.
-		glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
-	}
-	
-	// Read back the pixels in BGRA format, since legacy OpenGL devices may experience a performance
-	// penalty if the readback is in any other format.
-	glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0);
-	
-	// Set the read and draw target buffers back to color attachment 0, which is always the default.
-	if (this->willFlipFramebufferOnGPU || this->willConvertFramebufferOnGPU)
-	{
-		glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
-		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	}
-	
-	this->_pixelReadNeedsFinish = true;
 	return OGLERROR_NOERR;
 }
 

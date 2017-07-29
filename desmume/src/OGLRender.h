@@ -600,7 +600,9 @@ private:
 	unsigned int versionRevision;
 	
 private:
-	template<bool SWAP_RB> Render3DError _FlushFramebufferConvertOnCPU(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
+	Render3DError _FlushFramebufferFlipAndConvertOnCPU(const FragmentColor *__restrict srcFramebuffer,
+													   FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16,
+													   bool doFramebufferFlip, bool doFramebufferConvert);
 	
 protected:
 	// OpenGL-specific References
@@ -782,10 +784,7 @@ protected:
 };
 
 class OpenGLRenderer_2_1 : public OpenGLRenderer_2_0
-{
-protected:
-	virtual Render3DError ReadBackPixels();
-	
+{	
 public:
 	virtual Render3DError RenderFinish();
 	virtual Render3DError RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16);
