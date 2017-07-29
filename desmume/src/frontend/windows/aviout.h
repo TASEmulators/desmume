@@ -20,8 +20,8 @@
 
 #include "types.h"
 
-bool DRV_AviBegin(const char* fname);
-void DRV_AviEnd();
+bool DRV_AviBegin(const char* fname, bool newsegment = false);
+void DRV_AviEnd(bool newsegment = false);
 void DRV_AviSoundUpdate(void* soundData, int soundLen);
 bool AVI_IsRecording();
 void DRV_AviVideoUpdate();

@@ -206,7 +206,7 @@ static int avi_open(const char* filename, const BITMAPINFOHEADER* pbmih, const W
 	do
 	{
 		// close existing first
-		DRV_AviEnd();
+		DRV_AviEnd(false);
 
 		if(!truncate_existing(filename))
 			break;
@@ -362,16 +362,19 @@ static bool AviNextSegment()
 	saved_avi_info=*avi_file;
 	use_prev_options=1;
 	avi_segnum++;
-	bool ret = DRV_AviBegin(avi_fname_temp);
+	bool ret = DRV_AviBegin(avi_fname_temp,true);
 	use_prev_options=0;
 	strcpy(saved_avi_fname,avi_fname);
 	return ret;
 }
 
 
-bool DRV_AviBegin(const char* fname)
+bool DRV_AviBegin(const char* fname, bool newsegment)
 {
-	DRV_AviEnd();
+	DRV_AviEnd(newsegment);
+
+	if(!newsegment)
+		avi_segnum = 0;
 
 	BITMAPINFOHEADER bi;
 	memset(&bi, 0, sizeof(bi));
@@ -429,8 +432,6 @@ bool DRV_AviBegin(const char* fname)
 		dot[0]='\0';
 	}
 
-	avi_segnum = 0;
-
 	return 1;
 }
 
@@ -456,7 +457,7 @@ void DRV_AviVideoUpdate()
                                  avi_file->bitmap_format.biSizeImage, AVIIF_KEYFRAME,
                                  NULL, &avi_file->ByteBuffer)))
 	{
-		DRV_AviEnd();
+		DRV_AviEnd(false);
 		return;
 	}
 
@@ -493,7 +494,7 @@ void DRV_AviSoundUpdate(void* soundData, int soundLen)
 		                         avi_file->sound_samples, samplesPerSegment,
 		                         avi_file->audio_buffer, audioSegmentSize, 0, NULL, &avi_file->ByteBuffer)))
 		{
-			DRV_AviEnd();
+			DRV_AviEnd(false);
 			return;
 		}
 		avi_file->sound_samples += samplesPerSegment;
@@ -504,13 +505,13 @@ void DRV_AviSoundUpdate(void* soundData, int soundLen)
 	avi_file->audio_buffer_pos += nBytes;
 }
 
-void DRV_AviEnd()
+void DRV_AviEnd(bool newsegment)
 {
 	if(!avi_file)
 		return;
 
-	// Don't display if we're just starting another segment
-	if(avi_file->tBytes <= 1800 * 1024 * 1024) {
+	if(!newsegment)
+	{
 		EMU_PrintMessage("AVI recording ended.");
 		driver->AddLine("AVI recording ended.");
 	}
