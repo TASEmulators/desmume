@@ -21,6 +21,7 @@
 	#error This code requires AVX2 support.
 #else
 
+#include <string.h>
 #include <immintrin.h>
 
 template <bool SWAP_RB>

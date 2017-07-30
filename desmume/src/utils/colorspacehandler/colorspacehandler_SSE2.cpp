@@ -17,12 +17,11 @@
 
 #include "colorspacehandler_SSE2.h"
 
-#include <string.h>
-
 #ifndef ENABLE_SSE2
 	#error This code requires SSE2 support.
 #else
 
+#include <string.h>
 #include <emmintrin.h>
 
 #ifdef ENABLE_SSSE3

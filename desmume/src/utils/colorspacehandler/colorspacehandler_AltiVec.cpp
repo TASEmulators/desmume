@@ -21,6 +21,8 @@
 	#error This code requires PowerPC AltiVec support.
 #else
 
+#include <string.h>
+
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert555To8888_AltiVec(const v128u16 &srcColor, const v128u32 &srcAlphaBits32Lo, const v128u32 &srcAlphaBits32Hi, v128u32 &dstLo, v128u32 &dstHi)
 {
