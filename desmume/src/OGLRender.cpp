@@ -1584,7 +1584,7 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		GLint maxDrawBuffersOGL = 0;
 		GLint maxShaderTexUnitsOGL = 0;
 		glGetIntegerv(GL_MAX_DRAW_BUFFERS_ARB, &maxDrawBuffersOGL);
-		glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &maxShaderTexUnitsOGL);
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &maxShaderTexUnitsOGL);
 		
 		if ( (maxDrawBuffersOGL >= 4) && (maxShaderTexUnitsOGL >= 8) )
 		{
