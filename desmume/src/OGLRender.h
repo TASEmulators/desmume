@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2016 DeSmuME team
+	Copyright (C) 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -429,7 +429,6 @@ struct OGLRenderRef
 	GLuint texGPolyID;
 	GLuint texZeroAlphaPixelMaskID;
 	GLuint texGDepthStencilID;
-	GLuint texPostprocessFogID;
 	GLuint texFinalColorID;
 	
 	GLuint rboMSGColorID;
@@ -437,7 +436,6 @@ struct OGLRenderRef
 	GLuint rboMSGPolyID;
 	GLuint rboMSGFogAttrID;
 	GLuint rboMSGDepthStencilID;
-	GLuint rboFramebufferRGBA6665ID;
 	
 	GLuint fboClearImageID;
 	GLuint fboRenderID;
@@ -466,6 +464,10 @@ struct OGLRenderRef
 	GLuint programFramebufferRGBA8888OutputID;
 	
 	GLint uniformFramebufferSize;
+	GLint uniformFramebufferSize_ConvertRGBA6665;
+	GLint uniformFramebufferSize_ConvertRGBA8888;
+	GLint uniformTexInFragColor_ConvertRGBA6665;
+	GLint uniformTexInFragColor_ConvertRGBA8888;
 	GLint uniformStateToonShadingMode;
 	GLint uniformStateEnableAlphaTest;
 	GLint uniformStateEnableAntialiasing;
@@ -622,6 +624,7 @@ protected:
 	FragmentColor *_workingTextureUnpackBuffer;
 	bool _pixelReadNeedsFinish;
 	size_t _currentPolyIndex;
+	OGLTextureUnitID _lastTextureDrawTarget;
 	
 	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	OpenGLTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
