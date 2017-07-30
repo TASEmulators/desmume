@@ -617,8 +617,8 @@ protected:
 	bool isMultisampledFBOSupported;
 	bool isShaderSupported;
 	bool isVAOSupported;
-	bool willFlipFramebufferOnGPU;
-	bool willConvertFramebufferOnGPU;
+	bool willFlipOnlyFramebufferOnGPU;
+	bool willFlipAndConvertFramebufferOnGPU;
 		
 	FragmentColor *_mappedFramebuffer;
 	FragmentColor *_workingTextureUnpackBuffer;

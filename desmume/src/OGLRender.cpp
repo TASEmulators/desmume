@@ -596,11 +596,12 @@ static const char *FogFragShader_100 = {"\
 static const char *FramebufferOutputVtxShader_100 = {"\
 	attribute vec2 inPosition;\n\
 	attribute vec2 inTexCoord0;\n\
+	uniform vec2 framebufferSize;\n\
 	varying vec2 texCoord;\n\
 	\n\
 	void main()\n\
 	{\n\
-		texCoord = inTexCoord0;\n\
+		texCoord = vec2(inTexCoord0.x, (framebufferSize.y - (framebufferSize.y * inTexCoord0.y)) / framebufferSize.y);\n\
 		gl_Position = vec4(inPosition, 0.0, 1.0);\n\
 	}\n\
 "};
@@ -632,6 +633,8 @@ static const char *FramebufferOutputRGBA8888FragShader_100 = {"\
 	\n\
 	void main()\n\
 	{\n\
+		// Note that we swap B and R since pixel readbacks are done in BGRA format for fastest\n\
+		// performance. The final color is still in RGBA format.\n\
 		gl_FragData[0] = texture2D(texInFragColor, texCoord).bgra;\n\
 	}\n\
 "};
@@ -1051,8 +1054,8 @@ OpenGLRenderer::OpenGLRenderer()
 	isMultisampledFBOSupported = false;
 	isShaderSupported = false;
 	isVAOSupported = false;
-	willFlipFramebufferOnGPU = false;
-	willConvertFramebufferOnGPU = false;
+	willFlipOnlyFramebufferOnGPU = false;
+	willFlipAndConvertFramebufferOnGPU = false;
 	
 	// Init OpenGL rendering states
 	ref = new OGLRenderRef;
@@ -1456,16 +1459,16 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 
 Render3DError OpenGLRenderer::FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16)
 {
-	if (this->willFlipFramebufferOnGPU && this->willConvertFramebufferOnGPU)
+	if (this->willFlipAndConvertFramebufferOnGPU && this->isPBOSupported)
 	{
 		this->_renderNeedsFlushMain = false;
 		return Render3D::FlushFramebuffer(srcFramebuffer, NULL, dstFramebuffer16);
 	}
 	else
 	{
-		this->_FlushFramebufferFlipAndConvertOnCPU(srcFramebuffer,
-												   dstFramebufferMain, dstFramebuffer16,
-												   !this->willFlipFramebufferOnGPU, !this->willConvertFramebufferOnGPU);
+		return this->_FlushFramebufferFlipAndConvertOnCPU(srcFramebuffer,
+														  dstFramebufferMain, dstFramebuffer16,
+														  !this->willFlipOnlyFramebufferOnGPU, !this->willFlipAndConvertFramebufferOnGPU);
 	}
 	
 	return RENDER3DERROR_NOERR;
@@ -1473,7 +1476,7 @@ Render3DError OpenGLRenderer::FlushFramebuffer(const FragmentColor *__restrict s
 
 FragmentColor* OpenGLRenderer::GetFramebuffer()
 {
-	return (this->willFlipFramebufferOnGPU && this->willConvertFramebufferOnGPU) ? this->_mappedFramebuffer : GPU->GetEngineMain()->Get3DFramebufferMain();
+	return (this->willFlipAndConvertFramebufferOnGPU && this->isPBOSupported) ? this->_mappedFramebuffer : GPU->GetEngineMain()->Get3DFramebufferMain();
 }
 
 OpenGLTexture* OpenGLRenderer::GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing)
@@ -1679,10 +1682,6 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		
 		if (maxColorAttachments >= 4)
 		{
-			// Set these flags now because CreateFBOs() will use them.
-			this->willFlipFramebufferOnGPU = this->isPBOSupported;
-			this->willConvertFramebufferOnGPU = (this->isShaderSupported && this->isPBOSupported);
-			
 			// This texture will be used as an FBO color attachment.
 			// If this texture wasn't already created by passing the shader support check,
 			// then create the texture now.
@@ -1756,8 +1755,8 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	}
 	
 	// Set rendering support flags based on driver features.
-	this->willFlipFramebufferOnGPU = (this->isPBOSupported && this->isFBOSupported);
-	this->willConvertFramebufferOnGPU = (this->isShaderSupported && this->isPBOSupported && this->isFBOSupported);
+	this->willFlipAndConvertFramebufferOnGPU = this->isShaderSupported && this->isVBOSupported;
+	this->willFlipOnlyFramebufferOnGPU = this->willFlipAndConvertFramebufferOnGPU || this->isFBOSupported;
 	this->_deviceInfo.isEdgeMarkSupported = (this->isShaderSupported && this->isVBOSupported && this->isFBOSupported);
 	this->_deviceInfo.isFogSupported = (this->isShaderSupported && this->isVBOSupported && this->isFBOSupported);
 	this->_deviceInfo.isTextureSmoothingSupported = this->isShaderSupported;
@@ -2982,10 +2981,12 @@ Render3DError OpenGLRenderer_1_2::InitFramebufferOutputShaderLocations()
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	glUseProgram(OGLRef.programFramebufferRGBA6665OutputID);
+	OGLRef.uniformFramebufferSize_ConvertRGBA6665 = glGetUniformLocation(OGLRef.programFramebufferRGBA6665OutputID, "framebufferSize");
 	OGLRef.uniformTexInFragColor_ConvertRGBA6665 = glGetUniformLocation(OGLRef.programFramebufferRGBA6665OutputID, "texInFragColor");
 	glUniform1i(OGLRef.uniformTexInFragColor_ConvertRGBA6665, OGLTextureUnitID_FinalColor);
 	
 	glUseProgram(OGLRef.programFramebufferRGBA8888OutputID);
+	OGLRef.uniformFramebufferSize_ConvertRGBA8888 = glGetUniformLocation(OGLRef.programFramebufferRGBA8888OutputID, "framebufferSize");
 	OGLRef.uniformTexInFragColor_ConvertRGBA8888 = glGetUniformLocation(OGLRef.programFramebufferRGBA8888OutputID, "texInFragColor");
 	glUniform1i(OGLRef.uniformTexInFragColor_ConvertRGBA8888, OGLTextureUnitID_FinalColor);
 	
@@ -3211,68 +3212,50 @@ Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	if (!this->isPBOSupported)
-	{
-		this->_pixelReadNeedsFinish = true;
-		return OGLERROR_NOERR;
-	}
-	
 	if (this->_mappedFramebuffer != NULL)
 	{
 		glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
 		this->_mappedFramebuffer = NULL;
 	}
 	
-	// Flip the framebuffer in Y to match the coordinates of OpenGL and the NDS hardware.
-	if (this->willFlipFramebufferOnGPU)
+	if (this->willFlipAndConvertFramebufferOnGPU)
 	{
-		glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
-		
-		if (this->_lastTextureDrawTarget == OGLTextureUnitID_GColor)
-		{
-			glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
-			this->_lastTextureDrawTarget = OGLTextureUnitID_FinalColor;
-		}
-		else
-		{
-			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-			this->_lastTextureDrawTarget = OGLTextureUnitID_GColor;
-		}
-		
-		glBlitFramebufferEXT(0, this->_framebufferHeight, this->_framebufferWidth, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
-		
-		if (this->_lastTextureDrawTarget == OGLTextureUnitID_GColor)
-		{
-			glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
-		}
-		else
-		{
-			glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
-		}
-	}
-	
-	if (this->willConvertFramebufferOnGPU)
-	{
-		// Perform the color space conversion while we're still on the GPU so
-		// that we can avoid having to do it on the CPU.
+		// Both flips and converts the framebuffer on the GPU. No additional postprocessing
+		// should be necessary at this point.
 		const GLuint convertProgramID = (this->_outputFormat == NDSColorFormat_BGR666_Rev) ? OGLRef.programFramebufferRGBA6665OutputID : OGLRef.programFramebufferRGBA8888OutputID;
+		const GLint uniformTexNumber = (this->_outputFormat == NDSColorFormat_BGR666_Rev) ? OGLRef.uniformTexInFragColor_ConvertRGBA6665 : OGLRef.uniformTexInFragColor_ConvertRGBA8888;
+		const GLint uniformFramebufferSize = (this->_outputFormat == NDSColorFormat_BGR666_Rev) ? OGLRef.uniformFramebufferSize_ConvertRGBA6665 : OGLRef.uniformFramebufferSize_ConvertRGBA8888;
 		
 		glUseProgram(convertProgramID);
 		
-		if (this->_lastTextureDrawTarget == OGLTextureUnitID_GColor)
+		if (this->isFBOSupported)
 		{
-			glUniform1i(OGLRef.uniformTexInFragColor_ConvertRGBA6665, OGLTextureUnitID_GColor);
-			glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
-			this->_lastTextureDrawTarget = OGLTextureUnitID_FinalColor;
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
+			
+			if (this->_lastTextureDrawTarget == OGLTextureUnitID_GColor)
+			{
+				glUniform1i(uniformTexNumber, OGLTextureUnitID_GColor);
+				glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
+				glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
+				this->_lastTextureDrawTarget = OGLTextureUnitID_FinalColor;
+			}
+			else
+			{
+				glUniform1i(uniformTexNumber, OGLTextureUnitID_FinalColor);
+				glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+				glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
+				this->_lastTextureDrawTarget = OGLTextureUnitID_GColor;
+			}
 		}
 		else
 		{
-			glUniform1i(OGLRef.uniformTexInFragColor_ConvertRGBA6665, OGLTextureUnitID_FinalColor);
-			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-			this->_lastTextureDrawTarget = OGLTextureUnitID_GColor;
+			glUniform1i(uniformTexNumber, OGLTextureUnitID_FinalColor);
+			glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_FinalColor);
+			glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
 		}
 		
+		glUniform2f(uniformFramebufferSize, this->_framebufferWidth, this->_framebufferHeight);
 		glViewport(0, 0, this->_framebufferWidth, this->_framebufferHeight);
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_STENCIL_TEST);
@@ -3305,20 +3288,35 @@ Render3DError OpenGLRenderer_1_2::ReadBackPixels()
 			glDisableVertexAttribArray(OGLVertexAttributeID_Position);
 			glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
 		}
+	}
+	else if (this->willFlipOnlyFramebufferOnGPU)
+	{
+		// Just flips the framebuffer in Y to match the coordinates of OpenGL and the NDS hardware.
+		// Further colorspace conversion will need to be done in a later step.
+		glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
 		
 		if (this->_lastTextureDrawTarget == OGLTextureUnitID_GColor)
 		{
-			glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
+			glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
+			glBlitFramebufferEXT(0, this->_framebufferHeight, this->_framebufferWidth, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
+			glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
 		}
 		else
 		{
-			glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+			glBlitFramebufferEXT(0, this->_framebufferHeight, this->_framebufferWidth, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, OGLRef.fboPostprocessID);
+			glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 		}
 	}
 	
-	// Read back the pixels in BGRA format, since legacy OpenGL devices may experience a performance
-	// penalty if the readback is in any other format.
-	glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+	if (this->isPBOSupported)
+	{
+		// Read back the pixels in BGRA format, since legacy OpenGL devices may experience a performance
+		// penalty if the readback is in any other format.
+		glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+	}
 	
 	this->_pixelReadNeedsFinish = true;
 	return OGLERROR_NOERR;
@@ -4349,13 +4347,10 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
-	if (this->isPBOSupported)
+	if (this->_mappedFramebuffer != NULL)
 	{
-		if (this->_mappedFramebuffer != NULL)
-		{
-			glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
-			this->_mappedFramebuffer = NULL;
-		}
+		glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
+		this->_mappedFramebuffer = NULL;
 	}
 	
 	if (this->isShaderSupported || this->isFBOSupported)
