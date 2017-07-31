@@ -778,6 +778,8 @@ public:
 class OpenGLRenderer_2_0 : public OpenGLRenderer_1_2
 {
 protected:
+	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
+	
 	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
 	

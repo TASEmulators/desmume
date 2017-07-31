@@ -4428,6 +4428,29 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	return OGLERROR_NOERR;
 }
 
+Render3DError OpenGLRenderer_2_0::InitFinalRenderStates(const std::set<std::string> *oglExtensionSet)
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	
+	// we want to use alpha destination blending so we can track the last-rendered alpha value
+	// test: new super mario brothers renders the stormclouds at the beginning
+	
+	// Blending Support
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
+	glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
+	
+	// Mirrored Repeat Mode Support
+	OGLRef.stateTexMirroredRepeat = GL_MIRRORED_REPEAT;
+	
+	// Ignore our color buffer since we'll transfer the polygon alpha through a uniform.
+	OGLRef.color4fBuffer = NULL;
+	
+	// VBOs are supported here, so just use the index buffer on the GPU.
+	OGLRef.vertIndexBuffer = NULL;
+	
+	return OGLERROR_NOERR;
+}
+
 Render3DError OpenGLRenderer_2_0::EnableVertexAttributes()
 {
 	OGLRenderRef &OGLRef = *this->ref;
