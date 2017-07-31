@@ -236,7 +236,7 @@ static FORCEINLINE void CopyLineExpand_SSE2(void *__restrict dst, const void *__
 			if (ELEMENTSIZE == 2)
 			{
 				const __m128i src16 = _mm_load_si128((__m128i *)((u16 *)src + srcX));
-				const __m128i src16lo = _mm_shuffle_epi32(src16, 0x88);
+				const __m128i src16lo = _mm_shuffle_epi32(src16, 0x44);
 				const __m128i src16hi = _mm_shuffle_epi32(src16, 0xEE);
 				const __m128i src16out[3] = { _mm_shufflehi_epi16(_mm_shufflelo_epi16(src16lo, 0x40), 0xA5), _mm_shufflehi_epi16(_mm_shufflelo_epi16(src16, 0xFE), 0x40), _mm_shufflehi_epi16(_mm_shufflelo_epi16(src16hi, 0xA5), 0xFE) };
 				
