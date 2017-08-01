@@ -2127,26 +2127,8 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
 	{
 		INFO("OpenGL: Failed to create FBOs!\n");
+		this->DestroyFBOs();
 		
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-		glDeleteFramebuffersEXT(1, &OGLRef.fboClearImageID);
-		glDeleteFramebuffersEXT(1, &OGLRef.fboRenderID);
-		glDeleteFramebuffersEXT(1, &OGLRef.fboPostprocessID);
-		glDeleteTextures(1, &OGLRef.texCIColorID);
-		glDeleteTextures(1, &OGLRef.texCIFogAttrID);
-		glDeleteTextures(1, &OGLRef.texCIPolyID);
-		glDeleteTextures(1, &OGLRef.texCIDepthStencilID);
-		glDeleteTextures(1, &OGLRef.texGColorID);
-		glDeleteTextures(1, &OGLRef.texGPolyID);
-		glDeleteTextures(1, &OGLRef.texGFogAttrID);
-		glDeleteTextures(1, &OGLRef.texGDepthStencilID);
-		glDeleteTextures(1, &OGLRef.texZeroAlphaPixelMaskID);
-		
-		OGLRef.fboClearImageID = 0;
-		OGLRef.fboRenderID = 0;
-		OGLRef.fboPostprocessID = 0;
-		
-		this->isFBOSupported = false;
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
 	
@@ -2171,26 +2153,8 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
 	{
 		INFO("OpenGL: Failed to create FBOs!\n");
+		this->DestroyFBOs();
 		
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-		glDeleteFramebuffersEXT(1, &OGLRef.fboClearImageID);
-		glDeleteFramebuffersEXT(1, &OGLRef.fboRenderID);
-		glDeleteFramebuffersEXT(1, &OGLRef.fboPostprocessID);
-		glDeleteTextures(1, &OGLRef.texCIColorID);
-		glDeleteTextures(1, &OGLRef.texCIFogAttrID);
-		glDeleteTextures(1, &OGLRef.texCIPolyID);
-		glDeleteTextures(1, &OGLRef.texCIDepthStencilID);
-		glDeleteTextures(1, &OGLRef.texGColorID);
-		glDeleteTextures(1, &OGLRef.texGPolyID);
-		glDeleteTextures(1, &OGLRef.texGFogAttrID);
-		glDeleteTextures(1, &OGLRef.texGDepthStencilID);
-		glDeleteTextures(1, &OGLRef.texZeroAlphaPixelMaskID);
-		
-		OGLRef.fboClearImageID = 0;
-		OGLRef.fboRenderID = 0;
-		OGLRef.fboPostprocessID = 0;
-		
-		this->isFBOSupported = false;
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
 	
@@ -2213,26 +2177,8 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
 	{
 		INFO("OpenGL: Failed to created FBOs!\n");
+		this->DestroyFBOs();
 		
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-		glDeleteFramebuffersEXT(1, &OGLRef.fboClearImageID);
-		glDeleteFramebuffersEXT(1, &OGLRef.fboRenderID);
-		glDeleteFramebuffersEXT(1, &OGLRef.fboPostprocessID);
-		glDeleteTextures(1, &OGLRef.texCIColorID);
-		glDeleteTextures(1, &OGLRef.texCIFogAttrID);
-		glDeleteTextures(1, &OGLRef.texCIPolyID);
-		glDeleteTextures(1, &OGLRef.texCIDepthStencilID);
-		glDeleteTextures(1, &OGLRef.texGColorID);
-		glDeleteTextures(1, &OGLRef.texGPolyID);
-		glDeleteTextures(1, &OGLRef.texGFogAttrID);
-		glDeleteTextures(1, &OGLRef.texGDepthStencilID);
-		glDeleteTextures(1, &OGLRef.texZeroAlphaPixelMaskID);
-		
-		OGLRef.fboClearImageID = 0;
-		OGLRef.fboRenderID = 0;
-		OGLRef.fboPostprocessID = 0;
-		
-		this->isFBOSupported = false;
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
 	
@@ -2314,13 +2260,7 @@ Render3DError OpenGLRenderer_1_2::CreateMultisampledFBO()
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
 	{
 		INFO("OpenGL: Failed to create multisampled FBO!\n");
-		
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-		glDeleteFramebuffersEXT(1, &OGLRef.fboMSIntermediateRenderID);
-		glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGColorID);
-		glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGPolyID);
-		glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGFogAttrID);
-		glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGDepthStencilID);
+		this->DestroyMultisampledFBO();
 		
 		return OGLERROR_FBO_CREATE_ERROR;
 	}

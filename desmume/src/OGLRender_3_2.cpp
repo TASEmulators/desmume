@@ -906,24 +906,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		INFO("OpenGL: Failed to create FBOs!\n");
-		
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDeleteFramebuffers(1, &OGLRef.fboClearImageID);
-		glDeleteFramebuffers(1, &OGLRef.fboRenderID);
-		glDeleteFramebuffers(1, &OGLRef.fboPostprocessID);
-		glDeleteTextures(1, &OGLRef.texCIColorID);
-		glDeleteTextures(1, &OGLRef.texCIFogAttrID);
-		glDeleteTextures(1, &OGLRef.texCIPolyID);
-		glDeleteTextures(1, &OGLRef.texCIDepthStencilID);
-		glDeleteTextures(1, &OGLRef.texGColorID);
-		glDeleteTextures(1, &OGLRef.texGPolyID);
-		glDeleteTextures(1, &OGLRef.texGFogAttrID);
-		glDeleteTextures(1, &OGLRef.texGDepthStencilID);
-		glDeleteTextures(1, &OGLRef.texZeroAlphaPixelMaskID);
-		
-		OGLRef.fboClearImageID = 0;
-		OGLRef.fboRenderID = 0;
-		OGLRef.fboPostprocessID = 0;
+		this->DestroyFBOs();
 		
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
@@ -940,24 +923,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		INFO("OpenGL: Failed to create FBOs!\n");
-		
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDeleteFramebuffers(1, &OGLRef.fboClearImageID);
-		glDeleteFramebuffers(1, &OGLRef.fboRenderID);
-		glDeleteFramebuffers(1, &OGLRef.fboPostprocessID);
-		glDeleteTextures(1, &OGLRef.texCIColorID);
-		glDeleteTextures(1, &OGLRef.texCIFogAttrID);
-		glDeleteTextures(1, &OGLRef.texCIPolyID);
-		glDeleteTextures(1, &OGLRef.texCIDepthStencilID);
-		glDeleteTextures(1, &OGLRef.texGColorID);
-		glDeleteTextures(1, &OGLRef.texGPolyID);
-		glDeleteTextures(1, &OGLRef.texGFogAttrID);
-		glDeleteTextures(1, &OGLRef.texGDepthStencilID);
-		glDeleteTextures(1, &OGLRef.texZeroAlphaPixelMaskID);
-		
-		OGLRef.fboClearImageID = 0;
-		OGLRef.fboRenderID = 0;
-		OGLRef.fboPostprocessID = 0;
+		this->DestroyFBOs();
 		
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
@@ -973,24 +939,7 @@ Render3DError OpenGLRenderer_3_2::CreateFBOs()
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		INFO("OpenGL: Failed to create FBOs!\n");
-		
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDeleteFramebuffers(1, &OGLRef.fboClearImageID);
-		glDeleteFramebuffers(1, &OGLRef.fboRenderID);
-		glDeleteFramebuffers(1, &OGLRef.fboPostprocessID);
-		glDeleteTextures(1, &OGLRef.texCIColorID);
-		glDeleteTextures(1, &OGLRef.texCIFogAttrID);
-		glDeleteTextures(1, &OGLRef.texCIPolyID);
-		glDeleteTextures(1, &OGLRef.texCIDepthStencilID);
-		glDeleteTextures(1, &OGLRef.texGColorID);
-		glDeleteTextures(1, &OGLRef.texGPolyID);
-		glDeleteTextures(1, &OGLRef.texGFogAttrID);
-		glDeleteTextures(1, &OGLRef.texGDepthStencilID);
-		glDeleteTextures(1, &OGLRef.texZeroAlphaPixelMaskID);
-		
-		OGLRef.fboClearImageID = 0;
-		OGLRef.fboRenderID = 0;
-		OGLRef.fboPostprocessID = 0;
+		this->DestroyFBOs();
 		
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
@@ -1081,15 +1030,7 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO()
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		INFO("OpenGL: Failed to create multisampled FBO. Multisample antialiasing will be disabled.\n");
-		
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDeleteFramebuffers(1, &OGLRef.fboMSIntermediateRenderID);
-		glDeleteRenderbuffers(1, &OGLRef.rboMSGColorID);
-		glDeleteRenderbuffers(1, &OGLRef.rboMSGPolyID);
-		glDeleteRenderbuffers(1, &OGLRef.rboMSGFogAttrID);
-		glDeleteRenderbuffers(1, &OGLRef.rboMSGDepthStencilID);
-		
-		OGLRef.fboMSIntermediateRenderID = 0;
+		this->DestroyMultisampledFBO();
 		
 		return OGLERROR_FBO_CREATE_ERROR;
 	}
@@ -1647,7 +1588,7 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
 	glDrawBuffers(3, RenderDrawList);
 	
-	OGLRef.selectedRenderingFBO = (CommonSettings.GFX3D_Renderer_Multisample) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
+	OGLRef.selectedRenderingFBO = (CommonSettings.GFX3D_Renderer_Multisample && this->isMultisampledFBOSupported) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
 	if (OGLRef.selectedRenderingFBO == OGLRef.fboMSIntermediateRenderID)
 	{
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, OGLRef.fboRenderID);
