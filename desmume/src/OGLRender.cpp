@@ -78,7 +78,7 @@ const GLfloat PostprocessVtxBuffer[16]	= {-1.0f, -1.0f,  1.0f, -1.0f,  1.0f,  1.
 										    0.0f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,  0.0f,  1.0f};
 const GLubyte PostprocessElementBuffer[6] = {0, 1, 2, 2, 3, 0};
 
-const GLenum RenderDrawList[4] = {GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_COLOR_ATTACHMENT3_EXT};
+const GLenum RenderDrawList[3] = {GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_COLOR_ATTACHMENT2_EXT};
 
 bool BEGINGL()
 {
@@ -318,19 +318,11 @@ static const char *fragmentShader_100 = {"\
 	\n\
 	uniform bool polyDrawShadow;\n\
 	\n\
-	vec3 packVec3FromFloat(const float value)\n\
-	{\n\
-		float expandedValue = value * 16777215.0;\n\
-		vec3 packedValue = vec3( fract(expandedValue/256.0), fract(((expandedValue/256.0) - fract(expandedValue/256.0)) / 256.0), fract(((expandedValue/65536.0) - fract(expandedValue/65536.0)) / 256.0) );\n\
-		return packedValue;\n\
-	}\n\
-	\n\
 	void main()\n\
 	{\n\
 		vec4 newFragColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
 		vec4 newPolyID = vec4(0.0, 0.0, 0.0, 0.0);\n\
 		vec4 newFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
-		vec4 newFragDepth = vec4(0.0, 0.0, 0.0, 0.0);\n\
 		\n\
 		float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w;\n\
 		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
@@ -385,19 +377,13 @@ static const char *fragmentShader_100 = {"\
 				discard;\n\
 			}\n\
 			\n\
-			if ( (newFragColor.a > 0.999) || polySetNewDepthForTranslucent )\n\
-			{\n\
-				newFragDepth = vec4(packVec3FromFloat(newFragDepthValue), 1.0);\n\
-			}\n\
-			\n\
 			newPolyID = vec4( float(polyID)/63.0, float(polyIsWireframe), 0.0, float(newFragColor.a > 0.999) );\n\
 			newFogAttributes = vec4( float(polyEnableFog), 0.0, 0.0, float((newFragColor.a > 0.999) ? 1.0 : 0.5) );\n\
 		}\n\
 		\n\
 		gl_FragData[0] = newFragColor;\n\
-		gl_FragData[1] = newFragDepth;\n\
-		gl_FragData[2] = newPolyID;\n\
-		gl_FragData[3] = newFogAttributes;\n\
+		gl_FragData[1] = newPolyID;\n\
+		gl_FragData[2] = newFogAttributes;\n\
 		gl_FragDepth = newFragDepthValue;\n\
 	}\n\
 "};
@@ -458,12 +444,6 @@ static const char *EdgeMarkFragShader_100 = {"\
 	uniform vec4 stateEdgeColor[8];\n\
 	uniform bool isAlphaWriteDisabled;\n\
 	\n\
-	float unpackFloatFromVec3(const vec3 value)\n\
-	{\n\
-		const vec3 unpackRatio = vec3(256.0, 65536.0, 16777216.0);\n\
-		return (dot(value, unpackRatio) / 16777215.0);\n\
-	}\n\
-	\n\
 	void main()\n\
 	{\n\
 		bool isZeroAlphaPixel = bool(texture2D(texZeroAlphaPixelMask, texCoord[0]).r);\n\
@@ -479,11 +459,11 @@ static const char *EdgeMarkFragShader_100 = {"\
 		isWireframe[0] = bool(polyIDInfo[0].g);\n\
 		\n\
 		float depth[5];\n\
-		depth[0] = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord[0]).rgb);\n\
-		depth[1] = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord[1]).rgb);\n\
-		depth[2] = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord[2]).rgb);\n\
-		depth[3] = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord[3]).rgb);\n\
-		depth[4] = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord[4]).rgb);\n\
+		depth[0] = texture2D(texInFragDepth, texCoord[0]).r;\n\
+		depth[1] = texture2D(texInFragDepth, texCoord[1]).r;\n\
+		depth[2] = texture2D(texInFragDepth, texCoord[2]).r;\n\
+		depth[3] = texture2D(texInFragDepth, texCoord[3]).r;\n\
+		depth[4] = texture2D(texInFragDepth, texCoord[4]).r;\n\
 		\n\
 		vec4 newEdgeColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
 		\n\
@@ -545,12 +525,6 @@ static const char *FogFragShader_100 = {"\
 	uniform float stateFogOffset;\n\
 	uniform float stateFogStep;\n\
 	\n\
-	float unpackFloatFromVec3(const vec3 value)\n\
-	{\n\
-		const vec3 unpackRatio = vec3(256.0, 65536.0, 16777216.0);\n\
-		return (dot(value, unpackRatio) / 16777215.0);\n\
-	}\n\
-	\n\
 	void main()\n\
 	{\n\
 		vec4 inFragColor = texture2D(texInFragColor, texCoord);\n\
@@ -560,7 +534,7 @@ static const char *FogFragShader_100 = {"\
 		\n\
 		if (polyEnableFog)\n\
 		{\n\
-			float inFragDepth = unpackFloatFromVec3(texture2D(texInFragDepth, texCoord).rgb);\n\
+			float inFragDepth = texture2D(texInFragDepth, texCoord).r;\n\
 			float fogMixWeight = 0.0;\n\
 			\n\
 			if (inFragDepth <= min(stateFogOffset + stateFogStep, 1.0))\n\
@@ -2054,19 +2028,17 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	
 	// Set up FBO render targets
 	glGenTextures(1, &OGLRef.texCIColorID);
-	glGenTextures(1, &OGLRef.texCIDepthID);
 	glGenTextures(1, &OGLRef.texCIFogAttrID);
 	glGenTextures(1, &OGLRef.texCIPolyID);
 	glGenTextures(1, &OGLRef.texCIDepthStencilID);
 	
 	glGenTextures(1, &OGLRef.texGColorID);
-	glGenTextures(1, &OGLRef.texGDepthID);
 	glGenTextures(1, &OGLRef.texGFogAttrID);
 	glGenTextures(1, &OGLRef.texGPolyID);
 	glGenTextures(1, &OGLRef.texGDepthStencilID);
 	glGenTextures(1, &OGLRef.texZeroAlphaPixelMaskID);
 	
-	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_GColor);
+	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_DepthStencil);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthStencilID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -2075,15 +2047,8 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, this->_framebufferWidth, this->_framebufferHeight, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
 	
+	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_GColor);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	
-	glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_GDepth);
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -2131,13 +2096,6 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8_EXT, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, NULL);
 	
-	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIDepthID);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texCIPolyID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -2161,9 +2119,8 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboClearImageID);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, OGLRef.texCIColorID, 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, OGLRef.texCIDepthID, 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_TEXTURE_2D, OGLRef.texCIPolyID, 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT3_EXT, GL_TEXTURE_2D, OGLRef.texCIFogAttrID, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, OGLRef.texCIPolyID, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_TEXTURE_2D, OGLRef.texCIFogAttrID, 0);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, OGLRef.texCIDepthStencilID, 0);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_TEXTURE_2D, OGLRef.texCIDepthStencilID, 0);
 	
@@ -2176,12 +2133,10 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 		glDeleteFramebuffersEXT(1, &OGLRef.fboRenderID);
 		glDeleteFramebuffersEXT(1, &OGLRef.fboPostprocessID);
 		glDeleteTextures(1, &OGLRef.texCIColorID);
-		glDeleteTextures(1, &OGLRef.texCIDepthID);
 		glDeleteTextures(1, &OGLRef.texCIFogAttrID);
 		glDeleteTextures(1, &OGLRef.texCIPolyID);
 		glDeleteTextures(1, &OGLRef.texCIDepthStencilID);
 		glDeleteTextures(1, &OGLRef.texGColorID);
-		glDeleteTextures(1, &OGLRef.texGDepthID);
 		glDeleteTextures(1, &OGLRef.texGPolyID);
 		glDeleteTextures(1, &OGLRef.texGFogAttrID);
 		glDeleteTextures(1, &OGLRef.texGDepthStencilID);
@@ -2197,7 +2152,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	
 	if (this->isShaderSupported)
 	{
-		glDrawBuffers(4, RenderDrawList);
+		glDrawBuffers(3, RenderDrawList);
 	}
 	else
 	{
@@ -2208,9 +2163,8 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, OGLRef.texGColorID, 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, OGLRef.texGDepthID, 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_TEXTURE_2D, OGLRef.texGPolyID, 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT3_EXT, GL_TEXTURE_2D, OGLRef.texGFogAttrID, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, OGLRef.texGPolyID, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_TEXTURE_2D, OGLRef.texGFogAttrID, 0);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, OGLRef.texGDepthStencilID, 0);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_TEXTURE_2D, OGLRef.texGDepthStencilID, 0);
 	
@@ -2223,12 +2177,10 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 		glDeleteFramebuffersEXT(1, &OGLRef.fboRenderID);
 		glDeleteFramebuffersEXT(1, &OGLRef.fboPostprocessID);
 		glDeleteTextures(1, &OGLRef.texCIColorID);
-		glDeleteTextures(1, &OGLRef.texCIDepthID);
 		glDeleteTextures(1, &OGLRef.texCIFogAttrID);
 		glDeleteTextures(1, &OGLRef.texCIPolyID);
 		glDeleteTextures(1, &OGLRef.texCIDepthStencilID);
 		glDeleteTextures(1, &OGLRef.texGColorID);
-		glDeleteTextures(1, &OGLRef.texGDepthID);
 		glDeleteTextures(1, &OGLRef.texGPolyID);
 		glDeleteTextures(1, &OGLRef.texGFogAttrID);
 		glDeleteTextures(1, &OGLRef.texGDepthStencilID);
@@ -2244,7 +2196,7 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 	
 	if (this->isShaderSupported)
 	{
-		glDrawBuffers(4, RenderDrawList);
+		glDrawBuffers(3, RenderDrawList);
 	}
 	else
 	{
@@ -2267,12 +2219,10 @@ Render3DError OpenGLRenderer_1_2::CreateFBOs()
 		glDeleteFramebuffersEXT(1, &OGLRef.fboRenderID);
 		glDeleteFramebuffersEXT(1, &OGLRef.fboPostprocessID);
 		glDeleteTextures(1, &OGLRef.texCIColorID);
-		glDeleteTextures(1, &OGLRef.texCIDepthID);
 		glDeleteTextures(1, &OGLRef.texCIFogAttrID);
 		glDeleteTextures(1, &OGLRef.texCIPolyID);
 		glDeleteTextures(1, &OGLRef.texCIDepthStencilID);
 		glDeleteTextures(1, &OGLRef.texGColorID);
-		glDeleteTextures(1, &OGLRef.texGDepthID);
 		glDeleteTextures(1, &OGLRef.texGPolyID);
 		glDeleteTextures(1, &OGLRef.texGFogAttrID);
 		glDeleteTextures(1, &OGLRef.texGDepthStencilID);
@@ -2310,12 +2260,10 @@ void OpenGLRenderer_1_2::DestroyFBOs()
 	glDeleteFramebuffersEXT(1, &OGLRef.fboRenderID);
 	glDeleteFramebuffersEXT(1, &OGLRef.fboPostprocessID);
 	glDeleteTextures(1, &OGLRef.texCIColorID);
-	glDeleteTextures(1, &OGLRef.texCIDepthID);
 	glDeleteTextures(1, &OGLRef.texCIFogAttrID);
 	glDeleteTextures(1, &OGLRef.texCIPolyID);
 	glDeleteTextures(1, &OGLRef.texCIDepthStencilID);
 	glDeleteTextures(1, &OGLRef.texGColorID);
-	glDeleteTextures(1, &OGLRef.texGDepthID);
 	glDeleteTextures(1, &OGLRef.texGPolyID);
 	glDeleteTextures(1, &OGLRef.texGFogAttrID);
 	glDeleteTextures(1, &OGLRef.texGDepthStencilID);
@@ -2334,7 +2282,6 @@ Render3DError OpenGLRenderer_1_2::CreateMultisampledFBO()
 	
 	// Set up FBO render targets
 	glGenRenderbuffersEXT(1, &OGLRef.rboMSGColorID);
-	glGenRenderbuffersEXT(1, &OGLRef.rboMSGDepthID);
 	glGenRenderbuffersEXT(1, &OGLRef.rboMSGPolyID);
 	glGenRenderbuffersEXT(1, &OGLRef.rboMSGFogAttrID);
 	glGenRenderbuffersEXT(1, &OGLRef.rboMSGDepthStencilID);
@@ -2346,8 +2293,6 @@ Render3DError OpenGLRenderer_1_2::CreateMultisampledFBO()
 	}
 	
 	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGColorID);
-	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight);
-	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthID);
 	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight);
 	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGPolyID);
 	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight);
@@ -2361,9 +2306,8 @@ Render3DError OpenGLRenderer_1_2::CreateMultisampledFBO()
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboMSIntermediateRenderID);
 	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGColorID);
-	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthID);
-	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGPolyID);
-	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT3_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGFogAttrID);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGPolyID);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGFogAttrID);
 	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilID);
 	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilID);
 	
@@ -2374,7 +2318,6 @@ Render3DError OpenGLRenderer_1_2::CreateMultisampledFBO()
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 		glDeleteFramebuffersEXT(1, &OGLRef.fboMSIntermediateRenderID);
 		glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGColorID);
-		glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGDepthID);
 		glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGPolyID);
 		glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGFogAttrID);
 		glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGDepthStencilID);
@@ -2400,7 +2343,6 @@ void OpenGLRenderer_1_2::DestroyMultisampledFBO()
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	glDeleteFramebuffersEXT(1, &OGLRef.fboMSIntermediateRenderID);
 	glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGColorID);
-	glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGDepthID);
 	glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGPolyID);
 	glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGFogAttrID);
 	glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGDepthStencilID);
@@ -2923,7 +2865,7 @@ Render3DError OpenGLRenderer_1_2::InitEdgeMarkProgramShaderLocations()
 	const GLint uniformTexGPolyID				= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInPolyID");
 	const GLint uniformTexZeroAlphaPixelMask	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texZeroAlphaPixelMask");
 	OGLRef.uniformIsAlphaWriteDisabled			= glGetUniformLocation(OGLRef.programEdgeMarkID, "isAlphaWriteDisabled");
-	glUniform1i(uniformTexGDepth, OGLTextureUnitID_GDepth);
+	glUniform1i(uniformTexGDepth, OGLTextureUnitID_DepthStencil);
 	glUniform1i(uniformTexGPolyID, OGLTextureUnitID_GPolyID);
 	glUniform1i(uniformTexZeroAlphaPixelMask, OGLTextureUnitID_ZeroAlphaPixelMask);
 	glUniform1i(OGLRef.uniformIsAlphaWriteDisabled, GL_FALSE);
@@ -2953,7 +2895,7 @@ Render3DError OpenGLRenderer_1_2::InitFogProgramShaderLocations()
 	const GLint uniformTexGDepth			= glGetUniformLocation(OGLRef.programFogID, "texInFragDepth");
 	const GLint uniformTexGFog				= glGetUniformLocation(OGLRef.programFogID, "texInFogAttributes");
 	glUniform1i(uniformTexGColor, OGLTextureUnitID_GColor);
-	glUniform1i(uniformTexGDepth, OGLTextureUnitID_GDepth);
+	glUniform1i(uniformTexGDepth, OGLTextureUnitID_DepthStencil);
 	glUniform1i(uniformTexGFog, OGLTextureUnitID_FogAttr);
 	
 	OGLRef.uniformStateEnableFogAlphaOnly	= glGetUniformLocation(OGLRef.programFogID, "stateEnableFogAlphaOnly");
@@ -3031,7 +2973,6 @@ Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBu
 		for (size_t i = 0; i < GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT; i++)
 		{
 			OGLRef.workingCIDepthStencilBuffer[i] = (depthBuffer[i] << 8) | polyIDBuffer[i];
-			OGLRef.workingCIDepthBuffer[i] = depthBuffer[i] | 0xFF000000;
 			OGLRef.workingCIFogAttributesBuffer[i] = (fogBuffer[i]) ? 0xFF0000FF : 0xFF000000;
 			OGLRef.workingCIPolyIDBuffer[i] = (GLuint)polyIDBuffer[i] | 0xFF000000;
 		}
@@ -3053,9 +2994,6 @@ Render3DError OpenGLRenderer_1_2::UploadClearImage(const u16 *__restrict colorBu
 	
 	if (this->isShaderSupported)
 	{
-		glBindTexture(GL_TEXTURE_2D, OGLRef.texCIDepthID);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, OGLRef.workingCIDepthBuffer);
-		
 		glBindTexture(GL_TEXTURE_2D, OGLRef.texCIFogAttrID);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, OGLRef.workingCIFogAttributesBuffer);
 		
@@ -3175,24 +3113,19 @@ Render3DError OpenGLRenderer_1_2::DownsampleFBO()
 			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 			glBlitFramebufferEXT(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 			
-			// Blit the working depth buffer
+			// Blit the polygon ID buffer
 			glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
 			glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
 			glBlitFramebufferEXT(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 			
-			// Blit the polygon ID buffer
+			// Blit the fog buffer
 			glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
 			glDrawBuffer(GL_COLOR_ATTACHMENT2_EXT);
 			glBlitFramebufferEXT(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 			
-			// Blit the fog buffer
-			glReadBuffer(GL_COLOR_ATTACHMENT3_EXT);
-			glDrawBuffer(GL_COLOR_ATTACHMENT3_EXT);
-			glBlitFramebufferEXT(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			
 			// Reset framebuffer targets
 			glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
-			glDrawBuffers(4, RenderDrawList);
+			glDrawBuffers(3, RenderDrawList);
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
 		}
 		else
@@ -3815,19 +3748,14 @@ Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuf
 	
 	if (this->isShaderSupported)
 	{
-		// Blit the working depth buffer
+		// Blit the polygon ID buffer
 		glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
 		glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
 		glBlitFramebufferEXT(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		
-		// Blit the polygon ID buffer
+		// Blit the fog buffer
 		glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
 		glDrawBuffer(GL_COLOR_ATTACHMENT2_EXT);
-		glBlitFramebufferEXT(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-		
-		// Blit the fog buffer
-		glReadBuffer(GL_COLOR_ATTACHMENT3_EXT);
-		glDrawBuffer(GL_COLOR_ATTACHMENT3_EXT);
 		glBlitFramebufferEXT(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		
 		// Blit the color buffer. Do this last so that color attachment 0 is set to the read FBO.
@@ -3836,7 +3764,7 @@ Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuf
 		glBlitFramebufferEXT(0, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GPU_FRAMEBUFFER_NATIVE_WIDTH, 0, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 		
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
-		glDrawBuffers(4, RenderDrawList);
+		glDrawBuffers(3, RenderDrawList);
 	}
 	else
 	{
@@ -3859,19 +3787,14 @@ Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuf
 			
 			if (this->isShaderSupported)
 			{
-				// Blit the working depth buffer
+				// Blit the polygon ID buffer
 				glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
 				glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
 				glBlitFramebufferEXT(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 				
-				// Blit the polygon ID buffer
+				// Blit the fog buffer
 				glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
 				glDrawBuffer(GL_COLOR_ATTACHMENT2_EXT);
-				glBlitFramebufferEXT(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-				
-				// Blit the fog buffer
-				glReadBuffer(GL_COLOR_ATTACHMENT3_EXT);
-				glDrawBuffer(GL_COLOR_ATTACHMENT3_EXT);
 				glBlitFramebufferEXT(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 				
 				// Blit the color and depth buffers. Do this last so that color attachment 0 is set to the read FBO.
@@ -3880,7 +3803,7 @@ Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuf
 				glBlitFramebufferEXT(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 				
 				glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.selectedRenderingFBO);
-				glDrawBuffers(4, RenderDrawList);
+				glDrawBuffers(3, RenderDrawList);
 			}
 			else
 			{
@@ -3914,19 +3837,15 @@ Render3DError OpenGLRenderer_1_2::ClearUsingValues(const FragmentColor &clearCol
 		glClearStencil(clearAttributes.opaquePolyID);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		
-		glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT); // texGDepthID
-		glClearColor((GLfloat)(clearAttributes.depth & 0x000000FF)/255.0f, (GLfloat)((clearAttributes.depth >> 8) & 0x000000FF)/255.0f, (GLfloat)((clearAttributes.depth >> 16) & 0x000000FF)/255.0f, 1.0);
-		glClear(GL_COLOR_BUFFER_BIT);
-		
-		glDrawBuffer(GL_COLOR_ATTACHMENT2_EXT); // texGPolyID
+		glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT); // texGPolyID
 		glClearColor((GLfloat)clearAttributes.opaquePolyID/63.0f, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT);
 		
-		glDrawBuffer(GL_COLOR_ATTACHMENT3_EXT); // texGFogAttrID
+		glDrawBuffer(GL_COLOR_ATTACHMENT2_EXT); // texGFogAttrID
 		glClearColor(clearAttributes.isFogged, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT);
 		
-		glDrawBuffers(4, RenderDrawList);
+		glDrawBuffers(3, RenderDrawList);
 	}
 	else
 	{
@@ -4368,9 +4287,6 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		glBindTexture(GL_TEXTURE_2D, OGLRef.texGColorID);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 		
-		glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_GDepth);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-		
 		glActiveTextureARB(GL_TEXTURE0_ARB + OGLTextureUnitID_GPolyID);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 		
@@ -4386,8 +4302,6 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		GLint maxSamples = (GLint)this->_deviceInfo.maxSamples;
 		
 		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGColorID);
-		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamples, GL_RGBA, w, h);
-		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthID);
 		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamples, GL_RGBA, w, h);
 		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGPolyID);
 		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamples, GL_RGBA, w, h);

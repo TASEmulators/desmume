@@ -295,7 +295,7 @@ enum OGLTextureUnitID
 	OGLTextureUnitID_FinalColor = 1,
 	OGLTextureUnitID_ToonTable,
 	OGLTextureUnitID_GColor,
-	OGLTextureUnitID_GDepth,
+	OGLTextureUnitID_DepthStencil,
 	OGLTextureUnitID_GPolyID,
 	OGLTextureUnitID_ZeroAlphaPixelMask,
 	OGLTextureUnitID_FogAttr,
@@ -418,13 +418,11 @@ struct OGLRenderRef
 	
 	// FBO
 	GLuint texCIColorID;
-	GLuint texCIDepthID;
 	GLuint texCIFogAttrID;
 	GLuint texCIPolyID;
 	GLuint texCIDepthStencilID;
 	
 	GLuint texGColorID;
-	GLuint texGDepthID;
 	GLuint texGFogAttrID;
 	GLuint texGPolyID;
 	GLuint texZeroAlphaPixelMaskID;
@@ -432,7 +430,6 @@ struct OGLRenderRef
 	GLuint texFinalColorID;
 	
 	GLuint rboMSGColorID;
-	GLuint rboMSGDepthID;
 	GLuint rboMSGPolyID;
 	GLuint rboMSGFogAttrID;
 	GLuint rboMSGDepthStencilID;
@@ -506,7 +503,6 @@ struct OGLRenderRef
 	// Client-side Buffers
 	GLfloat *color4fBuffer;
 	GLushort *vertIndexBuffer;
-	CACHE_ALIGN GLuint workingCIDepthBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN GLuint workingCIDepthStencilBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN GLuint workingCIFogAttributesBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN GLuint workingCIPolyIDBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
@@ -528,7 +524,7 @@ extern GPU3DInterface gpu3Dgl;
 extern GPU3DInterface gpu3DglOld;
 extern GPU3DInterface gpu3Dgl_3_2;
 
-extern const GLenum RenderDrawList[4];
+extern const GLenum RenderDrawList[3];
 extern CACHE_ALIGN const GLfloat divide5bitBy31_LUT[32];
 extern CACHE_ALIGN const GLfloat divide6bitBy63_LUT[64];
 extern const GLfloat PostprocessVtxBuffer[16];
