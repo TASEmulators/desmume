@@ -1642,8 +1642,7 @@ void OpenGLRenderer_3_2::SetPolygonIndex(const size_t index)
 	glUniform1i(this->ref->uniformPolyStateIndex, index);
 }
 
-template <bool WILLCHANGESTENCILBUFFER>
-Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
+Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool willChangeStencilBuffer)
 {
 	const PolygonAttributes attr = thePoly.getAttributes();
 	
@@ -1665,7 +1664,7 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 		glCullFace(cullingMode);
 	}
 	
-	if (WILLCHANGESTENCILBUFFER)
+	if (willChangeStencilBuffer)
 	{
 		// Handle drawing states for the polygon
 		if (attr.polygonMode == POLYGON_MODE_SHADOW)

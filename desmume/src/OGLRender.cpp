@@ -1487,6 +1487,186 @@ OpenGLTexture* OpenGLRenderer::GetLoadedTextureFromPolygon(const POLY &thePoly, 
 	return theTexture;
 }
 
+template <OGLPolyDrawMode DRAWMODE>
+size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t indexOffset, size_t firstIndex, size_t lastIndex)
+{
+	OGLRenderRef &OGLRef = *this->ref;
+	
+	if (lastIndex > (polyList->count - 1))
+	{
+		lastIndex = polyList->count - 1;
+	}
+	
+	if (firstIndex > lastIndex)
+	{
+		return 0;
+	}
+	
+	// Map GFX3D_QUADS and GFX3D_QUAD_STRIP to GL_TRIANGLES since we will convert them.
+	//
+	// Also map GFX3D_TRIANGLE_STRIP to GL_TRIANGLES. This is okay since this is actually
+	// how the POLY struct stores triangle strip vertices, which is in sets of 3 vertices
+	// each. This redefinition is necessary since uploading more than 3 indices at a time
+	// will cause glDrawElements() to draw the triangle strip incorrectly.
+	static const GLenum oglPrimitiveType[]	= { GL_TRIANGLES, GL_TRIANGLES, GL_TRIANGLES, GL_TRIANGLES,
+		GL_LINE_LOOP, GL_LINE_LOOP, GL_LINE_STRIP, GL_LINE_STRIP };
+	
+	static const GLsizei indexIncrementLUT[] = {3, 6, 3, 6, 3, 4, 3, 4};
+	
+	const POLY &firstPoly = polyList->list[indexList->list[firstIndex]];
+	u32 lastPolyAttr = firstPoly.polyAttr;
+	u32 lastTexParams = firstPoly.texParam;
+	u32 lastTexPalette = firstPoly.texPalette;
+	u32 lastViewport = firstPoly.viewport;
+	
+	this->SetupPolygon(firstPoly, (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass));
+	this->SetupTexture(firstPoly, firstIndex);
+	this->SetupViewport(lastViewport);
+	
+	GLsizei vertIndexCount = 0;
+	GLushort *indexBufferPtr = OGLRef.vertIndexBuffer + indexOffset;
+	
+	// Enumerate through all polygons and render
+	size_t i = firstIndex;
+	for (; i <= lastIndex; i++)
+	{
+		const POLY &thePoly = polyList->list[indexList->list[i]];
+		
+		// Set up the polygon if it changed
+		if (lastPolyAttr != thePoly.polyAttr)
+		{
+			lastPolyAttr = thePoly.polyAttr;
+			this->SetupPolygon(thePoly, (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass));
+		}
+		
+		// Set up the texture if it changed
+		if (lastTexParams != thePoly.texParam || lastTexPalette != thePoly.texPalette)
+		{
+			lastTexParams = thePoly.texParam;
+			lastTexPalette = thePoly.texPalette;
+			this->SetupTexture(thePoly, i);
+		}
+		
+		// Set up the viewport if it changed
+		if (lastViewport != thePoly.viewport)
+		{
+			lastViewport = thePoly.viewport;
+			this->SetupViewport(thePoly.viewport);
+		}
+		
+		// In wireframe mode, redefine all primitives as GL_LINE_LOOP rather than
+		// setting the polygon mode to GL_LINE though glPolygonMode(). Not only is
+		// drawing more accurate this way, but it also allows GFX3D_QUADS and
+		// GFX3D_QUAD_STRIP primitives to properly draw as wireframe without the
+		// extra diagonal line.
+		const GLenum polyPrimitive = (!thePoly.isWireframe()) ? oglPrimitiveType[thePoly.vtxFormat] : GL_LINE_LOOP;
+		
+		// Increment the vertex count
+		vertIndexCount += indexIncrementLUT[thePoly.vtxFormat];
+		
+		// Look ahead to the next polygon to see if we can simply buffer the indices
+		// instead of uploading them now. We can buffer if all polygon states remain
+		// the same and we're not drawing a line loop or line strip.
+		if (i+1 <= lastIndex)
+		{
+			const POLY *nextPoly = &polyList->list[indexList->list[i+1]];
+			
+			if (lastPolyAttr == nextPoly->polyAttr &&
+				lastTexParams == nextPoly->texParam &&
+				lastTexPalette == nextPoly->texPalette &&
+				lastViewport == nextPoly->viewport &&
+				polyPrimitive == oglPrimitiveType[nextPoly->vtxFormat] &&
+				polyPrimitive != GL_LINE_LOOP &&
+				polyPrimitive != GL_LINE_STRIP &&
+				oglPrimitiveType[nextPoly->vtxFormat] != GL_LINE_LOOP &&
+				oglPrimitiveType[nextPoly->vtxFormat] != GL_LINE_STRIP)
+			{
+				continue;
+			}
+		}
+		
+		// Render the polygons
+		this->SetPolygonIndex(i);
+		
+		if (thePoly.getAttributePolygonMode() == POLYGON_MODE_SHADOW)
+		{
+			if (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass)
+			{
+				this->DrawShadowPolygon(polyPrimitive, vertIndexCount, indexBufferPtr, thePoly.getAttributeEnableAlphaDepthWrite(), thePoly.isTranslucent(), thePoly.getAttributePolygonID());
+			}
+		}
+		else if ( (thePoly.getTexParamTexFormat() == TEXMODE_A3I5) || (thePoly.getTexParamTexFormat() == TEXMODE_A5I3) )
+		{
+			if (DRAWMODE == OGLPolyDrawMode_ZeroAlphaPass)
+			{
+				this->DrawAlphaTexturePolygon<false>(polyPrimitive, vertIndexCount, indexBufferPtr, thePoly.getAttributeEnableAlphaDepthWrite(), thePoly.isTranslucent(), thePoly.isWireframe() || thePoly.isOpaque());
+			}
+			else
+			{
+				this->DrawAlphaTexturePolygon<true>(polyPrimitive, vertIndexCount, indexBufferPtr, thePoly.getAttributeEnableAlphaDepthWrite(), thePoly.isTranslucent(), thePoly.isWireframe() || thePoly.isOpaque());
+			}
+		}
+		else
+		{
+			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+		}
+		
+		indexBufferPtr += vertIndexCount;
+		indexOffset += vertIndexCount;
+		vertIndexCount = 0;
+	}
+	
+	return indexOffset;
+}
+
+template <bool WILLUPDATESTENCILBUFFER>
+Render3DError OpenGLRenderer::DrawAlphaTexturePolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const bool canHaveOpaqueFragments)
+{
+	if (this->isShaderSupported)
+	{
+		const OGLRenderRef &OGLRef = *this->ref;
+		
+		if (isTranslucent)
+		{
+			// Draw the translucent fragments.
+			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+			
+			// Draw the opaque fragments if they might exist.
+			if (canHaveOpaqueFragments)
+			{
+				if (WILLUPDATESTENCILBUFFER)
+				{
+					glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+					glDepthMask(GL_TRUE);
+				}
+				
+				glUniform1i(OGLRef.uniformTexDrawOpaque, GL_TRUE);
+				glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+				glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
+				
+				if (WILLUPDATESTENCILBUFFER)
+				{
+					glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+					glDepthMask((enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
+				}
+			}
+		}
+		else
+		{
+			// Draw the polygon as completely opaque.
+			glUniform1i(OGLRef.uniformTexDrawOpaque, GL_TRUE);
+			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+			glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
+		}
+	}
+	else
+	{
+		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+	}
+	
+	return OGLERROR_NOERR;
+}
+
 OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 {
 	glFinish();
@@ -3037,154 +3217,6 @@ Render3DError OpenGLRenderer_1_2::DisableVertexAttributes()
 	return OGLERROR_NOERR;
 }
 
-template <OGLPolyDrawMode DRAWMODE>
-size_t OpenGLRenderer_1_2::DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t indexOffset, size_t firstIndex, size_t lastIndex)
-{
-	OGLRenderRef &OGLRef = *this->ref;
-	
-	if (lastIndex > (polyList->count - 1))
-	{
-		lastIndex = polyList->count - 1;
-	}
-	
-	if (firstIndex > lastIndex)
-	{
-		return 0;
-	}
-	
-	// Map GFX3D_QUADS and GFX3D_QUAD_STRIP to GL_TRIANGLES since we will convert them.
-	//
-	// Also map GFX3D_TRIANGLE_STRIP to GL_TRIANGLES. This is okay since this is actually
-	// how the POLY struct stores triangle strip vertices, which is in sets of 3 vertices
-	// each. This redefinition is necessary since uploading more than 3 indices at a time
-	// will cause glDrawElements() to draw the triangle strip incorrectly.
-	static const GLenum oglPrimitiveType[]	= { GL_TRIANGLES, GL_TRIANGLES, GL_TRIANGLES, GL_TRIANGLES,
-	                                            GL_LINE_LOOP, GL_LINE_LOOP, GL_LINE_STRIP, GL_LINE_STRIP };
-	
-	static const GLsizei indexIncrementLUT[] = {3, 6, 3, 6, 3, 4, 3, 4};
-	
-	const POLY &firstPoly = polyList->list[indexList->list[firstIndex]];
-	u32 lastPolyAttr = firstPoly.polyAttr;
-	u32 lastTexParams = firstPoly.texParam;
-	u32 lastTexPalette = firstPoly.texPalette;
-	u32 lastViewport = firstPoly.viewport;
-	
-	if (DRAWMODE == OGLPolyDrawMode_ZeroAlphaPass)
-	{
-		this->SetupPolygon<false>(firstPoly);
-	}
-	else
-	{
-		this->SetupPolygon<true>(firstPoly);
-	}
-	
-	this->SetupTexture(firstPoly, firstIndex);
-	this->SetupViewport(lastViewport);
-	
-	GLsizei vertIndexCount = 0;
-	GLushort *indexBufferPtr = OGLRef.vertIndexBuffer + indexOffset;
-	
-	// Enumerate through all polygons and render
-	size_t i = firstIndex;
-	for (; i <= lastIndex; i++)
-	{
-		const POLY &thePoly = polyList->list[indexList->list[i]];
-		
-		// Set up the polygon if it changed
-		if (lastPolyAttr != thePoly.polyAttr)
-		{
-			lastPolyAttr = thePoly.polyAttr;
-			
-			if (DRAWMODE == OGLPolyDrawMode_ZeroAlphaPass)
-			{
-				this->SetupPolygon<false>(thePoly);
-			}
-			else
-			{
-				this->SetupPolygon<true>(thePoly);
-			}
-		}
-		
-		// Set up the texture if it changed
-		if (lastTexParams != thePoly.texParam || lastTexPalette != thePoly.texPalette)
-		{
-			lastTexParams = thePoly.texParam;
-			lastTexPalette = thePoly.texPalette;
-			this->SetupTexture(thePoly, i);
-		}
-		
-		// Set up the viewport if it changed
-		if (lastViewport != thePoly.viewport)
-		{
-			lastViewport = thePoly.viewport;
-			this->SetupViewport(thePoly.viewport);
-		}
-		
-		// In wireframe mode, redefine all primitives as GL_LINE_LOOP rather than
-		// setting the polygon mode to GL_LINE though glPolygonMode(). Not only is
-		// drawing more accurate this way, but it also allows GFX3D_QUADS and
-		// GFX3D_QUAD_STRIP primitives to properly draw as wireframe without the
-		// extra diagonal line.
-		const GLenum polyPrimitive = (!thePoly.isWireframe()) ? oglPrimitiveType[thePoly.vtxFormat] : GL_LINE_LOOP;
-		
-		// Increment the vertex count
-		vertIndexCount += indexIncrementLUT[thePoly.vtxFormat];
-		
-		// Look ahead to the next polygon to see if we can simply buffer the indices
-		// instead of uploading them now. We can buffer if all polygon states remain
-		// the same and we're not drawing a line loop or line strip.
-		if (i+1 <= lastIndex)
-		{
-			const POLY *nextPoly = &polyList->list[indexList->list[i+1]];
-			
-			if (lastPolyAttr == nextPoly->polyAttr &&
-				lastTexParams == nextPoly->texParam &&
-				lastTexPalette == nextPoly->texPalette &&
-				lastViewport == nextPoly->viewport &&
-				polyPrimitive == oglPrimitiveType[nextPoly->vtxFormat] &&
-				polyPrimitive != GL_LINE_LOOP &&
-				polyPrimitive != GL_LINE_STRIP &&
-				oglPrimitiveType[nextPoly->vtxFormat] != GL_LINE_LOOP &&
-				oglPrimitiveType[nextPoly->vtxFormat] != GL_LINE_STRIP)
-			{
-				continue;
-			}
-		}
-		
-		// Render the polygons
-		this->SetPolygonIndex(i);
-		
-		if (thePoly.getAttributePolygonMode() == POLYGON_MODE_SHADOW)
-		{
-			if (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass)
-			{
-				this->DrawShadowPolygon(polyPrimitive, vertIndexCount, indexBufferPtr, thePoly.getAttributeEnableAlphaDepthWrite(), thePoly.isTranslucent(), thePoly.getAttributePolygonID());
-			}
-		}
-		else if ( (thePoly.getTexParamTexFormat() == TEXMODE_A3I5) || (thePoly.getTexParamTexFormat() == TEXMODE_A5I3) )
-		{
-			if (DRAWMODE == OGLPolyDrawMode_ZeroAlphaPass)
-			{
-				this->DrawAlphaTexturePolygon<false>(polyPrimitive, vertIndexCount, indexBufferPtr, thePoly.getAttributeEnableAlphaDepthWrite(), thePoly.isTranslucent(), thePoly.isWireframe() || thePoly.isOpaque());
-			}
-			else
-			{
-				this->DrawAlphaTexturePolygon<true>(polyPrimitive, vertIndexCount, indexBufferPtr, thePoly.getAttributeEnableAlphaDepthWrite(), thePoly.isTranslucent(), thePoly.isWireframe() || thePoly.isOpaque());
-			}
-		}
-		else
-		{
-			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-		}
-		
-		indexBufferPtr += vertIndexCount;
-		indexOffset += vertIndexCount;
-		vertIndexCount = 0;
-	}
-	
-	return indexOffset;
-}
-
 Render3DError OpenGLRenderer_1_2::DownsampleFBO()
 {
 	OGLRenderRef &OGLRef = *this->ref;
@@ -3859,8 +3891,7 @@ void OpenGLRenderer_1_2::SetPolygonIndex(const size_t index)
 	this->_currentPolyIndex = index;
 }
 
-template <bool WILLCHANGESTENCILBUFFER>
-Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
+Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool willChangeStencilBuffer)
 {
 	const PolygonAttributes attr = thePoly.getAttributes();
 	
@@ -3882,7 +3913,7 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly)
 		glCullFace(cullingMode);
 	}
 	
-	if (WILLCHANGESTENCILBUFFER)
+	if (willChangeStencilBuffer)
 	{
 		// Handle drawing states for the polygon
 		if (attr.polygonMode == POLYGON_MODE_SHADOW)
@@ -4024,54 +4055,6 @@ Render3DError OpenGLRenderer_1_2::SetupViewport(const u32 viewportValue)
 			   (viewport.y > 191) ? (viewport.y - 0xFF) * hScalar : viewport.y * hScalar,
 			    viewport.width  * wScalar,
 			    viewport.height * hScalar);
-	
-	return OGLERROR_NOERR;
-}
-
-template <bool WILLUPDATESTENCILBUFFER>
-Render3DError OpenGLRenderer_1_2::DrawAlphaTexturePolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const bool canHaveOpaqueFragments)
-{
-	if (this->isShaderSupported)
-	{
-		const OGLRenderRef &OGLRef = *this->ref;
-		
-		if (isTranslucent)
-		{
-			// Draw the translucent fragments.
-			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-			
-			// Draw the opaque fragments if they might exist.
-			if (canHaveOpaqueFragments)
-			{
-				if (WILLUPDATESTENCILBUFFER)
-				{
-					glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-					glDepthMask(GL_TRUE);
-				}
-				
-				glUniform1i(OGLRef.uniformTexDrawOpaque, GL_TRUE);
-				glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-				glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
-				
-				if (WILLUPDATESTENCILBUFFER)
-				{
-					glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-					glDepthMask((enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
-				}
-			}
-		}
-		else
-		{
-			// Draw the polygon as completely opaque.
-			glUniform1i(OGLRef.uniformTexDrawOpaque, GL_TRUE);
-			glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-			glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
-		}
-	}
-	else
-	{
-		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
-	}
 	
 	return OGLERROR_NOERR;
 }
