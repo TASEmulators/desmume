@@ -99,7 +99,7 @@ protected:
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) const;
 	
 	virtual void SetPolygonIndex(const size_t index);
-	virtual Render3DError SetupPolygon(const POLY &thePoly);
+	template<bool WILLCHANGESTENCILBUFFER> Render3DError SetupPolygon(const POLY &thePoly);
 	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 	

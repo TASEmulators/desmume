@@ -620,11 +620,6 @@ Render3DError Render3D::ClearUsingValues(const FragmentColor &clearColor6665, co
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::SetupPolygon(const POLY &thePoly)
-{
-	return RENDER3DERROR_NOERR;
-}
-
 Render3DError Render3D::SetupTexture(const POLY &thePoly, size_t polyRenderIndex)
 {
 	return RENDER3DERROR_NOERR;

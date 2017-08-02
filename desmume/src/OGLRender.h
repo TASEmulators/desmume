@@ -330,6 +330,13 @@ enum OGLErrorCode
 	OGLERROR_FBO_CREATE_ERROR
 };
 
+enum OGLPolyDrawMode
+{
+	OGLPolyDrawMode_DrawOpaquePolys			= 0,
+	OGLPolyDrawMode_DrawTranslucentPolys	= 1,
+	OGLPolyDrawMode_ZeroAlphaPass			= 2
+};
+
 union GLvec2
 {
 	struct { GLfloat x, y; };
@@ -672,7 +679,6 @@ protected:
 	virtual Render3DError DownsampleFBO() = 0;
 	virtual Render3DError ReadBackPixels() = 0;
 	
-	virtual Render3DError DrawAlphaTexturePolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const bool canHaveOpaqueFragments) = 0;
 	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID) = 0;
 	virtual void SetPolygonIndex(const size_t index) = 0;
 	
@@ -739,6 +745,7 @@ protected:
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
 	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
+	template<OGLPolyDrawMode DRAWMODE> size_t DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t indexOffset, size_t firstIndex, size_t lastIndex);
 	virtual Render3DError DownsampleFBO();
 	virtual Render3DError ReadBackPixels();
 	
@@ -753,11 +760,11 @@ protected:
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) const;
 	
 	virtual void SetPolygonIndex(const size_t index);
-	virtual Render3DError SetupPolygon(const POLY &thePoly);
+	template<bool WILLCHANGESTENCILBUFFER> Render3DError SetupPolygon(const POLY &thePoly);
 	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
 	virtual Render3DError SetupViewport(const u32 viewportValue);
 	
-	virtual Render3DError DrawAlphaTexturePolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const bool canHaveOpaqueFragments);
+	template<bool WILLUPDATESTENCILBUFFER> Render3DError DrawAlphaTexturePolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const bool canHaveOpaqueFragments);
 	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID);
 	
 public:

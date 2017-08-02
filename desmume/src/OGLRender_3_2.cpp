@@ -1642,6 +1642,7 @@ void OpenGLRenderer_3_2::SetPolygonIndex(const size_t index)
 	glUniform1i(this->ref->uniformPolyStateIndex, index);
 }
 
+template <bool WILLCHANGESTENCILBUFFER>
 Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 {
 	const PolygonAttributes attr = thePoly.getAttributes();
@@ -1664,42 +1665,45 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly)
 		glCullFace(cullingMode);
 	}
 	
-	// Handle drawing states for the polygon
-	if (attr.polygonMode == POLYGON_MODE_SHADOW)
+	if (WILLCHANGESTENCILBUFFER)
 	{
-		// Set up shadow polygon states.
-		//
-		// See comments in DrawShadowPolygon() for more information about
-		// how this 4-pass process works in OpenGL.
-		if (attr.polygonID == 0)
+		// Handle drawing states for the polygon
+		if (attr.polygonMode == POLYGON_MODE_SHADOW)
 		{
-			// 1st pass: Mark stencil buffer bits (0x40) with the shadow polygon volume.
-			// Bits are only marked on depth-fail.
-			glStencilFunc(GL_ALWAYS, 0x40, 0xC0);
-			glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
-			glStencilMask(0xC0);
+			// Set up shadow polygon states.
+			//
+			// See comments in DrawShadowPolygon() for more information about
+			// how this 4-pass process works in OpenGL.
+			if (attr.polygonID == 0)
+			{
+				// 1st pass: Mark stencil buffer bits (0x40) with the shadow polygon volume.
+				// Bits are only marked on depth-fail.
+				glStencilFunc(GL_ALWAYS, 0x40, 0xC0);
+				glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
+				glStencilMask(0xC0);
+			}
+			else
+			{
+				// 2nd pass: Mark stencil buffer bits (0x80) with the result of the polygon ID
+				// check. Bits are marked if the polygon ID of this polygon differs from the
+				// one in the stencil buffer.
+				glStencilFunc(GL_NOTEQUAL, 0x80 | attr.polygonID, 0x3F);
+				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+				glStencilMask(0x80);
+			}
+			
+			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+			glDepthMask(GL_FALSE);
 		}
 		else
 		{
-			// 2nd pass: Mark stencil buffer bits (0x80) with the result of the polygon ID
-			// check. Bits are marked if the polygon ID of this polygon differs from the
-			// one in the stencil buffer.
-			glStencilFunc(GL_NOTEQUAL, 0x80 | attr.polygonID, 0x3F);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-			glStencilMask(0x80);
+			glStencilFunc(GL_ALWAYS, attr.polygonID, 0x3F);
+			glStencilOp(GL_KEEP, GL_KEEP, (attr.isTranslucent) ? GL_KEEP : GL_REPLACE);
+			glStencilMask(0xFF); // Drawing non-shadow polygons will implicitly reset the stencil buffer bits
+			
+			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+			glDepthMask((!attr.isTranslucent || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 		}
-		
-		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glDepthMask(GL_FALSE);
-	}
-	else
-	{
-		glStencilFunc(GL_ALWAYS, attr.polygonID, 0x3F);
-		glStencilOp(GL_KEEP, GL_KEEP, (attr.isTranslucent) ? GL_KEEP : GL_REPLACE);
-		glStencilMask(0xFF); // Drawing non-shadow polygons will implicitly reset the stencil buffer bits
-		
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glDepthMask((!attr.isTranslucent || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	}
 	
 	return OGLERROR_NOERR;
