@@ -10,7 +10,11 @@ DeSmuME provides another interface based on libglade, to use
 
 * http://glade.gnome.org/
 
-To build, cd to src/frontend/posix and then run ./configure && make
+To build, cd to src/frontend/posix and then run `./autoconf.sh`
+
+This will create the file `configure`. Run this using `./configure`
+
+Then build the program by running `make`
 
 It will generate three programs:
 1) "desmume" in the "gtk" directory;
