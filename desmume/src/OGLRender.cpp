@@ -3217,10 +3217,10 @@ Render3DError OpenGLRenderer_1_2::DownsampleFBO()
 		
 		if (this->isShaderSupported)
 		{
-			// Blit the color buffer
+			// Blit the color and depth buffers
 			glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-			glBlitFramebufferEXT(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			glBlitFramebufferEXT(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 			
 			// Blit the polygon ID buffer
 			glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
