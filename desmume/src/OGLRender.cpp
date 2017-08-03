@@ -1488,7 +1488,7 @@ OpenGLTexture* OpenGLRenderer::GetLoadedTextureFromPolygon(const POLY &thePoly, 
 }
 
 template <OGLPolyDrawMode DRAWMODE>
-size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t indexOffset, size_t firstIndex, size_t lastIndex)
+size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, u32 &lastPolyAttr, u32 &lastTexParams, u32 &lastTexPalette, u32 &lastViewport)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -1509,26 +1509,15 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const
 	// each. This redefinition is necessary since uploading more than 3 indices at a time
 	// will cause glDrawElements() to draw the triangle strip incorrectly.
 	static const GLenum oglPrimitiveType[]	= { GL_TRIANGLES, GL_TRIANGLES, GL_TRIANGLES, GL_TRIANGLES,
-		GL_LINE_LOOP, GL_LINE_LOOP, GL_LINE_STRIP, GL_LINE_STRIP };
+	                                            GL_LINE_LOOP, GL_LINE_LOOP, GL_LINE_STRIP, GL_LINE_STRIP };
 	
 	static const GLsizei indexIncrementLUT[] = {3, 6, 3, 6, 3, 4, 3, 4};
-	
-	const POLY &firstPoly = polyList->list[indexList->list[firstIndex]];
-	u32 lastPolyAttr = firstPoly.polyAttr;
-	u32 lastTexParams = firstPoly.texParam;
-	u32 lastTexPalette = firstPoly.texPalette;
-	u32 lastViewport = firstPoly.viewport;
-	
-	this->SetupPolygon(firstPoly, (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass));
-	this->SetupTexture(firstPoly, firstIndex);
-	this->SetupViewport(lastViewport);
 	
 	GLsizei vertIndexCount = 0;
 	GLushort *indexBufferPtr = OGLRef.vertIndexBuffer + indexOffset;
 	
 	// Enumerate through all polygons and render
-	size_t i = firstIndex;
-	for (; i <= lastIndex; i++)
+	for (size_t i = firstIndex; i <= lastIndex; i++)
 	{
 		const POLY &thePoly = polyList->list[indexList->list[i]];
 		
@@ -3530,11 +3519,22 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 		
 		this->EnableVertexAttributes();
 		
-		size_t indexOffset = this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(polyList, indexList, 0, 0, polyList->opaqueCount - 1);
+		const POLY &firstPoly = polyList->list[indexList->list[0]];
+		u32 lastPolyAttr = firstPoly.polyAttr;
+		u32 lastTexParams = firstPoly.texParam;
+		u32 lastTexPalette = firstPoly.texPalette;
+		u32 lastViewport = firstPoly.viewport;
+		size_t indexOffset = 0;
+
+		this->SetupPolygon(firstPoly, true);
+		this->SetupTexture(firstPoly, 0);
+		this->SetupViewport(firstPoly.viewport);
+
+		this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(polyList, indexList, 0, polyList->opaqueCount - 1, indexOffset, lastPolyAttr, lastTexParams, lastTexPalette, lastViewport);
 		
 		if (polyList->opaqueCount != polyList->count)
 		{
-			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(polyList, indexList, indexOffset, polyList->opaqueCount, polyList->count - 1);
+			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(polyList, indexList, polyList->opaqueCount, polyList->count - 1, indexOffset, lastPolyAttr, lastTexParams, lastTexPalette, lastViewport);
 		}
 		
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
