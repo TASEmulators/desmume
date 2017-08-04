@@ -1488,7 +1488,7 @@ OpenGLTexture* OpenGLRenderer::GetLoadedTextureFromPolygon(const POLY &thePoly, 
 }
 
 template <OGLPolyDrawMode DRAWMODE>
-size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, u32 &lastPolyAttr, u32 &lastTexParams, u32 &lastTexPalette, u32 &lastViewport)
+size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, bool &lastPolyTreatedAsTranslucent)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -1513,10 +1513,21 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const
 	
 	static const GLsizei indexIncrementLUT[] = {3, 6, 3, 6, 3, 4, 3, 4};
 	
+	// Set up the initial polygon
+	const POLY &initialPoly = polyList->list[indexList->list[firstIndex]];
+	u32 lastPolyAttr = initialPoly.polyAttr;
+	u32 lastTexParams = initialPoly.texParam;
+	u32 lastTexPalette = initialPoly.texPalette;
+	u32 lastViewport = initialPoly.viewport;
+	
+	this->SetupPolygon(initialPoly, lastPolyTreatedAsTranslucent, (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass));
+	this->SetupTexture(initialPoly, firstIndex);
+	this->SetupViewport(initialPoly.viewport);
+	
+	// Enumerate through all polygons and render
 	GLsizei vertIndexCount = 0;
 	GLushort *indexBufferPtr = OGLRef.vertIndexBuffer + indexOffset;
 	
-	// Enumerate through all polygons and render
 	for (size_t i = firstIndex; i <= lastIndex; i++)
 	{
 		const POLY &thePoly = polyList->list[indexList->list[i]];
@@ -1525,7 +1536,8 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const
 		if (lastPolyAttr != thePoly.polyAttr)
 		{
 			lastPolyAttr = thePoly.polyAttr;
-			this->SetupPolygon(thePoly, (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass));
+			lastPolyTreatedAsTranslucent = thePoly.isTranslucent();
+			this->SetupPolygon(thePoly, lastPolyTreatedAsTranslucent, (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass));
 		}
 		
 		// Set up the texture if it changed
@@ -1749,6 +1761,7 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 					std::string framebufferOutputVtxShaderString = std::string(FramebufferOutputVtxShader_100);
 					std::string framebufferOutputRGBA6665FragShaderString = std::string(FramebufferOutputRGBA6665FragShader_100);
 					std::string framebufferOutputRGBA8888FragShaderString = std::string(FramebufferOutputRGBA8888FragShader_100);
+					
 					error = this->InitPostprocessingPrograms(zeroAlphaPixelMaskVtxShaderString,
 															 zeroAlphaPixelMaskFragShaderString,
 															 edgeMarkVtxShaderString,
@@ -2131,7 +2144,6 @@ void OpenGLRenderer_1_2::DestroyGeometryProgram()
 	
 	glDetachShader(OGLRef.programGeometryID, OGLRef.vertexGeometryShaderID);
 	glDetachShader(OGLRef.programGeometryID, OGLRef.fragmentGeometryShaderID);
-	
 	glDeleteProgram(OGLRef.programGeometryID);
 	glDeleteShader(OGLRef.vertexGeometryShaderID);
 	glDeleteShader(OGLRef.fragmentGeometryShaderID);
@@ -3506,7 +3518,7 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_STENCIL_TEST);
 		
-		if(renderState.enableAlphaBlending)
+		if (renderState.enableAlphaBlending)
 		{
 			glEnable(GL_BLEND);
 		}
@@ -3520,21 +3532,17 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 		this->EnableVertexAttributes();
 		
 		const POLY &firstPoly = polyList->list[indexList->list[0]];
-		u32 lastPolyAttr = firstPoly.polyAttr;
-		u32 lastTexParams = firstPoly.texParam;
-		u32 lastTexPalette = firstPoly.texPalette;
-		u32 lastViewport = firstPoly.viewport;
+		bool lastPolyTreatedAsTranslucent = firstPoly.isTranslucent();
 		size_t indexOffset = 0;
-
-		this->SetupPolygon(firstPoly, true);
-		this->SetupTexture(firstPoly, 0);
-		this->SetupViewport(firstPoly.viewport);
-
-		this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(polyList, indexList, 0, polyList->opaqueCount - 1, indexOffset, lastPolyAttr, lastTexParams, lastTexPalette, lastViewport);
+		
+		if (polyList->opaqueCount > 0)
+		{
+			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(polyList, indexList, 0, polyList->opaqueCount - 1, indexOffset, lastPolyTreatedAsTranslucent);
+		}
 		
 		if (polyList->opaqueCount != polyList->count)
 		{
-			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(polyList, indexList, polyList->opaqueCount, polyList->count - 1, indexOffset, lastPolyAttr, lastTexParams, lastTexPalette, lastViewport);
+			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(polyList, indexList, polyList->opaqueCount, polyList->count - 1, indexOffset, lastPolyTreatedAsTranslucent);
 		}
 		
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -3891,7 +3899,7 @@ void OpenGLRenderer_1_2::SetPolygonIndex(const size_t index)
 	this->_currentPolyIndex = index;
 }
 
-Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool willChangeStencilBuffer)
+Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer)
 {
 	const PolygonAttributes attr = thePoly.getAttributes();
 	
@@ -3946,11 +3954,11 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool willCha
 		else
 		{
 			glStencilFunc(GL_ALWAYS, attr.polygonID, 0x3F);
-			glStencilOp(GL_KEEP, GL_KEEP, (attr.isTranslucent) ? GL_KEEP : GL_REPLACE);
+			glStencilOp(GL_KEEP, GL_KEEP, (treatAsTranslucent) ? GL_KEEP : GL_REPLACE);
 			glStencilMask(0xFF); // Drawing non-shadow polygons will implicitly reset the stencil buffer bits
 			
 			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-			glDepthMask((!attr.isTranslucent || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
+			glDepthMask((!treatAsTranslucent || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 		}
 	}
 	
@@ -4527,3 +4535,7 @@ Render3DError OpenGLRenderer_2_1::RenderFlush(bool willFlushBuffer32, bool willF
 	
 	return RENDER3DERROR_NOERR;
 }
+
+template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, bool &lastPolyTreatedAsTranslucent);
+template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, bool &lastPolyTreatedAsTranslucent);
+template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_ZeroAlphaPass>(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, bool &lastPolyTreatedAsTranslucent);

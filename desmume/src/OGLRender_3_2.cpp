@@ -638,6 +638,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	std::string fogFragShaderString = std::string(FogFragShader_150);
 	std::string framebufferOutputVtxShaderString = std::string(FramebufferOutputVtxShader_150);
 	std::string framebufferOutputFragShaderString = std::string(FramebufferOutputFragShader_150);
+	
 	error = this->InitPostprocessingPrograms(zeroAlphaPixelMaskVtxShaderString,
 											 zeroAlphaPixelMaskFragShaderString,
 											 edgeMarkVtxShaderString,
@@ -1198,7 +1199,6 @@ void OpenGLRenderer_3_2::DestroyGeometryProgram()
 	
 	glDetachShader(OGLRef.programGeometryID, OGLRef.vertexGeometryShaderID);
 	glDetachShader(OGLRef.programGeometryID, OGLRef.fragmentGeometryShaderID);
-	
 	glDeleteProgram(OGLRef.programGeometryID);
 	glDeleteShader(OGLRef.vertexGeometryShaderID);
 	glDeleteShader(OGLRef.fragmentGeometryShaderID);
@@ -1642,7 +1642,7 @@ void OpenGLRenderer_3_2::SetPolygonIndex(const size_t index)
 	glUniform1i(this->ref->uniformPolyStateIndex, index);
 }
 
-Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool willChangeStencilBuffer)
+Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer)
 {
 	const PolygonAttributes attr = thePoly.getAttributes();
 	
@@ -1697,11 +1697,11 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool willCha
 		else
 		{
 			glStencilFunc(GL_ALWAYS, attr.polygonID, 0x3F);
-			glStencilOp(GL_KEEP, GL_KEEP, (attr.isTranslucent) ? GL_KEEP : GL_REPLACE);
+			glStencilOp(GL_KEEP, GL_KEEP, (treatAsTranslucent) ? GL_KEEP : GL_REPLACE);
 			glStencilMask(0xFF); // Drawing non-shadow polygons will implicitly reset the stencil buffer bits
 			
 			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-			glDepthMask((!attr.isTranslucent || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
+			glDepthMask((!treatAsTranslucent || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 		}
 	}
 	
