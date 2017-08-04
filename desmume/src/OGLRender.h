@@ -643,21 +643,21 @@ protected:
 	virtual void DestroyFBOs() = 0;
 	virtual Render3DError CreateMultisampledFBO() = 0;
 	virtual void DestroyMultisampledFBO() = 0;
-	virtual Render3DError InitGeometryProgram(const std::string &vertexShaderProgram, const std::string &fragmentShaderProgram) = 0;
+	virtual Render3DError InitGeometryProgram(const char *geometryVtxShaderCString, const char *geometryFragShaderCString) = 0;
 	virtual void DestroyGeometryProgram() = 0;
 	virtual Render3DError CreateVAOs() = 0;
 	virtual void DestroyVAOs() = 0;
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet) = 0;
 	virtual Render3DError InitTables() = 0;
-	virtual Render3DError InitPostprocessingPrograms(const std::string &zeroAlphaPixelMaskVtxShader,
-													 const std::string &zeroAlphaPixelMaskFragShader,
-													 const std::string &edgeMarkVtxShader,
-													 const std::string &edgeMarkFragShader,
-													 const std::string &fogVtxShader,
-													 const std::string &fogFragShader,
-													 const std::string &framebufferOutputVtxShader,
-													 const std::string &framebufferOutputRGBA6665FragShader,
-													 const std::string &framebufferOutputRGBA8888FragShader) = 0;
+	virtual Render3DError InitPostprocessingPrograms(const char *zeroAlphaPixelMaskVtxShaderCString,
+													 const char *zeroAlphaPixelMaskFragShaderCString,
+													 const char *edgeMarkVtxShaderCString,
+													 const char *edgeMarkFragShaderCString,
+													 const char *fogVtxShaderCString,
+													 const char *fogFragShaderCString,
+													 const char *framebufferOutputVtxShaderCString,
+													 const char *framebufferOutputRGBA6665FragShaderCString,
+													 const char *framebufferOutputRGBA8888FragShaderCString) = 0;
 	virtual Render3DError DestroyPostprocessingPrograms() = 0;
 	virtual Render3DError InitZeroAlphaPixelMaskProgramBindings() = 0;
 	virtual Render3DError InitZeroAlphaPixelMaskProgramShaderLocations() = 0;
@@ -717,20 +717,20 @@ protected:
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
 	virtual Render3DError InitTables();
 	
-	virtual Render3DError InitGeometryProgram(const std::string &vertexShaderProgram, const std::string &fragmentShaderProgram);
+	virtual Render3DError InitGeometryProgram(const char *geometryVtxShaderCString, const char *geometryFragShaderCString);
 	virtual Render3DError LoadGeometryShaders(std::string &outVertexShaderProgram, std::string &outFragmentShaderProgram);
 	virtual Render3DError InitGeometryProgramBindings();
 	virtual Render3DError InitGeometryProgramShaderLocations();
 	virtual void DestroyGeometryProgram();
-	virtual Render3DError InitPostprocessingPrograms(const std::string &zeroAlphaPixelMaskVtxShader,
-													 const std::string &zeroAlphaPixelMaskFragShader,
-													 const std::string &edgeMarkVtxShader,
-													 const std::string &edgeMarkFragShader,
-													 const std::string &fogVtxShader,
-													 const std::string &fogFragShader,
-													 const std::string &framebufferOutputVtxShader,
-													 const std::string &framebufferOutputRGBA6665FragShader,
-													 const std::string &framebufferOutputRGBA8888FragShader);
+	virtual Render3DError InitPostprocessingPrograms(const char *zeroAlphaPixelMaskVtxShaderCString,
+													 const char *zeroAlphaPixelMaskFragShaderCString,
+													 const char *edgeMarkVtxShaderCString,
+													 const char *edgeMarkFragShaderCString,
+													 const char *fogVtxShaderCString,
+													 const char *fogFragShaderCString,
+													 const char *framebufferOutputVtxShaderCString,
+													 const char *framebufferOutputRGBA6665FragShaderCString,
+													 const char *framebufferOutputRGBA8888FragShaderCString);
 	virtual Render3DError DestroyPostprocessingPrograms();
 	virtual Render3DError InitZeroAlphaPixelMaskProgramBindings();
 	virtual Render3DError InitZeroAlphaPixelMaskProgramShaderLocations();

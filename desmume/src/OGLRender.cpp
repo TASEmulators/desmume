@@ -1743,13 +1743,13 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		
 		if ( (maxDrawBuffersOGL >= 4) && (maxShaderTexUnitsOGL >= 8) )
 		{
-			std::string vertexShaderProgram;
-			std::string fragmentShaderProgram;
+			std::string geometryVtxShaderString;
+			std::string geometryFragShaderString;
 			
-			error = this->LoadGeometryShaders(vertexShaderProgram, fragmentShaderProgram);
+			error = this->LoadGeometryShaders(geometryVtxShaderString, geometryFragShaderString);
 			if (error == OGLERROR_NOERR)
 			{
-				error = this->InitGeometryProgram(vertexShaderProgram, fragmentShaderProgram);
+				error = this->InitGeometryProgram(geometryVtxShaderString.c_str(), geometryFragShaderString.c_str());
 				if (error == OGLERROR_NOERR)
 				{
 					std::string zeroAlphaPixelMaskVtxShaderString = std::string(ZeroAlphaPixelMaskVtxShader_100);
@@ -1762,15 +1762,15 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 					std::string framebufferOutputRGBA6665FragShaderString = std::string(FramebufferOutputRGBA6665FragShader_100);
 					std::string framebufferOutputRGBA8888FragShaderString = std::string(FramebufferOutputRGBA8888FragShader_100);
 					
-					error = this->InitPostprocessingPrograms(zeroAlphaPixelMaskVtxShaderString,
-															 zeroAlphaPixelMaskFragShaderString,
-															 edgeMarkVtxShaderString,
-															 edgeMarkFragShaderString,
-															 fogVtxShaderString,
-															 fogFragShaderString,
-															 framebufferOutputVtxShaderString,
-															 framebufferOutputRGBA6665FragShaderString,
-															 framebufferOutputRGBA8888FragShaderString);
+					error = this->InitPostprocessingPrograms(zeroAlphaPixelMaskVtxShaderString.c_str(),
+															 zeroAlphaPixelMaskFragShaderString.c_str(),
+															 edgeMarkVtxShaderString.c_str(),
+															 edgeMarkFragShaderString.c_str(),
+															 fogVtxShaderString.c_str(),
+															 fogFragShaderString.c_str(),
+															 framebufferOutputVtxShaderString.c_str(),
+															 framebufferOutputRGBA6665FragShaderString.c_str(),
+															 framebufferOutputRGBA8888FragShaderString.c_str());
 				}
 			}
 			
@@ -2054,7 +2054,7 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgramShaderLocations()
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const std::string &vertexShaderProgram, const std::string &fragmentShaderProgram)
+Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const char *geometryVtxShaderCString, const char *geometryFragShaderCString)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -2065,7 +2065,7 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const std::string &vertexS
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
-	const char *vertexShaderProgramChar = vertexShaderProgram.c_str();
+	const char *vertexShaderProgramChar = geometryVtxShaderCString;
 	glShaderSource(OGLRef.vertexGeometryShaderID, 1, (const GLchar **)&vertexShaderProgramChar, NULL);
 	glCompileShader(OGLRef.vertexGeometryShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.vertexGeometryShaderID))
@@ -2083,7 +2083,7 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const std::string &vertexS
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
-	const char *fragmentShaderProgramChar = fragmentShaderProgram.c_str();
+	const char *fragmentShaderProgramChar = geometryFragShaderCString;
 	glShaderSource(OGLRef.fragmentGeometryShaderID, 1, (const GLchar **)&fragmentShaderProgramChar, NULL);
 	glCompileShader(OGLRef.fragmentGeometryShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.fragmentGeometryShaderID))
@@ -2530,15 +2530,15 @@ Render3DError OpenGLRenderer_1_2::InitTables()
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const std::string &zeroAlphaPixelMaskVtxShader,
-															 const std::string &zeroAlphaPixelMaskFragShader,
-															 const std::string &edgeMarkVtxShader,
-															 const std::string &edgeMarkFragShader,
-															 const std::string &fogVtxShader,
-															 const std::string &fogFragShader,
-															 const std::string &framebufferOutputVtxShader,
-															 const std::string &framebufferOutputRGBA6665FragShader,
-															 const std::string &framebufferOutputRGBA8888FragShader)
+Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlphaPixelMaskVtxShaderCString,
+															 const char *zeroAlphaPixelMaskFragShaderCString,
+															 const char *edgeMarkVtxShaderCString,
+															 const char *edgeMarkFragShaderCString,
+															 const char *fogVtxShaderCString,
+															 const char *fogFragShaderCString,
+															 const char *framebufferOutputVtxShaderCString,
+															 const char *framebufferOutputRGBA6665FragShaderCString,
+															 const char *framebufferOutputRGBA8888FragShaderCString)
 {
 	Render3DError error = OGLERROR_NOERR;
 	OGLRenderRef &OGLRef = *this->ref;
@@ -2550,7 +2550,7 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const std::string &
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
-	const char *zeroAlphaPixelMaskVtxShaderCStr = zeroAlphaPixelMaskVtxShader.c_str();
+	const char *zeroAlphaPixelMaskVtxShaderCStr = zeroAlphaPixelMaskVtxShaderCString;
 	glShaderSource(OGLRef.vertexZeroAlphaPixelMaskShaderID, 1, (const GLchar **)&zeroAlphaPixelMaskVtxShaderCStr, NULL);
 	glCompileShader(OGLRef.vertexZeroAlphaPixelMaskShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.vertexZeroAlphaPixelMaskShaderID))
@@ -2568,7 +2568,7 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const std::string &
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
-	const char *zeroAlphaPixelMaskFragShaderCStr = zeroAlphaPixelMaskFragShader.c_str();
+	const char *zeroAlphaPixelMaskFragShaderCStr = zeroAlphaPixelMaskFragShaderCString;
 	glShaderSource(OGLRef.fragmentZeroAlphaPixelMaskShaderID, 1, (const GLchar **)&zeroAlphaPixelMaskFragShaderCStr, NULL);
 	glCompileShader(OGLRef.fragmentZeroAlphaPixelMaskShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.fragmentZeroAlphaPixelMaskShaderID))
@@ -2627,7 +2627,7 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const std::string &
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
-	const char *edgeMarkVtxShaderCStr = edgeMarkVtxShader.c_str();
+	const char *edgeMarkVtxShaderCStr = edgeMarkVtxShaderCString;
 	glShaderSource(OGLRef.vertexEdgeMarkShaderID, 1, (const GLchar **)&edgeMarkVtxShaderCStr, NULL);
 	glCompileShader(OGLRef.vertexEdgeMarkShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.vertexEdgeMarkShaderID))
@@ -2645,7 +2645,7 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const std::string &
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
-	const char *edgeMarkFragShaderCStr = edgeMarkFragShader.c_str();
+	const char *edgeMarkFragShaderCStr = edgeMarkFragShaderCString;
 	glShaderSource(OGLRef.fragmentEdgeMarkShaderID, 1, (const GLchar **)&edgeMarkFragShaderCStr, NULL);
 	glCompileShader(OGLRef.fragmentEdgeMarkShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.fragmentEdgeMarkShaderID))
@@ -2704,7 +2704,7 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const std::string &
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
-	const char *fogVtxShaderCStr = fogVtxShader.c_str();
+	const char *fogVtxShaderCStr = fogVtxShaderCString;
 	glShaderSource(OGLRef.vertexFogShaderID, 1, (const GLchar **)&fogVtxShaderCStr, NULL);
 	glCompileShader(OGLRef.vertexFogShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.vertexFogShaderID))
@@ -2722,7 +2722,7 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const std::string &
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
-	const char *fogFragShaderCStr = fogFragShader.c_str();
+	const char *fogFragShaderCStr = fogFragShaderCString;
 	glShaderSource(OGLRef.fragmentFogShaderID, 1, (const GLchar **)&fogFragShaderCStr, NULL);
 	glCompileShader(OGLRef.fragmentFogShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.fragmentFogShaderID))
@@ -2781,7 +2781,7 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const std::string &
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
-	const char *framebufferOutputVtxShaderCStr = framebufferOutputVtxShader.c_str();
+	const char *framebufferOutputVtxShaderCStr = framebufferOutputVtxShaderCString;
 	glShaderSource(OGLRef.vertexFramebufferOutputShaderID, 1, (const GLchar **)&framebufferOutputVtxShaderCStr, NULL);
 	glCompileShader(OGLRef.vertexFramebufferOutputShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.vertexFramebufferOutputShaderID))
@@ -2808,7 +2808,7 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const std::string &
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
-	const char *framebufferOutputRGBA6665FragShaderCStr = framebufferOutputRGBA6665FragShader.c_str();
+	const char *framebufferOutputRGBA6665FragShaderCStr = framebufferOutputRGBA6665FragShaderCString;
 	glShaderSource(OGLRef.fragmentFramebufferRGBA6665OutputShaderID, 1, (const GLchar **)&framebufferOutputRGBA6665FragShaderCStr, NULL);
 	glCompileShader(OGLRef.fragmentFramebufferRGBA6665OutputShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.fragmentFramebufferRGBA6665OutputShaderID))
@@ -2820,7 +2820,7 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const std::string &
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
-	const char *framebufferOutputRGBA8888FragShaderCStr = framebufferOutputRGBA8888FragShader.c_str();
+	const char *framebufferOutputRGBA8888FragShaderCStr = framebufferOutputRGBA8888FragShaderCString;
 	glShaderSource(OGLRef.fragmentFramebufferRGBA8888OutputShaderID, 1, (const GLchar **)&framebufferOutputRGBA8888FragShaderCStr, NULL);
 	glCompileShader(OGLRef.fragmentFramebufferRGBA8888OutputShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.fragmentFramebufferRGBA8888OutputShaderID))

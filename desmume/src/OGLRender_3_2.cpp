@@ -614,16 +614,16 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	this->willFlipOnlyFramebufferOnGPU = true;
 	this->willFlipAndConvertFramebufferOnGPU = true;
 	
-	std::string vertexShaderProgram;
-	std::string fragmentShaderProgram;
-	error = this->LoadGeometryShaders(vertexShaderProgram, fragmentShaderProgram);
+	std::string geometryVtxShaderString;
+	std::string geometryFragShaderString;
+	error = this->LoadGeometryShaders(geometryVtxShaderString, geometryFragShaderString);
 	if (error != OGLERROR_NOERR)
 	{
 		this->isShaderSupported = false;
 		return error;
 	}
 	
-	error = this->InitGeometryProgram(vertexShaderProgram, fragmentShaderProgram);
+	error = this->InitGeometryProgram(geometryVtxShaderString.c_str(), geometryFragShaderString.c_str());
 	if (error != OGLERROR_NOERR)
 	{
 		this->isShaderSupported = false;
@@ -639,15 +639,15 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	std::string framebufferOutputVtxShaderString = std::string(FramebufferOutputVtxShader_150);
 	std::string framebufferOutputFragShaderString = std::string(FramebufferOutputFragShader_150);
 	
-	error = this->InitPostprocessingPrograms(zeroAlphaPixelMaskVtxShaderString,
-											 zeroAlphaPixelMaskFragShaderString,
-											 edgeMarkVtxShaderString,
-											 edgeMarkFragShaderString,
-											 fogVtxShaderString,
-											 fogFragShaderString,
-											 framebufferOutputVtxShaderString,
-											 framebufferOutputFragShaderString,
-											 framebufferOutputFragShaderString);
+	error = this->InitPostprocessingPrograms(zeroAlphaPixelMaskVtxShaderString.c_str(),
+											 zeroAlphaPixelMaskFragShaderString.c_str(),
+											 edgeMarkVtxShaderString.c_str(),
+											 edgeMarkFragShaderString.c_str(),
+											 fogVtxShaderString.c_str(),
+											 fogFragShaderString.c_str(),
+											 framebufferOutputVtxShaderString.c_str(),
+											 framebufferOutputFragShaderString.c_str(),
+											 framebufferOutputFragShaderString.c_str());
 	if (error != OGLERROR_NOERR)
 	{
 		this->DestroyGeometryProgram();
