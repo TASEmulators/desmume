@@ -2059,7 +2059,7 @@ Render3DError SoftRasterizerRenderer::ClearUsingImage(const u16 *__restrict colo
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError SoftRasterizerRenderer::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) const
+Render3DError SoftRasterizerRenderer::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
 {
 	for (size_t i = 0; i < (this->_framebufferWidth * this->_framebufferHeight); i++)
 	{
@@ -2217,7 +2217,7 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 
 #ifdef ENABLE_SSE2
 
-Render3DError SoftRasterizerRenderer_SSE2::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) const
+Render3DError SoftRasterizerRenderer_SSE2::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
 {
 	const __m128i color_vec128					= _mm_set1_epi32(clearColor6665.color);
 	const __m128i attrDepth_vec128				= _mm_set1_epi32(clearAttributes.depth);

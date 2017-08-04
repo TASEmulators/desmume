@@ -615,7 +615,7 @@ Render3DError Render3D::ClearUsingImage(const u16 *__restrict colorBuffer, const
 	return RENDER3DERROR_NOERR;
 }
 
-Render3DError Render3D::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) const
+Render3DError Render3D::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
 {
 	return RENDER3DERROR_NOERR;
 }
