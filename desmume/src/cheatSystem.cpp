@@ -1016,12 +1016,14 @@ void CHEATS::process(int targetType)
 			default: continue;
 		}
 	}
-
+	
+#ifdef HAVE_JIT
 	if(cheatsResetJit)
 	{
 		if(CommonSettings.use_jit)
 			arm_jit_reset(true,true);
 	}
+#endif
 }
 
 void CHEATS::getXXcodeString(CHEATS_LIST list, char *res_buf)
