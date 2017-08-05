@@ -5597,7 +5597,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "-I./../../";
 				PRODUCT_NAME = "DeSmuME (Debug)";
-				SDKROOT = "";
+				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
 				STRIP_INSTALLED_PRODUCT = NO;
 			};
@@ -5651,7 +5651,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = "-I./../../";
 				PRODUCT_NAME = DeSmuME;
-				SDKROOT = "";
+				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
 				VALIDATE_PRODUCT = YES;
 			};

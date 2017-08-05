@@ -42,7 +42,7 @@ class GPUEventHandlerOSX;
 }
 
 @property (assign, nonatomic) GPUClientFetchObject *GPUFetchObject;
-@property (readonly, nonatomic) int32_t numberViewsUsingDirectToCPUFiltering;
+@property (readonly, nonatomic) volatile int32_t numberViewsUsingDirectToCPUFiltering;
 
 - (const NDSDisplayInfo &) fetchDisplayInfoForIndex:(const u8)bufferIndex;
 - (pthread_rwlock_t *) rwlockFramebufferAtIndex:(const u8)bufferIndex;
