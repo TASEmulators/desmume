@@ -792,7 +792,7 @@ enum GPUEngineID
 #define ADDRESS_STEP_512KB	   0x80000
 #define ADDRESS_MASK_256KB	   (ADDRESS_STEP_256KB-1)
 
-#ifdef LOCAL_BE
+#ifdef MSB_FIRST
 struct _TILEENTRY
 {
 /*14*/	unsigned Palette:4;
@@ -823,7 +823,7 @@ typedef union
 */
 
 struct _COLOR { // abgr x555
-#ifdef LOCAL_BE
+#ifdef MSB_FIRST
 	unsigned alpha:1;    // sometimes it is unused (pad)
 	unsigned blue:5;
 	unsigned green:5;

@@ -472,7 +472,7 @@ TextureStore::TextureStore(const u32 texAttributes, const u32 palAttributes)
 	{
 		MemSpan currentPaletteMS = MemSpan_TexPalette(_paletteAddress, _paletteSize, false);
 		
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
 		currentPaletteMS.dump16(_paletteColorTable);
 #else
 		currentPaletteMS.dump(_paletteColorTable);
@@ -594,7 +594,7 @@ void TextureStore::SetTexturePalette(const MemSpan &packedPalette)
 {
 	if (this->_paletteSize > 0)
 	{
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
 		packedPalette.dump16(this->_paletteColorTable);
 #else
 		packedPalette.dump(this->_paletteColorTable);
@@ -783,7 +783,7 @@ void TextureStore::VRAMCompareAndUpdate()
 		currentPackedTexIndexMS.dump(this->_workingData + this->_packSize);
 	}
 	
-#ifdef WORDS_BIGENDIAN
+#ifdef MSB_FIRST
 	currentPaletteMS.dump16(this->_workingData + this->_packSize + this->_packIndexSize);
 #else
 	currentPaletteMS.dump(this->_workingData + this->_packSize + this->_packIndexSize);
@@ -1210,7 +1210,7 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 					break;
 					
 				case 1:
-#ifdef LOCAL_BE
+#ifdef MSB_FIRST
 					tmp_col[2]	= ( (((tmp_col[0] & 0xFF000000) >> 1)+((tmp_col[1] & 0xFF000000)  >> 1)) & 0xFF000000 ) |
 					              ( (((tmp_col[0] & 0x00FF0000)      + (tmp_col[1] & 0x00FF0000)) >> 1)  & 0x00FF0000 ) |
 					              ( (((tmp_col[0] & 0x0000FF00)      + (tmp_col[1] & 0x0000FF00)) >> 1)  & 0x0000FF00 ) |
@@ -1231,7 +1231,7 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 					
 				case 3:
 				{
-#ifdef LOCAL_BE
+#ifdef MSB_FIRST
 					const u32 r0	= (tmp_col[0]>>24) & 0x000000FF;
 					const u32 r1	= (tmp_col[1]>>24) & 0x000000FF;
 					const u32 g0	= (tmp_col[0]>>16) & 0x000000FF;

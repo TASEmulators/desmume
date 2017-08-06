@@ -36,6 +36,12 @@
 #include "./utils/colorspacehandler/colorspacehandler_SSE2.h"
 #endif
 
+#if MSB_FIRST
+	#define GL_TEXTURE_SRC_FORMAT GL_UNSIGNED_INT_8_8_8_8
+#else
+	#define GL_TEXTURE_SRC_FORMAT GL_UNSIGNED_INT_8_8_8_8_REV
+#endif
+
 typedef struct
 {
 	unsigned int major;
@@ -758,11 +764,11 @@ void OpenGLTexture::Load(bool isNewTexture)
 			
 			if (isNewTexture)
 			{
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_sizeS, this->_sizeT, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_sizeS, this->_sizeT, 0, GL_RGBA, GL_TEXTURE_SRC_FORMAT, textureSrc);
 			}
 			else
 			{
-				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->_sizeS, this->_sizeT, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->_sizeS, this->_sizeT, GL_RGBA, GL_TEXTURE_SRC_FORMAT, textureSrc);
 			}
 			break;
 		}
@@ -776,13 +782,13 @@ void OpenGLTexture::Load(bool isNewTexture)
 			
 			if (isNewTexture)
 			{
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_sizeS*2, this->_sizeT*2, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_upscaleBuffer);
-				glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, this->_sizeS*1, this->_sizeT*1, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_sizeS*2, this->_sizeT*2, 0, GL_RGBA, GL_TEXTURE_SRC_FORMAT, this->_upscaleBuffer);
+				glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, this->_sizeS*1, this->_sizeT*1, 0, GL_RGBA, GL_TEXTURE_SRC_FORMAT, textureSrc);
 			}
 			else
 			{
-				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->_sizeS*2, this->_sizeT*2, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_upscaleBuffer);
-				glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, this->_sizeS*1, this->_sizeT*1, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->_sizeS*2, this->_sizeT*2, GL_RGBA, GL_TEXTURE_SRC_FORMAT, this->_upscaleBuffer);
+				glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, this->_sizeS*1, this->_sizeT*1, GL_RGBA, GL_TEXTURE_SRC_FORMAT, textureSrc);
 			}
 			break;
 		}
@@ -796,21 +802,21 @@ void OpenGLTexture::Load(bool isNewTexture)
 			
 			if (isNewTexture)
 			{
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_sizeS*4, this->_sizeT*4, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_upscaleBuffer);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_sizeS*4, this->_sizeT*4, 0, GL_RGBA, GL_TEXTURE_SRC_FORMAT, this->_upscaleBuffer);
 				
 				this->_Upscale<2>(textureSrc, this->_upscaleBuffer);
-				glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, this->_sizeS*2, this->_sizeT*2, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_upscaleBuffer);
+				glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, this->_sizeS*2, this->_sizeT*2, 0, GL_RGBA, GL_TEXTURE_SRC_FORMAT, this->_upscaleBuffer);
 				
-				glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA, this->_sizeS*1, this->_sizeT*1, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+				glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA, this->_sizeS*1, this->_sizeT*1, 0, GL_RGBA, GL_TEXTURE_SRC_FORMAT, textureSrc);
 			}
 			else
 			{
-				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->_sizeS*4, this->_sizeT*4, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_upscaleBuffer);
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, this->_sizeS*4, this->_sizeT*4, GL_RGBA, GL_TEXTURE_SRC_FORMAT, this->_upscaleBuffer);
 				
 				this->_Upscale<2>(textureSrc, this->_upscaleBuffer);
-				glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, this->_sizeS*2, this->_sizeT*2, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_upscaleBuffer);
+				glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, this->_sizeS*2, this->_sizeT*2, GL_RGBA, GL_TEXTURE_SRC_FORMAT, this->_upscaleBuffer);
 				
-				glTexSubImage2D(GL_TEXTURE_2D, 2, 0, 0, this->_sizeS*1, this->_sizeT*1, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, textureSrc);
+				glTexSubImage2D(GL_TEXTURE_2D, 2, 0, 0, this->_sizeS*1, this->_sizeT*1, GL_RGBA, GL_TEXTURE_SRC_FORMAT, textureSrc);
 			}
 			break;
 		}

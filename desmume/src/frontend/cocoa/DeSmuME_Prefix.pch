@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,6 +30,10 @@
 
 #if defined(__i386__) || defined(__x86_64__)
 	#define HAVE_JIT
+#endif
+
+#if defined(__ppc__) || defined(__ppc64__)
+	#define MSB_FIRST 1
 #endif
 
 #define PORT_VERSION	"Cocoa"
