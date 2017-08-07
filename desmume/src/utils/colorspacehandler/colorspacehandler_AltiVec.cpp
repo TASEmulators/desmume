@@ -35,6 +35,12 @@ FORCEINLINE void ColorspaceConvert555To8888_AltiVec(const v128u16 &srcColor, con
 	dstHi = vec_unpackh((vector pixel)srcColor);
 	dstHi = vec_or( vec_sl((v128u8)dstHi, ((v128u8){3,3,3,0,  3,3,3,0,  3,3,3,0,  3,3,3,0})), vec_sr((v128u8)dstHi, ((v128u8){2,2,2,0,  2,2,2,0,  2,2,2,0,  2,2,2,0})) );
 	dstHi = vec_sel(dstHi, srcAlphaBits32Hi, vec_splat_u32(0xFF000000));
+	
+	if (SWAP_RB)
+	{
+		dstLo = vec_perm(dstLo, dstLo, ((v128u8){2,1,0,3,  6,5,4,7,  10,9,8,11,  14,13,12,15}));
+		dstHi = vec_perm(dstHi, dstHi, ((v128u8){2,1,0,3,  6,5,4,7,  10,9,8,11,  14,13,12,15}));
+	}
 }
 
 template <bool SWAP_RB>
@@ -49,6 +55,12 @@ FORCEINLINE void ColorspaceConvert555To6665_AltiVec(const v128u16 &srcColor, con
 	dstHi = vec_unpackh((vector pixel)srcColor);
 	dstHi = vec_or( vec_sl((v128u8)dstHi, ((v128u8){1,1,1,0,  1,1,1,0,  1,1,1,0,  1,1,1,0})), vec_sr((v128u8)dstHi, ((v128u8){4,4,4,0,  4,4,4,0,  4,4,4,0,  4,4,4,0})) );
 	dstHi = vec_sel(dstHi, srcAlphaBits32Hi, vec_splat_u32(0xFF000000));
+	
+	if (SWAP_RB)
+	{
+		dstLo = vec_perm(dstLo, dstLo, ((v128u8){2,1,0,3,  6,5,4,7,  10,9,8,11,  14,13,12,15}));
+		dstHi = vec_perm(dstHi, dstHi, ((v128u8){2,1,0,3,  6,5,4,7,  10,9,8,11,  14,13,12,15}));
+	}
 }
 
 template <bool SWAP_RB>
