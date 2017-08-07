@@ -4874,7 +4874,11 @@ void OGLClientFetchObject::Init()
 
 void OGLClientFetchObject::SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo)
 {
+#ifdef MSB_FIRST
+	this->_fetchColorFormatOGL = (currentDisplayInfo.pixelBytes == 2) ? GL_UNSIGNED_SHORT_1_5_5_5_REV : GL_UNSIGNED_INT_8_8_8_8;
+#else
 	this->_fetchColorFormatOGL = (currentDisplayInfo.pixelBytes == 2) ? GL_UNSIGNED_SHORT_1_5_5_5_REV : GL_UNSIGNED_INT_8_8_8_8_REV;
+#endif
 	
 	const size_t nativeSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * currentDisplayInfo.pixelBytes;
 	const size_t customSize = currentDisplayInfo.customWidth * currentDisplayInfo.customHeight * currentDisplayInfo.pixelBytes;
@@ -5412,7 +5416,7 @@ void OGLFilter::DownloadDstBufferOGL(uint32_t *dstBuffer, size_t lineOffset, siz
 	}
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, this->_fboID);
-	glReadPixels(0, lineOffset, this->_dstWidth, readLineCount, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, dstBuffer);
+	glReadPixels(0, lineOffset, this->_dstWidth, readLineCount, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, dstBuffer);
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 }
 
