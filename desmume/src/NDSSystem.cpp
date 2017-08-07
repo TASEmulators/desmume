@@ -2971,7 +2971,7 @@ static void NDS_applyFinalInput()
 	if (!nds.isTouch)     padExt |= 1<<6; //~touch
 	if (LidClosed)        padExt |= 1<<7;
 	
-	((u16 *)MMU.ARM7_REG)[0x136>>1] = padExt;
+	((u16 *)MMU.ARM7_REG)[0x136>>1] = LOCAL_TO_LE_16(padExt);
 
 	InputDisplayString=MakeInputDisplayString(padExt, pad);
 
