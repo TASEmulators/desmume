@@ -183,7 +183,6 @@ class OGLVideoOutput;
 - (IBAction) changeDisplayOrientation:(id)sender;
 - (IBAction) changeDisplayOrder:(id)sender;
 - (IBAction) changeDisplayGap:(id)sender;
-- (IBAction) toggleVerticalSync:(id)sender;
 - (IBAction) toggleVideoFiltersPreferGPU:(id)sender;
 - (IBAction) toggleVideoSourceDeposterize:(id)sender;
 - (IBAction) changeVideoOutputFilter:(id)sender;

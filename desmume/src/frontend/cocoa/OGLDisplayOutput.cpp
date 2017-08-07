@@ -4929,11 +4929,11 @@ void OGLClientFetchObject::_FetchNativeDisplayByID(const NDSDisplayID displayID,
 		
 		if (this->_fetchColorFormatOGL == GL_UNSIGNED_SHORT_1_5_5_5_REV)
 		{
-			ColorspaceConvertBuffer555To8888Opaque<true, false>((const uint16_t *)this->_fetchDisplayInfo[bufferIndex].nativeBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			ColorspaceConvertBuffer555To8888Opaque<false, false>((const uint16_t *)this->_fetchDisplayInfo[bufferIndex].nativeBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		}
 		else
 		{
-			ColorspaceConvertBuffer888XTo8888Opaque<true, false>((const uint32_t *)this->_fetchDisplayInfo[bufferIndex].nativeBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+			ColorspaceConvertBuffer888XTo8888Opaque<false, false>((const uint32_t *)this->_fetchDisplayInfo[bufferIndex].nativeBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		}
 		
 		pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
@@ -6909,7 +6909,7 @@ void OGLDisplayLayer::_ProcessDisplayByID(const NDSDisplayID displayID, GLsizei 
 			uint32_t *texData = vf->RunFilter();
 			inoutTexID = this->_output->GetTexCPUFilterDstID(displayID);
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, inoutTexID);
-			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, vf->GetDstWidth(), vf->GetDstHeight(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, texData);
+			glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, vf->GetDstWidth(), vf->GetDstHeight(), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, texData);
 			
 			inoutWidth  = (GLsizei)vf->GetDstWidth();
 			inoutHeight = (GLsizei)vf->GetDstHeight();
