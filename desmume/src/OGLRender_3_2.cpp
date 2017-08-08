@@ -555,12 +555,15 @@ static const char *FramebufferOutputVtxShader_150 = {"\
 	\n\
 	in vec2 inPosition;\n\
 	in vec2 inTexCoord0;\n\
-	uniform vec2 framebufferSize;\n\
+	\n\
+	uniform sampler2D texInFragColor;\n\
+	\n\
 	out vec2 texCoord;\n\
 	\n\
 	void main()\n\
 	{\n\
-		texCoord = vec2(inTexCoord0.x, (framebufferSize.y - (framebufferSize.y * inTexCoord0.y)) / framebufferSize.y);\n\
+		float framebufferHeight = float( textureSize(texInFragColor, 0).y );\n\
+		texCoord = vec2(inTexCoord0.x, (framebufferHeight - (framebufferHeight * inTexCoord0.y)) / framebufferHeight);\n\
 		gl_Position = vec4(inPosition, 0.0, 1.0);\n\
 	}\n\
 "};
@@ -814,12 +817,10 @@ Render3DError OpenGLRenderer_3_2::InitFramebufferOutputShaderLocations()
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	glUseProgram(OGLRef.programFramebufferRGBA6665OutputID);
-	OGLRef.uniformFramebufferSize_ConvertRGBA6665 = glGetUniformLocation(OGLRef.programFramebufferRGBA6665OutputID, "framebufferSize");
 	OGLRef.uniformTexInFragColor_ConvertRGBA6665 = glGetUniformLocation(OGLRef.programFramebufferRGBA6665OutputID, "texInFragColor");
 	glUniform1i(OGLRef.uniformTexInFragColor_ConvertRGBA6665, OGLTextureUnitID_FinalColor);
 	
 	glUseProgram(OGLRef.programFramebufferRGBA8888OutputID);
-	OGLRef.uniformFramebufferSize_ConvertRGBA8888 = glGetUniformLocation(OGLRef.programFramebufferRGBA8888OutputID, "framebufferSize");
 	OGLRef.uniformTexInFragColor_ConvertRGBA8888 = glGetUniformLocation(OGLRef.programFramebufferRGBA8888OutputID, "texInFragColor");
 	glUniform1i(OGLRef.uniformTexInFragColor_ConvertRGBA8888, OGLTextureUnitID_FinalColor);
 	
@@ -1312,6 +1313,8 @@ Render3DError OpenGLRenderer_3_2::ZeroDstAlphaPass(const POLYLIST *polyList, con
 	glDisable(GL_BLEND);
 	glEnable(GL_STENCIL_TEST);
 	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 	
 	glStencilFunc(GL_ALWAYS, 0x80, 0x80);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -1428,12 +1431,12 @@ Render3DError OpenGLRenderer_3_2::ReadBackPixels()
 			this->_lastTextureDrawTarget = OGLTextureUnitID_GColor;
 		}
 		
-		glUniform2f(OGLRef.uniformFramebufferSize_ConvertRGBA6665, this->_framebufferWidth, this->_framebufferHeight);
 		glViewport(0, 0, this->_framebufferWidth, this->_framebufferHeight);
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_STENCIL_TEST);
 		glDisable(GL_BLEND);
-		glDisable(GL_CULL_FACE);
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
 		
 		glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboPostprocessIndexID);
@@ -1615,7 +1618,8 @@ Render3DError OpenGLRenderer_3_2::RenderEdgeMarking(const u16 *colorTable, const
 	glViewport(0, 0, this->_framebufferWidth, this->_framebufferHeight);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_STENCIL_TEST);
-	glDisable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboPostprocessIndexID);
@@ -1660,7 +1664,8 @@ Render3DError OpenGLRenderer_3_2::RenderFog(const u8 *densityTable, const u32 co
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_STENCIL_TEST);
 	glDisable(GL_BLEND);
-	glDisable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, OGLRef.vboPostprocessVtxID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, OGLRef.iboPostprocessIndexID);
