@@ -3855,7 +3855,7 @@ bool GPUEngineBase::_ComputeSpriteVars(GPUEngineCompositorInfo &compInfo, const 
 	if (y >= sprSize.height)
 		return false;
 
-	if ((sprX == GPU_FRAMEBUFFER_NATIVE_WIDTH) || (sprX+sprSize.width <= 0))	/* sprite pixels outside of line */
+	if ((sprX == GPU_FRAMEBUFFER_NATIVE_WIDTH) || ((sprX+sprSize.width) <= 0))	/* sprite pixels outside of line */
 		return false;				/* not to be drawn */
 
 	// sprite portion out of the screen (LEFT)
@@ -3972,7 +3972,7 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
 	size_t cost = 0;
 	
-	for (size_t i = 0; i < 128; i++)
+	for (unsigned char i = 0; i < 128; i++)
 	{
 		OAMAttributes spriteInfo = this->_oamList[i];
 

@@ -26,10 +26,10 @@
 
 void _NOSSE_MatrixMultVec4x4 (const float *matrix, float *vecPtr)
 {
-	float x = vecPtr[0];
-	float y = vecPtr[1];
-	float z = vecPtr[2];
-	float w = vecPtr[3];
+	const float x = vecPtr[0];
+	const float y = vecPtr[1];
+	const float z = vecPtr[2];
+	const float w = vecPtr[3];
 
 	vecPtr[0] = x * matrix[0] + y * matrix[4] + z * matrix[ 8] + w * matrix[12];
 	vecPtr[1] = x * matrix[1] + y * matrix[5] + z * matrix[ 9] + w * matrix[13];
@@ -72,9 +72,9 @@ void MatrixMultVec4x4 (const float *matrix, float *vecPtr)
 
 void MatrixMultVec3x3 (const float *matrix, float *vecPtr)
 {
-	float x = vecPtr[0];
-	float y = vecPtr[1];
-	float z = vecPtr[2];
+	const float x = vecPtr[0];
+	const float y = vecPtr[1];
+	const float z = vecPtr[2];
 
 	vecPtr[0] = x * matrix[0] + y * matrix[4] + z * matrix[ 8];
 	vecPtr[1] = x * matrix[1] + y * matrix[5] + z * matrix[ 9];
@@ -149,7 +149,7 @@ void MatrixInit  (float *matrix)
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
 }
 
-void	MatrixIdentity			(s32 *matrix)
+void MatrixIdentity  (s32 *matrix)
 {
 	matrix[1] = matrix[2] = matrix[3] = matrix[4] = 0;
 	matrix[6] = matrix[7] = matrix[8] = matrix[9] = 0;
@@ -392,4 +392,3 @@ void MatrixTranslate(s32 *matrix, const s32 *ptr)
 		matrix[X+12] = sfx32_shiftdown(temp);
 	});
 }
-

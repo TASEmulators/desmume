@@ -40,7 +40,7 @@ template<u32> static u32 armcpu_prefetch();
 
 FORCEINLINE u32 armcpu_prefetch(armcpu_t *armcpu) { 
 	if(armcpu->proc_ID==0) return armcpu_prefetch<0>();
-	else return armcpu_prefetch<1>();
+	return armcpu_prefetch<1>();
 }
 
 armcpu_t NDS_ARM7;
@@ -59,14 +59,14 @@ armcpu_t NDS_ARM9;
 static void
 stall_cpu( void *instance) {
   armcpu_t *armcpu = (armcpu_t *)instance;
-  printf("STALL\n");
+  puts("STALL");
   armcpu->stalled = 1;
 }
-                      
+
 static void
 unstall_cpu( void *instance) {
   armcpu_t *armcpu = (armcpu_t *)instance;
-  printf("UNSTALL\n");
+  puts("UNSTALL");
   armcpu->stalled = 0;
 }
 
@@ -94,10 +94,10 @@ static u32 read_cpu_reg( void *instance, u32 reg_num)
 	if ( reg_num <= 14) {
 	  return armcpu->R[reg_num];
 	}
-	else if ( reg_num == 15) {
+	if ( reg_num == 15) {
 	  return armcpu->instruct_adr;
 	}
-	else if ( reg_num == 16) {
+	if ( reg_num == 16) {
 	  //CPSR
 	  return armcpu->CPSR.val;
 	}
@@ -364,7 +364,7 @@ u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode)
 				armcpu->SPSR = armcpu->SPSR_abt;
 				break;
 				
-          case UND :
+			case UND :
 				armcpu->R[13] = armcpu->R13_und;
 				armcpu->R[14] = armcpu->R14_und;
 				armcpu->SPSR = armcpu->SPSR_und;
@@ -447,8 +447,7 @@ FORCEINLINE static u32 armcpu_prefetch()
 		// arm9 fetches 2 instructions at a time in thumb mode
 		if(!(curInstruction == armcpu->instruct_adr + 2 && (curInstruction & 2)))
 			return MMU_codeFetchCycles<PROCNUM,32>(curInstruction);
-		else
-			return 0;
+		return 0;
 	}
 
 	return MMU_codeFetchCycles<PROCNUM,16>(curInstruction);
@@ -522,7 +521,7 @@ void armcpu_exception(armcpu_t *cpu, u32 number)
 
 BOOL armcpu_irqException(armcpu_t *armcpu)
 {
-    Status_Reg tmp;
+	Status_Reg tmp;
 
 	//TODO - remove GDB specific code
 //#ifdef GDB_STUB
@@ -676,7 +675,7 @@ u32 armcpu_exec()
 			CallRegisteredLuaMemHook(ARMPROC.instruct_adr, 4, ARMPROC.instruction, LUAMEMHOOK_EXEC); // should report even if condition=false?
 #endif
 			#ifdef DEVELOPER
-			DEBUG_statistics.instructionHits[PROCNUM].arm[INSTRUCTION_INDEX(ARMPROC.instruction)]++;
+			++DEBUG_statistics.instructionHits[PROCNUM].arm[INSTRUCTION_INDEX(ARMPROC.instruction)];
 			#endif
 			cExecute = arm_instructions_set[PROCNUM][INSTRUCTION_INDEX(ARMPROC.instruction)](ARMPROC.instruction);
 		}
