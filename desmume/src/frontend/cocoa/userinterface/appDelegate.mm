@@ -621,34 +621,37 @@
 				continue;
 			}
 			
-			const NSInteger displayMode				= [(NSNumber *)[windowProperties valueForKey:@"displayMode"] integerValue];
-			const double displayScale				= [(NSNumber *)[windowProperties valueForKey:@"displayScale"] doubleValue];
-			const double displayRotation			= [(NSNumber *)[windowProperties valueForKey:@"displayRotation"] doubleValue];
-			const NSInteger displayOrientation		= [(NSNumber *)[windowProperties valueForKey:@"displayOrientation"] integerValue];
-			const NSInteger displayOrder			= [(NSNumber *)[windowProperties valueForKey:@"displayOrder"] integerValue];
-			const double displayGap					= [(NSNumber *)[windowProperties valueForKey:@"displayGap"] doubleValue];
+			const NSInteger displayMode				= ([windowProperties objectForKey:@"displayMode"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayMode"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"];
+			const double displayScale				= ([windowProperties objectForKey:@"displayScale"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayScale"] doubleValue] : ([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Size"] / 100.0);
+			const double displayRotation			= ([windowProperties objectForKey:@"displayRotation"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayRotation"] doubleValue] : [[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Rotation"];
+			const NSInteger displayOrientation		= ([windowProperties objectForKey:@"displayOrientation"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayOrientation"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Orientation"];
+			const NSInteger displayOrder			= ([windowProperties objectForKey:@"displayOrder"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayOrder"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"];
+			const double displayGap					= ([windowProperties objectForKey:@"displayGap"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayGap"] doubleValue] : ([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayViewCombo_Gap"] / 100.0);
 			
-			const BOOL videoFiltersPreferGPU		= [(NSNumber *)[windowProperties valueForKey:@"videoFiltersPreferGPU"] boolValue];
-			const BOOL videoSourceDeposterize		= [(NSNumber *)[windowProperties valueForKey:@"videoSourceDeposterize"] boolValue];
-			const NSInteger videoPixelScaler		= [(NSNumber *)[windowProperties valueForKey:@"videoFilterType"] integerValue];
-			const NSInteger videoOutputFilter		= [(NSNumber *)[windowProperties valueForKey:@"videoOutputFilter"] integerValue];
+			const NSInteger displayMainSource		= ([windowProperties objectForKey:@"displayMainVideoSource"]  != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayMainVideoSource"] integerValue]  : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayMainVideoSource"];
+			const NSInteger displayTouchSource		= ([windowProperties objectForKey:@"displayTouchVideoSource"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayTouchVideoSource"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayTouchVideoSource"];
 			
-			const BOOL hudEnable					= [(NSNumber *)[windowProperties valueForKey:@"hudEnable"] boolValue];
-			const BOOL hudShowVideoFPS				= [(NSNumber *)[windowProperties valueForKey:@"hudShowVideoFPS"] boolValue];
-			const BOOL hudShowRender3DFPS			= [(NSNumber *)[windowProperties valueForKey:@"hudShowRender3DFPS"] boolValue];
-			const BOOL hudShowFrameIndex			= [(NSNumber *)[windowProperties valueForKey:@"hudShowFrameIndex"] boolValue];
-			const BOOL hudShowLagFrameCount			= [(NSNumber *)[windowProperties valueForKey:@"hudShowLagFrameCount"] boolValue];
-			const BOOL hudShowCPULoadAverage		= [(NSNumber *)[windowProperties valueForKey:@"hudShowCPULoadAverage"] boolValue];
-			const BOOL hudShowRTC					= [(NSNumber *)[windowProperties valueForKey:@"hudShowRTC"] boolValue];
+			const BOOL videoFiltersPreferGPU		= ([windowProperties objectForKey:@"videoFiltersPreferGPU"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"videoFiltersPreferGPU"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_FiltersPreferGPU"];
+			const BOOL videoSourceDeposterize		= ([windowProperties objectForKey:@"videoSourceDeposterize"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"videoSourceDeposterize"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_Deposterize"];
+			const NSInteger videoPixelScaler		= ([windowProperties objectForKey:@"videoFilterType"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"videoFilterType"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"];
+			const NSInteger videoOutputFilter		= ([windowProperties objectForKey:@"videoOutputFilter"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"videoOutputFilter"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"];
+			
+			const BOOL hudEnable					= ([windowProperties objectForKey:@"hudEnable"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudEnable"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_EnableHUD"];
+			const BOOL hudShowVideoFPS				= ([windowProperties objectForKey:@"hudShowVideoFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowVideoFPS"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowVideoFPS"];
+			const BOOL hudShowRender3DFPS			= ([windowProperties objectForKey:@"hudShowRender3DFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowRender3DFPS"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRender3DFPS"];
+			const BOOL hudShowFrameIndex			= ([windowProperties objectForKey:@"hudShowFrameIndex"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowFrameIndex"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowFrameIndex"];
+			const BOOL hudShowLagFrameCount			= ([windowProperties objectForKey:@"hudShowLagFrameCount"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowLagFrameCount"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowLagFrameCount"];
+			const BOOL hudShowCPULoadAverage		= ([windowProperties objectForKey:@"hudShowCPULoadAverage"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowCPULoadAverage"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowCPULoadAverage"];
+			const BOOL hudShowRTC					= ([windowProperties objectForKey:@"hudShowRTC"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowRTC"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRTC"];
 			// TODO: Show HUD Input.
 			//const BOOL hudShowInput					= [(NSNumber *)[windowProperties valueForKey:@"hudShowInput"] boolValue];
 			
-			const NSInteger screenshotFileFormat	= [(NSNumber *)[windowProperties valueForKey:@"screenshotFileFormat"] integerValue];
-			const BOOL useVerticalSync				= [(NSNumber *)[windowProperties valueForKey:@"useVerticalSync"] boolValue];
-			const BOOL isMinSizeNormal				= [(NSNumber *)[windowProperties valueForKey:@"isMinSizeNormal"] boolValue];
-			const BOOL isShowingStatusBar			= [(NSNumber *)[windowProperties valueForKey:@"isShowingStatusBar"] boolValue];
-			const BOOL isInFullScreenMode			= [(NSNumber *)[windowProperties valueForKey:@"isInFullScreenMode"] boolValue];
-			const NSUInteger screenIndex			= [(NSNumber *)[windowProperties valueForKey:@"screenIndex"] unsignedIntegerValue];
+			const NSInteger screenshotFileFormat	= ([windowProperties objectForKey:@"screenshotFileFormat"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"screenshotFileFormat"] integerValue] : NSTIFFFileType;
+			const BOOL useVerticalSync				= ([windowProperties objectForKey:@"useVerticalSync"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"useVerticalSync"] boolValue] : YES;
+			const BOOL isMinSizeNormal				= ([windowProperties objectForKey:@"isMinSizeNormal"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"isMinSizeNormal"] boolValue] : YES;
+			const BOOL isShowingStatusBar			= ([windowProperties objectForKey:@"isShowingStatusBar"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"isShowingStatusBar"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"];
+			const BOOL isInFullScreenMode			= ([windowProperties objectForKey:@"isInFullScreenMode"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"isInFullScreenMode"] boolValue] : NO;
+			const NSUInteger screenIndex			= ([windowProperties objectForKey:@"screenIndex"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"screenIndex"] unsignedIntegerValue] : 0;
 			NSString *windowFrameStr				= (NSString *)[windowProperties valueForKey:@"windowFrame"];
 			
 			int frameX = 0;
@@ -662,13 +665,16 @@
 			[windowController window];
 			
 			[windowController setDisplayMode:(ClientDisplayMode)displayMode
+								   viewScale:displayScale
+									rotation:displayRotation
 									  layout:(ClientDisplayLayout)displayOrientation
 									   order:(ClientDisplayOrder)displayOrder
-									rotation:displayRotation
-								   viewScale:displayScale
 									gapScale:displayGap
 							 isMinSizeNormal:isMinSizeNormal
 						  isShowingStatusBar:isShowingStatusBar];
+			
+			[windowController setDisplayMainVideoSource:displayMainSource];
+			[windowController setDisplayTouchVideoSource:displayTouchSource];
 			
 			[windowController setVideoPropertiesWithoutUpdateUsingPreferGPU:videoFiltersPreferGPU
 														  sourceDeposterize:videoSourceDeposterize
@@ -738,6 +744,8 @@
 											  [NSNumber numberWithInteger:[windowController displayMode]], @"displayMode",
 											  [NSNumber numberWithDouble:[windowController masterWindowScale]], @"displayScale",
 											  [NSNumber numberWithDouble:[windowController displayRotation]], @"displayRotation",
+											  [NSNumber numberWithInteger:[windowController displayMainVideoSource]], @"displayMainVideoSource",
+											  [NSNumber numberWithInteger:[windowController displayTouchVideoSource]], @"displayTouchVideoSource",
 											  [NSNumber numberWithInteger:[windowController displayOrientation]], @"displayOrientation",
 											  [NSNumber numberWithInteger:[windowController displayOrder]], @"displayOrder",
 											  [NSNumber numberWithDouble:[windowController displayGap]], @"displayGap",

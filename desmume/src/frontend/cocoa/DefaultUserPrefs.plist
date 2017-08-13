@@ -32,6 +32,10 @@
 	<integer>1</integer>
 	<key>DisplayView_Rotation</key>
 	<integer>0</integer>
+	<key>DisplayView_DisplayMainVideoSource</key>
+	<integer>1</integer>
+	<key>DisplayView_DisplayTouchVideoSource</key>
+	<integer>1</integer>
 	<key>DisplayView_EnableHUD</key>
 	<false/>
 	<key>DisplayView_ShowStatusBar</key>

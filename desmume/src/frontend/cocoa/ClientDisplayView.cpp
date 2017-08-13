@@ -72,6 +72,13 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	_pixelScaler = VideoFilterTypeID_None;
 	_outputFilter = OutputFilterTypeID_Bilinear;
 	
+	_displaySourceSelect[NDSDisplayID_Main]  = ClientDisplaySource_DeterminedByNDS;
+	_displaySourceSelect[NDSDisplayID_Touch] = ClientDisplaySource_DeterminedByNDS;
+	_isSelectedDisplayEnabled[NDSDisplayID_Main]  = true;
+	_isSelectedDisplayEnabled[NDSDisplayID_Touch] = true;
+	_selectedSourceForDisplay[NDSDisplayID_Main]  = NDSDisplayID_Main;
+	_selectedSourceForDisplay[NDSDisplayID_Touch] = NDSDisplayID_Touch;
+	
 	_useVerticalSync = false;
 	_scaleFactor = 1.0;
 	
@@ -315,6 +322,26 @@ double ClientDisplayView::GetGapScale() const
 double ClientDisplayView::GetGapDistance() const
 {
 	return this->_renderProperty.gapDistance;
+}
+
+ClientDisplaySource ClientDisplayView::GetDisplayVideoSource(const NDSDisplayID displayID) const
+{
+	return this->_displaySourceSelect[displayID];
+}
+
+void ClientDisplayView::SetDisplayVideoSource(const NDSDisplayID displayID, ClientDisplaySource displaySrc)
+{
+	this->_displaySourceSelect[displayID] = displaySrc;
+}
+
+NDSDisplayID ClientDisplayView::GetSelectedDisplaySourceForDisplay(const NDSDisplayID displayID) const
+{
+	return this->_selectedSourceForDisplay[displayID];
+}
+
+bool ClientDisplayView::IsSelectedDisplayEnabled(const NDSDisplayID displayID) const
+{
+	return this->_isSelectedDisplayEnabled[displayID];
 }
 
 // NDS screen filters
@@ -561,30 +588,125 @@ void ClientDisplayView::LoadDisplays()
 {
 	this->_emuDisplayInfo = this->_fetchObject->GetFetchDisplayInfoForBufferIndex(this->_fetchObject->GetLastFetchIndex());
 	
-	const bool loadMainScreen = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main] && ((this->_renderProperty.mode == ClientDisplayMode_Main) || (this->_renderProperty.mode == ClientDisplayMode_Dual));
-	const bool loadTouchScreen = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && ((this->_renderProperty.mode == ClientDisplayMode_Touch) || (this->_renderProperty.mode == ClientDisplayMode_Dual));
+	this->_selectedSourceForDisplay[NDSDisplayID_Main]  = NDSDisplayID_Main;
+	this->_selectedSourceForDisplay[NDSDisplayID_Touch] = NDSDisplayID_Touch;
+	this->_isSelectedDisplayEnabled[NDSDisplayID_Main]  = false;
+	this->_isSelectedDisplayEnabled[NDSDisplayID_Touch] = false;
+	
+	// Select the display source
+	const ClientDisplaySource mainDisplaySrc  = this->_displaySourceSelect[NDSDisplayID_Main];
+	const ClientDisplaySource touchDisplaySrc = this->_displaySourceSelect[NDSDisplayID_Touch];
+	
+	switch (mainDisplaySrc)
+	{
+		case ClientDisplaySource_DeterminedByNDS:
+			this->_selectedSourceForDisplay[NDSDisplayID_Main] = NDSDisplayID_Main;
+			this->_isSelectedDisplayEnabled[NDSDisplayID_Main] = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main];
+			break;
+			
+		case ClientDisplaySource_EngineMain:
+		{
+			if ( (this->_emuDisplayInfo.engineID[NDSDisplayID_Main] == GPUEngineID_Main) && (mainDisplaySrc == ClientDisplaySource_EngineMain) )
+			{
+				this->_selectedSourceForDisplay[NDSDisplayID_Main] = NDSDisplayID_Main;
+				this->_isSelectedDisplayEnabled[NDSDisplayID_Main] = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main];
+			}
+			else
+			{
+				this->_selectedSourceForDisplay[NDSDisplayID_Main] = NDSDisplayID_Touch;
+				this->_isSelectedDisplayEnabled[NDSDisplayID_Main] = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch];
+			}
+			break;
+		}
+			
+		case ClientDisplaySource_EngineSub:
+		{
+			if ( (this->_emuDisplayInfo.engineID[NDSDisplayID_Main] == GPUEngineID_Sub)  && (mainDisplaySrc == ClientDisplaySource_EngineSub) )
+			{
+				this->_selectedSourceForDisplay[NDSDisplayID_Main] = NDSDisplayID_Main;
+				this->_isSelectedDisplayEnabled[NDSDisplayID_Main] = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main];
+			}
+			else
+			{
+				this->_selectedSourceForDisplay[NDSDisplayID_Main] = NDSDisplayID_Touch;
+				this->_isSelectedDisplayEnabled[NDSDisplayID_Main] = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch];
+			}
+			break;
+		}
+			
+		case ClientDisplaySource_None:
+		default:
+			this->_isSelectedDisplayEnabled[NDSDisplayID_Main] = false;
+			break;
+	}
+	
+	switch (touchDisplaySrc)
+	{
+		case ClientDisplaySource_DeterminedByNDS:
+			this->_selectedSourceForDisplay[NDSDisplayID_Touch] = NDSDisplayID_Touch;
+			this->_isSelectedDisplayEnabled[NDSDisplayID_Touch] = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch];
+			break;
+			
+		case ClientDisplaySource_EngineMain:
+		{
+			if ( (this->_emuDisplayInfo.engineID[NDSDisplayID_Touch] == GPUEngineID_Main) && (touchDisplaySrc == ClientDisplaySource_EngineMain) )
+			{
+				this->_selectedSourceForDisplay[NDSDisplayID_Touch] = NDSDisplayID_Touch;
+				this->_isSelectedDisplayEnabled[NDSDisplayID_Touch] = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch];
+			}
+			else
+			{
+				this->_selectedSourceForDisplay[NDSDisplayID_Touch] = NDSDisplayID_Main;
+				this->_isSelectedDisplayEnabled[NDSDisplayID_Touch] = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main];
+			}
+			break;
+		}
+			
+		case ClientDisplaySource_EngineSub:
+		{
+			if ( (this->_emuDisplayInfo.engineID[NDSDisplayID_Touch] == GPUEngineID_Sub)  && (touchDisplaySrc == ClientDisplaySource_EngineSub) )
+			{
+				this->_selectedSourceForDisplay[NDSDisplayID_Touch] = NDSDisplayID_Touch;
+				this->_isSelectedDisplayEnabled[NDSDisplayID_Touch] = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch];
+			}
+			else
+			{
+				this->_selectedSourceForDisplay[NDSDisplayID_Touch] = NDSDisplayID_Main;
+				this->_isSelectedDisplayEnabled[NDSDisplayID_Touch] = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main];
+			}
+			break;
+		}
+			
+		case ClientDisplaySource_None:
+		default:
+			this->_isSelectedDisplayEnabled[NDSDisplayID_Touch] = false;
+			break;
+	}
+	
+	const bool loadMainScreen  = this->_isSelectedDisplayEnabled[NDSDisplayID_Main]  && ((this->_renderProperty.mode == ClientDisplayMode_Main)  || (this->_renderProperty.mode == ClientDisplayMode_Dual));
+	const bool loadTouchScreen = this->_isSelectedDisplayEnabled[NDSDisplayID_Touch] && ((this->_renderProperty.mode == ClientDisplayMode_Touch) || (this->_renderProperty.mode == ClientDisplayMode_Dual)) && (this->_selectedSourceForDisplay[NDSDisplayID_Main] != this->_selectedSourceForDisplay[NDSDisplayID_Touch]);
 	
 	if (loadMainScreen)
 	{
-		if (!this->_emuDisplayInfo.didPerformCustomRender[NDSDisplayID_Main])
+		if (!this->_emuDisplayInfo.didPerformCustomRender[this->_selectedSourceForDisplay[NDSDisplayID_Main]])
 		{
-			this->_LoadNativeDisplayByID(NDSDisplayID_Main);
+			this->_LoadNativeDisplayByID(this->_selectedSourceForDisplay[NDSDisplayID_Main]);
 		}
 		else
 		{
-			this->_LoadCustomDisplayByID(NDSDisplayID_Main);
+			this->_LoadCustomDisplayByID(this->_selectedSourceForDisplay[NDSDisplayID_Main]);
 		}
 	}
 	
 	if (loadTouchScreen)
 	{
-		if (!this->_emuDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch])
+		if (!this->_emuDisplayInfo.didPerformCustomRender[this->_selectedSourceForDisplay[NDSDisplayID_Touch]])
 		{
-			this->_LoadNativeDisplayByID(NDSDisplayID_Touch);
+			this->_LoadNativeDisplayByID(this->_selectedSourceForDisplay[NDSDisplayID_Touch]);
 		}
 		else
 		{
-			this->_LoadCustomDisplayByID(NDSDisplayID_Touch);
+			this->_LoadCustomDisplayByID(this->_selectedSourceForDisplay[NDSDisplayID_Touch]);
 		}
 	}
 }

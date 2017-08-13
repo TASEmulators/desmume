@@ -6926,20 +6926,21 @@ void OGLDisplayLayer::ProcessOGL()
 	const OGLClientFetchObject &fetchObj = (const OGLClientFetchObject &)this->_output->GetFetchObject();
 	const NDSDisplayInfo &emuDisplayInfo = this->_output->GetEmuDisplayInfo();
 	const ClientDisplayMode mode = this->_output->GetViewProperties().mode;
+	const NDSDisplayID selectedDisplaySource[2] = { this->_output->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main), this->_output->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) };
 	
-	const bool didRenderNative[2] = { !emuDisplayInfo.didPerformCustomRender[NDSDisplayID_Main], !emuDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch] };
-	GLuint texVideoSourceID[2]	= { (didRenderNative[NDSDisplayID_Main])  ? fetchObj.GetTexNative(NDSDisplayID_Main,  emuDisplayInfo.bufferIndex) : fetchObj.GetTexCustom(NDSDisplayID_Main,  emuDisplayInfo.bufferIndex),
-								    (didRenderNative[NDSDisplayID_Touch]) ? fetchObj.GetTexNative(NDSDisplayID_Touch, emuDisplayInfo.bufferIndex) : fetchObj.GetTexCustom(NDSDisplayID_Touch, emuDisplayInfo.bufferIndex) };
-	GLsizei width[2]  = { emuDisplayInfo.renderedWidth[NDSDisplayID_Main],  emuDisplayInfo.renderedWidth[NDSDisplayID_Touch] };
-	GLsizei height[2] = { emuDisplayInfo.renderedHeight[NDSDisplayID_Main], emuDisplayInfo.renderedHeight[NDSDisplayID_Touch] };
+	const bool didRenderNative[2] = { !emuDisplayInfo.didPerformCustomRender[selectedDisplaySource[NDSDisplayID_Main]], !emuDisplayInfo.didPerformCustomRender[selectedDisplaySource[NDSDisplayID_Touch]] };
+	GLuint texVideoSourceID[2]	= { (didRenderNative[NDSDisplayID_Main])  ? fetchObj.GetTexNative(selectedDisplaySource[NDSDisplayID_Main],  emuDisplayInfo.bufferIndex) : fetchObj.GetTexCustom(selectedDisplaySource[NDSDisplayID_Main],  emuDisplayInfo.bufferIndex),
+								    (didRenderNative[NDSDisplayID_Touch]) ? fetchObj.GetTexNative(selectedDisplaySource[NDSDisplayID_Touch], emuDisplayInfo.bufferIndex) : fetchObj.GetTexCustom(selectedDisplaySource[NDSDisplayID_Touch], emuDisplayInfo.bufferIndex) };
+	GLsizei width[2]  = { emuDisplayInfo.renderedWidth[selectedDisplaySource[NDSDisplayID_Main]],  emuDisplayInfo.renderedWidth[selectedDisplaySource[NDSDisplayID_Touch]] };
+	GLsizei height[2] = { emuDisplayInfo.renderedHeight[selectedDisplaySource[NDSDisplayID_Main]], emuDisplayInfo.renderedHeight[selectedDisplaySource[NDSDisplayID_Touch]] };
 	
 	if (emuDisplayInfo.pixelBytes != 0)
 	{
 		// Run the video source filters and the pixel scalers
 		const bool willFilterOnGPU = this->_output->WillFilterOnGPU();
 		const bool useDeposterize = this->_output->GetSourceDeposterize();
-		const bool needProcessDisplay[2] = { (didRenderNative[NDSDisplayID_Main]  || !emuDisplayInfo.isCustomSizeRequested) && emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main]  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
-		                                     (didRenderNative[NDSDisplayID_Touch] || !emuDisplayInfo.isCustomSizeRequested) && emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual) };
+		const bool needProcessDisplay[2] = { (didRenderNative[NDSDisplayID_Main]  || !emuDisplayInfo.isCustomSizeRequested) && this->_output->IsSelectedDisplayEnabled(NDSDisplayID_Main)  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
+		                                     (didRenderNative[NDSDisplayID_Touch] || !emuDisplayInfo.isCustomSizeRequested) && this->_output->IsSelectedDisplayEnabled(NDSDisplayID_Touch) && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual) && (selectedDisplaySource[NDSDisplayID_Main] != selectedDisplaySource[NDSDisplayID_Touch]) };
 		const bool needsLock = (willFilterOnGPU || useDeposterize) && (needProcessDisplay[NDSDisplayID_Main] || needProcessDisplay[NDSDisplayID_Touch]);
 		
 		if (needsLock)
@@ -6964,15 +6965,25 @@ void OGLDisplayLayer::ProcessOGL()
 	}
 	
 	// Set the final output texture IDs
-	this->_texVideoOutputID[NDSDisplayID_Main]  = texVideoSourceID[NDSDisplayID_Main];
-	this->_texVideoOutputID[NDSDisplayID_Touch] = texVideoSourceID[NDSDisplayID_Touch];
+	this->_texVideoOutputID[NDSDisplayID_Main] = texVideoSourceID[NDSDisplayID_Main];
+	
+	if (selectedDisplaySource[NDSDisplayID_Touch] != selectedDisplaySource[NDSDisplayID_Main])
+	{
+		this->_texVideoOutputID[NDSDisplayID_Touch] = texVideoSourceID[NDSDisplayID_Touch];
+	}
+	else
+	{
+		this->_texVideoOutputID[NDSDisplayID_Touch] = texVideoSourceID[NDSDisplayID_Main];
+		width[NDSDisplayID_Touch]  = width[NDSDisplayID_Main];
+		height[NDSDisplayID_Touch] = height[NDSDisplayID_Main];
+	}
 	
 	// Update the texture coordinates
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, this->_vboTexCoordID);
 	glBufferDataARB(GL_ARRAY_BUFFER_ARB, (4 * 8) * sizeof(GLfloat), NULL, GL_STREAM_DRAW_ARB);
 	float *texCoordPtr = (float *)glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 	
-	this->_output->SetScreenTextureCoordinates((float)width[NDSDisplayID_Main], (float)height[NDSDisplayID_Main],
+	this->_output->SetScreenTextureCoordinates((float)width[NDSDisplayID_Main],  (float)height[NDSDisplayID_Main],
 											   (float)width[NDSDisplayID_Touch], (float)height[NDSDisplayID_Touch],
 											   texCoordPtr);
 	
@@ -7028,7 +7039,7 @@ void OGLDisplayLayer::RenderOGL()
 		{
 			case ClientDisplayMode_Main:
 			{
-				if (emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main])
+				if (this->_output->IsSelectedDisplayEnabled(NDSDisplayID_Main))
 				{
 					glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Main]);
 					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Main]);
@@ -7040,7 +7051,7 @@ void OGLDisplayLayer::RenderOGL()
 				
 			case ClientDisplayMode_Touch:
 			{
-				if (emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch])
+				if (this->_output->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
 				{
 					glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Touch]);
 					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Touch]);
@@ -7061,7 +7072,7 @@ void OGLDisplayLayer::RenderOGL()
 					case ClientDisplayLayout_Hybrid_16_9:
 					case ClientDisplayLayout_Hybrid_16_10:
 					{
-						if (emuDisplayInfo.isDisplayEnabled[majorDisplayID])
+						if (this->_output->IsSelectedDisplayEnabled(majorDisplayID))
 						{
 							glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[majorDisplayID]);
 							glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[majorDisplayID]);
@@ -7075,7 +7086,7 @@ void OGLDisplayLayer::RenderOGL()
 						break;
 				}
 				
-				if (emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main])
+				if (this->_output->IsSelectedDisplayEnabled(NDSDisplayID_Main))
 				{
 					glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Main]);
 					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Main]);
@@ -7083,7 +7094,7 @@ void OGLDisplayLayer::RenderOGL()
 					glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 				}
 				
-				if (emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch])
+				if (this->_output->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
 				{
 					glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Touch]);
 					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Touch]);

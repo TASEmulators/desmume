@@ -138,6 +138,7 @@ struct NDSFrameInfo;
 	OSSpinLock spinlockOutputFilter;
 	OSSpinLock spinlockSourceDeposterize;
 	OSSpinLock spinlockPixelScaler;
+	OSSpinLock spinlockDisplayVideoSource;
 }
 
 @property (readonly, nonatomic) BOOL canFilterOnGPU;
@@ -149,6 +150,8 @@ struct NDSFrameInfo;
 @property (assign) BOOL isHUDLagFrameCountVisible;
 @property (assign) BOOL isHUDCPULoadAverageVisible;
 @property (assign) BOOL isHUDRealTimeClockVisible;
+@property (assign) NSInteger displayMainVideoSource;
+@property (assign) NSInteger displayTouchVideoSource;
 @property (assign) BOOL useVerticalSync;
 @property (assign) BOOL videoFiltersPreferGPU;
 @property (assign) BOOL sourceDeposterize;

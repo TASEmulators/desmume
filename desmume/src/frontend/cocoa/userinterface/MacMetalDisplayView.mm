@@ -1243,15 +1243,31 @@
 	const NDSDisplayInfo &fetchDisplayInfo = _cdv->GetEmuDisplayInfo();
 	const ClientDisplayMode mode = _cdv->GetViewProperties().mode;
 	const bool useDeposterize = _cdv->GetSourceDeposterize();
+	const NDSDisplayID selectedDisplaySource[2] = { _cdv->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main), _cdv->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) };
 	
-	_texDisplayOutput[NDSDisplayID_Main]  = [sharedData texDisplaySrcTargetMain];
-	_texDisplayOutput[NDSDisplayID_Touch] = [sharedData texDisplaySrcTargetTouch];
+	if (selectedDisplaySource[NDSDisplayID_Main] == NDSDisplayID_Main)
+	{
+		_texDisplayOutput[NDSDisplayID_Main]  = [sharedData texDisplaySrcTargetMain];
+	}
+	else
+	{
+		_texDisplayOutput[NDSDisplayID_Main]  = [sharedData texDisplaySrcTargetTouch];
+	}
+	
+	if (selectedDisplaySource[NDSDisplayID_Touch] == NDSDisplayID_Touch)
+	{
+		_texDisplayOutput[NDSDisplayID_Touch] = [sharedData texDisplaySrcTargetTouch];
+	}
+	else
+	{
+		_texDisplayOutput[NDSDisplayID_Touch] = [sharedData texDisplaySrcTargetMain];
+	}
 	
 	if ( (fetchDisplayInfo.pixelBytes != 0) && (useDeposterize || (_cdv->GetPixelScaler() != VideoFilterTypeID_None)) )
 	{
 		const bool willFilterOnGPU = _cdv->WillFilterOnGPU();
-		const bool shouldProcessDisplay[2] = { (!fetchDisplayInfo.didPerformCustomRender[NDSDisplayID_Main]  || !fetchDisplayInfo.isCustomSizeRequested) && fetchDisplayInfo.isDisplayEnabled[NDSDisplayID_Main]  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
-		                                       (!fetchDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch] || !fetchDisplayInfo.isCustomSizeRequested) && fetchDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch] && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual) };
+		const bool shouldProcessDisplay[2] = { (!fetchDisplayInfo.didPerformCustomRender[selectedDisplaySource[NDSDisplayID_Main]]  || !fetchDisplayInfo.isCustomSizeRequested) && _cdv->IsSelectedDisplayEnabled(NDSDisplayID_Main)  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
+		                                       (!fetchDisplayInfo.didPerformCustomRender[selectedDisplaySource[NDSDisplayID_Touch]] || !fetchDisplayInfo.isCustomSizeRequested) && _cdv->IsSelectedDisplayEnabled(NDSDisplayID_Touch) && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual) && (selectedDisplaySource[NDSDisplayID_Main] != selectedDisplaySource[NDSDisplayID_Touch]) };
 		
 		VideoFilter *vfMain  = _cdv->GetPixelScalerObject(NDSDisplayID_Main);
 		VideoFilter *vfTouch = _cdv->GetPixelScalerObject(NDSDisplayID_Touch);
@@ -1266,7 +1282,7 @@
 			
 			if (shouldProcessDisplay[NDSDisplayID_Main])
 			{
-				[cce setTexture:[sharedData texDisplaySrcTargetMain] atIndex:0];
+				[cce setTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
 				[cce setTexture:_texDisplaySrcDeposterize[NDSDisplayID_Main][0] atIndex:1];
 				[cce dispatchThreadgroups:[sharedData deposterizeThreadGroupsPerGrid]
 					threadsPerThreadgroup:[sharedData deposterizeThreadsPerGroup]];
@@ -1281,7 +1297,7 @@
 			
 			if (shouldProcessDisplay[NDSDisplayID_Touch])
 			{
-				[cce setTexture:[sharedData texDisplaySrcTargetTouch] atIndex:0];
+				[cce setTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
 				[cce setTexture:_texDisplaySrcDeposterize[NDSDisplayID_Touch][0] atIndex:1];
 				[cce dispatchThreadgroups:[sharedData deposterizeThreadGroupsPerGrid]
 					threadsPerThreadgroup:[sharedData deposterizeThreadsPerGroup]];
@@ -1416,6 +1432,11 @@
 		[cb commit];
 	}
 	
+	if (selectedDisplaySource[NDSDisplayID_Touch] == selectedDisplaySource[NDSDisplayID_Main])
+	{
+		_texDisplayOutput[NDSDisplayID_Touch] = _texDisplayOutput[NDSDisplayID_Main];
+	}
+	
 	// Update the texture coordinates
 	_cdv->SetScreenTextureCoordinates((float)[_texDisplayOutput[NDSDisplayID_Main]  width], (float)[_texDisplayOutput[NDSDisplayID_Main]  height],
 									  (float)[_texDisplayOutput[NDSDisplayID_Touch] width], (float)[_texDisplayOutput[NDSDisplayID_Touch] height],
@@ -1502,7 +1523,7 @@
 		{
 			case ClientDisplayMode_Main:
 			{
-				if (displayInfo.isDisplayEnabled[NDSDisplayID_Main])
+				if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Main))
 				{
 					[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
 					[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
@@ -1512,7 +1533,7 @@
 				
 			case ClientDisplayMode_Touch:
 			{
-				if (displayInfo.isDisplayEnabled[NDSDisplayID_Touch])
+				if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
 				{
 					[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
 					[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
@@ -1531,7 +1552,7 @@
 					case ClientDisplayLayout_Hybrid_16_9:
 					case ClientDisplayLayout_Hybrid_16_10:
 					{
-						if (displayInfo.isDisplayEnabled[majorDisplayID])
+						if (_cdv->IsSelectedDisplayEnabled(majorDisplayID))
 						{
 							[ce setFragmentTexture:_texDisplayOutput[majorDisplayID] atIndex:0];
 							[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:majorDisplayVtx vertexCount:4];
@@ -1543,13 +1564,13 @@
 						break;
 				}
 				
-				if (displayInfo.isDisplayEnabled[NDSDisplayID_Main])
+				if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Main))
 				{
 					[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
 					[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
 				}
 				
-				if (displayInfo.isDisplayEnabled[NDSDisplayID_Touch])
+				if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
 				{
 					[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
 					[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];

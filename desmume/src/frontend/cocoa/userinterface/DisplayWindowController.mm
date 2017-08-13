@@ -63,6 +63,8 @@
 @dynamic isFullScreen;
 @dynamic displayScale;
 @dynamic displayRotation;
+@dynamic displayMainVideoSource;
+@dynamic displayTouchVideoSource;
 @dynamic videoFiltersPreferGPU;
 @dynamic videoSourceDeposterize;
 @dynamic videoOutputFilter;
@@ -219,6 +221,28 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (double) displayRotation
 {
 	return _localRotation;
+}
+
+- (void) setDisplayMainVideoSource:(NSInteger)displaySourceID
+{
+	[[self view] setDisplayMainVideoSource:displaySourceID];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
+}
+
+- (NSInteger) displayMainVideoSource
+{
+	return [[self view] displayMainVideoSource];
+}
+
+- (void) setDisplayTouchVideoSource:(NSInteger)displaySourceID
+{
+	[[self view] setDisplayTouchVideoSource:displaySourceID];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
+}
+
+- (NSInteger) displayTouchVideoSource
+{
+	return [[self view] displayTouchVideoSource];
 }
 
 - (void) setDisplayMode:(NSInteger)displayModeID
@@ -447,10 +471,10 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 }
 
 - (void) setDisplayMode:(ClientDisplayMode)mode
+			  viewScale:(double)viewScale
+			   rotation:(double)rotation
 				 layout:(ClientDisplayLayout)layout
 				  order:(ClientDisplayOrder)order
-			   rotation:(double)rotation
-			  viewScale:(double)viewScale
 			   gapScale:(double)gapScale
 		isMinSizeNormal:(BOOL)isMinSizeNormal
 	 isShowingStatusBar:(BOOL)isShowingStatusBar
@@ -524,24 +548,28 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setupUserDefaults
 {
 	[self setDisplayMode:(ClientDisplayMode)[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"]
+			   viewScale:([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Size"] / 100.0)
+				rotation:[[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Rotation"]
 				  layout:(ClientDisplayLayout)[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Orientation"]
 				   order:(ClientDisplayOrder)[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"]
-				rotation:[[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Rotation"]
-			   viewScale:([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Size"] / 100.0)
 				gapScale:([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayViewCombo_Gap"] / 100.0)
 		 isMinSizeNormal:[self isMinSizeNormal]
 	  isShowingStatusBar:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"]];
 	
+	[self setDisplayMainVideoSource:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayMainVideoSource"]];
+	[self setDisplayTouchVideoSource:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayTouchVideoSource"]];
+	
 	[self setVideoPropertiesWithoutUpdateUsingPreferGPU:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_FiltersPreferGPU"]
 									  sourceDeposterize:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_Deposterize"]
 										   outputFilter:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"]
-											pixelScaler:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"]];
+											pixelScaler:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"]];
 	
 	[[self view] setIsHUDVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_EnableHUD"]];
 	[[self view] setIsHUDVideoFPSVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowVideoFPS"]];
 	[[self view] setIsHUDRender3DFPSVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRender3DFPS"]];
 	[[self view] setIsHUDFrameIndexVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowFrameIndex"]];
 	[[self view] setIsHUDLagFrameCountVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowLagFrameCount"]];
+	[[self view] setIsHUDCPULoadAverageVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowCPULoadAverage"]];
 	[[self view] setIsHUDRealTimeClockVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRTC"]];
 	// TODO: Show HUD Input.
 	//[[self view] setIsHUDInputVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowInput"]];
@@ -975,6 +1003,30 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[self setDisplayGap:(double)[CocoaDSUtil getIBActionSenderTag:sender] / 100.0];
 }
 
+- (IBAction) changeDisplayVideoSource:(id)sender
+{
+	NSInteger tag = [CocoaDSUtil getIBActionSenderTag:sender];
+	
+	if (tag >= DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE)
+	{
+		if ((tag-DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE) == [self displayTouchVideoSource])
+		{
+			return;
+		}
+		
+		[self setDisplayTouchVideoSource:tag-DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE];
+	}
+	else
+	{
+		if ((tag-DISPLAY_VIDEO_SOURCE_MAIN_TAG_BASE) == [self displayMainVideoSource])
+		{
+			return;
+		}
+		
+		[self setDisplayMainVideoSource:tag-DISPLAY_VIDEO_SOURCE_MAIN_TAG_BASE];
+	}
+}
+
 - (IBAction) toggleVideoFiltersPreferGPU:(id)sender
 {
 	[self setVideoFiltersPreferGPU:![self videoFiltersPreferGPU]];
@@ -1127,6 +1179,20 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 				{
 					[(NSMenuItem *)theItem setState:(gapScalar == [theItem tag]) ? NSOnState : NSOffState];
 				}
+			}
+		}
+	}
+	else if (theAction == @selector(changeDisplayVideoSource:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			if ([theItem tag] >= DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE)
+			{
+				[(NSMenuItem *)theItem setState:([self displayTouchVideoSource] == ([theItem tag]-DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE)) ? NSOnState : NSOffState];
+			}
+			else
+			{
+				[(NSMenuItem *)theItem setState:([self displayMainVideoSource]  == ([theItem tag]-DISPLAY_VIDEO_SOURCE_MAIN_TAG_BASE)) ? NSOnState : NSOffState];
 			}
 		}
 	}
@@ -1605,6 +1671,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 @dynamic isHUDLagFrameCountVisible;
 @dynamic isHUDCPULoadAverageVisible;
 @dynamic isHUDRealTimeClockVisible;
+@dynamic displayMainVideoSource;
+@dynamic displayTouchVideoSource;
 @dynamic useVerticalSync;
 @dynamic videoFiltersPreferGPU;
 @dynamic sourceDeposterize;
@@ -1734,6 +1802,26 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (BOOL) isHUDRealTimeClockVisible
 {
 	return [[self cdsVideoOutput] isHUDRealTimeClockVisible];
+}
+
+- (void) setDisplayMainVideoSource:(NSInteger)displaySourceID
+{
+	[[self cdsVideoOutput] setDisplayMainVideoSource:displaySourceID];
+}
+
+- (NSInteger) displayMainVideoSource
+{
+	return [[self cdsVideoOutput] displayMainVideoSource];
+}
+
+- (void) setDisplayTouchVideoSource:(NSInteger)displaySourceID
+{
+	[[self cdsVideoOutput] setDisplayTouchVideoSource:displaySourceID];
+}
+
+- (NSInteger) displayTouchVideoSource
+{
+	return [[self cdsVideoOutput] displayTouchVideoSource];
 }
 
 - (void) setUseVerticalSync:(BOOL)theState

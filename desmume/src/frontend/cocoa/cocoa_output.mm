@@ -750,6 +750,8 @@
 @dynamic sourceDeposterize;
 @dynamic outputFilter;
 @dynamic pixelScaler;
+@dynamic displayMainVideoSource;
+@dynamic displayTouchVideoSource;
 
 - (id)init
 {
@@ -765,6 +767,7 @@
 	spinlockOutputFilter = OS_SPINLOCK_INIT;
 	spinlockSourceDeposterize = OS_SPINLOCK_INIT;
 	spinlockPixelScaler = OS_SPINLOCK_INIT;
+	spinlockDisplayVideoSource = OS_SPINLOCK_INIT;
 		
 	return self;
 }
@@ -894,6 +897,38 @@
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
+}
+
+- (void) setDisplayMainVideoSource:(NSInteger)displaySourceID
+{
+	OSSpinLockLock(&spinlockDisplayVideoSource);
+	_cdv->SetDisplayVideoSource(NDSDisplayID_Main, (ClientDisplaySource)displaySourceID);
+	OSSpinLockUnlock(&spinlockDisplayVideoSource);
+}
+
+- (NSInteger) displayMainVideoSource
+{
+	OSSpinLockLock(&spinlockDisplayVideoSource);
+	const NSInteger displayVideoSource = _cdv->GetDisplayVideoSource(NDSDisplayID_Main);
+	OSSpinLockUnlock(&spinlockDisplayVideoSource);
+	
+	return displayVideoSource;
+}
+
+- (void) setDisplayTouchVideoSource:(NSInteger)displaySourceID
+{
+	OSSpinLockLock(&spinlockDisplayVideoSource);
+	_cdv->SetDisplayVideoSource(NDSDisplayID_Touch, (ClientDisplaySource)displaySourceID);
+	OSSpinLockUnlock(&spinlockDisplayVideoSource);
+}
+
+- (NSInteger) displayTouchVideoSource
+{
+	OSSpinLockLock(&spinlockDisplayVideoSource);
+	const NSInteger displayVideoSource = _cdv->GetDisplayVideoSource(NDSDisplayID_Touch);
+	OSSpinLockUnlock(&spinlockDisplayVideoSource);
+	
+	return displayVideoSource;
 }
 
 - (void) setUseVerticalSync:(BOOL)theState

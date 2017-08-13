@@ -57,6 +57,14 @@ enum ClientDisplayOrder
 	ClientDisplayOrder_TouchFirst
 };
 
+enum ClientDisplaySource
+{
+	ClientDisplaySource_None			= 0,
+	ClientDisplaySource_DeterminedByNDS	= 1,
+	ClientDisplaySource_EngineMain		= 2,
+	ClientDisplaySource_EngineSub		= 3
+};
+
 enum OutputFilterTypeID
 {
 	OutputFilterTypeID_NearestNeighbor	= 0,
@@ -139,6 +147,10 @@ protected:
 	VideoFilterTypeID _pixelScaler;
 	OutputFilterTypeID _outputFilter;
 	
+	ClientDisplaySource _displaySourceSelect[2];
+	bool _isSelectedDisplayEnabled[2];
+	NDSDisplayID _selectedSourceForDisplay[2];
+	
 	bool _useVerticalSync;
 	double _scaleFactor;
 	
@@ -205,6 +217,11 @@ public:
 	ClientDisplayOrder GetOrder() const;
 	double GetGapScale() const;
 	double GetGapDistance() const;
+	
+	ClientDisplaySource GetDisplayVideoSource(const NDSDisplayID displayID) const;
+	virtual void SetDisplayVideoSource(const NDSDisplayID displayID, ClientDisplaySource displaySrc);
+	NDSDisplayID GetSelectedDisplaySourceForDisplay(const NDSDisplayID displayID) const;
+	bool IsSelectedDisplayEnabled(const NDSDisplayID displayID) const;
 	
 	// NDS screen filters
 	bool GetSourceDeposterize();

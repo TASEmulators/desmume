@@ -26,6 +26,9 @@
 #include "../ClientDisplayView.h"
 #undef BOOL
 
+#define DISPLAY_VIDEO_SOURCE_MAIN_TAG_BASE		1000
+#define DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE		2000
+
 @class CocoaDSController;
 @class EmuControllerDelegate;
 class OGLVideoOutput;
@@ -55,6 +58,8 @@ class OGLVideoOutput;
 @property (assign) BOOL isHUDLagFrameCountVisible;
 @property (assign) BOOL isHUDCPULoadAverageVisible;
 @property (assign) BOOL isHUDRealTimeClockVisible;
+@property (assign) NSInteger displayMainVideoSource;
+@property (assign) NSInteger displayTouchVideoSource;
 @property (assign) BOOL useVerticalSync;
 @property (assign) BOOL videoFiltersPreferGPU;
 @property (assign) BOOL sourceDeposterize;
@@ -129,6 +134,8 @@ class OGLVideoOutput;
 @property (assign, nonatomic) double displayGap;
 @property (assign, nonatomic) double displayScale;
 @property (assign, nonatomic) double displayRotation;
+@property (assign, nonatomic) NSInteger displayMainVideoSource;
+@property (assign, nonatomic) NSInteger displayTouchVideoSource;
 @property (assign) BOOL videoFiltersPreferGPU;
 @property (assign) BOOL videoSourceDeposterize;
 @property (assign) NSInteger videoOutputFilter;
@@ -145,10 +152,10 @@ class OGLVideoOutput;
 										  outputFilter:(NSInteger)outputFilterID
 										   pixelScaler:(NSInteger)pixelScalerID;
 - (void) setDisplayMode:(ClientDisplayMode)mode
+			  viewScale:(double)viewScale
+			   rotation:(double)rotation
 				 layout:(ClientDisplayLayout)layout
 				  order:(ClientDisplayOrder)order
-			   rotation:(double)rotation
-			  viewScale:(double)viewScale
 			   gapScale:(double)gapScale
 		isMinSizeNormal:(BOOL)isMinSizeNormal
 	 isShowingStatusBar:(BOOL)isShowingStatusBar;
@@ -183,6 +190,7 @@ class OGLVideoOutput;
 - (IBAction) changeDisplayOrientation:(id)sender;
 - (IBAction) changeDisplayOrder:(id)sender;
 - (IBAction) changeDisplayGap:(id)sender;
+- (IBAction) changeDisplayVideoSource:(id)sender;
 - (IBAction) toggleVideoFiltersPreferGPU:(id)sender;
 - (IBAction) toggleVideoSourceDeposterize:(id)sender;
 - (IBAction) changeVideoOutputFilter:(id)sender;

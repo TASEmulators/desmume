@@ -1103,6 +1103,8 @@ typedef struct
 	size_t renderedHeight[2];					// The display rendered at this height, measured in pixels.
 	void *renderedBuffer[2];					// The display rendered to this buffer.
 	
+	GPUEngineID engineID[2];					// ID of the engine sourcing the display.
+	
 	bool didPerformCustomRender[2];				// Reports that the display actually rendered at a custom size for this frame.
 												//    true  - The display performed a custom-sized render.
 												//    false - The display performed a native-sized render.

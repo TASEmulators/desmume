@@ -3855,7 +3855,7 @@ bool GPUEngineBase::_ComputeSpriteVars(GPUEngineCompositorInfo &compInfo, const 
 	if (y >= sprSize.height)
 		return false;
 
-	if ((sprX == GPU_FRAMEBUFFER_NATIVE_WIDTH) || (sprX+sprSize.width <= 0))	/* sprite pixels outside of line */
+	if ((sprX == GPU_FRAMEBUFFER_NATIVE_WIDTH) || ((sprX+sprSize.width) <= 0))	/* sprite pixels outside of line */
 		return false;				/* not to be drawn */
 
 	// sprite portion out of the screen (LEFT)
@@ -3866,7 +3866,7 @@ bool GPUEngineBase::_ComputeSpriteVars(GPUEngineCompositorInfo &compInfo, const 
 		sprX = 0;
 	}
 	// sprite portion out of the screen (RIGHT)
-	if (sprX+sprSize.width >= GPU_FRAMEBUFFER_NATIVE_WIDTH)
+	if ((sprX+sprSize.width) >= GPU_FRAMEBUFFER_NATIVE_WIDTH)
 		lg = GPU_FRAMEBUFFER_NATIVE_WIDTH - sprX;
 
 	// switch TOP<-->BOTTOM
@@ -7610,6 +7610,9 @@ void GPUSubsystem::Reset()
 	this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = this->_displayInfo.nativeBuffer[NDSDisplayID_Touch];
 	
+	this->_displayInfo.engineID[NDSDisplayID_Main] = GPUEngineID_Main;
+	this->_displayInfo.engineID[NDSDisplayID_Touch] = GPUEngineID_Sub;
+	
 	this->_display[NDSDisplayID_Main]->SetEngineByID(GPUEngineID_Main);
 	this->_display[NDSDisplayID_Touch]->SetEngineByID(GPUEngineID_Sub);
 	
@@ -8246,10 +8249,13 @@ void GPUSubsystem::RenderLine(const size_t l)
 			this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngine()->renderedWidth;
 			this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngine()->renderedHeight;
 			
-			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Main] = CommonSettings.showGpu.screens[this->_display[NDSDisplayID_Main]->GetEngineID()];
-			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Touch] = CommonSettings.showGpu.screens[this->_display[NDSDisplayID_Touch]->GetEngineID()];
+			this->_displayInfo.engineID[NDSDisplayID_Main]  = this->_display[NDSDisplayID_Main]->GetEngineID();
+			this->_displayInfo.engineID[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngineID();
 			
-			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Main] = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
+			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Main]  = CommonSettings.showGpu.screens[this->_displayInfo.engineID[NDSDisplayID_Main]];
+			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Touch] = CommonSettings.showGpu.screens[this->_displayInfo.engineID[NDSDisplayID_Touch]];
+			
+			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Main]  = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
 			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Touch] = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
 			
 			this->_engineMain->UpdateMasterBrightnessDisplayInfo(this->_displayInfo);
