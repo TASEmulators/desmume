@@ -3972,7 +3972,7 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
 	size_t cost = 0;
 	
-	for (size_t i = 0; i < 128; i++)
+	for (unsigned char i = 0; i < 128; i++)
 	{
 		OAMAttributes spriteInfo = this->_oamList[i];
 

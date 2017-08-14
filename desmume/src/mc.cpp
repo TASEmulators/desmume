@@ -40,7 +40,7 @@
 // TODO: motion device was broken
 //#define _ENABLE_MOTION
 
-#define BM_CMD_NOP					0x00
+#define BM_CMD_NOP				0x00
 #define BM_CMD_AUTODETECT			0xFF
 #define BM_CMD_WRITESTATUS			0x01
 #define BM_CMD_WRITELOW				0x02
@@ -52,7 +52,7 @@
 #define BM_CMD_READHIGH				0x0B
 
 // Pokemons IrDA
-#define BM_CMD_IRDA					0x08
+#define BM_CMD_IRDA				0x08
 
 //FLASH
 #define COMM_PAGE_WRITE				0x0A
@@ -164,30 +164,30 @@ bool BackupDevice::load_state(EMUFILE* is)
 
 	if(read32le(&version,is)!=1) return false;
 
-   readbool(&write_enable,is);
-   read32le(&com,is);
-   read32le(&addr_size,is);
-   read32le(&addr_counter,is);
-   read32le(&temp,is);
-   state = (STATE)temp;
-   readbuffer(data,is);
-   readbuffer(data_autodetect,is);
+	readbool(&write_enable,is);
+	read32le(&com,is);
+	read32le(&addr_size,is);
+	read32le(&addr_counter,is);
+	read32le(&temp,is);
+	state = (STATE)temp;
+	readbuffer(data,is);
+	readbuffer(data_autodetect,is);
 
-	if(version>=1)
+	if(version >= 1)
 		read32le(&addr,is);
 	
-	if(version>=2)
+	if(version >= 2)
 	{
 		read8le(&motionInitState,is);
 		read8le(&motionFlag,is);
 	}
 
-	if(version>=3)
+	if(version >= 3)
 	{
 		readbool(&reset_command_state,is);
 	}
 
-	if(version>=4)
+	if(version >= 4)
 	{
 		read8le(&write_protect,is);
 	}
@@ -235,7 +235,7 @@ BackupDevice::BackupDevice()
 
 	MCLOG("MC: %s\n", filename.c_str());
 
-	bool fexists = (access(filename.c_str(), 0) == 0)?true:false;
+	bool fexists = access(filename.c_str(), 0) == 0;
 
 	if (fexists && CommonSettings.backupSave)
 	{
@@ -256,7 +256,7 @@ BackupDevice::BackupDevice()
 				}
 				else
 				{
-					printf("BackupDevice: Could not create the backup save file.\n");
+					puts("BackupDevice: Could not create the backup save file.");
 				}
 				
 				delete out;
@@ -264,7 +264,7 @@ BackupDevice::BackupDevice()
 		}
 		else
 		{
-			printf("BackupDevice: Could not read the save file for creating a backup.\n");
+			puts("BackupDevice: Could not read the save file for creating a backup.");
 		}
 		
 		delete in;
@@ -272,7 +272,7 @@ BackupDevice::BackupDevice()
 
 	if (!fexists)
 	{
-		printf("BackupDevice: DeSmuME .dsv save file not found. Trying to load a .sav file.\n");
+		puts("BackupDevice: DeSmuME .dsv save file not found. Trying to load a .sav file.");
 		std::string tmp_fsav = std::string(buf) + ".sav";
 
 		EMUFILE_FILE *fpTmp = new EMUFILE_FILE(tmp_fsav, "rb");
@@ -290,11 +290,11 @@ BackupDevice::BackupDevice()
 					{
 						if (no_gba_unpack(buf, sz))
 						{
-							printf("BackupDevice: Converting no$gba .sav file.\n");
+							puts("BackupDevice: Converting no$gba .sav file.");
 						}
 						else
 						{
-							printf("BackupDevice: Converting old raw .sav file.\n");
+							puts("BackupDevice: Converting old raw .sav file.");
 							//dont TRIM this! it will wreck the searchFileSaveType below.
 							//was this intended for egregiously over-sized save files? too bad.
 							//sz = trim(buf, sz);
@@ -318,7 +318,7 @@ BackupDevice::BackupDevice()
 						}
 						else
 						{
-							printf("BackupDevice: Error converting .sav file.\n");
+							puts("BackupDevice: Error converting .sav file.");
 						}
 					}
 					delete [] buf;
@@ -335,7 +335,7 @@ BackupDevice::BackupDevice()
 	{
 		delete fpMC;
 		fpMC = new EMUFILE_MEMORY();
-		printf("BackupDevice: WARNING! Failed to get read/write access to the save file! Will operate in RAM instead.\n");
+		puts("BackupDevice: WARNING! Failed to get read/write access to the save file! Will operate in RAM instead.");
 	}
 	
 	if (!fpMC->fail())
@@ -362,7 +362,7 @@ BackupDevice::BackupDevice()
 				info.type = advsc.getSaveType();
 				if (info.type != 0xFF && info.type != 0xFE)
 				{
-					info.type++;
+					++info.type;
 					u32 adv_size = save_types[info.type].size;
 					if (info.size > adv_size)
 					{
@@ -1363,12 +1363,12 @@ bool BackupDevice::export_no_gba(const char* fname)
 	u32 padSize = pad_up_size(size);
 	if(data.size()>0)
 		fwrite(&data[0],1,size,outf);
-	for(u32 i=size;i<padSize;i++)
-		fputc(0xFF,outf);
+	for(u32 i=size; i < padSize; ++i)
+		fputc(0xFF, outf);
 
 	if (padSize < 512 * 1024)
 	{
-		for(u32 i=padSize; i<512 * 1024; i++)
+		for(u32 i=padSize; i < 512 * 1024; i++)
 			fputc(0xFF,outf);
 	}
 	fclose(outf);
@@ -1386,13 +1386,13 @@ bool BackupDevice::export_raw(const char* filename)
 	fpMC->fread((char *)&data[0], fsize);
 	fpMC->fseek(pos, SEEK_SET);
 
-	FILE* outf = fopen(filename,"wb");
+	FILE* outf = fopen(filename, "wb");
 	if(!outf) return false;
 	u32 size = data.size();
 	u32 padSize = pad_up_size(size);
 	if(data.size()>0)
 		fwrite(&data[0],1,size,outf);
-	for(u32 i=size;i<padSize;i++)
+	for(u32 i=size; i < padSize; i++)
 		fputc(uninitializedValue,outf);
 	fclose(outf);
 
@@ -1409,7 +1409,7 @@ u32 BackupDevice::pad_up_size(u32 startSize)
 	u32 padSize = saveSizes[ctr];
 	if(padSize == 0xFFFFFFFF)
 	{
-		printf("PANIC! Couldn't pad up save size. Refusing to pad.\n");
+		puts("PANIC! Couldn't pad up save size. Refusing to pad.");
 		padSize = startSize;
 	}
 	
@@ -1453,7 +1453,7 @@ u32 BackupDevice::get_save_raw_size(const char* fname)
 
 bool BackupDevice::import_raw(const char* filename, u32 force_size)
 {
-	FILE* inf = fopen(filename,"rb");
+	FILE* inf = fopen(filename, "rb");
 
 	if (!inf) return false;
 
@@ -1487,7 +1487,6 @@ bool BackupDevice::import_raw(const char* filename, u32 force_size)
 		saveBuffer(data, sz, true, true);
 	delete [] data;
 
-
 	return true;
 }
 
@@ -1514,12 +1513,12 @@ bool BackupDevice::import_duc(const char* filename, u32 force_size)
 	int version = 0;
 
 	//ID version 1
-	fread(id16, 1, 16, file);
+	if(fread(id16, 1, 16, file) != 16) return false;
 	if(!memcmp(id16, "ARDS000000000001", 16)) version = 1;
 
 	//ID version 2
-	fseek(file,0xA1,SEEK_SET);
-	fread(id3,1,3,file);
+	if(fseek(file, 0xA1, SEEK_SET) != 0) return false;
+	if(fread(id3, 1, 3, file) != 0) return false;
 	if(!memcmp(id16,"\0\0\0\0",4) && id3[2] == 0xC0) version = 2;
 
 	if(version == 0)
@@ -1576,7 +1575,6 @@ bool BackupDevice::import_duc(const char* filename, u32 force_size)
 	delete [] data;
 
 	return res;
-
 }
 
 bool BackupDevice::load_movie(EMUFILE* is) {
@@ -1589,7 +1587,7 @@ bool BackupDevice::load_movie(EMUFILE* is) {
 	u32 version = 0xFFFFFFFF;
 	is->fread((char*)&version,4);
 	if(version!=0) {
-		printf("Unknown save file format\n");
+		puts("Unknown save file format");
 		return false;
 	}
 	is->fseek(-24, SEEK_CUR);

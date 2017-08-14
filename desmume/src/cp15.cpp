@@ -167,9 +167,9 @@ void armcp15_t::maskPrecalc()
 
 BOOL armcp15_t::isAccessAllowed(u32 address,u32 access)
 {
-	int i ;
+	char i ;
 	if (!(ctrl & 1)) return TRUE ;        /* protection checking is not enabled */
-	for (i=0;i<8;i++) {
+	for (i=0; i < 8; ++i) {
 		switch (access) {
 		case CP15_ACCESS_WRITEUSR:
 			if ((address & regionWriteMask_USR[i]) == regionWriteSet_USR[i]) return TRUE ;
@@ -457,8 +457,8 @@ BOOL armcp15_t::moveARM2CP(u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2)
 // Save state
 void armcp15_t::saveone(EMUFILE* os)
 {
-	write32le(IDCode,os);
-	write32le(cacheType,os);
+    write32le(IDCode,os);
+    write32le(cacheType,os);
     write32le(TCMSize,os);
     write32le(ctrl,os);
     write32le(DCConfig,os);
@@ -467,7 +467,7 @@ void armcp15_t::saveone(EMUFILE* os)
     write32le(und,os);
     write32le(DaccessPerm,os);
     write32le(IaccessPerm,os);
-	for(int i=0;i<8;i++) write32le(protectBaseSize[i],os);
+    for(int i=0;i<8;i++) write32le(protectBaseSize[i],os);
     write32le(cacheOp,os);
     write32le(DcacheLock,os);
     write32le(IcacheLock,os);
@@ -493,8 +493,8 @@ void armcp15_t::saveone(EMUFILE* os)
 
 bool armcp15_t::loadone(EMUFILE* is)
 {
-	if(!read32le(&IDCode,is)) return false;
-	if(!read32le(&cacheType,is)) return false;
+    if(!read32le(&IDCode,is)) return false;
+    if(!read32le(&cacheType,is)) return false;
     if(!read32le(&TCMSize,is)) return false;
     if(!read32le(&ctrl,is)) return false;
     if(!read32le(&DCConfig,is)) return false;
@@ -503,7 +503,7 @@ bool armcp15_t::loadone(EMUFILE* is)
     if(!read32le(&und,is)) return false;
     if(!read32le(&DaccessPerm,is)) return false;
     if(!read32le(&IaccessPerm,is)) return false;
-	for(int i=0;i<8;i++) if(!read32le(&protectBaseSize[i],is)) return false;
+    for(int i=0;i<8;i++) if(!read32le(&protectBaseSize[i],is)) return false;
     if(!read32le(&cacheOp,is)) return false;
     if(!read32le(&DcacheLock,is)) return false;
     if(!read32le(&IcacheLock,is)) return false;

@@ -371,11 +371,9 @@ namespace Database
 {
 	const char* RegionXXXForCode(char code, bool unknownAsString)
 	{
-		size_t regions_num = ARRAY_SIZE(regions);
-		
 		const char* found = strchr(regions_index,code);
 		if(found) return regions[found-regions_index];
-		else return unknownAsString ? "???" : NULL;
+		return unknownAsString ? "???" : NULL;
 	}
 
 	const char *MakerNameForMakerCode(u16 id, bool unknownAsString)
