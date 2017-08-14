@@ -1123,8 +1123,6 @@ typedef struct
 	bool needApplyMasterBrightness[2];			// Reports if the display still needs to apply the master brightness.
 } NDSDisplayInfo;
 
-#define VRAM_NO_3D_USAGE 0xFF
-
 typedef struct
 {
 	u8 begin;
@@ -1480,7 +1478,6 @@ public:
 	void UpdatePropertiesWithoutRender(const u16 l);
 	void LastLineProcess();
 	
-	u8 vramBlockOBJIndex;
 	u32 vramBlockOBJAddress;
 	
 	size_t nativeLineRenderCount;
@@ -1517,8 +1514,6 @@ public:
 	template<NDSColorFormat OUTPUTFORMAT, bool ISFULLINTENSITYHINT> void ApplyMasterBrightness(void *dst, const size_t pixCount, const GPUMasterBrightMode mode, const u8 intensity);
 	
 	const BGLayerInfo& GetBGLayerInfoByID(const GPULayerID layerID);
-	
-	void UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex);
 	
 	void SpriteRenderDebug(const u16 lineIndex, u16 *dst);
 	void RenderLayerBG(const GPULayerID layerID, u16 *dstLineColor);

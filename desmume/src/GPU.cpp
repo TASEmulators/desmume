@@ -762,8 +762,7 @@ void GPUEngineBase::_Reset_Base()
 	this->_needUpdateWINH[0] = true;
 	this->_needUpdateWINH[1] = true;
 	
-	this->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
-	this->vramBlockOBJAddress = this->_sprMem;
+	this->vramBlockOBJAddress = 0;
 	
 	this->nativeLineRenderCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	this->nativeLineOutputCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
@@ -4115,6 +4114,7 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 								dst_alpha[sprX] = 0xFF;
 								typeTab[sprX] = objMode;
 								prioTab[sprX] = prio;
+								this->_sprNum[sprX] = i;
 							}
 						}
 					}
@@ -4146,13 +4146,13 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 					{
 						if (DISPCNT.OBJ_BMP_2D_dim)
 							//tested by knights in the nightmare
-							offset = (this->_SpriteAddressBMP(compInfo, spriteInfo, sprSize, auxY)-srcadr)/2+auxX;
+							offset = ((this->_SpriteAddressBMP(compInfo, spriteInfo, sprSize, auxY) - srcadr) / 2) + auxX;
 						else //tested by lego indiana jones (somehow?)
 							//tested by buffy sacrifice damage blood splatters in corner
-							offset = auxX + (auxY*sprSize.width);
+							offset = auxX + (auxY * sprSize.width);
 
-
-						u16* mem = (u16*)MMU_gpu_map(srcadr + (offset<<1));
+						const u32 finalAddr = srcadr + (offset << 1);
+						u16 *mem = (u16 *)MMU_gpu_map(finalAddr);
 						colour = LE_TO_LOCAL_16(*mem);
 						
 						if (ISDEBUGRENDER)
@@ -4170,6 +4170,7 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 								dst_alpha[sprX] = spriteInfo.PaletteIndex;
 								typeTab[sprX] = objMode;
 								prioTab[sprX] = prio;
+								this->_sprNum[sprX] = i;
 							}
 						}
 					}
@@ -4233,6 +4234,7 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 									dst_alpha[sprX] = 0xFF;
 									typeTab[sprX] = objMode;
 									prioTab[sprX] = prio;
+									this->_sprNum[sprX] = i;
 								}
 							}
 						}
@@ -4278,6 +4280,20 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 				
 				srcadr = this->_SpriteAddressBMP(compInfo, spriteInfo, sprSize, y);
 				this->_RenderSpriteBMP<ISDEBUGRENDER>(compInfo, i, dst, srcadr, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo.PaletteIndex);
+				
+				const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(srcadr) - MMU.ARM9_LCD) / sizeof(u16);
+				if (vramPixel < (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4))
+				{
+					const size_t blockID = vramPixel / (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
+					const size_t blockPixel = vramPixel % (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
+					const size_t blockLine = blockPixel / GPU_FRAMEBUFFER_NATIVE_WIDTH;
+					const size_t linePixel = blockPixel % GPU_FRAMEBUFFER_NATIVE_WIDTH;
+					
+					if (!GPU->GetEngineMain()->isLineCaptureNative[blockID][blockLine] && (linePixel == 0))
+					{
+						this->vramBlockOBJAddress = srcadr;
+					}
+				}
 			}
 			else if (spriteInfo.PaletteMode == PaletteMode_1x256) //256 colors
 			{
@@ -4336,6 +4352,7 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 	// for all the pixels in the line
 	if (this->_enableLayer[GPULayerID_OBJ])
 	{
+		this->vramBlockOBJAddress = 0;
 		this->_RenderLine_SetupSprites(compInfo);
 	}
 	
@@ -4477,9 +4494,8 @@ template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool WI
 void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, itemsForPriority_t *__restrict item)
 {
 	bool useCustomVRAM = false;
-	size_t vramLine = compInfo.line.indexNative;
 	
-	if (this->vramBlockOBJIndex != VRAM_NO_3D_USAGE)
+	if (this->vramBlockOBJAddress != 0)
 	{
 		const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(this->vramBlockOBJAddress) - MMU.ARM9_LCD) / sizeof(u16);
 		
@@ -4489,9 +4505,8 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 			const size_t blockPixel = vramPixel % (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
 			const size_t blockLine = blockPixel / GPU_FRAMEBUFFER_NATIVE_WIDTH;
 			
-			vramLine += blockLine;
-			GPU->GetEngineMain()->VerifyVRAMLineDidChange(blockID, vramLine);
-			useCustomVRAM = !GPU->GetEngineMain()->isLineCaptureNative[blockID][vramLine];
+			GPU->GetEngineMain()->VerifyVRAMLineDidChange(blockID, blockLine);
+			useCustomVRAM = !GPU->GetEngineMain()->isLineCaptureNative[blockID][blockLine];
 		}
 	}
 	
@@ -4504,7 +4519,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 	{
 		if (useCustomVRAM && (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev))
 		{
-			const FragmentColor *__restrict vramColorPtr = (FragmentColor *)GPU->GetCustomVRAMAddressUsingMappedAddress<OUTPUTFORMAT>(this->vramBlockOBJAddress, compInfo.line.blockOffsetCustom);
+			const FragmentColor *__restrict vramColorPtr = (FragmentColor *)GPU->GetCustomVRAMAddressUsingMappedAddress<OUTPUTFORMAT>(this->vramBlockOBJAddress, 0);
 			
 			for (size_t i = 0; i < item->nbPixelsX; i++)
 			{
@@ -4554,7 +4569,7 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 		
 		if (useCustomVRAM)
 		{
-			const void *__restrict vramColorPtr = GPU->GetCustomVRAMAddressUsingMappedAddress<OUTPUTFORMAT>(this->vramBlockOBJAddress, compInfo.line.blockOffsetCustom);
+			const void *__restrict vramColorPtr = GPU->GetCustomVRAMAddressUsingMappedAddress<OUTPUTFORMAT>(this->vramBlockOBJAddress, 0);
 			
 			for (size_t line = 0; line < compInfo.line.renderCount; line++)
 			{
@@ -5095,36 +5110,6 @@ void GPUEngineBase::_PerformWindowTesting(GPUEngineCompositorInfo &compInfo)
 		{
 			CopyLineExpand<-1, false, 1>(this->_didPassWindowTestCustom[layerID], this->_didPassWindowTestNative[layerID], compInfo.line.widthCustom);
 			CopyLineExpand<-1, false, 1>(this->_enableColorEffectCustom[layerID], this->_enableColorEffectNative[layerID], compInfo.line.widthCustom);
-		}
-	}
-}
-
-void GPUEngineBase::UpdateVRAM3DUsageProperties_OBJLayer(const size_t bankIndex)
-{
-	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
-	if (!this->_enableLayer[GPULayerID_OBJ] || (DISPCNT.OBJ_BMP_mapping != 0) || (DISPCNT.OBJ_BMP_2D_dim == 0))
-	{
-		return;
-	}
-	
-	const GPUEngineA *mainEngine = GPU->GetEngineMain();
-	const IOREG_DISPCAPCNT &DISPCAPCNT = mainEngine->GetIORegisterMap().DISPCAPCNT;
-	
-	for (size_t spriteIndex = 0; spriteIndex < 128; spriteIndex++)
-	{
-		const OAMAttributes &spriteInfo = this->_oamList[spriteIndex];
-		
-		if ( ((spriteInfo.RotScale != 0) || (spriteInfo.Disable == 0)) && (spriteInfo.Mode == OBJMode_Bitmap) && (spriteInfo.PaletteIndex != 0) )
-		{
-			const u32 vramAddress = ((spriteInfo.TileIndex & 0x1F) << 5) + ((spriteInfo.TileIndex & ~0x1F) << 7);
-			const SpriteSize sprSize = GPUEngineBase::_sprSizeTab[spriteInfo.Size][spriteInfo.Shape];
-			
-			if( (vramAddress == (DISPCAPCNT.VRAMWriteOffset * ADDRESS_STEP_32KB)) && (sprSize.width == 64) && (sprSize.height == 64) )
-			{
-				this->vramBlockOBJIndex = bankIndex;
-				this->vramBlockOBJAddress = this->_sprMem + (((spriteInfo.TileIndex & 0x3E0) * 64 + (spriteInfo.TileIndex & 0x1F) * 8) << 1);
-				return;
-			}
 		}
 	}
 }
@@ -7670,9 +7655,6 @@ void GPUSubsystem::ResetDisplayCaptureEnable()
 
 void GPUSubsystem::UpdateRenderProperties()
 {
-	this->_engineMain->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
-	this->_engineSub->vramBlockOBJIndex = VRAM_NO_3D_USAGE;
-	
 	this->_engineMain->nativeLineRenderCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	this->_engineMain->nativeLineOutputCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	this->_engineSub->nativeLineRenderCount = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
@@ -7740,14 +7722,8 @@ void GPUSubsystem::UpdateRenderProperties()
 			case VramConfiguration::ABG:
 			case VramConfiguration::BBG:
 			case VramConfiguration::LCDC:
-				break;
-				
 			case VramConfiguration::AOBJ:
-				this->_engineMain->UpdateVRAM3DUsageProperties_OBJLayer(i);
-				break;
-				
 			case VramConfiguration::BOBJ:
-				this->_engineSub->UpdateVRAM3DUsageProperties_OBJLayer(i);
 				break;
 				
 			default:
