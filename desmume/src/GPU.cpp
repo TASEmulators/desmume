@@ -630,8 +630,8 @@ GPUEngineBase::GPUEngineBase()
 	_InitLUTs();
 	_internalRenderLineTargetCustom = NULL;
 	_renderLineLayerIDCustom = NULL;
-	_bgLayerIndexCustom = NULL;
-	_bgLayerColorCustom = NULL;
+	_deferredIndexCustom = NULL;
+	_deferredColorCustom = NULL;
 	
 	_didPassWindowTestCustomMasterPtr = NULL;
 	_didPassWindowTestCustom[GPULayerID_BG0] = NULL;
@@ -654,10 +654,10 @@ GPUEngineBase::~GPUEngineBase()
 	this->_internalRenderLineTargetCustom = NULL;
 	free_aligned(this->_renderLineLayerIDCustom);
 	this->_renderLineLayerIDCustom = NULL;
-	free_aligned(this->_bgLayerIndexCustom);
-	this->_bgLayerIndexCustom = NULL;
-	free_aligned(this->_bgLayerColorCustom);
-	this->_bgLayerColorCustom = NULL;
+	free_aligned(this->_deferredIndexCustom);
+	this->_deferredIndexCustom = NULL;
+	free_aligned(this->_deferredColorCustom);
+	this->_deferredColorCustom = NULL;
 	
 	free_aligned(this->_didPassWindowTestCustomMasterPtr);
 	this->_didPassWindowTestCustomMasterPtr = NULL;
@@ -2903,7 +2903,7 @@ void GPUEngineBase::_MosaicSpriteLine(GPUEngineCompositorInfo &compInfo, u16 *__
 	}
 }
 
-template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc, bool WRAP>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING, PixelLookupFunc GetPixelFunc, bool WRAP>
 void GPUEngineBase::_RenderPixelIterate_Final(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal)
 {
 	const u16 lineWidth = (COMPOSITORMODE == GPUCompositorMode_Debug) ? compInfo.renderState.selectedBGLayer->size.width : GPU_FRAMEBUFFER_NATIVE_WIDTH;
@@ -2943,14 +2943,14 @@ void GPUEngineBase::_RenderPixelIterate_Final(GPUEngineCompositorInfo &compInfo,
 			{
 				GetPixelFunc(auxX, auxY, wh, map, tile, pal, index, srcColor);
 				
-				if (ISCUSTOMRENDERINGNEEDED)
+				if (WILLDEFERCOMPOSITING)
 				{
-					this->_bgLayerIndex[i] = index;
-					this->_bgLayerColor[i] = srcColor;
+					this->_deferredIndexNative[i] = index;
+					this->_deferredColorNative[i] = srcColor;
 				}
 				else
 				{
-					this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, i, srcColor, (index != 0));
+					this->_CompositePixelImmediate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, i, srcColor, (index != 0));
 				}
 				
 				auxX++;
@@ -2974,35 +2974,35 @@ void GPUEngineBase::_RenderPixelIterate_Final(GPUEngineCompositorInfo &compInfo,
 		{
 			GetPixelFunc(auxX, auxY, wh, map, tile, pal, index, srcColor);
 			
-			if (ISCUSTOMRENDERINGNEEDED)
+			if (WILLDEFERCOMPOSITING)
 			{
-				this->_bgLayerIndex[i] = index;
-				this->_bgLayerColor[i] = srcColor;
+				this->_deferredIndexNative[i] = index;
+				this->_deferredColorNative[i] = srcColor;
 			}
 			else
 			{
-				this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, i, srcColor, (index != 0));
+				this->_CompositePixelImmediate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, i, srcColor, (index != 0));
 			}
 		}
 	}
 }
 
-template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc, bool WRAP>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING, PixelLookupFunc GetPixelFunc, bool WRAP>
 void GPUEngineBase::_RenderPixelIterate_ApplyWrap(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal)
 {
-	this->_RenderPixelIterate_Final<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, GetPixelFunc, WRAP>(compInfo, param, map, tile, pal);
+	this->_RenderPixelIterate_Final<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING, GetPixelFunc, WRAP>(compInfo, param, map, tile, pal);
 }
 
-template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED, PixelLookupFunc GetPixelFunc>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING, PixelLookupFunc GetPixelFunc>
 void GPUEngineBase::_RenderPixelIterate(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, const u32 map, const u32 tile, const u16 *__restrict pal)
 {
 	if (compInfo.renderState.selectedBGLayer->isDisplayWrapped)
 	{
-		this->_RenderPixelIterate_ApplyWrap<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, GetPixelFunc, true>(compInfo, param, map, tile, pal);
+		this->_RenderPixelIterate_ApplyWrap<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING, GetPixelFunc, true>(compInfo, param, map, tile, pal);
 	}
 	else
 	{
-		this->_RenderPixelIterate_ApplyWrap<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, GetPixelFunc, false>(compInfo, param, map, tile, pal);
+		this->_RenderPixelIterate_ApplyWrap<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING, GetPixelFunc, false>(compInfo, param, map, tile, pal);
 	}
 }
 
@@ -3019,7 +3019,7 @@ TILEENTRY GPUEngineBase::_GetTileEntry(const u32 tileMapAddress, const u16 xOffs
 }
 
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST>
-FORCEINLINE void GPUEngineBase::_RenderPixelSingle(GPUEngineCompositorInfo &compInfo, const size_t srcX, u16 srcColor16, const bool opaque)
+FORCEINLINE void GPUEngineBase::_CompositePixelImmediate(GPUEngineCompositorInfo &compInfo, const size_t srcX, u16 srcColor16, const bool opaque)
 {
 	bool willRenderColor = opaque;
 	
@@ -3062,15 +3062,15 @@ FORCEINLINE void GPUEngineBase::_RenderPixelSingle(GPUEngineCompositorInfo &comp
 }
 
 template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST>
-void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
+void GPUEngineBase::_CompositeLineDeferred(GPUEngineCompositorInfo &compInfo)
 {
 	if (MOSAIC)
 	{
 #ifdef ENABLE_SSE2
 		for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x+=8)
 		{
-			const __m128i index_vec128 = _mm_loadl_epi64((__m128i *)(this->_bgLayerIndex + x));
-			const __m128i col_vec128 = _mm_load_si128((__m128i *)(this->_bgLayerColor + x));
+			const __m128i index_vec128 = _mm_loadl_epi64((__m128i *)(this->_deferredIndexNative + x));
+			const __m128i col_vec128 = _mm_load_si128((__m128i *)(this->_deferredColorNative + x));
 			
 			const __m128i idxMask = _mm_cmpeq_epi16(_mm_unpacklo_epi8(index_vec128, _mm_setzero_si128()), _mm_setzero_si128());
 			const __m128i tmpColor_vec128 = _mm_blendv_epi8(_mm_and_si128(col_vec128, _mm_set1_epi16(0x7FFF)), _mm_set1_epi16(0xFFFF), idxMask);
@@ -3091,13 +3091,13 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 			
 			const __m128i mosaicColor_vec128 = _mm_loadu_si128((__m128i *)(mosaicColorBG + x));
 			const __m128i mosaicColorMask = _mm_cmpeq_epi16(mosaicColor_vec128, _mm_set1_epi16(0xFFFF));
-			_mm_storel_epi64( (__m128i *)(this->_bgLayerIndex + x), _mm_andnot_si128(_mm_packs_epi16(mosaicColorMask, _mm_setzero_si128()), index_vec128) );
-			_mm_store_si128( (__m128i *)(this->_bgLayerColor + x), _mm_blendv_epi8(mosaicColor_vec128, col_vec128, mosaicColorMask) );
+			_mm_storel_epi64( (__m128i *)(this->_deferredIndexNative + x), _mm_andnot_si128(_mm_packs_epi16(mosaicColorMask, _mm_setzero_si128()), index_vec128) );
+			_mm_store_si128( (__m128i *)(this->_deferredColorNative + x), _mm_blendv_epi8(mosaicColor_vec128, col_vec128, mosaicColorMask) );
 		}
 #else
 		for (size_t x = 0, dstIdx = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
 		{
-			u16 tmpColor = (this->_bgLayerIndex[x] == 0) ? 0xFFFF : this->_bgLayerColor[x] & 0x7FFF;
+			u16 tmpColor = (this->_deferredIndexNative[x] == 0) ? 0xFFFF : this->_deferredColorNative[x] & 0x7FFF;
 			
 			if (!compInfo.renderState.mosaicWidthBG[x].begin || !compInfo.renderState.mosaicHeightBG[compInfo.line.indexNative].begin)
 			{
@@ -3108,18 +3108,18 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 			
 			if (tmpColor == 0xFFFF)
 			{
-				this->_bgLayerIndex[x] = 0;
+				this->_deferredIndexNative[x] = 0;
 			}
 			else
 			{
-				this->_bgLayerColor[x] = tmpColor;
+				this->_deferredColorNative[x] = tmpColor;
 			}
 		}
 #endif
 	}
 	
-	CopyLineExpand<0xFFFF, false, 2>(this->_bgLayerColorCustom, this->_bgLayerColor, compInfo.line.widthCustom);
-	CopyLineExpand<0xFFFF, false, 1>(this->_bgLayerIndexCustom, this->_bgLayerIndex, compInfo.line.widthCustom);
+	CopyLineExpand<0xFFFF, false, 2>(this->_deferredColorCustom, this->_deferredColorNative, compInfo.line.widthCustom);
+	CopyLineExpand<0xFFFF, false, 1>(this->_deferredIndexCustom, this->_deferredIndexNative, compInfo.line.widthCustom);
 	
 	compInfo.target.lineColor16 = (u16 *)compInfo.target.lineColorHead;
 	compInfo.target.lineColor32 = (FragmentColor *)compInfo.target.lineColorHead;
@@ -3151,7 +3151,7 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 			}
 			
 			// Do the index test. Pixels with an index value of 0 are rejected.
-			passMask8 = _mm_andnot_si128(_mm_cmpeq_epi8(_mm_load_si128((__m128i *)(this->_bgLayerIndexCustom + compInfo.target.xCustom)), _mm_setzero_si128()), passMask8);
+			passMask8 = _mm_andnot_si128(_mm_cmpeq_epi8(_mm_load_si128((__m128i *)(this->_deferredIndexCustom + compInfo.target.xCustom)), _mm_setzero_si128()), passMask8);
 			
 			const int passMaskValue = _mm_movemask_epi8(passMask8);
 			
@@ -3165,13 +3165,13 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 			
 			if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
 			{
-				src[0] = _mm_load_si128((__m128i *)(this->_bgLayerColorCustom + compInfo.target.xCustom + 0));
-				src[1] = _mm_load_si128((__m128i *)(this->_bgLayerColorCustom + compInfo.target.xCustom + 8));
+				src[0] = _mm_load_si128((__m128i *)(this->_deferredColorCustom + compInfo.target.xCustom + 0));
+				src[1] = _mm_load_si128((__m128i *)(this->_deferredColorCustom + compInfo.target.xCustom + 8));
 			}
 			else
 			{
-				const __m128i src16[2] = { _mm_load_si128((__m128i *)(this->_bgLayerColorCustom + compInfo.target.xCustom + 0)),
-										   _mm_load_si128((__m128i *)(this->_bgLayerColorCustom + compInfo.target.xCustom + 8)) };
+				const __m128i src16[2] = { _mm_load_si128((__m128i *)(this->_deferredColorCustom + compInfo.target.xCustom + 0)),
+										   _mm_load_si128((__m128i *)(this->_deferredColorCustom + compInfo.target.xCustom + 8)) };
 				
 				if (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev)
 				{
@@ -3205,19 +3205,19 @@ void GPUEngineBase::_RenderPixelsCustom(GPUEngineCompositorInfo &compInfo)
 				continue;
 			}
 			
-			if (this->_bgLayerIndexCustom[compInfo.target.xCustom] == 0)
+			if (this->_deferredIndexCustom[compInfo.target.xCustom] == 0)
 			{
 				continue;
 			}
 			
 			const bool enableColorEffect = (WILLPERFORMWINDOWTEST) ? (this->_enableColorEffectNative[compInfo.renderState.selectedLayerID][compInfo.target.xNative] != 0) : true;
-			this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_BG>(compInfo, this->_bgLayerColorCustom[compInfo.target.xCustom], 0, enableColorEffect);
+			this->_PixelComposite<COMPOSITORMODE, OUTPUTFORMAT, GPULayerType_BG>(compInfo, this->_deferredColorCustom[compInfo.target.xCustom], 0, enableColorEffect);
 		}
 	}
 }
 
 template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST>
-void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
+void GPUEngineBase::_CompositeVRAMLineDeferred(GPUEngineCompositorInfo &compInfo)
 {
 	const void *__restrict vramColorPtr = GPU->GetCustomVRAMAddressUsingMappedAddress<OUTPUTFORMAT>(compInfo.renderState.selectedBGLayer->BMPAddress, compInfo.line.blockOffsetCustom);
 	
@@ -3332,7 +3332,7 @@ void GPUEngineBase::_RenderPixelsCustomVRAM(GPUEngineCompositorInfo &compInfo)
 //			BACKGROUND RENDERING -TEXT-
 /*****************************************************************************/
 // render a text background to the combined pixelbuffer
-template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING>
 void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const u16 XBG, const u16 YBG)
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
@@ -3371,16 +3371,16 @@ void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const 
 				
 				if (xoff & 1)
 				{
-					if (ISCUSTOMRENDERINGNEEDED)
+					if (WILLDEFERCOMPOSITING)
 					{
-						this->_bgLayerIndex[x] = *tileColorIdx & 0x0F;
-						this->_bgLayerColor[x] = LE_TO_LOCAL_16(pal[this->_bgLayerIndex[x] + tilePalette]);
+						this->_deferredIndexNative[x] = *tileColorIdx & 0x0F;
+						this->_deferredColorNative[x] = LE_TO_LOCAL_16(pal[this->_deferredIndexNative[x] + tilePalette]);
 					}
 					else
 					{
 						index = *tileColorIdx & 0x0F;
 						color = LE_TO_LOCAL_16(pal[index + tilePalette]);
-						this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
+						this->_CompositePixelImmediate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
 					}
 					
 					x++;
@@ -3390,16 +3390,16 @@ void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const 
 				
 				for (; x < xfin; tileColorIdx--)
 				{
-					if (ISCUSTOMRENDERINGNEEDED)
+					if (WILLDEFERCOMPOSITING)
 					{
-						this->_bgLayerIndex[x] = *tileColorIdx >> 4;
-						this->_bgLayerColor[x] = LE_TO_LOCAL_16(pal[this->_bgLayerIndex[x] + tilePalette]);
+						this->_deferredIndexNative[x] = *tileColorIdx >> 4;
+						this->_deferredColorNative[x] = LE_TO_LOCAL_16(pal[this->_deferredIndexNative[x] + tilePalette]);
 					}
 					else
 					{
 						index = *tileColorIdx >> 4;
 						color = LE_TO_LOCAL_16(pal[index + tilePalette]);
-						this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
+						this->_CompositePixelImmediate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
 					}
 					
 					x++;
@@ -3407,16 +3407,16 @@ void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const 
 					
 					if (x < xfin)
 					{
-						if (ISCUSTOMRENDERINGNEEDED)
+						if (WILLDEFERCOMPOSITING)
 						{
-							this->_bgLayerIndex[x] = *tileColorIdx & 0x0F;
-							this->_bgLayerColor[x] = LE_TO_LOCAL_16(pal[this->_bgLayerIndex[x] + tilePalette]);
+							this->_deferredIndexNative[x] = *tileColorIdx & 0x0F;
+							this->_deferredColorNative[x] = LE_TO_LOCAL_16(pal[this->_deferredIndexNative[x] + tilePalette]);
 						}
 						else
 						{
 							index = *tileColorIdx & 0x0F;
 							color = LE_TO_LOCAL_16(pal[index + tilePalette]);
-							this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
+							this->_CompositePixelImmediate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
 						}
 						
 						x++;
@@ -3430,16 +3430,16 @@ void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const 
 				
 				if (xoff & 1)
 				{
-					if (ISCUSTOMRENDERINGNEEDED)
+					if (WILLDEFERCOMPOSITING)
 					{
-						this->_bgLayerIndex[x] = *tileColorIdx >> 4;
-						this->_bgLayerColor[x] = LE_TO_LOCAL_16(pal[this->_bgLayerIndex[x] + tilePalette]);
+						this->_deferredIndexNative[x] = *tileColorIdx >> 4;
+						this->_deferredColorNative[x] = LE_TO_LOCAL_16(pal[this->_deferredIndexNative[x] + tilePalette]);
 					}
 					else
 					{
 						index = *tileColorIdx >> 4;
 						color = LE_TO_LOCAL_16(pal[index + tilePalette]);
-						this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
+						this->_CompositePixelImmediate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
 					}
 					
 					x++;
@@ -3449,16 +3449,16 @@ void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const 
 				
 				for (; x < xfin; tileColorIdx++)
 				{
-					if (ISCUSTOMRENDERINGNEEDED)
+					if (WILLDEFERCOMPOSITING)
 					{
-						this->_bgLayerIndex[x] = *tileColorIdx & 0x0F;
-						this->_bgLayerColor[x] = LE_TO_LOCAL_16(pal[this->_bgLayerIndex[x] + tilePalette]);
+						this->_deferredIndexNative[x] = *tileColorIdx & 0x0F;
+						this->_deferredColorNative[x] = LE_TO_LOCAL_16(pal[this->_deferredIndexNative[x] + tilePalette]);
 					}
 					else
 					{
 						index = *tileColorIdx & 0x0F;
 						color = LE_TO_LOCAL_16(pal[index + tilePalette]);
-						this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
+						this->_CompositePixelImmediate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
 					}
 					
 					x++;
@@ -3466,16 +3466,16 @@ void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const 
 					
 					if (x < xfin)
 					{
-						if (ISCUSTOMRENDERINGNEEDED)
+						if (WILLDEFERCOMPOSITING)
 						{
-							this->_bgLayerIndex[x] = *tileColorIdx >> 4;
-							this->_bgLayerColor[x] = LE_TO_LOCAL_16(pal[this->_bgLayerIndex[x] + tilePalette]);
+							this->_deferredIndexNative[x] = *tileColorIdx >> 4;
+							this->_deferredColorNative[x] = LE_TO_LOCAL_16(pal[this->_deferredIndexNative[x] + tilePalette]);
 						}
 						else
 						{
 							index = *tileColorIdx >> 4;
 							color = LE_TO_LOCAL_16(pal[index + tilePalette]);
-							this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
+							this->_CompositePixelImmediate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
 						}
 						
 						x++;
@@ -3511,29 +3511,29 @@ void GPUEngineBase::_RenderLine_BGText(GPUEngineCompositorInfo &compInfo, const 
 			
 			for (; x < xfin; x++, xoff++, tileColorIdx += line_dir)
 			{
-				if (ISCUSTOMRENDERINGNEEDED)
+				if (WILLDEFERCOMPOSITING)
 				{
-					this->_bgLayerIndex[x] = *tileColorIdx;
-					this->_bgLayerColor[x] = LE_TO_LOCAL_16(tilePal[this->_bgLayerIndex[x]]);
+					this->_deferredIndexNative[x] = *tileColorIdx;
+					this->_deferredColorNative[x] = LE_TO_LOCAL_16(tilePal[this->_deferredIndexNative[x]]);
 				}
 				else
 				{
 					const u8 index = *tileColorIdx;
 					const u16 color = LE_TO_LOCAL_16(tilePal[index]);
-					this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
+					this->_CompositePixelImmediate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (index != 0));
 				}
 			}
 		}
 	}
 }
 
-template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING>
 void GPUEngineBase::_RenderLine_BGAffine(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param)
 {
-	this->_RenderPixelIterate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, rot_tiled_8bit_entry>(compInfo, param, compInfo.renderState.selectedBGLayer->tileMapAddress, compInfo.renderState.selectedBGLayer->tileEntryAddress, this->_paletteBG);
+	this->_RenderPixelIterate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING, rot_tiled_8bit_entry>(compInfo, param, compInfo.renderState.selectedBGLayer->tileMapAddress, compInfo.renderState.selectedBGLayer->tileEntryAddress, this->_paletteBG);
 }
 
-template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING>
 void GPUEngineBase::_RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, const IOREG_BGnParameter &param, bool &outUseCustomVRAM)
 {
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
@@ -3544,17 +3544,17 @@ void GPUEngineBase::_RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, co
 		{
 			if (DISPCNT.ExBGxPalette_Enable)
 			{
-				this->_RenderPixelIterate< COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, rot_tiled_16bit_entry<true> >(compInfo, param, compInfo.renderState.selectedBGLayer->tileMapAddress, compInfo.renderState.selectedBGLayer->tileEntryAddress, *(compInfo.renderState.selectedBGLayer->extPalette));
+				this->_RenderPixelIterate< COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING, rot_tiled_16bit_entry<true> >(compInfo, param, compInfo.renderState.selectedBGLayer->tileMapAddress, compInfo.renderState.selectedBGLayer->tileEntryAddress, *(compInfo.renderState.selectedBGLayer->extPalette));
 			}
 			else
 			{
-				this->_RenderPixelIterate< COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, rot_tiled_16bit_entry<false> >(compInfo, param, compInfo.renderState.selectedBGLayer->tileMapAddress, compInfo.renderState.selectedBGLayer->tileEntryAddress, this->_paletteBG);
+				this->_RenderPixelIterate< COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING, rot_tiled_16bit_entry<false> >(compInfo, param, compInfo.renderState.selectedBGLayer->tileMapAddress, compInfo.renderState.selectedBGLayer->tileEntryAddress, this->_paletteBG);
 			}
 			break;
 		}
 			
 		case BGType_AffineExt_256x1: // 256 colors
-			this->_RenderPixelIterate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, rot_256_map>(compInfo, param, compInfo.renderState.selectedBGLayer->BMPAddress, 0, this->_paletteBG);
+			this->_RenderPixelIterate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING, rot_256_map>(compInfo, param, compInfo.renderState.selectedBGLayer->BMPAddress, 0, this->_paletteBG);
 			break;
 			
 		case BGType_AffineExt_Direct: // direct colors / BMP
@@ -3585,7 +3585,7 @@ void GPUEngineBase::_RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, co
 			
 			if (!outUseCustomVRAM)
 			{
-				this->_RenderPixelIterate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, rot_BMP_map>(compInfo, param, compInfo.renderState.selectedBGLayer->BMPAddress, 0, this->_paletteBG);
+				this->_RenderPixelIterate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING, rot_BMP_map>(compInfo, param, compInfo.renderState.selectedBGLayer->BMPAddress, 0, this->_paletteBG);
 			}
 			else
 			{
@@ -3598,7 +3598,7 @@ void GPUEngineBase::_RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, co
 		}
 			
 		case BGType_Large8bpp: // large screen 256 colors
-			this->_RenderPixelIterate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED, rot_256_map>(compInfo, param, compInfo.renderState.selectedBGLayer->largeBMPAddress, 0, this->_paletteBG);
+			this->_RenderPixelIterate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING, rot_256_map>(compInfo, param, compInfo.renderState.selectedBGLayer->largeBMPAddress, 0, this->_paletteBG);
 			break;
 			
 		default:
@@ -3610,49 +3610,49 @@ void GPUEngineBase::_RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, co
 //			BACKGROUND RENDERING -HELPER FUNCTIONS-
 /*****************************************************************************/
 
-template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING>
 void GPUEngineBase::_LineText(GPUEngineCompositorInfo &compInfo)
 {
 	if (COMPOSITORMODE == GPUCompositorMode_Debug)
 	{
-		this->_RenderLine_BGText<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, 0, compInfo.line.indexNative);
+		this->_RenderLine_BGText<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING>(compInfo, 0, compInfo.line.indexNative);
 	}
 	else
 	{
-		this->_RenderLine_BGText<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, compInfo.renderState.selectedBGLayer->xOffset, compInfo.line.indexNative + compInfo.renderState.selectedBGLayer->yOffset);
+		this->_RenderLine_BGText<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING>(compInfo, compInfo.renderState.selectedBGLayer->xOffset, compInfo.line.indexNative + compInfo.renderState.selectedBGLayer->yOffset);
 	}
 }
 
-template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING>
 void GPUEngineBase::_LineRot(GPUEngineCompositorInfo &compInfo)
 {
 	if (COMPOSITORMODE == GPUCompositorMode_Debug)
 	{
 		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, (s32)compInfo.line.blockOffsetNative};
-		this->_RenderLine_BGAffine<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, debugParams);
+		this->_RenderLine_BGAffine<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING>(compInfo, debugParams);
 	}
 	else
 	{
 		IOREG_BGnParameter *__restrict bgParams = (compInfo.renderState.selectedLayerID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
-		this->_RenderLine_BGAffine<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, *bgParams);
+		this->_RenderLine_BGAffine<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING>(compInfo, *bgParams);
 		
 		bgParams->BGnX.value += bgParams->BGnPB.value;
 		bgParams->BGnY.value += bgParams->BGnPD.value;
 	}
 }
 
-template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING>
 void GPUEngineBase::_LineExtRot(GPUEngineCompositorInfo &compInfo, bool &outUseCustomVRAM)
 {
 	if (COMPOSITORMODE == GPUCompositorMode_Debug)
 	{
 		static const IOREG_BGnParameter debugParams = {256, 0, 0, -77, 0, (s32)compInfo.line.blockOffsetNative};
-		this->_RenderLine_BGExtended<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, debugParams, outUseCustomVRAM);
+		this->_RenderLine_BGExtended<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING>(compInfo, debugParams, outUseCustomVRAM);
 	}
 	else
 	{
 		IOREG_BGnParameter *__restrict bgParams = (compInfo.renderState.selectedLayerID == GPULayerID_BG2) ? (IOREG_BGnParameter *)&this->_IORegisterMap->BG2Param : (IOREG_BGnParameter *)&this->_IORegisterMap->BG3Param;
-		this->_RenderLine_BGExtended<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, *bgParams, outUseCustomVRAM);
+		this->_RenderLine_BGExtended<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING>(compInfo, *bgParams, outUseCustomVRAM);
 		
 		bgParams->BGnX.value += bgParams->BGnPB.value;
 		bgParams->BGnY.value += bgParams->BGnPD.value;
@@ -5114,30 +5114,30 @@ void GPUEngineBase::_PerformWindowTesting(GPUEngineCompositorInfo &compInfo)
 	}
 }
 
-template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
+template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING>
 FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG_Final(GPUEngineCompositorInfo &compInfo)
 {
 	bool useCustomVRAM = false;
 	
-	if (ISCUSTOMRENDERINGNEEDED)
+	if (WILLDEFERCOMPOSITING)
 	{
 		// Because there is no guarantee for any given pixel to be written out, we need
 		// to zero out the deferred index buffer so that unwritten pixels can properly
-		// fail in _RenderPixelsCustom(). If we don't do this, then previously rendered
+		// fail in _CompositeLineDeferred(). If we don't do this, then previously rendered
 		// layers may leave garbage indices for the current layer to mistakenly use if
 		// the current layer just so happens to have unwritten pixels.
 		//
 		// Test case: The score screen in Sonic Rush will be taken over by BG2, filling
 		// the screen with blue, unless this initialization is done each time.
-		memset(this->_bgLayerIndex, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u8));
+		memset(this->_deferredIndexNative, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u8));
 	}
 	
 	switch (compInfo.renderState.selectedBGLayer->baseType)
 	{
-		case BGType_Text: this->_LineText<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo); break;
-		case BGType_Affine: this->_LineRot<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo); break;
-		case BGType_AffineExt: this->_LineExtRot<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, useCustomVRAM); break;
-		case BGType_Large8bpp: this->_LineExtRot<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, ISCUSTOMRENDERINGNEEDED>(compInfo, useCustomVRAM); break;
+		case BGType_Text: this->_LineText<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING>(compInfo); break;
+		case BGType_Affine: this->_LineRot<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING>(compInfo); break;
+		case BGType_AffineExt: this->_LineExtRot<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING>(compInfo, useCustomVRAM); break;
+		case BGType_Large8bpp: this->_LineExtRot<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST, WILLDEFERCOMPOSITING>(compInfo, useCustomVRAM); break;
 		case BGType_Invalid:
 			PROGINFO("Attempting to render an invalid BG type\n");
 			break;
@@ -5145,18 +5145,18 @@ FORCEINLINE void GPUEngineBase::_RenderLine_LayerBG_Final(GPUEngineCompositorInf
 			break;
 	}
 	
-	// If rendering at the native size, each pixel is rendered the moment it is gathered.
-	// However, if rendering at a custom size, pixel gathering and pixel rendering are split
-	// up into separate steps. If rendering at a custom size, do the pixel rendering step now.
-	if ( (COMPOSITORMODE != GPUCompositorMode_Debug) && (ISCUSTOMRENDERINGNEEDED || !this->isLineRenderNative[compInfo.line.indexNative] || (useCustomVRAM && (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) && !GPU->GetDisplayInfo().isCustomSizeRequested)) )
+	// If compositing at the native size, each pixel is composited immediately. However, if
+	// compositing at a custom size, pixel gathering and pixel compositing are split up into
+	// separate steps. If compositing at a custom size, composite the entire line now.
+	if ( (COMPOSITORMODE != GPUCompositorMode_Debug) && (WILLDEFERCOMPOSITING || !this->isLineRenderNative[compInfo.line.indexNative] || (useCustomVRAM && (OUTPUTFORMAT == NDSColorFormat_BGR888_Rev) && !GPU->GetDisplayInfo().isCustomSizeRequested)) )
 	{
 		if (useCustomVRAM)
 		{
-			this->_RenderPixelsCustomVRAM<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo);
+			this->_CompositeVRAMLineDeferred<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo);
 		}
 		else
 		{
-			this->_RenderPixelsCustom<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo);
+			this->_CompositeLineDeferred<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo);
 		}
 	}
 }
@@ -5471,20 +5471,20 @@ void GPUEngineBase::SetCustomFramebufferSize(size_t w, size_t h)
 {
 	void *oldWorkingLineColor = this->_internalRenderLineTargetCustom;
 	u8 *oldWorkingLineLayerID = this->_renderLineLayerIDCustom;
-	u8 *oldBGLayerIndexCustom = this->_bgLayerIndexCustom;
-	u16 *oldBGLayerColorCustom = this->_bgLayerColorCustom;
+	u8 *oldDeferredIndexCustom = this->_deferredIndexCustom;
+	u16 *oldDeferredColorCustom = this->_deferredColorCustom;
 	u8 *oldDidPassWindowTestCustomMasterPtr = this->_didPassWindowTestCustomMasterPtr;
 	
 	void *newWorkingLineColor = malloc_alignedCacheLine(w * _gpuLargestDstLineCount * GPU->GetDisplayInfo().pixelBytes);
 	u8 *newWorkingLineLayerID = (u8 *)malloc_alignedCacheLine(w * _gpuLargestDstLineCount * 4 * sizeof(u8)); // yes indeed, this is oversized. map debug tools try to write to it
-	u8 *newBGLayerIndexCustom = (u8 *)malloc_alignedCacheLine(w * sizeof(u8));
-	u16 *newBGLayerColorCustom = (u16 *)malloc_alignedCacheLine(w * sizeof(u16));
+	u8 *newDeferredIndexCustom = (u8 *)malloc_alignedCacheLine(w * sizeof(u8));
+	u16 *newDeferredColorCustom = (u16 *)malloc_alignedCacheLine(w * sizeof(u16));
 	u8 *newDidPassWindowTestCustomMasterPtr = (u8 *)malloc_alignedCacheLine(w * 10 * sizeof(u8));
 	
 	this->_internalRenderLineTargetCustom = newWorkingLineColor;
 	this->_renderLineLayerIDCustom = newWorkingLineLayerID;
-	this->_bgLayerIndexCustom = newBGLayerIndexCustom;
-	this->_bgLayerColorCustom = newBGLayerColorCustom;
+	this->_deferredIndexCustom = newDeferredIndexCustom;
+	this->_deferredColorCustom = newDeferredColorCustom;
 	
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	const size_t nativeFramebufferSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes;
@@ -5530,8 +5530,8 @@ void GPUEngineBase::SetCustomFramebufferSize(size_t w, size_t h)
 	
 	free_aligned(oldWorkingLineColor);
 	free_aligned(oldWorkingLineLayerID);
-	free_aligned(oldBGLayerIndexCustom);
-	free_aligned(oldBGLayerColorCustom);
+	free_aligned(oldDeferredIndexCustom);
+	free_aligned(oldDeferredColorCustom);
 	free_aligned(oldDidPassWindowTestCustomMasterPtr);
 }
 
@@ -7330,7 +7330,7 @@ void GPUEngineA::_HandleDisplayModeMainMemory(const size_t l)
 	}
 }
 
-template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool ISCUSTOMRENDERINGNEEDED>
+template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST, bool WILLDEFERCOMPOSITING>
 void GPUEngineA::_LineLarge8bpp(GPUEngineCompositorInfo &compInfo)
 {
 	u16 XBG = compInfo.renderState.selectedBGLayer->xOffset;
@@ -7350,16 +7350,16 @@ void GPUEngineA::_LineLarge8bpp(GPUEngineCompositorInfo &compInfo)
 	{
 		XBG &= wmask;
 		
-		if (ISCUSTOMRENDERINGNEEDED)
+		if (WILLDEFERCOMPOSITING)
 		{
-			this->_bgLayerIndex[x] = map[XBG];
-			this->_bgLayerColor[x] = LE_TO_LOCAL_16(this->_paletteBG[this->_bgLayerIndex[x]]);
+			this->_deferredIndexNative[x] = map[XBG];
+			this->_deferredColorNative[x] = LE_TO_LOCAL_16(this->_paletteBG[this->_deferredIndexNative[x]]);
 		}
 		else
 		{
 			const u8 index = map[XBG];
 			const u16 color = LE_TO_LOCAL_16(this->_paletteBG[index]);
-			this->_RenderPixelSingle<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (color != 0));
+			this->_CompositePixelImmediate<COMPOSITORMODE, OUTPUTFORMAT, MOSAIC, WILLPERFORMWINDOWTEST>(compInfo, x, color, (color != 0));
 		}
 	}
 }
