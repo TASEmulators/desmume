@@ -1062,18 +1062,15 @@ OpenGLRenderer::OpenGLRenderer()
 	isFBOSupported = false;
 	isMultisampledFBOSupported = false;
 	isShaderSupported = false;
+	isSampleShadingSupported = false;
 	isVAOSupported = false;
 	willFlipOnlyFramebufferOnGPU = false;
 	willFlipAndConvertFramebufferOnGPU = false;
+	willUsePerSampleZeroDstPass = false;
 	
 	// Init OpenGL rendering states
 	ref = new OGLRenderRef;
-	ref->fboRenderID = 0;
-	ref->fboMSIntermediateRenderID = 0;
-	ref->fboPostprocessID = 0;
-	ref->selectedRenderingFBO = 0;
-	ref->texGDepthStencilAlphaID = 0;
-	ref->texFinalColorID = 0;
+	memset(ref, 0, sizeof(OGLRenderRef));
 	
 	_mappedFramebuffer = NULL;
 	_workingTextureUnpackBuffer = (FragmentColor *)malloc_alignedCacheLine(1024 * 1024 * sizeof(FragmentColor));
@@ -1719,6 +1716,7 @@ OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 	
 	DestroyPostprocessingPrograms();
 	DestroyGeometryProgram();
+	isShaderSupported = false;
 	
 	DestroyVAOs();
 	DestroyVBOs();
@@ -1781,7 +1779,8 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		if ( (maxDrawBuffersOGL >= 4) && (maxShaderTexUnitsOGL >= 8) )
 		{
 			error = this->InitGeometryProgram(GeometryVtxShader_100, GeometryFragShader_100,
-											  GeometryZeroDstAlphaPixelMaskVtxShader_100, GeometryZeroDstAlphaPixelMaskFragShader_100);
+											  GeometryZeroDstAlphaPixelMaskVtxShader_100, GeometryZeroDstAlphaPixelMaskFragShader_100,
+											  NULL, NULL);
 			if (error == OGLERROR_NOERR)
 			{
 				error = this->InitPostprocessingPrograms(ZeroAlphaPixelMaskVtxShader_100,
@@ -1797,6 +1796,7 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 			
 			if (error != OGLERROR_NOERR)
 			{
+				this->DestroyPostprocessingPrograms();
 				this->DestroyGeometryProgram();
 				this->isShaderSupported = false;
 			}
@@ -2091,7 +2091,8 @@ Render3DError OpenGLRenderer_1_2::InitGeometryZeroDstAlphaProgramShaderLocations
 }
 
 Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const char *geometryVtxShaderCString, const char *geometryFragShaderCString,
-													  const char *geometryAlphaVtxShaderCString, const char *geometryAlphaFragShaderCString)
+													  const char *geometryAlphaVtxShaderCString, const char *geometryAlphaFragShaderCString,
+													  const char *geometryMSAlphaVtxShaderCString, const char *geometryMSAlphaFragShaderCString)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -2107,7 +2108,6 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const char *geometryVtxSha
 	glCompileShader(OGLRef.vertexGeometryShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.vertexGeometryShaderID))
 	{
-		glDeleteShader(OGLRef.vertexGeometryShaderID);
 		INFO("OpenGL: Failed to compile the vertex shader. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2115,7 +2115,6 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const char *geometryVtxSha
 	OGLRef.fragmentGeometryShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 	if(!OGLRef.fragmentGeometryShaderID)
 	{
-		glDeleteShader(OGLRef.vertexGeometryShaderID);
 		INFO("OpenGL: Failed to create the fragment shader. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2125,8 +2124,6 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const char *geometryVtxSha
 	glCompileShader(OGLRef.fragmentGeometryShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.fragmentGeometryShaderID))
 	{
-		glDeleteShader(OGLRef.vertexGeometryShaderID);
-		glDeleteShader(OGLRef.fragmentGeometryShaderID);
 		INFO("OpenGL: Failed to compile the fragment shader. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2134,8 +2131,6 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const char *geometryVtxSha
 	OGLRef.programGeometryID = glCreateProgram();
 	if(!OGLRef.programGeometryID)
 	{
-		glDeleteShader(OGLRef.vertexGeometryShaderID);
-		glDeleteShader(OGLRef.fragmentGeometryShaderID);
 		INFO("OpenGL: Failed to create the shader program. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2148,11 +2143,6 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const char *geometryVtxSha
 	glLinkProgram(OGLRef.programGeometryID);
 	if (!this->ValidateShaderProgramLink(OGLRef.programGeometryID))
 	{
-		glDetachShader(OGLRef.programGeometryID, OGLRef.vertexGeometryShaderID);
-		glDetachShader(OGLRef.programGeometryID, OGLRef.fragmentGeometryShaderID);
-		glDeleteProgram(OGLRef.programGeometryID);
-		glDeleteShader(OGLRef.vertexGeometryShaderID);
-		glDeleteShader(OGLRef.fragmentGeometryShaderID);
 		INFO("OpenGL: Failed to link the shader program. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2175,7 +2165,6 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const char *geometryVtxSha
 	glCompileShader(OGLRef.vtxShaderGeometryZeroDstAlphaID);
 	if (!this->ValidateShaderCompile(OGLRef.vtxShaderGeometryZeroDstAlphaID))
 	{
-		glDeleteShader(OGLRef.vtxShaderGeometryZeroDstAlphaID);
 		INFO("OpenGL: Failed to compile the vertex shader. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2183,7 +2172,6 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const char *geometryVtxSha
 	OGLRef.fragShaderGeometryZeroDstAlphaID = glCreateShader(GL_FRAGMENT_SHADER);
 	if(!OGLRef.fragShaderGeometryZeroDstAlphaID)
 	{
-		glDeleteShader(OGLRef.vtxShaderGeometryZeroDstAlphaID);
 		INFO("OpenGL: Failed to create the fragment shader. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2193,8 +2181,6 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const char *geometryVtxSha
 	glCompileShader(OGLRef.fragShaderGeometryZeroDstAlphaID);
 	if (!this->ValidateShaderCompile(OGLRef.fragShaderGeometryZeroDstAlphaID))
 	{
-		glDeleteShader(OGLRef.vtxShaderGeometryZeroDstAlphaID);
-		glDeleteShader(OGLRef.fragShaderGeometryZeroDstAlphaID);
 		INFO("OpenGL: Failed to compile the fragment shader. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2202,8 +2188,6 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const char *geometryVtxSha
 	OGLRef.programGeometryZeroDstAlphaID = glCreateProgram();
 	if(!OGLRef.programGeometryZeroDstAlphaID)
 	{
-		glDeleteShader(OGLRef.vtxShaderGeometryZeroDstAlphaID);
-		glDeleteShader(OGLRef.fragShaderGeometryZeroDstAlphaID);
 		INFO("OpenGL: Failed to create the shader program. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2211,21 +2195,80 @@ Render3DError OpenGLRenderer_1_2::InitGeometryProgram(const char *geometryVtxSha
 	glAttachShader(OGLRef.programGeometryZeroDstAlphaID, OGLRef.vtxShaderGeometryZeroDstAlphaID);
 	glAttachShader(OGLRef.programGeometryZeroDstAlphaID, OGLRef.fragShaderGeometryZeroDstAlphaID);
 	
+	// ------------------------------------------
+	
+	bool useMSGeometryProgram = this->isSampleShadingSupported && (geometryMSAlphaVtxShaderCString != NULL) && (geometryMSAlphaFragShaderCString != NULL);
+	
+	if (useMSGeometryProgram)
+	{
+		OGLRef.vtxShaderMSGeometryZeroDstAlphaID = glCreateShader(GL_VERTEX_SHADER);
+		if(!OGLRef.vtxShaderMSGeometryZeroDstAlphaID)
+		{
+			INFO("OpenGL: Failed to create the vertex shader. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
+			return OGLERROR_SHADER_CREATE_ERROR;
+		}
+		
+		const char *vertexMSAlphaShaderProgramChar = geometryMSAlphaVtxShaderCString;
+		glShaderSource(OGLRef.vtxShaderMSGeometryZeroDstAlphaID, 1, (const GLchar **)&vertexMSAlphaShaderProgramChar, NULL);
+		glCompileShader(OGLRef.vtxShaderMSGeometryZeroDstAlphaID);
+		if (!this->ValidateShaderCompile(OGLRef.vtxShaderMSGeometryZeroDstAlphaID))
+		{
+			INFO("OpenGL: Failed to compile the vertex shader. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
+			return OGLERROR_SHADER_CREATE_ERROR;
+		}
+		
+		OGLRef.fragShaderMSGeometryZeroDstAlphaID = glCreateShader(GL_FRAGMENT_SHADER);
+		if(!OGLRef.fragShaderMSGeometryZeroDstAlphaID)
+		{
+			INFO("OpenGL: Failed to create the fragment shader. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
+			return OGLERROR_SHADER_CREATE_ERROR;
+		}
+		
+		const char *fragmentMSAlphaShaderProgramChar = geometryMSAlphaFragShaderCString;
+		glShaderSource(OGLRef.fragShaderMSGeometryZeroDstAlphaID, 1, (const GLchar **)&fragmentMSAlphaShaderProgramChar, NULL);
+		glCompileShader(OGLRef.fragShaderMSGeometryZeroDstAlphaID);
+		if (!this->ValidateShaderCompile(OGLRef.fragShaderMSGeometryZeroDstAlphaID))
+		{
+			INFO("OpenGL: Failed to compile the fragment shader. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
+			return OGLERROR_SHADER_CREATE_ERROR;
+		}
+		
+		OGLRef.programMSGeometryZeroDstAlphaID = glCreateProgram();
+		if(!OGLRef.programMSGeometryZeroDstAlphaID)
+		{
+			INFO("OpenGL: Failed to create the shader program. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
+			return OGLERROR_SHADER_CREATE_ERROR;
+		}
+		
+		glAttachShader(OGLRef.programMSGeometryZeroDstAlphaID, OGLRef.vtxShaderMSGeometryZeroDstAlphaID);
+		glAttachShader(OGLRef.programMSGeometryZeroDstAlphaID, OGLRef.fragShaderMSGeometryZeroDstAlphaID);
+	}
+	
 	this->InitGeometryZeroDstAlphaProgramBindings();
 	
 	glLinkProgram(OGLRef.programGeometryZeroDstAlphaID);
 	if (!this->ValidateShaderProgramLink(OGLRef.programGeometryZeroDstAlphaID))
 	{
-		glDetachShader(OGLRef.programGeometryZeroDstAlphaID, OGLRef.vtxShaderGeometryZeroDstAlphaID);
-		glDetachShader(OGLRef.programGeometryZeroDstAlphaID, OGLRef.fragShaderGeometryZeroDstAlphaID);
-		glDeleteProgram(OGLRef.programGeometryZeroDstAlphaID);
-		glDeleteShader(OGLRef.vtxShaderGeometryZeroDstAlphaID);
-		glDeleteShader(OGLRef.fragShaderGeometryZeroDstAlphaID);
 		INFO("OpenGL: Failed to link the shader program. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
 	glValidateProgram(OGLRef.programGeometryZeroDstAlphaID);
+	
+	if (useMSGeometryProgram)
+	{
+		glLinkProgram(OGLRef.programMSGeometryZeroDstAlphaID);
+		if (!this->ValidateShaderProgramLink(OGLRef.programMSGeometryZeroDstAlphaID))
+		{
+			INFO("OpenGL: Failed to link the shader program. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
+			return OGLERROR_SHADER_CREATE_ERROR;
+		}
+		
+		glValidateProgram(OGLRef.programMSGeometryZeroDstAlphaID);
+		
+		this->willUsePerSampleZeroDstPass = true;
+	}
+	
 	this->InitGeometryZeroDstAlphaProgramShaderLocations();
 	
 	// ------------------------------------------
@@ -2250,19 +2293,26 @@ void OpenGLRenderer_1_2::DestroyGeometryProgram()
 	
 	glDetachShader(OGLRef.programGeometryID, OGLRef.vertexGeometryShaderID);
 	glDetachShader(OGLRef.programGeometryID, OGLRef.fragmentGeometryShaderID);
-	glDeleteProgram(OGLRef.programGeometryID);
-	glDeleteShader(OGLRef.vertexGeometryShaderID);
-	glDeleteShader(OGLRef.fragmentGeometryShaderID);
-	
 	glDetachShader(OGLRef.programGeometryZeroDstAlphaID, OGLRef.vtxShaderGeometryZeroDstAlphaID);
 	glDetachShader(OGLRef.programGeometryZeroDstAlphaID, OGLRef.fragShaderGeometryZeroDstAlphaID);
+	
+	glDeleteProgram(OGLRef.programGeometryID);
 	glDeleteProgram(OGLRef.programGeometryZeroDstAlphaID);
+	
+	glDeleteShader(OGLRef.vertexGeometryShaderID);
+	glDeleteShader(OGLRef.fragmentGeometryShaderID);
 	glDeleteShader(OGLRef.vtxShaderGeometryZeroDstAlphaID);
 	glDeleteShader(OGLRef.fragShaderGeometryZeroDstAlphaID);
 	
-	this->DestroyToonTable();
+	OGLRef.programGeometryID = 0;
+	OGLRef.programGeometryZeroDstAlphaID = 0;
 	
-	this->isShaderSupported = false;
+	OGLRef.vertexGeometryShaderID = 0;
+	OGLRef.fragmentGeometryShaderID = 0;
+	OGLRef.vtxShaderGeometryZeroDstAlphaID = 0;
+	OGLRef.fragShaderGeometryZeroDstAlphaID = 0;
+	
+	this->DestroyToonTable();
 }
 
 Render3DError OpenGLRenderer_1_2::CreateVAOs()
@@ -2561,6 +2611,7 @@ Render3DError OpenGLRenderer_1_2::CreateMultisampledFBO(GLsizei numSamples)
 	glGenRenderbuffersEXT(1, &OGLRef.rboMSGPolyID);
 	glGenRenderbuffersEXT(1, &OGLRef.rboMSGFogAttrID);
 	glGenRenderbuffersEXT(1, &OGLRef.rboMSGDepthStencilID);
+	glGenRenderbuffersEXT(1, &OGLRef.rboMSGDepthStencilAlphaID);
 	
 	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGColorID);
 	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight);
@@ -2570,16 +2621,33 @@ Render3DError OpenGLRenderer_1_2::CreateMultisampledFBO(GLsizei numSamples)
 	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight);
 	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilID);
 	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, numSamples, GL_DEPTH24_STENCIL8_EXT, this->_framebufferWidth, this->_framebufferHeight);
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilAlphaID);
+	glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, numSamples, GL_DEPTH24_STENCIL8_EXT, this->_framebufferWidth, this->_framebufferHeight);
 	
 	// Set up multisampled rendering FBO
 	glGenFramebuffersEXT(1, &OGLRef.fboMSIntermediateRenderID);
-	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboMSIntermediateRenderID);
 	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGColorID);
 	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGPolyID);
 	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGFogAttrID);
 	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilID);
 	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilID);
+	
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
+	{
+		INFO("OpenGL: Failed to create multisampled FBO!\n");
+		this->DestroyMultisampledFBO();
+		
+		return OGLERROR_FBO_CREATE_ERROR;
+	}
+	
+	glGenFramebuffersEXT(1, &OGLRef.fboMSIntermediateRenderAlphaID);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboMSIntermediateRenderAlphaID);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGColorID);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGPolyID);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGFogAttrID);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilAlphaID);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilAlphaID);
 	
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
 	{
@@ -2606,10 +2674,15 @@ void OpenGLRenderer_1_2::DestroyMultisampledFBO()
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	glDeleteFramebuffersEXT(1, &OGLRef.fboMSIntermediateRenderID);
+	glDeleteFramebuffersEXT(1, &OGLRef.fboMSIntermediateRenderAlphaID);
 	glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGColorID);
 	glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGPolyID);
 	glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGFogAttrID);
 	glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGDepthStencilID);
+	glDeleteRenderbuffersEXT(1, &OGLRef.rboMSGDepthStencilAlphaID);
+	
+	OGLRef.fboMSIntermediateRenderID = 0;
+	OGLRef.fboMSIntermediateRenderAlphaID = 0;
 	
 	this->isMultisampledFBOSupported = false;
 }
@@ -2698,7 +2771,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	glCompileShader(OGLRef.vertexZeroAlphaPixelMaskShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.vertexZeroAlphaPixelMaskShaderID))
 	{
-		glDeleteShader(OGLRef.vertexZeroAlphaPixelMaskShaderID);
 		INFO("OpenGL: Failed to compile the zero-alpha pixel mask vertex shader.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2706,7 +2778,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	OGLRef.fragmentZeroAlphaPixelMaskShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 	if(!OGLRef.fragmentZeroAlphaPixelMaskShaderID)
 	{
-		glDeleteShader(OGLRef.vertexZeroAlphaPixelMaskShaderID);
 		INFO("OpenGL: Failed to create the zero-alpha pixel mask fragment shader.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2716,8 +2787,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	glCompileShader(OGLRef.fragmentZeroAlphaPixelMaskShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.fragmentZeroAlphaPixelMaskShaderID))
 	{
-		glDeleteShader(OGLRef.vertexZeroAlphaPixelMaskShaderID);
-		glDeleteShader(OGLRef.fragmentZeroAlphaPixelMaskShaderID);
 		INFO("OpenGL: Failed to compile the zero-alpha pixel mask fragment shader.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2725,8 +2794,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	OGLRef.programZeroAlphaPixelMaskID = glCreateProgram();
 	if(!OGLRef.programZeroAlphaPixelMaskID)
 	{
-		glDeleteShader(OGLRef.vertexZeroAlphaPixelMaskShaderID);
-		glDeleteShader(OGLRef.fragmentZeroAlphaPixelMaskShaderID);
 		INFO("OpenGL: Failed to create the zero-alpha pixel mask shader program.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2737,11 +2804,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	error = this->InitZeroAlphaPixelMaskProgramBindings();
 	if (error != OGLERROR_NOERR)
 	{
-		glDetachShader(OGLRef.programZeroAlphaPixelMaskID, OGLRef.vertexZeroAlphaPixelMaskShaderID);
-		glDetachShader(OGLRef.programZeroAlphaPixelMaskID, OGLRef.fragmentZeroAlphaPixelMaskShaderID);
-		glDeleteProgram(OGLRef.programZeroAlphaPixelMaskID);
-		glDeleteShader(OGLRef.vertexZeroAlphaPixelMaskShaderID);
-		glDeleteShader(OGLRef.fragmentZeroAlphaPixelMaskShaderID);
 		INFO("OpenGL: Failed to make the zero-alpha pixel mask shader bindings.\n");
 		return error;
 	}
@@ -2749,11 +2811,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	glLinkProgram(OGLRef.programZeroAlphaPixelMaskID);
 	if (!this->ValidateShaderProgramLink(OGLRef.programZeroAlphaPixelMaskID))
 	{
-		glDetachShader(OGLRef.programZeroAlphaPixelMaskID, OGLRef.vertexZeroAlphaPixelMaskShaderID);
-		glDetachShader(OGLRef.programZeroAlphaPixelMaskID, OGLRef.fragmentZeroAlphaPixelMaskShaderID);
-		glDeleteProgram(OGLRef.programZeroAlphaPixelMaskID);
-		glDeleteShader(OGLRef.vertexZeroAlphaPixelMaskShaderID);
-		glDeleteShader(OGLRef.fragmentZeroAlphaPixelMaskShaderID);
 		INFO("OpenGL: Failed to link the zero-alpha pixel mask shader program.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2775,7 +2832,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	glCompileShader(OGLRef.vertexEdgeMarkShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.vertexEdgeMarkShaderID))
 	{
-		glDeleteShader(OGLRef.vertexEdgeMarkShaderID);
 		INFO("OpenGL: Failed to compile the edge mark vertex shader.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2783,7 +2839,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	OGLRef.fragmentEdgeMarkShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 	if(!OGLRef.fragmentEdgeMarkShaderID)
 	{
-		glDeleteShader(OGLRef.vertexEdgeMarkShaderID);
 		INFO("OpenGL: Failed to create the edge mark fragment shader.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2793,8 +2848,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	glCompileShader(OGLRef.fragmentEdgeMarkShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.fragmentEdgeMarkShaderID))
 	{
-		glDeleteShader(OGLRef.vertexEdgeMarkShaderID);
-		glDeleteShader(OGLRef.fragmentEdgeMarkShaderID);
 		INFO("OpenGL: Failed to compile the edge mark fragment shader.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2802,8 +2855,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	OGLRef.programEdgeMarkID = glCreateProgram();
 	if(!OGLRef.programEdgeMarkID)
 	{
-		glDeleteShader(OGLRef.vertexEdgeMarkShaderID);
-		glDeleteShader(OGLRef.fragmentEdgeMarkShaderID);
 		INFO("OpenGL: Failed to create the edge mark shader program.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2814,11 +2865,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	error = this->InitEdgeMarkProgramBindings();
 	if (error != OGLERROR_NOERR)
 	{
-		glDetachShader(OGLRef.programEdgeMarkID, OGLRef.vertexEdgeMarkShaderID);
-		glDetachShader(OGLRef.programEdgeMarkID, OGLRef.fragmentEdgeMarkShaderID);
-		glDeleteProgram(OGLRef.programEdgeMarkID);
-		glDeleteShader(OGLRef.vertexEdgeMarkShaderID);
-		glDeleteShader(OGLRef.fragmentEdgeMarkShaderID);
 		INFO("OpenGL: Failed to make the edge mark shader bindings.\n");
 		return error;
 	}
@@ -2826,11 +2872,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	glLinkProgram(OGLRef.programEdgeMarkID);
 	if (!this->ValidateShaderProgramLink(OGLRef.programEdgeMarkID))
 	{
-		glDetachShader(OGLRef.programEdgeMarkID, OGLRef.vertexEdgeMarkShaderID);
-		glDetachShader(OGLRef.programEdgeMarkID, OGLRef.fragmentEdgeMarkShaderID);
-		glDeleteProgram(OGLRef.programEdgeMarkID);
-		glDeleteShader(OGLRef.vertexEdgeMarkShaderID);
-		glDeleteShader(OGLRef.fragmentEdgeMarkShaderID);
 		INFO("OpenGL: Failed to link the edge mark shader program.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2852,7 +2893,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	glCompileShader(OGLRef.vertexFogShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.vertexFogShaderID))
 	{
-		glDeleteShader(OGLRef.vertexFogShaderID);
 		INFO("OpenGL: Failed to compile the fog vertex shader.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2860,7 +2900,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	OGLRef.fragmentFogShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 	if(!OGLRef.fragmentFogShaderID)
 	{
-		glDeleteShader(OGLRef.vertexFogShaderID);
 		INFO("OpenGL: Failed to create the fog fragment shader.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2870,8 +2909,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	glCompileShader(OGLRef.fragmentFogShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.fragmentFogShaderID))
 	{
-		glDeleteShader(OGLRef.vertexFogShaderID);
-		glDeleteShader(OGLRef.fragmentFogShaderID);
 		INFO("OpenGL: Failed to compile the fog fragment shader.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2879,8 +2916,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	OGLRef.programFogID = glCreateProgram();
 	if(!OGLRef.programFogID)
 	{
-		glDeleteShader(OGLRef.vertexFogShaderID);
-		glDeleteShader(OGLRef.fragmentFogShaderID);
 		INFO("OpenGL: Failed to create the fog shader program.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2891,11 +2926,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	error = this->InitFogProgramBindings();
 	if (error != OGLERROR_NOERR)
 	{
-		glDetachShader(OGLRef.programFogID, OGLRef.vertexFogShaderID);
-		glDetachShader(OGLRef.programFogID, OGLRef.fragmentFogShaderID);
-		glDeleteProgram(OGLRef.programFogID);
-		glDeleteShader(OGLRef.vertexFogShaderID);
-		glDeleteShader(OGLRef.fragmentFogShaderID);
 		INFO("OpenGL: Failed to make the fog shader bindings.\n");
 		return error;
 	}
@@ -2903,11 +2933,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	glLinkProgram(OGLRef.programFogID);
 	if (!this->ValidateShaderProgramLink(OGLRef.programFogID))
 	{
-		glDetachShader(OGLRef.programFogID, OGLRef.vertexFogShaderID);
-		glDetachShader(OGLRef.programFogID, OGLRef.fragmentFogShaderID);
-		glDeleteProgram(OGLRef.programFogID);
-		glDeleteShader(OGLRef.vertexFogShaderID);
-		glDeleteShader(OGLRef.fragmentFogShaderID);
 		INFO("OpenGL: Failed to link the fog shader program.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2929,7 +2954,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	glCompileShader(OGLRef.vertexFramebufferOutputShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.vertexFramebufferOutputShaderID))
 	{
-		glDeleteShader(OGLRef.vertexFramebufferOutputShaderID);
 		INFO("OpenGL: Failed to compile the framebuffer output vertex shader.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2937,7 +2961,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	OGLRef.fragmentFramebufferRGBA6665OutputShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 	if(!OGLRef.fragmentFramebufferRGBA6665OutputShaderID)
 	{
-		glDeleteShader(OGLRef.vertexFramebufferOutputShaderID);
 		INFO("OpenGL: Failed to create the framebuffer output fragment shader.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2945,8 +2968,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	OGLRef.fragmentFramebufferRGBA8888OutputShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 	if(!OGLRef.fragmentFramebufferRGBA8888OutputShaderID)
 	{
-		glDeleteShader(OGLRef.vertexFramebufferOutputShaderID);
-		glDeleteShader(OGLRef.fragmentFramebufferRGBA6665OutputShaderID);
 		INFO("OpenGL: Failed to create the framebuffer output fragment shader.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2956,9 +2977,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	glCompileShader(OGLRef.fragmentFramebufferRGBA6665OutputShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.fragmentFramebufferRGBA6665OutputShaderID))
 	{
-		glDeleteShader(OGLRef.vertexFramebufferOutputShaderID);
-		glDeleteShader(OGLRef.fragmentFramebufferRGBA6665OutputShaderID);
-		glDeleteShader(OGLRef.fragmentFramebufferRGBA8888OutputShaderID);
 		INFO("OpenGL: Failed to compile the framebuffer output fragment shader.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2968,9 +2986,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	glCompileShader(OGLRef.fragmentFramebufferRGBA8888OutputShaderID);
 	if (!this->ValidateShaderCompile(OGLRef.fragmentFramebufferRGBA8888OutputShaderID))
 	{
-		glDeleteShader(OGLRef.vertexFramebufferOutputShaderID);
-		glDeleteShader(OGLRef.fragmentFramebufferRGBA6665OutputShaderID);
-		glDeleteShader(OGLRef.fragmentFramebufferRGBA8888OutputShaderID);
 		INFO("OpenGL: Failed to compile the framebuffer output fragment shader.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2978,9 +2993,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	OGLRef.programFramebufferRGBA6665OutputID = glCreateProgram();
 	if(!OGLRef.programFramebufferRGBA6665OutputID)
 	{
-		glDeleteShader(OGLRef.vertexFramebufferOutputShaderID);
-		glDeleteShader(OGLRef.fragmentFramebufferRGBA6665OutputShaderID);
-		glDeleteShader(OGLRef.fragmentFramebufferRGBA8888OutputShaderID);
 		INFO("OpenGL: Failed to create the framebuffer output shader program.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -2988,9 +3000,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	OGLRef.programFramebufferRGBA8888OutputID = glCreateProgram();
 	if(!OGLRef.programFramebufferRGBA8888OutputID)
 	{
-		glDeleteShader(OGLRef.vertexFramebufferOutputShaderID);
-		glDeleteShader(OGLRef.fragmentFramebufferRGBA6665OutputShaderID);
-		glDeleteShader(OGLRef.fragmentFramebufferRGBA8888OutputShaderID);
 		INFO("OpenGL: Failed to create the framebuffer output shader program.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
@@ -3003,16 +3012,6 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	error = this->InitFramebufferOutputProgramBindings();
 	if (error != OGLERROR_NOERR)
 	{
-		glDetachShader(OGLRef.programFramebufferRGBA6665OutputID, OGLRef.vertexFramebufferOutputShaderID);
-		glDetachShader(OGLRef.programFramebufferRGBA6665OutputID, OGLRef.fragmentFramebufferRGBA6665OutputShaderID);
-		glDetachShader(OGLRef.programFramebufferRGBA8888OutputID, OGLRef.vertexFramebufferOutputShaderID);
-		glDetachShader(OGLRef.programFramebufferRGBA8888OutputID, OGLRef.fragmentFramebufferRGBA8888OutputShaderID);
-		
-		glDeleteProgram(OGLRef.programFramebufferRGBA6665OutputID);
-		glDeleteProgram(OGLRef.programFramebufferRGBA8888OutputID);
-		glDeleteShader(OGLRef.vertexFramebufferOutputShaderID);
-		glDeleteShader(OGLRef.fragmentFramebufferRGBA6665OutputShaderID);
-		glDeleteShader(OGLRef.fragmentFramebufferRGBA8888OutputShaderID);
 		INFO("OpenGL: Failed to make the framebuffer output shader bindings.\n");
 		return error;
 	}
@@ -3022,22 +3021,13 @@ Render3DError OpenGLRenderer_1_2::InitPostprocessingPrograms(const char *zeroAlp
 	
 	if (!this->ValidateShaderProgramLink(OGLRef.programFramebufferRGBA6665OutputID) || !this->ValidateShaderProgramLink(OGLRef.programFramebufferRGBA8888OutputID))
 	{
-		glDetachShader(OGLRef.programFramebufferRGBA6665OutputID, OGLRef.vertexFramebufferOutputShaderID);
-		glDetachShader(OGLRef.programFramebufferRGBA6665OutputID, OGLRef.fragmentFramebufferRGBA6665OutputShaderID);
-		glDetachShader(OGLRef.programFramebufferRGBA8888OutputID, OGLRef.vertexFramebufferOutputShaderID);
-		glDetachShader(OGLRef.programFramebufferRGBA8888OutputID, OGLRef.fragmentFramebufferRGBA8888OutputShaderID);
-		
-		glDeleteProgram(OGLRef.programFramebufferRGBA6665OutputID);
-		glDeleteProgram(OGLRef.programFramebufferRGBA8888OutputID);
-		glDeleteShader(OGLRef.vertexFramebufferOutputShaderID);
-		glDeleteShader(OGLRef.fragmentFramebufferRGBA6665OutputShaderID);
-		glDeleteShader(OGLRef.fragmentFramebufferRGBA8888OutputShaderID);
 		INFO("OpenGL: Failed to link the framebuffer output shader program.\n");
 		return OGLERROR_SHADER_CREATE_ERROR;
 	}
 	
 	glValidateProgram(OGLRef.programFramebufferRGBA6665OutputID);
 	glValidateProgram(OGLRef.programFramebufferRGBA8888OutputID);
+	
 	this->InitFramebufferOutputShaderLocations();
 	
 	// ------------------------------------------
@@ -3058,16 +3048,23 @@ Render3DError OpenGLRenderer_1_2::DestroyPostprocessingPrograms()
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	glUseProgram(0);
+	
 	glDetachShader(OGLRef.programZeroAlphaPixelMaskID, OGLRef.vertexZeroAlphaPixelMaskShaderID);
 	glDetachShader(OGLRef.programZeroAlphaPixelMaskID, OGLRef.fragmentZeroAlphaPixelMaskShaderID);
 	glDetachShader(OGLRef.programEdgeMarkID, OGLRef.vertexEdgeMarkShaderID);
 	glDetachShader(OGLRef.programEdgeMarkID, OGLRef.fragmentEdgeMarkShaderID);
 	glDetachShader(OGLRef.programFogID, OGLRef.vertexFogShaderID);
 	glDetachShader(OGLRef.programFogID, OGLRef.fragmentFogShaderID);
+	glDetachShader(OGLRef.programFramebufferRGBA6665OutputID, OGLRef.vertexFramebufferOutputShaderID);
+	glDetachShader(OGLRef.programFramebufferRGBA6665OutputID, OGLRef.fragmentFramebufferRGBA6665OutputShaderID);
+	glDetachShader(OGLRef.programFramebufferRGBA8888OutputID, OGLRef.vertexFramebufferOutputShaderID);
+	glDetachShader(OGLRef.programFramebufferRGBA8888OutputID, OGLRef.fragmentFramebufferRGBA8888OutputShaderID);
 	
 	glDeleteProgram(OGLRef.programZeroAlphaPixelMaskID);
 	glDeleteProgram(OGLRef.programEdgeMarkID);
 	glDeleteProgram(OGLRef.programFogID);
+	glDeleteProgram(OGLRef.programFramebufferRGBA6665OutputID);
+	glDeleteProgram(OGLRef.programFramebufferRGBA8888OutputID);
 	
 	glDeleteShader(OGLRef.vertexZeroAlphaPixelMaskShaderID);
 	glDeleteShader(OGLRef.fragmentZeroAlphaPixelMaskShaderID);
@@ -3075,17 +3072,25 @@ Render3DError OpenGLRenderer_1_2::DestroyPostprocessingPrograms()
 	glDeleteShader(OGLRef.fragmentEdgeMarkShaderID);
 	glDeleteShader(OGLRef.vertexFogShaderID);
 	glDeleteShader(OGLRef.fragmentFogShaderID);
-	
-	glDetachShader(OGLRef.programFramebufferRGBA6665OutputID, OGLRef.vertexFramebufferOutputShaderID);
-	glDetachShader(OGLRef.programFramebufferRGBA6665OutputID, OGLRef.fragmentFramebufferRGBA6665OutputShaderID);
-	glDetachShader(OGLRef.programFramebufferRGBA8888OutputID, OGLRef.vertexFramebufferOutputShaderID);
-	glDetachShader(OGLRef.programFramebufferRGBA8888OutputID, OGLRef.fragmentFramebufferRGBA8888OutputShaderID);
-	
-	glDeleteProgram(OGLRef.programFramebufferRGBA6665OutputID);
-	glDeleteProgram(OGLRef.programFramebufferRGBA8888OutputID);
 	glDeleteShader(OGLRef.vertexFramebufferOutputShaderID);
 	glDeleteShader(OGLRef.fragmentFramebufferRGBA6665OutputShaderID);
 	glDeleteShader(OGLRef.fragmentFramebufferRGBA8888OutputShaderID);
+	
+	OGLRef.programZeroAlphaPixelMaskID = 0;
+	OGLRef.programEdgeMarkID = 0;
+	OGLRef.programFogID = 0;
+	OGLRef.programFramebufferRGBA6665OutputID = 0;
+	OGLRef.programFramebufferRGBA8888OutputID = 0;
+	
+	OGLRef.vertexZeroAlphaPixelMaskShaderID = 0;
+	OGLRef.fragmentZeroAlphaPixelMaskShaderID = 0;
+	OGLRef.vertexEdgeMarkShaderID = 0;
+	OGLRef.fragmentEdgeMarkShaderID = 0;
+	OGLRef.vertexFogShaderID = 0;
+	OGLRef.fragmentFogShaderID = 0;
+	OGLRef.vertexFramebufferOutputShaderID = 0;
+	OGLRef.fragmentFramebufferRGBA6665OutputShaderID = 0;
+	OGLRef.fragmentFramebufferRGBA8888OutputShaderID = 0;
 	
 	return OGLERROR_NOERR;
 }
@@ -3224,6 +3229,7 @@ Render3DError OpenGLRenderer_1_2::CreateToonTable()
 Render3DError OpenGLRenderer_1_2::DestroyToonTable()
 {
 	glDeleteTextures(1, &this->ref->texToonTableID);
+	this->ref->texToonTableID = 0;
 	
 	return OGLERROR_NOERR;
 }
@@ -3370,19 +3376,24 @@ Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const POLYLIST *polyList, con
 		return OGLERROR_FEATURE_UNSUPPORTED;
 	}
 	
-	// For now, we're not going to support this pass with MSAA, so skip it when running MSAA.
-	if (this->isMultisampledFBOSupported && (OGLRef.selectedRenderingFBO == OGLRef.fboMSIntermediateRenderID))
-	{
-		return OGLERROR_NOERR;
-	}
-	
 	// Pre Pass: Fill in the stencil buffer based on the alpha of the current framebuffer color.
 	// Fully transparent pixels (alpha == 0) -- Set stencil buffer to 0
 	// All other pixels (alpha != 0) -- Set stencil buffer to 1
 	
 	this->DisableVertexAttributes();
 	
-	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, OGLRef.fboRenderAlphaID);
+	const bool isRunningMSAA = this->isMultisampledFBOSupported && (OGLRef.selectedRenderingFBO == OGLRef.fboMSIntermediateRenderID);
+	
+	if (isRunningMSAA)
+	{
+		// Just downsample the color buffer now so that we have some texture data to sample from in the non-multisample shader.
+		// Not perfectly pixel accurate, but it's better than nothing.
+		glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, OGLRef.fboRenderAlphaID);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+		glBlitFramebufferEXT(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	}
+	
+	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, (isRunningMSAA) ? OGLRef.fboMSIntermediateRenderAlphaID : OGLRef.fboRenderAlphaID);
 	glDrawBuffer(GL_NONE);
 	glClearStencil(0);
 	glClear(GL_STENCIL_BUFFER_BIT);
@@ -4557,6 +4568,8 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	}
 	
+	glActiveTextureARB(GL_TEXTURE0_ARB);
+	
 	if (this->isMultisampledFBOSupported)
 	{
 		GLsizei maxSamplesOGL = (GLsizei)this->_deviceInfo.maxSamples;
@@ -4574,8 +4587,6 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilID);
 		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamplesOGL, GL_DEPTH24_STENCIL8_EXT, w, h);
 	}
-	
-	glActiveTextureARB(GL_TEXTURE0_ARB);
 	
 	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
 	

@@ -436,17 +436,20 @@ struct OGLRenderRef
 	GLuint texGDepthStencilID;
 	GLuint texGDepthStencilAlphaID;
 	GLuint texFinalColorID;
+	GLuint texMSGColorID;
 	
 	GLuint rboMSGColorID;
 	GLuint rboMSGPolyID;
 	GLuint rboMSGFogAttrID;
 	GLuint rboMSGDepthStencilID;
+	GLuint rboMSGDepthStencilAlphaID;
 	
 	GLuint fboClearImageID;
 	GLuint fboRenderID;
 	GLuint fboRenderAlphaID;
 	GLuint fboPostprocessID;
 	GLuint fboMSIntermediateRenderID;
+	GLuint fboMSIntermediateRenderAlphaID;
 	GLuint selectedRenderingFBO;
 	
 	// Shader states
@@ -457,6 +460,10 @@ struct OGLRenderRef
 	GLuint vtxShaderGeometryZeroDstAlphaID;
 	GLuint fragShaderGeometryZeroDstAlphaID;
 	GLuint programGeometryZeroDstAlphaID;
+	
+	GLuint vtxShaderMSGeometryZeroDstAlphaID;
+	GLuint fragShaderMSGeometryZeroDstAlphaID;
+	GLuint programMSGeometryZeroDstAlphaID;
 	
 	GLuint vertexZeroAlphaPixelMaskShaderID;
 	GLuint vertexEdgeMarkShaderID;
@@ -626,9 +633,11 @@ protected:
 	bool isMultisampledFBOSupported;
 	bool isShaderSupported;
 	bool isVAOSupported;
+	bool isSampleShadingSupported;
 	bool willFlipOnlyFramebufferOnGPU;
 	bool willFlipAndConvertFramebufferOnGPU;
-		
+	bool willUsePerSampleZeroDstPass;
+	
 	FragmentColor *_mappedFramebuffer;
 	FragmentColor *_workingTextureUnpackBuffer;
 	bool _pixelReadNeedsFinish;
@@ -650,7 +659,9 @@ protected:
 	virtual void DestroyFBOs() = 0;
 	virtual Render3DError CreateMultisampledFBO(GLsizei numSamples) = 0;
 	virtual void DestroyMultisampledFBO() = 0;
-	virtual Render3DError InitGeometryProgram(const char *geometryVtxShaderCString, const char *geometryFragShaderCString, const char *geometryAlphaVtxShaderCString, const char *geometryAlphaFragShaderCString) = 0;
+	virtual Render3DError InitGeometryProgram(const char *geometryVtxShaderCString, const char *geometryFragShaderCString,
+											  const char *geometryAlphaVtxShaderCString, const char *geometryAlphaFragShaderCString,
+											  const char *geometryMSAlphaVtxShaderCString, const char *geometryMSAlphaFragShaderCString) = 0;
 	virtual void DestroyGeometryProgram() = 0;
 	virtual Render3DError CreateVAOs() = 0;
 	virtual void DestroyVAOs() = 0;
@@ -725,7 +736,9 @@ protected:
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet);
 	virtual Render3DError InitTables();
 	
-	virtual Render3DError InitGeometryProgram(const char *geometryVtxShaderCString, const char *geometryFragShaderCString, const char *geometryAlphaVtxShaderCString, const char *geometryAlphaFragShaderCString);
+	virtual Render3DError InitGeometryProgram(const char *geometryVtxShaderCString, const char *geometryFragShaderCString,
+											  const char *geometryAlphaVtxShaderCString, const char *geometryAlphaFragShaderCString,
+											  const char *geometryMSAlphaVtxShaderCString, const char *geometryMSAlphaFragShaderCString);
 	virtual Render3DError InitGeometryProgramBindings();
 	virtual Render3DError InitGeometryProgramShaderLocations();
 	virtual Render3DError InitGeometryZeroDstAlphaProgramBindings();

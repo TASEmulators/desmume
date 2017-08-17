@@ -305,6 +305,42 @@ static const char *GeometryZeroDstAlphaPixelMaskFragShader_150 = {"\
 "};
 
 // Vertex shader for determining which pixels have a zero alpha, GLSL 1.50
+static const char *MSGeometryZeroDstAlphaPixelMaskVtxShader_150 = {"\
+	#version 150\n\
+	#extension GL_ARB_sample_shading : require\n\
+	\n\
+	in vec2 inPosition;\n\
+	in vec2 inTexCoord0;\n\
+	uniform sampler2DMS texInFragColor;\n\
+	out vec2 texCoord;\n\
+	\n\
+	void main()\n\
+	{\n\
+		texCoord = inTexCoord0 * textureSize(texInFragColor);\n\
+		gl_Position = vec4(inPosition, 0.0, 1.0);\n\
+	}\n\
+"};
+
+// Fragment shader for determining which pixels have a zero alpha, GLSL 1.50
+static const char *MSGeometryZeroDstAlphaPixelMaskFragShader_150 = {"\
+	#version 150\n\
+	#extension GL_ARB_sample_shading : require\n\
+	\n\
+	in vec2 texCoord;\n\
+	uniform sampler2DMS texInFragColor;\n\
+	\n\
+	void main()\n\
+	{\n\
+		vec4 inFragColor = texelFetch(texInFragColor, ivec2(texCoord), gl_SampleID);\n\
+		\n\
+		if (inFragColor.a <= 0.001)\n\
+		{\n\
+			discard;\n\
+		}\n\
+	}\n\
+"};
+
+// Vertex shader for determining which pixels have a zero alpha, GLSL 1.50
 static const char *ZeroAlphaPixelMaskVtxShader_150 = {"\
 	#version 150\n\
 	\n\
@@ -646,13 +682,20 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	this->willFlipOnlyFramebufferOnGPU = true;
 	this->willFlipAndConvertFramebufferOnGPU = true;
 	
+	this->isSampleShadingSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_sample_shading");
+	
 	error = this->InitGeometryProgram(GeometryVtxShader_150, GeometryFragShader_150,
-									  GeometryZeroDstAlphaPixelMaskVtxShader_150, GeometryZeroDstAlphaPixelMaskFragShader_150);
+									  GeometryZeroDstAlphaPixelMaskVtxShader_150, GeometryZeroDstAlphaPixelMaskFragShader_150,
+									  MSGeometryZeroDstAlphaPixelMaskVtxShader_150, MSGeometryZeroDstAlphaPixelMaskFragShader_150);
 	if (error != OGLERROR_NOERR)
 	{
+		this->DestroyGeometryProgram();
 		this->isShaderSupported = false;
+		
 		return error;
 	}
+	
+	this->willUsePerSampleZeroDstPass = this->isSampleShadingSupported && (OGLRef.programMSGeometryZeroDstAlphaID != 0);
 	
 	error = this->InitPostprocessingPrograms(ZeroAlphaPixelMaskVtxShader_150,
 											 ZeroAlphaPixelMaskFragShader_150,
@@ -665,8 +708,10 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 											 FramebufferOutputFragShader_150);
 	if (error != OGLERROR_NOERR)
 	{
+		this->DestroyPostprocessingPrograms();
 		this->DestroyGeometryProgram();
 		this->isShaderSupported = false;
+		
 		return error;
 	}
 	
@@ -1044,25 +1089,50 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	// Set up FBO render targets
-	glGenRenderbuffers(1, &OGLRef.rboMSGColorID);
 	glGenRenderbuffers(1, &OGLRef.rboMSGPolyID);
 	glGenRenderbuffers(1, &OGLRef.rboMSGFogAttrID);
 	glGenRenderbuffers(1, &OGLRef.rboMSGDepthStencilID);
+	glGenRenderbuffers(1, &OGLRef.rboMSGDepthStencilAlphaID);
 	
-	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGColorID);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight);
+	if (this->willUsePerSampleZeroDstPass)
+	{
+		glGenTextures(1, &OGLRef.texMSGColorID);
+		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGColorID);
+		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight, GL_TRUE);
+	}
+	else
+	{
+		glGenRenderbuffers(1, &OGLRef.rboMSGColorID);
+		glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGColorID);
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight);
+	}
+	
 	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGPolyID);
 	glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight);
 	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGFogAttrID);
 	glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_RGBA, this->_framebufferWidth, this->_framebufferHeight);
 	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGDepthStencilID);
 	glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_DEPTH24_STENCIL8, this->_framebufferWidth, this->_framebufferHeight);
+	glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGDepthStencilAlphaID);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, numSamples, GL_DEPTH24_STENCIL8, this->_framebufferWidth, this->_framebufferHeight);
 	
 	// Set up multisampled rendering FBO
 	glGenFramebuffers(1, &OGLRef.fboMSIntermediateRenderID);
-	
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboMSIntermediateRenderID);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, OGLRef.rboMSGColorID);
+	
+	if (this->willUsePerSampleZeroDstPass)
+	{
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGColorID, 0);
+	}
+	else
+	{
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, OGLRef.rboMSGColorID);
+	}
+	
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_RENDERBUFFER, OGLRef.rboMSGPolyID);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_RENDERBUFFER, OGLRef.rboMSGFogAttrID);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, OGLRef.rboMSGDepthStencilID);
@@ -1070,6 +1140,30 @@ Render3DError OpenGLRenderer_3_2::CreateMultisampledFBO(GLsizei numSamples)
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		INFO("OpenGL: Failed to create multisampled FBO. Multisample antialiasing will be disabled.\n");
+		this->DestroyMultisampledFBO();
+		
+		return OGLERROR_FBO_CREATE_ERROR;
+	}
+	
+	glGenFramebuffers(1, &OGLRef.fboMSIntermediateRenderAlphaID);
+	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboMSIntermediateRenderAlphaID);
+	
+	if (this->willUsePerSampleZeroDstPass)
+	{
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGColorID, 0);
+	}
+	else
+	{
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, OGLRef.rboMSGColorID);
+	}
+	
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_RENDERBUFFER, OGLRef.rboMSGPolyID);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_RENDERBUFFER, OGLRef.rboMSGFogAttrID);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, OGLRef.rboMSGDepthStencilAlphaID);
+	
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		INFO("OpenGL: Failed to create multisampled FBO. Multisample antialiasing will be disabled!\n");
 		this->DestroyMultisampledFBO();
 		
 		return OGLERROR_FBO_CREATE_ERROR;
@@ -1092,12 +1186,16 @@ void OpenGLRenderer_3_2::DestroyMultisampledFBO()
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDeleteFramebuffers(1, &OGLRef.fboMSIntermediateRenderID);
+	glDeleteFramebuffers(1, &OGLRef.fboMSIntermediateRenderAlphaID);
+	glDeleteTextures(1, &OGLRef.texMSGColorID);
 	glDeleteRenderbuffers(1, &OGLRef.rboMSGColorID);
 	glDeleteRenderbuffers(1, &OGLRef.rboMSGPolyID);
 	glDeleteRenderbuffers(1, &OGLRef.rboMSGFogAttrID);
 	glDeleteRenderbuffers(1, &OGLRef.rboMSGDepthStencilID);
+	glDeleteRenderbuffers(1, &OGLRef.rboMSGDepthStencilAlphaID);
 	
 	OGLRef.fboMSIntermediateRenderID = 0;
+	OGLRef.fboMSIntermediateRenderAlphaID = 0;
 	
 	this->isMultisampledFBOSupported = false;
 }
@@ -1216,6 +1314,12 @@ Render3DError OpenGLRenderer_3_2::InitGeometryZeroDstAlphaProgramBindings()
 	glBindAttribLocation(OGLRef.programGeometryZeroDstAlphaID, OGLVertexAttributeID_Position, "inPosition");
 	glBindAttribLocation(OGLRef.programGeometryZeroDstAlphaID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
 	
+	if (OGLRef.programMSGeometryZeroDstAlphaID != 0)
+	{
+		glBindAttribLocation(OGLRef.programMSGeometryZeroDstAlphaID, OGLVertexAttributeID_Position, "inPosition");
+		glBindAttribLocation(OGLRef.programMSGeometryZeroDstAlphaID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
+	}
+	
 	return OGLERROR_NOERR;
 }
 
@@ -1224,8 +1328,15 @@ Render3DError OpenGLRenderer_3_2::InitGeometryZeroDstAlphaProgramShaderLocations
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	glUseProgram(OGLRef.programGeometryZeroDstAlphaID);
-	const GLint uniformTexGColor = glGetUniformLocation(OGLRef.programGeometryZeroDstAlphaID, "texInFragColor");
+	GLint uniformTexGColor = glGetUniformLocation(OGLRef.programGeometryZeroDstAlphaID, "texInFragColor");
 	glUniform1i(uniformTexGColor, OGLTextureUnitID_GColor);
+	
+	if (OGLRef.programMSGeometryZeroDstAlphaID != 0)
+	{
+		glUseProgram(OGLRef.programMSGeometryZeroDstAlphaID);
+		uniformTexGColor = glGetUniformLocation(OGLRef.programMSGeometryZeroDstAlphaID, "texInFragColor");
+		glUniform1i(uniformTexGColor, 0);
+	}
 	
 	return OGLERROR_NOERR;
 }
@@ -1248,19 +1359,37 @@ void OpenGLRenderer_3_2::DestroyGeometryProgram()
 	
 	glDetachShader(OGLRef.programGeometryID, OGLRef.vertexGeometryShaderID);
 	glDetachShader(OGLRef.programGeometryID, OGLRef.fragmentGeometryShaderID);
-	glDeleteProgram(OGLRef.programGeometryID);
-	glDeleteShader(OGLRef.vertexGeometryShaderID);
-	glDeleteShader(OGLRef.fragmentGeometryShaderID);
-	
 	glDetachShader(OGLRef.programGeometryZeroDstAlphaID, OGLRef.vtxShaderGeometryZeroDstAlphaID);
 	glDetachShader(OGLRef.programGeometryZeroDstAlphaID, OGLRef.fragShaderGeometryZeroDstAlphaID);
+	glDetachShader(OGLRef.programMSGeometryZeroDstAlphaID, OGLRef.vtxShaderMSGeometryZeroDstAlphaID);
+	glDetachShader(OGLRef.programMSGeometryZeroDstAlphaID, OGLRef.fragShaderMSGeometryZeroDstAlphaID);
+	
+	glDeleteProgram(OGLRef.programGeometryID);
 	glDeleteProgram(OGLRef.programGeometryZeroDstAlphaID);
+	glDeleteProgram(OGLRef.programMSGeometryZeroDstAlphaID);
+	
+	glDeleteShader(OGLRef.vertexGeometryShaderID);
+	glDeleteShader(OGLRef.fragmentGeometryShaderID);
 	glDeleteShader(OGLRef.vtxShaderGeometryZeroDstAlphaID);
 	glDeleteShader(OGLRef.fragShaderGeometryZeroDstAlphaID);
+	glDeleteShader(OGLRef.vtxShaderMSGeometryZeroDstAlphaID);
+	glDeleteShader(OGLRef.fragShaderMSGeometryZeroDstAlphaID);
+	
+	OGLRef.uboRenderStatesID = 0;
+	OGLRef.tboPolyStatesID = 0;
+	
+	OGLRef.programGeometryID = 0;
+	OGLRef.programGeometryZeroDstAlphaID = 0;
+	OGLRef.programMSGeometryZeroDstAlphaID = 0;
+	
+	OGLRef.vertexGeometryShaderID = 0;
+	OGLRef.fragmentGeometryShaderID = 0;
+	OGLRef.vtxShaderGeometryZeroDstAlphaID = 0;
+	OGLRef.fragShaderGeometryZeroDstAlphaID = 0;
+	OGLRef.vtxShaderMSGeometryZeroDstAlphaID = 0;
+	OGLRef.fragShaderMSGeometryZeroDstAlphaID = 0;
 	
 	this->DestroyToonTable();
-	
-	this->isShaderSupported = false;
 }
 
 void OpenGLRenderer_3_2::GetExtensionSet(std::set<std::string> *oglExtensionSet)
@@ -1291,24 +1420,30 @@ Render3DError OpenGLRenderer_3_2::ZeroDstAlphaPass(const POLYLIST *polyList, con
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
-	// For now, we're not going to support this pass with MSAA, so skip it when running MSAA.
-	if (this->isMultisampledFBOSupported && (OGLRef.selectedRenderingFBO == OGLRef.fboMSIntermediateRenderID))
-	{
-		return OGLERROR_NOERR;
-	}
-	
 	// Pre Pass: Fill in the stencil buffer based on the alpha of the current framebuffer color.
 	// Fully transparent pixels (alpha == 0) -- Set stencil buffer to 0
 	// All other pixels (alpha != 0) -- Set stencil buffer to 1
 	
 	this->DisableVertexAttributes();
 	
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboRenderAlphaID);
+	const bool isRunningMSAA = this->isMultisampledFBOSupported && (OGLRef.selectedRenderingFBO == OGLRef.fboMSIntermediateRenderID);
+	const bool isRunningMSAAWithPerSampleShading = isRunningMSAA && this->willUsePerSampleZeroDstPass; // Doing per-sample shading should be a little more accurate than not doing so.
+	
+	if (isRunningMSAA && !isRunningMSAAWithPerSampleShading)
+	{
+		// Just downsample the color buffer now so that we have some texture data to sample from in the non-multisample shader.
+		// Not perfectly pixel accurate, but it's better than nothing.
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboRenderAlphaID);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+		glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	}
+	
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (isRunningMSAA) ? OGLRef.fboMSIntermediateRenderAlphaID : OGLRef.fboRenderAlphaID);
 	glDrawBuffer(GL_NONE);
 	glClearBufferfi(GL_DEPTH_STENCIL, 0, 0.0f, 0);
 	glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 	
-	glUseProgram(OGLRef.programGeometryZeroDstAlphaID);
+	glUseProgram((isRunningMSAAWithPerSampleShading) ? OGLRef.programMSGeometryZeroDstAlphaID : OGLRef.programGeometryZeroDstAlphaID);
 	glViewport(0, 0, this->_framebufferWidth, this->_framebufferHeight);
 	glDisable(GL_BLEND);
 	glEnable(GL_STENCIL_TEST);
@@ -1924,6 +2059,8 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FogAttr);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 	
+	glActiveTexture(GL_TEXTURE0);
+	
 	if (this->isMultisampledFBOSupported)
 	{
 		GLsizei maxSamplesOGL = (GLsizei)this->_deviceInfo.maxSamples;
@@ -1932,17 +2069,26 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 			maxSamplesOGL = OGLRENDER_MAX_MULTISAMPLES;
 		}
 		
-		glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGColorID);
-		glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamplesOGL, GL_RGBA, w, h);
+		if (this->willUsePerSampleZeroDstPass)
+		{
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, OGLRef.texMSGColorID);
+			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, maxSamplesOGL, GL_RGBA, w, h, GL_TRUE);
+		}
+		else
+		{
+			glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGColorID);
+			glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamplesOGL, GL_RGBA, w, h);
+		}
+		
 		glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGPolyID);
 		glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamplesOGL, GL_RGBA, w, h);
 		glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGFogAttrID);
 		glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamplesOGL, GL_RGBA, w, h);
 		glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGDepthStencilID);
 		glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamplesOGL, GL_DEPTH24_STENCIL8, w, h);
+		glBindRenderbuffer(GL_RENDERBUFFER, OGLRef.rboMSGDepthStencilAlphaID);
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, maxSamplesOGL, GL_DEPTH24_STENCIL8, w, h);
 	}
-	
-	glActiveTexture(GL_TEXTURE0);
 	
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthStencilAlphaID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, w, h, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
