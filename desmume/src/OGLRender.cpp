@@ -3799,7 +3799,7 @@ Render3DError OpenGLRenderer_1_2::RenderEdgeMarking(const u16 *colorTable, const
 		glDisableVertexAttribArray(OGLVertexAttributeID_TexCoord0);
 	}
 	
-	glBindFramebuffer(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderAlphaID);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.fboRenderAlphaID);
 	glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	this->_lastTextureDrawTarget = OGLTextureUnitID_GColor;
 		
