@@ -63,8 +63,6 @@ class OpenGLRenderer_3_2 : public OpenGLRenderer_2_1
 {
 protected:
 	virtual Render3DError InitExtensions();
-	virtual Render3DError InitZeroAlphaPixelMaskProgramBindings();
-	virtual Render3DError InitZeroAlphaPixelMaskProgramShaderLocations();
 	virtual Render3DError InitEdgeMarkProgramBindings();
 	virtual Render3DError InitEdgeMarkProgramShaderLocations();
 	virtual Render3DError InitFogProgramBindings();

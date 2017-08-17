@@ -53,6 +53,7 @@ OGLEXT(PFNGLBINDRENDERBUFFERPROC, glBindRenderbuffer) // Core in v3.0
 OGLEXT(PFNGLRENDERBUFFERSTORAGEPROC, glRenderbufferStorage) // Core in v3.0
 OGLEXT(PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC, glRenderbufferStorageMultisample) // Core in v3.0
 OGLEXT(PFNGLDELETERENDERBUFFERSPROC, glDeleteRenderbuffers) // Core in v3.0
+OGLEXT(PFNGLTEXIMAGE2DMULTISAMPLEPROC, glTexImage2DMultisample) // Core in v3.2
 
 // UBO
 OGLEXT(PFNGLGETUNIFORMBLOCKINDEXPROC, glGetUniformBlockIndex) // Core in v3.1
@@ -89,6 +90,7 @@ void OGLLoadEntryPoints_3_2()
 	INITOGLEXT(PFNGLRENDERBUFFERSTORAGEPROC, glRenderbufferStorage) // Promote to core version
 	INITOGLEXT(PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC, glRenderbufferStorageMultisample) // Promote to core version
 	INITOGLEXT(PFNGLDELETERENDERBUFFERSPROC, glDeleteRenderbuffers) // Promote to core version
+	INITOGLEXT(PFNGLTEXIMAGE2DMULTISAMPLEPROC, glTexImage2DMultisample)
 	
 	// UBO
 	INITOGLEXT(PFNGLGETUNIFORMBLOCKINDEXPROC, glGetUniformBlockIndex)
@@ -340,36 +342,6 @@ static const char *MSGeometryZeroDstAlphaPixelMaskFragShader_150 = {"\
 	}\n\
 "};
 
-// Vertex shader for determining which pixels have a zero alpha, GLSL 1.50
-static const char *ZeroAlphaPixelMaskVtxShader_150 = {"\
-	#version 150\n\
-	\n\
-	in vec2 inPosition;\n\
-	in vec2 inTexCoord0;\n\
-	out vec2 texCoord;\n\
-	\n\
-	void main()\n\
-	{\n\
-		texCoord = inTexCoord0;\n\
-		gl_Position = vec4(inPosition, 0.0, 1.0);\n\
-	}\n\
-"};
-
-// Fragment shader for determining which pixels have a zero alpha, GLSL 1.50
-static const char *ZeroAlphaPixelMaskFragShader_150 = {"\
-	#version 150\n\
-	\n\
-	in vec2 texCoord;\n\
-	uniform sampler2D texInFragColor;\n\
-	out vec4 outZeroAlphaPixelMask;\n\
-	\n\
-	void main()\n\
-	{\n\
-		vec4 inFragColor = texture(texInFragColor, texCoord);\n\
-		outZeroAlphaPixelMask = vec4( float(inFragColor.a < 0.001), 0.0, 0.0, 1.0 );\n\
-	}\n\
-"};
-
 // Vertex shader for applying edge marking, GLSL 1.50
 static const char *EdgeMarkVtxShader_150 = {"\
 	#version 150\n\
@@ -438,15 +410,11 @@ static const char *EdgeMarkFragShader_150 = {"\
 	\n\
 	uniform sampler2D texInFragDepth;\n\
 	uniform sampler2D texInPolyID;\n\
-	uniform sampler2D texZeroAlphaPixelMask;\n\
-	uniform bool isAlphaWriteDisabled;\n\
 	\n\
 	out vec4 outFragColor;\n\
 	\n\
 	void main()\n\
 	{\n\
-		bool isZeroAlphaPixel = bool(texture(texZeroAlphaPixelMask, texCoord[0]).r);\n\
-		\n\
 		vec4 polyIDInfo[5];\n\
 		polyIDInfo[0] = texture(texInPolyID, texCoord[0]);\n\
 		polyIDInfo[1] = texture(texInPolyID, texCoord[1]);\n\
@@ -466,7 +434,7 @@ static const char *EdgeMarkFragShader_150 = {"\
 		\n\
 		vec4 newEdgeColor = vec4(0.0, 0.0, 0.0, 0.0);\n\
 		\n\
-		if ( !isWireframe[0] && (!isAlphaWriteDisabled || isZeroAlphaPixel) )\n\
+		if (!isWireframe[0])\n\
 		{\n\
 			int polyID[5];\n\
 			polyID[0] = int((polyIDInfo[0].r * 63.0) + 0.5);\n\
@@ -485,10 +453,6 @@ static const char *EdgeMarkFragShader_150 = {"\
 				if ( (polyID[0] != polyID[i]) && (depth[0] >= depth[i]) && !isWireframe[i] )\n\
 				{\n\
 					newEdgeColor = state.edgeColor[polyID[i]/8];\n\
-					if (isAlphaWriteDisabled)\n\
-					{\n\
-						newEdgeColor.a = 1.0;\n\
-					}\n\
 					break;\n\
 				}\n\
 			}\n\
@@ -697,9 +661,7 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	
 	this->willUsePerSampleZeroDstPass = this->isSampleShadingSupported && (OGLRef.programMSGeometryZeroDstAlphaID != 0);
 	
-	error = this->InitPostprocessingPrograms(ZeroAlphaPixelMaskVtxShader_150,
-											 ZeroAlphaPixelMaskFragShader_150,
-											 EdgeMarkVtxShader_150,
+	error = this->InitPostprocessingPrograms(EdgeMarkVtxShader_150,
 											 EdgeMarkFragShader_150,
 											 FogVtxShader_150,
 											 FogFragShader_150,
@@ -763,27 +725,6 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_3_2::InitZeroAlphaPixelMaskProgramBindings()
-{
-	OGLRenderRef &OGLRef = *this->ref;
-	glBindAttribLocation(OGLRef.programZeroAlphaPixelMaskID, OGLVertexAttributeID_Position, "inPosition");
-	glBindAttribLocation(OGLRef.programZeroAlphaPixelMaskID, OGLVertexAttributeID_TexCoord0, "inTexCoord0");
-	glBindFragDataLocation(OGLRef.programZeroAlphaPixelMaskID, 0, "outZeroAlphaPixelMask");
-	
-	return OGLERROR_NOERR;
-}
-
-Render3DError OpenGLRenderer_3_2::InitZeroAlphaPixelMaskProgramShaderLocations()
-{
-	OGLRenderRef &OGLRef = *this->ref;
-	
-	glUseProgram(OGLRef.programZeroAlphaPixelMaskID);
-	const GLint uniformTexGColor = glGetUniformLocation(OGLRef.programZeroAlphaPixelMaskID, "texInFragColor");
-	glUniform1i(uniformTexGColor, OGLTextureUnitID_GColor);
-	
-	return OGLERROR_NOERR;
-}
-
 Render3DError OpenGLRenderer_3_2::InitEdgeMarkProgramBindings()
 {
 	OGLRenderRef &OGLRef = *this->ref;
@@ -805,12 +746,8 @@ Render3DError OpenGLRenderer_3_2::InitEdgeMarkProgramShaderLocations()
 	
 	const GLint uniformTexGDepth				= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInFragDepth");
 	const GLint uniformTexGPolyID				= glGetUniformLocation(OGLRef.programEdgeMarkID, "texInPolyID");
-	const GLint uniformTexZeroAlphaPixelMask	= glGetUniformLocation(OGLRef.programEdgeMarkID, "texZeroAlphaPixelMask");
-	OGLRef.uniformIsAlphaWriteDisabled			= glGetUniformLocation(OGLRef.programEdgeMarkID, "isAlphaWriteDisabled");
 	glUniform1i(uniformTexGDepth, OGLTextureUnitID_DepthStencil);
 	glUniform1i(uniformTexGPolyID, OGLTextureUnitID_GPolyID);
-	glUniform1i(uniformTexZeroAlphaPixelMask, OGLTextureUnitID_ZeroAlphaPixelMask);
-	glUniform1i(OGLRef.uniformIsAlphaWriteDisabled, GL_FALSE);
 	
 	return OGLERROR_NOERR;
 }
@@ -1476,10 +1413,7 @@ Render3DError OpenGLRenderer_3_2::ZeroDstAlphaPass(const POLYLIST *polyList, con
 	glEnable(GL_DEPTH_TEST);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
 	glDepthMask(GL_FALSE);
-	
 	glStencilFunc(GL_NOTEQUAL, 0x80, 0x80);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	glStencilMask(0x80);
 	
 	this->DrawPolygonsForIndexRange<OGLPolyDrawMode_ZeroAlphaPass>(polyList, indexList, polyList->opaqueCount, polyList->count - 1, indexOffset, lastPolyTreatedAsTranslucent);
 	
@@ -1749,10 +1683,13 @@ Render3DError OpenGLRenderer_3_2::RenderEdgeMarking(const u16 *colorTable, const
 	OGLRenderRef &OGLRef = *this->ref;
 	
 	// Set up the postprocessing states
-	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboPostprocessID);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, OGLRef.fboRenderID);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, OGLRef.fboRenderAlphaID);
+	
 	glViewport(0, 0, this->_framebufferWidth, this->_framebufferHeight);
+	glDisable(GL_BLEND);
 	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_STENCIL_TEST);
+	glEnable(GL_STENCIL_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	
@@ -1761,26 +1698,33 @@ Render3DError OpenGLRenderer_3_2::RenderEdgeMarking(const u16 *colorTable, const
 	glBindVertexArray(OGLRef.vaoPostprocessStatesID);
 	
 	// Pass 1: Determine the pixels with zero alpha
-	glDrawBuffer(GL_COLOR_ATTACHMENT2);
-	glUseProgram(OGLRef.programZeroAlphaPixelMaskID);
-	glDisable(GL_BLEND);
+	glDrawBuffer(GL_NONE);
+	glClearBufferfi(GL_DEPTH_STENCIL, 0, 0.0f, 0);
+	glBlitFramebuffer(0, 0, this->_framebufferWidth, this->_framebufferHeight, 0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	
+	glStencilFunc(GL_ALWAYS, 0x80, 0x80);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glStencilMask(0x80);
+	
+	glUseProgram(OGLRef.programGeometryZeroDstAlphaID);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
 	
 	// Pass 2: Unblended edge mark colors to zero-alpha pixels
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	glUseProgram(OGLRef.programEdgeMarkID);
-	glUniform1i(OGLRef.uniformIsAlphaWriteDisabled, GL_TRUE);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
-	glEnable(GL_BLEND);
+	glStencilFunc(GL_NOTEQUAL, 0x80, 0x80);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
 	
 	// Pass 3: Blended edge mark
-	glUniform1i(OGLRef.uniformIsAlphaWriteDisabled, GL_FALSE);
+	glEnable(GL_BLEND);
+	glDisable(GL_STENCIL_TEST);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0);
 	
 	glBindVertexArray(0);
 	
+	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderAlphaID);
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
 	this->_lastTextureDrawTarget = OGLTextureUnitID_GColor;
 	

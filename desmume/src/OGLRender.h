@@ -262,6 +262,7 @@ EXTERNOGLEXT(PFNGLBINDRENDERBUFFERPROC, glBindRenderbuffer) // Core in v3.0
 EXTERNOGLEXT(PFNGLRENDERBUFFERSTORAGEPROC, glRenderbufferStorage) // Core in v3.0
 EXTERNOGLEXT(PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC, glRenderbufferStorageMultisample) // Core in v3.0
 EXTERNOGLEXT(PFNGLDELETERENDERBUFFERSPROC, glDeleteRenderbuffers) // Core in v3.0
+EXTERNOGLEXT(PFNGLTEXIMAGE2DMULTISAMPLEPROC, glTexImage2DMultisample) // Core in v3.2
 
 // UBO
 EXTERNOGLEXT(PFNGLGETUNIFORMBLOCKINDEXPROC, glGetUniformBlockIndex) // Core in v3.1
@@ -465,16 +466,13 @@ struct OGLRenderRef
 	GLuint fragShaderMSGeometryZeroDstAlphaID;
 	GLuint programMSGeometryZeroDstAlphaID;
 	
-	GLuint vertexZeroAlphaPixelMaskShaderID;
 	GLuint vertexEdgeMarkShaderID;
 	GLuint vertexFogShaderID;
 	GLuint vertexFramebufferOutputShaderID;
-	GLuint fragmentZeroAlphaPixelMaskShaderID;
 	GLuint fragmentEdgeMarkShaderID;
 	GLuint fragmentFogShaderID;
 	GLuint fragmentFramebufferRGBA6665OutputShaderID;
 	GLuint fragmentFramebufferRGBA8888OutputShaderID;
-	GLuint programZeroAlphaPixelMaskID;
 	GLuint programEdgeMarkID;
 	GLuint programFogID;
 	GLuint programFramebufferRGBA6665OutputID;
@@ -512,7 +510,6 @@ struct OGLRenderRef
 	
 	GLint uniformPolyStateIndex;
 	GLint uniformPolyDrawShadow;
-	GLint uniformIsAlphaWriteDisabled;
 	
 	GLuint texToonTableID;
 	
@@ -667,9 +664,7 @@ protected:
 	virtual void DestroyVAOs() = 0;
 	virtual Render3DError InitFinalRenderStates(const std::set<std::string> *oglExtensionSet) = 0;
 	virtual Render3DError InitTables() = 0;
-	virtual Render3DError InitPostprocessingPrograms(const char *zeroAlphaPixelMaskVtxShader,
-													 const char *zeroAlphaPixelMaskFragShader,
-													 const char *edgeMarkVtxShader,
+	virtual Render3DError InitPostprocessingPrograms(const char *edgeMarkVtxShader,
 													 const char *edgeMarkFragShader,
 													 const char *fogVtxShader,
 													 const char *fogFragShader,
@@ -677,8 +672,6 @@ protected:
 													 const char *framebufferOutputRGBA6665FragShader,
 													 const char *framebufferOutputRGBA8888FragShader) = 0;
 	virtual Render3DError DestroyPostprocessingPrograms() = 0;
-	virtual Render3DError InitZeroAlphaPixelMaskProgramBindings() = 0;
-	virtual Render3DError InitZeroAlphaPixelMaskProgramShaderLocations() = 0;
 	virtual Render3DError InitEdgeMarkProgramBindings() = 0;
 	virtual Render3DError InitEdgeMarkProgramShaderLocations() = 0;
 	virtual Render3DError InitFogProgramBindings() = 0;
@@ -744,9 +737,7 @@ protected:
 	virtual Render3DError InitGeometryZeroDstAlphaProgramBindings();
 	virtual Render3DError InitGeometryZeroDstAlphaProgramShaderLocations();
 	virtual void DestroyGeometryProgram();
-	virtual Render3DError InitPostprocessingPrograms(const char *zeroAlphaPixelMaskVtxShader,
-													 const char *zeroAlphaPixelMaskFragShader,
-													 const char *edgeMarkVtxShader,
+	virtual Render3DError InitPostprocessingPrograms(const char *edgeMarkVtxShader,
 													 const char *edgeMarkFragShader,
 													 const char *fogVtxShader,
 													 const char *fogFragShader,
@@ -754,8 +745,6 @@ protected:
 													 const char *framebufferOutputRGBA6665FragShader,
 													 const char *framebufferOutputRGBA8888FragShader);
 	virtual Render3DError DestroyPostprocessingPrograms();
-	virtual Render3DError InitZeroAlphaPixelMaskProgramBindings();
-	virtual Render3DError InitZeroAlphaPixelMaskProgramShaderLocations();
 	virtual Render3DError InitEdgeMarkProgramBindings();
 	virtual Render3DError InitEdgeMarkProgramShaderLocations();
 	virtual Render3DError InitFogProgramBindings();
