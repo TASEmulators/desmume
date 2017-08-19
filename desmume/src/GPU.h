@@ -1193,10 +1193,10 @@ typedef struct
 	FragmentColor *brightnessDownTable666;
 	FragmentColor *brightnessDownTable888;
 	
-	bool srcBlendEnable[6];
+	bool srcEffectEnable[6];
 	bool dstBlendEnable[6];
 #ifdef ENABLE_SSE2
-	__m128i srcBlendEnable_SSE2[6];
+	__m128i srcEffectEnable_SSE2[6];
 #ifdef ENABLE_SSSE3
 	__m128i dstBlendEnable_SSSE3;
 #else

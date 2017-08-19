@@ -795,12 +795,12 @@ void GPUEngineBase::_Reset_Base()
 	renderState.brightnessDownTable666 = &GPUEngineBase::_brightnessDownTable666[renderState.blendEVY][0];
 	renderState.brightnessDownTable888 = &GPUEngineBase::_brightnessDownTable888[renderState.blendEVY][0];
 	
-	renderState.srcBlendEnable[GPULayerID_BG0] = false;
-	renderState.srcBlendEnable[GPULayerID_BG1] = false;
-	renderState.srcBlendEnable[GPULayerID_BG2] = false;
-	renderState.srcBlendEnable[GPULayerID_BG3] = false;
-	renderState.srcBlendEnable[GPULayerID_OBJ] = false;
-	renderState.srcBlendEnable[GPULayerID_Backdrop] = false;
+	renderState.srcEffectEnable[GPULayerID_BG0] = false;
+	renderState.srcEffectEnable[GPULayerID_BG1] = false;
+	renderState.srcEffectEnable[GPULayerID_BG2] = false;
+	renderState.srcEffectEnable[GPULayerID_BG3] = false;
+	renderState.srcEffectEnable[GPULayerID_OBJ] = false;
+	renderState.srcEffectEnable[GPULayerID_Backdrop] = false;
 	
 	renderState.dstBlendEnable[GPULayerID_BG0] = false;
 	renderState.dstBlendEnable[GPULayerID_BG1] = false;
@@ -811,12 +811,12 @@ void GPUEngineBase::_Reset_Base()
 	renderState.dstAnyBlendEnable = false;
 	
 #ifdef ENABLE_SSE2
-	renderState.srcBlendEnable_SSE2[GPULayerID_BG0] = _mm_setzero_si128();
-	renderState.srcBlendEnable_SSE2[GPULayerID_BG1] = _mm_setzero_si128();
-	renderState.srcBlendEnable_SSE2[GPULayerID_BG2] = _mm_setzero_si128();
-	renderState.srcBlendEnable_SSE2[GPULayerID_BG3] = _mm_setzero_si128();
-	renderState.srcBlendEnable_SSE2[GPULayerID_OBJ] = _mm_setzero_si128();
-	renderState.srcBlendEnable_SSE2[GPULayerID_Backdrop] = _mm_setzero_si128();
+	renderState.srcEffectEnable_SSE2[GPULayerID_BG0] = _mm_setzero_si128();
+	renderState.srcEffectEnable_SSE2[GPULayerID_BG1] = _mm_setzero_si128();
+	renderState.srcEffectEnable_SSE2[GPULayerID_BG2] = _mm_setzero_si128();
+	renderState.srcEffectEnable_SSE2[GPULayerID_BG3] = _mm_setzero_si128();
+	renderState.srcEffectEnable_SSE2[GPULayerID_OBJ] = _mm_setzero_si128();
+	renderState.srcEffectEnable_SSE2[GPULayerID_Backdrop] = _mm_setzero_si128();
 #ifdef ENABLE_SSSE3
 	renderState.dstBlendEnable_SSSE3 = _mm_setzero_si128();
 #else
@@ -1599,7 +1599,7 @@ void GPUEngineBase::_RenderLine_Clear(GPUEngineCompositorInfo &compInfo)
 	// Clear the current line with the clear color
 	u16 dstClearColor16 = compInfo.renderState.backdropColor16;
 	
-	if (compInfo.renderState.srcBlendEnable[GPULayerID_Backdrop])
+	if (compInfo.renderState.srcEffectEnable[GPULayerID_Backdrop])
 	{
 		if (compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness)
 		{
@@ -2005,15 +2005,15 @@ FORCEINLINE void GPUEngineBase::_PixelUnknownEffect(GPUEngineCompositorInfo &com
 	u8 blendEVA = compInfo.renderState.blendEVA;
 	u8 blendEVB = compInfo.renderState.blendEVB;
 	
-	const bool dstEffectEnable = (dstLayerID != compInfo.renderState.selectedLayerID) && compInfo.renderState.dstBlendEnable[dstLayerID];
-	bool forceBlendEffect = false;
+	const bool dstTargetBlendEnable = (dstLayerID != compInfo.renderState.selectedLayerID) && compInfo.renderState.dstBlendEnable[dstLayerID];
+	bool forceDstTargetBlend = false;
 	
-	if ((LAYERTYPE == GPULayerType_OBJ) && enableColorEffect)
+	if (LAYERTYPE == GPULayerType_OBJ)
 	{
 		//translucent-capable OBJ are forcing the function to blend when the second target is satisfied
 		const OBJMode objMode = (OBJMode)this->_sprType[compInfo.target.xNative];
 		const bool isObjTranslucentType = (objMode == OBJMode_Transparent) || (objMode == OBJMode_Bitmap);
-		if (isObjTranslucentType && dstEffectEnable)
+		if (isObjTranslucentType && dstTargetBlendEnable)
 		{
 			// OBJ without fine-grained alpha are using EVA/EVB for blending. This is signified by receiving 0xFF in the alpha.
 			// Test cases:
@@ -2027,33 +2027,40 @@ FORCEINLINE void GPUEngineBase::_PixelUnknownEffect(GPUEngineCompositorInfo &com
 				selectedBlendTable = &GPUEngineBase::_blendTable555[blendEVA][blendEVB];
 			}
 			
-			forceBlendEffect = true;
+			forceDstTargetBlend = true;
 		}
 	}
 	
-	ColorEffect selectedEffect = (forceBlendEffect) ? ColorEffect_Blend : ColorEffect_Disable;
+	ColorEffect selectedEffect = ColorEffect_Disable;
 	
-	// If we're not forcing blending, then select the color effect based on the BLDCNT target flags.
-	if (!forceBlendEffect && enableColorEffect && compInfo.renderState.srcBlendEnable[compInfo.renderState.selectedLayerID])
+	if (forceDstTargetBlend)
 	{
-		switch (compInfo.renderState.colorEffect)
+		selectedEffect = ColorEffect_Blend;
+	}
+	else
+	{
+		// If we're not forcing blending, then select the color effect based on the BLDCNT target flags.
+		if (enableColorEffect && compInfo.renderState.srcEffectEnable[compInfo.renderState.selectedLayerID])
 		{
-			// For the Blend effect, both first and second target flags must be checked.
-			case ColorEffect_Blend:
+			switch (compInfo.renderState.colorEffect)
 			{
-				if (dstEffectEnable) selectedEffect = compInfo.renderState.colorEffect;
-				break;
+				// For the Blend effect, both first and second target flags must be checked.
+				case ColorEffect_Blend:
+				{
+					if (dstTargetBlendEnable) selectedEffect = compInfo.renderState.colorEffect;
+					break;
+				}
+					
+				// For the Increase/Decrease Brightness effects, only the first target flag needs to be checked.
+				// Test case: Bomberman Land Touch! dialog boxes will render too dark without this check.
+				case ColorEffect_IncreaseBrightness:
+				case ColorEffect_DecreaseBrightness:
+					selectedEffect = compInfo.renderState.colorEffect;
+					break;
+					
+				default:
+					break;
 			}
-				
-			// For the Increase/Decrease Brightness effects, only the first target flag needs to be checked.
-			// Test case: Bomberman Land Touch! dialog boxes will render too dark without this check.
-			case ColorEffect_IncreaseBrightness:
-			case ColorEffect_DecreaseBrightness:
-				selectedEffect = compInfo.renderState.colorEffect;
-				break;
-				
-			default:
-				break;
 		}
 	}
 	
@@ -2164,7 +2171,7 @@ FORCEINLINE void GPUEngineBase::_PixelUnknownEffect(GPUEngineCompositorInfo &com
 	u8 blendEVA = compInfo.renderState.blendEVA;
 	u8 blendEVB = compInfo.renderState.blendEVB;
 	
-	const bool dstEffectEnable = (dstLayerID != compInfo.renderState.selectedLayerID) && compInfo.renderState.dstBlendEnable[dstLayerID];
+	const bool dstTargetBlendEnable = (dstLayerID != compInfo.renderState.selectedLayerID) && compInfo.renderState.dstBlendEnable[dstLayerID];
 	
 	// 3D rendering has a special override: If the destination pixel is set to blend, then always blend.
 	// Test case: When starting a stage in Super Princess Peach, the screen will be solid black unless
@@ -2173,14 +2180,14 @@ FORCEINLINE void GPUEngineBase::_PixelUnknownEffect(GPUEngineCompositorInfo &com
 	// This behavior must take priority over checking for the window color effect enable flag.
 	// Test case: Dialogue boxes in Front Mission will be rendered with blending disabled unless
 	// blend forcing takes priority.
-	bool forceBlendEffect = (LAYERTYPE == GPULayerType_3D) ? dstEffectEnable : false;
+	bool forceDstTargetBlend = (LAYERTYPE == GPULayerType_3D) ? dstTargetBlendEnable : false;
 	
-	if ((LAYERTYPE == GPULayerType_OBJ) && enableColorEffect)
+	if (LAYERTYPE == GPULayerType_OBJ)
 	{
 		//translucent-capable OBJ are forcing the function to blend when the second target is satisfied
 		const OBJMode objMode = (OBJMode)this->_sprType[compInfo.target.xNative];
 		const bool isObjTranslucentType = (objMode == OBJMode_Transparent) || (objMode == OBJMode_Bitmap);
-		if (isObjTranslucentType && dstEffectEnable)
+		if (isObjTranslucentType && dstTargetBlendEnable)
 		{
 			// OBJ without fine-grained alpha are using EVA/EVB for blending. This is signified by receiving 0xFF in the alpha.
 			// Test cases:
@@ -2193,33 +2200,40 @@ FORCEINLINE void GPUEngineBase::_PixelUnknownEffect(GPUEngineCompositorInfo &com
 				blendEVB = 16 - spriteAlpha;
 			}
 			
-			forceBlendEffect = true;
+			forceDstTargetBlend = true;
 		}
 	}
 	
-	ColorEffect selectedEffect = (forceBlendEffect) ? ColorEffect_Blend : ColorEffect_Disable;
+	ColorEffect selectedEffect = ColorEffect_Disable;
 	
-	// If we're not forcing blending, then select the color effect based on the BLDCNT target flags.
-	if (!forceBlendEffect && enableColorEffect && compInfo.renderState.srcBlendEnable[compInfo.renderState.selectedLayerID])
+	if (forceDstTargetBlend)
 	{
-		switch (compInfo.renderState.colorEffect)
+		selectedEffect = ColorEffect_Blend;
+	}
+	else
+	{
+		// If we're not forcing blending, then select the color effect based on the BLDCNT target flags.
+		if (enableColorEffect && compInfo.renderState.srcEffectEnable[compInfo.renderState.selectedLayerID])
 		{
-			// For the Blend effect, both first and second target flags must be checked.
-			case ColorEffect_Blend:
+			switch (compInfo.renderState.colorEffect)
 			{
-				if (dstEffectEnable) selectedEffect = compInfo.renderState.colorEffect;
-				break;
+				// For the Blend effect, both first and second target flags must be checked.
+				case ColorEffect_Blend:
+				{
+					if (dstTargetBlendEnable) selectedEffect = compInfo.renderState.colorEffect;
+					break;
+				}
+					
+				// For the Increase/Decrease Brightness effects, only the first target flag needs to be checked.
+				// Test case: Bomberman Land Touch! dialog boxes will render too dark without this check.
+				case ColorEffect_IncreaseBrightness:
+				case ColorEffect_DecreaseBrightness:
+					selectedEffect = compInfo.renderState.colorEffect;
+					break;
+					
+				default:
+					break;
 			}
-				
-			// For the Increase/Decrease Brightness effects, only the first target flag needs to be checked.
-			// Test case: Bomberman Land Touch! dialog boxes will render too dark without this check.
-			case ColorEffect_IncreaseBrightness:
-			case ColorEffect_DecreaseBrightness:
-				selectedEffect = compInfo.renderState.colorEffect;
-				break;
-				
-			default:
-				break;
 		}
 	}
 	
@@ -2540,34 +2554,34 @@ FORCEINLINE void GPUEngineBase::_PixelUnknownEffectWithMask16_SSE2(GPUEngineComp
 	                                _mm_unpacklo_epi16(passMask16[1], passMask16[1]),
 	                                _mm_unpackhi_epi16(passMask16[1], passMask16[1]) };
 	
-	__m128i dstEffectEnableMask;
+	__m128i dstTargetBlendEnableMask;
 	
 #ifdef ENABLE_SSSE3
-	dstEffectEnableMask = _mm_shuffle_epi8(compInfo.renderState.dstBlendEnable_SSSE3, dstLayerID);
-	dstEffectEnableMask = _mm_xor_si128( _mm_cmpeq_epi8(dstEffectEnableMask, _mm_setzero_si128()), _mm_set1_epi32(0xFFFFFFFF) );
+	dstTargetBlendEnableMask = _mm_shuffle_epi8(compInfo.renderState.dstBlendEnable_SSSE3, dstLayerID);
+	dstTargetBlendEnableMask = _mm_xor_si128( _mm_cmpeq_epi8(dstTargetBlendEnableMask, _mm_setzero_si128()), _mm_set1_epi32(0xFFFFFFFF) );
 #else
-	dstEffectEnableMask =                                   _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG0)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG0]);
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG1)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG1]) );
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG2)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG2]) );
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG3)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG3]) );
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_OBJ)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_OBJ]) );
-	dstEffectEnableMask = _mm_or_si128(dstEffectEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_Backdrop)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_Backdrop]) );
+	dstTargetBlendEnableMask =                                        _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG0)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG0]);
+	dstTargetBlendEnableMask = _mm_or_si128(dstTargetBlendEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG1)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG1]) );
+	dstTargetBlendEnableMask = _mm_or_si128(dstTargetBlendEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG2)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG2]) );
+	dstTargetBlendEnableMask = _mm_or_si128(dstTargetBlendEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_BG3)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_BG3]) );
+	dstTargetBlendEnableMask = _mm_or_si128(dstTargetBlendEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_OBJ)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_OBJ]) );
+	dstTargetBlendEnableMask = _mm_or_si128(dstTargetBlendEnableMask, _mm_and_si128(_mm_cmpeq_epi8(dstLayerID, _mm_set1_epi8(GPULayerID_Backdrop)), compInfo.renderState.dstBlendEnable_SSE2[GPULayerID_Backdrop]) );
 #endif
 	
-	dstEffectEnableMask = _mm_andnot_si128( _mm_cmpeq_epi8(dstLayerID, srcLayerID_vec128), dstEffectEnableMask );
+	dstTargetBlendEnableMask = _mm_andnot_si128( _mm_cmpeq_epi8(dstLayerID, srcLayerID_vec128), dstTargetBlendEnableMask );
 	
 	// Select the color effect based on the BLDCNT target flags.
 	const __m128i colorEffect_vec128 = _mm_blendv_epi8(_mm_set1_epi8(ColorEffect_Disable), _mm_set1_epi8(compInfo.renderState.colorEffect), enableColorEffectMask);
 	const __m128i evy_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVY);
 	__m128i eva_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVA);
 	__m128i evb_vec128 = _mm_set1_epi16(compInfo.renderState.blendEVB);
-	__m128i forceBlendEffectMask = (LAYERTYPE == GPULayerType_3D) ? dstEffectEnableMask : _mm_setzero_si128();
+	__m128i forceDstTargetBlendMask = (LAYERTYPE == GPULayerType_3D) ? dstTargetBlendEnableMask : _mm_setzero_si128();
 	
 	if (LAYERTYPE == GPULayerType_OBJ)
 	{
 		const __m128i objMode_vec128 = _mm_loadu_si128((__m128i *)(this->_sprType + compInfo.target.xNative));
-		const __m128i isObjTranslucentMask = _mm_and_si128( _mm_and_si128(enableColorEffectMask, dstEffectEnableMask), _mm_or_si128(_mm_cmpeq_epi8(objMode_vec128, _mm_set1_epi8(OBJMode_Transparent)), _mm_cmpeq_epi8(objMode_vec128, _mm_set1_epi8(OBJMode_Bitmap))) );
-		forceBlendEffectMask = isObjTranslucentMask;
+		const __m128i isObjTranslucentMask = _mm_and_si128( dstTargetBlendEnableMask, _mm_or_si128(_mm_cmpeq_epi8(objMode_vec128, _mm_set1_epi8(OBJMode_Transparent)), _mm_cmpeq_epi8(objMode_vec128, _mm_set1_epi8(OBJMode_Bitmap))) );
+		forceDstTargetBlendMask = isObjTranslucentMask;
 		
 		const __m128i spriteAlphaMask = _mm_andnot_si128(_mm_cmpeq_epi8(spriteAlpha, _mm_set1_epi8(0xFF)), isObjTranslucentMask);
 		eva_vec128 = _mm_blendv_epi8(eva_vec128, spriteAlpha, spriteAlphaMask);
@@ -2596,7 +2610,7 @@ FORCEINLINE void GPUEngineBase::_PixelUnknownEffectWithMask16_SSE2(GPUEngineComp
 	{
 		case ColorEffect_IncreaseBrightness:
 		{
-			const __m128i brightnessMask8 = _mm_andnot_si128( forceBlendEffectMask, _mm_and_si128(srcEffectEnableMask, _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_IncreaseBrightness))) );
+			const __m128i brightnessMask8 = _mm_andnot_si128( forceDstTargetBlendMask, _mm_and_si128(srcEffectEnableMask, _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_IncreaseBrightness))) );
 			const __m128i brightnessMask16[2] = {_mm_unpacklo_epi8(brightnessMask8, brightnessMask8), _mm_unpackhi_epi8(brightnessMask8, brightnessMask8)};
 			
 			if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
@@ -2621,7 +2635,7 @@ FORCEINLINE void GPUEngineBase::_PixelUnknownEffectWithMask16_SSE2(GPUEngineComp
 			
 		case ColorEffect_DecreaseBrightness:
 		{
-			const __m128i brightnessMask8 = _mm_andnot_si128( forceBlendEffectMask, _mm_and_si128(srcEffectEnableMask, _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_DecreaseBrightness))) );
+			const __m128i brightnessMask8 = _mm_andnot_si128( forceDstTargetBlendMask, _mm_and_si128(srcEffectEnableMask, _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_DecreaseBrightness))) );
 			const __m128i brightnessMask16[2] = {_mm_unpacklo_epi8(brightnessMask8, brightnessMask8), _mm_unpackhi_epi8(brightnessMask8, brightnessMask8)};
 			
 			if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
@@ -2649,7 +2663,7 @@ FORCEINLINE void GPUEngineBase::_PixelUnknownEffectWithMask16_SSE2(GPUEngineComp
 	}
 	
 	// Render the pixel using the selected color effect.
-	const __m128i blendMask8 = _mm_or_si128( forceBlendEffectMask, _mm_and_si128(_mm_and_si128(srcEffectEnableMask, dstEffectEnableMask), _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_Blend))) );
+	const __m128i blendMask8 = _mm_or_si128( forceDstTargetBlendMask, _mm_and_si128(_mm_and_si128(srcEffectEnableMask, dstTargetBlendEnableMask), _mm_cmpeq_epi8(colorEffect_vec128, _mm_set1_epi8(ColorEffect_Blend))) );
 	const __m128i blendMask16[2] = {_mm_unpacklo_epi8(blendMask8, blendMask8), _mm_unpackhi_epi8(blendMask8, blendMask8)};
 	
 	if (OUTPUTFORMAT == NDSColorFormat_BGR555_Rev)
@@ -3127,7 +3141,7 @@ void GPUEngineBase::_CompositeLineDeferred(GPUEngineCompositorInfo &compInfo)
 	
 #ifdef ENABLE_SSE2
 	const size_t ssePixCount = (compInfo.line.widthCustom - (compInfo.line.widthCustom % 16));
-	const __m128i srcEffectEnableMask = compInfo.renderState.srcBlendEnable_SSE2[compInfo.renderState.selectedLayerID];
+	const __m128i srcEffectEnableMask = compInfo.renderState.srcEffectEnable_SSE2[compInfo.renderState.selectedLayerID];
 #endif
 	
 	for (size_t l = 0; l < compInfo.line.renderCount; l++)
@@ -3230,7 +3244,7 @@ void GPUEngineBase::_CompositeVRAMLineDeferred(GPUEngineCompositorInfo &compInfo
 	size_t i = 0;
 	
 #ifdef ENABLE_SSE2
-	const __m128i srcEffectEnableMask = compInfo.renderState.srcBlendEnable_SSE2[compInfo.renderState.selectedLayerID];
+	const __m128i srcEffectEnableMask = compInfo.renderState.srcEffectEnable_SSE2[compInfo.renderState.selectedLayerID];
 	
 	const size_t ssePixCount = (compInfo.line.pixelCount - (compInfo.line.pixelCount % 16));
 	for (; i < ssePixCount; i+=16, compInfo.target.xCustom+=16, compInfo.target.xNative = _gpuDstToSrcIndex[compInfo.target.xCustom], compInfo.target.lineColor16+=16, compInfo.target.lineColor32+=16, compInfo.target.lineLayerID+=16)
@@ -4242,9 +4256,9 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 					continue;
 				
 				srcadr = this->_SpriteAddressBMP(compInfo, spriteInfo, sprSize, y);
-
+				
 				this->_RenderSpriteBMP<ISDEBUGRENDER>(compInfo, i, dst, srcadr, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo.PaletteIndex);
-
+				
 				const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(srcadr) - MMU.ARM9_LCD) / sizeof(u16);
 				if (vramPixel < (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4))
 				{
@@ -4265,9 +4279,9 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 					srcadr = this->_sprMem + ((spriteInfo.TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
 				else
 					srcadr = this->_sprMem + (spriteInfo.TileIndex<<compInfo.renderState.spriteBoundary) + ((y>>3)*sprSize.width*8) + ((y&0x7)*8);
-
+				
 				pal = (DISPCNT.ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*ADDRESS_STEP_512B)) : this->_paletteOBJ;
-
+				
 				if (objMode == OBJMode_Window)
 					this->_RenderSprite256<ISDEBUGRENDER,true>(compInfo, i, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
 				else
@@ -4285,7 +4299,7 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 				}
 				
 				pal = this->_paletteOBJ + (spriteInfo.PaletteIndex << 4);
-
+				
 				if (objMode == OBJMode_Window)
 					this->_RenderSprite16<ISDEBUGRENDER, true>(compInfo, i, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
 				else 
@@ -4357,16 +4371,16 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 						{
 #ifndef DISABLE_COMPOSITOR_FAST_PATHS
 							if ( !compInfo.renderState.dstAnyBlendEnable && (  (compInfo.renderState.colorEffect == ColorEffect_Disable) ||
-																			   !compInfo.renderState.srcBlendEnable[GPULayerID_BG0] ||
+																			   !compInfo.renderState.srcEffectEnable[GPULayerID_BG0] ||
 																			 (((compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) || (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness)) && (compInfo.renderState.blendEVY == 0)) ) )
 							{
 								GPU->GetEngineMain()->RenderLine_Layer3D<GPUCompositorMode_Copy, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 							}
-							else if ( !WILLPERFORMWINDOWTEST && !compInfo.renderState.dstAnyBlendEnable && compInfo.renderState.srcBlendEnable[GPULayerID_BG0] && (compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) )
+							else if ( !WILLPERFORMWINDOWTEST && !compInfo.renderState.dstAnyBlendEnable && compInfo.renderState.srcEffectEnable[GPULayerID_BG0] && (compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) )
 							{
 								GPU->GetEngineMain()->RenderLine_Layer3D<GPUCompositorMode_BrightUp, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 							}
-							else if ( !WILLPERFORMWINDOWTEST && !compInfo.renderState.dstAnyBlendEnable && compInfo.renderState.srcBlendEnable[GPULayerID_BG0] && (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness) )
+							else if ( !WILLPERFORMWINDOWTEST && !compInfo.renderState.dstAnyBlendEnable && compInfo.renderState.srcEffectEnable[GPULayerID_BG0] && (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness) )
 							{
 								GPU->GetEngineMain()->RenderLine_Layer3D<GPUCompositorMode_BrightDown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 							}
@@ -4381,17 +4395,17 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 										
 #ifndef DISABLE_COMPOSITOR_FAST_PATHS
 					if ( (compInfo.renderState.colorEffect == ColorEffect_Disable) ||
-						 !compInfo.renderState.srcBlendEnable[compInfo.renderState.selectedLayerID] ||
+						 !compInfo.renderState.srcEffectEnable[compInfo.renderState.selectedLayerID] ||
 						((compInfo.renderState.colorEffect == ColorEffect_Blend) && !compInfo.renderState.dstAnyBlendEnable) ||
 						(((compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) || (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness)) && (compInfo.renderState.blendEVY == 0)) )
 					{
 						this->_RenderLine_LayerBG<GPUCompositorMode_Copy, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 					}
-					else if ( !WILLPERFORMWINDOWTEST && compInfo.renderState.srcBlendEnable[compInfo.renderState.selectedLayerID] && (compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) )
+					else if ( !WILLPERFORMWINDOWTEST && compInfo.renderState.srcEffectEnable[compInfo.renderState.selectedLayerID] && (compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) )
 					{
 						this->_RenderLine_LayerBG<GPUCompositorMode_BrightUp, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 					}
-					else if ( !WILLPERFORMWINDOWTEST && compInfo.renderState.srcBlendEnable[compInfo.renderState.selectedLayerID] && (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness) )
+					else if ( !WILLPERFORMWINDOWTEST && compInfo.renderState.srcEffectEnable[compInfo.renderState.selectedLayerID] && (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness) )
 					{
 						this->_RenderLine_LayerBG<GPUCompositorMode_BrightDown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 					}
@@ -4412,16 +4426,16 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 			
 #ifndef DISABLE_COMPOSITOR_FAST_PATHS
 			if ( !compInfo.renderState.dstAnyBlendEnable && (  (compInfo.renderState.colorEffect == ColorEffect_Disable) ||
-															   !compInfo.renderState.srcBlendEnable[GPULayerID_OBJ] ||
+															   !compInfo.renderState.srcEffectEnable[GPULayerID_OBJ] ||
 															 (((compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) || (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness)) && (compInfo.renderState.blendEVY == 0)) ) )
 			{
 				this->_RenderLine_LayerOBJ<GPUCompositorMode_Copy, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo, item);
 			}
-			else if ( !WILLPERFORMWINDOWTEST && !compInfo.renderState.dstAnyBlendEnable && compInfo.renderState.srcBlendEnable[GPULayerID_OBJ] && (compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) )
+			else if ( !WILLPERFORMWINDOWTEST && !compInfo.renderState.dstAnyBlendEnable && compInfo.renderState.srcEffectEnable[GPULayerID_OBJ] && (compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness) )
 			{
 				this->_RenderLine_LayerOBJ<GPUCompositorMode_BrightUp, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo, item);
 			}
-			else if ( !WILLPERFORMWINDOWTEST && !compInfo.renderState.dstAnyBlendEnable && compInfo.renderState.srcBlendEnable[GPULayerID_OBJ] && (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness) )
+			else if ( !WILLPERFORMWINDOWTEST && !compInfo.renderState.dstAnyBlendEnable && compInfo.renderState.srcEffectEnable[GPULayerID_OBJ] && (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness) )
 			{
 				this->_RenderLine_LayerOBJ<GPUCompositorMode_BrightDown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo, item);
 			}
@@ -5337,12 +5351,12 @@ void GPUEngineBase::ParseReg_BLDCNT()
 	
 	renderState.colorEffect = (ColorEffect)BLDCNT.ColorEffect;
 	
-	renderState.srcBlendEnable[GPULayerID_BG0] = (BLDCNT.BG0_Target1 != 0);
-	renderState.srcBlendEnable[GPULayerID_BG1] = (BLDCNT.BG1_Target1 != 0);
-	renderState.srcBlendEnable[GPULayerID_BG2] = (BLDCNT.BG2_Target1 != 0);
-	renderState.srcBlendEnable[GPULayerID_BG3] = (BLDCNT.BG3_Target1 != 0);
-	renderState.srcBlendEnable[GPULayerID_OBJ] = (BLDCNT.OBJ_Target1 != 0);
-	renderState.srcBlendEnable[GPULayerID_Backdrop] = (BLDCNT.Backdrop_Target1 != 0);
+	renderState.srcEffectEnable[GPULayerID_BG0] = (BLDCNT.BG0_Target1 != 0);
+	renderState.srcEffectEnable[GPULayerID_BG1] = (BLDCNT.BG1_Target1 != 0);
+	renderState.srcEffectEnable[GPULayerID_BG2] = (BLDCNT.BG2_Target1 != 0);
+	renderState.srcEffectEnable[GPULayerID_BG3] = (BLDCNT.BG3_Target1 != 0);
+	renderState.srcEffectEnable[GPULayerID_OBJ] = (BLDCNT.OBJ_Target1 != 0);
+	renderState.srcEffectEnable[GPULayerID_Backdrop] = (BLDCNT.Backdrop_Target1 != 0);
 	
 	renderState.dstBlendEnable[GPULayerID_BG0] = (BLDCNT.BG0_Target2 != 0);
 	renderState.dstBlendEnable[GPULayerID_BG1] = (BLDCNT.BG1_Target2 != 0);
@@ -5361,12 +5375,12 @@ void GPUEngineBase::ParseReg_BLDCNT()
 #ifdef ENABLE_SSE2
 	const __m128i one_vec128 = _mm_set1_epi8(1);
 	
-	renderState.srcBlendEnable_SSE2[GPULayerID_BG0] = _mm_cmpeq_epi8(_mm_set1_epi8(BLDCNT.BG0_Target1), one_vec128);
-	renderState.srcBlendEnable_SSE2[GPULayerID_BG1] = _mm_cmpeq_epi8(_mm_set1_epi8(BLDCNT.BG1_Target1), one_vec128);
-	renderState.srcBlendEnable_SSE2[GPULayerID_BG2] = _mm_cmpeq_epi8(_mm_set1_epi8(BLDCNT.BG2_Target1), one_vec128);
-	renderState.srcBlendEnable_SSE2[GPULayerID_BG3] = _mm_cmpeq_epi8(_mm_set1_epi8(BLDCNT.BG3_Target1), one_vec128);
-	renderState.srcBlendEnable_SSE2[GPULayerID_OBJ] = _mm_cmpeq_epi8(_mm_set1_epi8(BLDCNT.OBJ_Target1), one_vec128);
-	renderState.srcBlendEnable_SSE2[GPULayerID_Backdrop] = _mm_cmpeq_epi8(_mm_set1_epi8(BLDCNT.Backdrop_Target1), one_vec128);
+	renderState.srcEffectEnable_SSE2[GPULayerID_BG0] = _mm_cmpeq_epi8(_mm_set1_epi8(BLDCNT.BG0_Target1), one_vec128);
+	renderState.srcEffectEnable_SSE2[GPULayerID_BG1] = _mm_cmpeq_epi8(_mm_set1_epi8(BLDCNT.BG1_Target1), one_vec128);
+	renderState.srcEffectEnable_SSE2[GPULayerID_BG2] = _mm_cmpeq_epi8(_mm_set1_epi8(BLDCNT.BG2_Target1), one_vec128);
+	renderState.srcEffectEnable_SSE2[GPULayerID_BG3] = _mm_cmpeq_epi8(_mm_set1_epi8(BLDCNT.BG3_Target1), one_vec128);
+	renderState.srcEffectEnable_SSE2[GPULayerID_OBJ] = _mm_cmpeq_epi8(_mm_set1_epi8(BLDCNT.OBJ_Target1), one_vec128);
+	renderState.srcEffectEnable_SSE2[GPULayerID_Backdrop] = _mm_cmpeq_epi8(_mm_set1_epi8(BLDCNT.Backdrop_Target1), one_vec128);
 	
 #ifdef ENABLE_SSSE3
 	renderState.dstBlendEnable_SSSE3 = _mm_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -6028,7 +6042,7 @@ void GPUEngineA::RenderLine_Layer3D(GPUEngineCompositorInfo &compInfo)
 	{
 #ifdef ENABLE_SSE2
 		const size_t ssePixCount = (compInfo.line.widthCustom - (compInfo.line.widthCustom % 16));
-		const __m128i srcEffectEnableMask = compInfo.renderState.srcBlendEnable_SSE2[compInfo.renderState.selectedLayerID];
+		const __m128i srcEffectEnableMask = compInfo.renderState.srcEffectEnable_SSE2[compInfo.renderState.selectedLayerID];
 #endif
 		
 		for (size_t line = 0; line < compInfo.line.renderCount; line++)
