@@ -3767,21 +3767,17 @@ void GPUEngineBase::_RenderSprite256(GPUEngineCompositorInfo &compInfo, const u8
 		const u8 palette_entry = *src;
 
 		//a zero value suppresses the pixel from processing entirely; it doesnt exist
-		if (ISDEBUGRENDER)
+		if (palette_entry > 0)
 		{
-			if (palette_entry > 0)
+			if (ISWINDOW)
+			{
+				this->_sprWin[sprX] = 1;
+			}
+			else if (ISDEBUGRENDER)
 			{
 				dst[sprX] = LE_TO_LOCAL_16(pal[palette_entry]);
 			}
-		}
-		else
-		{
-			if(ISWINDOW)
-			{
-				if(palette_entry > 0)
-					this->_sprWin[sprX] = 1;
-			}
-			else if ((palette_entry > 0) && (prio < prioTab[sprX]))
+			else if (prio < prioTab[sprX])
 			{
 				dst[sprX] = LE_TO_LOCAL_16(pal[palette_entry]);
 				dst_alpha[sprX] = 0xFF;
@@ -3805,21 +3801,17 @@ void GPUEngineBase::_RenderSprite16(GPUEngineCompositorInfo &compInfo, const u8 
 		const u8 palette_entry = (x & 1) ? palette >> 4 : palette & 0xF;
 		
 		//a zero value suppresses the pixel from processing entirely; it doesnt exist
-		if (ISDEBUGRENDER)
+		if (palette_entry > 0)
 		{
-			if (palette_entry > 0)
+			if (ISWINDOW)
+			{
+				this->_sprWin[sprX] = 1;
+			}
+			else if (ISDEBUGRENDER)
 			{
 				dst[sprX] = LE_TO_LOCAL_16(pal[palette_entry]);
 			}
-		}
-		else
-		{
-			if(ISWINDOW)
-			{
-				if(palette_entry > 0)
-					this->_sprWin[sprX] = 1;
-			}
-			else if ((palette_entry > 0) && (prio < prioTab[sprX]))
+			else if (prio < prioTab[sprX])
 			{
 				dst[sprX] = LE_TO_LOCAL_16(pal[palette_entry]);
 				dst_alpha[sprX] = 0xFF;
@@ -4095,16 +4087,17 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 
 						colour = src[offset];
 						
-						if (ISDEBUGRENDER)
+						if (colour > 0)
 						{
-							if (colour)
+							if (objMode == OBJMode_Window)
+							{
+								this->_sprWin[sprX] = 1;
+							}
+							else if (ISDEBUGRENDER)
 							{
 								dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
 							}
-						}
-						else
-						{
-							if (colour && (prio < prioTab[sprX]))
+							else if (prio < prioTab[sprX])
 							{
 								dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
 								dst_alpha[sprX] = 0xFF;
@@ -4209,29 +4202,23 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 						if (auxX&1)	colour >>= 4;
 						else		colour &= 0xF;
 						
-						if (ISDEBUGRENDER)
+						if (colour > 0)
 						{
-							if (colour)
+							if (objMode == OBJMode_Window)
+							{
+								this->_sprWin[sprX] = 1;
+							}
+							else if (ISDEBUGRENDER)
 							{
 								dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
 							}
-						}
-						else
-						{
-							if (colour && (prio < prioTab[sprX]))
+							else if (prio < prioTab[sprX])
 							{
-								if (objMode == OBJMode_Window)
-								{
-									this->_sprWin[sprX] = 1;
-								}
-								else
-								{
-									dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
-									dst_alpha[sprX] = 0xFF;
-									typeTab[sprX] = objMode;
-									prioTab[sprX] = prio;
-									this->_sprNum[sprX] = i;
-								}
+								dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
+								dst_alpha[sprX] = 0xFF;
+								typeTab[sprX] = objMode;
+								prioTab[sprX] = prio;
+								this->_sprNum[sprX] = i;
 							}
 						}
 					}
