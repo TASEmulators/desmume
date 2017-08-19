@@ -3743,7 +3743,7 @@ void GPUEngineBase::_RenderSpriteBMP(GPUEngineCompositorInfo &compInfo, const u8
 	}
 }
 
-template<bool ISDEBUGRENDER>
+template<bool ISDEBUGRENDER, bool ISWINDOW>
 void GPUEngineBase::_RenderSprite256(GPUEngineCompositorInfo &compInfo, const u8 spriteNum, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
 {
 	for (size_t i = 0; i < lg; i++, ++sprX, x += xdir)
@@ -3762,7 +3762,12 @@ void GPUEngineBase::_RenderSprite256(GPUEngineCompositorInfo &compInfo, const u8
 		}
 		else
 		{
-			if ((palette_entry > 0) && (prio < prioTab[sprX]))
+			if(ISWINDOW)
+			{
+				if(palette_entry > 0)
+					this->_sprWin[sprX] = 1;
+			}
+			else if ((palette_entry > 0) && (prio < prioTab[sprX]))
 			{
 				dst[sprX] = LE_TO_LOCAL_16(pal[palette_entry]);
 				dst_alpha[sprX] = 0xFF;
@@ -3774,7 +3779,7 @@ void GPUEngineBase::_RenderSprite256(GPUEngineCompositorInfo &compInfo, const u8
 	}
 }
 
-template<bool ISDEBUGRENDER>
+template<bool ISDEBUGRENDER, bool ISWINDOW>
 void GPUEngineBase::_RenderSprite16(GPUEngineCompositorInfo &compInfo, const u8 spriteNum, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
 {
 	for (size_t i = 0; i < lg; i++, ++sprX, x += xdir)
@@ -3795,41 +3800,18 @@ void GPUEngineBase::_RenderSprite16(GPUEngineCompositorInfo &compInfo, const u8 
 		}
 		else
 		{
-			if ((palette_entry > 0) && (prio < prioTab[sprX]))
+			if(ISWINDOW)
+			{
+				if(palette_entry > 0)
+					this->_sprWin[sprX] = 1;
+			}
+			else if ((palette_entry > 0) && (prio < prioTab[sprX]))
 			{
 				dst[sprX] = LE_TO_LOCAL_16(pal[palette_entry]);
 				dst_alpha[sprX] = 0xFF;
 				typeTab[sprX] = (alpha ? OBJMode_Transparent : OBJMode_Normal);
 				prioTab[sprX] = prio;
 				this->_sprNum[sprX] = spriteNum;
-			}
-		}
-	}
-}
-
-void GPUEngineBase::_RenderSpriteWin(const u8 *src, const bool col256, const size_t lg, size_t sprX, size_t x, const s32 xdir)
-{
-	if (col256)
-	{
-		for (size_t i = 0; i < lg; i++, sprX++, x += xdir)
-		{
-			if (src[(x & 7) + ((x & 0xFFF8) << 3)])
-			{
-				this->_sprWin[sprX] = 1;
-			}
-		}
-	}
-	else
-	{
-		for (size_t i = 0; i < lg; i++, sprX++, x += xdir)
-		{
-			const size_t x1 = x >> 1;
-			const u8 palette = src[(x1 & 0x3) + ((x1 & 0xFFFC) << 3)];
-			const u8 palette_entry = (x & 1) ? palette >> 4 : palette & 0xF;
-			
-			if (palette_entry)
-			{
-				this->_sprWin[sprX] = 1;
 			}
 		}
 	}
@@ -4253,34 +4235,16 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 
 			cost += sprSize.width;
 
-			if (objMode == OBJMode_Window)
-			{
-				if (MODE == SpriteRenderMode_Sprite2D)
-				{
-					if (spriteInfo.PaletteMode == PaletteMode_1x256)
-						src = (u8 *)MMU_gpu_map(this->_sprMem + ((spriteInfo.TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8));
-					else
-						src = (u8 *)MMU_gpu_map(this->_sprMem + ((spriteInfo.TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4));
-				}
-				else
-				{
-					if (spriteInfo.PaletteMode == PaletteMode_1x256)
-						src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex<<compInfo.renderState.spriteBoundary) + ((y>>3)*sprSize.width*8) + ((y&0x7)*8));
-					else
-						src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex<<compInfo.renderState.spriteBoundary) + ((y>>3)*sprSize.width*4) + ((y&0x7)*4));
-				}
-
-				this->_RenderSpriteWin(src, (spriteInfo.PaletteMode == PaletteMode_1x256), lg, sprX, x, xdir);
-			}
-			else if (objMode == OBJMode_Bitmap) //sprite is in BMP format
+			if (objMode == OBJMode_Bitmap) //sprite is in BMP format
 			{
 				//transparent (i think, dont bother to render?) if alpha is 0
 				if (spriteInfo.PaletteIndex == 0)
 					continue;
 				
 				srcadr = this->_SpriteAddressBMP(compInfo, spriteInfo, sprSize, y);
+
 				this->_RenderSpriteBMP<ISDEBUGRENDER>(compInfo, i, dst, srcadr, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo.PaletteIndex);
-				
+
 				const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(srcadr) - MMU.ARM9_LCD) / sizeof(u16);
 				if (vramPixel < (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4))
 				{
@@ -4295,17 +4259,21 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 					}
 				}
 			}
-			else if (spriteInfo.PaletteMode == PaletteMode_1x256) //256 colors
+			else if (spriteInfo.PaletteMode == PaletteMode_1x256) //256 colors; handles OBJ windows too
 			{
 				if (MODE == SpriteRenderMode_Sprite2D)
 					srcadr = this->_sprMem + ((spriteInfo.TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
 				else
 					srcadr = this->_sprMem + (spriteInfo.TileIndex<<compInfo.renderState.spriteBoundary) + ((y>>3)*sprSize.width*8) + ((y&0x7)*8);
-				
+
 				pal = (DISPCNT.ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*ADDRESS_STEP_512B)) : this->_paletteOBJ;
-				this->_RenderSprite256<ISDEBUGRENDER>(compInfo, i, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
+
+				if (objMode == OBJMode_Window)
+					this->_RenderSprite256<ISDEBUGRENDER,true>(compInfo, i, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
+				else
+					this->_RenderSprite256<ISDEBUGRENDER,false>(compInfo, i, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
 			}
-			else // 16 colors
+			else // 16 colors; handles OBJ windows too
 			{
 				if (MODE == SpriteRenderMode_Sprite2D)
 				{
@@ -4317,7 +4285,11 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 				}
 				
 				pal = this->_paletteOBJ + (spriteInfo.PaletteIndex << 4);
-				this->_RenderSprite16<ISDEBUGRENDER>(compInfo, i, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
+
+				if (objMode == OBJMode_Window)
+					this->_RenderSprite16<ISDEBUGRENDER, true>(compInfo, i, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
+				else 
+					this->_RenderSprite16<ISDEBUGRENDER, false>(compInfo, i, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
 			}
 		}
 	}
