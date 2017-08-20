@@ -3677,38 +3677,72 @@ void GPUEngineBase::_LineExtRot(GPUEngineCompositorInfo &compInfo, bool &outUseC
 //			SPRITE RENDERING -HELPER FUNCTIONS-
 /*****************************************************************************/
 
+template <bool ISDEBUGRENDER, bool ISOBJMODEBITMAP>
+FORCEINLINE void GPUEngineBase::_RenderSpriteUpdatePixel(size_t frameX,
+														 const u16 *__restrict srcPalette, const u8 palIndex, const OBJMode objMode, const u8 prio, const u8 spriteNum,
+														 u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab)
+{
+	if ( (ISOBJMODEBITMAP && ((*srcPalette & 0x8000) == 0)) || (!ISOBJMODEBITMAP && (palIndex == 0)) )
+	{
+		return;
+	}
+	
+	if (ISDEBUGRENDER)
+	{
+		dst[frameX] = (ISOBJMODEBITMAP) ? *srcPalette : LE_TO_LOCAL_16(srcPalette[palIndex]);
+		return;
+	}
+	
+	if ( !ISOBJMODEBITMAP && (objMode == OBJMode_Window) )
+	{
+		this->_sprWin[frameX] = 1;
+		return;
+	}
+	
+	if (prio < prioTab[frameX])
+	{
+		dst[frameX]           = (ISOBJMODEBITMAP) ? *srcPalette : LE_TO_LOCAL_16(srcPalette[palIndex]);
+		dst_alpha[frameX]     = (ISOBJMODEBITMAP) ? palIndex : 0xFF;
+		typeTab[frameX]       = (ISOBJMODEBITMAP) ? OBJMode_Bitmap : objMode;
+		prioTab[frameX]       = prio;
+		this->_sprNum[frameX] = spriteNum;
+	}
+}
+
 /* if i understand it correct, and it fixes some sprite problems in chameleon shot */
 /* we have a 15 bit color, and should use the pal entry bits as alpha ?*/
 /* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
 template <bool ISDEBUGRENDER>
-void GPUEngineBase::_RenderSpriteBMP(GPUEngineCompositorInfo &compInfo, const u8 spriteNum, u16 *__restrict dst, const u32 srcadr, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
+void GPUEngineBase::_RenderSpriteBMP(const u32 objAddress, const size_t length, size_t frameX, size_t spriteX, const s32 readXStep,
+									 const u8 spriteAlpha, const OBJMode objMode, const u8 prio, const u8 spriteNum,
+									 u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab)
 {
-	const u16 *__restrict bmpBuffer = (u16 *)MMU_gpu_map(srcadr);
+	const u16 *__restrict vramBuffer = (u16 *)MMU_gpu_map(objAddress);
 	size_t i = 0;
 	
 #ifdef ENABLE_SSE2
-	if (xdir == 1)
+	if (readXStep == 1)
 	{
 		if (ISDEBUGRENDER)
 		{
-			const size_t ssePixCount = lg - (lg % 8);
-			for (; i < ssePixCount; i += 8, x += 8, sprX += 8)
+			const size_t ssePixCount = length - (length % 8);
+			for (; i < ssePixCount; i += 8, spriteX += 8, frameX += 8)
 			{
-				const __m128i color_vec128 = _mm_loadu_si128((__m128i *)(bmpBuffer + x));
+				const __m128i color_vec128 = _mm_loadu_si128((__m128i *)(vramBuffer + spriteX));
 				const __m128i alphaCompare = _mm_cmpeq_epi16( _mm_srli_epi16(color_vec128, 15), _mm_set1_epi16(0x0001) );
-				_mm_storeu_si128( (__m128i *)(dst + sprX), _mm_blendv_epi8(_mm_loadu_si128((__m128i *)(dst + sprX)), color_vec128, alphaCompare) );
+				_mm_storeu_si128( (__m128i *)(dst + frameX), _mm_blendv_epi8(_mm_loadu_si128((__m128i *)(dst + frameX)), color_vec128, alphaCompare) );
 			}
 		}
 		else
 		{
 			const __m128i prio_vec128 = _mm_set1_epi8(prio);
 			
-			const size_t ssePixCount = lg - (lg % 16);
-			for (; i < ssePixCount; i += 16, x += 16, sprX += 16)
+			const size_t ssePixCount = length - (length % 16);
+			for (; i < ssePixCount; i += 16, spriteX += 16, frameX += 16)
 			{
-				const __m128i prioTab_vec128 = _mm_loadu_si128((__m128i *)(prioTab + sprX));
-				const __m128i colorLo_vec128 = _mm_loadu_si128((__m128i *)(bmpBuffer + x));
-				const __m128i colorHi_vec128 = _mm_loadu_si128((__m128i *)(bmpBuffer + x + 8));
+				const __m128i prioTab_vec128 = _mm_loadu_si128((__m128i *)(prioTab + frameX));
+				const __m128i colorLo_vec128 = _mm_loadu_si128((__m128i *)(vramBuffer + spriteX));
+				const __m128i colorHi_vec128 = _mm_loadu_si128((__m128i *)(vramBuffer + spriteX + 8));
 				
 				const __m128i prioCompare = _mm_cmplt_epi8(prio_vec128, prioTab_vec128);
 				const __m128i alphaCompare = _mm_cmpeq_epi8( _mm_packs_epi16(_mm_srli_epi16(colorLo_vec128, 15), _mm_srli_epi16(colorHi_vec128, 15)), _mm_set1_epi8(0x01) );
@@ -3720,106 +3754,53 @@ void GPUEngineBase::_RenderSpriteBMP(GPUEngineCompositorInfo &compInfo, const u8
 				// Just in case you're wondering why we're not using maskmovdqu, but instead using movdqu+pblendvb+movdqu, it's because
 				// maskmovdqu won't keep the data in cache, and we really need the data in cache since we're about to render the sprite
 				// to the framebuffer. In addition, the maskmovdqu instruction can be brutally slow on many non-Intel CPUs.
-				_mm_storeu_si128( (__m128i *)(dst + sprX + 0),       _mm_blendv_epi8(_mm_loadu_si128((__m128i *)(dst + sprX + 0)), colorLo_vec128, combinedLoCompare) );
-				_mm_storeu_si128( (__m128i *)(dst + sprX + 8),       _mm_blendv_epi8(_mm_loadu_si128((__m128i *)(dst + sprX + 8)), colorHi_vec128, combinedHiCompare) );
-				_mm_storeu_si128( (__m128i *)(dst_alpha + sprX),     _mm_blendv_epi8(_mm_loadu_si128((__m128i *)(dst_alpha + sprX)), _mm_set1_epi8(alpha + 1), combinedPackedCompare) );
-				_mm_storeu_si128( (__m128i *)(typeTab + sprX),       _mm_blendv_epi8(_mm_loadu_si128((__m128i *)(typeTab + sprX)), _mm_set1_epi8(OBJMode_Bitmap), combinedPackedCompare) );
-				_mm_storeu_si128( (__m128i *)(prioTab + sprX),       _mm_blendv_epi8(prioTab_vec128, prio_vec128, combinedPackedCompare) );
-				_mm_storeu_si128( (__m128i *)(this->_sprNum + sprX), _mm_blendv_epi8(_mm_loadu_si128((__m128i *)(this->_sprNum + sprX)), _mm_set1_epi8(spriteNum), combinedPackedCompare) );
+				_mm_storeu_si128( (__m128i *)(dst + frameX + 0),       _mm_blendv_epi8(_mm_loadu_si128((__m128i *)(dst + frameX + 0)), colorLo_vec128, combinedLoCompare) );
+				_mm_storeu_si128( (__m128i *)(dst + frameX + 8),       _mm_blendv_epi8(_mm_loadu_si128((__m128i *)(dst + frameX + 8)), colorHi_vec128, combinedHiCompare) );
+				_mm_storeu_si128( (__m128i *)(dst_alpha + frameX),     _mm_blendv_epi8(_mm_loadu_si128((__m128i *)(dst_alpha + frameX)), _mm_set1_epi8(spriteAlpha + 1), combinedPackedCompare) );
+				_mm_storeu_si128( (__m128i *)(typeTab + frameX),       _mm_blendv_epi8(_mm_loadu_si128((__m128i *)(typeTab + frameX)), _mm_set1_epi8(OBJMode_Bitmap), combinedPackedCompare) );
+				_mm_storeu_si128( (__m128i *)(prioTab + frameX),       _mm_blendv_epi8(prioTab_vec128, prio_vec128, combinedPackedCompare) );
+				_mm_storeu_si128( (__m128i *)(this->_sprNum + frameX), _mm_blendv_epi8(_mm_loadu_si128((__m128i *)(this->_sprNum + frameX)), _mm_set1_epi8(spriteNum), combinedPackedCompare) );
 			}
 		}
 	}
 #endif
 	
-	for (; i < lg; i++, sprX++, x += xdir)
+	for (; i < length; i++, frameX++, spriteX+=readXStep)
 	{
-		const u16 color = LE_TO_LOCAL_16(bmpBuffer[x]);
-		
-		//a cleared alpha bit suppresses the pixel from processing entirely; it doesnt exist
-		if (ISDEBUGRENDER)
-		{
-			if (color & 0x8000)
-			{
-				dst[sprX] = color;
-			}
-		}
-		else
-		{
-			if ((color & 0x8000) && (prio < prioTab[sprX]))
-			{
-				dst[sprX] = color;
-				dst_alpha[sprX] = alpha+1;
-				typeTab[sprX] = OBJMode_Bitmap;
-				prioTab[sprX] = prio;
-				this->_sprNum[sprX] = spriteNum;
-			}
-		}
+		const u16 vramColor = LE_TO_LOCAL_16(vramBuffer[spriteX]);
+		this->_RenderSpriteUpdatePixel<ISDEBUGRENDER, true>(frameX, &vramColor, spriteAlpha+1, OBJMode_Bitmap, prio, spriteNum, dst, dst_alpha, typeTab, prioTab);
 	}
 }
 
-template<bool ISDEBUGRENDER, bool ISWINDOW>
-void GPUEngineBase::_RenderSprite256(GPUEngineCompositorInfo &compInfo, const u8 spriteNum, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
+template<bool ISDEBUGRENDER>
+void GPUEngineBase::_RenderSprite256(const u32 objAddress, const size_t length, size_t frameX, size_t spriteX, const s32 readXStep,
+									 const u16 *__restrict palColorBuffer, const OBJMode objMode, const u8 prio, const u8 spriteNum,
+									 u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab)
 {
-	for (size_t i = 0; i < lg; i++, ++sprX, x += xdir)
+	for (size_t i = 0; i < length; i++, frameX++, spriteX+=readXStep)
 	{
-		const u32 adr = srcadr + (u32)( (x & 0x7) + ((x & 0xFFF8) << 3) );
-		const u8 *__restrict src = (u8 *)MMU_gpu_map(adr);
-		const u8 palette_entry = *src;
-
-		//a zero value suppresses the pixel from processing entirely; it doesnt exist
-		if (palette_entry > 0)
-		{
-			if (ISWINDOW)
-			{
-				this->_sprWin[sprX] = 1;
-			}
-			else if (ISDEBUGRENDER)
-			{
-				dst[sprX] = LE_TO_LOCAL_16(pal[palette_entry]);
-			}
-			else if (prio < prioTab[sprX])
-			{
-				dst[sprX] = LE_TO_LOCAL_16(pal[palette_entry]);
-				dst_alpha[sprX] = 0xFF;
-				typeTab[sprX] = (alpha ? OBJMode_Transparent : OBJMode_Normal);
-				prioTab[sprX] = prio;
-				this->_sprNum[sprX] = spriteNum;
-			}
-		}
+		const u32 palIndexAddress = objAddress + (u32)( (spriteX & 0x0007) + ((spriteX & 0xFFF8) << 3) );
+		const u8 *__restrict palIndexBuffer = (u8 *)MMU_gpu_map(palIndexAddress);
+		const u8 idx8 = *palIndexBuffer;
+		
+		this->_RenderSpriteUpdatePixel<ISDEBUGRENDER, false>(frameX, palColorBuffer, idx8, objMode, prio, spriteNum, dst, dst_alpha, typeTab, prioTab);
 	}
 }
 
-template<bool ISDEBUGRENDER, bool ISWINDOW>
-void GPUEngineBase::_RenderSprite16(GPUEngineCompositorInfo &compInfo, const u8 spriteNum, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha)
+template<bool ISDEBUGRENDER>
+void GPUEngineBase::_RenderSprite16(const u32 objAddress, const size_t length, size_t frameX, size_t spriteX, const s32 readXStep,
+									const u16 *__restrict palColorBuffer, const OBJMode objMode, const u8 prio, const u8 spriteNum,
+									u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab)
 {
-	for (size_t i = 0; i < lg; i++, ++sprX, x += xdir)
+	for (size_t i = 0; i < length; i++, frameX++, spriteX+=readXStep)
 	{
-		const u16 x1 = x >> 1;
-		const u32 adr = srcadr + (x1 & 0x3) + ((x1 & 0xFFFC) << 3);
-		const u8 *__restrict src = (u8 *)MMU_gpu_map(adr);
-		const u8 palette = *src;
-		const u8 palette_entry = (x & 1) ? palette >> 4 : palette & 0xF;
+		const u32 spriteX_word = spriteX >> 1;
+		const u32 palIndexAddress = objAddress + (spriteX_word & 0x0003) + ((spriteX_word & 0xFFFC) << 3);
+		const u8 *__restrict palIndexBuffer = (u8 *)MMU_gpu_map(palIndexAddress);
+		const u8 palIndex = *palIndexBuffer;
+		const u8 idx4 = (spriteX & 1) ? palIndex >> 4 : palIndex & 0x0F;
 		
-		//a zero value suppresses the pixel from processing entirely; it doesnt exist
-		if (palette_entry > 0)
-		{
-			if (ISWINDOW)
-			{
-				this->_sprWin[sprX] = 1;
-			}
-			else if (ISDEBUGRENDER)
-			{
-				dst[sprX] = LE_TO_LOCAL_16(pal[palette_entry]);
-			}
-			else if (prio < prioTab[sprX])
-			{
-				dst[sprX] = LE_TO_LOCAL_16(pal[palette_entry]);
-				dst_alpha[sprX] = 0xFF;
-				typeTab[sprX] = (alpha ? OBJMode_Transparent : OBJMode_Normal);
-				prioTab[sprX] = prio;
-				this->_sprNum[sprX] = spriteNum;
-			}
-		}
+		this->_RenderSpriteUpdatePixel<ISDEBUGRENDER, false>(frameX, palColorBuffer, idx4, objMode, prio, spriteNum, dst, dst_alpha, typeTab, prioTab);
 	}
 }
 
@@ -3959,18 +3940,18 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 	const IOREG_DISPCNT &DISPCNT = this->_IORegisterMap->DISPCNT;
 	size_t cost = 0;
 	
-	for (size_t i = 0; i < 128; i++)
+	for (size_t spriteNum = 0; spriteNum < 128; spriteNum++)
 	{
-		OAMAttributes spriteInfo = this->_oamList[i];
-
+		OAMAttributes spriteInfo = this->_oamList[spriteNum];
+		
 		//for each sprite:
 		if (cost >= 2130)
 		{
 			//out of sprite rendering time
 			//printf("sprite overflow!\n");
-			//return;		
+			//return;
 		}
-
+		
 		//do we incur a cost if a sprite is disabled?? we guess so.
 		cost += 2;
 		
@@ -3983,59 +3964,55 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 		spriteInfo.attr[2] = LOCAL_TO_LE_16(spriteInfo.attr[2]);
 		
 		const OBJMode objMode = (OBJMode)spriteInfo.Mode;
-
+		
 		SpriteSize sprSize;
-		s32 sprX;
-		s32 sprY;
-		s32 x;
-		s32 y;
-		s32 lg;
-		s32 xdir;
+		s32 frameX;
+		s32 frameY;
+		s32 spriteX;
+		s32 spriteY;
+		s32 length;
+		s32 readXStep;
 		u8 prio = spriteInfo.Priority;
-		u16 *__restrict pal;
-		u8 *__restrict src;
-		u32 srcadr;
 		
 		if (spriteInfo.RotScale != 0)
 		{
-			s32		fieldX, fieldY, auxX, auxY, realX, realY, offset;
+			s32		fieldX, fieldY, auxX, auxY, realX, realY;
 			u8		blockparameter;
 			s16		dx, dmx, dy, dmy;
-			u16		colour;
-
+			
 			// Get sprite positions and size
-			sprX = spriteInfo.X;
-			sprY = spriteInfo.Y;
+			frameX = spriteInfo.X;
+			frameY = spriteInfo.Y;
 			sprSize = GPUEngineBase::_sprSizeTab[spriteInfo.Size][spriteInfo.Shape];
-
+			
 			// Copy sprite size, to check change it if needed
 			fieldX = sprSize.width;
 			fieldY = sprSize.height;
-			lg = sprSize.width;
-
+			length = sprSize.width;
+			
 			// If we are using double size mode, double our control vars
 			if (spriteInfo.DoubleSize != 0)
 			{
 				fieldX <<= 1;
 				fieldY <<= 1;
-				lg <<= 1;
+				length <<= 1;
 			}
-
+			
 			//check if the sprite is visible y-wise. unfortunately our logic for x and y is different due to our scanline based rendering
 			//tested thoroughly by many large sprites in Super Robot Wars K which wrap around the screen
-			y = (compInfo.line.indexNative - sprY) & 0xFF;
-			if (y >= fieldY)
+			spriteY = (compInfo.line.indexNative - frameY) & 0xFF;
+			if (spriteY >= fieldY)
 				continue;
-
+			
 			//check if sprite is visible x-wise.
-			if ((sprX == GPU_FRAMEBUFFER_NATIVE_WIDTH) || (sprX + fieldX <= 0))
+			if ((frameX == GPU_FRAMEBUFFER_NATIVE_WIDTH) || (frameX + fieldX <= 0))
 				continue;
-
+			
 			cost += (sprSize.width * 2) + 10;
-
+			
 			// Get which four parameter block is assigned to this sprite
 			blockparameter = (spriteInfo.RotScaleIndex + (spriteInfo.HFlip << 3) + (spriteInfo.VFlip << 4)) * 4;
-
+			
 			// Get rotation/scale parameters
 			dx  = LE_TO_LOCAL_16((s16)this->_oamList[blockparameter+0].attr3);
 			dmx = LE_TO_LOCAL_16((s16)this->_oamList[blockparameter+1].attr3);
@@ -4043,147 +4020,105 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 			dmy = LE_TO_LOCAL_16((s16)this->_oamList[blockparameter+3].attr3);
 			
 			// Calculate fixed point 8.8 start offsets
-			realX = (sprSize.width  << 7) - (fieldX >> 1)*dx - (fieldY >> 1)*dmx + y*dmx;
-			realY = (sprSize.height << 7) - (fieldX >> 1)*dy - (fieldY >> 1)*dmy + y*dmy;
-
-			if (sprX < 0)
+			realX = (sprSize.width  << 7) - (fieldX >> 1)*dx - (fieldY >> 1)*dmx + spriteY*dmx;
+			realY = (sprSize.height << 7) - (fieldX >> 1)*dy - (fieldY >> 1)*dmy + spriteY*dmy;
+			
+			if (frameX < 0)
 			{
 				// If sprite is not in the window
-				if (sprX + fieldX <= 0)
+				if (frameX + fieldX <= 0)
 					continue;
 
 				// Otherwise, is partially visible
-				lg += sprX;
-				realX -= sprX*dx;
-				realY -= sprX*dy;
-				sprX = 0;
+				length += frameX;
+				realX -= frameX*dx;
+				realY -= frameX*dy;
+				frameX = 0;
 			}
 			else
 			{
-				if (sprX + fieldX > GPU_FRAMEBUFFER_NATIVE_WIDTH)
-					lg = GPU_FRAMEBUFFER_NATIVE_WIDTH - sprX;
+				if (frameX + fieldX > GPU_FRAMEBUFFER_NATIVE_WIDTH)
+					length = GPU_FRAMEBUFFER_NATIVE_WIDTH - frameX;
 			}
-
-			// If we are using 1 palette of 256 colours
-			if (spriteInfo.PaletteMode == PaletteMode_1x256)
-			{
-				src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex << compInfo.renderState.spriteBoundary));
-
-				// If extended palettes are set, use them
-				pal = (DISPCNT.ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*ADDRESS_STEP_512B)) : this->_paletteOBJ;
-
-				for (size_t j = 0; j < lg; ++j, ++sprX)
-				{
-					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
-					auxX = (realX >> 8);
-					auxY = (realY >> 8);
-
-					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.width && auxY < sprSize.height)
-					{
-						if (MODE == SpriteRenderMode_Sprite2D)
-							offset = (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)<<10) + ((auxY&0x7)*8);
-						else
-							offset = (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)*sprSize.width*8) + ((auxY&0x7)*8);
-
-						colour = src[offset];
-						
-						if (colour > 0)
-						{
-							if (objMode == OBJMode_Window)
-							{
-								this->_sprWin[sprX] = 1;
-							}
-							else if (ISDEBUGRENDER)
-							{
-								dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
-							}
-							else if (prio < prioTab[sprX])
-							{
-								dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
-								dst_alpha[sprX] = 0xFF;
-								typeTab[sprX] = objMode;
-								prioTab[sprX] = prio;
-								this->_sprNum[sprX] = i;
-							}
-						}
-					}
-
-					// Add the rotation/scale coefficients, here the rotation/scaling is performed
-					realX += dx;
-					realY += dy;
-				}
-			}
-			// Rotozoomed direct color
-			else if (objMode == OBJMode_Bitmap)
+			
+			if (objMode == OBJMode_Bitmap) // Rotozoomed direct color
 			{
 				//transparent (i think, dont bother to render?) if alpha is 0
 				if (spriteInfo.PaletteIndex == 0)
 					continue;
-
-				srcadr = this->_SpriteAddressBMP(compInfo, spriteInfo, sprSize, 0);
-
-				for (size_t j = 0; j < lg; ++j, ++sprX)
+				
+				const u32 objAddress = this->_SpriteAddressBMP(compInfo, spriteInfo, sprSize, 0);
+				
+				for (size_t j = 0; j < length; ++j, ++frameX)
 				{
 					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
 					auxX = realX >> 8;
 					auxY = realY >> 8;
-
+					
 					//this is all very slow, and so much dup code with other rotozoomed modes.
 					//dont bother fixing speed until this whole thing gets reworked
-
+					
 					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.width && auxY < sprSize.height)
 					{
-						if (DISPCNT.OBJ_BMP_2D_dim)
-							//tested by knights in the nightmare
-							offset = ((this->_SpriteAddressBMP(compInfo, spriteInfo, sprSize, auxY) - srcadr) / 2) + auxX;
-						else //tested by lego indiana jones (somehow?)
-							//tested by buffy sacrifice damage blood splatters in corner
-							offset = auxX + (auxY * sprSize.width);
-
-						const u32 finalAddr = srcadr + (offset << 1);
-						u16 *mem = (u16 *)MMU_gpu_map(finalAddr);
-						colour = LE_TO_LOCAL_16(*mem);
+						size_t objOffset = 0;
 						
-						if (ISDEBUGRENDER)
+						if (DISPCNT.OBJ_BMP_2D_dim)
 						{
-							if (colour & 0x8000)
-							{
-								dst[sprX] = colour;
-							}
+							//tested by knights in the nightmare
+							objOffset = ((this->_SpriteAddressBMP(compInfo, spriteInfo, sprSize, auxY) - objAddress) / 2) + auxX;
 						}
 						else
 						{
-							if ((colour & 0x8000) && (prio < prioTab[sprX]))
-							{
-								dst[sprX] = colour;
-								dst_alpha[sprX] = spriteInfo.PaletteIndex;
-								typeTab[sprX] = objMode;
-								prioTab[sprX] = prio;
-								this->_sprNum[sprX] = i;
-							}
+							//tested by lego indiana jones (somehow?)
+							//tested by buffy sacrifice damage blood splatters in corner
+							objOffset = (auxY * sprSize.width) + auxX;
 						}
+						
+						const u32 vramAddress = objAddress + (objOffset << 1);
+						const u16 *vramBuffer = (u16 *)MMU_gpu_map(vramAddress);
+						const u16 vramColor = LE_TO_LOCAL_16(*vramBuffer);
+						
+						this->_RenderSpriteUpdatePixel<ISDEBUGRENDER, true>(frameX, &vramColor, spriteInfo.PaletteIndex, OBJMode_Bitmap, prio, spriteNum, dst, dst_alpha, typeTab, prioTab);
 					}
-
+					
 					// Add the rotation/scale coefficients, here the rotation/scaling is performed
 					realX += dx;
 					realY += dy;
 				}
 			}
-			// Rotozoomed 16/16 palette
-			else
+			else if (spriteInfo.PaletteMode == PaletteMode_1x256) // If we are using 1 palette of 256 colours
 			{
-				if (MODE == SpriteRenderMode_Sprite2D)
-				{
-					src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex << 5));
-				}
-				else
-				{
-					src = (u8 *)MMU_gpu_map(this->_sprMem + (spriteInfo.TileIndex << compInfo.renderState.spriteBoundary));
-				}
+				const u32 objAddress = this->_sprMem + (spriteInfo.TileIndex << compInfo.renderState.spriteBoundary);
+				const u8 *__restrict palIndexBuffer = (u8 *)MMU_gpu_map(objAddress);
+				const u16 *__restrict palColorBuffer = (DISPCNT.ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*ADDRESS_STEP_512B)) : this->_paletteOBJ;
 				
-				pal = this->_paletteOBJ + (spriteInfo.PaletteIndex << 4);
-
-				for (size_t j = 0; j < lg; ++j, ++sprX)
+				for (size_t j = 0; j < length; ++j, ++frameX)
+				{
+					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
+					auxX = (realX >> 8);
+					auxY = (realY >> 8);
+					
+					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.width && auxY < sprSize.height)
+					{
+						const size_t palOffset = (MODE == SpriteRenderMode_Sprite2D) ? (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)<<10) + ((auxY&0x7)*8) :
+						                                                               (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)*sprSize.width*8) + ((auxY&0x7)*8);
+						const u8 idx8 = palIndexBuffer[palOffset];
+						
+						this->_RenderSpriteUpdatePixel<ISDEBUGRENDER, false>(frameX, palColorBuffer, idx8, objMode, prio, spriteNum, dst, dst_alpha, typeTab, prioTab);
+					}
+					
+					// Add the rotation/scale coefficients, here the rotation/scaling is performed
+					realX += dx;
+					realY += dy;
+				}
+			}
+			else // Rotozoomed 16/16 palette
+			{
+				const u32 objAddress = (MODE == SpriteRenderMode_Sprite2D) ? this->_sprMem + (spriteInfo.TileIndex << 5) : this->_sprMem + (spriteInfo.TileIndex << compInfo.renderState.spriteBoundary);
+				const u8 *__restrict palIndexBuffer = (u8 *)MMU_gpu_map(objAddress);
+				const u16 *__restrict palColorBuffer = this->_paletteOBJ + (spriteInfo.PaletteIndex << 4);
+				
+				for (size_t j = 0; j < length; ++j, ++frameX)
 				{
 					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
 					auxX = realX >> 8;
@@ -4191,38 +4126,14 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 
 					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.width && auxY < sprSize.height)
 					{
-						if (MODE == SpriteRenderMode_Sprite2D)
-							offset = ((auxX>>1)&0x3) + (((auxX>>1)&0xFFFC)<<3) + ((auxY>>3)<<10) + ((auxY&0x7)*4);
-						else
-							offset = ((auxX>>1)&0x3) + (((auxX>>1)&0xFFFC)<<3) + ((auxY>>3)*sprSize.width)*4 + ((auxY&0x7)*4);
+						const size_t palOffset = (MODE == SpriteRenderMode_Sprite2D) ? ((auxX>>1)&0x3) + (((auxX>>1)&0xFFFC)<<3) + ((auxY>>3)<<10) + ((auxY&0x7)*4) :
+						                                                               ((auxX>>1)&0x3) + (((auxX>>1)&0xFFFC)<<3) + ((auxY>>3)*sprSize.width*4) + ((auxY&0x7)*4);
+						const u8 palIndex = palIndexBuffer[palOffset];
+						const u8 idx4 = (auxX & 1) ? palIndex >> 4 : palIndex & 0x0F;
 						
-						colour = src[offset];
-
-						// Get 4bits value from the readed 8bits
-						if (auxX&1)	colour >>= 4;
-						else		colour &= 0xF;
-						
-						if (colour > 0)
-						{
-							if (objMode == OBJMode_Window)
-							{
-								this->_sprWin[sprX] = 1;
-							}
-							else if (ISDEBUGRENDER)
-							{
-								dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
-							}
-							else if (prio < prioTab[sprX])
-							{
-								dst[sprX] = LE_TO_LOCAL_16(pal[colour]);
-								dst_alpha[sprX] = 0xFF;
-								typeTab[sprX] = objMode;
-								prioTab[sprX] = prio;
-								this->_sprNum[sprX] = i;
-							}
-						}
+						this->_RenderSpriteUpdatePixel<ISDEBUGRENDER, false>(frameX, palColorBuffer, idx4, objMode, prio, spriteNum, dst, dst_alpha, typeTab, prioTab);
 					}
-
+					
 					// Add the rotation/scale coeficients, here the rotation/scaling  is performed
 					realX += dx;
 					realY += dy;
@@ -4231,22 +4142,26 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 		}
 		else //NOT rotozoomed
 		{
-			if (!this->_ComputeSpriteVars(compInfo, spriteInfo, sprSize, sprX, sprY, x, y, lg, xdir))
+			if (!this->_ComputeSpriteVars(compInfo, spriteInfo, sprSize, frameX, frameY, spriteX, spriteY, length, readXStep))
 				continue;
-
+			
 			cost += sprSize.width;
-
+			
 			if (objMode == OBJMode_Bitmap) //sprite is in BMP format
 			{
 				//transparent (i think, dont bother to render?) if alpha is 0
 				if (spriteInfo.PaletteIndex == 0)
 					continue;
 				
-				srcadr = this->_SpriteAddressBMP(compInfo, spriteInfo, sprSize, y);
+				const u32 objAddress = this->_SpriteAddressBMP(compInfo, spriteInfo, sprSize, spriteY);
 				
-				this->_RenderSpriteBMP<ISDEBUGRENDER>(compInfo, i, dst, srcadr, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo.PaletteIndex);
+				this->_RenderSpriteBMP<ISDEBUGRENDER>(objAddress, length, frameX, spriteX, readXStep,
+													  spriteInfo.PaletteIndex, OBJMode_Bitmap, prio, spriteNum,
+													  dst, dst_alpha, typeTab, prioTab);
 				
-				const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(srcadr) - MMU.ARM9_LCD) / sizeof(u16);
+				// When rendering at a custom framebuffer size, save a copy of the OBJ address as a reference
+				// for reading the custom VRAM.
+				const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(objAddress) - MMU.ARM9_LCD) / sizeof(u16);
 				if (vramPixel < (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4))
 				{
 					const size_t blockID = vramPixel / (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
@@ -4256,41 +4171,31 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 					
 					if (!GPU->GetEngineMain()->isLineCaptureNative[blockID][blockLine] && (linePixel == 0))
 					{
-						this->vramBlockOBJAddress = srcadr;
+						this->vramBlockOBJAddress = objAddress;
 					}
 				}
 			}
 			else if (spriteInfo.PaletteMode == PaletteMode_1x256) //256 colors; handles OBJ windows too
 			{
-				if (MODE == SpriteRenderMode_Sprite2D)
-					srcadr = this->_sprMem + ((spriteInfo.TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
-				else
-					srcadr = this->_sprMem + (spriteInfo.TileIndex<<compInfo.renderState.spriteBoundary) + ((y>>3)*sprSize.width*8) + ((y&0x7)*8);
+				const u32 objAddress = (MODE == SpriteRenderMode_Sprite2D) ? this->_sprMem + ((spriteInfo.TileIndex)<<5) + ((spriteY>>3)<<10) + ((spriteY&0x7)*8) :
+				                                                             this->_sprMem + (spriteInfo.TileIndex<<compInfo.renderState.spriteBoundary) + ((spriteY>>3)*sprSize.width*8) + ((spriteY&0x7)*8);
 				
-				pal = (DISPCNT.ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*ADDRESS_STEP_512B)) : this->_paletteOBJ;
+				const u16 *__restrict palColorBuffer = (DISPCNT.ExOBJPalette_Enable) ? (u16 *)(MMU.ObjExtPal[this->_engineID][0]+(spriteInfo.PaletteIndex*ADDRESS_STEP_512B)) : this->_paletteOBJ;
 				
-				if (objMode == OBJMode_Window)
-					this->_RenderSprite256<ISDEBUGRENDER,true>(compInfo, i, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
-				else
-					this->_RenderSprite256<ISDEBUGRENDER,false>(compInfo, i, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
+				this->_RenderSprite256<ISDEBUGRENDER>(objAddress, length, frameX, spriteX, readXStep,
+													  palColorBuffer, objMode, prio, spriteNum,
+													  dst, dst_alpha, typeTab, prioTab);
 			}
 			else // 16 colors; handles OBJ windows too
 			{
-				if (MODE == SpriteRenderMode_Sprite2D)
-				{
-					srcadr = this->_sprMem + ((spriteInfo.TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
-				}
-				else
-				{
-					srcadr = this->_sprMem + (spriteInfo.TileIndex<<compInfo.renderState.spriteBoundary) + ((y>>3)*sprSize.width*4) + ((y&0x7)*4);
-				}
+				const u32 objAddress = (MODE == SpriteRenderMode_Sprite2D) ? this->_sprMem + ((spriteInfo.TileIndex)<<5) + ((spriteY>>3)<<10) + ((spriteY&0x7)*4) :
+				                                                             this->_sprMem + (spriteInfo.TileIndex<<compInfo.renderState.spriteBoundary) + ((spriteY>>3)*sprSize.width*4) + ((spriteY&0x7)*4);
 				
-				pal = this->_paletteOBJ + (spriteInfo.PaletteIndex << 4);
+				const u16 *__restrict palColorBuffer = this->_paletteOBJ + (spriteInfo.PaletteIndex << 4);
 				
-				if (objMode == OBJMode_Window)
-					this->_RenderSprite16<ISDEBUGRENDER, true>(compInfo, i, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
-				else 
-					this->_RenderSprite16<ISDEBUGRENDER, false>(compInfo, i, dst, srcadr, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, (objMode == OBJMode_Transparent));
+				this->_RenderSprite16<ISDEBUGRENDER>(objAddress, length, frameX, spriteX, readXStep,
+													 palColorBuffer, objMode, prio, spriteNum,
+													 dst, dst_alpha, typeTab, prioTab);
 			}
 		}
 	}

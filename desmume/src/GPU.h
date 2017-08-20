@@ -867,7 +867,7 @@ typedef union
 			
 			struct
 			{
-				u16 Y:8;					//  0- 7: Sprite Y-coordinate; 0...255
+				u16 Y:8;					//  0- 7: Sprite Y-coordinate location within the framebuffer; 0...255
 				u16 RotScale:1;				//     8: Perform rotation/scaling; 0=Disable, 1=Enable
 				u16 Disable:1;				//     9: OBJ disable flag, only if Bit8 is cleared; 0=Perform render, 1=Do not perform render
 				u16 Mode:2;					// 10-11: OBJ mode; 0=Normal, 1=Transparent, 2=Window, 3=Bitmap
@@ -885,7 +885,7 @@ typedef union
 			};
 		};
 		
-		s16 X:9;							// 16-24: Sprite X-coordinate; 0...511
+		s16 X:9;							// 16-24: Sprite X-coordinate location within the framebuffer; 0...511
 		u16 RotScaleIndex:3;				// 25-27: Rotation/scaling parameter selection; 0...31
 		u16 HFlip:1;						//    28: Flip sprite horizontally; 0=Normal, 1=Flip
 		u16 VFlip:1;						//    29: Flip sprite vertically; 0=Normal, 1=Flip
@@ -907,7 +907,7 @@ typedef union
 			
 			struct
 			{
-				u16 Y:8;					//  0- 7: Sprite Y-coordinate; 0...255
+				u16 Y:8;					//  0- 7: Sprite Y-coordinate location within the framebuffer; 0...255
 				u16 Shape:2;				// 14-15: OBJ shape; 0=Square, 1=Horizontal, 2=Vertical, 3=Prohibited
 				u16 PaletteMode:1;			//    13: Color/palette select; 0=16 palettes of 16 colors each, 1=Single palette of 256 colors
 				u16 Mosaic:1;				//    12: Mosaic render: 0=Disable, 1=Enable
@@ -936,7 +936,7 @@ typedef union
 		u16 VFlip:1;						//    29: Flip sprite vertically; 0=Normal, 1=Flip
 		u16 HFlip:1;						//    28: Flip sprite horizontally; 0=Normal, 1=Flip
 		u16 RotScaleIndex:3;				// 25-27: Rotation/scaling parameter selection; 0...31
-		s16 X:9;							// 16-24: Sprite X-coordinate; 0...511
+		s16 X:9;							// 16-24: Sprite X-coordinate location within the framebuffer; 0...511
 		
 		// 32-47: Whenever this is used, you will need to explicitly convert endianness.
 		u16 PaletteIndex:4;					// 44-47: Palette index; 0...15
@@ -1436,9 +1436,10 @@ protected:
 	template<GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, GPULayerType LAYERTYPE, bool WILLPERFORMWINDOWTEST> FORCEINLINE void _PixelComposite16_SSE2(GPUEngineCompositorInfo &compInfo, const bool didAllPixelsPass, const __m128i &passMask8, const __m128i &src3, const __m128i &src2, const __m128i &src1, const __m128i &src0, const __m128i &srcEffectEnableMask);
 #endif
 	
-	template<bool ISDEBUGRENDER> void _RenderSpriteBMP(GPUEngineCompositorInfo &compInfo, const u8 spriteNum, u16 *__restrict dst, const u32 srcadr, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
-	template<bool ISDEBUGRENDER, bool ISWINDOW> void _RenderSprite256(GPUEngineCompositorInfo &compInfo, const u8 spriteNum, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
-	template<bool ISDEBUGRENDER, bool ISWINDOW> void _RenderSprite16(GPUEngineCompositorInfo &compInfo, const u8 spriteNum, u16 *__restrict dst, const u32 srcadr, const u16 *__restrict pal, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab, const u8 prio, const size_t lg, size_t sprX, size_t x, const s32 xdir, const u8 alpha);
+	template<bool ISDEBUGRENDER, bool ISOBJMODEBITMAP> FORCEINLINE void _RenderSpriteUpdatePixel(size_t frameX, const u16 *__restrict srcPalette, const u8 palIndex, const OBJMode objMode, const u8 prio, const u8 spriteNum, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
+	template<bool ISDEBUGRENDER> void _RenderSpriteBMP(const u32 objAddress, const size_t length, size_t frameX, size_t spriteX, const s32 readXStep, const u8 spriteAlpha, const OBJMode objMode, const u8 prio, const u8 spriteNum, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
+	template<bool ISDEBUGRENDER> void _RenderSprite256(const u32 objAddress, const size_t length, size_t frameX, size_t spriteX, const s32 readXStep, const u16 *__restrict palColorBuffer, const OBJMode objMode, const u8 prio, const u8 spriteNum, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
+	template<bool ISDEBUGRENDER> void _RenderSprite16(const u32 objAddress, const size_t length, size_t frameX, size_t spriteX, const s32 readXStep, const u16 *__restrict palColorBuffer, const OBJMode objMode, const u8 prio, const u8 spriteNum, u16 *__restrict dst, u8 *__restrict dst_alpha, u8 *__restrict typeTab, u8 *__restrict prioTab);
 	void _RenderSpriteWin(const u8 *src, const bool col256, const size_t lg, size_t sprX, size_t x, const s32 xdir);
 	bool _ComputeSpriteVars(GPUEngineCompositorInfo &compInfo, const OAMAttributes &spriteInfo, SpriteSize &sprSize, s32 &sprX, s32 &sprY, s32 &x, s32 &y, s32 &lg, s32 &xdir);
 	
