@@ -3587,9 +3587,8 @@ void GPUEngineBase::_RenderLine_BGExtended(GPUEngineCompositorInfo &compInfo, co
 					
 					if (vramPixel < (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4))
 					{
-						const size_t blockID = vramPixel / (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
-						const size_t blockPixel = vramPixel % (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
-						const size_t blockLine = blockPixel / GPU_FRAMEBUFFER_NATIVE_WIDTH;
+						const size_t blockID   = vramPixel >> 16;
+						const size_t blockLine = (vramPixel >> 8) & 0x000000FF;
 						
 						GPU->GetEngineMain()->VerifyVRAMLineDidChange(blockID, compInfo.line.indexNative + blockLine);
 						outUseCustomVRAM = !GPU->GetEngineMain()->isLineCaptureNative[blockID][compInfo.line.indexNative + blockLine];
@@ -4164,10 +4163,9 @@ void GPUEngineBase::_SpriteRenderPerform(GPUEngineCompositorInfo &compInfo, u16 
 				const size_t vramPixel = (size_t)((u8 *)MMU_gpu_map(objAddress) - MMU.ARM9_LCD) / sizeof(u16);
 				if (vramPixel < (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4))
 				{
-					const size_t blockID = vramPixel / (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
-					const size_t blockPixel = vramPixel % (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
-					const size_t blockLine = blockPixel / GPU_FRAMEBUFFER_NATIVE_WIDTH;
-					const size_t linePixel = blockPixel % GPU_FRAMEBUFFER_NATIVE_WIDTH;
+					const size_t blockID   = vramPixel >> 16;
+					const size_t blockLine = (vramPixel >> 8) & 0x000000FF;
+					const size_t linePixel = vramPixel & 0x000000FF;
 					
 					if (!GPU->GetEngineMain()->isLineCaptureNative[blockID][blockLine] && (linePixel == 0))
 					{
@@ -4379,9 +4377,8 @@ void GPUEngineBase::_RenderLine_LayerOBJ(GPUEngineCompositorInfo &compInfo, item
 		
 		if (vramPixel < (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES * 4))
 		{
-			const size_t blockID = vramPixel / (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
-			const size_t blockPixel = vramPixel % (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
-			const size_t blockLine = blockPixel / GPU_FRAMEBUFFER_NATIVE_WIDTH;
+			const size_t blockID   = vramPixel >> 16;
+			const size_t blockLine = (vramPixel >> 8) & 0x000000FF;
 			
 			GPU->GetEngineMain()->VerifyVRAMLineDidChange(blockID, blockLine);
 			useCustomVRAM = !GPU->GetEngineMain()->isLineCaptureNative[blockID][blockLine];
@@ -7915,10 +7912,9 @@ void* GPUSubsystem::GetCustomVRAMAddressUsingMappedAddress(const u32 mappedAddr,
 		return this->_customVRAMBlank;
 	}
 	
-	const size_t blockID = vramPixel / (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
-	const size_t blockPixel = vramPixel % (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES);
-	const size_t blockLine = blockPixel / GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	const size_t linePixel = blockPixel % GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	const size_t blockID   = vramPixel >> 16;				// blockID   = vramPixel / (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES)
+	const size_t blockLine = (vramPixel >> 8) & 0x000000FF;	// blockLine = (vramPixel % (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES)) / GPU_FRAMEBUFFER_NATIVE_WIDTH
+	const size_t linePixel = vramPixel & 0x000000FF;		// linePixel = (vramPixel % (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_VRAM_BLOCK_LINES)) % GPU_FRAMEBUFFER_NATIVE_WIDTH
 	
 	return (COLORFORMAT == NDSColorFormat_BGR888_Rev) ? (void *)((FragmentColor *)this->GetEngineMain()->GetCustomVRAMBlockPtr(blockID) + (_gpuCaptureLineIndex[blockLine] * this->_displayInfo.customWidth) + _gpuDstPitchIndex[linePixel] + offset) : (void *)((u16 *)this->GetEngineMain()->GetCustomVRAMBlockPtr(blockID) + (_gpuCaptureLineIndex[blockLine] * this->_displayInfo.customWidth) + _gpuDstPitchIndex[linePixel] + offset);
 }
