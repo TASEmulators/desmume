@@ -3033,26 +3033,24 @@ TILEENTRY GPUEngineBase::_GetTileEntry(const u32 tileMapAddress, const u16 xOffs
 }
 
 template <GPUCompositorMode COMPOSITORMODE, NDSColorFormat OUTPUTFORMAT, bool MOSAIC, bool WILLPERFORMWINDOWTEST>
-FORCEINLINE void GPUEngineBase::_CompositePixelImmediate(GPUEngineCompositorInfo &compInfo, const size_t srcX, u16 srcColor16, const bool opaque)
+FORCEINLINE void GPUEngineBase::_CompositePixelImmediate(GPUEngineCompositorInfo &compInfo, const size_t srcX, u16 srcColor16, bool opaque)
 {
-	bool willRenderColor = opaque;
-	
 	if (MOSAIC)
 	{
 		//due to this early out, we will get incorrect behavior in cases where
 		//we enable mosaic in the middle of a frame. this is deemed unlikely.
 		
-		if (!opaque) srcColor16 = 0xFFFF;
-		else srcColor16 &= 0x7FFF;
-		
-		if (!compInfo.renderState.mosaicWidthBG[srcX].begin || !compInfo.renderState.mosaicHeightBG[compInfo.line.indexNative].begin)
+		if (compInfo.renderState.mosaicWidthBG[srcX].begin && compInfo.renderState.mosaicHeightBG[compInfo.line.indexNative].begin)
+		{
+			srcColor16 = (!opaque) ? 0xFFFF : (srcColor16 & 0x7FFF);
+			this->_mosaicColors.bg[compInfo.renderState.selectedLayerID][srcX] = srcColor16;
+		}
+		else
 		{
 			srcColor16 = this->_mosaicColors.bg[compInfo.renderState.selectedLayerID][compInfo.renderState.mosaicWidthBG[srcX].trunc];
 		}
 		
-		this->_mosaicColors.bg[compInfo.renderState.selectedLayerID][srcX] = srcColor16;
-		
-		willRenderColor = (srcColor16 != 0xFFFF);
+		opaque = (srcColor16 != 0xFFFF);
 	}
 	
 	if ( WILLPERFORMWINDOWTEST && (this->_didPassWindowTestNative[compInfo.renderState.selectedLayerID][srcX] == 0) )
@@ -3060,7 +3058,7 @@ FORCEINLINE void GPUEngineBase::_CompositePixelImmediate(GPUEngineCompositorInfo
 		return;
 	}
 	
-	if (!willRenderColor)
+	if (!opaque)
 	{
 		return;
 	}
@@ -3083,50 +3081,56 @@ void GPUEngineBase::_CompositeLineDeferred(GPUEngineCompositorInfo &compInfo)
 #ifdef ENABLE_SSE2
 		for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x+=8)
 		{
+			__m128i mosaicColor_vec128;
+			u16 *mosaicColorBG = this->_mosaicColors.bg[compInfo.renderState.selectedLayerID];
+			
 			const __m128i index_vec128 = _mm_loadl_epi64((__m128i *)(this->_deferredIndexNative + x));
 			const __m128i col_vec128 = _mm_load_si128((__m128i *)(this->_deferredColorNative + x));
 			
-			const __m128i idxMask = _mm_cmpeq_epi16(_mm_unpacklo_epi8(index_vec128, _mm_setzero_si128()), _mm_setzero_si128());
-			const __m128i tmpColor_vec128 = _mm_blendv_epi8(_mm_and_si128(col_vec128, _mm_set1_epi16(0x7FFF)), _mm_set1_epi16(0xFFFF), idxMask);
-			
-			const __m128i mosaicWidthMask = _mm_cmpeq_epi16( _mm_and_si128(_mm_set1_epi16(0x00FF), _mm_loadu_si128((__m128i *)(compInfo.renderState.mosaicWidthBG + x))), _mm_setzero_si128() );
-			const __m128i mosaicHeightMask = _mm_cmpeq_epi16(_mm_set1_epi16(compInfo.renderState.mosaicHeightBG[compInfo.line.indexNative].begin), _mm_setzero_si128());
-			const __m128i mosaicMask = _mm_or_si128(mosaicWidthMask, mosaicHeightMask);
-			
-			u16 *mosaicColorBG = this->_mosaicColors.bg[compInfo.renderState.selectedLayerID];
-			mosaicColorBG[x+0] = (_mm_extract_epi16(mosaicMask, 0) != 0) ? mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+0].trunc] : _mm_extract_epi16(tmpColor_vec128, 0);
-			mosaicColorBG[x+1] = (_mm_extract_epi16(mosaicMask, 1) != 0) ? mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+1].trunc] : _mm_extract_epi16(tmpColor_vec128, 1);
-			mosaicColorBG[x+2] = (_mm_extract_epi16(mosaicMask, 2) != 0) ? mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+2].trunc] : _mm_extract_epi16(tmpColor_vec128, 2);
-			mosaicColorBG[x+3] = (_mm_extract_epi16(mosaicMask, 3) != 0) ? mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+3].trunc] : _mm_extract_epi16(tmpColor_vec128, 3);
-			mosaicColorBG[x+4] = (_mm_extract_epi16(mosaicMask, 4) != 0) ? mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+4].trunc] : _mm_extract_epi16(tmpColor_vec128, 4);
-			mosaicColorBG[x+5] = (_mm_extract_epi16(mosaicMask, 5) != 0) ? mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+5].trunc] : _mm_extract_epi16(tmpColor_vec128, 5);
-			mosaicColorBG[x+6] = (_mm_extract_epi16(mosaicMask, 6) != 0) ? mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+6].trunc] : _mm_extract_epi16(tmpColor_vec128, 6);
-			mosaicColorBG[x+7] = (_mm_extract_epi16(mosaicMask, 7) != 0) ? mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+7].trunc] : _mm_extract_epi16(tmpColor_vec128, 7);
-			
-			const __m128i mosaicColor_vec128 = _mm_loadu_si128((__m128i *)(mosaicColorBG + x));
-			const __m128i mosaicColorMask = _mm_cmpeq_epi16(mosaicColor_vec128, _mm_set1_epi16(0xFFFF));
-			_mm_storel_epi64( (__m128i *)(this->_deferredIndexNative + x), _mm_andnot_si128(_mm_packs_epi16(mosaicColorMask, _mm_setzero_si128()), index_vec128) );
-			_mm_store_si128( (__m128i *)(this->_deferredColorNative + x), _mm_blendv_epi8(mosaicColor_vec128, col_vec128, mosaicColorMask) );
-		}
-#else
-		for (size_t x = 0, dstIdx = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
-		{
-			u16 tmpColor = (this->_deferredIndexNative[x] == 0) ? 0xFFFF : this->_deferredColorNative[x] & 0x7FFF;
-			
-			if (!compInfo.renderState.mosaicWidthBG[x].begin || !compInfo.renderState.mosaicHeightBG[compInfo.line.indexNative].begin)
+			if (compInfo.renderState.mosaicHeightBG[compInfo.line.indexNative].begin)
 			{
-				tmpColor = this->_mosaicColors.bg[compInfo.renderState.selectedLayerID][compInfo.renderState.mosaicWidthBG[x].trunc];
+				const __m128i mosaicSetColorMask = _mm_cmpgt_epi16( _mm_and_si128(_mm_set1_epi16(0x00FF), _mm_loadu_si128((__m128i *)(compInfo.renderState.mosaicWidthBG + x))), _mm_setzero_si128() );
+				const __m128i idxMask = _mm_cmpeq_epi16(_mm_unpacklo_epi8(index_vec128, _mm_setzero_si128()), _mm_setzero_si128());
+				mosaicColor_vec128 = _mm_blendv_epi8(_mm_and_si128(col_vec128, _mm_set1_epi16(0x7FFF)), _mm_set1_epi16(0xFFFF), idxMask);
+				
+				_mm_storeu_si128( (__m128i *)(mosaicColorBG + x), _mm_blendv_epi8(_mm_loadu_si128((__m128i *)(mosaicColorBG + x)), mosaicColor_vec128, mosaicSetColorMask) );
 			}
 			
-			this->_mosaicColors.bg[compInfo.renderState.selectedLayerID][x] = tmpColor;
+			mosaicColor_vec128 = _mm_set_epi16(mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+7].trunc],
+											   mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+6].trunc],
+											   mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+5].trunc],
+											   mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+4].trunc],
+											   mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+3].trunc],
+											   mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+2].trunc],
+											   mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+1].trunc],
+											   mosaicColorBG[compInfo.renderState.mosaicWidthBG[x+0].trunc]);
 			
-			if (tmpColor == 0xFFFF)
+			const __m128i writeColorMask = _mm_cmpeq_epi16(mosaicColor_vec128, _mm_set1_epi16(0xFFFF));
+			_mm_storel_epi64( (__m128i *)(this->_deferredIndexNative + x), _mm_andnot_si128(_mm_packs_epi16(writeColorMask, _mm_setzero_si128()), index_vec128) );
+			_mm_store_si128( (__m128i *)(this->_deferredColorNative + x), _mm_blendv_epi8(mosaicColor_vec128, col_vec128, writeColorMask) );
+		}
+#else
+		for (size_t x = 0; x < GPU_FRAMEBUFFER_NATIVE_WIDTH; x++)
+		{
+			u16 mosaicColor;
+			
+			if (compInfo.renderState.mosaicWidthBG[x].begin && compInfo.renderState.mosaicHeightBG[compInfo.line.indexNative].begin)
+			{
+				mosaicColor = (this->_deferredIndexNative[x] == 0) ? 0xFFFF : this->_deferredColorNative[x] & 0x7FFF;
+				this->_mosaicColors.bg[compInfo.renderState.selectedLayerID][x] = mosaicColor;
+			}
+			else
+			{
+				mosaicColor = this->_mosaicColors.bg[compInfo.renderState.selectedLayerID][compInfo.renderState.mosaicWidthBG[x].trunc];
+			}
+			
+			if (mosaicColor == 0xFFFF)
 			{
 				this->_deferredIndexNative[x] = 0;
 			}
 			else
 			{
-				this->_deferredColorNative[x] = tmpColor;
+				this->_deferredColorNative[x] = mosaicColor;
 			}
 		}
 #endif
