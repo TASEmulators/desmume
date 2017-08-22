@@ -5046,10 +5046,10 @@ void OGLVideoOutput::_ResizeCPUPixelScaler(const VideoFilterTypeID filterID)
 	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[NDSDisplayID_Main]);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_vf[NDSDisplayID_Main]->GetSrcWidth()  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide, this->_vf[NDSDisplayID_Main]->GetSrcWidth()  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Main]->GetDstBufferPtr());
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_vf[NDSDisplayID_Main]->GetSrcWidth()  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide, this->_vf[NDSDisplayID_Main]->GetSrcWidth()  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Main]->GetDstBufferPtr());
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[NDSDisplayID_Touch]);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_vf[NDSDisplayID_Touch]->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide, this->_vf[NDSDisplayID_Touch]->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Touch]->GetDstBufferPtr());
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_vf[NDSDisplayID_Touch]->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide, this->_vf[NDSDisplayID_Touch]->GetSrcWidth() * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Touch]->GetDstBufferPtr());
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
