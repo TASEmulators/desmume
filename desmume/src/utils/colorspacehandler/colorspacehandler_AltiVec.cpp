@@ -83,11 +83,11 @@ FORCEINLINE v128u32 ColorspaceConvert8888To6665_AltiVec(const v128u32 &src)
 	// Conversion algorithm:
 	//    RGB   8-bit to 6-bit formula: dstRGB6 = (srcRGB8 >> 2)
 	//    Alpha 8-bit to 6-bit formula: dstA5   = (srcA8   >> 3)	
-	v128u8 rgba = vec_sr( (v128u8)src, ((v128u8){3,2,2,2,  3,2,2,2,  3,2,2,2,  3,2,2,2}) );
+	v128u8 rgba = vec_sr( (v128u8)src, ((v128u8){2,2,2,3,  2,2,2,3,  2,2,2,3,  2,2,2,3}) );
 	
 	if (SWAP_RB)
 	{
-		rgba = vec_perm( rgba, rgba, ((v128u8){0,3,2,1,  4,7,6,5,  8,11,10,9,  12,15,14,13}) );
+		rgba = vec_perm( rgba, rgba, ((v128u8){2,1,0,3,  6,5,4,7,  10,9,8,11,  14,13,12,15}) );
 	}
 	
 	return (v128u32)rgba;
@@ -99,11 +99,11 @@ FORCEINLINE v128u32 ColorspaceConvert6665To8888_AltiVec(const v128u32 &src)
 	// Conversion algorithm:
 	//    RGB   6-bit to 8-bit formula: dstRGB8 = (srcRGB6 << 2) | ((srcRGB6 >> 4) & 0x03)
 	//    Alpha 5-bit to 8-bit formula: dstA8   = (srcA5   << 3) | ((srcA5   >> 2) & 0x07)
-	v128u8 rgba = vec_or( vec_sl((v128u8)src, ((v128u8){3,2,2,2,  3,2,2,2,  3,2,2,2,  3,2,2,2})), vec_sr((v128u8)src, ((v128u8){2,4,4,4,  2,4,4,4,  2,4,4,4,  2,4,4,4})) );
+	v128u8 rgba = vec_or( vec_sl((v128u8)src, ((v128u8){2,2,2,3,  2,2,2,3,  2,2,2,3,  2,2,2,3})), vec_sr((v128u8)src, ((v128u8){4,4,4,2,  4,4,4,2,  4,4,4,2,  4,4,4,2})) );
 	
 	if (SWAP_RB)
 	{		
-		rgba = vec_perm( rgba, rgba, ((v128u8){0,3,2,1,  4,7,6,5,  8,11,10,9,  12,15,14,13}) );
+		rgba = vec_perm( rgba, rgba, ((v128u8){2,1,0,3,  6,5,4,7,  10,9,8,11,  14,13,12,15}) );
 	}
 	
 	return (v128u32)rgba;
@@ -125,52 +125,39 @@ FORCEINLINE v128u16 _ConvertColorBaseTo5551_AltiVec(const v128u32 &srcLo, const 
 	
 	if (COLORFORMAT == NDSColorFormat_BGR666_Rev)
 	{
+		rgbLo = vec_sl( srcLo, ((v128u32){2,2,2,2}) );
+		rgbHi = vec_sl( srcHi, ((v128u32){2,2,2,2}) );
+		
 		// Convert alpha
 		dstAlpha = vec_packsu( vec_and(vec_sr(srcLo, ((v128u32){24,24,24,24})), ((v128u32){0x0000001F,0x0000001F,0x0000001F,0x0000001F})), vec_and(vec_sr(srcHi, ((v128u32){24,24,24,24})), ((v128u32){0x0000001F,0x0000001F,0x0000001F,0x0000001F})) );
-		dstAlpha = vec_cmpgt(dstAlpha, ((v128u16){0,0,0,0,0,0,0,0}));
-		dstAlpha = vec_and(dstAlpha, ((v128u16){0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000}));
-		
-		// Convert RGB
-		if (SWAP_RB)
-		{
-			rgbLo = vec_perm( srcLo, srcLo, ((v128u8){0,3,2,1,  4,7,6,5,  8,11,10,9,  12,15,14,13}) );
-			rgbHi = vec_perm( srcHi, srcHi, ((v128u8){0,3,2,1,  4,7,6,5,  8,11,10,9,  12,15,14,13}) );
-			
-			rgbLo = vec_sl( rgbLo, ((v128u32){2,2,2,2}) );
-			rgbHi = vec_sl( rgbHi, ((v128u32){2,2,2,2}) );
-			
-			dstColor = (v128u16)vec_packpx(rgbLo, rgbHi);
-		}
-		else
-		{
-			rgbLo = vec_sl( srcLo, ((v128u32){2,2,2,2}) );
-			rgbHi = vec_sl( srcHi, ((v128u32){2,2,2,2}) );
-			
-			dstColor = (v128u16)vec_packpx(rgbLo, rgbHi);
-		}
 	}
 	else if (COLORFORMAT == NDSColorFormat_BGR888_Rev)
 	{
+		rgbLo = srcLo;
+		rgbHi = srcHi;
+		
 		// Convert alpha
 		dstAlpha = vec_packsu( vec_sr(srcLo, ((v128u32){24,24,24,24})), vec_sr(srcHi, ((v128u32){24,24,24,24})) );
-		dstAlpha = vec_cmpgt(dstAlpha, ((v128u16){0,0,0,0,0,0,0,0}));
-		dstAlpha = vec_and(dstAlpha, ((v128u16){0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000}));
-		
-		// Convert RGB
-		if (SWAP_RB)
-		{
-			rgbLo = vec_perm( srcLo, srcLo, ((v128u8){0,3,2,1,  4,7,6,5,  8,11,10,9,  12,15,14,13}) );
-			rgbHi = vec_perm( srcHi, srcHi, ((v128u8){0,3,2,1,  4,7,6,5,  8,11,10,9,  12,15,14,13}) );
-			
-			dstColor = (v128u16)vec_packpx(rgbLo, rgbHi);
-		}
-		else
-		{
-			dstColor = (v128u16)vec_packpx(srcLo, srcHi);
-		}
 	}
 	
+	dstAlpha = vec_cmpgt(dstAlpha, ((v128u16){0,0,0,0,0,0,0,0}));
+	dstAlpha = vec_and(dstAlpha, ((v128u16){0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000}));
+	
+	// Convert RGB
+	if (SWAP_RB)
+	{
+		rgbLo = vec_perm( rgbLo, rgbLo, ((v128u8){3,0,1,2,  7,4,5,6,  11,8,9,10,  15,12,13,14}) );
+		rgbHi = vec_perm( rgbHi, rgbHi, ((v128u8){3,0,1,2,  7,4,5,6,  11,8,9,10,  15,12,13,14}) );
+	}
+	else
+	{
+		rgbLo = vec_perm( rgbLo, rgbLo, ((v128u8){3,2,1,0,  7,6,5,4,  11,10,9,8,  15,14,13,12}) );
+		rgbHi = vec_perm( rgbHi, rgbHi, ((v128u8){3,2,1,0,  7,6,5,4,  11,10,9,8,  15,14,13,12}) );
+	}
+	
+	dstColor = (v128u16)vec_packpx(rgbLo, rgbHi);
 	dstColor = vec_and(dstColor, ((v128u16){0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF,0x7FFF}));
+	
 	return vec_or(dstColor, dstAlpha);
 }
 
@@ -191,10 +178,10 @@ FORCEINLINE v128u32 ColorspaceConvert888XTo8888Opaque_AltiVec(const v128u32 &src
 {
 	if (SWAP_RB)
 	{
-		return vec_or( vec_perm(src, src, ((v128u8){0,3,2,1,  4,7,6,5,  8,11,10,9,  12,15,14,13})), ((v128u32){0xFF000000,0xFF000000,0xFF000000,0xFF000000}) );
+		return vec_or( vec_perm(src, src, ((v128u8){3,0,1,2,  7,4,5,6,  11,8,9,10,  15,12,13,14})), ((v128u32){0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000}) );
 	}
 	
-	return vec_or(src, ((v128u32){0xFF000000,0xFF000000,0xFF000000,0xFF000000}));
+	return vec_or( vec_perm(src, src, ((v128u8){3,2,1,0,  7,6,5,4,  11,10,9,8,  15,14,13,12})), ((v128u32){0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000}) );
 }
 
 template <bool SWAP_RB>
@@ -213,7 +200,7 @@ FORCEINLINE v128u32 ColorspaceCopy32_AltiVec(const v128u32 &src)
 {
 	if (SWAP_RB)
 	{
-		return vec_perm(src, src, ((v128u8){0,3,2,1,  4,7,6,5,  8,11,10,9,  12,15,14,13}));
+		return vec_perm(src, src, ((v128u8){2,1,0,3,  6,5,4,7,  10,9,8,11,  14,13,12,15}));
 	}
 	
 	return src;
