@@ -412,17 +412,15 @@ static NSMutableDictionary *saveTypeValues = nil;
 		return newImage;
 	}
 	
-	NSUInteger w = ROM_ICON_WIDTH;
-	NSUInteger h = ROM_ICON_HEIGHT;
 	NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-																		 pixelsWide:w
-																		 pixelsHigh:h
+																		 pixelsWide:ROM_ICON_WIDTH
+																		 pixelsHigh:ROM_ICON_HEIGHT
 																	  bitsPerSample:8
 																	samplesPerPixel:4
 																		   hasAlpha:YES
 																		   isPlanar:NO
 																	 colorSpaceName:NSCalibratedRGBColorSpace
-																		bytesPerRow:w * 4
+																		bytesPerRow:ROM_ICON_WIDTH * 4
 																	   bitsPerPixel:32];
 	
 	if(imageRep == nil)
@@ -436,10 +434,9 @@ static NSMutableDictionary *saveTypeValues = nil;
 	RomIconToRGBA8888(bitmapData);
 	
 #ifdef MSB_FIRST
-	uint32_t *bitmapDataEnd = bitmapData + (w * h);
-	while (bitmapData < bitmapDataEnd)
+	for (size_t i = 0; i < ROM_ICON_WIDTH * ROM_ICON_HEIGHT; i++)
 	{
-		*bitmapData++ = CFSwapInt32LittleToHost(*bitmapData);
+		bitmapData[i] = LE_TO_LOCAL_32(bitmapData[i]);
 	}
 #endif
 	

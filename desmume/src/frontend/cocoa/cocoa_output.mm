@@ -722,10 +722,9 @@
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 #ifdef MSB_FIRST
-	uint32_t *bitmapDataEnd = bitmapData + (w * h);
-	while (bitmapData < bitmapDataEnd)
+	for (size_t i = 0; i < w * h; i++)
 	{
-		*bitmapData++ = CFSwapInt32LittleToHost(*bitmapData);
+		bitmapData[i] = LE_TO_LOCAL_32(bitmapData[i]);
 	}
 #endif
 	
