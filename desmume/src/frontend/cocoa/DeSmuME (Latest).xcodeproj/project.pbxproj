@@ -894,6 +894,7 @@
 		ABB0FBD91A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB0FBD81A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png */; };
 		ABB0FBDA1A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB0FBD81A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png */; };
 		ABB0FBDB1A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB0FBD81A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png */; };
+		ABB1C9451F4D6B340004844F /* macosx_10_5_compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */; };
 		ABB24F6D1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */; };
 		ABB24F6E1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */; };
 		ABB24F6F1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */; };
@@ -1208,7 +1209,7 @@
 		AB000DC61CCC6B0700413F02 /* retro_dirent.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = retro_dirent.c; sourceTree = "<group>"; };
 		AB000DC71CCC6B0700413F02 /* retro_stat.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = retro_stat.c; sourceTree = "<group>"; };
 		AB0038A61872A96700B0B055 /* Image_PaddleController.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_PaddleController.png; path = images/Image_PaddleController.png; sourceTree = "<group>"; };
-		AB00E87A14205EAE00DE561F /* English */ = {isa = PBXFileReference; fileEncoding = 2483028224; lastKnownFileType = text.plist.strings; name = English; path = translations/English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		AB00E87A14205EAE00DE561F /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = English; path = translations/English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		AB00E87D14205EBC00DE561F /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = translations/English.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		AB00E89114205ECC00DE561F /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; lineEnding = 0; name = English; path = translations/English.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB01005C170D07AF00D70FBE /* InputProfileController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InputProfileController.h; sourceTree = "<group>"; };
@@ -4160,6 +4161,7 @@
 				AB405654169F5DBB0016AC3E /* operand.cpp in Sources */,
 				AB405657169F5DBB0016AC3E /* stringbuilder.cpp in Sources */,
 				AB40565A169F5DBB0016AC3E /* stringutil.cpp in Sources */,
+				ABB1C9451F4D6B340004844F /* macosx_10_5_compat.cpp in Sources */,
 				AB000DCF1CCC6B0700413F02 /* retro_dirent.c in Sources */,
 				AB40565D169F5DBB0016AC3E /* virtualmemory.cpp in Sources */,
 				AB405660169F5DBB0016AC3E /* zonememory.cpp in Sources */,
