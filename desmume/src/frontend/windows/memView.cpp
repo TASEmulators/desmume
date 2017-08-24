@@ -591,7 +591,7 @@ INT_PTR CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 						{
 						case MEMVIEW_ARM9:
 						case MEMVIEW_ARM7:
-							DEBUG_dumpMemory(&f);
+							DEBUG_dumpMemory(f);
 							break;
 						default:
 							{

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -2080,7 +2080,7 @@ DEFINE_LUA_FUNCTION(state_save, "location[,option]")
 			if((*ppEmuFile)->fail())
 				luaL_error(L, "failed to save, savestate object was dead.");
 
-			savestate_save(*ppEmuFile, 0);
+			savestate_save(**ppEmuFile, 0);
 
 			if((*ppEmuFile)->fail())
 				luaL_error(L, "failed to save savestate!");
@@ -2135,7 +2135,7 @@ DEFINE_LUA_FUNCTION(state_load, "location[,option]")
 			if((*ppEmuFile)->size() == 0)
 				luaL_error(L, "failed to load, savestate wasn't saved first.");
 
-			savestate_load(*ppEmuFile);
+			savestate_load(**ppEmuFile);
 
 			if((*ppEmuFile)->fail())
 				luaL_error(L, "failed to load savestate!");
@@ -2276,7 +2276,7 @@ DEFINE_LUA_FUNCTION(state_verify, "location[,option]")
 				luaL_error(L, "failed to verify, savestate object was dead.");
 
 			EMUFILE_MEMORY_VERIFIER verifier (*ppEmuFile);
-			savestate_save(&verifier, 0);
+			savestate_save(verifier, 0);
 			if(verifier.differences.size())
 			{
 				fputs("\n", stdout);

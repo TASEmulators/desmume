@@ -205,10 +205,10 @@ bool LoadSample(const char *name)
 			return false;
 	}
    
-	 if (!formatChunk(&inf))
+	 if (!formatChunk(inf))
       return false;
     
-	 if (!dataChunk(&inf))
+	 if (!dataChunk(inf))
 	 {
 		 MessageBox(0,"not a valid WAVE file. some unknown problem.",0,0);
 		 return false;

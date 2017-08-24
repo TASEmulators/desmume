@@ -125,7 +125,7 @@ void Describe(HWND hwndDlg)
 	EMUFILE_FILE fp(playfilename,"rb");
 	if(fp.fail()) return;
 	MovieData md;
-	LoadFM2(md, &fp, INT_MAX, false);
+	LoadFM2(md, fp, INT_MAX, false);
 
 	u32 num_frames = md.records.size();
 
