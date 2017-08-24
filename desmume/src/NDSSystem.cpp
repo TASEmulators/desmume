@@ -131,13 +131,13 @@ void NDS_SetupDefaultFirmware()
 
 void NDS_RunAdvansceneAutoImport()
 {
-	if(CommonSettings.run_advanscene_import != "")
+	if (CommonSettings.run_advanscene_import != "")
 	{
 		std::string fname = CommonSettings.run_advanscene_import;
 		std::string fname_out = fname + ".ddb";
 		EMUFILE_FILE outf(fname_out,"wb");
-		u32 ret = advsc.convertDB(fname.c_str(),&outf);
-		if(ret == 0)
+		u32 ret = advsc.convertDB(fname.c_str(),outf);
+		if (ret == 0)
 			exit(0);
 		else exit(1);
 	}
@@ -909,18 +909,18 @@ struct TSequenceItem
 	u32 param;
 	bool enabled;
 
-	virtual void save(EMUFILE* os)
+	virtual void save(EMUFILE &os)
 	{
-		write64le(timestamp,os);
-		write32le(param,os);
-		writebool(enabled,os);
+		os.write_64LE(timestamp);
+		os.write_32LE(param);
+		os.write_bool32(enabled);
 	}
 
-	virtual bool load(EMUFILE* is)
+	virtual bool load(EMUFILE &is)
 	{
-		if(read64le(&timestamp,is) != 1) return false;
-		if(read32le(&param,is) != 1) return false;
-		if(readbool(&enabled,is) != 1) return false;
+		if (is.read_64LE(timestamp) != 1) return false;
+		if (is.read_32LE(param) != 1) return false;
+		if (is.read_bool32(enabled) != 1) return false;
 		return true;
 	}
 
@@ -1191,11 +1191,11 @@ struct Sequencer
 	void execHardware();
 	u64 findNext();
 
-	void save(EMUFILE* os)
+	void save(EMUFILE &os)
 	{
-		write64le(nds_timer,os);
-		write64le(nds_arm9_timer,os);
-		write64le(nds_arm7_timer,os);
+		os.write_64LE(nds_timer);
+		os.write_64LE(nds_arm9_timer);
+		os.write_64LE(nds_arm7_timer);
 		dispcnt.save(os);
 		divider.save(os);
 		sqrtunit.save(os);
@@ -1210,17 +1210,17 @@ struct Sequencer
 #undef SAVE
 	}
 
-	bool load(EMUFILE* is, int version)
+	bool load(EMUFILE &is, int version)
 	{
-		if(read64le(&nds_timer,is) != 1) return false;
-		if(read64le(&nds_arm9_timer,is) != 1) return false;
-		if(read64le(&nds_arm7_timer,is) != 1) return false;
-		if(!dispcnt.load(is)) return false;
-		if(!divider.load(is)) return false;
-		if(!sqrtunit.load(is)) return false;
-		if(!gxfifo.load(is)) return false;
-		if(!readslot1.load(is)) return false;
-		if(version >= 1) if(!wifi.load(is)) return false;
+		if (is.read_64LE(nds_timer) != 1) return false;
+		if (is.read_64LE(nds_arm9_timer) != 1) return false;
+		if (is.read_64LE(nds_arm7_timer) != 1) return false;
+		if (!dispcnt.load(is)) return false;
+		if (!divider.load(is)) return false;
+		if (!sqrtunit.load(is)) return false;
+		if (!gxfifo.load(is)) return false;
+		if (!readslot1.load(is)) return false;
+		if (version >= 1) if(!wifi.load(is)) return false;
 #define LOAD(I,X,Y) if(!I##_##X##_##Y .load(is)) return false;
 		LOAD(timer,0,0); LOAD(timer,0,1); LOAD(timer,0,2); LOAD(timer,0,3); 
 		LOAD(timer,1,0); LOAD(timer,1,1); LOAD(timer,1,2); LOAD(timer,1,3); 
@@ -1742,23 +1742,23 @@ void Sequencer::execHardware()
 
 void execHardware_interrupts();
 
-static void saveUserInput(EMUFILE* os);
-static bool loadUserInput(EMUFILE* is, int version);
+static void saveUserInput(EMUFILE &os);
+static bool loadUserInput(EMUFILE &is, int version);
 
-void nds_savestate(EMUFILE* os)
+void nds_savestate(EMUFILE &os)
 {
 	//version
-	write32le(3,os);
+	os.write_32LE(3);
 
 	sequencer.save(os);
 
 	saveUserInput(os);
 
-	write32le(LidClosed,os);
-	write8le(countLid,os);
+	os.write_32LE(LidClosed);
+	os.write_u8(countLid);
 }
 
-bool nds_loadstate(EMUFILE* is, int size)
+bool nds_loadstate(EMUFILE &is, int size)
 {
 	// this isn't part of the savestate loading logic, but
 	// don't skip the next frame after loading a savestate
@@ -1766,19 +1766,19 @@ bool nds_loadstate(EMUFILE* is, int size)
 
 	//read version
 	u32 version;
-	if(read32le(&version,is) != 1) return false;
+	if (is.read_32LE(version) != 1) return false;
 
-	if(version > 3) return false;
+	if (version > 3) return false;
 
 	bool temp = true;
 	temp &= sequencer.load(is, version);
-	if(version <= 1 || !temp) return temp;
+	if (version <= 1 || !temp) return temp;
 	temp &= loadUserInput(is, version);
 
-	if(version < 3) return temp;
+	if (version < 3) return temp;
 
-	read32le(&LidClosed,is);
-	read8le(&countLid,is);
+	is.read_32LE(LidClosed);
+	is.read_u8(countLid);
 
 	return temp;
 }
@@ -2688,7 +2688,7 @@ static std::string MakeInputDisplayString(u16 pad, u16 padExt) {
 
 
 buttonstruct<bool> Turbo;
-buttonstruct<int> TurboTime;
+buttonstruct<u32> TurboTime;
 buttonstruct<bool> AutoHold;
 
 void ClearAutoHold(void) {
@@ -2740,44 +2740,45 @@ const UserInput& NDS_getFinalUserInput()
 }
 
 
-static void saveUserInput(EMUFILE* os, UserInput& input)
+static void saveUserInput(EMUFILE &os, UserInput &input)
 {
-	os->fwrite((const char*)input.buttons.array, 14);
-	writebool(input.touch.isTouch, os);
-	write16le(input.touch.touchX, os);
-	write16le(input.touch.touchY, os);
-	write32le(input.mic.micButtonPressed, os);
+	os.fwrite(input.buttons.array, 14);
+	os.write_bool32(input.touch.isTouch);
+	os.write_16LE(input.touch.touchX);
+	os.write_16LE(input.touch.touchY);
+	os.write_32LE(input.mic.micButtonPressed);
 }
-static bool loadUserInput(EMUFILE* is, UserInput& input, int version)
+static bool loadUserInput(EMUFILE &is, UserInput &input, int version)
 {
-	is->fread((char*)input.buttons.array, 14);
-	readbool(&input.touch.isTouch, is);
-	read16le(&input.touch.touchX, is);
-	read16le(&input.touch.touchY, is);
-	read32le(&input.mic.micButtonPressed, is);
+	is.fread(input.buttons.array, 14);
+	is.read_bool32(input.touch.isTouch);
+	is.read_16LE(input.touch.touchX);
+	is.read_16LE(input.touch.touchY);
+	is.read_32LE(input.mic.micButtonPressed);
 	return true;
 }
-static void resetUserInput(UserInput& input)
+static void resetUserInput(UserInput &input)
 {
 	memset(&input, 0, sizeof(UserInput));
 }
 // (userinput is kind of a misnomer, e.g. finalUserInput has to mirror nds.pad, nds.touchX, etc.)
-static void saveUserInput(EMUFILE* os)
+static void saveUserInput(EMUFILE &os)
 {
 	saveUserInput(os, finalUserInput);
 	saveUserInput(os, intermediateUserInput); // saved in case a savestate is made during input processing (which Lua could do if nothing else)
-	writebool(validToProcessInput, os);
-	for(int i = 0; i < 14; i++)
-		write32le(TurboTime.array[i], os); // saved to make autofire more tolerable to use with re-recording
+	os.write_bool32(validToProcessInput);
+	for (int i = 0; i < 14; i++)
+		os.write_32LE(TurboTime.array[i]); // saved to make autofire more tolerable to use with re-recording
 }
-static bool loadUserInput(EMUFILE* is, int version)
+static bool loadUserInput(EMUFILE &is, int version)
 {
 	bool rv = true;
 	rv &= loadUserInput(is, finalUserInput, version);
 	rv &= loadUserInput(is, intermediateUserInput, version);
-	readbool(&validToProcessInput, is);
-	for(int i = 0; i < 14; i++)
-		read32le((u32*)&TurboTime.array[i], is);
+	is.read_bool32(validToProcessInput);
+	for (int i = 0; i < 14; i++)
+		is.read_32LE(TurboTime.array[i]);
+	
 	return rv;
 }
 static void resetUserInput()

@@ -1,7 +1,7 @@
 /*
 The MIT License
 
-Copyright (C) 2009-2015 DeSmuME team
+Copyright (C) 2009-2017 DeSmuME team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -166,163 +166,298 @@ EMUFILE* EMUFILE_MEMORY::memwrap()
 	return this;
 }
 
-void EMUFILE::write64le(u64* val)
+size_t EMUFILE::write_64LE(s64 s64valueIn)
 {
-	write64le(*val);
+	return write_64LE(*(u64 *)&s64valueIn);
 }
 
-void EMUFILE::write64le(u64 val)
+size_t EMUFILE::write_64LE(u64 u64valueIn)
 {
-	val = LOCAL_TO_LE_64(val);
-	fwrite(&val,8);
+	u64valueIn = LOCAL_TO_LE_64(u64valueIn);
+	fwrite(&u64valueIn,8);
+	return 8;
 }
 
-
-size_t EMUFILE::read64le(u64 *Bufo)
+size_t EMUFILE::read_64LE(s64 &s64valueOut)
 {
-	u64 buf;
-	if(fread((char*)&buf,8) != 8)
+	return read_64LE(*(u64 *)&s64valueOut);
+}
+
+size_t EMUFILE::read_64LE(u64 &u64valueOut)
+{
+	u64 temp = 0;
+	if (fread(&temp,8) != 8)
 		return 0;
 	
-	*Bufo = LE_TO_LOCAL_64(buf);
+	u64valueOut = LE_TO_LOCAL_64(temp);
 	
 	return 1;
 }
 
-u64 EMUFILE::read64le()
+s64 EMUFILE::read_s64LE()
 {
-	u64 temp;
-	read64le(&temp);
-	return temp;
+	s64 value = 0;
+	read_64LE(value);
+	return value;
 }
 
-void EMUFILE::write32le(u32* val)
+u64 EMUFILE::read_u64LE()
 {
-	write32le(*val);
+	u64 value = 0;
+	read_64LE(value);
+	return value;
 }
 
-void EMUFILE::write32le(u32 val)
+size_t EMUFILE::write_32LE(s32 s32valueIn)
 {
-	val = LOCAL_TO_LE_32(val);
-	fwrite(&val,4);
+	return write_32LE(*(u32 *)&s32valueIn);
 }
 
-size_t EMUFILE::read32le(s32* Bufo) { return read32le((u32*)Bufo); }
-
-size_t EMUFILE::read32le(u32* Bufo)
+size_t EMUFILE::write_32LE(u32 u32valueIn)
 {
-	u32 buf;
-	if(fread(&buf,4)<4)
+	u32valueIn = LOCAL_TO_LE_32(u32valueIn);
+	fwrite(&u32valueIn,4);
+	return 4;
+}
+
+size_t EMUFILE::read_32LE(s32 &s32valueOut)
+{
+	return read_32LE(*(u32 *)&s32valueOut);
+}
+
+size_t EMUFILE::read_32LE(u32 &u32valueOut)
+{
+	u32 temp = 0;
+	if (fread(&temp,4) != 4)
 		return 0;
 	
-	*Bufo = LE_TO_LOCAL_32(buf);
+	u32valueOut = LE_TO_LOCAL_32(temp);
 	
 	return 1;
 }
 
-u32 EMUFILE::read32le()
+s32 EMUFILE::read_s32LE()
 {
-	u32 ret;
-	read32le(&ret);
-	return ret;
+	s32 value = 0;
+	read_32LE(value);
+	return value;
 }
 
-void EMUFILE::write16le(u16* val)
+u32 EMUFILE::read_u32LE()
 {
-	write16le(*val);
+	u32 value = 0;
+	read_32LE(value);
+	return value;
 }
 
-void EMUFILE::write16le(u16 val)
+size_t EMUFILE::write_16LE(s16 s16valueIn)
 {
-	val = LOCAL_TO_LE_16(val);
-	fwrite(&val,2);
+	return write_16LE(*(u16 *)&s16valueIn);
 }
 
-size_t EMUFILE::read16le(s16* Bufo) { return read16le((u16*)Bufo); }
-
-size_t EMUFILE::read16le(u16* Bufo)
+size_t EMUFILE::write_16LE(u16 u16valueIn)
 {
-	u32 buf;
-	if(fread(&buf,2)<2)
+	u16valueIn = LOCAL_TO_LE_16(u16valueIn);
+	fwrite(&u16valueIn,2);
+	return 2;
+}
+
+size_t EMUFILE::read_16LE(s16 &s16valueOut)
+{
+	return read_16LE(*(u16 *)&s16valueOut);
+}
+
+size_t EMUFILE::read_16LE(u16 &u16valueOut)
+{
+	u32 temp = 0;
+	if (fread(&temp,2) != 2)
 		return 0;
 	
-	*Bufo = LE_TO_LOCAL_16(buf);
+	u16valueOut = LE_TO_LOCAL_16(temp);
 	
 	return 1;
 }
 
-u16 EMUFILE::read16le()
+s16 EMUFILE::read_s16LE()
 {
-	u16 ret;
-	read16le(&ret);
+	s16 value = 0;
+	read_16LE(value);
+	return value;
+}
+
+u16 EMUFILE::read_u16LE()
+{
+	u16 value = 0;
+	read_16LE(value);
+	return value;
+}
+
+size_t EMUFILE::write_u8(u8 u8valueIn)
+{
+	fwrite(&u8valueIn,1);
+	return 1;
+}
+
+size_t EMUFILE::read_u8(u8 &u8valueOut)
+{
+	return fread(&u8valueOut,1);
+}
+
+u8 EMUFILE::read_u8()
+{
+	u8 value = 0;
+	fread(&value,1);
+	return value;
+}
+
+size_t EMUFILE::write_doubleLE(double doubleValueIn)
+{
+	return write_64LE(double_to_u64(doubleValueIn));
+}
+
+size_t EMUFILE::read_doubleLE(double &doubleValueOut)
+{
+	u64 temp = 0;
+	size_t ret = read_64LE(temp);
+	doubleValueOut = u64_to_double(temp);
 	return ret;
 }
 
-void EMUFILE::write8le(u8* val)
+double EMUFILE::read_doubleLE()
 {
-	write8le(*val);
+	double value = 0.0;
+	read_doubleLE(value);
+	return value;
 }
 
-
-void EMUFILE::write8le(u8 val)
+size_t EMUFILE::write_floatLE(float floatValueIn)
 {
-	fwrite(&val,1);
+	return write_32LE(float_to_u32(floatValueIn));
 }
 
-size_t EMUFILE::read8le(u8* val)
+size_t EMUFILE::read_floatLE(float &floatValueOut)
 {
-	return fread(val,1);
-}
-
-u8 EMUFILE::read8le()
-{
-	u8 temp;
-	fread(&temp,1);
-	return temp;
-}
-
-void EMUFILE::writedouble(double* val)
-{
-	write64le(double_to_u64(*val));
-}
-void EMUFILE::writedouble(double val)
-{
-	write64le(double_to_u64(val));
-}
-
-double EMUFILE::readdouble()
-{
-	double temp;
-	readdouble(&temp);
-	return temp;
-}
-
-size_t EMUFILE::readdouble(double* val)
-{
-	u64 temp;
-	size_t ret = read64le(&temp);
-	*val = u64_to_double(temp);
+	u32 temp = 0;
+	size_t ret = read_32LE(temp);
+	floatValueOut = u32_to_float(temp);
 	return ret;
 }
 
-void EMUFILE::writeMemoryStream(EMUFILE_MEMORY* ms)
+float EMUFILE::read_floatLE()
 {
-	s32 size = (s32)ms->size();
-	write32le(size);
-	if(size>0)
+	float value = 0.0f;
+	read_floatLE(value);
+	return value;
+}
+
+size_t EMUFILE::write_bool32(bool boolValueIn)
+{
+	return write_32LE((boolValueIn) ? 1 : 0);
+}
+
+size_t EMUFILE::read_bool32(bool &boolValueOut)
+{
+	u32 temp = 0;
+	size_t ret = read_32LE(temp);
+	
+	if (ret != 0)
+		boolValueOut = (temp != 0);
+	
+	return ret;
+}
+
+bool EMUFILE::read_bool32()
+{
+	bool value = false;
+	read_bool32(value);
+	return value;
+}
+
+size_t EMUFILE::write_bool8(bool boolValueIn)
+{
+	return write_u8((boolValueIn) ? 1 : 0);
+}
+
+size_t EMUFILE::read_bool8(bool &boolValueOut)
+{
+	u8 temp = 0;
+	size_t ret = read_u8(temp);
+	
+	if (ret != 0)
+		boolValueOut = (temp != 0);
+	
+	return ret;
+}
+
+bool EMUFILE::read_bool8()
+{
+	bool value = false;
+	read_bool8(value);
+	return value;
+}
+
+size_t EMUFILE::write_buffer(std::vector<u8> &vec)
+{
+	u32 size = (u32)vec.size();
+	write_32LE(size);
+	
+	if (size > 0)
+		fwrite(&vec[0],size);
+	
+	return (size + 4);
+}
+
+size_t EMUFILE::read_buffer(std::vector<u8> &vec)
+{
+	u32 size = 0;
+	
+	if (read_32LE(size) != 1)
+		return 0;
+	
+	vec.resize(size);
+	
+	if (size > 0)
 	{
-		std::vector<u8>* vec = ms->get_vec();
+		size_t ret = fread(&vec[0],size);
+		
+		if (ret != size)
+			return 0;
+	}
+	
+	return 1;
+}
+
+size_t EMUFILE::write_MemoryStream(EMUFILE_MEMORY &ms)
+{
+	u32 size = (u32)ms.size();
+	write_32LE(size);
+	
+	if (size > 0)
+	{
+		std::vector<u8> *vec = ms.get_vec();
 		fwrite(&vec->at(0),size);
 	}
+	
+	return (size + 4);
 }
 
-void EMUFILE::readMemoryStream(EMUFILE_MEMORY* ms)
+size_t EMUFILE::read_MemoryStream(EMUFILE_MEMORY &ms)
 {
-	s32 size = read32le();
-	if(size != 0)
+	u32 size = 0;
+	
+	if (read_32LE(size) != 1)
+		return 0;
+	
+	if (size > 0)
 	{
-		std::vector<u8> temp(size);
-		fread(&temp[0],size);
-		ms->fwrite(&temp[0],size);
+		std::vector<u8> vec(size);
+		size_t ret = fread(&vec[0],size);
+		
+		if (ret != size)
+			return 0;
+		
+		ms.fwrite(&vec[0],size);
 	}
+	
+	return 1;
 }

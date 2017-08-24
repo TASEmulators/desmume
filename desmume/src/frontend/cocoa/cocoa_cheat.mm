@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2015 DeSmuME team
+	Copyright (C) 2012-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1071,7 +1071,12 @@ static NSImage *iconCodeBreaker = nil;
 	u32 itemCount = cheatList->getSize();
 	for (u32 i = 0; i < itemCount; i++)
 	{
-		[newList addObject:[[[CocoaDSCheatItem alloc] initWithCheatData:cheatList->getItemByIndex(i)] autorelease]];
+		CocoaDSCheatItem *newItem = [[CocoaDSCheatItem alloc] initWithCheatData:cheatList->getItemByIndex(i)];
+		
+		if (newItem != nil)
+		{
+			[newList addObject:[newItem autorelease]];
+		}
 	}
 	
 	return newList;
@@ -1184,7 +1189,7 @@ static NSImage *iconCodeBreaker = nil;
 	}
 	else if (theRwlock == NULL && !isUsingDummyRWlock)
 	{
-		rwlockCoreExecute = (pthread_rwlock_t *)malloc(sizeof(pthread_mutex_t));
+		rwlockCoreExecute = (pthread_rwlock_t *)malloc(sizeof(pthread_rwlock_t));
 		pthread_rwlock_init(rwlockCoreExecute, NULL);
 		isUsingDummyRWlock = YES;
 		return;

@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006 Mic
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -158,7 +158,7 @@ static unsigned int cflash_read(unsigned int address)
 			{
 				if(file)
 				{
-					u8 data[2];
+					u8 data[2] = {0,0};
 					file->fseek(currLBA, SEEK_SET);
 					elems_read += file->fread(data,2);
 					ret_value = data[1] << 8 | data[0];

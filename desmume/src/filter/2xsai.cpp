@@ -1034,9 +1034,9 @@ void Scale_2xSaI (u8 *srcPtr, u32 srcPitch, u8 * /* deltaPtr */,
       u32 E, F, G, H;
       u32 I, J, K, L;
       u32 x1, x2, a1, f1, f2;
-      u32 position, product1;
 
-      position = w >> 16;
+      u32 position = w >> 16;
+
       A = bP[position]; // current pixel
       B = bP[position + 1];     // next pixel
       C = bP[position + Nextline];
@@ -1052,6 +1052,8 @@ void Scale_2xSaI (u8 *srcPtr, u32 srcPitch, u8 * /* deltaPtr */,
 
       x1 = w & 0xffff;  // fraction part of fixed point
       x2 = 0x10000 - x1;
+
+      u32 product1 = A;
 
       /*0*/
       if (A == B && C == D && A == C)

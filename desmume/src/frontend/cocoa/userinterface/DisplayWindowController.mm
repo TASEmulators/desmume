@@ -1209,7 +1209,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
 			[(NSMenuItem *)theItem setState:([self videoSourceDeposterize]) ? NSOnState : NSOffState];
-			enable = [[self view] canUseShaderBasedFilters];
 		}
 		
 		enable = [[self view] canUseShaderBasedFilters];

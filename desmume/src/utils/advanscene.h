@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2011-2015 DeSmuME team
+	Copyright (C) 2011-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ public:
 	}
 	void setDatabase(const char *path);
 	std::string getDatabase() const { return database_path; }
-	u32 convertDB(const char *in_filename, EMUFILE* output);
+	u32 convertDB(const char *in_filename, EMUFILE &output);
 	u8 checkDB(const char *ROMserial, u32 crc);
 	u32 getSaveType() { return saveType; }
 	u32 getCRC32() { return crc32; }

@@ -1,7 +1,7 @@
 /*
 The MIT License
 
-Copyright (C) 2009-2015 DeSmuME team
+Copyright (C) 2009-2017 DeSmuME team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -85,32 +85,54 @@ public:
 
 	virtual size_t _fread(const void *ptr, size_t bytes) = 0;
 	virtual size_t fwrite(const void *ptr, size_t bytes) = 0;
-
-	void write64le(u64* val);
-	void write64le(u64 val);
-	size_t read64le(u64* val);
-	u64 read64le();
-	void write32le(u32* val);
-	void write32le(s32* val) { write32le((u32*)val); }
-	void write32le(u32 val);
-	size_t read32le(u32* val);
-	size_t read32le(s32* val);
-	u32 read32le();
-	void write16le(u16* val);
-	void write16le(s16* val) { write16le((u16*)val); }
-	void write16le(u16 val);
-	size_t read16le(s16* Bufo);
-	size_t read16le(u16* val);
-	u16 read16le();
-	void write8le(u8* val);
-	void write8le(u8 val);
-	size_t read8le(u8* val);
-	u8 read8le();
-	void writedouble(double* val);
-	void writedouble(double val);
-	double readdouble();
-	size_t readdouble(double* val);
-
+	
+	size_t write_64LE(s64 s64valueIn);
+	size_t write_64LE(u64 u64valueIn);
+	size_t read_64LE(s64 &s64valueOut);
+	size_t read_64LE(u64 &u64valueOut);
+	s64 read_s64LE();
+	u64 read_u64LE();
+	
+	size_t write_32LE(s32 s32valueIn);
+	size_t write_32LE(u32 u32valueIn);
+	size_t read_32LE(s32 &s32valueOut);
+	size_t read_32LE(u32 &u32valueOut);
+	s32 read_s32LE();
+	u32 read_u32LE();
+	
+	size_t write_16LE(s16 s16valueIn);
+	size_t write_16LE(u16 u16valueIn);
+	size_t read_16LE(s16 &s16valueOut);
+	size_t read_16LE(u16 &u16valueOut);
+	s16 read_s16LE();
+	u16 read_u16LE();
+	
+	size_t write_u8(u8 u8valueIn);
+	size_t read_u8(u8 &u8valueOut);
+	u8 read_u8();
+	
+	size_t write_bool32(bool boolValueIn);
+	size_t read_bool32(bool &boolValueOut);
+	bool read_bool32();
+	
+	size_t write_bool8(bool boolValueIn);
+	size_t read_bool8(bool &boolValueOut);
+	bool read_bool8();
+	
+	size_t write_doubleLE(double doubleValueIn);
+	size_t read_doubleLE(double &doubleValueOut);
+	double read_doubleLE();
+	
+	size_t write_floatLE(float floatValueIn);
+	size_t read_floatLE(float &floatValueOut);
+	float read_floatLE();
+	
+	size_t write_buffer(std::vector<u8> &vec);
+	size_t read_buffer(std::vector<u8> &vec);
+	
+	size_t write_MemoryStream(EMUFILE_MEMORY &ms);
+	size_t read_MemoryStream(EMUFILE_MEMORY &ms);
+	
 	virtual int fseek(int offset, int origin) = 0;
 
 	virtual int ftell() = 0;
@@ -118,10 +140,6 @@ public:
 	virtual void fflush() = 0;
 
 	virtual void truncate(s32 length) = 0;
-
-	void writeMemoryStream(EMUFILE_MEMORY* ms);
-	void readMemoryStream(EMUFILE_MEMORY* ms);
-
 };
 
 //todo - handle read-only specially?

@@ -69,8 +69,8 @@ class Slot1Comp_Protocol
 {
 public:
 
-	void savestate(EMUFILE* os);
-	void loadstate(EMUFILE* is);
+	void savestate(EMUFILE &os);
+	void loadstate(EMUFILE &is);
 	
 	//set some kind of protocol/hardware reset state
 	void reset(ISlot1Comp_Protocol_Client* client);

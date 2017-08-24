@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2015 DeSmuME team
+	Copyright (C) 2011-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -151,7 +151,7 @@ volatile bool execute = true;
 	cdsController = nil;
 	cdsFirmware = nil;
 	cdsGPU = [[[[CocoaDSGPU alloc] init] autorelease] retain];
-	cdsOutputList = [[NSMutableArray alloc] initWithCapacity:32];
+	cdsOutputList = [[[[NSMutableArray alloc] initWithCapacity:32] autorelease] retain];
 	
 	emulationFlags = EMULATION_ADVANCED_BUS_LEVEL_TIMING_MASK;
 	emuFlagAdvancedBusLevelTiming = YES;
@@ -235,11 +235,11 @@ volatile bool execute = true;
 	[self setCoreState:CORESTATE_PAUSE];
 	
 	[self removeAllOutputs];
-	[cdsOutputList release];
 	
 	[self setCdsController:nil];
 	[self setCdsFirmware:nil];
 	[self setCdsGPU:nil];
+	[self setCdsOutputList:nil];
 	
 	pthread_cancel(coreThread);
 	pthread_join(coreThread, NULL);

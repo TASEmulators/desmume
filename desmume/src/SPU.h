@@ -137,8 +137,8 @@ public:
 	s16 dequeue();
 	s16 buffer[16];
 	s32 head,tail,size;
-	void save(EMUFILE* fp);
-	bool load(EMUFILE* fp);
+	void save(EMUFILE &fp);
+	bool load(EMUFILE &fp);
 	void reset();
 };
 
@@ -267,8 +267,8 @@ void SPU_Emulate_user(bool mix = true);
 void SPU_DefaultFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
 size_t SPU_DefaultPostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
 
-void spu_savestate(EMUFILE* os);
-bool spu_loadstate(EMUFILE* is, int size);
+void spu_savestate(EMUFILE &os);
+bool spu_loadstate(EMUFILE &is, int size);
 
 enum WAVMode
 {

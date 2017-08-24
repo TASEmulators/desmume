@@ -409,12 +409,12 @@ static INLINE void FlipByteOrder(u8 *src, u32 count)
 }
 #endif
 
-static bool s_slot1_loadstate(EMUFILE* is, int size)
+static bool s_slot1_loadstate(EMUFILE &is, int size)
 {
-	u32 version = is->read32le();
+	u32 version = is.read_u32LE();
 
 	/* version 0: */
-   u8 slotID = is->read32le();
+   u8 slotID = is.read_u32LE();
    slot1Type = NDS_SLOT1_RETAIL_AUTO;
    if (version >= 1)
       slot1_getTypeByID(slotID, slot1Type);
@@ -422,63 +422,63 @@ static bool s_slot1_loadstate(EMUFILE* is, int size)
    slot1_Change(slot1Type);
 
    EMUFILE_MEMORY temp;
-   is->readMemoryStream(&temp);
+   is.read_MemoryStream(temp);
    temp.fseek(0,SEEK_SET);
-   slot1_Loadstate(&temp);
+   slot1_Loadstate(temp);
 
 	return true;
 }
 
-static void s_slot1_savestate(EMUFILE* os)
+static void s_slot1_savestate(EMUFILE &os)
 {
 	u32 version = 1;
-	os->write32le(version);
+	os.write_32LE(version);
 
 	u8 slotID = (u8)slot1_List[slot1_GetSelectedType()]->info()->id();
-	os->write32le(slotID);
+	os.write_32LE(slotID);
 
 	EMUFILE_MEMORY temp;
-	slot1_Savestate(&temp);
-	os->writeMemoryStream(&temp);
+	slot1_Savestate(temp);
+	os.write_MemoryStream(temp);
 }
 
-static bool s_slot2_loadstate(EMUFILE* is, int size)
+static bool s_slot2_loadstate(EMUFILE &is, int size)
 {
-	u32 version = is->read32le();
+	u32 version = is.read_u32LE();
 
 	/* version 0: */
    slot2Type = NDS_SLOT2_AUTO;
-   u8 slotID = is->read32le();
+   u8 slotID = is.read_u32LE();
    if (version == 0)
       slot2_getTypeByID(slotID, slot2Type);
    slot2_Change(slot2Type);
 
    EMUFILE_MEMORY temp;
-   is->readMemoryStream(&temp);
+   is.read_MemoryStream(temp);
    temp.fseek(0,SEEK_SET);
-   slot2_Loadstate(&temp);
+   slot2_Loadstate(temp);
 
 	return true;
 }
 
-static void s_slot2_savestate(EMUFILE* os)
+static void s_slot2_savestate(EMUFILE &os)
 {
 	u32 version = 0;
-	os->write32le(version);
+	os.write_32LE(version);
 
 	//version 0:
 	u8 slotID = (u8)slot2_List[slot2_GetSelectedType()]->info()->id();
-	os->write32le(slotID);
+	os.write_32LE(slotID);
 
 	EMUFILE_MEMORY temp;
-	slot2_Savestate(&temp);
-	os->writeMemoryStream(&temp);
+	slot2_Savestate(temp);
+	os.write_MemoryStream(temp);
 }
 
-static void mmu_savestate(EMUFILE* os)
+static void mmu_savestate(EMUFILE &os)
 {
 	u32 version = 8;
-	write32le(version,os);
+	os.write_32LE(version);
 	
 	//version 2:
 	MMU_new.backupDevice.save_state(os);
@@ -504,61 +504,61 @@ static void mmu_savestate(EMUFILE* os)
 	MMU_new.dsi_tsc.save_state(os);
 
 	//version 8:
-	os->write32le(MMU.fw.size);
-	os->fwrite(MMU.fw.data,MMU.fw.size);
+	os.write_32LE(MMU.fw.size);
+	os.fwrite(MMU.fw.data,MMU.fw.size);
 }
 
-static bool mmu_loadstate(EMUFILE* is, int size)
+static bool mmu_loadstate(EMUFILE &is, int size)
 {
 	//read version
 	u32 version;
-	if(read32le(&version,is) != 1) return false;
+	if (is.read_32LE(version) != 1) return false;
 	
-	if(version == 0 || version == 1)
+	if (version == 0 || version == 1)
 	{
 		u32 bupmem_size;
-		u32 addr_size;
+		u32 addr_size = 0xFFFFFFFF;
 
-		if(version == 0)
+		if (version == 0)
 		{
 			//version 0 was buggy and didnt save the type. 
 			//it would silently fail if there was a size mismatch
 			SAV_silent_fail_flag = true;
-			if(read32le(&bupmem_size,is) != 1) return false;
+			if (is.read_32LE(bupmem_size) != 1) return false;
 			//if(bupmem_size != MMU.bupmem.size) return false; //mismatch between current initialized and saved size
 			addr_size = BackupDevice::addr_size_for_old_save_size(bupmem_size);
 		}
-		else if(version == 1)
+		else if (version == 1)
 		{
 			//version 1 reinitializes the save system with the type that was saved
 			u32 bupmem_type;
-			if(read32le(&bupmem_type,is) != 1) return false;
-			if(read32le(&bupmem_size,is) != 1) return false;
+			if (is.read_32LE(bupmem_type) != 1) return false;
+			if (is.read_32LE(bupmem_size) != 1) return false;
 			addr_size = BackupDevice::addr_size_for_old_save_type(bupmem_type);
-			if(addr_size == 0xFFFFFFFF)
+			if (addr_size == 0xFFFFFFFF)
 				addr_size = BackupDevice::addr_size_for_old_save_size(bupmem_size);
 		}
 
-		if(addr_size == 0xFFFFFFFF)
+		if (addr_size == 0xFFFFFFFF)
 			return false;
 
-		u8* temp = new u8[bupmem_size];
-		is->fread((char*)temp,bupmem_size);
+		u8 *temp = new u8[bupmem_size];
+		is.fread(temp,bupmem_size);
 		MMU_new.backupDevice.load_old_state(addr_size,temp,bupmem_size);
 		delete[] temp;
-		if(is->fail()) return false;
+		if (is.fail()) return false;
 	}
 
-	if(version < 2) return true;
+	if (version < 2) return true;
 
 	bool ok = MMU_new.backupDevice.load_state(is);
 
-	if(version < 3) return ok;
+	if (version < 3) return ok;
 
 	ok &= MMU_new.gxstat.loadstate(is);
 	
-	for(int i=0;i<2;i++)
-		for(int j=0;j<4;j++)
+	for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 4; j++)
 			ok &= MMU_new.dma[i][j].loadstate(is);
 
 	ok &= MMU_timing.arm9codeFetch.loadstate(is, version);
@@ -568,7 +568,7 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 	ok &= MMU_timing.arm9codeCache.loadstate(is, version);
 	ok &= MMU_timing.arm9dataCache.loadstate(is, version);
 
-	if(version < 4) return ok;
+	if (version < 4) return ok;
 
 	ok &= MMU_new.sqrt.loadstate(is,version);
 	ok &= MMU_new.div.loadstate(is,version);
@@ -580,56 +580,62 @@ static bool mmu_loadstate(EMUFILE* is, int size)
 	MMU_new.gxstat.fifo_low = gxFIFO.size <= 127;
 	MMU_new.gxstat.fifo_empty = gxFIFO.size == 0;
 
-	if(version < 5) return ok;
-	if(version < 6) return ok;
+	if (version < 5) return ok;
+	if (version < 6) return ok;
 
 	MMU_new.dsi_tsc.load_state(is);
 
 	//version 6
-	if(version < 7)
+	if (version < 7)
 	{
 		//recover WRAMCNT from the stashed WRAMSTAT memory location
 		MMU.WRAMCNT = MMU.MMU_MEM[ARMCPU_ARM7][0x40][0x241];
 	}
 
-	if(version<8) return ok;
+	if (version < 8) return ok;
 
 	//version 8:
 	delete[] MMU.fw.data;
-	MMU.fw.size = is->read32le();
+	MMU.fw.size = is.read_u32LE();
 	MMU.fw.data = new u8[size];
-	is->fread(MMU.fw.data,MMU.fw.size);
+	is.fread(MMU.fw.data,MMU.fw.size);
 
 	return ok;
 }
 
-static void cp15_savestate(EMUFILE* os)
+static void cp15_savestate(EMUFILE &os)
 {
 	//version
-	write32le(1,os);
+	os.write_32LE(1);
 
 	cp15.saveone(os);
 	//ARM7 not have coprocessor
 	//cp15_saveone((armcp15_t *)NDS_ARM7.coproc[15],os);
 }
 
-static bool cp15_loadstate(EMUFILE* is, int size)
+static bool cp15_loadstate(EMUFILE &is, int size)
 {
 	//read version
 	u32 version;
-	if(read32le(&version,is) != 1) return false;
-	if(version > 1) return false;
+	if (is.read_32LE(version) != 1) return false;
+	if (version > 1) return false;
 
-	if(!cp15.loadone(is)) return false;
+	if (!cp15.loadone(is)) return false;
 	
-	if(version == 0)
+	if (version == 0)
 	{
 		//ARM7 not have coprocessor
+		
+		// TODO: What's going on here with tmp_buf?
 		u8 *tmp_buf = new u8 [sizeof(armcp15_t)];
 		if (!tmp_buf) return false;
-		if(!cp15.loadone(is)) return false;
+		
+		if (!cp15.loadone(is))
+		{
+			delete [] tmp_buf;
+			return false;
+		}
 		delete [] tmp_buf;
-		tmp_buf = NULL;
 	}
 
 	return true;
@@ -741,8 +747,9 @@ void loadstate_slot(int num)
 // in the (most common) case that we already know where the next entry is.
 static const SFORMAT *CheckS(const SFORMAT *guessSF, const SFORMAT *firstSF, u32 size, u32 count, char *desc)
 {
-	const SFORMAT *sf = guessSF ? guessSF : firstSF;
-	while(sf->v)
+	const SFORMAT *sf = (guessSF != NULL) ? guessSF : firstSF;
+	
+	while (sf->v)
 	{
 		//NOT SUPPORTED RIGHT NOW
 		//if(sf->size==~0)		// Link to another SFORMAT structure.
@@ -753,15 +760,20 @@ static const SFORMAT *CheckS(const SFORMAT *guessSF, const SFORMAT *firstSF, u32
 		//	sf++;
 		//	continue;
 		//}
-		if(!memcmp(desc,sf->desc,4))
+		if (!memcmp(desc,sf->desc,4))
 		{
-			if(sf->size != size || sf->count != count)
-				return 0;
-			return sf;
+			if (sf->size != size || sf->count != count)
+			{
+				return NULL;
+			}
+			else
+			{
+				return sf;
+			}
 		}
 
 		// failed to find it, have to keep iterating
-		if(guessSF)
+		if (guessSF != NULL)
 		{
 			sf = firstSF;
 			guessSF = NULL;
@@ -771,50 +783,56 @@ static const SFORMAT *CheckS(const SFORMAT *guessSF, const SFORMAT *firstSF, u32
 			sf++;
 		}
 	}
-	return 0;
+	
+	return NULL;
 }
 
 
-static bool ReadStateChunk(EMUFILE* is, const SFORMAT *sf, int size)
+static bool ReadStateChunk(EMUFILE &is, const SFORMAT *sf, int size)
 {
 	const SFORMAT *tmp = NULL;
 	const SFORMAT *guessSF = NULL;
-	int temp = is->ftell();
+	int temp = is.ftell();
 
-	while(is->ftell()<temp+size)
+	while (is.ftell() < (temp+size))
 	{
 		u32 sz, count;
 
 		char toa[4];
-		is->fread(toa,4);
-		if(is->fail())
+		is.fread(toa,4);
+		if (is.fail())
 			return false;
 
-		if(!read32le(&sz,is)) return false;
-		if(!read32le(&count,is)) return false;
-
-		if((tmp=CheckS(guessSF,sf,sz,count,toa)))
+		if (!is.read_32LE(sz)) return false;
+		if (!is.read_32LE(count)) return false;
+		
+		tmp = CheckS(guessSF,sf,sz,count,toa);
+		
+		if (tmp != NULL)
 		{
 		#ifdef MSB_FIRST
-			if(sz == 1) {
+			if (sz == 1)
+			{
 				//special case: read a huge byte array
-				is->fread((char *)tmp->v,count);
-			} else {
-				for(unsigned int i=0;i<count;i++)
+				is.fread(tmp->v,count);
+			}
+			else
+			{
+				for (size_t i = 0; i < count; i++)
 				{
-					is->fread((char *)tmp->v + i*sz,sz);
-                    FlipByteOrder((u8*)tmp->v + i*sz,sz);
+					is.fread((u8 *)tmp->v + i*sz,sz);
+                    FlipByteOrder((u8 *)tmp->v + i*sz,sz);
 				}
 			}
 		#else
 			// no need to ever loop one at a time if not flipping byte order
-			is->fread((char *)tmp->v,sz*count);
+			is.fread(tmp->v,sz*count);
 		#endif
 			guessSF = tmp + 1;
 		}
 		else
 		{
-			is->fseek(sz*count,SEEK_CUR);
+			is.fseek(sz*count,SEEK_CUR);
 			guessSF = NULL;
 		}
 	} // while(...)
@@ -823,9 +841,9 @@ static bool ReadStateChunk(EMUFILE* is, const SFORMAT *sf, int size)
 
 
 
-static int SubWrite(EMUFILE* os, const SFORMAT *sf)
+static int SubWrite(EMUFILE *os, const SFORMAT *sf)
 {
-	uint32 acc=0;
+	u32 acc=0;
 
 #ifdef DEBUG
 	std::set<std::string> keyset;
@@ -843,12 +861,12 @@ static int SubWrite(EMUFILE* os, const SFORMAT *sf)
 		temp++;
 	}
 
-	while(sf->v)
+	while (sf->v)
 	{
 		//not supported right now
 		//if(sf->size==~0)		//Link to another struct
 		//{
-		//	uint32 tmp;
+		//	u32 tmp;
 
 		//	if(!(tmp=SubWrite(os,(SFORMAT *)sf->v)))
 		//		return(0);
@@ -864,11 +882,11 @@ static int SubWrite(EMUFILE* os, const SFORMAT *sf)
 		acc += 4 + sizeof(sf->size) + sizeof(sf->count);
 		acc += count * size;
 
-		if(os)			//Are we writing or calculating the size of this block?
+		if (os != NULL)			//Are we writing or calculating the size of this block?
 		{
 			os->fwrite(sf->desc,4);
-			write32le(sf->size,os);
-			write32le(sf->count,os);
+			os->write_32LE(sf->size);
+			os->write_32LE(sf->count);
 
 			#ifdef DEBUG
 			//make sure we dont dup any keys
@@ -882,20 +900,24 @@ static int SubWrite(EMUFILE* os, const SFORMAT *sf)
 
 
 		#ifdef MSB_FIRST
-			if(size == 1) {
+			if (size == 1)
+			{
 				//special case: write a huge byte array
-				os->fwrite((char *)sf->v,count);
-			} else {
-				for(int i=0;i<count;i++) {
-					FlipByteOrder((u8*)sf->v + i*size, size);
-					os->fwrite((char*)sf->v + i*size,size);
+				os->fwrite(sf->v,count);
+			}
+			else
+			{
+				for (int i = 0; i < count; i++)
+				{
+					FlipByteOrder((u8 *)sf->v + i*size, size);
+					os->fwrite((u8 *)sf->v + i*size,size);
 					//Now restore the original byte order.
-					FlipByteOrder((u8*)sf->v + i*size, size);
+					FlipByteOrder((u8 *)sf->v + i*size, size);
 				}
 			}
 		#else
 			// no need to ever loop one at a time if not flipping byte order
-			os->fwrite((char *)sf->v,size*count);
+			os->fwrite(sf->v,size*count);
 		#endif
 		}
 		sf++;
@@ -904,38 +926,38 @@ static int SubWrite(EMUFILE* os, const SFORMAT *sf)
 	return(acc);
 }
 
-static int savestate_WriteChunk(EMUFILE* os, int type, const SFORMAT *sf)
+static int savestate_WriteChunk(EMUFILE &os, int type, const SFORMAT *sf)
 {
-	write32le(type,os);
-	if(!sf) return 4;
-	int bsize = SubWrite((EMUFILE*)0,sf);
-	write32le(bsize,os);
+	os.write_32LE(type);
+	if (!sf) return 4;
+	int bsize = SubWrite(NULL,sf);
+	os.write_32LE(bsize);
 
-	if(!SubWrite(os,sf))
+	if (!SubWrite(&os,sf))
 	{
 		return 8;
 	}
 	return (bsize+8);
 }
 
-static void savestate_WriteChunk(EMUFILE* os, int type, void (*saveproc)(EMUFILE* os))
+static void savestate_WriteChunk(EMUFILE &os, int type, void (*saveproc)(EMUFILE &os))
 {
-	u32 pos1 = os->ftell();
+	u32 pos1 = os.ftell();
 
 	//write the type, size(placeholder), and data
-	write32le(type,os);
-	os->fseek(4, SEEK_CUR); // skip the size, we write that later
+	os.write_32LE(type);
+	os.fseek(4, SEEK_CUR); // skip the size, we write that later
 	saveproc(os);
 
 	//get the size
-	u32 pos2 = os->ftell();
+	u32 pos2 = os.ftell();
 	assert(pos2 != (u32)-1); // if this assert fails, saveproc did something bad
 	u32 size = (pos2 - pos1) - (2 * sizeof(u32));
 
 	//fill in the actual size
-	os->fseek(pos1 + sizeof(u32),SEEK_SET);
-	write32le(size,os);
-	os->fseek(pos2,SEEK_SET);
+	os.fseek(pos1 + sizeof(u32),SEEK_SET);
+	os.write_32LE(size);
+	os.fseek(pos2,SEEK_SET);
 
 /*
 // old version of this function,
@@ -951,15 +973,15 @@ static void savestate_WriteChunk(EMUFILE* os, int type, void (*saveproc)(EMUFILE
 	u32 size = mstemp.size();
 
 	//write the type, size, and data
-	write32le(type,os);
-	write32le(size,os);
+	write_32LE(type,os);
+	write_32LE(size,os);
 	os->write(mstemp.buf(),size);
 */
 }
 
-static void writechunks(EMUFILE* os);
+static void writechunks(EMUFILE &os);
 
-bool savestate_save(EMUFILE* outstream, int compressionLevel)
+bool savestate_save(EMUFILE &outstream, int compressionLevel)
 {
 #ifdef HAVE_JIT 
 	arm_jit_sync();
@@ -969,30 +991,24 @@ bool savestate_save(EMUFILE* outstream, int compressionLevel)
 	#endif
 
 	EMUFILE_MEMORY ms;
-	EMUFILE* os;
+	EMUFILE &os = (compressionLevel != Z_NO_COMPRESSION) ? (EMUFILE &)ms : (EMUFILE &)outstream;
 	
-	if(compressionLevel != Z_NO_COMPRESSION)
+	if (compressionLevel == Z_NO_COMPRESSION)
 	{
-		//generate the savestate in memory first
-		os = (EMUFILE*)&ms;
-		writechunks(os);
+		os.fseek(32,SEEK_SET); //skip the header
 	}
-	else
-	{
-		os = outstream;
-		os->fseek(32,SEEK_SET); //skip the header
-		writechunks(os);
-	}
+	
+	writechunks(os);
 
 	//save the length of the file
-	u32 len = os->ftell();
+	u32 len = os.ftell();
 
 	u32 comprlen = 0xFFFFFFFF;
 	u8* cbuf;
 
 	//compress the data
 	int error = Z_OK;
-	if(compressionLevel != Z_NO_COMPRESSION)
+	if (compressionLevel != Z_NO_COMPRESSION)
 	{
 		cbuf = ms.buf();
 		uLongf comprlen2;
@@ -1007,16 +1023,16 @@ bool savestate_save(EMUFILE* outstream, int compressionLevel)
 	}
 
 	//dump the header
-	outstream->fseek(0,SEEK_SET);
-	outstream->fwrite(magic,16);
-	write32le(SAVESTATE_VERSION,outstream);
-	write32le(EMU_DESMUME_VERSION_NUMERIC(),outstream); //desmume version
-	write32le(len,outstream); //uncompressed length
-	write32le(comprlen,outstream); //compressed length (-1 if it is not compressed)
+	outstream.fseek(0,SEEK_SET);
+	outstream.fwrite(magic,16);
+	outstream.write_32LE(SAVESTATE_VERSION);
+	outstream.write_32LE(EMU_DESMUME_VERSION_NUMERIC()); //desmume version
+	outstream.write_32LE(len); //uncompressed length
+	outstream.write_32LE(comprlen); //compressed length (-1 if it is not compressed)
 
-	if(compressionLevel != Z_NO_COMPRESSION)
+	if (compressionLevel != Z_NO_COMPRESSION)
 	{
-		outstream->fwrite((char*)cbuf,comprlen==(u32)-1?len:comprlen);
+		outstream.fwrite(cbuf,comprlen==(u32)-1?len:comprlen);
 		delete[] cbuf;
 	}
 
@@ -1028,9 +1044,9 @@ bool savestate_save (const char *file_name)
 	EMUFILE_MEMORY ms;
 	size_t elems_written;
 #ifdef HAVE_LIBZ
-	if(!savestate_save(&ms, Z_DEFAULT_COMPRESSION))
+	if (!savestate_save(ms, Z_DEFAULT_COMPRESSION))
 #else
-	if(!savestate_save(&ms, 0))
+	if (!savestate_save(ms, 0))
 #endif
 		return false;
 	FILE* file = fopen(file_name,"wb");
@@ -1042,7 +1058,8 @@ bool savestate_save (const char *file_name)
 	} else return false;
 }
 
-static void writechunks(EMUFILE* os) {
+static void writechunks(EMUFILE &os)
+{
 
 	DateTime tm = DateTime::get_Now();
 	svn_rev = 0;
@@ -1077,7 +1094,7 @@ static void writechunks(EMUFILE* os) {
 	savestate_WriteChunk(os,0xFFFFFFFF,(SFORMAT*)0);
 }
 
-static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
+static bool ReadStateChunks(EMUFILE &is, s32 totalsize)
 {
 	bool ret = true;
 	bool haveInfo = false;
@@ -1101,13 +1118,14 @@ static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 	};
 	memset(&header, 0, sizeof(header));
 
-	while(totalsize > 0)
+	while (totalsize > 0)
 	{
 		u32 size = 0;
 		u32 t = 0;
-		if(!read32le(&t,is))  { ret=false; break; }
-		if(t == 0xFFFFFFFF) break;
-		if(!read32le(&size,is))  { ret=false; break; }
+		if (!is.read_32LE(t))  { ret=false; break; }
+		if (t == 0xFFFFFFFF) break;
+		if (!is.read_32LE(size))  { ret=false; break; }
+		
 		switch(t)
 		{
 			case 1: if(!ReadStateChunk(is,SF_ARM9,size)) ret=false; break;
@@ -1161,7 +1179,7 @@ static bool ReadStateChunks(EMUFILE* is, s32 totalsize)
 		{
 			static const char *wday[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 			DateTime tm = save_time;
-			printf("\tSave created: %04d-%03s-%02d %s %02d:%02d:%02d\n", tm.get_Year(), DateTime::GetNameOfMonth(tm.get_Month()), tm.get_Day(), wday[tm.get_DayOfWeek()%7], tm.get_Hour(), tm.get_Minute(), tm.get_Second());
+			printf("\tSave created: %04d-%.3s-%02d %s %02d:%02d:%02d\n", tm.get_Year(), DateTime::GetNameOfMonth(tm.get_Month()), tm.get_Day(), wday[tm.get_DayOfWeek()%7], tm.get_Hour(), tm.get_Minute(), tm.get_Second());
 		}
 
 		//nope. create a common method elsewhere for printing this.
@@ -1214,41 +1232,44 @@ static void loadstate()
 	execute = !driver->EMU_IsEmulationPaused();
 }
 
-bool savestate_load(EMUFILE* is)
+bool savestate_load(EMUFILE &is)
 {
 	SAV_silent_fail_flag = false;
 	char header[16];
-	is->fread(header,16);
-	if(is->fail() || memcmp(header,magic,16))
+	is.fread(header,16);
+	if (is.fail() || memcmp(header,magic,16))
 		return false;
 
 	u32 ssversion,len,comprlen;
-	if(!read32le(&ssversion,is)) return false;
-	if(!read32le(&_DESMUME_version,is)) return false;
-	if(!read32le(&len,is)) return false;
-	if(!read32le(&comprlen,is)) return false;
+	if (!is.read_32LE(ssversion)) return false;
+	if (!is.read_32LE(_DESMUME_version)) return false;
+	if (!is.read_32LE(len)) return false;
+	if (!is.read_32LE(comprlen)) return false;
 
-	if(ssversion != SAVESTATE_VERSION) return false;
+	if (ssversion != SAVESTATE_VERSION) return false;
 
 	std::vector<u8> buf(len);
 
-	if(comprlen != 0xFFFFFFFF) {
+	if (comprlen != 0xFFFFFFFF)
+	{
 #ifndef HAVE_LIBZ
 		//without libz, we can't decompress this savestate
 		return false;
 #endif
 		std::vector<char> cbuf(comprlen);
-		is->fread(&cbuf[0],comprlen);
-		if(is->fail()) return false;
+		is.fread(&cbuf[0],comprlen);
+		if (is.fail()) return false;
 
 #ifdef HAVE_LIBZ
 		uLongf uncomprlen = len;
 		int error = uncompress((uint8*)&buf[0],&uncomprlen,(uint8*)&cbuf[0],comprlen);
-		if(error != Z_OK || uncomprlen != len)
+		if (error != Z_OK || uncomprlen != len)
 			return false;
 #endif
-	} else {
-		is->fread((char*)&buf[0],len-32);
+	}
+	else
+	{
+		is.fread(&buf[0],len-32);
 	}
 
 	//GO!! READ THE SAVESTATE
@@ -1273,9 +1294,9 @@ bool savestate_load(EMUFILE* is)
 	//SPU_Reset();
 
 	EMUFILE_MEMORY mstemp(&buf);
-	bool x = ReadStateChunks(&mstemp,(s32)len);
+	bool x = ReadStateChunks(mstemp,(s32)len);
 
-	if(!x && !SAV_silent_fail_flag)
+	if (!x && !SAV_silent_fail_flag)
 	{
 		msgbox->error("Error loading savestate. It failed halfway through;\nSince there is no savestate backup system, your current game session is wrecked");
 		return false;
@@ -1283,11 +1304,13 @@ bool savestate_load(EMUFILE* is)
 
 	loadstate();
 
-	if(nds.ConsoleType != CommonSettings.ConsoleType) {
+	if (nds.ConsoleType != CommonSettings.ConsoleType)
+	{
 		printf("WARNING: forcing console type to: ConsoleType=%d\n",nds.ConsoleType);
 	}
 
-	if((nds._DebugConsole!=0) != CommonSettings.DebugConsole) {
+	if ((nds._DebugConsole != 0) != CommonSettings.DebugConsole)
+	{
 			printf("WARNING: forcing console debug mode to: debugmode=%s\n",nds._DebugConsole?"TRUE":"FALSE");
 	}
 
@@ -1298,7 +1321,7 @@ bool savestate_load(EMUFILE* is)
 bool savestate_load(const char *file_name)
 {
 	EMUFILE_FILE f(file_name,"rb");
-	if(f.fail()) return false;
+	if (f.fail()) return false;
 
-	return savestate_load(&f);
+	return savestate_load(f);
 }

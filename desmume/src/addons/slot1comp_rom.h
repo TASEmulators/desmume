@@ -34,8 +34,8 @@ public:
 	u32 getAddress();
 	u32 incAddress();
 
-	void savestate(EMUFILE* os);
-	void loadstate(EMUFILE* is);
+	void savestate(EMUFILE &os);
+	void loadstate(EMUFILE &is);
 
 private:
 	u32 address;

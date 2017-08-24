@@ -39,6 +39,7 @@
 #include "readwrite.h"
 #include "armcpu.h"
 #include "NDSSystem.h"
+#include "emufile.h"
 #include "matrix.h"
 #include "utils/bits.h"
 
@@ -701,26 +702,26 @@ s16 SPUFifo::dequeue()
 	return ret;
 }
 
-void SPUFifo::save(EMUFILE* fp)
+void SPUFifo::save(EMUFILE &fp)
 {
 	u32 version = 1;
-	write32le(version,fp);
-	write32le(head,fp);
-	write32le(tail,fp);
-	write32le(size,fp);
-	for(int i=0;i<16;i++)
-		write16le(buffer[i],fp);
+	fp.write_32LE(version);
+	fp.write_32LE(head);
+	fp.write_32LE(tail);
+	fp.write_32LE(size);
+	for (int i = 0; i < 16; i++)
+		fp.write_16LE(buffer[i]);
 }
 
-bool SPUFifo::load(EMUFILE* fp)
+bool SPUFifo::load(EMUFILE &fp)
 {
 	u32 version;
-	if(read32le(&version,fp) != 1) return false;
-	read32le(&head,fp);
-	read32le(&tail,fp);
-	read32le(&size,fp);
-	for(int i=0;i<16;i++)
-		read16le(&buffer[i],fp);
+	if (fp.read_32LE(version) != 1) return false;
+	fp.read_32LE(head);
+	fp.read_32LE(tail);
+	fp.read_32LE(size);
+	for (int i = 0; i < 16; i++)
+		fp.read_16LE(buffer[i]);
 	return true;
 }
 
@@ -1356,11 +1357,11 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 	bool skipcap = false;
 	//-----------------
 
-	s32 samp0[2];
+	s32 samp0[2] = {0,0};
 	
 	//believe it or not, we are going to do this one sample at a time.
 	//like i said, it is slower.
-	for(int samp=0;samp<length;samp++)
+	for (int samp = 0; samp < length; samp++)
 	{
 		SPU->sndbuf[0] = 0;
 		SPU->sndbuf[1] = 0;
@@ -1372,7 +1373,7 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 		s32 submix[32];
 
 		//generate each channel, and helpfully mix it at the same time
-		for(int i=0;i<16;i++)
+		for (int i = 0; i < 16; i++)
 		{
 			channel_struct *chan = &SPU->channels[i];
 
@@ -1381,17 +1382,17 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 				SPU->bufpos = 0;
 
 				bool bypass = false;
-				if(i==1 && SPU->regs.ctl_ch1bypass) bypass=true;
-				if(i==3 && SPU->regs.ctl_ch3bypass) bypass=true;
+				if (i==1 && SPU->regs.ctl_ch1bypass) bypass=true;
+				if (i==3 && SPU->regs.ctl_ch3bypass) bypass=true;
 
 
 				//output to mixer unless we are bypassed.
 				//dont output to mixer if the user muted us
 				bool outputToMix = true;
-				if(CommonSettings.spu_muteChannels[i]) outputToMix = false;
-				if(bypass) outputToMix = false;
+				if (CommonSettings.spu_muteChannels[i]) outputToMix = false;
+				if (bypass) outputToMix = false;
 				bool outputToCap = outputToMix;
-				if(CommonSettings.spu_captureMuted && !bypass) outputToCap = true;
+				if (CommonSettings.spu_captureMuted && !bypass) outputToCap = true;
 
 				//channels 1 and 3 should probably always generate their audio
 				//internally at least, just in case they get used by the spu output
@@ -1409,14 +1410,14 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 				submix[i*2+1] = SPU->sndbuf[1];
 
 				//send sample to our capture mix
-				if(outputToCap)
+				if (outputToCap)
 				{
 					capmix[0] += submix[i*2];
 					capmix[1] += submix[i*2+1];
 				}
 
 				//send sample to our main mixer
-				if(outputToMix)
+				if (outputToMix)
 				{
 					mix[0] += submix[i*2];
 					mix[1] += submix[i*2+1];
@@ -1436,32 +1437,32 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 		s32 capout[2];
 
 		//create SPU output
-		switch(SPU->regs.ctl_left)
+		switch (SPU->regs.ctl_left)
 		{
-		case SPU_struct::REGS::LOM_LEFT_MIXER: sndout[0] = mixout[0]; break;
-		case SPU_struct::REGS::LOM_CH1: sndout[0] = submix[1*2+0]; break;
-		case SPU_struct::REGS::LOM_CH3: sndout[0] = submix[3*2+0]; break;
-		case SPU_struct::REGS::LOM_CH1_PLUS_CH3: sndout[0] = submix[1*2+0] + submix[3*2+0]; break;
+			case SPU_struct::REGS::LOM_LEFT_MIXER: sndout[0] = mixout[0]; break;
+			case SPU_struct::REGS::LOM_CH1: sndout[0] = submix[1*2+0]; break;
+			case SPU_struct::REGS::LOM_CH3: sndout[0] = submix[3*2+0]; break;
+			case SPU_struct::REGS::LOM_CH1_PLUS_CH3: sndout[0] = submix[1*2+0] + submix[3*2+0]; break;
 		}
-		switch(SPU->regs.ctl_right)
+		switch (SPU->regs.ctl_right)
 		{
-		case SPU_struct::REGS::ROM_RIGHT_MIXER: sndout[1] = mixout[1]; break;
-		case SPU_struct::REGS::ROM_CH1: sndout[1] = submix[1*2+1]; break;
-		case SPU_struct::REGS::ROM_CH3: sndout[1] = submix[3*2+1]; break;
-		case SPU_struct::REGS::ROM_CH1_PLUS_CH3: sndout[1] = submix[1*2+1] + submix[3*2+1]; break;
+			case SPU_struct::REGS::ROM_RIGHT_MIXER: sndout[1] = mixout[1]; break;
+			case SPU_struct::REGS::ROM_CH1: sndout[1] = submix[1*2+1]; break;
+			case SPU_struct::REGS::ROM_CH3: sndout[1] = submix[3*2+1]; break;
+			case SPU_struct::REGS::ROM_CH1_PLUS_CH3: sndout[1] = submix[1*2+1] + submix[3*2+1]; break;
 		}
 
 
 		//generate capture output ("capture bugs" from gbatek are not emulated)
-		if(SPU->regs.cap[0].source==0) 
+		if (SPU->regs.cap[0].source == 0)
 			capout[0] = capmixout[0]; //cap0 = L-mix
-		else if(SPU->regs.cap[0].add)
+		else if (SPU->regs.cap[0].add)
 			capout[0] = chanout[0] + chanout[1]; //cap0 = ch0+ch1
 		else capout[0] = chanout[0]; //cap0 = ch0
 
-		if(SPU->regs.cap[1].source==0) 
+		if (SPU->regs.cap[1].source == 0)
 			capout[1] = capmixout[1]; //cap1 = R-mix
-		else if(SPU->regs.cap[1].add)
+		else if (SPU->regs.cap[1].add)
 			capout[1] = chanout[2] + chanout[3]; //cap1 = ch2+ch3
 		else capout[1] = chanout[2]; //cap1 = ch2
 
@@ -1469,7 +1470,7 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 		capout[1] = MinMax(capout[1],-0x8000,0x7FFF);
 
 		//write the output sample where it is supposed to go
-		if(samp==0)
+		if (samp == 0)
 		{
 			samp0[0] = sndout[0];
 			samp0[1] = sndout[1];
@@ -1480,15 +1481,15 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 			SPU->sndbuf[samp*2+1] = sndout[1];
 		}
 
-		for(int capchan=0;capchan<2;capchan++)
+		for (int capchan = 0; capchan < 2; capchan++)
 		{
-			if(SPU->regs.cap[capchan].runtime.running)
+			if (SPU->regs.cap[capchan].runtime.running)
 			{
 				SPU_struct::REGS::CAP& cap = SPU->regs.cap[capchan];
 				u32 last = sputrunc(cap.runtime.sampcnt);
 				cap.runtime.sampcnt += SPU->channels[1+2*capchan].sampinc;
 				u32 curr = sputrunc(cap.runtime.sampcnt);
-				for(u32 j=last;j<curr;j++)
+				for (u32 j = last; j < curr; j++)
 				{
 					//so, this is a little strange. why go through a fifo?
 					//it seems that some games will set up a reverb effect by capturing
@@ -1504,7 +1505,7 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 					//Subjectively, it seems to be working.
 
 					//Don't do anything until the fifo is filled, so as to delay it
-					if(cap.runtime.fifo.size<16)
+					if (cap.runtime.fifo.size < 16)
 					{
 						cap.runtime.fifo.enqueue(capout[capchan]);
 						continue;
@@ -1519,10 +1520,10 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 					//if(!fp) fp = fopen("d:\\capout.raw","wb");
 					//fwrite(&sample,2,1,fp);
 					
-					if(cap.bits8)
+					if (cap.bits8)
 					{
-						s8 sample8 = sample>>8;
-						if(skipcap) _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,0);
+						s8 sample8 = sample >> 8;
+						if (skipcap) _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,0);
 						else _MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,sample8);
 						cap.runtime.curdad++;
 						multiplier = 4;
@@ -1530,13 +1531,14 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 					else
 					{
 						s16 sample16 = sample;
-						if(skipcap) _MMU_write16<1,MMU_AT_DMA>(cap.runtime.curdad,0);
+						if (skipcap) _MMU_write16<1,MMU_AT_DMA>(cap.runtime.curdad,0);
 						else _MMU_write16<1,MMU_AT_DMA>(cap.runtime.curdad,sample16);
 						cap.runtime.curdad+=2;
 						multiplier = 2;
 					}
 
-					if(cap.runtime.curdad>=cap.runtime.maxdad) {
+					if (cap.runtime.curdad >= cap.runtime.maxdad)
+					{
 						cap.runtime.curdad = cap.dad;
 						cap.runtime.sampcnt -= cap.len*multiplier;
 					}
@@ -1552,7 +1554,7 @@ static void SPU_MixAudio_Advanced(bool actuallyMix, SPU_struct *SPU, int length)
 //ENTER
 static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 {
-	if(actuallyMix)
+	if (actuallyMix)
 	{
 		memset(SPU->sndbuf, 0, length*4*2);
 		memset(SPU->outbuf, 0, length*2*2);
@@ -1569,14 +1571,14 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 	//branch here so that slow computers don't have to take the advanced (slower) codepath.
 	//it remainds to be seen exactly how much slower it is
 	//if it isnt much slower then we should refactor everything to be simpler, once it is working
-	if(advanced && SPU == SPU_core)
+	if (advanced && SPU == SPU_core)
 	{
 		SPU_MixAudio_Advanced(actuallyMix, SPU, length);
 	}
 	else
 	{
 		//non-advanced mode
-		for(int i=0;i<16;i++)
+		for (int i = 0; i < 16; i++)
 		{
 			channel_struct *chan = &SPU->channels[i];
 
@@ -1595,19 +1597,19 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 		//this code is bulkier and slower than it might otherwise be to reduce the chance of bugs 
 		//IDEALLY the non-advanced codepath would be removed (while the advanced codepath was optimized and improved)
 		//and this code would disappear, to be replaced with code more capable of emitting zeroes at the opportune time.
-		for(int capchan=0;capchan<2;capchan++)
+		for (int capchan = 0; capchan < 2; capchan++)
 		{
 			SPU_struct::REGS::CAP& cap = SPU->regs.cap[capchan];
-			if(cap.runtime.running)
+			if (cap.runtime.running)
 			{
-				for(int samp=0;samp<length;samp++)
+				for (int samp = 0; samp < length; samp++)
 				{
 					u32 last = sputrunc(cap.runtime.sampcnt);
 					cap.runtime.sampcnt += SPU->channels[1+2*capchan].sampinc;
 					u32 curr = sputrunc(cap.runtime.sampcnt);
-					for(u32 j=last;j<curr;j++)
+					for (u32 j = last; j < curr; j++)
 					{
-						if(cap.bits8)
+						if (cap.bits8)
 						{
 							_MMU_write08<1,MMU_AT_DMA>(cap.runtime.curdad,0);
 							cap.runtime.curdad++;
@@ -1618,7 +1620,8 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 							cap.runtime.curdad+=2;
 						}
 
-						if(cap.runtime.curdad>=cap.runtime.maxdad) {
+						if (cap.runtime.curdad >= cap.runtime.maxdad)
+						{
 							cap.runtime.curdad = cap.dad;
 							cap.runtime.sampcnt -= cap.len*(cap.bits8?4:2);
 						}
@@ -1638,7 +1641,7 @@ static void SPU_MixAudio(bool actuallyMix, SPU_struct *SPU, int length)
 	u8 vol = SPU->regs.mastervol;
 
 	// convert from 32-bit->16-bit
-	if(actuallyMix && speakers)
+	if (actuallyMix && speakers)
 		for (int i = 0; i < length*2; i++)
 		{
 			// Apply Master Volume
@@ -1948,168 +1951,169 @@ void WAV_WavSoundUpdate(void* soundData, int numSamples, WAVMode mode)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void spu_savestate(EMUFILE* os)
+void spu_savestate(EMUFILE &os)
 {
 	//version
-	write32le(6,os);
+	os.write_32LE(6);
 
 	SPU_struct *spu = SPU_core;
 
-	for(int j=0;j<16;j++) {
-		channel_struct &chan = spu->channels[j];
-		write32le(chan.num,os);
-		write8le(chan.vol,os);
-		write8le(chan.volumeDiv,os);
-		write8le(chan.hold,os);
-		write8le(chan.pan,os);
-		write8le(chan.waveduty,os);
-		write8le(chan.repeat,os);
-		write8le(chan.format,os);
-		write8le(chan.status,os);
-		write32le(chan.addr,os);
-		write16le(chan.timer,os);
-		write16le(chan.loopstart,os);
-		write32le(chan.length,os);
-		write64le(double_to_u64(chan.sampcnt),os);
-		write64le(double_to_u64(chan.sampinc),os);
-		write32le(chan.lastsampcnt,os);
-		write16le(chan.pcm16b,os);
-		write16le(chan.pcm16b_last,os);
-		write32le(chan.index,os);
-		write16le(chan.x,os);
-		write16le(chan.psgnoise_last,os);
-		write8le(chan.keyon,os);
-	}
-
-	write64le(double_to_u64(samples),os);
-
-	write8le(spu->regs.mastervol,os);
-	write8le(spu->regs.ctl_left,os);
-	write8le(spu->regs.ctl_right,os);
-	write8le(spu->regs.ctl_ch1bypass,os);
-	write8le(spu->regs.ctl_ch3bypass,os);
-	write8le(spu->regs.masteren,os);
-	write16le(spu->regs.soundbias,os);
-
-	for(int i=0;i<2;i++)
+	for (int j = 0; j < 16; j++)
 	{
-		write8le(spu->regs.cap[i].add,os);
-		write8le(spu->regs.cap[i].source,os);
-		write8le(spu->regs.cap[i].oneshot,os);
-		write8le(spu->regs.cap[i].bits8,os);
-		write8le(spu->regs.cap[i].active,os);
-		write32le(spu->regs.cap[i].dad,os);
-		write16le(spu->regs.cap[i].len,os);
-		write8le(spu->regs.cap[i].runtime.running,os);
-		write32le(spu->regs.cap[i].runtime.curdad,os);
-		write32le(spu->regs.cap[i].runtime.maxdad,os);
-		write_double_le(spu->regs.cap[i].runtime.sampcnt,os);
+		channel_struct &chan = spu->channels[j];
+		os.write_32LE(chan.num);
+		os.write_u8(chan.vol);
+		os.write_u8(chan.volumeDiv);
+		os.write_u8(chan.hold);
+		os.write_u8(chan.pan);
+		os.write_u8(chan.waveduty);
+		os.write_u8(chan.repeat);
+		os.write_u8(chan.format);
+		os.write_u8(chan.status);
+		os.write_32LE(chan.addr);
+		os.write_16LE(chan.timer);
+		os.write_16LE(chan.loopstart);
+		os.write_32LE(chan.length);
+		os.write_doubleLE(chan.sampcnt);
+		os.write_doubleLE(chan.sampinc);
+		os.write_32LE(chan.lastsampcnt);
+		os.write_16LE(chan.pcm16b);
+		os.write_16LE(chan.pcm16b_last);
+		os.write_32LE(chan.index);
+		os.write_16LE(chan.x);
+		os.write_16LE(chan.psgnoise_last);
+		os.write_u8(chan.keyon);
 	}
 
-	for(int i=0;i<2;i++)
+	os.write_doubleLE(samples);
+
+	os.write_u8(spu->regs.mastervol);
+	os.write_u8(spu->regs.ctl_left);
+	os.write_u8(spu->regs.ctl_right);
+	os.write_u8(spu->regs.ctl_ch1bypass);
+	os.write_u8(spu->regs.ctl_ch3bypass);
+	os.write_u8(spu->regs.masteren);
+	os.write_16LE(spu->regs.soundbias);
+
+	for (int i = 0; i < 2; i++)
+	{
+		os.write_u8(spu->regs.cap[i].add);
+		os.write_u8(spu->regs.cap[i].source);
+		os.write_u8(spu->regs.cap[i].oneshot);
+		os.write_u8(spu->regs.cap[i].bits8);
+		os.write_u8(spu->regs.cap[i].active);
+		os.write_32LE(spu->regs.cap[i].dad);
+		os.write_16LE(spu->regs.cap[i].len);
+		os.write_u8(spu->regs.cap[i].runtime.running);
+		os.write_32LE(spu->regs.cap[i].runtime.curdad);
+		os.write_32LE(spu->regs.cap[i].runtime.maxdad);
+		os.write_doubleLE(spu->regs.cap[i].runtime.sampcnt);
+	}
+
+	for (int i = 0; i < 2; i++)
 		spu->regs.cap[i].runtime.fifo.save(os);
 }
 
-bool spu_loadstate(EMUFILE* is, int size)
+bool spu_loadstate(EMUFILE &is, int size)
 {
 	//note! if we load a state created with advanced spu logic on a system without it,
 	//there's a high likelihood of captured data existing.
 	//this would get played back forever without being replaced by captured data.
 	//it's been solved by capturing zeroes though even when advanced spu logic is disabled.
-
-	u64 temp64; 
 	
 	//read version
 	u32 version;
-	if(read32le(&version,is) != 1) return false;
+	if (is.read_32LE(version) != 1) return false;
 
 	SPU_struct *spu = SPU_core;
 	reconstruct(&SPU_core->regs);
 
-	for(int j=0;j<16;j++) {
+	for (int j = 0; j < 16; j++)
+	{
 		channel_struct &chan = spu->channels[j];
-		read32le(&chan.num,is);
-		read8le(&chan.vol,is);
-		read8le(&chan.volumeDiv,is);
+		is.read_32LE(chan.num);
+		is.read_u8(chan.vol);
+		is.read_u8(chan.volumeDiv);
 		if (chan.volumeDiv == 4) chan.volumeDiv = 3;
-		read8le(&chan.hold,is);
-		read8le(&chan.pan,is);
-		read8le(&chan.waveduty,is);
-		read8le(&chan.repeat,is);
-		read8le(&chan.format,is);
-		read8le(&chan.status,is);
-		read32le(&chan.addr,is);
-		read16le(&chan.timer,is);
-		read16le(&chan.loopstart,is);
-		read32le(&chan.length,is);
+		is.read_u8(chan.hold);
+		is.read_u8(chan.pan);
+		is.read_u8(chan.waveduty);
+		is.read_u8(chan.repeat);
+		is.read_u8(chan.format);
+		is.read_u8(chan.status);
+		is.read_32LE(chan.addr);
+		is.read_16LE(chan.timer);
+		is.read_16LE(chan.loopstart);
+		is.read_32LE(chan.length);
 		chan.totlength = chan.length + chan.loopstart;
 		chan.double_totlength_shifted = (double)(chan.totlength << format_shift[chan.format]);
 		//printf("%f\n",chan.double_totlength_shifted);
-		if(version >= 2)
+		if (version >= 2)
 		{
-			read64le(&temp64,is); chan.sampcnt = u64_to_double(temp64);
-			read64le(&temp64,is); chan.sampinc = u64_to_double(temp64);
+			is.read_doubleLE(chan.sampcnt);
+			is.read_doubleLE(chan.sampinc);
 		}
 		else
 		{
-			read32le((u32*)&chan.sampcnt,is);
-			read32le((u32*)&chan.sampinc,is);
+			is.read_32LE(*(u32 *)&chan.sampcnt);
+			is.read_32LE(*(u32 *)&chan.sampinc);
 		}
-		read32le(&chan.lastsampcnt,is);
-		read16le(&chan.pcm16b,is);
-		read16le(&chan.pcm16b_last,is);
-		read32le(&chan.index,is);
-		read16le(&chan.x,is);
-		read16le(&chan.psgnoise_last,is);
+		is.read_32LE(chan.lastsampcnt);
+		is.read_16LE(chan.pcm16b);
+		is.read_16LE(chan.pcm16b_last);
+		is.read_32LE(chan.index);
+		is.read_16LE(chan.x);
+		is.read_16LE(chan.psgnoise_last);
 
-		if(version>=4)
-			read8le(&chan.keyon,is);
+		if (version >= 4)
+			is.read_u8(chan.keyon);
 
 		//hopefully trigger a recovery of the adpcm looping system
 		chan.loop_index = K_ADPCM_LOOPING_RECOVERY_INDEX;
 	}
 
-	if(version>=2) {
-		read64le(&temp64,is); samples = u64_to_double(temp64);
+	if (version >= 2)
+	{
+		is.read_doubleLE(samples);
 	}
 
-	if(version>=4)
+	if (version >= 4)
 	{
-		read8le(&spu->regs.mastervol,is);
-		read8le(&spu->regs.ctl_left,is);
-		read8le(&spu->regs.ctl_right,is);
-		read8le(&spu->regs.ctl_ch1bypass,is);
-		read8le(&spu->regs.ctl_ch3bypass,is);
-		read8le(&spu->regs.masteren,is);
-		read16le(&spu->regs.soundbias,is);
+		is.read_u8(spu->regs.mastervol);
+		is.read_u8(spu->regs.ctl_left);
+		is.read_u8(spu->regs.ctl_right);
+		is.read_u8(spu->regs.ctl_ch1bypass);
+		is.read_u8(spu->regs.ctl_ch3bypass);
+		is.read_u8(spu->regs.masteren);
+		is.read_16LE(spu->regs.soundbias);
 	}
 
-	if(version>=5)
+	if (version >= 5)
 	{
-		for(int i=0;i<2;i++)
+		for (int i = 0; i < 2; i++)
 		{
-			read8le(&spu->regs.cap[i].add,is);
-			read8le(&spu->regs.cap[i].source,is);
-			read8le(&spu->regs.cap[i].oneshot,is);
-			read8le(&spu->regs.cap[i].bits8,is);
-			read8le(&spu->regs.cap[i].active,is);
-			read32le(&spu->regs.cap[i].dad,is);
-			read16le(&spu->regs.cap[i].len,is);
-			read8le(&spu->regs.cap[i].runtime.running,is);
-			read32le(&spu->regs.cap[i].runtime.curdad,is);
-			read32le(&spu->regs.cap[i].runtime.maxdad,is);
-			read_double_le(&spu->regs.cap[i].runtime.sampcnt,is);
+			is.read_u8(spu->regs.cap[i].add);
+			is.read_u8(spu->regs.cap[i].source);
+			is.read_u8(spu->regs.cap[i].oneshot);
+			is.read_u8(spu->regs.cap[i].bits8);
+			is.read_u8(spu->regs.cap[i].active);
+			is.read_32LE(spu->regs.cap[i].dad);
+			is.read_16LE(spu->regs.cap[i].len);
+			is.read_u8(spu->regs.cap[i].runtime.running);
+			is.read_32LE(spu->regs.cap[i].runtime.curdad);
+			is.read_32LE(spu->regs.cap[i].runtime.maxdad);
+			is.read_doubleLE(spu->regs.cap[i].runtime.sampcnt);
 		}
 	}
 
-	if(version>=6)
-		for(int i=0;i<2;i++) spu->regs.cap[i].runtime.fifo.load(is);
+	if (version >= 6)
+		for (int i=0;i<2;i++) spu->regs.cap[i].runtime.fifo.load(is);
 	else
-		for(int i=0;i<2;i++) spu->regs.cap[i].runtime.fifo.reset();
+		for (int i=0;i<2;i++) spu->regs.cap[i].runtime.fifo.reset();
 
 	//older versions didnt store a mastervol; 
 	//we must reload this or else games will start silent
-	if(version<4)
+	if (version < 4)
 	{
 		spu->regs.mastervol = T1ReadByte(MMU.ARM7_REG, 0x500) & 0x7F;
 		spu->regs.masteren = BIT15(T1ReadWord(MMU.ARM7_REG, 0x500));

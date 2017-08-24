@@ -96,13 +96,13 @@ public:
 		protocol.mode = eCardMode_NORMAL;
 	}
 
-	virtual void savestate(EMUFILE* os)
+	virtual void savestate(EMUFILE &os)
 	{
 		protocol.savestate(os);
 		rom.savestate(os);
 	}
 
-	virtual void loadstate(EMUFILE* is)
+	virtual void loadstate(EMUFILE &is)
 	{
 		protocol.loadstate(is);
 		rom.loadstate(is);

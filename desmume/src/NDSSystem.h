@@ -55,7 +55,7 @@ struct buttonstruct {
 };
 
 extern buttonstruct<bool> Turbo;
-extern buttonstruct<int> TurboTime;
+extern buttonstruct<u32> TurboTime;
 extern buttonstruct<bool> AutoHold;
 extern volatile bool execute;
 extern BOOL click;
@@ -453,8 +453,8 @@ void NDS_Reset();
 bool NDS_LegitBoot();
 bool NDS_FakeBoot();
 
-void nds_savestate(EMUFILE* os);
-bool nds_loadstate(EMUFILE* is, int size);
+void nds_savestate(EMUFILE &os);
+bool nds_loadstate(EMUFILE &is, int size);
 
 void NDS_Sleep();
 void NDS_TriggerCardEjectIRQ();

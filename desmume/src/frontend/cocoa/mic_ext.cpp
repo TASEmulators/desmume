@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2015 DeSmuME team
+	Copyright (C) 2012-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -69,14 +69,14 @@ void Mic_SetSampleReadCallback(MicSampleReadCallback callbackFunc, void *inParam
 	_sampleReadCallbackParam2 = inParam2;
 }
 
-void mic_savestate(EMUFILE* os)
+void mic_savestate(EMUFILE &os)
 {
-	write32le(-1, os);
+	os.write_32LE(-1);
 }
 
-bool mic_loadstate(EMUFILE* is, int size)
+bool mic_loadstate(EMUFILE &is, int size)
 {
-	is->fseek(size, SEEK_CUR);
+	is.fseek(size, SEEK_CUR);
 	return true;
 }
 

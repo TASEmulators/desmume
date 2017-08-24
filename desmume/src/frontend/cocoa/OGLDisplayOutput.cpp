@@ -4559,12 +4559,18 @@ GLuint OGLShaderProgram::LoadShaderOGL(GLenum shaderType, const char *shaderProg
 	{
 		static const size_t logBytes = 16384; // 16KB should be more than enough
 		GLchar *logBuf = (GLchar *)calloc(logBytes, sizeof(GLchar));
-		GLsizei logSize = 0;
-		glGetShaderInfoLog(shaderID, logBytes * sizeof(GLchar), &logSize, logBuf);
 		
-		printf("OpenGL Error - Failed to compile %s.\n%s\n",
-			   (shaderType == GL_VERTEX_SHADER) ? "GL_VERTEX_SHADER" : ((shaderType == GL_FRAGMENT_SHADER) ? "GL_FRAGMENT_SHADER" : "OTHER SHADER TYPE"),
-			   (char *)logBuf);
+		if (logBuf != NULL)
+		{
+			GLsizei logSize = 0;
+			glGetShaderInfoLog(shaderID, logBytes * sizeof(GLchar), &logSize, logBuf);
+			
+			printf("OpenGL Error - Failed to compile %s.\n%s\n",
+				   (shaderType == GL_VERTEX_SHADER) ? "GL_VERTEX_SHADER" : ((shaderType == GL_FRAGMENT_SHADER) ? "GL_FRAGMENT_SHADER" : "OTHER SHADER TYPE"),
+				   (char *)logBuf);
+		}
+		
+		free(logBuf);
 		
 		glDeleteShader(shaderID);
 		return shaderID;

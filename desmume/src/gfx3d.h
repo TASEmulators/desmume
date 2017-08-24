@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -473,8 +473,8 @@ struct POLY {
 		return false;
 	}
 	
-	void save(EMUFILE* os);
-	void load(EMUFILE* is);
+	void save(EMUFILE &os);
+	void load(EMUFILE &is);
 };
 
 #define POLYLIST_SIZE 20000
@@ -542,8 +542,8 @@ struct VERT {
 		fcolor[1] = color[1];
 		fcolor[2] = color[2];
 	}
-	void save(EMUFILE* os);
-	void load(EMUFILE* is);
+	void save(EMUFILE &os);
+	void load(EMUFILE &is);
 };
 
 #define VERTLIST_SIZE (POLYLIST_SIZE * 4)
@@ -728,8 +728,8 @@ void gfx3d_glGetLightColor(const size_t index, u32 &dst);
 struct SFORMAT;
 extern SFORMAT SF_GFX3D[];
 void gfx3d_Update3DFramebuffers(FragmentColor *framebufferMain, u16 *framebuffer16);
-void gfx3d_savestate(EMUFILE* os);
-bool gfx3d_loadstate(EMUFILE* is, int size);
+void gfx3d_savestate(EMUFILE &os);
+bool gfx3d_loadstate(EMUFILE &is, int size);
 
 void gfx3d_ClearStack();
 

@@ -1,20 +1,18 @@
-/*  Copyright (C) 2009 DeSmuME team
-
-    This file is part of DeSmuME
-
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+/*
+	Copyright (C) 2009-2017 DeSmuME team
+ 
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
+	
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+ 
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "filter.h"
@@ -25,31 +23,31 @@
 // where each corner is selected based on equivalence of neighboring pixels
 void RenderEPX (SSurface Src, SSurface Dst)
 {
-	uint32 *lpSrc;
+	u32 *lpSrc;
 
-	const uint32 srcHeight = Src.Height;
-	const uint32 srcWidth = Src.Width;
+	const u32 srcHeight = Src.Height;
+	const u32 srcWidth = Src.Width;
 
 	const unsigned int srcPitch = Src.Pitch >> 1;
-	lpSrc = reinterpret_cast<uint32 *>(Src.Surface);
+	lpSrc = reinterpret_cast<u32 *>(Src.Surface);
 
 	const unsigned int dstPitch = Dst.Pitch >> 1;
-	uint32 *lpDst = (uint32*)Dst.Surface;
+	u32 *lpDst = (u32*)Dst.Surface;
 
-	for(uint32 j = 0; j < srcHeight; j++)
+	for(u32 j = 0; j < srcHeight; j++)
 	{
-		uint32* SrcLine = lpSrc + srcPitch*j;
-		uint32* DstLine1 = lpDst + dstPitch*(j*2);
-		uint32* DstLine2 = lpDst + dstPitch*(j*2+1);
-		for(uint32 i = 0; i < srcWidth; i++)
+		u32* SrcLine = lpSrc + srcPitch*j;
+		u32* DstLine1 = lpDst + dstPitch*(j*2);
+		u32* DstLine2 = lpDst + dstPitch*(j*2+1);
+		for(u32 i = 0; i < srcWidth; i++)
 		{
-			uint32 L = *(SrcLine-1);
-			uint32 C = *(SrcLine);
-			uint32 R = *(SrcLine+1);
+			u32 L = *(SrcLine-1);
+			u32 C = *(SrcLine);
+			u32 R = *(SrcLine+1);
 			if(L != R)
 			{
-				uint32 U = *(SrcLine-srcPitch);
-				uint32 D = *(SrcLine+srcPitch);
+				u32 U = *(SrcLine-srcPitch);
+				u32 D = *(SrcLine+srcPitch);
 				if(U != D)
 				{
 					*DstLine1++ = (U == L) ? U : C;
@@ -77,8 +75,6 @@ void RenderEPX_1Point5x (SSurface Src, SSurface Dst)
 
 	u32 srcHeight = Src.Height;
 	u32 srcWidth = Src.Width;
-	u32 dstHeight = Dst.Height;
-	u32 dstWidth = Dst.Width;
 
 	const unsigned int srcPitch = Src.Pitch >> 1;
 	lpSrc = reinterpret_cast<u32 *>(Src.Surface);
@@ -86,18 +82,18 @@ void RenderEPX_1Point5x (SSurface Src, SSurface Dst)
 	const unsigned int dstPitch = Dst.Pitch >> 1;
 	u32 *lpDst = (u32*)Dst.Surface;
 
-	for(uint32 yi=0, yo=0; yi < srcHeight; yi+=2, yo+=3)
+	for(u32 yi=0, yo=0; yi < srcHeight; yi+=2, yo+=3)
 	{
 		u32* SrcLine = lpSrc + srcPitch*yi;
 		u32* DstLine1 = lpDst + dstPitch*(yo);
 		u32* DstLine2 = lpDst + dstPitch*(yo+1);
 		u32* DstLine3 = lpDst + dstPitch*(yo+2);
-		for(uint32 xi=0; xi < srcWidth; xi+=2)
+		for(u32 xi=0; xi < srcWidth; xi+=2)
 		{
 			u32                                s10 = *(SrcLine-srcPitch),   s20 = *(SrcLine-srcPitch+1),   s30 = *(SrcLine-srcPitch+2);
 			u32 s01 = *(SrcLine-1),            s11 = *(SrcLine),            s21 = *(SrcLine+1),            s31 = *(SrcLine+2);
 			u32 s02 = *(SrcLine+srcPitch-1),   s12 = *(SrcLine+srcPitch),   s22 = *(SrcLine+srcPitch+1),   s32 = *(SrcLine+srcPitch+2);
-			u32 s03 = *(SrcLine+2*srcPitch-1), s13 = *(SrcLine+2*srcPitch), s23 = *(SrcLine+2*srcPitch+1), s33 = *(SrcLine+2*srcPitch+2);
+			u32 s03 = *(SrcLine+2*srcPitch-1), s13 = *(SrcLine+2*srcPitch), s23 = *(SrcLine+2*srcPitch+1);
 			*DstLine1++ =  s01==s10 && s10!=s21 && s01!=s12
 			                                                             ? s01:s11;
 			*DstLine1++ =  s10==s21 && s10!=s01 && s21!=s12
@@ -136,29 +132,29 @@ static u32 dist(u32 a, u32 b)
 // where each corner is selected based on relative equivalence of neighboring pixels
 void RenderEPXPlus (SSurface Src, SSurface Dst)
 {
-	uint32 *lpSrc;
+	u32 *lpSrc;
 
-	const uint32 srcHeight = Src.Height;
-	const uint32 srcWidth = Src.Width;
+	const u32 srcHeight = Src.Height;
+	const u32 srcWidth = Src.Width;
 
 	const unsigned int srcPitch = Src.Pitch >> 1;
-	lpSrc = reinterpret_cast<uint32 *>(Src.Surface);
+	lpSrc = reinterpret_cast<u32 *>(Src.Surface);
 
 	const unsigned int dstPitch = Dst.Pitch >> 1;
-	uint32 *lpDst = (uint32*)Dst.Surface;
+	u32 *lpDst = (u32*)Dst.Surface;
 
-	for(uint32 j = 0; j < srcHeight; j++)
+	for(u32 j = 0; j < srcHeight; j++)
 	{
-		uint32* SrcLine = lpSrc + srcPitch*j;
-		uint32* DstLine1 = lpDst + dstPitch*(j*2);
-		uint32* DstLine2 = lpDst + dstPitch*(j*2+1);
-		for(uint32 i = 0; i < srcWidth; i++)
+		u32* SrcLine = lpSrc + srcPitch*j;
+		u32* DstLine1 = lpDst + dstPitch*(j*2);
+		u32* DstLine2 = lpDst + dstPitch*(j*2+1);
+		for(u32 i = 0; i < srcWidth; i++)
 		{
-			uint32 L = *(SrcLine-1);
-			uint32 C = *(SrcLine);
-			uint32 R = *(SrcLine+1);
-			uint32 U = *(SrcLine-srcPitch);
-			uint32 D = *(SrcLine+srcPitch);
+			u32 L = *(SrcLine-1);
+			u32 C = *(SrcLine);
+			u32 R = *(SrcLine+1);
+			u32 U = *(SrcLine-srcPitch);
+			u32 D = *(SrcLine+srcPitch);
 			*DstLine1++ = dist(L,U) < min(dist(L,D),dist(R,U)) ? mix(L,U) : C;
 			*DstLine1++ = dist(R,U) < min(dist(L,U),dist(R,D)) ? mix(R,U) : C;
 			*DstLine2++ = dist(L,D) < min(dist(L,U),dist(R,D)) ? mix(L,D) : C;
@@ -176,8 +172,6 @@ void RenderEPXPlus_1Point5x (SSurface Src, SSurface Dst)
 
 	u32 srcHeight = Src.Height;
 	u32 srcWidth = Src.Width;
-	u32 dstHeight = Dst.Height;
-	u32 dstWidth = Dst.Width;
 
 	const unsigned int srcPitch = Src.Pitch >> 1;
 	lpSrc = reinterpret_cast<u32 *>(Src.Surface);
@@ -185,18 +179,18 @@ void RenderEPXPlus_1Point5x (SSurface Src, SSurface Dst)
 	const unsigned int dstPitch = Dst.Pitch >> 1;
 	u32 *lpDst = (u32*)Dst.Surface;
 
-	for(uint32 yi=0, yo=0; yi < srcHeight; yi+=2, yo+=3)
+	for(u32 yi=0, yo=0; yi < srcHeight; yi+=2, yo+=3)
 	{
 		u32* SrcLine = lpSrc + srcPitch*yi;
 		u32* DstLine1 = lpDst + dstPitch*(yo);
 		u32* DstLine2 = lpDst + dstPitch*(yo+1);
 		u32* DstLine3 = lpDst + dstPitch*(yo+2);
-		for(uint32 xi=0; xi < srcWidth; xi+=2)
+		for(u32 xi=0; xi < srcWidth; xi+=2)
 		{
 			u32                                s10 = *(SrcLine-srcPitch),   s20 = *(SrcLine-srcPitch+1),   s30 = *(SrcLine-srcPitch+2);
 			u32 s01 = *(SrcLine-1),            s11 = *(SrcLine),            s21 = *(SrcLine+1),            s31 = *(SrcLine+2);
 			u32 s02 = *(SrcLine+srcPitch-1),   s12 = *(SrcLine+srcPitch),   s22 = *(SrcLine+srcPitch+1),   s32 = *(SrcLine+srcPitch+2);
-			u32 s03 = *(SrcLine+2*srcPitch-1), s13 = *(SrcLine+2*srcPitch), s23 = *(SrcLine+2*srcPitch+1), s33 = *(SrcLine+2*srcPitch+2);
+			u32 s03 = *(SrcLine+2*srcPitch-1), s13 = *(SrcLine+2*srcPitch), s23 = *(SrcLine+2*srcPitch+1);
 			*DstLine1++ =  dist(s01,s10) < min( dist(s10,s21),dist(s01,s12))
 			                                                                                ? mix(s01,s10):s11;
 			*DstLine1++ =  dist(s10,s21) < min( dist(s10,s01),dist(s21,s12))
@@ -226,20 +220,18 @@ void RenderEPXPlus_1Point5x (SSurface Src, SSurface Dst)
 // which are selected stupidly from neighboring pixels in the original 2x2 block
 void RenderNearest_1Point5x (SSurface Src, SSurface Dst)
 {
-	uint32 *lpSrc;
+	u32 *lpSrc;
 
-	uint32 srcHeight = Src.Height;
-	uint32 srcWidth = Src.Width;
-	uint32 dstHeight = Dst.Height;
-	uint32 dstWidth = Dst.Width;
+	u32 srcHeight = Src.Height;
+	u32 srcWidth = Src.Width;
 
 	const unsigned int srcPitch = Src.Pitch >> 1;
-	lpSrc = reinterpret_cast<uint32 *>(Src.Surface);
+	lpSrc = reinterpret_cast<u32 *>(Src.Surface);
 
 	const unsigned int dstPitch = Dst.Pitch >> 1;
-	uint32 *lpDst = (uint32*)Dst.Surface;
+	u32 *lpDst = (u32*)Dst.Surface;
 
-	for(uint32 yi = 0, yo = 0; yi < srcHeight; yi+=2, yo+=3)
+	for(u32 yi = 0, yo = 0; yi < srcHeight; yi+=2, yo+=3)
 	{
 		u32* srcPix1 = lpSrc + srcPitch*(yi);
 		u32* srcPix2 = lpSrc + srcPitch*(yi+1);
@@ -247,7 +239,7 @@ void RenderNearest_1Point5x (SSurface Src, SSurface Dst)
 		u32* dstPix2 = lpDst + dstPitch*(yo+1);
 		u32* dstPix3 = lpDst + dstPitch*(yo+2);
 
-		for(uint32 xi = 0; xi < srcWidth; xi+=2)
+		for(u32 xi = 0; xi < srcWidth; xi+=2)
 		{
 			*dstPix1++ = *srcPix1++;
 			*dstPix1++ = *srcPix1;
@@ -273,30 +265,28 @@ int CLAMP(const int value, const int high)
 // which are selected from neighboring pixels depending on matching diagonals
 void RenderNearestPlus_1Point5x (SSurface Src, SSurface Dst)
 {
-	uint32 *lpSrc;
+	u32 *lpSrc;
 
-	uint32 srcHeight = Src.Height;
-	uint32 srcWidth = Src.Width;
-	uint32 dstHeight = Dst.Height;
-	uint32 dstWidth = Dst.Width;
+	u32 srcHeight = Src.Height;
+	u32 srcWidth = Src.Width;
 
 	const unsigned int srcPitch = Src.Pitch >> 1;
-	lpSrc = reinterpret_cast<uint32 *>(Src.Surface);
+	lpSrc = reinterpret_cast<u32 *>(Src.Surface);
 
 	const unsigned int dstPitch = Dst.Pitch >> 1;
-	uint32 *lpDst = (uint32*)Dst.Surface;
+	u32 *lpDst = (u32*)Dst.Surface;
 
  	u32* srcPix = lpSrc;
 	u32* dstPix = lpDst;
 
-  for(uint32 j = 0, y = 0; j < srcHeight; j+=2, y+=3)
+  for(u32 j = 0, y = 0; j < srcHeight; j+=2, y+=3)
 	{
 
 #define GET(dx,dy) *(srcPix+(CLAMP((dy)+j,srcHeight))*srcPitch+(CLAMP((dx)+i,srcWidth)))
 #define SET(dx,dy,val) *(dstPix+(dy+y)*dstPitch+(dx+x)) = (val)
 #define BETTER(dx,dy,dx2,dy2) (GET(dx,dy) == GET(dx2,dy2) && GET(dx2,dy) != GET(dx,dy2))
 
-		for(uint32 i = 0, x = 0; i < srcWidth; i+=2, x+=3) //, srcPix+=2, dstPix+=3
+		for(u32 i = 0, x = 0; i < srcWidth; i+=2, x+=3) //, srcPix+=2, dstPix+=3
 		{
 			SET(0,0,GET(0,0));
 			SET(1,0,GET(1,0));

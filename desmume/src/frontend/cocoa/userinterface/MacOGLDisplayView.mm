@@ -90,17 +90,18 @@ void MacOGLClientFetchObject::operator delete(void *ptr)
 	[(MacClientSharedObject *)(fetchObjectPtr->GetClientData()) release];
 	
 	CGLContextObj context = fetchObjectPtr->GetContext();
-	OGLContextInfo *contextInfo = fetchObjectPtr->GetContextInfo();
 	
 	if (context != NULL)
 	{
+		OGLContextInfo *contextInfo = fetchObjectPtr->GetContextInfo();
 		CGLContextObj prevContext = CGLGetCurrentContext();
 		CGLSetCurrentContext(context);
-		::operator delete(ptr);
-		CGLSetCurrentContext(prevContext);
 		
-		delete contextInfo;
 		[fetchObjectPtr->GetNSContext() release];
+		delete contextInfo;
+		::operator delete(ptr);
+		
+		CGLSetCurrentContext(prevContext);
 	}
 }
 
@@ -216,18 +217,19 @@ void MacOGLClientFetchObject::FetchFromBufferIndex(const u8 index)
 void MacOGLDisplayView::operator delete(void *ptr)
 {
 	CGLContextObj context = ((MacOGLDisplayView *)ptr)->GetContext();
-	OGLContextInfo *contextInfo = ((MacOGLDisplayView *)ptr)->GetContextInfo();
 	
 	if (context != NULL)
 	{
+		OGLContextInfo *contextInfo = ((MacOGLDisplayView *)ptr)->GetContextInfo();
 		CGLContextObj prevContext = CGLGetCurrentContext();
 		CGLSetCurrentContext(context);
-		::operator delete(ptr);
-		CGLSetCurrentContext(prevContext);
 		
-		delete contextInfo;
 		[((MacOGLDisplayView *)ptr)->GetNSContext() release];
 		[((MacOGLDisplayView *)ptr)->GetNSPixelFormat() release];
+		delete contextInfo;
+		::operator delete(ptr);
+		
+		CGLSetCurrentContext(prevContext);
 	}
 }
 
@@ -266,7 +268,6 @@ MacOGLDisplayView::MacOGLDisplayView()
 	{
 		// If we can't get a 3.2 Core Profile context, then switch to using a
 		// legacy context instead.
-		useContext_3_2 = false;
 		attributes[9] = (NSOpenGLPixelFormatAttribute)0;
 		attributes[10] = (NSOpenGLPixelFormatAttribute)0;
 		_nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];

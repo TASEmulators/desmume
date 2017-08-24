@@ -209,17 +209,17 @@ private:
 
 public:
 
-	void savestate(EMUFILE *f)
+	void savestate(EMUFILE &f)
 	{
-		write32le(2,f); //version
-		write32le(shiftCommand,f);
-		write32le(paramCounter,f);
+		f.write_32LE(2); //version
+		f.write_32LE(shiftCommand);
+		f.write_32LE(paramCounter);
 	}
 	
-	bool loadstate(EMUFILE *f)
+	bool loadstate(EMUFILE &f)
 	{
 		u32 version;
-		if(read32le(&version,f) != 1) return false;
+		if (f.read_32LE(version) != 1) return false;
 
 		u8 junk8;
 		u32 junk32;
@@ -227,26 +227,26 @@ public:
 		if (version == 0)
 		{
 			//untested
-			read32le(&junk32,f);
+			f.read_32LE(junk32);
 			int commandCursor = 4-junk32;
-			for(u32 i=commandCursor;i<4;i++) read8le(&junk8,f);
-			read32le(&junk32,f);
-			for(u32 i=commandCursor;i<4;i++) read8le(&junk8,f);
-			read8le(&junk8,f);
+			for (u32 i=commandCursor;i<4;i++) f.read_u8(junk8);
+			f.read_32LE(junk32);
+			for (u32 i=commandCursor;i<4;i++) f.read_u8(junk8);
+			f.read_u8(junk8);
 		}
 		else if (version == 1)
 		{
 			//untested
-			read32le(&junk32,f);
-			read32le(&junk32,f);
-			for(u32 i=0;i<4;i++) read8le(&junk8,f);
-			for(u32 i=0;i<4;i++) read8le(&junk8,f);
-			read8le(&junk8,f);
+			f.read_32LE(junk32);
+			f.read_32LE(junk32);
+			for (u32 i=0;i<4;i++) f.read_u8(junk8);
+			for (u32 i=0;i<4;i++) f.read_u8(junk8);
+			f.read_u8(junk8);
 		}
 		else if (version == 2)
 		{
-			read32le(&shiftCommand,f);
-			read32le(&paramCounter,f);
+			f.read_32LE(shiftCommand);
+			f.read_32LE(paramCounter);
 		}
 
 		return true;
@@ -431,42 +431,68 @@ static void makeTables()
 			}
 }
 
-#define OSWRITE(x) os->fwrite((char*)&(x),sizeof((x)));
-#define OSREAD(x) is->fread((char*)&(x),sizeof((x)));
-
-void POLY::save(EMUFILE* os)
+void POLY::save(EMUFILE &os)
 {
-	OSWRITE(type);
-	OSWRITE(vertIndexes[0]); OSWRITE(vertIndexes[1]); OSWRITE(vertIndexes[2]); OSWRITE(vertIndexes[3]);
-	OSWRITE(polyAttr); OSWRITE(texParam); OSWRITE(texPalette);
-	OSWRITE(viewport);
-	OSWRITE(miny);
-	OSWRITE(maxy);
+	os.write_32LE((u32)type);
+	os.write_16LE(vertIndexes[0]);
+	os.write_16LE(vertIndexes[1]);
+	os.write_16LE(vertIndexes[2]);
+	os.write_16LE(vertIndexes[3]);
+	os.write_32LE(polyAttr);
+	os.write_32LE(texParam);
+	os.write_32LE(texPalette);
+	os.write_32LE(viewport);
+	os.write_floatLE(miny);
+	os.write_floatLE(maxy);
 }
 
-void POLY::load(EMUFILE* is)
+void POLY::load(EMUFILE &is)
 {
-	OSREAD(type);
-	OSREAD(vertIndexes[0]); OSREAD(vertIndexes[1]); OSREAD(vertIndexes[2]); OSREAD(vertIndexes[3]);
-	OSREAD(polyAttr); OSREAD(texParam); OSREAD(texPalette);
-	OSREAD(viewport);
-	OSREAD(miny);
-	OSREAD(maxy);
+	u32 polyType32;
+	is.read_32LE(polyType32);
+	type = (PolygonType)polyType32;
+	
+	is.read_16LE(vertIndexes[0]);
+	is.read_16LE(vertIndexes[1]);
+	is.read_16LE(vertIndexes[2]);
+	is.read_16LE(vertIndexes[3]);
+	is.read_32LE(polyAttr);
+	is.read_32LE(texParam);
+	is.read_32LE(texPalette);
+	is.read_32LE(viewport);
+	is.read_floatLE(miny);
+	is.read_floatLE(maxy);
 }
 
-void VERT::save(EMUFILE* os)
+void VERT::save(EMUFILE &os)
 {
-	OSWRITE(x); OSWRITE(y); OSWRITE(z); OSWRITE(w);
-	OSWRITE(u); OSWRITE(v);
-	OSWRITE(color[0]); OSWRITE(color[1]); OSWRITE(color[2]);
-	OSWRITE(fcolor[0]); OSWRITE(fcolor[1]); OSWRITE(fcolor[2]);
+	os.write_floatLE(x);
+	os.write_floatLE(y);
+	os.write_floatLE(z);
+	os.write_floatLE(w);
+	os.write_floatLE(u);
+	os.write_floatLE(v);
+	os.write_u8(color[0]);
+	os.write_u8(color[1]);
+	os.write_u8(color[2]);
+	os.write_floatLE(fcolor[0]);
+	os.write_floatLE(fcolor[1]);
+	os.write_floatLE(fcolor[2]);
 }
-void VERT::load(EMUFILE* is)
+void VERT::load(EMUFILE &is)
 {
-	OSREAD(x); OSREAD(y); OSREAD(z); OSREAD(w);
-	OSREAD(u); OSREAD(v);
-	OSREAD(color[0]); OSREAD(color[1]); OSREAD(color[2]);
-	OSREAD(fcolor[0]); OSREAD(fcolor[1]); OSREAD(fcolor[2]);
+	is.read_floatLE(x);
+	is.read_floatLE(y);
+	is.read_floatLE(z);
+	is.read_floatLE(w);
+	is.read_floatLE(u);
+	is.read_floatLE(v);
+	is.read_u8(color[0]);
+	is.read_u8(color[1]);
+	is.read_u8(color[2]);
+	is.read_floatLE(fcolor[0]);
+	is.read_floatLE(fcolor[1]);
+	is.read_floatLE(fcolor[2]);
 }
 
 void gfx3d_init()
@@ -1641,7 +1667,7 @@ static BOOL gfx3d_glBoxTest(u32 v)
 		CACHE_ALIGN float temp1[16] = {mtxCurrent[1][0]/4096.0f,mtxCurrent[1][1]/4096.0f,mtxCurrent[1][2]/4096.0f,mtxCurrent[1][3]/4096.0f,mtxCurrent[1][4]/4096.0f,mtxCurrent[1][5]/4096.0f,mtxCurrent[1][6]/4096.0f,mtxCurrent[1][7]/4096.0f,mtxCurrent[1][8]/4096.0f,mtxCurrent[1][9]/4096.0f,mtxCurrent[1][10]/4096.0f,mtxCurrent[1][11]/4096.0f,mtxCurrent[1][12]/4096.0f,mtxCurrent[1][13]/4096.0f,mtxCurrent[1][14]/4096.0f,mtxCurrent[1][15]/4096.0f};
 		CACHE_ALIGN float temp0[16] = {mtxCurrent[0][0]/4096.0f,mtxCurrent[0][1]/4096.0f,mtxCurrent[0][2]/4096.0f,mtxCurrent[0][3]/4096.0f,mtxCurrent[0][4]/4096.0f,mtxCurrent[0][5]/4096.0f,mtxCurrent[0][6]/4096.0f,mtxCurrent[0][7]/4096.0f,mtxCurrent[0][8]/4096.0f,mtxCurrent[0][9]/4096.0f,mtxCurrent[0][10]/4096.0f,mtxCurrent[0][11]/4096.0f,mtxCurrent[0][12]/4096.0f,mtxCurrent[0][13]/4096.0f,mtxCurrent[0][14]/4096.0f,mtxCurrent[0][15]/4096.0f};
 
-		DS_ALIGN(16) VERT_POS4f vert = { verts[i].x, verts[i].y, verts[i].z, verts[i].w };
+		//DS_ALIGN(16) VERT_POS4f vert = { verts[i].x, verts[i].y, verts[i].z, verts[i].w };
 
 		_NOSSE_MatrixMultVec4x4(temp1,verts[i].coord);
 		_NOSSE_MatrixMultVec4x4(temp0,verts[i].coord);
@@ -2580,7 +2606,7 @@ void gfx3d_Update3DFramebuffers(FragmentColor *framebufferMain, u16 *framebuffer
 }
 
 //-------------savestate
-void gfx3d_savestate(EMUFILE* os)
+void gfx3d_savestate(EMUFILE &os)
 {
 	if (CurrentRenderer->GetRenderNeedsFinish())
 	{
@@ -2588,37 +2614,49 @@ void gfx3d_savestate(EMUFILE* os)
 	}
 	
 	//version
-	write32le(4,os);
+	os.write_32LE(4);
 
 	//dump the render lists
-	const u32 vertListCount32 = (u32)vertlist->count;
-	const u32 polyListCount32 = (u32)polylist->count;
-	
-	OSWRITE(vertListCount32);
+	os.write_32LE((u32)vertlist->count);
 	for (size_t i = 0; i < vertlist->count; i++)
 		vertlist->list[i].save(os);
-	OSWRITE(polyListCount32);
+	
+	os.write_32LE((u32)polylist->count);
 	for (size_t i = 0; i < polylist->count; i++)
 		polylist->list[i].save(os);
 
 	for (size_t i = 0; i < ARRAY_SIZE(mtxStack); i++)
 	{
-		OSWRITE(mtxStack[i].position);
-		for(size_t j = 0; j < mtxStack[i].size*16; j++)
-			OSWRITE(mtxStack[i].matrix[j]);
+		os.write_32LE(mtxStack[i].position);
+		
+		for (size_t j = 0; j < mtxStack[i].size*16; j++)
+			os.write_32LE(mtxStack[i].matrix[j]);
 	}
 
 	gxf_hardware.savestate(os);
 
 	// evidently these need to be saved because we don't cache the matrix that would need to be used to properly regenerate them
-	OSWRITE(cacheLightDirection);
-	OSWRITE(cacheHalfVector);
+	for (size_t i = 0; i < 4; i++)
+	{
+		for (size_t j = 0; j < 4; j++)
+		{
+			os.write_32LE(cacheLightDirection[i][j]);
+		}
+	}
+	
+	for (size_t i = 0; i < 4; i++)
+	{
+		for (size_t j = 0; j < 4; j++)
+		{
+			os.write_32LE(cacheHalfVector[i][j]);
+		}
+	}
 }
 
-bool gfx3d_loadstate(EMUFILE* is, int size)
+bool gfx3d_loadstate(EMUFILE &is, int size)
 {
 	int version;
-	if (read32le(&version,is) != 1) return false;
+	if (is.read_32LE(version) != 1) return false;
 	if (size == 8) version = 0;
 
 	if (CurrentRenderer->GetRenderNeedsFinish())
@@ -2645,12 +2683,12 @@ bool gfx3d_loadstate(EMUFILE* is, int size)
 		u32 vertListCount32 = 0;
 		u32 polyListCount32 = 0;
 		
-		OSREAD(vertListCount32);
+		is.read_32LE(vertListCount32);
 		vertlist->count = vertListCount32;
 		for (size_t i = 0; i < vertlist->count; i++)
 			vertlist->list[i].load(is);
 		
-		OSREAD(polyListCount32);
+		is.read_32LE(polyListCount32);
 		polylist->count = polyListCount32;
 		for (size_t i = 0; i < polylist->count; i++)
 			polylist->list[i].load(is);
@@ -2658,11 +2696,12 @@ bool gfx3d_loadstate(EMUFILE* is, int size)
 
 	if (version >= 2)
 	{
-		for (size_t i=0; i < ARRAY_SIZE(mtxStack); i++)
+		for (size_t i = 0; i < ARRAY_SIZE(mtxStack); i++)
 		{
-			OSREAD(mtxStack[i].position);
-			for(size_t j = 0; j < mtxStack[i].size*16; j++)
-				OSREAD(mtxStack[i].matrix[j]);
+			is.read_32LE(mtxStack[i].position);
+			
+			for (size_t j = 0; j < mtxStack[i].size*16; j++)
+				is.read_32LE(mtxStack[i].matrix[j]);
 		}
 	}
 
@@ -2673,13 +2712,26 @@ bool gfx3d_loadstate(EMUFILE* is, int size)
 
 	gfx3d.polylist = &polylists[listTwiddle^1];
 	gfx3d.vertlist = &vertlists[listTwiddle^1];
-	gfx3d.polylist->count=0;
-	gfx3d.vertlist->count=0;
+	gfx3d.polylist->count = 0;
+	gfx3d.vertlist->count = 0;
 
 	if (version >= 4)
 	{
-		OSREAD(cacheLightDirection);
-		OSREAD(cacheHalfVector);
+		for (size_t i = 0; i < 4; i++)
+		{
+			for (size_t j = 0; j < 4; j++)
+			{
+				is.read_32LE(cacheLightDirection[i][j]);
+			}
+		}
+		
+		for (size_t i = 0; i < 4; i++)
+		{
+			for (size_t j = 0; j < 4; j++)
+			{
+				is.read_32LE(cacheHalfVector[i][j]);
+			}
+		}
 	}
 
 	return true;

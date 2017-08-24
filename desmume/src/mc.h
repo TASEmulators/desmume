@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 thoduv
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2008-2015 DeSmuME team
+	Copyright (C) 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -90,8 +90,8 @@ public:
 	
 	u8 searchFileSaveType(u32 size);
 
-	bool save_state(EMUFILE* os);
-	bool load_state(EMUFILE* is);
+	bool save_state(EMUFILE &os);
+	bool load_state(EMUFILE &is);
 	
 	//commands from mmu
 	void reset_command() { reset_command_state = true; };
@@ -128,7 +128,7 @@ public:
 	bool export_raw(const char* filename);
 	bool no_gba_unpack(u8 *&buf, u32 &size);
 	
-	bool load_movie(EMUFILE* is);
+	bool load_movie(EMUFILE &is);
 
 	struct {
 			u32 size,padSize,type,addr_size,mem_size;

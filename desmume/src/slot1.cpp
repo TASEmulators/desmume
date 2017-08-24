@@ -198,11 +198,11 @@ NDS_SLOT1_TYPE slot1_GetSelectedType()
 	return slot1_device_type;
 }
 
-void slot1_Savestate(EMUFILE* os)
+void slot1_Savestate(EMUFILE &os)
 {
 	slot1_device->savestate(os);
 }
-void slot1_Loadstate(EMUFILE* is)
+void slot1_Loadstate(EMUFILE &is)
 {
 	slot1_device->loadstate(is);
 }

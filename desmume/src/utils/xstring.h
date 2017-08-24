@@ -2,7 +2,7 @@
 //subsequently modified for desmume
 
 /*
-	Copyright (C) 2008-2009 DeSmuME team
+	Copyright (C) 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -49,14 +49,14 @@ std::vector<std::string> tokenize_str(const std::string & str,const std::string 
 std::string stditoa(int n);
 
 //extracts a decimal uint from an istream
-template<typename T> T templateIntegerDecFromIstream(EMUFILE* is)
+template<typename T> T templateIntegerDecFromIstream(EMUFILE &is)
 {
 	unsigned int ret = 0;
 	bool pre = true;
 
 	for(;;)
 	{
-		int c = is->fgetc();
+		int c = is.fgetc();
 		if(c == -1) return ret;
 		int d = c - '0';
 		if((d<0 || d>9))
@@ -71,33 +71,35 @@ template<typename T> T templateIntegerDecFromIstream(EMUFILE* is)
 			ret += d;
 		}
 	}
-	is->unget();
+	is.unget();
 	return ret;
 }
 
-inline u32 u32DecFromIstream(EMUFILE* is) { return templateIntegerDecFromIstream<u32>(is); }
-inline u64 u64DecFromIstream(EMUFILE* is) { return templateIntegerDecFromIstream<u64>(is); }
+inline u32 u32DecFromIstream(EMUFILE &is) { return templateIntegerDecFromIstream<u32>(is); }
+inline u64 u64DecFromIstream(EMUFILE &is) { return templateIntegerDecFromIstream<u64>(is); }
 
 //puts an optionally 0-padded decimal integer of type T into the ostream (0-padding is quicker)
-template<typename T, int DIGITS, bool PAD> void putdec(EMUFILE* os, T dec)
+template<typename T, int DIGITS, bool PAD> void putdec(EMUFILE &os, T dec)
 {
 	char temp[DIGITS];
 	int ctr = 0;
-	for(int i=0;i<DIGITS;i++)
+	
+	for (int i = 0; i < DIGITS; i++)
 	{
-		int quot = dec/10;
-		int rem = dec%10;
+		int quot = dec / 10;
+		int rem = dec % 10;
 		temp[DIGITS-1-i] = '0' + rem;
-		if(!PAD)
+		if (!PAD)
 		{
-			if(rem != 0) ctr = i;
+			if (rem != 0) ctr = i;
 		}
 		dec = quot;
 	}
-	if(!PAD)
-		os->fwrite(temp+DIGITS-ctr-1,ctr+1);
+	
+	if (!PAD)
+		os.fwrite(temp+DIGITS-ctr-1,ctr+1);
 	else
-		os->fwrite(temp,DIGITS);
+		os.fwrite(temp,DIGITS);
 }
 
 std::string mass_replace(const std::string &source, const std::string &victim, const std::string &replacement);

@@ -272,11 +272,7 @@
 #pragma mark NSOutlineViewDataSource Protocol
 - (id)outlineView:(NSOutlineView *)outlineView child:(NSInteger)index ofItem:(id)item
 {
-	if (item == nil)
-	{
-		return [_fileTreeVersionList objectAtIndex:index];
-	}
-	else if ([item isKindOfClass:[NSString class]])
+	if ([item isKindOfClass:[NSString class]])
 	{
 		NSArray *versionKeys = [(NSDictionary *)[_fileTree objectForKey:(NSString *)item] allKeys];
 		return [(NSDictionary *)[_fileTree objectForKey:(NSString *)item] objectForKey:[versionKeys objectAtIndex:index]];
@@ -286,7 +282,7 @@
 		return [(NSArray *)item objectAtIndex:index];
 	}
 	
-	return nil;
+	return [_fileTreeVersionList objectAtIndex:index];
 }
 
 - (BOOL)outlineView:(NSOutlineView *)outlineView isItemExpandable:(id)item

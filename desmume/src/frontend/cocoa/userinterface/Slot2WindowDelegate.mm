@@ -69,6 +69,7 @@
 		return nil;
 	}
 	
+	selectedDevice = nil;
 	deviceManager = [[[[CocoaDSSlot2Manager alloc] init] retain] autorelease];
 	hidManager = nil;
 	currentDeviceView = viewNoSelection;
@@ -90,8 +91,10 @@
 
 - (void)dealloc
 {
+	[self setSelectedDevice:nil];
 	[self setDeviceManager:nil];
 	[self setHidManager:nil];
+	[self setAutoSelectedDeviceText:nil];
 	[self setMpcfFolderURL:nil];
 	[self setMpcfDiskImageURL:nil];
 	[self setGbaCartridgeURL:nil];

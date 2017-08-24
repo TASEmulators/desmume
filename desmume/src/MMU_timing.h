@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2011 DeSmuME team
+	Copyright (C) 2007-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include "readwrite.h"
 #include "debug.h"
 #include "NDSSystem.h"
+#include "emufile.h"
 
 ////////////////////////////////////////////////////////////////
 // MEMORY TIMING ACCURACY CONFIGURATION
@@ -104,24 +105,24 @@ public:
 		Reset();
 	}
 	
-	void savestate(EMUFILE* os, int version)
+	void savestate(EMUFILE &os, int version)
 	{
-		write32le(m_cacheCache, os);
-		for(int i = 0; i < NUMBLOCKS; i++)
+		os.write_32LE(m_cacheCache);
+		for (int i = 0; i < NUMBLOCKS; i++)
 		{
-			for(int j = 0; j < ASSOCIATIVITY; j++)
-				write32le(m_blocks[i].tag[j],os);
-			write32le(m_blocks[i].nextWay,os);
+			for (int j = 0; j < ASSOCIATIVITY; j++)
+				os.write_32LE(m_blocks[i].tag[j]);
+			os.write_32LE(m_blocks[i].nextWay);
 		}
 	}
-	bool loadstate(EMUFILE* is, int version)
+	bool loadstate(EMUFILE &is, int version)
 	{
-		read32le(&m_cacheCache, is);
-		for(int i = 0; i < NUMBLOCKS; i++)
+		is.read_32LE(m_cacheCache);
+		for (int i = 0; i < NUMBLOCKS; i++)
 		{
-			for(int j = 0; j < ASSOCIATIVITY; j++)
-				read32le(&m_blocks[i].tag[j],is);
-			read32le(&m_blocks[i].nextWay,is);
+			for (int j = 0; j < ASSOCIATIVITY; j++)
+				is.read_32LE(m_blocks[i].tag[j]);
+			is.read_32LE(m_blocks[i].nextWay);
 		}
 		return true;
 	}
@@ -228,13 +229,13 @@ public:
 	}
 	FetchAccessUnit() { this->Reset(); }
 
-	void savestate(EMUFILE* os, int version)
+	void savestate(EMUFILE &os, int version)
 	{
-		write32le(m_lastAddress,os);
+		os.write_32LE(m_lastAddress);
 	}
-	bool loadstate(EMUFILE* is, int version)
+	bool loadstate(EMUFILE &is, int version)
 	{
-		read32le(&m_lastAddress,is);
+		is.read_32LE(m_lastAddress);
 		return true;
 	}
 

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2015 DeSmuME team
+	Copyright (C) 2006-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -123,8 +123,8 @@ public:
 		BOOL moveARM2CP(u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
 		BOOL isAccessAllowed(u32 address,u32 access);
 		// savestate
-		void saveone(EMUFILE* os);
-		bool loadone(EMUFILE* is);
+		void saveone(EMUFILE &os);
+		bool loadone(EMUFILE &is);
 };
 
 extern armcp15_t cp15;

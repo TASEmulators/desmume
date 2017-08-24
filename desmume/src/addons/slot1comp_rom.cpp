@@ -106,17 +106,17 @@ u32 Slot1Comp_Rom::incAddress()
 }
 
 
-void Slot1Comp_Rom::savestate(EMUFILE* os)
+void Slot1Comp_Rom::savestate(EMUFILE &os)
 {
 	s32 version = 0;
-	os->write32le(version);
-	os->write32le((s32)operation);
-	os->write32le(address);
+	os.write_32LE(version);
+	os.write_32LE((s32)operation);
+	os.write_32LE(address);
 }
 
-void Slot1Comp_Rom::loadstate(EMUFILE* is)
+void Slot1Comp_Rom::loadstate(EMUFILE &is)
 {
-	s32 version = is->read32le();
-	operation = (eSlot1Operation)is->read32le();
-	address = is->read32le();
+	s32 version = is.read_s32LE();
+	operation = (eSlot1Operation)is.read_s32LE();
+	address = is.read_u32LE();
 }

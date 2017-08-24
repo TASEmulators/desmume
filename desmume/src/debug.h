@@ -48,7 +48,7 @@ struct DebugStatistics
 extern DebugStatistics DEBUG_statistics;
 
 void DEBUG_reset();
-void DEBUG_dumpMemory(EMUFILE* fp);
+void DEBUG_dumpMemory(EMUFILE &fp);
 
 struct armcpu_t;
 

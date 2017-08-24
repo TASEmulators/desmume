@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2015 DeSmuME team
+	Copyright (C) 2007-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -130,8 +130,8 @@ struct TGXSTAT : public TRegister_32
 	virtual u32 read32();
 	virtual void write32(const u32 val);
 
-	void savestate(EMUFILE *f);
-	bool loadstate(EMUFILE *f);
+	void savestate(EMUFILE &f);
+	bool loadstate(EMUFILE &f);
 };
 
 void triggerDma(EDMAMode mode);
@@ -149,8 +149,8 @@ public:
 		mode = val&3;
 		//todo - do we clear the div0 flag here or is that strictly done by the divider unit?
 	}
-	void savestate(EMUFILE* os);
-	bool loadstate(EMUFILE* is, int version);
+	void savestate(EMUFILE &os);
+	bool loadstate(EMUFILE &is, int version);
 };
 
 class SqrtController
@@ -163,8 +163,8 @@ public:
 	u8 mode, busy;
 	u16 read16() { return mode|(busy<<15); }
 	void write16(u16 val) { mode = val&1; }
-	void savestate(EMUFILE* os);
-	bool loadstate(EMUFILE* is, int version);
+	void savestate(EMUFILE &os);
+	bool loadstate(EMUFILE &is, int version);
 };
 
 
@@ -198,8 +198,8 @@ public:
 
 	int procnum, chan;
 
-	void savestate(EMUFILE *f);
-	bool loadstate(EMUFILE *f);
+	void savestate(EMUFILE &f);
+	bool loadstate(EMUFILE &f);
 
 	void exec();
 	template<int PROCNUM> void doCopy();
@@ -468,8 +468,8 @@ public:
 	DSI_TSC();
 	void reset_command();
 	u16 write16(u16 val);
-	bool save_state(EMUFILE* os);
-	bool load_state(EMUFILE* is);
+	bool save_state(EMUFILE &os);
+	bool load_state(EMUFILE &is);
 
 private:
 	u16 read16();

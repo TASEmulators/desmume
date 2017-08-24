@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2008-2016 DeSmuME team
+	Copyright (C) 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -88,27 +88,30 @@ static FILE* fp = NULL;
 
 EMUFILE_MEMORY newWavData;
 
-static bool dataChunk(EMUFILE* inf)
+static bool dataChunk(EMUFILE &inf)
 {
 	bool found = false;
 
 	// seek to just after the RIFF header
-	inf->fseek(12,SEEK_SET);
+	inf.fseek(12,SEEK_SET);
 
 	// search for a format chunk
-	for (;;) {
+	for (;;)
+	{
 		char chunk_id[4];
-		u32   chunk_length;
+		u32  chunk_length;
 
-		if(inf->eof()) return found;
-		if(inf->fread(chunk_id, 4) != 4) return found;
-		if(!read32le(&chunk_length, inf)) return found;
+		if (inf.eof()) return found;
+		if (inf.fread(chunk_id, 4) != 4) return found;
+		if (!inf.read_32LE(chunk_length)) return found;
 
 		// if we found a data chunk, excellent!
-      if (memcmp(chunk_id, "data", 4) == 0) {
+      if (memcmp(chunk_id, "data", 4) == 0)
+	  {
 		  found = true;
-		  u8* temp = new u8[chunk_length];
-		  if(inf->fread(temp,chunk_length) != chunk_length) {
+		  u8 *temp = new u8[chunk_length];
+		  if (inf.fread(temp,chunk_length) != chunk_length)
+		  {
 			  delete[] temp;
 			  return false;
 		  }
@@ -117,27 +120,29 @@ static bool dataChunk(EMUFILE* inf)
 		  chunk_length = 0;
 	  }
 
-	  inf->fseek(chunk_length,SEEK_CUR);
+	  inf.fseek(chunk_length,SEEK_CUR);
 	}
 
 	return found;
 }
 
-static bool formatChunk(EMUFILE* inf)
+static bool formatChunk(EMUFILE &inf)
 {
 	// seek to just after the RIFF header
-	inf->fseek(12,SEEK_SET);
+	inf.fseek(12,SEEK_SET);
 
 	// search for a format chunk
-	for (;;) {
+	for (;;)
+	{
 		char chunk_id[4];
-		u32   chunk_length;
+		u32  chunk_length;
 
-		inf->fread(chunk_id, 4);
-		if(!read32le(&chunk_length, inf)) return false;
+		inf.fread(chunk_id, 4);
+		if (!inf.read_32LE(chunk_length)) return false;
 
 		// if we found a format chunk, excellent!
-		if (memcmp(chunk_id, "fmt ", 4) == 0 && chunk_length >= 16) {
+		if (memcmp(chunk_id, "fmt ", 4) == 0 && chunk_length >= 16)
+		{
 
 			// read format chunk
 			u16 format_tag;
@@ -147,11 +152,11 @@ static bool formatChunk(EMUFILE* inf)
 			//u16 block_align        = read16_le(chunk + 12);
 			u16 bits_per_sample;
 
-			if(read16le(&format_tag,inf)!=1) return false;
-			if(read16le(&channel_count,inf)!=1) return false;
-			if(read32le(&samples_per_second,inf)!=1) return false;
-			inf->fseek(6,SEEK_CUR);
-			if(read16le(&bits_per_sample,inf)!=1) return false;
+			if (inf.read_16LE(format_tag) != 1) return false;
+			if (inf.read_16LE(channel_count) != 1) return false;
+			if (inf.read_32LE(samples_per_second) != 1) return false;
+			inf.fseek(6,SEEK_CUR);
+			if (inf.read_16LE(bits_per_sample) != 1) return false;
 
 			chunk_length -= 16;
 
@@ -159,7 +164,8 @@ static bool formatChunk(EMUFILE* inf)
 			// we only support mono 8bit
 			if (format_tag != 1 ||
 				channel_count != 1 ||
-				bits_per_sample != 8) {
+				bits_per_sample != 8)
+			{
 					MessageBox(0,"not a valid RIFF WAVE file; must be 8bit mono pcm",0,0);
 					return false;
 			}
@@ -167,7 +173,7 @@ static bool formatChunk(EMUFILE* inf)
 			return true;
 		}
 
-		inf->fseek(chunk_length,SEEK_CUR);
+		inf.fseek(chunk_length,SEEK_CUR);
 	}
 	return false;
 }
@@ -175,10 +181,10 @@ static bool formatChunk(EMUFILE* inf)
 bool LoadSample(const char *name)
 {
 	SampleLoaded = 0;
-	if(!name) return true;
+	if (!name) return true;
 	 
 	EMUFILE_FILE inf(name,"rb");
-	if(inf.fail()) return false;
+	if (inf.fail()) return false;
 
 	//wav reading code adapted from AUDIERE (LGPL)
 
@@ -188,7 +194,7 @@ bool LoadSample(const char *name)
     u8 riff_datatype[4];
 
     inf.fread(riff_id, 4);
-    read32le(&riff_length,&inf);
+    inf.read_32LE(riff_length);
     inf.fread(riff_datatype, 4);
 
 	if (inf.size() < 12 ||
@@ -202,7 +208,8 @@ bool LoadSample(const char *name)
 	 if (!formatChunk(&inf))
       return false;
     
-	 if(!dataChunk(&inf)) {
+	 if (!dataChunk(&inf))
+	 {
 		 MessageBox(0,"not a valid WAVE file. some unknown problem.",0,0);
 		 return false;
 	 }
@@ -235,7 +242,7 @@ BOOL Mic_DeInit_Physical()
 
 BOOL Mic_Init_Physical()
 {
-	if(Mic_Inited)
+	if (Mic_Inited)
 		return TRUE;
 
 	Mic_Inited = FALSE;
@@ -282,8 +289,8 @@ BOOL Mic_Init_Physical()
 	return TRUE;
 }
 
-BOOL Mic_Init() {
-
+BOOL Mic_Init()
+{
 	micReadSamplePos = 0;
 	
 	return TRUE;
@@ -293,7 +300,7 @@ void Mic_Reset()
 {
 	micReadSamplePos = 0;
 	
-	if(!Mic_Inited)
+	if (!Mic_Inited)
 		return;
 
 	//reset physical
@@ -310,8 +317,7 @@ void Mic_DeInit()
 {
 }
 
-static const u8 random[32] =
-{
+static const u8 random[32] = {
     0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF5, 0xFF, 0xFF, 0xFF, 0xFF, 0x8E, 0xFF, 
     0xF4, 0xE1, 0xBF, 0x9A, 0x71, 0x58, 0x5B, 0x5F, 0x62, 0xC2, 0x25, 0x05, 0x01, 0x01, 0x01, 0x01, 
 } ;
@@ -322,9 +328,9 @@ u8 Mic_ReadSample()
 {
 	u8 ret;
 	u8 tmp;
-	if(CommonSettings.micMode == TCommonSettings::Physical)
+	if (CommonSettings.micMode == TCommonSettings::Physical)
 	{
-		if(movieMode == MOVIEMODE_INACTIVE)
+		if (movieMode == MOVIEMODE_INACTIVE)
 		{
 			//normal mic behavior
 			tmp = (u8)Mic_Buffer[Mic_PlayBuf][Mic_BufPos >> 1];
@@ -337,9 +343,9 @@ u8 Mic_ReadSample()
 	}
 	else
 	{
-		if(NDS_getFinalUserInput().mic.micButtonPressed)
+		if (NDS_getFinalUserInput().mic.micButtonPressed)
 		{
-			if(SampleLoaded)
+			if (SampleLoaded)
 			{
 				//use a sample
 				//TODO: what if a movie is active?
@@ -348,17 +354,17 @@ u8 Mic_ReadSample()
 				// or they're playing a game where it doesn't even matter or they never press the mic button.
 				tmp = samplebuffer[micReadSamplePos >> 1];
 				micReadSamplePos++;
-				if(micReadSamplePos == samplebuffersize*2)
+				if (micReadSamplePos == samplebuffersize*2)
 					micReadSamplePos=0;
 			}
 			else
 			{
 				//use the "random" values
-				if(CommonSettings.micMode == TCommonSettings::InternalNoise)
+				if (CommonSettings.micMode == TCommonSettings::InternalNoise)
 					tmp = random[micReadSamplePos >> 1];
 				else tmp = rand();
 				micReadSamplePos++;
-				if(micReadSamplePos == ARRAY_SIZE(random)*2)
+				if (micReadSamplePos == ARRAY_SIZE(random)*2)
 					micReadSamplePos=0;
 			}
 		}
@@ -371,7 +377,7 @@ u8 Mic_ReadSample()
 		}
 	}
 
-	if(Mic_BufPos & 0x1)
+	if (Mic_BufPos & 0x1)
 	{
 		ret = ((tmp & 0x1) << 7);
 	}
@@ -383,7 +389,7 @@ u8 Mic_ReadSample()
 	MicDisplay = tmp;
 
 	Mic_BufPos++;
-	if(Mic_BufPos >= (MIC_BUFSIZE << 1))
+	if (Mic_BufPos >= (MIC_BUFSIZE << 1))
 	{
 		Mic_BufPos = 0;
 		Mic_PlayBuf ^= 1;
@@ -393,31 +399,31 @@ u8 Mic_ReadSample()
 }
 
 // maybe a bit paranoid...
-void mic_savestate(EMUFILE* os)
+void mic_savestate(EMUFILE &os)
 {
 	//version
-	write32le(1,os);
+	os.write_32LE(1);
 	assert(MIC_BUFSIZE == 4096); // else needs new version
 
-	os->fwrite((char*)Mic_Buffer[0], MIC_BUFSIZE);
-	os->fwrite((char*)Mic_Buffer[1], MIC_BUFSIZE);
-	write16le(Mic_BufPos,os);
-	write8le(Mic_WriteBuf,os); // seems OK to save...
-	write8le(Mic_PlayBuf,os);
-	write32le(micReadSamplePos,os);
+	os.fwrite(Mic_Buffer[0], MIC_BUFSIZE);
+	os.fwrite(Mic_Buffer[1], MIC_BUFSIZE);
+	os.write_16LE(Mic_BufPos);
+	os.write_u8(Mic_WriteBuf); // seems OK to save...
+	os.write_u8(Mic_PlayBuf);
+	os.write_32LE(micReadSamplePos);
 }
-bool mic_loadstate(EMUFILE* is, int size)
+bool mic_loadstate(EMUFILE &is, int size)
 {
 	u32 version;
-	if(read32le(&version,is) != 1) return false;
-	if(version > 1 || version == 0) { is->fseek(size-4, SEEK_CUR); return true; }
+	if (is.read_32LE(version) != 1) return false;
+	if (version > 1 || version == 0) { is.fseek(size-4, SEEK_CUR); return true; }
 
-	is->fread((char*)Mic_Buffer[0], MIC_BUFSIZE);
-	is->fread((char*)Mic_Buffer[1], MIC_BUFSIZE);
-	read16le(&Mic_BufPos,is);
-	read8le(&Mic_WriteBuf,is);
-	read8le(&Mic_PlayBuf,is);
-	read32le(&micReadSamplePos,is);
+	is.fread(Mic_Buffer[0], MIC_BUFSIZE);
+	is.fread(Mic_Buffer[1], MIC_BUFSIZE);
+	is.read_16LE(Mic_BufPos);
+	is.read_u8(Mic_WriteBuf);
+	is.read_u8(Mic_PlayBuf);
+	is.read_32LE(micReadSamplePos);
 	return true;
 }
 

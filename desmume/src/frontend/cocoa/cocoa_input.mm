@@ -110,6 +110,13 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 {
 	delete CAInputDevice;
 	delete _hwMicLevelList;
+	
+	[self setDelegate:nil];
+	[self setHardwareMicInfoString:nil];
+	[self setHardwareMicNameString:nil];
+	[self setHardwareMicManufacturerString:nil];
+	[self setHardwareMicSampleRateString:nil];
+	
 	[super dealloc];
 }
 

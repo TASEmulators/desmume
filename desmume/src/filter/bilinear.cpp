@@ -288,10 +288,6 @@ void Bilinear32(u8 *srcPtr, u32 srcPitch, u8 * /* deltaPtr */,
       u8 *db = next_row++;
 
       // upper left pixel in quad: just copy it in
-	  int m = *ar;
-	  int mm = *ag;
-	  int mmmm = *ab;
-	  int mmm =  RGB1(*ar, *ag, *ab);
       *to++ = RGB1(*ar, *ag, *ab);
 
       // upper right

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011-2012 Roger Manuel
-	Copyright (C) 2013-2015 DeSmuME team
+	Copyright (C) 2013-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -617,12 +617,14 @@ void VideoFilter::RunFilterCustomByAttributes(const uint32_t *__restrict srcBuff
 	srcSurface.Pitch = srcWidth*2;
 	srcSurface.Width = srcWidth;
 	srcSurface.Height = srcHeight;
+	srcSurface.userData = NULL;
 	
 	SSurface dstSurface;
 	dstSurface.Surface = (unsigned char *)dstBuffer;
 	dstSurface.Pitch = dstWidth*2;
 	dstSurface.Width = dstWidth;
 	dstSurface.Height = dstHeight;
+	srcSurface.userData = NULL;
 	
 	if (filterFunction == NULL)
 	{

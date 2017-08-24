@@ -469,28 +469,28 @@ FORCEINLINE void rot_BMP_map(const s32 auxX, const s32 auxY, const int lg, const
 	outIndex = ((outColor & 0x8000) == 0) ? 0 : 1;
 }
 
-void gpu_savestate(EMUFILE* os)
+void gpu_savestate(EMUFILE &os)
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	const GPUEngineA *mainEngine = GPU->GetEngineMain();
 	const GPUEngineB *subEngine = GPU->GetEngineSub();
 	
 	//version
-	write32le(1,os);
+	os.write_32LE(1);
 	
-	os->fwrite((u8 *)dispInfo.masterCustomBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
+	os.fwrite((u8 *)dispInfo.masterCustomBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
 	
-	write32le(mainEngine->savedBG2X.value, os);
-	write32le(mainEngine->savedBG2Y.value, os);
-	write32le(mainEngine->savedBG3X.value, os);
-	write32le(mainEngine->savedBG3Y.value, os);
-	write32le(subEngine->savedBG2X.value, os);
-	write32le(subEngine->savedBG2Y.value, os);
-	write32le(subEngine->savedBG3X.value, os);
-	write32le(subEngine->savedBG3Y.value, os);
+	os.write_32LE(mainEngine->savedBG2X.value);
+	os.write_32LE(mainEngine->savedBG2Y.value);
+	os.write_32LE(mainEngine->savedBG3X.value);
+	os.write_32LE(mainEngine->savedBG3Y.value);
+	os.write_32LE(subEngine->savedBG2X.value);
+	os.write_32LE(subEngine->savedBG2Y.value);
+	os.write_32LE(subEngine->savedBG3X.value);
+	os.write_32LE(subEngine->savedBG3Y.value);
 }
 
-bool gpu_loadstate(EMUFILE* is, int size)
+bool gpu_loadstate(EMUFILE &is, int size)
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	GPUEngineA *mainEngine = GPU->GetEngineMain();
@@ -506,28 +506,28 @@ bool gpu_loadstate(EMUFILE* is, int size)
 	}
 	else if (size == 0x30024)
 	{
-		read32le(&version,is);
+		is.read_32LE(version);
 		version = 1;
 	}
 	else
 	{
-		if(read32le(&version,is) != 1) return false;
+		if (is.read_32LE(version) != 1) return false;
 	}
 	
 	if (version > 1) return false;
 	
-	is->fread((u8 *)dispInfo.masterCustomBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
+	is.fread((u8 *)dispInfo.masterCustomBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
 	
 	if (version == 1)
 	{
-		read32le((u32 *)&mainEngine->savedBG2X, is);
-		read32le((u32 *)&mainEngine->savedBG2Y, is);
-		read32le((u32 *)&mainEngine->savedBG3X, is);
-		read32le((u32 *)&mainEngine->savedBG3Y, is);
-		read32le((u32 *)&subEngine->savedBG2X, is);
-		read32le((u32 *)&subEngine->savedBG2Y, is);
-		read32le((u32 *)&subEngine->savedBG3X, is);
-		read32le((u32 *)&subEngine->savedBG3Y, is);
+		is.read_32LE(mainEngine->savedBG2X.value);
+		is.read_32LE(mainEngine->savedBG2Y.value);
+		is.read_32LE(mainEngine->savedBG3X.value);
+		is.read_32LE(mainEngine->savedBG3Y.value);
+		is.read_32LE(subEngine->savedBG2X.value);
+		is.read_32LE(subEngine->savedBG2Y.value);
+		is.read_32LE(subEngine->savedBG3X.value);
+		is.read_32LE(subEngine->savedBG3Y.value);
 		//removed per nitsuja feedback. anyway, this same thing will happen almost immediately in gpu line=0
 		//mainEngine->refreshAffineStartRegs(-1,-1);
 		//subEngine->refreshAffineStartRegs(-1,-1);
@@ -536,7 +536,7 @@ bool gpu_loadstate(EMUFILE* is, int size)
 	mainEngine->ParseAllRegisters();
 	subEngine->ParseAllRegisters();
 	
-	return !is->fail();
+	return !is.fail();
 }
 
 /*****************************************************************************/
@@ -4877,7 +4877,6 @@ void GPUEngineBase::_PerformWindowTesting(GPUEngineCompositorInfo &compInfo)
 			__m128i win0HandledMask = _mm_setzero_si128();
 			__m128i win1HandledMask = _mm_setzero_si128();
 			__m128i winOBJHandledMask = _mm_setzero_si128();
-			__m128i winOUTHandledMask = _mm_setzero_si128();
 			
 			// Window 0 has the highest priority, so always check this first.
 			if (compInfo.renderState.WIN0_ENABLED && this->_IsWindowInsideVerticalRange<0>(compInfo))
@@ -4911,7 +4910,7 @@ void GPUEngineBase::_PerformWindowTesting(GPUEngineCompositorInfo &compInfo)
 			
 			// If the pixel isn't inside any windows, then the pixel is outside, and therefore uses the WINOUT flags.
 			// This has the lowest priority, and is always checked last.
-			winOUTHandledMask = _mm_xor_si128( _mm_or_si128(win0HandledMask, _mm_or_si128(win1HandledMask, winOBJHandledMask)), _mm_set1_epi32(0xFFFFFFFF) );
+			const __m128i winOUTHandledMask = _mm_xor_si128( _mm_or_si128(win0HandledMask, _mm_or_si128(win1HandledMask, winOBJHandledMask)), _mm_set1_epi32(0xFFFFFFFF) );
 			didPassWindowTest = _mm_or_si128( didPassWindowTest, _mm_and_si128(winOUTHandledMask, compInfo.renderState.WINOUT_enable_SSE2[layerID]) );
 			enableColorEffect = _mm_or_si128( enableColorEffect, _mm_and_si128(winOUTHandledMask, compInfo.renderState.WINOUT_enable_SSE2[WINDOWCONTROL_EFFECTFLAG]) );
 			

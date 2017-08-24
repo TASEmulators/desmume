@@ -46,6 +46,7 @@
 #include "encrypt.h"
 #include "GPU.h"
 #include "SPU.h"
+#include "emufile.h"
 
 #ifdef DO_ASSERT_UNALIGNED
 #define ASSERT_UNALIGNED(x) assert(x)
@@ -1216,32 +1217,32 @@ u16 DSI_TSC::read16()
 	return 0xFF;
 }
 
-bool DSI_TSC::save_state(EMUFILE* os)
+bool DSI_TSC::save_state(EMUFILE &os)
 {
 	u32 version = 0;
-	write32le(version,os);
+	os.write_32LE(version);
 
-	write8le(reg_selection,os);
-	write8le(read_flag,os);
-	write32le(state,os);
-	write32le(readcount,os);
-	for(int i=0;i<ARRAY_SIZE(registers);i++)
-		write8le(registers[i],os);
+	os.write_u8(reg_selection);
+	os.write_u8(read_flag);
+	os.write_32LE(state);
+	os.write_32LE(readcount);
+	for (int i = 0; i < ARRAY_SIZE(registers); i++)
+		os.write_u8(registers[i]);
 
 	return true;
 }
 
-bool DSI_TSC::load_state(EMUFILE* is)
+bool DSI_TSC::load_state(EMUFILE &is)
 {
 	u32 version;
-	read32le(&version,is);
+	is.read_32LE(version);
 
-	read8le(&reg_selection,is);
-	read8le(&read_flag,is);
-	read32le(&state,is);
-	read32le(&readcount,is);
-	for(int i=0;i<ARRAY_SIZE(registers);i++)
-		read8le(&registers[i],is);
+	is.read_u8(reg_selection);
+	is.read_u8(read_flag);
+	is.read_32LE(state);
+	is.read_32LE(readcount);
+	for (int i = 0; i < ARRAY_SIZE(registers); i++)
+		is.read_u8(registers[i]);
 
 	return true;
 }
@@ -1982,20 +1983,21 @@ void TGXSTAT::write32(const u32 val)
 	//}
 }
 
-void TGXSTAT::savestate(EMUFILE *f)
+void TGXSTAT::savestate(EMUFILE &f)
 {
-	write32le(1,f); //version
-	write8le(tb,f); write8le(tr,f); write8le(se,f); write8le(gxfifo_irq,f); write8le(sb,f);
+	f.write_32LE(1); //version
+	f.write_u8(tb); f.write_u8(tr); f.write_u8(se); f.write_u8(gxfifo_irq); f.write_u8(sb);
 }
-bool TGXSTAT::loadstate(EMUFILE *f)
+
+bool TGXSTAT::loadstate(EMUFILE &f)
 {
 	u32 version;
-	if(read32le(&version,f) != 1) return false;
-	if(version > 1) return false;
+	if (f.read_32LE(version) != 1) return false;
+	if (version > 1) return false;
 
-	read8le(&tb,f); read8le(&tr,f); read8le(&se,f); read8le(&gxfifo_irq,f); 
+	f.read_u8(tb); f.read_u8(tr); f.read_u8(se); f.read_u8(gxfifo_irq);
 	if (version >= 1)
-		read8le(&sb,f);
+		f.read_u8(sb);
 
 	return true;
 }
@@ -2039,78 +2041,78 @@ MMU_struct_new::MMU_struct_new()
 		}
 }
 
-void DivController::savestate(EMUFILE* os)
+void DivController::savestate(EMUFILE &os)
 {
-	write8le(&mode,os);
-	write8le(&busy,os);
-	write8le(&div0,os);
+	os.write_u8(mode);
+	os.write_u8(busy);
+	os.write_u8(div0);
 }
 
-bool DivController::loadstate(EMUFILE* is, int version)
+bool DivController::loadstate(EMUFILE &is, int version)
 {
 	int ret = 1;
-	ret &= read8le(&mode,is);
-	ret &= read8le(&busy,is);
-	ret &= read8le(&div0,is);
+	ret &= is.read_u8(mode);
+	ret &= is.read_u8(busy);
+	ret &= is.read_u8(div0);
 	return ret==1;
 }
 
-void SqrtController::savestate(EMUFILE* os)
+void SqrtController::savestate(EMUFILE &os)
 {
-	write8le(&mode,os);
-	write8le(&busy,os);
+	os.write_u8(mode);
+	os.write_u8(busy);
 }
 
-bool SqrtController::loadstate(EMUFILE* is, int version)
+bool SqrtController::loadstate(EMUFILE &is, int version)
 {
 	int ret=1;
-	ret &= read8le(&mode,is);
-	ret &= read8le(&busy,is);
+	ret &= is.read_u8(mode);
+	ret &= is.read_u8(busy);
 	return ret==1;
 }
 
-bool DmaController::loadstate(EMUFILE* f)
+bool DmaController::loadstate(EMUFILE &f)
 {
 	u32 version;
-	if(read32le(&version,f) != 1) return false;
-	if(version >1) return false;
+	if (f.read_32LE(version) != 1) return false;
+	if (version > 1) return false;
 
-	read8le(&enable,f); read8le(&irq,f); read8le(&repeatMode,f); read8le(&_startmode,f);
-	read8le(&userEnable,f);
-	read32le(&wordcount,f);
+	f.read_u8(enable); f.read_u8(irq); f.read_u8(repeatMode); f.read_u8(_startmode);
+	f.read_u8(userEnable);
+	f.read_32LE(wordcount);
 	u8 temp;
-	read8le(&temp,f); startmode = (EDMAMode)temp;
-	read8le(&temp,f); bitWidth = (EDMABitWidth)temp;
-	read8le(&temp,f); sar = (EDMASourceUpdate)temp;
-	read8le(&temp,f); dar = (EDMADestinationUpdate)temp;
-	read32le(&saddr,f); read32le(&daddr,f);
-	read32le(&dmaCheck,f); read32le(&running,f); read32le(&paused,f); read32le(&triggered,f); 
-	read64le(&nextEvent,f);
+	f.read_u8(temp); startmode = (EDMAMode)temp;
+	f.read_u8(temp); bitWidth = (EDMABitWidth)temp;
+	f.read_u8(temp); sar = (EDMASourceUpdate)temp;
+	f.read_u8(temp); dar = (EDMADestinationUpdate)temp;
+	f.read_32LE(saddr); f.read_32LE(daddr);
+	f.read_32LE(dmaCheck); f.read_32LE(running); f.read_32LE(paused); f.read_32LE(triggered);
+	f.read_64LE(nextEvent);
 
-	if(version==1)
+	if (version == 1)
 	{
-		read32le(&saddr_user,f);
-		read32le(&daddr_user,f);
+		f.read_32LE(saddr_user);
+		f.read_32LE(daddr_user);
 	}
 
 	return true;
 }
 
-void DmaController::savestate(EMUFILE *f)
+void DmaController::savestate(EMUFILE &f)
 {
-	write32le(1,f); //version
-	write8le(enable,f); write8le(irq,f); write8le(repeatMode,f); write8le(_startmode,f);
-	write8le(userEnable,f);
-	write32le(wordcount,f);
-	write8le(startmode,f); 
-	write8le(bitWidth,f); 
-	write8le(sar,f); 
-	write8le(dar,f); 
-	write32le(saddr,f); write32le(daddr,f);
-	write32le(dmaCheck,f); write32le(running,f); write32le(paused,f); write32le(triggered,f); 
-	write64le(nextEvent,f);
-	write32le(saddr_user,f);
-	write32le(daddr_user,f);
+	f.write_32LE(1); //version
+	f.write_u8(enable); f.write_u8(irq); f.write_u8(repeatMode); f.write_u8(_startmode);
+	f.write_u8(userEnable);
+	f.write_32LE(wordcount);
+	f.write_u8(startmode);
+	f.write_u8(bitWidth);
+	f.write_u8(sar);
+	f.write_u8(dar);
+	f.write_32LE(saddr); f.write_32LE(daddr);
+	f.write_32LE(dmaCheck); f.write_32LE(running); f.write_32LE(paused); f.write_32LE(triggered);
+	f.write_64LE(nextEvent);
+	f.write_32LE(saddr_user);
+	f.write_32LE(daddr_user);
 }
 
 void DmaController::write32(const u32 val)

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME Team
+	Copyright (C) 2009-2017 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ void Mic_Reset(void);
 void Mic_DeInit(void);
 u8 Mic_ReadSample(void);
 
-void mic_savestate(EMUFILE* os);
-bool mic_loadstate(EMUFILE* is, int size);
+void mic_savestate(EMUFILE &os);
+bool mic_loadstate(EMUFILE &is, int size);
 
 #endif // MIC_H

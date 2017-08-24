@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2015 DeSmuME Team
+	Copyright (C) 2012-2017 DeSmuME Team
 	
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -314,14 +314,13 @@ static NSDictionary *hidUsageTable = nil;
 	
 	if (theRunLoop == nil)
 	{
-		IOHIDQueueRegisterValueAvailableCallback(hidQueueRef, NULL, NULL);
 		IOHIDQueueUnscheduleFromRunLoop(hidQueueRef, [runLoop getCFRunLoop], kCFRunLoopDefaultMode);
 	}
 	else
 	{
 		[theRunLoop retain];
-		IOHIDQueueScheduleWithRunLoop(hidQueueRef, [theRunLoop getCFRunLoop], kCFRunLoopDefaultMode);
 		IOHIDQueueRegisterValueAvailableCallback(hidQueueRef, HandleQueueValueAvailableCallback, self);
+		IOHIDQueueScheduleWithRunLoop(hidQueueRef, [theRunLoop getCFRunLoop], kCFRunLoopDefaultMode);
 	}
 	
 	[runLoop release];
@@ -546,23 +545,23 @@ InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef, InputManage
 		{
 			InputAttributes hatUp = inputAttr;
 			hatUp.isAnalog = false;
-			strncat(hatUp.elementName, "/Up", INPUT_HANDLER_STRING_LENGTH);
-			strncat(hatUp.elementCode, "/Up", INPUT_HANDLER_STRING_LENGTH);
+			strncat(hatUp.elementName, "/Up", 4);
+			strncat(hatUp.elementCode, "/Up", 4);
 			
 			InputAttributes hatRight = inputAttr;
 			hatRight.isAnalog = false;
-			strncat(hatRight.elementName, "/Right", INPUT_HANDLER_STRING_LENGTH);
-			strncat(hatRight.elementCode, "/Right", INPUT_HANDLER_STRING_LENGTH);
+			strncat(hatRight.elementName, "/Right", 7);
+			strncat(hatRight.elementCode, "/Right", 7);
 			
 			InputAttributes hatDown = inputAttr;
 			hatDown.isAnalog = false;
-			strncat(hatDown.elementName, "/Down", INPUT_HANDLER_STRING_LENGTH);
-			strncat(hatDown.elementCode, "/Down", INPUT_HANDLER_STRING_LENGTH);
+			strncat(hatDown.elementName, "/Down", 6);
+			strncat(hatDown.elementCode, "/Down", 6);
 			
 			InputAttributes hatLeft = inputAttr;
 			hatLeft.isAnalog = false;
-			strncat(hatLeft.elementName, "/Left", INPUT_HANDLER_STRING_LENGTH);
-			strncat(hatLeft.elementCode, "/Left", INPUT_HANDLER_STRING_LENGTH);
+			strncat(hatLeft.elementName, "/Left", 6);
+			strncat(hatLeft.elementCode, "/Left", 6);
 			
 			if (inputAttr.intCoordX == -1)
 			{
@@ -626,13 +625,13 @@ InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef, InputManage
 			{
 				InputAttributes loInputAttr = inputAttr;
 				loInputAttr.isAnalog = false;
-				strncat(loInputAttr.elementName, "-", INPUT_HANDLER_STRING_LENGTH);
-				strncat(loInputAttr.elementCode, "/LowerThreshold", INPUT_HANDLER_STRING_LENGTH);
+				strncat(loInputAttr.elementName, "-", 2);
+				strncat(loInputAttr.elementCode, "/LowerThreshold", 16);
 				
 				InputAttributes hiInputAttr = inputAttr;
 				hiInputAttr.isAnalog = false;
-				strncat(hiInputAttr.elementName, "+", INPUT_HANDLER_STRING_LENGTH);
-				strncat(hiInputAttr.elementCode, "/UpperThreshold", INPUT_HANDLER_STRING_LENGTH);
+				strncat(hiInputAttr.elementName, "+", 2);
+				strncat(hiInputAttr.elementCode, "/UpperThreshold", 16);
 				
 				if (loInputAttr.scalar <= 0.30f)
 				{
@@ -881,6 +880,7 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 - (void)dealloc
 {
 	[self setRunLoop:nil];
+	[self setDeviceListController:nil];
 	[self setInputManager:nil];
 	[self setTarget:nil];
 		

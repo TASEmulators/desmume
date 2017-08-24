@@ -455,76 +455,76 @@ BOOL armcp15_t::moveARM2CP(u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2)
 }
 
 // Save state
-void armcp15_t::saveone(EMUFILE* os)
+void armcp15_t::saveone(EMUFILE &os)
 {
-	write32le(IDCode,os);
-	write32le(cacheType,os);
-    write32le(TCMSize,os);
-    write32le(ctrl,os);
-    write32le(DCConfig,os);
-    write32le(ICConfig,os);
-    write32le(writeBuffCtrl,os);
-    write32le(und,os);
-    write32le(DaccessPerm,os);
-    write32le(IaccessPerm,os);
-	for(int i=0;i<8;i++) write32le(protectBaseSize[i],os);
-    write32le(cacheOp,os);
-    write32le(DcacheLock,os);
-    write32le(IcacheLock,os);
-    write32le(ITCMRegion,os);
-    write32le(DTCMRegion,os);
-    write32le(processID,os);
-    write32le(RAM_TAG,os);
-    write32le(testState,os);
-    write32le(cacheDbg,os);
-    for(int i=0;i<8;i++) write32le(regionWriteMask_USR[i],os);
-    for(int i=0;i<8;i++) write32le(regionWriteMask_SYS[i],os);
-    for(int i=0;i<8;i++) write32le(regionReadMask_USR[i],os);
-    for(int i=0;i<8;i++) write32le(regionReadMask_SYS[i],os);
-    for(int i=0;i<8;i++) write32le(regionExecuteMask_USR[i],os);
-    for(int i=0;i<8;i++) write32le(regionExecuteMask_SYS[i],os);
-    for(int i=0;i<8;i++) write32le(regionWriteSet_USR[i],os);
-    for(int i=0;i<8;i++) write32le(regionWriteSet_SYS[i],os);
-    for(int i=0;i<8;i++) write32le(regionReadSet_USR[i],os);
-    for(int i=0;i<8;i++) write32le(regionReadSet_SYS[i],os);
-    for(int i=0;i<8;i++) write32le(regionExecuteSet_USR[i],os);
-    for(int i=0;i<8;i++) write32le(regionExecuteSet_SYS[i],os);
+	os.write_32LE(IDCode);
+	os.write_32LE(cacheType);
+    os.write_32LE(TCMSize);
+    os.write_32LE(ctrl);
+    os.write_32LE(DCConfig);
+    os.write_32LE(ICConfig);
+    os.write_32LE(writeBuffCtrl);
+    os.write_32LE(und);
+    os.write_32LE(DaccessPerm);
+    os.write_32LE(IaccessPerm);
+	for (int i=0;i<8;i++) os.write_32LE(protectBaseSize[i]);
+    os.write_32LE(cacheOp);
+    os.write_32LE(DcacheLock);
+    os.write_32LE(IcacheLock);
+    os.write_32LE(ITCMRegion);
+    os.write_32LE(DTCMRegion);
+    os.write_32LE(processID);
+    os.write_32LE(RAM_TAG);
+    os.write_32LE(testState);
+    os.write_32LE(cacheDbg);
+    for (int i=0;i<8;i++) os.write_32LE(regionWriteMask_USR[i]);
+    for (int i=0;i<8;i++) os.write_32LE(regionWriteMask_SYS[i]);
+    for (int i=0;i<8;i++) os.write_32LE(regionReadMask_USR[i]);
+    for (int i=0;i<8;i++) os.write_32LE(regionReadMask_SYS[i]);
+    for (int i=0;i<8;i++) os.write_32LE(regionExecuteMask_USR[i]);
+    for (int i=0;i<8;i++) os.write_32LE(regionExecuteMask_SYS[i]);
+    for (int i=0;i<8;i++) os.write_32LE(regionWriteSet_USR[i]);
+    for (int i=0;i<8;i++) os.write_32LE(regionWriteSet_SYS[i]);
+    for (int i=0;i<8;i++) os.write_32LE(regionReadSet_USR[i]);
+    for (int i=0;i<8;i++) os.write_32LE(regionReadSet_SYS[i]);
+    for (int i=0;i<8;i++) os.write_32LE(regionExecuteSet_USR[i]);
+    for (int i=0;i<8;i++) os.write_32LE(regionExecuteSet_SYS[i]);
 }
 
-bool armcp15_t::loadone(EMUFILE* is)
+bool armcp15_t::loadone(EMUFILE &is)
 {
-	if(!read32le(&IDCode,is)) return false;
-	if(!read32le(&cacheType,is)) return false;
-    if(!read32le(&TCMSize,is)) return false;
-    if(!read32le(&ctrl,is)) return false;
-    if(!read32le(&DCConfig,is)) return false;
-    if(!read32le(&ICConfig,is)) return false;
-    if(!read32le(&writeBuffCtrl,is)) return false;
-    if(!read32le(&und,is)) return false;
-    if(!read32le(&DaccessPerm,is)) return false;
-    if(!read32le(&IaccessPerm,is)) return false;
-	for(int i=0;i<8;i++) if(!read32le(&protectBaseSize[i],is)) return false;
-    if(!read32le(&cacheOp,is)) return false;
-    if(!read32le(&DcacheLock,is)) return false;
-    if(!read32le(&IcacheLock,is)) return false;
-    if(!read32le(&ITCMRegion,is)) return false;
-    if(!read32le(&DTCMRegion,is)) return false;
-    if(!read32le(&processID,is)) return false;
-    if(!read32le(&RAM_TAG,is)) return false;
-    if(!read32le(&testState,is)) return false;
-    if(!read32le(&cacheDbg,is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&regionWriteMask_USR[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&regionWriteMask_SYS[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&regionReadMask_USR[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&regionReadMask_SYS[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&regionExecuteMask_USR[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&regionExecuteMask_SYS[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&regionWriteSet_USR[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&regionWriteSet_SYS[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&regionReadSet_USR[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&regionReadSet_SYS[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&regionExecuteSet_USR[i],is)) return false;
-    for(int i=0;i<8;i++) if(!read32le(&regionExecuteSet_SYS[i],is)) return false;
+	if (!is.read_32LE(IDCode)) return false;
+	if (!is.read_32LE(cacheType)) return false;
+    if (!is.read_32LE(TCMSize)) return false;
+    if (!is.read_32LE(ctrl)) return false;
+    if (!is.read_32LE(DCConfig)) return false;
+    if (!is.read_32LE(ICConfig)) return false;
+    if (!is.read_32LE(writeBuffCtrl)) return false;
+    if (!is.read_32LE(und)) return false;
+    if (!is.read_32LE(DaccessPerm)) return false;
+    if (!is.read_32LE(IaccessPerm)) return false;
+	for (int i=0;i<8;i++) if (!is.read_32LE(protectBaseSize[i])) return false;
+    if (!is.read_32LE(cacheOp)) return false;
+    if (!is.read_32LE(DcacheLock)) return false;
+    if (!is.read_32LE(IcacheLock)) return false;
+    if (!is.read_32LE(ITCMRegion)) return false;
+    if (!is.read_32LE(DTCMRegion)) return false;
+    if (!is.read_32LE(processID)) return false;
+    if (!is.read_32LE(RAM_TAG)) return false;
+    if (!is.read_32LE(testState)) return false;
+    if (!is.read_32LE(cacheDbg)) return false;
+    for (int i=0;i<8;i++) if (!is.read_32LE(regionWriteMask_USR[i])) return false;
+    for (int i=0;i<8;i++) if (!is.read_32LE(regionWriteMask_SYS[i])) return false;
+    for (int i=0;i<8;i++) if (!is.read_32LE(regionReadMask_USR[i])) return false;
+    for (int i=0;i<8;i++) if (!is.read_32LE(regionReadMask_SYS[i])) return false;
+    for (int i=0;i<8;i++) if (!is.read_32LE(regionExecuteMask_USR[i])) return false;
+    for (int i=0;i<8;i++) if (!is.read_32LE(regionExecuteMask_SYS[i])) return false;
+    for (int i=0;i<8;i++) if (!is.read_32LE(regionWriteSet_USR[i])) return false;
+    for (int i=0;i<8;i++) if (!is.read_32LE(regionWriteSet_SYS[i])) return false;
+    for (int i=0;i<8;i++) if (!is.read_32LE(regionReadSet_USR[i])) return false;
+    for (int i=0;i<8;i++) if (!is.read_32LE(regionReadSet_SYS[i])) return false;
+    for (int i=0;i<8;i++) if (!is.read_32LE(regionExecuteSet_USR[i])) return false;
+    for (int i=0;i<8;i++) if (!is.read_32LE(regionExecuteSet_SYS[i])) return false;
 
     return true;
 }

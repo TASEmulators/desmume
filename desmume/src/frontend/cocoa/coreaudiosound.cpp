@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2015 DeSmuME team
+	Copyright (C) 2012-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -25,8 +25,6 @@
 
 CoreAudioInput::CoreAudioInput()
 {
-	OSStatus error = noErr;
-	
 	_spinlockAUHAL = (OSSpinLock *)malloc(sizeof(OSSpinLock));
 	*_spinlockAUHAL = OS_SPINLOCK_INIT;
 	
@@ -89,19 +87,19 @@ CoreAudioInput::CoreAudioInput()
 	
 	CreateAudioUnitInstance(&_auHALInputDevice, &halInputDeviceDesc);
 	
-	error = NewAUGraph(&_auGraph);
-	error = AUGraphOpen(_auGraph);
+	NewAUGraph(&_auGraph);
+	AUGraphOpen(_auGraph);
 #if defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
-	error = AUGraphAddNode(_auGraph, (AudioComponentDescription *)&formatConverterDesc, &_auFormatConverterNode);
-	error = AUGraphAddNode(_auGraph, (AudioComponentDescription *)&outputDesc, &_auOutputNode);
+	AUGraphAddNode(_auGraph, (AudioComponentDescription *)&formatConverterDesc, &_auFormatConverterNode);
+	AUGraphAddNode(_auGraph, (AudioComponentDescription *)&outputDesc, &_auOutputNode);
 #else
-	error = AUGraphAddNode(_auGraph, (ComponentDescription *)&formatConverterDesc, &_auFormatConverterNode);
-	error = AUGraphAddNode(_auGraph, (ComponentDescription *)&outputDesc, &_auOutputNode);
+	AUGraphAddNode(_auGraph, (ComponentDescription *)&formatConverterDesc, &_auFormatConverterNode);
+	AUGraphAddNode(_auGraph, (ComponentDescription *)&outputDesc, &_auOutputNode);
 #endif
-	error = AUGraphConnectNodeInput(_auGraph, _auFormatConverterNode, 0, _auOutputNode, 0);
+	AUGraphConnectNodeInput(_auGraph, _auFormatConverterNode, 0, _auOutputNode, 0);
 	
-	error = AUGraphNodeInfo(_auGraph, _auFormatConverterNode, NULL, &_auFormatConverterUnit);
-	error = AUGraphNodeInfo(_auGraph, _auOutputNode, NULL, &_auOutputUnit);
+	AUGraphNodeInfo(_auGraph, _auFormatConverterNode, NULL, &_auFormatConverterUnit);
+	AUGraphNodeInfo(_auGraph, _auOutputNode, NULL, &_auOutputUnit);
 	
 	static const UInt32 disableFlag = 0;
 	static const UInt32 enableFlag = 1;
@@ -109,19 +107,19 @@ CoreAudioInput::CoreAudioInput()
 	static const AudioUnitScope outputBus = 0;
 	UInt32 propertySize = 0;
 	
-	error = AudioUnitSetProperty(_auHALInputDevice,
-								 kAudioOutputUnitProperty_EnableIO,
-								 kAudioUnitScope_Input,
-								 inputBus,
-								 &enableFlag,
-								 sizeof(enableFlag) );
+	AudioUnitSetProperty(_auHALInputDevice,
+						 kAudioOutputUnitProperty_EnableIO,
+						 kAudioUnitScope_Input,
+						 inputBus,
+						 &enableFlag,
+						 sizeof(enableFlag) );
 	
-	error = AudioUnitSetProperty(_auHALInputDevice,
-								 kAudioOutputUnitProperty_EnableIO,
-								 kAudioUnitScope_Output,
-								 outputBus,
-								 &disableFlag,
-								 sizeof(disableFlag) );
+	AudioUnitSetProperty(_auHALInputDevice,
+						 kAudioOutputUnitProperty_EnableIO,
+						 kAudioUnitScope_Output,
+						 outputBus,
+						 &disableFlag,
+						 sizeof(disableFlag) );
 	
 	AudioStreamBasicDescription outputFormat;
 	propertySize = sizeof(AudioStreamBasicDescription);
@@ -135,48 +133,48 @@ CoreAudioInput::CoreAudioInput()
 	outputFormat.mBitsPerChannel = MIC_SAMPLE_RESOLUTION;
 	
 	AudioStreamBasicDescription deviceOutputFormat;
-	error = AudioUnitGetProperty(_auOutputUnit,
-								 kAudioUnitProperty_StreamFormat,
-								 kAudioUnitScope_Output,
-								 0,
-								 &deviceOutputFormat,
-								 &propertySize);
+	AudioUnitGetProperty(_auOutputUnit,
+						 kAudioUnitProperty_StreamFormat,
+						 kAudioUnitScope_Output,
+						 0,
+						 &deviceOutputFormat,
+						 &propertySize);
 	
-	error = AudioUnitSetProperty(_auFormatConverterUnit,
-								 kAudioUnitProperty_StreamFormat,
-								 kAudioUnitScope_Input,
-								 0,
-								 &outputFormat,
-								 propertySize);
+	AudioUnitSetProperty(_auFormatConverterUnit,
+						 kAudioUnitProperty_StreamFormat,
+						 kAudioUnitScope_Input,
+						 0,
+						 &outputFormat,
+						 propertySize);
 	
-	error = AudioUnitSetProperty(_auFormatConverterUnit,
-								 kAudioUnitProperty_StreamFormat,
-								 kAudioUnitScope_Output,
-								 0,
-								 &outputFormat,
-								 propertySize);
+	AudioUnitSetProperty(_auFormatConverterUnit,
+						 kAudioUnitProperty_StreamFormat,
+						 kAudioUnitScope_Output,
+						 0,
+						 &outputFormat,
+						 propertySize);
 	
-	error = AudioUnitSetProperty(_auOutputUnit,
-								 kAudioUnitProperty_StreamFormat,
-								 kAudioUnitScope_Input,
-								 0,
-								 &outputFormat,
-								 propertySize);
+	AudioUnitSetProperty(_auOutputUnit,
+						 kAudioUnitProperty_StreamFormat,
+						 kAudioUnitScope_Input,
+						 0,
+						 &outputFormat,
+						 propertySize);
 	
-	error = AudioUnitSetProperty(_auOutputUnit,
-								 kAudioUnitProperty_StreamFormat,
-								 kAudioUnitScope_Output,
-								 0,
-								 &outputFormat,
-								 propertySize);
+	AudioUnitSetProperty(_auOutputUnit,
+						 kAudioUnitProperty_StreamFormat,
+						 kAudioUnitScope_Output,
+						 0,
+						 &outputFormat,
+						 propertySize);
 	
 	static const UInt32 bestQuality = kAudioUnitSampleRateConverterComplexity_Mastering;
-	error = AudioUnitSetProperty(_auFormatConverterUnit,
-								 kAudioUnitProperty_SampleRateConverterComplexity,
-								 kAudioUnitScope_Global,
-								 0,
-								 &bestQuality,
-								 sizeof(bestQuality));
+	AudioUnitSetProperty(_auFormatConverterUnit,
+						 kAudioUnitProperty_SampleRateConverterComplexity,
+						 kAudioUnitScope_Global,
+						 0,
+						 &bestQuality,
+						 sizeof(bestQuality));
 	
 	// Set up the capture buffers.
 	const size_t audioBufferListSize = offsetof(AudioBufferList, mBuffers[0]) + sizeof(AudioBuffer);
@@ -201,39 +199,39 @@ CoreAudioInput::CoreAudioInput()
 	inputCaptureCallback.inputProc = &CoreAudioInputCaptureCallback;
 	inputCaptureCallback.inputProcRefCon = this;
 	
-	error = AudioUnitSetProperty(_auHALInputDevice,
-								 kAudioOutputUnitProperty_SetInputCallback,
-								 kAudioUnitScope_Global,
-								 0,
-								 &inputCaptureCallback,
-								 sizeof(inputCaptureCallback) );
+	AudioUnitSetProperty(_auHALInputDevice,
+						 kAudioOutputUnitProperty_SetInputCallback,
+						 kAudioUnitScope_Global,
+						 0,
+						 &inputCaptureCallback,
+						 sizeof(inputCaptureCallback) );
 	
-	error = AudioUnitAddPropertyListener(this->_auHALInputDevice,
-										 kAudioDevicePropertyVolumeScalar,
-										 &CoreAudioInputAUHALChanged,
-										 this);
+	AudioUnitAddPropertyListener(this->_auHALInputDevice,
+								 kAudioDevicePropertyVolumeScalar,
+								 &CoreAudioInputAUHALChanged,
+								 this);
 	
-	error = AudioUnitAddPropertyListener(this->_auHALInputDevice,
-										 kAudioHardwarePropertyDefaultInputDevice,
-										 &CoreAudioInputAUHALChanged,
-										 this);
+	AudioUnitAddPropertyListener(this->_auHALInputDevice,
+								 kAudioHardwarePropertyDefaultInputDevice,
+								 &CoreAudioInputAUHALChanged,
+								 this);
 	
-	error = AudioUnitAddPropertyListener(this->_auHALInputDevice,
-										 kAudioDevicePropertyHogMode,
-										 &CoreAudioInputAUHALChanged,
-										 this);
+	AudioUnitAddPropertyListener(this->_auHALInputDevice,
+								 kAudioDevicePropertyHogMode,
+								 &CoreAudioInputAUHALChanged,
+								 this);
 	
-	error = AudioUnitAddPropertyListener(this->_auHALInputDevice,
-										 kAudioDevicePropertyJackIsConnected,
-										 &CoreAudioInputAUHALChanged,
-										 this);
+	AudioUnitAddPropertyListener(this->_auHALInputDevice,
+								 kAudioDevicePropertyJackIsConnected,
+								 &CoreAudioInputAUHALChanged,
+								 this);
 	
 	AudioObjectPropertyAddress defaultDeviceProperty;
 	defaultDeviceProperty.mSelector = kAudioHardwarePropertyDefaultInputDevice;
 	defaultDeviceProperty.mScope = kAudioObjectPropertyScopeGlobal;
 	defaultDeviceProperty.mElement = kAudioObjectPropertyElementMaster;
 	
-	error = AudioObjectAddPropertyListener(kAudioObjectSystemObject,
+	AudioObjectAddPropertyListener(kAudioObjectSystemObject,
 										   &defaultDeviceProperty,
 										   &CoreAudioInputDeviceChanged,
 										   this);
@@ -243,14 +241,14 @@ CoreAudioInput::CoreAudioInput()
 	inputReceiveCallback.inputProc = &CoreAudioInputReceiveCallback;
 	inputReceiveCallback.inputProcRefCon = this->_samplesCaptured;
 	
-	error = AudioUnitSetProperty(_auFormatConverterUnit,
-								 kAudioUnitProperty_SetRenderCallback,
-								 kAudioUnitScope_Global,
-								 0,
-								 &inputReceiveCallback,
-								 sizeof(inputReceiveCallback) );
+	AudioUnitSetProperty(_auFormatConverterUnit,
+						 kAudioUnitProperty_SetRenderCallback,
+						 kAudioUnitScope_Global,
+						 0,
+						 &inputReceiveCallback,
+						 sizeof(inputReceiveCallback) );
 	
-	error = AUGraphAddRenderNotify(_auGraph, &CoreAudioInputConvertCallback, this->_samplesConverted);
+	AUGraphAddRenderNotify(_auGraph, &CoreAudioInputConvertCallback, this->_samplesConverted);
 }
 
 CoreAudioInput::~CoreAudioInput()
@@ -472,12 +470,12 @@ void CoreAudioInput::Start()
 	defaultDeviceProperty.mScope = kAudioObjectPropertyScopeGlobal;
 	defaultDeviceProperty.mElement = kAudioObjectPropertyElementMaster;
 	
-	error = AudioObjectGetPropertyData(kAudioObjectSystemObject,
-									   &defaultDeviceProperty,
-									   0,
-									   NULL,
-									   &propertySize,
-									   &defaultInputDeviceID);
+	AudioObjectGetPropertyData(kAudioObjectSystemObject,
+							   &defaultDeviceProperty,
+							   0,
+							   NULL,
+							   &propertySize,
+							   &defaultInputDeviceID);
 	
 	// Set the default input device to the audio unit.
 	OSSpinLockLock(this->_spinlockAUHAL);
@@ -518,15 +516,15 @@ void CoreAudioInput::Start()
 	
 	if (this->IsHardwareEnabled() && !this->IsHardwareLocked() && !this->GetPauseState())
 	{
-		error = AudioOutputUnitStart(this->_auHALInputDevice);
+		AudioOutputUnitStart(this->_auHALInputDevice);
 	}
 	
 	OSSpinLockUnlock(this->_spinlockAUHAL);
 	
-	error = AUGraphInitialize(_auGraph);
+	AUGraphInitialize(_auGraph);
 	if (!this->GetPauseState())
 	{
-		error = AUGraphStart(this->_auGraph);
+		AUGraphStart(this->_auGraph);
 	}
 	
 	this->_samplesCaptured->clear();
@@ -555,15 +553,14 @@ void CoreAudioInput::Stop()
 
 size_t CoreAudioInput::Pull()
 {
-	OSStatus error = noErr;
 	AudioUnitRenderActionFlags ioActionFlags = 0;
 	
-	error = AudioUnitRender(this->_auOutputUnit,
-							&ioActionFlags,
-							&this->_timeStamp,
-							0,
-							MIC_CAPTURE_FRAMES,
-							this->_convertBufferList);
+	AudioUnitRender(this->_auOutputUnit,
+					&ioActionFlags,
+					&this->_timeStamp,
+					0,
+					MIC_CAPTURE_FRAMES,
+					this->_convertBufferList);
 	
 	return MIC_CAPTURE_FRAMES;
 }
@@ -610,17 +607,16 @@ float CoreAudioInput::GetGain() const
 
 void CoreAudioInput::SetGain(float normalizedGain)
 {
-	OSStatus error = noErr;
 	Float32 gainValue = normalizedGain;
 	UInt32 gainPropSize = sizeof(gainValue);
 	
 	OSSpinLockLock(this->_spinlockAUHAL);
-	error = AudioUnitSetProperty(this->_auHALInputDevice,
-								 kAudioDevicePropertyVolumeScalar,
-								 kAudioUnitScope_Input,
-								 this->_inputElement,
-								 &gainValue,
-								 gainPropSize);
+	AudioUnitSetProperty(this->_auHALInputDevice,
+						 kAudioDevicePropertyVolumeScalar,
+						 kAudioUnitScope_Input,
+						 this->_inputElement,
+						 &gainValue,
+						 gainPropSize);
 	OSSpinLockUnlock(this->_spinlockAUHAL);
 }
 
@@ -671,16 +667,15 @@ void CoreAudioInput::UpdateHardwareLock()
 									 &propertySize);
 		if (error == noErr)
 		{
+			// If the kAudioDevicePropertyJackIsConnected property is supported,
+			// then lock the hardware if the jack isn't connected.
+			//
+			// If the kAudioDevicePropertyJackIsConnected property is not supported,
+			// then always assume that the hardware device is always plugged in.
 			if (isJackConnected == 0)
 			{
 				hardwareLocked = true;
 			}
-		}
-		else
-		{
-			// If this property is not supported, then always assume that
-			// the hardware device is always plugged in.
-			isJackConnected = 1;
 		}
 	}
 	else

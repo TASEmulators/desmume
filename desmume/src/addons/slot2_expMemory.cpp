@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2009 CrazyMax
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -169,29 +169,27 @@ public:
 		return 0xFFFFFFFF;
 	}
 
-	virtual void savestate(EMUFILE* os)
+	virtual void savestate(EMUFILE &os)
 	{
 		s32 version = 0;
-		EMUFILE_MEMORY *ram = new EMUFILE_MEMORY(expMemory, EXPANSION_MEMORY_SIZE);
-		os->write32le(version);
-		os->write32le((u32)ext_ram_lock);
-		os->writeMemoryStream(ram);
-		delete ram;
+		EMUFILE_MEMORY ram = EMUFILE_MEMORY(expMemory, EXPANSION_MEMORY_SIZE);
+		os.write_32LE(version);
+		os.write_bool32(ext_ram_lock);
+		os.write_MemoryStream(ram);
 	}
 
-	virtual void loadstate(EMUFILE* is)
+	virtual void loadstate(EMUFILE &is)
 	{
-		EMUFILE_MEMORY *ram = new EMUFILE_MEMORY();
+		EMUFILE_MEMORY ram = EMUFILE_MEMORY();
 
-		s32 version = is->read32le();
+		s32 version = is.read_s32LE();
 
 		if (version >= 0)
 		{
-			is->read32le((u32*)&ext_ram_lock);
-			is->readMemoryStream(ram);
-			memcpy(expMemory, ram->buf(), std::min(EXPANSION_MEMORY_SIZE, ram->size()));
+			is.read_bool32(ext_ram_lock);
+			is.read_MemoryStream(ram);
+			memcpy(expMemory, ram.buf(), std::min(EXPANSION_MEMORY_SIZE, ram.size()));
 		}
-		delete ram;
 	}
 };
 

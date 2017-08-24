@@ -266,12 +266,12 @@ NDS_SLOT2_TYPE slot2_DetermineTypeByGameCode(const char *theGameCode)
 	return theType;
 }
 
-void slot2_Savestate(EMUFILE* os)
+void slot2_Savestate(EMUFILE &os)
 {
 	slot2_device->savestate(os);
 }
 
-void slot2_Loadstate(EMUFILE* is)
+void slot2_Loadstate(EMUFILE &is)
 {
 	slot2_device->loadstate(is);
 }

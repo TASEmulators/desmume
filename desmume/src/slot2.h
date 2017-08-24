@@ -78,9 +78,9 @@ public:
 	virtual u16	readWord(u8 PROCNUM, u32 addr) { return 0xFFFF; };
 	virtual u32	readLong(u8 PROCNUM, u32 addr) { return 0xFFFFFFFF; };
 
-	virtual void savestate(EMUFILE* os) {}
+	virtual void savestate(EMUFILE &os) {}
 
-	virtual void loadstate(EMUFILE* is) {}
+	virtual void loadstate(EMUFILE &is) {}
 }; 
 
 typedef ISlot2Interface* TISlot2InterfaceConstructor();
@@ -108,8 +108,8 @@ void slot2_Init();
 bool slot2_Connect();
 void slot2_Disconnect();
 void slot2_Shutdown();
-void slot2_Savestate(EMUFILE* os);
-void slot2_Loadstate(EMUFILE* is);
+void slot2_Savestate(EMUFILE &os);
+void slot2_Loadstate(EMUFILE &is);
 
 //just disconnects and reconnects the device. ideally, the disconnection and connection would be called with sensible timing
 void slot2_Reset();

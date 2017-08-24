@@ -132,18 +132,14 @@
 #pragma mark NSOutlineViewDataSource Protocol
 - (id)outlineView:(NSOutlineView *)outlineView child:(NSInteger)index ofItem:(id)item
 {
-	if (item == nil)
-	{
-		NSDictionary *mappings = [(NSDictionary *)[self content] valueForKey:@"Mappings"];
-		NSString *commandTag = [[inputManager commandTagList] objectAtIndex:index];
-		return [mappings valueForKey:commandTag];
-	}
-	else if ([item isKindOfClass:[NSArray class]])
+	if ([item isKindOfClass:[NSArray class]])
 	{
 		return [(NSArray *)item objectAtIndex:index];
 	}
 	
-	return nil;
+	NSDictionary *mappings = [(NSDictionary *)[self content] valueForKey:@"Mappings"];
+	NSString *commandTag = [[inputManager commandTagList] objectAtIndex:index];
+	return [mappings valueForKey:commandTag];
 }
 
 - (BOOL)outlineView:(NSOutlineView *)outlineView isItemExpandable:(id)item

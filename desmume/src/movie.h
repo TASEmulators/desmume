@@ -1,5 +1,5 @@
 /*
-	Copyright 2008-2015 DeSmuME team
+	Copyright 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -115,12 +115,12 @@ public:
 	bool Compare(MovieRecord& compareRec);
 	void clear();
 	
-	void parse(EMUFILE* fp);
-	bool parseBinary(EMUFILE* fp);
-	void dump(EMUFILE* fp);
-	void dumpBinary(EMUFILE* fp);
-	void parsePad(EMUFILE* fp, u16& pad);
-	void dumpPad(EMUFILE* fp, u16 pad);
+	void parse(EMUFILE &fp);
+	bool parseBinary(EMUFILE &fp);
+	void dump(EMUFILE &fp);
+	void dumpBinary(EMUFILE &fp);
+	void parsePad(EMUFILE &fp, u16 &outPad);
+	void dumpPad(EMUFILE &fp, u16 inPad);
 	
 	static const char mnemonics[13];
 
@@ -187,7 +187,7 @@ public:
 
 	void truncateAt(int frame);
 	void installValue(std::string& key, std::string& val);
-	int dump(EMUFILE* fp, bool binary);
+	int dump(EMUFILE &fp, bool binary);
 	void clearRecordRange(int start, int len);
 	void insertEmpty(int at, int frames);
 	
@@ -215,17 +215,17 @@ extern MovieData currMovieData;		//adelikat: main needs this for frame counter d
 
 extern bool movie_reset_command;
 
-bool FCEUI_MovieGetInfo(EMUFILE* fp, MOVIE_INFO& info, bool skipFrameCount);
+bool FCEUI_MovieGetInfo(EMUFILE &fp, MOVIE_INFO &info, bool skipFrameCount);
 void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname, const DateTime &rtcstart);
 const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe); // returns NULL on success, errmsg on failure
 void FCEUI_StopMovie();
 void FCEUMOV_AddInputState();
 void FCEUMOV_HandlePlayback();
 void FCEUMOV_HandleRecording();
-void mov_savestate(EMUFILE* fp);
-bool mov_loadstate(EMUFILE* fp, int size);
-void LoadFM2_binarychunk(MovieData& movieData, EMUFILE* fp, int size);
-bool LoadFM2(MovieData& movieData, EMUFILE* fp, int size, bool stopAfterHeader);
+void mov_savestate(EMUFILE &fp);
+bool mov_loadstate(EMUFILE &fp, int size);
+void LoadFM2_binarychunk(MovieData& movieData, EMUFILE &fp, int size);
+bool LoadFM2(MovieData &movieData, EMUFILE &fp, int size, bool stopAfterHeader);
 extern bool movie_readonly;
 extern bool ShowInputDisplay;
 void FCEUI_MakeBackupMovie(bool dispMessage);

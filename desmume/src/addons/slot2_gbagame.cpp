@@ -134,7 +134,7 @@ private:
 					return 2;
 				case FLASH:
 				{
-					u32 tmp = fROM->read32le();
+					u32 tmp = fROM->read_u32LE();
 					return ((tmp == FLASH1M_)?3:5);
 				}
 				case SIIRTC_V:

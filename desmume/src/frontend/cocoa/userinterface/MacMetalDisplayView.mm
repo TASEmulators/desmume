@@ -209,7 +209,7 @@
 	texDisplayPostprocessNativeTouch = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
 	texDisplayPostprocessCustomTouch = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
 	
-	uint16_t *blankBuffer = (uint16_t *)calloc(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT, sizeof(uint32_t));
+	uint32_t *blankBuffer = (uint32_t *)calloc(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT, sizeof(uint32_t));
 	const MTLRegion texRegionNative = MTLRegionMake2D(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 	[texDisplayFetch32NativeMain  replaceRegion:texRegionNative
 									mipmapLevel:0

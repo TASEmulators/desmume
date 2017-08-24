@@ -88,9 +88,9 @@ public:
 	//called when NDS_FakeBoot terminates, emulate in here the BIOS behaviour
 	virtual void post_fakeboot(int PROCNUM) {}
 
-	virtual void savestate(EMUFILE* os) {}
+	virtual void savestate(EMUFILE &os) {}
 
-	virtual void loadstate(EMUFILE* is) {}
+	virtual void loadstate(EMUFILE &is) {}
 }; 
 
 typedef ISlot1Interface* TISlot1InterfaceConstructor();
@@ -114,8 +114,8 @@ void slot1_Init();
 bool slot1_Connect();
 void slot1_Disconnect();
 void slot1_Shutdown();
-void slot1_Savestate(EMUFILE* os);
-void slot1_Loadstate(EMUFILE* is);
+void slot1_Savestate(EMUFILE &os);
+void slot1_Loadstate(EMUFILE &is);
 
 //just disconnects and reconnects the device. ideally, the disconnection and connection would be called with sensible timing
 void slot1_Reset();

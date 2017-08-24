@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2015 DeSmuME team
+	Copyright (C) 2011-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -101,7 +101,7 @@ typedef struct
 @property (retain) CocoaDSController *cdsController;
 @property (retain) CocoaDSFirmware *cdsFirmware;
 @property (retain) CocoaDSGPU *cdsGPU;
-@property (assign) NSMutableArray *cdsOutputList;
+@property (retain) NSMutableArray *cdsOutputList;
 
 @property (assign) BOOL masterExecute;
 @property (assign) BOOL isFrameSkipEnabled;

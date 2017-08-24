@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2016 DeSmuME team
+	Copyright (C) 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1258,6 +1258,11 @@ void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, co
 					tmp_col[3] = COLOR555TO8888_OPAQUE(tmp2);
 					break;
 				}
+					
+				default:
+					tmp_col[2] = 0;
+					tmp_col[3] = 0;
+					break;
 			}
 			
 			if (TEXCACHEFORMAT == TexFormat_15bpp)

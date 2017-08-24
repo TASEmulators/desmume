@@ -89,12 +89,12 @@ public:
 		mSelectedImplementation->post_fakeboot(PROCNUM);
 	}
 
-	virtual void savestate(EMUFILE* os)
+	virtual void savestate(EMUFILE &os)
 	{
 		mSelectedImplementation->savestate(os);
 	}
 
-	virtual void loadstate(EMUFILE* is)
+	virtual void loadstate(EMUFILE &is)
 	{
 		mSelectedImplementation->loadstate(is);
 	}

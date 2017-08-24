@@ -113,6 +113,9 @@
 	[inputSettingsMappings release];
 	[savedProfilesList release];
 	
+	[self setConfigInputTargetID:nil];
+	[self setInputSettingsInEdit:nil];
+	
 	[super dealloc];
 }
 
@@ -577,17 +580,13 @@
 #pragma mark NSOutlineViewDataSource Protocol
 - (id)outlineView:(NSOutlineView *)outlineView child:(NSInteger)index ofItem:(id)item
 {
-	if (item == nil)
-	{
-		NSString *commandTag = [[inputManager commandTagList] objectAtIndex:index];
-		return [[inputManager inputMappings] valueForKey:commandTag];
-	}
-	else if ([item isKindOfClass:[NSArray class]])
+	if ([item isKindOfClass:[NSArray class]])
 	{
 		return [(NSArray *)item objectAtIndex:index];
 	}
 	
-	return nil;
+	NSString *commandTag = [[inputManager commandTagList] objectAtIndex:index];
+	return [[inputManager inputMappings] valueForKey:commandTag];
 }
 
 - (BOOL)outlineView:(NSOutlineView *)outlineView isItemExpandable:(id)item

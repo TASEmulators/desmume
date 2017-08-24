@@ -68,8 +68,8 @@ struct MMU_struct;
 #define GPU_VRAM_BLOCK_LINES			256
 #define GPU_VRAM_BLANK_REGION_LINES		544
 
-void gpu_savestate(EMUFILE* os);
-bool gpu_loadstate(EMUFILE* is, int size);
+void gpu_savestate(EMUFILE &os);
+bool gpu_loadstate(EMUFILE &is, int size);
 
 typedef void (*PixelLookupFunc)(const s32 auxX, const s32 auxY, const int lg, const u32 map, const u32 tile, const u16 *__restrict pal, u8 &outIndex, u16 &outColor);
 

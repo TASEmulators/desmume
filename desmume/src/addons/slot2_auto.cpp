@@ -58,12 +58,12 @@ public:
 	virtual u16	readWord(u8 PROCNUM, u32 addr) { return mSelectedImplementation->readWord(PROCNUM, addr); }
 	virtual u32	readLong(u8 PROCNUM, u32 addr) { return mSelectedImplementation->readLong(PROCNUM, addr); }
 
-	virtual void savestate(EMUFILE* os)
+	virtual void savestate(EMUFILE &os)
 	{
 		mSelectedImplementation->savestate(os);
 	}
 
-	virtual void loadstate(EMUFILE* is)
+	virtual void loadstate(EMUFILE &is)
 	{
 		mSelectedImplementation->loadstate(is);
 	}
