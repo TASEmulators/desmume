@@ -635,8 +635,8 @@ void ScaleScreen(float factor, bool user)
 
 	if(windowSize == 0)
 	{
-		int defw = GetPrivateProfileInt("Video", "Window width", 256, IniName);
-		int defh = GetPrivateProfileInt("Video", "Window height", 384, IniName);
+		int defw = GetPrivateProfileInt("Video", "Window width", GPU_FRAMEBUFFER_NATIVE_WIDTH, IniName);
+		int defh = GetPrivateProfileInt("Video", "Window height", GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, IniName);
 
 		// fix for wrong rotation
 		int w1x = 0; 
@@ -826,7 +826,7 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 	}
 
 	// finally, make it relative to the correct screen
-	const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUEngineID_Main);
+	const bool isMainGPUFirst = (GPU->GetDisplayInfo().engineID[NDSDisplayID_Main] == GPUEngineID_Main);
 
 	if (video.layout == 0 || video.layout == 2)
 	{
@@ -835,9 +835,9 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 			bool topOnTop = (video.swap == 0) || (video.swap == 2 && isMainGPUFirst) || (video.swap == 3 && !isMainGPUFirst);
 			bool bottom = (whichScreen > 0);
 			if(topOnTop)
-				y += bottom ? -192 : 0;
+				y += bottom ? -GPU_FRAMEBUFFER_NATIVE_HEIGHT : 0;
 			else
-				y += (y < 192) ? (bottom ? 0 : 192) : (bottom ? 0 : -192);
+				y += (y < GPU_FRAMEBUFFER_NATIVE_HEIGHT) ? (bottom ? 0 : GPU_FRAMEBUFFER_NATIVE_HEIGHT) : (bottom ? 0 : -GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		}
 	}
 	else if (video.layout == 1) // side-by-side
@@ -847,21 +847,21 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 			bool topOnTop = (video.swap == 0) || (video.swap == 2 && isMainGPUFirst) || (video.swap == 3 && !isMainGPUFirst);
 			bool bottom = (whichScreen > 0);
 			if(topOnTop)
-				x += bottom ? -256 : 0;
+				x += bottom ? -GPU_FRAMEBUFFER_NATIVE_WIDTH : 0;
 			else
-				x += (x < 256) ? (bottom ? 0 : 256) : (bottom ? 0 : -256);
+				x += (x < GPU_FRAMEBUFFER_NATIVE_WIDTH) ? (bottom ? 0 : GPU_FRAMEBUFFER_NATIVE_WIDTH) : (bottom ? 0 : -GPU_FRAMEBUFFER_NATIVE_WIDTH);
 		}
 		else
 		{
-			if(x >= 256)
+			if(x >= GPU_FRAMEBUFFER_NATIVE_WIDTH)
 			{
-				x -= 256;
-				y += 192;
+				x -= GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				y += GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 			}
 			else if(x < 0)
 			{
-				x += 256;
-				y -= 192;
+				x += GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				y -= GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 			}
 		}
 	}
@@ -1139,14 +1139,14 @@ void UpdateWndRects(HWND hwnd)
 	
 	if (video.layout == 1) //horizontal
 	{
-		rc = CalculateDisplayLayoutWrapper(rc, 512, 192, tbheight, maximized);
+		rc = CalculateDisplayLayoutWrapper(rc, GPU_FRAMEBUFFER_NATIVE_WIDTH * 2, GPU_FRAMEBUFFER_NATIVE_HEIGHT, tbheight, maximized);
 
 		wndWidth = (rc.bottom - rc.top) - tbheight;
 		wndHeight = (rc.right - rc.left);
 
 		ratio = ((float)wndHeight / (float)512);
-		oneScreenHeight = (int)((256) * ratio);
-		int oneScreenWidth = (int)((192) * ratio);
+		oneScreenHeight = (int)((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * ratio);
+		int oneScreenWidth = (int)((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * ratio);
 
 		// Main screen
 		ptClient.x = rc.left;
@@ -1175,7 +1175,7 @@ void UpdateWndRects(HWND hwnd)
 	else
 	if (video.layout == 2) //one screen
 	{
-		rc = CalculateDisplayLayoutWrapper(rc, 256, 192, tbheight, maximized);
+		rc = CalculateDisplayLayoutWrapper(rc, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, tbheight, maximized);
 
 		wndWidth = (rc.bottom - rc.top) - tbheight;
 		wndHeight = (rc.right - rc.left);
@@ -1202,11 +1202,11 @@ void UpdateWndRects(HWND hwnd)
 		//apply logic to correct things if forced integer is selected
 		if((video.rotation == 90) || (video.rotation == 270))
 		{
-			rc = CalculateDisplayLayoutWrapper(rc, 384 + video.screengap, 256, tbheight, maximized);
+			rc = CalculateDisplayLayoutWrapper(rc, (GPU_FRAMEBUFFER_NATIVE_HEIGHT*2) + video.screengap, GPU_FRAMEBUFFER_NATIVE_WIDTH, tbheight, maximized);
 		}
 		else
 		{
-			rc = CalculateDisplayLayoutWrapper(rc, 256, 384 + video.screengap, tbheight, maximized);
+			rc = CalculateDisplayLayoutWrapper(rc, GPU_FRAMEBUFFER_NATIVE_WIDTH, (GPU_FRAMEBUFFER_NATIVE_HEIGHT*2) + video.screengap, tbheight, maximized);
 		}
 
 		if((video.rotation == 90) || (video.rotation == 270))
@@ -1365,12 +1365,12 @@ void doLCDsLayout()
 		if (video.layout_old == 1)
 		{
 			newwidth = oldwidth / 2;
-			newheight = (oldheight * 2) + (video.screengap * oldheight / 192);
+			newheight = (oldheight * 2) + (video.screengap * oldheight / GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		}
 		else if (video.layout_old == 2)
 		{
 			newwidth = oldwidth;
-			newheight = (oldheight * 2) + (video.screengap * oldheight / 192);
+			newheight = (oldheight * 2) + (video.screengap * oldheight / GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		} 
 		else
 		{
@@ -1708,7 +1708,7 @@ static void OGL_DoDisplay()
 
 
 	RECT srcRects [2];
-	const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUEngineID_Main);
+	const bool isMainGPUFirst = (GPU->GetDisplayInfo().engineID[NDSDisplayID_Main] == GPUEngineID_Main);
 
 	if(video.swap == 0)
 	{
@@ -1830,7 +1830,7 @@ static void DD_DoDisplay()
 
 	RECT* dstRects [2] = {&MainScreenRect, &SubScreenRect};
 	RECT* srcRects [2];
-	const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUEngineID_Main);
+	const bool isMainGPUFirst = (GPU->GetDisplayInfo().engineID[NDSDisplayID_Main] == GPUEngineID_Main);
 
 	if(video.swap == 0)
 	{
@@ -1923,7 +1923,7 @@ struct DisplayBuffer
 	{
 	}
 	u32* buffer;
-	int size; //[256*192*4];
+	size_t size; //[256*192*4];
 } displayBuffers[3];
 
 volatile int currDisplayBuffer=-1;
@@ -2067,12 +2067,10 @@ void Display()
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 
-	const int PS = gpu_bpp==15?2:4;
-
 	if(CommonSettings.single_core())
 	{
 		video.srcBuffer = (u8*)dispInfo.masterCustomBuffer;
-		video.srcBufferSize = dispInfo.customWidth*dispInfo.customHeight*2* PS;
+		video.srcBufferSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes * 2;
 		DoDisplay(true);
 	}
 	else
@@ -2090,11 +2088,11 @@ void Display()
 		else newestDisplayBuffer = (currDisplayBuffer+2)%3;
 
 		DisplayBuffer& db = displayBuffers[newestDisplayBuffer];
-		int targetSize = 256*192*2* PS*video.prescaleHD*video.prescaleHD;
+		size_t targetSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes * 2;
 		if(db.size != targetSize)
 		{
 			free_aligned(db.buffer);
-			db.buffer = (u32*)malloc_alignedCacheLine(targetSize);
+			db.buffer = (u32*)malloc_alignedPage(targetSize);
 			db.size = targetSize;
 		}
 		memcpy(db.buffer,dispInfo.masterCustomBuffer,targetSize);
@@ -2982,10 +2980,10 @@ int _main()
 	WndY = GetPrivateProfileInt("Video","WindowPosY", CW_USEDEFAULT, IniName);
 	if(WndX < -10000) WndX = CW_USEDEFAULT; // fix for missing window problem
 	if(WndY < -10000) WndY = CW_USEDEFAULT; // (happens if you close desmume while it's minimized)
-  video.width = 256;
-  video.height = 384;
-	//video.width = GetPrivateProfileInt("Video", "Width", 256, IniName);
-	//video.height = GetPrivateProfileInt("Video", "Height", 384, IniName);
+  video.width = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+  video.height = GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2;
+	//video.width = GetPrivateProfileInt("Video", "Width", GPU_FRAMEBUFFER_NATIVE_WIDTH, IniName);
+	//video.height = GetPrivateProfileInt("Video", "Height", GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, IniName);
 	video.layout_old = video.layout = GetPrivateProfileInt("Video", "LCDsLayout", 0, IniName);
 	if (video.layout > 2)
 	{
@@ -3258,7 +3256,7 @@ int _main()
 	}
 
 	video.SetPrescale(CommonSettings.GFX3D_PrescaleHD, 1);
-	GPU->SetCustomFramebufferSize(256*video.prescaleHD,192*video.prescaleHD);
+	GPU->SetCustomFramebufferSize(GPU_FRAMEBUFFER_NATIVE_WIDTH*video.prescaleHD, GPU_FRAMEBUFFER_NATIVE_HEIGHT*video.prescaleHD);
 	SyncGpuBpp();
 	GPU->ClearWithColor(0xFFFFFF);
 
@@ -4267,8 +4265,8 @@ void ScreenshotToClipboard(bool extraInfo)
 	}
 	else
 	{
-		u32* swapbuf = (u32*)malloc_alignedCacheLine(width*height * 4);
-		ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, width * height);
+		u32* swapbuf = (u32*)malloc_alignedPage(width*height * 4);
+		ColorspaceConvertBuffer888XTo8888Opaque<true, false>((const u32*)dispInfo.masterCustomBuffer, swapbuf, width * height);
 
 		SetDIBitsToDevice(hMemDC, 0, 0, width, height, 0, 0, 0, height, swapbuf, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
 
@@ -5169,7 +5167,7 @@ DOKEYDOWN:
 			}
 			else
 			{
-				const bool isMainGPUFirst = (GPU->GetDisplayMain()->GetEngineID() == GPUEngineID_Main);
+				const bool isMainGPUFirst = (GPU->GetDisplayInfo().engineID[NDSDisplayID_Main] == GPUEngineID_Main);
 				if ((video.layout == 2) && ((video.swap == 0) || (video.swap == 2 && isMainGPUFirst) || (video.swap == 3 && !isMainGPUFirst))) return 0;
 				
 				bool untouch = false;
@@ -6397,7 +6395,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			CheckDlgButton(hw,IDC_TEX_DEPOSTERIZE, CommonSettings.GFX3D_Renderer_TextureDeposterize);
 			CheckDlgButton(hw,IDC_TEX_SMOOTH, CommonSettings.GFX3D_Renderer_TextureSmoothing);
 
-			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(5, 1));
+			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(16, 1));
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, CommonSettings.GFX3D_PrescaleHD);
 
 			for(i = 0; core3DList[i] != NULL; i++)
@@ -6421,7 +6419,13 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					CommonSettings.GFX3D_LineHack = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_LINEHACK);
 					CommonSettings.GFX3D_Renderer_Multisample = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_ANTIALIASING);
 					CommonSettings.GFX3D_TXTHack = IsDlgCheckboxChecked(hw,IDC_TXTHACK);
-					CommonSettings.GFX3D_PrescaleHD = SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_GETPOS, 0, 0);
+
+					LRESULT scaleResult = SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_GETPOS, 0, 0);
+					if ((scaleResult & 0xFFFF0000) == 0)
+					{
+						CommonSettings.GFX3D_PrescaleHD = scaleResult & 0x0000FFFF;
+					}
+
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_1)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 1;
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_2)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 2;
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_4)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 4;
@@ -6436,7 +6440,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 						if(display_mutex) slock_lock(display_mutex);
 						Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
 						video.SetPrescale(CommonSettings.GFX3D_PrescaleHD,1);
-						GPU->SetCustomFramebufferSize(256*video.prescaleHD,192*video.prescaleHD);
+						GPU->SetCustomFramebufferSize(GPU_FRAMEBUFFER_NATIVE_WIDTH*video.prescaleHD, GPU_FRAMEBUFFER_NATIVE_HEIGHT*video.prescaleHD);
 						SyncGpuBpp();
 						ScaleScreen(windowSize, false);
 						UpdateScreenRects();
@@ -7405,7 +7409,7 @@ bool DDRAW::createSurfaces(HWND hwnd)
 		return false;
 
 	//default doesnt matter much, itll get adjusted later
-	if(!createBackSurface(256,384))
+	if(!createBackSurface(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2))
 		return false;
 
 	if (FAILED(handle->CreateClipper(0, &clip, NULL))) return false;

@@ -43,9 +43,9 @@ public:
 	int prescalePost; //not supported yet
 	int prescaleTotal;
 
-	int scratchBufferSize;
+	size_t scratchBufferSize;
 	u8* srcBuffer;
-	int srcBufferSize;
+	size_t srcBufferSize;
 	u32 *buffer, *buffer_raw;
 	u32 *filteredbuffer;
 
@@ -64,8 +64,8 @@ public:
 		//all these stupid video filters read outside of their buffer. let's allocate too much and hope it stays filled with black. geeze
 		const int kPadSize = 4;
 		
-		int scratchBufferWidth = 256*kInflationFactor*prescaleHD + (kPadSize*2);
-		int scratchBufferHeight = 192*2*prescaleHD*kInflationFactor + (kPadSize*2);
+		size_t scratchBufferWidth = 256*kInflationFactor*prescaleHD + (kPadSize*2);
+		size_t scratchBufferHeight = 192*2*prescaleHD*kInflationFactor + (kPadSize*2);
 		scratchBufferSize = scratchBufferWidth * scratchBufferHeight * 4;
 
 		//why are these the same size, anyway?
