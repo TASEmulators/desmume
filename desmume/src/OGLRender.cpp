@@ -1878,9 +1878,28 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		
 		if (maxSamplesOGL >= 2)
 		{
-			if (maxSamplesOGL > OGLRENDER_MAX_MULTISAMPLES)
+			GLint maxMultisamples = OGLMaxMultisamples_Tier1;
+			
+			if ( (this->_framebufferWidth <= GPU_FRAMEBUFFER_NATIVE_WIDTH) && (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT) )
 			{
-				maxSamplesOGL = OGLRENDER_MAX_MULTISAMPLES;
+				maxMultisamples = OGLMaxMultisamples_Tier1;
+			}
+			else if ( (this->_framebufferWidth <= GPU_FRAMEBUFFER_NATIVE_WIDTH * 2) && (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2) )
+			{
+				maxMultisamples = OGLMaxMultisamples_Tier2;
+			}
+			else if ( (this->_framebufferWidth <= GPU_FRAMEBUFFER_NATIVE_WIDTH * 8) && (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * 8) )
+			{
+				maxMultisamples = OGLMaxMultisamples_Tier3;
+			}
+			else
+			{
+				maxMultisamples = OGLMaxMultisamples_Tier4;
+			}
+			
+			if (maxSamplesOGL > maxMultisamples)
+			{
+				maxSamplesOGL = maxMultisamples;
 			}
 			
 			error = this->CreateMultisampledFBO(maxSamplesOGL);
@@ -4451,9 +4470,28 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	if (this->isMultisampledFBOSupported)
 	{
 		GLsizei maxSamplesOGL = (GLsizei)this->_deviceInfo.maxSamples;
-		if (maxSamplesOGL > OGLRENDER_MAX_MULTISAMPLES)
+		GLint maxMultisamples = OGLMaxMultisamples_Tier1;
+		
+		if ( (w <= GPU_FRAMEBUFFER_NATIVE_WIDTH) && (h <= GPU_FRAMEBUFFER_NATIVE_HEIGHT) )
 		{
-			maxSamplesOGL = OGLRENDER_MAX_MULTISAMPLES;
+			maxMultisamples = OGLMaxMultisamples_Tier1;
+		}
+		else if ( (w <= GPU_FRAMEBUFFER_NATIVE_WIDTH * 2) && (h <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2) )
+		{
+			maxMultisamples = OGLMaxMultisamples_Tier2;
+		}
+		else if ( (w <= GPU_FRAMEBUFFER_NATIVE_WIDTH * 8) && (h <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * 8) )
+		{
+			maxMultisamples = OGLMaxMultisamples_Tier3;
+		}
+		else
+		{
+			maxMultisamples = OGLMaxMultisamples_Tier4;
+		}
+		
+		if (maxSamplesOGL > maxMultisamples)
+		{
+			maxSamplesOGL = maxMultisamples;
 		}
 		
 		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGColorID);

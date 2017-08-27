@@ -280,8 +280,15 @@ EXTERNOGLEXT(PFNGLTEXBUFFERPROC, glTexBuffer) // Core in v3.1
 #define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_MINOR			2
 #define OGLRENDER_MINIMUM_DRIVER_VERSION_REQUIRED_REVISION		0
 
-#define OGLRENDER_MAX_MULTISAMPLES			8
 #define OGLRENDER_VERT_INDEX_BUFFER_COUNT	(POLYLIST_SIZE * 6)
+
+enum OGLMaxMultisamples
+{
+	OGLMaxMultisamples_Tier1		= 32,
+	OGLMaxMultisamples_Tier2		= 16,
+	OGLMaxMultisamples_Tier3		= 8,
+	OGLMaxMultisamples_Tier4		= 4,
+};
 
 enum OGLVertexAttributeID
 {
