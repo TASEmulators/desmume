@@ -1454,6 +1454,40 @@ FragmentColor* OpenGLRenderer::GetFramebuffer()
 	return (this->willFlipAndConvertFramebufferOnGPU && this->isPBOSupported) ? this->_mappedFramebuffer : GPU->GetEngineMain()->Get3DFramebufferMain();
 }
 
+
+GLsizei OpenGLRenderer::GetLimitedMultisampleSize() const
+{
+	GLsizei deviceMultisamples = this->_deviceInfo.maxSamples;
+	GLsizei maxMultisamples = OGLMaxMultisamples_Tier1;
+	
+	if ( (this->_framebufferWidth  <= GPU_FRAMEBUFFER_NATIVE_WIDTH  * OGLMaxMultisamplesScaleLimit_Tier1) &&
+		 (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * OGLMaxMultisamplesScaleLimit_Tier1) )
+	{
+		maxMultisamples = OGLMaxMultisamples_Tier1;
+	}
+	else if ( (this->_framebufferWidth  <= GPU_FRAMEBUFFER_NATIVE_WIDTH  * OGLMaxMultisamplesScaleLimit_Tier2) &&
+			  (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * OGLMaxMultisamplesScaleLimit_Tier2) )
+	{
+		maxMultisamples = OGLMaxMultisamples_Tier2;
+	}
+	else if ( (this->_framebufferWidth  <= GPU_FRAMEBUFFER_NATIVE_WIDTH  * OGLMaxMultisamplesScaleLimit_Tier3) &&
+			  (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * OGLMaxMultisamplesScaleLimit_Tier3) )
+	{
+		maxMultisamples = OGLMaxMultisamples_Tier3;
+	}
+	else
+	{
+		maxMultisamples = OGLMaxMultisamples_Tier4;
+	}
+	
+	if (deviceMultisamples > maxMultisamples)
+	{
+		deviceMultisamples = maxMultisamples;
+	}
+	
+	return deviceMultisamples;
+}
+
 OpenGLTexture* OpenGLRenderer::GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing)
 {
 	OpenGLTexture *theTexture = (OpenGLTexture *)texCache.GetTexture(thePoly.texParam, thePoly.texPalette);
@@ -1878,31 +1912,9 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 		
 		if (maxSamplesOGL >= 2)
 		{
-			GLint maxMultisamples = OGLMaxMultisamples_Tier1;
+			GLsizei sampleSize = this->GetLimitedMultisampleSize();
 			
-			if ( (this->_framebufferWidth <= GPU_FRAMEBUFFER_NATIVE_WIDTH) && (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT) )
-			{
-				maxMultisamples = OGLMaxMultisamples_Tier1;
-			}
-			else if ( (this->_framebufferWidth <= GPU_FRAMEBUFFER_NATIVE_WIDTH * 2) && (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2) )
-			{
-				maxMultisamples = OGLMaxMultisamples_Tier2;
-			}
-			else if ( (this->_framebufferWidth <= GPU_FRAMEBUFFER_NATIVE_WIDTH * 8) && (this->_framebufferHeight <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * 8) )
-			{
-				maxMultisamples = OGLMaxMultisamples_Tier3;
-			}
-			else
-			{
-				maxMultisamples = OGLMaxMultisamples_Tier4;
-			}
-			
-			if (maxSamplesOGL > maxMultisamples)
-			{
-				maxSamplesOGL = maxMultisamples;
-			}
-			
-			error = this->CreateMultisampledFBO(maxSamplesOGL);
+			error = this->CreateMultisampledFBO(sampleSize);
 			if (error != OGLERROR_NOERR)
 			{
 				this->isMultisampledFBOSupported = false;
@@ -4469,41 +4481,18 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	
 	if (this->isMultisampledFBOSupported)
 	{
-		GLsizei maxSamplesOGL = (GLsizei)this->_deviceInfo.maxSamples;
-		GLint maxMultisamples = OGLMaxMultisamples_Tier1;
-		
-		if ( (w <= GPU_FRAMEBUFFER_NATIVE_WIDTH) && (h <= GPU_FRAMEBUFFER_NATIVE_HEIGHT) )
-		{
-			maxMultisamples = OGLMaxMultisamples_Tier1;
-		}
-		else if ( (w <= GPU_FRAMEBUFFER_NATIVE_WIDTH * 2) && (h <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2) )
-		{
-			maxMultisamples = OGLMaxMultisamples_Tier2;
-		}
-		else if ( (w <= GPU_FRAMEBUFFER_NATIVE_WIDTH * 8) && (h <= GPU_FRAMEBUFFER_NATIVE_HEIGHT * 8) )
-		{
-			maxMultisamples = OGLMaxMultisamples_Tier3;
-		}
-		else
-		{
-			maxMultisamples = OGLMaxMultisamples_Tier4;
-		}
-		
-		if (maxSamplesOGL > maxMultisamples)
-		{
-			maxSamplesOGL = maxMultisamples;
-		}
+		GLsizei sampleSize = this->GetLimitedMultisampleSize();
 		
 		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGColorID);
-		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamplesOGL, GL_RGBA, w, h);
+		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, sampleSize, GL_RGBA, w, h);
 		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGPolyID);
-		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamplesOGL, GL_RGBA, w, h);
+		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, sampleSize, GL_RGBA, w, h);
 		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGFogAttrID);
-		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamplesOGL, GL_RGBA, w, h);
+		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, sampleSize, GL_RGBA, w, h);
 		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilID);
-		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamplesOGL, GL_DEPTH24_STENCIL8_EXT, w, h);
+		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, sampleSize, GL_DEPTH24_STENCIL8_EXT, w, h);
 		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, OGLRef.rboMSGDepthStencilAlphaID);
-		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, maxSamplesOGL, GL_DEPTH24_STENCIL8_EXT, w, h);
+		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, sampleSize, GL_DEPTH24_STENCIL8_EXT, w, h);
 	}
 	
 	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);

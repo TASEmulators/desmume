@@ -284,10 +284,17 @@ EXTERNOGLEXT(PFNGLTEXBUFFERPROC, glTexBuffer) // Core in v3.1
 
 enum OGLMaxMultisamples
 {
-	OGLMaxMultisamples_Tier1		= 32,
-	OGLMaxMultisamples_Tier2		= 16,
-	OGLMaxMultisamples_Tier3		= 8,
-	OGLMaxMultisamples_Tier4		= 4,
+	OGLMaxMultisamples_Tier1			= 32,
+	OGLMaxMultisamples_Tier2			= 16,
+	OGLMaxMultisamples_Tier3			= 8,
+	OGLMaxMultisamples_Tier4			= 4,
+};
+
+enum OGLMaxMultisamplesScaleLimit
+{
+	OGLMaxMultisamplesScaleLimit_Tier1	= 1,
+	OGLMaxMultisamplesScaleLimit_Tier2	= 4,
+	OGLMaxMultisamplesScaleLimit_Tier3	= 8
 };
 
 enum OGLVertexAttributeID
@@ -717,6 +724,7 @@ public:
 	void SetVersion(unsigned int major, unsigned int minor, unsigned int revision);
 	
 	virtual FragmentColor* GetFramebuffer();
+	virtual GLsizei GetLimitedMultisampleSize() const;
 };
 
 class OpenGLRenderer_1_2 : public OpenGLRenderer
