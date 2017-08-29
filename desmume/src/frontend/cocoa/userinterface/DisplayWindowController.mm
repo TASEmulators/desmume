@@ -1341,10 +1341,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Set up the scaling factor if this is a Retina window
 	float scaleFactor = 1.0f;
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-	if ([[self window] respondsToSelector:@selector(backingScaleFactor)])
+	if ([masterWindow respondsToSelector:@selector(backingScaleFactor)])
 	{
-		scaleFactor = [[self window] backingScaleFactor];
+		scaleFactor = [masterWindow backingScaleFactor];
 	}
+    
+	if (_canUseMavericksFullScreen)
+	{
+		[masterWindow setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
+	}
+	else
 #endif
 	
 	// Set up some custom UI elements.
@@ -1529,8 +1535,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (NSApplicationPresentationOptions)window:(NSWindow *)window willUseFullScreenPresentationOptions:(NSApplicationPresentationOptions)proposedOptions
 {
-	[[NSApplication sharedApplication] setPresentationOptions:NSApplicationPresentationHideDock];
-	
 	NSApplicationPresentationOptions options = (NSApplicationPresentationHideDock |
 												NSApplicationPresentationAutoHideMenuBar |
 												NSApplicationPresentationFullScreen |
@@ -1563,11 +1567,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_screenMap.erase([self assignedScreen]);
 	[self setAssignedScreen:nil];
 	[self setIsShowingStatusBar:_masterStatusBarState];
-	
-	if (_screenMap.size() == 0)
-	{
-		[[NSApplication sharedApplication] setPresentationOptions:NSApplicationPresentationDefault];
-	}
 }
 
 #endif
