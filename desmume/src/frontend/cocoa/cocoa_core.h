@@ -35,11 +35,6 @@ typedef void *gdbstub_handle_t;
 typedef struct
 {
 	CocoaDSCore *cdsCore;
-	ExecutionBehavior behavior;
-	bool isFrameSkipEnabled;
-	uint64_t frameJumpTarget;
-	uint8_t framesToSkip;
-	uint64_t timeBudgetMachAbsTime;
 	pthread_mutex_t mutexOutputList;
 	pthread_mutex_t mutexThreadExecute;
 	pthread_cond_t condThreadExecute;
@@ -48,6 +43,8 @@ typedef struct
 
 @interface CocoaDSCore : NSObject
 {
+	ClientExecutionControl *execControl;
+	
 	CocoaDSController *cdsController;
 	CocoaDSFirmware *cdsFirmware;
 	CocoaDSGPU *cdsGPU;
@@ -56,9 +53,6 @@ typedef struct
 	pthread_t coreThread;
 	CoreThreadParam threadParam;
 	
-	NSInteger prevCoreState;
-	BOOL isSpeedLimitEnabled;
-	CGFloat speedScalar;
 	std::string _slot1R4Path;
 	
 	NSTimer *_fpsTimer;
@@ -73,16 +67,6 @@ typedef struct
 	volatile gdbstub_handle_t gdbStubHandleARM9;
 	volatile gdbstub_handle_t gdbStubHandleARM7;
 	
-	BOOL emuFlagAdvancedBusLevelTiming;
-	BOOL emuFlagRigorousTiming;
-	BOOL emuFlagUseExternalBios;
-	BOOL emuFlagEmulateBiosInterrupts;
-	BOOL emuFlagPatchDelayLoop;
-	BOOL emuFlagUseExternalFirmware;
-	BOOL emuFlagFirmwareBoot;
-	BOOL emuFlagDebugConsole;
-	BOOL emuFlagEmulateEnsata;
-	NSInteger cpuEmulationEngine;
 	NSInteger slot1DeviceType;
 	NSString *slot1StatusText;
 	NSString *frameStatus;
@@ -92,11 +76,9 @@ typedef struct
 	
 	OSSpinLock spinlockCdsController;
 	OSSpinLock spinlockMasterExecute;
-	OSSpinLock spinlockExecutionChange;
-	OSSpinLock spinlockCheatEnableFlag;
-	OSSpinLock spinlockEmulationFlags;
-	OSSpinLock spinlockCPUEmulationEngine;
 }
+
+@property (readonly, nonatomic) ClientExecutionControl *execControl;
 
 @property (retain) CocoaDSController *cdsController;
 @property (retain) CocoaDSFirmware *cdsFirmware;
@@ -142,12 +124,11 @@ typedef struct
 
 @property (readonly) pthread_rwlock_t *rwlockCoreExecute;
 
-- (BOOL) ejectCardFlag;
+- (BOOL) isSlot1Ejected;
 - (void) slot1Eject;
 
 - (void) changeRomSaveType:(NSInteger)saveTypeID;
-- (void) changeExecutionSpeed;
-- (void) applyDynaRec;
+- (void) updateExecutionSpeedStatus;
 - (BOOL) applySlot1Device;
 
 - (void) restoreCoreState;
@@ -171,5 +152,3 @@ typedef struct
 @end
 
 static void* RunCoreThread(void *arg);
-static uint8_t CalculateFrameSkip(uint64_t timeBudgetMachAbsTime, uint64_t frameStartMachAbsTime);
-uint64_t GetFrameAbsoluteTime(const double frameTimeScalar);

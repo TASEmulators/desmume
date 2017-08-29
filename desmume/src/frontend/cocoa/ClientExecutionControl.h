@@ -19,6 +19,7 @@
 #define _CLIENT_EXECUTION_CONTROL_H_
 
 #include <pthread.h>
+#include <string>
 
 #define SPEED_SCALAR_QUARTER						0.25	// Speed scalar for quarter execution speed.
 #define SPEED_SCALAR_HALF							0.5		// Speed scalar for half execution speed.
@@ -60,9 +61,13 @@ typedef struct ClientExecutionControlSettings
 {
 	CPUEmulationEngineID cpuEngineID;
 	uint8_t JITMaxBlockSize;
+	std::string filePathARM9BIOS;
+	std::string filePathARM7BIOS;
+	std::string filePathFirmware;
 	
 	bool enableAdvancedBusLevelTiming;
 	bool enableRigorous3DRenderingTiming;
+	bool enableGameSpecificHacks;
 	bool enableExternalBIOS;
 	bool enableBIOSInterrupts;
 	bool enableBIOSPatchDelayLoop;
@@ -71,12 +76,12 @@ typedef struct ClientExecutionControlSettings
 	bool enableDebugConsole;
 	bool enableEnsataEmulation;
 	
-	bool enableSpeedLimiter;
-	float executionSpeed;
-	uint64_t timeBudget;
+	bool enableCheats;
+	
+	bool enableExecutionSpeedLimiter;
+	double executionSpeed;
 	
 	bool enableFrameSkip;
-	uint8_t framesToSkip;
 	uint64_t frameJumpTarget;
 	
 	ExecutionBehavior execBehavior;
@@ -90,14 +95,19 @@ private:
 	ClientExecutionControlSettings _settingsPending;
 	ClientExecutionControlSettings _settingsApplied;
 	
+	bool _newSettingsPendingOnReset;
+	bool _newSettingsPendingOnExecutionLoopStart;
+	bool _newSettingsPendingOnNDSExec;
+	
+	bool _needResetFramesToSkip;
+	
+	double _frameTime;
+	uint8_t _framesToSkip;
+	ExecutionBehavior _prevExecBehavior;
+	
 	pthread_mutex_t _mutexSettingsPendingOnReset;
-	pthread_mutex_t _mutexSettingsApplyOnReset;
-	
 	pthread_mutex_t _mutexSettingsPendingOnExecutionLoopStart;
-	pthread_mutex_t _mutexSettingsApplyOnExecutionLoopStart;
-	
 	pthread_mutex_t _mutexSettingsPendingOnNDSExec;
-	pthread_mutex_t _mutexSettingsApplyOnNDSExec;
 	
 public:
 	ClientExecutionControl();
@@ -109,11 +119,23 @@ public:
 	uint8_t GetJITMaxBlockSize();
 	void SetJITMaxBlockSize(uint8_t blockSize);
 	
+	const char* GetARM9ImagePath();
+	void SetARM9ImagePath(const char *filePath);
+	
+	const char* GetARM7ImagePath();
+	void SetARM7ImagePath(const char *filePath);
+	
+	const char* GetFirmwareImagePath();
+	void SetFirmwareImagePath(const char *filePath);
+	
 	bool GetEnableAdvancedBusLevelTiming();
 	void SetEnableAdvancedBusLevelTiming(bool enable);
 	
 	bool GetEnableRigorous3DRenderingTiming();
 	void SetEnableRigorous3DRenderingTiming(bool enable);
+	
+	bool GetEnableGameSpecificHacks();
+	void SetEnableGameSpecificHacks(bool enable);
 	
 	bool GetEnableExternalBIOS();
 	void SetEnableExternalBIOS(bool enable);
@@ -136,31 +158,45 @@ public:
 	bool GetEnableEnsataEmulation();
 	void SetEnableEnsataEmulation(bool enable);
 	
+	bool GetEnableCheats();
+	void SetEnableCheats(bool enable);
+	
 	bool GetEnableSpeedLimiter();
 	void SetEnableSpeedLimiter(bool enable);
 	
-	float GetExecutionSpeed();
-	void SetExecutionSpeed(float speedScalar);
+	double GetExecutionSpeed();
+	void SetExecutionSpeed(double speedScalar);
 	
 	bool GetEnableFrameSkip();
+	bool GetEnableFrameSkipApplied();
 	void SetEnableFrameSkip(bool enable);
 	
 	uint8_t GetFramesToSkip();
+	void SetFramesToSkip(uint8_t numFrames);
+	void ResetFramesToSkip();
 	
 	uint64_t GetFrameJumpTarget();
+	uint64_t GetFrameJumpTargetApplied();
 	void SetFrameJumpTarget(uint64_t newJumpTarget);
 	
+	ExecutionBehavior GetPreviousExecutionBehavior();
 	ExecutionBehavior GetExecutionBehavior();
+	ExecutionBehavior GetExecutionBehaviorApplied();
 	void SetExecutionBehavior(ExecutionBehavior newBehavior);
 	
 	FrameJumpBehavior GetFrameJumpBehavior();
 	void SetFrameJumpBehavior(FrameJumpBehavior newBehavior);
 	
-	void FlushSettingsOnReset();
-	void FlushSettingsOnExecutionLoopStart();
-	void FlushSettingsOnNDSExec();
+	void ApplySettingsOnReset();
+	void ApplySettingsOnExecutionLoopStart();
+	void ApplySettingsOnNDSExec();
 	
-	virtual uint64_t GetFrameAbsoluteTime(double frameTimeScalar);
+	double GetFrameTime();
+	uint8_t CalculateFrameSkip(double startAbsoluteTime, double frameAbsoluteTime);
+	
+	virtual double GetCurrentAbsoluteTime();
+	virtual double CalculateFrameAbsoluteTime(double frameTimeScalar);
+	virtual void WaitUntilAbsoluteTime(double deadlineAbsoluteTime);
 };
 
 #endif // _CLIENT_EXECUTION_CONTROL_H_

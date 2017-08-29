@@ -15,6 +15,9 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <mach/mach.h>
+#include <mach/mach_time.h>
+
 #include "NDSSystem.h"
 
 #include "ClientExecutionControl.h"
@@ -22,11 +25,25 @@
 
 ClientExecutionControl::ClientExecutionControl()
 {
+	_newSettingsPendingOnReset = true;
+	_newSettingsPendingOnExecutionLoopStart = true;
+	_newSettingsPendingOnNDSExec = true;
+	
+	_needResetFramesToSkip = false;
+	
+	_frameTime = 0.0;
+	_framesToSkip = 0;
+	_prevExecBehavior = ExecutionBehavior_Pause;
+	
 	_settingsPending.cpuEngineID = CPUEmulationEngineID_Interpreter;
 	_settingsPending.JITMaxBlockSize = 12;
+	_settingsPending.filePathARM9BIOS = std::string();
+	_settingsPending.filePathARM7BIOS = std::string();
+	_settingsPending.filePathFirmware = std::string();
 	
 	_settingsPending.enableAdvancedBusLevelTiming = true;
 	_settingsPending.enableRigorous3DRenderingTiming = false;
+	_settingsPending.enableGameSpecificHacks = true;
 	_settingsPending.enableExternalBIOS = false;
 	_settingsPending.enableBIOSInterrupts = false;
 	_settingsPending.enableBIOSPatchDelayLoop = false;
@@ -35,31 +52,30 @@ ClientExecutionControl::ClientExecutionControl()
 	_settingsPending.enableDebugConsole = false;
 	_settingsPending.enableEnsataEmulation = false;
 	
-	_settingsPending.executionSpeed = 1.0f;
+	_settingsPending.enableExecutionSpeedLimiter = true;
+	_settingsPending.executionSpeed = SPEED_SCALAR_NORMAL;
 	
 	_settingsPending.enableFrameSkip = true;
-	_settingsPending.framesToSkip = 0;
 	_settingsPending.frameJumpTarget = 0;
 	
 	_settingsPending.execBehavior = ExecutionBehavior_Pause;
 	_settingsPending.jumpBehavior = FrameJumpBehavior_Forward;
 	
+	_settingsApplied = _settingsPending;
+	_settingsApplied.filePathARM9BIOS = std::string();
+	_settingsApplied.filePathARM7BIOS = std::string();
+	_settingsApplied.filePathFirmware = std::string();
+	
 	pthread_mutex_init(&_mutexSettingsPendingOnReset, NULL);
-	pthread_mutex_init(&_mutexSettingsApplyOnReset, NULL);
 	pthread_mutex_init(&_mutexSettingsPendingOnExecutionLoopStart, NULL);
-	pthread_mutex_init(&_mutexSettingsApplyOnExecutionLoopStart, NULL);
 	pthread_mutex_init(&_mutexSettingsPendingOnNDSExec, NULL);
-	pthread_mutex_init(&_mutexSettingsApplyOnNDSExec, NULL);
 }
 
 ClientExecutionControl::~ClientExecutionControl()
 {
 	pthread_mutex_destroy(&this->_mutexSettingsPendingOnReset);
-	pthread_mutex_destroy(&this->_mutexSettingsApplyOnReset);
 	pthread_mutex_destroy(&this->_mutexSettingsPendingOnExecutionLoopStart);
-	pthread_mutex_destroy(&this->_mutexSettingsApplyOnExecutionLoopStart);
 	pthread_mutex_destroy(&this->_mutexSettingsPendingOnNDSExec);
-	pthread_mutex_destroy(&this->_mutexSettingsApplyOnNDSExec);
 }
 
 CPUEmulationEngineID ClientExecutionControl::GetCPUEmulationEngineID()
@@ -73,8 +89,14 @@ CPUEmulationEngineID ClientExecutionControl::GetCPUEmulationEngineID()
 
 void ClientExecutionControl::SetCPUEmulationEngineID(CPUEmulationEngineID engineID)
 {
+#if !defined(__i386__) && !defined(__x86_64__)
+	engineID = CPUEmulationEngine_Interpreter;
+#endif
+	
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
 	this->_settingsPending.cpuEngineID = engineID;
+	
+	this->_newSettingsPendingOnReset = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
 }
 
@@ -100,6 +122,86 @@ void ClientExecutionControl::SetJITMaxBlockSize(uint8_t blockSize)
 	
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
 	this->_settingsPending.JITMaxBlockSize = blockSize;
+	
+	this->_newSettingsPendingOnReset = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+}
+
+const char* ClientExecutionControl::GetARM9ImagePath()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	const char *filePath = this->_settingsPending.filePathARM9BIOS.c_str();
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	
+	return filePath;
+}
+
+void ClientExecutionControl::SetARM9ImagePath(const char *filePath)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	
+	if (filePath == NULL)
+	{
+		this->_settingsPending.filePathARM9BIOS.clear();
+	}
+	else
+	{
+		this->_settingsPending.filePathARM9BIOS = std::string(filePath, sizeof(CommonSettings.ARM9BIOS));
+	}
+	
+	this->_newSettingsPendingOnReset = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+}
+
+const char* ClientExecutionControl::GetARM7ImagePath()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	const char *filePath = this->_settingsPending.filePathARM7BIOS.c_str();
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	
+	return filePath;
+}
+
+void ClientExecutionControl::SetARM7ImagePath(const char *filePath)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	
+	if (filePath == NULL)
+	{
+		this->_settingsPending.filePathARM7BIOS.clear();
+	}
+	else
+	{
+		this->_settingsPending.filePathARM7BIOS = std::string(filePath, sizeof(CommonSettings.ARM7BIOS));
+	}
+	
+	this->_newSettingsPendingOnReset = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+}
+
+const char* ClientExecutionControl::GetFirmwareImagePath()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	const char *filePath = this->_settingsPending.filePathFirmware.c_str();
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	
+	return filePath;
+}
+
+void ClientExecutionControl::SetFirmwareImagePath(const char *filePath)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	
+	if (filePath == NULL)
+	{
+		this->_settingsPending.filePathFirmware.clear();
+	}
+	else
+	{
+		this->_settingsPending.filePathFirmware = std::string(filePath, sizeof(CommonSettings.Firmware));
+	}
+	
+	this->_newSettingsPendingOnReset = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
 }
 
@@ -116,6 +218,8 @@ void ClientExecutionControl::SetEnableAdvancedBusLevelTiming(bool enable)
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
 	this->_settingsPending.enableAdvancedBusLevelTiming = enable;
+	
+	this->_newSettingsPendingOnNDSExec = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
@@ -132,6 +236,26 @@ void ClientExecutionControl::SetEnableRigorous3DRenderingTiming(bool enable)
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
 	this->_settingsPending.enableRigorous3DRenderingTiming = enable;
+	
+	this->_newSettingsPendingOnNDSExec = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+}
+
+bool ClientExecutionControl::GetEnableGameSpecificHacks()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	const bool enable = this->_settingsPending.enableGameSpecificHacks;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+	
+	return enable;
+}
+
+void ClientExecutionControl::SetEnableGameSpecificHacks(bool enable)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	this->_settingsPending.enableGameSpecificHacks = enable;
+	
+	this->_newSettingsPendingOnNDSExec = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
@@ -148,6 +272,8 @@ void ClientExecutionControl::SetEnableExternalBIOS(bool enable)
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
 	this->_settingsPending.enableExternalBIOS = enable;
+	
+	this->_newSettingsPendingOnNDSExec = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
@@ -164,6 +290,8 @@ void ClientExecutionControl::SetEnableBIOSInterrupts(bool enable)
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
 	this->_settingsPending.enableBIOSInterrupts = enable;
+	
+	this->_newSettingsPendingOnNDSExec = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
@@ -180,6 +308,8 @@ void ClientExecutionControl::SetEnableBIOSPatchDelayLoop(bool enable)
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
 	this->_settingsPending.enableBIOSPatchDelayLoop = enable;
+	
+	this->_newSettingsPendingOnNDSExec = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
@@ -196,6 +326,8 @@ void ClientExecutionControl::SetEnableExternalFirmware(bool enable)
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
 	this->_settingsPending.enableExternalFirmware = enable;
+	
+	this->_newSettingsPendingOnNDSExec = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
@@ -212,6 +344,8 @@ void ClientExecutionControl::SetEnableFirmwareBoot(bool enable)
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
 	this->_settingsPending.enableFirmwareBoot = enable;
+	
+	this->_newSettingsPendingOnNDSExec = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
@@ -228,6 +362,8 @@ void ClientExecutionControl::SetEnableDebugConsole(bool enable)
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
 	this->_settingsPending.enableDebugConsole = enable;
+	
+	this->_newSettingsPendingOnNDSExec = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
@@ -244,13 +380,33 @@ void ClientExecutionControl::SetEnableEnsataEmulation(bool enable)
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
 	this->_settingsPending.enableEnsataEmulation = enable;
+	
+	this->_newSettingsPendingOnNDSExec = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+}
+
+bool ClientExecutionControl::GetEnableCheats()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	const bool enable = this->_settingsPending.enableCheats;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+	
+	return enable;
+}
+
+void ClientExecutionControl::SetEnableCheats(bool enable)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	this->_settingsPending.enableCheats = enable;
+	
+	this->_newSettingsPendingOnNDSExec = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
 bool ClientExecutionControl::GetEnableSpeedLimiter()
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
-	const bool enable = this->_settingsPending.enableSpeedLimiter;
+	const bool enable = this->_settingsPending.enableExecutionSpeedLimiter;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
 	
 	return enable;
@@ -259,23 +415,27 @@ bool ClientExecutionControl::GetEnableSpeedLimiter()
 void ClientExecutionControl::SetEnableSpeedLimiter(bool enable)
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
-	this->_settingsPending.enableSpeedLimiter = enable;
+	this->_settingsPending.enableExecutionSpeedLimiter = enable;
+	
+	this->_newSettingsPendingOnExecutionLoopStart = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
 }
 
-float ClientExecutionControl::GetExecutionSpeed()
+double ClientExecutionControl::GetExecutionSpeed()
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
-	const float speedScalar = this->_settingsPending.executionSpeed;
+	const double speedScalar = this->_settingsPending.executionSpeed;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
 	
 	return speedScalar;
 }
 
-void ClientExecutionControl::SetExecutionSpeed(float speedScalar)
+void ClientExecutionControl::SetExecutionSpeed(double speedScalar)
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
 	this->_settingsPending.executionSpeed = speedScalar;
+	
+	this->_newSettingsPendingOnExecutionLoopStart = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
 }
 
@@ -288,46 +448,98 @@ bool ClientExecutionControl::GetEnableFrameSkip()
 	return enable;
 }
 
+bool ClientExecutionControl::GetEnableFrameSkipApplied()
+{
+	return this->_settingsApplied.enableFrameSkip;
+}
+
 void ClientExecutionControl::SetEnableFrameSkip(bool enable)
 {
-	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
 	
 	if (this->_settingsPending.enableFrameSkip != enable)
 	{
 		this->_settingsPending.enableFrameSkip = enable;
-		this->_settingsPending.framesToSkip = 0;
+		
+		this->_needResetFramesToSkip = true;
+		this->_newSettingsPendingOnNDSExec = true;
 	}
 	
-	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
 uint8_t ClientExecutionControl::GetFramesToSkip()
 {
-	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
-	const uint8_t numFramesToSkip = this->_settingsPending.framesToSkip;
-	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	return this->_framesToSkip;
+}
+
+void ClientExecutionControl::SetFramesToSkip(uint8_t numFrames)
+{
+	this->_framesToSkip = numFrames;
+}
+
+void ClientExecutionControl::ResetFramesToSkip()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	this->_needResetFramesToSkip = true;
 	
-	return numFramesToSkip;
+	this->_newSettingsPendingOnNDSExec = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
 uint64_t ClientExecutionControl::GetFrameJumpTarget()
 {
-	return this->_settingsPending.frameJumpTarget;
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	const uint64_t jumpTarget = this->_settingsPending.frameJumpTarget;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	
+	return jumpTarget;
+}
+
+uint64_t ClientExecutionControl::GetFrameJumpTargetApplied()
+{
+	return this->_settingsApplied.frameJumpTarget;
 }
 
 void ClientExecutionControl::SetFrameJumpTarget(uint64_t newJumpTarget)
 {
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
 	this->_settingsPending.frameJumpTarget = newJumpTarget;
+	
+	this->_newSettingsPendingOnExecutionLoopStart = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+}
+
+ExecutionBehavior ClientExecutionControl::GetPreviousExecutionBehavior()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	const ExecutionBehavior behavior = this->_prevExecBehavior;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	
+	return behavior;
 }
 
 ExecutionBehavior ClientExecutionControl::GetExecutionBehavior()
 {
-	return this->_settingsPending.execBehavior;
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	const ExecutionBehavior behavior = this->_settingsPending.execBehavior;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	
+	return behavior;
+}
+
+ExecutionBehavior ClientExecutionControl::GetExecutionBehaviorApplied()
+{
+	return this->_settingsApplied.execBehavior;
 }
 
 void ClientExecutionControl::SetExecutionBehavior(ExecutionBehavior newBehavior)
 {
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
 	this->_settingsPending.execBehavior = newBehavior;
+	
+	this->_newSettingsPendingOnExecutionLoopStart = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
 }
 
 FrameJumpBehavior ClientExecutionControl::GetFrameJumpBehavior()
@@ -340,93 +552,246 @@ void ClientExecutionControl::SetFrameJumpBehavior(FrameJumpBehavior newBehavior)
 	this->_settingsPending.jumpBehavior = newBehavior;
 }
 
-void ClientExecutionControl::FlushSettingsOnReset()
+void ClientExecutionControl::ApplySettingsOnReset()
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
 	
-	CommonSettings.use_jit = (this->_settingsPending.cpuEngineID == CPUEmulationEngineID_DynamicRecompiler);
-	CommonSettings.jit_max_block_size = this->_settingsPending.JITMaxBlockSize;
-	
-	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
-}
-
-void ClientExecutionControl::FlushSettingsOnExecutionLoopStart()
-{
-	pthread_mutex_lock(&this->_mutexSettingsApplyOnExecutionLoopStart);
-	
-	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
-	
-	const bool didFrameSkipSettingChange = (this->_settingsPending.enableFrameSkip != this->_settingsApplied.enableFrameSkip);
-	if (didFrameSkipSettingChange)
+	if (this->_newSettingsPendingOnReset)
 	{
-		this->_settingsApplied.enableFrameSkip	= this->_settingsPending.enableFrameSkip;
-		this->_settingsApplied.framesToSkip		= this->_settingsPending.framesToSkip;
-	}
-	
-	const float speedScalar = (this->_settingsPending.executionSpeed > SPEED_SCALAR_MIN) ? this->_settingsPending.executionSpeed : SPEED_SCALAR_MIN;
-	const bool didExecutionSpeedChange = (speedScalar != this->_settingsApplied.executionSpeed) || (this->_settingsPending.enableSpeedLimiter != this->_settingsApplied.enableSpeedLimiter);
-	if (didExecutionSpeedChange)
-	{
-		this->_settingsApplied.enableSpeedLimiter	= this->_settingsPending.enableSpeedLimiter;
-		this->_settingsApplied.executionSpeed		= speedScalar;
-	}
-	
-	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
-	
-	if (didFrameSkipSettingChange)
-	{
-		NDS_OmitFrameSkip(2);
-	}
-	
-	if (didExecutionSpeedChange)
-	{
-		if (this->_settingsApplied.enableSpeedLimiter)
+		this->_settingsApplied.cpuEngineID			= this->_settingsPending.cpuEngineID;
+		this->_settingsApplied.JITMaxBlockSize		= this->_settingsPending.JITMaxBlockSize;
+		
+		this->_settingsApplied.filePathARM9BIOS		= this->_settingsPending.filePathARM9BIOS;
+		this->_settingsApplied.filePathARM7BIOS		= this->_settingsPending.filePathARM7BIOS;
+		this->_settingsApplied.filePathFirmware		= this->_settingsPending.filePathFirmware;
+		
+		this->_newSettingsPendingOnReset = false;
+		pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+		
+		CommonSettings.use_jit				= (this->_settingsApplied.cpuEngineID == CPUEmulationEngineID_DynamicRecompiler);
+		CommonSettings.jit_max_block_size	= this->_settingsApplied.JITMaxBlockSize;
+		
+		if (this->_settingsApplied.filePathARM9BIOS.length() == 0)
 		{
-			this->_settingsApplied.timeBudget = this->GetFrameAbsoluteTime(1.0f/speedScalar);
+			memset(CommonSettings.ARM9BIOS, 0, sizeof(CommonSettings.ARM9BIOS));
 		}
 		else
 		{
-			this->_settingsApplied.timeBudget = 0;
+			strlcpy(CommonSettings.ARM9BIOS, this->_settingsApplied.filePathARM9BIOS.c_str(), sizeof(CommonSettings.ARM9BIOS));
+		}
+		
+		if (this->_settingsApplied.filePathARM7BIOS.length() == 0)
+		{
+			memset(CommonSettings.ARM7BIOS, 0, sizeof(CommonSettings.ARM7BIOS));
+		}
+		else
+		{
+			strlcpy(CommonSettings.ARM7BIOS, this->_settingsApplied.filePathARM7BIOS.c_str(), sizeof(CommonSettings.ARM7BIOS));
+		}
+		
+		if (this->_settingsApplied.filePathFirmware.length() == 0)
+		{
+			memset(CommonSettings.Firmware, 0, sizeof(CommonSettings.Firmware));
+		}
+		else
+		{
+			strlcpy(CommonSettings.Firmware, this->_settingsApplied.filePathFirmware.c_str(), sizeof(CommonSettings.Firmware));
 		}
 	}
-	
-	pthread_mutex_unlock(&this->_mutexSettingsApplyOnExecutionLoopStart);
+	else
+	{
+		pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	}
 }
 
-void ClientExecutionControl::FlushSettingsOnNDSExec()
+void ClientExecutionControl::ApplySettingsOnExecutionLoopStart()
 {
-	pthread_mutex_lock(&this->_mutexSettingsApplyOnNDSExec);
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
 	
+	if (this->_newSettingsPendingOnExecutionLoopStart)
+	{
+		const double speedScalar = (this->_settingsPending.executionSpeed > SPEED_SCALAR_MIN) ? this->_settingsPending.executionSpeed : SPEED_SCALAR_MIN;
+		this->_settingsApplied.enableExecutionSpeedLimiter	= this->_settingsPending.enableExecutionSpeedLimiter;
+		this->_settingsApplied.executionSpeed				= speedScalar;
+		
+		this->_settingsApplied.frameJumpTarget				= this->_settingsPending.frameJumpTarget;
+		
+		const bool needBehaviorChange = (this->_settingsApplied.execBehavior != this->_settingsPending.execBehavior);
+		if (needBehaviorChange)
+		{
+			if ( (this->_settingsApplied.execBehavior == ExecutionBehavior_Run) || (this->_settingsApplied.execBehavior == ExecutionBehavior_Pause) )
+			{
+				this->_prevExecBehavior = this->_settingsApplied.execBehavior;
+			}
+			
+			this->_settingsApplied.execBehavior = this->_settingsPending.execBehavior;
+		}
+		
+		this->_newSettingsPendingOnExecutionLoopStart = false;
+		pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+		
+		if (this->_settingsApplied.enableExecutionSpeedLimiter)
+		{
+			this->_frameTime = this->CalculateFrameAbsoluteTime(1.0/speedScalar);
+		}
+		else
+		{
+			this->_frameTime = 0.0;
+		}
+		
+		if (needBehaviorChange)
+		{
+			this->ResetFramesToSkip();
+		}
+	}
+	else
+	{
+		pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	}
+}
+
+void ClientExecutionControl::ApplySettingsOnNDSExec()
+{
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
 	
-	this->_settingsApplied.enableAdvancedBusLevelTiming		= this->_settingsPending.enableAdvancedBusLevelTiming;
-	this->_settingsApplied.enableRigorous3DRenderingTiming	= this->_settingsPending.enableRigorous3DRenderingTiming;
-	this->_settingsApplied.enableExternalBIOS				= this->_settingsPending.enableExternalBIOS;
-	this->_settingsApplied.enableBIOSInterrupts				= this->_settingsPending.enableBIOSInterrupts;
-	this->_settingsApplied.enableBIOSPatchDelayLoop			= this->_settingsPending.enableBIOSPatchDelayLoop;
-	this->_settingsApplied.enableExternalFirmware			= this->_settingsPending.enableExternalFirmware;
-	this->_settingsApplied.enableFirmwareBoot				= this->_settingsPending.enableFirmwareBoot;
-	this->_settingsApplied.enableDebugConsole				= this->_settingsPending.enableDebugConsole;
-	this->_settingsApplied.enableEnsataEmulation			= this->_settingsPending.enableEnsataEmulation;
-	
-	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
-	
-	CommonSettings.advanced_timing			= this->_settingsApplied.enableAdvancedBusLevelTiming;
-	CommonSettings.rigorous_timing			= this->_settingsApplied.enableRigorous3DRenderingTiming;
-	CommonSettings.UseExtBIOS				= this->_settingsApplied.enableExternalBIOS;
-	CommonSettings.SWIFromBIOS				= this->_settingsApplied.enableBIOSInterrupts;
-	CommonSettings.PatchSWI3				= this->_settingsApplied.enableBIOSPatchDelayLoop;
-	CommonSettings.UseExtFirmware			= this->_settingsApplied.enableExternalFirmware;
-	CommonSettings.UseExtFirmwareSettings	= this->_settingsApplied.enableExternalFirmware;
-	CommonSettings.BootFromFirmware			= this->_settingsApplied.enableFirmwareBoot;
-	CommonSettings.DebugConsole				= this->_settingsApplied.enableDebugConsole;
-	CommonSettings.EnsataEmulation			= this->_settingsApplied.enableEnsataEmulation;
-	
-	pthread_mutex_unlock(&this->_mutexSettingsApplyOnNDSExec);
+	if (this->_newSettingsPendingOnNDSExec)
+	{
+		this->_settingsApplied.enableAdvancedBusLevelTiming		= this->_settingsPending.enableAdvancedBusLevelTiming;
+		this->_settingsApplied.enableRigorous3DRenderingTiming	= this->_settingsPending.enableRigorous3DRenderingTiming;
+		this->_settingsApplied.enableGameSpecificHacks			= this->_settingsPending.enableGameSpecificHacks;
+		this->_settingsApplied.enableExternalBIOS				= this->_settingsPending.enableExternalBIOS;
+		this->_settingsApplied.enableBIOSInterrupts				= this->_settingsPending.enableBIOSInterrupts;
+		this->_settingsApplied.enableBIOSPatchDelayLoop			= this->_settingsPending.enableBIOSPatchDelayLoop;
+		this->_settingsApplied.enableExternalFirmware			= this->_settingsPending.enableExternalFirmware;
+		this->_settingsApplied.enableFirmwareBoot				= this->_settingsPending.enableFirmwareBoot;
+		this->_settingsApplied.enableDebugConsole				= this->_settingsPending.enableDebugConsole;
+		this->_settingsApplied.enableEnsataEmulation			= this->_settingsPending.enableEnsataEmulation;
+		
+		this->_settingsApplied.enableCheats						= this->_settingsPending.enableCheats;
+		
+		this->_settingsApplied.enableFrameSkip					= this->_settingsPending.enableFrameSkip;
+		
+		const bool needResetFramesToSkip = this->_needResetFramesToSkip;
+		
+		this->_needResetFramesToSkip = false;
+		this->_newSettingsPendingOnNDSExec = false;
+		pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+		
+		CommonSettings.advanced_timing			= this->_settingsApplied.enableAdvancedBusLevelTiming;
+		CommonSettings.rigorous_timing			= this->_settingsApplied.enableRigorous3DRenderingTiming;
+		CommonSettings.UseExtBIOS				= this->_settingsApplied.enableExternalBIOS;
+		CommonSettings.SWIFromBIOS				= this->_settingsApplied.enableBIOSInterrupts;
+		CommonSettings.PatchSWI3				= this->_settingsApplied.enableBIOSPatchDelayLoop;
+		CommonSettings.UseExtFirmware			= this->_settingsApplied.enableExternalFirmware;
+		CommonSettings.UseExtFirmwareSettings	= this->_settingsApplied.enableExternalFirmware;
+		CommonSettings.BootFromFirmware			= this->_settingsApplied.enableFirmwareBoot;
+		CommonSettings.DebugConsole				= this->_settingsApplied.enableDebugConsole;
+		CommonSettings.EnsataEmulation			= this->_settingsApplied.enableEnsataEmulation;
+		
+		CommonSettings.cheatsDisable			= !this->_settingsApplied.enableCheats;
+		
+		CommonSettings.gamehacks.en				= this->_settingsApplied.enableGameSpecificHacks;
+		CommonSettings.gamehacks.apply();
+		
+		if (needResetFramesToSkip)
+		{
+			this->_framesToSkip = 0;
+			NDS_OmitFrameSkip(2);
+		}
+	}
+	else
+	{
+		pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+	}
 }
 
-uint64_t ClientExecutionControl::GetFrameAbsoluteTime(double frameTimeScalar)
+double ClientExecutionControl::GetFrameTime()
 {
-	// Do nothing. This is implementation dependent;
-	return 1.0;
+	return this->_frameTime;
+}
+
+uint8_t ClientExecutionControl::CalculateFrameSkip(double startAbsoluteTime, double frameAbsoluteTime)
+{
+	static const double skipCurve[10]	= {0.60, 0.58, 0.55, 0.51, 0.46, 0.40, 0.30, 0.20, 0.10, 0.00};
+	static const double unskipCurve[10]	= {0.75, 0.70, 0.65, 0.60, 0.50, 0.40, 0.30, 0.20, 0.10, 0.00};
+	static size_t skipStep = 0;
+	static size_t unskipStep = 0;
+	static uint64_t lastSetFrameSkip = 0;
+	
+	// Calculate the time remaining.
+	const double elapsed = this->GetCurrentAbsoluteTime() - startAbsoluteTime;
+	uint64_t framesToSkip = 0;
+	
+	if (elapsed > frameAbsoluteTime)
+	{
+		if (frameAbsoluteTime > 0)
+		{
+			framesToSkip = (uint64_t)( (((elapsed - frameAbsoluteTime) * FRAME_SKIP_AGGRESSIVENESS) / frameAbsoluteTime) + FRAME_SKIP_BIAS );
+			
+			if (framesToSkip > lastSetFrameSkip)
+			{
+				framesToSkip -= (uint64_t)((double)(framesToSkip - lastSetFrameSkip) * skipCurve[skipStep]);
+				if (skipStep < 9)
+				{
+					skipStep++;
+				}
+			}
+			else
+			{
+				framesToSkip += (uint64_t)((double)(lastSetFrameSkip - framesToSkip) * skipCurve[skipStep]);
+				if (skipStep > 0)
+				{
+					skipStep--;
+				}
+			}
+		}
+		else
+		{
+			static const double frameRate100x = (double)FRAME_SKIP_AGGRESSIVENESS / CalculateFrameAbsoluteTime(1.0/100.0);
+			framesToSkip = (uint64_t)(elapsed * frameRate100x);
+		}
+		
+		unskipStep = 0;
+	}
+	else
+	{
+		framesToSkip = (uint64_t)((double)lastSetFrameSkip * unskipCurve[unskipStep]);
+		if (unskipStep < 9)
+		{
+			unskipStep++;
+		}
+		
+		skipStep = 0;
+	}
+	
+	// Bound the frame skip.
+	static const uint64_t kMaxFrameSkip = (uint64_t)MAX_FRAME_SKIP;
+	if (framesToSkip > kMaxFrameSkip)
+	{
+		framesToSkip = kMaxFrameSkip;
+	}
+	
+	lastSetFrameSkip = framesToSkip;
+	
+	return (uint8_t)framesToSkip;
+}
+
+double ClientExecutionControl::GetCurrentAbsoluteTime()
+{
+	return (double)mach_absolute_time();
+}
+
+double ClientExecutionControl::CalculateFrameAbsoluteTime(double frameTimeScalar)
+{
+	mach_timebase_info_data_t timeBase;
+	mach_timebase_info(&timeBase);
+	
+	const double frameTimeNanoseconds = DS_SECONDS_PER_FRAME * 1000000000.0 * frameTimeScalar;
+	
+	return (frameTimeNanoseconds * (double)timeBase.denom) / (double)timeBase.numer;
+}
+
+void ClientExecutionControl::WaitUntilAbsoluteTime(double deadlineAbsoluteTime)
+{
+	mach_wait_until((uint64_t)deadlineAbsoluteTime);
 }

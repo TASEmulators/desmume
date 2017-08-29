@@ -1682,7 +1682,7 @@
 	[self pauseCore];
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore applyDynaRec];
+	[cdsCore execControl]->ApplySettingsOnReset();
 	[cdsCore applySlot1Device];
 	[self writeDefaultsSlot1Settings:nil];
 	

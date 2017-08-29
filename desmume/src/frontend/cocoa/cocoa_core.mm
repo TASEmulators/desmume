@@ -27,9 +27,6 @@
 
 #include "ClientExecutionControl.h"
 
-#include <mach/mach.h>
-#include <mach/mach_time.h>
-
 #include "../../movie.h"
 #include "../../NDSSystem.h"
 #include "../../armcpu.h"
@@ -77,6 +74,8 @@ public:
 volatile bool execute = true;
 
 @implementation CocoaDSCore
+
+@synthesize execControl;
 
 @dynamic cdsController;
 @synthesize cdsFirmware;
@@ -146,6 +145,8 @@ volatile bool execute = true;
 		return self;
 	}
 	
+	execControl = new ClientExecutionControl;
+	
 	_fpsTimer = nil;
 	_isTimerAtSecond = NO;
 	
@@ -154,42 +155,16 @@ volatile bool execute = true;
 	cdsGPU = [[[[CocoaDSGPU alloc] init] autorelease] retain];
 	cdsOutputList = [[[[NSMutableArray alloc] initWithCapacity:32] autorelease] retain];
 	
-	emuFlagAdvancedBusLevelTiming = YES;
-	emuFlagRigorousTiming = NO;
-	emuFlagUseExternalBios = NO;
-	emuFlagEmulateBiosInterrupts = NO;
-	emuFlagPatchDelayLoop = NO;
-	emuFlagUseExternalFirmware = NO;
-	emuFlagFirmwareBoot = NO;
-	emuFlagDebugConsole = NO;
-	emuFlagEmulateEnsata = NO;
-	
 	slot1DeviceType = NDS_SLOT1_RETAIL_AUTO;
 	slot1StatusText = NSSTRING_STATUS_EMULATION_NOT_RUNNING;
 	
 	spinlockMasterExecute = OS_SPINLOCK_INIT;
 	spinlockCdsController = OS_SPINLOCK_INIT;
-	spinlockExecutionChange = OS_SPINLOCK_INIT;
-	spinlockCheatEnableFlag = OS_SPINLOCK_INIT;
-	spinlockEmulationFlags = OS_SPINLOCK_INIT;
-	spinlockCPUEmulationEngine = OS_SPINLOCK_INIT;
-	
-	isSpeedLimitEnabled = YES;
-	speedScalar = SPEED_SCALAR_NORMAL;
-	prevCoreState = ExecutionBehavior_Pause;
 	
 	slot1R4URL = nil;
 	_slot1R4Path = "";
 	
 	threadParam.cdsCore = self;
-	threadParam.behavior = ExecutionBehavior_Pause;
-	threadParam.isFrameSkipEnabled = true;
-	threadParam.framesToSkip = 0;
-	threadParam.frameJumpTarget = 0;
-	
-	uint64_t timeBudgetNanoseconds = (uint64_t)(DS_SECONDS_PER_FRAME * 1000000000.0 / speedScalar);
-	AbsoluteTime timeBudgetAbsTime = NanosecondsToAbsolute(*(Nanoseconds *)&timeBudgetNanoseconds);
-	threadParam.timeBudgetMachAbsTime = *(uint64_t *)&timeBudgetAbsTime;
 	
 	pthread_mutex_init(&threadParam.mutexOutputList, NULL);
 	pthread_mutex_init(&threadParam.mutexThreadExecute, NULL);
@@ -252,6 +227,7 @@ volatile bool execute = true;
 	
 	[self setIsGdbStubStarted:NO];
 	
+	delete execControl;
 	NDS_DeInit();
 	
 	[super dealloc];
@@ -305,81 +281,50 @@ volatile bool execute = true;
 	return theController;
 }
 
-- (void) setIsFrameSkipEnabled:(BOOL)theState
+- (void) setIsFrameSkipEnabled:(BOOL)enable
 {
-	pthread_mutex_lock(&threadParam.mutexThreadExecute);
-	
-	if (theState)
-	{
-		threadParam.isFrameSkipEnabled = true;
-	}
-	else
-	{
-		threadParam.isFrameSkipEnabled = false;
-		threadParam.framesToSkip = 0;
-		NDS_OmitFrameSkip(2);
-	}
-	
-	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+	execControl->SetEnableFrameSkip((enable) ? true : false);
 }
 
 - (BOOL) isFrameSkipEnabled
 {
-	pthread_mutex_lock(&threadParam.mutexThreadExecute);
-	const BOOL theState = threadParam.isFrameSkipEnabled ? YES : NO;
-	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
-	
-	return theState;
+	const bool enable = execControl->GetEnableFrameSkip();
+	return (enable) ? YES : NO;
 }
 
 - (void) setSpeedScalar:(CGFloat)scalar
 {
-	OSSpinLockLock(&spinlockExecutionChange);
-	speedScalar = scalar;
-	OSSpinLockUnlock(&spinlockExecutionChange);
-	[self changeExecutionSpeed];
+	execControl->SetExecutionSpeed((float)scalar);
+	[self updateExecutionSpeedStatus];
 }
 
 - (CGFloat) speedScalar
 {
-	OSSpinLockLock(&spinlockExecutionChange);
-	const CGFloat scalar = speedScalar;
-	OSSpinLockUnlock(&spinlockExecutionChange);
-	
+	const CGFloat scalar = (CGFloat)execControl->GetExecutionSpeed();
 	return scalar;
 }
 
-- (void) setIsSpeedLimitEnabled:(BOOL)theState
+- (void) setIsSpeedLimitEnabled:(BOOL)enable
 {
-	OSSpinLockLock(&spinlockExecutionChange);
-	isSpeedLimitEnabled = theState;
-	OSSpinLockUnlock(&spinlockExecutionChange);
-	[self changeExecutionSpeed];
+	execControl->SetEnableSpeedLimiter((enable) ? true : false);
+	[self updateExecutionSpeedStatus];
 }
 
 - (BOOL) isSpeedLimitEnabled
 {
-	OSSpinLockLock(&spinlockExecutionChange);
-	const BOOL enabled = isSpeedLimitEnabled;
-	OSSpinLockUnlock(&spinlockExecutionChange);
-	
-	return enabled;
+	const bool enable = execControl->GetEnableSpeedLimiter();
+	return (enable) ? YES : NO;
 }
 
-- (void) setIsCheatingEnabled:(BOOL)theState
+- (void) setIsCheatingEnabled:(BOOL)enable
 {
-	OSSpinLockLock(&spinlockCheatEnableFlag);
-	CommonSettings.cheatsDisable = theState ? false : true;
-	OSSpinLockUnlock(&spinlockCheatEnableFlag);
+	execControl->SetEnableCheats((enable) ? true : false);
 }
 
 - (BOOL) isCheatingEnabled
 {
-	OSSpinLockLock(&spinlockCheatEnableFlag);
-	BOOL theState = CommonSettings.cheatsDisable ? NO : YES;
-	OSSpinLockUnlock(&spinlockCheatEnableFlag);
-	
-	return theState;
+	const bool enable = execControl->GetEnableCheats();
+	return (enable) ? YES : NO;
 }
 
 - (void) setIsGdbStubStarted:(BOOL)theState
@@ -463,8 +408,7 @@ volatile bool execute = true;
 	// frame skipping this time.
 	if (isInDebugTrap && !theState)
 	{
-		threadParam.framesToSkip = 0;
-		NDS_OmitFrameSkip(2);
+		execControl->ResetFramesToSkip();
 	}
 	
 	isInDebugTrap = theState;
@@ -477,214 +421,141 @@ volatile bool execute = true;
 
 - (void) setEmuFlagAdvancedBusLevelTiming:(BOOL)enable
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
-	CommonSettings.advanced_timing = (enable) ? true : false;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
+	execControl->SetEnableAdvancedBusLevelTiming((enable) ? true : false);
 }
 
 - (BOOL) emuFlagAdvancedBusLevelTiming
 {
-	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
-	const BOOL enable = (CommonSettings.advanced_timing) ? YES : NO;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
-	
-	return enable;
+	const bool enable = execControl->GetEnableAdvancedBusLevelTiming();
+	return (enable) ? YES : NO;
 }
 
 - (void) setEmuFlagRigorousTiming:(BOOL)enable
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
-	CommonSettings.rigorous_timing = (enable) ? true : false;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
+	execControl->SetEnableRigorous3DRenderingTiming((enable) ? true : false);
 }
 
 - (BOOL) emuFlagRigorousTiming
 {
-	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
-	const BOOL enable = (CommonSettings.rigorous_timing) ? YES : NO;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
-	
-	return enable;
+	const bool enable = execControl->GetEnableRigorous3DRenderingTiming();
+	return (enable) ? YES : NO;
 }
 
-- (void) setEmuFlagUseGameSpecificHacks:(BOOL)useTiming
+- (void) setEmuFlagUseGameSpecificHacks:(BOOL)enable
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
-	CommonSettings.gamehacks.en = (useTiming) ? true : false;
-	CommonSettings.gamehacks.apply();
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
+	execControl->SetEnableGameSpecificHacks((enable) ? true : false);
 }
 
 - (BOOL) emuFlagUseGameSpecificHacks
 {
-	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
-	const BOOL useTiming = (CommonSettings.gamehacks.en) ? YES : NO;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
-	
-	return useTiming;
+	const bool enable = execControl->GetEnableGameSpecificHacks();
+	return (enable) ? YES : NO;
 }
 
 - (void) setEmuFlagUseExternalBios:(BOOL)enable
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
-	CommonSettings.UseExtBIOS = (enable) ? true : false;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
+	execControl->SetEnableExternalBIOS((enable) ? true : false);
 }
 
 - (BOOL) emuFlagUseExternalBios
 {
-	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
-	const BOOL enable = (CommonSettings.UseExtBIOS) ? YES : NO;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
-	
-	return enable;
+	const bool enable = execControl->GetEnableExternalBIOS();
+	return (enable) ? YES : NO;
 }
 
 - (void) setEmuFlagEmulateBiosInterrupts:(BOOL)enable
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
-	CommonSettings.SWIFromBIOS = (enable) ? true : false;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
+	execControl->SetEnableBIOSInterrupts((enable) ? true : false);
 }
 
 - (BOOL) emuFlagEmulateBiosInterrupts
 {
-	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
-	const BOOL enable = (CommonSettings.SWIFromBIOS) ? YES : NO;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
-	
-	return enable;
+	const bool enable = execControl->GetEnableBIOSInterrupts();
+	return (enable) ? YES : NO;
 }
 
 - (void) setEmuFlagPatchDelayLoop:(BOOL)enable
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
-	CommonSettings.PatchSWI3 = (enable) ? true : false;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
+	execControl->SetEnableBIOSPatchDelayLoop((enable) ? true : false);
 }
 
 - (BOOL) emuFlagPatchDelayLoop
 {
-	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
-	const BOOL enable = (CommonSettings.PatchSWI3) ? YES : NO;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
-	
-	return enable;
+	const bool enable = execControl->GetEnableBIOSPatchDelayLoop();
+	return (enable) ? YES : NO;
 }
 
 - (void) setEmuFlagUseExternalFirmware:(BOOL)enable
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
-	CommonSettings.UseExtFirmware = (enable) ? true : false;
-	CommonSettings.UseExtFirmwareSettings = CommonSettings.UseExtFirmware;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
+	execControl->SetEnableExternalFirmware((enable) ? true : false);
 }
 
 - (BOOL) emuFlagUseExternalFirmware
 {
-	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
-	const BOOL enable = (CommonSettings.UseExtFirmware) ? YES : NO;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
-	
-	return enable;
+	const bool enable = execControl->GetEnableExternalFirmware();
+	return (enable) ? YES : NO;
 }
 
 - (void) setEmuFlagFirmwareBoot:(BOOL)enable
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
-	CommonSettings.BootFromFirmware = (enable) ? true : false;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
+	execControl->SetEnableFirmwareBoot((enable) ? true : false);
 }
 
 - (BOOL) emuFlagFirmwareBoot
 {
-	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
-	const BOOL enable = (CommonSettings.BootFromFirmware) ? YES : NO;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
-	
-	return enable;
+	const bool enable = execControl->GetEnableFirmwareBoot();
+	return (enable) ? YES : NO;
 }
 
 - (void) setEmuFlagDebugConsole:(BOOL)enable
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
-	CommonSettings.DebugConsole = (enable) ? true : false;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
+	execControl->SetEnableDebugConsole((enable) ? true : false);
 }
 
 - (BOOL) emuFlagDebugConsole
 {
-	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
-	const BOOL enable = (CommonSettings.DebugConsole) ? YES : NO;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
-	
-	return enable;
+	const bool enable = execControl->GetEnableDebugConsole();
+	return (enable) ? YES : NO;
 }
 
 - (void) setEmuFlagEmulateEnsata:(BOOL)enable
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
-	CommonSettings.EnsataEmulation = (enable) ? true : false;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
+	execControl->SetEnableEnsataEmulation((enable) ? true : false);
 }
 
 - (BOOL) emuFlagEmulateEnsata
 {
-	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
-	const BOOL enable = (CommonSettings.EnsataEmulation) ? YES : NO;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
-	
-	return enable;
+	const bool enable = execControl->GetEnableEnsataEmulation();
+	return (enable) ? YES : NO;
 }
 
 - (void) setCpuEmulationEngine:(NSInteger)engineID
 {
-	OSSpinLockLock(&spinlockCPUEmulationEngine);
-#if defined(__i386__) || defined(__x86_64__)
-	cpuEmulationEngine = engineID;
-#else
-	cpuEmulationEngine = CPUEmulationEngine_Interpreter;
-#endif
-	OSSpinLockUnlock(&spinlockCPUEmulationEngine);
+	execControl->SetCPUEmulationEngineID((CPUEmulationEngineID)engineID);
 }
 
 - (NSInteger) cpuEmulationEngine
 {
-	OSSpinLockLock(&spinlockCPUEmulationEngine);
-	const NSInteger engineID = cpuEmulationEngine;
-	OSSpinLockUnlock(&spinlockCPUEmulationEngine);
-	
-	return engineID;
+	return (NSInteger)execControl->GetCPUEmulationEngineID();
 }
 
 - (void) setMaxJITBlockSize:(NSInteger)blockSize
 {
-	pthread_rwlock_wrlock(&threadParam.rwlockCoreExecute);
-	CommonSettings.jit_max_block_size = (blockSize > 0) ? blockSize : 1;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
+	execControl->SetJITMaxBlockSize((uint8_t)blockSize);
 }
 
 - (NSInteger) maxJITBlockSize
 {
-	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
-	const NSInteger blockSize = CommonSettings.jit_max_block_size;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
-	
-	return blockSize;
+	return (NSInteger)execControl->GetJITMaxBlockSize();
 }
 
 - (void) setCoreState:(NSInteger)coreState
 {
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	
-	if (threadParam.behavior == ExecutionBehavior_Run || threadParam.behavior == ExecutionBehavior_Pause)
-	{
-		prevCoreState = threadParam.behavior;
-	}
+	execControl->SetExecutionBehavior((ExecutionBehavior)coreState);
 	
-	threadParam.behavior = (ExecutionBehavior)coreState;
-	threadParam.framesToSkip = 0;
-	NDS_OmitFrameSkip(2);
+	pthread_mutex_lock(&threadParam.mutexOutputList);
 	
 	switch ((ExecutionBehavior)coreState)
 	{
@@ -748,7 +619,7 @@ volatile bool execute = true;
 				}
 			}
 			
-			[self setFrameStatus:[NSString stringWithFormat:@"Jumping to frame %lu.", (unsigned long)threadParam.frameJumpTarget]];
+			[self setFrameStatus:[NSString stringWithFormat:@"Jumping to frame %lu.", (unsigned long)execControl->GetFrameJumpTarget()]];
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
 			break;
@@ -757,6 +628,8 @@ volatile bool execute = true;
 		default:
 			break;
 	}
+	
+	pthread_mutex_unlock(&threadParam.mutexOutputList);
 	
 	pthread_cond_signal(&threadParam.condThreadExecute);
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
@@ -767,62 +640,44 @@ volatile bool execute = true;
 
 - (NSInteger) coreState
 {
-	pthread_mutex_lock(&threadParam.mutexThreadExecute);
-	const NSInteger theState = threadParam.behavior;
-	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
-	
-	return theState;
+	const NSInteger behavior = (NSInteger)execControl->GetExecutionBehavior();
+	return behavior;
 }
 
 - (void) setArm9ImageURL:(NSURL *)fileURL
 {
-	if (fileURL != nil)
-	{
-		strlcpy(CommonSettings.ARM9BIOS, [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding], sizeof(CommonSettings.ARM9BIOS));
-	}
-	else
-	{
-		memset(CommonSettings.ARM9BIOS, 0, sizeof(CommonSettings.ARM9BIOS));
-	}
+	const char *filePath = (fileURL != NULL) ? [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding] : NULL;
+	execControl->SetARM9ImagePath(filePath);
 }
 
 - (NSURL *) arm9ImageURL
 {
-	return [NSURL fileURLWithPath:[NSString stringWithCString:CommonSettings.ARM9BIOS encoding:NSUTF8StringEncoding]];
+	const char *filePath = execControl->GetARM9ImagePath();
+	return [NSURL fileURLWithPath:[NSString stringWithCString:filePath encoding:NSUTF8StringEncoding]];
 }
 
 - (void) setArm7ImageURL:(NSURL *)fileURL
 {
-	if (fileURL != nil)
-	{
-		strlcpy(CommonSettings.ARM7BIOS, [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding], sizeof(CommonSettings.ARM7BIOS));
-	}
-	else
-	{
-		memset(CommonSettings.ARM7BIOS, 0, sizeof(CommonSettings.ARM7BIOS));
-	}
+	const char *filePath = (fileURL != NULL) ? [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding] : NULL;
+	execControl->SetARM7ImagePath(filePath);
 }
 
 - (NSURL *) arm7ImageURL
 {
-	return [NSURL fileURLWithPath:[NSString stringWithCString:CommonSettings.ARM7BIOS encoding:NSUTF8StringEncoding]];
+	const char *filePath = execControl->GetARM7ImagePath();
+	return [NSURL fileURLWithPath:[NSString stringWithCString:filePath encoding:NSUTF8StringEncoding]];
 }
 
 - (void) setFirmwareImageURL:(NSURL *)fileURL
 {
-	if (fileURL != nil)
-	{
-		strlcpy(CommonSettings.Firmware, [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding], sizeof(CommonSettings.Firmware));
-	}
-	else
-	{
-		memset(CommonSettings.Firmware, 0, sizeof(CommonSettings.Firmware));
-	}
+	const char *filePath = (fileURL != NULL) ? [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding] : NULL;
+	execControl->SetFirmwareImagePath(filePath);
 }
 
 - (NSURL *) firmwareImageURL
 {
-	return [NSURL fileURLWithPath:[NSString stringWithCString:CommonSettings.Firmware encoding:NSUTF8StringEncoding]];
+	const char *filePath = execControl->GetFirmwareImagePath();
+	return [NSURL fileURLWithPath:[NSString stringWithCString:filePath encoding:NSUTF8StringEncoding]];
 }
 
 - (pthread_rwlock_t *) rwlockCoreExecute
@@ -830,7 +685,7 @@ volatile bool execute = true;
 	return &threadParam.rwlockCoreExecute;
 }
 
-- (BOOL) ejectCardFlag
+- (BOOL) isSlot1Ejected
 {
 	const BOOL isEjected = (nds.cardEjected) ? YES : NO;
 	return isEjected;
@@ -852,52 +707,16 @@ volatile bool execute = true;
 	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
 }
 
-- (void) changeExecutionSpeed
+- (void) updateExecutionSpeedStatus
 {
-	if (self.isSpeedLimitEnabled)
+	if ([self isSpeedLimitEnabled])
 	{
-		const CGFloat theSpeed = ([self speedScalar] > SPEED_SCALAR_MIN) ? [self speedScalar] : SPEED_SCALAR_MIN;
-		pthread_mutex_lock(&threadParam.mutexThreadExecute);
-		threadParam.timeBudgetMachAbsTime = GetFrameAbsoluteTime(1.0/theSpeed);
-		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
-		
-		[self setExecutionSpeedStatus:[NSString stringWithFormat:@"%1.2fx", theSpeed]];
+		[self setExecutionSpeedStatus:[NSString stringWithFormat:@"%1.2fx", [self speedScalar]]];
 	}
 	else
 	{
-		pthread_mutex_lock(&threadParam.mutexThreadExecute);
-		threadParam.timeBudgetMachAbsTime = 0;
-		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
-		
 		[self setExecutionSpeedStatus:@"Unlimited"];
 	}
-}
-
-/********************************************************************************************
-	applyDynaRec
-
-	Sets the use_jit variable for CommonSettings.
-
-	Takes:
-		Nothing.
-
-	Returns:
-		Nothing.
-
-	Details:
-		In the UI, we call setCpuEmulationEngine to set whether we should use the
-		interpreter or the dynamic recompiler. However, the emulator cannot handle
-		changing the engine while the emulation is running. Therefore, we use this
-		method to set the engine at a later time, using the last cpuEmulationEngine
-		value from the user.
- ********************************************************************************************/
-- (void) applyDynaRec
-{
-	const NSInteger engineID = [self cpuEmulationEngine];
-	
-	pthread_mutex_lock(&threadParam.mutexThreadExecute);
-	CommonSettings.use_jit = (engineID == CPUEmulationEngineID_DynamicRecompiler);
-	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 }
 
 - (BOOL) applySlot1Device
@@ -946,16 +765,16 @@ volatile bool execute = true;
 
 - (void) restoreCoreState
 {
-	[self setCoreState:prevCoreState];
+	[self setCoreState:(NSInteger)execControl->GetPreviousExecutionBehavior()];
 }
 
 - (void) reset
 {
 	[self setCoreState:ExecutionBehavior_Pause];
-	[self applyDynaRec];
 	[self applySlot1Device];
 	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
+	execControl->ApplySettingsOnReset();
 	NDS_Reset();
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	
@@ -1003,18 +822,12 @@ volatile bool execute = true;
 
 - (void) frameJumpTo:(NSUInteger)targetFrameNum
 {
-	pthread_mutex_lock(&threadParam.mutexThreadExecute);
+	execControl->SetFrameJumpTarget(targetFrameNum);
 	
-	threadParam.frameJumpTarget = targetFrameNum;
-	if (targetFrameNum <= (NSUInteger)currFrameCounter)
+	if (targetFrameNum > [self frameNumber])
 	{
-		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
-		return;
+		[self setCoreState:ExecutionBehavior_FrameJump];
 	}
-	
-	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
-	
-	[self setCoreState:ExecutionBehavior_FrameJump];
 }
 
 - (void) frameJump:(NSUInteger)relativeFrameNum
@@ -1163,26 +976,37 @@ static void* RunCoreThread(void *arg)
 {
 	CoreThreadParam *param = (CoreThreadParam *)arg;
 	CocoaDSCore *cdsCore = (CocoaDSCore *)param->cdsCore;
+	ClientExecutionControl *execControl = [cdsCore execControl];
 	NSMutableArray *cdsOutputList = [cdsCore cdsOutputList];
-	NSUInteger frameNum = 0;
-	uint64_t startTime = 0;
-	uint64_t timeBudget = 0; // Need local variable to ensure that param->timeBudgetMachAbsTime is thread-safe.
+	uint64_t frameNum = 0;
+	double startTime = 0;
+	double frameTime = 0; // The amount of time that is expected for the frame to run.
+	
+	ExecutionBehavior behavior = ExecutionBehavior_Pause;
+	uint64_t frameJumpTarget = 0;
 	
 	do
 	{
-		startTime = mach_absolute_time();
-		pthread_mutex_lock(&param->mutexThreadExecute);
-		timeBudget = param->timeBudgetMachAbsTime;
+		startTime = execControl->GetCurrentAbsoluteTime();
 		
-		while (!(param->behavior != ExecutionBehavior_Pause && execute))
+		pthread_mutex_lock(&param->mutexThreadExecute);
+		execControl->ApplySettingsOnExecutionLoopStart();
+		behavior = execControl->GetExecutionBehaviorApplied();
+		
+		while (!(behavior != ExecutionBehavior_Pause && execute))
 		{
 			pthread_cond_wait(&param->condThreadExecute, &param->mutexThreadExecute);
-			startTime = mach_absolute_time();
-			timeBudget = param->timeBudgetMachAbsTime;
+			
+			startTime = execControl->GetCurrentAbsoluteTime();
+			execControl->ApplySettingsOnExecutionLoopStart();
+			behavior = execControl->GetExecutionBehaviorApplied();
 		}
 		
+		frameTime = execControl->GetFrameTime();
+		frameJumpTarget = execControl->GetFrameJumpTargetApplied();
+		
 		CocoaDSController *cdsController = [cdsCore cdsController];
-		if (param->behavior != ExecutionBehavior_FrameJump)
+		if (behavior != ExecutionBehavior_FrameJump)
 		{
 			[cdsController flush];
 		}
@@ -1196,10 +1020,12 @@ static void* RunCoreThread(void *arg)
 		NDS_endProcessingInput();
 		FCEUMOV_HandleRecording();
 		
+		execControl->ApplySettingsOnNDSExec();
+		
 		// Execute the frame and increment the frame counter.
 		pthread_rwlock_wrlock(&param->rwlockCoreExecute);
 		NDS_exec<false>();
-		frameNum = currFrameCounter;
+		frameNum = (uint64_t)currFrameCounter;
 		pthread_rwlock_unlock(&param->rwlockCoreExecute);
 		
 		// Check if an internal execution error occurred that halted the emulation.
@@ -1216,9 +1042,11 @@ static void* RunCoreThread(void *arg)
 		[cdsController updateMicLevel];
 		[cdsController clearMicLevelMeasure];
 		
+		const uint8_t framesToSkip = execControl->GetFramesToSkip();
+		
 		pthread_mutex_lock(&param->mutexOutputList);
 		
-		switch (param->behavior)
+		switch (behavior)
 		{
 			case ExecutionBehavior_Run:
 			case ExecutionBehavior_FrameAdvance:
@@ -1226,7 +1054,7 @@ static void* RunCoreThread(void *arg)
 			{
 				for (CocoaDSOutput *cdsOutput in cdsOutputList)
 				{
-					if (![cdsOutput isKindOfClass:[CocoaDSDisplay class]] || param->framesToSkip == 0)
+					if ( ![cdsOutput isKindOfClass:[CocoaDSDisplay class]] || (framesToSkip == 0) )
 					{
 						[cdsOutput doCoreEmuFrame];
 					}
@@ -1240,22 +1068,22 @@ static void* RunCoreThread(void *arg)
 		
 		pthread_mutex_unlock(&param->mutexOutputList);
 		
-		switch (param->behavior)
+		switch (behavior)
 		{
 			case ExecutionBehavior_Run:
 			{
 				// Determine the number of frames to skip based on how much time "debt"
 				// we owe on timeBudget.
-				if (param->isFrameSkipEnabled)
+				if (execControl->GetEnableFrameSkipApplied())
 				{
-					if (param->framesToSkip > 0)
+					if (framesToSkip > 0)
 					{
 						NDS_SkipNextFrame();
-						param->framesToSkip--;
+						execControl->SetFramesToSkip(framesToSkip - 1);
 					}
 					else
 					{
-						param->framesToSkip = CalculateFrameSkip(timeBudget, startTime);
+						execControl->SetFramesToSkip( execControl->CalculateFrameSkip(startTime, frameTime) );
 					}
 				}
 				break;
@@ -1263,14 +1091,14 @@ static void* RunCoreThread(void *arg)
 			
 			case ExecutionBehavior_FrameJump:
 			{
-				if (param->framesToSkip > 0)
+				if (framesToSkip > 0)
 				{
 					NDS_SkipNextFrame();
-					param->framesToSkip--;
+					execControl->SetFramesToSkip(framesToSkip - 1);
 				}
 				else
 				{
-					param->framesToSkip = (uint8_t)((DS_FRAMES_PER_SECOND * 1.0) + 0.85);
+					execControl->SetFramesToSkip( (uint8_t)((DS_FRAMES_PER_SECOND * 1.0) + 0.85) );
 				}
 				break;
 			}
@@ -1283,18 +1111,17 @@ static void* RunCoreThread(void *arg)
 		
 		// If we're doing a frame advance, switch back to pause state immediately
 		// after we're done with the frame.
-		if (param->behavior == ExecutionBehavior_FrameAdvance)
+		if (behavior == ExecutionBehavior_FrameAdvance)
 		{
 			[cdsCore setCoreState:ExecutionBehavior_Pause];
 		}
-		else if (param->behavior == ExecutionBehavior_FrameJump)
+		else if (behavior == ExecutionBehavior_FrameJump)
 		{
-			if (frameNum == (param->frameJumpTarget - 1))
+			if (frameNum == (frameJumpTarget - 1))
 			{
-				param->framesToSkip = 0;
-				NDS_OmitFrameSkip(2);
+				execControl->ResetFramesToSkip();
 			}
-			else if (frameNum >= param->frameJumpTarget)
+			else if (frameNum >= frameJumpTarget)
 			{
 				[cdsCore restoreCoreState];
 			}
@@ -1302,86 +1129,12 @@ static void* RunCoreThread(void *arg)
 		else
 		{
 			// If there is any time left in the loop, go ahead and pad it.
-			mach_wait_until(startTime + timeBudget);
+			execControl->WaitUntilAbsoluteTime(startTime + frameTime);
 		}
 		
 	} while(true);
 	
 	return NULL;
-}
-
-static uint8_t CalculateFrameSkip(uint64_t timeBudgetMachAbsTime, uint64_t frameStartMachAbsTime)
-{
-	static const double skipCurve[10]	= {0.60, 0.58, 0.55, 0.51, 0.46, 0.40, 0.30, 0.20, 0.10, 0.00};
-	static const double unskipCurve[10]	= {0.75, 0.70, 0.65, 0.60, 0.50, 0.40, 0.30, 0.20, 0.10, 0.00};
-	static size_t skipStep = 0;
-	static size_t unskipStep = 0;
-	static uint64_t lastSetFrameSkip = 0;
-	
-	// Calculate the time remaining.
-	const uint64_t elapsed = mach_absolute_time() - frameStartMachAbsTime;
-	uint64_t framesToSkip = 0;
-	
-	if (elapsed > timeBudgetMachAbsTime)
-	{
-		if (timeBudgetMachAbsTime > 0)
-		{
-			framesToSkip = (uint64_t)( (((double)(elapsed - timeBudgetMachAbsTime) * FRAME_SKIP_AGGRESSIVENESS) / (double)timeBudgetMachAbsTime) + FRAME_SKIP_BIAS );
-			
-			if (framesToSkip > lastSetFrameSkip)
-			{
-				framesToSkip -= (uint64_t)((double)(framesToSkip - lastSetFrameSkip) * skipCurve[skipStep]);
-				if (skipStep < 9)
-				{
-					skipStep++;
-				}
-			}
-			else
-			{
-				framesToSkip += (uint64_t)((double)(lastSetFrameSkip - framesToSkip) * skipCurve[skipStep]);
-				if (skipStep > 0)
-				{
-					skipStep--;
-				}
-			}
-		}
-		else
-		{
-			static const double frameRate100x = (double)FRAME_SKIP_AGGRESSIVENESS / (double)GetFrameAbsoluteTime(1.0/100.0);
-			framesToSkip = (uint64_t)((double)elapsed * frameRate100x);
-		}
-		
-		unskipStep = 0;
-	}
-	else
-	{
-		framesToSkip = (uint64_t)((double)lastSetFrameSkip * unskipCurve[unskipStep]);
-		if (unskipStep < 9)
-		{
-			unskipStep++;
-		}
-		
-		skipStep = 0;
-	}
-	
-	// Bound the frame skip.
-	static const uint64_t kMaxFrameSkip = (uint64_t)MAX_FRAME_SKIP;
-	if (framesToSkip > kMaxFrameSkip)
-	{
-		framesToSkip = kMaxFrameSkip;
-	}
-	
-	lastSetFrameSkip = framesToSkip;
-	
-	return (uint8_t)framesToSkip;
-}
-
-uint64_t GetFrameAbsoluteTime(const double frameTimeScalar)
-{
-	const uint64_t frameTimeNanoseconds = (uint64_t)(DS_SECONDS_PER_FRAME * 1000000000.0 * frameTimeScalar);
-	const AbsoluteTime frameTimeAbsTime = NanosecondsToAbsolute(*(Nanoseconds *)&frameTimeNanoseconds);
-	
-	return *(uint64_t *)&frameTimeAbsTime;
 }
 
 #pragma mark - OSXDriver
@@ -1432,7 +1185,7 @@ void OSXDriver::EMU_DebugIdleWakeUp()
 
 #pragma mark - GDB Stub implementation
 
-void* createThread_gdb(void (*thread_function)( void *data),void *thread_data)
+void* createThread_gdb(void (*thread_function)(void *data), void *thread_data)
 {
 	// Create the thread using POSIX routines.
 	pthread_attr_t  attr;
@@ -1458,6 +1211,6 @@ void* createThread_gdb(void (*thread_function)( void *data),void *thread_data)
 
 void joinThread_gdb(void *thread_handle)
 {
-	pthread_join(*((pthread_t*)thread_handle), NULL);
+	pthread_join(*(pthread_t *)thread_handle, NULL);
 	free(thread_handle);
 }
