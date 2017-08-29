@@ -129,7 +129,7 @@
 	currentSaveStateURL = nil;
 	selectedRomSaveTypeID = ROMSAVETYPE_AUTOMATIC;
 	selectedExportRomSaveID = 0;
-	frameJumpType = FRAMEJUMP_TYPE_FORWARD;
+	frameJumpType = FrameJumpBehavior_Forward;
 	frameJumpFramesForward = 60;
 	frameJumpToFrame = 0;
 	
@@ -815,30 +815,6 @@
 	[self setVerticalSyncForNonLayerBackedViews:sender];
 }
 
-- (IBAction) changeCoreEmuFlags:(id)sender
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	NSUInteger flags = [cdsCore emulationFlags];
-	
-	NSInteger flagBit = [CocoaDSUtil getIBActionSenderTag:sender];
-	if (flagBit < 0)
-	{
-		return;
-	}
-	
-	BOOL flagState = [CocoaDSUtil getIBActionSenderButtonStateBool:sender];
-	if (flagState)
-	{
-		flags |= (1 << flagBit);
-	}
-	else
-	{
-		flags &= ~(1 << flagBit);
-	}
-	
-	[cdsCore setEmulationFlags:flags];
-}
-
 - (IBAction) changeFirmwareSettings:(id)sender
 {
 	// Force end of editing of any text fields.
@@ -859,7 +835,7 @@
 	const BOOL muteState = [CocoaDSUtil getIBActionSenderButtonStateBool:sender];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsController] setHardwareMicMute:muteState];
-	[[cdsCore cdsController] setHardwareMicPause:([cdsCore coreState] != CORESTATE_EXECUTE)];
+	[[cdsCore cdsController] setHardwareMicPause:([cdsCore coreState] != ExecutionBehavior_Run)];
 	[self updateMicStatusIcon];
 }
 
@@ -1426,7 +1402,7 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
-	if ([cdsCore coreState] == CORESTATE_PAUSE)
+	if ([cdsCore coreState] == ExecutionBehavior_Pause)
 	{
 		[self executeCore];
 	}
@@ -1469,12 +1445,12 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF || [cdsCore coreState] != CORESTATE_PAUSE || [self currentRom] == nil)
+	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF || [cdsCore coreState] != ExecutionBehavior_Pause || [self currentRom] == nil)
 	{
 		return;
 	}
 	
-	[cdsCore setCoreState:CORESTATE_FRAMEADVANCE];
+	[cdsCore setCoreState:ExecutionBehavior_FrameAdvance];
 }
 
 - (void) cmdFrameJump:(NSValue *)cmdAttrValue
@@ -1493,17 +1469,17 @@
 	
 	switch ([self frameJumpType])
 	{
-		case FRAMEJUMP_TYPE_FORWARD:
+		case FrameJumpBehavior_Forward:
 			jumpFrames = [self frameJumpFramesForward];
 			[cdsCore frameJump:jumpFrames];
 			break;
 			
-		case FRAMEJUMP_TYPE_TOFRAME:
+		case FrameJumpBehavior_ToFrame:
 			jumpFrames = [self frameJumpToFrame];
 			[cdsCore frameJumpTo:jumpFrames];
 			break;
 			
-		case FRAMEJUMP_TYPE_NEXTMARKER:
+		case FrameJumpBehavior_NextMarker:
 			// TODO: Support when replay markers are implemented.
 			break;
 			
@@ -1964,14 +1940,14 @@
 - (void) executeCore
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore setCoreState:CORESTATE_EXECUTE];
+	[cdsCore setCoreState:ExecutionBehavior_Run];
 	[self updateMicStatusIcon];
 }
 
 - (void) pauseCore
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[cdsCore setCoreState:CORESTATE_PAUSE];
+	[cdsCore setCoreState:ExecutionBehavior_Pause];
 	[self updateMicStatusIcon];
 }
 
@@ -2269,23 +2245,23 @@
 		
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			if ([cdsCore coreState] == CORESTATE_PAUSE)
+			if ([cdsCore coreState] == ExecutionBehavior_Pause)
 			{
 				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_EXECUTE_CONTROL];
 			}
-			else if ([cdsCore coreState] == CORESTATE_EXECUTE)
+			else if ([cdsCore coreState] == ExecutionBehavior_Run)
 			{
 				[(NSMenuItem*)theItem setTitle:NSSTRING_TITLE_PAUSE_CONTROL];
 			}
 		}
 		else if ([(id)theItem isMemberOfClass:[NSToolbarItem class]])
 		{
-			if ([cdsCore coreState] == CORESTATE_PAUSE)
+			if ([cdsCore coreState] == ExecutionBehavior_Pause)
 			{
 				[(NSToolbarItem*)theItem setLabel:NSSTRING_TITLE_EXECUTE_CONTROL];
 				[(NSToolbarItem*)theItem setImage:iconExecute];
 			}
-			else if ([cdsCore coreState] == CORESTATE_EXECUTE)
+			else if ([cdsCore coreState] == ExecutionBehavior_Run)
 			{
 				[(NSToolbarItem*)theItem setLabel:NSSTRING_TITLE_PAUSE_CONTROL];
 				[(NSToolbarItem*)theItem setImage:iconPause];
@@ -2294,12 +2270,12 @@
     }
 	else if (theAction == @selector(frameAdvance:))
 	{
-		if ([cdsCore coreState] != CORESTATE_PAUSE)
+		if ([cdsCore coreState] != ExecutionBehavior_Pause)
 		{
 			enable = NO;
 		}
 		
-		if ([cdsCore coreState] != CORESTATE_PAUSE ||
+		if ([cdsCore coreState] != ExecutionBehavior_Pause ||
 			![cdsCore masterExecute] ||
 			[self currentRom] == nil ||
 			[self isShowingSaveStateDialog])
@@ -2318,8 +2294,8 @@
 	}
 	else if (theAction == @selector(coreExecute:))
     {
-		if ([cdsCore coreState] == CORESTATE_EXECUTE ||
-			[cdsCore coreState] == CORESTATE_FRAMEADVANCE ||
+		if ([cdsCore coreState] == ExecutionBehavior_Run ||
+			[cdsCore coreState] == ExecutionBehavior_FrameAdvance ||
 			![cdsCore masterExecute] ||
 			[self currentRom] == nil ||
 			[self isShowingSaveStateDialog])
@@ -2329,7 +2305,7 @@
     }
 	else if (theAction == @selector(corePause:))
     {
-		if ([cdsCore coreState] == CORESTATE_PAUSE ||
+		if ([cdsCore coreState] == ExecutionBehavior_Pause ||
 			![cdsCore masterExecute] ||
 			[self currentRom] == nil ||
 			[self isShowingSaveStateDialog])

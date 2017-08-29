@@ -170,7 +170,7 @@
 	[aboutWindowController setContent:aboutWindowProperties];
 	
 	// Set the preferences window to the general view by default.
-	[[prefWindowDelegate toolbar] setSelectedItemIdentifier:@"General"];
+	[[prefWindowDelegate toolbar] setSelectedItemIdentifier:[[prefWindowDelegate toolbarItemGeneral] itemIdentifier]];
 	[prefWindowDelegate changePrefView:self];
 	
 	// Setup the slot menu items. We set this up manually instead of through Interface
@@ -446,59 +446,20 @@
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	// Set the emulation flags.
-	NSUInteger emuFlags = 0;
-	
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_AdvancedBusLevelTiming"])
-	{
-		emuFlags |= EMULATION_ADVANCED_BUS_LEVEL_TIMING_MASK;
-	}
-	
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_RigorousTiming"])
-	{
-		emuFlags |= EMULATION_RIGOROUS_TIMING_MASK;
-	}
-	
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_UseExternalBIOSImages"])
-	{
-		emuFlags |= EMULATION_USE_EXTERNAL_BIOS_MASK;
-	}
-	
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_BIOSEmulateSWI"])
-	{
-		emuFlags |= EMULATION_BIOS_SWI_MASK;
-	}
-	
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_BIOSPatchDelayLoopSWI"])
-	{
-		emuFlags |= EMULATION_PATCH_DELAY_LOOP_MASK;
-	}
-	
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_UseExternalFirmwareImage"])
-	{
-		emuFlags |= EMULATION_USE_EXTERNAL_FIRMWARE_MASK;
-	}
-	
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_FirmwareBoot"])
-	{
-		emuFlags |= EMULATION_BOOT_FROM_FIRMWARE_MASK;
-	}
-	
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_EmulateEnsata"])
-	{
-		emuFlags |= EMULATION_ENSATA_MASK;
-	}
-	
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_UseDebugConsole"])
-	{
-		emuFlags |= EMULATION_DEBUG_CONSOLE_MASK;
-	}
-	
-	[cdsCore setEmulationFlags:emuFlags];
+	[cdsCore setEmuFlagAdvancedBusLevelTiming:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_AdvancedBusLevelTiming"]];
+	[cdsCore setEmuFlagRigorousTiming:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_RigorousTiming"]];
+	[cdsCore setEmuFlagUseExternalBios:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_UseExternalBIOSImages"]];
+	[cdsCore setEmuFlagEmulateBiosInterrupts:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_BIOSEmulateSWI"]];
+	[cdsCore setEmuFlagPatchDelayLoop:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_BIOSPatchDelayLoopSWI"]];
+	[cdsCore setEmuFlagUseExternalFirmware:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_UseExternalFirmwareImage"]];
+	[cdsCore setEmuFlagFirmwareBoot:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_FirmwareBoot"]];
+	[cdsCore setEmuFlagEmulateEnsata:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_EmulateEnsata"]];
+	[cdsCore setEmuFlagDebugConsole:[[NSUserDefaults standardUserDefaults] boolForKey:@"Emulation_UseDebugConsole"]];
 	
 	// If we're not running on Intel, force the CPU emulation engine to use the interpreter engine.
 	if (!isAppRunningOnIntel)
 	{
-		[[NSUserDefaults standardUserDefaults] setInteger:CPU_EMULATION_ENGINE_INTERPRETER forKey:@"Emulation_CPUEmulationEngine"];
+		[[NSUserDefaults standardUserDefaults] setInteger:CPUEmulationEngineID_Interpreter forKey:@"Emulation_CPUEmulationEngine"];
 	}
 	
 	// Set the CPU emulation engine per user preferences.

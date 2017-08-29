@@ -57,6 +57,12 @@ class OGLImage;
 	NSObjectController *cheatWindowController;
 	NSArrayController *cheatDatabaseController;
 	
+	NSToolbarItem *toolbarItemGeneral;
+	NSToolbarItem *toolbarItemInput;
+	NSToolbarItem *toolbarItemDisplay;
+	NSToolbarItem *toolbarItemSound;
+	NSToolbarItem *toolbarItemEmulation;
+	
 	NSView *viewGeneral;
 	InputPrefsView *viewInput;
 	NSView *viewDisplay;
@@ -88,6 +94,11 @@ class OGLImage;
 @property (readonly) IBOutlet NSObjectController *prefWindowController;
 @property (readonly) IBOutlet NSObjectController *cheatWindowController;
 @property (readonly) IBOutlet NSArrayController *cheatDatabaseController;
+@property (readonly) IBOutlet NSToolbarItem *toolbarItemGeneral;
+@property (readonly) IBOutlet NSToolbarItem *toolbarItemInput;
+@property (readonly) IBOutlet NSToolbarItem *toolbarItemDisplay;
+@property (readonly) IBOutlet NSToolbarItem *toolbarItemSound;
+@property (readonly) IBOutlet NSToolbarItem *toolbarItemEmulation;
 @property (readonly) IBOutlet NSView *viewGeneral;
 @property (readonly) IBOutlet InputPrefsView *viewInput;
 @property (readonly) IBOutlet NSView *viewDisplay;

@@ -286,6 +286,12 @@
 @synthesize cheatWindowController;
 @synthesize cheatDatabaseController;
 
+@synthesize toolbarItemGeneral;
+@synthesize toolbarItemInput;
+@synthesize toolbarItemDisplay;
+@synthesize toolbarItemSound;
+@synthesize toolbarItemEmulation;
+
 @synthesize viewGeneral;
 @synthesize viewInput;
 @synthesize viewDisplay;
@@ -347,11 +353,11 @@
 	{
 		// Associates NSView objects to their respective toolbar identifiers.
 		prefViewDict = [[NSDictionary alloc] initWithObjectsAndKeys:
-						viewGeneral, @"General",
-						viewInput, @"Input",
-						viewDisplay, @"Display",
-						viewSound, @"Sound",
-						viewEmulation, @"Emulation",
+						viewGeneral,	[toolbarItemGeneral itemIdentifier],
+						viewInput,		[toolbarItemInput itemIdentifier],
+						viewDisplay,	[toolbarItemDisplay itemIdentifier],
+						viewSound,		[toolbarItemSound itemIdentifier],
+						viewEmulation,	[toolbarItemEmulation itemIdentifier],
 						nil];
 	}
 	
@@ -361,7 +367,7 @@
 	{
 		[self switchContentView:theView];
 		
-		if ([toolbarItemIdentifier isEqualToString:@"Input"])
+		if ([toolbarItemIdentifier isEqualToString:[toolbarItemDisplay itemIdentifier]])
 		{
 			[window makeFirstResponder:theView];
 		}

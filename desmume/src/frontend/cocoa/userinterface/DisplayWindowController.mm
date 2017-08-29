@@ -1586,7 +1586,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			enable = NO;
 		}
 		
-		if ([emuControl executionState] == CORESTATE_PAUSE)
+		if ([emuControl executionState] == ExecutionBehavior_Pause)
 		{
 			[theItem setLabel:NSSTRING_TITLE_EXECUTE_CONTROL];
 			[theItem setImage:[emuControl iconExecute]];
@@ -1602,7 +1602,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		if (![emuControl masterExecuteFlag] ||
 			[emuControl currentRom] == nil ||
 			[emuControl isUserInterfaceBlockingExecution] ||
-			[emuControl executionState] != CORESTATE_PAUSE)
+			[emuControl executionState] != ExecutionBehavior_Pause)
 		{
 			enable = NO;
 		}

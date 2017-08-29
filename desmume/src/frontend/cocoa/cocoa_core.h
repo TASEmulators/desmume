@@ -21,6 +21,7 @@
 #include <libkern/OSAtomic.h>
 #include <string>
 #import "cocoa_util.h"
+#include "ClientExecutionControl.h"
 
 
 @class CocoaDSCore;
@@ -34,10 +35,10 @@ typedef void *gdbstub_handle_t;
 typedef struct
 {
 	CocoaDSCore *cdsCore;
-	int state;
+	ExecutionBehavior behavior;
 	bool isFrameSkipEnabled;
-	NSUInteger frameJumpTarget;
-	int framesToSkip;
+	uint64_t frameJumpTarget;
+	uint8_t framesToSkip;
 	uint64_t timeBudgetMachAbsTime;
 	pthread_mutex_t mutexOutputList;
 	pthread_mutex_t mutexThreadExecute;
@@ -72,7 +73,6 @@ typedef struct
 	volatile gdbstub_handle_t gdbStubHandleARM9;
 	volatile gdbstub_handle_t gdbStubHandleARM7;
 	
-	NSUInteger emulationFlags;
 	BOOL emuFlagAdvancedBusLevelTiming;
 	BOOL emuFlagRigorousTiming;
 	BOOL emuFlagUseExternalBios;
@@ -118,7 +118,6 @@ typedef struct
 @property (assign) NSUInteger gdbStubPortARM9;
 @property (assign) NSUInteger gdbStubPortARM7;
 
-@property (assign) NSUInteger emulationFlags;
 @property (assign) BOOL emuFlagAdvancedBusLevelTiming;
 @property (assign) BOOL emuFlagRigorousTiming;
 @property (assign) BOOL emuFlagUseGameSpecificHacks;
@@ -144,7 +143,6 @@ typedef struct
 @property (readonly) pthread_rwlock_t *rwlockCoreExecute;
 
 - (BOOL) ejectCardFlag;
-- (void) setEjectCardFlag;
 - (void) slot1Eject;
 
 - (void) changeRomSaveType:(NSInteger)saveTypeID;
@@ -173,5 +171,5 @@ typedef struct
 @end
 
 static void* RunCoreThread(void *arg);
-static int CalculateFrameSkip(uint64_t timeBudgetMachAbsTime, uint64_t frameStartMachAbsTime);
+static uint8_t CalculateFrameSkip(uint64_t timeBudgetMachAbsTime, uint64_t frameStartMachAbsTime);
 uint64_t GetFrameAbsoluteTime(const double frameTimeScalar);

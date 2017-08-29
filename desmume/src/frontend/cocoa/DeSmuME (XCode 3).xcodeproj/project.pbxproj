@@ -1468,6 +1468,11 @@
 		ABD21B641DE9010B001D2DFA /* features_cpu.c in Sources */ = {isa = PBXBuildFile; fileRef = ABD21B611DE9010B001D2DFA /* features_cpu.c */; };
 		ABD21B651DE9010B001D2DFA /* features_cpu.c in Sources */ = {isa = PBXBuildFile; fileRef = ABD21B611DE9010B001D2DFA /* features_cpu.c */; };
 		ABD21B661DE9010B001D2DFA /* features_cpu.c in Sources */ = {isa = PBXBuildFile; fileRef = ABD21B611DE9010B001D2DFA /* features_cpu.c */; };
+		ABD4F2731F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD4F2711F54A51000D75A1F /* ClientExecutionControl.cpp */; };
+		ABD4F2741F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD4F2711F54A51000D75A1F /* ClientExecutionControl.cpp */; };
+		ABD4F2751F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD4F2711F54A51000D75A1F /* ClientExecutionControl.cpp */; };
+		ABD4F2761F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD4F2711F54A51000D75A1F /* ClientExecutionControl.cpp */; };
+		ABD4F2771F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD4F2711F54A51000D75A1F /* ClientExecutionControl.cpp */; };
 		ABD597BC187CD95A00069403 /* Image_GuitarGrip.png in Resources */ = {isa = PBXBuildFile; fileRef = ABD597BB187CD95A00069403 /* Image_GuitarGrip.png */; };
 		ABD597BD187CD95A00069403 /* Image_GuitarGrip.png in Resources */ = {isa = PBXBuildFile; fileRef = ABD597BB187CD95A00069403 /* Image_GuitarGrip.png */; };
 		ABD597BE187CD95A00069403 /* Image_GuitarGrip.png in Resources */ = {isa = PBXBuildFile; fileRef = ABD597BB187CD95A00069403 /* Image_GuitarGrip.png */; };
@@ -2159,6 +2164,8 @@
 		ABD21B591DE900D3001D2DFA /* Database.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Database.h; sourceTree = "<group>"; };
 		ABD21B5A1DE900D3001D2DFA /* Database.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Database.cpp; sourceTree = "<group>"; };
 		ABD21B611DE9010B001D2DFA /* features_cpu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = features_cpu.c; sourceTree = "<group>"; };
+		ABD4F2711F54A51000D75A1F /* ClientExecutionControl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClientExecutionControl.cpp; sourceTree = "<group>"; };
+		ABD4F2721F54A51000D75A1F /* ClientExecutionControl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientExecutionControl.h; sourceTree = "<group>"; };
 		ABD597BB187CD95A00069403 /* Image_GuitarGrip.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Image_GuitarGrip.png; path = images/Image_GuitarGrip.png; sourceTree = "<group>"; };
 		ABD59813187D417900069403 /* Icon_GuitarGrip_Button_Blue_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Blue_512x512.png; path = images/Icon_GuitarGrip_Button_Blue_512x512.png; sourceTree = "<group>"; };
 		ABD59814187D417900069403 /* Icon_GuitarGrip_Button_Green_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_GuitarGrip_Button_Green_512x512.png; path = images/Icon_GuitarGrip_Button_Green_512x512.png; sourceTree = "<group>"; };
@@ -2378,6 +2385,7 @@
 				AB2F56EF1704C86900E28885 /* utilities.c */,
 				AB2145221714DFF4006DDB0F /* audiosamplegenerator.cpp */,
 				AB0F13911E1B7C320075684F /* ClientDisplayView.cpp */,
+				ABD4F2711F54A51000D75A1F /* ClientExecutionControl.cpp */,
 				ABD0A5341501AA5A0074A094 /* coreaudiosound.cpp */,
 				ABD9A46413DB99B300777194 /* mic_ext.cpp */,
 				ABECB51318A460910052D52A /* OGLDisplayOutput.cpp */,
@@ -2385,6 +2393,7 @@
 				ABD104141346652500AF11D1 /* sndOSX.cpp */,
 				AB2145211714DFF4006DDB0F /* audiosamplegenerator.h */,
 				AB0F13901E1B7C320075684F /* ClientDisplayView.h */,
+				ABD4F2721F54A51000D75A1F /* ClientExecutionControl.h */,
 				ABA6574914511EC90077E5E9 /* cocoa_cheat.h */,
 				ABD103FE1346652500AF11D1 /* cocoa_core.h */,
 				AB58F32B1364F44B0074C376 /* cocoa_file.h */,
@@ -4571,6 +4580,7 @@
 				AB0F13931E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 				AB3E69111E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 				AB3E69841E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
+				ABD4F2741F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4755,6 +4765,7 @@
 				AB0F13941E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 				AB3E69121E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 				AB3E69851E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
+				ABD4F2751F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4969,6 +4980,7 @@
 				AB0F13921E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 				AB3E69101E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 				AB3E69831E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
+				ABD4F2731F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5183,6 +5195,7 @@
 				AB0F13961E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 				AB3E69141E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 				AB3E69871E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
+				ABD4F2771F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5367,6 +5380,7 @@
 				AB0F13951E1B7C320075684F /* ClientDisplayView.cpp in Sources */,
 				AB3E69131E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 				AB3E69861E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
+				ABD4F2761F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

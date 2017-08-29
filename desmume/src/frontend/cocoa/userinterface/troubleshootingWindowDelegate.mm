@@ -113,7 +113,7 @@
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nSLOT-2 Device Type: "] stringByAppendingString:[cdsCore slot2DeviceTypeString]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAdvanced Bus-Level Timing: "] stringByAppendingString:([cdsCore emuFlagAdvancedBusLevelTiming] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nRigorous 3D Rendering Timing: "] stringByAppendingString:([cdsCore emuFlagRigorousTiming] ? @"YES" : @"NO")];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCPU Emulation Engine: "] stringByAppendingString:([cdsCore cpuEmulationEngine] == CPU_EMULATION_ENGINE_DYNAMIC_RECOMPILER ? [NSString stringWithFormat:@"%@ (BlockSize=%li)", [cdsCore cpuEmulationEngineString], (long)[cdsCore maxJITBlockSize]] : [cdsCore cpuEmulationEngineString])];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCPU Emulation Engine: "] stringByAppendingString:([cdsCore cpuEmulationEngine] == CPUEmulationEngineID_DynamicRecompiler ? [NSString stringWithFormat:@"%@ (BlockSize=%li)", [cdsCore cpuEmulationEngineString], (long)[cdsCore maxJITBlockSize]] : [cdsCore cpuEmulationEngineString])];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nExternal BIOS: "] stringByAppendingString:([cdsCore emuFlagUseExternalBios] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nExternal Firmware: "] stringByAppendingString:([cdsCore emuFlagUseExternalFirmware] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nGPU - Scaling Factor: "] stringByAppendingString:[NSString stringWithFormat:@"%ldx", (unsigned long)[[cdsCore cdsGPU] gpuScale]]];

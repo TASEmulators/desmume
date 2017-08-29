@@ -895,6 +895,10 @@
 		ABB0FBDA1A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB0FBD81A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png */; };
 		ABB0FBDB1A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABB0FBD81A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png */; };
 		ABB1C9451F4D6B340004844F /* macosx_10_5_compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */; };
+		ABB1C9481F5281AE0004844F /* ClientExecutionControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB1C9461F5281AE0004844F /* ClientExecutionControl.cpp */; };
+		ABB1C9491F5281AE0004844F /* ClientExecutionControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB1C9461F5281AE0004844F /* ClientExecutionControl.cpp */; };
+		ABB1C94A1F5281AE0004844F /* ClientExecutionControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB1C9461F5281AE0004844F /* ClientExecutionControl.cpp */; };
+		ABB1C94B1F5281AE0004844F /* ClientExecutionControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB1C9461F5281AE0004844F /* ClientExecutionControl.cpp */; };
 		ABB24F6D1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */; };
 		ABB24F6E1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */; };
 		ABB24F6F1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */; };
@@ -1564,6 +1568,8 @@
 		ABB0FBCA1A9EED350060C55A /* Icon_MicrophoneGreen_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneGreen_256x256.png; path = images/Icon_MicrophoneGreen_256x256.png; sourceTree = "<group>"; };
 		ABB0FBCB1A9EED350060C55A /* Icon_MicrophoneRed_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneRed_256x256.png; path = images/Icon_MicrophoneRed_256x256.png; sourceTree = "<group>"; };
 		ABB0FBD81A9FD0260060C55A /* Icon_MicrophoneGray_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneGray_256x256.png; path = images/Icon_MicrophoneGray_256x256.png; sourceTree = "<group>"; };
+		ABB1C9461F5281AE0004844F /* ClientExecutionControl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClientExecutionControl.cpp; sourceTree = "<group>"; };
+		ABB1C9471F5281AE0004844F /* ClientExecutionControl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientExecutionControl.h; sourceTree = "<group>"; };
 		ABB24F6B1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OGLDisplayOutput_3_2.cpp; sourceTree = "<group>"; };
 		ABB24F6C1A81EE92006C1108 /* OGLDisplayOutput_3_2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OGLDisplayOutput_3_2.h; sourceTree = "<group>"; };
 		ABB3C63B1501BB8300E0C22E /* DeSmuME_Prefix_OpenEmu.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DeSmuME_Prefix_OpenEmu.pch; sourceTree = "<group>"; };
@@ -1993,6 +1999,7 @@
 				AB82445A1704AE9A00B8EE20 /* utilities.c */,
 				ABD10AE51715FCDD00B5729D /* audiosamplegenerator.cpp */,
 				ABAD07DA1E19CAA6007867CA /* ClientDisplayView.cpp */,
+				ABB1C9461F5281AE0004844F /* ClientExecutionControl.cpp */,
 				AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */,
 				AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */,
 				ABD10AE61715FCDD00B5729D /* mic_ext.cpp */,
@@ -2002,6 +2009,7 @@
 				ABD104141346652500AF11D1 /* sndOSX.cpp */,
 				ABD10AE31715FCDD00B5729D /* audiosamplegenerator.h */,
 				ABAD07DB1E19CAA6007867CA /* ClientDisplayView.h */,
+				ABB1C9471F5281AE0004844F /* ClientExecutionControl.h */,
 				ABA6574914511EC90077E5E9 /* cocoa_cheat.h */,
 				ABD103FE1346652500AF11D1 /* cocoa_core.h */,
 				AB58F32B1364F44B0074C376 /* cocoa_file.h */,
@@ -3825,6 +3833,7 @@
 				ABD1FEF51345AC8400AF11D1 /* ROMReader.cpp in Sources */,
 				ABD1FEF61345AC8400AF11D1 /* rtc.cpp in Sources */,
 				ABD1FEF71345AC8400AF11D1 /* saves.cpp in Sources */,
+				ABB1C94A1F5281AE0004844F /* ClientExecutionControl.cpp in Sources */,
 				ABD1FEF81345AC8400AF11D1 /* slot1.cpp in Sources */,
 				ABD1FF0B1345AC9C00AF11D1 /* slot1_none.cpp in Sources */,
 				ABD1FF0C1345AC9C00AF11D1 /* slot1_r4.cpp in Sources */,
@@ -4044,6 +4053,7 @@
 				AB796D1A15CDCBA200C59155 /* MMU.cpp in Sources */,
 				ABB24F6D1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */,
 				AB796D1B15CDCBA200C59155 /* mmx_optimized.cpp in Sources */,
+				ABB1C9481F5281AE0004844F /* ClientExecutionControl.cpp in Sources */,
 				AB2ABA3F1C9F9CFA00173B15 /* rsemaphore.c in Sources */,
 				AB796D1C15CDCBA200C59155 /* movie.cpp in Sources */,
 				AB9038B817C5ED2200F410BD /* slot1comp_rom.cpp in Sources */,
@@ -4208,6 +4218,7 @@
 				ABFEA8361BB4EC1100B08C25 /* ftmm.c in Sources */,
 				ABFEA81E1BB4EC1000B08C25 /* ftfstype.c in Sources */,
 				ABA731601BB51E7000B26147 /* pshinter.c in Sources */,
+				ABB1C9491F5281AE0004844F /* ClientExecutionControl.cpp in Sources */,
 				AB301BE01D9C8BCD00246A93 /* deposterize.cpp in Sources */,
 				ABFEA8211BB4EC1000B08C25 /* ftgasp.c in Sources */,
 				ABFEA83C1BB4EC1100B08C25 /* ftotval.c in Sources */,
@@ -4447,6 +4458,7 @@
 				ABB3C6851501C04F00E0C22E /* bilinear.cpp in Sources */,
 				ABB3C6861501C04F00E0C22E /* epx.cpp in Sources */,
 				ABB3C6871501C04F00E0C22E /* hq2x.cpp in Sources */,
+				ABB1C94B1F5281AE0004844F /* ClientExecutionControl.cpp in Sources */,
 				ABB3C6881501C04F00E0C22E /* hq4x.cpp in Sources */,
 				ABB3C6891501C04F00E0C22E /* lq2x.cpp in Sources */,
 				ABB3C68A1501C04F00E0C22E /* scanline.cpp in Sources */,

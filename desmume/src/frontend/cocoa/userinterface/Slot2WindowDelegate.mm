@@ -145,7 +145,7 @@
 
 - (IBAction) showInputPreferences:(id)sender
 {
-	[[prefWindowDelegate toolbar] setSelectedItemIdentifier:@"Input"];
+	[[prefWindowDelegate toolbar] setSelectedItemIdentifier:[[prefWindowDelegate toolbarItemInput] itemIdentifier]];
 	[prefWindowDelegate changePrefView:sender];
 	[[prefWindowDelegate window] makeKeyAndOrderFront:sender];
 }

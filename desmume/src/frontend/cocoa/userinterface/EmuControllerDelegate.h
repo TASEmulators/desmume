@@ -215,7 +215,6 @@ class AudioSampleBlockGenerator;
 - (IBAction) setVerticalSyncForNonLayerBackedViews:(id)sender;
 
 - (IBAction) changeCoreSpeed:(id)sender;
-- (IBAction) changeCoreEmuFlags:(id)sender;
 - (IBAction) changeFirmwareSettings:(id)sender;
 - (IBAction) changeHardwareMicGain:(id)sender;
 - (IBAction) changeHardwareMicMute:(id)sender;

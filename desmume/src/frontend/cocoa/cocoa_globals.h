@@ -187,21 +187,6 @@
 
 #define WINDOW_STATUS_BAR_HEIGHT					24		// Height of an emulation window status bar in pixels.
 
-#define SPEED_SCALAR_QUARTER						0.25	// Speed scalar for quarter execution speed.
-#define SPEED_SCALAR_HALF							0.5		// Speed scalar for half execution speed.
-#define SPEED_SCALAR_THREE_QUARTER					0.75	// Speed scalar for three quarters execution speed.
-#define SPEED_SCALAR_NORMAL							1.0		// Speed scalar for normal execution speed.
-#define SPEED_SCALAR_DOUBLE							2.0		// Speed scalar for double execution speed.
-#define SPEED_SCALAR_MIN							0.005	// Lower limit for the speed multiplier.
-
-#define DS_FRAMES_PER_SECOND						59.8261	// Number of DS frames per second.
-#define DS_SECONDS_PER_FRAME						(1.0 / DS_FRAMES_PER_SECOND) // The length of time in seconds that, ideally, a frame should be processed within.
-
-#define FRAME_SKIP_AGGRESSIVENESS					9.0		// Must be a value between 0.0 (inclusive) and positive infinity.
-															// This value acts as a scalar multiple of the frame skip.
-#define FRAME_SKIP_BIAS								0.1		// May be any real number. This value acts as a vector addition to the frame skip.
-#define MAX_FRAME_SKIP								(DS_FRAMES_PER_SECOND / 3.0)
-
 //#define SPU_SAMPLE_RATE								(44100.0 * DS_FRAMES_PER_SECOND / 60.0)	// Samples per second
 #define SPU_SAMPLE_RATE								44100.0	// Samples per second
 #define SPU_SAMPLE_RESOLUTION						16		// Bits per sample; must be a multiple of 8
@@ -272,42 +257,6 @@ enum
 enum
 {
 	ROMSAVETYPE_AUTOMATIC							= 0
-};
-
-enum
-{
-	EMULATION_ENSATA_BIT							= 0,
-	EMULATION_ADVANCED_BUS_LEVEL_TIMING_BIT			= 1,
-	EMULATION_USE_EXTERNAL_BIOS_BIT					= 2,
-	EMULATION_BIOS_SWI_BIT							= 3,
-	EMULATION_PATCH_DELAY_LOOP_BIT					= 4,
-	EMULATION_USE_EXTERNAL_FIRMWARE_BIT				= 5,
-	EMULATION_BOOT_FROM_FIRMWARE_BIT				= 6,
-	EMULATION_SLEEP_BIT								= 7,
-	EMULATION_CARD_EJECT_BIT						= 8,
-	EMULATION_DEBUG_CONSOLE_BIT						= 9,
-	EMULATION_RIGOROUS_TIMING_BIT					= 10
-};
-
-enum
-{
-	EMULATION_ENSATA_MASK							= 1 << EMULATION_ENSATA_BIT,
-	EMULATION_ADVANCED_BUS_LEVEL_TIMING_MASK		= 1 << EMULATION_ADVANCED_BUS_LEVEL_TIMING_BIT,
-	EMULATION_USE_EXTERNAL_BIOS_MASK				= 1 << EMULATION_USE_EXTERNAL_BIOS_BIT,
-	EMULATION_BIOS_SWI_MASK							= 1 << EMULATION_BIOS_SWI_BIT,
-	EMULATION_PATCH_DELAY_LOOP_MASK					= 1 << EMULATION_PATCH_DELAY_LOOP_BIT,
-	EMULATION_USE_EXTERNAL_FIRMWARE_MASK			= 1 << EMULATION_USE_EXTERNAL_FIRMWARE_BIT,
-	EMULATION_BOOT_FROM_FIRMWARE_MASK				= 1 << EMULATION_BOOT_FROM_FIRMWARE_BIT,
-	EMULATION_SLEEP_MASK							= 1 << EMULATION_SLEEP_BIT,
-	EMULATION_CARD_EJECT_MASK						= 1 << EMULATION_CARD_EJECT_BIT,
-	EMULATION_DEBUG_CONSOLE_MASK					= 1 << EMULATION_DEBUG_CONSOLE_BIT,
-	EMULATION_RIGOROUS_TIMING_MASK					= 1 << EMULATION_RIGOROUS_TIMING_BIT
-};
-
-enum
-{
-	CPU_EMULATION_ENGINE_INTERPRETER				= 0,
-	CPU_EMULATION_ENGINE_DYNAMIC_RECOMPILER			= 1
 };
 
 enum
@@ -439,17 +388,6 @@ enum
 };
 
 /*
- COCOA DS CORE STATES
- */
-enum
-{
-	CORESTATE_PAUSE = 0,
-	CORESTATE_EXECUTE,
-	CORESTATE_FRAMEADVANCE,
-	CORESTATE_FRAMEJUMP
-};
-
-/*
  DESMUME 3D RENDERER TYPES
  */
 enum
@@ -470,13 +408,6 @@ enum
 	MICMODE_WHITE_NOISE,
 	MICMODE_PHYSICAL,
 	MICMODE_SINE_WAVE
-};
-
-enum
-{
-	FRAMEJUMP_TYPE_FORWARD		= 0,
-	FRAMEJUMP_TYPE_TOFRAME		= 1,
-	FRAMEJUMP_TYPE_NEXTMARKER	= 2
 };
 
 enum
