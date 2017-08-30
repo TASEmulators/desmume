@@ -19,6 +19,9 @@
 #include <mach/mach_time.h>
 
 #include "NDSSystem.h"
+#include "GPU.h"
+#include "movie.h"
+#include "rtc.h"
 
 #include "ClientExecutionControl.h"
 
@@ -35,40 +38,55 @@ ClientExecutionControl::ClientExecutionControl()
 	_framesToSkip = 0;
 	_prevExecBehavior = ExecutionBehavior_Pause;
 	
-	_settingsPending.cpuEngineID = CPUEmulationEngineID_Interpreter;
-	_settingsPending.JITMaxBlockSize = 12;
-	_settingsPending.filePathARM9BIOS = std::string();
-	_settingsPending.filePathARM7BIOS = std::string();
-	_settingsPending.filePathFirmware = std::string();
+	_settingsPending.cpuEngineID						= CPUEmulationEngineID_Interpreter;
+	_settingsPending.JITMaxBlockSize					= 12;
+	_settingsPending.slot1DeviceType					= NDS_SLOT1_RETAIL_AUTO;
+	_settingsPending.filePathARM9BIOS					= std::string();
+	_settingsPending.filePathARM7BIOS					= std::string();
+	_settingsPending.filePathFirmware					= std::string();
+	_settingsPending.filePathSlot1R4					= std::string();
+	_settingsPending.cpuEmulationEngineName				= "Interpreter";
+	_settingsPending.slot1DeviceName					= "Uninitialized";
 	
-	_settingsPending.enableAdvancedBusLevelTiming = true;
-	_settingsPending.enableRigorous3DRenderingTiming = false;
-	_settingsPending.enableGameSpecificHacks = true;
-	_settingsPending.enableExternalBIOS = false;
-	_settingsPending.enableBIOSInterrupts = false;
-	_settingsPending.enableBIOSPatchDelayLoop = false;
-	_settingsPending.enableExternalFirmware = false;
-	_settingsPending.enableFirmwareBoot = false;
-	_settingsPending.enableDebugConsole = false;
-	_settingsPending.enableEnsataEmulation = false;
+	_settingsPending.enableAdvancedBusLevelTiming		= true;
+	_settingsPending.enableRigorous3DRenderingTiming	= false;
+	_settingsPending.enableGameSpecificHacks			= true;
+	_settingsPending.enableExternalBIOS					= false;
+	_settingsPending.enableBIOSInterrupts				= false;
+	_settingsPending.enableBIOSPatchDelayLoop			= false;
+	_settingsPending.enableExternalFirmware				= false;
+	_settingsPending.enableFirmwareBoot					= false;
+	_settingsPending.enableDebugConsole					= false;
+	_settingsPending.enableEnsataEmulation				= false;
 	
-	_settingsPending.enableExecutionSpeedLimiter = true;
-	_settingsPending.executionSpeed = SPEED_SCALAR_NORMAL;
+	_settingsPending.enableExecutionSpeedLimiter		= true;
+	_settingsPending.executionSpeed						= SPEED_SCALAR_NORMAL;
 	
-	_settingsPending.enableFrameSkip = true;
-	_settingsPending.frameJumpTarget = 0;
+	_settingsPending.enableFrameSkip					= true;
+	_settingsPending.frameJumpTarget					= 0;
 	
-	_settingsPending.execBehavior = ExecutionBehavior_Pause;
-	_settingsPending.jumpBehavior = FrameJumpBehavior_Forward;
+	_settingsPending.execBehavior						= ExecutionBehavior_Pause;
+	_settingsPending.jumpBehavior						= FrameJumpBehavior_Forward;
 	
 	_settingsApplied = _settingsPending;
-	_settingsApplied.filePathARM9BIOS = std::string();
-	_settingsApplied.filePathARM7BIOS = std::string();
-	_settingsApplied.filePathFirmware = std::string();
+	_settingsApplied.filePathARM9BIOS					= _settingsPending.filePathARM9BIOS;
+	_settingsApplied.filePathARM7BIOS					= _settingsPending.filePathARM7BIOS;
+	_settingsApplied.filePathFirmware					= _settingsPending.filePathFirmware;
+	_settingsApplied.filePathSlot1R4					= _settingsPending.filePathSlot1R4;
+	_settingsApplied.cpuEmulationEngineName				= _settingsPending.cpuEmulationEngineName;
+	_settingsApplied.slot1DeviceName					= _settingsPending.slot1DeviceName;
+	
+	_ndsFrameInfo.clear();
+	_ndsFrameInfo.cpuEmulationEngineName				= _settingsPending.cpuEmulationEngineName;
+	_ndsFrameInfo.slot1DeviceName						= _settingsPending.slot1DeviceName;
+	
+	_cpuEmulationEngineNameOut							= _ndsFrameInfo.cpuEmulationEngineName;
+	_slot1DeviceNameOut									= _ndsFrameInfo.slot1DeviceName;
 	
 	pthread_mutex_init(&_mutexSettingsPendingOnReset, NULL);
 	pthread_mutex_init(&_mutexSettingsPendingOnExecutionLoopStart, NULL);
 	pthread_mutex_init(&_mutexSettingsPendingOnNDSExec, NULL);
+	pthread_mutex_init(&_mutexOutputPostNDSExec, NULL);
 }
 
 ClientExecutionControl::~ClientExecutionControl()
@@ -76,6 +94,7 @@ ClientExecutionControl::~ClientExecutionControl()
 	pthread_mutex_destroy(&this->_mutexSettingsPendingOnReset);
 	pthread_mutex_destroy(&this->_mutexSettingsPendingOnExecutionLoopStart);
 	pthread_mutex_destroy(&this->_mutexSettingsPendingOnNDSExec);
+	pthread_mutex_destroy(&this->_mutexOutputPostNDSExec);
 }
 
 CPUEmulationEngineID ClientExecutionControl::GetCPUEmulationEngineID()
@@ -87,7 +106,16 @@ CPUEmulationEngineID ClientExecutionControl::GetCPUEmulationEngineID()
 	return engineID;
 }
 
-void ClientExecutionControl::SetCPUEmulationEngineID(CPUEmulationEngineID engineID)
+const char* ClientExecutionControl::GetCPUEmulationEngineName()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	this->_cpuEmulationEngineNameOut = this->_settingsPending.cpuEmulationEngineName;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	
+	return this->_cpuEmulationEngineNameOut.c_str();
+}
+
+void ClientExecutionControl::SetCPUEmulationEngineByID(CPUEmulationEngineID engineID)
 {
 #if !defined(__i386__) && !defined(__x86_64__)
 	engineID = CPUEmulationEngine_Interpreter;
@@ -95,6 +123,21 @@ void ClientExecutionControl::SetCPUEmulationEngineID(CPUEmulationEngineID engine
 	
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
 	this->_settingsPending.cpuEngineID = engineID;
+	
+	switch (engineID)
+	{
+		case CPUEmulationEngineID_Interpreter:
+			this->_settingsPending.cpuEmulationEngineName = "Interpreter";
+			break;
+			
+		case CPUEmulationEngineID_DynamicRecompiler:
+			this->_settingsPending.cpuEmulationEngineName = "Dynamic Recompiler";
+			break;
+			
+		default:
+			this->_settingsPending.cpuEmulationEngineName = "Unknown Engine";
+			break;
+	}
 	
 	this->_newSettingsPendingOnReset = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
@@ -122,6 +165,42 @@ void ClientExecutionControl::SetJITMaxBlockSize(uint8_t blockSize)
 	
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
 	this->_settingsPending.JITMaxBlockSize = blockSize;
+	
+	this->_newSettingsPendingOnReset = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+}
+
+NDS_SLOT1_TYPE ClientExecutionControl::GetSlot1DeviceType()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	const NDS_SLOT1_TYPE type = this->_settingsPending.slot1DeviceType;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	
+	return type;
+}
+
+const char* ClientExecutionControl::GetSlot1DeviceName()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	this->_slot1DeviceNameOut = this->_settingsPending.slot1DeviceName;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	
+	return this->_slot1DeviceNameOut.c_str();
+}
+
+void ClientExecutionControl::SetSlot1DeviceByType(NDS_SLOT1_TYPE type)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	this->_settingsPending.slot1DeviceType = type;
+	
+	if ( (type < 0) || type >= (NDS_SLOT1_COUNT) )
+	{
+		this->_settingsPending.slot1DeviceName = "Uninitialized";
+	}
+	else
+	{
+		this->_settingsPending.slot1DeviceName = slot1_List[type]->info()->name();
+	}
 	
 	this->_newSettingsPendingOnReset = true;
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
@@ -199,6 +278,32 @@ void ClientExecutionControl::SetFirmwareImagePath(const char *filePath)
 	else
 	{
 		this->_settingsPending.filePathFirmware = std::string(filePath, sizeof(CommonSettings.Firmware));
+	}
+	
+	this->_newSettingsPendingOnReset = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+}
+
+const char* ClientExecutionControl::GetSlot1R4Path()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	const char *filePath = this->_settingsPending.filePathSlot1R4.c_str();
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	
+	return filePath;
+}
+
+void ClientExecutionControl::SetSlot1R4Path(const char *filePath)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	
+	if (filePath == NULL)
+	{
+		this->_settingsPending.filePathSlot1R4.clear();
+	}
+	else
+	{
+		this->_settingsPending.filePathSlot1R4 = std::string(filePath);
 	}
 	
 	this->_newSettingsPendingOnReset = true;
@@ -558,12 +663,24 @@ void ClientExecutionControl::ApplySettingsOnReset()
 	
 	if (this->_newSettingsPendingOnReset)
 	{
-		this->_settingsApplied.cpuEngineID			= this->_settingsPending.cpuEngineID;
-		this->_settingsApplied.JITMaxBlockSize		= this->_settingsPending.JITMaxBlockSize;
+		this->_settingsApplied.cpuEngineID				= this->_settingsPending.cpuEngineID;
+		this->_settingsApplied.JITMaxBlockSize			= this->_settingsPending.JITMaxBlockSize;
 		
-		this->_settingsApplied.filePathARM9BIOS		= this->_settingsPending.filePathARM9BIOS;
-		this->_settingsApplied.filePathARM7BIOS		= this->_settingsPending.filePathARM7BIOS;
-		this->_settingsApplied.filePathFirmware		= this->_settingsPending.filePathFirmware;
+		this->_settingsApplied.filePathARM9BIOS			= this->_settingsPending.filePathARM9BIOS;
+		this->_settingsApplied.filePathARM7BIOS			= this->_settingsPending.filePathARM7BIOS;
+		this->_settingsApplied.filePathFirmware			= this->_settingsPending.filePathFirmware;
+		this->_settingsApplied.filePathSlot1R4			= this->_settingsPending.filePathSlot1R4;
+		
+		this->_settingsApplied.cpuEmulationEngineName	= this->_settingsPending.cpuEmulationEngineName;
+		this->_settingsApplied.slot1DeviceName			= this->_settingsPending.slot1DeviceName;
+		this->_ndsFrameInfo.cpuEmulationEngineName		= this->_settingsApplied.cpuEmulationEngineName;
+		this->_ndsFrameInfo.slot1DeviceName				= this->_settingsApplied.slot1DeviceName;
+		
+		const bool didChangeSlot1Type = (this->_settingsApplied.slot1DeviceType != this->_settingsPending.slot1DeviceType);
+		if (didChangeSlot1Type)
+		{
+			this->_settingsApplied.slot1DeviceType	= this->_settingsPending.slot1DeviceType;
+		}
 		
 		this->_newSettingsPendingOnReset = false;
 		pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
@@ -596,6 +713,16 @@ void ClientExecutionControl::ApplySettingsOnReset()
 		else
 		{
 			strlcpy(CommonSettings.Firmware, this->_settingsApplied.filePathFirmware.c_str(), sizeof(CommonSettings.Firmware));
+		}
+		
+		if (this->_settingsApplied.filePathSlot1R4.length() > 0)
+		{
+			slot1_SetFatDir(this->_settingsApplied.filePathSlot1R4);
+		}
+		
+		if (didChangeSlot1Type)
+		{
+			slot1_Change(this->_settingsApplied.slot1DeviceType);
 		}
 	}
 	else
@@ -703,6 +830,32 @@ void ClientExecutionControl::ApplySettingsOnNDSExec()
 	{
 		pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 	}
+}
+
+void ClientExecutionControl::FetchOutputPostNDSExec()
+{
+	pthread_mutex_lock(&this->_mutexOutputPostNDSExec);
+	
+	this->_ndsFrameInfo.frameIndex		= currFrameCounter;
+	this->_ndsFrameInfo.render3DFPS		= GPU->GetFPSRender3D();
+	this->_ndsFrameInfo.lagFrameCount	= TotalLagFrames;
+	
+	if ((this->_ndsFrameInfo.frameIndex & 0xF) == 0xF)
+	{
+		NDS_GetCPULoadAverage(this->_ndsFrameInfo.cpuLoadAvgARM9, this->_ndsFrameInfo.cpuLoadAvgARM7);
+	}
+	
+	char *tempBuffer = (char *)calloc(25, sizeof(char));
+	rtcGetTimeAsString(tempBuffer);
+	this->_ndsFrameInfo.rtcString = tempBuffer;
+	free(tempBuffer);
+		
+	pthread_mutex_unlock(&this->_mutexOutputPostNDSExec);
+}
+
+const NDSFrameInfo& ClientExecutionControl::GetNDSFrameInfo()
+{
+	return this->_ndsFrameInfo;
 }
 
 double ClientExecutionControl::GetFrameTime()

@@ -91,8 +91,10 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	_showCPULoadAverage = false;
 	_showRTC = false;
 	
+	_clientFrameInfo.videoFPS = 0;
+	_ndsFrameInfo.clear();
+	
 	memset(&_emuDisplayInfo, 0, sizeof(_emuDisplayInfo));
-	memset(&_emuFrameInfo, 0, sizeof(_emuFrameInfo));
 	_hudString = "\x01"; // Char value 0x01 will represent the "text box" character, which will always be first in the string.
 	_hudNeedsUpdate = true;
 	_allowViewUpdates = true;
@@ -133,36 +135,36 @@ void ClientDisplayView::_UpdateHUDString()
 	
 	if (this->_showVideoFPS)
 	{
-		ss << "Video FPS: " << this->_emuFrameInfo.videoFPS << "\n";
+		ss << "Video FPS: " << this->_clientFrameInfo.videoFPS << "\n";
 	}
 	
 	if (this->_showRender3DFPS)
 	{
-		ss << "3D Rendering FPS: " << this->_emuFrameInfo.render3DFPS << "\n";
+		ss << "3D Rendering FPS: " << this->_ndsFrameInfo.render3DFPS << "\n";
 	}
 	
 	if (this->_showFrameIndex)
 	{
-		ss << "Frame Index: " << this->_emuFrameInfo.frameIndex << "\n";
+		ss << "Frame Index: " << this->_ndsFrameInfo.frameIndex << "\n";
 	}
 	
 	if (this->_showLagFrameCount)
 	{
-		ss << "Lag Frame Count: " << this->_emuFrameInfo.lagFrameCount << "\n";
+		ss << "Lag Frame Count: " << this->_ndsFrameInfo.lagFrameCount << "\n";
 	}
 	
 	if (this->_showCPULoadAverage)
 	{
 		static char buffer[32];
 		memset(buffer, 0, sizeof(buffer));
-		snprintf(buffer, 25, "CPU Load Avg: %02d%% / %02d%%\n", this->_emuFrameInfo.cpuLoadAvgARM9, this->_emuFrameInfo.cpuLoadAvgARM7);
+		snprintf(buffer, 25, "CPU Load Avg: %02d%% / %02d%%\n", this->_ndsFrameInfo.cpuLoadAvgARM9, this->_ndsFrameInfo.cpuLoadAvgARM7);
 		
 		ss << buffer;
 	}
 	
 	if (this->_showRTC)
 	{
-		ss << "RTC: " << this->_emuFrameInfo.rtcString << "\n";
+		ss << "RTC: " << this->_ndsFrameInfo.rtcString << "\n";
 	}
 	
 	this->_hudString = ss.str();
@@ -445,9 +447,11 @@ void ClientDisplayView::CopyHUDFont(const FT_Face &fontFace, const size_t glyphS
 	// Do nothing. This is implementation dependent.
 }
 
-void ClientDisplayView::SetHUDInfo(const NDSFrameInfo &frameInfo)
+void ClientDisplayView::SetHUDInfo(const ClientFrameInfo &clientFrameInfo, const NDSFrameInfo &ndsFrameInfo)
 {
-	this->_emuFrameInfo = frameInfo;
+	this->_clientFrameInfo.videoFPS = clientFrameInfo.videoFPS;
+	this->_ndsFrameInfo.copyFrom(ndsFrameInfo);
+	
 	this->_UpdateHUDString();
 }
 
@@ -756,9 +760,8 @@ void ClientDisplayView::SetEmuDisplayInfo(const NDSDisplayInfo &ndsDisplayInfo)
 	this->_emuDisplayInfo = ndsDisplayInfo;
 }
 
-void ClientDisplayView::HandleEmulatorFrameEndEvent(const NDSFrameInfo &frameInfo)
+void ClientDisplayView::HandleEmulatorFrameEndEvent()
 {
-	this->SetHUDInfo(frameInfo);
 	this->UpdateView();
 }
 

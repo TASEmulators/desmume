@@ -108,7 +108,7 @@ volatile bool execute = true;
 @dynamic emuFlagEmulateEnsata;
 @dynamic cpuEmulationEngine;
 @dynamic maxJITBlockSize;
-@synthesize slot1DeviceType;
+@dynamic slot1DeviceType;
 @synthesize slot1StatusText;
 @synthesize frameStatus;
 @synthesize executionSpeedStatus;
@@ -116,7 +116,7 @@ volatile bool execute = true;
 @dynamic arm9ImageURL;
 @dynamic arm7ImageURL;
 @dynamic firmwareImageURL;
-@synthesize slot1R4URL;
+@dynamic slot1R4URL;
 
 @dynamic rwlockCoreExecute;
 
@@ -155,14 +155,10 @@ volatile bool execute = true;
 	cdsGPU = [[[[CocoaDSGPU alloc] init] autorelease] retain];
 	cdsOutputList = [[[[NSMutableArray alloc] initWithCapacity:32] autorelease] retain];
 	
-	slot1DeviceType = NDS_SLOT1_RETAIL_AUTO;
 	slot1StatusText = NSSTRING_STATUS_EMULATION_NOT_RUNNING;
 	
 	spinlockMasterExecute = OS_SPINLOCK_INIT;
 	spinlockCdsController = OS_SPINLOCK_INIT;
-	
-	slot1R4URL = nil;
-	_slot1R4Path = "";
 	
 	threadParam.cdsCore = self;
 	
@@ -531,7 +527,7 @@ volatile bool execute = true;
 
 - (void) setCpuEmulationEngine:(NSInteger)engineID
 {
-	execControl->SetCPUEmulationEngineID((CPUEmulationEngineID)engineID);
+	execControl->SetCPUEmulationEngineByID((CPUEmulationEngineID)engineID);
 }
 
 - (NSInteger) cpuEmulationEngine
@@ -547,6 +543,16 @@ volatile bool execute = true;
 - (NSInteger) maxJITBlockSize
 {
 	return (NSInteger)execControl->GetJITMaxBlockSize();
+}
+
+- (void) setSlot1DeviceType:(NSInteger)theType
+{
+	execControl->SetSlot1DeviceByType((NDS_SLOT1_TYPE)theType);
+}
+
+- (NSInteger) slot1DeviceType
+{
+	return (NSInteger)execControl->GetSlot1DeviceType();
 }
 
 - (void) setCoreState:(NSInteger)coreState
@@ -680,6 +686,18 @@ volatile bool execute = true;
 	return [NSURL fileURLWithPath:[NSString stringWithCString:filePath encoding:NSUTF8StringEncoding]];
 }
 
+- (void) setSlot1R4URL:(NSURL *)fileURL
+{
+	const char *filePath = (fileURL != NULL) ? [[fileURL path] cStringUsingEncoding:NSUTF8StringEncoding] : NULL;
+	execControl->SetSlot1R4Path(filePath);
+}
+
+- (NSURL *) slot1R4URL
+{
+	const char *filePath = execControl->GetSlot1R4Path();
+	return [NSURL fileURLWithPath:[NSString stringWithCString:filePath encoding:NSUTF8StringEncoding]];
+}
+
 - (pthread_rwlock_t *) rwlockCoreExecute
 {
 	return &threadParam.rwlockCoreExecute;
@@ -719,19 +737,9 @@ volatile bool execute = true;
 	}
 }
 
-- (BOOL) applySlot1Device
+- (void) updateSlot1DeviceStatus
 {
-	const NSInteger deviceTypeID = [self slot1DeviceType];
-	NSString *r4Path = [[self slot1R4URL] path];
-	
-	pthread_mutex_lock(&threadParam.mutexThreadExecute);
-	
-	_slot1R4Path = (r4Path != nil) ? std::string([r4Path cStringUsingEncoding:NSUTF8StringEncoding]) : "";
-	slot1_SetFatDir(_slot1R4Path);
-	
-	BOOL result = slot1_Change((NDS_SLOT1_TYPE)deviceTypeID);
-	
-	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
+	const NDS_SLOT1_TYPE deviceTypeID = execControl->GetSlot1DeviceType();
 	
 	switch (deviceTypeID)
 	{
@@ -759,8 +767,6 @@ volatile bool execute = true;
 			[self setSlot1StatusText:NSSTRING_STATUS_SLOT1_UNKNOWN_STATE];
 			break;
 	}
-	
-	return result;
 }
 
 - (void) restoreCoreState
@@ -771,13 +777,13 @@ volatile bool execute = true;
 - (void) reset
 {
 	[self setCoreState:ExecutionBehavior_Pause];
-	[self applySlot1Device];
 	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	execControl->ApplySettingsOnReset();
 	NDS_Reset();
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	
+	[self updateSlot1DeviceStatus];
 	[self restoreCoreState];
 	[self setMasterExecute:YES];
 	[[self cdsController] reset];
@@ -786,13 +792,6 @@ volatile bool execute = true;
 
 - (void) getTimedEmulatorStatistics:(NSTimer *)timer
 {
-	uint32_t loadAvgARM9;
-	uint32_t loadAvgARM7;
-	
-	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
-	NDS_GetCPULoadAverage(loadAvgARM9, loadAvgARM7);
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
-	
 	// The timer should fire every 0.5 seconds, so only take the frame
 	// count every other instance the timer fires.
 	_isTimerAtSecond = !_isTimerAtSecond;
@@ -805,8 +804,6 @@ volatile bool execute = true;
 			{
 				[(CocoaDSDisplay *)cdsOutput takeFrameCount];
 			}
-			
-			[(CocoaDSDisplay *)cdsOutput setCPULoadAvgARM9:loadAvgARM9 ARM7:loadAvgARM7];
 		}
 	}
 }
@@ -868,43 +865,12 @@ volatile bool execute = true;
 
 - (NSString *) cpuEmulationEngineString
 {
-	NSString *theString = @"Uninitialized";
-	
-	switch ([self cpuEmulationEngine])
-	{
-		case CPUEmulationEngineID_Interpreter:
-			theString = @"Interpreter";
-			break;
-			
-		case CPUEmulationEngineID_DynamicRecompiler:
-			theString = @"Dynamic Recompiler";
-			break;
-			
-		default:
-			break;
-	}
-	
-	return theString;
+	return [NSString stringWithCString:execControl->GetCPUEmulationEngineName() encoding:NSUTF8StringEncoding];
 }
 
 - (NSString *) slot1DeviceTypeString
 {
-	NSString *theString = @"Uninitialized";
-	
-	pthread_mutex_lock(&threadParam.mutexThreadExecute);
-	
-	if(slot1_device == NULL)
-	{
-		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
-		return theString;
-	}
-	
-	const Slot1Info *info = slot1_device->info();
-	theString = [NSString stringWithCString:info->name() encoding:NSUTF8StringEncoding];
-	
-	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
-	
-	return theString;
+	return [NSString stringWithCString:execControl->GetSlot1DeviceName() encoding:NSUTF8StringEncoding];
 }
 
 - (NSString *) slot2DeviceTypeString
@@ -913,7 +879,7 @@ volatile bool execute = true;
 	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	
-	if(slot2_device == NULL)
+	if (slot2_device == NULL)
 	{
 		pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 		return theString;
@@ -978,7 +944,8 @@ static void* RunCoreThread(void *arg)
 	CocoaDSCore *cdsCore = (CocoaDSCore *)param->cdsCore;
 	ClientExecutionControl *execControl = [cdsCore execControl];
 	NSMutableArray *cdsOutputList = [cdsCore cdsOutputList];
-	uint64_t frameNum = 0;
+	const NDSFrameInfo &ndsFrameInfo = execControl->GetNDSFrameInfo();
+	
 	double startTime = 0;
 	double frameTime = 0; // The amount of time that is expected for the frame to run.
 	
@@ -1025,7 +992,7 @@ static void* RunCoreThread(void *arg)
 		// Execute the frame and increment the frame counter.
 		pthread_rwlock_wrlock(&param->rwlockCoreExecute);
 		NDS_exec<false>();
-		frameNum = (uint64_t)currFrameCounter;
+		execControl->FetchOutputPostNDSExec();
 		pthread_rwlock_unlock(&param->rwlockCoreExecute);
 		
 		// Check if an internal execution error occurred that halted the emulation.
@@ -1054,6 +1021,11 @@ static void* RunCoreThread(void *arg)
 			{
 				for (CocoaDSOutput *cdsOutput in cdsOutputList)
 				{
+					if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+					{
+						[(CocoaDSDisplay *)cdsOutput setNDSFrameInfo:ndsFrameInfo];
+					}
+					
 					if ( ![cdsOutput isKindOfClass:[CocoaDSDisplay class]] || (framesToSkip == 0) )
 					{
 						[cdsOutput doCoreEmuFrame];
@@ -1115,11 +1087,11 @@ static void* RunCoreThread(void *arg)
 		}
 		else if (behavior == ExecutionBehavior_FrameJump)
 		{
-			if (frameNum == (frameJumpTarget - 1))
+			if (ndsFrameInfo.frameIndex == (frameJumpTarget - 1))
 			{
 				execControl->ResetFramesToSkip();
 			}
-			else if (frameNum >= frameJumpTarget)
+			else if (ndsFrameInfo.frameIndex >= frameJumpTarget)
 			{
 				[cdsCore restoreCoreState];
 			}

@@ -37,7 +37,6 @@
 
 
 class OGLVideoOutput;
-struct NDSFrameInfo;
 
 enum ShaderSupportTier
 {

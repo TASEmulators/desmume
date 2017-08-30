@@ -152,17 +152,22 @@ void slot1_Reset()
 
 bool slot1_Change(NDS_SLOT1_TYPE changeToType)
 {
-	if((changeToType == slot1_device_type) || (changeToType == slot1_GetSelectedType()))
-		return FALSE; //nothing to do
-	if (changeToType > NDS_SLOT1_COUNT || changeToType < 0) return FALSE;
-	if(slot1_device != NULL)
+	if ( (changeToType == slot1_device_type) || (changeToType == slot1_GetSelectedType()) )
+		return false; //nothing to do
+	
+	if ( (changeToType >= NDS_SLOT1_COUNT) || (changeToType < 0) )
+		return false;
+	
+	if (slot1_device != NULL)
 		slot1_device->disconnect();
+	
 	slot1_device_type = changeToType;
 	slot1_device = slot1_List[slot1_device_type];
 	printf("Slot 1: %s\n", slot1_device->info()->name());
 	printf("sending eject signal to SLOT-1\n");
 	NDS_TriggerCardEjectIRQ();
 	slot1_device->connect();
+	
 	return true;
 }
 

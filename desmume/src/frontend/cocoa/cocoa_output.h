@@ -22,12 +22,11 @@
 
 #import "cocoa_util.h"
 #include "ClientDisplayView.h"
+#include "ClientExecutionControl.h"
 #undef BOOL
 
 @class NSImage;
 @class NSBitmapImageRep;
-
-struct NDSFrameInfo;
 
 @interface CocoaDSOutput : CocoaDSThread
 {
@@ -105,11 +104,10 @@ struct NDSFrameInfo;
 	uint32_t _currentReceivedFrameIndex;
 	uint32_t _receivedFrameCount;
 	
-	uint32_t _cpuLoadAvgARM9;
-	uint32_t _cpuLoadAvgARM7;
+	NDSFrameInfo _ndsFrameInfo;
 	
 	OSSpinLock spinlockReceivedFrameIndex;
-	OSSpinLock spinlockCPULoadAverage;
+	OSSpinLock spinlockNDSFrameInfo;
 	OSSpinLock spinlockViewProperties;
 }
 
@@ -124,7 +122,7 @@ struct NDSFrameInfo;
 - (void) handleCopyToPasteboard;
 
 - (void) takeFrameCount;
-- (void) setCPULoadAvgARM9:(uint32_t)loadAvgARM9 ARM7:(uint32_t)loadAvgARM7;
+- (void) setNDSFrameInfo:(const NDSFrameInfo &)ndsFrameInfo;
 - (NSImage *) image;
 - (NSBitmapImageRep *) bitmapImageRep;
 

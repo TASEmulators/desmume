@@ -21,6 +21,9 @@
 #include <pthread.h>
 #include <string>
 
+#include "../../slot1.h"
+#undef BOOL
+
 #define SPEED_SCALAR_QUARTER						0.25	// Speed scalar for quarter execution speed.
 #define SPEED_SCALAR_HALF							0.5		// Speed scalar for half execution speed.
 #define SPEED_SCALAR_THREE_QUARTER					0.75	// Speed scalar for three quarters execution speed.
@@ -61,9 +64,14 @@ typedef struct ClientExecutionControlSettings
 {
 	CPUEmulationEngineID cpuEngineID;
 	uint8_t JITMaxBlockSize;
+	NDS_SLOT1_TYPE slot1DeviceType;
 	std::string filePathARM9BIOS;
 	std::string filePathARM7BIOS;
 	std::string filePathFirmware;
+	std::string filePathSlot1R4;
+	
+	std::string cpuEmulationEngineName;
+	std::string slot1DeviceName;
 	
 	bool enableAdvancedBusLevelTiming;
 	bool enableRigorous3DRenderingTiming;
@@ -89,11 +97,50 @@ typedef struct ClientExecutionControlSettings
 	
 } ClientExecutionControlSettings;
 
+struct NDSFrameInfo
+{
+	std::string cpuEmulationEngineName;
+	std::string slot1DeviceName;
+	std::string rtcString;
+	
+	uint64_t frameIndex;
+	uint32_t render3DFPS;
+	uint32_t lagFrameCount;
+	uint32_t cpuLoadAvgARM9;
+	uint32_t cpuLoadAvgARM7;
+	
+	void clear()
+	{
+		this->cpuEmulationEngineName	= std::string();
+		this->slot1DeviceName			= std::string();
+		this->rtcString					= std::string();
+		this->frameIndex				= 0;
+		this->render3DFPS				= 0;
+		this->lagFrameCount				= 0;
+		this->cpuLoadAvgARM9			= 0;
+		this->cpuLoadAvgARM7			= 0;
+	}
+	
+	void copyFrom(const NDSFrameInfo &fromObject)
+	{
+		this->cpuEmulationEngineName	= fromObject.cpuEmulationEngineName;
+		this->slot1DeviceName			= fromObject.slot1DeviceName;
+		this->rtcString					= fromObject.rtcString;
+		this->frameIndex				= fromObject.frameIndex;
+		this->render3DFPS				= fromObject.render3DFPS;
+		this->lagFrameCount				= fromObject.lagFrameCount;
+		this->cpuLoadAvgARM9			= fromObject.cpuLoadAvgARM9;
+		this->cpuLoadAvgARM7			= fromObject.cpuLoadAvgARM7;
+	}
+};
+
 class ClientExecutionControl
 {
 private:
 	ClientExecutionControlSettings _settingsPending;
 	ClientExecutionControlSettings _settingsApplied;
+	
+	NDSFrameInfo _ndsFrameInfo;
 	
 	bool _newSettingsPendingOnReset;
 	bool _newSettingsPendingOnExecutionLoopStart;
@@ -105,19 +152,29 @@ private:
 	uint8_t _framesToSkip;
 	ExecutionBehavior _prevExecBehavior;
 	
+	std::string _cpuEmulationEngineNameOut;
+	std::string _slot1DeviceNameOut;
+	std::string _rtcStringOut;
+	
 	pthread_mutex_t _mutexSettingsPendingOnReset;
 	pthread_mutex_t _mutexSettingsPendingOnExecutionLoopStart;
 	pthread_mutex_t _mutexSettingsPendingOnNDSExec;
+	pthread_mutex_t _mutexOutputPostNDSExec;
 	
 public:
 	ClientExecutionControl();
 	~ClientExecutionControl();
 	
 	CPUEmulationEngineID GetCPUEmulationEngineID();
-	void SetCPUEmulationEngineID(CPUEmulationEngineID engineID);
+	const char* GetCPUEmulationEngineName();
+	void SetCPUEmulationEngineByID(CPUEmulationEngineID engineID);
 	
 	uint8_t GetJITMaxBlockSize();
 	void SetJITMaxBlockSize(uint8_t blockSize);
+	
+	NDS_SLOT1_TYPE GetSlot1DeviceType();
+	const char* GetSlot1DeviceName();
+	void SetSlot1DeviceByType(NDS_SLOT1_TYPE type);
 	
 	const char* GetARM9ImagePath();
 	void SetARM9ImagePath(const char *filePath);
@@ -127,6 +184,9 @@ public:
 	
 	const char* GetFirmwareImagePath();
 	void SetFirmwareImagePath(const char *filePath);
+	
+	const char* GetSlot1R4Path();
+	void SetSlot1R4Path(const char *filePath);
 	
 	bool GetEnableAdvancedBusLevelTiming();
 	void SetEnableAdvancedBusLevelTiming(bool enable);
@@ -190,6 +250,9 @@ public:
 	void ApplySettingsOnReset();
 	void ApplySettingsOnExecutionLoopStart();
 	void ApplySettingsOnNDSExec();
+	
+	void FetchOutputPostNDSExec();
+	const NDSFrameInfo& GetNDSFrameInfo();
 	
 	double GetFrameTime();
 	uint8_t CalculateFrameSkip(double startAbsoluteTime, double frameAbsoluteTime);

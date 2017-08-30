@@ -1683,7 +1683,7 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore execControl]->ApplySettingsOnReset();
-	[cdsCore applySlot1Device];
+	[cdsCore updateSlot1DeviceStatus];
 	[self writeDefaultsSlot1Settings:nil];
 	
 	CocoaDSRom *newRom = [[CocoaDSRom alloc] init];

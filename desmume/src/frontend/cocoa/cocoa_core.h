@@ -53,8 +53,6 @@ typedef struct
 	pthread_t coreThread;
 	CoreThreadParam threadParam;
 	
-	std::string _slot1R4Path;
-	
 	NSTimer *_fpsTimer;
 	BOOL _isTimerAtSecond;
 	
@@ -67,12 +65,9 @@ typedef struct
 	volatile gdbstub_handle_t gdbStubHandleARM9;
 	volatile gdbstub_handle_t gdbStubHandleARM7;
 	
-	NSInteger slot1DeviceType;
 	NSString *slot1StatusText;
 	NSString *frameStatus;
 	NSString *executionSpeedStatus;
-	
-	NSURL *slot1R4URL;
 	
 	OSSpinLock spinlockCdsController;
 	OSSpinLock spinlockMasterExecute;
@@ -120,7 +115,7 @@ typedef struct
 @property (copy) NSURL *arm9ImageURL;
 @property (copy) NSURL *arm7ImageURL;
 @property (copy) NSURL *firmwareImageURL;
-@property (retain) NSURL *slot1R4URL;
+@property (copy) NSURL *slot1R4URL;
 
 @property (readonly) pthread_rwlock_t *rwlockCoreExecute;
 
@@ -129,7 +124,7 @@ typedef struct
 
 - (void) changeRomSaveType:(NSInteger)saveTypeID;
 - (void) updateExecutionSpeedStatus;
-- (BOOL) applySlot1Device;
+- (void) updateSlot1DeviceStatus;
 
 - (void) restoreCoreState;
 - (void) reset;

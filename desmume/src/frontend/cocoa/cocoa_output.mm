@@ -513,17 +513,15 @@
 	}
 	
 	spinlockReceivedFrameIndex = OS_SPINLOCK_INIT;
-	spinlockCPULoadAverage = OS_SPINLOCK_INIT;
+	spinlockNDSFrameInfo = OS_SPINLOCK_INIT;
 	spinlockViewProperties = OS_SPINLOCK_INIT;
 	
 	_cdv = NULL;
+	_ndsFrameInfo.clear();
 	
 	_receivedFrameIndex = 0;
 	_currentReceivedFrameIndex = 0;
 	_receivedFrameCount = 0;
-	
-	_cpuLoadAvgARM9 = 0;
-	_cpuLoadAvgARM7 = 0;
 		
 	return self;
 }
@@ -645,12 +643,11 @@
 	OSSpinLockUnlock(&spinlockReceivedFrameIndex);
 }
 
-- (void) setCPULoadAvgARM9:(uint32_t)loadAvgARM9 ARM7:(uint32_t)loadAvgARM7
+- (void) setNDSFrameInfo:(const NDSFrameInfo &)ndsFrameInfo
 {
-	OSSpinLockLock(&spinlockCPULoadAverage);
-	_cpuLoadAvgARM9 = loadAvgARM9;
-	_cpuLoadAvgARM7 = loadAvgARM7;
-	OSSpinLockUnlock(&spinlockCPULoadAverage);
+	OSSpinLockLock(&spinlockNDSFrameInfo);
+	_ndsFrameInfo.copyFrom(ndsFrameInfo);
+	OSSpinLockUnlock(&spinlockNDSFrameInfo);
 }
 
 - (NSImage *) image
@@ -1038,23 +1035,16 @@
 {
 	[super handleEmuFrameProcessed];
 	
-	NDSFrameInfo frameInfo;
-	frameInfo.render3DFPS = GPU->GetFPSRender3D();
-	frameInfo.frameIndex = currFrameCounter;
-	frameInfo.lagFrameCount = TotalLagFrames;
-	
 	OSSpinLockLock(&spinlockReceivedFrameIndex);
-	frameInfo.videoFPS = _receivedFrameCount;
+	ClientFrameInfo clientFrameInfo;
+	clientFrameInfo.videoFPS = _receivedFrameCount;
 	OSSpinLockUnlock(&spinlockReceivedFrameIndex);
 	
-	OSSpinLockLock(&spinlockCPULoadAverage);
-	frameInfo.cpuLoadAvgARM9 = _cpuLoadAvgARM9;
-	frameInfo.cpuLoadAvgARM7 = _cpuLoadAvgARM7;
-	OSSpinLockUnlock(&spinlockCPULoadAverage);
+	OSSpinLockLock(&spinlockNDSFrameInfo);
+	_cdv->SetHUDInfo(clientFrameInfo, _ndsFrameInfo);
+	OSSpinLockUnlock(&spinlockNDSFrameInfo);
 	
-	rtcGetTimeAsString(frameInfo.rtcString);
-	
-	_cdv->HandleEmulatorFrameEndEvent(frameInfo);
+	_cdv->HandleEmulatorFrameEndEvent();
 }
 
 - (void) handleReceiveGPUFrame

@@ -23,6 +23,8 @@
 #include "../../filter/videofilter.h"
 #include "../../GPU.h"
 
+#include "ClientExecutionControl.h"
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
@@ -97,17 +99,11 @@ struct LUTValues
 };
 typedef struct LUTValues LUTValues;
 
-struct NDSFrameInfo
+struct ClientFrameInfo
 {
 	uint32_t videoFPS;
-	uint32_t render3DFPS;
-	uint32_t frameIndex;
-	uint32_t lagFrameCount;
-	uint32_t cpuLoadAvgARM9;
-	uint32_t cpuLoadAvgARM7;
-	char rtcString[25];
 };
-typedef struct NDSFrameInfo NDSFrameInfo;
+typedef struct ClientFrameInfo ClientFrameInfo;
 
 struct ClientDisplayViewProperties
 {
@@ -163,8 +159,10 @@ protected:
 	bool _showCPULoadAverage;
 	bool _showRTC;
 	
+	ClientFrameInfo _clientFrameInfo;
+	NDSFrameInfo _ndsFrameInfo;
+	
 	NDSDisplayInfo _emuDisplayInfo;
-	NDSFrameInfo _emuFrameInfo;
 	std::string _hudString;
 	bool _hudNeedsUpdate;
 	bool _allowViewUpdates;
@@ -237,7 +235,7 @@ public:
 	void SetHUDFontPath(const char *filePath);
 	virtual void LoadHUDFont();
 	virtual void CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo);
-	virtual void SetHUDInfo(const NDSFrameInfo &frameInfo);
+	virtual void SetHUDInfo(const ClientFrameInfo &clientFrameInfo, const NDSFrameInfo &ndsFrameInfo);
 	
 	const std::string& GetHUDString() const;
 	float GetHUDObjectScale() const;
@@ -275,7 +273,7 @@ public:
 	// Emulator interface
 	const NDSDisplayInfo& GetEmuDisplayInfo() const;
 	void SetEmuDisplayInfo(const NDSDisplayInfo &ndsDisplayInfo);
-	virtual void HandleEmulatorFrameEndEvent(const NDSFrameInfo &frameInfo);
+	virtual void HandleEmulatorFrameEndEvent();
 	
 	// Touch screen input handling
 	void GetNDSPoint(const int inputID, const bool isInitialTouchPress,
