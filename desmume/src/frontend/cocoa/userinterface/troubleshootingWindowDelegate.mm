@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012 DeSmuME team
+	Copyright (C) 2012-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -114,9 +114,11 @@
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAdvanced Bus-Level Timing: "] stringByAppendingString:([cdsCore emuFlagAdvancedBusLevelTiming] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nRigorous 3D Rendering Timing: "] stringByAppendingString:([cdsCore emuFlagRigorousTiming] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nCPU Emulation Engine: "] stringByAppendingString:([cdsCore cpuEmulationEngine] == CPUEmulationEngineID_DynamicRecompiler ? [NSString stringWithFormat:@"%@ (BlockSize=%li)", [cdsCore cpuEmulationEngineString], (long)[cdsCore maxJITBlockSize]] : [cdsCore cpuEmulationEngineString])];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nUse Game-Specific Hacks: "] stringByAppendingString:([cdsCore emuFlagUseGameSpecificHacks] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nExternal BIOS: "] stringByAppendingString:([cdsCore emuFlagUseExternalBios] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nExternal Firmware: "] stringByAppendingString:([cdsCore emuFlagUseExternalFirmware] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nGPU - Scaling Factor: "] stringByAppendingString:[NSString stringWithFormat:@"%ldx", (unsigned long)[[cdsCore cdsGPU] gpuScale]]];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nGPU - Color Depth: "] stringByAppendingString:[NSString stringWithFormat:@"%@", ([[cdsCore cdsGPU] gpuColorFormat] == NDSColorFormat_BGR555_Rev) ? @"15-bit" : (([[cdsCore cdsGPU] gpuColorFormat] == NDSColorFormat_BGR666_Rev) ? @"18-bit" : @"24-bit")]];
 	
 	NSString *render3DEngineDetails = [[cdsCore cdsGPU] render3DRenderingEngineString];
 	switch ([[cdsCore cdsGPU] render3DRenderingEngine])
@@ -134,9 +136,10 @@
 			break;
 			
 		case CORE3DLIST_OPENGL:
-			render3DEngineDetails = [NSString stringWithFormat:@"%@ (MSAA=%@)",
+			render3DEngineDetails = [NSString stringWithFormat:@"%@ (MSAA=%@, SmoothTextures=%@)",
 									 [[cdsCore cdsGPU] render3DRenderingEngineString],
-									 ([[cdsCore cdsGPU] render3DMultisample] ? @"YES" : @"NO")];
+									 [[cdsCore cdsGPU] render3DMultisample] ? @"YES" : @"NO",
+									 [[cdsCore cdsGPU] render3DTextureSmoothing] ? @"YES" : @"NO"];
 			break;
 			
 		default:
@@ -144,7 +147,9 @@
 	}
 	
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Engine: "] stringByAppendingString:render3DEngineDetails];
-	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Textures: "] stringByAppendingString:([[cdsCore cdsGPU] render3DTextures] ? @"YES" : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Enable Textures: "] stringByAppendingString:([[cdsCore cdsGPU] render3DTextures] ? @"YES" : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Texture Deposterize: "] stringByAppendingString:([[cdsCore cdsGPU] render3DTextureDeposterize] ? @"YES" : @"NO")];
+	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Texture Scaling Factor: "] stringByAppendingString:[NSString stringWithFormat:@"%ldx", (unsigned long)[[cdsCore cdsGPU] render3DTextureScalingFactor]]];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Edge Marking: "] stringByAppendingString:([[cdsCore cdsGPU] render3DEdgeMarking] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\n3D Renderer - Fog: "] stringByAppendingString:([[cdsCore cdsGPU] render3DFog] ? @"YES" : @"NO")];
 	finalFormTextStr = [[finalFormTextStr stringByAppendingString:@"\nAudio - Output Engine: "] stringByAppendingString:[[emuControl cdsSpeaker] audioOutputEngineString]];

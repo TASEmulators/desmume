@@ -1072,8 +1072,6 @@ static void* RunCoreThread(void *arg)
 		{
 			case ExecutionBehavior_Run:
 			{
-				// Determine the number of frames to skip based on how much time "debt"
-				// we owe on timeBudget.
 				if (execControl->GetEnableFrameSkipApplied())
 				{
 					if (framesToSkip > 0)
