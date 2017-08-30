@@ -60,6 +60,8 @@ ClientDisplayView::~ClientDisplayView()
 		FT_Done_FreeType(this->_ftLibrary);
 		this->_ftLibrary = NULL;
 	}
+	
+	pthread_mutex_destroy(&this->_mutexHUDString);
 }
 
 void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
@@ -96,6 +98,7 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	
 	memset(&_emuDisplayInfo, 0, sizeof(_emuDisplayInfo));
 	_hudString = "\x01"; // Char value 0x01 will represent the "text box" character, which will always be first in the string.
+	_outHudString = _hudString;
 	_hudNeedsUpdate = true;
 	_allowViewUpdates = true;
 	
@@ -126,6 +129,8 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	_vf[NDSDisplayID_Touch] = new VideoFilter(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, VideoFilterTypeID_None, 0);
 	_vf[NDSDisplayID_Main]->SetDstBufferPtr(_vfMasterDstBuffer);
 	_vf[NDSDisplayID_Touch]->SetDstBufferPtr(_vfMasterDstBuffer + (_vf[NDSDisplayID_Main]->GetDstWidth() * _vf[NDSDisplayID_Main]->GetDstHeight()));
+	
+	pthread_mutex_init(&_mutexHUDString, NULL);
 }
 
 void ClientDisplayView::_UpdateHUDString()
@@ -167,8 +172,10 @@ void ClientDisplayView::_UpdateHUDString()
 		ss << "RTC: " << this->_ndsFrameInfo.rtcString << "\n";
 	}
 	
+	pthread_mutex_lock(&this->_mutexHUDString);
 	this->_hudString = ss.str();
 	this->_hudNeedsUpdate = true;
+	pthread_mutex_unlock(&this->_mutexHUDString);
 }
 
 void ClientDisplayView::_SetHUDShowInfoItem(bool &infoItemFlag, const bool visibleState)
@@ -218,7 +225,9 @@ void ClientDisplayView::SetScaleFactor(const double scaleFactor)
 
 void ClientDisplayView::_UpdateClientSize()
 {
+	pthread_mutex_lock(&this->_mutexHUDString);
 	this->_hudNeedsUpdate = true;
+	pthread_mutex_unlock(&this->_mutexHUDString);
 }
 
 void ClientDisplayView::_UpdateViewScale()
@@ -455,9 +464,13 @@ void ClientDisplayView::SetHUDInfo(const ClientFrameInfo &clientFrameInfo, const
 	this->_UpdateHUDString();
 }
 
-const std::string& ClientDisplayView::GetHUDString() const
+const std::string& ClientDisplayView::GetHUDString()
 {
-	return this->_hudString;
+	pthread_mutex_lock(&this->_mutexHUDString);
+	this->_outHudString = this->_hudString;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
+	return this->_outHudString;
 }
 
 float ClientDisplayView::GetHUDObjectScale() const
@@ -547,14 +560,20 @@ void ClientDisplayView::SetHUDShowRTC(const bool visibleState)
 	this->UpdateView();
 }
 
-bool ClientDisplayView::HUDNeedsUpdate() const
+bool ClientDisplayView::HUDNeedsUpdate()
 {
-	return this->_hudNeedsUpdate;
+	pthread_mutex_lock(&this->_mutexHUDString);
+	const bool needsUpdate = this->_hudNeedsUpdate;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
+	return needsUpdate;
 }
 
 void ClientDisplayView::ClearHUDNeedsUpdate()
 {
+	pthread_mutex_lock(&this->_mutexHUDString);
 	this->_hudNeedsUpdate = false;
+	pthread_mutex_unlock(&this->_mutexHUDString);
 }
 
 // NDS GPU Interface
@@ -1169,8 +1188,12 @@ void ClientDisplay3DView::SetSourceDeposterize(bool useDeposterize)
 
 void ClientDisplay3DView::SetHUDVertices(float viewportWidth, float viewportHeight, float *vtxBufferPtr)
 {
-	const char *cString = this->_hudString.c_str();
-	const size_t length = this->_hudString.length();
+	pthread_mutex_lock(&this->_mutexHUDString);
+	std::string hudString = this->_hudString;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
+	const char *cString = hudString.c_str();
+	const size_t length = hudString.length();
 	const float charSize = this->_glyphSize;
 	const float lineHeight = charSize * 0.8f;
 	const float textBoxTextOffset = charSize * 0.25f;
@@ -1253,8 +1276,12 @@ void ClientDisplay3DView::SetHUDVertices(float viewportWidth, float viewportHeig
 
 void ClientDisplay3DView::SetHUDTextureCoordinates(float *texCoordBufferPtr)
 {
-	const char *cString = this->_hudString.c_str();
-	const size_t length = this->_hudString.length();
+	pthread_mutex_lock(&this->_mutexHUDString);
+	std::string hudString = this->_hudString;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
+	const char *cString = hudString.c_str();
+	const size_t length = hudString.length();
 	
 	for (size_t i = 0; i < length; i++)
 	{

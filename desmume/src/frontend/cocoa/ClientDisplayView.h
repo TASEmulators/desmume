@@ -18,6 +18,7 @@
 #ifndef _CLIENT_DISPLAY_VIEW_H_
 #define _CLIENT_DISPLAY_VIEW_H_
 
+#include <pthread.h>
 #include <map>
 #include <string>
 #include "../../filter/videofilter.h"
@@ -164,6 +165,7 @@ protected:
 	
 	NDSDisplayInfo _emuDisplayInfo;
 	std::string _hudString;
+	std::string _outHudString;
 	bool _hudNeedsUpdate;
 	bool _allowViewUpdates;
 	
@@ -176,6 +178,8 @@ protected:
 	uint32_t *_vfMasterDstBuffer;
 	size_t _vfMasterDstBufferSize;
 	VideoFilter *_vf[2];
+	
+	pthread_mutex_t _mutexHUDString;
 	
 	void _UpdateHUDString();
 	void _SetHUDShowInfoItem(bool &infoItemFlag, const bool visibleState);
@@ -237,7 +241,7 @@ public:
 	virtual void CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo);
 	virtual void SetHUDInfo(const ClientFrameInfo &clientFrameInfo, const NDSFrameInfo &ndsFrameInfo);
 	
-	const std::string& GetHUDString() const;
+	const std::string& GetHUDString();
 	float GetHUDObjectScale() const;
 	virtual void SetHUDObjectScale(float objectScale);
 	
@@ -255,7 +259,7 @@ public:
 	virtual void SetHUDShowCPULoadAverage(const bool visibleState);
 	bool GetHUDShowRTC() const;
 	virtual void SetHUDShowRTC(const bool visibleState);
-	bool HUDNeedsUpdate() const;
+	bool HUDNeedsUpdate();
 	void ClearHUDNeedsUpdate();
 	
 	// Client view interface
