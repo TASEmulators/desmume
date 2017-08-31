@@ -202,6 +202,8 @@ struct edge_fx_fl {
 	edge_fx_fl(int Top, int Bottom, VERT** verts, bool& failure);
 	FORCEINLINE int Step();
 
+	VERT TOP, BOTTOM;
+
 	VERT** verts;
 	long X, XStep, Numerator, Denominator;			// DDA info for x
 	long ErrorTerm;
@@ -209,8 +211,6 @@ struct edge_fx_fl {
 	
 	struct Interpolant {
 		float curr, step, stepExtra;
-		FORCEINLINE void doStep() { curr += step; }
-		FORCEINLINE void doStepExtra() { curr += stepExtra; }
 		FORCEINLINE void initialize(float value) {
 			curr = value;
 			step = 0;
@@ -225,15 +225,13 @@ struct edge_fx_fl {
 		}
 	};
 	
-	static const int NUM_INTERPOLANTS = 7;
+	static const int NUM_INTERPOLANTS = 8;
 	union {
 		struct {
-			Interpolant invw,z,u,v,color[3];
+			Interpolant invw,w,z,u,v,color[3];
 		};
 		Interpolant interpolants[NUM_INTERPOLANTS];
 	};
-	void FORCEINLINE doStepInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStep(); }
-	void FORCEINLINE doStepExtraInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStepExtra(); }
 };
 
 FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom, VERT** verts, bool& failure) {
@@ -244,6 +242,9 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom, VERT** verts, bool& fail
 	X = Ceil28_4((fixed28_4)verts[Top]->x);
 	int XEnd = Ceil28_4((fixed28_4)verts[Bottom]->x);
 	int Width = XEnd - X; // can be negative
+
+	TOP = *verts[Top];
+	BOTTOM = *verts[Bottom];
 
 	// even if Height == 0, give some info for horizontal line poly
 	if(Height != 0 || Width != 0)
@@ -273,6 +274,7 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom, VERT** verts, bool& fail
 		float dx = 1/Fixed28_4ToFloat(dM);
 		
 		invw.initialize(1/verts[Top]->w,1/verts[Bottom]->w,dx,dy,XStep,XPrestep,YPrestep);
+		w.initialize(verts[Top]->w,verts[Bottom]->w,dx,dy,XStep,XPrestep,YPrestep);
 		u.initialize(verts[Top]->u,verts[Bottom]->u,dx,dy,XStep,XPrestep,YPrestep);
 		v.initialize(verts[Top]->v,verts[Bottom]->v,dx,dy,XStep,XPrestep,YPrestep);
 		z.initialize(verts[Top]->z,verts[Bottom]->z,dx,dy,XStep,XPrestep,YPrestep);
@@ -298,13 +300,11 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom, VERT** verts, bool& fail
 
 FORCEINLINE int edge_fx_fl::Step() {
 	X += XStep; Y++; Height--;
-	doStepInterpolants();
 
 	ErrorTerm += Numerator;
 	if(ErrorTerm >= Denominator) {
 		X++;
 		ErrorTerm -= Denominator;
-		doStepExtraInterpolants();
 	}
 	return Height;
 }	
@@ -508,7 +508,7 @@ public:
 	}
 	
 	template<bool ISSHADOWPOLYGON>
-	FORCEINLINE void pixel(const PolygonAttributes &polyAttr, const size_t fragmentIndex, FragmentColor &dstColor, float r, float g, float b, float invu, float invv, float w, float z)
+	FORCEINLINE void pixel(const PolygonAttributes &polyAttr, const size_t fragmentIndex, FragmentColor &dstColor, float r, float g, float b, float u, float v, float w, float z)
 	{
 		FragmentColor srcColor;
 		FragmentColor shaderOutput;
@@ -585,11 +585,6 @@ public:
 			}
 		}
 
-		//perspective-correct the colors
-		r = (r * w) + 0.5f;
-		g = (g * w) + 0.5f;
-		b = (b * w) + 0.5f;
-		
 		//this is a HACK: 
 		//we are being very sloppy with our interpolation precision right now
 		//and rather than fix it, i just want to clamp it
@@ -599,7 +594,7 @@ public:
 									 polyAttr.alpha);
 		
 		//pixel shader
-		shade(polyAttr.polygonMode, srcColor, shaderOutput, invu * w, invv * w);
+		shade(polyAttr.polygonMode, srcColor, shaderOutput, u, v);
 		
 		// handle alpha test
 		if ( shaderOutput.a == 0 ||
@@ -658,28 +653,6 @@ public:
 			width = max(1, max(abs(leftWidth), abs(rightWidth)));
 		}
 
-		//these are the starting values, taken from the left edge
-		float invw = pLeft->invw.curr;
-		float u = pLeft->u.curr;
-		float v = pLeft->v.curr;
-		float z = pLeft->z.curr;
-		
-		float color[3] = {
-			pLeft->color[0].curr,
-			pLeft->color[1].curr,
-			pLeft->color[2].curr };
-		
-		//our dx values are taken from the steps up until the right edge
-		float invWidth = 1.0f / width;
-		float dinvw_dx = (pRight->invw.curr - invw) * invWidth;
-		float du_dx = (pRight->u.curr - u) * invWidth;
-		float dv_dx = (pRight->v.curr - v) * invWidth;
-		float dz_dx = (pRight->z.curr - z) * invWidth;
-		float dc_dx[3] = {
-			(pRight->color[0].curr - color[0]) * invWidth,
-			(pRight->color[1].curr - color[1]) * invWidth,
-			(pRight->color[2].curr - color[2]) * invWidth };
-
 		size_t adr = (pLeft->Y*framebufferWidth)+XStart;
 
 		//CONSIDER: in case some other math is wrong (shouldve been clipped OK), we might go out of bounds here.
@@ -704,15 +677,6 @@ public:
 				printf("rasterizer rendering at x=%d! oops!\n",x);
 				return;
 			}
-			invw += dinvw_dx * -x;
-			u += du_dx * -x;
-			v += dv_dx * -x;
-			z += dz_dx * -x;
-			color[0] += dc_dx[0] * -x;
-			color[1] += dc_dx[1] * -x;
-			color[2] += dc_dx[2] * -x;
-			adr += -x;
-			width -= -x;
 			x = 0;
 		}
 		if (x+width > framebufferWidth)
@@ -724,20 +688,35 @@ public:
 			}
 			width = framebufferWidth - x;
 		}
-		
+
+		float iw0 =  1 / pLeft->w.curr;
+		float iw1 =  1 / pRight->w.curr;
+
+		//a similar approach is used for walking down left/right edges outside this function
+		//but the technique is more clear here, so this is where it's documented
 		while (width-- > 0)
 		{
-			pixel<ISSHADOWPOLYGON>(polyAttr, adr, dstColor[adr], color[0], color[1], color[2], u, v, 1.0f/invw, z);
+			//calculate parameter for basic lerp across scanline X coord
+			//(probably done with steps in HW)
+			float a = ((float)x - pLeft->X) / (pRight->X - pLeft->X);
+
+			//courtesy of staplebutter (who has more info about the fixed point precision as well)
+			//calculate 'perspective corrected' lerp parameter 
+			//this can be used to calculate perspective correct uvrgbw from the basic lerp
+			//without needing interpolants to be processed as inverses
+			float P = (a*iw1) / (((1-a)*iw0) + a*iw1);
+
+			float u = (1.0f - P) * pLeft->u.curr + P * pRight->u.curr;
+			float v = (1.0f - P) * pLeft->v.curr + P * pRight->v.curr;
+			float w = (1.0f - P) * pLeft->w.curr + P * pRight->w.curr;
+			float z = (1.0f - P) * pLeft->z.curr + P * pRight->z.curr;
+			float r = (1.0f - P) * pLeft->color[0].curr + P * pRight->color[0].curr;
+			float g = (1.0f - P) * pLeft->color[1].curr + P * pRight->color[1].curr;
+			float b = (1.0f - P) * pLeft->color[2].curr + P * pRight->color[2].curr;
+
+			pixel<ISSHADOWPOLYGON>(polyAttr, adr, dstColor[adr], r, g, b, u, v, w, z);
 			adr++;
 			x++;
-
-			invw += dinvw_dx;
-			u += du_dx;
-			v += dv_dx;
-			z += dz_dx;
-			color[0] += dc_dx[0];
-			color[1] += dc_dx[1];
-			color[2] += dc_dx[2];
 		}
 	}
 
@@ -758,8 +737,29 @@ public:
 			if(draw) drawscanline<ISSHADOWPOLYGON>(polyAttr, dstColor, framebufferWidth, framebufferHeight, left,right,lineHack);
 		}
 
+		edge_fx_fl oldleft = *left;
+		edge_fx_fl oldright = *right;
+
+		float iw0[2] = {1/left->TOP.w,1/right->TOP.w};
+		float iw1[2] = {1/left->BOTTOM.w,1/right->BOTTOM.w};
+
 		while(Height--)
 		{
+			for(int i=0;i<2;i++)
+			{
+				edge_fx_fl* old = (i==0)?&oldleft:&oldright;
+				edge_fx_fl* edge = (i==0)?left:right;
+				float a = (edge->Y-old->TOP.y/16)/(old->BOTTOM.y/16-old->TOP.y/16);
+				float P = (a*iw1[i]) / (((1-a)*iw0[i]) + a*iw1[i]);
+				edge->u.curr = (1.0f - P) * old->TOP.u + P * old->BOTTOM.u;
+				edge->v.curr = (1.0f - P) * old->TOP.v + P * old->BOTTOM.v;
+				edge->w.curr = (1.0f - P) * old->TOP.w + P * old->BOTTOM.w;
+				edge->z.curr = (1.0f - P) * old->TOP.z + P * old->BOTTOM.z;
+				edge->color[0].curr = (1.0f - P) * old->TOP.fcolor[0] + P * old->BOTTOM.fcolor[0];
+				edge->color[1].curr = (1.0f - P) * old->TOP.fcolor[1] + P * old->BOTTOM.fcolor[1];
+				edge->color[2].curr = (1.0f - P) * old->TOP.fcolor[2] + P * old->BOTTOM.fcolor[2];
+			}
+		
 			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
 			if(draw) drawscanline<ISSHADOWPOLYGON>(polyAttr, dstColor, framebufferWidth, framebufferHeight, left,right,lineHack);
 			const int xl = left->X;
@@ -1522,18 +1522,11 @@ void SoftRasterizerRenderer::performViewportTransforms()
 			vert.coord[0] = (vert.coord[0]+vertw) / (2*vertw);
 			vert.coord[1] = (vert.coord[1]+vertw) / (2*vertw);
 			vert.coord[2] = (vert.coord[2]+vertw) / (2*vertw);
-			vert.texcoord[0] /= vertw;
-			vert.texcoord[1] /= vertw;
 			
 			//CONSIDER: do we need to guarantee that these are in bounds? perhaps not.
 			//vert.coord[0] = max(0.0f,min(1.0f,vert.coord[0]));
 			//vert.coord[1] = max(0.0f,min(1.0f,vert.coord[1]));
 			//vert.coord[2] = max(0.0f,min(1.0f,vert.coord[2]));
-			
-			//perspective-correct the colors
-			vert.fcolor[0] /= vertw;
-			vert.fcolor[1] /= vertw;
-			vert.fcolor[2] /= vertw;
 			
 			//viewport transformation
 			VIEWPORT viewport;
