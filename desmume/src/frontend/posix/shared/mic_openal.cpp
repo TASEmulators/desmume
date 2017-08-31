@@ -154,14 +154,14 @@ u8 Mic_ReadSample()
   return ret;
 }
 
-void mic_savestate(EMUFILE* os)
+void mic_savestate(EMUFILE &os)
 {
-	write32le(-1,os);
+	os.write_32LE(-1);
 }
 
-bool mic_loadstate(EMUFILE* is, int size)
+bool mic_loadstate(EMUFILE &is, int size)
 {
-	is->fseek(size, SEEK_CUR);
+	is.fseek(size, SEEK_CUR);
 	return TRUE;
 }
 

@@ -197,7 +197,7 @@ void Mic_DoNoise(BOOL noise)
 
 void mic_savestate(EMUFILE &os)
 {
-	write_32LE(-1,os);
+	os.write_32LE(-1);
 }
 
 bool mic_loadstate(EMUFILE &is, int size)
