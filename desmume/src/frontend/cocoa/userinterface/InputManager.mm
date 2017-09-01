@@ -1122,47 +1122,47 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 	commandSelector["Enable/Disable GPU State"]	= @selector(cmdToggleGPUState:);
 	
 	// Generate the default command attributes for each command tag. (Do this in code rather than in an external file.)
-	CommandAttributes cmdDSControlRight			= NewCommandAttributesForDSControl("Right", DSControllerState_Right, true);
-	CommandAttributes cmdDSControlLeft			= NewCommandAttributesForDSControl("Left", DSControllerState_Left, true);
-	CommandAttributes cmdDSControlDown			= NewCommandAttributesForDSControl("Down", DSControllerState_Down, true);
-	CommandAttributes cmdDSControlUp			= NewCommandAttributesForDSControl("Up", DSControllerState_Up, true);
-	CommandAttributes cmdDSControlSelect		= NewCommandAttributesForDSControl("Select", DSControllerState_Select, true);
-	CommandAttributes cmdDSControlStart			= NewCommandAttributesForDSControl("Start", DSControllerState_Start, true);
-	CommandAttributes cmdDSControlB				= NewCommandAttributesForDSControl("B", DSControllerState_B, true);
-	CommandAttributes cmdDSControlA				= NewCommandAttributesForDSControl("A", DSControllerState_A, true);
-	CommandAttributes cmdDSControlY				= NewCommandAttributesForDSControl("Y", DSControllerState_Y, true);
-	CommandAttributes cmdDSControlX				= NewCommandAttributesForDSControl("X", DSControllerState_X, true);
-	CommandAttributes cmdDSControlL				= NewCommandAttributesForDSControl("L", DSControllerState_L, true);
-	CommandAttributes cmdDSControlR				= NewCommandAttributesForDSControl("R", DSControllerState_R, true);
-	CommandAttributes cmdDSControlDebug			= NewCommandAttributesForDSControl("Debug", DSControllerState_Debug, false);
-	CommandAttributes cmdDSControlLid			= NewCommandAttributesForDSControl("Lid", DSControllerState_Lid, false);
+	CommandAttributes cmdDSControlRight			= NewCommandAttributesForDSControl("Right", NDSInputID_Right, true);
+	CommandAttributes cmdDSControlLeft			= NewCommandAttributesForDSControl("Left", NDSInputID_Left, true);
+	CommandAttributes cmdDSControlDown			= NewCommandAttributesForDSControl("Down", NDSInputID_Down, true);
+	CommandAttributes cmdDSControlUp			= NewCommandAttributesForDSControl("Up", NDSInputID_Up, true);
+	CommandAttributes cmdDSControlSelect		= NewCommandAttributesForDSControl("Select", NDSInputID_Select, true);
+	CommandAttributes cmdDSControlStart			= NewCommandAttributesForDSControl("Start", NDSInputID_Start, true);
+	CommandAttributes cmdDSControlB				= NewCommandAttributesForDSControl("B", NDSInputID_B, true);
+	CommandAttributes cmdDSControlA				= NewCommandAttributesForDSControl("A", NDSInputID_A, true);
+	CommandAttributes cmdDSControlY				= NewCommandAttributesForDSControl("Y", NDSInputID_Y, true);
+	CommandAttributes cmdDSControlX				= NewCommandAttributesForDSControl("X", NDSInputID_X, true);
+	CommandAttributes cmdDSControlL				= NewCommandAttributesForDSControl("L", NDSInputID_L, true);
+	CommandAttributes cmdDSControlR				= NewCommandAttributesForDSControl("R", NDSInputID_R, true);
+	CommandAttributes cmdDSControlDebug			= NewCommandAttributesForDSControl("Debug", NDSInputID_Debug, false);
+	CommandAttributes cmdDSControlLid			= NewCommandAttributesForDSControl("Lid", NDSInputID_Lid, false);
 	
-	CommandAttributes cmdDSControlTouch			= NewCommandAttributesForDSControl("Touch", DSControllerState_Touch, false);	
+	CommandAttributes cmdDSControlTouch			= NewCommandAttributesForDSControl("Touch", NDSInputID_Touch, false);
 	cmdDSControlTouch.useInputForIntCoord = true;
 	
-	CommandAttributes cmdDSControlMic			= NewCommandAttributesForDSControl("Microphone", DSControllerState_Microphone, false);
+	CommandAttributes cmdDSControlMic			= NewCommandAttributesForDSControl("Microphone", NDSInputID_Microphone, false);
 	cmdDSControlMic.intValue[1] = MICMODE_INTERNAL_NOISE;
 	cmdDSControlMic.floatValue[0] = 250.0f;
 	
-	CommandAttributes cmdGuitarGripGreen		= NewCommandAttributesForDSControl("Guitar Grip: Green", DSControllerState_GuitarGrip_Green, false);
-	CommandAttributes cmdGuitarGripRed			= NewCommandAttributesForDSControl("Guitar Grip: Red", DSControllerState_GuitarGrip_Red, false);
-	CommandAttributes cmdGuitarGripYellow		= NewCommandAttributesForDSControl("Guitar Grip: Yellow", DSControllerState_GuitarGrip_Yellow, false);
-	CommandAttributes cmdGuitarGripBlue			= NewCommandAttributesForDSControl("Guitar Grip: Blue", DSControllerState_GuitarGrip_Blue, false);
-	CommandAttributes cmdPianoC					= NewCommandAttributesForDSControl("Piano: C", DSControllerState_Piano_C, false);
-	CommandAttributes cmdPianoCSharp			= NewCommandAttributesForDSControl("Piano: C#", DSControllerState_Piano_CSharp, false);
-	CommandAttributes cmdPianoD					= NewCommandAttributesForDSControl("Piano: D", DSControllerState_Piano_D, false);
-	CommandAttributes cmdPianoDSharp			= NewCommandAttributesForDSControl("Piano: D#", DSControllerState_Piano_DSharp, false);
-	CommandAttributes cmdPianoE					= NewCommandAttributesForDSControl("Piano: E", DSControllerState_Piano_E, false);
-	CommandAttributes cmdPianoF					= NewCommandAttributesForDSControl("Piano: F", DSControllerState_Piano_F, false);
-	CommandAttributes cmdPianoFSharp			= NewCommandAttributesForDSControl("Piano: F#", DSControllerState_Piano_FSharp, false);
-	CommandAttributes cmdPianoG					= NewCommandAttributesForDSControl("Piano: G", DSControllerState_Piano_G, false);
-	CommandAttributes cmdPianoGSharp			= NewCommandAttributesForDSControl("Piano: G#", DSControllerState_Piano_GSharp, false);
-	CommandAttributes cmdPianoA					= NewCommandAttributesForDSControl("Piano: A", DSControllerState_Piano_A, false);
-	CommandAttributes cmdPianoASharp			= NewCommandAttributesForDSControl("Piano: A#", DSControllerState_Piano_ASharp, false);
-	CommandAttributes cmdPianoB					= NewCommandAttributesForDSControl("Piano: B", DSControllerState_Piano_B, false);
-	CommandAttributes cmdPianoHighC				= NewCommandAttributesForDSControl("Piano: High C", DSControllerState_Piano_HighC, false);
+	CommandAttributes cmdGuitarGripGreen		= NewCommandAttributesForDSControl("Guitar Grip: Green", NDSInputID_GuitarGrip_Green, false);
+	CommandAttributes cmdGuitarGripRed			= NewCommandAttributesForDSControl("Guitar Grip: Red", NDSInputID_GuitarGrip_Red, false);
+	CommandAttributes cmdGuitarGripYellow		= NewCommandAttributesForDSControl("Guitar Grip: Yellow", NDSInputID_GuitarGrip_Yellow, false);
+	CommandAttributes cmdGuitarGripBlue			= NewCommandAttributesForDSControl("Guitar Grip: Blue", NDSInputID_GuitarGrip_Blue, false);
+	CommandAttributes cmdPianoC					= NewCommandAttributesForDSControl("Piano: C", NDSInputID_Piano_C, false);
+	CommandAttributes cmdPianoCSharp			= NewCommandAttributesForDSControl("Piano: C#", NDSInputID_Piano_CSharp, false);
+	CommandAttributes cmdPianoD					= NewCommandAttributesForDSControl("Piano: D", NDSInputID_Piano_D, false);
+	CommandAttributes cmdPianoDSharp			= NewCommandAttributesForDSControl("Piano: D#", NDSInputID_Piano_DSharp, false);
+	CommandAttributes cmdPianoE					= NewCommandAttributesForDSControl("Piano: E", NDSInputID_Piano_E, false);
+	CommandAttributes cmdPianoF					= NewCommandAttributesForDSControl("Piano: F", NDSInputID_Piano_F, false);
+	CommandAttributes cmdPianoFSharp			= NewCommandAttributesForDSControl("Piano: F#", NDSInputID_Piano_FSharp, false);
+	CommandAttributes cmdPianoG					= NewCommandAttributesForDSControl("Piano: G", NDSInputID_Piano_G, false);
+	CommandAttributes cmdPianoGSharp			= NewCommandAttributesForDSControl("Piano: G#", NDSInputID_Piano_GSharp, false);
+	CommandAttributes cmdPianoA					= NewCommandAttributesForDSControl("Piano: A", NDSInputID_Piano_A, false);
+	CommandAttributes cmdPianoASharp			= NewCommandAttributesForDSControl("Piano: A#", NDSInputID_Piano_ASharp, false);
+	CommandAttributes cmdPianoB					= NewCommandAttributesForDSControl("Piano: B", NDSInputID_Piano_B, false);
+	CommandAttributes cmdPianoHighC				= NewCommandAttributesForDSControl("Piano: High C", NDSInputID_Piano_HighC, false);
 	
-	CommandAttributes cmdPaddle					= NewCommandAttributesForDSControl("Paddle", DSControllerState_Paddle, false);
+	CommandAttributes cmdPaddle					= NewCommandAttributesForDSControl("Paddle", NDSInputID_Paddle, false);
 	cmdPaddle.allowAnalogInput = true;
 	cmdPaddle.intValue[1] = 0;
 	cmdPaddle.floatValue[0] = 10.0f;
@@ -1323,7 +1323,7 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 			[self removeAllMappingsForCommandTag:[commandTag cStringUsingEncoding:NSUTF8StringEncoding]];
 		}
 		
-		for(NSDictionary *deviceInfo in deviceInfoList)
+		for (NSDictionary *deviceInfo in deviceInfoList)
 		{
 			const char *cmdTag = [commandTag cStringUsingEncoding:NSUTF8StringEncoding];
 			CommandAttributes cmdAttr = defaultCommandAttributes[cmdTag];
@@ -1339,6 +1339,11 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 				cmdAttr.selector == @selector(cmdUpdateDSPaddle:))
 			{
 				cmdAttr.intValue[0] = defaultCommandAttributes[cmdTag].intValue[0];
+			}
+			
+			if (cmdAttr.selector == @selector(cmdUpdateDSControllerWithTurbo:))
+			{
+				cmdAttr.intValue[2] = defaultCommandAttributes[cmdTag].intValue[2];
 			}
 			
 			// Copy all command attributes into a new deviceInfo dictionary.
@@ -2023,30 +2028,31 @@ CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const
 	
 	switch (controlID)
 	{
-		case DSControllerState_Right:
-		case DSControllerState_Left:
-		case DSControllerState_Down:
-		case DSControllerState_Up:
-		case DSControllerState_Select:
-		case DSControllerState_Start:
-		case DSControllerState_B:
-		case DSControllerState_A:
-		case DSControllerState_Y:
-		case DSControllerState_X:
-		case DSControllerState_L:
-		case DSControllerState_R:
+		case NDSInputID_Right:
+		case NDSInputID_Left:
+		case NDSInputID_Down:
+		case NDSInputID_Up:
+		case NDSInputID_Select:
+		case NDSInputID_Start:
+		case NDSInputID_B:
+		case NDSInputID_A:
+		case NDSInputID_Y:
+		case NDSInputID_X:
+		case NDSInputID_L:
+		case NDSInputID_R:
 			cmdAttr.selector = @selector(cmdUpdateDSControllerWithTurbo:);
+			cmdAttr.intValue[2] = (supportTurbo) ? 0x33333333 : 0;
 			break;
 			
-		case DSControllerState_Touch:
+		case NDSInputID_Touch:
 			cmdAttr.selector = @selector(cmdUpdateDSTouch:);
 			break;
 			
-		case DSControllerState_Microphone:
+		case NDSInputID_Microphone:
 			cmdAttr.selector = @selector(cmdUpdateDSMicrophone:);
 			break;
 			
-		case DSControllerState_Paddle:
+		case NDSInputID_Paddle:
 			cmdAttr.selector = @selector(cmdUpdateDSPaddle:);
 			break;
 			

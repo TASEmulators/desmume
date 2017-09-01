@@ -849,7 +849,30 @@ void ClientExecutionControl::FetchOutputPostNDSExec()
 	rtcGetTimeAsString(tempBuffer);
 	this->_ndsFrameInfo.rtcString = tempBuffer;
 	free(tempBuffer);
-		
+	
+	const UserInput &ndsInput = NDS_getFinalUserInput();
+	
+	this->_ndsFrameInfo.inputState.value			= 0xFFFFFFFFFFFFFFFFUL;
+	this->_ndsFrameInfo.inputState.A				= (ndsInput.buttons.A) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.B				= (ndsInput.buttons.B) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.Select			= (ndsInput.buttons.T) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.Start			= (ndsInput.buttons.S) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.Right			= (ndsInput.buttons.R) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.Left				= (ndsInput.buttons.L) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.Up				= (ndsInput.buttons.U) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.Down				= (ndsInput.buttons.D) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.R				= (ndsInput.buttons.E) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.L				= (ndsInput.buttons.W) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.X				= (ndsInput.buttons.X) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.Y				= (ndsInput.buttons.Y) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.Debug			= (ndsInput.buttons.G) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.Touch			= (ndsInput.touch.isTouch) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.Lid				= (ndsInput.buttons.F) ? 0 : 1;
+	this->_ndsFrameInfo.inputState.Microphone		= (ndsInput.mic.micButtonPressed != 0) ? 0 : 1;
+	
+	this->_ndsFrameInfo.touchLocX					= ndsInput.touch.touchX;
+	this->_ndsFrameInfo.touchLocY					= ndsInput.touch.touchY;
+	
 	pthread_mutex_unlock(&this->_mutexOutputPostNDSExec);
 }
 

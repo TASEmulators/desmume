@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2015 DeSmuME Team
+	Copyright (C) 2012-2017 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,61 +20,22 @@
 #include <libkern/OSAtomic.h>
 #include <vector>
 
+#include "ClientExecutionControl.h"
+
 @class CocoaDSController;
 class CoreAudioInput;
 struct CoreAudioInputDeviceInfo;
 class AudioGenerator;
 class AudioSampleBlockGenerator;
 
-enum
-{
-	DSControllerState_Right = 0,
-	DSControllerState_Left,
-	DSControllerState_Down,
-	DSControllerState_Up,
-	DSControllerState_Select,
-	DSControllerState_Start,
-	DSControllerState_B,
-	DSControllerState_A,
-	DSControllerState_Y,
-	DSControllerState_X,
-	DSControllerState_L,
-	DSControllerState_R,
-	DSControllerState_Debug,
-	DSControllerState_Lid,
-	
-	DSControllerState_Touch,
-	DSControllerState_Microphone,
-	
-	DSControllerState_GuitarGrip_Green,
-	DSControllerState_GuitarGrip_Red,
-	DSControllerState_GuitarGrip_Yellow,
-	DSControllerState_GuitarGrip_Blue,
-	DSControllerState_Piano_C,
-	DSControllerState_Piano_CSharp,
-	DSControllerState_Piano_D,
-	DSControllerState_Piano_DSharp,
-	DSControllerState_Piano_E,
-	DSControllerState_Piano_F,
-	DSControllerState_Piano_FSharp,
-	DSControllerState_Piano_G,
-	DSControllerState_Piano_GSharp,
-	DSControllerState_Piano_A,
-	DSControllerState_Piano_ASharp,
-	DSControllerState_Piano_B,
-	DSControllerState_Piano_HighC,
-	DSControllerState_Paddle,
-	
-	DSControllerState_StatesCount
-};
-
 typedef struct
 {
-	bool state;
+	bool isPressed;
 	bool turbo;
 	bool autohold;
-	uint16_t turboPattern;
-} NDSInput;
+	uint32_t turboPattern;
+	uint8_t turboPatternStep;
+} ClientInput;
 
 @protocol CocoaDSControllerDelegate <NSObject>
 
@@ -92,7 +53,7 @@ typedef struct
 {
 	id <CocoaDSControllerDelegate> delegate;
 	
-	NDSInput ndsInput[DSControllerState_StatesCount];
+	ClientInput clientInput[NDSInputID_InputCount];
 	BOOL autohold;
 	BOOL _isAutoholdCleared;
 	
@@ -101,10 +62,12 @@ typedef struct
 	NSInteger stylusPressure;
 	
 	float micLevel;
+	float _micLevelTotal;
+	float _micLevelsRead;
+	
 	BOOL hardwareMicMute;
 	BOOL _useHardwareMic;
 	size_t _availableMicSamples;
-	std::vector<uint8_t> *_hwMicLevelList;
 	NSInteger micMode;
 	
 	AudioSampleBlockGenerator *selectedAudioFileGenerator;
@@ -144,7 +107,7 @@ typedef struct
 @property (retain) NSString *hardwareMicSampleRateString;
 
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID;
-- (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID turbo:(const BOOL)isTurboEnabled;
+- (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID turbo:(const BOOL)isTurboEnabled turboPattern:(uint32_t)turboPattern;
 - (void) setTouchState:(BOOL)theState location:(const NSPoint)theLocation;
 - (void) setSineWaveGeneratorFrequency:(const double)freq;
 - (void) clearAutohold;

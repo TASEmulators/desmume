@@ -1004,10 +1004,13 @@ static void* RunCoreThread(void *arg)
 			continue;
 		}
 		
-		// Make sure that the mic level is updated at least once per frame, regardless
+		// Make sure that the mic level is updated at least once every 8 frames, regardless
 		// of whether the NDS actually reads the mic or not.
-		[cdsController updateMicLevel];
-		[cdsController clearMicLevelMeasure];
+		if ((ndsFrameInfo.frameIndex & 0x07) == 0x07)
+		{
+			[cdsController updateMicLevel];
+			[cdsController clearMicLevelMeasure];
+		}
 		
 		const uint8_t framesToSkip = execControl->GetFramesToSkip();
 		

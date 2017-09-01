@@ -32,14 +32,17 @@ public:
 
 	virtual void connect()
 	{
-		guitarKeyStatus = 0;
+		guitarKeyStatus = 0xFF;
 	}
 
 	virtual u8	readByte(u8 PROCNUM, u32 addr) 
 	{
-		if (addr == 0x0A000000) return (~guitarKeyStatus);
-		return (addr & 1)?0xF9:0xFF; 
+		if (addr == 0x0A000000)
+			return guitarKeyStatus;
+		
+		return (addr & 1) ? 0xF9 : 0xFF;
 	}
+	
 	virtual u16	readWord(u8 PROCNUM, u32 addr) { return 0xF9FF; }
 	virtual u32	readLong(u8 PROCNUM, u32 addr) { return 0xF9FFF9FF; }
 };
@@ -48,5 +51,15 @@ ISlot2Interface* construct_Slot2_GuitarGrip() { return new Slot2_GuitarGrip(); }
 
 void guitarGrip_setKey(bool green, bool red, bool yellow, bool blue)
 {
-	guitarKeyStatus = 0 | (green << 6) | (red << 5) | (yellow << 4) | (blue << 3);
+	const u8 g = (green)	? (1 << 6) : 0;
+	const u8 r = (red)		? (1 << 5) : 0;
+	const u8 y = (yellow)	? (1 << 4) : 0;
+	const u8 b = (blue)		? (1 << 3) : 0;
+	
+	guitarKeyStatus = ~(g | r | y | b);
+}
+
+void guitarGrip_setKey(u8 theKeys)
+{
+	guitarKeyStatus = theKeys;
 }

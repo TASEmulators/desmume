@@ -1050,9 +1050,10 @@
 	const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
 	const NSUInteger controlID = cmdAttr.intValue[0];
 	const BOOL isTurboEnabled = (BOOL)cmdAttr.intValue[1];
+	const uint32_t turboPattern = (uint32_t)cmdAttr.intValue[2];
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[[cdsCore cdsController] setControllerState:theState controlID:controlID turbo:isTurboEnabled];
+	[[cdsCore cdsController] setControllerState:theState controlID:controlID turbo:isTurboEnabled turboPattern:turboPattern];
 }
 
 - (void) cmdUpdateDSTouch:(NSValue *)cmdAttrValue
@@ -1097,7 +1098,7 @@
 	
 	if (cmdAttr.input.isAnalog)
 	{
-		const NSInteger paddleSensitivity = cmdAttr.floatValue[0];
+		const float paddleSensitivity = cmdAttr.floatValue[0];
 		const float paddleScalar = cmdAttr.input.scalar;
 		float paddleAdjust = (paddleScalar * 2.0f) - 1.0f;
 		
@@ -1113,8 +1114,8 @@
 		}
 		
 		// Normalize the input value for the paddle.
-		paddleAdjust *= (float)paddleSensitivity;
-		[[cdsCore cdsController] setPaddleAdjust:paddleAdjust];
+		paddleAdjust *= paddleSensitivity;
+		[[cdsCore cdsController] setPaddleAdjust:(NSInteger)(paddleAdjust + 0.5f)];
 	}
 	else
 	{

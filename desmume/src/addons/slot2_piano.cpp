@@ -17,7 +17,7 @@
 
 #include "../slot2.h"
 
-static u16	pianoKeyStatus = 0;
+static u16 pianoKeyStatus = 0;
 
 class Slot2_EasyPiano : public ISlot2Interface
 {
@@ -30,7 +30,7 @@ public:
 
 	virtual void connect()
 	{
-		pianoKeyStatus = 0;
+		pianoKeyStatus = 0xE7FF;
 	}
 
 	virtual u8	readByte(u8 PROCNUM, u32 addr)
@@ -61,10 +61,10 @@ public:
 
 		//LOG("PIANO: %04X\n",pianoKeyStatus);
 
-		if(addr == 0x09FFFFFE) return (~(pianoKeyStatus&0xFF));
-		if(addr == 0x09FFFFFF) return (~((pianoKeyStatus>>8)&0xFF))&~(0x18);
+		if (addr == 0x09FFFFFE) return ((pianoKeyStatus >> 0) & 0xFF);
+		if (addr == 0x09FFFFFF) return ((pianoKeyStatus >> 8) & 0xFF) & ~(0x18);
 
-		return (addr & 1)?0xE7:0xFF;
+		return (addr & 1) ? 0xE7 : 0xFF;
 	}
 	virtual u16	readWord(u8 PROCNUM, u32 addr)
 	{
@@ -99,7 +99,7 @@ void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, boo
 	//0x09FFFFFF:7 = ?
 
 	#define BIT_P(N,v) ((v)?(1<<(N)):0)
-		pianoKeyStatus = 
+		pianoKeyStatus = ~(
 			BIT_P(0,c) |
 			BIT_P(1,cs) |
 			BIT_P(2,d) |
@@ -113,5 +113,10 @@ void piano_setKey(bool c, bool cs, bool d, bool ds, bool e, bool f, bool fs, boo
 			BIT_P(10,as) |
 			BIT_P(13,b) |
 			BIT_P(14,hic)
-			;
+			);
+}
+
+void piano_setKey(u16 theKeys)
+{
+	pianoKeyStatus = theKeys;
 }
