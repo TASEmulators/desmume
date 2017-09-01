@@ -192,7 +192,6 @@ struct NDSSystem
 	BOOL isFakeBooted;
 	
 	BOOL isTouch;
-	u16 pad;
 	
 	u16 paddle;
 

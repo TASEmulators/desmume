@@ -728,7 +728,7 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::stri
 		 else
 		 {
 			 UserInput &input = NDS_getProcessingUserInput();
-			 ReplayRecToDesmumeInput(currMovieData.records[currFrameCounter], &input);
+			 ReplayRecToDesmumeInput(currMovieData.records[currFrameCounter], input);
 		 }
 
 		 //if we are on the last frame, then pause the emulator if the player requested it
@@ -763,7 +763,7 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::stri
 	 {
 		 MovieRecord mr;
 		 const UserInput &input = NDS_getFinalUserInput();
-		 DesmumeInputToReplayRec(input, &mr);
+		 DesmumeInputToReplayRec(input, mr);
 
 		 assert(mr.touch.touch || (!mr.touch.x && !mr.touch.y));
 		 //assert(nds.touchX == input.touch.touchX && nds.touchY == input.touch.touchY);
@@ -1210,14 +1210,9 @@ void BinaryDataFromString(std::string &inStringData, std::vector<u8> *outBinaryD
 	}
 }
 
-void ReplayRecToDesmumeInput(const MovieRecord &theRecord, UserInput *theInput)
+void ReplayRecToDesmumeInput(const MovieRecord &inRecord, UserInput &outInput)
 {
-	if (theInput == NULL)
-	{
-		return;
-	}
-	
-	if(theRecord.command_reset())
+	if (inRecord.command_reset())
 	{
 		NDS_Reset();
 		return;
@@ -1227,47 +1222,60 @@ void ReplayRecToDesmumeInput(const MovieRecord &theRecord, UserInput *theInput)
 		movie_reset_command = false;
 	}
 	
-	const u16 pad = theRecord.pad;
-	theInput->buttons.R = (((pad>>12)&1)!=0);
-	theInput->buttons.L = (((pad>>11)&1)!=0);
-	theInput->buttons.D = (((pad>>10)&1)!=0);
-	theInput->buttons.U = (((pad>>9)&1)!=0);
-	theInput->buttons.T = (((pad>>8)&1)!=0);
-	theInput->buttons.S = (((pad>>7)&1)!=0);
-	theInput->buttons.B = (((pad>>6)&1)!=0);
-	theInput->buttons.A = (((pad>>5)&1)!=0);
-	theInput->buttons.Y = (((pad>>4)&1)!=0);
-	theInput->buttons.X = (((pad>>3)&1)!=0);
-	theInput->buttons.W = (((pad>>2)&1)!=0);
-	theInput->buttons.E = (((pad>>1)&1)!=0);
-	theInput->buttons.G = (((pad>>0)&1)!=0);
-	theInput->buttons.F = theRecord.command_lid();
+	outInput.buttons.R = ((inRecord.pad & (1 << 12)) != 0);
+	outInput.buttons.L = ((inRecord.pad & (1 << 11)) != 0);
+	outInput.buttons.D = ((inRecord.pad & (1 << 10)) != 0);
+	outInput.buttons.U = ((inRecord.pad & (1 <<  9)) != 0);
+	outInput.buttons.T = ((inRecord.pad & (1 <<  8)) != 0);
+	outInput.buttons.S = ((inRecord.pad & (1 <<  7)) != 0);
+	outInput.buttons.B = ((inRecord.pad & (1 <<  6)) != 0);
+	outInput.buttons.A = ((inRecord.pad & (1 <<  5)) != 0);
+	outInput.buttons.Y = ((inRecord.pad & (1 <<  4)) != 0);
+	outInput.buttons.X = ((inRecord.pad & (1 <<  3)) != 0);
+	outInput.buttons.W = ((inRecord.pad & (1 <<  2)) != 0);
+	outInput.buttons.E = ((inRecord.pad & (1 <<  1)) != 0);
+	outInput.buttons.G = ((inRecord.pad & (1 <<  0)) != 0);
+	outInput.buttons.F = inRecord.command_lid();
 	
-	theInput->touch.touchX = theRecord.touch.x << 4;
-	theInput->touch.touchY = theRecord.touch.y << 4;
-	theInput->touch.isTouch = (theRecord.touch.touch != 0);
+	outInput.touch.isTouch = (inRecord.touch.touch != 0);
+	outInput.touch.touchX = inRecord.touch.x << 4;
+	outInput.touch.touchY = inRecord.touch.y << 4;
 	
-	theInput->mic.micButtonPressed = (theRecord.command_microphone()) ? 1 : 0;
+	outInput.mic.micButtonPressed = (inRecord.command_microphone()) ? 1 : 0;
 }
 
-void DesmumeInputToReplayRec(const UserInput &theInput, MovieRecord *theRecord)
+void DesmumeInputToReplayRec(const UserInput &inInput, MovieRecord &outRecord)
 {
-	theRecord->commands = 0;
+	outRecord.commands = 0;
 	
-	if(theInput.mic.micButtonPressed == 1)
-		theRecord->commands = MOVIECMD_MIC;
+	//put into the format we want for the movie system
+	//fRLDUTSBAYXWEg
+	outRecord.pad = ((inInput.buttons.R) ? (1 << 12) : 0) |
+	                ((inInput.buttons.L) ? (1 << 11) : 0) |
+	                ((inInput.buttons.D) ? (1 << 10) : 0) |
+	                ((inInput.buttons.U) ? (1 <<  9) : 0) |
+	                ((inInput.buttons.T) ? (1 <<  8) : 0) |
+	                ((inInput.buttons.S) ? (1 <<  7) : 0) |
+	                ((inInput.buttons.B) ? (1 <<  6) : 0) |
+	                ((inInput.buttons.A) ? (1 <<  5) : 0) |
+	                ((inInput.buttons.Y) ? (1 <<  4) : 0) |
+	                ((inInput.buttons.X) ? (1 <<  3) : 0) |
+	                ((inInput.buttons.W) ? (1 <<  2) : 0) |
+	                ((inInput.buttons.E) ? (1 <<  1) : 0);
 	
-	theRecord->pad = nds.pad;
+	if (inInput.buttons.F)
+		outRecord.commands = MOVIECMD_LID;
 	
-	if(theInput.buttons.F)
-		theRecord->commands = MOVIECMD_LID;
-	
-	if(movie_reset_command) {
-		theRecord->commands = MOVIECMD_RESET;
+	if (movie_reset_command)
+	{
+		outRecord.commands = MOVIECMD_RESET;
 		movie_reset_command = false;
 	}
 	
-	theRecord->touch.touch = theInput.touch.isTouch ? 1 : 0;
-	theRecord->touch.x = (theInput.touch.isTouch) ? theInput.touch.touchX >> 4 : 0;
-	theRecord->touch.y = (theInput.touch.isTouch) ? theInput.touch.touchY >> 4 : 0;
+	outRecord.touch.touch = (inInput.touch.isTouch) ? 1 : 0;
+	outRecord.touch.x = (inInput.touch.isTouch) ? inInput.touch.touchX >> 4 : 0;
+	outRecord.touch.y = (inInput.touch.isTouch) ? inInput.touch.touchY >> 4 : 0;
+	
+	if (inInput.mic.micButtonPressed != 0)
+		outRecord.commands = MOVIECMD_MIC;
 }

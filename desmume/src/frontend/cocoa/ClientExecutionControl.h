@@ -39,6 +39,8 @@
 #define FRAME_SKIP_BIAS								0.1		// May be any real number. This value acts as a vector addition to the frame skip.
 #define MAX_FRAME_SKIP								(DS_FRAMES_PER_SECOND / 2.98)
 
+#define INPUT_STATES_CLEAR_VALUE					0xFFFFFFFF00FF03FFUL
+
 enum ExecutionBehavior
 {
 	ExecutionBehavior_Pause = 0,
@@ -112,11 +114,10 @@ typedef union
 	struct
 	{
 		uint16_t gbaKeys;
-		uint8_t ndsKeysExt;
-		uint8_t guitarGripKeys;
+		uint16_t ndsKeysExt;
 		uint16_t easyPianoKeys;
+		uint8_t guitarGripKeys;
 		uint8_t miscKeys;
-		uint8_t unused;
 	};
 	
 	struct
@@ -143,12 +144,7 @@ typedef union
 		uint8_t Touch:1;
 		uint8_t Lid:1;
 		
-		uint8_t :3;
-		uint8_t GuitarGripBlue:1;
-		uint8_t GuitarGripYellow:1;
-		uint8_t GuitarGripRed:1;
-		uint8_t GuitarGripGreen:1;
-		uint8_t :1;
+		uint8_t :8;
 		
 		uint8_t PianoC:1;
 		uint8_t PianoCSharp:1;
@@ -167,11 +163,17 @@ typedef union
 		uint8_t PianoHighC:1;
 		uint8_t :1;
 		
+		uint8_t :3;
+		uint8_t GuitarGripBlue:1;
+		uint8_t GuitarGripYellow:1;
+		uint8_t GuitarGripRed:1;
+		uint8_t GuitarGripGreen:1;
+		uint8_t :1;
+		
 		uint8_t Paddle:1;
 		uint8_t Microphone:1;
-		uint8_t :6;
-		
-		uint8_t :8;
+		uint8_t Reset:1;
+		uint8_t :5;
 #else
 		uint8_t Down:1;
 		uint8_t Up:1;
@@ -194,12 +196,7 @@ typedef union
 		uint8_t Y:1;
 		uint8_t X:1;
 		
-		uint8_t :1;
-		uint8_t GuitarGripGreen:1;
-		uint8_t GuitarGripRed:1;
-		uint8_t GuitarGripYellow:1;
-		uint8_t GuitarGripBlue:1;
-		uint8_t :3;
+		uint8_t :8;
 		
 		uint8_t PianoG:1;
 		uint8_t PianoFSharp:1;
@@ -218,11 +215,17 @@ typedef union
 		uint8_t PianoA:1;
 		uint8_t PianoGSharp:1;
 		
-		uint8_t :6;
+		uint8_t :1;
+		uint8_t GuitarGripGreen:1;
+		uint8_t GuitarGripRed:1;
+		uint8_t GuitarGripYellow:1;
+		uint8_t GuitarGripBlue:1;
+		uint8_t :3;
+		
+		uint8_t :5;
+		uint8_t Reset:1;
 		uint8_t Microphone:1;
 		uint8_t Paddle:1;
-		
-		uint8_t :8;
 #endif
 	};
 } NDSInputState; // Each bit represents the Pressed/Released state of a single input. Pressed=0, Released=1
@@ -275,9 +278,13 @@ struct NDSFrameInfo
 	uint32_t cpuLoadAvgARM9;
 	uint32_t cpuLoadAvgARM7;
 	
-	NDSInputState inputState;
-	uint16_t touchLocX;
-	uint16_t touchLocY;
+	NDSInputState inputStatesPending;
+	uint8_t touchLocXPending;
+	uint8_t touchLocYPending;
+	
+	NDSInputState inputStatesApplied;
+	uint8_t touchLocXApplied;
+	uint8_t touchLocYApplied;
 	
 	void clear()
 	{
@@ -289,9 +296,14 @@ struct NDSFrameInfo
 		this->lagFrameCount				= 0;
 		this->cpuLoadAvgARM9			= 0;
 		this->cpuLoadAvgARM7			= 0;
-		this->inputState.value			= 0xFFFFFFFFFFFFFFFFUL;
-		this->touchLocX					= 0;
-		this->touchLocY					= 0;
+		
+		this->inputStatesPending.value	= INPUT_STATES_CLEAR_VALUE;
+		this->touchLocXPending			= 0;
+		this->touchLocYPending			= 0;
+		
+		this->inputStatesApplied.value	= INPUT_STATES_CLEAR_VALUE;
+		this->touchLocXApplied			= 0;
+		this->touchLocYApplied			= 0;
 	}
 	
 	void copyFrom(const NDSFrameInfo &fromObject)
@@ -304,9 +316,14 @@ struct NDSFrameInfo
 		this->lagFrameCount				= fromObject.lagFrameCount;
 		this->cpuLoadAvgARM9			= fromObject.cpuLoadAvgARM9;
 		this->cpuLoadAvgARM7			= fromObject.cpuLoadAvgARM7;
-		this->inputState				= fromObject.inputState;
-		this->touchLocX					= fromObject.touchLocX;
-		this->touchLocY					= fromObject.touchLocY;
+		
+		this->inputStatesPending		= fromObject.inputStatesPending;
+		this->touchLocXPending			= fromObject.touchLocXPending;
+		this->touchLocYPending			= fromObject.touchLocYPending;
+		
+		this->inputStatesApplied		= fromObject.inputStatesApplied;
+		this->touchLocXApplied			= fromObject.touchLocXApplied;
+		this->touchLocYApplied			= fromObject.touchLocYApplied;
 	}
 };
 

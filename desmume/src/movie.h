@@ -231,7 +231,7 @@ extern bool ShowInputDisplay;
 void FCEUI_MakeBackupMovie(bool dispMessage);
 DateTime FCEUI_MovieGetRTCDefault();
 void BinaryDataFromString(std::string &inStringData, std::vector<u8> *outBinaryData);
-void ReplayRecToDesmumeInput(const MovieRecord &theRecord, UserInput *theInput);
-void DesmumeInputToReplayRec(const UserInput &theInput, MovieRecord *theRecord);
+void ReplayRecToDesmumeInput(const MovieRecord &inRecord, UserInput &outInput);
+void DesmumeInputToReplayRec(const UserInput &inInput, MovieRecord &outRecord);
 
 #endif

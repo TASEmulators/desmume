@@ -850,28 +850,48 @@ void ClientExecutionControl::FetchOutputPostNDSExec()
 	this->_ndsFrameInfo.rtcString = tempBuffer;
 	free(tempBuffer);
 	
-	const UserInput &ndsInput = NDS_getFinalUserInput();
+	const UserInput &ndsInputsPending = NDS_getRawUserInput();
+	const UserInput &ndsInputsApplied = NDS_getFinalUserInput();
 	
-	this->_ndsFrameInfo.inputState.value			= 0xFFFFFFFFFFFFFFFFUL;
-	this->_ndsFrameInfo.inputState.A				= (ndsInput.buttons.A) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.B				= (ndsInput.buttons.B) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.Select			= (ndsInput.buttons.T) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.Start			= (ndsInput.buttons.S) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.Right			= (ndsInput.buttons.R) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.Left				= (ndsInput.buttons.L) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.Up				= (ndsInput.buttons.U) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.Down				= (ndsInput.buttons.D) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.R				= (ndsInput.buttons.E) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.L				= (ndsInput.buttons.W) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.X				= (ndsInput.buttons.X) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.Y				= (ndsInput.buttons.Y) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.Debug			= (ndsInput.buttons.G) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.Touch			= (ndsInput.touch.isTouch) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.Lid				= (ndsInput.buttons.F) ? 0 : 1;
-	this->_ndsFrameInfo.inputState.Microphone		= (ndsInput.mic.micButtonPressed != 0) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.value			= INPUT_STATES_CLEAR_VALUE;
+	this->_ndsFrameInfo.inputStatesPending.A				= (ndsInputsPending.buttons.A) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.B				= (ndsInputsPending.buttons.B) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.Select			= (ndsInputsPending.buttons.T) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.Start			= (ndsInputsPending.buttons.S) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.Right			= (ndsInputsPending.buttons.R) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.Left				= (ndsInputsPending.buttons.L) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.Up				= (ndsInputsPending.buttons.U) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.Down				= (ndsInputsPending.buttons.D) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.R				= (ndsInputsPending.buttons.E) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.L				= (ndsInputsPending.buttons.W) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.X				= (ndsInputsPending.buttons.X) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.Y				= (ndsInputsPending.buttons.Y) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.Debug			= (ndsInputsPending.buttons.G) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.Touch			= (ndsInputsPending.touch.isTouch) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.Lid				= (ndsInputsPending.buttons.F) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesPending.Microphone		= (ndsInputsPending.mic.micButtonPressed != 0) ? 0 : 1;
+	this->_ndsFrameInfo.touchLocXPending					= ndsInputsPending.touch.touchX >> 4;
+	this->_ndsFrameInfo.touchLocYPending					= ndsInputsPending.touch.touchY >> 4;
 	
-	this->_ndsFrameInfo.touchLocX					= ndsInput.touch.touchX;
-	this->_ndsFrameInfo.touchLocY					= ndsInput.touch.touchY;
+	this->_ndsFrameInfo.inputStatesApplied.value			= INPUT_STATES_CLEAR_VALUE;
+	this->_ndsFrameInfo.inputStatesApplied.A				= (ndsInputsApplied.buttons.A) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.B				= (ndsInputsApplied.buttons.B) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.Select			= (ndsInputsApplied.buttons.T) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.Start			= (ndsInputsApplied.buttons.S) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.Right			= (ndsInputsApplied.buttons.R) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.Left				= (ndsInputsApplied.buttons.L) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.Up				= (ndsInputsApplied.buttons.U) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.Down				= (ndsInputsApplied.buttons.D) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.R				= (ndsInputsApplied.buttons.E) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.L				= (ndsInputsApplied.buttons.W) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.X				= (ndsInputsApplied.buttons.X) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.Y				= (ndsInputsApplied.buttons.Y) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.Debug			= (ndsInputsApplied.buttons.G) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.Touch			= (ndsInputsApplied.touch.isTouch) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.Lid				= (ndsInputsApplied.buttons.F) ? 0 : 1;
+	this->_ndsFrameInfo.inputStatesApplied.Microphone		= (ndsInputsApplied.mic.micButtonPressed != 0) ? 0 : 1;
+	this->_ndsFrameInfo.touchLocXApplied					= ndsInputsApplied.touch.touchX >> 4;
+	this->_ndsFrameInfo.touchLocYApplied					= ndsInputsApplied.touch.touchY >> 4;
 	
 	pthread_mutex_unlock(&this->_mutexOutputPostNDSExec);
 }

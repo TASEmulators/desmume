@@ -2881,54 +2881,56 @@ static void NDS_applyFinalInput()
 {
 	const UserInput& input = NDS_getFinalUserInput();
 
-	u16	pad	= (0 |
-		((input.buttons.A ? 0 : 0x80) >> 7) |
-		((input.buttons.B ? 0 : 0x80) >> 6) |
-		((input.buttons.T ? 0 : 0x80) >> 5) |
-		((input.buttons.S ? 0 : 0x80) >> 4) |
-		((input.buttons.R ? 0 : 0x80) >> 3) |
-		((input.buttons.L ? 0 : 0x80) >> 2) |
-		((input.buttons.U ? 0 : 0x80) >> 1) |
-		((input.buttons.D ? 0 : 0x80)     ) |
-		((input.buttons.E ? 0 : 0x80) << 1) |
-		((input.buttons.W ? 0 : 0x80) << 2)) ;
+	u16	gbaKeys = ((input.buttons.A) ? 0 : (1 << 0)) |
+	              ((input.buttons.B) ? 0 : (1 << 1)) |
+	              ((input.buttons.T) ? 0 : (1 << 2)) |
+	              ((input.buttons.S) ? 0 : (1 << 3)) |
+	              ((input.buttons.R) ? 0 : (1 << 4)) |
+	              ((input.buttons.L) ? 0 : (1 << 5)) |
+	              ((input.buttons.U) ? 0 : (1 << 6)) |
+	              ((input.buttons.D) ? 0 : (1 << 7)) |
+	              ((input.buttons.E) ? 0 : (1 << 8)) |
+	              ((input.buttons.W) ? 0 : (1 << 9));
+	
+	gbaKeys = LOCAL_TO_LE_16(gbaKeys);
+	HostWriteWord(MMU.ARM9_REG, 0x130, gbaKeys);
+	HostWriteWord(MMU.ARM7_REG, 0x130, gbaKeys);
 
-	pad = LOCAL_TO_LE_16(pad);
-	((u16 *)MMU.ARM9_REG)[0x130>>1] = (u16)pad;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] = (u16)pad;
-
-	u16 k_cnt = ((u16 *)MMU.ARM9_REG)[0x132>>1];
-	if ( k_cnt & (1<<14))
+	const u16 k_cnt_9 = HostReadWord(MMU.ARM9_REG, 0x132);
+	if (k_cnt_9 & (1 << 14))
 	{
-		//INFO("ARM9: KeyPad IRQ (pad 0x%04X, cnt 0x%04X (condition %s))\n", pad, k_cnt, k_cnt&(1<<15)?"AND":"OR");
-		u16 k_cnt_selected = (k_cnt & 0x3F);
-		if (k_cnt&(1<<15))	// AND
+		//INFO("ARM9: KeyPad IRQ (pad 0x%04X, cnt 0x%04X (condition %s))\n", pad, k_cnt_9, k_cnt_9 & (1<<15) ? "AND" : "OR");
+		const u16 k_cnt_selected = (k_cnt_9 & 0x3F);
+		if (k_cnt_9 & (1 << 15))	// AND
 		{
-			if ((~pad & k_cnt_selected) == k_cnt_selected) NDS_makeIrq(ARMCPU_ARM9,IRQ_BIT_KEYPAD);
+			if ((~gbaKeys & k_cnt_selected) == k_cnt_selected)
+				NDS_makeIrq(ARMCPU_ARM9,IRQ_BIT_KEYPAD);
 		}
 		else				// OR
 		{
-			if (~pad & k_cnt_selected) NDS_makeIrq(ARMCPU_ARM9,IRQ_BIT_KEYPAD);
+			if (~gbaKeys & k_cnt_selected)
+				NDS_makeIrq(ARMCPU_ARM9,IRQ_BIT_KEYPAD);
 		}
 	}
 
-	k_cnt = ((u16 *)MMU.ARM7_REG)[0x132>>1];
-	if ( k_cnt & (1<<14))
+	const u16 k_cnt_7 = HostReadWord(MMU.ARM7_REG, 0x132);
+	if ( k_cnt_7 & (1 << 14))
 	{
-		//INFO("ARM7: KeyPad IRQ (pad 0x%04X, cnt 0x%04X (condition %s))\n", pad, k_cnt, k_cnt&(1<<15)?"AND":"OR");
-		u16 k_cnt_selected = (k_cnt & 0x3F);
-		if (k_cnt&(1<<15))	// AND
+		//INFO("ARM7: KeyPad IRQ (pad 0x%04X, cnt 0x%04X (condition %s))\n", pad, k_cnt_7, k_cnt_7 & (1<<15) ? "AND" : "OR");
+		const u16 k_cnt_selected = (k_cnt_7 & 0x3F);
+		if (k_cnt_7 & (1 << 15))	// AND
 		{
-			if ((~pad & k_cnt_selected) == k_cnt_selected) NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_KEYPAD);
+			if ((~gbaKeys & k_cnt_selected) == k_cnt_selected)
+				NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_KEYPAD);
 		}
 		else				// OR
 		{
-			if (~pad & k_cnt_selected) NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_KEYPAD);
+			if (~gbaKeys & k_cnt_selected)
+				NDS_makeIrq(ARMCPU_ARM7,IRQ_BIT_KEYPAD);
 		}
 	}
-
-
-	if(input.touch.isTouch)
+	
+	if (input.touch.isTouch)
 	{
 		u16 adc_x = NDS_getADCTouchPosX(input.touch.touchX);
 		u16 adc_y = NDS_getADCTouchPosY(input.touch.touchY);
@@ -2964,35 +2966,19 @@ static void NDS_applyFinalInput()
 		if (countLid > 0)
 			countLid--;
 	}
-
-	u16 padExt = (1<<2) | (1<<4) | (1<<5);
-	if (!input.buttons.X) padExt |= 1<<0;
-	if (!input.buttons.Y) padExt |= 1<<1;
-	if (!input.buttons.G) padExt |= 1<<3; //debug button
-	if (!nds.isTouch)     padExt |= 1<<6; //~touch
-	if (LidClosed)        padExt |= 1<<7;
 	
-	((u16 *)MMU.ARM7_REG)[0x136>>1] = LOCAL_TO_LE_16(padExt);
-
-	InputDisplayString=MakeInputDisplayString(padExt, pad);
-
-	//put into the format we want for the movie system
-	//fRLDUTSBAYXWEg
-	//we don't really need nds.pad anymore, but removing it would be a pain
-
- 	nds.pad =
-		((input.buttons.R ? 1 : 0) << 12)|
-		((input.buttons.L ? 1 : 0) << 11)|
-		((input.buttons.D ? 1 : 0) << 10)|
-		((input.buttons.U ? 1 : 0) << 9)|
-		((input.buttons.T ? 1 : 0) << 8)|
-		((input.buttons.S ? 1 : 0) << 7)|
-		((input.buttons.B ? 1 : 0) << 6)|
-		((input.buttons.A ? 1 : 0) << 5)|
-		((input.buttons.Y ? 1 : 0) << 4)|
-		((input.buttons.X ? 1 : 0) << 3)|
-		((input.buttons.W ? 1 : 0) << 2)|
-		((input.buttons.E ? 1 : 0) << 1);
+	u16	ndsKeysExt = ((input.buttons.X) ? 0 : (1 << 0)) |
+	                 ((input.buttons.Y) ? 0 : (1 << 1)) |
+	                                          (1 << 2)  |
+	                 ((input.buttons.G) ? 0 : (1 << 3)) | // debug button
+	                                          (1 << 4)  |
+	                                          (1 << 5)  |
+	                 ((nds.isTouch)     ? 0 : (1 << 6)) |
+	                 ((!LidClosed)      ? 0 : (1 << 7));
+	
+	T1WriteWord(MMU.ARM7_REG, 0x136, ndsKeysExt);
+	
+	InputDisplayString = MakeInputDisplayString(ndsKeysExt, gbaKeys);
 }
 
 
