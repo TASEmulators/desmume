@@ -367,7 +367,7 @@
 	{
 		[self switchContentView:theView];
 		
-		if ([toolbarItemIdentifier isEqualToString:[toolbarItemDisplay itemIdentifier]])
+		if ([toolbarItemIdentifier isEqualToString:[toolbarItemInput itemIdentifier]])
 		{
 			[window makeFirstResponder:theView];
 		}
