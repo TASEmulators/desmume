@@ -1051,9 +1051,10 @@
 	const NSUInteger controlID = cmdAttr.intValue[0];
 	const BOOL isTurboEnabled = (BOOL)cmdAttr.intValue[1];
 	const uint32_t turboPattern = (uint32_t)cmdAttr.intValue[2];
+	const uint32_t turboPatternLength = (uint32_t)cmdAttr.intValue[3];
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	[[cdsCore cdsController] setControllerState:theState controlID:controlID turbo:isTurboEnabled turboPattern:turboPattern];
+	[[cdsCore cdsController] setControllerState:theState controlID:controlID turbo:isTurboEnabled turboPattern:turboPattern turboPatternLength:turboPatternLength];
 }
 
 - (void) cmdUpdateDSTouch:(NSValue *)cmdAttrValue

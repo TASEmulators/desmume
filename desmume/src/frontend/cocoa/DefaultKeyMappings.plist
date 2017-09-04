@@ -81,6 +81,10 @@
 						<string>Up Arrow</string>
 						<key>intValue1</key>
 						<false/>
+						<key>intValue2</key>
+						<integer>858993459</integer>
+						<key>intValue3</key>
+						<integer>4</integer>
 					</dict>
 				</array>
 				<key>Down</key>
@@ -98,6 +102,10 @@
 						<string>Down Arrow</string>
 						<key>intValue1</key>
 						<false/>
+						<key>intValue2</key>
+						<integer>858993459</integer>
+						<key>intValue3</key>
+						<integer>4</integer>
 					</dict>
 				</array>
 				<key>Left</key>
@@ -115,6 +123,10 @@
 						<string>Left Arrow</string>
 						<key>intValue1</key>
 						<false/>
+						<key>intValue2</key>
+						<integer>858993459</integer>
+						<key>intValue3</key>
+						<integer>4</integer>
 					</dict>
 				</array>
 				<key>Right</key>
@@ -132,6 +144,10 @@
 						<string>Right Arrow</string>
 						<key>intValue1</key>
 						<false/>
+						<key>intValue2</key>
+						<integer>858993459</integer>
+						<key>intValue3</key>
+						<integer>4</integer>
 					</dict>
 				</array>
 				<key>A</key>
@@ -149,6 +165,10 @@
 						<string>X</string>
 						<key>intValue1</key>
 						<false/>
+						<key>intValue2</key>
+						<integer>858993459</integer>
+						<key>intValue3</key>
+						<integer>4</integer>
 					</dict>
 				</array>
 				<key>B</key>
@@ -166,6 +186,10 @@
 						<string>Z</string>
 						<key>intValue1</key>
 						<false/>
+						<key>intValue2</key>
+						<integer>858993459</integer>
+						<key>intValue3</key>
+						<integer>4</integer>
 					</dict>
 				</array>
 				<key>X</key>
@@ -183,6 +207,10 @@
 						<string>S</string>
 						<key>intValue1</key>
 						<false/>
+						<key>intValue2</key>
+						<integer>858993459</integer>
+						<key>intValue3</key>
+						<integer>4</integer>
 					</dict>
 				</array>
 				<key>Y</key>
@@ -200,6 +228,10 @@
 						<string>A</string>
 						<key>intValue1</key>
 						<false/>
+						<key>intValue2</key>
+						<integer>858993459</integer>
+						<key>intValue3</key>
+						<integer>4</integer>
 					</dict>
 				</array>
 				<key>L</key>
@@ -217,6 +249,10 @@
 						<string>Q</string>
 						<key>intValue1</key>
 						<false/>
+						<key>intValue2</key>
+						<integer>858993459</integer>
+						<key>intValue3</key>
+						<integer>4</integer>
 					</dict>
 				</array>
 				<key>R</key>
@@ -234,6 +270,10 @@
 						<string>W</string>
 						<key>intValue1</key>
 						<false/>
+						<key>intValue2</key>
+						<integer>858993459</integer>
+						<key>intValue3</key>
+						<integer>4</integer>
 					</dict>
 				</array>
 				<key>Start</key>
@@ -251,6 +291,10 @@
 						<string>Return</string>
 						<key>intValue1</key>
 						<false/>
+						<key>intValue2</key>
+						<integer>858993459</integer>
+						<key>intValue3</key>
+						<integer>4</integer>
 					</dict>
 				</array>
 				<key>Select</key>
@@ -268,6 +312,10 @@
 						<string>Tab</string>
 						<key>intValue1</key>
 						<false/>
+						<key>intValue2</key>
+						<integer>858993459</integer>
+						<key>intValue3</key>
+						<integer>4</integer>
 					</dict>
 				</array>
 				<key>Touch</key>

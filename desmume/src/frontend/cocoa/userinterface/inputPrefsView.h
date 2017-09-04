@@ -48,6 +48,8 @@
 	NSWindow *inputSettingsGPUState;
 	NSWindow *inputSettingsPaddleController;
 	
+	NSSegmentedControl *turboPatternControl;
+	
 	InputManager *inputManager;
 	NSString *configInputTargetID;
 	NSMutableDictionary *configInputList;
@@ -80,6 +82,8 @@
 @property (readonly) IBOutlet NSWindow *inputSettingsGPUState;
 @property (readonly) IBOutlet NSWindow *inputSettingsPaddleController;
 
+@property (readonly) IBOutlet NSSegmentedControl *turboPatternControl;
+
 @property (readonly) IBOutlet InputManager *inputManager;
 @property (retain) NSString *configInputTargetID;
 @property (retain) NSMutableDictionary *inputSettingsInEdit;
@@ -103,6 +107,10 @@
 - (IBAction) changeSpeed:(id)sender;
 - (IBAction) showSettingsSheet:(id)sender;
 - (IBAction) closeSettingsSheet:(id)sender;
+
+- (IBAction) updateCustomTurboPatternControls:(id)sender;
+- (IBAction) setTurboPatternBits:(id)sender;
+- (IBAction) setTurboPatternUsingTag:(id)sender;
 
 - (IBAction) profileNew:(id)sender;
 - (IBAction) profileView:(id)sender;

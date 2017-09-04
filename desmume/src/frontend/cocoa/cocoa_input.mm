@@ -72,6 +72,7 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 		clientInput[i].turbo = false;
 		clientInput[i].turboPattern = 0;
 		clientInput[i].turboPatternStep = 0;
+		clientInput[i].turboPatternLength = 0;
 		clientInput[i].autohold = false;
 	}
 	
@@ -242,10 +243,10 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID
 {
-	[self setControllerState:theState controlID:controlID turbo:NO turboPattern:0];
+	[self setControllerState:theState controlID:controlID turbo:NO turboPattern:0 turboPatternLength:0];
 }
 
-- (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID turbo:(const BOOL)isTurboEnabled turboPattern:(uint32_t)turboPattern
+- (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID turbo:(const BOOL)isTurboEnabled turboPattern:(uint32_t)turboPattern turboPatternLength:(uint32_t)turboPatternLength
 {
 	if (controlID >= NDSInputID_InputCount)
 	{
@@ -259,25 +260,27 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 		if (theState)
 		{
 			clientInput[controlID].turbo = (isTurboEnabled) ? true : false;
-			clientInput[controlID].turboPattern = (clientInput[controlID].turbo) ? turboPattern : 0;
 			clientInput[controlID].autohold = true;
-			
-			if (!clientInput[controlID].turbo)
-			{
-				clientInput[controlID].turboPatternStep = 0;
-			}
 		}
 	}
 	else
 	{
 		clientInput[controlID].isPressed = (theState || clientInput[controlID].autohold);
 		clientInput[controlID].turbo = (isTurboEnabled && clientInput[controlID].isPressed);
-		clientInput[controlID].turboPattern = (clientInput[controlID].turbo) ? turboPattern : 0;
-		
-		if (!clientInput[controlID].turbo)
-		{
-			clientInput[controlID].turboPatternStep = 0;
-		}
+	}
+	
+	clientInput[controlID].turboPattern = (clientInput[controlID].turbo) ? turboPattern : 0;
+	
+	if (turboPatternLength > 32)
+	{
+		turboPatternLength = 32;
+	}
+	
+	clientInput[controlID].turboPatternLength = (clientInput[controlID].turbo) ? turboPatternLength : 0;
+	
+	if (!clientInput[controlID].turbo)
+	{
+		clientInput[controlID].turboPatternStep = 0;
 	}
 	
 	OSSpinLockUnlock(&spinlockControllerState);
@@ -326,11 +329,11 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 			
 			if (clientInput[i].turbo)
 			{
-				const bool turboState = (clientInput[i].turboPattern >> clientInput[i].turboPatternStep) & 0x00000001;
-				flushedStates[i] = (flushedStates[i] && turboState);
+				const bool pressedState = (clientInput[i].turboPattern >> clientInput[i].turboPatternStep) & 0x00000001;
+				flushedStates[i] = (flushedStates[i] && pressedState);
 				
 				clientInput[i].turboPatternStep++;
-				if (clientInput[i].turboPatternStep >= 32)
+				if (clientInput[i].turboPatternStep >= clientInput[i].turboPatternLength)
 				{
 					clientInput[i].turboPatternStep = 0;
 				}

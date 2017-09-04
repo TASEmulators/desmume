@@ -44,6 +44,7 @@
 @synthesize inputSettingsSetSpeedLimit;
 @synthesize inputSettingsGPUState;
 @synthesize inputSettingsPaddleController;
+@synthesize turboPatternControl;
 @synthesize inputProfileSheet;
 @synthesize inputProfileRenameSheet;
 @synthesize inputManager;
@@ -818,6 +819,11 @@
 	
 	[inputSettingsController setContent:[NSMutableDictionary dictionaryWithDictionary:[self inputSettingsInEdit]]];
 	
+	if (theSheet == inputSettingsNDSInput)
+	{
+		[self updateCustomTurboPatternControls:turboPatternControl];
+	}
+	
 	[NSApp beginSheet:theSheet
 	   modalForWindow:prefWindow
 		modalDelegate:self
@@ -830,6 +836,108 @@
 	NSWindow *sheet = [(NSControl *)sender window];
 	[sheet makeFirstResponder:nil]; // Force end of editing of any text fields.
     [NSApp endSheet:sheet returnCode:[CocoaDSUtil getIBActionSenderTag:sender]];
+}
+
+- (IBAction) updateCustomTurboPatternControls:(id)sender
+{
+	NSMutableDictionary *editedDeviceInfo = (NSMutableDictionary *)[inputSettingsController content];
+	NSWindow *theSheet = [(NSControl *)sender window];
+	[theSheet makeFirstResponder:nil]; // Force end of editing of any text fields.
+	
+	NSNumber *turboPatternNumber = (NSNumber *)[editedDeviceInfo valueForKey:@"intValue2"];
+	uint32_t turboPattern = (uint32_t)[turboPatternNumber unsignedIntegerValue];
+	
+	NSNumber *turboPatternLengthNumber = (NSNumber *)[editedDeviceInfo valueForKey:@"intValue3"];
+	NSInteger turboPatternLength = [turboPatternLengthNumber integerValue];
+	[turboPatternControl setSegmentCount:turboPatternLength];
+	
+	for (NSInteger i = 0; i < turboPatternLength; i++)
+	{
+		[turboPatternControl setWidth:19.0f forSegment:i];
+		[turboPatternControl setLabel:[NSString stringWithFormat:@"%i", (int)(i + 1)] forSegment:i];
+		
+		BOOL isPressedBit = ( ((turboPattern >> i) & 0x01) != 0 );
+		[turboPatternControl setSelected:isPressedBit forSegment:i];
+	}
+	
+	float controlWidth = (turboPatternLength * (19.0f + 1.3f));
+	NSRect oldSheetFrame = [theSheet frame];
+	NSRect newSheetFrame = oldSheetFrame;
+	
+	if (controlWidth < 377.0f)
+	{
+		newSheetFrame.size.width = 407.0f;
+	}
+	else
+	{
+		newSheetFrame.size.width = controlWidth + 20.0f;
+	}
+	
+	newSheetFrame.origin.x += (oldSheetFrame.size.width - newSheetFrame.size.width) / 2.0f;
+	[theSheet setFrame:newSheetFrame display:NO];
+	
+	NSPoint turboPatternControlOrigin = [turboPatternControl frame].origin;
+	turboPatternControlOrigin.x = (newSheetFrame.size.width / 2.0f) - (controlWidth / 2.0f);
+	[turboPatternControl setFrameOrigin:turboPatternControlOrigin];
+}
+
+- (IBAction) setTurboPatternBits:(id)sender
+{
+	NSNumber *turboPatternLengthNumber = (NSNumber *)[[self inputSettingsInEdit] valueForKey:@"intValue3"];
+	NSInteger turboPatternLength = [turboPatternLengthNumber integerValue];
+	
+	uint32_t turboPattern = 0;
+	
+	for (NSInteger i = 0; i < turboPatternLength; i++)
+	{
+		BOOL isPressedBit = [turboPatternControl isSelectedForSegment:i];
+		if (isPressedBit)
+		{
+			turboPattern |= (1 << i);
+		}
+	}
+	
+	NSNumber *turboPatternNumber = [NSNumber numberWithUnsignedInt:turboPattern];
+	NSMutableDictionary *editedDeviceInfo = (NSMutableDictionary *)[inputSettingsController content];
+	[editedDeviceInfo setValue:turboPatternNumber forKey:@"intValue2"];
+}
+
+- (IBAction) setTurboPatternUsingTag:(id)sender
+{
+	uint32_t intValue = (uint32_t)[CocoaDSUtil getIBActionSenderTag:sender];
+	
+	if ( (intValue < 1) || (intValue > 16) )
+	{
+		return;
+	}
+	
+	uint32_t turboPattern = 0;
+	uint32_t turboPatternLength = intValue * 2;
+	
+	for (uint32_t i = 0, j = 0; i < 32; i++)
+	{
+		if (j < intValue)
+		{
+			turboPattern |= (1 << i);
+		}
+		
+		j++;
+		
+		if (j >= (intValue * 2))
+		{
+			j = 0;
+		}
+	}
+	
+	NSMutableDictionary *editedDeviceInfo = (NSMutableDictionary *)[inputSettingsController content];
+	
+	NSNumber *turboPatternNumber = [NSNumber numberWithUnsignedInt:turboPattern];
+	[editedDeviceInfo setValue:turboPatternNumber forKey:@"intValue2"];
+	
+	NSNumber *turboPatternLengthNumber = [NSNumber numberWithUnsignedInt:turboPatternLength];
+	[editedDeviceInfo setValue:turboPatternLengthNumber forKey:@"intValue3"];
+	
+	[self updateCustomTurboPatternControls:turboPatternControl];
 }
 
 - (IBAction) profileNew:(id)sender

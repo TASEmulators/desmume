@@ -39,7 +39,7 @@
 #define FRAME_SKIP_BIAS								0.1		// May be any real number. This value acts as a vector addition to the frame skip.
 #define MAX_FRAME_SKIP								(DS_FRAMES_PER_SECOND / 2.98)
 
-#define INPUT_STATES_CLEAR_VALUE					0xFFFFFFFF00FF03FFUL
+#define INPUT_STATES_CLEAR_VALUE					0xFFFFFFFF00FF03FFULL
 
 enum ExecutionBehavior
 {

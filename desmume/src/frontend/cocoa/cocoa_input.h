@@ -35,6 +35,7 @@ typedef struct
 	bool autohold;
 	uint32_t turboPattern;
 	uint8_t turboPatternStep;
+	uint8_t turboPatternLength;
 } ClientInput;
 
 @protocol CocoaDSControllerDelegate <NSObject>
@@ -107,7 +108,7 @@ typedef struct
 @property (retain) NSString *hardwareMicSampleRateString;
 
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID;
-- (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID turbo:(const BOOL)isTurboEnabled turboPattern:(uint32_t)turboPattern;
+- (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID turbo:(const BOOL)isTurboEnabled turboPattern:(uint32_t)turboPattern turboPatternLength:(uint32_t)turboPatternLength;
 - (void) setTouchState:(BOOL)theState location:(const NSPoint)theLocation;
 - (void) setSineWaveGeneratorFrequency:(const double)freq;
 - (void) clearAutohold;
