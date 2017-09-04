@@ -1350,7 +1350,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		[masterWindow setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
 	}
-	else
 #endif
 	
 	// Set up some custom UI elements.
