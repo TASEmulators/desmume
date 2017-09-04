@@ -864,9 +864,9 @@
 	NSRect oldSheetFrame = [theSheet frame];
 	NSRect newSheetFrame = oldSheetFrame;
 	
-	if (controlWidth < 377.0f)
+	if (controlWidth < 410.0f)
 	{
-		newSheetFrame.size.width = 407.0f;
+		newSheetFrame.size.width = 440.0f;
 	}
 	else
 	{
@@ -883,7 +883,8 @@
 
 - (IBAction) setTurboPatternBits:(id)sender
 {
-	NSNumber *turboPatternLengthNumber = (NSNumber *)[[self inputSettingsInEdit] valueForKey:@"intValue3"];
+	NSMutableDictionary *editedDeviceInfo = (NSMutableDictionary *)[inputSettingsController content];
+	NSNumber *turboPatternLengthNumber = (NSNumber *)[editedDeviceInfo valueForKey:@"intValue3"];
 	NSInteger turboPatternLength = [turboPatternLengthNumber integerValue];
 	
 	uint32_t turboPattern = 0;
@@ -898,7 +899,6 @@
 	}
 	
 	NSNumber *turboPatternNumber = [NSNumber numberWithUnsignedInt:turboPattern];
-	NSMutableDictionary *editedDeviceInfo = (NSMutableDictionary *)[inputSettingsController content];
 	[editedDeviceInfo setValue:turboPatternNumber forKey:@"intValue2"];
 }
 

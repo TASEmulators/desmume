@@ -9696,14 +9696,14 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
             <object class="NSButton" id="523260352">
               <reference key="NSNextResponder" ref="663395288"/>
               <int key="NSvFlags">268</int>
-              <string key="NSFrame">{{13, 108}, {63, 18}}</string>
+              <string key="NSFrame">{{13, 108}, {106, 18}}</string>
               <reference key="NSSuperview" ref="663395288"/>
               <string key="NSReuseIdentifierKey">_NS:682</string>
               <bool key="NSEnabled">YES</bool>
               <object class="NSButtonCell" key="NSCell" id="149222356">
                 <int key="NSCellFlags">-2080374784</int>
                 <int key="NSCellFlags2">0</int>
-                <string key="NSContents">Turbo</string>
+                <string key="NSContents">Enable Turbo</string>
                 <reference key="NSSupport" ref="462791774"/>
                 <string key="NSCellIdentifier">_NS:682</string>
                 <reference key="NSControlView" ref="523260352"/>
@@ -9962,7 +9962,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
             <object class="NSPopUpButton" id="568942126">
               <reference key="NSNextResponder" ref="663395288"/>
               <int key="NSvFlags">268</int>
-              <string key="NSFrame">{{95, 104}, {300, 26}}</string>
+              <string key="NSFrame">{{128, 104}, {300, 26}}</string>
               <reference key="NSSuperview" ref="663395288"/>
               <string key="NSReuseIdentifierKey">_NS:791</string>
               <bool key="NSEnabled">YES</bool>
