@@ -23,6 +23,7 @@ using namespace metal;
 struct HUDVtx
 {
 	float4 position [[position]];
+	float4 color;
 	float2 texCoord;
 	bool isBox;
 	bool lowerHUDMipMapLevel;
@@ -143,15 +144,17 @@ float dist_EPXPlus(const float3 pixA, const float3 pixB)
 #pragma mark HUD Shader Functions
 
 vertex HUDVtx hud_vertex(const device float2 *inPosition [[buffer(0)]],
-						 const device float2 *inTexCoord [[buffer(1)]],
-						 const constant DisplayViewShaderProperties &viewProps [[buffer(2)]],
+						 const device uint32_t *inColor [[buffer(1)]],
+						 const device float2 *inTexCoord [[buffer(2)]],
+						 const constant DisplayViewShaderProperties &viewProps [[buffer(3)]],
 						 const uint vid [[vertex_id]])
 {
-	const float2x2 projection	= float2x2(	float2(2.0/viewProps.width,                   0.0),
-	                                        float2(                0.0, 2.0/viewProps.height));
+	const float2x2 projection	= float2x2(	float2(2.0f/viewProps.width,                  0.0f),
+	                                        float2(                0.0f, 2.0f/viewProps.height));
 	
 	HUDVtx outVtx;
-	outVtx.position = float4(projection * inPosition[vid], 0.0, 1.0);
+	outVtx.position = float4(projection * inPosition[vid], 0.0f, 1.0f);
+	outVtx.color = float4( (float)((inColor[vid] >> 0) & 0xFF) / 255.0f, (float)((inColor[vid] >> 8) & 0xFF) / 255.0f, (float)((inColor[vid] >> 16) & 0xFF) / 255.0f, (float)((inColor[vid] >> 24) & 0xFF) / 255.0f );
 	outVtx.texCoord = inTexCoord[vid];
 	outVtx.isBox = (vid < 4);
 	outVtx.lowerHUDMipMapLevel = (viewProps.lowerHUDMipMapLevel == 1);
@@ -163,7 +166,7 @@ fragment float4 hud_fragment(const HUDVtx vtx [[stage_in]],
 							 const texture2d<float> tex [[texture(0)]],
 							 const sampler samp [[sampler(0)]])
 {
-	return tex.sample(samp, vtx.texCoord, (vtx.lowerHUDMipMapLevel) ? level(-0.50f) : level(0.00f));
+	return tex.sample(samp, vtx.texCoord, (vtx.lowerHUDMipMapLevel) ? level(-0.50f) : level(0.00f)) * vtx.color;
 }
 
 #pragma mark Output Filters
@@ -173,19 +176,19 @@ vertex DisplayVtx display_output_vertex(const device float2 *inPosition [[buffer
 										const constant DisplayViewShaderProperties &viewProps [[buffer(2)]],
 										const uint vid [[vertex_id]])
 {
-	const float angleRadians    = viewProps.rotation * (M_PI_F/180.0);
+	const float angleRadians    = viewProps.rotation * (M_PI_F/180.0f);
 	
-	const float2x2 projection   = float2x2(	float2(2.0/viewProps.width,                  0.0),
-	                                        float2(                0.0, 2.0/viewProps.height));
+	const float2x2 projection   = float2x2(	float2(2.0f/viewProps.width,                  0.0f),
+	                                        float2(                0.0f, 2.0f/viewProps.height));
 	
 	const float2x2 rotation     = float2x2(	float2( cos(angleRadians), sin(angleRadians)),
 	                                        float2(-sin(angleRadians), cos(angleRadians)));
 	
-	const float2x2 scale        = float2x2(	float2(viewProps.viewScale,                 0.0),
-	                                        float2(                0.0, viewProps.viewScale));
+	const float2x2 scale        = float2x2(	float2(viewProps.viewScale,                0.0f),
+	                                        float2(               0.0f, viewProps.viewScale));
 	
 	DisplayVtx outVtx;
-	outVtx.position = float4(projection * rotation * scale * inPosition[vid], 0.0, 1.0);
+	outVtx.position = float4(projection * rotation * scale * inPosition[vid], 0.0f, 1.0f);
 	outVtx.texCoord = inTexCoord[vid];
 	
 	return outVtx;
@@ -196,19 +199,19 @@ vertex DisplayVtx display_output_bicubic_vertex(const device float2 *inPosition 
 												const constant DisplayViewShaderProperties &viewProps [[buffer(2)]],
 												const uint vid [[vertex_id]])
 {
-	const float angleRadians    = viewProps.rotation * (M_PI_F/180.0);
+	const float angleRadians    = viewProps.rotation * (M_PI_F/180.0f);
 	
-	const float2x2 projection   = float2x2(	float2(2.0/viewProps.width,                  0.0),
-	                                        float2(                0.0, 2.0/viewProps.height));
+	const float2x2 projection   = float2x2(	float2(2.0f/viewProps.width,                  0.0f),
+	                                        float2(                0.0f, 2.0f/viewProps.height));
 	
 	const float2x2 rotation     = float2x2(	float2( cos(angleRadians), sin(angleRadians)),
 	                                        float2(-sin(angleRadians), cos(angleRadians)));
 	
-	const float2x2 scale        = float2x2(	float2(viewProps.viewScale,                 0.0),
-	                                        float2(                0.0, viewProps.viewScale));
+	const float2x2 scale        = float2x2(	float2(viewProps.viewScale,                0.0f),
+	                                        float2(               0.0f, viewProps.viewScale));
 	
 	DisplayVtx outVtx;
-	outVtx.position = float4(projection * rotation * scale * inPosition[vid], 0.0, 1.0);
+	outVtx.position = float4(projection * rotation * scale * inPosition[vid], 0.0f, 1.0f);
 	outVtx.texCoord = floor(inTexCoord[vid] - 0.5f) + 0.5f;
 	
 	return outVtx;
@@ -2665,8 +2668,6 @@ kernel void pixel_scaler_6xBRZ(const uint2 inPosition [[thread_position_in_grid]
 		src[0],
 		src[0]
 	};
-	
-	//float3 dst[36] = {src[0]};
 	
 	// Scale pixel
 	if (IsBlendingNeeded(blendResult))

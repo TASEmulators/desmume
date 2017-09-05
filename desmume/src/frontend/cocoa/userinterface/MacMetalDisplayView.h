@@ -166,6 +166,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLBuffer> _displayVtxPositionBuffer;
 	id<MTLBuffer> _displayTexCoordBuffer;
 	id<MTLBuffer> _hudVtxPositionBuffer;
+	id<MTLBuffer> _hudVtxColorBuffer;
 	id<MTLBuffer> _hudTexCoordBuffer;
 	id<MTLBuffer> bufCPUFilterSrcMain;
 	id<MTLBuffer> bufCPUFilterSrcTouch;

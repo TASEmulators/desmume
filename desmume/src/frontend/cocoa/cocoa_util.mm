@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2016 DeSmuME team
+	Copyright (C) 2012-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -154,6 +154,36 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 	}
 	
 	return theState;
+}
+
++ (NSColor *) NSColorFromRGBA8888:(uint32_t)theColor
+{
+	const CGFloat r = (CGFloat)((theColor >>  0) & 0xFF) / 255.0f;
+	const CGFloat g = (CGFloat)((theColor >>  8) & 0xFF) / 255.0f;
+	const CGFloat b = (CGFloat)((theColor >> 16) & 0xFF) / 255.0f;
+	const CGFloat a = (CGFloat)((theColor >> 24) & 0xFF) / 255.0f;
+	
+	return [NSColor colorWithDeviceRed:r green:g blue:b alpha:a];
+}
+
++ (uint32_t) RGBA8888FromNSColor:(NSColor *)theColor
+{
+	if (![[theColor colorSpaceName] isEqualToString:NSDeviceRGBColorSpace])
+	{
+		theColor = [theColor colorUsingColorSpaceName:NSDeviceRGBColorSpace];
+		if (theColor == nil)
+		{
+			return 0x00000000;
+		}
+	}
+	
+	CGFloat r, g, b, a;
+	[theColor getRed:&r green:&g blue:&b alpha:&a];
+	
+	return (((uint32_t)(r * 255.0f)) <<  0) |
+	       (((uint32_t)(g * 255.0f)) <<  8) |
+	       (((uint32_t)(b * 255.0f)) << 16) |
+	       (((uint32_t)(a * 255.0f)) << 24);
 }
 
 + (NSInteger) appVersionNumeric
@@ -349,6 +379,71 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 {
 	NSNotification *notification = [NSNotification notificationWithName:aName object:anObject userInfo:aUserInfo];
 	[self postNotificationOnMainThread:notification];
+}
+
+@end
+
+@implementation RGBA8888ToNSColorValueTransformer
+
++ (Class)transformedValueClass
+{
+	return [NSColor class];
+}
+
++ (BOOL)allowsReverseTransformation
+{
+	return YES;
+}
+
+- (id)transformedValue:(id)value
+{
+	if (value == nil)
+	{
+		return nil;
+	}
+	
+	uint32_t color32 = 0xFFFFFFFF;
+	
+	if ([value respondsToSelector:@selector(unsignedIntegerValue)])
+	{
+		color32 = (uint32_t)[value unsignedIntegerValue];
+	}
+	else if ([value respondsToSelector:@selector(unsignedIntValue)])
+	{
+		color32 = (uint32_t)[value unsignedIntValue];
+	}
+	else if ([value respondsToSelector:@selector(integerValue)])
+	{
+		color32 = (uint32_t)[value integerValue];
+	}
+	else if ([value respondsToSelector:@selector(intValue)])
+	{
+		color32 = (uint32_t)[value intValue];
+	}
+	else
+	{
+		[NSException raise:NSInternalInconsistencyException format:@"Value (%@) does not respond to -unsignedIntegerValue, -unsignedIntValue, -integerValue or -intValue.", [value class]];
+	}
+	
+	return [CocoaDSUtil NSColorFromRGBA8888:color32];
+}
+
+- (id)reverseTransformedValue:(id)value
+{
+	uint32_t color32 = 0xFFFFFFFF;
+	
+	if (value == nil)
+	{
+		return nil;
+	}
+	else if (![value isKindOfClass:[NSColor class]])
+	{
+		NSLog(@"-reverseTransformedValue is %@", [value class]);
+		return [NSNumber numberWithUnsignedInteger:color32];
+	}
+	
+	color32 = [CocoaDSUtil RGBA8888FromNSColor:(NSColor *)value];
+	return [NSNumber numberWithUnsignedInteger:color32];
 }
 
 @end

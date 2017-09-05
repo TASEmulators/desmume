@@ -301,7 +301,7 @@ enum OGLVertexAttributeID
 {
 	OGLVertexAttributeID_Position	= 0,
 	OGLVertexAttributeID_TexCoord0	= 8,
-	OGLVertexAttributeID_Color		= 3,
+	OGLVertexAttributeID_Color		= 3
 };
 
 enum OGLTextureUnitID

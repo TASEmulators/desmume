@@ -93,6 +93,13 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	_showCPULoadAverage = false;
 	_showRTC = false;
 	
+	_hudColorVideoFPS = 0xFFFFFFFF;
+	_hudColorRender3DFPS = 0xFFFFFFFF;
+	_hudColorFrameIndex = 0xFFFFFFFF;
+	_hudColorLagFrameCount = 0xFFFFFFFF;
+	_hudColorCPULoadAverage = 0xFFFFFFFF;
+	_hudColorRTC = 0xFFFFFFFF;
+	
 	_clientFrameInfo.videoFPS = 0;
 	_ndsFrameInfo.clear();
 	
@@ -557,6 +564,102 @@ bool ClientDisplayView::GetHUDShowRTC() const
 void ClientDisplayView::SetHUDShowRTC(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showRTC, visibleState);
+	this->UpdateView();
+}
+
+uint32_t ClientDisplayView::GetHUDColorVideoFPS() const
+{
+	return this->_hudColorVideoFPS;
+}
+
+void ClientDisplayView::SetHUDColorVideoFPS(uint32_t color32)
+{
+	this->_hudColorVideoFPS = color32;
+	
+	pthread_mutex_lock(&this->_mutexHUDString);
+	this->_hudNeedsUpdate = true;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
+	this->UpdateView();
+}
+
+uint32_t ClientDisplayView::GetHUDColorRender3DFPS() const
+{
+	return this->_hudColorRender3DFPS;
+}
+
+void ClientDisplayView::SetHUDColorRender3DFPS(uint32_t color32)
+{
+	this->_hudColorRender3DFPS = color32;
+	
+	pthread_mutex_lock(&this->_mutexHUDString);
+	this->_hudNeedsUpdate = true;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
+	this->UpdateView();
+}
+
+uint32_t ClientDisplayView::GetHUDColorFrameIndex() const
+{
+	return this->_hudColorFrameIndex;
+}
+
+void ClientDisplayView::SetHUDColorFrameIndex(uint32_t color32)
+{
+	this->_hudColorFrameIndex = color32;
+	
+	pthread_mutex_lock(&this->_mutexHUDString);
+	this->_hudNeedsUpdate = true;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
+	this->UpdateView();
+}
+
+uint32_t ClientDisplayView::GetHUDColorLagFrameCount() const
+{
+	return this->_hudColorLagFrameCount;
+}
+
+void ClientDisplayView::SetHUDColorLagFrameCount(uint32_t color32)
+{
+	this->_hudColorLagFrameCount = color32;
+	
+	pthread_mutex_lock(&this->_mutexHUDString);
+	this->_hudNeedsUpdate = true;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
+	this->UpdateView();
+}
+
+uint32_t ClientDisplayView::GetHUDColorCPULoadAverage() const
+{
+	return this->_hudColorCPULoadAverage;
+}
+
+void ClientDisplayView::SetHUDColorCPULoadAverage(uint32_t color32)
+{
+	this->_hudColorCPULoadAverage = color32;
+	
+	pthread_mutex_lock(&this->_mutexHUDString);
+	this->_hudNeedsUpdate = true;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
+	this->UpdateView();
+}
+
+uint32_t ClientDisplayView::GetHUDColorRTC() const
+{
+	return this->_hudColorRTC;
+}
+
+void ClientDisplayView::SetHUDColorRTC(uint32_t color32)
+{
+	this->_hudColorRTC = color32;
+	
+	pthread_mutex_lock(&this->_mutexHUDString);
+	this->_hudNeedsUpdate = true;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
 	this->UpdateView();
 }
 
@@ -1186,7 +1289,7 @@ void ClientDisplay3DView::SetSourceDeposterize(bool useDeposterize)
 	this->_useDeposterize = (this->_canFilterOnGPU) ? useDeposterize : false;
 }
 
-void ClientDisplay3DView::SetHUDVertices(float viewportWidth, float viewportHeight, float *vtxBufferPtr)
+void ClientDisplay3DView::SetHUDPositionVertices(float viewportWidth, float viewportHeight, float *vtxPositionBufferPtr)
 {
 	pthread_mutex_lock(&this->_mutexHUDString);
 	std::string hudString = this->_hudString;
@@ -1203,10 +1306,10 @@ void ClientDisplay3DView::SetHUDVertices(float viewportWidth, float viewportHeig
 	
 	// First, calculate the vertices of the text box.
 	// The text box should always be the first character in the string.
-	vtxBufferPtr[0] = 0.0f;			vtxBufferPtr[1] = 0.0f;
-	vtxBufferPtr[2] = charLocX;		vtxBufferPtr[3] = 0.0f;
-	vtxBufferPtr[4] = charLocX;		vtxBufferPtr[5] = -textBoxTextOffset;
-	vtxBufferPtr[6] = 0.0f;			vtxBufferPtr[7] = -textBoxTextOffset;
+	vtxPositionBufferPtr[0] = 0.0f;			vtxPositionBufferPtr[1] = 0.0f;
+	vtxPositionBufferPtr[2] = charLocX;		vtxPositionBufferPtr[3] = 0.0f;
+	vtxPositionBufferPtr[4] = charLocX;		vtxPositionBufferPtr[5] = -textBoxTextOffset;
+	vtxPositionBufferPtr[6] = 0.0f;			vtxPositionBufferPtr[7] = -textBoxTextOffset;
 	
 	// Calculate the vertices of the remaining characters in the string.
 	for (size_t i = 1, j = 8; i < length; i++, j+=8)
@@ -1220,8 +1323,8 @@ void ClientDisplay3DView::SetHUDVertices(float viewportWidth, float viewportHeig
 				textBoxWidth = charLocX;
 			}
 			
-			vtxBufferPtr[5] -= lineHeight;
-			vtxBufferPtr[7] -= lineHeight;
+			vtxPositionBufferPtr[5] -= lineHeight;
+			vtxPositionBufferPtr[7] -= lineHeight;
 			
 			charLocX = textBoxTextOffset;
 			charLocY -= lineHeight;
@@ -1230,10 +1333,10 @@ void ClientDisplay3DView::SetHUDVertices(float viewportWidth, float viewportHeig
 		
 		const float charWidth = this->_glyphInfo[c].width * charSize / (float)this->_glyphTileSize;
 		
-		vtxBufferPtr[j+0] = charLocX;					vtxBufferPtr[j+1] = charLocY + charSize;	// Top Left
-		vtxBufferPtr[j+2] = charLocX + charWidth;		vtxBufferPtr[j+3] = charLocY + charSize;	// Top Right
-		vtxBufferPtr[j+4] = charLocX + charWidth;		vtxBufferPtr[j+5] = charLocY;				// Bottom Right
-		vtxBufferPtr[j+6] = charLocX;					vtxBufferPtr[j+7] = charLocY;				// Bottom Left
+		vtxPositionBufferPtr[j+0] = charLocX;					vtxPositionBufferPtr[j+1] = charLocY + charSize;	// Top Left
+		vtxPositionBufferPtr[j+2] = charLocX + charWidth;		vtxPositionBufferPtr[j+3] = charLocY + charSize;	// Top Right
+		vtxPositionBufferPtr[j+4] = charLocX + charWidth;		vtxPositionBufferPtr[j+5] = charLocY;				// Bottom Right
+		vtxPositionBufferPtr[j+6] = charLocX;					vtxPositionBufferPtr[j+7] = charLocY;				// Bottom Left
 		charLocX += (charWidth + (charSize * 0.03f) + 0.10f);
 	}
 	
@@ -1258,19 +1361,122 @@ void ClientDisplay3DView::SetHUDVertices(float viewportWidth, float viewportHeig
 	boxOffset *= this->_scaleFactor;
 	
 	// Set the width of the text box
-	vtxBufferPtr[2] += textBoxWidth;
-	vtxBufferPtr[4] += textBoxWidth;
+	vtxPositionBufferPtr[2] += textBoxWidth;
+	vtxPositionBufferPtr[4] += textBoxWidth;
 	
 	// Scale and translate the box
 	for (size_t i = 0; i < (length * 8); i+=2)
 	{
 		// Scale
-		vtxBufferPtr[i+0] *= textBoxScale;
-		vtxBufferPtr[i+1] *= textBoxScale;
+		vtxPositionBufferPtr[i+0] *= textBoxScale;
+		vtxPositionBufferPtr[i+1] *= textBoxScale;
 		
 		// Translate
-		vtxBufferPtr[i+0] += boxOffset - (viewportWidth / 2.0f);
-		vtxBufferPtr[i+1] += (viewportHeight / 2.0f) - boxOffset;
+		vtxPositionBufferPtr[i+0] += boxOffset - (viewportWidth / 2.0f);
+		vtxPositionBufferPtr[i+1] += (viewportHeight / 2.0f) - boxOffset;
+	}
+}
+
+void ClientDisplay3DView::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
+{
+	pthread_mutex_lock(&this->_mutexHUDString);
+	std::string hudString = this->_hudString;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
+	const char *cString = hudString.c_str();
+	const size_t length = hudString.length();
+	uint32_t currentColor = 0x40000000;
+	
+	// First, calculate the color of the text box.
+	// The text box should always be the first character in the string.
+	vtxColorBufferPtr[0] = currentColor;
+	vtxColorBufferPtr[1] = currentColor;
+	vtxColorBufferPtr[2] = currentColor;
+	vtxColorBufferPtr[3] = currentColor;
+	
+	// Calculate the colors of the remaining characters in the string.
+	bool alreadyColoredVideoFPS = false;
+	bool alreadyColoredRender3DFPS = false;
+	bool alreadyColoredFrameIndex = false;
+	bool alreadyColoredLagFrameCount = false;
+	bool alreadyColoredCPULoadAverage = false;
+	bool alreadyColoredRTC = false;
+	
+	if (this->_showVideoFPS)
+	{
+		currentColor = this->_hudColorVideoFPS;
+		alreadyColoredVideoFPS = true;
+	}
+	else if (this->_showRender3DFPS)
+	{
+		currentColor = this->_hudColorRender3DFPS;
+		alreadyColoredRender3DFPS = true;
+	}
+	else if (this->_showFrameIndex)
+	{
+		currentColor = this->_hudColorFrameIndex;
+		alreadyColoredFrameIndex = true;
+	}
+	else if (this->_showLagFrameCount)
+	{
+		currentColor = this->_hudColorLagFrameCount;
+		alreadyColoredLagFrameCount = true;
+	}
+	else if (this->_showCPULoadAverage)
+	{
+		currentColor = this->_hudColorCPULoadAverage;
+		alreadyColoredCPULoadAverage = true;
+	}
+	else if (this->_showRTC)
+	{
+		currentColor = this->_hudColorRTC;
+		alreadyColoredRTC = true;
+	}
+	
+	for (size_t i = 1, j = 4; i < length; i++, j+=4)
+	{
+		const char c = cString[i];
+		
+		if (c == '\n')
+		{
+			if (this->_showVideoFPS && !alreadyColoredVideoFPS)
+			{
+				currentColor = this->_hudColorVideoFPS;
+				alreadyColoredVideoFPS = true;
+			}
+			else if (this->_showRender3DFPS && !alreadyColoredRender3DFPS)
+			{
+				currentColor = this->_hudColorRender3DFPS;
+				alreadyColoredRender3DFPS = true;
+			}
+			else if (this->_showFrameIndex && !alreadyColoredFrameIndex)
+			{
+				currentColor = this->_hudColorFrameIndex;
+				alreadyColoredFrameIndex = true;
+			}
+			else if (this->_showLagFrameCount && !alreadyColoredLagFrameCount)
+			{
+				currentColor = this->_hudColorLagFrameCount;
+				alreadyColoredLagFrameCount = true;
+			}
+			else if (this->_showCPULoadAverage && !alreadyColoredCPULoadAverage)
+			{
+				currentColor = this->_hudColorCPULoadAverage;
+				alreadyColoredCPULoadAverage = true;
+			}
+			else if (this->_showRTC && !alreadyColoredRTC)
+			{
+				currentColor = this->_hudColorRTC;
+				alreadyColoredRTC = true;
+			}
+			
+			continue;
+		}
+		
+		vtxColorBufferPtr[j+0] = currentColor;		// Top Left
+		vtxColorBufferPtr[j+1] = currentColor;		// Top Right
+		vtxColorBufferPtr[j+2] = currentColor;		// Bottom Right
+		vtxColorBufferPtr[j+3] = currentColor;		// Bottom Left
 	}
 }
 

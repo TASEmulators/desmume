@@ -106,10 +106,10 @@ public:
 	ShaderSupportTier GetShaderSupport();
 	void SetShaderSupport(const ShaderSupportTier theTier);
 	GLuint GetVertexShaderID();
-	void SetVertexShaderOGL(const char *shaderProgram, bool useShader150);
+	void SetVertexShaderOGL(const char *shaderProgram, bool useVtxColors, bool useShader150);
 	GLuint GetFragmentShaderID();
 	void SetFragmentShaderOGL(const char *shaderProgram, bool useShader150);
-	void SetVertexAndFragmentShaderOGL(const char *vertShaderProgram, const char *fragShaderProgram, bool useShader150);
+	void SetVertexAndFragmentShaderOGL(const char *vertShaderProgram, const char *fragShaderProgram, bool useVtxColors, bool useShader150);
 	GLuint GetProgramID();
 };
 
@@ -274,7 +274,8 @@ protected:
 	GLint _uniformViewSize;
 	
 	GLuint _vaoMainStatesID;
-	GLuint _vboVertexID;
+	GLuint _vboPositionVertexID;
+	GLuint _vboColorVertexID;
 	GLuint _vboTexCoordID;
 	GLuint _vboElementID;
 	GLuint _texCharMap;

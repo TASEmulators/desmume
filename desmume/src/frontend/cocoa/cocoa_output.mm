@@ -741,6 +741,12 @@
 @dynamic isHUDLagFrameCountVisible;
 @dynamic isHUDCPULoadAverageVisible;
 @dynamic isHUDRealTimeClockVisible;
+@dynamic hudColorVideoFPS;
+@dynamic hudColorRender3DFPS;
+@dynamic hudColorFrameIndex;
+@dynamic hudColorLagFrameCount;
+@dynamic hudColorCPULoadAverage;
+@dynamic hudColorRTC;
 @dynamic useVerticalSync;
 @dynamic videoFiltersPreferGPU;
 @dynamic sourceDeposterize;
@@ -893,6 +899,102 @@
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
+}
+
+- (void) setHudColorVideoFPS:(uint32_t)theColor
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDColorVideoFPS(theColor);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (uint32_t) hudColorVideoFPS
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const uint32_t color32 = _cdv->GetHUDColorVideoFPS();
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return color32;
+}
+
+- (void) setHudColorRender3DFPS:(uint32_t)theColor
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDColorRender3DFPS(theColor);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (uint32_t) hudColorRender3DFPS
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const uint32_t color32 = _cdv->GetHUDColorRender3DFPS();
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return color32;
+}
+
+- (void) setHudColorFrameIndex:(uint32_t)theColor
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDColorFrameIndex(theColor);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (uint32_t) hudColorFrameIndex
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const uint32_t color32 = _cdv->GetHUDColorFrameIndex();
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return color32;
+}
+
+- (void) setHudColorLagFrameCount:(uint32_t)theColor
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDColorLagFrameCount(theColor);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (uint32_t) hudColorLagFrameCount
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const uint32_t color32 = _cdv->GetHUDColorLagFrameCount();
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return color32;
+}
+
+- (void) setHudColorCPULoadAverage:(uint32_t)theColor
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDColorCPULoadAverage(theColor);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (uint32_t) hudColorCPULoadAverage
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const uint32_t color32 = _cdv->GetHUDColorCPULoadAverage();
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return color32;
+}
+
+- (void) setHudColorRTC:(uint32_t)theColor
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDColorRTC(theColor);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (uint32_t) hudColorRTC
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const uint32_t color32 = _cdv->GetHUDColorRTC();
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return color32;
 }
 
 - (void) setDisplayMainVideoSource:(NSInteger)displaySourceID

@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2013 DeSmuME team
+	Copyright (C) 2012-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 */
 
 #import <Foundation/Foundation.h>
+#import <AppKit/AppKit.h>
 #include <libkern/OSAtomic.h>
 #include "utilities.h"
 
@@ -39,6 +40,9 @@
 + (void) messageSendOneWayWithRect:(NSPort *)sendPort msgID:(NSInteger)msgID rect:(NSRect)rect;
 + (NSInteger) getIBActionSenderTag:(id)sender;
 + (BOOL) getIBActionSenderButtonStateBool:(id)sender;
+
++ (NSColor *) NSColorFromRGBA8888:(uint32_t)theColor;
++ (uint32_t) RGBA8888FromNSColor:(NSColor *)theColor;
 
 + (NSInteger) appVersionNumeric;
 + (NSString *) appInternalVersionString;
@@ -90,3 +94,8 @@
 - (void)postNotificationOnMainThreadName:(NSString *)aName object:(id)anObject userInfo:(NSDictionary *)aUserInfo;
 
 @end
+
+@interface RGBA8888ToNSColorValueTransformer : NSValueTransformer
+{ }
+@end
+

@@ -573,6 +573,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[self view] setIsHUDRealTimeClockVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRTC"]];
 	// TODO: Show HUD Input.
 	//[[self view] setIsHUDInputVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowInput"]];
+	
+	[[self view] setHudColorVideoFPS:[CocoaDSUtil NSColorFromRGBA8888:[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_VideoFPS"]]];
+	[[self view] setHudColorRender3DFPS:[CocoaDSUtil NSColorFromRGBA8888:[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Render3DFPS"]]];
+	[[self view] setHudColorFrameIndex:[CocoaDSUtil NSColorFromRGBA8888:[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_FrameIndex"]]];
+	[[self view] setHudColorLagFrameCount:[CocoaDSUtil NSColorFromRGBA8888:[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_LagFrameCount"]]];
+	[[self view] setHudColorCPULoadAverage:[CocoaDSUtil NSColorFromRGBA8888:[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_CPULoadAverage"]]];
+	[[self view] setHudColorRTC:[CocoaDSUtil NSColorFromRGBA8888:[[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_RTC"]]];
 }
 
 - (BOOL) masterStatusBarState
@@ -1075,6 +1082,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDRealTimeClockVisible] forKey:@"HUD_ShowRTC"];
 	// TODO: Show HUD Input.
 	//[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDInputVisible] forKey:@"HUD_ShowInput"];
+	
+	[[NSUserDefaults standardUserDefaults] setInteger:[CocoaDSUtil RGBA8888FromNSColor:[[self view] hudColorVideoFPS]] forKey:@"HUD_Color_VideoFPS"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[CocoaDSUtil RGBA8888FromNSColor:[[self view] hudColorRender3DFPS]] forKey:@"HUD_Color_Render3DFPS"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[CocoaDSUtil RGBA8888FromNSColor:[[self view] hudColorFrameIndex]] forKey:@"HUD_Color_FrameIndex"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[CocoaDSUtil RGBA8888FromNSColor:[[self view] hudColorLagFrameCount]] forKey:@"HUD_Color_LagFrameCount"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[CocoaDSUtil RGBA8888FromNSColor:[[self view] hudColorCPULoadAverage]] forKey:@"HUD_Color_CPULoadAverage"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[CocoaDSUtil RGBA8888FromNSColor:[[self view] hudColorRTC]] forKey:@"HUD_Color_RTC"];
 	
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
@@ -1668,6 +1682,12 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 @dynamic isHUDLagFrameCountVisible;
 @dynamic isHUDCPULoadAverageVisible;
 @dynamic isHUDRealTimeClockVisible;
+@dynamic hudColorVideoFPS;
+@dynamic hudColorRender3DFPS;
+@dynamic hudColorFrameIndex;
+@dynamic hudColorLagFrameCount;
+@dynamic hudColorCPULoadAverage;
+@dynamic hudColorRTC;
 @dynamic displayMainVideoSource;
 @dynamic displayTouchVideoSource;
 @dynamic useVerticalSync;
@@ -1799,6 +1819,66 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (BOOL) isHUDRealTimeClockVisible
 {
 	return [[self cdsVideoOutput] isHUDRealTimeClockVisible];
+}
+
+- (void) setHudColorVideoFPS:(NSColor *)theColor
+{
+	[[self cdsVideoOutput] setHudColorVideoFPS:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
+}
+
+- (NSColor *) hudColorVideoFPS
+{
+	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorVideoFPS]];
+}
+
+- (void) setHudColorRender3DFPS:(NSColor *)theColor
+{
+	[[self cdsVideoOutput] setHudColorRender3DFPS:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
+}
+
+- (NSColor *) hudColorRender3DFPS
+{
+	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorRender3DFPS]];
+}
+
+- (void) setHudColorFrameIndex:(NSColor *)theColor
+{
+	[[self cdsVideoOutput] setHudColorFrameIndex:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
+}
+
+- (NSColor *) hudColorFrameIndex
+{
+	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorFrameIndex]];
+}
+
+- (void) setHudColorLagFrameCount:(NSColor *)theColor
+{
+	[[self cdsVideoOutput] setHudColorLagFrameCount:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
+}
+
+- (NSColor *) hudColorLagFrameCount
+{
+	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorLagFrameCount]];
+}
+
+- (void) setHudColorCPULoadAverage:(NSColor *)theColor
+{
+	[[self cdsVideoOutput] setHudColorCPULoadAverage:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
+}
+
+- (NSColor *) hudColorCPULoadAverage
+{
+	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorCPULoadAverage]];
+}
+
+- (void) setHudColorRTC:(NSColor *)theColor
+{
+	[[self cdsVideoOutput] setHudColorRTC:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
+}
+
+- (NSColor *) hudColorRTC
+{
+	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorRTC]];
 }
 
 - (void) setDisplayMainVideoSource:(NSInteger)displaySourceID

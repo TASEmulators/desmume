@@ -31,6 +31,7 @@
 
 #define HUD_MAX_CHARACTERS							2048
 #define HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE			(sizeof(float) * HUD_MAX_CHARACTERS * (2 * 4))
+#define HUD_VERTEX_COLOR_ATTRIBUTE_BUFFER_SIZE		(sizeof(uint32_t) * HUD_MAX_CHARACTERS * 4)
 #define HUD_TEXTBOX_BASEGLYPHSIZE					64.0
 #define HUD_TEXTBOX_BASE_SCALE						(1.0/3.0)
 #define HUD_TEXTBOX_MIN_SCALE						0.70
@@ -160,6 +161,13 @@ protected:
 	bool _showCPULoadAverage;
 	bool _showRTC;
 	
+	uint32_t _hudColorVideoFPS;
+	uint32_t _hudColorRender3DFPS;
+	uint32_t _hudColorFrameIndex;
+	uint32_t _hudColorLagFrameCount;
+	uint32_t _hudColorCPULoadAverage;
+	uint32_t _hudColorRTC;
+	
 	ClientFrameInfo _clientFrameInfo;
 	NDSFrameInfo _ndsFrameInfo;
 	
@@ -259,6 +267,18 @@ public:
 	virtual void SetHUDShowCPULoadAverage(const bool visibleState);
 	bool GetHUDShowRTC() const;
 	virtual void SetHUDShowRTC(const bool visibleState);
+	uint32_t GetHUDColorVideoFPS() const;
+	virtual void SetHUDColorVideoFPS(uint32_t color32);
+	uint32_t GetHUDColorRender3DFPS() const;
+	virtual void SetHUDColorRender3DFPS(uint32_t color32);
+	uint32_t GetHUDColorFrameIndex() const;
+	virtual void SetHUDColorFrameIndex(uint32_t color32);
+	uint32_t GetHUDColorLagFrameCount() const;
+	virtual void SetHUDColorLagFrameCount(uint32_t color32);
+	uint32_t GetHUDColorCPULoadAverage() const;
+	virtual void SetHUDColorCPULoadAverage(uint32_t color32);
+	uint32_t GetHUDColorRTC() const;
+	virtual void SetHUDColorRTC(uint32_t color32);
 	bool HUDNeedsUpdate();
 	void ClearHUDNeedsUpdate();
 	
@@ -319,7 +339,8 @@ public:
 	
 	virtual void SetSourceDeposterize(const bool useDeposterize);
 	
-	void SetHUDVertices(float viewportWidth, float viewportHeight, float *vtxBufferPtr);
+	void SetHUDPositionVertices(float viewportWidth, float viewportHeight, float *vtxPositionBufferPtr);
+	void SetHUDColorVertices(uint32_t *vtxColorBufferPtr);
 	void SetHUDTextureCoordinates(float *texCoordBufferPtr);
 	void SetScreenVertices(float *vtxBufferPtr);
 	void SetScreenTextureCoordinates(float w0, float h0, float w1, float h1, float *texCoordBufferPtr);

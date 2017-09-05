@@ -766,6 +766,7 @@
 	_displayVtxPositionBuffer = nil;
 	_displayTexCoordBuffer = nil;
 	_hudVtxPositionBuffer = nil;
+	_hudVtxColorBuffer = nil;
 	_hudTexCoordBuffer = nil;
 	
 	_texDisplaySrcDeposterize[NDSDisplayID_Main][0]  = nil;
@@ -803,6 +804,7 @@
 	[_displayVtxPositionBuffer release];
 	[_displayTexCoordBuffer release];
 	[_hudVtxPositionBuffer release];
+	[_hudVtxColorBuffer release];
 	[_hudTexCoordBuffer release];
 	
 	[_texDisplaySrcDeposterize[NDSDisplayID_Main][0]  release];
@@ -1049,6 +1051,7 @@
 	_displayVtxPositionBuffer = [[[self device] newBufferWithLength:(sizeof(float) * (4 * 8)) options:MTLResourceStorageModeManaged] retain];
 	_displayTexCoordBuffer = [[[self device] newBufferWithLength:(sizeof(float) * (4 * 8)) options:MTLResourceStorageModeManaged] retain];
 	_hudVtxPositionBuffer = [[[self device] newBufferWithLength:HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged] retain];
+	_hudVtxColorBuffer = [[[self device] newBufferWithLength:HUD_VERTEX_COLOR_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged] retain];
 	_hudTexCoordBuffer = [[[self device] newBufferWithLength:HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged] retain];
 	
 	DisplayViewShaderProperties *viewProps = (DisplayViewShaderProperties *)[_cdvPropertiesBuffer contents];
@@ -1188,7 +1191,7 @@
 		{
 			for (size_t pixIndex = 0; pixIndex < tileSize; pixIndex++)
 			{
-				const uint32_t colorRGBA8888 = 0x50000000;
+				const uint32_t colorRGBA8888 = 0xFFFFFFFF;
 				charMapBuffer[(tileSize + pixIndex) + (rowIndex * (16 * tileSize))] = colorRGBA8888;
 			}
 		}
@@ -1588,8 +1591,11 @@
 	{
 		if (_cdv->HUDNeedsUpdate())
 		{
-			_cdv->SetHUDVertices((float)_cdv->GetViewProperties().clientWidth, (float)_cdv->GetViewProperties().clientHeight, (float *)[_hudVtxPositionBuffer contents]);
+			_cdv->SetHUDPositionVertices((float)_cdv->GetViewProperties().clientWidth, (float)_cdv->GetViewProperties().clientHeight, (float *)[_hudVtxPositionBuffer contents]);
 			[_hudVtxPositionBuffer didModifyRange:NSMakeRange(0, sizeof(float) * hudLength * 8)];
+			
+			_cdv->SetHUDColorVertices((uint32_t *)[_hudVtxColorBuffer contents]);
+			[_hudVtxColorBuffer didModifyRange:NSMakeRange(0, sizeof(uint32_t) * hudLength * 4)];
 			
 			_cdv->SetHUDTextureCoordinates((float *)[_hudTexCoordBuffer contents]);
 			[_hudTexCoordBuffer didModifyRange:NSMakeRange(0, sizeof(float) * hudLength * 8)];
@@ -1599,8 +1605,9 @@
 		
 		[ce setRenderPipelineState:[sharedData hudPipeline]];
 		[ce setVertexBuffer:_hudVtxPositionBuffer offset:0 atIndex:0];
-		[ce setVertexBuffer:_hudTexCoordBuffer offset:0 atIndex:1];
-		[ce setVertexBuffer:_cdvPropertiesBuffer offset:0 atIndex:2];
+		[ce setVertexBuffer:_hudVtxColorBuffer offset:0 atIndex:1];
+		[ce setVertexBuffer:_hudTexCoordBuffer offset:0 atIndex:2];
+		[ce setVertexBuffer:_cdvPropertiesBuffer offset:0 atIndex:3];
 		[ce setFragmentTexture:[self texHUDCharMap] atIndex:0];
 		
 		// First, draw the backing text box.
