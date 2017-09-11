@@ -1141,7 +1141,7 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 	cmdDSControlTouch.useInputForIntCoord = true;
 	
 	CommandAttributes cmdDSControlMic			= NewCommandAttributesForDSControl("Microphone", NDSInputID_Microphone);
-	cmdDSControlMic.intValue[1] = MICMODE_INTERNAL_NOISE;
+	cmdDSControlMic.intValue[1] = MicrophoneMode_InternalNoise;
 	cmdDSControlMic.floatValue[0] = 250.0f;
 	
 	CommandAttributes cmdGuitarGripGreen		= NewCommandAttributesForDSControl("Guitar Grip: Green", NDSInputID_GuitarGrip_Green);
@@ -1685,18 +1685,18 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 	}
 	else if (strncmp(commandTag, "Microphone", INPUT_HANDLER_STRING_LENGTH) == 0)
 	{
-		const NSInteger micMode = [(NSNumber *)[deviceInfo valueForKey:@"intValue1"] integerValue];
+		const MicrophoneMode micMode = (MicrophoneMode)[(NSNumber *)[deviceInfo valueForKey:@"intValue1"] integerValue];
 		switch (micMode)
 		{
-			case MICMODE_NONE:
+			case MicrophoneMode_None:
 				inputSummary = NSSTRING_INPUTPREF_MIC_NONE;
 				break;
 				
-			case MICMODE_INTERNAL_NOISE:
+			case MicrophoneMode_InternalNoise:
 				inputSummary = NSSTRING_INPUTPREF_MIC_INTERNAL_NOISE;
 				break;
 				
-			case MICMODE_AUDIO_FILE:
+			case MicrophoneMode_AudioFile:
 				inputSummary = (NSString *)[deviceInfo valueForKey:@"object1"];
 				if (inputSummary == nil)
 				{
@@ -1704,15 +1704,15 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 				}
 				break;
 				
-			case MICMODE_WHITE_NOISE:
+			case MicrophoneMode_WhiteNoise:
 				inputSummary = NSSTRING_INPUTPREF_MIC_WHITE_NOISE;
 				break;
 				
-			case MICMODE_SINE_WAVE:
+			case MicrophoneMode_SineWave:
 				inputSummary = [NSString stringWithFormat:NSSTRING_INPUTPREF_MIC_SINE_WAVE, [(NSNumber *)[deviceInfo valueForKey:@"floatValue0"] floatValue]];
 				break;
 				
-			case MICMODE_PHYSICAL:
+			case MicrophoneMode_Physical:
 				inputSummary = @"Physical:";
 				break;
 				

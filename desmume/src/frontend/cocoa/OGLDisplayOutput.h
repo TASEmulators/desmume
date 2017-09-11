@@ -209,9 +209,9 @@ protected:
 	GLuint _vboVertexID;
 	GLuint _vboTexCoordID;
 	
-	GLint _uniformFinalOutputAngleDegrees;
-	GLint _uniformFinalOutputScalar;
-	GLint _uniformFinalOutputViewSize;
+	GLint _uniformAngleDegrees;
+	GLint _uniformScalar;
+	GLint _uniformViewSize;
 	
 	void UploadVerticesOGL();
 	void UploadTexCoordsOGL();
@@ -254,10 +254,15 @@ protected:
 	bool _needUpdateRotationScale;
 	bool _needUpdateVertices;
 	
+	GLint _uniformAngleDegrees;
+	GLint _uniformScalar;
+	GLint _uniformViewSize;
+	
 public:
 	virtual ~OGLVideoLayer() {};
 	
 	void SetNeedsUpdateViewport();
+	void SetNeedsUpdateRotationScale();
 	void SetNeedsUpdateVertices();
 	
 	virtual bool IsVisible();
@@ -271,7 +276,6 @@ class OGLHUDLayer : public OGLVideoLayer
 {
 protected:
 	OGLShaderProgram *_program;
-	GLint _uniformViewSize;
 	
 	GLuint _vaoMainStatesID;
 	GLuint _vboPositionVertexID;
@@ -305,10 +309,6 @@ protected:
 	GLuint _vboVertexID;
 	GLuint _vboTexCoordID;
 	
-	GLint _uniformFinalOutputAngleDegrees;
-	GLint _uniformFinalOutputScalar;
-	GLint _uniformFinalOutputViewSize;
-	
 	void _UpdateRotationScaleOGL();
 	void _UpdateVerticesOGL();
 	
@@ -318,8 +318,6 @@ public:
 	OGLDisplayLayer() {};
 	OGLDisplayLayer(OGLVideoOutput *oglVO);
 	virtual ~OGLDisplayLayer();
-	
-	void SetNeedsUpdateRotationScale();
 	
 	OutputFilterTypeID SetOutputFilterOGL(const OutputFilterTypeID filterID);
 	bool SetGPUPixelScalerOGL(const VideoFilterTypeID filterID);

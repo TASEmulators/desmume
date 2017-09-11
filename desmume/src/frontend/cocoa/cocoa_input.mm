@@ -26,17 +26,13 @@
 #include "../../slot2.h"
 #undef BOOL
 
-NullGenerator nullSampleGenerator;
-InternalNoiseGenerator internalNoiseGenerator;
-WhiteNoiseGenerator whiteNoiseGenerator;
-SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
-
 
 @implementation CocoaDSController
 
 @synthesize delegate;
+@synthesize execControl;
 @dynamic autohold;
-@synthesize paddleAdjust;
+@dynamic paddleAdjust;
 @synthesize stylusPressure;
 @dynamic isHardwareMicAvailable;
 @dynamic isHardwareMicIdle;
@@ -47,12 +43,9 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 @dynamic hardwareMicGain;
 @synthesize hardwareMicMute;
 @dynamic hardwareMicPause;
-@dynamic softwareMicState;
-@dynamic softwareMicMode;
-@synthesize micMode;
 @synthesize CAInputDevice;
-@synthesize softwareMicSampleGenerator;
-@synthesize selectedAudioFileGenerator;
+@dynamic softwareMicSampleGenerator;
+@dynamic selectedAudioFileGenerator;
 @synthesize hardwareMicInfoString;
 @synthesize hardwareMicNameString;
 @synthesize hardwareMicManufacturerString;
@@ -65,36 +58,18 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 	{
 		return self;
 	}
-	
-	for (size_t i = 0; i < NDSInputID_InputCount; i++)
-	{
-		clientInput[i].isPressed = false;
-		clientInput[i].turbo = false;
-		clientInput[i].turboPattern = 0;
-		clientInput[i].turboPatternStep = 0;
-		clientInput[i].turboPatternLength = 0;
-		clientInput[i].autohold = false;
-	}
-	
+		
 	delegate = nil;
-	spinlockControllerState = OS_SPINLOCK_INIT;	
-	autohold = NO;
-	_isAutoholdCleared = YES;
-	_useHardwareMic = NO;
+	execControl = NULL;
 	_availableMicSamples = 0;
 	
 	micLevel = 0.0f;
 	_micLevelTotal = 0.0f;
 	_micLevelsRead = 0.0f;
 	
-	micMode = MICMODE_NONE;
-	selectedAudioFileGenerator = NULL;
 	CAInputDevice = new CoreAudioInput;
 	CAInputDevice->SetCallbackHardwareStateChanged(&CAHardwareStateChangedCallback, self, NULL);
 	CAInputDevice->SetCallbackHardwareGainChanged(&CAHardwareGainChangedCallback, self, NULL);
-	softwareMicSampleGenerator = &nullSampleGenerator;
-	touchLocation = NSMakePoint(0.0f, 0.0f);
-	paddleAdjust = 0;
 	
 	hardwareMicInfoString = @"No hardware input detected.";
 	hardwareMicNameString = @"No hardware input detected.";
@@ -180,365 +155,94 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 	return (CAInputDevice->GetPauseState()) ? YES : NO;
 }
 
-- (void) setSoftwareMicState:(BOOL)theState
+- (void) setSoftwareMicState:(BOOL)theState mode:(NSInteger)micMode
 {
-	OSSpinLockLock(&spinlockControllerState);
-	clientInput[NDSInputID_Microphone].isPressed = (theState) ? true : false;
-	OSSpinLockUnlock(&spinlockControllerState);
+	execControl->SetClientSoftwareMicState((theState) ? true : false, (MicrophoneMode)micMode);
 }
 
 - (BOOL) softwareMicState
 {
-	OSSpinLockLock(&spinlockControllerState);
-	BOOL theState = (clientInput[NDSInputID_Microphone].isPressed) ? YES : NO;
-	OSSpinLockUnlock(&spinlockControllerState);
-	return theState;
+	return (execControl->GetClientSoftwareMicState()) ? YES : NO;
 }
 
-- (void) setSoftwareMicMode:(NSInteger)theMode
+- (AudioGenerator *) softwareMicSampleGenerator
 {
-	OSSpinLockLock(&spinlockControllerState);
-	micMode = theMode;
-	OSSpinLockUnlock(&spinlockControllerState);
+	return execControl->GetClientSoftwareMicSampleGenerator();
 }
 
-- (NSInteger) softwareMicMode
+- (void) setSelectedAudioFileGenerator:(AudioSampleBlockGenerator *)audioGenerator
 {
-	OSSpinLockLock(&spinlockControllerState);
-	NSInteger theMode = micMode;
-	OSSpinLockUnlock(&spinlockControllerState);
-	return theMode;
+	execControl->SetClientSelectedAudioFileGenerator(audioGenerator);
+}
+
+- (AudioSampleBlockGenerator *) selectedAudioFileGenerator
+{
+	return execControl->GetClientSelectedAudioFileGenerator();
 }
 
 - (void) setAutohold:(BOOL)theState
 {
-	OSSpinLockLock(&spinlockControllerState);
-	
-	autohold = theState;
-	
-	if (autohold && _isAutoholdCleared)
-	{
-		memset(clientInput, 0, sizeof(clientInput));
-		_isAutoholdCleared = NO;
-	}
-	
-	if (!autohold)
-	{
-		for (size_t i = 0; i < NDSInputID_InputCount; i++)
-		{
-			clientInput[i].isPressed = clientInput[i].autohold;
-		}
-	}
-	
-	OSSpinLockUnlock(&spinlockControllerState);
+	execControl->SetEnableAutohold((theState) ? true: false);
 }
 
 - (BOOL) autohold
 {
-	OSSpinLockLock(&spinlockControllerState);
-	const BOOL theState = autohold;
-	OSSpinLockUnlock(&spinlockControllerState);
-	return theState;
+	return (execControl->GetEnableAutohold()) ? YES : NO;
+}
+
+- (void) setPaddleAdjust:(NSInteger)paddleAdjust
+{
+	execControl->SetClientPaddleAdjust((int16_t)paddleAdjust);
+}
+
+- (NSInteger) paddleAdjust
+{
+	return (NSInteger)execControl->GetClientPaddleAdjust();
 }
 
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID
 {
-	[self setControllerState:theState controlID:controlID turbo:NO turboPattern:0 turboPatternLength:0];
+	execControl->SetClientInputStateUsingID((NDSInputID)controlID,
+											(theState) ? true : false,
+											false,
+											0,
+											0);
 }
 
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID turbo:(const BOOL)isTurboEnabled turboPattern:(uint32_t)turboPattern turboPatternLength:(uint32_t)turboPatternLength
 {
-	if (controlID >= NDSInputID_InputCount)
-	{
-		return;
-	}
-	
-	OSSpinLockLock(&spinlockControllerState);
-	
-	if (autohold)
-	{
-		if (theState)
-		{
-			clientInput[controlID].turbo = (isTurboEnabled) ? true : false;
-			clientInput[controlID].autohold = true;
-		}
-	}
-	else
-	{
-		clientInput[controlID].isPressed = (theState || clientInput[controlID].autohold);
-		clientInput[controlID].turbo = (isTurboEnabled && clientInput[controlID].isPressed);
-	}
-	
-	clientInput[controlID].turboPattern = (clientInput[controlID].turbo) ? turboPattern : 0;
-	
-	if (turboPatternLength > 32)
-	{
-		turboPatternLength = 32;
-	}
-	
-	clientInput[controlID].turboPatternLength = (clientInput[controlID].turbo) ? turboPatternLength : 0;
-	
-	if (!clientInput[controlID].turbo)
-	{
-		clientInput[controlID].turboPatternStep = 0;
-	}
-	
-	OSSpinLockUnlock(&spinlockControllerState);
+	execControl->SetClientInputStateUsingID((NDSInputID)controlID,
+											(theState) ? true : false,
+											(isTurboEnabled) ? true : false,
+											turboPattern,
+											turboPatternLength);
 }
 
 - (void) setTouchState:(BOOL)theState location:(const NSPoint)theLocation
 {
-	OSSpinLockLock(&spinlockControllerState);
-	clientInput[NDSInputID_Touch].isPressed = (theState) ? true : false;
-	touchLocation = theLocation;
-	OSSpinLockUnlock(&spinlockControllerState);
+	execControl->SetClientTouchState((theState) ? true : false,
+									 (uint8_t)(theLocation.x + 0.3f),
+									 (uint8_t)(theLocation.y + 0.3f),
+									 (uint8_t)[self stylusPressure]);
 }
 
 - (void) setSineWaveGeneratorFrequency:(const double)freq
 {
-	sineWaveGenerator.setFrequency(freq);
+	execControl->SetSineWaveFrequency(freq);
 }
 
 - (void) clearAutohold
 {
-	[self setAutohold:NO];
-	OSSpinLockLock(&spinlockControllerState);
-	
-	if (!_isAutoholdCleared)
-	{
-		memset(clientInput, 0, sizeof(clientInput));
-		_isAutoholdCleared = YES;
-	}
-	
-	OSSpinLockUnlock(&spinlockControllerState);
-}
-
-- (void) flush
-{
-	OSSpinLockLock(&spinlockControllerState);
-	
-	const NSPoint theLocation = touchLocation;
-	const NSInteger theMicMode = micMode;
-	bool flushedStates[NDSInputID_InputCount] = {0};
-	
-	if (!autohold)
-	{
-		for (size_t i = 0; i < NDSInputID_InputCount; i++)
-		{
-			flushedStates[i] = (clientInput[i].isPressed || clientInput[i].autohold);
-			
-			if (clientInput[i].turbo)
-			{
-				const bool pressedState = (clientInput[i].turboPattern >> clientInput[i].turboPatternStep) & 0x00000001;
-				flushedStates[i] = (flushedStates[i] && pressedState);
-				
-				clientInput[i].turboPatternStep++;
-				if (clientInput[i].turboPatternStep >= clientInput[i].turboPatternLength)
-				{
-					clientInput[i].turboPatternStep = 0;
-				}
-			}
-			else
-			{
-				flushedStates[i] = clientInput[i].isPressed;
-			}
-		}
-	}
-	
-	OSSpinLockUnlock(&spinlockControllerState);
-	
-	const bool isTouchDown = flushedStates[NDSInputID_Touch];
-	const bool isMicPressed = flushedStates[NDSInputID_Microphone];
-	
-	// Setup the DS pad.
-	NDS_setPad(flushedStates[NDSInputID_Right],
-			   flushedStates[NDSInputID_Left],
-			   flushedStates[NDSInputID_Down],
-			   flushedStates[NDSInputID_Up],
-			   flushedStates[NDSInputID_Select],
-			   flushedStates[NDSInputID_Start],
-			   flushedStates[NDSInputID_B],
-			   flushedStates[NDSInputID_A],
-			   flushedStates[NDSInputID_Y],
-			   flushedStates[NDSInputID_X],
-			   flushedStates[NDSInputID_L],
-			   flushedStates[NDSInputID_R],
-			   flushedStates[NDSInputID_Debug],
-			   flushedStates[NDSInputID_Lid]);
-	
-	// Setup the DS touch pad.
-	CommonSettings.StylusPressure = (int)[self stylusPressure];
-	
-	if (isTouchDown)
-	{
-		NDS_setTouchPos((u16)theLocation.x, (u16)theLocation.y);
-	}
-	else
-	{
-		NDS_releaseTouch();
-	}
-	
-	// Setup the inputs from SLOT-2 devices.
-	const NDS_SLOT2_TYPE slot2DeviceType = slot2_GetSelectedType();
-	switch (slot2DeviceType)
-	{
-		case NDS_SLOT2_GUITARGRIP:
-			guitarGrip_setKey(flushedStates[NDSInputID_GuitarGrip_Green],
-							  flushedStates[NDSInputID_GuitarGrip_Red],
-							  flushedStates[NDSInputID_GuitarGrip_Yellow],
-							  flushedStates[NDSInputID_GuitarGrip_Blue]);
-			break;
-			
-		case NDS_SLOT2_EASYPIANO:
-			piano_setKey(flushedStates[NDSInputID_Piano_C],
-						 flushedStates[NDSInputID_Piano_CSharp],
-						 flushedStates[NDSInputID_Piano_D],
-						 flushedStates[NDSInputID_Piano_DSharp],
-						 flushedStates[NDSInputID_Piano_E],
-						 flushedStates[NDSInputID_Piano_F],
-						 flushedStates[NDSInputID_Piano_FSharp],
-						 flushedStates[NDSInputID_Piano_G],
-						 flushedStates[NDSInputID_Piano_GSharp],
-						 flushedStates[NDSInputID_Piano_A],
-						 flushedStates[NDSInputID_Piano_ASharp],
-						 flushedStates[NDSInputID_Piano_B],
-						 flushedStates[NDSInputID_Piano_HighC]);
-			break;
-			
-		case NDS_SLOT2_PADDLE:
-		{
-			const u16 newPaddleValue = Paddle_GetValue() + (u16)[self paddleAdjust];
-			Paddle_SetValue(newPaddleValue);
-			break;
-		}
-			
-		default:
-			break;
-	}
-	
-	// Setup the DS mic.
-	AudioGenerator *selectedGenerator = &nullSampleGenerator;
-	
-	if (isMicPressed)
-	{
-		switch (theMicMode)
-		{
-			case MICMODE_INTERNAL_NOISE:
-				selectedGenerator = &internalNoiseGenerator;
-				break;
-				
-			case MICMODE_WHITE_NOISE:
-				selectedGenerator = &whiteNoiseGenerator;
-				break;
-				
-			case MICMODE_SINE_WAVE:
-				selectedGenerator = &sineWaveGenerator;
-				break;
-				
-			case MICMODE_AUDIO_FILE:
-				if (selectedAudioFileGenerator != NULL)
-				{
-					selectedGenerator = selectedAudioFileGenerator;
-				}
-				break;
-				
-			default:
-				break;
-		}
-	}
-	else
-	{
-		selectedGenerator = &nullSampleGenerator;
-		internalNoiseGenerator.setSamplePosition(0);
-		sineWaveGenerator.setCyclePosition(0.0);
-		
-		if (selectedAudioFileGenerator != NULL)
-		{
-			selectedAudioFileGenerator->setSamplePosition(0);
-		}
-	}
-	
-	_useHardwareMic = (isMicPressed) ? NO : YES;
-	softwareMicSampleGenerator = selectedGenerator;
-	NDS_setMic(isMicPressed);
-}
-
-- (void) flushEmpty
-{
-	// Setup the DS pad.
-	NDS_setPad(false,
-			   false,
-			   false,
-			   false,
-			   false,
-			   false,
-			   false,
-			   false,
-			   false,
-			   false,
-			   false,
-			   false,
-			   false,
-			   false);
-	
-	// Setup the DS touch pad.
-	NDS_releaseTouch();
-	
-	// Setup the inputs from SLOT-2 devices.
-	const NDS_SLOT2_TYPE slot2DeviceType = slot2_GetSelectedType();
-	switch (slot2DeviceType)
-	{
-		case NDS_SLOT2_GUITARGRIP:
-			guitarGrip_setKey(false,
-							  false,
-							  false,
-							  false);
-			break;
-			
-		case NDS_SLOT2_EASYPIANO:
-			piano_setKey(false,
-						 false,
-						 false,
-						 false,
-						 false,
-						 false,
-						 false,
-						 false,
-						 false,
-						 false,
-						 false,
-						 false,
-						 false);
-			break;
-			
-		case NDS_SLOT2_PADDLE:
-			// Do nothing.
-			break;
-			
-		default:
-			break;
-	}
-	
-	// Setup the DS mic.
-	_useHardwareMic = NO;
-	softwareMicSampleGenerator = &nullSampleGenerator;
-	NDS_setMic(false);
+	execControl->ClearAutohold();
 }
 
 - (void) reset
 {
-	for (size_t i = 0; i < NDSInputID_InputCount; i++)
-	{
-		memset(clientInput, 0, sizeof(clientInput));
-	}
-	
 	[self setAutohold:NO];
 	[self setMicLevel:0.0f];
+	[self clearMicLevelMeasure];
 	
-	_isAutoholdCleared = YES;
 	_availableMicSamples = 0;
-	_micLevelTotal = 0.0f;
-	_micLevelsRead = 0.0f;
 }
 
 - (void) clearMicLevelMeasure
@@ -549,7 +253,7 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 
 - (void) updateMicLevel
 {
-	float avgMicLevel = _micLevelTotal / _micLevelsRead;
+	float avgMicLevel = (_micLevelsRead != 0) ? _micLevelTotal / _micLevelsRead : 0.0f;
 	
 	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
 	[self setMicLevel:avgMicLevel];
@@ -566,7 +270,7 @@ SineWaveGenerator sineWaveGenerator(250.0, MIC_SAMPLE_RATE);
 {
 	uint8_t theSample = MIC_NULL_SAMPLE_VALUE;
 	
-	if (_useHardwareMic && (caInput != NULL))
+	if (!execControl->GetClientSoftwareMicStateApplied() && (caInput != NULL))
 	{
 		if (caInput->GetPauseState())
 		{

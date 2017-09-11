@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2012-2015 DeSmuME team
+	Copyright (C) 2012-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -86,7 +86,7 @@ volatile bool execute = true;
 	
 	// Set up the DS controller
 	cdsController = [[[[CocoaDSController alloc] init] retain] autorelease];
-	[cdsController setMicMode:MICMODE_INTERNAL_NOISE];
+	[cdsController setMicMode:MicrophoneMode_InternalNoise];
 	
 	// Set up the cheat system
 	cdsCheats = [[[[CocoaDSCheatManager alloc] init] retain] autorelease];

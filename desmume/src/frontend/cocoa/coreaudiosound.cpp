@@ -18,8 +18,10 @@
 #include "coreaudiosound.h"
 
 #include <CoreAudio/CoreAudio.h>
-#include "cocoa_globals.h"
+#include "ClientExecutionControl.h"
 #include "utilities.h"
+
+#import "cocoa_globals.h"
 
 //#define FORCE_AUDIOCOMPONENT_10_5
 

@@ -25,7 +25,6 @@ struct HUDVtx
 	float4 position [[position]];
 	float4 color;
 	float2 texCoord;
-	bool isBox;
 	bool lowerHUDMipMapLevel;
 };
 
@@ -147,16 +146,24 @@ vertex HUDVtx hud_vertex(const device float2 *inPosition [[buffer(0)]],
 						 const device uint32_t *inColor [[buffer(1)]],
 						 const device float2 *inTexCoord [[buffer(2)]],
 						 const constant DisplayViewShaderProperties &viewProps [[buffer(3)]],
+						 const constant uint8_t &isScreenOverlay [[buffer(4)]],
 						 const uint vid [[vertex_id]])
 {
+	const float angleRadians    = viewProps.rotation * (M_PI_F/180.0f);
+	
 	const float2x2 projection	= float2x2(	float2(2.0f/viewProps.width,                  0.0f),
-	                                        float2(                0.0f, 2.0f/viewProps.height));
+										    float2(                0.0f, 2.0f/viewProps.height));
+	
+	const float2x2 rotation     = float2x2(	float2( cos(angleRadians), sin(angleRadians)),
+										    float2(-sin(angleRadians), cos(angleRadians)));
+	
+	const float2x2 scale        = float2x2(	float2(viewProps.viewScale,                0.0f),
+										    float2(               0.0f, viewProps.viewScale));
 	
 	HUDVtx outVtx;
-	outVtx.position = float4(projection * inPosition[vid], 0.0f, 1.0f);
+	outVtx.position = (isScreenOverlay != 0) ? float4(projection * rotation * scale * inPosition[vid], 0.0f, 1.0f) : float4(projection * inPosition[vid], 0.0f, 1.0f);
 	outVtx.color = float4( (float)((inColor[vid] >> 0) & 0xFF) / 255.0f, (float)((inColor[vid] >> 8) & 0xFF) / 255.0f, (float)((inColor[vid] >> 16) & 0xFF) / 255.0f, (float)((inColor[vid] >> 24) & 0xFF) / 255.0f );
 	outVtx.texCoord = inTexCoord[vid];
-	outVtx.isBox = (vid < 4);
 	outVtx.lowerHUDMipMapLevel = (viewProps.lowerHUDMipMapLevel == 1);
 	
 	return outVtx;

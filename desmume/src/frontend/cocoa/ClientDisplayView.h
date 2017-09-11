@@ -29,9 +29,12 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#define HUD_MAX_CHARACTERS							2048
-#define HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE			(sizeof(float) * HUD_MAX_CHARACTERS * (2 * 4))
-#define HUD_VERTEX_COLOR_ATTRIBUTE_BUFFER_SIZE		(sizeof(uint32_t) * HUD_MAX_CHARACTERS * 4)
+#define HUD_TOTAL_ELEMENTS							1024
+#define HUD_INPUT_ELEMENT_LENGTH					26
+#define HUD_INPUT_TOUCH_LINE_ELEMENTS				4
+#define HUD_TEXT_MAX_CHARACTERS						(HUD_TOTAL_ELEMENTS - HUD_INPUT_ELEMENT_LENGTH - HUD_INPUT_TOUCH_LINE_ELEMENTS)
+#define HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE			(sizeof(float) * HUD_TOTAL_ELEMENTS * (2 * 4))
+#define HUD_VERTEX_COLOR_ATTRIBUTE_BUFFER_SIZE		(sizeof(uint32_t) * HUD_TOTAL_ELEMENTS * 4)
 #define HUD_TEXTBOX_BASEGLYPHSIZE					64.0
 #define HUD_TEXTBOX_BASE_SCALE						(1.0/3.0)
 #define HUD_TEXTBOX_MIN_SCALE						0.70
@@ -160,6 +163,7 @@ protected:
 	bool _showLagFrameCount;
 	bool _showCPULoadAverage;
 	bool _showRTC;
+	bool _showInputs;
 	
 	uint32_t _hudColorVideoFPS;
 	uint32_t _hudColorRender3DFPS;
@@ -167,12 +171,16 @@ protected:
 	uint32_t _hudColorLagFrameCount;
 	uint32_t _hudColorCPULoadAverage;
 	uint32_t _hudColorRTC;
+	uint32_t _hudColorInputAppliedAndPending;
+	uint32_t _hudColorInputAppliedOnly;
+	uint32_t _hudColorInputPendingOnly;
 	
 	ClientFrameInfo _clientFrameInfo;
 	NDSFrameInfo _ndsFrameInfo;
 	
 	NDSDisplayInfo _emuDisplayInfo;
 	std::string _hudString;
+	std::string _hudInputString;
 	std::string _outHudString;
 	bool _hudNeedsUpdate;
 	bool _allowViewUpdates;
@@ -267,6 +275,8 @@ public:
 	virtual void SetHUDShowCPULoadAverage(const bool visibleState);
 	bool GetHUDShowRTC() const;
 	virtual void SetHUDShowRTC(const bool visibleState);
+	bool GetHUDShowInput() const;
+	virtual void SetHUDShowInput(const bool visibleState);
 	uint32_t GetHUDColorVideoFPS() const;
 	virtual void SetHUDColorVideoFPS(uint32_t color32);
 	uint32_t GetHUDColorRender3DFPS() const;
@@ -279,6 +289,13 @@ public:
 	virtual void SetHUDColorCPULoadAverage(uint32_t color32);
 	uint32_t GetHUDColorRTC() const;
 	virtual void SetHUDColorRTC(uint32_t color32);
+	uint32_t GetHUDColorInputPendingAndApplied() const;
+	virtual void SetHUDColorInputPendingAndApplied(uint32_t color32);
+	uint32_t GetHUDColorInputAppliedOnly() const;
+	virtual void SetHUDColorInputAppliedOnly(uint32_t color32);
+	uint32_t GetHUDColorInputPendingOnly() const;
+	virtual void SetHUDColorInputPendingOnly(uint32_t color32);
+	uint32_t GetInputColorUsingStates(bool pendingState, bool appliedState);
 	bool HUDNeedsUpdate();
 	void ClearHUDNeedsUpdate();
 	
@@ -340,6 +357,7 @@ public:
 	virtual void SetSourceDeposterize(const bool useDeposterize);
 	
 	void SetHUDPositionVertices(float viewportWidth, float viewportHeight, float *vtxPositionBufferPtr);
+	void SetHUDTouchLinePositionVertices(float *vtxBufferPtr);
 	void SetHUDColorVertices(uint32_t *vtxColorBufferPtr);
 	void SetHUDTextureCoordinates(float *texCoordBufferPtr);
 	void SetScreenVertices(float *vtxBufferPtr);

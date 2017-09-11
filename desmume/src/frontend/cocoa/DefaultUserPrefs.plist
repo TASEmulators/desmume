@@ -112,11 +112,11 @@
 	<false/>
 	<key>HUD_ShowLagFrameCount</key>
 	<false/>
-	<key>HUD_ShowInput</key>
-	<false/>
 	<key>HUD_ShowCPULoadAverage</key>
 	<false/>
 	<key>HUD_ShowRTC</key>
+	<false/>
+	<key>HUD_ShowInput</key>
 	<false/>
 	<key>HUD_Color_VideoFPS</key>
 	<integer>4294967295</integer>
@@ -130,6 +130,12 @@
 	<integer>4294967295</integer>
 	<key>HUD_Color_RTC</key>
 	<integer>4294967295</integer>
+	<key>HUD_Color_Input_PendingAndApplied</key>
+	<integer>4294967295</integer>
+	<key>HUD_Color_Input_AppliedOnly</key>
+	<integer>4281348351</integer>
+	<key>HUD_Color_Input_PendingOnly</key>
+	<integer>4278239232</integer>
 	<key>Input_AudioInputMode</key>
 	<integer>1</integer>
 	<key>Input_ControllerMappings</key>

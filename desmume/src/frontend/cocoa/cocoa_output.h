@@ -148,12 +148,16 @@
 @property (assign) BOOL isHUDLagFrameCountVisible;
 @property (assign) BOOL isHUDCPULoadAverageVisible;
 @property (assign) BOOL isHUDRealTimeClockVisible;
+@property (assign) BOOL isHUDInputVisible;
 @property (assign) uint32_t hudColorVideoFPS;
 @property (assign) uint32_t hudColorRender3DFPS;
 @property (assign) uint32_t hudColorFrameIndex;
 @property (assign) uint32_t hudColorLagFrameCount;
 @property (assign) uint32_t hudColorCPULoadAverage;
 @property (assign) uint32_t hudColorRTC;
+@property (assign) uint32_t hudColorInputPendingAndApplied;
+@property (assign) uint32_t hudColorInputAppliedOnly;
+@property (assign) uint32_t hudColorInputPendingOnly;
 @property (assign) NSInteger displayMainVideoSource;
 @property (assign) NSInteger displayTouchVideoSource;
 @property (assign) BOOL useVerticalSync;
@@ -168,5 +172,6 @@
 - (void) handleRedraw;
 
 - (void) setScaleFactor:(float)theScaleFactor;
+- (void) hudUpdate;
 
 @end

@@ -28,16 +28,6 @@ struct CoreAudioInputDeviceInfo;
 class AudioGenerator;
 class AudioSampleBlockGenerator;
 
-typedef struct
-{
-	bool isPressed;
-	bool turbo;
-	bool autohold;
-	uint32_t turboPattern;
-	uint8_t turboPatternStep;
-	uint8_t turboPatternLength;
-} ClientInput;
-
 @protocol CocoaDSControllerDelegate <NSObject>
 
 @optional
@@ -53,13 +43,8 @@ typedef struct
 @interface CocoaDSController : NSObject
 {
 	id <CocoaDSControllerDelegate> delegate;
+	ClientExecutionControl *execControl;
 	
-	ClientInput clientInput[NDSInputID_InputCount];
-	BOOL autohold;
-	BOOL _isAutoholdCleared;
-	
-	NSPoint touchLocation;
-	NSInteger paddleAdjust;
 	NSInteger stylusPressure;
 	
 	float micLevel;
@@ -67,23 +52,18 @@ typedef struct
 	float _micLevelsRead;
 	
 	BOOL hardwareMicMute;
-	BOOL _useHardwareMic;
 	size_t _availableMicSamples;
-	NSInteger micMode;
 	
-	AudioSampleBlockGenerator *selectedAudioFileGenerator;
 	CoreAudioInput *CAInputDevice;
-	AudioGenerator *softwareMicSampleGenerator;
 	
 	NSString *hardwareMicInfoString;
 	NSString *hardwareMicNameString;
 	NSString *hardwareMicManufacturerString;
 	NSString *hardwareMicSampleRateString;
-	
-	OSSpinLock spinlockControllerState;
 }
 
 @property (retain) id <CocoaDSControllerDelegate> delegate;
+@property (assign) ClientExecutionControl *execControl;
 @property (assign) BOOL autohold;
 @property (assign) NSInteger paddleAdjust;
 @property (assign) NSInteger stylusPressure;
@@ -96,9 +76,6 @@ typedef struct
 @property (assign) float hardwareMicGain;
 @property (assign) BOOL hardwareMicMute;
 @property (assign) BOOL hardwareMicPause;
-@property (assign) BOOL softwareMicState;
-@property (assign) NSInteger softwareMicMode;
-@property (assign) NSInteger micMode;
 @property (readonly) CoreAudioInput *CAInputDevice;
 @property (readonly) AudioGenerator *softwareMicSampleGenerator;
 @property (assign) AudioSampleBlockGenerator *selectedAudioFileGenerator;
@@ -107,13 +84,13 @@ typedef struct
 @property (retain) NSString *hardwareMicManufacturerString;
 @property (retain) NSString *hardwareMicSampleRateString;
 
+- (void) setSoftwareMicState:(BOOL)theState mode:(NSInteger)micMode;
+- (BOOL) softwareMicState;
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID;
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID turbo:(const BOOL)isTurboEnabled turboPattern:(uint32_t)turboPattern turboPatternLength:(uint32_t)turboPatternLength;
 - (void) setTouchState:(BOOL)theState location:(const NSPoint)theLocation;
 - (void) setSineWaveGeneratorFrequency:(const double)freq;
 - (void) clearAutohold;
-- (void) flush;
-- (void) flushEmpty;
 - (void) reset;
 
 - (void) clearMicLevelMeasure;

@@ -204,16 +204,6 @@
 #define ROMINFO_GAME_CODE_LENGTH					4
 #define ROMINFO_GAME_BANNER_LENGTH					128
 
-#define MIC_SAMPLE_RATE								16000.0
-#define MIC_SAMPLE_RESOLUTION						8		// Bits per sample; must be a multiple of 8
-#define MIC_NUMBER_CHANNELS							1		// Number of channels
-#define MIC_SAMPLE_SIZE								((MIC_SAMPLE_RESOLUTION / 8) * MIC_NUMBER_CHANNELS) // Bytes per sample, multiplied by the number of channels
-#define MIC_MAX_BUFFER_SAMPLES						((MIC_SAMPLE_RATE / DS_FRAMES_PER_SECOND) * MIC_SAMPLE_SIZE)
-#define MIC_CAPTURE_FRAMES							192		// The number of audio frames that the NDS microphone should pull. The lower this value, the lower the latency. Ensure that this value is not too low, or else audio frames may be lost.
-#define MIC_NULL_LEVEL_THRESHOLD					2.5
-#define MIC_CLIP_LEVEL_THRESHOLD					39.743665431525209 // ((2.0/pi) * MIC_NULL_SAMPLE_VALUE) - 1.0
-#define MIC_NULL_SAMPLE_VALUE						64
-
 #define COCOA_DIALOG_CANCEL							0
 #define COCOA_DIALOG_DEFAULT						1
 #define COCOA_DIALOG_OK								1
@@ -395,19 +385,6 @@ enum
 	CORE3DLIST_NULL = 0,
 	CORE3DLIST_SWRASTERIZE,
 	CORE3DLIST_OPENGL
-};
-
-/*
- MICROPHONE MODE
- */
-enum
-{
-	MICMODE_NONE = 0,
-	MICMODE_INTERNAL_NOISE,
-	MICMODE_AUDIO_FILE,
-	MICMODE_WHITE_NOISE,
-	MICMODE_PHYSICAL,
-	MICMODE_SINE_WAVE
 };
 
 enum

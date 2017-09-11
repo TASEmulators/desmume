@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2015 DeSmuME team
+	Copyright (C) 2013-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 #include "audiosamplegenerator.h"
 #include <math.h>
 #include <string.h>
-#include "cocoa_globals.h"
+#include "ClientExecutionControl.h"
 
 #define NUM_INTERNAL_NOISE_SAMPLES 32
 

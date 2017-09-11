@@ -1041,6 +1041,17 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsController] setControllerState:theState controlID:controlID];
+	
+	for (DisplayWindowController *windowController in windowList)
+	{
+		[[[windowController view] cdsVideoOutput] setNDSFrameInfo:[cdsCore execControl]->GetNDSFrameInfo()];
+		[[[windowController view] cdsVideoOutput] hudUpdate];
+		
+		if ([[windowController view] isHUDInputVisible])
+		{
+			[[windowController view] clientDisplay3DView]->UpdateView();
+		}
+	}
 }
 
 - (void) cmdUpdateDSControllerWithTurbo:(NSValue *)cmdAttrValue
@@ -1055,6 +1066,17 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsController] setControllerState:theState controlID:controlID turbo:isTurboEnabled turboPattern:turboPattern turboPatternLength:turboPatternLength];
+	
+	for (DisplayWindowController *windowController in windowList)
+	{
+		[[[windowController view] cdsVideoOutput] setNDSFrameInfo:[cdsCore execControl]->GetNDSFrameInfo()];
+		[[[windowController view] cdsVideoOutput] hudUpdate];
+		
+		if ([[windowController view] isHUDInputVisible])
+		{
+			[[windowController view] clientDisplay3DView]->UpdateView();
+		}
+	}
 }
 
 - (void) cmdUpdateDSTouch:(NSValue *)cmdAttrValue
@@ -1068,6 +1090,17 @@
 	{
 		CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 		[[cdsCore cdsController] setTouchState:theState location:touchLoc];
+		
+		for (DisplayWindowController *windowController in windowList)
+		{
+			[[[windowController view] cdsVideoOutput] setNDSFrameInfo:[cdsCore execControl]->GetNDSFrameInfo()];
+			[[[windowController view] cdsVideoOutput] hudUpdate];
+			
+			if ([[windowController view] isHUDInputVisible])
+			{
+				[[windowController view] clientDisplay3DView]->UpdateView();
+			}
+		}
 	}
 }
 
@@ -1081,8 +1114,7 @@
 	CocoaDSController *cdsController = [cdsCore cdsController];
 	
 	const NSInteger micMode = cmdAttr.intValue[1];
-	[cdsController setSoftwareMicState:theState];
-	[cdsController setSoftwareMicMode:micMode];
+	[cdsController setSoftwareMicState:theState mode:micMode];
 	
 	const float sineWaveFrequency = cmdAttr.floatValue[0];
 	[cdsController setSineWaveGeneratorFrequency:sineWaveFrequency];

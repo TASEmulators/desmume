@@ -194,6 +194,7 @@
 	CocoaDSController *newController = [[[CocoaDSController alloc] init] autorelease];
 	[newCore setCdsController:newController];
 	[newController setDelegate:emuControl];
+	[newController setExecControl:[newCore execControl]];
 	[newController setHardwareMicEnabled:YES];
 	
 	// Init the DS speakers.
@@ -607,8 +608,7 @@
 			const BOOL hudShowLagFrameCount			= ([windowProperties objectForKey:@"hudShowLagFrameCount"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowLagFrameCount"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowLagFrameCount"];
 			const BOOL hudShowCPULoadAverage		= ([windowProperties objectForKey:@"hudShowCPULoadAverage"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowCPULoadAverage"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowCPULoadAverage"];
 			const BOOL hudShowRTC					= ([windowProperties objectForKey:@"hudShowRTC"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowRTC"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRTC"];
-			// TODO: Show HUD Input.
-			//const BOOL hudShowInput					= [(NSNumber *)[windowProperties valueForKey:@"hudShowInput"] boolValue];
+			const BOOL hudShowInput					= ([windowProperties objectForKey:@"hudShowInput"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowInput"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowInput"];
 			
 			const NSUInteger hudColorVideoFPS		= ([windowProperties objectForKey:@"hudColorVideoFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorVideoFPS"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_VideoFPS"];
 			const NSUInteger hudColorRender3DFPS	= ([windowProperties objectForKey:@"hudColorRender3DFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorRender3DFPS"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Render3DFPS"];
@@ -616,6 +616,9 @@
 			const NSUInteger hudColorLagFrameCount	= ([windowProperties objectForKey:@"hudColorLagFrameCount"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorLagFrameCount"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_LagFrameCount"];
 			const NSUInteger hudColorCPULoadAverage	= ([windowProperties objectForKey:@"hudColorCPULoadAverage"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorCPULoadAverage"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_CPULoadAverage"];
 			const NSUInteger hudColorRTC			= ([windowProperties objectForKey:@"hudColorRTC"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorRTC"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_RTC"];
+			const NSUInteger hudColorInputPendingAndApplied = ([windowProperties objectForKey:@"hudColorInputPendingAndApplied"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorInputPendingAndApplied"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Input_PendingAndApplied"];
+			const NSUInteger hudColorInputAppliedOnly = ([windowProperties objectForKey:@"hudColorInputAppliedOnly"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorInputAppliedOnly"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Input_AppliedOnly"];
+			const NSUInteger hudColorInputPendingOnly = ([windowProperties objectForKey:@"hudColorInputPendingOnly"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorInputPendingOnly"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Input_PendingOnly"];
 			
 			const NSInteger screenshotFileFormat	= ([windowProperties objectForKey:@"screenshotFileFormat"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"screenshotFileFormat"] integerValue] : NSTIFFFileType;
 			const BOOL useVerticalSync				= ([windowProperties objectForKey:@"useVerticalSync"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"useVerticalSync"] boolValue] : YES;
@@ -661,6 +664,7 @@
 			[[windowController view] setIsHUDLagFrameCountVisible:hudShowLagFrameCount];
 			[[windowController view] setIsHUDCPULoadAverageVisible:hudShowCPULoadAverage];
 			[[windowController view] setIsHUDRealTimeClockVisible:hudShowRTC];
+			[[windowController view] setIsHUDInputVisible:hudShowInput];
 			
 			[[windowController view] setHudColorVideoFPS:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorVideoFPS]];
 			[[windowController view] setHudColorRender3DFPS:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorRender3DFPS]];
@@ -668,6 +672,9 @@
 			[[windowController view] setHudColorLagFrameCount:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorLagFrameCount]];
 			[[windowController view] setHudColorCPULoadAverage:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorCPULoadAverage]];
 			[[windowController view] setHudColorRTC:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorRTC]];
+			[[windowController view] setHudColorInputPendingAndApplied:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorInputPendingAndApplied]];
+			[[windowController view] setHudColorInputAppliedOnly:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorInputAppliedOnly]];
+			[[windowController view] setHudColorInputPendingOnly:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorInputPendingOnly]];
 			
 			[[windowController masterWindow] setFrameOrigin:NSMakePoint(frameX, frameY)];
 			
@@ -740,12 +747,16 @@
 											  [NSNumber numberWithBool:[[windowController view] isHUDLagFrameCountVisible]], @"hudShowLagFrameCount",
 											  [NSNumber numberWithBool:[[windowController view] isHUDCPULoadAverageVisible]], @"hudShowCPULoadAverage",
 											  [NSNumber numberWithBool:[[windowController view] isHUDRealTimeClockVisible]], @"hudShowRTC",
+											  [NSNumber numberWithBool:[[windowController view] isHUDInputVisible]], @"hudShowInput",
 											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorVideoFPS]]], @"hudColorVideoFPS",
 											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorRender3DFPS]]], @"hudColorRender3DFPS",
 											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorFrameIndex]]], @"hudColorFrameIndex",
 											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorLagFrameCount]]], @"hudColorLagFrameCount",
 											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorCPULoadAverage]]], @"hudColorCPULoadAverage",
 											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorRTC]]], @"hudColorRTC",
+											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorInputPendingAndApplied]]], @"hudColorInputPendingAndApplied",
+											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorInputAppliedOnly]]], @"hudColorInputAppliedOnly",
+											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorInputPendingOnly]]], @"hudColorInputPendingOnly",
 											  [NSNumber numberWithBool:[windowController isMinSizeNormal]], @"isMinSizeNormal",
 											  [NSNumber numberWithBool:[windowController masterStatusBarState]], @"isShowingStatusBar",
 											  [NSNumber numberWithBool:[windowController isFullScreen]], @"isInFullScreenMode",

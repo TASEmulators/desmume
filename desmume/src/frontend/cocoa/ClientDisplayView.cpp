@@ -92,6 +92,7 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	_showLagFrameCount = false;
 	_showCPULoadAverage = false;
 	_showRTC = false;
+	_showInputs = false;
 	
 	_hudColorVideoFPS = 0xFFFFFFFF;
 	_hudColorRender3DFPS = 0xFFFFFFFF;
@@ -99,6 +100,9 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	_hudColorLagFrameCount = 0xFFFFFFFF;
 	_hudColorCPULoadAverage = 0xFFFFFFFF;
 	_hudColorRTC = 0xFFFFFFFF;
+	_hudColorInputAppliedAndPending = 0xFFFFFFFF;
+	_hudColorInputAppliedOnly = 0xFF3030FF;
+	_hudColorInputPendingOnly = 0xFF00C000;
 	
 	_clientFrameInfo.videoFPS = 0;
 	_ndsFrameInfo.clear();
@@ -106,6 +110,7 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	memset(&_emuDisplayInfo, 0, sizeof(_emuDisplayInfo));
 	_hudString = "\x01"; // Char value 0x01 will represent the "text box" character, which will always be first in the string.
 	_outHudString = _hudString;
+	_hudInputString = "<^>vABXYLRSsgf x:000 y:000";
 	_hudNeedsUpdate = true;
 	_allowViewUpdates = true;
 	
@@ -167,7 +172,7 @@ void ClientDisplayView::_UpdateHUDString()
 	
 	if (this->_showCPULoadAverage)
 	{
-		static char buffer[32];
+		char buffer[32];
 		memset(buffer, 0, sizeof(buffer));
 		snprintf(buffer, 25, "CPU Load Avg: %02d%% / %02d%%\n", this->_ndsFrameInfo.cpuLoadAvgARM9, this->_ndsFrameInfo.cpuLoadAvgARM7);
 		
@@ -177,6 +182,25 @@ void ClientDisplayView::_UpdateHUDString()
 	if (this->_showRTC)
 	{
 		ss << "RTC: " << this->_ndsFrameInfo.rtcString << "\n";
+	}
+	
+	if (this->_showInputs)
+	{
+		if ( (this->_ndsFrameInfo.inputStatesApplied.Touch == 0) || (this->_ndsFrameInfo.inputStatesPending.Touch == 0) )
+		{
+			char inputBuffer[HUD_INPUT_ELEMENT_LENGTH + 1];
+			uint8_t touchLocX = this->_ndsFrameInfo.touchLocXApplied;
+			uint8_t touchLocY = this->_ndsFrameInfo.touchLocYApplied;
+			
+			if ( (this->_ndsFrameInfo.inputStatesApplied.Touch != 0) && (this->_ndsFrameInfo.inputStatesPending.Touch == 0) )
+			{
+				touchLocX = this->_ndsFrameInfo.touchLocXPending;
+				touchLocY = this->_ndsFrameInfo.touchLocYPending;
+			}
+			
+			snprintf(inputBuffer, HUD_INPUT_ELEMENT_LENGTH + 1, "<^>vABXYLRSsgf x:%.3u y:%.3u", touchLocX, touchLocY);
+			this->_hudInputString = inputBuffer;
+		}
 	}
 	
 	pthread_mutex_lock(&this->_mutexHUDString);
@@ -292,6 +316,13 @@ void ClientDisplayView::SetupViewProperties()
 	if (didOrderChange)
 	{
 		this->_UpdateOrder();
+		
+		if (this->_showInputs)
+		{
+			pthread_mutex_lock(&this->_mutexHUDString);
+			this->_hudNeedsUpdate = true;
+			pthread_mutex_unlock(&this->_mutexHUDString);
+		}
 	}
 	
 	if (didRotationChange)
@@ -567,6 +598,17 @@ void ClientDisplayView::SetHUDShowRTC(const bool visibleState)
 	this->UpdateView();
 }
 
+bool ClientDisplayView::GetHUDShowInput() const
+{
+	return this->_showInputs;
+}
+
+void ClientDisplayView::SetHUDShowInput(const bool visibleState)
+{
+	this->_SetHUDShowInfoItem(this->_showInputs, visibleState);
+	this->UpdateView();
+}
+
 uint32_t ClientDisplayView::GetHUDColorVideoFPS() const
 {
 	return this->_hudColorVideoFPS;
@@ -661,6 +703,78 @@ void ClientDisplayView::SetHUDColorRTC(uint32_t color32)
 	pthread_mutex_unlock(&this->_mutexHUDString);
 	
 	this->UpdateView();
+}
+
+uint32_t ClientDisplayView::GetHUDColorInputPendingAndApplied() const
+{
+	return this->_hudColorInputAppliedAndPending;
+}
+
+void ClientDisplayView::SetHUDColorInputPendingAndApplied(uint32_t color32)
+{
+	this->_hudColorInputAppliedAndPending = color32;
+	
+	pthread_mutex_lock(&this->_mutexHUDString);
+	this->_hudNeedsUpdate = true;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
+	this->UpdateView();
+}
+
+uint32_t ClientDisplayView::GetHUDColorInputAppliedOnly() const
+{
+	return this->_hudColorInputAppliedOnly;
+}
+
+void ClientDisplayView::SetHUDColorInputAppliedOnly(uint32_t color32)
+{
+	this->_hudColorInputAppliedOnly = color32;
+	
+	pthread_mutex_lock(&this->_mutexHUDString);
+	this->_hudNeedsUpdate = true;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
+	this->UpdateView();
+}
+
+uint32_t ClientDisplayView::GetHUDColorInputPendingOnly() const
+{
+	return this->_hudColorInputPendingOnly;
+}
+
+void ClientDisplayView::SetHUDColorInputPendingOnly(uint32_t color32)
+{
+	this->_hudColorInputPendingOnly = color32;
+	
+	pthread_mutex_lock(&this->_mutexHUDString);
+	this->_hudNeedsUpdate = true;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
+	this->UpdateView();
+}
+
+uint32_t ClientDisplayView::GetInputColorUsingStates(bool pendingState, bool appliedState)
+{
+	uint32_t color = this->_hudColorInputAppliedAndPending;
+	
+	if (pendingState && appliedState)
+	{
+		color = this->_hudColorInputAppliedAndPending;
+	}
+	else if (appliedState)
+	{
+		color = this->_hudColorInputAppliedOnly;
+	}
+	else if (pendingState)
+	{
+		color = this->_hudColorInputPendingOnly;
+	}
+	else
+	{
+		color = 0x80808080;
+	}
+	
+	return color;
 }
 
 bool ClientDisplayView::HUDNeedsUpdate()
@@ -1296,7 +1410,7 @@ void ClientDisplay3DView::SetHUDPositionVertices(float viewportWidth, float view
 	pthread_mutex_unlock(&this->_mutexHUDString);
 	
 	const char *cString = hudString.c_str();
-	const size_t length = hudString.length();
+	const size_t textLength = (hudString.length() <= HUD_TEXT_MAX_CHARACTERS) ? hudString.length() : HUD_TEXT_MAX_CHARACTERS;
 	const float charSize = this->_glyphSize;
 	const float lineHeight = charSize * 0.8f;
 	const float textBoxTextOffset = charSize * 0.25f;
@@ -1312,7 +1426,10 @@ void ClientDisplay3DView::SetHUDPositionVertices(float viewportWidth, float view
 	vtxPositionBufferPtr[6] = 0.0f;			vtxPositionBufferPtr[7] = -textBoxTextOffset;
 	
 	// Calculate the vertices of the remaining characters in the string.
-	for (size_t i = 1, j = 8; i < length; i++, j+=8)
+	size_t i = 1;
+	size_t j = 8;
+	
+	for (; i < textLength; i++, j+=8)
 	{
 		const char c = cString[i];
 		
@@ -1365,15 +1482,239 @@ void ClientDisplay3DView::SetHUDPositionVertices(float viewportWidth, float view
 	vtxPositionBufferPtr[4] += textBoxWidth;
 	
 	// Scale and translate the box
-	for (size_t i = 0; i < (length * 8); i+=2)
+	charLocX = textBoxTextOffset;
+	charLocY = 0.0;
+	
+	for (size_t k = 0; k < (textLength * 8); k+=2)
 	{
 		// Scale
-		vtxPositionBufferPtr[i+0] *= textBoxScale;
-		vtxPositionBufferPtr[i+1] *= textBoxScale;
+		vtxPositionBufferPtr[k+0] *= textBoxScale;
+		vtxPositionBufferPtr[k+1] *= textBoxScale;
 		
 		// Translate
-		vtxPositionBufferPtr[i+0] += boxOffset - (viewportWidth / 2.0f);
-		vtxPositionBufferPtr[i+1] += (viewportHeight / 2.0f) - boxOffset;
+		vtxPositionBufferPtr[k+0] += boxOffset - (viewportWidth / 2.0f);
+		vtxPositionBufferPtr[k+1] += (viewportHeight / 2.0f) - boxOffset;
+	}
+	
+	// Fill in the vertices for the inputs.
+	const char *hudInputString = this->_hudInputString.c_str();
+	
+	for (size_t k = 0; k < HUD_INPUT_ELEMENT_LENGTH; i++, j+=8, k++)
+	{
+		const char c = hudInputString[k];
+		const float charWidth = this->_glyphInfo[c].width * charSize / (float)this->_glyphTileSize;
+		
+		vtxPositionBufferPtr[j+0] = charLocX;					vtxPositionBufferPtr[j+1] = charLocY + charSize;	// Top Left
+		vtxPositionBufferPtr[j+2] = charLocX + charWidth;		vtxPositionBufferPtr[j+3] = charLocY + charSize;	// Top Right
+		vtxPositionBufferPtr[j+4] = charLocX + charWidth;		vtxPositionBufferPtr[j+5] = charLocY;				// Bottom Right
+		vtxPositionBufferPtr[j+6] = charLocX;					vtxPositionBufferPtr[j+7] = charLocY;				// Bottom Left
+		charLocX += (charWidth + (charSize * 0.03f) + 0.10f);
+	}
+	
+	float inputScale = 0.45 * this->_hudObjectScale;
+	if (inputScale < (0.45 * 1.0))
+	{
+		inputScale = 0.45 * 1.0;
+	}
+	
+	inputScale /= this->_scaleFactor;
+	
+	for (size_t k = (textLength * 8); k < ((textLength + HUD_INPUT_ELEMENT_LENGTH) * 8); k+=2)
+	{
+		// Scale
+		vtxPositionBufferPtr[k+0] *= inputScale;
+		vtxPositionBufferPtr[k+1] *= inputScale;
+		
+		// Translate
+		vtxPositionBufferPtr[k+0] += boxOffset - (viewportWidth / 2.0f);
+		vtxPositionBufferPtr[k+1] += -(viewportHeight / 2.0f);
+	}
+	
+	this->SetHUDTouchLinePositionVertices(vtxPositionBufferPtr + j);
+}
+
+void ClientDisplay3DView::SetHUDTouchLinePositionVertices(float *vtxBufferPtr)
+{
+	const float x = (this->_ndsFrameInfo.inputStatesApplied.Touch == 0) ? this->_ndsFrameInfo.touchLocXApplied : this->_ndsFrameInfo.touchLocXPending;
+	const float y = 191.0f - ((this->_ndsFrameInfo.inputStatesApplied.Touch == 0) ? this->_ndsFrameInfo.touchLocYApplied : this->_ndsFrameInfo.touchLocYPending);
+	const float w = this->_renderProperty.normalWidth / 2.0f;
+	const float h = this->_renderProperty.normalHeight / 2.0f;
+	
+	if (this->_renderProperty.mode == ClientDisplayMode_Dual)
+	{
+		switch (this->_renderProperty.layout)
+		{
+			case ClientDisplayLayout_Horizontal:
+			{
+				if (this->_renderProperty.order == ClientDisplayOrder_MainFirst)
+				{
+					vtxBufferPtr[0]		=  x;															vtxBufferPtr[1]		=  h;						// Vertical line, top left
+					vtxBufferPtr[2]		=  x + 1.0f;													vtxBufferPtr[3]		=  h;						// Vertical line, top right
+					vtxBufferPtr[4]		=  x + 1.0f;													vtxBufferPtr[5]		= -h;						// Vertical line, bottom right
+					vtxBufferPtr[6]		=  x;															vtxBufferPtr[7]		= -h;						// Vertical line, bottom left
+					
+					vtxBufferPtr[8]		=  0.0f;														vtxBufferPtr[9]		= -h + y + 1.0f;			// Horizontal line, top left
+					vtxBufferPtr[10]	=  w;															vtxBufferPtr[11]	= -h + y + 1.0f;			// Horizontal line, top right
+					vtxBufferPtr[12]	=  w;															vtxBufferPtr[13]	= -h + y;					// Horizontal line, bottom right
+					vtxBufferPtr[14]	=  0.0f;														vtxBufferPtr[15]	= -h + y;					// Horizontal line, bottom left
+				}
+				else
+				{
+					vtxBufferPtr[0]		= -w + x;														vtxBufferPtr[1]		=  h;						// Vertical line, top left
+					vtxBufferPtr[2]		= -w + x + 1.0f;												vtxBufferPtr[3]		=  h;						// Vertical line, top right
+					vtxBufferPtr[4]		= -w + x + 1.0f;												vtxBufferPtr[5]		= -h;						// Vertical line, bottom right
+					vtxBufferPtr[6]		= -w + x;														vtxBufferPtr[7]		= -h;						// Vertical line, bottom left
+					
+					vtxBufferPtr[8]		= -w;															vtxBufferPtr[9]		= -h + y + 1.0f;			// Horizontal line, top left
+					vtxBufferPtr[10]	=  0.0f;														vtxBufferPtr[11]	= -h + y + 1.0f;			// Horizontal line, top right
+					vtxBufferPtr[12]	=  0.0f;														vtxBufferPtr[13]	= -h + y;					// Horizontal line, bottom right
+					vtxBufferPtr[14]	= -w;															vtxBufferPtr[15]	= -h + y;					// Horizontal line, bottom left
+				}
+				
+				memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));							// Unused lines
+				break;
+			}
+				
+			case ClientDisplayLayout_Hybrid_2_1:
+			{
+				vtxBufferPtr[0]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + (x/2.0f);				vtxBufferPtr[1]		= -h + 96.0f;				// Minor bottom display, vertical line, top left
+				vtxBufferPtr[2]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + ((x+1.0f)/2.0f);		vtxBufferPtr[3]		= -h + 96.0f;				// Minor bottom display, vertical line, top right
+				vtxBufferPtr[4]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + ((x+1.0f)/2.0f);		vtxBufferPtr[5]		= -h;						// Minor bottom display, vertical line, bottom right
+				vtxBufferPtr[6]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + (x/2.0f);				vtxBufferPtr[7]		= -h;						// Minor bottom display, vertical line, bottom left
+				
+				vtxBufferPtr[8]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;							vtxBufferPtr[9]		= -h + ((y+1.0f)/2.0f);		// Minor bottom display, horizontal line, top left
+				vtxBufferPtr[10]	=  w;																vtxBufferPtr[11]	= -h + ((y+1.0f)/2.0f);		// Minor bottom display, horizontal line, top right
+				vtxBufferPtr[12]	=  w;																vtxBufferPtr[13]	= -h + (y/2.0f);			// Minor bottom display, horizontal line, bottom right
+				vtxBufferPtr[14]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;							vtxBufferPtr[15]	= -h + (y/2.0f);			// Minor bottom display, horizontal line, bottom left
+				
+				if (this->_renderProperty.order == ClientDisplayOrder_MainFirst)
+				{
+					memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));													// Unused lines
+				}
+				else
+				{
+					vtxBufferPtr[16]	= -w + x;														vtxBufferPtr[17]	=  h;						// Major display, vertical line, top left
+					vtxBufferPtr[18]	= -w + x + 1.0f;												vtxBufferPtr[19]	=  h;						// Major display, vertical line, top right
+					vtxBufferPtr[20]	= -w + x + 1.0f;												vtxBufferPtr[21]	= -h;						// Major display, vertical line, bottom right
+					vtxBufferPtr[22]	= -w + x;														vtxBufferPtr[23]	= -h;						// Major display, vertical line, bottom left
+					
+					vtxBufferPtr[24]	= -w;															vtxBufferPtr[25]	= -h + y + 1.0f;			// Major display, horizontal line, top left
+					vtxBufferPtr[26]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;						vtxBufferPtr[27]	= -h + y + 1.0f;			// Major display, horizontal line, top right
+					vtxBufferPtr[28]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;						vtxBufferPtr[29]	= -h + y;					// Major display, horizontal line, bottom right
+					vtxBufferPtr[30]	= -w;															vtxBufferPtr[31]	= -h + y;					// Major display, horizontal line, bottom left
+				}
+				break;
+			}
+				
+			case ClientDisplayLayout_Hybrid_16_9:
+			{
+				vtxBufferPtr[0]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + (x/3.0f);				vtxBufferPtr[1]		= -h + 64.0f;				// Minor bottom display, vertical line, top left
+				vtxBufferPtr[2]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + ((x+1.0f)/3.0f);		vtxBufferPtr[3]		= -h + 64.0f;				// Minor bottom display, vertical line, top right
+				vtxBufferPtr[4]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + ((x+1.0f)/3.0f);		vtxBufferPtr[5]		= -h;						// Minor bottom display, vertical line, bottom right
+				vtxBufferPtr[6]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + (x/3.0f);				vtxBufferPtr[7]		= -h;						// Minor bottom display, vertical line, bottom left
+				
+				vtxBufferPtr[8]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;							vtxBufferPtr[9]		= -h + ((y+1.0f)/3.0f);		// Minor bottom display, horizontal line, top left
+				vtxBufferPtr[10]	=  w;																vtxBufferPtr[11]	= -h + ((y+1.0f)/3.0f);		// Minor bottom display, horizontal line, top right
+				vtxBufferPtr[12]	=  w;																vtxBufferPtr[13]	= -h + (y/3.0f);			// Minor bottom display, horizontal line, bottom right
+				vtxBufferPtr[14]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;							vtxBufferPtr[15]	= -h + (y/3.0f);			// Minor bottom display, horizontal line, bottom left
+				
+				if (this->_renderProperty.order == ClientDisplayOrder_MainFirst)
+				{
+					memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));													// Unused lines
+				}
+				else
+				{
+					vtxBufferPtr[16]	= -w + x;														vtxBufferPtr[17]	=  h;						// Major display, vertical line, top left
+					vtxBufferPtr[18]	= -w + x + 1.0f;												vtxBufferPtr[19]	=  h;						// Major display, vertical line, top right
+					vtxBufferPtr[20]	= -w + x + 1.0f;												vtxBufferPtr[21]	= -h;						// Major display, vertical line, bottom right
+					vtxBufferPtr[22]	= -w + x;														vtxBufferPtr[23]	= -h;						// Major display, vertical line, bottom left
+					
+					vtxBufferPtr[24]	= -w;															vtxBufferPtr[25]	= -h + y + 1.0f;			// Major display, horizontal line, top left
+					vtxBufferPtr[26]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;						vtxBufferPtr[27]	= -h + y + 1.0f;			// Major display, horizontal line, top right
+					vtxBufferPtr[28]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;						vtxBufferPtr[29]	= -h + y;					// Major display, horizontal line, bottom right
+					vtxBufferPtr[30]	= -w;															vtxBufferPtr[31]	= -h + y;					// Major display, horizontal line, bottom left
+				}
+				break;
+			}
+				
+			case ClientDisplayLayout_Hybrid_16_10:
+			{
+				vtxBufferPtr[0]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + (x/5.0f);				vtxBufferPtr[1]		= -h + 38.4f;				// Minor bottom display, vertical line, top left
+				vtxBufferPtr[2]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + ((x+1.0f)/5.0f);		vtxBufferPtr[3]		= -h + 38.4f;				// Minor bottom display, vertical line, top right
+				vtxBufferPtr[4]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + ((x+1.0f)/5.0f);		vtxBufferPtr[5]		= -h;						// Minor bottom display, vertical line, bottom right
+				vtxBufferPtr[6]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH + (x/5.0f);				vtxBufferPtr[7]		= -h;						// Minor bottom display, vertical line, bottom left
+				
+				vtxBufferPtr[8]		= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;							vtxBufferPtr[9]		= -h + ((y+1.0f)/5.0f);		// Minor bottom display, horizontal line, top left
+				vtxBufferPtr[10]	=  w;																vtxBufferPtr[11]	= -h + ((y+1.0f)/5.0f);		// Minor bottom display, horizontal line, top right
+				vtxBufferPtr[12]	=  w;																vtxBufferPtr[13]	= -h + (y/5.0f);			// Minor bottom display, horizontal line, bottom right
+				vtxBufferPtr[14]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;							vtxBufferPtr[15]	= -h + (y/5.0f);			// Minor bottom display, horizontal line, bottom left
+				
+				if (this->_renderProperty.order == ClientDisplayOrder_MainFirst)
+				{
+					memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));													// Unused lines
+				}
+				else
+				{
+					vtxBufferPtr[16]	= -w + x;														vtxBufferPtr[17]	=  h;						// Major display, vertical line, top left
+					vtxBufferPtr[18]	= -w + x + 1.0f;												vtxBufferPtr[19]	=  h;						// Major display, vertical line, top right
+					vtxBufferPtr[20]	= -w + x + 1.0f;												vtxBufferPtr[21]	= -h;						// Major display, vertical line, bottom right
+					vtxBufferPtr[22]	= -w + x;														vtxBufferPtr[23]	= -h;						// Major display, vertical line, bottom left
+					
+					vtxBufferPtr[24]	= -w;															vtxBufferPtr[25]	= -h + y + 1.0f;			// Major display, horizontal line, top left
+					vtxBufferPtr[26]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;						vtxBufferPtr[27]	= -h + y + 1.0f;			// Major display, horizontal line, top right
+					vtxBufferPtr[28]	= -w + (float)GPU_FRAMEBUFFER_NATIVE_WIDTH;						vtxBufferPtr[29]	= -h + y;					// Major display, horizontal line, bottom right
+					vtxBufferPtr[30]	= -w;															vtxBufferPtr[31]	= -h + y;					// Major display, horizontal line, bottom left
+				}
+				break;
+			}
+				
+			default: // Default to vertical orientation.
+			{
+				const float g = (float)this->_renderProperty.gapDistance;
+				
+				if (this->_renderProperty.order == ClientDisplayOrder_MainFirst)
+				{
+					vtxBufferPtr[0]		= -w + x;														vtxBufferPtr[1]		= -g/2.0f;					// Vertical line, top left
+					vtxBufferPtr[2]		= -w + x + 1.0f;												vtxBufferPtr[3]		= -g/2.0f;					// Vertical line, top right
+					vtxBufferPtr[4]		= -w + x + 1.0f;												vtxBufferPtr[5]		= -h;						// Vertical line, bottom right
+					vtxBufferPtr[6]		= -w + x;														vtxBufferPtr[7]		= -h;						// Vertical line, bottom left
+					
+					vtxBufferPtr[8]		= -w;															vtxBufferPtr[9]		= -h + y + 1.0f;			// Horizontal line, top left
+					vtxBufferPtr[10]	=  w;															vtxBufferPtr[11]	= -h + y + 1.0f;			// Horizontal line, top right
+					vtxBufferPtr[12]	=  w;															vtxBufferPtr[13]	= -h + y;					// Horizontal line, bottom right
+					vtxBufferPtr[14]	= -w;															vtxBufferPtr[15]	= -h + y;					// Horizontal line, bottom left
+				}
+				else
+				{
+					vtxBufferPtr[0]		= -w + x;														vtxBufferPtr[1]		=  h;						// Vertical line, top left
+					vtxBufferPtr[2]		= -w + x + 1.0f;												vtxBufferPtr[3]		=  h;						// Vertical line, top right
+					vtxBufferPtr[4]		= -w + x + 1.0f;												vtxBufferPtr[5]		=  g/2.0f;					// Vertical line, bottom right
+					vtxBufferPtr[6]		= -w + x;														vtxBufferPtr[7]		=  g/2.0f;					// Vertical line, bottom left
+					
+					vtxBufferPtr[8]		= -w;															vtxBufferPtr[9]		=  g/2.0f + y + 1.0f;		// Horizontal line, top left
+					vtxBufferPtr[10]	=  w;															vtxBufferPtr[11]	=  g/2.0f + y + 1.0f;		// Horizontal line, top right
+					vtxBufferPtr[12]	=  w;															vtxBufferPtr[13]	=  g/2.0f + y;				// Horizontal line, bottom right
+					vtxBufferPtr[14]	= -w;															vtxBufferPtr[15]	=  g/2.0f + y;				// Horizontal line, bottom left
+				}
+				
+				memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));														// Unused lines
+				break;
+			}
+		}
+	}
+	else // displayModeID == ClientDisplayMode_Main || displayModeID == ClientDisplayMode_Touch
+	{
+		vtxBufferPtr[0]		= -w + x;																	vtxBufferPtr[1]		=  h;						// Vertical line, top left
+		vtxBufferPtr[2]		= -w + x + 1.0f;															vtxBufferPtr[3]		=  h;						// Vertical line, top right
+		vtxBufferPtr[4]		= -w + x + 1.0f;															vtxBufferPtr[5]		= -h;						// Vertical line, bottom right
+		vtxBufferPtr[6]		= -w + x;																	vtxBufferPtr[7]		= -h;						// Vertical line, bottom left
+		
+		vtxBufferPtr[8]		= -w;																		vtxBufferPtr[9]		= -h + y + 1.0f;			// Horizontal line, top left
+		vtxBufferPtr[10]	=  w;																		vtxBufferPtr[11]	= -h + y + 1.0f;			// Horizontal line, top right
+		vtxBufferPtr[12]	=  w;																		vtxBufferPtr[13]	= -h + y;					// Horizontal line, bottom right
+		vtxBufferPtr[14]	= -w;																		vtxBufferPtr[15]	= -h + y;					// Horizontal line, bottom left
+		
+		memcpy(vtxBufferPtr + (2 * 8), vtxBufferPtr + (0 * 8), sizeof(float) * (2 * 8));																// Alternate lines
 	}
 }
 
@@ -1384,7 +1725,7 @@ void ClientDisplay3DView::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 	pthread_mutex_unlock(&this->_mutexHUDString);
 	
 	const char *cString = hudString.c_str();
-	const size_t length = hudString.length();
+	const size_t textLength = (hudString.length() <= HUD_TEXT_MAX_CHARACTERS) ? hudString.length() : HUD_TEXT_MAX_CHARACTERS;
 	uint32_t currentColor = 0x40000000;
 	
 	// First, calculate the color of the text box.
@@ -1433,7 +1774,10 @@ void ClientDisplay3DView::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 		alreadyColoredRTC = true;
 	}
 	
-	for (size_t i = 1, j = 4; i < length; i++, j+=4)
+	size_t i = 1;
+	size_t j = 4;
+	
+	for (; i < textLength; i++, j+=4)
 	{
 		const char c = cString[i];
 		
@@ -1478,6 +1822,51 @@ void ClientDisplay3DView::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 		vtxColorBufferPtr[j+2] = currentColor;		// Bottom Right
 		vtxColorBufferPtr[j+3] = currentColor;		// Bottom Left
 	}
+	
+	// Fill in the vertices for the inputs.
+	// "<^>vABXYLRSsgf x:000 y:000";
+	
+	uint32_t inputColors[HUD_INPUT_ELEMENT_LENGTH];
+	inputColors[ 0] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Left == 0),   (this->_ndsFrameInfo.inputStatesApplied.Left == 0) );
+	inputColors[ 1] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Up == 0),     (this->_ndsFrameInfo.inputStatesApplied.Up == 0) );
+	inputColors[ 2] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Right == 0),  (this->_ndsFrameInfo.inputStatesApplied.Right == 0) );
+	inputColors[ 3] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Down == 0),   (this->_ndsFrameInfo.inputStatesApplied.Down == 0) );
+	inputColors[ 4] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.A == 0),      (this->_ndsFrameInfo.inputStatesApplied.A == 0) );
+	inputColors[ 5] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.B == 0),      (this->_ndsFrameInfo.inputStatesApplied.B == 0) );
+	inputColors[ 6] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.X == 0),      (this->_ndsFrameInfo.inputStatesApplied.X == 0) );
+	inputColors[ 7] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Y == 0),      (this->_ndsFrameInfo.inputStatesApplied.Y == 0) );
+	inputColors[ 8] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.L == 0),      (this->_ndsFrameInfo.inputStatesApplied.L == 0) );
+	inputColors[ 9] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.R == 0),      (this->_ndsFrameInfo.inputStatesApplied.R == 0) );
+	inputColors[10] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Start == 0),  (this->_ndsFrameInfo.inputStatesApplied.Start == 0) );
+	inputColors[11] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Select == 0), (this->_ndsFrameInfo.inputStatesApplied.Select == 0) );
+	inputColors[12] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Debug == 0),  (this->_ndsFrameInfo.inputStatesApplied.Debug == 0) );
+	inputColors[13] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Lid == 0),    (this->_ndsFrameInfo.inputStatesApplied.Lid == 0) );
+	inputColors[14] = this->GetInputColorUsingStates( (this->_ndsFrameInfo.inputStatesPending.Touch == 0),  (this->_ndsFrameInfo.inputStatesApplied.Touch == 0) );
+	
+	uint32_t touchColor = inputColors[14];
+	
+	for (size_t k = 15; k < HUD_INPUT_ELEMENT_LENGTH; k++)
+	{
+		inputColors[k] = touchColor;
+	}
+	
+	for (size_t k = 0; k < HUD_INPUT_ELEMENT_LENGTH; i++, j+=4, k++)
+	{
+		vtxColorBufferPtr[j+0] = inputColors[k];		// Top Left
+		vtxColorBufferPtr[j+1] = inputColors[k];		// Top Right
+		vtxColorBufferPtr[j+2] = inputColors[k];		// Bottom Right
+		vtxColorBufferPtr[j+3] = inputColors[k];		// Bottom Left
+	}
+	
+	touchColor = ((this->_ndsFrameInfo.inputStatesPending.Touch != 0) && (this->_ndsFrameInfo.inputStatesApplied.Touch != 0)) ? 0x00000000 : (touchColor & 0x00FFFFFF) | (0x60000000);
+	
+	for (size_t k = 0; k < HUD_INPUT_TOUCH_LINE_ELEMENTS; i++, j+=4, k++)
+	{
+		vtxColorBufferPtr[j+0] = touchColor;			// Top Left
+		vtxColorBufferPtr[j+1] = touchColor;			// Top Right
+		vtxColorBufferPtr[j+2] = touchColor;			// Bottom Right
+		vtxColorBufferPtr[j+3] = touchColor;			// Bottom Left
+	}
 }
 
 void ClientDisplay3DView::SetHUDTextureCoordinates(float *texCoordBufferPtr)
@@ -1487,11 +1876,46 @@ void ClientDisplay3DView::SetHUDTextureCoordinates(float *texCoordBufferPtr)
 	pthread_mutex_unlock(&this->_mutexHUDString);
 	
 	const char *cString = hudString.c_str();
-	const size_t length = hudString.length();
+	const size_t textLength = hudString.length();
+	size_t i = 0;
 	
-	for (size_t i = 0; i < length; i++)
+	for (; i < textLength; i++)
 	{
 		const char c = cString[i];
+		const float *glyphTexCoord = this->_glyphInfo[c].texCoord;
+		float *hudTexCoord = &texCoordBufferPtr[i * 8];
+		
+		hudTexCoord[0] = glyphTexCoord[0];
+		hudTexCoord[1] = glyphTexCoord[1];
+		hudTexCoord[2] = glyphTexCoord[2];
+		hudTexCoord[3] = glyphTexCoord[3];
+		hudTexCoord[4] = glyphTexCoord[4];
+		hudTexCoord[5] = glyphTexCoord[5];
+		hudTexCoord[6] = glyphTexCoord[6];
+		hudTexCoord[7] = glyphTexCoord[7];
+	}
+	
+	const char *hudInputString = this->_hudInputString.c_str();
+	
+	for (size_t k = 0; k < HUD_INPUT_ELEMENT_LENGTH; i++, k++)
+	{
+		const char c = hudInputString[k];
+		const float *glyphTexCoord = this->_glyphInfo[c].texCoord;
+		float *hudTexCoord = &texCoordBufferPtr[i * 8];
+		
+		hudTexCoord[0] = glyphTexCoord[0];
+		hudTexCoord[1] = glyphTexCoord[1];
+		hudTexCoord[2] = glyphTexCoord[2];
+		hudTexCoord[3] = glyphTexCoord[3];
+		hudTexCoord[4] = glyphTexCoord[4];
+		hudTexCoord[5] = glyphTexCoord[5];
+		hudTexCoord[6] = glyphTexCoord[6];
+		hudTexCoord[7] = glyphTexCoord[7];
+	}
+	
+	for (size_t k = 0; k < HUD_INPUT_TOUCH_LINE_ELEMENTS; i++, k++)
+	{
+		const char c = cString[0];
 		const float *glyphTexCoord = this->_glyphInfo[c].texCoord;
 		float *hudTexCoord = &texCoordBufferPtr[i * 8];
 		

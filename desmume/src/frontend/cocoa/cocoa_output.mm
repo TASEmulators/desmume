@@ -741,12 +741,16 @@
 @dynamic isHUDLagFrameCountVisible;
 @dynamic isHUDCPULoadAverageVisible;
 @dynamic isHUDRealTimeClockVisible;
+@dynamic isHUDInputVisible;
 @dynamic hudColorVideoFPS;
 @dynamic hudColorRender3DFPS;
 @dynamic hudColorFrameIndex;
 @dynamic hudColorLagFrameCount;
 @dynamic hudColorCPULoadAverage;
 @dynamic hudColorRTC;
+@dynamic hudColorInputPendingAndApplied;
+@dynamic hudColorInputAppliedOnly;
+@dynamic hudColorInputPendingOnly;
 @dynamic useVerticalSync;
 @dynamic videoFiltersPreferGPU;
 @dynamic sourceDeposterize;
@@ -901,6 +905,22 @@
 	return theState;
 }
 
+- (void) setIsHUDInputVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDShowInput((theState) ? true : false);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (BOOL) isHUDInputVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (_cdv->GetHUDShowInput()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
+
 - (void) setHudColorVideoFPS:(uint32_t)theColor
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
@@ -992,6 +1012,54 @@
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
 	const uint32_t color32 = _cdv->GetHUDColorRTC();
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return color32;
+}
+
+- (void) setHudColorInputPendingAndApplied:(uint32_t)theColor
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDColorInputPendingAndApplied(theColor);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (uint32_t) hudColorInputPendingAndApplied
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const uint32_t color32 = _cdv->GetHUDColorInputPendingAndApplied();
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return color32;
+}
+
+- (void) setHudColorInputAppliedOnly:(uint32_t)theColor
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDColorInputAppliedOnly(theColor);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (uint32_t) hudColorInputAppliedOnly
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const uint32_t color32 = _cdv->GetHUDColorInputAppliedOnly();
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return color32;
+}
+
+- (void) setHudColorInputPendingOnly:(uint32_t)theColor
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->SetHUDColorInputPendingOnly(theColor);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (uint32_t) hudColorInputPendingOnly
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const uint32_t color32 = _cdv->GetHUDColorInputPendingOnly();
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return color32;
@@ -1136,16 +1204,7 @@
 - (void) handleEmuFrameProcessed
 {
 	[super handleEmuFrameProcessed];
-	
-	OSSpinLockLock(&spinlockReceivedFrameIndex);
-	ClientFrameInfo clientFrameInfo;
-	clientFrameInfo.videoFPS = _receivedFrameCount;
-	OSSpinLockUnlock(&spinlockReceivedFrameIndex);
-	
-	OSSpinLockLock(&spinlockNDSFrameInfo);
-	_cdv->SetHUDInfo(clientFrameInfo, _ndsFrameInfo);
-	OSSpinLockUnlock(&spinlockNDSFrameInfo);
-	
+	[self hudUpdate];
 	_cdv->HandleEmulatorFrameEndEvent();
 }
 
@@ -1185,6 +1244,18 @@
 	OSSpinLockLock(&spinlockIsHUDVisible);
 	_cdv->SetScaleFactor(theScaleFactor);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+}
+
+- (void) hudUpdate
+{
+	OSSpinLockLock(&spinlockReceivedFrameIndex);
+	ClientFrameInfo clientFrameInfo;
+	clientFrameInfo.videoFPS = _receivedFrameCount;
+	OSSpinLockUnlock(&spinlockReceivedFrameIndex);
+	
+	OSSpinLockLock(&spinlockNDSFrameInfo);
+	_cdv->SetHUDInfo(clientFrameInfo, _ndsFrameInfo);
+	OSSpinLockUnlock(&spinlockNDSFrameInfo);
 }
 
 @end

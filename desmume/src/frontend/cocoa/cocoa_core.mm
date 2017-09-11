@@ -972,21 +972,8 @@ static void* RunCoreThread(void *arg)
 		frameTime = execControl->GetFrameTime();
 		frameJumpTarget = execControl->GetFrameJumpTargetApplied();
 		
-		CocoaDSController *cdsController = [cdsCore cdsController];
-		if (behavior != ExecutionBehavior_FrameJump)
-		{
-			[cdsController flush];
-		}
-		else
-		{
-			[cdsController flushEmpty];
-		}
-		
-		NDS_beginProcessingInput();
-		FCEUMOV_HandlePlayback();
-		NDS_endProcessingInput();
-		FCEUMOV_HandleRecording();
-		
+		execControl->ProcessInputs();
+		execControl->ApplyInputs();
 		execControl->ApplySettingsOnNDSExec();
 		
 		// Execute the frame and increment the frame counter.
@@ -1008,6 +995,7 @@ static void* RunCoreThread(void *arg)
 		// of whether the NDS actually reads the mic or not.
 		if ((ndsFrameInfo.frameIndex & 0x07) == 0x07)
 		{
+			CocoaDSController *cdsController = [cdsCore cdsController];
 			[cdsController updateMicLevel];
 			[cdsController clearMicLevelMeasure];
 		}

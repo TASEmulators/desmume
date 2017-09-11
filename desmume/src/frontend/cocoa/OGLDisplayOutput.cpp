@@ -32,18 +32,28 @@ static const char *HUDOutputVertShader_100 = {"\
 	ATTRIBUTE vec2 inTexCoord0; \n\
 	\n\
 	uniform vec2 viewSize; \n\
+	uniform float scalar; \n\
+	uniform float angleDegrees; \n\
 	\n\
 	VARYING vec4 vtxColor; \n\
 	VARYING vec2 texCoord[1]; \n\
 	\n\
 	void main() \n\
 	{ \n\
+		float angleRadians = radians(angleDegrees); \n\
+		\n\
 		mat2 projection	= mat2(	vec2(2.0/viewSize.x,            0.0), \n\
 								vec2(           0.0, 2.0/viewSize.y)); \n\
 		\n\
+		mat2 rotation	= mat2(	vec2( cos(angleRadians), sin(angleRadians)), \n\
+								vec2(-sin(angleRadians), cos(angleRadians))); \n\
+		\n\
+		mat2 scale		= mat2(	vec2(scalar,    0.0), \n\
+								vec2(   0.0, scalar)); \n\
+		\n\
 		vtxColor = inColor; \n\
 		texCoord[0] = inTexCoord0; \n\
-		gl_Position = vec4(projection * inPosition, 0.0, 1.0);\n\
+		gl_Position = vec4(projection * rotation * scale * inPosition, 0.0, 1.0);\n\
 	} \n\
 "};
 
@@ -5016,7 +5026,11 @@ void OGLVideoOutput::_UpdateOrder()
 
 void OGLVideoOutput::_UpdateRotation()
 {
-	this->GetDisplayLayer()->SetNeedsUpdateRotationScale();
+	for (size_t i = 0; i < _layerList->size(); i++)
+	{
+		OGLVideoLayer *theLayer = (*_layerList)[i];
+		theLayer->SetNeedsUpdateRotationScale();
+	}
 }
 
 void OGLVideoOutput::_UpdateClientSize()
@@ -5032,7 +5046,12 @@ void OGLVideoOutput::_UpdateClientSize()
 void OGLVideoOutput::_UpdateViewScale()
 {
 	this->ClientDisplayView::_UpdateViewScale();
-	this->GetDisplayLayer()->SetNeedsUpdateRotationScale();
+	
+	for (size_t i = 0; i < _layerList->size(); i++)
+	{
+		OGLVideoLayer *theLayer = (*_layerList)[i];
+		theLayer->SetNeedsUpdateRotationScale();
+	}
 }
 
 void OGLVideoOutput::_UpdateViewport()
@@ -5042,11 +5061,7 @@ void OGLVideoOutput::_UpdateViewport()
 	for (size_t i = 0; i < _layerList->size(); i++)
 	{
 		OGLVideoLayer *theLayer = (*_layerList)[i];
-		
-		if (theLayer->IsVisible())
-		{
-			theLayer->SetNeedsUpdateViewport();
-		}
+		theLayer->SetNeedsUpdateViewport();
 	}
 }
 
@@ -5614,9 +5629,9 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 		
 		const GLuint finalOutputProgramID = _finalOutputProgram->GetProgramID();
 		glUseProgram(finalOutputProgramID);
-		_uniformFinalOutputAngleDegrees = glGetUniformLocation(finalOutputProgramID, "angleDegrees");
-		_uniformFinalOutputScalar = glGetUniformLocation(finalOutputProgramID, "scalar");
-		_uniformFinalOutputViewSize = glGetUniformLocation(finalOutputProgramID, "viewSize");
+		_uniformAngleDegrees = glGetUniformLocation(finalOutputProgramID, "angleDegrees");
+		_uniformScalar = glGetUniformLocation(finalOutputProgramID, "scalar");
+		_uniformViewSize = glGetUniformLocation(finalOutputProgramID, "viewSize");
 		glUseProgram(0);
 	}
 	else
@@ -5753,9 +5768,9 @@ void OGLImage::UploadTransformationOGL()
 	
 	if (this->_canUseShaderOutput)
 	{
-		glUniform2f(this->_uniformFinalOutputViewSize, w, h);
-		glUniform1f(this->_uniformFinalOutputAngleDegrees, 0.0f);
-		glUniform1f(this->_uniformFinalOutputScalar, s);
+		glUniform2f(this->_uniformViewSize, w, h);
+		glUniform1f(this->_uniformAngleDegrees, 0.0f);
+		glUniform1f(this->_uniformScalar, s);
 	}
 	else
 	{
@@ -6175,6 +6190,11 @@ void OGLVideoLayer::SetNeedsUpdateViewport()
 	this->_needUpdateViewport = true;
 }
 
+void OGLVideoLayer::SetNeedsUpdateRotationScale()
+{
+	this->_needUpdateRotationScale = true;
+}
+
 void OGLVideoLayer::SetNeedsUpdateVertices()
 {
 	this->_needUpdateVertices = true;
@@ -6205,6 +6225,8 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 		_program->SetVertexAndFragmentShaderOGL(HUDOutputVertShader_100, HUDOutputFragShader_110, true, oglVO->GetContextInfo()->IsUsingShader150());
 		
 		glUseProgram(_program->GetProgramID());
+		_uniformAngleDegrees = glGetUniformLocation(_program->GetProgramID(), "angleDegrees");
+		_uniformScalar = glGetUniformLocation(_program->GetProgramID(), "scalar");
 		_uniformViewSize = glGetUniformLocation(_program->GetProgramID(), "viewSize");
 		glUseProgram(0);
 	}
@@ -6230,10 +6252,10 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 	glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	
 	glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, _vboElementID);
-	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLshort) * HUD_MAX_CHARACTERS * 6, NULL, GL_STATIC_DRAW_ARB);
+	glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(GLshort) * HUD_TOTAL_ELEMENTS * 6, NULL, GL_STATIC_DRAW_ARB);
 	GLshort *idxBufferPtr = (GLshort *)glMapBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 		
-	for (size_t i = 0, j = 0, k = 0; i < HUD_MAX_CHARACTERS; i++, j+=6, k+=4)
+	for (size_t i = 0, j = 0, k = 0; i < HUD_TOTAL_ELEMENTS; i++, j+=6, k+=4)
 	{
 		idxBufferPtr[j+0] = k+0;
 		idxBufferPtr[j+1] = k+1;
@@ -6418,8 +6440,44 @@ void OGLHUDLayer::_UpdateVerticesOGL()
 
 void OGLHUDLayer::RenderOGL()
 {
-	const size_t length = this->_output->GetHUDString().length();
-	if (length <= 1)
+	size_t hudLength = this->_output->GetHUDString().length();
+	size_t hudTouchLineLength = 0;
+	
+	if (this->_output->GetHUDShowInput())
+	{
+		hudLength += HUD_INPUT_ELEMENT_LENGTH;
+		
+		switch (this->_output->GetMode())
+		{
+			case ClientDisplayMode_Main:
+			case ClientDisplayMode_Touch:
+				hudTouchLineLength = HUD_INPUT_TOUCH_LINE_ELEMENTS / 2;
+				break;
+				
+			case ClientDisplayMode_Dual:
+			{
+				switch (this->_output->GetLayout())
+				{
+					case ClientDisplayLayout_Vertical:
+					case ClientDisplayLayout_Horizontal:
+						hudTouchLineLength = HUD_INPUT_TOUCH_LINE_ELEMENTS / 2;
+						break;
+						
+					case ClientDisplayLayout_Hybrid_2_1:
+					case ClientDisplayLayout_Hybrid_16_9:
+					case ClientDisplayLayout_Hybrid_16_10:
+						hudTouchLineLength = HUD_INPUT_TOUCH_LINE_ELEMENTS;
+						break;
+				}
+				
+				break;
+			}
+		}
+		
+		hudLength += hudTouchLineLength;
+	}
+	
+	if (hudLength <= 1)
 	{
 		return;
 	}
@@ -6443,12 +6501,65 @@ void OGLHUDLayer::RenderOGL()
 	glBindVertexArrayDESMUME(this->_vaoMainStatesID);
 	glBindTexture(GL_TEXTURE_2D, this->_texCharMap);
 	
-	// First, draw the backing text box.
+	// First, draw the inputs.
+	if (this->_output->GetHUDShowInput())
+	{
+		const ClientDisplayViewProperties &cdv = this->_output->GetViewProperties();
+		
+		if (this->_output->GetContextInfo()->IsShaderSupported())
+		{
+			glUniform1f(this->_uniformAngleDegrees, cdv.rotation);
+			glUniform1f(this->_uniformScalar, cdv.viewScale);
+		}
+		else
+		{
+			glMatrixMode(GL_MODELVIEW);
+			glLoadIdentity();
+			glRotatef(cdv.rotation, 0.0f, 0.0f, 1.0f);
+			glScalef(cdv.viewScale, cdv.viewScale, 1.0f);
+		}
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glDrawElements(GL_TRIANGLES, hudTouchLineLength * 6, GL_UNSIGNED_SHORT, (GLvoid *)((this->_output->GetHUDString().length() + HUD_INPUT_ELEMENT_LENGTH) * 6 * sizeof(uint16_t)));
+		
+		if (this->_output->GetContextInfo()->IsShaderSupported())
+		{
+			glUniform1f(this->_uniformAngleDegrees, 0.0f);
+			glUniform1f(this->_uniformScalar, 1.0f);
+		}
+		else
+		{
+			glMatrixMode(GL_MODELVIEW);
+			glLoadIdentity();
+			glRotatef(0.0f, 0.0f, 0.0f, 1.0f);
+			glScalef(1.0f, 1.0f, 1.0f);
+		}
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glDrawElements(GL_TRIANGLES, HUD_INPUT_ELEMENT_LENGTH * 6, GL_UNSIGNED_SHORT, (GLvoid *)(this->_output->GetHUDString().length() * 6 * sizeof(uint16_t)));
+	}
+	
+	// Next, draw the backing text box.
+	if (this->_output->GetContextInfo()->IsShaderSupported())
+	{
+		glUniform1f(this->_uniformAngleDegrees, 0.0f);
+		glUniform1f(this->_uniformScalar, 1.0f);
+	}
+	else
+	{
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glRotatef(0.0f, 0.0f, 0.0f, 1.0f);
+		glScalef(1.0f, 1.0f, 1.0f);
+	}
+	
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 	
-	// Next, draw each character inside the box.
+	// Finally, draw each character inside the box.
 	const GLfloat textBoxScale = (GLfloat)HUD_TEXTBOX_BASE_SCALE * this->_output->GetHUDObjectScale() / this->_output->GetScaleFactor();
 	if (textBoxScale >= (2.0/3.0))
 	{
@@ -6462,7 +6573,7 @@ void OGLHUDLayer::RenderOGL()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -0.50f);
 	}
-	glDrawElements(GL_TRIANGLES, (length - 1) * 6, GL_UNSIGNED_SHORT, (GLvoid *)(6 * sizeof(GLshort)));
+	glDrawElements(GL_TRIANGLES, (this->_output->GetHUDString().length() - 1) * 6, GL_UNSIGNED_SHORT, (GLvoid *)(6 * sizeof(GLshort)));
 	
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindVertexArrayDESMUME(0);
@@ -6531,9 +6642,9 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 		
 		const GLuint finalOutputProgramID = _finalOutputProgram->GetProgramID();
 		glUseProgram(finalOutputProgramID);
-		_uniformFinalOutputAngleDegrees = glGetUniformLocation(finalOutputProgramID, "angleDegrees");
-		_uniformFinalOutputScalar = glGetUniformLocation(finalOutputProgramID, "scalar");
-		_uniformFinalOutputViewSize = glGetUniformLocation(finalOutputProgramID, "viewSize");
+		_uniformAngleDegrees = glGetUniformLocation(finalOutputProgramID, "angleDegrees");
+		_uniformScalar = glGetUniformLocation(finalOutputProgramID, "scalar");
+		_uniformViewSize = glGetUniformLocation(finalOutputProgramID, "viewSize");
 		glUseProgram(0);
 	}
 	else
@@ -6589,23 +6700,16 @@ OGLDisplayLayer::~OGLDisplayLayer()
 	}
 }
 
-void OGLDisplayLayer::SetNeedsUpdateRotationScale()
-{
-	this->_needUpdateRotationScale = true;
-	this->_needUpdateVertices = true;
-}
-
 void OGLDisplayLayer::_UpdateRotationScaleOGL()
 {
 	const ClientDisplayViewProperties &cdv = this->_output->GetViewProperties();
-	
 	const double r = cdv.rotation;
 	const double s = cdv.viewScale;
 	
 	if (this->_output->GetContextInfo()->IsShaderSupported())
 	{
-		glUniform1f(this->_uniformFinalOutputAngleDegrees, r);
-		glUniform1f(this->_uniformFinalOutputScalar, s);
+		glUniform1f(this->_uniformAngleDegrees, r);
+		glUniform1f(this->_uniformScalar, s);
 	}
 	else
 	{
@@ -7040,7 +7144,7 @@ void OGLDisplayLayer::RenderOGL()
 		
 		if (this->_needUpdateViewport)
 		{
-			glUniform2f(this->_uniformFinalOutputViewSize, this->_output->GetViewportWidth(), this->_output->GetViewportHeight());
+			glUniform2f(this->_uniformViewSize, this->_output->GetViewportWidth(), this->_output->GetViewportHeight());
 			this->_needUpdateViewport = false;
 		}
 	}

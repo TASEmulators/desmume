@@ -117,16 +117,18 @@
 	[[[hudPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setSourceAlphaBlendFactor:MTLBlendFactorSourceAlpha];
 	[[[hudPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setDestinationRGBBlendFactor:MTLBlendFactorOneMinusSourceAlpha];
 	[[[hudPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setDestinationAlphaBlendFactor:MTLBlendFactorOneMinusSourceAlpha];
-	[hudPipelineDesc setVertexFunction:[defaultLibrary newFunctionWithName:@"hud_vertex"]];
-	[hudPipelineDesc setFragmentFunction:[defaultLibrary newFunctionWithName:@"hud_fragment"]];
 	
+	id<MTLFunction> hudFragmentFunction = [defaultLibrary newFunctionWithName:@"hud_fragment"];
+	[hudPipelineDesc setVertexFunction:[defaultLibrary newFunctionWithName:@"hud_vertex"]];
+	[hudPipelineDesc setFragmentFunction:hudFragmentFunction];
 	hudPipeline = [[device newRenderPipelineStateWithDescriptor:hudPipelineDesc error:nil] retain];
+	
 	[hudPipelineDesc release];
 	
-	hudIndexBuffer = [[device newBufferWithLength:(sizeof(uint16_t) * HUD_MAX_CHARACTERS * 6) options:MTLResourceStorageModeManaged] retain];
+	hudIndexBuffer = [[device newBufferWithLength:(sizeof(uint16_t) * HUD_TOTAL_ELEMENTS * 6) options:MTLResourceStorageModeManaged] retain];
 	
 	uint16_t *idxBufferPtr = (uint16_t *)[hudIndexBuffer contents];
-	for (size_t i = 0, j = 0, k = 0; i < HUD_MAX_CHARACTERS; i++, j+=6, k+=4)
+	for (size_t i = 0, j = 0, k = 0; i < HUD_TOTAL_ELEMENTS; i++, j+=6, k+=4)
 	{
 		idxBufferPtr[j+0] = k+0;
 		idxBufferPtr[j+1] = k+1;
@@ -136,7 +138,7 @@
 		idxBufferPtr[j+5] = k+0;
 	}
 	
-	[hudIndexBuffer didModifyRange:NSMakeRange(0, sizeof(uint16_t) * HUD_MAX_CHARACTERS * 6)];
+	[hudIndexBuffer didModifyRange:NSMakeRange(0, sizeof(uint16_t) * HUD_TOTAL_ELEMENTS * 6)];
 	
 	_bufDisplayFetchNative[NDSDisplayID_Main][0]  = nil;
 	_bufDisplayFetchNative[NDSDisplayID_Main][1]  = nil;
@@ -1451,17 +1453,26 @@
 {
 	NSAutoreleasePool *renderAutoreleasePool = [[NSAutoreleasePool alloc] init];
 	
+	dispatch_semaphore_wait(availableResources, DISPATCH_TIME_FOREVER);
+	
 	id<CAMetalDrawable> drawable = [self nextDrawable];
+	if (drawable == nil)
+	{
+		puts("MacMetalDisplayView: No drawable object was available!\n");
+		dispatch_semaphore_signal(availableResources);
+		[renderAutoreleasePool release];
+		return;
+	}
+	
 	id<MTLTexture> texture = [drawable texture];
 	if (texture == nil)
 	{
+		dispatch_semaphore_signal(availableResources);
 		[renderAutoreleasePool release];
 		return;
 	}
 	
 	const NDSDisplayInfo &displayInfo = _cdv->GetEmuDisplayInfo();
-	
-	dispatch_semaphore_wait(availableResources, DISPATCH_TIME_FOREVER);
 	
 	[[self colorAttachment0Desc] setTexture:texture];
 	
@@ -1586,7 +1597,43 @@
 	}
 	
 	// Draw the HUD.
-	const size_t hudLength = _cdv->GetHUDString().length();
+	size_t hudLength = _cdv->GetHUDString().length();
+	size_t hudTouchLineLength = 0;
+	
+	if (_cdv->GetHUDShowInput())
+	{
+		hudLength += HUD_INPUT_ELEMENT_LENGTH;
+		
+		switch (_cdv->GetMode())
+		{
+			case ClientDisplayMode_Main:
+			case ClientDisplayMode_Touch:
+				hudTouchLineLength = HUD_INPUT_TOUCH_LINE_ELEMENTS / 2;
+				break;
+				
+			case ClientDisplayMode_Dual:
+			{
+				switch (_cdv->GetLayout())
+				{
+					case ClientDisplayLayout_Vertical:
+					case ClientDisplayLayout_Horizontal:
+						hudTouchLineLength = HUD_INPUT_TOUCH_LINE_ELEMENTS / 2;
+						break;
+						
+					case ClientDisplayLayout_Hybrid_2_1:
+					case ClientDisplayLayout_Hybrid_16_9:
+					case ClientDisplayLayout_Hybrid_16_10:
+						hudTouchLineLength = HUD_INPUT_TOUCH_LINE_ELEMENTS;
+						break;
+				}
+				
+				break;
+			}
+		}
+		
+		hudLength += hudTouchLineLength;
+	}
+	
 	if ( _cdv->GetHUDVisibility() && (hudLength > 1) && ([self texHUDCharMap] != nil) )
 	{
 		if (_cdv->HUDNeedsUpdate())
@@ -1603,6 +1650,8 @@
 			_cdv->ClearHUDNeedsUpdate();
 		}
 		
+		uint8_t isScreenOverlay = 0;
+		
 		[ce setRenderPipelineState:[sharedData hudPipeline]];
 		[ce setVertexBuffer:_hudVtxPositionBuffer offset:0 atIndex:0];
 		[ce setVertexBuffer:_hudVtxColorBuffer offset:0 atIndex:1];
@@ -1610,7 +1659,30 @@
 		[ce setVertexBuffer:_cdvPropertiesBuffer offset:0 atIndex:3];
 		[ce setFragmentTexture:[self texHUDCharMap] atIndex:0];
 		
-		// First, draw the backing text box.
+		// First, draw the inputs.
+		if (_cdv->GetHUDShowInput())
+		{
+			isScreenOverlay = 1;
+			[ce setVertexBytes:&isScreenOverlay length:sizeof(uint8_t) atIndex:4];
+			[ce setFragmentSamplerState:[sharedData samplerHUDBox] atIndex:0];
+			[ce drawIndexedPrimitives:MTLPrimitiveTypeTriangle
+						   indexCount:hudTouchLineLength * 6
+							indexType:MTLIndexTypeUInt16
+						  indexBuffer:[sharedData hudIndexBuffer]
+					indexBufferOffset:(_cdv->GetHUDString().length() + HUD_INPUT_ELEMENT_LENGTH) * 6 * sizeof(uint16_t)];
+			
+			isScreenOverlay = 0;
+			[ce setVertexBytes:&isScreenOverlay length:sizeof(uint8_t) atIndex:4];
+			[ce setFragmentSamplerState:[sharedData samplerHUDText] atIndex:0];
+			[ce drawIndexedPrimitives:MTLPrimitiveTypeTriangle
+						   indexCount:HUD_INPUT_ELEMENT_LENGTH * 6
+							indexType:MTLIndexTypeUInt16
+						  indexBuffer:[sharedData hudIndexBuffer]
+					indexBufferOffset:_cdv->GetHUDString().length() * 6 * sizeof(uint16_t)];
+		}
+		
+		// Next, draw the backing text box.
+		[ce setVertexBytes:&isScreenOverlay length:sizeof(uint8_t) atIndex:4];
 		[ce setFragmentSamplerState:[sharedData samplerHUDBox] atIndex:0];
 		[ce drawIndexedPrimitives:MTLPrimitiveTypeTriangle
 					   indexCount:6
@@ -1618,10 +1690,10 @@
 					  indexBuffer:[sharedData hudIndexBuffer]
 				indexBufferOffset:0];
 		
-		// Next, draw each character inside the box.
+		// Finally, draw each character inside the box.
 		[ce setFragmentSamplerState:[sharedData samplerHUDText] atIndex:0];
 		[ce drawIndexedPrimitives:MTLPrimitiveTypeTriangle
-					   indexCount:(hudLength - 1) * 6
+					   indexCount:(_cdv->GetHUDString().length() - 1) * 6
 						indexType:MTLIndexTypeUInt16
 					  indexBuffer:[sharedData hudIndexBuffer]
 				indexBufferOffset:6 * sizeof(uint16_t)];

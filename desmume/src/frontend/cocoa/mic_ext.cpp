@@ -16,7 +16,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import "cocoa_globals.h"
+#include "ClientExecutionControl.h"
 #include "mic_ext.h"
 #include "../../emufile.h"
 #include "../../readwrite.h"
