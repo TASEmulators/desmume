@@ -1596,17 +1596,18 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 {
 	BOOL enable = YES;
     const SEL theAction = [theItem action];
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[[emuControl cdsCoreController] content];
 	
 	if (theAction == @selector(toggleExecutePause:))
     {
-		if (![emuControl masterExecuteFlag] ||
+		if (![cdsCore masterExecute] ||
 			[emuControl currentRom] == nil ||
 			[emuControl isUserInterfaceBlockingExecution])
 		{
 			enable = NO;
 		}
 		
-		if ([emuControl executionState] == ExecutionBehavior_Pause)
+		if ([cdsCore coreState] == ExecutionBehavior_Pause)
 		{
 			[theItem setLabel:NSSTRING_TITLE_EXECUTE_CONTROL];
 			[theItem setImage:[emuControl iconExecute]];
@@ -1619,10 +1620,10 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
     }
 	else if (theAction == @selector(frameAdvance:))
     {
-		if (![emuControl masterExecuteFlag] ||
+		if (![cdsCore masterExecute] ||
 			[emuControl currentRom] == nil ||
 			[emuControl isUserInterfaceBlockingExecution] ||
-			[emuControl executionState] != ExecutionBehavior_Pause)
+			[cdsCore coreState] != ExecutionBehavior_Pause)
 		{
 			enable = NO;
 		}
@@ -1636,7 +1637,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	else if (theAction == @selector(changeCoreSpeed:))
 	{
-		NSInteger speedScalar = (NSInteger)([emuControl speedScalar] * 100.0);
+		NSInteger speedScalar = (NSInteger)([cdsCore speedScalar] * 100.0);
 		
 		if (speedScalar != (NSInteger)(SPEED_SCALAR_NORMAL * 100.0))
 		{

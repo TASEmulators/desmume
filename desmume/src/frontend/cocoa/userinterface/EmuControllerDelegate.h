@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2015 DeSmuME Team
+	Copyright (C) 2013-2017 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -77,15 +77,9 @@ class AudioSampleBlockGenerator;
 	NSURL *currentSaveStateURL;
 	NSInteger selectedExportRomSaveID;
 	NSInteger selectedRomSaveTypeID;
-	NSInteger frameJumpType;
-	NSInteger frameJumpFramesForward;
-	NSInteger frameJumpToFrame;
 	
 	CGFloat lastSetSpeedScalar;
-	BOOL isSoftwareMicActive;
 	BOOL isHardwareMicAvailable;
-	BOOL isHardwareMicIdle;
-	BOOL isHardwareMicInClip;
 	float currentMicGainValue;
 	BOOL isSoundMuted;
 	float lastSetVolumeValue;
@@ -143,18 +137,12 @@ class AudioSampleBlockGenerator;
 @property (readonly) NSImage *iconSpeedNormal;
 @property (readonly) NSImage *iconSpeedDouble;
 
-@property (readonly) BOOL masterExecuteFlag;
-@property (readonly) NSInteger executionState;
 @property (readonly) CGFloat lastSetSpeedScalar;
-@property (readonly) CGFloat speedScalar;
 
 @property (assign) BOOL isWorking;
 @property (assign) BOOL isRomLoading;
 @property (assign) NSString *statusText;
-@property (assign) BOOL isSoftwareMicActive;
 @property (assign) BOOL isHardwareMicAvailable;
-@property (assign) BOOL isHardwareMicIdle;
-@property (assign) BOOL isHardwareMicInClip;
 @property (assign) float currentMicGainValue;
 @property (assign) float currentVolumeValue;
 @property (retain) NSImage *currentMicStatusIcon;
@@ -165,9 +153,6 @@ class AudioSampleBlockGenerator;
 @property (retain) NSURL *currentSaveStateURL;
 @property (assign) NSInteger selectedExportRomSaveID;
 @property (assign) NSInteger selectedRomSaveTypeID;
-@property (assign) NSInteger frameJumpType;
-@property (assign) NSInteger frameJumpFramesForward;
-@property (assign) NSInteger frameJumpToFrame;
 
 @property (retain) DisplayWindowController *mainWindow;
 @property (readonly) NSMutableArray *windowList;

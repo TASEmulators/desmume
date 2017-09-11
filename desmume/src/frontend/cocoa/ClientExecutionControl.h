@@ -345,6 +345,7 @@ struct ClientExecutionControlSettings
 	double executionSpeed;
 	
 	bool enableFrameSkip;
+	uint64_t frameJumpRelativeTarget;
 	uint64_t frameJumpTarget;
 	
 	ExecutionBehavior execBehavior;
@@ -569,6 +570,9 @@ public:
 	void SetFramesToSkip(uint8_t numFrames);
 	void ResetFramesToSkip();
 	
+	uint64_t GetFrameJumpRelativeTarget();
+	void SetFrameJumpRelativeTarget(uint64_t newRelativeTarget);
+	
 	uint64_t GetFrameJumpTarget();
 	uint64_t GetFrameJumpTargetApplied();
 	void SetFrameJumpTarget(uint64_t newJumpTarget);
@@ -613,6 +617,7 @@ public:
 	
 	void FetchOutputPostNDSExec();
 	const NDSFrameInfo& GetNDSFrameInfo();
+	uint64_t GetFrameIndex();
 	
 	double GetFrameTime();
 	uint8_t CalculateFrameSkip(double startAbsoluteTime, double frameAbsoluteTime);

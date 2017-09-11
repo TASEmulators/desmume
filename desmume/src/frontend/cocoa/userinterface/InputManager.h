@@ -66,7 +66,7 @@ typedef struct
 	float floatCoordX;				// The X-coordinate as a float for commands that require a location
 	float floatCoordY;				// The Y-coordinate as a float for commands that require a location
 	float scalar;					// A scalar value for commands that require a scalar
-	id sender;						// An object for commands that require an object
+	void *object;					// An object for commands that require an object
 } InputAttributes;
 
 typedef struct
@@ -75,7 +75,7 @@ typedef struct
 	SEL selector;					// The selector that is called on command dispatch
 	int32_t intValue[4];			// Context dependent int values
 	float floatValue[4];			// Context dependent float values
-	id object[4];					// Context dependent objects
+	void *object[4];				// Context dependent objects
 	
 	bool useInputForIntCoord;		// The command will prefer the input device's int coordinate
 	bool useInputForFloatCoord;		// The command will prefer the input device's float coordinate

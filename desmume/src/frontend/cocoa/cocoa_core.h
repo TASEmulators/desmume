@@ -88,6 +88,10 @@ typedef struct
 @property (assign) BOOL isCheatingEnabled;
 @property (assign) CGFloat speedScalar;
 
+@property (assign) NSInteger frameJumpBehavior;
+@property (assign) NSUInteger frameJumpNumberFramesForward;
+@property (assign) NSUInteger frameJumpToFrameIndex;
+
 @property (assign) BOOL isGdbStubStarted;
 @property (assign) BOOL isInDebugTrap;
 @property (assign) BOOL enableGdbStubARM9;
@@ -130,8 +134,6 @@ typedef struct
 - (void) reset;
 - (void) getTimedEmulatorStatistics:(NSTimer *)timer;
 - (NSUInteger) frameNumber;
-- (void) frameJumpTo:(NSUInteger)targetFrameNum;
-- (void) frameJump:(NSUInteger)relativeFrameNum;
 
 - (void) addOutput:(CocoaDSOutput *)theOutput;
 - (void) removeOutput:(CocoaDSOutput *)theOutput;

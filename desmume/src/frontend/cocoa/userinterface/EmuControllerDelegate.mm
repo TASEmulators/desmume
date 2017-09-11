@@ -66,18 +66,12 @@
 @synthesize iconSpeedNormal;
 @synthesize iconSpeedDouble;
 
-@dynamic masterExecuteFlag;
-@dynamic executionState;
 @synthesize lastSetSpeedScalar;
-@dynamic speedScalar;
 
 @synthesize isWorking;
 @synthesize isRomLoading;
 @synthesize statusText;
-@synthesize isSoftwareMicActive;
 @synthesize isHardwareMicAvailable;
-@synthesize isHardwareMicIdle;
-@synthesize isHardwareMicInClip;
 @synthesize currentMicGainValue;
 @dynamic currentVolumeValue;
 @synthesize currentMicStatusIcon;
@@ -90,9 +84,6 @@
 @synthesize currentSaveStateURL;
 @synthesize selectedExportRomSaveID;
 @synthesize selectedRomSaveTypeID;
-@synthesize frameJumpType;
-@synthesize frameJumpFramesForward;
-@synthesize frameJumpToFrame;
 
 @synthesize mainWindow;
 @synthesize windowList;
@@ -129,15 +120,9 @@
 	currentSaveStateURL = nil;
 	selectedRomSaveTypeID = ROMSAVETYPE_AUTOMATIC;
 	selectedExportRomSaveID = 0;
-	frameJumpType = FrameJumpBehavior_Forward;
-	frameJumpFramesForward = 60;
-	frameJumpToFrame = 0;
 	
 	lastSetSpeedScalar = 1.0f;
-	isSoftwareMicActive = NO;
 	isHardwareMicAvailable = NO;
-	isHardwareMicIdle = YES;
-	isHardwareMicInClip = NO;
 	currentMicGainValue = 0.0f;
 	isSoundMuted = NO;
 	lastSetVolumeValue = MAX_VOLUME;
@@ -280,24 +265,6 @@
 	OSSpinLockUnlock(&spinlockSpeaker);
 	
 	return theSpeaker;
-}
-
-- (BOOL) masterExecuteFlag
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore masterExecute];
-}
-
-- (NSInteger) executionState
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore coreState];
-}
-
-- (CGFloat) speedScalar
-{
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	return [cdsCore speedScalar];
 }
 
 - (void) setCurrentVolumeValue:(float)vol
@@ -1119,7 +1086,7 @@
 	const float sineWaveFrequency = cmdAttr.floatValue[0];
 	[cdsController setSineWaveGeneratorFrequency:sineWaveFrequency];
 	
-	NSString *audioFilePath = cmdAttr.object[0];
+	NSString *audioFilePath = (NSString *)cmdAttr.object[0];
 	[cdsController setSelectedAudioFileGenerator:[inputManager audioFileGeneratorFromFilePath:audioFilePath]];
 }
 
@@ -1202,7 +1169,7 @@
 		return;
 	}
 	
-	const NSInteger slotNumber = (cmdAttr.useInputForSender) ? [CocoaDSUtil getIBActionSenderTag:cmdAttr.input.sender] : cmdAttr.intValue[0];
+	const NSInteger slotNumber = (cmdAttr.useInputForSender) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
 	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
 	{
 		return;
@@ -1247,7 +1214,7 @@
 		return;
 	}
 	
-	const NSInteger slotNumber = (cmdAttr.useInputForSender) ? [CocoaDSUtil getIBActionSenderTag:cmdAttr.input.sender] : cmdAttr.intValue[0];
+	const NSInteger slotNumber = (cmdAttr.useInputForSender) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
 	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
 	{
 		return;
@@ -1283,7 +1250,7 @@
 		return;
 	}
 	
-	const double relativeDegrees = (cmdAttr.useInputForSender) ? (double)[CocoaDSUtil getIBActionSenderTag:cmdAttr.input.sender] : (double)cmdAttr.intValue[0];
+	const double relativeDegrees = (cmdAttr.useInputForSender) ? (double)[CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : (double)cmdAttr.intValue[0];
 	const double angleDegrees = [mainWindow displayRotation] + relativeDegrees;
 	[mainWindow setDisplayRotation:angleDegrees];
 }
@@ -1429,7 +1396,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF || [self currentRom] == nil)
+	if ( (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) || ([self currentRom] == nil) )
 	{
 		return;
 	}
@@ -1451,7 +1418,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF || [self currentRom] == nil)
+	if ( (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) || ([self currentRom] == nil) )
 	{
 		return;
 	}
@@ -1464,7 +1431,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF || [self currentRom] == nil)
+	if ( (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) || ([self currentRom] == nil) )
 	{
 		return;
 	}
@@ -1479,7 +1446,9 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF || [cdsCore coreState] != ExecutionBehavior_Pause || [self currentRom] == nil)
+	if ( (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) ||
+	     ([cdsCore coreState] != ExecutionBehavior_Pause) ||
+	     ([self currentRom] == nil) )
 	{
 		return;
 	}
@@ -1492,34 +1461,15 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF || [self currentRom] == nil)
+	if ( (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) || ([self currentRom] == nil) )
 	{
 		return;
 	}
 	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[executionControlWindow makeFirstResponder:nil];
-	NSUInteger jumpFrames = 0;
 	
-	switch ([self frameJumpType])
-	{
-		case FrameJumpBehavior_Forward:
-			jumpFrames = [self frameJumpFramesForward];
-			[cdsCore frameJump:jumpFrames];
-			break;
-			
-		case FrameJumpBehavior_ToFrame:
-			jumpFrames = [self frameJumpToFrame];
-			[cdsCore frameJumpTo:jumpFrames];
-			break;
-			
-		case FrameJumpBehavior_NextMarker:
-			// TODO: Support when replay markers are implemented.
-			break;
-			
-		default:
-			break;
-	}
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore setCoreState:ExecutionBehavior_FrameJump];
 }
 
 - (void) cmdReset:(NSValue *)cmdAttrValue
@@ -1527,12 +1477,10 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF || [self currentRom] == nil)
+	if ( (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) || ([self currentRom] == nil) )
 	{
 		return;
 	}
-	
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESETTING];
 	[self setIsWorking:YES];
@@ -1542,6 +1490,7 @@
 		[[windowController window] displayIfNeeded];
 	}
 	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore reset];
 	
 	for (DisplayWindowController *windowController in windowList)
@@ -1598,7 +1547,7 @@
 	}
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	const NSInteger bitNumber = (cmdAttr.useInputForSender) ? [CocoaDSUtil getIBActionSenderTag:cmdAttr.input.sender] : cmdAttr.intValue[0];
+	const NSInteger bitNumber = (cmdAttr.useInputForSender) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
 	const UInt32 flagBit = [cdsCore.cdsGPU gpuStateFlags] ^ (1 << bitNumber);
 	
 	[cdsCore.cdsGPU setGpuStateFlags:flagBit];
@@ -1998,7 +1947,7 @@
 	CocoaDSController *cdsController = [cdsCore cdsController];
 	NSImage *micIcon = iconMicDisabled;
 	
-	if ([self isSoftwareMicActive])
+	if ([cdsController softwareMicState])
 	{
 		micIcon = iconMicManualOverride;
 	}
@@ -2006,11 +1955,11 @@
 	{
 		if ([cdsController isHardwareMicAvailable])
 		{
-			if ([self isHardwareMicInClip])
+			if ([cdsController isHardwareMicInClip])
 			{
 				micIcon = iconMicInClip;
 			}
-			else if ([self isHardwareMicIdle])
+			else if ([cdsController isHardwareMicIdle])
 			{
 				micIcon = iconMicIdle;
 			}
@@ -2304,11 +2253,6 @@
     }
 	else if (theAction == @selector(frameAdvance:))
 	{
-		if ([cdsCore coreState] != ExecutionBehavior_Pause)
-		{
-			enable = NO;
-		}
-		
 		if ([cdsCore coreState] != ExecutionBehavior_Pause ||
 			![cdsCore masterExecute] ||
 			[self currentRom] == nil ||
@@ -2534,9 +2478,6 @@
 
 - (void) doMicLevelUpdateFromController:(CocoaDSController *)cdsController
 {
-	[self setIsSoftwareMicActive:[cdsController softwareMicState]];
-	[self setIsHardwareMicIdle:[cdsController isHardwareMicIdle]];
-	[self setIsHardwareMicInClip:[cdsController isHardwareMicInClip]];
 	[self updateMicStatusIcon];
 }
 

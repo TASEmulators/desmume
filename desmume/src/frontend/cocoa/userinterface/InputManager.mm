@@ -453,7 +453,7 @@ InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef)
 	inputAttr.floatCoordX	= 0.0f;
 	inputAttr.floatCoordY	= 0.0f;
 	inputAttr.scalar		= (float)(logicalValue - logicalMin) / (float)(logicalMax - logicalMin);
-	inputAttr.sender		= nil;
+	inputAttr.object		= nil;
 	
 	if (!inputAttr.isAnalog)
 	{
@@ -2156,10 +2156,10 @@ NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttr
 										  nil];
 	
 	// Set the object references last since these could be nil.
-	[newDeviceInfo setValue:cmdAttr->object[0] forKey:@"object0"];
-	[newDeviceInfo setValue:cmdAttr->object[1] forKey:@"object1"];
-	[newDeviceInfo setValue:cmdAttr->object[2] forKey:@"object2"];
-	[newDeviceInfo setValue:cmdAttr->object[3] forKey:@"object3"];
+	[newDeviceInfo setValue:(id)cmdAttr->object[0] forKey:@"object0"];
+	[newDeviceInfo setValue:(id)cmdAttr->object[1] forKey:@"object1"];
+	[newDeviceInfo setValue:(id)cmdAttr->object[2] forKey:@"object2"];
+	[newDeviceInfo setValue:(id)cmdAttr->object[3] forKey:@"object3"];
 	
 	return newDeviceInfo;
 }
@@ -2217,7 +2217,7 @@ InputAttributes InputManagerEncodeKeyboardInput(const unsigned short keyCode, BO
 	inputAttr.floatCoordX	= 0.0f;
 	inputAttr.floatCoordY	= 0.0f;
 	inputAttr.scalar		= (keyPressed) ? 1.0f : 0.0f;
-	inputAttr.sender		= nil;
+	inputAttr.object		= nil;
 	
 	return inputAttr;
 }
@@ -2255,7 +2255,7 @@ InputAttributes InputManagerEncodeMouseButtonInput(const NSInteger buttonNumber,
 	inputAttr.floatCoordX	= touchLoc.x;
 	inputAttr.floatCoordY	= touchLoc.y;
 	inputAttr.scalar		= (buttonPressed) ? 1.0f : 0.0f;
-	inputAttr.sender		= nil;
+	inputAttr.object		= nil;
 	
 	return inputAttr;
 }
@@ -2275,7 +2275,7 @@ InputAttributes InputManagerEncodeIBAction(const SEL theSelector, id sender)
 	inputAttr.floatCoordX	= 0.0f;
 	inputAttr.floatCoordY	= 0.0f;
 	inputAttr.scalar		= 1.0f;
-	inputAttr.sender		= sender;
+	inputAttr.object		= sender;
 	
 	return inputAttr;
 }

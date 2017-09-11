@@ -89,6 +89,10 @@ volatile bool execute = true;
 @dynamic isCheatingEnabled;
 @dynamic speedScalar;
 
+@dynamic frameJumpBehavior;
+@dynamic frameJumpNumberFramesForward;
+@dynamic frameJumpToFrameIndex;
+
 @dynamic isGdbStubStarted;
 @dynamic isInDebugTrap;
 @synthesize enableGdbStubARM9;
@@ -298,6 +302,40 @@ volatile bool execute = true;
 {
 	const CGFloat scalar = (CGFloat)execControl->GetExecutionSpeed();
 	return scalar;
+}
+
+- (void) setFrameJumpBehavior:(NSInteger)theBehavior
+{
+	execControl->SetFrameJumpBehavior((FrameJumpBehavior)theBehavior);
+}
+
+- (NSInteger) frameJumpBehavior
+{
+	const NSInteger theBehavior = (NSInteger)execControl->GetFrameJumpBehavior();
+	return theBehavior;
+}
+
+- (void) setFrameJumpNumberFramesForward:(NSUInteger)numberFrames
+{
+	execControl->SetFrameJumpRelativeTarget((uint64_t)numberFrames);	
+	[self setFrameJumpToFrameIndex:[self frameNumber] + numberFrames];
+}
+
+- (NSUInteger) frameJumpNumberFramesForward
+{
+	const NSUInteger numberFrames = execControl->GetFrameJumpRelativeTarget();
+	return numberFrames;
+}
+
+- (void) setFrameJumpToFrameIndex:(NSUInteger)frameIndex
+{
+	execControl->SetFrameJumpTarget((uint64_t)frameIndex);
+}
+
+- (NSUInteger) frameJumpToFrameIndex
+{
+	const NSUInteger frameIndex = execControl->GetFrameJumpTarget();
+	return frameIndex;
 }
 
 - (void) setIsSpeedLimitEnabled:(BOOL)enable
@@ -557,6 +595,33 @@ volatile bool execute = true;
 
 - (void) setCoreState:(NSInteger)coreState
 {
+	if (coreState == ExecutionBehavior_FrameJump)
+	{
+		uint64_t frameIndex = [self frameNumber];
+		
+		switch ([self frameJumpBehavior])
+		{
+			case FrameJumpBehavior_Forward:
+				[self setFrameJumpToFrameIndex:[self frameJumpNumberFramesForward] + frameIndex];
+				break;
+				
+			case FrameJumpBehavior_NextMarker:
+				// TODO: Support frame jumping to replay markers.
+				break;
+				
+			case FrameJumpBehavior_ToFrame:
+			default:
+				break;
+		}
+		
+		uint64_t jumpTarget = [self frameJumpToFrameIndex];
+		
+		if (frameIndex >= jumpTarget)
+		{
+			return;
+		}
+	}
+	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
 	
 	execControl->SetExecutionBehavior((ExecutionBehavior)coreState);
@@ -572,7 +637,7 @@ volatile bool execute = true;
 				[cdsOutput setIdle:YES];
 			}
 			
-			[self setFrameStatus:[NSString stringWithFormat:@"%lu", (unsigned long)[self frameNumber]]];
+			[self setFrameStatus:[NSString stringWithFormat:@"%llu", (unsigned long long)[self frameNumber]]];
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
 			break;
@@ -585,7 +650,7 @@ volatile bool execute = true;
 				[cdsOutput setIdle:NO];
 			}
 			
-			[self setFrameStatus:[NSString stringWithFormat:@"%lu", (unsigned long)[self frameNumber]]];
+			[self setFrameStatus:[NSString stringWithFormat:@"%llu", (unsigned long long)[self frameNumber]]];
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
 			break;
@@ -625,7 +690,7 @@ volatile bool execute = true;
 				}
 			}
 			
-			[self setFrameStatus:[NSString stringWithFormat:@"Jumping to frame %lu.", (unsigned long)execControl->GetFrameJumpTarget()]];
+			[self setFrameStatus:[NSString stringWithFormat:@"Jumping to frame %llu.", (unsigned long long)execControl->GetFrameJumpTarget()]];
 			[_fpsTimer invalidate];
 			_fpsTimer = nil;
 			break;
@@ -810,26 +875,7 @@ volatile bool execute = true;
 
 - (NSUInteger) frameNumber
 {
-	pthread_rwlock_rdlock(&threadParam.rwlockCoreExecute);
-	const NSUInteger currFrameNum = currFrameCounter;
-	pthread_rwlock_unlock(&threadParam.rwlockCoreExecute);
-	
-	return currFrameNum;
-}
-
-- (void) frameJumpTo:(NSUInteger)targetFrameNum
-{
-	execControl->SetFrameJumpTarget(targetFrameNum);
-	
-	if (targetFrameNum > [self frameNumber])
-	{
-		[self setCoreState:ExecutionBehavior_FrameJump];
-	}
-}
-
-- (void) frameJump:(NSUInteger)relativeFrameNum
-{
-	[self frameJumpTo:[self frameNumber] + relativeFrameNum];
+	return (NSUInteger)execControl->GetFrameIndex();
 }
 
 - (void) addOutput:(CocoaDSOutput *)theOutput

@@ -81,7 +81,8 @@ ClientExecutionControl::ClientExecutionControl()
 	_settingsPending.executionSpeed						= SPEED_SCALAR_NORMAL;
 	
 	_settingsPending.enableFrameSkip					= true;
-	_settingsPending.frameJumpTarget					= 0;
+	_settingsPending.frameJumpRelativeTarget			= 60;
+	_settingsPending.frameJumpTarget					= 60;
 	
 	_settingsPending.execBehavior						= ExecutionBehavior_Pause;
 	_settingsPending.jumpBehavior						= FrameJumpBehavior_Forward;
@@ -672,6 +673,24 @@ void ClientExecutionControl::ResetFramesToSkip()
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
+uint64_t ClientExecutionControl::GetFrameJumpRelativeTarget()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	const uint64_t jumpTarget = this->_settingsPending.frameJumpRelativeTarget;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	
+	return jumpTarget;
+}
+
+void ClientExecutionControl::SetFrameJumpRelativeTarget(uint64_t newRelativeTarget)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	this->_settingsPending.frameJumpRelativeTarget = newRelativeTarget;
+	
+	this->_newSettingsPendingOnExecutionLoopStart = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+}
+
 uint64_t ClientExecutionControl::GetFrameJumpTarget()
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
@@ -729,12 +748,20 @@ void ClientExecutionControl::SetExecutionBehavior(ExecutionBehavior newBehavior)
 
 FrameJumpBehavior ClientExecutionControl::GetFrameJumpBehavior()
 {
-	return this->_settingsPending.jumpBehavior;
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	const FrameJumpBehavior jumpBehavior = this->_settingsPending.jumpBehavior;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
+	
+	return jumpBehavior;
 }
 
 void ClientExecutionControl::SetFrameJumpBehavior(FrameJumpBehavior newBehavior)
 {
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
 	this->_settingsPending.jumpBehavior = newBehavior;
+	
+	this->_newSettingsPendingOnExecutionLoopStart = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
 }
 
 void ClientExecutionControl::ApplySettingsOnReset()
@@ -821,7 +848,24 @@ void ClientExecutionControl::ApplySettingsOnExecutionLoopStart()
 		this->_settingsApplied.enableExecutionSpeedLimiter	= this->_settingsPending.enableExecutionSpeedLimiter;
 		this->_settingsApplied.executionSpeed				= speedScalar;
 		
-		this->_settingsApplied.frameJumpTarget				= this->_settingsPending.frameJumpTarget;
+		this->_settingsApplied.jumpBehavior					= this->_settingsPending.jumpBehavior;
+		this->_settingsApplied.frameJumpRelativeTarget		= this->_settingsPending.frameJumpRelativeTarget;
+		
+		switch (this->_settingsApplied.jumpBehavior)
+		{
+			case FrameJumpBehavior_Forward:
+				this->_settingsApplied.frameJumpTarget		= this->_ndsFrameInfo.frameIndex + this->_settingsApplied.frameJumpRelativeTarget;
+				break;
+				
+			case FrameJumpBehavior_NextMarker:
+				// TODO: Support frame markers in replays.
+				break;
+				
+			case FrameJumpBehavior_ToFrame:
+			default:
+				this->_settingsApplied.frameJumpTarget		= this->_settingsPending.frameJumpTarget;
+				break;
+		}
 		
 		const bool needBehaviorChange = (this->_settingsApplied.execBehavior != this->_settingsPending.execBehavior);
 		if (needBehaviorChange)
@@ -1378,6 +1422,15 @@ void ClientExecutionControl::FetchOutputPostNDSExec()
 const NDSFrameInfo& ClientExecutionControl::GetNDSFrameInfo()
 {
 	return this->_ndsFrameInfo;
+}
+
+uint64_t ClientExecutionControl::GetFrameIndex()
+{
+	pthread_mutex_lock(&this->_mutexOutputPostNDSExec);
+	const uint64_t frameIndex = this->_ndsFrameInfo.frameIndex;
+	pthread_mutex_unlock(&this->_mutexOutputPostNDSExec);
+	
+	return frameIndex;
 }
 
 double ClientExecutionControl::GetFrameTime()
