@@ -1451,47 +1451,23 @@
 
 - (void) renderToDrawable
 {
-	NSAutoreleasePool *renderAutoreleasePool = [[NSAutoreleasePool alloc] init];
-	
-	dispatch_semaphore_wait(availableResources, DISPATCH_TIME_FOREVER);
-	
-	id<CAMetalDrawable> drawable = [self nextDrawable];
-	if (drawable == nil)
-	{
-		puts("MacMetalDisplayView: No drawable object was available!\n");
-		dispatch_semaphore_signal(availableResources);
-		[renderAutoreleasePool release];
-		return;
-	}
-	
-	id<MTLTexture> texture = [drawable texture];
-	if (texture == nil)
-	{
-		dispatch_semaphore_signal(availableResources);
-		[renderAutoreleasePool release];
-		return;
-	}
-	
 	const NDSDisplayInfo &displayInfo = _cdv->GetEmuDisplayInfo();
-	
-	[[self colorAttachment0Desc] setTexture:texture];
-	
-	id<MTLCommandBuffer> cb = [[sharedData commandQueue] commandBufferWithUnretainedReferences];
-	id<MTLRenderCommandEncoder> ce = [cb renderCommandEncoderWithDescriptor:_outputRenderPassDesc];
 	
 	// Set up the view properties.
 	BOOL didChangeViewProperties = NO;
+	BOOL needEncodeViewport = NO;
+	
+	MTLViewport newViewport;
+	newViewport.originX = 0.0;
+	newViewport.originY = 0.0;
+	newViewport.width  = _cdv->GetViewProperties().clientWidth;
+	newViewport.height = _cdv->GetViewProperties().clientHeight;
+	newViewport.znear = 0.0;
+	newViewport.zfar = 1.0;
 	
 	if ([self needsViewportUpdate])
 	{
-		MTLViewport newViewport;
-		newViewport.originX = 0.0;
-		newViewport.originY = 0.0;
-		newViewport.width  = _cdv->GetViewProperties().clientWidth;
-		newViewport.height = _cdv->GetViewProperties().clientHeight;
-		newViewport.znear = 0.0;
-		newViewport.zfar = 1.0;
-		[ce setViewport:newViewport];
+		needEncodeViewport = YES;
 		
 		DisplayViewShaderProperties *viewProps = (DisplayViewShaderProperties *)[_cdvPropertiesBuffer contents];
 		viewProps->width    = _cdv->GetViewProperties().clientWidth;
@@ -1517,17 +1493,102 @@
 		[_cdvPropertiesBuffer didModifyRange:NSMakeRange(0, sizeof(DisplayViewShaderProperties))];
 	}
 	
-	// Draw the NDS displays.
-	if (displayInfo.pixelBytes != 0)
+	// Set up the display properties.
+	BOOL willDrawDisplays = (displayInfo.pixelBytes != 0);
+	if (willDrawDisplays && [self needsScreenVerticesUpdate])
 	{
-		if ([self needsScreenVerticesUpdate])
+		_cdv->SetScreenVertices((float *)[_displayVtxPositionBuffer contents]);
+		[_displayVtxPositionBuffer didModifyRange:NSMakeRange(0, sizeof(float) * (4 * 8))];
+		
+		[self setNeedsScreenVerticesUpdate:NO];
+	}
+	
+	// Set up the HUD properties.
+	size_t hudLength = _cdv->GetHUDString().length();
+	size_t hudTouchLineLength = 0;
+	BOOL willDrawHUD = _cdv->GetHUDVisibility() && ([self texHUDCharMap] != nil);
+	
+	if (_cdv->GetHUDShowInput())
+	{
+		hudLength += HUD_INPUT_ELEMENT_LENGTH;
+		
+		switch (_cdv->GetMode())
 		{
-			_cdv->SetScreenVertices((float *)[_displayVtxPositionBuffer contents]);
-			[_displayVtxPositionBuffer didModifyRange:NSMakeRange(0, sizeof(float) * (4 * 8))];
-			
-			[self setNeedsScreenVerticesUpdate:NO];
+			case ClientDisplayMode_Main:
+			case ClientDisplayMode_Touch:
+				hudTouchLineLength = HUD_INPUT_TOUCH_LINE_ELEMENTS / 2;
+				break;
+				
+			case ClientDisplayMode_Dual:
+			{
+				switch (_cdv->GetLayout())
+				{
+					case ClientDisplayLayout_Vertical:
+					case ClientDisplayLayout_Horizontal:
+						hudTouchLineLength = HUD_INPUT_TOUCH_LINE_ELEMENTS / 2;
+						break;
+						
+					case ClientDisplayLayout_Hybrid_2_1:
+					case ClientDisplayLayout_Hybrid_16_9:
+					case ClientDisplayLayout_Hybrid_16_10:
+						hudTouchLineLength = HUD_INPUT_TOUCH_LINE_ELEMENTS;
+						break;
+				}
+				
+				break;
+			}
 		}
 		
+		hudLength += hudTouchLineLength;
+	}
+	
+	willDrawHUD = willDrawHUD && (hudLength > 1);
+	
+	if (willDrawHUD && _cdv->HUDNeedsUpdate())
+	{
+		_cdv->SetHUDPositionVertices((float)_cdv->GetViewProperties().clientWidth, (float)_cdv->GetViewProperties().clientHeight, (float *)[_hudVtxPositionBuffer contents]);
+		[_hudVtxPositionBuffer didModifyRange:NSMakeRange(0, sizeof(float) * hudLength * 8)];
+		
+		_cdv->SetHUDColorVertices((uint32_t *)[_hudVtxColorBuffer contents]);
+		[_hudVtxColorBuffer didModifyRange:NSMakeRange(0, sizeof(uint32_t) * hudLength * 4)];
+		
+		_cdv->SetHUDTextureCoordinates((float *)[_hudTexCoordBuffer contents]);
+		[_hudTexCoordBuffer didModifyRange:NSMakeRange(0, sizeof(float) * hudLength * 8)];
+		
+		_cdv->ClearHUDNeedsUpdate();
+	}
+	
+	// Now that everything is set up, request a layer drawable and draw everything.
+	dispatch_semaphore_wait(availableResources, DISPATCH_TIME_FOREVER);
+	
+	id<CAMetalDrawable> drawable = [self nextDrawable];
+	if (drawable == nil)
+	{
+		puts("MacMetalDisplayView: No drawable object was available!\n");
+		dispatch_semaphore_signal(availableResources);
+		return;
+	}
+	
+	id<MTLTexture> texture = [drawable texture];
+	if (texture == nil)
+	{
+		dispatch_semaphore_signal(availableResources);
+		return;
+	}
+	
+	[[self colorAttachment0Desc] setTexture:texture];
+	
+	id<MTLCommandBuffer> cb = [[sharedData commandQueue] commandBufferWithUnretainedReferences];
+	id<MTLRenderCommandEncoder> ce = [cb renderCommandEncoderWithDescriptor:_outputRenderPassDesc];
+	
+	if (needEncodeViewport)
+	{
+		[ce setViewport:newViewport];
+	}
+	
+	// Draw the NDS displays.
+	if (willDrawDisplays)
+	{
 		[ce setRenderPipelineState:[self displayOutputPipeline]];
 		[ce setVertexBuffer:_displayVtxPositionBuffer offset:0 atIndex:0];
 		[ce setVertexBuffer:_displayTexCoordBuffer offset:0 atIndex:1];
@@ -1597,59 +1658,8 @@
 	}
 	
 	// Draw the HUD.
-	size_t hudLength = _cdv->GetHUDString().length();
-	size_t hudTouchLineLength = 0;
-	
-	if (_cdv->GetHUDShowInput())
+	if (willDrawHUD)
 	{
-		hudLength += HUD_INPUT_ELEMENT_LENGTH;
-		
-		switch (_cdv->GetMode())
-		{
-			case ClientDisplayMode_Main:
-			case ClientDisplayMode_Touch:
-				hudTouchLineLength = HUD_INPUT_TOUCH_LINE_ELEMENTS / 2;
-				break;
-				
-			case ClientDisplayMode_Dual:
-			{
-				switch (_cdv->GetLayout())
-				{
-					case ClientDisplayLayout_Vertical:
-					case ClientDisplayLayout_Horizontal:
-						hudTouchLineLength = HUD_INPUT_TOUCH_LINE_ELEMENTS / 2;
-						break;
-						
-					case ClientDisplayLayout_Hybrid_2_1:
-					case ClientDisplayLayout_Hybrid_16_9:
-					case ClientDisplayLayout_Hybrid_16_10:
-						hudTouchLineLength = HUD_INPUT_TOUCH_LINE_ELEMENTS;
-						break;
-				}
-				
-				break;
-			}
-		}
-		
-		hudLength += hudTouchLineLength;
-	}
-	
-	if ( _cdv->GetHUDVisibility() && (hudLength > 1) && ([self texHUDCharMap] != nil) )
-	{
-		if (_cdv->HUDNeedsUpdate())
-		{
-			_cdv->SetHUDPositionVertices((float)_cdv->GetViewProperties().clientWidth, (float)_cdv->GetViewProperties().clientHeight, (float *)[_hudVtxPositionBuffer contents]);
-			[_hudVtxPositionBuffer didModifyRange:NSMakeRange(0, sizeof(float) * hudLength * 8)];
-			
-			_cdv->SetHUDColorVertices((uint32_t *)[_hudVtxColorBuffer contents]);
-			[_hudVtxColorBuffer didModifyRange:NSMakeRange(0, sizeof(uint32_t) * hudLength * 4)];
-			
-			_cdv->SetHUDTextureCoordinates((float *)[_hudTexCoordBuffer contents]);
-			[_hudTexCoordBuffer didModifyRange:NSMakeRange(0, sizeof(float) * hudLength * 8)];
-			
-			_cdv->ClearHUDNeedsUpdate();
-		}
-		
 		uint8_t isScreenOverlay = 0;
 		
 		[ce setRenderPipelineState:[sharedData hudPipeline]];
@@ -1707,8 +1717,6 @@
 	}];
 	
 	[cb commit];
-	
-	[renderAutoreleasePool release];
 }
 
 @end
@@ -1929,7 +1937,10 @@ void MacMetalDisplayView::UpdateView()
 {
 	if (this->_allowViewUpdates)
 	{
-		[(DisplayViewMetalLayer *)this->GetFrontendLayer() renderToDrawable];
+		@autoreleasepool
+		{
+			[(DisplayViewMetalLayer *)this->GetFrontendLayer() renderToDrawable];
+		}
 	}
 }
 
