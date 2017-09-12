@@ -94,7 +94,7 @@
 
 - (BOOL) handleKeyboardEvent:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
 - (BOOL) handleMouseButtonEvent:(NSEvent *)mouseEvent buttonPressed:(BOOL)buttonPressed;
-- (BOOL) addMappingUsingInputAttributes:(const InputAttributes *)inputAttr commandTag:(NSString *)commandTag;
+- (BOOL) addMappingUsingInputAttributes:(const ClientInputDeviceProperties *)inputProperty commandTag:(NSString *)commandTag;
 - (void) setMappingUsingDeviceInfoDictionary:(NSMutableDictionary *)deviceInfo;
 - (BOOL) doesProfileNameExist:(NSString *)profileName;
 - (void) updateSelectedProfileName;

@@ -16,7 +16,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ClientExecutionControl.h"
+#include "ClientInputHandler.h"
 #include "mic_ext.h"
 #include "../../emufile.h"
 #include "../../readwrite.h"

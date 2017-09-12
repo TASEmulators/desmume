@@ -1446,6 +1446,16 @@
 		ABBFDFB51898EE4B00A3FFA5 /* Icon_FrameJump_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBFDFAD1898EE4B00A3FFA5 /* Icon_FrameJump_420x420.png */; };
 		ABBFDFB61898EE4B00A3FFA5 /* Icon_FrameAdvance_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBFDFAC1898EE4B00A3FFA5 /* Icon_FrameAdvance_420x420.png */; };
 		ABBFDFB71898EE4B00A3FFA5 /* Icon_FrameJump_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = ABBFDFAD1898EE4B00A3FFA5 /* Icon_FrameJump_420x420.png */; };
+		ABC04DA31F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABC04DA11F67A20500EA6ED7 /* ClientInputHandler.cpp */; };
+		ABC04DA41F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABC04DA11F67A20500EA6ED7 /* ClientInputHandler.cpp */; };
+		ABC04DA51F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABC04DA11F67A20500EA6ED7 /* ClientInputHandler.cpp */; };
+		ABC04DA61F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABC04DA11F67A20500EA6ED7 /* ClientInputHandler.cpp */; };
+		ABC04DA71F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABC04DA11F67A20500EA6ED7 /* ClientInputHandler.cpp */; };
+		ABC04DCA1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABC04DC91F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp */; };
+		ABC04DCB1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABC04DC91F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp */; };
+		ABC04DCC1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABC04DC91F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp */; };
+		ABC04DCD1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABC04DC91F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp */; };
+		ABC04DCE1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABC04DC91F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp */; };
 		ABC3AF3314B7F06900D5B13D /* Icon_VolumeFull_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC3AF2B14B7F06900D5B13D /* Icon_VolumeFull_16x16.png */; };
 		ABC3AF3414B7F06900D5B13D /* Icon_VolumeMute_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */; };
 		ABC3AF3514B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = ABC3AF2D14B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png */; };
@@ -1996,6 +2006,9 @@
 		ABBFDFA61898EE3200A3FFA5 /* Icon_DisplayToggle_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_DisplayToggle_420x420.png; path = images/Icon_DisplayToggle_420x420.png; sourceTree = "<group>"; };
 		ABBFDFAC1898EE4B00A3FFA5 /* Icon_FrameAdvance_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_FrameAdvance_420x420.png; path = images/Icon_FrameAdvance_420x420.png; sourceTree = "<group>"; };
 		ABBFDFAD1898EE4B00A3FFA5 /* Icon_FrameJump_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_FrameJump_420x420.png; path = images/Icon_FrameJump_420x420.png; sourceTree = "<group>"; };
+		ABC04DA11F67A20500EA6ED7 /* ClientInputHandler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClientInputHandler.cpp; sourceTree = "<group>"; };
+		ABC04DA21F67A20500EA6ED7 /* ClientInputHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientInputHandler.h; sourceTree = "<group>"; };
+		ABC04DC91F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = macosx_10_5_compat.cpp; sourceTree = "<group>"; };
 		ABC3AF2B14B7F06900D5B13D /* Icon_VolumeFull_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeFull_16x16.png; path = images/Icon_VolumeFull_16x16.png; sourceTree = "<group>"; };
 		ABC3AF2C14B7F06900D5B13D /* Icon_VolumeMute_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeMute_16x16.png; path = images/Icon_VolumeMute_16x16.png; sourceTree = "<group>"; };
 		ABC3AF2D14B7F06900D5B13D /* Icon_VolumeOneThird_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_VolumeOneThird_16x16.png; path = images/Icon_VolumeOneThird_16x16.png; sourceTree = "<group>"; };
@@ -2386,7 +2399,9 @@
 				AB2145221714DFF4006DDB0F /* audiosamplegenerator.cpp */,
 				AB0F13911E1B7C320075684F /* ClientDisplayView.cpp */,
 				ABD4F2711F54A51000D75A1F /* ClientExecutionControl.cpp */,
+				ABC04DA11F67A20500EA6ED7 /* ClientInputHandler.cpp */,
 				ABD0A5341501AA5A0074A094 /* coreaudiosound.cpp */,
+				ABC04DC91F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp */,
 				ABD9A46413DB99B300777194 /* mic_ext.cpp */,
 				ABECB51318A460910052D52A /* OGLDisplayOutput.cpp */,
 				ABD0A5351501AA5A0074A094 /* ringbuffer.cpp */,
@@ -2394,6 +2409,7 @@
 				AB2145211714DFF4006DDB0F /* audiosamplegenerator.h */,
 				AB0F13901E1B7C320075684F /* ClientDisplayView.h */,
 				ABD4F2721F54A51000D75A1F /* ClientExecutionControl.h */,
+				ABC04DA21F67A20500EA6ED7 /* ClientInputHandler.h */,
 				ABA6574914511EC90077E5E9 /* cocoa_cheat.h */,
 				ABD103FE1346652500AF11D1 /* cocoa_core.h */,
 				AB58F32B1364F44B0074C376 /* cocoa_file.h */,
@@ -4581,6 +4597,8 @@
 				AB3E69111E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 				AB3E69841E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
 				ABD4F2741F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
+				ABC04DA41F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
+				ABC04DCB1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4766,6 +4784,8 @@
 				AB3E69121E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 				AB3E69851E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
 				ABD4F2751F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
+				ABC04DA51F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
+				ABC04DCC1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4981,6 +5001,8 @@
 				AB3E69101E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 				AB3E69831E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
 				ABD4F2731F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
+				ABC04DA31F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
+				ABC04DCA1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5196,6 +5218,8 @@
 				AB3E69141E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 				AB3E69871E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
 				ABD4F2771F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
+				ABC04DA71F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
+				ABC04DCE1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5381,6 +5405,8 @@
 				AB3E69131E231E9900D4CC75 /* MacOGLDisplayView.mm in Sources */,
 				AB3E69861E25FBBF00D4CC75 /* DisplayViewCALayer.mm in Sources */,
 				ABD4F2761F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
+				ABC04DA61F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
+				ABC04DCD1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -31,16 +31,10 @@
 #include <vector>
 
 #include "../audiosamplegenerator.h"
+#include "../ClientInputHandler.h"
 
-#define INPUT_HANDLER_STRING_LENGTH 256
-
-enum InputAttributeState
-{
-	INPUT_ATTRIBUTE_STATE_OFF = 0,
-	INPUT_ATTRIBUTE_STATE_ON,
-	INPUT_ATTRIBUTE_STATE_MIXED
-};
-
+struct ClientInputDeviceProperties;
+class MacInputDevicePropertiesEncoder;
 @class EmuControllerDelegate;
 @class InputManager;
 @class InputHIDManager;
@@ -54,39 +48,21 @@ enum InputAttributeState
 
 typedef struct
 {
-	char deviceName[INPUT_HANDLER_STRING_LENGTH];
-	char deviceCode[INPUT_HANDLER_STRING_LENGTH];
-	char elementName[INPUT_HANDLER_STRING_LENGTH];
-	char elementCode[INPUT_HANDLER_STRING_LENGTH];
-	bool isAnalog;					// This is an analog input, as opposed to being a digital input.
-	
-	InputAttributeState state;		// The input state that is sent on command dispatch
-	int32_t intCoordX;				// The X-coordinate as an int for commands that require a location
-	int32_t intCoordY;				// The Y-coordinate as an int for commands that require a location
-	float floatCoordX;				// The X-coordinate as a float for commands that require a location
-	float floatCoordY;				// The Y-coordinate as a float for commands that require a location
-	float scalar;					// A scalar value for commands that require a scalar
-	void *object;					// An object for commands that require an object
-} InputAttributes;
-
-typedef struct
-{
 	char tag[INPUT_HANDLER_STRING_LENGTH];	// A string identifier for these attributes
-	SEL selector;					// The selector that is called on command dispatch
-	int32_t intValue[4];			// Context dependent int values
-	float floatValue[4];			// Context dependent float values
-	void *object[4];				// Context dependent objects
+	SEL selector;						// The selector that is called on command dispatch
+	int32_t intValue[4];				// Context dependent int values
+	float floatValue[4];				// Context dependent float values
+	void *object[4];					// Context dependent objects
 	
-	bool useInputForIntCoord;		// The command will prefer the input device's int coordinate
-	bool useInputForFloatCoord;		// The command will prefer the input device's float coordinate
-	bool useInputForScalar;			// The command will prefer the input device's scalar
-	bool useInputForSender;			// The command will prefer the input device's sender
+	bool useInputForIntCoord;			// The command will prefer the input device's int coordinate
+	bool useInputForFloatCoord;			// The command will prefer the input device's float coordinate
+	bool useInputForScalar;				// The command will prefer the input device's scalar
+	bool useInputForSender;				// The command will prefer the input device's sender
 	
-	InputAttributes input;			// The input device's attributes
-	bool allowAnalogInput;			// Flag for allowing a command to accept analog inputs
+	ClientInputDeviceProperties input;	// The input device's properties
+	bool allowAnalogInput;				// Flag for allowing a command to accept analog inputs
 } CommandAttributes;
 
-typedef std::vector<InputAttributes> InputAttributesList;
 typedef std::vector<CommandAttributes> CommandAttributesList;
 
 #if defined(__ppc__) || defined(__ppc64__)
@@ -94,16 +70,19 @@ typedef std::map<std::string, CommandAttributes> InputCommandMap; // Key = Input
 typedef std::map<std::string, CommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = CommandAttributes
 typedef std::map<std::string, SEL> CommandSelectorMap; // Key = Command Tag, Value = Obj-C Selector
 typedef std::map<std::string, AudioSampleBlockGenerator> AudioFileSampleGeneratorMap; // Key = File path to audio file, Value = AudioSampleBlockGenerator
+typedef std::map<int32_t, std::string> KeyboardKeyNameMap; // Key = Key code, Value = Key name
 #elif !defined(MAC_OS_X_VERSION_10_7) || (MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_6)
 typedef std::tr1::unordered_map<std::string, CommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = CommandAttributes
 typedef std::tr1::unordered_map<std::string, CommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = CommandAttributes
 typedef std::tr1::unordered_map<std::string, SEL> CommandSelectorMap; // Key = Command Tag, Value = Obj-C Selector
 typedef std::tr1::unordered_map<std::string, AudioSampleBlockGenerator> AudioFileSampleGeneratorMap; // Key = File path to audio file, Value = AudioSampleBlockGenerator
+typedef std::tr1::unordered_map<int32_t, std::string> KeyboardKeyNameMap; // Key = Key code, Value = Key name
 #else
 typedef std::unordered_map<std::string, CommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = CommandAttributes
 typedef std::unordered_map<std::string, CommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = CommandAttributes
 typedef std::unordered_map<std::string, SEL> CommandSelectorMap; // Key = Command Tag, Value = Obj-C Selector
 typedef std::unordered_map<std::string, AudioSampleBlockGenerator> AudioFileSampleGeneratorMap; // Key = File path to audio file, Value = AudioSampleBlockGenerator
+typedef std::unordered_map<int32_t, std::string> KeyboardKeyNameMap; // Key = Key code, Value = Key name
 #endif
 
 #pragma mark -
@@ -153,8 +132,8 @@ bool InputElementCodeFromHIDElement(const IOHIDElementRef hidElementRef, char *c
 bool InputElementNameFromHIDElement(const IOHIDElementRef hidElementRef, char *charBuffer);
 bool InputDeviceCodeFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charBuffer);
 bool InputDeviceNameFromHIDDevice(const IOHIDDeviceRef hidDeviceRef, char *charBuffer);
-InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef);
-InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef, InputManager *inputManager, bool forceDigitalInput);
+ClientInputDeviceProperties InputAttributesOfHIDValue(IOHIDValueRef hidValueRef);
+ClientInputDevicePropertiesList InputListFromHIDValue(IOHIDValueRef hidValueRef, InputManager *inputManager, bool forceDigitalInput);
 
 size_t ClearHIDQueue(const IOHIDQueueRef hidQueue);
 void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void *inSender);
@@ -188,6 +167,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 @interface InputManager : NSObject
 {
 	EmuControllerDelegate *emuControl;
+	MacInputDevicePropertiesEncoder *inputEncoder;
 	id<InputHIDManagerTarget> hidInputTarget;
 	InputHIDManager *hidManager;
 	NSMutableDictionary *inputMappings;
@@ -201,6 +181,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 }
 
 @property (readonly) IBOutlet EmuControllerDelegate *emuControl;
+@property (readonly) MacInputDevicePropertiesEncoder *inputEncoder;
 @property (retain) id<InputHIDManagerTarget> hidInputTarget;
 @property (readonly) InputHIDManager *hidManager;
 @property (readonly) NSMutableDictionary *inputMappings;
@@ -209,17 +190,17 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 
 - (void) setMappingsWithMappings:(NSDictionary *)mappings;
 - (void) addMappingUsingDeviceInfoDictionary:(NSDictionary *)deviceDict commandAttributes:(const CommandAttributes *)cmdAttr;
-- (void) addMappingUsingInputAttributes:(const InputAttributes *)inputAttr commandAttributes:(const CommandAttributes *)cmdAttr;
-- (void) addMappingUsingInputList:(const InputAttributesList *)inputList commandAttributes:(const CommandAttributes *)cmdAttr;
+- (void) addMappingUsingInputAttributes:(const ClientInputDeviceProperties *)inputProperty commandAttributes:(const CommandAttributes *)cmdAttr;
+- (void) addMappingUsingInputList:(const ClientInputDevicePropertiesList *)inputPropertyList commandAttributes:(const CommandAttributes *)cmdAttr;
 - (void) addMappingForIBAction:(const SEL)theSelector commandAttributes:(const CommandAttributes *)cmdAttr;
 - (void) addMappingUsingDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode commandAttributes:(const CommandAttributes *)cmdAttr;
 
 - (void) removeMappingUsingDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode;
 - (void) removeAllMappingsForCommandTag:(const char *)commandTag;
 
-- (CommandAttributesList) generateCommandListUsingInputList:(const InputAttributesList *)inputList;
+- (CommandAttributesList) generateCommandListUsingInputList:(const ClientInputDevicePropertiesList *)inputPropertyList;
 - (void) dispatchCommandList:(const CommandAttributesList *)cmdList;
-- (BOOL) dispatchCommandUsingInputAttributes:(const InputAttributes *)inputAttr;
+- (BOOL) dispatchCommandUsingInputProperties:(const ClientInputDeviceProperties *)inputProperty;
 - (BOOL) dispatchCommandUsingIBAction:(const SEL)theSelector sender:(id)sender;
 
 - (void) writeDefaultsInputMappings;
@@ -235,9 +216,11 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 - (AudioSampleBlockGenerator *) audioFileGeneratorFromFilePath:(NSString *)filePath;
 - (void) updateAudioFileGenerators;
 
+@end
+
 CommandAttributes NewDefaultCommandAttributes(const char *commandTag);
 CommandAttributes NewCommandAttributesForSelector(const char *commandTag, const SEL theSelector);
-CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const NSUInteger controlID);
+CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const NDSInputID controlID);
 void UpdateCommandAttributesWithDeviceInfoDictionary(CommandAttributes *cmdAttr, NSDictionary *deviceInfo);
 
 NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttributes *cmdAttr,
@@ -246,9 +229,16 @@ NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttr
 															   NSString *elementCode,
 															   NSString *elementName);
 
-InputAttributesList InputManagerEncodeHIDQueue(const IOHIDQueueRef hidQueue, InputManager *inputManager, bool forceDigitalInput);
-InputAttributes InputManagerEncodeKeyboardInput(const unsigned short keyCode, BOOL keyPressed);
-InputAttributes InputManagerEncodeMouseButtonInput(const NSInteger buttonNumber, const NSPoint touchLoc, BOOL buttonPressed);
-InputAttributes InputManagerEncodeIBAction(const SEL theSelector, id sender);
-
-@end
+class MacInputDevicePropertiesEncoder : public ClientInputDevicePropertiesEncoder
+{
+private:
+	KeyboardKeyNameMap _keyboardNameTable;
+	
+public:
+	MacInputDevicePropertiesEncoder();
+	
+	virtual ClientInputDeviceProperties EncodeKeyboardInput(const int32_t keyCode, bool keyPressed);
+	virtual ClientInputDeviceProperties EncodeMouseInput(const int32_t buttonNumber, float touchLocX, float touchLocY, bool buttonPressed);
+	virtual ClientInputDeviceProperties EncodeIBAction(const SEL theSelector, id sender);
+	virtual ClientInputDevicePropertiesList EncodeHIDQueue(const IOHIDQueueRef hidQueue, InputManager *inputManager, bool forceDigitalInput);
+};

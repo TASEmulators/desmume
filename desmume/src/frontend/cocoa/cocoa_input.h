@@ -20,9 +20,8 @@
 #include <libkern/OSAtomic.h>
 #include <vector>
 
-#include "ClientExecutionControl.h"
-
 @class CocoaDSController;
+class ClientInputHandler;
 class CoreAudioInput;
 struct CoreAudioInputDeviceInfo;
 class AudioGenerator;
@@ -43,7 +42,7 @@ class AudioSampleBlockGenerator;
 @interface CocoaDSController : NSObject
 {
 	id <CocoaDSControllerDelegate> delegate;
-	ClientExecutionControl *execControl;
+	ClientInputHandler *inputHandler;
 	
 	NSInteger stylusPressure;
 	
@@ -63,7 +62,7 @@ class AudioSampleBlockGenerator;
 }
 
 @property (retain) id <CocoaDSControllerDelegate> delegate;
-@property (assign) ClientExecutionControl *execControl;
+@property (readonly, nonatomic) ClientInputHandler *inputHandler;
 @property (assign) BOOL autohold;
 @property (assign) NSInteger paddleAdjust;
 @property (assign) NSInteger stylusPressure;

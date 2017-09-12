@@ -415,31 +415,31 @@ static NSDictionary *hidUsageTable = nil;
 		hidValueRef - The IOHIDValueRef to parse.
 
 	Returns:
-		An InputAttributes struct with the parsed input attributes.
+		A ClientInputDeviceProperties struct with the parsed input device's properties.
 
 	Details:
 		None.
  ********************************************************************************************/
-InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef)
+ClientInputDeviceProperties InputAttributesOfHIDValue(IOHIDValueRef hidValueRef)
 {
-	InputAttributes inputAttr;
+	ClientInputDeviceProperties inputProperty;
 	
 	if (hidValueRef == NULL)
 	{
-		return inputAttr;
+		return inputProperty;
 	}
 	
 	const IOHIDElementRef hidElementRef = IOHIDValueGetElement(hidValueRef);
 	const IOHIDDeviceRef hidDeviceRef = IOHIDElementGetDevice(hidElementRef);
 	
-	InputElementCodeFromHIDElement(hidElementRef, inputAttr.elementCode);
-	InputDeviceCodeFromHIDDevice(hidDeviceRef, inputAttr.deviceCode);
+	InputElementCodeFromHIDElement(hidElementRef, inputProperty.elementCode);
+	InputDeviceCodeFromHIDDevice(hidDeviceRef, inputProperty.deviceCode);
 	
-	strncpy(inputAttr.elementName, inputAttr.elementCode, INPUT_HANDLER_STRING_LENGTH);
-	InputElementNameFromHIDElement(hidElementRef, inputAttr.elementName);
+	strncpy(inputProperty.elementName, inputProperty.elementCode, INPUT_HANDLER_STRING_LENGTH);
+	InputElementNameFromHIDElement(hidElementRef, inputProperty.elementName);
 	
-	strncpy(inputAttr.deviceName, inputAttr.deviceCode, INPUT_HANDLER_STRING_LENGTH);
-	InputDeviceNameFromHIDDevice(hidDeviceRef, inputAttr.deviceName);
+	strncpy(inputProperty.deviceName, inputProperty.deviceCode, INPUT_HANDLER_STRING_LENGTH);
+	InputDeviceNameFromHIDDevice(hidDeviceRef, inputProperty.deviceName);
 		
 	const NSInteger logicalValue = IOHIDValueGetIntegerValue(hidValueRef);
 	const NSInteger logicalMin = IOHIDElementGetLogicalMin(hidElementRef);
@@ -447,23 +447,23 @@ InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef)
 	const NSInteger elementType = IOHIDElementGetType(hidElementRef);
 	const NSInteger elementUsage = IOHIDElementGetUsage(hidElementRef);
 	
-	inputAttr.isAnalog		= (elementType != kIOHIDElementTypeInput_Button) && !(logicalMin == 0 && logicalMax == 1);
-	inputAttr.intCoordX		= 0;
-	inputAttr.intCoordY		= 0;
-	inputAttr.floatCoordX	= 0.0f;
-	inputAttr.floatCoordY	= 0.0f;
-	inputAttr.scalar		= (float)(logicalValue - logicalMin) / (float)(logicalMax - logicalMin);
-	inputAttr.object		= nil;
+	inputProperty.isAnalog		= (elementType != kIOHIDElementTypeInput_Button) && !(logicalMin == 0 && logicalMax == 1);
+	inputProperty.intCoordX		= 0;
+	inputProperty.intCoordY		= 0;
+	inputProperty.floatCoordX	= 0.0f;
+	inputProperty.floatCoordY	= 0.0f;
+	inputProperty.scalar		= (float)(logicalValue - logicalMin) / (float)(logicalMax - logicalMin);
+	inputProperty.object		= NULL;
 	
-	if (!inputAttr.isAnalog)
+	if (!inputProperty.isAnalog)
 	{
-		inputAttr.state	= (logicalValue == 1) ? INPUT_ATTRIBUTE_STATE_ON : INPUT_ATTRIBUTE_STATE_OFF;
+		inputProperty.state	= (logicalValue == 1) ? ClientInputDeviceState_On : ClientInputDeviceState_Off;
 	}
 	else if (elementUsage == kHIDUsage_GD_Hatswitch)
 	{
 		// For hatswitch inputs, use the intCoord fields to store the axis information.
-		inputAttr.state = (logicalValue >= logicalMin && logicalValue <= logicalMax) ? INPUT_ATTRIBUTE_STATE_ON : INPUT_ATTRIBUTE_STATE_OFF;
-		if (inputAttr.state == INPUT_ATTRIBUTE_STATE_ON)
+		inputProperty.state = (logicalValue >= logicalMin && logicalValue <= logicalMax) ? ClientInputDeviceState_On : ClientInputDeviceState_Off;
+		if (inputProperty.state == ClientInputDeviceState_On)
 		{
 			struct IntCoord
 			{
@@ -491,31 +491,31 @@ InputAttributes InputAttributesOfHIDValue(IOHIDValueRef hidValueRef)
 			
 			if (logicalMax == 3) // For a 4-way hatswitch
 			{
-				inputAttr.intCoordX		= coords4Way[logicalValue].x;
-				inputAttr.intCoordY		= coords4Way[logicalValue].y;
+				inputProperty.intCoordX		= coords4Way[logicalValue].x;
+				inputProperty.intCoordY		= coords4Way[logicalValue].y;
 			}
 			else if (logicalMax == 7) // For an 8-way hatswitch
 			{
-				inputAttr.intCoordX		= coords8Way[logicalValue].x;
-				inputAttr.intCoordY		= coords8Way[logicalValue].y;
+				inputProperty.intCoordX		= coords8Way[logicalValue].x;
+				inputProperty.intCoordY		= coords8Way[logicalValue].y;
 			}
 		}
 	}
 	else // Some generic analog input
 	{
-		inputAttr.state	= (inputAttr.scalar <= 0.30f || inputAttr.scalar >= 0.7f) ? INPUT_ATTRIBUTE_STATE_ON : INPUT_ATTRIBUTE_STATE_OFF;
+		inputProperty.state	= (inputProperty.scalar <= 0.30f || inputProperty.scalar >= 0.7f) ? ClientInputDeviceState_On : ClientInputDeviceState_Off;
 	}
 	
-	return inputAttr;
+	return inputProperty;
 }
 
-InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef, InputManager *inputManager, bool forceDigitalInput)
+ClientInputDevicePropertiesList InputListFromHIDValue(IOHIDValueRef hidValueRef, InputManager *inputManager, bool forceDigitalInput)
 {
-	InputAttributesList inputList;
+	ClientInputDevicePropertiesList inputPropertyList;
 	
 	if (hidValueRef == NULL)
 	{
-		return inputList;
+		return inputPropertyList;
 	}
 	
 	// IOHIDValueGetIntegerValue() will crash if the value length is too large.
@@ -523,18 +523,18 @@ InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef, InputManage
 	// controller usable, since it returns a length of 39 on some elements.
 	if(IOHIDValueGetLength(hidValueRef) > 2)
 	{
-		return inputList;
+		return inputPropertyList;
 	}
 	
-	InputAttributes inputAttr = InputAttributesOfHIDValue(hidValueRef);
-	if (inputAttr.deviceCode[0] == '\0' || inputAttr.elementCode[0] == '\0')
+	ClientInputDeviceProperties inputProperty = InputAttributesOfHIDValue(hidValueRef);
+	if (inputProperty.deviceCode[0] == '\0' || inputProperty.elementCode[0] == '\0')
 	{
-		return inputList;
+		return inputPropertyList;
 	}
 	
-	if (!inputAttr.isAnalog)
+	if (!inputProperty.isAnalog)
 	{
-		inputList.push_back(inputAttr);
+		inputPropertyList.push_back(inputProperty);
 	}
 	else
 	{
@@ -543,75 +543,75 @@ InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef, InputManage
 		
 		if (elementUsage == kHIDUsage_GD_Hatswitch)
 		{
-			InputAttributes hatUp = inputAttr;
+			ClientInputDeviceProperties hatUp = inputProperty;
 			hatUp.isAnalog = false;
 			strncat(hatUp.elementName, "/Up", 4);
 			strncat(hatUp.elementCode, "/Up", 4);
 			
-			InputAttributes hatRight = inputAttr;
+			ClientInputDeviceProperties hatRight = inputProperty;
 			hatRight.isAnalog = false;
 			strncat(hatRight.elementName, "/Right", 7);
 			strncat(hatRight.elementCode, "/Right", 7);
 			
-			InputAttributes hatDown = inputAttr;
+			ClientInputDeviceProperties hatDown = inputProperty;
 			hatDown.isAnalog = false;
 			strncat(hatDown.elementName, "/Down", 6);
 			strncat(hatDown.elementCode, "/Down", 6);
 			
-			InputAttributes hatLeft = inputAttr;
+			ClientInputDeviceProperties hatLeft = inputProperty;
 			hatLeft.isAnalog = false;
 			strncat(hatLeft.elementName, "/Left", 6);
 			strncat(hatLeft.elementCode, "/Left", 6);
 			
-			if (inputAttr.intCoordX == -1)
+			if (inputProperty.intCoordX == -1)
 			{
-				hatRight.state = INPUT_ATTRIBUTE_STATE_OFF;
-				hatLeft.state = INPUT_ATTRIBUTE_STATE_ON;
+				hatRight.state = ClientInputDeviceState_Off;
+				hatLeft.state = ClientInputDeviceState_On;
 			}
-			else if (inputAttr.intCoordX == 1)
+			else if (inputProperty.intCoordX == 1)
 			{
-				hatRight.state = INPUT_ATTRIBUTE_STATE_ON;
-				hatLeft.state = INPUT_ATTRIBUTE_STATE_OFF;
-			}
-			else
-			{
-				hatRight.state = INPUT_ATTRIBUTE_STATE_OFF;
-				hatLeft.state = INPUT_ATTRIBUTE_STATE_OFF;
-			}
-			
-			if (inputAttr.intCoordY == -1)
-			{
-				hatDown.state = INPUT_ATTRIBUTE_STATE_OFF;
-				hatUp.state = INPUT_ATTRIBUTE_STATE_ON;
-			}
-			else if (inputAttr.intCoordY == 1)
-			{
-				hatDown.state = INPUT_ATTRIBUTE_STATE_ON;
-				hatUp.state = INPUT_ATTRIBUTE_STATE_OFF;
+				hatRight.state = ClientInputDeviceState_On;
+				hatLeft.state = ClientInputDeviceState_Off;
 			}
 			else
 			{
-				hatDown.state = INPUT_ATTRIBUTE_STATE_OFF;
-				hatUp.state = INPUT_ATTRIBUTE_STATE_OFF;
+				hatRight.state = ClientInputDeviceState_Off;
+				hatLeft.state = ClientInputDeviceState_Off;
 			}
 			
-			inputList.resize(4);
-			inputList.push_back(hatUp);
-			inputList.push_back(hatRight);
-			inputList.push_back(hatDown);
-			inputList.push_back(hatLeft);
+			if (inputProperty.intCoordY == -1)
+			{
+				hatDown.state = ClientInputDeviceState_Off;
+				hatUp.state = ClientInputDeviceState_On;
+			}
+			else if (inputProperty.intCoordY == 1)
+			{
+				hatDown.state = ClientInputDeviceState_On;
+				hatUp.state = ClientInputDeviceState_Off;
+			}
+			else
+			{
+				hatDown.state = ClientInputDeviceState_Off;
+				hatUp.state = ClientInputDeviceState_Off;
+			}
+			
+			inputPropertyList.resize(4);
+			inputPropertyList.push_back(hatUp);
+			inputPropertyList.push_back(hatRight);
+			inputPropertyList.push_back(hatDown);
+			inputPropertyList.push_back(hatLeft);
 		}
 		else
 		{
-			CommandAttributes cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputAttr.deviceCode elementCode:inputAttr.elementCode];
+			CommandAttributes cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputProperty.deviceCode elementCode:inputProperty.elementCode];
 			if (cmdAttr.tag[0] == '\0' || cmdAttr.selector == nil)
 			{
-				std::string tempElementCode = std::string(inputAttr.elementCode) + "/LowerThreshold";
-				cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputAttr.deviceCode elementCode:tempElementCode.c_str()];
+				std::string tempElementCode = std::string(inputProperty.elementCode) + "/LowerThreshold";
+				cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputProperty.deviceCode elementCode:tempElementCode.c_str()];
 				if (cmdAttr.tag[0] == '\0' || cmdAttr.selector == nil)
 				{
-					tempElementCode = std::string(inputAttr.elementCode) + "/UpperThreshold";
-					cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputAttr.deviceCode elementCode:tempElementCode.c_str()];
+					tempElementCode = std::string(inputProperty.elementCode) + "/UpperThreshold";
+					cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputProperty.deviceCode elementCode:tempElementCode.c_str()];
 				}
 			}
 			
@@ -619,44 +619,44 @@ InputAttributesList InputListFromHIDValue(IOHIDValueRef hidValueRef, InputManage
 			
 			if (useAnalog)
 			{
-				inputList.push_back(inputAttr);
+				inputPropertyList.push_back(inputProperty);
 			}
 			else
 			{
-				InputAttributes loInputAttr = inputAttr;
-				loInputAttr.isAnalog = false;
-				strncat(loInputAttr.elementName, "-", 2);
-				strncat(loInputAttr.elementCode, "/LowerThreshold", 16);
+				ClientInputDeviceProperties loInputProperty = inputProperty;
+				loInputProperty.isAnalog = false;
+				strncat(loInputProperty.elementName, "-", 2);
+				strncat(loInputProperty.elementCode, "/LowerThreshold", 16);
 				
-				InputAttributes hiInputAttr = inputAttr;
-				hiInputAttr.isAnalog = false;
-				strncat(hiInputAttr.elementName, "+", 2);
-				strncat(hiInputAttr.elementCode, "/UpperThreshold", 16);
+				ClientInputDeviceProperties hiInputProperty = inputProperty;
+				hiInputProperty.isAnalog = false;
+				strncat(hiInputProperty.elementName, "+", 2);
+				strncat(hiInputProperty.elementCode, "/UpperThreshold", 16);
 				
-				if (loInputAttr.scalar <= 0.30f)
+				if (loInputProperty.scalar <= 0.30f)
 				{
-					loInputAttr.state = INPUT_ATTRIBUTE_STATE_ON;
-					hiInputAttr.state = INPUT_ATTRIBUTE_STATE_OFF;
+					loInputProperty.state = ClientInputDeviceState_On;
+					hiInputProperty.state = ClientInputDeviceState_Off;
 				}
-				else if (loInputAttr.scalar >= 0.70f)
+				else if (loInputProperty.scalar >= 0.70f)
 				{
-					loInputAttr.state = INPUT_ATTRIBUTE_STATE_OFF;
-					hiInputAttr.state = INPUT_ATTRIBUTE_STATE_ON;
+					loInputProperty.state = ClientInputDeviceState_Off;
+					hiInputProperty.state = ClientInputDeviceState_On;
 				}
 				else
 				{
-					loInputAttr.state = INPUT_ATTRIBUTE_STATE_OFF;
-					hiInputAttr.state = INPUT_ATTRIBUTE_STATE_OFF;
+					loInputProperty.state = ClientInputDeviceState_Off;
+					hiInputProperty.state = ClientInputDeviceState_Off;
 				}
 				
-				inputList.resize(2);
-				inputList.push_back(loInputAttr);
-				inputList.push_back(hiInputAttr);
+				inputPropertyList.resize(2);
+				inputPropertyList.push_back(loInputProperty);
+				inputPropertyList.push_back(hiInputProperty);
 			}
 		}
 	}
 	
-	return inputList;
+	return inputPropertyList;
 }
 
 bool InputElementCodeFromHIDElement(const IOHIDElementRef hidElementRef, char *charBuffer)
@@ -976,19 +976,12 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 @implementation InputManager
 
 @synthesize emuControl;
+@synthesize inputEncoder;
 @dynamic hidInputTarget;
 @synthesize hidManager;
 @synthesize inputMappings;
 @synthesize commandTagList;
 @synthesize commandIcon;
-
-#if defined(__ppc__) || defined(__ppc64__)
-static std::map<unsigned short, std::string> keyboardNameTable; // Key = Key code, Value = Key name
-#elif !defined(MAC_OS_X_VERSION_10_7) || (MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_6)
-static std::tr1::unordered_map<unsigned short, std::string> keyboardNameTable; // Key = Key code, Value = Key name
-#else
-static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key = Key code, Value = Key name
-#endif
 
 - (id)init
 {
@@ -998,18 +991,7 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 		return self;
 	}
 	
-	if (keyboardNameTable.empty())
-	{
-		NSDictionary *keyboardNameDict = [[NSDictionary alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KeyNames" ofType:@"plist"]];
-		NSArray *keyboardDictKeyList = [keyboardNameDict allKeys];
-		
-		for (NSString *dKey in keyboardDictKeyList)
-		{
-			unsigned short keyCode = (unsigned short)[dKey intValue];
-			keyboardNameTable[keyCode] = std::string([(NSString *)[keyboardNameDict valueForKey:dKey] cStringUsingEncoding:NSUTF8StringEncoding]);
-		}
-	}
-	
+	inputEncoder = new MacInputDevicePropertiesEncoder;
 	hidManager = [[InputHIDManager alloc] initWithInputManager:self];
 	inputMappings = [[NSMutableDictionary alloc] initWithCapacity:128];
 	commandTagList = [[[NSDictionary alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultKeyMappings" ofType:@"plist"]] valueForKey:@"CommandTagList"];
@@ -1285,6 +1267,8 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 	[commandTagList release];
 	[commandIcon release];
 	
+	delete inputEncoder;
+	
 	[super dealloc];
 }
 
@@ -1396,41 +1380,41 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 	}
 }
 
-- (void) addMappingUsingInputAttributes:(const InputAttributes *)inputAttr commandAttributes:(const CommandAttributes *)cmdAttr
+- (void) addMappingUsingInputAttributes:(const ClientInputDeviceProperties *)inputProperty commandAttributes:(const CommandAttributes *)cmdAttr
 {
-	if (inputAttr == NULL)
+	if (inputProperty == NULL)
 	{
 		return;
 	}
 	
 	NSMutableDictionary *deviceInfo = DeviceInfoDictionaryWithCommandAttributes(cmdAttr,
-																				[NSString stringWithCString:inputAttr->deviceCode encoding:NSUTF8StringEncoding],
-																				[NSString stringWithCString:inputAttr->deviceName encoding:NSUTF8StringEncoding],
-																				[NSString stringWithCString:inputAttr->elementCode encoding:NSUTF8StringEncoding],
-																				[NSString stringWithCString:inputAttr->elementName encoding:NSUTF8StringEncoding]);
+																				[NSString stringWithCString:inputProperty->deviceCode encoding:NSUTF8StringEncoding],
+																				[NSString stringWithCString:inputProperty->deviceName encoding:NSUTF8StringEncoding],
+																				[NSString stringWithCString:inputProperty->elementCode encoding:NSUTF8StringEncoding],
+																				[NSString stringWithCString:inputProperty->elementName encoding:NSUTF8StringEncoding]);
 	
-	[deviceInfo setValue:[NSNumber numberWithBool:(cmdAttr->allowAnalogInput) ? inputAttr->isAnalog : NO] forKey:@"isInputAnalog"];
+	[deviceInfo setValue:[NSNumber numberWithBool:(cmdAttr->allowAnalogInput) ? inputProperty->isAnalog : NO] forKey:@"isInputAnalog"];
 	[self addMappingUsingDeviceInfoDictionary:deviceInfo commandAttributes:cmdAttr];
 }
 
-- (void) addMappingUsingInputList:(const InputAttributesList *)inputList commandAttributes:(const CommandAttributes *)cmdAttr
+- (void) addMappingUsingInputList:(const ClientInputDevicePropertiesList *)inputPropertyList commandAttributes:(const CommandAttributes *)cmdAttr
 {
-	if (inputList == NULL)
+	if (inputPropertyList == NULL)
 	{
 		return;
 	}
 	
-	const size_t inputCount = inputList->size();
+	const size_t inputCount = inputPropertyList->size();
 	
 	for (size_t i = 0; i < inputCount; i++)
 	{
-		const InputAttributes &inputAttr = (*inputList)[i];
-		if (inputAttr.state != INPUT_ATTRIBUTE_STATE_ON)
+		const ClientInputDeviceProperties &inputProperty = (*inputPropertyList)[i];
+		if (inputProperty.state != ClientInputDeviceState_On)
 		{
 			continue;
 		}
 		
-		[self addMappingUsingInputAttributes:&inputAttr commandAttributes:cmdAttr];
+		[self addMappingUsingInputAttributes:&inputProperty commandAttributes:cmdAttr];
 	}
 }
 
@@ -1515,31 +1499,31 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 	[inputList removeAllObjects];
 }
 
-- (CommandAttributesList) generateCommandListUsingInputList:(const InputAttributesList *)inputList
+- (CommandAttributesList) generateCommandListUsingInputList:(const ClientInputDevicePropertiesList *)inputPropertyList
 {
 	CommandAttributesList cmdList;
-	const size_t inputCount = inputList->size();
+	const size_t inputCount = inputPropertyList->size();
 	
 	for (size_t i = 0; i < inputCount; i++)
 	{
-		const InputAttributes &inputAttr = (*inputList)[i];
+		const ClientInputDeviceProperties &inputProperty = (*inputPropertyList)[i];
 		
 		// All inputs require a device code and element code for mapping. If one or both are
 		// not present, reject the input.
-		if (inputAttr.deviceCode[0] == '\0' || inputAttr.elementCode[0] == '\0')
+		if (inputProperty.deviceCode[0] == '\0' || inputProperty.elementCode[0] == '\0')
 		{
 			continue;
 		}
 		
 		// Look up the command attributes using the input key.
-		const std::string inputKey	= std::string(inputAttr.deviceCode) + ":" + std::string(inputAttr.elementCode);
+		const std::string inputKey	= std::string(inputProperty.deviceCode) + ":" + std::string(inputProperty.elementCode);
 		CommandAttributes cmdAttr	= commandMap[inputKey];
 		if (cmdAttr.tag[0] == '\0' || cmdAttr.selector == nil)
 		{
 			continue;
 		}
 		
-		cmdAttr.input = inputAttr; // Copy the input state to the command attributes.
+		cmdAttr.input = inputProperty; // Copy the input state to the command attributes.
 		cmdList.push_back(cmdAttr); // Add the command attributes to the list.
 	}
 	
@@ -1562,19 +1546,19 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 	}
 }
 
-- (BOOL) dispatchCommandUsingInputAttributes:(const InputAttributes *)inputAttr
+- (BOOL) dispatchCommandUsingInputProperties:(const ClientInputDeviceProperties *)inputProperty
 {
 	BOOL didCommandDispatch = NO;
 	
 	// All inputs require a device code and element code for mapping. If one or both are
 	// not present, reject the input.
-	if (inputAttr->deviceCode[0] == '\0' || inputAttr->elementCode[0] == '\0')
+	if (inputProperty->deviceCode[0] == '\0' || inputProperty->elementCode[0] == '\0')
 	{
 		return didCommandDispatch;
 	}
 	
 	// Look up the command key using the input key.
-	const std::string inputKey	= std::string(inputAttr->deviceCode) + ":" + std::string(inputAttr->elementCode);
+	const std::string inputKey	= std::string(inputProperty->deviceCode) + ":" + std::string(inputProperty->elementCode);
 	CommandAttributes cmdAttr	= commandMap[inputKey];
 	if (cmdAttr.tag[0] == '\0' || cmdAttr.selector == nil)
 	{
@@ -1582,7 +1566,7 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 	}
 	
 	// Copy the input state to the command attributes.
-	cmdAttr.input = *inputAttr;
+	cmdAttr.input = *inputProperty;
 	
 	if ([emuControl respondsToSelector:cmdAttr.selector])
 	{
@@ -1597,8 +1581,8 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 
 - (BOOL) dispatchCommandUsingIBAction:(const SEL)theSelector sender:(id)sender
 {
-	const InputAttributes inputAttr = InputManagerEncodeIBAction(theSelector, sender);
-	return [self dispatchCommandUsingInputAttributes:&inputAttr];
+	const ClientInputDeviceProperties inputProperty = inputEncoder->EncodeIBAction(theSelector, sender);
+	return [self dispatchCommandUsingInputProperties:&inputProperty];
 }
 
 - (void) writeDefaultsInputMappings
@@ -1990,6 +1974,8 @@ static std::unordered_map<unsigned short, std::string> keyboardNameTable; // Key
 	}
 }
 
+@end
+
 CommandAttributes NewDefaultCommandAttributes(const char *commandTag)
 {
 	CommandAttributes cmdAttr;
@@ -2004,10 +1990,10 @@ CommandAttributes NewDefaultCommandAttributes(const char *commandTag)
 	cmdAttr.floatValue[1]			= 0;
 	cmdAttr.floatValue[2]			= 0;
 	cmdAttr.floatValue[3]			= 0;
-	cmdAttr.object[0]				= nil;
-	cmdAttr.object[1]				= nil;
-	cmdAttr.object[2]				= nil;
-	cmdAttr.object[3]				= nil;
+	cmdAttr.object[0]				= NULL;
+	cmdAttr.object[1]				= NULL;
+	cmdAttr.object[2]				= NULL;
+	cmdAttr.object[3]				= NULL;
 	
 	cmdAttr.useInputForIntCoord		= false;
 	cmdAttr.useInputForFloatCoord	= false;
@@ -2026,7 +2012,7 @@ CommandAttributes NewCommandAttributesForSelector(const char *commandTag, const 
 	return cmdAttr;
 }
 
-CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const NSUInteger controlID)
+CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const NDSInputID controlID)
 {
 	CommandAttributes cmdAttr = NewCommandAttributesForSelector(commandTag, @selector(cmdUpdateDSController:));
 	
@@ -2164,12 +2150,104 @@ NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttr
 	return newDeviceInfo;
 }
 
-InputAttributesList InputManagerEncodeHIDQueue(const IOHIDQueueRef hidQueue, InputManager *inputManager, bool forceDigitalInput)
+MacInputDevicePropertiesEncoder::MacInputDevicePropertiesEncoder()
 {
-	InputAttributesList inputList;
+	NSDictionary *keyboardNameDict = [[NSDictionary alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"KeyNames" ofType:@"plist"]];
+	NSArray *keyboardDictKeyList = [keyboardNameDict allKeys];
+	
+	for (NSString *dKey in keyboardDictKeyList)
+	{
+		int32_t keyCode = (int32_t)[dKey intValue];
+		_keyboardNameTable[keyCode] = std::string([(NSString *)[keyboardNameDict valueForKey:dKey] cStringUsingEncoding:NSUTF8StringEncoding]);
+	}
+}
+
+ClientInputDeviceProperties MacInputDevicePropertiesEncoder::EncodeKeyboardInput(const int32_t keyCode, bool keyPressed)
+{
+	std::string elementName = this->_keyboardNameTable[keyCode];
+	
+	ClientInputDeviceProperties inputProperty;
+	strncpy(inputProperty.deviceCode, "NSEventKeyboard", INPUT_HANDLER_STRING_LENGTH);
+	strncpy(inputProperty.deviceName, "Keyboard", INPUT_HANDLER_STRING_LENGTH);
+	snprintf(inputProperty.elementCode, INPUT_HANDLER_STRING_LENGTH, "%i", (int)keyCode);
+	strncpy(inputProperty.elementName, (elementName.empty()) ? inputProperty.elementCode : elementName.c_str(), INPUT_HANDLER_STRING_LENGTH);
+	
+	inputProperty.isAnalog		= false;
+	inputProperty.state			= (keyPressed) ? ClientInputDeviceState_On : ClientInputDeviceState_Off;
+	inputProperty.intCoordX		= 0;
+	inputProperty.intCoordY		= 0;
+	inputProperty.floatCoordX	= 0.0f;
+	inputProperty.floatCoordY	= 0.0f;
+	inputProperty.scalar		= (keyPressed) ? 1.0f : 0.0f;
+	inputProperty.object		= NULL;
+	
+	return inputProperty;
+}
+
+ClientInputDeviceProperties MacInputDevicePropertiesEncoder::EncodeMouseInput(const int32_t buttonNumber, float touchLocX, float touchLocY, bool buttonPressed)
+{
+	ClientInputDeviceProperties inputProperty;
+	strncpy(inputProperty.deviceCode, "NSEventMouse", INPUT_HANDLER_STRING_LENGTH);
+	strncpy(inputProperty.deviceName, "Mouse", INPUT_HANDLER_STRING_LENGTH);
+	snprintf(inputProperty.elementCode, INPUT_HANDLER_STRING_LENGTH, "%i", (int)buttonNumber);
+	
+	switch (buttonNumber)
+	{
+		case kCGMouseButtonLeft:
+			strncpy(inputProperty.elementName, "Primary Button", INPUT_HANDLER_STRING_LENGTH);
+			break;
+			
+		case kCGMouseButtonRight:
+			strncpy(inputProperty.elementName, "Secondary Button", INPUT_HANDLER_STRING_LENGTH);
+			break;
+			
+		case kCGMouseButtonCenter:
+			strncpy(inputProperty.elementName, "Center Button", INPUT_HANDLER_STRING_LENGTH);
+			break;
+			
+		default:
+			snprintf(inputProperty.elementName, INPUT_HANDLER_STRING_LENGTH, "Button %i", (int)buttonNumber);
+			break;
+	}
+	
+	inputProperty.isAnalog		= false;
+	inputProperty.state			= (buttonPressed) ? ClientInputDeviceState_On : ClientInputDeviceState_Off;
+	inputProperty.intCoordX		= (int32_t)touchLocX;
+	inputProperty.intCoordY		= (int32_t)touchLocY;
+	inputProperty.floatCoordX	= touchLocX;
+	inputProperty.floatCoordY	= touchLocY;
+	inputProperty.scalar		= (buttonPressed) ? 1.0f : 0.0f;
+	inputProperty.object		= NULL;
+	
+	return inputProperty;
+}
+
+ClientInputDeviceProperties MacInputDevicePropertiesEncoder::EncodeIBAction(const SEL theSelector, id sender)
+{
+	ClientInputDeviceProperties inputProperty;
+	strncpy(inputProperty.deviceCode, "IBAction", INPUT_HANDLER_STRING_LENGTH);
+	strncpy(inputProperty.deviceName, "Application", INPUT_HANDLER_STRING_LENGTH);
+	strncpy(inputProperty.elementCode, sel_getName(theSelector), INPUT_HANDLER_STRING_LENGTH);
+	strncpy(inputProperty.elementName, inputProperty.elementCode, INPUT_HANDLER_STRING_LENGTH);
+	
+	inputProperty.isAnalog		= false;
+	inputProperty.state			= ClientInputDeviceState_On;
+	inputProperty.intCoordX		= 0;
+	inputProperty.intCoordY		= 0;
+	inputProperty.floatCoordX	= 0.0f;
+	inputProperty.floatCoordY	= 0.0f;
+	inputProperty.scalar		= 1.0f;
+	inputProperty.object		= sender;
+	
+	return inputProperty;
+}
+
+ClientInputDevicePropertiesList MacInputDevicePropertiesEncoder::EncodeHIDQueue(const IOHIDQueueRef hidQueue, InputManager *inputManager, bool forceDigitalInput)
+{
+	ClientInputDevicePropertiesList inputPropertyList;
 	if (hidQueue == nil)
 	{
-		return inputList;
+		return inputPropertyList;
 	}
 	
 	do
@@ -2179,105 +2257,23 @@ InputAttributesList InputManagerEncodeHIDQueue(const IOHIDQueueRef hidQueue, Inp
 		{
 			break;
 		}
-
-		InputAttributesList hidInputList = InputListFromHIDValue(hidValueRef, inputManager, forceDigitalInput);
+		
+		ClientInputDevicePropertiesList hidInputList = InputListFromHIDValue(hidValueRef, inputManager, forceDigitalInput);
 		const size_t hidInputCount = hidInputList.size();
 		for (size_t i = 0; i < hidInputCount; i++)
 		{
-			inputList.push_back(hidInputList[i]);
+			inputPropertyList.push_back(hidInputList[i]);
 		}
 		
 		CFRelease(hidValueRef);
 	} while (1);
 	
-	if (!inputList.empty())
+	if (!inputPropertyList.empty())
 	{
 		// HID input devices don't register events, so we need to manually prevent
 		// sleep and screensaver whenever we detect an input.
 		UpdateSystemActivity(UsrActivity);
 	}
 	
-	return inputList;
+	return inputPropertyList;
 }
-
-InputAttributes InputManagerEncodeKeyboardInput(const unsigned short keyCode, BOOL keyPressed)
-{
-	std::string elementName = keyboardNameTable[keyCode];
-	
-	InputAttributes inputAttr;
-	strncpy(inputAttr.deviceCode, "NSEventKeyboard", INPUT_HANDLER_STRING_LENGTH);
-	strncpy(inputAttr.deviceName, "Keyboard", INPUT_HANDLER_STRING_LENGTH);
-	snprintf(inputAttr.elementCode, INPUT_HANDLER_STRING_LENGTH, "%d", keyCode);
-	strncpy(inputAttr.elementName, (elementName.empty()) ? inputAttr.elementCode : elementName.c_str(), INPUT_HANDLER_STRING_LENGTH);
-	
-	inputAttr.isAnalog		= false;
-	inputAttr.state			= (keyPressed) ? INPUT_ATTRIBUTE_STATE_ON : INPUT_ATTRIBUTE_STATE_OFF;
-	inputAttr.intCoordX		= 0;
-	inputAttr.intCoordY		= 0;
-	inputAttr.floatCoordX	= 0.0f;
-	inputAttr.floatCoordY	= 0.0f;
-	inputAttr.scalar		= (keyPressed) ? 1.0f : 0.0f;
-	inputAttr.object		= nil;
-	
-	return inputAttr;
-}
-
-InputAttributes InputManagerEncodeMouseButtonInput(const NSInteger buttonNumber, const NSPoint touchLoc, BOOL buttonPressed)
-{
-	InputAttributes inputAttr;
-	strncpy(inputAttr.deviceCode, "NSEventMouse", INPUT_HANDLER_STRING_LENGTH);
-	strncpy(inputAttr.deviceName, "Mouse", INPUT_HANDLER_STRING_LENGTH);
-	snprintf(inputAttr.elementCode, INPUT_HANDLER_STRING_LENGTH, "%i", (const int)buttonNumber);
-	
-	switch (buttonNumber)
-	{
-		case kCGMouseButtonLeft:
-			strncpy(inputAttr.elementName, "Primary Button", INPUT_HANDLER_STRING_LENGTH);
-			break;
-			
-		case kCGMouseButtonRight:
-			strncpy(inputAttr.elementName, "Secondary Button", INPUT_HANDLER_STRING_LENGTH);
-			break;
-			
-		case kCGMouseButtonCenter:
-			strncpy(inputAttr.elementName, "Center Button", INPUT_HANDLER_STRING_LENGTH);
-			break;
-			
-		default:
-			snprintf(inputAttr.elementName, INPUT_HANDLER_STRING_LENGTH, "Button %i", (const int)buttonNumber);
-			break;
-	}
-	
-	inputAttr.isAnalog		= false;
-	inputAttr.state			= (buttonPressed) ? INPUT_ATTRIBUTE_STATE_ON : INPUT_ATTRIBUTE_STATE_OFF;
-	inputAttr.intCoordX		= (int32_t)touchLoc.x;
-	inputAttr.intCoordY		= (int32_t)touchLoc.y;
-	inputAttr.floatCoordX	= touchLoc.x;
-	inputAttr.floatCoordY	= touchLoc.y;
-	inputAttr.scalar		= (buttonPressed) ? 1.0f : 0.0f;
-	inputAttr.object		= nil;
-	
-	return inputAttr;
-}
-
-InputAttributes InputManagerEncodeIBAction(const SEL theSelector, id sender)
-{
-	InputAttributes inputAttr;
-	strncpy(inputAttr.deviceCode, "IBAction", INPUT_HANDLER_STRING_LENGTH);
-	strncpy(inputAttr.deviceName, "Application", INPUT_HANDLER_STRING_LENGTH);
-	strncpy(inputAttr.elementCode, sel_getName(theSelector), INPUT_HANDLER_STRING_LENGTH);
-	strncpy(inputAttr.elementName, inputAttr.elementCode, INPUT_HANDLER_STRING_LENGTH);
-	
-	inputAttr.isAnalog		= false;
-	inputAttr.state			= INPUT_ATTRIBUTE_STATE_ON;
-	inputAttr.intCoordX		= 0;
-	inputAttr.intCoordY		= 0;
-	inputAttr.floatCoordX	= 0.0f;
-	inputAttr.floatCoordY	= 0.0f;
-	inputAttr.scalar		= 1.0f;
-	inputAttr.object		= sender;
-	
-	return inputAttr;
-}
-
-@end

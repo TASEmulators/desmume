@@ -1003,7 +1003,7 @@
 {
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
-	const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
+	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
 	const NSUInteger controlID = cmdAttr.intValue[0];
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
@@ -1025,7 +1025,7 @@
 {
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
-	const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
+	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
 	const NSUInteger controlID = cmdAttr.intValue[0];
 	const BOOL isTurboEnabled = (BOOL)cmdAttr.intValue[1];
 	const uint32_t turboPattern = (uint32_t)cmdAttr.intValue[2];
@@ -1050,7 +1050,7 @@
 {
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
-	const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
+	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
 	
 	const NSPoint touchLoc = (cmdAttr.useInputForIntCoord) ? NSMakePoint(cmdAttr.input.intCoordX, cmdAttr.input.intCoordY) : NSMakePoint(cmdAttr.intValue[1], cmdAttr.intValue[2]);
 	if (touchLoc.x >= 0.0 && touchLoc.y >= 0.0)
@@ -1075,7 +1075,7 @@
 {
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
-	const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
+	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	CocoaDSController *cdsController = [cdsCore cdsController];
@@ -1119,7 +1119,7 @@
 	}
 	else
 	{
-		const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
+		const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
 		const NSInteger paddleAdjust = (theState) ? cmdAttr.intValue[1] : 0;
 		[[cdsCore cdsController] setPaddleAdjust:paddleAdjust];
 	}
@@ -1129,7 +1129,7 @@
 {
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
-	const BOOL theState = (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_ON) ? YES : NO;
+	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsController] setAutohold:theState];
@@ -1141,7 +1141,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
 	}
@@ -1157,7 +1157,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
 	}
@@ -1195,7 +1195,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
 	}
@@ -1245,7 +1245,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
 	}
@@ -1260,7 +1260,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
 	}
@@ -1305,7 +1305,7 @@
 	const float inputSpeedScalar = (cmdAttr.useInputForScalar) ? cmdAttr.input.scalar : cmdAttr.floatValue[0];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
-	[cdsCore setSpeedScalar:(cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) ? lastSetSpeedScalar : inputSpeedScalar];
+	[cdsCore setSpeedScalar:(cmdAttr.input.state == ClientInputDeviceState_Off) ? lastSetSpeedScalar : inputSpeedScalar];
 	[self setVerticalSyncForNonLayerBackedViews:nil];
 }
 
@@ -1314,7 +1314,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
 	}
@@ -1342,7 +1342,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
 	}
@@ -1370,7 +1370,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
 	}
@@ -1396,7 +1396,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if ( (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) || ([self currentRom] == nil) )
+	if ( (cmdAttr.input.state == ClientInputDeviceState_Off) || ([self currentRom] == nil) )
 	{
 		return;
 	}
@@ -1418,7 +1418,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if ( (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) || ([self currentRom] == nil) )
+	if ( (cmdAttr.input.state == ClientInputDeviceState_Off) || ([self currentRom] == nil) )
 	{
 		return;
 	}
@@ -1431,7 +1431,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if ( (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) || ([self currentRom] == nil) )
+	if ( (cmdAttr.input.state == ClientInputDeviceState_Off) || ([self currentRom] == nil) )
 	{
 		return;
 	}
@@ -1446,7 +1446,7 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
-	if ( (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) ||
+	if ( (cmdAttr.input.state == ClientInputDeviceState_Off) ||
 	     ([cdsCore coreState] != ExecutionBehavior_Pause) ||
 	     ([self currentRom] == nil) )
 	{
@@ -1461,7 +1461,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if ( (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) || ([self currentRom] == nil) )
+	if ( (cmdAttr.input.state == ClientInputDeviceState_Off) || ([self currentRom] == nil) )
 	{
 		return;
 	}
@@ -1477,7 +1477,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if ( (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF) || ([self currentRom] == nil) )
+	if ( (cmdAttr.input.state == ClientInputDeviceState_Off) || ([self currentRom] == nil) )
 	{
 		return;
 	}
@@ -1513,7 +1513,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
 	}
@@ -1541,7 +1541,7 @@
 	CommandAttributes cmdAttr;
 	[cmdAttrValue getValue:&cmdAttr];
 	
-	if (cmdAttr.input.state == INPUT_ATTRIBUTE_STATE_OFF)
+	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
 	}

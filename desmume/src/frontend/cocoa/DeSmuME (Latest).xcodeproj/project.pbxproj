@@ -73,6 +73,10 @@
 		AB0F29B514BE7213009ABC6F /* Icon_RotateCW_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A314BE7213009ABC6F /* Icon_RotateCW_420x420.png */; };
 		AB0F29B614BE7213009ABC6F /* Icon_ShowHUD_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */; };
 		AB0F29B714BE7213009ABC6F /* Icon_Speaker_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */; };
+		AB11AD891F6757F800CB298E /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */; };
+		AB11AD8A1F6757F800CB298E /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */; };
+		AB11AD8B1F6757F800CB298E /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */; };
+		AB11AD8C1F6757F800CB298E /* ClientInputHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */; };
 		AB15CA7214A29EE500B8A6A4 /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABAD3E6613AF1D6D00502E1E /* cpu_detect_x86_gcc.cpp */; };
 		AB1773FD182ECA8A009F29DD /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
 		AB1773FE182ECA8A009F29DD /* slot2_passme.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */; };
@@ -1265,6 +1269,8 @@
 		AB0F29A314BE7213009ABC6F /* Icon_RotateCW_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_RotateCW_420x420.png; path = images/Icon_RotateCW_420x420.png; sourceTree = "<group>"; };
 		AB0F29A414BE7213009ABC6F /* Icon_ShowHUD_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_ShowHUD_420x420.png; path = images/Icon_ShowHUD_420x420.png; sourceTree = "<group>"; };
 		AB0F29A514BE7213009ABC6F /* Icon_Speaker_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speaker_420x420.png; path = images/Icon_Speaker_420x420.png; sourceTree = "<group>"; };
+		AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClientInputHandler.cpp; sourceTree = "<group>"; };
+		AB11AD881F6757F800CB298E /* ClientInputHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientInputHandler.h; sourceTree = "<group>"; };
 		AB1773FC182ECA8A009F29DD /* slot2_passme.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot2_passme.cpp; sourceTree = "<group>"; };
 		AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = coreaudiosound.cpp; sourceTree = "<group>"; };
 		AB1B9E601501A78000464647 /* ringbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ringbuffer.cpp; sourceTree = "<group>"; };
@@ -2000,6 +2006,7 @@
 				ABD10AE51715FCDD00B5729D /* audiosamplegenerator.cpp */,
 				ABAD07DA1E19CAA6007867CA /* ClientDisplayView.cpp */,
 				ABB1C9461F5281AE0004844F /* ClientExecutionControl.cpp */,
+				AB11AD871F6757F800CB298E /* ClientInputHandler.cpp */,
 				AB1B9E5F1501A78000464647 /* coreaudiosound.cpp */,
 				AB23567216C2F6F400DA782E /* macosx_10_5_compat.cpp */,
 				ABD10AE61715FCDD00B5729D /* mic_ext.cpp */,
@@ -2010,6 +2017,7 @@
 				ABD10AE31715FCDD00B5729D /* audiosamplegenerator.h */,
 				ABAD07DB1E19CAA6007867CA /* ClientDisplayView.h */,
 				ABB1C9471F5281AE0004844F /* ClientExecutionControl.h */,
+				AB11AD881F6757F800CB298E /* ClientInputHandler.h */,
 				ABA6574914511EC90077E5E9 /* cocoa_cheat.h */,
 				ABD103FE1346652500AF11D1 /* cocoa_core.h */,
 				AB58F32B1364F44B0074C376 /* cocoa_file.h */,
@@ -3881,6 +3889,7 @@
 				ABD1FEFD1345AC8400AF11D1 /* version.cpp in Sources */,
 				ABD1FF681345ACBF00AF11D1 /* vfat.cpp in Sources */,
 				ABE5DE95143F781900835AD8 /* videofilter.cpp in Sources */,
+				AB11AD8B1F6757F800CB298E /* ClientInputHandler.cpp in Sources */,
 				AB1773FE182ECA8A009F29DD /* slot2_passme.cpp in Sources */,
 				ABAD3E7B13AF1D6D00502E1E /* WavFile.cpp in Sources */,
 				ABD1FEFE1345AC8400AF11D1 /* wifi.cpp in Sources */,
@@ -4101,6 +4110,7 @@
 				AB2ABA3B1C9F9CFA00173B15 /* async_job.c in Sources */,
 				AB796D3D15CDCBA200C59155 /* thumb_instructions.cpp in Sources */,
 				AB9038A617C5ECFD00F410BD /* advanscene.cpp in Sources */,
+				AB11AD891F6757F800CB298E /* ClientInputHandler.cpp in Sources */,
 				AB796D3E15CDCBA200C59155 /* Timestretcher.cpp in Sources */,
 				ABFEA81F1BB4EC1000B08C25 /* ftgasp.c in Sources */,
 				AB796D3F15CDCBA200C59155 /* tinystr.cpp in Sources */,
@@ -4324,6 +4334,7 @@
 				AB8F3CC11A53AC2600A80BF6 /* slot1_retail_auto.cpp in Sources */,
 				AB8F3CC21A53AC2600A80BF6 /* SPU.cpp in Sources */,
 				AB000DD71CCC6B4200413F02 /* retro_stat.c in Sources */,
+				AB11AD8A1F6757F800CB298E /* ClientInputHandler.cpp in Sources */,
 				AB8F3CC31A53AC2600A80BF6 /* sse_optimized.cpp in Sources */,
 				AB8F3CC41A53AC2600A80BF6 /* task.cpp in Sources */,
 				AB8F3CC51A53AC2600A80BF6 /* TDStretch.cpp in Sources */,
@@ -4488,6 +4499,7 @@
 				ABB3C69C1501C04F00E0C22E /* directory.cpp in Sources */,
 				ABB3C69D1501C04F00E0C22E /* disc.cpp in Sources */,
 				ABB3C69E1501C04F00E0C22E /* fatdir.cpp in Sources */,
+				AB11AD8C1F6757F800CB298E /* ClientInputHandler.cpp in Sources */,
 				ABB3C69F1501C04F00E0C22E /* fatfile.cpp in Sources */,
 				ABB3C6A01501C04F00E0C22E /* file_allocation_table.cpp in Sources */,
 				ABB3C6A11501C04F00E0C22E /* filetime.cpp in Sources */,

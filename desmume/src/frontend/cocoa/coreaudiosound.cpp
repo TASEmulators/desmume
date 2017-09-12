@@ -18,7 +18,7 @@
 #include "coreaudiosound.h"
 
 #include <CoreAudio/CoreAudio.h>
-#include "ClientExecutionControl.h"
+#include "ClientInputHandler.h"
 #include "utilities.h"
 
 #import "cocoa_globals.h"

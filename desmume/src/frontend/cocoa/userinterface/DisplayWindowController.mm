@@ -2141,23 +2141,24 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	BOOL isHandled = NO;
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 	
-	InputAttributesList inputList = InputManagerEncodeHIDQueue(hidQueue, [hidManager inputManager], false);
+	MacInputDevicePropertiesEncoder *inputEncoder = [[hidManager inputManager] inputEncoder];
+	ClientInputDevicePropertiesList inputPropertyList = inputEncoder->EncodeHIDQueue(hidQueue, [hidManager inputManager], false);
 	NSString *newStatusText = nil;
 	
-	const size_t inputCount = inputList.size();
+	const size_t inputCount = inputPropertyList.size();
 	
 	for (size_t i = 0; i < inputCount; i++)
 	{
-		const InputAttributes &inputAttr = inputList[i];
+		const ClientInputDeviceProperties &inputProperty = inputPropertyList[i];
 		
-		if (inputAttr.isAnalog)
+		if (inputProperty.isAnalog)
 		{
-			newStatusText = [NSString stringWithFormat:@"%s:%s (%1.2f)", inputAttr.deviceName, inputAttr.elementName, inputAttr.scalar];
+			newStatusText = [NSString stringWithFormat:@"%s:%s (%1.2f)", inputProperty.deviceName, inputProperty.elementName, inputProperty.scalar];
 			break;
 		}
-		else if (inputAttr.state == INPUT_ATTRIBUTE_STATE_ON)
+		else if (inputProperty.state == ClientInputDeviceState_On)
 		{
-			newStatusText = [NSString stringWithFormat:@"%s:%s", inputAttr.deviceName, inputAttr.elementName];
+			newStatusText = [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName];
 			break;
 		}
 	}
@@ -2167,7 +2168,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		[[windowController emuControl] setStatusText:newStatusText];
 	}
 	
-	CommandAttributesList cmdList = [inputManager generateCommandListUsingInputList:&inputList];
+	CommandAttributesList cmdList = [inputManager generateCommandListUsingInputList:&inputPropertyList];
 	if (cmdList.empty())
 	{
 		return isHandled;
@@ -2184,15 +2185,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	BOOL isHandled = NO;
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 	
-	const InputAttributes inputAttr = InputManagerEncodeKeyboardInput([theEvent keyCode], keyPressed);
+	MacInputDevicePropertiesEncoder *inputEncoder = [inputManager inputEncoder];
+	const ClientInputDeviceProperties inputProperty = inputEncoder->EncodeKeyboardInput((int32_t)[theEvent keyCode], (keyPressed) ? true : false);
 	
 	if (keyPressed && [theEvent window] != nil)
 	{
-		NSString *newStatusText = [NSString stringWithFormat:@"%s:%s", inputAttr.deviceName, inputAttr.elementName];
+		NSString *newStatusText = [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName];
 		[[windowController emuControl] setStatusText:newStatusText];
 	}
 	
-	isHandled = [inputManager dispatchCommandUsingInputAttributes:&inputAttr];
+	isHandled = [inputManager dispatchCommandUsingInputProperties:&inputProperty];
 	return isHandled;
 }
 
@@ -2205,7 +2207,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	// Convert the clicked location from window coordinates, to view coordinates,
 	// and finally to DS touchscreen coordinates.
-	const NSInteger buttonNumber = [theEvent buttonNumber];
+	const int32_t buttonNumber = (int32_t)[theEvent buttonNumber];
 	uint8_t x = 0;
 	uint8_t y = 0;
 	
@@ -2219,15 +2221,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		cdv->GetNDSPoint((int)buttonNumber, isInitialMouseDown, clientLoc.x, clientLoc.y, x, y);
 	}
 	
-	const InputAttributes inputAttr = InputManagerEncodeMouseButtonInput(buttonNumber, NSMakePoint(x, y), buttonPressed);
+	MacInputDevicePropertiesEncoder *inputEncoder = [inputManager inputEncoder];
+	const ClientInputDeviceProperties inputProperty = inputEncoder->EncodeMouseInput(buttonNumber, (float)x, (float)y, (buttonPressed) ? true : false);
 	
 	if (buttonPressed && [theEvent window] != nil)
 	{
-		NSString *newStatusText = (displayMode == ClientDisplayMode_Main) ? [NSString stringWithFormat:@"%s:%s", inputAttr.deviceName, inputAttr.elementName] : [NSString stringWithFormat:@"%s:%s X:%i Y:%i", inputAttr.deviceName, inputAttr.elementName, (int)inputAttr.intCoordX, (int)inputAttr.intCoordY];
+		NSString *newStatusText = (displayMode == ClientDisplayMode_Main) ? [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName] : [NSString stringWithFormat:@"%s:%s X:%i Y:%i", inputProperty.deviceName, inputProperty.elementName, (int)inputProperty.intCoordX, (int)inputProperty.intCoordY];
 		[[windowController emuControl] setStatusText:newStatusText];
 	}
 	
-	isHandled = [inputManager dispatchCommandUsingInputAttributes:&inputAttr];
+	isHandled = [inputManager dispatchCommandUsingInputProperties:&inputProperty];
 	return isHandled;
 }
 

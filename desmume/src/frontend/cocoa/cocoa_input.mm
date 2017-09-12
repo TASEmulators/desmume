@@ -26,11 +26,13 @@
 #include "../../slot2.h"
 #undef BOOL
 
+#include "ClientInputHandler.h"
+
 
 @implementation CocoaDSController
 
 @synthesize delegate;
-@synthesize execControl;
+@dynamic inputHandler;
 @dynamic autohold;
 @dynamic paddleAdjust;
 @synthesize stylusPressure;
@@ -60,7 +62,7 @@
 	}
 		
 	delegate = nil;
-	execControl = NULL;
+	inputHandler = new ClientInputHandler;
 	_availableMicSamples = 0;
 	
 	micLevel = 0.0f;
@@ -93,6 +95,11 @@
 	[self setHardwareMicSampleRateString:nil];
 	
 	[super dealloc];
+}
+
+- (ClientInputHandler *) inputHandler
+{
+	return inputHandler;
 }
 
 - (BOOL) isHardwareMicAvailable
@@ -157,83 +164,83 @@
 
 - (void) setSoftwareMicState:(BOOL)theState mode:(NSInteger)micMode
 {
-	execControl->SetClientSoftwareMicState((theState) ? true : false, (MicrophoneMode)micMode);
+	inputHandler->SetClientSoftwareMicState((theState) ? true : false, (MicrophoneMode)micMode);
 }
 
 - (BOOL) softwareMicState
 {
-	return (execControl->GetClientSoftwareMicState()) ? YES : NO;
+	return (inputHandler->GetClientSoftwareMicState()) ? YES : NO;
 }
 
 - (AudioGenerator *) softwareMicSampleGenerator
 {
-	return execControl->GetClientSoftwareMicSampleGenerator();
+	return inputHandler->GetClientSoftwareMicSampleGenerator();
 }
 
 - (void) setSelectedAudioFileGenerator:(AudioSampleBlockGenerator *)audioGenerator
 {
-	execControl->SetClientSelectedAudioFileGenerator(audioGenerator);
+	inputHandler->SetClientSelectedAudioFileGenerator(audioGenerator);
 }
 
 - (AudioSampleBlockGenerator *) selectedAudioFileGenerator
 {
-	return execControl->GetClientSelectedAudioFileGenerator();
+	return inputHandler->GetClientSelectedAudioFileGenerator();
 }
 
 - (void) setAutohold:(BOOL)theState
 {
-	execControl->SetEnableAutohold((theState) ? true: false);
+	inputHandler->SetEnableAutohold((theState) ? true: false);
 }
 
 - (BOOL) autohold
 {
-	return (execControl->GetEnableAutohold()) ? YES : NO;
+	return (inputHandler->GetEnableAutohold()) ? YES : NO;
 }
 
 - (void) setPaddleAdjust:(NSInteger)paddleAdjust
 {
-	execControl->SetClientPaddleAdjust((int16_t)paddleAdjust);
+	inputHandler->SetClientPaddleAdjust((int16_t)paddleAdjust);
 }
 
 - (NSInteger) paddleAdjust
 {
-	return (NSInteger)execControl->GetClientPaddleAdjust();
+	return (NSInteger)inputHandler->GetClientPaddleAdjust();
 }
 
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID
 {
-	execControl->SetClientInputStateUsingID((NDSInputID)controlID,
-											(theState) ? true : false,
-											false,
-											0,
-											0);
+	inputHandler->SetClientInputStateUsingID((NDSInputID)controlID,
+											 (theState) ? true : false,
+											 false,
+											 0,
+											 0);
 }
 
 - (void) setControllerState:(BOOL)theState controlID:(const NSUInteger)controlID turbo:(const BOOL)isTurboEnabled turboPattern:(uint32_t)turboPattern turboPatternLength:(uint32_t)turboPatternLength
 {
-	execControl->SetClientInputStateUsingID((NDSInputID)controlID,
-											(theState) ? true : false,
-											(isTurboEnabled) ? true : false,
-											turboPattern,
-											turboPatternLength);
+	inputHandler->SetClientInputStateUsingID((NDSInputID)controlID,
+											 (theState) ? true : false,
+											 (isTurboEnabled) ? true : false,
+											 turboPattern,
+											 turboPatternLength);
 }
 
 - (void) setTouchState:(BOOL)theState location:(const NSPoint)theLocation
 {
-	execControl->SetClientTouchState((theState) ? true : false,
-									 (uint8_t)(theLocation.x + 0.3f),
-									 (uint8_t)(theLocation.y + 0.3f),
-									 (uint8_t)[self stylusPressure]);
+	inputHandler->SetClientTouchState((theState) ? true : false,
+									  (uint8_t)(theLocation.x + 0.3f),
+									  (uint8_t)(theLocation.y + 0.3f),
+									  (uint8_t)[self stylusPressure]);
 }
 
 - (void) setSineWaveGeneratorFrequency:(const double)freq
 {
-	execControl->SetSineWaveFrequency(freq);
+	inputHandler->SetSineWaveFrequency(freq);
 }
 
 - (void) clearAutohold
 {
-	execControl->ClearAutohold();
+	inputHandler->ClearAutohold();
 }
 
 - (void) reset
@@ -270,7 +277,7 @@
 {
 	uint8_t theSample = MIC_NULL_SAMPLE_VALUE;
 	
-	if (!execControl->GetClientSoftwareMicStateApplied() && (caInput != NULL))
+	if (!inputHandler->GetClientSoftwareMicStateApplied() && (caInput != NULL))
 	{
 		if (caInput->GetPauseState())
 		{

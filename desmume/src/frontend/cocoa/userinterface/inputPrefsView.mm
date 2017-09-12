@@ -277,17 +277,19 @@
 
 - (BOOL) handleKeyboardEvent:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed
 {
-	const InputAttributes inputAttr = InputManagerEncodeKeyboardInput([theEvent keyCode], keyPressed);
-	return [self addMappingUsingInputAttributes:&inputAttr commandTag:[self configInputTargetID]];
+	MacInputDevicePropertiesEncoder *inputEncoder = [inputManager inputEncoder];
+	const ClientInputDeviceProperties inputProperty = inputEncoder->EncodeKeyboardInput((int32_t)[theEvent keyCode], (keyPressed) ? true : false);
+	return [self addMappingUsingInputAttributes:&inputProperty commandTag:[self configInputTargetID]];
 }
 
 - (BOOL) handleMouseButtonEvent:(NSEvent *)mouseEvent buttonPressed:(BOOL)buttonPressed
 {
-	const InputAttributes inputAttr = InputManagerEncodeMouseButtonInput([mouseEvent buttonNumber], NSMakePoint(0.0f, 0.0f), buttonPressed);
-	return [self addMappingUsingInputAttributes:&inputAttr commandTag:[self configInputTargetID]];
+	MacInputDevicePropertiesEncoder *inputEncoder = [inputManager inputEncoder];
+	const ClientInputDeviceProperties inputProperty = inputEncoder->EncodeMouseInput((int32_t)[mouseEvent buttonNumber], 0.0f, 0.0f, (buttonPressed) ? true : false);
+	return [self addMappingUsingInputAttributes:&inputProperty commandTag:[self configInputTargetID]];
 }
 
-- (BOOL) addMappingUsingInputAttributes:(const InputAttributes *)inputAttr commandTag:(NSString *)commandTag
+- (BOOL) addMappingUsingInputAttributes:(const ClientInputDeviceProperties *)inputProperty commandTag:(NSString *)commandTag
 {
 	BOOL didMap = NO;
 	
@@ -304,7 +306,7 @@
 	
 	// Add the input mapping.
 	const CommandAttributes cmdAttr = [inputManager defaultCommandAttributesForCommandTag:cmdTag];
-	[inputManager addMappingUsingInputAttributes:inputAttr commandAttributes:&cmdAttr];
+	[inputManager addMappingUsingInputAttributes:inputProperty commandAttributes:&cmdAttr];
 	[inputManager writeDefaultsInputMappings];
 	
 	// If we're dealing with a Microphone command, update the audio file generators list.
@@ -450,16 +452,18 @@
 	
 	CommandAttributes cmdAttr = [[hidManager inputManager] defaultCommandAttributesForCommandTag:[cmdTagTarget cStringUsingEncoding:NSUTF8StringEncoding]];
 	bool forceDigitalInput = !cmdAttr.allowAnalogInput;
-	InputAttributesList inputList = InputManagerEncodeHIDQueue(hidQueue, [hidManager inputManager], forceDigitalInput);
-	const size_t inputCount = inputList.size();
+	
+	MacInputDevicePropertiesEncoder *inputEncoder = [[hidManager inputManager] inputEncoder];
+	ClientInputDevicePropertiesList inputPropertyList = inputEncoder->EncodeHIDQueue(hidQueue, [hidManager inputManager], forceDigitalInput);
+	const size_t inputCount = inputPropertyList.size();
 	
 	for (size_t i = 0; i < inputCount; i++)
 	{
-		const InputAttributes &inputAttr = inputList[i];
-		NSString *inputKey = [NSString stringWithFormat:@"%s:%s", inputAttr.deviceCode, inputAttr.elementCode];
+		const ClientInputDeviceProperties &inputProperty = inputPropertyList[i];
+		NSString *inputKey = [NSString stringWithFormat:@"%s:%s", inputProperty.deviceCode, inputProperty.elementCode];
 		NSDate *inputOnDate = [configInputList valueForKey:inputKey];
 		
-		if (inputAttr.state == INPUT_ATTRIBUTE_STATE_ON)
+		if (inputProperty.state == ClientInputDeviceState_On)
 		{
 			if (inputOnDate == nil)
 			{
@@ -477,7 +481,7 @@
 				}
 				else
 				{
-					isHandled = [self addMappingUsingInputAttributes:&inputAttr commandTag:cmdTagTarget];
+					isHandled = [self addMappingUsingInputAttributes:&inputProperty commandTag:cmdTagTarget];
 					break;
 				}
 			}

@@ -23,7 +23,7 @@
 #include "audiosamplegenerator.h"
 #include <math.h>
 #include <string.h>
-#include "ClientExecutionControl.h"
+#include "ClientInputHandler.h"
 
 #define NUM_INTERNAL_NOISE_SAMPLES 32
 

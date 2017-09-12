@@ -26,6 +26,7 @@
 #import "cocoa_util.h"
 
 #include "ClientExecutionControl.h"
+#include "ClientInputHandler.h"
 
 #include "../../movie.h"
 #include "../../NDSSystem.h"
@@ -154,10 +155,14 @@ volatile bool execute = true;
 	_fpsTimer = nil;
 	_isTimerAtSecond = NO;
 	
-	cdsController = nil;
 	cdsFirmware = nil;
 	cdsGPU = [[[[CocoaDSGPU alloc] init] autorelease] retain];
+	cdsController = [[[[CocoaDSController alloc] init] autorelease] retain];
 	cdsOutputList = [[[[NSMutableArray alloc] initWithCapacity:32] autorelease] retain];
+	
+	ClientInputHandler *inputHandler = [cdsController inputHandler];
+	inputHandler->SetClientExecutionController(execControl);
+	execControl->SetClientInputHandler(inputHandler);
 	
 	slot1StatusText = NSSTRING_STATUS_EMULATION_NOT_RUNNING;
 	
@@ -989,6 +994,7 @@ static void* RunCoreThread(void *arg)
 	CoreThreadParam *param = (CoreThreadParam *)arg;
 	CocoaDSCore *cdsCore = (CocoaDSCore *)param->cdsCore;
 	ClientExecutionControl *execControl = [cdsCore execControl];
+	ClientInputHandler *inputHandler = execControl->GetClientInputHandler();
 	NSMutableArray *cdsOutputList = [cdsCore cdsOutputList];
 	const NDSFrameInfo &ndsFrameInfo = execControl->GetNDSFrameInfo();
 	
@@ -1018,8 +1024,8 @@ static void* RunCoreThread(void *arg)
 		frameTime = execControl->GetFrameTime();
 		frameJumpTarget = execControl->GetFrameJumpTargetApplied();
 		
-		execControl->ProcessInputs();
-		execControl->ApplyInputs();
+		inputHandler->ProcessInputs();
+		inputHandler->ApplyInputs();
 		execControl->ApplySettingsOnNDSExec();
 		
 		// Execute the frame and increment the frame counter.

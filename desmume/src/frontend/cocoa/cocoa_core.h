@@ -21,9 +21,9 @@
 #include <libkern/OSAtomic.h>
 #include <string>
 #import "cocoa_util.h"
-#include "ClientExecutionControl.h"
 
 
+class ClientExecutionControl;
 @class CocoaDSCore;
 @class CocoaDSController;
 @class CocoaDSFirmware;
