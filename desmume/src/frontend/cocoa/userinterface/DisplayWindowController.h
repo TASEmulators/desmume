@@ -92,7 +92,6 @@ class OGLVideoOutput;
 {
 	NSObject *dummyObject;
 	
-	DisplayView *view;
 	ClientDisplayViewProperties _localViewProps;
 	NSView *saveScreenshotPanelAccessoryView;
 	NSView *outputVolumeControlView;
@@ -102,6 +101,7 @@ class OGLVideoOutput;
 	NSSlider *microphoneGainSlider;
 	NSButton *microphoneMuteButton;
 	
+	DisplayView *view;
 	EmuControllerDelegate *emuControl;
 	CocoaDSDisplayVideo *cdsVideoOutput;
 	NSScreen *assignedScreen;
@@ -123,7 +123,6 @@ class OGLVideoOutput;
 
 @property (readonly) IBOutlet NSObject *dummyObject;
 
-@property (readonly) IBOutlet DisplayView *view;
 @property (readonly) IBOutlet NSView *saveScreenshotPanelAccessoryView;
 @property (readonly) IBOutlet NSView *outputVolumeControlView;
 @property (readonly) IBOutlet NSView *microphoneGainControlView;
@@ -132,6 +131,7 @@ class OGLVideoOutput;
 @property (readonly) IBOutlet NSSlider *microphoneGainSlider;
 @property (readonly) IBOutlet NSButton *microphoneMuteButton;
 
+@property (retain) DisplayView *view;
 @property (retain) EmuControllerDelegate *emuControl;
 @property (retain) CocoaDSDisplayVideo *cdsVideoOutput;
 @property (assign) NSScreen *assignedScreen;

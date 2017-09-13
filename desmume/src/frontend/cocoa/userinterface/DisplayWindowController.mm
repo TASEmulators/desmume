@@ -94,6 +94,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		return self;
 	}
 	
+	view = nil;
 	emuControl = [theEmuController retain];
 	cdsVideoOutput = nil;
 	assignedScreen = nil;
@@ -142,6 +143,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
 	[self setEmuControl:nil];
 	[self setAssignedScreen:nil];
+	[self setView:nil];
 	[self setMasterWindow:nil];
 	[self setCdsVideoOutput:nil];
 	
@@ -1350,9 +1352,14 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)windowDidLoad
 {
+	NSRect newViewFrameRect = NSMakeRect(0.0f, (CGFloat)_statusBarHeight, (CGFloat)_localViewProps.clientWidth, (CGFloat)_localViewProps.clientHeight);
+	DisplayView *newView = [[[DisplayView alloc] initWithFrame:newViewFrameRect] autorelease];
+	[self setView:newView];
+	
 	// Set up the master window that is associated with this window controller.
 	[self setMasterWindow:[self window]];
 	[masterWindow setTitle:(NSString *)[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"]];
+	[[masterWindow contentView] addSubview:view];
 	[masterWindow setInitialFirstResponder:view];
 	[[emuControl windowList] addObject:self];
 	[emuControl updateAllWindowTitles];
