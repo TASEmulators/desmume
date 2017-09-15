@@ -2344,19 +2344,9 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 		GPU->GetEventHandler()->DidRender3DEnd();
 	}
 
-	//try powering on geometry
-	if(!nds.power_geometry && nds.power1.gfx3d_geometry)
-	{
-		nds.power_geometry = TRUE;
-	}
-	else if(nds.power_geometry && !nds.power1.gfx3d_geometry)
-	{
-		//kill the geometry data when the power goes off
-		reconstruct(&gfx3d.state);
-		nds.power_geometry = FALSE;
-	}
-
-	//try powering on rendering. unclear whether there's anything very special about this
+	//try powering on rendering for the next frame.
+	//this is a wild guess. it isnt clear what various timings of powering off and on will affect whether a valid frame renders
+	//its also part of an old and probably bad guess.
 	if(!nds.power_render && nds.power1.gfx3d_render)
 		nds.power_render = TRUE;
 	else if(nds.power_render && !nds.power1.gfx3d_render)
@@ -2368,7 +2358,7 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	//But for that matter, so too could texture data. Do we continually re-render for that?
 	//Well, we have no evidence that anyone does this. (seems useful for an FMV, maybe)
 	//But also, for that matter, so too could CAPTURED DATA. Hopefully nobody does this.
-	//So, for now, we're calling this a hack for the clear iamge only. 
+	//So, for now, we're calling this a hack for the clear image only. 
 	//It will increase CPU load for apparently no purpose in some games which switch between heavy 3d and 2d.. and that also use clear images.. that seems unlikely.
 	//This could be a candidate for a per-game hack later if it proves unwieldy.
 	//Logic to determine whether the contents have changed (due to register changes or vram remapping to LCDC) are going to be really messy, but maybe workable if everything else wasn't so messy.

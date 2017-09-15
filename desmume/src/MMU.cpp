@@ -1772,7 +1772,10 @@ static u32 readreg_POWCNT1(const int size, const u32 adr) {
 	assert(false);
 	return 0;
 }
-static void writereg_POWCNT1(const int size, const u32 adr, const u32 val) { 
+static void writereg_POWCNT1(const int size, const u32 adr, const u32 val)
+{
+	bool wasGeomEnabled = !!nds.power1.gfx3d_geometry;
+
 	switch(size)
 	{
 	case 8:
@@ -1808,8 +1811,16 @@ static void writereg_POWCNT1(const int size, const u32 adr, const u32 val) {
 		writereg_POWCNT1(8,adr+1,(val>>8)&0xFF);
 		break;
 	}
+	
 	//do we need to test this?
 	//gbatek: "When disabled, corresponding Ports become Read-only, corresponding (palette-) memory becomes read-only-zero-filled."
+
+	bool isGeomEnabled = !!nds.power1.gfx3d_geometry;
+	if(wasGeomEnabled && !isGeomEnabled)
+	{
+		//kill the geometry data when the power goes off
+		reconstruct(&gfx3d.state);
+	}
 }
 
 static INLINE void MMU_IPCSync(u8 proc, u32 val)
@@ -3233,9 +3244,9 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				if ((adr >= 0x04000008) && (adr <= 0x0400005F)) return;
 			if (nds.power1.gpuSub == 0)
 				if ((adr >= 0x04001008) && (adr <= 0x0400105F)) return;
-			if (nds.power_geometry == 0)
+			if (nds.power1.gfx3d_geometry == 0)
 				if ((adr >= 0x04000400) && (adr <= 0x040006FF)) return;
-			if (nds.power_render == 0)
+			if (nds.power1.gfx3d_render == 0)
 				if ((adr >= 0x04000320) && (adr <= 0x040003FF)) return;
 			
 			if(MMU_new.is_dma(adr)) { 
@@ -3717,9 +3728,9 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				if ((adr >= 0x04000008) && (adr <= 0x0400005F)) return;
 			if (nds.power1.gpuSub == 0)
 				if ((adr >= 0x04001008) && (adr <= 0x0400105F)) return;
-			if (nds.power_geometry == 0)
+			if (nds.power1.gfx3d_geometry == 0)
 				if ((adr >= 0x04000400) && (adr <= 0x040006FF)) return;
-			if (nds.power_render == 0)
+			if (nds.power1.gfx3d_render == 0)
 				if ((adr >= 0x04000320) && (adr <= 0x040003FF)) return;
 			
 			if(MMU_new.is_dma(adr)) { 
@@ -4304,9 +4315,9 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				if ((adr >= 0x04000008) && (adr <= 0x0400005F)) return;
 			if (nds.power1.gpuSub == 0)
 				if ((adr >= 0x04001008) && (adr <= 0x0400105F)) return;
-			if (nds.power_geometry == 0)
+			if (nds.power1.gfx3d_geometry == 0)
 				if ((adr >= 0x04000400) && (adr <= 0x040006FF)) return;
-			if (nds.power_render == 0)
+			if (nds.power1.gfx3d_render == 0)
 				if ((adr >= 0x04000320) && (adr <= 0x040003FF)) return;
 
 			// MightyMax: no need to do several ifs, when only one can happen
