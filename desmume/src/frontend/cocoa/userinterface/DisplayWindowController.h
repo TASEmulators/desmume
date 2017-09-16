@@ -70,7 +70,6 @@ class OGLVideoOutput;
 	
 	NSView<CocoaDisplayViewProtocol> *view;
 	EmuControllerDelegate *emuControl;
-	CocoaDSDisplayVideo *cdsVideoOutput;
 	NSScreen *assignedScreen;
 	NSWindow *masterWindow;
 	
@@ -100,7 +99,6 @@ class OGLVideoOutput;
 
 @property (retain) NSView<CocoaDisplayViewProtocol> *view;
 @property (retain) EmuControllerDelegate *emuControl;
-@property (retain) CocoaDSDisplayVideo *cdsVideoOutput;
 @property (assign) NSScreen *assignedScreen;
 @property (retain) NSWindow *masterWindow;
 
@@ -111,12 +109,6 @@ class OGLVideoOutput;
 @property (assign, nonatomic) double displayGap;
 @property (assign, nonatomic) double displayScale;
 @property (assign, nonatomic) double displayRotation;
-@property (assign, nonatomic) NSInteger displayMainVideoSource;
-@property (assign, nonatomic) NSInteger displayTouchVideoSource;
-@property (assign) BOOL videoFiltersPreferGPU;
-@property (assign) BOOL videoSourceDeposterize;
-@property (assign) NSInteger videoOutputFilter;
-@property (assign) NSInteger videoPixelScaler;
 @property (assign) NSInteger screenshotFileFormat;
 @property (assign) BOOL isMinSizeNormal;
 @property (assign) BOOL isShowingStatusBar;

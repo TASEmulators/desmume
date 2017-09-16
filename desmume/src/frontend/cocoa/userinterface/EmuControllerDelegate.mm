@@ -321,7 +321,7 @@
 	const BOOL useVerticalSync = ([[newWindowController view] layer] != nil) || [cdsCore isFrameSkipEnabled] || (([cdsCore speedScalar] < 1.03f) && [cdsCore isSpeedLimitEnabled]);
 	[[newWindowController view] setUseVerticalSync:useVerticalSync];
 	
-	[[newWindowController cdsVideoOutput] handleReloadReprocessRedraw];
+	[[[newWindowController view] cdsVideoOutput] handleReloadReprocessRedraw];
 	[[newWindowController window] makeKeyAndOrderFront:self];
 	[[newWindowController window] makeMainWindow];
 }
@@ -1495,7 +1495,7 @@
 	
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
+		[CocoaDSUtil messageSendOneWay:[[[windowController view] cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESET];
@@ -1798,7 +1798,7 @@
 	
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
+		[CocoaDSUtil messageSendOneWay:[[[windowController view] cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_LOADED];
@@ -1877,7 +1877,7 @@
 	[[cdsCore cdsGPU] clearWithColor:0x8000];
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[CocoaDSUtil messageSendOneWay:[[windowController cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
+		[CocoaDSUtil messageSendOneWay:[[[windowController view] cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_UNLOADED];

@@ -645,8 +645,8 @@
 							 isMinSizeNormal:isMinSizeNormal
 						  isShowingStatusBar:isShowingStatusBar];
 			
-			[windowController setDisplayMainVideoSource:displayMainSource];
-			[windowController setDisplayTouchVideoSource:displayTouchSource];
+			[[windowController view] setDisplayMainVideoSource:displayMainSource];
+			[[windowController view] setDisplayTouchVideoSource:displayTouchSource];
 			
 			[windowController setVideoPropertiesWithoutUpdateUsingPreferGPU:videoFiltersPreferGPU
 														  sourceDeposterize:videoSourceDeposterize
@@ -680,7 +680,7 @@
 			// Otherwise, just order the window to the front so that the windows will
 			// stack in a deterministic order.
 			[[windowController view] setAllowViewUpdates:YES];
-			[[windowController cdsVideoOutput] handleReloadReprocessRedraw];
+			[[[windowController view] cdsVideoOutput] handleReloadReprocessRedraw];
 			
 			if (windowProperties == [windowPropertiesList lastObject])
 			{
@@ -727,16 +727,16 @@
 											  [NSNumber numberWithInteger:[windowController displayMode]], @"displayMode",
 											  [NSNumber numberWithDouble:[windowController masterWindowScale]], @"displayScale",
 											  [NSNumber numberWithDouble:[windowController displayRotation]], @"displayRotation",
-											  [NSNumber numberWithInteger:[windowController displayMainVideoSource]], @"displayMainVideoSource",
-											  [NSNumber numberWithInteger:[windowController displayTouchVideoSource]], @"displayTouchVideoSource",
+											  [NSNumber numberWithInteger:[[windowController view] displayMainVideoSource]], @"displayMainVideoSource",
+											  [NSNumber numberWithInteger:[[windowController view] displayTouchVideoSource]], @"displayTouchVideoSource",
 											  [NSNumber numberWithInteger:[windowController displayOrientation]], @"displayOrientation",
 											  [NSNumber numberWithInteger:[windowController displayOrder]], @"displayOrder",
 											  [NSNumber numberWithDouble:[windowController displayGap]], @"displayGap",
-											  [NSNumber numberWithBool:[windowController videoFiltersPreferGPU]], @"videoFiltersPreferGPU",
-											  [NSNumber numberWithInteger:[windowController videoPixelScaler]], @"videoFilterType",
+											  [NSNumber numberWithBool:[[windowController view] videoFiltersPreferGPU]], @"videoFiltersPreferGPU",
+											  [NSNumber numberWithInteger:[[windowController view] pixelScaler]], @"videoFilterType",
 											  [NSNumber numberWithInteger:[windowController screenshotFileFormat]], @"screenshotFileFormat",
-											  [NSNumber numberWithInteger:[windowController videoOutputFilter]], @"videoOutputFilter",
-											  [NSNumber numberWithBool:[windowController videoSourceDeposterize]], @"videoSourceDeposterize",
+											  [NSNumber numberWithInteger:[[windowController view] outputFilter]], @"videoOutputFilter",
+											  [NSNumber numberWithBool:[[windowController view] sourceDeposterize]], @"videoSourceDeposterize",
 											  [NSNumber numberWithBool:[[windowController view] useVerticalSync]], @"useVerticalSync",
 											  [NSNumber numberWithBool:[[windowController view] isHUDVisible]], @"hudEnable",
 											  [NSNumber numberWithBool:[[windowController view] isHUDVideoFPSVisible]], @"hudShowVideoFPS",

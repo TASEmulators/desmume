@@ -1146,7 +1146,7 @@ public:
 	for (size_t i = 0; i < [screenList count]; i++)
 	{
 		NSScreen *screen = [screenList objectAtIndex:i];
-		NSDictionary<NSString *, id> *deviceDescription = [screen deviceDescription];
+		NSDictionary *deviceDescription = [screen deviceDescription];
 		NSNumber *idNumber = (NSNumber *)[deviceDescription valueForKey:@"NSScreenNumber"];
 		
 		CGDirectDisplayID displayID = [idNumber unsignedIntValue];

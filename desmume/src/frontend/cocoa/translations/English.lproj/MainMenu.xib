@@ -12,8 +12,6 @@
     </object>
     <object class="NSMutableArray" key="IBDocument.EditedObjectIDs">
       <bool key="EncodedWithXMLCoder">YES</bool>
-      <integer value="8991"/>
-      <integer value="576"/>
     </object>
     <object class="NSArray" key="IBDocument.PluginDependencies">
       <bool key="EncodedWithXMLCoder">YES</bool>
@@ -20742,7 +20740,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
         <nil key="NSUserInterfaceItemIdentifier"/>
         <string key="NSWindowContentMaxSize">{1.7976931348623157e+308, 1.7976931348623157e+308}</string>
         <object class="NSView" key="NSWindowView" id="1071235285">
-          <reference key="NSNextResponder"/>
+          <nil key="NSNextResponder"/>
           <int key="NSvFlags">256</int>
           <object class="NSMutableArray" key="NSSubviews">
             <bool key="EncodedWithXMLCoder">YES</bool>
@@ -21601,7 +21599,6 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
             </object>
           </object>
           <string key="NSFrameSize">{254, 242}</string>
-          <reference key="NSSuperview"/>
           <string key="NSReuseIdentifierKey">_NS:103</string>
         </object>
         <string key="NSScreenRect">{{0, 0}, {1920, 1177}}</string>
@@ -30874,15 +30871,9 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
           <string>currentRom</string>
           <string>mainWindow</string>
           <string>mainWindow.displayRotation</string>
-          <string>mainWindow.videoFilterType</string>
-          <string>mainWindow.useBilinearOutput</string>
-          <string>mainWindow.useVerticalSync</string>
           <string>mainWindow.screenshotFileFormat</string>
           <string>selectedExportRomSaveID</string>
           <string>mainWindow.displayGap</string>
-          <string>mainWindow.outputFilter</string>
-          <string>mainWindow.videoSourceDeposterize</string>
-          <string>mainWindow.videoFiltersPreferGPU</string>
           <string>mainWindow.view.videoSourceDeposterize</string>
           <string>mainWindow.view.outputFilter</string>
           <string>mainWindow.view.sourceDeposterize</string>
@@ -30891,8 +30882,6 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
           <string>mainWindow.view.pixelScaler</string>
           <string>mainWindow.view.videoFiltersPreferGPU</string>
           <string>mainWindow.view.useVerticalSync</string>
-          <string>mainWindow.videoOutputFilter</string>
-          <string>mainWindow.videoPixelScaler</string>
           <string>mainWindow.view.canUseShaderBasedFilters</string>
           <string>mainWindow.view.isHUDVisible</string>
           <string>mainWindow.view.isHUDVideoFPSVisible</string>
@@ -41224,70 +41213,6 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
         </object>
         <object class="IBConnectionRecord">
           <object class="IBBindingConnection" key="connection">
-            <string key="label">value: selection.mainWindow.videoSourceDeposterize</string>
-            <reference key="source" ref="897872091"/>
-            <reference key="destination" ref="258098641"/>
-            <object class="NSNibBindingConnector" key="connector">
-              <reference key="NSSource" ref="897872091"/>
-              <reference key="NSDestination" ref="258098641"/>
-              <string key="NSLabel">value: selection.mainWindow.videoSourceDeposterize</string>
-              <string key="NSBinding">value</string>
-              <string key="NSKeyPath">selection.mainWindow.videoSourceDeposterize</string>
-              <int key="NSNibBindingConnectorVersion">2</int>
-            </object>
-          </object>
-          <int key="connectionID">9319</int>
-        </object>
-        <object class="IBConnectionRecord">
-          <object class="IBBindingConnection" key="connection">
-            <string key="label">selectedTag: selection.mainWindow.videoOutputFilter</string>
-            <reference key="source" ref="234283836"/>
-            <reference key="destination" ref="258098641"/>
-            <object class="NSNibBindingConnector" key="connector">
-              <reference key="NSSource" ref="234283836"/>
-              <reference key="NSDestination" ref="258098641"/>
-              <string key="NSLabel">selectedTag: selection.mainWindow.videoOutputFilter</string>
-              <string key="NSBinding">selectedTag</string>
-              <string key="NSKeyPath">selection.mainWindow.videoOutputFilter</string>
-              <int key="NSNibBindingConnectorVersion">2</int>
-            </object>
-          </object>
-          <int key="connectionID">9320</int>
-        </object>
-        <object class="IBConnectionRecord">
-          <object class="IBBindingConnection" key="connection">
-            <string key="label">selectedTag: selection.mainWindow.videoPixelScaler</string>
-            <reference key="source" ref="807791156"/>
-            <reference key="destination" ref="258098641"/>
-            <object class="NSNibBindingConnector" key="connector">
-              <reference key="NSSource" ref="807791156"/>
-              <reference key="NSDestination" ref="258098641"/>
-              <string key="NSLabel">selectedTag: selection.mainWindow.videoPixelScaler</string>
-              <string key="NSBinding">selectedTag</string>
-              <string key="NSKeyPath">selection.mainWindow.videoPixelScaler</string>
-              <int key="NSNibBindingConnectorVersion">2</int>
-            </object>
-          </object>
-          <int key="connectionID">9321</int>
-        </object>
-        <object class="IBConnectionRecord">
-          <object class="IBBindingConnection" key="connection">
-            <string key="label">value: selection.mainWindow.videoFiltersPreferGPU</string>
-            <reference key="source" ref="740875365"/>
-            <reference key="destination" ref="258098641"/>
-            <object class="NSNibBindingConnector" key="connector">
-              <reference key="NSSource" ref="740875365"/>
-              <reference key="NSDestination" ref="258098641"/>
-              <string key="NSLabel">value: selection.mainWindow.videoFiltersPreferGPU</string>
-              <string key="NSBinding">value</string>
-              <string key="NSKeyPath">selection.mainWindow.videoFiltersPreferGPU</string>
-              <int key="NSNibBindingConnectorVersion">2</int>
-            </object>
-          </object>
-          <int key="connectionID">9322</int>
-        </object>
-        <object class="IBConnectionRecord">
-          <object class="IBBindingConnection" key="connection">
             <string key="label">selectedTag: values.DisplayView_OutputFilter</string>
             <reference key="source" ref="156997726"/>
             <reference key="destination" ref="178548672"/>
@@ -44548,6 +44473,70 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
             </object>
           </object>
           <int key="connectionID">10516</int>
+        </object>
+        <object class="IBConnectionRecord">
+          <object class="IBBindingConnection" key="connection">
+            <string key="label">value: selection.mainWindow.view.videoFiltersPreferGPU</string>
+            <reference key="source" ref="740875365"/>
+            <reference key="destination" ref="258098641"/>
+            <object class="NSNibBindingConnector" key="connector">
+              <reference key="NSSource" ref="740875365"/>
+              <reference key="NSDestination" ref="258098641"/>
+              <string key="NSLabel">value: selection.mainWindow.view.videoFiltersPreferGPU</string>
+              <string key="NSBinding">value</string>
+              <string key="NSKeyPath">selection.mainWindow.view.videoFiltersPreferGPU</string>
+              <int key="NSNibBindingConnectorVersion">2</int>
+            </object>
+          </object>
+          <int key="connectionID">10517</int>
+        </object>
+        <object class="IBConnectionRecord">
+          <object class="IBBindingConnection" key="connection">
+            <string key="label">value: selection.mainWindow.view.sourceDeposterize</string>
+            <reference key="source" ref="897872091"/>
+            <reference key="destination" ref="258098641"/>
+            <object class="NSNibBindingConnector" key="connector">
+              <reference key="NSSource" ref="897872091"/>
+              <reference key="NSDestination" ref="258098641"/>
+              <string key="NSLabel">value: selection.mainWindow.view.sourceDeposterize</string>
+              <string key="NSBinding">value</string>
+              <string key="NSKeyPath">selection.mainWindow.view.sourceDeposterize</string>
+              <int key="NSNibBindingConnectorVersion">2</int>
+            </object>
+          </object>
+          <int key="connectionID">10518</int>
+        </object>
+        <object class="IBConnectionRecord">
+          <object class="IBBindingConnection" key="connection">
+            <string key="label">selectedTag: selection.mainWindow.view.outputFilter</string>
+            <reference key="source" ref="234283836"/>
+            <reference key="destination" ref="258098641"/>
+            <object class="NSNibBindingConnector" key="connector">
+              <reference key="NSSource" ref="234283836"/>
+              <reference key="NSDestination" ref="258098641"/>
+              <string key="NSLabel">selectedTag: selection.mainWindow.view.outputFilter</string>
+              <string key="NSBinding">selectedTag</string>
+              <string key="NSKeyPath">selection.mainWindow.view.outputFilter</string>
+              <int key="NSNibBindingConnectorVersion">2</int>
+            </object>
+          </object>
+          <int key="connectionID">10519</int>
+        </object>
+        <object class="IBConnectionRecord">
+          <object class="IBBindingConnection" key="connection">
+            <string key="label">selectedTag: selection.mainWindow.view.pixelScaler</string>
+            <reference key="source" ref="807791156"/>
+            <reference key="destination" ref="258098641"/>
+            <object class="NSNibBindingConnector" key="connector">
+              <reference key="NSSource" ref="807791156"/>
+              <reference key="NSDestination" ref="258098641"/>
+              <string key="NSLabel">selectedTag: selection.mainWindow.view.pixelScaler</string>
+              <string key="NSBinding">selectedTag</string>
+              <string key="NSKeyPath">selection.mainWindow.view.pixelScaler</string>
+              <int key="NSNibBindingConnectorVersion">2</int>
+            </object>
+          </object>
+          <int key="connectionID">10520</int>
         </object>
       </object>
       <object class="IBMutableOrderedSet" key="objectRecords">
@@ -67301,7 +67290,7 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
         </object>
       </object>
       <nil key="sourceID"/>
-      <int key="maxID">10516</int>
+      <int key="maxID">10520</int>
     </object>
     <object class="IBClassDescriber" key="IBDocument.Classes">
       <object class="NSMutableArray" key="referencedPartialClassDescriptions">
@@ -67795,14 +67784,6 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
           </object>
         </object>
         <object class="IBPartialClassDescription">
-          <string key="className">DisplayView</string>
-          <string key="superclassName">NSView</string>
-          <object class="IBClassDescriptionSource" key="sourceIdentifier" id="632370646">
-            <string key="majorKey">IBProjectSource</string>
-            <string key="minorKey">userinterface/DisplayWindowController.h</string>
-          </object>
-        </object>
-        <object class="IBPartialClassDescription">
           <string key="className">DisplayWindowController</string>
           <string key="superclassName">NSWindowController</string>
           <object class="NSMutableDictionary" key="actions">
@@ -68100,7 +68081,6 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
               <string>outputVolumeControlView</string>
               <string>outputVolumeMenuItem</string>
               <string>saveScreenshotPanelAccessoryView</string>
-              <string>view</string>
             </object>
             <object class="NSMutableArray" key="dict.values">
               <bool key="EncodedWithXMLCoder">YES</bool>
@@ -68111,7 +68091,6 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
               <string>NSView</string>
               <string>NSMenuItem</string>
               <string>NSView</string>
-              <string>DisplayView</string>
             </object>
           </object>
           <object class="NSMutableDictionary" key="toOneOutletInfosByName">
@@ -68125,7 +68104,6 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
               <string>outputVolumeControlView</string>
               <string>outputVolumeMenuItem</string>
               <string>saveScreenshotPanelAccessoryView</string>
-              <string>view</string>
             </object>
             <object class="NSMutableArray" key="dict.values">
               <bool key="EncodedWithXMLCoder">YES</bool>
@@ -68157,13 +68135,12 @@ y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ1MvVTtXR1lXW2Ndc1+DYZNjo2WzZ8dp2
                 <string key="name">saveScreenshotPanelAccessoryView</string>
                 <string key="candidateClassName">NSView</string>
               </object>
-              <object class="IBToOneOutletInfo">
-                <string key="name">view</string>
-                <string key="candidateClassName">DisplayView</string>
-              </object>
             </object>
           </object>
-          <reference key="sourceIdentifier" ref="632370646"/>
+          <object class="IBClassDescriptionSource" key="sourceIdentifier">
+            <string key="majorKey">IBProjectSource</string>
+            <string key="minorKey">userinterface/DisplayWindowController.h</string>
+          </object>
         </object>
         <object class="IBPartialClassDescription">
           <string key="className">EmuControllerDelegate</string>

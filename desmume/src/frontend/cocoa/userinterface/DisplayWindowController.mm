@@ -49,7 +49,6 @@
 
 @synthesize dummyObject;
 @synthesize emuControl;
-@synthesize cdsVideoOutput;
 @synthesize assignedScreen;
 @synthesize masterWindow;
 @synthesize view;
@@ -64,12 +63,6 @@
 @dynamic isFullScreen;
 @dynamic displayScale;
 @dynamic displayRotation;
-@dynamic displayMainVideoSource;
-@dynamic displayTouchVideoSource;
-@dynamic videoFiltersPreferGPU;
-@dynamic videoSourceDeposterize;
-@dynamic videoOutputFilter;
-@dynamic videoPixelScaler;
 @dynamic displayMode;
 @dynamic displayOrientation;
 @dynamic displayOrder;
@@ -97,7 +90,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	view = nil;
 	emuControl = [theEmuController retain];
-	cdsVideoOutput = nil;
 	assignedScreen = nil;
 	masterWindow = nil;
 	screenshotFileFormat = NSTIFFFileType;
@@ -146,7 +138,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[self setAssignedScreen:nil];
 	[self setView:nil];
 	[self setMasterWindow:nil];
-	[self setCdsVideoOutput:nil];
 	
 	[super dealloc];
 }
@@ -201,7 +192,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	if ([self isFullScreen])
 	{
-		[[self cdsVideoOutput] commitViewProperties:_localViewProps];
+		[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
 	}
 	else
 	{
@@ -216,7 +207,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		// display view to update itself.
 		if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
 		{
-			[[self cdsVideoOutput] commitViewProperties:_localViewProps];
+			[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
 		}
 	}
 }
@@ -224,28 +215,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (double) displayRotation
 {
 	return _localRotation;
-}
-
-- (void) setDisplayMainVideoSource:(NSInteger)displaySourceID
-{
-	[[self view] setDisplayMainVideoSource:displaySourceID];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
-}
-
-- (NSInteger) displayMainVideoSource
-{
-	return [[self view] displayMainVideoSource];
-}
-
-- (void) setDisplayTouchVideoSource:(NSInteger)displaySourceID
-{
-	[[self view] setDisplayTouchVideoSource:displaySourceID];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
-}
-
-- (NSInteger) displayTouchVideoSource
-{
-	return [[self view] displayTouchVideoSource];
 }
 
 - (void) setDisplayMode:(NSInteger)displayModeID
@@ -263,7 +232,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	else
 	{
-		[[self cdsVideoOutput] commitViewProperties:_localViewProps];
+		[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
 	}
 }
 
@@ -283,7 +252,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([self isFullScreen])
 		{
-			[[self cdsVideoOutput] commitViewProperties:_localViewProps];
+			[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
 		}
 		else
 		{
@@ -300,7 +269,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setDisplayOrder:(NSInteger)theOrder
 {
 	_localViewProps.order = (ClientDisplayOrder)theOrder;
-	[[self cdsVideoOutput] commitViewProperties:_localViewProps];
+	[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
 }
 
 - (NSInteger) displayOrder
@@ -327,7 +296,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 				case ClientDisplayLayout_Hybrid_16_9:
 				case ClientDisplayLayout_Hybrid_16_10:
 				default:
-					[[self cdsVideoOutput] commitViewProperties:_localViewProps];
+					[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
 					break;
 			}
 		}
@@ -337,7 +306,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			{
 				case ClientDisplayLayout_Hybrid_16_9:
 				case ClientDisplayLayout_Hybrid_16_10:
-					[[self cdsVideoOutput] commitViewProperties:_localViewProps];
+					[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
 					break;
 					
 				case ClientDisplayLayout_Horizontal:
@@ -355,50 +324,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (double) displayGap
 {
 	return _localViewProps.gapScale;
-}
-
-- (void) setVideoFiltersPreferGPU:(BOOL)theState
-{
-	[[self view] setVideoFiltersPreferGPU:theState];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
-}
-
-- (BOOL) videoFiltersPreferGPU
-{
-	return [[self view] videoFiltersPreferGPU];
-}
-
-- (void) setVideoSourceDeposterize:(BOOL)theState
-{
-	[[self view] setSourceDeposterize:theState];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
-}
-
-- (BOOL) videoSourceDeposterize
-{
-	return [[self view] sourceDeposterize];
-}
-
-- (void) setVideoOutputFilter:(NSInteger)filterID
-{
-	[[self view] setOutputFilter:filterID];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REDRAW_VIEW];
-}
-
-- (NSInteger) videoOutputFilter
-{
-	return [[self view] outputFilter];
-}
-
-- (void) setVideoPixelScaler:(NSInteger)filterID
-{
-	[[self view] setPixelScaler:filterID];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
-}
-
-- (NSInteger) videoPixelScaler
-{
-	return [[self view] pixelScaler];
 }
 
 - (void) setIsMinSizeNormal:(BOOL)theState
@@ -533,7 +458,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// window size changed or not.
 	if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
 	{
-		[[self cdsVideoOutput] commitViewProperties:_localViewProps];
+		[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
 	}
 }
 
@@ -559,8 +484,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		 isMinSizeNormal:[self isMinSizeNormal]
 	  isShowingStatusBar:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"]];
 	
-	[self setDisplayMainVideoSource:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayMainVideoSource"]];
-	[self setDisplayTouchVideoSource:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayTouchVideoSource"]];
+	[[self view] setDisplayMainVideoSource:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayMainVideoSource"]];
+	[[self view] setDisplayTouchVideoSource:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayTouchVideoSource"]];
 	
 	[self setVideoPropertiesWithoutUpdateUsingPreferGPU:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_FiltersPreferGPU"]
 									  sourceDeposterize:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_Deposterize"]
@@ -751,7 +676,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) updateDisplayID
 {
 	NSScreen *screen = [[self window] screen];
-	NSDictionary<NSString *, id> *deviceDescription = [screen deviceDescription];
+	NSDictionary *deviceDescription = [screen deviceDescription];
 	NSNumber *idNumber = (NSNumber *)[deviceDescription valueForKey:@"NSScreenNumber"];
 	CGDirectDisplayID displayID = [idNumber unsignedIntValue];
 	
@@ -800,7 +725,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (IBAction) copy:(id)sender
 {
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_COPY_TO_PASTEBOARD];
+	[CocoaDSUtil messageSendOneWay:[[[self view] cdsVideoOutput] receivePort] msgID:MESSAGE_COPY_TO_PASTEBOARD];
 }
 
 - (IBAction) changeHardwareMicGain:(id)sender
@@ -1028,42 +953,42 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	if (tag >= DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE)
 	{
-		if ((tag-DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE) == [self displayTouchVideoSource])
+		if ((tag-DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE) == [[self view] displayTouchVideoSource])
 		{
 			return;
 		}
 		
-		[self setDisplayTouchVideoSource:tag-DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE];
+		[[self view] setDisplayTouchVideoSource:tag-DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE];
 	}
 	else
 	{
-		if ((tag-DISPLAY_VIDEO_SOURCE_MAIN_TAG_BASE) == [self displayMainVideoSource])
+		if ((tag-DISPLAY_VIDEO_SOURCE_MAIN_TAG_BASE) == [[self view] displayMainVideoSource])
 		{
 			return;
 		}
 		
-		[self setDisplayMainVideoSource:tag-DISPLAY_VIDEO_SOURCE_MAIN_TAG_BASE];
+		[[self view] setDisplayMainVideoSource:tag-DISPLAY_VIDEO_SOURCE_MAIN_TAG_BASE];
 	}
 }
 
 - (IBAction) toggleVideoFiltersPreferGPU:(id)sender
 {
-	[self setVideoFiltersPreferGPU:![self videoFiltersPreferGPU]];
+	[[self view] setVideoFiltersPreferGPU:![[self view] videoFiltersPreferGPU]];
 }
 
 - (IBAction) toggleVideoSourceDeposterize:(id)sender
 {
-	[self setVideoSourceDeposterize:![self videoSourceDeposterize]];
+	[[self view] setSourceDeposterize:![[self view] sourceDeposterize]];
 }
 
 - (IBAction) changeVideoOutputFilter:(id)sender
 {
-	[self setVideoOutputFilter:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[[self view] setOutputFilter:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) changeVideoPixelScaler:(id)sender
 {
-	[self setVideoPixelScaler:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[[self view] setPixelScaler:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) toggleNDSDisplays:(id)sender
@@ -1109,10 +1034,10 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (IBAction) writeDefaultsDisplayVideoSettings:(id)sender
 {
-	[[NSUserDefaults standardUserDefaults] setBool:[self videoFiltersPreferGPU] forKey:@"DisplayView_FiltersPreferGPU"];
-	[[NSUserDefaults standardUserDefaults] setBool:[self videoSourceDeposterize] forKey:@"DisplayView_Deposterize"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[self videoOutputFilter] forKey:@"DisplayView_OutputFilter"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[self videoPixelScaler] forKey:@"DisplayView_VideoFilter"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[self view] videoFiltersPreferGPU] forKey:@"DisplayView_FiltersPreferGPU"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[self view] sourceDeposterize] forKey:@"DisplayView_Deposterize"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[[self view] outputFilter] forKey:@"DisplayView_OutputFilter"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[[self view] pixelScaler] forKey:@"DisplayView_VideoFilter"];
 	
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
@@ -1216,11 +1141,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		{
 			if ([theItem tag] >= DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE)
 			{
-				[(NSMenuItem *)theItem setState:([self displayTouchVideoSource] == ([theItem tag]-DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE)) ? NSOnState : NSOffState];
+				[(NSMenuItem *)theItem setState:([[self view] displayTouchVideoSource] == ([theItem tag]-DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE)) ? NSOnState : NSOffState];
 			}
 			else
 			{
-				[(NSMenuItem *)theItem setState:([self displayMainVideoSource]  == ([theItem tag]-DISPLAY_VIDEO_SOURCE_MAIN_TAG_BASE)) ? NSOnState : NSOffState];
+				[(NSMenuItem *)theItem setState:([[self view] displayMainVideoSource]  == ([theItem tag]-DISPLAY_VIDEO_SOURCE_MAIN_TAG_BASE)) ? NSOnState : NSOffState];
 			}
 		}
 	}
@@ -1228,7 +1153,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([self videoOutputFilter] == [theItem tag]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] outputFilter] == [theItem tag]) ? NSOnState : NSOffState];
 			enable = ([theItem tag] == OutputFilterTypeID_NearestNeighbor || [theItem tag] == OutputFilterTypeID_Bilinear) || [[self view] canUseShaderBasedFilters];
 		}
 	}
@@ -1236,7 +1161,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([self videoSourceDeposterize]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] sourceDeposterize]) ? NSOnState : NSOffState];
 		}
 		
 		enable = [[self view] canUseShaderBasedFilters];
@@ -1252,7 +1177,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
-			[(NSMenuItem *)theItem setState:([self videoPixelScaler] == [theItem tag]) ? NSOnState : NSOffState];
+			[(NSMenuItem *)theItem setState:([[self view] pixelScaler] == [theItem tag]) ? NSOnState : NSOffState];
 			
 			bool isSupportingCPU = false;
 			bool isSupportingShader = false;
@@ -1397,7 +1322,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[outputVolumeMenuItem setView:outputVolumeControlView];
 	
 	// Set up the video output thread.
-	CocoaDSDisplayVideo *newDisplayOutput = [[CocoaDSDisplayVideo alloc] init];
+	CocoaDSDisplayVideo *newDisplayOutput = [[[CocoaDSDisplayVideo alloc] init] autorelease];
 	[newDisplayOutput setClientDisplayView:[view clientDisplay3DView]];
 	
 	ClientDisplayView *cdv = [newDisplayOutput clientDisplayView];
@@ -1413,7 +1338,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		cdv->LoadHUDFont();
 	}
 	
-	[self setCdsVideoOutput:newDisplayOutput];
 	[newView setCdsVideoOutput:newDisplayOutput];
 	
 	// Add the video thread to the output list.
@@ -1543,10 +1467,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)windowWillClose:(NSNotification *)notification
 {
-	[emuControl removeOutputFromCore:[self cdsVideoOutput]];
-	[[self cdsVideoOutput] forceThreadExit];
-	[[self cdsVideoOutput] release];
-	[self setCdsVideoOutput:nil];
+	[emuControl removeOutputFromCore:[[self view] cdsVideoOutput]];
+	[[[self view] cdsVideoOutput] forceThreadExit];
 	
 	[[emuControl windowList] removeObject:self];
 	
@@ -1568,7 +1490,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void)windowDidChangeScreen:(NSNotification *)notification
 {
 	[self updateDisplayID];
-	[[view cdsVideoOutput] clientDisplayView]->UpdateView();
+	[[[self view] cdsVideoOutput] clientDisplayView]->UpdateView();
 }
 
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
@@ -2065,6 +1987,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		{
 			[macSharedData decrementViewsUsingDirectToCPUFiltering];
 		}
+		
+		[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
 }
 
@@ -2094,6 +2018,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		{
 			[macSharedData decrementViewsUsingDirectToCPUFiltering];
 		}
+		
+		[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
 }
 
@@ -2105,6 +2031,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setOutputFilter:(NSInteger)filterID
 {
 	[[self cdsVideoOutput] setOutputFilter:filterID];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REDRAW_VIEW];
 }
 
 - (NSInteger) outputFilter
@@ -2133,6 +2060,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		{
 			[macSharedData decrementViewsUsingDirectToCPUFiltering];
 		}
+		
+		[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
 }
 
