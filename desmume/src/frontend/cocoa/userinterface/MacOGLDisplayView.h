@@ -20,6 +20,7 @@
 
 #import <Cocoa/Cocoa.h>
 #import <OpenGL/OpenGL.h>
+#include <libkern/OSAtomic.h>
 
 #import "DisplayViewCALayer.h"
 #import "../cocoa_GPU.h"
@@ -67,7 +68,8 @@ protected:
 	NSOpenGLPixelFormat *_nsPixelFormat;
 	CGLContextObj _context;
 	CGLPixelFormatObj _pixelFormat;
-	bool _willRenderToCALayer;
+	
+	OSSpinLock _spinlockViewNeedsFlush;
 		
 public:
 	void operator delete(void *ptr);
@@ -80,8 +82,8 @@ public:
 	CGLPixelFormatObj GetPixelFormat() const;
 	CGLContextObj GetContext() const;
 	
-	bool GetRenderToCALayer() const;
-	void SetRenderToCALayer(const bool renderToLayer);
+	virtual bool GetViewNeedsFlush();
+	virtual void SetAllowViewFlushes(bool allowFlushes);
 		
 	virtual void LoadHUDFont();
 	
@@ -97,6 +99,7 @@ public:
 	virtual void LoadDisplays();
 	virtual void ProcessDisplays();
 	virtual void UpdateView();
+	virtual void FlushView();
 	virtual void FinishFrameAtIndex(const u8 bufferIndex);
 	virtual void LockDisplayTextures();
 	virtual void UnlockDisplayTextures();

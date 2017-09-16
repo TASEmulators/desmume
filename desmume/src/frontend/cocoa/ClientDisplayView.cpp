@@ -81,6 +81,7 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	_selectedSourceForDisplay[NDSDisplayID_Main]  = NDSDisplayID_Main;
 	_selectedSourceForDisplay[NDSDisplayID_Touch] = NDSDisplayID_Touch;
 	
+	_displayViewID = 0;
 	_useVerticalSync = false;
 	_scaleFactor = 1.0;
 	
@@ -112,7 +113,9 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	_outHudString = _hudString;
 	_hudInputString = "<^>vABXYLRSsgf x:000 y:000";
 	_hudNeedsUpdate = true;
+	_viewNeedsFlush = false;
 	_allowViewUpdates = true;
+	_allowViewFlushes = true;
 	
 	FT_Error error = FT_Init_FreeType(&_ftLibrary);
 	if (error)
@@ -223,6 +226,22 @@ void ClientDisplayView::_SetHUDShowInfoItem(bool &infoItemFlag, const bool visib
 void ClientDisplayView::Init()
 {
 	// Do nothing. This is implementation dependent.
+}
+
+int64_t ClientDisplayView::GetDisplayViewID()
+{
+	return this->_displayViewID;
+}
+
+void ClientDisplayView::SetDisplayViewID(int64_t displayViewID)
+{
+	// This implementation-dependent value will never be used internally.
+	this->_displayViewID = displayViewID;
+}
+
+bool ClientDisplayView::GetViewNeedsFlush()
+{
+	return this->_viewNeedsFlush;
 }
 
 bool ClientDisplayView::GetUseVerticalSync() const
@@ -809,9 +828,19 @@ bool ClientDisplayView::GetAllowViewUpdates() const
 	return this->_allowViewUpdates;
 }
 
-void ClientDisplayView::SetAllowViewUpdates(const bool allowUpdates)
+void ClientDisplayView::SetAllowViewUpdates(bool allowUpdates)
 {
 	this->_allowViewUpdates = allowUpdates;
+}
+
+bool ClientDisplayView::GetAllowViewFlushes() const
+{
+	return this->_allowViewFlushes;
+}
+
+void ClientDisplayView::SetAllowViewFlushes(bool allowFlushes)
+{
+	this->_allowViewFlushes = allowFlushes;
 }
 
 void ClientDisplayView::_LoadNativeDisplayByID(const NDSDisplayID displayID)
@@ -979,6 +1008,13 @@ void ClientDisplayView::ProcessDisplays()
 void ClientDisplayView::UpdateView()
 {
 	// Do nothing. This is implementation dependent.
+	this->_viewNeedsFlush = true;
+}
+
+void ClientDisplayView::FlushView()
+{
+	// Do nothing. This is implementation dependent.
+	this->_viewNeedsFlush = false;
 }
 
 void ClientDisplayView::FinishFrameAtIndex(const u8 bufferIndex)

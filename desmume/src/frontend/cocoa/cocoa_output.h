@@ -137,6 +137,7 @@
 	OSSpinLock spinlockSourceDeposterize;
 	OSSpinLock spinlockPixelScaler;
 	OSSpinLock spinlockDisplayVideoSource;
+	OSSpinLock spinlockDisplayID;
 }
 
 @property (readonly, nonatomic) BOOL canFilterOnGPU;
@@ -160,6 +161,7 @@
 @property (assign) uint32_t hudColorInputPendingOnly;
 @property (assign) NSInteger displayMainVideoSource;
 @property (assign) NSInteger displayTouchVideoSource;
+@property (assign) uint32_t currentDisplayID;
 @property (assign) BOOL useVerticalSync;
 @property (assign) BOOL videoFiltersPreferGPU;
 @property (assign) BOOL sourceDeposterize;

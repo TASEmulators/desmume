@@ -277,8 +277,8 @@ MacOGLDisplayView::MacOGLDisplayView()
 	
 	_nsContext = nil;
 	_context = nil;
-	_willRenderToCALayer = false;
 	_allowViewUpdates = false;
+	_spinlockViewNeedsFlush = OS_SPINLOCK_INIT;
 }
 
 void MacOGLDisplayView::Init()
@@ -328,14 +328,24 @@ CGLContextObj MacOGLDisplayView::GetContext() const
 	return this->_context;
 }
 
-bool MacOGLDisplayView::GetRenderToCALayer() const
+bool MacOGLDisplayView::GetViewNeedsFlush()
 {
-	return this->_willRenderToCALayer;
+	OSSpinLockLock(&this->_spinlockViewNeedsFlush);
+	const bool viewNeedsFlush = this->_viewNeedsFlush;
+	OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
+	
+	return viewNeedsFlush;
 }
 
-void MacOGLDisplayView::SetRenderToCALayer(const bool renderToLayer)
+void MacOGLDisplayView::SetAllowViewFlushes(bool allowFlushes)
 {
-	this->_willRenderToCALayer = renderToLayer;
+	CGDirectDisplayID displayID = (CGDirectDisplayID)this->GetDisplayViewID();
+	MacClientSharedObject *sharedData = this->GetSharedData();
+	
+	if (![sharedData isDisplayLinkRunningUsingID:displayID])
+	{
+		[sharedData displayLinkStartUsingID:displayID];
+	}
 }
 
 void MacOGLDisplayView::LoadHUDFont()
@@ -408,23 +418,38 @@ void MacOGLDisplayView::ProcessDisplays()
 
 void MacOGLDisplayView::UpdateView()
 {
-	if (!this->_allowViewUpdates)
+	if (!this->_allowViewUpdates || (this->GetNSView() == nil))
 	{
 		return;
 	}
 	
-	if (this->_willRenderToCALayer)
+	if (this->GetRenderToCALayer())
 	{
-		this->CALayerDisplay();
+		[[this->GetNSView() layer] setNeedsDisplay];
 	}
 	else
 	{
-		CGLLockContext(this->_context);
-		CGLSetCurrentContext(this->_context);
-		this->RenderViewOGL();
-		CGLFlushDrawable(this->_context);
-		CGLUnlockContext(this->_context);
+		// For every update, ensure that the CVDisplayLink is started so that the update
+		// will eventually get flushed.
+		this->SetAllowViewFlushes(true);
+		
+		OSSpinLockLock(&this->_spinlockViewNeedsFlush);
+		this->_viewNeedsFlush = true;
+		OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
 	}
+}
+
+void MacOGLDisplayView::FlushView()
+{
+	OSSpinLockLock(&this->_spinlockViewNeedsFlush);
+	this->_viewNeedsFlush = false;
+	OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
+	
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->RenderViewOGL();
+	CGLFlushDrawable(this->_context);
+	CGLUnlockContext(this->_context);
 }
 
 void MacOGLDisplayView::FinishFrameAtIndex(const u8 bufferIndex)

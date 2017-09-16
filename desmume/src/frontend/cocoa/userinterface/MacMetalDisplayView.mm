@@ -199,13 +199,14 @@
 	[texDisplayLoad32Desc setResourceOptions:MTLResourceStorageModeManaged];
 	[texDisplayLoad32Desc setStorageMode:MTLStorageModeManaged];
 	[texDisplayLoad32Desc setCpuCacheMode:MTLCPUCacheModeWriteCombined];
-	[texDisplayLoad32Desc setUsage:MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite];
 	
+	[texDisplayLoad32Desc setUsage:MTLTextureUsageShaderRead];
 	texDisplayFetch32NativeMain  = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
 	texDisplayFetch32NativeTouch = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
 	texDisplayFetch32CustomMain  = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
 	texDisplayFetch32CustomTouch = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
 	
+	[texDisplayLoad32Desc setUsage:MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite];
 	texDisplayPostprocessNativeMain  = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
 	texDisplayPostprocessCustomMain  = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
 	texDisplayPostprocessNativeTouch = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
@@ -750,7 +751,6 @@
 	}
 	
 	sharedData = nil;
-	availableResources = dispatch_semaphore_create(3);
 	
 	_cdv = new MacMetalDisplayView();
 	_cdv->SetFrontendLayer(self);
@@ -760,6 +760,7 @@
 	[colorAttachment0Desc setLoadAction:MTLLoadActionClear];
 	[colorAttachment0Desc setStoreAction:MTLStoreActionStore];
 	[colorAttachment0Desc setClearColor:MTLClearColorMake(0.0, 0.0, 0.0, 1.0)];
+	[colorAttachment0Desc setTexture:nil];
 	
 	pixelScalePipeline = nil;
 	displayOutputPipeline = nil;
@@ -795,6 +796,9 @@
 	needsScreenVerticesUpdate = YES;
 	needsHUDVerticesUpdate = YES;
 	
+	pthread_mutex_init(&_mutexDisplayTextureUpdate, NULL);
+	pthread_mutex_init(&_mutexBufferUpdate, NULL);
+	
 	return self;
 }
 
@@ -821,6 +825,7 @@
 	[self setTexDisplayPixelScaleMain:nil];
 	[self setTexDisplayPixelScaleTouch:nil];
 	
+	[[self colorAttachment0Desc] setTexture:nil];
 	[self setPixelScalePipeline:nil];
 	[self setDisplayOutputPipeline:nil];
 	[self setTexHUDCharMap:nil];
@@ -828,7 +833,8 @@
 	[self setSharedData:nil];
 	delete _cdv;
 	
-	dispatch_release(availableResources);
+	pthread_mutex_destroy(&_mutexDisplayTextureUpdate);
+	pthread_mutex_destroy(&_mutexBufferUpdate);
 	
 	[super dealloc];
 }
@@ -1250,6 +1256,8 @@
 	const bool useDeposterize = _cdv->GetSourceDeposterize();
 	const NDSDisplayID selectedDisplaySource[2] = { _cdv->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main), _cdv->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) };
 	
+	pthread_mutex_lock(&_mutexDisplayTextureUpdate);
+	
 	if (selectedDisplaySource[NDSDisplayID_Main] == NDSDisplayID_Main)
 	{
 		_texDisplayOutput[NDSDisplayID_Main]  = [sharedData texDisplaySrcTargetMain];
@@ -1447,15 +1455,17 @@
 									  (float)[_texDisplayOutput[NDSDisplayID_Touch] width], (float)[_texDisplayOutput[NDSDisplayID_Touch] height],
 									  (float *)[_displayTexCoordBuffer contents]);
 	[_displayTexCoordBuffer didModifyRange:NSMakeRange(0, sizeof(float) * (4 * 8))];
+	
+	pthread_mutex_unlock(&_mutexDisplayTextureUpdate);
 }
 
-- (void) renderToDrawable
+- (void) updateRenderBuffers
 {
 	const NDSDisplayInfo &displayInfo = _cdv->GetEmuDisplayInfo();
 	
 	// Set up the view properties.
-	BOOL didChangeViewProperties = NO;
-	BOOL needEncodeViewport = NO;
+	bool didChangeViewProperties = false;
+	bool needEncodeViewport = false;
 	
 	MTLViewport newViewport;
 	newViewport.originX = 0.0;
@@ -1465,14 +1475,16 @@
 	newViewport.znear = 0.0;
 	newViewport.zfar = 1.0;
 	
+	pthread_mutex_lock(&_mutexBufferUpdate);
+	
 	if ([self needsViewportUpdate])
 	{
-		needEncodeViewport = YES;
+		needEncodeViewport = true;
 		
 		DisplayViewShaderProperties *viewProps = (DisplayViewShaderProperties *)[_cdvPropertiesBuffer contents];
 		viewProps->width    = _cdv->GetViewProperties().clientWidth;
 		viewProps->height   = _cdv->GetViewProperties().clientHeight;
-		didChangeViewProperties = YES;
+		didChangeViewProperties = true;
 		
 		[self setNeedsViewportUpdate:NO];
 	}
@@ -1483,7 +1495,7 @@
 		viewProps->rotation            = _cdv->GetViewProperties().rotation;
 		viewProps->viewScale           = _cdv->GetViewProperties().viewScale;
 		viewProps->lowerHUDMipMapLevel = ( ((float)HUD_TEXTBOX_BASE_SCALE * _cdv->GetHUDObjectScale() / _cdv->GetScaleFactor()) >= (2.0/3.0) ) ? 0 : 1;
-		didChangeViewProperties = YES;
+		didChangeViewProperties = true;
 		
 		[self setNeedsRotationScaleUpdate:NO];
 	}
@@ -1494,7 +1506,7 @@
 	}
 	
 	// Set up the display properties.
-	BOOL willDrawDisplays = (displayInfo.pixelBytes != 0);
+	bool willDrawDisplays = (displayInfo.pixelBytes != 0);
 	if (willDrawDisplays && [self needsScreenVerticesUpdate])
 	{
 		_cdv->SetScreenVertices((float *)[_displayVtxPositionBuffer contents]);
@@ -1506,7 +1518,7 @@
 	// Set up the HUD properties.
 	size_t hudLength = _cdv->GetHUDString().length();
 	size_t hudTouchLineLength = 0;
-	BOOL willDrawHUD = _cdv->GetHUDVisibility() && ([self texHUDCharMap] != nil);
+	bool willDrawHUD = _cdv->GetHUDVisibility() && ([self texHUDCharMap] != nil);
 	
 	if (_cdv->GetHUDShowInput())
 	{
@@ -1558,165 +1570,168 @@
 		_cdv->ClearHUDNeedsUpdate();
 	}
 	
-	// Now that everything is set up, request a layer drawable and draw everything.
-	dispatch_semaphore_wait(availableResources, DISPATCH_TIME_FOREVER);
+	_needEncodeViewport = needEncodeViewport;
+	_newViewport = newViewport;
+	_willDrawDisplays = willDrawDisplays;
+	_willDrawHUD = willDrawHUD;
+	_willDrawHUDInput = _cdv->GetHUDShowInput();
+	_hudStringLength = _cdv->GetHUDString().length();
+	_hudTouchLineLength = hudTouchLineLength;
 	
-	id<CAMetalDrawable> drawable = [self nextDrawable];
-	if (drawable == nil)
+	pthread_mutex_unlock(&_mutexBufferUpdate);
+}
+
+- (void) renderAndFlushDrawable
+{
+	@autoreleasepool
 	{
-		puts("MacMetalDisplayView: No drawable object was available!\n");
-		dispatch_semaphore_signal(availableResources);
-		return;
-	}
-	
-	id<MTLTexture> texture = [drawable texture];
-	if (texture == nil)
-	{
-		dispatch_semaphore_signal(availableResources);
-		return;
-	}
-	
-	[[self colorAttachment0Desc] setTexture:texture];
-	
-	id<MTLCommandBuffer> cb = [[sharedData commandQueue] commandBufferWithUnretainedReferences];
-	id<MTLRenderCommandEncoder> ce = [cb renderCommandEncoderWithDescriptor:_outputRenderPassDesc];
-	
-	if (needEncodeViewport)
-	{
-		[ce setViewport:newViewport];
-	}
-	
-	// Draw the NDS displays.
-	if (willDrawDisplays)
-	{
-		[ce setRenderPipelineState:[self displayOutputPipeline]];
-		[ce setVertexBuffer:_displayVtxPositionBuffer offset:0 atIndex:0];
-		[ce setVertexBuffer:_displayTexCoordBuffer offset:0 atIndex:1];
-		[ce setVertexBuffer:_cdvPropertiesBuffer offset:0 atIndex:2];
+		pthread_mutex_lock(&_mutexDisplayTextureUpdate);
+		pthread_mutex_lock(&_mutexBufferUpdate);
+				
+		// Now that everything is set up, go ahead and draw everything.
+		id<CAMetalDrawable> layerDrawable = [self nextDrawable];
+		[colorAttachment0Desc setTexture:[layerDrawable texture]];
+		id<MTLCommandBuffer> cb = [[sharedData commandQueue] commandBufferWithUnretainedReferences];
+		id<MTLRenderCommandEncoder> ce = [cb renderCommandEncoderWithDescriptor:_outputRenderPassDesc];
 		
-		switch (_cdv->GetViewProperties().mode)
+		if (_needEncodeViewport)
 		{
-			case ClientDisplayMode_Main:
-			{
-				if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Main))
-				{
-					[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
-					[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
-				}
-				break;
-			}
-				
-			case ClientDisplayMode_Touch:
-			{
-				if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
-				{
-					[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
-					[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
-				}
-				break;
-			}
-				
-			case ClientDisplayMode_Dual:
-			{
-				const NDSDisplayID majorDisplayID = (_cdv->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
-				const size_t majorDisplayVtx = (_cdv->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
-				
-				switch (_cdv->GetViewProperties().layout)
-				{
-					case ClientDisplayLayout_Hybrid_2_1:
-					case ClientDisplayLayout_Hybrid_16_9:
-					case ClientDisplayLayout_Hybrid_16_10:
-					{
-						if (_cdv->IsSelectedDisplayEnabled(majorDisplayID))
-						{
-							[ce setFragmentTexture:_texDisplayOutput[majorDisplayID] atIndex:0];
-							[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:majorDisplayVtx vertexCount:4];
-						}
-						break;
-					}
-						
-					default:
-						break;
-				}
-				
-				if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Main))
-				{
-					[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
-					[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
-				}
-				
-				if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
-				{
-					[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
-					[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
-				}
-			}
-				
-			default:
-				break;
+			[ce setViewport:_newViewport];
 		}
-	}
-	
-	// Draw the HUD.
-	if (willDrawHUD)
-	{
-		uint8_t isScreenOverlay = 0;
 		
-		[ce setRenderPipelineState:[sharedData hudPipeline]];
-		[ce setVertexBuffer:_hudVtxPositionBuffer offset:0 atIndex:0];
-		[ce setVertexBuffer:_hudVtxColorBuffer offset:0 atIndex:1];
-		[ce setVertexBuffer:_hudTexCoordBuffer offset:0 atIndex:2];
-		[ce setVertexBuffer:_cdvPropertiesBuffer offset:0 atIndex:3];
-		[ce setFragmentTexture:[self texHUDCharMap] atIndex:0];
-		
-		// First, draw the inputs.
-		if (_cdv->GetHUDShowInput())
+		// Draw the NDS displays.
+		if (_willDrawDisplays)
 		{
-			isScreenOverlay = 1;
+			[ce setRenderPipelineState:[self displayOutputPipeline]];
+			[ce setVertexBuffer:_displayVtxPositionBuffer offset:0 atIndex:0];
+			[ce setVertexBuffer:_displayTexCoordBuffer offset:0 atIndex:1];
+			[ce setVertexBuffer:_cdvPropertiesBuffer offset:0 atIndex:2];
+			
+			switch (_cdv->GetViewProperties().mode)
+			{
+				case ClientDisplayMode_Main:
+				{
+					if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Main))
+					{
+						[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
+						[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+					}
+					break;
+				}
+					
+				case ClientDisplayMode_Touch:
+				{
+					if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
+					{
+						[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
+						[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
+					}
+					break;
+				}
+					
+				case ClientDisplayMode_Dual:
+				{
+					const NDSDisplayID majorDisplayID = (_cdv->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
+					const size_t majorDisplayVtx = (_cdv->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
+					
+					switch (_cdv->GetViewProperties().layout)
+					{
+						case ClientDisplayLayout_Hybrid_2_1:
+						case ClientDisplayLayout_Hybrid_16_9:
+						case ClientDisplayLayout_Hybrid_16_10:
+						{
+							if (_cdv->IsSelectedDisplayEnabled(majorDisplayID))
+							{
+								[ce setFragmentTexture:_texDisplayOutput[majorDisplayID] atIndex:0];
+								[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:majorDisplayVtx vertexCount:4];
+							}
+							break;
+						}
+							
+						default:
+							break;
+					}
+					
+					if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Main))
+					{
+						[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
+						[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+					}
+					
+					if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
+					{
+						[ce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
+						[ce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
+					}
+				}
+					
+				default:
+					break;
+			}
+		}
+		
+		// Draw the HUD.
+		if (_willDrawHUD)
+		{
+			uint8_t isScreenOverlay = 0;
+			
+			[ce setRenderPipelineState:[sharedData hudPipeline]];
+			[ce setVertexBuffer:_hudVtxPositionBuffer offset:0 atIndex:0];
+			[ce setVertexBuffer:_hudVtxColorBuffer offset:0 atIndex:1];
+			[ce setVertexBuffer:_hudTexCoordBuffer offset:0 atIndex:2];
+			[ce setVertexBuffer:_cdvPropertiesBuffer offset:0 atIndex:3];
+			[ce setFragmentTexture:[self texHUDCharMap] atIndex:0];
+			
+			// First, draw the inputs.
+			if (_willDrawHUDInput)
+			{
+				isScreenOverlay = 1;
+				[ce setVertexBytes:&isScreenOverlay length:sizeof(uint8_t) atIndex:4];
+				[ce setFragmentSamplerState:[sharedData samplerHUDBox] atIndex:0];
+				[ce drawIndexedPrimitives:MTLPrimitiveTypeTriangle
+							   indexCount:_hudTouchLineLength * 6
+								indexType:MTLIndexTypeUInt16
+							  indexBuffer:[sharedData hudIndexBuffer]
+						indexBufferOffset:(_hudStringLength + HUD_INPUT_ELEMENT_LENGTH) * 6 * sizeof(uint16_t)];
+				
+				isScreenOverlay = 0;
+				[ce setVertexBytes:&isScreenOverlay length:sizeof(uint8_t) atIndex:4];
+				[ce setFragmentSamplerState:[sharedData samplerHUDText] atIndex:0];
+				[ce drawIndexedPrimitives:MTLPrimitiveTypeTriangle
+							   indexCount:HUD_INPUT_ELEMENT_LENGTH * 6
+								indexType:MTLIndexTypeUInt16
+							  indexBuffer:[sharedData hudIndexBuffer]
+						indexBufferOffset:_hudStringLength * 6 * sizeof(uint16_t)];
+			}
+			
+			// Next, draw the backing text box.
 			[ce setVertexBytes:&isScreenOverlay length:sizeof(uint8_t) atIndex:4];
 			[ce setFragmentSamplerState:[sharedData samplerHUDBox] atIndex:0];
 			[ce drawIndexedPrimitives:MTLPrimitiveTypeTriangle
-						   indexCount:hudTouchLineLength * 6
+						   indexCount:6
 							indexType:MTLIndexTypeUInt16
 						  indexBuffer:[sharedData hudIndexBuffer]
-					indexBufferOffset:(_cdv->GetHUDString().length() + HUD_INPUT_ELEMENT_LENGTH) * 6 * sizeof(uint16_t)];
+					indexBufferOffset:0];
 			
-			isScreenOverlay = 0;
-			[ce setVertexBytes:&isScreenOverlay length:sizeof(uint8_t) atIndex:4];
+			// Finally, draw each character inside the box.
 			[ce setFragmentSamplerState:[sharedData samplerHUDText] atIndex:0];
 			[ce drawIndexedPrimitives:MTLPrimitiveTypeTriangle
-						   indexCount:HUD_INPUT_ELEMENT_LENGTH * 6
+						   indexCount:(_hudStringLength - 1) * 6
 							indexType:MTLIndexTypeUInt16
 						  indexBuffer:[sharedData hudIndexBuffer]
-					indexBufferOffset:_cdv->GetHUDString().length() * 6 * sizeof(uint16_t)];
+					indexBufferOffset:6 * sizeof(uint16_t)];
 		}
 		
-		// Next, draw the backing text box.
-		[ce setVertexBytes:&isScreenOverlay length:sizeof(uint8_t) atIndex:4];
-		[ce setFragmentSamplerState:[sharedData samplerHUDBox] atIndex:0];
-		[ce drawIndexedPrimitives:MTLPrimitiveTypeTriangle
-					   indexCount:6
-						indexType:MTLIndexTypeUInt16
-					  indexBuffer:[sharedData hudIndexBuffer]
-				indexBufferOffset:0];
+		[ce endEncoding];
 		
-		// Finally, draw each character inside the box.
-		[ce setFragmentSamplerState:[sharedData samplerHUDText] atIndex:0];
-		[ce drawIndexedPrimitives:MTLPrimitiveTypeTriangle
-					   indexCount:(_cdv->GetHUDString().length() - 1) * 6
-						indexType:MTLIndexTypeUInt16
-					  indexBuffer:[sharedData hudIndexBuffer]
-				indexBufferOffset:6 * sizeof(uint16_t)];
+		[cb presentDrawable:layerDrawable];
+		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+			pthread_mutex_unlock(&_mutexBufferUpdate);
+			pthread_mutex_unlock(&_mutexDisplayTextureUpdate);
+		}];
+		
+		[cb commit];
 	}
-	
-	[ce endEncoding];
-	
-	[cb presentDrawable:drawable];
-	[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-		dispatch_semaphore_signal(availableResources);
-	}];
-	
-	[cb commit];
 }
 
 @end
@@ -1828,6 +1843,7 @@ MacMetalDisplayView::MacMetalDisplayView()
 	_canFilterOnGPU = true;
 	_filtersPreferGPU = true;
 	_willFilterOnGPU = true;
+	_spinlockViewNeedsFlush = OS_SPINLOCK_INIT;
 	
 	_mutexProcessPtr = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(_mutexProcessPtr, NULL);
@@ -1837,6 +1853,26 @@ MacMetalDisplayView::~MacMetalDisplayView()
 {
 	pthread_mutex_destroy(this->_mutexProcessPtr);
 	free(this->_mutexProcessPtr);
+}
+
+bool MacMetalDisplayView::GetViewNeedsFlush()
+{
+	OSSpinLockLock(&this->_spinlockViewNeedsFlush);
+	const bool viewNeedsFlush = this->_viewNeedsFlush;
+	OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
+	
+	return viewNeedsFlush;
+}
+
+void MacMetalDisplayView::SetAllowViewFlushes(bool allowFlushes)
+{
+	CGDirectDisplayID displayID = (CGDirectDisplayID)this->GetDisplayViewID();
+	MacClientSharedObject *sharedData = this->GetSharedData();
+	
+	if (![sharedData isDisplayLinkRunningUsingID:displayID])
+	{
+		[sharedData displayLinkStartUsingID:displayID];
+	}
 }
 
 void MacMetalDisplayView::_UpdateNormalSize()
@@ -1935,13 +1971,29 @@ void MacMetalDisplayView::ProcessDisplays()
 
 void MacMetalDisplayView::UpdateView()
 {
-	if (this->_allowViewUpdates)
+	if (!this->_allowViewUpdates || (this->GetNSView() == nil))
 	{
-		@autoreleasepool
-		{
-			[(DisplayViewMetalLayer *)this->GetFrontendLayer() renderToDrawable];
-		}
+		return;
 	}
+	
+	// For every update, ensure that the CVDisplayLink is started so that the update
+	// will eventually get flushed.
+	this->SetAllowViewFlushes(true);
+	
+	[(DisplayViewMetalLayer *)this->GetFrontendLayer() updateRenderBuffers];
+	
+	OSSpinLockLock(&this->_spinlockViewNeedsFlush);
+	this->_viewNeedsFlush = true;
+	OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
+}
+
+void MacMetalDisplayView::FlushView()
+{
+	OSSpinLockLock(&this->_spinlockViewNeedsFlush);
+	this->_viewNeedsFlush = false;
+	OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
+	
+	[(DisplayViewMetalLayer *)this->GetFrontendLayer() renderAndFlushDrawable];
 }
 
 #pragma mark -

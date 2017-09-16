@@ -876,17 +876,45 @@ public:
 	
 	pthread_rwlock_init(_rwlockFramebuffer[0], NULL);
 	pthread_rwlock_init(_rwlockFramebuffer[1], NULL);
+	pthread_mutex_init(&_mutexFlushVideo, NULL);
 	
 	GPUFetchObject = nil;
 	_mutexOutputList = NULL;
 	_cdsOutputList = nil;
 	numberViewsUsingDirectToCPUFiltering = 0;
 	
+	_displayLinksActiveList.clear();
+	_displayLinkFlushTimeList.clear();
+	[self displayLinkListUpdate];
+	
+	[[NSNotificationCenter defaultCenter] addObserver:self
+											 selector:@selector(respondToScreenChange:)
+												 name:@"NSApplicationDidChangeScreenParametersNotification"
+											   object:NSApp];
+	
 	return self;
 }
 
 - (void)dealloc
 {
+	pthread_mutex_lock(&_mutexFlushVideo);
+	
+	for (DisplayLinksActiveMap::iterator it = _displayLinksActiveList.begin(); it != _displayLinksActiveList.end(); ++it)
+	{
+		CGDirectDisplayID displayID = it->first;
+		CVDisplayLinkRef displayLinkRef = it->second;
+		if (CVDisplayLinkIsRunning(displayLinkRef))
+		{
+			CVDisplayLinkStop(displayLinkRef);
+			CVDisplayLinkRelease(displayLinkRef);
+		}
+		
+		_displayLinksActiveList.erase(displayID);
+		_displayLinkFlushTimeList.erase(displayID);
+	}
+	
+	pthread_mutex_unlock(&_mutexFlushVideo);
+	
 	pthread_mutex_t *currentMutex = _mutexOutputList;
 	
 	if (currentMutex != NULL)
@@ -903,6 +931,7 @@ public:
 	
 	pthread_rwlock_destroy(_rwlockFramebuffer[0]);
 	pthread_rwlock_destroy(_rwlockFramebuffer[1]);
+	pthread_mutex_destroy(&_mutexFlushVideo);
 	
 	[super dealloc];
 }
@@ -1018,6 +1047,151 @@ public:
 	{
 		pthread_mutex_unlock(currentMutex);
 	}
+}
+
+- (void) flushAllDisplaysOnDisplayLink:(CVDisplayLinkRef)displayLink timeStamp:(const CVTimeStamp *)timeStamp
+{
+	pthread_mutex_t *currentMutex = _mutexOutputList;
+	CGDirectDisplayID displayID = CVDisplayLinkGetCurrentCGDisplay(displayLink);
+	bool didFlushOccur = false;
+	
+	if (currentMutex != NULL)
+	{
+		pthread_mutex_lock(currentMutex);
+	}
+	
+	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
+	{
+		if ([cdsOutput isKindOfClass:[CocoaDSDisplayVideo class]])
+		{
+			if ([(CocoaDSDisplayVideo *)cdsOutput currentDisplayID] == displayID)
+			{
+				ClientDisplay3DView *cdv = [(CocoaDSDisplayVideo *)cdsOutput clientDisplayView];
+				
+				if (cdv->GetViewNeedsFlush())
+				{
+					cdv->FlushView();
+					didFlushOccur = true;
+				}
+			}
+		}
+	}
+	
+	if (currentMutex != NULL)
+	{
+		pthread_mutex_unlock(currentMutex);
+	}
+	
+	pthread_mutex_lock(&_mutexFlushVideo);
+	
+	if (didFlushOccur)
+	{
+		// Set the new time limit to 8 seconds after the current time.
+		_displayLinkFlushTimeList[displayID] = timeStamp->videoTime + (timeStamp->videoTimeScale * VIDEO_FLUSH_TIME_LIMIT_OFFSET);
+	}
+	else if (timeStamp->videoTime > _displayLinkFlushTimeList[displayID])
+	{
+		CVDisplayLinkStop(displayLink);
+	}
+	
+	pthread_mutex_unlock(&_mutexFlushVideo);
+}
+
+- (BOOL) isDisplayLinkRunningUsingID:(CGDirectDisplayID)displayID
+{
+	CVDisplayLinkRef displayLink = NULL;
+	
+	pthread_mutex_lock(&_mutexFlushVideo);
+	
+	if (_displayLinksActiveList.find(displayID) != _displayLinksActiveList.end())
+	{
+		displayLink = _displayLinksActiveList[displayID];
+	}
+	
+	const BOOL isRunning = ( (displayLink != NULL) && CVDisplayLinkIsRunning(displayLink) ) ? YES : NO;
+	
+	pthread_mutex_unlock(&_mutexFlushVideo);
+	
+	return isRunning;
+}
+
+- (void) displayLinkStartUsingID:(CGDirectDisplayID)displayID
+{
+	CVDisplayLinkRef displayLink = NULL;
+	
+	pthread_mutex_lock(&_mutexFlushVideo);
+	
+	if (_displayLinksActiveList.find(displayID) != _displayLinksActiveList.end())
+	{
+		displayLink = _displayLinksActiveList[displayID];
+	}
+	
+	if (displayLink != NULL)
+	{
+		CVDisplayLinkStart(displayLink);
+	}
+	
+	pthread_mutex_unlock(&_mutexFlushVideo);
+}
+
+- (void) displayLinkListUpdate
+{
+	// Set up the display links
+	NSArray *screenList = [NSScreen screens];
+	std::set<CGDirectDisplayID> screenActiveDisplayIDsList;
+	
+	pthread_mutex_lock(&_mutexFlushVideo);
+	
+	// Add new CGDirectDisplayIDs for new screens
+	for (size_t i = 0; i < [screenList count]; i++)
+	{
+		NSScreen *screen = [screenList objectAtIndex:i];
+		NSDictionary<NSString *, id> *deviceDescription = [screen deviceDescription];
+		NSNumber *idNumber = (NSNumber *)[deviceDescription valueForKey:@"NSScreenNumber"];
+		
+		CGDirectDisplayID displayID = [idNumber unsignedIntValue];
+		bool isDisplayLinkStillActive = (_displayLinksActiveList.find(displayID) != _displayLinksActiveList.end());
+		
+		if (!isDisplayLinkStillActive)
+		{
+			CVDisplayLinkRef newDisplayLink;
+			CVDisplayLinkCreateWithActiveCGDisplays(&newDisplayLink);
+			CVDisplayLinkSetCurrentCGDisplay(newDisplayLink, displayID);
+			CVDisplayLinkSetOutputCallback(newDisplayLink, &MacDisplayLinkCallback, self);
+			
+			_displayLinksActiveList[displayID] = newDisplayLink;
+			_displayLinkFlushTimeList[displayID] = 0;
+		}
+		
+		// While we're iterating through NSScreens, save the CGDirectDisplayID to a temporary list for later use.
+		screenActiveDisplayIDsList.insert(displayID);
+	}
+	
+	// Remove old CGDirectDisplayIDs for screens that no longer exist
+	for (DisplayLinksActiveMap::iterator it = _displayLinksActiveList.begin(); it != _displayLinksActiveList.end(); ++it)
+	{
+		CGDirectDisplayID displayID = it->first;
+		CVDisplayLinkRef displayLinkRef = it->second;
+		
+		if (screenActiveDisplayIDsList.find(displayID) == screenActiveDisplayIDsList.end())
+		{
+			if (CVDisplayLinkIsRunning(displayLinkRef))
+			{
+				CVDisplayLinkStop(displayLinkRef);
+				CVDisplayLinkRelease(displayLinkRef);
+			}
+			
+			_displayLinksActiveList.erase(displayID);
+			_displayLinkFlushTimeList.erase(displayID);
+		}
+	}
+	
+	pthread_mutex_unlock(&_mutexFlushVideo);
+}
+
+- (void) respondToScreenChange:(NSNotification *)aNotification
+{
+	[self displayLinkListUpdate];
 }
 
 @end
@@ -1142,6 +1316,19 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 CGLPBufferObj OSXOpenGLRendererPBuffer = NULL;
 #pragma GCC diagnostic pop
+
+CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
+								const CVTimeStamp *inNow,
+								const CVTimeStamp *inOutputTime,
+								CVOptionFlags flagsIn,
+								CVOptionFlags *flagsOut,
+								void *displayLinkContext)
+{
+	MacClientSharedObject *sharedData = (MacClientSharedObject *)displayLinkContext;
+	[sharedData flushAllDisplaysOnDisplayLink:displayLink timeStamp:inNow];
+	
+	return kCVReturnSuccess;
+}
 
 bool OSXOpenGLRendererInit()
 {

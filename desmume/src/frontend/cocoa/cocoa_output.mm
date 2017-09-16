@@ -751,6 +751,7 @@
 @dynamic hudColorInputPendingAndApplied;
 @dynamic hudColorInputAppliedOnly;
 @dynamic hudColorInputPendingOnly;
+@dynamic currentDisplayID;
 @dynamic useVerticalSync;
 @dynamic videoFiltersPreferGPU;
 @dynamic sourceDeposterize;
@@ -774,6 +775,7 @@
 	spinlockSourceDeposterize = OS_SPINLOCK_INIT;
 	spinlockPixelScaler = OS_SPINLOCK_INIT;
 	spinlockDisplayVideoSource = OS_SPINLOCK_INIT;
+	spinlockDisplayID = OS_SPINLOCK_INIT;
 		
 	return self;
 }
@@ -1095,6 +1097,22 @@
 	OSSpinLockUnlock(&spinlockDisplayVideoSource);
 	
 	return displayVideoSource;
+}
+
+- (void) setCurrentDisplayID:(uint32_t)theDisplayID
+{
+	OSSpinLockLock(&spinlockDisplayID);
+	_cdv->SetDisplayViewID((int64_t)theDisplayID);
+	OSSpinLockUnlock(&spinlockDisplayID);
+}
+
+- (uint32_t) currentDisplayID
+{
+	OSSpinLockLock(&spinlockDisplayID);
+	const uint32_t displayID = (uint32_t)_cdv->GetDisplayViewID();
+	OSSpinLockUnlock(&spinlockDisplayID);
+	
+	return displayID;
 }
 
 - (void) setUseVerticalSync:(BOOL)theState

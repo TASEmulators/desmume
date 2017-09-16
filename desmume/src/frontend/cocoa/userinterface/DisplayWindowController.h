@@ -17,11 +17,9 @@
 
 #import <Cocoa/Cocoa.h>
 #import <OpenGL/OpenGL.h>
-#include <libkern/OSAtomic.h>
 #include <map>
 
-#import "InputManager.h"
-#import "cocoa_output.h"
+#import "DisplayViewCALayer.h"
 
 #include "../ClientDisplayView.h"
 #undef BOOL
@@ -30,7 +28,9 @@
 #define DISPLAY_VIDEO_SOURCE_TOUCH_TAG_BASE		2000
 
 @class CocoaDSController;
+@class CocoaDSDisplayVideo;
 @class EmuControllerDelegate;
+@class InputManager;
 class OGLVideoOutput;
 
 // Subclass NSWindow for full screen windows so that we can override some methods.
@@ -38,7 +38,7 @@ class OGLVideoOutput;
 { }
 @end
 
-@interface DisplayView : NSView <InputHIDManagerTarget>
+@interface DisplayView : NSView<CocoaDisplayViewProtocol>
 {
 	InputManager *inputManager;
 	CocoaDSDisplayVideo *cdsVideoOutput;
@@ -46,41 +46,8 @@ class OGLVideoOutput;
 	NSOpenGLContext *localOGLContext;
 }
 
-@property (retain) InputManager *inputManager;
-@property (retain) CocoaDSDisplayVideo *cdsVideoOutput;
-@property (readonly, nonatomic) ClientDisplay3DView *clientDisplay3DView;
-@property (readonly) BOOL canUseShaderBasedFilters;
-@property (assign, nonatomic) BOOL allowViewUpdates;
-@property (assign) BOOL isHUDVisible;
-@property (assign) BOOL isHUDVideoFPSVisible;
-@property (assign) BOOL isHUDRender3DFPSVisible;
-@property (assign) BOOL isHUDFrameIndexVisible;
-@property (assign) BOOL isHUDLagFrameCountVisible;
-@property (assign) BOOL isHUDCPULoadAverageVisible;
-@property (assign) BOOL isHUDRealTimeClockVisible;
-@property (assign) BOOL isHUDInputVisible;
-@property (assign) NSColor *hudColorVideoFPS;
-@property (assign) NSColor *hudColorRender3DFPS;
-@property (assign) NSColor *hudColorFrameIndex;
-@property (assign) NSColor *hudColorLagFrameCount;
-@property (assign) NSColor *hudColorCPULoadAverage;
-@property (assign) NSColor *hudColorRTC;
-@property (assign) NSColor *hudColorInputPendingAndApplied;
-@property (assign) NSColor *hudColorInputAppliedOnly;
-@property (assign) NSColor *hudColorInputPendingOnly;
-@property (assign) NSInteger displayMainVideoSource;
-@property (assign) NSInteger displayTouchVideoSource;
-@property (assign) BOOL useVerticalSync;
-@property (assign) BOOL videoFiltersPreferGPU;
-@property (assign) BOOL sourceDeposterize;
-@property (assign) NSInteger outputFilter;
-@property (assign) NSInteger pixelScaler;
-
-- (void) setupLayer;
-
 - (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed;
 - (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed;
-- (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType;
 
 @end
 
@@ -101,7 +68,7 @@ class OGLVideoOutput;
 	NSSlider *microphoneGainSlider;
 	NSButton *microphoneMuteButton;
 	
-	DisplayView *view;
+	NSView<CocoaDisplayViewProtocol> *view;
 	EmuControllerDelegate *emuControl;
 	CocoaDSDisplayVideo *cdsVideoOutput;
 	NSScreen *assignedScreen;
@@ -131,7 +98,7 @@ class OGLVideoOutput;
 @property (readonly) IBOutlet NSSlider *microphoneGainSlider;
 @property (readonly) IBOutlet NSButton *microphoneMuteButton;
 
-@property (retain) DisplayView *view;
+@property (retain) NSView<CocoaDisplayViewProtocol> *view;
 @property (retain) EmuControllerDelegate *emuControl;
 @property (retain) CocoaDSDisplayVideo *cdsVideoOutput;
 @property (assign) NSScreen *assignedScreen;
@@ -179,6 +146,7 @@ class OGLVideoOutput;
 - (double) maxViewScaleInHostScreen:(double)contentBoundsWidth height:(double)contentBoundsHeight;
 - (void) enterFullScreen;
 - (void) exitFullScreen;
+- (void) updateDisplayID;
 
 - (IBAction) copy:(id)sender;
 - (IBAction) changeHardwareMicGain:(id)sender;

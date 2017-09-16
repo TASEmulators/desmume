@@ -877,6 +877,9 @@
 		ABADF11F1DEA4D0000A142B1 /* Database.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABADF1171DEA4C1200A142B1 /* Database.cpp */; };
 		ABADF1201DEA4D0000A142B1 /* Database.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABADF1171DEA4C1200A142B1 /* Database.cpp */; };
 		ABADF1211DEA4D0000A142B1 /* Database.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABADF1171DEA4C1200A142B1 /* Database.cpp */; };
+		ABAE1F6F1F6873E70080EFE3 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABAE1F6E1F6873E70080EFE3 /* CoreVideo.framework */; };
+		ABAE1F701F6874090080EFE3 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABAE1F6E1F6873E70080EFE3 /* CoreVideo.framework */; };
+		ABAE1F711F6874090080EFE3 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABAE1F6E1F6873E70080EFE3 /* CoreVideo.framework */; };
 		ABAF0A411A96E67200B95B75 /* RomInfoPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAF0A401A96E67200B95B75 /* RomInfoPanel.mm */; };
 		ABAF0A421A96E67200B95B75 /* RomInfoPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAF0A401A96E67200B95B75 /* RomInfoPanel.mm */; };
 		ABAF0A431A96E67200B95B75 /* RomInfoPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAF0A401A96E67200B95B75 /* RomInfoPanel.mm */; };
@@ -1566,6 +1569,7 @@
 		ABADF1161DEA4C1200A142B1 /* Database.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Database.h; sourceTree = "<group>"; };
 		ABADF1171DEA4C1200A142B1 /* Database.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Database.cpp; sourceTree = "<group>"; };
 		ABADF11A1DEA4CF700A142B1 /* features_cpu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = features_cpu.c; sourceTree = "<group>"; };
+		ABAE1F6E1F6873E70080EFE3 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		ABAF0A3F1A96E67200B95B75 /* RomInfoPanel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RomInfoPanel.h; sourceTree = "<group>"; };
 		ABAF0A401A96E67200B95B75 /* RomInfoPanel.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = RomInfoPanel.mm; sourceTree = "<group>"; };
 		ABB0FBC41A9E5CEA0060C55A /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
@@ -1932,6 +1936,7 @@
 				ABC570D5134431DA00E7B0B1 /* OpenGL.framework in Frameworks */,
 				AB3BF4341E256309003E2B24 /* QuartzCore.framework in Frameworks */,
 				AB4676F314AB12D60002FF94 /* libz.dylib in Frameworks */,
+				ABAE1F711F6874090080EFE3 /* CoreVideo.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1946,6 +1951,7 @@
 				AB74EC8A1738499C0026C41E /* Carbon.framework in Frameworks */,
 				AB796D6815CDCBA200C59155 /* Cocoa.framework in Frameworks */,
 				ABB0FBC71A9E5D080060C55A /* CoreAudio.framework in Frameworks */,
+				ABAE1F6F1F6873E70080EFE3 /* CoreVideo.framework in Frameworks */,
 				AB564907186E6F0C002740F4 /* ForceFeedback.framework in Frameworks */,
 				AB796D6915CDCBA200C59155 /* Foundation.framework in Frameworks */,
 				AB796D6A15CDCBA200C59155 /* IOKit.framework in Frameworks */,
@@ -1974,6 +1980,7 @@
 				AB8F3D281A53AC2600A80BF6 /* OpenGL.framework in Frameworks */,
 				AB3BF4351E256309003E2B24 /* QuartzCore.framework in Frameworks */,
 				AB8F3D291A53AC2600A80BF6 /* libz.dylib in Frameworks */,
+				ABAE1F701F6874090080EFE3 /* CoreVideo.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2062,6 +2069,7 @@
 				AB74EC891738499C0026C41E /* Carbon.framework */,
 				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
 				ABB0FBC41A9E5CEA0060C55A /* CoreAudio.framework */,
+				ABAE1F6E1F6873E70080EFE3 /* CoreVideo.framework */,
 				AB564906186E6F0C002740F4 /* ForceFeedback.framework */,
 				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
 				AB350BA41478AC96007165AC /* IOKit.framework */,

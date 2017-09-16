@@ -33,6 +33,7 @@
 #import "cocoa_firmware.h"
 #import "cocoa_globals.h"
 #import "cocoa_input.h"
+#import "cocoa_output.h"
 #import "cocoa_rom.h"
 #import "cocoa_util.h"
 

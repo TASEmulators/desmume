@@ -782,6 +782,11 @@
 		AB43528917D5BA95007417C8 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB43528617D5BA95007417C8 /* fsnitro.cpp */; };
 		AB43528A17D5BA95007417C8 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB43528617D5BA95007417C8 /* fsnitro.cpp */; };
 		AB43528B17D5BA95007417C8 /* fsnitro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB43528617D5BA95007417C8 /* fsnitro.cpp */; };
+		AB446DA11F69DB56002F32B6 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB446DA01F69DB56002F32B6 /* CoreVideo.framework */; };
+		AB446DB31F69DB68002F32B6 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB446DA01F69DB56002F32B6 /* CoreVideo.framework */; };
+		AB446DB41F69DB68002F32B6 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB446DA01F69DB56002F32B6 /* CoreVideo.framework */; };
+		AB446DB51F69DB69002F32B6 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB446DA01F69DB56002F32B6 /* CoreVideo.framework */; };
+		AB446DB61F69DB69002F32B6 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB446DA01F69DB56002F32B6 /* CoreVideo.framework */; };
 		AB4C4C3F16F55C64002E07CD /* AAFilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2A16F55C64002E07CD /* AAFilter.cpp */; };
 		AB4C4C4016F55C64002E07CD /* cpu_detect_x86_gcc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2B16F55C64002E07CD /* cpu_detect_x86_gcc.cpp */; };
 		AB4C4C4116F55C64002E07CD /* FIFOSampleBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C4C2C16F55C64002E07CD /* FIFOSampleBuffer.cpp */; };
@@ -1912,6 +1917,7 @@
 		AB43527117D5BA5E007417C8 /* slot1_retail_mcrom_debug.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = slot1_retail_mcrom_debug.cpp; sourceTree = "<group>"; };
 		AB43528517D5BA95007417C8 /* fsnitro.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fsnitro.h; sourceTree = "<group>"; };
 		AB43528617D5BA95007417C8 /* fsnitro.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fsnitro.cpp; sourceTree = "<group>"; };
+		AB446DA01F69DB56002F32B6 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		AB4C4C2A16F55C64002E07CD /* AAFilter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AAFilter.cpp; sourceTree = "<group>"; };
 		AB4C4C2B16F55C64002E07CD /* cpu_detect_x86_gcc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cpu_detect_x86_gcc.cpp; sourceTree = "<group>"; };
 		AB4C4C2C16F55C64002E07CD /* FIFOSampleBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FIFOSampleBuffer.cpp; sourceTree = "<group>"; };
@@ -2305,6 +2311,7 @@
 				AB2A9A731725F00F0062C1A1 /* OpenGL.framework in Frameworks */,
 				AB1CC8001AA509C2008B0A16 /* CoreAudio.framework in Frameworks */,
 				AB3E69801E25FB9800D4CC75 /* QuartzCore.framework in Frameworks */,
+				AB446DB61F69DB69002F32B6 /* CoreVideo.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2325,6 +2332,7 @@
 				AB2F3C4015CF9C6000858373 /* OpenGL.framework in Frameworks */,
 				AB1CC80A1AA509DF008B0A16 /* CoreAudio.framework in Frameworks */,
 				AB3E697F1E25FB9700D4CC75 /* QuartzCore.framework in Frameworks */,
+				AB446DB51F69DB69002F32B6 /* CoreVideo.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2345,6 +2353,7 @@
 				AB711F761481C35F009011C8 /* OpenGL.framework in Frameworks */,
 				AB1CC80D1AA509E1008B0A16 /* CoreAudio.framework in Frameworks */,
 				AB3E69451E25FB8400D4CC75 /* QuartzCore.framework in Frameworks */,
+				AB446DA11F69DB56002F32B6 /* CoreVideo.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2365,6 +2374,7 @@
 				AB73AA2E1507C9F500A310C8 /* OpenGL.framework in Frameworks */,
 				AB1CC80C1AA509E0008B0A16 /* CoreAudio.framework in Frameworks */,
 				AB3E697D1E25FB9600D4CC75 /* QuartzCore.framework in Frameworks */,
+				AB446DB31F69DB68002F32B6 /* CoreVideo.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2385,6 +2395,7 @@
 				ABAD104415ACE7A00000EC47 /* OpenGL.framework in Frameworks */,
 				AB1CC80B1AA509E0008B0A16 /* CoreAudio.framework in Frameworks */,
 				AB3E697E1E25FB9700D4CC75 /* QuartzCore.framework in Frameworks */,
+				AB446DB41F69DB68002F32B6 /* CoreVideo.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2453,6 +2464,7 @@
 				ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */,
 				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
 				AB1CC7FF1AA509C2008B0A16 /* CoreAudio.framework */,
+				AB446DA01F69DB56002F32B6 /* CoreVideo.framework */,
 				AB8C6E56186CD07E00E3EC64 /* ForceFeedback.framework */,
 				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
 				AB350BA41478AC96007165AC /* IOKit.framework */,

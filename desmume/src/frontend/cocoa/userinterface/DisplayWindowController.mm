@@ -23,6 +23,7 @@
 #import "cocoa_GPU.h"
 #import "cocoa_file.h"
 #import "cocoa_input.h"
+#import "cocoa_output.h"
 #import "cocoa_globals.h"
 #import "cocoa_videofilter.h"
 #import "cocoa_util.h"
@@ -747,6 +748,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[masterWindow display];
 }
 
+- (void) updateDisplayID
+{
+	NSScreen *screen = [[self window] screen];
+	NSDictionary<NSString *, id> *deviceDescription = [screen deviceDescription];
+	NSNumber *idNumber = (NSNumber *)[deviceDescription valueForKey:@"NSScreenNumber"];
+	CGDirectDisplayID displayID = [idNumber unsignedIntValue];
+	
+	[[[self view] cdsVideoOutput] setCurrentDisplayID:displayID];
+}
+
 - (void) respondToScreenChange:(NSNotification *)aNotification
 {
 	if (_canUseMavericksFullScreen)
@@ -1353,19 +1364,19 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void)windowDidLoad
 {
 	NSRect newViewFrameRect = NSMakeRect(0.0f, (CGFloat)_statusBarHeight, (CGFloat)_localViewProps.clientWidth, (CGFloat)_localViewProps.clientHeight);
-	DisplayView *newView = [[[DisplayView alloc] initWithFrame:newViewFrameRect] autorelease];
+	NSView<CocoaDisplayViewProtocol> *newView = (NSView<CocoaDisplayViewProtocol> *)[[[DisplayView alloc] initWithFrame:newViewFrameRect] autorelease];
 	[self setView:newView];
 	
 	// Set up the master window that is associated with this window controller.
 	[self setMasterWindow:[self window]];
 	[masterWindow setTitle:(NSString *)[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"]];
-	[[masterWindow contentView] addSubview:view];
-	[masterWindow setInitialFirstResponder:view];
+	[[masterWindow contentView] addSubview:newView];
+	[masterWindow setInitialFirstResponder:newView];
 	[[emuControl windowList] addObject:self];
 	[emuControl updateAllWindowTitles];
 	
-	[view setupLayer];
-	[view setInputManager:[emuControl inputManager]];
+	[newView setupLayer];
+	[newView setInputManager:[emuControl inputManager]];
 	
 	// Set up the scaling factor if this is a Retina window
 	float scaleFactor = 1.0f;
@@ -1403,7 +1414,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	
 	[self setCdsVideoOutput:newDisplayOutput];
-	[view setCdsVideoOutput:newDisplayOutput];
+	[newView setCdsVideoOutput:newDisplayOutput];
 	
 	// Add the video thread to the output list.
 	[emuControl addOutputToCore:newDisplayOutput];
@@ -1552,6 +1563,12 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	[emuControl updateAllWindowTitles];
 	[emuControl updateDisplayPanelTitles];
+}
+
+- (void)windowDidChangeScreen:(NSNotification *)notification
+{
+	[self updateDisplayID];
+	[[view cdsVideoOutput] clientDisplayView]->UpdateView();
 }
 
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
@@ -1749,7 +1766,63 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[super dealloc];
 }
 
-#pragma mark Dynamic Property Methods
+#pragma mark Class Methods
+
+- (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed
+{
+	BOOL isHandled = NO;
+	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
+	
+	MacInputDevicePropertiesEncoder *inputEncoder = [inputManager inputEncoder];
+	const ClientInputDeviceProperties inputProperty = inputEncoder->EncodeKeyboardInput((int32_t)[theEvent keyCode], (keyPressed) ? true : false);
+	
+	if (keyPressed && [theEvent window] != nil)
+	{
+		NSString *newStatusText = [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName];
+		[[windowController emuControl] setStatusText:newStatusText];
+	}
+	
+	isHandled = [inputManager dispatchCommandUsingInputProperties:&inputProperty];
+	return isHandled;
+}
+
+- (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed
+{
+	BOOL isHandled = NO;
+	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
+	ClientDisplayView *cdv = [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
+	const ClientDisplayMode displayMode = cdv->GetMode();
+	
+	// Convert the clicked location from window coordinates, to view coordinates,
+	// and finally to DS touchscreen coordinates.
+	const int32_t buttonNumber = (int32_t)[theEvent buttonNumber];
+	uint8_t x = 0;
+	uint8_t y = 0;
+	
+	if (displayMode != ClientDisplayMode_Main)
+	{
+		const NSEventType eventType = [theEvent type];
+		const bool isInitialMouseDown = (eventType == NSLeftMouseDown) || (eventType == NSRightMouseDown) || (eventType == NSOtherMouseDown);
+		
+		// Convert the clicked location from window coordinates, to view coordinates, and finally to NDS touchscreen coordinates.
+		const NSPoint clientLoc = [self convertPoint:[theEvent locationInWindow] fromView:nil];
+		cdv->GetNDSPoint((int)buttonNumber, isInitialMouseDown, clientLoc.x, clientLoc.y, x, y);
+	}
+	
+	MacInputDevicePropertiesEncoder *inputEncoder = [inputManager inputEncoder];
+	const ClientInputDeviceProperties inputProperty = inputEncoder->EncodeMouseInput(buttonNumber, (float)x, (float)y, (buttonPressed) ? true : false);
+	
+	if (buttonPressed && [theEvent window] != nil)
+	{
+		NSString *newStatusText = (displayMode == ClientDisplayMode_Main) ? [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName] : [NSString stringWithFormat:@"%s:%s X:%i Y:%i", inputProperty.deviceName, inputProperty.elementName, (int)inputProperty.intCoordX, (int)inputProperty.intCoordY];
+		[[windowController emuControl] setStatusText:newStatusText];
+	}
+	
+	isHandled = [inputManager dispatchCommandUsingInputProperties:&inputProperty];
+	return isHandled;
+}
+
+#pragma mark CocoaDisplayView Protocol
 
 - (ClientDisplay3DView *) clientDisplay3DView
 {
@@ -2068,12 +2141,12 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	return [[self cdsVideoOutput] pixelScaler];
 }
 
-#pragma mark Class Methods
 - (void) setupLayer
 {
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
 	CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
+	BOOL isMetalLayer = NO;
 	
 #ifdef ENABLE_APPLE_METAL
 	MacClientSharedObject *macSharedData = [cdsGPU sharedData];
@@ -2082,15 +2155,19 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		localLayer = [[DisplayViewMetalLayer alloc] init];
 		[(DisplayViewMetalLayer *)localLayer setSharedData:(MetalDisplayViewSharedData *)macSharedData];
 		
-		MacMetalDisplayView *cdv = (MacMetalDisplayView *)[(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
-		cdv->SetFetchObject([cdsGPU fetchObject]);
-		cdv->Init();
+		MacMetalDisplayView *macMTLCDV = (MacMetalDisplayView *)[(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
+		macMTLCDV->SetFetchObject([cdsGPU fetchObject]);
+		macMTLCDV->Init();
+		macMTLCDV->SetNSView(self);
+		macMTLCDV->SetSharedData([cdsGPU sharedData]);
 		
 		if ([(DisplayViewMetalLayer *)localLayer device] == nil)
 		{
 			[localLayer release];
 			localLayer = nil;
 		}
+		
+		isMetalLayer = YES;
 	}
 #endif
 	
@@ -2100,6 +2177,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		MacOGLDisplayView *macOGLCDV = (MacOGLDisplayView *)[(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
 		macOGLCDV->SetFetchObject([cdsGPU fetchObject]);
 		macOGLCDV->Init();
+		macOGLCDV->SetNSView(self);
+		macOGLCDV->SetSharedData([cdsGPU sharedData]);
 		
 		// For macOS 10.8 Mountain Lion and later, we can use the CAOpenGLLayer directly. But for
 		// earlier versions of macOS, using the CALayer directly will cause too many strange issues,
@@ -2118,28 +2197,52 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 #endif
 			localOGLContext = macOGLCDV->GetNSContext();
 			[localOGLContext retain];
-			macOGLCDV->SetRenderToCALayer(false);
 		}
 	}
+	
+	ClientDisplay3DView *cdv = [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
+	cdv->UpdateView();
 	
 	if (localOGLContext != nil)
 	{
 		// If localOGLContext isn't nil, then we will not assign the local layer
 		// directly to the view, since the OpenGL context will already be what
 		// is assigned.
+		cdv->FlushView();
 		return;
 	}
 	
-	[localLayer setNeedsDisplay];
-    [self setLayer:localLayer];
-    [self setWantsLayer:YES];
-    
 #if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
-    if ([self respondsToSelector:@selector(setLayerContentsRedrawPolicy:)])
-    {
-        [self setLayerContentsRedrawPolicy:NSViewLayerContentsRedrawNever];
-    }
+	if ([self respondsToSelector:@selector(setLayerContentsRedrawPolicy:)])
+	{
+		[self setLayerContentsRedrawPolicy:NSViewLayerContentsRedrawNever];
+	}
 #endif
+	
+	[self setLayer:localLayer];
+	[self setWantsLayer:YES];
+	
+	if (isMetalLayer)
+	{
+		cdv->FlushView();
+	}
+	else
+	{
+		[localLayer setNeedsDisplay];
+	}
+}
+
+- (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType
+{
+	NSString *fileURLString = [fileURL absoluteString];
+	NSData *fileURLStringData = [fileURLString dataUsingEncoding:NSUTF8StringEncoding];
+	NSData *bitmapImageFileTypeData = [[NSData alloc] initWithBytes:&fileType length:sizeof(NSBitmapImageFileType)];
+	NSArray *messageComponents = [[NSArray alloc] initWithObjects:fileURLStringData, bitmapImageFileTypeData, nil];
+	
+	[CocoaDSUtil messageSendOneWayWithMessageComponents:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REQUEST_SCREENSHOT array:messageComponents];
+	
+	[bitmapImageFileTypeData release];
+	[messageComponents release];
 }
 
 #pragma mark InputHIDManagerTarget Protocol
@@ -2187,73 +2290,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	return isHandled;
 }
 
-- (BOOL) handleKeyPress:(NSEvent *)theEvent keyPressed:(BOOL)keyPressed
-{
-	BOOL isHandled = NO;
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	
-	MacInputDevicePropertiesEncoder *inputEncoder = [inputManager inputEncoder];
-	const ClientInputDeviceProperties inputProperty = inputEncoder->EncodeKeyboardInput((int32_t)[theEvent keyCode], (keyPressed) ? true : false);
-	
-	if (keyPressed && [theEvent window] != nil)
-	{
-		NSString *newStatusText = [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName];
-		[[windowController emuControl] setStatusText:newStatusText];
-	}
-	
-	isHandled = [inputManager dispatchCommandUsingInputProperties:&inputProperty];
-	return isHandled;
-}
-
-- (BOOL) handleMouseButton:(NSEvent *)theEvent buttonPressed:(BOOL)buttonPressed
-{
-	BOOL isHandled = NO;
-	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	ClientDisplayView *cdv = [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
-	const ClientDisplayMode displayMode = cdv->GetMode();
-	
-	// Convert the clicked location from window coordinates, to view coordinates,
-	// and finally to DS touchscreen coordinates.
-	const int32_t buttonNumber = (int32_t)[theEvent buttonNumber];
-	uint8_t x = 0;
-	uint8_t y = 0;
-	
-	if (displayMode != ClientDisplayMode_Main)
-	{
-		const NSEventType eventType = [theEvent type];
-		const bool isInitialMouseDown = (eventType == NSLeftMouseDown) || (eventType == NSRightMouseDown) || (eventType == NSOtherMouseDown);
-		
-		// Convert the clicked location from window coordinates, to view coordinates, and finally to NDS touchscreen coordinates.
-		const NSPoint clientLoc = [self convertPoint:[theEvent locationInWindow] fromView:nil];
-		cdv->GetNDSPoint((int)buttonNumber, isInitialMouseDown, clientLoc.x, clientLoc.y, x, y);
-	}
-	
-	MacInputDevicePropertiesEncoder *inputEncoder = [inputManager inputEncoder];
-	const ClientInputDeviceProperties inputProperty = inputEncoder->EncodeMouseInput(buttonNumber, (float)x, (float)y, (buttonPressed) ? true : false);
-	
-	if (buttonPressed && [theEvent window] != nil)
-	{
-		NSString *newStatusText = (displayMode == ClientDisplayMode_Main) ? [NSString stringWithFormat:@"%s:%s", inputProperty.deviceName, inputProperty.elementName] : [NSString stringWithFormat:@"%s:%s X:%i Y:%i", inputProperty.deviceName, inputProperty.elementName, (int)inputProperty.intCoordX, (int)inputProperty.intCoordY];
-		[[windowController emuControl] setStatusText:newStatusText];
-	}
-	
-	isHandled = [inputManager dispatchCommandUsingInputProperties:&inputProperty];
-	return isHandled;
-}
-
-- (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType
-{
-	NSString *fileURLString = [fileURL absoluteString];
-	NSData *fileURLStringData = [fileURLString dataUsingEncoding:NSUTF8StringEncoding];
-	NSData *bitmapImageFileTypeData = [[NSData alloc] initWithBytes:&fileType length:sizeof(NSBitmapImageFileType)];
-	NSArray *messageComponents = [[NSArray alloc] initWithObjects:fileURLStringData, bitmapImageFileTypeData, nil];
-	
-	[CocoaDSUtil messageSendOneWayWithMessageComponents:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REQUEST_SCREENSHOT array:messageComponents];
-	
-	[bitmapImageFileTypeData release];
-	[messageComponents release];
-}
-
 #pragma mark NSView Methods
 
 - (void)lockFocus
@@ -2283,12 +2319,12 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)updateLayer
 {
-	[self clientDisplay3DView]->UpdateView();
+	[self clientDisplay3DView]->FlushView();
 }
 
 - (void)drawRect:(NSRect)dirtyRect
 {
-	[self clientDisplay3DView]->UpdateView();
+	[self clientDisplay3DView]->FlushView();
 }
 
 - (void)setFrame:(NSRect)rect
@@ -2327,7 +2363,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			[localLayer setBounds:CGRectMake(0.0f, 0.0f, props.clientWidth, props.clientHeight)];
 		}
 #ifdef ENABLE_APPLE_METAL
-		else if ([[self layer] isKindOfClass:[CAMetalLayer class]])
+		else if ([localLayer isKindOfClass:[CAMetalLayer class]])
 		{
 			[(CAMetalLayer *)localLayer setDrawableSize:CGSizeMake(props.clientWidth, props.clientHeight)];
 		}

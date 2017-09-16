@@ -16,10 +16,24 @@
  */
 
 #import "DisplayViewCALayer.h"
+#import "../cocoa_GPU.h"
 
 DisplayViewCALayerInterface::DisplayViewCALayerInterface()
 {
+	_nsView = nil;
 	_frontendLayer = nil;
+	_sharedData = nil;
+	_willRenderToCALayer = false;
+}
+
+NSView* DisplayViewCALayerInterface::GetNSView() const
+{
+	return this->_nsView;
+}
+
+void DisplayViewCALayerInterface::SetNSView(NSView *theView)
+{
+	this->_nsView = theView;
 }
 
 CALayer<DisplayViewCALayer>* DisplayViewCALayerInterface::GetFrontendLayer() const
@@ -35,4 +49,24 @@ void DisplayViewCALayerInterface::SetFrontendLayer(CALayer<DisplayViewCALayer> *
 void DisplayViewCALayerInterface::CALayerDisplay()
 {
 	[this->_frontendLayer setNeedsDisplay];
+}
+
+bool DisplayViewCALayerInterface::GetRenderToCALayer() const
+{
+	return this->_willRenderToCALayer;
+}
+
+void DisplayViewCALayerInterface::SetRenderToCALayer(const bool renderToLayer)
+{
+	this->_willRenderToCALayer = renderToLayer;
+}
+
+MacClientSharedObject* DisplayViewCALayerInterface::GetSharedData()
+{
+	return this->_sharedData;
+}
+
+void DisplayViewCALayerInterface::SetSharedData(MacClientSharedObject *sharedObject)
+{
+	this->_sharedData = sharedObject;
 }

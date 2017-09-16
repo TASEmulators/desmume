@@ -20,6 +20,7 @@
 
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
+#include <libkern/OSAtomic.h>
 
 #import "DisplayViewCALayer.h"
 #import "../cocoa_GPU.h"
@@ -187,7 +188,15 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	BOOL needsScreenVerticesUpdate;
 	BOOL needsHUDVerticesUpdate;
 	
-	dispatch_semaphore_t availableResources;
+	pthread_mutex_t _mutexDisplayTextureUpdate;
+	pthread_mutex_t _mutexBufferUpdate;
+	bool _needEncodeViewport;
+	MTLViewport _newViewport;
+	bool _willDrawDisplays;
+	bool _willDrawHUD;
+	bool _willDrawHUDInput;
+	size_t _hudStringLength;
+	size_t _hudTouchLineLength;
 }
 
 @property (assign, nonatomic) MetalDisplayViewSharedData *sharedData;
@@ -213,7 +222,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 - (void) resizeCPUPixelScalerUsingFilterID:(const VideoFilterTypeID)filterID;
 - (void) copyHUDFontUsingFace:(const FT_Face &)fontFace size:(const size_t)glyphSize tileSize:(const size_t)glyphTileSize info:(GlyphInfo *)glyphInfo;
 - (void) processDisplays;
-- (void) renderToDrawable;
+- (void) updateRenderBuffers;
+- (void) renderAndFlushDrawable;
 
 @end
 
@@ -246,6 +256,7 @@ class MacMetalDisplayView : public ClientDisplay3DView, public DisplayViewCALaye
 {
 protected:
 	pthread_mutex_t *_mutexProcessPtr;
+	OSSpinLock _spinlockViewNeedsFlush;
 	
 	virtual void _UpdateNormalSize();
 	virtual void _UpdateOrder();
@@ -262,6 +273,8 @@ public:
 	pthread_mutex_t* GetMutexProcessPtr() const;
 	
 	virtual void Init();
+	virtual bool GetViewNeedsFlush();
+	virtual void SetAllowViewFlushes(bool allowFlushes);
 	
 	virtual void CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo);
 	
@@ -273,6 +286,7 @@ public:
 	// Client view interface
 	virtual void ProcessDisplays();
 	virtual void UpdateView();
+	virtual void FlushView();
 };
 
 #pragma mark -

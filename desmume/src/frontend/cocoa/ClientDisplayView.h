@@ -152,6 +152,7 @@ protected:
 	bool _isSelectedDisplayEnabled[2];
 	NDSDisplayID _selectedSourceForDisplay[2];
 	
+	int64_t _displayViewID;
 	bool _useVerticalSync;
 	double _scaleFactor;
 	
@@ -183,7 +184,9 @@ protected:
 	std::string _hudInputString;
 	std::string _outHudString;
 	bool _hudNeedsUpdate;
+	bool _viewNeedsFlush;
 	bool _allowViewUpdates;
+	bool _allowViewFlushes;
 	
 	FT_Library _ftLibrary;
 	const char *_lastFontFilePath;
@@ -217,6 +220,11 @@ public:
 	virtual ~ClientDisplayView();
 	
 	virtual void Init();
+	
+	int64_t GetDisplayViewID();
+	virtual void SetDisplayViewID(int64_t displayViewID);
+	
+	virtual bool GetViewNeedsFlush();
 	
 	bool GetUseVerticalSync() const;
 	virtual void SetUseVerticalSync(const bool useVerticalSync);
@@ -304,11 +312,14 @@ public:
 	void SetFetchObject(GPUClientFetchObject *fetchObject);
 	
 	bool GetAllowViewUpdates() const;
-	void SetAllowViewUpdates(const bool allowUpdates);
+	virtual void SetAllowViewUpdates(bool allowUpdates);
+	bool GetAllowViewFlushes() const;
+	virtual void SetAllowViewFlushes(bool allowFlushes);
 	
 	virtual void LoadDisplays();
 	virtual void ProcessDisplays();
 	virtual void UpdateView();
+	virtual void FlushView();
 	virtual void FinishFrameAtIndex(const u8 bufferIndex);
 	
 	// Emulator interface

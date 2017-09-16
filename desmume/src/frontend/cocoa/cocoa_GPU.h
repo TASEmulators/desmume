@@ -16,8 +16,10 @@
  */
 
 #import <Foundation/Foundation.h>
+#import <CoreVideo/CoreVideo.h>
 #include <pthread.h>
 #include <libkern/OSAtomic.h>
+#include <map>
 
 #import "cocoa_util.h"
 #include "../../GPU.h"
@@ -30,15 +32,24 @@
 #define ENABLE_APPLE_METAL
 #endif
 
+#define VIDEO_FLUSH_TIME_LIMIT_OFFSET	8	// The amount of time, in seconds, to wait for a flush to occur on a given CVDisplayLink before stopping it.
+
 class GPUEventHandlerOSX;
+
+typedef std::map<CGDirectDisplayID, CVDisplayLinkRef> DisplayLinksActiveMap;
+typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 
 @interface MacClientSharedObject : CocoaDSThread
 {
 	GPUClientFetchObject *GPUFetchObject;
 	pthread_rwlock_t *_rwlockFramebuffer[2];
 	pthread_mutex_t *_mutexOutputList;
+	pthread_mutex_t _mutexFlushVideo;
 	NSMutableArray *_cdsOutputList;
 	volatile int32_t numberViewsUsingDirectToCPUFiltering;
+	
+	DisplayLinksActiveMap _displayLinksActiveList;
+	DisplayLinkFlushTimeLimitMap _displayLinkFlushTimeList;
 }
 
 @property (assign, nonatomic) GPUClientFetchObject *GPUFetchObject;
@@ -52,6 +63,11 @@ class GPUEventHandlerOSX;
 - (void) handleFetchFromBufferIndexAndPushVideo:(NSData *)indexData;
 - (void) pushVideoDataToAllDisplayViews;
 - (void) finishAllDisplayViewsAtIndex:(const u8)bufferIndex;
+- (void) flushAllDisplaysOnDisplayLink:(CVDisplayLinkRef)displayLink timeStamp:(const CVTimeStamp *)timeStamp;
+
+- (BOOL) isDisplayLinkRunningUsingID:(CGDirectDisplayID)displayID;
+- (void) displayLinkStartUsingID:(CGDirectDisplayID)displayID;
+- (void) displayLinkListUpdate;
 
 @end
 
@@ -114,6 +130,13 @@ class GPUEventHandlerOSX;
 extern "C"
 {
 #endif
+
+CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
+								const CVTimeStamp *inNow,
+								const CVTimeStamp *inOutputTime,
+								CVOptionFlags flagsIn,
+								CVOptionFlags *flagsOut,
+								void *displayLinkContext);
 
 bool OSXOpenGLRendererInit();
 bool OSXOpenGLRendererBegin();
