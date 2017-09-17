@@ -35,6 +35,7 @@
 #include "../../gdbstub.h"
 #include "../../slot1.h"
 #include "../../slot2.h"
+#include "../../SPU.h"
 #undef BOOL
 
 // Need to include assert.h this way so that GDB stub will work
@@ -1031,6 +1032,7 @@ static void* RunCoreThread(void *arg)
 		// Execute the frame and increment the frame counter.
 		pthread_rwlock_wrlock(&param->rwlockCoreExecute);
 		NDS_exec<false>();
+		SPU_Emulate_user();
 		execControl->FetchOutputPostNDSExec();
 		pthread_rwlock_unlock(&param->rwlockCoreExecute);
 		
@@ -1069,7 +1071,7 @@ static void* RunCoreThread(void *arg)
 						[(CocoaDSDisplay *)cdsOutput setNDSFrameInfo:ndsFrameInfo];
 					}
 					
-					if ( ![cdsOutput isKindOfClass:[CocoaDSDisplay class]] || (framesToSkip == 0) )
+					if ( ![cdsOutput isKindOfClass:[CocoaDSSpeaker class]] && (![cdsOutput isKindOfClass:[CocoaDSDisplay class]] || (framesToSkip == 0)) )
 					{
 						[cdsOutput doCoreEmuFrame];
 					}

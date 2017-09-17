@@ -887,6 +887,13 @@ public:
 	_displayLinkFlushTimeList.clear();
 	[self displayLinkListUpdate];
 	
+	spinlockFetchSignal = OS_SPINLOCK_INIT;
+	_isFetchSignalled = NO;
+	_fetchIndex = 0;
+	pthread_cond_init(&_condSignalFetch, NULL);
+	pthread_create(&_threadFetch, NULL, &RunFetchThread, self);
+	pthread_mutex_init(&_mutexFetchExecute, NULL);
+		
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(respondToScreenChange:)
 												 name:@"NSApplicationDidChangeScreenParametersNotification"
@@ -897,6 +904,13 @@ public:
 
 - (void)dealloc
 {
+	pthread_cancel(_threadFetch);
+	pthread_join(_threadFetch, NULL);
+	_threadFetch = NULL;
+	
+	pthread_cond_destroy(&_condSignalFetch);
+	pthread_mutex_destroy(&_mutexFetchExecute);
+	
 	pthread_mutex_lock(&_mutexFlushVideo);
 	
 	for (DisplayLinksActiveMap::iterator it = _displayLinksActiveList.begin(); it != _displayLinksActiveList.end(); ++it)
@@ -914,6 +928,7 @@ public:
 	}
 	
 	pthread_mutex_unlock(&_mutexFlushVideo);
+	pthread_mutex_destroy(&_mutexFlushVideo);
 	
 	pthread_mutex_t *currentMutex = _mutexOutputList;
 	
@@ -931,26 +946,8 @@ public:
 	
 	pthread_rwlock_destroy(_rwlockFramebuffer[0]);
 	pthread_rwlock_destroy(_rwlockFramebuffer[1]);
-	pthread_mutex_destroy(&_mutexFlushVideo);
 	
 	[super dealloc];
-}
-
-- (void)handlePortMessage:(NSPortMessage *)portMessage
-{
-	NSInteger message = (NSInteger)[portMessage msgid];
-	NSArray *messageComponents = [portMessage components];
-	
-	switch (message)
-	{
-		case MESSAGE_FETCH_AND_PUSH_VIDEO:
-			[self handleFetchFromBufferIndexAndPushVideo:[messageComponents objectAtIndex:0]];
-			break;
-			
-		default:
-			[super handlePortMessage:portMessage];
-			break;
-	}
 }
 
 - (void) handleFetchFromBufferIndexAndPushVideo:(NSData *)indexData
@@ -1013,7 +1010,7 @@ public:
 	
 	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
 	{
-		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+		if ([cdsOutput isKindOfClass:[CocoaDSDisplayVideo class]])
 		{
 			[CocoaDSUtil messageSendOneWay:[cdsOutput receivePort] msgID:MESSAGE_RECEIVE_GPU_FRAME];
 		}
@@ -1036,9 +1033,9 @@ public:
 	
 	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
 	{
-		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
+		if ([cdsOutput isKindOfClass:[CocoaDSDisplayVideo class]])
 		{
-			ClientDisplay3DView *cdv = [(CocoaDSDisplay *)cdsOutput clientDisplayView];
+			ClientDisplay3DView *cdv = [(CocoaDSDisplayVideo *)cdsOutput clientDisplayView];
 			cdv->FinishFrameAtIndex(bufferIndex);
 		}
 	}
@@ -1189,6 +1186,36 @@ public:
 	pthread_mutex_unlock(&_mutexFlushVideo);
 }
 
+- (void) signalFetchAtIndex:(uint8_t)index
+{
+	pthread_mutex_lock(&_mutexFetchExecute);
+	
+	_fetchIndex = index;
+	_isFetchSignalled = YES;
+	pthread_cond_signal(&_condSignalFetch);
+	
+	pthread_mutex_unlock(&_mutexFetchExecute);
+}
+
+- (void) runFetchLoop
+{
+	do
+	{
+		pthread_mutex_lock(&_mutexFetchExecute);
+		
+		while (!_isFetchSignalled)
+		{
+			pthread_cond_wait(&_condSignalFetch, &_mutexFetchExecute);
+		}
+		_isFetchSignalled = NO;
+		
+		GPUFetchObject->FetchFromBufferIndex(_fetchIndex);
+		[self pushVideoDataToAllDisplayViews];
+		
+		pthread_mutex_unlock(&_mutexFetchExecute);
+	} while(true);
+}
+
 - (void) respondToScreenChange:(NSNotification *)aNotification
 {
 	[self displayLinkListUpdate];
@@ -1256,7 +1283,7 @@ void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &
 #if !defined(PORT_VERSION_OPENEMU)
 	if (!isFrameSkipped)
 	{
-		[CocoaDSUtil messageSendOneWayWithInteger:[sharedViewObject receivePort] msgID:MESSAGE_FETCH_AND_PUSH_VIDEO integerValue:latestDisplayInfo.bufferIndex];
+		[sharedViewObject signalFetchAtIndex:latestDisplayInfo.bufferIndex];
 	}
 #endif
 }
@@ -1316,6 +1343,14 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 CGLPBufferObj OSXOpenGLRendererPBuffer = NULL;
 #pragma GCC diagnostic pop
+
+static void* RunFetchThread(void *arg)
+{
+	MacClientSharedObject *sharedData = (MacClientSharedObject *)arg;
+	[sharedData runFetchLoop];
+	
+	return NULL;
+}
 
 CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
 								const CVTimeStamp *inNow,

@@ -1127,7 +1127,7 @@
 {
 	const VideoFilterAttributes vfAttr = VideoFilter::GetAttributesByID(filterID);
 	
-	id<MTLCommandBuffer> cb = [[sharedData commandQueue] commandBufferWithUnretainedReferences];
+	id<MTLCommandBuffer> cb = [self newCommandBuffer];
 	id<MTLBlitCommandEncoder> dummyEncoder = [cb blitCommandEncoder];
 	[dummyEncoder endEncoding];
 	[cb commit];
@@ -1145,7 +1145,7 @@
 																  options:MTLResourceStorageModeManaged
 															  deallocator:nil]];
 	
-	cb = [[sharedData commandQueue] commandBufferWithUnretainedReferences];
+	cb = [self newCommandBuffer];
 	dummyEncoder = [cb blitCommandEncoder];
 	[dummyEncoder endEncoding];
 	[cb commit];
@@ -1285,7 +1285,7 @@
 		VideoFilter *vfMain  = _cdv->GetPixelScalerObject(NDSDisplayID_Main);
 		VideoFilter *vfTouch = _cdv->GetPixelScalerObject(NDSDisplayID_Touch);
 		
-		id<MTLCommandBuffer> cb = [[sharedData commandQueue] commandBufferWithUnretainedReferences];
+		id<MTLCommandBuffer> cb = [self newCommandBuffer];
 		id<MTLComputeCommandEncoder> cce = [cb computeCommandEncoder];
 		
 		// Run the video source filters and the pixel scalers
@@ -1591,7 +1591,7 @@
 		// Now that everything is set up, go ahead and draw everything.
 		id<CAMetalDrawable> layerDrawable = [self nextDrawable];
 		[colorAttachment0Desc setTexture:[layerDrawable texture]];
-		id<MTLCommandBuffer> cb = [[sharedData commandQueue] commandBufferWithUnretainedReferences];
+		id<MTLCommandBuffer> cb = [self newCommandBuffer];
 		id<MTLRenderCommandEncoder> ce = [cb renderCommandEncoderWithDescriptor:_outputRenderPassDesc];
 		
 		if (_needEncodeViewport)
@@ -1804,7 +1804,10 @@ void MacMetalFetchObject::FetchFromBufferIndex(const u8 index)
 	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_clientData;
 	this->_useDirectToCPUFilterPipeline = ([sharedViewObject numberViewsUsingDirectToCPUFiltering] > 0);
 	
-	[(MetalDisplayViewSharedData *)this->_clientData fetchFromBufferIndex:index];
+	@autoreleasepool
+	{
+		[(MetalDisplayViewSharedData *)this->_clientData fetchFromBufferIndex:index];
+	}
 }
 
 void MacMetalFetchObject::_FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex)

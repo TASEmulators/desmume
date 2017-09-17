@@ -96,10 +96,6 @@
 
 @interface CocoaDSDisplay : CocoaDSOutput
 {
-	ClientDisplay3DView *_cdv;
-	ClientDisplayViewProperties _intermediateViewProps;
-	NSSize displaySize;
-	
 	uint32_t _receivedFrameIndex;
 	uint32_t _currentReceivedFrameIndex;
 	uint32_t _receivedFrameCount;
@@ -108,28 +104,21 @@
 	
 	OSSpinLock spinlockReceivedFrameIndex;
 	OSSpinLock spinlockNDSFrameInfo;
-	OSSpinLock spinlockViewProperties;
 }
 
-@property (assign, nonatomic) ClientDisplay3DView *clientDisplayView;
-@property (readonly) NSSize displaySize;
-
-- (void) commitViewProperties:(const ClientDisplayViewProperties &)viewProps;
-
 - (void) handleReceiveGPUFrame;
-- (void) handleChangeViewProperties;
-- (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData;
-- (void) handleCopyToPasteboard;
 
 - (void) takeFrameCount;
 - (void) setNDSFrameInfo:(const NDSFrameInfo &)ndsFrameInfo;
-- (NSImage *) image;
-- (NSBitmapImageRep *) bitmapImageRep;
 
 @end
 
 @interface CocoaDSDisplayVideo : CocoaDSDisplay
-{	
+{
+	ClientDisplay3DView *_cdv;
+	ClientDisplayViewProperties _intermediateViewProps;
+	
+	OSSpinLock spinlockViewProperties;
 	OSSpinLock spinlockIsHUDVisible;
 	OSSpinLock spinlockUseVerticalSync;
 	OSSpinLock spinlockVideoFiltersPreferGPU;
@@ -140,6 +129,7 @@
 	OSSpinLock spinlockDisplayID;
 }
 
+@property (assign, nonatomic) ClientDisplay3DView *clientDisplayView;
 @property (readonly, nonatomic) BOOL canFilterOnGPU;
 @property (readonly, nonatomic) BOOL willFilterOnGPU;
 @property (assign) BOOL isHUDVisible;
@@ -168,12 +158,19 @@
 @property (assign) NSInteger outputFilter;
 @property (assign) NSInteger pixelScaler;
 
+- (void) commitViewProperties:(const ClientDisplayViewProperties &)viewProps;
+
+- (void) handleChangeViewProperties;
 - (void) handleReceiveGPUFrame;
 - (void) handleReloadReprocessRedraw;
 - (void) handleReprocessRedraw;
 - (void) handleRedraw;
+- (void) handleCopyToPasteboard;
+- (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData;
 
 - (void) setScaleFactor:(float)theScaleFactor;
 - (void) hudUpdate;
+- (NSImage *) image;
+- (NSBitmapImageRep *) bitmapImageRep;
 
 @end

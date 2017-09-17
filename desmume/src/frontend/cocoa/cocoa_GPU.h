@@ -39,7 +39,7 @@ class GPUEventHandlerOSX;
 typedef std::map<CGDirectDisplayID, CVDisplayLinkRef> DisplayLinksActiveMap;
 typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 
-@interface MacClientSharedObject : CocoaDSThread
+@interface MacClientSharedObject : NSObject
 {
 	GPUClientFetchObject *GPUFetchObject;
 	pthread_rwlock_t *_rwlockFramebuffer[2];
@@ -50,6 +50,13 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 	
 	DisplayLinksActiveMap _displayLinksActiveList;
 	DisplayLinkFlushTimeLimitMap _displayLinkFlushTimeList;
+	
+	OSSpinLock spinlockFetchSignal;
+	BOOL _isFetchSignalled;
+	uint8_t _fetchIndex;
+	pthread_t _threadFetch;
+	pthread_cond_t _condSignalFetch;
+	pthread_mutex_t _mutexFetchExecute;
 }
 
 @property (assign, nonatomic) GPUClientFetchObject *GPUFetchObject;
@@ -68,6 +75,9 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 - (BOOL) isDisplayLinkRunningUsingID:(CGDirectDisplayID)displayID;
 - (void) displayLinkStartUsingID:(CGDirectDisplayID)displayID;
 - (void) displayLinkListUpdate;
+
+- (void) signalFetchAtIndex:(uint8_t)index;
+- (void) runFetchLoop;
 
 @end
 
@@ -130,6 +140,8 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 extern "C"
 {
 #endif
+
+static void* RunFetchThread(void *arg);
 
 CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
 								const CVTimeStamp *inNow,

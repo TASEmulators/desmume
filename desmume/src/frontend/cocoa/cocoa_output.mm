@@ -501,9 +501,6 @@
 
 @implementation CocoaDSDisplay
 
-@dynamic clientDisplayView;
-@dynamic displaySize;
-
 - (id)init
 {
 	self = [super init];
@@ -514,9 +511,7 @@
 	
 	spinlockReceivedFrameIndex = OS_SPINLOCK_INIT;
 	spinlockNDSFrameInfo = OS_SPINLOCK_INIT;
-	spinlockViewProperties = OS_SPINLOCK_INIT;
 	
-	_cdv = NULL;
 	_ndsFrameInfo.clear();
 	
 	_receivedFrameIndex = 0;
@@ -531,55 +526,14 @@
 	[super dealloc];
 }
 
-- (void) setClientDisplayView:(ClientDisplay3DView *)clientDisplayView
-{
-	_cdv = clientDisplayView;
-}
-
-- (ClientDisplay3DView *) clientDisplayView
-{
-	return _cdv;
-}
-
-- (void) commitViewProperties:(const ClientDisplayViewProperties &)viewProps
-{
-	OSSpinLockLock(&spinlockViewProperties);
-	_intermediateViewProps = viewProps;
-	OSSpinLockUnlock(&spinlockViewProperties);
-	
-	[self handleChangeViewProperties];
-}
-
-- (NSSize) displaySize
-{
-	pthread_rwlock_rdlock(self.rwlockProducer);
-	NSSize size = NSMakeSize((CGFloat)GPU->GetCustomFramebufferWidth(), (_cdv->GetMode() == ClientDisplayMode_Dual) ? (CGFloat)(GPU->GetCustomFramebufferHeight() * 2): (CGFloat)GPU->GetCustomFramebufferHeight());
-	pthread_rwlock_unlock(self.rwlockProducer);
-	
-	return size;
-}
-
 - (void)handlePortMessage:(NSPortMessage *)portMessage
 {
 	NSInteger message = (NSInteger)[portMessage msgid];
-	NSArray *messageComponents = [portMessage components];
 	
 	switch (message)
 	{
 		case MESSAGE_RECEIVE_GPU_FRAME:
 			[self handleReceiveGPUFrame];
-			break;
-			
-		case MESSAGE_CHANGE_VIEW_PROPERTIES:
-			[self handleChangeViewProperties];
-			break;
-			
-		case MESSAGE_REQUEST_SCREENSHOT:
-			[self handleRequestScreenshot:[messageComponents objectAtIndex:0] fileTypeData:[messageComponents objectAtIndex:1]];
-			break;
-			
-		case MESSAGE_COPY_TO_PASTEBOARD:
-			[self handleCopyToPasteboard];
 			break;
 		
 		default:
@@ -593,46 +547,6 @@
 	OSSpinLockLock(&spinlockReceivedFrameIndex);
 	_receivedFrameIndex++;
 	OSSpinLockUnlock(&spinlockReceivedFrameIndex);
-}
-
-- (void) handleChangeViewProperties
-{
-	OSSpinLockLock(&spinlockViewProperties);
-	_cdv->CommitViewProperties(_intermediateViewProps);
-	OSSpinLockUnlock(&spinlockViewProperties);
-	
-	_cdv->SetupViewProperties();
-}
-
-- (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData
-{
-	NSString *fileURLString = [[NSString alloc] initWithData:fileURLStringData encoding:NSUTF8StringEncoding];
-	NSURL *fileURL = [NSURL URLWithString:fileURLString];
-	NSBitmapImageFileType fileType = *(NSBitmapImageFileType *)[fileTypeData bytes];	
-	
-	NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:
-							  fileURL, @"fileURL", 
-							  [NSNumber numberWithInteger:(NSInteger)fileType], @"fileType",
-							  [self image], @"screenshotImage",
-							  nil];
-	
-	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.requestScreenshotDidFinish" object:self userInfo:userInfo];
-	[userInfo release];
-	
-	[fileURLString release];
-}
-
-- (void) handleCopyToPasteboard
-{
-	NSImage *screenshot = [self image];
-	if (screenshot == nil)
-	{
-		return;
-	}
-	
-	NSPasteboard *pboard = [NSPasteboard generalPasteboard];
-	[pboard declareTypes:[NSArray arrayWithObjects:NSTIFFPboardType, nil] owner:self];
-	[pboard setData:[screenshot TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0f] forType:NSTIFFPboardType];
 }
 
 - (void) takeFrameCount
@@ -650,88 +564,11 @@
 	OSSpinLockUnlock(&spinlockNDSFrameInfo);
 }
 
-- (NSImage *) image
-{
-	NSImage *newImage = [[NSImage alloc] initWithSize:[self displaySize]];
-	if (newImage == nil)
-	{
-		return newImage;
-	}
-	 
-	// Render the frame in an NSBitmapImageRep
-	NSBitmapImageRep *newImageRep = [self bitmapImageRep];
-	if (newImageRep == nil)
-	{
-		[newImage release];
-		newImage = nil;
-		return newImage;
-	}
-	
-	// Attach the rendered frame to the NSImageRep
-	[newImage addRepresentation:newImageRep];
-	
-	return [newImage autorelease];
-}
-
-- (NSBitmapImageRep *) bitmapImageRep
-{
-	GPUClientFetchObject &fetchObjMutable = (GPUClientFetchObject &)_cdv->GetFetchObject();
-	NDSDisplayInfo &displayInfoMutable = (NDSDisplayInfo &)fetchObjMutable.GetFetchDisplayInfoForBufferIndex(fetchObjMutable.GetLastFetchIndex());
-	
-	NSUInteger w = (NSUInteger)displayInfoMutable.customWidth;
-	NSUInteger h = (_cdv->GetMode() == ClientDisplayMode_Dual) ? (NSUInteger)(displayInfoMutable.customHeight * 2) : (NSUInteger)displayInfoMutable.customHeight;
-	
-	NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-																		 pixelsWide:w
-																		 pixelsHigh:h
-																	  bitsPerSample:8
-																	samplesPerPixel:4
-																		   hasAlpha:YES
-																		   isPlanar:NO
-																	 colorSpaceName:NSCalibratedRGBColorSpace
-																		bytesPerRow:w * 4
-																	   bitsPerPixel:32];
-	
-	if(imageRep == nil)
-	{
-		return imageRep;
-	}
-	
-	void *displayBuffer = displayInfoMutable.masterCustomBuffer;
-	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
-	
-	pthread_rwlock_wrlock(self.rwlockProducer);
-	
-	GPU->PostprocessDisplay(NDSDisplayID_Main,  displayInfoMutable);
-	GPU->PostprocessDisplay(NDSDisplayID_Touch, displayInfoMutable);
-	GPU->ResolveDisplayToCustomFramebuffer(NDSDisplayID_Main,  displayInfoMutable);
-	GPU->ResolveDisplayToCustomFramebuffer(NDSDisplayID_Touch, displayInfoMutable);
-	
-	if (displayInfoMutable.pixelBytes == 2)
-	{
-		ColorspaceConvertBuffer555To8888Opaque<false, true>((u16 *)displayBuffer, bitmapData, (w * h));
-	}
-	else if (displayInfoMutable.pixelBytes == 4)
-	{
-		memcpy(bitmapData, displayBuffer, w * h * sizeof(uint32_t));
-	}
-	
-	pthread_rwlock_unlock(self.rwlockProducer);
-	
-#ifdef MSB_FIRST
-	for (size_t i = 0; i < w * h; i++)
-	{
-		bitmapData[i] = LE_TO_LOCAL_32(bitmapData[i]);
-	}
-#endif
-	
-	return [imageRep autorelease];
-}
-
 @end
 
 @implementation CocoaDSDisplayVideo
 
+@dynamic clientDisplayView;
 @dynamic canFilterOnGPU;
 @dynamic willFilterOnGPU;
 @dynamic isHUDVisible;
@@ -768,6 +605,9 @@
 		return self;
 	}
 	
+	_cdv = NULL;
+	
+	spinlockViewProperties = OS_SPINLOCK_INIT;
 	spinlockIsHUDVisible = OS_SPINLOCK_INIT;
 	spinlockUseVerticalSync = OS_SPINLOCK_INIT;
 	spinlockVideoFiltersPreferGPU = OS_SPINLOCK_INIT;
@@ -783,6 +623,25 @@
 - (void)dealloc
 {
 	[super dealloc];
+}
+
+- (void) setClientDisplayView:(ClientDisplay3DView *)clientDisplayView
+{
+	_cdv = clientDisplayView;
+}
+
+- (ClientDisplay3DView *) clientDisplayView
+{
+	return _cdv;
+}
+
+- (void) commitViewProperties:(const ClientDisplayViewProperties &)viewProps
+{
+	OSSpinLockLock(&spinlockViewProperties);
+	_intermediateViewProps = viewProps;
+	OSSpinLockUnlock(&spinlockViewProperties);
+	
+	[self handleChangeViewProperties];
 }
 
 - (BOOL) canFilterOnGPU
@@ -1198,9 +1057,14 @@
 - (void)handlePortMessage:(NSPortMessage *)portMessage
 {
 	NSInteger message = (NSInteger)[portMessage msgid];
+	NSArray *messageComponents = [portMessage components];
 	
 	switch (message)
 	{
+		case MESSAGE_CHANGE_VIEW_PROPERTIES:
+			[self handleChangeViewProperties];
+			break;
+			
 		case MESSAGE_RELOAD_REPROCESS_REDRAW:
 			[self handleReloadReprocessRedraw];
 			break;
@@ -1211,6 +1075,14 @@
 			
 		case MESSAGE_REDRAW_VIEW:
 			[self handleRedraw];
+			break;
+			
+		case MESSAGE_COPY_TO_PASTEBOARD:
+			[self handleCopyToPasteboard];
+			break;
+			
+		case MESSAGE_REQUEST_SCREENSHOT:
+			[self handleRequestScreenshot:[messageComponents objectAtIndex:0] fileTypeData:[messageComponents objectAtIndex:1]];
 			break;
 			
 		default:
@@ -1224,6 +1096,15 @@
 	[super handleEmuFrameProcessed];
 	[self hudUpdate];
 	_cdv->HandleEmulatorFrameEndEvent();
+}
+
+- (void) handleChangeViewProperties
+{
+	OSSpinLockLock(&spinlockViewProperties);
+	_cdv->CommitViewProperties(_intermediateViewProps);
+	OSSpinLockUnlock(&spinlockViewProperties);
+	
+	_cdv->SetupViewProperties();
 }
 
 - (void) handleReceiveGPUFrame
@@ -1257,6 +1138,37 @@
 	_cdv->UpdateView();
 }
 
+- (void) handleCopyToPasteboard
+{
+	NSImage *screenshot = [self image];
+	if (screenshot == nil)
+	{
+		return;
+	}
+	
+	NSPasteboard *pboard = [NSPasteboard generalPasteboard];
+	[pboard declareTypes:[NSArray arrayWithObjects:NSTIFFPboardType, nil] owner:self];
+	[pboard setData:[screenshot TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0f] forType:NSTIFFPboardType];
+}
+
+- (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData
+{
+	NSString *fileURLString = [[NSString alloc] initWithData:fileURLStringData encoding:NSUTF8StringEncoding];
+	NSURL *fileURL = [NSURL URLWithString:fileURLString];
+	NSBitmapImageFileType fileType = *(NSBitmapImageFileType *)[fileTypeData bytes];
+	
+	NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:
+							  fileURL, @"fileURL",
+							  [NSNumber numberWithInteger:(NSInteger)fileType], @"fileType",
+							  [self image], @"screenshotImage",
+							  nil];
+	
+	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.requestScreenshotDidFinish" object:self userInfo:userInfo];
+	[userInfo release];
+	
+	[fileURLString release];
+}
+
 - (void) setScaleFactor:(float)theScaleFactor
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
@@ -1274,6 +1186,88 @@
 	OSSpinLockLock(&spinlockNDSFrameInfo);
 	_cdv->SetHUDInfo(clientFrameInfo, _ndsFrameInfo);
 	OSSpinLockUnlock(&spinlockNDSFrameInfo);
+}
+
+- (NSImage *) image
+{
+	pthread_rwlock_rdlock(self.rwlockProducer);
+	NSSize displaySize = NSMakeSize((CGFloat)GPU->GetCustomFramebufferWidth(), (_cdv->GetMode() == ClientDisplayMode_Dual) ? (CGFloat)(GPU->GetCustomFramebufferHeight() * 2): (CGFloat)GPU->GetCustomFramebufferHeight());
+	pthread_rwlock_unlock(self.rwlockProducer);
+	
+	NSImage *newImage = [[NSImage alloc] initWithSize:displaySize];
+	if (newImage == nil)
+	{
+		return newImage;
+	}
+	
+	// Render the frame in an NSBitmapImageRep
+	NSBitmapImageRep *newImageRep = [self bitmapImageRep];
+	if (newImageRep == nil)
+	{
+		[newImage release];
+		newImage = nil;
+		return newImage;
+	}
+	
+	// Attach the rendered frame to the NSImageRep
+	[newImage addRepresentation:newImageRep];
+	
+	return [newImage autorelease];
+}
+
+- (NSBitmapImageRep *) bitmapImageRep
+{
+	GPUClientFetchObject &fetchObjMutable = (GPUClientFetchObject &)_cdv->GetFetchObject();
+	NDSDisplayInfo &displayInfoMutable = (NDSDisplayInfo &)fetchObjMutable.GetFetchDisplayInfoForBufferIndex(fetchObjMutable.GetLastFetchIndex());
+	
+	NSUInteger w = (NSUInteger)displayInfoMutable.customWidth;
+	NSUInteger h = (_cdv->GetMode() == ClientDisplayMode_Dual) ? (NSUInteger)(displayInfoMutable.customHeight * 2) : (NSUInteger)displayInfoMutable.customHeight;
+	
+	NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
+																		 pixelsWide:w
+																		 pixelsHigh:h
+																	  bitsPerSample:8
+																	samplesPerPixel:4
+																		   hasAlpha:YES
+																		   isPlanar:NO
+																	 colorSpaceName:NSCalibratedRGBColorSpace
+																		bytesPerRow:w * 4
+																	   bitsPerPixel:32];
+	
+	if (imageRep == nil)
+	{
+		return imageRep;
+	}
+	
+	void *displayBuffer = displayInfoMutable.masterCustomBuffer;
+	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
+	
+	pthread_rwlock_wrlock(self.rwlockProducer);
+	
+	GPU->PostprocessDisplay(NDSDisplayID_Main,  displayInfoMutable);
+	GPU->PostprocessDisplay(NDSDisplayID_Touch, displayInfoMutable);
+	GPU->ResolveDisplayToCustomFramebuffer(NDSDisplayID_Main,  displayInfoMutable);
+	GPU->ResolveDisplayToCustomFramebuffer(NDSDisplayID_Touch, displayInfoMutable);
+	
+	if (displayInfoMutable.pixelBytes == 2)
+	{
+		ColorspaceConvertBuffer555To8888Opaque<false, true>((u16 *)displayBuffer, bitmapData, (w * h));
+	}
+	else if (displayInfoMutable.pixelBytes == 4)
+	{
+		memcpy(bitmapData, displayBuffer, w * h * sizeof(uint32_t));
+	}
+	
+	pthread_rwlock_unlock(self.rwlockProducer);
+	
+#ifdef MSB_FIRST
+	for (size_t i = 0; i < w * h; i++)
+	{
+		bitmapData[i] = LE_TO_LOCAL_32(bitmapData[i]);
+	}
+#endif
+	
+	return [imageRep autorelease];
 }
 
 @end

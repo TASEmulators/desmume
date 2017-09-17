@@ -183,13 +183,6 @@
 	
 	// Init the DS emulation core.
 	CocoaDSCore *newCore = [[[CocoaDSCore alloc] init] autorelease];
-	MacClientSharedObject *sharedViewObject = [[newCore cdsGPU] sharedData];
-	
-	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:sharedViewObject withObject:nil];
-	while ([sharedViewObject thread] == nil)
-	{
-		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
-	}
 	
 	// Init the DS controller.
 	[[newCore cdsController] setDelegate:emuControl];
@@ -204,13 +197,6 @@
 	[slot2WindowDelegate update];
 	[slot2WindowDelegate setHidManager:[inputManager hidManager]];
 	[slot2WindowDelegate setAutoSelectedDeviceText:[[slot2WindowDelegate deviceManager] autoSelectedDeviceName]];
-	
-	// Start up the threads for our outputs.
-	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:newSpeaker withObject:nil];
-	while ([newSpeaker thread] == nil)
-	{
-		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
-	}
 	
 	// Set up all the object controllers.
 	[cdsCoreController setContent:newCore];

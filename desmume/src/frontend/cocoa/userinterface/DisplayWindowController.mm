@@ -1323,7 +1323,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	// Set up the video output thread.
 	CocoaDSDisplayVideo *newDisplayOutput = [[[CocoaDSDisplayVideo alloc] init] autorelease];
-	[newDisplayOutput setClientDisplayView:[view clientDisplay3DView]];
+	[newDisplayOutput setClientDisplayView:[newView clientDisplay3DView]];
 	
 	ClientDisplayView *cdv = [newDisplayOutput clientDisplayView];
 	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];

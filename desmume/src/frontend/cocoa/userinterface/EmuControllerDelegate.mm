@@ -810,32 +810,32 @@
 {
 	const float vol = [self currentVolumeValue];
 	[self setCurrentVolumeValue:vol];
-	[CocoaDSUtil messageSendOneWayWithFloat:[cdsSpeaker receivePort] msgID:MESSAGE_SET_VOLUME floatValue:vol];
+	[[self cdsSpeaker] setVolume:vol];
 }
 
 - (IBAction) changeAudioEngine:(id)sender
 {
-	[CocoaDSUtil messageSendOneWayWithInteger:[cdsSpeaker receivePort] msgID:MESSAGE_SET_AUDIO_PROCESS_METHOD integerValue:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[[self cdsSpeaker] setAudioOutputEngine:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) changeSpuAdvancedLogic:(id)sender
 {
-	[CocoaDSUtil messageSendOneWayWithBool:[cdsSpeaker receivePort] msgID:MESSAGE_SET_SPU_ADVANCED_LOGIC boolValue:[CocoaDSUtil getIBActionSenderButtonStateBool:sender]];
+	[[self cdsSpeaker] setSpuAdvancedLogic:[CocoaDSUtil getIBActionSenderButtonStateBool:sender]];
 }
 
 - (IBAction) changeSpuInterpolationMode:(id)sender
 {
-	[CocoaDSUtil messageSendOneWayWithInteger:[cdsSpeaker receivePort] msgID:MESSAGE_SET_SPU_INTERPOLATION_MODE integerValue:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[[self cdsSpeaker] setSpuInterpolationMode:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) changeSpuSyncMode:(id)sender
 {
-	[CocoaDSUtil messageSendOneWayWithInteger:[cdsSpeaker receivePort] msgID:MESSAGE_SET_SPU_SYNC_MODE integerValue:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[[self cdsSpeaker] setSpuSyncMode:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) changeSpuSyncMethod:(id)sender
 {
-	[CocoaDSUtil messageSendOneWayWithInteger:[cdsSpeaker receivePort] msgID:MESSAGE_SET_SPU_SYNC_METHOD integerValue:[CocoaDSUtil getIBActionSenderTag:sender]];
+	[[self cdsSpeaker] setSpuSyncMethod:[CocoaDSUtil getIBActionSenderTag:sender]];
 }
 
 - (IBAction) toggleAllDisplays:(id)sender
@@ -1533,7 +1533,7 @@
 	}
 
 	[self setCurrentVolumeValue:vol];
-	[CocoaDSUtil messageSendOneWayWithFloat:[cdsSpeaker receivePort] msgID:MESSAGE_SET_VOLUME floatValue:vol];
+	[[self cdsSpeaker] setVolume:vol];
 }
 
 - (void) cmdToggleGPUState:(NSValue *)cmdAttrValue
