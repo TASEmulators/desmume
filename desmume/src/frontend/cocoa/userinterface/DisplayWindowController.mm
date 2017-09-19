@@ -681,6 +681,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	CGDirectDisplayID displayID = [idNumber unsignedIntValue];
 	
 	[[[self view] cdsVideoOutput] setCurrentDisplayID:displayID];
+	[[[self view] cdsVideoOutput] clientDisplayView]->UpdateView();
 }
 
 - (void) respondToScreenChange:(NSNotification *)aNotification
@@ -1353,8 +1354,21 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[self setupUserDefaults];
 }
 
+- (void)windowDidBecomeKey:(NSNotification *)notification
+{
+	if ([[[self view] cdsVideoOutput] currentDisplayID] == 0)
+	{
+		[self updateDisplayID];
+	}
+}
+
 - (void)windowDidBecomeMain:(NSNotification *)notification
 {
+	if ([[[self view] cdsVideoOutput] currentDisplayID] == 0)
+	{
+		[self updateDisplayID];
+	}
+	
 	[emuControl setMainWindow:self];
 	[emuControl updateDisplayPanelTitles];
 	[view setNextResponder:[self window]];
@@ -1490,7 +1504,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void)windowDidChangeScreen:(NSNotification *)notification
 {
 	[self updateDisplayID];
-	[[[self view] cdsVideoOutput] clientDisplayView]->UpdateView();
 }
 
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
