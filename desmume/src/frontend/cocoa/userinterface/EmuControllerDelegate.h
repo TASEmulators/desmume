@@ -61,6 +61,8 @@ class AudioSampleBlockGenerator;
 	NSWindow *slot1ManagerWindow;
 	NSWindow *saveFileMigrationSheet;
 	NSWindow *saveStatePrecloseSheet;
+	NSWindow *ndsErrorSheet;
+	NSTextField *ndsErrorStatusTextField;
 	NSView *exportRomSavePanelAccessoryView;
 	
 	BOOL isSaveStateEdited;
@@ -74,6 +76,7 @@ class AudioSampleBlockGenerator;
 	BOOL isShowingSaveStateDialog;
 	BOOL isShowingFileMigrationDialog;
 	BOOL isUserInterfaceBlockingExecution;
+	BOOL _isNDSErrorSheetAlreadyShown;
 	NSURL *currentSaveStateURL;
 	NSInteger selectedExportRomSaveID;
 	NSInteger selectedRomSaveTypeID;
@@ -130,6 +133,8 @@ class AudioSampleBlockGenerator;
 @property (readonly) IBOutlet NSWindow *slot1ManagerWindow;
 @property (readonly) IBOutlet NSWindow *saveFileMigrationSheet;
 @property (readonly) IBOutlet NSWindow *saveStatePrecloseSheet;
+@property (readonly) IBOutlet NSWindow *ndsErrorSheet;
+@property (readonly) IBOutlet NSTextField *ndsErrorStatusTextField;
 @property (readonly) IBOutlet NSView *exportRomSavePanelAccessoryView;
 
 @property (readonly) NSImage *iconExecute;
@@ -213,6 +218,7 @@ class AudioSampleBlockGenerator;
 // Misc IBActions
 - (IBAction) chooseSlot1R4Directory:(id)sender;
 - (IBAction) slot1Eject:(id)sender;
+- (IBAction) simulateEmulationCrash:(id)sender;
 
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender;
 - (IBAction) writeDefaultsEmulationSettings:(id)sender;

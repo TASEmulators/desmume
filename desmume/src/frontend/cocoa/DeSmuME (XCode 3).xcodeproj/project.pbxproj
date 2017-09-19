@@ -1422,6 +1422,11 @@
 		ABAE30BD1869484F00C92F4F /* Image_Piano.png in Resources */ = {isa = PBXBuildFile; fileRef = ABAE30BA1869484F00C92F4F /* Image_Piano.png */; };
 		ABAE30BE1869484F00C92F4F /* Image_Piano.png in Resources */ = {isa = PBXBuildFile; fileRef = ABAE30BA1869484F00C92F4F /* Image_Piano.png */; };
 		ABAE30BF1869484F00C92F4F /* Image_Piano.png in Resources */ = {isa = PBXBuildFile; fileRef = ABAE30BA1869484F00C92F4F /* Image_Piano.png */; };
+		ABAFD2751F7110E4007705BD /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF171345ACA900AF11D1 /* gdbstub.cpp */; };
+		ABAFD2761F7110E4007705BD /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF171345ACA900AF11D1 /* gdbstub.cpp */; };
+		ABAFD2771F7110E5007705BD /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF171345ACA900AF11D1 /* gdbstub.cpp */; };
+		ABAFD2781F7110E5007705BD /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF171345ACA900AF11D1 /* gdbstub.cpp */; };
+		ABAFD2791F7110E6007705BD /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FF171345ACA900AF11D1 /* gdbstub.cpp */; };
 		ABB6AD5D173A3F2B00EC2E8D /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABB6AD5C173A3F2B00EC2E8D /* Carbon.framework */; };
 		ABB9212117CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */; };
 		ABB9212217CEB4110049D4C5 /* slot1comp_protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABB9212017CEB4110049D4C5 /* slot1comp_protocol.cpp */; };
@@ -4611,6 +4616,7 @@
 				ABD4F2741F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
 				ABC04DA41F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
 				ABC04DCB1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
+				ABAFD2791F7110E6007705BD /* gdbstub.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4798,6 +4804,7 @@
 				ABD4F2751F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
 				ABC04DA51F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
 				ABC04DCC1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
+				ABAFD2781F7110E5007705BD /* gdbstub.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5015,6 +5022,7 @@
 				ABD4F2731F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
 				ABC04DA31F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
 				ABC04DCA1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
+				ABAFD2751F7110E4007705BD /* gdbstub.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5232,6 +5240,7 @@
 				ABD4F2771F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
 				ABC04DA71F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
 				ABC04DCE1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
+				ABAFD2761F7110E4007705BD /* gdbstub.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5419,6 +5428,7 @@
 				ABD4F2761F54A51000D75A1F /* ClientExecutionControl.cpp in Sources */,
 				ABC04DA61F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
 				ABC04DCD1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
+				ABAFD2771F7110E5007705BD /* gdbstub.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5625,6 +5635,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
 					"DEBUG=1",
+					GDB_STUB,
 				);
 				GCC_STRICT_ALIASING = YES;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;

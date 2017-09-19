@@ -379,20 +379,20 @@ void ClientExecutionControl::SetEnableGameSpecificHacks(bool enable)
 
 bool ClientExecutionControl::GetEnableExternalBIOS()
 {
-	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
 	const bool enable = this->_settingsPending.enableExternalBIOS;
-	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
 	
 	return enable;
 }
 
 void ClientExecutionControl::SetEnableExternalBIOS(bool enable)
 {
-	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
 	this->_settingsPending.enableExternalBIOS = enable;
 	
-	this->_newSettingsPendingOnNDSExec = true;
-	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+	this->_newSettingsPendingOnReset = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
 }
 
 bool ClientExecutionControl::GetEnableBIOSInterrupts()
@@ -433,38 +433,38 @@ void ClientExecutionControl::SetEnableBIOSPatchDelayLoop(bool enable)
 
 bool ClientExecutionControl::GetEnableExternalFirmware()
 {
-	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
 	const bool enable = this->_settingsPending.enableExternalFirmware;
-	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
 	
 	return enable;
 }
 
 void ClientExecutionControl::SetEnableExternalFirmware(bool enable)
 {
-	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
 	this->_settingsPending.enableExternalFirmware = enable;
 	
-	this->_newSettingsPendingOnNDSExec = true;
-	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+	this->_newSettingsPendingOnReset = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
 }
 
 bool ClientExecutionControl::GetEnableFirmwareBoot()
 {
-	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
 	const bool enable = this->_settingsPending.enableFirmwareBoot;
-	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
 	
 	return enable;
 }
 
 void ClientExecutionControl::SetEnableFirmwareBoot(bool enable)
 {
-	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
 	this->_settingsPending.enableFirmwareBoot = enable;
 	
-	this->_newSettingsPendingOnNDSExec = true;
-	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+	this->_newSettingsPendingOnReset = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
 }
 
 bool ClientExecutionControl::GetEnableDebugConsole()
@@ -702,18 +702,22 @@ void ClientExecutionControl::ApplySettingsOnReset()
 	
 	if (this->_newSettingsPendingOnReset)
 	{
-		this->_settingsApplied.cpuEngineID				= this->_settingsPending.cpuEngineID;
-		this->_settingsApplied.JITMaxBlockSize			= this->_settingsPending.JITMaxBlockSize;
+		this->_settingsApplied.cpuEngineID					= this->_settingsPending.cpuEngineID;
+		this->_settingsApplied.JITMaxBlockSize				= this->_settingsPending.JITMaxBlockSize;
 		
-		this->_settingsApplied.filePathARM9BIOS			= this->_settingsPending.filePathARM9BIOS;
-		this->_settingsApplied.filePathARM7BIOS			= this->_settingsPending.filePathARM7BIOS;
-		this->_settingsApplied.filePathFirmware			= this->_settingsPending.filePathFirmware;
-		this->_settingsApplied.filePathSlot1R4			= this->_settingsPending.filePathSlot1R4;
+		this->_settingsApplied.filePathARM9BIOS				= this->_settingsPending.filePathARM9BIOS;
+		this->_settingsApplied.filePathARM7BIOS				= this->_settingsPending.filePathARM7BIOS;
+		this->_settingsApplied.filePathFirmware				= this->_settingsPending.filePathFirmware;
+		this->_settingsApplied.filePathSlot1R4				= this->_settingsPending.filePathSlot1R4;
 		
-		this->_settingsApplied.cpuEmulationEngineName	= this->_settingsPending.cpuEmulationEngineName;
-		this->_settingsApplied.slot1DeviceName			= this->_settingsPending.slot1DeviceName;
-		this->_ndsFrameInfo.cpuEmulationEngineName		= this->_settingsApplied.cpuEmulationEngineName;
-		this->_ndsFrameInfo.slot1DeviceName				= this->_settingsApplied.slot1DeviceName;
+		this->_settingsApplied.enableExternalBIOS			= this->_settingsPending.enableExternalBIOS;
+		this->_settingsApplied.enableExternalFirmware		= this->_settingsPending.enableExternalFirmware;
+		this->_settingsApplied.enableFirmwareBoot			= this->_settingsPending.enableFirmwareBoot;
+		
+		this->_settingsApplied.cpuEmulationEngineName		= this->_settingsPending.cpuEmulationEngineName;
+		this->_settingsApplied.slot1DeviceName				= this->_settingsPending.slot1DeviceName;
+		this->_ndsFrameInfo.cpuEmulationEngineName			= this->_settingsApplied.cpuEmulationEngineName;
+		this->_ndsFrameInfo.slot1DeviceName					= this->_settingsApplied.slot1DeviceName;
 		
 		const bool didChangeSlot1Type = (this->_settingsApplied.slot1DeviceType != this->_settingsPending.slot1DeviceType);
 		if (didChangeSlot1Type)
@@ -724,8 +728,12 @@ void ClientExecutionControl::ApplySettingsOnReset()
 		this->_newSettingsPendingOnReset = false;
 		pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
 		
-		CommonSettings.use_jit				= (this->_settingsApplied.cpuEngineID == CPUEmulationEngineID_DynamicRecompiler);
-		CommonSettings.jit_max_block_size	= this->_settingsApplied.JITMaxBlockSize;
+		CommonSettings.use_jit					= (this->_settingsApplied.cpuEngineID == CPUEmulationEngineID_DynamicRecompiler);
+		CommonSettings.jit_max_block_size		= this->_settingsApplied.JITMaxBlockSize;
+		CommonSettings.UseExtBIOS				= this->_settingsApplied.enableExternalBIOS;
+		CommonSettings.UseExtFirmware			= this->_settingsApplied.enableExternalFirmware;
+		CommonSettings.UseExtFirmwareSettings	= this->_settingsApplied.enableExternalFirmware;
+		CommonSettings.BootFromFirmware			= this->_settingsApplied.enableFirmwareBoot;
 		
 		if (this->_settingsApplied.filePathARM9BIOS.length() == 0)
 		{
@@ -842,11 +850,8 @@ void ClientExecutionControl::ApplySettingsOnNDSExec()
 		this->_settingsApplied.enableAdvancedBusLevelTiming		= this->_settingsPending.enableAdvancedBusLevelTiming;
 		this->_settingsApplied.enableRigorous3DRenderingTiming	= this->_settingsPending.enableRigorous3DRenderingTiming;
 		this->_settingsApplied.enableGameSpecificHacks			= this->_settingsPending.enableGameSpecificHacks;
-		this->_settingsApplied.enableExternalBIOS				= this->_settingsPending.enableExternalBIOS;
 		this->_settingsApplied.enableBIOSInterrupts				= this->_settingsPending.enableBIOSInterrupts;
 		this->_settingsApplied.enableBIOSPatchDelayLoop			= this->_settingsPending.enableBIOSPatchDelayLoop;
-		this->_settingsApplied.enableExternalFirmware			= this->_settingsPending.enableExternalFirmware;
-		this->_settingsApplied.enableFirmwareBoot				= this->_settingsPending.enableFirmwareBoot;
 		this->_settingsApplied.enableDebugConsole				= this->_settingsPending.enableDebugConsole;
 		this->_settingsApplied.enableEnsataEmulation			= this->_settingsPending.enableEnsataEmulation;
 		
@@ -862,12 +867,8 @@ void ClientExecutionControl::ApplySettingsOnNDSExec()
 		
 		CommonSettings.advanced_timing			= this->_settingsApplied.enableAdvancedBusLevelTiming;
 		CommonSettings.rigorous_timing			= this->_settingsApplied.enableRigorous3DRenderingTiming;
-		CommonSettings.UseExtBIOS				= this->_settingsApplied.enableExternalBIOS;
 		CommonSettings.SWIFromBIOS				= this->_settingsApplied.enableBIOSInterrupts;
 		CommonSettings.PatchSWI3				= this->_settingsApplied.enableBIOSPatchDelayLoop;
-		CommonSettings.UseExtFirmware			= this->_settingsApplied.enableExternalFirmware;
-		CommonSettings.UseExtFirmwareSettings	= this->_settingsApplied.enableExternalFirmware;
-		CommonSettings.BootFromFirmware			= this->_settingsApplied.enableFirmwareBoot;
 		CommonSettings.DebugConsole				= this->_settingsApplied.enableDebugConsole;
 		CommonSettings.EnsataEmulation			= this->_settingsApplied.enableEnsataEmulation;
 		

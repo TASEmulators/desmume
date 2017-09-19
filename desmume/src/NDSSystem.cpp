@@ -83,11 +83,12 @@ BaseDriver* driver = &_stub_driver;
 std::string InputDisplayString;
 
 static BOOL LidClosed = FALSE;
-static u8	countLid = 0;
+static u8 countLid = 0;
+static NDSError _lastNDSError;
 
 GameInfo gameInfo;
 NDSSystem nds;
-CFIRMWARE	*firmware = NULL;
+CFIRMWARE *firmware = NULL;
 
 using std::min;
 using std::max;
@@ -2663,6 +2664,10 @@ void NDS_Reset()
 
 	//this needs to happen last, pretty much, since it establishes the correct scheduling state based on all of the above initialization
 	initSchedule();
+	
+	_lastNDSError.code = NDSError_NoError;
+	_lastNDSError.tag = NDSErrorTag_None;
+	NDS_CurrentCPUInfoToNDSError(_lastNDSError);
 }
 
 static std::string MakeInputDisplayString(u16 pad, const std::string* Buttons, int count) {
@@ -3019,12 +3024,59 @@ void NDS_swapScreen()
 	}
 }
 
-
-void emu_halt()
+NDSError NDS_GetLastError()
 {
-	//printf("halting emu: ARM9 PC=%08X/%08X, ARM7 PC=%08X/%08X\n", NDS_ARM9.R[15], NDS_ARM9.instruct_adr, NDS_ARM7.R[15], NDS_ARM7.instruct_adr);
-	execute = false;
+	return _lastNDSError;
+}
+
+static void NDS_CurrentCPUInfoToNDSError(NDSError &ndsError)
+{
+	ndsError.programCounterARM9		= NDS_ARM9.R[15];
+	ndsError.instructionARM9		= NDS_ARM9.instruction;
+	ndsError.instructionAddrARM9	= NDS_ARM9.instruct_adr;
+	ndsError.programCounterARM7		= NDS_ARM7.R[15];
+	ndsError.instructionARM7		= NDS_ARM7.instruction;
+	ndsError.instructionAddrARM7	= NDS_ARM7.instruct_adr;
+}
+
+void emu_halt(EmuHaltReasonCode reasonCode, NDSErrorTag errorTag)
+{
+	switch (reasonCode)
+	{
+		case EMUHALT_REASON_USER_REQUESTED_HALT:
+			_lastNDSError.code = NDSError_NoError;
+			_lastNDSError.tag = NDSErrorTag_None;
+			break;
+			
+		case EMUHALT_REASON_SYSTEM_POWERED_OFF:
+			_lastNDSError.code = NDSError_SystemPoweredOff;
+			_lastNDSError.tag = NDSErrorTag_None;
+			break;
+			
+		case EMUHALT_REASON_JIT_UNMAPPED_ADDRESS_EXCEPTION:
+			_lastNDSError.code = NDSError_JITUnmappedAddressException;
+			_lastNDSError.tag = errorTag;
+			break;
+			
+		case EMUHALT_REASON_ARM_RESERVED_0X14_EXCEPTION:
+		case EMUHALT_REASON_ARM_UNDEFINED_INSTRUCTION_EXCEPTION:
+			_lastNDSError.code = NDSError_ARMUndefinedInstructionException;
+			_lastNDSError.tag = errorTag;
+			break;
+			
+		case EMUHALT_REASON_UNKNOWN:
+		default:
+			_lastNDSError.code = NDSError_UnknownError;
+			_lastNDSError.tag = errorTag;
+			break;
+	}
+	
+	NDS_CurrentCPUInfoToNDSError(_lastNDSError);
+	
 	GPU->ForceFrameStop();
+	execute = false;
+	
+	//printf("halting emu: ARM9 PC=%08X/%08X, ARM7 PC=%08X/%08X\n", NDS_ARM9.R[15], NDS_ARM9.instruct_adr, NDS_ARM7.R[15], NDS_ARM7.instruct_adr);
 	
 #ifdef LOG_ARM9
 	if (fp_dis9)

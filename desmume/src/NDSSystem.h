@@ -82,6 +82,52 @@ enum
 	ROM_DSGBA
 };
 
+enum EmuHaltReasonCode
+{
+	EMUHALT_REASON_USER_REQUESTED_HALT					= 0,
+	
+	EMUHALT_REASON_SYSTEM_POWERED_OFF					= 1000,
+	
+	EMUHALT_REASON_JIT_UNMAPPED_ADDRESS_EXCEPTION		= 2000,
+	EMUHALT_REASON_ARM_RESERVED_0X14_EXCEPTION,
+	EMUHALT_REASON_ARM_UNDEFINED_INSTRUCTION_EXCEPTION,
+	
+	EMUHALT_REASON_UNKNOWN								= 10000
+};
+
+enum NDSErrorCode
+{
+	NDSError_NoError									= 0,
+	
+	NDSError_SystemPoweredOff							= 1000,
+	
+	NDSError_JITUnmappedAddressException				= 2000,
+	NDSError_ARMUndefinedInstructionException,
+	
+	NDSError_UnknownError								= 10000
+};
+
+enum NDSErrorTag
+{
+	NDSErrorTag_None		= 0,
+	NDSErrorTag_ARM9		= 1,
+	NDSErrorTag_ARM7		= 2,
+	NDSErrorTag_BothCPUs	= 3,
+};
+
+struct NDSError
+{
+	NDSErrorCode code;
+	NDSErrorTag tag;
+	u32 programCounterARM9;
+	u32 instructionARM9;
+	u32 instructionAddrARM9;
+	u32 programCounterARM7;
+	u32 instructionARM7;
+	u32 instructionAddrARM7;
+};
+typedef struct NDSError NDSError;
+
 //#define LOG_ARM9
 //#define LOG_ARM7
 
@@ -143,7 +189,9 @@ struct NDS_header
 #include "PACKED_END.h"
 
 extern void debug();
-void emu_halt();
+NDSError NDS_GetLastError();
+static void NDS_CurrentCPUInfoToNDSError(NDSError &ndsError);
+void emu_halt(EmuHaltReasonCode reasonCode, NDSErrorTag errorTag);
 
 extern u64 nds_timer;
 void NDS_Reschedule();

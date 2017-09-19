@@ -118,6 +118,7 @@ volatile bool execute = true;
 @synthesize slot1StatusText;
 @synthesize frameStatus;
 @synthesize executionSpeedStatus;
+@synthesize errorStatus;
 
 @dynamic arm9ImageURL;
 @dynamic arm7ImageURL;
@@ -207,6 +208,7 @@ volatile bool execute = true;
 	
 	frameStatus = @"---";
 	executionSpeedStatus = @"1.00x";
+	errorStatus = @"";
 	
 	return self;
 }
@@ -221,6 +223,7 @@ volatile bool execute = true;
 	[self setCdsFirmware:nil];
 	[self setCdsGPU:nil];
 	[self setCdsOutputList:nil];
+	[self setErrorStatus:nil];
 	
 	pthread_cancel(coreThread);
 	pthread_join(coreThread, NULL);
@@ -242,14 +245,23 @@ volatile bool execute = true;
 - (void) setMasterExecute:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockMasterExecute);
-	execute = theState ? true : false;
+	
+	if (theState)
+	{
+		execute = true;
+	}
+	else
+	{
+		emu_halt(EMUHALT_REASON_UNKNOWN, NDSErrorTag_BothCPUs);
+	}
+	
 	OSSpinLockUnlock(&spinlockMasterExecute);
 }
 
 - (BOOL) masterExecute
 {
 	OSSpinLockLock(&spinlockMasterExecute);
-	const BOOL theState = execute ? YES : NO;
+	const BOOL theState = (execute) ? YES : NO;
 	OSSpinLockUnlock(&spinlockMasterExecute);
 	
 	return theState;
@@ -855,8 +867,8 @@ volatile bool execute = true;
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
 	
 	[self updateSlot1DeviceStatus];
-	[self restoreCoreState];
 	[self setMasterExecute:YES];
+	[self restoreCoreState];
 	[[self cdsController] reset];
 	[[self cdsController] updateMicLevel];
 }
@@ -988,6 +1000,111 @@ volatile bool execute = true;
 	FCEUI_StopMovie();
 }
 
+- (void) postNDSError:(const NDSError &)ndsError
+{
+	NSString *newErrorString = nil;
+	
+	switch (ndsError.code)
+	{
+		case NDSError_NoError:
+			// Do nothing if there is no error.
+			return;
+			
+		case NDSError_SystemPoweredOff:
+			newErrorString = @"The system powered off using the ARM7 SPI device.";
+			break;
+			
+		case NDSError_JITUnmappedAddressException:
+		{
+			if (ndsError.tag == NDSErrorTag_ARM9)
+			{
+				newErrorString = [NSString stringWithFormat:
+@"JIT UNMAPPED ADDRESS EXCEPTION - ARM9:\n\
+\tARM9 Program Counter:     0x%08X\n\
+\tARM9 Instruction:         0x%08X\n\
+\tARM9 Instruction Address: 0x%08X",
+							  ndsError.programCounterARM9, ndsError.instructionARM9, ndsError.instructionAddrARM9];
+			}
+			else if (ndsError.tag == NDSErrorTag_ARM7)
+			{
+				newErrorString = [NSString stringWithFormat:
+@"JIT UNMAPPED ADDRESS EXCEPTION - ARM7:\n\
+\tARM7 Program Counter:     0x%08X\n\
+\tARM7 Instruction:         0x%08X\n\
+\tARM7 Instruction Address: 0x%08X",
+							  ndsError.programCounterARM7, ndsError.instructionARM7, ndsError.instructionAddrARM7];
+			}
+			else
+			{
+				newErrorString = [NSString stringWithFormat:
+@"JIT UNMAPPED ADDRESS EXCEPTION - UNKNOWN CPU:\n\
+\tARM9 Program Counter:     0x%08X\n\
+\tARM9 Instruction:         0x%08X\n\
+\tARM9 Instruction Address: 0x%08X\n\
+\tARM7 Program Counter:     0x%08X\n\
+\tARM7 Instruction:         0x%08X\n\
+\tARM7 Instruction Address: 0x%08X",
+							  ndsError.programCounterARM9, ndsError.instructionARM9, ndsError.instructionAddrARM9,
+							  ndsError.programCounterARM7, ndsError.instructionARM7, ndsError.instructionAddrARM7];
+			}
+			break;
+		}
+			
+		case NDSError_ARMUndefinedInstructionException:
+		{
+			if (ndsError.tag == NDSErrorTag_ARM9)
+			{
+				newErrorString = [NSString stringWithFormat:
+@"ARM9 UNDEFINED INSTRUCTION EXCEPTION:\n\
+\tARM9 Program Counter:     0x%08X\n\
+\tARM9 Instruction:         0x%08X\n\
+\tARM9 Instruction Address: 0x%08X",
+							  ndsError.programCounterARM9, ndsError.instructionARM9, ndsError.instructionAddrARM9];
+			}
+			else if (ndsError.tag == NDSErrorTag_ARM7)
+			{
+				newErrorString = [NSString stringWithFormat:
+@"ARM7 UNDEFINED INSTRUCTION EXCEPTION:\n\
+\tARM7 Program Counter:     0x%08X\n\
+\tARM7 Instruction:         0x%08X\n\
+\tARM7 Instruction Address: 0x%08X",
+							  ndsError.programCounterARM7, ndsError.instructionARM7, ndsError.instructionAddrARM7];
+			}
+			else
+			{
+				newErrorString = [NSString stringWithFormat:
+@"UNKNOWN ARM CPU UNDEFINED INSTRUCTION EXCEPTION:\n\
+\tARM9 Program Counter:     0x%08X\n\
+\tARM9 Instruction:         0x%08X\n\
+\tARM9 Instruction Address: 0x%08X\n\
+\tARM7 Program Counter:     0x%08X\n\
+\tARM7 Instruction:         0x%08X\n\
+\tARM7 Instruction Address: 0x%08X",
+							  ndsError.programCounterARM9, ndsError.instructionARM9, ndsError.instructionAddrARM9,
+							  ndsError.programCounterARM7, ndsError.instructionARM7, ndsError.instructionAddrARM7];
+			}
+			break;
+		}
+			
+		case NDSError_UnknownError:
+		default:
+			newErrorString = [NSString stringWithFormat:
+@"UNKNOWN ERROR:\n\
+\tARM9 Program Counter:     0x%08X\n\
+\tARM9 Instruction:         0x%08X\n\
+\tARM9 Instruction Address: 0x%08X\n\
+\tARM7 Program Counter:     0x%08X\n\
+\tARM7 Instruction:         0x%08X\n\
+\tARM7 Instruction Address: 0x%08X",
+							  ndsError.programCounterARM9, ndsError.instructionARM9, ndsError.instructionAddrARM9,
+							  ndsError.programCounterARM7, ndsError.instructionARM7, ndsError.instructionAddrARM7];
+			break;
+	}
+	
+	[self setErrorStatus:newErrorString];
+	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.handleNDSError" object:self userInfo:nil];
+}
+
 @end
 
 static void* RunCoreThread(void *arg)
@@ -1039,9 +1156,10 @@ static void* RunCoreThread(void *arg)
 		// Check if an internal execution error occurred that halted the emulation.
 		if (!execute)
 		{
+			NDSError ndsError = NDS_GetLastError();
 			pthread_mutex_unlock(&param->mutexThreadExecute);
-			// TODO: Message the core that emulation halted.
-			NSLog(@"The emulator halted during execution. Was it an internal error that caused this?");
+			
+			[cdsCore postNDSError:ndsError];
 			continue;
 		}
 		

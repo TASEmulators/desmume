@@ -2599,7 +2599,7 @@ public:
 
 static void DoQuit()
 {
-    emu_halt();
+    emu_halt(EMUHALT_REASON_USER_REQUESTED_HALT, NDSErrorTag_None);
     gtk_main_quit();
 }
 

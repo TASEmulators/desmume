@@ -2326,7 +2326,7 @@ static void StepRunLoop_Throttle(bool allowSleep = true, int forceFrameSkip = -1
 	if (frameAdvance && allowSleep)
 	{
 		frameAdvance = false;
-		emu_halt();
+		emu_halt(EMUHALT_REASON_USER_REQUESTED_HALT, NDSErrorTag_None);
 		SPU_Pause(1);
 	}
 	if(execute && emu_paused && !frameAdvance)
@@ -2386,7 +2386,7 @@ bool NDS_Pause(bool showMsg)
 {
 	if(paused) return false;
 
-	emu_halt();
+	emu_halt(EMUHALT_REASON_USER_REQUESTED_HALT, NDSErrorTag_None);
 	paused = TRUE;
 	SPU_Pause(1);
 	while (!paused) {}
@@ -2620,7 +2620,7 @@ void MenuDeinit()
 static void ExitRunLoop()
 {
 	finished = TRUE;
-	emu_halt();
+	emu_halt(EMUHALT_REASON_USER_REQUESTED_HALT, NDSErrorTag_None);
 }
 
 class WinWifiHandler : public WifiHandler

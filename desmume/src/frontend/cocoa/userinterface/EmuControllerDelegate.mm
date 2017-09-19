@@ -59,6 +59,8 @@
 @synthesize slot1ManagerWindow;
 @synthesize saveFileMigrationSheet;
 @synthesize saveStatePrecloseSheet;
+@synthesize ndsErrorSheet;
+@synthesize ndsErrorStatusTextField;
 @synthesize exportRomSavePanelAccessoryView;
 
 @synthesize iconExecute;
@@ -116,6 +118,7 @@
 	isShowingSaveStateDialog = NO;
 	isShowingFileMigrationDialog = NO;
 	isUserInterfaceBlockingExecution = NO;
+	_isNDSErrorSheetAlreadyShown = NO;
 	
 	currentSaveStateURL = nil;
 	selectedRomSaveTypeID = ROMSAVETYPE_AUTOMATIC;
@@ -153,6 +156,11 @@
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(loadRomDidFinish:)
 												 name:@"org.desmume.DeSmuME.loadRomDidFinish"
+											   object:nil];
+	
+	[[NSNotificationCenter defaultCenter] addObserver:self
+											 selector:@selector(handleNDSError:)
+												 name:@"org.desmume.DeSmuME.handleNDSError"
 											   object:nil];
 	
 	return self;
@@ -898,6 +906,12 @@
 {
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore slot1Eject];
+}
+
+- (IBAction) simulateEmulationCrash:(id)sender
+{
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore setMasterExecute:NO];
 }
 
 - (IBAction) writeDefaults3DRenderingSettings:(id)sender
@@ -1814,6 +1828,9 @@
 		[[windowController window] displayIfNeeded];
 	}
 	
+	[cdsCore execControl]->ApplySettingsOnReset();
+	[cdsCore setMasterExecute:YES];
+	
 	// After the ROM loading is complete, send an execute message to the Cocoa DS per
 	// user preferences.
 	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"General_ExecuteROMOnLoad"])
@@ -1899,6 +1916,50 @@
 	result = YES;
 	
 	return result;
+}
+
+- (void) handleNDSError:(NSNotification *)aNotification
+{
+	[self setIsUserInterfaceBlockingExecution:YES];
+	
+	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	NSString *ndsErrorString = [cdsCore errorStatus];
+	const char *ndsErrorCString = [ndsErrorString cStringUsingEncoding:NSUTF8StringEncoding];
+	size_t lineCount = 1;
+	
+	for (size_t i = 0; i < [ndsErrorString length]; i++)
+	{
+		if (ndsErrorCString[i] == '\n')
+		{
+			lineCount++;
+		}
+	}
+	
+	NSRect newSheetFrameRect = [ndsErrorSheet frame];
+	newSheetFrameRect.size.height = 98.0f + (16.0f * lineCount);
+	
+	// For some reason, when the sheet is shown for the very first time,
+	// the sheet doesn't drop down as low as it should. However, upon
+	// subsequent showings, the sheet drops down to the intended distance.
+	// To compensate for this difference, the first sheet showing will
+	// have a little added height to it.
+	if (!_isNDSErrorSheetAlreadyShown)
+	{
+		_isNDSErrorSheetAlreadyShown = YES;
+		newSheetFrameRect.size.height += 22.0f;
+	}
+	
+	[ndsErrorSheet setFrame:newSheetFrameRect display:NO];
+	
+	NSRect newTextFieldRect = [ndsErrorStatusTextField frame];
+	newTextFieldRect.size.height = 16.0f * lineCount;
+	[ndsErrorStatusTextField setFrame:newTextFieldRect];
+	
+	[NSApp beginSheet:ndsErrorSheet
+	   modalForWindow:(NSWindow *)[[windowList objectAtIndex:0] window]
+		modalDelegate:self
+	   didEndSelector:@selector(didEndErrorSheet:returnCode:contextInfo:)
+		  contextInfo:nil];
 }
 
 - (void) addOutputToCore:(CocoaDSOutput *)theOutput
@@ -2095,6 +2156,23 @@
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[cdsCore setSlot1R4URL:selectedDirURL];
+}
+
+- (void) didEndErrorSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
+{
+	[sheet orderOut:self];
+	[self setIsUserInterfaceBlockingExecution:NO];
+	
+	switch (returnCode)
+	{
+		case COCOA_DIALOG_OPTION: // Reset
+			[self reset:self];
+			break;
+			
+		case NSCancelButton: // Stop
+		default:
+			break;
+	}
 }
 
 - (void) updateAllWindowTitles

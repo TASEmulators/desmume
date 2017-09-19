@@ -1490,7 +1490,7 @@ void FASTCALL MMU_writeToSPIData(u16 val)
 					{
 						printf("SYSTEM POWERED OFF VIA ARM7 SPI POWER DEVICE\n");
 						printf("Did your main() return?\n");
-						emu_halt();
+						emu_halt(EMUHALT_REASON_SYSTEM_POWERED_OFF, NDSErrorTag_None);
 					}
 				}
 

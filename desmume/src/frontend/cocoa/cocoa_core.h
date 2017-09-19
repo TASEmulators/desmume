@@ -22,6 +22,9 @@
 #include <string>
 #import "cocoa_util.h"
 
+#include "../../NDSSystem.h"
+#undef BOOL
+
 
 class ClientExecutionControl;
 @class CocoaDSCore;
@@ -68,6 +71,7 @@ typedef struct
 	NSString *slot1StatusText;
 	NSString *frameStatus;
 	NSString *executionSpeedStatus;
+	NSString *errorStatus;
 	
 	OSSpinLock spinlockCdsController;
 	OSSpinLock spinlockMasterExecute;
@@ -115,6 +119,7 @@ typedef struct
 @property (assign) NSString *slot1StatusText;
 @property (assign) NSString *frameStatus;
 @property (assign) NSString *executionSpeedStatus;
+@property (retain) NSString *errorStatus;
 
 @property (copy) NSURL *arm9ImageURL;
 @property (copy) NSURL *arm7ImageURL;
@@ -145,6 +150,8 @@ typedef struct
 
 - (BOOL) startReplayRecording:(NSURL *)fileURL sramURL:(NSURL *)sramURL;
 - (void) stopReplay;
+
+- (void) postNDSError:(const NDSError &)ndsError;
 
 @end
 

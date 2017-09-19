@@ -498,7 +498,7 @@ void armcpu_exception(armcpu_t *cpu, u32 number)
 	case EXCEPTION_SWI: cpumode = SVC; break;
 	case EXCEPTION_PREFETCH_ABORT: cpumode = ABT; break;
 	case EXCEPTION_DATA_ABORT: cpumode = ABT; break;
-	case EXCEPTION_RESERVED_0x14: emu_halt(); break;
+	case EXCEPTION_RESERVED_0x14: emu_halt(EMUHALT_REASON_ARM_RESERVED_0X14_EXCEPTION, (cpu->proc_ID == ARMCPU_ARM9) ? NDSErrorTag_ARM9 : NDSErrorTag_ARM7); break;
 	case EXCEPTION_IRQ: cpumode = IRQ; break;
 	case EXCEPTION_FAST_IRQ: cpumode = FIQ; break;
 	}
@@ -576,7 +576,7 @@ u32 TRAPUNDEF(armcpu_t* cpu)
 	}
 	else
 	{
-		emu_halt();
+		emu_halt(EMUHALT_REASON_ARM_UNDEFINED_INSTRUCTION_EXCEPTION, (cpu->proc_ID == ARMCPU_ARM9) ? NDSErrorTag_ARM9 : NDSErrorTag_ARM7);
 		return 4;
 	}
 }
