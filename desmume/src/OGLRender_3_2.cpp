@@ -1973,11 +1973,15 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
+	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
+		
 	if (this->_mappedFramebuffer != NULL)
 	{
 		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-		this->_mappedFramebuffer = NULL;
 	}
+	
+	glBufferData(GL_PIXEL_PACK_BUFFER, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ);
+	this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texFinalColorID);
@@ -2029,9 +2033,6 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texGDepthStencilAlphaID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, w, h, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
-	
-	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
-	glBufferData(GL_PIXEL_PACK_BUFFER, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ);
 	
 	this->_framebufferWidth = w;
 	this->_framebufferHeight = h;

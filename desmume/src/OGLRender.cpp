@@ -4439,10 +4439,17 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
-	if (this->_mappedFramebuffer != NULL)
+	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
+	
+	if (this->isPBOSupported)
 	{
-		glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
-		this->_mappedFramebuffer = NULL;
+		if (this->_mappedFramebuffer != NULL)
+		{
+			glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
+		}
+		
+		glBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ_ARB);
+		this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
 	}
 	
 	if (this->isShaderSupported && this->isFBOSupported && this->isVBOSupported)
@@ -4495,15 +4502,12 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, sampleSize, GL_DEPTH24_STENCIL8_EXT, w, h);
 	}
 	
-	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
-	
 	this->_framebufferWidth = w;
 	this->_framebufferHeight = h;
 	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
 	
 	if (this->isPBOSupported)
 	{
-		glBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ_ARB);
 		this->_framebufferColor = NULL;
 	}
 	else
