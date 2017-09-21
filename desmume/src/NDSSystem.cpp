@@ -337,9 +337,12 @@ bool GameInfo::ValidateHeader()
 			char c = (char)header.gameTile[i];
 			if (c < 0 || (c > 0 && c < 32) || c == 127)
 			{
+				printf("\n[WARNING] ");
 				printf("ROM Validation: Invalid character detected in ROM Title.\n");
 				printf("                charIndex = %d, charValue = %d\n", (int)i, c);
-				return isRomValid;
+				//make sure the ROMname is ASCII clean, and use the ? to replace special characters.
+				header.gameTile[i] = '?';
+				//return isRomValid;
 			}
 		}
 		
