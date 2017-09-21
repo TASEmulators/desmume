@@ -810,7 +810,6 @@
 	const BOOL muteState = [CocoaDSUtil getIBActionSenderButtonStateBool:sender];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	[[cdsCore cdsController] setHardwareMicMute:muteState];
-	[[cdsCore cdsController] setHardwareMicPause:([cdsCore coreState] != ExecutionBehavior_Run)];
 	[self updateMicStatusIcon];
 }
 
@@ -1911,7 +1910,6 @@
 	
 	[cdsCore setSlot1StatusText:NSSTRING_STATUS_EMULATION_NOT_RUNNING];
 	[[cdsCore cdsController] reset];
-	[[cdsCore cdsController] updateMicLevel];
 	
 	result = YES;
 	
@@ -2016,7 +2014,11 @@
 	{
 		if ([cdsController isHardwareMicAvailable])
 		{
-			if ([cdsController isHardwareMicInClip])
+			if ([cdsController hardwareMicPause])
+			{
+				micIcon = iconMicDisabled;
+			}
+			else if ([cdsController isHardwareMicInClip])
 			{
 				micIcon = iconMicInClip;
 			}

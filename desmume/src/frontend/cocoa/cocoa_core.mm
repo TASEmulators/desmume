@@ -870,7 +870,6 @@ volatile bool execute = true;
 	[self setMasterExecute:YES];
 	[self restoreCoreState];
 	[[self cdsController] reset];
-	[[self cdsController] updateMicLevel];
 }
 
 - (void) getTimedEmulatorStatistics:(NSTimer *)timer
@@ -1159,6 +1158,10 @@ static void* RunCoreThread(void *arg)
 			NDSError ndsError = NDS_GetLastError();
 			pthread_mutex_unlock(&param->mutexThreadExecute);
 			
+			inputHandler->SetHardwareMicPause(true);
+			inputHandler->ClearAverageMicLevel();
+			inputHandler->ReportAverageMicLevel();
+			
 			[cdsCore postNDSError:ndsError];
 			continue;
 		}
@@ -1167,9 +1170,8 @@ static void* RunCoreThread(void *arg)
 		// of whether the NDS actually reads the mic or not.
 		if ((ndsFrameInfo.frameIndex & 0x07) == 0x07)
 		{
-			CocoaDSController *cdsController = [cdsCore cdsController];
-			[cdsController updateMicLevel];
-			[cdsController clearMicLevelMeasure];
+			inputHandler->ReportAverageMicLevel();
+			inputHandler->ClearAverageMicLevel();
 		}
 		
 		const uint8_t framesToSkip = execControl->GetFramesToSkip();

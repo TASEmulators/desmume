@@ -22,8 +22,9 @@
 #include <AudioUnit/AudioUnit.h>
 #include <AudioToolbox/AudioToolbox.h>
 #include <libkern/OSAtomic.h>
-#include "ringbuffer.h"
 
+#include "ringbuffer.h"
+#include "audiosamplegenerator.h"
 
 struct CoreAudioInputDeviceInfo
 {
@@ -44,7 +45,7 @@ typedef void (*CoreAudioInputHardwareStateChangedCallback)(CoreAudioInputDeviceI
 
 typedef void (*CoreAudioInputHardwareGainChangedCallback)(float normalizedGain, void *inParam1, void *inParam2);
 
-class CoreAudioInput
+class CoreAudioInput : public AudioGenerator
 {
 private:
 	OSSpinLock *_spinlockAUHAL;
@@ -65,6 +66,8 @@ private:
 	AudioBufferList *_convertBufferList;
 	UInt32 _captureFrames;
 	
+	RingBuffer *_samplesConverted;
+	
 	float _inputGainNormalized;
 	AudioUnitElement _inputElement;
 	
@@ -80,10 +83,9 @@ public:
 	AudioTimeStamp _timeStamp;
 	AudioBufferList *_captureBufferList;
 	RingBuffer *_samplesCaptured;
-	RingBuffer *_samplesConverted;
 	
 	CoreAudioInput();
-	~CoreAudioInput();
+	virtual ~CoreAudioInput();
 	
 	void Start();
 	void Stop();
@@ -93,13 +95,16 @@ public:
 	bool IsHardwareLocked() const;
 	bool GetPauseState() const;
 	void SetPauseState(bool pauseState);
-	float GetGain() const;
-	void SetGain(float normalizedGain);
+	float GetNormalizedGain() const;
+	void SetGainAsNormalized(float normalizedGain);
 	
 	void UpdateHardwareGain(float normalizedGain);
 	void UpdateHardwareLock();
 	void SetCallbackHardwareStateChanged(CoreAudioInputHardwareStateChangedCallback callbackFunc, void *inParam1, void *inParam2);
 	void SetCallbackHardwareGainChanged(CoreAudioInputHardwareGainChangedCallback callbackFunc, void *inParam1, void *inParam2);
+	
+	virtual size_t resetSamples();
+	virtual uint8_t generateSample();
 };
 
 class CoreAudioOutput

@@ -47,7 +47,7 @@ CoreAudioInput::CoreAudioInput()
 	_hwDeviceInfo.deviceUID = CFSTR("");
 	_hwDeviceInfo.modelUID = CFSTR("");
 	_hwDeviceInfo.sampleRate = 0.0;
-	_isPaused = false;
+	_isPaused = true;
 	_isHardwareEnabled = false;
 	_isHardwareLocked = true;
 	_captureFrames = 0;
@@ -602,12 +602,12 @@ void CoreAudioInput::SetPauseState(bool pauseState)
 	this->_isPaused = (this->IsHardwareLocked()) ? true : pauseState;
 }
 
-float CoreAudioInput::GetGain() const
+float CoreAudioInput::GetNormalizedGain() const
 {
 	return this->_inputGainNormalized;
 }
 
-void CoreAudioInput::SetGain(float normalizedGain)
+void CoreAudioInput::SetGainAsNormalized(float normalizedGain)
 {
 	Float32 gainValue = normalizedGain;
 	UInt32 gainPropSize = sizeof(gainValue);
@@ -696,6 +696,36 @@ void CoreAudioInput::UpdateHardwareLock()
 									  this->IsHardwareLocked(),
 									  this->_hwStateChangedCallbackParam1,
 									  this->_hwStateChangedCallbackParam2);
+}
+
+size_t CoreAudioInput::resetSamples()
+{
+	size_t samplesToDrop = this->_samplesConverted->getUsedElements();
+	this->_samplesConverted->clear();
+	
+	return samplesToDrop;
+}
+
+uint8_t CoreAudioInput::generateSample()
+{
+	uint8_t theSample = MIC_NULL_SAMPLE_VALUE;
+	
+	if (this->_isPaused)
+	{
+		return theSample;
+	}
+	else
+	{
+		if (this->_samplesConverted->getUsedElements() == 0)
+		{
+			this->Pull();
+		}
+		
+		this->_samplesConverted->read(&theSample, 1);
+		theSample >>= 1; // Samples from CoreAudio are 8-bit, so we need to convert the sample to 7-bit
+	}
+	
+	return theSample;
 }
 
 void CoreAudioInput::SetCallbackHardwareStateChanged(CoreAudioInputHardwareStateChangedCallback callbackFunc, void *inParam1, void *inParam2)

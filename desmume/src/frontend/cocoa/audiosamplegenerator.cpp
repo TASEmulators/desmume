@@ -33,6 +33,21 @@ static const uint8_t noiseSample[NUM_INTERNAL_NOISE_SAMPLES] =
 	0xF4, 0xE1, 0xBF, 0x9A, 0x71, 0x58, 0x5B, 0x5F, 0x62, 0xC2, 0x25, 0x05, 0x01, 0x01, 0x01, 0x01
 };
 
+size_t AudioGenerator::resetSamples()
+{
+	// Do nothing. This is implementation-dependent.
+	//
+	// The return value represents the number of samples that were dropped.
+	// By default, return 0 to signify that no samples are dropped. In other
+	// words, all samples will continue to exist after the reset.
+	return 0;
+}
+
+uint8_t AudioGenerator::generateSample()
+{
+	return MIC_NULL_SAMPLE_VALUE;
+}
+
 size_t AudioGenerator::generateSampleBlock(size_t sampleCount, uint8_t *outBuffer)
 {
 	if (outBuffer == NULL)
@@ -46,11 +61,6 @@ size_t AudioGenerator::generateSampleBlock(size_t sampleCount, uint8_t *outBuffe
 	}
 	
 	return sampleCount;
-}
-
-uint8_t AudioGenerator::generateSample()
-{
-	return MIC_NULL_SAMPLE_VALUE;
 }
 
 AudioSampleBlockGenerator::AudioSampleBlockGenerator(const uint8_t *audioBuffer, const size_t sampleCount)

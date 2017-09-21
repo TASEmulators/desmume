@@ -330,6 +330,8 @@ protected:
 	SineWaveGenerator *_sineWaveGenerator;
 	AudioSampleBlockGenerator *_selectedAudioFileGenerator;
 	
+	AudioGenerator *_hardwareMicSampleGenerator;
+	
 	ClientInput _clientInputPending[NDSInputID_InputCount];
 	ClientInput _clientInputProcessing[NDSInputID_InputCount];
 	ClientInput _clientInputApplied[NDSInputID_InputCount];
@@ -354,6 +356,12 @@ protected:
 	int16_t _paddleValueApplied;
 	int16_t _paddleAdjustApplied;
 	
+	float _avgMicLevel;
+	float _avgMicLevelTotal;
+	float _avgMicLevelsRead;
+	bool _isHardwareMicMuted;
+	bool _isHardwareMicPaused;
+	
 	pthread_mutex_t _mutexInputsPending;
 	
 public:
@@ -374,10 +382,20 @@ public:
 	double GetSineWaveFrequency();
 	void SetSineWaveFrequency(double freq);
 	
+	float GetAverageMicLevel();	
+	void AddSampleToAverageMicLevel(uint8_t sampleValue);
+	void ClearAverageMicLevel();
+	
+	bool IsMicrophoneIdle();
+	bool IsMicrophoneClipping();
+	
 	AudioGenerator* GetClientSoftwareMicSampleGenerator();
 	AudioGenerator* GetClientSoftwareMicSampleGeneratorApplied();
 	AudioSampleBlockGenerator* GetClientSelectedAudioFileGenerator();
 	void SetClientSelectedAudioFileGenerator(AudioSampleBlockGenerator *selectedAudioFileGenerator);
+	
+	void SetClientHardwareMicSampleGeneratorApplied(AudioGenerator *hwGenerator);
+	AudioGenerator* GetClientHardwareMicSampleGeneratorApplied();
 	
 	bool GetClientSoftwareMicState();
 	bool GetClientSoftwareMicStateApplied();
@@ -395,6 +413,20 @@ public:
 	
 	void ProcessInputs();
 	void ApplyInputs();
+	
+	virtual bool IsHardwareMicAvailable();
+	virtual void ResetHardwareMic();
+	virtual uint8_t HandleMicSampleRead();
+	virtual void ReportAverageMicLevel();
+	
+	virtual bool GetHardwareMicMute();
+	virtual void SetHardwareMicMute(bool muteState);
+	
+	virtual bool GetHardwareMicPause();
+	virtual void SetHardwareMicPause(bool pauseState);
+	
+	virtual float GetHardwareMicNormalizedGain();
+	virtual void SetHardwareMicGainAsNormalized(float normalizedGain);
 };
 
 #endif // _CLIENT_INPUT_HANDLER_H_

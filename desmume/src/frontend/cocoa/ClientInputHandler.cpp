@@ -73,7 +73,14 @@ ClientInputHandler::ClientInputHandler()
 	_internalNoiseGenerator = new InternalNoiseGenerator;
 	_whiteNoiseGenerator = new WhiteNoiseGenerator;
 	_sineWaveGenerator = new SineWaveGenerator(250.0, MIC_SAMPLE_RATE);
-	_selectedAudioFileGenerator = NULL;
+	_selectedAudioFileGenerator = NULL; // Note that this value can be NULL.
+	_hardwareMicSampleGenerator = _nullSampleGenerator;
+	
+	_avgMicLevel = 0.0f;
+	_avgMicLevelTotal = 0.0f;
+	_avgMicLevelsRead = 0.0f;
+	_isHardwareMicMuted = true;
+	_isHardwareMicPaused = true;
 	
 	_enableAutohold = false;
 	
@@ -83,7 +90,9 @@ ClientInputHandler::ClientInputHandler()
 	_paddleValuePending   = _paddleValueProcessing   = _paddleValueApplied   = 0;
 	_paddleAdjustPending  = _paddleAdjustProcessing  = _paddleAdjustApplied  = 0;
 	
-	_softwareMicSampleGeneratorPending = _softwareMicSampleGeneratorProcessing = _softwareMicSampleGeneratorApplied = _nullSampleGenerator;
+	_softwareMicSampleGeneratorPending = _nullSampleGenerator;
+	_softwareMicSampleGeneratorProcessing = _nullSampleGenerator;
+	_softwareMicSampleGeneratorApplied = _nullSampleGenerator;
 	
 	memset(_clientInputPending, 0, sizeof(_clientInputPending));
 	memset(_clientInputProcessing, 0, sizeof(_clientInputProcessing));
@@ -257,6 +266,35 @@ void ClientInputHandler::SetSineWaveFrequency(double freq)
 	this->_sineWaveGenerator->setFrequency(freq);
 }
 
+float ClientInputHandler::GetAverageMicLevel()
+{
+	return this->_avgMicLevel;
+}
+
+void ClientInputHandler::AddSampleToAverageMicLevel(uint8_t sampleValue)
+{
+	this->_avgMicLevelTotal += (float)( (MIC_NULL_SAMPLE_VALUE > sampleValue) ? MIC_NULL_SAMPLE_VALUE - sampleValue : sampleValue - MIC_NULL_SAMPLE_VALUE );
+	this->_avgMicLevelsRead += 1.0f;
+	this->_avgMicLevel = this->_avgMicLevelTotal / this->_avgMicLevelsRead;
+}
+
+void ClientInputHandler::ClearAverageMicLevel()
+{
+	this->_avgMicLevelTotal = 0.0f;
+	this->_avgMicLevelsRead = 0.0f;
+	this->_avgMicLevel = 0.0f;
+}
+
+bool ClientInputHandler::IsMicrophoneIdle()
+{
+	return (this->_avgMicLevel < MIC_NULL_LEVEL_THRESHOLD);
+}
+
+bool ClientInputHandler::IsMicrophoneClipping()
+{
+	return (this->_avgMicLevel >= MIC_CLIP_LEVEL_THRESHOLD);
+}
+
 AudioGenerator* ClientInputHandler::GetClientSoftwareMicSampleGenerator()
 {
 	pthread_mutex_lock(&this->_mutexInputsPending);
@@ -285,6 +323,23 @@ void ClientInputHandler::SetClientSelectedAudioFileGenerator(AudioSampleBlockGen
 	pthread_mutex_lock(&this->_mutexInputsPending);
 	this->_selectedAudioFileGenerator = selectedAudioFileGenerator;
 	pthread_mutex_unlock(&this->_mutexInputsPending);
+}
+
+void ClientInputHandler::SetClientHardwareMicSampleGeneratorApplied(AudioGenerator *hwGenerator)
+{
+	if (hwGenerator == NULL)
+	{
+		this->_hardwareMicSampleGenerator = this->_nullSampleGenerator;
+	}
+	else
+	{
+		this->_hardwareMicSampleGenerator = hwGenerator;
+	}
+}
+
+AudioGenerator* ClientInputHandler::GetClientHardwareMicSampleGeneratorApplied()
+{
+	return this->_hardwareMicSampleGenerator;
 }
 
 bool ClientInputHandler::GetClientSoftwareMicState()
@@ -610,4 +665,74 @@ void ClientInputHandler::ApplyInputs()
 	{
 		FCEUMOV_HandleRecording();
 	}
+}
+
+bool ClientInputHandler::IsHardwareMicAvailable()
+{
+	// Do nothing. This is implementation-dependent.
+	return false;
+}
+
+void ClientInputHandler::ResetHardwareMic()
+{
+	this->ClearAverageMicLevel();
+	this->ReportAverageMicLevel();
+	
+	this->_hardwareMicSampleGenerator->resetSamples();
+}
+
+uint8_t ClientInputHandler::HandleMicSampleRead()
+{
+	uint8_t theSample = MIC_NULL_SAMPLE_VALUE;
+	AudioGenerator *sampleGenerator = (this->GetClientSoftwareMicStateApplied()) ? this->GetClientSoftwareMicSampleGeneratorApplied() : this->_hardwareMicSampleGenerator;
+	
+	theSample = sampleGenerator->generateSample();
+	
+	this->AddSampleToAverageMicLevel(theSample);
+	return theSample;
+}
+
+void ClientInputHandler::ReportAverageMicLevel()
+{
+	// Do nothing. This is implementation-dependent.
+	// This method mainly exists for implementations to do some stuff during the
+	// emulation loop.
+}
+
+bool ClientInputHandler::GetHardwareMicMute()
+{
+	return this->_isHardwareMicMuted;
+}
+
+void ClientInputHandler::SetHardwareMicMute(bool muteState)
+{	
+	this->_isHardwareMicMuted = muteState;
+	
+	if (muteState)
+	{
+		this->_hardwareMicSampleGenerator->resetSamples();
+		this->ClearAverageMicLevel();
+	}
+}
+
+bool ClientInputHandler::GetHardwareMicPause()
+{
+	return this->_isHardwareMicPaused;
+}
+
+void ClientInputHandler::SetHardwareMicPause(bool pauseState)
+{
+	this->_isHardwareMicPaused = pauseState;
+}
+
+float ClientInputHandler::GetHardwareMicNormalizedGain()
+{
+	// Do nothing. This is implementation-dependent.
+	// The default value is 0.0f, which represents 0.0% of the hardware device's pickup sensitivity.
+	return 0.0f;
+}
+
+void ClientInputHandler::SetHardwareMicGainAsNormalized(float normalizedGain)
+{
+	// Do nothing. This is implementation-dependent.
 }

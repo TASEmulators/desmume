@@ -186,7 +186,7 @@
 	
 	// Init the DS controller.
 	[[newCore cdsController] setDelegate:emuControl];
-	[[newCore cdsController] setHardwareMicEnabled:YES];
+	[[newCore cdsController] startHardwareMicDevice];
 	
 	// Init the DS speakers.
 	CocoaDSSpeaker *newSpeaker = [[[CocoaDSSpeaker alloc] init] autorelease];
@@ -207,7 +207,6 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
-	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	
 	// Determine if the app was run for the first time.
@@ -237,11 +236,10 @@
 	[[inputPrefsView inputPrefOutlineView] expandItem:nil expandChildren:YES];
 	[[inputPrefsView inputProfileMenu] selectItemAtIndex:0];
 	
-	// Make sure that the mic is paused to start with.
-	[[cdsCore cdsController] setHardwareMicPause:YES];
+	// Initialize the microphone status icon.
 	[emuControl updateMicStatusIcon];
 	
-	//Bring the application to the front
+	// Bring the application to the front
 	[NSApp activateIgnoringOtherApps:YES];
 	[self restoreDisplayWindowStates];
 	

@@ -28,8 +28,9 @@ public:
 	AudioGenerator() {};
 	virtual ~AudioGenerator() {};
 	
-	virtual size_t generateSampleBlock(size_t sampleCount, uint8_t *outBuffer);
+	virtual size_t resetSamples();
 	virtual uint8_t generateSample();
+	virtual size_t generateSampleBlock(size_t sampleCount, uint8_t *outBuffer);
 };
 
 class NullGenerator : public AudioGenerator {};

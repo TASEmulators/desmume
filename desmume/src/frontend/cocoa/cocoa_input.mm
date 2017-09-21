@@ -26,8 +26,6 @@
 #include "../../slot2.h"
 #undef BOOL
 
-#include "ClientInputHandler.h"
-
 
 @implementation CocoaDSController
 
@@ -39,14 +37,10 @@
 @dynamic isHardwareMicAvailable;
 @dynamic isHardwareMicIdle;
 @dynamic isHardwareMicInClip;
-@synthesize micLevel;
-@dynamic hardwareMicEnabled;
-@dynamic hardwareMicLocked;
+@dynamic micLevel;
 @dynamic hardwareMicGain;
-@synthesize hardwareMicMute;
+@dynamic hardwareMicMute;
 @dynamic hardwareMicPause;
-@synthesize CAInputDevice;
-@dynamic softwareMicSampleGenerator;
 @dynamic selectedAudioFileGenerator;
 @synthesize hardwareMicInfoString;
 @synthesize hardwareMicNameString;
@@ -62,32 +56,20 @@
 	}
 		
 	delegate = nil;
-	inputHandler = new ClientInputHandler;
-	_availableMicSamples = 0;
-	
-	micLevel = 0.0f;
-	_micLevelTotal = 0.0f;
-	_micLevelsRead = 0.0f;
-	
-	CAInputDevice = new CoreAudioInput;
-	CAInputDevice->SetCallbackHardwareStateChanged(&CAHardwareStateChangedCallback, self, NULL);
-	CAInputDevice->SetCallbackHardwareGainChanged(&CAHardwareGainChangedCallback, self, NULL);
-	
+		
 	hardwareMicInfoString = @"No hardware input detected.";
 	hardwareMicNameString = @"No hardware input detected.";
 	hardwareMicManufacturerString = @"No hardware input detected.";
 	hardwareMicSampleRateString = @"No hardware input detected.";
 	
-	Mic_SetResetCallback(&CAResetCallback, self, NULL);
-	Mic_SetSampleReadCallback(&CASampleReadCallback, self, NULL);
+	inputHandler = new MacInputHandler;
+	((MacInputHandler *)inputHandler)->SetCocoaController(self);
 	
 	return self;
 }
 
 - (void)dealloc
 {
-	delete CAInputDevice;
-	
 	[self setDelegate:nil];
 	[self setHardwareMicInfoString:nil];
 	[self setHardwareMicNameString:nil];
@@ -104,62 +86,66 @@
 
 - (BOOL) isHardwareMicAvailable
 {
-	return ( CAInputDevice->IsHardwareEnabled() &&
-			!CAInputDevice->IsHardwareLocked() &&
-			!CAInputDevice->GetPauseState() ) ? YES : NO;
+	return (inputHandler->IsHardwareMicAvailable()) ? YES : NO;
 }
 
 - (BOOL) isHardwareMicIdle
 {
-	return (micLevel < MIC_NULL_LEVEL_THRESHOLD);
+	return (inputHandler->IsMicrophoneIdle()) ? YES : NO;
 }
 
 - (BOOL) isHardwareMicInClip
 {
-	return (micLevel >= MIC_CLIP_LEVEL_THRESHOLD);
+	return (inputHandler->IsMicrophoneClipping()) ? YES : NO;
 }
 
-- (void) setHardwareMicEnabled:(BOOL)micEnabled
+- (void) setMicLevel:(float)micLevelValue
 {
-	if (micEnabled)
+	// This method doesn't set the mic level, since the mic level is always an internally
+	// calculated value. What this method actually does is trigger updates for any
+	// KVO-compliant controls that are associated with this property.
+	
+	if ( (delegate != nil) && [delegate respondsToSelector:@selector(doMicLevelUpdateFromController:)] )
 	{
-		CAInputDevice->Start();
-	}
-	else
-	{
-		CAInputDevice->Stop();
+		NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
+		[[self delegate] doMicLevelUpdateFromController:self];
+		[tempPool release];
 	}
 }
 
-- (BOOL) hardwareMicEnabled
+- (float) micLevel
 {
-	return (CAInputDevice->IsHardwareEnabled()) ? YES : NO;
-}
-
-- (BOOL) hardwareMicLocked
-{
-	return (CAInputDevice->IsHardwareLocked()) ? YES : NO;
+	return inputHandler->GetAverageMicLevel();
 }
 
 - (void) setHardwareMicGain:(float)micGain
 {
-	CAInputDevice->SetGain(micGain);
+	inputHandler->SetHardwareMicGainAsNormalized(micGain);
 }
 
 - (float) hardwareMicGain
 {
-	return CAInputDevice->GetGain();
+	return inputHandler->GetHardwareMicNormalizedGain();
+}
+
+- (void) setHardwareMicMute:(BOOL)isMicMuted
+{
+	inputHandler->SetHardwareMicMute((isMicMuted) ? true : false);
+}
+
+- (BOOL) hardwareMicMute
+{
+	return (inputHandler->GetHardwareMicMute()) ? YES : NO;
 }
 
 - (void) setHardwareMicPause:(BOOL)isMicPaused
 {
-	bool pauseState = (isMicPaused || [self hardwareMicMute]) ? true : false;
-	CAInputDevice->SetPauseState(pauseState);
+	inputHandler->SetHardwareMicPause((isMicPaused) ? true : false);
 }
 
 - (BOOL) hardwareMicPause
 {
-	return (CAInputDevice->GetPauseState()) ? YES : NO;
+	return (inputHandler->GetHardwareMicPause()) ? YES : NO;
 }
 
 - (void) setSoftwareMicState:(BOOL)theState mode:(NSInteger)micMode
@@ -170,11 +156,6 @@
 - (BOOL) softwareMicState
 {
 	return (inputHandler->GetClientSoftwareMicState()) ? YES : NO;
-}
-
-- (AudioGenerator *) softwareMicSampleGenerator
-{
-	return inputHandler->GetClientSoftwareMicSampleGenerator();
 }
 
 - (void) setSelectedAudioFileGenerator:(AudioSampleBlockGenerator *)audioGenerator
@@ -246,63 +227,13 @@
 - (void) reset
 {
 	[self setAutohold:NO];
-	[self setMicLevel:0.0f];
-	[self clearMicLevelMeasure];
 	
-	_availableMicSamples = 0;
+	inputHandler->ResetHardwareMic();
 }
 
-- (void) clearMicLevelMeasure
+- (void) startHardwareMicDevice
 {
-	_micLevelTotal = 0.0f;
-	_micLevelsRead = 0.0f;
-}
-
-- (void) updateMicLevel
-{
-	float avgMicLevel = (_micLevelsRead != 0) ? _micLevelTotal / _micLevelsRead : 0.0f;
-	
-	NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
-	[self setMicLevel:avgMicLevel];
-	
-	if (delegate != nil && [delegate respondsToSelector:@selector(doMicLevelUpdateFromController:)])
-	{
-		[[self delegate] doMicLevelUpdateFromController:self];
-	}
-	
-	[tempPool release];
-}
-
-- (uint8_t) handleMicSampleRead:(CoreAudioInput *)caInput softwareMic:(AudioGenerator *)sampleGenerator
-{
-	uint8_t theSample = MIC_NULL_SAMPLE_VALUE;
-	
-	if (!inputHandler->GetClientSoftwareMicStateApplied() && (caInput != NULL))
-	{
-		if (caInput->GetPauseState())
-		{
-			return theSample;
-		}
-		else
-		{
-			if (_availableMicSamples == 0)
-			{
-				_availableMicSamples = CAInputDevice->Pull();
-			}
-			
-			caInput->_samplesConverted->read(&theSample, 1);
-			theSample >>= 1; // Samples from CoreAudio are 8-bit, so we need to convert the sample to 7-bit
-			_availableMicSamples--;
-		}
-	}
-	else
-	{
-		theSample = sampleGenerator->generateSample();
-	}
-	
-	_micLevelTotal += (float)( (MIC_NULL_SAMPLE_VALUE > theSample) ? MIC_NULL_SAMPLE_VALUE - theSample : theSample - MIC_NULL_SAMPLE_VALUE );
-	_micLevelsRead += 1.0f;
-	return theSample;
+	((MacInputHandler *)inputHandler)->StartHardwareMicDevice();
 }
 
 - (void) handleMicHardwareStateChanged:(CoreAudioInputDeviceInfo *)deviceInfo
@@ -329,10 +260,10 @@
 		[self setHardwareMicSampleRateString:[NSString stringWithFormat:@"%1.1f Hz", (double)deviceInfo->sampleRate]];
 	}
 	
-	[self clearMicLevelMeasure];
-	[self setMicLevel:0.0f];
+	inputHandler->ClearAverageMicLevel();
+	inputHandler->ReportAverageMicLevel();
 	
-	if (delegate != nil && [delegate respondsToSelector:@selector(doMicHardwareStateChangedFromController:isEnabled:isLocked:)])
+	if ( (delegate != nil) && [delegate respondsToSelector:@selector(doMicHardwareStateChangedFromController:isEnabled:isLocked:)] )
 	{
 		[[self delegate] doMicHardwareStateChangedFromController:self
 													   isEnabled:isHardwareEnabled
@@ -344,7 +275,7 @@
 
 - (void) handleMicHardwareGainChanged:(float)gainValue
 {
-	if (delegate != nil && [delegate respondsToSelector:@selector(doMicHardwareGainChangedFromController:gain:)])
+	if ( (delegate != nil) && [delegate respondsToSelector:@selector(doMicHardwareGainChangedFromController:gain:)] )
 	{
 		NSAutoreleasePool *tempPool = [[NSAutoreleasePool alloc] init];
 		[[self delegate] doMicHardwareGainChangedFromController:self gain:gainValue];
@@ -354,16 +285,105 @@
 
 @end
 
+MacInputHandler::MacInputHandler()
+{
+	_cdsController = nil;
+	_CAInputDevice = new CoreAudioInput;
+	_hardwareMicSampleGenerator = _CAInputDevice;
+	_isHardwareMicMuted = false;
+	
+	_CAInputDevice->SetCallbackHardwareStateChanged(&CAHardwareStateChangedCallback, _cdsController, NULL);
+	_CAInputDevice->SetCallbackHardwareGainChanged(&CAHardwareGainChangedCallback, _cdsController, NULL);
+	
+	Mic_SetResetCallback(&CAResetCallback, _CAInputDevice, NULL);
+	Mic_SetSampleReadCallback(&CASampleReadCallback, this, NULL);
+}
+
+MacInputHandler::~MacInputHandler()
+{
+	delete this->_CAInputDevice;
+}
+
+CocoaDSController* MacInputHandler::GetCocoaController()
+{
+	return this->_cdsController;
+}
+
+void MacInputHandler::SetCocoaController(CocoaDSController *theController)
+{
+	this->_cdsController = theController;
+	this->_CAInputDevice->SetCallbackHardwareStateChanged(&CAHardwareStateChangedCallback, theController, NULL);
+	this->_CAInputDevice->SetCallbackHardwareGainChanged(&CAHardwareGainChangedCallback, theController, NULL);
+}
+
+void MacInputHandler::StartHardwareMicDevice()
+{
+	this->_CAInputDevice->Start();
+}
+
+bool MacInputHandler::IsHardwareMicAvailable()
+{
+	return ( this->_CAInputDevice->IsHardwareEnabled() && !this->_CAInputDevice->IsHardwareLocked() );
+}
+
+void MacInputHandler::ReportAverageMicLevel()
+{
+	[this->_cdsController setMicLevel:this->GetAverageMicLevel()];
+}
+
+void MacInputHandler::SetHardwareMicMute(bool muteState)
+{
+	const bool needSetMuteState = (this->_isHardwareMicMuted != muteState);
+	
+	if (needSetMuteState)
+	{
+		if (muteState)
+		{
+			this->_hardwareMicSampleGenerator->resetSamples();
+			this->ClearAverageMicLevel();
+		}
+		
+		this->_isHardwareMicMuted = muteState;
+		this->_CAInputDevice->SetPauseState(this->_isHardwareMicPaused || muteState);
+	}
+}
+
+bool MacInputHandler::GetHardwareMicPause()
+{
+	return this->_CAInputDevice->GetPauseState();
+}
+
+void MacInputHandler::SetHardwareMicPause(bool pauseState)
+{
+	const bool needSetPauseState = (this->_isHardwareMicPaused != pauseState);
+	
+	if (needSetPauseState)
+	{
+		this->_isHardwareMicPaused = pauseState;
+		this->_CAInputDevice->SetPauseState(pauseState || this->_isHardwareMicMuted);
+	}
+}
+
+float MacInputHandler::GetHardwareMicNormalizedGain()
+{
+	return this->_CAInputDevice->GetNormalizedGain();
+}
+
+void MacInputHandler::SetHardwareMicGainAsNormalized(float normalizedGain)
+{
+	this->_CAInputDevice->SetGainAsNormalized(normalizedGain);
+}
+
 void CAResetCallback(void *inParam1, void *inParam2)
 {
-	CocoaDSController *cdsController = (CocoaDSController *)inParam1;
-	[cdsController CAInputDevice]->Start();
+	CoreAudioInput *caInputDevice = (CoreAudioInput *)inParam1;
+	caInputDevice->Start();
 }
 
 uint8_t CASampleReadCallback(void *inParam1, void *inParam2)
 {
-	CocoaDSController *cdsController = (CocoaDSController *)inParam1;
-	return [cdsController handleMicSampleRead:[cdsController CAInputDevice] softwareMic:[cdsController softwareMicSampleGenerator]];
+	ClientInputHandler *inputHandler = (ClientInputHandler *)inParam1;
+	return inputHandler->HandleMicSampleRead();
 }
 
 void CAHardwareStateChangedCallback(CoreAudioInputDeviceInfo *deviceInfo,

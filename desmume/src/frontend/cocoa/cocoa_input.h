@@ -20,6 +20,8 @@
 #include <libkern/OSAtomic.h>
 #include <vector>
 
+#include "ClientInputHandler.h"
+
 @class CocoaDSController;
 class ClientInputHandler;
 class CoreAudioInput;
@@ -45,16 +47,7 @@ class AudioSampleBlockGenerator;
 	ClientInputHandler *inputHandler;
 	
 	NSInteger stylusPressure;
-	
-	float micLevel;
-	float _micLevelTotal;
-	float _micLevelsRead;
-	
-	BOOL hardwareMicMute;
-	size_t _availableMicSamples;
-	
-	CoreAudioInput *CAInputDevice;
-	
+		
 	NSString *hardwareMicInfoString;
 	NSString *hardwareMicNameString;
 	NSString *hardwareMicManufacturerString;
@@ -70,13 +63,9 @@ class AudioSampleBlockGenerator;
 @property (readonly) BOOL isHardwareMicIdle;
 @property (readonly) BOOL isHardwareMicInClip;
 @property (assign) float micLevel;
-@property (assign) BOOL hardwareMicEnabled;
-@property (readonly) BOOL hardwareMicLocked;
 @property (assign) float hardwareMicGain;
 @property (assign) BOOL hardwareMicMute;
 @property (assign) BOOL hardwareMicPause;
-@property (readonly) CoreAudioInput *CAInputDevice;
-@property (readonly) AudioGenerator *softwareMicSampleGenerator;
 @property (assign) AudioSampleBlockGenerator *selectedAudioFileGenerator;
 @property (retain) NSString *hardwareMicInfoString;
 @property (retain) NSString *hardwareMicNameString;
@@ -91,16 +80,41 @@ class AudioSampleBlockGenerator;
 - (void) setSineWaveGeneratorFrequency:(const double)freq;
 - (void) clearAutohold;
 - (void) reset;
+- (void) startHardwareMicDevice;
 
-- (void) clearMicLevelMeasure;
-- (void) updateMicLevel;
-- (uint8_t) handleMicSampleRead:(CoreAudioInput *)caInput softwareMic:(AudioGenerator *)sampleGenerator;
 - (void) handleMicHardwareStateChanged:(CoreAudioInputDeviceInfo *)deviceInfo
 							 isEnabled:(BOOL)isHardwareEnabled
 							  isLocked:(BOOL)isHardwareLocked;
 - (void) handleMicHardwareGainChanged:(float)gainValue;
 
 @end
+
+class MacInputHandler : public ClientInputHandler
+{
+private:
+	CocoaDSController *_cdsController;
+	CoreAudioInput *_CAInputDevice;
+	
+public:
+	MacInputHandler();
+	~MacInputHandler();
+	
+	CocoaDSController* GetCocoaController();
+	void SetCocoaController(CocoaDSController *theController);
+	
+	void StartHardwareMicDevice();
+	
+	virtual bool IsHardwareMicAvailable();
+	virtual void ReportAverageMicLevel();
+	
+	virtual void SetHardwareMicMute(bool muteState);
+		
+	virtual bool GetHardwareMicPause();
+	virtual void SetHardwareMicPause(bool pauseState);
+	
+	virtual float GetHardwareMicNormalizedGain();
+	virtual void SetHardwareMicGainAsNormalized(float normalizedGain);
+};
 
 #ifdef __cplusplus
 extern "C"
