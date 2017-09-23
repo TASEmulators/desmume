@@ -1523,7 +1523,7 @@ OpenGLTexture* OpenGLRenderer::GetLoadedTextureFromPolygon(const POLY &thePoly, 
 }
 
 template <OGLPolyDrawMode DRAWMODE>
-size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, bool &lastPolyTreatedAsTranslucent)
+size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, u32 &lastPolyAttr)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -1550,12 +1550,10 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const
 	
 	// Set up the initial polygon
 	const POLY &initialPoly = polyList->list[indexList->list[firstIndex]];
-	u32 lastPolyAttr = initialPoly.polyAttr;
 	u32 lastTexParams = initialPoly.texParam;
 	u32 lastTexPalette = initialPoly.texPalette;
 	u32 lastViewport = initialPoly.viewport;
 	
-	this->SetupPolygon(initialPoly, lastPolyTreatedAsTranslucent, (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass));
 	this->SetupTexture(initialPoly, firstIndex);
 	this->SetupViewport(initialPoly.viewport);
 	
@@ -1571,8 +1569,7 @@ size_t OpenGLRenderer::DrawPolygonsForIndexRange(const POLYLIST *polyList, const
 		if (lastPolyAttr != thePoly.polyAttr)
 		{
 			lastPolyAttr = thePoly.polyAttr;
-			lastPolyTreatedAsTranslucent = thePoly.isTranslucent();
-			this->SetupPolygon(thePoly, lastPolyTreatedAsTranslucent, (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass));
+			this->SetupPolygon(thePoly, (DRAWMODE != OGLPolyDrawMode_DrawOpaquePolys), (DRAWMODE != OGLPolyDrawMode_ZeroAlphaPass));
 		}
 		
 		// Set up the texture if it changed
@@ -3268,7 +3265,7 @@ Render3DError OpenGLRenderer_1_2::DisableVertexAttributes()
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const POLYLIST *polyList, const INDEXLIST *indexList, bool enableAlphaBlending, size_t indexOffset, bool lastPolyTreatedAsTranslucent)
+Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const POLYLIST *polyList, const INDEXLIST *indexList, bool enableAlphaBlending, size_t indexOffset, u32 lastPolyAttr)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -3356,7 +3353,7 @@ Render3DError OpenGLRenderer_1_2::ZeroDstAlphaPass(const POLYLIST *polyList, con
 	glDepthMask(GL_FALSE);
 	glStencilFunc(GL_NOTEQUAL, 0x80, 0x80);
 	
-	this->DrawPolygonsForIndexRange<OGLPolyDrawMode_ZeroAlphaPass>(polyList, indexList, polyList->opaqueCount, polyList->count - 1, indexOffset, lastPolyTreatedAsTranslucent);
+	this->DrawPolygonsForIndexRange<OGLPolyDrawMode_ZeroAlphaPass>(polyList, indexList, polyList->opaqueCount, polyList->count - 1, indexOffset, lastPolyAttr);
 	
 	// Restore OpenGL states back to normal.
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.selectedRenderingFBO);
@@ -3692,23 +3689,33 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 		
 		this->EnableVertexAttributes();
 		
-		const POLY &firstPoly = polyList->list[indexList->list[0]];
-		bool lastPolyTreatedAsTranslucent = firstPoly.isTranslucent();
 		size_t indexOffset = 0;
+		
+		const POLY &firstPoly = polyList->list[indexList->list[0]];
+		u32 lastPolyAttr = firstPoly.polyAttr;
+		this->SetupPolygon(firstPoly, false, true);
 		
 		if (polyList->opaqueCount > 0)
 		{
-			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(polyList, indexList, 0, polyList->opaqueCount - 1, indexOffset, lastPolyTreatedAsTranslucent);
+			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(polyList, indexList, 0, polyList->opaqueCount - 1, indexOffset, lastPolyAttr);
 		}
 		
 		if (polyList->opaqueCount < polyList->count)
 		{
 			if (this->_needsZeroDstAlphaPass)
 			{
-				this->ZeroDstAlphaPass(polyList, indexList, renderState.enableAlphaBlending, indexOffset, lastPolyTreatedAsTranslucent);
+				this->ZeroDstAlphaPass(polyList, indexList, renderState.enableAlphaBlending, indexOffset, lastPolyAttr);
+				
+				if (polyList->opaqueCount > 0)
+				{
+					const POLY &lastOpaquePoly = polyList->list[indexList->list[polyList->opaqueCount - 1]];
+					lastPolyAttr = lastOpaquePoly.polyAttr;
+					this->SetupPolygon(lastOpaquePoly, false, true);
+				}
+				
 			}
 			
-			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(polyList, indexList, polyList->opaqueCount, polyList->count - 1, indexOffset, lastPolyTreatedAsTranslucent);
+			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(polyList, indexList, polyList->opaqueCount, polyList->count - 1, indexOffset, lastPolyAttr);
 		}
 		
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -4732,6 +4739,6 @@ Render3DError OpenGLRenderer_2_1::RenderFlush(bool willFlushBuffer32, bool willF
 	return RENDER3DERROR_NOERR;
 }
 
-template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, bool &lastPolyTreatedAsTranslucent);
-template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, bool &lastPolyTreatedAsTranslucent);
-template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_ZeroAlphaPass>(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, bool &lastPolyTreatedAsTranslucent);
+template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, u32 &lastPolyAttr);
+template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, u32 &lastPolyAttr);
+template size_t OpenGLRenderer::DrawPolygonsForIndexRange<OGLPolyDrawMode_ZeroAlphaPass>(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, u32 &lastPolyAttr);

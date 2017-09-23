@@ -658,7 +658,7 @@ protected:
 	
 	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	OpenGLTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
-	template<OGLPolyDrawMode DRAWMODE> size_t DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, bool &lastPolyTreatedAsTranslucent);
+	template<OGLPolyDrawMode DRAWMODE> size_t DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, u32 &lastPolyAttr);
 	template<bool WILLUPDATESTENCILBUFFER> Render3DError DrawAlphaTexturePolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const bool canHaveOpaqueFragments);
 	
 	// OpenGL-specific methods
@@ -774,7 +774,7 @@ protected:
 	virtual void GetExtensionSet(std::set<std::string> *oglExtensionSet);
 	virtual Render3DError EnableVertexAttributes();
 	virtual Render3DError DisableVertexAttributes();
-	virtual Render3DError ZeroDstAlphaPass(const POLYLIST *polyList, const INDEXLIST *indexList, bool enableAlphaBlending, size_t indexOffset, bool lastPolyTreatedAsTranslucent);
+	virtual Render3DError ZeroDstAlphaPass(const POLYLIST *polyList, const INDEXLIST *indexList, bool enableAlphaBlending, size_t indexOffset, u32 lastPolyAttr);
 	virtual Render3DError DownsampleFBO();
 	virtual Render3DError ReadBackPixels();
 	
