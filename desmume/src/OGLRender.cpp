@@ -3693,10 +3693,10 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 		
 		const POLY &firstPoly = polyList->list[indexList->list[0]];
 		u32 lastPolyAttr = firstPoly.polyAttr;
-		this->SetupPolygon(firstPoly, false, true);
 		
 		if (polyList->opaqueCount > 0)
 		{
+			this->SetupPolygon(firstPoly, false, true);
 			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawOpaquePolys>(polyList, indexList, 0, polyList->opaqueCount - 1, indexOffset, lastPolyAttr);
 		}
 		
@@ -3704,6 +3704,11 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 		{
 			if (this->_needsZeroDstAlphaPass)
 			{
+				if (polyList->opaqueCount == 0)
+				{
+					this->SetupPolygon(firstPoly, true, false);
+				}
+				
 				this->ZeroDstAlphaPass(polyList, indexList, renderState.enableAlphaBlending, indexOffset, lastPolyAttr);
 				
 				if (polyList->opaqueCount > 0)
@@ -3712,7 +3717,11 @@ Render3DError OpenGLRenderer_1_2::RenderGeometry(const GFX3D_State &renderState,
 					lastPolyAttr = lastOpaquePoly.polyAttr;
 					this->SetupPolygon(lastOpaquePoly, false, true);
 				}
-				
+			}
+			
+			if (polyList->opaqueCount == 0)
+			{
+				this->SetupPolygon(firstPoly, true, true);
 			}
 			
 			this->DrawPolygonsForIndexRange<OGLPolyDrawMode_DrawTranslucentPolys>(polyList, indexList, polyList->opaqueCount, polyList->count - 1, indexOffset, lastPolyAttr);
