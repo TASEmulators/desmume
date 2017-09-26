@@ -1017,7 +1017,12 @@ void ClientDisplayView::FlushView()
 	this->_viewNeedsFlush = false;
 }
 
-void ClientDisplayView::FinishFrameAtIndex(const u8 bufferIndex)
+void ClientDisplayView::CopyFrameToBuffer(uint32_t *dstBuffer)
+{
+	// Do nothing. This is implementation dependent.
+}
+
+void ClientDisplayView::FinishFrameAtIndex(const uint8_t bufferIndex)
 {
 	// Do nothing. This is implementation dependent.
 }

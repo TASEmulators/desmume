@@ -320,7 +320,9 @@ public:
 	virtual void ProcessDisplays();
 	virtual void UpdateView();
 	virtual void FlushView();
-	virtual void FinishFrameAtIndex(const u8 bufferIndex);
+	virtual void FinishFrameAtIndex(const uint8_t bufferIndex);
+	
+	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
 	
 	// Emulator interface
 	const NDSDisplayInfo& GetEmuDisplayInfo() const;

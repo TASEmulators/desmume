@@ -170,6 +170,7 @@
 
 - (void) setScaleFactor:(float)theScaleFactor;
 - (void) hudUpdate;
+- (NSImage *) copyImageFromView;
 - (NSImage *) image;
 - (NSBitmapImageRep *) bitmapImageRep;
 

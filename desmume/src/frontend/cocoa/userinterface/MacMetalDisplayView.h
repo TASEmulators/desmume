@@ -55,6 +55,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLComputePipelineState> _fetch888Pipeline;
 	id<MTLComputePipelineState> deposterizePipeline;
 	id<MTLRenderPipelineState> hudPipeline;
+	id<MTLRenderPipelineState> hudRGBAPipeline;
 	
 	id<MTLBlitCommandEncoder> _fetchEncoder;
 	
@@ -109,6 +110,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 
 @property (readonly, nonatomic) id<MTLComputePipelineState> deposterizePipeline;
 @property (readonly, nonatomic) id<MTLRenderPipelineState> hudPipeline;
+@property (readonly, nonatomic) id<MTLRenderPipelineState> hudRGBAPipeline;
 @property (readonly, nonatomic) id<MTLSamplerState> samplerHUDBox;
 @property (readonly, nonatomic) id<MTLSamplerState> samplerHUDText;
 
@@ -162,6 +164,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
 	id<MTLComputePipelineState> pixelScalePipeline;
 	id<MTLRenderPipelineState> displayOutputPipeline;
+	id<MTLRenderPipelineState> displayRGBAOutputPipeline;
 	
 	id<MTLBuffer> _cdvPropertiesBuffer;
 	id<MTLBuffer> _displayVtxPositionBuffer;
@@ -203,6 +206,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (readonly, nonatomic) MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
 @property (retain) id<MTLComputePipelineState> pixelScalePipeline;
 @property (retain) id<MTLRenderPipelineState> displayOutputPipeline;
+@property (retain) id<MTLRenderPipelineState> displayRGBAOutputPipeline;
 @property (retain) id<MTLBuffer> bufCPUFilterSrcMain;
 @property (retain) id<MTLBuffer> bufCPUFilterSrcTouch;
 @property (retain) id<MTLBuffer> bufCPUFilterDstMain;
@@ -223,6 +227,10 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 - (void) copyHUDFontUsingFace:(const FT_Face &)fontFace size:(const size_t)glyphSize tileSize:(const size_t)glyphTileSize info:(GlyphInfo *)glyphInfo;
 - (void) processDisplays;
 - (void) updateRenderBuffers;
+- (void) renderForCommandBuffer:(id<MTLCommandBuffer>)cb
+		   displayPipelineState:(id<MTLRenderPipelineState>)displayPipelineState
+			   hudPipelineState:(id<MTLRenderPipelineState>)hudPipelineState;
+- (void) renderAndDownloadToBuffer:(uint32_t *)dstBuffer;
 - (void) renderAndFlushDrawable;
 
 @end
@@ -287,6 +295,8 @@ public:
 	virtual void ProcessDisplays();
 	virtual void UpdateView();
 	virtual void FlushView();
+	
+	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
 };
 
 #pragma mark -

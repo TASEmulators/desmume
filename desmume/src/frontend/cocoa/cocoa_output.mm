@@ -1140,7 +1140,7 @@
 
 - (void) handleCopyToPasteboard
 {
-	NSImage *screenshot = [self image];
+	NSImage *screenshot = [self copyImageFromView];
 	if (screenshot == nil)
 	{
 		return;
@@ -1186,6 +1186,44 @@
 	OSSpinLockLock(&spinlockNDSFrameInfo);
 	_cdv->SetHUDInfo(clientFrameInfo, _ndsFrameInfo);
 	OSSpinLockUnlock(&spinlockNDSFrameInfo);
+}
+
+- (NSImage *) copyImageFromView
+{
+	NSSize viewSize = NSMakeSize(_cdv->GetViewProperties().clientWidth, _cdv->GetViewProperties().clientHeight);
+	NSUInteger w = viewSize.width;
+	NSUInteger h = viewSize.height;
+	
+	NSImage *newImage = [[NSImage alloc] initWithSize:viewSize];
+	if (newImage == nil)
+	{
+		return newImage;
+	}
+	
+	// Render the frame in an NSBitmapImageRep
+	NSBitmapImageRep *newImageRep = [[[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
+																			 pixelsWide:w
+																			 pixelsHigh:h
+																		  bitsPerSample:8
+																		samplesPerPixel:4
+																			   hasAlpha:YES
+																			   isPlanar:NO
+																		 colorSpaceName:NSCalibratedRGBColorSpace
+																			bytesPerRow:w * 4
+																		   bitsPerPixel:32] autorelease];
+	if (newImageRep == nil)
+	{
+		[newImage release];
+		newImage = nil;
+		return newImage;
+	}
+	
+	_cdv->CopyFrameToBuffer((uint32_t *)[newImageRep bitmapData]);
+	
+	// Attach the rendered frame to the NSImageRep
+	[newImage addRepresentation:newImageRep];
+	
+	return [newImage autorelease];
 }
 
 - (NSImage *) image

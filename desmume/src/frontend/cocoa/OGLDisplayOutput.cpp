@@ -34,6 +34,7 @@ static const char *HUDOutputVertShader_100 = {"\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
+	uniform bool renderFlipped; \n\
 	\n\
 	VARYING vec4 vtxColor; \n\
 	VARYING vec2 texCoord[1]; \n\
@@ -54,6 +55,11 @@ static const char *HUDOutputVertShader_100 = {"\
 		vtxColor = inColor; \n\
 		texCoord[0] = inTexCoord0; \n\
 		gl_Position = vec4(projection * rotation * scale * inPosition, 0.0, 1.0);\n\
+		\n\
+		if (renderFlipped)\n\
+		{\n\
+			gl_Position.y *= -1.0;\n\
+		}\n\
 	} \n\
 "};
 
@@ -77,6 +83,7 @@ static const char *Sample1x1OutputVertShader_100 = {"\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
+	uniform bool renderFlipped; \n\
 	\n\
 	VARYING vec2 texCoord[1]; \n\
 	\n\
@@ -95,6 +102,11 @@ static const char *Sample1x1OutputVertShader_100 = {"\
 		\n\
 		texCoord[0] = inTexCoord0; \n\
 		gl_Position = vec4(projection * rotation * scale * inPosition, 0.0, 1.0);\n\
+		\n\
+		if (renderFlipped)\n\
+		{\n\
+			gl_Position.y *= -1.0;\n\
+		}\n\
 	} \n\
 "};
 
@@ -111,6 +123,7 @@ static const char *BicubicSample4x4Output_VertShader_110 = {"\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
+	uniform bool renderFlipped; \n\
 	\n\
 	VARYING vec2 texCoord[16];\n\
 	\n\
@@ -150,6 +163,11 @@ static const char *BicubicSample4x4Output_VertShader_110 = {"\
 		texCoord[12] = xystart + vec2( 2.0, 2.0);\n\
 		\n\
 		gl_Position = vec4(projection * rotation * scale * inPosition, 0.0, 1.0);\n\
+		\n\
+		if (renderFlipped)\n\
+		{\n\
+			gl_Position.y *= -1.0;\n\
+		}\n\
 	}\n\
 "};
 
@@ -167,6 +185,7 @@ static const char *BicubicSample5x5Output_VertShader_110 = {"\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
+	uniform bool renderFlipped; \n\
 	\n\
 	VARYING vec2 texCoord[25];\n\
 	\n\
@@ -216,6 +235,11 @@ static const char *BicubicSample5x5Output_VertShader_110 = {"\
 		texCoord[12] = xystart + vec2( 2.0, 2.0);\n\
 		\n\
 		gl_Position = vec4(projection * rotation * scale * inPosition, 0.0, 1.0);\n\
+		\n\
+		if (renderFlipped)\n\
+		{\n\
+			gl_Position.y *= -1.0;\n\
+		}\n\
 	}\n\
 "};
 
@@ -234,6 +258,7 @@ static const char *BicubicSample6x6Output_VertShader_110 = {"\
 	uniform vec2 viewSize; \n\
 	uniform float scalar; \n\
 	uniform float angleDegrees; \n\
+	uniform bool renderFlipped; \n\
 	\n\
 	VARYING vec2 texCoord[36];\n\
 	\n\
@@ -295,6 +320,11 @@ static const char *BicubicSample6x6Output_VertShader_110 = {"\
 		texCoord[30] = xystart + vec2( 3.0, 3.0);\n\
 		\n\
 		gl_Position = vec4(projection * rotation * scale * inPosition, 0.0, 1.0);\n\
+		\n\
+		if (renderFlipped)\n\
+		{\n\
+			gl_Position.y *= -1.0;\n\
+		}\n\
 	}\n\
 "};
 
@@ -4996,6 +5026,8 @@ OGLVideoOutput::OGLVideoOutput()
 	
 	_texCPUFilterDstID[NDSDisplayID_Main] = 0;
 	_texCPUFilterDstID[NDSDisplayID_Touch] = 0;
+	
+	_fboFrameCopyID = 0;
 }
 
 OGLVideoOutput::~OGLVideoOutput()
@@ -5011,6 +5043,7 @@ OGLVideoOutput::~OGLVideoOutput()
 		this->_layerList = NULL;
 	}
 	
+	glDeleteFramebuffersEXT(1, &this->_fboFrameCopyID);
 	glDeleteTextures(2, this->_texCPUFilterDstID);
 }
 
@@ -5118,7 +5151,7 @@ void OGLVideoOutput::Init()
 	glDisable(GL_DITHER);
 	glDisable(GL_STENCIL_TEST);
 	
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
 	
 	// Set up fixed-function pipeline render states.
 	if (!this->_contextInfo->IsShaderSupported())
@@ -5133,10 +5166,9 @@ void OGLVideoOutput::Init()
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	
 	// Set up textures
-	glGenTextures(2, this->_texCPUFilterDstID);
-	
 	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, this->_vfMasterDstBufferSize, this->_vfMasterDstBuffer);
 	
+	glGenTextures(2, this->_texCPUFilterDstID);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texCPUFilterDstID[NDSDisplayID_Main]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -5154,6 +5186,8 @@ void OGLVideoOutput::Init()
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_vf[NDSDisplayID_Touch]->GetDstWidth(), this->_vf[NDSDisplayID_Touch]->GetDstHeight(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, this->_vf[NDSDisplayID_Touch]->GetDstBufferPtr());
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+	
+	glGenFramebuffersEXT(1, &this->_fboFrameCopyID);
 }
 
 void OGLVideoOutput::SetOutputFilter(const OutputFilterTypeID filterID)
@@ -5222,7 +5256,7 @@ void OGLVideoOutput::ProcessDisplays()
 	}
 }
 
-void OGLVideoOutput::FinishFrameAtIndex(const u8 bufferIndex)
+void OGLVideoOutput::FinishFrameAtIndex(const uint8_t bufferIndex)
 {
 	for (size_t i = 0; i < _layerList->size(); i++)
 	{
@@ -5235,7 +5269,42 @@ void OGLVideoOutput::FinishFrameAtIndex(const u8 bufferIndex)
 	}
 }
 
-void OGLVideoOutput::RenderViewOGL()
+void OGLVideoOutput::CopyFrameToBuffer(uint32_t *dstBuffer)
+{
+	for (size_t i = 0; i < _layerList->size(); i++)
+	{
+		OGLVideoLayer *theLayer = (*_layerList)[i];
+		theLayer->SetNeedsUpdateViewport();
+	}
+	
+	GLuint texFrameCopyID = 0;
+	
+	glGenTextures(1, &texFrameCopyID);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texFrameCopyID);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, this->_viewportWidth, this->_viewportHeight, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, dstBuffer);
+	
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, this->_fboFrameCopyID);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, texFrameCopyID, 0);
+	
+	this->RenderFrameOGL(true);
+	glReadPixels(0, 0, this->_renderProperty.clientWidth, this->_renderProperty.clientHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, dstBuffer);
+	
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+	glDeleteTextures(1, &texFrameCopyID);
+	
+	for (size_t i = 0; i < _layerList->size(); i++)
+	{
+		OGLVideoLayer *theLayer = (*_layerList)[i];
+		theLayer->SetNeedsUpdateViewport();
+	}
+}
+
+void OGLVideoOutput::RenderFrameOGL(bool isRenderingFlipped)
 {
 	if (this->_needUpdateViewport)
 	{
@@ -5251,7 +5320,7 @@ void OGLVideoOutput::RenderViewOGL()
 		
 		if (theLayer->IsVisible())
 		{
-			theLayer->RenderOGL();
+			theLayer->RenderOGL(isRenderingFlipped);
 		}
 	}
 }
@@ -5632,6 +5701,7 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 		_uniformAngleDegrees = glGetUniformLocation(finalOutputProgramID, "angleDegrees");
 		_uniformScalar = glGetUniformLocation(finalOutputProgramID, "scalar");
 		_uniformViewSize = glGetUniformLocation(finalOutputProgramID, "viewSize");
+		_uniformRenderFlipped = glGetUniformLocation(finalOutputProgramID, "renderFlipped");
 		glUseProgram(0);
 	}
 	else
@@ -5771,6 +5841,7 @@ void OGLImage::UploadTransformationOGL()
 		glUniform2f(this->_uniformViewSize, w, h);
 		glUniform1f(this->_uniformAngleDegrees, 0.0f);
 		glUniform1f(this->_uniformScalar, s);
+		glUniform1i(this->_uniformRenderFlipped, GL_FALSE);
 	}
 	else
 	{
@@ -6228,6 +6299,7 @@ OGLHUDLayer::OGLHUDLayer(OGLVideoOutput *oglVO)
 		_uniformAngleDegrees = glGetUniformLocation(_program->GetProgramID(), "angleDegrees");
 		_uniformScalar = glGetUniformLocation(_program->GetProgramID(), "scalar");
 		_uniformViewSize = glGetUniformLocation(_program->GetProgramID(), "viewSize");
+		_uniformRenderFlipped = glGetUniformLocation(_program->GetProgramID(), "renderFlipped");
 		glUseProgram(0);
 	}
 	else
@@ -6438,7 +6510,7 @@ void OGLHUDLayer::_UpdateVerticesOGL()
 	this->_output->ClearHUDNeedsUpdate();
 }
 
-void OGLHUDLayer::RenderOGL()
+void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 {
 	size_t hudLength = this->_output->GetHUDString().length();
 	size_t hudTouchLineLength = 0;
@@ -6489,6 +6561,7 @@ void OGLHUDLayer::RenderOGL()
 		if (this->_needUpdateViewport)
 		{
 			glUniform2f(this->_uniformViewSize, this->_output->GetViewProperties().clientWidth, this->_output->GetViewProperties().clientHeight);
+			glUniform1i(this->_uniformRenderFlipped, (isRenderingFlipped) ? GL_TRUE : GL_FALSE);
 			this->_needUpdateViewport = false;
 		}
 	}
@@ -6645,6 +6718,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 		_uniformAngleDegrees = glGetUniformLocation(finalOutputProgramID, "angleDegrees");
 		_uniformScalar = glGetUniformLocation(finalOutputProgramID, "scalar");
 		_uniformViewSize = glGetUniformLocation(finalOutputProgramID, "viewSize");
+		_uniformRenderFlipped = glGetUniformLocation(finalOutputProgramID, "renderFlipped");
 		glUseProgram(0);
 	}
 	else
@@ -7134,7 +7208,7 @@ void OGLDisplayLayer::ProcessOGL()
 	glViewport(0, 0, this->_output->GetViewportWidth(), this->_output->GetViewportHeight());
 }
 
-void OGLDisplayLayer::RenderOGL()
+void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 {
 	const NDSDisplayInfo &emuDisplayInfo = this->_output->GetEmuDisplayInfo();
 	
@@ -7145,6 +7219,7 @@ void OGLDisplayLayer::RenderOGL()
 		if (this->_needUpdateViewport)
 		{
 			glUniform2f(this->_uniformViewSize, this->_output->GetViewportWidth(), this->_output->GetViewportHeight());
+			glUniform1i(this->_uniformRenderFlipped, (isRenderingFlipped) ? GL_TRUE : GL_FALSE);
 			this->_needUpdateViewport = false;
 		}
 	}
@@ -7156,7 +7231,15 @@ void OGLDisplayLayer::RenderOGL()
 		
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		glOrtho(-w/2.0, -w/2.0 + w, -h/2.0, -h/2.0 + h, -1.0, 1.0);
+		
+		if (isRenderingFlipped)
+		{
+			glOrtho(-w/2.0, -w/2.0 + w, -h/2.0 + h, -h/2.0, -1.0, 1.0);
+		}
+		else
+		{
+			glOrtho(-w/2.0, -w/2.0 + w, -h/2.0, -h/2.0 + h, -1.0, 1.0);
+		}
 		
 		this->_needUpdateViewport = false;
 	}

@@ -212,6 +212,7 @@ protected:
 	GLint _uniformAngleDegrees;
 	GLint _uniformScalar;
 	GLint _uniformViewSize;
+	GLint _uniformRenderFlipped;
 	
 	void UploadVerticesOGL();
 	void UploadTexCoordsOGL();
@@ -257,6 +258,7 @@ protected:
 	GLint _uniformAngleDegrees;
 	GLint _uniformScalar;
 	GLint _uniformViewSize;
+	GLint _uniformRenderFlipped;
 	
 public:
 	virtual ~OGLVideoLayer() {};
@@ -268,7 +270,7 @@ public:
 	virtual bool IsVisible();
 	virtual void SetVisibility(const bool visibleState);
 	
-	virtual void RenderOGL() = 0;
+	virtual void RenderOGL(bool isRenderingFlipped) = 0;
 	virtual void FinishOGL(const u8 bufferIndex) {};
 };
 
@@ -292,7 +294,7 @@ public:
 	
 	void CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo);
 	
-	virtual void RenderOGL();
+	virtual void RenderOGL(bool isRenderingFlipped);
 };
 
 class OGLDisplayLayer : public OGLVideoLayer
@@ -324,7 +326,7 @@ public:
 	
 	void LoadNativeDisplayByID_OGL(const NDSDisplayID displayID);
 	void ProcessOGL();
-	virtual void RenderOGL();
+	virtual void RenderOGL(bool isRenderingFlipped);
 	virtual void FinishOGL(const u8 bufferIndex);
 };
 
@@ -381,6 +383,7 @@ protected:
 	bool _hasOGLPixelScaler;
 	std::vector<OGLVideoLayer *> *_layerList;
 	GLuint _texCPUFilterDstID[2];
+	GLuint _fboFrameCopyID;
 	
 	void _UpdateViewport();
 	
@@ -419,8 +422,9 @@ public:
 	
 	// Client view interface
 	virtual void ProcessDisplays();
-	virtual void FinishFrameAtIndex(const u8 bufferIndex);
-	virtual void RenderViewOGL();
+	virtual void FinishFrameAtIndex(const uint8_t bufferIndex);
+	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);;
+	virtual void RenderFrameOGL(bool isRenderingFlipped);
 	virtual void LockDisplayTextures();
 	virtual void UnlockDisplayTextures();
 };

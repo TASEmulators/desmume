@@ -75,7 +75,7 @@
 {
 	CGLSetCurrentContext(glContext);
 	CGLLockContext(glContext);
-	_cdv->RenderViewOGL();
+	_cdv->RenderFrameOGL(false);
 	[super drawInCGLContext:glContext pixelFormat:pixelFormat forLayerTime:timeInterval displayTime:timeStamp];
 	CGLUnlockContext(glContext);
 }
@@ -447,12 +447,20 @@ void MacOGLDisplayView::FlushView()
 	
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->RenderViewOGL();
+	this->RenderFrameOGL(false);
 	CGLFlushDrawable(this->_context);
 	CGLUnlockContext(this->_context);
 }
 
-void MacOGLDisplayView::FinishFrameAtIndex(const u8 bufferIndex)
+void MacOGLDisplayView::CopyFrameToBuffer(uint32_t *dstBuffer)
+{
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->OGLVideoOutput::CopyFrameToBuffer(dstBuffer);
+	CGLUnlockContext(this->_context);
+}
+
+void MacOGLDisplayView::FinishFrameAtIndex(const uint8_t bufferIndex)
 {
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
