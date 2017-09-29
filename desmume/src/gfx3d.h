@@ -696,8 +696,6 @@ extern CACHE_ALIGN u8 mixTable555[32][32][32];
 
 extern BOOL isSwapBuffers;
 
-int _hack_getMatrixStackLevel(int);
-
 void gfx3d_glFlush(u32 v);
 // end GE commands
 

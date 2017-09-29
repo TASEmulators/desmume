@@ -295,8 +295,6 @@ CACHE_ALIGN MatrixStack	mtxStack[4] = {
 	MatrixStack(1, 3), // Texture stack
 };
 
-int _hack_getMatrixStackLevel(int which) { return mtxStack[which].position; }
-
 static CACHE_ALIGN s32 mtxCurrent[4][16];
 static CACHE_ALIGN s32 mtxTemporal[16];
 static MatrixMode mode = MATRIXMODE_PROJECTION;
@@ -967,6 +965,9 @@ static void gfx3d_glPushMatrix()
 	//2. mask that bit off to actually index the matrix for reading
 	//3. SE is set depending on resulting internal counter
 
+	//printf("%d %d %d %d -> ",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
+	//printf("PUSH mode: %d -> ",mode,mtxStack[mode].position);
+
 	if(mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
 	{
 		MatrixCopy(MatrixStackGetPos(&mtxStack[mode], 0), mtxCurrent[mode]);
@@ -985,8 +986,10 @@ static void gfx3d_glPushMatrix()
 
 		index += 1;
 		index &= 63;
-		if(index >= 32) MMU_new.gxstat.se = 1;
+		if(index >= 32) MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
 	}
+
+	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
 
 	GFX_DELAY(17);
 }
@@ -996,6 +999,9 @@ static void gfx3d_glPopMatrix(u32 v)
 	//1. apply offset specified by pop to internal counter
 	//2. SE is set depending on resulting internal counter
 	//3. mask that bit off to actually index the matrix for reading
+
+	//printf("%d %d %d %d -> ",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
+	//printf("POP   (%d): mode: %d -> ",v,mode,mtxStack[mode].position);
 
 	if(mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
 	{
@@ -1012,17 +1018,22 @@ static void gfx3d_glPopMatrix(u32 v)
 			
 		index -= v & 63;
 		index &= 63;
-		if(index >= 32) MMU_new.gxstat.se = 1; 
+		if(index >= 32) MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
 			
 		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION], index&31));
 		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION_VECTOR], index&31));
 	}
+
+	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
 
 	GFX_DELAY(36);
 }
 
 static void gfx3d_glStoreMatrix(u32 v)
 {
+	//printf("%d %d %d %d -> ",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
+	//printf("STORE (%d): mode: %d -> ",v,mode,mtxStack[mode].position);
+
 	if(mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
 	{
 		//parameter ignored and treated as sensible
@@ -1034,12 +1045,14 @@ static void gfx3d_glStoreMatrix(u32 v)
 	{
 		v &= 31;
 
-		//out of bounds function fully properly, but set errors
+		//out of bounds function fully properly, but set errors (not sure, this might be off by 1)
 		if(v >= 31) MMU_new.gxstat.se = 1;
 
 		MatrixStackLoadMatrix(&mtxStack[MATRIXMODE_POSITION], v, mtxCurrent[MATRIXMODE_POSITION]);
 		MatrixStackLoadMatrix(&mtxStack[MATRIXMODE_POSITION_VECTOR], v, mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 	}
+
+	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
 
 	GFX_DELAY(17);
 }
@@ -1055,7 +1068,7 @@ static void gfx3d_glRestoreMatrix(u32 v)
 	else
 	{
 		//out of bounds errors function fully properly, but set errors
-		MMU_new.gxstat.se = v>=31;
+		MMU_new.gxstat.se = v>=31; //(not sure, this might be off by 1)
 
 		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION], v));
 		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION_VECTOR], v));
