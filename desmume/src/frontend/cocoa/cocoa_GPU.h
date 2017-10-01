@@ -62,12 +62,10 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 @property (assign, nonatomic) GPUClientFetchObject *GPUFetchObject;
 @property (readonly, nonatomic) volatile int32_t numberViewsUsingDirectToCPUFiltering;
 
-- (const NDSDisplayInfo &) fetchDisplayInfoForIndex:(const u8)bufferIndex;
 - (pthread_rwlock_t *) rwlockFramebufferAtIndex:(const u8)bufferIndex;
 - (void) setOutputList:(NSMutableArray *)theOutputList mutex:(pthread_mutex_t *)theMutex;
 - (void) incrementViewsUsingDirectToCPUFiltering;
 - (void) decrementViewsUsingDirectToCPUFiltering;
-- (void) handleFetchFromBufferIndexAndPushVideo:(NSData *)indexData;
 - (void) pushVideoDataToAllDisplayViews;
 - (void) finishAllDisplayViewsAtIndex:(const u8)bufferIndex;
 - (void) flushAllDisplaysOnDisplayLink:(CVDisplayLinkRef)displayLink timeStamp:(const CVTimeStamp *)timeStamp;

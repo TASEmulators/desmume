@@ -5019,15 +5019,17 @@ void OGLClientFetchObject::_FetchCustomDisplayByID(const NDSDisplayID displayID,
 OGLVideoOutput::OGLVideoOutput()
 {
 	_contextInfo = NULL;
+	_viewportWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_viewportHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2;
 	_needUpdateViewport = true;
 	_hasOGLPixelScaler = false;
-	_layerList = new std::vector<OGLVideoLayer *>;
-	_layerList->reserve(8);
 	
 	_texCPUFilterDstID[NDSDisplayID_Main] = 0;
 	_texCPUFilterDstID[NDSDisplayID_Touch] = 0;
-	
 	_fboFrameCopyID = 0;
+	
+	_layerList = new std::vector<OGLVideoLayer *>;
+	_layerList->reserve(8);
 }
 
 OGLVideoOutput::~OGLVideoOutput()
@@ -5073,12 +5075,12 @@ void OGLVideoOutput::_UpdateClientSize()
 	this->_needUpdateViewport = true;
 	
 	this->GetHUDLayer()->SetNeedsUpdateVertices();
-	this->ClientDisplay3DView::_UpdateClientSize();
+	this->ClientDisplay3DPresenter::_UpdateClientSize();
 }
 
 void OGLVideoOutput::_UpdateViewScale()
 {
-	this->ClientDisplayView::_UpdateViewScale();
+	this->ClientDisplay3DPresenter::_UpdateViewScale();
 	
 	for (size_t i = 0; i < _layerList->size(); i++)
 	{
@@ -5109,7 +5111,7 @@ void OGLVideoOutput::_ResizeCPUPixelScaler(const VideoFilterTypeID filterID)
 	
 	glFinish();
 	
-	this->ClientDisplay3DView::_ResizeCPUPixelScaler(filterID);
+	this->ClientDisplay3DPresenter::_ResizeCPUPixelScaler(filterID);
 	
 	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, this->_vfMasterDstBufferSize, this->_vfMasterDstBuffer);
 	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
@@ -5199,7 +5201,7 @@ void OGLVideoOutput::SetOutputFilter(const OutputFilterTypeID filterID)
 
 void OGLVideoOutput::SetPixelScaler(const VideoFilterTypeID filterID)
 {
-	this->ClientDisplay3DView::SetPixelScaler(filterID);
+	this->ClientDisplay3DPresenter::SetPixelScaler(filterID);
 	
 	this->_hasOGLPixelScaler = this->GetDisplayLayer()->SetGPUPixelScalerOGL(this->_pixelScaler);
 	this->_willFilterOnGPU = (this->GetFiltersPreferGPU()) ? this->_hasOGLPixelScaler : false;
@@ -5213,7 +5215,7 @@ void OGLVideoOutput::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize
 void OGLVideoOutput::SetHUDVisibility(const bool visibleState)
 {
 	this->GetHUDLayer()->SetVisibility(visibleState);
-	this->ClientDisplay3DView::SetHUDVisibility(visibleState);
+	this->ClientDisplay3DPresenter::SetHUDVisibility(visibleState);
 }
 
 void OGLVideoOutput::SetFiltersPreferGPU(const bool preferGPU)
@@ -5271,12 +5273,6 @@ void OGLVideoOutput::FinishFrameAtIndex(const uint8_t bufferIndex)
 
 void OGLVideoOutput::CopyFrameToBuffer(uint32_t *dstBuffer)
 {
-	for (size_t i = 0; i < _layerList->size(); i++)
-	{
-		OGLVideoLayer *theLayer = (*_layerList)[i];
-		theLayer->SetNeedsUpdateViewport();
-	}
-	
 	GLuint texFrameCopyID = 0;
 	
 	glGenTextures(1, &texFrameCopyID);
@@ -5290,6 +5286,7 @@ void OGLVideoOutput::CopyFrameToBuffer(uint32_t *dstBuffer)
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, this->_fboFrameCopyID);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, texFrameCopyID, 0);
 	
+	this->_needUpdateViewport = true;
 	this->RenderFrameOGL(true);
 	glReadPixels(0, 0, this->_renderProperty.clientWidth, this->_renderProperty.clientHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, dstBuffer);
 	
@@ -5297,11 +5294,7 @@ void OGLVideoOutput::CopyFrameToBuffer(uint32_t *dstBuffer)
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	glDeleteTextures(1, &texFrameCopyID);
 	
-	for (size_t i = 0; i < _layerList->size(); i++)
-	{
-		OGLVideoLayer *theLayer = (*_layerList)[i];
-		theLayer->SetNeedsUpdateViewport();
-	}
+	this->_needUpdateViewport = true;
 }
 
 void OGLVideoOutput::RenderFrameOGL(bool isRenderingFlipped)
@@ -5834,7 +5827,7 @@ void OGLImage::UploadTransformationOGL()
 {
 	const double w = this->_viewportWidth;
 	const double h = this->_viewportHeight;
-	const GLdouble s = ClientDisplayView::GetMaxScalarWithinBounds(this->_normalWidth, this->_normalHeight, w, h);
+	const GLdouble s = ClientDisplayPresenter::GetMaxScalarWithinBounds(this->_normalWidth, this->_normalHeight, w, h);
 	
 	if (this->_canUseShaderOutput)
 	{
@@ -6560,7 +6553,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 		
 		if (this->_needUpdateViewport)
 		{
-			glUniform2f(this->_uniformViewSize, this->_output->GetViewProperties().clientWidth, this->_output->GetViewProperties().clientHeight);
+			glUniform2f(this->_uniformViewSize, this->_output->GetPresenterProperties().clientWidth, this->_output->GetPresenterProperties().clientHeight);
 			glUniform1i(this->_uniformRenderFlipped, (isRenderingFlipped) ? GL_TRUE : GL_FALSE);
 			this->_needUpdateViewport = false;
 		}
@@ -6577,7 +6570,7 @@ void OGLHUDLayer::RenderOGL(bool isRenderingFlipped)
 	// First, draw the inputs.
 	if (this->_output->GetHUDShowInput())
 	{
-		const ClientDisplayViewProperties &cdv = this->_output->GetViewProperties();
+		const ClientDisplayPresenterProperties &cdv = this->_output->GetPresenterProperties();
 		
 		if (this->_output->GetContextInfo()->IsShaderSupported())
 		{
@@ -6776,7 +6769,7 @@ OGLDisplayLayer::~OGLDisplayLayer()
 
 void OGLDisplayLayer::_UpdateRotationScaleOGL()
 {
-	const ClientDisplayViewProperties &cdv = this->_output->GetViewProperties();
+	const ClientDisplayPresenterProperties &cdv = this->_output->GetPresenterProperties();
 	const double r = cdv.rotation;
 	const double s = cdv.viewScale;
 	
@@ -7140,7 +7133,7 @@ void OGLDisplayLayer::ProcessOGL()
 {
 	const OGLClientFetchObject &fetchObj = (const OGLClientFetchObject &)this->_output->GetFetchObject();
 	const NDSDisplayInfo &emuDisplayInfo = this->_output->GetEmuDisplayInfo();
-	const ClientDisplayMode mode = this->_output->GetViewProperties().mode;
+	const ClientDisplayMode mode = this->_output->GetPresenterProperties().mode;
 	const NDSDisplayID selectedDisplaySource[2] = { this->_output->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main), this->_output->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) };
 	
 	const bool didRenderNative[2] = { !emuDisplayInfo.didPerformCustomRender[selectedDisplaySource[NDSDisplayID_Main]], !emuDisplayInfo.didPerformCustomRender[selectedDisplaySource[NDSDisplayID_Touch]] };
@@ -7259,7 +7252,7 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 		this->_output->LockDisplayTextures();
 		glBindVertexArrayDESMUME(this->_vaoMainStatesID);
 		
-		switch (this->_output->GetViewProperties().mode)
+		switch (this->_output->GetPresenterProperties().mode)
 		{
 			case ClientDisplayMode_Main:
 			{
@@ -7287,10 +7280,10 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 			case ClientDisplayMode_Dual:
 			{
-				const NDSDisplayID majorDisplayID = (this->_output->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
-				const size_t majorDisplayVtx = (this->_output->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
+				const NDSDisplayID majorDisplayID = (this->_output->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
+				const size_t majorDisplayVtx = (this->_output->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
 				
-				switch (this->_output->GetViewProperties().layout)
+				switch (this->_output->GetPresenterProperties().layout)
 				{
 					case ClientDisplayLayout_Hybrid_2_1:
 					case ClientDisplayLayout_Hybrid_16_9:

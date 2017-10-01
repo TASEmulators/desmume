@@ -21,6 +21,8 @@
 
 @implementation DisplayViewOpenGLLayer
 
+@synthesize _cdv;
+
 - (id)init
 {
 	self = [super init];
@@ -29,8 +31,7 @@
 		return nil;
 	}
 	
-	_cdv = new MacOGLDisplayView();
-	_cdv->SetFrontendLayer(self);
+	_cdv = NULL;
 	
     [self setBounds:CGRectMake(0.0f, 0.0f, (float)GPU_FRAMEBUFFER_NATIVE_WIDTH, (float)GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
 	[self setAsynchronous:NO];
@@ -39,21 +40,9 @@
 	return self;
 }
 
-- (void)dealloc
-{
-	delete _cdv;
-	
-	[super dealloc];
-}
-
 - (OGLContextInfo *) contextInfo
 {
-	return _cdv->GetContextInfo();
-}
-
-- (ClientDisplay3DView *)clientDisplay3DView
-{
-	return _cdv;
+	return ((MacOGLDisplayPresenter *)(_cdv->Get3DPresenter()))->GetContextInfo();
 }
 
 - (BOOL)isAsynchronous
@@ -63,19 +52,19 @@
 
 - (CGLPixelFormatObj)copyCGLPixelFormatForDisplayMask:(uint32_t)mask
 {
-	return _cdv->GetPixelFormat();
+	return ((MacOGLDisplayPresenter *)(_cdv->Get3DPresenter()))->GetPixelFormat();
 }
 
 - (CGLContextObj)copyCGLContextForPixelFormat:(CGLPixelFormatObj)pixelFormat
 {
-	return _cdv->GetContext();
+	return ((MacOGLDisplayPresenter *)(_cdv->Get3DPresenter()))->GetContext();
 }
 
 - (void)drawInCGLContext:(CGLContextObj)glContext pixelFormat:(CGLPixelFormatObj)pixelFormat forLayerTime:(CFTimeInterval)timeInterval displayTime:(const CVTimeStamp *)timeStamp
 {
 	CGLSetCurrentContext(glContext);
 	CGLLockContext(glContext);
-	_cdv->RenderFrameOGL(false);
+	((MacOGLDisplayPresenter *)(_cdv->Get3DPresenter()))->RenderFrameOGL(false);
 	[super drawInCGLContext:glContext pixelFormat:pixelFormat forLayerTime:timeInterval displayTime:timeStamp];
 	CGLUnlockContext(glContext);
 }
@@ -214,18 +203,18 @@ void MacOGLClientFetchObject::FetchFromBufferIndex(const u8 index)
 
 #pragma mark -
 
-void MacOGLDisplayView::operator delete(void *ptr)
+void MacOGLDisplayPresenter::operator delete(void *ptr)
 {
-	CGLContextObj context = ((MacOGLDisplayView *)ptr)->GetContext();
+	CGLContextObj context = ((MacOGLDisplayPresenter *)ptr)->GetContext();
 	
 	if (context != NULL)
 	{
-		OGLContextInfo *contextInfo = ((MacOGLDisplayView *)ptr)->GetContextInfo();
+		OGLContextInfo *contextInfo = ((MacOGLDisplayPresenter *)ptr)->GetContextInfo();
 		CGLContextObj prevContext = CGLGetCurrentContext();
 		CGLSetCurrentContext(context);
 		
-		[((MacOGLDisplayView *)ptr)->GetNSContext() release];
-		[((MacOGLDisplayView *)ptr)->GetNSPixelFormat() release];
+		[((MacOGLDisplayPresenter *)ptr)->GetNSContext() release];
+		[((MacOGLDisplayPresenter *)ptr)->GetNSPixelFormat() release];
 		delete contextInfo;
 		::operator delete(ptr);
 		
@@ -233,7 +222,17 @@ void MacOGLDisplayView::operator delete(void *ptr)
 	}
 }
 
-MacOGLDisplayView::MacOGLDisplayView()
+MacOGLDisplayPresenter::MacOGLDisplayPresenter()
+{
+	__InstanceInit(nil);
+}
+
+MacOGLDisplayPresenter::MacOGLDisplayPresenter(MacClientSharedObject *sharedObject) : MacDisplayPresenterInterface(sharedObject)
+{
+	__InstanceInit(sharedObject);
+}
+
+void MacOGLDisplayPresenter::__InstanceInit(MacClientSharedObject *sharedObject)
 {
 	// Initialize the OpenGL context.
 	//
@@ -241,7 +240,6 @@ MacOGLDisplayView::MacOGLDisplayView()
 	// [NSOpenGLContext CGLContextObj] is available on macOS 10.5 Leopard, but
 	// [NSOpenGLContext initWithCGLContextObj:] is only available on macOS 10.6
 	// Snow Leopard.
-	bool useContext_3_2 = false;
 	NSOpenGLPixelFormatAttribute attributes[] = {
 		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
 		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
@@ -255,7 +253,7 @@ MacOGLDisplayView::MacOGLDisplayView()
 #ifdef _OGLDISPLAYOUTPUT_3_2_H_
 	// If we can support a 3.2 Core Profile context, then request that in our
 	// pixel format attributes.
-	useContext_3_2 = IsOSXVersionSupported(10, 7, 0);
+	bool useContext_3_2 = IsOSXVersionSupported(10, 7, 0);
 	if (useContext_3_2)
 	{
 		attributes[9] = NSOpenGLPFAOpenGLProfile;
@@ -277,11 +275,14 @@ MacOGLDisplayView::MacOGLDisplayView()
 	
 	_nsContext = nil;
 	_context = nil;
-	_allowViewUpdates = false;
-	_spinlockViewNeedsFlush = OS_SPINLOCK_INIT;
+	
+	if (sharedObject != nil)
+	{
+		SetFetchObject([sharedObject GPUFetchObject]);
+	}
 }
 
-void MacOGLDisplayView::Init()
+void MacOGLDisplayPresenter::Init()
 {
 	this->_nsContext = [[NSOpenGLContext alloc] initWithFormat:this->_nsPixelFormat
 												  shareContext:((MacOGLClientFetchObject *)this->_fetchObject)->GetNSContext()];
@@ -308,24 +309,144 @@ void MacOGLDisplayView::Init()
 	CGLSetCurrentContext(prevContext);
 }
 
-NSOpenGLPixelFormat* MacOGLDisplayView::GetNSPixelFormat() const
+NSOpenGLPixelFormat* MacOGLDisplayPresenter::GetNSPixelFormat() const
 {
 	return this->_nsPixelFormat;
 }
 
-NSOpenGLContext* MacOGLDisplayView::GetNSContext() const
+NSOpenGLContext* MacOGLDisplayPresenter::GetNSContext() const
 {
 	return this->_nsContext;
 }
 
-CGLPixelFormatObj MacOGLDisplayView::GetPixelFormat() const
+CGLPixelFormatObj MacOGLDisplayPresenter::GetPixelFormat() const
 {
 	return this->_pixelFormat;
 }
 
-CGLContextObj MacOGLDisplayView::GetContext() const
+CGLContextObj MacOGLDisplayPresenter::GetContext() const
 {
 	return this->_context;
+}
+
+void MacOGLDisplayPresenter::LoadHUDFont()
+{
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->OGLVideoOutput::LoadHUDFont();
+	CGLUnlockContext(this->_context);
+}
+
+void MacOGLDisplayPresenter::SetScaleFactor(const double scaleFactor)
+{
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->OGLVideoOutput::SetScaleFactor(scaleFactor);
+	CGLUnlockContext(this->_context);
+}
+
+void MacOGLDisplayPresenter::SetFiltersPreferGPU(const bool preferGPU)
+{
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->OGLVideoOutput::SetFiltersPreferGPU(preferGPU);
+	CGLUnlockContext(this->_context);
+}
+
+void MacOGLDisplayPresenter::SetOutputFilter(const OutputFilterTypeID filterID)
+{
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->OGLVideoOutput::SetOutputFilter(filterID);
+	CGLUnlockContext(this->_context);
+}
+
+void MacOGLDisplayPresenter::SetPixelScaler(const VideoFilterTypeID filterID)
+{
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->OGLVideoOutput::SetPixelScaler(filterID);
+	CGLUnlockContext(this->_context);
+}
+
+// NDS GPU Interface
+void MacOGLDisplayPresenter::LoadDisplays()
+{
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->OGLVideoOutput::LoadDisplays();
+	CGLUnlockContext(this->_context);
+}
+
+void MacOGLDisplayPresenter::ProcessDisplays()
+{
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->OGLVideoOutput::ProcessDisplays();
+	CGLUnlockContext(this->_context);
+}
+
+void MacOGLDisplayPresenter::CopyFrameToBuffer(uint32_t *dstBuffer)
+{
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->OGLVideoOutput::CopyFrameToBuffer(dstBuffer);
+	CGLUnlockContext(this->_context);
+}
+
+void MacOGLDisplayPresenter::FinishFrameAtIndex(const uint8_t bufferIndex)
+{
+	CGLLockContext(this->_context);
+	CGLSetCurrentContext(this->_context);
+	this->OGLVideoOutput::FinishFrameAtIndex(bufferIndex);
+	CGLUnlockContext(this->_context);
+}
+
+void MacOGLDisplayPresenter::LockDisplayTextures()
+{
+	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
+	const u8 bufferIndex = this->_emuDisplayInfo.bufferIndex;
+	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
+	
+	pthread_rwlock_rdlock([sharedViewObject rwlockFramebufferAtIndex:bufferIndex]);
+}
+
+void MacOGLDisplayPresenter::UnlockDisplayTextures()
+{
+	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
+	const u8 bufferIndex = this->_emuDisplayInfo.bufferIndex;
+	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
+	
+	pthread_rwlock_unlock([sharedViewObject rwlockFramebufferAtIndex:bufferIndex]);
+}
+
+#pragma mark -
+
+MacOGLDisplayView::MacOGLDisplayView()
+{
+	__InstanceInit(nil);
+}
+
+MacOGLDisplayView::MacOGLDisplayView(MacClientSharedObject *sharedObject)
+{
+	__InstanceInit(sharedObject);
+}
+
+MacOGLDisplayView::~MacOGLDisplayView()
+{
+	[this->_caLayer release];
+}
+
+void MacOGLDisplayView::__InstanceInit(MacClientSharedObject *sharedObject)
+{
+	_allowViewUpdates = false;
+	_spinlockViewNeedsFlush = OS_SPINLOCK_INIT;
+	
+	MacOGLDisplayPresenter *newOpenGLPresenter = new MacOGLDisplayPresenter(sharedObject);
+	_presenter = newOpenGLPresenter;
+	
+	_caLayer = [[DisplayViewOpenGLLayer alloc] init];
+	[_caLayer setClientDisplayView:this];
 }
 
 bool MacOGLDisplayView::GetViewNeedsFlush()
@@ -337,88 +458,9 @@ bool MacOGLDisplayView::GetViewNeedsFlush()
 	return viewNeedsFlush;
 }
 
-void MacOGLDisplayView::SetAllowViewFlushes(bool allowFlushes)
+void MacOGLDisplayView::SetViewNeedsFlush()
 {
-	CGDirectDisplayID displayID = (CGDirectDisplayID)this->GetDisplayViewID();
-	MacClientSharedObject *sharedData = this->GetSharedData();
-	
-	if (![sharedData isDisplayLinkRunningUsingID:displayID])
-	{
-		[sharedData displayLinkStartUsingID:displayID];
-	}
-}
-
-void MacOGLDisplayView::LoadHUDFont()
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::LoadHUDFont();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetUseVerticalSync(const bool useVerticalSync)
-{
-	const GLint swapInt = (useVerticalSync) ? 1 : 0;
-	
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	CGLSetParameter(this->_context, kCGLCPSwapInterval, &swapInt);
-	this->OGLVideoOutput::SetUseVerticalSync(useVerticalSync);
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetScaleFactor(const double scaleFactor)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetScaleFactor(scaleFactor);
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetFiltersPreferGPU(const bool preferGPU)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetFiltersPreferGPU(preferGPU);
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetOutputFilter(const OutputFilterTypeID filterID)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetOutputFilter(filterID);
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::SetPixelScaler(const VideoFilterTypeID filterID)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::SetPixelScaler(filterID);
-	CGLUnlockContext(this->_context);
-}
-
-// NDS GPU Interface
-void MacOGLDisplayView::LoadDisplays()
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::LoadDisplays();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::ProcessDisplays()
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::ProcessDisplays();
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::UpdateView()
-{
-	if (!this->_allowViewUpdates || (this->GetNSView() == nil))
+	if (!this->_allowViewUpdates || (this->_presenter == nil) || (this->GetNSView() == nil))
 	{
 		return;
 	}
@@ -439,49 +481,40 @@ void MacOGLDisplayView::UpdateView()
 	}
 }
 
+void MacOGLDisplayView::SetAllowViewFlushes(bool allowFlushes)
+{
+	CGDirectDisplayID displayID = (CGDirectDisplayID)this->GetDisplayViewID();
+	MacClientSharedObject *sharedData = ((MacOGLDisplayPresenter *)this->_presenter)->GetSharedData();
+	
+	if (![sharedData isDisplayLinkRunningUsingID:displayID])
+	{
+		[sharedData displayLinkStartUsingID:displayID];
+	}
+}
+
+void MacOGLDisplayView::SetUseVerticalSync(const bool useVerticalSync)
+{
+	CGLContextObj context = ((MacOGLDisplayPresenter *)this->_presenter)->GetContext();
+	const GLint swapInt = (useVerticalSync) ? 1 : 0;
+	
+	CGLLockContext(context);
+	CGLSetCurrentContext(context);
+	CGLSetParameter(context, kCGLCPSwapInterval, &swapInt);
+	MacDisplayLayeredView::SetUseVerticalSync(useVerticalSync);
+	CGLUnlockContext(context);
+}
+
 void MacOGLDisplayView::FlushView()
 {
 	OSSpinLockLock(&this->_spinlockViewNeedsFlush);
 	this->_viewNeedsFlush = false;
 	OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
 	
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->RenderFrameOGL(false);
-	CGLFlushDrawable(this->_context);
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::CopyFrameToBuffer(uint32_t *dstBuffer)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::CopyFrameToBuffer(dstBuffer);
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::FinishFrameAtIndex(const uint8_t bufferIndex)
-{
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::FinishFrameAtIndex(bufferIndex);
-	CGLUnlockContext(this->_context);
-}
-
-void MacOGLDisplayView::LockDisplayTextures()
-{
-	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
-	const u8 bufferIndex = this->_emuDisplayInfo.bufferIndex;
-	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
+	CGLContextObj context = ((MacOGLDisplayPresenter *)this->_presenter)->GetContext();
 	
-	pthread_rwlock_rdlock([sharedViewObject rwlockFramebufferAtIndex:bufferIndex]);
-}
-
-void MacOGLDisplayView::UnlockDisplayTextures()
-{
-	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
-	const u8 bufferIndex = this->_emuDisplayInfo.bufferIndex;
-	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
-	
-	pthread_rwlock_unlock([sharedViewObject rwlockFramebufferAtIndex:bufferIndex]);
+	CGLLockContext(context);
+	CGLSetCurrentContext(context);
+	((MacOGLDisplayPresenter *)this->_presenter)->RenderFrameOGL(false);
+	CGLFlushDrawable(context);
+	CGLUnlockContext(context);
 }

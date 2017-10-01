@@ -373,7 +373,7 @@ public:
 	virtual void SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo);
 };
 
-class OGLVideoOutput : public ClientDisplay3DView
+class OGLVideoOutput : public ClientDisplay3DPresenter
 {
 protected:
 	OGLContextInfo *_contextInfo;
@@ -381,9 +381,11 @@ protected:
 	GLsizei _viewportHeight;
 	bool _needUpdateViewport;
 	bool _hasOGLPixelScaler;
-	std::vector<OGLVideoLayer *> *_layerList;
+	
 	GLuint _texCPUFilterDstID[2];
 	GLuint _fboFrameCopyID;
+	
+	std::vector<OGLVideoLayer *> *_layerList;
 	
 	void _UpdateViewport();
 	

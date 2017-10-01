@@ -42,7 +42,7 @@ class OGLVideoOutput;
 {
 	InputManager *inputManager;
 	CocoaDSDisplayVideo *cdsVideoOutput;
-	CALayer *localLayer;
+	CALayer<DisplayViewCALayer> *localLayer;
 	NSOpenGLContext *localOGLContext;
 }
 
@@ -59,8 +59,7 @@ class OGLVideoOutput;
 {
 	NSObject *dummyObject;
 	
-	ClientDisplayViewProperties _localViewProps;
-	NSView *saveScreenshotPanelAccessoryView;
+	ClientDisplayPresenterProperties _localViewProps;
 	NSView *outputVolumeControlView;
 	NSView *microphoneGainControlView;
 	NSMenuItem *outputVolumeMenuItem;
@@ -72,8 +71,6 @@ class OGLVideoOutput;
 	EmuControllerDelegate *emuControl;
 	NSScreen *assignedScreen;
 	NSWindow *masterWindow;
-	
-	NSInteger screenshotFileFormat;
 	
 	NSSize _minDisplayViewSize;
 	BOOL _isMinSizeNormal;
@@ -89,7 +86,6 @@ class OGLVideoOutput;
 
 @property (readonly) IBOutlet NSObject *dummyObject;
 
-@property (readonly) IBOutlet NSView *saveScreenshotPanelAccessoryView;
 @property (readonly) IBOutlet NSView *outputVolumeControlView;
 @property (readonly) IBOutlet NSView *microphoneGainControlView;
 @property (readonly) IBOutlet NSMenuItem *outputVolumeMenuItem;
@@ -109,13 +105,12 @@ class OGLVideoOutput;
 @property (assign, nonatomic) double displayGap;
 @property (assign, nonatomic) double displayScale;
 @property (assign, nonatomic) double displayRotation;
-@property (assign) NSInteger screenshotFileFormat;
 @property (assign) BOOL isMinSizeNormal;
 @property (assign) BOOL isShowingStatusBar;
 
 - (id)initWithWindowNibName:(NSString *)windowNibName emuControlDelegate:(EmuControllerDelegate *)theEmuController;
 
-- (ClientDisplayViewProperties &) localViewProperties;
+- (ClientDisplayPresenterProperties &) localViewProperties;
 - (void) setVideoPropertiesWithoutUpdateUsingPreferGPU:(BOOL)preferGPU
 									 sourceDeposterize:(BOOL)useDeposterize
 										  outputFilter:(NSInteger)outputFilterID
@@ -150,7 +145,6 @@ class OGLVideoOutput;
 - (IBAction) reset:(id)sender;
 - (IBAction) changeCoreSpeed:(id)sender;
 - (IBAction) openRom:(id)sender;
-- (IBAction) saveScreenshotAs:(id)sender;
 
 // View Menu
 - (IBAction) changeScale:(id)sender;

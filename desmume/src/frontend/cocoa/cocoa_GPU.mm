@@ -950,19 +950,6 @@ public:
 	[super dealloc];
 }
 
-- (void) handleFetchFromBufferIndexAndPushVideo:(NSData *)indexData
-{
-	const NSInteger index = *(NSInteger *)[indexData bytes];
-	
-	GPUFetchObject->FetchFromBufferIndex(index);
-	[self pushVideoDataToAllDisplayViews];
-}
-
-- (const NDSDisplayInfo &) fetchDisplayInfoForIndex:(const u8)bufferIndex
-{
-	return GPUFetchObject->GetFetchDisplayInfoForBufferIndex(bufferIndex);
-}
-
 - (pthread_rwlock_t *) rwlockFramebufferAtIndex:(const u8)bufferIndex
 {
 	return _rwlockFramebuffer[bufferIndex];
@@ -1035,8 +1022,8 @@ public:
 	{
 		if ([cdsOutput isKindOfClass:[CocoaDSDisplayVideo class]])
 		{
-			ClientDisplay3DView *cdv = [(CocoaDSDisplayVideo *)cdsOutput clientDisplayView];
-			cdv->FinishFrameAtIndex(bufferIndex);
+			ClientDisplay3DView *cdv = [(CocoaDSDisplayVideo *)cdsOutput clientDisplay3DView];
+			cdv->Get3DPresenter()->FinishFrameAtIndex(bufferIndex);
 		}
 	}
 	
@@ -1063,7 +1050,7 @@ public:
 		{
 			if ([(CocoaDSDisplayVideo *)cdsOutput currentDisplayID] == displayID)
 			{
-				ClientDisplay3DView *cdv = [(CocoaDSDisplayVideo *)cdsOutput clientDisplayView];
+				ClientDisplay3DView *cdv = [(CocoaDSDisplayVideo *)cdsOutput clientDisplay3DView];
 				
 				if (cdv->GetViewNeedsFlush())
 				{

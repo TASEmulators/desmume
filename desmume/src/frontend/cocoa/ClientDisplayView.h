@@ -110,7 +110,7 @@ struct ClientFrameInfo
 };
 typedef struct ClientFrameInfo ClientFrameInfo;
 
-struct ClientDisplayViewProperties
+struct ClientDisplayPresenterProperties
 {
 	ClientDisplayMode mode;
 	ClientDisplayLayout layout;
@@ -125,7 +125,7 @@ struct ClientDisplayViewProperties
 	double viewScale;
 	double gapDistance;
 };
-typedef struct ClientDisplayViewProperties ClientDisplayViewProperties;
+typedef struct ClientDisplayPresenterProperties ClientDisplayPresenterProperties;
 
 extern LUTValues *_LQ2xLUT;
 extern LUTValues *_HQ2xLUT;
@@ -133,15 +133,14 @@ extern LUTValues *_HQ3xLUT;
 extern LUTValues *_HQ4xLUT;
 void InitHQnxLUTs();
 
-class ClientDisplayView
+class ClientDisplayPresenter
 {
 private:
-	void __InstanceInit(const ClientDisplayViewProperties &props);
+	void __InstanceInit(const ClientDisplayPresenterProperties &props);
 	
 protected:
-	ClientDisplayViewProperties _renderProperty;
-	ClientDisplayViewProperties _stagedProperty;
-	InitialTouchPressMap *_initialTouchInMajorDisplay;
+	ClientDisplayPresenterProperties _renderProperty;
+	ClientDisplayPresenterProperties _stagedProperty;
 	GPUClientFetchObject *_fetchObject;
 	
 	bool _useDeposterize;
@@ -152,8 +151,6 @@ protected:
 	bool _isSelectedDisplayEnabled[2];
 	NDSDisplayID _selectedSourceForDisplay[2];
 	
-	int64_t _displayViewID;
-	bool _useVerticalSync;
 	double _scaleFactor;
 	
 	double _hudObjectScale;
@@ -184,9 +181,6 @@ protected:
 	std::string _hudInputString;
 	std::string _outHudString;
 	bool _hudNeedsUpdate;
-	bool _viewNeedsFlush;
-	bool _allowViewUpdates;
-	bool _allowViewFlushes;
 	
 	FT_Library _ftLibrary;
 	const char *_lastFontFilePath;
@@ -215,26 +209,19 @@ protected:
 	virtual void _ResizeCPUPixelScaler(const VideoFilterTypeID filterID);
 	
 public:
-	ClientDisplayView();
-	ClientDisplayView(const ClientDisplayViewProperties &props);
-	virtual ~ClientDisplayView();
+	ClientDisplayPresenter();
+	ClientDisplayPresenter(const ClientDisplayPresenterProperties &props);
+	virtual ~ClientDisplayPresenter();
 	
 	virtual void Init();
 	
-	int64_t GetDisplayViewID();
-	virtual void SetDisplayViewID(int64_t displayViewID);
-	
-	virtual bool GetViewNeedsFlush();
-	
-	bool GetUseVerticalSync() const;
-	virtual void SetUseVerticalSync(const bool useVerticalSync);
 	double GetScaleFactor() const;
 	virtual void SetScaleFactor(const double scaleFactor);
 		
 	// NDS screen layout
-	const ClientDisplayViewProperties& GetViewProperties() const;
-	void CommitViewProperties(const ClientDisplayViewProperties &props);
-	virtual void SetupViewProperties();
+	const ClientDisplayPresenterProperties& GetPresenterProperties() const;
+	void CommitPresenterProperties(const ClientDisplayPresenterProperties &props);
+	virtual void SetupPresenterProperties();
 	
 	double GetRotation() const;
 	double GetViewScale() const;
@@ -311,15 +298,9 @@ public:
 	const GPUClientFetchObject& GetFetchObject() const;
 	void SetFetchObject(GPUClientFetchObject *fetchObject);
 	
-	bool GetAllowViewUpdates() const;
-	virtual void SetAllowViewUpdates(bool allowUpdates);
-	bool GetAllowViewFlushes() const;
-	virtual void SetAllowViewFlushes(bool allowFlushes);
-	
 	virtual void LoadDisplays();
 	virtual void ProcessDisplays();
-	virtual void UpdateView();
-	virtual void FlushView();
+	virtual void UpdateLayout();
 	virtual void FinishFrameAtIndex(const uint8_t bufferIndex);
 	
 	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
@@ -327,12 +308,6 @@ public:
 	// Emulator interface
 	const NDSDisplayInfo& GetEmuDisplayInfo() const;
 	void SetEmuDisplayInfo(const NDSDisplayInfo &ndsDisplayInfo);
-	virtual void HandleEmulatorFrameEndEvent();
-	
-	// Touch screen input handling
-	void GetNDSPoint(const int inputID, const bool isInitialTouchPress,
-					 const double clientX, const double clientY,
-					 u8 &outX, u8 &outY) const;
 	
 	// Utility methods
 	static void ConvertNormalToTransformedBounds(const double scalar,
@@ -342,25 +317,69 @@ public:
 	static double GetMaxScalarWithinBounds(const double normalBoundsWidth, const double normalBoundsHeight,
 										   const double keepInBoundsWidth, const double keepInBoundsHeight);
 	
+	static void CalculateNormalSize(const ClientDisplayMode mode, const ClientDisplayLayout layout, const double gapScale,
+									double &outWidth, double &outHeight);
+};
+
+class ClientDisplayViewInterface
+{
+protected:
+	InitialTouchPressMap *_initialTouchInMajorDisplay;
+	int64_t _displayViewID;
+	bool _useVerticalSync;
+	bool _viewNeedsFlush;
+	bool _allowViewUpdates;
+	bool _allowViewFlushes;
+	
+public:
+	ClientDisplayViewInterface();
+	virtual ~ClientDisplayViewInterface();
+	
+	int64_t GetDisplayViewID();
+	virtual void SetDisplayViewID(int64_t displayViewID);
+	
+	virtual bool GetViewNeedsFlush();
+	virtual void SetViewNeedsFlush();
+	
+	bool GetUseVerticalSync() const;
+	virtual void SetUseVerticalSync(const bool useVerticalSync);
+	
+	// Client view interface
+	bool GetAllowViewUpdates() const;
+	virtual void SetAllowViewUpdates(bool allowUpdates);
+	bool GetAllowViewFlushes() const;
+	virtual void SetAllowViewFlushes(bool allowFlushes);
+	
+	virtual void FlushView();
+	
+	// Touch screen input handling
+	void GetNDSPoint(const ClientDisplayPresenterProperties &props,
+					 const double logicalClientWidth, const double logicalClientHeight,
+					 const int inputID, const bool isInitialTouchPress,
+					 const double clientX, const double clientY,
+					 uint8_t &outX, uint8_t &outY) const;
+	
+	// Utility methods
 	static void ConvertClientToNormalPoint(const double normalBoundsWidth, const double normalBoundsHeight,
 										   const double transformBoundsWidth, const double transformBoundsHeight,
 										   const double scalar,
 										   const double angleDegrees,
 										   double &inoutX, double &inoutY);
-	
-	static void CalculateNormalSize(const ClientDisplayMode mode, const ClientDisplayLayout layout, const double gapScale,
-									double &outWidth, double &outHeight);
 };
 
-class ClientDisplay3DView : public ClientDisplayView
+class ClientDisplay3DPresenter : public ClientDisplayPresenter
 {
+private:
+	void __InstanceInit();
+	
 protected:
 	bool _canFilterOnGPU;
 	bool _willFilterOnGPU;
 	bool _filtersPreferGPU;
 	
 public:
-	ClientDisplay3DView();
+	ClientDisplay3DPresenter();
+	ClientDisplay3DPresenter(const ClientDisplayPresenterProperties &props);
 	
 	bool CanFilterOnGPU() const;
 	bool GetFiltersPreferGPU() const;
@@ -375,6 +394,36 @@ public:
 	void SetHUDTextureCoordinates(float *texCoordBufferPtr);
 	void SetScreenVertices(float *vtxBufferPtr);
 	void SetScreenTextureCoordinates(float w0, float h0, float w1, float h1, float *texCoordBufferPtr);
+};
+
+class ClientDisplayView : public ClientDisplayViewInterface
+{
+protected:
+	ClientDisplayPresenter *_presenter;
+	
+public:
+	ClientDisplayView();
+	ClientDisplayView(ClientDisplayPresenter *thePresenter);
+	
+	virtual void Init();
+	
+	ClientDisplayPresenter* GetPresenter();
+	void SetPresenter(ClientDisplayPresenter *thePresenter);
+};
+
+class ClientDisplay3DView : public ClientDisplayViewInterface
+{
+protected:
+	ClientDisplay3DPresenter *_presenter;
+	
+public:
+	ClientDisplay3DView();
+	ClientDisplay3DView(ClientDisplay3DPresenter *thePresenter);
+	
+	virtual void Init();
+	
+	ClientDisplay3DPresenter* Get3DPresenter();
+	void Set3DPresenter(ClientDisplay3DPresenter *thePresenter);
 };
 
 #endif // _CLIENT_DISPLAY_VIEW_H_

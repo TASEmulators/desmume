@@ -39,8 +39,9 @@ class MacOGLDisplayView;
 
 @interface DisplayViewOpenGLLayer : CAOpenGLLayer <DisplayViewCALayer>
 {
-	MacOGLDisplayView *_cdv;
+	MacDisplayLayeredView *_cdv;
 }
+
 @end
 
 class MacOGLClientFetchObject : public OGLClientFetchObject
@@ -61,19 +62,21 @@ public:
 	virtual void FetchFromBufferIndex(const u8 index);
 };
 
-class MacOGLDisplayView : public OGLVideoOutput, public DisplayViewCALayerInterface
+class MacOGLDisplayPresenter : public OGLVideoOutput, public MacDisplayPresenterInterface
 {
+private:
+	void __InstanceInit(MacClientSharedObject *sharedObject);
+	
 protected:
 	NSOpenGLContext *_nsContext;
 	NSOpenGLPixelFormat *_nsPixelFormat;
 	CGLContextObj _context;
 	CGLPixelFormatObj _pixelFormat;
 	
-	OSSpinLock _spinlockViewNeedsFlush;
-		
 public:
 	void operator delete(void *ptr);
-	MacOGLDisplayView();
+	MacOGLDisplayPresenter();
+	MacOGLDisplayPresenter(MacClientSharedObject *sharedObject);
 	
 	virtual void Init();
 	
@@ -82,12 +85,7 @@ public:
 	CGLPixelFormatObj GetPixelFormat() const;
 	CGLContextObj GetContext() const;
 	
-	virtual bool GetViewNeedsFlush();
-	virtual void SetAllowViewFlushes(bool allowFlushes);
-		
 	virtual void LoadHUDFont();
-	
-	virtual void SetUseVerticalSync(const bool useVerticalSync);
 	virtual void SetScaleFactor(const double scaleFactor);
 	
 	// NDS screen filters
@@ -98,12 +96,34 @@ public:
 	// Client view interface
 	virtual void LoadDisplays();
 	virtual void ProcessDisplays();
-	virtual void UpdateView();
-	virtual void FlushView();
 	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
 	virtual void FinishFrameAtIndex(const uint8_t bufferIndex);
 	virtual void LockDisplayTextures();
 	virtual void UnlockDisplayTextures();
+};
+
+class MacOGLDisplayView : public MacDisplayLayeredView
+{
+private:
+	void __InstanceInit(MacClientSharedObject *sharedObject);
+	
+protected:
+	OSSpinLock _spinlockViewNeedsFlush;
+		
+public:
+	MacOGLDisplayView();
+	MacOGLDisplayView(MacClientSharedObject *sharedObject);
+	virtual ~MacOGLDisplayView();
+	
+	virtual bool GetViewNeedsFlush();
+	virtual void SetViewNeedsFlush();
+	
+	virtual void SetAllowViewFlushes(bool allowFlushes);
+	
+	virtual void SetUseVerticalSync(const bool useVerticalSync);
+	
+	// Client view interface
+	virtual void FlushView();
 };
 
 #endif // _MAC_OGLDISPLAYOUTPUT_H_

@@ -19,9 +19,7 @@
 #import <Cocoa/Cocoa.h>
 
 @class InputPrefsView;
-@class InputManager;
 @class FileMigrationDelegate;
-@class RomInfoPanel;
 
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
@@ -34,21 +32,12 @@
 	
 	NSObjectController *aboutWindowController;
 	NSObjectController *emuControlController;
-	NSObjectController *cdsSoundController;
-	NSObjectController *romInfoPanelController;
 	NSObjectController *prefWindowController;
-	NSObjectController *cheatWindowController;
 	NSObjectController *cdsCoreController;
-	NSArrayController *inputDeviceListController;
 	FileMigrationDelegate *migrationDelegate;
-	InputManager *inputManager;
-	RomInfoPanel *romInfoPanel;
 	
 	NSWindow *prefWindow;
 	NSWindow *troubleshootingWindow;
-	NSWindow *cheatListWindow;
-	NSWindow *slot2Window;
-	NSView *prefGeneralView;
 	InputPrefsView *inputPrefsView;
 	
 	NSMenu *mLoadStateSlot;
@@ -62,23 +51,14 @@
 
 @property (readonly) IBOutlet NSObjectController *aboutWindowController;
 @property (readonly) IBOutlet NSObjectController *emuControlController;
-@property (readonly) IBOutlet NSObjectController *cdsSoundController;
-@property (readonly) IBOutlet NSObjectController *romInfoPanelController;
 @property (readonly) IBOutlet NSObjectController *prefWindowController;
-@property (readonly) IBOutlet NSObjectController *cheatWindowController;
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;
-@property (readonly) IBOutlet NSArrayController *inputDeviceListController;
 @property (readonly) IBOutlet FileMigrationDelegate *migrationDelegate;
-@property (readonly) IBOutlet InputManager *inputManager;
 @property (readonly) IBOutlet NSWindow *prefWindow;
 @property (readonly) IBOutlet NSWindow *troubleshootingWindow;
-@property (readonly) IBOutlet NSWindow *cheatListWindow;
-@property (readonly) IBOutlet NSWindow *slot2Window;
-@property (readonly) IBOutlet NSView *prefGeneralView;
 @property (readonly) IBOutlet NSMenu *mLoadStateSlot;
 @property (readonly) IBOutlet NSMenu *mSaveStateSlot;
 @property (readonly) IBOutlet InputPrefsView *inputPrefsView;
-@property (readonly) IBOutlet RomInfoPanel *romInfoPanel;
 
 @property (assign) BOOL isAppRunningOnIntel;
 @property (assign) BOOL isDeveloperPlusBuild;
@@ -91,7 +71,5 @@
 - (void) setupSlotMenuItems;
 - (NSMenuItem *) addSlotMenuItem:(NSMenu *)menu slotNumber:(NSUInteger)slotNumber;
 - (void) setupUserDefaults;
-- (void) restoreDisplayWindowStates;
-- (void) saveDisplayWindowStates;
 
 @end

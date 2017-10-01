@@ -38,7 +38,7 @@
 #define NSSTRING_TITLE_SELECT_MPCF_DISK_IMAGE_PANEL	NSLocalizedString(@"Select MPCF Disk Image", nil)
 #define NSSTRING_TITLE_CHOOSE_GBA_CARTRIDGE_PANEL	NSLocalizedString(@"Choose GBA Cartridge", nil)
 #define NSSTRING_TITLE_CHOOSE_GBA_SRAM_PANEL		NSLocalizedString(@"Choose GBA SRAM File", nil)
-#define NSSTRING_TITLE_SAVE_SCREENSHOT_PANEL		NSLocalizedString(@"Save Screenshot", nil)
+#define NSSTRING_TITLE_SAVE_SCREENSHOT_PANEL		NSLocalizedString(@"Screenshot Save Location", nil)
 
 #define NSSTRING_TITLE_EXECUTE_CONTROL				NSLocalizedString(@"Execute", nil)
 #define NSSTRING_TITLE_PAUSE_CONTROL				NSLocalizedString(@"Pause", nil)
@@ -367,7 +367,6 @@ enum
 	MESSAGE_SET_SPU_INTERPOLATION_MODE,
 	MESSAGE_SET_VOLUME,
 	
-	MESSAGE_REQUEST_SCREENSHOT,
 	MESSAGE_COPY_TO_PASTEBOARD
 };
 

@@ -31,6 +31,7 @@
 #endif
 
 class MacMetalFetchObject;
+class MacMetalDisplayPresenter;
 class MacMetalDisplayView;
 
 struct DisplayViewShaderProperties
@@ -155,16 +156,17 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 
 @end
 
-@interface DisplayViewMetalLayer : CAMetalLayer <DisplayViewCALayer>
+@interface MacMetalDisplayPresenterObject : NSObject
 {
-	MacMetalDisplayView *_cdv;
+	ClientDisplay3DPresenter *cdp;
 	MetalDisplayViewSharedData *sharedData;
 	
 	MTLRenderPassDescriptor *_outputRenderPassDesc;
 	MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
 	id<MTLComputePipelineState> pixelScalePipeline;
-	id<MTLRenderPipelineState> displayOutputPipeline;
-	id<MTLRenderPipelineState> displayRGBAOutputPipeline;
+	id<MTLRenderPipelineState> outputRGBAPipeline;
+	id<MTLRenderPipelineState> outputDrawablePipeline;
+	MTLPixelFormat drawableFormat;
 	
 	id<MTLBuffer> _cdvPropertiesBuffer;
 	id<MTLBuffer> _displayVtxPositionBuffer;
@@ -202,11 +204,15 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	size_t _hudTouchLineLength;
 }
 
+@property (readonly, nonatomic) ClientDisplay3DPresenter *cdp;
 @property (assign, nonatomic) MetalDisplayViewSharedData *sharedData;
 @property (readonly, nonatomic) MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
+@property (readonly, nonatomic) pthread_mutex_t *mutexDisplayTextureUpdate;
+@property (readonly, nonatomic) pthread_mutex_t *mutexBufferUpdate;
 @property (retain) id<MTLComputePipelineState> pixelScalePipeline;
-@property (retain) id<MTLRenderPipelineState> displayOutputPipeline;
-@property (retain) id<MTLRenderPipelineState> displayRGBAOutputPipeline;
+@property (retain) id<MTLRenderPipelineState> outputRGBAPipeline;
+@property (retain) id<MTLRenderPipelineState> outputDrawablePipeline;
+@property (assign) MTLPixelFormat drawableFormat;
 @property (retain) id<MTLBuffer> bufCPUFilterSrcMain;
 @property (retain) id<MTLBuffer> bufCPUFilterSrcTouch;
 @property (retain) id<MTLBuffer> bufCPUFilterDstMain;
@@ -221,17 +227,31 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (assign, nonatomic) VideoFilterTypeID pixelScaler;
 @property (assign, nonatomic) OutputFilterTypeID outputFilter;
 
+- (id) initWithDisplayPresenter:(MacMetalDisplayPresenter *)thePresenter;
 - (id<MTLCommandBuffer>) newCommandBuffer;
-- (void) setupLayer;
+- (void) setup;
 - (void) resizeCPUPixelScalerUsingFilterID:(const VideoFilterTypeID)filterID;
 - (void) copyHUDFontUsingFace:(const FT_Face &)fontFace size:(const size_t)glyphSize tileSize:(const size_t)glyphTileSize info:(GlyphInfo *)glyphInfo;
 - (void) processDisplays;
 - (void) updateRenderBuffers;
 - (void) renderForCommandBuffer:(id<MTLCommandBuffer>)cb
-		   displayPipelineState:(id<MTLRenderPipelineState>)displayPipelineState
+			outputPipelineState:(id<MTLRenderPipelineState>)outputPipelineState
 			   hudPipelineState:(id<MTLRenderPipelineState>)hudPipelineState;
-- (void) renderAndDownloadToBuffer:(uint32_t *)dstBuffer;
-- (void) renderAndFlushDrawable;
+- (void) renderToBuffer:(uint32_t *)dstBuffer;
+
+@end
+
+@interface DisplayViewMetalLayer : CAMetalLayer<DisplayViewCALayer>
+{
+	MacDisplayLayeredView *_cdv;
+	MacMetalDisplayPresenterObject *presenterObject;
+}
+
+@property (readonly, nonatomic) MacMetalDisplayPresenterObject *presenterObject;
+
+- (id) initWithDisplayPresenterObject:(MacMetalDisplayPresenterObject *)thePresenterObject;
+- (void) setupLayer;
+- (void) renderToDrawable;
 
 @end
 
@@ -260,11 +280,14 @@ public:
 
 #pragma mark -
 
-class MacMetalDisplayView : public ClientDisplay3DView, public DisplayViewCALayerInterface
+class MacMetalDisplayPresenter : public ClientDisplay3DPresenter, public MacDisplayPresenterInterface
 {
+private:
+	void __InstanceInit(MacClientSharedObject *sharedObject);
+	
 protected:
-	pthread_mutex_t *_mutexProcessPtr;
-	OSSpinLock _spinlockViewNeedsFlush;
+	MacMetalDisplayPresenterObject *_presenterObject;
+	pthread_mutex_t _mutexProcessPtr;
 	
 	virtual void _UpdateNormalSize();
 	virtual void _UpdateOrder();
@@ -273,17 +296,17 @@ protected:
 	virtual void _UpdateViewScale();
 	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
 	virtual void _ResizeCPUPixelScaler(const VideoFilterTypeID filterID);
-		
-public:
-	MacMetalDisplayView();
-	virtual ~MacMetalDisplayView();
 	
-	pthread_mutex_t* GetMutexProcessPtr() const;
+public:
+	MacMetalDisplayPresenter();
+	MacMetalDisplayPresenter(MacClientSharedObject *sharedObject);
+	virtual ~MacMetalDisplayPresenter();
+	
+	MacMetalDisplayPresenterObject* GetPresenterObject() const;
+	pthread_mutex_t* GetMutexProcessPtr();
 	
 	virtual void Init();
-	virtual bool GetViewNeedsFlush();
-	virtual void SetAllowViewFlushes(bool allowFlushes);
-	
+	virtual void SetSharedData(MacClientSharedObject *sharedObject);
 	virtual void CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo);
 	
 	// NDS screen filters
@@ -293,10 +316,33 @@ public:
 	
 	// Client view interface
 	virtual void ProcessDisplays();
-	virtual void UpdateView();
-	virtual void FlushView();
+	virtual void UpdateLayout();
 	
 	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
+};
+
+class MacMetalDisplayView : public MacDisplayLayeredView
+{
+private:
+	void __InstanceInit(MacClientSharedObject *sharedObject);
+	
+protected:
+	OSSpinLock _spinlockViewNeedsFlush;
+	
+public:
+	MacMetalDisplayView();
+	MacMetalDisplayView(MacClientSharedObject *sharedObject);
+	virtual ~MacMetalDisplayView();
+	
+	virtual void Init();
+	
+	virtual bool GetViewNeedsFlush();
+	virtual void SetViewNeedsFlush();
+	
+	virtual void SetAllowViewFlushes(bool allowFlushes);
+	
+	// Client view interface
+	virtual void FlushView();
 };
 
 #pragma mark -

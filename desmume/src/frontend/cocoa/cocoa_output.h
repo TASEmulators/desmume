@@ -116,7 +116,7 @@
 @interface CocoaDSDisplayVideo : CocoaDSDisplay
 {
 	ClientDisplay3DView *_cdv;
-	ClientDisplayViewProperties _intermediateViewProps;
+	ClientDisplayPresenterProperties _intermediateViewProps;
 	
 	OSSpinLock spinlockViewProperties;
 	OSSpinLock spinlockIsHUDVisible;
@@ -129,7 +129,7 @@
 	OSSpinLock spinlockDisplayID;
 }
 
-@property (assign, nonatomic) ClientDisplay3DView *clientDisplayView;
+@property (assign, nonatomic, getter=clientDisplay3DView, setter=setClientDisplay3DView:) ClientDisplay3DView *_cdv;
 @property (readonly, nonatomic) BOOL canFilterOnGPU;
 @property (readonly, nonatomic) BOOL willFilterOnGPU;
 @property (assign) BOOL isHUDVisible;
@@ -158,7 +158,7 @@
 @property (assign) NSInteger outputFilter;
 @property (assign) NSInteger pixelScaler;
 
-- (void) commitViewProperties:(const ClientDisplayViewProperties &)viewProps;
+- (void) commitPresenterProperties:(const ClientDisplayPresenterProperties &)viewProps;
 
 - (void) handleChangeViewProperties;
 - (void) handleReceiveGPUFrame;
@@ -166,12 +166,9 @@
 - (void) handleReprocessRedraw;
 - (void) handleRedraw;
 - (void) handleCopyToPasteboard;
-- (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData;
 
 - (void) setScaleFactor:(float)theScaleFactor;
 - (void) hudUpdate;
-- (NSImage *) copyImageFromView;
 - (NSImage *) image;
-- (NSBitmapImageRep *) bitmapImageRep;
 
 @end

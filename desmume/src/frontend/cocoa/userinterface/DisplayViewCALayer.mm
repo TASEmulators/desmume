@@ -18,55 +18,66 @@
 #import "DisplayViewCALayer.h"
 #import "../cocoa_GPU.h"
 
-DisplayViewCALayerInterface::DisplayViewCALayerInterface()
+MacDisplayPresenterInterface::MacDisplayPresenterInterface()
 {
-	_nsView = nil;
-	_frontendLayer = nil;
 	_sharedData = nil;
-	_willRenderToCALayer = false;
 }
 
-NSView* DisplayViewCALayerInterface::GetNSView() const
+MacDisplayPresenterInterface::MacDisplayPresenterInterface(MacClientSharedObject *sharedObject)
 {
-	return this->_nsView;
+	_sharedData = sharedObject;
 }
 
-void DisplayViewCALayerInterface::SetNSView(NSView *theView)
-{
-	this->_nsView = theView;
-}
-
-CALayer<DisplayViewCALayer>* DisplayViewCALayerInterface::GetFrontendLayer() const
-{
-	return this->_frontendLayer;
-}
-
-void DisplayViewCALayerInterface::SetFrontendLayer(CALayer<DisplayViewCALayer> *layer)
-{
-	this->_frontendLayer = layer;
-}
-
-void DisplayViewCALayerInterface::CALayerDisplay()
-{
-	[this->_frontendLayer setNeedsDisplay];
-}
-
-bool DisplayViewCALayerInterface::GetRenderToCALayer() const
-{
-	return this->_willRenderToCALayer;
-}
-
-void DisplayViewCALayerInterface::SetRenderToCALayer(const bool renderToLayer)
-{
-	this->_willRenderToCALayer = renderToLayer;
-}
-
-MacClientSharedObject* DisplayViewCALayerInterface::GetSharedData()
+MacClientSharedObject* MacDisplayPresenterInterface::GetSharedData()
 {
 	return this->_sharedData;
 }
 
-void DisplayViewCALayerInterface::SetSharedData(MacClientSharedObject *sharedObject)
+void MacDisplayPresenterInterface::SetSharedData(MacClientSharedObject *sharedObject)
 {
 	this->_sharedData = sharedObject;
+}
+
+#pragma mark -
+
+MacDisplayLayeredView::MacDisplayLayeredView()
+{
+	__InstanceInit();
+}
+
+MacDisplayLayeredView::MacDisplayLayeredView(ClientDisplay3DPresenter *thePresenter) : ClientDisplay3DView(thePresenter)
+{
+	__InstanceInit();
+}
+
+void MacDisplayLayeredView::__InstanceInit()
+{
+	_nsView = nil;
+	_caLayer = nil;
+	_willRenderToCALayer = false;
+}
+
+NSView* MacDisplayLayeredView::GetNSView() const
+{
+	return this->_nsView;
+}
+
+void MacDisplayLayeredView::SetNSView(NSView *theView)
+{
+	this->_nsView = theView;
+}
+
+CALayer<DisplayViewCALayer>* MacDisplayLayeredView::GetCALayer() const
+{
+	return this->_caLayer;
+}
+
+bool MacDisplayLayeredView::GetRenderToCALayer() const
+{
+	return this->_willRenderToCALayer;
+}
+
+void MacDisplayLayeredView::SetRenderToCALayer(const bool renderToLayer)
+{
+	this->_willRenderToCALayer = renderToLayer;
 }

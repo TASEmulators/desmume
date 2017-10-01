@@ -20,11 +20,11 @@
 
 #include <sstream>
 
-ClientDisplayView::ClientDisplayView()
+ClientDisplayPresenter::ClientDisplayPresenter()
 {
 	_fetchObject = NULL;
 	
-	ClientDisplayViewProperties defaultProperty;
+	ClientDisplayPresenterProperties defaultProperty;
 	defaultProperty.normalWidth		= GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	defaultProperty.normalHeight	= GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2.0;
 	defaultProperty.clientWidth		= defaultProperty.normalWidth;
@@ -40,20 +40,17 @@ ClientDisplayView::ClientDisplayView()
 	__InstanceInit(defaultProperty);
 }
 
-ClientDisplayView::ClientDisplayView(const ClientDisplayViewProperties &props)
+ClientDisplayPresenter::ClientDisplayPresenter(const ClientDisplayPresenterProperties &props)
 {
 	__InstanceInit(props);
 }
 
-ClientDisplayView::~ClientDisplayView()
+ClientDisplayPresenter::~ClientDisplayPresenter()
 {
 	delete this->_vf[NDSDisplayID_Main];
 	delete this->_vf[NDSDisplayID_Touch];
 	free_aligned(this->_vfMasterDstBuffer);
 	this->_vfMasterDstBufferSize = 0;
-	
-	delete this->_initialTouchInMajorDisplay;
-	this->_initialTouchInMajorDisplay = NULL;
 	
 	if (this->_ftLibrary != NULL)
 	{
@@ -64,11 +61,10 @@ ClientDisplayView::~ClientDisplayView()
 	pthread_mutex_destroy(&this->_mutexHUDString);
 }
 
-void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
+void ClientDisplayPresenter::__InstanceInit(const ClientDisplayPresenterProperties &props)
 {
 	_stagedProperty = props;
 	_renderProperty = _stagedProperty;
-	_initialTouchInMajorDisplay = new InitialTouchPressMap;
 	
 	_useDeposterize = false;
 	_pixelScaler = VideoFilterTypeID_None;
@@ -81,12 +77,10 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	_selectedSourceForDisplay[NDSDisplayID_Main]  = NDSDisplayID_Main;
 	_selectedSourceForDisplay[NDSDisplayID_Touch] = NDSDisplayID_Touch;
 	
-	_displayViewID = 0;
-	_useVerticalSync = false;
 	_scaleFactor = 1.0;
 	
 	_hudObjectScale = 1.0;
-	_isHUDVisible = true;
+	_isHUDVisible = false;
 	_showVideoFPS = true;
 	_showRender3DFPS = false;
 	_showFrameIndex = false;
@@ -113,14 +107,11 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	_outHudString = _hudString;
 	_hudInputString = "<^>vABXYLRSsgf x:000 y:000";
 	_hudNeedsUpdate = true;
-	_viewNeedsFlush = false;
-	_allowViewUpdates = true;
-	_allowViewFlushes = true;
 	
 	FT_Error error = FT_Init_FreeType(&_ftLibrary);
 	if (error)
 	{
-		printf("ClientDisplayView: FreeType failed to init!\n");
+		printf("ClientDisplayPresenter: FreeType failed to init!\n");
 	}
 	
 	memset(_glyphInfo, 0, sizeof(_glyphInfo));
@@ -148,7 +139,12 @@ void ClientDisplayView::__InstanceInit(const ClientDisplayViewProperties &props)
 	pthread_mutex_init(&_mutexHUDString, NULL);
 }
 
-void ClientDisplayView::_UpdateHUDString()
+void ClientDisplayPresenter::Init()
+{
+	// Do nothing. This is implementation dependent.
+}
+
+void ClientDisplayPresenter::_UpdateHUDString()
 {
 	std::ostringstream ss;
 	ss << "\x01"; // This represents the text box. It must always be the first character.
@@ -212,7 +208,7 @@ void ClientDisplayView::_UpdateHUDString()
 	pthread_mutex_unlock(&this->_mutexHUDString);
 }
 
-void ClientDisplayView::_SetHUDShowInfoItem(bool &infoItemFlag, const bool visibleState)
+void ClientDisplayPresenter::_SetHUDShowInfoItem(bool &infoItemFlag, const bool visibleState)
 {
 	if (infoItemFlag == visibleState)
 	{
@@ -223,43 +219,12 @@ void ClientDisplayView::_SetHUDShowInfoItem(bool &infoItemFlag, const bool visib
 	this->_UpdateHUDString();
 }
 
-void ClientDisplayView::Init()
-{
-	// Do nothing. This is implementation dependent.
-}
-
-int64_t ClientDisplayView::GetDisplayViewID()
-{
-	return this->_displayViewID;
-}
-
-void ClientDisplayView::SetDisplayViewID(int64_t displayViewID)
-{
-	// This implementation-dependent value will never be used internally.
-	this->_displayViewID = displayViewID;
-}
-
-bool ClientDisplayView::GetViewNeedsFlush()
-{
-	return this->_viewNeedsFlush;
-}
-
-bool ClientDisplayView::GetUseVerticalSync() const
-{
-	return this->_useVerticalSync;
-}
-
-void ClientDisplayView::SetUseVerticalSync(const bool useVerticalSync)
-{
-	this->_useVerticalSync = useVerticalSync;
-}
-
-double ClientDisplayView::GetScaleFactor() const
+double ClientDisplayPresenter::GetScaleFactor() const
 {
 	return this->_scaleFactor;
 }
 
-void ClientDisplayView::SetScaleFactor(const double scaleFactor)
+void ClientDisplayPresenter::SetScaleFactor(const double scaleFactor)
 {
 	const bool willChangeScaleFactor = (this->_scaleFactor != scaleFactor);
 	this->_scaleFactor = scaleFactor;
@@ -273,19 +238,19 @@ void ClientDisplayView::SetScaleFactor(const double scaleFactor)
 	}
 }
 
-void ClientDisplayView::_UpdateClientSize()
+void ClientDisplayPresenter::_UpdateClientSize()
 {
 	pthread_mutex_lock(&this->_mutexHUDString);
 	this->_hudNeedsUpdate = true;
 	pthread_mutex_unlock(&this->_mutexHUDString);
 }
 
-void ClientDisplayView::_UpdateViewScale()
+void ClientDisplayPresenter::_UpdateViewScale()
 {
 	double checkWidth = this->_renderProperty.normalWidth;
 	double checkHeight = this->_renderProperty.normalHeight;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, this->_renderProperty.rotation, checkWidth, checkHeight);
-	this->_renderProperty.viewScale = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, this->_renderProperty.clientWidth, this->_renderProperty.clientHeight);
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, this->_renderProperty.rotation, checkWidth, checkHeight);
+	this->_renderProperty.viewScale = ClientDisplayPresenter::GetMaxScalarWithinBounds(checkWidth, checkHeight, this->_renderProperty.clientWidth, this->_renderProperty.clientHeight);
 	
 	this->_hudObjectScale = this->_renderProperty.clientWidth / this->_renderProperty.normalWidth;
 	if (this->_hudObjectScale > 2.0)
@@ -297,21 +262,21 @@ void ClientDisplayView::_UpdateViewScale()
 }
 
 // NDS screen layout
-const ClientDisplayViewProperties& ClientDisplayView::GetViewProperties() const
+const ClientDisplayPresenterProperties& ClientDisplayPresenter::GetPresenterProperties() const
 {
 	return this->_renderProperty;
 }
 
-void ClientDisplayView::CommitViewProperties(const ClientDisplayViewProperties &props)
+void ClientDisplayPresenter::CommitPresenterProperties(const ClientDisplayPresenterProperties &props)
 {
 	this->_stagedProperty = props;
 }
 
-void ClientDisplayView::SetupViewProperties()
+void ClientDisplayPresenter::SetupPresenterProperties()
 {
 	// Validate the staged properties.
 	this->_stagedProperty.gapDistance = (double)DS_DISPLAY_UNSCALED_GAP * this->_stagedProperty.gapScale;
-	ClientDisplayView::CalculateNormalSize(this->_stagedProperty.mode, this->_stagedProperty.layout, this->_stagedProperty.gapScale, this->_stagedProperty.normalWidth, this->_stagedProperty.normalHeight);
+	ClientDisplayPresenter::CalculateNormalSize(this->_stagedProperty.mode, this->_stagedProperty.layout, this->_stagedProperty.gapScale, this->_stagedProperty.normalWidth, this->_stagedProperty.normalHeight);
 	
 	const bool didNormalSizeChange = (this->_renderProperty.mode != this->_stagedProperty.mode) ||
 	                                 (this->_renderProperty.layout != this->_stagedProperty.layout) ||
@@ -354,91 +319,91 @@ void ClientDisplayView::SetupViewProperties()
 		this->_UpdateClientSize();
 	}
 	
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-double ClientDisplayView::GetRotation() const
+double ClientDisplayPresenter::GetRotation() const
 {
 	return this->_renderProperty.rotation;
 }
 
-double ClientDisplayView::GetViewScale() const
+double ClientDisplayPresenter::GetViewScale() const
 {
 	return this->_renderProperty.viewScale;
 }
 
-ClientDisplayMode ClientDisplayView::GetMode() const
+ClientDisplayMode ClientDisplayPresenter::GetMode() const
 {
 	return this->_renderProperty.mode;
 }
 
-ClientDisplayLayout ClientDisplayView::GetLayout() const
+ClientDisplayLayout ClientDisplayPresenter::GetLayout() const
 {
 	return this->_renderProperty.layout;
 }
 
-ClientDisplayOrder ClientDisplayView::GetOrder() const
+ClientDisplayOrder ClientDisplayPresenter::GetOrder() const
 {
 	return this->_renderProperty.order;
 }
 
-double ClientDisplayView::GetGapScale() const
+double ClientDisplayPresenter::GetGapScale() const
 {
 	return this->_renderProperty.gapScale;
 }
 
-double ClientDisplayView::GetGapDistance() const
+double ClientDisplayPresenter::GetGapDistance() const
 {
 	return this->_renderProperty.gapDistance;
 }
 
-ClientDisplaySource ClientDisplayView::GetDisplayVideoSource(const NDSDisplayID displayID) const
+ClientDisplaySource ClientDisplayPresenter::GetDisplayVideoSource(const NDSDisplayID displayID) const
 {
 	return this->_displaySourceSelect[displayID];
 }
 
-void ClientDisplayView::SetDisplayVideoSource(const NDSDisplayID displayID, ClientDisplaySource displaySrc)
+void ClientDisplayPresenter::SetDisplayVideoSource(const NDSDisplayID displayID, ClientDisplaySource displaySrc)
 {
 	this->_displaySourceSelect[displayID] = displaySrc;
 }
 
-NDSDisplayID ClientDisplayView::GetSelectedDisplaySourceForDisplay(const NDSDisplayID displayID) const
+NDSDisplayID ClientDisplayPresenter::GetSelectedDisplaySourceForDisplay(const NDSDisplayID displayID) const
 {
 	return this->_selectedSourceForDisplay[displayID];
 }
 
-bool ClientDisplayView::IsSelectedDisplayEnabled(const NDSDisplayID displayID) const
+bool ClientDisplayPresenter::IsSelectedDisplayEnabled(const NDSDisplayID displayID) const
 {
 	return this->_isSelectedDisplayEnabled[displayID];
 }
 
 // NDS screen filters
-bool ClientDisplayView::GetSourceDeposterize()
+bool ClientDisplayPresenter::GetSourceDeposterize()
 {
 	return this->_useDeposterize;
 }
 
-void ClientDisplayView::SetSourceDeposterize(const bool useDeposterize)
+void ClientDisplayPresenter::SetSourceDeposterize(const bool useDeposterize)
 {
 	this->_useDeposterize = useDeposterize;
 }
 
-OutputFilterTypeID ClientDisplayView::GetOutputFilter() const
+OutputFilterTypeID ClientDisplayPresenter::GetOutputFilter() const
 {
 	return this->_outputFilter;
 }
 
-void ClientDisplayView::SetOutputFilter(const OutputFilterTypeID filterID)
+void ClientDisplayPresenter::SetOutputFilter(const OutputFilterTypeID filterID)
 {
 	this->_outputFilter = filterID;
 }
 
-VideoFilterTypeID ClientDisplayView::GetPixelScaler() const
+VideoFilterTypeID ClientDisplayPresenter::GetPixelScaler() const
 {
 	return this->_pixelScaler;
 }
 
-void ClientDisplayView::SetPixelScaler(const VideoFilterTypeID filterID)
+void ClientDisplayPresenter::SetPixelScaler(const VideoFilterTypeID filterID)
 {
 	std::string cpuTypeIDString = std::string( VideoFilter::GetTypeStringByID(filterID) );
 	const VideoFilterTypeID newFilterID = (cpuTypeIDString != std::string(VIDEOFILTERTYPE_UNKNOWN_STRING)) ? filterID : VideoFilterTypeID_None;
@@ -465,23 +430,23 @@ void ClientDisplayView::SetPixelScaler(const VideoFilterTypeID filterID)
 	free_aligned(oldMasterBuffer);
 }
 
-VideoFilter* ClientDisplayView::GetPixelScalerObject(const NDSDisplayID displayID)
+VideoFilter* ClientDisplayPresenter::GetPixelScalerObject(const NDSDisplayID displayID)
 {
 	return this->_vf[displayID];
 }
 
 // HUD appearance
-const char* ClientDisplayView::GetHUDFontPath() const
+const char* ClientDisplayPresenter::GetHUDFontPath() const
 {
 	return this->_lastFontFilePath;
 }
 
-void ClientDisplayView::SetHUDFontPath(const char *filePath)
+void ClientDisplayPresenter::SetHUDFontPath(const char *filePath)
 {
 	this->_lastFontFilePath = filePath;
 }
 
-void ClientDisplayView::LoadHUDFont()
+void ClientDisplayPresenter::LoadHUDFont()
 {
 	if (this->_lastFontFilePath == NULL)
 	{
@@ -494,12 +459,12 @@ void ClientDisplayView::LoadHUDFont()
 	error = FT_New_Face(this->_ftLibrary, this->_lastFontFilePath, 0, &fontFace);
 	if (error == FT_Err_Unknown_File_Format)
 	{
-		printf("ClientDisplayView: FreeType failed to load font face because it is in an unknown format from:\n%s\n", this->_lastFontFilePath);
+		printf("ClientDisplayPresenter: FreeType failed to load font face because it is in an unknown format from:\n%s\n", this->_lastFontFilePath);
 		return;
 	}
 	else if (error)
 	{
-		printf("ClientDisplayView: FreeType failed to load font face with an unknown error from:\n%s\n", this->_lastFontFilePath);
+		printf("ClientDisplayPresenter: FreeType failed to load font face with an unknown error from:\n%s\n", this->_lastFontFilePath);
 		return;
 	}
 	
@@ -508,12 +473,12 @@ void ClientDisplayView::LoadHUDFont()
 	FT_Done_Face(fontFace);
 }
 
-void ClientDisplayView::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo)
+void ClientDisplayPresenter::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo)
 {
 	// Do nothing. This is implementation dependent.
 }
 
-void ClientDisplayView::SetHUDInfo(const ClientFrameInfo &clientFrameInfo, const NDSFrameInfo &ndsFrameInfo)
+void ClientDisplayPresenter::SetHUDInfo(const ClientFrameInfo &clientFrameInfo, const NDSFrameInfo &ndsFrameInfo)
 {
 	this->_clientFrameInfo.videoFPS = clientFrameInfo.videoFPS;
 	this->_ndsFrameInfo.copyFrom(ndsFrameInfo);
@@ -521,7 +486,7 @@ void ClientDisplayView::SetHUDInfo(const ClientFrameInfo &clientFrameInfo, const
 	this->_UpdateHUDString();
 }
 
-const std::string& ClientDisplayView::GetHUDString()
+const std::string& ClientDisplayPresenter::GetHUDString()
 {
 	pthread_mutex_lock(&this->_mutexHUDString);
 	this->_outHudString = this->_hudString;
@@ -530,110 +495,110 @@ const std::string& ClientDisplayView::GetHUDString()
 	return this->_outHudString;
 }
 
-float ClientDisplayView::GetHUDObjectScale() const
+float ClientDisplayPresenter::GetHUDObjectScale() const
 {
 	return this->_hudObjectScale;
 }
 
-void ClientDisplayView::SetHUDObjectScale(float objectScale)
+void ClientDisplayPresenter::SetHUDObjectScale(float objectScale)
 {
 	this->_hudObjectScale = objectScale;
 }
 
-bool ClientDisplayView::GetHUDVisibility() const
+bool ClientDisplayPresenter::GetHUDVisibility() const
 {
 	return this->_isHUDVisible;
 }
 
-void ClientDisplayView::SetHUDVisibility(const bool visibleState)
+void ClientDisplayPresenter::SetHUDVisibility(const bool visibleState)
 {
 	this->_isHUDVisible = visibleState;
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-bool ClientDisplayView::GetHUDShowVideoFPS() const
+bool ClientDisplayPresenter::GetHUDShowVideoFPS() const
 {
 	return this->_showVideoFPS;
 }
 
-void ClientDisplayView::SetHUDShowVideoFPS(const bool visibleState)
+void ClientDisplayPresenter::SetHUDShowVideoFPS(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showVideoFPS, visibleState);
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-bool ClientDisplayView::GetHUDShowRender3DFPS() const
+bool ClientDisplayPresenter::GetHUDShowRender3DFPS() const
 {
 	return this->_showRender3DFPS;
 }
 
-void ClientDisplayView::SetHUDShowRender3DFPS(const bool visibleState)
+void ClientDisplayPresenter::SetHUDShowRender3DFPS(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showRender3DFPS, visibleState);
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-bool ClientDisplayView::GetHUDShowFrameIndex() const
+bool ClientDisplayPresenter::GetHUDShowFrameIndex() const
 {
 	return this->_showFrameIndex;
 }
 
-void ClientDisplayView::SetHUDShowFrameIndex(const bool visibleState)
+void ClientDisplayPresenter::SetHUDShowFrameIndex(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showFrameIndex, visibleState);
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-bool ClientDisplayView::GetHUDShowLagFrameCount() const
+bool ClientDisplayPresenter::GetHUDShowLagFrameCount() const
 {
 	return this->_showLagFrameCount;
 }
 
-void ClientDisplayView::SetHUDShowLagFrameCount(const bool visibleState)
+void ClientDisplayPresenter::SetHUDShowLagFrameCount(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showLagFrameCount, visibleState);
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-bool ClientDisplayView::GetHUDShowCPULoadAverage() const
+bool ClientDisplayPresenter::GetHUDShowCPULoadAverage() const
 {
 	return this->_showCPULoadAverage;
 }
 
-void ClientDisplayView::SetHUDShowCPULoadAverage(const bool visibleState)
+void ClientDisplayPresenter::SetHUDShowCPULoadAverage(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showCPULoadAverage, visibleState);
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-bool ClientDisplayView::GetHUDShowRTC() const
+bool ClientDisplayPresenter::GetHUDShowRTC() const
 {
 	return this->_showRTC;
 }
 
-void ClientDisplayView::SetHUDShowRTC(const bool visibleState)
+void ClientDisplayPresenter::SetHUDShowRTC(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showRTC, visibleState);
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-bool ClientDisplayView::GetHUDShowInput() const
+bool ClientDisplayPresenter::GetHUDShowInput() const
 {
 	return this->_showInputs;
 }
 
-void ClientDisplayView::SetHUDShowInput(const bool visibleState)
+void ClientDisplayPresenter::SetHUDShowInput(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showInputs, visibleState);
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayView::GetHUDColorVideoFPS() const
+uint32_t ClientDisplayPresenter::GetHUDColorVideoFPS() const
 {
 	return this->_hudColorVideoFPS;
 }
 
-void ClientDisplayView::SetHUDColorVideoFPS(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorVideoFPS(uint32_t color32)
 {
 	this->_hudColorVideoFPS = color32;
 	
@@ -641,15 +606,15 @@ void ClientDisplayView::SetHUDColorVideoFPS(uint32_t color32)
 	this->_hudNeedsUpdate = true;
 	pthread_mutex_unlock(&this->_mutexHUDString);
 	
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayView::GetHUDColorRender3DFPS() const
+uint32_t ClientDisplayPresenter::GetHUDColorRender3DFPS() const
 {
 	return this->_hudColorRender3DFPS;
 }
 
-void ClientDisplayView::SetHUDColorRender3DFPS(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorRender3DFPS(uint32_t color32)
 {
 	this->_hudColorRender3DFPS = color32;
 	
@@ -657,15 +622,15 @@ void ClientDisplayView::SetHUDColorRender3DFPS(uint32_t color32)
 	this->_hudNeedsUpdate = true;
 	pthread_mutex_unlock(&this->_mutexHUDString);
 	
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayView::GetHUDColorFrameIndex() const
+uint32_t ClientDisplayPresenter::GetHUDColorFrameIndex() const
 {
 	return this->_hudColorFrameIndex;
 }
 
-void ClientDisplayView::SetHUDColorFrameIndex(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorFrameIndex(uint32_t color32)
 {
 	this->_hudColorFrameIndex = color32;
 	
@@ -673,15 +638,15 @@ void ClientDisplayView::SetHUDColorFrameIndex(uint32_t color32)
 	this->_hudNeedsUpdate = true;
 	pthread_mutex_unlock(&this->_mutexHUDString);
 	
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayView::GetHUDColorLagFrameCount() const
+uint32_t ClientDisplayPresenter::GetHUDColorLagFrameCount() const
 {
 	return this->_hudColorLagFrameCount;
 }
 
-void ClientDisplayView::SetHUDColorLagFrameCount(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorLagFrameCount(uint32_t color32)
 {
 	this->_hudColorLagFrameCount = color32;
 	
@@ -689,15 +654,15 @@ void ClientDisplayView::SetHUDColorLagFrameCount(uint32_t color32)
 	this->_hudNeedsUpdate = true;
 	pthread_mutex_unlock(&this->_mutexHUDString);
 	
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayView::GetHUDColorCPULoadAverage() const
+uint32_t ClientDisplayPresenter::GetHUDColorCPULoadAverage() const
 {
 	return this->_hudColorCPULoadAverage;
 }
 
-void ClientDisplayView::SetHUDColorCPULoadAverage(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorCPULoadAverage(uint32_t color32)
 {
 	this->_hudColorCPULoadAverage = color32;
 	
@@ -705,15 +670,15 @@ void ClientDisplayView::SetHUDColorCPULoadAverage(uint32_t color32)
 	this->_hudNeedsUpdate = true;
 	pthread_mutex_unlock(&this->_mutexHUDString);
 	
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayView::GetHUDColorRTC() const
+uint32_t ClientDisplayPresenter::GetHUDColorRTC() const
 {
 	return this->_hudColorRTC;
 }
 
-void ClientDisplayView::SetHUDColorRTC(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorRTC(uint32_t color32)
 {
 	this->_hudColorRTC = color32;
 	
@@ -721,15 +686,15 @@ void ClientDisplayView::SetHUDColorRTC(uint32_t color32)
 	this->_hudNeedsUpdate = true;
 	pthread_mutex_unlock(&this->_mutexHUDString);
 	
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayView::GetHUDColorInputPendingAndApplied() const
+uint32_t ClientDisplayPresenter::GetHUDColorInputPendingAndApplied() const
 {
 	return this->_hudColorInputAppliedAndPending;
 }
 
-void ClientDisplayView::SetHUDColorInputPendingAndApplied(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorInputPendingAndApplied(uint32_t color32)
 {
 	this->_hudColorInputAppliedAndPending = color32;
 	
@@ -737,15 +702,15 @@ void ClientDisplayView::SetHUDColorInputPendingAndApplied(uint32_t color32)
 	this->_hudNeedsUpdate = true;
 	pthread_mutex_unlock(&this->_mutexHUDString);
 	
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayView::GetHUDColorInputAppliedOnly() const
+uint32_t ClientDisplayPresenter::GetHUDColorInputAppliedOnly() const
 {
 	return this->_hudColorInputAppliedOnly;
 }
 
-void ClientDisplayView::SetHUDColorInputAppliedOnly(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorInputAppliedOnly(uint32_t color32)
 {
 	this->_hudColorInputAppliedOnly = color32;
 	
@@ -753,15 +718,15 @@ void ClientDisplayView::SetHUDColorInputAppliedOnly(uint32_t color32)
 	this->_hudNeedsUpdate = true;
 	pthread_mutex_unlock(&this->_mutexHUDString);
 	
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayView::GetHUDColorInputPendingOnly() const
+uint32_t ClientDisplayPresenter::GetHUDColorInputPendingOnly() const
 {
 	return this->_hudColorInputPendingOnly;
 }
 
-void ClientDisplayView::SetHUDColorInputPendingOnly(uint32_t color32)
+void ClientDisplayPresenter::SetHUDColorInputPendingOnly(uint32_t color32)
 {
 	this->_hudColorInputPendingOnly = color32;
 	
@@ -769,10 +734,10 @@ void ClientDisplayView::SetHUDColorInputPendingOnly(uint32_t color32)
 	this->_hudNeedsUpdate = true;
 	pthread_mutex_unlock(&this->_mutexHUDString);
 	
-	this->UpdateView();
+	this->UpdateLayout();
 }
 
-uint32_t ClientDisplayView::GetInputColorUsingStates(bool pendingState, bool appliedState)
+uint32_t ClientDisplayPresenter::GetInputColorUsingStates(bool pendingState, bool appliedState)
 {
 	uint32_t color = this->_hudColorInputAppliedAndPending;
 	
@@ -796,7 +761,7 @@ uint32_t ClientDisplayView::GetInputColorUsingStates(bool pendingState, bool app
 	return color;
 }
 
-bool ClientDisplayView::HUDNeedsUpdate()
+bool ClientDisplayPresenter::HUDNeedsUpdate()
 {
 	pthread_mutex_lock(&this->_mutexHUDString);
 	const bool needsUpdate = this->_hudNeedsUpdate;
@@ -805,7 +770,7 @@ bool ClientDisplayView::HUDNeedsUpdate()
 	return needsUpdate;
 }
 
-void ClientDisplayView::ClearHUDNeedsUpdate()
+void ClientDisplayPresenter::ClearHUDNeedsUpdate()
 {
 	pthread_mutex_lock(&this->_mutexHUDString);
 	this->_hudNeedsUpdate = false;
@@ -813,47 +778,27 @@ void ClientDisplayView::ClearHUDNeedsUpdate()
 }
 
 // NDS GPU Interface
-const GPUClientFetchObject& ClientDisplayView::GetFetchObject() const
+const GPUClientFetchObject& ClientDisplayPresenter::GetFetchObject() const
 {
 	return *this->_fetchObject;
 }
 
-void ClientDisplayView::SetFetchObject(GPUClientFetchObject *fetchObject)
+void ClientDisplayPresenter::SetFetchObject(GPUClientFetchObject *fetchObject)
 {
 	this->_fetchObject = fetchObject;
 }
 
-bool ClientDisplayView::GetAllowViewUpdates() const
-{
-	return this->_allowViewUpdates;
-}
-
-void ClientDisplayView::SetAllowViewUpdates(bool allowUpdates)
-{
-	this->_allowViewUpdates = allowUpdates;
-}
-
-bool ClientDisplayView::GetAllowViewFlushes() const
-{
-	return this->_allowViewFlushes;
-}
-
-void ClientDisplayView::SetAllowViewFlushes(bool allowFlushes)
-{
-	this->_allowViewFlushes = allowFlushes;
-}
-
-void ClientDisplayView::_LoadNativeDisplayByID(const NDSDisplayID displayID)
+void ClientDisplayPresenter::_LoadNativeDisplayByID(const NDSDisplayID displayID)
 {
 	// Do nothing. This is implementation dependent.
 }
 
-void ClientDisplayView::_LoadCustomDisplayByID(const NDSDisplayID displayID)
+void ClientDisplayPresenter::_LoadCustomDisplayByID(const NDSDisplayID displayID)
 {
 	// Do nothing. This is implementation dependent.
 }
 
-void ClientDisplayView::LoadDisplays()
+void ClientDisplayPresenter::LoadDisplays()
 {
 	this->_emuDisplayInfo = this->_fetchObject->GetFetchDisplayInfoForBufferIndex(this->_fetchObject->GetLastFetchIndex());
 	
@@ -980,7 +925,7 @@ void ClientDisplayView::LoadDisplays()
 	}
 }
 
-void ClientDisplayView::_ResizeCPUPixelScaler(const VideoFilterTypeID filterID)
+void ClientDisplayPresenter::_ResizeCPUPixelScaler(const VideoFilterTypeID filterID)
 {
 	const VideoFilterAttributes newFilterAttr = VideoFilter::GetAttributesByID(filterID);
 	const size_t newDstBufferWidth  = (this->_vf[NDSDisplayID_Main]->GetSrcWidth()  + this->_vf[NDSDisplayID_Touch]->GetSrcWidth())  * newFilterAttr.scaleMultiply / newFilterAttr.scaleDivide;
@@ -1000,137 +945,34 @@ void ClientDisplayView::_ResizeCPUPixelScaler(const VideoFilterTypeID filterID)
 	this->_vfMasterDstBufferSize = newMasterBufferSize;
 }
 
-void ClientDisplayView::ProcessDisplays()
+void ClientDisplayPresenter::ProcessDisplays()
 {
 	// Do nothing. This is implementation dependent.
 }
 
-void ClientDisplayView::UpdateView()
-{
-	// Do nothing. This is implementation dependent.
-	this->_viewNeedsFlush = true;
-}
-
-void ClientDisplayView::FlushView()
-{
-	// Do nothing. This is implementation dependent.
-	this->_viewNeedsFlush = false;
-}
-
-void ClientDisplayView::CopyFrameToBuffer(uint32_t *dstBuffer)
+void ClientDisplayPresenter::UpdateLayout()
 {
 	// Do nothing. This is implementation dependent.
 }
 
-void ClientDisplayView::FinishFrameAtIndex(const uint8_t bufferIndex)
+void ClientDisplayPresenter::CopyFrameToBuffer(uint32_t *dstBuffer)
 {
 	// Do nothing. This is implementation dependent.
 }
 
-const NDSDisplayInfo& ClientDisplayView::GetEmuDisplayInfo() const
+void ClientDisplayPresenter::FinishFrameAtIndex(const uint8_t bufferIndex)
+{
+	// Do nothing. This is implementation dependent.
+}
+
+const NDSDisplayInfo& ClientDisplayPresenter::GetEmuDisplayInfo() const
 {
 	return this->_emuDisplayInfo;
 }
 
-void ClientDisplayView::SetEmuDisplayInfo(const NDSDisplayInfo &ndsDisplayInfo)
+void ClientDisplayPresenter::SetEmuDisplayInfo(const NDSDisplayInfo &ndsDisplayInfo)
 {
 	this->_emuDisplayInfo = ndsDisplayInfo;
-}
-
-void ClientDisplayView::HandleEmulatorFrameEndEvent()
-{
-	this->UpdateView();
-}
-
-// Touch screen input handling
-void ClientDisplayView::GetNDSPoint(const int inputID, const bool isInitialTouchPress,
-									const double clientX, const double clientY,
-									u8 &outX, u8 &outY) const
-{
-	double x = clientX;
-	double y = clientY;
-	double w = this->_renderProperty.normalWidth;
-	double h = this->_renderProperty.normalHeight;
-	const double logicalClientWidth  = this->_renderProperty.clientWidth  / this->_scaleFactor;
-	const double logicalClientHeight = this->_renderProperty.clientHeight / this->_scaleFactor;
-	
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, this->_renderProperty.rotation, w, h);
-	const double s = ClientDisplayView::GetMaxScalarWithinBounds(w, h, logicalClientWidth, logicalClientHeight);
-	
-	ClientDisplayView::ConvertClientToNormalPoint(this->_renderProperty.normalWidth, this->_renderProperty.normalHeight,
-												  logicalClientWidth, logicalClientHeight,
-												  s,
-												  this->_renderProperty.rotation,
-												  x, y);
-	
-	// Normalize the touch location to the DS.
-	if (this->_renderProperty.mode == ClientDisplayMode_Dual)
-	{
-		switch (this->_renderProperty.layout)
-		{
-			case ClientDisplayLayout_Horizontal:
-			{
-				if (this->_renderProperty.order == ClientDisplayOrder_MainFirst)
-				{
-					x -= GPU_FRAMEBUFFER_NATIVE_WIDTH;
-				}
-				break;
-			}
-				
-			case ClientDisplayLayout_Hybrid_2_1:
-			case ClientDisplayLayout_Hybrid_16_9:
-			case ClientDisplayLayout_Hybrid_16_10:
-			{
-				if (isInitialTouchPress)
-				{
-					const bool isClickWithinMajorDisplay = (this->_renderProperty.order == ClientDisplayOrder_TouchFirst) && (x >= 0.0) && (x < 256.0);
-					(*_initialTouchInMajorDisplay)[inputID] = isClickWithinMajorDisplay;
-				}
-				
-				const bool handleClickInMajorDisplay = (*_initialTouchInMajorDisplay)[inputID];
-				if (!handleClickInMajorDisplay)
-				{
-					const double minorDisplayScale = (this->_renderProperty.normalWidth - (double)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
-					x = (x - GPU_FRAMEBUFFER_NATIVE_WIDTH) / minorDisplayScale;
-					y = y / minorDisplayScale;
-				}
-				break;
-			}
-				
-			default: // Default to vertical orientation.
-			{
-				if (this->_renderProperty.order == ClientDisplayOrder_TouchFirst)
-				{
-					y -= ((double)GPU_FRAMEBUFFER_NATIVE_HEIGHT + this->_renderProperty.gapDistance);
-				}
-				break;
-			}
-		}
-	}
-	
-	y = GPU_FRAMEBUFFER_NATIVE_HEIGHT - y;
-	
-	// Constrain the touch point to the DS dimensions.
-	if (x < 0.0)
-	{
-		x = 0.0;
-	}
-	else if (x > (GPU_FRAMEBUFFER_NATIVE_WIDTH - 1.0))
-	{
-		x = (GPU_FRAMEBUFFER_NATIVE_WIDTH - 1.0);
-	}
-	
-	if (y < 0.0)
-	{
-		y = 0.0;
-	}
-	else if (y > (GPU_FRAMEBUFFER_NATIVE_HEIGHT - 1.0))
-	{
-		y = (GPU_FRAMEBUFFER_NATIVE_HEIGHT - 1.0);
-	}
-	
-	outX = (u8)(x + 0.001);
-	outY = (u8)(y + 0.001);
 }
 
 /********************************************************************************************
@@ -1152,9 +994,9 @@ void ClientDisplayView::GetNDSPoint(const int inputID, const bool isInitialTouch
 		returned bounds will always be at its smallest when the angle is at 0, 90, 180,
 		or 270 degrees, and largest when the angle is at 45, 135, 225, or 315 degrees.
  ********************************************************************************************/
-void ClientDisplayView::ConvertNormalToTransformedBounds(const double scalar,
-														 const double angleDegrees,
-														 double &inoutWidth, double &inoutHeight)
+void ClientDisplayPresenter::ConvertNormalToTransformedBounds(const double scalar,
+															  const double angleDegrees,
+															  double &inoutWidth, double &inoutHeight)
 {
 	const double angleRadians = angleDegrees * (M_PI/180.0);
 	
@@ -1290,13 +1132,219 @@ void ClientDisplayView::ConvertNormalToTransformedBounds(const double scalar,
 		If keepInBoundsWidth or keepInBoundsHeight are less than or equal to zero, the
 		returned scalar will be zero.
  ********************************************************************************************/
-double ClientDisplayView::GetMaxScalarWithinBounds(const double normalBoundsWidth, const double normalBoundsHeight,
-												   const double keepInBoundsWidth, const double keepInBoundsHeight)
+double ClientDisplayPresenter::GetMaxScalarWithinBounds(const double normalBoundsWidth, const double normalBoundsHeight,
+														const double keepInBoundsWidth, const double keepInBoundsHeight)
 {
 	const double maxX = (normalBoundsWidth <= 0.0) ? 0.0 : keepInBoundsWidth / normalBoundsWidth;
 	const double maxY = (normalBoundsHeight <= 0.0) ? 0.0 : keepInBoundsHeight / normalBoundsHeight;
 	
 	return (maxX <= maxY) ? maxX : maxY;
+}
+
+void ClientDisplayPresenter::CalculateNormalSize(const ClientDisplayMode mode, const ClientDisplayLayout layout, const double gapScale,
+												 double &outWidth, double &outHeight)
+{
+	if (mode == ClientDisplayMode_Dual)
+	{
+		switch (layout)
+		{
+			case ClientDisplayLayout_Horizontal:
+				outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH*2.0;
+				outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+				break;
+				
+			case ClientDisplayLayout_Hybrid_2_1:
+				outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH + (128.0);
+				outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+				break;
+				
+			case ClientDisplayLayout_Hybrid_16_9:
+				outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH + (64.0 * 4.0 / 3.0);
+				outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+				break;
+				
+			case ClientDisplayLayout_Hybrid_16_10:
+				outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH + (51.2);
+				outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+				break;
+				
+			default: // Default to vertical orientation.
+				outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT*2.0 + (DS_DISPLAY_UNSCALED_GAP*gapScale);
+				break;
+		}
+	}
+	else
+	{
+		outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+		outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	}
+}
+
+ClientDisplayViewInterface::ClientDisplayViewInterface()
+{
+	_displayViewID = 0;
+	_useVerticalSync = false;
+	_viewNeedsFlush = false;
+	_allowViewUpdates = true;
+	_allowViewFlushes = true;
+	
+	_initialTouchInMajorDisplay = new InitialTouchPressMap;
+}
+
+ClientDisplayViewInterface::~ClientDisplayViewInterface()
+{
+	delete this->_initialTouchInMajorDisplay;
+	this->_initialTouchInMajorDisplay = NULL;
+}
+
+int64_t ClientDisplayViewInterface::GetDisplayViewID()
+{
+	return this->_displayViewID;
+}
+
+void ClientDisplayViewInterface::SetDisplayViewID(int64_t displayViewID)
+{
+	// This implementation-dependent value will never be used internally.
+	this->_displayViewID = displayViewID;
+}
+
+bool ClientDisplayViewInterface::GetViewNeedsFlush()
+{
+	return this->_viewNeedsFlush;
+}
+
+void ClientDisplayViewInterface::SetViewNeedsFlush()
+{
+	// Do nothing. This is implementation dependent.
+	this->_viewNeedsFlush = true;
+}
+
+bool ClientDisplayViewInterface::GetUseVerticalSync() const
+{
+	return this->_useVerticalSync;
+}
+
+void ClientDisplayViewInterface::SetUseVerticalSync(const bool useVerticalSync)
+{
+	this->_useVerticalSync = useVerticalSync;
+}
+
+bool ClientDisplayViewInterface::GetAllowViewUpdates() const
+{
+	return this->_allowViewUpdates;
+}
+
+void ClientDisplayViewInterface::SetAllowViewUpdates(bool allowUpdates)
+{
+	this->_allowViewUpdates = allowUpdates;
+}
+
+bool ClientDisplayViewInterface::GetAllowViewFlushes() const
+{
+	return this->_allowViewFlushes;
+}
+
+void ClientDisplayViewInterface::SetAllowViewFlushes(bool allowFlushes)
+{
+	this->_allowViewFlushes = allowFlushes;
+}
+
+void ClientDisplayViewInterface::FlushView()
+{
+	// Do nothing. This is implementation dependent.
+	this->_viewNeedsFlush = false;
+}
+
+// Touch screen input handling
+void ClientDisplayViewInterface::GetNDSPoint(const ClientDisplayPresenterProperties &props,
+											 const double logicalClientWidth, const double logicalClientHeight,
+											 const int inputID, const bool isInitialTouchPress,
+											 const double clientX, const double clientY,
+											 uint8_t &outX, uint8_t &outY) const
+{
+	double x = clientX;
+	double y = clientY;
+	double w = props.normalWidth;
+	double h = props.normalHeight;
+	
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, props.rotation, w, h);
+	const double s = ClientDisplayPresenter::GetMaxScalarWithinBounds(w, h, logicalClientWidth, logicalClientHeight);
+	
+	ClientDisplayViewInterface::ConvertClientToNormalPoint(props.normalWidth, props.normalHeight,
+														   logicalClientWidth, logicalClientHeight,
+														   s,
+														   props.rotation,
+														   x, y);
+	
+	// Normalize the touch location to the DS.
+	if (props.mode == ClientDisplayMode_Dual)
+	{
+		switch (props.layout)
+		{
+			case ClientDisplayLayout_Horizontal:
+			{
+				if (props.order == ClientDisplayOrder_MainFirst)
+				{
+					x -= GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				}
+				break;
+			}
+				
+			case ClientDisplayLayout_Hybrid_2_1:
+			case ClientDisplayLayout_Hybrid_16_9:
+			case ClientDisplayLayout_Hybrid_16_10:
+			{
+				if (isInitialTouchPress)
+				{
+					const bool isClickWithinMajorDisplay = (props.order == ClientDisplayOrder_TouchFirst) && (x >= 0.0) && (x < 256.0);
+					(*_initialTouchInMajorDisplay)[inputID] = isClickWithinMajorDisplay;
+				}
+				
+				const bool handleClickInMajorDisplay = (*_initialTouchInMajorDisplay)[inputID];
+				if (!handleClickInMajorDisplay)
+				{
+					const double minorDisplayScale = (props.normalWidth - (double)GPU_FRAMEBUFFER_NATIVE_WIDTH) / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+					x = (x - GPU_FRAMEBUFFER_NATIVE_WIDTH) / minorDisplayScale;
+					y = y / minorDisplayScale;
+				}
+				break;
+			}
+				
+			default: // Default to vertical orientation.
+			{
+				if (props.order == ClientDisplayOrder_TouchFirst)
+				{
+					y -= ((double)GPU_FRAMEBUFFER_NATIVE_HEIGHT + props.gapDistance);
+				}
+				break;
+			}
+		}
+	}
+	
+	y = GPU_FRAMEBUFFER_NATIVE_HEIGHT - y;
+	
+	// Constrain the touch point to the DS dimensions.
+	if (x < 0.0)
+	{
+		x = 0.0;
+	}
+	else if (x > (GPU_FRAMEBUFFER_NATIVE_WIDTH - 1.0))
+	{
+		x = (GPU_FRAMEBUFFER_NATIVE_WIDTH - 1.0);
+	}
+	
+	if (y < 0.0)
+	{
+		y = 0.0;
+	}
+	else if (y > (GPU_FRAMEBUFFER_NATIVE_HEIGHT - 1.0))
+	{
+		y = (GPU_FRAMEBUFFER_NATIVE_HEIGHT - 1.0);
+	}
+	
+	outX = (u8)(x + 0.001);
+	outY = (u8)(y + 0.001);
 }
 
 /********************************************************************************************
@@ -1320,11 +1368,11 @@ double ClientDisplayView::GetMaxScalarWithinBounds(const double normalBoundsWidt
 	Details:
 		It may help to call GetMaxScalarWithinBounds() for the scalar parameter.
  ********************************************************************************************/
-void ClientDisplayView::ConvertClientToNormalPoint(const double normalWidth, const double normalHeight,
-												   const double clientWidth, const double clientHeight,
-												   const double scalar,
-												   const double angleDegrees,
-												   double &inoutX, double &inoutY)
+void ClientDisplayViewInterface::ConvertClientToNormalPoint(const double normalWidth, const double normalHeight,
+															const double clientWidth, const double clientHeight,
+															const double scalar,
+															const double angleDegrees,
+															double &inoutX, double &inoutY)
 {
 	// Get the coordinates of the client point and translate the coordinate
 	// system so that the origin becomes the center.
@@ -1372,79 +1420,49 @@ void ClientDisplayView::ConvertClientToNormalPoint(const double normalWidth, con
 	inoutY = (r * sin(normalizedAngle)) + (normalHeight / 2.0);
 }
 
-void ClientDisplayView::CalculateNormalSize(const ClientDisplayMode mode, const ClientDisplayLayout layout, const double gapScale,
-											double &outWidth, double &outHeight)
+ClientDisplay3DPresenter::ClientDisplay3DPresenter()
 {
-	if (mode == ClientDisplayMode_Dual)
-	{
-		switch (layout)
-		{
-			case ClientDisplayLayout_Horizontal:
-				outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH*2.0;
-				outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-				break;
-				
-			case ClientDisplayLayout_Hybrid_2_1:
-				outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH + (128.0);
-				outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-				break;
-				
-			case ClientDisplayLayout_Hybrid_16_9:
-				outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH + (64.0 * 4.0 / 3.0);
-				outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-				break;
-				
-			case ClientDisplayLayout_Hybrid_16_10:
-				outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH + (51.2);
-				outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-				break;
-				
-			default: // Default to vertical orientation.
-				outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
-				outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT*2.0 + (DS_DISPLAY_UNSCALED_GAP*gapScale);
-				break;
-		}
-	}
-	else
-	{
-		outWidth  = (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
-		outHeight = (double)GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	}
+	__InstanceInit();
 }
 
-ClientDisplay3DView::ClientDisplay3DView()
+ClientDisplay3DPresenter::ClientDisplay3DPresenter(const ClientDisplayPresenterProperties &props) : ClientDisplayPresenter(props)
+{
+	__InstanceInit();
+}
+
+void ClientDisplay3DPresenter::__InstanceInit()
 {
 	_canFilterOnGPU = false;
 	_willFilterOnGPU = false;
 	_filtersPreferGPU = false;
 }
 
-bool ClientDisplay3DView::CanFilterOnGPU() const
+bool ClientDisplay3DPresenter::CanFilterOnGPU() const
 {
 	return this->_canFilterOnGPU;
 }
 
-bool ClientDisplay3DView::WillFilterOnGPU() const
+bool ClientDisplay3DPresenter::WillFilterOnGPU() const
 {
 	return this->_willFilterOnGPU;
 }
 
-bool ClientDisplay3DView::GetFiltersPreferGPU() const
+bool ClientDisplay3DPresenter::GetFiltersPreferGPU() const
 {
 	return this->_filtersPreferGPU;
 }
 
-void ClientDisplay3DView::SetFiltersPreferGPU(const bool preferGPU)
+void ClientDisplay3DPresenter::SetFiltersPreferGPU(const bool preferGPU)
 {
 	this->_filtersPreferGPU = preferGPU;
 }
 
-void ClientDisplay3DView::SetSourceDeposterize(bool useDeposterize)
+void ClientDisplay3DPresenter::SetSourceDeposterize(bool useDeposterize)
 {
 	this->_useDeposterize = (this->_canFilterOnGPU) ? useDeposterize : false;
 }
 
-void ClientDisplay3DView::SetHUDPositionVertices(float viewportWidth, float viewportHeight, float *vtxPositionBufferPtr)
+void ClientDisplay3DPresenter::SetHUDPositionVertices(float viewportWidth, float viewportHeight, float *vtxPositionBufferPtr)
 {
 	pthread_mutex_lock(&this->_mutexHUDString);
 	std::string hudString = this->_hudString;
@@ -1574,7 +1592,7 @@ void ClientDisplay3DView::SetHUDPositionVertices(float viewportWidth, float view
 	this->SetHUDTouchLinePositionVertices(vtxPositionBufferPtr + j);
 }
 
-void ClientDisplay3DView::SetHUDTouchLinePositionVertices(float *vtxBufferPtr)
+void ClientDisplay3DPresenter::SetHUDTouchLinePositionVertices(float *vtxBufferPtr)
 {
 	const float x = (this->_ndsFrameInfo.inputStatesApplied.Touch == 0) ? this->_ndsFrameInfo.touchLocXApplied : this->_ndsFrameInfo.touchLocXPending;
 	const float y = 191.0f - ((this->_ndsFrameInfo.inputStatesApplied.Touch == 0) ? this->_ndsFrameInfo.touchLocYApplied : this->_ndsFrameInfo.touchLocYPending);
@@ -1759,7 +1777,7 @@ void ClientDisplay3DView::SetHUDTouchLinePositionVertices(float *vtxBufferPtr)
 	}
 }
 
-void ClientDisplay3DView::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
+void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 {
 	pthread_mutex_lock(&this->_mutexHUDString);
 	std::string hudString = this->_hudString;
@@ -1910,7 +1928,7 @@ void ClientDisplay3DView::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 	}
 }
 
-void ClientDisplay3DView::SetHUDTextureCoordinates(float *texCoordBufferPtr)
+void ClientDisplay3DPresenter::SetHUDTextureCoordinates(float *texCoordBufferPtr)
 {
 	pthread_mutex_lock(&this->_mutexHUDString);
 	std::string hudString = this->_hudString;
@@ -1971,7 +1989,7 @@ void ClientDisplay3DView::SetHUDTextureCoordinates(float *texCoordBufferPtr)
 	}
 }
 
-void ClientDisplay3DView::SetScreenVertices(float *vtxBufferPtr)
+void ClientDisplay3DPresenter::SetScreenVertices(float *vtxBufferPtr)
 {
 	const float w = this->_renderProperty.normalWidth / 2.0f;
 	const float h = this->_renderProperty.normalHeight / 2.0f;
@@ -2096,7 +2114,7 @@ void ClientDisplay3DView::SetScreenVertices(float *vtxBufferPtr)
 	}
 }
 
-void ClientDisplay3DView::SetScreenTextureCoordinates(float w0, float h0, float w1, float h1, float *texCoordBufferPtr)
+void ClientDisplay3DPresenter::SetScreenTextureCoordinates(float w0, float h0, float w1, float h1, float *texCoordBufferPtr)
 {
 	texCoordBufferPtr[0]  = 0.0f;			texCoordBufferPtr[1]  = 0.0f;
 	texCoordBufferPtr[2]  =   w0;			texCoordBufferPtr[3]  = 0.0f;
@@ -2109,6 +2127,62 @@ void ClientDisplay3DView::SetScreenTextureCoordinates(float w0, float h0, float 
 	texCoordBufferPtr[14] =   w1;			texCoordBufferPtr[15] =   h1;
 	
 	memcpy(texCoordBufferPtr + (2 * 8), texCoordBufferPtr + (0 * 8), sizeof(float) * (2 * 8));
+}
+
+ClientDisplayView::ClientDisplayView()
+{
+	_presenter = NULL;
+}
+
+ClientDisplayView::ClientDisplayView(ClientDisplayPresenter *thePresenter)
+{
+	_presenter = thePresenter;
+}
+
+void ClientDisplayView::Init()
+{
+	if (this->_presenter != NULL)
+	{
+		this->_presenter->Init();
+	}
+}
+
+ClientDisplayPresenter* ClientDisplayView::GetPresenter()
+{
+	return this->_presenter;
+}
+
+void ClientDisplayView::SetPresenter(ClientDisplayPresenter *thePresenter)
+{
+	this->_presenter = thePresenter;
+}
+
+ClientDisplay3DView::ClientDisplay3DView()
+{
+	_presenter = NULL;
+}
+
+ClientDisplay3DView::ClientDisplay3DView(ClientDisplay3DPresenter *thePresenter)
+{
+	_presenter = thePresenter;
+}
+
+void ClientDisplay3DView::Init()
+{
+	if (this->_presenter != NULL)
+	{
+		this->_presenter->Init();
+	}
+}
+
+ClientDisplay3DPresenter* ClientDisplay3DView::Get3DPresenter()
+{
+	return this->_presenter;
+}
+
+void ClientDisplay3DView::Set3DPresenter(ClientDisplay3DPresenter *thePresenter)
+{
+	this->_presenter = thePresenter;
 }
 
 LUTValues *_LQ2xLUT = NULL;

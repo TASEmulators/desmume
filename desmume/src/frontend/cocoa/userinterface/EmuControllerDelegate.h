@@ -28,6 +28,8 @@
 @class CocoaDSCheatManager;
 @class CheatWindowDelegate;
 @class DisplayWindowController;
+@class RomInfoPanel;
+@class MacScreenshotCaptureToolDelegate;
 class AudioSampleBlockGenerator;
 
 @interface EmuControllerDelegate : NSObject <NSUserInterfaceValidations, CocoaDSControllerDelegate>
@@ -41,14 +43,18 @@ class AudioSampleBlockGenerator;
 	CocoaDSCheatManager *dummyCheatList;
 	
 	CheatWindowDelegate *cheatWindowDelegate;
+	MacScreenshotCaptureToolDelegate *screenshotCaptureToolDelegate;
 	NSObjectController *firmwarePanelController;
 	NSObjectController *romInfoPanelController;
 	NSObjectController *cdsCoreController;
 	NSObjectController *cdsSoundController;
 	NSObjectController *cheatWindowController;
 	NSObjectController *slot2WindowController;
+	NSArrayController *inputDeviceListController;
 	NSArrayController *cheatListController;
 	NSArrayController *cheatDatabaseController;
+	
+	RomInfoPanel *romInfoPanel;
 	
 	NSWindow *displayRotationPanel;
 	NSWindow *displaySeparationPanel;
@@ -116,14 +122,18 @@ class AudioSampleBlockGenerator;
 @property (retain) CocoaDSCheatManager *cdsCheats;
 
 @property (readonly) IBOutlet CheatWindowDelegate *cheatWindowDelegate;
+@property (readonly) IBOutlet MacScreenshotCaptureToolDelegate *screenshotCaptureToolDelegate;
 @property (readonly) IBOutlet NSObjectController *firmwarePanelController;
 @property (readonly) IBOutlet NSObjectController *romInfoPanelController;
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;
 @property (readonly) IBOutlet NSObjectController *cdsSoundController;
 @property (readonly) IBOutlet NSObjectController *cheatWindowController;
 @property (readonly) IBOutlet NSObjectController *slot2WindowController;
+@property (readonly) IBOutlet NSArrayController *inputDeviceListController;
 @property (readonly) IBOutlet NSArrayController *cheatListController;
 @property (readonly) IBOutlet NSArrayController *cheatDatabaseController;
+
+@property (readonly) IBOutlet RomInfoPanel *romInfoPanel;
 
 @property (readonly) IBOutlet NSWindow *displayRotationPanel;
 @property (readonly) IBOutlet NSWindow *displaySeparationPanel;
@@ -278,6 +288,10 @@ class AudioSampleBlockGenerator;
 
 - (void) updateAllWindowTitles;
 - (void) updateDisplayPanelTitles;
-- (void) setupUserDefaults;
+- (void) appInit;
+- (void) readUserDefaults;
+- (void) writeUserDefaults;
+- (void) restoreDisplayWindowStates;
+- (void) saveDisplayWindowStates;
 
 @end

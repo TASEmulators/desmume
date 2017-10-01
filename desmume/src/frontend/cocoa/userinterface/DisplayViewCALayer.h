@@ -22,15 +22,17 @@
 #import <QuartzCore/QuartzCore.h>
 
 #import "InputManager.h"
+#import "../ClientDisplayView.h"
 
 @class CocoaDSDisplayVideo;
 @class MacClientSharedObject;
-class ClientDisplay3DView;
+class MacDisplayLayeredView;
 
 @protocol DisplayViewCALayer <NSObject>
 
 @required
-- (ClientDisplay3DView *) clientDisplay3DView;
+
+@property (assign, nonatomic, getter=clientDisplayView, setter=setClientDisplayView:) MacDisplayLayeredView *_cdv;
 
 @end
 
@@ -39,7 +41,7 @@ class ClientDisplay3DView;
 @required
 @property (retain) InputManager *inputManager;
 @property (retain) CocoaDSDisplayVideo *cdsVideoOutput;
-@property (readonly, nonatomic) ClientDisplay3DView *clientDisplay3DView;
+@property (readonly, nonatomic) MacDisplayLayeredView *clientDisplayView;
 @property (readonly) BOOL canUseShaderBasedFilters;
 @property (assign, nonatomic) BOOL allowViewUpdates;
 @property (assign) BOOL isHUDVisible;
@@ -68,34 +70,43 @@ class ClientDisplay3DView;
 @property (assign) NSInteger pixelScaler;
 
 - (void) setupLayer;
-- (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType;
 
 @end
 
-class DisplayViewCALayerInterface
+class MacDisplayPresenterInterface
 {
-private:
-	NSView *_nsView;
-	CALayer<DisplayViewCALayer> *_frontendLayer;
-	bool _willRenderToCALayer;
-	
+protected:
 	MacClientSharedObject *_sharedData;
 	
 public:
-	DisplayViewCALayerInterface();
+	MacDisplayPresenterInterface();
+	MacDisplayPresenterInterface(MacClientSharedObject *sharedObject);
+	
+	MacClientSharedObject* GetSharedData();
+	virtual void SetSharedData(MacClientSharedObject *sharedObject);
+};
+
+class MacDisplayLayeredView : public ClientDisplay3DView
+{
+private:
+	void __InstanceInit();
+	
+protected:
+	NSView *_nsView;
+	CALayer<DisplayViewCALayer> *_caLayer;
+	bool _willRenderToCALayer;
+	
+public:
+	MacDisplayLayeredView();
+	MacDisplayLayeredView(ClientDisplay3DPresenter *thePresenter);
 	
 	NSView* GetNSView() const;
 	void SetNSView(NSView *theView);
 	
-	CALayer<DisplayViewCALayer>* GetFrontendLayer() const;
-	void SetFrontendLayer(CALayer<DisplayViewCALayer> *layer);
-	void CALayerDisplay();
+	CALayer<DisplayViewCALayer>* GetCALayer() const;
 	
 	bool GetRenderToCALayer() const;
 	void SetRenderToCALayer(const bool renderToLayer);
-	
-	MacClientSharedObject* GetSharedData();
-	void SetSharedData(MacClientSharedObject *sharedObject);
 };
 
 #endif // _DISPLAYVIEWCALAYER_H

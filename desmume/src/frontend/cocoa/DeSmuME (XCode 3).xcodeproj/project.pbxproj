@@ -1227,6 +1227,11 @@
 		ABAAFBEB172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */; };
 		ABAAFBEC172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */; };
 		ABAAFBED172122B6005DDDBE /* FileMigrationDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */; };
+		ABAB0AFF1F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAB0AFE1F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm */; };
+		ABAB0B001F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAB0AFE1F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm */; };
+		ABAB0B011F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAB0AFE1F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm */; };
+		ABAB0B021F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAB0AFE1F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm */; };
+		ABAB0B031F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABAB0AFE1F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm */; };
 		ABACB73A1AAC46B20066F429 /* Icon_MicrophoneDarkGreen_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABACB7391AAC46B20066F429 /* Icon_MicrophoneDarkGreen_256x256.png */; };
 		ABACB73B1AAC46B20066F429 /* Icon_MicrophoneDarkGreen_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABACB7391AAC46B20066F429 /* Icon_MicrophoneDarkGreen_256x256.png */; };
 		ABACB73C1AAC46B20066F429 /* Icon_MicrophoneDarkGreen_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = ABACB7391AAC46B20066F429 /* Icon_MicrophoneDarkGreen_256x256.png */; };
@@ -1994,6 +1999,8 @@
 		ABAAEFFE1B22361800E1269D /* hq3x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hq3x.cpp; sourceTree = "<group>"; };
 		ABAAFBE8172122B6005DDDBE /* FileMigrationDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileMigrationDelegate.h; sourceTree = "<group>"; };
 		ABAAFBE9172122B6005DDDBE /* FileMigrationDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FileMigrationDelegate.mm; sourceTree = "<group>"; };
+		ABAB0AFD1F7C1BB70079EFD3 /* MacScreenshotCaptureTool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacScreenshotCaptureTool.h; sourceTree = "<group>"; };
+		ABAB0AFE1F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MacScreenshotCaptureTool.mm; sourceTree = "<group>"; };
 		ABACB7391AAC46B20066F429 /* Icon_MicrophoneDarkGreen_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_MicrophoneDarkGreen_256x256.png; path = images/Icon_MicrophoneDarkGreen_256x256.png; sourceTree = "<group>"; };
 		ABAD104915ACE7A00000EC47 /* DeSmuME (PPC).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeSmuME (PPC).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABAE2F7918682B6C00C92F4F /* Slot2WindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Slot2WindowDelegate.h; sourceTree = "<group>"; };
@@ -3017,6 +3024,7 @@
 				AB3ACB6E14C2361100D7D192 /* inputPrefsView.h */,
 				AB213D43170CB141006DDB0F /* InputProfileController.h */,
 				AB3E690E1E231E9900D4CC75 /* MacOGLDisplayView.h */,
+				ABAB0AFD1F7C1BB70079EFD3 /* MacScreenshotCaptureTool.h */,
 				AB3ACB7014C2361100D7D192 /* preferencesWindowDelegate.h */,
 				ABC3DEBB1A96EA96009EC345 /* RomInfoPanel.h */,
 				ABAE2F7918682B6C00C92F4F /* Slot2WindowDelegate.h */,
@@ -3031,6 +3039,7 @@
 				AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */,
 				AB213D44170CB141006DDB0F /* InputProfileController.mm */,
 				AB3E690F1E231E9900D4CC75 /* MacOGLDisplayView.mm */,
+				ABAB0AFE1F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm */,
 				AB3ACB7114C2361100D7D192 /* preferencesWindowDelegate.mm */,
 				ABC3DEBC1A96EA96009EC345 /* RomInfoPanel.mm */,
 				ABAE2F7A18682B6C00C92F4F /* Slot2WindowDelegate.mm */,
@@ -4617,6 +4626,7 @@
 				ABC04DA41F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
 				ABC04DCB1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
 				ABAFD2791F7110E6007705BD /* gdbstub.cpp in Sources */,
+				ABAB0B001F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4805,6 +4815,7 @@
 				ABC04DA51F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
 				ABC04DCC1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
 				ABAFD2781F7110E5007705BD /* gdbstub.cpp in Sources */,
+				ABAB0B011F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5023,6 +5034,7 @@
 				ABC04DA31F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
 				ABC04DCA1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
 				ABAFD2751F7110E4007705BD /* gdbstub.cpp in Sources */,
+				ABAB0AFF1F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5241,6 +5253,7 @@
 				ABC04DA71F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
 				ABC04DCE1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
 				ABAFD2761F7110E4007705BD /* gdbstub.cpp in Sources */,
+				ABAB0B031F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5429,6 +5442,7 @@
 				ABC04DA61F67A20500EA6ED7 /* ClientInputHandler.cpp in Sources */,
 				ABC04DCD1F67A2AC00EA6ED7 /* macosx_10_5_compat.cpp in Sources */,
 				ABAFD2771F7110E5007705BD /* gdbstub.cpp in Sources */,
+				ABAB0B021F7C1BB70079EFD3 /* MacScreenshotCaptureTool.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

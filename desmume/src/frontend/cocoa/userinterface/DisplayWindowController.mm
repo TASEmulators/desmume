@@ -52,7 +52,6 @@
 @synthesize assignedScreen;
 @synthesize masterWindow;
 @synthesize view;
-@synthesize saveScreenshotPanelAccessoryView;
 @synthesize outputVolumeControlView;
 @synthesize microphoneGainControlView;
 @synthesize outputVolumeMenuItem;
@@ -67,7 +66,6 @@
 @dynamic displayOrientation;
 @dynamic displayOrder;
 @dynamic displayGap;
-@synthesize screenshotFileFormat;
 @dynamic isMinSizeNormal;
 @dynamic isShowingStatusBar;
 
@@ -92,7 +90,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	emuControl = [theEmuController retain];
 	assignedScreen = nil;
 	masterWindow = nil;
-	screenshotFileFormat = NSTIFFFileType;
 	
 	// These need to be initialized first since there are dependencies on these.
 	_localViewProps.normalWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
@@ -117,11 +114,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_masterWindowScale = 1.0;
 	_masterWindowFrame = NSMakeRect(0.0, 0.0, _localViewProps.clientWidth, _localViewProps.clientHeight + _localViewProps.gapDistance);
 	_masterStatusBarState = NO;
-	
-	[[NSNotificationCenter defaultCenter] addObserver:self
-											 selector:@selector(saveScreenshotAsFinish:)
-												 name:@"org.desmume.DeSmuME.requestScreenshotDidFinish"
-											   object:nil];
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(respondToScreenChange:)
@@ -192,7 +184,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	if ([self isFullScreen])
 	{
-		[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
+		[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
 	}
 	else
 	{
@@ -207,7 +199,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		// display view to update itself.
 		if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
 		{
-			[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
+			[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
 		}
 	}
 }
@@ -223,7 +215,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	                                ( ((_localViewProps.mode == ClientDisplayMode_Main) || (_localViewProps.mode == ClientDisplayMode_Touch)) && (displayModeID == ClientDisplayMode_Dual) );
 	_localViewProps.mode = (ClientDisplayMode)displayModeID;
 	
-	ClientDisplayView::CalculateNormalSize((ClientDisplayMode)displayModeID, (ClientDisplayLayout)[self displayOrientation], [self displayGap], _localViewProps.normalWidth, _localViewProps.normalHeight);
+	ClientDisplayPresenter::CalculateNormalSize((ClientDisplayMode)displayModeID, (ClientDisplayLayout)[self displayOrientation], [self displayGap], _localViewProps.normalWidth, _localViewProps.normalHeight);
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
 	
 	if (![self isFullScreen] && willModeChangeSize)
@@ -232,7 +224,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	else
 	{
-		[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
+		[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
 	}
 }
 
@@ -245,14 +237,14 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 {
 	_localViewProps.layout = (ClientDisplayLayout)theOrientation;
 	
-	ClientDisplayView::CalculateNormalSize((ClientDisplayMode)[self displayMode], (ClientDisplayLayout)theOrientation, [self displayGap], _localViewProps.normalWidth, _localViewProps.normalHeight);
+	ClientDisplayPresenter::CalculateNormalSize((ClientDisplayMode)[self displayMode], (ClientDisplayLayout)theOrientation, [self displayGap], _localViewProps.normalWidth, _localViewProps.normalHeight);
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
 	
 	if ([self displayMode] == ClientDisplayMode_Dual)
 	{
 		if ([self isFullScreen])
 		{
-			[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
+			[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
 		}
 		else
 		{
@@ -269,7 +261,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setDisplayOrder:(NSInteger)theOrder
 {
 	_localViewProps.order = (ClientDisplayOrder)theOrder;
-	[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
+	[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
 }
 
 - (NSInteger) displayOrder
@@ -280,7 +272,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setDisplayGap:(double)gapScalar
 {
 	_localViewProps.gapScale = gapScalar;
-	ClientDisplayView::CalculateNormalSize((ClientDisplayMode)[self displayMode], (ClientDisplayLayout)[self displayOrientation], gapScalar, _localViewProps.normalWidth, _localViewProps.normalHeight);
+	ClientDisplayPresenter::CalculateNormalSize((ClientDisplayMode)[self displayMode], (ClientDisplayLayout)[self displayOrientation], gapScalar, _localViewProps.normalWidth, _localViewProps.normalHeight);
 	[self setIsMinSizeNormal:[self isMinSizeNormal]];
 	
 	if ([self displayMode] == ClientDisplayMode_Dual)
@@ -296,7 +288,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 				case ClientDisplayLayout_Hybrid_16_9:
 				case ClientDisplayLayout_Hybrid_16_10:
 				default:
-					[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
+					[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
 					break;
 			}
 		}
@@ -306,7 +298,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			{
 				case ClientDisplayLayout_Hybrid_16_9:
 				case ClientDisplayLayout_Hybrid_16_10:
-					[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
+					[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
 					break;
 					
 				case ClientDisplayLayout_Horizontal:
@@ -341,7 +333,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Set the minimum content size, keeping the display rotation in mind.
 	double transformedMinWidth = _minDisplayViewSize.width;
 	double transformedMinHeight = _minDisplayViewSize.height;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
 	[[self window] setContentMinSize:NSMakeSize(transformedMinWidth, transformedMinHeight + _statusBarHeight)];
 }
 
@@ -393,7 +385,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 #pragma mark Class Methods
 
-- (ClientDisplayViewProperties &) localViewProperties
+- (ClientDisplayPresenterProperties &) localViewProperties
 {
 	return _localViewProps;
 }
@@ -429,7 +421,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	_localViewProps.gapDistance	= DS_DISPLAY_UNSCALED_GAP * gapScale;
 	_localViewProps.rotation	= 360.0 - _localRotation;
 	
-	ClientDisplayView::CalculateNormalSize(mode, layout, gapScale, _localViewProps.normalWidth, _localViewProps.normalHeight);
+	ClientDisplayPresenter::CalculateNormalSize(mode, layout, gapScale, _localViewProps.normalWidth, _localViewProps.normalHeight);
 	
 	// Set the minimum content size.
 	_isMinSizeNormal = isMinSizeNormal;
@@ -444,7 +436,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	double transformedMinWidth = _minDisplayViewSize.width;
 	double transformedMinHeight = _minDisplayViewSize.height;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
 	[[self window] setContentMinSize:NSMakeSize(transformedMinWidth, transformedMinHeight + _statusBarHeight)];
 	
 	// Set the client size and resize the window.
@@ -458,7 +450,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// window size changed or not.
 	if (oldBounds.width == newBounds.width && oldBounds.height == newBounds.height)
 	{
-		[[[self view] cdsVideoOutput] commitViewProperties:_localViewProps];
+		[[[self view] cdsVideoOutput] commitPresenterProperties:_localViewProps];
 	}
 }
 
@@ -529,7 +521,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Get the maximum scalar size within drawBounds.
 	double checkWidth = _localViewProps.normalWidth;
 	double checkHeight = _localViewProps.normalHeight;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
 	
 	const double maxViewScaleInHostScreen = [self maxViewScaleInHostScreen:checkWidth height:checkHeight];
 	if (_localViewScale > maxViewScaleInHostScreen)
@@ -540,7 +532,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Get the new bounds for the window's content view based on the transformed draw bounds.
 	double transformedWidth = _localViewProps.normalWidth;
 	double transformedHeight = _localViewProps.normalHeight;
-	ClientDisplayView::ConvertNormalToTransformedBounds(_localViewScale, _localViewProps.rotation, transformedWidth, transformedHeight);
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(_localViewScale, _localViewProps.rotation, transformedWidth, transformedHeight);
 	
 	// Get the center of the content view in screen coordinates.
 	const NSRect windowContentRect = [[masterWindow contentView] bounds];
@@ -573,29 +565,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	const NSRect windowFrame = [[self window] frameRectForContentRect:NSMakeRect(0.0, 0.0, contentBoundsWidth, contentBoundsHeight + _statusBarHeight)];
 	const NSSize visibleScreenBounds = { (screenFrame.size.width - (windowFrame.size.width - contentBoundsWidth)), (screenFrame.size.height - (windowFrame.size.height - contentBoundsHeight)) };
 	
-	return ClientDisplayView::GetMaxScalarWithinBounds(contentBoundsWidth, contentBoundsHeight, visibleScreenBounds.width, visibleScreenBounds.height);
-}
-
-- (void) saveScreenshotAsFinish:(NSNotification *)aNotification
-{
-	NSURL *fileURL = (NSURL *)[[aNotification userInfo] valueForKey:@"fileURL"];
-	NSBitmapImageFileType fileType = (NSBitmapImageFileType)[(NSNumber *)[[aNotification userInfo] valueForKey:@"fileType"] integerValue];
-	NSImage *screenshotImage = (NSImage *)[[aNotification userInfo] valueForKey:@"screenshotImage"];
-	
-	const BOOL fileSaved = [CocoaDSFile saveScreenshot:fileURL bitmapData:(NSBitmapImageRep *)[[screenshotImage representations] objectAtIndex:0] fileType:fileType];
-	if (!fileSaved)
-	{
-		NSAlert *theAlert = [[NSAlert alloc] init];
-		[theAlert setMessageText:NSSTRING_ALERT_SCREENSHOT_FAILED_TITLE];
-		[theAlert setInformativeText:NSSTRING_ALERT_SCREENSHOT_FAILED_MESSAGE];
-		[theAlert setAlertStyle:NSCriticalAlertStyle];
-		
-		[theAlert runModal];
-		
-		[theAlert release];
-	}
-	
-	[emuControl restoreCoreState];
+	return ClientDisplayPresenter::GetMaxScalarWithinBounds(contentBoundsWidth, contentBoundsHeight, visibleScreenBounds.width, visibleScreenBounds.height);
 }
 
 - (void) enterFullScreen
@@ -681,7 +651,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	CGDirectDisplayID displayID = [idNumber unsignedIntValue];
 	
 	[[[self view] cdsVideoOutput] setCurrentDisplayID:displayID];
-	[[[self view] cdsVideoOutput] clientDisplayView]->UpdateView();
+	[[[self view] cdsVideoOutput] clientDisplay3DView]->SetViewNeedsFlush();
 }
 
 - (void) respondToScreenChange:(NSNotification *)aNotification
@@ -797,7 +767,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		// Set the minimum content size, keeping the display rotation in mind.
 		double transformedMinWidth = _minDisplayViewSize.width;
 		double transformedMinHeight = _minDisplayViewSize.height;
-		ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
+		ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, transformedMinWidth, transformedMinHeight);
 		transformedMinHeight += _statusBarHeight;
 		
 		// Resize the window if it's smaller than the minimum content size.
@@ -868,26 +838,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (IBAction) openRom:(id)sender
 {
 	[emuControl openRom:sender];
-}
-
-- (IBAction) saveScreenshotAs:(id)sender
-{
-	[emuControl pauseCore];
-	
-	NSSavePanel *panel = [NSSavePanel savePanel];
-	[panel setCanCreateDirectories:YES];
-	[panel setTitle:NSSTRING_TITLE_SAVE_SCREENSHOT_PANEL];
-	[panel setAccessoryView:saveScreenshotPanelAccessoryView];
-	
-	const NSInteger buttonClicked = [panel runModal];
-	if(buttonClicked == NSOKButton)
-	{
-		[view requestScreenshot:[panel URL] fileType:(NSBitmapImageFileType)[self screenshotFileFormat]];
-	}
-	else
-	{
-		[emuControl restoreCoreState];
-	}
 }
 
 - (IBAction) changeScale:(id)sender
@@ -1324,11 +1274,12 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	// Set up the video output thread.
 	CocoaDSDisplayVideo *newDisplayOutput = [[[CocoaDSDisplayVideo alloc] init] autorelease];
-	[newDisplayOutput setClientDisplayView:[newView clientDisplay3DView]];
+	ClientDisplay3DView *cdv = [newView clientDisplayView];
 	
-	ClientDisplayView *cdv = [newDisplayOutput clientDisplayView];
+	[newDisplayOutput setClientDisplay3DView:cdv];
+	
 	NSString *fontPath = [[NSBundle mainBundle] pathForResource:@"SourceSansPro-Bold" ofType:@"otf"];
-	cdv->SetHUDFontPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
+	cdv->Get3DPresenter()->SetHUDFontPath([fontPath cStringUsingEncoding:NSUTF8StringEncoding]);
 	
 	if (scaleFactor != 1.0f)
 	{
@@ -1336,7 +1287,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	}
 	else
 	{
-		cdv->LoadHUDFont();
+		cdv->Get3DPresenter()->LoadHUDFont();
 	}
 	
 	[newView setCdsVideoOutput:newDisplayOutput];
@@ -1390,9 +1341,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Find the maximum scalar we can use for the display view, bounded by the content Rect.
 	double checkWidth = _localViewProps.normalWidth;
 	double checkHeight = _localViewProps.normalHeight;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
 	const NSSize contentBounds = NSMakeSize(contentRect.size.width, contentRect.size.height - _statusBarHeight);
-	_localViewScale = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, contentBounds.width, contentBounds.height);
+	_localViewScale = ClientDisplayPresenter::GetMaxScalarWithinBounds(checkWidth, checkHeight, contentBounds.width, contentBounds.height);
 	
 	// Make a new content Rect with our max scalar, and convert it back to a frame Rect.
 	const NSRect finalContentRect = NSMakeRect(0.0f, 0.0f, checkWidth * _localViewScale, (checkHeight * _localViewScale) + _statusBarHeight);
@@ -1445,9 +1396,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Find the maximum scalar we can use for the display view, bounded by the content Rect.
 	double checkWidth = _localViewProps.normalWidth;
 	double checkHeight = _localViewProps.normalHeight;
-	ClientDisplayView::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
+	ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, _localViewProps.rotation, checkWidth, checkHeight);
 	const NSSize contentBounds = NSMakeSize(contentRect.size.width, contentRect.size.height - _statusBarHeight);
-	const double maxS = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, contentBounds.width, contentBounds.height);
+	const double maxS = ClientDisplayPresenter::GetMaxScalarWithinBounds(checkWidth, checkHeight, contentBounds.width, contentBounds.height);
 	
 	// Make a new content Rect with our max scalar, and convert it back to a frame Rect.
 	const NSRect finalContentRect = NSMakeRect(0.0f, 0.0f, checkWidth * maxS, (checkHeight * maxS) + _statusBarHeight);
@@ -1640,7 +1591,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 @synthesize inputManager;
 @synthesize cdsVideoOutput;
-@dynamic clientDisplay3DView;
+@dynamic clientDisplayView;
 @dynamic canUseShaderBasedFilters;
 @dynamic allowViewUpdates;
 @dynamic isHUDVisible;
@@ -1725,8 +1676,8 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 {
 	BOOL isHandled = NO;
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-	ClientDisplayView *cdv = [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
-	const ClientDisplayMode displayMode = cdv->GetMode();
+	MacDisplayLayeredView *cdv = [localLayer clientDisplayView];
+	const ClientDisplayMode displayMode = cdv->Get3DPresenter()->GetMode();
 	
 	// Convert the clicked location from window coordinates, to view coordinates,
 	// and finally to DS touchscreen coordinates.
@@ -1736,12 +1687,17 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	if (displayMode != ClientDisplayMode_Main)
 	{
+		const ClientDisplayPresenterProperties &props = cdv->Get3DPresenter()->GetPresenterProperties();
+		const double scaleFactor = cdv->Get3DPresenter()->GetScaleFactor();
 		const NSEventType eventType = [theEvent type];
 		const bool isInitialMouseDown = (eventType == NSLeftMouseDown) || (eventType == NSRightMouseDown) || (eventType == NSOtherMouseDown);
 		
 		// Convert the clicked location from window coordinates, to view coordinates, and finally to NDS touchscreen coordinates.
 		const NSPoint clientLoc = [self convertPoint:[theEvent locationInWindow] fromView:nil];
-		cdv->GetNDSPoint((int)buttonNumber, isInitialMouseDown, clientLoc.x, clientLoc.y, x, y);
+		
+		cdv->GetNDSPoint(props,
+						 props.clientWidth * scaleFactor, props.clientHeight * scaleFactor,
+						 (int)buttonNumber, isInitialMouseDown, clientLoc.x, clientLoc.y, x, y);
 	}
 	
 	MacInputDevicePropertiesEncoder *inputEncoder = [inputManager inputEncoder];
@@ -1759,9 +1715,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 #pragma mark CocoaDisplayView Protocol
 
-- (ClientDisplay3DView *) clientDisplay3DView
+- (MacDisplayLayeredView *) clientDisplayView
 {
-	return [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
+	return [localLayer clientDisplayView];
 }
 
 - (BOOL) canUseShaderBasedFilters
@@ -1771,12 +1727,12 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (BOOL) allowViewUpdates
 {
-	return ([self clientDisplay3DView]->GetAllowViewUpdates()) ? YES : NO;
+	return ([self clientDisplayView]->GetAllowViewUpdates()) ? YES : NO;
 }
 
 - (void) setAllowViewUpdates:(BOOL)allowUpdates
 {
-	[self clientDisplay3DView]->SetAllowViewUpdates((allowUpdates) ? true : false);
+	[self clientDisplayView]->SetAllowViewUpdates((allowUpdates) ? true : false);
 }
 
 - (void) setIsHUDVisible:(BOOL)theState
@@ -2031,9 +1987,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		{
 			[macSharedData decrementViewsUsingDirectToCPUFiltering];
 		}
-		
-		[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
+	
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
 }
 
 - (BOOL) sourceDeposterize
@@ -2073,9 +2029,9 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		{
 			[macSharedData decrementViewsUsingDirectToCPUFiltering];
 		}
-		
-		[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
+	
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
 }
 
 - (NSInteger) pixelScaler
@@ -2088,39 +2044,30 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[[[windowController emuControl] cdsCoreController] content];
 	CocoaDSGPU *cdsGPU = [cdsCore cdsGPU];
+	MacClientSharedObject *macSharedData = [cdsGPU sharedData];
 	BOOL isMetalLayer = NO;
 	
 #ifdef ENABLE_APPLE_METAL
-	MacClientSharedObject *macSharedData = [cdsGPU sharedData];
 	if ((macSharedData != nil) && [macSharedData isKindOfClass:[MetalDisplayViewSharedData class]])
 	{
-		localLayer = [[DisplayViewMetalLayer alloc] init];
-		[(DisplayViewMetalLayer *)localLayer setSharedData:(MetalDisplayViewSharedData *)macSharedData];
-		
-		MacMetalDisplayView *macMTLCDV = (MacMetalDisplayView *)[(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
-		macMTLCDV->SetFetchObject([cdsGPU fetchObject]);
-		macMTLCDV->Init();
-		macMTLCDV->SetNSView(self);
-		macMTLCDV->SetSharedData([cdsGPU sharedData]);
-		
-		if ([(DisplayViewMetalLayer *)localLayer device] == nil)
+		if ([(MetalDisplayViewSharedData *)macSharedData device] != nil)
 		{
-			[localLayer release];
-			localLayer = nil;
+			MacMetalDisplayView *macMTLCDV = new MacMetalDisplayView(macSharedData);
+			macMTLCDV->SetNSView(self);
+			macMTLCDV->Init();
+			
+			localLayer = macMTLCDV->GetCALayer();
+			isMetalLayer = YES;
 		}
-		
-		isMetalLayer = YES;
 	}
+	else
 #endif
-	
-	if (localLayer == nil)
 	{
-		localLayer = [[DisplayViewOpenGLLayer alloc] init];
-		MacOGLDisplayView *macOGLCDV = (MacOGLDisplayView *)[(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
-		macOGLCDV->SetFetchObject([cdsGPU fetchObject]);
-		macOGLCDV->Init();
+		MacOGLDisplayView *macOGLCDV = new MacOGLDisplayView(macSharedData);
 		macOGLCDV->SetNSView(self);
-		macOGLCDV->SetSharedData([cdsGPU sharedData]);
+		macOGLCDV->Init();
+		
+		localLayer = macOGLCDV->GetCALayer();
 		
 		// For macOS 10.8 Mountain Lion and later, we can use the CAOpenGLLayer directly. But for
 		// earlier versions of macOS, using the CALayer directly will cause too many strange issues,
@@ -2137,13 +2084,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 				[self setWantsBestResolutionOpenGLSurface:YES];
 			}
 #endif
-			localOGLContext = macOGLCDV->GetNSContext();
+			localOGLContext = ((MacOGLDisplayPresenter *)macOGLCDV->Get3DPresenter())->GetNSContext();
 			[localOGLContext retain];
 		}
 	}
 	
-	ClientDisplay3DView *cdv = [(id<DisplayViewCALayer>)localLayer clientDisplay3DView];
-	cdv->UpdateView();
+	MacDisplayLayeredView *cdv = [localLayer clientDisplayView];
+	cdv->Get3DPresenter()->UpdateLayout();
 	
 	if (localOGLContext != nil)
 	{
@@ -2172,19 +2119,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	{
 		[localLayer setNeedsDisplay];
 	}
-}
-
-- (void) requestScreenshot:(NSURL *)fileURL fileType:(NSBitmapImageFileType)fileType
-{
-	NSString *fileURLString = [fileURL absoluteString];
-	NSData *fileURLStringData = [fileURLString dataUsingEncoding:NSUTF8StringEncoding];
-	NSData *bitmapImageFileTypeData = [[NSData alloc] initWithBytes:&fileType length:sizeof(NSBitmapImageFileType)];
-	NSArray *messageComponents = [[NSArray alloc] initWithObjects:fileURLStringData, bitmapImageFileTypeData, nil];
-	
-	[CocoaDSUtil messageSendOneWayWithMessageComponents:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REQUEST_SCREENSHOT array:messageComponents];
-	
-	[bitmapImageFileTypeData release];
-	[messageComponents release];
 }
 
 #pragma mark InputHIDManagerTarget Protocol
@@ -2261,12 +2195,12 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)updateLayer
 {
-	[self clientDisplay3DView]->FlushView();
+	[self clientDisplayView]->FlushView();
 }
 
 - (void)drawRect:(NSRect)dirtyRect
 {
-	[self clientDisplay3DView]->FlushView();
+	[self clientDisplayView]->FlushView();
 }
 
 - (void)setFrame:(NSRect)rect
@@ -2277,7 +2211,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	if (rect.size.width != oldFrame.size.width || rect.size.height != oldFrame.size.height)
 	{
 		DisplayWindowController *windowController = (DisplayWindowController *)[[self window] delegate];
-		ClientDisplayViewProperties &props = [windowController localViewProperties];
+		ClientDisplayPresenterProperties &props = [windowController localViewProperties];
 		NSRect newViewportRect = rect;
 		
 #if defined(MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
@@ -2290,11 +2224,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		// Calculate the view scale for the given client size.
 		double checkWidth = props.normalWidth;
 		double checkHeight = props.normalHeight;
-		ClientDisplayView::ConvertNormalToTransformedBounds(1.0, props.rotation, checkWidth, checkHeight);
+		ClientDisplayPresenter::ConvertNormalToTransformedBounds(1.0, props.rotation, checkWidth, checkHeight);
 		
 		props.clientWidth = newViewportRect.size.width;
 		props.clientHeight = newViewportRect.size.height;
-		props.viewScale = ClientDisplayView::GetMaxScalarWithinBounds(checkWidth, checkHeight, props.clientWidth, props.clientHeight);
+		props.viewScale = ClientDisplayPresenter::GetMaxScalarWithinBounds(checkWidth, checkHeight, props.clientWidth, props.clientHeight);
 		
 		if (localOGLContext != nil)
 		{
@@ -2311,7 +2245,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		}
 #endif
 		
-		[[self cdsVideoOutput] commitViewProperties:props];
+		[[self cdsVideoOutput] commitPresenterProperties:props];
 	}
 }
 

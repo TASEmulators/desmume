@@ -752,6 +752,26 @@
 	<integer>0</integer>
 	<key>RomInfoPanel_SectionViewState</key>
 	<dict/>
+	<key>ScreenshotCaptureTool_DirectoryPath</key>
+	<string>~/Pictures</string>
+	<key>ScreenshotCaptureTool_FileFormat</key>
+	<integer>0</integer>
+	<key>ScreenshotCaptureTool_DisplayMode</key>
+	<integer>2</integer>
+	<key>ScreenshotCaptureTool_DisplayRotation</key>
+	<integer>0</integer>
+	<key>ScreenshotCaptureTool_DisplaySeparation</key>
+	<integer>0</integer>
+	<key>ScreenshotCaptureTool_DisplayLayout</key>
+	<integer>0</integer>
+	<key>ScreenshotCaptureTool_DisplayOrder</key>
+	<integer>0</integer>
+	<key>ScreenshotCaptureTool_Deposterize</key>
+	<false/>
+	<key>ScreenshotCaptureTool_OutputFilter</key>
+	<integer>1</integer>
+	<key>ScreenshotCaptureTool_PixelScaler</key>
+	<integer>0</integer>
 	<key>Slot2_GBA_CartridgePath</key>
 	<string></string>
 	<key>Slot2_GBA_SRAMPath</key>

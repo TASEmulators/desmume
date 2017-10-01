@@ -20,8 +20,6 @@
 #import "DisplayWindowController.h"
 #import "EmuControllerDelegate.h"
 #import "FileMigrationDelegate.h"
-#import "RomInfoPanel.h"
-#import "Slot2WindowDelegate.h"
 #import "preferencesWindowDelegate.h"
 #import "troubleshootingWindowDelegate.h"
 #import "cheatWindowDelegate.h"
@@ -43,23 +41,14 @@
 @dynamic dummyObject;
 @synthesize prefWindow;
 @synthesize troubleshootingWindow;
-@synthesize cheatListWindow;
-@synthesize slot2Window;
-@synthesize prefGeneralView;
 @synthesize mLoadStateSlot;
 @synthesize mSaveStateSlot;
 @synthesize inputPrefsView;
 @synthesize aboutWindowController;
 @synthesize emuControlController;
-@synthesize cdsSoundController;
-@synthesize romInfoPanelController;
 @synthesize prefWindowController;
 @synthesize cdsCoreController;
-@synthesize inputDeviceListController;
-@synthesize cheatWindowController;
 @synthesize migrationDelegate;
-@synthesize inputManager;
-@synthesize romInfoPanel;
 
 @synthesize isAppRunningOnIntel;
 @synthesize isDeveloperPlusBuild;
@@ -136,8 +125,6 @@
 	
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	PreferencesWindowDelegate *prefWindowDelegate = (PreferencesWindowDelegate *)[prefWindow delegate];
-	CheatWindowDelegate *cheatWindowDelegate = (CheatWindowDelegate *)[cheatListWindow delegate];
-	Slot2WindowDelegate *slot2WindowDelegate = (Slot2WindowDelegate *)[slot2Window delegate];
 	
 	// Create the needed directories in Application Support if they haven't already
 	// been created.
@@ -148,6 +135,14 @@
 	}
 	
 	[CocoaDSFile setupAllFilePaths];
+	
+	// On macOS v10.13 and later, some unwanted menu items will show up in the View menu.
+	// Disable automatic window tabbing for all NSWindows in order to rid ourselves of
+	// these unwanted menu items.
+	if ([[NSWindow class] respondsToSelector:@selector(setAllowsAutomaticWindowTabbing:)])
+	{
+		[NSWindow setAllowsAutomaticWindowTabbing:NO];
+	}
 	
 	// Setup the About window.
 	NSString *descriptionStr = [[[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"] stringByAppendingString:@" "] stringByAppendingString:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"]];
@@ -193,16 +188,11 @@
 	[newCore addOutput:newSpeaker];
 	[emuControl setCdsSpeaker:newSpeaker];
 	
-	// Update the SLOT-2 device list after the emulation core is initialized.
-	[slot2WindowDelegate update];
-	[slot2WindowDelegate setHidManager:[inputManager hidManager]];
-	[slot2WindowDelegate setAutoSelectedDeviceText:[[slot2WindowDelegate deviceManager] autoSelectedDeviceName]];
-	
 	// Set up all the object controllers.
 	[cdsCoreController setContent:newCore];
-	[romInfoPanelController setContent:[CocoaDSRom romNotLoadedBindings]];
 	[prefWindowController setContent:[prefWindowDelegate bindings]];
-	[cheatWindowController setContent:[cheatWindowDelegate bindings]];
+	
+	[emuControl appInit];
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
@@ -241,7 +231,7 @@
 	
 	// Bring the application to the front
 	[NSApp activateIgnoringOtherApps:YES];
-	[self restoreDisplayWindowStates];
+	[emuControl restoreDisplayWindowStates];
 	
 	// Load a new ROM on launch per user preferences.
 	if ([[NSUserDefaults standardUserDefaults] objectForKey:@"General_AutoloadROMOnLaunch"] != nil)
@@ -337,8 +327,9 @@
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	// Save some settings to user defaults before app termination
-	[self saveDisplayWindowStates];
-	[romInfoPanel writeDefaults];
+	[emuControl saveDisplayWindowStates];
+	[emuControl writeUserDefaults];
+	
 	[[NSUserDefaults standardUserDefaults] setBool:[[cdsCore cdsController] hardwareMicMute] forKey:@"Microphone_HardwareMicMute"];
 	[[NSUserDefaults standardUserDefaults] setDouble:[emuControl currentVolumeValue] forKey:@"Sound_Volume"];
 	[[NSUserDefaults standardUserDefaults] setDouble:[emuControl lastSetSpeedScalar] forKey:@"CoreControl_SpeedScalar"];
@@ -428,7 +419,6 @@
 {
 	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
 	PreferencesWindowDelegate *prefWindowDelegate = [prefWindow delegate];
-	Slot2WindowDelegate *slot2WindowDelegate = (Slot2WindowDelegate *)[slot2Window delegate];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	// Set the emulation flags.
@@ -520,244 +510,11 @@
 	[cdsCore setGdbStubPortARM7:0];
 #endif
 	
-	// Set up the user's default input settings.
-	NSDictionary *userMappings = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"Input_ControllerMappings"];
-	if (userMappings == nil)
-	{
-		NSDictionary *defaultKeyMappingsDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"DefaultKeyMappings" ofType:@"plist"]];
-		NSArray *internalDefaultProfilesList = (NSArray *)[defaultKeyMappingsDict valueForKey:@"DefaultInputProfiles"];
-		userMappings = [(NSDictionary *)[internalDefaultProfilesList objectAtIndex:0] valueForKey:@"Mappings"];
-	}
-	
-	[inputManager setMappingsWithMappings:userMappings];
-	[[inputManager hidManager] setDeviceListController:inputDeviceListController];
-	
-	// Set up the ROM Info panel.
-	[romInfoPanel setupUserDefaults];
+	// Set up the rest of the emulation-related user defaults.
+	[emuControl readUserDefaults];
 	
 	// Set up the preferences window.
 	[prefWindowDelegate setupUserDefaults];
-	
-	// Set up the default SLOT-2 device.
-	[slot2WindowDelegate setupUserDefaults];
-	
-	// Set up the rest of the emulation-related user defaults.
-	[emuControl setupUserDefaults];
-}
-
-- (void) restoreDisplayWindowStates
-{
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
-	NSArray *windowPropertiesList = [[NSUserDefaults standardUserDefaults] arrayForKey:@"General_DisplayWindowRestorableStates"];
-	const BOOL willRestoreWindows = [[NSUserDefaults standardUserDefaults] boolForKey:@"General_WillRestoreDisplayWindows"];
-	
-	if (!willRestoreWindows || windowPropertiesList == nil || [windowPropertiesList count] < 1)
-	{
-		// If no windows were saved for restoring (the user probably closed all windows before
-		// app termination), then simply create a new display window per user defaults.
-		[emuControl newDisplayWindow:self];
-	}
-	else
-	{
-		for (NSDictionary *windowProperties in windowPropertiesList)
-		{
-			DisplayWindowController *windowController = [[DisplayWindowController alloc] initWithWindowNibName:@"DisplayWindow" emuControlDelegate:emuControl];
-			
-			if (windowController == nil)
-			{
-				continue;
-			}
-			
-			const NSInteger displayMode				= ([windowProperties objectForKey:@"displayMode"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayMode"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_Mode"];
-			const double displayScale				= ([windowProperties objectForKey:@"displayScale"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayScale"] doubleValue] : ([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Size"] / 100.0);
-			const double displayRotation			= ([windowProperties objectForKey:@"displayRotation"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayRotation"] doubleValue] : [[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayView_Rotation"];
-			const NSInteger displayOrientation		= ([windowProperties objectForKey:@"displayOrientation"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayOrientation"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Orientation"];
-			const NSInteger displayOrder			= ([windowProperties objectForKey:@"displayOrder"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayOrder"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayViewCombo_Order"];
-			const double displayGap					= ([windowProperties objectForKey:@"displayGap"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayGap"] doubleValue] : ([[NSUserDefaults standardUserDefaults] doubleForKey:@"DisplayViewCombo_Gap"] / 100.0);
-			
-			const NSInteger displayMainSource		= ([windowProperties objectForKey:@"displayMainVideoSource"]  != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayMainVideoSource"] integerValue]  : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayMainVideoSource"];
-			const NSInteger displayTouchSource		= ([windowProperties objectForKey:@"displayTouchVideoSource"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"displayTouchVideoSource"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_DisplayTouchVideoSource"];
-			
-			const BOOL videoFiltersPreferGPU		= ([windowProperties objectForKey:@"videoFiltersPreferGPU"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"videoFiltersPreferGPU"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_FiltersPreferGPU"];
-			const BOOL videoSourceDeposterize		= ([windowProperties objectForKey:@"videoSourceDeposterize"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"videoSourceDeposterize"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_Deposterize"];
-			const NSInteger videoPixelScaler		= ([windowProperties objectForKey:@"videoFilterType"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"videoFilterType"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"];
-			const NSInteger videoOutputFilter		= ([windowProperties objectForKey:@"videoOutputFilter"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"videoOutputFilter"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"];
-			
-			const BOOL hudEnable					= ([windowProperties objectForKey:@"hudEnable"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudEnable"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_EnableHUD"];
-			const BOOL hudShowVideoFPS				= ([windowProperties objectForKey:@"hudShowVideoFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowVideoFPS"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowVideoFPS"];
-			const BOOL hudShowRender3DFPS			= ([windowProperties objectForKey:@"hudShowRender3DFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowRender3DFPS"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRender3DFPS"];
-			const BOOL hudShowFrameIndex			= ([windowProperties objectForKey:@"hudShowFrameIndex"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowFrameIndex"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowFrameIndex"];
-			const BOOL hudShowLagFrameCount			= ([windowProperties objectForKey:@"hudShowLagFrameCount"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowLagFrameCount"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowLagFrameCount"];
-			const BOOL hudShowCPULoadAverage		= ([windowProperties objectForKey:@"hudShowCPULoadAverage"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowCPULoadAverage"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowCPULoadAverage"];
-			const BOOL hudShowRTC					= ([windowProperties objectForKey:@"hudShowRTC"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowRTC"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRTC"];
-			const BOOL hudShowInput					= ([windowProperties objectForKey:@"hudShowInput"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowInput"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowInput"];
-			
-			const NSUInteger hudColorVideoFPS		= ([windowProperties objectForKey:@"hudColorVideoFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorVideoFPS"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_VideoFPS"];
-			const NSUInteger hudColorRender3DFPS	= ([windowProperties objectForKey:@"hudColorRender3DFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorRender3DFPS"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Render3DFPS"];
-			const NSUInteger hudColorFrameIndex		= ([windowProperties objectForKey:@"hudColorFrameIndex"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorFrameIndex"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_FrameIndex"];
-			const NSUInteger hudColorLagFrameCount	= ([windowProperties objectForKey:@"hudColorLagFrameCount"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorLagFrameCount"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_LagFrameCount"];
-			const NSUInteger hudColorCPULoadAverage	= ([windowProperties objectForKey:@"hudColorCPULoadAverage"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorCPULoadAverage"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_CPULoadAverage"];
-			const NSUInteger hudColorRTC			= ([windowProperties objectForKey:@"hudColorRTC"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorRTC"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_RTC"];
-			const NSUInteger hudColorInputPendingAndApplied = ([windowProperties objectForKey:@"hudColorInputPendingAndApplied"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorInputPendingAndApplied"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Input_PendingAndApplied"];
-			const NSUInteger hudColorInputAppliedOnly = ([windowProperties objectForKey:@"hudColorInputAppliedOnly"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorInputAppliedOnly"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Input_AppliedOnly"];
-			const NSUInteger hudColorInputPendingOnly = ([windowProperties objectForKey:@"hudColorInputPendingOnly"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorInputPendingOnly"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Input_PendingOnly"];
-			
-			const NSInteger screenshotFileFormat	= ([windowProperties objectForKey:@"screenshotFileFormat"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"screenshotFileFormat"] integerValue] : NSTIFFFileType;
-			const BOOL useVerticalSync				= ([windowProperties objectForKey:@"useVerticalSync"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"useVerticalSync"] boolValue] : YES;
-			const BOOL isMinSizeNormal				= ([windowProperties objectForKey:@"isMinSizeNormal"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"isMinSizeNormal"] boolValue] : YES;
-			const BOOL isShowingStatusBar			= ([windowProperties objectForKey:@"isShowingStatusBar"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"isShowingStatusBar"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_ShowStatusBar"];
-			const BOOL isInFullScreenMode			= ([windowProperties objectForKey:@"isInFullScreenMode"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"isInFullScreenMode"] boolValue] : NO;
-			const NSUInteger screenIndex			= ([windowProperties objectForKey:@"screenIndex"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"screenIndex"] unsignedIntegerValue] : 0;
-			NSString *windowFrameStr				= (NSString *)[windowProperties valueForKey:@"windowFrame"];
-			
-			int frameX = 0;
-			int frameY = 0;
-			int frameWidth = 256;
-			int frameHeight = 192*2;
-			const char *frameCStr = [windowFrameStr cStringUsingEncoding:NSUTF8StringEncoding];
-			sscanf(frameCStr, "%i %i %i %i", &frameX, &frameY, &frameWidth, &frameHeight);
-			
-			// Force the window to load now so that we can overwrite its internal defaults with the user's defaults.
-			[windowController window];
-			
-			[windowController setDisplayMode:(ClientDisplayMode)displayMode
-								   viewScale:displayScale
-									rotation:displayRotation
-									  layout:(ClientDisplayLayout)displayOrientation
-									   order:(ClientDisplayOrder)displayOrder
-									gapScale:displayGap
-							 isMinSizeNormal:isMinSizeNormal
-						  isShowingStatusBar:isShowingStatusBar];
-			
-			[[windowController view] setDisplayMainVideoSource:displayMainSource];
-			[[windowController view] setDisplayTouchVideoSource:displayTouchSource];
-			
-			[windowController setVideoPropertiesWithoutUpdateUsingPreferGPU:videoFiltersPreferGPU
-														  sourceDeposterize:videoSourceDeposterize
-															   outputFilter:videoOutputFilter
-																pixelScaler:videoPixelScaler];
-			
-			[windowController setScreenshotFileFormat:screenshotFileFormat];
-			[[windowController view] setUseVerticalSync:useVerticalSync];
-			[[windowController view] setIsHUDVisible:hudEnable];
-			[[windowController view] setIsHUDVideoFPSVisible:hudShowVideoFPS];
-			[[windowController view] setIsHUDRender3DFPSVisible:hudShowRender3DFPS];
-			[[windowController view] setIsHUDFrameIndexVisible:hudShowFrameIndex];
-			[[windowController view] setIsHUDLagFrameCountVisible:hudShowLagFrameCount];
-			[[windowController view] setIsHUDCPULoadAverageVisible:hudShowCPULoadAverage];
-			[[windowController view] setIsHUDRealTimeClockVisible:hudShowRTC];
-			[[windowController view] setIsHUDInputVisible:hudShowInput];
-			
-			[[windowController view] setHudColorVideoFPS:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorVideoFPS]];
-			[[windowController view] setHudColorRender3DFPS:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorRender3DFPS]];
-			[[windowController view] setHudColorFrameIndex:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorFrameIndex]];
-			[[windowController view] setHudColorLagFrameCount:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorLagFrameCount]];
-			[[windowController view] setHudColorCPULoadAverage:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorCPULoadAverage]];
-			[[windowController view] setHudColorRTC:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorRTC]];
-			[[windowController view] setHudColorInputPendingAndApplied:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorInputPendingAndApplied]];
-			[[windowController view] setHudColorInputAppliedOnly:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorInputAppliedOnly]];
-			[[windowController view] setHudColorInputPendingOnly:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorInputPendingOnly]];
-			
-			[[windowController masterWindow] setFrameOrigin:NSMakePoint(frameX, frameY)];
-			
-			// If this is the last window in the list, make this window key and main.
-			// Otherwise, just order the window to the front so that the windows will
-			// stack in a deterministic order.
-			[[windowController view] setAllowViewUpdates:YES];
-			[[[windowController view] cdsVideoOutput] handleReloadReprocessRedraw];
-			
-			if (windowProperties == [windowPropertiesList lastObject])
-			{
-				[[windowController window] makeKeyAndOrderFront:self];
-				[[windowController window] makeMainWindow];
-			}
-			else
-			{
-				[[windowController window] orderFront:self];
-			}
-			
-			// If this window is set to full screen mode, its associated screen index must
-			// exist. If not, this window will not enter full screen mode. This is necessary,
-			// since the user's screen configuration could change in between app launches,
-			// and since we don't want a window to go full screen on the wrong screen.
-			if (isInFullScreenMode &&
-				([[NSScreen screens] indexOfObject:[[windowController window] screen]] == screenIndex))
-			{
-				[windowController toggleFullScreenDisplay:self];
-			}
-		}
-	}
-}
-
-- (void) saveDisplayWindowStates
-{
-	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)[emuControlController content];
-	NSArray *windowList = [emuControl windowList];
-	const BOOL willRestoreWindows = [[NSUserDefaults standardUserDefaults] boolForKey:@"General_WillRestoreDisplayWindows"];
-	
-	if (willRestoreWindows && [windowList count] > 0)
-	{
-		NSMutableArray *windowPropertiesList = [NSMutableArray arrayWithCapacity:[windowList count]];
-		
-		for (DisplayWindowController *windowController in windowList)
-		{
-			const NSUInteger screenIndex = [[NSScreen screens] indexOfObject:[[windowController masterWindow] screen]];
-			
-			const NSRect windowFrame = [windowController masterWindowFrame];
-			NSString *windowFrameStr = [NSString stringWithFormat:@"%i %i %i %i",
-										(int)windowFrame.origin.x, (int)windowFrame.origin.y, (int)windowFrame.size.width, (int)windowFrame.size.height];
-			
-			NSDictionary *windowProperties = [NSDictionary dictionaryWithObjectsAndKeys:
-											  [NSNumber numberWithInteger:[windowController displayMode]], @"displayMode",
-											  [NSNumber numberWithDouble:[windowController masterWindowScale]], @"displayScale",
-											  [NSNumber numberWithDouble:[windowController displayRotation]], @"displayRotation",
-											  [NSNumber numberWithInteger:[[windowController view] displayMainVideoSource]], @"displayMainVideoSource",
-											  [NSNumber numberWithInteger:[[windowController view] displayTouchVideoSource]], @"displayTouchVideoSource",
-											  [NSNumber numberWithInteger:[windowController displayOrientation]], @"displayOrientation",
-											  [NSNumber numberWithInteger:[windowController displayOrder]], @"displayOrder",
-											  [NSNumber numberWithDouble:[windowController displayGap]], @"displayGap",
-											  [NSNumber numberWithBool:[[windowController view] videoFiltersPreferGPU]], @"videoFiltersPreferGPU",
-											  [NSNumber numberWithInteger:[[windowController view] pixelScaler]], @"videoFilterType",
-											  [NSNumber numberWithInteger:[windowController screenshotFileFormat]], @"screenshotFileFormat",
-											  [NSNumber numberWithInteger:[[windowController view] outputFilter]], @"videoOutputFilter",
-											  [NSNumber numberWithBool:[[windowController view] sourceDeposterize]], @"videoSourceDeposterize",
-											  [NSNumber numberWithBool:[[windowController view] useVerticalSync]], @"useVerticalSync",
-											  [NSNumber numberWithBool:[[windowController view] isHUDVisible]], @"hudEnable",
-											  [NSNumber numberWithBool:[[windowController view] isHUDVideoFPSVisible]], @"hudShowVideoFPS",
-											  [NSNumber numberWithBool:[[windowController view] isHUDRender3DFPSVisible]], @"hudShowRender3DFPS",
-											  [NSNumber numberWithBool:[[windowController view] isHUDFrameIndexVisible]], @"hudShowFrameIndex",
-											  [NSNumber numberWithBool:[[windowController view] isHUDLagFrameCountVisible]], @"hudShowLagFrameCount",
-											  [NSNumber numberWithBool:[[windowController view] isHUDCPULoadAverageVisible]], @"hudShowCPULoadAverage",
-											  [NSNumber numberWithBool:[[windowController view] isHUDRealTimeClockVisible]], @"hudShowRTC",
-											  [NSNumber numberWithBool:[[windowController view] isHUDInputVisible]], @"hudShowInput",
-											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorVideoFPS]]], @"hudColorVideoFPS",
-											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorRender3DFPS]]], @"hudColorRender3DFPS",
-											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorFrameIndex]]], @"hudColorFrameIndex",
-											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorLagFrameCount]]], @"hudColorLagFrameCount",
-											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorCPULoadAverage]]], @"hudColorCPULoadAverage",
-											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorRTC]]], @"hudColorRTC",
-											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorInputPendingAndApplied]]], @"hudColorInputPendingAndApplied",
-											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorInputAppliedOnly]]], @"hudColorInputAppliedOnly",
-											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorInputPendingOnly]]], @"hudColorInputPendingOnly",
-											  [NSNumber numberWithBool:[windowController isMinSizeNormal]], @"isMinSizeNormal",
-											  [NSNumber numberWithBool:[windowController masterStatusBarState]], @"isShowingStatusBar",
-											  [NSNumber numberWithBool:[windowController isFullScreen]], @"isInFullScreenMode",
-											  [NSNumber numberWithUnsignedInteger:screenIndex], @"screenIndex",
-											  windowFrameStr, @"windowFrame",
-											  nil];
-			
-			// TODO: Show HUD Input.
-			//[NSNumber numberWithBool:[[windowController view] isHUDInputVisible]], @"hudShowInput",
-			
-			[windowPropertiesList addObject:windowProperties];
-		}
-		
-		[[NSUserDefaults standardUserDefaults] setObject:windowPropertiesList forKey:@"General_DisplayWindowRestorableStates"];
-	}
-	else
-	{
-		[[NSUserDefaults standardUserDefaults] removeObjectForKey:@"General_DisplayWindowRestorableStates"];
-	}
 }
 
 @end

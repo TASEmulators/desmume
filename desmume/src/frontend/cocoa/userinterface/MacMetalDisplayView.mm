@@ -728,13 +728,17 @@
 
 @end
 
-@implementation DisplayViewMetalLayer
+@implementation MacMetalDisplayPresenterObject
 
+@synthesize cdp;
 @synthesize sharedData;
 @synthesize colorAttachment0Desc;
+@dynamic mutexDisplayTextureUpdate;
+@dynamic mutexBufferUpdate;
 @synthesize pixelScalePipeline;
-@synthesize displayOutputPipeline;
-@synthesize displayRGBAOutputPipeline;
+@synthesize outputRGBAPipeline;
+@synthesize outputDrawablePipeline;
+@synthesize drawableFormat;
 @synthesize bufCPUFilterSrcMain;
 @synthesize bufCPUFilterSrcTouch;
 @synthesize bufCPUFilterDstMain;
@@ -749,7 +753,7 @@
 @dynamic pixelScaler;
 @dynamic outputFilter;
 
-- (id)init
+- (id) initWithDisplayPresenter:(MacMetalDisplayPresenter *)thePresenter
 {
 	self = [super init];
 	if(self == nil)
@@ -757,10 +761,16 @@
 		return nil;
 	}
 	
-	sharedData = nil;
+	cdp = thePresenter;
 	
-	_cdv = new MacMetalDisplayView();
-	_cdv->SetFrontendLayer(self);
+	if (thePresenter != NULL)
+	{
+		sharedData = (MetalDisplayViewSharedData *)thePresenter->GetSharedData();
+	}
+	else
+	{
+		sharedData = nil;
+	}
 	
 	_outputRenderPassDesc = [[MTLRenderPassDescriptor renderPassDescriptor] retain];
 	colorAttachment0Desc = [[_outputRenderPassDesc colorAttachments] objectAtIndexedSubscript:0];
@@ -770,8 +780,9 @@
 	[colorAttachment0Desc setTexture:nil];
 	
 	pixelScalePipeline = nil;
-	displayOutputPipeline = nil;
-	displayRGBAOutputPipeline = nil;
+	outputRGBAPipeline = nil;
+	outputDrawablePipeline = nil;
+	drawableFormat = MTLPixelFormatInvalid;
 	
 	_cdvPropertiesBuffer = nil;
 	_displayVtxPositionBuffer = nil;
@@ -794,8 +805,6 @@
 	_texDisplayOutput[1] = nil;
 	texHUDCharMap = nil;
 	
-	[self setOpaque:YES];
-	
 	_pixelScalerThreadsPerGroup = MTLSizeMake(1, 1, 1);
 	_pixelScalerThreadGroupsPerGrid = MTLSizeMake(1, 1, 1);
 	
@@ -812,6 +821,7 @@
 
 - (void)dealloc
 {
+	[[self colorAttachment0Desc] setTexture:nil];
 	[_outputRenderPassDesc release];
 	
 	[_cdvPropertiesBuffer release];
@@ -833,14 +843,12 @@
 	[self setTexDisplayPixelScaleMain:nil];
 	[self setTexDisplayPixelScaleTouch:nil];
 	
-	[[self colorAttachment0Desc] setTexture:nil];
 	[self setPixelScalePipeline:nil];
-	[self setDisplayOutputPipeline:nil];
-	[self setDisplayRGBAOutputPipeline:nil];
+	[self setOutputRGBAPipeline:nil];
+	[self setOutputDrawablePipeline:nil];
 	[self setTexHUDCharMap:nil];
 	
 	[self setSharedData:nil];
-	delete _cdv;
 	
 	pthread_mutex_destroy(&_mutexDisplayTextureUpdate);
 	pthread_mutex_destroy(&_mutexBufferUpdate);
@@ -848,14 +856,19 @@
 	[super dealloc];
 }
 
-- (ClientDisplay3DView *)clientDisplay3DView
+- (pthread_mutex_t *) mutexDisplayTextureUpdate
 {
-	return _cdv;
+	return &_mutexDisplayTextureUpdate;
+}
+
+- (pthread_mutex_t *) mutexBufferUpdate
+{
+	return &_mutexBufferUpdate;
 }
 
 - (VideoFilterTypeID) pixelScaler
 {
-	return _cdv->GetPixelScaler();
+	return cdp->GetPixelScaler();
 }
 
 - (void) setPixelScaler:(VideoFilterTypeID)filterID
@@ -865,91 +878,91 @@
 	switch (filterID)
 	{
 		case VideoFilterTypeID_Nearest2X:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_nearest2x"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_nearest2x"] error:nil]];
 			break;
 			
 		case VideoFilterTypeID_Scanline:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_scanline"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_scanline"] error:nil]];
 			break;
 			
 		case VideoFilterTypeID_EPX:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xEPX"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xEPX"] error:nil]];
 			break;
 			
 		case VideoFilterTypeID_EPXPlus:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xEPXPlus"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xEPXPlus"] error:nil]];
 			break;
 			
 		case VideoFilterTypeID_2xSaI:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xSaI"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xSaI"] error:nil]];
 			break;
 			
 		case VideoFilterTypeID_Super2xSaI:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_Super2xSaI"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_Super2xSaI"] error:nil]];
 			break;
 			
 		case VideoFilterTypeID_SuperEagle:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xSuperEagle"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xSuperEagle"] error:nil]];
 			break;
 			
 		case VideoFilterTypeID_LQ2X:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_LQ2x"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_LQ2x"] error:nil]];
 			currentHQnxLUT = [sharedData texLQ2xLUT];
 			break;
 			
 		case VideoFilterTypeID_LQ2XS:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_LQ2xS"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_LQ2xS"] error:nil]];
 			currentHQnxLUT = [sharedData texLQ2xLUT];
 			break;
 			
 		case VideoFilterTypeID_HQ2X:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ2x"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ2x"] error:nil]];
 			currentHQnxLUT = [sharedData texHQ2xLUT];
 			break;
 			
 		case VideoFilterTypeID_HQ2XS:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ2xS"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ2xS"] error:nil]];
 			currentHQnxLUT = [sharedData texHQ2xLUT];
 			break;
 			
 		case VideoFilterTypeID_HQ3X:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ3x"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ3x"] error:nil]];
 			currentHQnxLUT = [sharedData texHQ3xLUT];
 			break;
 			
 		case VideoFilterTypeID_HQ3XS:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ3xS"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ3xS"] error:nil]];
 			currentHQnxLUT = [sharedData texHQ3xLUT];
 			break;
 			
 		case VideoFilterTypeID_HQ4X:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ4x"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ4x"] error:nil]];
 			currentHQnxLUT = [sharedData texHQ4xLUT];
 			break;
 			
 		case VideoFilterTypeID_HQ4XS:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ4xS"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_HQ4xS"] error:nil]];
 			currentHQnxLUT = [sharedData texHQ4xLUT];
 			break;
 			
 		case VideoFilterTypeID_2xBRZ:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xBRZ"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_2xBRZ"] error:nil]];
 			break;
 			
 		case VideoFilterTypeID_3xBRZ:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_3xBRZ"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_3xBRZ"] error:nil]];
 			break;
 			
 		case VideoFilterTypeID_4xBRZ:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_4xBRZ"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_4xBRZ"] error:nil]];
 			break;
 			
 		case VideoFilterTypeID_5xBRZ:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_5xBRZ"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_5xBRZ"] error:nil]];
 			break;
 			
 		case VideoFilterTypeID_6xBRZ:
-			[self setPixelScalePipeline:[[self device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_6xBRZ"] error:nil]];
+			[self setPixelScalePipeline:[[sharedData device] newComputePipelineStateWithFunction:[[sharedData defaultLibrary] newFunctionWithName:@"pixel_scaler_6xBRZ"] error:nil]];
 			break;
 			
 		case VideoFilterTypeID_None:
@@ -972,8 +985,8 @@
 	[texDisplayPixelScaleDesc setStorageMode:MTLStorageModePrivate];
 	[texDisplayPixelScaleDesc setUsage:MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite];
 	
-	[self setTexDisplayPixelScaleMain:[[self device] newTextureWithDescriptor:texDisplayPixelScaleDesc]];
-	[self setTexDisplayPixelScaleTouch:[[self device] newTextureWithDescriptor:texDisplayPixelScaleDesc]];
+	[self setTexDisplayPixelScaleMain:[[sharedData device] newTextureWithDescriptor:texDisplayPixelScaleDesc]];
+	[self setTexDisplayPixelScaleTouch:[[sharedData device] newTextureWithDescriptor:texDisplayPixelScaleDesc]];
 	
 	if ([self pixelScalePipeline] != nil)
 	{
@@ -999,7 +1012,7 @@
 
 - (OutputFilterTypeID) outputFilter
 {
-	return _cdv->GetOutputFilter();
+	return cdp->GetOutputFilter();
 }
 
 - (void) setOutputFilter:(OutputFilterTypeID)filterID
@@ -1041,11 +1054,14 @@
 			break;
 	}
 	
-	[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:[self pixelFormat]];
-	[self setDisplayOutputPipeline:[[self device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil]];
-	
 	[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:MTLPixelFormatRGBA8Unorm];
-	[self setDisplayRGBAOutputPipeline:[[self device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil]];
+	[self setOutputRGBAPipeline:[[sharedData device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil]];
+	
+	if ([self drawableFormat] != MTLPixelFormatInvalid)
+	{
+		[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:[self drawableFormat]];
+		[self setOutputDrawablePipeline:[[sharedData device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil]];
+	}
 	
 	[outputPipelineDesc release];
 }
@@ -1055,35 +1071,36 @@
 	return [[sharedData commandQueue] commandBufferWithUnretainedReferences];
 }
 
-- (void) setupLayer
+- (void) setup
 {
-	[self setDevice:[sharedData device]];
-	
 	MTLRenderPipelineDescriptor *outputPipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
 	[outputPipelineDesc setAlphaToOneEnabled:YES];
 	[outputPipelineDesc setVertexFunction:[[sharedData defaultLibrary] newFunctionWithName:@"display_output_vertex"]];
 	[outputPipelineDesc setFragmentFunction:[[sharedData defaultLibrary] newFunctionWithName:@"output_filter_bilinear"]];
 	
-	[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:[self pixelFormat]];
-	displayOutputPipeline = [[[self device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil] retain];
-	
 	[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:MTLPixelFormatRGBA8Unorm];
-	displayRGBAOutputPipeline = [[[self device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil] retain];
+	outputRGBAPipeline = [[[sharedData device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil] retain];
+	
+	if ([self drawableFormat] != MTLPixelFormatInvalid)
+	{
+		[[[outputPipelineDesc colorAttachments] objectAtIndexedSubscript:0] setPixelFormat:[self drawableFormat]];
+		outputDrawablePipeline = [[[sharedData device] newRenderPipelineStateWithDescriptor:outputPipelineDesc error:nil] retain];
+	}
 	
 	[outputPipelineDesc release];
 	
-	_cdvPropertiesBuffer = [[[self device] newBufferWithLength:sizeof(DisplayViewShaderProperties) options:MTLResourceStorageModeManaged] retain];
-	_displayVtxPositionBuffer = [[[self device] newBufferWithLength:(sizeof(float) * (4 * 8)) options:MTLResourceStorageModeManaged] retain];
-	_displayTexCoordBuffer = [[[self device] newBufferWithLength:(sizeof(float) * (4 * 8)) options:MTLResourceStorageModeManaged] retain];
-	_hudVtxPositionBuffer = [[[self device] newBufferWithLength:HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged] retain];
-	_hudVtxColorBuffer = [[[self device] newBufferWithLength:HUD_VERTEX_COLOR_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged] retain];
-	_hudTexCoordBuffer = [[[self device] newBufferWithLength:HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged] retain];
+	_cdvPropertiesBuffer = [[[sharedData device] newBufferWithLength:sizeof(DisplayViewShaderProperties) options:MTLResourceStorageModeManaged] retain];
+	_displayVtxPositionBuffer = [[[sharedData device] newBufferWithLength:(sizeof(float) * (4 * 8)) options:MTLResourceStorageModeManaged] retain];
+	_displayTexCoordBuffer = [[[sharedData device] newBufferWithLength:(sizeof(float) * (4 * 8)) options:MTLResourceStorageModeManaged] retain];
+	_hudVtxPositionBuffer = [[[sharedData device] newBufferWithLength:HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged] retain];
+	_hudVtxColorBuffer = [[[sharedData device] newBufferWithLength:HUD_VERTEX_COLOR_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged] retain];
+	_hudTexCoordBuffer = [[[sharedData device] newBufferWithLength:HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged] retain];
 	
 	DisplayViewShaderProperties *viewProps = (DisplayViewShaderProperties *)[_cdvPropertiesBuffer contents];
-	viewProps->width               = _cdv->GetViewProperties().clientWidth;
-	viewProps->height              = _cdv->GetViewProperties().clientHeight;
-	viewProps->rotation            = _cdv->GetViewProperties().rotation;
-	viewProps->viewScale           = _cdv->GetViewProperties().viewScale;
+	viewProps->width               = cdp->GetPresenterProperties().clientWidth;
+	viewProps->height              = cdp->GetPresenterProperties().clientHeight;
+	viewProps->rotation            = cdp->GetPresenterProperties().rotation;
+	viewProps->viewScale           = cdp->GetPresenterProperties().viewScale;
 	viewProps->lowerHUDMipMapLevel = 0;
 	[_cdvPropertiesBuffer didModifyRange:NSMakeRange(0, sizeof(DisplayViewShaderProperties))];
 	
@@ -1096,10 +1113,10 @@
 	[texDisplaySrcDesc setStorageMode:MTLStorageModePrivate];
 	[texDisplaySrcDesc setUsage:MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite];
 	
-	_texDisplaySrcDeposterize[NDSDisplayID_Main][0]  = [[[self device] newTextureWithDescriptor:texDisplaySrcDesc] retain];
-	_texDisplaySrcDeposterize[NDSDisplayID_Touch][0] = [[[self device] newTextureWithDescriptor:texDisplaySrcDesc] retain];
-	_texDisplaySrcDeposterize[NDSDisplayID_Main][1]  = [[[self device] newTextureWithDescriptor:texDisplaySrcDesc] retain];
-	_texDisplaySrcDeposterize[NDSDisplayID_Touch][1] = [[[self device] newTextureWithDescriptor:texDisplaySrcDesc] retain];
+	_texDisplaySrcDeposterize[NDSDisplayID_Main][0]  = [[[sharedData device] newTextureWithDescriptor:texDisplaySrcDesc] retain];
+	_texDisplaySrcDeposterize[NDSDisplayID_Touch][0] = [[[sharedData device] newTextureWithDescriptor:texDisplaySrcDesc] retain];
+	_texDisplaySrcDeposterize[NDSDisplayID_Main][1]  = [[[sharedData device] newTextureWithDescriptor:texDisplaySrcDesc] retain];
+	_texDisplaySrcDeposterize[NDSDisplayID_Touch][1] = [[[sharedData device] newTextureWithDescriptor:texDisplaySrcDesc] retain];
 	
 	MTLTextureDescriptor *texDisplayPixelScaleDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
 																										width:GPU_FRAMEBUFFER_NATIVE_WIDTH*2
@@ -1109,33 +1126,33 @@
 	[texDisplayPixelScaleDesc setStorageMode:MTLStorageModePrivate];
 	[texDisplayPixelScaleDesc setUsage:MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite];
 	
-	[self setTexDisplayPixelScaleMain:[[self device] newTextureWithDescriptor:texDisplayPixelScaleDesc]];
-	[self setTexDisplayPixelScaleTouch:[[self device] newTextureWithDescriptor:texDisplayPixelScaleDesc]];
+	[self setTexDisplayPixelScaleMain:[[sharedData device] newTextureWithDescriptor:texDisplayPixelScaleDesc]];
+	[self setTexDisplayPixelScaleTouch:[[sharedData device] newTextureWithDescriptor:texDisplayPixelScaleDesc]];
 	
 	_texDisplayOutput[NDSDisplayID_Main]  = [sharedData texDisplayFetch32NativeMain];
 	_texDisplayOutput[NDSDisplayID_Touch] = [sharedData texDisplayFetch32NativeTouch];
 	
-	VideoFilter *vfMain  = _cdv->GetPixelScalerObject(NDSDisplayID_Main);
-	[self setBufCPUFilterSrcMain:[[self device] newBufferWithBytesNoCopy:vfMain->GetSrcBufferPtr()
-																  length:vfMain->GetSrcWidth() * vfMain->GetSrcHeight() * sizeof(uint32_t)
-																 options:MTLResourceStorageModeManaged
-															 deallocator:nil]];
+	VideoFilter *vfMain  = cdp->GetPixelScalerObject(NDSDisplayID_Main);
+	[self setBufCPUFilterSrcMain:[[sharedData device] newBufferWithBytesNoCopy:vfMain->GetSrcBufferPtr()
+																		length:vfMain->GetSrcWidth() * vfMain->GetSrcHeight() * sizeof(uint32_t)
+																	   options:MTLResourceStorageModeManaged
+																   deallocator:nil]];
 	
-	[self setBufCPUFilterDstMain:[[self device] newBufferWithBytesNoCopy:vfMain->GetDstBufferPtr()
-																  length:vfMain->GetDstWidth() * vfMain->GetDstHeight() * sizeof(uint32_t)
-																 options:MTLResourceStorageModeManaged
-															 deallocator:nil]];
+	[self setBufCPUFilterDstMain:[[sharedData device] newBufferWithBytesNoCopy:vfMain->GetDstBufferPtr()
+																		length:vfMain->GetDstWidth() * vfMain->GetDstHeight() * sizeof(uint32_t)
+																	   options:MTLResourceStorageModeManaged
+																   deallocator:nil]];
 	
-	VideoFilter *vfTouch = _cdv->GetPixelScalerObject(NDSDisplayID_Touch);
-	[self setBufCPUFilterSrcTouch:[[self device] newBufferWithBytesNoCopy:vfTouch->GetSrcBufferPtr()
-																   length:vfTouch->GetSrcWidth() * vfTouch->GetSrcHeight() * sizeof(uint32_t)
-																  options:MTLResourceStorageModeManaged
-															  deallocator:nil]];
+	VideoFilter *vfTouch = cdp->GetPixelScalerObject(NDSDisplayID_Touch);
+	[self setBufCPUFilterSrcTouch:[[sharedData device] newBufferWithBytesNoCopy:vfTouch->GetSrcBufferPtr()
+																		 length:vfTouch->GetSrcWidth() * vfTouch->GetSrcHeight() * sizeof(uint32_t)
+																		options:MTLResourceStorageModeManaged
+																	deallocator:nil]];
 	
-	[self setBufCPUFilterDstTouch:[[self device] newBufferWithBytesNoCopy:vfTouch->GetDstBufferPtr()
-																   length:vfTouch->GetDstWidth() * vfTouch->GetDstHeight() * sizeof(uint32_t)
-																  options:MTLResourceStorageModeManaged
-															  deallocator:nil]];
+	[self setBufCPUFilterDstTouch:[[sharedData device] newBufferWithBytesNoCopy:vfTouch->GetDstBufferPtr()
+																		 length:vfTouch->GetDstWidth() * vfTouch->GetDstHeight() * sizeof(uint32_t)
+																		options:MTLResourceStorageModeManaged
+																	deallocator:nil]];
 	
 	texHUDCharMap = nil;
 }
@@ -1150,17 +1167,17 @@
 	[cb commit];
 	[cb waitUntilCompleted];
 	
-	VideoFilter *vfMain  = _cdv->GetPixelScalerObject(NDSDisplayID_Main);
-	[self setBufCPUFilterDstMain:[[self device] newBufferWithBytesNoCopy:vfMain->GetDstBufferPtr()
-																  length:(vfMain->GetSrcWidth()  * vfAttr.scaleMultiply / vfAttr.scaleDivide) * (vfMain->GetSrcHeight()  * vfAttr.scaleMultiply / vfAttr.scaleDivide) * sizeof(uint32_t)
-																 options:MTLResourceStorageModeManaged
-															 deallocator:nil]];
+	VideoFilter *vfMain  = cdp->GetPixelScalerObject(NDSDisplayID_Main);
+	[self setBufCPUFilterDstMain:[[sharedData device] newBufferWithBytesNoCopy:vfMain->GetDstBufferPtr()
+																		length:(vfMain->GetSrcWidth()  * vfAttr.scaleMultiply / vfAttr.scaleDivide) * (vfMain->GetSrcHeight()  * vfAttr.scaleMultiply / vfAttr.scaleDivide) * sizeof(uint32_t)
+																	   options:MTLResourceStorageModeManaged
+																   deallocator:nil]];
 	
-	VideoFilter *vfTouch = _cdv->GetPixelScalerObject(NDSDisplayID_Touch);
-	[self setBufCPUFilterDstTouch:[[self device] newBufferWithBytesNoCopy:vfTouch->GetDstBufferPtr()
-																   length:(vfTouch->GetSrcWidth() * vfAttr.scaleMultiply / vfAttr.scaleDivide) * (vfTouch->GetSrcHeight() * vfAttr.scaleMultiply / vfAttr.scaleDivide) * sizeof(uint32_t)
-																  options:MTLResourceStorageModeManaged
-															  deallocator:nil]];
+	VideoFilter *vfTouch = cdp->GetPixelScalerObject(NDSDisplayID_Touch);
+	[self setBufCPUFilterDstTouch:[[sharedData device] newBufferWithBytesNoCopy:vfTouch->GetDstBufferPtr()
+																		 length:(vfTouch->GetSrcWidth() * vfAttr.scaleMultiply / vfAttr.scaleDivide) * (vfTouch->GetSrcHeight() * vfAttr.scaleMultiply / vfAttr.scaleDivide) * sizeof(uint32_t)
+																		options:MTLResourceStorageModeManaged
+																	deallocator:nil]];
 	
 	cb = [self newCommandBuffer];
 	dummyEncoder = [cb blitCommandEncoder];
@@ -1189,7 +1206,7 @@
 	[texHUDCharMapDesc setUsage:MTLTextureUsageShaderRead];
 	[texHUDCharMapDesc setMipmapLevelCount:texLevel];
 	
-	[self setTexHUDCharMap:[[self device] newTextureWithDescriptor:texHUDCharMapDesc]];
+	[self setTexHUDCharMap:[[sharedData device] newTextureWithDescriptor:texHUDCharMapDesc]];
 	
 	texLevel = 0;
 	for (size_t tileSize = glyphTileSize, gSize = glyphSize; tileSize >= 4; texLevel++, tileSize >>= 1, gSize = (GLfloat)tileSize * 0.75f)
@@ -1268,10 +1285,10 @@
 
 - (void) processDisplays
 {
-	const NDSDisplayInfo &fetchDisplayInfo = _cdv->GetEmuDisplayInfo();
-	const ClientDisplayMode mode = _cdv->GetViewProperties().mode;
-	const bool useDeposterize = _cdv->GetSourceDeposterize();
-	const NDSDisplayID selectedDisplaySource[2] = { _cdv->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main), _cdv->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) };
+	const NDSDisplayInfo &fetchDisplayInfo = cdp->GetEmuDisplayInfo();
+	const ClientDisplayMode mode = cdp->GetPresenterProperties().mode;
+	const bool useDeposterize = cdp->GetSourceDeposterize();
+	const NDSDisplayID selectedDisplaySource[2] = { cdp->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main), cdp->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) };
 	
 	pthread_mutex_lock(&_mutexDisplayTextureUpdate);
 	
@@ -1293,14 +1310,14 @@
 		_texDisplayOutput[NDSDisplayID_Touch] = [sharedData texDisplaySrcTargetMain];
 	}
 	
-	if ( (fetchDisplayInfo.pixelBytes != 0) && (useDeposterize || (_cdv->GetPixelScaler() != VideoFilterTypeID_None)) )
+	if ( (fetchDisplayInfo.pixelBytes != 0) && (useDeposterize || (cdp->GetPixelScaler() != VideoFilterTypeID_None)) )
 	{
-		const bool willFilterOnGPU = _cdv->WillFilterOnGPU();
-		const bool shouldProcessDisplay[2] = { (!fetchDisplayInfo.didPerformCustomRender[selectedDisplaySource[NDSDisplayID_Main]]  || !fetchDisplayInfo.isCustomSizeRequested) && _cdv->IsSelectedDisplayEnabled(NDSDisplayID_Main)  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
-		                                       (!fetchDisplayInfo.didPerformCustomRender[selectedDisplaySource[NDSDisplayID_Touch]] || !fetchDisplayInfo.isCustomSizeRequested) && _cdv->IsSelectedDisplayEnabled(NDSDisplayID_Touch) && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual) && (selectedDisplaySource[NDSDisplayID_Main] != selectedDisplaySource[NDSDisplayID_Touch]) };
+		const bool willFilterOnGPU = cdp->WillFilterOnGPU();
+		const bool shouldProcessDisplay[2] = { (!fetchDisplayInfo.didPerformCustomRender[selectedDisplaySource[NDSDisplayID_Main]]  || !fetchDisplayInfo.isCustomSizeRequested) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main)  && (mode == ClientDisplayMode_Main  || mode == ClientDisplayMode_Dual),
+		                                       (!fetchDisplayInfo.didPerformCustomRender[selectedDisplaySource[NDSDisplayID_Touch]] || !fetchDisplayInfo.isCustomSizeRequested) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch) && (mode == ClientDisplayMode_Touch || mode == ClientDisplayMode_Dual) && (selectedDisplaySource[NDSDisplayID_Main] != selectedDisplaySource[NDSDisplayID_Touch]) };
 		
-		VideoFilter *vfMain  = _cdv->GetPixelScalerObject(NDSDisplayID_Main);
-		VideoFilter *vfTouch = _cdv->GetPixelScalerObject(NDSDisplayID_Touch);
+		VideoFilter *vfMain  = cdp->GetPixelScalerObject(NDSDisplayID_Main);
+		VideoFilter *vfTouch = cdp->GetPixelScalerObject(NDSDisplayID_Touch);
 		
 		id<MTLCommandBuffer> cb = [self newCommandBuffer];
 		id<MTLComputeCommandEncoder> cce = [cb computeCommandEncoder];
@@ -1342,7 +1359,7 @@
 		}
 		
 		// Run the pixel scalers. First attempt on the GPU.
-		if ( (_cdv->GetPixelScaler() != VideoFilterTypeID_None) && willFilterOnGPU )
+		if ( (cdp->GetPixelScaler() != VideoFilterTypeID_None) && willFilterOnGPU )
 		{
 			[cce setComputePipelineState:[self pixelScalePipeline]];
 			
@@ -1370,7 +1387,7 @@
 		[cce endEncoding];
 		
 		// If the pixel scaler didn't already run on the GPU, then run the pixel scaler on the CPU.
-		if ( (_cdv->GetPixelScaler() != VideoFilterTypeID_None) && !willFilterOnGPU )
+		if ( (cdp->GetPixelScaler() != VideoFilterTypeID_None) && !willFilterOnGPU )
 		{
 			id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
 			
@@ -1408,7 +1425,7 @@
 				}
 			}
 			
-			pthread_mutex_lock(_cdv->GetMutexProcessPtr());
+			pthread_mutex_lock(((MacMetalDisplayPresenter *)cdp)->GetMutexProcessPtr());
 			
 			if (shouldProcessDisplay[NDSDisplayID_Main])
 			{
@@ -1454,7 +1471,7 @@
 				_texDisplayOutput[NDSDisplayID_Touch] = [self texDisplayPixelScaleTouch];
 			}
 			
-			pthread_mutex_unlock(_cdv->GetMutexProcessPtr());
+			pthread_mutex_unlock(((MacMetalDisplayPresenter *)cdp)->GetMutexProcessPtr());
 			
 			[bce endEncoding];
 		}
@@ -1468,9 +1485,9 @@
 	}
 	
 	// Update the texture coordinates
-	_cdv->SetScreenTextureCoordinates((float)[_texDisplayOutput[NDSDisplayID_Main]  width], (float)[_texDisplayOutput[NDSDisplayID_Main]  height],
-									  (float)[_texDisplayOutput[NDSDisplayID_Touch] width], (float)[_texDisplayOutput[NDSDisplayID_Touch] height],
-									  (float *)[_displayTexCoordBuffer contents]);
+	cdp->SetScreenTextureCoordinates((float)[_texDisplayOutput[NDSDisplayID_Main]  width], (float)[_texDisplayOutput[NDSDisplayID_Main]  height],
+									 (float)[_texDisplayOutput[NDSDisplayID_Touch] width], (float)[_texDisplayOutput[NDSDisplayID_Touch] height],
+									 (float *)[_displayTexCoordBuffer contents]);
 	[_displayTexCoordBuffer didModifyRange:NSMakeRange(0, sizeof(float) * (4 * 8))];
 	
 	pthread_mutex_unlock(&_mutexDisplayTextureUpdate);
@@ -1478,7 +1495,7 @@
 
 - (void) updateRenderBuffers
 {
-	const NDSDisplayInfo &displayInfo = _cdv->GetEmuDisplayInfo();
+	const NDSDisplayInfo &displayInfo = cdp->GetEmuDisplayInfo();
 	
 	// Set up the view properties.
 	bool didChangeViewProperties = false;
@@ -1487,8 +1504,8 @@
 	MTLViewport newViewport;
 	newViewport.originX = 0.0;
 	newViewport.originY = 0.0;
-	newViewport.width  = _cdv->GetViewProperties().clientWidth;
-	newViewport.height = _cdv->GetViewProperties().clientHeight;
+	newViewport.width  = cdp->GetPresenterProperties().clientWidth;
+	newViewport.height = cdp->GetPresenterProperties().clientHeight;
 	newViewport.znear = 0.0;
 	newViewport.zfar = 1.0;
 	
@@ -1499,8 +1516,8 @@
 		needEncodeViewport = true;
 		
 		DisplayViewShaderProperties *viewProps = (DisplayViewShaderProperties *)[_cdvPropertiesBuffer contents];
-		viewProps->width    = _cdv->GetViewProperties().clientWidth;
-		viewProps->height   = _cdv->GetViewProperties().clientHeight;
+		viewProps->width    = cdp->GetPresenterProperties().clientWidth;
+		viewProps->height   = cdp->GetPresenterProperties().clientHeight;
 		didChangeViewProperties = true;
 		
 		[self setNeedsViewportUpdate:NO];
@@ -1509,9 +1526,9 @@
 	if ([self needsRotationScaleUpdate])
 	{
 		DisplayViewShaderProperties *viewProps = (DisplayViewShaderProperties *)[_cdvPropertiesBuffer contents];
-		viewProps->rotation            = _cdv->GetViewProperties().rotation;
-		viewProps->viewScale           = _cdv->GetViewProperties().viewScale;
-		viewProps->lowerHUDMipMapLevel = ( ((float)HUD_TEXTBOX_BASE_SCALE * _cdv->GetHUDObjectScale() / _cdv->GetScaleFactor()) >= (2.0/3.0) ) ? 0 : 1;
+		viewProps->rotation            = cdp->GetPresenterProperties().rotation;
+		viewProps->viewScale           = cdp->GetPresenterProperties().viewScale;
+		viewProps->lowerHUDMipMapLevel = ( ((float)HUD_TEXTBOX_BASE_SCALE * cdp->GetHUDObjectScale() / cdp->GetScaleFactor()) >= (2.0/3.0) ) ? 0 : 1;
 		didChangeViewProperties = true;
 		
 		[self setNeedsRotationScaleUpdate:NO];
@@ -1526,22 +1543,22 @@
 	bool willDrawDisplays = (displayInfo.pixelBytes != 0);
 	if (willDrawDisplays && [self needsScreenVerticesUpdate])
 	{
-		_cdv->SetScreenVertices((float *)[_displayVtxPositionBuffer contents]);
+		cdp->SetScreenVertices((float *)[_displayVtxPositionBuffer contents]);
 		[_displayVtxPositionBuffer didModifyRange:NSMakeRange(0, sizeof(float) * (4 * 8))];
 		
 		[self setNeedsScreenVerticesUpdate:NO];
 	}
 	
 	// Set up the HUD properties.
-	size_t hudLength = _cdv->GetHUDString().length();
+	size_t hudLength = cdp->GetHUDString().length();
 	size_t hudTouchLineLength = 0;
-	bool willDrawHUD = _cdv->GetHUDVisibility() && ([self texHUDCharMap] != nil);
+	bool willDrawHUD = cdp->GetHUDVisibility() && ([self texHUDCharMap] != nil);
 	
-	if (_cdv->GetHUDShowInput())
+	if (cdp->GetHUDShowInput())
 	{
 		hudLength += HUD_INPUT_ELEMENT_LENGTH;
 		
-		switch (_cdv->GetMode())
+		switch (cdp->GetMode())
 		{
 			case ClientDisplayMode_Main:
 			case ClientDisplayMode_Touch:
@@ -1550,7 +1567,7 @@
 				
 			case ClientDisplayMode_Dual:
 			{
-				switch (_cdv->GetLayout())
+				switch (cdp->GetLayout())
 				{
 					case ClientDisplayLayout_Vertical:
 					case ClientDisplayLayout_Horizontal:
@@ -1573,33 +1590,33 @@
 	
 	willDrawHUD = willDrawHUD && (hudLength > 1);
 	
-	if (willDrawHUD && _cdv->HUDNeedsUpdate())
+	if (willDrawHUD && cdp->HUDNeedsUpdate())
 	{
-		_cdv->SetHUDPositionVertices((float)_cdv->GetViewProperties().clientWidth, (float)_cdv->GetViewProperties().clientHeight, (float *)[_hudVtxPositionBuffer contents]);
+		cdp->SetHUDPositionVertices((float)cdp->GetPresenterProperties().clientWidth, (float)cdp->GetPresenterProperties().clientHeight, (float *)[_hudVtxPositionBuffer contents]);
 		[_hudVtxPositionBuffer didModifyRange:NSMakeRange(0, sizeof(float) * hudLength * 8)];
 		
-		_cdv->SetHUDColorVertices((uint32_t *)[_hudVtxColorBuffer contents]);
+		cdp->SetHUDColorVertices((uint32_t *)[_hudVtxColorBuffer contents]);
 		[_hudVtxColorBuffer didModifyRange:NSMakeRange(0, sizeof(uint32_t) * hudLength * 4)];
 		
-		_cdv->SetHUDTextureCoordinates((float *)[_hudTexCoordBuffer contents]);
+		cdp->SetHUDTextureCoordinates((float *)[_hudTexCoordBuffer contents]);
 		[_hudTexCoordBuffer didModifyRange:NSMakeRange(0, sizeof(float) * hudLength * 8)];
 		
-		_cdv->ClearHUDNeedsUpdate();
+		cdp->ClearHUDNeedsUpdate();
 	}
 	
 	_needEncodeViewport = needEncodeViewport;
 	_newViewport = newViewport;
 	_willDrawDisplays = willDrawDisplays;
 	_willDrawHUD = willDrawHUD;
-	_willDrawHUDInput = _cdv->GetHUDShowInput();
-	_hudStringLength = _cdv->GetHUDString().length();
+	_willDrawHUDInput = cdp->GetHUDShowInput();
+	_hudStringLength = cdp->GetHUDString().length();
 	_hudTouchLineLength = hudTouchLineLength;
 	
 	pthread_mutex_unlock(&_mutexBufferUpdate);
 }
 
 - (void) renderForCommandBuffer:(id<MTLCommandBuffer>)cb
-		   displayPipelineState:(id<MTLRenderPipelineState>)displayPipelineState
+			outputPipelineState:(id<MTLRenderPipelineState>)outputPipelineState
 			   hudPipelineState:(id<MTLRenderPipelineState>)hudPipelineState
 {
 	id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:_outputRenderPassDesc];
@@ -1612,16 +1629,16 @@
 	// Draw the NDS displays.
 	if (_willDrawDisplays)
 	{
-		[rce setRenderPipelineState:displayPipelineState];
+		[rce setRenderPipelineState:outputPipelineState];
 		[rce setVertexBuffer:_displayVtxPositionBuffer offset:0 atIndex:0];
 		[rce setVertexBuffer:_displayTexCoordBuffer offset:0 atIndex:1];
 		[rce setVertexBuffer:_cdvPropertiesBuffer offset:0 atIndex:2];
 		
-		switch (_cdv->GetViewProperties().mode)
+		switch (cdp->GetPresenterProperties().mode)
 		{
 			case ClientDisplayMode_Main:
 			{
-				if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Main))
+				if (cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main))
 				{
 					[rce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
 					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
@@ -1631,7 +1648,7 @@
 				
 			case ClientDisplayMode_Touch:
 			{
-				if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
+				if (cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
 				{
 					[rce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
 					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
@@ -1641,16 +1658,16 @@
 				
 			case ClientDisplayMode_Dual:
 			{
-				const NDSDisplayID majorDisplayID = (_cdv->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
-				const size_t majorDisplayVtx = (_cdv->GetViewProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
+				const NDSDisplayID majorDisplayID = (cdp->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? NDSDisplayID_Main : NDSDisplayID_Touch;
+				const size_t majorDisplayVtx = (cdp->GetPresenterProperties().order == ClientDisplayOrder_MainFirst) ? 8 : 12;
 				
-				switch (_cdv->GetViewProperties().layout)
+				switch (cdp->GetPresenterProperties().layout)
 				{
 					case ClientDisplayLayout_Hybrid_2_1:
 					case ClientDisplayLayout_Hybrid_16_9:
 					case ClientDisplayLayout_Hybrid_16_10:
 					{
-						if (_cdv->IsSelectedDisplayEnabled(majorDisplayID))
+						if (cdp->IsSelectedDisplayEnabled(majorDisplayID))
 						{
 							[rce setFragmentTexture:_texDisplayOutput[majorDisplayID] atIndex:0];
 							[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:majorDisplayVtx vertexCount:4];
@@ -1662,13 +1679,13 @@
 						break;
 				}
 				
-				if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Main))
+				if (cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main))
 				{
 					[rce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
 					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
 				}
 				
-				if (_cdv->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
+				if (cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
 				{
 					[rce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
 					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
@@ -1735,10 +1752,10 @@
 	[rce endEncoding];
 }
 
-- (void) renderAndDownloadToBuffer:(uint32_t *)dstBuffer
+- (void) renderToBuffer:(uint32_t *)dstBuffer
 {
-	const size_t clientWidth  = _cdv->GetViewProperties().clientWidth;
-	const size_t clientHeight = _cdv->GetViewProperties().clientHeight;
+	const size_t clientWidth  = cdp->GetPresenterProperties().clientWidth;
+	const size_t clientHeight = cdp->GetPresenterProperties().clientHeight;
 	
 	@autoreleasepool
 	{
@@ -1750,8 +1767,8 @@
 		[texRenderDesc setStorageMode:MTLStorageModePrivate];
 		[texRenderDesc setUsage:MTLTextureUsageRenderTarget];
 		
-		id<MTLTexture> texRender = [[[self device] newTextureWithDescriptor:texRenderDesc] retain];
-		id<MTLBuffer> dstMTLBuffer = [[[self device] newBufferWithLength:clientWidth * clientHeight * sizeof(uint32_t) options:MTLResourceStorageModeManaged] retain];
+		id<MTLTexture> texRender = [[[sharedData device] newTextureWithDescriptor:texRenderDesc] retain];
+		id<MTLBuffer> dstMTLBuffer = [[[sharedData device] newBufferWithLength:clientWidth * clientHeight * sizeof(uint32_t) options:MTLResourceStorageModeManaged] retain];
 		
 		pthread_mutex_lock(&_mutexDisplayTextureUpdate);
 		pthread_mutex_lock(&_mutexBufferUpdate);
@@ -1760,7 +1777,7 @@
 		[colorAttachment0Desc setTexture:texRender];
 		id<MTLCommandBuffer> cb = [self newCommandBuffer];
 		
-		[self renderForCommandBuffer:cb displayPipelineState:[self displayRGBAOutputPipeline] hudPipelineState:[sharedData hudRGBAPipeline]];
+		[self renderForCommandBuffer:cb outputPipelineState:[self outputRGBAPipeline] hudPipelineState:[sharedData hudRGBAPipeline]];
 		
 		id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
 		
@@ -1792,24 +1809,64 @@
 	}
 }
 
-- (void) renderAndFlushDrawable
+@end
+
+@implementation DisplayViewMetalLayer
+
+@synthesize _cdv;
+@synthesize presenterObject;
+
+- (id) initWithDisplayPresenterObject:(MacMetalDisplayPresenterObject *)thePresenterObject
+{
+	self = [super init];
+	if(self == nil)
+	{
+		return nil;
+	}
+	
+	_cdv = NULL;
+	
+	presenterObject = thePresenterObject;
+	if (thePresenterObject != nil)
+	{
+		[self setDevice:[[thePresenterObject sharedData] device]];
+		[thePresenterObject setDrawableFormat:[self pixelFormat]];
+	}
+	
+	[self setOpaque:YES];
+	
+	return self;
+}
+
+- (void) setupLayer
+{
+	if ([self device] == nil)
+	{
+		[self setDevice:[[presenterObject sharedData] device]];
+		[presenterObject setDrawableFormat:[self pixelFormat]];
+	}
+}
+
+- (void) renderToDrawable
 {
 	@autoreleasepool
 	{
-		pthread_mutex_lock(&_mutexDisplayTextureUpdate);
-		pthread_mutex_lock(&_mutexBufferUpdate);
+		pthread_mutex_lock([presenterObject mutexDisplayTextureUpdate]);
+		pthread_mutex_lock([presenterObject mutexBufferUpdate]);
 				
 		// Now that everything is set up, go ahead and draw everything.
 		id<CAMetalDrawable> layerDrawable = [self nextDrawable];
-		[colorAttachment0Desc setTexture:[layerDrawable texture]];
-		id<MTLCommandBuffer> cb = [self newCommandBuffer];
+		[[presenterObject colorAttachment0Desc] setTexture:[layerDrawable texture]];
+		id<MTLCommandBuffer> cb = [presenterObject newCommandBuffer];
 		
-		[self renderForCommandBuffer:cb displayPipelineState:[self displayOutputPipeline] hudPipelineState:[sharedData hudPipeline]];
+		[presenterObject renderForCommandBuffer:cb
+							outputPipelineState:[presenterObject outputDrawablePipeline]
+							   hudPipelineState:[[presenterObject sharedData] hudPipeline]];
 		
 		[cb presentDrawable:layerDrawable];
 		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-			pthread_mutex_unlock(&_mutexBufferUpdate);
-			pthread_mutex_unlock(&_mutexDisplayTextureUpdate);
+			pthread_mutex_unlock([presenterObject mutexBufferUpdate]);
+			pthread_mutex_unlock([presenterObject mutexDisplayTextureUpdate]);
 		}];
 		
 		[cb commit];
@@ -1922,22 +1979,187 @@ void MacMetalFetchObject::_FetchCustomDisplayByID(const NDSDisplayID displayID, 
 
 #pragma mark -
 
-MacMetalDisplayView::MacMetalDisplayView()
+MacMetalDisplayPresenter::MacMetalDisplayPresenter()
 {
-	_allowViewUpdates = false;
+	__InstanceInit(nil);
+}
+
+MacMetalDisplayPresenter::MacMetalDisplayPresenter(MacClientSharedObject *sharedObject) : MacDisplayPresenterInterface(sharedObject)
+{
+	__InstanceInit(sharedObject);
+}
+
+MacMetalDisplayPresenter::~MacMetalDisplayPresenter()
+{
+	[this->_presenterObject release];
+	
+	pthread_mutex_destroy(&this->_mutexProcessPtr);
+}
+
+void MacMetalDisplayPresenter::__InstanceInit(MacClientSharedObject *sharedObject)
+{
 	_canFilterOnGPU = true;
 	_filtersPreferGPU = true;
 	_willFilterOnGPU = true;
-	_spinlockViewNeedsFlush = OS_SPINLOCK_INIT;
 	
-	_mutexProcessPtr = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(_mutexProcessPtr, NULL);
+	if (sharedObject != nil)
+	{
+		SetFetchObject([sharedObject GPUFetchObject]);
+	}
+	
+	_presenterObject = [[MacMetalDisplayPresenterObject alloc] initWithDisplayPresenter:this];
+	
+	pthread_mutex_init(&_mutexProcessPtr, NULL);
+}
+
+void MacMetalDisplayPresenter::_UpdateNormalSize()
+{
+	[this->_presenterObject setNeedsScreenVerticesUpdate:YES];
+}
+
+void MacMetalDisplayPresenter::_UpdateOrder()
+{
+	[this->_presenterObject setNeedsScreenVerticesUpdate:YES];
+}
+
+void MacMetalDisplayPresenter::_UpdateRotation()
+{
+	[this->_presenterObject setNeedsRotationScaleUpdate:YES];
+}
+
+void MacMetalDisplayPresenter::_UpdateClientSize()
+{
+	[this->_presenterObject setNeedsViewportUpdate:YES];
+	[this->_presenterObject setNeedsHUDVerticesUpdate:YES];
+	this->ClientDisplay3DPresenter::_UpdateClientSize();
+}
+
+void MacMetalDisplayPresenter::_UpdateViewScale()
+{
+	this->ClientDisplay3DPresenter::_UpdateViewScale();
+	[this->_presenterObject setNeedsRotationScaleUpdate:YES];
+}
+
+void MacMetalDisplayPresenter::_LoadNativeDisplayByID(const NDSDisplayID displayID)
+{
+	if ((this->GetPixelScaler() != VideoFilterTypeID_None) && !this->WillFilterOnGPU() && !this->GetSourceDeposterize())
+	{
+		MacMetalFetchObject &fetchObjMutable = (MacMetalFetchObject &)this->GetFetchObject();
+		VideoFilter *vf = this->GetPixelScalerObject(displayID);
+		
+		fetchObjMutable.CopyFromSrcClone(vf->GetSrcBufferPtr(), displayID, this->GetEmuDisplayInfo().bufferIndex);
+	}
+}
+
+void MacMetalDisplayPresenter::_ResizeCPUPixelScaler(const VideoFilterTypeID filterID)
+{
+	this->ClientDisplay3DPresenter::_ResizeCPUPixelScaler(filterID);
+	[this->_presenterObject resizeCPUPixelScalerUsingFilterID:filterID];
+}
+
+MacMetalDisplayPresenterObject* MacMetalDisplayPresenter::GetPresenterObject() const
+{
+	return this->_presenterObject;
+}
+
+pthread_mutex_t* MacMetalDisplayPresenter::GetMutexProcessPtr()
+{
+	return &this->_mutexProcessPtr;
+}
+
+void MacMetalDisplayPresenter::Init()
+{
+	[this->_presenterObject setup];
+}
+
+void MacMetalDisplayPresenter::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo)
+{
+	[this->_presenterObject copyHUDFontUsingFace:fontFace size:glyphSize tileSize:glyphTileSize info:glyphInfo];
+}
+
+void MacMetalDisplayPresenter::SetSharedData(MacClientSharedObject *sharedObject)
+{
+	[this->_presenterObject setSharedData:(MetalDisplayViewSharedData *)sharedObject];
+	this->SetFetchObject([sharedObject GPUFetchObject]);
+}
+
+// NDS screen filters
+void MacMetalDisplayPresenter::SetPixelScaler(const VideoFilterTypeID filterID)
+{
+	pthread_mutex_lock(&this->_mutexProcessPtr);
+	
+	this->ClientDisplay3DPresenter::SetPixelScaler(filterID);
+	[this->_presenterObject setPixelScaler:this->_pixelScaler];
+	this->_willFilterOnGPU = (this->GetFiltersPreferGPU()) ? ([this->_presenterObject pixelScalePipeline] != nil) : false;
+	
+	pthread_mutex_unlock(&this->_mutexProcessPtr);
+}
+
+void MacMetalDisplayPresenter::SetOutputFilter(const OutputFilterTypeID filterID)
+{
+	this->ClientDisplay3DPresenter::SetOutputFilter(filterID);
+	[this->_presenterObject setOutputFilter:filterID];
+}
+
+void MacMetalDisplayPresenter::SetFiltersPreferGPU(const bool preferGPU)
+{
+	pthread_mutex_lock(&this->_mutexProcessPtr);
+	
+	this->_filtersPreferGPU = preferGPU;
+	this->_willFilterOnGPU = (preferGPU) ? ([this->_presenterObject pixelScalePipeline] != nil) : false;
+	
+	pthread_mutex_unlock(&this->_mutexProcessPtr);
+}
+
+// NDS GPU interface
+void MacMetalDisplayPresenter::ProcessDisplays()
+{
+	[this->_presenterObject processDisplays];
+}
+
+void MacMetalDisplayPresenter::UpdateLayout()
+{
+	[this->_presenterObject updateRenderBuffers];
+}
+
+void MacMetalDisplayPresenter::CopyFrameToBuffer(uint32_t *dstBuffer)
+{
+	[this->_presenterObject renderToBuffer:dstBuffer];
+}
+
+#pragma mark -
+
+MacMetalDisplayView::MacMetalDisplayView()
+{
+	__InstanceInit(nil);
+}
+
+MacMetalDisplayView::MacMetalDisplayView(MacClientSharedObject *sharedObject)
+{
+	__InstanceInit(sharedObject);
 }
 
 MacMetalDisplayView::~MacMetalDisplayView()
 {
-	pthread_mutex_destroy(this->_mutexProcessPtr);
-	free(this->_mutexProcessPtr);
+	[this->_caLayer release];
+}
+
+void MacMetalDisplayView::__InstanceInit(MacClientSharedObject *sharedObject)
+{
+	_allowViewUpdates = false;
+	_spinlockViewNeedsFlush = OS_SPINLOCK_INIT;
+	
+	MacMetalDisplayPresenter *newMetalPresenter = new MacMetalDisplayPresenter(sharedObject);
+	_presenter = newMetalPresenter;
+	
+	_caLayer = [[DisplayViewMetalLayer alloc] initWithDisplayPresenterObject:newMetalPresenter->GetPresenterObject()];
+	[_caLayer setClientDisplayView:this];
+}
+
+void MacMetalDisplayView::Init()
+{
+	[(DisplayViewMetalLayer *)this->_caLayer setupLayer];
+	MacDisplayLayeredView::Init();
 }
 
 bool MacMetalDisplayView::GetViewNeedsFlush()
@@ -1949,114 +2171,9 @@ bool MacMetalDisplayView::GetViewNeedsFlush()
 	return viewNeedsFlush;
 }
 
-void MacMetalDisplayView::SetAllowViewFlushes(bool allowFlushes)
+void MacMetalDisplayView::SetViewNeedsFlush()
 {
-	CGDirectDisplayID displayID = (CGDirectDisplayID)this->GetDisplayViewID();
-	MacClientSharedObject *sharedData = this->GetSharedData();
-	
-	if (![sharedData isDisplayLinkRunningUsingID:displayID])
-	{
-		[sharedData displayLinkStartUsingID:displayID];
-	}
-}
-
-void MacMetalDisplayView::_UpdateNormalSize()
-{
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() setNeedsScreenVerticesUpdate:YES];
-}
-
-void MacMetalDisplayView::_UpdateOrder()
-{
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() setNeedsScreenVerticesUpdate:YES];
-}
-
-void MacMetalDisplayView::_UpdateRotation()
-{
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() setNeedsRotationScaleUpdate:YES];
-}
-
-void MacMetalDisplayView::_UpdateClientSize()
-{
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() setNeedsViewportUpdate:YES];
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() setNeedsHUDVerticesUpdate:YES];
-	this->ClientDisplay3DView::_UpdateClientSize();
-}
-
-void MacMetalDisplayView::_UpdateViewScale()
-{
-	this->ClientDisplay3DView::_UpdateViewScale();
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() setNeedsRotationScaleUpdate:YES];
-}
-
-void MacMetalDisplayView::_LoadNativeDisplayByID(const NDSDisplayID displayID)
-{
-	if ((this->GetPixelScaler() != VideoFilterTypeID_None) && !this->WillFilterOnGPU() && !this->GetSourceDeposterize())
-	{
-		MacMetalFetchObject &fetchObjMutable = (MacMetalFetchObject &)this->GetFetchObject();
-		VideoFilter *vf = this->GetPixelScalerObject(displayID);
-		
-		fetchObjMutable.CopyFromSrcClone(vf->GetSrcBufferPtr(), displayID, this->GetEmuDisplayInfo().bufferIndex);
-	}
-}
-
-void MacMetalDisplayView::_ResizeCPUPixelScaler(const VideoFilterTypeID filterID)
-{
-	this->ClientDisplay3DView::_ResizeCPUPixelScaler(filterID);
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() resizeCPUPixelScalerUsingFilterID:filterID];
-}
-
-pthread_mutex_t* MacMetalDisplayView::GetMutexProcessPtr() const
-{
-	return this->_mutexProcessPtr;
-}
-
-void MacMetalDisplayView::Init()
-{
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() setupLayer];
-}
-
-void MacMetalDisplayView::CopyHUDFont(const FT_Face &fontFace, const size_t glyphSize, const size_t glyphTileSize, GlyphInfo *glyphInfo)
-{
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() copyHUDFontUsingFace:fontFace size:glyphSize tileSize:glyphTileSize info:glyphInfo];
-}
-
-// NDS screen filters
-void MacMetalDisplayView::SetPixelScaler(const VideoFilterTypeID filterID)
-{
-	pthread_mutex_lock(this->_mutexProcessPtr);
-	
-	this->ClientDisplay3DView::SetPixelScaler(filterID);
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() setPixelScaler:this->_pixelScaler];
-	this->_willFilterOnGPU = (this->GetFiltersPreferGPU()) ? ([(DisplayViewMetalLayer *)this->GetFrontendLayer() pixelScalePipeline] != nil) : false;
-	
-	pthread_mutex_unlock(this->_mutexProcessPtr);
-}
-
-void MacMetalDisplayView::SetOutputFilter(const OutputFilterTypeID filterID)
-{
-	this->ClientDisplay3DView::SetOutputFilter(filterID);
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() setOutputFilter:filterID];
-}
-
-void MacMetalDisplayView::SetFiltersPreferGPU(const bool preferGPU)
-{
-	pthread_mutex_lock(this->_mutexProcessPtr);
-	
-	this->_filtersPreferGPU = preferGPU;
-	this->_willFilterOnGPU = (preferGPU) ? ([(DisplayViewMetalLayer *)this->GetFrontendLayer() pixelScalePipeline] != nil) : false;
-	
-	pthread_mutex_unlock(this->_mutexProcessPtr);
-}
-
-// NDS GPU interface
-void MacMetalDisplayView::ProcessDisplays()
-{
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() processDisplays];
-}
-
-void MacMetalDisplayView::UpdateView()
-{
-	if (!this->_allowViewUpdates || (this->GetNSView() == nil))
+	if (!this->_allowViewUpdates || (this->_presenter == nil) || (this->GetNSView() == nil))
 	{
 		return;
 	}
@@ -2065,11 +2182,22 @@ void MacMetalDisplayView::UpdateView()
 	// will eventually get flushed.
 	this->SetAllowViewFlushes(true);
 	
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() updateRenderBuffers];
+	this->_presenter->UpdateLayout();
 	
 	OSSpinLockLock(&this->_spinlockViewNeedsFlush);
 	this->_viewNeedsFlush = true;
 	OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
+}
+
+void MacMetalDisplayView::SetAllowViewFlushes(bool allowFlushes)
+{
+	CGDirectDisplayID displayID = (CGDirectDisplayID)this->GetDisplayViewID();
+	MacClientSharedObject *sharedData = ((MacMetalDisplayPresenter *)this->_presenter)->GetSharedData();
+	
+	if (![sharedData isDisplayLinkRunningUsingID:displayID])
+	{
+		[sharedData displayLinkStartUsingID:displayID];
+	}
 }
 
 void MacMetalDisplayView::FlushView()
@@ -2078,12 +2206,7 @@ void MacMetalDisplayView::FlushView()
 	this->_viewNeedsFlush = false;
 	OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
 	
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() renderAndFlushDrawable];
-}
-
-void MacMetalDisplayView::CopyFrameToBuffer(uint32_t *dstBuffer)
-{
-	[(DisplayViewMetalLayer *)this->GetFrontendLayer() renderAndDownloadToBuffer:dstBuffer];
+	[(DisplayViewMetalLayer *)this->_caLayer renderToDrawable];
 }
 
 #pragma mark -

@@ -568,7 +568,7 @@
 
 @implementation CocoaDSDisplayVideo
 
-@dynamic clientDisplayView;
+@synthesize _cdv;
 @dynamic canFilterOnGPU;
 @dynamic willFilterOnGPU;
 @dynamic isHUDVisible;
@@ -625,17 +625,7 @@
 	[super dealloc];
 }
 
-- (void) setClientDisplayView:(ClientDisplay3DView *)clientDisplayView
-{
-	_cdv = clientDisplayView;
-}
-
-- (ClientDisplay3DView *) clientDisplayView
-{
-	return _cdv;
-}
-
-- (void) commitViewProperties:(const ClientDisplayViewProperties &)viewProps
+- (void) commitPresenterProperties:(const ClientDisplayPresenterProperties &)viewProps
 {
 	OSSpinLockLock(&spinlockViewProperties);
 	_intermediateViewProps = viewProps;
@@ -646,25 +636,27 @@
 
 - (BOOL) canFilterOnGPU
 {
-	return (_cdv->CanFilterOnGPU()) ? YES : NO;
+	return (_cdv->Get3DPresenter()->CanFilterOnGPU()) ? YES : NO;
 }
 
 - (BOOL) willFilterOnGPU
 {
-	return (_cdv->WillFilterOnGPU()) ? YES : NO;
+	return (_cdv->Get3DPresenter()->WillFilterOnGPU()) ? YES : NO;
 }
 
 - (void) setIsHUDVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDVisibility((theState) ? true : false);
+	_cdv->Get3DPresenter()->SetHUDVisibility((theState) ? true : false);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDVisibility()) ? YES : NO;
+	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDVisibility()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -673,14 +665,16 @@
 - (void) setIsHUDVideoFPSVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDShowVideoFPS((theState) ? true : false);
+	_cdv->Get3DPresenter()->SetHUDShowVideoFPS((theState) ? true : false);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDVideoFPSVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDShowVideoFPS()) ? YES : NO;
+	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowVideoFPS()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -689,14 +683,16 @@
 - (void) setIsHUDRender3DFPSVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDShowRender3DFPS((theState) ? true : false);
+	_cdv->Get3DPresenter()->SetHUDShowRender3DFPS((theState) ? true : false);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDRender3DFPSVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDShowRender3DFPS()) ? YES : NO;
+	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowRender3DFPS()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -705,14 +701,16 @@
 - (void) setIsHUDFrameIndexVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDShowFrameIndex((theState) ? true : false);
+	_cdv->Get3DPresenter()->SetHUDShowFrameIndex((theState) ? true : false);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDFrameIndexVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDShowFrameIndex()) ? YES : NO;
+	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowFrameIndex()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -721,14 +719,16 @@
 - (void) setIsHUDLagFrameCountVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDShowLagFrameCount((theState) ? true : false);
+	_cdv->Get3DPresenter()->SetHUDShowLagFrameCount((theState) ? true : false);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDLagFrameCountVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDShowLagFrameCount()) ? YES : NO;
+	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowLagFrameCount()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -737,14 +737,16 @@
 - (void) setIsHUDCPULoadAverageVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDShowCPULoadAverage((theState) ? true : false);
+	_cdv->Get3DPresenter()->SetHUDShowCPULoadAverage((theState) ? true : false);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDCPULoadAverageVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDShowCPULoadAverage()) ? YES : NO;
+	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowCPULoadAverage()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -753,14 +755,16 @@
 - (void) setIsHUDRealTimeClockVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDShowRTC((theState) ? true : false);
+	_cdv->Get3DPresenter()->SetHUDShowRTC((theState) ? true : false);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDRealTimeClockVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDShowRTC()) ? YES : NO;
+	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowRTC()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -769,14 +773,16 @@
 - (void) setIsHUDInputVisible:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDShowInput((theState) ? true : false);
+	_cdv->Get3DPresenter()->SetHUDShowInput((theState) ? true : false);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (BOOL) isHUDInputVisible
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const BOOL theState = (_cdv->GetHUDShowInput()) ? YES : NO;
+	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowInput()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -785,14 +791,16 @@
 - (void) setHudColorVideoFPS:(uint32_t)theColor
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDColorVideoFPS(theColor);
+	_cdv->Get3DPresenter()->SetHUDColorVideoFPS(theColor);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorVideoFPS
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const uint32_t color32 = _cdv->GetHUDColorVideoFPS();
+	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorVideoFPS();
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return color32;
@@ -801,14 +809,16 @@
 - (void) setHudColorRender3DFPS:(uint32_t)theColor
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDColorRender3DFPS(theColor);
+	_cdv->Get3DPresenter()->SetHUDColorRender3DFPS(theColor);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorRender3DFPS
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const uint32_t color32 = _cdv->GetHUDColorRender3DFPS();
+	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorRender3DFPS();
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return color32;
@@ -817,14 +827,16 @@
 - (void) setHudColorFrameIndex:(uint32_t)theColor
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDColorFrameIndex(theColor);
+	_cdv->Get3DPresenter()->SetHUDColorFrameIndex(theColor);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorFrameIndex
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const uint32_t color32 = _cdv->GetHUDColorFrameIndex();
+	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorFrameIndex();
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return color32;
@@ -833,14 +845,16 @@
 - (void) setHudColorLagFrameCount:(uint32_t)theColor
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDColorLagFrameCount(theColor);
+	_cdv->Get3DPresenter()->SetHUDColorLagFrameCount(theColor);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorLagFrameCount
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const uint32_t color32 = _cdv->GetHUDColorLagFrameCount();
+	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorLagFrameCount();
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return color32;
@@ -849,14 +863,16 @@
 - (void) setHudColorCPULoadAverage:(uint32_t)theColor
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDColorCPULoadAverage(theColor);
+	_cdv->Get3DPresenter()->SetHUDColorCPULoadAverage(theColor);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorCPULoadAverage
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const uint32_t color32 = _cdv->GetHUDColorCPULoadAverage();
+	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorCPULoadAverage();
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return color32;
@@ -865,14 +881,16 @@
 - (void) setHudColorRTC:(uint32_t)theColor
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDColorRTC(theColor);
+	_cdv->Get3DPresenter()->SetHUDColorRTC(theColor);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorRTC
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const uint32_t color32 = _cdv->GetHUDColorRTC();
+	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorRTC();
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return color32;
@@ -881,14 +899,16 @@
 - (void) setHudColorInputPendingAndApplied:(uint32_t)theColor
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDColorInputPendingAndApplied(theColor);
+	_cdv->Get3DPresenter()->SetHUDColorInputPendingAndApplied(theColor);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorInputPendingAndApplied
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const uint32_t color32 = _cdv->GetHUDColorInputPendingAndApplied();
+	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorInputPendingAndApplied();
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return color32;
@@ -897,14 +917,16 @@
 - (void) setHudColorInputAppliedOnly:(uint32_t)theColor
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDColorInputAppliedOnly(theColor);
+	_cdv->Get3DPresenter()->SetHUDColorInputAppliedOnly(theColor);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorInputAppliedOnly
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const uint32_t color32 = _cdv->GetHUDColorInputAppliedOnly();
+	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorInputAppliedOnly();
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return color32;
@@ -913,14 +935,16 @@
 - (void) setHudColorInputPendingOnly:(uint32_t)theColor
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetHUDColorInputPendingOnly(theColor);
+	_cdv->Get3DPresenter()->SetHUDColorInputPendingOnly(theColor);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (uint32_t) hudColorInputPendingOnly
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	const uint32_t color32 = _cdv->GetHUDColorInputPendingOnly();
+	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorInputPendingOnly();
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return color32;
@@ -929,14 +953,16 @@
 - (void) setDisplayMainVideoSource:(NSInteger)displaySourceID
 {
 	OSSpinLockLock(&spinlockDisplayVideoSource);
-	_cdv->SetDisplayVideoSource(NDSDisplayID_Main, (ClientDisplaySource)displaySourceID);
+	_cdv->Get3DPresenter()->SetDisplayVideoSource(NDSDisplayID_Main, (ClientDisplaySource)displaySourceID);
 	OSSpinLockUnlock(&spinlockDisplayVideoSource);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (NSInteger) displayMainVideoSource
 {
 	OSSpinLockLock(&spinlockDisplayVideoSource);
-	const NSInteger displayVideoSource = _cdv->GetDisplayVideoSource(NDSDisplayID_Main);
+	const NSInteger displayVideoSource = _cdv->Get3DPresenter()->GetDisplayVideoSource(NDSDisplayID_Main);
 	OSSpinLockUnlock(&spinlockDisplayVideoSource);
 	
 	return displayVideoSource;
@@ -945,14 +971,16 @@
 - (void) setDisplayTouchVideoSource:(NSInteger)displaySourceID
 {
 	OSSpinLockLock(&spinlockDisplayVideoSource);
-	_cdv->SetDisplayVideoSource(NDSDisplayID_Touch, (ClientDisplaySource)displaySourceID);
+	_cdv->Get3DPresenter()->SetDisplayVideoSource(NDSDisplayID_Touch, (ClientDisplaySource)displaySourceID);
 	OSSpinLockUnlock(&spinlockDisplayVideoSource);
+	
+	_cdv->SetViewNeedsFlush();
 }
 
 - (NSInteger) displayTouchVideoSource
 {
 	OSSpinLockLock(&spinlockDisplayVideoSource);
-	const NSInteger displayVideoSource = _cdv->GetDisplayVideoSource(NDSDisplayID_Touch);
+	const NSInteger displayVideoSource = _cdv->Get3DPresenter()->GetDisplayVideoSource(NDSDisplayID_Touch);
 	OSSpinLockUnlock(&spinlockDisplayVideoSource);
 	
 	return displayVideoSource;
@@ -993,14 +1021,14 @@
 - (void) setVideoFiltersPreferGPU:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockVideoFiltersPreferGPU);
-	_cdv->SetFiltersPreferGPU((theState) ? true : false);
+	_cdv->Get3DPresenter()->SetFiltersPreferGPU((theState) ? true : false);
 	OSSpinLockUnlock(&spinlockVideoFiltersPreferGPU);
 }
 
 - (BOOL) videoFiltersPreferGPU
 {
 	OSSpinLockLock(&spinlockVideoFiltersPreferGPU);
-	const BOOL theState = (_cdv->GetFiltersPreferGPU()) ? YES : NO;
+	const BOOL theState = (_cdv->Get3DPresenter()->GetFiltersPreferGPU()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockVideoFiltersPreferGPU);
 	
 	return theState;
@@ -1009,14 +1037,14 @@
 - (void) setSourceDeposterize:(BOOL)theState
 {
 	OSSpinLockLock(&spinlockSourceDeposterize);
-	_cdv->SetSourceDeposterize((theState) ? true : false);
+	_cdv->Get3DPresenter()->SetSourceDeposterize((theState) ? true : false);
 	OSSpinLockUnlock(&spinlockSourceDeposterize);
 }
 
 - (BOOL) sourceDeposterize
 {
 	OSSpinLockLock(&spinlockSourceDeposterize);
-	const BOOL theState = (_cdv->GetSourceDeposterize()) ? YES : NO;
+	const BOOL theState = (_cdv->Get3DPresenter()->GetSourceDeposterize()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockSourceDeposterize);
 	
 	return theState;
@@ -1025,14 +1053,14 @@
 - (void) setOutputFilter:(NSInteger)filterID
 {
 	OSSpinLockLock(&spinlockOutputFilter);
-	_cdv->SetOutputFilter((OutputFilterTypeID)filterID);
+	_cdv->Get3DPresenter()->SetOutputFilter((OutputFilterTypeID)filterID);
 	OSSpinLockUnlock(&spinlockOutputFilter);
 }
 
 - (NSInteger) outputFilter
 {
 	OSSpinLockLock(&spinlockOutputFilter);
-	const NSInteger filterID = _cdv->GetOutputFilter();
+	const NSInteger filterID = _cdv->Get3DPresenter()->GetOutputFilter();
 	OSSpinLockUnlock(&spinlockOutputFilter);
 	
 	return filterID;
@@ -1041,14 +1069,14 @@
 - (void) setPixelScaler:(NSInteger)filterID
 {
 	OSSpinLockLock(&spinlockPixelScaler);
-	_cdv->SetPixelScaler((VideoFilterTypeID)filterID);
+	_cdv->Get3DPresenter()->SetPixelScaler((VideoFilterTypeID)filterID);
 	OSSpinLockUnlock(&spinlockPixelScaler);
 }
 
 - (NSInteger) pixelScaler
 {
 	OSSpinLockLock(&spinlockPixelScaler);
-	const NSInteger filterID = _cdv->GetPixelScaler();
+	const NSInteger filterID = _cdv->Get3DPresenter()->GetPixelScaler();
 	OSSpinLockUnlock(&spinlockPixelScaler);
 	
 	return filterID;
@@ -1057,7 +1085,6 @@
 - (void)handlePortMessage:(NSPortMessage *)portMessage
 {
 	NSInteger message = (NSInteger)[portMessage msgid];
-	NSArray *messageComponents = [portMessage components];
 	
 	switch (message)
 	{
@@ -1081,10 +1108,6 @@
 			[self handleCopyToPasteboard];
 			break;
 			
-		case MESSAGE_REQUEST_SCREENSHOT:
-			[self handleRequestScreenshot:[messageComponents objectAtIndex:0] fileTypeData:[messageComponents objectAtIndex:1]];
-			break;
-			
 		default:
 			[super handlePortMessage:portMessage];
 			break;
@@ -1095,52 +1118,53 @@
 {
 	[super handleEmuFrameProcessed];
 	[self hudUpdate];
-	_cdv->HandleEmulatorFrameEndEvent();
+	_cdv->SetViewNeedsFlush();
 }
 
 - (void) handleChangeViewProperties
 {
 	OSSpinLockLock(&spinlockViewProperties);
-	_cdv->CommitViewProperties(_intermediateViewProps);
+	_cdv->Get3DPresenter()->CommitPresenterProperties(_intermediateViewProps);
 	OSSpinLockUnlock(&spinlockViewProperties);
 	
-	_cdv->SetupViewProperties();
+	_cdv->Get3DPresenter()->SetupPresenterProperties();
+	_cdv->SetViewNeedsFlush();
 }
 
 - (void) handleReceiveGPUFrame
 {
 	[super handleReceiveGPUFrame];
 	
-	_cdv->LoadDisplays();
-	_cdv->ProcessDisplays();
+	_cdv->Get3DPresenter()->LoadDisplays();
+	_cdv->Get3DPresenter()->ProcessDisplays();
 }
 
 - (void) handleReloadReprocessRedraw
 {
-	GPUClientFetchObject &fetchObjMutable = (GPUClientFetchObject &)_cdv->GetFetchObject();
+	GPUClientFetchObject &fetchObjMutable = (GPUClientFetchObject &)_cdv->Get3DPresenter()->GetFetchObject();
 	const u8 bufferIndex = fetchObjMutable.GetLastFetchIndex();
 	
 	fetchObjMutable.FetchFromBufferIndex(bufferIndex);
-	_cdv->LoadDisplays();
-	_cdv->ProcessDisplays();
+	_cdv->Get3DPresenter()->LoadDisplays();
+	_cdv->Get3DPresenter()->ProcessDisplays();
 	
 	[self handleEmuFrameProcessed];
 }
 
 - (void) handleReprocessRedraw
 {	
-	_cdv->ProcessDisplays();
-	_cdv->UpdateView();
+	_cdv->Get3DPresenter()->ProcessDisplays();
+	_cdv->SetViewNeedsFlush();
 }
 
 - (void) handleRedraw
 {
-	_cdv->UpdateView();
+	_cdv->SetViewNeedsFlush();
 }
 
 - (void) handleCopyToPasteboard
 {
-	NSImage *screenshot = [self copyImageFromView];
+	NSImage *screenshot = [self image];
 	if (screenshot == nil)
 	{
 		return;
@@ -1151,28 +1175,10 @@
 	[pboard setData:[screenshot TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0f] forType:NSTIFFPboardType];
 }
 
-- (void) handleRequestScreenshot:(NSData *)fileURLStringData fileTypeData:(NSData *)fileTypeData
-{
-	NSString *fileURLString = [[NSString alloc] initWithData:fileURLStringData encoding:NSUTF8StringEncoding];
-	NSURL *fileURL = [NSURL URLWithString:fileURLString];
-	NSBitmapImageFileType fileType = *(NSBitmapImageFileType *)[fileTypeData bytes];
-	
-	NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:
-							  fileURL, @"fileURL",
-							  [NSNumber numberWithInteger:(NSInteger)fileType], @"fileType",
-							  [self image], @"screenshotImage",
-							  nil];
-	
-	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadName:@"org.desmume.DeSmuME.requestScreenshotDidFinish" object:self userInfo:userInfo];
-	[userInfo release];
-	
-	[fileURLString release];
-}
-
 - (void) setScaleFactor:(float)theScaleFactor
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
-	_cdv->SetScaleFactor(theScaleFactor);
+	_cdv->Get3DPresenter()->SetScaleFactor(theScaleFactor);
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 }
 
@@ -1184,13 +1190,13 @@
 	OSSpinLockUnlock(&spinlockReceivedFrameIndex);
 	
 	OSSpinLockLock(&spinlockNDSFrameInfo);
-	_cdv->SetHUDInfo(clientFrameInfo, _ndsFrameInfo);
+	_cdv->Get3DPresenter()->SetHUDInfo(clientFrameInfo, _ndsFrameInfo);
 	OSSpinLockUnlock(&spinlockNDSFrameInfo);
 }
 
-- (NSImage *) copyImageFromView
+- (NSImage *) image
 {
-	NSSize viewSize = NSMakeSize(_cdv->GetViewProperties().clientWidth, _cdv->GetViewProperties().clientHeight);
+	NSSize viewSize = NSMakeSize(_cdv->Get3DPresenter()->GetPresenterProperties().clientWidth, _cdv->Get3DPresenter()->GetPresenterProperties().clientHeight);
 	NSUInteger w = viewSize.width;
 	NSUInteger h = viewSize.height;
 	
@@ -1218,94 +1224,12 @@
 		return newImage;
 	}
 	
-	_cdv->CopyFrameToBuffer((uint32_t *)[newImageRep bitmapData]);
+	_cdv->Get3DPresenter()->CopyFrameToBuffer((uint32_t *)[newImageRep bitmapData]);
 	
 	// Attach the rendered frame to the NSImageRep
 	[newImage addRepresentation:newImageRep];
 	
 	return [newImage autorelease];
-}
-
-- (NSImage *) image
-{
-	pthread_rwlock_rdlock(self.rwlockProducer);
-	NSSize displaySize = NSMakeSize((CGFloat)GPU->GetCustomFramebufferWidth(), (_cdv->GetMode() == ClientDisplayMode_Dual) ? (CGFloat)(GPU->GetCustomFramebufferHeight() * 2): (CGFloat)GPU->GetCustomFramebufferHeight());
-	pthread_rwlock_unlock(self.rwlockProducer);
-	
-	NSImage *newImage = [[NSImage alloc] initWithSize:displaySize];
-	if (newImage == nil)
-	{
-		return newImage;
-	}
-	
-	// Render the frame in an NSBitmapImageRep
-	NSBitmapImageRep *newImageRep = [self bitmapImageRep];
-	if (newImageRep == nil)
-	{
-		[newImage release];
-		newImage = nil;
-		return newImage;
-	}
-	
-	// Attach the rendered frame to the NSImageRep
-	[newImage addRepresentation:newImageRep];
-	
-	return [newImage autorelease];
-}
-
-- (NSBitmapImageRep *) bitmapImageRep
-{
-	GPUClientFetchObject &fetchObjMutable = (GPUClientFetchObject &)_cdv->GetFetchObject();
-	NDSDisplayInfo &displayInfoMutable = (NDSDisplayInfo &)fetchObjMutable.GetFetchDisplayInfoForBufferIndex(fetchObjMutable.GetLastFetchIndex());
-	
-	NSUInteger w = (NSUInteger)displayInfoMutable.customWidth;
-	NSUInteger h = (_cdv->GetMode() == ClientDisplayMode_Dual) ? (NSUInteger)(displayInfoMutable.customHeight * 2) : (NSUInteger)displayInfoMutable.customHeight;
-	
-	NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-																		 pixelsWide:w
-																		 pixelsHigh:h
-																	  bitsPerSample:8
-																	samplesPerPixel:4
-																		   hasAlpha:YES
-																		   isPlanar:NO
-																	 colorSpaceName:NSCalibratedRGBColorSpace
-																		bytesPerRow:w * 4
-																	   bitsPerPixel:32];
-	
-	if (imageRep == nil)
-	{
-		return imageRep;
-	}
-	
-	void *displayBuffer = displayInfoMutable.masterCustomBuffer;
-	uint32_t *bitmapData = (uint32_t *)[imageRep bitmapData];
-	
-	pthread_rwlock_wrlock(self.rwlockProducer);
-	
-	GPU->PostprocessDisplay(NDSDisplayID_Main,  displayInfoMutable);
-	GPU->PostprocessDisplay(NDSDisplayID_Touch, displayInfoMutable);
-	GPU->ResolveDisplayToCustomFramebuffer(NDSDisplayID_Main,  displayInfoMutable);
-	GPU->ResolveDisplayToCustomFramebuffer(NDSDisplayID_Touch, displayInfoMutable);
-	
-	if (displayInfoMutable.pixelBytes == 2)
-	{
-		ColorspaceConvertBuffer555To8888Opaque<false, true>((u16 *)displayBuffer, bitmapData, (w * h));
-	}
-	else if (displayInfoMutable.pixelBytes == 4)
-	{
-		memcpy(bitmapData, displayBuffer, w * h * sizeof(uint32_t));
-	}
-	
-	pthread_rwlock_unlock(self.rwlockProducer);
-	
-#ifdef MSB_FIRST
-	for (size_t i = 0; i < w * h; i++)
-	{
-		bitmapData[i] = LE_TO_LOCAL_32(bitmapData[i]);
-	}
-#endif
-	
-	return [imageRep autorelease];
 }
 
 @end
