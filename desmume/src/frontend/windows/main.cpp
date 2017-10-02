@@ -1639,7 +1639,7 @@ static void OGL_DoDisplay()
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, video.width, video.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, video.finalBuffer());
 	}
 	else
-		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA, video.width,video.height,0,GL_BGRA,GL_UNSIGNED_BYTE,video.finalBuffer());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, video.width, video.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, video.finalBuffer());
 
 	//the ds screen fills the texture entirely, so we dont have garbage at edge to worry about,
 	//but we need to make sure this is clamped for when filtering is selected
@@ -1969,6 +1969,9 @@ static void DoDisplay(bool firstTime)
 {
 	Lock lock (win_backbuffer_sync);
 
+	bool ddhw = (GetStyle()&DWS_DDRAW_HW)!=0;
+	bool ddsw = (GetStyle()&DWS_DDRAW_SW)!=0;
+
 	if(displayPostponeType && !displayNoPostponeNext && (displayPostponeType < 0 || timeGetTime() < displayPostponeUntil))
 		return;
 	displayNoPostponeNext = false;
@@ -1978,6 +1981,23 @@ static void DoDisplay(bool firstTime)
 		ColorspaceConvertBuffer555To8888Opaque<true, false>((u16 *)video.srcBuffer, video.buffer, video.srcBufferSize / 2);
 	else
 		ColorspaceConvertBuffer888XTo8888Opaque<true, false>((u32*)video.srcBuffer, video.buffer, video.srcBufferSize / 4);
+
+	if(ddhw || ddsw)
+	{
+		const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
+
+		for(int screen=0;screen<2;screen++)
+		{
+			const GLfloat backlightIntensity = displayInfo.backlightIntensity[screen];
+			if(backlightIntensity == 1.0f) continue;
+
+			//abuse accelerated masterbrightness algorithm for this
+			const int factor = 16-backlightIntensity*16;
+			const u32 screenSize = 256*video.prescaleHD*192*video.prescaleHD;
+			u32* dst = video.buffer + screenSize*screen;
+			GPU->GetEngineMain()->ApplyMasterBrightness<NDSColorFormat_BGR888_Rev,false>(dst,screenSize,GPUMasterBrightMode_Down,(u8)factor);
+		}
+	}
 
 	if(firstTime)
 	{
@@ -2016,9 +2036,8 @@ static void DoDisplay(bool firstTime)
 		aggDraw.hud->clear();
 	}
 	
-	bool hw = (GetStyle()&DWS_DDRAW_HW)!=0;
-	bool sw = (GetStyle()&DWS_DDRAW_SW)!=0;
-	if(hw || sw)
+
+	if(ddhw || ddsw)
 	{
 		gldisplay.kill();
 		DD_DoDisplay();
