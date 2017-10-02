@@ -332,10 +332,11 @@ static const char *BicubicSample6x6Output_VertShader_110 = {"\
 static const char *PassthroughOutputFragShader_110 = {"\
 	VARYING vec2 texCoord[1];\n\
 	uniform sampler2DRect tex;\n\
+	uniform float backlightIntensity;\n\
 	\n\
 	void main()\n\
 	{\n\
-		OUT_FRAG_COLOR.rgb = SAMPLE3_TEX_RECT(tex, texCoord[0]);\n\
+		OUT_FRAG_COLOR.rgb = SAMPLE3_TEX_RECT(tex, texCoord[0]) * backlightIntensity;\n\
 		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
@@ -583,6 +584,7 @@ static const char *FilterDeposterizeFragShader_110 = {"\
 static const char *FilterBicubicBSplineFragShader_110 = {"\
 	VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
+	uniform float backlightIntensity;\n\
 	\n\
 	vec4 WeightBSpline(float f)\n\
 	{\n\
@@ -624,6 +626,7 @@ static const char *FilterBicubicBSplineFragShader_110 = {"\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[14]) * wx.g\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[13]) * wx.b\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[12]) * wx.a) * wy.a;\n\
+		OUT_FRAG_COLOR.rgb *= backlightIntensity;\n\
 		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
@@ -631,6 +634,7 @@ static const char *FilterBicubicBSplineFragShader_110 = {"\
 static const char *FilterBicubicBSplineFastFragShader_110 = {"\
 	VARYING vec2 texCoord[1];\n\
 	uniform sampler2DRect tex;\n\
+	uniform float backlightIntensity;\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -652,6 +656,7 @@ static const char *FilterBicubicBSplineFastFragShader_110 = {"\
 							   SAMPLE3_TEX_RECT(tex, vec2(t1.x, t0.y)) * s1.x) * s0.y +\n\
 							  (SAMPLE3_TEX_RECT(tex, vec2(t0.x, t1.y)) * s0.x +\n\
 							   SAMPLE3_TEX_RECT(tex, vec2(t1.x, t1.y)) * s1.x) * s1.y;\n\
+		OUT_FRAG_COLOR.rgb *= backlightIntensity;\n\
 		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
@@ -659,6 +664,7 @@ static const char *FilterBicubicBSplineFastFragShader_110 = {"\
 static const char *FilterBicubicMitchellNetravaliFragShader_110 = {"\
 	VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
+	uniform float backlightIntensity;\n\
 	\n\
 	vec4 WeightMitchellNetravali(float f)\n\
 	{\n\
@@ -700,6 +706,7 @@ static const char *FilterBicubicMitchellNetravaliFragShader_110 = {"\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[14]) * wx.g\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[13]) * wx.b\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[12]) * wx.a) * wy.a;\n\
+		OUT_FRAG_COLOR.rgb *= backlightIntensity;\n\
 		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
@@ -707,6 +714,7 @@ static const char *FilterBicubicMitchellNetravaliFragShader_110 = {"\
 static const char *FilterBicubicMitchellNetravaliFastFragShader_110 = {"\
 	VARYING vec2 texCoord[1];\n\
 	uniform sampler2DRect tex;\n\
+	uniform float backlightIntensity;\n\
 	\n\
 	void main()\n\
 	{\n\
@@ -728,6 +736,7 @@ static const char *FilterBicubicMitchellNetravaliFastFragShader_110 = {"\
 							   SAMPLE3_TEX_RECT(tex, vec2(t1.x, t0.y)) * s1.x) * s0.y +\n\
 							  (SAMPLE3_TEX_RECT(tex, vec2(t0.x, t1.y)) * s0.x +\n\
 							   SAMPLE3_TEX_RECT(tex, vec2(t1.x, t1.y)) * s1.x) * s1.y;\n\
+		OUT_FRAG_COLOR.rgb *= backlightIntensity;\n\
 		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
@@ -739,6 +748,7 @@ static const char *FilterLanczos2FragShader_110 = {"\
 	\n\
 	VARYING vec2 texCoord[16];\n\
 	uniform sampler2DRect tex;\n\
+	uniform float backlightIntensity;\n\
 	\n\
 	vec4 WeightLanczos2(float f)\n\
 	{\n\
@@ -778,6 +788,7 @@ static const char *FilterLanczos2FragShader_110 = {"\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[14]) * wx.g\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[13]) * wx.b\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[12]) * wx.a) * wy.a;\n\
+		OUT_FRAG_COLOR.rgb *= backlightIntensity;\n\
 		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
@@ -795,6 +806,7 @@ static const char *FilterLanczos3FragShader_110 = {"\
 	VARYING vec2 texCoord[16];\n\
 #endif\n\
 	uniform sampler2DRect tex;\n\
+	uniform float backlightIntensity;\n\
 	\n\
 	vec3 weight3(float x)\n\
 	{\n\
@@ -938,6 +950,7 @@ static const char *FilterLanczos3FragShader_110 = {"\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 2.0, 3.0)) * wx1.b\n\
 							+  SAMPLE3_TEX_RECT(tex, texCoord[ 0] + vec2( 3.0, 3.0)) * wx2.b) * wy2.b;\n\
 #endif\n\
+		OUT_FRAG_COLOR.rgb *= backlightIntensity;\n\
 		OUT_FRAG_COLOR.a = 1.0;\n\
 	}\n\
 "};
@@ -5695,6 +5708,7 @@ OGLImage::OGLImage(OGLContextInfo *contextInfo, GLsizei imageWidth, GLsizei imag
 		_uniformScalar = glGetUniformLocation(finalOutputProgramID, "scalar");
 		_uniformViewSize = glGetUniformLocation(finalOutputProgramID, "viewSize");
 		_uniformRenderFlipped = glGetUniformLocation(finalOutputProgramID, "renderFlipped");
+		_uniformBacklightIntensity = glGetUniformLocation(finalOutputProgramID, "backlightIntensity");
 		glUseProgram(0);
 	}
 	else
@@ -6225,7 +6239,12 @@ void OGLImage::ProcessOGL()
 
 void OGLImage::RenderOGL()
 {
-	glUseProgram(this->_finalOutputProgram->GetProgramID());
+	if (this->_canUseShaderOutput)
+	{
+		glUseProgram(this->_finalOutputProgram->GetProgramID());
+		glUniform1f(this->_uniformBacklightIntensity, 1.0f);
+	}
+	
 	this->UploadTransformationOGL();
 	
 	if (this->_needUploadVertices)
@@ -6712,6 +6731,7 @@ OGLDisplayLayer::OGLDisplayLayer(OGLVideoOutput *oglVO)
 		_uniformScalar = glGetUniformLocation(finalOutputProgramID, "scalar");
 		_uniformViewSize = glGetUniformLocation(finalOutputProgramID, "viewSize");
 		_uniformRenderFlipped = glGetUniformLocation(finalOutputProgramID, "renderFlipped");
+		_uniformBacklightIntensity = glGetUniformLocation(finalOutputProgramID, "backlightIntensity");
 		glUseProgram(0);
 	}
 	else
@@ -7204,8 +7224,9 @@ void OGLDisplayLayer::ProcessOGL()
 void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 {
 	const NDSDisplayInfo &emuDisplayInfo = this->_output->GetEmuDisplayInfo();
+	const bool isShaderSupported = this->_output->GetContextInfo()->IsShaderSupported();
 	
-	if (this->_output->GetContextInfo()->IsShaderSupported())
+	if (isShaderSupported)
 	{
 		glUseProgram(this->_finalOutputProgram->GetProgramID());
 		
@@ -7258,6 +7279,11 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 			{
 				if (this->_output->IsSelectedDisplayEnabled(NDSDisplayID_Main))
 				{
+					if (isShaderSupported)
+					{
+						glUniform1f(this->_uniformBacklightIntensity, emuDisplayInfo.backlightIntensity[NDSDisplayID_Main]);
+					}
+					
 					glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Main]);
 					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Main]);
 					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[NDSDisplayID_Main]);
@@ -7270,6 +7296,11 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 			{
 				if (this->_output->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
 				{
+					if (isShaderSupported)
+					{
+						glUniform1f(this->_uniformBacklightIntensity, emuDisplayInfo.backlightIntensity[NDSDisplayID_Touch]);
+					}
+					
 					glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Touch]);
 					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Touch]);
 					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[NDSDisplayID_Touch]);
@@ -7291,6 +7322,11 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 					{
 						if (this->_output->IsSelectedDisplayEnabled(majorDisplayID))
 						{
+							if (isShaderSupported)
+							{
+								glUniform1f(this->_uniformBacklightIntensity, emuDisplayInfo.backlightIntensity[majorDisplayID]);
+							}
+							
 							glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[majorDisplayID]);
 							glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[majorDisplayID]);
 							glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[majorDisplayID]);
@@ -7305,6 +7341,11 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 				if (this->_output->IsSelectedDisplayEnabled(NDSDisplayID_Main))
 				{
+					if (isShaderSupported)
+					{
+						glUniform1f(this->_uniformBacklightIntensity, emuDisplayInfo.backlightIntensity[NDSDisplayID_Main]);
+					}
+					
 					glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Main]);
 					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Main]);
 					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[NDSDisplayID_Main]);
@@ -7313,6 +7354,11 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 				if (this->_output->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
 				{
+					if (isShaderSupported)
+					{
+						glUniform1f(this->_uniformBacklightIntensity, emuDisplayInfo.backlightIntensity[NDSDisplayID_Touch]);
+					}
+					
 					glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texVideoOutputID[NDSDisplayID_Touch]);
 					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, this->_displayTexFilter[NDSDisplayID_Touch]);
 					glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, this->_displayTexFilter[NDSDisplayID_Touch]);

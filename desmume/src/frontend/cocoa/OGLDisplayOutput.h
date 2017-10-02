@@ -213,6 +213,7 @@ protected:
 	GLint _uniformScalar;
 	GLint _uniformViewSize;
 	GLint _uniformRenderFlipped;
+	GLint _uniformBacklightIntensity;
 	
 	void UploadVerticesOGL();
 	void UploadTexCoordsOGL();
@@ -259,6 +260,7 @@ protected:
 	GLint _uniformScalar;
 	GLint _uniformViewSize;
 	GLint _uniformRenderFlipped;
+	GLint _uniformBacklightIntensity;
 	
 public:
 	virtual ~OGLVideoLayer() {};

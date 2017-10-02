@@ -764,6 +764,70 @@ typedef struct
 } GPU_IOREG;										// 0x04000000, 0x04001000: GPU registers
 #include "PACKED_END.h"
 
+typedef union
+{
+	u8 value;
+	
+	struct
+	{
+#ifndef MSB_FIRST
+		u8 SoundAmp_Enable:1;						//  0: Sound amplifier; 0=Disable, 1=Enable
+		u8 SoundAmp_Mute:1;							//  1: Sound amplifier mute control; 0=Normal, 1=Mute
+		u8 TouchBacklight_Enable:1;					//  2: Touch display backlight; 0=Disable, 1=Enable
+		u8 MainBacklight_Enable:1;					//  3: Main display backlight; 0=Disable, 1=Enable
+		u8 PowerLEDBlink_Enable:1;					//  4: Power LED blink control; 0=Disable (Power LED remains steadily ON), 1=Enable
+		u8 PowerLEDBlinkSpeed:1;					//  5: Power LED blink speed when enabled; 0=Slow, 1=Fast
+		u8 SystemPowerState:2;						//  6: NDS system power state; 0=System is powered ON, 1=System is powered OFF
+		u8 :1;										//  7: Unused bit (should always be read as 0)
+#else
+		u8 :1;										//  7: Unused bit (should always be read as 0)
+		u8 SystemPowerState:2;						//  6: NDS system power state; 0=System is powered ON, 1=System is powered OFF
+		u8 PowerLEDBlinkSpeed:1;					//  5: Power LED blink speed when enabled; 0=Slow, 1=Fast
+		u8 PowerLEDBlink_Enable:1;					//  4: Power LED blink control; 0=Disable (LED is steady ON), 1=Enable
+		u8 MainBacklight_Enable:1;					//  3: Main display backlight; 0=Disable, 1=Enable
+		u8 TouchBacklight_Enable:1;					//  2: Touch display backlight; 0=Disable, 1=Enable
+		u8 SoundAmp_Mute:1;							//  1: Sound amplifier mute control; 0=Normal, 1=Mute
+		u8 SoundAmp_Enable:1;						//  0: Sound amplifier; 0=Disable, 1=Enable
+#endif
+	};
+} IOREG_POWERMANCTL;
+
+typedef union
+{
+	u8 value;
+	
+	struct
+	{
+#ifndef MSB_FIRST
+		u8 Level:2;									// 0-1: Backlight brightness level;
+													//      0=Low
+													//      1=Medium
+													//      2=High
+													//      3=Maximum
+		u8 ForceMaxBrightnessWithExtPower_Enable:1;	//   2: Forces maximum brightness if external power is present, interacts with Bit 3; 0=Disable, 1=Enable
+		u8 ExternalPowerState:1;					//   3: External power state; 0=External power is not present, 1=External power is present
+		u8 :4;										// 4-7: Unknown bits (should always be read as 4)
+#else
+		u8 :4;										// 4-7: Unknown bits (should always be read as 4)
+		u8 ExternalPowerState:1;					//   3: External power state; 0=External power is not present, 1=External power is present
+		u8 ForceMaxBrightnessWithExtPower_Enable:1;	//   2: Forces maximum brightness if external power is present, interacts with Bit 3; 0=Disable, 1=Enable
+		u8 Level:2;									// 0-1: Backlight brightness level;
+													//      0=Low
+													//      1=Medium
+													//      2=High
+													//      3=Maximum
+#endif
+	};
+} IOREG_BACKLIGHTCTL;
+
+enum BacklightLevel
+{
+	BacklightLevel_Low					= 0,
+	BacklightLevel_Medium				= 1,
+	BacklightLevel_High					= 2,
+	BacklightLevel_Maximum				= 3
+};
+
 enum ColorEffect
 {
 	ColorEffect_Disable					= 0,
@@ -1114,6 +1178,10 @@ typedef struct
 												// framebuffer. For most NDS games, this field will be false.
 	u8 masterBrightnessMode[2][GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // The master brightness mode of each display line.
 	u8 masterBrightnessIntensity[2][GPU_FRAMEBUFFER_NATIVE_HEIGHT]; // The master brightness intensity of each display line.
+	
+	float backlightIntensity[2];				// Reports the intensity of the backlight.
+												//    0.000 - The backlight is completely off.
+												//    1.000 - The backlight is at its maximum brightness.
 	
 	
 	
@@ -1671,6 +1739,7 @@ private:
 	GPUEngineA *_engineMain;
 	GPUEngineB *_engineSub;
 	NDSDisplay *_display[2];
+	float _backlightIntensityTotal[2];
 	
 	u32 _videoFrameCount;			// Internal variable that increments when a video frame is completed. Resets every 60 video frames.
 	u32 _render3DFrameCount;		// The current 3D rendering frame count, saved to this variable once every 60 video frames.
@@ -1757,6 +1826,7 @@ public:
 	void ResolveDisplayToCustomFramebuffer(const NDSDisplayID displayID, NDSDisplayInfo &mutableInfo);
 	
 	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const size_t l);
+	void UpdateAverageBacklightIntensityTotal();
 	void ClearWithColor(const u16 colorBGRA5551);
 };
 

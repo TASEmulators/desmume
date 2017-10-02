@@ -1625,6 +1625,8 @@ static void OGL_DoDisplay()
 {
 	if(!gldisplay.begin()) return;
 
+	const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
+
 	static GLuint tex = 0;
 	if(tex == 0)
 		glGenTextures(1,&tex);
@@ -1641,8 +1643,8 @@ static void OGL_DoDisplay()
 
 	//the ds screen fills the texture entirely, so we dont have garbage at edge to worry about,
 	//but we need to make sure this is clamped for when filtering is selected
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
 
 	if(GetStyle()&DWS_FILTER)
 	{
@@ -1700,7 +1702,7 @@ static void OGL_DoDisplay()
 		int r = (color_rev>>0)&0xFF;
 		int g = (color_rev>>8)&0xFF;
 		int b = (color_rev>>16)&0xFF;
-		glClearColor(r/255.0f,g/255.0f,b/255.0f,1);
+		glClearColor(r/255.0f,g/255.0f,b/255.0f,1.0f);
 		glEnable(GL_SCISSOR_TEST);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glDisable(GL_SCISSOR_TEST);
@@ -1708,7 +1710,7 @@ static void OGL_DoDisplay()
 
 
 	RECT srcRects [2];
-	const bool isMainGPUFirst = (GPU->GetDisplayInfo().engineID[NDSDisplayID_Main] == GPUEngineID_Main);
+	const bool isMainGPUFirst = (displayInfo.engineID[NDSDisplayID_Main] == GPUEngineID_Main);
 
 	if(video.swap == 0)
 	{
@@ -1776,12 +1778,21 @@ static void OGL_DoDisplay()
 			float u[] = {u1,u2,u2,u1};
 			float v[] = {v1,v1,v2,v2};
 
+			const GLfloat backlightIntensity = displayInfo.backlightIntensity[i];
+
+			glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
 			glTexCoord2f(u[(ofs+0)%4],v[(ofs+0)%4]);
 			glVertex2i(dr[i].left,dr[i].top);
+
+			glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
 			glTexCoord2f(u[(ofs+1)%4],v[(ofs+1)%4]);
 			glVertex2i(dr[i].right,dr[i].top);
+
+			glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
 			glTexCoord2f(u[(ofs+2)%4],v[(ofs+2)%4]);
 			glVertex2i(dr[i].right,dr[i].bottom);
+
+			glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
 			glTexCoord2f(u[(ofs+3)%4],v[(ofs+3)%4]);
 			glVertex2i(dr[i].left,dr[i].bottom);
 		}

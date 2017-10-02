@@ -1629,6 +1629,8 @@
 	// Draw the NDS displays.
 	if (_willDrawDisplays)
 	{
+		const NDSDisplayInfo &displayInfo = cdp->GetEmuDisplayInfo();
+		
 		[rce setRenderPipelineState:outputPipelineState];
 		[rce setVertexBuffer:_displayVtxPositionBuffer offset:0 atIndex:0];
 		[rce setVertexBuffer:_displayTexCoordBuffer offset:0 atIndex:1];
@@ -1640,6 +1642,7 @@
 			{
 				if (cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main))
 				{
+					[rce setFragmentBytes:&displayInfo.backlightIntensity[NDSDisplayID_Main] length:sizeof(displayInfo.backlightIntensity[NDSDisplayID_Main]) atIndex:0];
 					[rce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
 					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
 				}
@@ -1650,6 +1653,7 @@
 			{
 				if (cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
 				{
+					[rce setFragmentBytes:&displayInfo.backlightIntensity[NDSDisplayID_Touch] length:sizeof(displayInfo.backlightIntensity[NDSDisplayID_Touch]) atIndex:0];
 					[rce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
 					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
 				}
@@ -1669,6 +1673,7 @@
 					{
 						if (cdp->IsSelectedDisplayEnabled(majorDisplayID))
 						{
+							[rce setFragmentBytes:&displayInfo.backlightIntensity[majorDisplayID] length:sizeof(displayInfo.backlightIntensity[majorDisplayID]) atIndex:0];
 							[rce setFragmentTexture:_texDisplayOutput[majorDisplayID] atIndex:0];
 							[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:majorDisplayVtx vertexCount:4];
 						}
@@ -1681,12 +1686,14 @@
 				
 				if (cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main))
 				{
+					[rce setFragmentBytes:&displayInfo.backlightIntensity[NDSDisplayID_Main] length:sizeof(displayInfo.backlightIntensity[NDSDisplayID_Main]) atIndex:0];
 					[rce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Main] atIndex:0];
 					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
 				}
 				
 				if (cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
 				{
+					[rce setFragmentBytes:&displayInfo.backlightIntensity[NDSDisplayID_Touch] length:sizeof(displayInfo.backlightIntensity[NDSDisplayID_Touch]) atIndex:0];
 					[rce setFragmentTexture:_texDisplayOutput[NDSDisplayID_Touch] atIndex:0];
 					[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:4 vertexCount:4];
 				}

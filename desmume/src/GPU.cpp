@@ -35,7 +35,6 @@
 #include "gfx3d.h"
 #include "debug.h"
 #include "NDSSystem.h"
-#include "readwrite.h"
 #include "matrix.h"
 #include "emufile.h"
 
@@ -7456,6 +7455,8 @@ void GPUSubsystem::Reset()
 	this->_willFrameSkip = false;
 	this->_videoFrameCount = 0;
 	this->_render3DFrameCount = 0;
+	this->_backlightIntensityTotal[NDSDisplayID_Main]  = 0.0f;
+	this->_backlightIntensityTotal[NDSDisplayID_Touch] = 0.0f;
 	
 	this->ClearWithColor(0xFFFF);
 	
@@ -7475,6 +7476,9 @@ void GPUSubsystem::Reset()
 	
 	this->_displayInfo.engineID[NDSDisplayID_Main] = GPUEngineID_Main;
 	this->_displayInfo.engineID[NDSDisplayID_Touch] = GPUEngineID_Sub;
+	
+	this->_displayInfo.backlightIntensity[NDSDisplayID_Main]  = 1.0f;
+	this->_displayInfo.backlightIntensity[NDSDisplayID_Touch] = 1.0f;
 	
 	this->_display[NDSDisplayID_Main]->SetEngineByID(GPUEngineID_Main);
 	this->_display[NDSDisplayID_Touch]->SetEngineByID(GPUEngineID_Sub);
@@ -8111,6 +8115,12 @@ void GPUSubsystem::RenderLine(const size_t l)
 			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Main]  = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
 			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Touch] = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
 			
+			// Set the average backlight intensity and then reset the current total.
+			this->_displayInfo.backlightIntensity[NDSDisplayID_Main]  = this->_backlightIntensityTotal[NDSDisplayID_Main]  / 263.0f;
+			this->_displayInfo.backlightIntensity[NDSDisplayID_Touch] = this->_backlightIntensityTotal[NDSDisplayID_Touch] / 263.0f;
+			this->_backlightIntensityTotal[NDSDisplayID_Main]  = 0.0f;
+			this->_backlightIntensityTotal[NDSDisplayID_Touch] = 0.0f;
+			
 			this->_engineMain->UpdateMasterBrightnessDisplayInfo(this->_displayInfo);
 			this->_engineSub->UpdateMasterBrightnessDisplayInfo(this->_displayInfo);
 			
@@ -8132,6 +8142,32 @@ void GPUSubsystem::RenderLine(const size_t l)
 			this->_frameNeedsFinish = false;
 			this->_event->DidFrameEnd(this->_willFrameSkip, this->_displayInfo);
 		}
+	}
+}
+
+void GPUSubsystem::UpdateAverageBacklightIntensityTotal()
+{
+	// The values in this table are, more or less, arbitrarily chosen.
+	//
+	// It would be nice to get some real testing done on a hardware NDS to have some more
+	// accurate intensity values for each backlight level.
+	static const float backlightLevelToIntensityTable[] = {0.100, 0.300, 0.600, 1.000};
+	
+	IOREG_POWERMANCTL POWERMANCTL;
+	IOREG_BACKLIGHTCTL BACKLIGHTCTL;
+	POWERMANCTL.value = MMU.powerMan_Reg[0];
+	BACKLIGHTCTL.value = MMU.powerMan_Reg[4];
+	
+	if (POWERMANCTL.MainBacklight_Enable != 0)
+	{
+		const BacklightLevel level = ((BACKLIGHTCTL.ExternalPowerState != 0) && (BACKLIGHTCTL.ForceMaxBrightnessWithExtPower_Enable != 0)) ? BacklightLevel_Maximum : (BacklightLevel)BACKLIGHTCTL.Level;
+		this->_backlightIntensityTotal[NDSDisplayID_Main]  += backlightLevelToIntensityTable[level];
+	}
+	
+	if (POWERMANCTL.TouchBacklight_Enable != 0)
+	{
+		const BacklightLevel level = ((BACKLIGHTCTL.ExternalPowerState != 0) && (BACKLIGHTCTL.ForceMaxBrightnessWithExtPower_Enable != 0)) ? BacklightLevel_Maximum : (BacklightLevel)BACKLIGHTCTL.Level;
+		this->_backlightIntensityTotal[NDSDisplayID_Touch] += backlightLevelToIntensityTable[level];
 	}
 }
 

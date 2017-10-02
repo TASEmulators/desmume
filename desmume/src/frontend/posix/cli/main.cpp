@@ -1,6 +1,6 @@
 /* main.c - this file is part of DeSmuME
  *
- * Copyright (C) 2006-2015 DeSmuME Team
+ * Copyright (C) 2006-2017 DeSmuME Team
  * Copyright (C) 2007 Pascal Giard (evilynux)
  *
  * This file is free software; you can redistribute it and/or modify
@@ -138,7 +138,6 @@ public:
   
 #ifdef INCLUDE_OPENGL_2D
   int opengl_2d;
-  int soft_colour_convert;
 #endif
 
   int firmware_language;
@@ -155,7 +154,6 @@ init_config( class configured_features *config) {
 
 #ifdef INCLUDE_OPENGL_2D
   config->opengl_2d = 0;
-  config->soft_colour_convert = 0;
 #endif
 
   /* use the default language */
@@ -184,7 +182,6 @@ fill_config( class configured_features *config,
     "SAVETYPE"},
 #ifdef INCLUDE_OPENGL_2D
     { "opengl-2d", 0, 0, G_OPTION_ARG_NONE, &config->opengl_2d, "Enables using OpenGL for screen rendering", NULL},
-    { "soft-convert", 0, 0, G_OPTION_ARG_NONE, &config->soft_colour_convert, "Use software colour conversion during OpenGL screen rendering. May produce better or worse frame rates depending on hardware.",
      NULL},
 #endif
     { "fwlang", 0, 0, G_OPTION_ARG_INT, &config->firmware_language, "Set the language in the firmware, LANG as follows:\n"
@@ -274,9 +271,9 @@ joinThread_gdb( void *thread_handle) {
 static int
 initGL( GLuint *screen_texture) {
   GLenum errCode;
-  u16 blank_texture[256 * 512];
+  u16 blank_texture[256 * 256];
 
-  memset(blank_texture, 0x001f, sizeof(blank_texture));
+  memset(blank_texture, 0, sizeof(blank_texture));
 
   /* Enable Texture Mapping */
   glEnable( GL_TEXTURE_2D );
@@ -294,19 +291,25 @@ initGL( GLuint *screen_texture) {
   glDepthFunc( GL_LEQUAL );
 
   /* Create The Texture */
-  glGenTextures( 1, &screen_texture[0]);
+  glGenTextures(2, screen_texture);
 
-  glBindTexture( GL_TEXTURE_2D, screen_texture[0]);
+  for (int i = 0; i < 2; i++)
+  {
+    glBindTexture(GL_TEXTURE_2D, screen_texture[i]);
 
-  /* Generate The Texture */
-  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, 256, 512,
-                0, GL_RGBA,
-                GL_UNSIGNED_SHORT_1_5_5_5_REV,
-                blank_texture);
+    /* Generate The Texture */
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 256,
+      0, GL_RGBA,
+      GL_UNSIGNED_SHORT_1_5_5_5_REV,
+      blank_texture);
 
-  /* Linear Filtering */
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    /* Linear Filtering */
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  }
 
   if ((errCode = glGetError()) != GL_NO_ERROR) {
     const GLubyte *errString;
@@ -368,9 +371,8 @@ resizeWindow( u16 width, u16 height, GLuint *screen_texture) {
 
 
 static void
-opengl_Draw( GLuint *texture, int software_convert) {
-  GLenum errCode;
-  u16 *gpuFramebuffer = (u16 *)GPU->GetDisplayInfo().masterNativeBuffer;
+opengl_Draw(GLuint *texture) {
+  const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
 
   /* Clear The Screen And The Depth Buffer */
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -378,54 +380,39 @@ opengl_Draw( GLuint *texture, int software_convert) {
   /* Move Into The Screen 5 Units */
   glLoadIdentity( );
 
-  /* Select screen Texture */
-  glBindTexture( GL_TEXTURE_2D, texture[0]);
-  if ( software_convert) {
-    int i;
-    u8 converted[256 * 384 * 3];
+  /* Draw the main screen as a textured quad */
+  glBindTexture(GL_TEXTURE_2D, texture[NDSDisplayID_Main]);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 192,
+                  GL_RGBA,
+                  GL_UNSIGNED_SHORT_1_5_5_5_REV,
+                  displayInfo.renderedBuffer[NDSDisplayID_Main]);
 
-    for ( i = 0; i < (256 * 384); i++) {
-      converted[(i * 3) + 0] = ((gpuFramebuffer[i] >> 0) & 0x1f) << 3;
-      converted[(i * 3) + 1] = ((gpuFramebuffer[i] >> 5) & 0x1f) << 3;
-      converted[(i * 3) + 2] = ((gpuFramebuffer[i] >> 10) & 0x1f) << 3;
-    }
+  GLfloat backlightIntensity = displayInfo.backlightIntensity[NDSDisplayID_Main];
 
-    glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 256, 384,
-                     GL_RGB,
-                     GL_UNSIGNED_BYTE,
-                     converted);
-  }
-  else {
-    glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 256, 384,
-                     GL_RGBA,
-                     GL_UNSIGNED_SHORT_1_5_5_5_REV,
-                     gpuFramebuffer);
-  }
+  glBegin(GL_QUADS);
+    glTexCoord2f(0.00f, 0.00f); glVertex2f(  0.0f,   0.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+    glTexCoord2f(1.00f, 0.00f); glVertex2f(256.0f,   0.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+    glTexCoord2f(1.00f, 0.75f); glVertex2f(256.0f, 192.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+    glTexCoord2f(0.00f, 0.75f); glVertex2f(  0.0f, 192.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+  glEnd();
 
-  if ((errCode = glGetError()) != GL_NO_ERROR) {
-    const GLubyte *errString;
+  /* Draw the touch screen as a textured quad */
+  glBindTexture(GL_TEXTURE_2D, texture[NDSDisplayID_Touch]);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 192,
+                  GL_RGBA,
+                  GL_UNSIGNED_SHORT_1_5_5_5_REV,
+                  displayInfo.renderedBuffer[NDSDisplayID_Touch]);
 
-    errString = gluErrorString(errCode);
-    fprintf( stderr, "GL subimage failed: %s\n", errString);
-  }
+  backlightIntensity = displayInfo.backlightIntensity[NDSDisplayID_Touch];
 
+  glBegin(GL_QUADS);
+    glTexCoord2f(0.00f, 0.00f); glVertex2f(  0.0f, 192.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+    glTexCoord2f(1.00f, 0.00f); glVertex2f(256.0f, 192.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+    glTexCoord2f(1.00f, 0.75f); glVertex2f(256.0f, 384.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+    glTexCoord2f(0.00f, 0.75f); glVertex2f(  0.0f, 384.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+  glEnd();
 
-  /* Draw the screen as a textured quad */
-  glBegin( GL_QUADS);
-  glTexCoord2f( 0.0f, 0.0f ); glVertex3f( 0.0f,  0.0f, 0.0f );
-  glTexCoord2f( 1.0f, 0.0f ); glVertex3f( 256.0f,  0.0f,  0.0f );
-  glTexCoord2f( 1.0f, 0.75f ); glVertex3f( 256.0f,  384.0f,  0.0f );
-  glTexCoord2f( 0.0f, 0.75f ); glVertex3f(  0.0f,  384.0f, 0.0f );
-  glEnd( );
-
-  if ((errCode = glGetError()) != GL_NO_ERROR) {
-    const GLubyte *errString;
-
-    errString = gluErrorString(errCode);
-    fprintf( stderr, "GL draw failed: %s\n", errString);
-  }
-
-  /* Draw it to the screen */
+  /* Flush the drawing to the screen */
   SDL_GL_SwapBuffers( );
 }
 #endif
@@ -510,7 +497,7 @@ int main(int argc, char ** argv) {
 #endif
 
 #ifdef INCLUDE_OPENGL_2D
-  GLuint screen_texture[1];
+  GLuint screen_texture[2];
 #endif
   /* this holds some info about our display */
   const SDL_VideoInfo *videoInfo;
@@ -772,7 +759,7 @@ int main(int argc, char ** argv) {
 
 #ifdef INCLUDE_OPENGL_2D
     if ( my_config.opengl_2d) {
-      opengl_Draw( screen_texture, my_config.soft_colour_convert);
+      opengl_Draw(screen_texture);
       ctrls_cfg.resize_cb = &resizeWindow;
     }
     else

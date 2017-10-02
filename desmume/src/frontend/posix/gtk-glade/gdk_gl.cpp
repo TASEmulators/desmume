@@ -1,6 +1,6 @@
 /* gdk_gl.cpp - this file is part of DeSmuME
  *
- * Copyright (C) 2007-2016 DeSmuME Team
+ * Copyright (C) 2007-2017 DeSmuME Team
  * Copyright (C) 2007 Damien Nozay (damdoum)
  * Author: damdoum at users.sourceforge.net
  *
@@ -33,7 +33,6 @@
 #define _DUP4(a) a,a,a,a
 #define _DUP2(a) a,a
 
-GLuint Textures[2];
 // free number we can use in tools 0-1 reserved for screens
 static int free_gl_drawable=2;
 GdkGLConfig  *my_glConfig=NULL;
@@ -41,10 +40,7 @@ GdkGLContext *my_glContext[8]={_DUP8(NULL)};
 GdkGLDrawable *my_glDrawable[8]={_DUP8(NULL)};
 GtkWidget *pDrawingTexArea;
 
-GLuint screen_texture[1];
-
-/* enable software colour format conversion */
-static int gtk_glade_use_software_colour_convert;
+GLuint screen_texture[2];
 
 #undef _DUP8
 #undef _DUP4
@@ -141,32 +137,45 @@ int init_GL_free(GtkWidget * widget) {
 	return r;
 }
 
-void init_GL_capabilities(  int use_software_convert) {
+void init_GL_capabilities() {
 
-	uint16_t blank_texture[256 * 512];
+	uint16_t blank_texture[256 * 256];
+	memset(blank_texture, 0, sizeof(blank_texture));
+	
 	my_glConfig = gdk_gl_config_new_by_mode (
 		(GdkGLConfigMode) (GDK_GL_MODE_RGBA
 		| GDK_GL_MODE_DEPTH 
 		| GDK_GL_MODE_DOUBLE)
 	);
 
-        gtk_glade_use_software_colour_convert = use_software_convert;
 	// initialize 1st drawing area
 	init_GL(pDrawingArea,0,0);
 	my_gl_Clear(0);
 	
 	if (!my_gl_Begin(0)) return;
-	// generate ONE texture (display)
+	
 	glEnable(GL_TEXTURE_2D);
-	glGenTextures(2, Textures);
+	glGenTextures(2, screen_texture);
 
-        /* Generate The Texture */
-	glBindTexture( GL_TEXTURE_2D, Textures[0]);
-    memset(blank_texture, 0, sizeof(blank_texture));
-	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, 256, 512,
-		      0, GL_RGBA,
-		      GL_UNSIGNED_SHORT_1_5_5_5_REV,
-		      blank_texture);
+	/* Generate The Texture */
+	for (int i = 0; i < 2; i++)
+	{
+		glBindTexture(GL_TEXTURE_2D, screen_texture[i]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		
+#define MyFILTER GL_LINEAR
+//#define MyFILTER GL_NEAREST
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, MyFILTER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, MyFILTER);
+#undef MyFILTER
+		
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 256,
+					 0, GL_RGBA,
+					 GL_UNSIGNED_SHORT_1_5_5_5_REV,
+					 blank_texture);
+	}
+	
 	my_gl_End(0);
 
 	// initialize 2nd drawing area (sharing context)
@@ -192,52 +201,44 @@ void reshape (GtkWidget * widget, int screen) {
 /* TEXTURING                                    */
 /************************************************/
 
-static void my_gl_Texture2D() {
-	glBindTexture(GL_TEXTURE_2D, Textures[0]);
-#define MyFILTER GL_LINEAR
-//#define MyFILTER GL_NEAREST
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, MyFILTER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, MyFILTER);
-#undef MyFILTER
-}
-
 static void
-my_gl_ScreenTex( int software_convert) {
-  u16 *gpuFramebuffer = (u16 *)GPU->GetDisplayInfo().masterNativeBuffer;
-
-  if ( software_convert) {
-    u8 converted[256 * 384 * 3];
-    int i;
-
-    for ( i = 0; i < (256 * 384); i++) {
-      converted[(i * 3) + 0] = ((gpuFramebuffer[i] >> 0) & 0x1f) << 3;
-      converted[(i * 3) + 1] = ((gpuFramebuffer[i] >> 5) & 0x1f) << 3;
-      converted[(i * 3) + 2] = ((gpuFramebuffer[i] >> 10) & 0x1f) << 3;
-    }
-
-    glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 256, 384,
-                     GL_RGB,
-                     GL_UNSIGNED_BYTE,
-                     converted);
-  }
-  else {
-    glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 256, 384,
-                     GL_RGBA,
-                     GL_UNSIGNED_SHORT_1_5_5_5_REV,
-                     gpuFramebuffer);
-  }
+my_gl_ScreenTex() {
+	const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
+	
+	glBindTexture(GL_TEXTURE_2D, screen_texture[NDSDisplayID_Main]);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 192,
+					GL_RGBA,
+					GL_UNSIGNED_SHORT_1_5_5_5_REV,
+					displayInfo.renderedBuffer[NDSDisplayID_Main]);
+	
+	glBindTexture(GL_TEXTURE_2D, screen_texture[NDSDisplayID_Touch]);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 192,
+					GL_RGBA,
+					GL_UNSIGNED_SHORT_1_5_5_5_REV,
+					displayInfo.renderedBuffer[NDSDisplayID_Touch]);
 }
 
 static void my_gl_ScreenTexApply(int screen) {
-	float off = (screen)?0.375:0;
-
-    glColor4ub(255,255,255,255);
+	const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
+	
+	GLfloat backlightIntensity = displayInfo.backlightIntensity[NDSDisplayID_Main];
+	
+	glBindTexture(GL_TEXTURE_2D, screen_texture[NDSDisplayID_Main]);
 	glBegin(GL_QUADS);
-		// texcoords 0.375 means 192, 1 means 256
-		glTexCoord2f(0.0, off+0.000); glVertex2d(-1.0, 1.0);
-		glTexCoord2f(1.0, off+0.000); glVertex2d( 1.0, 1.0);
-		glTexCoord2f(1.0, off+0.375); glVertex2d( 1.0,-1.0);
-		glTexCoord2f(0.0, off+0.375); glVertex2d(-1.0,-1.0);
+		glTexCoord2f(0.00f, 0.00f); glVertex2f(-1.0f,  1.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+		glTexCoord2f(1.00f, 0.00f); glVertex2f( 1.0f,  1.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+		glTexCoord2f(1.00f, 0.75f); glVertex2f( 1.0f,  0.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+		glTexCoord2f(0.00f, 0.75f); glVertex2f(-1.0f,  0.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+	glEnd();
+	
+	backlightIntensity = displayInfo.backlightIntensity[NDSDisplayID_Touch];
+	
+	glBindTexture(GL_TEXTURE_2D, screen_texture[NDSDisplayID_Touch]);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.00f, 0.00f); glVertex2f(-1.0f,  0.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+		glTexCoord2f(1.00f, 0.00f); glVertex2f( 1.0f,  0.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+		glTexCoord2f(1.00f, 0.75f); glVertex2f( 1.0f, -1.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+		glTexCoord2f(0.00f, 0.75f); glVertex2f(-1.0f, -1.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
 	glEnd();
 }
 
@@ -247,7 +248,6 @@ static void my_gl_ScreenTexApply(int screen) {
 
 gboolean screen (GtkWidget * widget, int viewportscreen) {
 	int screen;
-	GPUEngineBase * gpu;
 	
 	// we take care to draw the right thing the right place
 	// we need to rearrange widgets not to use this trick
@@ -271,10 +271,8 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 	if (desmume_running()) {
 		// rotate
 		glRotatef(ScreenRotate, 0.0, 0.0, 1.0);
-		// create the texture for both display
-		my_gl_Texture2D();
 		if (viewportscreen==0) {
-                  my_gl_ScreenTex( gtk_glade_use_software_colour_convert);
+                  my_gl_ScreenTex();
 		}
 	}
 	

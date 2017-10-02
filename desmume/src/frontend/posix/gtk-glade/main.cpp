@@ -90,7 +90,6 @@ GPU3DInterface *core3DList[] = {
  */
 struct configured_features {
   int load_slot;
-  int software_colour_convert;
   int opengl_2d;
   int engine_3d;
   int disable_limiter;
@@ -109,8 +108,6 @@ init_configured_features( struct configured_features *config) {
   config->load_slot = 0;
   config->arm9_gdb_port = 0;
   config->arm7_gdb_port = 0;
-
-  config->software_colour_convert = 0;
 
   config->opengl_2d = 0;
   config->engine_3d = 1;
@@ -137,12 +134,6 @@ fill_configured_features( struct configured_features *config,
       g_print( _("OPTIONS:\n"));
       g_print( _("\
    --load-slot=NUM     Load game saved under NUM position.\n\n"));
-#ifdef GTKGLEXT_AVAILABLE
-      g_print( _("\
-   --soft-convert      Use software colour conversion during OpenGL\n\
-                       screen rendering. May produce better or worse\n\
-                       frame rates depending on hardware.\n\n"));
-#endif
       g_print( _("\
    --3d-engine=ENGINE  Selects 3D rendering engine\n\
                          0 = disabled\n\
@@ -197,9 +188,6 @@ fill_configured_features( struct configured_features *config,
     else if ( strcmp( argv[i], "--opengl-2d") == 0) {
         // FIXME: to be implemented
       config->opengl_2d = 1;
-    }
-    else if ( strcmp( argv[i], "--soft-convert") == 0) {
-      config->software_colour_convert = 1;
     }
 #define MAX3DEMU 2
 #else
@@ -466,7 +454,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
 	glade_xml_signal_autoconnect_StringObject(xml);
 	glade_xml_signal_autoconnect_StringObject(xml_tools);
 
-	init_GL_capabilities( my_config->software_colour_convert);
+	init_GL_capabilities();
 
 	/* check command line file */
 	if( my_config->nds_file) {

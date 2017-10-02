@@ -1533,6 +1533,8 @@ static void execHardware_hstart()
 	{
 		gfx3d_VBlankEndSignal(frameSkipper.ShouldSkip3D());
 	}
+	
+	GPU->UpdateAverageBacklightIntensityTotal();
 
 	if (nds.VCount == 263)
 	{
