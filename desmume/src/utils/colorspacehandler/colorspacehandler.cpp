@@ -600,15 +600,16 @@ void ColorspaceApplyIntensityToBuffer16(u16 *dst, size_t pixCount, float intensi
 			i = csh.ApplyIntensityToBuffer16(dst, pixCountVector, intensity);
 		}
 	}
-	
-#pragma LOOPVECTORIZE_DISABLE
-	
+
 #endif // USEMANUALVECTORIZATION
 	
 	if (intensity > 0.999f)
 	{
 		if (SWAP_RB)
 		{
+#ifdef USEMANUALVECTORIZATION
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 			for (; i < pixCount; i++)
 			{
 				dst[i] = COLOR5551_SWAP_RB(dst[i]);
@@ -619,6 +620,9 @@ void ColorspaceApplyIntensityToBuffer16(u16 *dst, size_t pixCount, float intensi
 	}
 	else if (intensity < 0.001f)
 	{
+#ifdef USEMANUALVECTORIZATION
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 		for (; i < pixCount; i++)
 		{
 			dst[i] = dst[i] & 0x8000;
@@ -628,7 +632,9 @@ void ColorspaceApplyIntensityToBuffer16(u16 *dst, size_t pixCount, float intensi
 	}
 	
 	const u16 intensity_u16 = (u16)(intensity * (float)(0xFFFF));
-	
+#ifdef USEMANUALVECTORIZATION
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 	for (; i < pixCount; i++)
 	{
 		u16 outColor = (SWAP_RB) ? COLOR5551_SWAP_RB(dst[i]) : dst[i];
@@ -680,14 +686,15 @@ void ColorspaceApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensi
 		}
 	}
 	
-#pragma LOOPVECTORIZE_DISABLE
-	
 #endif // USEMANUALVECTORIZATION
 	
 	if (intensity > 0.999f)
 	{
 		if (SWAP_RB)
 		{
+#ifdef USEMANUALVECTORIZATION
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 			for (; i < pixCount; i++)
 			{
 				FragmentColor dstColor;
@@ -703,6 +710,9 @@ void ColorspaceApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensi
 	}
 	else if (intensity < 0.001f)
 	{
+#ifdef USEMANUALVECTORIZATION
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 		for (; i < pixCount; i++)
 		{
 			dst[i] = dst[i] & 0xFF000000;
@@ -715,6 +725,9 @@ void ColorspaceApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensi
 	
 	if (SWAP_RB)
 	{
+#ifdef USEMANUALVECTORIZATION
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 		for (; i < pixCount; i++)
 		{
 			FragmentColor dstColor;
@@ -728,6 +741,9 @@ void ColorspaceApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensi
 	}
 	else
 	{
+#ifdef USEMANUALVECTORIZATION
+#pragma LOOPVECTORIZE_DISABLE
+#endif
 		for (; i < pixCount; i++)
 		{
 			FragmentColor &outColor = (FragmentColor &)dst[i];

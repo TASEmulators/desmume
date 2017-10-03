@@ -1985,18 +1985,10 @@ static void DoDisplay(bool firstTime)
 	if(ddhw || ddsw)
 	{
 		const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
+		const size_t pixCount = displayInfo.customWidth * displayInfo.customHeight;
 
-		for(int screen=0;screen<2;screen++)
-		{
-			const GLfloat backlightIntensity = displayInfo.backlightIntensity[screen];
-			if(backlightIntensity == 1.0f) continue;
-
-			//abuse accelerated masterbrightness algorithm for this
-			const int factor = 16-backlightIntensity*16;
-			const u32 screenSize = 256*video.prescaleHD*192*video.prescaleHD;
-			u32* dst = video.buffer + screenSize*screen;
-			GPU->GetEngineMain()->ApplyMasterBrightness<NDSColorFormat_BGR888_Rev,false>(dst,screenSize,GPUMasterBrightMode_Down,(u8)factor);
-		}
+		ColorspaceApplyIntensityToBuffer32<false, false>(video.buffer, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
+		ColorspaceApplyIntensityToBuffer32<false, false>(video.buffer + pixCount, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
 	}
 
 	if(firstTime)
