@@ -182,7 +182,6 @@ fill_config( class configured_features *config,
     "SAVETYPE"},
 #ifdef INCLUDE_OPENGL_2D
     { "opengl-2d", 0, 0, G_OPTION_ARG_NONE, &config->opengl_2d, "Enables using OpenGL for screen rendering", NULL},
-     NULL},
 #endif
     { "fwlang", 0, 0, G_OPTION_ARG_INT, &config->firmware_language, "Set the language in the firmware, LANG as follows:\n"
     "\t\t\t\t\t\t  0 = Japanese\n"
