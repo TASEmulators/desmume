@@ -117,8 +117,14 @@ static void decode_screen () {
 
 	int x,y, m, W,H,L,BL;
 	u32 image[RAW_H*2][RAW_W], pix;
-	u16 * pixel = (u16 *)GPU->GetDisplayInfo().masterNativeBuffer;
+	
+	const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
+	const size_t pixCount = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	u16 * pixel = (u16 *)displayInfo.masterNativeBuffer;
 	u32 * rgb32 = &on_screen_image32[0];
+	
+	ColorspaceApplyIntensityToBuffer16<false, false>(pixel, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
+	ColorspaceApplyIntensityToBuffer16<false, false>(pixel + pixCount, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
 
 	/* decode colors */
 	init_pix_col_map();

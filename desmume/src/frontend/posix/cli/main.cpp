@@ -381,7 +381,7 @@ opengl_Draw(GLuint *texture) {
 
   /* Draw the main screen as a textured quad */
   glBindTexture(GL_TEXTURE_2D, texture[NDSDisplayID_Main]);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 192,
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT,
                   GL_RGBA,
                   GL_UNSIGNED_SHORT_1_5_5_5_REV,
                   displayInfo.renderedBuffer[NDSDisplayID_Main]);
@@ -397,7 +397,7 @@ opengl_Draw(GLuint *texture) {
 
   /* Draw the touch screen as a textured quad */
   glBindTexture(GL_TEXTURE_2D, texture[NDSDisplayID_Touch]);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 192,
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT,
                   GL_RGBA,
                   GL_UNSIGNED_SHORT_1_5_5_5_REV,
                   displayInfo.renderedBuffer[NDSDisplayID_Touch]);
@@ -429,16 +429,18 @@ resizeWindow_stub (u16 width, u16 height, void *screen_texture) {
 
 static void
 Draw( void) {
-  SDL_Surface *rawImage;
+  const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
+  const size_t pixCount = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+  ColorspaceApplyIntensityToBuffer16<false, false>((u16 *)displayInfo.masterNativeBuffer, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
+  ColorspaceApplyIntensityToBuffer16<false, false>((u16 *)displayInfo.masterNativeBuffer + pixCount, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
 
-  rawImage = SDL_CreateRGBSurfaceFrom(GPU->GetDisplayInfo().masterNativeBuffer, 256, 384, 16, 512, 0x001F, 0x03E0, 0x7C00, 0);
+  SDL_Surface *rawImage = SDL_CreateRGBSurfaceFrom(displayInfo.masterNativeBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, 16, GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(u16), 0x001F, 0x03E0, 0x7C00, 0);
   if(rawImage == NULL) return;
 
   SDL_BlitSurface(rawImage, 0, surface, 0);
-
   SDL_UpdateRect(surface, 0, 0, 0, 0);
-
   SDL_FreeSurface(rawImage);
+
   return;
 }
 
