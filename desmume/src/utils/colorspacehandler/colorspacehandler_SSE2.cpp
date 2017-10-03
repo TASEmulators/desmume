@@ -292,6 +292,66 @@ FORCEINLINE v128u32 ColorspaceCopy32_SSE2(const v128u32 &src)
 	return src;
 }
 
+template<bool SWAP_RB>
+FORCEINLINE v128u16 ColorspaceApplyIntensity16_SSE2(const v128u16 &src, float intensity)
+{
+	v128u16 tempSrc = (SWAP_RB) ? _mm_or_si128( _mm_or_si128(_mm_srli_epi16(_mm_and_si128(src, _mm_set1_epi16(0x7C00)), 10), _mm_or_si128(_mm_and_si128(src, _mm_set1_epi16(0x0E30)), _mm_slli_epi16(_mm_and_si128(src, _mm_set1_epi16(0x001F)), 10))), _mm_and_si128(src, _mm_set1_epi16(0x8000)) ) : src;
+	
+	if (intensity > 0.999f)
+	{
+		return tempSrc;
+	}
+	else if (intensity < 0.001f)
+	{
+		return _mm_and_si128(tempSrc, _mm_set1_epi16(0x8000));
+	}
+	
+	v128u16 r = _mm_and_si128(                tempSrc,      _mm_set1_epi16(0x001F) );
+	v128u16 g = _mm_and_si128( _mm_srli_epi16(tempSrc,  5), _mm_set1_epi16(0x001F) );
+	v128u16 b = _mm_and_si128( _mm_srli_epi16(tempSrc, 10), _mm_set1_epi16(0x001F) );
+	v128u16 a = _mm_and_si128(                tempSrc,      _mm_set1_epi16(0x8000) );
+	
+	const v128u16 intensity_v128 = _mm_set1_epi16( (u16)(intensity * (float)(0xFFFF)) );
+	
+	r =                 _mm_mulhi_epu16(r, intensity_v128);
+	g = _mm_slli_epi16( _mm_mulhi_epu16(g, intensity_v128),  5 );
+	b = _mm_slli_epi16( _mm_mulhi_epu16(b, intensity_v128), 10 );
+	
+	return _mm_or_si128( _mm_or_si128( _mm_or_si128(r, g), b), a);
+}
+
+template<bool SWAP_RB>
+FORCEINLINE v128u32 ColorspaceApplyIntensity32_SSE2(const v128u32 &src, float intensity)
+{
+#ifdef ENABLE_SSSE3
+	v128u32 tempSrc = (SWAP_RB) ? _mm_shuffle_epi8(src, _mm_set_epi8(15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2)) : src;
+#else
+	v128u32 tempSrc = (SWAP_RB) ? _mm_or_si128( _mm_or_si128(_mm_srli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x00FF0000)), 16), _mm_or_si128(_mm_and_si128(src, _mm_set1_epi32(0x0000FF00)), _mm_slli_epi32(_mm_and_si128(src, _mm_set1_epi32(0x000000FF)), 16))), _mm_and_si128(src, _mm_set1_epi32(0xFF000000)) ) : src;
+#endif
+	
+	if (intensity > 0.999f)
+	{
+		return tempSrc;
+	}
+	else if (intensity < 0.001f)
+	{
+		return _mm_and_si128(tempSrc, _mm_set1_epi32(0xFF000000));
+	}
+	
+	v128u16 r = _mm_and_si128(                tempSrc,      _mm_set1_epi32(0x000000FF) );
+	v128u16 g = _mm_and_si128( _mm_srli_epi32(tempSrc,  8), _mm_set1_epi32(0x000000FF) );
+	v128u16 b = _mm_and_si128( _mm_srli_epi32(tempSrc, 16), _mm_set1_epi32(0x000000FF) );
+	v128u32 a = _mm_and_si128(                tempSrc,      _mm_set1_epi32(0xFF000000) );
+	
+	const v128u16 intensity_v128 = _mm_set1_epi16( (u16)(intensity * (float)(0xFFFF)) );
+	
+	r =                 _mm_mulhi_epu16(r, intensity_v128);
+	g = _mm_slli_epi32( _mm_mulhi_epu16(g, intensity_v128),  8 );
+	b = _mm_slli_epi32( _mm_mulhi_epu16(b, intensity_v128), 16 );
+	
+	return _mm_or_si128( _mm_or_si128( _mm_or_si128(r, g), b), a);
+}
+
 template <bool SWAP_RB, bool IS_UNALIGNED>
 static size_t ColorspaceConvertBuffer555To8888Opaque_SSE2(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec128)
 {
@@ -500,6 +560,167 @@ size_t ColorspaceCopyBuffer32_SSE2(const u32 *src, u32 *dst, size_t pixCountVec1
 	return i;
 }
 
+template <bool SWAP_RB, bool IS_UNALIGNED>
+size_t ColorspaceApplyIntensityToBuffer16_SSE2(u16 *dst, size_t pixCountVec128, float intensity)
+{
+	size_t i = 0;
+	
+	if (intensity > 0.999f)
+	{
+		if (SWAP_RB)
+		{
+			for (; i < pixCountVec128; i+=8)
+			{
+				const v128u16 dst_v128 = (IS_UNALIGNED) ? _mm_loadu_si128((v128u16 *)(dst+i)) : _mm_load_si128((v128u16 *)(dst+i));
+				const v128u16 tempDst = _mm_or_si128( _mm_or_si128(_mm_srli_epi16(_mm_and_si128(dst_v128, _mm_set1_epi16(0x7C00)), 10), _mm_or_si128(_mm_and_si128(dst_v128, _mm_set1_epi16(0x0E30)), _mm_slli_epi16(_mm_and_si128(dst_v128, _mm_set1_epi16(0x001F)), 10))), _mm_and_si128(dst_v128, _mm_set1_epi16(0x8000)) );
+				
+				if (IS_UNALIGNED)
+				{
+					_mm_storeu_si128( (v128u16 *)(dst+i), tempDst);
+				}
+				else
+				{
+					_mm_store_si128( (v128u16 *)(dst+i), tempDst);
+				}
+			}
+		}
+		else
+		{
+			return pixCountVec128;
+		}
+	}
+	else if (intensity < 0.001f)
+	{
+		for (; i < pixCountVec128; i+=8)
+		{
+			if (IS_UNALIGNED)
+			{
+				_mm_storeu_si128( (v128u16 *)(dst+i), _mm_and_si128(_mm_loadu_si128((v128u16 *)(dst+i)), _mm_set1_epi16(0x8000)) );
+			}
+			else
+			{
+				_mm_store_si128( (v128u16 *)(dst+i), _mm_and_si128(_mm_load_si128((v128u16 *)(dst+i)), _mm_set1_epi16(0x8000)) );
+			}
+		}
+	}
+	else
+	{
+		const v128u16 intensity_v128 = _mm_set1_epi16( (u16)(intensity * (float)(0xFFFF)) );
+		
+		for (; i < pixCountVec128; i+=8)
+		{
+			v128u16 dst_v128 = (IS_UNALIGNED) ? _mm_loadu_si128((v128u16 *)(dst+i)) : _mm_load_si128((v128u16 *)(dst+i));
+			v128u16 tempDst = (SWAP_RB) ? _mm_or_si128( _mm_or_si128(_mm_srli_epi16(_mm_and_si128(dst_v128, _mm_set1_epi16(0x7C00)), 10), _mm_or_si128(_mm_and_si128(dst_v128, _mm_set1_epi16(0x0E30)), _mm_slli_epi16(_mm_and_si128(dst_v128, _mm_set1_epi16(0x001F)), 10))), _mm_and_si128(dst_v128, _mm_set1_epi16(0x8000)) ) : dst_v128;
+			
+			v128u16 r = _mm_and_si128(                tempDst,      _mm_set1_epi16(0x001F) );
+			v128u16 g = _mm_and_si128( _mm_srli_epi16(tempDst,  5), _mm_set1_epi16(0x001F) );
+			v128u16 b = _mm_and_si128( _mm_srli_epi16(tempDst, 10), _mm_set1_epi16(0x001F) );
+			v128u16 a = _mm_and_si128(                tempDst,      _mm_set1_epi16(0x8000) );
+			
+			r =                 _mm_mulhi_epu16(r, intensity_v128);
+			g = _mm_slli_epi16( _mm_mulhi_epu16(g, intensity_v128),  5 );
+			b = _mm_slli_epi16( _mm_mulhi_epu16(b, intensity_v128), 10 );
+			
+			tempDst = _mm_or_si128( _mm_or_si128( _mm_or_si128(r, g), b), a);
+			
+			if (IS_UNALIGNED)
+			{
+				_mm_storeu_si128((v128u16 *)(dst+i), tempDst);
+			}
+			else
+			{
+				_mm_store_si128((v128u16 *)(dst+i), tempDst);
+			}
+		}
+	}
+	
+	return i;
+}
+
+template <bool SWAP_RB, bool IS_UNALIGNED>
+size_t ColorspaceApplyIntensityToBuffer32_SSE2(u32 *dst, size_t pixCountVec128, float intensity)
+{
+	size_t i = 0;
+	
+	if (intensity > 0.999f)
+	{
+		if (SWAP_RB)
+		{
+			for (; i < pixCountVec128; i+=4)
+			{
+				const v128u32 dst_v128 = (IS_UNALIGNED) ? _mm_loadu_si128((v128u32 *)(dst+i)) : _mm_load_si128((v128u32 *)(dst+i));
+#ifdef ENABLE_SSSE3
+				const v128u32 tempDst = _mm_shuffle_epi8(dst_v128, _mm_set_epi8(15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2));
+#else
+				const v128u32 tempDst = _mm_or_si128( _mm_or_si128(_mm_srli_epi32(_mm_and_si128(dst_v128, _mm_set1_epi32(0x00FF0000)), 16), _mm_or_si128(_mm_and_si128(dst_v128, _mm_set1_epi32(0x0000FF00)), _mm_slli_epi32(_mm_and_si128(dst_v128, _mm_set1_epi32(0x000000FF)), 16))), _mm_and_si128(dst_v128, _mm_set1_epi32(0xFF000000)) );
+#endif
+				if (IS_UNALIGNED)
+				{
+					_mm_storeu_si128( (v128u32 *)(dst+i), tempDst);
+				}
+				else
+				{
+					_mm_store_si128( (v128u32 *)(dst+i), tempDst);
+				}
+			}
+		}
+		else
+		{
+			return pixCountVec128;
+		}
+	}
+	else if (intensity < 0.001f)
+	{
+		for (; i < pixCountVec128; i+=4)
+		{
+			if (IS_UNALIGNED)
+			{
+				_mm_storeu_si128( (v128u32 *)(dst+i), _mm_and_si128(_mm_loadu_si128((v128u32 *)(dst+i)), _mm_set1_epi32(0xFF000000)) );
+			}
+			else
+			{
+				_mm_store_si128( (v128u32 *)(dst+i), _mm_and_si128(_mm_load_si128((v128u32 *)(dst+i)), _mm_set1_epi32(0xFF000000)) );
+			}
+		}
+	}
+	else
+	{
+		const v128u16 intensity_v128 = _mm_set1_epi16( (u16)(intensity * (float)(0xFFFF)) );
+		
+		for (; i < pixCountVec128; i+=4)
+		{
+			v128u32 dst_v128 = (IS_UNALIGNED) ? _mm_loadu_si128((v128u32 *)(dst+i)) : _mm_load_si128((v128u32 *)(dst+i));
+#ifdef ENABLE_SSSE3
+			v128u32 tempDst = (SWAP_RB) ? _mm_shuffle_epi8(dst_v128, _mm_set_epi8(15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2)) : dst_v128;
+#else
+			v128u32 tempDst = (SWAP_RB) ? _mm_or_si128( _mm_or_si128(_mm_srli_epi32(_mm_and_si128(dst_v128, _mm_set1_epi32(0x00FF0000)), 16), _mm_or_si128(_mm_and_si128(dst_v128, _mm_set1_epi32(0x0000FF00)), _mm_slli_epi32(_mm_and_si128(dst_v128, _mm_set1_epi32(0x000000FF)), 16))), _mm_and_si128(dst_v128, _mm_set1_epi32(0xFF000000)) ) : dst_v128;
+#endif
+			
+			v128u16 r = _mm_and_si128(                tempDst,      _mm_set1_epi32(0x000000FF) );
+			v128u16 g = _mm_and_si128( _mm_srli_epi32(tempDst,  8), _mm_set1_epi32(0x000000FF) );
+			v128u16 b = _mm_and_si128( _mm_srli_epi32(tempDst, 16), _mm_set1_epi32(0x000000FF) );
+			v128u32 a = _mm_and_si128(                tempDst,      _mm_set1_epi32(0xFF000000) );
+			
+			r =                 _mm_mulhi_epu16(r, intensity_v128);
+			g = _mm_slli_epi32( _mm_mulhi_epu16(g, intensity_v128),  8 );
+			b = _mm_slli_epi32( _mm_mulhi_epu16(b, intensity_v128), 16 );
+			
+			tempDst = _mm_or_si128( _mm_or_si128( _mm_or_si128(r, g), b), a);
+			
+			if (IS_UNALIGNED)
+			{
+				_mm_storeu_si128((v128u32 *)(dst+i), tempDst);
+			}
+			else
+			{
+				_mm_store_si128((v128u32 *)(dst+i), tempDst);
+			}
+		}
+	}
+	
+	return i;
+}
+
 size_t ColorspaceHandler_SSE2::ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To8888Opaque_SSE2<false, false>(src, dst, pixCount);
@@ -660,6 +881,46 @@ size_t ColorspaceHandler_SSE2::CopyBuffer32_SwapRB_IsUnaligned(const u32 *src, u
 	return ColorspaceCopyBuffer32_SSE2<true, true>(src, dst, pixCount);
 }
 
+size_t ColorspaceHandler_SSE2::ApplyIntensityToBuffer16(u16 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer16_SSE2<false, false>(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler_SSE2::ApplyIntensityToBuffer16_SwapRB(u16 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer16_SSE2<true, false>(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler_SSE2::ApplyIntensityToBuffer16_IsUnaligned(u16 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer16_SSE2<false, true>(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler_SSE2::ApplyIntensityToBuffer16_SwapRB_IsUnaligned(u16 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer16_SSE2<true, true>(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler_SSE2::ApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer32_SSE2<false, false>(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler_SSE2::ApplyIntensityToBuffer32_SwapRB(u32 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer32_SSE2<true, false>(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler_SSE2::ApplyIntensityToBuffer32_IsUnaligned(u32 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer32_SSE2<false, true>(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler_SSE2::ApplyIntensityToBuffer32_SwapRB_IsUnaligned(u32 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer32_SSE2<true, true>(dst, pixCount, intensity);
+}
+
 template void ColorspaceConvert555To8888_SSE2<true>(const v128u16 &srcColor, const v128u32 &srcAlphaBits32Lo, const v128u32 &srcAlphaBits32Hi, v128u32 &dstLo, v128u32 &dstHi);
 template void ColorspaceConvert555To8888_SSE2<false>(const v128u16 &srcColor, const v128u32 &srcAlphaBits32Lo, const v128u32 &srcAlphaBits32Hi, v128u32 &dstLo, v128u32 &dstHi);
 
@@ -692,5 +953,11 @@ template v128u16 ColorspaceCopy16_SSE2<false>(const v128u16 &src);
 
 template v128u32 ColorspaceCopy32_SSE2<true>(const v128u32 &src);
 template v128u32 ColorspaceCopy32_SSE2<false>(const v128u32 &src);
+
+template v128u16 ColorspaceApplyIntensity16_SSE2<true>(const v128u16 &src, float intensity);
+template v128u16 ColorspaceApplyIntensity16_SSE2<false>(const v128u16 &src, float intensity);
+
+template v128u32 ColorspaceApplyIntensity32_SSE2<true>(const v128u32 &src, float intensity);
+template v128u32 ColorspaceApplyIntensity32_SSE2<false>(const v128u32 &src, float intensity);
 
 #endif // ENABLE_SSE2

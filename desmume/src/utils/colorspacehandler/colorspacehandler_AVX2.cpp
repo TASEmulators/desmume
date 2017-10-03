@@ -248,6 +248,62 @@ FORCEINLINE v256u32 ColorspaceCopy32_AVX2(const v256u32 &src)
 	return src;
 }
 
+template<bool SWAP_RB>
+FORCEINLINE v256u16 ColorspaceApplyIntensity16_AVX2(const v256u16 &src, float intensity)
+{
+	v256u16 tempSrc = (SWAP_RB) ? _mm256_or_si256( _mm256_or_si256(_mm256_srli_epi16(_mm256_and_si256(src, _mm256_set1_epi16(0x7C00)), 10), _mm256_or_si256(_mm256_and_si256(src, _mm256_set1_epi16(0x0E30)), _mm256_slli_epi16(_mm256_and_si256(src, _mm256_set1_epi16(0x001F)), 10))), _mm256_and_si256(src, _mm256_set1_epi16(0x8000)) ) : src;
+	
+	if (intensity > 0.999f)
+	{
+		return tempSrc;
+	}
+	else if (intensity < 0.001f)
+	{
+		return _mm256_and_si256(tempSrc, _mm256_set1_epi16(0x8000));
+	}
+	
+	v256u16 r = _mm256_and_si256(                   tempSrc,      _mm256_set1_epi16(0x001F) );
+	v256u16 g = _mm256_and_si256( _mm256_srli_epi16(tempSrc,  5), _mm256_set1_epi16(0x001F) );
+	v256u16 b = _mm256_and_si256( _mm256_srli_epi16(tempSrc, 10), _mm256_set1_epi16(0x001F) );
+	v256u16 a = _mm256_and_si256(                   tempSrc,      _mm256_set1_epi16(0x8000) );
+	
+	const v256u16 intensity_v256 = _mm256_set1_epi16( (u16)(intensity * (float)(0xFFFF)) );
+	
+	r =                    _mm256_mulhi_epu16(r, intensity_v256);
+	g = _mm256_slli_epi16( _mm256_mulhi_epu16(g, intensity_v256),  5 );
+	b = _mm256_slli_epi16( _mm256_mulhi_epu16(b, intensity_v256), 10 );
+	
+	return _mm256_or_si256( _mm256_or_si256( _mm256_or_si256(r, g), b), a);
+}
+
+template<bool SWAP_RB>
+FORCEINLINE v256u32 ColorspaceApplyIntensity32_AVX2(const v256u32 &src, float intensity)
+{
+	v256u32 tempSrc = (SWAP_RB) ? _mm256_shuffle_epi8(src, _mm256_set_epi8(31,28,29,30,  27,24,25,26,  23,20,21,22,  19,16,17,18,  15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2)) : src;
+	
+	if (intensity > 0.999f)
+	{
+		return tempSrc;
+	}
+	else if (intensity < 0.001f)
+	{
+		return _mm256_and_si256(tempSrc, _mm256_set1_epi32(0xFF000000));
+	}
+	
+	v256u16 r = _mm256_and_si256(                   tempSrc,      _mm256_set1_epi32(0x000000FF) );
+	v256u16 g = _mm256_and_si256( _mm256_srli_epi32(tempSrc,  8), _mm256_set1_epi32(0x000000FF) );
+	v256u16 b = _mm256_and_si256( _mm256_srli_epi32(tempSrc, 16), _mm256_set1_epi32(0x000000FF) );
+	v256u32 a = _mm256_and_si256(                   tempSrc,      _mm256_set1_epi32(0xFF000000) );
+	
+	const v256u16 intensity_v256 = _mm256_set1_epi16( (u16)(intensity * (float)(0xFFFF)) );
+	
+	r =                    _mm256_mulhi_epu16(r, intensity_v256);
+	g = _mm256_slli_epi32( _mm256_mulhi_epu16(g, intensity_v256),  8 );
+	b = _mm256_slli_epi32( _mm256_mulhi_epu16(b, intensity_v256), 16 );
+	
+	return _mm256_or_si256( _mm256_or_si256( _mm256_or_si256(r, g), b), a);
+}
+
 template <bool SWAP_RB, bool IS_UNALIGNED>
 static size_t ColorspaceConvertBuffer555To8888Opaque_AVX2(const u16 *__restrict src, u32 *__restrict dst, const size_t pixCountVec256)
 {
@@ -456,6 +512,160 @@ size_t ColorspaceCopyBuffer32_AVX2(const u32 *src, u32 *dst, size_t pixCountVec2
 	return i;
 }
 
+template <bool SWAP_RB, bool IS_UNALIGNED>
+size_t ColorspaceApplyIntensityToBuffer16_AVX2(u16 *dst, size_t pixCountVec256, float intensity)
+{
+	size_t i = 0;
+	
+	if (intensity > 0.999f)
+	{
+		if (SWAP_RB)
+		{
+			for (; i < pixCountVec256; i+=16)
+			{
+				const v256u16 dst_v256 = (IS_UNALIGNED) ? _mm256_loadu_si256((v256u16 *)(dst+i)) : _mm256_load_si256((v256u16 *)(dst+i));
+				const v256u16 tempDst = _mm256_or_si256( _mm256_or_si256(_mm256_srli_epi16(_mm256_and_si256(dst_v256, _mm256_set1_epi16(0x7C00)), 10), _mm256_or_si256(_mm256_and_si256(dst_v256, _mm256_set1_epi16(0x0E30)), _mm256_slli_epi16(_mm256_and_si256(dst_v256, _mm256_set1_epi16(0x001F)), 10))), _mm256_and_si256(dst_v256, _mm256_set1_epi16(0x8000)) );
+				
+				if (IS_UNALIGNED)
+				{
+					_mm256_storeu_si256( (v256u16 *)(dst+i), tempDst);
+				}
+				else
+				{
+					_mm256_store_si256( (v256u16 *)(dst+i), tempDst);
+				}
+			}
+		}
+		else
+		{
+			return pixCountVec256;
+		}
+	}
+	else if (intensity < 0.001f)
+	{
+		for (; i < pixCountVec256; i+=16)
+		{
+			if (IS_UNALIGNED)
+			{
+				_mm256_storeu_si256( (v256u16 *)(dst+i), _mm256_and_si256(_mm256_loadu_si256((v256u16 *)(dst+i)), _mm256_set1_epi16(0x8000)) );
+			}
+			else
+			{
+				_mm256_store_si256( (v256u16 *)(dst+i), _mm256_and_si256(_mm256_load_si256((v256u16 *)(dst+i)), _mm256_set1_epi16(0x8000)) );
+			}
+		}
+	}
+	else
+	{
+		const v256u16 intensity_v256 = _mm256_set1_epi16( (u16)(intensity * (float)(0xFFFF)) );
+		
+		for (; i < pixCountVec256; i+=16)
+		{
+			v256u16 dst_v256 = (IS_UNALIGNED) ? _mm256_loadu_si256((v256u16 *)(dst+i)) : _mm256_load_si256((v256u16 *)(dst+i));
+			v256u16 tempDst = (SWAP_RB) ? _mm256_or_si256( _mm256_or_si256(_mm256_srli_epi16(_mm256_and_si256(dst_v256, _mm256_set1_epi16(0x7C00)), 10), _mm256_or_si256(_mm256_and_si256(dst_v256, _mm256_set1_epi16(0x0E30)), _mm256_slli_epi16(_mm256_and_si256(dst_v256, _mm256_set1_epi16(0x001F)), 10))), _mm256_and_si256(dst_v256, _mm256_set1_epi16(0x8000)) ) : dst_v256;
+			
+			v256u16 r = _mm256_and_si256(                   tempDst,      _mm256_set1_epi16(0x001F) );
+			v256u16 g = _mm256_and_si256( _mm256_srli_epi16(tempDst,  5), _mm256_set1_epi16(0x001F) );
+			v256u16 b = _mm256_and_si256( _mm256_srli_epi16(tempDst, 10), _mm256_set1_epi16(0x001F) );
+			v256u16 a = _mm256_and_si256(                   tempDst,      _mm256_set1_epi16(0x8000) );
+			
+			r =                    _mm256_mulhi_epu16(r, intensity_v256);
+			g = _mm256_slli_epi32( _mm256_mulhi_epu16(g, intensity_v256),  5 );
+			b = _mm256_slli_epi32( _mm256_mulhi_epu16(b, intensity_v256), 10 );
+			
+			tempDst = _mm256_or_si256( _mm256_or_si256( _mm256_or_si256(r, g), b), a);
+			
+			if (IS_UNALIGNED)
+			{
+				_mm256_storeu_si256((v256u16 *)(dst+i), tempDst);
+			}
+			else
+			{
+				_mm256_store_si256((v256u16 *)(dst+i), tempDst);
+			}
+		}
+	}
+	
+	return i;
+}
+
+template <bool SWAP_RB, bool IS_UNALIGNED>
+size_t ColorspaceApplyIntensityToBuffer32_AVX2(u32 *dst, size_t pixCountVec256, float intensity)
+{
+	size_t i = 0;
+	
+	if (intensity > 0.999f)
+	{
+		if (SWAP_RB)
+		{
+			for (; i < pixCountVec256; i+=8)
+			{
+				const v256u32 dst_v256 = (IS_UNALIGNED) ? _mm256_loadu_si256((v256u32 *)(dst+i)) : _mm256_load_si256((v256u32 *)(dst+i));
+				const v256u32 tempDst = _mm256_shuffle_epi8(dst_v256, _mm256_set_epi8(31,28,29,30,  27,24,25,26,  23,20,21,22,  19,16,17,18,  15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2));
+				
+				if (IS_UNALIGNED)
+				{
+					_mm256_storeu_si256( (v256u32 *)(dst+i), tempDst);
+				}
+				else
+				{
+					_mm256_store_si256( (v256u32 *)(dst+i), tempDst);
+				}
+			}
+		}
+		else
+		{
+			return pixCountVec256;
+		}
+	}
+	else if (intensity < 0.001f)
+	{
+		for (; i < pixCountVec256; i+=8)
+		{
+			if (IS_UNALIGNED)
+			{
+				_mm256_storeu_si256( (v256u32 *)(dst+i), _mm256_and_si256(_mm256_loadu_si256((v256u32 *)(dst+i)), _mm256_set1_epi32(0xFF000000)) );
+			}
+			else
+			{
+				_mm256_store_si256( (v256u32 *)(dst+i), _mm256_and_si256(_mm256_load_si256((v256u32 *)(dst+i)), _mm256_set1_epi32(0xFF000000)) );
+			}
+		}
+	}
+	else
+	{
+		const v256u16 intensity_v256 = _mm256_set1_epi16( (u16)(intensity * (float)(0xFFFF)) );
+		
+		for (; i < pixCountVec256; i+=8)
+		{
+			v256u32 dst_v256 = (IS_UNALIGNED) ? _mm256_loadu_si256((v256u32 *)(dst+i)) : _mm256_load_si256((v256u32 *)(dst+i));
+			v256u32 tempDst = (SWAP_RB) ? _mm256_shuffle_epi8(dst_v256, _mm256_set_epi8(31,28,29,30,  27,24,25,26,  23,20,21,22,  19,16,17,18,  15,12,13,14,  11,8,9,10,  7,4,5,6,  3,0,1,2)) : dst_v256;
+			
+			v256u16 r = _mm256_and_si256(                   tempDst,      _mm256_set1_epi32(0x000000FF) );
+			v256u16 g = _mm256_and_si256( _mm256_srli_epi32(tempDst,  8), _mm256_set1_epi32(0x000000FF) );
+			v256u16 b = _mm256_and_si256( _mm256_srli_epi32(tempDst, 16), _mm256_set1_epi32(0x000000FF) );
+			v256u32 a = _mm256_and_si256(                   tempDst,      _mm256_set1_epi32(0xFF000000) );
+			
+			r =                    _mm256_mulhi_epu16(r, intensity_v256);
+			g = _mm256_slli_epi32( _mm256_mulhi_epu16(g, intensity_v256),  8 );
+			b = _mm256_slli_epi32( _mm256_mulhi_epu16(b, intensity_v256), 16 );
+			
+			tempDst = _mm256_or_si256( _mm256_or_si256( _mm256_or_si256(r, g), b), a);
+			
+			if (IS_UNALIGNED)
+			{
+				_mm256_storeu_si256((v256u32 *)(dst+i), tempDst);
+			}
+			else
+			{
+				_mm256_store_si256((v256u32 *)(dst+i), tempDst);
+			}
+		}
+	}
+	
+	return i;
+}
+
 size_t ColorspaceHandler_AVX2::ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	return ColorspaceConvertBuffer555To8888Opaque_AVX2<false, false>(src, dst, pixCount);
@@ -616,6 +826,46 @@ size_t ColorspaceHandler_AVX2::CopyBuffer32_SwapRB_IsUnaligned(const u32 *src, u
 	return ColorspaceCopyBuffer32_AVX2<true, true>(src, dst, pixCount);
 }
 
+size_t ColorspaceHandler_AVX2::ApplyIntensityToBuffer16(u16 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer16_AVX2<false, false>(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler_AVX2::ApplyIntensityToBuffer16_SwapRB(u16 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer16_AVX2<true, false>(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler_AVX2::ApplyIntensityToBuffer16_IsUnaligned(u16 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer16_AVX2<false, true>(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler_AVX2::ApplyIntensityToBuffer16_SwapRB_IsUnaligned(u16 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer16_AVX2<true, true>(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler_AVX2::ApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer32_AVX2<false, false>(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler_AVX2::ApplyIntensityToBuffer32_SwapRB(u32 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer32_AVX2<true, false>(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler_AVX2::ApplyIntensityToBuffer32_IsUnaligned(u32 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer32_AVX2<false, true>(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler_AVX2::ApplyIntensityToBuffer32_SwapRB_IsUnaligned(u32 *dst, size_t pixCount, float intensity) const
+{
+	return ColorspaceApplyIntensityToBuffer32_AVX2<true, true>(dst, pixCount, intensity);
+}
+
 template void ColorspaceConvert555To8888_AVX2<true>(const v256u16 &srcColor, const v256u32 &srcAlphaBits32Lo, const v256u32 &srcAlphaBits32Hi, v256u32 &dstLo, v256u32 &dstHi);
 template void ColorspaceConvert555To8888_AVX2<false>(const v256u16 &srcColor, const v256u32 &srcAlphaBits32Lo, const v256u32 &srcAlphaBits32Hi, v256u32 &dstLo, v256u32 &dstHi);
 
@@ -648,5 +898,11 @@ template v256u16 ColorspaceCopy16_AVX2<false>(const v256u16 &src);
 
 template v256u32 ColorspaceCopy32_AVX2<true>(const v256u32 &src);
 template v256u32 ColorspaceCopy32_AVX2<false>(const v256u32 &src);
+
+template v256u16 ColorspaceApplyIntensity16_AVX2<true>(const v256u16 &src, float intensity);
+template v256u16 ColorspaceApplyIntensity16_AVX2<false>(const v256u16 &src, float intensity);
+
+template v256u32 ColorspaceApplyIntensity32_AVX2<true>(const v256u32 &src, float intensity);
+template v256u32 ColorspaceApplyIntensity32_AVX2<false>(const v256u32 &src, float intensity);
 
 #endif // ENABLE_AVX2

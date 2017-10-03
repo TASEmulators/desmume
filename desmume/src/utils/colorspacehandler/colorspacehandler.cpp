@@ -563,6 +563,181 @@ void ColorspaceCopyBuffer32(const u32 *src, u32 *dst, size_t pixCount)
 	}
 }
 
+template <bool SWAP_RB, bool IS_UNALIGNED>
+void ColorspaceApplyIntensityToBuffer16(u16 *dst, size_t pixCount, float intensity)
+{
+	size_t i = 0;
+	
+#ifdef USEMANUALVECTORIZATION
+	
+#if defined(USEVECTORSIZE_512)
+	const size_t pixCountVector = pixCount - (pixCount % 32);
+#elif defined(USEVECTORSIZE_256)
+	const size_t pixCountVector = pixCount - (pixCount % 16);
+#elif defined(USEVECTORSIZE_128)
+	const size_t pixCountVector = pixCount - (pixCount % 8);
+#endif
+	
+	if (SWAP_RB)
+	{
+		if (IS_UNALIGNED)
+		{
+			i = csh.ApplyIntensityToBuffer16_IsUnaligned(dst, pixCountVector, intensity);
+		}
+		else
+		{
+			i = csh.ApplyIntensityToBuffer16_SwapRB(dst, pixCountVector, intensity);
+		}
+	}
+	else
+	{
+		if (IS_UNALIGNED)
+		{
+			i = csh.ApplyIntensityToBuffer16_IsUnaligned(dst, pixCountVector, intensity);
+		}
+		else
+		{
+			i = csh.ApplyIntensityToBuffer16(dst, pixCountVector, intensity);
+		}
+	}
+	
+#pragma LOOPVECTORIZE_DISABLE
+	
+#endif // USEMANUALVECTORIZATION
+	
+	if (intensity > 0.999f)
+	{
+		if (SWAP_RB)
+		{
+			for (; i < pixCount; i++)
+			{
+				dst[i] = COLOR5551_SWAP_RB(dst[i]);
+			}
+		}
+		
+		return;
+	}
+	else if (intensity < 0.001f)
+	{
+		for (; i < pixCount; i++)
+		{
+			dst[i] = dst[i] & 0x8000;
+		}
+		
+		return;
+	}
+	
+	const u16 intensity_u16 = (u16)(intensity * (float)(0xFFFF));
+	
+	for (; i < pixCount; i++)
+	{
+		u16 outColor = (SWAP_RB) ? COLOR5551_SWAP_RB(dst[i]) : dst[i];
+		
+		u8 r = (u8)( (((outColor >>  0) & 0x1F) * intensity_u16) >> 16 );
+		u8 g = (u8)( (((outColor >>  5) & 0x1F) * intensity_u16) >> 16 );
+		u8 b = (u8)( (((outColor >> 10) & 0x1F) * intensity_u16) >> 16 );
+		u8 a = outColor & 0x8000;
+		
+		dst[i] = ( (r << 0) | (g << 5) | (b << 10) | a );
+	}
+}
+
+template <bool SWAP_RB, bool IS_UNALIGNED>
+void ColorspaceApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensity)
+{
+	size_t i = 0;
+	
+#ifdef USEMANUALVECTORIZATION
+	
+#if defined(USEVECTORSIZE_512)
+	const size_t pixCountVector = pixCount - (pixCount % 32);
+#elif defined(USEVECTORSIZE_256)
+	const size_t pixCountVector = pixCount - (pixCount % 16);
+#elif defined(USEVECTORSIZE_128)
+	const size_t pixCountVector = pixCount - (pixCount % 8);
+#endif
+	
+	if (SWAP_RB)
+	{
+		if (IS_UNALIGNED)
+		{
+			i = csh.ApplyIntensityToBuffer32_IsUnaligned(dst, pixCountVector, intensity);
+		}
+		else
+		{
+			i = csh.ApplyIntensityToBuffer32_SwapRB(dst, pixCountVector, intensity);
+		}
+	}
+	else
+	{
+		if (IS_UNALIGNED)
+		{
+			i = csh.ApplyIntensityToBuffer32_IsUnaligned(dst, pixCountVector, intensity);
+		}
+		else
+		{
+			i = csh.ApplyIntensityToBuffer32(dst, pixCountVector, intensity);
+		}
+	}
+	
+#pragma LOOPVECTORIZE_DISABLE
+	
+#endif // USEMANUALVECTORIZATION
+	
+	if (intensity > 0.999f)
+	{
+		if (SWAP_RB)
+		{
+			for (; i < pixCount; i++)
+			{
+				FragmentColor dstColor;
+				dstColor.color = dst[i];
+				
+				FragmentColor &outColor = (FragmentColor &)dst[i];
+				outColor.r = dstColor.b;
+				outColor.b = dstColor.r;
+			}
+		}
+		
+		return;
+	}
+	else if (intensity < 0.001f)
+	{
+		for (; i < pixCount; i++)
+		{
+			dst[i] = dst[i] & 0xFF000000;
+		}
+		
+		return;
+	}
+	
+	const u16 intensity_u16 = (u16)(intensity * (float)(0xFFFF));
+	
+	if (SWAP_RB)
+	{
+		for (; i < pixCount; i++)
+		{
+			FragmentColor dstColor;
+			dstColor.color = dst[i];
+			
+			FragmentColor &outColor = (FragmentColor &)dst[i];
+			outColor.r = (u8)( ((u16)dstColor.b * intensity_u16) >> 16 );
+			outColor.g = (u8)( ((u16)dstColor.g * intensity_u16) >> 16 );
+			outColor.b = (u8)( ((u16)dstColor.r * intensity_u16) >> 16 );
+		}
+	}
+	else
+	{
+		for (; i < pixCount; i++)
+		{
+			FragmentColor &outColor = (FragmentColor &)dst[i];
+			outColor.r = (u8)( ((u16)outColor.r * intensity_u16) >> 16 );
+			outColor.g = (u8)( ((u16)outColor.g * intensity_u16) >> 16 );
+			outColor.b = (u8)( ((u16)outColor.b * intensity_u16) >> 16 );
+		}
+	}
+}
+
 size_t ColorspaceHandler::ConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount) const
 {
 	size_t i = 0;
@@ -835,6 +1010,176 @@ size_t ColorspaceHandler::CopyBuffer32_SwapRB_IsUnaligned(const u32 *src, u32 *d
 	return this->CopyBuffer32_SwapRB(src, dst, pixCount);
 }
 
+size_t ColorspaceHandler::ApplyIntensityToBuffer16(u16 *dst, size_t pixCount, float intensity) const
+{
+	size_t i = 0;
+	
+	if (intensity > 0.999f)
+	{
+		return pixCount;
+	}
+	else if (intensity < 0.001f)
+	{
+		for (; i < pixCount; i++)
+		{
+			dst[i] = dst[i] & 0x8000;
+		}
+		
+		return i;
+	}
+	
+	const u16 intensity_u16 = (u16)(intensity * (float)(0xFFFF));
+	
+	for (; i < pixCount; i++)
+	{
+		u16 outColor = dst[i];
+		
+		u8 r = (u8)( (((outColor >>  0) & 0x1F) * intensity_u16) >> 16 );
+		u8 g = (u8)( (((outColor >>  5) & 0x1F) * intensity_u16) >> 16 );
+		u8 b = (u8)( (((outColor >> 10) & 0x1F) * intensity_u16) >> 16 );
+		u8 a = outColor & 0x8000;
+		
+		dst[i] = ( (r << 0) | (g << 5) | (b << 10) | a );
+	}
+	
+	return i;
+}
+
+size_t ColorspaceHandler::ApplyIntensityToBuffer16_SwapRB(u16 *dst, size_t pixCount, float intensity) const
+{
+	size_t i = 0;
+	
+	if (intensity > 0.999f)
+	{
+		for (; i < pixCount; i++)
+		{
+			dst[i] = COLOR5551_SWAP_RB(dst[i]);
+		}
+		
+		return i;
+	}
+	else if (intensity < 0.001f)
+	{
+		for (; i < pixCount; i++)
+		{
+			dst[i] = dst[i] & 0x8000;
+		}
+		
+		return i;
+	}
+	
+	const u16 intensity_u16 = (u16)(intensity * (float)(0xFFFF));
+	
+	for (; i < pixCount; i++)
+	{
+		u16 outColor = COLOR5551_SWAP_RB(dst[i]);
+		
+		u8 r = (u8)( (((outColor >>  0) & 0x1F) * intensity_u16) >> 16 );
+		u8 g = (u8)( (((outColor >>  5) & 0x1F) * intensity_u16) >> 16 );
+		u8 b = (u8)( (((outColor >> 10) & 0x1F) * intensity_u16) >> 16 );
+		u8 a = outColor & 0x8000;
+		
+		dst[i] = ( (r << 0) | (g << 5) | (b << 10) | a );
+	}
+	
+	return i;
+}
+
+size_t ColorspaceHandler::ApplyIntensityToBuffer16_IsUnaligned(u16 *dst, size_t pixCount, float intensity) const
+{
+	return this->ApplyIntensityToBuffer16(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler::ApplyIntensityToBuffer16_SwapRB_IsUnaligned(u16 *dst, size_t pixCount, float intensity) const
+{
+	return this->ApplyIntensityToBuffer16_SwapRB(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler::ApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensity) const
+{
+	size_t i = 0;
+	
+	if (intensity > 0.999f)
+	{
+		return pixCount;
+	}
+	else if (intensity < 0.001f)
+	{
+		for (; i < pixCount; i++)
+		{
+			dst[i] = dst[i] & 0xFF000000;
+		}
+		
+		return i;
+	}
+	
+	const u16 intensity_u16 = (u16)(intensity * (float)(0xFFFF));
+	
+	for (; i < pixCount; i++)
+	{
+		FragmentColor &outColor = (FragmentColor &)dst[i];
+		outColor.r = (u8)( ((u16)outColor.r * intensity_u16) >> 16 );
+		outColor.g = (u8)( ((u16)outColor.g * intensity_u16) >> 16 );
+		outColor.b = (u8)( ((u16)outColor.b * intensity_u16) >> 16 );
+	}
+	
+	return i;
+}
+
+size_t ColorspaceHandler::ApplyIntensityToBuffer32_SwapRB(u32 *dst, size_t pixCount, float intensity) const
+{
+	size_t i = 0;
+	
+	if (intensity > 0.999f)
+	{
+		for (; i < pixCount; i++)
+		{
+			FragmentColor dstColor;
+			dstColor.color = dst[i];
+			
+			FragmentColor &outColor = (FragmentColor &)dst[i];
+			outColor.r = dstColor.b;
+			outColor.b = dstColor.r;
+		}
+		
+		return i;
+	}
+	else if (intensity < 0.001f)
+	{
+		for (; i < pixCount; i++)
+		{
+			dst[i] = dst[i] & 0xFF000000;
+		}
+		
+		return i;
+	}
+	
+	const u16 intensity_u16 = (u16)(intensity * (float)(0xFFFF));
+	
+	for (; i < pixCount; i++)
+	{
+		FragmentColor dstColor;
+		dstColor.color = dst[i];
+		
+		FragmentColor &outColor = (FragmentColor &)dst[i];
+		outColor.r = (u8)( ((u16)dstColor.b * intensity_u16) >> 16 );
+		outColor.g = (u8)( ((u16)dstColor.g * intensity_u16) >> 16 );
+		outColor.b = (u8)( ((u16)dstColor.r * intensity_u16) >> 16 );
+	}
+	
+	return i;
+}
+
+size_t ColorspaceHandler::ApplyIntensityToBuffer32_IsUnaligned(u32 *dst, size_t pixCount, float intensity) const
+{
+	return this->ApplyIntensityToBuffer32(dst, pixCount, intensity);
+}
+
+size_t ColorspaceHandler::ApplyIntensityToBuffer32_SwapRB_IsUnaligned(u32 *dst, size_t pixCount, float intensity) const
+{
+	return this->ApplyIntensityToBuffer32_SwapRB(dst, pixCount, intensity);
+}
+
 template void ColorspaceConvertBuffer555To8888Opaque<true, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 template void ColorspaceConvertBuffer555To8888Opaque<true, false>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 template void ColorspaceConvertBuffer555To8888Opaque<false, true>(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
@@ -879,3 +1224,13 @@ template void ColorspaceCopyBuffer32<true, true>(const u32 *src, u32 *dst, size_
 template void ColorspaceCopyBuffer32<true, false>(const u32 *src, u32 *dst, size_t pixCount);
 template void ColorspaceCopyBuffer32<false, true>(const u32 *src, u32 *dst, size_t pixCount);
 template void ColorspaceCopyBuffer32<false, false>(const u32 *src, u32 *dst, size_t pixCount);
+
+template void ColorspaceApplyIntensityToBuffer16<true, true>(u16 *dst, size_t pixCount, float intensity);
+template void ColorspaceApplyIntensityToBuffer16<true, false>(u16 *dst, size_t pixCount, float intensity);
+template void ColorspaceApplyIntensityToBuffer16<false, true>(u16 *dst, size_t pixCount, float intensity);
+template void ColorspaceApplyIntensityToBuffer16<false, false>(u16 *dst, size_t pixCount, float intensity);
+
+template void ColorspaceApplyIntensityToBuffer32<true, true>(u32 *dst, size_t pixCount, float intensity);
+template void ColorspaceApplyIntensityToBuffer32<true, false>(u32 *dst, size_t pixCount, float intensity);
+template void ColorspaceApplyIntensityToBuffer32<false, true>(u32 *dst, size_t pixCount, float intensity);
+template void ColorspaceApplyIntensityToBuffer32<false, false>(u32 *dst, size_t pixCount, float intensity);

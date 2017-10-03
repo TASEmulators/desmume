@@ -37,6 +37,9 @@ template<bool SWAP_RB> v128u32 ColorspaceConvert888XTo8888Opaque_SSE2(const v128
 template<bool SWAP_RB> v128u16 ColorspaceCopy16_SSE2(const v128u16 &src);
 template<bool SWAP_RB> v128u32 ColorspaceCopy32_SSE2(const v128u32 &src);
 
+template<bool SWAP_RB> v128u16 ColorspaceApplyIntensity16_SSE2(const v128u16 &src, float intensity);
+template<bool SWAP_RB> v128u32 ColorspaceApplyIntensity32_SSE2(const v128u32 &src, float intensity);
+
 class ColorspaceHandler_SSE2 : public ColorspaceHandler
 {
 public:
@@ -82,6 +85,16 @@ public:
 	
 	size_t CopyBuffer32_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const;
 	size_t CopyBuffer32_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const;
+	
+	size_t ApplyIntensityToBuffer16(u16 *dst, size_t pixCount, float intensity) const;
+	size_t ApplyIntensityToBuffer16_SwapRB(u16 *dst, size_t pixCount, float intensity) const;
+	size_t ApplyIntensityToBuffer16_IsUnaligned(u16 *dst, size_t pixCount, float intensity) const;
+	size_t ApplyIntensityToBuffer16_SwapRB_IsUnaligned(u16 *dst, size_t pixCount, float intensity) const;
+	
+	size_t ApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensity) const;
+	size_t ApplyIntensityToBuffer32_SwapRB(u32 *dst, size_t pixCount, float intensity) const;
+	size_t ApplyIntensityToBuffer32_IsUnaligned(u32 *dst, size_t pixCount, float intensity) const;
+	size_t ApplyIntensityToBuffer32_SwapRB_IsUnaligned(u32 *dst, size_t pixCount, float intensity) const;
 };
 
 #endif // ENABLE_SSE2

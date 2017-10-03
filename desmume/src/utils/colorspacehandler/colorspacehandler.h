@@ -265,6 +265,65 @@ FORCEINLINE u32 ColorspaceCopy32(u32 srcColor)
 	return ColorspaceCopy32<SWAP_RB>(srcColorComponent);
 }
 
+template <bool SWAP_RB>
+FORCEINLINE u16 ColorspaceApplyIntensity16(u16 srcColor, float intensity)
+{
+	u16 outColor = (SWAP_RB) ? COLOR5551_SWAP_RB(srcColor) : srcColor;
+	
+	if (intensity > 0.999f)
+	{
+		return outColor;
+	}
+	else if (intensity < 0.001f)
+	{
+		return (outColor & 0x8000);
+	}
+	
+	const u16 intensity_u16 = (u16)(intensity * (float)(0xFFFF));
+	u8 r = (u8)( (((outColor >>  0) & 0x1F) * intensity_u16) >> 16 );
+	u8 g = (u8)( (((outColor >>  5) & 0x1F) * intensity_u16) >> 16 );
+	u8 b = (u8)( (((outColor >> 10) & 0x1F) * intensity_u16) >> 16 );
+	u8 a = outColor & 0x8000;
+	
+	return ( (r << 0) | (g << 5) | (b << 10) | a );
+}
+
+template <bool SWAP_RB>
+FORCEINLINE u32 ColorspaceApplyIntensity32(FragmentColor srcColor, float intensity)
+{
+	FragmentColor outColor;
+	outColor.r = ((SWAP_RB) ? srcColor.b : srcColor.r);
+	outColor.g = srcColor.g;
+	outColor.b = ((SWAP_RB) ? srcColor.r : srcColor.b);
+	outColor.a = srcColor.a;
+	
+	if (intensity > 0.999f)
+	{
+		return outColor.color;
+	}
+	else if (intensity < 0.001f)
+	{
+		return (outColor.color & 0xFF000000);
+	}
+	
+	const u16 intensity_u16 = (u16)(intensity * (float)(0xFFFF));
+	outColor.r = (u8)( ((u16)outColor.r * intensity_u16) >> 16 );
+	outColor.g = (u8)( ((u16)outColor.g * intensity_u16) >> 16 );
+	outColor.b = (u8)( ((u16)outColor.b * intensity_u16) >> 16 );
+	outColor.a = outColor.a;
+	
+	return outColor.color;
+}
+
+template <bool SWAP_RB>
+FORCEINLINE u32 ColorspaceApplyIntensity32(u32 srcColor, float intensity)
+{
+	FragmentColor srcColorComponent;
+	srcColorComponent.color = srcColor;
+	
+	return ColorspaceApplyIntensity32<SWAP_RB>(srcColorComponent);
+}
+
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer555To8888Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer555To6665Opaque(const u16 *__restrict src, u32 *__restrict dst, size_t pixCount);
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer8888To6665(const u32 *src, u32 *dst, size_t pixCount);
@@ -275,6 +334,9 @@ template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer888XTo8888
 
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceCopyBuffer16(const u16 *src, u16 *dst, size_t pixCount);
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceCopyBuffer32(const u32 *src, u32 *dst, size_t pixCount);
+
+template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceApplyIntensityToBuffer16(u16 *dst, size_t pixCount, float intensity);
+template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensity);
 
 class ColorspaceHandler
 {
@@ -321,6 +383,16 @@ public:
 	
 	size_t CopyBuffer32_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const;
 	size_t CopyBuffer32_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const;
+	
+	size_t ApplyIntensityToBuffer16(u16 *dst, size_t pixCount, float intensity) const;
+	size_t ApplyIntensityToBuffer16_SwapRB(u16 *dst, size_t pixCount, float intensity) const;
+	size_t ApplyIntensityToBuffer16_IsUnaligned(u16 *dst, size_t pixCount, float intensity) const;
+	size_t ApplyIntensityToBuffer16_SwapRB_IsUnaligned(u16 *dst, size_t pixCount, float intensity) const;
+	
+	size_t ApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensity) const;
+	size_t ApplyIntensityToBuffer32_SwapRB(u32 *dst, size_t pixCount, float intensity) const;
+	size_t ApplyIntensityToBuffer32_IsUnaligned(u32 *dst, size_t pixCount, float intensity) const;
+	size_t ApplyIntensityToBuffer32_SwapRB_IsUnaligned(u32 *dst, size_t pixCount, float intensity) const;
 };
 
 FORCEINLINE FragmentColor MakeFragmentColor(const u8 r, const u8 g, const u8 b, const u8 a)
