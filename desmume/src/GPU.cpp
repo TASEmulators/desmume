@@ -8115,11 +8115,9 @@ void GPUSubsystem::RenderLine(const size_t l)
 			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Main]  = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
 			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Touch] = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
 			
-			// Set the average backlight intensity and then reset the current total.
+			// Set the average backlight intensity over 263 H-blanks.
 			this->_displayInfo.backlightIntensity[NDSDisplayID_Main]  = this->_backlightIntensityTotal[NDSDisplayID_Main]  / 263.0f;
 			this->_displayInfo.backlightIntensity[NDSDisplayID_Touch] = this->_backlightIntensityTotal[NDSDisplayID_Touch] / 263.0f;
-			this->_backlightIntensityTotal[NDSDisplayID_Main]  = 0.0f;
-			this->_backlightIntensityTotal[NDSDisplayID_Touch] = 0.0f;
 			
 			this->_engineMain->UpdateMasterBrightnessDisplayInfo(this->_displayInfo);
 			this->_engineSub->UpdateMasterBrightnessDisplayInfo(this->_displayInfo);
@@ -8136,6 +8134,10 @@ void GPUSubsystem::RenderLine(const size_t l)
 				this->ResolveDisplayToCustomFramebuffer(NDSDisplayID_Touch, this->_displayInfo);
 			}
 		}
+		
+		// Reset the current backlight intensity total.
+		this->_backlightIntensityTotal[NDSDisplayID_Main]  = 0.0f;
+		this->_backlightIntensityTotal[NDSDisplayID_Touch] = 0.0f;
 		
 		if (this->_frameNeedsFinish)
 		{
