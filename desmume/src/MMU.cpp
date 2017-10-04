@@ -1011,10 +1011,11 @@ void MMU_Reset()
 
 	MMU.powerMan_CntReg = 0x00;
 	MMU.powerMan_CntRegWritten = FALSE;
-	MMU.powerMan_Reg[0] = 0x0B;
+	MMU.powerMan_Reg[0] = 0x0D;
 	MMU.powerMan_Reg[1] = 0x00;
 	MMU.powerMan_Reg[2] = 0x01;
 	MMU.powerMan_Reg[3] = 0x00;
+	MMU.powerMan_Reg[4] = 0x03;
 
 	rtcInit();
 	partie = 1;

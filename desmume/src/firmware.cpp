@@ -798,7 +798,7 @@ static void fill_user_data_area( struct NDS_fw_config_data *user_settings,u8 *da
 	}
 
 	//language and flags
-	data[0x64] = user_settings->language;
+	data[0x64] = user_settings->language | 0x30; // Also set bits 4 and 5 to set the backlight level to max.
 	data[0x65] = 0xfc;
 
 	//update count and crc
