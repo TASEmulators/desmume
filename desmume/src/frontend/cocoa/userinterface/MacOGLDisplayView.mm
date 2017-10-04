@@ -485,11 +485,7 @@ void MacOGLDisplayView::SetAllowViewFlushes(bool allowFlushes)
 {
 	CGDirectDisplayID displayID = (CGDirectDisplayID)this->GetDisplayViewID();
 	MacClientSharedObject *sharedData = ((MacOGLDisplayPresenter *)this->_presenter)->GetSharedData();
-	
-	if (![sharedData isDisplayLinkRunningUsingID:displayID])
-	{
-		[sharedData displayLinkStartUsingID:displayID];
-	}
+	[sharedData displayLinkStartUsingID:displayID];
 }
 
 void MacOGLDisplayView::SetUseVerticalSync(const bool useVerticalSync)

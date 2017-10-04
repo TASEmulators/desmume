@@ -2200,11 +2200,7 @@ void MacMetalDisplayView::SetAllowViewFlushes(bool allowFlushes)
 {
 	CGDirectDisplayID displayID = (CGDirectDisplayID)this->GetDisplayViewID();
 	MacClientSharedObject *sharedData = ((MacMetalDisplayPresenter *)this->_presenter)->GetSharedData();
-	
-	if (![sharedData isDisplayLinkRunningUsingID:displayID])
-	{
-		[sharedData displayLinkStartUsingID:displayID];
-	}
+	[sharedData displayLinkStartUsingID:displayID];
 }
 
 void MacMetalDisplayView::FlushView()

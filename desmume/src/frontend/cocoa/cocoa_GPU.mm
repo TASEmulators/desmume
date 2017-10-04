@@ -876,7 +876,7 @@ public:
 	
 	pthread_rwlock_init(_rwlockFramebuffer[0], NULL);
 	pthread_rwlock_init(_rwlockFramebuffer[1], NULL);
-	pthread_mutex_init(&_mutexFlushVideo, NULL);
+	pthread_mutex_init(&_mutexDisplayLinkLists, NULL);
 	
 	GPUFetchObject = nil;
 	_mutexOutputList = NULL;
@@ -911,24 +911,27 @@ public:
 	pthread_cond_destroy(&_condSignalFetch);
 	pthread_mutex_destroy(&_mutexFetchExecute);
 	
-	pthread_mutex_lock(&_mutexFlushVideo);
+	pthread_mutex_lock(&_mutexDisplayLinkLists);
 	
-	for (DisplayLinksActiveMap::iterator it = _displayLinksActiveList.begin(); it != _displayLinksActiveList.end(); ++it)
+	while (_displayLinksActiveList.size() > 0)
 	{
+		DisplayLinksActiveMap::iterator it = _displayLinksActiveList.begin();
 		CGDirectDisplayID displayID = it->first;
 		CVDisplayLinkRef displayLinkRef = it->second;
+		
 		if (CVDisplayLinkIsRunning(displayLinkRef))
 		{
 			CVDisplayLinkStop(displayLinkRef);
-			CVDisplayLinkRelease(displayLinkRef);
 		}
+		
+		CVDisplayLinkRelease(displayLinkRef);
 		
 		_displayLinksActiveList.erase(displayID);
 		_displayLinkFlushTimeList.erase(displayID);
 	}
 	
-	pthread_mutex_unlock(&_mutexFlushVideo);
-	pthread_mutex_destroy(&_mutexFlushVideo);
+	pthread_mutex_unlock(&_mutexDisplayLinkLists);
+	pthread_mutex_destroy(&_mutexDisplayLinkLists);
 	
 	pthread_mutex_t *currentMutex = _mutexOutputList;
 	
@@ -1066,8 +1069,6 @@ public:
 		pthread_mutex_unlock(currentMutex);
 	}
 	
-	pthread_mutex_lock(&_mutexFlushVideo);
-	
 	if (didFlushOccur)
 	{
 		// Set the new time limit to 8 seconds after the current time.
@@ -1077,45 +1078,25 @@ public:
 	{
 		CVDisplayLinkStop(displayLink);
 	}
-	
-	pthread_mutex_unlock(&_mutexFlushVideo);
-}
-
-- (BOOL) isDisplayLinkRunningUsingID:(CGDirectDisplayID)displayID
-{
-	CVDisplayLinkRef displayLink = NULL;
-	
-	pthread_mutex_lock(&_mutexFlushVideo);
-	
-	if (_displayLinksActiveList.find(displayID) != _displayLinksActiveList.end())
-	{
-		displayLink = _displayLinksActiveList[displayID];
-	}
-	
-	const BOOL isRunning = ( (displayLink != NULL) && CVDisplayLinkIsRunning(displayLink) ) ? YES : NO;
-	
-	pthread_mutex_unlock(&_mutexFlushVideo);
-	
-	return isRunning;
 }
 
 - (void) displayLinkStartUsingID:(CGDirectDisplayID)displayID
 {
 	CVDisplayLinkRef displayLink = NULL;
 	
-	pthread_mutex_lock(&_mutexFlushVideo);
+	pthread_mutex_lock(&_mutexDisplayLinkLists);
 	
 	if (_displayLinksActiveList.find(displayID) != _displayLinksActiveList.end())
 	{
 		displayLink = _displayLinksActiveList[displayID];
 	}
 	
-	if (displayLink != NULL)
+	if ( (displayLink != NULL) && !CVDisplayLinkIsRunning(displayLink) )
 	{
 		CVDisplayLinkStart(displayLink);
 	}
 	
-	pthread_mutex_unlock(&_mutexFlushVideo);
+	pthread_mutex_unlock(&_mutexDisplayLinkLists);
 }
 
 - (void) displayLinkListUpdate
@@ -1124,7 +1105,7 @@ public:
 	NSArray *screenList = [NSScreen screens];
 	std::set<CGDirectDisplayID> screenActiveDisplayIDsList;
 	
-	pthread_mutex_lock(&_mutexFlushVideo);
+	pthread_mutex_lock(&_mutexDisplayLinkLists);
 	
 	// Add new CGDirectDisplayIDs for new screens
 	for (size_t i = 0; i < [screenList count]; i++)
@@ -1152,7 +1133,7 @@ public:
 	}
 	
 	// Remove old CGDirectDisplayIDs for screens that no longer exist
-	for (DisplayLinksActiveMap::iterator it = _displayLinksActiveList.begin(); it != _displayLinksActiveList.end(); ++it)
+	for (DisplayLinksActiveMap::iterator it = _displayLinksActiveList.begin(); it != _displayLinksActiveList.end(); )
 	{
 		CGDirectDisplayID displayID = it->first;
 		CVDisplayLinkRef displayLinkRef = it->second;
@@ -1162,15 +1143,28 @@ public:
 			if (CVDisplayLinkIsRunning(displayLinkRef))
 			{
 				CVDisplayLinkStop(displayLinkRef);
-				CVDisplayLinkRelease(displayLinkRef);
 			}
+			
+			CVDisplayLinkRelease(displayLinkRef);
 			
 			_displayLinksActiveList.erase(displayID);
 			_displayLinkFlushTimeList.erase(displayID);
+			
+			if (_displayLinksActiveList.empty())
+			{
+				break;
+			}
+			else
+			{
+				it = _displayLinksActiveList.begin();
+				continue;
+			}
 		}
+		
+		++it;
 	}
 	
-	pthread_mutex_unlock(&_mutexFlushVideo);
+	pthread_mutex_unlock(&_mutexDisplayLinkLists);
 }
 
 - (void) signalFetchAtIndex:(uint8_t)index
