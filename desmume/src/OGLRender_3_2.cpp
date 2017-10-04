@@ -1658,9 +1658,9 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 	glUnmapBuffer(GL_TEXTURE_BUFFER);
 	
-	const size_t vtxBufferSize = sizeof(VERT) * engine.vertlist->count;
+	const size_t vtxBufferSize = sizeof(VERT) * engine.vertListCount;
 	VERT *vtxPtr = (VERT *)glMapBufferRange(GL_ARRAY_BUFFER, 0, vtxBufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-	memcpy(vtxPtr, engine.vertlist, vtxBufferSize);
+	memcpy(vtxPtr, engine.vertList, vtxBufferSize);
 	glUnmapBuffer(GL_ARRAY_BUFFER);
 	
 	glUseProgram(OGLRef.programGeometryID);

@@ -478,6 +478,8 @@ struct POLY {
 };
 
 #define POLYLIST_SIZE 20000
+#define VERTLIST_SIZE (POLYLIST_SIZE * 4)
+
 struct POLYLIST {
 	POLY list[POLYLIST_SIZE];
 	size_t count;
@@ -505,58 +507,85 @@ struct VERT_POS4f
 	}
 };
 
-//dont use SSE optimized matrix instructions in here, things might not be aligned
-//we havent padded this because the sheer bulk of data leaves things running faster without the extra bloat
-struct VERT {
-	// Align to 16 for SSE instructions to work
-	union {
+#include "PACKED.h"
+
+// This struct is padded in such a way so that each component can be accessed with a 16-byte alignment.
+struct VERT
+{
+	union
+	{
 		float coord[4];
-		struct {
-			float x,y,z,w;
+		struct
+		{
+			float x, y, z, w;
 		};
-	} CACHE_ALIGN;
-	union {
-		float texcoord[2];
-		struct {
-			float u,v;
+	};
+	
+	union
+	{
+		float texcoord[4];
+		struct
+		{
+			float u, v, tcPad2, tcPad3;
 		};
-	} CACHE_ALIGN;
-	void set_coord(float x, float y, float z, float w) { 
+	};
+	
+	union
+	{
+		float fcolor[4];
+		struct
+		{
+			float rf, gf, bf, af; // The alpha value is unused and only exists for padding purposes.
+		};
+	};
+	
+	union
+	{
+		u32 color32;
+		u8 color[4];
+		
+		struct
+		{
+			u8 r, g, b, a; // The alpha value is unused and only exists for padding purposes.
+		};
+	};
+	
+	u8 padFinal[12]; // Final padding to bring the struct to exactly 64 bytes.
+	
+	void set_coord(float x, float y, float z, float w)
+	{
 		this->x = x; 
 		this->y = y; 
 		this->z = z; 
 		this->w = w; 
 	}
-	void set_coord(float* coords) { 
+	
+	void set_coord(float* coords)
+	{
 		x = coords[0];
 		y = coords[1];
 		z = coords[2];
 		w = coords[3];
 	}
-	float fcolor[3];
-	u8 color[3];
-
-
-	void color_to_float() {
-		fcolor[0] = color[0];
-		fcolor[1] = color[1];
-		fcolor[2] = color[2];
+	
+	void color_to_float()
+	{
+		rf = (float)r;
+		gf = (float)g;
+		bf = (float)b;
+		af = (float)a;
 	}
+	
 	void save(EMUFILE &os);
 	void load(EMUFILE &is);
 };
 
-#define VERTLIST_SIZE (POLYLIST_SIZE * 4)
-struct VERTLIST {
-	VERT list[VERTLIST_SIZE];
-	size_t count;
-};
+#include "PACKED_END.h"
 
 #define INDEXLIST_SIZE (POLYLIST_SIZE * 4)
 struct INDEXLIST {
 	int list[INDEXLIST_SIZE];
 };
-
 
 struct VIEWPORT {
 	u8 x, y;
@@ -660,9 +689,11 @@ struct Viewer3d_State
 {
 	int frameNumber;
 	GFX3D_State state;
-	VERTLIST vertlist;
+	VERT vertList[VERTLIST_SIZE];
 	POLYLIST polylist;
 	INDEXLIST indexlist;
+	
+	size_t vertListCount;
 };
 
 extern Viewer3d_State* viewer3d_state;
@@ -670,8 +701,8 @@ extern Viewer3d_State* viewer3d_state;
 struct GFX3D
 {
 	GFX3D()
-		: polylist(0)
-		, vertlist(0)
+		: polylist(NULL)
+		, vertList(NULL)
 		, render3DFrameCount(0) {
 	}
 
@@ -681,10 +712,11 @@ struct GFX3D
 	//values used for the currently-rendered frame (committed with each flush)
 	GFX3D_State renderState;
 
-	POLYLIST* polylist;
-	VERTLIST* vertlist;
+	POLYLIST *polylist;
+	VERT *vertList;
 	INDEXLIST indexlist;
 	
+	size_t vertListCount;
 	u32 render3DFrameCount;			// Increments when gfx3d_doFlush() is called. Resets every 60 video frames.
 };
 extern GFX3D gfx3d;

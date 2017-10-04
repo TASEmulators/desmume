@@ -1474,7 +1474,7 @@ Render3DError SoftRasterizerRenderer::InitTables()
 }
 
 template<bool USEHIRESINTERPOLATE>
-size_t SoftRasterizerRenderer::performClipping(const VERTLIST *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
+size_t SoftRasterizerRenderer::performClipping(const VERT *vertList, const POLYLIST *polyList, const INDEXLIST *indexList)
 {
 	//submit all polys to clipper
 	clipper.reset();
@@ -1482,12 +1482,10 @@ size_t SoftRasterizerRenderer::performClipping(const VERTLIST *vertList, const P
 	{
 		const POLY &poly = polyList->list[indexList->list[i]];
 		const VERT *clipVerts[4] = {
-			&vertList->list[poly.vertIndexes[0]],
-			&vertList->list[poly.vertIndexes[1]],
-			&vertList->list[poly.vertIndexes[2]],
-			poly.type==POLYGON_TYPE_QUAD
-			?&vertList->list[poly.vertIndexes[3]]
-			:NULL
+			&vertList[poly.vertIndexes[0]],
+			&vertList[poly.vertIndexes[1]],
+			&vertList[poly.vertIndexes[2]],
+			(poly.type == POLYGON_TYPE_QUAD) ? &vertList[poly.vertIndexes[3]] : NULL
 		};
 		
 		clipper.clipPoly<USEHIRESINTERPOLATE>(poly, clipVerts);
@@ -1651,11 +1649,11 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 	
 	if (CommonSettings.GFX3D_HighResolutionInterpolateColor)
 	{
-		this->_clippedPolyCount = this->performClipping<true>(engine.vertlist, engine.polylist, &engine.indexlist);
+		this->_clippedPolyCount = this->performClipping<true>(engine.vertList, engine.polylist, &engine.indexlist);
 	}
 	else
 	{
-		this->_clippedPolyCount = this->performClipping<false>(engine.vertlist, engine.polylist, &engine.indexlist);
+		this->_clippedPolyCount = this->performClipping<false>(engine.vertList, engine.polylist, &engine.indexlist);
 	}
 	
 	if (rasterizerCores >= 4)

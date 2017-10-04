@@ -367,9 +367,11 @@ static CACHE_ALIGN s32 cacheHalfVector[4][4];
 //-------------poly and vertex lists and such things
 POLYLIST* polylists = NULL;
 POLYLIST* polylist = NULL;
-VERTLIST* vertlists = NULL;
-VERTLIST* vertlist = NULL;
-int			polygonListCompleted = 0;
+VERT *vertLists = NULL;
+VERT *vertList = NULL;
+
+size_t vertListCount[2] = {0, 0};
+int polygonListCompleted = 0;
 
 static int listTwiddle = 1;
 static u8 triStripToggle;
@@ -391,10 +393,10 @@ static void twiddleLists()
 	listTwiddle++;
 	listTwiddle &= 1;
 	polylist = &polylists[listTwiddle];
-	vertlist = &vertlists[listTwiddle];
+	vertList = vertLists + (VERTLIST_SIZE * listTwiddle);
 	polylist->count = 0;
 	polylist->opaqueCount = 0;
-	vertlist->count = 0;
+	vertListCount[listTwiddle] = 0;
 }
 
 static BOOL drawPending = FALSE;
@@ -515,18 +517,21 @@ void gfx3d_init()
 
 	// Use malloc() instead of new because, for some unknown reason, GCC 4.9 has a bug
 	// that causes a std::bad_alloc exception on certain memory allocations. Right now,
-	// POLYLIST and VERTLIST are POD-style structs, so malloc() can substitute for new
+	// POLYLIST and VERT are POD-style structs, so malloc() can substitute for new
 	// in this case.
-	if(polylists == NULL)
+	if (polylists == NULL)
 	{
 		polylists = (POLYLIST *)malloc(sizeof(POLYLIST)*2);
 		polylist = &polylists[0];
 	}
 	
-	if(vertlists == NULL)
+	if (vertLists == NULL)
 	{
-		vertlists = (VERTLIST *)malloc(sizeof(VERTLIST)*2);
-		vertlist = &vertlists[0];
+		vertLists = (VERT *)malloc_alignedPage(VERTLIST_SIZE * sizeof(VERT) * 2);
+		vertList = vertLists;
+		
+		vertListCount[0] = 0;
+		vertListCount[1] = 0;
 	}
 	
 	gfx3d.state.savedDISP3DCNT.value = 0;
@@ -547,9 +552,9 @@ void gfx3d_deinit()
 	polylists = NULL;
 	polylist = NULL;
 	
-	free(vertlists);
-	vertlists = NULL;
-	vertlist = NULL;
+	free_aligned(vertLists);
+	vertLists = NULL;
+	vertList = NULL;
 }
 
 void gfx3d_reset()
@@ -571,12 +576,13 @@ void gfx3d_reset()
 
 	drawPending = FALSE;
 	memset(polylists, 0, sizeof(POLYLIST)*2);
-	memset(vertlists, 0, sizeof(VERTLIST)*2);
+	memset(vertLists, 0, VERTLIST_SIZE * sizeof(VERT) * 2);
 	gfx3d.state.invalidateToon = true;
 	listTwiddle = 1;
 	twiddleLists();
 	gfx3d.polylist = polylist;
-	gfx3d.vertlist = vertlist;
+	gfx3d.vertList = vertList;
+	gfx3d.vertListCount = vertListCount[listTwiddle];
 
 	polyAttr = 0;
 	textureFormat = 0;
@@ -726,7 +732,7 @@ static void SetVertex()
 
 	//refuse to do anything if we have too many verts or polys
 	polygonListCompleted = 0;
-	if(vertlist->count >= VERTLIST_SIZE) 
+	if(vertListCount[listTwiddle] >= VERTLIST_SIZE)
 			return;
 	if(polylist->count >= POLYLIST_SIZE) 
 			return;
@@ -745,13 +751,13 @@ static void SetVertex()
 
 	//record the vertex
 	//VERT &vert = tempVertList.list[tempVertList.count];
-	const size_t vertIndex = vertlist->count + tempVertInfo.count - continuation;
+	const size_t vertIndex = vertListCount[listTwiddle] + tempVertInfo.count - continuation;
 	if (vertIndex >= VERTLIST_SIZE)
 	{
 		printf("wtf\n");
 	}
 	
-	VERT &vert = vertlist->list[vertIndex];
+	VERT &vert = vertList[vertIndex];
 
 	//printf("%f %f %f\n",coordTransformed[0],coordTransformed[1],coordTransformed[2]);
 	//if(coordTransformed[1] > 20) 
@@ -775,7 +781,7 @@ static void SetVertex()
 	vert.color[1] = GFX3D_5TO6_LOOKUP(colorRGB[1]);
 	vert.color[2] = GFX3D_5TO6_LOOKUP(colorRGB[2]);
 	vert.color_to_float();
-	tempVertInfo.map[tempVertInfo.count] = vertlist->count + tempVertInfo.count - continuation;
+	tempVertInfo.map[tempVertInfo.count] = vertListCount[listTwiddle] + tempVertInfo.count - continuation;
 	tempVertInfo.count++;
 
 	//possibly complete a polygon
@@ -791,7 +797,7 @@ static void SetVertex()
 				SUBMITVERTEX(0,0);
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,2);
-				vertlist->count+=3;
+				vertListCount[listTwiddle] += 3;
 				polylist->list[polylist->count].type = POLYGON_TYPE_TRIANGLE;
 				tempVertInfo.count = 0;
 				break;
@@ -804,7 +810,7 @@ static void SetVertex()
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,2);
 				SUBMITVERTEX(3,3);
-				vertlist->count+=4;
+				vertListCount[listTwiddle] += 4;
 				polylist->list[polylist->count].type = POLYGON_TYPE_QUAD;
 				tempVertInfo.count = 0;
 				break;
@@ -819,14 +825,14 @@ static void SetVertex()
 				polylist->list[polylist->count].type = POLYGON_TYPE_TRIANGLE;
 
 				if(triStripToggle)
-					tempVertInfo.map[1] = vertlist->count+2-continuation;
+					tempVertInfo.map[1] = vertListCount[listTwiddle]+2-continuation;
 				else
-					tempVertInfo.map[0] = vertlist->count+2-continuation;
+					tempVertInfo.map[0] = vertListCount[listTwiddle]+2-continuation;
 				
 				if(tempVertInfo.first)
-					vertlist->count+=3;
+					vertListCount[listTwiddle] += 3;
 				else
-					vertlist->count+=1;
+					vertListCount[listTwiddle] += 1;
 
 				triStripToggle ^= 1;
 				tempVertInfo.first = false;
@@ -842,11 +848,11 @@ static void SetVertex()
 				SUBMITVERTEX(2,3);
 				SUBMITVERTEX(3,2);
 				polylist->list[polylist->count].type = POLYGON_TYPE_QUAD;
-				tempVertInfo.map[0] = vertlist->count+2-continuation;
-				tempVertInfo.map[1] = vertlist->count+3-continuation;
+				tempVertInfo.map[0] = vertListCount[listTwiddle]+2-continuation;
+				tempVertInfo.map[1] = vertListCount[listTwiddle]+3-continuation;
 				if(tempVertInfo.first)
-					vertlist->count+=4;
-				else vertlist->count+=2;
+					vertListCount[listTwiddle] += 4;
+				else vertListCount[listTwiddle] += 2;
 				tempVertInfo.first = false;
 				tempVertInfo.count = 2;
 				break;
@@ -866,9 +872,9 @@ static void SetVertex()
 			if (!(textureFormat & (7 << 26)))	// no texture
 			{
 				bool duplicated = false;
-				const VERT &vert0 = vertlist->list[poly.vertIndexes[0]];
-				const VERT &vert1 = vertlist->list[poly.vertIndexes[1]];
-				const VERT &vert2 = vertlist->list[poly.vertIndexes[2]];
+				const VERT &vert0 = vertList[poly.vertIndexes[0]];
+				const VERT &vert1 = vertList[poly.vertIndexes[1]];
+				const VERT &vert2 = vertList[poly.vertIndexes[2]];
 				if ( (vert0.x == vert1.x) && (vert0.y == vert1.y) ) duplicated = true;
 				else
 					if ( (vert1.x == vert2.x) && (vert1.y == vert2.y) ) duplicated = true;
@@ -1823,7 +1829,7 @@ int gfx3d_GetNumPolys()
 int gfx3d_GetNumVertex()
 {
 	//so is this in the currently-displayed or currently-built list?
-	return (vertlists[listTwiddle].count);
+	return (vertListCount[listTwiddle]);
 }
 
 void gfx3d_UpdateToonTable(u8 offset, u16 val)
@@ -2226,7 +2232,8 @@ static void gfx3d_doFlush()
 
 	//the renderer will get the lists we just built
 	gfx3d.polylist = polylist;
-	gfx3d.vertlist = vertlist;
+	gfx3d.vertList = vertList;
+	gfx3d.vertListCount = vertListCount[listTwiddle];
 
 	//and also our current render state
 	gfx3d.state.sortmode = BIT0(gfx3d.state.activeFlushCommand);
@@ -2252,8 +2259,8 @@ static void gfx3d_doFlush()
 	const size_t polycount = polylist->count;
 #ifdef _SHOW_VTX_COUNTERS
 	max_polys = max((u32)polycount, max_polys);
-	max_verts = max((u32)vertlist->count, max_verts);
-	osd->addFixed(180, 20, "%i/%i", polycount, vertlist->count);		// current
+	max_verts = max((u32)vertListCount[listTwiddle], max_verts);
+	osd->addFixed(180, 20, "%i/%i", polycount, vertListCount[listTwiddle]);		// current
 	osd->addFixed(180, 35, "%i/%i", max_polys, max_verts);		// max
 #endif
 
@@ -2269,15 +2276,15 @@ static void gfx3d_doFlush()
 		// If both of these questions answer to yes, then how does the NDS handle a NaN?
 		// For now, simply prevent w from being zero.
 		POLY &poly = polylist->list[i];
-		float verty = vertlist->list[poly.vertIndexes[0]].y;
-		float vertw = (vertlist->list[poly.vertIndexes[0]].w != 0.0f) ? vertlist->list[poly.vertIndexes[0]].w : 0.00000001f;
+		float verty = vertList[poly.vertIndexes[0]].y;
+		float vertw = (vertList[poly.vertIndexes[0]].w != 0.0f) ? vertList[poly.vertIndexes[0]].w : 0.00000001f;
 		verty = 1.0f-(verty+vertw)/(2*vertw);
 		poly.miny = poly.maxy = verty;
 
 		for (size_t j = 1; j < poly.type; j++)
 		{
-			verty = vertlist->list[poly.vertIndexes[j]].y;
-			vertw = (vertlist->list[poly.vertIndexes[j]].w != 0.0f) ? vertlist->list[poly.vertIndexes[j]].w : 0.00000001f;
+			verty = vertList[poly.vertIndexes[j]].y;
+			vertw = (vertList[poly.vertIndexes[j]].w != 0.0f) ? vertList[poly.vertIndexes[j]].w : 0.00000001f;
 			verty = 1.0f-(verty+vertw)/(2*vertw);
 			poly.miny = min(poly.miny, verty);
 			poly.maxy = max(poly.maxy, verty);
@@ -2330,8 +2337,11 @@ static void gfx3d_doFlush()
 		viewer3d_state->frameNumber = currFrameCounter;
 		viewer3d_state->state = gfx3d.state;
 		viewer3d_state->polylist = *gfx3d.polylist;
-		viewer3d_state->vertlist = *gfx3d.vertlist;
 		viewer3d_state->indexlist = gfx3d.indexlist;
+		viewer3d_state->vertListCount = gfx3d.vertListCount;
+		
+		memcpy(viewer3d_state->vertList, gfx3d.vertList, gfx3d.vertListCount * sizeof(VERT));
+		
 		driver->view3d->NewFrame();
 	}
 
@@ -2620,9 +2630,9 @@ void gfx3d_savestate(EMUFILE &os)
 	os.write_32LE(4);
 
 	//dump the render lists
-	os.write_32LE((u32)vertlist->count);
-	for (size_t i = 0; i < vertlist->count; i++)
-		vertlist->list[i].save(os);
+	os.write_32LE((u32)vertListCount[listTwiddle]);
+	for (size_t i = 0; i < vertListCount[listTwiddle]; i++)
+		vertList[i].save(os);
 	
 	os.write_32LE((u32)polylist->count);
 	for (size_t i = 0; i < polylist->count; i++)
@@ -2676,8 +2686,8 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 
 	//jiggle the lists. and also wipe them. this is clearly not the best thing to be doing.
 	listTwiddle = 0;
-	polylist = &polylists[listTwiddle];
-	vertlist = &vertlists[listTwiddle];
+	polylist = &polylists[0];
+	vertList = vertLists;
 	
 	gfx3d_parseCurrentDISP3DCNT();
 	
@@ -2687,9 +2697,9 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 		u32 polyListCount32 = 0;
 		
 		is.read_32LE(vertListCount32);
-		vertlist->count = vertListCount32;
-		for (size_t i = 0; i < vertlist->count; i++)
-			vertlist->list[i].load(is);
+		vertListCount[0] = vertListCount32;
+		for (size_t i = 0; i < vertListCount[0]; i++)
+			vertList[i].load(is);
 		
 		is.read_32LE(polyListCount32);
 		polylist->count = polyListCount32;
@@ -2714,9 +2724,9 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 	}
 
 	gfx3d.polylist = &polylists[listTwiddle^1];
-	gfx3d.vertlist = &vertlists[listTwiddle^1];
+	gfx3d.vertList = vertLists + VERTLIST_SIZE;
 	gfx3d.polylist->count = 0;
-	gfx3d.vertlist->count = 0;
+	gfx3d.vertListCount = 0;
 
 	if (version >= 4)
 	{

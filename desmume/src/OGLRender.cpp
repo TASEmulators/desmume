@@ -3579,9 +3579,9 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	else
 	{
 		// If VBOs aren't supported, we need to use the client-side buffers here.
-		OGLRef.vtxPtrPosition = &engine.vertlist->list[0].coord;
-		OGLRef.vtxPtrTexCoord = &engine.vertlist->list[0].texcoord;
-		OGLRef.vtxPtrColor = (this->isShaderSupported) ? (GLvoid *)&engine.vertlist->list[0].color : OGLRef.color4fBuffer;
+		OGLRef.vtxPtrPosition = &engine.vertList[0].coord;
+		OGLRef.vtxPtrTexCoord = &engine.vertList[0].texcoord;
+		OGLRef.vtxPtrColor = (this->isShaderSupported) ? (GLvoid *)&engine.vertList[0].color : OGLRef.color4fBuffer;
 		indexPtr = OGLRef.vertIndexBuffer;
 	}
 	
@@ -3627,7 +3627,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 				
 				// Consolidate the vertex color and the poly alpha to our internal color buffer
 				// so that OpenGL can use it.
-				const VERT *vert = &engine.vertlist->list[vertIndex];
+				const VERT *vert = &engine.vertList[vertIndex];
 				OGLRef.color4fBuffer[colorIndex+0] = material_8bit_to_float[vert->color[0]];
 				OGLRef.color4fBuffer[colorIndex+1] = material_8bit_to_float[vert->color[1]];
 				OGLRef.color4fBuffer[colorIndex+2] = material_8bit_to_float[vert->color[2]];
@@ -3658,7 +3658,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 	if (this->isVBOSupported)
 	{
 		glUnmapBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB);
-		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * engine.vertlist->count, engine.vertlist);
+		glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, 0, sizeof(VERT) * engine.vertListCount, engine.vertList);
 	}
 	
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -4661,7 +4661,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	}
 	
 	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * engine.vertlist->count, engine.vertlist);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VERT) * engine.vertListCount, engine.vertList);
 	
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask(GL_TRUE);

@@ -545,7 +545,6 @@ struct OGLRenderRef
 };
 
 struct GFX3D_State;
-struct VERTLIST;
 struct POLYLIST;
 struct INDEXLIST;
 struct POLY;
