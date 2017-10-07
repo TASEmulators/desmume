@@ -1350,7 +1350,7 @@ Render3DError OpenGLRenderer_3_2::DisableVertexAttributes()
 	return OGLERROR_NOERR;
 }
 
-Render3DError OpenGLRenderer_3_2::ZeroDstAlphaPass(const POLYLIST *polyList, const INDEXLIST *indexList, bool enableAlphaBlending, size_t indexOffset, u32 lastPolyAttr)
+Render3DError OpenGLRenderer_3_2::ZeroDstAlphaPass(const POLYLIST *polyList, const INDEXLIST *indexList, bool enableAlphaBlending, size_t indexOffset, POLYGON_ATTR lastPolyAttr)
 {
 	OGLRenderRef &OGLRef = *this->ref;
 	
@@ -1612,19 +1612,19 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	
 	for (size_t i = 0; i < engine.polylist->count; i++)
 	{
-		const POLY *thePoly = &engine.polylist->list[engine.indexlist.list[i]];
-		const size_t polyType = thePoly->type;
+		const POLY &thePoly = engine.polylist->list[engine.indexlist.list[i]];
+		const size_t polyType = thePoly.type;
 		
 		for (size_t j = 0; j < polyType; j++)
 		{
-			const GLushort vertIndex = thePoly->vertIndexes[j];
+			const GLushort vertIndex = thePoly.vertIndexes[j];
 			
 			// While we're looping through our vertices, add each vertex index to
 			// a buffer. For GFX3D_QUADS and GFX3D_QUAD_STRIP, we also add additional
 			// vertices here to convert them to GL_TRIANGLES, which are much easier
 			// to work with and won't be deprecated in future OpenGL versions.
 			indexPtr[vertIndexCount++] = vertIndex;
-			if (thePoly->vtxFormat == GFX3D_QUADS || thePoly->vtxFormat == GFX3D_QUAD_STRIP)
+			if (thePoly.vtxFormat == GFX3D_QUADS || thePoly.vtxFormat == GFX3D_QUAD_STRIP)
 			{
 				if (j == 2)
 				{
@@ -1632,26 +1632,24 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 				}
 				else if (j == 3)
 				{
-					indexPtr[vertIndexCount++] = thePoly->vertIndexes[0];
+					indexPtr[vertIndexCount++] = thePoly.vertIndexes[0];
 				}
 			}
 		}
 		
-		this->_textureList[i] = this->GetLoadedTextureFromPolygon(*thePoly, engine.renderState.enableTexturing);
+		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, engine.renderState.enableTexturing);
 		
 		const NDSTextureFormat packFormat = this->_textureList[i]->GetPackFormat();
-		const PolygonAttributes polyAttr = thePoly->getAttributes();
-		const PolygonTexParams texParams = thePoly->getTexParams();
 		
 		polyStates[i].enableTexture = (this->_textureList[i]->IsSamplingEnabled()) ? GL_TRUE : GL_FALSE;
-		polyStates[i].enableFog = (polyAttr.enableRenderFog) ? GL_TRUE : GL_FALSE;
-		polyStates[i].isWireframe = (polyAttr.isWireframe) ? GL_TRUE : GL_FALSE;
-		polyStates[i].setNewDepthForTranslucent = (polyAttr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE;
-		polyStates[i].polyAlpha = (polyAttr.isWireframe) ? 0x1F : polyAttr.alpha;
-		polyStates[i].polyMode = polyAttr.polygonMode;
-		polyStates[i].polyID = polyAttr.polygonID;
-		polyStates[i].texSizeS = texParams.sizeS; // Note that we are using the packed version of sizeS
-		polyStates[i].texSizeT = texParams.sizeT; // Note that we are using the packed version of sizeT
+		polyStates[i].enableFog = (thePoly.attribute.Fog_Enable) ? GL_TRUE : GL_FALSE;
+		polyStates[i].isWireframe = (thePoly.isWireframe()) ? GL_TRUE : GL_FALSE;
+		polyStates[i].setNewDepthForTranslucent = (thePoly.attribute.TranslucentDepthWrite_Enable) ? GL_TRUE : GL_FALSE;
+		polyStates[i].polyAlpha = (thePoly.isWireframe()) ? 0x1F : thePoly.attribute.Alpha;
+		polyStates[i].polyMode = thePoly.attribute.Mode;
+		polyStates[i].polyID = thePoly.attribute.PolygonID;
+		polyStates[i].texSizeS = thePoly.texParam.SizeShiftS; // Note that we are using the preshifted size of S
+		polyStates[i].texSizeT = thePoly.texParam.SizeShiftT; // Note that we are using the preshifted size of T
 		polyStates[i].texSingleBitAlpha = (packFormat != TEXMODE_A3I5 && packFormat != TEXMODE_A5I3) ? GL_TRUE : GL_FALSE;
 	}
 	
@@ -1860,15 +1858,13 @@ void OpenGLRenderer_3_2::SetPolygonIndex(const size_t index)
 
 Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer)
 {
-	const PolygonAttributes attr = thePoly.getAttributes();
-	
 	// Set up depth test mode
 	static const GLenum oglDepthFunc[2] = {GL_LESS, GL_EQUAL};
-	glDepthFunc(oglDepthFunc[attr.enableDepthEqualTest]);
+	glDepthFunc(oglDepthFunc[thePoly.attribute.DepthEqualTest_Enable]);
 	
 	// Set up culling mode
 	static const GLenum oglCullingMode[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
-	GLenum cullingMode = oglCullingMode[attr.surfaceCullingMode];
+	GLenum cullingMode = oglCullingMode[thePoly.attribute.SurfaceCullingMode];
 	
 	if (cullingMode == 0)
 	{
@@ -1883,13 +1879,13 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAs
 	if (willChangeStencilBuffer)
 	{
 		// Handle drawing states for the polygon
-		if (attr.polygonMode == POLYGON_MODE_SHADOW)
+		if (thePoly.attribute.Mode == POLYGON_MODE_SHADOW)
 		{
 			// Set up shadow polygon states.
 			//
 			// See comments in DrawShadowPolygon() for more information about
 			// how this 4-pass process works in OpenGL.
-			if (attr.polygonID == 0)
+			if (thePoly.attribute.PolygonID == 0)
 			{
 				// 1st pass: Mark stencil buffer bits (0x40) with the shadow polygon volume.
 				// Bits are only marked on depth-fail.
@@ -1902,7 +1898,7 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAs
 				// 2nd pass: Mark stencil buffer bits (0x80) with the result of the polygon ID
 				// check. Bits are marked if the polygon ID of this polygon differs from the
 				// one in the stencil buffer.
-				glStencilFunc(GL_NOTEQUAL, 0x80 | attr.polygonID, 0x3F);
+				glStencilFunc(GL_NOTEQUAL, 0x80 | thePoly.attribute.PolygonID, 0x3F);
 				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 				glStencilMask(0x80);
 			}
@@ -1912,12 +1908,12 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAs
 		}
 		else
 		{
-			glStencilFunc(GL_ALWAYS, attr.polygonID, 0x3F);
+			glStencilFunc(GL_ALWAYS, thePoly.attribute.PolygonID, 0x3F);
 			glStencilOp(GL_KEEP, GL_KEEP, (treatAsTranslucent) ? GL_KEEP : GL_REPLACE);
 			glStencilMask(0xFF); // Drawing non-shadow polygons will implicitly reset the stencil buffer bits
 			
 			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-			glDepthMask((!treatAsTranslucent || attr.enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
+			glDepthMask((!treatAsTranslucent || thePoly.attribute.TranslucentDepthWrite_Enable) ? GL_TRUE : GL_FALSE);
 		}
 	}
 	
@@ -1934,11 +1930,9 @@ Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, size_t polyR
 		return OGLERROR_NOERR;
 	}
 	
-	PolygonTexParams texParams = thePoly.getTexParams();
-	
 	glBindTexture(GL_TEXTURE_2D, theTexture->GetID());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (texParams.enableRepeatS ? (texParams.enableMirroredRepeatS ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (texParams.enableRepeatT ? (texParams.enableMirroredRepeatT ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ((thePoly.texParam.RepeatS_Enable) ? ((thePoly.texParam.MirroredRepeatS_Enable) ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ((thePoly.texParam.RepeatT_Enable) ? ((thePoly.texParam.MirroredRepeatT_Enable) ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	
 	if (this->_textureSmooth)
 	{

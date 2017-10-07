@@ -380,7 +380,7 @@ public:
 			return RENDER3DERROR_NOERR;
 		}
 		
-		this->_textureWrapMode = (thePoly.texParam >> 16) & 0x0F;
+		this->_textureWrapMode = thePoly.texParam.TextureWrapMode;
 		
 		theTexture->ResetCacheAge();
 		theTexture->IncreaseCacheUsageCount(1);
@@ -508,7 +508,7 @@ public:
 	}
 	
 	template<bool ISSHADOWPOLYGON>
-	FORCEINLINE void pixel(const PolygonAttributes &polyAttr, const size_t fragmentIndex, FragmentColor &dstColor, float r, float g, float b, float invu, float invv, float w, float z)
+	FORCEINLINE void pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, FragmentColor &dstColor, float r, float g, float b, float invu, float invv, float w, float z)
 	{
 		FragmentColor srcColor;
 		FragmentColor shaderOutput;
@@ -530,7 +530,7 @@ public:
 		
 		// run the depth test
 		bool depthFail = false;
-		if (polyAttr.enableDepthEqualTest)
+		if (polyAttr.DepthEqualTest_Enable)
 		{
 			const u32 minDepth = max<u32>(0x00000000, dstAttributeDepth - SOFTRASTERIZER_DEPTH_EQUAL_TEST_TOLERANCE);
 			const u32 maxDepth = min<u32>(0x00FFFFFF, dstAttributeDepth + SOFTRASTERIZER_DEPTH_EQUAL_TEST_TOLERANCE);
@@ -548,10 +548,10 @@ public:
 			}
 		}
 
-		if(depthFail)
+		if (depthFail)
 		{
 			//shadow mask polygons set stencil bit here
-			if (ISSHADOWPOLYGON && polyAttr.polygonID == 0)
+			if (ISSHADOWPOLYGON && polyAttr.PolygonID == 0)
 				dstAttributeStencil=1;
 			return;
 		}
@@ -559,7 +559,7 @@ public:
 		//handle shadow polys
 		if (ISSHADOWPOLYGON)
 		{
-			if (polyAttr.polygonID == 0)
+			if (polyAttr.PolygonID == 0)
 			{
 				//shadow mask polygons only affect the stencil buffer, and then only when they fail depth test
 				//if we made it here, the shadow mask polygon fragment needs to be trashed
@@ -573,7 +573,7 @@ public:
 					//draw only where stencil bit is set
 					return;
 				}	
-				if (dstAttributeOpaquePolyID == polyAttr.polygonID)
+				if (dstAttributeOpaquePolyID == polyAttr.PolygonID)
 				{
 					//draw only when polygon ID differs
 					//TODO: are we using the right dst polyID?
@@ -596,10 +596,10 @@ public:
 		srcColor = MakeFragmentColor(max<u8>(0x00, min<u32>(0x3F,u32floor(r))),
 									 max<u8>(0x00, min<u32>(0x3F,u32floor(g))),
 									 max<u8>(0x00, min<u32>(0x3F,u32floor(b))),
-									 polyAttr.alpha);
+									 polyAttr.Alpha);
 		
 		//pixel shader
-		shade(polyAttr.polygonMode, srcColor, shaderOutput, invu * w, invv * w);
+		shade((PolygonMode)polyAttr.Mode, srcColor, shaderOutput, invu * w, invv * w);
 		
 		// handle alpha test
 		if ( shaderOutput.a == 0 ||
@@ -612,42 +612,42 @@ public:
 		isOpaquePixel = (shaderOutput.a == 0x1F);
 		if (isOpaquePixel)
 		{
-			dstAttributeOpaquePolyID = polyAttr.polygonID;
-			dstAttributeIsTranslucentPoly = polyAttr.isTranslucent;
-			dstAttributeIsFogged = polyAttr.enableRenderFog;
+			dstAttributeOpaquePolyID = polyAttr.PolygonID;
+			dstAttributeIsTranslucentPoly = isTranslucent;
+			dstAttributeIsFogged = polyAttr.Fog_Enable;
 			dstColor = shaderOutput;
 		}
 		else
 		{
 			//dont overwrite pixels on translucent polys with the same polyids
-			if (dstAttributeTranslucentPolyID == polyAttr.polygonID)
+			if (dstAttributeTranslucentPolyID == polyAttr.PolygonID)
 				return;
 			
 			//originally we were using a test case of shadows-behind-trees in sm64ds
 			//but, it looks bad in that game. this is actually correct
 			//if this isnt correct, then complex shape cart shadows in mario kart don't work right
-			dstAttributeTranslucentPolyID = polyAttr.polygonID;
+			dstAttributeTranslucentPolyID = polyAttr.PolygonID;
 			
 			//alpha blending and write color
 			alphaBlend(dstColor, shaderOutput);
 			
-			dstAttributeIsFogged = (dstAttributeIsFogged && polyAttr.enableRenderFog);
+			dstAttributeIsFogged = (dstAttributeIsFogged && polyAttr.Fog_Enable);
 		}
 		
 		//depth writing
-		if (isOpaquePixel || polyAttr.enableAlphaDepthWrite)
+		if (isOpaquePixel || polyAttr.TranslucentDepthWrite_Enable)
 			dstAttributeDepth = newDepth;
 	}
 
 	//draws a single scanline
-	template <bool ISSHADOWPOLYGON>
-	FORCEINLINE void drawscanline(const PolygonAttributes &polyAttr, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight, bool lineHack)
+	template <bool ISSHADOWPOLYGON, bool USELINEHACK>
+	FORCEINLINE void drawscanline(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight)
 	{
 		int XStart = pLeft->X;
 		int width = pRight->X - XStart;
 
 		// HACK: workaround for vertical/slant line poly
-		if (lineHack && width == 0)
+		if (USELINEHACK && width == 0)
 		{
 			int leftWidth = pLeft->XStep;
 			if (pLeft->ErrorTerm + pLeft->Numerator >= pLeft->Denominator)
@@ -699,7 +699,7 @@ public:
 
 		if (x < 0)
 		{
-			if (RENDERER && !lineHack)
+			if (RENDERER && !USELINEHACK)
 			{
 				printf("rasterizer rendering at x=%d! oops!\n",x);
 				return;
@@ -717,7 +717,7 @@ public:
 		}
 		if (x+width > framebufferWidth)
 		{
-			if (RENDERER && !lineHack && framebufferWidth == GPU_FRAMEBUFFER_NATIVE_WIDTH)
+			if (RENDERER && !USELINEHACK && framebufferWidth == GPU_FRAMEBUFFER_NATIVE_WIDTH)
 			{
 				printf("rasterizer rendering at x=%d! oops!\n",x+width-1);
 				return;
@@ -727,7 +727,7 @@ public:
 		
 		while (width-- > 0)
 		{
-			pixel<ISSHADOWPOLYGON>(polyAttr, adr, dstColor[adr], color[0], color[1], color[2], u, v, 1.0f/invw, z);
+			pixel<ISSHADOWPOLYGON>(polyAttr, isTranslucent, adr, dstColor[adr], color[0], color[1], color[2], u, v, 1.0f/invw, z);
 			adr++;
 			x++;
 
@@ -742,44 +742,44 @@ public:
 	}
 
 	//runs several scanlines, until an edge is finished
-	template<bool SLI, bool ISSHADOWPOLYGON>
-	void runscanlines(const PolygonAttributes &polyAttr, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *left, edge_fx_fl *right, bool horizontal, bool lineHack)
+	template <bool SLI, bool ISSHADOWPOLYGON, bool USELINEHACK, bool ISHORIZONTAL>
+	void runscanlines(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *left, edge_fx_fl *right)
 	{
 		//oh lord, hack city for edge drawing
 
 		//do not overstep either of the edges
 		int Height = min(left->Height,right->Height);
-		bool first=true;
+		bool first = true;
 
 		//HACK: special handling for horizontal line poly
-		if (lineHack && left->Height == 0 && right->Height == 0 && left->Y<framebufferHeight && left->Y>=0)
+		if (USELINEHACK && left->Height == 0 && right->Height == 0 && left->Y<framebufferHeight && left->Y>=0)
 		{
 			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
-			if(draw) drawscanline<ISSHADOWPOLYGON>(polyAttr, dstColor, framebufferWidth, framebufferHeight, left,right,lineHack);
+			if (draw) drawscanline<ISSHADOWPOLYGON, USELINEHACK>(polyAttr, isTranslucent, dstColor, framebufferWidth, framebufferHeight, left, right);
 		}
 
-		while(Height--)
+		while (Height--)
 		{
 			bool draw = (!SLI || (left->Y & SLI_MASK) == SLI_VALUE);
-			if(draw) drawscanline<ISSHADOWPOLYGON>(polyAttr, dstColor, framebufferWidth, framebufferHeight, left,right,lineHack);
+			if (draw) drawscanline<ISSHADOWPOLYGON, USELINEHACK>(polyAttr, isTranslucent, dstColor, framebufferWidth, framebufferHeight, left, right);
 			const int xl = left->X;
 			const int xr = right->X;
 			const int y = left->Y;
 			left->Step();
 			right->Step();
 
-			if(!RENDERER && _debug_thisPoly)
+			if (!RENDERER && _debug_thisPoly)
 			{
 				//debug drawing
-				bool top = (horizontal&&first);
-				bool bottom = (!Height&&horizontal);
-				if(Height || top || bottom)
+				bool top = (ISHORIZONTAL && first);
+				bool bottom = (!Height && ISHORIZONTAL);
+				if (Height || top || bottom)
 				{
-					if(draw)
+					if (draw)
 					{
 						int nxl = left->X;
 						int nxr = right->X;
-						if(top)
+						if (top)
 						{
 							int xs = min(xl,xr);
 							int xe = max(xl,xr);
@@ -791,7 +791,7 @@ public:
 								dstColor[adr].b = 0;
 							}
 						}
-						else if(bottom)
+						else if (bottom)
 						{
 							int xs = min(xl,xr);
 							int xe = max(xl,xr);
@@ -844,11 +844,11 @@ public:
 
 	//rotate verts until vert0.y is minimum, and then vert0.x is minimum in case of ties
 	//this is a necessary precondition for our shape engine
-	template<int TYPE>
-	void sort_verts(bool backwards)
+	template<bool ISBACKWARDS, int TYPE>
+	void sort_verts()
 	{
 		//if the verts are backwards, reorder them first
-		if (backwards)
+		if (ISBACKWARDS)
 			for (size_t i = 0; i < TYPE/2; i++)
 				swap(verts[i],verts[TYPE-i-1]);
 
@@ -881,22 +881,22 @@ public:
 	//verts must be clockwise.
 	//I didnt reference anything for this algorithm but it seems like I've seen it somewhere before.
 	//Maybe it is like crow's algorithm
-	template<bool SLI, bool ISSHADOWPOLYGON>
-	void shape_engine(const PolygonAttributes &polyAttr, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type, const bool backwards, bool lineHack)
+	template <bool SLI, bool ISBACKWARDS, bool ISSHADOWPOLYGON, bool USELINEHACK>
+	void shape_engine(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type)
 	{
 		bool failure = false;
 
-		switch(type)
+		switch (type)
 		{
-			case 3: sort_verts<3>(backwards); break;
-			case 4: sort_verts<4>(backwards); break;
-			case 5: sort_verts<5>(backwards); break;
-			case 6: sort_verts<6>(backwards); break;
-			case 7: sort_verts<7>(backwards); break;
-			case 8: sort_verts<8>(backwards); break;
-			case 9: sort_verts<9>(backwards); break;
-			case 10: sort_verts<10>(backwards); break;
-			default: printf("skipping type %d\n",type); return;
+			case 3: sort_verts<ISBACKWARDS, 3>(); break;
+			case 4: sort_verts<ISBACKWARDS, 4>(); break;
+			case 5: sort_verts<ISBACKWARDS, 5>(); break;
+			case 6: sort_verts<ISBACKWARDS, 6>(); break;
+			case 7: sort_verts<ISBACKWARDS, 7>(); break;
+			case 8: sort_verts<ISBACKWARDS, 8>(); break;
+			case 9: sort_verts<ISBACKWARDS, 9>(); break;
+			case 10: sort_verts<ISBACKWARDS, 10>(); break;
+			default: printf("skipping type %d\n", type); return;
 		}
 
 		//we are going to step around the polygon in both directions starting from vert 0.
@@ -912,18 +912,25 @@ public:
 			//generate new edges if necessary. we must avoid regenerating edges when they are incomplete
 			//so that they can be continued on down the shape
 			assert(rv != type);
-			int _lv = lv==type?0:lv; //make sure that we ask for vert 0 when the variable contains the starting value
+			int _lv = (lv == type) ? 0 : lv; //make sure that we ask for vert 0 when the variable contains the starting value
 			if (step_left) left = edge_fx_fl(_lv,lv-1,(VERT**)&verts, failure);
 			if (step_right) right = edge_fx_fl(rv,rv+1,(VERT**)&verts, failure);
 			step_left = step_right = false;
 
 			//handle a failure in the edge setup due to nutty polys
-			if(failure) 
+			if (failure)
 				return;
 
-			bool horizontal = left.Y == right.Y;
-			runscanlines<SLI, ISSHADOWPOLYGON>(polyAttr, dstColor, framebufferWidth, framebufferHeight, &left, &right, horizontal, lineHack);
-
+			const bool horizontal = (left.Y == right.Y);
+			if (horizontal)
+			{
+				runscanlines<SLI, ISSHADOWPOLYGON, USELINEHACK, true>(polyAttr, isTranslucent, dstColor, framebufferWidth, framebufferHeight, &left, &right);
+			}
+			else
+			{
+				runscanlines<SLI, ISSHADOWPOLYGON, USELINEHACK, false>(polyAttr, isTranslucent, dstColor, framebufferWidth, framebufferHeight, &left, &right);
+			}
+			
 			//if we ran out of an edge, step to the next one
 			if (right.Height == 0)
 			{
@@ -937,11 +944,11 @@ public:
 			}
 
 			//this is our completion condition: when our stepped edges meet in the middle
-			if (lv<=rv+1) break;
+			if (lv <= rv+1) break;
 		}
 	}
 	
-	template<bool SLI>
+	template<bool SLI, bool USELINEHACK>
 	FORCEINLINE void mainLoop()
 	{
 		const size_t polyCount = this->_softRender->_clippedPolyCount;
@@ -956,9 +963,8 @@ public:
 		
 		const GFX3D_Clipper::TClippedPoly &firstClippedPoly = this->_softRender->clippedPolys[0];
 		const POLY &firstPoly = *firstClippedPoly.poly;
-		PolygonAttributes polyAttr = firstPoly.getAttributes();
-		u32 lastPolyAttr = firstPoly.polyAttr;
-		u32 lastTexParams = firstPoly.texParam;
+		POLYGON_ATTR polyAttr = firstPoly.attribute;
+		TEXIMAGE_PARAM lastTexParams = firstPoly.texParam;
 		u32 lastTexPalette = firstPoly.texPalette;
 		
 		this->SetupTexture(firstPoly, 0);
@@ -972,38 +978,78 @@ public:
 
 			GFX3D_Clipper::TClippedPoly &clippedPoly = this->_softRender->clippedPolys[i];
 			const POLY &thePoly = *clippedPoly.poly;
-			const PolygonType type = clippedPoly.type;
+			const int vertCount = clippedPoly.type;
+			const bool useLineHack = USELINEHACK && (thePoly.vtxFormat & 4);
 			
-			if (lastPolyAttr != thePoly.polyAttr)
-			{
-				polyAttr = thePoly.getAttributes();
-				lastPolyAttr = thePoly.polyAttr;
-			}
+			polyAttr = thePoly.attribute;
+			const bool isTranslucent = thePoly.isTranslucent();
 			
-			if (lastTexParams != thePoly.texParam || lastTexPalette != thePoly.texPalette)
+			if (lastTexParams.value != thePoly.texParam.value || lastTexPalette != thePoly.texPalette)
 			{
 				lastTexParams = thePoly.texParam;
 				lastTexPalette = thePoly.texPalette;
 				this->SetupTexture(thePoly, i);
 			}
 			
-			for (int j = 0; j < type; j++)
+			for (int j = 0; j < vertCount; j++)
 				this->verts[j] = &clippedPoly.clipVerts[j];
-			for (int j = type; j < MAX_CLIPPED_VERTS; j++)
+			for (int j = vertCount; j < MAX_CLIPPED_VERTS; j++)
 				this->verts[j] = NULL;
 			
-			if (polyAttr.polygonMode == POLYGON_MODE_SHADOW)
+			if (!this->_softRender->polyBackfacing[i])
 			{
-				shape_engine<SLI, true>(polyAttr, dstColor, dstWidth, dstHeight, type, !this->_softRender->polyBackfacing[i], (thePoly.vtxFormat & 4) && CommonSettings.GFX3D_LineHack);
+				if (polyAttr.Mode == POLYGON_MODE_SHADOW)
+				{
+					if (useLineHack)
+					{
+						shape_engine<SLI, true, true, true>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					}
+					else
+					{
+						shape_engine<SLI, true, true, false>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					}
+				}
+				else
+				{
+					if (useLineHack)
+					{
+						shape_engine<SLI, true, false, true>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					}
+					else
+					{
+						shape_engine<SLI, true, false, false>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					}
+				}
 			}
 			else
 			{
-				shape_engine<SLI, false>(polyAttr, dstColor, dstWidth, dstHeight, type, !this->_softRender->polyBackfacing[i], (thePoly.vtxFormat & 4) && CommonSettings.GFX3D_LineHack);
+				if (polyAttr.Mode == POLYGON_MODE_SHADOW)
+				{
+					if (useLineHack)
+					{
+						shape_engine<SLI, false, true, true>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					}
+					else
+					{
+						shape_engine<SLI, false, true, false>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					}
+				}
+				else
+				{
+					if (useLineHack)
+					{
+						shape_engine<SLI, false, false, true>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					}
+					else
+					{
+						shape_engine<SLI, false, false, false>(polyAttr, isTranslucent, dstColor, dstWidth, dstHeight, vertCount);
+					}
+				}
 			}
 		}
 	}
-
-
+	
+	
 }; //rasterizerUnit
 
 #define _MAX_CORES 16
@@ -1016,7 +1062,16 @@ static bool rasterizerUnitTasksInited = false;
 static void* execRasterizerUnit(void *arg)
 {
 	intptr_t which = (intptr_t)arg;
-	rasterizerUnit[which].mainLoop<true>();
+	
+	if (CommonSettings.GFX3D_LineHack)
+	{
+		rasterizerUnit[which].mainLoop<true, true>();
+	}
+	else
+	{
+		rasterizerUnit[which].mainLoop<true, false>();
+	}
+	
 	return 0;
 }
 
@@ -1066,7 +1121,14 @@ static void* SoftRasterizer_RunRenderEdgeMarkAndFog(void *arg)
 
 void _HACK_Viewer_ExecUnit()
 {
-	_HACK_viewer_rasterizerUnit.mainLoop<false>();
+	if (CommonSettings.GFX3D_LineHack)
+	{
+		_HACK_viewer_rasterizerUnit.mainLoop<false, true>();
+	}
+	else
+	{
+		_HACK_viewer_rasterizerUnit.mainLoop<false, false>();
+	}
 }
 
 static Render3D* SoftRasterizerRendererCreate()
@@ -1092,7 +1154,7 @@ static void SoftRasterizerRendererDestroy()
 	}
 }
 
-SoftRasterizerTexture::SoftRasterizerTexture(u32 texAttributes, u32 palAttributes) : Render3DTexture(texAttributes, palAttributes)
+SoftRasterizerTexture::SoftRasterizerTexture(TEXIMAGE_PARAM texAttributes, u32 palAttributes) : Render3DTexture(texAttributes, palAttributes)
 {
 	_cacheSize = GetUnpackSizeUsingFormat(TexFormat_15bpp);
 	_unpackData = (u32 *)malloc_alignedCacheLine(_cacheSize);
@@ -1599,7 +1661,7 @@ void SoftRasterizerRenderer::performBackfaceTests()
 		const POLY &thePoly = *clippedPoly.poly;
 		const PolygonType type = clippedPoly.type;
 		const VERT *verts = &clippedPoly.clipVerts[0];
-		const u8 cullingMode = thePoly.getAttributeEnableFaceCullingFlags();
+		const u8 cullingMode = thePoly.attribute.SurfaceCullingMode;
 		
 		//HACK: backface culling
 		//this should be moved to gfx3d, but first we need to redo the way the lists are built
@@ -1714,7 +1776,15 @@ Render3DError SoftRasterizerRenderer::RenderGeometry(const GFX3D_State &renderSt
 	}
 	else
 	{
-		rasterizerUnit[0].mainLoop<false>();
+		if (CommonSettings.GFX3D_LineHack)
+		{
+			rasterizerUnit[0].mainLoop<false, true>();
+		}
+		else
+		{
+			rasterizerUnit[0].mainLoop<false, false>();
+		}
+		
 		this->_renderGeometryNeedsFinish = false;
 		texCache.Evict(); // Since we're finishing geometry rendering here and now, also check the texture cache now.
 	}

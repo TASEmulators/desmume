@@ -321,7 +321,7 @@ void TextureCache::ForceReloadAllTextures()
 	}
 }
 
-TextureStore* TextureCache::GetTexture(u32 texAttributes, u32 palAttributes)
+TextureStore* TextureCache::GetTexture(TEXIMAGE_PARAM texAttributes, u32 palAttributes)
 {
 	TextureStore *theTexture = NULL;
 	const TextureCacheKey key = TextureCache::GenerateKey(texAttributes, palAttributes);
@@ -364,16 +364,16 @@ void TextureCache::Remove(TextureStore *texItem)
 	this->_actualCacheSize -= texItem->GetCacheSize();
 }
 
-TextureCacheKey TextureCache::GenerateKey(const u32 texAttributes, const u32 palAttributes)
+TextureCacheKey TextureCache::GenerateKey(const TEXIMAGE_PARAM texAttributes, const u32 palAttributes)
 {
 	// Since the repeat, flip, and coordinate transformation modes are render settings
 	// and not data settings, we can mask out those bits to help reduce duplicate entries.
-	return (TextureCacheKey)( ((u64)palAttributes << 32) | (u64)(texAttributes & 0x3FF0FFFF) );
+	return (TextureCacheKey)( ((u64)palAttributes << 32) | (u64)(texAttributes.value & 0x3FF0FFFF) );
 }
 
 TextureStore::TextureStore()
 {
-	_textureAttributes = 0;
+	_textureAttributes.value = 0;
 	_paletteAttributes = 0;
 	_cacheKey = 0;
 	
@@ -406,7 +406,7 @@ TextureStore::TextureStore()
 	_cacheUsageCount = 0;
 }
 
-TextureStore::TextureStore(const u32 texAttributes, const u32 palAttributes)
+TextureStore::TextureStore(const TEXIMAGE_PARAM texAttributes, const u32 palAttributes)
 {
 	//for each texformat, multiplier from numtexels to numbytes (fixed point 30.2)
 	static const u32 texSizes[] = {0, 4, 1, 2, 4, 1, 4, 8};
@@ -418,16 +418,16 @@ TextureStore::TextureStore(const u32 texAttributes, const u32 palAttributes)
 	_paletteAttributes = palAttributes;
 	_cacheKey = TextureCache::GenerateKey(texAttributes, palAttributes);
 	
-	_sizeS = (8 << ((texAttributes >> 20) & 0x07));
-	_sizeT = (8 << ((texAttributes >> 23) & 0x07));
+	_sizeS = (8 << texAttributes.SizeShiftS);
+	_sizeT = (8 << texAttributes.SizeShiftT);
 	
-	_packFormat = (NDSTextureFormat)((texAttributes >> 26) & 0x07);
-	_packAddress = (texAttributes & 0xFFFF) << 3;
+	_packFormat = (NDSTextureFormat)(texAttributes.PackedFormat);
+	_packAddress = texAttributes.VRAMOffset << 3;
 	_packSize = (_sizeS * _sizeT * texSizes[_packFormat]) >> 2; //shifted because the texSizes multiplier is fixed point
 	
 	if ( (_packFormat == TEXMODE_I2) || (_packFormat == TEXMODE_I4) || (_packFormat == TEXMODE_I8) )
 	{
-		_isPalZeroTransparent = ( ((texAttributes >> 29) & 1) != 0 );
+		_isPalZeroTransparent = (texAttributes.KeyColor0_Enable != 0);
 	}
 	else
 	{
@@ -439,8 +439,8 @@ TextureStore::TextureStore(const u32 texAttributes, const u32 palAttributes)
 	
 	if (_packFormat == TEXMODE_4X4)
 	{
-		const u32 indexBase = ((texAttributes & 0xC000) == 0x8000) ? 0x30000 : 0x20000;
-		const u32 indexOffset = (texAttributes & 0x3FFF) << 2;
+		const u32 indexBase = ((texAttributes.VRAMOffset & 0xC000) == 0x8000) ? 0x30000 : 0x20000;
+		const u32 indexOffset = (texAttributes.VRAMOffset & 0x3FFF) << 2;
 		_packIndexAddress = indexBase + indexOffset;
 		_packIndexSize = (_sizeS * _sizeT) >> 3;
 		
@@ -502,7 +502,7 @@ TextureStore::~TextureStore()
 	free_aligned(this->_packData);
 }
 
-u32 TextureStore::GetTextureAttributes() const
+TEXIMAGE_PARAM TextureStore::GetTextureAttributes() const
 {
 	return this->_textureAttributes;
 }
@@ -647,7 +647,7 @@ void TextureStore::Unpack(u32 *unpackBuffer)
 				PROGINFO("Your 4x4 texture has overrun its texture slot.\n");
 			}
 			
-			NDSTextureUnpack4x4<TEXCACHEFORMAT>(this->_packSizeFirstSlot, (u32 *)this->_packData, (u16 *)this->_packIndexData, this->_paletteAddress, this->_textureAttributes, this->_sizeS, this->_sizeT, unpackBuffer);
+			NDSTextureUnpack4x4<TEXCACHEFORMAT>(this->_packSizeFirstSlot, (u32 *)this->_packData, (u16 *)this->_packIndexData, this->_paletteAddress, this->_sizeS, this->_sizeT, unpackBuffer);
 			break;
 		}
 			
@@ -1164,7 +1164,7 @@ void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *__restrict srcData, co
 #define PAL4X4(offset) ( LE_TO_LOCAL_16( *(u16*)( MMU.texInfo.texPalSlot[((palAddress + (offset)*2)>>14)&0x7] + ((palAddress + (offset)*2)&0x3FFF) ) ) & 0x7FFF )
 
 template <TextureStoreUnpackFormat TEXCACHEFORMAT>
-void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, const u16 *__restrict srcIndex, const u32 palAddress, const u32 texAttributes, const u32 sizeX, const u32 sizeY, u32 *__restrict dstBuffer)
+void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, const u16 *__restrict srcIndex, const u32 palAddress, const u32 sizeX, const u32 sizeY, u32 *__restrict dstBuffer)
 {
 	const u32 limit = srcSize * sizeof(u32);
 	const u16 xTmpSize = sizeX >> 2;

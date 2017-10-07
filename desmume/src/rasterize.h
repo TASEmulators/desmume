@@ -63,7 +63,7 @@ protected:
 	u32 _renderWidthShift;
 	
 public:
-	SoftRasterizerTexture(u32 texAttributes, u32 palAttributes);
+	SoftRasterizerTexture(TEXIMAGE_PARAM texAttributes, u32 palAttributes);
 	virtual ~SoftRasterizerTexture();
 	
 	virtual void Load();

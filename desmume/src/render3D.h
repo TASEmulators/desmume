@@ -126,7 +126,7 @@ protected:
 	template<size_t SCALEFACTOR> void _Upscale(const u32 *__restrict src, u32 *__restrict dst);
 	
 public:
-	Render3DTexture(u32 texAttributes, u32 palAttributes);
+	Render3DTexture(TEXIMAGE_PARAM texAttributes, u32 palAttributes);
 	
 	bool IsSamplingEnabled() const;
 	void SetSamplingEnabled(bool isEnabled);

@@ -193,7 +193,7 @@ void FragmentAttributesBuffer::SetAll(const FragmentAttributes &attr)
 	}
 }
 
-Render3DTexture::Render3DTexture(u32 texAttributes, u32 palAttributes) : TextureStore(texAttributes, palAttributes)
+Render3DTexture::Render3DTexture(TEXIMAGE_PARAM texAttributes, u32 palAttributes) : TextureStore(texAttributes, palAttributes)
 {
 	_isSamplingEnabled = true;
 	_useDeposterize = false;

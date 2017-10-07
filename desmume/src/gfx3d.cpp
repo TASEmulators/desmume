@@ -334,7 +334,10 @@ static CACHE_ALIGN u16 BTcoords[6] = {0, 0, 0, 0, 0, 0};
 static CACHE_ALIGN float PTcoords[4] = {0.0, 0.0, 0.0, 1.0};
 
 //raw ds format poly attributes
-static u32 polyAttr=0,textureFormat=0, texturePalette=0, polyAttrPending=0;
+static POLYGON_ATTR polyAttrInProcess;
+static POLYGON_ATTR currentPolyAttr;
+static TEXIMAGE_PARAM currentPolyTexParam;
+static u32 currentPolyTexPalette = 0;
 
 //the current vertex color, 5bit values
 static u8 colorRGB[4] = { 31,31,31,31 };
@@ -351,11 +354,9 @@ static u8 shininessInd = 0;
 //-----------cached things:
 //these dont need to go into the savestate. they can be regenerated from HW registers
 //from polygonattr:
-static unsigned int cullingMask=0;
-static u32 envMode=0;
 static u32 lightMask=0;
 //other things:
-static int texCoordinateTransform = 0;
+static TextureTransformationMode texCoordTransformMode = TextureTransformationMode_None;
 static CACHE_ALIGN s32 cacheLightDirection[4][4];
 static CACHE_ALIGN s32 cacheHalfVector[4][4];
 //------------------
@@ -438,8 +439,8 @@ void POLY::save(EMUFILE &os)
 	os.write_16LE(vertIndexes[1]);
 	os.write_16LE(vertIndexes[2]);
 	os.write_16LE(vertIndexes[3]);
-	os.write_32LE(polyAttr);
-	os.write_32LE(texParam);
+	os.write_32LE(attribute.value);
+	os.write_32LE(texParam.value);
 	os.write_32LE(texPalette);
 	os.write_32LE(viewport);
 	os.write_floatLE(miny);
@@ -456,8 +457,8 @@ void POLY::load(EMUFILE &is)
 	is.read_16LE(vertIndexes[1]);
 	is.read_16LE(vertIndexes[2]);
 	is.read_16LE(vertIndexes[3]);
-	is.read_32LE(polyAttr);
-	is.read_32LE(texParam);
+	is.read_32LE(attribute.value);
+	is.read_32LE(texParam.value);
 	is.read_32LE(texPalette);
 	is.read_32LE(viewport);
 	is.read_floatLE(miny);
@@ -497,6 +498,10 @@ void VERT::load(EMUFILE &is)
 
 void gfx3d_init()
 {
+	polyAttrInProcess.value = 0;
+	currentPolyAttr.value = 0;
+	currentPolyTexParam.value = 0;
+	
 	gxf_hardware.reset();
 	//gxf_hardware.test();
 	int zzz=9;
@@ -584,10 +589,10 @@ void gfx3d_reset()
 	gfx3d.vertList = vertList;
 	gfx3d.vertListCount = vertListCount[listTwiddle];
 
-	polyAttr = 0;
-	textureFormat = 0;
-	texturePalette = 0;
-	polyAttrPending = 0;
+	polyAttrInProcess.value = 0;
+	currentPolyAttr.value = 0;
+	currentPolyTexParam.value = 0;
+	currentPolyTexPalette = 0;
 	mode = MATRIXMODE_PROJECTION;
 	s16coord[0] = s16coord[1] = s16coord[2] = s16coord[3] = 0;
 	coordind = 0;
@@ -717,7 +722,7 @@ static void SetVertex()
 
 	DS_ALIGN(16) s32 coordTransformed[4] = { coord[0], coord[1], coord[2], (1<<12) };
 
-	if (texCoordinateTransform == 3)
+	if (texCoordTransformMode == TextureTransformationMode_VertexSource)
 	{
 		//Tested by: Eledees The Adventures of Kai and Zero (E) [title screen and frontend menus]
 		last_s = (s32)(((s64)s16coord[0] * mtxCurrent[3][0] + 
@@ -869,7 +874,7 @@ static void SetVertex()
 
 			// Line segment detect
 			// Tested" Castlevania POR - warp stone, trajectory of ricochet, "Eye of Decay"
-			if (!(textureFormat & (7 << 26)))	// no texture
+			if (currentPolyTexParam.PackedFormat == TEXMODE_NONE)
 			{
 				bool duplicated = false;
 				const VERT &vert0 = vertList[poly.vertIndexes[0]];
@@ -889,9 +894,9 @@ static void SetVertex()
 				}
 			}
 
-			poly.polyAttr = polyAttr;
-			poly.texParam = textureFormat;
-			poly.texPalette = texturePalette;
+			poly.attribute = polyAttrInProcess;
+			poly.texParam = currentPolyTexParam;
+			poly.texPalette = currentPolyTexPalette;
 			poly.viewport = viewport;
 			polylist->count++;
 		}
@@ -901,18 +906,12 @@ static void SetVertex()
 static void gfx3d_glPolygonAttrib_cache()
 {
 	// Light enable/disable
-	lightMask = (polyAttr&0xF);
-
-	// texture environment
-	envMode = (polyAttr&0x30)>>4;
-
-	// back face culling
-	cullingMask = (polyAttr>>6)&3;
+	lightMask = polyAttrInProcess.LightMask;
 }
 
 static void gfx3d_glTexImage_cache()
 {
-	texCoordinateTransform = (textureFormat>>30);
+	texCoordTransformMode = (TextureTransformationMode)currentPolyTexParam.TexCoordTransformMode;
 }
 
 static void gfx3d_glLightDirection_cache(const size_t index)
@@ -1292,7 +1291,7 @@ static void gfx3d_glNormal(s32 v)
 
 	CACHE_ALIGN s32 normal[4] =  { nx,ny,nz,(1<<12) };
 
-	if (texCoordinateTransform == 2)
+	if (texCoordTransformMode == TextureTransformationMode_NormalSource)
 	{
 		//SM64 highlight rendered star in main menu tests this
 		//also smackdown 2010 player textures tested this (needed cast on _s and _t)
@@ -1391,13 +1390,13 @@ static void gfx3d_glTexCoord(s32 val)
 	_s = ((val<<16)>>16);
 	_t = (val>>16);
 
-	if (texCoordinateTransform == 1)
+	if (texCoordTransformMode == TextureTransformationMode_TexCoordSource)
 	{
 		//dragon quest 4 overworld will test this
 		last_s = (s32) (( (s64)_s * mtxCurrent[3][0] + (s64)_t * mtxCurrent[3][4] + (s64)mtxCurrent[3][8] + (s64)mtxCurrent[3][12])>>12);
 		last_t = (s32) (( (s64)_s * mtxCurrent[3][1] + (s64)_t * mtxCurrent[3][5] + (s64)mtxCurrent[3][9] + (s64)mtxCurrent[3][13])>>12);
 	}
-	else if(texCoordinateTransform == 0)
+	else if (texCoordTransformMode == TextureTransformationMode_None)
 	{
 		last_s=_s;
 		last_t=_t;
@@ -1469,20 +1468,20 @@ static void gfx3d_glPolygonAttrib (u32 val)
 		//PROGINFO("Set polyattr in the middle of a begin/end pair.\n  (This won't be activated until the next begin)\n");
 		//TODO - we need some some similar checking for teximageparam etc.
 	}
-	polyAttrPending = val;
+	currentPolyAttr.value = val;
 	GFX_DELAY(1);
 }
 
 static void gfx3d_glTexImage(u32 val)
 {
-	textureFormat = val;
+	currentPolyTexParam.value = val;
 	gfx3d_glTexImage_cache();
 	GFX_DELAY(1);
 }
 
 static void gfx3d_glTexPalette(u32 val)
 {
-	texturePalette = val;
+	currentPolyTexPalette = val;
 	GFX_DELAY(1);
 }
 
@@ -1558,7 +1557,7 @@ static void gfx3d_glBegin(u32 v)
 	triStripToggle = 0;
 	tempVertInfo.count = 0;
 	tempVertInfo.first = true;
-	polyAttr = polyAttrPending;
+	polyAttrInProcess = currentPolyAttr;
 	gfx3d_glPolygonAttrib_cache();
 	GFX_DELAY(1);
 }
@@ -2529,11 +2528,11 @@ void gfx3d_glGetLightColor(const size_t index, u32 &dst)
 
 SFORMAT SF_GFX3D[]={
 	{ "GCTL", 4, 1, &gfx3d.state.savedDISP3DCNT},
-	{ "GPAT", 4, 1, &polyAttr},
-	{ "GPAP", 4, 1, &polyAttrPending},
+	{ "GPAT", 4, 1, &polyAttrInProcess.value},
+	{ "GPAP", 4, 1, &currentPolyAttr.value},
 	{ "GINB", 4, 1, &inBegin},
-	{ "GTFM", 4, 1, &textureFormat},
-	{ "GTPA", 4, 1, &texturePalette},
+	{ "GTFM", 4, 1, &currentPolyTexParam.value},
+	{ "GTPA", 4, 1, &currentPolyTexPalette},
 	{ "GMOD", 4, 1, &mode},
 	{ "GMTM", 4,16, mtxTemporal},
 	{ "GMCU", 4,64, mtxCurrent},

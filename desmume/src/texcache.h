@@ -76,18 +76,18 @@ public:
 	void Reset();
 	void ForceReloadAllTextures();
 	
-	TextureStore* GetTexture(u32 texAttributes, u32 palAttributes);
+	TextureStore* GetTexture(TEXIMAGE_PARAM texAttributes, u32 palAttributes);
 	
 	void Add(TextureStore *texItem);
 	void Remove(TextureStore *texItem);
 	
-	static TextureCacheKey GenerateKey(const u32 texAttributes, const u32 palAttributes);
+	static TextureCacheKey GenerateKey(const TEXIMAGE_PARAM texAttributes, const u32 palAttributes);
 };
 
 class TextureStore
 {
 protected:
-	u32 _textureAttributes;
+	TEXIMAGE_PARAM _textureAttributes;
 	u32 _paletteAttributes;
 	
 	u32 _sizeS;
@@ -123,10 +123,10 @@ protected:
 	
 public:
 	TextureStore();
-	TextureStore(const u32 texAttributes, const u32 palAttributes);
+	TextureStore(const TEXIMAGE_PARAM texAttributes, const u32 palAttributes);
 	virtual ~TextureStore();
 	
-	u32 GetTextureAttributes() const;
+	TEXIMAGE_PARAM GetTextureAttributes() const;
 	u32 GetPaletteAttributes() const;
 	
 	u32 GetWidth() const;
@@ -187,7 +187,7 @@ template<TextureStoreUnpackFormat TEXCACHEFORMAT> void NDSTextureUnpackI4(const 
 template<TextureStoreUnpackFormat TEXCACHEFORMAT> void NDSTextureUnpackI8(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, const bool isPalZeroTransparent, u32 *__restrict dstBuffer);
 template<TextureStoreUnpackFormat TEXCACHEFORMAT> void NDSTextureUnpackA3I5(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer);
 template<TextureStoreUnpackFormat TEXCACHEFORMAT> void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *__restrict srcData, const u16 *__restrict srcPal, u32 *__restrict dstBuffer);
-template<TextureStoreUnpackFormat TEXCACHEFORMAT> void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, const u16 *__restrict srcIndex, const u32 palAddress, const u32 texAttributes, const u32 sizeX, const u32 sizeY, u32 *__restrict dstBuffer);
+template<TextureStoreUnpackFormat TEXCACHEFORMAT> void NDSTextureUnpack4x4(const size_t srcSize, const u32 *__restrict srcData, const u16 *__restrict srcIndex, const u32 palAddress, const u32 sizeX, const u32 sizeY, u32 *__restrict dstBuffer);
 template<TextureStoreUnpackFormat TEXCACHEFORMAT> void NDSTextureUnpackDirect16Bit(const size_t srcSize, const u16 *__restrict srcData, u32 *__restrict dstBuffer);
 
 extern TextureCache texCache;
