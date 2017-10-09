@@ -1887,20 +1887,19 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAs
 			// how this 4-pass process works in OpenGL.
 			if (thePoly.attribute.PolygonID == 0)
 			{
-				// 1st pass: Mark stencil buffer bits (0x40) with the shadow polygon volume.
-				// Bits are only marked on depth-fail.
-				glStencilFunc(GL_ALWAYS, 0x40, 0xC0);
+				// 1st pass: Use stencil buffer bit 6 (0x40) for the shadow volume mask.
+				// Write only on depth-fail.
+				glStencilFunc(GL_ALWAYS, 0x40, 0x40);
 				glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
-				glStencilMask(0xC0);
+				glStencilMask(0x40);
 			}
 			else
 			{
-				// 2nd pass: Mark stencil buffer bits (0x80) with the result of the polygon ID
-				// check. Bits are marked if the polygon ID of this polygon differs from the
-				// one in the stencil buffer.
-				glStencilFunc(GL_NOTEQUAL, 0x80 | thePoly.attribute.PolygonID, 0x3F);
-				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-				glStencilMask(0x80);
+				// 2nd pass: Compare stencil buffer bits 0-5 (0x3F) with this polygon's ID. If this stencil
+				// test fails, remove the fragment from the shadow volume mask by clearing bit 6.
+				glStencilFunc(GL_NOTEQUAL, thePoly.attribute.PolygonID, 0x3F);
+				glStencilOp(GL_ZERO, GL_KEEP, GL_KEEP);
+				glStencilMask(0x40);
 			}
 			
 			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -1910,7 +1909,7 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAs
 		{
 			glStencilFunc(GL_ALWAYS, thePoly.attribute.PolygonID, 0x3F);
 			glStencilOp(GL_KEEP, GL_KEEP, (treatAsTranslucent) ? GL_KEEP : GL_REPLACE);
-			glStencilMask(0xFF); // Drawing non-shadow polygons will implicitly reset the stencil buffer bits
+			glStencilMask(0x7F); // Drawing non-shadow polygons will implicitly reset the shadow volume mask.
 			
 			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 			glDepthMask((!treatAsTranslucent || thePoly.attribute.TranslucentDepthWrite_Enable) ? GL_TRUE : GL_FALSE);

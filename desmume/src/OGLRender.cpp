@@ -4127,20 +4127,19 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool treatAs
 			// how this 4-pass process works in OpenGL.
 			if (thePoly.attribute.PolygonID == 0)
 			{
-				// 1st pass: Mark stencil buffer bits (0x40) with the shadow polygon volume.
-				// Bits are only marked on depth-fail.
-				glStencilFunc(GL_ALWAYS, 0x40, 0xC0);
+				// 1st pass: Use stencil buffer bit 6 (0x40) for the shadow volume mask.
+				// Write only on depth-fail.
+				glStencilFunc(GL_ALWAYS, 0x40, 0x40);
 				glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
-				glStencilMask(0xC0);
+				glStencilMask(0x40);
 			}
 			else
 			{
-				// 2nd pass: Mark stencil buffer bits (0x80) with the result of the polygon ID
-				// check. Bits are marked if the polygon ID of this polygon differs from the
-				// one in the stencil buffer.
-				glStencilFunc(GL_NOTEQUAL, 0x80 | thePoly.attribute.PolygonID, 0x3F);
-				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-				glStencilMask(0x80);
+				// 2nd pass: Compare stencil buffer bits 0-5 (0x3F) with this polygon's ID. If this stencil
+				// test fails, remove the fragment from the shadow volume mask by clearing bit 6.
+				glStencilFunc(GL_NOTEQUAL, thePoly.attribute.PolygonID, 0x3F);
+				glStencilOp(GL_ZERO, GL_KEEP, GL_KEEP);
+				glStencilMask(0x40);
 			}
 			
 			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -4150,7 +4149,7 @@ Render3DError OpenGLRenderer_1_2::SetupPolygon(const POLY &thePoly, bool treatAs
 		{
 			glStencilFunc(GL_ALWAYS, thePoly.attribute.PolygonID, 0x3F);
 			glStencilOp(GL_KEEP, GL_KEEP, (treatAsTranslucent) ? GL_KEEP : GL_REPLACE);
-			glStencilMask(0xFF); // Drawing non-shadow polygons will implicitly reset the stencil buffer bits
+			glStencilMask(0x7F); // Drawing non-shadow polygons will implicitly reset the shadow volume mask.
 			
 			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 			glDepthMask((!treatAsTranslucent || thePoly.attribute.TranslucentDepthWrite_Enable) ? GL_TRUE : GL_FALSE);
@@ -4266,7 +4265,7 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 	// Note that the 1st and 2nd passes are performed using states from SetupPolygon().
 	//
 	// 1st pass (NDS driven): The NDS creates the shadow volume and updates only the
-	// stencil buffer, writing to bit 0x40. Color and depth writes are disabled for this
+	// stencil buffer, writing to bit 6 (0x40). Color and depth writes are disabled for this
 	// pass.
 	//
 	// 2nd pass (NDS driven): Normally, stencil buffer bits marked for shadow rendering
@@ -4275,13 +4274,13 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 	// one type of stencil buffer check at a time, we need to do things differently from
 	// what the NDS does at this point. In OpenGL, this pass is used only to update the
 	// stencil buffer for the polygon ID check, checking bits 0x3F for the polygon ID,
-	// and writing the result to bit 0x80. Color and depth writes are disabled for this
-	// pass.
+	// and clearing bit 6 (0x40) if this check fails. Color and depth writes are disabled
+	// for this pass.
 	//
-	// 3rd pass (emulator driven): Check both stencil buffer bits 0x80 (the polygon ID
-	// check) and 0x40 (the shadow volume definition), and render the shadow polygons only
-	// if both bits are set. Color writes are always enabled and depth writes are enabled
-	// if the shadow polygon is opaque or if transparent polygon depth writes are enabled.
+	// 3rd pass (emulator driven): Use stencil buffer bit 6 (0x40) for the shadow volume
+	// mask and render the shadow polygons only within the mask. Color writes are always
+	// enabled and depth writes are enabled if the shadow polygon is opaque or if transparent
+	// polygon depth writes are enabled.
 	//
 	// 4th pass (emulator driven): This pass only occurs when the shadow polygon is opaque.
 	// Since opaque polygons need to update their polygon IDs, we update only the stencil
@@ -4298,12 +4297,12 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 	glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 	
 	// 3rd pass: Draw the shadow polygon.
-	glStencilFunc(GL_EQUAL, 0xC0, 0xC0);
-	// Technically, a depth-fail result should also reset the stencil buffer bits, but
-	// Mario Kart DS draws shadow polygons better when it doesn't reset bits on depth-fail.
+	glStencilFunc(GL_EQUAL, 0x40, 0x40);
+	// Technically, a depth-fail result should also clear the shadow volume mask, but
+	// Mario Kart DS draws shadow polygons better when it doesn't clear bits on depth-fail.
 	// I have no idea why this works. - rogerman 2016/12/21
 	glStencilOp(GL_ZERO, GL_KEEP, GL_ZERO);
-	glStencilMask(0xC0);
+	glStencilMask(0x40);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask((!isTranslucent || enableAlphaDepthWrite) ? GL_TRUE : GL_FALSE);
 	
@@ -4321,7 +4320,7 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 	}
 	
 	// Reset the OpenGL states back to their original shadow polygon states.
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glStencilOp(GL_ZERO, GL_KEEP, GL_KEEP);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 	glDepthMask(GL_FALSE);
 	
@@ -4333,8 +4332,8 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 	}
 	
-	glStencilFunc(GL_NOTEQUAL, 0x80 | opaquePolyID, 0x3F);
-	glStencilMask(0x80);
+	glStencilFunc(GL_NOTEQUAL, opaquePolyID, 0x3F);
+	glStencilMask(0x40);
 	
 	return OGLERROR_NOERR;
 }
