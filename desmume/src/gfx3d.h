@@ -250,12 +250,12 @@ typedef union
 		u16 SizeShiftT:3;					// 23-25: Texel size shift for T-coordinate; 0...7, where the actual texel size is (8 << N)
 		u16 PackedFormat:3;					// 26-28: Packed texture format;
 											//        0=None
-											//        1=A3I5, 5-bit indexed color with 3-bit alpha
+											//        1=A3I5, 5-bit indexed color (32-color palette) with 3-bit alpha (0...7, where 0=Fully Transparent and 7=Opaque)
 											//        2=I2, 2-bit indexed color (4-color palette)
 											//        3=I4, 4-bit indexed color (16-color palette)
 											//        4=I8, 8-bit indexed color (256-color palette)
 											//        5=4x4-texel compressed
-											//        6=A5I3, 3-bit indexed color with 5-bit alpha
+											//        6=A5I3, 3-bit indexed color (8-color palette) with 5-bit alpha (0...31, where 0=Fully Transparent and 31=Opaque)
 											//        7=Direct 16-bit color
 		u16 KeyColor0_Enable:1;				//    29: Use palette color 0 as transparent; 0=Displayed 1=Transparent
 		u16 TexCoordTransformMode:2;		// 30-31: Texture coordinate transformation mode;
