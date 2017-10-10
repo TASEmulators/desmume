@@ -523,6 +523,7 @@ struct OGLRenderRef
 	GLint uniformTexDrawOpaque;
 	
 	GLint uniformPolyStateIndex;
+	GLint uniformPolyDepthOffsetMode;
 	GLint uniformPolyDrawShadow;
 	
 	GLuint texToonTableID;
@@ -658,7 +659,8 @@ protected:
 	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	OpenGLTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
 	template<OGLPolyDrawMode DRAWMODE> size_t DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr);
-	template<bool WILLUPDATESTENCILBUFFER> Render3DError DrawAlphaTexturePolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const bool canHaveOpaqueFragments);
+	template<OGLPolyDrawMode DRAWMODE> Render3DError DrawAlphaTexturePolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool performDepthEqualTest, const bool enableAlphaDepthWrite, const bool canHaveOpaqueFragments, const u8 opaquePolyID);
+	template<OGLPolyDrawMode DRAWMODE> Render3DError DrawOtherPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool performDepthEqualTest, const bool enableAlphaDepthWrite, const u8 opaquePolyID);
 	
 	// OpenGL-specific methods
 	virtual Render3DError CreateVBOs() = 0;
@@ -706,7 +708,7 @@ protected:
 	virtual Render3DError DownsampleFBO() = 0;
 	virtual Render3DError ReadBackPixels() = 0;
 	
-	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID) = 0;
+	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool performDepthEqualTest, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID) = 0;
 	virtual void SetPolygonIndex(const size_t index) = 0;
 	virtual Render3DError SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer) = 0;
 	
@@ -792,7 +794,7 @@ protected:
 	virtual Render3DError SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
 	virtual Render3DError SetupViewport(const u32 viewportValue);
 	
-	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID);
+	virtual Render3DError DrawShadowPolygon(const GLenum polyPrimitive, const GLsizei vertIndexCount, const GLushort *indexBufferPtr, const bool performDepthEqualTest, const bool enableAlphaDepthWrite, const bool isTranslucent, const u8 opaquePolyID);
 	
 public:
 	~OpenGLRenderer_1_2();

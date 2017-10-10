@@ -191,6 +191,7 @@ static const char *GeometryFragShader_150 = {"\
 	uniform bool texDrawOpaque;\n\
 	uniform bool polyDrawShadow;\n\
 	uniform int polyIndex;\n\
+	uniform int polyDepthOffsetMode;\n\
 	\n\
 	out vec4 outFragColor;\n\
 	out vec4 outPolyID;\n\
@@ -203,8 +204,9 @@ static const char *GeometryFragShader_150 = {"\
 		vec4 newFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
 		\n\
 		float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w;\n\
+		float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -512.0 : 512.0);\n\
 		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
-		float newFragDepthValue = (state.useWDepth) ? floor(vtxPosition.w * 4096.0) / 16777215.0 : (floor(clamp(((vtxPosition.z/vertW) * 0.5 + 0.5), 0.0, 1.0) * 32767.0) * 512.0) / 16777215.0;\n\
+		float newFragDepthValue = (state.useWDepth) ? clamp( ( floor(vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 ) : clamp( ( (floor(clamp(((vtxPosition.z/vertW) * 0.5 + 0.5), 0.0, 1.0) * 32767.0) * 512.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
 		\n\
 		if ((polyMode != 3u) || polyDrawShadow)\n\
 		{\n\
@@ -1237,6 +1239,7 @@ Render3DError OpenGLRenderer_3_2::InitGeometryProgramShaderLocations()
 	OGLRef.uniformTexDrawOpaque				= glGetUniformLocation(OGLRef.programGeometryID, "texDrawOpaque");
 	OGLRef.uniformPolyDrawShadow			= glGetUniformLocation(OGLRef.programGeometryID, "polyDrawShadow");
 	OGLRef.uniformPolyStateIndex			= glGetUniformLocation(OGLRef.programGeometryID, "polyIndex");
+	OGLRef.uniformPolyDepthOffsetMode		= glGetUniformLocation(OGLRef.programGeometryID, "polyDepthOffsetMode");
 	
 	return OGLERROR_NOERR;
 }
@@ -1858,9 +1861,11 @@ void OpenGLRenderer_3_2::SetPolygonIndex(const size_t index)
 
 Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAsTranslucent, bool willChangeStencilBuffer)
 {
+	OGLRenderRef &OGLRef = *this->ref;
+	
 	// Set up depth test mode
-	static const GLenum oglDepthFunc[2] = {GL_LESS, GL_EQUAL};
-	glDepthFunc(oglDepthFunc[thePoly.attribute.DepthEqualTest_Enable]);
+	glDepthFunc((thePoly.attribute.DepthEqualTest_Enable) ? GL_EQUAL : GL_LESS);
+	glUniform1i(OGLRef.uniformPolyDepthOffsetMode, 0);
 	
 	// Set up culling mode
 	static const GLenum oglCullingMode[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
