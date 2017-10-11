@@ -1914,7 +1914,7 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAs
 		{
 			glStencilFunc(GL_ALWAYS, thePoly.attribute.PolygonID, 0x3F);
 			glStencilOp(GL_KEEP, GL_KEEP, (treatAsTranslucent) ? GL_KEEP : GL_REPLACE);
-			glStencilMask(0x7F); // Drawing non-shadow polygons will implicitly reset the shadow volume mask.
+			glStencilMask(0xFF); // Drawing non-shadow polygons will implicitly reset the shadow volume mask.
 			
 			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 			glDepthMask((!treatAsTranslucent || thePoly.attribute.TranslucentDepthWrite_Enable) ? GL_TRUE : GL_FALSE);
