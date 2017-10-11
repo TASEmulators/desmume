@@ -4499,8 +4499,10 @@ Render3DError OpenGLRenderer_1_2::DrawShadowPolygon(const GLenum polyPrimitive, 
 		glStencilFunc(GL_NOTEQUAL, opaquePolyID, 0x3F);
 		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
 	}
-	
-	glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+	else
+	{
+		glDrawElements(polyPrimitive, vertIndexCount, GL_UNSIGNED_SHORT, indexBufferPtr);
+	}
 	
 	// 3rd pass: Update the polygon IDs in the stencil buffer if the shadow polygons are opaque.
 	if (!isTranslucent)
