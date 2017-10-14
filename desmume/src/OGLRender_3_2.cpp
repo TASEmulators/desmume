@@ -1889,22 +1889,22 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAs
 			// Set up shadow polygon states.
 			//
 			// See comments in DrawShadowPolygon() for more information about
-			// how this 4-pass process works in OpenGL.
+			// how this 5-pass process works in OpenGL.
 			if (thePoly.attribute.PolygonID == 0)
 			{
-				// 1st pass: Use stencil buffer bit 6 (0x40) for the shadow volume mask.
+				// 1st pass: Use stencil buffer bit 7 (0x80) for the shadow volume mask.
 				// Write only on depth-fail.
-				glStencilFunc(GL_ALWAYS, 0x40, 0x40);
+				glStencilFunc(GL_ALWAYS, 0x80, 0x80);
 				glStencilOp(GL_KEEP, GL_REPLACE, GL_KEEP);
-				glStencilMask(0x40);
+				glStencilMask(0x80);
 			}
 			else
 			{
 				// 2nd pass: Compare stencil buffer bits 0-5 (0x3F) with this polygon's ID. If this stencil
-				// test fails, remove the fragment from the shadow volume mask by clearing bit 6.
+				// test fails, remove the fragment from the shadow volume mask by clearing bit 7.
 				glStencilFunc(GL_NOTEQUAL, thePoly.attribute.PolygonID, 0x3F);
 				glStencilOp(GL_ZERO, GL_KEEP, GL_KEEP);
-				glStencilMask(0x40);
+				glStencilMask(0x80);
 			}
 			
 			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -1912,8 +1912,28 @@ Render3DError OpenGLRenderer_3_2::SetupPolygon(const POLY &thePoly, bool treatAs
 		}
 		else
 		{
-			glStencilFunc(GL_ALWAYS, thePoly.attribute.PolygonID, 0x3F);
-			glStencilOp(GL_KEEP, GL_KEEP, (treatAsTranslucent) ? GL_KEEP : GL_REPLACE);
+			// Polygon IDs are always written for every polygon, whether they are opaque or transparent, just as
+			// long as they pass the stencil and depth tests.
+			// - Polygon IDs are contained in stencil bits 0-5 (0x3F).
+			// - The translucent fragment flag is contained in stencil bit 6 (0x40).
+			//
+			// Opaque polygons have no stencil conditions, so if they pass the depth test, then they write out
+			// their polygon ID with a translucent fragment flag of 0.
+			//
+			// Transparent polygons have the stencil condition where they will not draw if they are drawing on
+			// top of previously drawn translucent fragments with the same polygon ID. This condition is checked
+			// using both polygon ID bits and the translucent fragment flag. If the polygon passes both stencil
+			// and depth tests, it writes out its polygon ID with a translucent fragment flag of 1.
+			if (treatAsTranslucent)
+			{
+				glStencilFunc(GL_NOTEQUAL, 0x40 | thePoly.attribute.PolygonID, 0x7F);
+			}
+			else
+			{
+				glStencilFunc(GL_ALWAYS, thePoly.attribute.PolygonID, 0x3F);
+			}
+			
+			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 			glStencilMask(0xFF); // Drawing non-shadow polygons will implicitly reset the shadow volume mask.
 			
 			glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
