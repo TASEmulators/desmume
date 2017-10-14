@@ -157,10 +157,10 @@ typedef union
 		u8 Light2:1;						//     2: Light 2; 0=Disable, 1=Enable
 		u8 Light3:1;						//     3: Light 3; 0=Disable, 1=Enable
 		u8 Mode:2;							//  4- 5: Polygon mode;
-											//        0=Low
-											//        1=Medium
-											//        2=High
-											//        3=Maximum
+											//        0=Modulate
+											//        1=Decal
+											//        2=Toon/Highlight
+											//        3=Shadow
 		u8 BackSurface:1;					//     6: Back surface; 0=Hide, 1=Render
 		u8 FrontSurface:1;					//     7: Front surface; 0=Hide, 1=Render
 		
@@ -180,10 +180,10 @@ typedef union
 		u8 FrontSurface:1;					//     7: Front surface; 0=Hide, 1=Render
 		u8 BackSurface:1;					//     6: Back surface; 0=Hide, 1=Render
 		u8 Mode:2;							//  4- 5: Polygon mode;
-											//        0=Low
-											//        1=Medium
-											//        2=High
-											//        3=Maximum
+											//        0=Modulate
+											//        1=Decal
+											//        2=Toon/Highlight
+											//        3=Shadow
 		u8 Light3:1;						//     3: Light 3; 0=Disable, 1=Enable
 		u8 Light2:1;						//     2: Light 2; 0=Disable, 1=Enable
 		u8 Light1:1;						//     1: Light 1; 0=Disable, 1=Enable
