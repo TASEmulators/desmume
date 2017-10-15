@@ -758,6 +758,8 @@
 	<integer>0</integer>
 	<key>ScreenshotCaptureTool_DisplayMode</key>
 	<integer>2</integer>
+	<key>ScreenshotCaptureTool_DisplayScale</key>
+	<integer>0</integer>
 	<key>ScreenshotCaptureTool_DisplayRotation</key>
 	<integer>0</integer>
 	<key>ScreenshotCaptureTool_DisplaySeparation</key>

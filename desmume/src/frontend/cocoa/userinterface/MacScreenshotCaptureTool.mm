@@ -38,6 +38,7 @@
 @synthesize displayLayout;
 @synthesize displayOrder;
 @synthesize displaySeparation;
+@synthesize displayScale;
 @synthesize displayRotation;
 @synthesize useDeposterize;
 @synthesize outputFilterID;
@@ -51,9 +52,20 @@
 		return nil;
 	}
 	
-	sharedData = nil;
-	saveDirectoryPath = nil;
-	romName = @"No_ROM_loaded";
+	sharedData			= nil;
+	saveDirectoryPath	= nil;
+	romName				= @"No_ROM_loaded";
+	
+	fileFormat			= NSTIFFFileType;
+	displayMode			= ClientDisplayMode_Dual;
+	displayLayout		= ClientDisplayLayout_Vertical;
+	displayOrder		= ClientDisplayOrder_MainFirst;
+	displaySeparation	= 0;
+	displayScale		= 0;
+	displayRotation		= 0;
+	useDeposterize		= NO;
+	outputFilterID		= OutputFilterTypeID_Bilinear;
+	pixelScalerID		= VideoFilterTypeID_None;
 	
 	return self;
 }
@@ -136,8 +148,9 @@
 	param->cdpProperty.mode			= (ClientDisplayMode)[self displayMode];
 	param->cdpProperty.layout		= (ClientDisplayLayout)[self displayLayout];
 	param->cdpProperty.order		= (ClientDisplayOrder)[self displayOrder];
-	param->cdpProperty.gapScale		= (float)[self displaySeparation] / 100.0f;
-	param->cdpProperty.rotation		= (float)[self displayRotation];
+	param->cdpProperty.gapScale		= (double)[self displaySeparation] / 100.0;
+	param->cdpProperty.rotation		= (double)[self displayRotation];
+	param->cdpProperty.viewScale	= (double)[self displayScale] / 100.0;
 	
 	pthread_t fileWriteThread;
 	pthread_attr_t fileWriteThreadAttr;
@@ -177,6 +190,7 @@
 	[self setDisplayLayout:[[NSUserDefaults standardUserDefaults] integerForKey:@"ScreenshotCaptureTool_DisplayLayout"]];
 	[self setDisplayOrder:[[NSUserDefaults standardUserDefaults] integerForKey:@"ScreenshotCaptureTool_DisplayOrder"]];
 	[self setDisplaySeparation:[[NSUserDefaults standardUserDefaults] integerForKey:@"ScreenshotCaptureTool_DisplaySeparation"]];
+	[self setDisplayScale:[[NSUserDefaults standardUserDefaults] integerForKey:@"ScreenshotCaptureTool_DisplayScale"]];
 	[self setDisplayRotation:[[NSUserDefaults standardUserDefaults] integerForKey:@"ScreenshotCaptureTool_DisplayRotation"]];
 }
 
@@ -191,6 +205,7 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:[self displayLayout] forKey:@"ScreenshotCaptureTool_DisplayLayout"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self displayOrder] forKey:@"ScreenshotCaptureTool_DisplayOrder"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self displaySeparation] forKey:@"ScreenshotCaptureTool_DisplaySeparation"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[self displayScale] forKey:@"ScreenshotCaptureTool_DisplayScale"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self displayRotation] forKey:@"ScreenshotCaptureTool_DisplayRotation"];
 }
 
@@ -215,6 +230,7 @@ static void* RunFileWriteThread(void *arg)
 	param.cdpProperty.order			= inParams->cdpProperty.order;
 	param.cdpProperty.gapScale		= inParams->cdpProperty.gapScale;
 	param.cdpProperty.rotation		= inParams->cdpProperty.rotation;
+	param.cdpProperty.viewScale		= inParams->cdpProperty.viewScale;
 	
 	delete inParams;
 	inParams = NULL;
@@ -243,8 +259,14 @@ static void* RunFileWriteThread(void *arg)
 	ClientDisplayPresenter::CalculateNormalSize(param.cdpProperty.mode, param.cdpProperty.layout, param.cdpProperty.gapScale, param.cdpProperty.normalWidth, param.cdpProperty.normalHeight);
 	double transformedWidth = param.cdpProperty.normalWidth;
 	double transformedHeight = param.cdpProperty.normalHeight;
+	double framebufferScale = (double)displayInfo.customWidth / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	
-	param.cdpProperty.viewScale		= (double)displayInfo.customWidth / (double)GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	// If the scaling is 0, then calculate the scaling based on the incoming framebuffer size.
+	if (param.cdpProperty.viewScale == 0)
+	{
+		param.cdpProperty.viewScale = framebufferScale;
+	}
+	
 	ClientDisplayPresenter::ConvertNormalToTransformedBounds(param.cdpProperty.viewScale, param.cdpProperty.rotation, transformedWidth, transformedHeight);
 	
 	param.cdpProperty.clientWidth	= transformedWidth;
@@ -304,8 +326,9 @@ static void* RunFileWriteThread(void *arg)
 	
 	if ( (cdp->GetViewScale() > 0.999) && (cdp->GetViewScale() < 1.001) )
 	{
-		// Special case stuff for when capturing the screenshot at the native resolution.
-		if ( (param.cdpProperty.layout == ClientDisplayLayout_Vertical) || (param.cdpProperty.layout == ClientDisplayLayout_Horizontal) )
+		// In the special case of capturing a native-size framebuffer at its native size, don't use any filters for the sake of accuracy.
+		if ( (param.cdpProperty.layout == ClientDisplayLayout_Vertical) || (param.cdpProperty.layout == ClientDisplayLayout_Horizontal) ||
+			 ((framebufferScale > 0.999) && (framebufferScale < 1.001)) )
 		{
 			cdp->SetOutputFilter(OutputFilterTypeID_NearestNeighbor);
 		}

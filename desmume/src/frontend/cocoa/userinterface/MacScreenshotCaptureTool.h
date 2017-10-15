@@ -46,6 +46,7 @@
 	NSInteger displayLayout;
 	NSInteger displayOrder;
 	NSInteger displaySeparation;
+	NSInteger displayScale;
 	NSInteger displayRotation;
 	BOOL useDeposterize;
 	NSInteger outputFilterID;
@@ -63,6 +64,7 @@
 @property (assign) NSInteger displayLayout;
 @property (assign) NSInteger displayOrder;
 @property (assign) NSInteger displaySeparation;
+@property (assign) NSInteger displayScale;
 @property (assign) NSInteger displayRotation;
 @property (assign) BOOL useDeposterize;
 @property (assign) NSInteger outputFilterID;
