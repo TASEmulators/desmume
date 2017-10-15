@@ -142,12 +142,51 @@ void HK_SearchCheats(int, bool justPressed)
 	if (romloaded)
 		CheatsSearchDialog(MainWindow->getHWnd()); 
 }
+
+static void DoScreenshot(const char* fname)
+{
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+
+	switch(path.imageformat())
+	{
+	case PathInfo::PNG:
+		{
+			if(gpu_bpp == 15)
+			{
+				NDS_WritePNG_15bpp(dispInfo.customWidth, dispInfo.customHeight * 2, (const u16*)dispInfo.masterCustomBuffer, fname);
+			}
+			else
+			{
+				u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
+				ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
+				NDS_WritePNG_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight*2, swapbuf, fname);
+				free_aligned(swapbuf);
+			}
+		}
+		break;
+	case PathInfo::BMP:
+		{
+			if(gpu_bpp == 15)
+			{
+				NDS_WriteBMP_15bpp(dispInfo.customWidth, dispInfo.customHeight * 2, (const u16*)dispInfo.masterCustomBuffer, fname);
+			}
+			else
+			{
+				u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
+				ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
+				NDS_WriteBMP_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight *2, swapbuf, fname);
+				free_aligned(swapbuf);
+			}
+		}
+		break;
+	}
+}
+
 void HK_QuickScreenShot(int param, bool justPressed)
 {
 	if(!romloaded) return;
 	if(!justPressed) return;
 
-	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 
 	char fname[MAX_PATH];
 	ZeroMemory(fname, sizeof(fname));
@@ -164,38 +203,14 @@ void HK_QuickScreenShot(int param, bool justPressed)
 	switch(path.imageformat())
 	{
 	case PathInfo::PNG:
-		{
 			strcat(fname, ".png");
-			if(gpu_bpp == 15)
-			{
-				NDS_WritePNG_15bpp(dispInfo.customWidth, dispInfo.customHeight * 2, (const u16*)dispInfo.masterCustomBuffer, fname);
-			}
-			else
-			{
-				u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
-				ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
-				NDS_WritePNG_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight*2, swapbuf, fname);
-				free_aligned(swapbuf);
-			}
-		}
-		break;
+			break;
 	case PathInfo::BMP:
-		{
 			strcat(fname, ".bmp");
-			if(gpu_bpp == 15)
-			{
-				NDS_WriteBMP_15bpp(dispInfo.customWidth, dispInfo.customHeight * 2, (const u16*)dispInfo.masterCustomBuffer, fname);
-			}
-			else
-			{
-				u32* swapbuf = (u32*)malloc_alignedCacheLine(dispInfo.customWidth * dispInfo.customHeight * 2 * 4);
-				ColorspaceConvertBuffer888XTo8888Opaque<true, true>((const u32*)dispInfo.masterCustomBuffer, swapbuf, dispInfo.customWidth * dispInfo.customHeight * 2);
-				NDS_WriteBMP_32bppBuffer(dispInfo.customWidth, dispInfo.customHeight *2, swapbuf, fname);
-				free_aligned(swapbuf);
-			}
-		}
-		break;
+			break;
 	}
+
+	DoScreenshot(fname);
 }
 
 void HK_PrintScreen(int param, bool justPressed)
@@ -241,14 +256,7 @@ void HK_PrintScreen(int param, bool justPressed)
 	strcpy(outFilename,filename.c_str());
 	if(GetSaveFileName(&ofn))
 	{
-		const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-
-		filename = outFilename;
-
-		if(toupper(strright(filename,4)) == ".PNG")
-			NDS_WritePNG_15bpp(dispInfo.customWidth, dispInfo.customHeight*2, (const u16*)dispInfo.masterCustomBuffer, filename.c_str());
-		else if(toupper(strright(filename,4)) == ".BMP")
-			NDS_WriteBMP_15bpp(dispInfo.customWidth, dispInfo.customHeight*2, (const u16*)dispInfo.masterCustomBuffer, filename.c_str());
+		DoScreenshot(outFilename);
 	}
 
 	if(unpause) NDS_UnPause(false);
