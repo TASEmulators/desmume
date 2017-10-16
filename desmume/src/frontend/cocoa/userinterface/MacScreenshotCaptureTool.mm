@@ -120,19 +120,20 @@
 	
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
 	BOOL isDirectoryFound = [fileManager createDirectoryAtPath:savePath withIntermediateDirectories:YES attributes:nil error:nil];
+	
+	if (!isDirectoryFound)
+	{
+		// This was the last chance for the user to try to get a working writable directory.
+		[self chooseDirectoryPath:self];
+		isDirectoryFound = [fileManager createDirectoryAtPath:savePath withIntermediateDirectories:YES attributes:nil error:nil];
+	}
+	
 	[fileManager release];
 	
 	if (!isDirectoryFound)
 	{
-		[self chooseDirectoryPath:self];
-		
-		isDirectoryFound = [fileManager createDirectoryAtPath:savePath withIntermediateDirectories:YES attributes:nil error:nil];
-		if (!isDirectoryFound)
-		{
-			// This was the last chance for the user to try to get a working writable directory.
-			// If the directory is still invalid, then just bail.
-			return;
-		}
+		// If the directory is still invalid, then just bail.
+		return;
 	}
 	
 	// Note: We're allocating the parameter's memory block here, but we will be freeing it once we copy it in the detached thread.
