@@ -109,6 +109,8 @@
 {
 	NSString *savePath = [self saveDirectoryPath];
 	
+	// Check for the existence of the target writable directory. Cancel the take screenshot operation
+	// if the directory does not exist or is not writable.
 	if ( (savePath != nil) && ([savePath length] > 0) )
 	{
 		savePath = [savePath stringByExpandingTildeInPath];
@@ -116,6 +118,7 @@
 	else
 	{
 		[self chooseDirectoryPath:self];
+		return;
 	}
 	
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
@@ -123,18 +126,12 @@
 	
 	if (!isDirectoryFound)
 	{
-		// This was the last chance for the user to try to get a working writable directory.
 		[self chooseDirectoryPath:self];
-		isDirectoryFound = [fileManager createDirectoryAtPath:savePath withIntermediateDirectories:YES attributes:nil error:nil];
+		[fileManager release];
+		return;
 	}
 	
 	[fileManager release];
-	
-	if (!isDirectoryFound)
-	{
-		// If the directory is still invalid, then just bail.
-		return;
-	}
 	
 	// Note: We're allocating the parameter's memory block here, but we will be freeing it once we copy it in the detached thread.
 	MacScreenshotCaptureToolParams *param = new MacScreenshotCaptureToolParams;
