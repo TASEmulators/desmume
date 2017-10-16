@@ -30,6 +30,7 @@
 @class DisplayWindowController;
 @class RomInfoPanel;
 @class MacScreenshotCaptureToolDelegate;
+struct ClientCommandAttributes;
 class AudioSampleBlockGenerator;
 
 @interface EmuControllerDelegate : NSObject <NSUserInterfaceValidations, CocoaDSControllerDelegate>
@@ -238,30 +239,34 @@ class AudioSampleBlockGenerator;
 
 - (IBAction) closeSheet:(id)sender;
 
-- (void) cmdUpdateDSController:(NSValue *)cmdAttrValue;
-- (void) cmdUpdateDSControllerWithTurbo:(NSValue *)cmdAttrValue;
-- (void) cmdUpdateDSTouch:(NSValue *)cmdAttrValue;
-- (void) cmdUpdateDSMicrophone:(NSValue *)cmdAttrValue;
-- (void) cmdUpdateDSPaddle:(NSValue *)cmdAttrValue;
+- (void) cmdUpdateDSController:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdUpdateDSControllerWithTurbo:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdUpdateDSTouch:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdUpdateDSMicrophone:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdUpdateDSPaddle:(const ClientCommandAttributes &)cmdAttr;
 
-- (void) cmdLoadEmuSaveStateSlot:(NSValue *)cmdAttrValue;
-- (void) cmdSaveEmuSaveStateSlot:(NSValue *)cmdAttrValue;
+- (void) cmdAutoholdSet:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdAutoholdClear:(const ClientCommandAttributes &)cmdAttr;
 
-- (void) cmdCopyScreen:(NSValue *)cmdAttrValue;
-- (void) cmdRotateDisplayRelative:(NSValue *)cmdAttrValue;
-- (void) cmdToggleAllDisplays:(NSValue *)cmdAttrValue;
+- (void) cmdLoadEmuSaveStateSlot:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdSaveEmuSaveStateSlot:(const ClientCommandAttributes &)cmdAttr;
 
-- (void) cmdHoldToggleSpeedScalar:(NSValue *)cmdAttrValue;
-- (void) cmdToggleSpeedLimiter:(NSValue *)cmdAttrValue;
-- (void) cmdToggleAutoFrameSkip:(NSValue *)cmdAttrValue;
-- (void) cmdToggleCheats:(NSValue *)cmdAttrValue;
-- (void) cmdToggleExecutePause:(NSValue *)cmdAttrValue;
-- (void) cmdCoreExecute:(NSValue *)cmdAttrValue;
-- (void) cmdCorePause:(NSValue *)cmdAttrValue;
-- (void) cmdFrameAdvance:(NSValue *)cmdAttrValue;
-- (void) cmdFrameJump:(NSValue *)cmdAttrValue;
-- (void) cmdReset:(NSValue *)cmdAttrValue;
-- (void) cmdToggleGPUState:(NSValue *)cmdAttrValue;
+- (void) cmdCopyScreen:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdRotateDisplayRelative:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdToggleAllDisplays:(const ClientCommandAttributes &)cmdAttr;
+
+- (void) cmdHoldToggleSpeedScalar:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdToggleSpeedLimiter:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdToggleAutoFrameSkip:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdToggleCheats:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdToggleExecutePause:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdCoreExecute:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdCorePause:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdFrameAdvance:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdFrameJump:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdReset:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdToggleMute:(const ClientCommandAttributes &)cmdAttr;
+- (void) cmdToggleGPUState:(const ClientCommandAttributes &)cmdAttr;
 
 - (BOOL) handleLoadRomByURL:(NSURL *)fileURL;
 - (BOOL) handleUnloadRom:(NSInteger)reasonID romToLoad:(NSURL *)romURL;

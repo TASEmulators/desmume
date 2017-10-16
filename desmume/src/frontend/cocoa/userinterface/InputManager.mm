@@ -603,19 +603,19 @@ ClientInputDevicePropertiesList InputListFromHIDValue(IOHIDValueRef hidValueRef,
 		}
 		else
 		{
-			CommandAttributes cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputProperty.deviceCode elementCode:inputProperty.elementCode];
-			if (cmdAttr.tag[0] == '\0' || cmdAttr.selector == nil)
+			ClientCommandAttributes cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputProperty.deviceCode elementCode:inputProperty.elementCode];
+			if (cmdAttr.tag[0] == '\0' || cmdAttr.dispatchFunction == NULL)
 			{
 				std::string tempElementCode = std::string(inputProperty.elementCode) + "/LowerThreshold";
 				cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputProperty.deviceCode elementCode:tempElementCode.c_str()];
-				if (cmdAttr.tag[0] == '\0' || cmdAttr.selector == nil)
+				if (cmdAttr.tag[0] == '\0' || cmdAttr.dispatchFunction == NULL)
 				{
 					tempElementCode = std::string(inputProperty.elementCode) + "/UpperThreshold";
 					cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:inputProperty.deviceCode elementCode:tempElementCode.c_str()];
 				}
 			}
 			
-			const bool useAnalog = (cmdAttr.tag[0] == '\0' || cmdAttr.selector == nil) ? !forceDigitalInput : (!forceDigitalInput && cmdAttr.allowAnalogInput);
+			const bool useAnalog = (cmdAttr.tag[0] == '\0' || cmdAttr.dispatchFunction == NULL) ? !forceDigitalInput : (!forceDigitalInput && cmdAttr.allowAnalogInput);
 			
 			if (useAnalog)
 			{
@@ -1046,197 +1046,140 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 				   [NSImage imageNamed:@"Icon_VolumeMute_16x16"],					@"Mute/Unmute",
 				   nil];
 	
-	// Initialize the selectors used for each command tag. (Do this in code rather than in an external file.)
-	commandSelector["Up"]						= @selector(cmdUpdateDSControllerWithTurbo:);
-	commandSelector["Down"]						= @selector(cmdUpdateDSControllerWithTurbo:);
-	commandSelector["Right"]					= @selector(cmdUpdateDSControllerWithTurbo:);
-	commandSelector["Left"]						= @selector(cmdUpdateDSControllerWithTurbo:);
-	commandSelector["A"]						= @selector(cmdUpdateDSControllerWithTurbo:);
-	commandSelector["B"]						= @selector(cmdUpdateDSControllerWithTurbo:);
-	commandSelector["X"]						= @selector(cmdUpdateDSControllerWithTurbo:);
-	commandSelector["Y"]						= @selector(cmdUpdateDSControllerWithTurbo:);
-	commandSelector["L"]						= @selector(cmdUpdateDSControllerWithTurbo:);
-	commandSelector["R"]						= @selector(cmdUpdateDSControllerWithTurbo:);
-	commandSelector["Start"]					= @selector(cmdUpdateDSControllerWithTurbo:);
-	commandSelector["Select"]					= @selector(cmdUpdateDSControllerWithTurbo:);
-	commandSelector["Touch"]					= @selector(cmdUpdateDSTouch:);
-	commandSelector["Microphone"]				= @selector(cmdUpdateDSMicrophone:);
-	commandSelector["Debug"]					= @selector(cmdUpdateDSController:);
-	commandSelector["Lid"]						= @selector(cmdUpdateDSController:);
-	
-	commandSelector["Guitar Grip: Green"]		= @selector(cmdUpdateDSController:);
-	commandSelector["Guitar Grip: Red"]			= @selector(cmdUpdateDSController:);
-	commandSelector["Guitar Grip: Yellow"]		= @selector(cmdUpdateDSController:);
-	commandSelector["Guitar Grip: Blue"]		= @selector(cmdUpdateDSController:);
-	commandSelector["Piano: C"]					= @selector(cmdUpdateDSController:);
-	commandSelector["Piano: C#"]				= @selector(cmdUpdateDSController:);
-	commandSelector["Piano: D"]					= @selector(cmdUpdateDSController:);
-	commandSelector["Piano: D#"]				= @selector(cmdUpdateDSController:);
-	commandSelector["Piano: E"]					= @selector(cmdUpdateDSController:);
-	commandSelector["Piano: F"]					= @selector(cmdUpdateDSController:);
-	commandSelector["Piano: F#"]				= @selector(cmdUpdateDSController:);
-	commandSelector["Piano: G"]					= @selector(cmdUpdateDSController:);
-	commandSelector["Piano: G#"]				= @selector(cmdUpdateDSController:);
-	commandSelector["Piano: A"]					= @selector(cmdUpdateDSController:);
-	commandSelector["Piano: A#"]				= @selector(cmdUpdateDSController:);
-	commandSelector["Piano: B"]					= @selector(cmdUpdateDSController:);
-	commandSelector["Piano: High C"]			= @selector(cmdUpdateDSController:);
-	commandSelector["Paddle"]					= @selector(cmdUpdateDSPaddle:);
-	
-	commandSelector["Autohold - Set"]			= @selector(cmdAutoholdSet:);
-	commandSelector["Autohold - Clear"]			= @selector(cmdAutoholdClear:);
-	commandSelector["Load State Slot"]			= @selector(cmdLoadEmuSaveStateSlot:);
-	commandSelector["Save State Slot"]			= @selector(cmdSaveEmuSaveStateSlot:);
-	commandSelector["Copy Screen"]				= @selector(cmdCopyScreen:);
-	commandSelector["Rotate Display Relative"]	= @selector(cmdRotateDisplayRelative:);
-	commandSelector["Toggle All Displays"]		= @selector(cmdToggleAllDisplays:);
-	commandSelector["Set Speed"]				= @selector(cmdHoldToggleSpeedScalar:);
-	commandSelector["Enable/Disable Speed Limiter"] = @selector(cmdToggleSpeedLimiter:);
-	commandSelector["Enable/Disable Auto Frame Skip"] = @selector(cmdToggleAutoFrameSkip:);
-	commandSelector["Enable/Disable Cheats"]	= @selector(cmdToggleCheats:);
-	commandSelector["Execute"]					= @selector(cmdCoreExecute:);
-	commandSelector["Pause"]					= @selector(cmdCorePause:);
-	commandSelector["Execute/Pause"]			= @selector(cmdToggleExecutePause:);
-	commandSelector["Frame Advance"]			= @selector(cmdFrameAdvance:);
-	commandSelector["Frame Jump"]				= @selector(cmdFrameJump:);
-	commandSelector["Reset"]					= @selector(cmdReset:);
-	commandSelector["Mute/Unmute"]				= @selector(cmdToggleMute:);
-	commandSelector["Enable/Disable GPU State"]	= @selector(cmdToggleGPUState:);
-	
 	// Generate the default command attributes for each command tag. (Do this in code rather than in an external file.)
-	CommandAttributes cmdDSControlRight			= NewCommandAttributesForDSControl("Right", NDSInputID_Right);
-	CommandAttributes cmdDSControlLeft			= NewCommandAttributesForDSControl("Left", NDSInputID_Left);
-	CommandAttributes cmdDSControlDown			= NewCommandAttributesForDSControl("Down", NDSInputID_Down);
-	CommandAttributes cmdDSControlUp			= NewCommandAttributesForDSControl("Up", NDSInputID_Up);
-	CommandAttributes cmdDSControlSelect		= NewCommandAttributesForDSControl("Select", NDSInputID_Select);
-	CommandAttributes cmdDSControlStart			= NewCommandAttributesForDSControl("Start", NDSInputID_Start);
-	CommandAttributes cmdDSControlB				= NewCommandAttributesForDSControl("B", NDSInputID_B);
-	CommandAttributes cmdDSControlA				= NewCommandAttributesForDSControl("A", NDSInputID_A);
-	CommandAttributes cmdDSControlY				= NewCommandAttributesForDSControl("Y", NDSInputID_Y);
-	CommandAttributes cmdDSControlX				= NewCommandAttributesForDSControl("X", NDSInputID_X);
-	CommandAttributes cmdDSControlL				= NewCommandAttributesForDSControl("L", NDSInputID_L);
-	CommandAttributes cmdDSControlR				= NewCommandAttributesForDSControl("R", NDSInputID_R);
-	CommandAttributes cmdDSControlDebug			= NewCommandAttributesForDSControl("Debug", NDSInputID_Debug);
-	CommandAttributes cmdDSControlLid			= NewCommandAttributesForDSControl("Lid", NDSInputID_Lid);
+	ClientCommandAttributes cmdDSControlRight					= NewCommandAttributesForDSControl("Right", NDSInputID_Right);
+	ClientCommandAttributes cmdDSControlLeft					= NewCommandAttributesForDSControl("Left", NDSInputID_Left);
+	ClientCommandAttributes cmdDSControlDown					= NewCommandAttributesForDSControl("Down", NDSInputID_Down);
+	ClientCommandAttributes cmdDSControlUp						= NewCommandAttributesForDSControl("Up", NDSInputID_Up);
+	ClientCommandAttributes cmdDSControlSelect					= NewCommandAttributesForDSControl("Select", NDSInputID_Select);
+	ClientCommandAttributes cmdDSControlStart					= NewCommandAttributesForDSControl("Start", NDSInputID_Start);
+	ClientCommandAttributes cmdDSControlB						= NewCommandAttributesForDSControl("B", NDSInputID_B);
+	ClientCommandAttributes cmdDSControlA						= NewCommandAttributesForDSControl("A", NDSInputID_A);
+	ClientCommandAttributes cmdDSControlY						= NewCommandAttributesForDSControl("Y", NDSInputID_Y);
+	ClientCommandAttributes cmdDSControlX						= NewCommandAttributesForDSControl("X", NDSInputID_X);
+	ClientCommandAttributes cmdDSControlL						= NewCommandAttributesForDSControl("L", NDSInputID_L);
+	ClientCommandAttributes cmdDSControlR						= NewCommandAttributesForDSControl("R", NDSInputID_R);
+	ClientCommandAttributes cmdDSControlDebug					= NewCommandAttributesForDSControl("Debug", NDSInputID_Debug);
+	ClientCommandAttributes cmdDSControlLid						= NewCommandAttributesForDSControl("Lid", NDSInputID_Lid);
 	
-	CommandAttributes cmdDSControlTouch			= NewCommandAttributesForDSControl("Touch", NDSInputID_Touch);
+	ClientCommandAttributes cmdDSControlTouch					= NewCommandAttributesForDSControl("Touch", NDSInputID_Touch);
 	cmdDSControlTouch.useInputForIntCoord = true;
 	
-	CommandAttributes cmdDSControlMic			= NewCommandAttributesForDSControl("Microphone", NDSInputID_Microphone);
+	ClientCommandAttributes cmdDSControlMic						= NewCommandAttributesForDSControl("Microphone", NDSInputID_Microphone);
 	cmdDSControlMic.intValue[1] = MicrophoneMode_InternalNoise;
 	cmdDSControlMic.floatValue[0] = 250.0f;
 	
-	CommandAttributes cmdGuitarGripGreen		= NewCommandAttributesForDSControl("Guitar Grip: Green", NDSInputID_GuitarGrip_Green);
-	CommandAttributes cmdGuitarGripRed			= NewCommandAttributesForDSControl("Guitar Grip: Red", NDSInputID_GuitarGrip_Red);
-	CommandAttributes cmdGuitarGripYellow		= NewCommandAttributesForDSControl("Guitar Grip: Yellow", NDSInputID_GuitarGrip_Yellow);
-	CommandAttributes cmdGuitarGripBlue			= NewCommandAttributesForDSControl("Guitar Grip: Blue", NDSInputID_GuitarGrip_Blue);
-	CommandAttributes cmdPianoC					= NewCommandAttributesForDSControl("Piano: C", NDSInputID_Piano_C);
-	CommandAttributes cmdPianoCSharp			= NewCommandAttributesForDSControl("Piano: C#", NDSInputID_Piano_CSharp);
-	CommandAttributes cmdPianoD					= NewCommandAttributesForDSControl("Piano: D", NDSInputID_Piano_D);
-	CommandAttributes cmdPianoDSharp			= NewCommandAttributesForDSControl("Piano: D#", NDSInputID_Piano_DSharp);
-	CommandAttributes cmdPianoE					= NewCommandAttributesForDSControl("Piano: E", NDSInputID_Piano_E);
-	CommandAttributes cmdPianoF					= NewCommandAttributesForDSControl("Piano: F", NDSInputID_Piano_F);
-	CommandAttributes cmdPianoFSharp			= NewCommandAttributesForDSControl("Piano: F#", NDSInputID_Piano_FSharp);
-	CommandAttributes cmdPianoG					= NewCommandAttributesForDSControl("Piano: G", NDSInputID_Piano_G);
-	CommandAttributes cmdPianoGSharp			= NewCommandAttributesForDSControl("Piano: G#", NDSInputID_Piano_GSharp);
-	CommandAttributes cmdPianoA					= NewCommandAttributesForDSControl("Piano: A", NDSInputID_Piano_A);
-	CommandAttributes cmdPianoASharp			= NewCommandAttributesForDSControl("Piano: A#", NDSInputID_Piano_ASharp);
-	CommandAttributes cmdPianoB					= NewCommandAttributesForDSControl("Piano: B", NDSInputID_Piano_B);
-	CommandAttributes cmdPianoHighC				= NewCommandAttributesForDSControl("Piano: High C", NDSInputID_Piano_HighC);
+	ClientCommandAttributes cmdGuitarGripGreen					= NewCommandAttributesForDSControl("Guitar Grip: Green", NDSInputID_GuitarGrip_Green);
+	ClientCommandAttributes cmdGuitarGripRed					= NewCommandAttributesForDSControl("Guitar Grip: Red", NDSInputID_GuitarGrip_Red);
+	ClientCommandAttributes cmdGuitarGripYellow					= NewCommandAttributesForDSControl("Guitar Grip: Yellow", NDSInputID_GuitarGrip_Yellow);
+	ClientCommandAttributes cmdGuitarGripBlue					= NewCommandAttributesForDSControl("Guitar Grip: Blue", NDSInputID_GuitarGrip_Blue);
+	ClientCommandAttributes cmdPianoC							= NewCommandAttributesForDSControl("Piano: C", NDSInputID_Piano_C);
+	ClientCommandAttributes cmdPianoCSharp						= NewCommandAttributesForDSControl("Piano: C#", NDSInputID_Piano_CSharp);
+	ClientCommandAttributes cmdPianoD							= NewCommandAttributesForDSControl("Piano: D", NDSInputID_Piano_D);
+	ClientCommandAttributes cmdPianoDSharp						= NewCommandAttributesForDSControl("Piano: D#", NDSInputID_Piano_DSharp);
+	ClientCommandAttributes cmdPianoE							= NewCommandAttributesForDSControl("Piano: E", NDSInputID_Piano_E);
+	ClientCommandAttributes cmdPianoF							= NewCommandAttributesForDSControl("Piano: F", NDSInputID_Piano_F);
+	ClientCommandAttributes cmdPianoFSharp						= NewCommandAttributesForDSControl("Piano: F#", NDSInputID_Piano_FSharp);
+	ClientCommandAttributes cmdPianoG							= NewCommandAttributesForDSControl("Piano: G", NDSInputID_Piano_G);
+	ClientCommandAttributes cmdPianoGSharp						= NewCommandAttributesForDSControl("Piano: G#", NDSInputID_Piano_GSharp);
+	ClientCommandAttributes cmdPianoA							= NewCommandAttributesForDSControl("Piano: A", NDSInputID_Piano_A);
+	ClientCommandAttributes cmdPianoASharp						= NewCommandAttributesForDSControl("Piano: A#", NDSInputID_Piano_ASharp);
+	ClientCommandAttributes cmdPianoB							= NewCommandAttributesForDSControl("Piano: B", NDSInputID_Piano_B);
+	ClientCommandAttributes cmdPianoHighC						= NewCommandAttributesForDSControl("Piano: High C", NDSInputID_Piano_HighC);
 	
-	CommandAttributes cmdPaddle					= NewCommandAttributesForDSControl("Paddle", NDSInputID_Paddle);
+	ClientCommandAttributes cmdPaddle							= NewCommandAttributesForDSControl("Paddle", NDSInputID_Paddle);
 	cmdPaddle.allowAnalogInput = true;
 	cmdPaddle.intValue[1] = 0;
 	cmdPaddle.floatValue[0] = 10.0f;
 	
-	CommandAttributes cmdAutoholdSet			= NewCommandAttributesForSelector("Autohold - Set", commandSelector["Autohold - Set"]);
-	CommandAttributes cmdAutoholdClear			= NewCommandAttributesForSelector("Autohold - Clear", commandSelector["Autohold - Clear"]);
-	CommandAttributes cmdLoadEmuSaveStateSlot	= NewCommandAttributesForSelector("Load State Slot", commandSelector["Load State Slot"]);
-	CommandAttributes cmdSaveEmuSaveStateSlot	= NewCommandAttributesForSelector("Save State Slot", commandSelector["Save State Slot"]);
-	CommandAttributes cmdCopyScreen				= NewCommandAttributesForSelector("Copy Screen", commandSelector["Copy Screen"]);
+	ClientCommandAttributes cmdAutoholdSet						= NewCommandAttributesWithFunction("Autohold - Set", &ClientCommandAutoholdSet);
+	ClientCommandAttributes cmdAutoholdClear					= NewCommandAttributesWithFunction("Autohold - Clear", &ClientCommandAutoholdClear);
+	ClientCommandAttributes cmdLoadEmuSaveStateSlot				= NewCommandAttributesWithFunction("Load State Slot", &ClientCommandLoadEmuSaveStateSlot);
+	ClientCommandAttributes cmdSaveEmuSaveStateSlot				= NewCommandAttributesWithFunction("Save State Slot", &ClientCommandSaveEmuSaveStateSlot);
+	ClientCommandAttributes cmdCopyScreen						= NewCommandAttributesWithFunction("Copy Screen", &ClientCommandCopyScreen);
 	
-	CommandAttributes cmdRotateDisplayRelative	= NewCommandAttributesForSelector("Rotate Display Relative", commandSelector["Rotate Display Relative"]);
+	ClientCommandAttributes cmdRotateDisplayRelative			= NewCommandAttributesWithFunction("Rotate Display Relative", &ClientCommandRotateDisplayRelative);
 	cmdRotateDisplayRelative.intValue[0] = 90;
 	
-	CommandAttributes cmdRotateDisplayLeft		= NewCommandAttributesForSelector("Rotate Display Left", commandSelector["Rotate Display Relative"]);
+	ClientCommandAttributes cmdRotateDisplayLeft				= NewCommandAttributesWithFunction("Rotate Display Left", &ClientCommandRotateDisplayRelative);
 	cmdRotateDisplayLeft.intValue[0] = -90;
 	
-	CommandAttributes cmdRotateDisplayRight		= NewCommandAttributesForSelector("Rotate Display Right", commandSelector["Rotate Display Relative"]);
+	ClientCommandAttributes cmdRotateDisplayRight				= NewCommandAttributesWithFunction("Rotate Display Right", &ClientCommandRotateDisplayRelative);
 	cmdRotateDisplayRight.intValue[0] = 90;
 	
-	CommandAttributes cmdToggleAllDisplays		= NewCommandAttributesForSelector("Toggle All Displays", commandSelector["Toggle All Displays"]);
+	ClientCommandAttributes cmdToggleAllDisplays				= NewCommandAttributesWithFunction("Toggle All Displays", &ClientCommandToggleAllDisplays);
 	
-	CommandAttributes cmdToggleSpeed			= NewCommandAttributesForSelector("Set Speed", commandSelector["Set Speed"]);
+	ClientCommandAttributes cmdToggleSpeed						= NewCommandAttributesWithFunction("Set Speed", &ClientCommandHoldToggleSpeedScalar);
 	cmdToggleSpeed.floatValue[0] = 1.0f;
 	
-	CommandAttributes cmdToggleSpeedLimiter		= NewCommandAttributesForSelector("Enable/Disable Speed Limiter", commandSelector["Enable/Disable Speed Limiter"]);
-	CommandAttributes cmdToggleAutoFrameSkip	= NewCommandAttributesForSelector("Enable/Disable Auto Frame Skip", commandSelector["Enable/Disable Auto Frame Skip"]);
-	CommandAttributes cmdToggleCheats			= NewCommandAttributesForSelector("Enable/Disable Cheats", commandSelector["Enable/Disable Cheats"]);
-	CommandAttributes cmdCoreExecute			= NewCommandAttributesForSelector("Execute", commandSelector["Execute"]);
-	CommandAttributes cmdCorePause				= NewCommandAttributesForSelector("Pause", commandSelector["Pause"]);
-	CommandAttributes cmdToggleExecutePause		= NewCommandAttributesForSelector("Execute/Pause", commandSelector["Execute/Pause"]);
-	CommandAttributes cmdFrameAdvance			= NewCommandAttributesForSelector("Frame Advance", commandSelector["Frame Advance"]);
-	CommandAttributes cmdFrameJump				= NewCommandAttributesForSelector("Frame Jump", commandSelector["Frame Jump"]);
-	CommandAttributes cmdReset					= NewCommandAttributesForSelector("Reset", commandSelector["Reset"]);
-	CommandAttributes cmdToggleMute				= NewCommandAttributesForSelector("Mute/Unmute", commandSelector["Mute/Unmute"]);
-	CommandAttributes cmdToggleGPUState			= NewCommandAttributesForSelector("Enable/Disable GPU State", commandSelector["Enable/Disable GPU State"]);
+	ClientCommandAttributes cmdToggleSpeedLimiter				= NewCommandAttributesWithFunction("Enable/Disable Speed Limiter", &ClientCommandToggleSpeedLimiter);
+	ClientCommandAttributes cmdToggleAutoFrameSkip				= NewCommandAttributesWithFunction("Enable/Disable Auto Frame Skip", &ClientCommandToggleAutoFrameSkip);
+	ClientCommandAttributes cmdToggleCheats						= NewCommandAttributesWithFunction("Enable/Disable Cheats", &ClientCommandToggleCheats);
+	ClientCommandAttributes cmdCoreExecute						= NewCommandAttributesWithFunction("Execute", &ClientCommandCoreExecute);
+	ClientCommandAttributes cmdCorePause						= NewCommandAttributesWithFunction("Pause", &ClientCommandCorePause);
+	ClientCommandAttributes cmdToggleExecutePause				= NewCommandAttributesWithFunction("Execute/Pause", &ClientCommandToggleExecutePause);
+	ClientCommandAttributes cmdFrameAdvance						= NewCommandAttributesWithFunction("Frame Advance", &ClientCommandFrameAdvance);
+	ClientCommandAttributes cmdFrameJump						= NewCommandAttributesWithFunction("Frame Jump", &ClientCommandFrameJump);
+	ClientCommandAttributes cmdReset							= NewCommandAttributesWithFunction("Reset", &ClientCommandReset);
+	ClientCommandAttributes cmdToggleMute						= NewCommandAttributesWithFunction("Mute/Unmute", &ClientCommandToggleMute);
+	ClientCommandAttributes cmdToggleGPUState					= NewCommandAttributesWithFunction("Enable/Disable GPU State", &ClientCommandToggleGPUState);
 	
-	defaultCommandAttributes["Up"]				= cmdDSControlUp;
-	defaultCommandAttributes["Down"]			= cmdDSControlDown;
-	defaultCommandAttributes["Right"]			= cmdDSControlRight;
-	defaultCommandAttributes["Left"]			= cmdDSControlLeft;
-	defaultCommandAttributes["A"]				= cmdDSControlA;
-	defaultCommandAttributes["B"]				= cmdDSControlB;
-	defaultCommandAttributes["X"]				= cmdDSControlX;
-	defaultCommandAttributes["Y"]				= cmdDSControlY;
-	defaultCommandAttributes["L"]				= cmdDSControlL;
-	defaultCommandAttributes["R"]				= cmdDSControlR;
-	defaultCommandAttributes["Start"]			= cmdDSControlStart;
-	defaultCommandAttributes["Select"]			= cmdDSControlSelect;
-	defaultCommandAttributes["Touch"]			= cmdDSControlTouch;
-	defaultCommandAttributes["Microphone"]		= cmdDSControlMic;
-	defaultCommandAttributes["Debug"]			= cmdDSControlDebug;
-	defaultCommandAttributes["Lid"]				= cmdDSControlLid;
+	defaultCommandAttributes["Up"]								= cmdDSControlUp;
+	defaultCommandAttributes["Down"]							= cmdDSControlDown;
+	defaultCommandAttributes["Right"]							= cmdDSControlRight;
+	defaultCommandAttributes["Left"]							= cmdDSControlLeft;
+	defaultCommandAttributes["A"]								= cmdDSControlA;
+	defaultCommandAttributes["B"]								= cmdDSControlB;
+	defaultCommandAttributes["X"]								= cmdDSControlX;
+	defaultCommandAttributes["Y"]								= cmdDSControlY;
+	defaultCommandAttributes["L"]								= cmdDSControlL;
+	defaultCommandAttributes["R"]								= cmdDSControlR;
+	defaultCommandAttributes["Start"]							= cmdDSControlStart;
+	defaultCommandAttributes["Select"]							= cmdDSControlSelect;
+	defaultCommandAttributes["Touch"]							= cmdDSControlTouch;
+	defaultCommandAttributes["Microphone"]						= cmdDSControlMic;
+	defaultCommandAttributes["Debug"]							= cmdDSControlDebug;
+	defaultCommandAttributes["Lid"]								= cmdDSControlLid;
 	
-	defaultCommandAttributes["Guitar Grip: Green"]	= cmdGuitarGripGreen;
-	defaultCommandAttributes["Guitar Grip: Red"]	= cmdGuitarGripRed;
-	defaultCommandAttributes["Guitar Grip: Yellow"]	= cmdGuitarGripYellow;
-	defaultCommandAttributes["Guitar Grip: Blue"]	= cmdGuitarGripBlue;
-	defaultCommandAttributes["Piano: C"]		= cmdPianoC;
-	defaultCommandAttributes["Piano: C#"]		= cmdPianoCSharp;
-	defaultCommandAttributes["Piano: D"]		= cmdPianoD;
-	defaultCommandAttributes["Piano: D#"]		= cmdPianoDSharp;
-	defaultCommandAttributes["Piano: E"]		= cmdPianoE;
-	defaultCommandAttributes["Piano: F"]		= cmdPianoF;
-	defaultCommandAttributes["Piano: F#"]		= cmdPianoFSharp;
-	defaultCommandAttributes["Piano: G"]		= cmdPianoG;
-	defaultCommandAttributes["Piano: G#"]		= cmdPianoGSharp;
-	defaultCommandAttributes["Piano: A"]		= cmdPianoA;
-	defaultCommandAttributes["Piano: A#"]		= cmdPianoASharp;
-	defaultCommandAttributes["Piano: B"]		= cmdPianoB;
-	defaultCommandAttributes["Piano: High C"]	= cmdPianoHighC;
-	defaultCommandAttributes["Paddle"]			= cmdPaddle;
+	defaultCommandAttributes["Guitar Grip: Green"]				= cmdGuitarGripGreen;
+	defaultCommandAttributes["Guitar Grip: Red"]				= cmdGuitarGripRed;
+	defaultCommandAttributes["Guitar Grip: Yellow"]				= cmdGuitarGripYellow;
+	defaultCommandAttributes["Guitar Grip: Blue"]				= cmdGuitarGripBlue;
+	defaultCommandAttributes["Piano: C"]						= cmdPianoC;
+	defaultCommandAttributes["Piano: C#"]						= cmdPianoCSharp;
+	defaultCommandAttributes["Piano: D"]						= cmdPianoD;
+	defaultCommandAttributes["Piano: D#"]						= cmdPianoDSharp;
+	defaultCommandAttributes["Piano: E"]						= cmdPianoE;
+	defaultCommandAttributes["Piano: F"]						= cmdPianoF;
+	defaultCommandAttributes["Piano: F#"]						= cmdPianoFSharp;
+	defaultCommandAttributes["Piano: G"]						= cmdPianoG;
+	defaultCommandAttributes["Piano: G#"]						= cmdPianoGSharp;
+	defaultCommandAttributes["Piano: A"]						= cmdPianoA;
+	defaultCommandAttributes["Piano: A#"]						= cmdPianoASharp;
+	defaultCommandAttributes["Piano: B"]						= cmdPianoB;
+	defaultCommandAttributes["Piano: High C"]					= cmdPianoHighC;
+	defaultCommandAttributes["Paddle"]							= cmdPaddle;
 	
-	defaultCommandAttributes["Autohold - Set"]	= cmdAutoholdSet;
-	defaultCommandAttributes["Autohold - Clear"]	= cmdAutoholdClear;
-	defaultCommandAttributes["Load State Slot"] = cmdLoadEmuSaveStateSlot;
-	defaultCommandAttributes["Save State Slot"] = cmdSaveEmuSaveStateSlot;
-	defaultCommandAttributes["Copy Screen"]		= cmdCopyScreen;
-	defaultCommandAttributes["Rotate Display Left"] = cmdRotateDisplayLeft;
-	defaultCommandAttributes["Rotate Display Right"] = cmdRotateDisplayRight;
-	defaultCommandAttributes["Toggle All Displays"]	= cmdToggleAllDisplays;
-	defaultCommandAttributes["Set Speed"]		= cmdToggleSpeed;
-	defaultCommandAttributes["Enable/Disable Speed Limiter"] = cmdToggleSpeedLimiter;
-	defaultCommandAttributes["Enable/Disable Auto Frame Skip"] = cmdToggleAutoFrameSkip;
-	defaultCommandAttributes["Enable/Disable Cheats"] = cmdToggleCheats;
-	defaultCommandAttributes["Execute"]			= cmdCoreExecute;
-	defaultCommandAttributes["Pause"]			= cmdCorePause;
-	defaultCommandAttributes["Execute/Pause"]	= cmdToggleExecutePause;
-	defaultCommandAttributes["Frame Advance"]	= cmdFrameAdvance;
-	defaultCommandAttributes["Frame Jump"]		= cmdFrameJump;
-	defaultCommandAttributes["Reset"]			= cmdReset;
-	defaultCommandAttributes["Mute/Unmute"]		= cmdToggleMute;
-	defaultCommandAttributes["Enable/Disable GPU State"] = cmdToggleGPUState;
+	defaultCommandAttributes["Autohold - Set"]					= cmdAutoholdSet;
+	defaultCommandAttributes["Autohold - Clear"]				= cmdAutoholdClear;
+	defaultCommandAttributes["Load State Slot"]					= cmdLoadEmuSaveStateSlot;
+	defaultCommandAttributes["Save State Slot"]					= cmdSaveEmuSaveStateSlot;
+	defaultCommandAttributes["Copy Screen"]						= cmdCopyScreen;
+	defaultCommandAttributes["Rotate Display Left"]				= cmdRotateDisplayLeft;
+	defaultCommandAttributes["Rotate Display Right"]			= cmdRotateDisplayRight;
+	defaultCommandAttributes["Toggle All Displays"]				= cmdToggleAllDisplays;
+	defaultCommandAttributes["Set Speed"]						= cmdToggleSpeed;
+	defaultCommandAttributes["Enable/Disable Speed Limiter"]	= cmdToggleSpeedLimiter;
+	defaultCommandAttributes["Enable/Disable Auto Frame Skip"]	= cmdToggleAutoFrameSkip;
+	defaultCommandAttributes["Enable/Disable Cheats"]			= cmdToggleCheats;
+	defaultCommandAttributes["Execute"]							= cmdCoreExecute;
+	defaultCommandAttributes["Pause"]							= cmdCorePause;
+	defaultCommandAttributes["Execute/Pause"]					= cmdToggleExecutePause;
+	defaultCommandAttributes["Frame Advance"]					= cmdFrameAdvance;
+	defaultCommandAttributes["Frame Jump"]						= cmdFrameJump;
+	defaultCommandAttributes["Reset"]							= cmdReset;
+	defaultCommandAttributes["Mute/Unmute"]						= cmdToggleMute;
+	defaultCommandAttributes["Enable/Disable GPU State"]		= cmdToggleGPUState;
 	
 	// Map all IBActions (the target object is an EmuControllerDelegate)
 	[self addMappingForIBAction:@selector(autoholdSet:) commandAttributes:&cmdAutoholdSet];
@@ -1310,22 +1253,22 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 		for (NSDictionary *deviceInfo in deviceInfoList)
 		{
 			const char *cmdTag = [commandTag cStringUsingEncoding:NSUTF8StringEncoding];
-			CommandAttributes cmdAttr = defaultCommandAttributes[cmdTag];
+			ClientCommandAttributes cmdAttr = defaultCommandAttributes[cmdTag];
 			UpdateCommandAttributesWithDeviceInfoDictionary(&cmdAttr, deviceInfo);
 			
 			// Force DS control commands to use IDs from code instead of from the file.
 			// (In other words, we can't trust an external file with this information since
 			// IDs might desync if the DS Control ID enumeration changes.)
-			if (cmdAttr.selector == @selector(cmdUpdateDSController:) ||
-				cmdAttr.selector == @selector(cmdUpdateDSControllerWithTurbo:) ||
-				cmdAttr.selector == @selector(cmdUpdateDSTouch:) ||
-				cmdAttr.selector == @selector(cmdUpdateDSMicrophone:) ||
-				cmdAttr.selector == @selector(cmdUpdateDSPaddle:))
+			if (cmdAttr.dispatchFunction == &ClientCommandUpdateDSController ||
+				cmdAttr.dispatchFunction == &ClientCommandUpdateDSControllerWithTurbo ||
+				cmdAttr.dispatchFunction == &ClientCommandUpdateDSTouch ||
+				cmdAttr.dispatchFunction == &ClientCommandUpdateDSMicrophone ||
+				cmdAttr.dispatchFunction == &ClientCommandUpdateDSPaddle)
 			{
 				cmdAttr.intValue[0] = defaultCommandAttributes[cmdTag].intValue[0];
 			}
 			
-			if (cmdAttr.selector == @selector(cmdUpdateDSControllerWithTurbo:))
+			if (cmdAttr.dispatchFunction == &ClientCommandUpdateDSControllerWithTurbo)
 			{
 				if ((cmdAttr.intValue[2] == 0) || (cmdAttr.intValue[3] == 0))
 				{
@@ -1348,7 +1291,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	[self updateAudioFileGenerators];
 }
 
-- (void) addMappingUsingDeviceInfoDictionary:(NSDictionary *)deviceInfo commandAttributes:(const CommandAttributes *)cmdAttr
+- (void) addMappingUsingDeviceInfoDictionary:(NSDictionary *)deviceInfo commandAttributes:(const ClientCommandAttributes *)cmdAttr
 {
 	NSString *deviceCode = (NSString *)[deviceInfo valueForKey:@"deviceCode"];
 	NSString *elementCode = (NSString *)[deviceInfo valueForKey:@"elementCode"];
@@ -1380,7 +1323,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	}
 }
 
-- (void) addMappingUsingInputAttributes:(const ClientInputDeviceProperties *)inputProperty commandAttributes:(const CommandAttributes *)cmdAttr
+- (void) addMappingUsingInputAttributes:(const ClientInputDeviceProperties *)inputProperty commandAttributes:(const ClientCommandAttributes *)cmdAttr
 {
 	if (inputProperty == NULL)
 	{
@@ -1397,7 +1340,7 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	[self addMappingUsingDeviceInfoDictionary:deviceInfo commandAttributes:cmdAttr];
 }
 
-- (void) addMappingUsingInputList:(const ClientInputDevicePropertiesList *)inputPropertyList commandAttributes:(const CommandAttributes *)cmdAttr
+- (void) addMappingUsingInputList:(const ClientInputDevicePropertiesList *)inputPropertyList commandAttributes:(const ClientCommandAttributes *)cmdAttr
 {
 	if (inputPropertyList == NULL)
 	{
@@ -1418,20 +1361,20 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	}
 }
 
-- (void) addMappingForIBAction:(const SEL)theSelector commandAttributes:(const CommandAttributes *)cmdAttr
+- (void) addMappingForIBAction:(const SEL)theSelector commandAttributes:(const ClientCommandAttributes *)cmdAttr
 {
 	if (theSelector == nil)
 	{
 		return;
 	}
 	
-	CommandAttributes IBActionCmdAttr = *cmdAttr;
-	IBActionCmdAttr.useInputForSender = true;
+	ClientCommandAttributes IBActionCmdAttr = *cmdAttr;
+	IBActionCmdAttr.useInputForObject = true;
 	
 	[self addMappingUsingDeviceCode:"IBAction" elementCode:sel_getName(theSelector) commandAttributes:&IBActionCmdAttr];
 }
 
-- (void) addMappingUsingDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode commandAttributes:(const CommandAttributes *)cmdAttr
+- (void) addMappingUsingDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode commandAttributes:(const ClientCommandAttributes *)cmdAttr
 {
 	if (deviceCode == NULL || elementCode == NULL || cmdAttr == NULL)
 	{
@@ -1517,8 +1460,8 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 		
 		// Look up the command attributes using the input key.
 		const std::string inputKey	= std::string(inputProperty.deviceCode) + ":" + std::string(inputProperty.elementCode);
-		CommandAttributes cmdAttr	= commandMap[inputKey];
-		if (cmdAttr.tag[0] == '\0' || cmdAttr.selector == nil)
+		ClientCommandAttributes cmdAttr	= commandMap[inputKey];
+		if (cmdAttr.tag[0] == '\0' || cmdAttr.dispatchFunction == NULL)
 		{
 			continue;
 		}
@@ -1535,14 +1478,8 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	size_t cmdCount = cmdList->size();
 	for (size_t i = 0; i < cmdCount; i++)
 	{
-		const CommandAttributes &cmdAttr = (*cmdList)[i];
-		
-		if ([emuControl respondsToSelector:cmdAttr.selector])
-		{
-			NSValue *cmdObject = [[NSValue alloc] initWithBytes:&cmdAttr objCType:@encode(CommandAttributes)];
-			[emuControl performSelector:cmdAttr.selector withObject:cmdObject];
-			[cmdObject release];
-		}
+		const ClientCommandAttributes &cmdAttr = (*cmdList)[i];
+		cmdAttr.dispatchFunction(cmdAttr, emuControl);
 	}
 }
 
@@ -1559,8 +1496,8 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	
 	// Look up the command key using the input key.
 	const std::string inputKey	= std::string(inputProperty->deviceCode) + ":" + std::string(inputProperty->elementCode);
-	CommandAttributes cmdAttr	= commandMap[inputKey];
-	if (cmdAttr.tag[0] == '\0' || cmdAttr.selector == nil)
+	ClientCommandAttributes cmdAttr	= commandMap[inputKey];
+	if (cmdAttr.tag[0] == '\0' || cmdAttr.dispatchFunction == NULL)
 	{
 		return didCommandDispatch;
 	}
@@ -1568,12 +1505,8 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	// Copy the input state to the command attributes.
 	cmdAttr.input = *inputProperty;
 	
-	if ([emuControl respondsToSelector:cmdAttr.selector])
-	{
-		NSValue *cmdObject = [[NSValue alloc] initWithBytes:&cmdAttr objCType:@encode(CommandAttributes)];
-		[emuControl performSelector:cmdAttr.selector withObject:cmdObject];
-		[cmdObject release];
-	}
+	// Call this command's dispatch function.
+	cmdAttr.dispatchFunction(cmdAttr, emuControl);
 	
 	didCommandDispatch = YES;
 	return didCommandDispatch;
@@ -1611,23 +1544,18 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	return commandTag;
 }
 
-- (SEL) selectorOfCommandTag:(const char *)commandTag
-{
-	return commandSelector[commandTag];
-}
-
-- (CommandAttributes) defaultCommandAttributesForCommandTag:(const char *)commandTag
+- (ClientCommandAttributes) defaultCommandAttributesForCommandTag:(const char *)commandTag
 {
 	return defaultCommandAttributes[commandTag];
 }
 
-- (CommandAttributes) mappedCommandAttributesOfDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode
+- (ClientCommandAttributes) mappedCommandAttributesOfDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode
 {
 	const std::string inputKey = std::string(deviceCode) + ":" + std::string(elementCode);
 	return commandMap[inputKey];
 }
 
-- (void) setMappedCommandAttributes:(const CommandAttributes *)cmdAttr deviceCode:(const char *)deviceCode elementCode:(const char *)elementCode
+- (void) setMappedCommandAttributes:(const ClientCommandAttributes *)cmdAttr deviceCode:(const char *)deviceCode elementCode:(const char *)elementCode
 {
 	const std::string inputKey = std::string(deviceCode) + ":" + std::string(elementCode);
 	commandMap[inputKey] = *cmdAttr;
@@ -1976,12 +1904,12 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 
 @end
 
-CommandAttributes NewDefaultCommandAttributes(const char *commandTag)
+ClientCommandAttributes NewDefaultCommandAttributes(const char *commandTag)
 {
-	CommandAttributes cmdAttr;
+	ClientCommandAttributes cmdAttr;
 	
 	strncpy(cmdAttr.tag, commandTag, INPUT_HANDLER_STRING_LENGTH);
-	cmdAttr.selector				= nil;
+	cmdAttr.dispatchFunction		= NULL;
 	cmdAttr.intValue[0]				= 0;
 	cmdAttr.intValue[1]				= 0;
 	cmdAttr.intValue[2]				= 0;
@@ -1998,23 +1926,23 @@ CommandAttributes NewDefaultCommandAttributes(const char *commandTag)
 	cmdAttr.useInputForIntCoord		= false;
 	cmdAttr.useInputForFloatCoord	= false;
 	cmdAttr.useInputForScalar		= false;
-	cmdAttr.useInputForSender		= false;
+	cmdAttr.useInputForObject		= false;
 	cmdAttr.allowAnalogInput		= false;
 	
 	return cmdAttr;
 }
 
-CommandAttributes NewCommandAttributesForSelector(const char *commandTag, const SEL theSelector)
+ClientCommandAttributes NewCommandAttributesWithFunction(const char *commandTag, const ClientCommandDispatcher commandFunc)
 {
-	CommandAttributes cmdAttr = NewDefaultCommandAttributes(commandTag);
-	cmdAttr.selector = theSelector;
+	ClientCommandAttributes cmdAttr = NewDefaultCommandAttributes(commandTag);
+	cmdAttr.dispatchFunction = commandFunc;
 	
 	return cmdAttr;
 }
 
-CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const NDSInputID controlID)
+ClientCommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const NDSInputID controlID)
 {
-	CommandAttributes cmdAttr = NewCommandAttributesForSelector(commandTag, @selector(cmdUpdateDSController:));
+	ClientCommandAttributes cmdAttr = NewCommandAttributesWithFunction(commandTag, &ClientCommandUpdateDSController);
 	
 	switch (controlID)
 	{
@@ -2030,21 +1958,21 @@ CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const
 		case NDSInputID_X:
 		case NDSInputID_L:
 		case NDSInputID_R:
-			cmdAttr.selector = @selector(cmdUpdateDSControllerWithTurbo:);
+			cmdAttr.dispatchFunction = &ClientCommandUpdateDSControllerWithTurbo;
 			cmdAttr.intValue[2] = 0x33333333;
 			cmdAttr.intValue[3] = 4;
 			break;
 			
 		case NDSInputID_Touch:
-			cmdAttr.selector = @selector(cmdUpdateDSTouch:);
+			cmdAttr.dispatchFunction = &ClientCommandUpdateDSTouch;
 			break;
 			
 		case NDSInputID_Microphone:
-			cmdAttr.selector = @selector(cmdUpdateDSMicrophone:);
+			cmdAttr.dispatchFunction = &ClientCommandUpdateDSMicrophone;
 			break;
 			
 		case NDSInputID_Paddle:
-			cmdAttr.selector = @selector(cmdUpdateDSPaddle:);
+			cmdAttr.dispatchFunction = &ClientCommandUpdateDSPaddle;
 			break;
 			
 		default:
@@ -2057,7 +1985,7 @@ CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const
 	return cmdAttr;
 }
 
-void UpdateCommandAttributesWithDeviceInfoDictionary(CommandAttributes *cmdAttr, NSDictionary *deviceInfo)
+void UpdateCommandAttributesWithDeviceInfoDictionary(ClientCommandAttributes *cmdAttr, NSDictionary *deviceInfo)
 {
 	if (cmdAttr == NULL || deviceInfo == nil)
 	{
@@ -2079,7 +2007,7 @@ void UpdateCommandAttributesWithDeviceInfoDictionary(CommandAttributes *cmdAttr,
 	NSNumber *useInputForIntCoord	= (NSNumber *)[deviceInfo valueForKey:@"useInputForIntCoord"];
 	NSNumber *useInputForFloatCoord	= (NSNumber *)[deviceInfo valueForKey:@"useInputForFloatCoord"];
 	NSNumber *useInputForScalar		= (NSNumber *)[deviceInfo valueForKey:@"useInputForScalar"];
-	NSNumber *useInputForSender		= (NSNumber *)[deviceInfo valueForKey:@"useInputForSender"];
+	NSNumber *useInputForObject		= (NSNumber *)[deviceInfo valueForKey:@"useInputForSender"];
 	NSNumber *isInputAnalog			= (NSNumber *)[deviceInfo valueForKey:@"isInputAnalog"];
 	
 	if (intValue0 != nil)				cmdAttr->intValue[0] = [intValue0 intValue];
@@ -2093,7 +2021,7 @@ void UpdateCommandAttributesWithDeviceInfoDictionary(CommandAttributes *cmdAttr,
 	if (useInputForIntCoord != nil)		cmdAttr->useInputForIntCoord = [useInputForIntCoord boolValue];
 	if (useInputForFloatCoord != nil)	cmdAttr->useInputForFloatCoord = [useInputForFloatCoord boolValue];
 	if (useInputForScalar != nil)		cmdAttr->useInputForScalar = [useInputForScalar boolValue];
-	if (useInputForSender != nil)		cmdAttr->useInputForSender = [useInputForSender boolValue];
+	if (useInputForObject != nil)		cmdAttr->useInputForObject = [useInputForObject boolValue];
 	if (isInputAnalog != nil)			cmdAttr->allowAnalogInput = [isInputAnalog boolValue];
 	
 	cmdAttr->object[0] = object0;
@@ -2102,7 +2030,7 @@ void UpdateCommandAttributesWithDeviceInfoDictionary(CommandAttributes *cmdAttr,
 	cmdAttr->object[3] = object3;
 }
 
-NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttributes *cmdAttr,
+NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const ClientCommandAttributes *cmdAttr,
 															   NSString *deviceCode,
 															   NSString *deviceName,
 															   NSString *elementCode,
@@ -2138,7 +2066,7 @@ NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttr
 										  [NSNumber numberWithBool:cmdAttr->useInputForIntCoord],		@"useInputForIntCoord",
 										  [NSNumber numberWithBool:cmdAttr->useInputForFloatCoord],		@"useInputForFloatCoord",
 										  [NSNumber numberWithBool:cmdAttr->useInputForScalar],			@"useInputForScalar",
-										  [NSNumber numberWithBool:cmdAttr->useInputForSender],			@"useInputForSender",
+										  [NSNumber numberWithBool:cmdAttr->useInputForObject],			@"useInputForSender",
 										  nil];
 	
 	// Set the object references last since these could be nil.
@@ -2148,6 +2076,150 @@ NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttr
 	[newDeviceInfo setValue:(id)cmdAttr->object[3] forKey:@"object3"];
 	
 	return newDeviceInfo;
+}
+
+void ClientCommandUpdateDSController(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdUpdateDSController:cmdAttr];
+}
+
+void ClientCommandUpdateDSControllerWithTurbo(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdUpdateDSControllerWithTurbo:cmdAttr];
+}
+
+void ClientCommandUpdateDSTouch(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdUpdateDSTouch:cmdAttr];
+}
+
+void ClientCommandUpdateDSMicrophone(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdUpdateDSMicrophone:cmdAttr];
+}
+
+void ClientCommandUpdateDSPaddle(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdUpdateDSPaddle:cmdAttr];
+}
+
+void ClientCommandAutoholdSet(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdAutoholdSet:cmdAttr];
+}
+
+void ClientCommandAutoholdClear(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdAutoholdClear:cmdAttr];
+}
+
+void ClientCommandLoadEmuSaveStateSlot(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdLoadEmuSaveStateSlot:cmdAttr];
+}
+
+void ClientCommandSaveEmuSaveStateSlot(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdSaveEmuSaveStateSlot:cmdAttr];
+}
+
+void ClientCommandCopyScreen(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdCopyScreen:cmdAttr];
+}
+
+void ClientCommandRotateDisplayRelative(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdRotateDisplayRelative:cmdAttr];
+}
+
+void ClientCommandToggleAllDisplays(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdToggleAllDisplays:cmdAttr];
+}
+
+void ClientCommandHoldToggleSpeedScalar(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdHoldToggleSpeedScalar:cmdAttr];
+}
+
+void ClientCommandToggleSpeedLimiter(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdToggleSpeedLimiter:cmdAttr];
+}
+
+void ClientCommandToggleAutoFrameSkip(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdToggleAutoFrameSkip:cmdAttr];
+}
+
+void ClientCommandToggleCheats(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdToggleCheats:cmdAttr];
+}
+
+void ClientCommandToggleExecutePause(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdToggleExecutePause:cmdAttr];
+}
+
+void ClientCommandCoreExecute(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdCoreExecute:cmdAttr];
+}
+
+void ClientCommandCorePause(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdCorePause:cmdAttr];
+}
+
+void ClientCommandFrameAdvance(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdFrameAdvance:cmdAttr];
+}
+
+void ClientCommandFrameJump(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdFrameJump:cmdAttr];
+}
+
+void ClientCommandReset(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdReset:cmdAttr];
+}
+
+void ClientCommandToggleMute(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdToggleMute:cmdAttr];
+}
+
+void ClientCommandToggleGPUState(const ClientCommandAttributes &cmdAttr, void *dispatcherObject)
+{
+	EmuControllerDelegate *emuControl = (EmuControllerDelegate *)dispatcherObject;
+	[emuControl cmdToggleGPUState:cmdAttr];
 }
 
 MacInputDevicePropertiesEncoder::MacInputDevicePropertiesEncoder()

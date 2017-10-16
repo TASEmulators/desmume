@@ -149,6 +149,7 @@ class InternalNoiseGenerator;
 class WhiteNoiseGenerator;
 class SineWaveGenerator;
 class AudioSampleBlockGenerator;
+struct ClientCommandAttributes;
 
 typedef union
 {
@@ -273,6 +274,8 @@ typedef union
 	};
 } NDSInputState; // Each bit represents the Pressed/Released state of a single input. Pressed=0, Released=1
 
+typedef void (*ClientCommandDispatcher)(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+
 struct ClientInputDeviceProperties
 {
 	char deviceName[INPUT_HANDLER_STRING_LENGTH];
@@ -301,6 +304,25 @@ struct ClientInput
 	uint8_t turboPatternLength;
 };
 typedef struct ClientInput ClientInput;
+
+struct ClientCommandAttributes
+{
+	ClientCommandDispatcher dispatchFunction;		// The function to be called when this command is dispatched.
+	
+	char tag[INPUT_HANDLER_STRING_LENGTH];			// A string identifier for these attributes
+	int32_t intValue[4];							// Context dependent int values
+	float floatValue[4];							// Context dependent float values
+	void *object[4];								// Context dependent objects
+	
+	bool useInputForIntCoord;						// The command will prefer the input device's int coordinate
+	bool useInputForFloatCoord;						// The command will prefer the input device's float coordinate
+	bool useInputForScalar;							// The command will prefer the input device's scalar
+	bool useInputForObject;							// The command will prefer the input device's object
+	
+	ClientInputDeviceProperties input;				// The input device's properties
+	bool allowAnalogInput;							// Flag for allowing a command to accept analog inputs
+};
+typedef struct ClientCommandAttributes ClientCommandAttributes;
 
 typedef std::map<NDSInputID, size_t> NDSUserInputMap;
 typedef std::map<NDSInputID, NDSInputStateBit> NDSInputStateBitMap;

@@ -305,7 +305,7 @@
 	}
 	
 	// Add the input mapping.
-	const CommandAttributes cmdAttr = [inputManager defaultCommandAttributesForCommandTag:cmdTag];
+	const ClientCommandAttributes cmdAttr = [inputManager defaultCommandAttributesForCommandTag:cmdTag];
 	[inputManager addMappingUsingInputAttributes:inputProperty commandAttributes:&cmdAttr];
 	[inputManager writeDefaultsInputMappings];
 	
@@ -352,7 +352,7 @@
 	const char *devCode = [deviceCode cStringUsingEncoding:NSUTF8StringEncoding];
 	const char *elCode = [elementCode cStringUsingEncoding:NSUTF8StringEncoding];
 	
-	CommandAttributes cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:devCode elementCode:elCode];
+	ClientCommandAttributes cmdAttr = [inputManager mappedCommandAttributesOfDeviceCode:devCode elementCode:elCode];
 	UpdateCommandAttributesWithDeviceInfoDictionary(&cmdAttr, deviceInfo);
 	[inputManager updateInputSettingsSummaryInDeviceInfoDictionary:deviceInfo commandTag:cmdAttr.tag];
 	[inputManager setMappedCommandAttributes:&cmdAttr deviceCode:devCode elementCode:elCode];
@@ -450,7 +450,7 @@
 		return isHandled;
 	}
 	
-	CommandAttributes cmdAttr = [[hidManager inputManager] defaultCommandAttributesForCommandTag:[cmdTagTarget cStringUsingEncoding:NSUTF8StringEncoding]];
+	ClientCommandAttributes cmdAttr = [[hidManager inputManager] defaultCommandAttributesForCommandTag:[cmdTagTarget cStringUsingEncoding:NSUTF8StringEncoding]];
 	bool forceDigitalInput = !cmdAttr.allowAnalogInput;
 	
 	MacInputDevicePropertiesEncoder *inputEncoder = [[hidManager inputManager] inputEncoder];

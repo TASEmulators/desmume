@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2015 DeSmuME Team
+	Copyright (C) 2013-2017 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@
 #include "../audiosamplegenerator.h"
 #include "../ClientInputHandler.h"
 
+struct ClientCommandAttributes;
 struct ClientInputDeviceProperties;
 class MacInputDevicePropertiesEncoder;
 @class EmuControllerDelegate;
@@ -46,41 +47,21 @@ class MacInputDevicePropertiesEncoder;
 
 @end
 
-typedef struct
-{
-	char tag[INPUT_HANDLER_STRING_LENGTH];	// A string identifier for these attributes
-	SEL selector;						// The selector that is called on command dispatch
-	int32_t intValue[4];				// Context dependent int values
-	float floatValue[4];				// Context dependent float values
-	void *object[4];					// Context dependent objects
-	
-	bool useInputForIntCoord;			// The command will prefer the input device's int coordinate
-	bool useInputForFloatCoord;			// The command will prefer the input device's float coordinate
-	bool useInputForScalar;				// The command will prefer the input device's scalar
-	bool useInputForSender;				// The command will prefer the input device's sender
-	
-	ClientInputDeviceProperties input;	// The input device's properties
-	bool allowAnalogInput;				// Flag for allowing a command to accept analog inputs
-} CommandAttributes;
-
-typedef std::vector<CommandAttributes> CommandAttributesList;
+typedef std::vector<ClientCommandAttributes> CommandAttributesList;
 
 #if defined(__ppc__) || defined(__ppc64__)
-typedef std::map<std::string, CommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = CommandAttributes
-typedef std::map<std::string, CommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = CommandAttributes
-typedef std::map<std::string, SEL> CommandSelectorMap; // Key = Command Tag, Value = Obj-C Selector
+typedef std::map<std::string, ClientCommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = ClientCommandAttributes
+typedef std::map<std::string, ClientCommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = ClientCommandAttributes
 typedef std::map<std::string, AudioSampleBlockGenerator> AudioFileSampleGeneratorMap; // Key = File path to audio file, Value = AudioSampleBlockGenerator
 typedef std::map<int32_t, std::string> KeyboardKeyNameMap; // Key = Key code, Value = Key name
 #elif !defined(MAC_OS_X_VERSION_10_7) || (MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_6)
-typedef std::tr1::unordered_map<std::string, CommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = CommandAttributes
-typedef std::tr1::unordered_map<std::string, CommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = CommandAttributes
-typedef std::tr1::unordered_map<std::string, SEL> CommandSelectorMap; // Key = Command Tag, Value = Obj-C Selector
+typedef std::tr1::unordered_map<std::string, ClientCommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = ClientCommandAttributes
+typedef std::tr1::unordered_map<std::string, ClientCommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = ClientCommandAttributes
 typedef std::tr1::unordered_map<std::string, AudioSampleBlockGenerator> AudioFileSampleGeneratorMap; // Key = File path to audio file, Value = AudioSampleBlockGenerator
 typedef std::tr1::unordered_map<int32_t, std::string> KeyboardKeyNameMap; // Key = Key code, Value = Key name
 #else
-typedef std::unordered_map<std::string, CommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = CommandAttributes
-typedef std::unordered_map<std::string, CommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = CommandAttributes
-typedef std::unordered_map<std::string, SEL> CommandSelectorMap; // Key = Command Tag, Value = Obj-C Selector
+typedef std::unordered_map<std::string, ClientCommandAttributes> InputCommandMap; // Key = Input key in deviceCode:elementCode format, Value = ClientCommandAttributes
+typedef std::unordered_map<std::string, ClientCommandAttributes> CommandAttributesMap; // Key = Command Tag, Value = ClientCommandAttributes
 typedef std::unordered_map<std::string, AudioSampleBlockGenerator> AudioFileSampleGeneratorMap; // Key = File path to audio file, Value = AudioSampleBlockGenerator
 typedef std::unordered_map<int32_t, std::string> KeyboardKeyNameMap; // Key = Key code, Value = Key name
 #endif
@@ -176,7 +157,6 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 	
 	InputCommandMap commandMap;
 	CommandAttributesMap defaultCommandAttributes;
-	CommandSelectorMap commandSelector;
 	AudioFileSampleGeneratorMap audioFileGenerators;
 }
 
@@ -189,11 +169,11 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 @property (readonly) NSDictionary *commandIcon;
 
 - (void) setMappingsWithMappings:(NSDictionary *)mappings;
-- (void) addMappingUsingDeviceInfoDictionary:(NSDictionary *)deviceDict commandAttributes:(const CommandAttributes *)cmdAttr;
-- (void) addMappingUsingInputAttributes:(const ClientInputDeviceProperties *)inputProperty commandAttributes:(const CommandAttributes *)cmdAttr;
-- (void) addMappingUsingInputList:(const ClientInputDevicePropertiesList *)inputPropertyList commandAttributes:(const CommandAttributes *)cmdAttr;
-- (void) addMappingForIBAction:(const SEL)theSelector commandAttributes:(const CommandAttributes *)cmdAttr;
-- (void) addMappingUsingDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode commandAttributes:(const CommandAttributes *)cmdAttr;
+- (void) addMappingUsingDeviceInfoDictionary:(NSDictionary *)deviceDict commandAttributes:(const ClientCommandAttributes *)cmdAttr;
+- (void) addMappingUsingInputAttributes:(const ClientInputDeviceProperties *)inputProperty commandAttributes:(const ClientCommandAttributes *)cmdAttr;
+- (void) addMappingUsingInputList:(const ClientInputDevicePropertiesList *)inputPropertyList commandAttributes:(const ClientCommandAttributes *)cmdAttr;
+- (void) addMappingForIBAction:(const SEL)theSelector commandAttributes:(const ClientCommandAttributes *)cmdAttr;
+- (void) addMappingUsingDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode commandAttributes:(const ClientCommandAttributes *)cmdAttr;
 
 - (void) removeMappingUsingDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode;
 - (void) removeAllMappingsForCommandTag:(const char *)commandTag;
@@ -205,11 +185,10 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 
 - (void) writeDefaultsInputMappings;
 - (NSString *) commandTagFromInputList:(NSArray *)inputList;
-- (SEL) selectorOfCommandTag:(const char *)commandTag;
-- (CommandAttributes) defaultCommandAttributesForCommandTag:(const char *)commandTag;
+- (ClientCommandAttributes) defaultCommandAttributesForCommandTag:(const char *)commandTag;
 
-- (CommandAttributes) mappedCommandAttributesOfDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode;
-- (void) setMappedCommandAttributes:(const CommandAttributes *)cmdAttr deviceCode:(const char *)deviceCode elementCode:(const char *)elementCode;
+- (ClientCommandAttributes) mappedCommandAttributesOfDeviceCode:(const char *)deviceCode elementCode:(const char *)elementCode;
+- (void) setMappedCommandAttributes:(const ClientCommandAttributes *)cmdAttr deviceCode:(const char *)deviceCode elementCode:(const char *)elementCode;
 - (void) updateInputSettingsSummaryInDeviceInfoDictionary:(NSMutableDictionary *)deviceInfo commandTag:(const char *)commandTag;
 
 - (OSStatus) loadAudioFileUsingPath:(NSString *)filePath;
@@ -218,16 +197,41 @@ void HandleDeviceRemovalCallback(void *inContext, IOReturn inResult, void *inSen
 
 @end
 
-CommandAttributes NewDefaultCommandAttributes(const char *commandTag);
-CommandAttributes NewCommandAttributesForSelector(const char *commandTag, const SEL theSelector);
-CommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const NDSInputID controlID);
-void UpdateCommandAttributesWithDeviceInfoDictionary(CommandAttributes *cmdAttr, NSDictionary *deviceInfo);
+ClientCommandAttributes NewDefaultCommandAttributes(const char *commandTag);
+ClientCommandAttributes NewCommandAttributesWithFunction(const char *commandTag, const ClientCommandDispatcher commandFunc);
+ClientCommandAttributes NewCommandAttributesForDSControl(const char *commandTag, const NDSInputID controlID);
+void UpdateCommandAttributesWithDeviceInfoDictionary(ClientCommandAttributes *cmdAttr, NSDictionary *deviceInfo);
 
-NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const CommandAttributes *cmdAttr,
+NSMutableDictionary* DeviceInfoDictionaryWithCommandAttributes(const ClientCommandAttributes *cmdAttr,
 															   NSString *deviceCode,
 															   NSString *deviceName,
 															   NSString *elementCode,
 															   NSString *elementName);
+
+void ClientCommandUpdateDSController(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandUpdateDSControllerWithTurbo(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandUpdateDSTouch(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandUpdateDSMicrophone(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandUpdateDSPaddle(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandAutoholdSet(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandAutoholdClear(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandLoadEmuSaveStateSlot(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandSaveEmuSaveStateSlot(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandCopyScreen(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandRotateDisplayRelative(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandToggleAllDisplays(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandHoldToggleSpeedScalar(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandToggleSpeedLimiter(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandToggleAutoFrameSkip(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandToggleCheats(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandToggleExecutePause(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandCoreExecute(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandCorePause(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandFrameAdvance(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandFrameJump(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandReset(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandToggleMute(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
+void ClientCommandToggleGPUState(const ClientCommandAttributes &cmdAttr, void *dispatcherObject);
 
 class MacInputDevicePropertiesEncoder : public ClientInputDevicePropertiesEncoder
 {

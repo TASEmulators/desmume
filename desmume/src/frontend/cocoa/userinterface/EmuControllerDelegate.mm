@@ -1017,10 +1017,8 @@
 
 #pragma mark Class Methods
 
-- (void) cmdUpdateDSController:(NSValue *)cmdAttrValue
+- (void) cmdUpdateDSController:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
 	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
 	const NSUInteger controlID = cmdAttr.intValue[0];
 	
@@ -1039,10 +1037,8 @@
 	}
 }
 
-- (void) cmdUpdateDSControllerWithTurbo:(NSValue *)cmdAttrValue
+- (void) cmdUpdateDSControllerWithTurbo:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
 	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
 	const NSUInteger controlID = cmdAttr.intValue[0];
 	const BOOL isTurboEnabled = (BOOL)cmdAttr.intValue[1];
@@ -1064,10 +1060,8 @@
 	}
 }
 
-- (void) cmdUpdateDSTouch:(NSValue *)cmdAttrValue
+- (void) cmdUpdateDSTouch:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
 	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
 	
 	const NSPoint touchLoc = (cmdAttr.useInputForIntCoord) ? NSMakePoint(cmdAttr.input.intCoordX, cmdAttr.input.intCoordY) : NSMakePoint(cmdAttr.intValue[1], cmdAttr.intValue[2]);
@@ -1089,10 +1083,8 @@
 	}
 }
 
-- (void) cmdUpdateDSMicrophone:(NSValue *)cmdAttrValue
+- (void) cmdUpdateDSMicrophone:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
 	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
@@ -1108,10 +1100,8 @@
 	[cdsController setSelectedAudioFileGenerator:[inputManager audioFileGeneratorFromFilePath:audioFilePath]];
 }
 
-- (void) cmdUpdateDSPaddle:(NSValue *)cmdAttrValue
+- (void) cmdUpdateDSPaddle:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	if (cmdAttr.input.isAnalog)
@@ -1143,10 +1133,8 @@
 	}
 }
 
-- (void) cmdAutoholdSet:(NSValue *)cmdAttrValue
+- (void) cmdAutoholdSet:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
 	const BOOL theState = (cmdAttr.input.state == ClientInputDeviceState_On) ? YES : NO;
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
@@ -1154,11 +1142,8 @@
 	[self setStatusText:(theState) ? NSSTRING_STATUS_AUTOHOLD_SET : NSSTRING_STATUS_AUTOHOLD_SET_RELEASE];
 }
 
-- (void) cmdAutoholdClear:(NSValue *)cmdAttrValue
+- (void) cmdAutoholdClear:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
@@ -1170,11 +1155,8 @@
 	
 }
 
-- (void) cmdLoadEmuSaveStateSlot:(NSValue *)cmdAttrValue
+- (void) cmdLoadEmuSaveStateSlot:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
@@ -1187,7 +1169,7 @@
 		return;
 	}
 	
-	const NSInteger slotNumber = (cmdAttr.useInputForSender) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
+	const NSInteger slotNumber = (cmdAttr.useInputForObject) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
 	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
 	{
 		return;
@@ -1208,11 +1190,8 @@
 	[self restoreCoreState];
 }
 
-- (void) cmdSaveEmuSaveStateSlot:(NSValue *)cmdAttrValue
+- (void) cmdSaveEmuSaveStateSlot:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
@@ -1232,7 +1211,7 @@
 		return;
 	}
 	
-	const NSInteger slotNumber = (cmdAttr.useInputForSender) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
+	const NSInteger slotNumber = (cmdAttr.useInputForObject) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
 	if (slotNumber < 0 || slotNumber > MAX_SAVESTATE_SLOTS)
 	{
 		return;
@@ -1253,31 +1232,25 @@
 	[self restoreCoreState];
 }
 
-- (void) cmdCopyScreen:(NSValue *)cmdAttrValue
+- (void) cmdCopyScreen:(const ClientCommandAttributes &)cmdAttr
 {
 	[mainWindow copy:nil];
 }
 
-- (void) cmdRotateDisplayRelative:(NSValue *)cmdAttrValue
+- (void) cmdRotateDisplayRelative:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
 	}
 	
-	const double relativeDegrees = (cmdAttr.useInputForSender) ? (double)[CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : (double)cmdAttr.intValue[0];
+	const double relativeDegrees = (cmdAttr.useInputForObject) ? (double)[CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : (double)cmdAttr.intValue[0];
 	const double angleDegrees = [mainWindow displayRotation] + relativeDegrees;
 	[mainWindow setDisplayRotation:angleDegrees];
 }
 
-- (void) cmdToggleAllDisplays:(NSValue *)cmdAttrValue
+- (void) cmdToggleAllDisplays:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
@@ -1316,10 +1289,8 @@
 	}
 }
 
-- (void) cmdHoldToggleSpeedScalar:(NSValue *)cmdAttrValue
+- (void) cmdHoldToggleSpeedScalar:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
 	const float inputSpeedScalar = (cmdAttr.useInputForScalar) ? cmdAttr.input.scalar : cmdAttr.floatValue[0];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
@@ -1327,11 +1298,8 @@
 	[self setVerticalSyncForNonLayerBackedViews:nil];
 }
 
-- (void) cmdToggleSpeedLimiter:(NSValue *)cmdAttrValue
+- (void) cmdToggleSpeedLimiter:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
@@ -1355,11 +1323,8 @@
 	[self setVerticalSyncForNonLayerBackedViews:nil];
 }
 
-- (void) cmdToggleAutoFrameSkip:(NSValue *)cmdAttrValue
+- (void) cmdToggleAutoFrameSkip:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
@@ -1383,11 +1348,8 @@
 	[self setVerticalSyncForNonLayerBackedViews:nil];
 }
 
-- (void) cmdToggleCheats:(NSValue *)cmdAttrValue
+- (void) cmdToggleCheats:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
@@ -1409,11 +1371,8 @@
 	}
 }
 
-- (void) cmdToggleExecutePause:(NSValue *)cmdAttrValue
+- (void) cmdToggleExecutePause:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if ( (cmdAttr.input.state == ClientInputDeviceState_Off) || ([self currentRom] == nil) )
 	{
 		return;
@@ -1431,11 +1390,8 @@
 	}
 }
 
-- (void) cmdCoreExecute:(NSValue *)cmdAttrValue
+- (void) cmdCoreExecute:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if ( (cmdAttr.input.state == ClientInputDeviceState_Off) || ([self currentRom] == nil) )
 	{
 		return;
@@ -1444,11 +1400,8 @@
 	[self executeCore];
 }
 
-- (void) cmdCorePause:(NSValue *)cmdAttrValue
+- (void) cmdCorePause:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if ( (cmdAttr.input.state == ClientInputDeviceState_Off) || ([self currentRom] == nil) )
 	{
 		return;
@@ -1457,11 +1410,8 @@
 	[self pauseCore];
 }
 
-- (void) cmdFrameAdvance:(NSValue *)cmdAttrValue
+- (void) cmdFrameAdvance:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
 	if ( (cmdAttr.input.state == ClientInputDeviceState_Off) ||
@@ -1474,11 +1424,8 @@
 	[cdsCore setCoreState:ExecutionBehavior_FrameAdvance];
 }
 
-- (void) cmdFrameJump:(NSValue *)cmdAttrValue
+- (void) cmdFrameJump:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if ( (cmdAttr.input.state == ClientInputDeviceState_Off) || ([self currentRom] == nil) )
 	{
 		return;
@@ -1490,11 +1437,8 @@
 	[cdsCore setCoreState:ExecutionBehavior_FrameJump];
 }
 
-- (void) cmdReset:(NSValue *)cmdAttrValue
+- (void) cmdReset:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if ( (cmdAttr.input.state == ClientInputDeviceState_Off) || ([self currentRom] == nil) )
 	{
 		return;
@@ -1526,11 +1470,8 @@
 	}
 }
 
-- (void) cmdToggleMute:(NSValue *)cmdAttrValue
+- (void) cmdToggleMute:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
@@ -1554,18 +1495,15 @@
 	[[self cdsSpeaker] setVolume:vol];
 }
 
-- (void) cmdToggleGPUState:(NSValue *)cmdAttrValue
+- (void) cmdToggleGPUState:(const ClientCommandAttributes &)cmdAttr
 {
-	CommandAttributes cmdAttr;
-	[cmdAttrValue getValue:&cmdAttr];
-	
 	if (cmdAttr.input.state == ClientInputDeviceState_Off)
 	{
 		return;
 	}
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
-	const NSInteger bitNumber = (cmdAttr.useInputForSender) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
+	const NSInteger bitNumber = (cmdAttr.useInputForObject) ? [CocoaDSUtil getIBActionSenderTag:(id)cmdAttr.input.object] : cmdAttr.intValue[0];
 	const UInt32 flagBit = [cdsCore.cdsGPU gpuStateFlags] ^ (1 << bitNumber);
 	
 	[cdsCore.cdsGPU setGpuStateFlags:flagBit];
