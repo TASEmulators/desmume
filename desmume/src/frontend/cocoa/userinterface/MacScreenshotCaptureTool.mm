@@ -245,7 +245,8 @@ static void* RunFileWriteThread(void *arg)
 		return NULL;
 	}
 	
-	const NDSDisplayInfo &displayInfo = fetchObject->GetFetchDisplayInfoForBufferIndex( fetchObject->GetLastFetchIndex() );
+	const u8 lastBufferIndex = fetchObject->GetLastFetchIndex();
+	const NDSDisplayInfo &displayInfo = fetchObject->GetFetchDisplayInfoForBufferIndex(lastBufferIndex);
 	
 	if ( (displayInfo.renderedWidth[NDSDisplayID_Main]  == 0) || (displayInfo.renderedHeight[NDSDisplayID_Main]  == 0) ||
 		 (displayInfo.renderedWidth[NDSDisplayID_Touch] == 0) || (displayInfo.renderedHeight[NDSDisplayID_Touch] == 0) )
@@ -312,7 +313,6 @@ static void* RunFileWriteThread(void *arg)
 #endif
 	{
 		cdp = new MacOGLDisplayPresenter(param.sharedData);
-		filtersPreferGPU = false; // Just in case we're capturing the screenshot on an older GPU, perform the filtering on the CPU to avoid potential issues.
 	}
 	
 	cdp->Init();
@@ -338,8 +338,21 @@ static void* RunFileWriteThread(void *arg)
 	else
 	{
 		// For custom-sized resolutions, apply all the filters as normal.
-		cdp->SetPixelScaler(param.pixelScalerID);
 		cdp->SetOutputFilter(param.outputFilterID);
+		cdp->SetPixelScaler(param.pixelScalerID);
+		
+		if (!cdp->WillFilterOnGPU())
+		{
+			if ( (param.cdpProperty.mode == ClientDisplayMode_Main) || (param.cdpProperty.mode == ClientDisplayMode_Dual) )
+			{
+				((OGLClientFetchObject *)fetchObject)->FetchNativeDisplayToSrcClone(NDSDisplayID_Main, lastBufferIndex, true);
+			}
+			
+			if ( (param.cdpProperty.mode == ClientDisplayMode_Touch) || (param.cdpProperty.mode == ClientDisplayMode_Dual) )
+			{
+				((OGLClientFetchObject *)fetchObject)->FetchNativeDisplayToSrcClone(NDSDisplayID_Touch, lastBufferIndex, true);
+			}
+		}
 	}
 	
 	cdp->LoadDisplays();

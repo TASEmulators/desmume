@@ -349,6 +349,7 @@ protected:
 	uint32_t *_srcNativeCloneMaster;
 	uint32_t *_srcNativeClone[2][2];
 	pthread_rwlock_t _srcCloneRWLock[2][2];
+	bool _srcCloneNeedsUpdate[2][2];
 	
 	virtual void _FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
 	virtual void _FetchCustomDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
@@ -370,6 +371,7 @@ public:
 	GLuint GetTexHQ4xLUT() const;
 	
 	void CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex);
+	void FetchNativeDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
 	
 	virtual void Init();
 	virtual void SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo);

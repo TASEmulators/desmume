@@ -1908,6 +1908,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setDisplayMainVideoSource:(NSInteger)displaySourceID
 {
 	[[self cdsVideoOutput] setDisplayMainVideoSource:displaySourceID];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 }
 
 - (NSInteger) displayMainVideoSource
@@ -1918,6 +1919,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setDisplayTouchVideoSource:(NSInteger)displaySourceID
 {
 	[[self cdsVideoOutput] setDisplayTouchVideoSource:displaySourceID];
+	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
 }
 
 - (NSInteger) displayTouchVideoSource

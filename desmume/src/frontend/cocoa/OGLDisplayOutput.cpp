@@ -1960,11 +1960,7 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 	#define DOMINANT_DIRECTION_THRESHOLD 3.6\n\
 	#define M_PI 3.1415926535897932384626433832795\n\
 	\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 	VARYING vec2 texCoord[25];\n\
-#else\n\
-	VARYING vec2 texCoord[16];\n\
-#endif\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	float reduce(const vec3 color)\n\
@@ -1995,7 +1991,8 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 		return any(notEqual(blend, ivec4(BLEND_NONE)));\n\
 	}\n\
 	\n\
-#if GPU_TIER < SHADERSUPPORT_MID_TIER\n\
+	// Let's keep xBRZ's original blending logic around for reference.\n\
+	/*\n\
 	void ScalePixel(const ivec4 blend, const vec3 k[9], inout vec3 dst[4])\n\
 	{\n\
 		// This is the optimized version of xBRZ's blending logic. It's behavior\n\
@@ -2021,8 +2018,6 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 		dst[2] = mix(dst[2], blendPix, (needBlend) ? ((doLineBlend) ? ((haveShallowLine) ? ((haveSteepLine) ? 5.0/6.0 : 0.75) : ((haveSteepLine) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
 		dst[3] = mix(dst[3], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.25 : 0.00);\n\
 		\n\
-		// Let's keep xBRZ's original blending logic around for reference.\n\
-		/*\n\
 		if (blend[2] == BLEND_NONE)\n\
 		{\n\
 			return;\n\
@@ -2079,9 +2074,8 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 			// Blend corner\n\
 			dst[2] = mix(dst[2], blendPix, 1.0 - (M_PI/4.0));\n\
 		}\n\
-		*/\n\
 	}\n\
-#endif\n\
+	*/\n\
 	\n\
 	//---------------------------------------\n\
 	// Input Pixel Mapping:  --|21|22|23|--\n\
@@ -2091,11 +2085,10 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 	//                       --|15|14|13|--\n\
 	//\n\
 	// Output Pixel Mapping:     00|01\n\
-	//                           03|02\n\
+	//                           02|03\n\
 	\n\
 	void main()\n\
 	{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 		vec3 src[25];\n\
 		src[ 0] = SAMPLE3_TEX_RECT(tex, texCoord[ 0]).rgb;\n\
 		src[ 1] = SAMPLE3_TEX_RECT(tex, texCoord[ 1]).rgb;\n\
@@ -2122,25 +2115,6 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 		src[22] = SAMPLE3_TEX_RECT(tex, texCoord[22]).rgb;\n\
 		src[23] = SAMPLE3_TEX_RECT(tex, texCoord[23]).rgb;\n\
 		src[24] = SAMPLE3_TEX_RECT(tex, texCoord[24]).rgb;\n\
-#else\n\
-		vec3 src[16];\n\
-		src[ 0] = SAMPLE3_TEX_RECT(tex, texCoord[ 0]).rgb;\n\
-		src[ 1] = SAMPLE3_TEX_RECT(tex, texCoord[ 1]).rgb;\n\
-		src[ 2] = SAMPLE3_TEX_RECT(tex, texCoord[ 2]).rgb;\n\
-		src[ 3] = SAMPLE3_TEX_RECT(tex, texCoord[ 3]).rgb;\n\
-		src[ 4] = SAMPLE3_TEX_RECT(tex, texCoord[ 4]).rgb;\n\
-		src[ 5] = SAMPLE3_TEX_RECT(tex, texCoord[ 5]).rgb;\n\
-		src[ 6] = SAMPLE3_TEX_RECT(tex, texCoord[ 6]).rgb;\n\
-		src[ 7] = SAMPLE3_TEX_RECT(tex, texCoord[ 7]).rgb;\n\
-		src[ 8] = SAMPLE3_TEX_RECT(tex, texCoord[ 8]).rgb;\n\
-		src[ 9] = SAMPLE3_TEX_RECT(tex, texCoord[ 9]).rgb;\n\
-		src[10] = SAMPLE3_TEX_RECT(tex, texCoord[10]).rgb;\n\
-		src[11] = SAMPLE3_TEX_RECT(tex, texCoord[11]).rgb;\n\
-		src[12] = SAMPLE3_TEX_RECT(tex, texCoord[12]).rgb;\n\
-		src[13] = SAMPLE3_TEX_RECT(tex, texCoord[13]).rgb;\n\
-		src[14] = SAMPLE3_TEX_RECT(tex, texCoord[14]).rgb;\n\
-		src[15] = SAMPLE3_TEX_RECT(tex, texCoord[15]).rgb;\n\
-#endif\n\
 		\n\
 		float v[9];\n\
 		v[0] = reduce(src[0]);\n\
@@ -2180,15 +2154,8 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 		// Corner (0, 1)\n\
 		if ( !((v[5] == v[0] && v[4] == v[3]) || (v[5] == v[4] && v[0] == v[3])) )\n\
 		{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 			float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
 			float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
-#else\n\
-			vec3 src17 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, 1.0)).rgb;\n\
-			vec3 src18 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, 0.0)).rgb;\n\
-			float dist_04_00 = DistYCbCr(src17  , src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
-			float dist_05_03 = DistYCbCr(src18  , src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
-#endif\n\
 			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_03) < dist_04_00;\n\
 			blendResult[3] = ((dist_04_00 > dist_05_03) && (v[0] != v[5]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
 		}\n\
@@ -2201,15 +2168,8 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 		// Corner (1, 0)\n\
 		if ( !((v[7] == v[8] && v[0] == v[1]) || (v[7] == v[0] && v[8] == v[1])) )\n\
 		{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 			float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
 			float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
-#else\n\
-			vec3 src22 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(0.0, -2.0)).rgb;\n\
-			vec3 src23 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(1.0, -2.0)).rgb;\n\
-			float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src23  ) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
-			float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src22  , src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
-#endif\n\
 			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_07_01) < dist_00_08;\n\
 			blendResult[1] = ((dist_00_08 > dist_07_01) && (v[0] != v[7]) && (v[0] != v[1])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
 		}\n\
@@ -2222,31 +2182,17 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 		// Corner (0, 0)\n\
 		if ( !((v[6] == v[7] && v[5] == v[0]) || (v[6] == v[5] && v[7] == v[0])) )\n\
 		{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 			float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
 			float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
-#else\n\
-			vec3 src18 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0,  0.0)).rgb;\n\
-			vec3 src19 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, -1.0)).rgb;\n\
-			vec3 src21 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-1.0, -2.0)).rgb;\n\
-			vec3 src22 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2( 0.0, -2.0)).rgb;\n\
-			float dist_05_07 = DistYCbCr(src18  , src[ 6]) + DistYCbCr(src[ 6], src22  ) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
-			float dist_06_00 = DistYCbCr(src19  , src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src21  , src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
-#endif\n\
 			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_07) < dist_06_00;\n\
 			blendResult[0] = ((dist_05_07 < dist_06_00) && (v[0] != v[5]) && (v[0] != v[7])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
 		}\n\
 		\n\
-		vec3 dst[4];\n\
-		dst[0] = src[0];\n\
-		dst[1] = src[0];\n\
-		dst[2] = src[0];\n\
-		dst[3] = src[0];\n\
+		vec3 newFragColor = src[0];\n\
 		\n\
 		// Scale pixel\n\
 		if (IsBlendingNeeded(blendResult))\n\
 		{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 			vec4 dist_01_04 = vec4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );\n\
 			vec4 dist_03_08 = vec4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );\n\
 			bvec4 haveShallowLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_01_04, dist_03_08);\n\
@@ -2263,10 +2209,6 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 								 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
 			blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
 			\n\
-			dst[1] = mix(dst[1], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.25 : 0.00);\n\
-			dst[2] = mix(dst[2], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveShallowLine[0]) ? ((haveSteepLine[0]) ? 5.0/6.0 : 0.75) : ((haveSteepLine[0]) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
-			dst[3] = mix(dst[3], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.25 : 0.00);\n\
-			\n\
 			haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
 			haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
 			doLineBlend[1] = (  doLineBlend[1] ||\n\
@@ -2274,10 +2216,6 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 							(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
 							(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
 			blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
-			\n\
-			dst[0] = mix(dst[0], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.25 : 0.00);\n\
-			dst[1] = mix(dst[1], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveShallowLine[1]) ? ((haveSteepLine[1]) ? 5.0/6.0 : 0.75) : ((haveSteepLine[1]) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
-			dst[2] = mix(dst[2], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.25 : 0.00);\n\
 			\n\
 			haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
 			haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
@@ -2287,10 +2225,6 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 							(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
 			blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
 			\n\
-			dst[3] = mix(dst[3], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.25 : 0.00);\n\
-			dst[0] = mix(dst[0], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveShallowLine[2]) ? ((haveSteepLine[2]) ? 5.0/6.0 : 0.75) : ((haveSteepLine[2]) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
-			dst[1] = mix(dst[1], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.25 : 0.00);\n\
-			\n\
 			haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
 			haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
 			doLineBlend[3] = (  doLineBlend[3] ||\n\
@@ -2299,82 +2233,35 @@ static const char *Scaler2xBRZFragShader_110 = {"\
 							(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
 			blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
 			\n\
-			dst[2] = mix(dst[2], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.25 : 0.00);\n\
-			dst[3] = mix(dst[3], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveShallowLine[3]) ? ((haveSteepLine[3]) ? 5.0/6.0 : 0.75) : ((haveSteepLine[3]) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
-			dst[0] = mix(dst[0], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.25 : 0.00);\n\
-#else\n\
-			vec3 k[9];\n\
-			vec3 tempDst3;\n\
+			int i = int( dot(floor(fract(texCoord[0]) * 2.05), vec2(1.05, 2.05)) );\n\
 			\n\
-			k[0] = src[0];\n\
-			k[1] = src[1];\n\
-			k[2] = src[2];\n\
-			k[3] = src[3];\n\
-			k[4] = src[4];\n\
-			k[5] = src[5];\n\
-			k[6] = src[6];\n\
-			k[7] = src[7];\n\
-			k[8] = src[8];\n\
-			ScalePixel(blendResult.xyzw, k, dst);\n\
-			\n\
-			k[1] = src[7];\n\
-			k[2] = src[8];\n\
-			k[3] = src[1];\n\
-			k[4] = src[2];\n\
-			k[5] = src[3];\n\
-			k[6] = src[4];\n\
-			k[7] = src[5];\n\
-			k[8] = src[6];\n\
-			tempDst3 = dst[3];\n\
-			dst[3] = dst[2];\n\
-			dst[2] = dst[1];\n\
-			dst[1] = dst[0];\n\
-			dst[0] = tempDst3;\n\
-			ScalePixel(blendResult.wxyz, k, dst);\n\
-			\n\
-			k[1] = src[5];\n\
-			k[2] = src[6];\n\
-			k[3] = src[7];\n\
-			k[4] = src[8];\n\
-			k[5] = src[1];\n\
-			k[6] = src[2];\n\
-			k[7] = src[3];\n\
-			k[8] = src[4];\n\
-			tempDst3 = dst[3];\n\
-			dst[3] = dst[2];\n\
-			dst[2] = dst[1];\n\
-			dst[1] = dst[0];\n\
-			dst[0] = tempDst3;\n\
-			ScalePixel(blendResult.zwxy, k, dst);\n\
-			\n\
-			k[1] = src[3];\n\
-			k[2] = src[4];\n\
-			k[3] = src[5];\n\
-			k[4] = src[6];\n\
-			k[5] = src[7];\n\
-			k[6] = src[8];\n\
-			k[7] = src[1];\n\
-			k[8] = src[2];\n\
-			tempDst3 = dst[3];\n\
-			dst[3] = dst[2];\n\
-			dst[2] = dst[1];\n\
-			dst[1] = dst[0];\n\
-			dst[0] = tempDst3;\n\
-			ScalePixel(blendResult.yzwx, k, dst);\n\
-			\n\
-			// Rotate the destination pixels back to 0 degrees.\n\
-			tempDst3 = dst[3];\n\
-			dst[3] = dst[2];\n\
-			dst[2] = dst[1];\n\
-			dst[1] = dst[0];\n\
-			dst[0] = tempDst3;\n\
-#endif\n\
+			if (i == 0)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.25 : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveShallowLine[2]) ? ((haveSteepLine[2]) ? 5.0/6.0 : 0.75) : ((haveSteepLine[2]) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.25 : 0.00);\n\
+			}\n\
+			else if (i == 1)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveShallowLine[1]) ? ((haveSteepLine[1]) ? 5.0/6.0 : 0.75) : ((haveSteepLine[1]) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.25 : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.25 : 0.00);\n\
+			}\n\
+			else if (i == 2)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.25 : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.25 : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveShallowLine[3]) ? ((haveSteepLine[3]) ? 5.0/6.0 : 0.75) : ((haveSteepLine[3]) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
+			}\n\
+			else if (i == 3)\n\
+			{\n\
+				newFragColor = mix(newFragColor, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveShallowLine[0]) ? ((haveSteepLine[0]) ? 5.0/6.0 : 0.75) : ((haveSteepLine[0]) ? 0.75 : 0.50)) : 1.0 - (M_PI/4.0)) : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.25 : 0.00);\n\
+				newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.25 : 0.00);\n\
+			}\n\
 		}\n\
 		\n\
-		vec2 f = step(0.5, fract(texCoord[0]));\n\
-		OUT_FRAG_COLOR.rgb =	mix( mix(dst[0], dst[1], f.x),\n\
-								     mix(dst[3], dst[2], f.x), f.y );\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		OUT_FRAG_COLOR = vec4(newFragColor, 1.0);\n\
 	}\n\
 "};
 
@@ -2388,11 +2275,7 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 	#define DOMINANT_DIRECTION_THRESHOLD 3.6\n\
 	#define M_PI 3.1415926535897932384626433832795\n\
 	\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 	VARYING vec2 texCoord[25];\n\
-#else\n\
-	VARYING vec2 texCoord[16];\n\
-#endif\n\
 	uniform sampler2DRect tex;\n\
 	\n\
 	float reduce(const vec3 color)\n\
@@ -2423,7 +2306,8 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 		return any(notEqual(blend, ivec4(BLEND_NONE)));\n\
 	}\n\
 	\n\
-#if GPU_TIER < SHADERSUPPORT_MID_TIER\n\
+	// Let's keep xBRZ's original blending logic around for reference.\n\
+	/*\n\
 	void ScalePixel(const ivec4 blend, const vec3 k[9], inout vec3 dst[9])\n\
 	{\n\
 		// This is the optimized version of xBRZ's blending logic. It's behavior\n\
@@ -2451,8 +2335,6 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 		dst[4] = mix(dst[4], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.250 : 0.000);\n\
 		dst[8] = mix(dst[8], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.250 : 0.000);\n\
 		\n\
-		// Let's keep xBRZ's original blending logic around for reference.\n\
-		/*\n\
 		if (blend[2] == BLEND_NONE)\n\
 		{\n\
 			return;\n\
@@ -2517,9 +2399,8 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 			// Blend corner\n\
 			dst[2] = mix(dst[2], blendPix, 0.4545939598);\n\
 		}\n\
-		*/\n\
 	}\n\
-#endif\n\
+	*/\n\
 	\n\
 	//---------------------------------------\n\
 	// Input Pixel Mapping:  --|21|22|23|--\n\
@@ -2528,13 +2409,12 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 	//                       17|04|03|02|11\n\
 	//                       --|15|14|13|--\n\
 	//\n\
-	// Output Pixel Mapping:    06|07|08\n\
-	//                          05|00|01\n\
-	//                          04|03|02\n\
+	// Output Pixel Mapping:    00|01|02\n\
+	//                          03|04|05\n\
+	//                          06|07|08\n\
 	\n\
 	void main()\n\
 	{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
 		vec3 src[25];\n\
 		src[ 0] = SAMPLE3_TEX_RECT(tex, texCoord[ 0]);\n\
 		src[ 1] = SAMPLE3_TEX_RECT(tex, texCoord[ 1]);\n\
@@ -2561,295 +2441,175 @@ static const char *Scaler3xBRZFragShader_110 = {"\
 		src[22] = SAMPLE3_TEX_RECT(tex, texCoord[22]);\n\
 		src[23] = SAMPLE3_TEX_RECT(tex, texCoord[23]);\n\
 		src[24] = SAMPLE3_TEX_RECT(tex, texCoord[24]);\n\
-#else\n\
-		vec3 src[16];\n\
-		src[ 0] = SAMPLE3_TEX_RECT(tex, texCoord[ 0]);\n\
-		src[ 1] = SAMPLE3_TEX_RECT(tex, texCoord[ 1]);\n\
-		src[ 2] = SAMPLE3_TEX_RECT(tex, texCoord[ 2]);\n\
-		src[ 3] = SAMPLE3_TEX_RECT(tex, texCoord[ 3]);\n\
-		src[ 4] = SAMPLE3_TEX_RECT(tex, texCoord[ 4]);\n\
-		src[ 5] = SAMPLE3_TEX_RECT(tex, texCoord[ 5]);\n\
-		src[ 6] = SAMPLE3_TEX_RECT(tex, texCoord[ 6]);\n\
-		src[ 7] = SAMPLE3_TEX_RECT(tex, texCoord[ 7]);\n\
-		src[ 8] = SAMPLE3_TEX_RECT(tex, texCoord[ 8]);\n\
-		src[ 9] = SAMPLE3_TEX_RECT(tex, texCoord[ 9]);\n\
-		src[10] = SAMPLE3_TEX_RECT(tex, texCoord[10]);\n\
-		src[11] = SAMPLE3_TEX_RECT(tex, texCoord[11]);\n\
-		src[12] = SAMPLE3_TEX_RECT(tex, texCoord[12]);\n\
-		src[13] = SAMPLE3_TEX_RECT(tex, texCoord[13]);\n\
-		src[14] = SAMPLE3_TEX_RECT(tex, texCoord[14]);\n\
-		src[15] = SAMPLE3_TEX_RECT(tex, texCoord[15]);\n\
-#endif\n\
 		\n\
-		float v[9];\n\
-		v[0] = reduce(src[0]);\n\
-		v[1] = reduce(src[1]);\n\
-		v[2] = reduce(src[2]);\n\
-		v[3] = reduce(src[3]);\n\
-		v[4] = reduce(src[4]);\n\
-		v[5] = reduce(src[5]);\n\
-		v[6] = reduce(src[6]);\n\
-		v[7] = reduce(src[7]);\n\
-		v[8] = reduce(src[8]);\n\
+		vec3 newFragColor = src[0];\n\
+		int i = int( dot(floor(fract(texCoord[0]) * 3.05), vec2(1.05, 3.05)) );\n\
 		\n\
-		ivec4 blendResult = ivec4(BLEND_NONE);\n\
-		\n\
-		// Preprocess corners\n\
-		// Pixel Tap Mapping: --|--|--|--|--\n\
-		//                    --|--|07|08|--\n\
-		//                    --|05|00|01|10\n\
-		//                    --|04|03|02|11\n\
-		//                    --|--|14|13|--\n\
-		\n\
-		// Corner (1, 1)\n\
-		if ( !((v[0] == v[1] && v[3] == v[2]) || (v[0] == v[3] && v[1] == v[2])) )\n\
+		if (i != 4)\n\
 		{\n\
-			float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[14], src[ 2]) + DistYCbCr(src[ 2], src[10]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));\n\
-			float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], src[13]) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], src[11]) + (4.0 * DistYCbCr(src[ 0], src[ 2]));\n\
-			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_03_01) < dist_00_02;\n\
-			blendResult[2] = ((dist_03_01 < dist_00_02) && (v[0] != v[1]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			float v[9];\n\
+			v[0] = reduce(src[0]);\n\
+			v[1] = reduce(src[1]);\n\
+			v[2] = reduce(src[2]);\n\
+			v[3] = reduce(src[3]);\n\
+			v[4] = reduce(src[4]);\n\
+			v[5] = reduce(src[5]);\n\
+			v[6] = reduce(src[6]);\n\
+			v[7] = reduce(src[7]);\n\
+			v[8] = reduce(src[8]);\n\
+			\n\
+			ivec4 blendResult = ivec4(BLEND_NONE);\n\
+			\n\
+			// Preprocess corners\n\
+			// Pixel Tap Mapping: --|--|--|--|--\n\
+			//                    --|--|07|08|--\n\
+			//                    --|05|00|01|10\n\
+			//                    --|04|03|02|11\n\
+			//                    --|--|14|13|--\n\
+			\n\
+			// Corner (1, 1)\n\
+			if ( !((v[0] == v[1] && v[3] == v[2]) || (v[0] == v[3] && v[1] == v[2])) )\n\
+			{\n\
+				float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[14], src[ 2]) + DistYCbCr(src[ 2], src[10]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));\n\
+				float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], src[13]) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], src[11]) + (4.0 * DistYCbCr(src[ 0], src[ 2]));\n\
+				bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_03_01) < dist_00_02;\n\
+				blendResult[2] = ((dist_03_01 < dist_00_02) && (v[0] != v[1]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			}\n\
+			\n\
+			\n\
+			// Pixel Tap Mapping: --|--|--|--|--\n\
+			//                    --|06|07|--|--\n\
+			//                    18|05|00|01|--\n\
+			//                    17|04|03|02|--\n\
+			//                    --|15|14|--|--\n\
+			// Corner (0, 1)\n\
+			if ( !((v[5] == v[0] && v[4] == v[3]) || (v[5] == v[4] && v[0] == v[3])) )\n\
+			{\n\
+				float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
+				float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
+				bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_03) < dist_04_00;\n\
+				blendResult[3] = ((dist_04_00 > dist_05_03) && (v[0] != v[5]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			}\n\
+			\n\
+			// Pixel Tap Mapping: --|--|22|23|--\n\
+			//                    --|06|07|08|09\n\
+			//                    --|05|00|01|10\n\
+			//                    --|--|03|02|--\n\
+			//                    --|--|--|--|--\n\
+			// Corner (1, 0)\n\
+			if ( !((v[7] == v[8] && v[0] == v[1]) || (v[7] == v[0] && v[8] == v[1])) )\n\
+			{\n\
+				float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
+				float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
+				bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_07_01) < dist_00_08;\n\
+				blendResult[1] = ((dist_00_08 > dist_07_01) && (v[0] != v[7]) && (v[0] != v[1])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			}\n\
+			\n\
+			// Pixel Tap Mapping: --|21|22|--|--\n\
+			//                    19|06|07|08|--\n\
+			//                    18|05|00|01|--\n\
+			//                    --|04|03|--|--\n\
+			//                    --|--|--|--|--\n\
+			// Corner (0, 0)\n\
+			if ( !((v[6] == v[7] && v[5] == v[0]) || (v[6] == v[5] && v[7] == v[0])) )\n\
+			{\n\
+				float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
+				float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
+				bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_07) < dist_06_00;\n\
+				blendResult[0] = ((dist_05_07 < dist_06_00) && (v[0] != v[5]) && (v[0] != v[7])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
+			}\n\
+			\n\
+			// Scale pixel\n\
+			if (IsBlendingNeeded(blendResult))\n\
+			{\n\
+				vec4 dist_01_04 = vec4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );\n\
+				vec4 dist_03_08 = vec4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );\n\
+				bvec4 haveShallowLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_01_04, dist_03_08);\n\
+				bvec4 haveSteepLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_03_08, dist_01_04);\n\
+				bvec4 needBlend = notEqual( blendResult.zyxw, ivec4(BLEND_NONE) );\n\
+				bvec4 doLineBlend = greaterThanEqual( blendResult.zyxw, ivec4(BLEND_DOMINANT) );\n\
+				vec3 blendPix[4];\n\
+				\n\
+				haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
+				haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
+				doLineBlend[0] = (  doLineBlend[0] ||\n\
+								   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
+									 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
+									 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
+				blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
+				\n\
+				haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
+				haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
+				doLineBlend[1] = (  doLineBlend[1] ||\n\
+							  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
+								(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
+								(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
+				blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
+				\n\
+				haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
+				haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
+				doLineBlend[2] = (  doLineBlend[2] ||\n\
+							  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
+								(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
+								(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
+				blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
+				\n\
+				haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
+				haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
+				doLineBlend[3] = (  doLineBlend[3] ||\n\
+							  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
+								(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
+								(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
+				blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
+				\n\
+				if (i == 0)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((!haveShallowLine[2] && !haveSteepLine[2]) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250 : 0.000);\n\
+				}\n\
+				else if (i == 1)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveSteepLine[1]) ? 0.750 : ((haveShallowLine[1]) ? 0.250 : 0.125)) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? 0.750 : ((haveSteepLine[2]) ? 0.250 : 0.125)) : 0.000);\n\
+				}\n\
+				else if (i == 2)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((!haveShallowLine[1] && !haveSteepLine[1]) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250 : 0.000);\n\
+				}\n\
+				else if (i == 3)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveSteepLine[2]) ? 0.750 : ((haveShallowLine[2]) ? 0.250 : 0.125)) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? 0.750 : ((haveSteepLine[3]) ? 0.250 : 0.125)) : 0.000);\n\
+				}\n\
+				else if (i == 5)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveSteepLine[0]) ? 0.750 : ((haveShallowLine[0]) ? 0.250 : 0.125)) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? 0.750 : ((haveSteepLine[1]) ? 0.250 : 0.125)) : 0.000);\n\
+				}\n\
+				else if (i == 6)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((!haveShallowLine[3] && !haveSteepLine[3]) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
+				}\n\
+				else if (i == 7)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? 0.750 : ((haveSteepLine[0]) ? 0.250 : 0.125)) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveSteepLine[3]) ? 0.750 : ((haveShallowLine[3]) ? 0.250 : 0.125)) : 0.000);\n\
+				}\n\
+				else if (i == 8)\n\
+				{\n\
+					newFragColor = mix(newFragColor, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((!haveShallowLine[0] && !haveSteepLine[0]) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250 : 0.000);\n\
+					newFragColor = mix(newFragColor, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250 : 0.000);\n\
+				}\n\
+			}\n\
 		}\n\
 		\n\
-		\n\
-		// Pixel Tap Mapping: --|--|--|--|--\n\
-		//                    --|06|07|--|--\n\
-		//                    18|05|00|01|--\n\
-		//                    17|04|03|02|--\n\
-		//                    --|15|14|--|--\n\
-		// Corner (0, 1)\n\
-		if ( !((v[5] == v[0] && v[4] == v[3]) || (v[5] == v[4] && v[0] == v[3])) )\n\
-		{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
-			float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
-			float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
-#else\n\
-			vec3 src17 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, 1.0));\n\
-			vec3 src18 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, 0.0));\n\
-			float dist_04_00 = DistYCbCr(src17  , src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));\n\
-			float dist_05_03 = DistYCbCr(src18  , src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));\n\
-#endif\n\
-			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_03) < dist_04_00;\n\
-			blendResult[3] = ((dist_04_00 > dist_05_03) && (v[0] != v[5]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
-		}\n\
-		\n\
-		// Pixel Tap Mapping: --|--|22|23|--\n\
-		//                    --|06|07|08|09\n\
-		//                    --|05|00|01|10\n\
-		//                    --|--|03|02|--\n\
-		//                    --|--|--|--|--\n\
-		// Corner (1, 0)\n\
-		if ( !((v[7] == v[8] && v[0] == v[1]) || (v[7] == v[0] && v[8] == v[1])) )\n\
-		{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
-			float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
-			float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
-#else\n\
-			vec3 src22 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(0.0, -2.0));\n\
-			vec3 src23 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(1.0, -2.0));\n\
-			float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src23  ) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));\n\
-			float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src22  , src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));\n\
-#endif\n\
-			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_07_01) < dist_00_08;\n\
-			blendResult[1] = ((dist_00_08 > dist_07_01) && (v[0] != v[7]) && (v[0] != v[1])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
-		}\n\
-		\n\
-		// Pixel Tap Mapping: --|21|22|--|--\n\
-		//                    19|06|07|08|--\n\
-		//                    18|05|00|01|--\n\
-		//                    --|04|03|--|--\n\
-		//                    --|--|--|--|--\n\
-		// Corner (0, 0)\n\
-		if ( !((v[6] == v[7] && v[5] == v[0]) || (v[6] == v[5] && v[7] == v[0])) )\n\
-		{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
-			float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
-			float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
-#else\n\
-			vec3 src18 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0,  0.0));\n\
-			vec3 src19 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-2.0, -1.0));\n\
-			vec3 src21 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2(-1.0, -2.0));\n\
-			vec3 src22 = SAMPLE3_TEX_RECT(tex, texCoord[0] + vec2( 0.0, -2.0));\n\
-			float dist_05_07 = DistYCbCr(src18  , src[ 6]) + DistYCbCr(src[ 6], src22  ) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));\n\
-			float dist_06_00 = DistYCbCr(src19  , src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src21  , src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));\n\
-#endif\n\
-			bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_07) < dist_06_00;\n\
-			blendResult[0] = ((dist_05_07 < dist_06_00) && (v[0] != v[5]) && (v[0] != v[7])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;\n\
-		}\n\
-		\n\
-		vec3 dst[9];\n\
-		dst[0] = src[0];\n\
-		dst[1] = src[0];\n\
-		dst[2] = src[0];\n\
-		dst[3] = src[0];\n\
-		dst[4] = src[0];\n\
-		dst[5] = src[0];\n\
-		dst[6] = src[0];\n\
-		dst[7] = src[0];\n\
-		dst[8] = src[0];\n\
-		\n\
-		// Scale pixel\n\
-		if (IsBlendingNeeded(blendResult))\n\
-		{\n\
-#if GPU_TIER >= SHADERSUPPORT_MID_TIER\n\
-			vec4 dist_01_04 = vec4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );\n\
-			vec4 dist_03_08 = vec4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );\n\
-			bvec4 haveShallowLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_01_04, dist_03_08);\n\
-			bvec4 haveSteepLine = lessThanEqual(STEEP_DIRECTION_THRESHOLD * dist_03_08, dist_01_04);\n\
-			bvec4 needBlend = notEqual( blendResult.zyxw, ivec4(BLEND_NONE) );\n\
-			bvec4 doLineBlend = greaterThanEqual( blendResult.zyxw, ivec4(BLEND_DOMINANT) );\n\
-			vec3 blendPix[4];\n\
-			\n\
-			haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);\n\
-			haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);\n\
-			doLineBlend[0] = (  doLineBlend[0] ||\n\
-							   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-								 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-								 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );\n\
-			blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];\n\
-			\n\
-			dst[1] = mix(dst[1], blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveSteepLine[0]) ? 0.750 : ((haveShallowLine[0]) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[2] = mix(dst[2], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((!haveShallowLine[0] && !haveSteepLine[0]) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
-			dst[3] = mix(dst[3], blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? 0.750 : ((haveSteepLine[0]) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[4] = mix(dst[4], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250 : 0.000);\n\
-			dst[8] = mix(dst[8], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250 : 0.000);\n\
-			\n\
-			haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);\n\
-			haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);\n\
-			doLineBlend[1] = (  doLineBlend[1] ||\n\
-						  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-							(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-							(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );\n\
-			blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];\n\
-			\n\
-			dst[7] = mix(dst[7], blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveSteepLine[1]) ? 0.750 : ((haveShallowLine[1]) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[8] = mix(dst[8], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((!haveShallowLine[1] && !haveSteepLine[1]) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
-			dst[1] = mix(dst[1], blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? 0.750 : ((haveSteepLine[1]) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[2] = mix(dst[2], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250 : 0.000);\n\
-			dst[6] = mix(dst[6], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250 : 0.000);\n\
-			\n\
-			haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);\n\
-			haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);\n\
-			doLineBlend[2] = (  doLineBlend[2] ||\n\
-						  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||\n\
-							(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||\n\
-							(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );\n\
-			blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];\n\
-			\n\
-			dst[5] = mix(dst[5], blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveSteepLine[2]) ? 0.750 : ((haveShallowLine[2]) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[6] = mix(dst[6], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((!haveShallowLine[2] && !haveSteepLine[2]) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
-			dst[7] = mix(dst[7], blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? 0.750 : ((haveSteepLine[2]) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[8] = mix(dst[8], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250 : 0.000);\n\
-			dst[4] = mix(dst[4], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250 : 0.000);\n\
-			\n\
-			haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);\n\
-			haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);\n\
-			doLineBlend[3] = (  doLineBlend[3] ||\n\
-						  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||\n\
-							(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||\n\
-							(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );\n\
-			blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];\n\
-			\n\
-			dst[3] = mix(dst[3], blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveSteepLine[3]) ? 0.750 : ((haveShallowLine[3]) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[4] = mix(dst[4], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((!haveShallowLine[3] && !haveSteepLine[3]) ? 0.875 : 1.000) : 0.4545939598) : 0.000);\n\
-			dst[5] = mix(dst[5], blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? 0.750 : ((haveSteepLine[3]) ? 0.250 : 0.125)) : 0.000);\n\
-			dst[6] = mix(dst[6], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250 : 0.000);\n\
-			dst[2] = mix(dst[2], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250 : 0.000);\n\
-#else\n\
-			vec3 k[9];\n\
-			vec3 tempDst8;\n\
-			vec3 tempDst7;\n\
-			\n\
-			k[8] = src[8];\n\
-			k[7] = src[7];\n\
-			k[6] = src[6];\n\
-			k[5] = src[5];\n\
-			k[4] = src[4];\n\
-			k[3] = src[3];\n\
-			k[2] = src[2];\n\
-			k[1] = src[1];\n\
-			k[0] = src[0];\n\
-			ScalePixel(blendResult.xyzw, k, dst);\n\
-			\n\
-			k[8] = src[6];\n\
-			k[7] = src[5];\n\
-			k[6] = src[4];\n\
-			k[5] = src[3];\n\
-			k[4] = src[2];\n\
-			k[3] = src[1];\n\
-			k[2] = src[8];\n\
-			k[1] = src[7];\n\
-			tempDst8 = dst[8];\n\
-			tempDst7 = dst[7];\n\
-			dst[8] = dst[6];\n\
-			dst[7] = dst[5];\n\
-			dst[6] = dst[4];\n\
-			dst[5] = dst[3];\n\
-			dst[4] = dst[2];\n\
-			dst[3] = dst[1];\n\
-			dst[2] = tempDst8;\n\
-			dst[1] = tempDst7;\n\
-			ScalePixel(blendResult.wxyz, k, dst);\n\
-			\n\
-			k[8] = src[4];\n\
-			k[7] = src[3];\n\
-			k[6] = src[2];\n\
-			k[5] = src[1];\n\
-			k[4] = src[8];\n\
-			k[3] = src[7];\n\
-			k[2] = src[6];\n\
-			k[1] = src[5];\n\
-			tempDst8 = dst[8];\n\
-			tempDst7 = dst[7];\n\
-			dst[8] = dst[6];\n\
-			dst[7] = dst[5];\n\
-			dst[6] = dst[4];\n\
-			dst[5] = dst[3];\n\
-			dst[4] = dst[2];\n\
-			dst[3] = dst[1];\n\
-			dst[2] = tempDst8;\n\
-			dst[1] = tempDst7;\n\
-			ScalePixel(blendResult.zwxy, k, dst);\n\
-			\n\
-			k[8] = src[2];\n\
-			k[7] = src[1];\n\
-			k[6] = src[8];\n\
-			k[5] = src[7];\n\
-			k[4] = src[6];\n\
-			k[3] = src[5];\n\
-			k[2] = src[4];\n\
-			k[1] = src[3];\n\
-			tempDst8 = dst[8];\n\
-			tempDst7 = dst[7];\n\
-			dst[8] = dst[6];\n\
-			dst[7] = dst[5];\n\
-			dst[6] = dst[4];\n\
-			dst[5] = dst[3];\n\
-			dst[4] = dst[2];\n\
-			dst[3] = dst[1];\n\
-			dst[2] = tempDst8;\n\
-			dst[1] = tempDst7;\n\
-			ScalePixel(blendResult.yzwx, k, dst);\n\
-			\n\
-			// Rotate the destination pixels back to 0 degrees.\n\
-			tempDst8 = dst[8];\n\
-			tempDst7 = dst[7];\n\
-			dst[8] = dst[6];\n\
-			dst[7] = dst[5];\n\
-			dst[6] = dst[4];\n\
-			dst[5] = dst[3];\n\
-			dst[4] = dst[2];\n\
-			dst[3] = dst[1];\n\
-			dst[2] = tempDst8;\n\
-			dst[1] = tempDst7;\n\
-#endif\n\
-		}\n\
-		\n\
-		vec2 f = fract(texCoord[0]);\n\
-		OUT_FRAG_COLOR.rgb =	mix( mix(     dst[6], mix(dst[7], dst[8], step(0.6, f.x)), step(0.3, f.x)),\n\
-							         mix( mix(dst[5], mix(dst[0], dst[1], step(0.6, f.x)), step(0.3, f.x)),\n\
-							              mix(dst[4], mix(dst[3], dst[2], step(0.6, f.x)), step(0.3, f.x)), step(0.6, f.y)),\n\
-								step(0.3, f.y) );\n\
-		OUT_FRAG_COLOR.a = 1.0;\n\
+		OUT_FRAG_COLOR = vec4(newFragColor, 1.0);\n\
 	}\n\
 "};
 
@@ -4386,18 +4146,22 @@ OGLContextInfo_Legacy::OGLContextInfo_Legacy()
 				
 				if (_versionMajor == 2 && _versionMinor == 0)
 				{
-					if (maxVaryingFloats < 32)
+					if (maxVaryingFloats < 60)
 					{
 						_shaderSupport = ShaderSupport_BottomTier;
 					}
-					else
+					else if (maxVaryingFloats < 124)
 					{
 						_shaderSupport = ShaderSupport_LowTier;
+					}
+					else if (maxVaryingFloats >= 124)
+					{
+						_shaderSupport = ShaderSupport_MidTier;
 					}
 				}
 				else
 				{
-					if (maxVaryingFloats < 32)
+					if (maxVaryingFloats < 41)
 					{
 						_shaderSupport = ShaderSupport_BottomTier;
 					}
@@ -4405,17 +4169,13 @@ OGLContextInfo_Legacy::OGLContextInfo_Legacy()
 					{
 						_shaderSupport = ShaderSupport_LowTier;
 					}
-					else if (maxVaryingFloats < 84)
+					else if (maxVaryingFloats < 124)
 					{
 						_shaderSupport = ShaderSupport_MidTier;
 					}
-					else if (maxVaryingFloats < 108)
+					else if (maxVaryingFloats >= 124)
 					{
 						_shaderSupport = ShaderSupport_HighTier;
-					}
-					else if (maxVaryingFloats >= 108)
-					{
-						_shaderSupport = ShaderSupport_TopTier;
 					}
 				}
 			}
@@ -4797,6 +4557,11 @@ OGLClientFetchObject::OGLClientFetchObject()
 	_srcNativeClone[NDSDisplayID_Main][1]  = _srcNativeCloneMaster + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
 	_srcNativeClone[NDSDisplayID_Touch][1] = _srcNativeCloneMaster + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 3);
 	memset(_srcNativeCloneMaster, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * sizeof(uint32_t));
+	
+	_srcCloneNeedsUpdate[NDSDisplayID_Main][0] = true;
+	_srcCloneNeedsUpdate[NDSDisplayID_Touch][0] = true;
+	_srcCloneNeedsUpdate[NDSDisplayID_Main][1] = true;
+	_srcCloneNeedsUpdate[NDSDisplayID_Touch][1] = true;
 }
 
 OGLClientFetchObject::~OGLClientFetchObject()
@@ -4877,66 +4642,99 @@ void OGLClientFetchObject::CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDis
 	pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 }
 
+void OGLClientFetchObject::FetchNativeDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock)
+{
+	if (needsLock)
+	{
+		pthread_rwlock_wrlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
+	}
+	
+	if (!this->_srcCloneNeedsUpdate[displayID][bufferIndex])
+	{
+		if (needsLock)
+		{
+			pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
+		}
+		return;
+	}
+	
+	if (this->_fetchColorFormatOGL == GL_UNSIGNED_SHORT_1_5_5_5_REV)
+	{
+		ColorspaceConvertBuffer555To8888Opaque<false, false>((const uint16_t *)this->_fetchDisplayInfo[bufferIndex].nativeBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+	}
+	else
+	{
+		ColorspaceConvertBuffer888XTo8888Opaque<false, false>((const uint32_t *)this->_fetchDisplayInfo[bufferIndex].nativeBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+	}
+	
+	this->_srcCloneNeedsUpdate[displayID][bufferIndex] = false;
+	
+	if (needsLock)
+	{
+		pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
+	}
+}
+
 void OGLClientFetchObject::Init()
 {
-	glGenTextures(4, &_texDisplayFetchNative[0][0]);
-	glGenTextures(4, &_texDisplayFetchCustom[0][0]);
+	glGenTextures(4, &this->_texDisplayFetchNative[0][0]);
+	glGenTextures(4, &this->_texDisplayFetchCustom[0][0]);
 	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texDisplayFetchNative[NDSDisplayID_Main][0]);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Main][0]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, _srcNativeClone[NDSDisplayID_Main][0]);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Main][0]);
 	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texDisplayFetchNative[NDSDisplayID_Main][1]);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Main][1]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, _srcNativeClone[NDSDisplayID_Main][1]);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Main][1]);
 	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texDisplayFetchNative[NDSDisplayID_Touch][0]);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Touch][0]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, _srcNativeClone[NDSDisplayID_Touch][0]);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Touch][0]);
 	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texDisplayFetchNative[NDSDisplayID_Touch][1]);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Touch][1]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, _srcNativeClone[NDSDisplayID_Touch][1]);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Touch][1]);
 	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texDisplayFetchCustom[NDSDisplayID_Main][0]);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Main][0]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, _srcNativeClone[NDSDisplayID_Main][0]);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Main][0]);
 	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texDisplayFetchCustom[NDSDisplayID_Main][1]);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Main][1]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, _srcNativeClone[NDSDisplayID_Main][1]);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Main][1]);
 	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texDisplayFetchCustom[NDSDisplayID_Touch][0]);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Touch][0]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, _srcNativeClone[NDSDisplayID_Touch][0]);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Touch][0]);
 	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _texDisplayFetchCustom[NDSDisplayID_Touch][1]);
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Touch][1]);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, _srcNativeClone[NDSDisplayID_Touch][1]);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Touch][1]);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
@@ -4944,6 +4742,11 @@ void OGLClientFetchObject::Init()
 	{
 		SetupHQnxLUTs_OGL(GL_TEXTURE0 + 1, this->_texLQ2xLUT, this->_texHQ2xLUT, this->_texHQ3xLUT, this->_texHQ4xLUT);
 	}
+	
+	this->_srcCloneNeedsUpdate[NDSDisplayID_Main][0] = true;
+	this->_srcCloneNeedsUpdate[NDSDisplayID_Touch][0] = true;
+	this->_srcCloneNeedsUpdate[NDSDisplayID_Main][1] = true;
+	this->_srcCloneNeedsUpdate[NDSDisplayID_Touch][1] = true;
 }
 
 void OGLClientFetchObject::SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo)
@@ -4997,25 +4800,35 @@ void OGLClientFetchObject::SetFetchBuffers(const NDSDisplayInfo &currentDisplayI
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
 	glFinish();
+	
+	pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Main][0]);
+	this->_srcCloneNeedsUpdate[NDSDisplayID_Main][0] = true;
+	pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Main][0]);
+	
+	pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][0]);
+	this->_srcCloneNeedsUpdate[NDSDisplayID_Touch][0] = true;
+	pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][0]);
+	
+	pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Main][1]);
+	this->_srcCloneNeedsUpdate[NDSDisplayID_Main][1] = true;
+	pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Main][1]);
+	
+	pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][1]);
+	this->_srcCloneNeedsUpdate[NDSDisplayID_Touch][1] = true;
+	pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][1]);
 }
 
 void OGLClientFetchObject::_FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex)
 {
+	pthread_rwlock_wrlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
+	this->_srcCloneNeedsUpdate[displayID][bufferIndex] = true;
+	
 	if (this->_useDirectToCPUFilterPipeline)
 	{
-		pthread_rwlock_wrlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
-		
-		if (this->_fetchColorFormatOGL == GL_UNSIGNED_SHORT_1_5_5_5_REV)
-		{
-			ColorspaceConvertBuffer555To8888Opaque<false, false>((const uint16_t *)this->_fetchDisplayInfo[bufferIndex].nativeBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-		}
-		else
-		{
-			ColorspaceConvertBuffer888XTo8888Opaque<false, false>((const uint32_t *)this->_fetchDisplayInfo[bufferIndex].nativeBuffer[displayID], this->_srcNativeClone[displayID][bufferIndex], GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-		}
-		
-		pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
+		this->FetchNativeDisplayToSrcClone(displayID, bufferIndex, false);
 	}
+	
+	pthread_rwlock_unlock(&this->_srcCloneRWLock[displayID][bufferIndex]);
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[displayID][bufferIndex]);
 	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[bufferIndex].nativeBuffer[displayID]);
@@ -5301,7 +5114,12 @@ void OGLVideoOutput::CopyFrameToBuffer(uint32_t *dstBuffer)
 	
 	this->_needUpdateViewport = true;
 	this->RenderFrameOGL(true);
+	
+#ifdef MSB_FIRST
+	glReadPixels(0, 0, this->_renderProperty.clientWidth, this->_renderProperty.clientHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, dstBuffer);
+#else
 	glReadPixels(0, 0, this->_renderProperty.clientWidth, this->_renderProperty.clientHeight, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, dstBuffer);
+#endif
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
@@ -5989,16 +5807,43 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			break;
 			
 		case VideoFilterTypeID_2xSaI:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scalar2xSaIFragShader_110, false, _useShader150);
+		{
+			if (this->_shaderSupport >= ShaderSupport_LowTier)
+			{
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scalar2xSaIFragShader_110, false, _useShader150);
+			}
+			else
+			{
+				willUseShaderBasedPixelScaler = false;
+			}
 			break;
+		}
 			
 		case VideoFilterTypeID_Super2xSaI:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuper2xSaIFragShader_110, false, _useShader150);
+		{
+			if (this->_shaderSupport >= ShaderSupport_LowTier)
+			{
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuper2xSaIFragShader_110, false, _useShader150);
+			}
+			else
+			{
+				willUseShaderBasedPixelScaler = false;
+			}
 			break;
+		}
 			
 		case VideoFilterTypeID_SuperEagle:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuperEagle2xFragShader_110, false, _useShader150);
+		{
+			if (this->_shaderSupport >= ShaderSupport_LowTier)
+			{
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuperEagle2xFragShader_110, false, _useShader150);
+			}
+			else
+			{
+				willUseShaderBasedPixelScaler = false;
+			}
 			break;
+		}
 			
 		case VideoFilterTypeID_LQ2X:
 			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xFragShader_110, false, _useShader150);
@@ -6021,34 +5866,66 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			break;
 			
 		case VideoFilterTypeID_HQ3X:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xFragShader_110, false, _useShader150);
-			currentHQnxLUT = this->_texHQ3xLUT;
+		{
+			if (this->_shaderSupport >= ShaderSupport_LowTier)
+			{
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xFragShader_110, false, _useShader150);
+				currentHQnxLUT = this->_texHQ3xLUT;
+			}
+			else
+			{
+				willUseShaderBasedPixelScaler = false;
+			}
 			break;
+		}
 			
 		case VideoFilterTypeID_HQ3XS:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xSFragShader_110, false, _useShader150);
-			currentHQnxLUT = this->_texHQ3xLUT;
+		{
+			if (this->_shaderSupport >= ShaderSupport_LowTier)
+			{
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xSFragShader_110, false, _useShader150);
+				currentHQnxLUT = this->_texHQ3xLUT;
+			}
+			else
+			{
+				willUseShaderBasedPixelScaler = false;
+			}
 			break;
+		}
 			
 		case VideoFilterTypeID_HQ4X:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xFragShader_110, false, _useShader150);
-			currentHQnxLUT = this->_texHQ4xLUT;
+		{
+			if (this->_shaderSupport >= ShaderSupport_LowTier)
+			{
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xFragShader_110, false, _useShader150);
+				currentHQnxLUT = this->_texHQ4xLUT;
+			}
+			else
+			{
+				willUseShaderBasedPixelScaler = false;
+			}
 			break;
+		}
 			
 		case VideoFilterTypeID_HQ4XS:
-			shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xSFragShader_110, false, _useShader150);
-			currentHQnxLUT = this->_texHQ4xLUT;
+		{
+			if (this->_shaderSupport >= ShaderSupport_LowTier)
+			{
+				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xSFragShader_110, false, _useShader150);
+				currentHQnxLUT = this->_texHQ4xLUT;
+			}
+			else
+			{
+				willUseShaderBasedPixelScaler = false;
+			}
 			break;
+		}
 			
 		case VideoFilterTypeID_2xBRZ:
 		{
 			if (this->_shaderSupport >= ShaderSupport_MidTier)
 			{
 				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler2xBRZFragShader_110, false, _useShader150);
-			}
-			else if (this->_shaderSupport >= ShaderSupport_LowTier)
-			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler2xBRZFragShader_110, false, _useShader150);
 			}
 			else
 			{
@@ -6062,10 +5939,6 @@ bool OGLImage::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 			if (this->_shaderSupport >= ShaderSupport_MidTier)
 			{
 				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler3xBRZFragShader_110, false, _useShader150);
-			}
-			else if (this->_shaderSupport >= ShaderSupport_LowTier)
-			{
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler3xBRZFragShader_110, false, _useShader150);
 			}
 			else
 			{
@@ -6933,16 +6806,43 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 				break;
 				
 			case VideoFilterTypeID_2xSaI:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scalar2xSaIFragShader_110, false, useShader150);
+			{
+				if (shaderSupport >= ShaderSupport_LowTier)
+				{
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scalar2xSaIFragShader_110, false, useShader150);
+				}
+				else
+				{
+					willUseShaderBasedPixelScaler = false;
+				}
 				break;
+			}
 				
 			case VideoFilterTypeID_Super2xSaI:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuper2xSaIFragShader_110, false, useShader150);
+			{
+				if (shaderSupport >= ShaderSupport_LowTier)
+				{
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuper2xSaIFragShader_110, false, useShader150);
+				}
+				else
+				{
+					willUseShaderBasedPixelScaler = false;
+				}
 				break;
+			}
 				
 			case VideoFilterTypeID_SuperEagle:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuperEagle2xFragShader_110, false, useShader150);
+			{
+				if (shaderSupport >= ShaderSupport_LowTier)
+				{
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, ScalarSuperEagle2xFragShader_110, false, useShader150);
+				}
+				else
+				{
+					willUseShaderBasedPixelScaler = false;
+				}
 				break;
+			}
 				
 			case VideoFilterTypeID_LQ2X:
 				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerLQ2xFragShader_110, false, useShader150);
@@ -6965,34 +6865,66 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 				break;
 				
 			case VideoFilterTypeID_HQ3X:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xFragShader_110, false, useShader150);
-				currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexHQ3xLUT();
+			{
+				if (shaderSupport >= ShaderSupport_LowTier)
+				{
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xFragShader_110, false, useShader150);
+					currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexHQ3xLUT();
+				}
+				else
+				{
+					willUseShaderBasedPixelScaler = false;
+				}
 				break;
+			}
 				
 			case VideoFilterTypeID_HQ3XS:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xSFragShader_110, false, useShader150);
-				currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexHQ3xLUT();
+			{
+				if (shaderSupport >= ShaderSupport_LowTier)
+				{
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ3xSFragShader_110, false, useShader150);
+					currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexHQ3xLUT();
+				}
+				else
+				{
+					willUseShaderBasedPixelScaler = false;
+				}
 				break;
+			}
 				
 			case VideoFilterTypeID_HQ4X:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xFragShader_110, false, useShader150);
-				currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexHQ4xLUT();
+			{
+				if (shaderSupport >= ShaderSupport_LowTier)
+				{
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xFragShader_110, false, useShader150);
+					currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexHQ4xLUT();
+				}
+				else
+				{
+					willUseShaderBasedPixelScaler = false;
+				}
 				break;
+			}
 				
 			case VideoFilterTypeID_HQ4XS:
-				shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xSFragShader_110, false, useShader150);
-				currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexHQ4xLUT();
+			{
+				if (shaderSupport >= ShaderSupport_LowTier)
+				{
+					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample3x3_VertShader_110, ScalerHQ4xSFragShader_110, false, useShader150);
+					currentHQnxLUT = ((const OGLClientFetchObject &)this->_output->GetFetchObject()).GetTexHQ4xLUT();
+				}
+				else
+				{
+					willUseShaderBasedPixelScaler = false;
+				}
 				break;
+			}
 				
 			case VideoFilterTypeID_2xBRZ:
 			{
 				if (shaderSupport >= ShaderSupport_MidTier)
 				{
 					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler2xBRZFragShader_110, false, useShader150);
-				}
-				else if (shaderSupport >= ShaderSupport_LowTier)
-				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler2xBRZFragShader_110, false, useShader150);
 				}
 				else
 				{
@@ -7006,10 +6938,6 @@ bool OGLDisplayLayer::SetGPUPixelScalerOGL(const VideoFilterTypeID filterID)
 				if (shaderSupport >= ShaderSupport_MidTier)
 				{
 					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample5x5_VertShader_110, Scaler3xBRZFragShader_110, false, useShader150);
-				}
-				else if (shaderSupport >= ShaderSupport_LowTier)
-				{
-					shaderFilterProgram->SetVertexAndFragmentShaderOGL(Sample4x4_VertShader_110, Scaler3xBRZFragShader_110, false, useShader150);
 				}
 				else
 				{

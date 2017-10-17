@@ -955,8 +955,6 @@
 	OSSpinLockLock(&spinlockDisplayVideoSource);
 	_cdv->Get3DPresenter()->SetDisplayVideoSource(NDSDisplayID_Main, (ClientDisplaySource)displaySourceID);
 	OSSpinLockUnlock(&spinlockDisplayVideoSource);
-	
-	_cdv->SetViewNeedsFlush();
 }
 
 - (NSInteger) displayMainVideoSource
@@ -973,8 +971,6 @@
 	OSSpinLockLock(&spinlockDisplayVideoSource);
 	_cdv->Get3DPresenter()->SetDisplayVideoSource(NDSDisplayID_Touch, (ClientDisplaySource)displaySourceID);
 	OSSpinLockUnlock(&spinlockDisplayVideoSource);
-	
-	_cdv->SetViewNeedsFlush();
 }
 
 - (NSInteger) displayTouchVideoSource
