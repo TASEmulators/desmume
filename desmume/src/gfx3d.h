@@ -177,6 +177,19 @@ typedef union
 		u8 PolygonID:6;						// 24-29: Polygon ID
 		u8 :2;								// 30-31: Unused bits
 #else
+		u8 :2;								// 30-31: Unused bits
+		u8 PolygonID:6;						// 24-29: Polygon ID
+		
+		u8 :3;								// 21-23: Unused bits
+		u8 Alpha:5;							// 16-20: Alpha value
+		
+		u8 Fog_Enable:1;					//    15: Fog; 0=Disable, 1=Enable
+		u8 DepthEqualTest_Enable:1;			//    14: Depth test mode; 0=Less, 1=Equal
+		u8 OneDotPolygons_Enable:1;			//    13: One-dot polygons; 0=Hide, 1=Render
+		u8 FarPlaneIntersect_Enable:1;		//    12: Far-plane intersecting polygons; 0=Hide, 1=Render/clipped
+		u8 TranslucentDepthWrite_Enable:1;	//    11: Translucent depth write; 0=Keep 1=Replace
+		u8 :3;								//  8-10: Unused bits
+		
 		u8 FrontSurface:1;					//     7: Front surface; 0=Hide, 1=Render
 		u8 BackSurface:1;					//     6: Back surface; 0=Hide, 1=Render
 		u8 Mode:2;							//  4- 5: Polygon mode;
@@ -188,19 +201,6 @@ typedef union
 		u8 Light2:1;						//     2: Light 2; 0=Disable, 1=Enable
 		u8 Light1:1;						//     1: Light 1; 0=Disable, 1=Enable
 		u8 Light0:1;						//     0: Light 0; 0=Disable, 1=Enable
-		
-		u8 Fog_Enable:1;					//    15: Fog; 0=Disable, 1=Enable
-		u8 DepthEqualTest_Enable:1;			//    14: Depth test mode; 0=Less, 1=Equal
-		u8 OneDotPolygons_Enable:1;			//    13: One-dot polygons; 0=Hide, 1=Render
-		u8 FarPlaneIntersect_Enable:1;		//    12: Far-plane intersecting polygons; 0=Hide, 1=Render/clipped
-		u8 TranslucentDepthWrite_Enable:1;	//    11: Translucent depth write; 0=Keep 1=Replace
-		u8 :3;								//  8-10: Unused bits
-		
-		u8 :3;								// 21-23: Unused bits
-		u8 Alpha:5;							// 16-20: Alpha value
-		
-		u8 :2;								// 30-31: Unused bits
-		u8 PolygonID:6;						// 24-29: Polygon ID
 #endif
 	};
 	
@@ -218,6 +218,10 @@ typedef union
 		u8 :8;
 		u8 :8;
 #else
+		u8 :8;
+		u8 :8;
+		u8 :8;
+		
 		u8 SurfaceCullingMode:2;			//  6- 7: Surface culling mode;
 											//        0=Cull front and back
 											//        1=Cull front
@@ -225,10 +229,6 @@ typedef union
 											//        3=No culling
 		u8 :2;
 		u8 LightMask:4;						//  0- 3: Light enable mask
-		
-		u8 :8;
-		u8 :8;
-		u8 :8;
 #endif
 	};
 } POLYGON_ATTR;
@@ -239,9 +239,9 @@ typedef union
 	
 	struct
 	{
+#ifndef MSB_FIRST
 		u16 VRAMOffset:16;					//  0-15: VRAM offset address
 		
-#ifndef MSB_FIRST
 		u16 RepeatS_Enable:1;				//    16: Repeat for S-coordinate; 0=Clamp 1=Repeat
 		u16 RepeatT_Enable:1;				//    17: Repeat for T-coordinate; 0=Clamp 1=Repeat
 		u16 MirroredRepeatS_Enable:1;		//    18: Mirrored repeat for S-coordinate, interacts with bit 16; 0=Disable 1=Enable
@@ -285,19 +285,21 @@ typedef union
 		u16 MirroredRepeatS_Enable:1;		//    18: Mirrored repeat for S-coordinate, interacts with bit 16; 0=Disable 1=Enable
 		u16 RepeatT_Enable:1;				//    17: Repeat for T-coordinate; 0=Clamp 1=Repeat
 		u16 RepeatS_Enable:1;				//    16: Repeat for S-coordinate; 0=Clamp 1=Repeat
+		
+		u16 VRAMOffset:16;					//  0-15: VRAM offset address
 #endif
 	};
 	
 	struct
 	{
-		u16 :16;
-		
 #ifndef MSB_FIRST
+		u16 :16;
 		u16 TextureWrapMode:4;				// 16-19: Texture wrap mode for repeat and mirrored repeat
 		u16 :12;
 #else
 		u16 :12;
 		u16 TextureWrapMode:4;				// 16-19: Texture wrap mode for repeat and mirrored repeat
+		u16 :16;
 #endif
 	};
 } TEXIMAGE_PARAM;
