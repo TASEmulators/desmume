@@ -158,10 +158,17 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 
 + (NSColor *) NSColorFromRGBA8888:(uint32_t)theColor
 {
+#ifdef MSB_FIRST
+	const CGFloat a = (CGFloat)((theColor >>  0) & 0xFF) / 255.0f;
+	const CGFloat b = (CGFloat)((theColor >>  8) & 0xFF) / 255.0f;
+	const CGFloat g = (CGFloat)((theColor >> 16) & 0xFF) / 255.0f;
+	const CGFloat r = (CGFloat)((theColor >> 24) & 0xFF) / 255.0f;
+#else
 	const CGFloat r = (CGFloat)((theColor >>  0) & 0xFF) / 255.0f;
 	const CGFloat g = (CGFloat)((theColor >>  8) & 0xFF) / 255.0f;
 	const CGFloat b = (CGFloat)((theColor >> 16) & 0xFF) / 255.0f;
 	const CGFloat a = (CGFloat)((theColor >> 24) & 0xFF) / 255.0f;
+#endif
 	
 	return [NSColor colorWithDeviceRed:r green:g blue:b alpha:a];
 }
@@ -180,10 +187,17 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 	CGFloat r, g, b, a;
 	[theColor getRed:&r green:&g blue:&b alpha:&a];
 	
+#ifdef MSB_FIRST
+	return (((uint32_t)(a * 255.0f)) <<  0) |
+	       (((uint32_t)(b * 255.0f)) <<  8) |
+	       (((uint32_t)(g * 255.0f)) << 16) |
+	       (((uint32_t)(r * 255.0f)) << 24);
+#else
 	return (((uint32_t)(r * 255.0f)) <<  0) |
 	       (((uint32_t)(g * 255.0f)) <<  8) |
 	       (((uint32_t)(b * 255.0f)) << 16) |
 	       (((uint32_t)(a * 255.0f)) << 24);
+#endif
 }
 
 + (NSInteger) appVersionNumeric
@@ -425,6 +439,7 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 		[NSException raise:NSInternalInconsistencyException format:@"Value (%@) does not respond to -unsignedIntegerValue, -unsignedIntValue, -integerValue or -intValue.", [value class]];
 	}
 	
+	color32 = LE_TO_LOCAL_32(color32);
 	return [CocoaDSUtil NSColorFromRGBA8888:color32];
 }
 
@@ -443,6 +458,7 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 	}
 	
 	color32 = [CocoaDSUtil RGBA8888FromNSColor:(NSColor *)value];
+	color32 = LE_TO_LOCAL_32(color32);
 	return [NSNumber numberWithUnsignedInteger:color32];
 }
 

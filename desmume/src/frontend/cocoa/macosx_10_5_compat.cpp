@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2015 DeSmuME team
+	Copyright (C) 2013-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 
 #include <AvailabilityMacros.h>
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_5
+#if defined(MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_5)
 
 #include <ostream>
 #include <istream>

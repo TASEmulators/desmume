@@ -777,11 +777,11 @@ typedef union
 		u8 MainBacklight_Enable:1;					//  3: Main display backlight; 0=Disable, 1=Enable
 		u8 PowerLEDBlink_Enable:1;					//  4: Power LED blink control; 0=Disable (Power LED remains steadily ON), 1=Enable
 		u8 PowerLEDBlinkSpeed:1;					//  5: Power LED blink speed when enabled; 0=Slow, 1=Fast
-		u8 SystemPowerState:2;						//  6: NDS system power state; 0=System is powered ON, 1=System is powered OFF
+		u8 SystemPowerState:1;						//  6: NDS system power state; 0=System is powered ON, 1=System is powered OFF
 		u8 :1;										//  7: Unused bit (should always be read as 0)
 #else
 		u8 :1;										//  7: Unused bit (should always be read as 0)
-		u8 SystemPowerState:2;						//  6: NDS system power state; 0=System is powered ON, 1=System is powered OFF
+		u8 SystemPowerState:1;						//  6: NDS system power state; 0=System is powered ON, 1=System is powered OFF
 		u8 PowerLEDBlinkSpeed:1;					//  5: Power LED blink speed when enabled; 0=Slow, 1=Fast
 		u8 PowerLEDBlink_Enable:1;					//  4: Power LED blink control; 0=Disable (LED is steady ON), 1=Enable
 		u8 MainBacklight_Enable:1;					//  3: Main display backlight; 0=Disable, 1=Enable

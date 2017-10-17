@@ -89,15 +89,15 @@ void ClientDisplayPresenter::__InstanceInit(const ClientDisplayPresenterProperti
 	_showRTC = false;
 	_showInputs = false;
 	
-	_hudColorVideoFPS = 0xFFFFFFFF;
-	_hudColorRender3DFPS = 0xFFFFFFFF;
-	_hudColorFrameIndex = 0xFFFFFFFF;
-	_hudColorLagFrameCount = 0xFFFFFFFF;
-	_hudColorCPULoadAverage = 0xFFFFFFFF;
-	_hudColorRTC = 0xFFFFFFFF;
-	_hudColorInputAppliedAndPending = 0xFFFFFFFF;
-	_hudColorInputAppliedOnly = 0xFF3030FF;
-	_hudColorInputPendingOnly = 0xFF00C000;
+	_hudColorVideoFPS = LE_TO_LOCAL_32(0xFFFFFFFF);
+	_hudColorRender3DFPS = LE_TO_LOCAL_32(0xFFFFFFFF);
+	_hudColorFrameIndex = LE_TO_LOCAL_32(0xFFFFFFFF);
+	_hudColorLagFrameCount = LE_TO_LOCAL_32(0xFFFFFFFF);
+	_hudColorCPULoadAverage = LE_TO_LOCAL_32(0xFFFFFFFF);
+	_hudColorRTC = LE_TO_LOCAL_32(0xFFFFFFFF);
+	_hudColorInputAppliedAndPending = LE_TO_LOCAL_32(0xFFFFFFFF);
+	_hudColorInputAppliedOnly = LE_TO_LOCAL_32(0xFF3030FF);
+	_hudColorInputPendingOnly = LE_TO_LOCAL_32(0xFF00C000);
 	
 	_clientFrameInfo.videoFPS = 0;
 	_ndsFrameInfo.clear();
@@ -755,7 +755,7 @@ uint32_t ClientDisplayPresenter::GetInputColorUsingStates(bool pendingState, boo
 	}
 	else
 	{
-		color = 0x80808080;
+		color = LE_TO_LOCAL_32(0x80808080);
 	}
 	
 	return color;
@@ -1785,7 +1785,7 @@ void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 	
 	const char *cString = hudString.c_str();
 	const size_t textLength = (hudString.length() <= HUD_TEXT_MAX_CHARACTERS) ? hudString.length() : HUD_TEXT_MAX_CHARACTERS;
-	uint32_t currentColor = 0x40000000;
+	uint32_t currentColor = LE_TO_LOCAL_32(0x40000000);
 	
 	// First, calculate the color of the text box.
 	// The text box should always be the first character in the string.
@@ -1917,7 +1917,7 @@ void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 		vtxColorBufferPtr[j+3] = inputColors[k];		// Bottom Left
 	}
 	
-	touchColor = ((this->_ndsFrameInfo.inputStatesPending.Touch != 0) && (this->_ndsFrameInfo.inputStatesApplied.Touch != 0)) ? 0x00000000 : (touchColor & 0x00FFFFFF) | (0x60000000);
+	touchColor = ((this->_ndsFrameInfo.inputStatesPending.Touch != 0) && (this->_ndsFrameInfo.inputStatesApplied.Touch != 0)) ? 0x00000000 : (touchColor & LE_TO_LOCAL_32(0x00FFFFFF)) | LE_TO_LOCAL_32(0x60000000);
 	
 	for (size_t k = 0; k < HUD_INPUT_TOUCH_LINE_ELEMENTS; i++, j+=4, k++)
 	{

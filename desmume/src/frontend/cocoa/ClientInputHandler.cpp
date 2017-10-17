@@ -227,7 +227,7 @@ void ClientInputHandler::SetClientInputStateUsingID(NDSInputID inputID, bool pre
 	if (this->_execControl != NULL)
 	{
 		NDSFrameInfo &frameInfoMutable = (NDSFrameInfo &)this->_execControl->GetNDSFrameInfo();
-		const uint64_t bitValue = (1 << this->_inputStateBitMap[inputID]);
+		const uint64_t bitValue = LOCAL_TO_LE_64(1ULL << this->_inputStateBitMap[inputID]);
 		
 		frameInfoMutable.inputStatesPending.value = (this->_clientInputPending[inputID].isPressed) ? frameInfoMutable.inputStatesPending.value & ~bitValue : frameInfoMutable.inputStatesPending.value | bitValue;
 	}
