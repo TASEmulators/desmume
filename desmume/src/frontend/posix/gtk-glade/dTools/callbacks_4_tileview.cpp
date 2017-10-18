@@ -79,7 +79,7 @@ static int colnum=0;
 static void refresh();
 static GtkWidget * wPaint;
 static GtkSpinButton * wSpin;
-static int gl_context_num=0;
+static NDSDisplayID gl_context_num = NDSDisplayID_Main;
 
 #define TILE_NUM_MAX  1024
 #define TILE_W_SZ     8
@@ -270,7 +270,7 @@ static void initialize() {
 	combo = (GtkComboBox*)glade_xml_get_widget(xml_tools, "wtools_4_memory");
 	init_combo_memory(combo, mem_addr);
 
-	gl_context_num = init_GL_free_s(wPaint,0);
+	gl_context_num = init_GL_free_s(wPaint, NDSDisplayID_Main);
 	reshape(wPaint, gl_context_num);
 	gtk_widget_show(wPaint);
 	init=TRUE;

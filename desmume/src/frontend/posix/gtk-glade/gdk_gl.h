@@ -31,18 +31,19 @@
 	#include <gtk/gtkglwidget.h>
 #endif
 
+#include "../GPU.h"
 	
-BOOL my_gl_Begin (int screen);
-void my_gl_End (int screen);
-void my_gl_Clear(int screen);
+BOOL my_gl_Begin (NDSDisplayID displayID);
+void my_gl_End (NDSDisplayID displayID);
+void my_gl_Clear(NDSDisplayID displayID);
 void my_gl_DrawBeautifulQuad( void);
 void my_gl_Identity( void);
 
-void init_GL_capabilities( int use_software_convert);
-void init_GL(GtkWidget * widget, int screen, int share_num);
-int init_GL_free_s(GtkWidget * widget, int share_num);
-int init_GL_free(GtkWidget * widget);
-void reshape (GtkWidget * widget, int screen);
-gboolean screen (GtkWidget * widget, int off);
+void init_GL_capabilities();
+void init_GL(GtkWidget *widget, NDSDisplayID displayID, NDSDisplayID sharedContextDisplayID);
+NDSDisplayID init_GL_free_s(GtkWidget *widget, NDSDisplayID sharedContextDisplayID);
+NDSDisplayID init_GL_free(GtkWidget *widget);
+void reshape(GtkWidget *widget, NDSDisplayID displayID);
+gboolean screen(GtkWidget *widget, NDSDisplayID displayID);
 
 #endif

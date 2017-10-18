@@ -185,12 +185,13 @@ gboolean screen (GtkWidget * widget, int off) {
 
 /* OUTPUT SCREENS  */
 gboolean  on_wDrawScreen_expose_event   (GtkWidget *widget, GdkEventExpose  *event, gpointer user_data) {
-	int scr = dyn_CAST(int,user_data);
-	return screen(widget, scr);
+	NDSDisplayID displayID = (NDSDisplayID)dyn_CAST(int,user_data);
+	return screen(widget, displayID);
 }
 gboolean  on_wDrawScreen_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer user_data) {
-	int scr = dyn_CAST(int,user_data);
-	reshape(widget, scr); return TRUE;
+	NDSDisplayID displayID = (NDSDisplayID)dyn_CAST(int,user_data);
+	reshape(widget, displayID);
+	return TRUE;
 }
 
 

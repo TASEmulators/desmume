@@ -27,8 +27,6 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-#include "../GPU.h"
-
 #define _DUP8(a) a,a,a,a, a,a,a,a
 #define _DUP4(a) a,a,a,a
 #define _DUP2(a) a,a
@@ -50,52 +48,58 @@ GLuint screen_texture[2];
 /* BEGIN & END                                  */
 /************************************************/
 
-BOOL my_gl_Begin (int screen) {
-	return gdk_gl_drawable_gl_begin(my_glDrawable[screen], my_glContext[screen]);
+BOOL my_gl_Begin (NDSDisplayID displayID)
+{
+	return gdk_gl_drawable_gl_begin(my_glDrawable[displayID], my_glContext[displayID]);
 }
 
-void my_gl_End (int screen) {
-	if (gdk_gl_drawable_is_double_buffered (my_glDrawable[screen]))
-		gdk_gl_drawable_swap_buffers (my_glDrawable[screen]);
+void my_gl_End (NDSDisplayID displayID)
+{
+	if (gdk_gl_drawable_is_double_buffered (my_glDrawable[displayID]))
+		gdk_gl_drawable_swap_buffers (my_glDrawable[displayID]);
 	else
 		glFlush();
-	gdk_gl_drawable_gl_end(my_glDrawable[screen]);
+	gdk_gl_drawable_gl_end(my_glDrawable[displayID]);
 }
 
 /************************************************/
 /* OTHER GL COMMANDS                            */
 /************************************************/
 
-void my_gl_Identity() {
+void my_gl_Identity()
+{
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
 
-void my_gl_Clear(int screen) {
-	if (!my_gl_Begin(screen)) return;
+void my_gl_Clear(NDSDisplayID displayID)
+{
+	if (!my_gl_Begin(displayID))
+		return;
 	
 	/* Set the background black */
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-	my_gl_End(screen);
+	my_gl_End(displayID);
 }
 
 /************************************************/
 /* INITIALIZATION                               */
 /************************************************/
 
-void init_GL(GtkWidget * widget, int screen, int share_num) {
+void init_GL(GtkWidget *widget, NDSDisplayID displayID, NDSDisplayID sharedContextDisplayID)
+{
 //	for (n=gtk_events_pending(); n>0; n--)
 //		gtk_main_iteration();
 	// init GL capability
-	my_glContext[screen]=NULL;
-	my_glDrawable[screen]=NULL;
+	my_glContext[displayID] = NULL;
+	my_glDrawable[displayID] = NULL;
 	if (!gtk_widget_set_gl_capability(
 			widget, my_glConfig, 
-			my_glContext[share_num],
+			my_glContext[sharedContextDisplayID],
 			//NULL,
 			TRUE, 
 			GDK_GL_RGBA_TYPE)) {
@@ -107,31 +111,36 @@ void init_GL(GtkWidget * widget, int screen, int share_num) {
 	// make sure we realize
  	gdk_flush();
 
-	my_glDrawable[screen] = gtk_widget_get_gl_drawable(widget);
+	my_glDrawable[displayID] = gtk_widget_get_gl_drawable(widget);
 
-	if (screen == share_num) {
-		my_glContext[screen] = gtk_widget_get_gl_context(widget);
-	} else {
-		my_glContext[screen] = my_glContext[share_num];
+	if (displayID == sharedContextDisplayID)
+	{
+		my_glContext[displayID] = gtk_widget_get_gl_context(widget);
+	}
+	else
+	{
+		my_glContext[displayID] = my_glContext[sharedContextDisplayID];
 		return;
 	}
 	
-	reshape(widget, screen);
+	reshape(widget, displayID);
 }
 
-int init_GL_free_s(GtkWidget * widget, int share_num) {
-	int r = free_gl_drawable;
-	my_glContext[r]=NULL;
-	my_glDrawable[r]=NULL;
-	init_GL(widget, r, share_num);
+NDSDisplayID init_GL_free_s(GtkWidget *widget, NDSDisplayID sharedContextDisplayID)
+{
+	NDSDisplayID r = (NDSDisplayID)free_gl_drawable;
+	my_glContext[r] = NULL;
+	my_glDrawable[r] = NULL;
+	init_GL(widget, r, sharedContextDisplayID);
 	free_gl_drawable++;
 	return r;
 }
 
-int init_GL_free(GtkWidget * widget) {
-	int r = free_gl_drawable;
-	my_glContext[r]=NULL;
-	my_glDrawable[r]=NULL;
+NDSDisplayID init_GL_free(GtkWidget *widget)
+{
+	NDSDisplayID r = (NDSDisplayID)free_gl_drawable;
+	my_glContext[r] = NULL;
+	my_glDrawable[r] = NULL;
 	init_GL(widget, r, r);
 	free_gl_drawable++;
 	return r;
@@ -149,10 +158,11 @@ void init_GL_capabilities() {
 	);
 
 	// initialize 1st drawing area
-	init_GL(pDrawingArea,0,0);
-	my_gl_Clear(0);
+	init_GL(pDrawingArea, NDSDisplayID_Main, NDSDisplayID_Main);
+	my_gl_Clear(NDSDisplayID_Main);
 	
-	if (!my_gl_Begin(0)) return;
+	if (!my_gl_Begin(NDSDisplayID_Main))
+		return;
 	
 	glEnable(GL_TEXTURE_2D);
 	glGenTextures(2, screen_texture);
@@ -176,25 +186,26 @@ void init_GL_capabilities() {
 					 blank_texture);
 	}
 	
-	my_gl_End(0);
+	my_gl_End(NDSDisplayID_Main);
 
 	// initialize 2nd drawing area (sharing context)
-	init_GL(pDrawingArea2,1,0);
-	my_gl_Clear(1);
+	init_GL(pDrawingArea2, NDSDisplayID_Touch, NDSDisplayID_Main);
+	my_gl_Clear(NDSDisplayID_Touch);
 }
 
 /************************************************/
 /* RESHAPE                                      */
 /************************************************/
 
-void reshape (GtkWidget * widget, int screen) {
-	if (my_glDrawable[screen] == NULL ||
-		!my_gl_Begin(screen)) return;
+void reshape(GtkWidget *widget, NDSDisplayID displayID)
+{
+	if (my_glDrawable[displayID] == NULL || !my_gl_Begin(displayID))
+		return;
 
 	glViewport (0, 0, widget->allocation.width, widget->allocation.height);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	my_gl_End(screen);
+	my_gl_End(displayID);
 }
 
 /************************************************/
@@ -202,15 +213,16 @@ void reshape (GtkWidget * widget, int screen) {
 /************************************************/
 
 static void
-my_gl_ScreenTex() {
+my_gl_ScreenTex()
+{
 	const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
-	
+
 	glBindTexture(GL_TEXTURE_2D, screen_texture[NDSDisplayID_Main]);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 192,
 					GL_RGBA,
 					GL_UNSIGNED_SHORT_1_5_5_5_REV,
 					displayInfo.renderedBuffer[NDSDisplayID_Main]);
-	
+					
 	glBindTexture(GL_TEXTURE_2D, screen_texture[NDSDisplayID_Touch]);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 192,
 					GL_RGBA,
@@ -218,27 +230,18 @@ my_gl_ScreenTex() {
 					displayInfo.renderedBuffer[NDSDisplayID_Touch]);
 }
 
-static void my_gl_ScreenTexApply(int screen) {
+static void my_gl_ScreenTexApply(NDSDisplayID displayID)
+{
 	const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
 	
-	GLfloat backlightIntensity = displayInfo.backlightIntensity[NDSDisplayID_Main];
+	GLfloat backlightIntensity = displayInfo.backlightIntensity[displayID];
 	
-	glBindTexture(GL_TEXTURE_2D, screen_texture[NDSDisplayID_Main]);
+	glBindTexture(GL_TEXTURE_2D, screen_texture[displayID]);
 	glBegin(GL_QUADS);
-		glTexCoord2f(0.00f, 0.00f); glVertex2f(-1.0f,  1.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-		glTexCoord2f(1.00f, 0.00f); glVertex2f( 1.0f,  1.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-		glTexCoord2f(1.00f, 0.75f); glVertex2f( 1.0f,  0.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-		glTexCoord2f(0.00f, 0.75f); glVertex2f(-1.0f,  0.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-	glEnd();
-	
-	backlightIntensity = displayInfo.backlightIntensity[NDSDisplayID_Touch];
-	
-	glBindTexture(GL_TEXTURE_2D, screen_texture[NDSDisplayID_Touch]);
-	glBegin(GL_QUADS);
-		glTexCoord2f(0.00f, 0.00f); glVertex2f(-1.0f,  0.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-		glTexCoord2f(1.00f, 0.00f); glVertex2f( 1.0f,  0.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-		glTexCoord2f(1.00f, 0.75f); glVertex2f( 1.0f, -1.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-		glTexCoord2f(0.00f, 0.75f); glVertex2f(-1.0f, -1.0f); glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
+		glColor3f(backlightIntensity, backlightIntensity, backlightIntensity); glTexCoord2f(0.00f, 0.00f); glVertex2f(-1.0f,  1.0f);
+		glColor3f(backlightIntensity, backlightIntensity, backlightIntensity); glTexCoord2f(1.00f, 0.00f); glVertex2f( 1.0f,  1.0f);
+		glColor3f(backlightIntensity, backlightIntensity, backlightIntensity); glTexCoord2f(1.00f, 0.75f); glVertex2f( 1.0f, -1.0f);
+		glColor3f(backlightIntensity, backlightIntensity, backlightIntensity); glTexCoord2f(0.00f, 0.75f); glVertex2f(-1.0f, -1.0f);
 	glEnd();
 }
 
@@ -246,15 +249,19 @@ static void my_gl_ScreenTexApply(int screen) {
 /* RENDERING                                    */
 /************************************************/
 
-gboolean screen (GtkWidget * widget, int viewportscreen) {
-	int screen;
-	
+gboolean screen(GtkWidget *widget, NDSDisplayID displayID)
+{
+	NDSDisplayID displayToDraw = displayID;
+
 	// we take care to draw the right thing the right place
 	// we need to rearrange widgets not to use this trick
-	screen = (ScreenInvert)?1-viewportscreen:viewportscreen;
-//	screen = viewportscreen;
+	if (ScreenInvert)
+	{
+		displayToDraw = (displayID == NDSDisplayID_Main) ? NDSDisplayID_Touch : NDSDisplayID_Main;
+	}
 
-	if (!my_gl_Begin(viewportscreen)) return TRUE;
+	if (!my_gl_Begin(displayID))
+		return TRUE;
 
 	glLoadIdentity();
 
@@ -268,18 +275,21 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 	glDisable(GL_DITHER);
 	glDisable(GL_STENCIL_TEST);
 
-	if (desmume_running()) {
+	if (desmume_running())
+	{
 		// rotate
 		glRotatef(ScreenRotate, 0.0, 0.0, 1.0);
-		if (viewportscreen==0) {
-                  my_gl_ScreenTex();
+		if (displayID == NDSDisplayID_Main)
+		{
+			my_gl_ScreenTex();
 		}
 	}
 	
 	// apply part of the texture
-	my_gl_ScreenTexApply(screen);
+	my_gl_ScreenTexApply(displayToDraw);
 
-	my_gl_End(viewportscreen);
+	my_gl_End(displayID);
+	
 	return TRUE;
 }
 
