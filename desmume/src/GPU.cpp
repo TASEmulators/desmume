@@ -1617,11 +1617,11 @@ void GPUEngineBase::_RenderLine_Clear(GPUEngineCompositorInfo &compInfo)
 			break;
 			
 		case NDSColorFormat_BGR666_Rev:
-			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(*compInfo.target.lineColor, COLOR555TO666(dstClearColor16));
+			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(*compInfo.target.lineColor, COLOR555TO666(LOCAL_TO_LE_16(dstClearColor16)));
 			break;
 			
 		case NDSColorFormat_BGR888_Rev:
-			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(*compInfo.target.lineColor, COLOR555TO888(dstClearColor16));
+			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(*compInfo.target.lineColor, COLOR555TO888(LOCAL_TO_LE_16(dstClearColor16)));
 			break;
 	}
 	
@@ -2927,17 +2927,21 @@ void GPUEngineBase::_RenderPixelIterate_Final(GPUEngineCompositorInfo &compInfo,
 	const s32 wmask = wh - 1;
 	const s32 hmask = ht - 1;
 	
-	IOREG_BGnX x = param.BGnX;
-	IOREG_BGnY y = param.BGnY;
+	IOREG_BGnX x;
+	IOREG_BGnY y;
+	x.value = LOCAL_TO_LE_32(param.BGnX.value);
+	y.value = LOCAL_TO_LE_32(param.BGnY.value);
 	
 #ifdef MSB_FIRST
-	// This only seems to work in the unrotated/unscaled case. I'm not too sure
-	// about how these bits should really be arranged on big-endian, but at
-	// least this arrangement fixes a bunch of games that use affine or extended
-	// layers, just as long as they don't perform any rotation/scaling.
-	// - rogerman, 2016-07-05
-	x.value = ((x.value & 0x00FFFFFF) << 8) | ((x.value & 0xFF000000) >> 24);
-	y.value = ((y.value & 0x00FFFFFF) << 8) | ((y.value & 0xFF000000) >> 24);
+	// This only seems to work in the unrotated/unscaled case.
+	//
+	// All the working values should be correct on big-endian, but there is something else wrong going
+	// on somewhere else, but that remains a mystery at this time. In the meantime, this hack will have
+	// to remain in order to fix a bunch of games that use affine or extended layers, just as long as
+	// they don't perform any rotation/scaling.
+	// - rogerman, 2017-10-17
+	x.value = ((x.value & 0xFF000000) >> 16) | (x.value & 0x00FF00FF) | ((x.value & 0x0000FF00) << 16);
+	y.value = ((y.value & 0xFF000000) >> 16) | (y.value & 0x00FF00FF) | ((y.value & 0x0000FF00) << 16);
 #endif
 	
 	u8 index;
