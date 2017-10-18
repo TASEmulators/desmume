@@ -1515,7 +1515,7 @@ OpenGLTexture* OpenGLRenderer::GetLoadedTextureFromPolygon(const POLY &thePoly, 
 		theTexture->SetDeposterizeBuffer(this->_workingTextureUnpackBuffer, this->_textureDeposterizeDstSurface.workingSurface[0]);
 		theTexture->SetUpscalingBuffer(this->_textureUpscaleBuffer);
 		
-		theTexture->SetUseDeposterize(this->_textureDeposterize);
+		theTexture->SetUseDeposterize(this->_enableTextureDeposterize);
 		theTexture->SetScalingFactor(this->_textureScalingFactor);
 		
 		theTexture->Load(isNewTexture || (previousScalingFactor != this->_textureScalingFactor));
@@ -1925,6 +1925,13 @@ Render3DError OpenGLRenderer::DrawOtherPolygon(const GLenum polyPrimitive, const
 	return OGLERROR_NOERR;
 }
 
+Render3DError OpenGLRenderer::ApplyRenderingSettings(const GFX3D_State &renderState)
+{
+	this->_enableMultisampledRendering = (CommonSettings.GFX3D_Renderer_Multisample && this->isMultisampledFBOSupported);
+	
+	return Render3D::ApplyRenderingSettings(renderState);
+}
+
 OpenGLRenderer_1_2::~OpenGLRenderer_1_2()
 {
 	glFinish();
@@ -2160,6 +2167,8 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	this->_deviceInfo.isEdgeMarkSupported = (this->isShaderSupported && this->isVBOSupported && this->isFBOSupported);
 	this->_deviceInfo.isFogSupported = (this->isShaderSupported && this->isVBOSupported && this->isFBOSupported);
 	this->_deviceInfo.isTextureSmoothingSupported = this->isShaderSupported;
+	
+	this->_enableMultisampledRendering = (CommonSettings.GFX3D_Renderer_Multisample && this->isMultisampledFBOSupported);
 	
 	this->InitFinalRenderStates(&oglExtensionSet); // This must be done last
 	
@@ -3773,7 +3782,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 		glUniform1i(OGLRef.uniformStateToonShadingMode, engine.renderState.shading);
 		glUniform1i(OGLRef.uniformStateEnableAlphaTest, (engine.renderState.enableAlphaTest) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformStateEnableAntialiasing, (engine.renderState.enableAntialiasing) ? GL_TRUE : GL_FALSE);
-		glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (engine.renderState.enableEdgeMarking) ? GL_TRUE : GL_FALSE);
+		glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (this->_enableEdgeMark) ? GL_TRUE : GL_FALSE);
 		glUniform1i(OGLRef.uniformStateUseWDepth, (engine.renderState.wbuffer) ? GL_TRUE : GL_FALSE);
 		glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
 		glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
@@ -3878,7 +3887,7 @@ Render3DError OpenGLRenderer_1_2::BeginRender(const GFX3D &engine)
 			}
 		}
 		
-		this->_textureList[i] = this->GetLoadedTextureFromPolygon(*thePoly, engine.renderState.enableTexturing);
+		this->_textureList[i] = this->GetLoadedTextureFromPolygon(*thePoly, this->_enableTextureSampling);
 	}
 	
 	if (this->isVBOSupported)
@@ -4227,7 +4236,7 @@ Render3DError OpenGLRenderer_1_2::ClearUsingImage(const u16 *__restrict colorBuf
 	
 	if (this->isMultisampledFBOSupported)
 	{
-		OGLRef.selectedRenderingFBO = (CommonSettings.GFX3D_Renderer_Multisample) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
+		OGLRef.selectedRenderingFBO = (this->_enableMultisampledRendering) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
 		if (OGLRef.selectedRenderingFBO == OGLRef.fboMSIntermediateRenderID)
 		{
 			glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, OGLRef.fboRenderID);
@@ -4276,7 +4285,7 @@ Render3DError OpenGLRenderer_1_2::ClearUsingValues(const FragmentColor &clearCol
 	
 	if (this->isFBOSupported)
 	{
-		OGLRef.selectedRenderingFBO = (CommonSettings.GFX3D_Renderer_Multisample && this->isMultisampledFBOSupported) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
+		OGLRef.selectedRenderingFBO = (this->_enableMultisampledRendering) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, OGLRef.selectedRenderingFBO);
 	}
 	
@@ -4465,7 +4474,7 @@ Render3DError OpenGLRenderer_1_2::SetupTexture(const POLY &thePoly, size_t polyR
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ((thePoly.texParam.RepeatS_Enable) ? ((thePoly.texParam.MirroredRepeatS_Enable) ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ((thePoly.texParam.RepeatT_Enable) ? ((thePoly.texParam.MirroredRepeatT_Enable) ? OGLRef.stateTexMirroredRepeat : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	
-	if (this->_textureSmooth)
+	if (this->_enableTextureSmoothing)
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (this->_textureScalingFactor > 1) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -4928,7 +4937,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 	glUniform1i(OGLRef.uniformStateToonShadingMode, engine.renderState.shading);
 	glUniform1i(OGLRef.uniformStateEnableAlphaTest, (engine.renderState.enableAlphaTest) ? GL_TRUE : GL_FALSE);
 	glUniform1i(OGLRef.uniformStateEnableAntialiasing, (engine.renderState.enableAntialiasing) ? GL_TRUE : GL_FALSE);
-	glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (engine.renderState.enableEdgeMarking) ? GL_TRUE : GL_FALSE);
+	glUniform1i(OGLRef.uniformStateEnableEdgeMarking, (this->_enableEdgeMark) ? GL_TRUE : GL_FALSE);
 	glUniform1i(OGLRef.uniformStateUseWDepth, (engine.renderState.wbuffer) ? GL_TRUE : GL_FALSE);
 	glUniform1f(OGLRef.uniformStateAlphaTestRef, divide5bitBy31_LUT[engine.renderState.alphaTestRef]);
 	glUniform1i(OGLRef.uniformTexDrawOpaque, GL_FALSE);
@@ -4967,7 +4976,7 @@ Render3DError OpenGLRenderer_2_0::BeginRender(const GFX3D &engine)
 			}
 		}
 		
-		this->_textureList[i] = this->GetLoadedTextureFromPolygon(*thePoly, engine.renderState.enableTexturing);
+		this->_textureList[i] = this->GetLoadedTextureFromPolygon(*thePoly, this->_enableTextureSampling);
 	}
 	
 	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
@@ -5004,7 +5013,7 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, size_t polyR
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ((thePoly.texParam.RepeatS_Enable) ? ((thePoly.texParam.MirroredRepeatS_Enable) ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ((thePoly.texParam.RepeatT_Enable) ? ((thePoly.texParam.MirroredRepeatT_Enable) ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	
-	if (this->_textureSmooth)
+	if (this->_enableTextureSmoothing)
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (this->_textureScalingFactor > 1) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

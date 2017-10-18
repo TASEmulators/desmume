@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2016 DeSmuME team
+	Copyright (C) 2008-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 
 #include "utils/bits.h"
 #include "MMU.h"
+#include "NDSSystem.h"
 #include "./filter/filter.h"
 #include "./filter/xbrz.h"
 
@@ -296,10 +297,20 @@ Render3D::Render3D()
 	_renderNeedsFlushMain = false;
 	_renderNeedsFlush16 = false;
 	
-	_textureScalingFactor = 1;
-	_textureDeposterize = false;
-	_textureSmooth = false;
 	_textureUpscaleBuffer = NULL;
+	
+	_enableEdgeMark = CommonSettings.GFX3D_EdgeMark;
+	_enableFog = CommonSettings.GFX3D_Fog;
+	_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
+	
+	_enableTextureSampling = CommonSettings.GFX3D_Texture;
+	_prevEnableTextureSampling = _enableTextureSampling;
+	
+	_enableTextureDeposterize = CommonSettings.GFX3D_Renderer_TextureDeposterize;
+	_prevEnableTextureDeposterize = _enableTextureDeposterize;
+	
+	_textureScalingFactor = 1;
+	_prevTextureScalingFactor = _textureScalingFactor;
 	
 	memset(&_textureDeposterizeSrcSurface, 0, sizeof(_textureDeposterizeSrcSurface));
 	memset(&_textureDeposterizeDstSurface, 0, sizeof(_textureDeposterizeDstSurface));
@@ -402,13 +413,16 @@ bool Render3D::GetRenderNeedsFlush16() const
 	return this->_renderNeedsFlush16;
 }
 
-void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDeposterize, bool willSmooth)
+void Render3D::SetTextureProcessingProperties()
 {
-	const bool isScaleValid = ( (scalingFactor == 2) || (scalingFactor == 4) );
-	const size_t newScalingFactor = (isScaleValid) ? scalingFactor : 1;
 	bool needTextureReload = false;
 	
-	if ( willDeposterize && !this->_textureDeposterize)
+	if (this->_enableTextureSampling && !this->_prevEnableTextureSampling)
+	{
+		needTextureReload = true;
+	}
+	
+	if (this->_enableTextureDeposterize && !this->_prevEnableTextureDeposterize)
 	{
 		// 1024x1024 texels is the largest possible texture size.
 		// We need two buffers, one for each deposterize stage.
@@ -416,34 +430,28 @@ void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDep
 		
 		this->_textureDeposterizeDstSurface.Surface = (unsigned char *)malloc_alignedCacheLine(bufferSize);
 		this->_textureDeposterizeDstSurface.workingSurface[0] = (unsigned char *)((u32 *)this->_textureDeposterizeDstSurface.Surface + (1024 * 1024));
-		
 		memset(this->_textureDeposterizeDstSurface.Surface, 0, bufferSize);
 		
-		this->_textureDeposterize = true;
 		needTextureReload = true;
 	}
-	else if (!willDeposterize && this->_textureDeposterize)
+	else if (!this->_enableTextureDeposterize && this->_prevEnableTextureDeposterize)
 	{
 		free_aligned(this->_textureDeposterizeDstSurface.Surface);
 		this->_textureDeposterizeDstSurface.Surface = NULL;
 		this->_textureDeposterizeDstSurface.workingSurface[0] = NULL;
 		
-		this->_textureDeposterize = false;
 		needTextureReload = true;
 	}
 	
-	if (newScalingFactor != this->_textureScalingFactor)
+	if (this->_textureScalingFactor != this->_prevTextureScalingFactor)
 	{
 		u32 *oldTextureBuffer = this->_textureUpscaleBuffer;
-		u32 *newTextureBuffer = (u32 *)malloc_alignedCacheLine( (1024 * newScalingFactor) * (1024 * newScalingFactor) * sizeof(u32) );
-		this->_textureScalingFactor = newScalingFactor;
+		u32 *newTextureBuffer = (u32 *)malloc_alignedCacheLine( (1024 * this->_textureScalingFactor) * (1024 * this->_textureScalingFactor) * sizeof(u32) );
 		this->_textureUpscaleBuffer = newTextureBuffer;
 		free_aligned(oldTextureBuffer);
 		
 		needTextureReload = true;
 	}
-	
-	this->_textureSmooth = willSmooth;
 	
 	if (needTextureReload)
 	{
@@ -454,6 +462,32 @@ void Render3D::SetTextureProcessingProperties(size_t scalingFactor, bool willDep
 Render3DTexture* Render3D::GetTextureByPolygonRenderIndex(size_t polyRenderIndex) const
 {
 	return this->_textureList[polyRenderIndex];
+}
+
+Render3DError Render3D::ApplyRenderingSettings(const GFX3D_State &renderState)
+{
+	this->_enableEdgeMark = (CommonSettings.GFX3D_EdgeMark) ? renderState.enableEdgeMarking : false;
+	this->_enableFog = (CommonSettings.GFX3D_Fog) ? renderState.enableFog : false;
+	this->_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
+	
+	this->_prevEnableTextureSampling = this->_enableTextureSampling;
+	this->_enableTextureSampling = (CommonSettings.GFX3D_Texture) ? renderState.enableTexturing : false;
+	
+	this->_prevEnableTextureDeposterize = this->_enableTextureDeposterize;
+	this->_enableTextureDeposterize = CommonSettings.GFX3D_Renderer_TextureDeposterize;
+	
+	this->_prevTextureScalingFactor = this->_textureScalingFactor;
+	size_t newScalingFactor = (size_t)CommonSettings.GFX3D_Renderer_TextureScalingFactor;
+	
+	const bool isScaleValid = ( (newScalingFactor == 2) || (newScalingFactor == 4) );
+	if (!isScaleValid)
+	{
+		newScalingFactor = 1;
+	}
+	
+	this->_textureScalingFactor = newScalingFactor;
+	
+	return RENDER3DERROR_NOERR;
 }
 
 Render3DError Render3D::BeginRender(const GFX3D &engine)
@@ -666,12 +700,12 @@ Render3DError Render3D::Render(const GFX3D &engine)
 	
 	this->RenderGeometry(engine.renderState, engine.polylist, &engine.indexlist);
 	
-	if (engine.renderState.enableEdgeMarking)
+	if (this->_enableEdgeMark)
 	{
 		this->RenderEdgeMarking(engine.renderState.edgeMarkColorTable, engine.renderState.enableAntialiasing);
 	}
 	
-	if (engine.renderState.enableFog)
+	if (this->_enableFog)
 	{
 		this->RenderFog(engine.renderState.fogDensityTable, engine.renderState.fogColor, engine.renderState.fogOffset, engine.renderState.fogShift, engine.renderState.enableFogAlphaOnly);
 	}

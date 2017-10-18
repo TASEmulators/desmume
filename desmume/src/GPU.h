@@ -1716,6 +1716,8 @@ public:
 	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo) = 0;
 	virtual void DidRender3DBegin() = 0;
 	virtual void DidRender3DEnd() = 0;
+	virtual void DidApplyRender3DSettingsBegin() = 0;
+	virtual void DidApplyRender3DSettingsEnd() = 0;
 };
 
 // All of the default event handler methods should do nothing.
@@ -1728,6 +1730,8 @@ public:
 	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo) {};
 	virtual void DidRender3DBegin() {};
 	virtual void DidRender3DEnd() {};
+	virtual void DidApplyRender3DSettingsBegin() {};
+	virtual void DidApplyRender3DSettingsEnd() {};
 };
 
 class GPUSubsystem

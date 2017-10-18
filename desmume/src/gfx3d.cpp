@@ -2243,16 +2243,6 @@ static void gfx3d_doFlush()
 	//that's pretty annoying.
 	gfx3d.renderState = gfx3d.state;
 	
-	// Override render states per user settings
-	if (!CommonSettings.GFX3D_Texture)
-		gfx3d.renderState.enableTexturing = false;
-	
-	if (!CommonSettings.GFX3D_EdgeMark)
-		gfx3d.renderState.enableEdgeMarking = false;
-	
-	if (!CommonSettings.GFX3D_Fog)
-		gfx3d.renderState.enableFog = false;
-	
 	gfx3d.state.activeFlushCommand = gfx3d.state.pendingFlushCommand;
 
 	const size_t polycount = polylist->count;
@@ -2403,16 +2393,18 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	if (skipFrame) return;
 
 	drawPending = FALSE;
-
+	
+	GPU->GetEventHandler()->DidApplyRender3DSettingsBegin();
+	CurrentRenderer->ApplyRenderingSettings(gfx3d.renderState);
+	GPU->GetEventHandler()->DidApplyRender3DSettingsEnd();
+	
 	GPU->GetEventHandler()->DidRender3DBegin();
 	CurrentRenderer->SetRenderNeedsFinish(true);
 	
 	//the timing of powering on rendering may not be exactly right here.
 	if (CommonSettings.showGpu.main && nds.power_render)
 	{
-		CurrentRenderer->SetTextureProcessingProperties(CommonSettings.GFX3D_Renderer_TextureScalingFactor,
-														CommonSettings.GFX3D_Renderer_TextureDeposterize,
-														CommonSettings.GFX3D_Renderer_TextureSmoothing);
+		CurrentRenderer->SetTextureProcessingProperties();
 		CurrentRenderer->Render(gfx3d);
 	}
 	else

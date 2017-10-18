@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2016 DeSmuME team
+	Copyright (C) 2009-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -98,6 +98,9 @@ protected:
 	bool _stateSetupNeedsFinish;
 	bool _renderGeometryNeedsFinish;
 	
+	bool _enableHighPrecisionColorInterpolation;
+	bool _enableLineHack;
+	
 	// SoftRasterizer-specific methods
 	virtual Render3DError InitTables();
 	
@@ -124,6 +127,8 @@ public:
 	GFX3D_State *currentRenderState;
 	SoftRasterizerPostProcessParams *postprocessParam;
 	
+	bool _enableFragmentSamplingHack;
+	
 	SoftRasterizerRenderer();
 	virtual ~SoftRasterizerRenderer();
 	
@@ -140,6 +145,7 @@ public:
 	// Base rendering methods
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError Reset();
+	virtual Render3DError ApplyRenderingSettings(const GFX3D_State &renderState);
 	virtual Render3DError Render(const GFX3D &engine);
 	virtual Render3DError RenderFinish();
 	virtual Render3DError RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16);

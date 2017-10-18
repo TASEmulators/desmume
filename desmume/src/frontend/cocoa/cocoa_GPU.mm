@@ -54,6 +54,7 @@ private:
 	
 	pthread_rwlock_t _rwlockFrame;
 	pthread_mutex_t _mutex3DRender;
+	pthread_mutex_t _mutexApplyRender3DSettings;
 	bool _render3DNeedsFinish;
 	
 public:
@@ -68,6 +69,8 @@ public:
 	void FramebufferUnlock();
 	void Render3DLock();
 	void Render3DUnlock();
+	void ApplyRender3DSettingsLock();
+	void ApplyRender3DSettingsUnlock();
 	
 	pthread_rwlock_t* GetFrameRWLock();
 	bool GetRender3DNeedsFinish();
@@ -76,6 +79,8 @@ public:
 	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo);
 	virtual void DidRender3DBegin();
 	virtual void DidRender3DEnd();
+	virtual void DidApplyRender3DSettingsBegin();
+	virtual void DidApplyRender3DSettingsEnd();
 };
 
 @implementation CocoaDSGPU
@@ -336,64 +341,64 @@ public:
 
 - (void) setRender3DHighPrecisionColorInterpolation:(BOOL)state
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	CommonSettings.GFX3D_HighResolutionInterpolateColor = state ? true : false;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 }
 
 - (BOOL) render3DHighPrecisionColorInterpolation
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	const BOOL state = CommonSettings.GFX3D_HighResolutionInterpolateColor ? YES : NO;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 	
 	return state;
 }
 
 - (void) setRender3DEdgeMarking:(BOOL)state
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	CommonSettings.GFX3D_EdgeMark = state ? true : false;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 }
 
 - (BOOL) render3DEdgeMarking
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	const BOOL state = CommonSettings.GFX3D_EdgeMark ? YES : NO;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 	
 	return state;
 }
 
 - (void) setRender3DFog:(BOOL)state
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	CommonSettings.GFX3D_Fog = state ? true : false;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 }
 
 - (BOOL) render3DFog
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	const BOOL state = CommonSettings.GFX3D_Fog ? YES : NO;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 	
 	return state;
 }
 
 - (void) setRender3DTextures:(BOOL)state
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	CommonSettings.GFX3D_Texture = state ? true : false;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 }
 
 - (BOOL) render3DTextures
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	const BOOL state = CommonSettings.GFX3D_Texture ? YES : NO;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 	
 	return state;
 }
@@ -453,64 +458,64 @@ public:
 
 - (void) setRender3DLineHack:(BOOL)state
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	CommonSettings.GFX3D_LineHack = state ? true : false;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 }
 
 - (BOOL) render3DLineHack
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	const BOOL state = CommonSettings.GFX3D_LineHack ? YES : NO;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 	
 	return state;
 }
 
 - (void) setRender3DMultisample:(BOOL)state
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	CommonSettings.GFX3D_Renderer_Multisample = state ? true : false;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 }
 
 - (BOOL) render3DMultisample
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	const BOOL state = CommonSettings.GFX3D_Renderer_Multisample ? YES : NO;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 	
 	return state;
 }
 
 - (void) setRender3DTextureDeposterize:(BOOL)state
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	CommonSettings.GFX3D_Renderer_TextureDeposterize = state ? true : false;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 }
 
 - (BOOL) render3DTextureDeposterize
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	const BOOL state = CommonSettings.GFX3D_Renderer_TextureDeposterize ? YES : NO;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 	
 	return state;
 }
 
 - (void) setRender3DTextureSmoothing:(BOOL)state
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	CommonSettings.GFX3D_Renderer_TextureSmoothing = state ? true : false;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 }
 
 - (BOOL) render3DTextureSmoothing
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	const BOOL state = CommonSettings.GFX3D_Renderer_TextureSmoothing ? YES : NO;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 	
 	return state;
 }
@@ -528,7 +533,7 @@ public:
 		newScalingFactor = 4;
 	}
 	
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	
 	if (newScalingFactor == 3)
 	{
@@ -536,30 +541,30 @@ public:
 	}
 	
 	CommonSettings.GFX3D_Renderer_TextureScalingFactor = newScalingFactor;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 }
 
 - (NSUInteger) render3DTextureScalingFactor
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	const NSUInteger scalingFactor = (NSUInteger)CommonSettings.GFX3D_Renderer_TextureScalingFactor;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 	
 	return scalingFactor;
 }
 
 - (void) setRender3DFragmentSamplingHack:(BOOL)state
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	CommonSettings.GFX3D_TXTHack = state ? true : false;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 }
 
 - (BOOL) render3DFragmentSamplingHack
 {
-	gpuEvent->Render3DLock();
+	gpuEvent->ApplyRender3DSettingsLock();
 	const BOOL state = CommonSettings.GFX3D_TXTHack ? YES : NO;
-	gpuEvent->Render3DUnlock();
+	gpuEvent->ApplyRender3DSettingsUnlock();
 	
 	return state;
 }
@@ -1212,6 +1217,7 @@ GPUEventHandlerOSX::GPUEventHandlerOSX()
 	_render3DNeedsFinish = false;
 	pthread_rwlock_init(&_rwlockFrame, NULL);
 	pthread_mutex_init(&_mutex3DRender, NULL);
+	pthread_mutex_init(&_mutexApplyRender3DSettings, NULL);
 }
 
 GPUEventHandlerOSX::~GPUEventHandlerOSX()
@@ -1223,6 +1229,7 @@ GPUEventHandlerOSX::~GPUEventHandlerOSX()
 	
 	pthread_rwlock_destroy(&this->_rwlockFrame);
 	pthread_mutex_destroy(&this->_mutex3DRender);
+	pthread_mutex_destroy(&this->_mutexApplyRender3DSettings);
 }
 
 GPUClientFetchObject* GPUEventHandlerOSX::GetFetchObject() const
@@ -1281,6 +1288,16 @@ void GPUEventHandlerOSX::DidRender3DEnd()
 	this->Render3DUnlock();
 }
 
+void GPUEventHandlerOSX::DidApplyRender3DSettingsBegin()
+{
+	this->ApplyRender3DSettingsLock();
+}
+
+void GPUEventHandlerOSX::DidApplyRender3DSettingsEnd()
+{
+	this->ApplyRender3DSettingsUnlock();
+}
+
 void GPUEventHandlerOSX::FramebufferLockWrite()
 {
 	pthread_rwlock_wrlock(&this->_rwlockFrame);
@@ -1304,6 +1321,16 @@ void GPUEventHandlerOSX::Render3DLock()
 void GPUEventHandlerOSX::Render3DUnlock()
 {
 	pthread_mutex_unlock(&this->_mutex3DRender);
+}
+
+void GPUEventHandlerOSX::ApplyRender3DSettingsLock()
+{
+	pthread_mutex_lock(&this->_mutexApplyRender3DSettings);
+}
+
+void GPUEventHandlerOSX::ApplyRender3DSettingsUnlock()
+{
+	pthread_mutex_unlock(&this->_mutexApplyRender3DSettings);
 }
 
 bool GPUEventHandlerOSX::GetRender3DNeedsFinish()

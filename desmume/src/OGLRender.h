@@ -656,6 +656,8 @@ protected:
 	size_t _currentPolyIndex;
 	OGLTextureUnitID _lastTextureDrawTarget;
 	
+	bool _enableMultisampledRendering;
+	
 	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	OpenGLTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
 	template<OGLPolyDrawMode DRAWMODE> size_t DrawPolygonsForIndexRange(const POLYLIST *polyList, const INDEXLIST *indexList, size_t firstIndex, size_t lastIndex, size_t &indexOffset, POLYGON_ATTR &lastPolyAttr);
@@ -726,6 +728,8 @@ public:
 	
 	virtual FragmentColor* GetFramebuffer();
 	virtual GLsizei GetLimitedMultisampleSize() const;
+	
+	Render3DError ApplyRenderingSettings(const GFX3D_State &renderState);
 };
 
 class OpenGLRenderer_1_2 : public OpenGLRenderer

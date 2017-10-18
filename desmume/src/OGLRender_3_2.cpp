@@ -719,6 +719,8 @@ Render3DError OpenGLRenderer_3_2::InitExtensions()
 		INFO("OpenGL: Driver does not support at least 2x multisampled FBOs.\n");
 	}
 	
+	this->_enableMultisampledRendering = (CommonSettings.GFX3D_Renderer_Multisample && this->isMultisampledFBOSupported);
+	
 	this->InitFinalRenderStates(&oglExtensionSet); // This must be done last
 	
 	return OGLERROR_NOERR;
@@ -1565,7 +1567,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 	state->toonShadingMode = engine.renderState.shading;
 	state->enableAlphaTest = (engine.renderState.enableAlphaTest) ? GL_TRUE : GL_FALSE;
 	state->enableAntialiasing = (engine.renderState.enableAntialiasing) ? GL_TRUE : GL_FALSE;
-	state->enableEdgeMarking = (engine.renderState.enableEdgeMarking) ? GL_TRUE : GL_FALSE;
+	state->enableEdgeMarking = (this->_enableEdgeMark) ? GL_TRUE : GL_FALSE;
 	state->enableFogAlphaOnly = (engine.renderState.enableFogAlphaOnly) ? GL_TRUE : GL_FALSE;
 	state->useWDepth = (engine.renderState.wbuffer) ? GL_TRUE : GL_FALSE;
 	state->alphaTestRef = divide5bitBy31_LUT[engine.renderState.alphaTestRef];
@@ -1640,7 +1642,7 @@ Render3DError OpenGLRenderer_3_2::BeginRender(const GFX3D &engine)
 			}
 		}
 		
-		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, engine.renderState.enableTexturing);
+		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, this->_enableTextureSampling);
 		
 		const NDSTextureFormat packFormat = this->_textureList[i]->GetPackFormat();
 		
@@ -1803,7 +1805,7 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.fboRenderID);
 	glDrawBuffers(3, RenderDrawList);
 	
-	OGLRef.selectedRenderingFBO = (CommonSettings.GFX3D_Renderer_Multisample && this->isMultisampledFBOSupported) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
+	OGLRef.selectedRenderingFBO = (this->_enableMultisampledRendering) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
 	if (OGLRef.selectedRenderingFBO == OGLRef.fboMSIntermediateRenderID)
 	{
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, OGLRef.fboRenderID);
@@ -1834,7 +1836,7 @@ Render3DError OpenGLRenderer_3_2::ClearUsingImage(const u16 *__restrict colorBuf
 Render3DError OpenGLRenderer_3_2::ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
 {
 	OGLRenderRef &OGLRef = *this->ref;
-	OGLRef.selectedRenderingFBO = (CommonSettings.GFX3D_Renderer_Multisample && this->isMultisampledFBOSupported) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
+	OGLRef.selectedRenderingFBO = (this->_enableMultisampledRendering) ? OGLRef.fboMSIntermediateRenderID : OGLRef.fboRenderID;
 	glBindFramebuffer(GL_FRAMEBUFFER, OGLRef.selectedRenderingFBO);
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
 	glDrawBuffers(3, RenderDrawList);
@@ -1958,7 +1960,7 @@ Render3DError OpenGLRenderer_3_2::SetupTexture(const POLY &thePoly, size_t polyR
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ((thePoly.texParam.RepeatS_Enable) ? ((thePoly.texParam.MirroredRepeatS_Enable) ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ((thePoly.texParam.RepeatT_Enable) ? ((thePoly.texParam.MirroredRepeatT_Enable) ? GL_MIRRORED_REPEAT : GL_REPEAT) : GL_CLAMP_TO_EDGE));
 	
-	if (this->_textureSmooth)
+	if (this->_enableTextureSmoothing)
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (this->_textureScalingFactor > 1) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

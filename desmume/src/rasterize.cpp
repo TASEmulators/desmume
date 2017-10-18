@@ -397,7 +397,7 @@ public:
 		s32 iu = 0;
 		s32 iv = 0;
 		
-		if (!CommonSettings.GFX3D_TXTHack)
+		if (!this->_softRender->_enableFragmentSamplingHack)
 		{
 			iu = s32floor(fu);
 			iv = s32floor(fv);
@@ -1058,12 +1058,13 @@ static RasterizerUnit<true> rasterizerUnit[_MAX_CORES];
 static RasterizerUnit<false> _HACK_viewer_rasterizerUnit;
 static size_t rasterizerCores = 0;
 static bool rasterizerUnitTasksInited = false;
+static bool gEnableLineHack = true;
 
 static void* execRasterizerUnit(void *arg)
 {
 	intptr_t which = (intptr_t)arg;
 	
-	if (CommonSettings.GFX3D_LineHack)
+	if (gEnableLineHack)
 	{
 		rasterizerUnit[which].mainLoop<true, true>();
 	}
@@ -1121,7 +1122,7 @@ static void* SoftRasterizer_RunRenderEdgeMarkAndFog(void *arg)
 
 void _HACK_Viewer_ExecUnit()
 {
-	if (CommonSettings.GFX3D_LineHack)
+	if (gEnableLineHack)
 	{
 		_HACK_viewer_rasterizerUnit.mainLoop<false, true>();
 	}
@@ -1436,6 +1437,11 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	_renderGeometryNeedsFinish = false;
 	_framebufferAttributes = NULL;
 	
+	_enableHighPrecisionColorInterpolation = CommonSettings.GFX3D_HighResolutionInterpolateColor;
+	_enableLineHack = CommonSettings.GFX3D_LineHack;
+	gEnableLineHack = _enableLineHack;
+	_enableFragmentSamplingHack = CommonSettings.GFX3D_TXTHack;
+	
 	if (!rasterizerUnitTasksInited)
 	{
 		_HACK_viewer_rasterizerUnit._debug_thisPoly = false;
@@ -1649,7 +1655,7 @@ void SoftRasterizerRenderer::GetAndLoadAllTextures()
 		//(otherwise on a multithreaded system there will be multiple writers--
 		//this SHOULD be read-only, although some day the texcache may collect statistics or something
 		//and then it won't be safe.
-		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, gfx3d.renderState.enableTexturing);
+		this->_textureList[i] = this->GetLoadedTextureFromPolygon(thePoly, this->_enableTextureSampling);
 	}
 }
 
@@ -1695,6 +1701,16 @@ void SoftRasterizerRenderer::performBackfaceTests()
 	}
 }
 
+Render3DError SoftRasterizerRenderer::ApplyRenderingSettings(const GFX3D_State &renderState)
+{
+	this->_enableHighPrecisionColorInterpolation = CommonSettings.GFX3D_HighResolutionInterpolateColor;
+	this->_enableLineHack = CommonSettings.GFX3D_LineHack;
+	gEnableLineHack = this->_enableLineHack;
+	this->_enableFragmentSamplingHack = CommonSettings.GFX3D_TXTHack;
+	
+	return Render3D::ApplyRenderingSettings(renderState);
+}
+
 Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 {
 	if (rasterizerCores > 1)
@@ -1709,7 +1725,7 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 	// Keep the current render states for later use
 	this->currentRenderState = (GFX3D_State *)&engine.renderState;
 	
-	if (CommonSettings.GFX3D_HighResolutionInterpolateColor)
+	if (this->_enableHighPrecisionColorInterpolation)
 	{
 		this->_clippedPolyCount = this->performClipping<true>(engine.vertList, engine.polylist, &engine.indexlist);
 	}
@@ -1734,12 +1750,12 @@ Render3DError SoftRasterizerRenderer::BeginRender(const GFX3D &engine)
 		this->GetAndLoadAllTextures();
 		this->UpdateToonTable(engine.renderState.u16ToonTable);
 		
-		if (this->currentRenderState->enableEdgeMarking)
+		if (this->_enableEdgeMark)
 		{
 			this->UpdateEdgeMarkColorTable(this->currentRenderState->edgeMarkColorTable);
 		}
 		
-		if (this->currentRenderState->enableFog)
+		if (this->_enableFog)
 		{
 			this->UpdateFogTable(this->currentRenderState->fogDensityTable);
 		}
@@ -1776,7 +1792,7 @@ Render3DError SoftRasterizerRenderer::RenderGeometry(const GFX3D_State &renderSt
 	}
 	else
 	{
-		if (CommonSettings.GFX3D_LineHack)
+		if (this->_enableLineHack)
 		{
 			rasterizerUnit[0].mainLoop<false, true>();
 		}
@@ -2082,7 +2098,7 @@ SoftRasterizerTexture* SoftRasterizerRenderer::GetLoadedTextureFromPolygon(const
 	
 	if (theTexture->IsLoadNeeded() && isTextureEnabled)
 	{
-		theTexture->SetUseDeposterize(this->_textureDeposterize);
+		theTexture->SetUseDeposterize(this->_enableTextureDeposterize);
 		theTexture->SetScalingFactor(this->_textureScalingFactor);
 		theTexture->Load();
 	}
@@ -2187,10 +2203,10 @@ Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
 	// If we're not multithreaded, then just do the post-processing steps now.
 	if (!this->_renderGeometryNeedsFinish)
 	{
-		if (this->currentRenderState->enableEdgeMarking || this->currentRenderState->enableFog)
+		if (this->_enableEdgeMark || this->_enableFog)
 		{
-			this->postprocessParam[0].enableEdgeMarking = this->currentRenderState->enableEdgeMarking;
-			this->postprocessParam[0].enableFog = this->currentRenderState->enableFog;
+			this->postprocessParam[0].enableEdgeMarking = this->_enableEdgeMark;
+			this->postprocessParam[0].enableFog = this->_enableFog;
 			this->postprocessParam[0].fogColor = this->currentRenderState->fogColor;
 			this->postprocessParam[0].fogAlphaOnly = this->currentRenderState->enableFogAlphaOnly;
 			
@@ -2219,12 +2235,12 @@ Render3DError SoftRasterizerRenderer::RenderFinish()
 	texCache.Evict();
 	
 	// Do multithreaded post-processing.
-	if (this->currentRenderState->enableEdgeMarking || this->currentRenderState->enableFog)
+	if (this->_enableEdgeMark || this->_enableFog)
 	{
 		for (size_t i = 0; i < rasterizerCores; i++)
 		{
-			this->postprocessParam[i].enableEdgeMarking = this->currentRenderState->enableEdgeMarking;
-			this->postprocessParam[i].enableFog = this->currentRenderState->enableFog;
+			this->postprocessParam[i].enableEdgeMarking = this->_enableEdgeMark;
+			this->postprocessParam[i].enableFog = this->_enableFog;
 			this->postprocessParam[i].fogColor = this->currentRenderState->fogColor;
 			this->postprocessParam[i].fogAlphaOnly = this->currentRenderState->enableFogAlphaOnly;
 			

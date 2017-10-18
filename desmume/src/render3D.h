@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2016 DeSmuME team
+	Copyright (C) 2007-2017 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -154,9 +154,16 @@ protected:
 	bool _renderNeedsFlushMain;
 	bool _renderNeedsFlush16;
 	
+	bool _enableEdgeMark;
+	bool _enableFog;
+	bool _enableTextureSampling;
+	bool _enableTextureDeposterize;
+	bool _enableTextureSmoothing;
 	size_t _textureScalingFactor;
-	bool _textureDeposterize;
-	bool _textureSmooth;
+	
+	bool _prevEnableTextureSampling;
+	bool _prevEnableTextureDeposterize;
+	size_t _prevTextureScalingFactor;
 	
 	SSurface _textureDeposterizeSrcSurface;
 	SSurface _textureDeposterizeDstSurface;
@@ -168,7 +175,7 @@ protected:
 	CACHE_ALIGN u32 clearImageDepthBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN u8 clearImageFogBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	CACHE_ALIGN u8 clearImagePolyIDBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
-		
+	
 	virtual Render3DError BeginRender(const GFX3D &engine);
 	virtual Render3DError RenderGeometry(const GFX3D_State &renderState, const POLYLIST *polyList, const INDEXLIST *indexList);
 	virtual Render3DError RenderEdgeMarking(const u16 *colorTable, const bool useAntialias);
@@ -198,6 +205,8 @@ public:
 	
 	virtual Render3DError UpdateToonTable(const u16 *toonTableBuffer);
 	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
+	
+	virtual Render3DError ApplyRenderingSettings(const GFX3D_State &renderState);
 	
 	virtual Render3DError Reset();						// Called when the emulator resets.
 	
@@ -234,7 +243,7 @@ public:
 	bool GetRenderNeedsFlushMain() const;
 	bool GetRenderNeedsFlush16() const;
 	
-	void SetTextureProcessingProperties(size_t scalingFactor, bool willDeposterize, bool willSmooth);
+	void SetTextureProcessingProperties();
 	Render3DTexture* GetTextureByPolygonRenderIndex(size_t polyRenderIndex) const;
 };
 
