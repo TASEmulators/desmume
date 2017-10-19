@@ -299,14 +299,14 @@ Render3D::Render3D()
 	
 	_textureUpscaleBuffer = NULL;
 	
-	_enableEdgeMark = CommonSettings.GFX3D_EdgeMark;
-	_enableFog = CommonSettings.GFX3D_Fog;
-	_enableTextureSmoothing = CommonSettings.GFX3D_Renderer_TextureSmoothing;
+	_enableEdgeMark = true;
+	_enableFog = true;
+	_enableTextureSmoothing = false;
 	
-	_enableTextureSampling = CommonSettings.GFX3D_Texture;
+	_enableTextureSampling = true;
 	_prevEnableTextureSampling = _enableTextureSampling;
 	
-	_enableTextureDeposterize = CommonSettings.GFX3D_Renderer_TextureDeposterize;
+	_enableTextureDeposterize = false;
 	_prevEnableTextureDeposterize = _enableTextureDeposterize;
 	
 	_textureScalingFactor = 1;
