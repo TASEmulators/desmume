@@ -220,7 +220,7 @@ static const char* luaCallIDStrings [] =
 	"CALL_HOTKEY_15",
 	"CALL_HOTKEY_16",
 };
-static const int _makeSureWeHaveTheRightNumberOfStrings [sizeof(luaCallIDStrings)/sizeof(*luaCallIDStrings) == LUACALL_COUNT ? 1 : 0];
+static const int _makeSureWeHaveTheRightNumberOfStrings = (sizeof(luaCallIDStrings)/sizeof(*luaCallIDStrings) == LUACALL_COUNT) ? 1 : 0;
 
 static const char* luaMemHookTypeStrings [] =
 {
@@ -232,7 +232,7 @@ static const char* luaMemHookTypeStrings [] =
 	"MEMHOOK_READ_SUB",
 	"MEMHOOK_EXEC_SUB",
 };
-static const int _makeSureWeHaveTheRightNumberOfStrings2 [sizeof(luaMemHookTypeStrings)/sizeof(*luaMemHookTypeStrings) == LUAMEMHOOK_COUNT ? 1 : 0];
+static const int _makeSureWeHaveTheRightNumberOfStrings2 = (sizeof(luaMemHookTypeStrings)/sizeof(*luaMemHookTypeStrings) == LUAMEMHOOK_COUNT) ? 1 : 0;
 
 void StopScriptIfFinished(int uid, bool justReturned = false);
 void SetSaveKey(LuaContextInfo& info, const char* key);
@@ -1405,7 +1405,7 @@ DEFINE_LUA_FUNCTION(bitbit, "whichbit")
 	BRET(rv);
 }
 
-int emu_wait(lua_State* L);
+static int emu_wait(lua_State* L);
 int dontworry(LuaContextInfo& info);
 
 void indicateBusy(lua_State* L, bool busy)
@@ -1518,6 +1518,19 @@ void LuaRescueHook(lua_State* L, lua_Debug *dbg)
 		info.panic = false;
 	}
 }
+
+// vscprintf() is only available on Windows, so we need to make our own vscprintf() for other platforms.
+// https://stackoverflow.com/questions/4785381/replacement-for-ms-vscprintf-on-macos-linux
+#ifndef HOST_WINDOWS
+int vscprintf(const char * format, va_list pargs) {
+	int retval;
+	va_list argcopy;
+	va_copy(argcopy, pargs);
+	retval = vsnprintf(NULL, 0, format, argcopy);
+	va_end(argcopy);
+	return retval;
+}
+#endif
 
 void printfToOutput(const char* fmt, ...)
 {
@@ -1632,7 +1645,15 @@ int StepEmulationAtSpeed(lua_State* L, SpeedMode speedMode, bool allowPause)
 	}
 
 	driver->USR_SetDisplayPostpone(postponeTime, drawNextFrame);
-	allowPause ? dontworry(info) : worry(L, worryIntensity);
+	
+	if (allowPause)
+	{
+		dontworry(info);
+	}
+	else
+	{
+		worry(L, worryIntensity);
+	}
 
 	if(!allowPause && driver->EMU_IsEmulationPaused())
 		driver->EMU_PauseEmulation(false);
@@ -2895,10 +2916,8 @@ static void PutTextInternal (const char *str, int len, short x, short y, int col
 		if(dxdy < 0 && x < curGuiData.xMin) break;
 
 		int c = *str++;
-		if(dxdx > 0 && x >= curGuiData.xMax
-		|| dxdx < 0 && x < curGuiData.xMin
-		|| dydx > 0 && y >= curGuiData.yMax
-		|| dydx < 0 && y < curGuiData.yMin)
+		if ( (dxdx > 0 && x >= curGuiData.xMax) || (dxdx < 0 && x < curGuiData.xMin) ||
+			 (dydx > 0 && y >= curGuiData.yMax) || (dydx < 0 && y < curGuiData.yMin) )
 		{
 			while (c != '\n') {
 				c = *str;
@@ -4176,6 +4195,8 @@ int dontworry(LuaContextInfo& info)
 //agg basic shapes
 //TODO polygon and polyline, maybe the overloads for roundedRect and curve
 
+#ifdef HAVE_LIBAGG
+
 static int line(lua_State *L) {
 
 	double x1,y1,x2,y2;
@@ -4290,6 +4311,50 @@ static int curve(lua_State *L) {
 	return 0;
 }
 
+#else
+
+static int line(lua_State *L)
+{
+	return 0;
+}
+
+static int triangle(lua_State *L)
+{
+	return 0;
+}
+
+static int rectangle(lua_State *L)
+{
+	return 0;
+}
+
+static int roundedRect(lua_State *L)
+{
+	return 0;
+}
+
+static int ellipse(lua_State *L)
+{
+	return 0;
+}
+
+static int arc(lua_State *L)
+{
+	return 0;
+}
+
+static int star(lua_State *L)
+{
+	return 0;
+}
+
+static int curve(lua_State *L)
+{
+	return 0;
+}
+
+#endif
+
 static const struct luaL_reg aggbasicshapes [] =
 {
 	{"line", line},
@@ -4300,8 +4365,8 @@ static const struct luaL_reg aggbasicshapes [] =
 	{"arc", arc},
 	{"star", star},
 	{"curve", curve},
-//	{"polygon", polygon},
-//	{"polyline", polyline},
+	//	{"polygon", polygon},
+	//	{"polyline", polyline},
 	{NULL, NULL}
 };
 
@@ -4326,6 +4391,8 @@ static void getColorForAgg(lua_State *L, int&r,int&g,int&b,int&a)
 		a = luaL_optinteger(L,4,255);
 	}
 }
+
+#ifdef HAVE_LIBAGG
 
 static int fillColor(lua_State *L) {
 
@@ -4369,6 +4436,35 @@ static int lineWidth(lua_State *L) {
 	return 0;
 }
 
+#else
+
+static int fillColor(lua_State *L)
+{
+	return 0;
+}
+
+static int noFill(lua_State *L)
+{
+	return 0;
+}
+
+static int lineColor(lua_State *L)
+{
+	return 0;
+}
+
+static int noLine(lua_State *L)
+{
+	return 0;
+}
+
+static int lineWidth(lua_State *L)
+{
+	return 0;
+}
+
+#endif
+
 static const struct luaL_reg agggeneralattributes [] =
 {
 //	{"blendMode", blendMode},
@@ -4392,6 +4488,8 @@ static const struct luaL_reg agggeneralattributes [] =
 	{NULL, NULL}
 };
 
+#ifdef HAVE_LIBAGG
+
 static int setFont(lua_State *L) {
 
 	const char *choice;
@@ -4412,6 +4510,20 @@ static int text(lua_State *L) {
 	aggDraw.hud->renderTextDropshadowed(x,y,choice);
 	return 0;
 }
+
+#else
+
+static int setFont(lua_State *L)
+{
+	return 0;
+}
+
+static int text(lua_State *L)
+{
+	return 0;
+}
+
+#endif
 
 static const struct luaL_reg aggcustom [] =
 {
@@ -4437,8 +4549,10 @@ static int gui_osdtext(lua_State *L)
 
 	const char* msg = toCString(L,3);
 
+#ifdef HAVE_LIBAGG
 	osd->addFixed(x, y, "%s", msg);
-
+#endif
+	
 	return 0;
 }
 
@@ -4986,8 +5100,14 @@ void ResetInfo(LuaContextInfo& info)
 	info.numMemHooks = 0;
 	info.persistVars.clear();
 	info.newDefaultData.ClearRecords();
+#ifdef HAVE_LIBAGG
 	info.guiData.data = (u32*)aggDraw.hud->buf().buf();
 	info.guiData.stridePix = aggDraw.hud->buf().stride_abs() / 4;
+#else
+	static u32 dummyBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2];
+	info.guiData.data = dummyBuffer;
+	info.guiData.stridePix = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+#endif
 	info.guiData.xMin = 0;
 	info.guiData.xMax = 256;
 	info.guiData.yMin = 0;
