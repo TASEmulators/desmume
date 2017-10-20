@@ -1696,7 +1696,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		const NSPoint clientLoc = [self convertPoint:[theEvent locationInWindow] fromView:nil];
 		
 		cdv->GetNDSPoint(props,
-						 props.clientWidth * scaleFactor, props.clientHeight * scaleFactor,
+						 props.clientWidth / scaleFactor, props.clientHeight / scaleFactor,
 						 (int)buttonNumber, isInitialMouseDown, clientLoc.x, clientLoc.y, x, y);
 	}
 	
