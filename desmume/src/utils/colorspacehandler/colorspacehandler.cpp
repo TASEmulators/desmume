@@ -639,10 +639,10 @@ void ColorspaceApplyIntensityToBuffer16(u16 *dst, size_t pixCount, float intensi
 	{
 		u16 outColor = (SWAP_RB) ? COLOR5551_SWAP_RB(dst[i]) : dst[i];
 		
-		u8 r = (u8)( (((outColor >>  0) & 0x1F) * intensity_u16) >> 16 );
-		u8 g = (u8)( (((outColor >>  5) & 0x1F) * intensity_u16) >> 16 );
-		u8 b = (u8)( (((outColor >> 10) & 0x1F) * intensity_u16) >> 16 );
-		u8 a = outColor & 0x8000;
+		u8  r = (u8)( (((outColor >>  0) & 0x1F) * intensity_u16) >> 16 );
+		u8  g = (u8)( (((outColor >>  5) & 0x1F) * intensity_u16) >> 16 );
+		u8  b = (u8)( (((outColor >> 10) & 0x1F) * intensity_u16) >> 16 );
+		u16 a = outColor & 0x8000;
 		
 		dst[i] = ( (r << 0) | (g << 5) | (b << 10) | a );
 	}
@@ -1050,10 +1050,10 @@ size_t ColorspaceHandler::ApplyIntensityToBuffer16(u16 *dst, size_t pixCount, fl
 	{
 		u16 outColor = dst[i];
 		
-		u8 r = (u8)( (((outColor >>  0) & 0x1F) * intensity_u16) >> 16 );
-		u8 g = (u8)( (((outColor >>  5) & 0x1F) * intensity_u16) >> 16 );
-		u8 b = (u8)( (((outColor >> 10) & 0x1F) * intensity_u16) >> 16 );
-		u8 a = outColor & 0x8000;
+		u8  r = (u8)( (((outColor >>  0) & 0x1F) * intensity_u16) >> 16 );
+		u8  g = (u8)( (((outColor >>  5) & 0x1F) * intensity_u16) >> 16 );
+		u8  b = (u8)( (((outColor >> 10) & 0x1F) * intensity_u16) >> 16 );
+		u16 a = outColor & 0x8000;
 		
 		dst[i] = ( (r << 0) | (g << 5) | (b << 10) | a );
 	}
@@ -1090,10 +1090,10 @@ size_t ColorspaceHandler::ApplyIntensityToBuffer16_SwapRB(u16 *dst, size_t pixCo
 	{
 		u16 outColor = COLOR5551_SWAP_RB(dst[i]);
 		
-		u8 r = (u8)( (((outColor >>  0) & 0x1F) * intensity_u16) >> 16 );
-		u8 g = (u8)( (((outColor >>  5) & 0x1F) * intensity_u16) >> 16 );
-		u8 b = (u8)( (((outColor >> 10) & 0x1F) * intensity_u16) >> 16 );
-		u8 a = outColor & 0x8000;
+		u8  r = (u8)( (((outColor >>  0) & 0x1F) * intensity_u16) >> 16 );
+		u8  g = (u8)( (((outColor >>  5) & 0x1F) * intensity_u16) >> 16 );
+		u8  b = (u8)( (((outColor >> 10) & 0x1F) * intensity_u16) >> 16 );
+		u16 a = outColor & 0x8000;
 		
 		dst[i] = ( (r << 0) | (g << 5) | (b << 10) | a );
 	}
