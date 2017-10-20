@@ -22,6 +22,7 @@
 
 #include <string>
 #include "../ClientDisplayView.h"
+#include "../cocoa_util.h"
 
 #ifdef BOOL
 #undef BOOL
@@ -30,12 +31,14 @@
 @class MacClientSharedObject;
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-@interface MacScreenshotCaptureToolDelegate : NSObject <NSWindowDelegate>
+@interface MacScreenshotCaptureToolDelegate : NSObject <NSWindowDelegate, DirectoryURLDragDestTextFieldProtocol>
 #else
-@interface MacScreenshotCaptureToolDelegate : NSObject
+@interface MacScreenshotCaptureToolDelegate : NSObject <DirectoryURLDragDestTextFieldProtocol>
 #endif
 {
+	NSObject *dummyObject;
 	NSWindow *window;
+	DirectoryURLDragDestTextField *saveDirectoryPathTextField;
 	
 	MacClientSharedObject *sharedData;
 	
@@ -53,7 +56,9 @@
 	NSInteger pixelScalerID;
 }
 
+@property (readonly) IBOutlet NSObject *dummyObject;
 @property (readonly) IBOutlet NSWindow *window;
+@property (readonly) IBOutlet DirectoryURLDragDestTextField *saveDirectoryPathTextField;
 
 @property (retain) MacClientSharedObject *sharedData;
 

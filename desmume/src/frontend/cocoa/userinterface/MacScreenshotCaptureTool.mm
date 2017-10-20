@@ -29,7 +29,9 @@
 
 @implementation MacScreenshotCaptureToolDelegate
 
+@synthesize dummyObject;
 @synthesize window;
+@synthesize saveDirectoryPathTextField;
 @synthesize sharedData;
 @synthesize saveDirectoryPath;
 @synthesize romName;
@@ -205,6 +207,15 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:[self displaySeparation] forKey:@"ScreenshotCaptureTool_DisplaySeparation"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self displayScale] forKey:@"ScreenshotCaptureTool_DisplayScale"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self displayRotation] forKey:@"ScreenshotCaptureTool_DisplayRotation"];
+}
+
+#pragma mark DirectoryURLDragDestTextFieldProtocol Protocol
+- (void)assignDirectoryPath:(NSString *)dirPath textField:(NSTextField *)textField
+{
+	if (textField == saveDirectoryPathTextField)
+	{
+		[self setSaveDirectoryPath:dirPath];
+	}
 }
 
 @end

@@ -376,6 +376,75 @@ static NSDate *distantFutureDate = [[NSDate distantFuture] retain];
 @end
 #endif
 
+@implementation DirectoryURLDragDestTextField
+
+- (id)initWithCoder:(NSCoder *)coder
+{
+	self = [super initWithCoder:coder];
+	if (self == nil)
+	{
+		return self;
+	}
+	
+	[self registerForDraggedTypes:[NSArray arrayWithObjects: NSURLPboardType, nil]];
+	
+	return self;
+}
+
+#pragma mark NSDraggingDestination Protocol
+- (BOOL)wantsPeriodicDraggingUpdates
+{
+	return NO;
+}
+
+- (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender
+{
+	NSDragOperation dragOp = NSDragOperationNone;
+	NSPasteboard *pboard = [sender draggingPasteboard];
+	
+	if ([[pboard types] containsObject:NSURLPboardType])
+	{
+		NSURL *fileURL = [NSURL URLFromPasteboard:pboard];
+		NSString *filePath = [fileURL path];
+		
+		NSFileManager *fileManager = [[NSFileManager alloc] init];
+		BOOL isDir;
+		BOOL dirExists = [fileManager fileExistsAtPath:filePath isDirectory:&isDir];
+		
+		if (dirExists && isDir)
+		{
+			dragOp = NSDragOperationLink;
+		}
+		
+		[fileManager release];
+	}
+	
+	return dragOp;
+}
+
+- (BOOL)performDragOperation:(id <NSDraggingInfo>)sender
+{
+	NSWindow *window = [self window];
+	id <DirectoryURLDragDestTextFieldProtocol> delegate = (id <DirectoryURLDragDestTextFieldProtocol>)[window delegate];
+	NSPasteboard *pboard = [sender draggingPasteboard];
+	NSString *filePath = NULL;
+	
+	if ([[pboard types] containsObject:NSURLPboardType])
+	{
+		NSURL *fileURL = [NSURL URLFromPasteboard:pboard];
+		filePath = [fileURL path];
+	}
+	
+	if (filePath != NULL)
+	{
+		[delegate assignDirectoryPath:filePath textField:self];
+	}
+	
+	return YES;
+}
+
+@end
+
 @implementation NSNotificationCenter (MainThread)
 
 - (void)postNotificationOnMainThread:(NSNotification *)notification

@@ -87,6 +87,18 @@
 
 #endif
 
+@protocol DirectoryURLDragDestTextFieldProtocol <NSObject>
+
+@required
+- (void) assignDirectoryPath:(NSString *)dirPath textField:(NSTextField *)textField;
+
+@end
+
+// Subclass NSTextField to override NSDraggingDestination methods for assigning directory paths using drag-and-drop
+@interface DirectoryURLDragDestTextField : NSTextField
+{ }
+@end
+
 @interface NSNotificationCenter (MainThread)
 
 - (void)postNotificationOnMainThread:(NSNotification *)notification;
