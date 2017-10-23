@@ -25,61 +25,59 @@
 #include <immintrin.h>
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert555To8888_AVX2(const v256u16 &srcColor, const v256u32 &srcAlphaBits32Lo, const v256u32 &srcAlphaBits32Hi, v256u32 &dstLo, v256u32 &dstHi)
+FORCEINLINE void ColorspaceConvert555To8888_AVX2(const v256u16 &srcColor, const v256u16 &srcAlphaBits, v256u32 &dstLo, v256u32 &dstHi)
 {
-	v256u32 src32;
-	
 	// Conversion algorithm:
 	//    RGB   5-bit to 8-bit formula: dstRGB8 = (srcRGB5 << 3) | ((srcRGB5 >> 2) & 0x07)
-	src32 = _mm256_cvtepu16_epi32( _mm256_extracti128_si256(srcColor, 0) );
-	dstLo = (SWAP_RB) ? _mm256_or_si256(_mm256_slli_epi32(src32, 19), _mm256_srli_epi32(src32, 7)) : _mm256_or_si256(_mm256_slli_epi32(src32, 3), _mm256_slli_epi32(src32, 9));
-	dstLo = _mm256_and_si256( dstLo, _mm256_set1_epi32(0x00F800F8) );
-	dstLo = _mm256_or_si256( dstLo, _mm256_and_si256(_mm256_slli_epi32(src32, 6), _mm256_set1_epi32(0x0000F800)) );
-	dstLo = _mm256_or_si256( dstLo, _mm256_and_si256(_mm256_srli_epi32(dstLo, 5), _mm256_set1_epi32(0x00070707)) );
-	dstLo = _mm256_or_si256( dstLo, srcAlphaBits32Lo );
 	
-	src32 = _mm256_cvtepu16_epi32( _mm256_extracti128_si256(srcColor, 1) );
-	dstHi = (SWAP_RB) ? _mm256_or_si256(_mm256_slli_epi32(src32, 19), _mm256_srli_epi32(src32, 7)) : _mm256_or_si256(_mm256_slli_epi32(src32, 3), _mm256_slli_epi32(src32, 9));
-	dstHi = _mm256_and_si256( dstHi, _mm256_set1_epi32(0x00F800F8) );
-	dstHi = _mm256_or_si256( dstHi, _mm256_and_si256(_mm256_slli_epi32(src32, 6), _mm256_set1_epi32(0x0000F800)) );
+	v256u16 rb = _mm256_and_si256( _mm256_or_si256(_mm256_slli_epi32(srcColor, 11), _mm256_srli_epi16(srcColor, 7)), _mm256_set1_epi16(0xF8F8) );
+	v256u16 ga = _mm256_or_si256( _mm256_and_si256(_mm256_srli_epi16(srcColor, 2), _mm256_set1_epi16(0x00F8)), srcAlphaBits);
+	
+	rb = _mm256_permute4x64_epi64(rb, 0xD8);
+	ga = _mm256_permute4x64_epi64(ga, 0xD8);
+	
+	dstLo = _mm256_unpacklo_epi16(rb, ga);
+	dstLo = _mm256_or_si256( dstLo, _mm256_and_si256(_mm256_srli_epi32(dstLo, 5), _mm256_set1_epi32(0x00070707)) );
+	dstLo = _mm256_shuffle_epi8( dstLo, (SWAP_RB) ? _mm256_set_epi8(31,29,30,28,   27,25,26,24,   23,21,22,20,   19,17,18,16,   15,13,14,12,   11,9,10,8,   7,5,6,4,   3,1,2,0) : _mm256_set_epi8(31,28,30,29,   27,24,26,25,   23,20,22,21,   19,16,18,17,   15,12,14,13,   11,8,10,9,   7,4,6,5,   3,0,2,1) );
+	
+	dstHi = _mm256_unpackhi_epi16(rb, ga);
 	dstHi = _mm256_or_si256( dstHi, _mm256_and_si256(_mm256_srli_epi32(dstHi, 5), _mm256_set1_epi32(0x00070707)) );
-	dstHi = _mm256_or_si256( dstHi, srcAlphaBits32Hi );
+	dstHi = _mm256_shuffle_epi8( dstHi, (SWAP_RB) ? _mm256_set_epi8(31,29,30,28,   27,25,26,24,   23,21,22,20,   19,17,18,16,   15,13,14,12,   11,9,10,8,   7,5,6,4,   3,1,2,0) : _mm256_set_epi8(31,28,30,29,   27,24,26,25,   23,20,22,21,   19,16,18,17,   15,12,14,13,   11,8,10,9,   7,4,6,5,   3,0,2,1) );
 }
 
 template <bool SWAP_RB>
-FORCEINLINE void ColorspaceConvert555To6665_AVX2(const v256u16 &srcColor, const v256u32 &srcAlphaBits32Lo, const v256u32 &srcAlphaBits32Hi, v256u32 &dstLo, v256u32 &dstHi)
+FORCEINLINE void ColorspaceConvert555To6665_AVX2(const v256u16 &srcColor, const v256u16 &srcAlphaBits, v256u32 &dstLo, v256u32 &dstHi)
 {
-	v256u32 src32;
-	
 	// Conversion algorithm:
 	//    RGB   5-bit to 6-bit formula: dstRGB6 = (srcRGB5 << 1) | ((srcRGB5 >> 4) & 0x01)
-	src32 = _mm256_cvtepu16_epi32( _mm256_extracti128_si256(srcColor, 0) );
-	dstLo = (SWAP_RB) ? _mm256_or_si256(_mm256_slli_epi32(src32, 17), _mm256_srli_epi32(src32, 9)) : _mm256_or_si256(_mm256_slli_epi32(src32, 1), _mm256_slli_epi32(src32, 7));
-	dstLo = _mm256_and_si256( dstLo, _mm256_set1_epi32(0x003E003E) );
-	dstLo = _mm256_or_si256( dstLo, _mm256_and_si256(_mm256_slli_epi32(src32, 4), _mm256_set1_epi32(0x00003E00)) );
-	dstLo = _mm256_or_si256( dstLo, _mm256_and_si256(_mm256_srli_epi32(dstLo, 5), _mm256_set1_epi32(0x00010101)) );
-	dstLo = _mm256_or_si256( dstLo, srcAlphaBits32Lo );
 	
-	src32 = _mm256_cvtepu16_epi32( _mm256_extracti128_si256(srcColor, 1) );
-	dstHi = (SWAP_RB) ? _mm256_or_si256(_mm256_slli_epi32(src32, 17), _mm256_srli_epi32(src32, 9)) : _mm256_or_si256(_mm256_slli_epi32(src32, 1), _mm256_slli_epi32(src32, 7));
-	dstHi = _mm256_and_si256( dstHi, _mm256_set1_epi32(0x003E003E) );
-	dstHi = _mm256_or_si256( dstHi, _mm256_and_si256(_mm256_slli_epi32(src32, 4), _mm256_set1_epi32(0x00003E00)) );
+	v256u16 rb = _mm256_and_si256( _mm256_or_si256(_mm256_slli_epi32(srcColor, 9), _mm256_srli_epi16(srcColor, 9)), _mm256_set1_epi16(0x3E3E) );
+	v256u16 ga = _mm256_or_si256( _mm256_and_si256(_mm256_srli_epi16(srcColor, 4), _mm256_set1_epi16(0x003E)), srcAlphaBits);
+	
+	rb = _mm256_permute4x64_epi64(rb, 0xD8);
+	ga = _mm256_permute4x64_epi64(ga, 0xD8);
+	
+	dstLo = _mm256_unpacklo_epi16(rb, ga);
+	dstLo = _mm256_or_si256( dstLo, _mm256_and_si256(_mm256_srli_epi32(dstLo, 5), _mm256_set1_epi32(0x00010101)) );
+	dstLo = _mm256_shuffle_epi8( dstLo, (SWAP_RB) ? _mm256_set_epi8(31,29,30,28,   27,25,26,24,   23,21,22,20,   19,17,18,16,   15,13,14,12,   11,9,10,8,   7,5,6,4,   3,1,2,0) : _mm256_set_epi8(31,28,30,29,   27,24,26,25,   23,20,22,21,   19,16,18,17,   15,12,14,13,   11,8,10,9,   7,4,6,5,   3,0,2,1) );
+	
+	dstHi = _mm256_unpackhi_epi16(rb, ga);
 	dstHi = _mm256_or_si256( dstHi, _mm256_and_si256(_mm256_srli_epi32(dstHi, 5), _mm256_set1_epi32(0x00010101)) );
-	dstHi = _mm256_or_si256( dstHi, srcAlphaBits32Hi );
+	dstHi = _mm256_shuffle_epi8( dstHi, (SWAP_RB) ? _mm256_set_epi8(31,29,30,28,   27,25,26,24,   23,21,22,20,   19,17,18,16,   15,13,14,12,   11,9,10,8,   7,5,6,4,   3,1,2,0) : _mm256_set_epi8(31,28,30,29,   27,24,26,25,   23,20,22,21,   19,16,18,17,   15,12,14,13,   11,8,10,9,   7,4,6,5,   3,0,2,1) );
 }
 
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert555To8888Opaque_AVX2(const v256u16 &srcColor, v256u32 &dstLo, v256u32 &dstHi)
 {
-	const v256u32 srcAlphaBits32 = _mm256_set1_epi32(0xFF000000);
-	ColorspaceConvert555To8888_AVX2<SWAP_RB>(srcColor, srcAlphaBits32, srcAlphaBits32, dstLo, dstHi);
+	const v256u16 srcAlphaBits16 = _mm256_set1_epi16(0xFF00);
+	ColorspaceConvert555To8888_AVX2<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert555To6665Opaque_AVX2(const v256u16 &srcColor, v256u32 &dstLo, v256u32 &dstHi)
 {
-	const v256u32 srcAlphaBits32 = _mm256_set1_epi32(0x1F000000);
-	ColorspaceConvert555To6665_AVX2<SWAP_RB>(srcColor, srcAlphaBits32, srcAlphaBits32, dstLo, dstHi);
+	const v256u16 srcAlphaBits16 = _mm256_set1_epi32(0x1F00);
+	ColorspaceConvert555To6665_AVX2<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
 template <bool SWAP_RB>
@@ -457,6 +455,132 @@ size_t ColorspaceConvertBuffer888XTo8888Opaque_AVX2(const u32 *src, u32 *dst, si
 }
 
 template <bool SWAP_RB, bool IS_UNALIGNED>
+size_t ColorspaceConvertBuffer555XTo888_AVX2(const u16 *__restrict src, u8 *__restrict dst, size_t pixCountVec256)
+{
+	size_t i = 0;
+	v256u16 src_v256u16[2];
+	v256u32 src_v256u32[4];
+	
+	for (; i < pixCountVec256; i+=32)
+	{
+		if (IS_UNALIGNED)
+		{
+			src_v256u16[0] = _mm256_loadu_si256((v256u16 *)(src + i + 0));
+			src_v256u16[1] = _mm256_loadu_si256((v256u16 *)(src + i + 16));
+		}
+		else
+		{
+			src_v256u16[0] = _mm256_load_si256((v256u16 *)(src + i + 0));
+			src_v256u16[1] = _mm256_load_si256((v256u16 *)(src + i + 16));
+		}
+		
+		v256u16 rb = _mm256_and_si256( _mm256_or_si256(_mm256_slli_epi32(src_v256u16[0], 11), _mm256_srli_epi16(src_v256u16[0], 7)), _mm256_set1_epi16(0xF8F8) );
+		v256u16 g  = _mm256_or_si256( _mm256_and_si256(_mm256_srli_epi16(src_v256u16[0], 2), _mm256_set1_epi16(0x00F8)), srcAlphaBits);
+		rb = _mm256_permute4x64_epi64(rb, 0xD8);
+		g  = _mm256_permute4x64_epi64( g, 0xD8);
+		src_v256u32[0] = _mm256_unpacklo_epi16(rb, g);
+		src_v256u32[1] = _mm256_unpackhi_epi16(rb, g);
+		
+		rb = _mm256_and_si256( _mm256_or_si256(_mm256_slli_epi32(src_v256u16[1], 11), _mm256_srli_epi16(src_v256u16[1], 7)), _mm256_set1_epi16(0xF8F8) );
+		g  = _mm256_or_si256( _mm256_and_si256(_mm256_srli_epi16(src_v256u16[1], 2), _mm256_set1_epi16(0x00F8)), srcAlphaBits);
+		rb = _mm256_permute4x64_epi64(rb, 0xD8);
+		g  = _mm256_permute4x64_epi64( g, 0xD8);
+		src_v256u32[2] = _mm256_unpacklo_epi16(rb, g);
+		src_v256u32[3] = _mm256_unpackhi_epi16(rb, g);
+		
+		src_v256u32[0] = _mm256_or_si256( src_v256u32[0], _mm256_and_si256(_mm256_srli_epi32(src_v256u32[0], 5), _mm256_set1_epi32(0x00070707)) );
+		src_v256u32[1] = _mm256_or_si256( src_v256u32[1], _mm256_and_si256(_mm256_srli_epi32(src_v256u32[1], 5), _mm256_set1_epi32(0x00070707)) );
+		src_v256u32[2] = _mm256_or_si256( src_v256u32[2], _mm256_and_si256(_mm256_srli_epi32(src_v256u32[2], 5), _mm256_set1_epi32(0x00070707)) );
+		src_v256u32[3] = _mm256_or_si256( src_v256u32[3], _mm256_and_si256(_mm256_srli_epi32(src_v256u32[3], 5), _mm256_set1_epi32(0x00070707)) );
+		
+		if (SWAP_RB)
+		{
+			src_v256u32[0] = _mm256_shuffle_epi8( src_v256u32[0], _mm256_set_epi8(31,27,23,19,   15,11, 7, 3,   29,30,28,25,   26,24,21,22,   20,17,18,16,   13,14,12, 9,   10, 8, 5, 6,    4, 1, 2, 0) );
+			src_v256u32[1] = _mm256_shuffle_epi8( src_v256u32[1], _mm256_set_epi8(10, 8, 5, 6,    4, 1, 2, 0,   31,27,23,19,   15,11, 7, 3,   29,30,28,25,   26,24,21,22,   20,17,18,16,   13,14,12, 9) );
+			src_v256u32[2] = _mm256_shuffle_epi8( src_v256u32[2], _mm256_set_epi8(20,17,18,16,   13,14,12, 9,   10, 8, 5, 6,    4, 1, 2, 0,   31,27,23,19,   15,11, 7, 3,   29,30,28,25,   26,24,21,22) );
+			src_v256u32[3] = _mm256_shuffle_epi8( src_v256u32[3], _mm256_set_epi8(29,30,28,25,   26,24,21,22,   20,17,18,16,   13,14,12, 9,   10, 8, 5, 6,    4, 1, 2, 0,   31,27,23,19,   15,11, 7, 3) );
+		}
+		else
+		{
+			src_v256u32[0] = _mm256_shuffle_epi8( src_v256u32[0], _mm256_set_epi8(31,27,23,19,   15,11, 7, 3,   28,30,29,24,   26,25,20,22,   21,16,18,17,   12,14,13, 8,   10, 9, 4, 6,    5, 0, 2, 1) );
+			src_v256u32[1] = _mm256_shuffle_epi8( src_v256u32[1], _mm256_set_epi8(10, 9, 4, 6,    5, 0, 2, 1,   31,27,23,19,   15,11, 7, 3,   28,30,29,24,   26,25,20,22,   21,16,18,17,   12,14,13, 8) );
+			src_v256u32[2] = _mm256_shuffle_epi8( src_v256u32[2], _mm256_set_epi8(21,16,18,17,   12,14,13, 8,   10, 9, 4, 6,    5, 0, 2, 1,   31,27,23,19,   15,11, 7, 3,   28,30,29,24,   26,25,20,22) );
+			src_v256u32[3] = _mm256_shuffle_epi8( src_v256u32[3], _mm256_set_epi8(28,30,29,24,   26,25,20,22,   21,16,18,17,   12,14,13, 8,   10, 9, 4, 6,    5, 0, 2, 1,   31,27,23,19,   15,11, 7, 3) );
+		}
+		
+		if (IS_UNALIGNED)
+		{
+			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) +  0), _mm256_or_si256(_mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), src_v256u32[0]) );
+			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) + 32), _mm256_or_si256(_mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))) );
+			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) + 64), _mm256_or_si256(                 src_v256u32[3],                                                                                                                    _mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF))) );
+		}
+		else
+		{
+			_mm256_store_si256( (v256u8 *)(dst + (i * 3) +  0), _mm256_or_si256(_mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), src_v256u32[0]) );
+			_mm256_store_si256( (v256u8 *)(dst + (i * 3) + 32), _mm256_or_si256(_mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))) );
+			_mm256_store_si256( (v256u8 *)(dst + (i * 3) + 64), _mm256_or_si256(                 src_v256u32[3],                                                                                                                    _mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF))) );
+		}
+	}
+	
+	return i;
+}
+
+template <bool SWAP_RB, bool IS_UNALIGNED>
+size_t ColorspaceConvertBuffer888XTo888_AVX2(const u32 *__restrict src, u8 *__restrict dst, size_t pixCountVec256)
+{
+	size_t i = 0;
+	v256u32 src_v256u32[4];
+	
+	for (; i < pixCountVec256; i+=32)
+	{
+		if (IS_UNALIGNED)
+		{
+			src_v256u32[0] = _mm256_loadu_si256((v256u32 *)(src + i + 0));
+			src_v256u32[1] = _mm256_loadu_si256((v256u32 *)(src + i + 8));
+			src_v256u32[2] = _mm256_loadu_si256((v256u32 *)(src + i + 16));
+			src_v256u32[3] = _mm256_loadu_si256((v256u32 *)(src + i + 24));
+		}
+		else
+		{
+			src_v256u32[0] = _mm256_load_si256((v256u32 *)(src + i + 0));
+			src_v256u32[1] = _mm256_load_si256((v256u32 *)(src + i + 8));
+			src_v256u32[2] = _mm256_load_si256((v256u32 *)(src + i + 16));
+			src_v256u32[3] = _mm256_load_si256((v256u32 *)(src + i + 24));
+		}
+		
+		if (SWAP_RB)
+		{
+			src_v256u32[0] = _mm256_shuffle_epi8(src_v256u32[0], _mm256_set_epi8(31,27,23,19,   15,11, 7, 3,   28,29,30,24,   25,26,20,21,   22,16,17,18,   12,13,14, 8,    9,10, 4, 5,    6, 0, 1, 2));
+			src_v256u32[1] = _mm256_shuffle_epi8(src_v256u32[1], _mm256_set_epi8( 9,10, 4, 5,    6, 0, 1, 2,   31,27,23,19,   15,11, 7, 3,   28,29,30,24,   25,26,20,21,   22,16,17,18,   12,13,14, 8));
+			src_v256u32[2] = _mm256_shuffle_epi8(src_v256u32[2], _mm256_set_epi8(22,16,17,18,   12,13,14, 8,    9,10, 4, 5,    6, 0, 1, 2,   31,27,23,19,   15,11, 7, 3,   28,29,30,24,   25,26,20,21));
+			src_v256u32[3] = _mm256_shuffle_epi8(src_v256u32[3], _mm256_set_epi8(28,29,30,24,   25,26,20,21,   22,16,17,18,   12,13,14, 8,    9,10, 4, 5,    6, 0, 1, 2,   31,27,23,19,   15,11, 7, 3));
+		}
+		else
+		{
+			src_v256u32[0] = _mm256_shuffle_epi8(src_v256u32[0], _mm256_set_epi8(31,27,23,19,   15,11, 7, 3,   30,29,28,26,   25,24,22,21,   20,18,17,16,   14,13,12,10,    9, 8, 6, 5,    4, 2, 1, 0));
+			src_v256u32[1] = _mm256_shuffle_epi8(src_v256u32[1], _mm256_set_epi8( 9, 8, 6, 5,    4, 2, 1, 0,   31,27,23,19,   15,11, 7, 3,   30,29,28,26,   25,24,22,21,   20,18,17,16,   14,13,12,10));
+			src_v256u32[2] = _mm256_shuffle_epi8(src_v256u32[2], _mm256_set_epi8(20,18,17,16,   14,13,12,10,    9, 8, 6, 5,    4, 2, 1, 0,   31,27,23,19,   15,11, 7, 3,   30,29,28,26,   25,24,22,21));
+			src_v256u32[3] = _mm256_shuffle_epi8(src_v256u32[3], _mm256_set_epi8(30,29,28,26,   25,24,22,21,   20,18,17,16,   14,13,12,10,    9, 8, 6, 5,    4, 2, 1, 0,   31,27,23,19,   15,11, 7, 3));
+		}
+		
+		if (IS_UNALIGNED)
+		{
+			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) +  0), _mm256_or_si256(_mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[0], _mm256_set_epi32(0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))) );
+			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) + 32), _mm256_or_si256(_mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))) );
+			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) + 64), _mm256_or_si256(_mm256_and_si256(src_v256u32[3], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF))) );
+		}
+		else
+		{
+			_mm256_store_si256( (v256u8 *)(dst + (i * 3) +  0), _mm256_or_si256(_mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[0], _mm256_set_epi32(0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))) );
+			_mm256_store_si256( (v256u8 *)(dst + (i * 3) + 32), _mm256_or_si256(_mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))) );
+			_mm256_store_si256( (v256u8 *)(dst + (i * 3) + 64), _mm256_or_si256(_mm256_and_si256(src_v256u32[3], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF))) );
+		}
+	}
+	
+	return i;
+}
+
+template <bool SWAP_RB, bool IS_UNALIGNED>
 size_t ColorspaceCopyBuffer16_AVX2(const u16 *src, u16 *dst, size_t pixCountVec256)
 {
 	if (!SWAP_RB)
@@ -806,6 +930,46 @@ size_t ColorspaceHandler_AVX2::ConvertBuffer888XTo8888Opaque_SwapRB_IsUnaligned(
 	return ColorspaceConvertBuffer888XTo8888Opaque_AVX2<true, true>(src, dst, pixCount);
 }
 
+size_t ColorspaceHandler_AVX2::ConvertBuffer555XTo888(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer555XTo888_AVX2<false, false>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AVX2::ConvertBuffer555XTo888_SwapRB(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer555XTo888_AVX2<true, false>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AVX2::ConvertBuffer555XTo888_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer555XTo888_AVX2<false, true>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AVX2::ConvertBuffer555XTo888_SwapRB_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer555XTo888_AVX2<true, true>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AVX2::ConvertBuffer888XTo888(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer888XTo888_AVX2<false, false>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AVX2::ConvertBuffer888XTo888_SwapRB(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer888XTo888_AVX2<true, false>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AVX2::ConvertBuffer888XTo888_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer888XTo888_AVX2<false, true>(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler_AVX2::ConvertBuffer888XTo888_SwapRB_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	return ColorspaceConvertBuffer888XTo888_AVX2<true, true>(src, dst, pixCount);
+}
+
 size_t ColorspaceHandler_AVX2::CopyBuffer16_SwapRB(const u16 *src, u16 *dst, size_t pixCount) const
 {
 	return ColorspaceCopyBuffer16_AVX2<true, false>(src, dst, pixCount);
@@ -866,11 +1030,11 @@ size_t ColorspaceHandler_AVX2::ApplyIntensityToBuffer32_SwapRB_IsUnaligned(u32 *
 	return ColorspaceApplyIntensityToBuffer32_AVX2<true, true>(dst, pixCount, intensity);
 }
 
-template void ColorspaceConvert555To8888_AVX2<true>(const v256u16 &srcColor, const v256u32 &srcAlphaBits32Lo, const v256u32 &srcAlphaBits32Hi, v256u32 &dstLo, v256u32 &dstHi);
-template void ColorspaceConvert555To8888_AVX2<false>(const v256u16 &srcColor, const v256u32 &srcAlphaBits32Lo, const v256u32 &srcAlphaBits32Hi, v256u32 &dstLo, v256u32 &dstHi);
+template void ColorspaceConvert555To8888_AVX2<true>(const v256u16 &srcColor, const v256u16 &srcAlphaBits, v256u32 &dstLo, v256u32 &dstHi);
+template void ColorspaceConvert555To8888_AVX2<false>(const v256u16 &srcColor, const v256u16 &srcAlphaBits, v256u32 &dstLo, v256u32 &dstHi);
 
-template void ColorspaceConvert555To6665_AVX2<true>(const v256u16 &srcColor, const v256u32 &srcAlphaBits32Lo, const v256u32 &srcAlphaBits32Hi, v256u32 &dstLo, v256u32 &dstHi);
-template void ColorspaceConvert555To6665_AVX2<false>(const v256u16 &srcColor, const v256u32 &srcAlphaBits32Lo, const v256u32 &srcAlphaBits32Hi, v256u32 &dstLo, v256u32 &dstHi);
+template void ColorspaceConvert555To6665_AVX2<true>(const v256u16 &srcColor, const v256u16 &srcAlphaBits16Lo, const v256u16 &srcAlphaBits16Hi, v256u32 &dstLo, v256u32 &dstHi);
+template void ColorspaceConvert555To6665_AVX2<false>(const v256u16 &srcColor, const v256u16 &srcAlphaBits16Lo, const v256u16 &srcAlphaBits16Hi, v256u32 &dstLo, v256u32 &dstHi);
 
 template void ColorspaceConvert555To8888Opaque_AVX2<true>(const v256u16 &srcColor, v256u32 &dstLo, v256u32 &dstHi);
 template void ColorspaceConvert555To8888Opaque_AVX2<false>(const v256u16 &srcColor, v256u32 &dstLo, v256u32 &dstHi);

@@ -239,6 +239,32 @@ FORCEINLINE u32 ColorspaceConvert888XTo8888Opaque(u32 srcColor)
 }
 
 template <bool SWAP_RB>
+FORCEINLINE void ColorspaceConvert888XTo888(FragmentColor srcColor, u8 *dst)
+{
+	dst[0] = (SWAP_RB) ? srcColor.b : srcColor.r;
+	dst[1] = srcColor.g;
+	dst[2] = (SWAP_RB) ? srcColor.r : srcColor.b;
+}
+
+template <bool SWAP_RB>
+FORCEINLINE void ColorspaceConvert888XTo888(u32 srcColor, u8 *dst)
+{
+	FragmentColor srcColorComponent;
+	srcColorComponent.color = srcColor;
+	
+	ColorspaceConvert888XTo888<SWAP_RB>(srcColorComponent, dst);
+}
+
+template <bool SWAP_RB>
+FORCEINLINE void ColorspaceConvert555XTo888(u16 srcColor, u8 *dst)
+{
+	FragmentColor srcColorComponent;
+	srcColorComponent.color = ColorspaceConvert555To8888Opaque<SWAP_RB>(srcColor);
+	
+	ColorspaceConvert888XTo888<SWAP_RB>(srcColorComponent, dst);
+}
+
+template <bool SWAP_RB>
 FORCEINLINE u16 ColorspaceCopy16(u16 srcColor)
 {
 	return (SWAP_RB) ? COLOR5551_SWAP_RB(srcColor) : srcColor;
@@ -332,6 +358,9 @@ template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer8888To5551
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer6665To5551(const u32 *__restrict src, u16 *__restrict dst, size_t pixCount);
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer888XTo8888Opaque(const u32 *src, u32 *dst, size_t pixCount);
 
+template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer555XTo888(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount);
+template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceConvertBuffer888XTo888(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount);
+
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceCopyBuffer16(const u16 *src, u16 *dst, size_t pixCount);
 template<bool SWAP_RB, bool IS_UNALIGNED> void ColorspaceCopyBuffer32(const u32 *src, u32 *dst, size_t pixCount);
 
@@ -377,6 +406,16 @@ public:
 	size_t ConvertBuffer888XTo8888Opaque_SwapRB(const u32 *src, u32 *dst, size_t pixCount) const;
 	size_t ConvertBuffer888XTo8888Opaque_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const;
 	size_t ConvertBuffer888XTo8888Opaque_SwapRB_IsUnaligned(const u32 *src, u32 *dst, size_t pixCount) const;
+	
+	size_t ConvertBuffer555XTo888(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const;
+	size_t ConvertBuffer555XTo888_SwapRB(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const;
+	size_t ConvertBuffer555XTo888_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const;
+	size_t ConvertBuffer555XTo888_SwapRB_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const;
+	
+	size_t ConvertBuffer888XTo888(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const;
+	size_t ConvertBuffer888XTo888_SwapRB(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const;
+	size_t ConvertBuffer888XTo888_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const;
+	size_t ConvertBuffer888XTo888_SwapRB_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const;
 	
 	size_t CopyBuffer16_SwapRB(const u16 *src, u16 *dst, size_t pixCount) const;
 	size_t CopyBuffer16_SwapRB_IsUnaligned(const u16 *src, u16 *dst, size_t pixCount) const;

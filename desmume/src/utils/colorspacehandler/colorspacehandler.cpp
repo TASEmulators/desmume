@@ -484,6 +484,102 @@ void ColorspaceConvertBuffer888XTo8888Opaque(const u32 *src, u32 *dst, size_t pi
 }
 
 template <bool SWAP_RB, bool IS_UNALIGNED>
+void ColorspaceConvertBuffer555XTo888(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount)
+{
+	size_t i = 0;
+	
+#ifdef USEMANUALVECTORIZATION
+	
+#if defined(USEVECTORSIZE_512)
+	const size_t pixCountVector = pixCount - (pixCount % 32);
+#elif defined(USEVECTORSIZE_256)
+	const size_t pixCountVector = pixCount - (pixCount % 16);
+#elif defined(USEVECTORSIZE_128)
+	const size_t pixCountVector = pixCount - (pixCount % 8);
+#endif
+	
+	if (SWAP_RB)
+	{
+		if (IS_UNALIGNED)
+		{
+			i = csh.ConvertBuffer555XTo888_SwapRB_IsUnaligned(src, dst, pixCountVector);
+		}
+		else
+		{
+			i = csh.ConvertBuffer555XTo888_SwapRB(src, dst, pixCountVector);
+		}
+	}
+	else
+	{
+		if (IS_UNALIGNED)
+		{
+			i = csh.ConvertBuffer555XTo888_IsUnaligned(src, dst, pixCountVector);
+		}
+		else
+		{
+			i = csh.ConvertBuffer555XTo888(src, dst, pixCountVector);
+		}
+	}
+	
+#pragma LOOPVECTORIZE_DISABLE
+	
+#endif // USEMANUALVECTORIZATION
+	
+	for (; i < pixCount; i++)
+	{
+		ColorspaceConvert555XTo888<SWAP_RB>(src[i], &dst[i*3]);
+	}
+}
+
+template <bool SWAP_RB, bool IS_UNALIGNED>
+void ColorspaceConvertBuffer888XTo888(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount)
+{
+	size_t i = 0;
+	
+#ifdef USEMANUALVECTORIZATION
+	
+#if defined(USEVECTORSIZE_512)
+	const size_t pixCountVector = pixCount - (pixCount % 32);
+#elif defined(USEVECTORSIZE_256)
+	const size_t pixCountVector = pixCount - (pixCount % 16);
+#elif defined(USEVECTORSIZE_128)
+	const size_t pixCountVector = pixCount - (pixCount % 8);
+#endif
+	
+	if (SWAP_RB)
+	{
+		if (IS_UNALIGNED)
+		{
+			i = csh.ConvertBuffer888XTo888_SwapRB_IsUnaligned(src, dst, pixCountVector);
+		}
+		else
+		{
+			i = csh.ConvertBuffer888XTo888_SwapRB(src, dst, pixCountVector);
+		}
+	}
+	else
+	{
+		if (IS_UNALIGNED)
+		{
+			i = csh.ConvertBuffer888XTo888_IsUnaligned(src, dst, pixCountVector);
+		}
+		else
+		{
+			i = csh.ConvertBuffer888XTo888(src, dst, pixCountVector);
+		}
+	}
+	
+#pragma LOOPVECTORIZE_DISABLE
+	
+#endif // USEMANUALVECTORIZATION
+	
+	for (; i < pixCount; i++)
+	{
+		ColorspaceConvert888XTo888<SWAP_RB>(src[i], &dst[i*3]);
+	}
+}
+
+template <bool SWAP_RB, bool IS_UNALIGNED>
 void ColorspaceCopyBuffer16(const u16 *src, u16 *dst, size_t pixCount)
 {
 	if (!SWAP_RB)
@@ -992,6 +1088,74 @@ size_t ColorspaceHandler::ConvertBuffer888XTo8888Opaque_SwapRB_IsUnaligned(const
 	return this->ConvertBuffer888XTo8888Opaque_SwapRB(src, dst, pixCount);
 }
 
+size_t ColorspaceHandler::ConvertBuffer555XTo888(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	size_t i = 0;
+	
+	for (; i < pixCount; i++)
+	{
+		ColorspaceConvert555XTo888<false>(src[i], &dst[i*3]);
+	}
+	
+	return i;
+}
+
+size_t ColorspaceHandler::ConvertBuffer555XTo888_SwapRB(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	size_t i = 0;
+	
+	for (; i < pixCount; i++)
+	{
+		ColorspaceConvert555XTo888<true>(src[i], &dst[i*3]);
+	}
+	
+	return i;
+}
+
+size_t ColorspaceHandler::ConvertBuffer555XTo888_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	return this->ConvertBuffer555XTo888(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler::ConvertBuffer555XTo888_SwapRB_IsUnaligned(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	return this->ConvertBuffer555XTo888_SwapRB(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler::ConvertBuffer888XTo888(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	size_t i = 0;
+	
+	for (; i < pixCount; i++)
+	{
+		ColorspaceConvert888XTo888<false>(src[i], &dst[i*3]);
+	}
+	
+	return i;
+}
+
+size_t ColorspaceHandler::ConvertBuffer888XTo888_SwapRB(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	size_t i = 0;
+	
+	for (; i < pixCount; i++)
+	{
+		ColorspaceConvert888XTo888<true>(src[i], &dst[i*3]);
+	}
+	
+	return i;
+}
+
+size_t ColorspaceHandler::ConvertBuffer888XTo888_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	return this->ConvertBuffer888XTo888(src, dst, pixCount);
+}
+
+size_t ColorspaceHandler::ConvertBuffer888XTo888_SwapRB_IsUnaligned(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount) const
+{
+	return this->ConvertBuffer888XTo888_SwapRB(src, dst, pixCount);
+}
+
 size_t ColorspaceHandler::CopyBuffer16_SwapRB(const u16 *src, u16 *dst, size_t pixCount) const
 {
 	size_t i = 0;
@@ -1230,6 +1394,16 @@ template void ColorspaceConvertBuffer888XTo8888Opaque<true, true>(const u32 *src
 template void ColorspaceConvertBuffer888XTo8888Opaque<true, false>(const u32 *src, u32 *dst, size_t pixCount);
 template void ColorspaceConvertBuffer888XTo8888Opaque<false, true>(const u32 *src, u32 *dst, size_t pixCount);
 template void ColorspaceConvertBuffer888XTo8888Opaque<false, false>(const u32 *src, u32 *dst, size_t pixCount);
+
+template void ColorspaceConvertBuffer555XTo888<true, true>(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555XTo888<true, false>(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555XTo888<false, true>(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer555XTo888<false, false>(const u16 *__restrict src, u8 *__restrict dst, size_t pixCount);
+
+template void ColorspaceConvertBuffer888XTo888<true, true>(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer888XTo888<true, false>(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer888XTo888<false, true>(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount);
+template void ColorspaceConvertBuffer888XTo888<false, false>(const u32 *__restrict src, u8 *__restrict dst, size_t pixCount);
 
 template void ColorspaceCopyBuffer16<true, true>(const u16 *src, u16 *dst, size_t pixCount);
 template void ColorspaceCopyBuffer16<true, false>(const u16 *src, u16 *dst, size_t pixCount);

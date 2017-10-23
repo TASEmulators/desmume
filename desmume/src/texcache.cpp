@@ -1114,7 +1114,6 @@ void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *__restrict srcData, co
 		const __m128i palColor0 = _mm_shuffle_epi8(pal_vec128, idx0);
 		const __m128i palColor1 = _mm_shuffle_epi8(pal_vec128, idx1);
 		
-		__m128i tmpAlpha[2];
 		__m128i convertedColor[4];
 		
 		if (TEXCACHEFORMAT == TexFormat_15bpp)
@@ -1123,13 +1122,8 @@ void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *__restrict srcData, co
 			const __m128i alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
 			const __m128i alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
 			
-			tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaLo);
-			tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaLo);
-			ColorspaceConvert555To6665_SSE2<false>(palColor0, tmpAlpha[0], tmpAlpha[1], convertedColor[0], convertedColor[1]);
-			
-			tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaHi);
-			tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaHi);
-			ColorspaceConvert555To6665_SSE2<false>(palColor1, tmpAlpha[0], tmpAlpha[1], convertedColor[2], convertedColor[3]);
+			ColorspaceConvert555To6665_SSE2<false>(palColor0, alphaLo, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555To6665_SSE2<false>(palColor1, alphaHi, convertedColor[2], convertedColor[3]);
 		}
 		else
 		{
@@ -1137,13 +1131,8 @@ void NDSTextureUnpackA5I3(const size_t srcSize, const u8 *__restrict srcData, co
 			const __m128i alphaLo = _mm_unpacklo_epi8(_mm_setzero_si128(), alpha);
 			const __m128i alphaHi = _mm_unpackhi_epi8(_mm_setzero_si128(), alpha);
 			
-			tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaLo);
-			tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaLo);
-			ColorspaceConvert555To8888_SSE2<false>(palColor0, tmpAlpha[0], tmpAlpha[1], convertedColor[0], convertedColor[1]);
-			
-			tmpAlpha[0] = _mm_unpacklo_epi16(_mm_setzero_si128(), alphaHi);
-			tmpAlpha[1] = _mm_unpackhi_epi16(_mm_setzero_si128(), alphaHi);
-			ColorspaceConvert555To8888_SSE2<false>(palColor1, tmpAlpha[0], tmpAlpha[1], convertedColor[2], convertedColor[3]);
+			ColorspaceConvert555To8888_SSE2<false>(palColor0, alphaLo, convertedColor[0], convertedColor[1]);
+			ColorspaceConvert555To8888_SSE2<false>(palColor1, alphaHi, convertedColor[2], convertedColor[3]);
 		}
 		
 		_mm_store_si128((__m128i *)(dstBuffer +  0), convertedColor[0]);
