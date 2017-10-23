@@ -475,14 +475,14 @@ size_t ColorspaceConvertBuffer555XTo888_AVX2(const u16 *__restrict src, u8 *__re
 		}
 		
 		v256u16 rb = _mm256_and_si256( _mm256_or_si256(_mm256_slli_epi32(src_v256u16[0], 11), _mm256_srli_epi16(src_v256u16[0], 7)), _mm256_set1_epi16(0xF8F8) );
-		v256u16 g  = _mm256_or_si256( _mm256_and_si256(_mm256_srli_epi16(src_v256u16[0], 2), _mm256_set1_epi16(0x00F8)), srcAlphaBits);
+		v256u16 g  = _mm256_and_si256( _mm256_srli_epi16(src_v256u16[0], 2), _mm256_set1_epi16(0x00F8) );
 		rb = _mm256_permute4x64_epi64(rb, 0xD8);
 		g  = _mm256_permute4x64_epi64( g, 0xD8);
 		src_v256u32[0] = _mm256_unpacklo_epi16(rb, g);
 		src_v256u32[1] = _mm256_unpackhi_epi16(rb, g);
 		
 		rb = _mm256_and_si256( _mm256_or_si256(_mm256_slli_epi32(src_v256u16[1], 11), _mm256_srli_epi16(src_v256u16[1], 7)), _mm256_set1_epi16(0xF8F8) );
-		g  = _mm256_or_si256( _mm256_and_si256(_mm256_srli_epi16(src_v256u16[1], 2), _mm256_set1_epi16(0x00F8)), srcAlphaBits);
+		g  = _mm256_and_si256( _mm256_srli_epi16(src_v256u16[1], 2), _mm256_set1_epi16(0x00F8) );
 		rb = _mm256_permute4x64_epi64(rb, 0xD8);
 		g  = _mm256_permute4x64_epi64( g, 0xD8);
 		src_v256u32[2] = _mm256_unpacklo_epi16(rb, g);
@@ -1033,8 +1033,8 @@ size_t ColorspaceHandler_AVX2::ApplyIntensityToBuffer32_SwapRB_IsUnaligned(u32 *
 template void ColorspaceConvert555To8888_AVX2<true>(const v256u16 &srcColor, const v256u16 &srcAlphaBits, v256u32 &dstLo, v256u32 &dstHi);
 template void ColorspaceConvert555To8888_AVX2<false>(const v256u16 &srcColor, const v256u16 &srcAlphaBits, v256u32 &dstLo, v256u32 &dstHi);
 
-template void ColorspaceConvert555To6665_AVX2<true>(const v256u16 &srcColor, const v256u16 &srcAlphaBits16Lo, const v256u16 &srcAlphaBits16Hi, v256u32 &dstLo, v256u32 &dstHi);
-template void ColorspaceConvert555To6665_AVX2<false>(const v256u16 &srcColor, const v256u16 &srcAlphaBits16Lo, const v256u16 &srcAlphaBits16Hi, v256u32 &dstLo, v256u32 &dstHi);
+template void ColorspaceConvert555To6665_AVX2<true>(const v256u16 &srcColor, const v256u16 &srcAlphaBits, v256u32 &dstLo, v256u32 &dstHi);
+template void ColorspaceConvert555To6665_AVX2<false>(const v256u16 &srcColor, const v256u16 &srcAlphaBits, v256u32 &dstLo, v256u32 &dstHi);
 
 template void ColorspaceConvert555To8888Opaque_AVX2<true>(const v256u16 &srcColor, v256u32 &dstLo, v256u32 &dstHi);
 template void ColorspaceConvert555To8888Opaque_AVX2<false>(const v256u16 &srcColor, v256u32 &dstLo, v256u32 &dstHi);
