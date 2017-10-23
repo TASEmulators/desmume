@@ -5708,12 +5708,30 @@ void OGLImage::SetOutputFilterOGL(const int filterID)
 				break;
 				
 			case OutputFilterTypeID_BicubicBSpline:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicBSplineFragShader_110, false, _useShader150);
+			{
+				if (this->_shaderSupport == ShaderSupport_BottomTier)
+				{
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, FilterBicubicBSplineFastFragShader_110, false, _useShader150);
+				}
+				else
+				{
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicBSplineFragShader_110, false, _useShader150);
+				}
 				break;
+			}
 				
 			case OutputFilterTypeID_BicubicMitchell:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicMitchellNetravaliFragShader_110, false, _useShader150);
+			{
+				if (this->_shaderSupport == ShaderSupport_BottomTier)
+				{
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, FilterBicubicMitchellNetravaliFastFragShader_110, false, _useShader150);
+				}
+				else
+				{
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicMitchellNetravaliFragShader_110, false, _useShader150);
+				}
 				break;
+			}
 				
 			case OutputFilterTypeID_Lanczos2:
 				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos2FragShader_110, false, _useShader150);
@@ -6719,12 +6737,30 @@ OutputFilterTypeID OGLDisplayLayer::SetOutputFilterOGL(const OutputFilterTypeID 
 				break;
 				
 			case OutputFilterTypeID_BicubicBSpline:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicBSplineFragShader_110, false, useShader150);
+			{
+				if (shaderSupport == ShaderSupport_BottomTier)
+				{
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, FilterBicubicBSplineFastFragShader_110, false, useShader150);
+				}
+				else
+				{
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicBSplineFragShader_110, false, useShader150);
+				}
 				break;
+			}
 				
 			case OutputFilterTypeID_BicubicMitchell:
-				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicMitchellNetravaliFragShader_110, false, useShader150);
+			{
+				if (shaderSupport == ShaderSupport_BottomTier)
+				{
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(Sample1x1OutputVertShader_100, FilterBicubicMitchellNetravaliFastFragShader_110, false, useShader150);
+				}
+				else
+				{
+					this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterBicubicMitchellNetravaliFragShader_110, false, useShader150);
+				}
 				break;
+			}
 				
 			case OutputFilterTypeID_Lanczos2:
 				this->_finalOutputProgram->SetVertexAndFragmentShaderOGL(BicubicSample4x4Output_VertShader_110, FilterLanczos2FragShader_110, false, useShader150);
