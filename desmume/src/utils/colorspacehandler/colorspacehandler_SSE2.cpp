@@ -550,18 +550,33 @@ size_t ColorspaceConvertBuffer555XTo888_SSSE3(const u16 *__restrict src, u8 *__r
 			src_v128u32[3] = _mm_shuffle_epi8( src_v128u32[3], _mm_set_epi8(12,14,13, 8,   10, 9, 4, 6,    5, 0, 2, 1,   15,11, 7, 3) );
 		}
 		
+#ifdef ENABLE_SSE4_1
 		if (IS_UNALIGNED)
 		{
-			_mm_storeu_si128( (v128u8 *)(dst + (i * 3) +  0), _mm_or_si128(_mm_and_si128(src_v128u32[1], _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000)), src_v128u32[0]) );
+			_mm_storeu_si128( (v128u8 *)(dst + (i * 3) +  0), _mm_blend_epi16(src_v128u32[0], src_v128u32[1], 0xC0) );
+			_mm_storeu_si128( (v128u8 *)(dst + (i * 3) + 16), _mm_blend_epi16(src_v128u32[1], src_v128u32[2], 0xF0) );
+			_mm_storeu_si128( (v128u8 *)(dst + (i * 3) + 32), _mm_blend_epi16(src_v128u32[2], src_v128u32[3], 0xFC) );
+		}
+		else
+		{
+			_mm_store_si128( (v128u8 *)(dst + (i * 3) +  0), _mm_blend_epi16(src_v128u32[0], src_v128u32[1], 0xC0) );
+			_mm_store_si128( (v128u8 *)(dst + (i * 3) + 16), _mm_blend_epi16(src_v128u32[1], src_v128u32[2], 0xF0) );
+			_mm_store_si128( (v128u8 *)(dst + (i * 3) + 32), _mm_blend_epi16(src_v128u32[2], src_v128u32[3], 0xFC) );
+		}
+#else
+		if (IS_UNALIGNED)
+		{
+			_mm_storeu_si128( (v128u8 *)(dst + (i * 3) +  0), _mm_or_si128(_mm_and_si128(src_v128u32[1], _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000)),               src_v128u32[0]) );
 			_mm_storeu_si128( (v128u8 *)(dst + (i * 3) + 16), _mm_or_si128(_mm_and_si128(src_v128u32[2], _mm_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000)), _mm_and_si128(src_v128u32[1], _mm_set_epi32(0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF))) );
 			_mm_storeu_si128( (v128u8 *)(dst + (i * 3) + 32), _mm_or_si128(              src_v128u32[3],                                                                 _mm_and_si128(src_v128u32[2], _mm_set_epi32(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF))) );
 		}
 		else
 		{
-			_mm_store_si128( (v128u8 *)(dst + (i * 3) +  0), _mm_or_si128(_mm_and_si128(src_v128u32[1], _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000)), src_v128u32[0]) );
+			_mm_store_si128( (v128u8 *)(dst + (i * 3) +  0), _mm_or_si128(_mm_and_si128(src_v128u32[1], _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000)),               src_v128u32[0]) );
 			_mm_store_si128( (v128u8 *)(dst + (i * 3) + 16), _mm_or_si128(_mm_and_si128(src_v128u32[2], _mm_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000)), _mm_and_si128(src_v128u32[1], _mm_set_epi32(0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF))) );
 			_mm_store_si128( (v128u8 *)(dst + (i * 3) + 32), _mm_or_si128(              src_v128u32[3],                                                                 _mm_and_si128(src_v128u32[2], _mm_set_epi32(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF))) );
 		}
+#endif
 	}
 	
 	return i;
@@ -605,6 +620,20 @@ size_t ColorspaceConvertBuffer888XTo888_SSSE3(const u32 *__restrict src, u8 *__r
 			src_v128u32[3] = _mm_shuffle_epi8(src_v128u32[3], _mm_set_epi8(14,13,12,10,    9, 8, 6, 5,    4, 2, 1, 0,   15,11, 7, 3));
 		}
 		
+#ifdef ENABLE_SSE4_1
+		if (IS_UNALIGNED)
+		{
+			_mm_storeu_si128( (v128u8 *)(dst + (i * 3) +  0), _mm_blend_epi16(src_v128u32[0], src_v128u32[1], 0xC0) );
+			_mm_storeu_si128( (v128u8 *)(dst + (i * 3) + 16), _mm_blend_epi16(src_v128u32[1], src_v128u32[2], 0xF0) );
+			_mm_storeu_si128( (v128u8 *)(dst + (i * 3) + 32), _mm_blend_epi16(src_v128u32[2], src_v128u32[3], 0xFC) );
+		}
+		else
+		{
+			_mm_store_si128( (v128u8 *)(dst + (i * 3) +  0), _mm_blend_epi16(src_v128u32[0], src_v128u32[1], 0xC0) );
+			_mm_store_si128( (v128u8 *)(dst + (i * 3) + 16), _mm_blend_epi16(src_v128u32[1], src_v128u32[2], 0xF0) );
+			_mm_store_si128( (v128u8 *)(dst + (i * 3) + 32), _mm_blend_epi16(src_v128u32[2], src_v128u32[3], 0xFC) );
+		}
+#else
 		if (IS_UNALIGNED)
 		{
 			_mm_storeu_si128( (v128u8 *)(dst + (i * 3) +  0), _mm_or_si128(_mm_and_si128(src_v128u32[1], _mm_set_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000)), _mm_and_si128(src_v128u32[0], _mm_set_epi32(0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))) );
@@ -617,6 +646,7 @@ size_t ColorspaceConvertBuffer888XTo888_SSSE3(const u32 *__restrict src, u8 *__r
 			_mm_store_si128( (v128u8 *)(dst + (i * 3) + 16), _mm_or_si128(_mm_and_si128(src_v128u32[2], _mm_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000)), _mm_and_si128(src_v128u32[1], _mm_set_epi32(0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF))) );
 			_mm_store_si128( (v128u8 *)(dst + (i * 3) + 32), _mm_or_si128(_mm_and_si128(src_v128u32[3], _mm_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000)), _mm_and_si128(src_v128u32[2], _mm_set_epi32(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF))) );
 		}
+#endif
 	}
 	
 	return i;

@@ -495,30 +495,36 @@ size_t ColorspaceConvertBuffer555XTo888_AVX2(const u16 *__restrict src, u8 *__re
 		
 		if (SWAP_RB)
 		{
-			src_v256u32[0] = _mm256_shuffle_epi8( src_v256u32[0], _mm256_set_epi8(31,27,23,19,   15,11, 7, 3,   29,30,28,25,   26,24,21,22,   20,17,18,16,   13,14,12, 9,   10, 8, 5, 6,    4, 1, 2, 0) );
-			src_v256u32[1] = _mm256_shuffle_epi8( src_v256u32[1], _mm256_set_epi8(10, 8, 5, 6,    4, 1, 2, 0,   31,27,23,19,   15,11, 7, 3,   29,30,28,25,   26,24,21,22,   20,17,18,16,   13,14,12, 9) );
-			src_v256u32[2] = _mm256_shuffle_epi8( src_v256u32[2], _mm256_set_epi8(20,17,18,16,   13,14,12, 9,   10, 8, 5, 6,    4, 1, 2, 0,   31,27,23,19,   15,11, 7, 3,   29,30,28,25,   26,24,21,22) );
-			src_v256u32[3] = _mm256_shuffle_epi8( src_v256u32[3], _mm256_set_epi8(29,30,28,25,   26,24,21,22,   20,17,18,16,   13,14,12, 9,   10, 8, 5, 6,    4, 1, 2, 0,   31,27,23,19,   15,11, 7, 3) );
+			src_v256u32[0] = _mm256_shuffle_epi8( src_v256u32[0], _mm256_set_epi8(31,27,23,19,   29,30,28,25,   26,24,21,22,   20,17,18,16,   15,11, 7, 3,   13,14,12, 9,   10, 8, 5, 6,    4, 1, 2, 0) );
+			src_v256u32[1] = _mm256_shuffle_epi8( src_v256u32[1], _mm256_set_epi8(31,27,23,19,   29,30,28,25,   26,24,21,22,   20,17,18,16,   15,11, 7, 3,   13,14,12, 9,   10, 8, 5, 6,    4, 1, 2, 0) );
+			src_v256u32[2] = _mm256_shuffle_epi8( src_v256u32[2], _mm256_set_epi8(31,27,23,19,   29,30,28,25,   26,24,21,22,   20,17,18,16,   15,11, 7, 3,   13,14,12, 9,   10, 8, 5, 6,    4, 1, 2, 0) );
+			src_v256u32[3] = _mm256_shuffle_epi8( src_v256u32[3], _mm256_set_epi8(31,27,23,19,   29,30,28,25,   26,24,21,22,   20,17,18,16,   15,11, 7, 3,   13,14,12, 9,   10, 8, 5, 6,    4, 1, 2, 0) );
 		}
 		else
 		{
-			src_v256u32[0] = _mm256_shuffle_epi8( src_v256u32[0], _mm256_set_epi8(31,27,23,19,   15,11, 7, 3,   28,30,29,24,   26,25,20,22,   21,16,18,17,   12,14,13, 8,   10, 9, 4, 6,    5, 0, 2, 1) );
-			src_v256u32[1] = _mm256_shuffle_epi8( src_v256u32[1], _mm256_set_epi8(10, 9, 4, 6,    5, 0, 2, 1,   31,27,23,19,   15,11, 7, 3,   28,30,29,24,   26,25,20,22,   21,16,18,17,   12,14,13, 8) );
-			src_v256u32[2] = _mm256_shuffle_epi8( src_v256u32[2], _mm256_set_epi8(21,16,18,17,   12,14,13, 8,   10, 9, 4, 6,    5, 0, 2, 1,   31,27,23,19,   15,11, 7, 3,   28,30,29,24,   26,25,20,22) );
-			src_v256u32[3] = _mm256_shuffle_epi8( src_v256u32[3], _mm256_set_epi8(28,30,29,24,   26,25,20,22,   21,16,18,17,   12,14,13, 8,   10, 9, 4, 6,    5, 0, 2, 1,   31,27,23,19,   15,11, 7, 3) );
+			src_v256u32[0] = _mm256_shuffle_epi8( src_v256u32[0], _mm256_set_epi8(31,27,23,19,   28,30,29,24,   26,25,20,22,   21,16,18,17,   15,11, 7, 3,   12,14,13, 8,   10, 9, 4, 6,    5, 0, 2, 1) );
+			src_v256u32[1] = _mm256_shuffle_epi8( src_v256u32[1], _mm256_set_epi8(31,27,23,19,   28,30,29,24,   26,25,20,22,   21,16,18,17,   15,11, 7, 3,   12,14,13, 8,   10, 9, 4, 6,    5, 0, 2, 1) );
+			src_v256u32[2] = _mm256_shuffle_epi8( src_v256u32[2], _mm256_set_epi8(31,27,23,19,   28,30,29,24,   26,25,20,22,   21,16,18,17,   15,11, 7, 3,   12,14,13, 8,   10, 9, 4, 6,    5, 0, 2, 1) );
+			src_v256u32[3] = _mm256_shuffle_epi8( src_v256u32[3], _mm256_set_epi8(31,27,23,19,   28,30,29,24,   26,25,20,22,   21,16,18,17,   15,11, 7, 3,   12,14,13, 8,   10, 9, 4, 6,    5, 0, 2, 1) );
 		}
+		
+		// This is necessary because vpshufb cannot shuffle bits across 128-bit lanes, but vpermd can.
+		src_v256u32[0] = _mm256_permutevar8x32_epi32( src_v256u32[0], _mm256_set_epi32(7, 3, 6, 5, 4, 2, 1, 0) );
+		src_v256u32[1] = _mm256_permutevar8x32_epi32( src_v256u32[1], _mm256_set_epi32(1, 0, 7, 3, 6, 5, 4, 2) );
+		src_v256u32[2] = _mm256_permutevar8x32_epi32( src_v256u32[2], _mm256_set_epi32(4, 2, 1, 0, 7, 3, 6, 5) );
+		src_v256u32[3] = _mm256_permutevar8x32_epi32( src_v256u32[3], _mm256_set_epi32(6, 5, 4, 2, 1, 0, 7, 3) );
 		
 		if (IS_UNALIGNED)
 		{
-			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) +  0), _mm256_or_si256(_mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), src_v256u32[0]) );
-			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) + 32), _mm256_or_si256(_mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))) );
-			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) + 64), _mm256_or_si256(                 src_v256u32[3],                                                                                                                    _mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF))) );
+			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) +  0), _mm256_blend_epi32(src_v256u32[0], src_v256u32[1], 0xC0) );
+			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) + 32), _mm256_blend_epi32(src_v256u32[1], src_v256u32[2], 0xF0) );
+			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) + 64), _mm256_blend_epi32(src_v256u32[2], src_v256u32[3], 0xFC) );
 		}
 		else
 		{
-			_mm256_store_si256( (v256u8 *)(dst + (i * 3) +  0), _mm256_or_si256(_mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), src_v256u32[0]) );
-			_mm256_store_si256( (v256u8 *)(dst + (i * 3) + 32), _mm256_or_si256(_mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))) );
-			_mm256_store_si256( (v256u8 *)(dst + (i * 3) + 64), _mm256_or_si256(                 src_v256u32[3],                                                                                                                    _mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF))) );
+			_mm256_store_si256( (v256u8 *)(dst + (i * 3) +  0), _mm256_blend_epi32(src_v256u32[0], src_v256u32[1], 0xC0) );
+			_mm256_store_si256( (v256u8 *)(dst + (i * 3) + 32), _mm256_blend_epi32(src_v256u32[1], src_v256u32[2], 0xF0) );
+			_mm256_store_si256( (v256u8 *)(dst + (i * 3) + 64), _mm256_blend_epi32(src_v256u32[2], src_v256u32[3], 0xFC) );
 		}
 	}
 	
@@ -550,30 +556,36 @@ size_t ColorspaceConvertBuffer888XTo888_AVX2(const u32 *__restrict src, u8 *__re
 		
 		if (SWAP_RB)
 		{
-			src_v256u32[0] = _mm256_shuffle_epi8(src_v256u32[0], _mm256_set_epi8(31,27,23,19,   15,11, 7, 3,   28,29,30,24,   25,26,20,21,   22,16,17,18,   12,13,14, 8,    9,10, 4, 5,    6, 0, 1, 2));
-			src_v256u32[1] = _mm256_shuffle_epi8(src_v256u32[1], _mm256_set_epi8( 9,10, 4, 5,    6, 0, 1, 2,   31,27,23,19,   15,11, 7, 3,   28,29,30,24,   25,26,20,21,   22,16,17,18,   12,13,14, 8));
-			src_v256u32[2] = _mm256_shuffle_epi8(src_v256u32[2], _mm256_set_epi8(22,16,17,18,   12,13,14, 8,    9,10, 4, 5,    6, 0, 1, 2,   31,27,23,19,   15,11, 7, 3,   28,29,30,24,   25,26,20,21));
-			src_v256u32[3] = _mm256_shuffle_epi8(src_v256u32[3], _mm256_set_epi8(28,29,30,24,   25,26,20,21,   22,16,17,18,   12,13,14, 8,    9,10, 4, 5,    6, 0, 1, 2,   31,27,23,19,   15,11, 7, 3));
+			src_v256u32[0] = _mm256_shuffle_epi8(src_v256u32[0], _mm256_set_epi8(31,27,23,19,   28,29,30,24,   25,26,20,21,   22,16,17,18,   15,11, 7, 3,   12,13,14, 8,    9,10, 4, 5,    6, 0, 1, 2));
+			src_v256u32[1] = _mm256_shuffle_epi8(src_v256u32[1], _mm256_set_epi8(31,27,23,19,   28,29,30,24,   25,26,20,21,   22,16,17,18,   15,11, 7, 3,   12,13,14, 8,    9,10, 4, 5,    6, 0, 1, 2));
+			src_v256u32[2] = _mm256_shuffle_epi8(src_v256u32[2], _mm256_set_epi8(31,27,23,19,   28,29,30,24,   25,26,20,21,   22,16,17,18,   15,11, 7, 3,   12,13,14, 8,    9,10, 4, 5,    6, 0, 1, 2));
+			src_v256u32[3] = _mm256_shuffle_epi8(src_v256u32[3], _mm256_set_epi8(31,27,23,19,   28,29,30,24,   25,26,20,21,   22,16,17,18,   15,11, 7, 3,   12,13,14, 8,    9,10, 4, 5,    6, 0, 1, 2));
 		}
 		else
 		{
-			src_v256u32[0] = _mm256_shuffle_epi8(src_v256u32[0], _mm256_set_epi8(31,27,23,19,   15,11, 7, 3,   30,29,28,26,   25,24,22,21,   20,18,17,16,   14,13,12,10,    9, 8, 6, 5,    4, 2, 1, 0));
-			src_v256u32[1] = _mm256_shuffle_epi8(src_v256u32[1], _mm256_set_epi8( 9, 8, 6, 5,    4, 2, 1, 0,   31,27,23,19,   15,11, 7, 3,   30,29,28,26,   25,24,22,21,   20,18,17,16,   14,13,12,10));
-			src_v256u32[2] = _mm256_shuffle_epi8(src_v256u32[2], _mm256_set_epi8(20,18,17,16,   14,13,12,10,    9, 8, 6, 5,    4, 2, 1, 0,   31,27,23,19,   15,11, 7, 3,   30,29,28,26,   25,24,22,21));
-			src_v256u32[3] = _mm256_shuffle_epi8(src_v256u32[3], _mm256_set_epi8(30,29,28,26,   25,24,22,21,   20,18,17,16,   14,13,12,10,    9, 8, 6, 5,    4, 2, 1, 0,   31,27,23,19,   15,11, 7, 3));
+			src_v256u32[0] = _mm256_shuffle_epi8(src_v256u32[0], _mm256_set_epi8(31,27,23,19,   30,29,28,26,   25,24,22,21,   20,18,17,16,   15,11, 7, 3,   14,13,12,10,    9, 8, 6, 5,    4, 2, 1, 0));
+			src_v256u32[1] = _mm256_shuffle_epi8(src_v256u32[1], _mm256_set_epi8(31,27,23,19,   30,29,28,26,   25,24,22,21,   20,18,17,16,   15,11, 7, 3,   14,13,12,10,    9, 8, 6, 5,    4, 2, 1, 0));
+			src_v256u32[2] = _mm256_shuffle_epi8(src_v256u32[2], _mm256_set_epi8(31,27,23,19,   30,29,28,26,   25,24,22,21,   20,18,17,16,   15,11, 7, 3,   14,13,12,10,    9, 8, 6, 5,    4, 2, 1, 0));
+			src_v256u32[3] = _mm256_shuffle_epi8(src_v256u32[3], _mm256_set_epi8(31,27,23,19,   30,29,28,26,   25,24,22,21,   20,18,17,16,   15,11, 7, 3,   14,13,12,10,    9, 8, 6, 5,    4, 2, 1, 0));
 		}
+		
+		// This is necessary because vpshufb cannot shuffle bits across 128-bit lanes, but vpermd can.
+		src_v256u32[0] = _mm256_permutevar8x32_epi32( src_v256u32[0], _mm256_set_epi32(7, 3, 6, 5, 4, 2, 1, 0) );
+		src_v256u32[1] = _mm256_permutevar8x32_epi32( src_v256u32[1], _mm256_set_epi32(1, 0, 7, 3, 6, 5, 4, 2) );
+		src_v256u32[2] = _mm256_permutevar8x32_epi32( src_v256u32[2], _mm256_set_epi32(4, 2, 1, 0, 7, 3, 6, 5) );
+		src_v256u32[3] = _mm256_permutevar8x32_epi32( src_v256u32[3], _mm256_set_epi32(6, 5, 4, 2, 1, 0, 7, 3) );
 		
 		if (IS_UNALIGNED)
 		{
-			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) +  0), _mm256_or_si256(_mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[0], _mm256_set_epi32(0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))) );
-			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) + 32), _mm256_or_si256(_mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))) );
-			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) + 64), _mm256_or_si256(_mm256_and_si256(src_v256u32[3], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF))) );
+			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) +  0), _mm256_blend_epi32(src_v256u32[0], src_v256u32[1], 0xC0) );
+			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) + 32), _mm256_blend_epi32(src_v256u32[1], src_v256u32[2], 0xF0) );
+			_mm256_storeu_si256( (v256u8 *)(dst + (i * 3) + 64), _mm256_blend_epi32(src_v256u32[2], src_v256u32[3], 0xFC) );
 		}
 		else
 		{
-			_mm256_store_si256( (v256u8 *)(dst + (i * 3) +  0), _mm256_or_si256(_mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[0], _mm256_set_epi32(0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))) );
-			_mm256_store_si256( (v256u8 *)(dst + (i * 3) + 32), _mm256_or_si256(_mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[1], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF))) );
-			_mm256_store_si256( (v256u8 *)(dst + (i * 3) + 64), _mm256_or_si256(_mm256_and_si256(src_v256u32[3], _mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000)), _mm256_and_si256(src_v256u32[2], _mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF))) );
+			_mm256_store_si256( (v256u8 *)(dst + (i * 3) +  0), _mm256_blend_epi32(src_v256u32[0], src_v256u32[1], 0xC0) );
+			_mm256_store_si256( (v256u8 *)(dst + (i * 3) + 32), _mm256_blend_epi32(src_v256u32[1], src_v256u32[2], 0xF0) );
+			_mm256_store_si256( (v256u8 *)(dst + (i * 3) + 64), _mm256_blend_epi32(src_v256u32[2], src_v256u32[3], 0xFC) );
 		}
 	}
 	
