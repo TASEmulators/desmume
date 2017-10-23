@@ -32,6 +32,7 @@
 #include "main.h"
 #include "driver.h"
 #include "NDSSystem.h"
+#include "utils/task.h"
 
 extern VideoInfo video;
 
@@ -47,10 +48,22 @@ static void EMU_PrintMessage(const char* msg) {
 //extern WAVEFORMATEX wf;
 //extern int soundo;
 
-#define VIDEO_STREAM	0
-#define AUDIO_STREAM	1
+#define VIDEO_STREAM		0
+#define AUDIO_STREAM		1
+#define MAX_CONVERT_THREADS	16
 
-static struct AVIFile
+struct AVIFile;
+
+struct AVIConversionParam
+{
+	AVIFile *avi;
+	const void *src;
+	size_t firstLineIndex;
+	size_t lastLineIndex;
+};
+typedef struct AVIConversionParam AVIConversionParam;
+
+struct AVIFile
 {
 	int					valid;
 	int					fps;
@@ -76,6 +89,8 @@ static struct AVIFile
 
 	u8					*convert_buffer;
 	int					prescaleLevel;
+	size_t				frameWidth;
+	size_t				frameHeight;
 	int					start_scanline;
 	int					end_scanline;
 	
@@ -83,7 +98,14 @@ static struct AVIFile
 
 	u8					audio_buffer[DESMUME_SAMPLE_RATE*2*2]; // 1 second buffer
 	int					audio_buffer_pos;
-} *avi_file = NULL;
+
+	size_t				numThreads;
+	Task				*convertThread[MAX_CONVERT_THREADS];
+	AVIConversionParam	convertParam[MAX_CONVERT_THREADS];
+};
+typedef AVIFile AVIFile;
+
+AVIFile *avi_file = NULL;
 
 struct VideoSystemInfo
 {
@@ -226,7 +248,9 @@ static int avi_open(const char* filename, const BITMAPINFOHEADER* pbmih, const W
 
 		memset(&avi_file->avi_video_header, 0, sizeof(AVISTREAMINFO));
 		avi_file->prescaleLevel = video.prescaleHD;
-		avi_file->convert_buffer = (u8*)malloc_alignedCacheLine(video.prescaleHD*video.prescaleHD*256*384*3);
+		avi_file->frameWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH * video.prescaleHD;
+		avi_file->frameHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT * video.prescaleHD * 2;
+		avi_file->convert_buffer = (u8*)malloc_alignedCacheLine(avi_file->frameWidth * avi_file->frameHeight * 3);
 
 		avi_file->avi_video_header.fccType = streamtypeVIDEO;
 		avi_file->avi_video_header.dwScale = 6*355*263;
@@ -311,47 +335,48 @@ static int avi_open(const char* filename, const BITMAPINFOHEADER* pbmih, const W
 }
 
 //converts 16bpp to 24bpp and flips
-static void do_video_conversion555(AVIFile* avi, const u16* buffer)
+static void do_video_conversion555(AVIFile* avi, const u16* srcHead, const size_t firstLineIndex, const size_t lastLineIndex)
 {
-	int width = avi->prescaleLevel * 256;
-	int height = avi->prescaleLevel * 384;
-	u8* outbuf = avi_file->convert_buffer + width*(height - 1) * 3;
+	const u16* src = srcHead + (avi->frameWidth * firstLineIndex);
+	u8* dst = avi->convert_buffer + (avi->frameWidth * (avi->frameHeight - (firstLineIndex + 1)) * 3);
 
-	for(int y = 0; y < height; y++)
+	for (size_t y = firstLineIndex; y <= lastLineIndex; y++)
 	{
-		for(int x = 0; x < width; x++)
-		{
-			u32 dst = ColorspaceConvert555To8888Opaque<true>(*buffer++);
-			*outbuf++ = dst & 0xFF;
-			*outbuf++ = (dst >> 8) & 0xFF;
-			*outbuf++ = (dst >> 16) & 0xFF;
-		}
-
-		outbuf -= width * 3 * 2;
+		ColorspaceConvertBuffer555XTo888<true, false>(src, dst, avi->frameWidth);
+		src += avi->frameWidth;
+		dst -= avi->frameWidth * 3;
 	}
 }
 
 //converts 32bpp to 24bpp and flips
-static void do_video_conversion(AVIFile* avi, const u32* buffer)
+static void do_video_conversion(AVIFile* avi, const u32* srcHead, const size_t firstLineIndex, const size_t lastLineIndex)
 {
-	int width = avi->prescaleLevel*256;
-	int height = avi->prescaleLevel*384;
-	u8* outbuf = avi_file->convert_buffer + width*(height-1)*3;
+	const u32* src = srcHead + (avi->frameWidth * firstLineIndex);
+	u8* dst = avi->convert_buffer + (avi->frameWidth * (avi->frameHeight - (firstLineIndex + 1)) * 3);
 
-	for (int y = 0; y < height; y++)
+	for (size_t y = firstLineIndex; y <= lastLineIndex; y++)
 	{
-		for (int x = 0; x < width; x++)
-		{
-			u32 dst = *buffer++;
-			*outbuf++ = (dst >> 16) & 0xFF;
-			*outbuf++ = (dst >> 8) & 0xFF;
-			*outbuf++ = dst & 0xFF;
-		}
-
-		outbuf -= width*3*2;
+		ColorspaceConvertBuffer888XTo888<true, false>(src, dst, avi->frameWidth);
+		src += avi->frameWidth;
+		dst -= avi->frameWidth * 3;
 	}
 }
 
+static void* RunConvertBuffer555XTo888(void *arg)
+{
+	AVIConversionParam *convertParam = (AVIConversionParam *)arg;
+	do_video_conversion555(convertParam->avi, (u16 *)convertParam->src, convertParam->firstLineIndex, convertParam->lastLineIndex);
+
+	return NULL;
+}
+
+static void* RunConvertBuffer888XTo888(void *arg)
+{
+	AVIConversionParam *convertParam = (AVIConversionParam *)arg;
+	do_video_conversion(convertParam->avi, (u32 *)convertParam->src, convertParam->firstLineIndex, convertParam->lastLineIndex);
+
+	return NULL;
+}
 
 static bool AviNextSegment()
 {
@@ -417,8 +442,47 @@ bool DRV_AviBegin(const char* fname, bool newsegment)
 		return 0;
 	}
 
-	// Don't display at file splits
-	if(!avi_segnum) {
+	if(!avi_segnum)
+	{
+		avi_file->numThreads = CommonSettings.num_cores;
+
+		if (avi_file->numThreads > MAX_CONVERT_THREADS)
+		{
+			avi_file->numThreads = MAX_CONVERT_THREADS;
+		}
+		else if (avi_file->numThreads < 2)
+		{
+			avi_file->numThreads = 0;
+		}
+		
+		size_t linesPerThread = (avi_file->numThreads > 0) ? avi_file->frameHeight / avi_file->numThreads : avi_file->frameHeight;
+
+		for (size_t i = 0; i < avi_file->numThreads; i++)
+		{
+			if (i == 0)
+			{
+				avi_file->convertParam[i].firstLineIndex = 0;
+				avi_file->convertParam[i].lastLineIndex = linesPerThread - 1;
+			}
+			else if (i == (avi_file->numThreads - 1))
+			{
+				avi_file->convertParam[i].firstLineIndex = avi_file->convertParam[i - 1].lastLineIndex + 1;
+				avi_file->convertParam[i].lastLineIndex = avi_file->frameHeight - 1;
+			}
+			else
+			{
+				avi_file->convertParam[i].firstLineIndex = avi_file->convertParam[i - 1].lastLineIndex + 1;
+				avi_file->convertParam[i].lastLineIndex = avi_file->convertParam[i].firstLineIndex + linesPerThread - 1;
+			}
+
+			avi_file->convertParam[i].avi = avi_file;
+			avi_file->convertParam[i].src = NULL;
+
+			avi_file->convertThread[i] = new Task();
+			avi_file->convertThread[i]->start(false);
+		}
+
+		// Don't display at file splits
 		EMU_PrintMessage("AVI recording started.");
 		driver->AddLine("AVI recording started.");
 	}
@@ -437,20 +501,51 @@ bool DRV_AviBegin(const char* fname, bool newsegment)
 
 void DRV_AviVideoUpdate()
 {
-	if(!avi_file || !avi_file->valid)
+	if (!avi_file || !avi_file->valid)
 		return;
 
 	const NDSDisplayInfo& dispInfo = GPU->GetDisplayInfo();
-	const u32* buffer = (const u32 *)dispInfo.masterCustomBuffer;
+	const void* buffer = dispInfo.masterCustomBuffer;
 
 	//dont do anything if prescale has changed, it's just going to be garbage
-	if(video.prescaleHD != avi_file->prescaleLevel)
+	if (video.prescaleHD != avi_file->prescaleLevel)
 		return;
 
-	if(gpu_bpp == 15)
-		do_video_conversion555(avi_file, (u16*)buffer);
-	else 
-		do_video_conversion(avi_file, buffer);
+	if (gpu_bpp == 15)
+	{
+		if (avi_file->numThreads == 0)
+		{
+			do_video_conversion555(avi_file, (u16 *)buffer, 0, avi_file->frameHeight - 1);
+		}
+		else
+		{
+			for (size_t i = 0; i < avi_file->numThreads; i++)
+			{
+				avi_file->convertParam[i].src = buffer;
+				avi_file->convertThread[i]->execute(&RunConvertBuffer555XTo888, &avi_file->convertParam[i]);
+			}
+		}
+	}
+	else
+	{
+		if (avi_file->numThreads == 0)
+		{
+			do_video_conversion(avi_file, (u32 *)buffer, 0, avi_file->frameHeight - 1);
+		}
+		else
+		{
+			for (size_t i = 0; i < avi_file->numThreads; i++)
+			{
+				avi_file->convertParam[i].src = buffer;
+				avi_file->convertThread[i]->execute(&RunConvertBuffer888XTo888, &avi_file->convertParam[i]);
+			}
+		}
+	}
+
+	for (size_t i = 0; i < avi_file->numThreads; i++)
+	{
+		avi_file->convertThread[i]->finish();
+	}
 
     if(FAILED(AVIStreamWrite(avi_file->compressed_streams[VIDEO_STREAM],
                                  avi_file->video_frames, 1, avi_file->convert_buffer,
@@ -514,6 +609,13 @@ void DRV_AviEnd(bool newsegment)
 	{
 		EMU_PrintMessage("AVI recording ended.");
 		driver->AddLine("AVI recording ended.");
+
+		for (size_t i = 0; i < avi_file->numThreads; i++)
+		{
+			delete avi_file->convertThread[i];
+			avi_file->convertThread[i] = NULL;
+			avi_file->numThreads = 0;
+		}
 	}
 
 	avi_destroy(&avi_file);
