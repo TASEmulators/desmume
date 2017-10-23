@@ -261,7 +261,7 @@ FORCEINLINE void ColorspaceConvert555XTo888(u16 srcColor, u8 *dst)
 	FragmentColor srcColorComponent;
 	srcColorComponent.color = ColorspaceConvert555To8888Opaque<SWAP_RB>(srcColor);
 	
-	ColorspaceConvert888XTo888<SWAP_RB>(srcColorComponent, dst);
+	ColorspaceConvert888XTo888<false>(srcColorComponent, dst);
 }
 
 template <bool SWAP_RB>
