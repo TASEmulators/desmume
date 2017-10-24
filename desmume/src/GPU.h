@@ -58,6 +58,7 @@
 class GPUEngineBase;
 class EMUFILE;
 struct MMU_struct;
+struct Render3DInterface;
 
 //#undef FORCEINLINE
 //#define FORCEINLINE
@@ -1383,8 +1384,11 @@ protected:
 	u8 *_deferredIndexCustom;
 	u16 *_deferredColorCustom;
 	
-	bool _enableLayer[5];
-	bool _isAnyBGLayerEnabled;
+	bool _enableEngine;
+	bool _enableBGLayer[5];
+	
+	bool _isBGLayerShown[5];
+	bool _isAnyBGLayerShown;
 	itemsForPriority_t _itemsForPriority[NB_PRIORITIES];
 	
 	struct MosaicColor {
@@ -1574,9 +1578,12 @@ public:
 	void GetMasterBrightnessAtLineZero(GPUMasterBrightMode &outMode, u8 &outIntensity);
 	
 	bool GetEnableState();
+	bool GetEnableStateApplied();
 	void SetEnableState(bool theState);
 	bool GetLayerEnableState(const size_t layerIndex);
 	void SetLayerEnableState(const size_t layerIndex, bool theState);
+	
+	void ApplySettings();
 	
 	void UpdateMasterBrightnessDisplayInfo(NDSDisplayInfo &mutableInfo);
 	template<NDSColorFormat OUTPUTFORMAT> void ApplyMasterBrightness(const NDSDisplayInfo &displayInfo);
@@ -1716,6 +1723,8 @@ public:
 	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo) = 0;
 	virtual void DidRender3DBegin() = 0;
 	virtual void DidRender3DEnd() = 0;
+	virtual void DidApplyGPUSettingsBegin() = 0;
+	virtual void DidApplyGPUSettingsEnd() = 0;
 	virtual void DidApplyRender3DSettingsBegin() = 0;
 	virtual void DidApplyRender3DSettingsEnd() = 0;
 };
@@ -1730,6 +1739,8 @@ public:
 	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo) {};
 	virtual void DidRender3DBegin() {};
 	virtual void DidRender3DEnd() {};
+	virtual void DidApplyGPUSettingsBegin() {};
+	virtual void DidApplyGPUSettingsEnd() {};
 	virtual void DidApplyRender3DSettingsBegin() {};
 	virtual void DidApplyRender3DSettingsEnd() {};
 };
@@ -1744,6 +1755,9 @@ private:
 	GPUEngineB *_engineSub;
 	NDSDisplay *_display[2];
 	float _backlightIntensityTotal[2];
+	
+	int _pending3DRendererID;
+	bool _needChange3DRenderer;
 	
 	u32 _videoFrameCount;			// Internal variable that increments when a video frame is completed. Resets every 60 video frames.
 	u32 _render3DFrameCount;		// The current 3D rendering frame count, saved to this variable once every 60 video frames.
@@ -1789,6 +1803,11 @@ public:
 	void SetCustomFramebufferSize(size_t w, size_t h);
 	void SetColorFormat(const NDSColorFormat outputFormat);
 	NDSColorFormat GetColorFormat() const;
+	
+	int Get3DRendererID();
+	void Set3DRendererByID(int rendererID);
+	bool Change3DRendererByID(int rendererID);
+	bool Change3DRendererIfNeeded();
 	
 	bool GetWillFrameSkip() const;
 	void SetWillFrameSkip(const bool willFrameSkip);

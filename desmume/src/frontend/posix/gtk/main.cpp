@@ -2311,10 +2311,13 @@ static void GraphicsSettingsDialog() {
 				init_glx_3Demu();
 			}
 #endif
-			if (NDS_3D_ChangeCore(sel3DCore)) {
-				config.core3D = sel3DCore;
+			
+			if (GPU->Change3DRendererByID(sel3DCore)) {
+				config.core3D = sel3DCore
 			} else {
-				g_printerr("Failed to change the 3D Core!");
+				GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER);
+				g_printerr("3D renderer initialization failed!\nFalling back to 3D core: %s\n", core3DList[RENDERID_SOFTRASTERIZER]->name);
+				config.core3D = RENDERID_SOFTRASTERIZER;
 			}
 		}
 
@@ -3417,15 +3420,15 @@ common_gtk_main( class configured_features *my_config)
 #elif defined(HAVE_GL_GLX)
         core = init_glx_3Demu()
 #endif
-        ? 2 : GPU3D_NULL;
+        ? 2 : RENDERID_NULL;
     }
 #endif
-    NDS_3D_ChangeCore(core);
-    if(core != 0 && gpu3D == &gpu3DNull) {
-        g_printerr("Failed to initialise openGL 3D emulation; "
-                   "removing 3D support\n");
-    }
 
+	if (!GPU->Change3DRendererByID(core)) {
+		GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER);
+		g_printerr("3D renderer initialization failed!\nFalling back to 3D core: %s\n", core3DList[RENDERID_SOFTRASTERIZER]->name);
+		my_config->engine_3d = RENDERID_SOFTRASTERIZER;
+	}
 
     CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation;
     CommonSettings.GFX3D_Renderer_Multisample = config.multisampling;

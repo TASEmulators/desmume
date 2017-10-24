@@ -2395,6 +2395,7 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	drawPending = FALSE;
 	
 	GPU->GetEventHandler()->DidApplyRender3DSettingsBegin();
+	GPU->Change3DRendererIfNeeded();
 	CurrentRenderer->ApplyRenderingSettings(gfx3d.renderState);
 	GPU->GetEventHandler()->DidApplyRender3DSettingsEnd();
 	
@@ -2402,7 +2403,7 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	CurrentRenderer->SetRenderNeedsFinish(true);
 	
 	//the timing of powering on rendering may not be exactly right here.
-	if (CommonSettings.showGpu.main && nds.power_render)
+	if (GPU->GetEngineMain()->GetEnableStateApplied() && nds.power_render)
 	{
 		CurrentRenderer->SetTextureProcessingProperties();
 		CurrentRenderer->Render(gfx3d);

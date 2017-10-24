@@ -632,6 +632,13 @@ GPUEngineBase::GPUEngineBase()
 	_deferredIndexCustom = NULL;
 	_deferredColorCustom = NULL;
 	
+	_enableEngine = true;
+	_enableBGLayer[GPULayerID_BG0] = true;
+	_enableBGLayer[GPULayerID_BG1] = true;
+	_enableBGLayer[GPULayerID_BG2] = true;
+	_enableBGLayer[GPULayerID_BG3] = true;
+	_enableBGLayer[GPULayerID_OBJ] = true;
+	
 	_didPassWindowTestCustomMasterPtr = NULL;
 	_didPassWindowTestCustom[GPULayerID_BG0] = NULL;
 	_didPassWindowTestCustom[GPULayerID_BG1] = NULL;
@@ -704,12 +711,12 @@ void GPUEngineBase::_Reset_Base()
 		memset(this->_renderLineLayerIDCustom, 0, dispInfo.customWidth * _gpuLargestDstLineCount * 4 * sizeof(u8));
 	}
 	
-	this->_enableLayer[GPULayerID_BG0] = false;
-	this->_enableLayer[GPULayerID_BG1] = false;
-	this->_enableLayer[GPULayerID_BG2] = false;
-	this->_enableLayer[GPULayerID_BG3] = false;
-	this->_enableLayer[GPULayerID_OBJ] = false;
-	this->_isAnyBGLayerEnabled = false;
+	this->_isBGLayerShown[GPULayerID_BG0] = false;
+	this->_isBGLayerShown[GPULayerID_BG1] = false;
+	this->_isBGLayerShown[GPULayerID_BG2] = false;
+	this->_isBGLayerShown[GPULayerID_BG3] = false;
+	this->_isBGLayerShown[GPULayerID_OBJ] = false;
+	this->_isAnyBGLayerShown = false;
 	
 	this->_BGLayer[GPULayerID_BG0].BGnCNT = this->_IORegisterMap->BG0CNT;
 	this->_BGLayer[GPULayerID_BG1].BGnCNT = this->_IORegisterMap->BG1CNT;
@@ -933,13 +940,13 @@ void GPUEngineBase::_ResortBGLayers()
 #define OP ^ !
 	// if we untick boxes, layers become invisible
 	//#define OP &&
-	this->_enableLayer[GPULayerID_BG0] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG0] OP(this->_BGLayer[GPULayerID_BG0].isVisible);
-	this->_enableLayer[GPULayerID_BG1] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG1] OP(this->_BGLayer[GPULayerID_BG1].isVisible);
-	this->_enableLayer[GPULayerID_BG2] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG2] OP(this->_BGLayer[GPULayerID_BG2].isVisible);
-	this->_enableLayer[GPULayerID_BG3] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG3] OP(this->_BGLayer[GPULayerID_BG3].isVisible);
-	this->_enableLayer[GPULayerID_OBJ] = CommonSettings.dispLayers[this->_engineID][GPULayerID_OBJ] OP(DISPCNT.OBJ_Enable);
+	this->_isBGLayerShown[GPULayerID_BG0] = this->_enableBGLayer[GPULayerID_BG0] OP(this->_BGLayer[GPULayerID_BG0].isVisible);
+	this->_isBGLayerShown[GPULayerID_BG1] = this->_enableBGLayer[GPULayerID_BG1] OP(this->_BGLayer[GPULayerID_BG1].isVisible);
+	this->_isBGLayerShown[GPULayerID_BG2] = this->_enableBGLayer[GPULayerID_BG2] OP(this->_BGLayer[GPULayerID_BG2].isVisible);
+	this->_isBGLayerShown[GPULayerID_BG3] = this->_enableBGLayer[GPULayerID_BG3] OP(this->_BGLayer[GPULayerID_BG3].isVisible);
+	this->_isBGLayerShown[GPULayerID_OBJ] = this->_enableBGLayer[GPULayerID_OBJ] OP(DISPCNT.OBJ_Enable);
 	
-	this->_isAnyBGLayerEnabled = this->_enableLayer[GPULayerID_BG0] || this->_enableLayer[GPULayerID_BG1] || this->_enableLayer[GPULayerID_BG2] || this->_enableLayer[GPULayerID_BG3];
+	this->_isAnyBGLayerShown = this->_isBGLayerShown[GPULayerID_BG0] || this->_isBGLayerShown[GPULayerID_BG1] || this->_isBGLayerShown[GPULayerID_BG2] || this->_isBGLayerShown[GPULayerID_BG3];
 	
 	// KISS ! lower priority first, if same then lower num
 	for (i = 0; i < NB_PRIORITIES; i++)
@@ -952,7 +959,7 @@ void GPUEngineBase::_ResortBGLayers()
 	for (i = NB_BG; i > 0; )
 	{
 		i--;
-		if (!this->_enableLayer[i]) continue;
+		if (!this->_isBGLayerShown[i]) continue;
 		prio = this->_BGLayer[i].priority;
 		item = &(this->_itemsForPriority[prio]);
 		item->BGs[item->nbBGs]=i;
@@ -1654,7 +1661,7 @@ void GPUEngineBase::RenderLine(const size_t l)
 void GPUEngineBase::UpdatePropertiesWithoutRender(const u16 l)
 {
 	// Update BG2/BG3 parameters for Affine and AffineExt modes
-	if (  this->_enableLayer[GPULayerID_BG2] &&
+	if (  this->_isBGLayerShown[GPULayerID_BG2] &&
 		((this->_BGLayer[GPULayerID_BG2].baseType == BGType_Affine) || (this->_BGLayer[GPULayerID_BG2].baseType == BGType_AffineExt)) )
 	{
 		IOREG_BG2Parameter &BG2Param = this->_IORegisterMap->BG2Param;
@@ -1663,7 +1670,7 @@ void GPUEngineBase::UpdatePropertiesWithoutRender(const u16 l)
 		BG2Param.BG2Y.value += BG2Param.BG2PD.value;
 	}
 	
-	if (  this->_enableLayer[GPULayerID_BG3] &&
+	if (  this->_isBGLayerShown[GPULayerID_BG3] &&
 		((this->_BGLayer[GPULayerID_BG3].baseType == BGType_Affine) || (this->_BGLayer[GPULayerID_BG3].baseType == BGType_AffineExt)) )
 	{
 		IOREG_BG3Parameter &BG3Param = this->_IORegisterMap->BG3Param;
@@ -1713,6 +1720,11 @@ bool GPUEngineBase::GetEnableState()
 	return CommonSettings.showGpu.screens[this->_engineID];
 }
 
+bool GPUEngineBase::GetEnableStateApplied()
+{
+	return this->_enableEngine;
+}
+
 void GPUEngineBase::SetEnableState(bool theState)
 {
 	CommonSettings.showGpu.screens[this->_engineID] = theState;
@@ -1726,7 +1738,28 @@ bool GPUEngineBase::GetLayerEnableState(const size_t layerIndex)
 void GPUEngineBase::SetLayerEnableState(const size_t layerIndex, bool theState)
 {
 	CommonSettings.dispLayers[this->_engineID][layerIndex] = theState;
-	this->_ResortBGLayers();
+}
+
+void GPUEngineBase::ApplySettings()
+{
+	this->_enableEngine = CommonSettings.showGpu.screens[this->_engineID];
+	
+	bool needResortBGLayers = ( (this->_enableBGLayer[GPULayerID_BG0] != CommonSettings.dispLayers[this->_engineID][GPULayerID_BG0]) ||
+							    (this->_enableBGLayer[GPULayerID_BG1] != CommonSettings.dispLayers[this->_engineID][GPULayerID_BG1]) ||
+							    (this->_enableBGLayer[GPULayerID_BG2] != CommonSettings.dispLayers[this->_engineID][GPULayerID_BG2]) ||
+							    (this->_enableBGLayer[GPULayerID_BG3] != CommonSettings.dispLayers[this->_engineID][GPULayerID_BG3]) ||
+							    (this->_enableBGLayer[GPULayerID_OBJ] != CommonSettings.dispLayers[this->_engineID][GPULayerID_OBJ]) );
+	
+	if (needResortBGLayers)
+	{
+		this->_enableBGLayer[GPULayerID_BG0] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG0];
+		this->_enableBGLayer[GPULayerID_BG1] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG1];
+		this->_enableBGLayer[GPULayerID_BG2] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG2];
+		this->_enableBGLayer[GPULayerID_BG3] = CommonSettings.dispLayers[this->_engineID][GPULayerID_BG3];
+		this->_enableBGLayer[GPULayerID_OBJ] = CommonSettings.dispLayers[this->_engineID][GPULayerID_OBJ];
+		
+		this->_ResortBGLayers();
+	}
 }
 
 template <s32 INTEGERSCALEHINT, bool USELINEINDEX, bool NEEDENDIANSWAP, size_t ELEMENTSIZE>
@@ -4233,7 +4266,7 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 	this->_RenderLine_Clear<OUTPUTFORMAT>(compInfo);
 	
 	// for all the pixels in the line
-	if (this->_enableLayer[GPULayerID_OBJ])
+	if (this->_isBGLayerShown[GPULayerID_OBJ])
 	{
 		this->vramBlockOBJAddress = 0;
 		this->_RenderLine_SetupSprites(compInfo);
@@ -4251,13 +4284,13 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 		prio--;
 		item = &(this->_itemsForPriority[prio]);
 		// render BGs
-		if (this->_isAnyBGLayerEnabled)
+		if (this->_isAnyBGLayerShown)
 		{
 			for (size_t i = 0; i < item->nbBGs; i++)
 			{
 				const GPULayerID layerID = (GPULayerID)item->BGs[i];
 				
-				if (this->_enableLayer[layerID])
+				if (this->_isBGLayerShown[layerID])
 				{
 					compInfo.renderState.selectedLayerID = layerID;
 					compInfo.renderState.selectedBGLayer = &this->_BGLayer[layerID];
@@ -4316,7 +4349,7 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 		}
 		
 		// render sprite Pixels
-		if ( this->_enableLayer[GPULayerID_OBJ] && (item->nbPixelsX > 0) )
+		if ( this->_isBGLayerShown[GPULayerID_OBJ] && (item->nbPixelsX > 0) )
 		{
 			compInfo.renderState.selectedLayerID = GPULayerID_OBJ;
 			compInfo.renderState.selectedBGLayer = NULL;
@@ -4864,7 +4897,7 @@ void GPUEngineBase::_PerformWindowTesting(GPUEngineCompositorInfo &compInfo)
 	
 	for (size_t layerID = GPULayerID_BG0; layerID <= GPULayerID_OBJ; layerID++)
 	{
-		if (!this->_enableLayer[layerID])
+		if (!this->_isBGLayerShown[layerID])
 		{
 			continue;
 		}
@@ -5791,7 +5824,7 @@ void GPUEngineA::SetCustomFramebufferSize(size_t w, size_t h)
 
 bool GPUEngineA::WillRender3DLayer()
 {
-	return ( this->_enableLayer[GPULayerID_BG0] && (this->_IORegisterMap->DISPCNT.BG0_3D != 0) );
+	return ( this->_isBGLayerShown[GPULayerID_BG0] && (this->_IORegisterMap->DISPCNT.BG0_3D != 0) );
 }
 
 bool GPUEngineA::WillCapture3DLayerDirect(const size_t l)
@@ -7352,6 +7385,9 @@ GPUSubsystem::GPUSubsystem()
 	_display[NDSDisplayID_Touch] = new NDSDisplay(NDSDisplayID_Touch);
 	_display[NDSDisplayID_Touch]->SetEngine(_engineSub);
 	
+	_pending3DRendererID = RENDERID_NULL;
+	_needChange3DRenderer = false;
+	
 	_videoFrameCount = 0;
 	_render3DFrameCount = 0;
 	_frameNeedsFinish = false;
@@ -7765,6 +7801,9 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h)
 	_gpuDstToSrcSSSE3_u16_8e = newGpuDstToSrcSSSE3_u16_8e;
 	_gpuDstToSrcSSSE3_u32_4e = newGpuDstToSrcSSSE3_u32_4e;
 	
+	CurrentRenderer->RenderFinish();
+	CurrentRenderer->SetRenderNeedsFinish(false);
+	
 	this->_displayInfo.isCustomSizeRequested = ( (w != GPU_FRAMEBUFFER_NATIVE_WIDTH) || (h != GPU_FRAMEBUFFER_NATIVE_HEIGHT) );
 	this->_displayInfo.customWidth = w;
 	this->_displayInfo.customHeight = h;
@@ -7807,10 +7846,14 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h)
 
 void GPUSubsystem::SetColorFormat(const NDSColorFormat outputFormat)
 {
-	//check for no-op
-	if(this->_displayInfo.colorFormat == outputFormat)
+	if (this->_displayInfo.colorFormat == outputFormat)
+	{
 		return;
-
+	}
+	
+	CurrentRenderer->RenderFinish();
+	CurrentRenderer->SetRenderNeedsFinish(false);
+	
 	this->_displayInfo.colorFormat = outputFormat;
 	this->_displayInfo.pixelBytes = (outputFormat == NDSColorFormat_BGR555_Rev) ? sizeof(u16) : sizeof(FragmentColor);
 	
@@ -7902,6 +7945,81 @@ void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, 
 	
 	free_aligned(oldMasterFramebuffer);
 	free_aligned(oldCustomVRAM);
+}
+
+int GPUSubsystem::Get3DRendererID()
+{
+	return this->_pending3DRendererID;
+}
+
+void GPUSubsystem::Set3DRendererByID(int rendererID)
+{
+	Render3DInterface *newRenderInterface = core3DList[rendererID];
+	if (newRenderInterface->NDS_3D_Init == NULL)
+	{
+		return;
+	}
+	
+	this->_pending3DRendererID = rendererID;
+	this->_needChange3DRenderer = true;
+}
+
+bool GPUSubsystem::Change3DRendererByID(int rendererID)
+{
+	bool result = false;
+	
+	// Whether pass or fail, the 3D renderer will have only one chance to be
+	// lazily changed via the flag set by Set3DRendererByID().
+	this->_needChange3DRenderer = false;
+	
+	Render3DInterface *newRenderInterface = core3DList[rendererID];
+	if (newRenderInterface->NDS_3D_Init == NULL)
+	{
+		return result;
+	}
+	
+	// Some resources are shared between renderers, such as the texture cache,
+	// so we need to shut down the current renderer now to ensure that any
+	// shared resources aren't in use.
+	const bool didRenderBegin = CurrentRenderer->GetRenderNeedsFinish();
+	CurrentRenderer->RenderFinish();
+	gpu3D->NDS_3D_Close();
+	gpu3D = &gpu3DNull;
+	cur3DCore = RENDERID_NULL;
+	BaseRenderer->SetRenderNeedsFinish(didRenderBegin);
+	CurrentRenderer = BaseRenderer;
+	
+	Render3D *newRenderer = newRenderInterface->NDS_3D_Init();
+	if (newRenderer == NULL)
+	{
+		return result;
+	}
+	
+	newRenderer->RequestColorFormat(GPU->GetDisplayInfo().colorFormat);
+	
+	Render3DError error = newRenderer->SetFramebufferSize(GPU->GetCustomFramebufferWidth(), GPU->GetCustomFramebufferHeight());
+	if (error != RENDER3DERROR_NOERR)
+	{
+		return result;
+	}
+	
+	gpu3D = newRenderInterface;
+	cur3DCore = rendererID;
+	newRenderer->SetRenderNeedsFinish( BaseRenderer->GetRenderNeedsFinish() );
+	CurrentRenderer = newRenderer;
+	
+	result = true;
+	return result;
+}
+
+bool GPUSubsystem::Change3DRendererIfNeeded()
+{
+	if (!this->_needChange3DRenderer)
+	{
+		return true;
+	}
+	
+	return this->Change3DRendererByID(this->_pending3DRendererID);
 }
 
 void* GPUSubsystem::GetCustomVRAMBuffer()
@@ -8023,6 +8141,11 @@ void GPUSubsystem::RenderLine(const size_t l)
 			targetBufferIndex = (targetBufferIndex + 1) & 0x01;
 		}
 		
+		this->_event->DidApplyGPUSettingsBegin();
+		this->_engineMain->ApplySettings();
+		this->_engineSub->ApplySettings();
+		this->_event->DidApplyGPUSettingsEnd();
+		
 		this->_event->DidFrameBegin(this->_willFrameSkip, targetBufferIndex, l);
 		this->_frameNeedsFinish = true;
 	}
@@ -8031,7 +8154,7 @@ void GPUSubsystem::RenderLine(const size_t l)
 	this->_engineSub->UpdateRenderStates(l);
 	
 	const bool isDisplayCaptureNeeded = this->_engineMain->WillDisplayCapture(l);
-	const bool isFramebufferRenderNeeded[2]	= { CommonSettings.showGpu.main, CommonSettings.showGpu.sub };
+	const bool isFramebufferRenderNeeded[2]	= { this->_engineMain->GetEnableStateApplied(), this->_engineSub->GetEnableStateApplied() };
 	
 	if (l == 0)
 	{
@@ -8113,8 +8236,8 @@ void GPUSubsystem::RenderLine(const size_t l)
 			this->_displayInfo.engineID[NDSDisplayID_Main]  = this->_display[NDSDisplayID_Main]->GetEngineID();
 			this->_displayInfo.engineID[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngineID();
 			
-			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Main]  = CommonSettings.showGpu.screens[this->_displayInfo.engineID[NDSDisplayID_Main]];
-			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Touch] = CommonSettings.showGpu.screens[this->_displayInfo.engineID[NDSDisplayID_Touch]];
+			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Main]  = this->_display[NDSDisplayID_Main]->GetEngine()->GetEnableStateApplied();
+			this->_displayInfo.isDisplayEnabled[NDSDisplayID_Touch] = this->_display[NDSDisplayID_Touch]->GetEngine()->GetEnableStateApplied();
 			
 			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Main]  = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);
 			this->_displayInfo.needConvertColorFormat[NDSDisplayID_Touch] = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev);

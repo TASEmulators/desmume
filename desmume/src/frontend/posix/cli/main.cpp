@@ -630,7 +630,10 @@ int main(int argc, char ** argv) {
     SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
   }
 
-  NDS_3D_ChangeCore(my_config.engine_3d);
+  if (!GPU->Change3DRendererByID(my_config.engine_3d)) {
+    GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER);
+    fprintf(stderr, "3D renderer initialization failed!\nFalling back to 3D core: %s\n", core3DList[RENDERID_SOFTRASTERIZER]->name);
+  }
 
   backup_setManualBackupType(my_config.savetype);
 

@@ -31,7 +31,7 @@
 #include "./filter/xbrz.h"
 
 
-int cur3DCore = GPU3D_NULL;
+int cur3DCore = RENDERID_NULL;
 
 GPU3DInterface gpu3DNull = { 
 	"None",
@@ -53,7 +53,7 @@ void Render3D_Init()
 	if (CurrentRenderer == NULL)
 	{
 		gpu3D = &gpu3DNull;
-		cur3DCore = GPU3D_NULL;
+		cur3DCore = RENDERID_NULL;
 		CurrentRenderer = BaseRenderer;
 	}
 }
@@ -63,50 +63,6 @@ void Render3D_DeInit()
 	gpu3D->NDS_3D_Close();
 	delete BaseRenderer;
 	BaseRenderer = NULL;
-}
-
-bool NDS_3D_ChangeCore(int newCore)
-{
-	bool result = false;
-		
-	Render3DInterface *newRenderInterface = core3DList[newCore];
-	if (newRenderInterface->NDS_3D_Init == NULL)
-	{
-		return result;
-	}
-	
-	// Some resources are shared between renderers, such as the texture cache,
-	// so we need to shut down the current renderer now to ensure that any
-	// shared resources aren't in use.
-	const bool didRenderBegin = CurrentRenderer->GetRenderNeedsFinish();
-	CurrentRenderer->RenderFinish();
-	gpu3D->NDS_3D_Close();
-	gpu3D = &gpu3DNull;
-	cur3DCore = GPU3D_NULL;
-	BaseRenderer->SetRenderNeedsFinish(didRenderBegin);
-	CurrentRenderer = BaseRenderer;
-	
-	Render3D *newRenderer = newRenderInterface->NDS_3D_Init();
-	if (newRenderer == NULL)
-	{
-		return result;
-	}
-	
-	newRenderer->RequestColorFormat(GPU->GetDisplayInfo().colorFormat);
-	
-	Render3DError error = newRenderer->SetFramebufferSize(GPU->GetCustomFramebufferWidth(), GPU->GetCustomFramebufferHeight());
-	if (error != RENDER3DERROR_NOERR)
-	{
-		return result;
-	}
-	
-	gpu3D = newRenderInterface;
-	cur3DCore = newCore;
-	newRenderer->SetRenderNeedsFinish( BaseRenderer->GetRenderNeedsFinish() );
-	CurrentRenderer = newRenderer;
-	
-	result = true;
-	return result;
 }
 
 Render3D* Render3DBaseCreate()

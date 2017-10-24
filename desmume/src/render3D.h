@@ -42,7 +42,6 @@ extern int cur3DCore;
 extern GPU3DInterface *core3DList[];
 
 // Default null plugin
-#define GPU3D_NULL 0
 extern GPU3DInterface gpu3DNull;
 
 // Extern pointer
@@ -55,7 +54,6 @@ void Render3DBaseDestroy();
 
 void Render3D_Init();
 void Render3D_DeInit();
-bool NDS_3D_ChangeCore(int newCore);
 
 enum RendererID
 {

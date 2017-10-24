@@ -488,9 +488,10 @@ common_gtk_glade_main( struct configured_features *my_config) {
                   engine = 0;
               }
 #endif
-          NDS_3D_ChangeCore(engine);
-          if(my_config->engine_3d != 0 && gpu3D == GPU3D_NULL)
-              fprintf(stderr, _("Failed to setup 3D engine; removing 3D support\n"));
+          if (!GPU->Change3DRendererByID(engine)) {
+              GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER);
+              fprintf(stderr, _("3D renderer initialization failed!\nFalling back to 3D core: %s\n"), core3DList[RENDERID_SOFTRASTERIZER]->name);
+          }
         }
 
 //	on_menu_tileview_activate(NULL,NULL);

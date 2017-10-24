@@ -2911,7 +2911,7 @@ static void SyncGpuBpp()
 		GPU->SetColorFormat(NDSColorFormat_BGR888_Rev);
 }
 
-#define GPU3D_NULL_SAVED -1
+#define RENDERID_NULL_SAVED -1
 #define GPU3D_DEFAULT  GPU3D_SWRAST
 
 DWORD wmTimerRes;
@@ -3361,12 +3361,12 @@ int _main()
 	hKeyInputTimer = timeSetEvent (KeyInRepeatMSec, 0, KeyInputTimer, 0, TIME_PERIODIC);
 
 	cur3DCore = GetPrivateProfileInt("3D", "Renderer", GPU3D_DEFAULT, IniName);
-	if(cur3DCore == GPU3D_NULL_SAVED)
-		cur3DCore = GPU3D_NULL;
-	else if(cur3DCore == GPU3D_NULL) // this value shouldn't be saved anymore
+	if(cur3DCore == RENDERID_NULL_SAVED)
+		cur3DCore = RENDERID_NULL;
+	else if(cur3DCore == RENDERID_NULL) // this value shouldn't be saved anymore
 		cur3DCore = GPU3D_DEFAULT;
 
-	if(cmdline.render3d == COMMANDLINE_RENDER3D_NONE) cur3DCore = GPU3D_NULL;
+	if(cmdline.render3d == COMMANDLINE_RENDER3D_NONE) cur3DCore = RENDERID_NULL;
 	if(cmdline.render3d == COMMANDLINE_RENDER3D_SW) cur3DCore = GPU3D_SWRAST;
 	if(cmdline.render3d == COMMANDLINE_RENDER3D_OLDGL) cur3DCore = GPU3D_OPENGL_OLD;
 	if(cmdline.render3d == COMMANDLINE_RENDER3D_GL) cur3DCore = GPU3D_OPENGL_3_2; //no way of forcing it, at least not right now. I dont care.
@@ -6329,13 +6329,13 @@ void Change3DCoreWithFallbackAndSave(int newCore)
 	if(newCore == GPU3D_SWRAST)
 		goto TRY_SWRAST;
 
-	if(newCore == GPU3D_NULL)
+	if(newCore == RENDERID_NULL)
 	{
-		NDS_3D_ChangeCore(GPU3D_NULL);
+		GPU->Change3DRendererByID(RENDERID_NULL);
 		goto DONE;
 	}
 
-	if(!NDS_3D_ChangeCore(GPU3D_OPENGL_3_2))
+	if(!GPU->Change3DRendererByID(GPU3D_OPENGL_3_2))
 	{
 		printf("falling back to 3d core: %s\n",core3DList[GPU3D_OPENGL_OLD]->name);
 		goto TRY_OGL_OLD;
@@ -6343,7 +6343,7 @@ void Change3DCoreWithFallbackAndSave(int newCore)
 	goto DONE;
 
 TRY_OGL_OLD:
-	if(!NDS_3D_ChangeCore(GPU3D_OPENGL_OLD))
+	if(!GPU->Change3DRendererByID(GPU3D_OPENGL_OLD))
 	{
 		printf("falling back to 3d core: %s\n",core3DList[GPU3D_SWRAST]->name);
 		goto TRY_SWRAST;
@@ -6351,10 +6351,10 @@ TRY_OGL_OLD:
 	goto DONE;
 
 TRY_SWRAST:
-	NDS_3D_ChangeCore(GPU3D_SWRAST);
+	GPU->Change3DRendererByID(GPU3D_SWRAST);
 	
 DONE:
-	int gpu3dSaveValue = ((cur3DCore != GPU3D_NULL) ? cur3DCore : GPU3D_NULL_SAVED);
+	int gpu3dSaveValue = ((cur3DCore != RENDERID_NULL) ? cur3DCore : RENDERID_NULL_SAVED);
 	WritePrivateProfileInt("3D", "Renderer", gpu3dSaveValue, IniName);
 }
 
