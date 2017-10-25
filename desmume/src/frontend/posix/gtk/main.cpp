@@ -2313,7 +2313,7 @@ static void GraphicsSettingsDialog() {
 #endif
 			
 			if (GPU->Change3DRendererByID(sel3DCore)) {
-				config.core3D = sel3DCore
+				config.core3D = sel3DCore;
 			} else {
 				GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER);
 				g_printerr("3D renderer initialization failed!\nFalling back to 3D core: %s\n", core3DList[RENDERID_SOFTRASTERIZER]->name);
