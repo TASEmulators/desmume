@@ -298,6 +298,8 @@ static const char *GeometryVtxShader_100 = {"\
 
 // Fragment Shader GLSL 1.00
 static const char *GeometryFragShader_100 = {"\
+	#define DEPTH_EQUALS_TEST_TOLERANCE 255.0\n\
+	\n\
 	varying vec4 vtxPosition;\n\
 	varying vec2 vtxTexCoord;\n\
 	varying vec4 vtxColor;\n\
@@ -332,7 +334,7 @@ static const char *GeometryFragShader_100 = {"\
 		vec4 newFogAttributes = vec4(0.0, 0.0, 0.0, 0.0);\n\
 		\n\
 		float vertW = (vtxPosition.w == 0.0) ? 0.00000001 : vtxPosition.w;\n\
-		float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -512.0 : 512.0);\n\
+		float depthOffset = (polyDepthOffsetMode == 0) ? 0.0 : ((polyDepthOffsetMode == 1) ? -DEPTH_EQUALS_TEST_TOLERANCE : DEPTH_EQUALS_TEST_TOLERANCE);\n\
 		// hack: when using z-depth, drop some LSBs so that the overworld map in Dragon Quest IV shows up correctly\n\
 		float newFragDepthValue = (stateUseWDepth) ? clamp( ( floor(vtxPosition.w * 4096.0) + depthOffset ) / 16777215.0, 0.0, 1.0 ) : clamp( ( (floor(clamp(((vtxPosition.z/vertW) * 0.5 + 0.5), 0.0, 1.0) * 32767.0) * 512.0) + depthOffset ) / 16777215.0, 0.0, 1.0 );\n\
 		\n\

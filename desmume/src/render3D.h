@@ -25,6 +25,7 @@
 #include "./filter/filter.h"
 
 #define kUnsetTranslucentPolyID 255
+#define DEPTH_EQUALS_TEST_TOLERANCE 255
 
 class Render3D;
 

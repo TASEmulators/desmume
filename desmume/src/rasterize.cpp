@@ -532,8 +532,8 @@ public:
 		bool depthFail = false;
 		if (polyAttr.DepthEqualTest_Enable)
 		{
-			const u32 minDepth = max<u32>(0x00000000, dstAttributeDepth - SOFTRASTERIZER_DEPTH_EQUAL_TEST_TOLERANCE);
-			const u32 maxDepth = min<u32>(0x00FFFFFF, dstAttributeDepth + SOFTRASTERIZER_DEPTH_EQUAL_TEST_TOLERANCE);
+			const u32 minDepth = max<u32>(0x00000000, dstAttributeDepth - DEPTH_EQUALS_TEST_TOLERANCE);
+			const u32 maxDepth = min<u32>(0x00FFFFFF, dstAttributeDepth + DEPTH_EQUALS_TEST_TOLERANCE);
 			
 			if (newDepth < minDepth || newDepth > maxDepth)
 			{
