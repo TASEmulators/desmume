@@ -2055,7 +2055,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		if ([(MetalDisplayViewSharedData *)macSharedData device] != nil)
 		{
 			MacMetalDisplayView *macMTLCDV = new MacMetalDisplayView(macSharedData);
-			macMTLCDV->SetNSView(self);
 			macMTLCDV->Init();
 			
 			localLayer = macMTLCDV->GetCALayer();
@@ -2066,7 +2065,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 #endif
 	{
 		MacOGLDisplayView *macOGLCDV = new MacOGLDisplayView(macSharedData);
-		macOGLCDV->SetNSView(self);
 		macOGLCDV->Init();
 		
 		localLayer = macOGLCDV->GetCALayer();

@@ -50,6 +50,8 @@ protected:
 	NSOpenGLContext *_nsContext;
 	CGLContextObj _context;
 	
+	OSSpinLock _spinlockTexFetch[2];
+	
 public:
 	void operator delete(void *ptr);
 	MacOGLClientFetchObject();
@@ -60,6 +62,9 @@ public:
 	virtual void Init();
 	virtual void SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo);
 	virtual void FetchFromBufferIndex(const u8 index);
+	
+	virtual GLuint GetFetchTexture(const NDSDisplayID displayID);
+	virtual void SetFetchTexture(const NDSDisplayID displayID, GLuint texID);
 };
 
 class MacOGLDisplayPresenter : public OGLVideoOutput, public MacDisplayPresenterInterface
@@ -72,6 +77,7 @@ protected:
 	NSOpenGLPixelFormat *_nsPixelFormat;
 	CGLContextObj _context;
 	CGLPixelFormatObj _pixelFormat;
+	OSSpinLock _spinlockProcessedInfo;
 	
 public:
 	void operator delete(void *ptr);
@@ -97,9 +103,13 @@ public:
 	virtual void LoadDisplays();
 	virtual void ProcessDisplays();
 	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
-	virtual void FinishFrameAtIndex(const uint8_t bufferIndex);
-	virtual void LockDisplayTextures();
-	virtual void UnlockDisplayTextures();
+	
+	virtual const OGLProcessedFrameInfo& GetProcessedFrameInfo();
+	virtual void SetProcessedFrameInfo(const OGLProcessedFrameInfo &processedInfo);
+	
+	virtual void WriteLockEmuFramebuffer(const uint8_t bufferIndex);
+	virtual void ReadLockEmuFramebuffer(const uint8_t bufferIndex);
+	virtual void UnlockEmuFramebuffer(const uint8_t bufferIndex);
 };
 
 class MacOGLDisplayView : public MacDisplayLayeredView

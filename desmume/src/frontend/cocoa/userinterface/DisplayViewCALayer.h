@@ -92,16 +92,12 @@ private:
 	void __InstanceInit();
 	
 protected:
-	NSView *_nsView;
 	CALayer<DisplayViewCALayer> *_caLayer;
 	bool _willRenderToCALayer;
 	
 public:
 	MacDisplayLayeredView();
 	MacDisplayLayeredView(ClientDisplay3DPresenter *thePresenter);
-	
-	NSView* GetNSView() const;
-	void SetNSView(NSView *theView);
 	
 	CALayer<DisplayViewCALayer>* GetCALayer() const;
 	

@@ -62,8 +62,8 @@
 
 - (void)drawInCGLContext:(CGLContextObj)glContext pixelFormat:(CGLPixelFormatObj)pixelFormat forLayerTime:(CFTimeInterval)timeInterval displayTime:(const CVTimeStamp *)timeStamp
 {
-	CGLSetCurrentContext(glContext);
 	CGLLockContext(glContext);
+	CGLSetCurrentContext(glContext);
 	((MacOGLDisplayPresenter *)(_cdv->Get3DPresenter()))->RenderFrameOGL(false);
 	[super drawInCGLContext:glContext pixelFormat:pixelFormat forLayerTime:timeInterval displayTime:timeStamp];
 	CGLUnlockContext(glContext);
@@ -156,6 +156,9 @@ MacOGLClientFetchObject::MacOGLClientFetchObject()
 	CGLSetCurrentContext(prevContext);
 	
 	_clientData = [[MacClientSharedObject alloc] init];
+	
+	_spinlockTexFetch[NDSDisplayID_Main]  = OS_SPINLOCK_INIT;
+	_spinlockTexFetch[NDSDisplayID_Touch] = OS_SPINLOCK_INIT;
 }
 
 NSOpenGLContext* MacOGLClientFetchObject::GetNSContext() const
@@ -195,10 +198,26 @@ void MacOGLClientFetchObject::FetchFromBufferIndex(const u8 index)
 	
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
-	this->GPUClientFetchObject::FetchFromBufferIndex(index);
+	this->OGLClientFetchObject::FetchFromBufferIndex(index);
 	CGLUnlockContext(this->_context);
 	
 	pthread_rwlock_unlock([sharedViewObject rwlockFramebufferAtIndex:index]);
+}
+
+GLuint MacOGLClientFetchObject::GetFetchTexture(const NDSDisplayID displayID)
+{
+	OSSpinLockLock(&this->_spinlockTexFetch[displayID]);
+	const GLuint texFetchID = this->OGLClientFetchObject::GetFetchTexture(displayID);
+	OSSpinLockUnlock(&this->_spinlockTexFetch[displayID]);
+	
+	return texFetchID;
+}
+
+void MacOGLClientFetchObject::SetFetchTexture(const NDSDisplayID displayID, GLuint texID)
+{
+	OSSpinLockLock(&this->_spinlockTexFetch[displayID]);
+	this->OGLClientFetchObject::SetFetchTexture(displayID, texID);
+	OSSpinLockUnlock(&this->_spinlockTexFetch[displayID]);
 }
 
 #pragma mark -
@@ -275,6 +294,7 @@ void MacOGLDisplayPresenter::__InstanceInit(MacClientSharedObject *sharedObject)
 	
 	_nsContext = nil;
 	_context = nil;
+	_spinlockProcessedInfo = OS_SPINLOCK_INIT;
 	
 	if (sharedObject != nil)
 	{
@@ -394,27 +414,41 @@ void MacOGLDisplayPresenter::CopyFrameToBuffer(uint32_t *dstBuffer)
 	CGLUnlockContext(this->_context);
 }
 
-void MacOGLDisplayPresenter::FinishFrameAtIndex(const uint8_t bufferIndex)
+const OGLProcessedFrameInfo& MacOGLDisplayPresenter::GetProcessedFrameInfo()
 {
-	CGLLockContext(this->_context);
-	CGLSetCurrentContext(this->_context);
-	this->OGLVideoOutput::FinishFrameAtIndex(bufferIndex);
-	CGLUnlockContext(this->_context);
+	OSSpinLockLock(&this->_spinlockProcessedInfo);
+	const OGLProcessedFrameInfo &processedInfo = this->OGLVideoOutput::GetProcessedFrameInfo();
+	OSSpinLockUnlock(&this->_spinlockProcessedInfo);
+	
+	return processedInfo;
 }
 
-void MacOGLDisplayPresenter::LockDisplayTextures()
+void MacOGLDisplayPresenter::SetProcessedFrameInfo(const OGLProcessedFrameInfo &processedInfo)
+{
+	OSSpinLockLock(&this->_spinlockProcessedInfo);
+	this->OGLVideoOutput::SetProcessedFrameInfo(processedInfo);
+	OSSpinLockUnlock(&this->_spinlockProcessedInfo);
+}
+
+void MacOGLDisplayPresenter::WriteLockEmuFramebuffer(const uint8_t bufferIndex)
 {
 	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
-	const u8 bufferIndex = this->_emuDisplayInfo.bufferIndex;
+	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
+	
+	pthread_rwlock_wrlock([sharedViewObject rwlockFramebufferAtIndex:bufferIndex]);
+}
+
+void MacOGLDisplayPresenter::ReadLockEmuFramebuffer(const uint8_t bufferIndex)
+{
+	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
 	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
 	
 	pthread_rwlock_rdlock([sharedViewObject rwlockFramebufferAtIndex:bufferIndex]);
 }
 
-void MacOGLDisplayPresenter::UnlockDisplayTextures()
+void MacOGLDisplayPresenter::UnlockEmuFramebuffer(const uint8_t bufferIndex)
 {
 	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
-	const u8 bufferIndex = this->_emuDisplayInfo.bufferIndex;
 	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
 	
 	pthread_rwlock_unlock([sharedViewObject rwlockFramebufferAtIndex:bufferIndex]);
@@ -460,14 +494,14 @@ bool MacOGLDisplayView::GetViewNeedsFlush()
 
 void MacOGLDisplayView::SetViewNeedsFlush()
 {
-	if (!this->_allowViewUpdates || (this->_presenter == nil) || (this->GetNSView() == nil))
+	if (!this->_allowViewUpdates || (this->_presenter == nil) || (this->_caLayer == nil))
 	{
 		return;
 	}
 	
 	if (this->GetRenderToCALayer())
 	{
-		[[this->GetNSView() layer] setNeedsDisplay];
+		[this->_caLayer setNeedsDisplay];
 	}
 	else
 	{

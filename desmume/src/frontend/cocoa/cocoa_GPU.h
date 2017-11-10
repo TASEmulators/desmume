@@ -67,7 +67,6 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 - (void) incrementViewsUsingDirectToCPUFiltering;
 - (void) decrementViewsUsingDirectToCPUFiltering;
 - (void) pushVideoDataToAllDisplayViews;
-- (void) finishAllDisplayViewsAtIndex:(const u8)bufferIndex;
 - (void) flushAllDisplaysOnDisplayLink:(CVDisplayLinkRef)displayLink timeStamp:(const CVTimeStamp *)timeStamp;
 
 - (void) displayLinkStartUsingID:(CGDirectDisplayID)displayID;

@@ -119,6 +119,19 @@ bool IsOSXVersionSupported(const unsigned int major, const unsigned int minor, c
 	return result;
 }
 
+bool IsOSXVersion(const unsigned int major, const unsigned int minor, const unsigned int revision)
+{
+	bool result = false;
+	
+	if (!isSystemVersionAlreadyRead)
+	{
+		ReadSystemVersionPListFile();
+	}
+	
+	result = (isSystemVersionAlreadyRead && (OSXVersionMajor == major) && (OSXVersionMinor == minor) && (OSXVersionRevision == revision));
+	return result;
+}
+
 /********************************************************************************************
 	GetNearestPositivePOT()
 

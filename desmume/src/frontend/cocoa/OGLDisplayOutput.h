@@ -49,6 +49,15 @@ enum ShaderSupportTier
 	ShaderSupport_FutureTier	= 6,
 };
 
+struct OGLProcessedFrameInfo
+{
+	uint8_t bufferIndex;
+	GLuint texID[2];
+	bool isMainDisplayProcessed;
+	bool isTouchDisplayProcessed;
+};
+typedef struct OGLProcessedFrameInfo OGLProcessedFrameInfo;
+
 class OGLContextInfo
 {
 protected:
@@ -273,7 +282,6 @@ public:
 	virtual void SetVisibility(const bool visibleState);
 	
 	virtual void RenderOGL(bool isRenderingFlipped) = 0;
-	virtual void FinishOGL(const u8 bufferIndex) {};
 };
 
 class OGLHUDLayer : public OGLVideoLayer
@@ -306,8 +314,7 @@ protected:
 	OGLFilter *_filterDeposterize[2];
 	OGLFilter *_shaderFilter[2];
 	GLint _displayTexFilter[2];
-	
-	GLuint _texVideoOutputID[2];
+	pthread_rwlock_t _cpuFilterRWLock[2][2];
 	
 	GLuint _vaoMainStatesID;
 	GLuint _vboVertexID;
@@ -315,8 +322,6 @@ protected:
 	
 	void _UpdateRotationScaleOGL();
 	void _UpdateVerticesOGL();
-	
-	void _ProcessDisplayByID(const NDSDisplayID displayID, GLsizei &inoutWidth, GLsizei &inoutHeight, GLuint &inoutTexID);
 	
 public:
 	OGLDisplayLayer() {};
@@ -328,8 +333,8 @@ public:
 	
 	void LoadNativeDisplayByID_OGL(const NDSDisplayID displayID);
 	void ProcessOGL();
+	
 	virtual void RenderOGL(bool isRenderingFlipped);
-	virtual void FinishOGL(const u8 bufferIndex);
 };
 
 class OGLClientFetchObject : public GPUClientFetchObject
@@ -345,10 +350,13 @@ protected:
 	GLuint _texHQ3xLUT;
 	GLuint _texHQ4xLUT;
 	
+	GLuint _texFetch[2];
+	
 	bool _useDirectToCPUFilterPipeline;
 	uint32_t *_srcNativeCloneMaster;
 	uint32_t *_srcNativeClone[2][2];
 	pthread_rwlock_t _srcCloneRWLock[2][2];
+	pthread_rwlock_t _texFetchRWLock[2];
 	bool _srcCloneNeedsUpdate[2][2];
 	
 	virtual void _FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
@@ -372,9 +380,16 @@ public:
 	
 	void CopyFromSrcClone(uint32_t *dstBufferPtr, const NDSDisplayID displayID, const u8 bufferIndex);
 	void FetchNativeDisplayToSrcClone(const NDSDisplayID displayID, const u8 bufferIndex, bool needsLock);
+	void FetchTextureWriteLock(const NDSDisplayID displayID);
+	void FetchTextureReadLock(const NDSDisplayID displayID);
+	void FetchTextureUnlock(const NDSDisplayID displayID);
 	
 	virtual void Init();
 	virtual void SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo);
+	virtual void FetchFromBufferIndex(const u8 index);
+	
+	virtual GLuint GetFetchTexture(const NDSDisplayID displayID);
+	virtual void SetFetchTexture(const NDSDisplayID displayID, GLuint texID);
 };
 
 class OGLVideoOutput : public ClientDisplay3DPresenter
@@ -388,6 +403,8 @@ protected:
 	
 	GLuint _texCPUFilterDstID[2];
 	GLuint _fboFrameCopyID;
+	
+	OGLProcessedFrameInfo _processedFrameInfo;
 	
 	std::vector<OGLVideoLayer *> *_layerList;
 	
@@ -428,11 +445,15 @@ public:
 	
 	// Client view interface
 	virtual void ProcessDisplays();
-	virtual void FinishFrameAtIndex(const uint8_t bufferIndex);
-	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);;
+	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
 	virtual void RenderFrameOGL(bool isRenderingFlipped);
-	virtual void LockDisplayTextures();
-	virtual void UnlockDisplayTextures();
+	
+	virtual const OGLProcessedFrameInfo& GetProcessedFrameInfo();
+	virtual void SetProcessedFrameInfo(const OGLProcessedFrameInfo &processedInfo);
+	
+	virtual void WriteLockEmuFramebuffer(const uint8_t bufferIndex);
+	virtual void ReadLockEmuFramebuffer(const uint8_t bufferIndex);
+	virtual void UnlockEmuFramebuffer(const uint8_t bufferIndex);
 };
 
 extern void (*glBindVertexArrayDESMUME)(GLuint id);

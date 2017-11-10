@@ -52,19 +52,8 @@ MacDisplayLayeredView::MacDisplayLayeredView(ClientDisplay3DPresenter *thePresen
 
 void MacDisplayLayeredView::__InstanceInit()
 {
-	_nsView = nil;
 	_caLayer = nil;
 	_willRenderToCALayer = false;
-}
-
-NSView* MacDisplayLayeredView::GetNSView() const
-{
-	return this->_nsView;
-}
-
-void MacDisplayLayeredView::SetNSView(NSView *theView)
-{
-	this->_nsView = theView;
 }
 
 CALayer<DisplayViewCALayer>* MacDisplayLayeredView::GetCALayer() const

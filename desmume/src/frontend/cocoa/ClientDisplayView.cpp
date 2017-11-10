@@ -72,8 +72,8 @@ void ClientDisplayPresenter::__InstanceInit(const ClientDisplayPresenterProperti
 	
 	_displaySourceSelect[NDSDisplayID_Main]  = ClientDisplaySource_DeterminedByNDS;
 	_displaySourceSelect[NDSDisplayID_Touch] = ClientDisplaySource_DeterminedByNDS;
-	_isSelectedDisplayEnabled[NDSDisplayID_Main]  = true;
-	_isSelectedDisplayEnabled[NDSDisplayID_Touch] = true;
+	_isSelectedDisplayEnabled[NDSDisplayID_Main]  = false;
+	_isSelectedDisplayEnabled[NDSDisplayID_Touch] = false;
 	_selectedSourceForDisplay[NDSDisplayID_Main]  = NDSDisplayID_Main;
 	_selectedSourceForDisplay[NDSDisplayID_Touch] = NDSDisplayID_Touch;
 	
@@ -820,7 +820,7 @@ void ClientDisplayPresenter::LoadDisplays()
 			
 		case ClientDisplaySource_EngineMain:
 		{
-			if ( (this->_emuDisplayInfo.engineID[NDSDisplayID_Main] == GPUEngineID_Main) && (mainDisplaySrc == ClientDisplaySource_EngineMain) )
+			if (this->_emuDisplayInfo.engineID[NDSDisplayID_Main] == GPUEngineID_Main)
 			{
 				this->_selectedSourceForDisplay[NDSDisplayID_Main] = NDSDisplayID_Main;
 				this->_isSelectedDisplayEnabled[NDSDisplayID_Main] = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main];
@@ -835,7 +835,7 @@ void ClientDisplayPresenter::LoadDisplays()
 			
 		case ClientDisplaySource_EngineSub:
 		{
-			if ( (this->_emuDisplayInfo.engineID[NDSDisplayID_Main] == GPUEngineID_Sub)  && (mainDisplaySrc == ClientDisplaySource_EngineSub) )
+			if (this->_emuDisplayInfo.engineID[NDSDisplayID_Main] == GPUEngineID_Sub)
 			{
 				this->_selectedSourceForDisplay[NDSDisplayID_Main] = NDSDisplayID_Main;
 				this->_isSelectedDisplayEnabled[NDSDisplayID_Main] = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Main];
@@ -863,7 +863,7 @@ void ClientDisplayPresenter::LoadDisplays()
 			
 		case ClientDisplaySource_EngineMain:
 		{
-			if ( (this->_emuDisplayInfo.engineID[NDSDisplayID_Touch] == GPUEngineID_Main) && (touchDisplaySrc == ClientDisplaySource_EngineMain) )
+			if (this->_emuDisplayInfo.engineID[NDSDisplayID_Touch] == GPUEngineID_Main)
 			{
 				this->_selectedSourceForDisplay[NDSDisplayID_Touch] = NDSDisplayID_Touch;
 				this->_isSelectedDisplayEnabled[NDSDisplayID_Touch] = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch];
@@ -878,7 +878,7 @@ void ClientDisplayPresenter::LoadDisplays()
 			
 		case ClientDisplaySource_EngineSub:
 		{
-			if ( (this->_emuDisplayInfo.engineID[NDSDisplayID_Touch] == GPUEngineID_Sub)  && (touchDisplaySrc == ClientDisplaySource_EngineSub) )
+			if (this->_emuDisplayInfo.engineID[NDSDisplayID_Touch] == GPUEngineID_Sub)
 			{
 				this->_selectedSourceForDisplay[NDSDisplayID_Touch] = NDSDisplayID_Touch;
 				this->_isSelectedDisplayEnabled[NDSDisplayID_Touch] = this->_emuDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch];
@@ -956,11 +956,6 @@ void ClientDisplayPresenter::UpdateLayout()
 }
 
 void ClientDisplayPresenter::CopyFrameToBuffer(uint32_t *dstBuffer)
-{
-	// Do nothing. This is implementation dependent.
-}
-
-void ClientDisplayPresenter::FinishFrameAtIndex(const uint8_t bufferIndex)
 {
 	// Do nothing. This is implementation dependent.
 }

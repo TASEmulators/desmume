@@ -26,7 +26,8 @@ extern "C"
 {
 #endif
 
-bool IsOSXVersionSupported(const unsigned int major, const unsigned int minor, const unsigned int revision);	
+bool IsOSXVersionSupported(const unsigned int major, const unsigned int minor, const unsigned int revision);
+bool IsOSXVersion(const unsigned int major, const unsigned int minor, const unsigned int revision);
 uint32_t GetNearestPositivePOT(uint32_t value);
 
 #ifdef __cplusplus

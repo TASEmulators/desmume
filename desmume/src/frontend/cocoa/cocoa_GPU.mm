@@ -167,16 +167,21 @@ public:
 #ifdef ENABLE_APPLE_METAL
 	if (IsOSXVersionSupported(10, 11, 0) && ![[NSUserDefaults standardUserDefaults] boolForKey:@"Debug_DisableMetal"])
 	{
-		fetchObject = new MacMetalFetchObject;
-		
-		if (fetchObject->GetClientData() == nil)
+		// macOS v10.13.0 and v10.13.1 are specifically checked for here, because there are
+		// bugs in these versions of macOS that prevent Metal from working properly.
+		if (!IsOSXVersion(10, 13, 0) && !IsOSXVersion(10, 13, 1))
 		{
-			delete fetchObject;
-			fetchObject = NULL;
-		}
-		else
-		{
-			GPU->SetWillPostprocessDisplays(false);
+			fetchObject = new MacMetalFetchObject;
+			
+			if (fetchObject->GetClientData() == nil)
+			{
+				delete fetchObject;
+				fetchObject = NULL;
+			}
+			else
+			{
+				GPU->SetWillPostprocessDisplays(false);
+			}
 		}
 	}
 #endif
@@ -188,6 +193,8 @@ public:
 	
 	fetchObject->Init();
 	gpuEvent->SetFetchObject(fetchObject);
+	
+	[self clearWithColor:0x8000];
 	
 	return self;
 }
@@ -244,15 +251,16 @@ public:
 
 - (void) setGpuDimensions:(NSSize)theDimensions
 {
-	[[self sharedData] finishAllDisplayViewsAtIndex:0];
-	[[self sharedData] finishAllDisplayViewsAtIndex:1];
-	
 	gpuEvent->Render3DLock();
 	gpuEvent->FramebufferLockWrite();
+	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:0]);
+	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:1]);
 	
 	GPU->SetCustomFramebufferSize(theDimensions.width, theDimensions.height);
 	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
 	
+	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:1]);
+	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:0]);
 	gpuEvent->FramebufferUnlock();
 	gpuEvent->Render3DUnlock();
 }
@@ -294,15 +302,16 @@ public:
 	}
 	
 	// Change the color format.
-	[[self sharedData] finishAllDisplayViewsAtIndex:0];
-	[[self sharedData] finishAllDisplayViewsAtIndex:1];
-	
 	gpuEvent->Render3DLock();
 	gpuEvent->FramebufferLockWrite();
+	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:0]);
+	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:1]);
 	
 	GPU->SetColorFormat((NDSColorFormat)colorFormat);
 	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
 	
+	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:1]);
+	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:0]);
 	gpuEvent->FramebufferUnlock();
 	gpuEvent->Render3DUnlock();
 }
@@ -842,8 +851,17 @@ public:
 - (void) clearWithColor:(const uint16_t)colorBGRA5551
 {
 	gpuEvent->FramebufferLockWrite();
+	const u8 bufferIndex = GPU->GetDisplayInfo().bufferIndex;
+	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:bufferIndex]);
+	
 	GPU->ClearWithColor(colorBGRA5551);
+	
+	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:bufferIndex]);
 	gpuEvent->FramebufferUnlock();
+	
+#if !defined(PORT_VERSION_OPENEMU)
+	[[self sharedData] signalFetchAtIndex:bufferIndex];
+#endif
 }
 
 - (void) respondToPauseState:(BOOL)isPaused
@@ -1022,30 +1040,6 @@ public:
 	}
 }
 
-- (void) finishAllDisplayViewsAtIndex:(const u8)bufferIndex
-{
-	pthread_mutex_t *currentMutex = _mutexOutputList;
-	
-	if (currentMutex != NULL)
-	{
-		pthread_mutex_lock(currentMutex);
-	}
-	
-	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
-	{
-		if ([cdsOutput isKindOfClass:[CocoaDSDisplayVideo class]])
-		{
-			ClientDisplay3DView *cdv = [(CocoaDSDisplayVideo *)cdsOutput clientDisplay3DView];
-			cdv->Get3DPresenter()->FinishFrameAtIndex(bufferIndex);
-		}
-	}
-	
-	if (currentMutex != NULL)
-	{
-		pthread_mutex_unlock(currentMutex);
-	}
-}
-
 - (void) flushAllDisplaysOnDisplayLink:(CVDisplayLinkRef)displayLink timeStamp:(const CVTimeStamp *)timeStamp
 {
 	pthread_mutex_t *currentMutex = _mutexOutputList;
@@ -1190,10 +1184,10 @@ public:
 
 - (void) runFetchLoop
 {
+	pthread_mutex_lock(&_mutexFetchExecute);
+	
 	do
 	{
-		pthread_mutex_lock(&_mutexFetchExecute);
-		
 		while (!_isFetchSignalled)
 		{
 			pthread_cond_wait(&_condSignalFetch, &_mutexFetchExecute);
@@ -1202,8 +1196,6 @@ public:
 		
 		GPUFetchObject->FetchFromBufferIndex(_fetchIndex);
 		[self pushVideoDataToAllDisplayViews];
-		
-		pthread_mutex_unlock(&_mutexFetchExecute);
 	} while(true);
 }
 

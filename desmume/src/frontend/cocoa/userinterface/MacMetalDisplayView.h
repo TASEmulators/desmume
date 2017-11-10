@@ -34,6 +34,15 @@ class MacMetalFetchObject;
 class MacMetalDisplayPresenter;
 class MacMetalDisplayView;
 
+struct MetalProcessedFrameInfo
+{
+	uint8_t bufferIndex;
+	id<MTLTexture> tex[2];
+	bool isMainDisplayProcessed;
+	bool isTouchDisplayProcessed;
+};
+typedef struct MetalProcessedFrameInfo MetalProcessedFrameInfo;
+
 struct DisplayViewShaderProperties
 {
 	float width;
@@ -70,22 +79,22 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLBuffer> _bufMasterBrightMode[2];
 	id<MTLBuffer> _bufMasterBrightIntensity[2];
 	
-	id<MTLTexture> texDisplayFetch16NativeMain;
-	id<MTLTexture> texDisplayFetch16NativeTouch;
-	id<MTLTexture> texDisplayFetch32NativeMain;
-	id<MTLTexture> texDisplayFetch32NativeTouch;
-	id<MTLTexture> texDisplayFetch16CustomMain;
-	id<MTLTexture> texDisplayFetch16CustomTouch;
-	id<MTLTexture> texDisplayFetch32CustomMain;
-	id<MTLTexture> texDisplayFetch32CustomTouch;
+	id<MTLTexture> _texDisplayFetch16NativeMain;
+	id<MTLTexture> _texDisplayFetch16NativeTouch;
+	id<MTLTexture> _texDisplayFetch32NativeMain;
+	id<MTLTexture> _texDisplayFetch32NativeTouch;
+	id<MTLTexture> _texDisplayPostprocessNativeMain;
+	id<MTLTexture> _texDisplayPostprocessNativeTouch;
 	
-	id<MTLTexture> texDisplayPostprocessNativeMain;
-	id<MTLTexture> texDisplayPostprocessCustomMain;
-	id<MTLTexture> texDisplayPostprocessNativeTouch;
-	id<MTLTexture> texDisplayPostprocessCustomTouch;
+	id<MTLTexture> _texDisplayFetch16CustomMain;
+	id<MTLTexture> _texDisplayFetch16CustomTouch;
+	id<MTLTexture> _texDisplayFetch32CustomMain;
+	id<MTLTexture> _texDisplayFetch32CustomTouch;
+	id<MTLTexture> _texDisplayPostprocessCustomMain;
+	id<MTLTexture> _texDisplayPostprocessCustomTouch;
 	
-	id<MTLTexture> texDisplaySrcTargetMain;
-	id<MTLTexture> texDisplaySrcTargetTouch;
+	id<MTLTexture> texFetchMain;
+	id<MTLTexture> texFetchTouch;
 	
 	id<MTLTexture> texLQ2xLUT;
 	id<MTLTexture> texHQ2xLUT;
@@ -93,16 +102,13 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLTexture> texHQ4xLUT;
 	id<MTLTexture> texCurrentHQnxLUT;
 	
-	MTLSize fetchThreadsPerGroup;
-	MTLSize fetchThreadGroupsPerGridNative;
-	MTLSize fetchThreadGroupsPerGridCustom;
+	MTLSize _fetchThreadsPerGroup;
+	MTLSize _fetchThreadGroupsPerGridNative;
+	MTLSize _fetchThreadGroupsPerGridCustom;
 	MTLSize deposterizeThreadsPerGroup;
 	MTLSize deposterizeThreadGroupsPerGrid;
 	
-	size_t displayFetchNativeBufferSize;
-	size_t displayFetchCustomBufferSize;
-	
-	pthread_mutex_t _mutexFetch;
+	uint32_t _isUsingFramebufferDirectly[2][2];
 }
 
 @property (readonly, nonatomic) id<MTLDevice> device;
@@ -117,22 +123,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 
 @property (readonly, nonatomic) id<MTLBuffer> hudIndexBuffer;
 
-@property (readonly, nonatomic) id<MTLTexture> texDisplayFetch16NativeMain;
-@property (readonly, nonatomic) id<MTLTexture> texDisplayFetch16NativeTouch;
-@property (readonly, nonatomic) id<MTLTexture> texDisplayFetch32NativeMain;
-@property (readonly, nonatomic) id<MTLTexture> texDisplayFetch32NativeTouch;
-@property (retain) id<MTLTexture> texDisplayFetch16CustomMain;
-@property (retain) id<MTLTexture> texDisplayFetch16CustomTouch;
-@property (retain) id<MTLTexture> texDisplayFetch32CustomMain;
-@property (retain) id<MTLTexture> texDisplayFetch32CustomTouch;
-
-@property (retain) id<MTLTexture> texDisplayPostprocessNativeMain;
-@property (retain) id<MTLTexture> texDisplayPostprocessCustomMain;
-@property (retain) id<MTLTexture> texDisplayPostprocessNativeTouch;
-@property (retain) id<MTLTexture> texDisplayPostprocessCustomTouch;
-
-@property (retain) id<MTLTexture> texDisplaySrcTargetMain;
-@property (retain) id<MTLTexture> texDisplaySrcTargetTouch;
+@property (retain) id<MTLTexture> texFetchMain;
+@property (retain) id<MTLTexture> texFetchTouch;
 
 @property (readonly, nonatomic) id<MTLTexture> texLQ2xLUT;
 @property (readonly, nonatomic) id<MTLTexture> texHQ2xLUT;
@@ -140,16 +132,14 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (readonly, nonatomic) id<MTLTexture> texHQ4xLUT;
 @property (retain) id<MTLTexture> texCurrentHQnxLUT;
 
-@property (assign) size_t displayFetchNativeBufferSize;
-@property (assign) size_t displayFetchCustomBufferSize;
-
-@property (readonly, nonatomic) MTLSize fetchThreadsPerGroup;
-@property (readonly, nonatomic) MTLSize fetchThreadGroupsPerGridNative;
-@property (assign) MTLSize fetchThreadGroupsPerGridCustom;
 @property (readonly, nonatomic) MTLSize deposterizeThreadsPerGroup;
 @property (readonly, nonatomic) MTLSize deposterizeThreadGroupsPerGrid;
 
+- (void) setUsingFramebufferDirectlyAtIndex:(const u8)index displayID:(NDSDisplayID)displayID state:(bool)theState;
+- (bool) isUsingFramebufferDirectlyAtIndex:(const u8)index displayID:(NDSDisplayID)displayID;
+
 - (void) setFetchBuffersWithDisplayInfo:(const NDSDisplayInfo &)dispInfo;
+- (void) setFetchTextureBindingsAtIndex:(const u8)index commandBuffer:(id<MTLCommandBuffer>)cb;
 - (void) fetchFromBufferIndex:(const u8)index;
 - (void) fetchNativeDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex;
 - (void) fetchCustomDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex;
@@ -174,15 +164,14 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLBuffer> _hudVtxPositionBuffer;
 	id<MTLBuffer> _hudVtxColorBuffer;
 	id<MTLBuffer> _hudTexCoordBuffer;
-	id<MTLBuffer> bufCPUFilterSrcMain;
-	id<MTLBuffer> bufCPUFilterSrcTouch;
+	id<MTLBuffer> _bufCPUFilterSrcMain;
+	id<MTLBuffer> _bufCPUFilterSrcTouch;
 	id<MTLBuffer> bufCPUFilterDstMain;
 	id<MTLBuffer> bufCPUFilterDstTouch;
 	
 	id<MTLTexture> _texDisplaySrcDeposterize[2][2];
 	id<MTLTexture> texDisplayPixelScaleMain;
 	id<MTLTexture> texDisplayPixelScaleTouch;
-	id<MTLTexture> _texDisplayOutput[2];
 	id<MTLTexture> texHUDCharMap;
 	
 	MTLSize _pixelScalerThreadsPerGroup;
@@ -193,28 +182,25 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	BOOL needsScreenVerticesUpdate;
 	BOOL needsHUDVerticesUpdate;
 	
-	pthread_mutex_t _mutexDisplayTextureUpdate;
 	pthread_mutex_t _mutexBufferUpdate;
 	bool _needEncodeViewport;
 	MTLViewport _newViewport;
-	bool _willDrawDisplays;
 	bool _willDrawHUD;
 	bool _willDrawHUDInput;
 	size_t _hudStringLength;
 	size_t _hudTouchLineLength;
+		
+	MetalProcessedFrameInfo processedFrameInfo;
 }
 
 @property (readonly, nonatomic) ClientDisplay3DPresenter *cdp;
 @property (assign, nonatomic) MetalDisplayViewSharedData *sharedData;
 @property (readonly, nonatomic) MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
-@property (readonly, nonatomic) pthread_mutex_t *mutexDisplayTextureUpdate;
 @property (readonly, nonatomic) pthread_mutex_t *mutexBufferUpdate;
 @property (retain) id<MTLComputePipelineState> pixelScalePipeline;
 @property (retain) id<MTLRenderPipelineState> outputRGBAPipeline;
 @property (retain) id<MTLRenderPipelineState> outputDrawablePipeline;
 @property (assign) MTLPixelFormat drawableFormat;
-@property (retain) id<MTLBuffer> bufCPUFilterSrcMain;
-@property (retain) id<MTLBuffer> bufCPUFilterSrcTouch;
 @property (retain) id<MTLBuffer> bufCPUFilterDstMain;
 @property (retain) id<MTLBuffer> bufCPUFilterDstTouch;
 @property (retain) id<MTLTexture> texDisplayPixelScaleMain;
@@ -226,6 +212,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (assign) BOOL needsHUDVerticesUpdate;
 @property (assign, nonatomic) VideoFilterTypeID pixelScaler;
 @property (assign, nonatomic) OutputFilterTypeID outputFilter;
+@property (assign) MetalProcessedFrameInfo processedFrameInfo;
 
 - (id) initWithDisplayPresenter:(MacMetalDisplayPresenter *)thePresenter;
 - (id<MTLCommandBuffer>) newCommandBuffer;
@@ -236,7 +223,9 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 - (void) updateRenderBuffers;
 - (void) renderForCommandBuffer:(id<MTLCommandBuffer>)cb
 			outputPipelineState:(id<MTLRenderPipelineState>)outputPipelineState
-			   hudPipelineState:(id<MTLRenderPipelineState>)hudPipelineState;
+			   hudPipelineState:(id<MTLRenderPipelineState>)hudPipelineState
+				 texDisplayMain:(id<MTLTexture>)texDisplayMain
+				texDisplayTouch:(id<MTLTexture>)texDisplayTouch;
 - (void) renderToBuffer:(uint32_t *)dstBuffer;
 
 @end
@@ -288,6 +277,7 @@ private:
 protected:
 	MacMetalDisplayPresenterObject *_presenterObject;
 	pthread_mutex_t _mutexProcessPtr;
+	pthread_rwlock_t _cpuFilterRWLock[2][2];
 	
 	virtual void _UpdateNormalSize();
 	virtual void _UpdateOrder();
@@ -304,6 +294,7 @@ public:
 	
 	MacMetalDisplayPresenterObject* GetPresenterObject() const;
 	pthread_mutex_t* GetMutexProcessPtr();
+	pthread_rwlock_t* GetCPUFilterRWLock(const NDSDisplayID displayID, const uint8_t bufferIndex);
 	
 	virtual void Init();
 	virtual void SetSharedData(MacClientSharedObject *sharedObject);

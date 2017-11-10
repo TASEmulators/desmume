@@ -301,7 +301,6 @@ public:
 	virtual void LoadDisplays();
 	virtual void ProcessDisplays();
 	virtual void UpdateLayout();
-	virtual void FinishFrameAtIndex(const uint8_t bufferIndex);
 	
 	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
 	

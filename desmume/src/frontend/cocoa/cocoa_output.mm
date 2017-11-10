@@ -517,7 +517,7 @@
 	_receivedFrameIndex = 0;
 	_currentReceivedFrameIndex = 0;
 	_receivedFrameCount = 0;
-		
+	
 	return self;
 }
 
@@ -1137,10 +1137,6 @@
 
 - (void) handleReloadReprocessRedraw
 {
-	GPUClientFetchObject &fetchObjMutable = (GPUClientFetchObject &)_cdv->Get3DPresenter()->GetFetchObject();
-	const u8 bufferIndex = fetchObjMutable.GetLastFetchIndex();
-	
-	fetchObjMutable.FetchFromBufferIndex(bufferIndex);
 	_cdv->Get3DPresenter()->LoadDisplays();
 	_cdv->Get3DPresenter()->ProcessDisplays();
 	
