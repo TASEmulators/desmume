@@ -546,7 +546,7 @@ void ClientInputHandler::ProcessInputs()
 	}
 	else
 	{
-		if ( (this->_execControl != NULL) && (this->_execControl->GetExecutionBehaviorApplied() != ExecutionBehavior_FrameJump) )
+		if ( (this->_execControl == NULL) || ((this->_execControl != NULL) && (this->_execControl->GetExecutionBehaviorApplied() != ExecutionBehavior_FrameJump)) )
 		{
 			size_t i = 0;
 			

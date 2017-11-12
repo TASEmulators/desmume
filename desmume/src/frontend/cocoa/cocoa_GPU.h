@@ -28,13 +28,19 @@
 #undef BOOL
 #endif
 
-#if defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
-#define ENABLE_APPLE_METAL
+#if defined(PORT_VERSION_OS_X_APP)
+	#define ENABLE_SHARED_FETCH_OBJECT
+#endif
+
+#if defined(ENABLE_SHARED_FETCH_OBJECT) && defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
+	#define ENABLE_APPLE_METAL
 #endif
 
 #define VIDEO_FLUSH_TIME_LIMIT_OFFSET	8	// The amount of time, in seconds, to wait for a flush to occur on a given CVDisplayLink before stopping it.
 
 class GPUEventHandlerOSX;
+
+#ifdef ENABLE_SHARED_FETCH_OBJECT
 
 typedef std::map<CGDirectDisplayID, CVDisplayLinkRef> DisplayLinksActiveMap;
 typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
@@ -77,6 +83,8 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 
 @end
 
+#endif
+
 @interface CocoaDSGPU : NSObject
 {
 	UInt32 gpuStateFlags;
@@ -87,6 +95,7 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 	
 	OSSpinLock spinlockGpuState;
 	GPUEventHandlerOSX *gpuEvent;
+	
 	GPUClientFetchObject *fetchObject;
 }
 
@@ -95,8 +104,6 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 @property (assign) NSUInteger gpuScale;
 @property (assign) NSUInteger gpuColorFormat;
 @property (readonly) pthread_rwlock_t *gpuFrameRWLock;
-@property (readonly, nonatomic) GPUClientFetchObject *fetchObject;
-@property (readonly, nonatomic) MacClientSharedObject *sharedData;
 
 @property (assign) BOOL layerMainGPU;
 @property (assign) BOOL layerMainBG0;
@@ -124,7 +131,13 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 @property (assign) NSUInteger render3DTextureScalingFactor;
 @property (assign) BOOL render3DFragmentSamplingHack;
 
+#ifdef ENABLE_SHARED_FETCH_OBJECT
+@property (readonly, nonatomic) GPUClientFetchObject *fetchObject;
+@property (readonly, nonatomic) MacClientSharedObject *sharedData;
+
 - (void) setOutputList:(NSMutableArray *)theOutputList mutexPtr:(pthread_mutex_t *)theMutex;
+#endif
+
 - (BOOL) gpuStateByBit:(const UInt32)stateBit;
 - (NSString *) render3DRenderingEngineString;
 - (void) clearWithColor:(const uint16_t)colorBGRA5551;
@@ -137,6 +150,8 @@ extern "C"
 {
 #endif
 
+#ifdef ENABLE_SHARED_FETCH_OBJECT
+
 static void* RunFetchThread(void *arg);
 
 CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
@@ -145,6 +160,7 @@ CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
 								CVOptionFlags flagsIn,
 								CVOptionFlags *flagsOut,
 								void *displayLinkContext);
+#endif
 
 bool OSXOpenGLRendererInit();
 bool OSXOpenGLRendererBegin();

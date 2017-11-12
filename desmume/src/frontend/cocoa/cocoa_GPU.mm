@@ -95,8 +95,6 @@ public:
 @dynamic gpuScale;
 @dynamic gpuColorFormat;
 @dynamic gpuFrameRWLock;
-@synthesize fetchObject;
-@dynamic sharedData;
 
 @dynamic layerMainGPU;
 @dynamic layerMainBG0;
@@ -124,6 +122,10 @@ public:
 @dynamic render3DTextureScalingFactor;
 @dynamic render3DFragmentSamplingHack;
 
+#ifdef ENABLE_SHARED_FETCH_OBJECT
+@synthesize fetchObject;
+@dynamic sharedData;
+#endif
 
 - (id)init
 {
@@ -186,6 +188,7 @@ public:
 	}
 #endif
 	
+#ifdef ENABLE_SHARED_FETCH_OBJECT
 	if (fetchObject == NULL)
 	{
 		fetchObject = new MacOGLClientFetchObject;
@@ -193,6 +196,7 @@ public:
 	
 	fetchObject->Init();
 	gpuEvent->SetFetchObject(fetchObject);
+#endif
 	
 	[self clearWithColor:0x8000];
 	
@@ -253,14 +257,20 @@ public:
 {
 	gpuEvent->Render3DLock();
 	gpuEvent->FramebufferLockWrite();
+	
+#ifdef ENABLE_SHARED_FETCH_OBJECT
 	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:0]);
 	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:1]);
+#endif
 	
 	GPU->SetCustomFramebufferSize(theDimensions.width, theDimensions.height);
-	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
 	
+#ifdef ENABLE_SHARED_FETCH_OBJECT
+	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
 	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:1]);
 	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:0]);
+#endif
+	
 	gpuEvent->FramebufferUnlock();
 	gpuEvent->Render3DUnlock();
 }
@@ -304,14 +314,20 @@ public:
 	// Change the color format.
 	gpuEvent->Render3DLock();
 	gpuEvent->FramebufferLockWrite();
+	
+#ifdef ENABLE_SHARED_FETCH_OBJECT
 	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:0]);
 	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:1]);
+#endif
 	
 	GPU->SetColorFormat((NDSColorFormat)colorFormat);
-	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
 	
+#ifdef ENABLE_SHARED_FETCH_OBJECT
+	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
 	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:1]);
 	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:0]);
+#endif
+	
 	gpuEvent->FramebufferUnlock();
 	gpuEvent->Render3DUnlock();
 }
@@ -332,10 +348,12 @@ public:
 	return gpuEvent->GetFrameRWLock();
 }
 
+#ifdef ENABLE_SHARED_FETCH_OBJECT
 - (void) setOutputList:(NSMutableArray *)theOutputList mutexPtr:(pthread_mutex_t *)theMutex
 {
 	[(MacClientSharedObject *)fetchObject->GetClientData() setOutputList:theOutputList mutex:theMutex];
 }
+#endif
 
 - (void) setRender3DRenderingEngine:(NSInteger)rendererID
 {
@@ -851,15 +869,20 @@ public:
 - (void) clearWithColor:(const uint16_t)colorBGRA5551
 {
 	gpuEvent->FramebufferLockWrite();
+	
+#ifdef ENABLE_SHARED_FETCH_OBJECT
 	const u8 bufferIndex = GPU->GetDisplayInfo().bufferIndex;
 	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:bufferIndex]);
+#endif
 	
 	GPU->ClearWithColor(colorBGRA5551);
 	
+#ifdef ENABLE_SHARED_FETCH_OBJECT
 	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:bufferIndex]);
+#endif
 	gpuEvent->FramebufferUnlock();
 	
-#if !defined(PORT_VERSION_OPENEMU)
+#ifdef ENABLE_SHARED_FETCH_OBJECT
 	[[self sharedData] signalFetchAtIndex:bufferIndex];
 #endif
 }
@@ -885,6 +908,8 @@ public:
 }
 
 @end
+
+#ifdef ENABLE_SHARED_FETCH_OBJECT
 
 @implementation MacClientSharedObject
 
@@ -1206,6 +1231,8 @@ public:
 
 @end
 
+#endif
+
 #pragma mark -
 
 GPUEventHandlerOSX::GPUEventHandlerOSX()
@@ -1245,7 +1272,7 @@ void GPUEventHandlerOSX::DidFrameBegin(bool isFrameSkipRequested, const u8 targe
 {
 	this->FramebufferLockWrite();
 	
-#if !defined(PORT_VERSION_OPENEMU)
+#ifdef ENABLE_SHARED_FETCH_OBJECT
 	if (!isFrameSkipRequested)
 	{
 		MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_fetchObject->GetClientData();
@@ -1256,7 +1283,7 @@ void GPUEventHandlerOSX::DidFrameBegin(bool isFrameSkipRequested, const u8 targe
 
 void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo)
 {
-#if !defined(PORT_VERSION_OPENEMU)
+#ifdef ENABLE_SHARED_FETCH_OBJECT
 	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_fetchObject->GetClientData();
 	if (!isFrameSkipped)
 	{
@@ -1267,7 +1294,7 @@ void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &
 	
 	this->FramebufferUnlock();
 	
-#if !defined(PORT_VERSION_OPENEMU)
+#ifdef ENABLE_SHARED_FETCH_OBJECT
 	if (!isFrameSkipped)
 	{
 		[sharedViewObject signalFetchAtIndex:latestDisplayInfo.bufferIndex];
@@ -1371,6 +1398,8 @@ CGLContextObj OSXOpenGLRendererContext = NULL;
 CGLPBufferObj OSXOpenGLRendererPBuffer = NULL;
 #pragma GCC diagnostic pop
 
+#ifdef ENABLE_SHARED_FETCH_OBJECT
+
 static void* RunFetchThread(void *arg)
 {
 	MacClientSharedObject *sharedData = (MacClientSharedObject *)arg;
@@ -1391,6 +1420,8 @@ CVReturn MacDisplayLinkCallback(CVDisplayLinkRef displayLink,
 	
 	return kCVReturnSuccess;
 }
+
+#endif
 
 bool OSXOpenGLRendererInit()
 {

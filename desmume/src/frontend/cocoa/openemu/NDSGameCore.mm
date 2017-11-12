@@ -22,6 +22,8 @@
 #import "cocoa_firmware.h"
 #import "cocoa_GPU.h"
 #import "cocoa_input.h"
+#import "ClientDisplayView.h"
+#import "ClientInputHandler.h"
 #import "OESoundInterface.h"
 #import "OENDSSystemResponderClient.h"
 
@@ -57,21 +59,21 @@ volatile bool execute = true;
 	touchLocation.x = 0;
 	touchLocation.y = 0;
 	
-	inputID[OENDSButtonUp]			= DSControllerState_Up;
-	inputID[OENDSButtonDown]		= DSControllerState_Down;
-	inputID[OENDSButtonLeft]		= DSControllerState_Left;
-	inputID[OENDSButtonRight]		= DSControllerState_Right;
-	inputID[OENDSButtonA]			= DSControllerState_A;
-	inputID[OENDSButtonB]			= DSControllerState_B;
-	inputID[OENDSButtonX]			= DSControllerState_X;
-	inputID[OENDSButtonY]			= DSControllerState_Y;
-	inputID[OENDSButtonL]			= DSControllerState_L;
-	inputID[OENDSButtonR]			= DSControllerState_R;
-	inputID[OENDSButtonStart]		= DSControllerState_Start;
-	inputID[OENDSButtonSelect]		= DSControllerState_Select;
-	inputID[OENDSButtonMicrophone]	= DSControllerState_Microphone;
-	inputID[OENDSButtonLid]			= DSControllerState_Lid;
-	inputID[OENDSButtonDebug]		= DSControllerState_Debug;
+	inputID[OENDSButtonUp]			= NDSInputID_Up;
+	inputID[OENDSButtonDown]		= NDSInputID_Down;
+	inputID[OENDSButtonLeft]		= NDSInputID_Left;
+	inputID[OENDSButtonRight]		= NDSInputID_Right;
+	inputID[OENDSButtonA]			= NDSInputID_A;
+	inputID[OENDSButtonB]			= NDSInputID_B;
+	inputID[OENDSButtonX]			= NDSInputID_X;
+	inputID[OENDSButtonY]			= NDSInputID_Y;
+	inputID[OENDSButtonL]			= NDSInputID_L;
+	inputID[OENDSButtonR]			= NDSInputID_R;
+	inputID[OENDSButtonStart]		= NDSInputID_Start;
+	inputID[OENDSButtonSelect]		= NDSInputID_Select;
+	inputID[OENDSButtonMicrophone]	= NDSInputID_Microphone;
+	inputID[OENDSButtonLid]			= NDSInputID_Lid;
+	inputID[OENDSButtonDebug]		= NDSInputID_Debug;
 	
 	// Set up the emulation core
 	CommonSettings.advanced_timing = true;
@@ -86,7 +88,7 @@ volatile bool execute = true;
 	
 	// Set up the DS controller
 	cdsController = [[[[CocoaDSController alloc] init] retain] autorelease];
-	[cdsController setMicMode:MicrophoneMode_InternalNoise];
+	[cdsController startHardwareMicDevice];
 	
 	// Set up the cheat system
 	cdsCheats = [[[[CocoaDSCheatManager alloc] init] retain] autorelease];
@@ -105,7 +107,7 @@ volatile bool execute = true;
 	openEmuSoundInterfaceBuffer = [self ringBufferAtIndex:0];
 	
 	NSInteger result = SPU_ChangeSoundCore(SNDCORE_OPENEMU, (int)SPU_BUFFER_BYTES);
-	if(result == -1)
+	if (result == -1)
 	{
 		SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
 	}
@@ -140,7 +142,7 @@ volatile bool execute = true;
 - (NSInteger) displayMode
 {
 	OSSpinLockLock(&spinlockDisplayMode);
-	NSInteger theMode = displayMode;
+	const NSInteger theMode = displayMode;
 	OSSpinLockUnlock(&spinlockDisplayMode);
 	
 	return theMode;
@@ -187,46 +189,7 @@ volatile bool execute = true;
 	return NO;
 }
 
-#pragma mark - Execution
-
-- (BOOL)rendersToOpenGL
-{
-	return NO;
-}
-
-#pragma mark - ABSTRACT METHODS
-
-- (void)resetEmulation
-{
-	pthread_rwlock_wrlock(&rwlockCoreExecute);
-	NDS_Reset();
-	pthread_rwlock_unlock(&rwlockCoreExecute);
-	execute = true;
-}
-
-- (void)executeFrameSkippingFrame:(BOOL)skip
-{
-	if (skip)
-	{
-		NDS_SkipNextFrame();
-	}
-	
-	[self executeFrame];
-}
-
-- (void)executeFrame
-{
-	[cdsController flush];
-	
-	NDS_beginProcessingInput();
-	NDS_endProcessingInput();
-	
-	pthread_rwlock_wrlock(&rwlockCoreExecute);
-	NDS_exec<false>();
-	pthread_rwlock_unlock(&rwlockCoreExecute);
-	
-	SPU_Emulate_user();
-}
+#pragma mark - Starting
 
 - (BOOL)loadFileAtPath:(NSString*)path
 {
@@ -258,12 +221,75 @@ volatile bool execute = true;
 	return isRomLoaded;
 }
 
+#pragma mark - Execution
+
+- (NSTimeInterval)frameInterval
+{
+	return DS_FRAMES_PER_SECOND;
+}
+
+- (void)executeFrame
+{
+	ClientInputHandler *inputHandler = [cdsController inputHandler];
+	inputHandler->ProcessInputs();
+	inputHandler->ApplyInputs();
+	
+	pthread_rwlock_wrlock(&rwlockCoreExecute);
+	NDS_exec<false>();
+	pthread_rwlock_unlock(&rwlockCoreExecute);
+	
+	SPU_Emulate_user();
+}
+
+- (void)resetEmulation
+{
+	pthread_rwlock_wrlock(&rwlockCoreExecute);
+	NDS_Reset();
+	pthread_rwlock_unlock(&rwlockCoreExecute);
+	execute = true;
+}
+
+- (void)executeFrameSkippingFrame:(BOOL)skip
+{
+	if (skip)
+	{
+		NDS_SkipNextFrame();
+	}
+	
+	[self executeFrame];
+}
+
 #pragma mark - Video
+
+- (const void *)getVideoBufferWithHint:(void *)hint
+{
+	return GPU->GetDisplayInfo().masterNativeBuffer;
+}
+
+- (OEGameCoreRendering)gameCoreRendering
+{
+	return OEGameCoreRendering2DVideo;
+}
+
+- (BOOL)hasAlternateRenderingThread
+{
+	return NO;
+}
+
+- (BOOL)needsDoubleBufferedFBO
+{
+	return NO;
+}
+
+- (OEIntSize)bufferSize
+{
+	return OEIntSizeMake(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
+}
 
 - (OEIntRect)screenRect
 {
 	OSSpinLockLock(&spinlockDisplayMode);
-	OEIntRect theRect = displayRect;
+	const OEIntRect theRect = displayRect;
 	OSSpinLockUnlock(&spinlockDisplayMode);
 	
 	return theRect;
@@ -272,25 +298,10 @@ volatile bool execute = true;
 - (OEIntSize)aspectSize
 {
 	OSSpinLockLock(&spinlockDisplayMode);
-	OEIntSize theAspectRatio = displayAspectRatio;
+	const OEIntSize theAspectRatio = displayAspectRatio;
 	OSSpinLockUnlock(&spinlockDisplayMode);
 	
 	return theAspectRatio;
-}
-
-- (OEIntSize)bufferSize
-{
-	return OEIntSizeMake(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
-}
-
-- (const void *)videoBuffer
-{
-	return GPU->GetDisplayInfo().masterNativeBuffer;
-}
-
-- (GLenum)pixelFormat
-{
-	return GL_RGBA;
 }
 
 - (GLenum)pixelType
@@ -298,36 +309,14 @@ volatile bool execute = true;
 	return GL_UNSIGNED_SHORT_1_5_5_5_REV;
 }
 
+- (GLenum)pixelFormat
+{
+	return GL_RGBA;
+}
+
 - (GLenum)internalPixelFormat
 {
 	return GL_RGB5_A1;
-}
-
-- (NSTimeInterval)frameInterval
-{
-	return DS_FRAMES_PER_SECOND;
-}
-
-- (void)changeDisplayMode
-{
-	switch (displayMode)
-    {
-        case ClientDisplayMode_Main:
-            [self setDisplayMode:ClientDisplayMode_Touch];
-            break;
-			
-        case ClientDisplayMode_Touch:
-            [self setDisplayMode:ClientDisplayMode_Dual];
-            break;
-			
-        case ClientDisplayMode_Dual:
-            [self setDisplayMode:ClientDisplayMode_Main];
-            break;
-			
-        default:
-            return;
-            break;
-    }
 }
 
 #pragma mark - Audio
@@ -342,14 +331,14 @@ volatile bool execute = true;
 	return SPU_NUMBER_CHANNELS;
 }
 
+- (NSUInteger)audioBitDepth
+{
+	return SPU_SAMPLE_RESOLUTION;
+}
+
 - (double)audioSampleRate
 {
 	return SPU_SAMPLE_RATE;
-}
-
-- (NSUInteger)audioBitDepth
-{
-    return SPU_SAMPLE_RESOLUTION;
 }
 
 - (NSUInteger)channelCountForBuffer:(NSUInteger)buffer
@@ -365,6 +354,74 @@ volatile bool execute = true;
 - (double)audioSampleRateForBuffer:(NSUInteger)buffer
 {
 	return [self audioSampleRate];
+}
+
+#pragma mark - Save States
+
+- (void)saveStateToFileAtPath:(NSString *)fileName completionHandler:(void(^)(BOOL success, NSError *error))block
+{
+	BOOL fileSuccess = [CocoaDSFile saveState:[NSURL fileURLWithPath:fileName]];
+	
+	if (block != nil)
+	{
+		block(fileSuccess, nil);
+	}
+}
+
+- (void)loadStateFromFileAtPath:(NSString *)fileName completionHandler:(void(^)(BOOL success, NSError *error))block
+{	
+	BOOL fileSuccess = [CocoaDSFile loadState:[NSURL fileURLWithPath:fileName]];
+	
+	if (block != nil)
+	{
+		block(fileSuccess, nil);
+	}
+}
+
+#pragma mark - Optional
+
+- (NSTrackingAreaOptions)mouseTrackingOptions
+{
+	return 0;
+}
+
+#pragma mark - Cheats - Optional
+
+- (void)setCheat:(NSString *)code setType:(NSString *)type setEnabled:(BOOL)enabled
+{
+	// This method can be used for both adding a new cheat or setting the enable
+	// state on an existing cheat, so be sure to account for both cases.
+	
+	// First check if the cheat exists.
+	CocoaDSCheatItem *cheatItem = (CocoaDSCheatItem *)[addedCheatsDict objectForKey:code];
+	
+	if (cheatItem == nil)
+	{
+		// If the cheat doesn't already exist, then create a new one and add it.
+		cheatItem = [[[CocoaDSCheatItem alloc] init] autorelease];
+		[cheatItem setCheatType:CHEAT_TYPE_ACTION_REPLAY]; // Default to Action Replay for now
+		[cheatItem setFreezeType:0];
+		[cheatItem setDescription:@""]; // OpenEmu takes care of this
+		[cheatItem setCode:code];
+		[cheatItem setMemAddress:0x00000000]; // UNUSED
+		[cheatItem setBytes:1]; // UNUSED
+		[cheatItem setValue:0]; // UNUSED
+		
+		[cheatItem setEnabled:enabled];
+		[[self cdsCheats] add:cheatItem];
+		
+		// OpenEmu doesn't currently save cheats per game, so assume that the
+		// cheat list is short and that code strings are unique. This allows
+		// us to get away with simply saving the cheat code string and hashing
+		// for it later.
+		[addedCheatsDict setObject:cheatItem forKey:code];
+	}
+	else
+	{
+		// If the cheat does exist, then just set its enable state.
+		[cheatItem setEnabled:enabled];
+		[[self cdsCheats] update:cheatItem];
+	}
 }
 
 #pragma mark - Input
@@ -432,65 +489,25 @@ volatile bool execute = true;
 	[cdsController setTouchState:NO location:touchLocation];
 }
 
-- (NSTrackingAreaOptions)mouseTrackingOptions
+- (void)changeDisplayMode
 {
-	return 0;
-}
-
-- (void)settingWasSet:(id)aValue forKey:(NSString *)keyName
-{
-	DLog(@"keyName = %@", keyName);
-	//[self doesNotImplementSelector:_cmd];
-}
-
-#pragma mark - Save State
-
-- (BOOL)saveStateToFileAtPath:(NSString *)fileName
-{
-	return [CocoaDSFile saveState:[NSURL fileURLWithPath:fileName]];
-}
-
-- (BOOL)loadStateFromFileAtPath:(NSString *)fileName
-{
-	return [CocoaDSFile loadState:[NSURL fileURLWithPath:fileName]];
-}
-
-#pragma mark - Miscellaneous
-
-- (void)setCheat:(NSString *)code setType:(NSString *)type setEnabled:(BOOL)enabled
-{
-	// This method can be used for both adding a new cheat or setting the enable
-	// state on an existing cheat, so be sure to account for both cases.
-	
-	// First check if the cheat exists.
-	CocoaDSCheatItem *cheatItem = (CocoaDSCheatItem *)[addedCheatsDict objectForKey:code];
-	
-	if (cheatItem == nil)
+	switch (displayMode)
 	{
-		// If the cheat doesn't already exist, then create a new one and add it.
-		cheatItem = [[[CocoaDSCheatItem alloc] init] autorelease];
-		[cheatItem setCheatType:CHEAT_TYPE_ACTION_REPLAY]; // Default to Action Replay for now
-		[cheatItem setFreezeType:0];
-		[cheatItem setDescription:@""]; // OpenEmu takes care of this
-		[cheatItem setCode:code];
-		[cheatItem setMemAddress:0x00000000]; // UNUSED
-		[cheatItem setBytes:1]; // UNUSED
-		[cheatItem setValue:0]; // UNUSED
-		
-		[cheatItem setEnabled:enabled];
-		[[self cdsCheats] add:cheatItem];
-		
-		// OpenEmu doesn't currently save cheats per game, so assume that the
-		// cheat list is short and that code strings are unique. This allows
-		// us to get away with simply saving the cheat code string and hashing
-		// for it later.
-		[addedCheatsDict setObject:cheatItem forKey:code];
-	}
-	else
-	{
-		// If the cheat does exist, then just set its enable state.
-		[cheatItem setEnabled:enabled];
-		[[self cdsCheats] update:cheatItem];
+		case ClientDisplayMode_Main:
+			[self setDisplayMode:ClientDisplayMode_Touch];
+			break;
+			
+		case ClientDisplayMode_Touch:
+			[self setDisplayMode:ClientDisplayMode_Dual];
+			break;
+			
+		case ClientDisplayMode_Dual:
+			[self setDisplayMode:ClientDisplayMode_Main];
+			break;
+			
+		default:
+			return;
+			break;
 	}
 }
 

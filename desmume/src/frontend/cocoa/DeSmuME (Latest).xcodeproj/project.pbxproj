@@ -4832,7 +4832,6 @@
 					"\"$(SRCROOT)/openemu\"",
 				);
 				GCC_PREFIX_HEADER = openemu/DeSmuME_Prefix_OpenEmu.pch;
-				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = "openemu/Info (OpenEmu Plug-in).plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_NAME = DeSmuME;
@@ -4850,7 +4849,6 @@
 					"\"$(SRCROOT)/openemu\"",
 				);
 				GCC_PREFIX_HEADER = openemu/DeSmuME_Prefix_OpenEmu.pch;
-				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = "openemu/Info (OpenEmu Plug-in).plist";
 				LLVM_LTO = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
