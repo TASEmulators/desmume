@@ -110,7 +110,7 @@
 	
 	[hudPipelineDesc release];
 	
-	hudIndexBuffer = [[device newBufferWithLength:(sizeof(uint16_t) * HUD_TOTAL_ELEMENTS * 6) options:MTLResourceStorageModeManaged] retain];
+	hudIndexBuffer = [[device newBufferWithLength:(sizeof(uint16_t) * HUD_TOTAL_ELEMENTS * 6) options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined] retain];
 	
 	uint16_t *idxBufferPtr = (uint16_t *)[hudIndexBuffer contents];
 	for (size_t i = 0, j = 0, k = 0; i < HUD_TOTAL_ELEMENTS; i++, j+=6, k+=4)
@@ -134,10 +134,10 @@
 	_bufDisplayFetchCustom[NDSDisplayID_Touch][0] = nil;
 	_bufDisplayFetchCustom[NDSDisplayID_Touch][1] = nil;
 	
-	_bufMasterBrightMode[NDSDisplayID_Main]  = [[device newBufferWithLength:sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT options:MTLResourceStorageModeManaged] retain];
-	_bufMasterBrightMode[NDSDisplayID_Touch] = [[device newBufferWithLength:sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT options:MTLResourceStorageModeManaged] retain];
-	_bufMasterBrightIntensity[NDSDisplayID_Main]  = [[device newBufferWithLength:sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT options:MTLResourceStorageModeManaged] retain];
-	_bufMasterBrightIntensity[NDSDisplayID_Touch] = [[device newBufferWithLength:sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT options:MTLResourceStorageModeManaged] retain];
+	_bufMasterBrightMode[NDSDisplayID_Main]  = [[device newBufferWithLength:sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined] retain];
+	_bufMasterBrightMode[NDSDisplayID_Touch] = [[device newBufferWithLength:sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined] retain];
+	_bufMasterBrightIntensity[NDSDisplayID_Main]  = [[device newBufferWithLength:sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined] retain];
+	_bufMasterBrightIntensity[NDSDisplayID_Touch] = [[device newBufferWithLength:sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined] retain];
 	
 	// Set up HUD texture samplers.
 	MTLSamplerDescriptor *samplerDesc = [[MTLSamplerDescriptor alloc] init];
@@ -330,42 +330,42 @@
 	
 	_bufDisplayFetchNative[NDSDisplayID_Main][0]  = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead
 																			   length:nativeSize
-																			  options:MTLResourceStorageModeManaged
+																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	_bufDisplayFetchNative[NDSDisplayID_Main][1]  = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead + dispInfo.framebufferSize
 																			   length:nativeSize
-																			  options:MTLResourceStorageModeManaged
+																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	_bufDisplayFetchNative[NDSDisplayID_Touch][0] = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead + (nativeSize * 1)
 																			   length:nativeSize
-																			  options:MTLResourceStorageModeManaged
+																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	_bufDisplayFetchNative[NDSDisplayID_Touch][1] = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead + (nativeSize * 1) + dispInfo.framebufferSize
 																			   length:nativeSize
-																			  options:MTLResourceStorageModeManaged
+																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	_bufDisplayFetchCustom[NDSDisplayID_Main][0]  = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead + (nativeSize * 2)
 																			   length:customSize
-																			  options:MTLResourceStorageModeManaged
+																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	_bufDisplayFetchCustom[NDSDisplayID_Main][1]  = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead + (nativeSize * 2) + dispInfo.framebufferSize
 																			   length:customSize
-																			  options:MTLResourceStorageModeManaged
+																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	_bufDisplayFetchCustom[NDSDisplayID_Touch][0] = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead + (nativeSize * 2) + customSize + dispInfo.framebufferSize
 																			   length:customSize
-																			  options:MTLResourceStorageModeManaged
+																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	_bufDisplayFetchCustom[NDSDisplayID_Touch][1] = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead + (nativeSize * 2) + customSize + dispInfo.framebufferSize
 																			   length:customSize
-																			  options:MTLResourceStorageModeManaged
+																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	// If the existing texture size is different than the incoming size, then remake the textures to match the incoming size.
@@ -1078,12 +1078,12 @@
 	
 	[outputPipelineDesc release];
 	
-	_cdvPropertiesBuffer = [[[sharedData device] newBufferWithLength:sizeof(DisplayViewShaderProperties) options:MTLResourceStorageModeManaged] retain];
-	_displayVtxPositionBuffer = [[[sharedData device] newBufferWithLength:(sizeof(float) * (4 * 8)) options:MTLResourceStorageModeManaged] retain];
-	_displayTexCoordBuffer = [[[sharedData device] newBufferWithLength:(sizeof(float) * (4 * 8)) options:MTLResourceStorageModeManaged] retain];
-	_hudVtxPositionBuffer = [[[sharedData device] newBufferWithLength:HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged] retain];
-	_hudVtxColorBuffer = [[[sharedData device] newBufferWithLength:HUD_VERTEX_COLOR_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged] retain];
-	_hudTexCoordBuffer = [[[sharedData device] newBufferWithLength:HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged] retain];
+	_cdvPropertiesBuffer = [[[sharedData device] newBufferWithLength:sizeof(DisplayViewShaderProperties) options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined] retain];
+	_displayVtxPositionBuffer = [[[sharedData device] newBufferWithLength:(sizeof(float) * (4 * 8)) options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined] retain];
+	_displayTexCoordBuffer = [[[sharedData device] newBufferWithLength:(sizeof(float) * (4 * 8)) options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined] retain];
+	_hudVtxPositionBuffer = [[[sharedData device] newBufferWithLength:HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined] retain];
+	_hudVtxColorBuffer = [[[sharedData device] newBufferWithLength:HUD_VERTEX_COLOR_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined] retain];
+	_hudTexCoordBuffer = [[[sharedData device] newBufferWithLength:HUD_VERTEX_ATTRIBUTE_BUFFER_SIZE options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined] retain];
 	
 	DisplayViewShaderProperties *viewProps = (DisplayViewShaderProperties *)[_cdvPropertiesBuffer contents];
 	viewProps->width               = cdp->GetPresenterProperties().clientWidth;
@@ -1123,24 +1123,24 @@
 	
 	VideoFilter *vfMain  = cdp->GetPixelScalerObject(NDSDisplayID_Main);
 	_bufCPUFilterSrcMain = [[[sharedData device] newBufferWithBytesNoCopy:vfMain->GetSrcBufferPtr()
-																		length:vfMain->GetSrcWidth() * vfMain->GetSrcHeight() * sizeof(uint32_t)
-																 options:MTLResourceStorageModeManaged
-															 deallocator:nil] retain];
+																   length:vfMain->GetSrcWidth() * vfMain->GetSrcHeight() * sizeof(uint32_t)
+																  options:MTLResourceStorageModeManaged
+															  deallocator:nil] retain];
 	
 	[self setBufCPUFilterDstMain:[[sharedData device] newBufferWithBytesNoCopy:vfMain->GetDstBufferPtr()
 																		length:vfMain->GetDstWidth() * vfMain->GetDstHeight() * sizeof(uint32_t)
-																	   options:MTLResourceStorageModeManaged
+																	   options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																   deallocator:nil]];
 	
 	VideoFilter *vfTouch = cdp->GetPixelScalerObject(NDSDisplayID_Touch);
 	_bufCPUFilterSrcTouch = [[[sharedData device] newBufferWithBytesNoCopy:vfTouch->GetSrcBufferPtr()
-																		 length:vfTouch->GetSrcWidth() * vfTouch->GetSrcHeight() * sizeof(uint32_t)
-																		options:MTLResourceStorageModeManaged
-																	deallocator:nil] retain];
+																	length:vfTouch->GetSrcWidth() * vfTouch->GetSrcHeight() * sizeof(uint32_t)
+																   options:MTLResourceStorageModeManaged
+															   deallocator:nil] retain];
 	
 	[self setBufCPUFilterDstTouch:[[sharedData device] newBufferWithBytesNoCopy:vfTouch->GetDstBufferPtr()
 																		 length:vfTouch->GetDstWidth() * vfTouch->GetDstHeight() * sizeof(uint32_t)
-																		options:MTLResourceStorageModeManaged
+																		options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																	deallocator:nil]];
 	
 	texHUDCharMap = nil;
@@ -1159,13 +1159,13 @@
 	VideoFilter *vfMain  = cdp->GetPixelScalerObject(NDSDisplayID_Main);
 	[self setBufCPUFilterDstMain:[[sharedData device] newBufferWithBytesNoCopy:vfMain->GetDstBufferPtr()
 																		length:(vfMain->GetSrcWidth()  * vfAttr.scaleMultiply / vfAttr.scaleDivide) * (vfMain->GetSrcHeight()  * vfAttr.scaleMultiply / vfAttr.scaleDivide) * sizeof(uint32_t)
-																	   options:MTLResourceStorageModeManaged
+																	   options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																   deallocator:nil]];
 	
 	VideoFilter *vfTouch = cdp->GetPixelScalerObject(NDSDisplayID_Touch);
 	[self setBufCPUFilterDstTouch:[[sharedData device] newBufferWithBytesNoCopy:vfTouch->GetDstBufferPtr()
 																		 length:(vfTouch->GetSrcWidth() * vfAttr.scaleMultiply / vfAttr.scaleDivide) * (vfTouch->GetSrcHeight() * vfAttr.scaleMultiply / vfAttr.scaleDivide) * sizeof(uint32_t)
-																		options:MTLResourceStorageModeManaged
+																		options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																	deallocator:nil]];
 	
 	cb = [self newCommandBuffer];
