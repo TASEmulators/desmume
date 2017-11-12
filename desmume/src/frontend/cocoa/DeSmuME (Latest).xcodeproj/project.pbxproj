@@ -794,96 +794,6 @@
 		AB9038B817C5ED2200F410BD /* slot1comp_rom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AD17C5ED2200F410BD /* slot1comp_rom.cpp */; };
 		AB9038B917C5ED2200F410BD /* slot1comp_rom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AD17C5ED2200F410BD /* slot1comp_rom.cpp */; };
 		AB9038BA17C5ED2200F410BD /* slot1comp_rom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038AD17C5ED2200F410BD /* slot1comp_rom.cpp */; };
-		AB96EE501F990DE400B7AA67 /* lua-engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB81345AC8400AF11D1 /* lua-engine.cpp */; };
-		AB96EE511F990DE500B7AA67 /* lua-engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB81345AC8400AF11D1 /* lua-engine.cpp */; };
-		AB96EE521F990DE500B7AA67 /* lua-engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ABD1FEB81345AC8400AF11D1 /* lua-engine.cpp */; };
-		AB96EE881F990E4700B7AA67 /* lapi.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE541F990E4700B7AA67 /* lapi.c */; };
-		AB96EE891F990E4700B7AA67 /* lauxlib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE561F990E4700B7AA67 /* lauxlib.c */; };
-		AB96EE8A1F990E4700B7AA67 /* lbaselib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE581F990E4700B7AA67 /* lbaselib.c */; };
-		AB96EE8B1F990E4700B7AA67 /* lcode.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE591F990E4700B7AA67 /* lcode.c */; };
-		AB96EE8C1F990E4700B7AA67 /* ldblib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE5B1F990E4700B7AA67 /* ldblib.c */; };
-		AB96EE8D1F990E4700B7AA67 /* ldebug.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE5C1F990E4700B7AA67 /* ldebug.c */; };
-		AB96EE8E1F990E4700B7AA67 /* ldo.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE5E1F990E4700B7AA67 /* ldo.c */; };
-		AB96EE8F1F990E4700B7AA67 /* ldump.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE601F990E4700B7AA67 /* ldump.c */; };
-		AB96EE901F990E4700B7AA67 /* lfunc.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE611F990E4700B7AA67 /* lfunc.c */; };
-		AB96EE911F990E4700B7AA67 /* lgc.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE631F990E4700B7AA67 /* lgc.c */; };
-		AB96EE921F990E4700B7AA67 /* linit.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE651F990E4700B7AA67 /* linit.c */; };
-		AB96EE931F990E4700B7AA67 /* liolib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE661F990E4700B7AA67 /* liolib.c */; };
-		AB96EE941F990E4700B7AA67 /* llex.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE671F990E4700B7AA67 /* llex.c */; };
-		AB96EE951F990E4700B7AA67 /* lmathlib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE6A1F990E4700B7AA67 /* lmathlib.c */; };
-		AB96EE961F990E4700B7AA67 /* lmem.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE6B1F990E4700B7AA67 /* lmem.c */; };
-		AB96EE971F990E4700B7AA67 /* loadlib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE6D1F990E4700B7AA67 /* loadlib.c */; };
-		AB96EE981F990E4700B7AA67 /* lobject.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE6E1F990E4700B7AA67 /* lobject.c */; };
-		AB96EE991F990E4700B7AA67 /* lopcodes.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE701F990E4700B7AA67 /* lopcodes.c */; };
-		AB96EE9A1F990E4700B7AA67 /* loslib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE721F990E4700B7AA67 /* loslib.c */; };
-		AB96EE9B1F990E4700B7AA67 /* lparser.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE731F990E4700B7AA67 /* lparser.c */; };
-		AB96EE9C1F990E4700B7AA67 /* lstate.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE751F990E4700B7AA67 /* lstate.c */; };
-		AB96EE9D1F990E4700B7AA67 /* lstring.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE771F990E4700B7AA67 /* lstring.c */; };
-		AB96EE9E1F990E4700B7AA67 /* lstrlib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE791F990E4700B7AA67 /* lstrlib.c */; };
-		AB96EE9F1F990E4700B7AA67 /* ltable.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE7A1F990E4700B7AA67 /* ltable.c */; };
-		AB96EEA01F990E4700B7AA67 /* ltablib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE7C1F990E4700B7AA67 /* ltablib.c */; };
-		AB96EEA11F990E4700B7AA67 /* ltm.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE7D1F990E4700B7AA67 /* ltm.c */; };
-		AB96EEA21F990E4700B7AA67 /* lundump.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE821F990E4700B7AA67 /* lundump.c */; };
-		AB96EEA31F990E4700B7AA67 /* lvm.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE841F990E4700B7AA67 /* lvm.c */; };
-		AB96EEA41F990E4700B7AA67 /* lzio.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE861F990E4700B7AA67 /* lzio.c */; };
-		AB96EEA51F990E5300B7AA67 /* lapi.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE541F990E4700B7AA67 /* lapi.c */; };
-		AB96EEA61F990E5300B7AA67 /* lauxlib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE561F990E4700B7AA67 /* lauxlib.c */; };
-		AB96EEA71F990E5300B7AA67 /* lbaselib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE581F990E4700B7AA67 /* lbaselib.c */; };
-		AB96EEA81F990E5300B7AA67 /* lcode.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE591F990E4700B7AA67 /* lcode.c */; };
-		AB96EEA91F990E5300B7AA67 /* ldblib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE5B1F990E4700B7AA67 /* ldblib.c */; };
-		AB96EEAA1F990E5300B7AA67 /* ldebug.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE5C1F990E4700B7AA67 /* ldebug.c */; };
-		AB96EEAB1F990E5300B7AA67 /* ldo.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE5E1F990E4700B7AA67 /* ldo.c */; };
-		AB96EEAC1F990E5300B7AA67 /* ldump.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE601F990E4700B7AA67 /* ldump.c */; };
-		AB96EEAD1F990E5300B7AA67 /* lfunc.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE611F990E4700B7AA67 /* lfunc.c */; };
-		AB96EEAE1F990E5300B7AA67 /* lgc.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE631F990E4700B7AA67 /* lgc.c */; };
-		AB96EEAF1F990E5300B7AA67 /* linit.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE651F990E4700B7AA67 /* linit.c */; };
-		AB96EEB01F990E5300B7AA67 /* liolib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE661F990E4700B7AA67 /* liolib.c */; };
-		AB96EEB11F990E5300B7AA67 /* llex.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE671F990E4700B7AA67 /* llex.c */; };
-		AB96EEB21F990E5300B7AA67 /* lmathlib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE6A1F990E4700B7AA67 /* lmathlib.c */; };
-		AB96EEB31F990E5300B7AA67 /* lmem.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE6B1F990E4700B7AA67 /* lmem.c */; };
-		AB96EEB41F990E5300B7AA67 /* loadlib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE6D1F990E4700B7AA67 /* loadlib.c */; };
-		AB96EEB51F990E5300B7AA67 /* lobject.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE6E1F990E4700B7AA67 /* lobject.c */; };
-		AB96EEB61F990E5300B7AA67 /* lopcodes.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE701F990E4700B7AA67 /* lopcodes.c */; };
-		AB96EEB71F990E5300B7AA67 /* loslib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE721F990E4700B7AA67 /* loslib.c */; };
-		AB96EEB81F990E5300B7AA67 /* lparser.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE731F990E4700B7AA67 /* lparser.c */; };
-		AB96EEB91F990E5300B7AA67 /* lstate.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE751F990E4700B7AA67 /* lstate.c */; };
-		AB96EEBA1F990E5300B7AA67 /* lstring.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE771F990E4700B7AA67 /* lstring.c */; };
-		AB96EEBB1F990E5300B7AA67 /* lstrlib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE791F990E4700B7AA67 /* lstrlib.c */; };
-		AB96EEBC1F990E5300B7AA67 /* ltable.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE7A1F990E4700B7AA67 /* ltable.c */; };
-		AB96EEBD1F990E5300B7AA67 /* ltablib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE7C1F990E4700B7AA67 /* ltablib.c */; };
-		AB96EEBE1F990E5300B7AA67 /* ltm.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE7D1F990E4700B7AA67 /* ltm.c */; };
-		AB96EEBF1F990E5300B7AA67 /* lundump.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE821F990E4700B7AA67 /* lundump.c */; };
-		AB96EEC01F990E5300B7AA67 /* lvm.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE841F990E4700B7AA67 /* lvm.c */; };
-		AB96EEC11F990E5300B7AA67 /* lzio.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE861F990E4700B7AA67 /* lzio.c */; };
-		AB96EEC21F990E5400B7AA67 /* lapi.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE541F990E4700B7AA67 /* lapi.c */; };
-		AB96EEC31F990E5400B7AA67 /* lauxlib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE561F990E4700B7AA67 /* lauxlib.c */; };
-		AB96EEC41F990E5400B7AA67 /* lbaselib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE581F990E4700B7AA67 /* lbaselib.c */; };
-		AB96EEC51F990E5400B7AA67 /* lcode.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE591F990E4700B7AA67 /* lcode.c */; };
-		AB96EEC61F990E5400B7AA67 /* ldblib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE5B1F990E4700B7AA67 /* ldblib.c */; };
-		AB96EEC71F990E5400B7AA67 /* ldebug.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE5C1F990E4700B7AA67 /* ldebug.c */; };
-		AB96EEC81F990E5400B7AA67 /* ldo.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE5E1F990E4700B7AA67 /* ldo.c */; };
-		AB96EEC91F990E5400B7AA67 /* ldump.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE601F990E4700B7AA67 /* ldump.c */; };
-		AB96EECA1F990E5400B7AA67 /* lfunc.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE611F990E4700B7AA67 /* lfunc.c */; };
-		AB96EECB1F990E5400B7AA67 /* lgc.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE631F990E4700B7AA67 /* lgc.c */; };
-		AB96EECC1F990E5400B7AA67 /* linit.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE651F990E4700B7AA67 /* linit.c */; };
-		AB96EECD1F990E5400B7AA67 /* liolib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE661F990E4700B7AA67 /* liolib.c */; };
-		AB96EECE1F990E5400B7AA67 /* llex.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE671F990E4700B7AA67 /* llex.c */; };
-		AB96EECF1F990E5400B7AA67 /* lmathlib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE6A1F990E4700B7AA67 /* lmathlib.c */; };
-		AB96EED01F990E5400B7AA67 /* lmem.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE6B1F990E4700B7AA67 /* lmem.c */; };
-		AB96EED11F990E5400B7AA67 /* loadlib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE6D1F990E4700B7AA67 /* loadlib.c */; };
-		AB96EED21F990E5400B7AA67 /* lobject.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE6E1F990E4700B7AA67 /* lobject.c */; };
-		AB96EED31F990E5400B7AA67 /* lopcodes.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE701F990E4700B7AA67 /* lopcodes.c */; };
-		AB96EED41F990E5400B7AA67 /* loslib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE721F990E4700B7AA67 /* loslib.c */; };
-		AB96EED51F990E5400B7AA67 /* lparser.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE731F990E4700B7AA67 /* lparser.c */; };
-		AB96EED61F990E5400B7AA67 /* lstate.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE751F990E4700B7AA67 /* lstate.c */; };
-		AB96EED71F990E5400B7AA67 /* lstring.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE771F990E4700B7AA67 /* lstring.c */; };
-		AB96EED81F990E5400B7AA67 /* lstrlib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE791F990E4700B7AA67 /* lstrlib.c */; };
-		AB96EED91F990E5400B7AA67 /* ltable.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE7A1F990E4700B7AA67 /* ltable.c */; };
-		AB96EEDA1F990E5400B7AA67 /* ltablib.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE7C1F990E4700B7AA67 /* ltablib.c */; };
-		AB96EEDB1F990E5400B7AA67 /* ltm.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE7D1F990E4700B7AA67 /* ltm.c */; };
-		AB96EEDC1F990E5400B7AA67 /* lundump.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE821F990E4700B7AA67 /* lundump.c */; };
-		AB96EEDD1F990E5400B7AA67 /* lvm.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE841F990E4700B7AA67 /* lvm.c */; };
-		AB96EEDE1F990E5400B7AA67 /* lzio.c in Sources */ = {isa = PBXBuildFile; fileRef = AB96EE861F990E4700B7AA67 /* lzio.c */; };
 		ABA6574B14511EC90077E5E9 /* cocoa_cheat.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABA6574A14511EC90077E5E9 /* cocoa_cheat.mm */; };
 		ABA731321BB5104200B26147 /* SIL Open Font License.txt in Resources */ = {isa = PBXBuildFile; fileRef = ABA731251BB5104200B26147 /* SIL Open Font License.txt */; };
 		ABA731331BB5104200B26147 /* SIL Open Font License.txt in Resources */ = {isa = PBXBuildFile; fileRef = ABA731251BB5104200B26147 /* SIL Open Font License.txt */; };
@@ -3997,7 +3907,6 @@
 				ABFEA82F1BB4EC1100B08C25 /* ftlcdfil.c in Sources */,
 				ABAD3E7113AF1D6D00502E1E /* AAFilter.cpp in Sources */,
 				ABD1FED21345AC8400AF11D1 /* arm_instructions.cpp in Sources */,
-				AB96EEA61F990E5300B7AA67 /* lauxlib.c in Sources */,
 				ABAF0A421A96E67200B95B75 /* RomInfoPanel.mm in Sources */,
 				ABD1FED31345AC8400AF11D1 /* armcpu.cpp in Sources */,
 				ABD1FED41345AC8400AF11D1 /* bios.cpp in Sources */,
@@ -4011,19 +3920,16 @@
 				ABD1FF551345ACBF00AF11D1 /* crc.cpp in Sources */,
 				AB181D0013B66889006CA82D /* datetime.cpp in Sources */,
 				ABD1FEDA1345AC8400AF11D1 /* debug.cpp in Sources */,
-				AB96EEB41F990E5300B7AA67 /* loadlib.c in Sources */,
 				ABD1FF561345ACBF00AF11D1 /* decrypt.cpp in Sources */,
 				ABD1FF5C1345ACBF00AF11D1 /* directory.cpp in Sources */,
 				ABD1FEDC1345AC8400AF11D1 /* Disassembler.cpp in Sources */,
 				ABD1FF5D1345ACBF00AF11D1 /* disc.cpp in Sources */,
 				ABD1FF581345ACBF00AF11D1 /* dlditool.cpp in Sources */,
-				AB96EEAA1F990E5300B7AA67 /* ldebug.c in Sources */,
 				ABD1FEDD1345AC8400AF11D1 /* driver.cpp in Sources */,
 				ABD1FF591345ACBF00AF11D1 /* emufat.cpp in Sources */,
 				ABD1FEDE1345AC8400AF11D1 /* emufile.cpp in Sources */,
 				ABD1FF5E1345ACBF00AF11D1 /* fatdir.cpp in Sources */,
 				ABB24F6E1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */,
-				AB96EEAE1F990E5300B7AA67 /* lgc.c in Sources */,
 				ABA7316F1BB51FDC00B26147 /* type1.c in Sources */,
 				ABD1FF5F1345ACBF00AF11D1 /* fatfile.cpp in Sources */,
 				ABD1FEDF1345AC8400AF11D1 /* FIFO.cpp in Sources */,
@@ -4034,36 +3940,29 @@
 				ABD1FF611345ACBF00AF11D1 /* filetime.cpp in Sources */,
 				ABAD3E7513AF1D6D00502E1E /* FIRFilter.cpp in Sources */,
 				ABD1FEE01345AC8400AF11D1 /* firmware.cpp in Sources */,
-				AB96EEBF1F990E5300B7AA67 /* lundump.c in Sources */,
 				AB2ABA3D1C9F9CFA00173B15 /* async_job.c in Sources */,
 				ABD1FEE31345AC8400AF11D1 /* gfx3d.cpp in Sources */,
 				AB3BF43A1E25D9AE003E2B24 /* DisplayViewCALayer.mm in Sources */,
-				AB96EEB81F990E5300B7AA67 /* lparser.c in Sources */,
 				ABD1FEE61345AC8400AF11D1 /* GPU.cpp in Sources */,
 				ABD1FF5A1345ACBF00AF11D1 /* guid.cpp in Sources */,
 				ABD1FF571345ACBF00AF11D1 /* header.cpp in Sources */,
 				ABD1FF621345ACBF00AF11D1 /* libfat.cpp in Sources */,
-				AB96EEAD1F990E5300B7AA67 /* lfunc.c in Sources */,
 				ABD1FF631345ACBF00AF11D1 /* libfat_public_api.cpp in Sources */,
 				ABD1FF641345ACBF00AF11D1 /* lock.cpp in Sources */,
 				ABA7315F1BB51E7000B26147 /* pshinter.c in Sources */,
 				ABD1FEE81345AC8400AF11D1 /* matrix.cpp in Sources */,
 				ABD1FEE91345AC8400AF11D1 /* mc.cpp in Sources */,
 				ABADF11D1DEA4CFC00A142B1 /* features_cpu.c in Sources */,
-				AB96EEBE1F990E5300B7AA67 /* ltm.c in Sources */,
-				AB96EEBD1F990E5300B7AA67 /* ltablib.c in Sources */,
 				ABD1FF9F1345ACFA00AF11D1 /* metaspu.cpp in Sources */,
 				ABD1FEED1345AC8400AF11D1 /* MMU.cpp in Sources */,
 				ABAD3E7613AF1D6D00502E1E /* mmx_optimized.cpp in Sources */,
 				ABD1FEEE1345AC8400AF11D1 /* movie.cpp in Sources */,
 				AB29B16318313AF5009B7982 /* slot2.cpp in Sources */,
 				ABD1FEEF1345AC8400AF11D1 /* NDSSystem.cpp in Sources */,
-				AB96EEBA1F990E5300B7AA67 /* lstring.c in Sources */,
 				ABD1FF651345ACBF00AF11D1 /* partition.cpp in Sources */,
 				ABD1FEF11345AC8400AF11D1 /* path.cpp in Sources */,
 				ABD1FEF21345AC8400AF11D1 /* rasterize.cpp in Sources */,
 				ABAD3E7713AF1D6D00502E1E /* RateTransposer.cpp in Sources */,
-				AB96EEB61F990E5300B7AA67 /* lopcodes.c in Sources */,
 				ABD1FEF31345AC8400AF11D1 /* readwrite.cpp in Sources */,
 				ABD1FEF41345AC8400AF11D1 /* render3D.cpp in Sources */,
 				ABFEA80B1BB4EC1000B08C25 /* ftbitmap.c in Sources */,
@@ -4082,14 +3981,11 @@
 				ABD1FF0F1345AC9C00AF11D1 /* slot2_gbagame.cpp in Sources */,
 				ABD1FF101345AC9C00AF11D1 /* slot2_guitarGrip.cpp in Sources */,
 				AB000DD21CCC6B3A00413F02 /* file_path.c in Sources */,
-				AB96EEB51F990E5300B7AA67 /* lobject.c in Sources */,
 				ABFEA8261BB4EC1000B08C25 /* ftglyph.c in Sources */,
-				AB96EEA81F990E5300B7AA67 /* lcode.c in Sources */,
 				ABFEA82C1BB4EC1100B08C25 /* ftinit.c in Sources */,
 				ABD1FF111345AC9C00AF11D1 /* slot2_mpcf.cpp in Sources */,
 				ABE6840D189E33BC007FD69C /* OGLDisplayOutput.cpp in Sources */,
 				ABD1FF121345AC9C00AF11D1 /* slot2_none.cpp in Sources */,
-				AB96EEA71F990E5300B7AA67 /* lbaselib.c in Sources */,
 				ABD1FF131345AC9C00AF11D1 /* slot2_paddle.cpp in Sources */,
 				ABD1FF141345AC9C00AF11D1 /* slot2_piano.cpp in Sources */,
 				ABADF1201DEA4D0000A142B1 /* Database.cpp in Sources */,
@@ -4104,7 +4000,6 @@
 				ABD1FEFA1345AC8400AF11D1 /* SPU.cpp in Sources */,
 				ABAD3E7913AF1D6D00502E1E /* sse_optimized.cpp in Sources */,
 				ABD1FF671345ACBF00AF11D1 /* task.cpp in Sources */,
-				AB96EEB11F990E5300B7AA67 /* llex.c in Sources */,
 				ABAD3E7A13AF1D6D00502E1E /* TDStretch.cpp in Sources */,
 				ABD1FEFB1345AC8400AF11D1 /* texcache.cpp in Sources */,
 				ABD1FEFC1345AC8400AF11D1 /* thumb_instructions.cpp in Sources */,
@@ -4123,13 +4018,10 @@
 				ABD1FF681345ACBF00AF11D1 /* vfat.cpp in Sources */,
 				ABE5DE95143F781900835AD8 /* videofilter.cpp in Sources */,
 				AB11AD8B1F6757F800CB298E /* ClientInputHandler.cpp in Sources */,
-				AB96EEA51F990E5300B7AA67 /* lapi.c in Sources */,
 				AB1773FE182ECA8A009F29DD /* slot2_passme.cpp in Sources */,
 				ABAD3E7B13AF1D6D00502E1E /* WavFile.cpp in Sources */,
 				ABD1FEFE1345AC8400AF11D1 /* wifi.cpp in Sources */,
-				AB96EEAC1F990E5300B7AA67 /* ldump.c in Sources */,
 				ABFEA8051BB4EC1000B08C25 /* ftbbox.c in Sources */,
-				AB96EEBB1F990E5300B7AA67 /* lstrlib.c in Sources */,
 				AB9038B317C5ED2200F410BD /* slot1_retail_mcrom.cpp in Sources */,
 				AB54718D1E27610500508C5C /* MacMetalDisplayViewShaders.metal in Sources */,
 				ABD1FF691345ACBF00AF11D1 /* xstring.cpp in Sources */,
@@ -4138,13 +4030,11 @@
 				ABA6574B14511EC90077E5E9 /* cocoa_cheat.mm in Sources */,
 				ABD1041D1346652500AF11D1 /* cocoa_core.mm in Sources */,
 				AB58F32D1364F44B0074C376 /* cocoa_file.mm in Sources */,
-				AB96EEBC1F990E5300B7AA67 /* ltable.c in Sources */,
 				AB3BF43E1E26289E003E2B24 /* MacMetalDisplayView.mm in Sources */,
 				AB3BF4041E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */,
 				ABE7F53E13EE1C7900FD3A71 /* cocoa_firmware.mm in Sources */,
 				ABD1041C1346652500AF11D1 /* cocoa_input.mm in Sources */,
 				AB3E34C9134AF4500056477A /* cocoa_output.mm in Sources */,
-				AB96EEC11F990E5300B7AA67 /* lzio.c in Sources */,
 				ABFEA8CB1BB4EC1100B08C25 /* smooth.c in Sources */,
 				AB301BE11D9C8BCE00246A93 /* deposterize.cpp in Sources */,
 				ABD1041E1346652500AF11D1 /* cocoa_rom.mm in Sources */,
@@ -4153,7 +4043,6 @@
 				AB0F291D14BE6F4A009ABC6F /* OGLRender.cpp in Sources */,
 				AB8B7AAD17CE8C440051CEBF /* slot1comp_protocol.cpp in Sources */,
 				AB3ACB7214C2361100D7D192 /* appDelegate.mm in Sources */,
-				AB96EEB91F990E5300B7AA67 /* lstate.c in Sources */,
 				AB3ACB7314C2361100D7D192 /* cheatWindowDelegate.mm in Sources */,
 				AB000DD81CCC6B4300413F02 /* retro_stat.c in Sources */,
 				AB3ACB7614C2361100D7D192 /* inputPrefsView.mm in Sources */,
@@ -4187,7 +4076,6 @@
 				AB405640169F5DBB0016AC3E /* context.cpp in Sources */,
 				AB405643169F5DBB0016AC3E /* cpuinfo.cpp in Sources */,
 				AB405646169F5DBB0016AC3E /* defs.cpp in Sources */,
-				AB96EEB01F990E5300B7AA67 /* liolib.c in Sources */,
 				AB405649169F5DBB0016AC3E /* func.cpp in Sources */,
 				AB40564C169F5DBB0016AC3E /* logger.cpp in Sources */,
 				AB000DD51CCC6B3E00413F02 /* retro_dirent.c in Sources */,
@@ -4199,7 +4087,6 @@
 				AB40565B169F5DBB0016AC3E /* stringutil.cpp in Sources */,
 				AB40565E169F5DBB0016AC3E /* virtualmemory.cpp in Sources */,
 				AB405661169F5DBB0016AC3E /* zonememory.cpp in Sources */,
-				AB96EEAB1F990E5300B7AA67 /* ldo.c in Sources */,
 				AB405679169F5DCC0016AC3E /* x86assembler.cpp in Sources */,
 				ABBFFF861D6283C1003CD598 /* colorspacehandler.cpp in Sources */,
 				AB40567C169F5DCC0016AC3E /* x86compiler.cpp in Sources */,
@@ -4208,7 +4095,6 @@
 				AB40567F169F5DCC0016AC3E /* x86compilercontext.cpp in Sources */,
 				AB405682169F5DCC0016AC3E /* x86compilerfunc.cpp in Sources */,
 				AB405685169F5DCC0016AC3E /* x86compileritem.cpp in Sources */,
-				AB96EE501F990DE400B7AA67 /* lua-engine.cpp in Sources */,
 				AB405688169F5DCC0016AC3E /* x86cpuinfo.cpp in Sources */,
 				AB564900186E6EA8002740F4 /* cocoa_slot2.mm in Sources */,
 				AB40568B169F5DCC0016AC3E /* x86defs.cpp in Sources */,
@@ -4219,11 +4105,8 @@
 				AB2EE13217D57F5000F68622 /* fsnitro.cpp in Sources */,
 				AB23567416C2F6F400DA782E /* macosx_10_5_compat.cpp in Sources */,
 				AB23567516C2FAD800DA782E /* OGLRender_3_2.cpp in Sources */,
-				AB96EEA91F990E5300B7AA67 /* ldblib.c in Sources */,
-				AB96EEC01F990E5300B7AA67 /* lvm.c in Sources */,
 				ABFEA81A1BB4EC1000B08C25 /* ftfntfmt.c in Sources */,
 				AB3A655F16CC5421001F5D4A /* EmuControllerDelegate.mm in Sources */,
-				AB96EEB71F990E5300B7AA67 /* loslib.c in Sources */,
 				AB3A656216CC5438001F5D4A /* cocoa_GPU.mm in Sources */,
 				AB9038B917C5ED2200F410BD /* slot1comp_rom.cpp in Sources */,
 				AB8967DA16D2ED0700F826F1 /* DisplayWindowController.mm in Sources */,
@@ -4231,11 +4114,8 @@
 				ABFEA8531BB4EC1100B08C25 /* ftstroke.c in Sources */,
 				ABFEA8E91BB4FB3100B08C25 /* truetype.c in Sources */,
 				AB82445C1704AE9A00B8EE20 /* utilities.c in Sources */,
-				AB96EEB31F990E5300B7AA67 /* lmem.c in Sources */,
-				AB96EEAF1F990E5300B7AA67 /* linit.c in Sources */,
 				AB01005F170D07B000D70FBE /* InputProfileController.mm in Sources */,
 				ABD10AE81715FCDD00B5729D /* audiosamplegenerator.cpp in Sources */,
-				AB96EEB21F990E5300B7AA67 /* lmathlib.c in Sources */,
 				ABD10AEB1715FCDD00B5729D /* mic_ext.cpp in Sources */,
 				ABD42048172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */,
 				AB4C81E51B21676C00ACECD5 /* hq3x.cpp in Sources */,
@@ -4249,7 +4129,6 @@
 				AB796CF015CDCBA200C59155 /* AAFilter.cpp in Sources */,
 				AB796CF215CDCBA200C59155 /* arm_instructions.cpp in Sources */,
 				AB796CF315CDCBA200C59155 /* armcpu.cpp in Sources */,
-				AB96EE891F990E4700B7AA67 /* lauxlib.c in Sources */,
 				AB796CF415CDCBA200C59155 /* bios.cpp in Sources */,
 				AB796CF515CDCBA200C59155 /* cache.cpp in Sources */,
 				AB2EE13117D57F5000F68622 /* fsnitro.cpp in Sources */,
@@ -4263,19 +4142,16 @@
 				ABAD07DC1E19CAA6007867CA /* ClientDisplayView.cpp in Sources */,
 				AB796CF915CDCBA200C59155 /* cpu_detect_x86_gcc.cpp in Sources */,
 				AB796CFA15CDCBA200C59155 /* crc.cpp in Sources */,
-				AB96EE971F990E4700B7AA67 /* loadlib.c in Sources */,
 				AB301BDF1D9C8BAC00246A93 /* deposterize.cpp in Sources */,
 				AB796CFB15CDCBA200C59155 /* datetime.cpp in Sources */,
 				AB796CFC15CDCBA200C59155 /* debug.cpp in Sources */,
 				ABFEA82E1BB4EC1100B08C25 /* ftlcdfil.c in Sources */,
 				AB796CFD15CDCBA200C59155 /* decrypt.cpp in Sources */,
-				AB96EE8D1F990E4700B7AA67 /* ldebug.c in Sources */,
 				ABA7316E1BB51FDC00B26147 /* type1.c in Sources */,
 				AB796CFE15CDCBA200C59155 /* directory.cpp in Sources */,
 				AB796CFF15CDCBA200C59155 /* Disassembler.cpp in Sources */,
 				AB796D0015CDCBA200C59155 /* disc.cpp in Sources */,
 				AB29B16218313AF5009B7982 /* slot2.cpp in Sources */,
-				AB96EE911F990E4700B7AA67 /* lgc.c in Sources */,
 				AB796D0115CDCBA200C59155 /* dlditool.cpp in Sources */,
 				AB796D0215CDCBA200C59155 /* driver.cpp in Sources */,
 				AB796D0315CDCBA200C59155 /* emufat.cpp in Sources */,
@@ -4286,36 +4162,29 @@
 				AB796D0415CDCBA200C59155 /* emufile.cpp in Sources */,
 				AB796D0515CDCBA200C59155 /* fatdir.cpp in Sources */,
 				ABFEA8011BB4EC1000B08C25 /* ftbase.c in Sources */,
-				AB96EEA21F990E4700B7AA67 /* lundump.c in Sources */,
 				AB796D0615CDCBA200C59155 /* fatfile.cpp in Sources */,
 				AB796D0715CDCBA200C59155 /* FIFO.cpp in Sources */,
 				ABFEA8A31BB4EC1100B08C25 /* sfnt.c in Sources */,
-				AB96EE9B1F990E4700B7AA67 /* lparser.c in Sources */,
 				ABFEA8E81BB4FB3100B08C25 /* truetype.c in Sources */,
 				ABFEA80A1BB4EC1000B08C25 /* ftbitmap.c in Sources */,
 				AB796D0815CDCBA200C59155 /* FIFOSampleBuffer.cpp in Sources */,
 				AB796D0915CDCBA200C59155 /* file_allocation_table.cpp in Sources */,
-				AB96EE901F990E4700B7AA67 /* lfunc.c in Sources */,
 				AB796D0A15CDCBA200C59155 /* filetime.cpp in Sources */,
 				AB796D0B15CDCBA200C59155 /* FIRFilter.cpp in Sources */,
 				AB796D0C15CDCBA200C59155 /* firmware.cpp in Sources */,
 				ABFEA8521BB4EC1100B08C25 /* ftstroke.c in Sources */,
 				ABAF0A411A96E67200B95B75 /* RomInfoPanel.mm in Sources */,
 				AB796D0E15CDCBA200C59155 /* gfx3d.cpp in Sources */,
-				AB96EEA11F990E4700B7AA67 /* ltm.c in Sources */,
-				AB96EEA01F990E4700B7AA67 /* ltablib.c in Sources */,
 				AB796D0F15CDCBA200C59155 /* GPU.cpp in Sources */,
 				ABADF11B1DEA4CF700A142B1 /* features_cpu.c in Sources */,
 				AB9038AF17C5ED2200F410BD /* slot1_retail_auto.cpp in Sources */,
 				AB3BF4021E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */,
 				AB796D1115CDCBA200C59155 /* guid.cpp in Sources */,
 				ABFEA8191BB4EC1000B08C25 /* ftfntfmt.c in Sources */,
-				AB96EE9D1F990E4700B7AA67 /* lstring.c in Sources */,
 				AB796D1215CDCBA200C59155 /* header.cpp in Sources */,
 				AB796D1315CDCBA200C59155 /* libfat.cpp in Sources */,
 				AB796D1415CDCBA200C59155 /* libfat_public_api.cpp in Sources */,
 				AB796D1515CDCBA200C59155 /* lock.cpp in Sources */,
-				AB96EE991F990E4700B7AA67 /* lopcodes.c in Sources */,
 				AB796D1615CDCBA200C59155 /* matrix.cpp in Sources */,
 				AB796D1715CDCBA200C59155 /* mc.cpp in Sources */,
 				AB796D1915CDCBA200C59155 /* metaspu.cpp in Sources */,
@@ -4334,14 +4203,11 @@
 				AB796D2115CDCBA200C59155 /* rasterize.cpp in Sources */,
 				AB796D2215CDCBA200C59155 /* RateTransposer.cpp in Sources */,
 				AB796D2315CDCBA200C59155 /* readwrite.cpp in Sources */,
-				AB96EE981F990E4700B7AA67 /* lobject.c in Sources */,
 				AB796D2415CDCBA200C59155 /* render3D.cpp in Sources */,
-				AB96EE8B1F990E4700B7AA67 /* lcode.c in Sources */,
 				ABFEA8161BB4EC1000B08C25 /* ftdebug.c in Sources */,
 				AB796D2515CDCBA200C59155 /* ROMReader.cpp in Sources */,
 				AB796D2615CDCBA200C59155 /* rtc.cpp in Sources */,
 				AB796D2715CDCBA200C59155 /* saves.cpp in Sources */,
-				AB96EE8A1F990E4700B7AA67 /* lbaselib.c in Sources */,
 				ABA7315E1BB51E7000B26147 /* pshinter.c in Sources */,
 				AB796D2815CDCBA200C59155 /* slot1.cpp in Sources */,
 				AB796D2915CDCBA200C59155 /* slot1_none.cpp in Sources */,
@@ -4356,7 +4222,6 @@
 				AB47B52F18A45C35009A42AF /* xbrz.cpp in Sources */,
 				AB796D2E15CDCBA200C59155 /* slot2_gbagame.cpp in Sources */,
 				AB796D2F15CDCBA200C59155 /* slot2_guitarGrip.cpp in Sources */,
-				AB96EE941F990E4700B7AA67 /* llex.c in Sources */,
 				AB796D3015CDCBA200C59155 /* slot2_mpcf.cpp in Sources */,
 				AB796D3115CDCBA200C59155 /* slot2_none.cpp in Sources */,
 				AB796D3215CDCBA200C59155 /* slot2_paddle.cpp in Sources */,
@@ -4375,13 +4240,10 @@
 				AB796D3D15CDCBA200C59155 /* thumb_instructions.cpp in Sources */,
 				AB9038A617C5ECFD00F410BD /* advanscene.cpp in Sources */,
 				AB11AD891F6757F800CB298E /* ClientInputHandler.cpp in Sources */,
-				AB96EE881F990E4700B7AA67 /* lapi.c in Sources */,
 				AB796D3E15CDCBA200C59155 /* Timestretcher.cpp in Sources */,
 				ABFEA81F1BB4EC1000B08C25 /* ftgasp.c in Sources */,
 				AB796D3F15CDCBA200C59155 /* tinystr.cpp in Sources */,
-				AB96EE8F1F990E4700B7AA67 /* ldump.c in Sources */,
 				AB796D4015CDCBA200C59155 /* tinyxml.cpp in Sources */,
-				AB96EE9E1F990E4700B7AA67 /* lstrlib.c in Sources */,
 				AB796D4115CDCBA200C59155 /* tinyxmlerror.cpp in Sources */,
 				AB796D4215CDCBA200C59155 /* tinyxmlparser.cpp in Sources */,
 				AB796D4315CDCBA200C59155 /* version.cpp in Sources */,
@@ -4390,13 +4252,11 @@
 				AB5FDDAC1D62C89E0094617C /* colorspacehandler.cpp in Sources */,
 				AB796D4515CDCBA200C59155 /* videofilter.cpp in Sources */,
 				AB796D4615CDCBA200C59155 /* WavFile.cpp in Sources */,
-				AB96EE9F1F990E4700B7AA67 /* ltable.c in Sources */,
 				AB796D4715CDCBA200C59155 /* wifi.cpp in Sources */,
 				AB796D4815CDCBA200C59155 /* xstring.cpp in Sources */,
 				AB796D4915CDCBA200C59155 /* main.m in Sources */,
 				AB2ABA431C9F9CFA00173B15 /* rthreads.c in Sources */,
 				AB796D4A15CDCBA200C59155 /* cocoa_cheat.mm in Sources */,
-				AB96EEA41F990E4700B7AA67 /* lzio.c in Sources */,
 				AB796D4B15CDCBA200C59155 /* cocoa_core.mm in Sources */,
 				AB796D4C15CDCBA200C59155 /* cocoa_file.mm in Sources */,
 				AB796D4D15CDCBA200C59155 /* cocoa_firmware.mm in Sources */,
@@ -4405,7 +4265,6 @@
 				AB796D5215CDCBA200C59155 /* cocoa_rom.mm in Sources */,
 				ABFEA8851BB4EC1100B08C25 /* cff.c in Sources */,
 				AB796D5315CDCBA200C59155 /* cocoa_util.mm in Sources */,
-				AB96EE9C1F990E4700B7AA67 /* lstate.c in Sources */,
 				AB796D5415CDCBA200C59155 /* cocoa_videofilter.mm in Sources */,
 				AB796D5515CDCBA200C59155 /* appDelegate.mm in Sources */,
 				AB000DCB1CCC6B0700413F02 /* file_path.c in Sources */,
@@ -4439,7 +4298,6 @@
 				AB405636169F5DBB0016AC3E /* compilercontext.cpp in Sources */,
 				AB405639169F5DBB0016AC3E /* compilerfunc.cpp in Sources */,
 				AB40563C169F5DBB0016AC3E /* compileritem.cpp in Sources */,
-				AB96EE931F990E4700B7AA67 /* liolib.c in Sources */,
 				AB40563F169F5DBB0016AC3E /* context.cpp in Sources */,
 				ABA731681BB51FDC00B26147 /* type1cid.c in Sources */,
 				AB405642169F5DBB0016AC3E /* cpuinfo.cpp in Sources */,
@@ -4451,7 +4309,6 @@
 				AB405651169F5DBB0016AC3E /* memorymarker.cpp in Sources */,
 				AB405654169F5DBB0016AC3E /* operand.cpp in Sources */,
 				AB405657169F5DBB0016AC3E /* stringbuilder.cpp in Sources */,
-				AB96EE8E1F990E4700B7AA67 /* ldo.c in Sources */,
 				AB40565A169F5DBB0016AC3E /* stringutil.cpp in Sources */,
 				ABB1C9451F4D6B340004844F /* macosx_10_5_compat.cpp in Sources */,
 				AB000DCF1CCC6B0700413F02 /* retro_dirent.c in Sources */,
@@ -4460,7 +4317,6 @@
 				AB405678169F5DCC0016AC3E /* x86assembler.cpp in Sources */,
 				AB40567B169F5DCC0016AC3E /* x86compiler.cpp in Sources */,
 				AB40567E169F5DCC0016AC3E /* x86compilercontext.cpp in Sources */,
-				AB96EE521F990DE500B7AA67 /* lua-engine.cpp in Sources */,
 				AB405681169F5DCC0016AC3E /* x86compilerfunc.cpp in Sources */,
 				AB405684169F5DCC0016AC3E /* x86compileritem.cpp in Sources */,
 				AB1773FD182ECA8A009F29DD /* slot2_passme.cpp in Sources */,
@@ -4471,11 +4327,8 @@
 				AB40568D169F5DCC0016AC3E /* x86func.cpp in Sources */,
 				ABFEA8431BB4EC1100B08C25 /* ftpfr.c in Sources */,
 				ABFEA8551BB4EC1100B08C25 /* ftsynth.c in Sources */,
-				AB96EE8C1F990E4700B7AA67 /* ldblib.c in Sources */,
-				AB96EEA31F990E4700B7AA67 /* lvm.c in Sources */,
 				AB405690169F5DCC0016AC3E /* x86operand.cpp in Sources */,
 				AB405693169F5DCC0016AC3E /* x86util.cpp in Sources */,
-				AB96EE9A1F990E4700B7AA67 /* loslib.c in Sources */,
 				AB26D87C16B5253D00A2305C /* OGLRender_3_2.cpp in Sources */,
 				AB3A655E16CC5421001F5D4A /* EmuControllerDelegate.mm in Sources */,
 				AB3A656116CC5438001F5D4A /* cocoa_GPU.mm in Sources */,
@@ -4483,11 +4336,8 @@
 				AB29B33116D4BEBF000EF671 /* InputManager.mm in Sources */,
 				AB8B7AAC17CE8C440051CEBF /* slot1comp_protocol.cpp in Sources */,
 				AB82445B1704AE9A00B8EE20 /* utilities.c in Sources */,
-				AB96EE961F990E4700B7AA67 /* lmem.c in Sources */,
-				AB96EE921F990E4700B7AA67 /* linit.c in Sources */,
 				AB01005E170D07B000D70FBE /* InputProfileController.mm in Sources */,
 				ABD10AE71715FCDD00B5729D /* audiosamplegenerator.cpp in Sources */,
-				AB96EE951F990E4700B7AA67 /* lmathlib.c in Sources */,
 				ABD10AEA1715FCDD00B5729D /* mic_ext.cpp in Sources */,
 				ABFEA8581BB4EC1100B08C25 /* ftsystem.c in Sources */,
 				ABD42047172319D1006A9B46 /* FileMigrationDelegate.mm in Sources */,
@@ -4503,17 +4353,14 @@
 				ABFEA8421BB4EC1100B08C25 /* ftpatent.c in Sources */,
 				ABFEA8A51BB4EC1100B08C25 /* sfnt.c in Sources */,
 				ABFEA81B1BB4EC1000B08C25 /* ftfntfmt.c in Sources */,
-				AB96EEDE1F990E5400B7AA67 /* lzio.c in Sources */,
 				ABA731641BB51F6700B26147 /* fttype1.c in Sources */,
 				ABFEA8361BB4EC1100B08C25 /* ftmm.c in Sources */,
 				ABFEA81E1BB4EC1000B08C25 /* ftfstype.c in Sources */,
 				ABA731601BB51E7000B26147 /* pshinter.c in Sources */,
 				ABB1C9491F5281AE0004844F /* ClientExecutionControl.cpp in Sources */,
 				AB301BE01D9C8BCD00246A93 /* deposterize.cpp in Sources */,
-				AB96EEC21F990E5400B7AA67 /* lapi.c in Sources */,
 				ABFEA8211BB4EC1000B08C25 /* ftgasp.c in Sources */,
 				ABFEA83C1BB4EC1100B08C25 /* ftotval.c in Sources */,
-				AB96EECD1F990E5400B7AA67 /* liolib.c in Sources */,
 				ABFEA8181BB4EC1000B08C25 /* ftdebug.c in Sources */,
 				ABFEA8541BB4EC1100B08C25 /* ftstroke.c in Sources */,
 				ABFEA8301BB4EC1100B08C25 /* ftlcdfil.c in Sources */,
@@ -4521,7 +4368,6 @@
 				ABFEA8271BB4EC1000B08C25 /* ftglyph.c in Sources */,
 				ABFEA8871BB4EC1100B08C25 /* cff.c in Sources */,
 				ABFEA8061BB4EC1000B08C25 /* ftbbox.c in Sources */,
-				AB96EED81F990E5400B7AA67 /* lstrlib.c in Sources */,
 				ABFEA8451BB4EC1100B08C25 /* ftpfr.c in Sources */,
 				ABFEA82D1BB4EC1100B08C25 /* ftinit.c in Sources */,
 				ABFEA8031BB4EC1000B08C25 /* ftbase.c in Sources */,
@@ -4543,15 +4389,12 @@
 				AB3BF4031E22FE01003E2B24 /* MacOGLDisplayView.mm in Sources */,
 				AB8F3C801A53AC2600A80BF6 /* datetime.cpp in Sources */,
 				AB8F3C811A53AC2600A80BF6 /* debug.cpp in Sources */,
-				AB96EECA1F990E5400B7AA67 /* lfunc.c in Sources */,
 				AB8F3C821A53AC2600A80BF6 /* decrypt.cpp in Sources */,
 				AB2ABA441C9F9CFA00173B15 /* rthreads.c in Sources */,
 				AB8F3C831A53AC2600A80BF6 /* directory.cpp in Sources */,
-				AB96EECF1F990E5400B7AA67 /* lmathlib.c in Sources */,
 				AB8F3C841A53AC2600A80BF6 /* Disassembler.cpp in Sources */,
 				ABAF0A431A96E67200B95B75 /* RomInfoPanel.mm in Sources */,
 				AB2ABA3C1C9F9CFA00173B15 /* async_job.c in Sources */,
-				AB96EED11F990E5400B7AA67 /* loadlib.c in Sources */,
 				AB8F3C851A53AC2600A80BF6 /* disc.cpp in Sources */,
 				AB3BF4391E25D9AE003E2B24 /* DisplayViewCALayer.mm in Sources */,
 				AB8F3C861A53AC2600A80BF6 /* dlditool.cpp in Sources */,
@@ -4567,10 +4410,8 @@
 				AB8F3C8F1A53AC2600A80BF6 /* slot1_retail_mcrom_debug.cpp in Sources */,
 				AB8F3C901A53AC2600A80BF6 /* filetime.cpp in Sources */,
 				AB8F3C911A53AC2600A80BF6 /* FIRFilter.cpp in Sources */,
-				AB96EED21F990E5400B7AA67 /* lobject.c in Sources */,
 				AB8F3C921A53AC2600A80BF6 /* firmware.cpp in Sources */,
 				AB8F3C941A53AC2600A80BF6 /* gfx3d.cpp in Sources */,
-				AB96EEC71F990E5400B7AA67 /* ldebug.c in Sources */,
 				AB000DD41CCC6B3D00413F02 /* retro_dirent.c in Sources */,
 				AB78B5C31E384F4F00297FED /* MacMetalDisplayView.mm in Sources */,
 				AB8F3C951A53AC2600A80BF6 /* GPU.cpp in Sources */,
@@ -4581,7 +4422,6 @@
 				AB8F3C9B1A53AC2600A80BF6 /* lock.cpp in Sources */,
 				AB8F3C9C1A53AC2600A80BF6 /* matrix.cpp in Sources */,
 				AB8F3C9D1A53AC2600A80BF6 /* mc.cpp in Sources */,
-				AB96EEDD1F990E5400B7AA67 /* lvm.c in Sources */,
 				AB8F3C9F1A53AC2600A80BF6 /* metaspu.cpp in Sources */,
 				AB8F3CA01A53AC2600A80BF6 /* MMU.cpp in Sources */,
 				AB8F3CA11A53AC2600A80BF6 /* mmx_optimized.cpp in Sources */,
@@ -4598,11 +4438,9 @@
 				AB8F3CAC1A53AC2600A80BF6 /* ROMReader.cpp in Sources */,
 				ABADF11C1DEA4CFC00A142B1 /* features_cpu.c in Sources */,
 				AB8F3CAD1A53AC2600A80BF6 /* rtc.cpp in Sources */,
-				AB96EEDA1F990E5400B7AA67 /* ltablib.c in Sources */,
 				AB8F3CAE1A53AC2600A80BF6 /* saves.cpp in Sources */,
 				AB8F3CAF1A53AC2600A80BF6 /* slot1.cpp in Sources */,
 				AB8F3CB01A53AC2600A80BF6 /* slot1_none.cpp in Sources */,
-				AB96EED01F990E5400B7AA67 /* lmem.c in Sources */,
 				AB8F3CB11A53AC2600A80BF6 /* slot1_r4.cpp in Sources */,
 				AB8F3CB21A53AC2600A80BF6 /* slot1_retail_nand.cpp in Sources */,
 				AB8F3CB31A53AC2600A80BF6 /* encrypt.cpp in Sources */,
@@ -4626,8 +4464,6 @@
 				AB8F3CC21A53AC2600A80BF6 /* SPU.cpp in Sources */,
 				AB000DD71CCC6B4200413F02 /* retro_stat.c in Sources */,
 				AB11AD8A1F6757F800CB298E /* ClientInputHandler.cpp in Sources */,
-				AB96EECE1F990E5400B7AA67 /* llex.c in Sources */,
-				AB96EEDC1F990E5400B7AA67 /* lundump.c in Sources */,
 				AB8F3CC31A53AC2600A80BF6 /* sse_optimized.cpp in Sources */,
 				AB8F3CC41A53AC2600A80BF6 /* task.cpp in Sources */,
 				AB8F3CC51A53AC2600A80BF6 /* TDStretch.cpp in Sources */,
@@ -4636,7 +4472,6 @@
 				AB8F3CC81A53AC2600A80BF6 /* Timestretcher.cpp in Sources */,
 				AB35BD901DEBF41800844310 /* encoding_utf.c in Sources */,
 				AB8F3CC91A53AC2600A80BF6 /* tinystr.cpp in Sources */,
-				AB96EEC31F990E5400B7AA67 /* lauxlib.c in Sources */,
 				AB8F3CCA1A53AC2600A80BF6 /* slot1comp_mc.cpp in Sources */,
 				AB8F3CCB1A53AC2600A80BF6 /* tinyxml.cpp in Sources */,
 				AB8F3CCC1A53AC2600A80BF6 /* tinyxmlerror.cpp in Sources */,
@@ -4650,19 +4485,15 @@
 				ABAD07DD1E19CAA6007867CA /* ClientDisplayView.cpp in Sources */,
 				AB8F3CD41A53AC2600A80BF6 /* slot1_retail_mcrom.cpp in Sources */,
 				AB8F3CD51A53AC2600A80BF6 /* xstring.cpp in Sources */,
-				AB96EED31F990E5400B7AA67 /* lopcodes.c in Sources */,
 				AB8F3CD61A53AC2600A80BF6 /* main.m in Sources */,
 				AB8F3CD71A53AC2600A80BF6 /* cocoa_cheat.mm in Sources */,
 				AB8F3CD81A53AC2600A80BF6 /* cocoa_core.mm in Sources */,
-				AB96EECC1F990E5400B7AA67 /* linit.c in Sources */,
 				AB8F3CD91A53AC2600A80BF6 /* cocoa_file.mm in Sources */,
 				AB8F3CDA1A53AC2600A80BF6 /* cocoa_firmware.mm in Sources */,
 				AB8F3CDB1A53AC2600A80BF6 /* cocoa_input.mm in Sources */,
 				AB8F3CDC1A53AC2600A80BF6 /* cocoa_output.mm in Sources */,
 				AB8F3CDD1A53AC2600A80BF6 /* cocoa_rom.mm in Sources */,
-				AB96EEDB1F990E5400B7AA67 /* ltm.c in Sources */,
 				AB8F3CDE1A53AC2600A80BF6 /* cocoa_util.mm in Sources */,
-				AB96EEC81F990E5400B7AA67 /* ldo.c in Sources */,
 				AB8F3CDF1A53AC2600A80BF6 /* cocoa_videofilter.mm in Sources */,
 				AB8F3CE01A53AC2600A80BF6 /* OGLRender.cpp in Sources */,
 				AB8F3CE11A53AC2600A80BF6 /* slot1comp_protocol.cpp in Sources */,
@@ -4670,23 +4501,18 @@
 				AB8F3CE31A53AC2600A80BF6 /* cheatWindowDelegate.mm in Sources */,
 				AB8F3CE41A53AC2600A80BF6 /* inputPrefsView.mm in Sources */,
 				AB8F3CE51A53AC2600A80BF6 /* preferencesWindowDelegate.mm in Sources */,
-				AB96EED41F990E5400B7AA67 /* loslib.c in Sources */,
 				AB8F3CE61A53AC2600A80BF6 /* 2xsai.cpp in Sources */,
-				AB96EED61F990E5400B7AA67 /* lstate.c in Sources */,
 				AB8F3CE71A53AC2600A80BF6 /* bilinear.cpp in Sources */,
 				AB8F3CE81A53AC2600A80BF6 /* epx.cpp in Sources */,
 				AB8F3CE91A53AC2600A80BF6 /* hq2x.cpp in Sources */,
 				AB8F3CEA1A53AC2600A80BF6 /* hq4x.cpp in Sources */,
 				ABD1FBF21F7B7E7E00B4F648 /* MacScreenshotCaptureTool.mm in Sources */,
 				AB8F3CEB1A53AC2600A80BF6 /* advanscene.cpp in Sources */,
-				AB96EED91F990E5400B7AA67 /* ltable.c in Sources */,
 				AB8F3CEC1A53AC2600A80BF6 /* lq2x.cpp in Sources */,
-				AB96EEC91F990E5400B7AA67 /* ldump.c in Sources */,
 				AB8F3CED1A53AC2600A80BF6 /* xbrz.cpp in Sources */,
 				ABB24F6F1A81EE92006C1108 /* OGLDisplayOutput_3_2.cpp in Sources */,
 				AB8F3CEE1A53AC2600A80BF6 /* scanline.cpp in Sources */,
 				AB8F3CEF1A53AC2600A80BF6 /* coreaudiosound.cpp in Sources */,
-				AB96EECB1F990E5400B7AA67 /* lgc.c in Sources */,
 				AB2ABA401C9F9CFA00173B15 /* rsemaphore.c in Sources */,
 				AB8F3CF01A53AC2600A80BF6 /* ringbuffer.cpp in Sources */,
 				AB8F3CF11A53AC2600A80BF6 /* arm_jit.cpp in Sources */,
@@ -4694,7 +4520,6 @@
 				AB8F3CF31A53AC2600A80BF6 /* assembler.cpp in Sources */,
 				AB8F3CF41A53AC2600A80BF6 /* assert.cpp in Sources */,
 				AB8F3CF51A53AC2600A80BF6 /* buffer.cpp in Sources */,
-				AB96EEC61F990E5400B7AA67 /* ldblib.c in Sources */,
 				AB8F3CF61A53AC2600A80BF6 /* compiler.cpp in Sources */,
 				AB8F3CF71A53AC2600A80BF6 /* compilercontext.cpp in Sources */,
 				AB4C81E61B21676C00ACECD5 /* hq3x.cpp in Sources */,
@@ -4702,10 +4527,8 @@
 				AB8F3CF91A53AC2600A80BF6 /* compileritem.cpp in Sources */,
 				AB8F3CFA1A53AC2600A80BF6 /* context.cpp in Sources */,
 				AB000DD11CCC6B3A00413F02 /* file_path.c in Sources */,
-				AB96EEC41F990E5400B7AA67 /* lbaselib.c in Sources */,
 				AB8F3CFB1A53AC2600A80BF6 /* cpuinfo.cpp in Sources */,
 				AB8F3CFC1A53AC2600A80BF6 /* defs.cpp in Sources */,
-				AB96EEC51F990E5400B7AA67 /* lcode.c in Sources */,
 				AB8F3CFD1A53AC2600A80BF6 /* func.cpp in Sources */,
 				AB8F3CFE1A53AC2600A80BF6 /* logger.cpp in Sources */,
 				AB8F3CFF1A53AC2600A80BF6 /* memorymanager.cpp in Sources */,
@@ -4723,9 +4546,7 @@
 				AB8F3D091A53AC2600A80BF6 /* x86compilerfunc.cpp in Sources */,
 				AB8F3D0A1A53AC2600A80BF6 /* x86compileritem.cpp in Sources */,
 				AB8F3D0B1A53AC2600A80BF6 /* x86cpuinfo.cpp in Sources */,
-				AB96EED51F990E5400B7AA67 /* lparser.c in Sources */,
 				AB8F3D0C1A53AC2600A80BF6 /* cocoa_slot2.mm in Sources */,
-				AB96EED71F990E5400B7AA67 /* lstring.c in Sources */,
 				AB8F3D0D1A53AC2600A80BF6 /* x86defs.cpp in Sources */,
 				AB8F3D0E1A53AC2600A80BF6 /* x86func.cpp in Sources */,
 				AB8F3D0F1A53AC2600A80BF6 /* x86operand.cpp in Sources */,
@@ -4733,7 +4554,6 @@
 				AB8F3D111A53AC2600A80BF6 /* fsnitro.cpp in Sources */,
 				AB8F3D121A53AC2600A80BF6 /* macosx_10_5_compat.cpp in Sources */,
 				AB8F3D131A53AC2600A80BF6 /* OGLRender_3_2.cpp in Sources */,
-				AB96EE511F990DE500B7AA67 /* lua-engine.cpp in Sources */,
 				AB8F3D141A53AC2600A80BF6 /* EmuControllerDelegate.mm in Sources */,
 				AB8F3D151A53AC2600A80BF6 /* cocoa_GPU.mm in Sources */,
 				AB8F3D161A53AC2600A80BF6 /* slot1comp_rom.cpp in Sources */,
