@@ -231,16 +231,16 @@ BackupDevice::BackupDevice()
 	char buf[MAX_PATH] = {0};
 	memset(buf, 0, MAX_PATH);
 	path.getpathnoext(path.BATTERY, buf);
-	filename = std::string(buf) + ".dsv";
+	_fileName = std::string(buf) + ".dsv";
 
-	MCLOG("MC: %s\n", filename.c_str());
+	MCLOG("MC: %s\n", _fileName.c_str());
 
-	bool fexists = (access(filename.c_str(), 0) == 0)?true:false;
+	bool fexists = (access(_fileName.c_str(), 0) == 0)?true:false;
 
 	if (fexists && CommonSettings.backupSave)
 	{
 		std::string tmp_fsav = std::string(buf) + ".dsv.bak";
-		EMUFILE_FILE in = EMUFILE_FILE(filename, "rb");
+		EMUFILE_FILE in = EMUFILE_FILE(_fileName, "rb");
 		if (!in.fail())
 		{
 			u32 sz = in.size();
@@ -278,7 +278,7 @@ BackupDevice::BackupDevice()
 
 			if (sz > 0)
 			{
-				EMUFILE_FILE fpOut = EMUFILE_FILE(filename, "wb");
+				EMUFILE_FILE fpOut = EMUFILE_FILE(_fileName, "wb");
 				if (!fpOut.fail())
 				{
 					u8 *buf = new u8[sz + 1];
@@ -301,15 +301,15 @@ BackupDevice::BackupDevice()
 							u8 res = searchFileSaveType(sz);
 							if (res != 0xFF)
 							{
-								info.type = (res + 1);
-								addr_size = info.addr_size = save_types[info.type].addr_size;
-								info.size = fsize = sz;
+								_info.type = (res + 1);
+								addr_size = _info.addr_size = save_types[_info.type].addr_size;
+								_info.size = fsize = sz;
 								fpMC = &fpOut; //so ensure() works
 								ensure(sz, &fpOut);
 								fsize = 0;
 							}
 							else
-								info.type = 0;
+								_info.type = 0;
 							fexists = true;
 						}
 						else
@@ -323,7 +323,7 @@ BackupDevice::BackupDevice()
 		}
 	}
 
-	fpMC = new EMUFILE_FILE(filename, fexists?"rb+":"wb+");
+	fpMC = new EMUFILE_FILE(_fileName, fexists?"rb+":"wb+");
 	const bool fileCanReadWrite = (fpMC->get_fp() != NULL);
 	if (!fileCanReadWrite)
 	{
@@ -339,10 +339,10 @@ BackupDevice::BackupDevice()
 			fpMC->truncate(0);
 
 		if (readFooter() == 0)
-			fsize -= (strlen(kDesmumeSaveCookie) + strlen(DESMUME_BACKUP_FOOTER_TXT) + 24);
+			fsize -= BackupDevice::GetDSVFooterSize();
 		else
 		{
-			memset(&info, 0, sizeof(info));
+			memset(&_info, 0, sizeof(_info));
 			fsize = 0;
 		}
 	
@@ -353,22 +353,22 @@ BackupDevice::BackupDevice()
 		{
 			if (advsc.isLoaded())
 			{
-				info.type = advsc.getSaveType();
-				if (info.type != 0xFF && info.type != 0xFE)
+				_info.type = advsc.getSaveType();
+				if (_info.type != 0xFF && _info.type != 0xFE)
 				{
-					info.type++;
-					u32 adv_size = save_types[info.type].size;
-					if (info.size > adv_size)
+					_info.type++;
+					u32 adv_size = save_types[_info.type].size;
+					if (_info.size > adv_size)
 					{
-						info.size = adv_size;
+						_info.size = adv_size;
 						fpMC->truncate(adv_size);
 						ensure(adv_size, fpMC);
 					}
 					else
-						if (info.size < adv_size)
+						if (_info.size < adv_size)
 						{
-							left = adv_size - info.size;
-							info.size = adv_size;
+							left = adv_size - _info.size;
+							_info.size = adv_size;
 							ensure(adv_size);
 						}
 
@@ -377,17 +377,17 @@ BackupDevice::BackupDevice()
 			}
 		}
 
-		addr_size = info.addr_size;
-		info.padSize = fsize;
+		addr_size = _info.addr_size;
+		_info.padSize = fsize;
 		//none of the other fields are used right now
 
-		if (CommonSettings.autodetectBackupMethod != 1 && info.type == 0) 
+		if (CommonSettings.autodetectBackupMethod != 1 && _info.type == 0)
 		{
-			info.type = searchFileSaveType(info.size);
-			if (info.type == 0xFF) info.type = 0;
+			_info.type = searchFileSaveType(_info.size);
+			if (_info.type == 0xFF) _info.type = 0;
 		}
 
-		u32 ss = (info.padSize * 8) / 1024;
+		u32 ss = (_info.padSize * 8) / 1024;
 		bool _Mbit = false;
 
 		if (ss >= 1024)
@@ -413,7 +413,7 @@ BackupDevice::~BackupDevice()
 int BackupDevice::readFooter()
 {
 	// Check if the footer data exists.
-	if (fpMC->size() < (strlen(kDesmumeSaveCookie) + strlen(DESMUME_BACKUP_FOOTER_TXT) + 24))
+	if (fpMC->size() < BackupDevice::GetDSVFooterSize())
 	{
 		return -1;
 	}
@@ -440,18 +440,18 @@ int BackupDevice::readFooter()
 		return -2;
 
 	fpMC->fseek(-24, SEEK_CUR);
-	fpMC->read_32LE(info.size);
-	fpMC->read_32LE(info.padSize);
-	fpMC->read_32LE(info.type);
-	fpMC->read_32LE(info.addr_size);
-	fpMC->read_32LE(info.mem_size);
+	fpMC->read_32LE(this->_info.size);
+	fpMC->read_32LE(this->_info.padSize);
+	fpMC->read_32LE(this->_info.type);
+	fpMC->read_32LE(this->_info.addr_size);
+	fpMC->read_32LE(this->_info.mem_size);
 
 	MCLOG("DeSmuME backup footer:\n");
-	MCLOG("\t* size:\t\t%u\n", info.size);
-	MCLOG("\t* padSize:\t%u\n", info.padSize);
-	MCLOG("\t* type (%u):\t%s\n", info.type, save_types[info.type].descr);
-	MCLOG("\t* addr_size:\t%u\n", info.addr_size);
-	MCLOG("\t* mem_size:\t%u\n", info.mem_size);
+	MCLOG("\t* size:\t\t%u\n", this->_info.size);
+	MCLOG("\t* padSize:\t%u\n", this->_info.padSize);
+	MCLOG("\t* type (%u):\t%s\n", this->_info.type, save_types[this->_info.type].descr);
+	MCLOG("\t* addr_size:\t%u\n", this->_info.addr_size);
+	MCLOG("\t* mem_size:\t%u\n", this->_info.mem_size);
 
 	return 0;
 }
@@ -952,9 +952,9 @@ void BackupDevice::ensure(u32 addr, u8 val, EMUFILE *fpOut)
 	
 	u32 padSize = pad_up_size(addr);
 	u32 size = padSize - fsize;
-	info.padSize = info.size = fsize = padSize;
+	this->_info.padSize = this->_info.size = fsize = padSize;
 	int type = searchFileSaveType(fsize);
-	if (type != 0xFF) info.type = (type + 1);
+	if (type != 0xFF) this->_info.type = (type + 1);
 
 #ifndef _DONT_SAVE_BACKUP
 	if (size > 0)
@@ -971,9 +971,9 @@ void BackupDevice::ensure(u32 addr, u8 val, EMUFILE *fpOut)
 	//and now the actual footer
 	fp->write_32LE(addr);			//the size of data that has actually been written
 	fp->write_32LE(padSize);			//the size we padded it to
-	fp->write_32LE(info.type);		//save memory type
+	fp->write_32LE(this->_info.type);		//save memory type
 	fp->write_32LE(addr_size);
-	fp->write_32LE(info.size);		//save memory size
+	fp->write_32LE(this->_info.size);		//save memory size
 	fp->write_32LE((u32)0);		//version number
 	fp->fprintf("%s", kDesmumeSaveCookie); //this is what we'll use to recognize the desmume format save
 
@@ -1066,22 +1066,43 @@ u32 BackupDevice::importDataSize(const char *filename)
 bool BackupDevice::importData(const char *filename, u32 force_size)
 {
 	bool res = false;
-	if (strlen(filename) < 4) return res;
+	
+	if (strlen(filename) < 4)
+	{
+		return res;
+	}
 
 	std::string ext = strright(filename,4);
+	
+	bool isNative = strncasecmp(ext.c_str(), ".dsv", 4) == 0;
 	bool isDuc = strncasecmp(ext.c_str(), ".duc", 4) == 0;
 	bool isDss = strncasecmp(ext.c_str(), ".dss", 4) == 0;
-	if(isDuc || isDss)
+	
+	if (isNative)
+	{
+		res = import_dsv(filename);
+	}
+	else if (isDuc || isDss)
+	{
 		res = import_duc(filename, force_size);
+	}
 	else
+	{
 		if (import_no_gba(filename, force_size))
+		{
 			res = true;
+		}
 		else
+		{
 			res = import_raw(filename, force_size);
-
+		}
+	}
+	
 	if (res)
+	{
 		NDS_Reset();
-
+	}
+	
 	return res;
 }
 
@@ -1573,6 +1594,75 @@ bool BackupDevice::import_duc(const char* filename, u32 force_size)
 
 }
 
+bool BackupDevice::import_dsv(const char *filename)
+{
+	bool result = false;
+	
+	FILE *theFile = fopen(filename, "rb");
+	if (theFile == NULL)
+	{
+		return result;
+	}
+	
+	// Validate the DeSmuME footer.
+	BackupDeviceFileSaveFooter importFileFooter;
+	size_t importFileSize = 0;
+	
+	const bool isFileValid = BackupDevice::GetDSVFileInfo(theFile, &importFileFooter, &importFileSize);
+	if (!isFileValid)
+	{
+		return result;
+	}
+	
+	if ( (this->addr_size != 0) && (this->addr_size != 0xFFFFFFFF) && (this->addr_size != importFileFooter.info.addr_size))
+	{
+		printf("BackupDevice: WARNING! Importing an address bus size that differs from what this game is currently using. (Importing \'%u\'; Expected \'%u\'.\n", (unsigned int)importFileFooter.info.addr_size, (unsigned int)addr_size);
+	}
+	
+	if ( (this->_info.padSize > 0) && (this->_info.padSize != importFileFooter.info.padSize) )
+	{
+		printf("BackupDevice: NOTE - Importing a backup data size that differs from what this game is currently using. (Importing \'%u\'; Expected \'%u\'.\n", (unsigned int)importFileFooter.info.padSize, (unsigned int)this->_info.padSize);
+	}
+	
+	// Read the backup data into memory.
+	u8 *backupData = (u8 *)malloc(importFileFooter.info.padSize);
+	
+	fseek(theFile, 0, SEEK_SET);
+	const size_t backupDataReadByteCount = fread(backupData, 1, importFileFooter.info.padSize, theFile);
+	fclose(theFile); // At this point, both backup data and footer should have been read, so we can close the import file now.
+	
+	if (backupDataReadByteCount != importFileFooter.info.padSize)
+	{
+		free(backupData);
+		printf("BackupDevice: DSV import failed! Could not read the backup data.\n");
+		return result;
+	}
+	
+	// Write out the entirety of the file data to the EMUFILE.
+	// Note: If EMUFILE is an EMUFILE_FILE, know that we are doing a straight overwrite here.
+	// TODO: For better safety, we should create a new file and then swap.
+	this->fpMC->fseek(0, SEEK_SET);
+	if (importFileFooter.info.padSize > 0)
+	{
+		this->fpMC->fwrite(backupData, importFileFooter.info.padSize);
+	}
+	
+	this->addr_size = importFileFooter.info.addr_size;
+	this->fsize = importFileFooter.info.padSize;
+	
+	this->ensure(importFileFooter.info.padSize, this->fpMC);
+	free(backupData);
+	
+	// Truncate the file if necessary.
+	// * Also see TODO note above, since that applies to this step as well.
+	const size_t newFileSize = this->_info.padSize + BackupDevice::GetDSVFooterSize();
+	this->fpMC->truncate(newFileSize);
+	
+	result = true;
+	
+	return result;
+}
+
 bool BackupDevice::load_movie(EMUFILE &is)
 {
 	const s32 cookieLen = (s32)strlen(kDesmumeSaveCookie);
@@ -1588,10 +1678,7 @@ bool BackupDevice::load_movie(EMUFILE &is)
 	}
 	is.fseek(-24, SEEK_CUR);
 
-	struct
-	{
-		u32 size,padSize,type,addr_size,mem_size;
-	} info;
+	BackupDeviceFileInfo info;
 	
 	is.read_32LE(info.size);
 	is.read_32LE(info.padSize);
@@ -1613,4 +1700,86 @@ void BackupDevice::forceManualBackupType()
 {
 	addr_size = addr_size_for_old_save_size(save_types[CommonSettings.manualBackupType].size);
 	state = RUNNING;
+}
+
+size_t BackupDevice::GetDSVFooterSize()
+{
+	return (strlen(DESMUME_BACKUP_FOOTER_TXT) + sizeof(BackupDeviceFileSaveFooter));
+}
+
+bool BackupDevice::GetDSVFileInfo(FILE *inFileDSV, BackupDeviceFileSaveFooter *outFooter, size_t *outFileSize)
+{
+	bool result = false;
+	
+	if (inFileDSV == NULL)
+	{
+		return result;
+	}
+	
+	// Get the total file size.
+	fseek(inFileDSV, 0, SEEK_END);
+	const size_t inFileSize = (size_t)ftell(inFileDSV);
+	fseek(inFileDSV, 0, SEEK_SET);
+	
+	// Check for the DeSmuME footer.
+	if (inFileSize < BackupDevice::GetDSVFooterSize())
+	{
+		printf("BackupDevice: File validation failed! The file appears to be corrupted.\n");
+		return result;
+	}
+	
+	// Validate the DeSmuME footer.
+	BackupDeviceFileSaveFooter inFileFooter;
+	
+	fseek(inFileDSV, -(s32)sizeof(inFileFooter), SEEK_END);
+	const size_t footerReadByteCount = fread(&inFileFooter, 1, sizeof(inFileFooter), inFileDSV);
+	
+	if (footerReadByteCount != sizeof(inFileFooter))
+	{
+		printf("BackupDevice: File validation failed! Could not read the file footer.\n");
+		return result;
+	}
+	
+	if (strncmp(inFileFooter.cookie, kDesmumeSaveCookie, sizeof(inFileFooter.cookie)) != 0)
+	{
+		char inCookieTerminatedString[sizeof(inFileFooter.cookie) + 1];
+		strncpy(inCookieTerminatedString, inFileFooter.cookie, sizeof(inFileFooter.cookie));
+		inCookieTerminatedString[sizeof(inFileFooter.cookie)] = '\0';
+		
+		printf("BackupDevice: File validation failed! Incorrect cookie found. (Read \'%s\'; Expected \'%s\'.\n", inCookieTerminatedString, kDesmumeSaveCookie);
+		return result;
+	}
+	
+	inFileFooter.version = LE_TO_LOCAL_32(inFileFooter.version);
+	if (inFileFooter.version != 0)
+	{
+		printf("BackupDevice: File validation failed! Incorrect version. (Read \'%u\'; Expected \'%u\'.\n", (unsigned int)inFileFooter.version, 0);
+		return result;
+	}
+	
+	inFileFooter.info.padSize = LE_TO_LOCAL_32(inFileFooter.info.padSize);
+	const size_t backupDataSize = (inFileSize - BackupDevice::GetDSVFooterSize());
+	if (inFileFooter.info.padSize != backupDataSize)
+	{
+		printf("BackupDevice: File validation failed! Incorrect backup data size. (Read \'%u\'; Expected \'%u\'.\n", (unsigned int)inFileFooter.info.padSize, (unsigned int)backupDataSize);
+		return result;
+	}
+	
+	if (outFooter != NULL)
+	{
+		inFileFooter.info.size = LE_TO_LOCAL_32(inFileFooter.info.size);
+		inFileFooter.info.type = LE_TO_LOCAL_32(inFileFooter.info.type);
+		inFileFooter.info.addr_size = LE_TO_LOCAL_32(inFileFooter.info.addr_size);
+		inFileFooter.info.mem_size = LE_TO_LOCAL_32(inFileFooter.info.mem_size);
+		
+		*outFooter = inFileFooter;
+	}
+	
+	if (outFileSize != NULL)
+	{
+		*outFileSize = inFileSize;
+	}
+	
+	result = true;
+	return result;
 }

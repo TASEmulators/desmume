@@ -50,6 +50,24 @@
 
 class EMUFILE;
 
+struct BackupDeviceFileInfo
+{
+	u32 size;
+	u32 padSize;
+	u32 type;
+	u32 addr_size;
+	u32 mem_size;
+};
+typedef struct BackupDeviceFileInfo BackupDeviceFileInfo;
+
+struct BackupDeviceFileSaveFooter
+{
+	BackupDeviceFileInfo info;
+	u32 version;
+	char cookie[16];
+};
+typedef struct BackupDeviceFileSaveFooter BackupDeviceFileSaveFooter;
+
 //This "backup device" represents a typical retail NDS save memory accessible via AUXSPI.
 //It is managed as a core emulator service for historical reasons which are bad,
 //and possible infrastructural simplification reasons which are good.
@@ -66,7 +84,7 @@ public:
 	void close_rom();
 	void forceManualBackupType();
 	void reset_hardware();
-	std::string getFilename() { return filename; }
+	std::string getFilename() { return this->_fileName; }
 
 	u8  readByte(u32 addr, const u8 init);
 	u16 readWord(u32 addr, const u16 init);
@@ -124,28 +142,30 @@ public:
 	bool import_duc(const char* filename, u32 force_size = 0);
 	bool import_no_gba(const char *fname, u32 force_size = 0);
 	bool import_raw(const char* filename, u32 force_size = 0);
+	bool import_dsv(const char *filename);
 	bool export_no_gba(const char* fname);
 	bool export_raw(const char* filename);
 	bool no_gba_unpack(u8 *&buf, u32 &size);
 	
 	bool load_movie(EMUFILE &is);
 
-	struct {
-			u32 size,padSize,type,addr_size,mem_size;
-		} info;
+	BackupDeviceFileInfo _info;
 
 	bool isMovieMode;
 
 	u32 importDataSize(const char *filename);
 	bool importData(const char *filename, u32 force_size = 0);
 	bool exportData(const char *filename);
+	
+	static size_t GetDSVFooterSize();
+	static bool GetDSVFileInfo(FILE *inFileDSV, BackupDeviceFileSaveFooter *outFooter, size_t *outFileSize);
 
 	//the value contained in memory when shipped from factory (before user program ever writes to it). more details commented elsewhere.
 	u8 uninitializedValue;
 
 private:
 	EMUFILE *fpMC;
-	std::string filename;
+	std::string _fileName;
 	u32	fsize;
 	int readFooter();
 	bool write(u8 val);

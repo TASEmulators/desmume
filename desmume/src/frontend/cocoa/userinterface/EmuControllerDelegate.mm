@@ -660,6 +660,7 @@
 	[panel setAllowsMultipleSelection:NO];
 	[panel setTitle:NSSTRING_TITLE_IMPORT_ROM_SAVE_PANEL];
 	NSArray *fileTypes = [NSArray arrayWithObjects:
+						  @FILE_EXT_ROM_SAVE,
 						  @FILE_EXT_ROM_SAVE_RAW,
 						  @FILE_EXT_ACTION_REPLAY_SAVE,
 						  @FILE_EXT_ACTION_REPLAY_MAX_SAVE,
