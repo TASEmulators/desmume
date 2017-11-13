@@ -665,6 +665,8 @@
 						  @FILE_EXT_ACTION_REPLAY_MAX_SAVE,
 						  nil];
 	
+	[self pauseCore];
+	
 	// The NSOpenPanel method -(NSInt)runModalForDirectory:file:types:
 	// is deprecated in Mac OS X v10.6.
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
@@ -685,16 +687,18 @@
 		const BOOL isRomSaveImported = [CocoaDSFile importRomSave:selectedFile];
 		[self setStatusText:(isRomSaveImported) ? NSSTRING_STATUS_ROM_SAVE_IMPORTED : NSSTRING_STATUS_ROM_SAVE_IMPORT_FAILED];
 	}
+	
+	[self restoreCoreState];
 }
 
 - (IBAction) exportRomSave:(id)sender
 {
-	[self pauseCore];
-	
 	NSSavePanel *panel = [NSSavePanel savePanel];
 	[panel setTitle:NSSTRING_TITLE_EXPORT_ROM_SAVE_PANEL];
 	[panel setCanCreateDirectories:YES];
 	[panel setAccessoryView:exportRomSavePanelAccessoryView];
+	
+	[self pauseCore];
 	
 	const NSInteger buttonClicked = [panel runModal];
 	if(buttonClicked == NSOKButton)
@@ -2483,14 +2487,25 @@
     const SEL theAction = [theItem action];
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
 	
-	if (theAction == @selector(importRomSave:) ||
-		theAction == @selector(exportRomSave:))
+	if (theAction == @selector(importRomSave:))
     {
 		if ([self currentRom] == nil)
 		{
 			enable = NO;
 		}
     }
+	else if (theAction == @selector(exportRomSave:))
+	{
+		NSFileManager *fileManager = [[NSFileManager alloc] init];
+		
+		if ( ([self currentRom] == nil) ||
+		     ![fileManager isReadableFileAtPath:[[CocoaDSFile fileURLFromRomURL:[[self currentRom] fileURL] toKind:@"ROM Save"] path]] )
+		{
+			enable = NO;
+		}
+		
+		[fileManager release];
+	}
     else if (theAction == @selector(toggleExecutePause:))
     {
 		if (![cdsCore masterExecute] ||
