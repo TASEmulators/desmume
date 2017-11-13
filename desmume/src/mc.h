@@ -149,14 +149,14 @@ public:
 	
 	bool load_movie(EMUFILE &is);
 
-	BackupDeviceFileInfo _info;
-
 	bool isMovieMode;
 
 	u32 importDataSize(const char *filename);
 	bool importData(const char *filename, u32 force_size = 0);
 	bool exportData(const char *filename);
 	
+	BackupDeviceFileInfo GetFileInfo();
+
 	static size_t GetDSVFooterSize();
 	static bool GetDSVFileInfo(FILE *inFileDSV, BackupDeviceFileSaveFooter *outFooter, size_t *outFileSize);
 
@@ -167,6 +167,7 @@ private:
 	EMUFILE *fpMC;
 	std::string _fileName;
 	u32	fsize;
+	BackupDeviceFileInfo _info;
 	int readFooter();
 	bool write(u8 val);
 	u8	read();

@@ -32,6 +32,8 @@ u32 fileSaveType = 0xFF;
 
 BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	BackupDeviceFileInfo fileInfo = MMU_new.backupDevice.GetFileInfo();
+
 	switch (msg)
 	{
 		case WM_INITDIALOG:
@@ -62,7 +64,7 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 				EnableWindow(GetDlgItem(hDlg, IDC_IMP_AUTO_ADVANSCENE), false);
 
 			{
-				u8 type = MMU_new.backupDevice.searchFileSaveType(MMU_new.backupDevice.info.size);
+				u8 type = MMU_new.backupDevice.searchFileSaveType(fileInfo.size);
 				if (type == 0xFF)
 					SetWindowText(GetDlgItem(hDlg, IDC_IMP_INFO_CURRENT), "NA");
 				else
@@ -75,7 +77,7 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 			{
 				SendDlgItemMessage(hDlg, IDC_IMP_MANUAL_SIZE, CB_ADDSTRING, 0, (LPARAM)save_types[i].descr);
 			}
-			SendDlgItemMessage(hDlg, IDC_IMP_MANUAL_SIZE, CB_SETCURSEL, MMU_new.backupDevice.info.type, 0);
+			SendDlgItemMessage(hDlg, IDC_IMP_MANUAL_SIZE, CB_SETCURSEL, fileInfo.type, 0);
 
 			fileSaveSize = MMU_new.backupDevice.importDataSize(ImportSavFName);
 
@@ -130,7 +132,7 @@ BOOL CALLBACK ImportSizeSelect_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 					u32 res = 0;
 
 					if (SendDlgItemMessage(hDlg, IDC_IMP_AUTO_CURRENT, BM_GETCHECK, 0, 0) == BST_CHECKED)
-						res = MMU_new.backupDevice.searchFileSaveType(MMU_new.backupDevice.info.size);
+						res = MMU_new.backupDevice.searchFileSaveType(fileInfo.size);
 					else
 						if (SendDlgItemMessage(hDlg, IDC_IMP_AUTO_FILE, BM_GETCHECK, 0, 0) == BST_CHECKED)
 						{

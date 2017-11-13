@@ -1702,6 +1702,11 @@ void BackupDevice::forceManualBackupType()
 	state = RUNNING;
 }
 
+BackupDeviceFileInfo BackupDevice::GetFileInfo()
+{
+	return this->_info;
+}
+
 size_t BackupDevice::GetDSVFooterSize()
 {
 	return (strlen(DESMUME_BACKUP_FOOTER_TXT) + sizeof(BackupDeviceFileSaveFooter));
