@@ -88,7 +88,6 @@ volatile bool execute = true;
 	
 	// Set up the DS controller
 	cdsController = [[[[CocoaDSController alloc] init] retain] autorelease];
-	[cdsController startHardwareMicDevice];
 	
 	// Set up the cheat system
 	cdsCheats = [[[[CocoaDSCheatManager alloc] init] retain] autorelease];
@@ -424,16 +423,61 @@ volatile bool execute = true;
 	}
 }
 
+#pragma mark - Internal
+
+- (void)startEmulation
+{
+	[cdsController startHardwareMicDevice];
+	[cdsController setHardwareMicMute:NO];
+	[cdsController setHardwareMicPause:NO];
+	
+	[super startEmulation];
+}
+
+- (void)setPauseEmulation:(BOOL)pauseEmulation
+{
+	[cdsController setHardwareMicPause:pauseEmulation];
+	
+	[super setPauseEmulation:pauseEmulation];
+}
+
 #pragma mark - Input
 
 - (oneway void)didPushNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player
 {
-	[cdsController setControllerState:YES controlID:inputID[button]];
+	switch (inputID[button])
+	{
+		case NDSInputID_Microphone:
+			[cdsController setSoftwareMicState:YES mode:MicrophoneMode_InternalNoise];
+			break;
+			
+		case NDSInputID_Paddle:
+			// Do nothing for now. OpenEmu doesn't currently support the Taito Paddle Controller.
+			//[cdsController setPaddleAdjust:0];
+			break;
+			
+		default:
+			[cdsController setControllerState:YES controlID:inputID[button]];
+			break;
+	}
 }
 
 - (oneway void)didReleaseNDSButton:(OENDSButton)button forPlayer:(NSUInteger)player
 {
-	[cdsController setControllerState:NO controlID:inputID[button]];
+	switch (inputID[button])
+	{
+		case NDSInputID_Microphone:
+			[cdsController setSoftwareMicState:NO mode:MicrophoneMode_InternalNoise];
+			break;
+			
+		case NDSInputID_Paddle:
+			[cdsController setPaddleAdjust:0];
+			break;
+			
+		default:
+			[cdsController setControllerState:NO controlID:inputID[button]];
+			break;
+	}
 }
 
 - (oneway void)didTouchScreenPoint:(OEIntPoint)aPoint

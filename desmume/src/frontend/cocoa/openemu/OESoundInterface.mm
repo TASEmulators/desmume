@@ -83,17 +83,8 @@ void SNDOpenEmuUpdateAudio(s16 *buffer, u32 num_samples)
 
 u32 SNDOpenEmuGetAudioSpace()
 {
-	// The latest version of the OpenEmu API (as of 11/11/2017) renames [OERingBuffer usedBytes]
-	// to [OERingBuffer freeBytes]. Due to poor planning on their part, using [OERingBuffer freeBytes]
-	// on the current release version of OpenEmu.app, v2.0.5, will cause the plug-in to fail due to
-	// [OERingBuffer freeBytes] not being available in that version.
-	//
-	// Therefore, let's make a note of the problem here and revert OpenEmuBase.framework back to a
-	// version before the method renaming broke things, then use the older-named method instead.
-	//
-	// TODO: Use the newer-named method, [OERingBuffer freeBytes], when a newer version of OpenEmu.app
-	// is finally released. Or maybe wait for the OpenEmu Team to bring back [OERingBuffer usedBytes]
-	// and let them deprecate it correctly.
+	// TODO: Use the newer-named method, [OERingBuffer freeBytes], when a newer version of OpenEmu.app released.
+	// But for now, use the older-named method, [OERingBuffer usedBytes].
 	
 	//return (u32)[openEmuSoundInterfaceBuffer freeBytes] / SPU_SAMPLE_SIZE;
 	return (u32)[openEmuSoundInterfaceBuffer usedBytes] / SPU_SAMPLE_SIZE;
