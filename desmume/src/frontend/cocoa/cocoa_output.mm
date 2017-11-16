@@ -57,6 +57,8 @@
 	mutexConsume = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(mutexConsume, NULL);
 	
+	rwlockProducer = NULL;
+	
 	return self;
 }
 

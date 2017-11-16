@@ -1299,15 +1299,15 @@
 		id<MTLCommandBuffer> cb = [self newCommandBuffer];
 		id<MTLComputeCommandEncoder> cce = [cb computeCommandEncoder];
 		
+		if (needsFetchBuffersLock)
+		{
+			pthread_rwlock_rdlock([sharedData rwlockFramebufferAtIndex:bufferIndex]);
+		}
+		
 		// Run the video source filters and the pixel scalers
 		if (useDeposterize)
 		{
 			[cce setComputePipelineState:[sharedData deposterizePipeline]];
-			
-			if (needsFetchBuffersLock)
-			{
-				pthread_rwlock_rdlock([sharedData rwlockFramebufferAtIndex:bufferIndex]);
-			}
 			
 			if (shouldProcessDisplay[NDSDisplayID_Main])
 			{
@@ -1348,16 +1348,19 @@
 			
 			if (needsFetchBuffersLock)
 			{
+				needsFetchBuffersLock = !isDisplayProcessedMain || !isDisplayProcessedTouch;
+				
 				[cce endEncoding];
 				[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-					pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:bufferIndex]);
+					if (!needsFetchBuffersLock)
+					{
+						pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:bufferIndex]);
+					}
 				}];
 				[cb commit];
 				
 				cb = [self newCommandBuffer];
 				cce = [cb computeCommandEncoder];
-				
-				needsFetchBuffersLock = !isDisplayProcessedMain || !isDisplayProcessedTouch;
 			}
 		}
 		
@@ -1365,11 +1368,6 @@
 		if ( (cdp->GetPixelScaler() != VideoFilterTypeID_None) && willFilterOnGPU )
 		{
 			[cce setComputePipelineState:[self pixelScalePipeline]];
-			
-			if (needsFetchBuffersLock)
-			{
-				pthread_rwlock_rdlock([sharedData rwlockFramebufferAtIndex:bufferIndex]);
-			}
 			
 			if (shouldProcessDisplay[NDSDisplayID_Main])
 			{
@@ -1400,6 +1398,8 @@
 			
 			if (needsFetchBuffersLock)
 			{
+				needsFetchBuffersLock = false;
+				
 				[cce endEncoding];
 				[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
 					pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:bufferIndex]);

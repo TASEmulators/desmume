@@ -52,7 +52,7 @@ class GPUEventHandlerOSX : public GPUEventHandlerDefault
 private:
 	GPUClientFetchObject *_fetchObject;
 	
-	pthread_rwlock_t _rwlockFrame;
+	pthread_mutex_t _mutexFrame;
 	pthread_mutex_t _mutex3DRender;
 	pthread_mutex_t _mutexApplyGPUSettings;
 	pthread_mutex_t _mutexApplyRender3DSettings;
@@ -65,8 +65,7 @@ public:
 	GPUClientFetchObject* GetFetchObject() const;
 	void SetFetchObject(GPUClientFetchObject *fetchObject);
 	
-	void FramebufferLockWrite();
-	void FramebufferLockRead();
+	void FramebufferLock();
 	void FramebufferUnlock();
 	void Render3DLock();
 	void Render3DUnlock();
@@ -75,7 +74,6 @@ public:
 	void ApplyRender3DSettingsLock();
 	void ApplyRender3DSettingsUnlock();
 	
-	pthread_rwlock_t* GetFrameRWLock();
 	bool GetRender3DNeedsFinish();
 	
 	virtual void DidFrameBegin(bool isFrameSkipRequested, const u8 targetBufferIndex, const size_t line);
@@ -94,7 +92,6 @@ public:
 @dynamic gpuDimensions;
 @dynamic gpuScale;
 @dynamic gpuColorFormat;
-@dynamic gpuFrameRWLock;
 
 @dynamic layerMainGPU;
 @dynamic layerMainBG0;
@@ -256,7 +253,7 @@ public:
 - (void) setGpuDimensions:(NSSize)theDimensions
 {
 	gpuEvent->Render3DLock();
-	gpuEvent->FramebufferLockWrite();
+	gpuEvent->FramebufferLock();
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:0]);
@@ -278,7 +275,7 @@ public:
 - (NSSize) gpuDimensions
 {
 	gpuEvent->Render3DLock();
-	gpuEvent->FramebufferLockRead();
+	gpuEvent->FramebufferLock();
 	const NSSize dimensions = NSMakeSize(GPU->GetCustomFramebufferWidth(), GPU->GetCustomFramebufferHeight());
 	gpuEvent->FramebufferUnlock();
 	gpuEvent->Render3DUnlock();
@@ -313,7 +310,7 @@ public:
 	
 	// Change the color format.
 	gpuEvent->Render3DLock();
-	gpuEvent->FramebufferLockWrite();
+	gpuEvent->FramebufferLock();
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:0]);
@@ -335,17 +332,12 @@ public:
 - (NSUInteger) gpuColorFormat
 {
 	gpuEvent->Render3DLock();
-	gpuEvent->FramebufferLockRead();
+	gpuEvent->FramebufferLock();
 	const NSUInteger colorFormat = (NSUInteger)GPU->GetDisplayInfo().colorFormat;
 	gpuEvent->FramebufferUnlock();
 	gpuEvent->Render3DUnlock();
 	
 	return colorFormat;
-}
-
-- (pthread_rwlock_t *) gpuFrameRWLock
-{
-	return gpuEvent->GetFrameRWLock();
 }
 
 #ifdef ENABLE_SHARED_FETCH_OBJECT
@@ -868,7 +860,7 @@ public:
 
 - (void) clearWithColor:(const uint16_t)colorBGRA5551
 {
-	gpuEvent->FramebufferLockWrite();
+	gpuEvent->FramebufferLock();
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 	const u8 bufferIndex = GPU->GetDisplayInfo().bufferIndex;
@@ -1239,7 +1231,7 @@ GPUEventHandlerOSX::GPUEventHandlerOSX()
 {
 	_fetchObject = nil;
 	_render3DNeedsFinish = false;
-	pthread_rwlock_init(&_rwlockFrame, NULL);
+	pthread_mutex_init(&_mutexFrame, NULL);
 	pthread_mutex_init(&_mutex3DRender, NULL);
 	pthread_mutex_init(&_mutexApplyGPUSettings, NULL);
 	pthread_mutex_init(&_mutexApplyRender3DSettings, NULL);
@@ -1252,7 +1244,7 @@ GPUEventHandlerOSX::~GPUEventHandlerOSX()
 		pthread_mutex_unlock(&this->_mutex3DRender);
 	}
 	
-	pthread_rwlock_destroy(&this->_rwlockFrame);
+	pthread_mutex_destroy(&this->_mutexFrame);
 	pthread_mutex_destroy(&this->_mutex3DRender);
 	pthread_mutex_destroy(&this->_mutexApplyGPUSettings);
 	pthread_mutex_destroy(&this->_mutexApplyRender3DSettings);
@@ -1270,7 +1262,7 @@ void GPUEventHandlerOSX::SetFetchObject(GPUClientFetchObject *fetchObject)
 
 void GPUEventHandlerOSX::DidFrameBegin(bool isFrameSkipRequested, const u8 targetBufferIndex, const size_t line)
 {
-	this->FramebufferLockWrite();
+	this->FramebufferLock();
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 	if (!isFrameSkipRequested)
@@ -1334,19 +1326,14 @@ void GPUEventHandlerOSX::DidApplyRender3DSettingsEnd()
 	this->ApplyRender3DSettingsUnlock();
 }
 
-void GPUEventHandlerOSX::FramebufferLockWrite()
+void GPUEventHandlerOSX::FramebufferLock()
 {
-	pthread_rwlock_wrlock(&this->_rwlockFrame);
-}
-
-void GPUEventHandlerOSX::FramebufferLockRead()
-{
-	pthread_rwlock_rdlock(&this->_rwlockFrame);
+	pthread_mutex_lock(&this->_mutexFrame);
 }
 
 void GPUEventHandlerOSX::FramebufferUnlock()
 {
-	pthread_rwlock_unlock(&this->_rwlockFrame);
+	pthread_mutex_unlock(&this->_mutexFrame);
 }
 
 void GPUEventHandlerOSX::Render3DLock()
@@ -1382,11 +1369,6 @@ void GPUEventHandlerOSX::ApplyRender3DSettingsUnlock()
 bool GPUEventHandlerOSX::GetRender3DNeedsFinish()
 {
 	return this->_render3DNeedsFinish;
-}
-
-pthread_rwlock_t* GPUEventHandlerOSX::GetFrameRWLock()
-{
-	return &this->_rwlockFrame;
 }
 
 #pragma mark -

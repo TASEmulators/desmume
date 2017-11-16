@@ -103,7 +103,6 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 @property (assign) NSSize gpuDimensions;
 @property (assign) NSUInteger gpuScale;
 @property (assign) NSUInteger gpuColorFormat;
-@property (readonly) pthread_rwlock_t *gpuFrameRWLock;
 
 @property (assign) BOOL layerMainGPU;
 @property (assign) BOOL layerMainBG0;

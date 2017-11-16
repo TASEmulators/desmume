@@ -901,7 +901,7 @@ volatile bool execute = true;
 	
 	if ([theOutput isKindOfClass:[CocoaDSDisplay class]])
 	{
-		[theOutput setRwlockProducer:[[self cdsGPU] gpuFrameRWLock]];
+		[theOutput setRwlockProducer:NULL];
 	}
 	else
 	{
