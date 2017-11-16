@@ -37,7 +37,6 @@ class MacMetalDisplayView;
 struct MetalProcessedFrameInfo
 {
 	uint8_t bufferIndex;
-	id<MTLTexture> tex[2];
 	bool isMainDisplayProcessed;
 	bool isTouchDisplayProcessed;
 };
@@ -172,6 +171,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLTexture> _texDisplaySrcDeposterize[2][2];
 	id<MTLTexture> texDisplayPixelScaleMain;
 	id<MTLTexture> texDisplayPixelScaleTouch;
+	id<MTLTexture> texDisplayProcessedMain;
+	id<MTLTexture> texDisplayProcessedTouch;
 	id<MTLTexture> texHUDCharMap;
 	
 	MTLSize _pixelScalerThreadsPerGroup;
@@ -189,7 +190,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	bool _willDrawHUDInput;
 	size_t _hudStringLength;
 	size_t _hudTouchLineLength;
-		
+	
 	MetalProcessedFrameInfo processedFrameInfo;
 }
 
@@ -205,6 +206,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (retain) id<MTLBuffer> bufCPUFilterDstTouch;
 @property (retain) id<MTLTexture> texDisplayPixelScaleMain;
 @property (retain) id<MTLTexture> texDisplayPixelScaleTouch;
+@property (retain) id<MTLTexture> texDisplayProcessedMain;
+@property (retain) id<MTLTexture> texDisplayProcessedTouch;
 @property (retain) id<MTLTexture> texHUDCharMap;
 @property (assign) BOOL needsViewportUpdate;
 @property (assign) BOOL needsRotationScaleUpdate;

@@ -735,6 +735,8 @@
 @synthesize bufCPUFilterDstTouch;
 @synthesize texDisplayPixelScaleMain;
 @synthesize texDisplayPixelScaleTouch;
+@synthesize texDisplayProcessedMain;
+@synthesize texDisplayProcessedTouch;
 @synthesize texHUDCharMap;
 @synthesize needsViewportUpdate;
 @synthesize needsRotationScaleUpdate;
@@ -793,6 +795,8 @@
 	bufCPUFilterDstTouch = nil;
 	texDisplayPixelScaleMain  = nil;
 	texDisplayPixelScaleTouch = nil;
+	texDisplayProcessedMain = nil;
+	texDisplayProcessedTouch = nil;
 	texHUDCharMap = nil;
 	
 	_pixelScalerThreadsPerGroup = MTLSizeMake(1, 1, 1);
@@ -804,8 +808,6 @@
 	needsHUDVerticesUpdate = YES;
 	
 	processedFrameInfo.bufferIndex = 0;
-	processedFrameInfo.tex[NDSDisplayID_Main]  = nil;
-	processedFrameInfo.tex[NDSDisplayID_Touch] = nil;
 	processedFrameInfo.isMainDisplayProcessed = false;
 	processedFrameInfo.isTouchDisplayProcessed = false;
 	
@@ -1117,9 +1119,8 @@
 	
 	[self setTexDisplayPixelScaleMain:[[sharedData device] newTextureWithDescriptor:texDisplayPixelScaleDesc]];
 	[self setTexDisplayPixelScaleTouch:[[sharedData device] newTextureWithDescriptor:texDisplayPixelScaleDesc]];
-	
-	processedFrameInfo.tex[NDSDisplayID_Main]  = [sharedData texFetchMain];
-	processedFrameInfo.tex[NDSDisplayID_Touch] = [sharedData texFetchTouch];
+	[self setTexDisplayProcessedMain:[sharedData texFetchMain]];
+	[self setTexDisplayProcessedTouch:[sharedData texFetchTouch]];
 	
 	VideoFilter *vfMain  = cdp->GetPixelScalerObject(NDSDisplayID_Main);
 	_bufCPUFilterSrcMain = [[[sharedData device] newBufferWithBytesNoCopy:vfMain->GetSrcBufferPtr()
@@ -1278,10 +1279,10 @@
 	const NDSDisplayInfo &fetchDisplayInfo = [sharedData GPUFetchObject]->GetFetchDisplayInfoForBufferIndex(bufferIndex);
 	const ClientDisplayMode mode = cdp->GetPresenterProperties().mode;
 	const bool useDeposterize = cdp->GetSourceDeposterize();
-	
 	const NDSDisplayID selectedDisplaySource[2] = { cdp->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main), cdp->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) };
-	id<MTLTexture> texMain  = (selectedDisplaySource[NDSDisplayID_Main]  == NDSDisplayID_Main)  ? [sharedData texFetchMain]  : [sharedData texFetchTouch];
-	id<MTLTexture> texTouch = (selectedDisplaySource[NDSDisplayID_Touch] == NDSDisplayID_Touch) ? [sharedData texFetchTouch] : [sharedData texFetchMain];
+	
+	[self setTexDisplayProcessedMain:(selectedDisplaySource[NDSDisplayID_Main]  == NDSDisplayID_Main)  ? [sharedData texFetchMain]  : [sharedData texFetchTouch]];
+	[self setTexDisplayProcessedTouch:(selectedDisplaySource[NDSDisplayID_Touch] == NDSDisplayID_Touch) ? [sharedData texFetchTouch] : [sharedData texFetchMain]];
 	
 	bool isDisplayProcessedMain  = ![sharedData isUsingFramebufferDirectlyAtIndex:bufferIndex displayID:selectedDisplaySource[NDSDisplayID_Main]];
 	bool isDisplayProcessedTouch = ![sharedData isUsingFramebufferDirectlyAtIndex:bufferIndex displayID:selectedDisplaySource[NDSDisplayID_Touch]];
@@ -1311,7 +1312,7 @@
 			
 			if (shouldProcessDisplay[NDSDisplayID_Main])
 			{
-				[cce setTexture:texMain atIndex:0];
+				[cce setTexture:[self texDisplayProcessedMain] atIndex:0];
 				[cce setTexture:_texDisplaySrcDeposterize[NDSDisplayID_Main][0] atIndex:1];
 				[cce dispatchThreadgroups:[sharedData deposterizeThreadGroupsPerGrid]
 					threadsPerThreadgroup:[sharedData deposterizeThreadsPerGroup]];
@@ -1321,7 +1322,7 @@
 				[cce dispatchThreadgroups:[sharedData deposterizeThreadGroupsPerGrid]
 					threadsPerThreadgroup:[sharedData deposterizeThreadsPerGroup]];
 				
-				texMain = _texDisplaySrcDeposterize[NDSDisplayID_Main][1];
+				[self setTexDisplayProcessedMain:_texDisplaySrcDeposterize[NDSDisplayID_Main][1]];
 				isDisplayProcessedMain = true;
 				
 				if (selectedDisplaySource[NDSDisplayID_Main] == selectedDisplaySource[NDSDisplayID_Touch])
@@ -1332,7 +1333,7 @@
 			
 			if (shouldProcessDisplay[NDSDisplayID_Touch])
 			{
-				[cce setTexture:texTouch atIndex:0];
+				[cce setTexture:[self texDisplayProcessedTouch] atIndex:0];
 				[cce setTexture:_texDisplaySrcDeposterize[NDSDisplayID_Touch][0] atIndex:1];
 				[cce dispatchThreadgroups:[sharedData deposterizeThreadGroupsPerGrid]
 					threadsPerThreadgroup:[sharedData deposterizeThreadsPerGroup]];
@@ -1342,7 +1343,7 @@
 				[cce dispatchThreadgroups:[sharedData deposterizeThreadGroupsPerGrid]
 					threadsPerThreadgroup:[sharedData deposterizeThreadsPerGroup]];
 				
-				texTouch = _texDisplaySrcDeposterize[NDSDisplayID_Touch][1];
+				[self setTexDisplayProcessedTouch:_texDisplaySrcDeposterize[NDSDisplayID_Touch][1]];
 				isDisplayProcessedTouch = true;
 			}
 			
@@ -1371,12 +1372,12 @@
 			
 			if (shouldProcessDisplay[NDSDisplayID_Main])
 			{
-				[cce setTexture:texMain atIndex:0];
+				[cce setTexture:[self texDisplayProcessedMain] atIndex:0];
 				[cce setTexture:[self texDisplayPixelScaleMain] atIndex:1];
 				[cce setTexture:[sharedData texCurrentHQnxLUT] atIndex:2];
 				[cce dispatchThreadgroups:_pixelScalerThreadGroupsPerGrid threadsPerThreadgroup:_pixelScalerThreadsPerGroup];
 				
-				texMain  = [self texDisplayPixelScaleMain];
+				[self setTexDisplayProcessedMain:[self texDisplayPixelScaleMain]];
 				isDisplayProcessedMain = true;
 				
 				if (selectedDisplaySource[NDSDisplayID_Main] == selectedDisplaySource[NDSDisplayID_Touch])
@@ -1387,12 +1388,12 @@
 			
 			if (shouldProcessDisplay[NDSDisplayID_Touch])
 			{
-				[cce setTexture:texTouch atIndex:0];
+				[cce setTexture:[self texDisplayProcessedTouch] atIndex:0];
 				[cce setTexture:[self texDisplayPixelScaleTouch] atIndex:1];
 				[cce setTexture:[sharedData texCurrentHQnxLUT] atIndex:2];
 				[cce dispatchThreadgroups:_pixelScalerThreadGroupsPerGrid threadsPerThreadgroup:_pixelScalerThreadsPerGroup];
 				
-				texTouch = [self texDisplayPixelScaleTouch];
+				[self setTexDisplayProcessedTouch:[self texDisplayPixelScaleTouch]];
 				isDisplayProcessedTouch = true;
 			}
 			
@@ -1485,7 +1486,7 @@
 				   destinationLevel:0
 				  destinationOrigin:MTLOriginMake(0, 0, 0)];
 				
-				texMain = [self texDisplayPixelScaleMain];
+				[self setTexDisplayProcessedMain:[self texDisplayPixelScaleMain]];
 				isDisplayProcessedMain = true;
 				
 				if (selectedDisplaySource[NDSDisplayID_Main] == selectedDisplaySource[NDSDisplayID_Touch])
@@ -1508,7 +1509,7 @@
 				   destinationLevel:0
 				  destinationOrigin:MTLOriginMake(0, 0, 0)];
 				
-				texTouch = [self texDisplayPixelScaleTouch];
+				[self setTexDisplayProcessedTouch:[self texDisplayPixelScaleTouch]];
 				isDisplayProcessedTouch = true;
 			}
 			
@@ -1522,12 +1523,12 @@
 	
 	if (selectedDisplaySource[NDSDisplayID_Touch] == selectedDisplaySource[NDSDisplayID_Main])
 	{
-		texTouch = texMain;
+		[self setTexDisplayProcessedTouch:[self texDisplayProcessedMain]];
 	}
 	
 	// Update the texture coordinates
-	cdp->SetScreenTextureCoordinates((float)[texMain  width], (float)[texMain  height],
-									 (float)[texTouch width], (float)[texTouch height],
+	cdp->SetScreenTextureCoordinates((float)[[self texDisplayProcessedMain]  width], (float)[[self texDisplayProcessedMain]  height],
+									 (float)[[self texDisplayProcessedTouch] width], (float)[[self texDisplayProcessedTouch] height],
 									 (float *)[_displayTexCoordBuffer contents]);
 	[_displayTexCoordBuffer didModifyRange:NSMakeRange(0, sizeof(float) * (4 * 8))];
 	
@@ -1536,9 +1537,6 @@
 	newFrameInfo.bufferIndex = bufferIndex;
 	newFrameInfo.isMainDisplayProcessed  = isDisplayProcessedMain;
 	newFrameInfo.isTouchDisplayProcessed = isDisplayProcessedTouch;
-	newFrameInfo.tex[NDSDisplayID_Main]  = texMain;
-	newFrameInfo.tex[NDSDisplayID_Touch] = texTouch;
-	
 	[self setProcessedFrameInfo:newFrameInfo];
 }
 
@@ -1824,9 +1822,6 @@
 		
 		const MetalProcessedFrameInfo processedInfo = [self processedFrameInfo];
 		const bool needsFetchBuffersLock = !processedInfo.isMainDisplayProcessed || !processedInfo.isTouchDisplayProcessed;
-		
-		pthread_mutex_lock(&_mutexBufferUpdate);
-		
 		if (needsFetchBuffersLock)
 		{
 			pthread_rwlock_rdlock([sharedData rwlockFramebufferAtIndex:processedInfo.bufferIndex]);
@@ -1836,19 +1831,21 @@
 		[colorAttachment0Desc setTexture:texRender];
 		id<MTLCommandBuffer> cb = [self newCommandBuffer];
 		
+		pthread_mutex_lock(&_mutexBufferUpdate);
+		
 		[self renderForCommandBuffer:cb
 				 outputPipelineState:[self outputRGBAPipeline]
 					hudPipelineState:[sharedData hudRGBAPipeline]
-					  texDisplayMain:(processedInfo.isMainDisplayProcessed)  ? processedInfo.tex[NDSDisplayID_Main]  : ((cdp->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main)  == NDSDisplayID_Main)  ? [sharedData texFetchMain]  : [sharedData texFetchTouch] )
-					 texDisplayTouch:(processedInfo.isTouchDisplayProcessed) ? processedInfo.tex[NDSDisplayID_Touch] : ((cdp->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) == NDSDisplayID_Touch) ? [sharedData texFetchTouch] : [sharedData texFetchMain]  )];
+					  texDisplayMain:(processedInfo.isMainDisplayProcessed)  ? [self texDisplayProcessedMain]  : ((cdp->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main)  == NDSDisplayID_Main)  ? [sharedData texFetchMain]  : [sharedData texFetchTouch] )
+					 texDisplayTouch:(processedInfo.isTouchDisplayProcessed) ? [self texDisplayProcessedTouch] : ((cdp->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) == NDSDisplayID_Touch) ? [sharedData texFetchTouch] : [sharedData texFetchMain]  )];
 		
 		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+			pthread_mutex_unlock(&_mutexBufferUpdate);
+			
 			if (needsFetchBuffersLock)
 			{
 				pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:processedInfo.bufferIndex]);
 			}
-			
-			pthread_mutex_unlock(&_mutexBufferUpdate);
 		}];
 		
 		[cb commit];
@@ -1923,9 +1920,6 @@
 	{
 		const MetalProcessedFrameInfo processedInfo = [presenterObject processedFrameInfo];
 		const bool needsFetchBuffersLock = !processedInfo.isMainDisplayProcessed || !processedInfo.isTouchDisplayProcessed;
-		
-		pthread_mutex_lock([presenterObject mutexBufferUpdate]);
-		
 		if (needsFetchBuffersLock)
 		{
 			pthread_rwlock_rdlock([[presenterObject sharedData] rwlockFramebufferAtIndex:processedInfo.bufferIndex]);
@@ -1936,20 +1930,22 @@
 		[[presenterObject colorAttachment0Desc] setTexture:[layerDrawable texture]];
 		id<MTLCommandBuffer> cb = [presenterObject newCommandBuffer];
 		
+		pthread_mutex_lock([presenterObject mutexBufferUpdate]);
+		
 		[presenterObject renderForCommandBuffer:cb
 							outputPipelineState:[presenterObject outputDrawablePipeline]
 							   hudPipelineState:[[presenterObject sharedData] hudPipeline]
-								 texDisplayMain:(processedInfo.isMainDisplayProcessed)  ? processedInfo.tex[NDSDisplayID_Main]  : (([presenterObject cdp]->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main)  == NDSDisplayID_Main)  ? [[presenterObject sharedData] texFetchMain]  : [[presenterObject sharedData] texFetchTouch] )
-								texDisplayTouch:(processedInfo.isTouchDisplayProcessed) ? processedInfo.tex[NDSDisplayID_Touch] : (([presenterObject cdp]->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) == NDSDisplayID_Touch) ? [[presenterObject sharedData] texFetchTouch] : [[presenterObject sharedData] texFetchMain]  )];
+								 texDisplayMain:(processedInfo.isMainDisplayProcessed)  ? [presenterObject texDisplayProcessedMain]  : (([presenterObject cdp]->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main)  == NDSDisplayID_Main)  ? [[presenterObject sharedData] texFetchMain]  : [[presenterObject sharedData] texFetchTouch] )
+								texDisplayTouch:(processedInfo.isTouchDisplayProcessed) ? [presenterObject texDisplayProcessedTouch] : (([presenterObject cdp]->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) == NDSDisplayID_Touch) ? [[presenterObject sharedData] texFetchTouch] : [[presenterObject sharedData] texFetchMain]  )];
 		
 		[cb presentDrawable:layerDrawable];
 		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+			pthread_mutex_unlock([presenterObject mutexBufferUpdate]);
+			
 			if (needsFetchBuffersLock)
 			{
 				pthread_rwlock_unlock([[presenterObject sharedData] rwlockFramebufferAtIndex:processedInfo.bufferIndex]);
 			}
-			
-			pthread_mutex_unlock([presenterObject mutexBufferUpdate]);
 		}];
 		
 		[cb commit];
