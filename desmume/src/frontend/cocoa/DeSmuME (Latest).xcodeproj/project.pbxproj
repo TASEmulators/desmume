@@ -4351,7 +4351,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if test -d \"${TARGET_BUILD_DIR}/DeSmuME.app\" ; then\n\nDESCRIBE=`git describe --always --long --dirty=\"+\" --broken`\nif [ \"$DESCRIBE\" == \"\" ] ; then\nDESCRIBE=\"0\"\nfi\n\nNEWBUILDNAME=\"${PRODUCT_NAME}_git#$DESCRIBE.app\"\ncd \"${TARGET_BUILD_DIR}\"\nrm -rf \"$NEWBUILDNAME\"\nmv -f \"${PRODUCT_NAME}.app\" \"$NEWBUILDNAME\"\n\nfi";
+			shellScript = "if test -d \"${TARGET_BUILD_DIR}/DeSmuME.app\" ; then\n\nDESCRIBE=`git describe --always --long --dirty=\"+\"`\nif [ \"$DESCRIBE\" == \"\" ] ; then\nDESCRIBE=\"0\"\nfi\n\nNEWBUILDNAME=\"${PRODUCT_NAME}_git#$DESCRIBE.app\"\ncd \"${TARGET_BUILD_DIR}\"\nrm -rf \"$NEWBUILDNAME\"\nmv -f \"${PRODUCT_NAME}.app\" \"$NEWBUILDNAME\"\n\nfi";
 		};
 		AB8F3C181A53AC2600A80BF6 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
