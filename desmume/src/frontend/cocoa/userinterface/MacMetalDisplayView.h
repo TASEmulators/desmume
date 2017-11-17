@@ -37,6 +37,7 @@ class MacMetalDisplayView;
 struct MetalProcessedFrameInfo
 {
 	uint8_t bufferIndex;
+    id<MTLTexture> tex[2];
 	bool isMainDisplayProcessed;
 	bool isTouchDisplayProcessed;
 };
