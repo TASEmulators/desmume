@@ -430,8 +430,15 @@ public:
 		}
 	}
 	
+	template <bool ISSHADOWPOLYGON>
 	FORCEINLINE void shade(const PolygonMode polygonMode, const FragmentColor src, FragmentColor &dst, const float texCoordU, const float texCoordV)
 	{
+		if (ISSHADOWPOLYGON)
+		{
+			dst = src;
+			return;
+		}
+		
 		static const FragmentColor colorWhite = MakeFragmentColor(0x3F, 0x3F, 0x3F, 0x1F);
 		const FragmentColor mainTexColor = (this->currentTexture->IsSamplingEnabled()) ? sample(texCoordU, texCoordV) : colorWhite;
 		
@@ -599,7 +606,7 @@ public:
 									 polyAttr.Alpha);
 		
 		//pixel shader
-		shade((PolygonMode)polyAttr.Mode, srcColor, shaderOutput, invu * w, invv * w);
+		shade<ISSHADOWPOLYGON>((PolygonMode)polyAttr.Mode, srcColor, shaderOutput, invu * w, invv * w);
 		
 		// handle alpha test
 		if ( shaderOutput.a == 0 ||
