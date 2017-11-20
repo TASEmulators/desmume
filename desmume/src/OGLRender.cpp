@@ -4717,28 +4717,32 @@ Render3DError OpenGLRenderer_1_2::Reset()
 
 Render3DError OpenGLRenderer_1_2::RenderFinish()
 {
-	if (!this->_renderNeedsFinish || !this->_pixelReadNeedsFinish)
+	if (!this->_renderNeedsFinish)
 	{
 		return OGLERROR_NOERR;
 	}
 	
-	if(!BEGINGL())
+	if (this->_pixelReadNeedsFinish)
 	{
-		return OGLERROR_BEGINGL_FAILED;
+		this->_pixelReadNeedsFinish = false;
+		
+		if(!BEGINGL())
+		{
+			return OGLERROR_BEGINGL_FAILED;
+		}
+		
+		if (this->isPBOSupported)
+		{
+			this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
+		}
+		else
+		{
+			glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, this->_framebufferColor);
+		}
+		
+		ENDGL();
 	}
 	
-	if (this->isPBOSupported)
-	{
-		this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
-	}
-	else
-	{
-		glReadPixels(0, 0, this->_framebufferWidth, this->_framebufferHeight, GL_BGRA, GL_UNSIGNED_BYTE, this->_framebufferColor);
-	}
-	
-	ENDGL();
-	
-	this->_pixelReadNeedsFinish = false;
 	this->_renderNeedsFlushMain = true;
 	this->_renderNeedsFlush16 = true;
 	
@@ -5036,21 +5040,25 @@ Render3DError OpenGLRenderer_2_0::SetupTexture(const POLY &thePoly, size_t polyR
 
 Render3DError OpenGLRenderer_2_1::RenderFinish()
 {
-	if (!this->_renderNeedsFinish || !this->_pixelReadNeedsFinish)
+	if (!this->_renderNeedsFinish)
 	{
 		return OGLERROR_NOERR;
 	}
 	
-	if(!BEGINGL())
+	if (this->_pixelReadNeedsFinish)
 	{
-		return OGLERROR_BEGINGL_FAILED;
+		this->_pixelReadNeedsFinish = false;
+		
+		if(!BEGINGL())
+		{
+			return OGLERROR_BEGINGL_FAILED;
+		}
+		
+		this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+		
+		ENDGL();
 	}
 	
-	this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-	
-	ENDGL();
-	
-	this->_pixelReadNeedsFinish = false;
 	this->_renderNeedsFlushMain = true;
 	this->_renderNeedsFlush16 = true;
 	

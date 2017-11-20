@@ -2226,38 +2226,41 @@ Render3DError SoftRasterizerRenderer::EndRender(const u64 frameCount)
 
 Render3DError SoftRasterizerRenderer::RenderFinish()
 {
-	if (!this->_renderNeedsFinish || !this->_renderGeometryNeedsFinish)
+	if (!this->_renderNeedsFinish)
 	{
 		return RENDER3DERROR_NOERR;
 	}
 	
-	// Allow for the geometry rendering to finish.
-	this->_renderGeometryNeedsFinish = false;
-	for (size_t i = 0; i < rasterizerCores; i++)
+	if (this->_renderGeometryNeedsFinish)
 	{
-		rasterizerUnitTask[i].finish();
-	}
-	
-	// Now that geometry rendering is finished on all threads, check the texture cache.
-	texCache.Evict();
-	
-	// Do multithreaded post-processing.
-	if (this->_enableEdgeMark || this->_enableFog)
-	{
-		for (size_t i = 0; i < rasterizerCores; i++)
-		{
-			this->postprocessParam[i].enableEdgeMarking = this->_enableEdgeMark;
-			this->postprocessParam[i].enableFog = this->_enableFog;
-			this->postprocessParam[i].fogColor = this->currentRenderState->fogColor;
-			this->postprocessParam[i].fogAlphaOnly = this->currentRenderState->enableFogAlphaOnly;
-			
-			rasterizerUnitTask[i].execute(&SoftRasterizer_RunRenderEdgeMarkAndFog, &this->postprocessParam[i]);
-		}
-		
-		// Allow for post-processing to finish.
+		// Allow for the geometry rendering to finish.
+		this->_renderGeometryNeedsFinish = false;
 		for (size_t i = 0; i < rasterizerCores; i++)
 		{
 			rasterizerUnitTask[i].finish();
+		}
+		
+		// Now that geometry rendering is finished on all threads, check the texture cache.
+		texCache.Evict();
+		
+		// Do multithreaded post-processing.
+		if (this->_enableEdgeMark || this->_enableFog)
+		{
+			for (size_t i = 0; i < rasterizerCores; i++)
+			{
+				this->postprocessParam[i].enableEdgeMarking = this->_enableEdgeMark;
+				this->postprocessParam[i].enableFog = this->_enableFog;
+				this->postprocessParam[i].fogColor = this->currentRenderState->fogColor;
+				this->postprocessParam[i].fogAlphaOnly = this->currentRenderState->enableFogAlphaOnly;
+				
+				rasterizerUnitTask[i].execute(&SoftRasterizer_RunRenderEdgeMarkAndFog, &this->postprocessParam[i]);
+			}
+			
+			// Allow for post-processing to finish.
+			for (size_t i = 0; i < rasterizerCores; i++)
+			{
+				rasterizerUnitTask[i].finish();
+			}
 		}
 	}
 	
