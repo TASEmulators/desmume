@@ -538,7 +538,7 @@ extern struct TCommonSettings
 		, GFX3D_Renderer_TextureSmoothing(false)
 		, GFX3D_TXTHack(false)
 		, GFX3D_PrescaleHD(1)
-		, jit_max_block_size(100)
+		, jit_max_block_size(12)
 		, loadToMemory(false)
 		, UseExtBIOS(false)
 		, SWIFromBIOS(false)
