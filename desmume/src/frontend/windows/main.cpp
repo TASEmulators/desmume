@@ -3034,8 +3034,6 @@ int _main()
 	CommonSettings.advanced_timing = GetPrivateProfileBool("Emulation", "AdvancedTiming", true, IniName);
 	CommonSettings.gamehacks.en = GetPrivateProfileBool("Emulation", "GameHacks", true, IniName);
 
-	CommonSettings.GFX3D_PrescaleHD = GetPrivateProfileInt("3D", "PrescaleHD", 1, IniName);
-	CommonSettings.GFX3D_Renderer_TextureScalingFactor = GetPrivateProfileInt("3D", "TextureScalingFactor ", 1, IniName);
 	CommonSettings.GFX3D_Renderer_TextureDeposterize =  GetPrivateProfileBool("3D", "TextureDeposterize ", 0, IniName);
 	CommonSettings.GFX3D_Renderer_TextureSmoothing =  GetPrivateProfileBool("3D", "TextureSmooth ", 0, IniName);
 	gpu_bpp = GetPrivateProfileInt("3D", "GpuBpp ", 24, IniName);
@@ -3267,17 +3265,10 @@ int _main()
 
 	NDS_Init();
 
-	if (cmdline.texture_upscale != -1)
-	{
-		CommonSettings.GFX3D_Renderer_TextureScalingFactor = cmdline.texture_upscale;
-	}
+	CommonSettings.GFX3D_Renderer_TextureScalingFactor = (cmdline.texture_upscale != -1) ? cmdline.texture_upscale : GetPrivateProfileInt("3D", "TextureScalingFactor ", 1, IniName);
+	int newPrescaleHD = (cmdline.gpu_resolution_multiplier != -1) ? cmdline.gpu_resolution_multiplier : GetPrivateProfileInt("3D", "PrescaleHD", 1, IniName);
 
-	if (cmdline.gpu_resolution_multiplier != -1)
-	{
-		CommonSettings.GFX3D_PrescaleHD = cmdline.gpu_resolution_multiplier;
-	}
-
-	video.SetPrescale(CommonSettings.GFX3D_PrescaleHD, 1);
+	video.SetPrescale(newPrescaleHD, 1);
 	GPU->SetCustomFramebufferSize(GPU_FRAMEBUFFER_NATIVE_WIDTH*video.prescaleHD, GPU_FRAMEBUFFER_NATIVE_HEIGHT*video.prescaleHD);
 	SyncGpuBpp();
 	GPU->ClearWithColor(0xFFFFFF);
@@ -6418,7 +6409,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			CheckDlgButton(hw,IDC_TEX_SMOOTH, CommonSettings.GFX3D_Renderer_TextureSmoothing);
 
 			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETRANGE, 0, MAKELPARAM(16, 1));
-			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, CommonSettings.GFX3D_PrescaleHD);
+			SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_SETPOS, 0, video.prescaleHD);
 
 			for(i = 0; core3DList[i] != NULL; i++)
 			{
@@ -6442,17 +6433,18 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					CommonSettings.GFX3D_Renderer_Multisample = IsDlgCheckboxChecked(hw,IDC_3DSETTINGS_ANTIALIASING);
 					CommonSettings.GFX3D_TXTHack = IsDlgCheckboxChecked(hw,IDC_TXTHACK);
 
+					int newPrescaleHD = video.prescaleHD;
 					LRESULT scaleResult = SendDlgItemMessage(hw, IDC_NUD_PRESCALEHD, UDM_GETPOS, 0, 0);
-					if ((scaleResult & 0xFFFF0000) == 0)
+					if (HIWORD(scaleResult) == 0)
 					{
-						CommonSettings.GFX3D_PrescaleHD = scaleResult & 0x0000FFFF;
+						newPrescaleHD = LOWORD(scaleResult);
 					}
 
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_1)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 1;
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_2)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 2;
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_4)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 4;
 					if(IsDlgCheckboxChecked(hw, IDC_GPU_15BPP)) gpu_bpp = 15;
-					if(IsDlgCheckboxChecked(hw,IDC_GPU_18BPP)) gpu_bpp = 18;
+					if(IsDlgCheckboxChecked(hw, IDC_GPU_18BPP)) gpu_bpp = 18;
 					if(IsDlgCheckboxChecked(hw, IDC_GPU_24BPP)) gpu_bpp = 24;
 					CommonSettings.GFX3D_Renderer_TextureDeposterize = IsDlgCheckboxChecked(hw,IDC_TEX_DEPOSTERIZE);
 					CommonSettings.GFX3D_Renderer_TextureSmoothing = IsDlgCheckboxChecked(hw,IDC_TEX_SMOOTH);
@@ -6461,10 +6453,9 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 						Lock lock(win_backbuffer_sync);
 						if(display_mutex) slock_lock(display_mutex);
 						Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
-						video.SetPrescale(CommonSettings.GFX3D_PrescaleHD,1);
+						video.SetPrescale(newPrescaleHD, 1);
 						GPU->SetCustomFramebufferSize(GPU_FRAMEBUFFER_NATIVE_WIDTH*video.prescaleHD, GPU_FRAMEBUFFER_NATIVE_HEIGHT*video.prescaleHD);
 						SyncGpuBpp();
-						ScaleScreen(windowSize, false);
 						UpdateScreenRects();
 						if(display_mutex) slock_unlock(display_mutex);
 					}
@@ -6476,7 +6467,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					WritePrivateProfileInt ("3D", "EnableLineHack", CommonSettings.GFX3D_LineHack, IniName);
 					WritePrivateProfileInt ("3D", "EnableAntiAliasing", CommonSettings.GFX3D_Renderer_Multisample, IniName);
 					WritePrivateProfileInt ("3D", "EnableTXTHack", CommonSettings.GFX3D_TXTHack, IniName);
-					WritePrivateProfileInt ("3D", "PrescaleHD", CommonSettings.GFX3D_PrescaleHD, IniName);
+					WritePrivateProfileInt ("3D", "PrescaleHD", video.prescaleHD, IniName);
 					WritePrivateProfileInt ("3D", "TextureScalingFactor", CommonSettings.GFX3D_Renderer_TextureScalingFactor, IniName);
 					WritePrivateProfileBool("3D", "TextureDeposterize", CommonSettings.GFX3D_Renderer_TextureDeposterize, IniName);
 					WritePrivateProfileBool("3D", "TextureSmooth", CommonSettings.GFX3D_Renderer_TextureSmoothing, IniName);

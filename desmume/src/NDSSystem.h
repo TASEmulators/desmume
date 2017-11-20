@@ -537,7 +537,6 @@ extern struct TCommonSettings
 		, GFX3D_Renderer_TextureDeposterize(false)
 		, GFX3D_Renderer_TextureSmoothing(false)
 		, GFX3D_TXTHack(false)
-		, GFX3D_PrescaleHD(1)
 		, jit_max_block_size(12)
 		, loadToMemory(false)
 		, UseExtBIOS(false)
@@ -598,9 +597,6 @@ extern struct TCommonSettings
 	bool GFX3D_Renderer_TextureDeposterize;
 	bool GFX3D_Renderer_TextureSmoothing;
 	bool GFX3D_TXTHack;
-
-	//may not want this on OSX port
-	int GFX3D_PrescaleHD;
 
 	bool loadToMemory;
 

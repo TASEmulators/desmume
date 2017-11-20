@@ -1647,7 +1647,7 @@ BEGIN
             MENUITEM "4xBRZ",                       IDM_RENDER_4XBRZ
             MENUITEM "5xBRZ",                       IDM_RENDER_5XBRZ
         END
-        MENUITEM "&Maintain Asect Ratio",       IDC_FORCERATIO
+        MENUITEM "&Maintain Aspect Ratio",      IDC_FORCERATIO
         MENUITEM "&Pad To Integer",             IDC_VIEW_PADTOINTEGER
         MENUITEM SEPARATOR
         MENUITEM "Show &Toolbar",               IDM_SHOWTOOLBAR
