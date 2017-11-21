@@ -551,15 +551,15 @@ extern struct TCommonSettings
 		, rigorous_timing(false)
 		, advanced_timing(true)
 		, micMode(InternalNoise)
-		, spuInterpolationMode(1)
+		, spuInterpolationMode(2)
 		, manualBackupType(0)
 		, autodetectBackupMethod(0)
 		, spu_captureMuted(false)
-		, spu_advanced(false)
+		, spu_advanced(true)
 		, StylusPressure(50)
 		, ConsoleType(NDS_CONSOLE_TYPE_FAT)
 		, backupSave(false)
-		, SPU_sync_mode(0)
+		, SPU_sync_mode(1)
 		, SPU_sync_method(0)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");

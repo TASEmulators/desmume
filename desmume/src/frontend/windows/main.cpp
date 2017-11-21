@@ -328,7 +328,7 @@ bool start_paused;
 extern bool killStylusTopScreen;
 extern bool killStylusOffScreen;
 
-int gpu_bpp = 24;
+int gpu_bpp = 18;
 
 extern LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void InitRamSearch();
@@ -3030,13 +3030,13 @@ int _main()
 	ScreenGapColor = GetPrivateProfileInt("Display", "ScreenGapColor", 0xFFFFFF, IniName);
 	CommonSettings.showGpu.main = GetPrivateProfileInt("Display", "MainGpu", 1, IniName) != 0;
 	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
-	CommonSettings.spu_advanced = GetPrivateProfileBool("Sound", "SpuAdvanced", false, IniName);
+	CommonSettings.spu_advanced = GetPrivateProfileBool("Sound", "SpuAdvanced", true, IniName);
 	CommonSettings.advanced_timing = GetPrivateProfileBool("Emulation", "AdvancedTiming", true, IniName);
 	CommonSettings.gamehacks.en = GetPrivateProfileBool("Emulation", "GameHacks", true, IniName);
 
 	CommonSettings.GFX3D_Renderer_TextureDeposterize =  GetPrivateProfileBool("3D", "TextureDeposterize ", 0, IniName);
 	CommonSettings.GFX3D_Renderer_TextureSmoothing =  GetPrivateProfileBool("3D", "TextureSmooth ", 0, IniName);
-	gpu_bpp = GetPrivateProfileInt("3D", "GpuBpp ", 24, IniName);
+	gpu_bpp = GetPrivateProfileInt("3D", "GpuBpp ", 18, IniName);
 		
 	lostFocusPause = GetPrivateProfileBool("Focus", "BackgroundPause", false, IniName);
 
@@ -3065,9 +3065,16 @@ int _main()
 	//zero 06-sep-2012 - shouldnt be defaulting this to true for now, since the jit is buggy. 
 	//id rather have people discover a bonus speedhack than discover new bugs in a new version
 	CommonSettings.use_jit = GetPrivateProfileBool("Emulation", "CPUmode", false, IniName);
-	CommonSettings.jit_max_block_size = GetPrivateProfileInt("Emulation", "JitSize", 100, IniName);
-	if ((CommonSettings.jit_max_block_size < 1) || (CommonSettings.jit_max_block_size > 100)) 
+	CommonSettings.jit_max_block_size = GetPrivateProfileInt("Emulation", "JitSize", 12, IniName);
+
+	if (CommonSettings.jit_max_block_size < 1)
+	{
+		CommonSettings.jit_max_block_size = 1;
+	}
+	else if (CommonSettings.jit_max_block_size > 100)
+	{
 		CommonSettings.jit_max_block_size = 100;
+	}
 #else
 	CommonSettings.use_jit = false;
 #endif
@@ -3379,10 +3386,10 @@ int _main()
 	LOG("Init sound core\n");
 	sndcoretype = (cmdline.disable_sound == 1) ? SNDCORE_DUMMY : GetPrivateProfileInt("Sound","SoundCore2", SNDCORE_DIRECTX, IniName);
 	sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize2", DESMUME_SAMPLE_RATE*8/60, IniName);
-	CommonSettings.spuInterpolationMode = (SPUInterpolationMode)GetPrivateProfileInt("Sound","SPUInterpolation", 1, IniName);
+	CommonSettings.spuInterpolationMode = (SPUInterpolationMode)GetPrivateProfileInt("Sound","SPUInterpolation", 2, IniName);
 
 	if (cmdline._spu_sync_mode == -1)
-		CommonSettings.SPU_sync_mode = GetPrivateProfileInt("Sound","SynchMode",0,IniName);
+		CommonSettings.SPU_sync_mode = GetPrivateProfileInt("Sound","SynchMode",1,IniName);
 	if (cmdline._spu_sync_method == -1)
 		CommonSettings.SPU_sync_method = GetPrivateProfileInt("Sound","SynchMethod",0,IniName);
 	
