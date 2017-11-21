@@ -598,14 +598,15 @@ protected:
 	GLuint _texID;
 	GLfloat _invSizeS;
 	GLfloat _invSizeT;
-		
+	bool _isTexInited;
+	
 	u32 *_upscaleBuffer;
 	
 public:
 	OpenGLTexture(TEXIMAGE_PARAM texAttributes, u32 palAttributes);
 	virtual ~OpenGLTexture();
 	
-	virtual void Load(bool isNewTexture);
+	virtual void Load(bool forceTextureInit);
 	
 	GLuint GetID() const;
 	GLfloat GetInvWidth() const;

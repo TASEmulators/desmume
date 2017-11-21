@@ -702,6 +702,7 @@ OpenGLTexture::OpenGLTexture(TEXIMAGE_PARAM texAttributes, u32 palAttributes) : 
 	_cacheSize = GetUnpackSizeUsingFormat(TexFormat_32bpp);
 	_invSizeS = 1.0f / (float)_sizeS;
 	_invSizeT = 1.0f / (float)_sizeT;
+	_isTexInited = false;
 	
 	_upscaleBuffer = NULL;
 	
@@ -713,7 +714,7 @@ OpenGLTexture::~OpenGLTexture()
 	glDeleteTextures(1, &this->_texID);
 }
 
-void OpenGLTexture::Load(bool isNewTexture)
+void OpenGLTexture::Load(bool forceTextureInit)
 {
 	u32 *textureSrc = (u32 *)this->_deposterizeSrcSurface.Surface;
 	
@@ -733,8 +734,9 @@ void OpenGLTexture::Load(bool isNewTexture)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 			
-			if (isNewTexture)
+			if (forceTextureInit || !this->_isTexInited)
 			{
+				this->_isTexInited = true;
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_sizeS, this->_sizeT, 0, GL_RGBA, GL_TEXTURE_SRC_FORMAT, textureSrc);
 			}
 			else
@@ -751,8 +753,9 @@ void OpenGLTexture::Load(bool isNewTexture)
 			
 			this->_Upscale<2>(textureSrc, this->_upscaleBuffer);
 			
-			if (isNewTexture)
+			if (forceTextureInit || !this->_isTexInited)
 			{
+				this->_isTexInited = true;
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_sizeS*2, this->_sizeT*2, 0, GL_RGBA, GL_TEXTURE_SRC_FORMAT, this->_upscaleBuffer);
 				glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, this->_sizeS*1, this->_sizeT*1, 0, GL_RGBA, GL_TEXTURE_SRC_FORMAT, textureSrc);
 			}
@@ -771,8 +774,9 @@ void OpenGLTexture::Load(bool isNewTexture)
 			
 			this->_Upscale<4>(textureSrc, this->_upscaleBuffer);
 			
-			if (isNewTexture)
+			if (forceTextureInit || !this->_isTexInited)
 			{
+				this->_isTexInited = true;
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->_sizeS*4, this->_sizeT*4, 0, GL_RGBA, GL_TEXTURE_SRC_FORMAT, this->_upscaleBuffer);
 				
 				this->_Upscale<2>(textureSrc, this->_upscaleBuffer);
