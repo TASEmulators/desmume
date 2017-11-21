@@ -159,7 +159,6 @@ public:
 	
 	gpuEvent = new GPUEventHandlerOSX;
 	GPU->SetEventHandler(gpuEvent);
-	GPU->SetWillAutoResolveToCustomBuffer(false);
 	
 	fetchObject = NULL;
 	
@@ -193,6 +192,8 @@ public:
 	
 	fetchObject->Init();
 	gpuEvent->SetFetchObject(fetchObject);
+	
+	GPU->SetWillAutoResolveToCustomBuffer(false);
 #endif
 	
 	[self clearWithColor:0x8000];

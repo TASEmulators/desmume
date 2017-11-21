@@ -85,6 +85,8 @@ volatile bool execute = true;
 	cdsGPU = [[[[CocoaDSGPU alloc] init] retain] autorelease];
 	[cdsGPU setRender3DThreads:0]; // Pass 0 to automatically set the number of rendering threads
 	[cdsGPU setRender3DRenderingEngine:CORE3DLIST_SWRASTERIZE];
+	[cdsGPU setGpuScale:1];
+	[cdsGPU setGpuColorFormat:NDSColorFormat_BGR666_Rev];
 	
 	// Set up the DS controller
 	cdsController = [[[[CocoaDSController alloc] init] retain] autorelease];
@@ -305,7 +307,7 @@ volatile bool execute = true;
 
 - (GLenum)pixelType
 {
-	return GL_UNSIGNED_SHORT_1_5_5_5_REV;
+	return GL_UNSIGNED_INT_8_8_8_8_REV;
 }
 
 - (GLenum)pixelFormat
@@ -315,7 +317,7 @@ volatile bool execute = true;
 
 - (GLenum)internalPixelFormat
 {
-	return GL_RGB5_A1;
+	return GL_RGBA;
 }
 
 #pragma mark - Audio
