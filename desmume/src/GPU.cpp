@@ -7414,21 +7414,30 @@ GPUSubsystem::GPUSubsystem()
 	_displayInfo.bufferIndex = 0;
 	_displayInfo.masterFramebufferHead = _masterFramebuffer;
 	_displayInfo.masterNativeBuffer = _masterFramebuffer;
-	_displayInfo.nativeBuffer[NDSDisplayID_Main] = _displayInfo.masterNativeBuffer;
+	_displayInfo.nativeBuffer[NDSDisplayID_Main]  = _displayInfo.masterNativeBuffer;
 	_displayInfo.nativeBuffer[NDSDisplayID_Touch] = (u8 *)_displayInfo.masterNativeBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * _displayInfo.pixelBytes);
 	
 	_displayInfo.masterCustomBuffer = (u8 *)_masterFramebuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * _displayInfo.pixelBytes);
-	_displayInfo.customBuffer[NDSDisplayID_Main] = _displayInfo.masterCustomBuffer;
+	_displayInfo.customBuffer[NDSDisplayID_Main]  = _displayInfo.masterCustomBuffer;
 	_displayInfo.customBuffer[NDSDisplayID_Touch] = (u8 *)_displayInfo.masterCustomBuffer + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * _displayInfo.pixelBytes);
 	
-	_displayInfo.didPerformCustomRender[NDSDisplayID_Main] = false;
+	_displayInfo.didPerformCustomRender[NDSDisplayID_Main]  = false;
 	_displayInfo.didPerformCustomRender[NDSDisplayID_Touch] = false;
-	_displayInfo.renderedWidth[NDSDisplayID_Main] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	_displayInfo.renderedWidth[NDSDisplayID_Main]  = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	_displayInfo.renderedWidth[NDSDisplayID_Touch] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	_displayInfo.renderedHeight[NDSDisplayID_Main] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	_displayInfo.renderedHeight[NDSDisplayID_Main]  = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	_displayInfo.renderedHeight[NDSDisplayID_Touch] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	_displayInfo.renderedBuffer[NDSDisplayID_Main] = _displayInfo.nativeBuffer[NDSDisplayID_Main];
+	_displayInfo.renderedBuffer[NDSDisplayID_Main]  = _displayInfo.nativeBuffer[NDSDisplayID_Main];
 	_displayInfo.renderedBuffer[NDSDisplayID_Touch] = _displayInfo.nativeBuffer[NDSDisplayID_Touch];
+	
+	_displayInfo.masterBrightnessDiffersPerLine[NDSDisplayID_Main]  = false;
+	_displayInfo.masterBrightnessDiffersPerLine[NDSDisplayID_Touch] = false;
+	_displayInfo.backlightIntensity[NDSDisplayID_Main]  = 1.0f;
+	_displayInfo.backlightIntensity[NDSDisplayID_Touch] = 1.0f;
+	_displayInfo.needConvertColorFormat[NDSDisplayID_Main]  = false;
+	_displayInfo.needConvertColorFormat[NDSDisplayID_Touch] = false;
+	_displayInfo.needApplyMasterBrightness[NDSDisplayID_Main]  = false;
+	_displayInfo.needApplyMasterBrightness[NDSDisplayID_Touch] = false;
 	
 	ClearWithColor(0x8000);
 }
