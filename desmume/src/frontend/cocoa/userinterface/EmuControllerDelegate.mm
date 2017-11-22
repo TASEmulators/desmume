@@ -2254,6 +2254,7 @@
 	[[cdsCore cdsGPU] setRender3DFragmentSamplingHack:[[NSUserDefaults standardUserDefaults] boolForKey:@"Render3D_FragmentSamplingHack"]];
 	[[cdsCore cdsGPU] setGpuScale:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_ScalingFactor"]];
 	[[cdsCore cdsGPU] setGpuColorFormat:(NSUInteger)[[NSUserDefaults standardUserDefaults] integerForKey:@"Render3D_ColorFormat"]];
+	[[[cdsCore cdsGPU] sharedData] signalFetchAtIndex:0];
 	
 	// Set the stylus options per user preferences.
 	[[cdsCore cdsController] setStylusPressure:[[NSUserDefaults standardUserDefaults] integerForKey:@"Emulation_StylusPressure"]];

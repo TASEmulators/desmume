@@ -253,6 +253,9 @@ public:
 
 - (void) setGpuDimensions:(NSSize)theDimensions
 {
+	const size_t w = (size_t)(theDimensions.width + 0.01);
+	const size_t h = (size_t)(theDimensions.height + 0.01);
+	
 	gpuEvent->Render3DLock();
 	gpuEvent->FramebufferLock();
 	
@@ -261,7 +264,7 @@ public:
 	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:1]);
 #endif
 	
-	GPU->SetCustomFramebufferSize(theDimensions.width, theDimensions.height);
+	GPU->SetCustomFramebufferSize(w, h);
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
@@ -313,18 +316,23 @@ public:
 	gpuEvent->Render3DLock();
 	gpuEvent->FramebufferLock();
 	
-#ifdef ENABLE_SHARED_FETCH_OBJECT
-	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:0]);
-	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:1]);
-#endif
+	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 	
-	GPU->SetColorFormat((NDSColorFormat)colorFormat);
-	
+	if (colorFormat != dispInfo.colorFormat)
+	{
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
-	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:1]);
-	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:0]);
+		pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:0]);
+		pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:1]);
 #endif
+		
+		GPU->SetColorFormat((NDSColorFormat)colorFormat);
+		
+#ifdef ENABLE_SHARED_FETCH_OBJECT
+		fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
+		pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:1]);
+		pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:0]);
+#endif
+	}
 	
 	gpuEvent->FramebufferUnlock();
 	gpuEvent->Render3DUnlock();
