@@ -1,22 +1,19 @@
-/* main.cpp - this file is part of DeSmuME
- *
- * Copyright (C) 2006-2016 DeSmuME Team
- * Copyright (C) 2007 Pascal Giard (evilynux)
- *
- * This file is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2, or (at your option)
- * any later version.
- *
- * This file is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ /*
+	Copyright (C) 2007 Pascal Giard (evilynux)
+	Copyright (C) 2006-2017 DeSmuME team
+ 
+	This file is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 2 of the License, or
+	(at your option) any later version.
+ 
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+ 
+	You should have received a copy of the GNU General Public License
+	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef GTK_UI
@@ -65,17 +62,25 @@
 #include "filter/videofilter.h"
 
 #ifdef GDB_STUB
-#include "armcpu.h"
-#include "gdbstub.h"
+	#include "armcpu.h"
+	#include "gdbstub.h"
 #endif
 
 #if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include "OGLRender.h"
-#include "OGLRender_3_2.h"
-#include "osmesa_3Demu.h"
-#include "glx_3Demu.h"
+	#define HAVE_OPENGL
+#endif
+
+#ifdef HAVE_OPENGL
+	#include <GL/gl.h>
+	#include <GL/glu.h>
+	#include "OGLRender.h"
+	#include "OGLRender_3_2.h"
+#endif
+
+#if defined(HAVE_GL_GLX)
+	#include "glx_3Demu.h"
+#elif defined(HAVE_LIBOSMESA)
+	#include "osmesa_3Demu.h"
 #endif
 
 #include "config.h"
@@ -617,7 +622,7 @@ NULL
 GPU3DInterface *core3DList[] = {
   &gpu3DNull,
   &gpu3DRasterize,
-#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
+#ifdef HAVE_OPENGL
   &gpu3Dgl,
 #endif
 };
@@ -693,7 +698,7 @@ fill_configured_features( class configured_features *config,
     { "3d-render", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3D rendering engine. Available engines:\n"
         "\t\t\t\t  0 = 3d disabled\n"
         "\t\t\t\t  1 = internal rasterizer (default)\n"
-#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
+#ifdef HAVE_OPENGL
         "\t\t\t\t  2 = opengl\n"
 #endif
         ,"ENGINE"},
@@ -737,12 +742,12 @@ fill_configured_features( class configured_features *config,
   // Check if the commandLine argument was actually passed
 	if (config->engine_3d != -1) {
 		if (config->engine_3d != 0 && config->engine_3d != 1
-#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
+#ifdef HAVE_OPENGL
 				&& config->engine_3d != 2
 #endif
 						) {
 			g_printerr("Currently available ENGINES: 0, 1"
-#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
+#ifdef HAVE_OPENGL
 							", 2"
 #endif
 					"\n");
@@ -2185,8 +2190,8 @@ static void GraphicsSettingsDialog() {
 
 	coreCombo = gtk_combo_box_text_new();
 	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 0, "Null");
-	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 1, "Software Raserizer");
-#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
+	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 1, "SoftRasterizer");
+#ifdef HAVE_OPENGL
 	gtk_combo_box_text_insert_text(GTK_COMBO_BOX_TEXT(coreCombo), 2, "OpenGL");
 #endif
 	gtk_combo_box_set_active(GTK_COMBO_BOX(coreCombo), cur3DCore);
@@ -2230,17 +2235,17 @@ static void GraphicsSettingsDialog() {
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 0, 0);
 
 
-#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
+#ifdef HAVE_OPENGL
 	// OpenGL Multisample
-	wMultisample = gtk_check_button_new_with_label("Multisample (OpenGL)");
+	wMultisample = gtk_check_button_new_with_label("Multisample Antialiasing (OpenGL)");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wMultisample), CommonSettings.GFX3D_Renderer_Multisample);
 	gtk_table_attach(GTK_TABLE(wTable), wMultisample, 1, 2, 2, 3,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL), 10, 0);
 #endif
 
-	// SoftwareRasterizer High Color Interpolation
-	wHCInterpolate = gtk_check_button_new_with_label("High Resolution Color Interpolation (SoftwareRasterizer)");
+	// SoftRasterizer High Color Interpolation
+	wHCInterpolate = gtk_check_button_new_with_label("High Resolution Color Interpolation (SoftRasterizer)");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wHCInterpolate), CommonSettings.GFX3D_HighResolutionInterpolateColor);
 	gtk_table_attach(GTK_TABLE(wTable), wHCInterpolate, 1, 2, 3, 4,
 			static_cast<GtkAttachOptions>(GTK_EXPAND | GTK_FILL),
@@ -2256,20 +2261,31 @@ static void GraphicsSettingsDialog() {
     	int sel3DCore = gtk_combo_box_get_active(GTK_COMBO_BOX(coreCombo));
 
     	// Change only if needed
-		if (sel3DCore != cur3DCore) {
-#if defined(HAVE_LIBOSMESA)
-			if (sel3DCore == 2 && !is_osmesa_initialized()) {
-				init_osmesa_3Demu();
-			}
+		if (sel3DCore != cur3DCore)
+		{
+			if (sel3DCore == 2)
+			{
+#if !defined(HAVE_OPENGL)
+				sel3DCore = RENDERID_SOFTRASTERIZER;
 #elif defined(HAVE_GL_GLX)
-			if (sel3DCore == 2 && !is_glx_initialized()) {
-				init_glx_3Demu();
-			}
+				if (!is_glx_initialized())
+				{
+					init_glx_3Demu();
+				}
+#elif defined(HAVE_LIBOSMESA)
+				if (!is_osmesa_initialized())
+				{
+					init_osmesa_3Demu();
+				}
 #endif
+			}
 			
-			if (GPU->Change3DRendererByID(sel3DCore)) {
+			if (GPU->Change3DRendererByID(sel3DCore))
+			{
 				config.core3D = sel3DCore;
-			} else {
+			}
+			else
+			{
 				GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER);
 				g_printerr("3D renderer initialization failed!\nFalling back to 3D core: %s\n", core3DList[RENDERID_SOFTRASTERIZER]->name);
 				config.core3D = RENDERID_SOFTRASTERIZER;
@@ -2292,7 +2308,7 @@ static void GraphicsSettingsDialog() {
 		CommonSettings.GFX3D_Renderer_TextureSmoothing = config.textureSmoothing = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wSmoothing));
 		CommonSettings.GFX3D_Renderer_TextureScalingFactor = config.textureUpscale = scale;
 		CommonSettings.GFX3D_HighResolutionInterpolateColor = config.highColorInterpolation = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wHCInterpolate));
-#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
+#ifdef HAVE_OPENGL
 		CommonSettings.GFX3D_Renderer_Multisample = config.multisampling = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wMultisample));
 #endif
     }
@@ -3348,8 +3364,10 @@ common_gtk_main( class configured_features *my_config)
             gtk_toggle_action_set_active((GtkToggleAction *)action, FALSE);
     }
 
+#if defined(HAVE_OPENGL) && defined(OGLRENDER_3_2_H)
     OGLLoadEntryPoints_3_2_Func = OGLLoadEntryPoints_3_2;
     OGLCreateRenderer_3_2_Func = OGLCreateRenderer_3_2;
+#endif
 
     //Set the 3D emulation to use
     int core = my_config->engine_3d;
@@ -3362,23 +3380,29 @@ common_gtk_main( class configured_features *my_config)
 
     	// Check if it is valid
     	if (!(core >= 0 && core <= 2)) {
-    		// If it is invalid, reset it to softwareRasterizer
+    		// If it is invalid, reset it to SoftRasterizer
     		core = 1;
     	}
     	//Set this too for clarity
         my_config->engine_3d = core;
     }
-#if defined(HAVE_LIBOSMESA) || defined(HAVE_GL_GLX)
-    if(core == 2)
-    {
-#if defined(HAVE_LIBOSMESA)
-        core = init_osmesa_3Demu()
+
+	if (core == 2)
+	{
+#if !defined(HAVE_OPENGL)
+		core = RENDERID_SOFTRASTERIZER;
 #elif defined(HAVE_GL_GLX)
-        core = init_glx_3Demu()
+		if (!is_glx_initialized())
+		{
+			init_glx_3Demu();
+		}
+#elif defined(HAVE_LIBOSMESA)
+		if (!is_osmesa_initialized())
+		{
+			init_osmesa_3Demu();
+		}
 #endif
-        ? 2 : RENDERID_NULL;
-    }
-#endif
+	}
 
 	if (!GPU->Change3DRendererByID(core)) {
 		GPU->Change3DRendererByID(RENDERID_SOFTRASTERIZER);
@@ -3443,10 +3467,10 @@ common_gtk_main( class configured_features *my_config)
 
     desmume_free();
 
-#if defined(HAVE_LIBOSMESA)
-    deinit_osmesa_3Demu();
-#elif defined(HAVE_GL_GLX)
-    deinit_glx_3Demu();
+#if defined(HAVE_GL_GLX)
+	deinit_glx_3Demu();
+#elif defined(HAVE_LIBOSMESA)
+	deinit_osmesa_3Demu();
 #endif
 
     /* Unload joystick */

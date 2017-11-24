@@ -75,7 +75,7 @@ AM_CONDITIONAL([HAVE_GL], [test "${have_gl_h}" = "yes"])
 
 dnl - if --enable-osmesa is used, check for it
 AC_ARG_ENABLE([osmesa],
-               [AC_HELP_STRING([--enable-osmesa], [use off-screen mesa])],
+               [AC_HELP_STRING([--enable-osmesa], [use off-screen mesa, overrides GLX])],
                [osmesa=$enableval],
                [osmesa=no])
 
