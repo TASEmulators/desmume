@@ -942,18 +942,31 @@ static Render3D* OpenGLRendererCreate()
 	{
 		if (error == OGLERROR_DRIVER_VERSION_TOO_OLD)
 		{
-			INFO("OpenGL: This driver does not support the minimum feature set required to run this renderer. Disabling 3D renderer.\n");
+			INFO("OpenGL: This driver does not support the minimum feature set required to run this renderer. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+				 oglVersionString, oglVendorString, oglRendererString);
+		}
+		else if (IsVersionSupported(1, 5, 0) && (error == OGLERROR_VBO_UNSUPPORTED))
+		{
+			INFO("OpenGL: VBOs are not available, even though this version of OpenGL requires them. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+				 oglVersionString, oglVendorString, oglRendererString);
 		}
 		else if ( IsVersionSupported(2, 0, 0) &&
 			(error == OGLERROR_SHADER_CREATE_ERROR ||
 			 error == OGLERROR_VERTEX_SHADER_PROGRAM_LOAD_ERROR ||
 			 error == OGLERROR_FRAGMENT_SHADER_PROGRAM_LOAD_ERROR) )
 		{
-			INFO("OpenGL: Shaders are not working, even though they should be. Disabling 3D renderer.\n");
+			INFO("OpenGL: Shaders are not working, even though they should be on this version of OpenGL. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+				 oglVersionString, oglVendorString, oglRendererString);
 		}
-		else if (IsVersionSupported(3, 0, 0) && error == OGLERROR_FBO_CREATE_ERROR && OGLLoadEntryPoints_3_2_Func != NULL)
+		else if (IsVersionSupported(2, 1, 0) && (error == OGLERROR_PBO_UNSUPPORTED))
 		{
-			INFO("OpenGL: FBOs are not working, even though they should be. Disabling 3D renderer.\n");
+			INFO("OpenGL: PBOs are not available, even though this version of OpenGL requires them. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+				 oglVersionString, oglVendorString, oglRendererString);
+		}
+		else if (IsVersionSupported(3, 0, 0) && (error == OGLERROR_FBO_CREATE_ERROR) && (OGLLoadEntryPoints_3_2_Func != NULL))
+		{
+			INFO("OpenGL: FBOs are not available, even though this version of OpenGL requires them. Disabling 3D renderer.\n[ Driver Info -\n    Version: %s\n    Vendor: %s\n    Renderer: %s ]\n",
+				 oglVersionString, oglVendorString, oglRendererString);
 		}
 		
 		delete newRenderer;
@@ -2057,12 +2070,25 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	else
 	{
 		INFO("OpenGL: Shaders are unsupported. Disabling shaders and using fixed-function pipeline. Some emulation features will be disabled.\n");
+		
+		if (IsVersionSupported(2, 0, 0))
+		{
+			return error;
+		}
 	}
 	
 	this->isVBOSupported = this->IsExtensionPresent(&oglExtensionSet, "GL_ARB_vertex_buffer_object");
 	if (this->isVBOSupported)
 	{
 		this->CreateVBOs();
+	}
+	else
+	{
+		error = OGLERROR_VBO_UNSUPPORTED;
+		if (IsVersionSupported(1, 5, 0))
+		{
+			return error;
+		}
 	}
 	
 	this->isPBOSupported	= this->isVBOSupported &&
@@ -2071,6 +2097,14 @@ Render3DError OpenGLRenderer_1_2::InitExtensions()
 	if (this->isPBOSupported)
 	{
 		this->CreatePBOs();
+	}
+	else
+	{
+		error = OGLERROR_PBO_UNSUPPORTED;
+		if (IsVersionSupported(2, 1, 0))
+		{
+			return error;
+		}
 	}
 	
 	this->isVAOSupported	= this->isShaderSupported &&
