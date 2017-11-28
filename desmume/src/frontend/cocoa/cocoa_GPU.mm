@@ -165,21 +165,16 @@ public:
 #ifdef ENABLE_APPLE_METAL
 	if (IsOSXVersionSupported(10, 11, 0) && ![[NSUserDefaults standardUserDefaults] boolForKey:@"Debug_DisableMetal"])
 	{
-		// macOS v10.13.0 and v10.13.1 are specifically checked for here, because there are
-		// bugs in these versions of macOS that prevent Metal from working properly.
-		if (!IsOSXVersion(10, 13, 0) && !IsOSXVersion(10, 13, 1))
+		fetchObject = new MacMetalFetchObject;
+		
+		if (fetchObject->GetClientData() == nil)
 		{
-			fetchObject = new MacMetalFetchObject;
-			
-			if (fetchObject->GetClientData() == nil)
-			{
-				delete fetchObject;
-				fetchObject = NULL;
-			}
-			else
-			{
-				GPU->SetWillPostprocessDisplays(false);
-			}
+			delete fetchObject;
+			fetchObject = NULL;
+		}
+		else
+		{
+			GPU->SetWillPostprocessDisplays(false);
 		}
 	}
 #endif

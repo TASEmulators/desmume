@@ -2211,10 +2211,10 @@ void InitHQnxLUTs()
 	
 	lutValuesInited = true;
 	
-	_LQ2xLUT = (LUTValues *)malloc(256*(2*2)*16 * sizeof(LUTValues));
-	_HQ2xLUT = (LUTValues *)malloc(256*(2*2)*16 * sizeof(LUTValues));
-	_HQ3xLUT = (LUTValues *)malloc(256*(3*3)*16 * sizeof(LUTValues) + 2);
-	_HQ4xLUT = (LUTValues *)malloc(256*(4*4)*16 * sizeof(LUTValues) + 4); // The bytes fix a mysterious crash that intermittently occurs. Don't know why this works... it just does.
+	_LQ2xLUT = (LUTValues *)malloc_alignedPage(256*(2*2)*16 * sizeof(LUTValues));
+	_HQ2xLUT = (LUTValues *)malloc_alignedPage(256*(2*2)*16 * sizeof(LUTValues));
+	_HQ3xLUT = (LUTValues *)malloc_alignedPage(256*(3*3)*16 * sizeof(LUTValues) + 2);
+	_HQ4xLUT = (LUTValues *)malloc_alignedPage(256*(4*4)*16 * sizeof(LUTValues) + 4); // The bytes fix a mysterious crash that intermittently occurs. Don't know why this works... it just does.
 	
 #define MUR (compare & 0x01) // top-right
 #define MDR (compare & 0x02) // bottom-right

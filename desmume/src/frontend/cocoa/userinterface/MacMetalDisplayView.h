@@ -24,6 +24,7 @@
 
 #import "DisplayViewCALayer.h"
 #import "../cocoa_GPU.h"
+#import "../cocoa_util.h"
 #include "../ClientDisplayView.h"
 
 #ifdef BOOL
@@ -100,6 +101,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLTexture> texHQ4xLUT;
 	id<MTLTexture> texCurrentHQnxLUT;
 	
+	MTLResourceOptions preferredResourceStorageMode;
+	
 	MTLSize _fetchThreadsPerGroup;
 	MTLSize _fetchThreadGroupsPerGridNative;
 	MTLSize _fetchThreadGroupsPerGridCustom;
@@ -129,6 +132,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (readonly, nonatomic) id<MTLTexture> texHQ3xLUT;
 @property (readonly, nonatomic) id<MTLTexture> texHQ4xLUT;
 @property (retain) id<MTLTexture> texCurrentHQnxLUT;
+
+@property (readonly, nonatomic) MTLResourceOptions preferredResourceStorageMode;
 
 @property (readonly, nonatomic) MTLSize deposterizeThreadsPerGroup;
 @property (readonly, nonatomic) MTLSize deposterizeThreadGroupsPerGrid;
@@ -337,7 +342,7 @@ public:
 };
 
 #pragma mark -
-void SetupHQnxLUTs_Metal(id<MTLDevice> &device, id<MTLTexture> &texLQ2xLUT, id<MTLTexture> &texHQ2xLUT, id<MTLTexture> &texHQ3xLUT, id<MTLTexture> &texHQ4xLUT);
+void SetupHQnxLUTs_Metal(id<MTLDevice> &device, id<MTLCommandQueue> &commandQueue, id<MTLTexture> &texLQ2xLUT, id<MTLTexture> &texHQ2xLUT, id<MTLTexture> &texHQ3xLUT, id<MTLTexture> &texHQ4xLUT);
 void DeleteHQnxLUTs_Metal(id<MTLTexture> &texLQ2xLUT, id<MTLTexture> &texHQ2xLUT, id<MTLTexture> &texHQ3xLUT, id<MTLTexture> &texHQ4xLUT);
 
 #endif // _MAC_METALDISPLAYVIEW_H

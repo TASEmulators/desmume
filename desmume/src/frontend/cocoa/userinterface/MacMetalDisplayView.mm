@@ -22,6 +22,7 @@
 @implementation MetalDisplayViewSharedData
 
 @synthesize device;
+@synthesize preferredResourceStorageMode;
 @synthesize commandQueue;
 @synthesize defaultLibrary;
 
@@ -71,6 +72,22 @@
 	_fetch555ConvertOnlyPipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch555ConvertOnly"] error:nil] retain];
 	_fetch666ConvertOnlyPipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch666ConvertOnly"] error:nil] retain];
 	deposterizePipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"src_filter_deposterize"] error:nil] retain];
+	
+	if ( IsOSXVersion(10, 13, 0) || IsOSXVersion(10, 13, 1) || IsOSXVersion(10, 13, 2) || IsOSXVersion(10, 13, 3) || IsOSXVersion(10, 13, 4) )
+	{
+		// On macOS High Sierra, there is currently a bug with newBufferWithBytesNoCopy:length:options:deallocator
+		// that causes it to crash with MTLResourceStorageModeManaged. So for these macOS versions, replace
+		// MTLResourceStorageModeManaged with MTLResourceStorageModeShared. While this solution causes a very small
+		// drop in performance, it is still far superior to use Metal rather than OpenGL.
+		//
+		// As of this writing, the current version of macOS is v10.13.1. Disabling MTLResourceStorageModeManaged on
+		// every point release up to v10.13.4 should, I hope, give Apple enough time to fix their bugs with this!
+		preferredResourceStorageMode = MTLResourceStorageModeShared;
+	}
+	else
+	{
+		preferredResourceStorageMode = MTLResourceStorageModeManaged;
+	}
 	
 	size_t tw = GetNearestPositivePOT((uint32_t)[_fetch555Pipeline threadExecutionWidth]);
 	while ( (tw > [_fetch555Pipeline threadExecutionWidth]) || (tw > GPU_FRAMEBUFFER_NATIVE_WIDTH) )
@@ -213,7 +230,7 @@
 	_isUsingFramebufferDirectly[NDSDisplayID_Touch][1] = 1;
 	
 	// Set up the HQnx LUT textures.
-	SetupHQnxLUTs_Metal(device, texLQ2xLUT, texHQ2xLUT, texHQ3xLUT, texHQ4xLUT);
+	SetupHQnxLUTs_Metal(device, commandQueue, texLQ2xLUT, texHQ2xLUT, texHQ3xLUT, texHQ4xLUT);
 	texCurrentHQnxLUT = nil;
 	
 	_fetchEncoder = nil;
@@ -315,42 +332,42 @@
 	
 	_bufDisplayFetchNative[NDSDisplayID_Main][0]  = [[device newBufferWithBytesNoCopy:dispInfo0.nativeBuffer[NDSDisplayID_Main]
 																			   length:_nativeBufferSize
-																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
+																			  options:preferredResourceStorageMode | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	_bufDisplayFetchNative[NDSDisplayID_Main][1]  = [[device newBufferWithBytesNoCopy:dispInfo1.nativeBuffer[NDSDisplayID_Main]
 																			   length:_nativeBufferSize
-																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
+																			  options:preferredResourceStorageMode | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	_bufDisplayFetchNative[NDSDisplayID_Touch][0] = [[device newBufferWithBytesNoCopy:dispInfo0.nativeBuffer[NDSDisplayID_Touch]
 																			   length:_nativeBufferSize
-																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
+																			  options:preferredResourceStorageMode | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	_bufDisplayFetchNative[NDSDisplayID_Touch][1] = [[device newBufferWithBytesNoCopy:dispInfo1.nativeBuffer[NDSDisplayID_Touch]
 																			   length:_nativeBufferSize
-																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
+																			  options:preferredResourceStorageMode | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	_bufDisplayFetchCustom[NDSDisplayID_Main][0]  = [[device newBufferWithBytesNoCopy:dispInfo0.customBuffer[NDSDisplayID_Main]
 																			   length:_customBufferSize
-																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
+																			  options:preferredResourceStorageMode | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	_bufDisplayFetchCustom[NDSDisplayID_Main][1]  = [[device newBufferWithBytesNoCopy:dispInfo1.customBuffer[NDSDisplayID_Main]
 																			   length:_customBufferSize
-																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
+																			  options:preferredResourceStorageMode | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	_bufDisplayFetchCustom[NDSDisplayID_Touch][0] = [[device newBufferWithBytesNoCopy:dispInfo0.customBuffer[NDSDisplayID_Touch]
 																			   length:_customBufferSize
-																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
+																			  options:preferredResourceStorageMode | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	_bufDisplayFetchCustom[NDSDisplayID_Touch][1] = [[device newBufferWithBytesNoCopy:dispInfo1.customBuffer[NDSDisplayID_Touch]
 																			   length:_customBufferSize
-																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
+																			  options:preferredResourceStorageMode | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
 	if (_fetchPixelBytes != dispInfo.pixelBytes)
@@ -662,7 +679,11 @@
 {
 	const id<MTLBuffer> targetSource = _bufDisplayFetchNative[displayID][bufferIndex];
 	id<MTLTexture> targetDestination = _texDisplayFetchNative[displayID][bufferIndex];
-	[targetSource didModifyRange:NSMakeRange(0, _nativeBufferSize)];
+	
+	if (preferredResourceStorageMode == MTLResourceStorageModeManaged)
+	{
+		[targetSource didModifyRange:NSMakeRange(0, _nativeBufferSize)];
+	}
 	
 	[_fetchEncoder copyFromBuffer:targetSource
 					 sourceOffset:0
@@ -681,7 +702,11 @@
 	
 	const id<MTLBuffer> targetSource = _bufDisplayFetchCustom[displayID][bufferIndex];
 	id<MTLTexture> targetDestination = _texDisplayFetchCustom[displayID][bufferIndex];
-	[targetSource didModifyRange:NSMakeRange(0, _customBufferSize)];
+	
+	if (preferredResourceStorageMode == MTLResourceStorageModeManaged)
+	{
+		[targetSource didModifyRange:NSMakeRange(0, _customBufferSize)];
+	}
 	
 	[_fetchEncoder copyFromBuffer:targetSource
 					 sourceOffset:0
@@ -1114,23 +1139,23 @@
 	VideoFilter *vfMain  = cdp->GetPixelScalerObject(NDSDisplayID_Main);
 	_bufCPUFilterSrcMain = [[[sharedData device] newBufferWithBytesNoCopy:vfMain->GetSrcBufferPtr()
 																   length:vfMain->GetSrcWidth() * vfMain->GetSrcHeight() * sizeof(uint32_t)
-																  options:MTLResourceStorageModeManaged
+																  options:[sharedData preferredResourceStorageMode]
 															  deallocator:nil] retain];
 	
 	[self setBufCPUFilterDstMain:[[sharedData device] newBufferWithBytesNoCopy:vfMain->GetDstBufferPtr()
 																		length:vfMain->GetDstWidth() * vfMain->GetDstHeight() * sizeof(uint32_t)
-																	   options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
+																	   options:[sharedData preferredResourceStorageMode] | MTLResourceCPUCacheModeWriteCombined
 																   deallocator:nil]];
 	
 	VideoFilter *vfTouch = cdp->GetPixelScalerObject(NDSDisplayID_Touch);
 	_bufCPUFilterSrcTouch = [[[sharedData device] newBufferWithBytesNoCopy:vfTouch->GetSrcBufferPtr()
 																	length:vfTouch->GetSrcWidth() * vfTouch->GetSrcHeight() * sizeof(uint32_t)
-																   options:MTLResourceStorageModeManaged
+																   options:[sharedData preferredResourceStorageMode]
 															   deallocator:nil] retain];
 	
 	[self setBufCPUFilterDstTouch:[[sharedData device] newBufferWithBytesNoCopy:vfTouch->GetDstBufferPtr()
 																		 length:vfTouch->GetDstWidth() * vfTouch->GetDstHeight() * sizeof(uint32_t)
-																		options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
+																		options:[sharedData preferredResourceStorageMode] | MTLResourceCPUCacheModeWriteCombined
 																	deallocator:nil]];
 	
 	texHUDCharMap = nil;
@@ -1149,13 +1174,13 @@
 	VideoFilter *vfMain  = cdp->GetPixelScalerObject(NDSDisplayID_Main);
 	[self setBufCPUFilterDstMain:[[sharedData device] newBufferWithBytesNoCopy:vfMain->GetDstBufferPtr()
 																		length:(vfMain->GetSrcWidth()  * vfAttr.scaleMultiply / vfAttr.scaleDivide) * (vfMain->GetSrcHeight()  * vfAttr.scaleMultiply / vfAttr.scaleDivide) * sizeof(uint32_t)
-																	   options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
+																	   options:[sharedData preferredResourceStorageMode] | MTLResourceCPUCacheModeWriteCombined
 																   deallocator:nil]];
 	
 	VideoFilter *vfTouch = cdp->GetPixelScalerObject(NDSDisplayID_Touch);
 	[self setBufCPUFilterDstTouch:[[sharedData device] newBufferWithBytesNoCopy:vfTouch->GetDstBufferPtr()
 																		 length:(vfTouch->GetSrcWidth() * vfAttr.scaleMultiply / vfAttr.scaleDivide) * (vfTouch->GetSrcHeight() * vfAttr.scaleMultiply / vfAttr.scaleDivide) * sizeof(uint32_t)
-																		options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
+																		options:[sharedData preferredResourceStorageMode] | MTLResourceCPUCacheModeWriteCombined
 																	deallocator:nil]];
 	
 	cb = [self newCommandBuffer];
@@ -1474,7 +1499,10 @@
 			
 			if (shouldProcessDisplay[NDSDisplayID_Main])
 			{
-				[[self bufCPUFilterDstMain] didModifyRange:NSMakeRange(0, vfMain->GetDstWidth() * vfMain->GetDstHeight() * sizeof(uint32_t))];
+				if ([sharedData preferredResourceStorageMode] == MTLResourceStorageModeManaged)
+				{
+					[[self bufCPUFilterDstMain] didModifyRange:NSMakeRange(0, vfMain->GetDstWidth() * vfMain->GetDstHeight() * sizeof(uint32_t))];
+				}
 				
 				[bce copyFromBuffer:[self bufCPUFilterDstMain]
 					   sourceOffset:0
@@ -1502,7 +1530,10 @@
 			
 			if (shouldProcessDisplay[NDSDisplayID_Touch])
 			{
-				[[self bufCPUFilterDstTouch] didModifyRange:NSMakeRange(0, vfTouch->GetDstWidth() * vfTouch->GetDstHeight() * sizeof(uint32_t))];
+				if ([sharedData preferredResourceStorageMode] == MTLResourceStorageModeManaged)
+				{
+					[[self bufCPUFilterDstTouch] didModifyRange:NSMakeRange(0, vfTouch->GetDstWidth() * vfTouch->GetDstHeight() * sizeof(uint32_t))];
+				}
 				
 				[bce copyFromBuffer:[self bufCPUFilterDstTouch]
 					   sourceOffset:0
@@ -2337,8 +2368,32 @@ void MacMetalDisplayView::FlushView()
 }
 
 #pragma mark -
-void SetupHQnxLUTs_Metal(id<MTLDevice> &device, id<MTLTexture> &texLQ2xLUT, id<MTLTexture> &texHQ2xLUT, id<MTLTexture> &texHQ3xLUT, id<MTLTexture> &texHQ4xLUT)
+void SetupHQnxLUTs_Metal(id<MTLDevice> &device, id<MTLCommandQueue> &commandQueue, id<MTLTexture> &texLQ2xLUT, id<MTLTexture> &texHQ2xLUT, id<MTLTexture> &texHQ3xLUT, id<MTLTexture> &texHQ4xLUT)
 {
+	InitHQnxLUTs();
+	
+	// Create the MTLBuffer objects to wrap the the existing LUT buffers that are already in memory.
+	id<MTLBuffer> bufLQ2xLUT = [device newBufferWithBytesNoCopy:_LQ2xLUT
+														 length:256 * 2 * 4  * 16 * sizeof(uint32_t)
+														options:MTLResourceStorageModeShared | MTLResourceCPUCacheModeWriteCombined
+													deallocator:nil];
+	
+	id<MTLBuffer> bufHQ2xLUT = [device newBufferWithBytesNoCopy:_HQ2xLUT
+														 length:256 * 2 * 4  * 16 * sizeof(uint32_t)
+														options:MTLResourceStorageModeShared | MTLResourceCPUCacheModeWriteCombined
+													deallocator:nil];
+	
+	id<MTLBuffer> bufHQ3xLUT = [device newBufferWithBytesNoCopy:_HQ3xLUT
+														 length:256 * 2 * 9  * 16 * sizeof(uint32_t)
+														options:MTLResourceStorageModeShared | MTLResourceCPUCacheModeWriteCombined
+													deallocator:nil];
+	
+	id<MTLBuffer> bufHQ4xLUT = [device newBufferWithBytesNoCopy:_HQ4xLUT
+														 length:256 * 2 * 16 * 16 * sizeof(uint32_t)
+														options:MTLResourceStorageModeShared | MTLResourceCPUCacheModeWriteCombined
+													deallocator:nil];
+	
+	// Create the MTLTexture objects that will be used as LUTs in the Metal shaders.
 	MTLTextureDescriptor *texHQ2xLUTDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
 																							  width:256 * 2
 																							 height:4
@@ -2346,9 +2401,8 @@ void SetupHQnxLUTs_Metal(id<MTLDevice> &device, id<MTLTexture> &texLQ2xLUT, id<M
 	
 	[texHQ2xLUTDesc setTextureType:MTLTextureType3D];
 	[texHQ2xLUTDesc setDepth:16];
-	[texHQ2xLUTDesc setResourceOptions:MTLResourceStorageModeManaged];
-	[texHQ2xLUTDesc setStorageMode:MTLStorageModeManaged];
-	[texHQ2xLUTDesc setCpuCacheMode:MTLCPUCacheModeWriteCombined];
+	[texHQ2xLUTDesc setResourceOptions:MTLResourceStorageModePrivate];
+	[texHQ2xLUTDesc setStorageMode:MTLStorageModePrivate];
 	[texHQ2xLUTDesc setUsage:MTLTextureUsageShaderRead];
 	
 	MTLTextureDescriptor *texHQ3xLUTDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
@@ -2357,9 +2411,8 @@ void SetupHQnxLUTs_Metal(id<MTLDevice> &device, id<MTLTexture> &texLQ2xLUT, id<M
 																						  mipmapped:NO];
 	[texHQ3xLUTDesc setTextureType:MTLTextureType3D];
 	[texHQ3xLUTDesc setDepth:16];
-	[texHQ3xLUTDesc setResourceOptions:MTLResourceStorageModeManaged];
-	[texHQ3xLUTDesc setStorageMode:MTLStorageModeManaged];
-	[texHQ3xLUTDesc setCpuCacheMode:MTLCPUCacheModeWriteCombined];
+	[texHQ3xLUTDesc setResourceOptions:MTLResourceStorageModePrivate];
+	[texHQ3xLUTDesc setStorageMode:MTLStorageModePrivate];
 	[texHQ3xLUTDesc setUsage:MTLTextureUsageShaderRead];
 	
 	MTLTextureDescriptor *texHQ4xLUTDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
@@ -2368,44 +2421,68 @@ void SetupHQnxLUTs_Metal(id<MTLDevice> &device, id<MTLTexture> &texLQ2xLUT, id<M
 																						  mipmapped:NO];
 	[texHQ4xLUTDesc setTextureType:MTLTextureType3D];
 	[texHQ4xLUTDesc setDepth:16];
-	[texHQ4xLUTDesc setResourceOptions:MTLResourceStorageModeManaged];
-	[texHQ4xLUTDesc setStorageMode:MTLStorageModeManaged];
-	[texHQ4xLUTDesc setCpuCacheMode:MTLCPUCacheModeWriteCombined];
+	[texHQ4xLUTDesc setResourceOptions:MTLResourceStorageModePrivate];
+	[texHQ4xLUTDesc setStorageMode:MTLStorageModePrivate];
 	[texHQ4xLUTDesc setUsage:MTLTextureUsageShaderRead];
 	
-	texLQ2xLUT = [[device newTextureWithDescriptor:texHQ2xLUTDesc] retain];
-	texHQ2xLUT = [[device newTextureWithDescriptor:texHQ2xLUTDesc] retain];
-	texHQ3xLUT = [[device newTextureWithDescriptor:texHQ3xLUTDesc] retain];
-	texHQ4xLUT = [[device newTextureWithDescriptor:texHQ4xLUTDesc] retain];
+	texLQ2xLUT = [device newTextureWithDescriptor:texHQ2xLUTDesc];
+	texHQ2xLUT = [device newTextureWithDescriptor:texHQ2xLUTDesc];
+	texHQ3xLUT = [device newTextureWithDescriptor:texHQ3xLUTDesc];
+	texHQ4xLUT = [device newTextureWithDescriptor:texHQ4xLUTDesc];
 	
-	InitHQnxLUTs();
-	[texLQ2xLUT replaceRegion:MTLRegionMake3D(0, 0, 0, 256 * 2, 4, 16)
-				  mipmapLevel:0
-						slice:0
-					withBytes:_LQ2xLUT
-				  bytesPerRow:256 * 2 * sizeof(uint32_t)
-				bytesPerImage:256 * 2 * 4 * sizeof(uint32_t)];
+	// Copy the LUT buffers from main memory to the GPU.
+	id<MTLCommandBuffer> cb = [commandQueue commandBufferWithUnretainedReferences];;
+	id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
 	
-	[texHQ2xLUT replaceRegion:MTLRegionMake3D(0, 0, 0, 256 * 2, 4, 16)
-				  mipmapLevel:0
-						slice:0
-					withBytes:_HQ2xLUT
-				  bytesPerRow:256 * 2 * sizeof(uint32_t)
-				bytesPerImage:256 * 2 * 4 * sizeof(uint32_t)];
+	[bce copyFromBuffer:bufLQ2xLUT
+		   sourceOffset:0
+	  sourceBytesPerRow:256 * 2 * sizeof(uint32_t)
+	sourceBytesPerImage:256 * 2 * 4 * sizeof(uint32_t)
+			 sourceSize:MTLSizeMake(256 * 2, 4, 16)
+			  toTexture:texLQ2xLUT
+	   destinationSlice:0
+	   destinationLevel:0
+	  destinationOrigin:MTLOriginMake(0, 0, 0)];
 	
-	[texHQ3xLUT replaceRegion:MTLRegionMake3D(0, 0, 0, 256 * 2, 9, 16)
-				  mipmapLevel:0
-						slice:0
-					withBytes:_HQ3xLUT
-				  bytesPerRow:256 * 2 * sizeof(uint32_t)
-				bytesPerImage:256 * 2 * 9 * sizeof(uint32_t)];
+	[bce copyFromBuffer:bufHQ2xLUT
+		   sourceOffset:0
+	  sourceBytesPerRow:256 * 2 * sizeof(uint32_t)
+	sourceBytesPerImage:256 * 2 * 4 * sizeof(uint32_t)
+			 sourceSize:MTLSizeMake(256 * 2, 4, 16)
+			  toTexture:texHQ2xLUT
+	   destinationSlice:0
+	   destinationLevel:0
+	  destinationOrigin:MTLOriginMake(0, 0, 0)];
 	
-	[texHQ4xLUT replaceRegion:MTLRegionMake3D(0, 0, 0, 256 * 2, 16, 16)
-				  mipmapLevel:0
-						slice:0
-					withBytes:_HQ4xLUT
-				  bytesPerRow:256 * 2 * sizeof(uint32_t)
-				bytesPerImage:256 * 2 * 16 * sizeof(uint32_t)];
+	[bce copyFromBuffer:bufHQ3xLUT
+		   sourceOffset:0
+	  sourceBytesPerRow:256 * 2 * sizeof(uint32_t)
+	sourceBytesPerImage:256 * 2 * 9 * sizeof(uint32_t)
+			 sourceSize:MTLSizeMake(256 * 2, 9, 16)
+			  toTexture:texHQ3xLUT
+	   destinationSlice:0
+	   destinationLevel:0
+	  destinationOrigin:MTLOriginMake(0, 0, 0)];
+	
+	[bce copyFromBuffer:bufHQ4xLUT
+		   sourceOffset:0
+	  sourceBytesPerRow:256 * 2 * sizeof(uint32_t)
+	sourceBytesPerImage:256 * 2 * 16 * sizeof(uint32_t)
+			 sourceSize:MTLSizeMake(256 * 2, 16, 16)
+			  toTexture:texHQ4xLUT
+	   destinationSlice:0
+	   destinationLevel:0
+	  destinationOrigin:MTLOriginMake(0, 0, 0)];
+	
+	[bce endEncoding];
+	
+	[cb commit];
+	[cb waitUntilCompleted];
+	
+	[bufLQ2xLUT release];
+	[bufHQ2xLUT release];
+	[bufHQ3xLUT release];
+	[bufHQ4xLUT release];
 }
 
 void DeleteHQnxLUTs_Metal(id<MTLTexture> &texLQ2xLUT, id<MTLTexture> &texHQ2xLUT, id<MTLTexture> &texHQ3xLUT, id<MTLTexture> &texHQ4xLUT)
