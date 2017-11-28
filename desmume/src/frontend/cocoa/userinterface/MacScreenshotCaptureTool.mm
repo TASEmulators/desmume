@@ -307,6 +307,7 @@ static void* RunFileWriteThread(void *arg)
 	
 	ClientDisplay3DPresenter *cdp = NULL;
 	bool filtersPreferGPU = true;
+	bool isUsingMetal = false;
 	
 #ifdef ENABLE_APPLE_METAL
 	if ([param.sharedData isKindOfClass:[MetalDisplayViewSharedData class]])
@@ -319,6 +320,7 @@ static void* RunFileWriteThread(void *arg)
 		}
 		
 		cdp = new MacMetalDisplayPresenter(param.sharedData);
+		isUsingMetal = true;
 	}
 	else
 #endif
@@ -352,7 +354,8 @@ static void* RunFileWriteThread(void *arg)
 		cdp->SetOutputFilter(param.outputFilterID);
 		cdp->SetPixelScaler(param.pixelScalerID);
 		
-		if (!cdp->WillFilterOnGPU())
+		// Metal presenters are always assumed to filter on the GPU, so only do this for OpenGL.
+		if (!isUsingMetal && !cdp->WillFilterOnGPU() && (param.pixelScalerID != VideoFilterTypeID_None))
 		{
 			if ( (param.cdpProperty.mode == ClientDisplayMode_Main) || (param.cdpProperty.mode == ClientDisplayMode_Dual) )
 			{
