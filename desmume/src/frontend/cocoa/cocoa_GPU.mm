@@ -196,8 +196,6 @@ public:
 	GPU->SetWillAutoResolveToCustomBuffer(false);
 #endif
 	
-	[self clearWithColor:0x8000];
-	
 	return self;
 }
 
@@ -1195,6 +1193,11 @@ public:
 	}
 	
 	pthread_mutex_unlock(&_mutexDisplayLinkLists);
+}
+
+- (void) fetchSynchronousAtIndex:(uint8_t)index
+{
+	GPUFetchObject->FetchFromBufferIndex(index);
 }
 
 - (void) signalFetchAtIndex:(uint8_t)index

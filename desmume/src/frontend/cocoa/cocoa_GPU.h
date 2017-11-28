@@ -78,6 +78,7 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 - (void) displayLinkStartUsingID:(CGDirectDisplayID)displayID;
 - (void) displayLinkListUpdate;
 
+- (void) fetchSynchronousAtIndex:(uint8_t)index;
 - (void) signalFetchAtIndex:(uint8_t)index;
 - (void) runFetchLoop;
 
