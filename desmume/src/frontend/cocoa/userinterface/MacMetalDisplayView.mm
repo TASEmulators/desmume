@@ -161,79 +161,50 @@
 	[samplerDesc release];
 	
 	// Set up the loading textures. These are special because they copy the raw image data from the emulator to the GPU.
-	MTLTextureDescriptor *texDisplayLoad16Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
-																									width:GPU_FRAMEBUFFER_NATIVE_WIDTH
-																								   height:GPU_FRAMEBUFFER_NATIVE_HEIGHT
-																								mipmapped:NO];
-	[texDisplayLoad16Desc setResourceOptions:MTLResourceStorageModeManaged];
-	[texDisplayLoad16Desc setStorageMode:MTLStorageModeManaged];
-	[texDisplayLoad16Desc setCpuCacheMode:MTLCPUCacheModeWriteCombined];
-	[texDisplayLoad16Desc setUsage:MTLTextureUsageShaderRead];
+	_fetchPixelBytes = sizeof(uint16_t);
+	_nativeLineSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * _fetchPixelBytes;
+	_nativeBufferSize = GPU_FRAMEBUFFER_NATIVE_HEIGHT * _nativeLineSize;
+	_customLineSize = _nativeLineSize;
+	_customBufferSize = _nativeBufferSize;
 	
-	_texDisplayFetch16NativeMain  = [[device newTextureWithDescriptor:texDisplayLoad16Desc] retain];
-	_texDisplayFetch16NativeTouch = [[device newTextureWithDescriptor:texDisplayLoad16Desc] retain];
-	_texDisplayFetch16CustomMain  = [[device newTextureWithDescriptor:texDisplayLoad16Desc] retain];
-	_texDisplayFetch16CustomTouch = [[device newTextureWithDescriptor:texDisplayLoad16Desc] retain];
+	MTLTextureDescriptor *newTexDisplayDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
+																								 width:GPU_FRAMEBUFFER_NATIVE_WIDTH
+																								height:GPU_FRAMEBUFFER_NATIVE_HEIGHT
+																							 mipmapped:NO];
+	[newTexDisplayDesc setResourceOptions:MTLResourceStorageModePrivate];
+	[newTexDisplayDesc setStorageMode:MTLStorageModePrivate];
+	[newTexDisplayDesc setUsage:MTLTextureUsageShaderRead];
 	
-	MTLTextureDescriptor *texDisplayLoad32Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
-																									width:GPU_FRAMEBUFFER_NATIVE_WIDTH
-																								   height:GPU_FRAMEBUFFER_NATIVE_HEIGHT
-																								mipmapped:NO];
-	[texDisplayLoad32Desc setResourceOptions:MTLResourceStorageModeManaged];
-	[texDisplayLoad32Desc setStorageMode:MTLStorageModeManaged];
-	[texDisplayLoad32Desc setCpuCacheMode:MTLCPUCacheModeWriteCombined];
+	_texDisplayFetchNative[NDSDisplayID_Main][0]  = [[device newTextureWithDescriptor:newTexDisplayDesc] retain];
+	_texDisplayFetchNative[NDSDisplayID_Main][1]  = [[device newTextureWithDescriptor:newTexDisplayDesc] retain];
+	_texDisplayFetchNative[NDSDisplayID_Touch][0] = [[device newTextureWithDescriptor:newTexDisplayDesc] retain];
+	_texDisplayFetchNative[NDSDisplayID_Touch][1] = [[device newTextureWithDescriptor:newTexDisplayDesc] retain];
 	
-	[texDisplayLoad32Desc setUsage:MTLTextureUsageShaderRead];
-	_texDisplayFetch32NativeMain  = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
-	_texDisplayFetch32NativeTouch = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
-	_texDisplayFetch32CustomMain  = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
-	_texDisplayFetch32CustomTouch = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
+	_texDisplayFetchCustom[NDSDisplayID_Main][0]  = [[device newTextureWithDescriptor:newTexDisplayDesc] retain];
+	_texDisplayFetchCustom[NDSDisplayID_Main][1]  = [[device newTextureWithDescriptor:newTexDisplayDesc] retain];
+	_texDisplayFetchCustom[NDSDisplayID_Touch][0] = [[device newTextureWithDescriptor:newTexDisplayDesc] retain];
+	_texDisplayFetchCustom[NDSDisplayID_Touch][1] = [[device newTextureWithDescriptor:newTexDisplayDesc] retain];
 	
-	[texDisplayLoad32Desc setUsage:MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite];
-	_texDisplayPostprocessNativeMain  = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
-	_texDisplayPostprocessNativeTouch = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
-	_texDisplayPostprocessCustomMain  = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
-	_texDisplayPostprocessCustomTouch = [[device newTextureWithDescriptor:texDisplayLoad32Desc] retain];
+	MTLTextureDescriptor *newTexPostprocessDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
+																									 width:GPU_FRAMEBUFFER_NATIVE_WIDTH
+																									height:GPU_FRAMEBUFFER_NATIVE_HEIGHT
+																								 mipmapped:NO];
+	[newTexPostprocessDesc setResourceOptions:MTLResourceStorageModePrivate];
+	[newTexPostprocessDesc setStorageMode:MTLStorageModePrivate];
+	[newTexPostprocessDesc setUsage:MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite];
 	
-	uint32_t *blankBuffer = (uint32_t *)calloc(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT, sizeof(uint32_t));
-	const MTLRegion texRegionNative = MTLRegionMake2D(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-	[_texDisplayFetch32NativeMain  replaceRegion:texRegionNative
-									 mipmapLevel:0
-									   withBytes:blankBuffer
-									 bytesPerRow:GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(uint32_t)];
-	[_texDisplayFetch32NativeTouch replaceRegion:texRegionNative
-									 mipmapLevel:0
-									   withBytes:blankBuffer
-									 bytesPerRow:GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(uint32_t)];
-	[_texDisplayFetch32CustomMain  replaceRegion:texRegionNative
-									 mipmapLevel:0
-									   withBytes:blankBuffer
-									 bytesPerRow:GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(uint32_t)];
-	[_texDisplayFetch32CustomTouch replaceRegion:texRegionNative
-									 mipmapLevel:0
-									   withBytes:blankBuffer
-									 bytesPerRow:GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(uint32_t)];
+	_texDisplayPostprocessNative[NDSDisplayID_Main][0]  = [[device newTextureWithDescriptor:newTexPostprocessDesc] retain];
+	_texDisplayPostprocessNative[NDSDisplayID_Main][1]  = [[device newTextureWithDescriptor:newTexPostprocessDesc] retain];
+	_texDisplayPostprocessNative[NDSDisplayID_Touch][0] = [[device newTextureWithDescriptor:newTexPostprocessDesc] retain];
+	_texDisplayPostprocessNative[NDSDisplayID_Touch][1] = [[device newTextureWithDescriptor:newTexPostprocessDesc] retain];
 	
-	[_texDisplayPostprocessNativeMain  replaceRegion:texRegionNative
-										 mipmapLevel:0
-										   withBytes:blankBuffer
-										 bytesPerRow:GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(uint32_t)];
-	[_texDisplayPostprocessNativeTouch replaceRegion:texRegionNative
-										 mipmapLevel:0
-										   withBytes:blankBuffer
-										 bytesPerRow:GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(uint32_t)];
-	[_texDisplayPostprocessCustomMain  replaceRegion:texRegionNative
-										 mipmapLevel:0
-										   withBytes:blankBuffer
-										 bytesPerRow:GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(uint32_t)];
-	[_texDisplayPostprocessCustomTouch replaceRegion:texRegionNative
-										 mipmapLevel:0
-										   withBytes:blankBuffer
-										 bytesPerRow:GPU_FRAMEBUFFER_NATIVE_WIDTH * sizeof(uint32_t)];
-	free(blankBuffer);
+	_texDisplayPostprocessCustom[NDSDisplayID_Main][0]  = [[device newTextureWithDescriptor:newTexPostprocessDesc] retain];
+	_texDisplayPostprocessCustom[NDSDisplayID_Main][1]  = [[device newTextureWithDescriptor:newTexPostprocessDesc] retain];
+	_texDisplayPostprocessCustom[NDSDisplayID_Touch][0] = [[device newTextureWithDescriptor:newTexPostprocessDesc] retain];
+	_texDisplayPostprocessCustom[NDSDisplayID_Touch][1] = [[device newTextureWithDescriptor:newTexPostprocessDesc] retain];
 	
-	texFetchMain  = [_texDisplayFetch32NativeMain retain];
-	texFetchTouch = [_texDisplayFetch32NativeTouch retain];
+	texFetchMain  = [_texDisplayPostprocessNative[NDSDisplayID_Main][0]  retain];
+	texFetchTouch = [_texDisplayPostprocessNative[NDSDisplayID_Touch][0] retain];
 	
 	_isUsingFramebufferDirectly[NDSDisplayID_Main][0] = 1;
 	_isUsingFramebufferDirectly[NDSDisplayID_Main][1] = 1;
@@ -269,19 +240,25 @@
 	[_bufMasterBrightIntensity[NDSDisplayID_Main] release];
 	[_bufMasterBrightIntensity[NDSDisplayID_Touch] release];
 	
-	[_texDisplayFetch16NativeMain release];
-	[_texDisplayFetch16NativeTouch release];
-	[_texDisplayFetch32NativeMain release];
-	[_texDisplayFetch32NativeTouch release];
-	[_texDisplayPostprocessNativeMain release];
-	[_texDisplayPostprocessNativeTouch release];
+	[_texDisplayFetchNative[NDSDisplayID_Main][0]  release];
+	[_texDisplayFetchNative[NDSDisplayID_Main][1]  release];
+	[_texDisplayFetchNative[NDSDisplayID_Touch][0] release];
+	[_texDisplayFetchNative[NDSDisplayID_Touch][1] release];
 	
-	[_texDisplayFetch16CustomMain release];
-	[_texDisplayFetch16CustomTouch release];
-	[_texDisplayFetch32CustomMain release];
-	[_texDisplayFetch32CustomTouch release];
-	[_texDisplayPostprocessCustomMain release];
-	[_texDisplayPostprocessCustomTouch release];
+	[_texDisplayFetchCustom[NDSDisplayID_Main][0]  release];
+	[_texDisplayFetchCustom[NDSDisplayID_Main][1]  release];
+	[_texDisplayFetchCustom[NDSDisplayID_Touch][0] release];
+	[_texDisplayFetchCustom[NDSDisplayID_Touch][1] release];
+	
+	[_texDisplayPostprocessNative[NDSDisplayID_Main][0]  release];
+	[_texDisplayPostprocessNative[NDSDisplayID_Main][1]  release];
+	[_texDisplayPostprocessNative[NDSDisplayID_Touch][0] release];
+	[_texDisplayPostprocessNative[NDSDisplayID_Touch][1] release];
+	
+	[_texDisplayPostprocessCustom[NDSDisplayID_Main][0]  release];
+	[_texDisplayPostprocessCustom[NDSDisplayID_Main][1]  release];
+	[_texDisplayPostprocessCustom[NDSDisplayID_Touch][0] release];
+	[_texDisplayPostprocessCustom[NDSDisplayID_Touch][1] release];
 	
 	[self setTexFetchMain:nil];
 	[self setTexFetchTouch:nil];
@@ -325,88 +302,136 @@
 {
 	const size_t w = dispInfo.customWidth;
 	const size_t h = dispInfo.customHeight;
-	const size_t nativeSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes;
-	const size_t customSize = w * h * dispInfo.pixelBytes;
 	
-	_bufDisplayFetchNative[NDSDisplayID_Main][0]  = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead
-																			   length:nativeSize
+	_nativeLineSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * dispInfo.pixelBytes;
+	_nativeBufferSize = GPU_FRAMEBUFFER_NATIVE_HEIGHT * _nativeLineSize;
+	_customLineSize = w * dispInfo.pixelBytes;
+	_customBufferSize = h * _customLineSize;
+	
+	const NDSDisplayInfo &dispInfo0 = GPUFetchObject->GetFetchDisplayInfoForBufferIndex(0);
+	const NDSDisplayInfo &dispInfo1 = GPUFetchObject->GetFetchDisplayInfoForBufferIndex(1);
+	
+	_bufDisplayFetchNative[NDSDisplayID_Main][0]  = [[device newBufferWithBytesNoCopy:dispInfo0.nativeBuffer[NDSDisplayID_Main]
+																			   length:_nativeBufferSize
 																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
-	_bufDisplayFetchNative[NDSDisplayID_Main][1]  = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead + dispInfo.framebufferSize
-																			   length:nativeSize
+	_bufDisplayFetchNative[NDSDisplayID_Main][1]  = [[device newBufferWithBytesNoCopy:dispInfo1.nativeBuffer[NDSDisplayID_Main]
+																			   length:_nativeBufferSize
 																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
-	_bufDisplayFetchNative[NDSDisplayID_Touch][0] = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead + (nativeSize * 1)
-																			   length:nativeSize
+	_bufDisplayFetchNative[NDSDisplayID_Touch][0] = [[device newBufferWithBytesNoCopy:dispInfo0.nativeBuffer[NDSDisplayID_Touch]
+																			   length:_nativeBufferSize
 																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
-	_bufDisplayFetchNative[NDSDisplayID_Touch][1] = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead + (nativeSize * 1) + dispInfo.framebufferSize
-																			   length:nativeSize
+	_bufDisplayFetchNative[NDSDisplayID_Touch][1] = [[device newBufferWithBytesNoCopy:dispInfo1.nativeBuffer[NDSDisplayID_Touch]
+																			   length:_nativeBufferSize
 																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
-	_bufDisplayFetchCustom[NDSDisplayID_Main][0]  = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead + (nativeSize * 2)
-																			   length:customSize
+	_bufDisplayFetchCustom[NDSDisplayID_Main][0]  = [[device newBufferWithBytesNoCopy:dispInfo0.customBuffer[NDSDisplayID_Main]
+																			   length:_customBufferSize
 																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
-	_bufDisplayFetchCustom[NDSDisplayID_Main][1]  = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead + (nativeSize * 2) + dispInfo.framebufferSize
-																			   length:customSize
+	_bufDisplayFetchCustom[NDSDisplayID_Main][1]  = [[device newBufferWithBytesNoCopy:dispInfo1.customBuffer[NDSDisplayID_Main]
+																			   length:_customBufferSize
 																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
-	_bufDisplayFetchCustom[NDSDisplayID_Touch][0] = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead + (nativeSize * 2) + customSize + dispInfo.framebufferSize
-																			   length:customSize
+	_bufDisplayFetchCustom[NDSDisplayID_Touch][0] = [[device newBufferWithBytesNoCopy:dispInfo0.customBuffer[NDSDisplayID_Touch]
+																			   length:_customBufferSize
 																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
-	_bufDisplayFetchCustom[NDSDisplayID_Touch][1] = [[device newBufferWithBytesNoCopy:(u8 *)dispInfo.masterFramebufferHead + (nativeSize * 2) + customSize + dispInfo.framebufferSize
-																			   length:customSize
+	_bufDisplayFetchCustom[NDSDisplayID_Touch][1] = [[device newBufferWithBytesNoCopy:dispInfo1.customBuffer[NDSDisplayID_Touch]
+																			   length:_customBufferSize
 																			  options:MTLResourceStorageModeManaged | MTLResourceCPUCacheModeWriteCombined
 																		  deallocator:nil] retain];
 	
-	// If the existing texture size is different than the incoming size, then remake the textures to match the incoming size.
-	if ( ([_texDisplayFetch32CustomMain width] != w) || ([_texDisplayFetch32CustomMain height] != h) )
+	if (_fetchPixelBytes != dispInfo.pixelBytes)
 	{
-		MTLTextureDescriptor *texDisplayLoad16Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
-																										width:w
-																									   height:h
-																									mipmapped:NO];
-		[texDisplayLoad16Desc setResourceOptions:MTLResourceStorageModeManaged];
-		[texDisplayLoad16Desc setStorageMode:MTLStorageModeManaged];
-		[texDisplayLoad16Desc setCpuCacheMode:MTLCPUCacheModeWriteCombined];
-		[texDisplayLoad16Desc setUsage:MTLTextureUsageShaderRead];
+		MTLTextureDescriptor *newTexDisplayNativeDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:(dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? MTLPixelFormatR16Uint : MTLPixelFormatRGBA8Unorm
+																										   width:GPU_FRAMEBUFFER_NATIVE_WIDTH
+																										  height:GPU_FRAMEBUFFER_NATIVE_HEIGHT
+																									   mipmapped:NO];
+		[newTexDisplayNativeDesc setResourceOptions:MTLResourceStorageModePrivate];
+		[newTexDisplayNativeDesc setStorageMode:MTLStorageModePrivate];
+		[newTexDisplayNativeDesc setUsage:MTLTextureUsageShaderRead];
 		
-		[_texDisplayFetch16CustomMain  release];
-		_texDisplayFetch16CustomMain  = [device newTextureWithDescriptor:texDisplayLoad16Desc];
-		[_texDisplayFetch16CustomTouch release];
-		_texDisplayFetch16CustomTouch = [device newTextureWithDescriptor:texDisplayLoad16Desc];
+		[_texDisplayFetchNative[NDSDisplayID_Main][0]  release];
+		[_texDisplayFetchNative[NDSDisplayID_Main][1]  release];
+		[_texDisplayFetchNative[NDSDisplayID_Touch][0] release];
+		[_texDisplayFetchNative[NDSDisplayID_Touch][1] release];
+		_texDisplayFetchNative[NDSDisplayID_Main][0]  = [[device newTextureWithDescriptor:newTexDisplayNativeDesc] retain];
+		_texDisplayFetchNative[NDSDisplayID_Main][1]  = [[device newTextureWithDescriptor:newTexDisplayNativeDesc] retain];
+		_texDisplayFetchNative[NDSDisplayID_Touch][0] = [[device newTextureWithDescriptor:newTexDisplayNativeDesc] retain];
+		_texDisplayFetchNative[NDSDisplayID_Touch][1] = [[device newTextureWithDescriptor:newTexDisplayNativeDesc] retain];
 		
-		MTLTextureDescriptor *texDisplayLoad32Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
-																										width:w
-																									   height:h
-																									mipmapped:NO];
-		[texDisplayLoad32Desc setResourceOptions:MTLResourceStorageModePrivate];
-		[texDisplayLoad32Desc setStorageMode:MTLStorageModePrivate];
-		[texDisplayLoad32Desc setUsage:MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite];
+		MTLTextureDescriptor *newTexPostprocessNativeDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
+																											   width:GPU_FRAMEBUFFER_NATIVE_WIDTH
+																											  height:GPU_FRAMEBUFFER_NATIVE_HEIGHT
+																										   mipmapped:NO];
+		[newTexPostprocessNativeDesc setResourceOptions:MTLResourceStorageModePrivate];
+		[newTexPostprocessNativeDesc setStorageMode:MTLStorageModePrivate];
+		[newTexPostprocessNativeDesc setUsage:MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite];
 		
-		[_texDisplayFetch32CustomMain  release];
-		_texDisplayFetch32CustomMain  = [device newTextureWithDescriptor:texDisplayLoad32Desc];
-		[_texDisplayFetch32CustomTouch release];
-		_texDisplayFetch32CustomTouch = [device newTextureWithDescriptor:texDisplayLoad32Desc];
-		
-		[_texDisplayPostprocessCustomMain  release];
-		_texDisplayPostprocessCustomMain = [device newTextureWithDescriptor:texDisplayLoad32Desc];
-		[_texDisplayPostprocessCustomTouch release];
-		_texDisplayPostprocessCustomTouch = [device newTextureWithDescriptor:texDisplayLoad32Desc];
-		
-		const size_t tw = _fetchThreadsPerGroup.width;
-		const size_t th = _fetchThreadsPerGroup.height;
-		_fetchThreadGroupsPerGridCustom = MTLSizeMake((w + tw - 1) / tw, (h + th - 1) / th, 1);
+		[_texDisplayPostprocessNative[NDSDisplayID_Main][0]  release];
+		[_texDisplayPostprocessNative[NDSDisplayID_Main][1]  release];
+		[_texDisplayPostprocessNative[NDSDisplayID_Touch][0] release];
+		[_texDisplayPostprocessNative[NDSDisplayID_Touch][1] release];
+		_texDisplayPostprocessNative[NDSDisplayID_Main][0]  = [[device newTextureWithDescriptor:newTexPostprocessNativeDesc] retain];
+		_texDisplayPostprocessNative[NDSDisplayID_Main][1]  = [[device newTextureWithDescriptor:newTexPostprocessNativeDesc] retain];
+		_texDisplayPostprocessNative[NDSDisplayID_Touch][0] = [[device newTextureWithDescriptor:newTexPostprocessNativeDesc] retain];
+		_texDisplayPostprocessNative[NDSDisplayID_Touch][1] = [[device newTextureWithDescriptor:newTexPostprocessNativeDesc] retain];
 	}
+	
+	if ( (_fetchPixelBytes != dispInfo.pixelBytes) ||
+	     ([_texDisplayFetchCustom[NDSDisplayID_Main][0] width] != w) ||
+	     ([_texDisplayFetchCustom[NDSDisplayID_Main][0] height] != h) )
+	{
+		MTLTextureDescriptor *newTexDisplayCustomDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:(dispInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? MTLPixelFormatR16Uint : MTLPixelFormatRGBA8Unorm
+																										   width:w
+																										  height:h
+																									   mipmapped:NO];
+		[newTexDisplayCustomDesc setResourceOptions:MTLResourceStorageModePrivate];
+		[newTexDisplayCustomDesc setStorageMode:MTLStorageModePrivate];
+		[newTexDisplayCustomDesc setUsage:MTLTextureUsageShaderRead];
+		
+		[_texDisplayFetchCustom[NDSDisplayID_Main][0]  release];
+		[_texDisplayFetchCustom[NDSDisplayID_Main][1]  release];
+		[_texDisplayFetchCustom[NDSDisplayID_Touch][0] release];
+		[_texDisplayFetchCustom[NDSDisplayID_Touch][1] release];
+		_texDisplayFetchCustom[NDSDisplayID_Main][0]  = [[device newTextureWithDescriptor:newTexDisplayCustomDesc] retain];
+		_texDisplayFetchCustom[NDSDisplayID_Main][1]  = [[device newTextureWithDescriptor:newTexDisplayCustomDesc] retain];
+		_texDisplayFetchCustom[NDSDisplayID_Touch][0] = [[device newTextureWithDescriptor:newTexDisplayCustomDesc] retain];
+		_texDisplayFetchCustom[NDSDisplayID_Touch][1] = [[device newTextureWithDescriptor:newTexDisplayCustomDesc] retain];
+		
+		MTLTextureDescriptor *newTexPostprocessCustomDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
+																											   width:w
+																											  height:h
+																										   mipmapped:NO];
+		[newTexPostprocessCustomDesc setResourceOptions:MTLResourceStorageModePrivate];
+		[newTexPostprocessCustomDesc setStorageMode:MTLStorageModePrivate];
+		[newTexPostprocessCustomDesc setUsage:MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite];
+		
+		[_texDisplayPostprocessCustom[NDSDisplayID_Main][0]  release];
+		[_texDisplayPostprocessCustom[NDSDisplayID_Main][1]  release];
+		[_texDisplayPostprocessCustom[NDSDisplayID_Touch][0] release];
+		[_texDisplayPostprocessCustom[NDSDisplayID_Touch][1] release];
+		_texDisplayPostprocessCustom[NDSDisplayID_Main][0]  = [[device newTextureWithDescriptor:newTexPostprocessCustomDesc] retain];
+		_texDisplayPostprocessCustom[NDSDisplayID_Main][1]  = [[device newTextureWithDescriptor:newTexPostprocessCustomDesc] retain];
+		_texDisplayPostprocessCustom[NDSDisplayID_Touch][0] = [[device newTextureWithDescriptor:newTexPostprocessCustomDesc] retain];
+		_texDisplayPostprocessCustom[NDSDisplayID_Touch][1] = [[device newTextureWithDescriptor:newTexPostprocessCustomDesc] retain];
+	}
+	
+	_fetchPixelBytes = dispInfo.pixelBytes;
+	
+	const size_t tw = _fetchThreadsPerGroup.width;
+	const size_t th = _fetchThreadsPerGroup.height;
+	_fetchThreadGroupsPerGridCustom = MTLSizeMake((w + tw - 1) / tw, (h + th - 1) / th, 1);
 	
 	id<MTLCommandBuffer> cb = [commandQueue commandBufferWithUnretainedReferences];
 	[self setFetchTextureBindingsAtIndex:dispInfo.bufferIndex commandBuffer:cb];
@@ -416,10 +441,13 @@
 
 - (void) setFetchTextureBindingsAtIndex:(const u8)index commandBuffer:(id<MTLCommandBuffer>)cb
 {
-	id<MTLTexture> texDisplaySrcTarget[2] = {nil, nil};
+	id<MTLTexture> texFetchTargetMain = nil;
+	id<MTLTexture> texFetchTargetTouch = nil;
 	const NDSDisplayInfo &currentDisplayInfo = GPUFetchObject->GetFetchDisplayInfoForBufferIndex(index);
 	const bool isMainEnabled  = currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Main];
 	const bool isTouchEnabled = currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch];
+	bool isUsingFramebufferDirectlyMain = true;
+	bool isUsingFramebufferDirectlyTouch = true;
 	
 	if (isMainEnabled || isTouchEnabled)
 	{
@@ -427,11 +455,11 @@
 		{
 			if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Main])
 			{
-				texDisplaySrcTarget[NDSDisplayID_Main] = _texDisplayFetch32NativeMain;
+				texFetchTargetMain = _texDisplayFetchNative[NDSDisplayID_Main][index];
 			}
 			else
 			{
-				texDisplaySrcTarget[NDSDisplayID_Main] = _texDisplayFetch32CustomMain;
+				texFetchTargetMain = _texDisplayFetchCustom[NDSDisplayID_Main][index];
 			}
 		}
 		
@@ -439,206 +467,151 @@
 		{
 			if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch])
 			{
-				texDisplaySrcTarget[NDSDisplayID_Touch] = _texDisplayFetch32NativeTouch;
+				texFetchTargetTouch = _texDisplayFetchNative[NDSDisplayID_Touch][index];
 			}
 			else
 			{
-				texDisplaySrcTarget[NDSDisplayID_Touch] = _texDisplayFetch32CustomTouch;
+				texFetchTargetTouch = _texDisplayFetchCustom[NDSDisplayID_Touch][index];
 			}
 		}
 		
 		id<MTLComputeCommandEncoder> cce = [cb computeCommandEncoder];
 		
-		if (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
+		if (currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Main]    || currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Touch] ||
+			currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Main] || currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Touch])
 		{
-			// 16-bit textures aren't handled natively in Metal for macOS, so we need to explicitly convert to 32-bit here.
-			
-			if (currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Main]    || currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Touch] ||
-				currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Main] || currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Touch])
+			switch (currentDisplayInfo.colorFormat)
 			{
-				[cce setComputePipelineState:_fetch555Pipeline];
-				
-				if (isMainEnabled)
-				{
-					memcpy([_bufMasterBrightMode[NDSDisplayID_Main] contents], currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Main], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-					memcpy([_bufMasterBrightIntensity[NDSDisplayID_Main] contents], currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Main], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-					[_bufMasterBrightMode[NDSDisplayID_Main] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
-					[_bufMasterBrightIntensity[NDSDisplayID_Main] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
+				case NDSColorFormat_BGR555_Rev:
+					[cce setComputePipelineState:_fetch555Pipeline];
+					break;
 					
-					[cce setBuffer:_bufMasterBrightMode[NDSDisplayID_Main] offset:0 atIndex:0];
-					[cce setBuffer:_bufMasterBrightIntensity[NDSDisplayID_Main] offset:0 atIndex:1];
+				case NDSColorFormat_BGR666_Rev:
+					[cce setComputePipelineState:_fetch666Pipeline];
+					break;
 					
-					if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Main])
-					{
-						[cce setTexture:_texDisplayFetch16NativeMain atIndex:0];
-						[cce setTexture:_texDisplayPostprocessNativeMain atIndex:1];
-						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
-							threadsPerThreadgroup:_fetchThreadsPerGroup];
-						
-						texDisplaySrcTarget[NDSDisplayID_Main] = _texDisplayPostprocessNativeMain;
-					}
-					else
-					{
-						[cce setTexture:_texDisplayFetch16CustomMain atIndex:0];
-						[cce setTexture:_texDisplayPostprocessCustomMain atIndex:1];
-						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
-							threadsPerThreadgroup:_fetchThreadsPerGroup];
-						
-						texDisplaySrcTarget[NDSDisplayID_Main] = _texDisplayPostprocessCustomMain;
-					}
-				}
-				
-				if (isTouchEnabled)
-				{
-					memcpy([_bufMasterBrightMode[NDSDisplayID_Touch] contents], currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Touch], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-					memcpy([_bufMasterBrightIntensity[NDSDisplayID_Touch] contents], currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Touch], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-					[_bufMasterBrightMode[NDSDisplayID_Touch] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
-					[_bufMasterBrightIntensity[NDSDisplayID_Touch] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
-					
-					[cce setBuffer:_bufMasterBrightMode[NDSDisplayID_Touch] offset:0 atIndex:0];
-					[cce setBuffer:_bufMasterBrightIntensity[NDSDisplayID_Touch] offset:0 atIndex:1];
-					
-					if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch])
-					{
-						[cce setTexture:_texDisplayFetch16NativeTouch atIndex:0];
-						[cce setTexture:_texDisplayPostprocessNativeTouch atIndex:1];
-						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
-							threadsPerThreadgroup:_fetchThreadsPerGroup];
-						
-						texDisplaySrcTarget[NDSDisplayID_Touch] = _texDisplayPostprocessNativeTouch;
-					}
-					else
-					{
-						[cce setTexture:_texDisplayFetch16CustomTouch atIndex:0];
-						[cce setTexture:_texDisplayPostprocessCustomTouch atIndex:1];
-						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
-							threadsPerThreadgroup:_fetchThreadsPerGroup];
-						
-						texDisplaySrcTarget[NDSDisplayID_Touch] = _texDisplayPostprocessCustomTouch;
-					}
-				}
+				case NDSColorFormat_BGR888_Rev:
+					[cce setComputePipelineState:_fetch888Pipeline];
+					break;
 			}
-			else
+			
+			if (isMainEnabled)
 			{
+				memcpy([_bufMasterBrightMode[NDSDisplayID_Main] contents], currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Main], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+				memcpy([_bufMasterBrightIntensity[NDSDisplayID_Main] contents], currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Main], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+				[_bufMasterBrightMode[NDSDisplayID_Main] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
+				[_bufMasterBrightIntensity[NDSDisplayID_Main] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
+				
+				[cce setBuffer:_bufMasterBrightMode[NDSDisplayID_Main] offset:0 atIndex:0];
+				[cce setBuffer:_bufMasterBrightIntensity[NDSDisplayID_Main] offset:0 atIndex:1];
+				
+				if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Main])
+				{
+					[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Main][index] atIndex:0];
+					[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Main][index] atIndex:1];
+					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
+						threadsPerThreadgroup:_fetchThreadsPerGroup];
+					
+					texFetchTargetMain = _texDisplayPostprocessNative[NDSDisplayID_Main][index];
+				}
+				else
+				{
+					[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Main][index] atIndex:0];
+					[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Main][index] atIndex:1];
+					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
+						threadsPerThreadgroup:_fetchThreadsPerGroup];
+					
+					texFetchTargetMain = _texDisplayPostprocessCustom[NDSDisplayID_Main][index];
+				}
+				
+				isUsingFramebufferDirectlyMain = false;
+			}
+			
+			if (isTouchEnabled)
+			{
+				memcpy([_bufMasterBrightMode[NDSDisplayID_Touch] contents], currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Touch], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+				memcpy([_bufMasterBrightIntensity[NDSDisplayID_Touch] contents], currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Touch], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
+				[_bufMasterBrightMode[NDSDisplayID_Touch] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
+				[_bufMasterBrightIntensity[NDSDisplayID_Touch] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
+				
+				[cce setBuffer:_bufMasterBrightMode[NDSDisplayID_Touch] offset:0 atIndex:0];
+				[cce setBuffer:_bufMasterBrightIntensity[NDSDisplayID_Touch] offset:0 atIndex:1];
+				
+				if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch])
+				{
+					[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Touch][index] atIndex:0];
+					[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Touch][index] atIndex:1];
+					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
+						threadsPerThreadgroup:_fetchThreadsPerGroup];
+					
+					texFetchTargetTouch = _texDisplayPostprocessNative[NDSDisplayID_Touch][index];
+				}
+				else
+				{
+					[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Touch][index] atIndex:0];
+					[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Touch][index] atIndex:1];
+					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
+						threadsPerThreadgroup:_fetchThreadsPerGroup];
+					
+					texFetchTargetTouch = _texDisplayPostprocessCustom[NDSDisplayID_Touch][index];
+				}
+				
+				isUsingFramebufferDirectlyTouch = false;
+			}
+		}
+		else
+		{
+			if (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
+			{
+				// 16-bit textures aren't handled natively in Metal for macOS, so we need to explicitly convert to 32-bit here.
 				[cce setComputePipelineState:_fetch555ConvertOnlyPipeline];
 				
 				if (isMainEnabled)
 				{
 					if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Main])
 					{
-						[cce setTexture:_texDisplayFetch16NativeMain atIndex:0];
-						[cce setTexture:_texDisplayPostprocessNativeMain atIndex:1];
+						[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Main][index] atIndex:0];
+						[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Main][index] atIndex:1];
 						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
 							threadsPerThreadgroup:_fetchThreadsPerGroup];
 						
-						texDisplaySrcTarget[NDSDisplayID_Main] = _texDisplayPostprocessNativeMain;
+						texFetchTargetMain = _texDisplayPostprocessNative[NDSDisplayID_Main][index];
 					}
 					else
 					{
-						[cce setTexture:_texDisplayFetch16CustomMain atIndex:0];
-						[cce setTexture:_texDisplayPostprocessCustomMain atIndex:1];
+						[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Main][index] atIndex:0];
+						[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Main][index] atIndex:1];
 						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
 							threadsPerThreadgroup:_fetchThreadsPerGroup];
 						
-						texDisplaySrcTarget[NDSDisplayID_Main] = _texDisplayPostprocessCustomMain;
+						texFetchTargetMain = _texDisplayPostprocessCustom[NDSDisplayID_Main][index];
 					}
+					
+					isUsingFramebufferDirectlyMain = false;
 				}
 				
 				if (isTouchEnabled)
 				{
 					if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch])
 					{
-						[cce setTexture:_texDisplayFetch16NativeTouch atIndex:0];
-						[cce setTexture:_texDisplayPostprocessNativeTouch atIndex:1];
+						[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Touch][index] atIndex:0];
+						[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Touch][index] atIndex:1];
 						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
 							threadsPerThreadgroup:_fetchThreadsPerGroup];
 						
-						texDisplaySrcTarget[NDSDisplayID_Touch] = _texDisplayPostprocessNativeTouch;
+						texFetchTargetTouch = _texDisplayPostprocessNative[NDSDisplayID_Touch][index];
 					}
 					else
 					{
-						[cce setTexture:_texDisplayFetch16CustomTouch atIndex:0];
-						[cce setTexture:_texDisplayPostprocessCustomTouch atIndex:1];
+						[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Touch][index] atIndex:0];
+						[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Touch][index] atIndex:1];
 						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
 							threadsPerThreadgroup:_fetchThreadsPerGroup];
 						
-						texDisplaySrcTarget[NDSDisplayID_Touch] = _texDisplayPostprocessCustomTouch;
+						texFetchTargetTouch = _texDisplayPostprocessCustom[NDSDisplayID_Touch][index];
 					}
-				}
-			}
-		}
-		else
-		{
-			if (currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Main]    || currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Touch] ||
-				currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Main] || currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Touch])
-			{
-				if (currentDisplayInfo.colorFormat == NDSColorFormat_BGR666_Rev)
-				{
-					[cce setComputePipelineState:_fetch666Pipeline];
-				}
-				else
-				{
-					[cce setComputePipelineState:_fetch888Pipeline];
-				}
-				
-				if (isMainEnabled)
-				{
-					memcpy([_bufMasterBrightMode[NDSDisplayID_Main] contents], currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Main], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-					memcpy([_bufMasterBrightIntensity[NDSDisplayID_Main] contents], currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Main], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-					[_bufMasterBrightMode[NDSDisplayID_Main] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
-					[_bufMasterBrightIntensity[NDSDisplayID_Main] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
 					
-					[cce setBuffer:_bufMasterBrightMode[NDSDisplayID_Main] offset:0 atIndex:0];
-					[cce setBuffer:_bufMasterBrightIntensity[NDSDisplayID_Main] offset:0 atIndex:1];
-					
-					if (texDisplaySrcTarget[NDSDisplayID_Main] == _texDisplayFetch32NativeMain)
-					{
-						[cce setTexture:_texDisplayFetch32NativeMain atIndex:0];
-						[cce setTexture:_texDisplayPostprocessNativeMain atIndex:1];
-						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
-							threadsPerThreadgroup:_fetchThreadsPerGroup];
-						
-						texDisplaySrcTarget[NDSDisplayID_Main] = _texDisplayPostprocessNativeMain;
-					}
-					else
-					{
-						[cce setTexture:_texDisplayFetch32CustomMain atIndex:0];
-						[cce setTexture:_texDisplayPostprocessCustomMain atIndex:1];
-						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
-							threadsPerThreadgroup:_fetchThreadsPerGroup];
-						
-						texDisplaySrcTarget[NDSDisplayID_Main] = _texDisplayPostprocessCustomMain;
-					}
-				}
-				
-				if (isTouchEnabled)
-				{
-					memcpy([_bufMasterBrightMode[NDSDisplayID_Touch] contents], currentDisplayInfo.masterBrightnessMode[NDSDisplayID_Touch], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-					memcpy([_bufMasterBrightIntensity[NDSDisplayID_Touch] contents], currentDisplayInfo.masterBrightnessIntensity[NDSDisplayID_Touch], sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT);
-					[_bufMasterBrightMode[NDSDisplayID_Touch] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
-					[_bufMasterBrightIntensity[NDSDisplayID_Touch] didModifyRange:NSMakeRange(0, sizeof(uint8_t) * GPU_FRAMEBUFFER_NATIVE_HEIGHT)];
-					
-					[cce setBuffer:_bufMasterBrightMode[NDSDisplayID_Touch] offset:0 atIndex:0];
-					[cce setBuffer:_bufMasterBrightIntensity[NDSDisplayID_Touch] offset:0 atIndex:1];
-					
-					if (texDisplaySrcTarget[NDSDisplayID_Touch] == _texDisplayFetch32NativeTouch)
-					{
-						[cce setTexture:_texDisplayFetch32NativeTouch atIndex:0];
-						[cce setTexture:_texDisplayPostprocessNativeTouch atIndex:1];
-						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
-							threadsPerThreadgroup:_fetchThreadsPerGroup];
-						
-						texDisplaySrcTarget[NDSDisplayID_Touch] = _texDisplayPostprocessNativeTouch;
-					}
-					else
-					{
-						[cce setTexture:_texDisplayFetch32CustomTouch atIndex:0];
-						[cce setTexture:_texDisplayPostprocessCustomTouch atIndex:1];
-						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
-							threadsPerThreadgroup:_fetchThreadsPerGroup];
-						
-						texDisplaySrcTarget[NDSDisplayID_Touch] = _texDisplayPostprocessCustomTouch;
-					}
+					isUsingFramebufferDirectlyTouch = false;
 				}
 			}
 		}
@@ -646,16 +619,11 @@
 		[cce endEncoding];
 	}
 	
-	[self setUsingFramebufferDirectlyAtIndex:index
-								   displayID:NDSDisplayID_Main
-									   state:(texDisplaySrcTarget[NDSDisplayID_Main] == _texDisplayFetch32NativeMain) || (texDisplaySrcTarget[NDSDisplayID_Main] == _texDisplayFetch32CustomMain)];
+	[self setUsingFramebufferDirectlyAtIndex:index displayID:NDSDisplayID_Main  state:isUsingFramebufferDirectlyMain];
+	[self setUsingFramebufferDirectlyAtIndex:index displayID:NDSDisplayID_Touch state:isUsingFramebufferDirectlyTouch];
 	
-	[self setUsingFramebufferDirectlyAtIndex:index
-								   displayID:NDSDisplayID_Touch
-									   state:(texDisplaySrcTarget[NDSDisplayID_Touch] == _texDisplayFetch32NativeTouch) || (texDisplaySrcTarget[NDSDisplayID_Touch] == _texDisplayFetch32CustomTouch)];
-	
-	[self setTexFetchMain:texDisplaySrcTarget[NDSDisplayID_Main]];
-	[self setTexFetchTouch:texDisplaySrcTarget[NDSDisplayID_Touch]];
+	[self setTexFetchMain:texFetchTargetMain];
+	[self setTexFetchTouch:texFetchTargetTouch];
 }
 
 - (void) fetchFromBufferIndex:(const u8)index
@@ -675,24 +643,21 @@
 		pthread_rwlock_unlock([self rwlockFramebufferAtIndex:index]);
 	}];
 	[cb commit];
+	[cb waitUntilScheduled];
 }
 
 - (void) fetchNativeDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex
 {
-	const NDSDisplayInfo &currentDisplayInfo = GPUFetchObject->GetFetchDisplayInfoForBufferIndex(bufferIndex);
-	
-	id<MTLTexture> texFetch16 = (displayID == NDSDisplayID_Main) ? _texDisplayFetch16NativeMain : _texDisplayFetch16NativeTouch;
-	id<MTLTexture> texFetch32 = (displayID == NDSDisplayID_Main) ? _texDisplayFetch32NativeMain : _texDisplayFetch32NativeTouch;
-	const size_t bufferSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * currentDisplayInfo.pixelBytes;
-	const id<MTLBuffer> targetSource = (displayID == NDSDisplayID_Main) ? _bufDisplayFetchNative[NDSDisplayID_Main][currentDisplayInfo.bufferIndex] : _bufDisplayFetchNative[NDSDisplayID_Touch][currentDisplayInfo.bufferIndex];
-	[targetSource didModifyRange:NSMakeRange(0, bufferSize)];
+	const id<MTLBuffer> targetSource = _bufDisplayFetchNative[displayID][bufferIndex];
+	id<MTLTexture> targetDestination = _texDisplayFetchNative[displayID][bufferIndex];
+	[targetSource didModifyRange:NSMakeRange(0, _nativeBufferSize)];
 	
 	[_fetchEncoder copyFromBuffer:targetSource
 					 sourceOffset:0
-				sourceBytesPerRow:GPU_FRAMEBUFFER_NATIVE_WIDTH * currentDisplayInfo.pixelBytes
-			  sourceBytesPerImage:bufferSize
+				sourceBytesPerRow:_nativeLineSize
+			  sourceBytesPerImage:_nativeBufferSize
 					   sourceSize:MTLSizeMake(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 1)
-						toTexture:(currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? texFetch16 : texFetch32
+						toTexture:targetDestination
 				 destinationSlice:0
 				 destinationLevel:0
 				destinationOrigin:MTLOriginMake(0, 0, 0)];
@@ -702,18 +667,16 @@
 {
 	const NDSDisplayInfo &currentDisplayInfo = GPUFetchObject->GetFetchDisplayInfoForBufferIndex(bufferIndex);
 	
-	id<MTLTexture> texFetch16 = (displayID == NDSDisplayID_Main) ? _texDisplayFetch16CustomMain : _texDisplayFetch16CustomTouch;
-	id<MTLTexture> texFetch32 = (displayID == NDSDisplayID_Main) ? _texDisplayFetch32CustomMain : _texDisplayFetch32CustomTouch;
-	const size_t bufferSize = currentDisplayInfo.customWidth * currentDisplayInfo.customHeight * currentDisplayInfo.pixelBytes;
-	const id<MTLBuffer> targetSource = (displayID == NDSDisplayID_Main) ? _bufDisplayFetchCustom[NDSDisplayID_Main][currentDisplayInfo.bufferIndex] : _bufDisplayFetchCustom[NDSDisplayID_Touch][currentDisplayInfo.bufferIndex];
-	[targetSource didModifyRange:NSMakeRange(0, bufferSize)];
+	const id<MTLBuffer> targetSource = _bufDisplayFetchCustom[displayID][bufferIndex];
+	id<MTLTexture> targetDestination = _texDisplayFetchCustom[displayID][bufferIndex];
+	[targetSource didModifyRange:NSMakeRange(0, _customBufferSize)];
 	
 	[_fetchEncoder copyFromBuffer:targetSource
 					 sourceOffset:0
-				sourceBytesPerRow:currentDisplayInfo.customWidth * currentDisplayInfo.pixelBytes
-			  sourceBytesPerImage:bufferSize
+				sourceBytesPerRow:_customLineSize
+			  sourceBytesPerImage:_customBufferSize
 					   sourceSize:MTLSizeMake(currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 1)
-						toTexture:(currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev) ? texFetch16 : texFetch32
+						toTexture:targetDestination
 				 destinationSlice:0
 				 destinationLevel:0
 				destinationOrigin:MTLOriginMake(0, 0, 0)];
@@ -726,6 +689,7 @@
 @synthesize cdp;
 @synthesize sharedData;
 @synthesize colorAttachment0Desc;
+@dynamic mutexTexProcessUpdate;
 @dynamic mutexBufferUpdate;
 @synthesize pixelScalePipeline;
 @synthesize outputRGBAPipeline;
@@ -735,8 +699,6 @@
 @synthesize bufCPUFilterDstTouch;
 @synthesize texDisplayPixelScaleMain;
 @synthesize texDisplayPixelScaleTouch;
-@synthesize texDisplayProcessedMain;
-@synthesize texDisplayProcessedTouch;
 @synthesize texHUDCharMap;
 @synthesize needsViewportUpdate;
 @synthesize needsRotationScaleUpdate;
@@ -744,7 +706,6 @@
 @synthesize needsHUDVerticesUpdate;
 @dynamic pixelScaler;
 @dynamic outputFilter;
-@synthesize processedFrameInfo;
 
 - (id) initWithDisplayPresenter:(MacMetalDisplayPresenter *)thePresenter
 {
@@ -795,8 +756,6 @@
 	bufCPUFilterDstTouch = nil;
 	texDisplayPixelScaleMain  = nil;
 	texDisplayPixelScaleTouch = nil;
-	texDisplayProcessedMain = nil;
-	texDisplayProcessedTouch = nil;
 	texHUDCharMap = nil;
 	
 	_pixelScalerThreadsPerGroup = MTLSizeMake(1, 1, 1);
@@ -807,12 +766,13 @@
 	needsScreenVerticesUpdate = YES;
 	needsHUDVerticesUpdate = YES;
 	
-	processedFrameInfo.bufferIndex = 0;
-    processedFrameInfo.tex[NDSDisplayID_Main]  = nil;
-    processedFrameInfo.tex[NDSDisplayID_Touch] = nil;
-	processedFrameInfo.isMainDisplayProcessed = false;
-	processedFrameInfo.isTouchDisplayProcessed = false;
+	_processedFrameInfo.bufferIndex = 0;
+    _processedFrameInfo.tex[NDSDisplayID_Main]  = nil;
+    _processedFrameInfo.tex[NDSDisplayID_Touch] = nil;
+	_processedFrameInfo.isMainDisplayProcessed = false;
+	_processedFrameInfo.isTouchDisplayProcessed = false;
 	
+	pthread_mutex_init(&_mutexTexProcessUpdate, NULL);
 	pthread_mutex_init(&_mutexBufferUpdate, NULL);
 	
 	return self;
@@ -841,11 +801,9 @@
 	[self setBufCPUFilterDstTouch:nil];
 	[self setTexDisplayPixelScaleMain:nil];
 	[self setTexDisplayPixelScaleTouch:nil];
-    [self setTexDisplayProcessedMain:nil];
-    [self setTexDisplayProcessedTouch:nil];
 	
-	[processedFrameInfo.tex[NDSDisplayID_Main]  release];
-	[processedFrameInfo.tex[NDSDisplayID_Touch] release];
+	[_processedFrameInfo.tex[NDSDisplayID_Main]  release];
+	[_processedFrameInfo.tex[NDSDisplayID_Touch] release];
 	
 	[self setPixelScalePipeline:nil];
 	[self setOutputRGBAPipeline:nil];
@@ -854,9 +812,15 @@
 	
 	[self setSharedData:nil];
 	
+	pthread_mutex_destroy(&_mutexTexProcessUpdate);
 	pthread_mutex_destroy(&_mutexBufferUpdate);
 	
 	[super dealloc];
+}
+
+- (pthread_mutex_t *) mutexTexProcessUpdate
+{
+	return &_mutexTexProcessUpdate;
 }
 
 - (pthread_mutex_t *) mutexBufferUpdate
@@ -1064,6 +1028,11 @@
 	[outputPipelineDesc release];
 }
 
+- (const MetalProcessedFrameInfo &) processedFrameInfo
+{
+	return _processedFrameInfo;
+}
+
 - (id<MTLCommandBuffer>) newCommandBuffer
 {
 	return [[sharedData commandQueue] commandBufferWithUnretainedReferences];
@@ -1126,10 +1095,9 @@
 	
 	[self setTexDisplayPixelScaleMain:[[sharedData device] newTextureWithDescriptor:texDisplayPixelScaleDesc]];
 	[self setTexDisplayPixelScaleTouch:[[sharedData device] newTextureWithDescriptor:texDisplayPixelScaleDesc]];
-	[self setTexDisplayProcessedMain:[sharedData texFetchMain]];
-	[self setTexDisplayProcessedTouch:[sharedData texFetchTouch]];
-	processedFrameInfo.tex[NDSDisplayID_Main]  = [[self texDisplayProcessedMain] retain];
-	processedFrameInfo.tex[NDSDisplayID_Touch] = [[self texDisplayProcessedTouch] retain];
+	
+	_processedFrameInfo.tex[NDSDisplayID_Main]  = [[sharedData texFetchMain]  retain];
+	_processedFrameInfo.tex[NDSDisplayID_Touch] = [[sharedData texFetchTouch] retain];
 	
 	VideoFilter *vfMain  = cdp->GetPixelScalerObject(NDSDisplayID_Main);
 	_bufCPUFilterSrcMain = [[[sharedData device] newBufferWithBytesNoCopy:vfMain->GetSrcBufferPtr()
@@ -1284,14 +1252,17 @@
 
 - (void) processDisplays
 {
-	const u8 bufferIndex = [sharedData GPUFetchObject]->GetLastFetchIndex();
+	const uint8_t bufferIndex = [sharedData GPUFetchObject]->GetLastFetchIndex();
 	const NDSDisplayInfo &fetchDisplayInfo = [sharedData GPUFetchObject]->GetFetchDisplayInfoForBufferIndex(bufferIndex);
 	const ClientDisplayMode mode = cdp->GetPresenterProperties().mode;
 	const bool useDeposterize = cdp->GetSourceDeposterize();
 	const NDSDisplayID selectedDisplaySource[2] = { cdp->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main), cdp->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) };
 	
-	[self setTexDisplayProcessedMain:(selectedDisplaySource[NDSDisplayID_Main]  == NDSDisplayID_Main)  ? [sharedData texFetchMain]  : [sharedData texFetchTouch]];
-	[self setTexDisplayProcessedTouch:(selectedDisplaySource[NDSDisplayID_Touch] == NDSDisplayID_Touch) ? [sharedData texFetchTouch] : [sharedData texFetchMain]];
+	NSUInteger width[2]  = { fetchDisplayInfo.renderedWidth[selectedDisplaySource[NDSDisplayID_Main]],  fetchDisplayInfo.renderedWidth[selectedDisplaySource[NDSDisplayID_Touch]] };
+	NSUInteger height[2] = { fetchDisplayInfo.renderedHeight[selectedDisplaySource[NDSDisplayID_Main]], fetchDisplayInfo.renderedHeight[selectedDisplaySource[NDSDisplayID_Touch]] };
+	
+	id<MTLTexture> texMain  = (selectedDisplaySource[NDSDisplayID_Main]  == NDSDisplayID_Main)  ? [sharedData texFetchMain]  : [sharedData texFetchTouch];
+	id<MTLTexture> texTouch = (selectedDisplaySource[NDSDisplayID_Touch] == NDSDisplayID_Touch) ? [sharedData texFetchTouch] : [sharedData texFetchMain];
 	
 	bool isDisplayProcessedMain  = ![sharedData isUsingFramebufferDirectlyAtIndex:bufferIndex displayID:selectedDisplaySource[NDSDisplayID_Main]];
 	bool isDisplayProcessedTouch = ![sharedData isUsingFramebufferDirectlyAtIndex:bufferIndex displayID:selectedDisplaySource[NDSDisplayID_Touch]];
@@ -1321,7 +1292,7 @@
 			
 			if (shouldProcessDisplay[NDSDisplayID_Main])
 			{
-				[cce setTexture:[self texDisplayProcessedMain] atIndex:0];
+				[cce setTexture:texMain atIndex:0];
 				[cce setTexture:_texDisplaySrcDeposterize[NDSDisplayID_Main][0] atIndex:1];
 				[cce dispatchThreadgroups:[sharedData deposterizeThreadGroupsPerGrid]
 					threadsPerThreadgroup:[sharedData deposterizeThreadsPerGroup]];
@@ -1331,19 +1302,19 @@
 				[cce dispatchThreadgroups:[sharedData deposterizeThreadGroupsPerGrid]
 					threadsPerThreadgroup:[sharedData deposterizeThreadsPerGroup]];
 				
-				[self setTexDisplayProcessedMain:_texDisplaySrcDeposterize[NDSDisplayID_Main][1]];
+				texMain = _texDisplaySrcDeposterize[NDSDisplayID_Main][1];
 				isDisplayProcessedMain = true;
 				
 				if (selectedDisplaySource[NDSDisplayID_Main] == selectedDisplaySource[NDSDisplayID_Touch])
 				{
-					[self setTexDisplayProcessedTouch:[self texDisplayProcessedMain]];
+					texTouch = texMain;
 					isDisplayProcessedTouch = true;
 				}
 			}
 			
 			if (shouldProcessDisplay[NDSDisplayID_Touch])
 			{
-				[cce setTexture:[self texDisplayProcessedTouch] atIndex:0];
+				[cce setTexture:texTouch atIndex:0];
 				[cce setTexture:_texDisplaySrcDeposterize[NDSDisplayID_Touch][0] atIndex:1];
 				[cce dispatchThreadgroups:[sharedData deposterizeThreadGroupsPerGrid]
 					threadsPerThreadgroup:[sharedData deposterizeThreadsPerGroup]];
@@ -1353,7 +1324,7 @@
 				[cce dispatchThreadgroups:[sharedData deposterizeThreadGroupsPerGrid]
 					threadsPerThreadgroup:[sharedData deposterizeThreadsPerGroup]];
 				
-				[self setTexDisplayProcessedTouch:_texDisplaySrcDeposterize[NDSDisplayID_Touch][1]];
+				texTouch = _texDisplaySrcDeposterize[NDSDisplayID_Touch][1];
 				isDisplayProcessedTouch = true;
 			}
 			
@@ -1382,29 +1353,35 @@
 			
 			if (shouldProcessDisplay[NDSDisplayID_Main])
 			{
-				[cce setTexture:[self texDisplayProcessedMain] atIndex:0];
+				[cce setTexture:texMain atIndex:0];
 				[cce setTexture:[self texDisplayPixelScaleMain] atIndex:1];
 				[cce setTexture:[sharedData texCurrentHQnxLUT] atIndex:2];
 				[cce dispatchThreadgroups:_pixelScalerThreadGroupsPerGrid threadsPerThreadgroup:_pixelScalerThreadsPerGroup];
 				
-				[self setTexDisplayProcessedMain:[self texDisplayPixelScaleMain]];
+				texMain = [self texDisplayPixelScaleMain];
+				width[NDSDisplayID_Main]  = [[self texDisplayPixelScaleMain] width];
+				height[NDSDisplayID_Main] = [[self texDisplayPixelScaleMain] height];
 				isDisplayProcessedMain = true;
 				
 				if (selectedDisplaySource[NDSDisplayID_Main] == selectedDisplaySource[NDSDisplayID_Touch])
 				{
-					[self setTexDisplayProcessedTouch:[self texDisplayProcessedMain]];
+					texTouch = texMain;
+					width[NDSDisplayID_Touch]  = width[NDSDisplayID_Main];
+					height[NDSDisplayID_Touch] = height[NDSDisplayID_Main];
 					isDisplayProcessedTouch = true;
 				}
 			}
 			
 			if (shouldProcessDisplay[NDSDisplayID_Touch])
 			{
-				[cce setTexture:[self texDisplayProcessedTouch] atIndex:0];
+				[cce setTexture:texTouch atIndex:0];
 				[cce setTexture:[self texDisplayPixelScaleTouch] atIndex:1];
 				[cce setTexture:[sharedData texCurrentHQnxLUT] atIndex:2];
 				[cce dispatchThreadgroups:_pixelScalerThreadGroupsPerGrid threadsPerThreadgroup:_pixelScalerThreadsPerGroup];
 				
-				[self setTexDisplayProcessedTouch:[self texDisplayPixelScaleTouch]];
+				texTouch = [self texDisplayPixelScaleTouch];
+				width[NDSDisplayID_Touch]  = [[self texDisplayPixelScaleTouch] width];
+				height[NDSDisplayID_Touch] = [[self texDisplayPixelScaleTouch] height];
 				isDisplayProcessedTouch = true;
 			}
 			
@@ -1497,12 +1474,16 @@
 				   destinationLevel:0
 				  destinationOrigin:MTLOriginMake(0, 0, 0)];
 				
-				[self setTexDisplayProcessedMain:[self texDisplayPixelScaleMain]];
+				texMain = [self texDisplayPixelScaleMain];
+				width[NDSDisplayID_Main]  = [[self texDisplayPixelScaleMain] width];
+				height[NDSDisplayID_Main] = [[self texDisplayPixelScaleMain] height];
 				isDisplayProcessedMain = true;
 				
 				if (selectedDisplaySource[NDSDisplayID_Main] == selectedDisplaySource[NDSDisplayID_Touch])
 				{
-					[self setTexDisplayProcessedTouch:[self texDisplayProcessedMain]];
+					texTouch = texMain;
+					width[NDSDisplayID_Touch]  = width[NDSDisplayID_Main];
+					height[NDSDisplayID_Touch] = height[NDSDisplayID_Main];
 					isDisplayProcessedTouch = true;
 				}
 			}
@@ -1521,7 +1502,9 @@
 				   destinationLevel:0
 				  destinationOrigin:MTLOriginMake(0, 0, 0)];
 				
-				[self setTexDisplayProcessedTouch:[self texDisplayPixelScaleTouch]];
+				texTouch = [self texDisplayPixelScaleTouch];
+				width[NDSDisplayID_Touch]  = [[self texDisplayPixelScaleTouch] width];
+				height[NDSDisplayID_Touch] = [[self texDisplayPixelScaleTouch] height];
 				isDisplayProcessedTouch = true;
 			}
 			
@@ -1534,26 +1517,27 @@
 	}
 	
 	// Update the texture coordinates
-	cdp->SetScreenTextureCoordinates((float)[[self texDisplayProcessedMain]  width], (float)[[self texDisplayProcessedMain]  height],
-									 (float)[[self texDisplayProcessedTouch] width], (float)[[self texDisplayProcessedTouch] height],
+	pthread_mutex_lock(&_mutexTexProcessUpdate);
+	
+	cdp->SetScreenTextureCoordinates((float)width[NDSDisplayID_Main],  (float)height[NDSDisplayID_Main],
+									 (float)width[NDSDisplayID_Touch], (float)height[NDSDisplayID_Touch],
 									 (float *)[_displayTexCoordBuffer contents]);
 	[_displayTexCoordBuffer didModifyRange:NSMakeRange(0, sizeof(float) * (4 * 8))];
 	
 	// Update the frame info
-	MetalProcessedFrameInfo newFrameInfo;
-	newFrameInfo.bufferIndex = bufferIndex;
-	newFrameInfo.isMainDisplayProcessed  = isDisplayProcessedMain;
-	newFrameInfo.isTouchDisplayProcessed = isDisplayProcessedTouch;
-	newFrameInfo.tex[NDSDisplayID_Main]  = [[self texDisplayProcessedMain] retain];
-	newFrameInfo.tex[NDSDisplayID_Touch] = [[self texDisplayProcessedTouch] retain];
+	id<MTLTexture> oldDisplayProcessedMain  = _processedFrameInfo.tex[NDSDisplayID_Main];
+	id<MTLTexture> oldDisplayProcessedTouch = _processedFrameInfo.tex[NDSDisplayID_Touch];
 	
-	id<MTLTexture> oldDisplayProcessedMain  = processedFrameInfo.tex[NDSDisplayID_Main];
-	id<MTLTexture> oldDisplayProcessedTouch = processedFrameInfo.tex[NDSDisplayID_Touch];
-	
-	[self setProcessedFrameInfo:newFrameInfo];
+	_processedFrameInfo.bufferIndex = bufferIndex;
+	_processedFrameInfo.isMainDisplayProcessed  = isDisplayProcessedMain;
+	_processedFrameInfo.isTouchDisplayProcessed = isDisplayProcessedTouch;
+	_processedFrameInfo.tex[NDSDisplayID_Main]  = [texMain  retain];
+	_processedFrameInfo.tex[NDSDisplayID_Touch] = [texTouch retain];
 	
 	[oldDisplayProcessedMain  release];
 	[oldDisplayProcessedTouch release];
+	
+	pthread_mutex_unlock(&_mutexTexProcessUpdate);
 }
 
 - (void) updateRenderBuffers
@@ -1836,11 +1820,12 @@
 		id<MTLTexture> texRender = [[[sharedData device] newTextureWithDescriptor:texRenderDesc] retain];
 		id<MTLBuffer> dstMTLBuffer = [[[sharedData device] newBufferWithLength:clientWidth * clientHeight * sizeof(uint32_t) options:MTLResourceStorageModeManaged] retain];
 		
-		const MetalProcessedFrameInfo processedInfo = [self processedFrameInfo];
-		const bool needsFetchBuffersLock = !processedInfo.isMainDisplayProcessed || !processedInfo.isTouchDisplayProcessed;
+		pthread_mutex_lock(&_mutexTexProcessUpdate);
+		
+		const bool needsFetchBuffersLock = !_processedFrameInfo.isMainDisplayProcessed || !_processedFrameInfo.isTouchDisplayProcessed;
 		if (needsFetchBuffersLock)
 		{
-			pthread_rwlock_rdlock([sharedData rwlockFramebufferAtIndex:processedInfo.bufferIndex]);
+			pthread_rwlock_rdlock([sharedData rwlockFramebufferAtIndex:_processedFrameInfo.bufferIndex]);
 		}
 		
 		// Now that everything is set up, go ahead and draw everything.
@@ -1852,15 +1837,16 @@
 		[self renderForCommandBuffer:cb
 				 outputPipelineState:[self outputRGBAPipeline]
 					hudPipelineState:[sharedData hudRGBAPipeline]
-					  texDisplayMain:(processedInfo.isMainDisplayProcessed)  ? processedInfo.tex[NDSDisplayID_Main]  : ((cdp->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main)  == NDSDisplayID_Main)  ? [sharedData texFetchMain]  : [sharedData texFetchTouch] )
-					 texDisplayTouch:(processedInfo.isTouchDisplayProcessed) ? processedInfo.tex[NDSDisplayID_Touch] : ((cdp->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) == NDSDisplayID_Touch) ? [sharedData texFetchTouch] : [sharedData texFetchMain]  )];
+					  texDisplayMain:_processedFrameInfo.tex[NDSDisplayID_Main]
+					 texDisplayTouch:_processedFrameInfo.tex[NDSDisplayID_Touch]];
 		
 		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
 			pthread_mutex_unlock(&_mutexBufferUpdate);
+			pthread_mutex_unlock(&_mutexTexProcessUpdate);
 			
 			if (needsFetchBuffersLock)
 			{
-				pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:processedInfo.bufferIndex]);
+				pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:_processedFrameInfo.bufferIndex]);
 			}
 		}];
 		
@@ -1934,7 +1920,9 @@
 {
 	@autoreleasepool
 	{
-		const MetalProcessedFrameInfo processedInfo = [presenterObject processedFrameInfo];
+		pthread_mutex_lock([presenterObject mutexTexProcessUpdate]);
+		
+		const MetalProcessedFrameInfo &processedInfo = [presenterObject processedFrameInfo];
 		const bool needsFetchBuffersLock = !processedInfo.isMainDisplayProcessed || !processedInfo.isTouchDisplayProcessed;
 		if (needsFetchBuffersLock)
 		{
@@ -1945,14 +1933,13 @@
 		id<CAMetalDrawable> layerDrawable = [self nextDrawable];
 		[[presenterObject colorAttachment0Desc] setTexture:[layerDrawable texture]];
 		id<MTLCommandBuffer> cb = [presenterObject newCommandBuffer];
-		
 		pthread_mutex_lock([presenterObject mutexBufferUpdate]);
 		
 		[presenterObject renderForCommandBuffer:cb
 							outputPipelineState:[presenterObject outputDrawablePipeline]
 							   hudPipelineState:[[presenterObject sharedData] hudPipeline]
-								 texDisplayMain:(processedInfo.isMainDisplayProcessed)  ? processedInfo.tex[NDSDisplayID_Main]  : (([presenterObject cdp]->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Main)  == NDSDisplayID_Main)  ? [[presenterObject sharedData] texFetchMain]  : [[presenterObject sharedData] texFetchTouch] )
-								texDisplayTouch:(processedInfo.isTouchDisplayProcessed) ? processedInfo.tex[NDSDisplayID_Touch] : (([presenterObject cdp]->GetSelectedDisplaySourceForDisplay(NDSDisplayID_Touch) == NDSDisplayID_Touch) ? [[presenterObject sharedData] texFetchTouch] : [[presenterObject sharedData] texFetchMain]  )];
+								 texDisplayMain:processedInfo.tex[NDSDisplayID_Main]
+								texDisplayTouch:processedInfo.tex[NDSDisplayID_Touch]];
 		
 		[cb presentDrawable:layerDrawable];
 		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
@@ -1962,6 +1949,8 @@
 			{
 				pthread_rwlock_unlock([[presenterObject sharedData] rwlockFramebufferAtIndex:processedInfo.bufferIndex]);
 			}
+			
+			pthread_mutex_unlock([presenterObject mutexTexProcessUpdate]);
 		}];
 		
 		[cb commit];
