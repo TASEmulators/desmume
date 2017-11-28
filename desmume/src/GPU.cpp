@@ -5359,21 +5359,18 @@ const BGLayerInfo& GPUEngineBase::GetBGLayerInfoByID(const GPULayerID layerID)
 	return this->_BGLayer[layerID];
 }
 
-NDSDisplayID GPUEngineBase::GetDisplayByID() const
+NDSDisplayID GPUEngineBase::GetTargetDisplayByID() const
 {
 	return this->_targetDisplayID;
 }
 
-void GPUEngineBase::SetDisplayByID(const NDSDisplayID theDisplayID)
+void GPUEngineBase::SetTargetDisplayByID(const NDSDisplayID theDisplayID)
 {
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
+	this->nativeBuffer = (theDisplayID == NDSDisplayID_Main) ? dispInfo.nativeBuffer[NDSDisplayID_Main] : dispInfo.nativeBuffer[NDSDisplayID_Touch];
+	this->customBuffer = (theDisplayID == NDSDisplayID_Main) ? dispInfo.customBuffer[NDSDisplayID_Main] : dispInfo.customBuffer[NDSDisplayID_Touch];
+	
 	this->_targetDisplayID = theDisplayID;
-	
-	const size_t nativeFramebufferSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes;
-	const size_t customFramebufferSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes;
-	
-	this->nativeBuffer = (theDisplayID == NDSDisplayID_Main) ? dispInfo.masterNativeBuffer : (u8 *)dispInfo.masterNativeBuffer + nativeFramebufferSize;
-	this->customBuffer = (theDisplayID == NDSDisplayID_Main) ? dispInfo.masterCustomBuffer : (u8 *)dispInfo.masterCustomBuffer + customFramebufferSize;
 }
 
 GPUEngineID GPUEngineBase::GetEngineID() const
@@ -5401,14 +5398,21 @@ void GPUEngineBase::SetCustomFramebufferSize(size_t w, size_t h)
 	this->_deferredColorCustom = newDeferredColorCustom;
 	
 	const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
-	const size_t nativeFramebufferSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * dispInfo.pixelBytes;
-	const size_t customFramebufferSize = w * h * dispInfo.pixelBytes;
+	this->nativeBuffer = (this->_targetDisplayID == NDSDisplayID_Main) ? dispInfo.nativeBuffer[NDSDisplayID_Main] : dispInfo.nativeBuffer[NDSDisplayID_Touch];
+	this->customBuffer = (this->_targetDisplayID == NDSDisplayID_Main) ? dispInfo.customBuffer[NDSDisplayID_Main] : dispInfo.customBuffer[NDSDisplayID_Touch];
 	
-	this->nativeBuffer   = (this->_targetDisplayID == NDSDisplayID_Main) ? dispInfo.masterNativeBuffer : (u8 *)dispInfo.masterNativeBuffer + nativeFramebufferSize;
-	this->customBuffer   = (this->_targetDisplayID == NDSDisplayID_Main) ? dispInfo.masterCustomBuffer : (u8 *)dispInfo.masterCustomBuffer + customFramebufferSize;
-	this->renderedBuffer = this->nativeBuffer;
-	this->renderedWidth  = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-	this->renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	if (this->nativeLineOutputCount == GPU_FRAMEBUFFER_NATIVE_HEIGHT)
+	{
+		this->renderedBuffer = this->nativeBuffer;
+		this->renderedWidth  = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+		this->renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	}
+	else
+	{
+		this->renderedBuffer = this->customBuffer;
+		this->renderedWidth  = dispInfo.customWidth;
+		this->renderedHeight = dispInfo.customHeight;
+	}
 	
 	this->_didPassWindowTestCustomMasterPtr = newDidPassWindowTestCustomMasterPtr;
 	this->_didPassWindowTestCustom[GPULayerID_BG0] = this->_didPassWindowTestCustomMasterPtr + (0 * w * sizeof(u8));
@@ -5692,7 +5696,7 @@ void GPUEngineA::Reset()
 	memset(this->_VRAMNativeBlockCaptureCopy, 0, GPU_VRAM_BLOCK_LINES * GPU_FRAMEBUFFER_NATIVE_WIDTH * 4);
 	
 	this->ResetCaptureLineStates();
-	this->SetDisplayByID(NDSDisplayID_Main);
+	this->SetTargetDisplayByID(NDSDisplayID_Main);
 	
 	memset(this->_3DFramebufferMain, 0, dispInfo.customWidth * dispInfo.customHeight * sizeof(FragmentColor));
 	memset(this->_3DFramebuffer16, 0, dispInfo.customWidth * dispInfo.customHeight * sizeof(u16));
@@ -7334,7 +7338,7 @@ void GPUEngineB::Reset()
 	this->_BGLayer[GPULayerID_BG2].tileEntryAddress = MMU_BBG;
 	this->_BGLayer[GPULayerID_BG3].tileEntryAddress = MMU_BBG;
 	
-	this->SetDisplayByID(NDSDisplayID_Touch);
+	this->SetTargetDisplayByID(NDSDisplayID_Touch);
 }
 
 template <NDSColorFormat OUTPUTFORMAT>
@@ -7605,35 +7609,33 @@ void GPUSubsystem::UpdateRenderProperties()
 	
 	this->_displayInfo.masterNativeBuffer = (u8 *)this->_masterFramebuffer + (this->_displayInfo.bufferIndex * this->_displayInfo.framebufferSize);
 	this->_displayInfo.masterCustomBuffer = (u8 *)this->_masterFramebuffer + (nativeFramebufferSize * 2) + (this->_displayInfo.bufferIndex * this->_displayInfo.framebufferSize);
+	this->_displayInfo.nativeBuffer[NDSDisplayID_Main]    = this->_displayInfo.masterNativeBuffer;
+	this->_displayInfo.customBuffer[NDSDisplayID_Main]    = this->_displayInfo.masterCustomBuffer;
+	this->_displayInfo.nativeBuffer[NDSDisplayID_Touch]   = (u8 *)this->_displayInfo.masterNativeBuffer + nativeFramebufferSize;
+	this->_displayInfo.customBuffer[NDSDisplayID_Touch]   = (u8 *)this->_displayInfo.masterCustomBuffer + customFramebufferSize;
 	
-	this->_engineMain->nativeBuffer = (this->_engineMain->GetDisplayByID() == NDSDisplayID_Main) ? this->_displayInfo.masterNativeBuffer : (u8 *)this->_displayInfo.masterNativeBuffer + nativeFramebufferSize;
-	this->_engineMain->customBuffer = (this->_engineMain->GetDisplayByID() == NDSDisplayID_Main) ? this->_displayInfo.masterCustomBuffer : (u8 *)this->_displayInfo.masterCustomBuffer + customFramebufferSize;
+	this->_displayInfo.renderedBuffer[NDSDisplayID_Main]  = this->_displayInfo.nativeBuffer[NDSDisplayID_Main];
+	this->_displayInfo.renderedWidth[NDSDisplayID_Main]   = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	this->_displayInfo.renderedHeight[NDSDisplayID_Main]  = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	
+	this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = this->_displayInfo.nativeBuffer[NDSDisplayID_Touch];
+	this->_displayInfo.renderedWidth[NDSDisplayID_Touch]  = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	
+	this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main] = false;
+	this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch] = false;
+	
+	this->_engineMain->nativeBuffer = (this->_engineMain->GetTargetDisplayByID() == NDSDisplayID_Main) ? this->_displayInfo.nativeBuffer[NDSDisplayID_Main] : this->_displayInfo.nativeBuffer[NDSDisplayID_Touch];
+	this->_engineMain->customBuffer = (this->_engineMain->GetTargetDisplayByID() == NDSDisplayID_Main) ? this->_displayInfo.customBuffer[NDSDisplayID_Main] : this->_displayInfo.customBuffer[NDSDisplayID_Touch];
 	this->_engineMain->renderedBuffer = this->_engineMain->nativeBuffer;
 	this->_engineMain->renderedWidth  = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	this->_engineMain->renderedHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
-	this->_engineSub->nativeBuffer  = (this->_engineSub->GetDisplayByID()  == NDSDisplayID_Main) ? this->_displayInfo.masterNativeBuffer : (u8 *)this->_displayInfo.masterNativeBuffer + nativeFramebufferSize;
-	this->_engineSub->customBuffer  = (this->_engineSub->GetDisplayByID()  == NDSDisplayID_Main) ? this->_displayInfo.masterCustomBuffer : (u8 *)this->_displayInfo.masterCustomBuffer + customFramebufferSize;
+	this->_engineSub->nativeBuffer  = (this->_engineSub->GetTargetDisplayByID()  == NDSDisplayID_Main) ? this->_displayInfo.nativeBuffer[NDSDisplayID_Main] : this->_displayInfo.nativeBuffer[NDSDisplayID_Touch];
+	this->_engineSub->customBuffer  = (this->_engineSub->GetTargetDisplayByID()  == NDSDisplayID_Main) ? this->_displayInfo.customBuffer[NDSDisplayID_Main] : this->_displayInfo.customBuffer[NDSDisplayID_Touch];
 	this->_engineSub->renderedBuffer  = this->_engineSub->nativeBuffer;
 	this->_engineSub->renderedWidth   = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	this->_engineSub->renderedHeight  = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	
-	GPUEngineBase *mainEngine  = this->_display[NDSDisplayID_Main]->GetEngine();
-	this->_displayInfo.nativeBuffer[NDSDisplayID_Main]    = mainEngine->nativeBuffer;
-	this->_displayInfo.customBuffer[NDSDisplayID_Main]    = mainEngine->customBuffer;
-	this->_displayInfo.renderedBuffer[NDSDisplayID_Main]  = mainEngine->renderedBuffer;
-	this->_displayInfo.renderedWidth[NDSDisplayID_Main]   = mainEngine->renderedWidth;
-	this->_displayInfo.renderedHeight[NDSDisplayID_Main]  = mainEngine->renderedHeight;
-	
-	GPUEngineBase *touchEngine = this->_display[NDSDisplayID_Touch]->GetEngine();
-	this->_displayInfo.nativeBuffer[NDSDisplayID_Touch]   = touchEngine->nativeBuffer;
-	this->_displayInfo.customBuffer[NDSDisplayID_Touch]   = touchEngine->customBuffer;
-	this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = touchEngine->renderedBuffer;
-	this->_displayInfo.renderedWidth[NDSDisplayID_Touch]  = touchEngine->renderedWidth;
-	this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = touchEngine->renderedHeight;
-	
-	this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main] = false;
-	this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch] = false;
 	
 	if (!this->_displayInfo.isCustomSizeRequested && (this->_displayInfo.colorFormat != NDSColorFormat_BGR888_Rev))
 	{
@@ -7822,28 +7824,6 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h)
 		this->_engineMain->ResetCaptureLineStates();
 	}
 	
-	if (this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main])
-	{
-		this->_displayInfo.renderedWidth[NDSDisplayID_Main] = this->_displayInfo.customWidth;
-		this->_displayInfo.renderedHeight[NDSDisplayID_Main] = this->_displayInfo.customHeight;
-	}
-	else
-	{
-		this->_displayInfo.renderedWidth[NDSDisplayID_Main] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-		this->_displayInfo.renderedHeight[NDSDisplayID_Main] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	}
-	
-	if (this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch])
-	{
-		this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = this->_displayInfo.customWidth;
-		this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = this->_displayInfo.customHeight;
-	}
-	else
-	{
-		this->_displayInfo.renderedWidth[NDSDisplayID_Touch] = GPU_FRAMEBUFFER_NATIVE_WIDTH;
-		this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-	}
-	
 	this->_AllocateFramebuffers(this->_displayInfo.colorFormat, w, h);
 	
 	free_aligned(oldGpuDstToSrcIndexPtr);
@@ -7894,23 +7874,41 @@ void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, 
 	
 	this->_displayInfo.framebufferSize = (nativeFramebufferSize * 2) + (customFramebufferSize * 2);
 	this->_masterFramebuffer = malloc_alignedPage(this->_displayInfo.framebufferSize * 2);
+	
 	this->_displayInfo.masterFramebufferHead = this->_masterFramebuffer;
 	this->_displayInfo.masterNativeBuffer = (u8 *)this->_masterFramebuffer + (this->_displayInfo.bufferIndex * this->_displayInfo.framebufferSize);
 	this->_displayInfo.masterCustomBuffer = (u8 *)this->_masterFramebuffer + (nativeFramebufferSize * 2) + (this->_displayInfo.bufferIndex * this->_displayInfo.framebufferSize);
 	
-	GPUEngineBase *mainEngine  = this->_display[NDSDisplayID_Main]->GetEngine();
-	this->_displayInfo.nativeBuffer[NDSDisplayID_Main]    = mainEngine->nativeBuffer;
-	this->_displayInfo.customBuffer[NDSDisplayID_Main]    = mainEngine->customBuffer;
-	this->_displayInfo.renderedBuffer[NDSDisplayID_Main]  = mainEngine->renderedBuffer;
-	this->_displayInfo.renderedWidth[NDSDisplayID_Main]   = mainEngine->renderedWidth;
-	this->_displayInfo.renderedHeight[NDSDisplayID_Main]  = mainEngine->renderedHeight;
+	this->_displayInfo.nativeBuffer[NDSDisplayID_Main]  = this->_displayInfo.masterNativeBuffer;
+	this->_displayInfo.customBuffer[NDSDisplayID_Main]  = this->_displayInfo.masterCustomBuffer;
+	this->_displayInfo.nativeBuffer[NDSDisplayID_Touch] = (u8 *)this->_displayInfo.masterNativeBuffer + nativeFramebufferSize;
+	this->_displayInfo.customBuffer[NDSDisplayID_Touch] = (u8 *)this->_displayInfo.masterCustomBuffer + customFramebufferSize;
 	
-	GPUEngineBase *touchEngine = this->_display[NDSDisplayID_Touch]->GetEngine();
-	this->_displayInfo.nativeBuffer[NDSDisplayID_Touch]   = touchEngine->nativeBuffer;
-	this->_displayInfo.customBuffer[NDSDisplayID_Touch]   = touchEngine->customBuffer;
-	this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = touchEngine->renderedBuffer;
-	this->_displayInfo.renderedWidth[NDSDisplayID_Touch]  = touchEngine->renderedWidth;
-	this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = touchEngine->renderedHeight;
+	if (this->_displayInfo.didPerformCustomRender[NDSDisplayID_Main])
+	{
+		this->_displayInfo.renderedBuffer[NDSDisplayID_Main] = this->_displayInfo.customBuffer[NDSDisplayID_Main];
+		this->_displayInfo.renderedWidth[NDSDisplayID_Main]  = this->_displayInfo.customWidth;
+		this->_displayInfo.renderedHeight[NDSDisplayID_Main] = this->_displayInfo.customHeight;
+	}
+	else
+	{
+		this->_displayInfo.renderedBuffer[NDSDisplayID_Main] = this->_displayInfo.nativeBuffer[NDSDisplayID_Main];
+		this->_displayInfo.renderedWidth[NDSDisplayID_Main]  = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+		this->_displayInfo.renderedHeight[NDSDisplayID_Main] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	}
+	
+	if (this->_displayInfo.didPerformCustomRender[NDSDisplayID_Touch])
+	{
+		this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = this->_displayInfo.customBuffer[NDSDisplayID_Touch];
+		this->_displayInfo.renderedWidth[NDSDisplayID_Touch]  = this->_displayInfo.customWidth;
+		this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = this->_displayInfo.customHeight;
+	}
+	else
+	{
+		this->_displayInfo.renderedBuffer[NDSDisplayID_Touch] = this->_displayInfo.nativeBuffer[NDSDisplayID_Touch];
+		this->_displayInfo.renderedWidth[NDSDisplayID_Touch]  = GPU_FRAMEBUFFER_NATIVE_WIDTH;
+		this->_displayInfo.renderedHeight[NDSDisplayID_Touch] = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	}
 	
 	switch (outputFormat)
 	{
@@ -8470,7 +8468,7 @@ GPUEngineID NDSDisplay::GetEngineID()
 void NDSDisplay::SetEngineByID(const GPUEngineID theID)
 {
 	this->_gpu = (theID == GPUEngineID_Main) ? (GPUEngineBase *)GPU->GetEngineMain() : (GPUEngineBase *)GPU->GetEngineSub();
-	this->_gpu->SetDisplayByID(this->_ID);
+	this->_gpu->SetTargetDisplayByID(this->_ID);
 }
 
 template void GPUEngineBase::ParseReg_BGnHOFS<GPULayerID_BG0>();

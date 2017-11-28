@@ -1594,8 +1594,8 @@ public:
 	void SpriteRenderDebug(const u16 lineIndex, u16 *dst);
 	void RenderLayerBG(const GPULayerID layerID, u16 *dstLineColor);
 
-	NDSDisplayID GetDisplayByID() const;
-	void SetDisplayByID(const NDSDisplayID theDisplayID);
+	NDSDisplayID GetTargetDisplayByID() const;
+	void SetTargetDisplayByID(const NDSDisplayID theDisplayID);
 	
 	GPUEngineID GetEngineID() const;
 	

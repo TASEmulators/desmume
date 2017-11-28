@@ -826,7 +826,7 @@ public:
 			SkipNext2DFrame = false;
 			nextSkip = false;
 		}
-		else if((lastDisplayTarget != mainEngine->GetDisplayByID()) && lastSkip && !skipped)
+		else if((lastDisplayTarget != mainEngine->GetTargetDisplayByID()) && lastSkip && !skipped)
 		{
 			// if we're switching from not skipping to skipping
 			// and the screens are also switching around this frame,
@@ -841,7 +841,7 @@ public:
 		else if(!(consecutiveNonCaptures > 9000)) // arbitrary cap to avoid eventual wrap
 			consecutiveNonCaptures++;
 		
-		lastDisplayTarget = mainEngine->GetDisplayByID();
+		lastDisplayTarget = mainEngine->GetTargetDisplayByID();
 		lastSkip = skipped;
 		skipped = nextSkip;
 		nextSkip = false;
