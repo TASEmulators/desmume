@@ -66,9 +66,10 @@
 	commandQueue = [[device newCommandQueue] retain];
 	defaultLibrary = [[device newDefaultLibrary] retain];
 	_fetch555Pipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch555"] error:nil] retain];
-	_fetch555ConvertOnlyPipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch555ConvertOnly"] error:nil] retain];
 	_fetch666Pipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch666"] error:nil] retain];
 	_fetch888Pipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch888"] error:nil] retain];
+	_fetch555ConvertOnlyPipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch555ConvertOnly"] error:nil] retain];
+	_fetch666ConvertOnlyPipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch666ConvertOnly"] error:nil] retain];
 	deposterizePipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"src_filter_deposterize"] error:nil] retain];
 	
 	size_t tw = GetNearestPositivePOT((uint32_t)[_fetch555Pipeline threadExecutionWidth]);
@@ -227,9 +228,10 @@
 	[commandQueue release];
 	[defaultLibrary release];
 	[_fetch555Pipeline release];
-	[_fetch555ConvertOnlyPipeline release];
 	[_fetch666Pipeline release];
 	[_fetch888Pipeline release];
+	[_fetch555ConvertOnlyPipeline release];
+	[_fetch666ConvertOnlyPipeline release];
 	[deposterizePipeline release];
 	[hudPipeline release];
 	[hudRGBAPipeline release];
@@ -477,22 +479,20 @@
 		
 		id<MTLComputeCommandEncoder> cce = [cb computeCommandEncoder];
 		
-		if (currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Main]    || currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Touch] ||
-			currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Main] || currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Touch])
+		if (currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Main] || currentDisplayInfo.needApplyMasterBrightness[NDSDisplayID_Touch])
 		{
-			switch (currentDisplayInfo.colorFormat)
+			if (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
 			{
-				case NDSColorFormat_BGR555_Rev:
-					[cce setComputePipelineState:_fetch555Pipeline];
-					break;
-					
-				case NDSColorFormat_BGR666_Rev:
-					[cce setComputePipelineState:_fetch666Pipeline];
-					break;
-					
-				case NDSColorFormat_BGR888_Rev:
-					[cce setComputePipelineState:_fetch888Pipeline];
-					break;
+				[cce setComputePipelineState:_fetch555Pipeline];
+			}
+			else if ( (currentDisplayInfo.colorFormat == NDSColorFormat_BGR666_Rev) &&
+					  (currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Main] || currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Touch]) )
+			{
+				[cce setComputePipelineState:_fetch666Pipeline];
+			}
+			else
+			{
+				[cce setComputePipelineState:_fetch888Pipeline];
 			}
 			
 			if (isMainEnabled)
@@ -559,13 +559,25 @@
 				isUsingFramebufferDirectlyTouch = false;
 			}
 		}
-		else
+		else if (currentDisplayInfo.colorFormat != NDSColorFormat_BGR888_Rev)
 		{
+			bool isPipelineStateSet = false;
+			
 			if (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
 			{
 				// 16-bit textures aren't handled natively in Metal for macOS, so we need to explicitly convert to 32-bit here.
 				[cce setComputePipelineState:_fetch555ConvertOnlyPipeline];
-				
+				isPipelineStateSet = true;
+			}
+			else if ( (currentDisplayInfo.colorFormat == NDSColorFormat_BGR666_Rev) &&
+					  (currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Main] || currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Touch]) )
+			{
+				[cce setComputePipelineState:_fetch666ConvertOnlyPipeline];
+				isPipelineStateSet = true;
+			}
+			
+			if (isPipelineStateSet)
+			{
 				if (isMainEnabled)
 				{
 					if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Main])

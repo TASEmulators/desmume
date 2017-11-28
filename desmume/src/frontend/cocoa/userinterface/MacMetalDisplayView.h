@@ -60,9 +60,10 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLLibrary> defaultLibrary;
 	
 	id<MTLComputePipelineState> _fetch555Pipeline;
-	id<MTLComputePipelineState> _fetch555ConvertOnlyPipeline;
 	id<MTLComputePipelineState> _fetch666Pipeline;
 	id<MTLComputePipelineState> _fetch888Pipeline;
+	id<MTLComputePipelineState> _fetch555ConvertOnlyPipeline;
+	id<MTLComputePipelineState> _fetch666ConvertOnlyPipeline;
 	id<MTLComputePipelineState> deposterizePipeline;
 	id<MTLRenderPipelineState> hudPipeline;
 	id<MTLRenderPipelineState> hudRGBAPipeline;
