@@ -3477,6 +3477,9 @@ int _main()
 
 	MainWindow->Show(SW_NORMAL);
 
+	if(cmdline.windowed_fullscreen)
+		ToggleFullscreen();
+
 	//DEBUG TEST HACK
 	//driver->VIEW3D_Init();
 	//driver->view3d->Launch();

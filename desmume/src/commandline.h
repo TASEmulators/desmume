@@ -63,6 +63,7 @@ public:
 	bool _slot1_fat_dir_type;
 	int disable_sound;
 	int disable_limiter;
+	int windowed_fullscreen;
 
 	bool parse(int argc,char **argv);
 

@@ -76,6 +76,7 @@ CommandLine::CommandLine()
 , language(1) //english by default
 , disable_sound(0)
 , disable_limiter(0)
+, windowed_fullscreen(0)
 , _rtc_day(-1)
 , _rtc_hour(-1)
 {
@@ -115,6 +116,8 @@ static const char* help_string = \
 "                            Increases the resolution of GPU rendering by this" ENDL
 "                            multipler; 1:256x192 (default), 2:512x384," ENDL
 "                            3:768x576, 4:1024x768, 5:1280x960" ENDL
+" --windowed-fullscreen" ENDL
+"                            Launches in windowed fullscreen (same as alt+enter)" ENDL
 #else
 " --nojoy                    Disables joystick support" ENDL
 #endif
@@ -241,6 +244,7 @@ bool CommandLine::parse(int argc,char **argv)
 			{ "3d-texture-smoothing-enable", no_argument, &_texture_smooth, 1 },
 			#ifdef HOST_WINDOWS
 				{ "gpu-resolution-multiplier", required_argument, NULL, OPT_GPU_RESOLUTION_MULTIPLIER },
+				{ "windowed-fullscreen", no_argument, &windowed_fullscreen, 1 },
 			#else
 				{ "nojoy", no_argument, &_commandline_linux_nojoy, 1},
 			#endif
