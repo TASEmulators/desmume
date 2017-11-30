@@ -677,9 +677,19 @@
 	
 	[self setFetchTextureBindingsAtIndex:index commandBuffer:cb];
 	
-	[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-		pthread_rwlock_unlock([self rwlockFramebufferAtIndex:index]);
-	}];
+	if (index == 0)
+	{
+		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+			pthread_rwlock_unlock([self rwlockFramebufferAtIndex:0]);
+		}];
+	}
+	else
+	{
+		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+			pthread_rwlock_unlock([self rwlockFramebufferAtIndex:1]);
+		}];
+	}
+	
 	[cb commit];
 	[cb waitUntilScheduled];
 }
@@ -1338,7 +1348,7 @@
 		{
 			[cce setComputePipelineState:[sharedData deposterizePipeline]];
 			
-			if (shouldProcessDisplay[NDSDisplayID_Main])
+			if ((texMain != nil) && shouldProcessDisplay[NDSDisplayID_Main])
 			{
 				[cce setTexture:texMain atIndex:0];
 				[cce setTexture:_texDisplaySrcDeposterize[NDSDisplayID_Main][0] atIndex:1];
@@ -1360,7 +1370,7 @@
 				}
 			}
 			
-			if (shouldProcessDisplay[NDSDisplayID_Touch])
+			if ((texTouch != nil) && shouldProcessDisplay[NDSDisplayID_Touch])
 			{
 				[cce setTexture:texTouch atIndex:0];
 				[cce setTexture:_texDisplaySrcDeposterize[NDSDisplayID_Touch][0] atIndex:1];
@@ -1381,12 +1391,23 @@
 				needsFetchBuffersLock = !isDisplayProcessedMain || !isDisplayProcessedTouch;
 				
 				[cce endEncoding];
-				[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-					if (!needsFetchBuffersLock)
+				
+				if (!needsFetchBuffersLock)
+				{
+					if (bufferIndex == 0)
 					{
-						pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:bufferIndex]);
+						[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+							pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:0]);
+						}];
 					}
-				}];
+					else
+					{
+						[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+							pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:1]);
+						}];
+					}
+				}
+				
 				[cb commit];
 				
 				cb = [self newCommandBuffer];
@@ -1399,7 +1420,7 @@
 		{
 			[cce setComputePipelineState:[self pixelScalePipeline]];
 			
-			if (shouldProcessDisplay[NDSDisplayID_Main])
+			if ((texMain != nil) && shouldProcessDisplay[NDSDisplayID_Main])
 			{
 				[cce setTexture:texMain atIndex:0];
 				[cce setTexture:[self texDisplayPixelScaleMain] atIndex:1];
@@ -1420,7 +1441,7 @@
 				}
 			}
 			
-			if (shouldProcessDisplay[NDSDisplayID_Touch])
+			if ((texTouch != nil) && shouldProcessDisplay[NDSDisplayID_Touch])
 			{
 				[cce setTexture:texTouch atIndex:0];
 				[cce setTexture:[self texDisplayPixelScaleTouch] atIndex:1];
@@ -1438,9 +1459,20 @@
 				needsFetchBuffersLock = false;
 				
 				[cce endEncoding];
-				[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-					pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:bufferIndex]);
-				}];
+				
+				if (bufferIndex == 0)
+				{
+					[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+						pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:0]);
+					}];
+				}
+				else
+				{
+					[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+						pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:1]);
+					}];
+				}
+				
 				[cb commit];
 				
 				cb = [self newCommandBuffer];
@@ -1574,17 +1606,57 @@
 			[bce endEncoding];
 		}
 		
-		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-			if (needsCPUFilterUnlockMain)
-			{
-				pthread_rwlock_unlock(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterRWLock(NDSDisplayID_Main, bufferIndex));
-			}
-			
+		if (needsCPUFilterUnlockMain)
+		{
 			if (needsCPUFilterUnlockTouch)
 			{
-				pthread_rwlock_unlock(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterRWLock(NDSDisplayID_Touch, bufferIndex));
+				if (bufferIndex == 0)
+				{
+					[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+						pthread_rwlock_unlock(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterRWLock(NDSDisplayID_Main,  0));
+						pthread_rwlock_unlock(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterRWLock(NDSDisplayID_Touch, 0));
+					}];
+				}
+				else
+				{
+					[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+						pthread_rwlock_unlock(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterRWLock(NDSDisplayID_Main,  1));
+						pthread_rwlock_unlock(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterRWLock(NDSDisplayID_Touch, 1));
+					}];
+				}
 			}
-		}];
+			else
+			{
+				if (bufferIndex == 0)
+				{
+					[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+						pthread_rwlock_unlock(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterRWLock(NDSDisplayID_Main, 0));
+					}];
+				}
+				else
+				{
+					[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+						pthread_rwlock_unlock(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterRWLock(NDSDisplayID_Main, 1));
+					}];
+				}
+			}
+		}
+		else if (needsCPUFilterUnlockTouch)
+		{
+			if (bufferIndex == 0)
+			{
+				[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+					pthread_rwlock_unlock(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterRWLock(NDSDisplayID_Touch, 0));
+				}];
+			}
+			else
+			{
+				[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+					pthread_rwlock_unlock(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterRWLock(NDSDisplayID_Touch, 1));
+				}];
+			}
+		}
+		
 		[cb commit];
 	}
 	
@@ -1756,7 +1828,7 @@
 	{
 		case ClientDisplayMode_Main:
 		{
-			if (cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main))
+			if ( (texDisplayMain != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main) )
 			{
 				[rce setFragmentBytes:&backlightIntensity[NDSDisplayID_Main] length:sizeof(backlightIntensity[NDSDisplayID_Main]) atIndex:0];
 				[rce setFragmentTexture:texDisplayMain atIndex:0];
@@ -1767,7 +1839,7 @@
 			
 		case ClientDisplayMode_Touch:
 		{
-			if (cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
+			if ( (texDisplayTouch != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch) )
 			{
 				[rce setFragmentBytes:&backlightIntensity[NDSDisplayID_Touch] length:sizeof(backlightIntensity[NDSDisplayID_Touch]) atIndex:0];
 				[rce setFragmentTexture:texDisplayTouch atIndex:0];
@@ -1787,7 +1859,7 @@
 				case ClientDisplayLayout_Hybrid_16_9:
 				case ClientDisplayLayout_Hybrid_16_10:
 				{
-					if (cdp->IsSelectedDisplayEnabled(majorDisplayID))
+					if ( (((majorDisplayID == NDSDisplayID_Main) && (texDisplayMain != nil)) || ((majorDisplayID == NDSDisplayID_Touch) && (texDisplayTouch != nil))) && cdp->IsSelectedDisplayEnabled(majorDisplayID) )
 					{
 						[rce setFragmentBytes:&backlightIntensity[majorDisplayID] length:sizeof(backlightIntensity[majorDisplayID]) atIndex:0];
 						[rce setFragmentTexture:((majorDisplayID == NDSDisplayID_Main) ? texDisplayMain : texDisplayTouch) atIndex:0];
@@ -1800,14 +1872,14 @@
 					break;
 			}
 			
-			if (cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main))
+			if ( (texDisplayMain != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Main) )
 			{
 				[rce setFragmentBytes:&backlightIntensity[NDSDisplayID_Main] length:sizeof(backlightIntensity[NDSDisplayID_Main]) atIndex:0];
 				[rce setFragmentTexture:texDisplayMain atIndex:0];
 				[rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
 			}
 			
-			if (cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch))
+			if ( (texDisplayTouch != nil) && cdp->IsSelectedDisplayEnabled(NDSDisplayID_Touch) )
 			{
 				[rce setFragmentBytes:&backlightIntensity[NDSDisplayID_Touch] length:sizeof(backlightIntensity[NDSDisplayID_Touch]) atIndex:0];
 				[rce setFragmentTexture:texDisplayTouch atIndex:0];
@@ -1912,16 +1984,32 @@
 					  texDisplayMain:_processedFrameInfo.tex[NDSDisplayID_Main]
 					 texDisplayTouch:_processedFrameInfo.tex[NDSDisplayID_Touch]];
 		
-		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-			pthread_mutex_unlock(&_mutexBufferUpdate);
-			
-			if (needsFetchBuffersLock)
+		if (needsFetchBuffersLock)
+		{
+			if (_processedFrameInfo.bufferIndex == 0)
 			{
-				pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:_processedFrameInfo.bufferIndex]);
+				[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+					pthread_mutex_unlock(&_mutexBufferUpdate);
+					pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:0]);
+					pthread_mutex_unlock(&_mutexTexProcessUpdate);
+				}];
 			}
-			
-			pthread_mutex_unlock(&_mutexTexProcessUpdate);
-		}];
+			else
+			{
+				[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+					pthread_mutex_unlock(&_mutexBufferUpdate);
+					pthread_rwlock_unlock([sharedData rwlockFramebufferAtIndex:1]);
+					pthread_mutex_unlock(&_mutexTexProcessUpdate);
+				}];
+			}
+		}
+		else
+		{
+			[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+				pthread_mutex_unlock(&_mutexBufferUpdate);
+				pthread_mutex_unlock(&_mutexTexProcessUpdate);
+			}];
+		}
 		
 		[cb commit];
 		
@@ -2015,16 +2103,33 @@
 								texDisplayTouch:processedInfo.tex[NDSDisplayID_Touch]];
 		
 		[cb presentDrawable:layerDrawable];
-		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-			pthread_mutex_unlock([presenterObject mutexBufferUpdate]);
-			
-			if (needsFetchBuffersLock)
+		
+		if (needsFetchBuffersLock)
+		{
+			if (processedInfo.bufferIndex == 0)
 			{
-				pthread_rwlock_unlock([[presenterObject sharedData] rwlockFramebufferAtIndex:processedInfo.bufferIndex]);
+				[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+					pthread_mutex_unlock([presenterObject mutexBufferUpdate]);
+					pthread_rwlock_unlock([[presenterObject sharedData] rwlockFramebufferAtIndex:0]);
+					pthread_mutex_unlock([presenterObject mutexTexProcessUpdate]);
+				}];
 			}
-			
-			pthread_mutex_unlock([presenterObject mutexTexProcessUpdate]);
-		}];
+			else
+			{
+				[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+					pthread_mutex_unlock([presenterObject mutexBufferUpdate]);
+					pthread_rwlock_unlock([[presenterObject sharedData] rwlockFramebufferAtIndex:1]);
+					pthread_mutex_unlock([presenterObject mutexTexProcessUpdate]);
+				}];
+			}
+		}
+		else
+		{
+			[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+				pthread_mutex_unlock([presenterObject mutexBufferUpdate]);
+				pthread_mutex_unlock([presenterObject mutexTexProcessUpdate]);
+			}];
+		}
 		
 		[cb commit];
 	}
