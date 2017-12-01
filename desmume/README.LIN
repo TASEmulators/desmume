@@ -10,9 +10,14 @@ DeSmuME provides another interface based on libglade, to use
 
 * http://glade.gnome.org/
 
-To build, cd to src/frontend/posix and then run `./autoconf.sh`
+To build, first cd to src/frontend/posix and then run `./autogen.sh`
 
-This will create the file `configure`. Run this using `./configure`
+This will create the file `configure`. 
+It does this using the packages `autoconf` and `automake`.
+It also requires `libglib2.0-dev` to generate correctly. 
+(`glib` from the AUR if building on Arch)
+
+Run this using `./configure`
 
 Then build the program by running `make`
 
