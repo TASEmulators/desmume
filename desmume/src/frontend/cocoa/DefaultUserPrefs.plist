@@ -104,6 +104,8 @@
 	<true/>
 	<key>General_WillRestoreDisplayWindows</key>
 	<true/>
+	<key>HUD_ShowExecutionSpeed</key>
+	<false/>
 	<key>HUD_ShowVideoFPS</key>
 	<true/>
 	<key>HUD_ShowRender3DFPS</key>
@@ -118,6 +120,8 @@
 	<false/>
 	<key>HUD_ShowInput</key>
 	<false/>
+	<key>HUD_Color_ExecutionSpeed</key>
+	<integer>4294967295</integer>
 	<key>HUD_Color_VideoFPS</key>
 	<integer>4294967295</integer>
 	<key>HUD_Color_Render3DFPS</key>

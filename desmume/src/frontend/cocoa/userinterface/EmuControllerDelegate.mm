@@ -2313,6 +2313,7 @@
 			const NSInteger videoOutputFilter		= ([windowProperties objectForKey:@"videoOutputFilter"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"videoOutputFilter"] integerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_OutputFilter"];
 			
 			const BOOL hudEnable					= ([windowProperties objectForKey:@"hudEnable"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudEnable"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_EnableHUD"];
+			const BOOL hudShowExecutionSpeed		= ([windowProperties objectForKey:@"hudShowExecutionSpeed"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowExecutionSpeed"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowExecutionSpeed"];
 			const BOOL hudShowVideoFPS				= ([windowProperties objectForKey:@"hudShowVideoFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowVideoFPS"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowVideoFPS"];
 			const BOOL hudShowRender3DFPS			= ([windowProperties objectForKey:@"hudShowRender3DFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowRender3DFPS"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRender3DFPS"];
 			const BOOL hudShowFrameIndex			= ([windowProperties objectForKey:@"hudShowFrameIndex"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowFrameIndex"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowFrameIndex"];
@@ -2321,6 +2322,7 @@
 			const BOOL hudShowRTC					= ([windowProperties objectForKey:@"hudShowRTC"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowRTC"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRTC"];
 			const BOOL hudShowInput					= ([windowProperties objectForKey:@"hudShowInput"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudShowInput"] boolValue] : [[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowInput"];
 			
+			const NSUInteger hudColorExecutionSpeed	= ([windowProperties objectForKey:@"hudColorExecutionSpeed"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorExecutionSpeed"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_ExecutionSpeed"];
 			const NSUInteger hudColorVideoFPS		= ([windowProperties objectForKey:@"hudColorVideoFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorVideoFPS"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_VideoFPS"];
 			const NSUInteger hudColorRender3DFPS	= ([windowProperties objectForKey:@"hudColorRender3DFPS"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorRender3DFPS"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Render3DFPS"];
 			const NSUInteger hudColorFrameIndex		= ([windowProperties objectForKey:@"hudColorFrameIndex"] != nil) ? [(NSNumber *)[windowProperties valueForKey:@"hudColorFrameIndex"] unsignedIntegerValue] : [[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_FrameIndex"];
@@ -2367,6 +2369,7 @@
 			
 			[[windowController view] setUseVerticalSync:useVerticalSync];
 			[[windowController view] setIsHUDVisible:hudEnable];
+			[[windowController view] setIsHUDExecutionSpeedVisible:hudShowExecutionSpeed];
 			[[windowController view] setIsHUDVideoFPSVisible:hudShowVideoFPS];
 			[[windowController view] setIsHUDRender3DFPSVisible:hudShowRender3DFPS];
 			[[windowController view] setIsHUDFrameIndexVisible:hudShowFrameIndex];
@@ -2375,6 +2378,7 @@
 			[[windowController view] setIsHUDRealTimeClockVisible:hudShowRTC];
 			[[windowController view] setIsHUDInputVisible:hudShowInput];
 			
+			[[windowController view] setHudColorExecutionSpeed:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorExecutionSpeed]];
 			[[windowController view] setHudColorVideoFPS:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorVideoFPS]];
 			[[windowController view] setHudColorRender3DFPS:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorRender3DFPS]];
 			[[windowController view] setHudColorFrameIndex:[CocoaDSUtil NSColorFromRGBA8888:(uint32_t)hudColorFrameIndex]];
@@ -2447,6 +2451,7 @@
 											  [NSNumber numberWithBool:[[windowController view] sourceDeposterize]], @"videoSourceDeposterize",
 											  [NSNumber numberWithBool:[[windowController view] useVerticalSync]], @"useVerticalSync",
 											  [NSNumber numberWithBool:[[windowController view] isHUDVisible]], @"hudEnable",
+											  [NSNumber numberWithBool:[[windowController view] isHUDExecutionSpeedVisible]], @"hudShowExecutionSpeed",
 											  [NSNumber numberWithBool:[[windowController view] isHUDVideoFPSVisible]], @"hudShowVideoFPS",
 											  [NSNumber numberWithBool:[[windowController view] isHUDRender3DFPSVisible]], @"hudShowRender3DFPS",
 											  [NSNumber numberWithBool:[[windowController view] isHUDFrameIndexVisible]], @"hudShowFrameIndex",
@@ -2454,6 +2459,7 @@
 											  [NSNumber numberWithBool:[[windowController view] isHUDCPULoadAverageVisible]], @"hudShowCPULoadAverage",
 											  [NSNumber numberWithBool:[[windowController view] isHUDRealTimeClockVisible]], @"hudShowRTC",
 											  [NSNumber numberWithBool:[[windowController view] isHUDInputVisible]], @"hudShowInput",
+											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorExecutionSpeed]]], @"hudColorExecutionSpeed",
 											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorVideoFPS]]], @"hudColorVideoFPS",
 											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorRender3DFPS]]], @"hudColorRender3DFPS",
 											  [NSNumber numberWithUnsignedInteger:[CocoaDSUtil RGBA8888FromNSColor:[[windowController view] hudColorFrameIndex]]], @"hudColorFrameIndex",

@@ -485,6 +485,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 											pixelScaler:[[NSUserDefaults standardUserDefaults] integerForKey:@"DisplayView_VideoFilter"]];
 	
 	[[self view] setIsHUDVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"DisplayView_EnableHUD"]];
+	[[self view] setIsHUDExecutionSpeedVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowExecutionSpeed"]];
 	[[self view] setIsHUDVideoFPSVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowVideoFPS"]];
 	[[self view] setIsHUDRender3DFPSVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRender3DFPS"]];
 	[[self view] setIsHUDFrameIndexVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowFrameIndex"]];
@@ -493,6 +494,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[self view] setIsHUDRealTimeClockVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowRTC"]];
 	[[self view] setIsHUDInputVisible:[[NSUserDefaults standardUserDefaults] boolForKey:@"HUD_ShowInput"]];
 	
+	[[self view] setHudColorExecutionSpeed:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32([[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_ExecutionSpeed"])]];
 	[[self view] setHudColorVideoFPS:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32([[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_VideoFPS"])]];
 	[[self view] setHudColorRender3DFPS:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32([[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_Render3DFPS"])]];
 	[[self view] setHudColorFrameIndex:[CocoaDSUtil NSColorFromRGBA8888:LE_TO_LOCAL_32([[NSUserDefaults standardUserDefaults] integerForKey:@"HUD_Color_FrameIndex"])]];
@@ -717,6 +719,11 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (IBAction) toggleHUDVisibility:(id)sender
 {
 	[[self view] setIsHUDVisible:![[self view] isHUDVisible]];
+}
+
+- (IBAction) toggleShowHUDExecutionSpeed:(id)sender
+{
+	[[self view] setIsHUDExecutionSpeedVisible:![[self view] isHUDExecutionSpeedVisible]];
 }
 
 - (IBAction) toggleShowHUDVideoFPS:(id)sender
@@ -962,6 +969,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (IBAction) writeDefaultsHUDSettings:(id)sender
 {
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDVisible] forKey:@"DisplayView_EnableHUD"];
+	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDExecutionSpeedVisible] forKey:@"HUD_ShowExecutionSpeed"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDVideoFPSVisible] forKey:@"HUD_ShowVideoFPS"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDRender3DFPSVisible] forKey:@"HUD_ShowRender3DFPS"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDFrameIndexVisible] forKey:@"HUD_ShowFrameIndex"];
@@ -970,6 +978,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDRealTimeClockVisible] forKey:@"HUD_ShowRTC"];
 	[[NSUserDefaults standardUserDefaults] setBool:[[self view] isHUDInputVisible] forKey:@"HUD_ShowInput"];
 	
+	[[NSUserDefaults standardUserDefaults] setInteger:[CocoaDSUtil RGBA8888FromNSColor:[[self view] hudColorExecutionSpeed]] forKey:@"HUD_Color_ExecutionSpeed"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[CocoaDSUtil RGBA8888FromNSColor:[[self view] hudColorVideoFPS]] forKey:@"HUD_Color_VideoFPS"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[CocoaDSUtil RGBA8888FromNSColor:[[self view] hudColorRender3DFPS]] forKey:@"HUD_Color_Render3DFPS"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[CocoaDSUtil RGBA8888FromNSColor:[[self view] hudColorFrameIndex]] forKey:@"HUD_Color_FrameIndex"];
@@ -1142,6 +1151,13 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
 		{
 			[(NSMenuItem *)theItem setState:([[self view] isHUDVisible]) ? NSOnState : NSOffState];
+		}
+	}
+	else if (theAction == @selector(toggleShowHUDExecutionSpeed:))
+	{
+		if ([(id)theItem isMemberOfClass:[NSMenuItem class]])
+		{
+			[(NSMenuItem *)theItem setState:([[self view] isHUDExecutionSpeedVisible]) ? NSOnState : NSOffState];
 		}
 	}
 	else if (theAction == @selector(toggleShowHUDVideoFPS:))
@@ -1595,6 +1611,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 @dynamic canUseShaderBasedFilters;
 @dynamic allowViewUpdates;
 @dynamic isHUDVisible;
+@dynamic isHUDExecutionSpeedVisible;
 @dynamic isHUDVideoFPSVisible;
 @dynamic isHUDRender3DFPSVisible;
 @dynamic isHUDFrameIndexVisible;
@@ -1602,6 +1619,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 @dynamic isHUDCPULoadAverageVisible;
 @dynamic isHUDRealTimeClockVisible;
 @dynamic isHUDInputVisible;
+@dynamic hudColorExecutionSpeed;
 @dynamic hudColorVideoFPS;
 @dynamic hudColorRender3DFPS;
 @dynamic hudColorFrameIndex;
@@ -1745,6 +1763,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	return [[self cdsVideoOutput] isHUDVisible];
 }
 
+- (void) setIsHUDExecutionSpeedVisible:(BOOL)theState
+{
+	[[self cdsVideoOutput] setIsHUDExecutionSpeedVisible:theState];
+}
+
+- (BOOL) isHUDExecutionSpeedVisible
+{
+	return [[self cdsVideoOutput] isHUDExecutionSpeedVisible];
+}
+
 - (void) setIsHUDVideoFPSVisible:(BOOL)theState
 {
 	[[self cdsVideoOutput] setIsHUDVideoFPSVisible:theState];
@@ -1813,6 +1841,16 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (BOOL) isHUDInputVisible
 {
 	return [[self cdsVideoOutput] isHUDInputVisible];
+}
+
+- (void) setHudColorExecutionSpeed:(NSColor *)theColor
+{
+	[[self cdsVideoOutput] setHudColorExecutionSpeed:[CocoaDSUtil RGBA8888FromNSColor:theColor]];
+}
+
+- (NSColor *) hudColorExecutionSpeed
+{
+	return [CocoaDSUtil NSColorFromRGBA8888:[[self cdsVideoOutput] hudColorExecutionSpeed]];
 }
 
 - (void) setHudColorVideoFPS:(NSColor *)theColor

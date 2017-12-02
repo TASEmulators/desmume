@@ -963,6 +963,11 @@ const NDSFrameInfo& ClientExecutionControl::GetNDSFrameInfo()
 	return this->_ndsFrameInfo;
 }
 
+void ClientExecutionControl::SetFrameInfoExecutionSpeed(double executionSpeed)
+{
+	this->_ndsFrameInfo.executionSpeed = executionSpeed;
+}
+
 uint64_t ClientExecutionControl::GetFrameIndex()
 {
 	pthread_mutex_lock(&this->_mutexOutputPostNDSExec);

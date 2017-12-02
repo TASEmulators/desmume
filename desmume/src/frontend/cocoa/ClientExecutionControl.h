@@ -111,6 +111,7 @@ struct NDSFrameInfo
 	uint32_t lagFrameCount;
 	uint32_t cpuLoadAvgARM9;
 	uint32_t cpuLoadAvgARM7;
+	double executionSpeed;
 	
 	NDSInputState inputStatesPending;
 	uint8_t touchLocXPending;
@@ -137,6 +138,7 @@ struct NDSFrameInfo
 		this->lagFrameCount						= 0;
 		this->cpuLoadAvgARM9					= 0;
 		this->cpuLoadAvgARM7					= 0;
+		this->executionSpeed					= 0.0;
 		
 		this->inputStatesPending.value			= INPUT_STATES_CLEAR_VALUE;
 		this->touchLocXPending					= 0;
@@ -164,6 +166,7 @@ struct NDSFrameInfo
 		this->lagFrameCount						= fromObject.lagFrameCount;
 		this->cpuLoadAvgARM9					= fromObject.cpuLoadAvgARM9;
 		this->cpuLoadAvgARM7					= fromObject.cpuLoadAvgARM7;
+		this->executionSpeed					= fromObject.executionSpeed;
 		
 		this->inputStatesPending				= fromObject.inputStatesPending;
 		this->touchLocXPending					= fromObject.touchLocXPending;
@@ -308,6 +311,7 @@ public:
 	
 	void FetchOutputPostNDSExec();
 	const NDSFrameInfo& GetNDSFrameInfo();
+	void SetFrameInfoExecutionSpeed(double executionSpeed);
 	uint64_t GetFrameIndex();
 	
 	double GetFrameTime();

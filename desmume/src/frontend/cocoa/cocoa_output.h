@@ -133,6 +133,7 @@
 @property (readonly, nonatomic) BOOL canFilterOnGPU;
 @property (readonly, nonatomic) BOOL willFilterOnGPU;
 @property (assign) BOOL isHUDVisible;
+@property (assign) BOOL isHUDExecutionSpeedVisible;
 @property (assign) BOOL isHUDVideoFPSVisible;
 @property (assign) BOOL isHUDRender3DFPSVisible;
 @property (assign) BOOL isHUDFrameIndexVisible;
@@ -140,6 +141,7 @@
 @property (assign) BOOL isHUDCPULoadAverageVisible;
 @property (assign) BOOL isHUDRealTimeClockVisible;
 @property (assign) BOOL isHUDInputVisible;
+@property (assign) uint32_t hudColorExecutionSpeed;
 @property (assign) uint32_t hudColorVideoFPS;
 @property (assign) uint32_t hudColorRender3DFPS;
 @property (assign) uint32_t hudColorFrameIndex;

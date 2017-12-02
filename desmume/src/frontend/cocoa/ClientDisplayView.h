@@ -155,6 +155,7 @@ protected:
 	
 	double _hudObjectScale;
 	bool _isHUDVisible;
+	bool _showExecutionSpeed;
 	bool _showVideoFPS;
 	bool _showRender3DFPS;
 	bool _showFrameIndex;
@@ -163,6 +164,7 @@ protected:
 	bool _showRTC;
 	bool _showInputs;
 	
+	uint32_t _hudColorExecutionSpeed;
 	uint32_t _hudColorVideoFPS;
 	uint32_t _hudColorRender3DFPS;
 	uint32_t _hudColorFrameIndex;
@@ -258,6 +260,8 @@ public:
 	
 	bool GetHUDVisibility() const;
 	virtual void SetHUDVisibility(const bool visibleState);
+	bool GetHUDShowExecutionSpeed() const;
+	virtual void SetHUDShowExecutionSpeed(const bool visibleState);
 	bool GetHUDShowVideoFPS() const;
 	virtual void SetHUDShowVideoFPS(const bool visibleState);
 	bool GetHUDShowRender3DFPS() const;
@@ -272,6 +276,8 @@ public:
 	virtual void SetHUDShowRTC(const bool visibleState);
 	bool GetHUDShowInput() const;
 	virtual void SetHUDShowInput(const bool visibleState);
+	uint32_t GetHUDColorExecutionSpeed() const;
+	virtual void SetHUDColorExecutionSpeed(uint32_t color32);
 	uint32_t GetHUDColorVideoFPS() const;
 	virtual void SetHUDColorVideoFPS(uint32_t color32);
 	uint32_t GetHUDColorRender3DFPS() const;

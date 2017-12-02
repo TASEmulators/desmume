@@ -160,6 +160,7 @@ class OGLVideoOutput;
 - (IBAction) changeVideoOutputFilter:(id)sender;
 - (IBAction) changeVideoPixelScaler:(id)sender;
 - (IBAction) toggleHUDVisibility:(id)sender;
+- (IBAction) toggleShowHUDExecutionSpeed:(id)sender;
 - (IBAction) toggleShowHUDVideoFPS:(id)sender;
 - (IBAction) toggleShowHUDRender3DFPS:(id)sender;
 - (IBAction) toggleShowHUDFrameIndex:(id)sender;

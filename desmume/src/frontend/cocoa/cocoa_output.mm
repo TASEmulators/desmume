@@ -574,6 +574,7 @@
 @dynamic canFilterOnGPU;
 @dynamic willFilterOnGPU;
 @dynamic isHUDVisible;
+@dynamic isHUDExecutionSpeedVisible;
 @dynamic isHUDVideoFPSVisible;
 @dynamic isHUDRender3DFPSVisible;
 @dynamic isHUDFrameIndexVisible;
@@ -581,6 +582,7 @@
 @dynamic isHUDCPULoadAverageVisible;
 @dynamic isHUDRealTimeClockVisible;
 @dynamic isHUDInputVisible;
+@dynamic hudColorExecutionSpeed;
 @dynamic hudColorVideoFPS;
 @dynamic hudColorRender3DFPS;
 @dynamic hudColorFrameIndex;
@@ -659,6 +661,24 @@
 {
 	OSSpinLockLock(&spinlockIsHUDVisible);
 	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDVisibility()) ? YES : NO;
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return theState;
+}
+
+- (void) setIsHUDExecutionSpeedVisible:(BOOL)theState
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->Get3DPresenter()->SetHUDShowExecutionSpeed((theState) ? true : false);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
+}
+
+- (BOOL) isHUDExecutionSpeedVisible
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const BOOL theState = (_cdv->Get3DPresenter()->GetHUDShowExecutionSpeed()) ? YES : NO;
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
@@ -788,6 +808,24 @@
 	OSSpinLockUnlock(&spinlockIsHUDVisible);
 	
 	return theState;
+}
+
+- (void) setHudColorExecutionSpeed:(uint32_t)theColor
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	_cdv->Get3DPresenter()->SetHUDColorExecutionSpeed(theColor);
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	_cdv->SetViewNeedsFlush();
+}
+
+- (uint32_t) hudColorExecutionSpeed
+{
+	OSSpinLockLock(&spinlockIsHUDVisible);
+	const uint32_t color32 = _cdv->Get3DPresenter()->GetHUDColorExecutionSpeed();
+	OSSpinLockUnlock(&spinlockIsHUDVisible);
+	
+	return color32;
 }
 
 - (void) setHudColorVideoFPS:(uint32_t)theColor

@@ -81,6 +81,7 @@ void ClientDisplayPresenter::__InstanceInit(const ClientDisplayPresenterProperti
 	
 	_hudObjectScale = 1.0;
 	_isHUDVisible = false;
+	_showExecutionSpeed = false;
 	_showVideoFPS = true;
 	_showRender3DFPS = false;
 	_showFrameIndex = false;
@@ -89,6 +90,7 @@ void ClientDisplayPresenter::__InstanceInit(const ClientDisplayPresenterProperti
 	_showRTC = false;
 	_showInputs = false;
 	
+	_hudColorExecutionSpeed = LE_TO_LOCAL_32(0xFFFFFFFF);
 	_hudColorVideoFPS = LE_TO_LOCAL_32(0xFFFFFFFF);
 	_hudColorRender3DFPS = LE_TO_LOCAL_32(0xFFFFFFFF);
 	_hudColorFrameIndex = LE_TO_LOCAL_32(0xFFFFFFFF);
@@ -148,6 +150,22 @@ void ClientDisplayPresenter::_UpdateHUDString()
 {
 	std::ostringstream ss;
 	ss << "\x01"; // This represents the text box. It must always be the first character.
+	
+	if (this->_showExecutionSpeed)
+	{
+		if (this->_ndsFrameInfo.executionSpeed < 0.0001)
+		{
+			ss << "Execution Speed: -----%\n";
+		}
+		else
+		{
+			char buffer[48];
+			memset(buffer, 0, sizeof(buffer));
+			snprintf(buffer, 47, "Execution Speed: %3.01f%%\n", this->_ndsFrameInfo.executionSpeed);
+			
+			ss << buffer;
+		}
+	}
 	
 	if (this->_showVideoFPS)
 	{
@@ -516,6 +534,17 @@ void ClientDisplayPresenter::SetHUDVisibility(const bool visibleState)
 	this->UpdateLayout();
 }
 
+bool ClientDisplayPresenter::GetHUDShowExecutionSpeed() const
+{
+	return this->_showExecutionSpeed;
+}
+
+void ClientDisplayPresenter::SetHUDShowExecutionSpeed(const bool visibleState)
+{
+	this->_SetHUDShowInfoItem(this->_showExecutionSpeed, visibleState);
+	this->UpdateLayout();
+}
+
 bool ClientDisplayPresenter::GetHUDShowVideoFPS() const
 {
 	return this->_showVideoFPS;
@@ -590,6 +619,22 @@ bool ClientDisplayPresenter::GetHUDShowInput() const
 void ClientDisplayPresenter::SetHUDShowInput(const bool visibleState)
 {
 	this->_SetHUDShowInfoItem(this->_showInputs, visibleState);
+	this->UpdateLayout();
+}
+
+uint32_t ClientDisplayPresenter::GetHUDColorExecutionSpeed() const
+{
+	return this->_hudColorExecutionSpeed;
+}
+
+void ClientDisplayPresenter::SetHUDColorExecutionSpeed(uint32_t color32)
+{
+	this->_hudColorExecutionSpeed = color32;
+	
+	pthread_mutex_lock(&this->_mutexHUDString);
+	this->_hudNeedsUpdate = true;
+	pthread_mutex_unlock(&this->_mutexHUDString);
+	
 	this->UpdateLayout();
 }
 
@@ -1790,6 +1835,7 @@ void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 	vtxColorBufferPtr[3] = currentColor;
 	
 	// Calculate the colors of the remaining characters in the string.
+	bool alreadyColoredExecutionSpeed = false;
 	bool alreadyColoredVideoFPS = false;
 	bool alreadyColoredRender3DFPS = false;
 	bool alreadyColoredFrameIndex = false;
@@ -1797,7 +1843,12 @@ void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 	bool alreadyColoredCPULoadAverage = false;
 	bool alreadyColoredRTC = false;
 	
-	if (this->_showVideoFPS)
+	if (this->_showExecutionSpeed)
+	{
+		currentColor = this->_hudColorExecutionSpeed;
+		alreadyColoredExecutionSpeed = true;
+	}
+	else if (this->_showVideoFPS)
 	{
 		currentColor = this->_hudColorVideoFPS;
 		alreadyColoredVideoFPS = true;
@@ -1837,7 +1888,12 @@ void ClientDisplay3DPresenter::SetHUDColorVertices(uint32_t *vtxColorBufferPtr)
 		
 		if (c == '\n')
 		{
-			if (this->_showVideoFPS && !alreadyColoredVideoFPS)
+			if (this->_showExecutionSpeed && !alreadyColoredExecutionSpeed)
+			{
+				currentColor = this->_hudColorExecutionSpeed;
+				alreadyColoredExecutionSpeed = true;
+			}
+			else if (this->_showVideoFPS && !alreadyColoredVideoFPS)
 			{
 				currentColor = this->_hudColorVideoFPS;
 				alreadyColoredVideoFPS = true;

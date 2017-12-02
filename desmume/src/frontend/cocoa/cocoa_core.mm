@@ -1118,6 +1118,10 @@ static void* RunCoreThread(void *arg)
 	double startTime = 0;
 	double frameTime = 0; // The amount of time that is expected for the frame to run.
 	
+	const double standardNDSFrameTime = execControl->CalculateFrameAbsoluteTime(1.0);
+	double executionSpeedAverage = 0.0;
+	double executionSpeedAverageFramesCollected = 0.0;
+	
 	ExecutionBehavior behavior = ExecutionBehavior_Pause;
 	uint64_t frameJumpTarget = 0;
 	
@@ -1175,6 +1179,26 @@ static void* RunCoreThread(void *arg)
 		}
 		
 		const uint8_t framesToSkip = execControl->GetFramesToSkip();
+		
+		if ( (behavior == ExecutionBehavior_Run) || (behavior == ExecutionBehavior_FrameJump) )
+		{
+			if ((ndsFrameInfo.frameIndex & 0x1F) == 0x1F)
+			{
+				if (executionSpeedAverageFramesCollected > 0.0001)
+				{
+					execControl->SetFrameInfoExecutionSpeed((executionSpeedAverage / executionSpeedAverageFramesCollected) * 100.0);
+				}
+				
+				executionSpeedAverage = 0.0;
+				executionSpeedAverageFramesCollected = 0.0;
+			}
+		}
+		else
+		{
+			execControl->SetFrameInfoExecutionSpeed(0.0);
+			executionSpeedAverage = 0.0;
+			executionSpeedAverageFramesCollected = 0.0;
+		}
 		
 		pthread_mutex_lock(&param->mutexOutputList);
 		
@@ -1266,6 +1290,10 @@ static void* RunCoreThread(void *arg)
 			// If there is any time left in the loop, go ahead and pad it.
 			execControl->WaitUntilAbsoluteTime(startTime + frameTime);
 		}
+		
+		const double currentExecutionSpeed = standardNDSFrameTime / (execControl->GetCurrentAbsoluteTime() - startTime);
+		executionSpeedAverage += currentExecutionSpeed;
+		executionSpeedAverageFramesCollected += 1.0;
 		
 	} while(true);
 	
