@@ -60,9 +60,12 @@ class AudioSampleBlockGenerator;
 	NSWindow *displayRotationPanel;
 	NSWindow *displaySeparationPanel;
 	NSWindow *displayVideoSettingsPanel;
-	NSString *displayRotationPanelTitle;
-	NSString *displaySeparationPanelTitle;
-	NSString *displayVideoSettingsPanelTitle;
+	NSWindow *displayHUDSettingsPanel;
+	
+	NSString *_displayRotationPanelTitle;
+	NSString *_displaySeparationPanelTitle;
+	NSString *_displayVideoSettingsPanelTitle;
+	NSString *_displayHUDSettingsPanelTitle;
 	
 	NSWindow *executionControlWindow;
 	NSWindow *slot1ManagerWindow;
@@ -139,6 +142,7 @@ class AudioSampleBlockGenerator;
 @property (readonly) IBOutlet NSWindow *displayRotationPanel;
 @property (readonly) IBOutlet NSWindow *displaySeparationPanel;
 @property (readonly) IBOutlet NSWindow *displayVideoSettingsPanel;
+@property (readonly) IBOutlet NSWindow *displayHUDSettingsPanel;
 
 @property (readonly) IBOutlet NSWindow *executionControlWindow;
 @property (readonly) IBOutlet NSWindow *slot1ManagerWindow;

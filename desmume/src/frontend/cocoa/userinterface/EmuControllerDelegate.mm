@@ -59,6 +59,7 @@
 @synthesize displayRotationPanel;
 @synthesize displaySeparationPanel;
 @synthesize displayVideoSettingsPanel;
+@synthesize displayHUDSettingsPanel;
 
 @synthesize executionControlWindow;
 @synthesize slot1ManagerWindow;
@@ -110,9 +111,10 @@
 	mainWindow = nil;
 	windowList = [[NSMutableArray alloc] initWithCapacity:32];
 	
-	displayRotationPanelTitle = nil;
-	displaySeparationPanelTitle = nil;
-	displayVideoSettingsPanelTitle = nil;
+	_displayRotationPanelTitle = nil;
+	_displaySeparationPanelTitle = nil;
+	_displayVideoSettingsPanelTitle = nil;
+	_displayHUDSettingsPanelTitle = nil;
 	
 	currentRom = nil;
 	cdsFirmware = nil;
@@ -2172,26 +2174,29 @@
 - (void) updateDisplayPanelTitles
 {
 	// If the original panel titles haven't been saved yet, then save them now.
-	if (displayRotationPanelTitle == nil)
+	if (_displayRotationPanelTitle == nil)
 	{
-		displayRotationPanelTitle = [[displayRotationPanel title] copy];
-		displaySeparationPanelTitle = [[displaySeparationPanel title] copy];
-		displayVideoSettingsPanelTitle = [[displayVideoSettingsPanel title] copy];
+		_displayRotationPanelTitle = [[displayRotationPanel title] copy];
+		_displaySeparationPanelTitle = [[displaySeparationPanel title] copy];
+		_displayVideoSettingsPanelTitle = [[displayVideoSettingsPanel title] copy];
+		_displayHUDSettingsPanelTitle = [[displayHUDSettingsPanel title] copy];
 	}
 	
 	// Set the panel titles to the window number.
 	if ([windowList count] <= 1)
 	{
-		[displayRotationPanel setTitle:displayRotationPanelTitle];
-		[displaySeparationPanel setTitle:displaySeparationPanelTitle];
-		[displayVideoSettingsPanel setTitle:displayVideoSettingsPanelTitle];
+		[displayRotationPanel setTitle:_displayRotationPanelTitle];
+		[displaySeparationPanel setTitle:_displaySeparationPanelTitle];
+		[displayVideoSettingsPanel setTitle:_displayVideoSettingsPanelTitle];
+		[displayHUDSettingsPanel setTitle:_displayHUDSettingsPanelTitle];
 	}
 	else
 	{
 		unsigned long windowNumber = (unsigned long)[windowList indexOfObject:mainWindow] + 1;
-		[displayRotationPanel setTitle:[displayRotationPanelTitle stringByAppendingFormat:@":%ld", windowNumber]];
-		[displaySeparationPanel setTitle:[displaySeparationPanelTitle stringByAppendingFormat:@":%ld", windowNumber]];
-		[displayVideoSettingsPanel setTitle:[displayVideoSettingsPanelTitle stringByAppendingFormat:@":%ld", windowNumber]];
+		[displayRotationPanel setTitle:[_displayRotationPanelTitle stringByAppendingFormat:@":%ld", windowNumber]];
+		[displaySeparationPanel setTitle:[_displaySeparationPanelTitle stringByAppendingFormat:@":%ld", windowNumber]];
+		[displayVideoSettingsPanel setTitle:[_displayVideoSettingsPanelTitle stringByAppendingFormat:@":%ld", windowNumber]];
+		[displayHUDSettingsPanel setTitle:[_displayHUDSettingsPanelTitle stringByAppendingFormat:@":%ld", windowNumber]];
 	}
 }
 
