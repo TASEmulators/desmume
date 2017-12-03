@@ -2410,6 +2410,7 @@
 			else
 			{
 				[[windowController window] orderFront:self];
+				[[windowController window] makeMainWindow];
 			}
 			
 			// If this window is set to full screen mode, its associated screen index must

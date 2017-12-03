@@ -1143,16 +1143,8 @@
 	_texDisplaySrcDeposterize[NDSDisplayID_Main][1]  = [[sharedData device] newTextureWithDescriptor:texDisplaySrcDesc];
 	_texDisplaySrcDeposterize[NDSDisplayID_Touch][1] = [[sharedData device] newTextureWithDescriptor:texDisplaySrcDesc];
 	
-	MTLTextureDescriptor *texDisplayPixelScaleDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
-																										width:GPU_FRAMEBUFFER_NATIVE_WIDTH*2
-																									   height:GPU_FRAMEBUFFER_NATIVE_HEIGHT*2
-																									mipmapped:NO];
-	[texDisplayPixelScaleDesc setResourceOptions:MTLResourceStorageModePrivate];
-	[texDisplayPixelScaleDesc setStorageMode:MTLStorageModePrivate];
-	[texDisplayPixelScaleDesc setUsage:MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite];
-	
-	[self setTexDisplayPixelScaleMain:[[[sharedData device] newTextureWithDescriptor:texDisplayPixelScaleDesc] autorelease]];
-	[self setTexDisplayPixelScaleTouch:[[[sharedData device] newTextureWithDescriptor:texDisplayPixelScaleDesc] autorelease]];
+	[self setTexDisplayPixelScaleMain:nil];
+	[self setTexDisplayPixelScaleTouch:nil];
 	
 	_processedFrameInfo.tex[NDSDisplayID_Main]  = [[sharedData texFetchMain]  retain];
 	_processedFrameInfo.tex[NDSDisplayID_Touch] = [[sharedData texFetchTouch] retain];
@@ -1348,7 +1340,7 @@
 		{
 			[cce setComputePipelineState:[sharedData deposterizePipeline]];
 			
-			if ((texMain != nil) && shouldProcessDisplay[NDSDisplayID_Main])
+			if (shouldProcessDisplay[NDSDisplayID_Main] && (texMain != nil))
 			{
 				[cce setTexture:texMain atIndex:0];
 				[cce setTexture:_texDisplaySrcDeposterize[NDSDisplayID_Main][0] atIndex:1];
@@ -1370,7 +1362,7 @@
 				}
 			}
 			
-			if ((texTouch != nil) && shouldProcessDisplay[NDSDisplayID_Touch])
+			if (shouldProcessDisplay[NDSDisplayID_Touch] && (texTouch != nil))
 			{
 				[cce setTexture:texTouch atIndex:0];
 				[cce setTexture:_texDisplaySrcDeposterize[NDSDisplayID_Touch][0] atIndex:1];
@@ -1416,11 +1408,13 @@
 		}
 		
 		// Run the pixel scalers. First attempt on the GPU.
+		pthread_mutex_lock(((MacMetalDisplayPresenter *)cdp)->GetMutexProcessPtr());
+		
 		if ( (cdp->GetPixelScaler() != VideoFilterTypeID_None) && willFilterOnGPU )
 		{
 			[cce setComputePipelineState:[self pixelScalePipeline]];
 			
-			if ((texMain != nil) && shouldProcessDisplay[NDSDisplayID_Main])
+			if (shouldProcessDisplay[NDSDisplayID_Main] && (texMain != nil) && ([self texDisplayPixelScaleMain] != nil))
 			{
 				[cce setTexture:texMain atIndex:0];
 				[cce setTexture:[self texDisplayPixelScaleMain] atIndex:1];
@@ -1441,7 +1435,7 @@
 				}
 			}
 			
-			if ((texTouch != nil) && shouldProcessDisplay[NDSDisplayID_Touch])
+			if (shouldProcessDisplay[NDSDisplayID_Touch] && (texTouch != nil) && ([self texDisplayPixelScaleTouch] != nil))
 			{
 				[cce setTexture:texTouch atIndex:0];
 				[cce setTexture:[self texDisplayPixelScaleTouch] atIndex:1];
@@ -1533,9 +1527,7 @@
 				}
 			}
 			
-			pthread_mutex_lock(((MacMetalDisplayPresenter *)cdp)->GetMutexProcessPtr());
-			
-			if (shouldProcessDisplay[NDSDisplayID_Main])
+			if (shouldProcessDisplay[NDSDisplayID_Main] && ([self texDisplayPixelScaleMain] != nil))
 			{
 				pthread_rwlock_rdlock(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterRWLock(NDSDisplayID_Main, bufferIndex));
 				needsCPUFilterUnlockMain = true;
@@ -1572,7 +1564,7 @@
 				}
 			}
 			
-			if (shouldProcessDisplay[NDSDisplayID_Touch])
+			if (shouldProcessDisplay[NDSDisplayID_Touch] && ([self texDisplayPixelScaleTouch] != nil))
 			{
 				pthread_rwlock_rdlock(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterRWLock(NDSDisplayID_Touch, bufferIndex));
 				needsCPUFilterUnlockTouch = true;
@@ -1601,10 +1593,10 @@
 				isDisplayProcessedTouch = true;
 			}
 			
-			pthread_mutex_unlock(((MacMetalDisplayPresenter *)cdp)->GetMutexProcessPtr());
-			
 			[bce endEncoding];
 		}
+		
+		pthread_mutex_unlock(((MacMetalDisplayPresenter *)cdp)->GetMutexProcessPtr());
 		
 		if (needsCPUFilterUnlockMain)
 		{
