@@ -253,16 +253,16 @@ public:
 	gpuEvent->FramebufferLock();
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:0]);
-	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:1]);
+	sem_wait([[self sharedData] semaphoreFramebufferAtIndex:0]);
+	sem_wait([[self sharedData] semaphoreFramebufferAtIndex:1]);
 #endif
 	
 	GPU->SetCustomFramebufferSize(w, h);
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
-	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:1]);
-	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:0]);
+	sem_post([[self sharedData] semaphoreFramebufferAtIndex:1]);
+	sem_post([[self sharedData] semaphoreFramebufferAtIndex:0]);
 #endif
 	
 	gpuEvent->FramebufferUnlock();
@@ -314,16 +314,16 @@ public:
 	if (colorFormat != dispInfo.colorFormat)
 	{
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-		pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:0]);
-		pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:1]);
+		sem_wait([[self sharedData] semaphoreFramebufferAtIndex:0]);
+		sem_wait([[self sharedData] semaphoreFramebufferAtIndex:1]);
 #endif
 		
 		GPU->SetColorFormat((NDSColorFormat)colorFormat);
 		
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 		fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
-		pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:1]);
-		pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:0]);
+		sem_post([[self sharedData] semaphoreFramebufferAtIndex:1]);
+		sem_post([[self sharedData] semaphoreFramebufferAtIndex:0]);
 #endif
 	}
 	
@@ -343,9 +343,9 @@ public:
 }
 
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-- (void) setOutputList:(NSMutableArray *)theOutputList mutexPtr:(pthread_mutex_t *)theMutex
+- (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock
 {
-	[(MacClientSharedObject *)fetchObject->GetClientData() setOutputList:theOutputList mutex:theMutex];
+	[(MacClientSharedObject *)fetchObject->GetClientData() setOutputList:theOutputList rwlock:theRWLock];
 }
 #endif
 
@@ -866,18 +866,18 @@ public:
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 	const u8 bufferIndex = GPU->GetDisplayInfo().bufferIndex;
-	pthread_rwlock_wrlock([[self sharedData] rwlockFramebufferAtIndex:bufferIndex]);
+	sem_wait([[self sharedData] semaphoreFramebufferAtIndex:bufferIndex]);
 #endif
 	
 	GPU->ClearWithColor(colorBGRA5551);
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-	pthread_rwlock_unlock([[self sharedData] rwlockFramebufferAtIndex:bufferIndex]);
+	sem_post([[self sharedData] semaphoreFramebufferAtIndex:bufferIndex]);
 #endif
 	gpuEvent->FramebufferUnlock();
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-	[[self sharedData] signalFetchAtIndex:bufferIndex];
+	[[self sharedData] signalFetchAtIndex:bufferIndex message:MESSAGE_FETCH_AND_PUSH_VIDEO];
 #endif
 }
 
@@ -918,15 +918,32 @@ public:
 		return self;
 	}
 	
-	_rwlockFramebuffer[0] = (pthread_rwlock_t *)malloc(sizeof(pthread_rwlock_t));
-	_rwlockFramebuffer[1] = (pthread_rwlock_t *)malloc(sizeof(pthread_rwlock_t));
+	_semFramebuffer[0] = sem_open("desmume_semFramebuffer0", O_CREAT | O_EXCL, 0777, 1);
+	if (_semFramebuffer[0] == SEM_FAILED)
+	{
+		sem_unlink("desmume_semFramebuffer0");
+		_semFramebuffer[0] = sem_open("desmume_semFramebuffer0", O_CREAT | O_EXCL, 0777, 1);
+		if (_semFramebuffer[0] == SEM_FAILED)
+		{
+			puts("desmume_semFramebuffer0 failed!");
+		}
+	}
 	
-	pthread_rwlock_init(_rwlockFramebuffer[0], NULL);
-	pthread_rwlock_init(_rwlockFramebuffer[1], NULL);
+	_semFramebuffer[1] = sem_open("desmume_semFramebuffer1", O_CREAT | O_EXCL, 0777, 1);
+	if (_semFramebuffer[1] == SEM_FAILED)
+	{
+		sem_unlink("desmume_semFramebuffer1");
+		_semFramebuffer[1] = sem_open("desmume_semFramebuffer1", O_CREAT | O_EXCL, 0777, 1);
+		if (_semFramebuffer[1] == SEM_FAILED)
+		{
+			puts("desmume_semFramebuffer1 failed!");
+		}
+	}
+	
 	pthread_mutex_init(&_mutexDisplayLinkLists, NULL);
 	
 	GPUFetchObject = nil;
-	_mutexOutputList = NULL;
+	_rwlockOutputList = NULL;
 	_cdsOutputList = nil;
 	numberViewsUsingDirectToCPUFiltering = 0;
 	
@@ -935,7 +952,7 @@ public:
 	[self displayLinkListUpdate];
 	
 	spinlockFetchSignal = OS_SPINLOCK_INIT;
-	_isFetchSignalled = NO;
+	_threadMessageID = MESSAGE_NONE;
 	_fetchIndex = 0;
 	pthread_cond_init(&_condSignalFetch, NULL);
 	pthread_create(&_threadFetch, NULL, &RunFetchThread, self);
@@ -980,50 +997,52 @@ public:
 	pthread_mutex_unlock(&_mutexDisplayLinkLists);
 	pthread_mutex_destroy(&_mutexDisplayLinkLists);
 	
-	pthread_mutex_t *currentMutex = _mutexOutputList;
+	pthread_rwlock_t *currentRWLock = _rwlockOutputList;
 	
-	if (currentMutex != NULL)
+	if (currentRWLock != NULL)
 	{
-		pthread_mutex_lock(currentMutex);
+		pthread_rwlock_wrlock(currentRWLock);
 	}
 	
 	[_cdsOutputList release];
 	
-	if (currentMutex != NULL)
+	if (currentRWLock != NULL)
 	{
-		pthread_mutex_unlock(currentMutex);
+		pthread_rwlock_unlock(currentRWLock);
 	}
 	
-	pthread_rwlock_destroy(_rwlockFramebuffer[0]);
-	pthread_rwlock_destroy(_rwlockFramebuffer[1]);
+	sem_close(_semFramebuffer[0]);
+	sem_close(_semFramebuffer[1]);
+	sem_unlink("desmume_semFramebuffer0");
+	sem_unlink("desmume_semFramebuffer1");
 	
 	[super dealloc];
 }
 
-- (pthread_rwlock_t *) rwlockFramebufferAtIndex:(const u8)bufferIndex
+- (sem_t *) semaphoreFramebufferAtIndex:(const u8)bufferIndex
 {
-	return _rwlockFramebuffer[bufferIndex];
+	return _semFramebuffer[bufferIndex];
 }
 
-- (void) setOutputList:(NSMutableArray *)theOutputList mutex:(pthread_mutex_t *)theMutex
+- (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock
 {
-	pthread_mutex_t *currentMutex = _mutexOutputList;
+	pthread_rwlock_t *currentRWLock = _rwlockOutputList;
 	
-	if (currentMutex != NULL)
+	if (currentRWLock != NULL)
 	{
-		pthread_mutex_lock(currentMutex);
+		pthread_rwlock_wrlock(currentRWLock);
 	}
 	
 	[_cdsOutputList release];
 	_cdsOutputList = theOutputList;
 	[_cdsOutputList retain];
 	
-	if (currentMutex != NULL)
+	if (currentRWLock != NULL)
 	{
-		pthread_mutex_unlock(currentMutex);
+		pthread_rwlock_unlock(currentRWLock);
 	}
 	
-	_mutexOutputList = theMutex;
+	_rwlockOutputList = theRWLock;
 }
 
 - (void) incrementViewsUsingDirectToCPUFiltering
@@ -1038,11 +1057,11 @@ public:
 
 - (void) pushVideoDataToAllDisplayViews
 {
-	pthread_mutex_t *currentMutex = _mutexOutputList;
+	pthread_rwlock_t *currentRWLock = _rwlockOutputList;
 	
-	if (currentMutex != NULL)
+	if (currentRWLock != NULL)
 	{
-		pthread_mutex_lock(currentMutex);
+		pthread_rwlock_rdlock(currentRWLock);
 	}
 	
 	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
@@ -1053,21 +1072,21 @@ public:
 		}
 	}
 	
-	if (currentMutex != NULL)
+	if (currentRWLock != NULL)
 	{
-		pthread_mutex_unlock(currentMutex);
+		pthread_rwlock_unlock(currentRWLock);
 	}
 }
 
 - (void) flushAllDisplaysOnDisplayLink:(CVDisplayLinkRef)displayLink timeStamp:(const CVTimeStamp *)timeStamp
 {
-	pthread_mutex_t *currentMutex = _mutexOutputList;
+	pthread_rwlock_t *currentRWLock = _rwlockOutputList;
 	CGDirectDisplayID displayID = CVDisplayLinkGetCurrentCGDisplay(displayLink);
 	bool didFlushOccur = false;
 	
-	if (currentMutex != NULL)
+	if (currentRWLock != NULL)
 	{
-		pthread_mutex_lock(currentMutex);
+		pthread_rwlock_rdlock(currentRWLock);
 	}
 	
 	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
@@ -1087,9 +1106,9 @@ public:
 		}
 	}
 	
-	if (currentMutex != NULL)
+	if (currentRWLock != NULL)
 	{
-		pthread_mutex_unlock(currentMutex);
+		pthread_rwlock_unlock(currentRWLock);
 	}
 	
 	if (didFlushOccur)
@@ -1195,12 +1214,12 @@ public:
 	GPUFetchObject->FetchFromBufferIndex(index);
 }
 
-- (void) signalFetchAtIndex:(uint8_t)index
+- (void) signalFetchAtIndex:(uint8_t)index message:(int32_t)messageID
 {
 	pthread_mutex_lock(&_mutexFetchExecute);
 	
 	_fetchIndex = index;
-	_isFetchSignalled = YES;
+	_threadMessageID = messageID;
 	pthread_cond_signal(&_condSignalFetch);
 	
 	pthread_mutex_unlock(&_mutexFetchExecute);
@@ -1212,14 +1231,15 @@ public:
 	
 	do
 	{
-		while (!_isFetchSignalled)
+		while (_threadMessageID == MESSAGE_NONE)
 		{
 			pthread_cond_wait(&_condSignalFetch, &_mutexFetchExecute);
 		}
-		_isFetchSignalled = NO;
 		
 		GPUFetchObject->FetchFromBufferIndex(_fetchIndex);
 		[self pushVideoDataToAllDisplayViews];
+		_threadMessageID = MESSAGE_NONE;
+		
 	} while(true);
 }
 
@@ -1275,7 +1295,7 @@ void GPUEventHandlerOSX::DidFrameBegin(bool isFrameSkipRequested, const u8 targe
 	if (!isFrameSkipRequested)
 	{
 		MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_fetchObject->GetClientData();
-		pthread_rwlock_wrlock([sharedViewObject rwlockFramebufferAtIndex:targetBufferIndex]);
+		sem_wait([sharedViewObject semaphoreFramebufferAtIndex:targetBufferIndex]);
 	}
 #endif
 }
@@ -1287,7 +1307,7 @@ void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &
 	if (!isFrameSkipped)
 	{
 		this->_fetchObject->SetFetchDisplayInfo(latestDisplayInfo);
-		pthread_rwlock_unlock([sharedViewObject rwlockFramebufferAtIndex:latestDisplayInfo.bufferIndex]);
+		sem_post([sharedViewObject semaphoreFramebufferAtIndex:latestDisplayInfo.bufferIndex]);
 	}
 #endif
 	
@@ -1296,7 +1316,7 @@ void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 	if (!isFrameSkipped)
 	{
-		[sharedViewObject signalFetchAtIndex:latestDisplayInfo.bufferIndex];
+		[sharedViewObject signalFetchAtIndex:latestDisplayInfo.bufferIndex message:MESSAGE_FETCH_AND_PUSH_VIDEO];
 	}
 #endif
 }

@@ -194,14 +194,14 @@ void MacOGLClientFetchObject::FetchFromBufferIndex(const u8 index)
 	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_clientData;
 	this->_useDirectToCPUFilterPipeline = ([sharedViewObject numberViewsUsingDirectToCPUFiltering] > 0);
 	
-	pthread_rwlock_rdlock([sharedViewObject rwlockFramebufferAtIndex:index]);
+	sem_wait([sharedViewObject semaphoreFramebufferAtIndex:index]);
 	
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
 	this->OGLClientFetchObject::FetchFromBufferIndex(index);
 	CGLUnlockContext(this->_context);
 	
-	pthread_rwlock_unlock([sharedViewObject rwlockFramebufferAtIndex:index]);
+	sem_post([sharedViewObject semaphoreFramebufferAtIndex:index]);
 }
 
 GLuint MacOGLClientFetchObject::GetFetchTexture(const NDSDisplayID displayID)
@@ -435,7 +435,7 @@ void MacOGLDisplayPresenter::WriteLockEmuFramebuffer(const uint8_t bufferIndex)
 	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
 	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
 	
-	pthread_rwlock_wrlock([sharedViewObject rwlockFramebufferAtIndex:bufferIndex]);
+	sem_wait([sharedViewObject semaphoreFramebufferAtIndex:bufferIndex]);
 }
 
 void MacOGLDisplayPresenter::ReadLockEmuFramebuffer(const uint8_t bufferIndex)
@@ -443,7 +443,7 @@ void MacOGLDisplayPresenter::ReadLockEmuFramebuffer(const uint8_t bufferIndex)
 	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
 	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
 	
-	pthread_rwlock_rdlock([sharedViewObject rwlockFramebufferAtIndex:bufferIndex]);
+	sem_wait([sharedViewObject semaphoreFramebufferAtIndex:bufferIndex]);
 }
 
 void MacOGLDisplayPresenter::UnlockEmuFramebuffer(const uint8_t bufferIndex)
@@ -451,7 +451,7 @@ void MacOGLDisplayPresenter::UnlockEmuFramebuffer(const uint8_t bufferIndex)
 	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
 	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
 	
-	pthread_rwlock_unlock([sharedViewObject rwlockFramebufferAtIndex:bufferIndex]);
+	sem_post([sharedViewObject semaphoreFramebufferAtIndex:bufferIndex]);
 }
 
 #pragma mark -

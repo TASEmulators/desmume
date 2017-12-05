@@ -38,7 +38,7 @@ typedef void *gdbstub_handle_t;
 typedef struct
 {
 	CocoaDSCore *cdsCore;
-	pthread_mutex_t mutexOutputList;
+	pthread_rwlock_t rwlockOutputList;
 	pthread_mutex_t mutexThreadExecute;
 	pthread_cond_t condThreadExecute;
 	pthread_rwlock_t rwlockCoreExecute;

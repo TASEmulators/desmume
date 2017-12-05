@@ -513,6 +513,19 @@ kernel void nds_fetch666ConvertOnly(const uint2 position [[thread_position_in_gr
 	outTexture.write(float4(outColor, 1.0f), position);
 }
 
+kernel void nds_fetch888PassthroughOnly(const uint2 position [[thread_position_in_grid]],
+										const texture2d<float, access::read> inTexture [[texture(0)]],
+										texture2d<float, access::write> outTexture [[texture(1)]])
+{
+	if ( (position.x > inTexture.get_width() - 1) || (position.y > inTexture.get_height() - 1) )
+	{
+		return;
+	}
+	
+	const float3 outColor = inTexture.read(position).rgb;
+	outTexture.write(float4(outColor, 1.0f), position);
+}
+
 float3 nds_apply_master_brightness(const float3 inColor, const uchar mode, const float intensity)
 {
 	switch (mode)

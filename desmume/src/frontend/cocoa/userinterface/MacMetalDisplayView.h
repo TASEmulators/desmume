@@ -21,6 +21,7 @@
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
 #include <libkern/OSAtomic.h>
+#include <semaphore.h>
 
 #import "DisplayViewCALayer.h"
 #import "../cocoa_GPU.h"
@@ -39,8 +40,6 @@ struct MetalProcessedFrameInfo
 {
 	uint8_t bufferIndex;
     id<MTLTexture> tex[2];
-	bool isMainDisplayProcessed;
-	bool isTouchDisplayProcessed;
 };
 typedef struct MetalProcessedFrameInfo MetalProcessedFrameInfo;
 
@@ -65,6 +64,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLComputePipelineState> _fetch888Pipeline;
 	id<MTLComputePipelineState> _fetch555ConvertOnlyPipeline;
 	id<MTLComputePipelineState> _fetch666ConvertOnlyPipeline;
+	id<MTLComputePipelineState> _fetch888PassthroughOnlyPipeline;
 	id<MTLComputePipelineState> deposterizePipeline;
 	id<MTLRenderPipelineState> hudPipeline;
 	id<MTLRenderPipelineState> hudRGBAPipeline;
@@ -185,8 +185,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	BOOL needsScreenVerticesUpdate;
 	BOOL needsHUDVerticesUpdate;
 	
-	pthread_mutex_t _mutexTexProcessUpdate;
-	pthread_mutex_t _mutexBufferUpdate;
+	sem_t *_semTexProcessUpdate;
 	bool _needEncodeViewport;
 	MTLViewport _newViewport;
 	bool _willDrawHUD;
@@ -200,8 +199,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (readonly, nonatomic) ClientDisplay3DPresenter *cdp;
 @property (assign, nonatomic) MetalDisplayViewSharedData *sharedData;
 @property (readonly, nonatomic) MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
-@property (readonly, nonatomic) pthread_mutex_t *mutexTexProcessUpdate;
-@property (readonly, nonatomic) pthread_mutex_t *mutexBufferUpdate;
+@property (readonly, nonatomic) sem_t *semTexProcessUpdate;
 @property (retain) id<MTLComputePipelineState> pixelScalePipeline;
 @property (retain) id<MTLRenderPipelineState> outputRGBAPipeline;
 @property (retain) id<MTLRenderPipelineState> outputDrawablePipeline;
@@ -225,6 +223,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 - (void) resizeCPUPixelScalerUsingFilterID:(const VideoFilterTypeID)filterID;
 - (void) copyHUDFontUsingFace:(const FT_Face &)fontFace size:(const size_t)glyphSize tileSize:(const size_t)glyphTileSize info:(GlyphInfo *)glyphInfo;
 - (void) processDisplays;
+- (void) updateTexCoordBuffer;
 - (void) updateRenderBuffers;
 - (void) renderForCommandBuffer:(id<MTLCommandBuffer>)cb
 			outputPipelineState:(id<MTLRenderPipelineState>)outputPipelineState
@@ -282,7 +281,7 @@ private:
 protected:
 	MacMetalDisplayPresenterObject *_presenterObject;
 	pthread_mutex_t _mutexProcessPtr;
-	pthread_rwlock_t _cpuFilterRWLock[2][2];
+	sem_t *_semCPUFilter[2][2];
 	
 	virtual void _UpdateNormalSize();
 	virtual void _UpdateOrder();
@@ -299,7 +298,7 @@ public:
 	
 	MacMetalDisplayPresenterObject* GetPresenterObject() const;
 	pthread_mutex_t* GetMutexProcessPtr();
-	pthread_rwlock_t* GetCPUFilterRWLock(const NDSDisplayID displayID, const uint8_t bufferIndex);
+	sem_t* GetCPUFilterSemaphore(const NDSDisplayID displayID, const uint8_t bufferIndex);
 	
 	virtual void Init();
 	virtual void SetSharedData(MacClientSharedObject *sharedObject);
@@ -312,7 +311,6 @@ public:
 	
 	// Client view interface
 	virtual void ProcessDisplays();
-	virtual void UpdateLayout();
 	
 	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
 };

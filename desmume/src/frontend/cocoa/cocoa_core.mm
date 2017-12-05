@@ -173,7 +173,7 @@ volatile bool execute = true;
 	
 	threadParam.cdsCore = self;
 	
-	pthread_mutex_init(&threadParam.mutexOutputList, NULL);
+	pthread_rwlock_init(&threadParam.rwlockOutputList, NULL);
 	pthread_mutex_init(&threadParam.mutexThreadExecute, NULL);
 	pthread_cond_init(&threadParam.condThreadExecute, NULL);
 	pthread_rwlock_init(&threadParam.rwlockCoreExecute, NULL);
@@ -198,7 +198,7 @@ volatile bool execute = true;
 	sp.sched_priority = sched_get_priority_max(thePolicy);
 	pthread_setschedparam(coreThread, thePolicy, &sp);
 	
-	[cdsGPU setOutputList:cdsOutputList mutexPtr:&threadParam.mutexOutputList];
+	[cdsGPU setOutputList:cdsOutputList rwlock:&threadParam.rwlockOutputList];
 	
 	OSXDriver *newDriver = new OSXDriver;
 	newDriver->SetCoreThreadMutexLock(&threadParam.mutexThreadExecute);
@@ -231,7 +231,7 @@ volatile bool execute = true;
 	
 	pthread_mutex_destroy(&threadParam.mutexThreadExecute);
 	pthread_cond_destroy(&threadParam.condThreadExecute);
-	pthread_mutex_destroy(&threadParam.mutexOutputList);
+	pthread_rwlock_destroy(&threadParam.rwlockOutputList);
 	pthread_rwlock_destroy(&threadParam.rwlockCoreExecute);
 	
 	[self setIsGdbStubStarted:NO];
@@ -644,7 +644,7 @@ volatile bool execute = true;
 	
 	execControl->SetExecutionBehavior((ExecutionBehavior)coreState);
 	
-	pthread_mutex_lock(&threadParam.mutexOutputList);
+	pthread_rwlock_rdlock(&threadParam.rwlockOutputList);
 	
 	switch ((ExecutionBehavior)coreState)
 	{
@@ -718,7 +718,7 @@ volatile bool execute = true;
 			break;
 	}
 	
-	pthread_mutex_unlock(&threadParam.mutexOutputList);
+	pthread_rwlock_unlock(&threadParam.rwlockOutputList);
 	
 	pthread_cond_signal(&threadParam.condThreadExecute);
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);
@@ -878,6 +878,8 @@ volatile bool execute = true;
 	// count every other instance the timer fires.
 	_isTimerAtSecond = !_isTimerAtSecond;
 	
+	pthread_rwlock_rdlock(&threadParam.rwlockOutputList);
+	
 	for (CocoaDSOutput *cdsOutput in cdsOutputList)
 	{
 		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
@@ -888,6 +890,8 @@ volatile bool execute = true;
 			}
 		}
 	}
+	
+	pthread_rwlock_unlock(&threadParam.rwlockOutputList);
 }
 
 - (NSUInteger) frameNumber
@@ -897,7 +901,7 @@ volatile bool execute = true;
 
 - (void) addOutput:(CocoaDSOutput *)theOutput
 {
-	pthread_mutex_lock(&threadParam.mutexOutputList);
+	pthread_rwlock_wrlock(&threadParam.rwlockOutputList);
 	
 	if ([theOutput isKindOfClass:[CocoaDSDisplay class]])
 	{
@@ -909,21 +913,21 @@ volatile bool execute = true;
 	}
 	
 	[[self cdsOutputList] addObject:theOutput];
-	pthread_mutex_unlock(&threadParam.mutexOutputList);
+	pthread_rwlock_unlock(&threadParam.rwlockOutputList);
 }
 
 - (void) removeOutput:(CocoaDSOutput *)theOutput
 {
-	pthread_mutex_lock(&threadParam.mutexOutputList);
+	pthread_rwlock_wrlock(&threadParam.rwlockOutputList);
 	[[self cdsOutputList] removeObject:theOutput];
-	pthread_mutex_unlock(&threadParam.mutexOutputList);
+	pthread_rwlock_unlock(&threadParam.rwlockOutputList);
 }
 
 - (void) removeAllOutputs
 {
-	pthread_mutex_lock(&threadParam.mutexOutputList);
+	pthread_rwlock_wrlock(&threadParam.rwlockOutputList);
 	[[self cdsOutputList] removeAllObjects];
-	pthread_mutex_unlock(&threadParam.mutexOutputList);
+	pthread_rwlock_unlock(&threadParam.rwlockOutputList);
 }
 
 - (NSString *) cpuEmulationEngineString
@@ -1200,7 +1204,7 @@ static void* RunCoreThread(void *arg)
 			executionSpeedAverageFramesCollected = 0.0;
 		}
 		
-		pthread_mutex_lock(&param->mutexOutputList);
+		pthread_rwlock_rdlock(&param->rwlockOutputList);
 		
 		switch (behavior)
 		{
@@ -1227,7 +1231,7 @@ static void* RunCoreThread(void *arg)
 				break;
 		}
 		
-		pthread_mutex_unlock(&param->mutexOutputList);
+		pthread_rwlock_unlock(&param->rwlockOutputList);
 		
 		switch (behavior)
 		{

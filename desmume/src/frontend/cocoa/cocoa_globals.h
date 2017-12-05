@@ -334,6 +334,8 @@ enum
  */
 enum
 {
+	MESSAGE_NONE = 0,
+	
 	MESSAGE_CHECK_FOR_RESPONSE = 100,		// Message to check if a port is responding. Usually sent to make sure that a thread is alive.
 	MESSAGE_CHECK_RESPONSE_ECHO,			// Response message when another port sends MESSAGE_CHECK_FOR_RESPONSE. Sent to confirm that a thread is indeed alive.
 	MESSAGE_EXIT_THREAD,					// Sent whenever there is a need to stop a thread.

@@ -19,6 +19,7 @@
 #import <CoreVideo/CoreVideo.h>
 #include <pthread.h>
 #include <libkern/OSAtomic.h>
+#include <semaphore.h>
 #include <map>
 
 #import "cocoa_util.h"
@@ -48,8 +49,8 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 @interface MacClientSharedObject : NSObject
 {
 	GPUClientFetchObject *GPUFetchObject;
-	pthread_rwlock_t *_rwlockFramebuffer[2];
-	pthread_mutex_t *_mutexOutputList;
+	sem_t *_semFramebuffer[2];
+	pthread_rwlock_t *_rwlockOutputList;
 	pthread_mutex_t _mutexDisplayLinkLists;
 	NSMutableArray *_cdsOutputList;
 	volatile int32_t numberViewsUsingDirectToCPUFiltering;
@@ -58,7 +59,7 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 	DisplayLinkFlushTimeLimitMap _displayLinkFlushTimeList;
 	
 	OSSpinLock spinlockFetchSignal;
-	BOOL _isFetchSignalled;
+	uint32_t _threadMessageID;
 	uint8_t _fetchIndex;
 	pthread_t _threadFetch;
 	pthread_cond_t _condSignalFetch;
@@ -68,8 +69,8 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 @property (assign, nonatomic) GPUClientFetchObject *GPUFetchObject;
 @property (readonly, nonatomic) volatile int32_t numberViewsUsingDirectToCPUFiltering;
 
-- (pthread_rwlock_t *) rwlockFramebufferAtIndex:(const u8)bufferIndex;
-- (void) setOutputList:(NSMutableArray *)theOutputList mutex:(pthread_mutex_t *)theMutex;
+- (sem_t *) semaphoreFramebufferAtIndex:(const u8)bufferIndex;
+- (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock;
 - (void) incrementViewsUsingDirectToCPUFiltering;
 - (void) decrementViewsUsingDirectToCPUFiltering;
 - (void) pushVideoDataToAllDisplayViews;
@@ -79,7 +80,7 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 - (void) displayLinkListUpdate;
 
 - (void) fetchSynchronousAtIndex:(uint8_t)index;
-- (void) signalFetchAtIndex:(uint8_t)index;
+- (void) signalFetchAtIndex:(uint8_t)index message:(int32_t)messageID;
 - (void) runFetchLoop;
 
 @end
@@ -135,7 +136,7 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 @property (readonly, nonatomic) GPUClientFetchObject *fetchObject;
 @property (readonly, nonatomic) MacClientSharedObject *sharedData;
 
-- (void) setOutputList:(NSMutableArray *)theOutputList mutexPtr:(pthread_mutex_t *)theMutex;
+- (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock;
 #endif
 
 - (BOOL) gpuStateByBit:(const UInt32)stateBit;
