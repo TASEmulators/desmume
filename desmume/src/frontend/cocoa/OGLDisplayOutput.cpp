@@ -7509,7 +7509,6 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 				if (texFetchMainNeedsLock)
 				{
-					glFlush();
 					fetchObj.FetchTextureUnlock(NDSDisplayID_Main);
 					texFetchMainNeedsLock = false;
 				}
@@ -7538,7 +7537,6 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 				if (texFetchTouchNeedsLock)
 				{
-					glFlush();
 					fetchObj.FetchTextureUnlock(NDSDisplayID_Touch);
 					texFetchTouchNeedsLock = false;
 				}
@@ -7617,7 +7615,6 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 				if (texFetchMainNeedsLock)
 				{
-					glFlush();
 					fetchObj.FetchTextureUnlock(NDSDisplayID_Main);
 					texFetchMainNeedsLock = false;
 				}
@@ -7642,7 +7639,6 @@ void OGLDisplayLayer::RenderOGL(bool isRenderingFlipped)
 				
 				if (texFetchTouchNeedsLock)
 				{
-					glFlush();
 					fetchObj.FetchTextureUnlock(NDSDisplayID_Touch);
 					texFetchTouchNeedsLock = false;
 				}
