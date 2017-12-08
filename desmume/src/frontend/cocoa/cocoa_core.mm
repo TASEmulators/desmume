@@ -1292,7 +1292,10 @@ static void* RunCoreThread(void *arg)
 		else
 		{
 			// If there is any time left in the loop, go ahead and pad it.
-			execControl->WaitUntilAbsoluteTime(startTime + frameTime);
+			if ( (execControl->GetCurrentAbsoluteTime() - startTime) < frameTime )
+			{
+				execControl->WaitUntilAbsoluteTime(startTime + frameTime);
+			}
 		}
 		
 		const double currentExecutionSpeed = standardNDSFrameTime / (execControl->GetCurrentAbsoluteTime() - startTime);
