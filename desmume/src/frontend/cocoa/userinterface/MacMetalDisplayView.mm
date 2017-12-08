@@ -16,12 +16,6 @@
  */
 
 #include "MacMetalDisplayView.h"
-
-#include <stdio.h>
-#include <semaphore.h>
-#include <mach/mach.h>
-#include <mach/mach_time.h>
-
 #include "../cocoa_globals.h"
 
 #include "../../../common.h"
@@ -78,7 +72,6 @@
 	_fetch888Pipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch888"] error:nil] retain];
 	_fetch555ConvertOnlyPipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch555ConvertOnly"] error:nil] retain];
 	_fetch666ConvertOnlyPipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch666ConvertOnly"] error:nil] retain];
-	_fetch888PassthroughOnlyPipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch888PassthroughOnly"] error:nil] retain];
 	deposterizePipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"src_filter_deposterize"] error:nil] retain];
 	
 	if ( IsOSXVersion(10, 13, 0) || IsOSXVersion(10, 13, 1) || IsOSXVersion(10, 13, 2) || IsOSXVersion(10, 13, 3) || IsOSXVersion(10, 13, 4) )
@@ -232,11 +225,6 @@
 	texFetchMain  = [_texDisplayPostprocessNative[NDSDisplayID_Main][0]  retain];
 	texFetchTouch = [_texDisplayPostprocessNative[NDSDisplayID_Touch][0] retain];
 	
-	_isUsingFramebufferDirectly[NDSDisplayID_Main][0] = 1;
-	_isUsingFramebufferDirectly[NDSDisplayID_Main][1] = 1;
-	_isUsingFramebufferDirectly[NDSDisplayID_Touch][0] = 1;
-	_isUsingFramebufferDirectly[NDSDisplayID_Touch][1] = 1;
-	
 	// Set up the HQnx LUT textures.
 	SetupHQnxLUTs_Metal(device, commandQueue, texLQ2xLUT, texHQ2xLUT, texHQ3xLUT, texHQ4xLUT);
 	texCurrentHQnxLUT = nil;
@@ -257,7 +245,6 @@
 	[_fetch888Pipeline release];
 	[_fetch555ConvertOnlyPipeline release];
 	[_fetch666ConvertOnlyPipeline release];
-	[_fetch888PassthroughOnlyPipeline release];
 	[deposterizePipeline release];
 	[hudPipeline release];
 	[hudRGBAPipeline release];
@@ -307,23 +294,6 @@
 	[_bufDisplayFetchCustom[NDSDisplayID_Touch][1] release];
 	
 	[super dealloc];
-}
-
-- (void) setUsingFramebufferDirectlyAtIndex:(const u8)index displayID:(NDSDisplayID)displayID state:(bool)theState
-{
-	if (theState)
-	{
-		OSAtomicOr32(1, &_isUsingFramebufferDirectly[displayID][index]);
-	}
-	else
-	{
-		OSAtomicAnd32(0, &_isUsingFramebufferDirectly[displayID][index]);
-	}
-}
-
-- (bool) isUsingFramebufferDirectlyAtIndex:(const u8)index displayID:(NDSDisplayID)displayID
-{
-	return (OSAtomicAnd32(1, &_isUsingFramebufferDirectly[displayID][index]) == 1);
 }
 
 - (void) setFetchBuffersWithDisplayInfo:(const NDSDisplayInfo &)dispInfo
@@ -483,8 +453,6 @@
 	const NDSDisplayInfo &currentDisplayInfo = GPUFetchObject->GetFetchDisplayInfoForBufferIndex(index);
 	const bool isMainEnabled  = currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Main];
 	const bool isTouchEnabled = currentDisplayInfo.isDisplayEnabled[NDSDisplayID_Touch];
-	bool isUsingFramebufferDirectlyMain = true;
-	bool isUsingFramebufferDirectlyTouch = true;
 	
 	if (isMainEnabled || isTouchEnabled)
 	{
@@ -558,8 +526,6 @@
 					
 					texFetchTargetMain = _texDisplayPostprocessCustom[NDSDisplayID_Main][index];
 				}
-				
-				isUsingFramebufferDirectlyMain = false;
 			}
 			
 			if (isTouchEnabled)
@@ -590,81 +556,75 @@
 					
 					texFetchTargetTouch = _texDisplayPostprocessCustom[NDSDisplayID_Touch][index];
 				}
-				
-				isUsingFramebufferDirectlyTouch = false;
 			}
 		}
-		else
+		else if (currentDisplayInfo.colorFormat != NDSColorFormat_BGR888_Rev)
 		{
+			bool isPipelineStateSet = false;
+			
 			if (currentDisplayInfo.colorFormat == NDSColorFormat_BGR555_Rev)
 			{
 				// 16-bit textures aren't handled natively in Metal for macOS, so we need to explicitly convert to 32-bit here.
 				[cce setComputePipelineState:_fetch555ConvertOnlyPipeline];
+				isPipelineStateSet = true;
 			}
 			else if ( (currentDisplayInfo.colorFormat == NDSColorFormat_BGR666_Rev) &&
 					  (currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Main] || currentDisplayInfo.needConvertColorFormat[NDSDisplayID_Touch]) )
 			{
 				[cce setComputePipelineState:_fetch666ConvertOnlyPipeline];
-			}
-			else
-			{
-				[cce setComputePipelineState:_fetch888PassthroughOnlyPipeline];
+				isPipelineStateSet = true;
 			}
 			
-			if (isMainEnabled)
+			if (isPipelineStateSet)
 			{
-				if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Main])
+				if (isMainEnabled)
 				{
-					[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Main][index] atIndex:0];
-					[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Main][index] atIndex:1];
-					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
-						threadsPerThreadgroup:_fetchThreadsPerGroup];
-					
-					texFetchTargetMain = _texDisplayPostprocessNative[NDSDisplayID_Main][index];
-				}
-				else
-				{
-					[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Main][index] atIndex:0];
-					[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Main][index] atIndex:1];
-					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
-						threadsPerThreadgroup:_fetchThreadsPerGroup];
-					
-					texFetchTargetMain = _texDisplayPostprocessCustom[NDSDisplayID_Main][index];
+					if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Main])
+					{
+						[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Main][index] atIndex:0];
+						[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Main][index] atIndex:1];
+						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
+							threadsPerThreadgroup:_fetchThreadsPerGroup];
+						
+						texFetchTargetMain = _texDisplayPostprocessNative[NDSDisplayID_Main][index];
+					}
+					else
+					{
+						[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Main][index] atIndex:0];
+						[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Main][index] atIndex:1];
+						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
+							threadsPerThreadgroup:_fetchThreadsPerGroup];
+						
+						texFetchTargetMain = _texDisplayPostprocessCustom[NDSDisplayID_Main][index];
+					}
 				}
 				
-				isUsingFramebufferDirectlyMain = false;
-			}
-			
-			if (isTouchEnabled)
-			{
-				if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch])
+				if (isTouchEnabled)
 				{
-					[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Touch][index] atIndex:0];
-					[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Touch][index] atIndex:1];
-					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
-						threadsPerThreadgroup:_fetchThreadsPerGroup];
-					
-					texFetchTargetTouch = _texDisplayPostprocessNative[NDSDisplayID_Touch][index];
+					if (!currentDisplayInfo.didPerformCustomRender[NDSDisplayID_Touch])
+					{
+						[cce setTexture:_texDisplayFetchNative[NDSDisplayID_Touch][index] atIndex:0];
+						[cce setTexture:_texDisplayPostprocessNative[NDSDisplayID_Touch][index] atIndex:1];
+						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridNative
+							threadsPerThreadgroup:_fetchThreadsPerGroup];
+						
+						texFetchTargetTouch = _texDisplayPostprocessNative[NDSDisplayID_Touch][index];
+					}
+					else
+					{
+						[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Touch][index] atIndex:0];
+						[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Touch][index] atIndex:1];
+						[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
+							threadsPerThreadgroup:_fetchThreadsPerGroup];
+						
+						texFetchTargetTouch = _texDisplayPostprocessCustom[NDSDisplayID_Touch][index];
+					}
 				}
-				else
-				{
-					[cce setTexture:_texDisplayFetchCustom[NDSDisplayID_Touch][index] atIndex:0];
-					[cce setTexture:_texDisplayPostprocessCustom[NDSDisplayID_Touch][index] atIndex:1];
-					[cce dispatchThreadgroups:_fetchThreadGroupsPerGridCustom
-						threadsPerThreadgroup:_fetchThreadsPerGroup];
-					
-					texFetchTargetTouch = _texDisplayPostprocessCustom[NDSDisplayID_Touch][index];
-				}
-				
-				isUsingFramebufferDirectlyTouch = false;
 			}
 		}
 		
 		[cce endEncoding];
 	}
-	
-	[self setUsingFramebufferDirectlyAtIndex:index displayID:NDSDisplayID_Main  state:isUsingFramebufferDirectlyMain];
-	[self setUsingFramebufferDirectlyAtIndex:index displayID:NDSDisplayID_Touch state:isUsingFramebufferDirectlyTouch];
 	
 	[self setTexFetchMain:texFetchTargetMain];
 	[self setTexFetchTouch:texFetchTargetTouch];
@@ -672,30 +632,29 @@
 
 - (void) fetchFromBufferIndex:(const u8)index
 {
-	sem_wait([self semaphoreFramebufferAtIndex:index]);
-	
 	id<MTLCommandBuffer> cb = [commandQueue commandBufferWithUnretainedReferences];
 	_fetchEncoder = [cb blitCommandEncoder];
 	
+	semaphore_wait([self semaphoreFramebufferAtIndex:index]);
 	GPUFetchObject->GPUClientFetchObject::FetchFromBufferIndex(index);
-	
 	[_fetchEncoder endEncoding];
-	
-	[self setFetchTextureBindingsAtIndex:index commandBuffer:cb];
 	
 	if (index == 0)
 	{
 		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-			sem_post([self semaphoreFramebufferAtIndex:0]);
+			semaphore_signal([self semaphoreFramebufferAtIndex:0]);
 		}];
 	}
 	else
 	{
 		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-			sem_post([self semaphoreFramebufferAtIndex:1]);
+			semaphore_signal([self semaphoreFramebufferAtIndex:1]);
 		}];
 	}
+	[cb commit];
 	
+	cb = [commandQueue commandBufferWithUnretainedReferences];
+	[self setFetchTextureBindingsAtIndex:index commandBuffer:cb];
 	[cb commit];
 }
 
@@ -750,6 +709,7 @@
 @synthesize cdp;
 @synthesize sharedData;
 @synthesize colorAttachment0Desc;
+@dynamic semDisplayLayoutUpdate;
 @dynamic semTexProcessUpdate;
 @synthesize pixelScalePipeline;
 @synthesize outputRGBAPipeline;
@@ -830,16 +790,8 @@
     _processedFrameInfo.tex[NDSDisplayID_Main]  = nil;
     _processedFrameInfo.tex[NDSDisplayID_Touch] = nil;
 	
-	_semTexProcessUpdate = sem_open("desmume_semTexProcessUpdate", O_CREAT | O_EXCL, 0777, 1);
-	if (_semTexProcessUpdate == SEM_FAILED)
-	{
-		sem_unlink("desmume_semTexProcessUpdate");
-		_semTexProcessUpdate = sem_open("desmume_semTexProcessUpdate", O_CREAT | O_EXCL, 0777, 1);
-		if (_semTexProcessUpdate == SEM_FAILED)
-		{
-			puts("desmume_semTexProcessUpdate failed!");
-		}
-	}
+	_semDisplayLayoutUpdate = dispatch_semaphore_create(1);
+	_semTexProcessUpdate = dispatch_semaphore_create(1);
 	
 	return self;
 }
@@ -878,13 +830,18 @@
 	
 	[self setSharedData:nil];
 	
-	sem_close(_semTexProcessUpdate);
-	sem_unlink("desmume_semTexProcessUpdate");
+	dispatch_release(_semDisplayLayoutUpdate);
+	dispatch_release(_semTexProcessUpdate);
 	
 	[super dealloc];
 }
 
-- (sem_t *) semTexProcessUpdate
+- (dispatch_semaphore_t) semDisplayLayoutUpdate
+{
+	return _semDisplayLayoutUpdate;
+}
+
+- (dispatch_semaphore_t) semTexProcessUpdate
 {
 	return _semTexProcessUpdate;
 }
@@ -1463,7 +1420,7 @@
 			
 			if (shouldProcessDisplay[NDSDisplayID_Main] && ([self texDisplayPixelScaleMain] != nil))
 			{
-				sem_wait(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main, bufferIndex));
+				dispatch_semaphore_wait(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main, bufferIndex), DISPATCH_TIME_FOREVER);
 				needsCPUFilterUnlockMain = true;
 				vfMain->RunFilter();
 				
@@ -1471,7 +1428,7 @@
 				{
 					[[self bufCPUFilterDstMain] didModifyRange:NSMakeRange(0, vfMain->GetDstWidth() * vfMain->GetDstHeight() * sizeof(uint32_t))];
 					needsCPUFilterUnlockMain = false;
-					sem_post(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main, bufferIndex));
+					dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main, bufferIndex));
 				}
 				
 				[bce copyFromBuffer:[self bufCPUFilterDstMain]
@@ -1498,7 +1455,7 @@
 			
 			if (shouldProcessDisplay[NDSDisplayID_Touch] && ([self texDisplayPixelScaleTouch] != nil))
 			{
-				sem_wait(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch, bufferIndex));
+				dispatch_semaphore_wait(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch, bufferIndex), DISPATCH_TIME_FOREVER);
 				needsCPUFilterUnlockTouch = true;
 				vfTouch->RunFilter();
 				
@@ -1506,7 +1463,7 @@
 				{
 					[[self bufCPUFilterDstTouch] didModifyRange:NSMakeRange(0, vfTouch->GetDstWidth() * vfTouch->GetDstHeight() * sizeof(uint32_t))];
 					needsCPUFilterUnlockTouch = false;
-					sem_post(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch, bufferIndex));
+					dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch, bufferIndex));
 				}
 				
 				[bce copyFromBuffer:[self bufCPUFilterDstTouch]
@@ -1536,15 +1493,15 @@
 				if (bufferIndex == 0)
 				{
 					[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-						sem_post(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main,  0));
-						sem_post(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch, 0));
+						dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main,  0));
+						dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch, 0));
 					}];
 				}
 				else
 				{
 					[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-						sem_post(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main,  1));
-						sem_post(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch, 1));
+						dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main,  1));
+						dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch, 1));
 					}];
 				}
 			}
@@ -1553,13 +1510,13 @@
 				if (bufferIndex == 0)
 				{
 					[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-						sem_post(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main, 0));
+						dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main, 0));
 					}];
 				}
 				else
 				{
 					[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-						sem_post(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main, 1));
+						dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Main, 1));
 					}];
 				}
 			}
@@ -1569,13 +1526,13 @@
 			if (bufferIndex == 0)
 			{
 				[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-					sem_post(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch, 0));
+					dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch, 0));
 				}];
 			}
 			else
 			{
 				[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-					sem_post(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch, 1));
+					dispatch_semaphore_signal(((MacMetalDisplayPresenter *)cdp)->GetCPUFilterSemaphore(NDSDisplayID_Touch, 1));
 				}];
 			}
 		}
@@ -1584,7 +1541,7 @@
 	}
 	
 	// Update the texture coordinates
-	sem_wait(_semTexProcessUpdate);
+	dispatch_semaphore_wait(_semTexProcessUpdate, DISPATCH_TIME_FOREVER);
 	
 	// Update the frame info
 	id<MTLTexture> oldDisplayProcessedMain  = _processedFrameInfo.tex[NDSDisplayID_Main];
@@ -1596,10 +1553,10 @@
 	
 	[self updateTexCoordBuffer];
 	
+	dispatch_semaphore_signal(_semTexProcessUpdate);
+	
 	[oldDisplayProcessedMain  release];
 	[oldDisplayProcessedTouch release];
-	
-	sem_post(_semTexProcessUpdate);
 }
 
 - (void) updateTexCoordBuffer
@@ -1623,6 +1580,8 @@
 	newViewport.height = cdp->GetPresenterProperties().clientHeight;
 	newViewport.znear = 0.0;
 	newViewport.zfar = 1.0;
+	
+	dispatch_semaphore_wait(_semDisplayLayoutUpdate, DISPATCH_TIME_FOREVER);
 	
 	if ([self needsViewportUpdate])
 	{
@@ -1722,6 +1681,8 @@
 	_willDrawHUDInput = cdp->GetHUDShowInput();
 	_hudStringLength = cdp->GetHUDString().length();
 	_hudTouchLineLength = hudTouchLineLength;
+	
+	dispatch_semaphore_signal(_semDisplayLayoutUpdate);
 }
 
 - (void) renderForCommandBuffer:(id<MTLCommandBuffer>)cb
@@ -1873,16 +1834,9 @@
 	const size_t clientWidth  = cdp->GetPresenterProperties().clientWidth;
 	const size_t clientHeight = cdp->GetPresenterProperties().clientHeight;
 	
-	// Create a unique semaphore name based on mach_absolute_time().
-	char semaphoreName[64];
-	memset(semaphoreName, '\0', sizeof(semaphoreName));
-	snprintf(semaphoreName, sizeof(semaphoreName), "desmume_semRenderToBuffer_0x%016llX", (unsigned long long)mach_absolute_time());
-	
-	sem_t *semRenderToBuffer = sem_open(semaphoreName, O_CREAT, 0777, 1);
-	if (semRenderToBuffer == SEM_FAILED)
-	{
-		puts("desmume_semRenderToBuffer failed!");
-	}
+	task_t renderTask = mach_task_self();
+	semaphore_t semRenderToBuffer = 0;
+	semaphore_create(renderTask, &semRenderToBuffer, SYNC_POLICY_PREPOST, 0);
 	
 	@autoreleasepool
 	{
@@ -1897,13 +1851,12 @@
 		id<MTLTexture> texRender = [[sharedData device] newTextureWithDescriptor:texRenderDesc];
 		id<MTLBuffer> dstMTLBuffer = [[sharedData device] newBufferWithLength:clientWidth * clientHeight * sizeof(uint32_t) options:MTLResourceStorageModeManaged];
 		
-		sem_wait(_semTexProcessUpdate);
+		dispatch_semaphore_wait(_semTexProcessUpdate, DISPATCH_TIME_FOREVER);
+		dispatch_semaphore_wait(_semDisplayLayoutUpdate, DISPATCH_TIME_FOREVER);
 		
 		// Now that everything is set up, go ahead and draw everything.
 		[colorAttachment0Desc setTexture:texRender];
 		id<MTLCommandBuffer> cb = [self newCommandBuffer];
-		
-		[self updateRenderBuffers];
 		
 		[self renderForCommandBuffer:cb
 				 outputPipelineState:[self outputRGBAPipeline]
@@ -1912,11 +1865,10 @@
 					 texDisplayTouch:_processedFrameInfo.tex[NDSDisplayID_Touch]];
 		
 		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-			sem_post(_semTexProcessUpdate);
+			dispatch_semaphore_signal(_semDisplayLayoutUpdate);
+			dispatch_semaphore_signal(_semTexProcessUpdate);
 		}];
 		[cb commit];
-		
-		sem_wait(semRenderToBuffer);
 		
 		cb = [self newCommandBuffer];
 		id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
@@ -1935,13 +1887,12 @@
 		[bce endEncoding];
 		
 		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-			sem_post(semRenderToBuffer);
+			semaphore_signal(semRenderToBuffer);
 		}];
 		[cb commit];
 		
 		// Wait on this thread until the GPU completes its task, then continue execution on this thread.
-		sem_wait(semRenderToBuffer);
-		sem_post(semRenderToBuffer);
+		semaphore_wait(semRenderToBuffer);
 		
 		memcpy(dstBuffer, [dstMTLBuffer contents], clientWidth * clientHeight * sizeof(uint32_t));
 		
@@ -1949,8 +1900,7 @@
 		[dstMTLBuffer release];
 	}
 	
-	sem_close(semRenderToBuffer);
-	sem_unlink(semaphoreName);
+	semaphore_destroy(renderTask, semRenderToBuffer);
 }
 
 @end
@@ -1995,7 +1945,8 @@
 {
 	@autoreleasepool
 	{
-		sem_wait([presenterObject semTexProcessUpdate]);
+		dispatch_semaphore_wait([presenterObject semTexProcessUpdate], DISPATCH_TIME_FOREVER);
+		dispatch_semaphore_wait([presenterObject semDisplayLayoutUpdate], DISPATCH_TIME_FOREVER);
 		
 		const MetalProcessedFrameInfo &processedInfo = [presenterObject processedFrameInfo];
 				
@@ -2003,8 +1954,6 @@
 		id<CAMetalDrawable> layerDrawable = [self nextDrawable];
 		[[presenterObject colorAttachment0Desc] setTexture:[layerDrawable texture]];
 		id<MTLCommandBuffer> cb = [presenterObject newCommandBuffer];
-		
-		[presenterObject updateRenderBuffers];
 		
 		[presenterObject renderForCommandBuffer:cb
 							outputPipelineState:[presenterObject outputDrawablePipeline]
@@ -2015,7 +1964,8 @@
 		[cb presentDrawable:layerDrawable];
 		
 		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-			sem_post([presenterObject semTexProcessUpdate]);
+			dispatch_semaphore_signal([presenterObject semDisplayLayoutUpdate]);
+			dispatch_semaphore_signal([presenterObject semTexProcessUpdate]);
 		}];
 		
 		[cb commit];
@@ -2160,14 +2110,10 @@ MacMetalDisplayPresenter::~MacMetalDisplayPresenter()
 	
 	pthread_mutex_destroy(&this->_mutexProcessPtr);
 	
-	sem_close(this->_semCPUFilter[NDSDisplayID_Main][0]);
-	sem_close(this->_semCPUFilter[NDSDisplayID_Main][1]);
-	sem_close(this->_semCPUFilter[NDSDisplayID_Touch][0]);
-	sem_close(this->_semCPUFilter[NDSDisplayID_Touch][1]);
-	sem_unlink("desmume_semCPUFilterMain0");
-	sem_unlink("desmume_semCPUFilterMain1");
-	sem_unlink("desmume_semCPUFilterTouch0");
-	sem_unlink("desmume_semCPUFilterTouch1");
+	dispatch_release(this->_semCPUFilter[NDSDisplayID_Main][0]);
+	dispatch_release(this->_semCPUFilter[NDSDisplayID_Main][1]);
+	dispatch_release(this->_semCPUFilter[NDSDisplayID_Touch][0]);
+	dispatch_release(this->_semCPUFilter[NDSDisplayID_Touch][1]);
 }
 
 void MacMetalDisplayPresenter::__InstanceInit(MacClientSharedObject *sharedObject)
@@ -2185,49 +2131,10 @@ void MacMetalDisplayPresenter::__InstanceInit(MacClientSharedObject *sharedObjec
 	
 	pthread_mutex_init(&_mutexProcessPtr, NULL);
 	
-	_semCPUFilter[NDSDisplayID_Main][0] = sem_open("desmume_semCPUFilterMain0", O_CREAT | O_EXCL, 0777, 1);
-	if (_semCPUFilter[NDSDisplayID_Main][0] == SEM_FAILED)
-	{
-		sem_unlink("desmume_semCPUFilterMain0");
-		_semCPUFilter[NDSDisplayID_Main][0] = sem_open("desmume_semCPUFilterMain0", O_CREAT | O_EXCL, 0777, 1);
-		if (_semCPUFilter[NDSDisplayID_Main][0] == SEM_FAILED)
-		{
-			puts("desmume_semCPUFilterMain0 failed!");
-		}
-	}
-	
-	_semCPUFilter[NDSDisplayID_Main][1] = sem_open("desmume_semCPUFilterMain1", O_CREAT | O_EXCL, 0777, 1);
-	if (_semCPUFilter[NDSDisplayID_Main][1] == SEM_FAILED)
-	{
-		sem_unlink("desmume_semCPUFilterMain1");
-		_semCPUFilter[NDSDisplayID_Main][1] = sem_open("desmume_semCPUFilterMain1", O_CREAT | O_EXCL, 0777, 1);
-		if (_semCPUFilter[NDSDisplayID_Main][1] == SEM_FAILED)
-		{
-			puts("desmume_semCPUFilterMain1 failed!");
-		}
-	}
-	
-	_semCPUFilter[NDSDisplayID_Touch][0] = sem_open("desmume_semCPUFilterTouch0", O_CREAT | O_EXCL, 0777, 1);
-	if (_semCPUFilter[NDSDisplayID_Touch][0] == SEM_FAILED)
-	{
-		sem_unlink("desmume_semCPUFilterTouch0");
-		_semCPUFilter[NDSDisplayID_Touch][0] = sem_open("desmume_semCPUFilterTouch0", O_CREAT | O_EXCL, 0777, 1);
-		if (_semCPUFilter[NDSDisplayID_Touch][0] == SEM_FAILED)
-		{
-			puts("desmume_semCPUFilterTouch0 failed!");
-		}
-	}
-	
-	_semCPUFilter[NDSDisplayID_Touch][1] = sem_open("desmume_semCPUFilterTouch1", O_CREAT | O_EXCL, 0777, 1);
-	if (_semCPUFilter[NDSDisplayID_Touch][1] == SEM_FAILED)
-	{
-		sem_unlink("desmume_semCPUFilterTouch1");
-		_semCPUFilter[NDSDisplayID_Touch][1] = sem_open("desmume_semCPUFilterTouch1", O_CREAT | O_EXCL, 0777, 1);
-		if (_semCPUFilter[NDSDisplayID_Touch][1] == SEM_FAILED)
-		{
-			puts("desmume_semCPUFilterTouch1 failed!");
-		}
-	}
+	_semCPUFilter[NDSDisplayID_Main][0]  = dispatch_semaphore_create(1);
+	_semCPUFilter[NDSDisplayID_Main][1]  = dispatch_semaphore_create(1);
+	_semCPUFilter[NDSDisplayID_Touch][0] = dispatch_semaphore_create(1);
+	_semCPUFilter[NDSDisplayID_Touch][1] = dispatch_semaphore_create(1);
 }
 
 void MacMetalDisplayPresenter::_UpdateNormalSize()
@@ -2267,9 +2174,9 @@ void MacMetalDisplayPresenter::_LoadNativeDisplayByID(const NDSDisplayID display
 		
 		const uint8_t bufferIndex = fetchObjMutable.GetLastFetchIndex();
 		
-		sem_wait(this->_semCPUFilter[displayID][bufferIndex]);
+		dispatch_semaphore_wait(this->_semCPUFilter[displayID][bufferIndex], DISPATCH_TIME_FOREVER);
 		fetchObjMutable.CopyFromSrcClone(vf->GetSrcBufferPtr(), displayID, bufferIndex);
-		sem_post(this->_semCPUFilter[displayID][bufferIndex]);
+		dispatch_semaphore_signal(this->_semCPUFilter[displayID][bufferIndex]);
 	}
 }
 
@@ -2289,7 +2196,7 @@ pthread_mutex_t* MacMetalDisplayPresenter::GetMutexProcessPtr()
 	return &this->_mutexProcessPtr;
 }
 
-sem_t* MacMetalDisplayPresenter::GetCPUFilterSemaphore(const NDSDisplayID displayID, const uint8_t bufferIndex)
+dispatch_semaphore_t MacMetalDisplayPresenter::GetCPUFilterSemaphore(const NDSDisplayID displayID, const uint8_t bufferIndex)
 {
 	return this->_semCPUFilter[displayID][bufferIndex];
 }
@@ -2342,6 +2249,11 @@ void MacMetalDisplayPresenter::SetFiltersPreferGPU(const bool preferGPU)
 void MacMetalDisplayPresenter::ProcessDisplays()
 {
 	[this->_presenterObject processDisplays];
+}
+
+void MacMetalDisplayPresenter::UpdateLayout()
+{
+	[this->_presenterObject updateRenderBuffers];
 }
 
 void MacMetalDisplayPresenter::CopyFrameToBuffer(uint32_t *dstBuffer)

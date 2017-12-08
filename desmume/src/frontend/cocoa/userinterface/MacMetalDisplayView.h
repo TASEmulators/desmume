@@ -21,7 +21,10 @@
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
 #include <libkern/OSAtomic.h>
-#include <semaphore.h>
+
+#include <mach/task.h>
+#include <mach/semaphore.h>
+#include <mach/sync_policy.h>
 
 #import "DisplayViewCALayer.h"
 #import "../cocoa_GPU.h"
@@ -64,7 +67,6 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLComputePipelineState> _fetch888Pipeline;
 	id<MTLComputePipelineState> _fetch555ConvertOnlyPipeline;
 	id<MTLComputePipelineState> _fetch666ConvertOnlyPipeline;
-	id<MTLComputePipelineState> _fetch888PassthroughOnlyPipeline;
 	id<MTLComputePipelineState> deposterizePipeline;
 	id<MTLRenderPipelineState> hudPipeline;
 	id<MTLRenderPipelineState> hudRGBAPipeline;
@@ -108,8 +110,6 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	MTLSize _fetchThreadGroupsPerGridCustom;
 	MTLSize deposterizeThreadsPerGroup;
 	MTLSize deposterizeThreadGroupsPerGrid;
-	
-	uint32_t _isUsingFramebufferDirectly[2][2];
 }
 
 @property (readonly, nonatomic) id<MTLDevice> device;
@@ -137,9 +137,6 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 
 @property (readonly, nonatomic) MTLSize deposterizeThreadsPerGroup;
 @property (readonly, nonatomic) MTLSize deposterizeThreadGroupsPerGrid;
-
-- (void) setUsingFramebufferDirectlyAtIndex:(const u8)index displayID:(NDSDisplayID)displayID state:(bool)theState;
-- (bool) isUsingFramebufferDirectlyAtIndex:(const u8)index displayID:(NDSDisplayID)displayID;
 
 - (void) setFetchBuffersWithDisplayInfo:(const NDSDisplayInfo &)dispInfo;
 - (void) setFetchTextureBindingsAtIndex:(const u8)index commandBuffer:(id<MTLCommandBuffer>)cb;
@@ -185,7 +182,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	BOOL needsScreenVerticesUpdate;
 	BOOL needsHUDVerticesUpdate;
 	
-	sem_t *_semTexProcessUpdate;
+	dispatch_semaphore_t _semDisplayLayoutUpdate;
+	dispatch_semaphore_t _semTexProcessUpdate;
 	bool _needEncodeViewport;
 	MTLViewport _newViewport;
 	bool _willDrawHUD;
@@ -199,7 +197,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (readonly, nonatomic) ClientDisplay3DPresenter *cdp;
 @property (assign, nonatomic) MetalDisplayViewSharedData *sharedData;
 @property (readonly, nonatomic) MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
-@property (readonly, nonatomic) sem_t *semTexProcessUpdate;
+@property (readonly, nonatomic) dispatch_semaphore_t semDisplayLayoutUpdate;
+@property (readonly, nonatomic) dispatch_semaphore_t semTexProcessUpdate;
 @property (retain) id<MTLComputePipelineState> pixelScalePipeline;
 @property (retain) id<MTLRenderPipelineState> outputRGBAPipeline;
 @property (retain) id<MTLRenderPipelineState> outputDrawablePipeline;
@@ -281,7 +280,7 @@ private:
 protected:
 	MacMetalDisplayPresenterObject *_presenterObject;
 	pthread_mutex_t _mutexProcessPtr;
-	sem_t *_semCPUFilter[2][2];
+	dispatch_semaphore_t _semCPUFilter[2][2];
 	
 	virtual void _UpdateNormalSize();
 	virtual void _UpdateOrder();
@@ -298,7 +297,7 @@ public:
 	
 	MacMetalDisplayPresenterObject* GetPresenterObject() const;
 	pthread_mutex_t* GetMutexProcessPtr();
-	sem_t* GetCPUFilterSemaphore(const NDSDisplayID displayID, const uint8_t bufferIndex);
+	dispatch_semaphore_t GetCPUFilterSemaphore(const NDSDisplayID displayID, const uint8_t bufferIndex);
 	
 	virtual void Init();
 	virtual void SetSharedData(MacClientSharedObject *sharedObject);
@@ -311,6 +310,7 @@ public:
 	
 	// Client view interface
 	virtual void ProcessDisplays();
+	virtual void UpdateLayout();
 	
 	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
 };

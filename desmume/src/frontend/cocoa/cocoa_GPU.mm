@@ -253,16 +253,16 @@ public:
 	gpuEvent->FramebufferLock();
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-	sem_wait([[self sharedData] semaphoreFramebufferAtIndex:0]);
-	sem_wait([[self sharedData] semaphoreFramebufferAtIndex:1]);
+	semaphore_wait([[self sharedData] semaphoreFramebufferAtIndex:0]);
+	semaphore_wait([[self sharedData] semaphoreFramebufferAtIndex:1]);
 #endif
 	
 	GPU->SetCustomFramebufferSize(w, h);
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
-	sem_post([[self sharedData] semaphoreFramebufferAtIndex:1]);
-	sem_post([[self sharedData] semaphoreFramebufferAtIndex:0]);
+	semaphore_signal([[self sharedData] semaphoreFramebufferAtIndex:1]);
+	semaphore_signal([[self sharedData] semaphoreFramebufferAtIndex:0]);
 #endif
 	
 	gpuEvent->FramebufferUnlock();
@@ -314,16 +314,16 @@ public:
 	if (colorFormat != dispInfo.colorFormat)
 	{
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-		sem_wait([[self sharedData] semaphoreFramebufferAtIndex:0]);
-		sem_wait([[self sharedData] semaphoreFramebufferAtIndex:1]);
+		semaphore_wait([[self sharedData] semaphoreFramebufferAtIndex:0]);
+		semaphore_wait([[self sharedData] semaphoreFramebufferAtIndex:1]);
 #endif
 		
 		GPU->SetColorFormat((NDSColorFormat)colorFormat);
 		
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 		fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
-		sem_post([[self sharedData] semaphoreFramebufferAtIndex:1]);
-		sem_post([[self sharedData] semaphoreFramebufferAtIndex:0]);
+		semaphore_signal([[self sharedData] semaphoreFramebufferAtIndex:1]);
+		semaphore_signal([[self sharedData] semaphoreFramebufferAtIndex:0]);
 #endif
 	}
 	
@@ -866,13 +866,13 @@ public:
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 	const u8 bufferIndex = GPU->GetDisplayInfo().bufferIndex;
-	sem_wait([[self sharedData] semaphoreFramebufferAtIndex:bufferIndex]);
+	semaphore_wait([[self sharedData] semaphoreFramebufferAtIndex:bufferIndex]);
 #endif
 	
 	GPU->ClearWithColor(colorBGRA5551);
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-	sem_post([[self sharedData] semaphoreFramebufferAtIndex:bufferIndex]);
+	semaphore_signal([[self sharedData] semaphoreFramebufferAtIndex:bufferIndex]);
 #endif
 	gpuEvent->FramebufferUnlock();
 	
@@ -918,28 +918,6 @@ public:
 		return self;
 	}
 	
-	_semFramebuffer[0] = sem_open("desmume_semFramebuffer0", O_CREAT | O_EXCL, 0777, 1);
-	if (_semFramebuffer[0] == SEM_FAILED)
-	{
-		sem_unlink("desmume_semFramebuffer0");
-		_semFramebuffer[0] = sem_open("desmume_semFramebuffer0", O_CREAT | O_EXCL, 0777, 1);
-		if (_semFramebuffer[0] == SEM_FAILED)
-		{
-			puts("desmume_semFramebuffer0 failed!");
-		}
-	}
-	
-	_semFramebuffer[1] = sem_open("desmume_semFramebuffer1", O_CREAT | O_EXCL, 0777, 1);
-	if (_semFramebuffer[1] == SEM_FAILED)
-	{
-		sem_unlink("desmume_semFramebuffer1");
-		_semFramebuffer[1] = sem_open("desmume_semFramebuffer1", O_CREAT | O_EXCL, 0777, 1);
-		if (_semFramebuffer[1] == SEM_FAILED)
-		{
-			puts("desmume_semFramebuffer1 failed!");
-		}
-	}
-	
 	pthread_mutex_init(&_mutexDisplayLinkLists, NULL);
 	
 	GPUFetchObject = nil;
@@ -957,6 +935,10 @@ public:
 	pthread_cond_init(&_condSignalFetch, NULL);
 	pthread_create(&_threadFetch, NULL, &RunFetchThread, self);
 	pthread_mutex_init(&_mutexFetchExecute, NULL);
+	
+	_taskEmulationLoop = 0;
+	_semFramebuffer[0] = 0;
+	_semFramebuffer[1] = 0;
 		
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(respondToScreenChange:)
@@ -1011,15 +993,32 @@ public:
 		pthread_rwlock_unlock(currentRWLock);
 	}
 	
-	sem_close(_semFramebuffer[0]);
-	sem_close(_semFramebuffer[1]);
-	sem_unlink("desmume_semFramebuffer0");
-	sem_unlink("desmume_semFramebuffer1");
-	
 	[super dealloc];
 }
 
-- (sem_t *) semaphoreFramebufferAtIndex:(const u8)bufferIndex
+- (void) semaphoreFramebufferCreate
+{
+	_taskEmulationLoop = mach_task_self();
+	semaphore_create(_taskEmulationLoop, &_semFramebuffer[0], SYNC_POLICY_FIFO, 1);
+	semaphore_create(_taskEmulationLoop, &_semFramebuffer[1], SYNC_POLICY_FIFO, 1);
+}
+
+- (void) semaphoreFramebufferDestroy
+{
+	if (_semFramebuffer[0] != 0)
+	{
+		semaphore_destroy(_taskEmulationLoop, _semFramebuffer[0]);
+		_semFramebuffer[0] = 0;
+	}
+	
+	if (_semFramebuffer[1] != 0)
+	{
+		semaphore_destroy(_taskEmulationLoop, _semFramebuffer[1]);
+		_semFramebuffer[1] = 0;
+	}
+}
+
+- (semaphore_t) semaphoreFramebufferAtIndex:(const u8)bufferIndex
 {
 	return _semFramebuffer[bufferIndex];
 }
@@ -1295,7 +1294,7 @@ void GPUEventHandlerOSX::DidFrameBegin(bool isFrameSkipRequested, const u8 targe
 	if (!isFrameSkipRequested)
 	{
 		MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_fetchObject->GetClientData();
-		sem_wait([sharedViewObject semaphoreFramebufferAtIndex:targetBufferIndex]);
+		semaphore_wait([sharedViewObject semaphoreFramebufferAtIndex:targetBufferIndex]);
 	}
 #endif
 }
@@ -1307,7 +1306,7 @@ void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &
 	if (!isFrameSkipped)
 	{
 		this->_fetchObject->SetFetchDisplayInfo(latestDisplayInfo);
-		sem_post([sharedViewObject semaphoreFramebufferAtIndex:latestDisplayInfo.bufferIndex]);
+		semaphore_signal([sharedViewObject semaphoreFramebufferAtIndex:latestDisplayInfo.bufferIndex]);
 	}
 #endif
 	

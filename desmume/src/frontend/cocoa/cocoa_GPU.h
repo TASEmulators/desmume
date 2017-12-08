@@ -19,11 +19,19 @@
 #import <CoreVideo/CoreVideo.h>
 #include <pthread.h>
 #include <libkern/OSAtomic.h>
-#include <semaphore.h>
+#include <mach/task.h>
+#include <mach/semaphore.h>
+#include <mach/sync_policy.h>
 #include <map>
 
 #import "cocoa_util.h"
 #include "../../GPU.h"
+
+// This symbol only exists in the kernel headers, but not in the user headers.
+// Manually define the symbol here, since we will be Mach semaphores in the user-space.
+#ifndef SYNC_POLICY_PREPOST
+#define SYNC_POLICY_PREPOST 0x4
+#endif
 
 #ifdef BOOL
 #undef BOOL
@@ -49,7 +57,8 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 @interface MacClientSharedObject : NSObject
 {
 	GPUClientFetchObject *GPUFetchObject;
-	sem_t *_semFramebuffer[2];
+	task_t _taskEmulationLoop;
+	semaphore_t _semFramebuffer[2];
 	pthread_rwlock_t *_rwlockOutputList;
 	pthread_mutex_t _mutexDisplayLinkLists;
 	NSMutableArray *_cdsOutputList;
@@ -69,7 +78,10 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 @property (assign, nonatomic) GPUClientFetchObject *GPUFetchObject;
 @property (readonly, nonatomic) volatile int32_t numberViewsUsingDirectToCPUFiltering;
 
-- (sem_t *) semaphoreFramebufferAtIndex:(const u8)bufferIndex;
+- (void) semaphoreFramebufferCreate;
+- (void) semaphoreFramebufferDestroy;
+- (semaphore_t) semaphoreFramebufferAtIndex:(const u8)bufferIndex;
+
 - (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock;
 - (void) incrementViewsUsingDirectToCPUFiltering;
 - (void) decrementViewsUsingDirectToCPUFiltering;

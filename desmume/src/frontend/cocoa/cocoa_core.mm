@@ -219,6 +219,8 @@ volatile bool execute = true;
 	
 	[self removeAllOutputs];
 	
+	[[cdsGPU sharedData] semaphoreFramebufferDestroy];
+	
 	[self setCdsController:nil];
 	[self setCdsFirmware:nil];
 	[self setCdsGPU:nil];
@@ -1128,6 +1130,8 @@ static void* RunCoreThread(void *arg)
 	
 	ExecutionBehavior behavior = ExecutionBehavior_Pause;
 	uint64_t frameJumpTarget = 0;
+	
+	[[[cdsCore cdsGPU] sharedData] semaphoreFramebufferCreate];
 	
 	do
 	{
