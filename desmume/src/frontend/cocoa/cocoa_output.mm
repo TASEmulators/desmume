@@ -210,8 +210,6 @@
 		SPU_ChangeSoundCore(SNDCORE_DUMMY, 0);
 	}
 	
-	rwlockAudioEmulateCore = self.rwlockProducer;
-	
 	pthread_rwlock_unlock(self.rwlockProducer);
 	
 	// Force the volume back to it's original setting.
@@ -454,13 +452,6 @@
 			[super handlePortMessage:portMessage];
 			break;
 	}
-}
-
-- (void) handleEmuFrameProcessed
-{
-	SPU_Emulate_user();
-	
-	[super handleEmuFrameProcessed];
 }
 
 - (void) handleSetVolume:(NSData *)volumeData

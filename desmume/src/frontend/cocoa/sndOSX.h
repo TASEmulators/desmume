@@ -26,7 +26,6 @@
 #define SNDCORE_OSX 58325 //hopefully this is unique number
 
 extern SoundInterface_struct SNDOSX; // Sound interface to the SPU
-extern pthread_rwlock_t *rwlockAudioEmulateCore; // RWlock for the emulation core - used when mixing audio in Dual Synch/Asynch mode in post-process
 
 // Core Audio functions for the sound interface
 int		SNDOSXInit(int buffer_size);
@@ -40,7 +39,5 @@ void	SNDOSXPauseAudio();
 void	SNDOSXUnpauseAudio();
 void	SNDOSXSetVolume(int volume);
 void	SNDOSXClearBuffer();
-void	SNDOSXFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
-size_t	SNDOSXPostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
 
 #endif // _OSXSOUNDINTERFACE_

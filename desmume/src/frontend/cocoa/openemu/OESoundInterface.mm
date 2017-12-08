@@ -22,8 +22,6 @@
 
 
 OERingBuffer *openEmuSoundInterfaceBuffer = nil;
-static pthread_mutex_t *mutexAudioSampleReadWrite = NULL;
-pthread_rwlock_t *rwlockAudioEmulateCore = NULL;
 
 // Sound interface to the SPU
 SoundInterface_struct SNDOpenEmu = {
@@ -37,8 +35,8 @@ SoundInterface_struct SNDOpenEmu = {
 	SNDOpenEmuUnMuteAudio,
 	SNDOpenEmuSetVolume,
 	SNDOpenEmuClearBuffer,
-	SNDOpenEmuFetchSamples,
-	SNDOpenEmuPostProcessSamples
+	NULL,
+	NULL
 };
 
 SoundInterface_struct *SNDCoreList[] = {
@@ -51,23 +49,12 @@ int SNDOpenEmuInit(int buffer_size)
 {
 	[openEmuSoundInterfaceBuffer setLength:buffer_size * 4 / SPU_SAMPLE_SIZE];
 	
-	if (mutexAudioSampleReadWrite == NULL)
-	{
-		mutexAudioSampleReadWrite = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-		pthread_mutex_init(mutexAudioSampleReadWrite, NULL);
-	}
-	
 	return 0;
 }
 
 void SNDOpenEmuDeInit()
 {
-	if (mutexAudioSampleReadWrite != NULL)
-	{
-		pthread_mutex_destroy(mutexAudioSampleReadWrite);
-		free(mutexAudioSampleReadWrite);
-		mutexAudioSampleReadWrite = NULL;
-	}
+	// Do nothing.
 }
 
 int SNDOpenEmuReset()
@@ -108,47 +95,4 @@ void SNDOpenEmuSetVolume(int volume)
 void SNDOpenEmuClearBuffer()
 {
 	// Do nothing. The OpenEmu frontend will take care of this.
-}
-
-void SNDOpenEmuFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer)
-{
-	if (mutexAudioSampleReadWrite == NULL)
-	{
-		return;
-	}
-	
-	pthread_mutex_lock(mutexAudioSampleReadWrite);
-	SPU_DefaultFetchSamples(sampleBuffer, sampleCount, synchMode, theSynchronizer);
-	pthread_mutex_unlock(mutexAudioSampleReadWrite);
-}
-
-size_t SNDOpenEmuPostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer)
-{
-	size_t processedSampleCount = 0;
-	
-	switch (synchMode)
-	{
-		case ESynchMode_DualSynchAsynch:
-			if (rwlockAudioEmulateCore != NULL)
-			{
-				pthread_rwlock_wrlock(rwlockAudioEmulateCore);
-				processedSampleCount = SPU_DefaultPostProcessSamples(postProcessBuffer, requestedSampleCount, synchMode, theSynchronizer);
-				pthread_rwlock_unlock(rwlockAudioEmulateCore);
-			}
-			break;
-			
-		case ESynchMode_Synchronous:
-			if (mutexAudioSampleReadWrite != NULL)
-			{
-				pthread_mutex_lock(mutexAudioSampleReadWrite);
-				processedSampleCount = SPU_DefaultPostProcessSamples(postProcessBuffer, requestedSampleCount, synchMode, theSynchronizer);
-				pthread_mutex_unlock(mutexAudioSampleReadWrite);
-			}
-			break;
-			
-		default:
-			break;
-	}
-	
-	return processedSampleCount;
 }
