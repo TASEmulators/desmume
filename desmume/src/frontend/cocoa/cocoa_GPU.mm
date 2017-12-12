@@ -30,10 +30,10 @@
 #endif
 
 #include <OpenGL/OpenGL.h>
-#include "userinterface/MacOGLDisplayView.h"
+#import "userinterface/MacOGLDisplayView.h"
 
 #ifdef ENABLE_APPLE_METAL
-#include "userinterface/MacMetalDisplayView.h"
+#import "userinterface/MacMetalDisplayView.h"
 #endif
 
 #ifdef BOOL
@@ -149,7 +149,6 @@ public:
 					  GPUSTATE_SUB_OBJ_MASK;
 	
 	isCPUCoreCountAuto = NO;
-	_needRestoreFrameLock = NO;
 	_needRestoreRender3DLock = NO;
 		
 	SetOpenGLRendererFunctions(&OSXOpenGLRendererInit,
@@ -865,18 +864,21 @@ public:
 	gpuEvent->FramebufferLock();
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-	const u8 bufferIndex = GPU->GetDisplayInfo().bufferIndex;
-	semaphore_wait([[self sharedData] semaphoreFramebufferAtIndex:bufferIndex]);
+	semaphore_wait([[self sharedData] semaphoreFramebufferAtIndex:0]);
+	semaphore_wait([[self sharedData] semaphoreFramebufferAtIndex:1]);
 #endif
 	
 	GPU->ClearWithColor(colorBGRA5551);
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-	semaphore_signal([[self sharedData] semaphoreFramebufferAtIndex:bufferIndex]);
+	semaphore_signal([[self sharedData] semaphoreFramebufferAtIndex:1]);
+	semaphore_signal([[self sharedData] semaphoreFramebufferAtIndex:0]);
 #endif
+	
 	gpuEvent->FramebufferUnlock();
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
+	const u8 bufferIndex = GPU->GetDisplayInfo().bufferIndex;
 	[[self sharedData] signalFetchAtIndex:bufferIndex message:MESSAGE_FETCH_AND_PUSH_VIDEO];
 #endif
 }

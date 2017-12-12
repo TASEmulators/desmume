@@ -4818,6 +4818,8 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
+	glFinish();
+	
 	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
 	
 	if (this->isPBOSupported)
@@ -4825,10 +4827,16 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		if (this->_mappedFramebuffer != NULL)
 		{
 			glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
+			glFinish();
 		}
 		
 		glBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ_ARB);
-		this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
+		
+		if (this->_mappedFramebuffer != NULL)
+		{
+			this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
+			glFinish();
+		}
 	}
 	
 	if (this->isShaderSupported && this->isFBOSupported && this->isVBOSupported)
@@ -4902,6 +4910,7 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 		oglrender_framebufferDidResizeCallback(w, h);
 	}
 	
+	glFinish();
 	ENDGL();
 	
 	return OGLERROR_NOERR;

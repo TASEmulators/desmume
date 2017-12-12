@@ -1994,15 +1994,22 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 		return OGLERROR_BEGINGL_FAILED;
 	}
 	
-	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
-		
+	glFinish();
+	
 	if (this->_mappedFramebuffer != NULL)
 	{
 		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+		glFinish();
 	}
 	
+	const size_t newFramebufferColorSizeBytes = w * h * sizeof(FragmentColor);
 	glBufferData(GL_PIXEL_PACK_BUFFER, newFramebufferColorSizeBytes, NULL, GL_STREAM_READ);
-	this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+	
+	if (this->_mappedFramebuffer != NULL)
+	{
+		this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+		glFinish();
+	}
 	
 	glActiveTexture(GL_TEXTURE0 + OGLTextureUnitID_FinalColor);
 	glBindTexture(GL_TEXTURE_2D, OGLRef.texFinalColorID);
@@ -2065,6 +2072,7 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 		oglrender_framebufferDidResizeCallback(w, h);
 	}
 	
+	glFinish();
 	ENDGL();
 	
 	return OGLERROR_NOERR;

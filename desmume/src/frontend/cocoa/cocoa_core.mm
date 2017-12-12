@@ -1121,8 +1121,8 @@ static void* RunCoreThread(void *arg)
 	NSMutableArray *cdsOutputList = [cdsCore cdsOutputList];
 	const NDSFrameInfo &ndsFrameInfo = execControl->GetNDSFrameInfo();
 	
-	double startTime = 0;
-	double frameTime = 0; // The amount of time that is expected for the frame to run.
+	double startTime = 0.0;
+	double frameTime = 0.0; // The amount of time that is expected for the frame to run.
 	
 	const double standardNDSFrameTime = execControl->CalculateFrameAbsoluteTime(1.0);
 	double executionSpeedAverage = 0.0;
@@ -1302,7 +1302,8 @@ static void* RunCoreThread(void *arg)
 			}
 		}
 		
-		const double currentExecutionSpeed = standardNDSFrameTime / (execControl->GetCurrentAbsoluteTime() - startTime);
+		const double endTime = execControl->GetCurrentAbsoluteTime();
+		const double currentExecutionSpeed = standardNDSFrameTime / (endTime - startTime);
 		executionSpeedAverage += currentExecutionSpeed;
 		executionSpeedAverageFramesCollected += 1.0;
 		
