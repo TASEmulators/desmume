@@ -35,16 +35,31 @@
 #undef BOOL
 #endif
 
+#define METAL_BUFFER_COUNT 3
+
 class MacMetalFetchObject;
 class MacMetalDisplayPresenter;
 class MacMetalDisplayView;
 
 struct MetalProcessedFrameInfo
 {
-	uint8_t bufferIndex;
+	uint8_t processIndex;
     id<MTLTexture> tex[2];
 };
 typedef struct MetalProcessedFrameInfo MetalProcessedFrameInfo;
+
+struct MetalRenderFrameInfo
+{
+	uint8_t renderIndex;
+	bool needEncodeViewport;
+	MTLViewport newViewport;
+	bool willDrawHUD;
+	bool willDrawHUDInput;
+	size_t hudStringLength;
+	size_t hudTouchLineLength;
+	size_t hudTotalLength;
+};
+typedef struct MetalRenderFrameInfo MetalRenderFrameInfo;
 
 struct DisplayViewShaderProperties
 {
@@ -71,8 +86,6 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLRenderPipelineState> hudPipeline;
 	id<MTLRenderPipelineState> hudRGBAPipeline;
 	
-	id<MTLBlitCommandEncoder> _fetchEncoder;
-	
 	id<MTLSamplerState> samplerHUDBox;
 	id<MTLSamplerState> samplerHUDText;
 	
@@ -80,8 +93,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLBuffer> _bufDisplayFetchNative[2][2];
 	id<MTLBuffer> _bufDisplayFetchCustom[2][2];
 	
-	id<MTLBuffer> _bufMasterBrightMode[2];
-	id<MTLBuffer> _bufMasterBrightIntensity[2];
+	id<MTLBuffer> _bufMasterBrightMode[2][2];
+	id<MTLBuffer> _bufMasterBrightIntensity[2][2];
 	
 	size_t _fetchPixelBytes;
 	size_t _nativeLineSize;
@@ -110,6 +123,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	MTLSize _fetchThreadGroupsPerGridCustom;
 	MTLSize deposterizeThreadsPerGroup;
 	MTLSize deposterizeThreadGroupsPerGrid;
+	
+	BOOL _isSharedBufferTextureSupported;
 }
 
 @property (readonly, nonatomic) id<MTLDevice> device;
@@ -158,18 +173,17 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLRenderPipelineState> outputDrawablePipeline;
 	MTLPixelFormat drawableFormat;
 	
-	id<MTLBuffer> _cdvPropertiesBuffer;
-	id<MTLBuffer> _displayVtxPositionBuffer;
-	id<MTLBuffer> _displayTexCoordBuffer;
-	id<MTLBuffer> _hudVtxPositionBuffer;
-	id<MTLBuffer> _hudVtxColorBuffer;
-	id<MTLBuffer> _hudTexCoordBuffer;
+	id<MTLBuffer> _hudVtxPositionBuffer[METAL_BUFFER_COUNT];
+	id<MTLBuffer> _hudVtxColorBuffer[METAL_BUFFER_COUNT];
+	id<MTLBuffer> _hudTexCoordBuffer[METAL_BUFFER_COUNT];
 	id<MTLBuffer> _bufCPUFilterSrcMain;
 	id<MTLBuffer> _bufCPUFilterSrcTouch;
-	id<MTLBuffer> bufCPUFilterDstMain;
-	id<MTLBuffer> bufCPUFilterDstTouch;
 	
-	id<MTLTexture> _texDisplaySrcDeposterize[2][2];
+	float _vtxPositionBuffer[32];
+	float _texCoordBuffer[32];
+	DisplayViewShaderProperties _cdvPropertiesBuffer;
+	
+	id<MTLTexture> _texDisplaySrcDeposterize[METAL_BUFFER_COUNT][2][2]; // [_processIndex][NDSDisplayID][stage]
 	id<MTLTexture> texDisplayPixelScaleMain;
 	id<MTLTexture> texDisplayPixelScaleTouch;
 	id<MTLTexture> texHUDCharMap;
@@ -182,29 +196,22 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	BOOL needsScreenVerticesUpdate;
 	BOOL needsHUDVerticesUpdate;
 	
-	dispatch_semaphore_t _semDisplayLayoutUpdate;
-	dispatch_semaphore_t _semTexProcessUpdate;
-	bool _needEncodeViewport;
-	MTLViewport _newViewport;
-	bool _willDrawHUD;
-	bool _willDrawHUDInput;
-	size_t _hudStringLength;
-	size_t _hudTouchLineLength;
+	dispatch_semaphore_t _semProcessBuffers;
+	dispatch_semaphore_t _semRenderBuffers;
+	OSSpinLock _spinlockProcessedFrameInfo;
 	
-	MetalProcessedFrameInfo _processedFrameInfo;
+	uint8_t _processIndex;
+	MetalProcessedFrameInfo _mpfi;
+	MetalRenderFrameInfo _mrfi;
 }
 
 @property (readonly, nonatomic) ClientDisplay3DPresenter *cdp;
 @property (assign, nonatomic) MetalDisplayViewSharedData *sharedData;
 @property (readonly, nonatomic) MTLRenderPassColorAttachmentDescriptor *colorAttachment0Desc;
-@property (readonly, nonatomic) dispatch_semaphore_t semDisplayLayoutUpdate;
-@property (readonly, nonatomic) dispatch_semaphore_t semTexProcessUpdate;
 @property (retain) id<MTLComputePipelineState> pixelScalePipeline;
 @property (retain) id<MTLRenderPipelineState> outputRGBAPipeline;
 @property (retain) id<MTLRenderPipelineState> outputDrawablePipeline;
 @property (assign) MTLPixelFormat drawableFormat;
-@property (retain) id<MTLBuffer> bufCPUFilterDstMain;
-@property (retain) id<MTLBuffer> bufCPUFilterDstTouch;
 @property (retain) id<MTLTexture> texDisplayPixelScaleMain;
 @property (retain) id<MTLTexture> texDisplayPixelScaleTouch;
 @property (retain) id<MTLTexture> texHUDCharMap;
@@ -216,19 +223,18 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (assign, nonatomic) OutputFilterTypeID outputFilter;
 
 - (id) initWithDisplayPresenter:(MacMetalDisplayPresenter *)thePresenter;
-- (const MetalProcessedFrameInfo &) processedFrameInfo;
+- (MetalProcessedFrameInfo) processedFrameInfo;
 - (id<MTLCommandBuffer>) newCommandBuffer;
 - (void) setup;
-- (void) resizeCPUPixelScalerUsingFilterID:(const VideoFilterTypeID)filterID;
 - (void) copyHUDFontUsingFace:(const FT_Face &)fontFace size:(const size_t)glyphSize tileSize:(const size_t)glyphTileSize info:(GlyphInfo *)glyphInfo;
 - (void) processDisplays;
-- (void) updateTexCoordBuffer;
 - (void) updateRenderBuffers;
 - (void) renderForCommandBuffer:(id<MTLCommandBuffer>)cb
 			outputPipelineState:(id<MTLRenderPipelineState>)outputPipelineState
 			   hudPipelineState:(id<MTLRenderPipelineState>)hudPipelineState
 				 texDisplayMain:(id<MTLTexture>)texDisplayMain
 				texDisplayTouch:(id<MTLTexture>)texDisplayTouch;
+- (void) renderFinish;
 - (void) renderToBuffer:(uint32_t *)dstBuffer;
 
 @end
@@ -288,7 +294,6 @@ protected:
 	virtual void _UpdateClientSize();
 	virtual void _UpdateViewScale();
 	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
-	virtual void _ResizeCPUPixelScaler(const VideoFilterTypeID filterID);
 	
 public:
 	MacMetalDisplayPresenter();
@@ -310,7 +315,6 @@ public:
 	
 	// Client view interface
 	virtual void ProcessDisplays();
-	virtual void UpdateLayout();
 	
 	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
 };
