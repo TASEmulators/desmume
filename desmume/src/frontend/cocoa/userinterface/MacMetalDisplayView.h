@@ -35,18 +35,32 @@
 #undef BOOL
 #endif
 
-#define METAL_BUFFER_COUNT 3
+#define RENDER_BUFFER_COUNT 4
+
+enum ClientDisplayBufferState
+{
+	ClientDisplayBufferState_Idle			= 0,	// The buffer has already been read and is currently idle. It is a candidate for a read or write operation.
+	ClientDisplayBufferState_Writing		= 1,	// The buffer is currently being written. It cannot be accessed.
+	ClientDisplayBufferState_Ready			= 2,	// The buffer was just written to, but has not been read yet. It is a candidate for a read or write operation.
+	ClientDisplayBufferState_PendingRead	= 3,	// The buffer has been marked that it will be read. It must not be accessed.
+	ClientDisplayBufferState_Reading		= 4		// The buffer is currently being read. It cannot be accessed.
+};
 
 class MacMetalFetchObject;
 class MacMetalDisplayPresenter;
 class MacMetalDisplayView;
 
-struct MetalProcessedFrameInfo
+union MetalTexturePair
 {
-	uint8_t processIndex;
-    id<MTLTexture> tex[2];
+	id<MTLTexture> tex[2];
+	
+	struct
+	{
+		id<MTLTexture> main;
+		id<MTLTexture> touch;
+	};
 };
-typedef struct MetalProcessedFrameInfo MetalProcessedFrameInfo;
+typedef union MetalTexturePair MetalTexturePair;
 
 struct MetalRenderFrameInfo
 {
@@ -107,8 +121,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLTexture> _texDisplayPostprocessNative[2][2];
 	id<MTLTexture> _texDisplayPostprocessCustom[2][2];
 	
-	id<MTLTexture> texFetchMain;
-	id<MTLTexture> texFetchTouch;
+	MetalTexturePair texPairFetch;
+	id<MTLBlitCommandEncoder> bceFetch;
 	
 	id<MTLTexture> texLQ2xLUT;
 	id<MTLTexture> texHQ2xLUT;
@@ -139,8 +153,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 
 @property (readonly, nonatomic) id<MTLBuffer> hudIndexBuffer;
 
-@property (retain) id<MTLTexture> texFetchMain;
-@property (retain) id<MTLTexture> texFetchTouch;
+@property (assign) MetalTexturePair texPairFetch;
+@property (assign) id<MTLBlitCommandEncoder> bceFetch;
 
 @property (readonly, nonatomic) id<MTLTexture> texLQ2xLUT;
 @property (readonly, nonatomic) id<MTLTexture> texHQ2xLUT;
@@ -154,10 +168,10 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (readonly, nonatomic) MTLSize deposterizeThreadGroupsPerGrid;
 
 - (void) setFetchBuffersWithDisplayInfo:(const NDSDisplayInfo &)dispInfo;
-- (void) setFetchTextureBindingsAtIndex:(const u8)index commandBuffer:(id<MTLCommandBuffer>)cb;
+- (MetalTexturePair) setFetchTextureBindingsAtIndex:(const u8)index commandBuffer:(id<MTLCommandBuffer>)cb;
 - (void) fetchFromBufferIndex:(const u8)index;
-- (void) fetchNativeDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex;
-- (void) fetchCustomDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex;
+- (void) fetchNativeDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex blitCommandEncoder:(id<MTLBlitCommandEncoder>)bce;
+- (void) fetchCustomDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex blitCommandEncoder:(id<MTLBlitCommandEncoder>)bce;
 
 @end
 
@@ -173,36 +187,37 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLRenderPipelineState> outputDrawablePipeline;
 	MTLPixelFormat drawableFormat;
 	
-	id<MTLBuffer> _hudVtxPositionBuffer[METAL_BUFFER_COUNT];
-	id<MTLBuffer> _hudVtxColorBuffer[METAL_BUFFER_COUNT];
-	id<MTLBuffer> _hudTexCoordBuffer[METAL_BUFFER_COUNT];
+	id<MTLBuffer> _hudVtxPositionBuffer[RENDER_BUFFER_COUNT];
+	id<MTLBuffer> _hudVtxColorBuffer[RENDER_BUFFER_COUNT];
+	id<MTLBuffer> _hudTexCoordBuffer[RENDER_BUFFER_COUNT];
 	id<MTLBuffer> _bufCPUFilterSrcMain;
 	id<MTLBuffer> _bufCPUFilterSrcTouch;
+	id<MTLBuffer> bufCPUFilterDstMain;
+	id<MTLBuffer> bufCPUFilterDstTouch;
 	
 	float _vtxPositionBuffer[32];
 	float _texCoordBuffer[32];
 	DisplayViewShaderProperties _cdvPropertiesBuffer;
 	
-	id<MTLTexture> _texDisplaySrcDeposterize[METAL_BUFFER_COUNT][2][2]; // [_processIndex][NDSDisplayID][stage]
-	id<MTLTexture> texDisplayPixelScaleMain;
-	id<MTLTexture> texDisplayPixelScaleTouch;
+	id<MTLTexture> _texDisplaySrcDeposterize[2][2]; // [NDSDisplayID][stage]
+	id<MTLTexture> _texDisplayPixelScaler[2];
 	id<MTLTexture> texHUDCharMap;
 	
 	MTLSize _pixelScalerThreadsPerGroup;
 	MTLSize _pixelScalerThreadGroupsPerGrid;
 	
+	BOOL needsProcessFrameWait;
 	BOOL needsViewportUpdate;
 	BOOL needsRotationScaleUpdate;
 	BOOL needsScreenVerticesUpdate;
 	BOOL needsHUDVerticesUpdate;
 	
-	dispatch_semaphore_t _semProcessBuffers;
-	dispatch_semaphore_t _semRenderBuffers;
-	OSSpinLock _spinlockProcessedFrameInfo;
+	OSSpinLock _spinlockRenderBufferStates[RENDER_BUFFER_COUNT];
+	dispatch_semaphore_t _semRenderBuffers[RENDER_BUFFER_COUNT];
+	ClientDisplayBufferState _renderBufferState[RENDER_BUFFER_COUNT];
 	
-	uint8_t _processIndex;
-	MetalProcessedFrameInfo _mpfi;
-	MetalRenderFrameInfo _mrfi;
+	MetalTexturePair texPairProcess;
+	MetalRenderFrameInfo renderFrameInfo;
 }
 
 @property (readonly, nonatomic) ClientDisplay3DPresenter *cdp;
@@ -212,29 +227,35 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @property (retain) id<MTLRenderPipelineState> outputRGBAPipeline;
 @property (retain) id<MTLRenderPipelineState> outputDrawablePipeline;
 @property (assign) MTLPixelFormat drawableFormat;
-@property (retain) id<MTLTexture> texDisplayPixelScaleMain;
-@property (retain) id<MTLTexture> texDisplayPixelScaleTouch;
+@property (retain) id<MTLBuffer> bufCPUFilterDstMain;
+@property (retain) id<MTLBuffer> bufCPUFilterDstTouch;
 @property (retain) id<MTLTexture> texHUDCharMap;
+@property (assign) BOOL needsProcessFrameWait;
 @property (assign) BOOL needsViewportUpdate;
 @property (assign) BOOL needsRotationScaleUpdate;
 @property (assign) BOOL needsScreenVerticesUpdate;
 @property (assign) BOOL needsHUDVerticesUpdate;
+@property (assign) MetalTexturePair texPairProcess;
+@property (assign) MetalRenderFrameInfo renderFrameInfo;
 @property (assign, nonatomic) VideoFilterTypeID pixelScaler;
 @property (assign, nonatomic) OutputFilterTypeID outputFilter;
 
 - (id) initWithDisplayPresenter:(MacMetalDisplayPresenter *)thePresenter;
-- (MetalProcessedFrameInfo) processedFrameInfo;
 - (id<MTLCommandBuffer>) newCommandBuffer;
 - (void) setup;
+- (void) resizeCPUPixelScalerUsingFilterID:(const VideoFilterTypeID)filterID;
 - (void) copyHUDFontUsingFace:(const FT_Face &)fontFace size:(const size_t)glyphSize tileSize:(const size_t)glyphTileSize info:(GlyphInfo *)glyphInfo;
 - (void) processDisplays;
 - (void) updateRenderBuffers;
 - (void) renderForCommandBuffer:(id<MTLCommandBuffer>)cb
 			outputPipelineState:(id<MTLRenderPipelineState>)outputPipelineState
 			   hudPipelineState:(id<MTLRenderPipelineState>)hudPipelineState
-				 texDisplayMain:(id<MTLTexture>)texDisplayMain
-				texDisplayTouch:(id<MTLTexture>)texDisplayTouch;
-- (void) renderFinish;
+					texDisplays:(MetalTexturePair)texDisplay
+						   mrfi:(MetalRenderFrameInfo)mrfi;
+- (void) renderStartAtIndex:(uint8_t)index;
+- (void) renderFinishAtIndex:(uint8_t)index;
+- (ClientDisplayBufferState) renderBufferStateAtIndex:(uint8_t)index;
+- (void) setRenderBufferState:(ClientDisplayBufferState)bufferState index:(uint8_t)index;
 - (void) renderToBuffer:(uint32_t *)dstBuffer;
 
 @end
@@ -286,7 +307,7 @@ private:
 protected:
 	MacMetalDisplayPresenterObject *_presenterObject;
 	pthread_mutex_t _mutexProcessPtr;
-	dispatch_semaphore_t _semCPUFilter[2][2];
+	dispatch_semaphore_t _semCPUFilter[2];
 	
 	virtual void _UpdateNormalSize();
 	virtual void _UpdateOrder();
@@ -294,6 +315,7 @@ protected:
 	virtual void _UpdateClientSize();
 	virtual void _UpdateViewScale();
 	virtual void _LoadNativeDisplayByID(const NDSDisplayID displayID);
+	virtual void _ResizeCPUPixelScaler(const VideoFilterTypeID filterID);
 	
 public:
 	MacMetalDisplayPresenter();
@@ -302,7 +324,7 @@ public:
 	
 	MacMetalDisplayPresenterObject* GetPresenterObject() const;
 	pthread_mutex_t* GetMutexProcessPtr();
-	dispatch_semaphore_t GetCPUFilterSemaphore(const NDSDisplayID displayID, const uint8_t bufferIndex);
+	dispatch_semaphore_t GetCPUFilterSemaphore(const NDSDisplayID displayID);
 	
 	virtual void Init();
 	virtual void SetSharedData(MacClientSharedObject *sharedObject);
@@ -315,6 +337,7 @@ public:
 	
 	// Client view interface
 	virtual void ProcessDisplays();
+	virtual void UpdateLayout();
 	
 	virtual void CopyFrameToBuffer(uint32_t *dstBuffer);
 };
