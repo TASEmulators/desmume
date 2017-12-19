@@ -7413,8 +7413,9 @@ GPUSubsystem::GPUSubsystem()
 	_displayInfo.customWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	_displayInfo.customHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	
-	_displayInfo.framebufferSize = ((GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT) + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT)) * 2 * _displayInfo.pixelBytes;
-	_masterFramebuffer = malloc_alignedPage(_displayInfo.framebufferSize * 2);
+	_displayInfo.framebufferPageSize = ((GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT) + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT)) * 2 * _displayInfo.pixelBytes;
+	_displayInfo.framebufferPageCount = 1;
+	_masterFramebuffer = malloc_alignedPage(_displayInfo.framebufferPageSize * _displayInfo.framebufferPageCount);
 	_displayInfo.masterFramebufferHead = _masterFramebuffer;
 	
 	_displayInfo.isDisplayEnabled[NDSDisplayID_Main]  = true;
@@ -7615,13 +7616,13 @@ void GPUSubsystem::UpdateRenderProperties()
 		this->_engineSub->isLineOutputNative[l] = true;
 	}
 	
-	this->_displayInfo.bufferIndex = (this->_displayInfo.bufferIndex + 1) & 0x01;
+	this->_displayInfo.bufferIndex = (this->_displayInfo.bufferIndex + 1) % this->_displayInfo.framebufferPageCount;
 	
 	const size_t nativeFramebufferSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * this->_displayInfo.pixelBytes;
 	const size_t customFramebufferSize = this->_displayInfo.customWidth * this->_displayInfo.customHeight * this->_displayInfo.pixelBytes;
 	
-	this->_displayInfo.masterNativeBuffer = (u8 *)this->_masterFramebuffer + (this->_displayInfo.bufferIndex * this->_displayInfo.framebufferSize);
-	this->_displayInfo.masterCustomBuffer = (u8 *)this->_masterFramebuffer + (nativeFramebufferSize * 2) + (this->_displayInfo.bufferIndex * this->_displayInfo.framebufferSize);
+	this->_displayInfo.masterNativeBuffer = (u8 *)this->_masterFramebuffer + (this->_displayInfo.bufferIndex * this->_displayInfo.framebufferPageSize);
+	this->_displayInfo.masterCustomBuffer = (u8 *)this->_masterFramebuffer + (nativeFramebufferSize * 2) + (this->_displayInfo.bufferIndex * this->_displayInfo.framebufferPageSize);
 	this->_displayInfo.nativeBuffer[NDSDisplayID_Main]    = this->_displayInfo.masterNativeBuffer;
 	this->_displayInfo.customBuffer[NDSDisplayID_Main]    = this->_displayInfo.masterCustomBuffer;
 	this->_displayInfo.nativeBuffer[NDSDisplayID_Touch]   = (u8 *)this->_displayInfo.masterNativeBuffer + nativeFramebufferSize;
@@ -7713,6 +7714,21 @@ NDSDisplay* GPUSubsystem::GetDisplayMain()
 NDSDisplay* GPUSubsystem::GetDisplayTouch()
 {
 	return this->_display[NDSDisplayID_Touch];
+}
+
+size_t GPUSubsystem::GetFramebufferPageCount() const
+{
+	return this->_displayInfo.framebufferPageCount;
+}
+
+void GPUSubsystem::SetFramebufferPageCount(size_t pageCount)
+{
+	if (pageCount > MAX_FRAMEBUFFER_PAGES)
+	{
+		pageCount = MAX_FRAMEBUFFER_PAGES;
+	}
+	
+	this->_displayInfo.framebufferPageCount = pageCount;
 }
 
 size_t GPUSubsystem::GetCustomFramebufferWidth() const
@@ -7837,13 +7853,18 @@ void GPUSubsystem::SetCustomFramebufferSize(size_t w, size_t h)
 		this->_engineMain->ResetCaptureLineStates();
 	}
 	
-	this->_AllocateFramebuffers(this->_displayInfo.colorFormat, w, h);
+	this->_AllocateFramebuffers(this->_displayInfo.colorFormat, w, h, this->_displayInfo.framebufferPageCount);
 	
 	free_aligned(oldGpuDstToSrcIndexPtr);
 	free_aligned(oldGpuDstToSrcSSSE3_u8_8e);
 	free_aligned(oldGpuDstToSrcSSSE3_u8_16e);
 	free_aligned(oldGpuDstToSrcSSSE3_u16_8e);
 	free_aligned(oldGpuDstToSrcSSSE3_u32_4e);
+}
+
+NDSColorFormat GPUSubsystem::GetColorFormat() const
+{
+	return this->_displayInfo.colorFormat;
 }
 
 void GPUSubsystem::SetColorFormat(const NDSColorFormat outputFormat)
@@ -7864,15 +7885,10 @@ void GPUSubsystem::SetColorFormat(const NDSColorFormat outputFormat)
 		this->_engineMain->ResetCaptureLineStates();
 	}
 	
-	this->_AllocateFramebuffers(this->_displayInfo.colorFormat, this->_displayInfo.customWidth, this->_displayInfo.customHeight);
+	this->_AllocateFramebuffers(this->_displayInfo.colorFormat, this->_displayInfo.customWidth, this->_displayInfo.customHeight, this->_displayInfo.framebufferPageCount);
 }
 
-NDSColorFormat GPUSubsystem::GetColorFormat() const
-{
-	return this->_displayInfo.colorFormat;
-}
-
-void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, size_t h)
+void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, size_t h, size_t pageCount)
 {
 	void *oldMasterFramebuffer = this->_masterFramebuffer;
 	void *oldCustomVRAM = this->_customVRAM;
@@ -7885,12 +7901,13 @@ void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, 
 	
 	void *newCustomVRAM = NULL;
 	
-	this->_displayInfo.framebufferSize = (nativeFramebufferSize * 2) + (customFramebufferSize * 2);
-	this->_masterFramebuffer = malloc_alignedPage(this->_displayInfo.framebufferSize * 2);
+	this->_displayInfo.framebufferPageCount = pageCount;
+	this->_displayInfo.framebufferPageSize = (nativeFramebufferSize * 2) + (customFramebufferSize * 2);
+	this->_masterFramebuffer = malloc_alignedPage(this->_displayInfo.framebufferPageSize * this->_displayInfo.framebufferPageCount);
 	
 	this->_displayInfo.masterFramebufferHead = this->_masterFramebuffer;
-	this->_displayInfo.masterNativeBuffer = (u8 *)this->_masterFramebuffer + (this->_displayInfo.bufferIndex * this->_displayInfo.framebufferSize);
-	this->_displayInfo.masterCustomBuffer = (u8 *)this->_masterFramebuffer + (nativeFramebufferSize * 2) + (this->_displayInfo.bufferIndex * this->_displayInfo.framebufferSize);
+	this->_displayInfo.masterNativeBuffer = (u8 *)this->_masterFramebuffer + (this->_displayInfo.bufferIndex * this->_displayInfo.framebufferPageSize);
+	this->_displayInfo.masterCustomBuffer = (u8 *)this->_masterFramebuffer + (nativeFramebufferSize * 2) + (this->_displayInfo.bufferIndex * this->_displayInfo.framebufferPageSize);
 	
 	this->_displayInfo.nativeBuffer[NDSDisplayID_Main]  = this->_displayInfo.masterNativeBuffer;
 	this->_displayInfo.customBuffer[NDSDisplayID_Main]  = this->_displayInfo.masterCustomBuffer;
@@ -7928,7 +7945,7 @@ void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, 
 		case NDSColorFormat_BGR555_Rev:
 			newCustomVRAM = (void *)malloc_alignedCacheLine(((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
 			memset(newCustomVRAM, 0, ((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
-			memset_u16(this->_masterFramebuffer, 0x8000, (this->_displayInfo.framebufferSize * 2) / sizeof(u16));
+			memset_u16(this->_masterFramebuffer, 0x8000, (this->_displayInfo.framebufferPageSize * this->_displayInfo.framebufferPageCount) / sizeof(u16));
 			this->_customVRAM = newCustomVRAM;
 			this->_customVRAMBlank = (u16 *)newCustomVRAM + (newCustomVRAMBlockSize * 4);
 			break;
@@ -7936,7 +7953,7 @@ void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, 
 		case NDSColorFormat_BGR666_Rev:
 			newCustomVRAM = (void *)malloc_alignedCacheLine(((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
 			memset(newCustomVRAM, 0, ((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(u16));
-			memset_u32(this->_masterFramebuffer, 0x1F000000, (this->_displayInfo.framebufferSize * 2) / sizeof(FragmentColor));
+			memset_u32(this->_masterFramebuffer, 0x1F000000, (this->_displayInfo.framebufferPageSize * this->_displayInfo.framebufferPageCount) / sizeof(FragmentColor));
 			this->_customVRAM = newCustomVRAM;
 			this->_customVRAMBlank = (u16 *)newCustomVRAM + (newCustomVRAMBlockSize * 4);
 			break;
@@ -7944,7 +7961,7 @@ void GPUSubsystem::_AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, 
 		case NDSColorFormat_BGR888_Rev:
 			newCustomVRAM = (void *)malloc_alignedCacheLine(((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(FragmentColor));
 			memset(newCustomVRAM, 0, ((newCustomVRAMBlockSize * 4) + newCustomVRAMBlankSize) * sizeof(FragmentColor));
-			memset_u32(this->_masterFramebuffer, 0xFF000000, (this->_displayInfo.framebufferSize * 2) / sizeof(FragmentColor));
+			memset_u32(this->_masterFramebuffer, 0xFF000000, (this->_displayInfo.framebufferPageSize * this->_displayInfo.framebufferPageCount) / sizeof(FragmentColor));
 			this->_customVRAM = newCustomVRAM;
 			this->_customVRAMBlank = (FragmentColor *)newCustomVRAM + (newCustomVRAMBlockSize * 4);
 			break;
@@ -8154,17 +8171,17 @@ void GPUSubsystem::RenderLine(const size_t l)
 {
 	if (!this->_frameNeedsFinish)
 	{
-		u8 targetBufferIndex = this->_displayInfo.bufferIndex;
-		
-		if ( (l == 0) && !this->_willFrameSkip )
-		{
-			targetBufferIndex = (targetBufferIndex + 1) & 0x01;
-		}
-		
 		this->_event->DidApplyGPUSettingsBegin();
 		this->_engineMain->ApplySettings();
 		this->_engineSub->ApplySettings();
 		this->_event->DidApplyGPUSettingsEnd();
+		
+		u8 targetBufferIndex = this->_displayInfo.bufferIndex;
+		
+		if ( (l == 0) && !this->_willFrameSkip )
+		{
+			targetBufferIndex = (targetBufferIndex + 1) % this->_displayInfo.framebufferPageCount;
+		}
 		
 		this->_event->DidFrameBegin(this->_willFrameSkip, targetBufferIndex, l);
 		this->_frameNeedsFinish = true;
@@ -8346,11 +8363,11 @@ void GPUSubsystem::ClearWithColor(const u16 colorBGRA5551)
 	switch (this->_displayInfo.pixelBytes)
 	{
 		case 2:
-			memset_u16(this->_masterFramebuffer, color16, (this->_displayInfo.framebufferSize * 2) / this->_displayInfo.pixelBytes);
+			memset_u16(this->_masterFramebuffer, color16, (this->_displayInfo.framebufferPageSize * this->_displayInfo.framebufferPageCount) / this->_displayInfo.pixelBytes);
 			break;
 			
 		case 4:
-			memset_u32(this->_masterFramebuffer, color32.color, (this->_displayInfo.framebufferSize * 2) / this->_displayInfo.pixelBytes);
+			memset_u32(this->_masterFramebuffer, color32.color, (this->_displayInfo.framebufferPageSize * this->_displayInfo.framebufferPageCount) / this->_displayInfo.pixelBytes);
 			break;
 			
 		default:
@@ -8360,8 +8377,11 @@ void GPUSubsystem::ClearWithColor(const u16 colorBGRA5551)
 
 GPUClientFetchObject::GPUClientFetchObject()
 {
-	memset(&_fetchDisplayInfo[0], 0, sizeof(NDSDisplayInfo));
-	memset(&_fetchDisplayInfo[1], 0, sizeof(NDSDisplayInfo));
+	for (size_t i = 0; i < MAX_FRAMEBUFFER_PAGES; i++)
+	{
+		memset(&_fetchDisplayInfo[i], 0, sizeof(NDSDisplayInfo));
+	}
+	
 	_clientData = NULL;
 	_lastFetchIndex = 0;
 }
@@ -8373,7 +8393,28 @@ void GPUClientFetchObject::Init()
 
 void GPUClientFetchObject::SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo)
 {
-	// Do nothing. This is implementation dependent.
+	const size_t nativeSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * currentDisplayInfo.pixelBytes;
+	const size_t customSize = currentDisplayInfo.customWidth * currentDisplayInfo.customHeight * currentDisplayInfo.pixelBytes;
+	
+	for (size_t i = 0; i < currentDisplayInfo.framebufferPageCount; i++)
+	{
+		this->_fetchDisplayInfo[i] = currentDisplayInfo;
+		
+		if (i == 0)
+		{
+			this->_fetchDisplayInfo[0].nativeBuffer[NDSDisplayID_Main]  = (u8 *)currentDisplayInfo.masterFramebufferHead;
+			this->_fetchDisplayInfo[0].nativeBuffer[NDSDisplayID_Touch] = (u8 *)currentDisplayInfo.masterFramebufferHead + (nativeSize * 1);
+			this->_fetchDisplayInfo[0].customBuffer[NDSDisplayID_Main]  = (u8 *)currentDisplayInfo.masterFramebufferHead + (nativeSize * 2);
+			this->_fetchDisplayInfo[0].customBuffer[NDSDisplayID_Touch] = (u8 *)currentDisplayInfo.masterFramebufferHead + (nativeSize * 2) + customSize;
+		}
+		else
+		{
+			this->_fetchDisplayInfo[i].nativeBuffer[NDSDisplayID_Main]  = (u8 *)this->_fetchDisplayInfo[0].nativeBuffer[NDSDisplayID_Main]  + (currentDisplayInfo.framebufferPageSize * i);
+			this->_fetchDisplayInfo[i].nativeBuffer[NDSDisplayID_Touch] = (u8 *)this->_fetchDisplayInfo[0].nativeBuffer[NDSDisplayID_Touch] + (currentDisplayInfo.framebufferPageSize * i);
+			this->_fetchDisplayInfo[i].customBuffer[NDSDisplayID_Main]  = (u8 *)this->_fetchDisplayInfo[0].customBuffer[NDSDisplayID_Main]  + (currentDisplayInfo.framebufferPageSize * i);
+			this->_fetchDisplayInfo[i].customBuffer[NDSDisplayID_Touch] = (u8 *)this->_fetchDisplayInfo[0].customBuffer[NDSDisplayID_Touch] + (currentDisplayInfo.framebufferPageSize * i);
+		}
+	}
 }
 
 void GPUClientFetchObject::FetchFromBufferIndex(const u8 index)

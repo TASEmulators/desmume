@@ -173,6 +173,7 @@ public:
 		}
 		else
 		{
+			GPU->SetFramebufferPageCount(METAL_FETCH_BUFFER_COUNT);
 			GPU->SetWillPostprocessDisplays(false);
 		}
 	}
@@ -187,6 +188,7 @@ public:
 	fetchObject->Init();
 	gpuEvent->SetFetchObject(fetchObject);
 	
+	GPU->SetFramebufferPageCount(OPENGL_FETCH_BUFFER_COUNT);
 	GPU->SetWillAutoResolveToCustomBuffer(false);
 #endif
 	

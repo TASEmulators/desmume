@@ -35,7 +35,8 @@
 #undef BOOL
 #endif
 
-#define RENDER_BUFFER_COUNT 4
+#define METAL_FETCH_BUFFER_COUNT	3
+#define RENDER_BUFFER_COUNT			4
 
 enum ClientDisplayBufferState
 {
@@ -104,11 +105,11 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	id<MTLSamplerState> samplerHUDText;
 	
 	id<MTLBuffer> hudIndexBuffer;
-	id<MTLBuffer> _bufDisplayFetchNative[2][2];
-	id<MTLBuffer> _bufDisplayFetchCustom[2][2];
+	id<MTLBuffer> _bufDisplayFetchNative[2][METAL_FETCH_BUFFER_COUNT];
+	id<MTLBuffer> _bufDisplayFetchCustom[2][METAL_FETCH_BUFFER_COUNT];
 	
-	id<MTLBuffer> _bufMasterBrightMode[2][2];
-	id<MTLBuffer> _bufMasterBrightIntensity[2][2];
+	id<MTLBuffer> _bufMasterBrightMode[2][METAL_FETCH_BUFFER_COUNT];
+	id<MTLBuffer> _bufMasterBrightIntensity[2][METAL_FETCH_BUFFER_COUNT];
 	
 	size_t _fetchPixelBytes;
 	size_t _nativeLineSize;
@@ -116,10 +117,10 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	size_t _customLineSize;
 	size_t _customBufferSize;
 	
-	id<MTLTexture> _texDisplayFetchNative[2][2];
-	id<MTLTexture> _texDisplayFetchCustom[2][2];
-	id<MTLTexture> _texDisplayPostprocessNative[2][2];
-	id<MTLTexture> _texDisplayPostprocessCustom[2][2];
+	id<MTLTexture> _texDisplayFetchNative[2][METAL_FETCH_BUFFER_COUNT];
+	id<MTLTexture> _texDisplayFetchCustom[2][METAL_FETCH_BUFFER_COUNT];
+	id<MTLTexture> _texDisplayPostprocessNative[2][METAL_FETCH_BUFFER_COUNT];
+	id<MTLTexture> _texDisplayPostprocessCustom[2][METAL_FETCH_BUFFER_COUNT];
 	
 	MetalTexturePair texPairFetch;
 	id<MTLBlitCommandEncoder> bceFetch;
@@ -281,8 +282,8 @@ class MacMetalFetchObject : public GPUClientFetchObject
 protected:
 	bool _useDirectToCPUFilterPipeline;
 	uint32_t *_srcNativeCloneMaster;
-	uint32_t *_srcNativeClone[2][2];
-	pthread_rwlock_t _srcCloneRWLock[2][2];
+	uint32_t *_srcNativeClone[2][METAL_FETCH_BUFFER_COUNT];
+	pthread_rwlock_t _srcCloneRWLock[2][METAL_FETCH_BUFFER_COUNT];
 	
 	virtual void _FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
 	virtual void _FetchCustomDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);

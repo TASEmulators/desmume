@@ -69,6 +69,8 @@ struct Render3DInterface;
 #define GPU_VRAM_BLOCK_LINES			256
 #define GPU_VRAM_BLANK_REGION_LINES		544
 
+#define MAX_FRAMEBUFFER_PAGES			8
+
 void gpu_savestate(EMUFILE &os);
 bool gpu_loadstate(EMUFILE &is, int size);
 
@@ -1141,10 +1143,11 @@ typedef struct
 												//    false - The user requested the native size.
 	size_t customWidth;							// The requested custom width, measured in pixels.
 	size_t customHeight;						// The requested custom height, measured in pixels.
-	size_t framebufferSize;						// The size of a single framebuffer, which includes the native and custom buffers of both displays,
-												// measured in bytes.
+	size_t framebufferPageSize;					// The size of a single framebuffer page, which includes the native and custom buffers of both
+												// displays, measured in bytes.
 	
 	// Changed by calling GPUSubsystem::SetColorFormat() or GPUSubsystem::SetFramebufferSize().
+	size_t framebufferPageCount;				// The number of framebuffer pages that were requested by the client.
 	void *masterFramebufferHead;				// Pointer to the head of the master framebuffer memory block that encompasses all buffers.
 	
 	// Changed by calling GPUEngineBase::SetEnableState().
@@ -1773,7 +1776,7 @@ private:
 	NDSDisplayInfo _displayInfo;
 	
 	void _UpdateFPSRender3D();
-	void _AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, size_t h);
+	void _AllocateFramebuffers(NDSColorFormat outputFormat, size_t w, size_t h, size_t pageCount);
 	
 public:
 	GPUSubsystem();
@@ -1798,11 +1801,15 @@ public:
 	void* GetCustomVRAMBlankBuffer();
 	template<NDSColorFormat COLORFORMAT> void* GetCustomVRAMAddressUsingMappedAddress(const u32 addr, const size_t offset);
 	
+	size_t GetFramebufferPageCount() const;
+	void SetFramebufferPageCount(size_t pageCount);
+	
 	size_t GetCustomFramebufferWidth() const;
 	size_t GetCustomFramebufferHeight() const;
 	void SetCustomFramebufferSize(size_t w, size_t h);
-	void SetColorFormat(const NDSColorFormat outputFormat);
+	
 	NDSColorFormat GetColorFormat() const;
+	void SetColorFormat(const NDSColorFormat outputFormat);
 	
 	int Get3DRendererID();
 	void Set3DRendererByID(int rendererID);
@@ -1856,7 +1863,7 @@ public:
 class GPUClientFetchObject
 {
 protected:
-	NDSDisplayInfo _fetchDisplayInfo[2];
+	NDSDisplayInfo _fetchDisplayInfo[MAX_FRAMEBUFFER_PAGES];
 	volatile u8 _lastFetchIndex;
 	void *_clientData;
 	

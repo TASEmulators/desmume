@@ -4546,25 +4546,23 @@ OGLClientFetchObject::OGLClientFetchObject()
 	_useDirectToCPUFilterPipeline = true;
 	_fetchColorFormatOGL = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	
-	pthread_rwlock_init(&_srcCloneRWLock[NDSDisplayID_Main][0],  NULL);
-	pthread_rwlock_init(&_srcCloneRWLock[NDSDisplayID_Touch][0], NULL);
-	pthread_rwlock_init(&_srcCloneRWLock[NDSDisplayID_Main][1],  NULL);
-	pthread_rwlock_init(&_srcCloneRWLock[NDSDisplayID_Touch][1], NULL);
-	
 	pthread_rwlock_init(&_texFetchRWLock[NDSDisplayID_Main],  NULL);
 	pthread_rwlock_init(&_texFetchRWLock[NDSDisplayID_Touch], NULL);
 	
-	_srcNativeCloneMaster = (uint32_t *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * 2 * sizeof(uint32_t));
-	_srcNativeClone[NDSDisplayID_Main][0]  = _srcNativeCloneMaster + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 0);
-	_srcNativeClone[NDSDisplayID_Touch][0] = _srcNativeCloneMaster + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 1);
-	_srcNativeClone[NDSDisplayID_Main][1]  = _srcNativeCloneMaster + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2);
-	_srcNativeClone[NDSDisplayID_Touch][1] = _srcNativeCloneMaster + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 3);
-	memset(_srcNativeCloneMaster, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * sizeof(uint32_t));
+	_srcNativeCloneMaster = (uint32_t *)malloc_alignedPage(GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * OPENGL_FETCH_BUFFER_COUNT * sizeof(uint32_t));
+	memset(_srcNativeCloneMaster, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2 * OPENGL_FETCH_BUFFER_COUNT * sizeof(uint32_t));
 	
-	_srcCloneNeedsUpdate[NDSDisplayID_Main][0] = true;
-	_srcCloneNeedsUpdate[NDSDisplayID_Touch][0] = true;
-	_srcCloneNeedsUpdate[NDSDisplayID_Main][1] = true;
-	_srcCloneNeedsUpdate[NDSDisplayID_Touch][1] = true;
+	for (size_t i = 0; i < OPENGL_FETCH_BUFFER_COUNT; i++)
+	{
+		pthread_rwlock_init(&_srcCloneRWLock[NDSDisplayID_Main][i],  NULL);
+		pthread_rwlock_init(&_srcCloneRWLock[NDSDisplayID_Touch][i], NULL);
+		
+		_srcCloneNeedsUpdate[NDSDisplayID_Main][i]  = true;
+		_srcCloneNeedsUpdate[NDSDisplayID_Touch][i] = true;
+		
+		_srcNativeClone[NDSDisplayID_Main][i]  = _srcNativeCloneMaster + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * ((i * 2) + 0));
+		_srcNativeClone[NDSDisplayID_Touch][i] = _srcNativeCloneMaster + (GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * ((i * 2) + 1));
+	}
 }
 
 OGLClientFetchObject::~OGLClientFetchObject()
@@ -4577,25 +4575,24 @@ OGLClientFetchObject::~OGLClientFetchObject()
 	glDeleteTextures(4, &this->_texDisplayFetchNative[0][0]);
 	glDeleteTextures(4, &this->_texDisplayFetchCustom[0][0]);
 	
-	pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Main][0]);
-	pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][0]);
-	pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Main][1]);
-	pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][1]);
+	for (size_t i = 0; i < OPENGL_FETCH_BUFFER_COUNT; i++)
+	{
+		pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Main][i]);
+		pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][i]);
+		this->_srcNativeClone[NDSDisplayID_Main][i]  = NULL;
+		this->_srcNativeClone[NDSDisplayID_Touch][i] = NULL;
+	}
+	
 	free_aligned(this->_srcNativeCloneMaster);
 	this->_srcNativeCloneMaster = NULL;
-	this->_srcNativeClone[NDSDisplayID_Main][0]  = NULL;
-	this->_srcNativeClone[NDSDisplayID_Touch][0] = NULL;
-	this->_srcNativeClone[NDSDisplayID_Main][1]  = NULL;
-	this->_srcNativeClone[NDSDisplayID_Touch][1] = NULL;
-	pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][1]);
-	pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Main][1]);
-	pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][0]);
-	pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Main][0]);
 	
-	pthread_rwlock_destroy(&this->_srcCloneRWLock[NDSDisplayID_Main][0]);
-	pthread_rwlock_destroy(&this->_srcCloneRWLock[NDSDisplayID_Touch][0]);
-	pthread_rwlock_destroy(&this->_srcCloneRWLock[NDSDisplayID_Main][1]);
-	pthread_rwlock_destroy(&this->_srcCloneRWLock[NDSDisplayID_Touch][1]);
+	for (size_t i = OPENGL_FETCH_BUFFER_COUNT - 1; i < OPENGL_FETCH_BUFFER_COUNT; i--)
+	{
+		pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][i]);
+		pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Main][i]);
+		pthread_rwlock_destroy(&this->_srcCloneRWLock[NDSDisplayID_Touch][i]);
+		pthread_rwlock_destroy(&this->_srcCloneRWLock[NDSDisplayID_Main][i]);
+	}
 	
 	pthread_rwlock_destroy(&this->_texFetchRWLock[NDSDisplayID_Main]);
 	pthread_rwlock_destroy(&this->_texFetchRWLock[NDSDisplayID_Touch]);
@@ -4698,64 +4695,42 @@ void OGLClientFetchObject::FetchTextureUnlock(const NDSDisplayID displayID)
 
 void OGLClientFetchObject::Init()
 {
-	glGenTextures(4, &this->_texDisplayFetchNative[0][0]);
-	glGenTextures(4, &this->_texDisplayFetchCustom[0][0]);
+	glGenTextures(2 * OPENGL_FETCH_BUFFER_COUNT, &this->_texDisplayFetchNative[0][0]);
+	glGenTextures(2 * OPENGL_FETCH_BUFFER_COUNT, &this->_texDisplayFetchCustom[0][0]);
 	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Main][0]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Main][0]);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Main][1]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Main][1]);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Touch][0]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Touch][0]);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Touch][1]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Touch][1]);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Main][0]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Main][0]);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Main][1]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Main][1]);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Touch][0]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Touch][0]);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Touch][1]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Touch][1]);
+	for (size_t i = 0; i < OPENGL_FETCH_BUFFER_COUNT; i++)
+	{
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Main][i]);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Main][i]);
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Touch][i]);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Touch][i]);
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Main][i]);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Main][i]);
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Touch][i]);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_srcNativeClone[NDSDisplayID_Touch][i]);
+		
+		this->_srcCloneNeedsUpdate[NDSDisplayID_Main][i]  = true;
+		this->_srcCloneNeedsUpdate[NDSDisplayID_Touch][i] = true;
+	}
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
@@ -4766,30 +4741,11 @@ void OGLClientFetchObject::Init()
 	{
 		SetupHQnxLUTs_OGL(GL_TEXTURE0 + 1, this->_texLQ2xLUT, this->_texHQ2xLUT, this->_texHQ3xLUT, this->_texHQ4xLUT);
 	}
-	
-	this->_srcCloneNeedsUpdate[NDSDisplayID_Main][0] = true;
-	this->_srcCloneNeedsUpdate[NDSDisplayID_Touch][0] = true;
-	this->_srcCloneNeedsUpdate[NDSDisplayID_Main][1] = true;
-	this->_srcCloneNeedsUpdate[NDSDisplayID_Touch][1] = true;
 }
 
 void OGLClientFetchObject::SetFetchBuffers(const NDSDisplayInfo &currentDisplayInfo)
 {
-	const size_t nativeSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * currentDisplayInfo.pixelBytes;
-	const size_t customSize = currentDisplayInfo.customWidth * currentDisplayInfo.customHeight * currentDisplayInfo.pixelBytes;
-	
-	this->_fetchDisplayInfo[0] = currentDisplayInfo;
-	this->_fetchDisplayInfo[1] = currentDisplayInfo;
-	
-	this->_fetchDisplayInfo[0].nativeBuffer[NDSDisplayID_Main]  = (u8 *)currentDisplayInfo.masterFramebufferHead;
-	this->_fetchDisplayInfo[0].nativeBuffer[NDSDisplayID_Touch] = (u8 *)currentDisplayInfo.masterFramebufferHead + (nativeSize * 1);
-	this->_fetchDisplayInfo[0].customBuffer[NDSDisplayID_Main]  = (u8 *)currentDisplayInfo.masterFramebufferHead + (nativeSize * 2);
-	this->_fetchDisplayInfo[0].customBuffer[NDSDisplayID_Touch] = (u8 *)currentDisplayInfo.masterFramebufferHead + (nativeSize * 2) + customSize;
-	
-	this->_fetchDisplayInfo[1].nativeBuffer[NDSDisplayID_Main]  = (u8 *)this->_fetchDisplayInfo[0].nativeBuffer[NDSDisplayID_Main]  + currentDisplayInfo.framebufferSize;
-	this->_fetchDisplayInfo[1].nativeBuffer[NDSDisplayID_Touch] = (u8 *)this->_fetchDisplayInfo[0].nativeBuffer[NDSDisplayID_Touch] + currentDisplayInfo.framebufferSize;
-	this->_fetchDisplayInfo[1].customBuffer[NDSDisplayID_Main]  = (u8 *)this->_fetchDisplayInfo[0].customBuffer[NDSDisplayID_Main]  + currentDisplayInfo.framebufferSize;
-	this->_fetchDisplayInfo[1].customBuffer[NDSDisplayID_Touch] = (u8 *)this->_fetchDisplayInfo[0].customBuffer[NDSDisplayID_Touch] + currentDisplayInfo.framebufferSize;
+	this->GPUClientFetchObject::SetFetchBuffers(currentDisplayInfo);
 	
 #ifdef MSB_FIRST
 	this->_fetchColorFormatOGL = (currentDisplayInfo.pixelBytes == 2) ? GL_UNSIGNED_SHORT_1_5_5_5_REV : GL_UNSIGNED_INT_8_8_8_8;
@@ -4799,60 +4755,39 @@ void OGLClientFetchObject::SetFetchBuffers(const NDSDisplayInfo &currentDisplayI
 	
 	glFinish();
 	
-	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, currentDisplayInfo.framebufferSize * 2, currentDisplayInfo.masterFramebufferHead);
+	glTextureRangeAPPLE(GL_TEXTURE_RECTANGLE_ARB, currentDisplayInfo.framebufferPageSize * currentDisplayInfo.framebufferPageCount, currentDisplayInfo.masterFramebufferHead);
 	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
 	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Main][0]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[0].nativeBuffer[NDSDisplayID_Main]);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Main][1]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[1].nativeBuffer[NDSDisplayID_Main]);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Touch][0]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[0].nativeBuffer[NDSDisplayID_Touch]);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Touch][1]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[1].nativeBuffer[NDSDisplayID_Touch]);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Main][0]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[0].customBuffer[NDSDisplayID_Main]);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Main][1]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[1].customBuffer[NDSDisplayID_Main]);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Touch][0]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[0].customBuffer[NDSDisplayID_Touch]);
-	
-	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Touch][1]);
-	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[1].customBuffer[NDSDisplayID_Touch]);
+	for (size_t i = 0; i < currentDisplayInfo.framebufferPageCount; i++)
+	{
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Main][i]);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[i].nativeBuffer[NDSDisplayID_Main]);
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchNative[NDSDisplayID_Touch][i]);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[i].nativeBuffer[NDSDisplayID_Touch]);
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Main][i]);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[i].customBuffer[NDSDisplayID_Main]);
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, this->_texDisplayFetchCustom[NDSDisplayID_Touch][i]);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 0, GL_RGBA, this->_fetchColorFormatOGL, this->_fetchDisplayInfo[i].customBuffer[NDSDisplayID_Touch]);
+		
+		pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Main][i]);
+		this->_srcCloneNeedsUpdate[NDSDisplayID_Main][i] = true;
+		pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Main][i]);
+		
+		pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][i]);
+		this->_srcCloneNeedsUpdate[NDSDisplayID_Touch][i] = true;
+		pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][i]);
+	}
 	
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 	
 	glFinish();
-	
-	pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Main][0]);
-	this->_srcCloneNeedsUpdate[NDSDisplayID_Main][0] = true;
-	pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Main][0]);
-	
-	pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][0]);
-	this->_srcCloneNeedsUpdate[NDSDisplayID_Touch][0] = true;
-	pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][0]);
-	
-	pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Main][1]);
-	this->_srcCloneNeedsUpdate[NDSDisplayID_Main][1] = true;
-	pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Main][1]);
-	
-	pthread_rwlock_wrlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][1]);
-	this->_srcCloneNeedsUpdate[NDSDisplayID_Touch][1] = true;
-	pthread_rwlock_unlock(&this->_srcCloneRWLock[NDSDisplayID_Touch][1]);
 }
 
 void OGLClientFetchObject::FetchFromBufferIndex(const u8 index)

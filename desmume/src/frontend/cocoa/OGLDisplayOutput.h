@@ -35,6 +35,7 @@
 
 #include "ClientDisplayView.h"
 
+#define OPENGL_FETCH_BUFFER_COUNT	3
 
 class OGLVideoOutput;
 
@@ -342,8 +343,8 @@ class OGLClientFetchObject : public GPUClientFetchObject
 protected:
 	OGLContextInfo *_contextInfo;
 	GLenum _fetchColorFormatOGL;
-	GLuint _texDisplayFetchNative[2][2];
-	GLuint _texDisplayFetchCustom[2][2];
+	GLuint _texDisplayFetchNative[2][OPENGL_FETCH_BUFFER_COUNT];
+	GLuint _texDisplayFetchCustom[2][OPENGL_FETCH_BUFFER_COUNT];
 	
 	GLuint _texLQ2xLUT;
 	GLuint _texHQ2xLUT;
@@ -354,10 +355,10 @@ protected:
 	
 	bool _useDirectToCPUFilterPipeline;
 	uint32_t *_srcNativeCloneMaster;
-	uint32_t *_srcNativeClone[2][2];
-	pthread_rwlock_t _srcCloneRWLock[2][2];
+	uint32_t *_srcNativeClone[2][OPENGL_FETCH_BUFFER_COUNT];
+	pthread_rwlock_t _srcCloneRWLock[2][OPENGL_FETCH_BUFFER_COUNT];
 	pthread_rwlock_t _texFetchRWLock[2];
-	bool _srcCloneNeedsUpdate[2][2];
+	bool _srcCloneNeedsUpdate[2][OPENGL_FETCH_BUFFER_COUNT];
 	
 	virtual void _FetchNativeDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
 	virtual void _FetchCustomDisplayByID(const NDSDisplayID displayID, const u8 bufferIndex);
