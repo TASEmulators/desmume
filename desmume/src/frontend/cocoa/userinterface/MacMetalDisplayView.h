@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -36,16 +36,7 @@
 #endif
 
 #define METAL_FETCH_BUFFER_COUNT	3
-#define RENDER_BUFFER_COUNT			4
-
-enum ClientDisplayBufferState
-{
-	ClientDisplayBufferState_Idle			= 0,	// The buffer has already been read and is currently idle. It is a candidate for a read or write operation.
-	ClientDisplayBufferState_Writing		= 1,	// The buffer is currently being written. It cannot be accessed.
-	ClientDisplayBufferState_Ready			= 2,	// The buffer was just written to, but has not been read yet. It is a candidate for a read or write operation.
-	ClientDisplayBufferState_PendingRead	= 3,	// The buffer has been marked that it will be read. It must not be accessed.
-	ClientDisplayBufferState_Reading		= 4		// The buffer is currently being read. It cannot be accessed.
-};
+#define RENDER_BUFFER_COUNT			6
 
 class MacMetalFetchObject;
 class MacMetalDisplayPresenter;
@@ -89,6 +80,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 @interface MetalDisplayViewSharedData : MacClientSharedObject
 {
 	id<MTLDevice> device;
+	id<MTLCommandQueue> _fetchCommandQueue;
 	id<MTLCommandQueue> commandQueue;
 	id<MTLLibrary> defaultLibrary;
 	
@@ -124,6 +116,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	
 	MetalTexturePair texPairFetch;
 	id<MTLBlitCommandEncoder> bceFetch;
+	BOOL willFetchImmediate;
 	
 	id<MTLTexture> texLQ2xLUT;
 	id<MTLTexture> texHQ2xLUT;
@@ -156,6 +149,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 
 @property (assign) MetalTexturePair texPairFetch;
 @property (assign) id<MTLBlitCommandEncoder> bceFetch;
+@property (assign) BOOL willFetchImmediate;
 
 @property (readonly, nonatomic) id<MTLTexture> texLQ2xLUT;
 @property (readonly, nonatomic) id<MTLTexture> texHQ2xLUT;
@@ -215,7 +209,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	
 	OSSpinLock _spinlockRenderBufferStates[RENDER_BUFFER_COUNT];
 	dispatch_semaphore_t _semRenderBuffers[RENDER_BUFFER_COUNT];
-	ClientDisplayBufferState _renderBufferState[RENDER_BUFFER_COUNT];
+	volatile ClientDisplayBufferState _renderBufferState[RENDER_BUFFER_COUNT];
 	
 	MetalTexturePair texPairProcess;
 	MetalRenderFrameInfo renderFrameInfo;

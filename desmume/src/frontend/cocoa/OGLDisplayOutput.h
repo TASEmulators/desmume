@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2017 DeSmuME team
+	Copyright (C) 2014-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@
 
 #include "ClientDisplayView.h"
 
-#define OPENGL_FETCH_BUFFER_COUNT	3
+#define OPENGL_FETCH_BUFFER_COUNT	2
 
 class OGLVideoOutput;
 

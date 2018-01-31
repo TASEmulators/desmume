@@ -2,7 +2,7 @@
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 Theo Berkau
 	Copyright (C) 2007 shash
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -7578,7 +7578,7 @@ void GPUSubsystem::ForceFrameStop()
 	if (this->_frameNeedsFinish)
 	{
 		this->_frameNeedsFinish = false;
-		this->_event->DidFrameEnd(false, this->_displayInfo);
+		this->_event->DidFrameEnd(this->_willFrameSkip, this->_displayInfo);
 	}
 }
 
@@ -7615,8 +7615,6 @@ void GPUSubsystem::UpdateRenderProperties()
 		this->_engineSub->isLineRenderNative[l] = true;
 		this->_engineSub->isLineOutputNative[l] = true;
 	}
-	
-	this->_displayInfo.bufferIndex = (this->_displayInfo.bufferIndex + 1) % this->_displayInfo.framebufferPageCount;
 	
 	const size_t nativeFramebufferSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * this->_displayInfo.pixelBytes;
 	const size_t customFramebufferSize = this->_displayInfo.customWidth * this->_displayInfo.customHeight * this->_displayInfo.pixelBytes;
@@ -8176,14 +8174,7 @@ void GPUSubsystem::RenderLine(const size_t l)
 		this->_engineSub->ApplySettings();
 		this->_event->DidApplyGPUSettingsEnd();
 		
-		u8 targetBufferIndex = this->_displayInfo.bufferIndex;
-		
-		if ( (l == 0) && !this->_willFrameSkip )
-		{
-			targetBufferIndex = (targetBufferIndex + 1) % this->_displayInfo.framebufferPageCount;
-		}
-		
-		this->_event->DidFrameBegin(this->_willFrameSkip, targetBufferIndex, l);
+		this->_event->DidFrameBegin(l, this->_willFrameSkip, this->_displayInfo.framebufferPageCount, this->_displayInfo.bufferIndex);
 		this->_frameNeedsFinish = true;
 	}
 	
@@ -8372,6 +8363,14 @@ void GPUSubsystem::ClearWithColor(const u16 colorBGRA5551)
 			
 		default:
 			break;
+	}
+}
+
+void GPUEventHandlerDefault::DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut)
+{
+	if ( (pageCount > 1) && (line == 0) && !isFrameSkipRequested )
+	{
+		selectedBufferIndexInOut = ((selectedBufferIndexInOut + 1) % pageCount);
 	}
 }
 

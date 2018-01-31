@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2017 DeSmuME team
+	Copyright (C) 2013-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -47,6 +47,15 @@
 
 #define VIDEO_FLUSH_TIME_LIMIT_OFFSET	8	// The amount of time, in seconds, to wait for a flush to occur on a given CVDisplayLink before stopping it.
 
+enum ClientDisplayBufferState
+{
+	ClientDisplayBufferState_Idle			= 0,	// The buffer has already been read and is currently idle. It is a candidate for a read or write operation.
+	ClientDisplayBufferState_Writing		= 1,	// The buffer is currently being written. It cannot be accessed.
+	ClientDisplayBufferState_Ready			= 2,	// The buffer was just written to, but has not been read yet. It is a candidate for a read or write operation.
+	ClientDisplayBufferState_PendingRead	= 3,	// The buffer has been marked that it will be read. It must not be accessed.
+	ClientDisplayBufferState_Reading		= 4		// The buffer is currently being read. It cannot be accessed.
+};
+
 class GPUEventHandlerOSX;
 
 #ifdef ENABLE_SHARED_FETCH_OBJECT
@@ -58,7 +67,11 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 {
 	GPUClientFetchObject *GPUFetchObject;
 	task_t _taskEmulationLoop;
-	semaphore_t _semFramebuffer[2];
+	
+	OSSpinLock _spinlockFramebufferStates[MAX_FRAMEBUFFER_PAGES];
+	semaphore_t _semFramebuffer[MAX_FRAMEBUFFER_PAGES];
+	volatile ClientDisplayBufferState _framebufferState[MAX_FRAMEBUFFER_PAGES];
+	
 	pthread_rwlock_t *_rwlockOutputList;
 	pthread_mutex_t _mutexDisplayLinkLists;
 	NSMutableArray *_cdsOutputList;
@@ -80,7 +93,10 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 
 - (void) semaphoreFramebufferCreate;
 - (void) semaphoreFramebufferDestroy;
-- (semaphore_t) semaphoreFramebufferAtIndex:(const u8)bufferIndex;
+- (u8) selectBufferIndex:(const u8)currentIndex pageCount:(size_t)pageCount;
+- (semaphore_t) semaphoreFramebufferPageAtIndex:(const u8)bufferIndex;
+- (ClientDisplayBufferState) framebufferStateAtIndex:(uint8_t)index;
+- (void) setFramebufferState:(ClientDisplayBufferState)bufferState index:(uint8_t)index;
 
 - (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock;
 - (void) incrementViewsUsingDirectToCPUFiltering;

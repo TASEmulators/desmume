@@ -2,7 +2,7 @@
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 Theo Berkau
 	Copyright (C) 2007 shash
-	Copyright (C) 2009-2017 DeSmuME team
+	Copyright (C) 2009-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1722,7 +1722,7 @@ public:
 class GPUEventHandler
 {
 public:
-	virtual void DidFrameBegin(bool isFrameSkipRequested, const u8 targetBufferIndex, const size_t line) = 0;
+	virtual void DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut) = 0;
 	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo) = 0;
 	virtual void DidRender3DBegin() = 0;
 	virtual void DidRender3DEnd() = 0;
@@ -1738,7 +1738,7 @@ public:
 class GPUEventHandlerDefault : public GPUEventHandler
 {
 public:
-	virtual void DidFrameBegin(bool isFrameSkipRequested, const u8 targetBufferIndex, const size_t line) {};
+	virtual void DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut);
 	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo) {};
 	virtual void DidRender3DBegin() {};
 	virtual void DidRender3DEnd() {};

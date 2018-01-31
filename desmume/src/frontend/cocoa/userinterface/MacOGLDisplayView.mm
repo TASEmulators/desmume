@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -195,14 +195,16 @@ void MacOGLClientFetchObject::FetchFromBufferIndex(const u8 index)
 	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_clientData;
 	this->_useDirectToCPUFilterPipeline = ([sharedViewObject numberViewsUsingDirectToCPUFiltering] > 0);
 	
-	semaphore_wait([sharedViewObject semaphoreFramebufferAtIndex:index]);
+	semaphore_wait([sharedViewObject semaphoreFramebufferPageAtIndex:index]);
+	[sharedViewObject setFramebufferState:ClientDisplayBufferState_Reading index:index];
 	
 	CGLLockContext(this->_context);
 	CGLSetCurrentContext(this->_context);
 	this->OGLClientFetchObject::FetchFromBufferIndex(index);
 	CGLUnlockContext(this->_context);
 	
-	semaphore_signal([sharedViewObject semaphoreFramebufferAtIndex:index]);
+	[sharedViewObject setFramebufferState:ClientDisplayBufferState_Idle index:index];
+	semaphore_signal([sharedViewObject semaphoreFramebufferPageAtIndex:index]);
 }
 
 GLuint MacOGLClientFetchObject::GetFetchTexture(const NDSDisplayID displayID)
@@ -436,7 +438,7 @@ void MacOGLDisplayPresenter::WriteLockEmuFramebuffer(const uint8_t bufferIndex)
 	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
 	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
 	
-	semaphore_wait([sharedViewObject semaphoreFramebufferAtIndex:bufferIndex]);
+	semaphore_wait([sharedViewObject semaphoreFramebufferPageAtIndex:bufferIndex]);
 }
 
 void MacOGLDisplayPresenter::ReadLockEmuFramebuffer(const uint8_t bufferIndex)
@@ -444,7 +446,7 @@ void MacOGLDisplayPresenter::ReadLockEmuFramebuffer(const uint8_t bufferIndex)
 	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
 	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
 	
-	semaphore_wait([sharedViewObject semaphoreFramebufferAtIndex:bufferIndex]);
+	semaphore_wait([sharedViewObject semaphoreFramebufferPageAtIndex:bufferIndex]);
 }
 
 void MacOGLDisplayPresenter::UnlockEmuFramebuffer(const uint8_t bufferIndex)
@@ -452,7 +454,7 @@ void MacOGLDisplayPresenter::UnlockEmuFramebuffer(const uint8_t bufferIndex)
 	const GPUClientFetchObject &fetchObj = this->GetFetchObject();
 	MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)fetchObj.GetClientData();
 	
-	semaphore_signal([sharedViewObject semaphoreFramebufferAtIndex:bufferIndex]);
+	semaphore_signal([sharedViewObject semaphoreFramebufferPageAtIndex:bufferIndex]);
 }
 
 #pragma mark -

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2017 DeSmuME team
+	Copyright (C) 2013-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -76,7 +76,7 @@ public:
 	
 	bool GetRender3DNeedsFinish();
 	
-	virtual void DidFrameBegin(bool isFrameSkipRequested, const u8 targetBufferIndex, const size_t line);
+	virtual void DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut);
 	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo);
 	virtual void DidRender3DBegin();
 	virtual void DidRender3DEnd();
@@ -183,12 +183,12 @@ public:
 	if (fetchObject == NULL)
 	{
 		fetchObject = new MacOGLClientFetchObject;
+		GPU->SetFramebufferPageCount(OPENGL_FETCH_BUFFER_COUNT);
 	}
 	
 	fetchObject->Init();
 	gpuEvent->SetFetchObject(fetchObject);
 	
-	GPU->SetFramebufferPageCount(OPENGL_FETCH_BUFFER_COUNT);
 	GPU->SetWillAutoResolveToCustomBuffer(false);
 #endif
 	
@@ -254,16 +254,22 @@ public:
 	gpuEvent->FramebufferLock();
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-	semaphore_wait([[self sharedData] semaphoreFramebufferAtIndex:0]);
-	semaphore_wait([[self sharedData] semaphoreFramebufferAtIndex:1]);
+	const size_t maxPages = GPU->GetDisplayInfo().framebufferPageCount;
+	for (size_t i = 0; i < maxPages; i++)
+	{
+		semaphore_wait([[self sharedData] semaphoreFramebufferPageAtIndex:i]);
+	}
 #endif
 	
 	GPU->SetCustomFramebufferSize(w, h);
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 	fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
-	semaphore_signal([[self sharedData] semaphoreFramebufferAtIndex:1]);
-	semaphore_signal([[self sharedData] semaphoreFramebufferAtIndex:0]);
+	
+	for (size_t i = maxPages - 1; i < maxPages; i--)
+	{
+		semaphore_signal([[self sharedData] semaphoreFramebufferPageAtIndex:i]);
+	}
 #endif
 	
 	gpuEvent->FramebufferUnlock();
@@ -315,16 +321,22 @@ public:
 	if (colorFormat != dispInfo.colorFormat)
 	{
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-		semaphore_wait([[self sharedData] semaphoreFramebufferAtIndex:0]);
-		semaphore_wait([[self sharedData] semaphoreFramebufferAtIndex:1]);
+		const size_t maxPages = GPU->GetDisplayInfo().framebufferPageCount;
+		for (size_t i = 0; i < maxPages; i++)
+		{
+			semaphore_wait([[self sharedData] semaphoreFramebufferPageAtIndex:i]);
+		}
 #endif
 		
 		GPU->SetColorFormat((NDSColorFormat)colorFormat);
 		
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 		fetchObject->SetFetchBuffers(GPU->GetDisplayInfo());
-		semaphore_signal([[self sharedData] semaphoreFramebufferAtIndex:1]);
-		semaphore_signal([[self sharedData] semaphoreFramebufferAtIndex:0]);
+		
+		for (size_t i = maxPages - 1; i < maxPages; i--)
+		{
+			semaphore_signal([[self sharedData] semaphoreFramebufferPageAtIndex:i]);
+		}
 #endif
 	}
 	
@@ -866,15 +878,20 @@ public:
 	gpuEvent->FramebufferLock();
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-	semaphore_wait([[self sharedData] semaphoreFramebufferAtIndex:0]);
-	semaphore_wait([[self sharedData] semaphoreFramebufferAtIndex:1]);
+	const size_t maxPages = GPU->GetDisplayInfo().framebufferPageCount;
+	for (size_t i = 0; i < maxPages; i++)
+	{
+		semaphore_wait([[self sharedData] semaphoreFramebufferPageAtIndex:i]);
+	}
 #endif
 	
 	GPU->ClearWithColor(colorBGRA5551);
 	
 #ifdef ENABLE_SHARED_FETCH_OBJECT
-	semaphore_signal([[self sharedData] semaphoreFramebufferAtIndex:1]);
-	semaphore_signal([[self sharedData] semaphoreFramebufferAtIndex:0]);
+	for (size_t i = maxPages - 1; i < maxPages; i--)
+	{
+		semaphore_signal([[self sharedData] semaphoreFramebufferPageAtIndex:i]);
+	}
 #endif
 	
 	gpuEvent->FramebufferUnlock();
@@ -941,9 +958,14 @@ public:
 	pthread_mutex_init(&_mutexFetchExecute, NULL);
 	
 	_taskEmulationLoop = 0;
-	_semFramebuffer[0] = 0;
-	_semFramebuffer[1] = 0;
-		
+	
+	for (size_t i = 0; i < MAX_FRAMEBUFFER_PAGES; i++)
+	{
+		_semFramebuffer[i] = 0;
+		_framebufferState[i] = ClientDisplayBufferState_Idle;
+		_spinlockFramebufferStates[i] = OS_SPINLOCK_INIT;
+	}
+	
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(respondToScreenChange:)
 												 name:@"NSApplicationDidChangeScreenParametersNotification"
@@ -1003,28 +1025,134 @@ public:
 - (void) semaphoreFramebufferCreate
 {
 	_taskEmulationLoop = mach_task_self();
-	semaphore_create(_taskEmulationLoop, &_semFramebuffer[0], SYNC_POLICY_FIFO, 1);
-	semaphore_create(_taskEmulationLoop, &_semFramebuffer[1], SYNC_POLICY_FIFO, 1);
+	
+	for (size_t i = 0; i < MAX_FRAMEBUFFER_PAGES; i++)
+	{
+		semaphore_create(_taskEmulationLoop, &_semFramebuffer[i], SYNC_POLICY_FIFO, 1);
+	}
 }
 
 - (void) semaphoreFramebufferDestroy
 {
-	if (_semFramebuffer[0] != 0)
+	for (size_t i = MAX_FRAMEBUFFER_PAGES - 1; i < MAX_FRAMEBUFFER_PAGES; i--)
 	{
-		semaphore_destroy(_taskEmulationLoop, _semFramebuffer[0]);
-		_semFramebuffer[0] = 0;
-	}
-	
-	if (_semFramebuffer[1] != 0)
-	{
-		semaphore_destroy(_taskEmulationLoop, _semFramebuffer[1]);
-		_semFramebuffer[1] = 0;
+		if (_semFramebuffer[i] != 0)
+		{
+			semaphore_destroy(_taskEmulationLoop, _semFramebuffer[i]);
+			_semFramebuffer[i] = 0;
+		}
 	}
 }
 
-- (semaphore_t) semaphoreFramebufferAtIndex:(const u8)bufferIndex
+- (u8) selectBufferIndex:(const u8)currentIndex pageCount:(size_t)pageCount
 {
+	u8 selectedIndex = currentIndex;
+	bool stillSearching = true;
+	
+	// First, search for an idle buffer along with its corresponding semaphore.
+	if (stillSearching)
+	{
+		selectedIndex = (selectedIndex + 1) % pageCount;
+		for (; selectedIndex != currentIndex; selectedIndex = (selectedIndex + 1) % pageCount)
+		{
+			if ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Idle)
+			{
+				stillSearching = false;
+				break;
+			}
+		}
+	}
+	
+	// Next, search for either an idle or a ready buffer along with its corresponding semaphore.
+	if (stillSearching)
+	{
+		selectedIndex = (selectedIndex + 1) % pageCount;
+		for (size_t spin = 0; spin < 100ULL * pageCount; selectedIndex = (selectedIndex + 1) % pageCount, spin++)
+		{
+			if ( ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Idle) ||
+				(([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Ready) && (selectedIndex != currentIndex)) )
+			{
+				stillSearching = false;
+				break;
+			}
+		}
+	}
+	
+	// Since the most available buffers couldn't be taken, we're going to spin for some finite
+	// period of time until an idle buffer emerges. If that happens, then force wait on the
+	// buffer's corresponding semaphore.
+	if (stillSearching)
+	{
+		selectedIndex = (selectedIndex + 1) % pageCount;
+		for (size_t spin = 0; spin < 10000ULL * pageCount; selectedIndex = (selectedIndex + 1) % pageCount, spin++)
+		{
+			if ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Idle)
+			{
+				stillSearching = false;
+				break;
+			}
+		}
+	}
+	
+	// In an effort to find something that is likely to be available shortly in the future,
+	// search for any idle, ready or reading buffer, and then force wait on its corresponding
+	// semaphore.
+	if (stillSearching)
+	{
+		selectedIndex = (selectedIndex + 1) % pageCount;
+		for (; selectedIndex != currentIndex; selectedIndex = (selectedIndex + 1) % pageCount)
+		{
+			if ( ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Idle) ||
+				 ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Ready) ||
+				 ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Reading) )
+			{
+				stillSearching = false;
+				break;
+			}
+		}
+	}
+	
+	// As a last resort, search for any buffer that is not currently writing, and then force wait
+	// on its corresponding semaphore.
+	if (stillSearching)
+	{
+		selectedIndex = (selectedIndex + 1) % pageCount;
+		for (; selectedIndex != currentIndex; selectedIndex = (selectedIndex + 1) % pageCount)
+		{
+			if ( ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Idle) ||
+				 ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Ready) ||
+				 ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Reading) ||
+				 ([self framebufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_PendingRead) )
+			{
+				stillSearching = false;
+				break;
+			}
+		}
+	}
+	
+	return selectedIndex;
+}
+
+- (semaphore_t) semaphoreFramebufferPageAtIndex:(const u8)bufferIndex
+{
+	assert(bufferIndex < MAX_FRAMEBUFFER_PAGES);
 	return _semFramebuffer[bufferIndex];
+}
+
+- (ClientDisplayBufferState) framebufferStateAtIndex:(uint8_t)index
+{
+	OSSpinLockLock(&_spinlockFramebufferStates[index]);
+	const ClientDisplayBufferState bufferState = _framebufferState[index];
+	OSSpinLockUnlock(&_spinlockFramebufferStates[index]);
+	
+	return bufferState;
+}
+
+- (void) setFramebufferState:(ClientDisplayBufferState)bufferState index:(uint8_t)index
+{
+	OSSpinLockLock(&_spinlockFramebufferStates[index]);
+	_framebufferState[index] = bufferState;
+	OSSpinLockUnlock(&_spinlockFramebufferStates[index]);
 }
 
 - (void) setOutputList:(NSMutableArray *)theOutputList rwlock:(pthread_rwlock_t *)theRWLock
@@ -1290,7 +1418,7 @@ void GPUEventHandlerOSX::SetFetchObject(GPUClientFetchObject *fetchObject)
 	this->_fetchObject = fetchObject;
 }
 
-void GPUEventHandlerOSX::DidFrameBegin(bool isFrameSkipRequested, const u8 targetBufferIndex, const size_t line)
+void GPUEventHandlerOSX::DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut)
 {
 	this->FramebufferLock();
 	
@@ -1298,7 +1426,14 @@ void GPUEventHandlerOSX::DidFrameBegin(bool isFrameSkipRequested, const u8 targe
 	if (!isFrameSkipRequested)
 	{
 		MacClientSharedObject *sharedViewObject = (MacClientSharedObject *)this->_fetchObject->GetClientData();
-		semaphore_wait([sharedViewObject semaphoreFramebufferAtIndex:targetBufferIndex]);
+		
+		if ( (pageCount > 1) && (line == 0) )
+		{
+			selectedBufferIndexInOut = [sharedViewObject selectBufferIndex:selectedBufferIndexInOut pageCount:pageCount];
+		}
+		
+		semaphore_wait([sharedViewObject semaphoreFramebufferPageAtIndex:selectedBufferIndexInOut]);
+		[sharedViewObject setFramebufferState:ClientDisplayBufferState_Writing index:selectedBufferIndexInOut];
 	}
 #endif
 }
@@ -1310,7 +1445,8 @@ void GPUEventHandlerOSX::DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &
 	if (!isFrameSkipped)
 	{
 		this->_fetchObject->SetFetchDisplayInfo(latestDisplayInfo);
-		semaphore_signal([sharedViewObject semaphoreFramebufferAtIndex:latestDisplayInfo.bufferIndex]);
+		[sharedViewObject setFramebufferState:ClientDisplayBufferState_Ready index:latestDisplayInfo.bufferIndex];
+		semaphore_signal([sharedViewObject semaphoreFramebufferPageAtIndex:latestDisplayInfo.bufferIndex]);
 	}
 #endif
 	

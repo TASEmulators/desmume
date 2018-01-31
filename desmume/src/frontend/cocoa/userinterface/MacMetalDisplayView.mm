@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@
 
 @synthesize texPairFetch;
 @synthesize bceFetch;
+@synthesize willFetchImmediate;
 
 @synthesize texLQ2xLUT;
 @synthesize texHQ2xLUT;
@@ -66,6 +67,7 @@
 	[device retain];
 	
 	commandQueue = [device newCommandQueue];
+	_fetchCommandQueue = [device newCommandQueue];
 	defaultLibrary = [device newDefaultLibrary];
 	_fetch555Pipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch555"] error:nil] retain];
 	_fetch666Pipeline = [[device newComputePipelineStateWithFunction:[defaultLibrary newFunctionWithName:@"nds_fetch666"] error:nil] retain];
@@ -148,7 +150,7 @@
 		idxBufferPtr[j+5] = k+0;
 	}
 	
-	id<MTLCommandBuffer> cb = [commandQueue commandBufferWithUnretainedReferences];;
+	id<MTLCommandBuffer> cb = [_fetchCommandQueue commandBufferWithUnretainedReferences];;
 	id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
 	
 	[bce copyFromBuffer:tempHUDIndexBuffer
@@ -235,9 +237,10 @@
 	texPairFetch.main  = [_texDisplayPostprocessNative[NDSDisplayID_Main][0]  retain];
 	texPairFetch.touch = [_texDisplayPostprocessNative[NDSDisplayID_Touch][0] retain];
 	bceFetch = nil;
+	willFetchImmediate = YES;
 	
 	// Set up the HQnx LUT textures.
-	SetupHQnxLUTs_Metal(device, commandQueue, texLQ2xLUT, texHQ2xLUT, texHQ3xLUT, texHQ4xLUT);
+	SetupHQnxLUTs_Metal(device, _fetchCommandQueue, texLQ2xLUT, texHQ2xLUT, texHQ3xLUT, texHQ4xLUT);
 	texCurrentHQnxLUT = nil;
 	
 	return self;
@@ -248,6 +251,7 @@
 	[device release];
 	
 	[commandQueue release];
+	[_fetchCommandQueue release];
 	[defaultLibrary release];
 	[_fetch555Pipeline release];
 	[_fetch666Pipeline release];
@@ -426,10 +430,9 @@
 	const size_t th = _fetchThreadsPerGroup.height;
 	_fetchThreadGroupsPerGridCustom = MTLSizeMake((w + tw - 1) / tw, (h + th - 1) / th, 1);
 	
-	id<MTLCommandBuffer> cb = [commandQueue commandBufferWithUnretainedReferences];
+	id<MTLCommandBuffer> cb = [_fetchCommandQueue commandBufferWithUnretainedReferences];
 	MetalTexturePair newTexPair = [self setFetchTextureBindingsAtIndex:dispInfo.bufferIndex commandBuffer:cb];
 	[cb commit];
-	[cb waitUntilCompleted];
 	
 	const MetalTexturePair oldTexPair = [self texPairFetch];
 	
@@ -625,108 +628,107 @@
 
 - (void) fetchFromBufferIndex:(const u8)index
 {
-	id<MTLCommandBuffer> cb = [commandQueue commandBufferWithUnretainedReferences];
+	id<MTLCommandBuffer> cb = [_fetchCommandQueue commandBufferWithUnretainedReferences];
+	[cb enqueue];
+	
+	[self setWillFetchImmediate:YES];
 	
 	if (!_isSharedBufferTextureSupported)
 	{
-		/*
+		semaphore_wait([self semaphoreFramebufferPageAtIndex:index]);
+		[self setFramebufferState:ClientDisplayBufferState_Reading index:index];
+		
 		id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
 		[self setBceFetch:bce];
-		*/
-		semaphore_wait([self semaphoreFramebufferAtIndex:index]);
 		GPUFetchObject->GPUClientFetchObject::FetchFromBufferIndex(index);
-		semaphore_signal([self semaphoreFramebufferAtIndex:index]);
-		/*
 		[self setBceFetch:nil];
 		[bce endEncoding];
 		
-		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-			semaphore_signal([self semaphoreFramebufferAtIndex:index]);
-		}];
-		[cb commit];
-		
-		cb = [commandQueue commandBufferWithUnretainedReferences];
-		*/
-	}
-	else
-	{
-		GPUFetchObject->GPUClientFetchObject::FetchFromBufferIndex(index);
+		if ([self willFetchImmediate])
+		{
+			[self setFramebufferState:ClientDisplayBufferState_Idle index:index];
+			semaphore_signal([self semaphoreFramebufferPageAtIndex:index]);
+		}
+		else
+		{
+			[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+				[self setFramebufferState:ClientDisplayBufferState_Idle index:index];
+				semaphore_signal([self semaphoreFramebufferPageAtIndex:index]);
+			}];
+			
+			[cb commit];
+			
+			cb = [_fetchCommandQueue commandBufferWithUnretainedReferences];
+			[cb enqueue];
+		}
 	}
 	
 	const MetalTexturePair newTexPair = [self setFetchTextureBindingsAtIndex:index commandBuffer:cb];
+	[newTexPair.main  retain];
+	[newTexPair.touch retain];
 	
-	//[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+	[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
 		const MetalTexturePair oldTexPair = [self texPairFetch];
-		
-		[newTexPair.main  retain];
-		[newTexPair.touch retain];
 		[self setTexPairFetch:newTexPair];
-		
 		[oldTexPair.main  release];
 		[oldTexPair.touch release];
-	//}];
+	}];
+	
 	[cb commit];
 }
 
 - (void) fetchNativeDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex blitCommandEncoder:(id<MTLBlitCommandEncoder>)bce
 {
-	if (_isSharedBufferTextureSupported)
-	{
-		return;
-	}
-	
 	id<MTLTexture> targetDestination = _texDisplayFetchNative[displayID][bufferIndex];
-	
 	const NDSDisplayInfo &currentDisplayInfo = GPUFetchObject->GetFetchDisplayInfoForBufferIndex(bufferIndex);
 	
-	[targetDestination replaceRegion:MTLRegionMake2D(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT)
-						 mipmapLevel:0
-						   withBytes:currentDisplayInfo.nativeBuffer[displayID]
-						 bytesPerRow:_nativeLineSize];
-	
-	/*
-	const id<MTLBuffer> targetSource = _bufDisplayFetchNative[displayID][bufferIndex];
-	
-	[bce copyFromBuffer:targetSource
-		   sourceOffset:0
-	  sourceBytesPerRow:_nativeLineSize
-	sourceBytesPerImage:_nativeBufferSize
-			 sourceSize:MTLSizeMake(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 1)
-			  toTexture:targetDestination
-	   destinationSlice:0
-	   destinationLevel:0
-	  destinationOrigin:MTLOriginMake(0, 0, 0)];
-	*/
+	if ([self willFetchImmediate])
+	{
+		[targetDestination replaceRegion:MTLRegionMake2D(0, 0, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT)
+							 mipmapLevel:0
+							   withBytes:currentDisplayInfo.nativeBuffer[displayID]
+							 bytesPerRow:_nativeLineSize];
+	}
+	else
+	{
+		[bce copyFromBuffer:_bufDisplayFetchNative[displayID][bufferIndex]
+			   sourceOffset:0
+		  sourceBytesPerRow:_nativeLineSize
+		sourceBytesPerImage:_nativeBufferSize
+				 sourceSize:MTLSizeMake(GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT, 1)
+				  toTexture:targetDestination
+		   destinationSlice:0
+		   destinationLevel:0
+		  destinationOrigin:MTLOriginMake(0, 0, 0)];
+	}
 }
 
 - (void) fetchCustomDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex blitCommandEncoder:(id<MTLBlitCommandEncoder>)bce
 {
-	if (_isSharedBufferTextureSupported)
-	{
-		return;
-	}
-	
 	const NDSDisplayInfo &currentDisplayInfo = GPUFetchObject->GetFetchDisplayInfoForBufferIndex(bufferIndex);
 	id<MTLTexture> targetDestination = _texDisplayFetchCustom[displayID][bufferIndex];
 	
-	[targetDestination replaceRegion:MTLRegionMake2D(0, 0, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight)
-						 mipmapLevel:0
-						   withBytes:currentDisplayInfo.customBuffer[displayID]
-						 bytesPerRow:_customLineSize];
-	
-	/*
-	const id<MTLBuffer> targetSource = _bufDisplayFetchCustom[displayID][bufferIndex];
-	
-	[bce copyFromBuffer:targetSource
-		   sourceOffset:0
-	  sourceBytesPerRow:_customLineSize
-	sourceBytesPerImage:_customBufferSize
-			 sourceSize:MTLSizeMake(currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 1)
-			  toTexture:targetDestination
-	   destinationSlice:0
-	   destinationLevel:0
-	  destinationOrigin:MTLOriginMake(0, 0, 0)];
-	*/
+	if ( (currentDisplayInfo.customWidth < GPU_FRAMEBUFFER_NATIVE_WIDTH * 5) && (currentDisplayInfo.customHeight < GPU_FRAMEBUFFER_NATIVE_HEIGHT * 5) )
+	{
+		[targetDestination replaceRegion:MTLRegionMake2D(0, 0, currentDisplayInfo.customWidth, currentDisplayInfo.customHeight)
+							 mipmapLevel:0
+							   withBytes:currentDisplayInfo.customBuffer[displayID]
+							 bytesPerRow:_customLineSize];
+	}
+	else
+	{
+		[self setWillFetchImmediate:NO];
+		
+		[bce copyFromBuffer:_bufDisplayFetchCustom[displayID][bufferIndex]
+			   sourceOffset:0
+		  sourceBytesPerRow:_customLineSize
+		sourceBytesPerImage:_customBufferSize
+				 sourceSize:MTLSizeMake(currentDisplayInfo.customWidth, currentDisplayInfo.customHeight, 1)
+				  toTexture:targetDestination
+		   destinationSlice:0
+		   destinationLevel:0
+		  destinationOrigin:MTLOriginMake(0, 0, 0)];
+	}
 }
 
 @end
@@ -1385,10 +1387,10 @@
 			
 			[cce endEncoding];
 			
+			[newTexProcess.main  retain];
+			[newTexProcess.touch retain];
+			
 			[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-				[newTexProcess.main  retain];
-				[newTexProcess.touch retain];
-				
 				const MetalTexturePair oldTexPair = [self texPairProcess];
 				[self setTexPairProcess:newTexProcess];
 				[oldTexPair.main  release];
@@ -1547,15 +1549,16 @@
 					}
 				}
 				
+				[newTexProcess.main  retain];
+				[newTexProcess.touch retain];
+				
 				[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-					[newTexProcess.main  retain];
-					[newTexProcess.touch retain];
-					
 					const MetalTexturePair oldTexPair = [self texPairProcess];
 					[self setTexPairProcess:newTexProcess];
 					[oldTexPair.main  release];
 					[oldTexPair.touch release];
 				}];
+				
 				[cb commit];
 				
 				if ([self needsProcessFrameWait])
@@ -1626,10 +1629,10 @@
 					newTexProcess.touch = _texDisplayPixelScaler[NDSDisplayID_Touch];
 				}
 				
+				[newTexProcess.main  retain];
+				[newTexProcess.touch retain];
+				
 				[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-					[newTexProcess.main  retain];
-					[newTexProcess.touch retain];
-					
 					const MetalTexturePair oldTexPair = [self texPairProcess];
 					[self setTexPairProcess:newTexProcess];
 					[oldTexPair.main  release];
@@ -1650,12 +1653,12 @@
 	}
 	else
 	{
+		[newTexProcess.main  retain];
+		[newTexProcess.touch retain];
+		
 		id<MTLCommandBuffer> cb = [self newCommandBuffer];
 		
 		[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
-			[newTexProcess.main  retain];
-			[newTexProcess.touch retain];
-			
 			const MetalTexturePair oldTexPair = [self texPairProcess];
 			[self setTexPairProcess:newTexProcess];
 			[oldTexPair.main  release];
@@ -1781,7 +1784,7 @@
 		if (stillSearching)
 		{
 			selectedIndex = (selectedIndex + 1) % RENDER_BUFFER_COUNT;
-			for (size_t spin = 0; spin < 10ULL * RENDER_BUFFER_COUNT; selectedIndex = (selectedIndex + 1) % RENDER_BUFFER_COUNT, spin++)
+			for (size_t spin = 0; spin < 100ULL * RENDER_BUFFER_COUNT; selectedIndex = (selectedIndex + 1) % RENDER_BUFFER_COUNT, spin++)
 			{
 				if ( ([self renderBufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Idle) ||
 					(([self renderBufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Ready) && (selectedIndex != mrfi.renderIndex)) )
@@ -1802,7 +1805,7 @@
 		if (stillSearching)
 		{
 			selectedIndex = (selectedIndex + 1) % RENDER_BUFFER_COUNT;
-			for (size_t spin = 0; spin < 100000ULL * RENDER_BUFFER_COUNT; selectedIndex = (selectedIndex + 1) % RENDER_BUFFER_COUNT, spin++)
+			for (size_t spin = 0; spin < 10000ULL * RENDER_BUFFER_COUNT; selectedIndex = (selectedIndex + 1) % RENDER_BUFFER_COUNT, spin++)
 			{
 				if ([self renderBufferStateAtIndex:selectedIndex] == ClientDisplayBufferState_Idle)
 				{
