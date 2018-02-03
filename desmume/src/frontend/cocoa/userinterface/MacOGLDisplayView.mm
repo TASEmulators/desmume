@@ -505,6 +505,7 @@ void MacOGLDisplayView::SetViewNeedsFlush()
 	if (this->GetRenderToCALayer())
 	{
 		[this->_caLayer setNeedsDisplay];
+		[CATransaction flush];
 	}
 	else
 	{

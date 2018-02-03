@@ -1199,7 +1199,7 @@ public:
 	{
 		if ([cdsOutput isKindOfClass:[CocoaDSDisplayVideo class]])
 		{
-			[CocoaDSUtil messageSendOneWay:[cdsOutput receivePort] msgID:MESSAGE_RECEIVE_GPU_FRAME];
+			[(CocoaDSDisplayVideo *)cdsOutput signalMessage:MESSAGE_RECEIVE_GPU_FRAME];
 		}
 	}
 	

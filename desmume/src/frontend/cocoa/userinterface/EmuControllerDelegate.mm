@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2017 DeSmuME Team
+	Copyright (C) 2013-2018 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1464,7 +1464,7 @@
 	
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[CocoaDSUtil messageSendOneWay:[[[windowController view] cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
+		[[[windowController view] cdsVideoOutput] signalMessage:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_EMULATOR_RESET];
@@ -1762,7 +1762,7 @@
 	
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[CocoaDSUtil messageSendOneWay:[[[windowController view] cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
+		[[[windowController view] cdsVideoOutput] signalMessage:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_LOADED];
@@ -1845,7 +1845,7 @@
 	[[cdsCore cdsGPU] clearWithColor:0x8000];
 	for (DisplayWindowController *windowController in windowList)
 	{
-		[CocoaDSUtil messageSendOneWay:[[[windowController view] cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
+		[[[windowController view] cdsVideoOutput] signalMessage:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
 	
 	[self setStatusText:NSSTRING_STATUS_ROM_UNLOADED];

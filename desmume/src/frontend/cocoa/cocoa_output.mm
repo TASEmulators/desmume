@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2017 DeSmuME team
+	Copyright (C) 2011-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -40,12 +40,11 @@
 @implementation CocoaDSOutput
 
 @synthesize property;
-@synthesize mutexConsume;
 @synthesize rwlockProducer;
 
 - (id)init
 {
-	self = [super initWithAutoreleaseInterval:0.1];
+	self = [super init];
 	if (self == nil)
 	{
 		return self;
@@ -54,45 +53,107 @@
 	property = [[NSMutableDictionary alloc] init];
 	[property setValue:[NSDate date] forKey:@"outputTime"];
 	
-	mutexConsume = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(mutexConsume, NULL);
-	
 	rwlockProducer = NULL;
+	
+	_threadMessageID = MESSAGE_NONE;
+	_pthread = NULL;
+	
+	_idleState = NO;
+	spinlockIdle = OS_SPINLOCK_INIT;
 	
 	return self;
 }
 
 - (void)dealloc
 {
-	// Force the thread to exit now so that we can safely release other resources.
-	[self forceThreadExit];
+	[self exitThread];
 	
 	[property release];
-	
-	pthread_mutex_destroy(mutexConsume);
-	free(mutexConsume);
-	mutexConsume = NULL;
 	
 	[super dealloc];
 }
 
-- (void) doCoreEmuFrame
+- (void) setIdle:(BOOL)theState
 {
-	[CocoaDSUtil messageSendOneWay:self.receivePort msgID:MESSAGE_EMU_FRAME_PROCESSED];
+	OSSpinLockLock(&spinlockIdle);
+	_idleState = theState;
+	OSSpinLockUnlock(&spinlockIdle);
 }
 
-- (void)handlePortMessage:(NSPortMessage *)portMessage
+- (BOOL) idle
 {
-	NSInteger message = (NSInteger)[portMessage msgid];
+	OSSpinLockLock(&spinlockIdle);
+	const BOOL theState = _idleState;
+	OSSpinLockUnlock(&spinlockIdle);
 	
-	switch (message)
+	return theState;
+}
+
+- (void) createThread
+{
+	pthread_mutex_init(&_mutexMessageLoop, NULL);
+	pthread_cond_init(&_condSignalMessage, NULL);
+	pthread_create(&_pthread, NULL, &RunOutputThread, self);
+}
+
+- (void) exitThread
+{
+	pthread_mutex_lock(&_mutexMessageLoop);
+	
+	if (_pthread != NULL)
+	{
+		_threadMessageID = MESSAGE_NONE;
+		pthread_mutex_unlock(&_mutexMessageLoop);
+		
+		pthread_cancel(_pthread);
+		pthread_join(_pthread, NULL);
+		_pthread = NULL;
+		
+		pthread_cond_destroy(&_condSignalMessage);
+		pthread_mutex_destroy(&_mutexMessageLoop);
+	}
+	else
+	{
+		pthread_mutex_unlock(&_mutexMessageLoop);
+	}
+}
+
+- (void) runMessageLoop
+{
+	pthread_mutex_lock(&_mutexMessageLoop);
+	
+	do
+	{
+		while (_threadMessageID == MESSAGE_NONE)
+		{
+			pthread_cond_wait(&_condSignalMessage, &_mutexMessageLoop);
+		}
+		
+		[self handleSignalMessageID:_threadMessageID];
+		_threadMessageID = MESSAGE_NONE;
+		
+	} while(true);
+}
+
+- (void) signalMessage:(int32_t)messageID
+{
+	pthread_mutex_lock(&_mutexMessageLoop);
+	
+	_threadMessageID = messageID;
+	pthread_cond_signal(&_condSignalMessage);
+	
+	pthread_mutex_unlock(&_mutexMessageLoop);
+}
+
+- (void) handleSignalMessageID:(int32_t)messageID
+{
+	switch (messageID)
 	{
 		case MESSAGE_EMU_FRAME_PROCESSED:
 			[self handleEmuFrameProcessed];
 			break;
 			
 		default:
-			[super handlePortMessage:portMessage];
 			break;
 	}
 }
@@ -100,6 +161,11 @@
 - (void) handleEmuFrameProcessed
 {
 	// The base method does nothing.
+}
+
+- (void) doCoreEmuFrame
+{
+	[self signalMessage:MESSAGE_EMU_FRAME_PROCESSED];
 }
 
 @end
@@ -417,79 +483,6 @@
 	return theString;
 }
 
-- (void)handlePortMessage:(NSPortMessage*)portMessage
-{
-	NSInteger message = (NSInteger)[portMessage msgid];
-	NSArray *messageComponents = [portMessage components];
-	
-	switch (message)
-	{
-		case MESSAGE_SET_AUDIO_PROCESS_METHOD:
-			[self handleSetAudioOutputEngine:[messageComponents objectAtIndex:0]];
-			break;
-			
-		case MESSAGE_SET_SPU_ADVANCED_LOGIC:
-			[self handleSetSpuAdvancedLogic:[messageComponents objectAtIndex:0]];
-			break;
-
-		case MESSAGE_SET_SPU_SYNC_MODE:
-			[self handleSetSpuSyncMode:[messageComponents objectAtIndex:0]];
-			break;
-		
-		case MESSAGE_SET_SPU_SYNC_METHOD:
-			[self handleSetSpuSyncMethod:[messageComponents objectAtIndex:0]];
-			break;
-			
-		case MESSAGE_SET_SPU_INTERPOLATION_MODE:
-			[self handleSetSpuInterpolationMode:[messageComponents objectAtIndex:0]];
-			break;
-			
-		case MESSAGE_SET_VOLUME:
-			[self handleSetVolume:[messageComponents objectAtIndex:0]];
-			break;
-			
-		default:
-			[super handlePortMessage:portMessage];
-			break;
-	}
-}
-
-- (void) handleSetVolume:(NSData *)volumeData
-{
-	const float vol = *(float *)[volumeData bytes];
-	[self setVolume:vol];
-}
-
-- (void) handleSetAudioOutputEngine:(NSData *)methodIdData
-{
-	const NSInteger methodID = *(NSInteger *)[methodIdData bytes];
-	[self setAudioOutputEngine:methodID];
-}
-
-- (void) handleSetSpuAdvancedLogic:(NSData *)stateData
-{
-	const BOOL theState = *(BOOL *)[stateData bytes];
-	[self setSpuAdvancedLogic:theState];
-}
-
-- (void) handleSetSpuSyncMode:(NSData *)modeIdData
-{
-	const NSInteger modeID = *(NSInteger *)[modeIdData bytes];
-	[self setSpuSyncMode:modeID];
-}
-
-- (void) handleSetSpuSyncMethod:(NSData *)methodIdData
-{
-	const NSInteger methodID = *(NSInteger *)[methodIdData bytes];
-	[self setSpuSyncMethod:methodID];
-}
-
-- (void) handleSetSpuInterpolationMode:(NSData *)modeIdData
-{
-	const NSInteger modeID = *(NSInteger *)[modeIdData bytes];
-	[self setSpuInterpolationMode:modeID];
-}
-
 @end
 
 @implementation CocoaDSDisplay
@@ -511,6 +504,8 @@
 	_currentReceivedFrameIndex = 0;
 	_receivedFrameCount = 0;
 	
+	[self createThread];
+	
 	return self;
 }
 
@@ -519,18 +514,16 @@
 	[super dealloc];
 }
 
-- (void)handlePortMessage:(NSPortMessage *)portMessage
+- (void) handleSignalMessageID:(int32_t)messageID
 {
-	NSInteger message = (NSInteger)[portMessage msgid];
-	
-	switch (message)
+	switch (messageID)
 	{
 		case MESSAGE_RECEIVE_GPU_FRAME:
 			[self handleReceiveGPUFrame];
 			break;
-		
+			
 		default:
-			[super handlePortMessage:portMessage];
+			[super handleSignalMessageID:messageID];
 			break;
 	}
 }
@@ -1109,11 +1102,9 @@
 	return filterID;
 }
 
-- (void)handlePortMessage:(NSPortMessage *)portMessage
+- (void) handleSignalMessageID:(int32_t)messageID
 {
-	NSInteger message = (NSInteger)[portMessage msgid];
-	
-	switch (message)
+	switch (messageID)
 	{
 		case MESSAGE_CHANGE_VIEW_PROPERTIES:
 			[self handleChangeViewProperties];
@@ -1136,7 +1127,7 @@
 			break;
 			
 		default:
-			[super handlePortMessage:portMessage];
+			[super handleSignalMessageID:messageID];
 			break;
 	}
 }
@@ -1256,3 +1247,11 @@
 }
 
 @end
+
+static void* RunOutputThread(void *arg)
+{
+	CocoaDSOutput *cdsDisplayOutput = (CocoaDSOutput *)arg;
+	[cdsDisplayOutput runMessageLoop];
+	
+	return NULL;
+}

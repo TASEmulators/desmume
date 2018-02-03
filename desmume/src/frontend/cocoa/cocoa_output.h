@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2017 DeSmuME team
+	Copyright (C) 2011-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,18 +28,31 @@
 @class NSImage;
 @class NSBitmapImageRep;
 
-@interface CocoaDSOutput : CocoaDSThread
+@interface CocoaDSOutput : NSObject
 {
+	uint32_t _threadMessageID;
+	pthread_mutex_t _mutexMessageLoop;
+	pthread_cond_t _condSignalMessage;
+	pthread_t _pthread;
+	
 	NSMutableDictionary *property;
 	
-	pthread_mutex_t *mutexConsume;
 	pthread_rwlock_t *rwlockProducer;
+	
+	BOOL _idleState;
+	OSSpinLock spinlockIdle;
 }
 
 @property (readonly) NSMutableDictionary *property;
 @property (assign) pthread_rwlock_t *rwlockProducer;
-@property (readonly) pthread_mutex_t *mutexConsume;
+@property (assign) BOOL idle;
 
+- (void) createThread;
+- (void) exitThread;
+
+- (void) runMessageLoop;
+- (void) signalMessage:(int32_t)messageID;
+- (void) handleSignalMessageID:(int32_t)messageID;
 - (void) doCoreEmuFrame;
 - (void) handleEmuFrameProcessed;
 
@@ -83,12 +96,6 @@
 - (NSString *) audioOutputEngineString;
 - (NSString *) spuInterpolationModeString;
 - (NSString *) spuSyncMethodString;
-- (void) handleSetVolume:(NSData *)volumeData;
-- (void) handleSetAudioOutputEngine:(NSData *)methodIdData;
-- (void) handleSetSpuAdvancedLogic:(NSData *)stateData;
-- (void) handleSetSpuSyncMode:(NSData *)modeIdData;
-- (void) handleSetSpuSyncMethod:(NSData *)methodIdData;
-- (void) handleSetSpuInterpolationMode:(NSData *)modeIdData;
 
 @end
 
@@ -174,3 +181,14 @@
 - (NSImage *) image;
 
 @end
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+static void* RunOutputThread(void *arg);
+
+#ifdef __cplusplus
+}
+#endif

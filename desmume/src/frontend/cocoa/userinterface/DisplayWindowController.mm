@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013-2017 DeSmuME team
+	Copyright (C) 2013-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -698,7 +698,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (IBAction) copy:(id)sender
 {
-	[CocoaDSUtil messageSendOneWay:[[[self view] cdsVideoOutput] receivePort] msgID:MESSAGE_COPY_TO_PASTEBOARD];
+	[[[self view] cdsVideoOutput] signalMessage:MESSAGE_COPY_TO_PASTEBOARD];
 }
 
 - (IBAction) changeHardwareMicGain:(id)sender
@@ -1311,12 +1311,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	// Add the video thread to the output list.
 	[emuControl addOutputToCore:newDisplayOutput];
 	
-	[NSThread detachNewThreadSelector:@selector(runThread:) toTarget:newDisplayOutput withObject:nil];
-	while ([newDisplayOutput thread] == nil)
-	{
-		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
-	}
-	
 	// Setup default values per user preferences.
 	[self setupUserDefaults];
 }
@@ -1449,7 +1443,6 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void)windowWillClose:(NSNotification *)notification
 {
 	[emuControl removeOutputFromCore:[[self view] cdsVideoOutput]];
-	[[[self view] cdsVideoOutput] forceThreadExit];
 	
 	[[emuControl windowList] removeObject:self];
 	
@@ -1946,7 +1939,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setDisplayMainVideoSource:(NSInteger)displaySourceID
 {
 	[[self cdsVideoOutput] setDisplayMainVideoSource:displaySourceID];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
+	[[self cdsVideoOutput] signalMessage:MESSAGE_RELOAD_REPROCESS_REDRAW];
 }
 
 - (NSInteger) displayMainVideoSource
@@ -1957,7 +1950,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setDisplayTouchVideoSource:(NSInteger)displaySourceID
 {
 	[[self cdsVideoOutput] setDisplayTouchVideoSource:displaySourceID];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
+	[[self cdsVideoOutput] signalMessage:MESSAGE_RELOAD_REPROCESS_REDRAW];
 }
 
 - (NSInteger) displayTouchVideoSource
@@ -1997,7 +1990,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 			[macSharedData decrementViewsUsingDirectToCPUFiltering];
 		}
 		
-		[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_RELOAD_REPROCESS_REDRAW];
+		[[self cdsVideoOutput] signalMessage:MESSAGE_RELOAD_REPROCESS_REDRAW];
 	}
 }
 
@@ -2029,7 +2022,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		}
 	}
 	
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
+	[[self cdsVideoOutput] signalMessage:MESSAGE_REPROCESS_AND_REDRAW];
 }
 
 - (BOOL) sourceDeposterize
@@ -2040,7 +2033,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 - (void) setOutputFilter:(NSInteger)filterID
 {
 	[[self cdsVideoOutput] setOutputFilter:filterID];
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REDRAW_VIEW];
+	[[self cdsVideoOutput] signalMessage:MESSAGE_REDRAW_VIEW];
 }
 
 - (NSInteger) outputFilter
@@ -2071,7 +2064,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		}
 	}
 	
-	[CocoaDSUtil messageSendOneWay:[[self cdsVideoOutput] receivePort] msgID:MESSAGE_REPROCESS_AND_REDRAW];
+	[[self cdsVideoOutput] signalMessage:MESSAGE_REPROCESS_AND_REDRAW];
 }
 
 - (NSInteger) pixelScaler

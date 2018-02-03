@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2017 DeSmuME Team
+	Copyright (C) 2012-2018 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -361,13 +361,6 @@ enum
 	MESSAGE_SET_RENDER3D_THREADS,
 	MESSAGE_SET_RENDER3D_LINE_HACK,
 	MESSAGE_SET_RENDER3D_MULTISAMPLE,
-	
-	MESSAGE_SET_AUDIO_PROCESS_METHOD,
-	MESSAGE_SET_SPU_ADVANCED_LOGIC,
-	MESSAGE_SET_SPU_SYNC_MODE,
-	MESSAGE_SET_SPU_SYNC_METHOD,
-	MESSAGE_SET_SPU_INTERPOLATION_MODE,
-	MESSAGE_SET_VOLUME,
 	
 	MESSAGE_COPY_TO_PASTEBOARD
 };

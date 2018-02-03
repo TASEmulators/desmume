@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2017 DeSmuME team
+	Copyright (C) 2012-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -31,13 +31,6 @@
 	
 }
 
-+ (void) messageSendOneWay:(NSPort *)sendPort msgID:(NSInteger)msgID;
-+ (void) messageSendOneWayWithMessageComponents:(NSPort *)sendPort msgID:(NSInteger)msgID array:(NSArray *)msgDataArray;
-+ (void) messageSendOneWayWithData:(NSPort *)sendPort msgID:(NSInteger)msgID data:(NSData *)msgData;
-+ (void) messageSendOneWayWithInteger:(NSPort *)sendPort msgID:(NSInteger)msgID integerValue:(NSInteger)integerValue;
-+ (void) messageSendOneWayWithFloat:(NSPort *)sendPort msgID:(NSInteger)msgID floatValue:(float)floatValue;
-+ (void) messageSendOneWayWithBool:(NSPort *)sendPort msgID:(NSInteger)msgID boolValue:(BOOL)boolValue;
-+ (void) messageSendOneWayWithRect:(NSPort *)sendPort msgID:(NSInteger)msgID rect:(NSRect)rect;
 + (NSInteger) getIBActionSenderTag:(id)sender;
 + (BOOL) getIBActionSenderButtonStateBool:(id)sender;
 
@@ -53,39 +46,6 @@
 + (NSString *) modelIdentifierString;
 
 @end
-
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_4
-
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-@interface CocoaDSThread : NSObject <NSPortDelegate>
-#else
-@interface CocoaDSThread : NSObject
-#endif
-{
-	NSThread *thread;
-	BOOL threadExit;
-	BOOL _idleState;
-	NSTimeInterval autoreleaseInterval;
-	NSPort *sendPort;
-	NSPort *receivePort;
-	
-	OSSpinLock spinlockIdle;
-}
-
-@property (assign) NSThread *thread;
-@property (assign) BOOL threadExit;
-@property (assign) BOOL idle;
-@property (assign) NSTimeInterval autoreleaseInterval;
-@property (assign) NSPort *sendPort;
-@property (assign) NSPort *receivePort;
-
-- (id) initWithAutoreleaseInterval:(NSTimeInterval)interval;
-- (void) runThread:(id)object;
-- (void) forceThreadExit;
-
-@end
-
-#endif
 
 @protocol DirectoryURLDragDestTextFieldProtocol <NSObject>
 
