@@ -914,11 +914,12 @@ public:
 	}
 	else
 	{
-		if (_needRestoreRender3DLock)
+		if (_needRestoreRender3DLock && gpuEvent->GetRender3DNeedsFinish())
 		{
 			gpuEvent->Render3DLock();
-			_needRestoreRender3DLock = NO;
 		}
+		
+		_needRestoreRender3DLock = NO;
 	}
 }
 

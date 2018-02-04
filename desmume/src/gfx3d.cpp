@@ -567,6 +567,8 @@ void gfx3d_reset()
 	if (CurrentRenderer->GetRenderNeedsFinish())
 	{
 		GPU->ForceRender3DFinishAndFlush(false);
+		CurrentRenderer->SetRenderNeedsFinish(false);
+		GPU->GetEventHandler()->DidRender3DEnd();
 	}
 	
 #ifdef _SHOW_VTX_COUNTERS
