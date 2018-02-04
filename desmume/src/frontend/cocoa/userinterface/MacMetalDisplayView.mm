@@ -2147,6 +2147,7 @@
 	}
 	
 	_cdv = NULL;
+	_semDrawable = dispatch_semaphore_create(3);
 	
 	presenterObject = thePresenterObject;
 	if (thePresenterObject != nil)
@@ -2158,6 +2159,13 @@
 	[self setOpaque:YES];
 	
 	return self;
+}
+
+- (void)dealloc
+{
+	dispatch_release(_semDrawable);
+	
+	[super dealloc];
 }
 
 - (void) setupLayer
@@ -2174,33 +2182,44 @@
 	@autoreleasepool
 	{
 		// Now that everything is set up, go ahead and draw everything.
-		id<CAMetalDrawable> layerDrawable = [self nextDrawable];
+		dispatch_semaphore_wait(_semDrawable, DISPATCH_TIME_FOREVER);
+		id<CAMetalDrawable> layerDrawable = [[self nextDrawable] retain];
 		
 		if (layerDrawable != nil)
 		{
 			[[presenterObject colorAttachment0Desc] setTexture:[layerDrawable texture]];
-			id<MTLCommandBuffer> cb = [presenterObject newCommandBuffer];
+			id<MTLCommandBuffer> cbRender = [presenterObject newCommandBuffer];
+			id<MTLCommandBuffer> cbPresent = [presenterObject newCommandBuffer];
 			
 			const MetalTexturePair texProcess = [presenterObject texPairProcess];
 			const MetalRenderFrameInfo mrfi = [presenterObject renderFrameInfo];
 			
-			[presenterObject renderForCommandBuffer:cb
+			[presenterObject renderForCommandBuffer:cbRender
 								outputPipelineState:[presenterObject outputDrawablePipeline]
 								   hudPipelineState:[[presenterObject sharedData] hudPipeline]
 										texDisplays:texProcess
 											   mrfi:mrfi];
 			
-			[cb presentDrawable:layerDrawable];
-			
-			[cb addScheduledHandler:^(id<MTLCommandBuffer> block) {
+			[cbRender addScheduledHandler:^(id<MTLCommandBuffer> block) {
 				[presenterObject setRenderBufferState:ClientDisplayBufferState_Reading index:mrfi.renderIndex];
 			}];
 			
-			[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+			[cbRender addCompletedHandler:^(id<MTLCommandBuffer> block) {
 				[presenterObject renderFinishAtIndex:mrfi.renderIndex];
 			}];
 			
-			[cb commit];
+			[cbPresent presentDrawable:layerDrawable];
+			[cbPresent addCompletedHandler:^(id<MTLCommandBuffer> block) {
+				[layerDrawable release];
+				dispatch_semaphore_signal(_semDrawable);
+			}];
+			
+			[cbRender commit];
+			[cbPresent commit];
+		}
+		else
+		{
+			dispatch_semaphore_signal(_semDrawable);
 		}
 	}
 }

@@ -259,6 +259,7 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 {
 	MacDisplayLayeredView *_cdv;
 	MacMetalDisplayPresenterObject *presenterObject;
+	dispatch_semaphore_t _semDrawable;
 }
 
 @property (readonly, nonatomic) MacMetalDisplayPresenterObject *presenterObject;
