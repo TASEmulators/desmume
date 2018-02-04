@@ -570,12 +570,13 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 
 void GameInfo::closeROM()
 {
-	GPU->ForceFrameStop();
+	if (GPU != NULL)
+		GPU->ForceFrameStop();
 	
-	if (reader)
+	if (reader != NULL)
 		reader->DeInit(fROM);
 
-	if (romdataForReader)
+	if (romdataForReader != NULL)
 		delete [] romdataForReader;
 
 	fROM = NULL;
