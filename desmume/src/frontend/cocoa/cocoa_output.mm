@@ -210,11 +210,6 @@
 	return self;
 }
 
-- (void)dealloc
-{
-	[super dealloc];
-}
-
 - (void) setIdle:(BOOL)theState
 {
 	if (theState)
@@ -509,11 +504,6 @@
 	return self;
 }
 
-- (void)dealloc
-{
-	[super dealloc];
-}
-
 - (void) handleSignalMessageID:(int32_t)messageID
 {
 	switch (messageID)
@@ -606,11 +596,6 @@
 	spinlockDisplayID = OS_SPINLOCK_INIT;
 		
 	return self;
-}
-
-- (void)dealloc
-{
-	[super dealloc];
 }
 
 - (void) commitPresenterProperties:(const ClientDisplayPresenterProperties &)viewProps

@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2013 DeSmuME team
+	Copyright (C) 2013-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -34,11 +34,6 @@
     }
 	
 	return self;
-}
-
-- (void)dealloc
-{
-	[super dealloc];
 }
 
 - (NSString *) commandTagFromInputList:(NSArray *)inputList

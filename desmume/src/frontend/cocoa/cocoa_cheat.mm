@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2012-2017 DeSmuME team
+	Copyright (C) 2012-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ static NSImage *iconCodeBreaker = nil;
 @synthesize workingCopy;
 @synthesize parent;
 
-- (id) init
+- (id)init
 {
 	return [self initWithCheatData:nil];
 }

@@ -72,9 +72,7 @@
 
 @property (assign) NSUInteger bufferSize;
 
-- (id) init;
 - (id) initWithVolume:(CGFloat)vol;
-- (void) dealloc;
 
 - (void) setVolume:(float)vol;
 - (float) volume;

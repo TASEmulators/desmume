@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014-2015 DeSmuME Team
+	Copyright (C) 2014-2018 DeSmuME Team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -43,11 +43,6 @@
 	return self;
 }
 
-- (void) dealloc
-{
-	[super dealloc];
-}
-
 - (NSString *) name
 {
 	const char *cDeviceName = device->info()->name();
@@ -88,7 +83,7 @@
 @dynamic gbaSRamURL;
 @dynamic doesGbaCartridgeSaveExist;
 
-- (id) init
+- (id)init
 {
 	self = [super init];
 	if (self == nil)
