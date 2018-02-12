@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -2064,6 +2064,7 @@ Render3DError OpenGLRenderer_3_2::SetFramebufferSize(size_t w, size_t h)
 	
 	this->_framebufferWidth = w;
 	this->_framebufferHeight = h;
+	this->_framebufferPixCount = w * h;
 	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
 	this->_framebufferColor = NULL; // Don't need to make a client-side buffer since we will be reading directly from the PBO.
 	

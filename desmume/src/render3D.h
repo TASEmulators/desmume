@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2017 DeSmuME team
+	Copyright (C) 2007-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -144,6 +144,8 @@ protected:
 	
 	size_t _framebufferWidth;
 	size_t _framebufferHeight;
+	size_t _framebufferPixCount;
+	size_t _framebufferSIMDPixCount;
 	size_t _framebufferColorSizeBytes;
 	FragmentColor *_framebufferColor;
 	
@@ -246,9 +248,25 @@ public:
 	Render3DTexture* GetTextureByPolygonRenderIndex(size_t polyRenderIndex) const;
 };
 
+class Render3D_SIMD128 : public Render3D
+{
+public:
+	Render3D_SIMD128();
+	
+	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
+};
+
+class Render3D_SIMD256 : public Render3D
+{
+public:
+	Render3D_SIMD256();
+	
+	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
+};
+
 #ifdef ENABLE_SSE2
 
-class Render3D_SSE2 : public Render3D
+class Render3D_SSE2 : public Render3D_SIMD128
 {
 public:
 	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);

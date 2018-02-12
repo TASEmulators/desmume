@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1171,14 +1171,12 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 	
 	if (!doFramebufferFlip)
 	{
-		const size_t pixCount = this->_framebufferWidth * this->_framebufferHeight;
-		
 		if (!doFramebufferConvert)
 		{
 			if ( (dstFramebufferMain != NULL) && (dstFramebuffer16 != NULL) )
 			{
 #ifdef ENABLE_SSE2
-				const size_t ssePixCount = pixCount - (pixCount % 8);
+				const size_t ssePixCount = this->_framebufferPixCount - (this->_framebufferPixCount % 8);
 				for (; i < ssePixCount; i += 8)
 				{
 					const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + i + 0));
@@ -1191,7 +1189,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 				
 #pragma LOOPVECTORIZE_DISABLE
 #endif
-				for (; i < pixCount; i++)
+				for (; i < this->_framebufferPixCount; i++)
 				{
 					dstFramebufferMain[i].color = ColorspaceCopy32<false>(srcFramebuffer[i]);
 					dstFramebuffer16[i]         = ColorspaceConvert8888To5551<false>(srcFramebuffer[i]);
@@ -1202,12 +1200,12 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 			}
 			else if (dstFramebufferMain != NULL)
 			{
-				ColorspaceCopyBuffer32<false, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, pixCount);
+				ColorspaceCopyBuffer32<false, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, this->_framebufferPixCount);
 				this->_renderNeedsFlushMain = false;
 			}
 			else
 			{
-				ColorspaceConvertBuffer8888To5551<false, false>((u32 *)srcFramebuffer, dstFramebuffer16, pixCount);
+				ColorspaceConvertBuffer8888To5551<false, false>((u32 *)srcFramebuffer, dstFramebuffer16, this->_framebufferPixCount);
 				this->_renderNeedsFlush16 = false;
 			}
 		}
@@ -1218,7 +1216,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 				if ( (dstFramebufferMain != NULL) && (dstFramebuffer16 != NULL) )
 				{
 #ifdef ENABLE_SSE2
-					const size_t ssePixCount = pixCount - (pixCount % 8);
+					const size_t ssePixCount = this->_framebufferPixCount - (this->_framebufferPixCount % 8);
 					for (; i < ssePixCount; i += 8)
 					{
 						const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + i + 0));
@@ -1231,7 +1229,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 					
 #pragma LOOPVECTORIZE_DISABLE
 #endif
-					for (; i < pixCount; i++)
+					for (; i < this->_framebufferPixCount; i++)
 					{
 						dstFramebufferMain[i].color = ColorspaceConvert8888To6665<true>(srcFramebuffer[i]);
 						dstFramebuffer16[i]         = ColorspaceConvert8888To5551<true>(srcFramebuffer[i]);
@@ -1242,12 +1240,12 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 				}
 				else if (dstFramebufferMain != NULL)
 				{
-					ColorspaceConvertBuffer8888To6665<true, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, pixCount);
+					ColorspaceConvertBuffer8888To6665<true, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, this->_framebufferPixCount);
 					this->_renderNeedsFlushMain = false;
 				}
 				else
 				{
-					ColorspaceConvertBuffer8888To5551<true, false>((u32 *)srcFramebuffer, dstFramebuffer16, pixCount);
+					ColorspaceConvertBuffer8888To5551<true, false>((u32 *)srcFramebuffer, dstFramebuffer16, this->_framebufferPixCount);
 					this->_renderNeedsFlush16 = false;
 				}
 			}
@@ -1256,7 +1254,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 				if ( (dstFramebufferMain != NULL) && (dstFramebuffer16 != NULL) )
 				{
 #ifdef ENABLE_SSE2
-					const size_t ssePixCount = pixCount - (pixCount % 8);
+					const size_t ssePixCount = this->_framebufferPixCount - (this->_framebufferPixCount % 8);
 					for (; i < ssePixCount; i += 8)
 					{
 						const __m128i srcColorLo = _mm_load_si128((__m128i *)(srcFramebuffer + i + 0));
@@ -1269,7 +1267,7 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 					
 #pragma LOOPVECTORIZE_DISABLE
 #endif
-					for (; i < pixCount; i++)
+					for (; i < this->_framebufferPixCount; i++)
 					{
 						dstFramebufferMain[i].color = ColorspaceCopy32<true>(srcFramebuffer[i]);
 						dstFramebuffer16[i]         = ColorspaceConvert8888To5551<true>(srcFramebuffer[i]);
@@ -1280,12 +1278,12 @@ Render3DError OpenGLRenderer::_FlushFramebufferFlipAndConvertOnCPU(const Fragmen
 				}
 				else if (dstFramebufferMain != NULL)
 				{
-					ColorspaceCopyBuffer32<true, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, pixCount);
+					ColorspaceCopyBuffer32<true, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, this->_framebufferPixCount);
 					this->_renderNeedsFlushMain = false;
 				}
 				else
 				{
-					ColorspaceConvertBuffer8888To5551<true, false>((u32 *)srcFramebuffer, dstFramebuffer16, pixCount);
+					ColorspaceConvertBuffer8888To5551<true, false>((u32 *)srcFramebuffer, dstFramebuffer16, this->_framebufferPixCount);
 					this->_renderNeedsFlush16 = false;
 				}
 			}
@@ -4891,6 +4889,7 @@ Render3DError OpenGLRenderer_1_2::SetFramebufferSize(size_t w, size_t h)
 	
 	this->_framebufferWidth = w;
 	this->_framebufferHeight = h;
+	this->_framebufferPixCount = w * h;
 	this->_framebufferColorSizeBytes = newFramebufferColorSizeBytes;
 	
 	if (this->isPBOSupported)

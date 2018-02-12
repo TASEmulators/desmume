@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2017 DeSmuME team
+	Copyright (C) 2009-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,10 +21,20 @@
 #include "render3D.h"
 #include "gfx3d.h"
 
+#define SOFTRASTERIZER_MAX_THREADS 32
 
 extern GPU3DInterface gpu3DRasterize;
 
+class Task;
 class SoftRasterizerRenderer;
+struct edge_fx_fl;
+
+struct SoftRasterizerClearParam
+{
+	SoftRasterizerRenderer *renderer;
+	size_t startPixel;
+	size_t endPixel;
+};
 
 struct SoftRasterizerPostProcessParams
 {
@@ -82,6 +92,39 @@ public:
 	void SetScalingFactor(size_t scalingFactor);
 };
 
+template <bool RENDERER>
+class RasterizerUnit
+{
+protected:
+	bool _debug_thisPoly;
+	u32 _SLI_Mask;
+	u32 _SLI_Value;
+	
+	SoftRasterizerRenderer *_softRender;
+	SoftRasterizerTexture *_currentTexture;
+	VERT *_verts[MAX_CLIPPED_VERTS];
+	size_t _polynum;
+	u8 _textureWrapMode;
+	
+	Render3DError _SetupTexture(const POLY &thePoly, size_t polyRenderIndex);
+	FORCEINLINE FragmentColor _sample(const float u, const float v);
+	FORCEINLINE float _round_s(double val);
+	
+	template<bool ISSHADOWPOLYGON> FORCEINLINE void _shade(const PolygonMode polygonMode, const FragmentColor src, FragmentColor &dst, const float texCoordU, const float texCoordV);
+	template<bool ISSHADOWPOLYGON> FORCEINLINE void _pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, FragmentColor &dstColor, float r, float g, float b, float invu, float invv, float w, float z);
+	template<bool ISSHADOWPOLYGON, bool USELINEHACK> FORCEINLINE void _drawscanline(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight);
+	template<bool SLI, bool ISSHADOWPOLYGON, bool USELINEHACK, bool ISHORIZONTAL> void _runscanlines(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *left, edge_fx_fl *right);
+	
+	template<int TYPE> FORCEINLINE void _rot_verts();
+	template<bool ISBACKWARDS, int TYPE> void _sort_verts();
+	template<bool SLI, bool ISBACKWARDS, bool ISSHADOWPOLYGON, bool USELINEHACK> void _shape_engine(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type);
+	
+public:
+	void SetSLI(u32 value, u32 mask, bool debug);
+	void SetRenderer(SoftRasterizerRenderer *theRenderer);
+	template<bool SLI, bool USELINEHACK> FORCEINLINE void Render();
+};
+
 #if defined(ENABLE_SSE2)
 class SoftRasterizerRenderer : public Render3D_SSE2
 #else
@@ -89,12 +132,27 @@ class SoftRasterizerRenderer : public Render3D
 #endif
 {
 protected:
+	Task *_task;
+	SoftRasterizerClearParam _threadClearParam[SOFTRASTERIZER_MAX_THREADS];
+	SoftRasterizerPostProcessParams _threadPostprocessParam[SOFTRASTERIZER_MAX_THREADS];
+	
+	RasterizerUnit<true> _rasterizerUnit[SOFTRASTERIZER_MAX_THREADS];
+	RasterizerUnit<false> _HACK_viewer_rasterizerUnit;
+	
+	size_t _threadCount;
+	size_t _nativeLinesPerThread;
+	size_t _nativePixelsPerThread;
+	size_t _customLinesPerThread;
+	size_t _customPixelsPerThread;
+	
+	FragmentColor _clearColor6665;
+	FragmentAttributes _clearAttributes;
+	
 	GFX3D_Clipper clipper;
 	u8 fogTable[32768];
 	FragmentColor edgeMarkTable[8];
 	bool edgeMarkDisabled[8];
 	
-	bool _stateSetupNeedsFinish;
 	bool _renderGeometryNeedsFinish;
 	
 	bool _enableHighPrecisionColorInterpolation;
@@ -124,7 +182,6 @@ public:
 	bool polyVisible[POLYLIST_SIZE];
 	bool polyBackfacing[POLYLIST_SIZE];
 	GFX3D_State *currentRenderState;
-	SoftRasterizerPostProcessParams *postprocessParam;
 	
 	bool _enableFragmentSamplingHack;
 	
@@ -148,6 +205,7 @@ public:
 	virtual Render3DError Render(const GFX3D &engine);
 	virtual Render3DError RenderFinish();
 	virtual Render3DError RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16);
+	virtual void ClearUsingValuesLoop(const size_t startPixel, const size_t endPixel);
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 
@@ -155,7 +213,22 @@ public:
 
 class SoftRasterizerRenderer_SSE2 : public SoftRasterizerRenderer
 {
+protected:
+	v128u32 _clearColor_v128u32;
+	v128u32 _clearDepth_v128u32;
+	v128u8 _clearAttrOpaquePolyID_v128u8;
+	v128u8 _clearAttrTranslucentPolyID_v128u8;
+	v128u8 _clearAttrStencil_v128u8;
+	v128u8 _clearAttrIsFogged_v128u8;
+	v128u8 _clearAttrIsTranslucentPoly_v128u8;
+	
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
+	
+public:
+	SoftRasterizerRenderer_SSE2();
+	
+	virtual void ClearUsingValuesLoop(const size_t startPixel, const size_t endPixel);
+	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 
 #endif

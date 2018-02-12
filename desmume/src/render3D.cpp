@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -244,6 +244,8 @@ Render3D::Render3D()
 	
 	_framebufferWidth = GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	_framebufferHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+	_framebufferPixCount = _framebufferWidth * _framebufferHeight;
+	_framebufferSIMDPixCount = 0;
 	_framebufferColorSizeBytes = 0;
 	_framebufferColor = NULL;
 	
@@ -332,6 +334,7 @@ Render3DError Render3D::SetFramebufferSize(size_t w, size_t h)
 	
 	this->_framebufferWidth = w;
 	this->_framebufferHeight = h;
+	this->_framebufferPixCount = w * h;
 	this->_framebufferColorSizeBytes = w * h * sizeof(FragmentColor);
 	this->_framebufferColor = GPU->GetEngineMain()->Get3DFramebufferMain(); // Just use the buffer that is already present on the main GPU engine
 	
@@ -478,22 +481,20 @@ Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFram
 		return RENDER3DERROR_NOERR;
 	}
 	
-	const size_t pixCount = this->_framebufferWidth * this->_framebufferHeight;
-	
 	if (dstFramebufferMain != NULL)
 	{
 		if ( (this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev) )
 		{
-			ColorspaceConvertBuffer8888To6665<false, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, pixCount);
+			ColorspaceConvertBuffer8888To6665<false, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, this->_framebufferPixCount);
 		}
 		else if ( (this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev) )
 		{
-			ColorspaceConvertBuffer6665To8888<false, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, pixCount);
+			ColorspaceConvertBuffer6665To8888<false, false>((u32 *)srcFramebuffer, (u32 *)dstFramebufferMain, this->_framebufferPixCount);
 		}
 		else if ( ((this->_internalRenderingFormat == NDSColorFormat_BGR666_Rev) && (this->_outputFormat == NDSColorFormat_BGR666_Rev)) ||
 		          ((this->_internalRenderingFormat == NDSColorFormat_BGR888_Rev) && (this->_outputFormat == NDSColorFormat_BGR888_Rev)) )
 		{
-			memcpy(dstFramebufferMain, srcFramebuffer, pixCount * sizeof(FragmentColor));
+			memcpy(dstFramebufferMain, srcFramebuffer, this->_framebufferPixCount * sizeof(FragmentColor));
 		}
 		
 		this->_renderNeedsFlushMain = false;
@@ -503,11 +504,11 @@ Render3DError Render3D::FlushFramebuffer(const FragmentColor *__restrict srcFram
 	{
 		if (this->_outputFormat == NDSColorFormat_BGR666_Rev)
 		{
-			ColorspaceConvertBuffer6665To5551<false, false>((u32 *)srcFramebuffer, dstFramebuffer16, pixCount);
+			ColorspaceConvertBuffer6665To5551<false, false>((u32 *)srcFramebuffer, dstFramebuffer16, this->_framebufferPixCount);
 		}
 		else if (this ->_outputFormat == NDSColorFormat_BGR888_Rev)
 		{
-			ColorspaceConvertBuffer8888To5551<false, false>((u32 *)srcFramebuffer, dstFramebuffer16, pixCount);
+			ColorspaceConvertBuffer8888To5551<false, false>((u32 *)srcFramebuffer, dstFramebuffer16, this->_framebufferPixCount);
 		}
 		
 		this->_renderNeedsFlush16 = false;
@@ -685,6 +686,42 @@ Render3DError Render3D::VramReconfigureSignal()
 {
 	texCache.Invalidate();
 	return RENDER3DERROR_NOERR;
+}
+
+Render3D_SIMD128::Render3D_SIMD128()
+{
+	_framebufferSIMDPixCount = _framebufferPixCount - (_framebufferPixCount % 16);
+}
+
+Render3DError Render3D_SIMD128::SetFramebufferSize(size_t w, size_t h)
+{
+	Render3DError error = this->Render3D::SetFramebufferSize(w, h);
+	if (error != RENDER3DERROR_NOERR)
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
+	this->_framebufferSIMDPixCount = this->_framebufferPixCount - (this->_framebufferPixCount % 16);
+	
+	return error;
+}
+
+Render3D_SIMD256::Render3D_SIMD256()
+{
+	_framebufferSIMDPixCount = _framebufferPixCount - (_framebufferPixCount % 32);
+}
+
+Render3DError Render3D_SIMD256::SetFramebufferSize(size_t w, size_t h)
+{
+	Render3DError error = this->Render3D::SetFramebufferSize(w, h);
+	if (error != RENDER3DERROR_NOERR)
+	{
+		return RENDER3DERROR_NOERR;
+	}
+	
+	this->_framebufferSIMDPixCount = this->_framebufferPixCount - (this->_framebufferPixCount % 32);
+	
+	return error;
 }
 
 #ifdef ENABLE_SSE2
