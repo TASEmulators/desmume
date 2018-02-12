@@ -2384,7 +2384,6 @@ Render3DError SoftRasterizerRenderer_SSE2::ClearUsingValues(const FragmentColor 
 	this->_clearAttrIsFogged_v128u8				= _mm_set1_epi8(clearAttributes.isFogged);
 	this->_clearAttrIsTranslucentPoly_v128u8	= _mm_set1_epi8(clearAttributes.isTranslucentPoly);
 	
-	size_t i = 0;
 	const bool doMultithreadedClear = (this->_threadCount > 0);
 	
 	if (doMultithreadedClear)
@@ -2397,13 +2396,12 @@ Render3DError SoftRasterizerRenderer_SSE2::ClearUsingValues(const FragmentColor 
 	else
 	{
 		this->ClearUsingValuesLoop(0, this->_framebufferSIMDPixCount);
-		i = this->_framebufferSIMDPixCount;
 	}
 	
 #ifdef ENABLE_SSE2
 #pragma LOOPVECTORIZE_DISABLE
 #endif
-	for (; i < this->_framebufferPixCount; i++)
+	for (size_t i = this->_framebufferSIMDPixCount; i < this->_framebufferPixCount; i++)
 	{
 		this->_framebufferColor[i] = clearColor6665;
 		this->_framebufferAttributes->SetAtIndex(i, clearAttributes);
