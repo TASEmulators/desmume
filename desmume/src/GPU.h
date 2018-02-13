@@ -1242,11 +1242,14 @@ typedef struct
 
 typedef struct
 {
+	GPULayerID previouslyRenderedLayerID;
 	GPULayerID selectedLayerID;
 	BGLayerInfo *selectedBGLayer;
 	
 	GPUDisplayMode displayOutputMode;
 	u16 backdropColor16;
+	u16 workingBackdropColor16;
+	FragmentColor workingBackdropColor32;
 	ColorEffect colorEffect;
 	u8 blendEVA;
 	u8 blendEVB;
@@ -1529,7 +1532,7 @@ public:
 	
 	virtual void Reset();
 	
-	void UpdateRenderStates(const size_t l);
+	template<NDSColorFormat OUTPUTFORMAT> void UpdateRenderStates(const size_t l);
 	template<NDSColorFormat OUTPUTFORMAT> void RenderLine(const size_t l);
 	
 	void RefreshAffineStartRegs();

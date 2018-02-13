@@ -782,9 +782,12 @@ void GPUEngineBase::_Reset_Base()
 	GPUEngineRenderState &renderState = this->_currentRenderState;
 	
 	renderState.displayOutputMode = GPUDisplayMode_Off;
+	renderState.previouslyRenderedLayerID = GPULayerID_Backdrop;
 	renderState.selectedLayerID = GPULayerID_BG0;
 	renderState.selectedBGLayer = &this->_BGLayer[GPULayerID_BG0];
 	renderState.backdropColor16 = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
+	renderState.workingBackdropColor16 = renderState.backdropColor16;
+	renderState.workingBackdropColor32.color = (dispInfo.colorFormat == NDSColorFormat_BGR666_Rev) ? COLOR555TO666(LOCAL_TO_LE_16(renderState.workingBackdropColor16)) : COLOR555TO888(LOCAL_TO_LE_16(renderState.workingBackdropColor16));
 	renderState.colorEffect = (ColorEffect)this->_IORegisterMap->BLDCNT.ColorEffect;
 	renderState.blendEVA = 0;
 	renderState.blendEVB = 0;
@@ -1603,32 +1606,32 @@ template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineBase::_RenderLine_Clear(GPUEngineCompositorInfo &compInfo)
 {
 	// Clear the current line with the clear color
-	u16 dstClearColor16 = compInfo.renderState.backdropColor16;
-	
 	if (compInfo.renderState.srcEffectEnable[GPULayerID_Backdrop])
 	{
 		if (compInfo.renderState.colorEffect == ColorEffect_IncreaseBrightness)
 		{
-			dstClearColor16 = compInfo.renderState.brightnessUpTable555[compInfo.renderState.backdropColor16];
+			compInfo.renderState.workingBackdropColor16 = compInfo.renderState.brightnessUpTable555[compInfo.renderState.backdropColor16];
 		}
 		else if (compInfo.renderState.colorEffect == ColorEffect_DecreaseBrightness)
 		{
-			dstClearColor16 = compInfo.renderState.brightnessDownTable555[compInfo.renderState.backdropColor16];
+			compInfo.renderState.workingBackdropColor16 = compInfo.renderState.brightnessDownTable555[compInfo.renderState.backdropColor16];
 		}
 	}
 	
 	switch (OUTPUTFORMAT)
 	{
 		case NDSColorFormat_BGR555_Rev:
-			memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(*compInfo.target.lineColor, dstClearColor16);
+			memset_u16_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(*compInfo.target.lineColor, compInfo.renderState.workingBackdropColor16);
 			break;
 			
 		case NDSColorFormat_BGR666_Rev:
-			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(*compInfo.target.lineColor, COLOR555TO666(LOCAL_TO_LE_16(dstClearColor16)));
+			compInfo.renderState.workingBackdropColor32.color = COLOR555TO666(LOCAL_TO_LE_16(compInfo.renderState.workingBackdropColor16));
+			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(*compInfo.target.lineColor, compInfo.renderState.workingBackdropColor32.color);
 			break;
 			
 		case NDSColorFormat_BGR888_Rev:
-			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(*compInfo.target.lineColor, COLOR555TO888(LOCAL_TO_LE_16(dstClearColor16)));
+			compInfo.renderState.workingBackdropColor32.color = COLOR555TO888(LOCAL_TO_LE_16(compInfo.renderState.workingBackdropColor16));
+			memset_u32_fast<GPU_FRAMEBUFFER_NATIVE_WIDTH>(*compInfo.target.lineColor, compInfo.renderState.workingBackdropColor32.color);
 			break;
 	}
 	
@@ -1643,11 +1646,14 @@ void GPUEngineBase::_RenderLine_Clear(GPUEngineCompositorInfo &compInfo)
 	this->_itemsForPriority[3].nbPixelsX = 0;
 }
 
+template <NDSColorFormat OUTPUTFORMAT>
 void GPUEngineBase::UpdateRenderStates(const size_t l)
 {
 	GPUEngineCompositorInfo &compInfo = this->_currentCompositorInfo[l];
 	
 	this->_currentRenderState.backdropColor16 = LE_TO_LOCAL_16(this->_paletteBG[0]) & 0x7FFF;
+	this->_currentRenderState.workingBackdropColor16 = this->_currentRenderState.backdropColor16;
+	this->_currentRenderState.workingBackdropColor32.color = (OUTPUTFORMAT == NDSColorFormat_BGR666_Rev) ? COLOR555TO666(LOCAL_TO_LE_16(this->_currentRenderState.workingBackdropColor16)) : COLOR555TO888(LOCAL_TO_LE_16(this->_currentRenderState.workingBackdropColor16));
 	compInfo.renderState = this->_currentRenderState;
 }
 
@@ -1842,19 +1848,38 @@ void GPUEngineBase::_TransitionLineNativeToCustom(GPUEngineCompositorInfo &compI
 {
 	if (this->isLineRenderNative[compInfo.line.indexNative])
 	{
-		switch (OUTPUTFORMAT)
+		if (compInfo.renderState.previouslyRenderedLayerID == GPULayerID_Backdrop)
 		{
-			case NDSColorFormat_BGR555_Rev:
-				this->_LineCopy<0xFFFF, false, false, 2>(compInfo.target.lineColorHeadCustom, compInfo.target.lineColorHeadNative, 0);
-				break;
-				
-			case NDSColorFormat_BGR666_Rev:
-			case NDSColorFormat_BGR888_Rev:
-				this->_LineCopy<0xFFFF, false, false, 4>(compInfo.target.lineColorHeadCustom, compInfo.target.lineColorHeadNative, 0);
-				break;
+			switch (OUTPUTFORMAT)
+			{
+				case NDSColorFormat_BGR555_Rev:
+					memset_u16(compInfo.target.lineColorHeadCustom, compInfo.renderState.workingBackdropColor16, compInfo.line.pixelCount);
+					break;
+					
+				case NDSColorFormat_BGR666_Rev:
+				case NDSColorFormat_BGR888_Rev:
+					memset_u32(compInfo.target.lineColorHeadCustom, compInfo.renderState.workingBackdropColor32.color, compInfo.line.pixelCount);
+					break;
+			}
+			
+			memset(compInfo.target.lineLayerIDHeadCustom, GPULayerID_Backdrop, compInfo.line.pixelCount);
 		}
-		
-		this->_LineCopy<0xFFFF, false, false, 1>(compInfo.target.lineLayerIDHeadCustom, compInfo.target.lineLayerIDHeadNative, 0);
+		else
+		{
+			switch (OUTPUTFORMAT)
+			{
+				case NDSColorFormat_BGR555_Rev:
+					this->_LineCopy<0xFFFF, false, false, 2>(compInfo.target.lineColorHeadCustom, compInfo.target.lineColorHeadNative, 0);
+					break;
+					
+				case NDSColorFormat_BGR666_Rev:
+				case NDSColorFormat_BGR888_Rev:
+					this->_LineCopy<0xFFFF, false, false, 4>(compInfo.target.lineColorHeadCustom, compInfo.target.lineColorHeadNative, 0);
+					break;
+			}
+			
+			this->_LineCopy<0xFFFF, false, false, 1>(compInfo.target.lineLayerIDHeadCustom, compInfo.target.lineLayerIDHeadNative, 0);
+		}
 		
 		compInfo.target.lineColorHead = compInfo.target.lineColorHeadCustom;
 		compInfo.target.lineLayerIDHead = compInfo.target.lineLayerIDHeadCustom;
@@ -3939,6 +3964,7 @@ void GPUEngineBase::SpriteRenderDebug(const u16 lineIndex, u16 *dst)
 	memset(&compInfo, 0, sizeof(compInfo));
 	
 	compInfo.renderState.displayOutputMode = GPUDisplayMode_Normal;
+	compInfo.renderState.previouslyRenderedLayerID = GPULayerID_Backdrop;
 	compInfo.renderState.selectedLayerID = GPULayerID_OBJ;
 	compInfo.renderState.colorEffect = ColorEffect_Disable;
 	compInfo.renderState.masterBrightnessMode = GPUMasterBrightMode_Disable;
@@ -4263,6 +4289,8 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 	compInfo.target.lineColor32 = (FragmentColor *)compInfo.target.lineColorHeadNative;
 	compInfo.target.lineLayerID = compInfo.target.lineLayerIDHead;
 	
+	compInfo.renderState.previouslyRenderedLayerID = GPULayerID_Backdrop;
+	
 	this->_RenderLine_Clear<OUTPUTFORMAT>(compInfo);
 	
 	// for all the pixels in the line
@@ -4344,6 +4372,8 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 					{
 						this->_RenderLine_LayerBG<GPUCompositorMode_Unknown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo);
 					}
+					
+					compInfo.renderState.previouslyRenderedLayerID = layerID;
 				} //layer enabled
 			}
 		}
@@ -4374,6 +4404,8 @@ void GPUEngineBase::_RenderLine_Layers(const size_t l)
 			{
 				this->_RenderLine_LayerOBJ<GPUCompositorMode_Unknown, OUTPUTFORMAT, WILLPERFORMWINDOWTEST>(compInfo, item);
 			}
+			
+			compInfo.renderState.previouslyRenderedLayerID = GPULayerID_OBJ;
 		}
 	}
 }
@@ -5109,6 +5141,7 @@ void GPUEngineBase::RenderLayerBG(const GPULayerID layerID, u16 *dstColorBuffer)
 	memset(&compInfo, 0, sizeof(compInfo));
 	
 	compInfo.renderState.displayOutputMode = GPUDisplayMode_Normal;
+	compInfo.renderState.previouslyRenderedLayerID = GPULayerID_Backdrop;
 	compInfo.renderState.selectedLayerID = layerID;
 	compInfo.renderState.selectedBGLayer = &this->_BGLayer[layerID];
 	compInfo.renderState.colorEffect = ColorEffect_Disable;
@@ -8178,8 +8211,8 @@ void GPUSubsystem::RenderLine(const size_t l)
 		this->_frameNeedsFinish = true;
 	}
 	
-	this->_engineMain->UpdateRenderStates(l);
-	this->_engineSub->UpdateRenderStates(l);
+	this->_engineMain->UpdateRenderStates<OUTPUTFORMAT>(l);
+	this->_engineSub->UpdateRenderStates<OUTPUTFORMAT>(l);
 	
 	const bool isDisplayCaptureNeeded = this->_engineMain->WillDisplayCapture(l);
 	const bool isFramebufferRenderNeeded[2]	= { this->_engineMain->GetEnableStateApplied(), this->_engineSub->GetEnableStateApplied() };
