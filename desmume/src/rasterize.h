@@ -125,8 +125,12 @@ public:
 	template<bool SLI, bool USELINEHACK> FORCEINLINE void Render();
 };
 
-#if defined(ENABLE_SSE2)
+#if defined(ENABLE_AVX2)
+class SoftRasterizerRenderer : public Render3D_AVX2
+#elif defined(ENABLE_SSE2)
 class SoftRasterizerRenderer : public Render3D_SSE2
+#elif defined(ENABLE_ALTIVEC)
+class SoftRasterizerRenderer : public Render3D_Altivec
 #else
 class SoftRasterizerRenderer : public Render3D
 #endif
@@ -205,15 +209,23 @@ public:
 	virtual Render3DError Render(const GFX3D &engine);
 	virtual Render3DError RenderFinish();
 	virtual Render3DError RenderFlush(bool willFlushBuffer32, bool willFlushBuffer16);
-	virtual void ClearUsingValuesLoop(const size_t startPixel, const size_t endPixel);
+	virtual void ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel);
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 
-#ifdef ENABLE_SSE2
-
-class SoftRasterizerRenderer_SSE2 : public SoftRasterizerRenderer
+template <size_t SIMDBYTES>
+class SoftRasterizer_SIMD : public SoftRasterizerRenderer
 {
 protected:
+#if defined(ENABLE_AVX2)
+	v256u32 _clearColor_v256u32;
+	v256u32 _clearDepth_v256u32;
+	v256u8 _clearAttrOpaquePolyID_v256u8;
+	v256u8 _clearAttrTranslucentPolyID_v256u8;
+	v256u8 _clearAttrStencil_v256u8;
+	v256u8 _clearAttrIsFogged_v256u8;
+	v256u8 _clearAttrIsTranslucentPoly_v256u8;
+#elif defined(ENABLE_SSE2) || defined(ENABLE_ALTIVEC)
 	v128u32 _clearColor_v128u32;
 	v128u32 _clearDepth_v128u32;
 	v128u8 _clearAttrOpaquePolyID_v128u8;
@@ -221,14 +233,45 @@ protected:
 	v128u8 _clearAttrStencil_v128u8;
 	v128u8 _clearAttrIsFogged_v128u8;
 	v128u8 _clearAttrIsTranslucentPoly_v128u8;
+#endif
 	
+	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) = 0;
 	virtual Render3DError ClearUsingValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
 	
 public:
-	SoftRasterizerRenderer_SSE2();
+	SoftRasterizer_SIMD();
 	
-	virtual void ClearUsingValuesLoop(const size_t startPixel, const size_t endPixel);
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
+};
+
+#if defined(ENABLE_AVX2)
+class SoftRasterizerRenderer_AVX2 : public SoftRasterizer_SIMD<32>
+{
+protected:
+	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
+	
+public:
+	virtual void ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel);
+};
+
+#elif defined(ENABLE_SSE2)
+class SoftRasterizerRenderer_SSE2 : public SoftRasterizer_SIMD<16>
+{
+protected:
+	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
+	
+public:
+	virtual void ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel);
+};
+
+#elif defined(ENABLE_ALTIVEC)
+class SoftRasterizerRenderer_Altivec : public SoftRasterizer_SIMD<16>
+{
+protected:
+	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes);
+	
+public:
+	virtual void ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel);
 };
 
 #endif

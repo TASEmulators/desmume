@@ -617,8 +617,12 @@ public:
 	void SetUpscalingBuffer(void *upscaleBuffer);
 };
 
-#if defined(ENABLE_SSE2)
+#if defined(ENABLE_AVX2)
+class OpenGLRenderer : public Render3D_AVX2
+#elif defined(ENABLE_SSE2)
 class OpenGLRenderer : public Render3D_SSE2
+#elif defined(ENABLE_ALTIVEC)
+class OpenGLRenderer : public Render3D_Altivec
 #else
 class OpenGLRenderer : public Render3D
 #endif

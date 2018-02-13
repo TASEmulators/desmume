@@ -96,7 +96,6 @@ struct FragmentAttributesBuffer
 	~FragmentAttributesBuffer();
 	
 	void SetAtIndex(const size_t index, const FragmentAttributes &attr);
-	void SetAll(const FragmentAttributes &attr);
 };
 
 struct Render3DDeviceInfo
@@ -248,29 +247,35 @@ public:
 	Render3DTexture* GetTextureByPolygonRenderIndex(size_t polyRenderIndex) const;
 };
 
-class Render3D_SIMD128 : public Render3D
+template <size_t SIMDBYTES>
+class Render3D_SIMD : public Render3D
 {
 public:
-	Render3D_SIMD128();
+	Render3D_SIMD();
 	
 	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
 };
 
-class Render3D_SIMD256 : public Render3D
-{
-public:
-	Render3D_SIMD256();
-	
-	virtual Render3DError SetFramebufferSize(size_t w, size_t h);
-};
+#if defined(ENABLE_AVX2)
 
-#ifdef ENABLE_SSE2
-
-class Render3D_SSE2 : public Render3D_SIMD128
+class Render3D_AVX2 : public Render3D_SIMD<32>
 {
 public:
 	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
 };
+
+#elif defined(ENABLE_SSE2)
+
+class Render3D_SSE2 : public Render3D_SIMD<16>
+{
+public:
+	virtual Render3DError ClearFramebuffer(const GFX3D_State &renderState);
+};
+
+#elif defined(ENABLE_ALTIVEC)
+
+class Render3D_Altivec : public Render3D_SIMD<16>
+{};
 
 #endif
 

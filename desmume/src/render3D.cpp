@@ -113,43 +113,6 @@ void FragmentAttributesBuffer::SetAtIndex(const size_t index, const FragmentAttr
 	this->isTranslucentPoly[index]	= attr.isTranslucentPoly;
 }
 
-void FragmentAttributesBuffer::SetAll(const FragmentAttributes &attr)
-{
-	size_t i = 0;
-	
-#ifdef ENABLE_SSE2
-	const __m128i attrDepth_vec128				= _mm_set1_epi32(attr.depth);
-	const __m128i attrOpaquePolyID_vec128		= _mm_set1_epi8(attr.opaquePolyID);
-	const __m128i attrTranslucentPolyID_vec128	= _mm_set1_epi8(attr.translucentPolyID);
-	const __m128i attrStencil_vec128			= _mm_set1_epi8(attr.stencil);
-	const __m128i attrIsFogged_vec128			= _mm_set1_epi8(attr.isFogged);
-	const __m128i attrIsTranslucentPoly_vec128	= _mm_set1_epi8(attr.isTranslucentPoly);
-	
-	const size_t sseCount = count - (count % 16);
-	for (; i < sseCount; i += 16)
-	{
-		_mm_stream_si128((__m128i *)(this->depth +  0), attrDepth_vec128);
-		_mm_stream_si128((__m128i *)(this->depth +  4), attrDepth_vec128);
-		_mm_stream_si128((__m128i *)(this->depth +  8), attrDepth_vec128);
-		_mm_stream_si128((__m128i *)(this->depth + 12), attrDepth_vec128);
-		
-		_mm_stream_si128((__m128i *)this->opaquePolyID, attrOpaquePolyID_vec128);
-		_mm_stream_si128((__m128i *)this->translucentPolyID, attrTranslucentPolyID_vec128);
-		_mm_stream_si128((__m128i *)this->stencil, attrStencil_vec128);
-		_mm_stream_si128((__m128i *)this->isFogged, attrIsFogged_vec128);
-		_mm_stream_si128((__m128i *)this->isTranslucentPoly, attrIsTranslucentPoly_vec128);
-	}
-#endif
-	
-#ifdef ENABLE_SSE2
-#pragma LOOPVECTORIZE_DISABLE
-#endif
-	for (; i < count; i++)
-	{
-		this->SetAtIndex(i, attr);
-	}
-}
-
 Render3DTexture::Render3DTexture(TEXIMAGE_PARAM texAttributes, u32 palAttributes) : TextureStore(texAttributes, palAttributes)
 {
 	_isSamplingEnabled = true;
@@ -688,30 +651,14 @@ Render3DError Render3D::VramReconfigureSignal()
 	return RENDER3DERROR_NOERR;
 }
 
-Render3D_SIMD128::Render3D_SIMD128()
+template <size_t SIMDBYTES>
+Render3D_SIMD<SIMDBYTES>::Render3D_SIMD()
 {
-	_framebufferSIMDPixCount = _framebufferPixCount - (_framebufferPixCount % 16);
+	_framebufferSIMDPixCount = (SIMDBYTES > 0) ? _framebufferPixCount - (_framebufferPixCount % SIMDBYTES) : _framebufferPixCount;
 }
 
-Render3DError Render3D_SIMD128::SetFramebufferSize(size_t w, size_t h)
-{
-	Render3DError error = this->Render3D::SetFramebufferSize(w, h);
-	if (error != RENDER3DERROR_NOERR)
-	{
-		return RENDER3DERROR_NOERR;
-	}
-	
-	this->_framebufferSIMDPixCount = this->_framebufferPixCount - (this->_framebufferPixCount % 16);
-	
-	return error;
-}
-
-Render3D_SIMD256::Render3D_SIMD256()
-{
-	_framebufferSIMDPixCount = _framebufferPixCount - (_framebufferPixCount % 32);
-}
-
-Render3DError Render3D_SIMD256::SetFramebufferSize(size_t w, size_t h)
+template <size_t SIMDBYTES>
+Render3DError Render3D_SIMD<SIMDBYTES>::SetFramebufferSize(size_t w, size_t h)
 {
 	Render3DError error = this->Render3D::SetFramebufferSize(w, h);
 	if (error != RENDER3DERROR_NOERR)
@@ -719,14 +666,18 @@ Render3DError Render3D_SIMD256::SetFramebufferSize(size_t w, size_t h)
 		return RENDER3DERROR_NOERR;
 	}
 	
-	this->_framebufferSIMDPixCount = this->_framebufferPixCount - (this->_framebufferPixCount % 32);
+	this->_framebufferSIMDPixCount = (SIMDBYTES > 0) ? this->_framebufferPixCount - (this->_framebufferPixCount % SIMDBYTES) : _framebufferPixCount;
 	
 	return error;
 }
 
-#ifdef ENABLE_SSE2
+#if defined(ENABLE_AVX2) || defined(ENABLE_SSE2)
 
+#if defined(ENABLE_AVX2)
+Render3DError Render3D_AVX2::ClearFramebuffer(const GFX3D_State &renderState)
+#elif defined(ENABLE_SSE2)
 Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
+#endif
 {
 	Render3DError error = RENDER3DERROR_NOERR;
 	
@@ -910,4 +861,8 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 	return error;
 }
 
-#endif // ENABLE_SSE2
+#endif // defined(ENABLE_AVX2) || defined(ENABLE_SSE2)
+
+template Render3D_SIMD<0>::Render3D_SIMD();
+template Render3D_SIMD<16>::Render3D_SIMD();
+template Render3D_SIMD<32>::Render3D_SIMD();
