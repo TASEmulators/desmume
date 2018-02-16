@@ -1,6 +1,6 @@
 /*  
 	Copyright (C) 2006-2007 shash
-	Copyright (C) 2007-2017 DeSmuME team
+	Copyright (C) 2007-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -78,6 +78,23 @@ void Vector3Copy(float *dst, const float *src);
 void Vector3Normalize(float *dst);
 
 void Vector4Copy(float *dst, const float *src);
+
+
+void _MatrixMultVec4x4_NoSIMD(const s32 *__restrict mtxPtr, float *__restrict vecPtr);
+
+void MatrixMultVec4x4(const s32 *__restrict mtxPtr, float *__restrict vecPtr);
+void MatrixMultVec3x3(const s32 *__restrict mtxPtr, float *__restrict vecPtr);
+void MatrixTranslate(float *__restrict mtxPtr, const float *__restrict vecPtr);
+void MatrixScale(float *__restrict mtxPtr, const float *__restrict vecPtr);
+void MatrixMultiply(float *__restrict mtxPtrA, const s32 *__restrict mtxPtrB);
+
+template<size_t NUM_ROWS> FORCEINLINE void vector_fix2float(float *mtxPtr, const float divisor);
+
+void MatrixMultVec4x4(const s32 *__restrict mtxPtr, s32 *__restrict vecPtr);
+void MatrixMultVec3x3(const s32 *__restrict mtxPtr, s32 *__restrict vecPtr);
+void MatrixTranslate(s32 *__restrict mtxPtr, const s32 *__restrict vecPtr);
+void MatrixScale(s32 *__restrict mtxPtr, const s32 *__restrict vecPtr);
+void MatrixMultiply(s32 *__restrict mtxPtrA, const s32 *__restrict mtxPtrB);
 
 //these functions are an unreliable, inaccurate floor.
 //it should only be used for positive numbers
@@ -295,152 +312,5 @@ static void memset_u32_fast(void *dst, const u32 val)
 }
 
 #endif // SIMD Functions
-
-// NOSSE version always used in gfx3d.cpp
-void _NOSSE_MatrixMultVec4x4 (const float *matrix, float *vecPtr);
-void MatrixMultVec3x3_fixed(const s32 *matrix, s32 *vecPtr);
-
-//---------------------------
-//switched SSE functions
-#ifdef ENABLE_SSE
-
-struct SSE_MATRIX
-{
-	SSE_MATRIX(const float *matrix)
-		: row0(_mm_load_ps(matrix))
-		, row1(_mm_load_ps(matrix+4))
-		, row2(_mm_load_ps(matrix+8))
-		, row3(_mm_load_ps(matrix+12))
-	{}
-
-	union {
-		__m128 rows[4];
-		struct { __m128 row0; __m128 row1; __m128 row2; __m128 row3; };
-	};
-		
-};
-
-FORCEINLINE __m128 _util_MatrixMultVec4x4_(const SSE_MATRIX &mat, __m128 vec)
-{
-	__m128 xmm5 = _mm_shuffle_ps(vec, vec, B8(01010101));
-	__m128 xmm6 = _mm_shuffle_ps(vec, vec, B8(10101010));
-	__m128 xmm7 = _mm_shuffle_ps(vec, vec, B8(11111111));
-	__m128 xmm4 = _mm_shuffle_ps(vec, vec, B8(00000000));
-
-	xmm4 = _mm_mul_ps(xmm4,mat.row0);
-	xmm5 = _mm_mul_ps(xmm5,mat.row1);
-	xmm6 = _mm_mul_ps(xmm6,mat.row2);
-	xmm7 = _mm_mul_ps(xmm7,mat.row3);
-	xmm4 = _mm_add_ps(xmm4,xmm5);
-	xmm4 = _mm_add_ps(xmm4,xmm6);
-	xmm4 = _mm_add_ps(xmm4,xmm7);
-	return xmm4;
-}
-
-FORCEINLINE void MatrixMultiply(float * matrix, const float * rightMatrix)
-{
-	//this seems to generate larger code, including many movaps, but maybe it is less harsh on the registers than the
-	//more hand-tailored approach
-	__m128 row0 = _util_MatrixMultVec4x4_((SSE_MATRIX)matrix,_mm_load_ps(rightMatrix)); 
-	__m128 row1 = _util_MatrixMultVec4x4_((SSE_MATRIX)matrix,_mm_load_ps(rightMatrix+4));
-	__m128 row2 = _util_MatrixMultVec4x4_((SSE_MATRIX)matrix,_mm_load_ps(rightMatrix+8)); 
-	__m128 row3 = _util_MatrixMultVec4x4_((SSE_MATRIX)matrix,_mm_load_ps(rightMatrix+12));
-	_mm_store_ps(matrix,row0); 
-	_mm_store_ps(matrix+4,row1); 
-	_mm_store_ps(matrix+8,row2);
-	_mm_store_ps(matrix+12,row3);
-}
-
-FORCEINLINE void MatrixMultVec4x4(const float *matrix, float *vecPtr)
-{
-	_mm_store_ps(vecPtr,_util_MatrixMultVec4x4_((SSE_MATRIX)matrix,_mm_load_ps(vecPtr)));
-}
-
-FORCEINLINE void MatrixMultVec3x3(const float * matrix, float * vecPtr)
-{
-	const __m128 vec = _mm_load_ps(vecPtr);
-
-	__m128 xmm5 = _mm_shuffle_ps(vec, vec, B8(01010101));
-	__m128 xmm6 = _mm_shuffle_ps(vec, vec, B8(10101010));
-	__m128 xmm4 = _mm_shuffle_ps(vec, vec, B8(00000000));
-
-	const SSE_MATRIX mat(matrix);
-
-	xmm4 = _mm_mul_ps(xmm4,mat.row0);
-	xmm5 = _mm_mul_ps(xmm5,mat.row1);
-	xmm6 = _mm_mul_ps(xmm6,mat.row2);
-	xmm4 = _mm_add_ps(xmm4,xmm5);
-	xmm4 = _mm_add_ps(xmm4,xmm6);
-
-	_mm_store_ps(vecPtr,xmm4);
-}
-
-FORCEINLINE void MatrixTranslate(float *matrix, const float *ptr)
-{
-	__m128 xmm4 = _mm_load_ps(ptr);
-	__m128 xmm5 = _mm_shuffle_ps(xmm4, xmm4, B8(01010101));
-	__m128 xmm6 = _mm_shuffle_ps(xmm4, xmm4, B8(10101010));
-	xmm4 = _mm_shuffle_ps(xmm4, xmm4, B8(00000000));
-	
-	xmm4 = _mm_mul_ps(xmm4,_mm_load_ps(matrix));
-	xmm5 = _mm_mul_ps(xmm5,_mm_load_ps(matrix+4));
-	xmm6 = _mm_mul_ps(xmm6,_mm_load_ps(matrix+8));
-	xmm4 = _mm_add_ps(xmm4,xmm5);
-	xmm4 = _mm_add_ps(xmm4,xmm6);
-	xmm4 = _mm_add_ps(xmm4,_mm_load_ps(matrix+12));
-	_mm_store_ps(matrix+12,xmm4);
-}
-
-FORCEINLINE void MatrixScale(float *matrix, const float *ptr)
-{
-	__m128 xmm4 = _mm_load_ps(ptr);
-	__m128 xmm5 = _mm_shuffle_ps(xmm4, xmm4, B8(01010101));
-	__m128 xmm6 = _mm_shuffle_ps(xmm4, xmm4, B8(10101010));
-	xmm4 = _mm_shuffle_ps(xmm4, xmm4, B8(00000000));
-	
-	xmm4 = _mm_mul_ps(xmm4,_mm_load_ps(matrix));
-	xmm5 = _mm_mul_ps(xmm5,_mm_load_ps(matrix+4));
-	xmm6 = _mm_mul_ps(xmm6,_mm_load_ps(matrix+8));
-	_mm_store_ps(matrix,xmm4);
-	_mm_store_ps(matrix+4,xmm5);
-	_mm_store_ps(matrix+8,xmm6);
-}
-
-template<int NUM_ROWS>
-FORCEINLINE void vector_fix2float(float* matrix, const float divisor)
-{
-	CTASSERT(NUM_ROWS==3 || NUM_ROWS==4);
-
-	const __m128 val = _mm_set_ps1(divisor);
-
-	_mm_store_ps(matrix,_mm_div_ps(_mm_load_ps(matrix),val));
-	_mm_store_ps(matrix+4,_mm_div_ps(_mm_load_ps(matrix+4),val));
-	_mm_store_ps(matrix+8,_mm_div_ps(_mm_load_ps(matrix+8),val));
-	if(NUM_ROWS==4)
-		_mm_store_ps(matrix+12,_mm_div_ps(_mm_load_ps(matrix+12),val));
-}
-
-#else //no sse
-
-void MatrixMultVec4x4 (const float *matrix, float *vecPtr);
-void MatrixMultVec3x3(const float * matrix, float * vecPtr);
-void MatrixMultiply(float * matrix, const float * rightMatrix);
-void MatrixTranslate(float *matrix, const float *ptr);
-void MatrixScale(float * matrix, const float * ptr);
-
-template<int NUM_ROWS>
-FORCEINLINE void vector_fix2float(float* matrix, const float divisor)
-{
-	for(int i=0;i<NUM_ROWS*4;i++)
-		matrix[i] /= divisor;
-}
-
-#endif //switched SSE functions
-
-void MatrixMultVec4x4 (const s32 *matrix, s32 *vecPtr);
-
-void MatrixMultiply(s32* matrix, const s32* rightMatrix);
-void MatrixScale(s32 *matrix, const s32 *ptr);
-void MatrixTranslate(s32 *matrix, const s32 *ptr);
 
 #endif // MATRIX_H

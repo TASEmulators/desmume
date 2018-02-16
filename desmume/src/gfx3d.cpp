@@ -609,11 +609,11 @@ void gfx3d_reset()
 	memset(colorRGB, 0, sizeof(colorRGB));
 	memset(&tempVertInfo, 0, sizeof(tempVertInfo));
 
-	MatrixInit (mtxCurrent[0]);
-	MatrixInit (mtxCurrent[1]);
-	MatrixInit (mtxCurrent[2]);
-	MatrixInit (mtxCurrent[3]);
-	MatrixInit (mtxTemporal);
+	MatrixInit(mtxCurrent[MATRIXMODE_PROJECTION]);
+	MatrixInit(mtxCurrent[MATRIXMODE_POSITION]);
+	MatrixInit(mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+	MatrixInit(mtxCurrent[MATRIXMODE_TEXTURE]);
+	MatrixInit(mtxTemporal);
 
 	MatrixStackInit(&mtxStack[0]);
 	MatrixStackInit(&mtxStack[1]);
@@ -727,13 +727,13 @@ static void SetVertex()
 	if (texCoordTransformMode == TextureTransformationMode_VertexSource)
 	{
 		//Tested by: Eledees The Adventures of Kai and Zero (E) [title screen and frontend menus]
-		last_s = (s32)(((s64)s16coord[0] * mtxCurrent[3][0] + 
-								(s64)s16coord[1] * mtxCurrent[3][4] + 
-								(s64)s16coord[2] * mtxCurrent[3][8] + 
+		last_s = (s32)(((s64)s16coord[0] * mtxCurrent[MATRIXMODE_TEXTURE][0] +
+								(s64)s16coord[1] * mtxCurrent[MATRIXMODE_TEXTURE][4] +
+								(s64)s16coord[2] * mtxCurrent[MATRIXMODE_TEXTURE][8] +
 								(((s64)(_s))<<24))>>24);
-		last_t = (s32)(((s64)s16coord[0] * mtxCurrent[3][1] + 
-								(s64)s16coord[1] * mtxCurrent[3][5] + 
-								(s64)s16coord[2] * mtxCurrent[3][9] + 
+		last_t = (s32)(((s64)s16coord[0] * mtxCurrent[MATRIXMODE_TEXTURE][1] +
+								(s64)s16coord[1] * mtxCurrent[MATRIXMODE_TEXTURE][5] +
+								(s64)s16coord[2] * mtxCurrent[MATRIXMODE_TEXTURE][9] +
 								(((s64)(_t))<<24))>>24);
 	}
 
@@ -744,8 +744,8 @@ static void SetVertex()
 	if(polylist->count >= POLYLIST_SIZE) 
 			return;
 
-	GEM_TransformVertex(mtxCurrent[1],coordTransformed); //modelview
-	GEM_TransformVertex(mtxCurrent[0],coordTransformed); //projection
+	GEM_TransformVertex(mtxCurrent[MATRIXMODE_POSITION], coordTransformed); //modelview
+	GEM_TransformVertex(mtxCurrent[MATRIXMODE_PROJECTION], coordTransformed); //projection
 
 	//TODO - culling should be done here.
 	//TODO - viewport transform?
@@ -930,7 +930,7 @@ static void gfx3d_glLightDirection_cache(const size_t index)
 	cacheLightDirection[index][3] = 0;
 
 	//Multiply the vector by the directional matrix
-	MatrixMultVec3x3_fixed(mtxCurrent[2], cacheLightDirection[index]);
+	MatrixMultVec3x3(mtxCurrent[MATRIXMODE_POSITION_VECTOR], cacheLightDirection[index]);
 
 	//Calculate the half angle vector
 	s32 lineOfSight[4] = {0, 0, (-1)<<12, 0};
@@ -1092,7 +1092,7 @@ static void gfx3d_glLoadIdentity()
 	GFX_DELAY(19);
 
 	if (mode == MATRIXMODE_POSITION_VECTOR)
-		MatrixIdentity(mtxCurrent[1]);
+		MatrixIdentity(mtxCurrent[MATRIXMODE_POSITION]);
 
 	//printf("identity: %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
 }
@@ -1110,7 +1110,7 @@ static BOOL gfx3d_glLoadMatrix4x4(s32 v)
 	//vector_fix2float<4>(mtxCurrent[mode], 4096.f);
 
 	if (mode == MATRIXMODE_POSITION_VECTOR)
-		MatrixCopy(mtxCurrent[1], mtxCurrent[2]);
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 
 	//printf("load4x4: matrix %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
 	return TRUE;
@@ -1134,7 +1134,7 @@ static BOOL gfx3d_glLoadMatrix4x3(s32 v)
 	GFX_DELAY(30);
 
 	if (mode == MATRIXMODE_POSITION_VECTOR)
-		MatrixCopy(mtxCurrent[1], mtxCurrent[2]);
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 	//printf("load4x3: matrix %d to: \n",mode); MatrixPrint(mtxCurrent[1]);
 	return TRUE;
 }
@@ -1155,7 +1155,7 @@ static BOOL gfx3d_glMultMatrix4x4(s32 v)
 
 	if (mode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixMultiply(mtxCurrent[1], mtxTemporal);
+		MatrixMultiply(mtxCurrent[MATRIXMODE_POSITION], mtxTemporal);
 		GFX_DELAY_M2(30);
 	}
 
@@ -1186,7 +1186,7 @@ static BOOL gfx3d_glMultMatrix4x3(s32 v)
 
 	if (mode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixMultiply (mtxCurrent[1], mtxTemporal);
+		MatrixMultiply (mtxCurrent[MATRIXMODE_POSITION], mtxTemporal);
 		GFX_DELAY_M2(30);
 	}
 
@@ -1219,7 +1219,7 @@ static BOOL gfx3d_glMultMatrix3x3(s32 v)
 
 	if (mode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixMultiply(mtxCurrent[1], mtxTemporal);
+		MatrixMultiply(mtxCurrent[MATRIXMODE_POSITION], mtxTemporal);
 		GFX_DELAY_M2(30);
 	}
 
@@ -1248,8 +1248,8 @@ static BOOL gfx3d_glScale(s32 v)
 	//note: pos-vector mode should not cause both matrices to scale.
 	//the whole purpose is to keep the vector matrix orthogonal
 	//so, I am leaving this commented out as an example of what not to do.
-	//if (mode == 2)
-	//	MatrixScale (mtxCurrent[1], scale);
+	//if (mode == MATRIXMODE_POSITION_VECTOR)
+	//	MatrixScale (mtxCurrent[MATRIXMODE_POSITION], scale);
 	return TRUE;
 }
 
@@ -1268,7 +1268,7 @@ static BOOL gfx3d_glTranslate(s32 v)
 
 	if (mode == MATRIXMODE_POSITION_VECTOR)
 	{
-		MatrixTranslate(mtxCurrent[1], trans);
+		MatrixTranslate(mtxCurrent[MATRIXMODE_POSITION], trans);
 		GFX_DELAY_M2(30);
 	}
 
@@ -1297,11 +1297,11 @@ static void gfx3d_glNormal(s32 v)
 	{
 		//SM64 highlight rendered star in main menu tests this
 		//also smackdown 2010 player textures tested this (needed cast on _s and _t)
-		last_s = (s32)(((s64)normal[0] * mtxCurrent[3][0] + (s64)normal[1] * mtxCurrent[3][4] + (s64)normal[2] * mtxCurrent[3][8] + (((s64)_s)<<24))>>24);
-		last_t = (s32)(((s64)normal[0] * mtxCurrent[3][1] + (s64)normal[1] * mtxCurrent[3][5] + (s64)normal[2] * mtxCurrent[3][9] + (((s64)_t)<<24))>>24);
+		last_s = (s32)(((s64)normal[0] * mtxCurrent[MATRIXMODE_TEXTURE][0] + (s64)normal[1] * mtxCurrent[MATRIXMODE_TEXTURE][4] + (s64)normal[2] * mtxCurrent[MATRIXMODE_TEXTURE][8] + (((s64)_s)<<24))>>24);
+		last_t = (s32)(((s64)normal[0] * mtxCurrent[MATRIXMODE_TEXTURE][1] + (s64)normal[1] * mtxCurrent[MATRIXMODE_TEXTURE][5] + (s64)normal[2] * mtxCurrent[MATRIXMODE_TEXTURE][9] + (((s64)_t)<<24))>>24);
 	}
 
-	MatrixMultVec3x3_fixed(mtxCurrent[2],normal);
+	MatrixMultVec3x3(mtxCurrent[MATRIXMODE_POSITION_VECTOR], normal);
 
 	//apply lighting model
 	u8 diffuse[3] = {
@@ -1395,8 +1395,8 @@ static void gfx3d_glTexCoord(s32 val)
 	if (texCoordTransformMode == TextureTransformationMode_TexCoordSource)
 	{
 		//dragon quest 4 overworld will test this
-		last_s = (s32) (( (s64)_s * mtxCurrent[3][0] + (s64)_t * mtxCurrent[3][4] + (s64)mtxCurrent[3][8] + (s64)mtxCurrent[3][12])>>12);
-		last_t = (s32) (( (s64)_s * mtxCurrent[3][1] + (s64)_t * mtxCurrent[3][5] + (s64)mtxCurrent[3][9] + (s64)mtxCurrent[3][13])>>12);
+		last_s = (s32) (( (s64)_s * mtxCurrent[MATRIXMODE_TEXTURE][0] + (s64)_t * mtxCurrent[MATRIXMODE_TEXTURE][4] + (s64)mtxCurrent[MATRIXMODE_TEXTURE][8] + (s64)mtxCurrent[MATRIXMODE_TEXTURE][12])>>12);
+		last_t = (s32) (( (s64)_s * mtxCurrent[MATRIXMODE_TEXTURE][1] + (s64)_t * mtxCurrent[MATRIXMODE_TEXTURE][5] + (s64)mtxCurrent[MATRIXMODE_TEXTURE][9] + (s64)mtxCurrent[MATRIXMODE_TEXTURE][13])>>12);
 	}
 	else if (texCoordTransformMode == TextureTransformationMode_None)
 	{
@@ -1684,13 +1684,13 @@ static BOOL gfx3d_glBoxTest(u32 v)
 		//MatrixMultVec4x4_M2(mtxCurrent[0], verts[i].coord);
 
 		//but change it all to floating point and do it that way instead
-		CACHE_ALIGN float temp1[16] = {mtxCurrent[1][0]/4096.0f,mtxCurrent[1][1]/4096.0f,mtxCurrent[1][2]/4096.0f,mtxCurrent[1][3]/4096.0f,mtxCurrent[1][4]/4096.0f,mtxCurrent[1][5]/4096.0f,mtxCurrent[1][6]/4096.0f,mtxCurrent[1][7]/4096.0f,mtxCurrent[1][8]/4096.0f,mtxCurrent[1][9]/4096.0f,mtxCurrent[1][10]/4096.0f,mtxCurrent[1][11]/4096.0f,mtxCurrent[1][12]/4096.0f,mtxCurrent[1][13]/4096.0f,mtxCurrent[1][14]/4096.0f,mtxCurrent[1][15]/4096.0f};
-		CACHE_ALIGN float temp0[16] = {mtxCurrent[0][0]/4096.0f,mtxCurrent[0][1]/4096.0f,mtxCurrent[0][2]/4096.0f,mtxCurrent[0][3]/4096.0f,mtxCurrent[0][4]/4096.0f,mtxCurrent[0][5]/4096.0f,mtxCurrent[0][6]/4096.0f,mtxCurrent[0][7]/4096.0f,mtxCurrent[0][8]/4096.0f,mtxCurrent[0][9]/4096.0f,mtxCurrent[0][10]/4096.0f,mtxCurrent[0][11]/4096.0f,mtxCurrent[0][12]/4096.0f,mtxCurrent[0][13]/4096.0f,mtxCurrent[0][14]/4096.0f,mtxCurrent[0][15]/4096.0f};
 
 		//DS_ALIGN(16) VERT_POS4f vert = { verts[i].x, verts[i].y, verts[i].z, verts[i].w };
-
-		_NOSSE_MatrixMultVec4x4(temp1,verts[i].coord);
-		_NOSSE_MatrixMultVec4x4(temp0,verts[i].coord);
+		
+		//_MatrixMultVec4x4_NoSIMD(mtxCurrent[MATRIXMODE_POSITION], verts[i].coord);
+		//_MatrixMultVec4x4_NoSIMD(mtxCurrent[MATRIXMODE_PROJECTION], verts[i].coord);
+		MatrixMultVec4x4(mtxCurrent[MATRIXMODE_POSITION], verts[i].coord);
+		MatrixMultVec4x4(mtxCurrent[MATRIXMODE_PROJECTION], verts[i].coord);
 	}
 
 	//clip each poly
@@ -1742,12 +1742,9 @@ static BOOL gfx3d_glPosTest(u32 v)
 	PTind = 0;
 	
 	PTcoords[3] = 1.0f;
-
-	CACHE_ALIGN float temp1[16] = {mtxCurrent[1][0]/4096.0f,mtxCurrent[1][1]/4096.0f,mtxCurrent[1][2]/4096.0f,mtxCurrent[1][3]/4096.0f,mtxCurrent[1][4]/4096.0f,mtxCurrent[1][5]/4096.0f,mtxCurrent[1][6]/4096.0f,mtxCurrent[1][7]/4096.0f,mtxCurrent[1][8]/4096.0f,mtxCurrent[1][9]/4096.0f,mtxCurrent[1][10]/4096.0f,mtxCurrent[1][11]/4096.0f,mtxCurrent[1][12]/4096.0f,mtxCurrent[1][13]/4096.0f,mtxCurrent[1][14]/4096.0f,mtxCurrent[1][15]/4096.0f};
-	CACHE_ALIGN float temp0[16] = {mtxCurrent[0][0]/4096.0f,mtxCurrent[0][1]/4096.0f,mtxCurrent[0][2]/4096.0f,mtxCurrent[0][3]/4096.0f,mtxCurrent[0][4]/4096.0f,mtxCurrent[0][5]/4096.0f,mtxCurrent[0][6]/4096.0f,mtxCurrent[0][7]/4096.0f,mtxCurrent[0][8]/4096.0f,mtxCurrent[0][9]/4096.0f,mtxCurrent[0][10]/4096.0f,mtxCurrent[0][11]/4096.0f,mtxCurrent[0][12]/4096.0f,mtxCurrent[0][13]/4096.0f,mtxCurrent[0][14]/4096.0f,mtxCurrent[0][15]/4096.0f};
-
-	MatrixMultVec4x4(temp1, PTcoords);
-	MatrixMultVec4x4(temp0, PTcoords);
+	
+	MatrixMultVec4x4(mtxCurrent[MATRIXMODE_POSITION], PTcoords);
+	MatrixMultVec4x4(mtxCurrent[MATRIXMODE_PROJECTION], PTcoords);
 
 	MMU_new.gxstat.tb = 0;
 
@@ -1765,13 +1762,14 @@ static void gfx3d_glVecTest(u32 v)
 	//i am not sure exactly what it is doing, maybe it is testing to ensure
 	//that the normal vector for the point of interest is camera-facing.
 
-	CACHE_ALIGN float normal[4] = { normalTable[v&1023],
-						normalTable[(v>>10)&1023],
-						normalTable[(v>>20)&1023],
-						0};
-
-	CACHE_ALIGN float temp[16] = {mtxCurrent[2][0]/4096.0f,mtxCurrent[2][1]/4096.0f,mtxCurrent[2][2]/4096.0f,mtxCurrent[2][3]/4096.0f,mtxCurrent[2][4]/4096.0f,mtxCurrent[2][5]/4096.0f,mtxCurrent[2][6]/4096.0f,mtxCurrent[2][7]/4096.0f,mtxCurrent[2][8]/4096.0f,mtxCurrent[2][9]/4096.0f,mtxCurrent[2][10]/4096.0f,mtxCurrent[2][11]/4096.0f,mtxCurrent[2][12]/4096.0f,mtxCurrent[2][13]/4096.0f,mtxCurrent[2][14]/4096.0f,mtxCurrent[2][15]/4096.0f};
-	MatrixMultVec4x4(temp, normal);
+	CACHE_ALIGN float normal[4] = {
+		normalTable[v&1023],
+		normalTable[(v>>10)&1023],
+		normalTable[(v>>20)&1023],
+		0
+	};
+	
+	MatrixMultVec4x4(mtxCurrent[MATRIXMODE_POSITION_VECTOR], normal);
 
 	s16 x = (s16)(normal[0]*4096);
 	s16 y = (s16)(normal[1]*4096);
@@ -1853,7 +1851,7 @@ void gfx3d_UpdateToonTable(u8 offset, u32 val)
 s32 gfx3d_GetClipMatrix(const u32 index)
 {
 	//printf("reading clip matrix: %d\n",index);
-	return (s32)MatrixGetMultipliedIndex(index, mtxCurrent[0], mtxCurrent[1]);
+	return (s32)MatrixGetMultipliedIndex(index, mtxCurrent[MATRIXMODE_PROJECTION], mtxCurrent[MATRIXMODE_POSITION]);
 }
 
 s32 gfx3d_GetDirectionalMatrix(const u32 index)
@@ -1861,7 +1859,7 @@ s32 gfx3d_GetDirectionalMatrix(const u32 index)
 	const size_t _index = (((index / 3) * 4) + (index % 3));
 
 	//return (s32)(mtxCurrent[2][_index]*(1<<12));
-	return mtxCurrent[2][_index];
+	return mtxCurrent[MATRIXMODE_POSITION_VECTOR][_index];
 }
 
 void gfx3d_glAlphaFunc(u32 v)
