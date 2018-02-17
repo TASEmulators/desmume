@@ -25,24 +25,98 @@
 #include "MMU.h"
 
 
-void MatrixInit  (s32 *matrix)
+void MatrixInit(s32 *mtxPtr)
 {
-	memset (matrix, 0, sizeof(s32)*16);
-	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1<<12;
+	MatrixIdentity(mtxPtr);
 }
 
-void MatrixInit  (float *matrix)
+void MatrixInit(float *mtxPtr)
 {
-	memset (matrix, 0, sizeof(s32)*16);
-	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
+	MatrixIdentity(mtxPtr);
 }
 
-void	MatrixIdentity			(s32 *matrix)
+void MatrixIdentity(s32 *mtxPtr)
 {
-	matrix[1] = matrix[2] = matrix[3] = matrix[4] = 0;
-	matrix[6] = matrix[7] = matrix[8] = matrix[9] = 0;
-	matrix[11] = matrix[12] = matrix[13] = matrix[14] = 0;
-	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1<<12;
+	static const CACHE_ALIGN s32 mtxIdentity[16] = {
+		(1 << 12), 0, 0, 0,
+		0, (1 << 12), 0, 0,
+		0, 0, (1 << 12), 0,
+		0, 0, 0, (1 << 12)
+	};
+	
+	memcpy(mtxPtr, mtxIdentity, sizeof(s32)*16);
+}
+
+void MatrixIdentity(float *mtxPtr)
+{
+	static const CACHE_ALIGN float mtxIdentity[16] = {
+		1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f
+	};
+	
+	memcpy(mtxPtr, mtxIdentity, sizeof(float)*16);
+}
+
+void MatrixSet(s32 *mtxPtr, const size_t x, const size_t y, const s32 value)
+{
+	mtxPtr[x+(y<<2)] = value;
+}
+
+void MatrixSet(float *mtxPtr, const size_t x, const size_t y, const float value)
+{
+	mtxPtr[x+(y<<2)] = value;
+}
+
+void MatrixSet(float *mtxPtr, const size_t x, const size_t y, const s32 value)
+{
+	mtxPtr[x+(y<<2)] = value / 4096.0f;
+}
+
+void MatrixCopy(s32 *mtxDst, const s32 *mtxSrc)
+{
+	// We're going to assume that the two buffers are not the same.
+	memcpy(mtxDst, mtxSrc, sizeof(s32)*16);
+}
+
+void MatrixCopy(float *mtxDst, const float *mtxSrc)
+{
+	// We're going to assume that the two buffers are not the same.
+	memcpy(mtxDst, mtxSrc, sizeof(float)*16);
+}
+
+void MatrixCopy(float *mtxDst, const s32 *mtxSrc)
+{
+	mtxDst[ 0] = mtxSrc[ 0] / 4096.0f;
+	mtxDst[ 1] = mtxSrc[ 1] / 4096.0f;
+	mtxDst[ 2] = mtxSrc[ 2] / 4096.0f;
+	mtxDst[ 3] = mtxSrc[ 3] / 4096.0f;
+	
+	mtxDst[ 4] = mtxSrc[ 4] / 4096.0f;
+	mtxDst[ 5] = mtxSrc[ 5] / 4096.0f;
+	mtxDst[ 6] = mtxSrc[ 6] / 4096.0f;
+	mtxDst[ 7] = mtxSrc[ 7] / 4096.0f;
+	
+	mtxDst[ 8] = mtxSrc[ 8] / 4096.0f;
+	mtxDst[ 9] = mtxSrc[ 9] / 4096.0f;
+	mtxDst[10] = mtxSrc[10] / 4096.0f;
+	mtxDst[11] = mtxSrc[11] / 4096.0f;
+	
+	mtxDst[12] = mtxSrc[12] / 4096.0f;
+	mtxDst[13] = mtxSrc[13] / 4096.0f;
+	mtxDst[14] = mtxSrc[14] / 4096.0f;
+	mtxDst[15] = mtxSrc[15] / 4096.0f;
+}
+
+int MatrixCompare(const s32 *mtxDst, const s32 *mtxSrc)
+{
+	return memcmp(mtxDst, mtxSrc, sizeof(s32)*16);
+}
+
+int MatrixCompare(const float *mtxDst, const float *mtxSrc)
+{
+	return memcmp(mtxDst, mtxSrc, sizeof(float)*16);
 }
 
 s32 MatrixGetMultipliedIndex(const u32 index, s32 *matrix, s32 *rightMatrix)
@@ -53,42 +127,6 @@ s32 MatrixGetMultipliedIndex(const u32 index, s32 *matrix, s32 *rightMatrix)
 			((s64)matrix[iMod+8]*rightMatrix[iDiv+2])+((s64)matrix[iMod+12]*rightMatrix[iDiv+3]);
 
 	return (s32)(temp>>12);
-}
-
-void MatrixSet (s32 *matrix, int x, int y, s32 value)
-{
-	matrix [x+(y<<2)] = value;
-}
-
-void MatrixCopy (float* matrixDST, const float* matrixSRC)
-{
-	matrixDST[0] = matrixSRC[0];
-	matrixDST[1] = matrixSRC[1];
-	matrixDST[2] = matrixSRC[2];
-	matrixDST[3] = matrixSRC[3];
-	matrixDST[4] = matrixSRC[4];
-	matrixDST[5] = matrixSRC[5];
-	matrixDST[6] = matrixSRC[6];
-	matrixDST[7] = matrixSRC[7];
-	matrixDST[8] = matrixSRC[8];
-	matrixDST[9] = matrixSRC[9];
-	matrixDST[10] = matrixSRC[10];
-	matrixDST[11] = matrixSRC[11];
-	matrixDST[12] = matrixSRC[12];
-	matrixDST[13] = matrixSRC[13];
-	matrixDST[14] = matrixSRC[14];
-	matrixDST[15] = matrixSRC[15];
-
-}
-
-void MatrixCopy (s32* matrixDST, const s32* matrixSRC)
-{
-	memcpy(matrixDST,matrixSRC,sizeof(s32)*16);
-}
-
-int MatrixCompare (const s32* matrixDST, const s32* matrixSRC)
-{
-	return memcmp((void*)matrixDST, matrixSRC, sizeof(s32)*16);
 }
 
 void MatrixStackInit(MatrixStack *stack)
@@ -450,9 +488,9 @@ void MatrixMultiply(float *__restrict mtxPtrA, const s32 *__restrict mtxPtrB)
 	};
 	
 	__m128 rowB[4] = {
-		_mm_load_ps(mtxFloatB + 0),
-		_mm_load_ps(mtxFloatB + 4),
-		_mm_load_ps(mtxFloatB + 8),
+		_mm_load_ps(mtxFloatB +  0),
+		_mm_load_ps(mtxFloatB +  4),
+		_mm_load_ps(mtxFloatB +  8),
 		_mm_load_ps(mtxFloatB + 12)
 	};
 #endif

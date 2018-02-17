@@ -670,6 +670,11 @@ FORCEINLINE s32 vec3dot_fixed32(const s32* a, const s32* b) {
 //Pretty much any math function in this file should be explicit about how it's handling precision.
 //Handling that stuff generically globally is not a winning proposition.
 
+FORCEINLINE s64 GEM_Mul32x16To64(const s32 a, const s16 b)
+{
+	return ((s64)a)*((s64)b);
+}
+
 FORCEINLINE s64 GEM_Mul32x32To64(const s32 a, const s32 b)
 {
 #ifdef _MSC_VER
@@ -687,7 +692,7 @@ static s32 GEM_SaturateAndShiftdown36To32(const s64 val)
 	return fx32_shiftdown(val);
 }
 
-static void GEM_TransformVertex(const s32 *matrix, s32 *vecPtr)
+static void GEM_TransformVertex(const s32 *__restrict mtxPtr, s32 *__restrict vecPtr)
 {
 	const s32 x = vecPtr[0];
 	const s32 y = vecPtr[1];
@@ -704,10 +709,10 @@ static void GEM_TransformVertex(const s32 *matrix, s32 *vecPtr)
 	//+ SM64: outside castle skybox
 	//+ NSMB: mario head screen wipe
 
-	vecPtr[0] = GEM_SaturateAndShiftdown36To32(GEM_Mul32x32To64(x,matrix[0]) + GEM_Mul32x32To64(y,matrix[4]) + GEM_Mul32x32To64(z,matrix [8]) + GEM_Mul32x32To64(w,matrix[12]));
-	vecPtr[1] = GEM_SaturateAndShiftdown36To32(GEM_Mul32x32To64(x,matrix[1]) + GEM_Mul32x32To64(y,matrix[5]) + GEM_Mul32x32To64(z,matrix[ 9]) + GEM_Mul32x32To64(w,matrix[13]));
-	vecPtr[2] = GEM_SaturateAndShiftdown36To32(GEM_Mul32x32To64(x,matrix[2]) + GEM_Mul32x32To64(y,matrix[6]) + GEM_Mul32x32To64(z,matrix[10]) + GEM_Mul32x32To64(w,matrix[14]));
-	vecPtr[3] = GEM_SaturateAndShiftdown36To32(GEM_Mul32x32To64(x,matrix[3]) + GEM_Mul32x32To64(y,matrix[7]) + GEM_Mul32x32To64(z,matrix[11]) + GEM_Mul32x32To64(w,matrix[15]));
+	vecPtr[0] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtxPtr[0]) + GEM_Mul32x32To64(y,mtxPtr[4]) + GEM_Mul32x32To64(z,mtxPtr[ 8]) + GEM_Mul32x32To64(w,mtxPtr[12]) );
+	vecPtr[1] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtxPtr[1]) + GEM_Mul32x32To64(y,mtxPtr[5]) + GEM_Mul32x32To64(z,mtxPtr[ 9]) + GEM_Mul32x32To64(w,mtxPtr[13]) );
+	vecPtr[2] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtxPtr[2]) + GEM_Mul32x32To64(y,mtxPtr[6]) + GEM_Mul32x32To64(z,mtxPtr[10]) + GEM_Mul32x32To64(w,mtxPtr[14]) );
+	vecPtr[3] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtxPtr[3]) + GEM_Mul32x32To64(y,mtxPtr[7]) + GEM_Mul32x32To64(z,mtxPtr[11]) + GEM_Mul32x32To64(w,mtxPtr[15]) );
 }
 //---------------
 
@@ -727,14 +732,9 @@ static void SetVertex()
 	if (texCoordTransformMode == TextureTransformationMode_VertexSource)
 	{
 		//Tested by: Eledees The Adventures of Kai and Zero (E) [title screen and frontend menus]
-		last_s = (s32)(((s64)s16coord[0] * mtxCurrent[MATRIXMODE_TEXTURE][0] +
-								(s64)s16coord[1] * mtxCurrent[MATRIXMODE_TEXTURE][4] +
-								(s64)s16coord[2] * mtxCurrent[MATRIXMODE_TEXTURE][8] +
-								(((s64)(_s))<<24))>>24);
-		last_t = (s32)(((s64)s16coord[0] * mtxCurrent[MATRIXMODE_TEXTURE][1] +
-								(s64)s16coord[1] * mtxCurrent[MATRIXMODE_TEXTURE][5] +
-								(s64)s16coord[2] * mtxCurrent[MATRIXMODE_TEXTURE][9] +
-								(((s64)(_t))<<24))>>24);
+		const s32 *mtxTex = mtxCurrent[MATRIXMODE_TEXTURE];
+		last_s = (s32)( (s64)(GEM_Mul32x16To64(mtxTex[0], s16coord[0]) + GEM_Mul32x16To64(mtxTex[4], s16coord[1]) + GEM_Mul32x16To64(mtxTex[8], s16coord[2]) + ((s64)_s << 24)) >> 24 );
+		last_t = (s32)( (s64)(GEM_Mul32x16To64(mtxTex[1], s16coord[0]) + GEM_Mul32x16To64(mtxTex[5], s16coord[1]) + GEM_Mul32x16To64(mtxTex[9], s16coord[2]) + ((s64)_t << 24)) >> 24 );
 	}
 
 	//refuse to do anything if we have too many verts or polys
@@ -1070,7 +1070,7 @@ static void gfx3d_glRestoreMatrix(u32 v)
 	{
 		//parameter ignored and treated as sensible
 		v = 0;
-	MatrixCopy(mtxCurrent[mode], MatrixStackGetPos(&mtxStack[mode], v));
+		MatrixCopy(mtxCurrent[mode], MatrixStackGetPos(&mtxStack[mode], v));
 	}
 	else
 	{
@@ -1297,8 +1297,9 @@ static void gfx3d_glNormal(s32 v)
 	{
 		//SM64 highlight rendered star in main menu tests this
 		//also smackdown 2010 player textures tested this (needed cast on _s and _t)
-		last_s = (s32)(((s64)normal[0] * mtxCurrent[MATRIXMODE_TEXTURE][0] + (s64)normal[1] * mtxCurrent[MATRIXMODE_TEXTURE][4] + (s64)normal[2] * mtxCurrent[MATRIXMODE_TEXTURE][8] + (((s64)_s)<<24))>>24);
-		last_t = (s32)(((s64)normal[0] * mtxCurrent[MATRIXMODE_TEXTURE][1] + (s64)normal[1] * mtxCurrent[MATRIXMODE_TEXTURE][5] + (s64)normal[2] * mtxCurrent[MATRIXMODE_TEXTURE][9] + (((s64)_t)<<24))>>24);
+		const s32 *mtxTex = mtxCurrent[MATRIXMODE_TEXTURE];
+		last_s = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[0], normal[0]) + GEM_Mul32x32To64(mtxTex[4], normal[1]) + GEM_Mul32x32To64(mtxTex[8], normal[2]) + ((s64)_s << 24)) >> 24 );
+		last_t = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[1], normal[0]) + GEM_Mul32x32To64(mtxTex[5], normal[1]) + GEM_Mul32x32To64(mtxTex[9], normal[2]) + ((s64)_t << 24)) >> 24 );
 	}
 
 	MatrixMultVec3x3(mtxCurrent[MATRIXMODE_POSITION_VECTOR], normal);
@@ -1395,8 +1396,9 @@ static void gfx3d_glTexCoord(s32 val)
 	if (texCoordTransformMode == TextureTransformationMode_TexCoordSource)
 	{
 		//dragon quest 4 overworld will test this
-		last_s = (s32) (( (s64)_s * mtxCurrent[MATRIXMODE_TEXTURE][0] + (s64)_t * mtxCurrent[MATRIXMODE_TEXTURE][4] + (s64)mtxCurrent[MATRIXMODE_TEXTURE][8] + (s64)mtxCurrent[MATRIXMODE_TEXTURE][12])>>12);
-		last_t = (s32) (( (s64)_s * mtxCurrent[MATRIXMODE_TEXTURE][1] + (s64)_t * mtxCurrent[MATRIXMODE_TEXTURE][5] + (s64)mtxCurrent[MATRIXMODE_TEXTURE][9] + (s64)mtxCurrent[MATRIXMODE_TEXTURE][13])>>12);
+		const s32 *mtxTex = mtxCurrent[MATRIXMODE_TEXTURE];
+		last_s = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[0], _s) + GEM_Mul32x32To64(mtxTex[4], _t) + (s64)mtxTex[8] + (s64)mtxTex[12]) >> 12 );
+		last_t = (s32)( (s64)(GEM_Mul32x32To64(mtxTex[1], _s) + GEM_Mul32x32To64(mtxTex[5], _t) + (s64)mtxTex[9] + (s64)mtxTex[13]) >> 12 );
 	}
 	else if (texCoordTransformMode == TextureTransformationMode_None)
 	{

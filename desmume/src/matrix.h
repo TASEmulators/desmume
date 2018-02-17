@@ -42,19 +42,25 @@ struct MatrixStack
 	u8		type;
 };
 
-void	MatrixInit				(float *matrix);
-void	MatrixInit				(s32 *matrix);
+void MatrixInit(s32 *mtxPtr);
+void MatrixInit(float *mtxPtr);
 
-//In order to conditionally use these asm optimized functions in visual studio
-//without having to make new build types to exclude the assembly files.
-//a bit sloppy, but there aint much to it
+void MatrixIdentity(s32 *mtxPtr);
+void MatrixIdentity(float *mtxPtr);
 
-float	MatrixGetMultipliedIndex	(const u32 index, float *matrix, float *rightMatrix);
-s32	MatrixGetMultipliedIndex	(const u32 index, s32 *matrix, s32 *rightMatrix);
-void	MatrixSet				(s32 *matrix, int x, int y, s32 value);
-void	MatrixCopy				(s32 * matrixDST, const s32 * matrixSRC);
-int		MatrixCompare				(const s32 * matrixDST, const float * matrixSRC);
-void	MatrixIdentity			(s32 *matrix);
+void MatrixSet(s32 *mtxPtr, const size_t x, const size_t y, const s32 value);
+void MatrixSet(float *mtxPtr, const size_t x, const size_t y, const float value);
+void MatrixSet(float *mtxPtr, const size_t x, const size_t y, const s32 value);
+
+void MatrixCopy(s32 *mtxDst, const s32 *mtxSrc);
+void MatrixCopy(float *mtxDst, const float *mtxSrc);
+void MatrixCopy(float *mtxDst, const s32 *mtxSrc);
+
+int MatrixCompare(const s32 *mtxDst, const s32 *mtxSrc);
+int MatrixCompare(const float *mtxDst, const float *mtxSrc);
+
+s32	MatrixGetMultipliedIndex(const u32 index, s32 *matrix, s32 *rightMatrix);
+float MatrixGetMultipliedIndex(const u32 index, float *matrix, float *rightMatrix);
 
 void	MatrixStackInit				(MatrixStack *stack);
 void	MatrixStackSetMaxSize		(MatrixStack *stack, int size);
