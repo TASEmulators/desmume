@@ -2872,6 +2872,11 @@ void ParseReg_DISP3DCNT()
 	gfx3d_parseCurrentDISP3DCNT();
 }
 
+template void gfx3d_glGetMatrix<MATRIXMODE_PROJECTION>(const int index, float(&dst)[16]);
+template void gfx3d_glGetMatrix<MATRIXMODE_POSITION>(const int index, float(&dst)[16]);
+template void gfx3d_glGetMatrix<MATRIXMODE_POSITION_VECTOR>(const int index, float(&dst)[16]);
+template void gfx3d_glGetMatrix<MATRIXMODE_TEXTURE>(const int index, float(&dst)[16]);
+
 //-------------------
 //clipping
 //-------------------

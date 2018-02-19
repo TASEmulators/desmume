@@ -685,14 +685,6 @@ FORCEINLINE void _Vec4_MultiplyByMatrix(__m128i &outVec,
 	outVec = _mm_blendv_epi8(outVecLo, outVecHi, _mm_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0, 0));
 }
 
-static s32 GEM_SaturateAndShiftdown36To32(const s64 val)
-{
-	if(val>(s64)0x000007FFFFFFFFFFULL) return (s32)0x7FFFFFFFU;
-	if(val<(s64)0xFFFFF80000000000ULL) return (s32)0x80000000U;
-	
-	return fx32_shiftdown(val);
-}
-
 FORCEINLINE void _Vec3_MultiplyByMatrix(__m128i &outVec,
 										const __m128i &c0, const __m128i &c1, const __m128i &c2,
 										const __m128i &rowLo0, const __m128i &rowLo1, const __m128i &rowLo2,
@@ -986,7 +978,7 @@ FORCEINLINE void _Vec4_Scale(s32 (&inoutVec)[4], const s32 scalar)
 
 void MatrixMultVec4x4(const s32 (&__restrict mtx)[16], s32 (&__restrict vec)[4])
 {
-	const CACHE_ALIGN s32 __restrict tmpVec[4] = {
+	const CACHE_ALIGN s32 tmpVec[4] = {
 		vec[0], vec[1], vec[2], vec[3]
 	};
 	
@@ -995,7 +987,7 @@ void MatrixMultVec4x4(const s32 (&__restrict mtx)[16], s32 (&__restrict vec)[4])
 
 void MatrixMultVec3x3(const s32 (&__restrict mtx)[16], s32 (&__restrict vec)[4])
 {
-	const CACHE_ALIGN s32 __restrict tmpVec[3] = {
+	const CACHE_ALIGN s32 tmpVec[3] = {
 		vec[0], vec[1], vec[2]
 	};
 	
