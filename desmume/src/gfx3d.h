@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <istream>
 
 #include "types.h"
+#include "matrix.h"
 #include "GPU.h"
 
 class EMUFILE;
@@ -76,14 +77,10 @@ class EMUFILE;
 extern CACHE_ALIGN u32 dsDepthExtend_15bit_to_24bit[32768];
 #define DS_DEPTH15TO24(depth) ( dsDepthExtend_15bit_to_24bit[(depth) & 0x7FFF] )
 
-// MATRIX MODES
-enum MatrixMode
-{
-	MATRIXMODE_PROJECTION		= 0,
-	MATRIXMODE_POSITION			= 1,
-	MATRIXMODE_POSITION_VECTOR	= 2,
-	MATRIXMODE_TEXTURE			= 3
-};
+extern CACHE_ALIGN MatrixStack<MATRIXMODE_PROJECTION> mtxStackProjection;
+extern CACHE_ALIGN MatrixStack<MATRIXMODE_POSITION> mtxStackPosition;
+extern CACHE_ALIGN MatrixStack<MATRIXMODE_POSITION_VECTOR> mtxStackPositionVector;
+extern CACHE_ALIGN MatrixStack<MATRIXMODE_TEXTURE> mtxStackTexture;
 
 // POLYGON PRIMITIVE TYPES
 enum PolygonPrimitiveType
@@ -633,7 +630,7 @@ void gfx3d_sendCommandToFIFO(u32 val);
 void gfx3d_sendCommand(u32 cmd, u32 param);
 
 //other misc stuff
-void gfx3d_glGetMatrix(const MatrixMode mode, int index, float *dst);
+template<MatrixMode MODE> void gfx3d_glGetMatrix(const int index, float (&dst)[16]);
 void gfx3d_glGetLightDirection(const size_t index, u32 &dst);
 void gfx3d_glGetLightColor(const size_t index, u32 &dst);
 

@@ -33,40 +33,50 @@
 #include <emmintrin.h>
 #endif
 
-struct MatrixStack
+#ifdef ENABLE_SSE4_1
+#include "smmintrin.h"
+#endif
+
+enum MatrixMode
 {
-	MatrixStack(int size, int type);
-	s32		*matrix;
-	u32		position;
-	s32		size;
-	u8		type;
+	MATRIXMODE_PROJECTION		= 0,
+	MATRIXMODE_POSITION			= 1,
+	MATRIXMODE_POSITION_VECTOR	= 2,
+	MATRIXMODE_TEXTURE			= 3
 };
 
-void MatrixInit(s32 *mtxPtr);
-void MatrixInit(float *mtxPtr);
+template<MatrixMode MODE>
+struct MatrixStack
+{
+	static const size_t size = ((MODE == MATRIXMODE_PROJECTION) || (MODE == MATRIXMODE_TEXTURE)) ? 1 : 32;
+	static const MatrixMode type = MODE;
+	
+	s32 matrix[size][16];
+	u32 position;
+};
 
-void MatrixIdentity(s32 *mtxPtr);
-void MatrixIdentity(float *mtxPtr);
+void MatrixInit(s32 (&mtx)[16]);
+void MatrixInit(float (&mtx)[16]);
 
-void MatrixSet(s32 *mtxPtr, const size_t x, const size_t y, const s32 value);
-void MatrixSet(float *mtxPtr, const size_t x, const size_t y, const float value);
-void MatrixSet(float *mtxPtr, const size_t x, const size_t y, const s32 value);
+void MatrixIdentity(s32 (&mtx)[16]);
+void MatrixIdentity(float (&mtx)[16]);
 
-void MatrixCopy(s32 *mtxDst, const s32 *mtxSrc);
-void MatrixCopy(float *mtxDst, const float *mtxSrc);
-void MatrixCopy(float *mtxDst, const s32 *mtxSrc);
+void MatrixSet(s32 (&mtx)[16], const size_t x, const size_t y, const s32 value);
+void MatrixSet(float (&mtx)[16], const size_t x, const size_t y, const float value);
+void MatrixSet(float (&mtx)[16], const size_t x, const size_t y, const s32 value);
 
-int MatrixCompare(const s32 *mtxDst, const s32 *mtxSrc);
-int MatrixCompare(const float *mtxDst, const float *mtxSrc);
+void MatrixCopy(s32 (&mtxDst)[16], const s32 (&mtxSrc)[16]);
+void MatrixCopy(float (&mtxDst)[16], const float (&mtxSrc)[16]);
+void MatrixCopy(float (&__restrict mtxDst)[16], const s32 (&__restrict mtxSrc)[16]);
 
-s32	MatrixGetMultipliedIndex(const u32 index, s32 *matrix, s32 *rightMatrix);
-float MatrixGetMultipliedIndex(const u32 index, float *matrix, float *rightMatrix);
+int MatrixCompare(const s32 (&mtxDst)[16], const s32 (&mtxSrc)[16]);
+int MatrixCompare(const float (&mtxDst)[16], const float (&mtxSrc)[16]);
 
-void	MatrixStackInit				(MatrixStack *stack);
-void	MatrixStackSetMaxSize		(MatrixStack *stack, int size);
-s32*	MatrixStackGetPos			(MatrixStack *stack, const size_t pos);
-s32*	MatrixStackGet				(MatrixStack *stack);
-void	MatrixStackLoadMatrix		(MatrixStack *stack, const size_t pos, const s32 *ptr);
+s32	MatrixGetMultipliedIndex(const u32 index, const s32 (&mtxA)[16], const s32 (&mtxB)[16]);
+float MatrixGetMultipliedIndex(const u32 index, const float (&mtxA)[16], const float (&mtxB)[16]);
+
+template<MatrixMode MODE> void MatrixStackInit(MatrixStack<MODE> *stack);
+template<MatrixMode MODE> s32* MatrixStackGet(MatrixStack<MODE> *stack);
 
 void Vector2Copy(float *dst, const float *src);
 void Vector2Add(float *dst, const float *src);
@@ -86,21 +96,21 @@ void Vector3Normalize(float *dst);
 void Vector4Copy(float *dst, const float *src);
 
 
-void _MatrixMultVec4x4_NoSIMD(const s32 *__restrict mtxPtr, float *__restrict vecPtr);
+void _MatrixMultVec4x4_NoSIMD(const s32 (&__restrict mtx)[16], float (&__restrict vec)[4]);
 
-void MatrixMultVec4x4(const s32 *__restrict mtxPtr, float *__restrict vecPtr);
-void MatrixMultVec3x3(const s32 *__restrict mtxPtr, float *__restrict vecPtr);
-void MatrixTranslate(float *__restrict mtxPtr, const float *__restrict vecPtr);
-void MatrixScale(float *__restrict mtxPtr, const float *__restrict vecPtr);
-void MatrixMultiply(float *__restrict mtxPtrA, const s32 *__restrict mtxPtrB);
+void MatrixMultVec4x4(const s32 (&__restrict mtx)[16], float (&__restrict vec)[4]);
+void MatrixMultVec3x3(const s32 (&__restrict mtx)[16], float (&__restrict vec)[4]);
+void MatrixTranslate(float (&__restrict mtx)[16], const float (&__restrict vec)[4]);
+void MatrixScale(float (&__restrict mtx)[16], const float (&__restrict vec)[4]);
+void MatrixMultiply(float (&__restrict mtxA)[16], const s32 (&__restrict mtxB)[16]);
 
-template<size_t NUM_ROWS> FORCEINLINE void vector_fix2float(float *mtxPtr, const float divisor);
+template<size_t NUM_ROWS> FORCEINLINE void vector_fix2float(float (&mtx)[16], const float divisor);
 
-void MatrixMultVec4x4(const s32 *__restrict mtxPtr, s32 *__restrict vecPtr);
-void MatrixMultVec3x3(const s32 *__restrict mtxPtr, s32 *__restrict vecPtr);
-void MatrixTranslate(s32 *__restrict mtxPtr, const s32 *__restrict vecPtr);
-void MatrixScale(s32 *__restrict mtxPtr, const s32 *__restrict vecPtr);
-void MatrixMultiply(s32 *__restrict mtxPtrA, const s32 *__restrict mtxPtrB);
+void MatrixMultVec4x4(const s32 (&__restrict mtx)[16], s32 (&__restrict vec)[4]);
+void MatrixMultVec3x3(const s32 (&__restrict mtx)[16], s32 (&__restrict vec)[4]);
+void MatrixTranslate(s32 (&__restrict mtx)[16], const s32 (&__restrict vec)[4]);
+void MatrixScale(s32 (&__restrict mtx)[16], const s32 (&__restrict vec)[4]);
+void MatrixMultiply(s32 (&__restrict mtxA)[16], const s32 (&__restrict mtxB)[16]);
 
 //these functions are an unreliable, inaccurate floor.
 //it should only be used for positive numbers

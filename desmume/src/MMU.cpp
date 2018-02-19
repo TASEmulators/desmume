@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2017 DeSmuME team
+	Copyright (C) 2007-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1936,7 +1936,6 @@ static INLINE void write_timer(int proc, int timerIndex, u16 val)
 	NDS_RescheduleTimers();
 }
 
-extern CACHE_ALIGN MatrixStack	mtxStack[4];
 u32 TGXSTAT::read32()
 {
 	u32 ret = 0;
@@ -1945,8 +1944,8 @@ u32 TGXSTAT::read32()
 
 	// stack position always equal zero. possible timings is wrong
 	// using in "The Wild West"
-	int proj_level = mtxStack[MATRIXMODE_PROJECTION].position & 1;
-	int mv_level = mtxStack[MATRIXMODE_POSITION].position & 31;
+	int proj_level = mtxStackProjection.position & 1;
+	int mv_level = mtxStackPosition.position & 31;
 	ret |= ((proj_level << 13) | (mv_level << 8));
 
 	ret |= sb<<14;	//stack busy
@@ -1981,7 +1980,7 @@ void TGXSTAT::write32(const u32 val)
 		// Writing "1" to Bit15 does reset the Error Flag (Bit15), 
 		// and additionally resets the Projection Stack Pointer (Bit13)
 		// (and probably (?) also the Texture Stack Pointer)??
-		mtxStack[0].position = 0;
+		mtxStackProjection.position = 0;
 		se = 0; //clear stack error flag
 	}
 	//printf("gxstat write: %08X while gxfifo.size=%d\n",val,gxFIFO.size);

@@ -1,6 +1,6 @@
 /*	
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -288,12 +288,10 @@ static u16 *_gfx3d_color16 = NULL;
 
 // Matrix stack handling
 //TODO: decouple stack pointers from matrix stack type
-CACHE_ALIGN MatrixStack	mtxStack[4] = {
-	MatrixStack(1, 0), // Projection stack
-	MatrixStack(32, 1), // Coordinate stack
-	MatrixStack(32, 2), // Directional stack
-	MatrixStack(1, 3), // Texture stack
-};
+CACHE_ALIGN MatrixStack<MATRIXMODE_PROJECTION> mtxStackProjection;
+CACHE_ALIGN MatrixStack<MATRIXMODE_POSITION> mtxStackPosition;
+CACHE_ALIGN MatrixStack<MATRIXMODE_POSITION_VECTOR> mtxStackPositionVector;
+CACHE_ALIGN MatrixStack<MATRIXMODE_TEXTURE> mtxStackTexture;
 
 static CACHE_ALIGN s32 mtxCurrent[4][16];
 static CACHE_ALIGN s32 mtxTemporal[16];
@@ -615,9 +613,10 @@ void gfx3d_reset()
 	MatrixInit(mtxCurrent[MATRIXMODE_TEXTURE]);
 	MatrixInit(mtxTemporal);
 
-	MatrixStackInit(&mtxStack[0]);
-	MatrixStackInit(&mtxStack[1]);
-	MatrixStackInit(&mtxStack[2]);
+	MatrixStackInit(&mtxStackProjection);
+	MatrixStackInit(&mtxStackPosition);
+	MatrixStackInit(&mtxStackPositionVector);
+	MatrixStackInit(&mtxStackTexture);
 
 	clCmd = 0;
 	clInd = 0;
@@ -692,12 +691,12 @@ static s32 GEM_SaturateAndShiftdown36To32(const s64 val)
 	return fx32_shiftdown(val);
 }
 
-static void GEM_TransformVertex(const s32 *__restrict mtxPtr, s32 *__restrict vecPtr)
+static void GEM_TransformVertex(const s32 (&__restrict mtx)[16], s32 (&__restrict vec)[4])
 {
-	const s32 x = vecPtr[0];
-	const s32 y = vecPtr[1];
-	const s32 z = vecPtr[2];
-	const s32 w = vecPtr[3];
+	const s32 x = vec[0];
+	const s32 y = vec[1];
+	const s32 z = vec[2];
+	const s32 w = vec[3];
 
 	//saturation logic is most carefully tested by:
 	//+ spectrobes beyond the portals excavation blower and drill tools: sets very large overflowing +x,+y in the modelview matrix to push things offscreen
@@ -709,10 +708,10 @@ static void GEM_TransformVertex(const s32 *__restrict mtxPtr, s32 *__restrict ve
 	//+ SM64: outside castle skybox
 	//+ NSMB: mario head screen wipe
 
-	vecPtr[0] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtxPtr[0]) + GEM_Mul32x32To64(y,mtxPtr[4]) + GEM_Mul32x32To64(z,mtxPtr[ 8]) + GEM_Mul32x32To64(w,mtxPtr[12]) );
-	vecPtr[1] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtxPtr[1]) + GEM_Mul32x32To64(y,mtxPtr[5]) + GEM_Mul32x32To64(z,mtxPtr[ 9]) + GEM_Mul32x32To64(w,mtxPtr[13]) );
-	vecPtr[2] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtxPtr[2]) + GEM_Mul32x32To64(y,mtxPtr[6]) + GEM_Mul32x32To64(z,mtxPtr[10]) + GEM_Mul32x32To64(w,mtxPtr[14]) );
-	vecPtr[3] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtxPtr[3]) + GEM_Mul32x32To64(y,mtxPtr[7]) + GEM_Mul32x32To64(z,mtxPtr[11]) + GEM_Mul32x32To64(w,mtxPtr[15]) );
+	vec[0] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtx[0]) + GEM_Mul32x32To64(y,mtx[4]) + GEM_Mul32x32To64(z,mtx[ 8]) + GEM_Mul32x32To64(w,mtx[12]) );
+	vec[1] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtx[1]) + GEM_Mul32x32To64(y,mtx[5]) + GEM_Mul32x32To64(z,mtx[ 9]) + GEM_Mul32x32To64(w,mtx[13]) );
+	vec[2] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtx[2]) + GEM_Mul32x32To64(y,mtx[6]) + GEM_Mul32x32To64(z,mtx[10]) + GEM_Mul32x32To64(w,mtx[14]) );
+	vec[3] = GEM_SaturateAndShiftdown36To32( GEM_Mul32x32To64(x,mtx[3]) + GEM_Mul32x32To64(y,mtx[7]) + GEM_Mul32x32To64(z,mtx[11]) + GEM_Mul32x32To64(w,mtx[15]) );
 }
 //---------------
 
@@ -975,25 +974,37 @@ static void gfx3d_glPushMatrix()
 	//printf("%d %d %d %d -> ",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
 	//printf("PUSH mode: %d -> ",mode,mtxStack[mode].position);
 
-	if(mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
+	if (mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
 	{
-		MatrixCopy(MatrixStackGetPos(&mtxStack[mode], 0), mtxCurrent[mode]);
-
-		u32& index = mtxStack[mode].position;
-		if(index == 1) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
-		index += 1;
-		index &= 1;
+		if (mode == MATRIXMODE_PROJECTION)
+		{
+			MatrixCopy(mtxStackProjection.matrix[0], mtxCurrent[mode]);
+			
+			u32 &index = mtxStackProjection.position;
+			if (index == 1) MMU_new.gxstat.se = 1;
+			index += 1;
+			index &= 1;
+		}
+		else
+		{
+			MatrixCopy(mtxStackTexture.matrix[0], mtxCurrent[mode]);
+			
+			u32 &index = mtxStackTexture.position;
+			if (index == 1) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
+			index += 1;
+			index &= 1;
+		}
 	}
 	else
 	{
-		u32& index = mtxStack[MATRIXMODE_POSITION].position;
+		u32 &index = mtxStackPosition.position;
 		
-		MatrixCopy(MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION], index&31), mtxCurrent[MATRIXMODE_POSITION]);
-		MatrixCopy(MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION_VECTOR], index&31), mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
-
+		MatrixCopy(mtxStackPosition.matrix[index & 31], mtxCurrent[MATRIXMODE_POSITION]);
+		MatrixCopy(mtxStackPositionVector.matrix[index & 31], mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+		
 		index += 1;
 		index &= 63;
-		if(index >= 32) MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
+		if (index >= 32) MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
 	}
 
 	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
@@ -1010,25 +1021,35 @@ static void gfx3d_glPopMatrix(u32 v)
 	//printf("%d %d %d %d -> ",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
 	//printf("POP   (%d): mode: %d -> ",v,mode,mtxStack[mode].position);
 
-	if(mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
+	if (mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
 	{
 		//parameter is ignored and treated as sensible (always 1)
-
-		u32& index = mtxStack[mode].position;
-		index ^= 1;
-		if(index == 1) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
-		MatrixCopy(mtxCurrent[mode], MatrixStackGetPos(&mtxStack[mode], 0));
+		
+		if (mode == MATRIXMODE_PROJECTION)
+		{
+			u32 &index = mtxStackProjection.position;
+			index ^= 1;
+			if (index == 1) MMU_new.gxstat.se = 1;
+			MatrixCopy(mtxCurrent[mode], mtxStackProjection.matrix[0]);
+		}
+		else
+		{
+			u32 &index = mtxStackTexture.position;
+			index ^= 1;
+			if (index == 1) MMU_new.gxstat.se = 1; //unknown if this applies to the texture matrix
+			MatrixCopy(mtxCurrent[mode], mtxStackTexture.matrix[0]);
+		}
 	}
 	else
 	{
-		u32& index = mtxStack[MATRIXMODE_POSITION].position;
+		u32 &index = mtxStackPosition.position;
 			
 		index -= v & 63;
 		index &= 63;
-		if(index >= 32) MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
-			
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION], index&31));
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION_VECTOR], index&31));
+		if (index >= 32) MMU_new.gxstat.se = 1; //(not sure, this might be off by 1)
+		
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], mtxStackPosition.matrix[index & 31]);
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], mtxStackPositionVector.matrix[index & 31]);
 	}
 
 	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
@@ -1041,22 +1062,29 @@ static void gfx3d_glStoreMatrix(u32 v)
 	//printf("%d %d %d %d -> ",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
 	//printf("STORE (%d): mode: %d -> ",v,mode,mtxStack[mode].position);
 
-	if(mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
+	if (mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
 	{
 		//parameter ignored and treated as sensible
 		v = 0;
-
-		MatrixStackLoadMatrix(&mtxStack[mode], v, mtxCurrent[mode]);
+		
+		if (mode == MATRIXMODE_PROJECTION)
+		{
+			MatrixCopy(mtxStackProjection.matrix[0], mtxCurrent[MATRIXMODE_PROJECTION]);
+		}
+		else
+		{
+			MatrixCopy(mtxStackTexture.matrix[0], mtxCurrent[MATRIXMODE_TEXTURE]);
+		}
 	}
 	else
 	{
 		v &= 31;
 
 		//out of bounds function fully properly, but set errors (not sure, this might be off by 1)
-		if(v >= 31) MMU_new.gxstat.se = 1;
-
-		MatrixStackLoadMatrix(&mtxStack[MATRIXMODE_POSITION], v, mtxCurrent[MATRIXMODE_POSITION]);
-		MatrixStackLoadMatrix(&mtxStack[MATRIXMODE_POSITION_VECTOR], v, mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
+		if (v >= 31) MMU_new.gxstat.se = 1;
+		
+		MatrixCopy(mtxStackPosition.matrix[v], mtxCurrent[MATRIXMODE_POSITION]);
+		MatrixCopy(mtxStackPositionVector.matrix[v], mtxCurrent[MATRIXMODE_POSITION_VECTOR]);
 	}
 
 	//printf("%d %d %d %d\n",mtxStack[0].position,mtxStack[1].position,mtxStack[2].position,mtxStack[3].position);
@@ -1066,19 +1094,27 @@ static void gfx3d_glStoreMatrix(u32 v)
 
 static void gfx3d_glRestoreMatrix(u32 v)
 {
-	if(mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
+	if (mode == MATRIXMODE_PROJECTION || mode == MATRIXMODE_TEXTURE)
 	{
 		//parameter ignored and treated as sensible
 		v = 0;
-		MatrixCopy(mtxCurrent[mode], MatrixStackGetPos(&mtxStack[mode], v));
+		
+		if (mode == MATRIXMODE_PROJECTION)
+		{
+			MatrixCopy(mtxCurrent[MATRIXMODE_PROJECTION], mtxStackProjection.matrix[0]);
+		}
+		else
+		{
+			MatrixCopy(mtxCurrent[MATRIXMODE_TEXTURE], mtxStackTexture.matrix[0]);
+		}
 	}
 	else
 	{
 		//out of bounds errors function fully properly, but set errors
-		MMU_new.gxstat.se = v>=31; //(not sure, this might be off by 1)
-
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION], v));
-		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], MatrixStackGetPos(&mtxStack[MATRIXMODE_POSITION_VECTOR], v));
+		MMU_new.gxstat.se = (v >= 31) ? 1 : 0; //(not sure, this might be off by 1)
+		
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION], mtxStackPosition.matrix[v]);
+		MatrixCopy(mtxCurrent[MATRIXMODE_POSITION_VECTOR], mtxStackPositionVector.matrix[v]);
 	}
 
 
@@ -1853,7 +1889,7 @@ void gfx3d_UpdateToonTable(u8 offset, u32 val)
 s32 gfx3d_GetClipMatrix(const u32 index)
 {
 	//printf("reading clip matrix: %d\n",index);
-	return (s32)MatrixGetMultipliedIndex(index, mtxCurrent[MATRIXMODE_PROJECTION], mtxCurrent[MATRIXMODE_POSITION]);
+	return MatrixGetMultipliedIndex(index, mtxCurrent[MATRIXMODE_PROJECTION], mtxCurrent[MATRIXMODE_POSITION]);
 }
 
 s32 gfx3d_GetDirectionalMatrix(const u32 index)
@@ -2491,20 +2527,37 @@ void gfx3d_sendCommand(u32 cmd, u32 param)
 
 //--------------
 //other misc stuff
-void gfx3d_glGetMatrix(const MatrixMode m_mode, int index, float *dst)
+template<MatrixMode MODE>
+void gfx3d_glGetMatrix(const int index, float (&dst)[16])
 {
-	//if(index == -1)
-	//{
-	//	MatrixCopy(dest, mtxCurrent[m_mode]);
-	//	return;
-	//}
-
-	//MatrixCopy(dest, MatrixStackGetPos(&mtxStack[m_mode], index));
-	
-	const s32 *src = (index == -1) ? mtxCurrent[m_mode] : MatrixStackGetPos(&mtxStack[m_mode], index);
-	
-	for (size_t i = 0; i < 16; i++)
-		dst[i] = src[i]/4096.0f;
+	if (index == -1)
+	{
+		MatrixCopy(dst, mtxCurrent[MODE]);
+	}
+	else
+	{
+		switch (MODE)
+		{
+			case MATRIXMODE_PROJECTION:
+				MatrixCopy(dst, mtxStackProjection.matrix[0]);
+				break;
+				
+			case MATRIXMODE_POSITION:
+				MatrixCopy(dst, mtxStackPosition.matrix[0]);
+				break;
+				
+			case MATRIXMODE_POSITION_VECTOR:
+				MatrixCopy(dst, mtxStackPositionVector.matrix[0]);
+				break;
+				
+			case MATRIXMODE_TEXTURE:
+				MatrixCopy(dst, mtxStackTexture.matrix[0]);
+				break;
+				
+			default:
+				break;
+		}
+	}
 }
 
 void gfx3d_glGetLightDirection(const size_t index, u32 &dst)
@@ -2632,12 +2685,35 @@ void gfx3d_savestate(EMUFILE &os)
 	for (size_t i = 0; i < polylist->count; i++)
 		polylist->list[i].save(os);
 
-	for (size_t i = 0; i < ARRAY_SIZE(mtxStack); i++)
+	// Write matrix stack data
+	os.write_32LE(mtxStackProjection.position);
+	for (size_t j = 0; j < 16; j++)
 	{
-		os.write_32LE(mtxStack[i].position);
-		
-		for (size_t j = 0; j < mtxStack[i].size*16; j++)
-			os.write_32LE(mtxStack[i].matrix[j]);
+		os.write_32LE(mtxStackProjection.matrix[0][j]);
+	}
+	
+	os.write_32LE(mtxStackPosition.position);
+	for (size_t i = 0; i < MatrixStack<MATRIXMODE_POSITION>::size; i++)
+	{
+		for (size_t j = 0; j < 16; j++)
+		{
+			os.write_32LE(mtxStackPosition.matrix[i][j]);
+		}
+	}
+	
+	os.write_32LE(mtxStackPositionVector.position);
+	for (size_t i = 0; i < MatrixStack<MATRIXMODE_POSITION_VECTOR>::size; i++)
+	{
+		for (size_t j = 0; j < 16; j++)
+		{
+			os.write_32LE(mtxStackPositionVector.matrix[i][j]);
+		}
+	}
+	
+	os.write_32LE(mtxStackTexture.position);
+	for (size_t j = 0; j < 16; j++)
+	{
+		os.write_32LE(mtxStackTexture.matrix[0][j]);
 	}
 
 	gxf_hardware.savestate(os);
@@ -2703,12 +2779,35 @@ bool gfx3d_loadstate(EMUFILE &is, int size)
 
 	if (version >= 2)
 	{
-		for (size_t i = 0; i < ARRAY_SIZE(mtxStack); i++)
+		// Read matrix stack data
+		is.read_32LE(mtxStackProjection.position);
+		for (size_t j = 0; j < 16; j++)
 		{
-			is.read_32LE(mtxStack[i].position);
-			
-			for (size_t j = 0; j < mtxStack[i].size*16; j++)
-				is.read_32LE(mtxStack[i].matrix[j]);
+			is.read_32LE(mtxStackProjection.matrix[0][j]);
+		}
+		
+		is.read_32LE(mtxStackPosition.position);
+		for (size_t i = 0; i < MatrixStack<MATRIXMODE_POSITION>::size; i++)
+		{
+			for (size_t j = 0; j < 16; j++)
+			{
+				is.read_32LE(mtxStackPosition.matrix[i][j]);
+			}
+		}
+		
+		is.read_32LE(mtxStackPositionVector.position);
+		for (size_t i = 0; i < MatrixStack<MATRIXMODE_POSITION_VECTOR>::size; i++)
+		{
+			for (size_t j = 0; j < 16; j++)
+			{
+				is.read_32LE(mtxStackPositionVector.matrix[i][j]);
+			}
+		}
+		
+		is.read_32LE(mtxStackTexture.position);
+		for (size_t j = 0; j < 16; j++)
+		{
+			is.read_32LE(mtxStackTexture.matrix[0][j]);
 		}
 	}
 
