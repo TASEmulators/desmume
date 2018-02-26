@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009-2015 DeSmuME team
+	Copyright (C) 2009-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,8 +22,12 @@
 
 bool DRV_AviBegin(const char* fname, bool newsegment = false);
 void DRV_AviEnd(bool newsegment = false);
-void DRV_AviSoundUpdate(void* soundData, int soundLen);
 bool AVI_IsRecording();
+
+void DRV_AviFrameStart();
 void DRV_AviVideoUpdate();
+void DRV_AviSoundUpdate(void* soundData, int soundLen);
+void DRV_AviFileWrite();
+void DRV_AviFileWriteFinish();
 
 #endif

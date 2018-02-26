@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2006-2017 DeSmuME team
+	Copyright (C) 2006-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -538,6 +538,21 @@ unsigned short windowSize = 0;
 	Color::Fuchsia
 };*/
 
+class GPUEventHandlerWindows : public GPUEventHandlerDefault
+{
+public:
+	virtual void DidFrameEnd(bool isFrameSkipped, const NDSDisplayInfo &latestDisplayInfo)
+	{
+		if (isFrameSkipped)
+		{
+			return;
+		}
+
+		DRV_AviVideoUpdate();
+	}
+};
+
+GPUEventHandlerWindows *WinGPUEvent = NULL;
 
 LRESULT CALLBACK HUDFontSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp);
@@ -2209,6 +2224,8 @@ static void StepRunLoop_Core()
 	NDS_endProcessingInput();
 	FCEUMOV_HandleRecording();
 
+	DRV_AviFrameStart();
+
 	inFrameBoundary = false;
 	{
 		Lock lock;
@@ -2217,7 +2234,8 @@ static void StepRunLoop_Core()
 		win_sound_samplecounter = DESMUME_SAMPLE_RATE/60;
 	}
 	inFrameBoundary = true;
-	DRV_AviVideoUpdate();
+
+	DRV_AviFileWrite();
 
 	CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
 	ServiceDisplayThreadInvocations();
@@ -2939,6 +2957,7 @@ int _main()
 
 	driver = new WinDriver();
 	CurrentWifiHandler = new WinWifiHandler();
+	WinGPUEvent = new GPUEventHandlerWindows;
 
 	InitializeCriticalSection(&win_execute_sync);
 	InitializeCriticalSection(&win_backbuffer_sync);
@@ -3272,6 +3291,8 @@ int _main()
 
 	NDS_Init();
 
+	GPU->SetEventHandler(WinGPUEvent);
+
 	CommonSettings.GFX3D_Renderer_TextureScalingFactor = (cmdline.texture_upscale != -1) ? cmdline.texture_upscale : GetPrivateProfileInt("3D", "TextureScalingFactor ", 1, IniName);
 	int newPrescaleHD = (cmdline.gpu_resolution_multiplier != -1) ? cmdline.gpu_resolution_multiplier : GetPrivateProfileInt("3D", "PrescaleHD", 1, IniName);
 
@@ -3494,6 +3515,7 @@ int _main()
 
 	KillDisplay();
 
+	DRV_AviFileWriteFinish();
 	DRV_AviEnd();
 	WAV_End();
 
@@ -3785,6 +3807,7 @@ void SetRotate(HWND hwnd, int rot, bool user)
 void AviEnd()
 {
 	NDS_Pause();
+	DRV_AviFileWriteFinish();
 	DRV_AviEnd();
 	NDS_UnPause();
 }
