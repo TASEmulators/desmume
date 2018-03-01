@@ -548,7 +548,7 @@ public:
 			return;
 		}
 
-		DRV_AviVideoUpdate();
+		DRV_AviVideoUpdate(latestDisplayInfo);
 	}
 };
 
@@ -2235,7 +2235,7 @@ static void StepRunLoop_Core()
 	}
 	inFrameBoundary = true;
 
-	DRV_AviFileWrite();
+	DRV_AviFileWriteStart();
 
 	CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
 	ServiceDisplayThreadInvocations();
@@ -3515,7 +3515,6 @@ int _main()
 
 	KillDisplay();
 
-	DRV_AviFileWriteFinish();
 	DRV_AviEnd();
 	WAV_End();
 
@@ -3807,8 +3806,11 @@ void SetRotate(HWND hwnd, int rot, bool user)
 void AviEnd()
 {
 	NDS_Pause();
-	DRV_AviFileWriteFinish();
+
 	DRV_AviEnd();
+	LOG("AVI recording ended.");
+	driver->AddLine("AVI recording ended.");
+
 	NDS_UnPause();
 }
 
@@ -3868,9 +3870,21 @@ void AviRecordTo()
 	ofn.nMaxFile = MAX_PATH;
 	ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
 
-	if(GetSaveFileName(&ofn))
+	if (GetSaveFileName(&ofn))
 	{
-		DRV_AviBegin(folder);
+		if (AVI_IsRecording())
+		{
+			DRV_AviEnd();
+			LOG("AVI recording ended.");
+			driver->AddLine("AVI recording ended.");
+		}
+
+		bool result = DRV_AviBegin(folder);
+		if (result)
+		{
+			LOG("AVI recording started.");
+			driver->AddLine("AVI recording started.");
+		}
 	}
 
 	NDS_UnPause();
