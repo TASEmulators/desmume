@@ -21,6 +21,11 @@
 #include <windows.h>
 #include <vfw.h>
 
+#include <queue>
+
+#include <rthreads/rthreads.h>
+#include <rthreads/rsemaphore.h>
+
 #include "GPU.h"
 #include "SPU.h"
 #include "utils/task.h"
@@ -31,7 +36,16 @@
 
 #define AUDIO_STREAM_BUFFER_SIZE	((DESMUME_SAMPLE_RATE * sizeof(u16) * 2) / 30)		// 16-bit samples, 2 channels, 2 frames (need only 1 frame's worth, but have 2 frame's worth for safety)
 #define MAX_AVI_FILE_SIZE			(2ULL * 1024ULL * 1024ULL * 1024ULL)				// Max file size should be 2 GB due to the Video for Windows AVI limit.
-#define PENDING_BUFFER_COUNT		2													// Number of pending buffers to maintain for file writes. Each pending buffer will store 1 frame's worth of the audio/video streams.
+#define MAX_PENDING_BUFFER_SIZE		(1536ULL * 1024ULL * 1024ULL)						// Max pending buffer size should not exceed 1.5 GB.
+#define MAX_PENDING_FRAME_COUNT		180													// Maintain up to 180 frames in memory for current and future file writes. This is equivalent to 3 seconds worth of frames.
+
+
+enum FileStreamCloseAction
+{
+	FSCA_DoNothing				= 0,
+	FSCA_PurgeQueue				= 1,
+	FSCA_WriteRemainingInQueue	= 2
+};
 
 class NDSCaptureObject;
 class AVIFileStream;
@@ -62,6 +76,8 @@ struct AVIFileWriteParam
 };
 typedef struct AVIFileWriteParam AVIFileWriteParam;
 
+typedef std::queue<AVIFileWriteParam> AVIWriteQueue;
+
 class AVIFileStream
 {
 private:
@@ -86,17 +102,28 @@ protected:
 	LONG _writtenVideoFrameCount;
 	LONG _writtenAudioSampleCount;
 
+	ssem_t *_semQueue;
+	slock_t *_mutexQueue;
+	AVIWriteQueue _writeQueue;
+
 public:
 	AVIFileStream();
 	~AVIFileStream();
 
-	HRESULT Open(const char *fileName, BITMAPINFOHEADER *bmpFormat, WAVEFORMATEX *wavFormat);
-	void Close();
+	static size_t GetExpectedFrameSize(const BITMAPINFOHEADER *bmpFormat, const WAVEFORMATEX *wavFormat);
+
+	HRESULT Open(const char *fileName, BITMAPINFOHEADER *bmpFormat, WAVEFORMATEX *wavFormat, size_t pendingFrameCount);
+	void Close(FileStreamCloseAction theAction);
 	bool IsValid();
+
+	void QueueAdd(u8 *srcVideo, const size_t videoBufferSize, u8 *srcAudio, const size_t audioBufferSize);
+	void QueueWait();
+	size_t GetQueueSize();
 
 	HRESULT FlushVideo(u8 *srcBuffer, const LONG bufferSize);
 	HRESULT FlushAudio(u8 *srcBuffer, const LONG bufferSize);
-	HRESULT WriteOneFrame(u8 *srcVideo, const LONG videoBufferSize, u8 *srcAudio, const LONG audioBufferSize);
+	HRESULT WriteOneFrame(const AVIFileWriteParam &param);
+	HRESULT WriteAllFrames();
 };
 
 class NDSCaptureObject
@@ -108,15 +135,15 @@ protected:
 	WAVEFORMATEX _wavFormat;
 
 	u8 *_pendingVideoBuffer;
-	u8 _pendingAudioBuffer[AUDIO_STREAM_BUFFER_SIZE * PENDING_BUFFER_COUNT];
-	size_t _pendingAudioWriteSize[2];
+	u8 *_pendingAudioBuffer;
+	size_t *_pendingAudioWriteSize;
+	size_t _pendingBufferCount;
 	size_t _currentBufferIndex;
 
 	size_t _numThreads;
 	Task *_fileWriteThread;
 	Task *_convertThread[MAX_CONVERT_THREADS];
 	VideoConvertParam _convertParam[MAX_CONVERT_THREADS];
-	AVIFileWriteParam _fileWriteParam;
 
 public:
 	NDSCaptureObject();

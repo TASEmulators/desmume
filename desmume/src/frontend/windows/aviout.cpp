@@ -61,8 +61,8 @@ static void* RunConvertVideoSlice888XTo888(void *arg)
 
 static void* RunAviFileWrite(void *arg)
 {
-	AVIFileWriteParam *fileWriteParam = (AVIFileWriteParam *)arg;
-	fileWriteParam->fs->WriteOneFrame(fileWriteParam->srcVideo, fileWriteParam->videoBufferSize, fileWriteParam->srcAudio, fileWriteParam->audioBufferSize);
+	AVIFileStream *fs = (AVIFileStream *)arg;
+	fs->WriteAllFrames();
 
 	return NULL;
 }
@@ -97,15 +97,40 @@ AVIFileStream::AVIFileStream()
 	_expectedFrameSize = 0;
 	_writtenVideoFrameCount = 0;
 	_writtenAudioSampleCount = 0;
-	_writtenBytes = 0;
+	_writtenBytes = 0;
+
+	_semQueue = NULL;
+	_mutexQueue = slock_new();
 }
 
 AVIFileStream::~AVIFileStream()
 {
-	this->Close();
+	this->Close(FSCA_WriteRemainingInQueue);
+
+	slock_free(this->_mutexQueue);
+	ssem_free(this->_semQueue);
 }
 
-HRESULT AVIFileStream::Open(const char *fileName, BITMAPINFOHEADER *bmpFormat, WAVEFORMATEX *wavFormat)
+size_t AVIFileStream::GetExpectedFrameSize(const BITMAPINFOHEADER *bmpFormat, const WAVEFORMATEX *wavFormat)
+{
+	size_t expectedFrameSize = 0; // The expected frame size is the video frame size plus the sum of the audio samples.
+
+	if (bmpFormat != NULL)
+	{
+		expectedFrameSize += bmpFormat->biSizeImage;
+	}
+
+	if (wavFormat != NULL)
+	{
+		// Since the number of audio samples may not be exactly the same for each video frame,
+		// we double the expected size of the audio buffer for safety.
+		expectedFrameSize += ((wavFormat->nAvgBytesPerSec / 60) * 2);
+	}
+
+	return expectedFrameSize;
+}
+
+HRESULT AVIFileStream::Open(const char *fileName, BITMAPINFOHEADER *bmpFormat, WAVEFORMATEX *wavFormat, size_t pendingFrameCount)
 {
 	HRESULT error = S_OK;
 
@@ -154,10 +179,9 @@ HRESULT AVIFileStream::Open(const char *fileName, BITMAPINFOHEADER *bmpFormat, W
 			this->_streamInfo[AUDIO_STREAM].dwSampleSize = this->_wavFormat.nBlockAlign;
 		}
 
-		// The expected frame size is the video frame size plus the sum of the audio samples.
-		// Since the number of audio samples may not be exactly the same for each video frame,
-		// we double the expected size of the audio buffer for safety.
-		this->_expectedFrameSize = this->_bmpFormat.biSizeImage + ((this->_wavFormat.nAvgBytesPerSec / 60) * 2);
+		this->_expectedFrameSize = AVIFileStream::GetExpectedFrameSize(bmpFormat, wavFormat);
+
+		_semQueue = ssem_new(pendingFrameCount);
 	}
 	else
 	{
@@ -244,11 +268,56 @@ HRESULT AVIFileStream::Open(const char *fileName, BITMAPINFOHEADER *bmpFormat, W
 	return error;
 }
 
-void AVIFileStream::Close()
+void AVIFileStream::Close(FileStreamCloseAction theAction)
 {
 	if (this->_file == NULL)
 	{
 		return;
+	}
+
+	switch (theAction)
+	{
+		case FSCA_PurgeQueue:
+		{
+			AVIWriteQueue clearQueue;
+
+			slock_lock(this->_mutexQueue);
+			this->_writeQueue.swap(clearQueue);
+			slock_unlock(this->_mutexQueue);
+
+			const size_t remainingFrameCount = (size_t)ssem_get(this->_semQueue);
+			for (size_t i = 0; i < remainingFrameCount; i++)
+			{
+				ssem_signal(this->_semQueue);
+			}
+			break;
+		}
+
+		case FSCA_WriteRemainingInQueue:
+		{
+			do
+			{
+				slock_lock(this->_mutexQueue);
+				if (this->_writeQueue.empty())
+				{
+					slock_unlock(this->_mutexQueue);
+					break;
+				}
+
+				const AVIFileWriteParam param = this->_writeQueue.front();
+				slock_unlock(this->_mutexQueue);
+
+				this->WriteOneFrame(param);
+
+				slock_lock(this->_mutexQueue);
+				this->_writeQueue.pop();
+				slock_unlock(this->_mutexQueue);
+
+				ssem_signal(this->_semQueue);
+
+			} while (true);
+			break;
+		}
 	}
 
 	// _compressedStream[AUDIO_STREAM] is just a copy of _stream[AUDIO_STREAM]
@@ -282,6 +351,38 @@ void AVIFileStream::Close()
 bool AVIFileStream::IsValid()
 {
 	return (this->_file != NULL);
+}
+
+void AVIFileStream::QueueAdd(u8 *srcVideo, const size_t videoBufferSize, u8 *srcAudio, const size_t audioBufferSize)
+{
+	AVIFileWriteParam newParam;
+	newParam.fs = this;
+	newParam.srcVideo = srcVideo;
+	newParam.videoBufferSize = videoBufferSize;
+	newParam.srcAudio = srcAudio;
+	newParam.audioBufferSize = audioBufferSize;
+
+	ssem_wait(this->_semQueue);
+
+	slock_lock(this->_mutexQueue);
+	this->_writeQueue.push(newParam);
+	slock_unlock(this->_mutexQueue);
+}
+
+void AVIFileStream::QueueWait()
+{
+	// If the queue if full, the ssem_wait() will force a wait until the current frame is finished writing.
+	ssem_wait(this->_semQueue);
+	ssem_signal(this->_semQueue);
+}
+
+size_t AVIFileStream::GetQueueSize()
+{
+	slock_lock(this->_mutexQueue);
+	const size_t queueSize = this->_writeQueue.size();
+	slock_unlock(this->_mutexQueue);
+
+	return queueSize;
 }
 
 HRESULT AVIFileStream::FlushVideo(u8 *srcBuffer, const LONG bufferSize)
@@ -341,21 +442,21 @@ HRESULT AVIFileStream::FlushAudio(u8 *srcBuffer, const LONG bufferSize)
 	return error;
 }
 
-HRESULT AVIFileStream::WriteOneFrame(u8 *srcVideo, const LONG videoBufferSize, u8 *srcAudio, const LONG audioBufferSize)
+HRESULT AVIFileStream::WriteOneFrame(const AVIFileWriteParam &param)
 {
 	HRESULT error = S_OK;
 
-	error = this->FlushVideo(srcVideo, videoBufferSize);
+	error = this->FlushVideo(param.srcVideo, param.videoBufferSize);
 	if (FAILED(error))
 	{
-		this->Close();
+		this->Close(FSCA_PurgeQueue);
 		return error;
 	}
 
-	error = this->FlushAudio(srcAudio, audioBufferSize);
+	error = this->FlushAudio(param.srcAudio, param.audioBufferSize);
 	if (FAILED(error))
 	{
-		this->Close();
+		this->Close(FSCA_PurgeQueue);
 		return error;
 	}
 
@@ -363,14 +464,14 @@ HRESULT AVIFileStream::WriteOneFrame(u8 *srcVideo, const LONG videoBufferSize, u
 	const size_t futureFrameSize = this->_writtenBytes + this->_expectedFrameSize;
 	if (futureFrameSize >= MAX_AVI_FILE_SIZE)
 	{
-		this->Close();
+		this->Close(FSCA_DoNothing);
 		this->_segmentNumber++;
 
-		error = this->Open(NULL, NULL, NULL);
+		error = this->Open(NULL, NULL, NULL, 0);
 		if (FAILED(error))
 		{
 			EMU_PrintError("Error creating new AVI segment.");
-			this->Close();
+			this->Close(FSCA_PurgeQueue);
 			return error;
 		}
 	}
@@ -378,22 +479,55 @@ HRESULT AVIFileStream::WriteOneFrame(u8 *srcVideo, const LONG videoBufferSize, u
 	return error;
 }
 
+HRESULT AVIFileStream::WriteAllFrames()
+{
+	HRESULT error = S_OK;
+
+	do
+	{
+		slock_lock(this->_mutexQueue);
+		if (this->_writeQueue.empty())
+		{
+			slock_unlock(this->_mutexQueue);
+			break;
+		}
+
+		const AVIFileWriteParam param = this->_writeQueue.front();
+		slock_unlock(this->_mutexQueue);
+
+		error = this->WriteOneFrame(param);
+
+		slock_lock(this->_mutexQueue);
+		this->_writeQueue.pop();
+		slock_unlock(this->_mutexQueue);
+
+		ssem_signal(this->_semQueue);
+
+		if (FAILED(error))
+		{
+			return error;
+		}
+
+	} while (true);
+
+	return error;
+}
+
 NDSCaptureObject::NDSCaptureObject()
 {
-	// create the video stream
+	// Create the format structs.
 	memset(&_bmpFormat, 0, sizeof(BITMAPINFOHEADER));
 	_bmpFormat.biSize = 0x28;
 	_bmpFormat.biPlanes = 1;
 	_bmpFormat.biBitCount = 24;
 
-	_pendingVideoBuffer = NULL;
-
-	memset(_pendingAudioBuffer, 0, AUDIO_STREAM_BUFFER_SIZE * PENDING_BUFFER_COUNT * sizeof(u8));
 	memset(&_wavFormat, 0, sizeof(WAVEFORMATEX));
 
+	_pendingVideoBuffer = NULL;
+	_pendingAudioBuffer = NULL;
+	_pendingAudioWriteSize = NULL;
+	_pendingBufferCount = 0;
 	_currentBufferIndex = 0;
-	_pendingAudioWriteSize[0] = 0;
-	_pendingAudioWriteSize[1] = 0;
 
 	// Create the colorspace conversion threads.
 	_numThreads = CommonSettings.num_cores;
@@ -419,12 +553,6 @@ NDSCaptureObject::NDSCaptureObject()
 	// Generate the AVI file streams.
 	_fs = new AVIFileStream;
 
-	_fileWriteParam.fs = _fs;
-	_fileWriteParam.srcVideo = NULL;
-	_fileWriteParam.videoBufferSize = 0;
-	_fileWriteParam.srcAudio = this->_pendingAudioBuffer;
-	_fileWriteParam.audioBufferSize = 0;
-
 	_fileWriteThread = new Task();
 	_fileWriteThread->start(false);
 }
@@ -437,12 +565,22 @@ NDSCaptureObject::NDSCaptureObject(size_t frameWidth, size_t frameHeight, const 
 	_bmpFormat.biHeight = frameHeight * 2;
 	_bmpFormat.biSizeImage = _bmpFormat.biWidth * _bmpFormat.biHeight * 3;
 
-	_pendingVideoBuffer = (u8*)malloc_alignedCacheLine(_bmpFormat.biSizeImage * PENDING_BUFFER_COUNT);
-
 	if (wfex != NULL)
 	{
 		_wavFormat = *wfex;
 	}
+
+	const size_t expectedFrameSize = AVIFileStream::GetExpectedFrameSize(&_bmpFormat, wfex);
+	_pendingBufferCount = MAX_PENDING_BUFFER_SIZE / expectedFrameSize;
+
+	if (_pendingBufferCount > MAX_PENDING_FRAME_COUNT)
+	{
+		_pendingBufferCount = MAX_PENDING_FRAME_COUNT;
+	}
+
+	_pendingVideoBuffer = (u8 *)malloc_alignedCacheLine(_bmpFormat.biSizeImage * _pendingBufferCount * sizeof(u8));
+	_pendingAudioBuffer = (u8 *)malloc_alignedCacheLine(AUDIO_STREAM_BUFFER_SIZE * _pendingBufferCount * sizeof(u8));
+	_pendingAudioWriteSize = (size_t *)calloc(_pendingBufferCount, sizeof(size_t));
 
 	const size_t linesPerThread = (_numThreads > 0) ? _bmpFormat.biHeight / _numThreads : _bmpFormat.biHeight;
 
@@ -482,9 +620,6 @@ NDSCaptureObject::NDSCaptureObject(size_t frameWidth, size_t frameHeight, const 
 			_convertParam[i].frameWidth = _bmpFormat.biWidth;
 		}
 	}
-
-	_fileWriteParam.srcVideo = _pendingVideoBuffer;
-	_fileWriteParam.videoBufferSize = _bmpFormat.biSizeImage;
 }
 
 NDSCaptureObject::~NDSCaptureObject()
@@ -501,16 +636,18 @@ NDSCaptureObject::~NDSCaptureObject()
 	delete this->_fs;
 
 	free_aligned(this->_pendingVideoBuffer);
+	free_aligned(this->_pendingAudioBuffer);
+	free(this->_pendingAudioWriteSize);
 }
 
 HRESULT NDSCaptureObject::OpenFileStream(const char *fileName)
 {
-	return this->_fs->Open(fileName, &this->_bmpFormat, &this->_wavFormat);
+	return this->_fs->Open(fileName, &this->_bmpFormat, &this->_wavFormat, this->_pendingBufferCount);
 }
 
 void NDSCaptureObject::CloseFileStream()
 {
-	this->_fs->Close();
+	this->_fs->Close(FSCA_WriteRemainingInQueue);
 }
 
 bool NDSCaptureObject::IsFileStreamValid()
@@ -520,34 +657,41 @@ bool NDSCaptureObject::IsFileStreamValid()
 
 void NDSCaptureObject::StartFrame()
 {
-	for (size_t i = 0; i < this->_numThreads; i++)
-	{
-		this->_convertThread[i]->finish();
-	}
+	// If the queue is full, then we need to wait for some frames to finish writing
+	// before we continue adding new frames to the queue.
+	this->_fs->QueueWait();
 
-	this->_currentBufferIndex = ((this->_currentBufferIndex + 1) % PENDING_BUFFER_COUNT);
+	this->_currentBufferIndex = ((this->_currentBufferIndex + 1) % this->_pendingBufferCount);
 	this->_pendingAudioWriteSize[this->_currentBufferIndex] = 0;
 }
 
 void NDSCaptureObject::StreamWriteStart()
 {
 	const size_t bufferIndex = this->_currentBufferIndex;
+	const size_t queueSize = this->_fs->GetQueueSize();
+	const bool isQueueEmpty = (queueSize == 0);
 
-	if (this->_bmpFormat.biSizeImage > 0)
+	// If there are no frames in the current write queue, then we know that the current
+	// pending video frame will be written immediately. If this is the case, then we
+	// need to force the video conversion to finish so that we can write out the frame.
+	if (isQueueEmpty)
 	{
-		for (size_t i = 0; i < this->_numThreads; i++)
+		if (this->_bmpFormat.biSizeImage > 0)
 		{
-			this->_convertThread[i]->finish();
+			for (size_t i = 0; i < this->_numThreads; i++)
+			{
+				this->_convertThread[i]->finish();
+			}
 		}
 	}
 
-	this->_fileWriteThread->finish();
+	this->_fs->QueueAdd(this->_pendingVideoBuffer + (this->_bmpFormat.biSizeImage * bufferIndex), this->_bmpFormat.biSizeImage,
+	                    this->_pendingAudioBuffer + (AUDIO_STREAM_BUFFER_SIZE * bufferIndex), this->_pendingAudioWriteSize[bufferIndex]);
 
-	this->_fileWriteParam.srcVideo = this->_pendingVideoBuffer + (this->_bmpFormat.biSizeImage * bufferIndex);
-	this->_fileWriteParam.srcAudio = this->_pendingAudioBuffer + (AUDIO_STREAM_BUFFER_SIZE * bufferIndex);
-	this->_fileWriteParam.audioBufferSize = this->_pendingAudioWriteSize[bufferIndex];
-
-	this->_fileWriteThread->execute(&RunAviFileWrite, &this->_fileWriteParam);
+	if (isQueueEmpty)
+	{
+		this->_fileWriteThread->execute(&RunAviFileWrite, this->_fs);
+	}
 }
 
 void NDSCaptureObject::StreamWriteFinish()
@@ -608,6 +752,7 @@ void NDSCaptureObject::ReadVideoFrame(const void *srcVideoFrame, const size_t in
 		{
 			for (size_t i = 0; i < this->_numThreads; i++)
 			{
+				this->_convertThread[i]->finish();
 				this->_convertParam[i].src = (u16 *)srcVideoFrame + this->_convertParam[i].srcOffset;
 				this->_convertParam[i].dst = convertBufferHead + this->_convertParam[i].dstOffset;
 				this->_convertThread[i]->execute(&RunConvertVideoSlice555XTo888, &this->_convertParam[i]);
@@ -626,6 +771,7 @@ void NDSCaptureObject::ReadVideoFrame(const void *srcVideoFrame, const size_t in
 		{
 			for (size_t i = 0; i < this->_numThreads; i++)
 			{
+				this->_convertThread[i]->finish();
 				this->_convertParam[i].src = (u32 *)srcVideoFrame + this->_convertParam[i].srcOffset;
 				this->_convertParam[i].dst = convertBufferHead + this->_convertParam[i].dstOffset;
 				this->_convertThread[i]->execute(&RunConvertVideoSlice888XTo888, &this->_convertParam[i]);
