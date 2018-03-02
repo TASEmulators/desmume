@@ -111,26 +111,49 @@ AVIFileStream::~AVIFileStream()
 	ssem_free(this->_semQueue);
 }
 
-size_t AVIFileStream::GetExpectedFrameSize(const BITMAPINFOHEADER *bmpFormat, const WAVEFORMATEX *wavFormat)
+HRESULT AVIFileStream::InitBaseProperties(const char *fileName, BITMAPINFOHEADER *bmpFormat, WAVEFORMATEX *wavFormat, size_t pendingFrameCount)
 {
-	size_t expectedFrameSize = 0; // The expected frame size is the video frame size plus the sum of the audio samples.
+	HRESULT error = S_OK;
 
+	// Generate the base file name. This will be used for the first segment.
+	const char *dot = strrchr(fileName, '.');
+	if (dot && dot > strrchr(fileName, '/') && dot > strrchr(fileName, '\\'))
+	{
+		const size_t baseNameSize = dot - fileName;
+
+		strcpy(this->_baseFileNameExt, dot);
+		strncpy(this->_baseFileName, fileName, baseNameSize);
+		this->_baseFileName[baseNameSize] = '\0'; // Even though the string should already be filled with \0, manually terminate again for safety's sake.
+	}
+	else
+	{
+		error = E_INVALIDARG;
+		return error;
+	}
+
+	// Set up the stream formats that will be used for all AVI segments.
 	if (bmpFormat != NULL)
 	{
-		expectedFrameSize += bmpFormat->biSizeImage;
+		this->_bmpFormat = *bmpFormat;
+		this->_streamInfo[VIDEO_STREAM].dwSuggestedBufferSize = this->_bmpFormat.biSizeImage;
 	}
 
 	if (wavFormat != NULL)
 	{
-		// Since the number of audio samples may not be exactly the same for each video frame,
-		// we double the expected size of the audio buffer for safety.
-		expectedFrameSize += ((wavFormat->nAvgBytesPerSec / 60) * 2);
+		this->_wavFormat = *wavFormat;
+		this->_streamInfo[AUDIO_STREAM].dwScale = this->_wavFormat.nBlockAlign;
+		this->_streamInfo[AUDIO_STREAM].dwRate = this->_wavFormat.nAvgBytesPerSec;
+		this->_streamInfo[AUDIO_STREAM].dwSampleSize = this->_wavFormat.nBlockAlign;
 	}
 
-	return expectedFrameSize;
+	this->_expectedFrameSize = NDSCaptureObject::GetExpectedFrameSize(bmpFormat, wavFormat);
+
+	_semQueue = ssem_new(pendingFrameCount);
+
+	return error;
 }
 
-HRESULT AVIFileStream::Open(const char *fileName, BITMAPINFOHEADER *bmpFormat, WAVEFORMATEX *wavFormat, size_t pendingFrameCount)
+HRESULT AVIFileStream::Open()
 {
 	HRESULT error = S_OK;
 
@@ -146,42 +169,7 @@ HRESULT AVIFileStream::Open(const char *fileName, BITMAPINFOHEADER *bmpFormat, W
 
 	if (this->_segmentNumber == 0)
 	{
-		// Generate the base file name. This will be used for the first segment.
-		const char *dot = strrchr(fileName, '.');
-		if (dot && dot > strrchr(fileName, '/') && dot > strrchr(fileName, '\\'))
-		{
-			const size_t baseNameSize = dot - fileName;
-
-			strcpy(this->_baseFileNameExt, dot);
-			strncpy(this->_baseFileName, fileName, baseNameSize);
-			this->_baseFileName[baseNameSize] = '\0'; // Even though the string should already be filled with \0, manually terminate again for safety's sake.
-
-			sprintf(workingFileName, "%s%s", this->_baseFileName, this->_baseFileNameExt);
-		}
-		else
-		{
-			error = E_INVALIDARG;
-			return error;
-		}
-
-		// Set up the stream formats that will be used for all AVI segments.
-		if (bmpFormat != NULL)
-		{
-			this->_bmpFormat = *bmpFormat;
-			this->_streamInfo[VIDEO_STREAM].dwSuggestedBufferSize = this->_bmpFormat.biSizeImage;
-		}
-
-		if (wavFormat != NULL)
-		{
-			this->_wavFormat = *wavFormat;
-			this->_streamInfo[AUDIO_STREAM].dwScale = this->_wavFormat.nBlockAlign;
-			this->_streamInfo[AUDIO_STREAM].dwRate = this->_wavFormat.nAvgBytesPerSec;
-			this->_streamInfo[AUDIO_STREAM].dwSampleSize = this->_wavFormat.nBlockAlign;
-		}
-
-		this->_expectedFrameSize = AVIFileStream::GetExpectedFrameSize(bmpFormat, wavFormat);
-
-		_semQueue = ssem_new(pendingFrameCount);
+		sprintf(workingFileName, "%s%s", this->_baseFileName, this->_baseFileNameExt);
 	}
 	else
 	{
@@ -356,7 +344,6 @@ bool AVIFileStream::IsValid()
 void AVIFileStream::QueueAdd(u8 *srcVideo, const size_t videoBufferSize, u8 *srcAudio, const size_t audioBufferSize)
 {
 	AVIFileWriteParam newParam;
-	newParam.fs = this;
 	newParam.srcVideo = srcVideo;
 	newParam.videoBufferSize = videoBufferSize;
 	newParam.srcAudio = srcAudio;
@@ -467,7 +454,7 @@ HRESULT AVIFileStream::WriteOneFrame(const AVIFileWriteParam &param)
 		this->Close(FSCA_DoNothing);
 		this->_segmentNumber++;
 
-		error = this->Open(NULL, NULL, NULL, 0);
+		error = this->Open();
 		if (FAILED(error))
 		{
 			EMU_PrintError("Error creating new AVI segment.");
@@ -570,7 +557,7 @@ NDSCaptureObject::NDSCaptureObject(size_t frameWidth, size_t frameHeight, const 
 		_wavFormat = *wfex;
 	}
 
-	const size_t expectedFrameSize = AVIFileStream::GetExpectedFrameSize(&_bmpFormat, wfex);
+	const size_t expectedFrameSize = NDSCaptureObject::GetExpectedFrameSize(&_bmpFormat, wfex);
 	_pendingBufferCount = MAX_PENDING_BUFFER_SIZE / expectedFrameSize;
 
 	if (_pendingBufferCount > MAX_PENDING_FRAME_COUNT)
@@ -640,9 +627,36 @@ NDSCaptureObject::~NDSCaptureObject()
 	free(this->_pendingAudioWriteSize);
 }
 
+size_t NDSCaptureObject::GetExpectedFrameSize(const BITMAPINFOHEADER *bmpFormat, const WAVEFORMATEX *wavFormat)
+{
+	size_t expectedFrameSize = 0; // The expected frame size is the video frame size plus the sum of the audio samples.
+
+	if (bmpFormat != NULL)
+	{
+		expectedFrameSize += bmpFormat->biSizeImage;
+	}
+
+	if (wavFormat != NULL)
+	{
+		// Since the number of audio samples may not be exactly the same for each video frame,
+		// we double the expected size of the audio buffer for safety.
+		expectedFrameSize += ((wavFormat->nAvgBytesPerSec / 60) * 2);
+	}
+
+	return expectedFrameSize;
+}
+
 HRESULT NDSCaptureObject::OpenFileStream(const char *fileName)
 {
-	return this->_fs->Open(fileName, &this->_bmpFormat, &this->_wavFormat, this->_pendingBufferCount);
+	HRESULT error = S_OK;
+
+	error = this->_fs->InitBaseProperties(fileName, &this->_bmpFormat, &this->_wavFormat, this->_pendingBufferCount);
+	if (FAILED(error))
+	{
+		return error;
+	}
+
+	return this->_fs->Open();
 }
 
 void NDSCaptureObject::CloseFileStream()

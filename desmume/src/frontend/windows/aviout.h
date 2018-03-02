@@ -48,7 +48,6 @@ enum FileStreamCloseAction
 };
 
 class NDSCaptureObject;
-class AVIFileStream;
 
 struct VideoConvertParam
 {
@@ -68,7 +67,6 @@ typedef struct VideoConvertParam VideoConvertParam;
 
 struct AVIFileWriteParam
 {
-	AVIFileStream *fs;
 	u8 *srcVideo;
 	u8 *srcAudio;
 	size_t videoBufferSize;
@@ -110,9 +108,8 @@ public:
 	AVIFileStream();
 	~AVIFileStream();
 
-	static size_t GetExpectedFrameSize(const BITMAPINFOHEADER *bmpFormat, const WAVEFORMATEX *wavFormat);
-
-	HRESULT Open(const char *fileName, BITMAPINFOHEADER *bmpFormat, WAVEFORMATEX *wavFormat, size_t pendingFrameCount);
+	HRESULT InitBaseProperties(const char *fileName, BITMAPINFOHEADER *bmpFormat, WAVEFORMATEX *wavFormat, size_t pendingFrameCount);
+	HRESULT Open();
 	void Close(FileStreamCloseAction theAction);
 	bool IsValid();
 
@@ -149,6 +146,8 @@ public:
 	NDSCaptureObject();
 	NDSCaptureObject(size_t videoWidth, size_t videoHeight, const WAVEFORMATEX *wfex);
 	~NDSCaptureObject();
+
+	static size_t GetExpectedFrameSize(const BITMAPINFOHEADER *bmpFormat, const WAVEFORMATEX *wavFormat);
 
 	HRESULT OpenFileStream(const char *fileName);
 	void CloseFileStream();
