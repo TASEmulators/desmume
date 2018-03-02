@@ -193,8 +193,13 @@ HRESULT AVIFileStream::Open()
 	error = AVIFileOpen(&this->_file, workingFileName, OF_CREATE | OF_WRITE, NULL);
 	if (FAILED(error))
 	{
+		this->_file = NULL;
 		return error;
 	}
+
+	this->_writtenVideoFrameCount = 0;
+	this->_writtenAudioSampleCount = 0;
+	this->_writtenBytes = 0;
 
 	if (this->_streamInfo[VIDEO_STREAM].dwSuggestedBufferSize > 0)
 	{
@@ -256,13 +261,31 @@ HRESULT AVIFileStream::Open()
 	return error;
 }
 
-void AVIFileStream::Close(FileStreamCloseAction theAction)
+void AVIFileStream::_CloseStreams()
 {
-	if (this->_file == NULL)
+	// _compressedStream[AUDIO_STREAM] is just a copy of _stream[AUDIO_STREAM]
+	if (this->_compressedStream[AUDIO_STREAM])
 	{
-		return;
+		AVIStreamClose(this->_compressedStream[AUDIO_STREAM]);
+		this->_compressedStream[AUDIO_STREAM] = NULL;
+		this->_stream[AUDIO_STREAM] = NULL;
 	}
 
+	if (this->_compressedStream[VIDEO_STREAM])
+	{
+		AVIStreamClose(this->_compressedStream[VIDEO_STREAM]);
+		this->_compressedStream[VIDEO_STREAM] = NULL;
+	}
+
+	if (this->_stream[VIDEO_STREAM])
+	{
+		AVIStreamClose(this->_stream[VIDEO_STREAM]);
+		this->_stream[VIDEO_STREAM] = NULL;
+	}
+}
+
+void AVIFileStream::Close(FileStreamCloseAction theAction)
+{
 	switch (theAction)
 	{
 		case FSCA_PurgeQueue:
@@ -283,57 +306,45 @@ void AVIFileStream::Close(FileStreamCloseAction theAction)
 
 		case FSCA_WriteRemainingInQueue:
 		{
-			do
+			if (this->_file != NULL)
 			{
-				slock_lock(this->_mutexQueue);
-				if (this->_writeQueue.empty())
+				do
 				{
+					slock_lock(this->_mutexQueue);
+					if (this->_writeQueue.empty())
+					{
+						slock_unlock(this->_mutexQueue);
+						break;
+					}
+
+					const AVIFileWriteParam param = this->_writeQueue.front();
 					slock_unlock(this->_mutexQueue);
-					break;
-				}
 
-				const AVIFileWriteParam param = this->_writeQueue.front();
-				slock_unlock(this->_mutexQueue);
+					this->WriteOneFrame(param);
 
-				this->WriteOneFrame(param);
+					slock_lock(this->_mutexQueue);
+					this->_writeQueue.pop();
+					slock_unlock(this->_mutexQueue);
 
-				slock_lock(this->_mutexQueue);
-				this->_writeQueue.pop();
-				slock_unlock(this->_mutexQueue);
+					ssem_signal(this->_semQueue);
 
-				ssem_signal(this->_semQueue);
-
-			} while (true);
+				} while (true);
+			}
 			break;
 		}
+
+		case FSCA_DoNothing:
+		default:
+			break;
 	}
 
-	// _compressedStream[AUDIO_STREAM] is just a copy of _stream[AUDIO_STREAM]
-	if (this->_compressedStream[AUDIO_STREAM])
+	this->_CloseStreams();
+
+	if (this->_file != NULL)
 	{
-		AVIStreamClose(this->_compressedStream[AUDIO_STREAM]);
-		this->_compressedStream[AUDIO_STREAM] = NULL;
-		this->_stream[AUDIO_STREAM] = NULL;
+		AVIFileClose(this->_file);
+		this->_file = NULL;
 	}
-
-	if (this->_compressedStream[VIDEO_STREAM])
-	{
-		AVIStreamClose(this->_compressedStream[VIDEO_STREAM]);
-		this->_compressedStream[VIDEO_STREAM] = NULL;
-	}
-
-	if (this->_stream[VIDEO_STREAM])
-	{
-		AVIStreamClose(this->_stream[VIDEO_STREAM]);
-		this->_stream[VIDEO_STREAM] = NULL;
-	}
-
-	AVIFileClose(this->_file);
-	this->_file = NULL;
-
-	this->_writtenVideoFrameCount = 0;
-	this->_writtenAudioSampleCount = 0;
-	this->_writtenBytes = 0;
 }
 
 bool AVIFileStream::IsValid()
@@ -451,10 +462,14 @@ HRESULT AVIFileStream::WriteOneFrame(const AVIFileWriteParam &param)
 	const size_t futureFrameSize = this->_writtenBytes + this->_expectedFrameSize;
 	if (futureFrameSize >= MAX_AVI_FILE_SIZE)
 	{
-		this->Close(FSCA_DoNothing);
+		PAVIFILE oldFile = this->_file;
+
+		this->_CloseStreams();
 		this->_segmentNumber++;
 
 		error = this->Open();
+		AVIFileClose(oldFile);
+
 		if (FAILED(error))
 		{
 			EMU_PrintError("Error creating new AVI segment.");

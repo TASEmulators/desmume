@@ -104,6 +104,8 @@ protected:
 	slock_t *_mutexQueue;
 	AVIWriteQueue _writeQueue;
 
+	void _CloseStreams();
+
 public:
 	AVIFileStream();
 	~AVIFileStream();
