@@ -2082,14 +2082,31 @@ void displayProc()
 }
 
 
-void displayThread(void*)
+void displayThread(void *arg)
 {
-	for(;;) {
-		if(display_die) return;
+	do
+	{
+		if ( (MainWindow == NULL) || IsMinimized(MainWindow->getHWnd()) )
+		{
+			WaitForSingleObject(display_wakeup_event, INFINITE);
+		}
+		else if ( (emu_paused || !execute || !romloaded) && (!HudEditorMode && !CommonSettings.hud.ShowInputDisplay && !CommonSettings.hud.ShowGraphicalInputDisplay) )
+		{
+			WaitForSingleObject(display_wakeup_event, 250);
+		}
+		else
+		{
+			WaitForSingleObject(display_wakeup_event, 10);
+		}
+		
+		if (display_die)
+		{
+			break;
+		}
+		
 		displayProc();
-		//Sleep(10); //don't be greedy and use a whole cpu core, but leave room for 60fps 
-		WaitForSingleObject(display_wakeup_event, 10); // same as sleep but lets something wake us up early
-	}
+
+	} while (!display_die);
 }
 
 void KillDisplay()
@@ -2135,6 +2152,8 @@ void Display()
 		memcpy(db.buffer,dispInfo.masterCustomBuffer,targetSize);
 
 		slock_unlock(display_mutex);
+
+		SetEvent(display_wakeup_event);
 	}
 }
 
@@ -5090,6 +5109,7 @@ DOKEYDOWN:
 				
 				UpdateWndRects(hwnd);
 				MainWindowToolbar->OnSize();
+				SetEvent(display_wakeup_event);
 			}
 			break;
 		}
