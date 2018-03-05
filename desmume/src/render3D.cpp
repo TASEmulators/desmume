@@ -209,7 +209,7 @@ Render3D::Render3D()
 	_framebufferHeight = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 	_framebufferPixCount = _framebufferWidth * _framebufferHeight;
 	_framebufferSIMDPixCount = 0;
-	_framebufferColorSizeBytes = 0;
+	_framebufferColorSizeBytes = _framebufferWidth * _framebufferHeight * sizeof(FragmentColor);
 	_framebufferColor = NULL;
 	
 	_internalRenderingFormat = NDSColorFormat_BGR666_Rev;

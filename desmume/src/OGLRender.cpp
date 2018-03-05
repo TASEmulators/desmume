@@ -2265,6 +2265,7 @@ Render3DError OpenGLRenderer_1_2::CreatePBOs()
 	glGenBuffersARB(1, &OGLRef.pboRenderDataID);
 	glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, OGLRef.pboRenderDataID);
 	glBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, this->_framebufferColorSizeBytes, NULL, GL_STREAM_READ_ARB);
+	this->_mappedFramebuffer = (FragmentColor *__restrict)glMapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
 	
 	return OGLERROR_NOERR;
 }
