@@ -2379,9 +2379,6 @@ bool S9xGetState (WORD KeyIdent)
 	if(KeyIdent == 0 || KeyIdent == 0xFF || KeyIdent == VK_ESCAPE) // if it's the 'disabled' key, it's never pressed
 		return true;
 
-	if(!allowBackgroundInput && MainWindow->getHWnd() != GetForegroundWindow())
-		return true;
-
     if (KeyIdent & 0x8000) // if it's a joystick 'key':
     {
         int j = (KeyIdent >> 8) & 15;
@@ -2439,34 +2436,47 @@ bool S9xGetState (WORD KeyIdent)
     return ((gks & 0x80) == 0);
 }
 
-void S9xWinScanJoypads ()
+void S9xWinScanJoypads(const bool willAcceptInput)
 {
 	S9xUpdateJoyState();
 
-    for (int J = 0; J < 8; J++)
-    {
-        if (Joypad [J].Enabled)
+	if (willAcceptInput)
+	{
+		for (int J = 0; J < 8; J++)
 		{
-			int PadState = 0;
-			PadState |= (!S9xGetState(Joypad[J].R))          ? R_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].L))          ? L_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].X))          ? X_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].A))          ? A_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].Right))      ? RIGHT_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].Right_Up))   ? RIGHT_MASK|UP_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].Right_Down)) ? RIGHT_MASK|DOWN_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].Left))       ? LEFT_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].Left_Up))    ? LEFT_MASK|UP_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].Left_Down))  ? LEFT_MASK|DOWN_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].Down))       ? DOWN_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].Up))         ? UP_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].Start))      ? START_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].Select))     ? SELECT_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].Y))          ? Y_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].B))          ? B_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].Lid))        ? LID_MASK : 0;
-			PadState |= (!S9xGetState(Joypad[J].Debug))      ? DEBUG_MASK : 0;
-            joypads [J] = PadState | 0x80000000;
+			if (Joypad[J].Enabled)
+			{
+				int PadState = 0;
+				PadState |= (!S9xGetState(Joypad[J].R))          ? R_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].L))          ? L_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].X))          ? X_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].A))          ? A_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].Right))      ? RIGHT_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].Right_Up))   ? RIGHT_MASK | UP_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].Right_Down)) ? RIGHT_MASK | DOWN_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].Left))       ? LEFT_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].Left_Up))    ? LEFT_MASK | UP_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].Left_Down))  ? LEFT_MASK | DOWN_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].Down))       ? DOWN_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].Up))         ? UP_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].Start))      ? START_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].Select))     ? SELECT_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].Y))          ? Y_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].B))          ? B_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].Lid))        ? LID_MASK : 0;
+				PadState |= (!S9xGetState(Joypad[J].Debug))      ? DEBUG_MASK : 0;
+				joypads[J] = PadState | 0x80000000;
+			}
+		}
+	}
+	else
+	{
+		for (int J = 0; J < 8; J++)
+		{
+			if (Joypad[J].Enabled)
+			{
+				joypads[J] = 0x80000000;
+			}
 		}
 	}
 }
@@ -2706,9 +2716,10 @@ static void RunAntipodalRestriction(const buttonstruct<bool>& pad);
 // and updates input-related state that needs to update even while paused.
 void input_acquire()
 {
+	const bool willAcceptInput = ( (MainWindow->getHWnd() == GetForegroundWindow()) || allowBackgroundInput );
 	u32 oldInput = joypads[0];
 
-	S9xWinScanJoypads();
+	S9xWinScanJoypads(willAcceptInput);
 
 	buttonstruct<bool> buttons = {};
 	buttons.R = (joypads[0] & RIGHT_MASK)!=0;
@@ -2766,43 +2777,57 @@ void input_acquire()
 		buttons.Y, buttons.X, buttons.W, buttons.E,
 		buttons.G, buttons.F);
 
-
-	// TODO: this part hasn't been revised yet,
-	// but guitarGrip_setKey should only request a change (like NDS_setPad does)
-	if (Guitar.Enabled)
+	if (willAcceptInput)
 	{
-		bool gG=!S9xGetState(Guitar.GREEN);
-		bool gR=!S9xGetState(Guitar.RED);
-		bool gY=!S9xGetState(Guitar.YELLOW);
-		bool gB=!S9xGetState(Guitar.BLUE);
-		guitarGrip_setKey(gG, gR, gY, gB);
+		// TODO: this part hasn't been revised yet,
+		// but guitarGrip_setKey should only request a change (like NDS_setPad does)
+		if (Guitar.Enabled)
+		{
+			bool gG = !S9xGetState(Guitar.GREEN);
+			bool gR = !S9xGetState(Guitar.RED);
+			bool gY = !S9xGetState(Guitar.YELLOW);
+			bool gB = !S9xGetState(Guitar.BLUE);
+			guitarGrip_setKey(gG, gR, gY, gB);
+		}
+
+		//etc. same as above
+		if (Piano.Enabled)
+		{
+			bool c   = !S9xGetState(Piano.C);
+			bool cs  = !S9xGetState(Piano.CS);
+			bool d   = !S9xGetState(Piano.D);
+			bool ds  = !S9xGetState(Piano.DS);
+			bool e   = !S9xGetState(Piano.E);
+			bool f   = !S9xGetState(Piano.F);
+			bool fs  = !S9xGetState(Piano.FS);
+			bool g   = !S9xGetState(Piano.G);
+			bool gs  = !S9xGetState(Piano.GS);
+			bool a   = !S9xGetState(Piano.A);
+			bool as  = !S9xGetState(Piano.AS);
+			bool b   = !S9xGetState(Piano.B);
+			bool hic = !S9xGetState(Piano.HIC);
+			piano_setKey(c, cs, d, ds, e, f, fs, g, gs, a, as, b, hic);
+		}
+
+		if (Paddle.Enabled)
+		{
+			bool dec = !S9xGetState(Paddle.DEC);
+			bool inc = !S9xGetState(Paddle.INC);
+			if (inc) nds.paddle += 5;
+			if (dec) nds.paddle -= 5;
+		}
 	}
-
-	//etc. same as above
-	if (Piano.Enabled)
+	else
 	{
-		bool c=!S9xGetState(Piano.C);
-		bool cs=!S9xGetState(Piano.CS);
-		bool d=!S9xGetState(Piano.D);
-		bool ds=!S9xGetState(Piano.DS);
-		bool e=!S9xGetState(Piano.E);
-		bool f=!S9xGetState(Piano.F);
-		bool fs=!S9xGetState(Piano.FS);
-		bool g=!S9xGetState(Piano.G);
-		bool gs=!S9xGetState(Piano.GS);
-		bool a=!S9xGetState(Piano.A);
-		bool as=!S9xGetState(Piano.AS);
-		bool b=!S9xGetState(Piano.B);
-		bool hic=!S9xGetState(Piano.HIC);
-		piano_setKey(c,cs,d,ds,e,f,fs,g,gs,a,as,b,hic);
-	}
+		if (Guitar.Enabled)
+		{
+			guitarGrip_setKey(false, false, false, false);
+		}
 
-	if (Paddle.Enabled)
-	{
-		bool dec = !S9xGetState(Paddle.DEC);
-		bool inc = !S9xGetState(Paddle.INC);
-		if (inc) nds.paddle += 5;
-		if (dec) nds.paddle -= 5;
+		if (Piano.Enabled)
+		{
+			piano_setKey(false, false, false, false, false, false, false, false, false, false, false, false, false);
+		}
 	}
 }
 
