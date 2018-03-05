@@ -599,7 +599,7 @@ static void InputTimer()
 
 	const int nloops = (JOYSTICK) ? 16 : 1;
 	const HWND mainWindow = MainWindow->getHWnd();
-	const bool willAcceptInput = ( (mainWindow == GetForegroundWindow()) || allowBackgroundInput );
+	const bool willAcceptInput = ( allowBackgroundInput || (mainWindow == GetForegroundWindow()) );
 
 	for (int j = 0; j < nloops; j++)
 	{

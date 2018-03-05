@@ -2716,7 +2716,7 @@ static void RunAntipodalRestriction(const buttonstruct<bool>& pad);
 // and updates input-related state that needs to update even while paused.
 void input_acquire()
 {
-	const bool willAcceptInput = ( (MainWindow->getHWnd() == GetForegroundWindow()) || allowBackgroundInput );
+	const bool willAcceptInput = ( allowBackgroundInput || (MainWindow->getHWnd() == GetForegroundWindow()) );
 	u32 oldInput = joypads[0];
 
 	S9xWinScanJoypads(willAcceptInput);
