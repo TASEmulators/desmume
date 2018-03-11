@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2016-2017 DeSmuME team
+	Copyright (C) 2016-2018 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ FORCEINLINE void ColorspaceConvert555To8888_AVX2(const v256u16 &srcColor, const 
 	// Conversion algorithm:
 	//    RGB   5-bit to 8-bit formula: dstRGB8 = (srcRGB5 << 3) | ((srcRGB5 >> 2) & 0x07)
 	
-	v256u16 rb = _mm256_and_si256( _mm256_or_si256(_mm256_slli_epi32(srcColor, 11), _mm256_srli_epi16(srcColor, 7)), _mm256_set1_epi16(0xF8F8) );
+	v256u16 rb = _mm256_and_si256( _mm256_or_si256(_mm256_slli_epi16(srcColor, 11), _mm256_srli_epi16(srcColor, 7)), _mm256_set1_epi16(0xF8F8) );
 	v256u16 ga = _mm256_or_si256( _mm256_and_si256(_mm256_srli_epi16(srcColor, 2), _mm256_set1_epi16(0x00F8)), srcAlphaBits);
 	
 	rb = _mm256_permute4x64_epi64(rb, 0xD8);
@@ -51,7 +51,7 @@ FORCEINLINE void ColorspaceConvert555To6665_AVX2(const v256u16 &srcColor, const 
 	// Conversion algorithm:
 	//    RGB   5-bit to 6-bit formula: dstRGB6 = (srcRGB5 << 1) | ((srcRGB5 >> 4) & 0x01)
 	
-	v256u16 rb = _mm256_and_si256( _mm256_or_si256(_mm256_slli_epi32(srcColor, 9), _mm256_srli_epi16(srcColor, 9)), _mm256_set1_epi16(0x3E3E) );
+	v256u16 rb = _mm256_and_si256( _mm256_or_si256(_mm256_slli_epi16(srcColor, 9), _mm256_srli_epi16(srcColor, 9)), _mm256_set1_epi16(0x3E3E) );
 	v256u16 ga = _mm256_or_si256( _mm256_and_si256(_mm256_srli_epi16(srcColor, 4), _mm256_set1_epi16(0x003E)), srcAlphaBits);
 	
 	rb = _mm256_permute4x64_epi64(rb, 0xD8);
@@ -76,7 +76,7 @@ FORCEINLINE void ColorspaceConvert555To8888Opaque_AVX2(const v256u16 &srcColor, 
 template <bool SWAP_RB>
 FORCEINLINE void ColorspaceConvert555To6665Opaque_AVX2(const v256u16 &srcColor, v256u32 &dstLo, v256u32 &dstHi)
 {
-	const v256u16 srcAlphaBits16 = _mm256_set1_epi32(0x1F00);
+	const v256u16 srcAlphaBits16 = _mm256_set1_epi16(0x1F00);
 	ColorspaceConvert555To6665_AVX2<SWAP_RB>(srcColor, srcAlphaBits16, dstLo, dstHi);
 }
 
@@ -474,14 +474,14 @@ size_t ColorspaceConvertBuffer555XTo888_AVX2(const u16 *__restrict src, u8 *__re
 			src_v256u16[1] = _mm256_load_si256((v256u16 *)(src + i + 16));
 		}
 		
-		v256u16 rb = _mm256_and_si256( _mm256_or_si256(_mm256_slli_epi32(src_v256u16[0], 11), _mm256_srli_epi16(src_v256u16[0], 7)), _mm256_set1_epi16(0xF8F8) );
+		v256u16 rb = _mm256_and_si256( _mm256_or_si256(_mm256_slli_epi16(src_v256u16[0], 11), _mm256_srli_epi16(src_v256u16[0], 7)), _mm256_set1_epi16(0xF8F8) );
 		v256u16 g  = _mm256_and_si256( _mm256_srli_epi16(src_v256u16[0], 2), _mm256_set1_epi16(0x00F8) );
 		rb = _mm256_permute4x64_epi64(rb, 0xD8);
 		g  = _mm256_permute4x64_epi64( g, 0xD8);
 		src_v256u32[0] = _mm256_unpacklo_epi16(rb, g);
 		src_v256u32[1] = _mm256_unpackhi_epi16(rb, g);
 		
-		rb = _mm256_and_si256( _mm256_or_si256(_mm256_slli_epi32(src_v256u16[1], 11), _mm256_srli_epi16(src_v256u16[1], 7)), _mm256_set1_epi16(0xF8F8) );
+		rb = _mm256_and_si256( _mm256_or_si256(_mm256_slli_epi16(src_v256u16[1], 11), _mm256_srli_epi16(src_v256u16[1], 7)), _mm256_set1_epi16(0xF8F8) );
 		g  = _mm256_and_si256( _mm256_srli_epi16(src_v256u16[1], 2), _mm256_set1_epi16(0x00F8) );
 		rb = _mm256_permute4x64_epi64(rb, 0xD8);
 		g  = _mm256_permute4x64_epi64( g, 0xD8);
