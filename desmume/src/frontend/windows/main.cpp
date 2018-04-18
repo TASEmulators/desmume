@@ -5833,12 +5833,20 @@ DOKEYDOWN:
 			return 0;
 		case IDM_DISASSEMBLER:
 			ViewDisasm_ARM7->regClass("DesViewBox7",ViewDisasm_ARM7BoxProc);
-			if (!ViewDisasm_ARM7->open(false))
-				ViewDisasm_ARM7->unregClass();
+			if(!ViewDisasm_ARM7->IsOpen())
+			{
+				if (!ViewDisasm_ARM7->open(false))
+					ViewDisasm_ARM7->unregClass();
+			}
+			else ViewDisasm_ARM7->Activate();
 
 			ViewDisasm_ARM9->regClass("DesViewBox9",ViewDisasm_ARM9BoxProc);
-			if (!ViewDisasm_ARM9->open(false))
-				ViewDisasm_ARM9->unregClass();
+			if(!ViewDisasm_ARM9->IsOpen())
+			{
+				if (!ViewDisasm_ARM9->open(false))
+					ViewDisasm_ARM9->unregClass();
+			}
+			else ViewDisasm_ARM9->Activate();
 			return 0;
 		case IDM_MAP:
 			ViewMaps->open();

@@ -289,12 +289,12 @@ private:
 	HWND		hwnd;
 	HINSTANCE	hInstance;
 	DLGPROC		dlgproc;
+	bool isOpen;
 	int			idd;
 	char		class_name[256];
 	char		class_name2[256];
 
 	DWORD doOpen();
-	void doClose();
 
 protected:
 	DWORD	ThreadFunc();
@@ -306,6 +306,9 @@ public:
 	bool close();
 	void regClass(LPSTR class_name, WNDPROC wproc, bool SecondReg = false);
 	void unregClass();
+	bool IsOpen() { return isOpen; }
+	void doClose();
+	void Activate();
 };
 
 #endif

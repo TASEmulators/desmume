@@ -44,6 +44,9 @@ typedef struct
 disview_struct		*DisView7 = NULL;
 disview_struct		*DisView9 = NULL;
 
+extern TOOLSCLASS	*ViewDisasm_ARM7;
+extern TOOLSCLASS	*ViewDisasm_ARM9;
+
 static	HWND DisViewWnd[2] = {NULL, NULL};
 
 #define INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
@@ -319,6 +322,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 					delete DisView7;
 					DisView7 = NULL;
 					DisViewWnd[1] = NULL;
+					ViewDisasm_ARM7->doClose();
 					//INFO("Close ARM7 disassembler\n");
 					return 1;
 				}
@@ -564,6 +568,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 					delete DisView9;
 					DisView9 = NULL;
 					DisViewWnd[0] = NULL;
+					ViewDisasm_ARM9->doClose();
 					//INFO("Close ARM9 disassembler\n");
 					return 1;
 				}

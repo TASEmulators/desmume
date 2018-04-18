@@ -18,6 +18,7 @@
 
 #include "CWindow.h"
 
+#include <windows.h>
 #include <windowsx.h>
 #include <commctrl.h>
 
@@ -803,6 +804,7 @@ TOOLSCLASS::TOOLSCLASS(HINSTANCE hInst, int IDD, DLGPROC dlgproc)
 	hwnd = NULL;
 	hInstance = hInst;
 	idd=IDD;
+	isOpen = false;
 	memset(class_name, 0, sizeof(class_name));
 	memset(class_name2, 0, sizeof(class_name2));
 }
@@ -810,6 +812,11 @@ TOOLSCLASS::TOOLSCLASS(HINSTANCE hInst, int IDD, DLGPROC dlgproc)
 TOOLSCLASS::~TOOLSCLASS()
 {
 	close();
+}
+
+void TOOLSCLASS::Activate()
+{
+	SetForegroundWindow(hwnd);
 }
 
 bool TOOLSCLASS::open(bool useThread)
@@ -842,6 +849,7 @@ DWORD TOOLSCLASS::doOpen()
 
 	ShowWindow(hwnd, SW_SHOW);
 	UpdateWindow(hwnd);
+	isOpen = true;
 
 	return 0;
 }
@@ -850,6 +858,7 @@ void TOOLSCLASS::doClose()
 {
 	unregClass();
 	hwnd = NULL;
+	isOpen = false;
 }
 
 DWORD TOOLSCLASS::ThreadFunc()
