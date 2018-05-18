@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2018 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <map>
 #include <string>
 
+#include "ClientAVCaptureObject.h"
 #include "ClientInputHandler.h"
 
 #include "../../slot1.h"
@@ -98,6 +99,8 @@ struct ClientExecutionControlSettings
 	
 	ExecutionBehavior execBehavior;
 	FrameJumpBehavior jumpBehavior;
+	
+	ClientAVCaptureObject *avCaptureObject;
 };
 
 struct NDSFrameInfo
@@ -184,6 +187,8 @@ struct NDSFrameInfo
 	}
 };
 
+typedef void *gdbstub_handle_t;
+
 class ClientExecutionControl
 {
 protected:
@@ -204,6 +209,15 @@ protected:
 	uint8_t _framesToSkip;
 	ExecutionBehavior _prevExecBehavior;
 	
+	bool _isGdbStubStarted;
+	bool _enableGdbStubARM9;
+	bool _enableGdbStubARM7;
+	uint16_t _gdbStubPortARM9;
+	uint16_t _gdbStubPortARM7;
+	volatile gdbstub_handle_t _gdbStubHandleARM9;
+	volatile gdbstub_handle_t _gdbStubHandleARM7;
+	bool _isInDebugTrap;
+	
 	std::string _cpuEmulationEngineNameOut;
 	std::string _slot1DeviceNameOut;
 	std::string _rtcStringOut;
@@ -216,6 +230,10 @@ protected:
 public:
 	ClientExecutionControl();
 	~ClientExecutionControl();
+	
+	ClientAVCaptureObject* GetClientAVCaptureObject();
+	ClientAVCaptureObject* GetClientAVCaptureObjectApplied();
+	void SetClientAVCaptureObject(ClientAVCaptureObject *theCaptureObject);
 	
 	ClientInputHandler* GetClientInputHandler();
 	void SetClientInputHandler(ClientInputHandler *inputHandler);
@@ -296,6 +314,21 @@ public:
 	uint64_t GetFrameJumpTarget();
 	uint64_t GetFrameJumpTargetApplied();
 	void SetFrameJumpTarget(uint64_t newJumpTarget);
+	
+	bool IsGDBStubARM9Enabled();
+	void SetGDBStubARM9Enabled(bool theState);
+	bool IsGDBStubARM7Enabled();
+	void SetGDBStubARM7Enabled(bool theState);
+	
+	uint16_t GetGDBStubARM9Port();
+	void SetGDBStubARM9Port(uint16_t portNumber);
+	uint16_t GetGDBStubARM7Port();
+	void SetGDBStubARM7Port(uint16_t portNumber);
+	
+	bool IsGDBStubStarted();
+	void SetIsGDBStubStarted(bool theState);
+	bool IsInDebugTrap();
+	void SetIsInDebugTrap(bool theState);
 	
 	ExecutionBehavior GetPreviousExecutionBehavior();
 	ExecutionBehavior GetExecutionBehavior();

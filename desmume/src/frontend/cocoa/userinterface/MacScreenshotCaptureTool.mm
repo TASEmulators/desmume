@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2018 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -29,23 +29,6 @@
 
 @implementation MacScreenshotCaptureToolDelegate
 
-@synthesize dummyObject;
-@synthesize window;
-@synthesize saveDirectoryPathTextField;
-@synthesize sharedData;
-@synthesize saveDirectoryPath;
-@synthesize romName;
-@synthesize fileFormat;
-@synthesize displayMode;
-@synthesize displayLayout;
-@synthesize displayOrder;
-@synthesize displaySeparation;
-@synthesize displayScale;
-@synthesize displayRotation;
-@synthesize useDeposterize;
-@synthesize outputFilterID;
-@synthesize pixelScalerID;
-
 - (id)init
 {
 	self = [super init];
@@ -54,57 +37,9 @@
 		return nil;
 	}
 	
-	sharedData			= nil;
-	saveDirectoryPath	= nil;
-	romName				= @"No_ROM_loaded";
-	
-	fileFormat			= NSTIFFFileType;
-	displayMode			= ClientDisplayMode_Dual;
-	displayLayout		= ClientDisplayLayout_Vertical;
-	displayOrder		= ClientDisplayOrder_MainFirst;
-	displaySeparation	= 0;
-	displayScale		= 0;
-	displayRotation		= 0;
-	useDeposterize		= NO;
-	outputFilterID		= OutputFilterTypeID_Bilinear;
-	pixelScalerID		= VideoFilterTypeID_None;
+	formatID = NSTIFFFileType;
 	
 	return self;
-}
-
-- (void)dealloc
-{
-	[self setSharedData:nil];
-	[self setSaveDirectoryPath:nil];
-	[self setRomName:nil];
-	
-	[super dealloc];
-}
-
-- (IBAction) chooseDirectoryPath:(id)sender
-{
-	NSOpenPanel *panel = [NSOpenPanel openPanel];
-	[panel setCanCreateDirectories:YES];
-	[panel setCanChooseDirectories:YES];
-	[panel setCanChooseFiles:NO];
-	[panel setResolvesAliases:YES];
-	[panel setAllowsMultipleSelection:NO];
-	[panel setTitle:NSSTRING_TITLE_SAVE_SCREENSHOT_PANEL];
-	
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
-	[panel beginSheetModalForWindow:[self window]
-				  completionHandler:^(NSInteger result) {
-					  [self chooseDirectoryPathDidEnd:panel returnCode:result contextInfo:nil];
-				  } ];
-#else
-	[panel beginSheetForDirectory:nil
-							 file:nil
-							types:nil
-				   modalForWindow:[self window]
-					modalDelegate:self
-				   didEndSelector:@selector(chooseDirectoryPathDidEnd:returnCode:contextInfo:)
-					  contextInfo:nil];
-#endif
 }
 
 - (IBAction) takeScreenshot:(id)sender
@@ -136,9 +71,10 @@
 	[fileManager release];
 	
 	// Note: We're allocating the parameter's memory block here, but we will be freeing it once we copy it in the detached thread.
-	MacScreenshotCaptureToolParams *param = new MacScreenshotCaptureToolParams;
+	MacCaptureToolParams *param = new MacCaptureToolParams;
+	param->refObject				= NULL;
 	param->sharedData				= [self sharedData];
-	param->fileFormat				= (NSBitmapImageFileType)[self fileFormat];
+	param->formatID					= [self formatID];
 	param->savePath					= std::string([savePath cStringUsingEncoding:NSUTF8StringEncoding]);
 	param->romName					= std::string([romName cStringUsingEncoding:NSUTF8StringEncoding]);
 	param->useDeposterize			= [self useDeposterize] ? true : false;
@@ -161,28 +97,10 @@
 	pthread_attr_destroy(&fileWriteThreadAttr);
 }
 
-- (void) chooseDirectoryPathDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
-{
-	[sheet orderOut:self];
-	
-	if (returnCode == NSCancelButton)
-	{
-		return;
-	}
-	
-	NSURL *selectedFileURL = [[sheet URLs] lastObject]; //hopefully also the first object
-	if(selectedFileURL == nil)
-	{
-		return;
-	}
-		
-	[self setSaveDirectoryPath:[selectedFileURL path]];
-}
-
 - (void) readUserDefaults
 {
 	[self setSaveDirectoryPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"ScreenshotCaptureTool_DirectoryPath"]];
-	[self setFileFormat:[[NSUserDefaults standardUserDefaults] integerForKey:@"ScreenshotCaptureTool_FileFormat"]];
+	[self setFormatID:[[NSUserDefaults standardUserDefaults] integerForKey:@"ScreenshotCaptureTool_FileFormat"]];
 	[self setUseDeposterize:[[NSUserDefaults standardUserDefaults] boolForKey:@"ScreenshotCaptureTool_Deposterize"]];
 	[self setOutputFilterID:[[NSUserDefaults standardUserDefaults] integerForKey:@"ScreenshotCaptureTool_OutputFilter"]];
 	[self setPixelScalerID:[[NSUserDefaults standardUserDefaults] integerForKey:@"ScreenshotCaptureTool_PixelScaler"]];
@@ -197,7 +115,7 @@
 - (void) writeUserDefaults
 {
 	[[NSUserDefaults standardUserDefaults] setObject:[self saveDirectoryPath] forKey:@"ScreenshotCaptureTool_DirectoryPath"];
-	[[NSUserDefaults standardUserDefaults] setInteger:[self fileFormat] forKey:@"ScreenshotCaptureTool_FileFormat"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[self formatID] forKey:@"ScreenshotCaptureTool_FileFormat"];
 	[[NSUserDefaults standardUserDefaults] setBool:[self useDeposterize] forKey:@"ScreenshotCaptureTool_Deposterize"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self outputFilterID] forKey:@"ScreenshotCaptureTool_OutputFilter"];
 	[[NSUserDefaults standardUserDefaults] setInteger:[self pixelScalerID] forKey:@"ScreenshotCaptureTool_PixelScaler"];
@@ -209,25 +127,17 @@
 	[[NSUserDefaults standardUserDefaults] setInteger:[self displayRotation] forKey:@"ScreenshotCaptureTool_DisplayRotation"];
 }
 
-#pragma mark DirectoryURLDragDestTextFieldProtocol Protocol
-- (void)assignDirectoryPath:(NSString *)dirPath textField:(NSTextField *)textField
-{
-	if (textField == saveDirectoryPathTextField)
-	{
-		[self setSaveDirectoryPath:dirPath];
-	}
-}
-
 @end
 
 static void* RunFileWriteThread(void *arg)
 {
 	// Copy the rendering properties from the calling thread.
-	MacScreenshotCaptureToolParams *inParams = (MacScreenshotCaptureToolParams *)arg;
-	MacScreenshotCaptureToolParams param;
+	MacCaptureToolParams *inParams = (MacCaptureToolParams *)arg;
+	MacCaptureToolParams param;
 	
+	param.refObject					= inParams->refObject;
 	param.sharedData				= inParams->sharedData;
-	param.fileFormat				= inParams->fileFormat;
+	param.formatID					= inParams->formatID;
 	param.savePath					= inParams->savePath;
 	param.romName					= inParams->romName;
 	param.useDeposterize			= inParams->useDeposterize;
@@ -382,7 +292,7 @@ static void* RunFileWriteThread(void *arg)
 	
 	NSString *savePath = [NSString stringWithCString:param.savePath.c_str() encoding:NSUTF8StringEncoding];
 	NSURL *fileURL = [NSURL fileURLWithPath:[savePath stringByAppendingPathComponent:fileName]];
-	[CocoaDSFile saveScreenshot:fileURL bitmapData:newImageRep fileType:param.fileFormat];
+	[CocoaDSFile saveScreenshot:fileURL bitmapData:newImageRep fileType:param.formatID];
 	
 	// Clean up.
 	delete cdp;

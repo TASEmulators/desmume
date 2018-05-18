@@ -20,6 +20,7 @@
 
 @class InputPrefsView;
 @class FileMigrationDelegate;
+@class MacAVCaptureToolDelegate;
 
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
@@ -35,6 +36,7 @@
 	NSObjectController *prefWindowController;
 	NSObjectController *cdsCoreController;
 	FileMigrationDelegate *migrationDelegate;
+	MacAVCaptureToolDelegate *avCaptureToolDelegate;
 	
 	NSWindow *prefWindow;
 	NSWindow *troubleshootingWindow;
@@ -54,6 +56,7 @@
 @property (readonly) IBOutlet NSObjectController *prefWindowController;
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;
 @property (readonly) IBOutlet FileMigrationDelegate *migrationDelegate;
+@property (readonly) IBOutlet MacAVCaptureToolDelegate *avCaptureToolDelegate;
 @property (readonly) IBOutlet NSWindow *prefWindow;
 @property (readonly) IBOutlet NSWindow *troubleshootingWindow;
 @property (readonly) IBOutlet NSMenu *mLoadStateSlot;

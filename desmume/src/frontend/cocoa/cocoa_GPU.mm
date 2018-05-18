@@ -1198,9 +1198,9 @@ public:
 	
 	for (CocoaDSOutput *cdsOutput in _cdsOutputList)
 	{
-		if ([cdsOutput isKindOfClass:[CocoaDSDisplayVideo class]])
+		if ([cdsOutput isKindOfClass:[CocoaDSDisplay class]])
 		{
-			[(CocoaDSDisplayVideo *)cdsOutput signalMessage:MESSAGE_RECEIVE_GPU_FRAME];
+			[(CocoaDSDisplay *)cdsOutput signalMessage:MESSAGE_RECEIVE_GPU_FRAME];
 		}
 	}
 	

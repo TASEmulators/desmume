@@ -30,6 +30,7 @@
 @class DisplayWindowController;
 @class RomInfoPanel;
 @class MacScreenshotCaptureToolDelegate;
+@class MacAVCaptureToolDelegate;
 struct ClientCommandAttributes;
 class AudioSampleBlockGenerator;
 
@@ -45,6 +46,7 @@ class AudioSampleBlockGenerator;
 	
 	CheatWindowDelegate *cheatWindowDelegate;
 	MacScreenshotCaptureToolDelegate *screenshotCaptureToolDelegate;
+	MacAVCaptureToolDelegate *avCaptureToolDelegate;
 	NSObjectController *firmwarePanelController;
 	NSObjectController *romInfoPanelController;
 	NSObjectController *cdsCoreController;
@@ -127,6 +129,7 @@ class AudioSampleBlockGenerator;
 
 @property (readonly) IBOutlet CheatWindowDelegate *cheatWindowDelegate;
 @property (readonly) IBOutlet MacScreenshotCaptureToolDelegate *screenshotCaptureToolDelegate;
+@property (readonly) IBOutlet MacAVCaptureToolDelegate *avCaptureToolDelegate;
 @property (readonly) IBOutlet NSObjectController *firmwarePanelController;
 @property (readonly) IBOutlet NSObjectController *romInfoPanelController;
 @property (readonly) IBOutlet NSObjectController *cdsCoreController;

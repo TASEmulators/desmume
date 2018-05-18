@@ -20,6 +20,7 @@
 #import "DisplayWindowController.h"
 #import "EmuControllerDelegate.h"
 #import "FileMigrationDelegate.h"
+#import "MacAVCaptureTool.h"
 #import "preferencesWindowDelegate.h"
 #import "troubleshootingWindowDelegate.h"
 #import "cheatWindowDelegate.h"
@@ -48,6 +49,7 @@
 @synthesize emuControlController;
 @synthesize prefWindowController;
 @synthesize cdsCoreController;
+@synthesize avCaptureToolDelegate;
 @synthesize migrationDelegate;
 
 @synthesize isAppRunningOnIntel;
@@ -182,6 +184,9 @@
 	// Init the DS controller.
 	[[newCore cdsController] setDelegate:emuControl];
 	[[newCore cdsController] startHardwareMicDevice];
+	
+	[avCaptureToolDelegate setCdsCore:newCore];
+	[avCaptureToolDelegate setExecControl:[newCore execControl]];
 	
 	// Init the DS speakers.
 	CocoaDSSpeaker *newSpeaker = [[[CocoaDSSpeaker alloc] init] autorelease];

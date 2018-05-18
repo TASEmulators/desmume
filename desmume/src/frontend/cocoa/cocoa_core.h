@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2011 Roger Manuel
-	Copyright (C) 2011-2017 DeSmuME team
+	Copyright (C) 2011-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -33,8 +33,6 @@ class ClientExecutionControl;
 @class CocoaDSGPU;
 @class CocoaDSOutput;
 
-typedef void *gdbstub_handle_t;
-
 typedef struct
 {
 	CocoaDSCore *cdsCore;
@@ -58,15 +56,6 @@ typedef struct
 	
 	NSTimer *_fpsTimer;
 	BOOL _isTimerAtSecond;
-	
-	BOOL isGdbStubStarted;
-	BOOL isInDebugTrap;
-	BOOL enableGdbStubARM9;
-	BOOL enableGdbStubARM7;
-	NSUInteger gdbStubPortARM9;
-	NSUInteger gdbStubPortARM7;
-	volatile gdbstub_handle_t gdbStubHandleARM9;
-	volatile gdbstub_handle_t gdbStubHandleARM7;
 	
 	NSString *slot1StatusText;
 	NSString *frameStatus;
@@ -96,12 +85,12 @@ typedef struct
 @property (assign) NSUInteger frameJumpNumberFramesForward;
 @property (assign) NSUInteger frameJumpToFrameIndex;
 
-@property (assign) BOOL isGdbStubStarted;
-@property (assign) BOOL isInDebugTrap;
 @property (assign) BOOL enableGdbStubARM9;
 @property (assign) BOOL enableGdbStubARM7;
 @property (assign) NSUInteger gdbStubPortARM9;
 @property (assign) NSUInteger gdbStubPortARM7;
+@property (assign) BOOL isGdbStubStarted;
+@property (readonly) BOOL isInDebugTrap;
 
 @property (assign) BOOL emuFlagAdvancedBusLevelTiming;
 @property (assign) BOOL emuFlagRigorousTiming;

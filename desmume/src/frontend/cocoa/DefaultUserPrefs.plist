@@ -756,6 +756,32 @@
 	<integer>0</integer>
 	<key>RomInfoPanel_SectionViewState</key>
 	<dict/>
+	<key>AVCaptureTool_DirectoryPath</key>
+	<string>~/Movies</string>
+	<key>AVCaptureTool_FileFormat</key>
+	<integer>0</integer>
+	<key>AVCaptureTool_DisplayMode</key>
+	<integer>2</integer>
+	<key>AVCaptureTool_DisplayRotation</key>
+	<integer>0</integer>
+	<key>AVCaptureTool_DisplaySeparation</key>
+	<integer>0</integer>
+	<key>AVCaptureTool_DisplayLayout</key>
+	<integer>0</integer>
+	<key>AVCaptureTool_DisplayOrder</key>
+	<integer>0</integer>
+	<key>AVCaptureTool_Deposterize</key>
+	<false/>
+	<key>AVCaptureTool_OutputFilter</key>
+	<integer>1</integer>
+	<key>AVCaptureTool_PixelScaler</key>
+	<integer>0</integer>
+	<key>AVCaptureTool_VideoSizeOption</key>
+	<integer>0</integer>
+	<key>AVCaptureTool_VideoWidth</key>
+	<integer>256</integer>
+	<key>AVCaptureTool_VideoHeight</key>
+	<integer>384</integer>
 	<key>ScreenshotCaptureTool_DirectoryPath</key>
 	<string>~/Pictures</string>
 	<key>ScreenshotCaptureTool_FileFormat</key>

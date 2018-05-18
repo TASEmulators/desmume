@@ -25,6 +25,7 @@
 #define HAVE_OPENGL
 #define HAVE_LIBZ
 //#define HAVE_LUA
+//#define HAVE_AV_CONFIG_H
 
 #define FT2_BUILD_LIBRARY
 #define DARWIN_NO_CARBON

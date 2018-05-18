@@ -23,6 +23,7 @@
 #import "cocoa_util.h"
 #include "ClientDisplayView.h"
 #include "ClientExecutionControl.h"
+#include "ClientAVCaptureObject.h"
 #undef BOOL
 
 @class NSImage;
@@ -115,6 +116,17 @@
 
 - (void) takeFrameCount;
 - (void) setNDSFrameInfo:(const NDSFrameInfo &)ndsFrameInfo;
+
+@end
+
+@interface CocoaDSVideoCapture : CocoaDSDisplay
+{
+	ClientDisplay3DPresenter *_cdp;
+}
+
+@property (assign, nonatomic, getter=clientDisplay3DPresenter, setter=setClientDisplay3DPresenter:) ClientDisplay3DPresenter *_cdp;
+
+- (void) handleReceiveGPUFrame;
 
 @end
 

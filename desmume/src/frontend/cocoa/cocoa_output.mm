@@ -542,6 +542,28 @@
 
 @end
 
+@implementation CocoaDSVideoCapture
+
+@synthesize _cdp;
+
+- (void) handleReceiveGPUFrame
+{
+	[super handleReceiveGPUFrame];
+	
+	if (_cdp == NULL)
+	{
+		return;
+	}
+	
+	_cdp->LoadDisplays();
+	_cdp->ProcessDisplays();
+	_cdp->UpdateLayout();
+	//_cdp->CopyFrameToBuffer((uint32_t *)[newImageRep bitmapData]);
+	//avCaptureObject->ReadVideoFrame(NULL, 0, 0, NDSColorFormat_BGR888_Rev);
+}
+
+@end
+
 @implementation CocoaDSDisplayVideo
 
 @synthesize _cdv;

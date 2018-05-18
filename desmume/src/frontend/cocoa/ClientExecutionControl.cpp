@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2018 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,12 +18,28 @@
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 
+#include "../../armcpu.h"
 #include "../../GPU.h"
 #include "../../movie.h"
 #include "../../NDSSystem.h"
+#include "../../gdbstub.h"
 #include "../../rtc.h"
 
 #include "ClientExecutionControl.h"
+
+// Need to include assert.h this way so that GDB stub will work
+// with an optimized build.
+#if defined(GDB_STUB) && defined(NDEBUG)
+#define TEMP_NDEBUG
+#undef NDEBUG
+#endif
+
+#include <assert.h>
+
+#if defined(TEMP_NDEBUG)
+#undef TEMP_NDEBUG
+#define NDEBUG
+#endif
 
 
 ClientExecutionControl::ClientExecutionControl()
@@ -39,6 +55,15 @@ ClientExecutionControl::ClientExecutionControl()
 	_frameTime = 0.0;
 	_framesToSkip = 0;
 	_prevExecBehavior = ExecutionBehavior_Pause;
+	
+	_isGdbStubStarted = false;
+	_enableGdbStubARM9 = false;
+	_enableGdbStubARM7 = false;
+	_gdbStubPortARM9 = 0;
+	_gdbStubPortARM7 = 0;
+	_gdbStubHandleARM9 = NULL;
+	_gdbStubHandleARM7 = NULL;
+	_isInDebugTrap = false;
 	
 	_settingsPending.cpuEngineID						= CPUEmulationEngineID_Interpreter;
 	_settingsPending.JITMaxBlockSize					= 12;
@@ -71,6 +96,8 @@ ClientExecutionControl::ClientExecutionControl()
 	_settingsPending.execBehavior						= ExecutionBehavior_Pause;
 	_settingsPending.jumpBehavior						= FrameJumpBehavior_Forward;
 	
+	_settingsPending.avCaptureObject					= NULL;
+	
 	_settingsApplied = _settingsPending;
 	_settingsApplied.filePathARM9BIOS					= _settingsPending.filePathARM9BIOS;
 	_settingsApplied.filePathARM7BIOS					= _settingsPending.filePathARM7BIOS;
@@ -98,6 +125,29 @@ ClientExecutionControl::~ClientExecutionControl()
 	pthread_mutex_destroy(&this->_mutexSettingsPendingOnExecutionLoopStart);
 	pthread_mutex_destroy(&this->_mutexSettingsPendingOnNDSExec);
 	pthread_mutex_destroy(&this->_mutexOutputPostNDSExec);
+}
+
+ClientAVCaptureObject* ClientExecutionControl::GetClientAVCaptureObject()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	ClientAVCaptureObject *theCaptureObject = this->_settingsPending.avCaptureObject;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
+	
+	return theCaptureObject;
+}
+
+ClientAVCaptureObject* ClientExecutionControl::GetClientAVCaptureObjectApplied()
+{
+	return this->_settingsApplied.avCaptureObject;
+}
+
+void ClientExecutionControl::SetClientAVCaptureObject(ClientAVCaptureObject *theCaptureObject)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
+	this->_settingsPending.avCaptureObject = theCaptureObject;
+	
+	this->_newSettingsPendingOnNDSExec = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
 ClientInputHandler* ClientExecutionControl::GetClientInputHandler()
@@ -646,6 +696,138 @@ void ClientExecutionControl::SetFrameJumpTarget(uint64_t newJumpTarget)
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
 }
 
+bool ClientExecutionControl::IsGDBStubARM9Enabled()
+{
+	return this->_enableGdbStubARM9;
+}
+
+void ClientExecutionControl::SetGDBStubARM9Enabled(bool theState)
+{
+	this->_enableGdbStubARM9 = theState;
+}
+
+bool ClientExecutionControl::IsGDBStubARM7Enabled()
+{
+	return this->_enableGdbStubARM7;
+}
+
+void ClientExecutionControl::SetGDBStubARM7Enabled(bool theState)
+{
+	this->_enableGdbStubARM7 = theState;
+}
+
+uint16_t ClientExecutionControl::GetGDBStubARM9Port()
+{
+	return this->_gdbStubPortARM9;
+}
+
+void ClientExecutionControl::SetGDBStubARM9Port(uint16_t portNumber)
+{
+	this->_gdbStubPortARM9 = portNumber;
+}
+
+uint16_t ClientExecutionControl::GetGDBStubARM7Port()
+{
+	return this->_gdbStubPortARM7;
+}
+
+void ClientExecutionControl::SetGDBStubARM7Port(uint16_t portNumber)
+{
+	this->_gdbStubPortARM7 = portNumber;
+}
+
+bool ClientExecutionControl::IsGDBStubStarted()
+{
+	return this->_isGdbStubStarted;
+}
+
+void ClientExecutionControl::SetIsGDBStubStarted(bool theState)
+{
+#ifdef GDB_STUB
+	if (theState)
+	{
+        gdbstub_mutex_init();
+        
+		if (this->_enableGdbStubARM9)
+		{
+			const uint16_t arm9Port = this->_gdbStubPortARM9;
+			if(arm9Port > 0)
+			{
+				this->_gdbStubHandleARM9 = createStub_gdb(arm9Port, &NDS_ARM9, &arm9_direct_memory_iface);
+				if (this->_gdbStubHandleARM9 == NULL)
+				{
+					printf("Failed to create ARM9 gdbstub on port %d\n", arm9Port);
+				}
+				else
+				{
+					activateStub_gdb(this->_gdbStubHandleARM9);
+				}
+			}
+		}
+		else
+		{
+			destroyStub_gdb(this->_gdbStubHandleARM9);
+			this->_gdbStubHandleARM9 = NULL;
+		}
+		
+		if (this->_enableGdbStubARM7)
+		{
+			const uint16_t arm7Port = this->_gdbStubPortARM7;
+			if (arm7Port > 0)
+			{
+				this->_gdbStubHandleARM7 = createStub_gdb(arm7Port, &NDS_ARM7, &arm7_base_memory_iface);
+				if (this->_gdbStubHandleARM7 == NULL)
+				{
+					printf("Failed to create ARM7 gdbstub on port %d\n", arm7Port);
+				}
+				else
+				{
+					activateStub_gdb(this->_gdbStubHandleARM7);
+				}
+			}
+		}
+		else
+		{
+			destroyStub_gdb(this->_gdbStubHandleARM7);
+			this->_gdbStubHandleARM7 = NULL;
+		}
+	}
+	else
+	{
+		destroyStub_gdb(this->_gdbStubHandleARM9);
+		this->_gdbStubHandleARM9 = NULL;
+		
+		destroyStub_gdb(this->_gdbStubHandleARM7);
+		this->_gdbStubHandleARM7 = NULL;
+
+        gdbstub_mutex_destroy();
+	}
+#endif
+	if ( (this->_gdbStubHandleARM9 == NULL) && (this->_gdbStubHandleARM7 == NULL) )
+	{
+		theState = false;
+	}
+	
+	this->_isGdbStubStarted = theState;
+}
+
+bool ClientExecutionControl::IsInDebugTrap()
+{
+	return this->_isInDebugTrap;
+}
+
+void ClientExecutionControl::SetIsInDebugTrap(bool theState)
+{
+	// If we're transitioning out of the debug trap, then ignore
+	// frame skipping this time.
+	if (this->_isInDebugTrap && !theState)
+	{
+		this->ResetFramesToSkip();
+	}
+	
+	this->_isInDebugTrap = theState;
+}
+
 ExecutionBehavior ClientExecutionControl::GetPreviousExecutionBehavior()
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
@@ -859,6 +1041,8 @@ void ClientExecutionControl::ApplySettingsOnNDSExec()
 		
 		this->_settingsApplied.enableFrameSkip					= this->_settingsPending.enableFrameSkip;
 		
+		this->_settingsApplied.avCaptureObject					= this->_settingsPending.avCaptureObject;
+		
 		const bool needResetFramesToSkip = this->_needResetFramesToSkip;
 		
 		this->_needResetFramesToSkip = false;
@@ -1066,4 +1250,34 @@ double ClientExecutionControl::CalculateFrameAbsoluteTime(double frameTimeScalar
 void ClientExecutionControl::WaitUntilAbsoluteTime(double deadlineAbsoluteTime)
 {
 	mach_wait_until((uint64_t)deadlineAbsoluteTime);
+}
+
+void* createThread_gdb(void (*thread_function)(void *data), void *thread_data)
+{
+	// Create the thread using POSIX routines.
+	pthread_attr_t  attr;
+	pthread_t*      posixThreadID = (pthread_t*)malloc(sizeof(pthread_t));
+	
+	assert(!pthread_attr_init(&attr));
+	assert(!pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE));
+	
+	int threadError = pthread_create(posixThreadID, &attr, (void* (*)(void *))thread_function, thread_data);
+	
+	assert(!pthread_attr_destroy(&attr));
+	
+	if (threadError != 0)
+	{
+		// Report an error.
+		return NULL;
+	}
+	else
+	{
+		return posixThreadID;
+	}
+}
+
+void joinThread_gdb(void *thread_handle)
+{
+	pthread_join(*(pthread_t *)thread_handle, NULL);
+	free(thread_handle);
 }

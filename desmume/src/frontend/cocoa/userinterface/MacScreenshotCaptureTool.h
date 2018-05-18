@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2018 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,86 +18,18 @@
 #ifndef _MAC_SCREENSHOTCAPTURETOOL_H_
 #define _MAC_SCREENSHOTCAPTURETOOL_H_
 
-#import <Cocoa/Cocoa.h>
+#import "MacBaseCaptureTool.h"
 
-#include <string>
-#include "../ClientDisplayView.h"
-#include "../cocoa_util.h"
-
-#ifdef BOOL
-#undef BOOL
-#endif
-
-@class MacClientSharedObject;
-
-#if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_5
-@interface MacScreenshotCaptureToolDelegate : NSObject <NSWindowDelegate, DirectoryURLDragDestTextFieldProtocol>
-#else
-@interface MacScreenshotCaptureToolDelegate : NSObject <DirectoryURLDragDestTextFieldProtocol>
-#endif
+@interface MacScreenshotCaptureToolDelegate : MacBaseCaptureToolDelegate
 {
-	NSObject *dummyObject;
-	NSWindow *window;
-	DirectoryURLDragDestTextField *saveDirectoryPathTextField;
 	
-	MacClientSharedObject *sharedData;
-	
-	NSString *saveDirectoryPath;
-	NSString *romName;
-	NSBitmapFormat fileFormat;
-	NSInteger displayMode;
-	NSInteger displayLayout;
-	NSInteger displayOrder;
-	NSInteger displaySeparation;
-	NSInteger displayScale;
-	NSInteger displayRotation;
-	BOOL useDeposterize;
-	NSInteger outputFilterID;
-	NSInteger pixelScalerID;
 }
 
-@property (readonly) IBOutlet NSObject *dummyObject;
-@property (readonly) IBOutlet NSWindow *window;
-@property (readonly) IBOutlet DirectoryURLDragDestTextField *saveDirectoryPathTextField;
-
-@property (retain) MacClientSharedObject *sharedData;
-
-@property (copy) NSString *saveDirectoryPath;
-@property (copy) NSString *romName;
-@property (assign) NSBitmapFormat fileFormat;
-@property (assign) NSInteger displayMode;
-@property (assign) NSInteger displayLayout;
-@property (assign) NSInteger displayOrder;
-@property (assign) NSInteger displaySeparation;
-@property (assign) NSInteger displayScale;
-@property (assign) NSInteger displayRotation;
-@property (assign) BOOL useDeposterize;
-@property (assign) NSInteger outputFilterID;
-@property (assign) NSInteger pixelScalerID;
-
-- (IBAction) chooseDirectoryPath:(id)sender;
 - (IBAction) takeScreenshot:(id)sender;
-
-- (void) chooseDirectoryPathDidEnd:(NSOpenPanel *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo;
-
 - (void) readUserDefaults;
 - (void) writeUserDefaults;
 
 @end
-
-class MacScreenshotCaptureToolParams
-{
-public:
-	MacClientSharedObject *sharedData;
-	
-	NSBitmapImageFileType fileFormat;
-	std::string savePath;
-	std::string romName;
-	bool useDeposterize;
-	OutputFilterTypeID outputFilterID;
-	VideoFilterTypeID pixelScalerID;
-	ClientDisplayPresenterProperties cdpProperty;
-};
 
 static void* RunFileWriteThread(void *arg);
 
