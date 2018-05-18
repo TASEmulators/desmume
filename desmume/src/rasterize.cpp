@@ -2520,13 +2520,33 @@ void SoftRasterizerRenderer_SSE2::ClearUsingValues_Execute(const size_t startPix
 
 void SoftRasterizerRenderer_Altivec::LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes)
 {
-	this->_clearColor_v128u32					= vec_splat_u32(clearColor6665.color);
-	this->_clearDepth_v128u32					= vec_splat_u32(clearAttributes.depth);
-	this->_clearAttrOpaquePolyID_v128u8			= vec_splat_u8(clearAttributes.opaquePolyID);
-	this->_clearAttrTranslucentPolyID_v128u8	= vec_splat_u8(clearAttributes.translucentPolyID);
-	this->_clearAttrStencil_v128u8				= vec_splat_u8(clearAttributes.stencil);
-	this->_clearAttrIsFogged_v128u8				= vec_splat_u8(clearAttributes.isFogged);
-	this->_clearAttrIsTranslucentPoly_v128u8	= vec_splat_u8(clearAttributes.isTranslucentPoly);
+	this->_clearColor_v128u32					= (v128u32){clearColor6665.color,clearColor6665.color,clearColor6665.color,clearColor6665.color};
+	this->_clearDepth_v128u32					= (v128u32){clearAttributes.depth,clearAttributes.depth,clearAttributes.depth,clearAttributes.depth};
+	
+	this->_clearAttrOpaquePolyID_v128u8			= (v128u8){clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,
+												           clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,
+												           clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,
+												           clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID,clearAttributes.opaquePolyID};
+	
+	this->_clearAttrTranslucentPolyID_v128u8	= (v128u8){clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,
+												           clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,
+												           clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,
+												           clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID,clearAttributes.translucentPolyID};
+	
+	this->_clearAttrStencil_v128u8	= (v128u8){clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil,
+									           clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil,
+									           clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil,
+									           clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil,clearAttributes.stencil};
+	
+	this->_clearAttrIsFogged_v128u8	= (v128u8){clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged,
+									           clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged,
+									           clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged,
+									           clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged,clearAttributes.isFogged};
+	
+	this->_clearAttrIsTranslucentPoly_v128u8	= (v128u8){clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,
+												           clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,
+												           clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,
+												           clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly,clearAttributes.isTranslucentPoly};
 }
 
 void SoftRasterizerRenderer_Altivec::ClearUsingValues_Execute(const size_t startPixel, const size_t endPixel)
