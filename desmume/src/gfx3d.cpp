@@ -1933,7 +1933,7 @@ static void log3D(u8 cmd, u32 param)
 				printf("MTX_RESTORE(%08X)", param);
 			break;
 			case 0x15:		// MTX_IDENTITY - Load Unit Matrix to Current Matrix (W)
-				printf("MTX_IDENTIFY()\t");
+				printf("MTX_IDENTITY()\t");
 			break;
 			case 0x16:		// MTX_LOAD_4x4 - Load 4x4 Matrix to Current Matrix (W)
 				printf("MTX_LOAD_4x4(%08X)", param);
@@ -2640,16 +2640,39 @@ SFORMAT SF_GFX3D[]={
 	{ "GSWB", 4, 1, &gfx3d.state.wbuffer},
 	{ "GSSM", 4, 1, &gfx3d.state.sortmode},
 	{ "GSAR", 1, 1, &gfx3d.state.alphaTestRef},
-	{ "GSVP", 4, 1, &viewport},
 	{ "GSCC", 4, 1, &gfx3d.state.clearColor},
 	{ "GSCD", 4, 1, &gfx3d.state.clearDepth},
 	{ "GSFC", 4, 4, &gfx3d.state.fogColor},
 	{ "GSFO", 4, 1, &gfx3d.state.fogOffset},
 	{ "GST4", 2, 32, gfx3d.state.u16ToonTable},
 	{ "GSSU", 1, 128, &gfx3d.state.shininessTable[0]},
-	{ "GSSI", 1, 1, &shininessInd},
 	{ "GSAF", 4, 1, &gfx3d.state.activeFlushCommand},
 	{ "GSPF", 4, 1, &gfx3d.state.pendingFlushCommand},
+
+	{ "gSET", 4, 1, &gfx3d.renderState.enableTexturing},
+	{ "gSEA", 4, 1, &gfx3d.renderState.enableAlphaTest},
+	{ "gSEB", 4, 1, &gfx3d.renderState.enableAlphaBlending},
+	{ "gSEX", 4, 1, &gfx3d.renderState.enableAntialiasing},
+	{ "gSEE", 4, 1, &gfx3d.renderState.enableEdgeMarking},
+	{ "gSEC", 4, 1, &gfx3d.renderState.enableClearImage},
+	{ "gSEF", 4, 1, &gfx3d.renderState.enableFog},
+	{ "gSEO", 4, 1, &gfx3d.renderState.enableFogAlphaOnly},
+	{ "gFSH", 4, 1, &gfx3d.renderState.fogShift},
+	{ "gSSH", 4, 1, &gfx3d.renderState.shading},
+	{ "gSWB", 4, 1, &gfx3d.renderState.wbuffer},
+	{ "gSSM", 4, 1, &gfx3d.renderState.sortmode},
+	{ "gSAR", 1, 1, &gfx3d.renderState.alphaTestRef},
+	{ "gSCC", 4, 1, &gfx3d.renderState.clearColor},
+	{ "gSCD", 4, 1, &gfx3d.renderState.clearDepth},
+	{ "gSFC", 4, 4, &gfx3d.renderState.fogColor},
+	{ "gSFO", 4, 1, &gfx3d.renderState.fogOffset},
+	{ "gST4", 2, 32, gfx3d.renderState.u16ToonTable},
+	{ "gSSU", 1, 128, &gfx3d.renderState.shininessTable[0]},
+	{ "gSAF", 4, 1, &gfx3d.renderState.activeFlushCommand},
+	{ "gSPF", 4, 1, &gfx3d.renderState.pendingFlushCommand},
+
+	{ "GSVP", 4, 1, &viewport},
+	{ "GSSI", 1, 1, &shininessInd},
 	//------------------------
 	{ "GTST", 1, 1, &triStripToggle},
 	{ "GTVC", 4, 1, &tempVertInfo.count},
