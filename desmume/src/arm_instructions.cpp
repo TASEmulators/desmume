@@ -3403,52 +3403,52 @@ TEMPLATE static u32 FASTCALL  OP_SMLA_T_T(const u32 i)
 
 TEMPLATE static u32 FASTCALL  OP_SMLAL_B_B(const u32 i)
 {
-	s64 tmp = (s64)(LWORD(cpu->R[REG_POS(i,0)])* LWORD(cpu->R[REG_POS(i,8)]));
-	u64 res = (u64)tmp + cpu->R[REG_POS(i,12)];
-
-	//INFO("SMLALBB %08X * %08X + %08X%08X = %08X%08X\n", (int)cpu->R[REG_POS(i,0)], (int)cpu->R[REG_POS(i,8)], (int)cpu->R[REG_POS(i,16)], (int)cpu->R[REG_POS(i,12)], (int)(cpu->R[REG_POS(i,16)] + (res + ((tmp<0)*0xFFFFFFFF))), (int)(u32) res);
-
-	cpu->R[REG_POS(i,12)] = (u32) res;
-	cpu->R[REG_POS(i,16)] += (res + ((tmp<0)*0xFFFFFFFF));
+	s32 a = LWORD(cpu->R[REG_POS(i,0)]);
+	s32 b = LWORD(cpu->R[REG_POS(i,8)]);
+	s64 product = (s64)(a*b);
+	s64 dst64 = (s64)(cpu->R[REG_POS(i,12)] + (((s64)cpu->R[REG_POS(i,16)])<<32));
+	s64 sum = dst64 + product;
+	cpu->R[REG_POS(i,12)] = (u32)(sum & 0xFFFFFFFF);
+	cpu->R[REG_POS(i,16)] = (u32)((sum>>32) & 0xFFFFFFFF);
 	
 	return 2;
 }
 
 TEMPLATE static u32 FASTCALL  OP_SMLAL_B_T(const u32 i)
 {
-	s64 tmp = (s64)(LWORD(cpu->R[REG_POS(i,0)])* HWORD(cpu->R[REG_POS(i,8)]));
-	u64 res = (u64)tmp + cpu->R[REG_POS(i,12)];
-	
-	//INFO("SMLALBT %08X * %08X + %08X%08X = %08X%08X\n", (int)cpu->R[REG_POS(i,0)], (int)cpu->R[REG_POS(i,8)], (int)cpu->R[REG_POS(i,16)], (int)cpu->R[REG_POS(i,12)], (int)(cpu->R[REG_POS(i,16)] + res + ((tmp<0)*0xFFFFFFFF)), (int)(u32) res);
-
-	cpu->R[REG_POS(i,12)] = (u32) res;
-	cpu->R[REG_POS(i,16)] += res + ((tmp<0)*0xFFFFFFFF);
+	s32 a = LWORD(cpu->R[REG_POS(i,0)]);
+	s32 b = HWORD(cpu->R[REG_POS(i,8)]);
+	s64 product = (s64)(a*b);
+	s64 dst64 = (s64)(cpu->R[REG_POS(i,12)] + (((s64)cpu->R[REG_POS(i,16)])<<32));
+	s64 sum = dst64 + product;
+	cpu->R[REG_POS(i,12)] = (u32)(sum & 0xFFFFFFFF);
+	cpu->R[REG_POS(i,16)] = (u32)((sum>>32) & 0xFFFFFFFF);
 
 	return 2;
 }
 
 TEMPLATE static u32 FASTCALL  OP_SMLAL_T_B(const u32 i)
 {
-	s64 tmp = (s64)(HWORD(cpu->R[REG_POS(i,0)])* (s64)LWORD(cpu->R[REG_POS(i,8)]));
-	u64 res = (u64)tmp + cpu->R[REG_POS(i,12)];
-	
-	//INFO("SMLALTB %08X * %08X + %08X%08X = %08X%08X\n", (int)cpu->R[REG_POS(i,0)], (int)cpu->R[REG_POS(i,8)], (int)cpu->R[REG_POS(i,16)], (int)cpu->R[REG_POS(i,12)], (int)(cpu->R[REG_POS(i,16)] + res + ((tmp<0)*0xFFFFFFFF)), (int)(u32) res);
-
-	cpu->R[REG_POS(i,12)] = (u32) res;
-	cpu->R[REG_POS(i,16)] += res + ((tmp<0)*0xFFFFFFFF);
+	s32 a = HWORD(cpu->R[REG_POS(i,0)]);
+	s32 b = LWORD(cpu->R[REG_POS(i,8)]);
+	s64 product = (s64)(a*b);
+	s64 dst64 = (s64)(cpu->R[REG_POS(i,12)] + (((s64)cpu->R[REG_POS(i,16)])<<32));
+	s64 sum = dst64 + product;
+	cpu->R[REG_POS(i,12)] = (u32)(sum & 0xFFFFFFFF);
+	cpu->R[REG_POS(i,16)] = (u32)((sum>>32) & 0xFFFFFFFF);
 
 	return 2;
 }
 
 TEMPLATE static u32 FASTCALL  OP_SMLAL_T_T(const u32 i)
 {
-	s64 tmp = (s64)(HWORD(cpu->R[REG_POS(i,0)])* HWORD(cpu->R[REG_POS(i,8)]));
-	u64 res = (u64)tmp + cpu->R[REG_POS(i,12)];
-	
-	//INFO("SMLALTT %08X * %08X + %08X%08X = %08X%08X\n", (int)cpu->R[REG_POS(i,0)], (int)cpu->R[REG_POS(i,8)], (int)cpu->R[REG_POS(i,16)], (int)cpu->R[REG_POS(i,12)], (int)(cpu->R[REG_POS(i,16)] + res + ((tmp<0)*0xFFFFFFFF)), (int)(u32) res);
-	
-	cpu->R[REG_POS(i,12)] = (u32) res;
-	cpu->R[REG_POS(i,16)] += res + ((tmp<0)*0xFFFFFFFF);
+	s32 a = HWORD(cpu->R[REG_POS(i,0)]);
+	s32 b = HWORD(cpu->R[REG_POS(i,8)]);
+	s64 product = (s64)(a*b);
+	s64 dst64 = (s64)(cpu->R[REG_POS(i,12)] + (((s64)cpu->R[REG_POS(i,16)])<<32));
+	s64 sum = dst64 + product;
+	cpu->R[REG_POS(i,12)] = (u32)(sum & 0xFFFFFFFF);
+	cpu->R[REG_POS(i,16)] = (u32)((sum>>32) & 0xFFFFFFFF);
 
 	return 2;
 }
