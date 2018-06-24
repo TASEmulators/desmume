@@ -1,38 +1,36 @@
-/*
-	Copyright (C) 2007 Tim Seidel
-	Copyright (C) 2008-2015 DeSmuME team
+/*  Copyright (C) 2007 Tim Seidel
+    Copyright (C) 2008-2009 DeSmuME team
+    Copyright (C) 2014 pleonex
 
-	This file is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 2 of the License, or
-	(at your option) any later version.
+    This file is part of DeSmuME
 
-	This file is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+    DeSmuME is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 
-	You should have received a copy of the GNU General Public License
-	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
+    DeSmuME is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with DeSmuME; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-
 #ifndef WIFI_H
 #define WIFI_H
 
 #include <stdio.h>
-#include <queue>
 #include "types.h"
 
 #ifdef EXPERIMENTAL_WIFI_COMM
-	#ifdef HOST_WINDOWS
-		#define WIN32_LEAN_AND_MEAN
-	#endif
 
-	#include <pcap.h>
-	#define HAVE_REMOTE
-	#define WPCAP
-	#define PACKET_SIZE 65535
-	#define _INC_STDIO
+#define HAVE_REMOTE
+#define WPCAP
+#define PACKET_SIZE 65535
+#define _INC_STDIO
+
 #endif
 
 
@@ -81,17 +79,17 @@
 #define     REG_WIFI_CIRCBUFWR_SKIP     0x076
 
 // 078 - internal
-#define     REG_WIFI_TXBUF_BEACON       0x080
+#define     REG_WIFI_TXLOCBEACON        0x080
 #define     REG_WIFI_LISTENCOUNT        0x088
 #define     REG_WIFI_BEACONPERIOD       0x08C
 #define     REG_WIFI_LISTENINT          0x08E
-#define 	REG_WIFI_TXBUF_CMD			0x090
-#define		REG_WIFI_TXBUF_REPLY1		0x094
-#define		REG_WIFI_TXBUF_REPLY2		0x098
+#define 	REG_WIFI_TXLOCEXTRA			0x090
+// 094 - ?
+// 098 - ?
 // 09C - internal
-#define     REG_WIFI_TXBUF_LOC1         0x0A0
-#define     REG_WIFI_TXBUF_LOC2         0x0A4
-#define     REG_WIFI_TXBUF_LOC3         0x0A8
+#define     REG_WIFI_TXLOC1             0x0A0
+#define     REG_WIFI_TXLOC2             0x0A4
+#define     REG_WIFI_TXLOC3             0x0A8
 #define     REG_WIFI_TXREQ_RESET        0x0AC
 #define     REG_WIFI_TXREQ_SET          0x0AE
 #define		REG_WIFI_TXREQ_READ			0x0B0
@@ -168,7 +166,6 @@
 #define		REG_WIFI_RFSTATUS			0x214
 #define		REG_WIFI_IF_SET				0x21C
 #define 	REG_WIFI_TXSEQNO			0x210
-#define		REG_WIFI_RXTXADDR			0x268
 #define		REG_WIFI_POWERACK			0x2D0
 
 
@@ -176,6 +173,11 @@
 
 /* WIFI misc constants */
 #define		WIFI_CHIPID					0x1440		/* emulates "old" wifi chip, new is 0xC340 */
+
+// SAVE PACKETS HACK FUNCTIONS
+static void create_packet();
+static void save_packet(u8* packet, u32 len, u32 seconds, u32 millis, bool isReceived);
+u32 timeval2millis(struct timeval tv);
 
 /* Referenced as RF_ in dswifi: rffilter_t */
 /* based on the documentation for the RF2958 chip of RF Micro Devices */
@@ -412,34 +414,14 @@ typedef union
 #define WIFI_IRQ_TIMEBEACON             14
 #define WIFI_IRQ_TIMEPREBEACON          15
 
-struct Wifi_TXSlot
+typedef struct
 {
-	u16 RegVal;
+	bool enabled;
+	u16 address;
 
-	u16 CurAddr;
-	int RemPreamble; // preamble time in µs
-	int RemHWords;
-	u32 TimeMask; // 3 = 2mbps, 7 = 1mbps
-	bool NotStarted;
-};
-
-#define WIFI_TXSLOT_LOC1		0
-#define WIFI_TXSLOT_MPCMD		1
-#define WIFI_TXSLOT_LOC2		2
-#define WIFI_TXSLOT_LOC3		3
-#define WIFI_TXSLOT_BEACON		4
-#define WIFI_TXSLOT_MPREPLY		5
-#define WIFI_TXSLOT_NUM			6
-
-struct Wifi_RXPacket
-{
-	u8* Data;
-	int CurOffset;
-	int RemHWords;
-	bool NotStarted;
-};
-
-typedef std::queue<Wifi_RXPacket> Wifi_RXPacketQueue;
+	bool sending;
+	u16 remtime;
+} Wifi_TXLoc;
 
 enum EAPStatus
 {
@@ -473,22 +455,29 @@ typedef struct
 	/* sending */
 	u16 TXStatCnt;
 	u16 TXPower;
+	u16 TXSlot[3];
 	u16 TXCnt;
+	u16 TXOpt;
 	u16 TXStat;
+	u16 BeaconAddr;
+	BOOL BeaconEnable;
+	u16 TXSlotExtra;
 	u16 TXSeqNo;
-	Wifi_TXSlot TXSlots[WIFI_TXSLOT_NUM];
-	int TXCurSlot;
-	u16 TXBusy;
+	u8 txCurSlot;
+	u8 txSlotBusy[3];
+	u32 txSlotAddr[3];
+	u32 txSlotLen[3];
+	u32 txSlotRemainingBytes[3];
+	bool ExtraSlotBusy;
+	u16 ExtraSlotAddr;
+	u16 ExtraSlotLen;
+	u16 ExtraSlotRemBytes;
 
 	/* receiving */
 	u16 RXCnt;
 	u16 RXCheckCounter;
 	u8 RXNum;
-	Wifi_RXPacketQueue RXPacketQueue;
 
-	u16 RXStatIncIF, RXStatIncIE;
-	u16 RXStatOvfIF, RXStatOvfIE;
-	u8 RXStat[16];
 	u16 RXTXAddr;
 
 	/* addressing/handshaking */
@@ -508,7 +497,6 @@ typedef struct
 	u16 retryLimit;
 
 	/* timing */
-	u64 GlobalUsecTimer;
 	BOOL crystalEnabled;
 	u64 usec;
 	BOOL usecEnable;
@@ -547,6 +535,11 @@ typedef struct
 	u16         CircBufWrEnd;
 	u16         CircBufWrSkip;
 
+	/* tx packets */
+	s32 curPacketSize[3];
+	s32 curPacketPos[3];
+	BOOL curPacketSending[3];
+
 	/* I/O ports */
 	u16			IOPorts[0x800];
 
@@ -558,6 +551,19 @@ typedef struct
 
 typedef struct
 {
+	u64 usecCounter;
+
+} Adhoc_t;
+
+typedef struct
+{
+	u64 usecCounter;
+
+	u8 curPacket[4096];
+	s32 curPacketSize;
+	s32 curPacketPos;
+	BOOL curPacketSending;
+
 	EAPStatus status;
 	u16 seqNum;
 
@@ -570,6 +576,7 @@ extern pcap_t *wifi_bridge;
 #endif
 
 extern wifimac_t wifiMac;
+extern Adhoc_t Adhoc;
 extern SoftAP_t SoftAP;
 
 bool WIFI_Init();
@@ -621,57 +628,6 @@ typedef struct _FW_WFCProfile
 
 } FW_WFCProfile;
 
-class WifiHandler
-{
-public:
-#ifdef EXPERIMENTAL_WIFI_COMM
-	virtual bool WIFI_SocketsAvailable() { return true; }
-	virtual bool WIFI_PCapAvailable() { return false; }
-	virtual void WIFI_GetUniqueMAC(u8* mac) {}
-	virtual bool WIFI_WFCWarning() { return false; }
-
-	virtual int PCAP_findalldevs(pcap_if_t** alldevs, char* errbuf) { return -1; }
-	virtual void PCAP_freealldevs(pcap_if_t* alldevs) {}
-	virtual pcap_t* PCAP_open(const char* source, int snaplen, int flags, int readtimeout, char* errbuf) { return NULL; }
-	virtual void PCAP_close(pcap_t* dev) {}
-	virtual int PCAP_setnonblock(pcap_t* dev, int nonblock, char* errbuf) { return -1; }
-	virtual int PCAP_sendpacket(pcap_t* dev, const u_char* data, int len) { return -1; }
-	virtual int PCAP_dispatch(pcap_t* dev, int num, pcap_handler callback, u_char* userdata) { return -1; }
-#endif
-};
-
-#ifndef HOST_WINDOWS
-class UnixWifiHandler : public WifiHandler
-{
-#ifdef EXPERIMENTAL_WIFI_COMM
-	virtual bool WIFI_SocketsAvailable() { return true; }
-	virtual bool WIFI_PCapAvailable() { return true; }
-	virtual bool WIFI_WFCWarning() { return false; }
-	
-	virtual int PCAP_findalldevs(pcap_if_t** alldevs, char* errbuf) {
-		return pcap_findalldevs(alldevs, errbuf); }
-	
-	virtual void PCAP_freealldevs(pcap_if_t* alldevs) {
-		pcap_freealldevs(alldevs); }
-	
-	virtual pcap_t* PCAP_open(const char* source, int snaplen, int flags, int readtimeout, char* errbuf) {
-		return pcap_open_live(source, snaplen, flags, readtimeout, errbuf); }
-	
-	virtual void PCAP_close(pcap_t* dev) {
-		pcap_close(dev); }
-	
-	virtual int PCAP_setnonblock(pcap_t* dev, int nonblock, char* errbuf) {
-		return pcap_setnonblock(dev, nonblock, errbuf); }
-	
-	virtual int PCAP_sendpacket(pcap_t* dev, const u_char* data, int len) {
-		return pcap_sendpacket(dev, data, len); }
-	
-	virtual int PCAP_dispatch(pcap_t* dev, int num, pcap_handler callback, u_char* userdata) {
-		return pcap_dispatch(dev, num, callback, userdata); }
-#endif
-};
-#endif
-
 /* wifi data to be stored in firmware, when no firmware image was loaded */
 extern u8 FW_Mac[6];
 extern const u8 FW_WIFIInit[32];
@@ -682,6 +638,5 @@ extern const u8 FW_BBChannel[14];
 extern FW_WFCProfile FW_WFCProfile1;
 extern FW_WFCProfile FW_WFCProfile2;
 extern FW_WFCProfile FW_WFCProfile3;
-extern WifiHandler *CurrentWifiHandler;
 
 #endif

@@ -38,6 +38,10 @@ armcpu_t* TDebugEventData::cpu() { return procnum==0?&NDS_ARM9:&NDS_ARM7; }
 TDebugEventData DebugEventData;
 u32 debugFlag;
 
+// PACKET HACK VARS
+FILE *log_ptr;	// File to store the dumped data
+const u32 rc4_addr[2] = { 0x020986A8, 0x02098710 };
+
 //DEBUG CONFIGURATION
 const bool debug_acl = false;
 const bool debug_cacheMiss = false;
@@ -78,9 +82,60 @@ void HandleDebugEvent_Read()
 
 void HandleDebugEvent_Write()
 {
-	if(!debug_acl) return;
-	if(DebugEventData.procnum != ARMCPU_ARM9) return; //acl only valid on arm9
-	acl_check_access(DebugEventData.addr,CP15_ACCESS_WRITE);
+	// Disabled by default.
+	// If you want to enable first you must know and update the address of the
+	// RC4 algoritm function.
+	return;
+
+	// This method is called twice, so ommit one call.
+	extern bool nds_debug_continuing[2];
+	if (nds_debug_continuing[DebugEventData.procnum]) {
+		nds_debug_continuing[DebugEventData.procnum] = false;
+		return;
+	}
+
+	// RC4 encrypt / decrypt function
+	//   R1: Pointer to data to operate (to decrypt or encrypt)
+	//   R2: Size of this data
+	if (DebugEventData.addr == rc4_addr[0] || DebugEventData.addr == rc4_addr[1]) {
+		nds_debug_continuing[DebugEventData.procnum] = true;
+
+		u32 addr = DebugEventData.addr;
+		printf("WIFI: Call to RC4_ALGORITM\n");
+
+		// Write log. Append current data
+		// TODO: It needs to open the file each time, it could be slow.
+		// An improvement could be opening the file at the start of the function
+		// and closing at the end of the function.
+		log_ptr = fopen("wifi_log.txt", "a");
+		if (log_ptr != NULL)
+		{
+			// Create header
+			time_t ti;
+			time(&ti);
+			tm* t = localtime(&ti);
+
+			fprintf(log_ptr, "\n[%02d-%02d-%02d-%02d-%02d] %s of RC4_ALGORITM -----------\n", 
+				t->tm_mon, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec,
+				(addr == rc4_addr[0]) ? "Start" : "End"
+			);
+
+			// Dump data
+			int length   = DebugEventData.cpu()->R[2];
+			int position = DebugEventData.cpu()->R[1] - 0x02000000;	// Relative to memory array
+			fwrite(MMU.MAIN_MEM + position, sizeof(char), length, log_ptr);
+			
+			// End
+			fprintf(log_ptr, "\n- THE END -----------------------------------------------\n");
+
+			// Flush and close by the moment
+			fflush(log_ptr);
+			fclose(log_ptr);
+		}
+		else {
+			printf("Error opening log file\n");
+		}
+	}
 }
 
 void HandleDebugEvent_Execute()
