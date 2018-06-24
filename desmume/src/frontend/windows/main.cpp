@@ -2689,7 +2689,11 @@ static void ExitRunLoop()
 	emu_halt(EMUHALT_REASON_USER_REQUESTED_HALT, NDSErrorTag_None);
 }
 
-class WinWifiHandler : public WifiHandler
+//-----------------------------------------------------------------------------
+//   Platform driver for Win32
+//-----------------------------------------------------------------------------
+
+class WinDriver : public BaseDriver
 {
 #ifdef EXPERIMENTAL_WIFI_COMM
 	virtual bool WIFI_SocketsAvailable() { return bSocketsAvailable; }
@@ -2750,7 +2754,7 @@ class WinWifiHandler : public WifiHandler
 			"Do you still want to connect?",
 			"DeSmuME - WFC warning",
 			MB_YESNO | MB_DEFBUTTON2 | MB_ICONWARNING
-			) == IDYES;
+		) == IDYES;
 	}
 
 	virtual int PCAP_findalldevs(pcap_if_t** alldevs, char* errbuf) {
@@ -2781,14 +2785,7 @@ class WinWifiHandler : public WifiHandler
 		return _pcap_dispatch(dev, num, callback, userdata);
 	}
 #endif
-};
 
-//-----------------------------------------------------------------------------
-//   Platform driver for Win32
-//-----------------------------------------------------------------------------
-
-class WinDriver : public BaseDriver
-{
 	virtual bool AVI_IsRecording()
 	{
 		return ::AVI_IsRecording();
@@ -2982,7 +2979,6 @@ int _main()
 #endif
 
 	driver = new WinDriver();
-	CurrentWifiHandler = new WinWifiHandler();
 	WinGPUEvent = new GPUEventHandlerWindows;
 
 	InitializeCriticalSection(&win_execute_sync);
@@ -6992,7 +6988,7 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 
 			if (bWinPCapAvailable)
 			{
-				if(CurrentWifiHandler->PCAP_findalldevs(&alldevs, errbuf) == -1)
+				if(driver->PCAP_findalldevs(&alldevs, errbuf) == -1)
 				{
 					// TODO: fail more gracefully!
 					EndDialog(hDlg, TRUE);
