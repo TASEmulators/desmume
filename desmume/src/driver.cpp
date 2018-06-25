@@ -49,11 +49,6 @@ BaseDriver::~BaseDriver()
 {
 }
 
-void BaseDriver::USR_InfoMessage(const char *message)
-{
-	LOG("%s\n", message);
-}
-
 void BaseDriver::AddLine(const char *fmt, ...)
 {
 #if HAVE_LIBAGG

@@ -21,8 +21,10 @@
 #include <map>
 #include <string>
 #include <algorithm>
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-
+#include <Commdlg.h>
+#include <Shellapi.h>
 #include "driver.h"
 #include "lua-engine.h"
 
