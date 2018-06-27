@@ -52,17 +52,20 @@ public:
 
 	void SetPrescale(int prescaleHD, int prescalePost)
 	{
-		free_aligned(buffer_raw);
-		free_aligned(filteredbuffer);
+		if (this->prescaleHD != prescaleHD || this->prescalePost != prescalePost)
+		{
+			free_aligned(buffer_raw);
+			free_aligned(filteredbuffer);
 
-		this->prescaleHD = prescaleHD;
-		this->prescalePost = prescalePost;
+			this->prescaleHD = prescaleHD;
+			this->prescalePost = prescalePost;
 
-		prescaleTotal = prescaleHD;
+			prescaleTotal = prescaleHD;
 
-		ResizeBuffers();
+			ResizeBuffers();
 
-		setfilter(currentfilter);
+			setfilter(currentfilter);
+		}
 	}
 
 	void ResizeBuffers()
