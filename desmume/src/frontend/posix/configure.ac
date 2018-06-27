@@ -53,6 +53,9 @@ AC_CHECK_LIB(zzip, zzip_open, [
 		AC_MSG_RESULT(no))
 ])
 
+dnl - Check for X11
+AC_PATH_X
+
 dnl - Check for SDL
 AC_PATH_PROGS(SDLCONFIG, [sdl-config sdl11-config])
 if test ! "x$SDLCONFIG" = "x" ; then
