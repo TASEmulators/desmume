@@ -4477,6 +4477,9 @@ void FilterUpdate(HWND hwnd, bool user)
 	SetRotate(hwnd, video.rotation, false);
 	if(user && windowSize==0) {}
 	else ScaleScreen(windowSize, false);
+	if (romloaded)
+		Display();
+
 	WritePrivateProfileInt("Video", "Filter", video.currentfilter, IniName);
 	WritePrivateProfileInt("Video", "Width", video.width, IniName);
 	WritePrivateProfileInt("Video", "Height", video.height, IniName);
