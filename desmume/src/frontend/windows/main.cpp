@@ -1965,6 +1965,8 @@ slock_t *display_mutex = NULL;
 sthread_t *display_thread = NULL;
 volatile bool display_die = false;
 HANDLE display_wakeup_event = INVALID_HANDLE_VALUE;
+HANDLE display_done_event = INVALID_HANDLE_VALUE;
+DWORD display_done_timeout = 500;
 
 int displayPostponeType = 0;
 DWORD displayPostponeUntil = ~0;
@@ -2112,7 +2114,7 @@ void displayThread(void *arg)
 		}
 		
 		displayProc();
-
+		SetEvent(display_done_event);
 	} while (!display_die);
 }
 
@@ -2289,6 +2291,8 @@ static void StepRunLoop_User()
 	Hud.fps = mainLoopData.fps;
 	Hud.fps3d = GPU->GetFPSRender3D();
 
+	// wait for the HUD to update from last frame
+	WaitForSingleObject(display_done_event, display_done_timeout);
 	Display();
 
 	mainLoopData.fps3d = Hud.fps3d;
@@ -2991,6 +2995,7 @@ int _main()
 	display_invoke_ready_event = CreateEvent(NULL, TRUE, FALSE, NULL);
 	display_invoke_done_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 	display_wakeup_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+	display_done_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 //	struct configured_features my_config;
 
