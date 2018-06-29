@@ -2292,7 +2292,7 @@ static void StepRunLoop_User()
 	Hud.fps3d = GPU->GetFPSRender3D();
 
 	// wait for the HUD to update from last frame
-	WaitForSingleObject(display_done_event, display_done_timeout);
+	if(frameskiprate==0) WaitForSingleObject(display_done_event, display_done_timeout);
 	Display();
 
 	mainLoopData.fps3d = Hud.fps3d;
