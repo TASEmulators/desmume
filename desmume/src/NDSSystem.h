@@ -24,8 +24,8 @@
 
 #include "types.h"
 #include "ROMReader.h"
+#include "wifi.h"
 
-class BaseDriver;
 class CFIRMWARE;
 class EMUFILE;
 
@@ -72,7 +72,6 @@ extern BOOL click;
 #define NDS_FW_LANG_CHI 6
 #define NDS_FW_LANG_RES 7
 
-extern BaseDriver *driver;
 extern CFIRMWARE *firmware;
 
 #define DSGBA_LOADER_SIZE 512

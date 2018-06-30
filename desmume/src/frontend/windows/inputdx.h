@@ -24,6 +24,7 @@
 #define INPUTDX_INCLUDED
 
 #include <windows.h>
+#include <Mmsystem.h>
 #define DIRECTINPUT_VERSION 0x0800
 #include "directx/dinput.h"
 #include "directx/xinput.h"

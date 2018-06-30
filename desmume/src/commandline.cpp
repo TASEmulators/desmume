@@ -142,6 +142,8 @@ ENDL
 "                            Select basic console type; default FAT" ENDL
 " --bios-arm9 BIN_FILE       Uses the ARM9 BIOS provided at the specified path" ENDL
 " --bios-arm7 BIN_FILE       Uses the ARM7 BIOS provided at the specified path" ENDL
+" --firmware-path BIN_FILE       Uses the firmware provided at the specified path" ENDL
+" --firmware-boot 0|1       Boot from firmware" ENDL
 " --bios-swi                 Uses SWI from the provided bios files (else HLE)" ENDL
 " --lang N                   Firmware language (can affect game translations)" ENDL
 "                            0 = Japanese, 1 = English (default), 2 = French" ENDL
@@ -195,6 +197,8 @@ ENDL
 #define OPT_ARM9 201
 #define OPT_ARM7 202
 #define OPT_LANGUAGE   203
+#define OPT_FIRMPATH 204
+#define OPT_FIRMBOOT 205
 
 #define OPT_SLOT1 300
 #define OPT_SLOT1_FAT_DIR 301
@@ -269,6 +273,8 @@ bool CommandLine::parse(int argc,char **argv)
 			{ "bios-arm9", required_argument, NULL, OPT_ARM9},
 			{ "bios-arm7", required_argument, NULL, OPT_ARM7},
 			{ "bios-swi", no_argument, &_bios_swi, 1},
+			{ "firmware-path", required_argument, NULL, OPT_FIRMPATH},
+			{ "firmware-boot", required_argument, NULL, OPT_FIRMBOOT},
 			{ "lang", required_argument, NULL, OPT_LANGUAGE},
 
 			//slot-1 contents
@@ -332,6 +338,8 @@ bool CommandLine::parse(int argc,char **argv)
 		case OPT_CONSOLE_TYPE: console_type = optarg; break;
 		case OPT_ARM9: _bios_arm9 = strdup(optarg); break;
 		case OPT_ARM7: _bios_arm7 = strdup(optarg); break;
+		case OPT_FIRMPATH: _fw_path = strdup(optarg); break;
+		case OPT_FIRMBOOT: _fw_boot = atoi(optarg); break;
 
 		//slot-1 contents
 		case OPT_SLOT1: slot1 = strtoupper(optarg); break;
@@ -418,6 +426,10 @@ bool CommandLine::parse(int argc,char **argv)
 	//TODO NOT MAX PRIORITY! change ARM9BIOS etc to be a std::string
 	if(_bios_arm9) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM9BIOS,_bios_arm9); }
 	if(_bios_arm7) { CommonSettings.UseExtBIOS = true; strcpy(CommonSettings.ARM7BIOS,_bios_arm7); }
+	#ifndef HOST_WINDOWS 
+		if(_fw_path) { CommonSettings.UseExtFirmware = true; CommonSettings.UseExtFirmwareSettings = true; strcpy(CommonSettings.Firmware,_fw_path); } 
+	#endif
+	if(_fw_boot) CommonSettings.BootFromFirmware = true;
 	if(_bios_swi) CommonSettings.SWIFromBIOS = true;
 	if(_spu_sync_mode != -1) CommonSettings.SPU_sync_mode = _spu_sync_mode;
 	if(_spu_sync_method != -1) CommonSettings.SPU_sync_method = _spu_sync_method;
@@ -489,6 +501,10 @@ bool CommandLine::validate()
 	if(_bios_swi && (!_bios_arm7 || !_bios_arm9)) {
 		printerror("If either bios-swi is used, bios-arm9 and bios-arm7 must be specified.\n");
 	}
+
+	if(_fw_boot && (!_fw_path)) {
+		printerror("If either firmware boot is used, firmware path must be specified.\n");
+ 	}
 
 	if((_cflash_image && _gbaslot_rom) || (_cflash_path && _gbaslot_rom)) {
 		printerror("Cannot specify both cflash and gbaslot rom (both occupy SLOT-2)\n");
