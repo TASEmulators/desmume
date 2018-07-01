@@ -149,7 +149,7 @@
 			<!-- export other user options to preprocessor -->
 			<PreprocessorDefinitions Condition="'$(DEVELOPER)' == 'true'">DEVELOPER=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<PreprocessorDefinitions Condition="'$(GDB_STUB)' == 'true'">GDB_STUB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-			<PreprocessorDefinitions Condition="'$(EXPERIMENTAL_WIFI_COMM)' == 'true'">EXPERIMENTAL_WIFI_COMM=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>EXPERIMENTAL_WIFI_COMM=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 
 			<!-- desmume configuration: features we always have in windows -->
 			<PreprocessorDefinitions>HAVE_LIBAGG=1;HAVE_JIT=1;HAVE_LUA=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>

@@ -533,6 +533,12 @@ int main(int argc, char *argv[]) {
 
   init_configured_features( &my_config);
 
+  /* X11 multi-threading support */
+  if(!XInitThreads())
+    {
+      fprintf(stderr, "Warning: X11 not thread-safe\n");
+    }
+
   if (!g_thread_supported())
     g_thread_init( NULL);
 

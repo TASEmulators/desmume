@@ -18,6 +18,7 @@
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
+#include <X11/Xlib.h>
 #include <SDL.h>
 #include <SDL_thread.h>
 #include <stdlib.h>
@@ -640,6 +641,12 @@ int main(int argc, char ** argv) {
   }
 
   execute = true;
+
+  /* X11 multi-threading support */
+  if(!XInitThreads())
+    {
+      fprintf(stderr, "Warning: X11 not thread-safe\n");
+    }
 
   if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) == -1)
     {

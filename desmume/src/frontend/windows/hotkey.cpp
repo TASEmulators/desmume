@@ -19,6 +19,11 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <Commdlg.h>
+#include <Shellapi.h>
+
 #include "hotkey.h"
 
 #include "NDSSystem.h"
