@@ -1989,7 +1989,7 @@ static void DoDisplay_DrawHud()
 }
 
 //does a single display work unit. only to be used from the display thread
-static void DoDisplay(bool firstTime)
+static void DoDisplay()
 {
 	Lock lock (win_backbuffer_sync);
 
@@ -2063,13 +2063,8 @@ void displayProc()
 		currDisplayBuffer = todo;
 		video.srcBuffer = (u8*)displayBuffers[currDisplayBuffer].buffer;
 		video.srcBufferSize = displayBuffers[currDisplayBuffer].size;
-
-		DoDisplay(true);
 	}
-	else
-	{
-		DoDisplay(false);
-	}
+	DoDisplay();
 }
 
 
@@ -2116,7 +2111,7 @@ void Display()
 	{
 		video.srcBuffer = (u8*)dispInfo.masterCustomBuffer;
 		video.srcBufferSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes * 2;
-		DoDisplay(true);
+		DoDisplay();
 	}
 	else
 	{
@@ -2260,7 +2255,7 @@ static void StepRunLoop_Paused()
 	if(CommonSettings.single_core() && GetActiveWindow() == mainLoopData.hwnd)
 	{
 		video.srcBuffer = (u8*)GPU->GetDisplayInfo().masterCustomBuffer;
-		DoDisplay(true);
+		DoDisplay();
 	}
 
 	ServiceDisplayThreadInvocations();
@@ -5126,7 +5121,7 @@ DOKEYDOWN:
 				{
 					const NDSDisplayInfo &dispInfo = GPU->GetDisplayInfo();
 					video.srcBuffer = (u8*)dispInfo.masterCustomBuffer;
-					DoDisplay(true);
+					DoDisplay();
 				}
 			}
 
