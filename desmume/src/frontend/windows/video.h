@@ -30,6 +30,8 @@ public:
 
 	int width;
 	int height;
+	int prefilterWidth;
+	int prefilterHeight;
 
 	int rotation;
 	int rotation_userset;
@@ -59,6 +61,8 @@ public:
 
 			this->prescaleHD = prescaleHD;
 			this->prescalePost = prescalePost;
+			prefilterWidth = 256 * prescaleHD;
+			prefilterHeight = 192 * 2 * prescaleHD;
 
 			prescaleTotal = prescaleHD;
 
@@ -74,8 +78,8 @@ public:
 		const int kPadSize = 4;
 
 		// raw buffer
-		size_t rawBufferWidth = 256 * prescaleHD + (kPadSize * 2);
-		size_t rawBufferHeight = 192 * 2 * prescaleHD + (kPadSize * 2);
+		size_t rawBufferWidth = prefilterWidth + (kPadSize * 2);
+		size_t rawBufferHeight = prefilterHeight + (kPadSize * 2);
 		rawBufferSize = rawBufferWidth * rawBufferHeight * 4;
 		buffer_raw = buffer = (u32*)malloc_alignedCacheLine(rawBufferSize);
 
@@ -134,8 +138,6 @@ public:
 
 	void reset() {
 		SetPrescale(1, 1); //should i do this here?
-		width = 256;
-		height = 384;
 	}
 
 	void setfilter(int filter) {
@@ -148,42 +150,40 @@ public:
 		switch (filter) {
 
 		case NONE:
-			width = 256;
-			height = 384;
+			width = prefilterWidth;
+			height = prefilterHeight;
 			break;
 		case EPX1POINT5:
 		case EPXPLUS1POINT5:
 		case NEAREST1POINT5:
 		case NEARESTPLUS1POINT5:
-			width = 256 * 3 / 2;
-			height = 384 * 3 / 2;
+			width = prefilterWidth * 3 / 2;
+			height = prefilterHeight * 3 / 2;
 			break;
 
 		case _5XBRZ:
-			width = 256 * 5;
-			height = 384 * 5;
+			width = prefilterWidth * 5;
+			height = prefilterHeight * 5;
 			break;
 
 		case HQ4X:
 		case _4XBRZ:
-			width = 256 * 4;
-			height = 384 * 4;
+			width = prefilterWidth * 4;
+			height = prefilterHeight * 4;
 			break;
 
 		case _3XBRZ:
-			width = 256 * 3;
-			height = 384 * 3;
+			width = prefilterWidth * 3;
+			height = prefilterHeight * 3;
 			break;
 
 		case _2XBRZ:
 		default:
-			width = 256 * 2;
-			height = 384 * 2;
+			width = prefilterWidth * 2;
+			height = prefilterHeight * 2;
 			break;
 		}
 
-		width *= prescaleHD;
-		height *= prescaleHD;
 		ResizeBuffers();
 	}
 
