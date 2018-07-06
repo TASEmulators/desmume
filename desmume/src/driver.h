@@ -107,7 +107,9 @@ public:
 	virtual bool EMU_HasEmulationStarted() { return true; }
 	virtual bool EMU_IsAtFrameBoundary() { return true; }
 	
+	virtual void EMU_DebugIdleEnter() {}
 	virtual void EMU_DebugIdleUpdate() {}
+	virtual void EMU_DebugIdleWakeUp() {}
 
 	enum eDebug_IOReg
 	{
