@@ -1,7 +1,7 @@
 /*
 	Copyright (C) 2006 thoduv
 	Copyright (C) 2006-2007 Theo Berkau
-	Copyright (C) 2008-2017 DeSmuME team
+	Copyright (C) 2008-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -164,14 +164,14 @@ bool BackupDevice::load_state(EMUFILE &is)
 
 	if (is.read_32LE(version) != 1) return false;
 
-   is.read_bool32(write_enable);
-   is.read_32LE(com);
-   is.read_32LE(addr_size);
-   is.read_32LE(addr_counter);
-   is.read_32LE(temp);
-   state = (STATE)temp;
-   is.read_buffer(data);
-   is.read_buffer(data_autodetect);
+	is.read_bool32(write_enable);
+	is.read_32LE(com);
+	is.read_32LE(addr_size);
+	is.read_32LE(addr_counter);
+	is.read_32LE(temp);
+	state = (STATE)temp;
+	is.read_buffer(data);
+	is.read_buffer(data_autodetect);
 
 	if (version >= 1)
 		is.read_32LE(addr);
@@ -1653,35 +1653,25 @@ bool BackupDevice::import_dsv(const char *filename)
 	return result;
 }
 
-bool BackupDevice::load_movie(EMUFILE &is)
+bool BackupDevice::load_movie(EMUFILE *is)
 {
-	const s32 cookieLen = (s32)strlen(kDesmumeSaveCookie);
-
-	is.fseek(-cookieLen, SEEK_END);
-	is.fseek(-4, SEEK_CUR);
-
-	u32 version = is.read_u32LE();
-	if (version != 0)
-	{
-		printf("Unknown save file format\n");
-		return false;
-	}
-	is.fseek(-24, SEEK_CUR);
-
-	BackupDeviceFileInfo info;
+	delete fpMC;
+	fpMC = is;
 	
-	is.read_32LE(info.size);
-	is.read_32LE(info.padSize);
-	is.read_32LE(info.type);
-	is.read_32LE(info.addr_size);
-	is.read_32LE(info.mem_size);
+	int ok = readFooter();
+	// TODO - in case we ever change the format again (and we should probably entirely rewrite this if we do) we'd need to detect the old versions
+	// (that is, returning -1 or -2 here or some other errors)
+	
+	is->fseek(0, SEEK_SET);
 
-	is.fseek(0, SEEK_SET);
-	fpMC = &is;
+	EMUFILE_MEMORY* scratchbuf = new EMUFILE_MEMORY(this->_info.padSize);
+	is->fread(scratchbuf->buf(),_info.padSize);
+	fpMC = scratchbuf;
 
+	//this is what load_movie has always done.
+	//seems sloppy, the original intention was for this to basically be a savestate, so that all fields are saved, but someone wrecked that
 	state = RUNNING;
-	addr_size = info.addr_size;
-	//none of the other fields are used right now
+	addr_size = _info.addr_size;
 
 	return true;
 }
@@ -1692,6 +1682,8 @@ void BackupDevice::load_movie_blank()
 	fpMC = new EMUFILE_MEMORY();
 
 	state = DETECTING;
+	fsize = 0;
+	addr_size = 0;
 }
 
 void BackupDevice::forceManualBackupType()
