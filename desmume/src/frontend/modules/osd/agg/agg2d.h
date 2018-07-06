@@ -242,7 +242,6 @@ public:
 		BlendDstAtop    = agg::comp_op_dst_atop,
 		BlendXor        = agg::comp_op_xor,
 		BlendAdd        = agg::comp_op_plus,
-		BlendSub        = agg::comp_op_minus,
 		BlendMultiply   = agg::comp_op_multiply,
 		BlendScreen     = agg::comp_op_screen,
 		BlendOverlay    = agg::comp_op_overlay,
@@ -253,8 +252,7 @@ public:
 		BlendHardLight  = agg::comp_op_hard_light,
 		BlendSoftLight  = agg::comp_op_soft_light,
 		BlendDifference = agg::comp_op_difference,
-		BlendExclusion  = agg::comp_op_exclusion,
-		BlendContrast   = agg::comp_op_contrast
+		BlendExclusion  = agg::comp_op_exclusion
 	};
 
 	enum Direction
