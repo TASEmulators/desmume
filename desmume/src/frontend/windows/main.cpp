@@ -2015,18 +2015,6 @@ static void DoDisplay(bool firstTime)
 		ColorspaceApplyIntensityToBuffer32<false, false>(video.buffer + pixCount, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
 	}
 
-	if(firstTime)
-	{
-		//on single core systems, draw straight to the screen
-		//we only do this once per emulated frame because we don't want to waste time redrawing
-		//on such lousy computers
-		if(CommonSettings.single_core())
-		{
-			aggDraw.hud->attach((u8*)video.buffer, video.width, video.height, video.width*4);
-			DoDisplay_DrawHud();
-		}
-	}
-
 	if(AnyLuaActive())
 	{
 		if(sthread_isself(display_thread))
@@ -2040,18 +2028,12 @@ static void DoDisplay(bool firstTime)
 		}
 	}
 
-	//apply user's filter
-	video.filter();
+	// draw HUD
+	aggDraw.hud->attach((u8*)video.buffer, video.prefilterWidth, video.prefilterHeight, video.prefilterWidth * 4);
+	DoDisplay_DrawHud();
 
-	if(!CommonSettings.single_core())
-	{
-		//draw and composite the OSD (but not if we are drawing osd straight to screen)
-		DoDisplay_DrawHud();
-		T_AGG_RGBA target((u8*)video.finalBuffer(), video.width,video.height,video.width*4);
-		target.transformImage(aggDraw.hud->image<T_AGG_PF_RGBA>(), 0,0,video.width,video.height);
-		aggDraw.hud->clear();
-	}
-	
+	//apply user's filter
+	video.filter();	
 
 	if(ddhw || ddsw)
 	{
@@ -2292,7 +2274,7 @@ static void StepRunLoop_User()
 	Hud.fps3d = GPU->GetFPSRender3D();
 
 	// wait for the HUD to update from last frame
-	WaitForSingleObject(display_done_event, display_done_timeout);
+	if(frameskiprate==0) WaitForSingleObject(display_done_event, display_done_timeout);
 	Display();
 
 	mainLoopData.fps3d = Hud.fps3d;
