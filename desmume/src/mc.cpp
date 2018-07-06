@@ -216,7 +216,6 @@ BackupDevice::BackupDevice()
 	fpMC = NULL;
 	fsize = 0;
 	addr_size = 0;
-	isMovieMode = false;
 
 	//default for most games; will be altered where appropriate
 	//usually 0xFF, but occasionally others. If these exceptions could be related to a particular backup memory type, that would be helpful.
@@ -519,44 +518,36 @@ bool  BackupDevice::write(u8 val)
 #ifdef _DONT_SAVE_BACKUP
 	return true;
 #endif
-	//never use save files if we are in movie mode
-	if (isMovieMode) return true;
 
 	return (fpMC->fwrite(&val, 1) == 1);
 }
 
 void BackupDevice::writeByte(u32 addr, u8 val)
 {
-	if (isMovieMode) return;
 	fpMC->fseek(addr, SEEK_SET);
 	fpMC->write_u8(val);
 }
 void BackupDevice::writeWord(u32 addr, u16 val)
 {
-	if (isMovieMode) return;
 	fpMC->fseek(addr, SEEK_SET);
 	fpMC->write_16LE(val);
 }
 void BackupDevice::writeLong(u32 addr, u32 val)
 {
-	if (isMovieMode) return;
 	fpMC->fseek(addr, SEEK_SET);
 	fpMC->write_32LE(val);
 }
 
 void BackupDevice::writeByte(u8 val)
 {
-	if (isMovieMode) return;
 	fpMC->write_u8(val);
 }
 void BackupDevice::writeWord(u16 val)
 {
-	if (isMovieMode) return;
 	fpMC->write_16LE(val);
 }
 void BackupDevice::writeLong(u32 val)
 {
-	if (isMovieMode) return;
 	fpMC->write_32LE(val);
 }
 
@@ -586,7 +577,6 @@ bool BackupDevice::saveBuffer(u8 *data, u32 size, bool _rewind, bool _truncate)
 
 void BackupDevice::movie_mode()
 {
-	isMovieMode = true;
 	reset();
 }
 
@@ -1694,6 +1684,14 @@ bool BackupDevice::load_movie(EMUFILE &is)
 	//none of the other fields are used right now
 
 	return true;
+}
+
+void BackupDevice::load_movie_blank()
+{
+	delete fpMC;
+	fpMC = new EMUFILE_MEMORY();
+
+	state = DETECTING;
 }
 
 void BackupDevice::forceManualBackupType()

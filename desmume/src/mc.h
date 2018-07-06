@@ -148,8 +148,7 @@ public:
 	bool no_gba_unpack(u8 *&buf, u32 &size);
 	
 	bool load_movie(EMUFILE &is);
-
-	bool isMovieMode;
+	void load_movie_blank();
 
 	u32 importDataSize(const char *filename);
 	bool importData(const char *filename, u32 force_size = 0);

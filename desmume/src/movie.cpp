@@ -582,6 +582,8 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 		bool success = MovieData::loadSramFrom(&currMovieData.sram);
 		if(!success) return "failed to load sram";
 	}
+	else
+		MMU_new.backupDevice.load_movie_blank();
 	freshMovie = true;
 	ClearAutoHold();
 
@@ -604,8 +606,8 @@ static void openRecordingMovie(const char* fname)
 
 bool MovieData::loadSramFrom(std::vector<u8>* buf)
 {
-	EMUFILE_MEMORY ms(buf);
-	MMU_new.backupDevice.load_movie(ms);
+	EMUFILE_MEMORY* ms = new EMUFILE_MEMORY(buf); // change to new to avoid automatic destruction
+	MMU_new.backupDevice.load_movie(*ms);
 	return true;
 }
 
