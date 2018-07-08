@@ -2148,8 +2148,9 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 
 					SoftAP.status = APStatus_Associated;
 					WIFI_LOG(1, "SoftAP connected!\n");
-
+#if (WIFI_LOGGING_LEVEL >= 3)
 					create_packet();
+#endif
 				}
 				break;
 
@@ -2220,8 +2221,9 @@ void SoftAP_SendPacket(u8 *packet, u32 len)
 
 				if(wifi_bridge != NULL) {
 					// Store the packet in the PCAP file.
+#if (WIFI_LOGGING_LEVEL >= 3)
 					save_packet(epacket, epacketLen, SoftAP.usecCounter / 1000000, SoftAP.usecCounter % 1000000, false);
-
+#endif
 					// Send it
 					driver->PCAP_sendpacket(wifi_bridge, epacket, epacketLen);
 				}
@@ -2289,9 +2291,10 @@ static void SoftAP_RXHandler(u_char* user, const struct pcap_pkthdr* h, const u_
 	// Save ethernet packet into the PCAP file.
 	// Filter broadcast because of privacy. They aren't needed to study the protocol with the nintendo server
 	// and can include PC Discovery protocols
+#if (WIFI_LOGGING_LEVEL >= 3)
 	if (!WIFI_isBroadcastMAC(&data[0]))
 		save_packet(data, h->len, SoftAP.usecCounter / 1000000, SoftAP.usecCounter % 1000000, true);
-
+#endif
 	//printf("RECEIVED DATA FRAME: len=%i/%i, src=%02X:%02X:%02X:%02X:%02X:%02X, dst=%02X:%02X:%02X:%02X:%02X:%02X, ethertype=%04X\n",
 	//	24+ (h->caplen-12), 24 + (h->len-12), data[6], data[7], data[8], data[9], data[10], data[11],
 	//	data[0], data[1], data[2], data[3], data[4], data[5], *(u16*)&data[12]);
