@@ -1609,6 +1609,15 @@ BEGIN
             MENUITEM "&Always On Top",              IDM_ALWAYS_ON_TOP
             MENUITEM "&Lockdown",                   IDM_LOCKDOWN
         END
+        POPUP "Screen Size Ratio (L:R)"
+        BEGIN
+            MENUITEM "1.0 : 1.0",                   IDC_SCR_RATIO_1p0
+            MENUITEM "1.1 : 0.9",                   IDC_SCR_RATIO_1p1
+            MENUITEM "1.2 : 0.8",                   IDC_SCR_RATIO_1p2
+            MENUITEM "1.3 : 0.7",                   IDC_SCR_RATIO_1p3
+            MENUITEM "1.4 : 0.6",                   IDC_SCR_RATIO_1p4
+            MENUITEM "1.5 : 0.5",                   IDC_SCR_RATIO_1p5
+        END
         POPUP "Screen &Gap"
         BEGIN
             MENUITEM "&None\t(0 px)",               IDM_SCREENSEP_NONE

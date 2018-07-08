@@ -519,6 +519,8 @@ bool continuousframeAdvancing = false;
 
 unsigned short windowSize = 0;
 
+float screenSizeRatio = 1.0f;
+
 /*const u32 gapColors[16] = {
 	Color::Gray,
 	Color::Brown,
@@ -714,7 +716,10 @@ void ScaleScreen(float factor, bool user)
 			MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor), (int)(video.rotatedheightgap() * factor));
 		else
 			if (video.layout == 1)
-				MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor * 2), (int)(video.rotatedheightgap() * factor / 2));
+			{
+				factor /= screenSizeRatio;
+				MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor * 2), (int)(video.rotatedheightgap() * factor * screenSizeRatio / 2));
+			}
 			else
 				if (video.layout == 2)
 					MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor), (int)(video.rotatedheightgap() * factor / 2));
@@ -868,22 +873,50 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 		{
 			bool topOnTop = (video.swap == 0) || (video.swap == 2 && isMainGPUFirst) || (video.swap == 3 && !isMainGPUFirst);
 			bool bottom = (whichScreen > 0);
-			if(topOnTop)
-				x += bottom ? -GPU_FRAMEBUFFER_NATIVE_WIDTH : 0;
+			if (topOnTop)
+			{
+				if (bottom)
+				{
+					x += -GPU_FRAMEBUFFER_NATIVE_WIDTH * screenSizeRatio;
+					x /= (2 - screenSizeRatio);
+					y /= (2 - screenSizeRatio);
+				}
+			}
 			else
-				x += (x < GPU_FRAMEBUFFER_NATIVE_WIDTH) ? (bottom ? 0 : GPU_FRAMEBUFFER_NATIVE_WIDTH) : (bottom ? 0 : -GPU_FRAMEBUFFER_NATIVE_WIDTH);
+			{
+				if (x < GPU_FRAMEBUFFER_NATIVE_WIDTH * screenSizeRatio)
+				{
+					if (bottom == 0)
+						x += GPU_FRAMEBUFFER_NATIVE_WIDTH * screenSizeRatio;
+				}
+				else
+				{
+					if (bottom == 0)
+						x += -GPU_FRAMEBUFFER_NATIVE_WIDTH * screenSizeRatio;
+				}
+				x /= screenSizeRatio;
+			}
 		}
 		else
 		{
+			x /= screenSizeRatio;
 			if(x >= GPU_FRAMEBUFFER_NATIVE_WIDTH)
 			{
 				x -= GPU_FRAMEBUFFER_NATIVE_WIDTH;
-				y += GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+				x *= screenSizeRatio / (2 - screenSizeRatio);
+				y += GPU_FRAMEBUFFER_NATIVE_HEIGHT * (2 - screenSizeRatio);
+				y /= (2 - screenSizeRatio);
+				if (y < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
+					y = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 			}
 			else if(x < 0)
 			{
-				x += GPU_FRAMEBUFFER_NATIVE_WIDTH;
-				y -= GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+				x = 0;
+			}
+			else
+			{
+				if (y > GPU_FRAMEBUFFER_NATIVE_HEIGHT)
+					y = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 			}
 		}
 	}
@@ -1161,8 +1194,8 @@ void UpdateWndRects(HWND hwnd)
 	
 	if (video.layout == 1) //horizontal
 	{
-		rc = CalculateDisplayLayoutWrapper(rc, GPU_FRAMEBUFFER_NATIVE_WIDTH * 2, GPU_FRAMEBUFFER_NATIVE_HEIGHT, tbheight, maximized);
-
+		rc = CalculateDisplayLayoutWrapper(rc, GPU_FRAMEBUFFER_NATIVE_WIDTH * 2, (int)((float)(GPU_FRAMEBUFFER_NATIVE_HEIGHT * screenSizeRatio)), tbheight, maximized);
+		
 		wndWidth = (rc.bottom - rc.top) - tbheight;
 		wndHeight = (rc.right - rc.left);
 
@@ -1176,20 +1209,20 @@ void UpdateWndRects(HWND hwnd)
 		ClientToScreen(hwnd, &ptClient);
 		MainScreenRect.left = ptClient.x;
 		MainScreenRect.top = ptClient.y;
-		ptClient.x = (rc.left + oneScreenHeight);
+		ptClient.x = (rc.left + oneScreenHeight * screenSizeRatio);
 		ptClient.y = (rc.top + wndWidth);
 		ClientToScreen(hwnd, &ptClient);
 		MainScreenRect.right = ptClient.x;
 		MainScreenRect.bottom = ptClient.y;
 
 		// Sub screen
-		ptClient.x = (rc.left + oneScreenHeight);
+		ptClient.x = (rc.left + oneScreenHeight * screenSizeRatio);
 		ptClient.y = rc.top;
 		ClientToScreen(hwnd, &ptClient);
 		SubScreenRect.left = ptClient.x;
 		SubScreenRect.top = ptClient.y;
-		ptClient.x = (rc.left + oneScreenHeight + oneScreenHeight);
-		ptClient.y = (rc.top + wndWidth);
+		ptClient.x = (rc.left + oneScreenHeight * 2);
+		ptClient.y = (rc.top + wndWidth * (2 - screenSizeRatio));
 		ClientToScreen(hwnd, &ptClient);
 		SubScreenRect.right = ptClient.x;
 		SubScreenRect.bottom = ptClient.y;
@@ -3008,6 +3041,7 @@ int _main()
 	msgbox = &msgBoxWnd;
 
 	char text[80] = {0};
+	char scrRatStr[4] = "1.0";
 
 	path.ReadPathSettings();
 
@@ -3071,6 +3105,8 @@ int _main()
 	GetPrivateProfileString("MicSettings", "MicSampleFile", "micsample.raw", MicSampleName, MAX_PATH, IniName);
 	RefreshMicSettings();
 	
+	GetPrivateProfileString("Display", "Screen Size Ratio", "1.0", scrRatStr, 4, IniName);
+	screenSizeRatio = atof(scrRatStr);
 	video.screengap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
 	SeparationBorderDrag = GetPrivateProfileBool("Display", "Window Split Border Drag", true, IniName);
 	ScreenGapColor = GetPrivateProfileInt("Display", "ScreenGapColor", 0xFFFFFF, IniName);
@@ -4629,6 +4665,20 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_ALWAYS_ON_TOP, (GetStyle()&DWS_ALWAYSONTOP)!=0);
 			MainWindow->checkMenu(IDM_LOCKDOWN, (GetStyle()&DWS_LOCKDOWN)!=0);
 
+			//Screen Size Ratio
+			MainWindow->checkMenu(IDC_SCR_RATIO_1p0, ((int)(screenSizeRatio*10)==10));
+			MainWindow->checkMenu(IDC_SCR_RATIO_1p1, ((int)(screenSizeRatio*10)==11));
+			MainWindow->checkMenu(IDC_SCR_RATIO_1p2, ((int)(screenSizeRatio*10)==12));
+			MainWindow->checkMenu(IDC_SCR_RATIO_1p3, ((int)(screenSizeRatio*10)==13));
+			MainWindow->checkMenu(IDC_SCR_RATIO_1p4, ((int)(screenSizeRatio*10)==14));
+			MainWindow->checkMenu(IDC_SCR_RATIO_1p5, ((int)(screenSizeRatio*10)==15));
+			DesEnableMenuItem(mainMenu, IDC_SCR_RATIO_1p0, (video.layout == 1));
+			DesEnableMenuItem(mainMenu, IDC_SCR_RATIO_1p1, (video.layout == 1));
+			DesEnableMenuItem(mainMenu, IDC_SCR_RATIO_1p2, (video.layout == 1));
+			DesEnableMenuItem(mainMenu, IDC_SCR_RATIO_1p3, (video.layout == 1));
+			DesEnableMenuItem(mainMenu, IDC_SCR_RATIO_1p4, (video.layout == 1));
+			DesEnableMenuItem(mainMenu, IDC_SCR_RATIO_1p5, (video.layout == 1));
+
 			//Screen Separation
 			MainWindow->checkMenu(IDM_SCREENSEP_NONE,   ((video.screengap==kGapNone)));
 			MainWindow->checkMenu(IDM_SCREENSEP_BORDER, ((video.screengap==kGapBorder)));
@@ -4920,7 +4970,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				else if (video.layout == 1)
 				{
 					minX = video.rotatedwidthgap() * 2;
-					minY = video.rotatedheightgap() / 2;
+					minY = video.rotatedheightgap() * screenSizeRatio / 2;
 				}
 				else if (video.layout == 2)
 				{
@@ -6277,6 +6327,26 @@ DOKEYDOWN:
 			ScaleScreen(windowSize, true);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 			break;
+
+		case IDC_SCR_RATIO_1p0:
+		case IDC_SCR_RATIO_1p1:
+		case IDC_SCR_RATIO_1p2:
+		case IDC_SCR_RATIO_1p3:
+		case IDC_SCR_RATIO_1p4:
+		case IDC_SCR_RATIO_1p5:
+		{
+			screenSizeRatio = LOWORD(wParam) - IDC_SCR_RATIO_1p0;
+			screenSizeRatio = screenSizeRatio * 0.1 + 1;
+
+			RECT rc;
+			GetClientRect(hwnd, &rc);
+			MainWindow->setClientSize((int)((rc.right - rc.left + 8) / screenSizeRatio), rc.bottom - rc.top);
+
+			char scrRatStr[4] = "1.0";
+			sprintf(scrRatStr, "%.1f", screenSizeRatio);
+			WritePrivateProfileString("Display", "Screen Size Ratio", scrRatStr, IniName);
+		}
+		return 0;
 
 		case IDC_VIEW_PADTOINTEGER:
 			PadToInteger = (!PadToInteger)?TRUE:FALSE;

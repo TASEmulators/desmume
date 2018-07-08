@@ -958,6 +958,12 @@
 #define IDM_RENDER_3XBRZ                40123
 #define IDM_RENDER_4XBRZ                40124
 #define IDM_RENDER_5XBRZ                40125
+#define IDC_SCR_RATIO_1p0               40143
+#define IDC_SCR_RATIO_1p1               40144
+#define IDC_SCR_RATIO_1p2               40145
+#define IDC_SCR_RATIO_1p3               40146
+#define IDC_SCR_RATIO_1p4               40147
+#define IDC_SCR_RATIO_1p5               40148
 #define ID_LABEL_HK3b                   44670
 #define ID_LABEL_HK3c                   44671
 #define ID_LABEL_HK3d                   44672
@@ -1072,7 +1078,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
-#define _APS_NEXT_COMMAND_VALUE         40126
+#define _APS_NEXT_COMMAND_VALUE         40149
 #define _APS_NEXT_CONTROL_VALUE         1065
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
