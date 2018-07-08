@@ -33,8 +33,8 @@ namespace agg
     extern const int8u gse4x8[];
     extern const int8u gse5x7[];
     extern const int8u gse5x9[];
-    extern const int8u gse6x12[];
     extern const int8u gse6x9[];
+    extern const int8u gse6x12[];
     extern const int8u gse7x11[];
     extern const int8u gse7x11_bold[];
     extern const int8u gse7x15[];
