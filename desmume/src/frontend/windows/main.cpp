@@ -6540,11 +6540,12 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					}
 
 					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_1)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 1;
-					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_2)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 2;
-					if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_4)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 4;
+					else if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_2)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 2;
+					else if(IsDlgCheckboxChecked(hw,IDC_TEXSCALE_4)) CommonSettings.GFX3D_Renderer_TextureScalingFactor = 4;
 					if(IsDlgCheckboxChecked(hw, IDC_GPU_15BPP)) gpu_bpp = 15;
-					if(IsDlgCheckboxChecked(hw, IDC_GPU_18BPP)) gpu_bpp = 18;
-					if(IsDlgCheckboxChecked(hw, IDC_GPU_24BPP)) gpu_bpp = 24;
+					else if(IsDlgCheckboxChecked(hw, IDC_GPU_18BPP)) gpu_bpp = 18;
+					else if(IsDlgCheckboxChecked(hw, IDC_GPU_24BPP)) gpu_bpp = 24;
+
 					CommonSettings.GFX3D_Renderer_TextureDeposterize = IsDlgCheckboxChecked(hw,IDC_TEX_DEPOSTERIZE);
 					CommonSettings.GFX3D_Renderer_TextureSmoothing = IsDlgCheckboxChecked(hw,IDC_TEX_SMOOTH);
 
@@ -6552,11 +6553,18 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 						Lock lock(win_backbuffer_sync);
 						if(display_mutex) slock_lock(display_mutex);
 						Change3DCoreWithFallbackAndSave(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
-						video.SetPrescale(newPrescaleHD, 1);
-						GPU->SetCustomFramebufferSize(GPU_FRAMEBUFFER_NATIVE_WIDTH*video.prescaleHD, GPU_FRAMEBUFFER_NATIVE_HEIGHT*video.prescaleHD);
+						if (newPrescaleHD != video.prescaleHD)
+						{
+							video.SetPrescale(newPrescaleHD, 1);
+							GPU->SetCustomFramebufferSize(GPU_FRAMEBUFFER_NATIVE_WIDTH*video.prescaleHD, GPU_FRAMEBUFFER_NATIVE_HEIGHT*video.prescaleHD);
+						}
 						SyncGpuBpp();
 						UpdateScreenRects();
 						if(display_mutex) slock_unlock(display_mutex);
+						// shrink buffer size if necessary
+						const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
+						size_t newBufferSize = displayInfo.customWidth * displayInfo.customHeight * 2 * displayInfo.pixelBytes;
+						if (newBufferSize < video.srcBufferSize) video.srcBufferSize = newBufferSize;
 					}
 
 					WritePrivateProfileBool("3D", "HighResolutionInterpolateColor", CommonSettings.GFX3D_HighResolutionInterpolateColor, IniName);

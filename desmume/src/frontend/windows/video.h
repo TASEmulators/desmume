@@ -94,8 +94,6 @@ public:
 
 		// clean the new buffers
 		clear();
-		// prevent crashing when reducing the scaling
-		srcBufferSize = 0;
 	}
 
 	enum {
