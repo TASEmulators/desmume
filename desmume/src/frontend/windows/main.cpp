@@ -717,8 +717,7 @@ void ScaleScreen(float factor, bool user)
 		else
 			if (video.layout == 1)
 			{
-				factor /= screenSizeRatio;
-				MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor * 2), (int)(video.rotatedheightgap() * factor * screenSizeRatio / 2));
+				MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor * 2 / screenSizeRatio), (int)(video.rotatedheightgap() * factor / 2));
 			}
 			else
 				if (video.layout == 2)
@@ -873,49 +872,41 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 		{
 			bool topOnTop = (video.swap == 0) || (video.swap == 2 && isMainGPUFirst) || (video.swap == 3 && !isMainGPUFirst);
 			bool bottom = (whichScreen > 0);
-			if (topOnTop)
+			if(topOnTop && bottom)
 			{
-				if (bottom)
-				{
-					x += -GPU_FRAMEBUFFER_NATIVE_WIDTH * screenSizeRatio;
-					x /= (2 - screenSizeRatio);
-					y /= (2 - screenSizeRatio);
-				}
+				x = (x - GPU_FRAMEBUFFER_NATIVE_WIDTH  * screenSizeRatio) / (2 - screenSizeRatio);
+				if(ForceRatio)
+					y *= screenSizeRatio / (2 - screenSizeRatio);
 			}
 			else
 			{
-				if (x < GPU_FRAMEBUFFER_NATIVE_WIDTH * screenSizeRatio)
-				{
-					if (bottom == 0)
-						x += GPU_FRAMEBUFFER_NATIVE_WIDTH * screenSizeRatio;
-				}
-				else
-				{
-					if (bottom == 0)
-						x += -GPU_FRAMEBUFFER_NATIVE_WIDTH * screenSizeRatio;
-				}
 				x /= screenSizeRatio;
+				if(!bottom) 
+				{
+					if(x < GPU_FRAMEBUFFER_NATIVE_WIDTH)
+						x += GPU_FRAMEBUFFER_NATIVE_WIDTH;
+					else
+						x += -GPU_FRAMEBUFFER_NATIVE_WIDTH;
+				}
 			}
 		}
 		else
 		{
-			x /= screenSizeRatio;
-			if(x >= GPU_FRAMEBUFFER_NATIVE_WIDTH)
+			if(x >= GPU_FRAMEBUFFER_NATIVE_WIDTH * screenSizeRatio)
 			{
-				x -= GPU_FRAMEBUFFER_NATIVE_WIDTH;
-				x *= screenSizeRatio / (2 - screenSizeRatio);
-				y += GPU_FRAMEBUFFER_NATIVE_HEIGHT * (2 - screenSizeRatio);
-				y /= (2 - screenSizeRatio);
-				if (y < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
+				x = (x - GPU_FRAMEBUFFER_NATIVE_WIDTH  * screenSizeRatio) / (2 - screenSizeRatio);
+				if(ForceRatio)
+					y *= screenSizeRatio / (2 - screenSizeRatio);
+				y += GPU_FRAMEBUFFER_NATIVE_HEIGHT;
+				if(y < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
 					y = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
-			}
-			else if(x < 0)
-			{
-				x = 0;
 			}
 			else
 			{
-				if (y > GPU_FRAMEBUFFER_NATIVE_HEIGHT)
+				x /= screenSizeRatio;
+				if(x < 0)
+					x = 0;
+				if(y > GPU_FRAMEBUFFER_NATIVE_HEIGHT)
 					y = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 			}
 		}
@@ -1194,7 +1185,7 @@ void UpdateWndRects(HWND hwnd)
 	
 	if (video.layout == 1) //horizontal
 	{
-		rc = CalculateDisplayLayoutWrapper(rc, GPU_FRAMEBUFFER_NATIVE_WIDTH * 2, (int)((float)(GPU_FRAMEBUFFER_NATIVE_HEIGHT * screenSizeRatio)), tbheight, maximized);
+		rc = CalculateDisplayLayoutWrapper(rc, (int)((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * 2 / screenSizeRatio), GPU_FRAMEBUFFER_NATIVE_HEIGHT, tbheight, maximized);
 		
 		wndWidth = (rc.bottom - rc.top) - tbheight;
 		wndHeight = (rc.right - rc.left);
@@ -1222,7 +1213,10 @@ void UpdateWndRects(HWND hwnd)
 		SubScreenRect.left = ptClient.x;
 		SubScreenRect.top = ptClient.y;
 		ptClient.x = (rc.left + oneScreenHeight * 2);
-		ptClient.y = (rc.top + wndWidth * (2 - screenSizeRatio));
+		if(ForceRatio)
+			ptClient.y = (rc.top + oneScreenWidth * (2 - screenSizeRatio));
+		else 
+			ptClient.y = (rc.top + wndWidth);
 		ClientToScreen(hwnd, &ptClient);
 		SubScreenRect.right = ptClient.x;
 		SubScreenRect.bottom = ptClient.y;
@@ -6356,6 +6350,7 @@ DOKEYDOWN:
 
 		case IDC_FORCERATIO:
 			ForceRatio = (!ForceRatio)?TRUE:FALSE;
+			if((int)(screenSizeRatio * 10) > 10) UpdateWndRects(hwnd);
 			if(ForceRatio)
 				FixAspectRatio();
 			WritePrivateProfileInt("Video","Window Force Ratio",ForceRatio,IniName);
