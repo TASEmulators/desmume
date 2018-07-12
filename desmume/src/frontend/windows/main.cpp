@@ -1643,25 +1643,75 @@ struct GLDISPLAY
 } gldisplay;
 
 
+static void OGL_DrawTexture(RECT* srcRects, RECT* dstRects)
+{
+	//use clear+scissor for gap
+	if (video.screengap > 0)
+	{
+		//adjust client rect into scissor rect (0,0 at bottomleft)
+		glScissor(dstRects[2].left, dstRects[2].bottom, dstRects[2].right - dstRects[2].left, dstRects[2].top - dstRects[2].bottom);
+
+		u32 color_rev = (u32)ScreenGapColor;
+		int r = (color_rev >> 0) & 0xFF;
+		int g = (color_rev >> 8) & 0xFF;
+		int b = (color_rev >> 16) & 0xFF;
+		glClearColor(r / 255.0f, g / 255.0f, b / 255.0f, 1.0f);
+		glEnable(GL_SCISSOR_TEST);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glDisable(GL_SCISSOR_TEST);
+	}
+
+	//draw two screens
+	glBegin(GL_QUADS);
+	for (int i = 0; i<2; i++)
+	{
+		//none of this makes any goddamn sense. dont even try.
+		int idx = i;
+		int ofs = 0;
+		switch (video.rotation)
+		{
+		case 0:
+			break;
+		case 90:
+			ofs = 3;
+			idx = 1 - i;
+			std::swap(srcRects[idx].right, srcRects[idx].bottom);
+			std::swap(srcRects[idx].left, srcRects[idx].top);
+			break;
+		case 180:
+			idx = 1 - i;
+			ofs = 2;
+			break;
+		case 270:
+			std::swap(srcRects[idx].right, srcRects[idx].bottom);
+			std::swap(srcRects[idx].left, srcRects[idx].top);
+			ofs = 1;
+			break;
+		}
+		float u1 = srcRects[idx].left / (float)video.width;
+		float u2 = srcRects[idx].right / (float)video.width;
+		float v1 = srcRects[idx].top / (float)video.height;
+		float v2 = srcRects[idx].bottom / (float)video.height;
+		float u[] = { u1,u2,u2,u1 };
+		float v[] = { v1,v1,v2,v2 };
+
+		glTexCoord2f(u[(ofs + 0) % 4], v[(ofs + 0) % 4]);
+		glVertex2i(dstRects[i].left, dstRects[i].top);
+
+		glTexCoord2f(u[(ofs + 1) % 4], v[(ofs + 1) % 4]);
+		glVertex2i(dstRects[i].right, dstRects[i].top);
+
+		glTexCoord2f(u[(ofs + 2) % 4], v[(ofs + 2) % 4]);
+		glVertex2i(dstRects[i].right, dstRects[i].bottom);
+
+		glTexCoord2f(u[(ofs + 3) % 4], v[(ofs + 3) % 4]);
+		glVertex2i(dstRects[i].left, dstRects[i].bottom);
+	}
+	glEnd();
+}
 static void OGL_DoDisplay()
 {
 	if(!gldisplay.begin()) return;
-
-	const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
-
-	static GLuint tex = 0;
-	if(tex == 0)
-		glGenTextures(1,&tex);
-
-	glBindTexture(GL_TEXTURE_2D,tex);
-
-	if(gpu_bpp == 15)
-	{
-		//yeah, it's 32bits here still. we've converted it previously, for compositing the HUD
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, video.width, video.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, video.finalBuffer());
-	}
-	else
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, video.width, video.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, video.finalBuffer());
 
 	//the ds screen fills the texture entirely, so we dont have garbage at edge to worry about,
 	//but we need to make sure this is clamped for when filtering is selected
@@ -1679,16 +1729,12 @@ static void OGL_DoDisplay()
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	}
 
-	glEnable(GL_TEXTURE_2D);
-
 	RECT rc;
 	HWND hwnd = MainWindow->getHWnd();
 	GetClientRect(hwnd,&rc);
 	int width = rc.right - rc.left;
 	int height = rc.bottom - rc.top;
 	
-	glDisable(GL_LIGHTING);
-
 	glViewport(0,0,width,height);
 	
 	glMatrixMode(GL_PROJECTION);
@@ -1698,41 +1744,22 @@ static void OGL_DoDisplay()
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
+	//clear entire area, for cases where the screen is maximized
+	glClearColor(0,0,0,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	// get dest and src rects
 	RECT dr[] = {MainScreenRect, SubScreenRect, GapRect};
 	for(int i=0;i<2;i++) //dont change gap rect, for some reason
 	{
 		ScreenToClient(hwnd,(LPPOINT)&dr[i].left);
 		ScreenToClient(hwnd,(LPPOINT)&dr[i].right);
 	}
-
-	//clear entire area, for cases where the screen is maximized
-	glClearColor(0,0,0,0);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	glDisable(GL_LIGHTING);
-	glDisable(GL_DEPTH_TEST);
-
-	//use clear+scissor for gap
-	if(video.screengap > 0)
-	{
-		//adjust client rect into scissor rect (0,0 at bottomleft)
-		dr[2].bottom = height - dr[2].bottom;
-		dr[2].top = height - dr[2].top;
-		glScissor(dr[2].left,dr[2].bottom,dr[2].right-dr[2].left,dr[2].top-dr[2].bottom);
-		
-		u32 color_rev = (u32)ScreenGapColor;
-		int r = (color_rev>>0)&0xFF;
-		int g = (color_rev>>8)&0xFF;
-		int b = (color_rev>>16)&0xFF;
-		glClearColor(r/255.0f,g/255.0f,b/255.0f,1.0f);
-		glEnable(GL_SCISSOR_TEST);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glDisable(GL_SCISSOR_TEST);
-	}
-
+	dr[2].bottom = height - dr[2].bottom;
+	dr[2].top = height - dr[2].top;
 
 	RECT srcRects [2];
-	const bool isMainGPUFirst = (displayInfo.engineID[NDSDisplayID_Main] == GPUEngineID_Main);
+	const bool isMainGPUFirst = (GPU->GetDisplayInfo().engineID[NDSDisplayID_Main] == GPUEngineID_Main);
 
 	if(video.swap == 0)
 	{
@@ -1764,62 +1791,17 @@ static void OGL_DoDisplay()
 	//	srcRects[1].left,srcRects[1].top, srcRects[1].right-srcRects[1].left, srcRects[1].bottom-srcRects[1].top
 	//	);
 
+	glEnable(GL_TEXTURE_2D);
+	// draw DS display
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, video.width, video.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, video.finalBuffer());
+	OGL_DrawTexture(srcRects, dr);
 
-	//draw two screens
-	glBegin(GL_QUADS);
-
-		for(int i=0;i<2;i++)
-		{
-			//none of this makes any goddamn sense. dont even try.
-			int idx = i;
-			int ofs = 0;
-			switch(video.rotation)
-			{
-			case 0:
-				break;
-			case 90:
-				ofs = 3;
-				idx = 1-i;
-				std::swap(srcRects[idx].right,srcRects[idx].bottom);
-				std::swap(srcRects[idx].left,srcRects[idx].top);
-				break;
-			case 180:
-				idx = 1-i;
-				ofs = 2;
-				break;
-			case 270:
-				std::swap(srcRects[idx].right,srcRects[idx].bottom);
-				std::swap(srcRects[idx].left,srcRects[idx].top);
-				ofs = 1;
-				break;
-			}
-			float u1 = srcRects[idx].left/(float)video.width;
-			float u2 = srcRects[idx].right/(float)video.width;
-			float v1 = srcRects[idx].top/(float)video.height;
-			float v2 = srcRects[idx].bottom/(float)video.height;
-			float u[] = {u1,u2,u2,u1};
-			float v[] = {v1,v1,v2,v2};
-
-			const GLfloat backlightIntensity = displayInfo.backlightIntensity[i];
-
-			glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-			glTexCoord2f(u[(ofs+0)%4],v[(ofs+0)%4]);
-			glVertex2i(dr[i].left,dr[i].top);
-
-			glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-			glTexCoord2f(u[(ofs+1)%4],v[(ofs+1)%4]);
-			glVertex2i(dr[i].right,dr[i].top);
-
-			glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-			glTexCoord2f(u[(ofs+2)%4],v[(ofs+2)%4]);
-			glVertex2i(dr[i].right,dr[i].bottom);
-
-			glColor4f(backlightIntensity, backlightIntensity, backlightIntensity, 1.0f);
-			glTexCoord2f(u[(ofs+3)%4],v[(ofs+3)%4]);
-			glVertex2i(dr[i].left,dr[i].bottom);
-		}
-
-	glEnd();
+	// draw HUD
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GPU_FRAMEBUFFER_NATIVE_WIDTH, GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, 0, GL_BGRA, GL_UNSIGNED_BYTE, aggDraw.hud->buf().buf());
+	OGL_DrawTexture(srcRects, dr);
+	glDisable(GL_BLEND);
 
 	gldisplay.showPage();
 
@@ -2029,7 +2011,10 @@ static void DoDisplay()
 	}
 
 	// draw HUD
-	aggDraw.hud->attach((u8*)video.buffer, video.prefilterWidth, video.prefilterHeight, video.prefilterWidth * 4);
+	if (ddhw || ddsw)
+		aggDraw.hud->attach((u8*)video.buffer, video.prefilterWidth, video.prefilterHeight, video.prefilterWidth * 4);
+	else
+		aggDraw.hud->clear();
 	DoDisplay_DrawHud();
 
 	//apply user's filter
