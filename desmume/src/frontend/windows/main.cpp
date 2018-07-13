@@ -520,6 +520,7 @@ bool continuousframeAdvancing = false;
 unsigned short windowSize = 0;
 
 float screenSizeRatio = 1.0f;
+bool vCenterResizedScr = true;
 
 /*const u32 gapColors[16] = {
 	Color::Gray,
@@ -876,7 +877,11 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 			{
 				x = (x - GPU_FRAMEBUFFER_NATIVE_WIDTH  * screenSizeRatio) / (2 - screenSizeRatio);
 				if(ForceRatio)
+				{
 					y *= screenSizeRatio / (2 - screenSizeRatio);
+					if (vCenterResizedScr)
+						y += GPU_FRAMEBUFFER_NATIVE_HEIGHT * (1 - screenSizeRatio) / (2 - screenSizeRatio);
+				}
 			}
 			else
 			{
@@ -896,7 +901,11 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 			{
 				x = (x - GPU_FRAMEBUFFER_NATIVE_WIDTH  * screenSizeRatio) / (2 - screenSizeRatio);
 				if(ForceRatio)
+				{
 					y *= screenSizeRatio / (2 - screenSizeRatio);
+					if (vCenterResizedScr)
+						y += GPU_FRAMEBUFFER_NATIVE_HEIGHT * (1 - screenSizeRatio) / (2 - screenSizeRatio);
+				}
 				y += GPU_FRAMEBUFFER_NATIVE_HEIGHT;
 				if(y < GPU_FRAMEBUFFER_NATIVE_HEIGHT)
 					y = GPU_FRAMEBUFFER_NATIVE_HEIGHT;
@@ -1193,6 +1202,7 @@ void UpdateWndRects(HWND hwnd)
 		ratio = ((float)wndHeight / (float)512);
 		oneScreenHeight = (int)((float)GPU_FRAMEBUFFER_NATIVE_WIDTH * ratio);
 		int oneScreenWidth = (int)((float)GPU_FRAMEBUFFER_NATIVE_HEIGHT * ratio);
+		int vResizedScrOffset = 0;
 
 		// Main screen
 		ptClient.x = rc.left;
@@ -1208,13 +1218,15 @@ void UpdateWndRects(HWND hwnd)
 
 		// Sub screen
 		ptClient.x = (rc.left + oneScreenHeight * screenSizeRatio);
-		ptClient.y = rc.top;
+		if(vCenterResizedScr && ForceRatio)
+			vResizedScrOffset = (wndWidth - oneScreenWidth * (2 - screenSizeRatio)) / 2;
+		ptClient.y = rc.top + vResizedScrOffset;
 		ClientToScreen(hwnd, &ptClient);
 		SubScreenRect.left = ptClient.x;
 		SubScreenRect.top = ptClient.y;
 		ptClient.x = (rc.left + oneScreenHeight * 2);
 		if(ForceRatio)
-			ptClient.y = (rc.top + oneScreenWidth * (2 - screenSizeRatio));
+			ptClient.y = (rc.top + vResizedScrOffset + oneScreenWidth * (2 - screenSizeRatio));
 		else 
 			ptClient.y = (rc.top + wndWidth);
 		ClientToScreen(hwnd, &ptClient);
@@ -3101,6 +3113,7 @@ int _main()
 	
 	GetPrivateProfileString("Display", "Screen Size Ratio", "1.0", scrRatStr, 4, IniName);
 	screenSizeRatio = atof(scrRatStr);
+	vCenterResizedScr = GetPrivateProfileBool("Display", "Vertically Center Resized Screen", 1, IniName);
 	video.screengap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
 	SeparationBorderDrag = GetPrivateProfileBool("Display", "Window Split Border Drag", true, IniName);
 	ScreenGapColor = GetPrivateProfileInt("Display", "ScreenGapColor", 0xFFFFFF, IniName);
@@ -4666,12 +4679,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDC_SCR_RATIO_1p3, ((int)(screenSizeRatio*10)==13));
 			MainWindow->checkMenu(IDC_SCR_RATIO_1p4, ((int)(screenSizeRatio*10)==14));
 			MainWindow->checkMenu(IDC_SCR_RATIO_1p5, ((int)(screenSizeRatio*10)==15));
+			MainWindow->checkMenu(IDC_SCR_VCENTER, (vCenterResizedScr == 1));
 			DesEnableMenuItem(mainMenu, IDC_SCR_RATIO_1p0, (video.layout == 1));
 			DesEnableMenuItem(mainMenu, IDC_SCR_RATIO_1p1, (video.layout == 1));
 			DesEnableMenuItem(mainMenu, IDC_SCR_RATIO_1p2, (video.layout == 1));
 			DesEnableMenuItem(mainMenu, IDC_SCR_RATIO_1p3, (video.layout == 1));
 			DesEnableMenuItem(mainMenu, IDC_SCR_RATIO_1p4, (video.layout == 1));
 			DesEnableMenuItem(mainMenu, IDC_SCR_RATIO_1p5, (video.layout == 1));
+			DesEnableMenuItem(mainMenu, IDC_SCR_VCENTER, (video.layout == 1));
 
 			//Screen Separation
 			MainWindow->checkMenu(IDM_SCREENSEP_NONE,   ((video.screengap==kGapNone)));
@@ -6339,6 +6354,14 @@ DOKEYDOWN:
 			char scrRatStr[4] = "1.0";
 			sprintf(scrRatStr, "%.1f", screenSizeRatio);
 			WritePrivateProfileString("Display", "Screen Size Ratio", scrRatStr, IniName);
+		}
+		return 0;
+
+		case IDC_SCR_VCENTER:
+		{
+			vCenterResizedScr = (!vCenterResizedScr) ? TRUE : FALSE;
+			UpdateWndRects(hwnd);
+			WritePrivateProfileInt("Display", "Vertically Center Resized Screen", vCenterResizedScr, IniName);
 		}
 		return 0;
 
