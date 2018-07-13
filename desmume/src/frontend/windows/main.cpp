@@ -1952,6 +1952,11 @@ static void DD_DoDisplay()
 			DD_FillRect(ddraw.surface.primary,0,bottom,left,wr.bottom,RGB(0,0,128)); //bottomleft
 			DD_FillRect(ddraw.surface.primary,left,bottom,right,wr.bottom,RGB(255,0,255)); //bottomcenter
 			DD_FillRect(ddraw.surface.primary,right,bottom,wr.right,wr.bottom,RGB(0,255,255)); //bottomright
+			if (video.layout == 1)
+			{
+				DD_FillRect(ddraw.surface.primary, SubScreenRect.left, wr.top, wr.right, SubScreenRect.top, RGB(0, 0, 0)); //Top gap left when centering the resized screen
+				DD_FillRect(ddraw.surface.primary, SubScreenRect.left, SubScreenRect.bottom, wr.right, wr.bottom, RGB(0, 0, 0)); //Bottom gap left when centering the resized screen
+			}
 		}
 	}
 
