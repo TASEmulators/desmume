@@ -1819,27 +1819,26 @@ static void DD_DoDisplay()
 		ddraw.createBackSurface(video.rotatedwidth(),video.rotatedheight());
 	}
 
-	switch(ddraw.surfDescBack.ddpfPixelFormat.dwRGBBitCount)
+	switch (ddraw.surfDescBack.ddpfPixelFormat.dwRGBBitCount)
 	{
-		case 32:
-			doRotate<u32>(ddraw.surfDescBack.lpSurface);
-			break;
-		case 24:
-			doRotate<pix24>(ddraw.surfDescBack.lpSurface);
-			break;
-		case 16:
-			if(ddraw.surfDescBack.ddpfPixelFormat.dwGBitMask != 0x3E0)
-				doRotate<pix16>(ddraw.surfDescBack.lpSurface);
-			else
-				doRotate<pix15>(ddraw.surfDescBack.lpSurface);
-			break;
-		default:
-			{
-				if(ddraw.surfDescBack.ddpfPixelFormat.dwRGBBitCount != 0)
-					INFO("Unsupported color depth: %i bpp\n", ddraw.surfDescBack.ddpfPixelFormat.dwRGBBitCount);
-				//emu_halt();
-			}
-			break;
+	case 32:
+		doRotate<u32>(ddraw.surfDescBack.lpSurface);
+		break;
+	case 24:
+		doRotate<pix24>(ddraw.surfDescBack.lpSurface);
+		break;
+	case 16:
+		if (ddraw.surfDescBack.ddpfPixelFormat.dwGBitMask != 0x3E0)
+			doRotate<pix16>(ddraw.surfDescBack.lpSurface);
+		else
+			doRotate<pix15>(ddraw.surfDescBack.lpSurface);
+		break;
+	case 0:
+		break;
+	default:
+		INFO("Unsupported color depth: %i bpp\n", ddraw.surfDescBack.ddpfPixelFormat.dwRGBBitCount);
+		//emu_halt();
+		break;
 	}
 	if (!ddraw.unlock()) return;
 
@@ -2010,24 +2009,23 @@ static void DoDisplay()
 		}
 	}
 
-	// draw HUD
-	if (ddhw || ddsw)
-		aggDraw.hud->attach((u8*)video.buffer, video.prefilterWidth, video.prefilterHeight, video.prefilterWidth * 4);
-	else
-		aggDraw.hud->clear();
-	DoDisplay_DrawHud();
-
 	//apply user's filter
-	video.filter();	
+	video.filter();
+
+	// draw hud
+	aggDraw.hud->clear();
+	DoDisplay_DrawHud();
 
 	if(ddhw || ddsw)
 	{
+		// DirectDraw doesn't support alpha blending, so we must scale and overlay the HUD ourselves.
+		T_AGG_RGBA target((u8*)video.finalBuffer(), video.width, video.height, video.width * 4);
+		target.transformImage(aggDraw.hud->image<T_AGG_PF_RGBA>(), 0, 0, video.width, video.height);
 		gldisplay.kill();
 		DD_DoDisplay();
 	}
 	else
 	{
-		//other cases..?
 		OGL_DoDisplay();
 	}
 }
