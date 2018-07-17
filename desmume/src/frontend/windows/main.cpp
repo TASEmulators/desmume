@@ -1987,15 +1987,6 @@ static void DoDisplay()
 	else
 		ColorspaceConvertBuffer888XTo8888Opaque<true, false>((u32*)video.srcBuffer, video.buffer, video.srcBufferSize / 4);
 
-	if(ddhw || ddsw)
-	{
-		const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
-		const size_t pixCount = displayInfo.customWidth * displayInfo.customHeight;
-
-		ColorspaceApplyIntensityToBuffer32<false, false>(video.buffer, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
-		ColorspaceApplyIntensityToBuffer32<false, false>(video.buffer + pixCount, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
-	}
-
 	if(AnyLuaActive())
 	{
 		if(sthread_isself(display_thread))
