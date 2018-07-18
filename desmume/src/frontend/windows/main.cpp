@@ -2005,18 +2005,21 @@ static void DoDisplay()
 		}
 	}
 
-	//apply user's filter
-	video.filter();
-
 	// draw hud
 	aggDraw.hud->clear();
 	DoDisplay_DrawHud();
+	if (ddhw || ddsw)
+	{
+		// DirectDraw doesn't support alpha blending, so we must scale and overlay the HUD ourselves.
+		T_AGG_RGBA target((u8*)video.buffer, video.prefilterWidth, video.prefilterHeight, video.prefilterWidth * 4);
+		target.transformImage(aggDraw.hud->image<T_AGG_PF_RGBA>(), 0, 0, video.prefilterWidth, video.prefilterHeight);
+	}
+
+	//apply user's filter
+	video.filter();
 
 	if(ddhw || ddsw)
 	{
-		// DirectDraw doesn't support alpha blending, so we must scale and overlay the HUD ourselves.
-		T_AGG_RGBA target((u8*)video.finalBuffer(), video.width, video.height, video.width * 4);
-		target.transformImage(aggDraw.hud->image<T_AGG_PF_RGBA>(), 0, 0, video.width, video.height);
 		gldisplay.kill();
 		DD_DoDisplay();
 	}
