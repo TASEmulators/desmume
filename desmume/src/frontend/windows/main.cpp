@@ -1645,6 +1645,11 @@ struct GLDISPLAY
 
 static void OGL_DrawTexture(RECT* srcRects, RECT* dstRects)
 {
+	//don't change the original rects
+	RECT sRects[2];
+	sRects[0] = RECT(srcRects[0]);
+	sRects[1] = RECT(srcRects[1]);
+
 	//use clear+scissor for gap
 	if (video.screengap > 0)
 	{
@@ -1675,23 +1680,23 @@ static void OGL_DrawTexture(RECT* srcRects, RECT* dstRects)
 		case 90:
 			ofs = 3;
 			idx = 1 - i;
-			std::swap(srcRects[idx].right, srcRects[idx].bottom);
-			std::swap(srcRects[idx].left, srcRects[idx].top);
+			std::swap(sRects[idx].right, sRects[idx].bottom);
+			std::swap(sRects[idx].left, sRects[idx].top);
 			break;
 		case 180:
 			idx = 1 - i;
 			ofs = 2;
 			break;
 		case 270:
-			std::swap(srcRects[idx].right, srcRects[idx].bottom);
-			std::swap(srcRects[idx].left, srcRects[idx].top);
+			std::swap(sRects[idx].right, sRects[idx].bottom);
+			std::swap(sRects[idx].left, sRects[idx].top);
 			ofs = 1;
 			break;
 		}
-		float u1 = srcRects[idx].left / (float)video.width;
-		float u2 = srcRects[idx].right / (float)video.width;
-		float v1 = srcRects[idx].top / (float)video.height;
-		float v2 = srcRects[idx].bottom / (float)video.height;
+		float u1 = sRects[idx].left / (float)video.width;
+		float u2 = sRects[idx].right / (float)video.width;
+		float v1 = sRects[idx].top / (float)video.height;
+		float v2 = sRects[idx].bottom / (float)video.height;
 		float u[] = { u1,u2,u2,u1 };
 		float v[] = { v1,v1,v2,v2 };
 
