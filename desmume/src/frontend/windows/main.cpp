@@ -1137,7 +1137,7 @@ RECT CalculateDisplayLayoutWrapper(RECT rcClient, int targetWidth, int targetHei
 	return rc;
 }
 
-void UpdateWndRects(HWND hwnd)
+void UpdateWndRects(HWND hwnd, RECT* newClientRect = NULL)
 {
 	POINT ptClient;
 	RECT rc;
@@ -1152,7 +1152,11 @@ void UpdateWndRects(HWND hwnd)
 	int oneScreenHeight, gapHeight;
 	int tbheight;
 
-	GetClientRect(hwnd, &rc);
+	//if we're in the middle of resizing the window, GetClientRect will return the old rect
+	if (newClientRect)
+		rc = RECT(*newClientRect);
+	else
+		GetClientRect(hwnd, &rc);
 
 	if(maximized)
 		rc = FullScreenRect;
@@ -4933,12 +4937,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					wndHeightGapless = (MainScreenRect.bottom - MainScreenRect.top) + (SubScreenRect.bottom - SubScreenRect.top);
 				}
 
-				if(ForceRatio)
-					video.screengap = (wndHeight * video.width / wndWidth - video.height);
-				else
-					video.screengap = wndHeight * video.height / wndHeightGapless - video.height;
+				video.screengap = GPU_FRAMEBUFFER_NATIVE_WIDTH * (wndHeight - wndHeightGapless) / wndWidth;
 
-				UpdateWndRects(MainWindow->getHWnd());
+				rc.bottom -= rc.top; rc.top = 0;
+				rc.right -= rc.left; rc.left = 0;
+				UpdateWndRects(MainWindow->getHWnd(), &rc);
 			}
 		}
 		return 1;
