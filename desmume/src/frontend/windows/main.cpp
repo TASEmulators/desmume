@@ -1996,6 +1996,12 @@ static void DoDisplay()
 	else
 		ColorspaceConvertBuffer888XTo8888Opaque<true, false>((u32*)video.srcBuffer, video.buffer, video.srcBufferSize / 4);
 
+	//some games use the backlight for fading effects
+	const size_t pixCount = video.prefilterWidth * video.prefilterHeight / 2;
+	const NDSDisplayInfo &displayInfo = GPU->GetDisplayInfo();
+	ColorspaceApplyIntensityToBuffer32<false, false>(video.buffer, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
+	ColorspaceApplyIntensityToBuffer32<false, false>(video.buffer + pixCount, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
+
 	if(AnyLuaActive())
 	{
 		if(sthread_isself(display_thread))
