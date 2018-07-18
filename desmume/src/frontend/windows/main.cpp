@@ -3708,7 +3708,17 @@ void FixAspectRatio()
 
 void SetScreenGap(int gap)
 {
+	RECT clientRect;
+	GetClientRect(MainWindow->getHWnd(), &clientRect);
+	RECT rc;
+	GetWindowRect(MainWindow->getHWnd(), &rc);
+	if (video.rotation == 0 || video.rotation == 180)
+		rc.bottom += (gap - video.screengap) * (clientRect.right - clientRect.left) / GPU_FRAMEBUFFER_NATIVE_WIDTH;
+	else
+		rc.right += (gap - video.screengap) * (clientRect.bottom - clientRect.top - MainWindowToolbar->GetHeight()) / GPU_FRAMEBUFFER_NATIVE_WIDTH;
 	video.screengap = gap;
+	MoveWindow(MainWindow->getHWnd(), rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, TRUE);
+
 	SetMinWindowSize();
 	FixAspectRatio();
 	UpdateWndRects(MainWindow->getHWnd());
