@@ -675,7 +675,7 @@ void ScaleScreen(float factor, bool user)
 		else
 			if (video.layout == 1)
 			{
-				w1x = video.rotatedwidthgap() * 2;
+				w1x = video.rotatedwidthgap() * 2 / screenSizeRatio;
 				h1x = video.rotatedheightgap() / 2;
 			}
 			else
