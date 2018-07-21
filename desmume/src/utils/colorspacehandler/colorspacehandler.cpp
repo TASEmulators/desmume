@@ -678,7 +678,7 @@ void ColorspaceApplyIntensityToBuffer16(u16 *dst, size_t pixCount, float intensi
 	{
 		if (IS_UNALIGNED)
 		{
-			i = csh.ApplyIntensityToBuffer16_IsUnaligned(dst, pixCountVector, intensity);
+			i = csh.ApplyIntensityToBuffer16_SwapRB_IsUnaligned(dst, pixCountVector, intensity);
 		}
 		else
 		{
@@ -763,7 +763,7 @@ void ColorspaceApplyIntensityToBuffer32(u32 *dst, size_t pixCount, float intensi
 	{
 		if (IS_UNALIGNED)
 		{
-			i = csh.ApplyIntensityToBuffer32_IsUnaligned(dst, pixCountVector, intensity);
+			i = csh.ApplyIntensityToBuffer32_SwapRB_IsUnaligned(dst, pixCountVector, intensity);
 		}
 		else
 		{
