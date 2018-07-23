@@ -2190,7 +2190,7 @@ static void DoDisplay()
 	}
 
 	//apply user's filter
-	video.filter();
+	video.filter();	
 
 	if(ddhw || ddsw)
 	{
