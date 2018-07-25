@@ -1444,7 +1444,24 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	
 	_HACK_viewer_rasterizerUnit.SetSLI(0, 1, false);
 	
-	_threadCount = CommonSettings.num_cores;
+	const size_t coreCount = CommonSettings.num_cores;
+	_threadCount = coreCount;
+	
+	// SoftRasterizer works best when the number of threads is a power-of-two.
+	// Ensure that the thread count is set to the previous power-of-two if the
+	// core count isn't already a power-of-two.
+	_threadCount--;
+	_threadCount |= (_threadCount >> 1);
+	_threadCount |= (_threadCount >> 2);
+	_threadCount |= (_threadCount >> 4);
+	_threadCount |= (_threadCount >> 8);
+	_threadCount |= (_threadCount >> 16);
+	_threadCount++;
+	
+	if (_threadCount != coreCount)
+	{
+		_threadCount >>= 1;
+	}
 	
 	if (_threadCount > SOFTRASTERIZER_MAX_THREADS)
 	{

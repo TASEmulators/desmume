@@ -448,36 +448,7 @@ public:
 	if (numberThreads == 0)
 	{
 		isCPUCoreCountAuto = YES;
-		
-		if (numberCores >= 96)
-		{
-			numberCores = 128;
-		}
-		else if (numberCores >= 48)
-		{
-			numberCores = 64;
-		}
-		else if (numberCores >= 24)
-		{
-			numberCores = 32;
-		}
-		else if (numberCores >= 16)
-		{
-			numberCores = 16;
-		}
-		else if (numberCores >= 8)
-		{
-			numberCores = 8;
-		}
-		else if (numberCores >= 4)
-		{
-			numberCores = 4;
-		}
-		else if (numberCores >= 2)
-		{
-			numberCores = 2;
-		}
-		else
+		if (numberCores < 2)
 		{
 			numberCores = 1;
 		}
