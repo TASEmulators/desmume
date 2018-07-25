@@ -93,7 +93,18 @@
 {
 	pthread_mutex_init(&_mutexMessageLoop, NULL);
 	pthread_cond_init(&_condSignalMessage, NULL);
-	pthread_create(&_pthread, NULL, &RunOutputThread, self);
+	
+	pthread_attr_t threadAttr;
+	pthread_attr_init(&threadAttr);
+	pthread_attr_setschedpolicy(&threadAttr, SCHED_RR);
+	
+	struct sched_param sp;
+	memset(&sp, 0, sizeof(struct sched_param));
+	sp.sched_priority = 45;
+	pthread_attr_setschedparam(&threadAttr, &sp);
+	
+	pthread_create(&_pthread, &threadAttr, &RunOutputThread, self);
+	pthread_attr_destroy(&threadAttr);
 }
 
 - (void) exitThread

@@ -151,13 +151,35 @@ static void *thread_wrap(void *data_)
  * @userdata                : pointer to userdata that will be made
  *                            available in thread entry callback function
  *
- * Create a new thread.
+ * Create a new thread using the operating system's default thread
+ * priority.
  *
  * Returns: pointer to new thread if successful, otherwise NULL.
  */
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 {
+	return sthread_create_with_priority(thread_func, userdata, 0);
+}
+
+/**
+ * sthread_create_with_priority:
+ * @start_routine           : thread entry callback function
+ * @userdata                : pointer to userdata that will be made
+ *                            available in thread entry callback function
+ * @thread_priority         : thread priority hint value from [1-100]
+ *
+ * Create a new thread. It is possible for the caller to give a hint
+ * for the thread's priority from [1-100]. Any passed in @thread_priority
+ * values that are outside of this range will cause sthread_create() to
+ * create a new thread using the operating system's default thread
+ * priority.
+ *
+ * Returns: pointer to new thread if successful, otherwise NULL.
+ */
+sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userdata, int thread_priority)
+{
    bool thread_created      = false;
+   bool thread_attr_needed  = false;
    struct thread_data *data = NULL;
    sthread_t *thread        = (sthread_t*)calloc(1, sizeof(*thread));
    if (!thread)
@@ -174,14 +196,35 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    thread->thread = CreateThread(NULL, 0, thread_wrap, data, 0, &thread->thread_id);
    thread_created = !!thread->thread;
 #else
-#if defined(VITA)
    pthread_attr_t thread_attr;
    pthread_attr_init(&thread_attr);
+	
+   if ( (thread_priority >= 1) && (thread_priority <= 100) )
+   {
+      struct sched_param sp;
+      memset(&sp, 0, sizeof(struct sched_param));
+      sp.sched_priority = thread_priority;
+      pthread_attr_setschedpolicy(&thread_attr, SCHED_RR);
+      pthread_attr_setschedparam(&thread_attr, &sp);
+	   
+      thread_attr_needed = true;
+   }
+	
+#if defined(VITA)
    pthread_attr_setstacksize(&thread_attr , 0x10000 );
-   thread_created = pthread_create(&thread->id, &thread_attr, thread_wrap, data) == 0;
-#else
-   thread_created = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
+   thread_attr_needed = true;
 #endif
+   
+   if (thread_attr_needed)
+   {
+      thread_created = pthread_create(&thread->id, &thread_attr, thread_wrap, data) == 0;
+   }
+   else
+   {
+      thread_created = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
+   }
+	
+   pthread_attr_destroy(&thread_attr);
 #endif
 
    if (!thread_created)

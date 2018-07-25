@@ -1501,7 +1501,13 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 			_threadClearParam[i].startPixel = i * _customPixelsPerThread;
 			_threadClearParam[i].endPixel = (i < _threadCount - 1) ? (i + 1) * _customPixelsPerThread : _framebufferPixCount;
 			
+#ifdef DESMUME_COCOA
+			// The Cocoa port takes advantage of hand-optimized thread priorities
+			// to help stabilize performance when running SoftRasterizer.
+			_task[i].start(false, 43);
+#else
 			_task[i].start(false);
+#endif
 		}
 	}
 	

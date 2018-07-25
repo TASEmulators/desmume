@@ -449,7 +449,23 @@ public:
 	{
 		isCPUCoreCountAuto = YES;
 		
-		if (numberCores >= 8)
+		if (numberCores >= 96)
+		{
+			numberCores = 128;
+		}
+		else if (numberCores >= 48)
+		{
+			numberCores = 64;
+		}
+		else if (numberCores >= 24)
+		{
+			numberCores = 32;
+		}
+		else if (numberCores >= 16)
+		{
+			numberCores = 16;
+		}
+		else if (numberCores >= 8)
 		{
 			numberCores = 8;
 		}
@@ -955,8 +971,19 @@ public:
 	_threadMessageID = MESSAGE_NONE;
 	_fetchIndex = 0;
 	pthread_cond_init(&_condSignalFetch, NULL);
-	pthread_create(&_threadFetch, NULL, &RunFetchThread, self);
 	pthread_mutex_init(&_mutexFetchExecute, NULL);
+	
+	pthread_attr_t threadAttr;
+	pthread_attr_init(&threadAttr);
+	pthread_attr_setschedpolicy(&threadAttr, SCHED_RR);
+	
+	struct sched_param sp;
+	memset(&sp, 0, sizeof(struct sched_param));
+	sp.sched_priority = 44;
+	pthread_attr_setschedparam(&threadAttr, &sp);
+	
+	pthread_create(&_threadFetch, &threadAttr, &RunFetchThread, self);
+	pthread_attr_destroy(&threadAttr);
 	
 	_taskEmulationLoop = 0;
 	

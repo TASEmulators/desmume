@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2009 DeSmuME team
+	Copyright (C) 2009-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ public:
 
 	// initialize task runner
 	void start(bool spinlock);
+	void start(bool spinlock, int threadPriority);
 
 	//execute some work
 	void execute(const TWork &work, void* param);

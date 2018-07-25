@@ -30,7 +30,7 @@ public:
 	Impl();
 	~Impl();
 
-	void start(bool spinlock);
+	void start(bool spinlock, int threadPriority);
 	void execute(const TWork &work, void *param);
 	void* finish();
 	void shutdown();
@@ -87,22 +87,22 @@ Task::Impl::~Impl()
 	scond_free(condWork);
 }
 
-void Task::Impl::start(bool spinlock)
+void Task::Impl::start(bool spinlock, int threadPriority)
 {
 	slock_lock(this->mutex);
-
+	
 	if (this->_isThreadRunning) {
 		slock_unlock(this->mutex);
 		return;
 	}
-
+	
 	this->workFunc = NULL;
 	this->workFuncParam = NULL;
 	this->ret = NULL;
 	this->exitThread = false;
-	this->_thread = sthread_create(&taskProc,this);
+	this->_thread = sthread_create_with_priority(&taskProc, this, threadPriority);
 	this->_isThreadRunning = true;
-
+	
 	slock_unlock(this->mutex);
 }
 
@@ -168,7 +168,8 @@ void Task::Impl::shutdown()
 	slock_unlock(this->mutex);
 }
 
-void Task::start(bool spinlock) { impl->start(spinlock); }
+void Task::start(bool spinlock) { impl->start(spinlock, 0); }
+void Task::start(bool spinlock, int threadPriority) { impl->start(spinlock, threadPriority); }
 void Task::shutdown() { impl->shutdown(); }
 Task::Task() : impl(new Task::Impl()) {}
 Task::~Task() { delete impl; }

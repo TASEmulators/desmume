@@ -132,7 +132,6 @@ volatile bool execute = true;
 	pthread_mutex_init(&threadParam.mutexThreadExecute, NULL);
 	pthread_cond_init(&threadParam.condThreadExecute, NULL);
 	pthread_rwlock_init(&threadParam.rwlockCoreExecute, NULL);
-	pthread_create(&coreThread, NULL, &RunCoreThread, &threadParam);
 	
 	// The core emulation thread needs max priority since it is the sole
 	// producer thread for all output threads. Note that this is not being
@@ -146,12 +145,18 @@ volatile bool execute = true;
 	// lot of CPU time under certain conditions, which may interfere with
 	// other threads. (Example: Video tearing on display windows, even with
 	// V-sync enabled.)
+	
+	pthread_attr_t threadAttr;
+	pthread_attr_init(&threadAttr);
+	pthread_attr_setschedpolicy(&threadAttr, SCHED_RR);
+	
 	struct sched_param sp;
-	int thePolicy = 0;
 	memset(&sp, 0, sizeof(struct sched_param));
-	pthread_getschedparam(coreThread, &thePolicy, &sp);
-	sp.sched_priority = sched_get_priority_max(thePolicy);
-	pthread_setschedparam(coreThread, thePolicy, &sp);
+	sp.sched_priority = 42;
+	pthread_attr_setschedparam(&threadAttr, &sp);
+	
+	pthread_create(&coreThread, &threadAttr, &RunCoreThread, &threadParam);
+	pthread_attr_destroy(&threadAttr);
 	
 	[cdsGPU setOutputList:cdsOutputList rwlock:&threadParam.rwlockOutputList];
 	
