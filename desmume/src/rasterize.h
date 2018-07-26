@@ -97,8 +97,8 @@ class RasterizerUnit
 {
 protected:
 	bool _debug_thisPoly;
-	u32 _SLI_Mask;
-	u32 _SLI_Value;
+	u32 _SLI_startLine;
+	u32 _SLI_endLine;
 	
 	SoftRasterizerRenderer *_softRender;
 	SoftRasterizerTexture *_currentTexture;
@@ -120,7 +120,7 @@ protected:
 	template<bool SLI, bool ISBACKWARDS, bool ISSHADOWPOLYGON, bool USELINEHACK> void _shape_engine(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type);
 	
 public:
-	void SetSLI(u32 value, u32 mask, bool debug);
+	void SetSLI(u32 startLine, u32 endLine, bool debug);
 	void SetRenderer(SoftRasterizerRenderer *theRenderer);
 	template<bool SLI, bool USELINEHACK> FORCEINLINE void Render();
 };

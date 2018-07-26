@@ -744,13 +744,13 @@ void RasterizerUnit<RENDERER>::_runscanlines(const POLYGON_ATTR polyAttr, const 
 	//HACK: special handling for horizontal line poly
 	if ( USELINEHACK && (left->Height == 0) && (right->Height == 0) && (left->Y < framebufferHeight) && (left->Y >= 0) )
 	{
-		const bool draw = (!SLI || (left->Y & this->_SLI_Mask) == this->_SLI_Value);
+		const bool draw = ( !SLI || ((left->Y >= this->_SLI_startLine) && (left->Y < this->_SLI_endLine)) );
 		if (draw) this->_drawscanline<ISSHADOWPOLYGON, USELINEHACK>(polyAttr, isTranslucent, dstColor, framebufferWidth, framebufferHeight, left, right);
 	}
 
 	while (Height--)
 	{
-		const bool draw = (!SLI || (left->Y & this->_SLI_Mask) == this->_SLI_Value);
+		const bool draw = ( !SLI || ((left->Y >= this->_SLI_startLine) && (left->Y < this->_SLI_endLine)) );
 		if (draw) this->_drawscanline<ISSHADOWPOLYGON, USELINEHACK>(polyAttr, isTranslucent, dstColor, framebufferWidth, framebufferHeight, left, right);
 		const int xl = left->X;
 		const int xr = right->X;
@@ -939,11 +939,11 @@ void RasterizerUnit<RENDERER>::_shape_engine(const POLYGON_ATTR polyAttr, const 
 }
 
 template<bool RENDERER>
-void RasterizerUnit<RENDERER>::SetSLI(u32 value, u32 mask, bool debug)
+void RasterizerUnit<RENDERER>::SetSLI(u32 startLine, u32 endLine, bool debug)
 {
-	this->_SLI_Value = value;
-	this->_SLI_Mask = mask;
 	this->_debug_thisPoly = debug;
+	this->_SLI_startLine = startLine;
+	this->_SLI_endLine = endLine;
 }
 
 template<bool RENDERER>
@@ -1442,26 +1442,10 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	_enableLineHack = CommonSettings.GFX3D_LineHack;
 	_enableFragmentSamplingHack = CommonSettings.GFX3D_TXTHack;
 	
-	_HACK_viewer_rasterizerUnit.SetSLI(0, 1, false);
+	_HACK_viewer_rasterizerUnit.SetSLI(0, _framebufferHeight, false);
 	
 	const size_t coreCount = CommonSettings.num_cores;
 	_threadCount = coreCount;
-	
-	// SoftRasterizer works best when the number of threads is a power-of-two.
-	// Ensure that the thread count is set to the previous power-of-two if the
-	// core count isn't already a power-of-two.
-	_threadCount--;
-	_threadCount |= (_threadCount >> 1);
-	_threadCount |= (_threadCount >> 2);
-	_threadCount |= (_threadCount >> 4);
-	_threadCount |= (_threadCount >> 8);
-	_threadCount |= (_threadCount >> 16);
-	_threadCount++;
-	
-	if (_threadCount != coreCount)
-	{
-		_threadCount >>= 1;
-	}
 	
 	if (_threadCount > SOFTRASTERIZER_MAX_THREADS)
 	{
@@ -1477,9 +1461,6 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 		_customLinesPerThread = _framebufferHeight;
 		_customPixelsPerThread = _framebufferPixCount;
 		
-		_rasterizerUnit[0].SetSLI(0, 0, false);
-		_rasterizerUnit[0].SetRenderer(this);
-		
 		_threadPostprocessParam[0].renderer = this;
 		_threadPostprocessParam[0].startLine = 0;
 		_threadPostprocessParam[0].endLine = _framebufferHeight;
@@ -1491,6 +1472,9 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 		_threadClearParam[0].renderer = this;
 		_threadClearParam[0].startPixel = 0;
 		_threadClearParam[0].endPixel = _framebufferPixCount;
+		
+		_rasterizerUnit[0].SetSLI(_threadPostprocessParam[0].startLine, _threadPostprocessParam[0].endLine, false);
+		_rasterizerUnit[0].SetRenderer(this);
 	}
 	else
 	{
@@ -1503,9 +1487,6 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 		
 		for (size_t i = 0; i < _threadCount; i++)
 		{
-			_rasterizerUnit[i].SetSLI(i, _threadCount - 1, false);
-			_rasterizerUnit[i].SetRenderer(this);
-			
 			_threadPostprocessParam[i].renderer = this;
 			_threadPostprocessParam[i].startLine = i * _customLinesPerThread;
 			_threadPostprocessParam[i].endLine = (i < _threadCount - 1) ? (i + 1) * _customLinesPerThread : _framebufferHeight;
@@ -1517,6 +1498,9 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 			_threadClearParam[i].renderer = this;
 			_threadClearParam[i].startPixel = i * _customPixelsPerThread;
 			_threadClearParam[i].endPixel = (i < _threadCount - 1) ? (i + 1) * _customPixelsPerThread : _framebufferPixCount;
+			
+			_rasterizerUnit[i].SetSLI(_threadPostprocessParam[i].startLine, _threadPostprocessParam[i].endLine, false);
+			_rasterizerUnit[i].SetRenderer(this);
 			
 #ifdef DESMUME_COCOA
 			// The Cocoa port takes advantage of hand-optimized thread priorities
@@ -1531,7 +1515,15 @@ SoftRasterizerRenderer::SoftRasterizerRenderer()
 	InitTables();
 	Reset();
 	
-	printf("SoftRast Initialized with cores=%d\n", (int)this->_threadCount);
+	if (_threadCount == 0)
+	{
+		printf("SoftRasterizer: Running directly on the emulation thread. (Multithreading disabled.)\n");
+	}
+	else
+	{
+		printf("SoftRasterizer: Running using %d additional %s. (Multithreading enabled.)\n",
+			   (int)_threadCount, (_threadCount == 1) ? "thread" : "threads");
+	}
 }
 
 SoftRasterizerRenderer::~SoftRasterizerRenderer()
@@ -2342,6 +2334,8 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 		
 		this->_threadClearParam[0].startPixel = 0;
 		this->_threadClearParam[0].endPixel = pixCount;
+		
+		this->_rasterizerUnit[0].SetSLI(this->_threadPostprocessParam[0].startLine, this->_threadPostprocessParam[0].endLine, false);
 	}
 	else
 	{
@@ -2355,6 +2349,8 @@ Render3DError SoftRasterizerRenderer::SetFramebufferSize(size_t w, size_t h)
 			
 			this->_threadClearParam[i].startPixel = i * this->_customPixelsPerThread;
 			this->_threadClearParam[i].endPixel = (i < this->_threadCount - 1) ? (i + 1) * this->_customPixelsPerThread : pixCount;
+			
+			this->_rasterizerUnit[i].SetSLI(this->_threadPostprocessParam[i].startLine, this->_threadPostprocessParam[i].endLine, false);
 		}
 	}
 	
@@ -2446,6 +2442,8 @@ Render3DError SoftRasterizer_SIMD<SIMDBYTES>::SetFramebufferSize(size_t w, size_
 		
 		this->_threadClearParam[0].startPixel = 0;
 		this->_threadClearParam[0].endPixel = pixCount;
+		
+		this->_rasterizerUnit[0].SetSLI(this->_threadPostprocessParam[0].startLine, this->_threadPostprocessParam[0].endLine, false);
 	}
 	else
 	{
@@ -2461,6 +2459,8 @@ Render3DError SoftRasterizer_SIMD<SIMDBYTES>::SetFramebufferSize(size_t w, size_
 			
 			this->_threadClearParam[i].startPixel = i * pixelsPerThread;
 			this->_threadClearParam[i].endPixel = (i < this->_threadCount - 1) ? (i + 1) * pixelsPerThread : pixCount;
+			
+			this->_rasterizerUnit[i].SetSLI(this->_threadPostprocessParam[i].startLine, this->_threadPostprocessParam[i].endLine, false);
 		}
 	}
 	
