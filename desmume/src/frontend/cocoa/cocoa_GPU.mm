@@ -452,6 +452,11 @@ public:
 		{
 			numberCores = 1;
 		}
+		else
+		{
+			const NSUInteger reserveCoreCount = numberCores / 12; // For every 12 cores, reserve 1 core for the rest of the system.
+			numberCores -= reserveCoreCount;
+		}
 	}
 	else
 	{
