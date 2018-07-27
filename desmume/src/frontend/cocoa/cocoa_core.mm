@@ -26,6 +26,7 @@
 #import "cocoa_util.h"
 
 #include "macOS_driver.h"
+#include "ClientAVCaptureObject.h"
 #include "ClientExecutionControl.h"
 #include "ClientInputHandler.h"
 
@@ -1118,7 +1119,7 @@ static void* RunCoreThread(void *arg)
 			continue;
 		}
 		
-		if (avCaptureObject != NULL)
+		if ( (avCaptureObject != NULL) && !avCaptureObject->IsCapturingVideo() )
 		{
 			avCaptureObject->StreamWriteStart();
 		}
@@ -1186,7 +1187,7 @@ static void* RunCoreThread(void *arg)
 		{
 			case ExecutionBehavior_Run:
 			{
-				if (execControl->GetEnableFrameSkipApplied())
+				if (execControl->GetEnableFrameSkipApplied() && !avCaptureObject)
 				{
 					if (framesToSkip > 0)
 					{
@@ -1203,14 +1204,17 @@ static void* RunCoreThread(void *arg)
 			
 			case ExecutionBehavior_FrameJump:
 			{
-				if (framesToSkip > 0)
+				if (!avCaptureObject)
 				{
-					NDS_SkipNextFrame();
-					execControl->SetFramesToSkip(framesToSkip - 1);
-				}
-				else
-				{
-					execControl->SetFramesToSkip( (uint8_t)((DS_FRAMES_PER_SECOND * 1.0) + 0.85) );
+					if (framesToSkip > 0)
+					{
+						NDS_SkipNextFrame();
+						execControl->SetFramesToSkip(framesToSkip - 1);
+					}
+					else
+					{
+						execControl->SetFramesToSkip( (uint8_t)((DS_FRAMES_PER_SECOND * 1.0) + 0.85) );
+					}
 				}
 				break;
 			}

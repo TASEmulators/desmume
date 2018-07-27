@@ -2739,6 +2739,11 @@
 		{
 			[(NSMenuItem*)theItem setTitle:([cdsCore isFrameSkipEnabled]) ? NSSTRING_TITLE_DISABLE_AUTO_FRAME_SKIP : NSSTRING_TITLE_ENABLE_AUTO_FRAME_SKIP];
 		}
+		
+		if ([avCaptureToolDelegate isRecording])
+		{
+			enable = NO;
+		}
 	}
 	else if (theAction == @selector(toggleCheats:))
 	{

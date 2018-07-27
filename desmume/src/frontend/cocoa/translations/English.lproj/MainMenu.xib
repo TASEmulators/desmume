@@ -2,9 +2,9 @@
 <archive type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="7.10">
 	<data>
 		<int key="IBDocument.SystemTarget">1050</int>
-		<string key="IBDocument.SystemVersion">17E202</string>
+		<string key="IBDocument.SystemVersion">17G65</string>
 		<string key="IBDocument.InterfaceBuilderVersion">851</string>
-		<string key="IBDocument.AppKitVersion">1561.40.112</string>
+		<string key="IBDocument.AppKitVersion">1561.60.100</string>
 		<string key="IBDocument.HIToolboxVersion">911.10</string>
 		<object class="NSMutableDictionary" key="IBDocument.PluginVersions">
 			<string key="NS.key.0">com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -2155,7 +2155,7 @@
 				<nil key="NSUserInterfaceItemIdentifier"/>
 				<string key="NSWindowContentMaxSize">{1.7976931348623157e+308, 1.7976931348623157e+308}</string>
 				<object class="NSView" key="NSWindowView" id="982736366">
-					<reference key="NSNextResponder"/>
+					<nil key="NSNextResponder"/>
 					<nil key="NSNibTouchBar"/>
 					<int key="NSvFlags">256</int>
 					<object class="NSMutableArray" key="NSSubviews">
@@ -2181,7 +2181,6 @@
 							</object>
 							<string key="NSFrame">{{20, 302}, {128, 128}}</string>
 							<reference key="NSSuperview" ref="982736366"/>
-							<reference key="NSWindow"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSImageCell" key="NSCell" id="1010597503">
 								<int key="NSCellFlags">134217728</int>
@@ -2204,7 +2203,6 @@
 							<int key="NSvFlags">274</int>
 							<string key="NSFrame">{{13, 10}, {524, 290}}</string>
 							<reference key="NSSuperview" ref="982736366"/>
-							<reference key="NSWindow"/>
 							<object class="NSMutableArray" key="NSTabViewItems">
 								<bool key="EncodedWithXMLCoder">YES</bool>
 								<object class="NSTabViewItem" id="830687618">
@@ -2233,7 +2231,6 @@
 																<int key="NSvFlags">274</int>
 																<string key="NSFrameSize">{505, 244}</string>
 																<reference key="NSSuperview" ref="369492831"/>
-																<reference key="NSWindow"/>
 																<object class="NSTextContainer" key="NSTextContainer" id="789743053">
 																	<object class="NSLayoutManager" key="NSLayoutManager">
 																		<object class="NSTextStorage" key="NSTextStorage">
@@ -2329,7 +2326,6 @@
 														</object>
 														<string key="NSFrameSize">{505, 244}</string>
 														<reference key="NSSuperview" ref="327910638"/>
-														<reference key="NSWindow"/>
 														<reference key="NSNextKeyView" ref="1041259261"/>
 														<reference key="NSDocView" ref="1041259261"/>
 														<reference key="NSBGColor" ref="991462592"/>
@@ -2363,7 +2359,6 @@
 														<int key="NSvFlags">256</int>
 														<string key="NSFrame">{{489, 0}, {16, 244}}</string>
 														<reference key="NSSuperview" ref="327910638"/>
-														<reference key="NSWindow"/>
 														<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
 														<string key="NSControlAction">_doScroller:</string>
 														<reference key="NSControlTarget" ref="327910638"/>
@@ -2377,7 +2372,6 @@
 														<int key="NSvFlags">-2147483392</int>
 														<string key="NSFrame">{{-100, -100}, {87, 18}}</string>
 														<reference key="NSSuperview" ref="327910638"/>
-														<reference key="NSWindow"/>
 														<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
 														<string key="NSControlAction">_doScroller:</string>
 														<reference key="NSControlTarget" ref="327910638"/>
@@ -2390,10 +2384,30 @@
 												</object>
 												<string key="NSFrame">{{-3, -3}, {505, 244}}</string>
 												<reference key="NSSuperview" ref="398550257"/>
-												<reference key="NSWindow"/>
 												<reference key="NSNextKeyView" ref="369492831"/>
 												<object class="NSArray" key="NSGestureRecognizers">
 													<bool key="EncodedWithXMLCoder">YES</bool>
+													<object class="NSPanGestureRecognizer">
+														<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+														<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+														<reference key="NSGestureRecognizer.target" ref="327910638"/>
+														<int key="NSPanGestureRecognizer.buttonMask">0</int>
+														<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+													</object>
+													<object class="NSPanGestureRecognizer">
+														<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+														<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+														<reference key="NSGestureRecognizer.target" ref="327910638"/>
+														<int key="NSPanGestureRecognizer.buttonMask">0</int>
+														<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+													</object>
+													<object class="NSPanGestureRecognizer">
+														<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+														<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+														<reference key="NSGestureRecognizer.target" ref="327910638"/>
+														<int key="NSPanGestureRecognizer.buttonMask">0</int>
+														<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+													</object>
 													<object class="NSPanGestureRecognizer">
 														<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
 														<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
@@ -2413,7 +2427,6 @@
 										</object>
 										<string key="NSFrame">{{10, 33}, {504, 244}}</string>
 										<reference key="NSSuperview" ref="912999179"/>
-										<reference key="NSWindow"/>
 									</object>
 									<string key="NSLabel">Read Me</string>
 									<object class="NSColor" key="NSColor" id="266180242">
@@ -2556,6 +2569,27 @@
 												<reference key="NSNextKeyView" ref="184811598"/>
 												<object class="NSArray" key="NSGestureRecognizers">
 													<bool key="EncodedWithXMLCoder">YES</bool>
+													<object class="NSPanGestureRecognizer">
+														<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+														<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+														<reference key="NSGestureRecognizer.target" ref="1015671392"/>
+														<int key="NSPanGestureRecognizer.buttonMask">0</int>
+														<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+													</object>
+													<object class="NSPanGestureRecognizer">
+														<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+														<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+														<reference key="NSGestureRecognizer.target" ref="1015671392"/>
+														<int key="NSPanGestureRecognizer.buttonMask">0</int>
+														<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+													</object>
+													<object class="NSPanGestureRecognizer">
+														<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+														<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+														<reference key="NSGestureRecognizer.target" ref="1015671392"/>
+														<int key="NSPanGestureRecognizer.buttonMask">0</int>
+														<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+													</object>
 													<object class="NSPanGestureRecognizer">
 														<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
 														<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
@@ -2718,6 +2752,27 @@
 														<int key="NSPanGestureRecognizer.buttonMask">0</int>
 														<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
 													</object>
+													<object class="NSPanGestureRecognizer">
+														<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+														<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+														<reference key="NSGestureRecognizer.target" ref="48238782"/>
+														<int key="NSPanGestureRecognizer.buttonMask">0</int>
+														<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+													</object>
+													<object class="NSPanGestureRecognizer">
+														<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+														<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+														<reference key="NSGestureRecognizer.target" ref="48238782"/>
+														<int key="NSPanGestureRecognizer.buttonMask">0</int>
+														<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+													</object>
+													<object class="NSPanGestureRecognizer">
+														<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+														<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+														<reference key="NSGestureRecognizer.target" ref="48238782"/>
+														<int key="NSPanGestureRecognizer.buttonMask">0</int>
+														<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+													</object>
 												</object>
 												<int key="NSsFlags">133136</int>
 												<reference key="NSVScroller" ref="1047662173"/>
@@ -2873,6 +2928,27 @@
 														<int key="NSPanGestureRecognizer.buttonMask">0</int>
 														<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
 													</object>
+													<object class="NSPanGestureRecognizer">
+														<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+														<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+														<reference key="NSGestureRecognizer.target" ref="978968857"/>
+														<int key="NSPanGestureRecognizer.buttonMask">0</int>
+														<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+													</object>
+													<object class="NSPanGestureRecognizer">
+														<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+														<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+														<reference key="NSGestureRecognizer.target" ref="978968857"/>
+														<int key="NSPanGestureRecognizer.buttonMask">0</int>
+														<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+													</object>
+													<object class="NSPanGestureRecognizer">
+														<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+														<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+														<reference key="NSGestureRecognizer.target" ref="978968857"/>
+														<int key="NSPanGestureRecognizer.buttonMask">0</int>
+														<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+													</object>
 												</object>
 												<int key="NSsFlags">133136</int>
 												<reference key="NSVScroller" ref="1070332045"/>
@@ -2910,7 +2986,6 @@
 							<int key="NSvFlags">270</int>
 							<string key="NSFrame">{{153, 374}, {380, 56}}</string>
 							<reference key="NSSuperview" ref="982736366"/>
-							<reference key="NSWindow"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSTextFieldCell" key="NSCell" id="933990936">
 								<int key="NSCellFlags">69206017</int>
@@ -2931,7 +3006,6 @@
 							<int key="NSvFlags">270</int>
 							<string key="NSFrame">{{156, 302}, {374, 64}}</string>
 							<reference key="NSSuperview" ref="982736366"/>
-							<reference key="NSWindow"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSTextFieldCell" key="NSCell" id="873080509">
 								<int key="NSCellFlags">73400321</int>
@@ -2953,8 +3027,6 @@
 						</object>
 					</object>
 					<string key="NSFrameSize">{550, 450}</string>
-					<reference key="NSSuperview"/>
-					<reference key="NSWindow"/>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {1920, 1177}}</string>
 				<string key="NSMaxSize">{1.7976931348623157e+308, 1.7976931348623157e+308}</string>
@@ -4232,6 +4304,27 @@ L3d3dy5hZHZhbnNjZW5lLmNvbS9vZmZsaW5lL2RhdGFzL0FEVkFOc0NFbmVfUlRvb2xEUy56aXA</str
 						<reference key="NSNextKeyView" ref="7331472"/>
 						<object class="NSArray" key="NSGestureRecognizers">
 							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="908217942"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="908217942"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="908217942"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
 							<object class="NSPanGestureRecognizer">
 								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
 								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
@@ -10028,6 +10121,27 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 									<int key="NSPanGestureRecognizer.buttonMask">0</int>
 									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
 								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="312722868"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="312722868"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="312722868"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
 							</object>
 							<int key="NSsFlags">133682</int>
 							<reference key="NSVScroller" ref="486971553"/>
@@ -10291,7 +10405,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 			<object class="NSWindowTemplate" id="205727894">
 				<int key="NSWindowStyleMask">1</int>
 				<int key="NSWindowBacking">2</int>
-				<string key="NSWindowRect">{{157, 281}, {640, 167}}</string>
+				<string key="NSWindowRect">{{157, 281}, {807, 167}}</string>
 				<int key="NSWTFlags">1685586944</int>
 				<string key="NSWindowTitle">InputSettingsNDSInput</string>
 				<string key="NSWindowClass">NSWindow</string>
@@ -10354,7 +10468,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 							<reference key="NSNextResponder" ref="663395288"/>
 							<nil key="NSNibTouchBar"/>
 							<int key="NSvFlags">265</int>
-							<string key="NSFrame">{{535, 7}, {96, 32}}</string>
+							<string key="NSFrame">{{697, 7}, {96, 32}}</string>
 							<reference key="NSSuperview" ref="663395288"/>
 							<int key="NSTag">1</int>
 							<bool key="NSEnabled">YES</bool>
@@ -10377,7 +10491,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 							<reference key="NSNextResponder" ref="663395288"/>
 							<nil key="NSNibTouchBar"/>
 							<int key="NSvFlags">265</int>
-							<string key="NSFrame">{{439, 7}, {96, 32}}</string>
+							<string key="NSFrame">{{601, 7}, {96, 32}}</string>
 							<reference key="NSSuperview" ref="663395288"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSButtonCell" key="NSCell" id="250989274">
@@ -10399,7 +10513,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 							<reference key="NSNextResponder" ref="663395288"/>
 							<nil key="NSNibTouchBar"/>
 							<int key="NSvFlags">271</int>
-							<string key="NSFrame">{{13, 50}, {614, 20}}</string>
+							<string key="NSFrame">{{16, 50}, {773, 21}}</string>
 							<reference key="NSSuperview" ref="663395288"/>
 							<string key="NSReuseIdentifierKey">_NS:2202</string>
 							<bool key="NSEnabled">YES</bool>
@@ -10412,183 +10526,182 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 								<object class="NSMutableArray" key="NSSegmentImages">
 									<bool key="EncodedWithXMLCoder">YES</bool>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">1</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">2</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">3</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">4</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">5</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">6</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">7</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">8</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">9</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">10</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">11</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">12</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">13</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">14</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">15</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">16</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">17</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">18</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">19</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">20</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">21</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">22</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">23</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">24</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">25</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">26</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">27</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">28</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">29</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">30</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">18</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">31</string>
 										<bool key="NSSegmentItemSelected">YES</bool>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 									<object class="NSSegmentItem">
-										<double key="NSSegmentItemWidth">19</double>
+										<double key="NSSegmentItemWidth">23</double>
 										<string key="NSSegmentItemLabel">32</string>
 										<int key="NSSegmentItemImageScaling">0</int>
 									</object>
 								</object>
-								<int key="NSSelectedSegment">18</int>
 								<int key="NSTrackingMode">1</int>
 								<int key="NSSegmentStyle">1</int>
 								<int key="NSSegmentDistribution">0</int>
@@ -10847,7 +10960,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 							<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
 						</object>
 					</object>
-					<string key="NSFrameSize">{640, 167}</string>
+					<string key="NSFrameSize">{807, 167}</string>
 					<string key="NSReuseIdentifierKey">_NS:122</string>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {1920, 1177}}</string>
@@ -14526,6 +14639,27 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 									<int key="NSPanGestureRecognizer.buttonMask">0</int>
 									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
 								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="266193397"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="266193397"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="266193397"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
 							</object>
 							<int key="NSsFlags">133682</int>
 							<reference key="NSVScroller" ref="210109789"/>
@@ -15119,6 +15253,27 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 							<reference key="NSNextKeyView" ref="1055577013"/>
 							<object class="NSArray" key="NSGestureRecognizers">
 								<bool key="EncodedWithXMLCoder">YES</bool>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="1011480808"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="1011480808"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="1011480808"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
 								<object class="NSPanGestureRecognizer">
 									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
 									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
@@ -15970,6 +16125,27 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 								<int key="NSPanGestureRecognizer.buttonMask">0</int>
 								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
 							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="502150128"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="502150128"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="502150128"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
 						</object>
 						<int key="NSsFlags">133682</int>
 						<reference key="NSVScroller" ref="116802186"/>
@@ -16185,6 +16361,27 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 							<reference key="NSNextKeyView" ref="979497021"/>
 							<object class="NSArray" key="NSGestureRecognizers">
 								<bool key="EncodedWithXMLCoder">YES</bool>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="740354183"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="740354183"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="740354183"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
 								<object class="NSPanGestureRecognizer">
 									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
 									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
@@ -17482,6 +17679,27 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<reference key="NSNextKeyView" ref="612858975"/>
 						<object class="NSArray" key="NSGestureRecognizers">
 							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="332554094"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="332554094"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="332554094"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
 							<object class="NSPanGestureRecognizer">
 								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
 								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
@@ -18830,6 +19048,27 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 									<int key="NSPanGestureRecognizer.buttonMask">0</int>
 									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
 								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="425688478"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="425688478"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="425688478"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
 							</object>
 							<int key="NSsFlags">133682</int>
 							<reference key="NSVScroller" ref="748049423"/>
@@ -19644,6 +19883,27 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<string key="NSReuseIdentifierKey">_NS:1839</string>
 						<object class="NSArray" key="NSGestureRecognizers">
 							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="278247291"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="278247291"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="278247291"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
 							<object class="NSPanGestureRecognizer">
 								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
 								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
@@ -24300,7 +24560,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 				<nil key="NSUserInterfaceItemIdentifier"/>
 				<string key="NSWindowContentMaxSize">{1.7976931348623157e+308, 1.7976931348623157e+308}</string>
 				<object class="NSView" key="NSWindowView" id="729561310">
-					<nil key="NSNextResponder"/>
+					<reference key="NSNextResponder"/>
 					<nil key="NSNibTouchBar"/>
 					<int key="NSvFlags">256</int>
 					<object class="NSMutableArray" key="NSSubviews">
@@ -24323,6 +24583,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 77}, {206, 18}}</string>
 											<reference key="NSSuperview" ref="372893695"/>
+											<reference key="NSWindow"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSButtonCell" key="NSCell" id="715693022">
 												<int key="NSCellFlags">-2080374784</int>
@@ -24347,6 +24608,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 15}, {109, 14}}</string>
 											<reference key="NSSuperview" ref="372893695"/>
+											<reference key="NSWindow"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="212555065">
 												<int key="NSCellFlags">68157504</int>
@@ -24366,6 +24628,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 57}, {115, 18}}</string>
 											<reference key="NSSuperview" ref="372893695"/>
+											<reference key="NSWindow"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSButtonCell" key="NSCell" id="394241287">
 												<int key="NSCellFlags">-2080374784</int>
@@ -24390,6 +24653,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 37}, {195, 18}}</string>
 											<reference key="NSSuperview" ref="372893695"/>
+											<reference key="NSWindow"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSButtonCell" key="NSCell" id="473306767">
 												<int key="NSCellFlags">-2080374784</int>
@@ -24414,6 +24678,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{126, 10}, {96, 22}}</string>
 											<reference key="NSSuperview" ref="372893695"/>
+											<reference key="NSWindow"/>
 											<string key="NSReuseIdentifierKey">_NS:791</string>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSPopUpButtonCell" key="NSCell" id="856816267">
@@ -24536,10 +24801,12 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 									</object>
 									<string key="NSFrame">{{1, 1}, {237, 102}}</string>
 									<reference key="NSSuperview" ref="219189503"/>
+									<reference key="NSWindow"/>
 								</object>
 							</object>
 							<string key="NSFrame">{{17, 109}, {239, 118}}</string>
 							<reference key="NSSuperview" ref="729561310"/>
+							<reference key="NSWindow"/>
 							<string key="NSOffsets">{0, 0}</string>
 							<object class="NSTextFieldCell" key="NSTitleCell">
 								<int key="NSCellFlags">67108864</int>
@@ -24561,6 +24828,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 							<int key="NSvFlags">268</int>
 							<string key="NSFrame">{{56, 8}, {162, 19}}</string>
 							<reference key="NSSuperview" ref="729561310"/>
+							<reference key="NSWindow"/>
 							<bool key="NSEnabled">YES</bool>
 							<object class="NSButtonCell" key="NSCell" id="837427736">
 								<int key="NSCellFlags">-2080374784</int>
@@ -24595,6 +24863,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{18, 14}, {107, 58}}</string>
 											<reference key="NSSuperview" ref="909175549"/>
+											<reference key="NSWindow"/>
 											<bool key="NSEnabled">YES</bool>
 											<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
 											<int key="NSNumRows">3</int>
@@ -24853,10 +25122,12 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 									</object>
 									<string key="NSFrame">{{1, 1}, {237, 82}}</string>
 									<reference key="NSSuperview" ref="299127137"/>
+									<reference key="NSWindow"/>
 								</object>
 							</object>
 							<string key="NSFrame">{{17, 424}, {239, 98}}</string>
 							<reference key="NSSuperview" ref="729561310"/>
+							<reference key="NSWindow"/>
 							<string key="NSOffsets">{0, 0}</string>
 							<object class="NSTextFieldCell" key="NSTitleCell">
 								<int key="NSCellFlags">67108864</int>
@@ -24890,6 +25161,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 52}, {108, 18}}</string>
 											<reference key="NSSuperview" ref="887816052"/>
+											<reference key="NSWindow"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSButtonCell" key="NSCell" id="109440671">
 												<int key="NSCellFlags">-2080374784</int>
@@ -24914,6 +25186,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 32}, {135, 18}}</string>
 											<reference key="NSSuperview" ref="887816052"/>
+											<reference key="NSWindow"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSButtonCell" key="NSCell" id="874032897">
 												<int key="NSCellFlags">-2080374784</int>
@@ -24938,6 +25211,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 12}, {82, 18}}</string>
 											<reference key="NSSuperview" ref="887816052"/>
+											<reference key="NSWindow"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSButtonCell" key="NSCell" id="67001337">
 												<int key="NSCellFlags">-2080374784</int>
@@ -24962,6 +25236,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{32, 148}, {113, 14}}</string>
 											<reference key="NSSuperview" ref="887816052"/>
+											<reference key="NSWindow"/>
 											<string key="NSReuseIdentifierKey">_NS:526</string>
 											<string key="NSHuggingPriority">{251, 750}</string>
 											<bool key="NSEnabled">YES</bool>
@@ -24984,6 +25259,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{150, 146}, {48, 19}}</string>
 											<reference key="NSSuperview" ref="887816052"/>
+											<reference key="NSWindow"/>
 											<string key="NSReuseIdentifierKey">_NS:9</string>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="674994910">
@@ -25062,6 +25338,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 142}, {19, 27}}</string>
 											<reference key="NSSuperview" ref="887816052"/>
+											<reference key="NSWindow"/>
 											<string key="NSReuseIdentifierKey">_NS:1592</string>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSStepperCell" key="NSCell" id="66154878">
@@ -25082,6 +25359,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{15, 72}, {137, 18}}</string>
 											<reference key="NSSuperview" ref="887816052"/>
+											<reference key="NSWindow"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSButtonCell" key="NSCell" id="120043682">
 												<int key="NSCellFlags">67108864</int>
@@ -25106,6 +25384,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{6, 96}, {139, 14}}</string>
 											<reference key="NSSuperview" ref="887816052"/>
+											<reference key="NSWindow"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="675964218">
 												<int key="NSCellFlags">68157504</int>
@@ -25125,6 +25404,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{203, 89}, {19, 27}}</string>
 											<reference key="NSSuperview" ref="887816052"/>
+											<reference key="NSWindow"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSStepperCell" key="NSCell" id="940124700">
 												<int key="NSCellFlags">67895328</int>
@@ -25145,6 +25425,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{163, 96}, {38, 14}}</string>
 											<reference key="NSSuperview" ref="887816052"/>
+											<reference key="NSWindow"/>
 											<string key="NSReuseIdentifierKey">_NS:4068</string>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="1027435588">
@@ -25222,6 +25503,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{41, 122}, {104, 14}}</string>
 											<reference key="NSSuperview" ref="887816052"/>
+											<reference key="NSWindow"/>
 											<string key="NSReuseIdentifierKey">_NS:4068</string>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="56977147">
@@ -25243,6 +25525,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{147, 117}, {75, 22}}</string>
 											<reference key="NSSuperview" ref="887816052"/>
+											<reference key="NSWindow"/>
 											<string key="NSReuseIdentifierKey">_NS:791</string>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSPopUpButtonCell" key="NSCell" id="18939080">
@@ -25311,10 +25594,12 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 									</object>
 									<string key="NSFrame">{{1, 1}, {237, 173}}</string>
 									<reference key="NSSuperview" ref="353783913"/>
+									<reference key="NSWindow"/>
 								</object>
 							</object>
 							<string key="NSFrame">{{17, 231}, {239, 189}}</string>
 							<reference key="NSSuperview" ref="729561310"/>
+							<reference key="NSWindow"/>
 							<string key="NSOffsets">{0, 0}</string>
 							<object class="NSTextFieldCell" key="NSTitleCell">
 								<int key="NSCellFlags">67108864</int>
@@ -25348,6 +25633,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{16, 32}, {192, 18}}</string>
 											<reference key="NSSuperview" ref="633221410"/>
+											<reference key="NSWindow"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSButtonCell" key="NSCell" id="477056413">
 												<int key="NSCellFlags">67108864</int>
@@ -25372,6 +25658,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{16, 12}, {114, 18}}</string>
 											<reference key="NSSuperview" ref="633221410"/>
+											<reference key="NSWindow"/>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSButtonCell" key="NSCell" id="474989169">
 												<int key="NSCellFlags">67108864</int>
@@ -25393,10 +25680,12 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 									</object>
 									<string key="NSFrame">{{1, 1}, {237, 58}}</string>
 									<reference key="NSSuperview" ref="226041199"/>
+									<reference key="NSWindow"/>
 								</object>
 							</object>
 							<string key="NSFrame">{{17, 31}, {239, 74}}</string>
 							<reference key="NSSuperview" ref="729561310"/>
+							<reference key="NSWindow"/>
 							<string key="NSOffsets">{0, 0}</string>
 							<object class="NSTextFieldCell" key="NSTitleCell">
 								<int key="NSCellFlags">67108864</int>
@@ -25414,6 +25703,8 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						</object>
 					</object>
 					<string key="NSFrameSize">{273, 542}</string>
+					<reference key="NSSuperview"/>
+					<reference key="NSWindow"/>
 				</object>
 				<string key="NSScreenRect">{{0, 0}, {1920, 1177}}</string>
 				<string key="NSMaxSize">{1.7976931348623157e+308, 1.7976931348623157e+308}</string>
@@ -29241,6 +29532,27 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 									<int key="NSPanGestureRecognizer.buttonMask">0</int>
 									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
 								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="469700544"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="469700544"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
+								<object class="NSPanGestureRecognizer">
+									<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+									<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+									<reference key="NSGestureRecognizer.target" ref="469700544"/>
+									<int key="NSPanGestureRecognizer.buttonMask">0</int>
+									<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+								</object>
 							</object>
 							<int key="NSsFlags">133138</int>
 							<reference key="NSVScroller" ref="68013444"/>
@@ -31962,9 +32274,9 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 												<string key="NSKeyEquivalent"/>
 												<int key="NSPeriodicDelay">400</int>
 												<int key="NSPeriodicInterval">75</int>
-												<object class="NSMenuItem" key="NSMenuItem" id="488877529">
+												<object class="NSMenuItem" key="NSMenuItem" id="737659288">
 													<reference key="NSMenu" ref="279276448"/>
-													<string key="NSTitle">mov (ProRes422 + ALAC)</string>
+													<string key="NSTitle">mp4 (H.264 + AAC)</string>
 													<string key="NSKeyEquiv"/>
 													<int key="NSMnemonicLoc">2147483647</int>
 													<int key="NSState">1</int>
@@ -31986,6 +32298,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 															<reference key="NSOnImage" ref="396634170"/>
 															<reference key="NSMixedImage" ref="678976864"/>
 															<string key="NSAction">_popUpItemAction:</string>
+															<int key="NSTag">73744</int>
 															<reference key="NSTarget" ref="654184880"/>
 														</object>
 														<object class="NSMenuItem" id="174284398">
@@ -31996,19 +32309,21 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 															<reference key="NSOnImage" ref="396634170"/>
 															<reference key="NSMixedImage" ref="678976864"/>
 															<string key="NSAction">_popUpItemAction:</string>
+															<int key="NSTag">143424</int>
 															<reference key="NSTarget" ref="654184880"/>
 														</object>
-														<reference ref="488877529"/>
-														<object class="NSMenuItem" id="737659288">
+														<object class="NSMenuItem" id="488877529">
 															<reference key="NSMenu" ref="279276448"/>
-															<string key="NSTitle">mp4 (H.264 + AAC)</string>
+															<string key="NSTitle">mov (ProRes422 + ALAC)</string>
 															<string key="NSKeyEquiv"/>
 															<int key="NSMnemonicLoc">2147483647</int>
 															<reference key="NSOnImage" ref="396634170"/>
 															<reference key="NSMixedImage" ref="678976864"/>
 															<string key="NSAction">_popUpItemAction:</string>
+															<int key="NSTag">213040</int>
 															<reference key="NSTarget" ref="654184880"/>
 														</object>
+														<reference ref="737659288"/>
 														<object class="NSMenuItem" id="127746718">
 															<reference key="NSMenu" ref="279276448"/>
 															<bool key="NSIsDisabled">YES</bool>
@@ -32030,6 +32345,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 															<reference key="NSOnImage" ref="396634170"/>
 															<reference key="NSMixedImage" ref="678976864"/>
 															<string key="NSAction">_popUpItemAction:</string>
+															<int key="NSTag">8519456</int>
 															<reference key="NSTarget" ref="654184880"/>
 														</object>
 														<object class="NSMenuItem" id="607773380">
@@ -32040,6 +32356,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 															<reference key="NSOnImage" ref="396634170"/>
 															<reference key="NSMixedImage" ref="678976864"/>
 															<string key="NSAction">_popUpItemAction:</string>
+															<int key="NSTag">8585024</int>
 															<reference key="NSTarget" ref="654184880"/>
 														</object>
 														<object class="NSMenuItem" id="176922833">
@@ -32050,6 +32367,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 															<reference key="NSOnImage" ref="396634170"/>
 															<reference key="NSMixedImage" ref="678976864"/>
 															<string key="NSAction">_popUpItemAction:</string>
+															<int key="NSTag">8453888</int>
 															<reference key="NSTarget" ref="654184880"/>
 														</object>
 														<object class="NSMenuItem" id="916087034">
@@ -32060,6 +32378,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 															<reference key="NSOnImage" ref="396634170"/>
 															<reference key="NSMixedImage" ref="678976864"/>
 															<string key="NSAction">_popUpItemAction:</string>
+															<int key="NSTag">8453936</int>
 															<reference key="NSTarget" ref="654184880"/>
 														</object>
 														<object class="NSMenuItem" id="140759560">
@@ -32070,12 +32389,13 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 															<reference key="NSOnImage" ref="396634170"/>
 															<reference key="NSMixedImage" ref="678976864"/>
 															<string key="NSAction">_popUpItemAction:</string>
+															<int key="NSTag">8650512</int>
 															<reference key="NSTarget" ref="654184880"/>
 														</object>
 													</object>
 													<reference key="NSMenuFont" ref="462791774"/>
 												</object>
-												<int key="NSSelectedIndex">2</int>
+												<int key="NSSelectedIndex">3</int>
 												<int key="NSPreferredEdge">1</int>
 												<bool key="NSUsesItemFromMenu">YES</bool>
 												<bool key="NSAltersState">YES</bool>
@@ -32443,8 +32763,8 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<string key="NSReuseIdentifierKey">_NS:185</string>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="302843893">
-												<int key="NSCellFlags">-1804599231</int>
-												<int key="NSCellFlags2">71435264</int>
+												<int key="NSCellFlags">-2073034687</int>
+												<int key="NSCellFlags2">104989696</int>
 												<integer value="1920" key="NSContents"/>
 												<reference key="NSSupport" ref="26"/>
 												<object class="NSNumberFormatter" key="NSFormatter" id="989002086">
@@ -32543,8 +32863,8 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 											<string key="NSReuseIdentifierKey">_NS:185</string>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="401647518">
-												<int key="NSCellFlags">-1804599231</int>
-												<int key="NSCellFlags2">71435264</int>
+												<int key="NSCellFlags">-2073034687</int>
+												<int key="NSCellFlags2">104989696</int>
 												<integer value="1080" key="NSContents"/>
 												<reference key="NSSupport" ref="26"/>
 												<object class="NSNumberFormatter" key="NSFormatter" id="838634358">
@@ -32687,7 +33007,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 				<bool key="NSWindowIsRestorable">NO</bool>
 			</object>
 			<object class="NSCustomView" id="199208987">
-				<reference key="NSNextResponder"/>
+				<nil key="NSNextResponder"/>
 				<nil key="NSNibTouchBar"/>
 				<int key="NSvFlags">256</int>
 				<object class="NSMutableArray" key="NSSubviews">
@@ -32698,7 +33018,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<int key="NSvFlags">8</int>
 						<string key="NSFrame">{{313, 5}, {5, 157}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:2182</string>
 						<string key="NSOffsets">{0, 0}</string>
 						<object class="NSTextFieldCell" key="NSTitleCell">
@@ -32720,7 +33039,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<int key="NSvFlags">8</int>
 						<string key="NSFrame">{{156, 5}, {5, 157}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:2182</string>
 						<string key="NSOffsets">{0, 0}</string>
 						<object class="NSTextFieldCell" key="NSTitleCell">
@@ -32742,7 +33060,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<int key="NSvFlags">264</int>
 						<string key="NSFrame">{{329, 45}, {74, 14}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:4068</string>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSTextFieldCell" key="NSCell" id="813197795">
@@ -32764,7 +33081,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<int key="NSvFlags">264</int>
 						<string key="NSFrame">{{172, 104}, {103, 14}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:4068</string>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSTextFieldCell" key="NSCell" id="229391706">
@@ -32786,7 +33102,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<int key="NSvFlags">264</int>
 						<string key="NSFrame">{{164, 82}, {146, 22}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:791</string>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSPopUpButtonCell" key="NSCell" id="563829225">
@@ -32878,7 +33193,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<int key="NSvFlags">264</int>
 						<string key="NSFrame">{{15, 104}, {92, 14}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:4068</string>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSTextFieldCell" key="NSCell" id="20855997">
@@ -32900,7 +33214,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<int key="NSvFlags">264</int>
 						<string key="NSFrame">{{7, 82}, {146, 22}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:791</string>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSPopUpButtonCell" key="NSCell" id="17461076">
@@ -32981,7 +33294,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<int key="NSvFlags">264</int>
 						<string key="NSFrame">{{15, 144}, {80, 14}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:4068</string>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSTextFieldCell" key="NSCell" id="86116299">
@@ -33003,7 +33315,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<int key="NSvFlags">264</int>
 						<string key="NSFrame">{{7, 122}, {146, 22}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:791</string>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSPopUpButtonCell" key="NSCell" id="156133616">
@@ -33074,7 +33385,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<int key="NSvFlags">264</int>
 						<string key="NSFrame">{{329, 86}, {80, 14}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:4068</string>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSTextFieldCell" key="NSCell" id="355714338">
@@ -33096,7 +33406,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<int key="NSvFlags">264</int>
 						<string key="NSFrame">{{172, 144}, {90, 14}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:4068</string>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSTextFieldCell" key="NSCell" id="492431528">
@@ -33130,7 +33439,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 										<int key="NSvFlags">268</int>
 										<string key="NSFrame">{{15, 12}, {87, 18}}</string>
 										<reference key="NSSuperview" ref="713727791"/>
-										<reference key="NSWindow"/>
 										<string key="NSReuseIdentifierKey">_NS:682</string>
 										<bool key="NSEnabled">YES</bool>
 										<object class="NSButtonCell" key="NSCell" id="657225757">
@@ -33154,13 +33462,11 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 								</object>
 								<string key="NSFrame">{{1, 1}, {144, 38}}</string>
 								<reference key="NSSuperview" ref="474887346"/>
-								<reference key="NSWindow"/>
 								<string key="NSReuseIdentifierKey">_NS:21</string>
 							</object>
 						</object>
 						<string key="NSFrame">{{321, 104}, {146, 54}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:18</string>
 						<string key="NSOffsets">{0, 0}</string>
 						<object class="NSTextFieldCell" key="NSTitleCell">
@@ -33183,7 +33489,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<int key="NSvFlags">264</int>
 						<string key="NSFrame">{{321, 23}, {146, 22}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:791</string>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSPopUpButtonCell" key="NSCell" id="1025582464">
@@ -33451,7 +33756,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<int key="NSvFlags">264</int>
 						<string key="NSFrame">{{321, 64}, {146, 22}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:791</string>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSPopUpButtonCell" key="NSCell" id="901287699">
@@ -33555,7 +33859,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<int key="NSvFlags">264</int>
 						<string key="NSFrame">{{164, 122}, {146, 22}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:791</string>
 						<bool key="NSEnabled">YES</bool>
 						<object class="NSPopUpButtonCell" key="NSCell" id="150359366">
@@ -33659,7 +33962,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 										<int key="NSvFlags">268</int>
 										<string key="NSFrame">{{8, 14}, {132, 32}}</string>
 										<reference key="NSSuperview" ref="583807089"/>
-										<reference key="NSWindow"/>
 										<string key="NSReuseIdentifierKey">_NS:736</string>
 										<bool key="NSEnabled">YES</bool>
 										<bool key="NSAllowsLogicalLayoutDirection">NO</bool>
@@ -33905,13 +34207,11 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 								</object>
 								<string key="NSFrame">{{1, 1}, {144, 56}}</string>
 								<reference key="NSSuperview" ref="632313571"/>
-								<reference key="NSWindow"/>
 								<string key="NSReuseIdentifierKey">_NS:21</string>
 							</object>
 						</object>
 						<string key="NSFrame">{{164, 6}, {146, 72}}</string>
 						<reference key="NSSuperview" ref="199208987"/>
-						<reference key="NSWindow"/>
 						<string key="NSReuseIdentifierKey">_NS:18</string>
 						<string key="NSOffsets">{0, 0}</string>
 						<object class="NSTextFieldCell" key="NSTitleCell">
@@ -33930,8 +34230,6 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					</object>
 				</object>
 				<string key="NSFrameSize">{474, 167}</string>
-				<reference key="NSSuperview"/>
-				<reference key="NSWindow"/>
 				<string key="NSClassName">NSView</string>
 			</object>
 			<object class="NSDrawer" id="637594956">
@@ -34991,6 +35289,27 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 								<int key="NSPanGestureRecognizer.buttonMask">0</int>
 								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
 							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="865252730"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="865252730"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="865252730"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
 						</object>
 						<int key="NSsFlags">133138</int>
 						<reference key="NSVScroller" ref="69605143"/>
@@ -35541,6 +35860,27 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 								<int key="NSPanGestureRecognizer.buttonMask">0</int>
 								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
 							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="894001553"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="894001553"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="894001553"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
 						</object>
 						<int key="NSsFlags">133138</int>
 						<reference key="NSVScroller" ref="1016206682"/>
@@ -35697,6 +36037,27 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<reference key="NSNextKeyView" ref="631391189"/>
 						<object class="NSArray" key="NSGestureRecognizers">
 							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="1056928026"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="1056928026"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="1056928026"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
 							<object class="NSPanGestureRecognizer">
 								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
 								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
@@ -36286,6 +36647,27 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<reference key="NSNextKeyView" ref="310103818"/>
 						<object class="NSArray" key="NSGestureRecognizers">
 							<bool key="EncodedWithXMLCoder">YES</bool>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="4253638"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="4253638"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
+							<object class="NSPanGestureRecognizer">
+								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
+								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
+								<reference key="NSGestureRecognizer.target" ref="4253638"/>
+								<int key="NSPanGestureRecognizer.buttonMask">0</int>
+								<int key="NSPanGestureRecognizer.numberOfTouchesRequired">1</int>
+							</object>
 							<object class="NSPanGestureRecognizer">
 								<int key="NSGestureRecognizer.allowedTouchTypes">1</int>
 								<string key="NSGestureRecognizer.action">_panWithGestureRecognizer:</string>
@@ -51310,15 +51692,31 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBBindingConnection" key="connection">
-						<string key="label">hidden: isDeveloperPlusBuild</string>
-						<reference key="source" ref="70316367"/>
-						<reference key="destination" ref="976324537"/>
+						<string key="label">value: saveDirectoryPath</string>
+						<reference key="source" ref="230229298"/>
+						<reference key="destination" ref="163407639"/>
 						<object class="NSNibBindingConnector" key="connector">
-							<reference key="NSSource" ref="70316367"/>
-							<reference key="NSDestination" ref="976324537"/>
-							<string key="NSLabel">hidden: isDeveloperPlusBuild</string>
-							<string key="NSBinding">hidden</string>
-							<string key="NSKeyPath">isDeveloperPlusBuild</string>
+							<reference key="NSSource" ref="230229298"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">value: saveDirectoryPath</string>
+							<string key="NSBinding">value</string>
+							<string key="NSKeyPath">saveDirectoryPath</string>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11286</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="969127933"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="969127933"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
 							<object class="NSDictionary" key="NSOptions">
 								<string key="NS.key.0">NSValueTransformerName</string>
 								<string key="NS.object.0">NSNegateBoolean</string>
@@ -51326,7 +51724,467 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 							<int key="NSNibBindingConnectorVersion">2</int>
 						</object>
 					</object>
-					<int key="connectionID">11284</int>
+					<int key="connectionID">11288</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="1068437360"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="1068437360"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11290</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="398967435"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="398967435"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11292</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="238400759"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="238400759"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11294</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="79035338"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="79035338"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11296</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="500794687"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="500794687"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11298</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="675964847"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="675964847"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11300</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="717638675"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="717638675"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11302</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="673250810"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="673250810"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11304</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="1050237774"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="1050237774"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11306</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="740290251"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="740290251"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11308</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="220050085"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="220050085"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11310</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="362833091"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="362833091"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11312</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="220633258"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="220633258"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11314</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="213092269"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="213092269"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11316</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="321684049"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="321684049"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11318</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="616532458"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="616532458"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11320</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="268211444"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="268211444"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11322</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="749928"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="749928"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11324</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="23646464"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="23646464"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11326</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isFileStreamClosing</string>
+						<reference key="source" ref="142307905"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="142307905"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isFileStreamClosing</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isFileStreamClosing</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11328</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="759859011"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="759859011"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11330</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="1038713956"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="1038713956"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11332</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBBindingConnection" key="connection">
+						<string key="label">enabled: isRecording</string>
+						<reference key="source" ref="357371288"/>
+						<reference key="destination" ref="163407639"/>
+						<object class="NSNibBindingConnector" key="connector">
+							<reference key="NSSource" ref="357371288"/>
+							<reference key="NSDestination" ref="163407639"/>
+							<string key="NSLabel">enabled: isRecording</string>
+							<string key="NSBinding">enabled</string>
+							<string key="NSKeyPath">isRecording</string>
+							<object class="NSDictionary" key="NSOptions">
+								<string key="NS.key.0">NSValueTransformerName</string>
+								<string key="NS.object.0">NSNegateBoolean</string>
+							</object>
+							<int key="NSNibBindingConnectorVersion">2</int>
+						</object>
+					</object>
+					<int key="connectionID">11335</int>
 				</object>
 			</object>
 			<object class="IBMutableOrderedSet" key="objectRecords">
@@ -62527,13 +63385,13 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 							<bool key="EncodedWithXMLCoder">YES</bool>
 							<reference ref="565977592"/>
 							<reference ref="523260352"/>
-							<reference ref="852351580"/>
 							<reference ref="361536114"/>
 							<reference ref="146671681"/>
 							<reference ref="232595516"/>
 							<reference ref="460634132"/>
 							<reference ref="926528210"/>
 							<reference ref="568942126"/>
+							<reference ref="852351580"/>
 						</object>
 						<reference key="parent" ref="205727894"/>
 					</object>
@@ -67401,11 +68259,11 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 						<reference key="object" ref="676633389"/>
 						<object class="NSMutableArray" key="children">
 							<bool key="EncodedWithXMLCoder">YES</bool>
-							<reference ref="731274534"/>
 							<reference ref="163895968"/>
 							<reference ref="157493336"/>
 							<reference ref="914491855"/>
 							<reference ref="759677315"/>
+							<reference ref="731274534"/>
 						</object>
 						<reference key="parent" ref="613785356"/>
 					</object>
@@ -73198,10 +74056,10 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					</object>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<integer value="0"/>
+					<integer value="29"/>
 					<integer value="0"/>
 					<object class="NSAffineTransform">
-						<bytes key="NSTransformStruct">P4AAAL+AAABBkAAAwzMAAA</bytes>
+						<bytes key="NSTransformStruct">P4AAAL+AAABBUAAAwogAAA</bytes>
 					</object>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<integer value="0"/>
@@ -73333,9 +74191,9 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{905, 759}, {480, 177}}</string>
+					<string>{{1111, 877}, {480, 177}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{905, 759}, {480, 177}}</string>
+					<string>{{1111, 877}, {480, 177}}</string>
 					<boolean value="NO"/>
 					<boolean value="YES"/>
 					<boolean value="YES"/>
@@ -73350,7 +74208,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					<string>DirectoryURLDragDestTextField</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<object class="NSAffineTransform">
-						<bytes key="NSTransformStruct">P4AAAL+AAABBoAAAw9SAAA</bytes>
+						<bytes key="NSTransformStruct">P4AAAL+AAABBIAAAwxgAAA</bytes>
 					</object>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -73544,9 +74402,9 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{905, 497}, {480, 245}}</string>
+					<string>{{1137, 506}, {480, 245}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{905, 497}, {480, 245}}</string>
+					<string>{{1137, 506}, {480, 245}}</string>
 					<boolean value="NO"/>
 					<boolean value="NO"/>
 					<boolean value="YES"/>
@@ -73616,10 +74474,10 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					</object>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<object class="NSAffineTransform">
-						<bytes key="NSTransformStruct">P4AAAL+AAABD54AAw8eAAA</bytes>
+						<bytes key="NSTransformStruct">P4AAAL+AAABBIAAAwxIAAA</bytes>
 					</object>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{1183, 489}, {199, 166}}</string>
+					<string>{{1673, 230}, {198, 166}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -73637,7 +74495,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					<boolean value="YES"/>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{587, 490}, {217, 383}}</string>
+					<string>{{1393, 321}, {217, 383}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -73720,7 +74578,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{918, 288}, {474, 167}}</string>
+					<string>{{1133, 394}, {474, 167}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<object class="NSAffineTransform"/>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -73757,7 +74615,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					</object>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<object class="NSAffineTransform">
-						<bytes key="NSTransformStruct">P4AAAL+AAABA4AAAwzgAAA</bytes>
+						<bytes key="NSTransformStruct">P4AAAL+AAABA4AAAww4AAA</bytes>
 					</object>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<object class="NSAffineTransform">
@@ -73785,7 +74643,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					</object>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<object class="NSAffineTransform">
-						<bytes key="NSTransformStruct">P4AAAL+AAABDJAAAwxYAAA</bytes>
+						<bytes key="NSTransformStruct">P4AAAL+AAABDJAAAww4AAA</bytes>
 					</object>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>{{827, 550}, {146, 88}}</string>
@@ -74368,7 +75226,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{891, 985}, {500, 20}}</string>
+					<string>{{1065, 1128}, {500, 20}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -74620,10 +75478,10 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					<reference ref="0"/>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{748, 206}, {273, 542}}</string>
+					<string>{{1316, 541}, {273, 542}}</string>
 					<string>{193.5, 488.5}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{748, 206}, {273, 542}}</string>
+					<string>{{1316, 541}, {273, 542}}</string>
 					<boolean value="NO"/>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -75493,7 +76351,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{423, 653}, {203, 183}}</string>
+					<string>{{1077, 945}, {200, 183}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -75513,7 +76371,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{1208, 832}, {281, 153}}</string>
+					<string>{{1382, 975}, {281, 153}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<reference ref="0"/>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -76379,7 +77237,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					<boolean value="NO"/>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{227, 373}, {325, 463}}</string>
+					<string>{{1166, 665}, {316, 463}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>{{655, 347}, {173, 339}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -76835,9 +77693,9 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 					<boolean value="YES"/>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{503, 689}, {640, 167}}</string>
+					<string>{{686, 691}, {807, 167}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{503, 689}, {640, 167}}</string>
+					<string>{{686, 691}, {807, 167}}</string>
 					<boolean value="NO"/>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -77310,7 +78168,7 @@ xcjGRsbDx0HHv8g9yLzJOsm5yjjKt8s2y7bMNcy1zTXNtc42zrbPN8+40DnQutE80b7SP9LB00TTxtRJ
 				</object>
 			</object>
 			<nil key="sourceID"/>
-			<int key="maxID">11284</int>
+			<int key="maxID">11335</int>
 		</object>
 		<object class="IBClassDescriber" key="IBDocument.Classes">
 			<object class="NSMutableArray" key="referencedPartialClassDescriptionsV3.1+">

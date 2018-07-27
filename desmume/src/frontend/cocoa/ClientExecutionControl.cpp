@@ -25,6 +25,7 @@
 #include "../../gdbstub.h"
 #include "../../rtc.h"
 
+#include "ClientAVCaptureObject.h"
 #include "ClientExecutionControl.h"
 
 // Need to include assert.h this way so that GDB stub will work
@@ -144,9 +145,15 @@ ClientAVCaptureObject* ClientExecutionControl::GetClientAVCaptureObjectApplied()
 void ClientExecutionControl::SetClientAVCaptureObject(ClientAVCaptureObject *theCaptureObject)
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
-	this->_settingsPending.avCaptureObject = theCaptureObject;
 	
-	this->_newSettingsPendingOnNDSExec = true;
+	if (this->_settingsPending.avCaptureObject != theCaptureObject)
+	{
+		this->_settingsPending.avCaptureObject = theCaptureObject;
+		
+		this->_needResetFramesToSkip = true;
+		this->_newSettingsPendingOnNDSExec = true;
+	}
+	
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 

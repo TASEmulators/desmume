@@ -23,9 +23,13 @@
 #import "cocoa_util.h"
 #include "ClientDisplayView.h"
 #include "ClientExecutionControl.h"
-#include "ClientAVCaptureObject.h"
-#undef BOOL
 
+#ifdef BOOL
+#undef BOOL
+#endif
+
+
+class ClientAVCaptureObject;
 @class NSImage;
 @class NSBitmapImageRep;
 
@@ -122,9 +126,14 @@
 @interface CocoaDSVideoCapture : CocoaDSDisplay
 {
 	ClientDisplay3DPresenter *_cdp;
+	ClientAVCaptureObject *avCaptureObject;
+	uint32_t *_videoCaptureBuffer;
+	
+	pthread_mutex_t _mutexCaptureBuffer;
 }
 
 @property (assign, nonatomic, getter=clientDisplay3DPresenter, setter=setClientDisplay3DPresenter:) ClientDisplay3DPresenter *_cdp;
+@property (assign, nonatomic) ClientAVCaptureObject *avCaptureObject;
 
 - (void) handleReceiveGPUFrame;
 

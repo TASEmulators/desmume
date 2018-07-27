@@ -245,7 +245,11 @@ ClientAVCaptureObject::ClientAVCaptureObject(size_t videoFrameWidth, size_t vide
 {
 	__InstanceInit(videoFrameWidth, videoFrameHeight);
 	
-	_pendingVideoBuffer = (u8 *)malloc_alignedCacheLine(_videoFrameSize * _pendingBufferCount);
+	if (_videoFrameSize > 0)
+	{
+		_pendingVideoBuffer = (u8 *)malloc_alignedCacheLine(_videoFrameSize * _pendingBufferCount);
+	}
+	
 	_pendingAudioBuffer = (u8 *)malloc_alignedCacheLine(_audioFrameSize * _pendingBufferCount);
 	_pendingAudioWriteSize = (size_t *)calloc(_pendingBufferCount, sizeof(size_t));
 	
@@ -258,7 +262,7 @@ ClientAVCaptureObject::ClientAVCaptureObject(size_t videoFrameWidth, size_t vide
 			_convertParam[i].firstLineIndex = 0;
 			_convertParam[i].lastLineIndex = linesPerThread - 1;
 			_convertParam[i].srcOffset = 0;
-			_convertParam[i].dstOffset = (videoFrameWidth * (videoFrameHeight - 1) * 3);
+			_convertParam[i].dstOffset = 0;
 			_convertParam[i].frameWidth = videoFrameWidth;
 		}
 	}
@@ -283,7 +287,7 @@ ClientAVCaptureObject::ClientAVCaptureObject(size_t videoFrameWidth, size_t vide
 			}
 			
 			_convertParam[i].srcOffset = (videoFrameWidth * _convertParam[i].firstLineIndex);
-			_convertParam[i].dstOffset = (videoFrameWidth * (videoFrameHeight - (_convertParam[i].firstLineIndex + 1)) * 3);
+			_convertParam[i].dstOffset = (videoFrameWidth * _convertParam[i].firstLineIndex * 3);
 			_convertParam[i].frameWidth = videoFrameWidth;
 		}
 	}
@@ -297,9 +301,20 @@ void ClientAVCaptureObject::__InstanceInit(size_t videoFrameWidth, size_t videoF
 	
 	_mutexCaptureFlags = slock_new();
 	
-	_videoFrameWidth = videoFrameWidth;
-	_videoFrameHeight = videoFrameHeight;
-	_videoFrameSize = videoFrameWidth * videoFrameHeight * 3; // The video frame will always be in the RGB888 colorspace.
+	if ( (videoFrameWidth == 0) || (videoFrameHeight == 0) )
+	{
+		// Audio-only capture.
+		_videoFrameWidth = 0;
+		_videoFrameHeight = 0;
+		_videoFrameSize = 0;
+	}
+	else
+	{
+		_videoFrameWidth = videoFrameWidth;
+		_videoFrameHeight = videoFrameHeight;
+		_videoFrameSize = videoFrameWidth * videoFrameHeight * 3; // The video frame will always be in the RGB888 colorspace.
+	}
+	
 	_audioBlockSize = sizeof(int16_t) * 2;
 	_audioFrameSize = ((DESMUME_SAMPLE_RATE * _audioBlockSize) / 30);
 	
@@ -433,27 +448,24 @@ void ClientAVCaptureObject::StreamWriteStart()
 		return;
 	}
 	
+	// Force video conversion to finish before putting the frame on the queue.
+	if ( (this->_videoFrameSize > 0) && (this->_numThreads > 0) )
+	{
+		for (size_t i = 0; i < this->_numThreads; i++)
+		{
+			this->_convertThread[i]->finish();
+		}
+	}
+	
 	const size_t bufferIndex = this->_currentBufferIndex;
 	const size_t queueSize = this->_fs->GetQueueSize();
 	const bool isQueueEmpty = (queueSize == 0);
 	
-	// If there are no frames in the current write queue, then we know that the current
-	// pending video frame will be written immediately. If this is the case, then we
-	// need to force the video conversion to finish so that we can write out the frame.
-	if (isQueueEmpty)
-	{
-		if (this->_videoFrameSize > 0)
-		{
-			for (size_t i = 0; i < this->_numThreads; i++)
-			{
-				this->_convertThread[i]->finish();
-			}
-		}
-	}
-	
 	this->_fs->QueueAdd(this->_pendingVideoBuffer + (this->_videoFrameSize * bufferIndex), this->_videoFrameSize,
 						this->_pendingAudioBuffer + (AUDIO_STREAM_BUFFER_SIZE * bufferIndex), this->_pendingAudioWriteSize[bufferIndex]);
 	
+	// If the queue was initially empty, then we need to wake up the file write
+	// thread at this time.
 	if (isQueueEmpty)
 	{
 		this->_fileWriteThread->execute(&RunAviFileWrite, this->_fs);
@@ -468,39 +480,31 @@ void ClientAVCaptureObject::StreamWriteFinish()
 //converts 16bpp to 24bpp and flips
 void ClientAVCaptureObject::ConvertVideoSlice555Xto888(const VideoConvertParam &param)
 {
+	const size_t lineCount = param.lastLineIndex - param.firstLineIndex + 1;
 	const u16 *__restrict src = (const u16 *__restrict)param.src;
 	u8 *__restrict dst = param.dst;
 	
-	for (size_t y = param.firstLineIndex; y <= param.lastLineIndex; y++)
-	{
-		ColorspaceConvertBuffer555XTo888<true, false>(src, dst, param.frameWidth);
-		src += param.frameWidth;
-		dst -= param.frameWidth * 3;
-	}
+	ColorspaceConvertBuffer555XTo888<false, false>(src, dst, param.frameWidth * lineCount);
 }
 
 //converts 32bpp to 24bpp and flips
 void ClientAVCaptureObject::ConvertVideoSlice888Xto888(const VideoConvertParam &param)
 {
+	const size_t lineCount = param.lastLineIndex - param.firstLineIndex + 1;
 	const u32 *__restrict src = (const u32 *__restrict)param.src;
 	u8 *__restrict dst = param.dst;
 	
-	for (size_t y = param.firstLineIndex; y <= param.lastLineIndex; y++)
-	{
-		ColorspaceConvertBuffer888XTo888<true, false>(src, dst, param.frameWidth);
-		src += param.frameWidth;
-		dst -= param.frameWidth * 3;
-	}
+	ColorspaceConvertBuffer888XTo888<false, false>(src, dst, param.frameWidth * lineCount);
 }
 
-void ClientAVCaptureObject::ReadVideoFrame(const void *srcVideoFrame, const size_t inFrameWidth, const size_t inFrameHeight, const NDSColorFormat colorFormat)
+void ClientAVCaptureObject::CaptureVideoFrame(const void *srcVideoFrame, const size_t inFrameWidth, const size_t inFrameHeight, const NDSColorFormat colorFormat)
 {
 	//dont do anything if prescale has changed, it's just going to be garbage
 	if (!this->_isCapturingVideo ||
 		(srcVideoFrame == NULL) ||
 		(this->_videoFrameSize == 0) ||
 		(this->_videoFrameWidth != inFrameWidth) ||
-		(this->_videoFrameHeight != (inFrameHeight * 2)))
+		(this->_videoFrameHeight != inFrameHeight))
 	{
 		return;
 	}
@@ -548,7 +552,7 @@ void ClientAVCaptureObject::ReadVideoFrame(const void *srcVideoFrame, const size
 	}
 }
 
-void ClientAVCaptureObject::ReadAudioFrames(const void *srcAudioBuffer, const size_t inSampleCount)
+void ClientAVCaptureObject::CaptureAudioFrames(const void *srcAudioBuffer, const size_t inSampleCount)
 {
 	if (!this->_isCapturingAudio || (srcAudioBuffer == NULL))
 	{

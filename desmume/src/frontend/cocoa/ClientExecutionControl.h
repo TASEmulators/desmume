@@ -22,11 +22,13 @@
 #include <map>
 #include <string>
 
-#include "ClientAVCaptureObject.h"
 #include "ClientInputHandler.h"
 
 #include "../../slot1.h"
+
+#ifdef BOOL
 #undef BOOL
+#endif
 
 #define SPEED_SCALAR_QUARTER						0.25		// Speed scalar for quarter execution speed.
 #define SPEED_SCALAR_HALF							0.5			// Speed scalar for half execution speed.
@@ -42,6 +44,8 @@
 																// This value acts as a scalar multiple of the frame skip.
 #define FRAME_SKIP_BIAS								0.1			// May be any real number. This value acts as a vector addition to the frame skip.
 #define MAX_FRAME_SKIP								(DS_FRAMES_PER_SECOND / 2.98)
+
+class ClientAVCaptureObject;
 
 enum ExecutionBehavior
 {

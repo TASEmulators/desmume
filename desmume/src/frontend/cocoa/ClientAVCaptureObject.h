@@ -253,8 +253,8 @@ public:
 	void ConvertVideoSlice555Xto888(const VideoConvertParam &param);
 	void ConvertVideoSlice888Xto888(const VideoConvertParam &param);
 	
-	void ReadVideoFrame(const void *srcVideoFrame, const size_t inFrameWidth, const size_t inFrameHeight, const NDSColorFormat colorFormat);
-	void ReadAudioFrames(const void *srcAudioBuffer, const size_t inSampleCount);
+	void CaptureVideoFrame(const void *srcVideoFrame, const size_t inFrameWidth, const size_t inFrameHeight, const NDSColorFormat colorFormat);
+	void CaptureAudioFrames(const void *srcAudioBuffer, const size_t inSampleCount);
 };
 
 #endif // _CLIENT_AV_CAPTURE_OBJECT_H_
