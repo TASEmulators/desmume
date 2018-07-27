@@ -146,7 +146,8 @@ vertex HUDVtx hud_vertex(const device float2 *inPosition [[buffer(0)]],
 						 const device uint32_t *inColor [[buffer(1)]],
 						 const device float2 *inTexCoord [[buffer(2)]],
 						 const constant DisplayViewShaderProperties &viewProps [[buffer(3)]],
-						 const constant uint8_t &isScreenOverlay [[buffer(4)]],
+						 const constant uint8_t &doYFlip [[buffer(4)]],
+						 const constant uint8_t &isScreenOverlay [[buffer(5)]],
 						 const uint vid [[vertex_id]])
 {
 	const float angleRadians    = viewProps.rotation * (M_PI_F/180.0f);
@@ -160,8 +161,10 @@ vertex HUDVtx hud_vertex(const device float2 *inPosition [[buffer(0)]],
 	const float2x2 scale        = float2x2(	float2(viewProps.viewScale,                0.0f),
 										    float2(               0.0f, viewProps.viewScale));
 	
+	const float2 yFlip = (doYFlip != 0) ? float2(1.0f, -1.0f) : float2(1.0f, 1.0f);
+	
 	HUDVtx outVtx;
-	outVtx.position = (isScreenOverlay != 0) ? float4(projection * rotation * scale * inPosition[vid], 0.0f, 1.0f) : float4(projection * inPosition[vid], 0.0f, 1.0f);
+	outVtx.position = (isScreenOverlay != 0) ? float4(projection * rotation * scale * inPosition[vid] * yFlip, 0.0f, 1.0f) : float4(projection * inPosition[vid] * yFlip, 0.0f, 1.0f);
 	outVtx.color = float4( (float)((inColor[vid] >> 0) & 0xFF) / 255.0f, (float)((inColor[vid] >> 8) & 0xFF) / 255.0f, (float)((inColor[vid] >> 16) & 0xFF) / 255.0f, (float)((inColor[vid] >> 24) & 0xFF) / 255.0f );
 	outVtx.texCoord = inTexCoord[vid];
 	outVtx.lowerHUDMipMapLevel = (viewProps.lowerHUDMipMapLevel == 1);
@@ -181,6 +184,7 @@ fragment float4 hud_fragment(const HUDVtx vtx [[stage_in]],
 vertex DisplayVtx display_output_vertex(const device float2 *inPosition [[buffer(0)]],
 										const device float2 *inTexCoord [[buffer(1)]],
 										const constant DisplayViewShaderProperties &viewProps [[buffer(2)]],
+										const constant uint8_t &doYFlip [[buffer(3)]],
 										const uint vid [[vertex_id]])
 {
 	const float angleRadians    = viewProps.rotation * (M_PI_F/180.0f);
@@ -194,8 +198,10 @@ vertex DisplayVtx display_output_vertex(const device float2 *inPosition [[buffer
 	const float2x2 scale        = float2x2(	float2(viewProps.viewScale,                0.0f),
 	                                        float2(               0.0f, viewProps.viewScale));
 	
+	const float2 yFlip = (doYFlip != 0) ? float2(1.0f, -1.0f) : float2(1.0f, 1.0f);
+	
 	DisplayVtx outVtx;
-	outVtx.position = float4(projection * rotation * scale * inPosition[vid], 0.0f, 1.0f);
+	outVtx.position = float4(projection * rotation * scale * inPosition[vid] * yFlip, 0.0f, 1.0f);
 	outVtx.texCoord = inTexCoord[vid];
 	
 	return outVtx;
@@ -204,6 +210,7 @@ vertex DisplayVtx display_output_vertex(const device float2 *inPosition [[buffer
 vertex DisplayVtx display_output_bicubic_vertex(const device float2 *inPosition [[buffer(0)]],
 												const device float2 *inTexCoord [[buffer(1)]],
 												const constant DisplayViewShaderProperties &viewProps [[buffer(2)]],
+												const constant uint8_t &doYFlip [[buffer(3)]],
 												const uint vid [[vertex_id]])
 {
 	const float angleRadians    = viewProps.rotation * (M_PI_F/180.0f);
@@ -217,8 +224,10 @@ vertex DisplayVtx display_output_bicubic_vertex(const device float2 *inPosition 
 	const float2x2 scale        = float2x2(	float2(viewProps.viewScale,                0.0f),
 	                                        float2(               0.0f, viewProps.viewScale));
 	
+	const float2 yFlip = (doYFlip != 0) ? float2(1.0f, -1.0f) : float2(1.0f, 1.0f);
+	
 	DisplayVtx outVtx;
-	outVtx.position = float4(projection * rotation * scale * inPosition[vid], 0.0f, 1.0f);
+	outVtx.position = float4(projection * rotation * scale * inPosition[vid] * yFlip, 0.0f, 1.0f);
 	outVtx.texCoord = floor(inTexCoord[vid] - 0.5f) + 0.5f;
 	
 	return outVtx;

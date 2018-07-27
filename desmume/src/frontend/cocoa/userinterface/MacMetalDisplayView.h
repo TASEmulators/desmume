@@ -246,7 +246,8 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 			outputPipelineState:(id<MTLRenderPipelineState>)outputPipelineState
 			   hudPipelineState:(id<MTLRenderPipelineState>)hudPipelineState
 					texDisplays:(MetalTexturePair)texDisplay
-						   mrfi:(MetalRenderFrameInfo)mrfi;
+						   mrfi:(MetalRenderFrameInfo)mrfi
+						doYFlip:(BOOL)willFlip;
 - (void) renderStartAtIndex:(uint8_t)index;
 - (void) renderFinishAtIndex:(uint8_t)index;
 - (ClientDisplayBufferState) renderBufferStateAtIndex:(uint8_t)index;

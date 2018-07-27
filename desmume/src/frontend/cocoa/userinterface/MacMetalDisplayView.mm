@@ -1885,6 +1885,7 @@
 			   hudPipelineState:(id<MTLRenderPipelineState>)hudPipelineState
 					texDisplays:(MetalTexturePair)texDisplay
 						   mrfi:(MetalRenderFrameInfo)mrfi
+						doYFlip:(BOOL)willFlip
 {
 	// Generate the command encoder.
 	id<MTLRenderCommandEncoder> rce = [cb renderCommandEncoderWithDescriptor:_outputRenderPassDesc];
@@ -1899,6 +1900,7 @@
 	}
 	
 	// Draw the NDS displays.
+	const uint8_t doYFlip = (willFlip) ? 1 : 0;
 	const NDSDisplayInfo &displayInfo = cdp->GetEmuDisplayInfo();
 	const float backlightIntensity[2] = { displayInfo.backlightIntensity[NDSDisplayID_Main], displayInfo.backlightIntensity[NDSDisplayID_Touch] };
 	
@@ -1906,6 +1908,7 @@
 	[rce setVertexBytes:_vtxPositionBuffer length:sizeof(_vtxPositionBuffer) atIndex:0];
 	[rce setVertexBytes:_texCoordBuffer length:sizeof(_texCoordBuffer) atIndex:1];
 	[rce setVertexBytes:&_cdvPropertiesBuffer length:sizeof(_cdvPropertiesBuffer) atIndex:2];
+	[rce setVertexBytes:&doYFlip length:sizeof(uint8_t) atIndex:3];
 	
 	switch (cdp->GetPresenterProperties().mode)
 	{
@@ -1986,13 +1989,14 @@
 		[rce setVertexBuffer:_hudVtxColorBuffer[mrfi.renderIndex]    offset:0 atIndex:1];
 		[rce setVertexBuffer:_hudTexCoordBuffer[mrfi.renderIndex]    offset:0 atIndex:2];
 		[rce setVertexBytes:&_cdvPropertiesBuffer length:sizeof(_cdvPropertiesBuffer) atIndex:3];
+		[rce setVertexBytes:&doYFlip length:sizeof(uint8_t) atIndex:4];
 		[rce setFragmentTexture:[self texHUDCharMap] atIndex:0];
 		
 		// First, draw the inputs.
 		if (mrfi.willDrawHUDInput)
 		{
 			isScreenOverlay = 1;
-			[rce setVertexBytes:&isScreenOverlay length:sizeof(uint8_t) atIndex:4];
+			[rce setVertexBytes:&isScreenOverlay length:sizeof(uint8_t) atIndex:5];
 			[rce setFragmentSamplerState:[sharedData samplerHUDBox] atIndex:0];
 			[rce drawIndexedPrimitives:MTLPrimitiveTypeTriangle
 							indexCount:mrfi.hudTouchLineLength * 6
@@ -2001,7 +2005,7 @@
 					 indexBufferOffset:(mrfi.hudStringLength + HUD_INPUT_ELEMENT_LENGTH) * 6 * sizeof(uint16_t)];
 			
 			isScreenOverlay = 0;
-			[rce setVertexBytes:&isScreenOverlay length:sizeof(uint8_t) atIndex:4];
+			[rce setVertexBytes:&isScreenOverlay length:sizeof(uint8_t) atIndex:5];
 			[rce setFragmentSamplerState:[sharedData samplerHUDText] atIndex:0];
 			[rce drawIndexedPrimitives:MTLPrimitiveTypeTriangle
 							indexCount:HUD_INPUT_ELEMENT_LENGTH * 6
@@ -2011,7 +2015,7 @@
 		}
 		
 		// Next, draw the backing text box.
-		[rce setVertexBytes:&isScreenOverlay length:sizeof(uint8_t) atIndex:4];
+		[rce setVertexBytes:&isScreenOverlay length:sizeof(uint8_t) atIndex:5];
 		[rce setFragmentSamplerState:[sharedData samplerHUDBox] atIndex:0];
 		[rce drawIndexedPrimitives:MTLPrimitiveTypeTriangle
 						indexCount:6
@@ -2092,7 +2096,8 @@
 				 outputPipelineState:[self outputRGBAPipeline]
 					hudPipelineState:[sharedData hudRGBAPipeline]
 						 texDisplays:texProcess
-								mrfi:mrfi];
+								mrfi:mrfi
+							 doYFlip:YES];
 		
 		id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
 		
@@ -2198,7 +2203,8 @@
 								outputPipelineState:[presenterObject outputDrawablePipeline]
 								   hudPipelineState:[[presenterObject sharedData] hudPipeline]
 										texDisplays:texProcess
-											   mrfi:mrfi];
+											   mrfi:mrfi
+											doYFlip:NO];
 			
 			[cbRender addScheduledHandler:^(id<MTLCommandBuffer> block) {
 				[presenterObject setRenderBufferState:ClientDisplayBufferState_Reading index:mrfi.renderIndex];
