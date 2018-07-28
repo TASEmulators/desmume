@@ -466,6 +466,7 @@
 #define IDC_EVALUE                      1065
 #define IDC_TEX_DEPOSTERIZE2            1065
 #define IDC_TEX_SMOOTH                  1065
+#define IDC_WIFI_EMULATED               1065
 #define IDC_STATIC_RANGE                1066
 #define IDC_TEXSCALE_1                  1066
 #define IDC_TEXSCALE_2                  1067
@@ -1080,7 +1081,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
 #define _APS_NEXT_COMMAND_VALUE         40150
-#define _APS_NEXT_CONTROL_VALUE         1065
+#define _APS_NEXT_CONTROL_VALUE         1066
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

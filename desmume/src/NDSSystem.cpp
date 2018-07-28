@@ -1334,8 +1334,13 @@ void Sequencer::init()
 
 
 	#ifdef EXPERIMENTAL_WIFI_COMM
-	wifi.enabled = true;
-	wifi.timestamp = kWifiCycles;
+	if(CommonSettings.wifi.emulated) 
+	{
+		wifi.enabled = true;
+		wifi.timestamp = kWifiCycles;
+	}
+	else
+		wifi.enabled = false;
 	#else
 	wifi.enabled = false;
 	#endif
@@ -1665,7 +1670,7 @@ u64 Sequencer::findNext()
 	if(readslot1.isEnabled()) next = _fast_min(next,readslot1.next());
 
 #ifdef EXPERIMENTAL_WIFI_COMM
-	next = _fast_min(next,wifi.next());
+	if (CommonSettings.wifi.emulated) next = _fast_min(next,wifi.next());
 #endif
 
 #define test(X,Y) if(dma_##X##_##Y .isEnabled()) next = _fast_min(next,dma_##X##_##Y .next());
@@ -1723,10 +1728,13 @@ void Sequencer::execHardware()
 	}
 
 #ifdef EXPERIMENTAL_WIFI_COMM
-	if(wifi.isTriggered())
+	if(CommonSettings.wifi.emulated)
 	{
-		WIFI_usTrigger();
-		wifi.timestamp += kWifiCycles;
+		if(wifi.isTriggered())
+		{
+			WIFI_usTrigger();
+			wifi.timestamp += kWifiCycles;
+		}
 	}
 #endif
 	

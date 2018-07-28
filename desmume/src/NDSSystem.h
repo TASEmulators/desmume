@@ -565,6 +565,7 @@ extern struct TCommonSettings
 		strcpy(ARM7BIOS, "biosnds7.bin");
 		strcpy(Firmware, "firmware.bin");
 
+		wifi.emulated = false;
 		/* WIFI mode: adhoc = 0, infrastructure = 1 */
 		wifi.mode = 1;
 		wifi.infraBridgeAdapter = 0;
@@ -648,6 +649,7 @@ extern struct TCommonSettings
 	u32	jit_max_block_size;
 	
 	struct _Wifi {
+		bool emulated;
 		int mode;
 		int infraBridgeAdapter;
 	} wifi;

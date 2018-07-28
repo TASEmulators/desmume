@@ -3328,6 +3328,7 @@ int _main()
 	Piano.Enabled	= (slot2_device_type == NDS_SLOT2_EASYPIANO)?true:false;
 	Paddle.Enabled	= (slot2_device_type == NDS_SLOT2_PADDLE)?true:false;
 
+	CommonSettings.wifi.emulated = GetPrivateProfileBool("Wifi", "Emulated", false, IniName);
 	CommonSettings.wifi.mode = GetPrivateProfileInt("Wifi", "Mode", 0, IniName);
 	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 
@@ -7066,6 +7067,8 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			int i;
 			HWND cur;
 
+			CheckDlgItem(hDlg, IDC_WIFI_EMULATED, CommonSettings.wifi.emulated);
+
 			if (bSocketsAvailable && bWinPCapAvailable)
 				CheckRadioButton(hDlg, IDC_WIFIMODE0, IDC_WIFIMODE1, IDC_WIFIMODE0 + CommonSettings.wifi.mode);
 			else if(bSocketsAvailable)
@@ -7118,6 +7121,9 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 
 					if(romloaded)
 						val = MessageBox(hDlg, "The current ROM needs to be reset to apply changes.\nReset now ?", "DeSmuME", (MB_YESNO | MB_ICONQUESTION));
+
+					CommonSettings.wifi.emulated = IsDlgCheckboxChecked(hDlg, IDC_WIFI_EMULATED);
+					WritePrivateProfileBool("Wifi", "Emulated", CommonSettings.wifi.emulated, IniName);
 
 					if (IsDlgButtonChecked(hDlg, IDC_WIFIMODE0))
 						CommonSettings.wifi.mode = 0;
