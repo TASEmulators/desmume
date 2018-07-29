@@ -466,9 +466,10 @@
 #define IDC_EVALUE                      1065
 #define IDC_TEX_DEPOSTERIZE2            1065
 #define IDC_TEX_SMOOTH                  1065
-#define IDC_WIFI_EMULATED               1065
+#define IDC_WIFI_ENABLED                1065
 #define IDC_STATIC_RANGE                1066
 #define IDC_TEXSCALE_1                  1066
+#define IDC_WIFI_COMPAT                 1066
 #define IDC_TEXSCALE_2                  1067
 #define IDC_BADD                        1068
 #define IDC_LIST                        1069
