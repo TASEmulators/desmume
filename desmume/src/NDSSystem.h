@@ -217,6 +217,14 @@ enum NDS_CONSOLE_TYPE
 	NDS_CONSOLE_TYPE_DSI = 0xFE
 };
 
+enum WifiEmulationLevel
+{
+	WifiEmulationLevel_Off = 0,
+	WifiEmulationLevel_Normal = 10000,
+	WifiEmulationLevel_Compatibility = 65535,
+};
+extern WifiEmulationLevel wifiEmulationLevel;
+
 struct NDSSystem
 {
 	s32 wifiCycle;
@@ -701,7 +709,8 @@ extern struct TCommonSettings
 
 	std::string run_advanscene_import;
 
-} CommonSettings;
+};
+extern TCommonSettings CommonSettings;
 
 void NDS_RunAdvansceneAutoImport();
 
