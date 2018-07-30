@@ -2576,15 +2576,15 @@ void SoftRasterizerRenderer_Altivec::ClearUsingValues_Execute(const size_t start
 {
 	for (size_t i = startPixel; i < endPixel; i+=16)
 	{
-		vec_st(this->_clearColor_v128u32, i +  0, this->_framebufferColor);
-		vec_st(this->_clearColor_v128u32, i + 16, this->_framebufferColor);
-		vec_st(this->_clearColor_v128u32, i + 32, this->_framebufferColor);
-		vec_st(this->_clearColor_v128u32, i + 48, this->_framebufferColor);
+		vec_st(this->_clearColor_v128u32, (i * 4) +  0, this->_framebufferColor);
+		vec_st(this->_clearColor_v128u32, (i * 4) + 16, this->_framebufferColor);
+		vec_st(this->_clearColor_v128u32, (i * 4) + 32, this->_framebufferColor);
+		vec_st(this->_clearColor_v128u32, (i * 4) + 48, this->_framebufferColor);
 		
-		vec_st(this->_clearDepth_v128u32, i +  0, this->_framebufferAttributes->depth);
-		vec_st(this->_clearDepth_v128u32, i + 16, this->_framebufferAttributes->depth);
-		vec_st(this->_clearDepth_v128u32, i + 32, this->_framebufferAttributes->depth);
-		vec_st(this->_clearDepth_v128u32, i + 48, this->_framebufferAttributes->depth);
+		vec_st(this->_clearDepth_v128u32, (i * 4) +  0, this->_framebufferAttributes->depth);
+		vec_st(this->_clearDepth_v128u32, (i * 4) + 16, this->_framebufferAttributes->depth);
+		vec_st(this->_clearDepth_v128u32, (i * 4) + 32, this->_framebufferAttributes->depth);
+		vec_st(this->_clearDepth_v128u32, (i * 4) + 48, this->_framebufferAttributes->depth);
 		
 		vec_st(this->_clearAttrOpaquePolyID_v128u8, i, this->_framebufferAttributes->opaquePolyID);
 		vec_st(this->_clearAttrTranslucentPolyID_v128u8, i, this->_framebufferAttributes->translucentPolyID);
