@@ -3331,12 +3331,12 @@ int _main()
 	if (GetPrivateProfileBool("Wifi", "Enabled", false, IniName))
 	{
 		if (GetPrivateProfileBool("Wifi", "Compatibility Mode", false, IniName))
-			wifiEmulationLevel = WifiEmulationLevel::Compatibility;
+			wifiEmulationLevel = WifiEmulationLevel_Compatibility;
 		else
-			wifiEmulationLevel = WifiEmulationLevel::Normal;
+			wifiEmulationLevel = WifiEmulationLevel_Normal;
 	}
 	else
-		wifiEmulationLevel = WifiEmulationLevel::Off;
+		wifiEmulationLevel = WifiEmulationLevel_Off;
 
 	CommonSettings.wifi.mode = GetPrivateProfileInt("Wifi", "Mode", 0, IniName);
 	CommonSettings.wifi.infraBridgeAdapter = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
@@ -7076,10 +7076,10 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			int i;
 			HWND cur;
 
-			if (wifiEmulationLevel > WifiEmulationLevel::Off)
+			if (wifiEmulationLevel > WifiEmulationLevel_Off)
 			{
 				CheckDlgItem(hDlg, IDC_WIFI_ENABLED, true);
-				CheckDlgItem(hDlg, IDC_WIFI_COMPAT, wifiEmulationLevel == WifiEmulationLevel::Compatibility);
+				CheckDlgItem(hDlg, IDC_WIFI_COMPAT, wifiEmulationLevel == WifiEmulationLevel_Compatibility);
 			}
 			else
 			{
@@ -7143,12 +7143,12 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 					if (IsDlgCheckboxChecked(hDlg, IDC_WIFI_ENABLED)) 
 					{
 						if (IsDlgCheckboxChecked(hDlg, IDC_WIFI_COMPAT))
-							wifiEmulationLevel = WifiEmulationLevel::Compatibility;
+							wifiEmulationLevel = WifiEmulationLevel_Compatibility;
 						else
-							wifiEmulationLevel = WifiEmulationLevel::Normal;
+							wifiEmulationLevel = WifiEmulationLevel_Normal;
 					}
 					else
-						wifiEmulationLevel = WifiEmulationLevel::Off;
+						wifiEmulationLevel = WifiEmulationLevel_Off;
 
 					WritePrivateProfileBool("Wifi", "Enabled", IsDlgCheckboxChecked(hDlg, IDC_WIFI_ENABLED), IniName);
 					WritePrivateProfileBool("Wifi", "Compatibility Mode", IsDlgCheckboxChecked(hDlg, IDC_WIFI_COMPAT), IniName);

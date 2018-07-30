@@ -217,11 +217,11 @@ enum NDS_CONSOLE_TYPE
 	NDS_CONSOLE_TYPE_DSI = 0xFE
 };
 
-enum class WifiEmulationLevel
+enum WifiEmulationLevel
 {
-	Off = 0,
-	Normal = 10000,
-	Compatibility = 65535,
+	WifiEmulationLevel_Off = 0,
+	WifiEmulationLevel_Normal = 10000,
+	WifiEmulationLevel_Compatibility = 65535,
 };
 extern WifiEmulationLevel wifiEmulationLevel;
 
