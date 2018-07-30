@@ -857,14 +857,14 @@
 	
 	for (NSInteger i = 0; i < turboPatternLength; i++)
 	{
-		[turboPatternControl setWidth:23.0f forSegment:i];
+		[turboPatternControl setWidth:24.0f forSegment:i];
 		[turboPatternControl setLabel:[NSString stringWithFormat:@"%i", (int)(i + 1)] forSegment:i];
 		
 		BOOL isPressedBit = ( ((turboPattern >> i) & 0x01) != 0 );
 		[turboPatternControl setSelected:isPressedBit forSegment:i];
 	}
 	
-	float controlWidth = (turboPatternLength * (23.0f + 1.5f));
+	float controlWidth = (turboPatternLength * (24.0f + 1.5f));
 	NSRect oldSheetFrame = [theSheet frame];
 	NSRect newSheetFrame = oldSheetFrame;
 	
