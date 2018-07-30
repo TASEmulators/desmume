@@ -102,7 +102,7 @@ int TotalLagFrames;
 
 TSCalInfo TSCal;
 
-WifiEmulationLevel wifiEmulationLevel;
+WifiEmulationLevel wifiEmulationLevel = WifiEmulationLevel_Off;
 
 namespace DLDI
 {
