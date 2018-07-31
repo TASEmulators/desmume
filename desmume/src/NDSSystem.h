@@ -709,8 +709,7 @@ extern struct TCommonSettings
 
 	std::string run_advanscene_import;
 
-};
-extern TCommonSettings CommonSettings;
+} CommonSettings;
 
 void NDS_RunAdvansceneAutoImport();
 
