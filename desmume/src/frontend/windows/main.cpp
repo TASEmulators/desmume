@@ -939,6 +939,7 @@ const u32 DWS_DDRAW_HW = 32;
 const u32 DWS_OPENGL = 64;
 const u32 DWS_DISPMETHODS =  (DWS_DDRAW_SW|DWS_DDRAW_HW|DWS_OPENGL);
 const u32 DWS_FILTER = 128;
+const u32 DWS_FS_MENU = 256;
 
 static u32 currWindowStyle = DWS_NORMAL;
 void SetStyle(u32 dws);
@@ -3040,6 +3041,7 @@ int _main()
 	u32 style = DWS_NORMAL;
 	if(GetPrivateProfileBool("Video","Window Always On Top", false, IniName)) style |= DWS_ALWAYSONTOP;
 	if(GetPrivateProfileBool("Video","Window Lockdown", false, IniName)) style |= DWS_LOCKDOWN;
+	if(GetPrivateProfileBool("Display", "Show Menu In Fullscreen Mode", false, IniName)) style |= DWS_FS_MENU;
 	
 	if(GetPrivateProfileBool("Video","Display Method Filter", false, IniName))
 		style |= DWS_FILTER;
@@ -4696,6 +4698,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			// Show toolbar
 			MainWindow->checkMenu(IDM_SHOWTOOLBAR, MainWindowToolbar->Visible());
 	
+			// Show Menu In Fullscreen Mode
+			MainWindow->checkMenu(IDM_FS_MENU, (GetStyle()&DWS_FS_MENU) != 0);
+
 			//Counters / Etc.
 			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER,CommonSettings.hud.FrameCounterDisplay);
 			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS,CommonSettings.hud.FpsDisplay);
@@ -6424,6 +6429,13 @@ DOKEYDOWN:
 			}
 			return 0;
 
+		case IDM_FS_MENU:
+			{
+				SetStyle(GetStyle()^DWS_FS_MENU);
+				WritePrivateProfileBool("Display", "Show Menu In Fullscreen Mode", (GetStyle()&DWS_FS_MENU)!= 0, IniName);
+			}
+			return 0;
+
 		case IDM_AUTODETECTSAVETYPE_INTERNAL: 
 		case IDM_AUTODETECTSAVETYPE_FROMDATABASE: 
 			CommonSettings.autodetectBackupMethod = LOWORD(wParam) - IDM_AUTODETECTSAVETYPE_INTERNAL; 
@@ -7753,7 +7765,7 @@ void SetStyle(u32 dws)
 	SetWindowLong(MainWindow->getHWnd(), GWL_STYLE, ws);
 
 
-	if ((dws&DWS_FULLSCREEN))
+	if ((dws&DWS_FULLSCREEN) && !(dws&DWS_FS_MENU))
 		SetMenu(MainWindow->getHWnd(), NULL);
 	else
 		SetMenu(MainWindow->getHWnd(), mainMenu);
