@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2018 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -56,7 +56,7 @@ float3 Lerp(const float3 weight, const float3 p1, const float3 p2, const float3 
 bool InterpDiff(const float3 p1, const float3 p2);
 float DistYCbCr(const float3 pixA, const float3 pixB);
 bool IsPixEqual(const float3 pixA, const float3 pixB);
-bool IsBlendingNeeded(const int4 blend);
+bool IsBlendingNeeded(const char4 blend);
 
 float3 nds_apply_master_brightness(const float3 inColor, const uchar mode, const float intensity);
 
@@ -1002,25 +1002,23 @@ kernel void pixel_scaler_LQ2x(const uint2 inPosition [[thread_position_in_grid]]
 	                    (int(v[7] != v[3]) * 4) +
 	                    (int(v[3] != v[1]) * 8);
 	
-	const float3 p[4] = {
-		lut.read(uint3(pattern*2+0, 0, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 1, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 2, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 3, compare)).rgb
-	};
-	
-	const float3 w[4] = {
-		lut.read(uint3(pattern*2+1, 0, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 1, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 2, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 3, compare)).rgb
-	};
-	
 	const uint2 outPosition = inPosition * 2;
-	outTexture.write( float4(Lerp(w[0], src[int(p[0].r*255.0f/30.95f)], src[int(p[0].g*255.0f/30.95f)], src[int(p[0].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
-	outTexture.write( float4(Lerp(w[1], src[int(p[1].r*255.0f/30.95f)], src[int(p[1].g*255.0f/30.95f)], src[int(p[1].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
-	outTexture.write( float4(Lerp(w[2], src[int(p[2].r*255.0f/30.95f)], src[int(p[2].g*255.0f/30.95f)], src[int(p[2].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
-	outTexture.write( float4(Lerp(w[3], src[int(p[3].r*255.0f/30.95f)], src[int(p[3].g*255.0f/30.95f)], src[int(p[3].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
+	
+	float3 p = lut.read(uint3(pattern*2+0,  0, compare)).rgb;
+	float3 w = lut.read(uint3(pattern*2+1,  0, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  1, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  1, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  2, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  2, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  3, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  3, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
 }
 
 //---------------------------------------
@@ -1068,25 +1066,23 @@ kernel void pixel_scaler_LQ2xS(const uint2 inPosition [[thread_position_in_grid]
 																	 (int(abs(b[7] - b[4]) > diffBright) * 64) +
 																	 (int(abs(b[8] - b[4]) > diffBright) * 128));
 	
-	const float3 p[4] = {
-		lut.read(uint3(pattern*2+0, 0, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 1, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 2, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 3, 0)).rgb
-	};
-	
-	const float3 w[4] = {
-		lut.read(uint3(pattern*2+1, 0, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 1, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 2, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 3, 0)).rgb
-	};
-	
 	const uint2 outPosition = inPosition * 2;
-	outTexture.write( float4(Lerp(w[0], src[int(p[0].r*255.0f/30.95f)], src[int(p[0].g*255.0f/30.95f)], src[int(p[0].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
-	outTexture.write( float4(Lerp(w[1], src[int(p[1].r*255.0f/30.95f)], src[int(p[1].g*255.0f/30.95f)], src[int(p[1].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
-	outTexture.write( float4(Lerp(w[2], src[int(p[2].r*255.0f/30.95f)], src[int(p[2].g*255.0f/30.95f)], src[int(p[2].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
-	outTexture.write( float4(Lerp(w[3], src[int(p[3].r*255.0f/30.95f)], src[int(p[3].g*255.0f/30.95f)], src[int(p[3].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
+	
+	float3 p = lut.read(uint3(pattern*2+0,  0, 0)).rgb;
+	float3 w = lut.read(uint3(pattern*2+1,  0, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  1, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  1, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  2, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  2, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  3, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  3, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
 }
 
 //---------------------------------------
@@ -1127,25 +1123,23 @@ kernel void pixel_scaler_HQ2x(const uint2 inPosition [[thread_position_in_grid]]
 						  (int(InterpDiff(src[7], src[3])) * 4) +
 						  (int(InterpDiff(src[3], src[1])) * 8);
 	
-	const float3 p[4] = {
-		lut.read(uint3(pattern*2+0, 0, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 1, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 2, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 3, compare)).rgb
-	};
-	
-	const float3 w[4] = {
-		lut.read(uint3(pattern*2+1, 0, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 1, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 2, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 3, compare)).rgb
-	};
-	
 	const uint2 outPosition = inPosition * 2;
-	outTexture.write( float4(Lerp(w[0], src[int(p[0].r*255.0f/30.95f)], src[int(p[0].g*255.0f/30.95f)], src[int(p[0].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
-	outTexture.write( float4(Lerp(w[1], src[int(p[1].r*255.0f/30.95f)], src[int(p[1].g*255.0f/30.95f)], src[int(p[1].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
-	outTexture.write( float4(Lerp(w[2], src[int(p[2].r*255.0f/30.95f)], src[int(p[2].g*255.0f/30.95f)], src[int(p[2].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
-	outTexture.write( float4(Lerp(w[3], src[int(p[3].r*255.0f/30.95f)], src[int(p[3].g*255.0f/30.95f)], src[int(p[3].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
+	
+	float3 p = lut.read(uint3(pattern*2+0,  0, compare)).rgb;
+	float3 w = lut.read(uint3(pattern*2+1,  0, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  1, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  1, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  2, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  2, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  3, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  3, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
 }
 
 //---------------------------------------
@@ -1193,25 +1187,23 @@ kernel void pixel_scaler_HQ2xS(const uint2 inPosition [[thread_position_in_grid]
 																	 (int(abs(b[7] - b[4]) > diffBright) * 64) +
 																	 (int(abs(b[8] - b[4]) > diffBright) * 128));
 	
-	const float3 p[4] = {
-		lut.read(uint3(pattern*2+0, 0, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 1, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 2, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 3, 0)).rgb
-	};
-	
-	const float3 w[4] = {
-		lut.read(uint3(pattern*2+1, 0, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 1, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 2, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 3, 0)).rgb
-	};
-	
 	const uint2 outPosition = inPosition * 2;
-	outTexture.write( float4(Lerp(w[0], src[int(p[0].r*255.0f/30.95f)], src[int(p[0].g*255.0f/30.95f)], src[int(p[0].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
-	outTexture.write( float4(Lerp(w[1], src[int(p[1].r*255.0f/30.95f)], src[int(p[1].g*255.0f/30.95f)], src[int(p[1].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
-	outTexture.write( float4(Lerp(w[2], src[int(p[2].r*255.0f/30.95f)], src[int(p[2].g*255.0f/30.95f)], src[int(p[2].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
-	outTexture.write( float4(Lerp(w[3], src[int(p[3].r*255.0f/30.95f)], src[int(p[3].g*255.0f/30.95f)], src[int(p[3].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
+	
+	float3 p = lut.read(uint3(pattern*2+0,  0, 0)).rgb;
+	float3 w = lut.read(uint3(pattern*2+1,  0, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  1, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  1, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  2, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  2, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  3, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  3, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
 }
 
 //---------------------------------------
@@ -1253,40 +1245,43 @@ kernel void pixel_scaler_HQ3x(const uint2 inPosition [[thread_position_in_grid]]
 						  (int(InterpDiff(src[7], src[3])) * 4) +
 						  (int(InterpDiff(src[3], src[1])) * 8);
 	
-	const float3 p[9] = {
-		lut.read(uint3(pattern*2+0, 0, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 1, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 2, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 3, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 4, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 5, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 6, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 7, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 8, compare)).rgb
-	};
-	
-	const float3 w[9] = {
-		lut.read(uint3(pattern*2+1, 0, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 1, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 2, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 3, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 4, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 5, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 6, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 7, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 8, compare)).rgb
-	};
-	
 	const uint2 outPosition = inPosition * 3;
-	outTexture.write( float4(Lerp(w[0], src[int(p[0].r*255.0f/30.95f)], src[int(p[0].g*255.0f/30.95f)], src[int(p[0].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
-	outTexture.write( float4(Lerp(w[1], src[int(p[1].r*255.0f/30.95f)], src[int(p[1].g*255.0f/30.95f)], src[int(p[1].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
-	outTexture.write( float4(Lerp(w[2], src[int(p[2].r*255.0f/30.95f)], src[int(p[2].g*255.0f/30.95f)], src[int(p[2].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 0) );
-	outTexture.write( float4(Lerp(w[3], src[int(p[3].r*255.0f/30.95f)], src[int(p[3].g*255.0f/30.95f)], src[int(p[3].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
-	outTexture.write( float4(Lerp(w[4], src[int(p[4].r*255.0f/30.95f)], src[int(p[4].g*255.0f/30.95f)], src[int(p[4].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
-	outTexture.write( float4(Lerp(w[5], src[int(p[5].r*255.0f/30.95f)], src[int(p[5].g*255.0f/30.95f)], src[int(p[5].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 1) );
-	outTexture.write( float4(Lerp(w[6], src[int(p[6].r*255.0f/30.95f)], src[int(p[6].g*255.0f/30.95f)], src[int(p[6].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 2) );
-	outTexture.write( float4(Lerp(w[7], src[int(p[7].r*255.0f/30.95f)], src[int(p[7].g*255.0f/30.95f)], src[int(p[7].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 2) );
-	outTexture.write( float4(Lerp(w[8], src[int(p[8].r*255.0f/30.95f)], src[int(p[8].g*255.0f/30.95f)], src[int(p[8].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 2) );
+	
+	float3 p = lut.read(uint3(pattern*2+0,  0, compare)).rgb;
+	float3 w = lut.read(uint3(pattern*2+1,  0, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  1, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  1, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  2, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  2, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  3, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  3, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  4, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  4, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  5, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  5, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  6, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  6, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 2) );
+	
+	p = lut.read(uint3(pattern*2+0,  7, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  7, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 2) );
+	
+	p = lut.read(uint3(pattern*2+0,  8, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  8, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 2) );
 }
 
 //---------------------------------------
@@ -1335,40 +1330,43 @@ kernel void pixel_scaler_HQ3xS(const uint2 inPosition [[thread_position_in_grid]
 																	 (int(abs(b[7] - b[4]) > diffBright) * 64) +
 																	 (int(abs(b[8] - b[4]) > diffBright) * 128));
 	
-	const float3 p[9] = {
-		lut.read(uint3(pattern*2+0, 0, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 1, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 2, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 3, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 4, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 5, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 6, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 7, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 8, 0)).rgb
-	};
-	
-	const float3 w[9] = {
-		lut.read(uint3(pattern*2+1, 0, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 1, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 2, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 3, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 4, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 5, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 6, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 7, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 8, 0)).rgb
-	};
-	
 	const uint2 outPosition = inPosition * 3;
-	outTexture.write( float4(Lerp(w[0], src[int(p[0].r*255.0f/30.95f)], src[int(p[0].g*255.0f/30.95f)], src[int(p[0].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
-	outTexture.write( float4(Lerp(w[1], src[int(p[1].r*255.0f/30.95f)], src[int(p[1].g*255.0f/30.95f)], src[int(p[1].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
-	outTexture.write( float4(Lerp(w[2], src[int(p[2].r*255.0f/30.95f)], src[int(p[2].g*255.0f/30.95f)], src[int(p[2].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 0) );
-	outTexture.write( float4(Lerp(w[3], src[int(p[3].r*255.0f/30.95f)], src[int(p[3].g*255.0f/30.95f)], src[int(p[3].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
-	outTexture.write( float4(Lerp(w[4], src[int(p[4].r*255.0f/30.95f)], src[int(p[4].g*255.0f/30.95f)], src[int(p[4].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
-	outTexture.write( float4(Lerp(w[5], src[int(p[5].r*255.0f/30.95f)], src[int(p[5].g*255.0f/30.95f)], src[int(p[5].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 1) );
-	outTexture.write( float4(Lerp(w[6], src[int(p[6].r*255.0f/30.95f)], src[int(p[6].g*255.0f/30.95f)], src[int(p[6].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 2) );
-	outTexture.write( float4(Lerp(w[7], src[int(p[7].r*255.0f/30.95f)], src[int(p[7].g*255.0f/30.95f)], src[int(p[7].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 2) );
-	outTexture.write( float4(Lerp(w[8], src[int(p[8].r*255.0f/30.95f)], src[int(p[8].g*255.0f/30.95f)], src[int(p[8].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 2) );
+	
+	float3 p = lut.read(uint3(pattern*2+0,  0, 0)).rgb;
+	float3 w = lut.read(uint3(pattern*2+1,  0, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  1, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  1, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  2, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  2, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  3, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  3, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  4, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  4, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  5, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  5, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  6, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  6, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 2) );
+	
+	p = lut.read(uint3(pattern*2+0,  7, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  7, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 2) );
+	
+	p = lut.read(uint3(pattern*2+0,  8, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  8, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 2) );
 }
 
 //---------------------------------------
@@ -1411,61 +1409,71 @@ kernel void pixel_scaler_HQ4x(const uint2 inPosition [[thread_position_in_grid]]
 	                    (int(InterpDiff(src[7], src[3])) * 4) +
 	                    (int(InterpDiff(src[3], src[1])) * 8);
 	
-	const float3 p[16] = {
-		lut.read(uint3(pattern*2+0,  0, compare)).rgb,
-		lut.read(uint3(pattern*2+0,  1, compare)).rgb,
-		lut.read(uint3(pattern*2+0,  2, compare)).rgb,
-		lut.read(uint3(pattern*2+0,  3, compare)).rgb,
-		lut.read(uint3(pattern*2+0,  4, compare)).rgb,
-		lut.read(uint3(pattern*2+0,  5, compare)).rgb,
-		lut.read(uint3(pattern*2+0,  6, compare)).rgb,
-		lut.read(uint3(pattern*2+0,  7, compare)).rgb,
-		lut.read(uint3(pattern*2+0,  8, compare)).rgb,
-		lut.read(uint3(pattern*2+0,  9, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 10, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 11, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 12, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 13, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 14, compare)).rgb,
-		lut.read(uint3(pattern*2+0, 15, compare)).rgb
-	};
-	
-	const float3 w[16] = {
-		lut.read(uint3(pattern*2+1,  0, compare)).rgb,
-		lut.read(uint3(pattern*2+1,  1, compare)).rgb,
-		lut.read(uint3(pattern*2+1,  2, compare)).rgb,
-		lut.read(uint3(pattern*2+1,  3, compare)).rgb,
-		lut.read(uint3(pattern*2+1,  4, compare)).rgb,
-		lut.read(uint3(pattern*2+1,  5, compare)).rgb,
-		lut.read(uint3(pattern*2+1,  6, compare)).rgb,
-		lut.read(uint3(pattern*2+1,  7, compare)).rgb,
-		lut.read(uint3(pattern*2+1,  8, compare)).rgb,
-		lut.read(uint3(pattern*2+1,  9, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 10, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 11, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 12, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 13, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 14, compare)).rgb,
-		lut.read(uint3(pattern*2+1, 15, compare)).rgb
-	};
-	
 	const uint2 outPosition = inPosition * 4;
-	outTexture.write( float4(Lerp(w[ 0], src[int(p[ 0].r*255.0f/30.95f)], src[int(p[ 0].g*255.0f/30.95f)], src[int(p[ 0].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
-	outTexture.write( float4(Lerp(w[ 1], src[int(p[ 1].r*255.0f/30.95f)], src[int(p[ 1].g*255.0f/30.95f)], src[int(p[ 1].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
-	outTexture.write( float4(Lerp(w[ 2], src[int(p[ 2].r*255.0f/30.95f)], src[int(p[ 2].g*255.0f/30.95f)], src[int(p[ 2].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 0) );
-	outTexture.write( float4(Lerp(w[ 3], src[int(p[ 3].r*255.0f/30.95f)], src[int(p[ 3].g*255.0f/30.95f)], src[int(p[ 3].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 0) );
-	outTexture.write( float4(Lerp(w[ 4], src[int(p[ 4].r*255.0f/30.95f)], src[int(p[ 4].g*255.0f/30.95f)], src[int(p[ 4].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
-	outTexture.write( float4(Lerp(w[ 5], src[int(p[ 5].r*255.0f/30.95f)], src[int(p[ 5].g*255.0f/30.95f)], src[int(p[ 5].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
-	outTexture.write( float4(Lerp(w[ 6], src[int(p[ 6].r*255.0f/30.95f)], src[int(p[ 6].g*255.0f/30.95f)], src[int(p[ 6].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 1) );
-	outTexture.write( float4(Lerp(w[ 7], src[int(p[ 7].r*255.0f/30.95f)], src[int(p[ 7].g*255.0f/30.95f)], src[int(p[ 7].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 1) );
-	outTexture.write( float4(Lerp(w[ 8], src[int(p[ 8].r*255.0f/30.95f)], src[int(p[ 8].g*255.0f/30.95f)], src[int(p[ 8].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 2) );
-	outTexture.write( float4(Lerp(w[ 9], src[int(p[ 9].r*255.0f/30.95f)], src[int(p[ 9].g*255.0f/30.95f)], src[int(p[ 9].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 2) );
-	outTexture.write( float4(Lerp(w[10], src[int(p[10].r*255.0f/30.95f)], src[int(p[10].g*255.0f/30.95f)], src[int(p[10].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 2) );
-	outTexture.write( float4(Lerp(w[11], src[int(p[11].r*255.0f/30.95f)], src[int(p[11].g*255.0f/30.95f)], src[int(p[11].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 2) );
-	outTexture.write( float4(Lerp(w[12], src[int(p[12].r*255.0f/30.95f)], src[int(p[12].g*255.0f/30.95f)], src[int(p[12].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 3) );
-	outTexture.write( float4(Lerp(w[13], src[int(p[13].r*255.0f/30.95f)], src[int(p[13].g*255.0f/30.95f)], src[int(p[13].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 3) );
-	outTexture.write( float4(Lerp(w[14], src[int(p[14].r*255.0f/30.95f)], src[int(p[14].g*255.0f/30.95f)], src[int(p[14].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 3) );
-	outTexture.write( float4(Lerp(w[15], src[int(p[15].r*255.0f/30.95f)], src[int(p[15].g*255.0f/30.95f)], src[int(p[15].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 3) );
+	
+	float3 p = lut.read(uint3(pattern*2+0,  0, compare)).rgb;
+	float3 w = lut.read(uint3(pattern*2+1,  0, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  1, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  1, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  2, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  2, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  3, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  3, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  4, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  4, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  5, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  5, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  6, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  6, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  7, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  7, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  8, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  8, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 2) );
+	
+	p = lut.read(uint3(pattern*2+0,  9, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1,  9, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 2) );
+	
+	p = lut.read(uint3(pattern*2+0, 10, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1, 10, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 2) );
+	
+	p = lut.read(uint3(pattern*2+0, 11, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1, 11, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 2) );
+	
+	p = lut.read(uint3(pattern*2+0, 12, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1, 12, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 3) );
+	
+	p = lut.read(uint3(pattern*2+0, 13, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1, 13, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 3) );
+	
+	p = lut.read(uint3(pattern*2+0, 14, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1, 14, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 3) );
+	
+	p = lut.read(uint3(pattern*2+0, 15, compare)).rgb;
+	w = lut.read(uint3(pattern*2+1, 15, compare)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 3) );
 }
 
 //---------------------------------------
@@ -1515,61 +1523,71 @@ kernel void pixel_scaler_HQ4xS(const uint2 inPosition [[thread_position_in_grid]
 																	 (int(abs(b[7] - b[4]) > diffBright) * 64) +
 																	 (int(abs(b[8] - b[4]) > diffBright) * 128));
 	
-	const float3 p[16] = {
-		lut.read(uint3(pattern*2+0,  0, 0)).rgb,
-		lut.read(uint3(pattern*2+0,  1, 0)).rgb,
-		lut.read(uint3(pattern*2+0,  2, 0)).rgb,
-		lut.read(uint3(pattern*2+0,  3, 0)).rgb,
-		lut.read(uint3(pattern*2+0,  4, 0)).rgb,
-		lut.read(uint3(pattern*2+0,  5, 0)).rgb,
-		lut.read(uint3(pattern*2+0,  6, 0)).rgb,
-		lut.read(uint3(pattern*2+0,  7, 0)).rgb,
-		lut.read(uint3(pattern*2+0,  8, 0)).rgb,
-		lut.read(uint3(pattern*2+0,  9, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 10, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 11, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 12, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 13, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 14, 0)).rgb,
-		lut.read(uint3(pattern*2+0, 15, 0)).rgb
-	};
-	
-	const float3 w[16] = {
-		lut.read(uint3(pattern*2+1,  0, 0)).rgb,
-		lut.read(uint3(pattern*2+1,  1, 0)).rgb,
-		lut.read(uint3(pattern*2+1,  2, 0)).rgb,
-		lut.read(uint3(pattern*2+1,  3, 0)).rgb,
-		lut.read(uint3(pattern*2+1,  4, 0)).rgb,
-		lut.read(uint3(pattern*2+1,  5, 0)).rgb,
-		lut.read(uint3(pattern*2+1,  6, 0)).rgb,
-		lut.read(uint3(pattern*2+1,  7, 0)).rgb,
-		lut.read(uint3(pattern*2+1,  8, 0)).rgb,
-		lut.read(uint3(pattern*2+1,  9, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 10, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 11, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 12, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 13, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 14, 0)).rgb,
-		lut.read(uint3(pattern*2+1, 15, 0)).rgb
-	};
-	
 	const uint2 outPosition = inPosition * 4;
-	outTexture.write( float4(Lerp(w[ 0], src[int(p[ 0].r*255.0f/30.95f)], src[int(p[ 0].g*255.0f/30.95f)], src[int(p[ 0].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
-	outTexture.write( float4(Lerp(w[ 1], src[int(p[ 1].r*255.0f/30.95f)], src[int(p[ 1].g*255.0f/30.95f)], src[int(p[ 1].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
-	outTexture.write( float4(Lerp(w[ 2], src[int(p[ 2].r*255.0f/30.95f)], src[int(p[ 2].g*255.0f/30.95f)], src[int(p[ 2].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 0) );
-	outTexture.write( float4(Lerp(w[ 3], src[int(p[ 3].r*255.0f/30.95f)], src[int(p[ 3].g*255.0f/30.95f)], src[int(p[ 3].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 0) );
-	outTexture.write( float4(Lerp(w[ 4], src[int(p[ 4].r*255.0f/30.95f)], src[int(p[ 4].g*255.0f/30.95f)], src[int(p[ 4].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
-	outTexture.write( float4(Lerp(w[ 5], src[int(p[ 5].r*255.0f/30.95f)], src[int(p[ 5].g*255.0f/30.95f)], src[int(p[ 5].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
-	outTexture.write( float4(Lerp(w[ 6], src[int(p[ 6].r*255.0f/30.95f)], src[int(p[ 6].g*255.0f/30.95f)], src[int(p[ 6].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 1) );
-	outTexture.write( float4(Lerp(w[ 7], src[int(p[ 7].r*255.0f/30.95f)], src[int(p[ 7].g*255.0f/30.95f)], src[int(p[ 7].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 1) );
-	outTexture.write( float4(Lerp(w[ 8], src[int(p[ 8].r*255.0f/30.95f)], src[int(p[ 8].g*255.0f/30.95f)], src[int(p[ 8].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 2) );
-	outTexture.write( float4(Lerp(w[ 9], src[int(p[ 9].r*255.0f/30.95f)], src[int(p[ 9].g*255.0f/30.95f)], src[int(p[ 9].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 2) );
-	outTexture.write( float4(Lerp(w[10], src[int(p[10].r*255.0f/30.95f)], src[int(p[10].g*255.0f/30.95f)], src[int(p[10].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 2) );
-	outTexture.write( float4(Lerp(w[11], src[int(p[11].r*255.0f/30.95f)], src[int(p[11].g*255.0f/30.95f)], src[int(p[11].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 2) );
-	outTexture.write( float4(Lerp(w[12], src[int(p[12].r*255.0f/30.95f)], src[int(p[12].g*255.0f/30.95f)], src[int(p[12].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 3) );
-	outTexture.write( float4(Lerp(w[13], src[int(p[13].r*255.0f/30.95f)], src[int(p[13].g*255.0f/30.95f)], src[int(p[13].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 3) );
-	outTexture.write( float4(Lerp(w[14], src[int(p[14].r*255.0f/30.95f)], src[int(p[14].g*255.0f/30.95f)], src[int(p[14].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 3) );
-	outTexture.write( float4(Lerp(w[15], src[int(p[15].r*255.0f/30.95f)], src[int(p[15].g*255.0f/30.95f)], src[int(p[15].b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 3) );
+	
+	float3 p = lut.read(uint3(pattern*2+0,  0, 0)).rgb;
+	float3 w = lut.read(uint3(pattern*2+1,  0, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  1, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  1, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  2, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  2, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  3, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  3, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 0) );
+	
+	p = lut.read(uint3(pattern*2+0,  4, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  4, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  5, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  5, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  6, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  6, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  7, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  7, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 1) );
+	
+	p = lut.read(uint3(pattern*2+0,  8, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  8, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 2) );
+	
+	p = lut.read(uint3(pattern*2+0,  9, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1,  9, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 2) );
+	
+	p = lut.read(uint3(pattern*2+0, 10, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1, 10, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 2) );
+	
+	p = lut.read(uint3(pattern*2+0, 11, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1, 11, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 2) );
+	
+	p = lut.read(uint3(pattern*2+0, 12, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1, 12, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(0, 3) );
+	
+	p = lut.read(uint3(pattern*2+0, 13, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1, 13, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(1, 3) );
+	
+	p = lut.read(uint3(pattern*2+0, 14, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1, 14, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(2, 3) );
+	
+	p = lut.read(uint3(pattern*2+0, 15, 0)).rgb;
+	w = lut.read(uint3(pattern*2+1, 15, 0)).rgb;
+	outTexture.write( float4(Lerp(w, src[int(p.r*255.0f/30.95f)], src[int(p.g*255.0f/30.95f)], src[int(p.b*255.0f/30.95f)]), 1.0f), outPosition + uint2(3, 3) );
 }
 
 #define BLEND_NONE 0
@@ -1598,17 +1616,17 @@ bool IsPixEqual(const float3 pixA, const float3 pixB)
 	return (DistYCbCr(pixA, pixB) < EQUAL_COLOR_TOLERANCE);
 }
 
-bool IsBlendingNeeded(const int4 blend)
+bool IsBlendingNeeded(const char4 blend)
 {
-	return any(blend != int4(BLEND_NONE));
+	return any(blend != char4(BLEND_NONE));
 }
 
 //---------------------------------------
-// Input Pixel Mapping:  --|21|22|23|--
-//                       19|06|07|08|09
-//                       18|05|00|01|10
-//                       17|04|03|02|11
-//                       --|15|14|13|--
+// Input Pixel Mapping:  --|GG|12|HH|--
+//                       FF|06|07|08|AA
+//                       11|05|00|01|09
+//                       EE|04|03|02|BB
+//                       --|DD|10|CC|--
 //
 // Output Pixel Mapping:     00|01
 //                           03|02
@@ -1616,7 +1634,7 @@ kernel void pixel_scaler_2xBRZ(const uint2 inPosition [[thread_position_in_grid]
 							   const texture2d<float, access::sample> inTexture [[texture(0)]],
 							   texture2d<float, access::write> outTexture [[texture(1)]])
 {
-	const float3 src[25] = {
+	const float3 src[13] = {
 		inTexture.sample(genSampler, float2(inPosition), int2( 0, 0)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1, 0)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1, 1)).rgb,
@@ -1626,22 +1644,10 @@ kernel void pixel_scaler_2xBRZ(const uint2 inPosition [[thread_position_in_grid]
 		inTexture.sample(genSampler, float2(inPosition), int2(-1,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 0,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1,-1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 2, 0)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 1, 2)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 0, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-1, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2, 1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2(-2, 0)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2,-1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-1,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 0,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 1,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2,-2)).rgb
+		inTexture.sample(genSampler, float2(inPosition), int2( 0,-2)).rgb
 	};
 	
 	const float v[9] = {
@@ -1656,20 +1662,20 @@ kernel void pixel_scaler_2xBRZ(const uint2 inPosition [[thread_position_in_grid]
 		reduce(src[8])
 	};
 	
-	int4 blendResult = int4(BLEND_NONE);
+	char4 blendResult = char4(BLEND_NONE);
 	
 	// Preprocess corners
 	// Pixel Tap Mapping: --|--|--|--|--
 	//                    --|--|07|08|--
-	//                    --|05|00|01|10
-	//                    --|04|03|02|11
-	//                    --|--|14|13|--
+	//                    --|05|00|01|09
+	//                    --|04|03|02|BB
+	//                    --|--|10|CC|--
 	
 	// Corner (1, 1)
 	if ( !((v[0] == v[1] && v[3] == v[2]) || (v[0] == v[3] && v[1] == v[2])) )
 	{
-		const float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[14], src[ 2]) + DistYCbCr(src[ 2], src[10]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));
-		const float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], src[13]) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], src[11]) + (4.0 * DistYCbCr(src[ 0], src[ 2]));
+		const float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[10], src[ 2]) + DistYCbCr(src[ 2], src[ 9]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));
+		const float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], inTexture.sample(genSampler, float2(inPosition), int2( 1, 2)).rgb) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb) + (4.0 * DistYCbCr(src[ 0], src[ 2]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_03_01) < dist_00_02;
 		
 		blendResult[2] = ((dist_03_01 < dist_00_02) && (v[0] != v[1]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
@@ -1678,129 +1684,136 @@ kernel void pixel_scaler_2xBRZ(const uint2 inPosition [[thread_position_in_grid]
 	
 	// Pixel Tap Mapping: --|--|--|--|--
 	//                    --|06|07|--|--
-	//                    18|05|00|01|--
-	//                    17|04|03|02|--
-	//                    --|15|14|--|--
+	//                    11|05|00|01|--
+	//                    EE|04|03|02|--
+	//                    --|DD|10|--|--
 	// Corner (0, 1)
 	if ( !((v[5] == v[0] && v[4] == v[3]) || (v[5] == v[4] && v[0] == v[3])) )
 	{
-		const float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));
-		const float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));
+		const float dist_04_00 = DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-2, 1)).rgb, src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb, src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));
+		const float dist_05_03 = DistYCbCr(src[11], src[ 4]) + DistYCbCr(src[ 4], src[10]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_03) < dist_04_00;
 		
 		blendResult[3] = ((dist_04_00 > dist_05_03) && (v[0] != v[5]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	// Pixel Tap Mapping: --|--|22|23|--
-	//                    --|06|07|08|09
-	//                    --|05|00|01|10
+	// Pixel Tap Mapping: --|--|12|HH|--
+	//                    --|06|07|08|AA
+	//                    --|05|00|01|09
 	//                    --|--|03|02|--
 	//                    --|--|--|--|--
 	// Corner (1, 0)
 	if ( !((v[7] == v[8] && v[0] == v[1]) || (v[7] == v[0] && v[8] == v[1])) )
 	{
-		const float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));
-		const float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));
+		const float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], inTexture.sample(genSampler, float2(inPosition), int2( 1,-2)).rgb) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], inTexture.sample(genSampler, float2(inPosition), int2( 2,-1)).rgb) + (4.0 * DistYCbCr(src[ 0], src[ 8]));
+		const float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[12], src[ 8]) + DistYCbCr(src[ 8], src[ 9]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_07_01) < dist_00_08;
 		
 		blendResult[1] = ((dist_00_08 > dist_07_01) && (v[0] != v[7]) && (v[0] != v[1])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	// Pixel Tap Mapping: --|21|22|--|--
-	//                    19|06|07|08|--
-	//                    18|05|00|01|--
+	// Pixel Tap Mapping: --|GG|12|--|--
+	//                    FF|06|07|08|--
+	//                    11|05|00|01|--
 	//                    --|04|03|--|--
 	//                    --|--|--|--|--
 	// Corner (0, 0)
 	if ( !((v[6] == v[7] && v[5] == v[0]) || (v[6] == v[5] && v[7] == v[0])) )
 	{
-		const float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));
-		const float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));
+		const float dist_05_07 = DistYCbCr(src[11], src[ 6]) + DistYCbCr(src[ 6], src[12]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));
+		const float dist_06_00 = DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-2,-1)).rgb, src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-1,-2)).rgb, src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_07) < dist_06_00;
 		
 		blendResult[0] = ((dist_05_07 < dist_06_00) && (v[0] != v[5]) && (v[0] != v[7])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	float3 dst[4] = {
-		src[0],
-		src[0],
-		src[0],
-		src[0]
-	};
-	
 	// Scale pixel
+	const uint2 outPosition = inPosition * 2;
+	
 	if (IsBlendingNeeded(blendResult))
 	{
-		float4 dist_01_04 = float4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );
-		float4 dist_03_08 = float4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );
+		const float4 dist_01_04 = float4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );
+		const float4 dist_03_08 = float4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );
+		
 		bool4 haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08);
-		bool4 haveSteepLine = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04);
-		bool4 needBlend = (blendResult.zyxw != int4(BLEND_NONE));
-		bool4 doLineBlend = (blendResult.zyxw >= int4(BLEND_DOMINANT));
-		float3 blendPix[4];
-		
 		haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);
-		haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);
-		doLineBlend[0] = (  doLineBlend[0] ||
-						   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
-							 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
-							 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );
-		blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];
-		
-		dst[1] = mix(dst[1], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.25f : 0.00f);
-		dst[2] = mix(dst[2], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveShallowLine[0]) ? ((haveSteepLine[0]) ? 5.0f/6.0f : 0.75f) : ((haveSteepLine[0]) ? 0.75f : 0.50f)) : 1.0f - (M_PI_F/4.0f)) : 0.00f);
-		dst[3] = mix(dst[3], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.25f : 0.00f);
-		
 		haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);
-		haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);
-		doLineBlend[1] = (  doLineBlend[1] ||
-					  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
-						(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
-						(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );
-		blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];
-		
-		dst[0] = mix(dst[0], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.25f : 0.00f);
-		dst[1] = mix(dst[1], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveShallowLine[1]) ? ((haveSteepLine[1]) ? 5.0f/6.0f : 0.75f) : ((haveSteepLine[1]) ? 0.75f : 0.50f)) : 1.0f - (M_PI_F/4.0f)) : 0.00f);
-		dst[2] = mix(dst[2], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.25f : 0.00f);
-		
 		haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);
-		haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);
-		doLineBlend[2] = (  doLineBlend[2] ||
-					  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
-						(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
-						(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );
-		blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];
-		
-		dst[3] = mix(dst[3], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.25f : 0.00f);
-		dst[0] = mix(dst[0], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveShallowLine[2]) ? ((haveSteepLine[2]) ? 5.0f/6.0f : 0.75f) : ((haveSteepLine[2]) ? 0.75f : 0.50f)) : 1.0f - (M_PI_F/4.0f)) : 0.00f);
-		dst[1] = mix(dst[1], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.25f : 0.00f);
-		
 		haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);
-		haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);
-		doLineBlend[3] = (  doLineBlend[3] ||
-					  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
-						(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
-						(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );
-		blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];
 		
-		dst[2] = mix(dst[2], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.25f : 0.00f);
-		dst[3] = mix(dst[3], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveShallowLine[3]) ? ((haveSteepLine[3]) ? 5.0f/6.0f : 0.75f) : ((haveSteepLine[3]) ? 0.75f : 0.50f)) : 1.0f - (M_PI_F/4.0f)) : 0.00f);
-		dst[0] = mix(dst[0], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.25f : 0.00f);
+		bool4 haveSteepLine = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04);
+		haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);
+		haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);
+		haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);
+		haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);
+		
+		bool4 doLineBlend = (blendResult.zyxw >= char4(BLEND_DOMINANT));
+		doLineBlend[0] = (  doLineBlend[0] ||
+						  !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
+							(blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
+							(IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );
+		doLineBlend[1] = (  doLineBlend[1] ||
+						  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
+							(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
+							(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );
+		doLineBlend[2] = (  doLineBlend[2] ||
+						  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
+							(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
+							(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );
+		doLineBlend[3] = (  doLineBlend[3] ||
+						  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
+							(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
+							(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );
+		
+		const bool4 needBlend = (blendResult.zyxw != char4(BLEND_NONE));
+		
+		const float3 blendPix[4] = {
+			( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3],
+			( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1],
+			( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7],
+			( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5]
+		};
+		
+		float4 outColor = float4(src[0], 1.0f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.25f : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveShallowLine[2]) ? ((haveSteepLine[2]) ? 5.0f/6.0f : 0.75f) : ((haveSteepLine[2]) ? 0.75f : 0.50f)) : 1.0f - (M_PI_F/4.0f)) : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.25f : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(0, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.25f : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveShallowLine[1]) ? ((haveSteepLine[1]) ? 5.0f/6.0f : 0.75f) : ((haveSteepLine[1]) ? 0.75f : 0.50f)) : 1.0f - (M_PI_F/4.0f)) : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.25f : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(1, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveShallowLine[0]) ? ((haveSteepLine[0]) ? 5.0f/6.0f : 0.75f) : ((haveSteepLine[0]) ? 0.75f : 0.50f)) : 1.0f - (M_PI_F/4.0f)) : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.25f : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.25f : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(1, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.25f : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.25f : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveShallowLine[3]) ? ((haveSteepLine[3]) ? 5.0f/6.0f : 0.75f) : ((haveSteepLine[3]) ? 0.75f : 0.50f)) : 1.0f - (M_PI_F/4.0f)) : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(0, 1) );
 	}
-	
-	const uint2 outPosition = inPosition * 2;
-	outTexture.write( float4(dst[0], 1.0f), outPosition + uint2(0, 0) );
-	outTexture.write( float4(dst[1], 1.0f), outPosition + uint2(1, 0) );
-	outTexture.write( float4(dst[3], 1.0f), outPosition + uint2(0, 1) );
-	outTexture.write( float4(dst[2], 1.0f), outPosition + uint2(1, 1) );
+	else
+	{
+		const float4 outColor = float4(src[0], 1.0f);
+		outTexture.write( outColor, outPosition + uint2(0, 0) );
+		outTexture.write( outColor, outPosition + uint2(1, 0) );
+		outTexture.write( outColor, outPosition + uint2(0, 1) );
+		outTexture.write( outColor, outPosition + uint2(1, 1) );
+	}
 }
 
 //---------------------------------------
-// Input Pixel Mapping:  --|21|22|23|--
-//                       19|06|07|08|09
-//                       18|05|00|01|10
-//                       17|04|03|02|11
-//                       --|15|14|13|--
+// Input Pixel Mapping:  --|GG|12|HH|--
+//                       FF|06|07|08|AA
+//                       11|05|00|01|09
+//                       EE|04|03|02|BB
+//                       --|DD|10|CC|--
 //
 // Output Pixel Mapping:    06|07|08
 //                          05|00|01
@@ -1809,7 +1822,7 @@ kernel void pixel_scaler_3xBRZ(const uint2 inPosition [[thread_position_in_grid]
 							   const texture2d<float, access::sample> inTexture [[texture(0)]],
 							   texture2d<float, access::write> outTexture [[texture(1)]])
 {
-	const float3 src[25] = {
+	const float3 src[13] = {
 		inTexture.sample(genSampler, float2(inPosition), int2( 0, 0)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1, 0)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1, 1)).rgb,
@@ -1819,22 +1832,10 @@ kernel void pixel_scaler_3xBRZ(const uint2 inPosition [[thread_position_in_grid]
 		inTexture.sample(genSampler, float2(inPosition), int2(-1,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 0,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1,-1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 2, 0)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 1, 2)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 0, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-1, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2, 1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2(-2, 0)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2,-1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-1,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 0,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 1,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2,-2)).rgb
+		inTexture.sample(genSampler, float2(inPosition), int2( 0,-2)).rgb
 	};
 	
 	const float v[9] = {
@@ -1849,20 +1850,20 @@ kernel void pixel_scaler_3xBRZ(const uint2 inPosition [[thread_position_in_grid]
 		reduce(src[8])
 	};
 	
-	int4 blendResult = int4(BLEND_NONE);
+	char4 blendResult = char4(BLEND_NONE);
 	
 	// Preprocess corners
 	// Pixel Tap Mapping: --|--|--|--|--
 	//                    --|--|07|08|--
-	//                    --|05|00|01|10
-	//                    --|04|03|02|11
-	//                    --|--|14|13|--
+	//                    --|05|00|01|09
+	//                    --|04|03|02|BB
+	//                    --|--|10|CC|--
 	
 	// Corner (1, 1)
 	if ( !((v[0] == v[1] && v[3] == v[2]) || (v[0] == v[3] && v[1] == v[2])) )
 	{
-		const float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[14], src[ 2]) + DistYCbCr(src[ 2], src[10]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));
-		const float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], src[13]) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], src[11]) + (4.0 * DistYCbCr(src[ 0], src[ 2]));
+		const float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[10], src[ 2]) + DistYCbCr(src[ 2], src[ 9]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));
+		const float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], inTexture.sample(genSampler, float2(inPosition), int2( 1, 2)).rgb) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb) + (4.0 * DistYCbCr(src[ 0], src[ 2]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_03_01) < dist_00_02;
 		
 		blendResult[2] = ((dist_03_01 < dist_00_02) && (v[0] != v[1]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
@@ -1871,147 +1872,164 @@ kernel void pixel_scaler_3xBRZ(const uint2 inPosition [[thread_position_in_grid]
 	
 	// Pixel Tap Mapping: --|--|--|--|--
 	//                    --|06|07|--|--
-	//                    18|05|00|01|--
-	//                    17|04|03|02|--
-	//                    --|15|14|--|--
+	//                    11|05|00|01|--
+	//                    EE|04|03|02|--
+	//                    --|DD|10|--|--
 	// Corner (0, 1)
 	if ( !((v[5] == v[0] && v[4] == v[3]) || (v[5] == v[4] && v[0] == v[3])) )
 	{
-		const float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));
-		const float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));
+		const float dist_04_00 = DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-2, 1)).rgb, src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb, src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));
+		const float dist_05_03 = DistYCbCr(src[11], src[ 4]) + DistYCbCr(src[ 4], src[10]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_03) < dist_04_00;
 		
 		blendResult[3] = ((dist_04_00 > dist_05_03) && (v[0] != v[5]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	// Pixel Tap Mapping: --|--|22|23|--
-	//                    --|06|07|08|09
-	//                    --|05|00|01|10
+	// Pixel Tap Mapping: --|--|12|HH|--
+	//                    --|06|07|08|AA
+	//                    --|05|00|01|09
 	//                    --|--|03|02|--
 	//                    --|--|--|--|--
 	// Corner (1, 0)
 	if ( !((v[7] == v[8] && v[0] == v[1]) || (v[7] == v[0] && v[8] == v[1])) )
 	{
-		const float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));
-		const float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));
+		const float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], inTexture.sample(genSampler, float2(inPosition), int2( 1,-2)).rgb) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], inTexture.sample(genSampler, float2(inPosition), int2( 2,-1)).rgb) + (4.0 * DistYCbCr(src[ 0], src[ 8]));
+		const float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[12], src[ 8]) + DistYCbCr(src[ 8], src[ 9]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_07_01) < dist_00_08;
 		
 		blendResult[1] = ((dist_00_08 > dist_07_01) && (v[0] != v[7]) && (v[0] != v[1])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	// Pixel Tap Mapping: --|21|22|--|--
-	//                    19|06|07|08|--
-	//                    18|05|00|01|--
+	// Pixel Tap Mapping: --|GG|12|--|--
+	//                    FF|06|07|08|--
+	//                    11|05|00|01|--
 	//                    --|04|03|--|--
 	//                    --|--|--|--|--
 	// Corner (0, 0)
 	if ( !((v[6] == v[7] && v[5] == v[0]) || (v[6] == v[5] && v[7] == v[0])) )
 	{
-		const float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));
-		const float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));
+		const float dist_05_07 = DistYCbCr(src[11], src[ 6]) + DistYCbCr(src[ 6], src[12]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));
+		const float dist_06_00 = DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-2,-1)).rgb, src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-1,-2)).rgb, src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_07) < dist_06_00;
 		
 		blendResult[0] = ((dist_05_07 < dist_06_00) && (v[0] != v[5]) && (v[0] != v[7])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	float3 dst[9] = {
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0]
-	};
-	
 	// Scale pixel
+	const uint2 outPosition = inPosition * 3;
+	
 	if (IsBlendingNeeded(blendResult))
 	{
-		float4 dist_01_04 = float4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );
-		float4 dist_03_08 = float4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );
+		const float4 dist_01_04 = float4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );
+		const float4 dist_03_08 = float4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );
+		
 		bool4 haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08);
-		bool4 haveSteepLine = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04);
-		bool4 needBlend = (blendResult.zyxw != int4(BLEND_NONE));
-		bool4 doLineBlend = (blendResult.zyxw >= int4(BLEND_DOMINANT));
-		float3 blendPix[4];
-		
 		haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);
-		haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);
-		doLineBlend[0] = (  doLineBlend[0] ||
-						   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
-							 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
-							 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );
-		blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];
-		
-		dst[1] = mix(dst[1], blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveSteepLine[0]) ? 0.750f : ((haveShallowLine[0]) ? 0.250f : 0.125f)) : 0.000f);
-		dst[2] = mix(dst[2], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((!haveShallowLine[0] && !haveSteepLine[0]) ? 0.875f : 1.000f) : 0.4545939598) : 0.000f);
-		dst[3] = mix(dst[3], blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? 0.750f : ((haveSteepLine[0]) ? 0.250f : 0.125f)) : 0.000f);
-		dst[4] = mix(dst[4], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250f : 0.000f);
-		dst[8] = mix(dst[8], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250f : 0.000f);
-		
 		haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);
-		haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);
-		doLineBlend[1] = (  doLineBlend[1] ||
-					  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
-						(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
-						(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );
-		blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];
-		
-		dst[7] = mix(dst[7], blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveSteepLine[1]) ? 0.750f : ((haveShallowLine[1]) ? 0.250f : 0.125f)) : 0.000f);
-		dst[8] = mix(dst[8], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((!haveShallowLine[1] && !haveSteepLine[1]) ? 0.875f : 1.000f) : 0.4545939598f) : 0.000f);
-		dst[1] = mix(dst[1], blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? 0.750f : ((haveSteepLine[1]) ? 0.250f : 0.125f)) : 0.000f);
-		dst[2] = mix(dst[2], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250f : 0.000f);
-		dst[6] = mix(dst[6], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250f : 0.000f);
-		
 		haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);
-		haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);
-		doLineBlend[2] = (  doLineBlend[2] ||
-					  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
-						(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
-						(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );
-		blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];
-		
-		dst[5] = mix(dst[5], blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveSteepLine[2]) ? 0.750f : ((haveShallowLine[2]) ? 0.250f : 0.125f)) : 0.000f);
-		dst[6] = mix(dst[6], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((!haveShallowLine[2] && !haveSteepLine[2]) ? 0.875f : 1.000f) : 0.4545939598f) : 0.000f);
-		dst[7] = mix(dst[7], blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? 0.750f : ((haveSteepLine[2]) ? 0.250f : 0.125f)) : 0.000f);
-		dst[8] = mix(dst[8], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250f : 0.000f);
-		dst[4] = mix(dst[4], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250f : 0.000f);
-		
 		haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);
-		haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);
-		doLineBlend[3] = (  doLineBlend[3] ||
-					  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
-						(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
-						(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );
-		blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];
 		
-		dst[3] = mix(dst[3], blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveSteepLine[3]) ? 0.750f : ((haveShallowLine[3]) ? 0.250f : 0.125f)) : 0.000f);
-		dst[4] = mix(dst[4], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((!haveShallowLine[3] && !haveSteepLine[3]) ? 0.875f : 1.000f) : 0.4545939598f) : 0.000f);
-		dst[5] = mix(dst[5], blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? 0.750f : ((haveSteepLine[3]) ? 0.250f : 0.125f)) : 0.000f);
-		dst[6] = mix(dst[6], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250f : 0.000f);
-		dst[2] = mix(dst[2], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250f : 0.000f);
+		bool4 haveSteepLine = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04);
+		haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);
+		haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);
+		haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);
+		haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);
+		
+		bool4 doLineBlend = (blendResult.zyxw >= char4(BLEND_DOMINANT));
+		doLineBlend[0] = (  doLineBlend[0] ||
+						  !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
+							(blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
+							(IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );
+		doLineBlend[1] = (  doLineBlend[1] ||
+						  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
+							(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
+							(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );
+		doLineBlend[2] = (  doLineBlend[2] ||
+						  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
+							(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
+							(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );
+		doLineBlend[3] = (  doLineBlend[3] ||
+						  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
+							(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
+							(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );
+		
+		const bool4 needBlend = (blendResult.zyxw != char4(BLEND_NONE));
+		
+		const float3 blendPix[4] = {
+			( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3],
+			( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1],
+			( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7],
+			( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5]
+		};
+		
+		float4 outColor = float4(src[0], 1.0f);
+		outTexture.write( outColor, outPosition + uint2(1, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveSteepLine[0]) ? 0.750f : ((haveShallowLine[0]) ? 0.250f : 0.125f)) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? 0.750f : ((haveSteepLine[1]) ? 0.250f : 0.125f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(2, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((!haveShallowLine[0] && !haveSteepLine[0]) ? 0.875f : 1.000f) : 0.4545939598) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(2, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? 0.750f : ((haveSteepLine[0]) ? 0.250f : 0.125f)) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveSteepLine[3]) ? 0.750f : ((haveShallowLine[3]) ? 0.250f : 0.125f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(1, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((!haveShallowLine[3] && !haveSteepLine[3]) ? 0.875f : 1.000f) : 0.4545939598f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(0, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveSteepLine[2]) ? 0.750f : ((haveShallowLine[2]) ? 0.250f : 0.125f)) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? 0.750f : ((haveSteepLine[3]) ? 0.250f : 0.125f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(0, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((!haveShallowLine[2] && !haveSteepLine[2]) ? 0.875f : 1.000f) : 0.4545939598f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(0, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveSteepLine[1]) ? 0.750f : ((haveShallowLine[1]) ? 0.250f : 0.125f)) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? 0.750f : ((haveSteepLine[2]) ? 0.250f : 0.125f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(1, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((!haveShallowLine[1] && !haveSteepLine[1]) ? 0.875f : 1.000f) : 0.4545939598f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(2, 0) );
 	}
-	
-	const uint2 outPosition = inPosition * 3;
-	outTexture.write( float4(dst[6], 1.0f), outPosition + uint2(0, 0) );
-	outTexture.write( float4(dst[7], 1.0f), outPosition + uint2(1, 0) );
-	outTexture.write( float4(dst[8], 1.0f), outPosition + uint2(2, 0) );
-	outTexture.write( float4(dst[5], 1.0f), outPosition + uint2(0, 1) );
-	outTexture.write( float4(dst[0], 1.0f), outPosition + uint2(1, 1) );
-	outTexture.write( float4(dst[1], 1.0f), outPosition + uint2(2, 1) );
-	outTexture.write( float4(dst[4], 1.0f), outPosition + uint2(0, 2) );
-	outTexture.write( float4(dst[3], 1.0f), outPosition + uint2(1, 2) );
-	outTexture.write( float4(dst[2], 1.0f), outPosition + uint2(2, 2) );
+	else
+	{
+		const float4 outColor = float4(src[0], 1.0f);
+		outTexture.write( outColor, outPosition + uint2(0, 0) );
+		outTexture.write( outColor, outPosition + uint2(1, 0) );
+		outTexture.write( outColor, outPosition + uint2(2, 0) );
+		outTexture.write( outColor, outPosition + uint2(0, 1) );
+		outTexture.write( outColor, outPosition + uint2(1, 1) );
+		outTexture.write( outColor, outPosition + uint2(2, 1) );
+		outTexture.write( outColor, outPosition + uint2(0, 2) );
+		outTexture.write( outColor, outPosition + uint2(1, 2) );
+		outTexture.write( outColor, outPosition + uint2(2, 2) );
+	}
 }
 
 //---------------------------------------
-// Input Pixel Mapping:  --|21|22|23|--
-//                       19|06|07|08|09
-//                       18|05|00|01|10
-//                       17|04|03|02|11
-//                       --|15|14|13|--
+// Input Pixel Mapping:  --|GG|12|HH|--
+//                       FF|06|07|08|AA
+//                       11|05|00|01|09
+//                       EE|04|03|02|BB
+//                       --|DD|10|CC|--
 //
 // Output Pixel Mapping:  00|01|02|03
 //                        04|05|06|07
@@ -2021,7 +2039,7 @@ kernel void pixel_scaler_4xBRZ(const uint2 inPosition [[thread_position_in_grid]
 							   const texture2d<float, access::sample> inTexture [[texture(0)]],
 							   texture2d<float, access::write> outTexture [[texture(1)]])
 {
-	const float3 src[25] = {
+	const float3 src[13] = {
 		inTexture.sample(genSampler, float2(inPosition), int2( 0, 0)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1, 0)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1, 1)).rgb,
@@ -2031,22 +2049,10 @@ kernel void pixel_scaler_4xBRZ(const uint2 inPosition [[thread_position_in_grid]
 		inTexture.sample(genSampler, float2(inPosition), int2(-1,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 0,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1,-1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 2, 0)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 1, 2)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 0, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-1, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2, 1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2(-2, 0)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2,-1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-1,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 0,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 1,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2,-2)).rgb
+		inTexture.sample(genSampler, float2(inPosition), int2( 0,-2)).rgb
 	};
 	
 	const float v[9] = {
@@ -2061,20 +2067,20 @@ kernel void pixel_scaler_4xBRZ(const uint2 inPosition [[thread_position_in_grid]
 		reduce(src[8])
 	};
 	
-	int4 blendResult = int4(BLEND_NONE);
+	char4 blendResult = char4(BLEND_NONE);
 	
 	// Preprocess corners
 	// Pixel Tap Mapping: --|--|--|--|--
 	//                    --|--|07|08|--
-	//                    --|05|00|01|10
-	//                    --|04|03|02|11
-	//                    --|--|14|13|--
+	//                    --|05|00|01|09
+	//                    --|04|03|02|BB
+	//                    --|--|10|CC|--
 	
 	// Corner (1, 1)
 	if ( !((v[0] == v[1] && v[3] == v[2]) || (v[0] == v[3] && v[1] == v[2])) )
 	{
-		const float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[14], src[ 2]) + DistYCbCr(src[ 2], src[10]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));
-		const float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], src[13]) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], src[11]) + (4.0 * DistYCbCr(src[ 0], src[ 2]));
+		const float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[10], src[ 2]) + DistYCbCr(src[ 2], src[ 9]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));
+		const float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], inTexture.sample(genSampler, float2(inPosition), int2( 1, 2)).rgb) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb) + (4.0 * DistYCbCr(src[ 0], src[ 2]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_03_01) < dist_00_02;
 		
 		blendResult[2] = ((dist_03_01 < dist_00_02) && (v[0] != v[1]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
@@ -2083,185 +2089,204 @@ kernel void pixel_scaler_4xBRZ(const uint2 inPosition [[thread_position_in_grid]
 	
 	// Pixel Tap Mapping: --|--|--|--|--
 	//                    --|06|07|--|--
-	//                    18|05|00|01|--
-	//                    17|04|03|02|--
-	//                    --|15|14|--|--
+	//                    11|05|00|01|--
+	//                    EE|04|03|02|--
+	//                    --|DD|10|--|--
 	// Corner (0, 1)
 	if ( !((v[5] == v[0] && v[4] == v[3]) || (v[5] == v[4] && v[0] == v[3])) )
 	{
-		const float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));
-		const float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));
+		const float dist_04_00 = DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-2, 1)).rgb, src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb, src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));
+		const float dist_05_03 = DistYCbCr(src[11], src[ 4]) + DistYCbCr(src[ 4], src[10]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_03) < dist_04_00;
 		
 		blendResult[3] = ((dist_04_00 > dist_05_03) && (v[0] != v[5]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	// Pixel Tap Mapping: --|--|22|23|--
-	//                    --|06|07|08|09
-	//                    --|05|00|01|10
+	// Pixel Tap Mapping: --|--|12|HH|--
+	//                    --|06|07|08|AA
+	//                    --|05|00|01|09
 	//                    --|--|03|02|--
 	//                    --|--|--|--|--
 	// Corner (1, 0)
 	if ( !((v[7] == v[8] && v[0] == v[1]) || (v[7] == v[0] && v[8] == v[1])) )
 	{
-		const float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));
-		const float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));
+		const float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], inTexture.sample(genSampler, float2(inPosition), int2( 1,-2)).rgb) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], inTexture.sample(genSampler, float2(inPosition), int2( 2,-1)).rgb) + (4.0 * DistYCbCr(src[ 0], src[ 8]));
+		const float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[12], src[ 8]) + DistYCbCr(src[ 8], src[ 9]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_07_01) < dist_00_08;
 		
 		blendResult[1] = ((dist_00_08 > dist_07_01) && (v[0] != v[7]) && (v[0] != v[1])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	// Pixel Tap Mapping: --|21|22|--|--
-	//                    19|06|07|08|--
-	//                    18|05|00|01|--
+	// Pixel Tap Mapping: --|GG|12|--|--
+	//                    FF|06|07|08|--
+	//                    11|05|00|01|--
 	//                    --|04|03|--|--
 	//                    --|--|--|--|--
 	// Corner (0, 0)
 	if ( !((v[6] == v[7] && v[5] == v[0]) || (v[6] == v[5] && v[7] == v[0])) )
 	{
-		const float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));
-		const float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));
+		const float dist_05_07 = DistYCbCr(src[11], src[ 6]) + DistYCbCr(src[ 6], src[12]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));
+		const float dist_06_00 = DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-2,-1)).rgb, src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-1,-2)).rgb, src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_07) < dist_06_00;
 		
 		blendResult[0] = ((dist_05_07 < dist_06_00) && (v[0] != v[5]) && (v[0] != v[7])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	float3 dst[16] = {
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0]
-	};
-	
 	// Scale pixel
+	const uint2 outPosition = inPosition * 4;
+	
 	if (IsBlendingNeeded(blendResult))
 	{
 		const float4 dist_01_04 = float4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );
 		const float4 dist_03_08 = float4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );
-		const bool4 haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08);
-		const bool4 haveSteepLine = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04);
-		const bool4 needBlend = (blendResult.zyxw != int4(BLEND_NONE));
-		const bool4 doLineBlend = (blendResult.zyxw >= int4(BLEND_DOMINANT));
-		float3 blendPix[4];
 		
+		bool4 haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08);
 		haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);
-		haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);
-		doLineBlend[0] = (  doLineBlend[0] ||
-						   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
-							 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
-							 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );
-		blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];
-		
 		haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);
-		haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);
-		doLineBlend[1] = (  doLineBlend[1] ||
-					  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
-						(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
-						(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );
-		blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];
-		
 		haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);
-		haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);
-		doLineBlend[2] = (  doLineBlend[2] ||
-					  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
-						(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
-						(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );
-		blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];
-		
 		haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);
-		haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);
-		doLineBlend[3] = (  doLineBlend[3] ||
-					  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
-						(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
-						(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );
-		blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];
 		
-		dst[ 0] = mix(dst[ 0], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.25f : 0.00f);
-		dst[ 0] = mix(dst[ 0], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.00f : 0.6848532563f) : 0.00f);
-		dst[ 0] = mix(dst[ 0], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.25f : 0.00f);
+		bool4 haveSteepLine = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04);
+		haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);
+		haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);
+		haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);
+		haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);
+		
+		bool4 doLineBlend = (blendResult.zyxw >= char4(BLEND_DOMINANT));
+		doLineBlend[0] = (  doLineBlend[0] ||
+						  !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
+							(blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
+							(IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );
+		doLineBlend[1] = (  doLineBlend[1] ||
+						  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
+							(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
+							(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );
+		doLineBlend[2] = (  doLineBlend[2] ||
+						  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
+							(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
+							(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );
+		doLineBlend[3] = (  doLineBlend[3] ||
+						  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
+							(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
+							(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );
+		
+		const bool4 needBlend = (blendResult.zyxw != char4(BLEND_NONE));
+		
+		const float3 blendPix[4] = {
+			( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3],
+			( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1],
+			( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7],
+			( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5]
+		};
+		
+		float4 outColor = float4(src[0], 1.0f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.25f : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.00f : 0.6848532563f) : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.25f : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(0, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.75f : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveShallowLine[2]) ? 1.00f : ((haveSteepLine[2]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(1, 0) );
 
-		dst[ 1] = mix(dst[ 1], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.75f : 0.00f);
-		dst[ 1] = mix(dst[ 1], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveShallowLine[2]) ? 1.00f : ((haveSteepLine[2]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
-
-		dst[ 2] = mix(dst[ 2], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveSteepLine[1]) ? 1.00f : ((haveShallowLine[1]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
-		dst[ 2] = mix(dst[ 2], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.75f : 0.00f);
-
-		dst[ 3] = mix(dst[ 3], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.25f : 0.00f);
-		dst[ 3] = mix(dst[ 3], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.00f : 0.6848532563f) : 0.00f);
-		dst[ 3] = mix(dst[ 3], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.25f : 0.00f);
-
-		dst[ 4] = mix(dst[ 4], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveSteepLine[2]) ? 1.00f : ((haveShallowLine[2]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
-		dst[ 4] = mix(dst[ 4], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.75f : 0.00f);
-
-		dst[ 5] = mix(dst[ 5], blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? ((haveSteepLine[2]) ? 1.0f/3.0f : 0.25f) : ((haveSteepLine[2]) ? 0.25f : 0.00f)) : 0.00f);
-
-		dst[ 6] = mix(dst[ 6], blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? ((haveSteepLine[1]) ? 1.0f/3.0f : 0.25f) : ((haveSteepLine[1]) ? 0.25f : 0.00f)) : 0.00f);
-
-		dst[ 7] = mix(dst[ 7], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.75f : 0.00f);
-		dst[ 7] = mix(dst[ 7], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveShallowLine[1]) ? 1.00f : ((haveSteepLine[1]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
-
-		dst[ 8] = mix(dst[ 8], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.75f : 0.00f);
-		dst[ 8] = mix(dst[ 8], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveShallowLine[3]) ? 1.00f : ((haveSteepLine[3]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
-
-		dst[ 9] = mix(dst[ 9], blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? ((haveSteepLine[3]) ? 1.0f/3.0f : 0.25f) : ((haveSteepLine[3]) ? 0.25f : 0.00f)) : 0.00f);
-
-		dst[10] = mix(dst[10], blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? ((haveSteepLine[0]) ? 1.0f/3.0f : 0.25f) : ((haveSteepLine[0]) ? 0.25f : 0.00f)) : 0.00f);
-
-		dst[11] = mix(dst[11], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveSteepLine[0]) ? 1.00f : ((haveShallowLine[0]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
-		dst[11] = mix(dst[11], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.75f : 0.00f);
-
-		dst[12] = mix(dst[12], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.25f : 0.00f);
-		dst[12] = mix(dst[12], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.25f : 0.00f);
-		dst[12] = mix(dst[12], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.00f : 0.6848532563f) : 0.00f);
-
-		dst[13] = mix(dst[13], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.75f : 0.00f);
-		dst[13] = mix(dst[13], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveSteepLine[3]) ? 1.00f : ((haveShallowLine[3]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
-
-		dst[14] = mix(dst[14], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveShallowLine[0]) ? 1.00f : ((haveSteepLine[0]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
-		dst[14] = mix(dst[14], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.75f : 0.00f);
-
-		dst[15] = mix(dst[15], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.00f : 0.6848532563f) : 0.00f);
-		dst[15] = mix(dst[15], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.25f : 0.00f);
-		dst[15] = mix(dst[15], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.25f : 0.00f);
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveSteepLine[1]) ? 1.00f : ((haveShallowLine[1]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.75f : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(2, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.25f : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.00f : 0.6848532563f) : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.25f : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(3, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveSteepLine[2]) ? 1.00f : ((haveShallowLine[2]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.75f : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(0, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? ((haveSteepLine[2]) ? 1.0f/3.0f : 0.25f) : ((haveSteepLine[2]) ? 0.25f : 0.00f)) : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(1, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? ((haveSteepLine[1]) ? 1.0f/3.0f : 0.25f) : ((haveSteepLine[1]) ? 0.25f : 0.00f)) : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(2, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.75f : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveShallowLine[1]) ? 1.00f : ((haveSteepLine[1]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(3, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.75f : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveShallowLine[3]) ? 1.00f : ((haveSteepLine[3]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(0, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? ((haveSteepLine[3]) ? 1.0f/3.0f : 0.25f) : ((haveSteepLine[3]) ? 0.25f : 0.00f)) : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(1, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? ((haveSteepLine[0]) ? 1.0f/3.0f : 0.25f) : ((haveSteepLine[0]) ? 0.25f : 0.00f)) : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(2, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveSteepLine[0]) ? 1.00f : ((haveShallowLine[0]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.75f : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(3, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.25f : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.25f : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.00f : 0.6848532563f) : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(0, 3) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.75f : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveSteepLine[3]) ? 1.00f : ((haveShallowLine[3]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(1, 3) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveShallowLine[0]) ? 1.00f : ((haveSteepLine[0]) ? 0.75f : 0.50f)) : 0.08677704501f) : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.75f : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(2, 3) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.00f : 0.6848532563f) : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.25f : 0.00f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.25f : 0.00f);
+		outTexture.write( outColor, outPosition + uint2(3, 3) );
 	}
-	
-	const uint2 outPosition = inPosition * 4;
-	outTexture.write( float4(dst[ 0], 1.0f), outPosition + uint2(0, 0) );
-	outTexture.write( float4(dst[ 1], 1.0f), outPosition + uint2(1, 0) );
-	outTexture.write( float4(dst[ 2], 1.0f), outPosition + uint2(2, 0) );
-	outTexture.write( float4(dst[ 3], 1.0f), outPosition + uint2(3, 0) );
-	outTexture.write( float4(dst[ 4], 1.0f), outPosition + uint2(0, 1) );
-	outTexture.write( float4(dst[ 5], 1.0f), outPosition + uint2(1, 1) );
-	outTexture.write( float4(dst[ 6], 1.0f), outPosition + uint2(2, 1) );
-	outTexture.write( float4(dst[ 7], 1.0f), outPosition + uint2(3, 1) );
-	outTexture.write( float4(dst[ 8], 1.0f), outPosition + uint2(0, 2) );
-	outTexture.write( float4(dst[ 9], 1.0f), outPosition + uint2(1, 2) );
-	outTexture.write( float4(dst[10], 1.0f), outPosition + uint2(2, 2) );
-	outTexture.write( float4(dst[11], 1.0f), outPosition + uint2(3, 2) );
-	outTexture.write( float4(dst[12], 1.0f), outPosition + uint2(0, 3) );
-	outTexture.write( float4(dst[13], 1.0f), outPosition + uint2(1, 3) );
-	outTexture.write( float4(dst[14], 1.0f), outPosition + uint2(2, 3) );
-	outTexture.write( float4(dst[15], 1.0f), outPosition + uint2(3, 3) );
+	else
+	{
+		const float4 outColor = float4(src[0], 1.0f);
+		outTexture.write( outColor, outPosition + uint2(0, 0) );
+		outTexture.write( outColor, outPosition + uint2(1, 0) );
+		outTexture.write( outColor, outPosition + uint2(2, 0) );
+		outTexture.write( outColor, outPosition + uint2(3, 0) );
+		outTexture.write( outColor, outPosition + uint2(0, 1) );
+		outTexture.write( outColor, outPosition + uint2(1, 1) );
+		outTexture.write( outColor, outPosition + uint2(2, 1) );
+		outTexture.write( outColor, outPosition + uint2(3, 1) );
+		outTexture.write( outColor, outPosition + uint2(0, 2) );
+		outTexture.write( outColor, outPosition + uint2(1, 2) );
+		outTexture.write( outColor, outPosition + uint2(2, 2) );
+		outTexture.write( outColor, outPosition + uint2(3, 2) );
+		outTexture.write( outColor, outPosition + uint2(0, 3) );
+		outTexture.write( outColor, outPosition + uint2(1, 3) );
+		outTexture.write( outColor, outPosition + uint2(2, 3) );
+		outTexture.write( outColor, outPosition + uint2(3, 3) );
+	}
 }
 
 //---------------------------------------
-// Input Pixel Mapping:  --|21|22|23|--
-//                       19|06|07|08|09
-//                       18|05|00|01|10
-//                       17|04|03|02|11
-//                       --|15|14|13|--
+// Input Pixel Mapping:  --|GG|12|HH|--
+//                       FF|06|07|08|AA
+//                       11|05|00|01|09
+//                       EE|04|03|02|BB
+//                       --|DD|10|CC|--
 //
 // Output Pixel Mapping: 00|01|02|03|04
 //                       05|06|07|08|09
@@ -2272,7 +2297,7 @@ kernel void pixel_scaler_5xBRZ(const uint2 inPosition [[thread_position_in_grid]
 							   const texture2d<float, access::sample> inTexture [[texture(0)]],
 							   texture2d<float, access::write> outTexture [[texture(1)]])
 {
-	const float3 src[25] = {
+	const float3 src[13] = {
 		inTexture.sample(genSampler, float2(inPosition), int2( 0, 0)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1, 0)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1, 1)).rgb,
@@ -2282,22 +2307,10 @@ kernel void pixel_scaler_5xBRZ(const uint2 inPosition [[thread_position_in_grid]
 		inTexture.sample(genSampler, float2(inPosition), int2(-1,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 0,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1,-1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 2, 0)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 1, 2)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 0, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-1, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2, 1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2(-2, 0)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2,-1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-1,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 0,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 1,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2,-2)).rgb
+		inTexture.sample(genSampler, float2(inPosition), int2( 0,-2)).rgb
 	};
 	
 	const float v[9] = {
@@ -2312,20 +2325,20 @@ kernel void pixel_scaler_5xBRZ(const uint2 inPosition [[thread_position_in_grid]
 		reduce(src[8])
 	};
 	
-	int4 blendResult = int4(BLEND_NONE);
+	char4 blendResult = char4(BLEND_NONE);
 	
 	// Preprocess corners
 	// Pixel Tap Mapping: --|--|--|--|--
 	//                    --|--|07|08|--
-	//                    --|05|00|01|10
-	//                    --|04|03|02|11
-	//                    --|--|14|13|--
+	//                    --|05|00|01|09
+	//                    --|04|03|02|BB
+	//                    --|--|10|CC|--
 	
 	// Corner (1, 1)
 	if ( !((v[0] == v[1] && v[3] == v[2]) || (v[0] == v[3] && v[1] == v[2])) )
 	{
-		const float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[14], src[ 2]) + DistYCbCr(src[ 2], src[10]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));
-		const float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], src[13]) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], src[11]) + (4.0 * DistYCbCr(src[ 0], src[ 2]));
+		const float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[10], src[ 2]) + DistYCbCr(src[ 2], src[ 9]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));
+		const float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], inTexture.sample(genSampler, float2(inPosition), int2( 1, 2)).rgb) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb) + (4.0 * DistYCbCr(src[ 0], src[ 2]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_03_01) < dist_00_02;
 		
 		blendResult[2] = ((dist_03_01 < dist_00_02) && (v[0] != v[1]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
@@ -2334,227 +2347,255 @@ kernel void pixel_scaler_5xBRZ(const uint2 inPosition [[thread_position_in_grid]
 	
 	// Pixel Tap Mapping: --|--|--|--|--
 	//                    --|06|07|--|--
-	//                    18|05|00|01|--
-	//                    17|04|03|02|--
-	//                    --|15|14|--|--
+	//                    11|05|00|01|--
+	//                    EE|04|03|02|--
+	//                    --|DD|10|--|--
 	// Corner (0, 1)
 	if ( !((v[5] == v[0] && v[4] == v[3]) || (v[5] == v[4] && v[0] == v[3])) )
 	{
-		const float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));
-		const float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));
+		const float dist_04_00 = DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-2, 1)).rgb, src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb, src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));
+		const float dist_05_03 = DistYCbCr(src[11], src[ 4]) + DistYCbCr(src[ 4], src[10]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_03) < dist_04_00;
 		
 		blendResult[3] = ((dist_04_00 > dist_05_03) && (v[0] != v[5]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	// Pixel Tap Mapping: --|--|22|23|--
-	//                    --|06|07|08|09
-	//                    --|05|00|01|10
+	// Pixel Tap Mapping: --|--|12|HH|--
+	//                    --|06|07|08|AA
+	//                    --|05|00|01|09
 	//                    --|--|03|02|--
 	//                    --|--|--|--|--
 	// Corner (1, 0)
 	if ( !((v[7] == v[8] && v[0] == v[1]) || (v[7] == v[0] && v[8] == v[1])) )
 	{
-		const float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));
-		const float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));
+		const float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], inTexture.sample(genSampler, float2(inPosition), int2( 1,-2)).rgb) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], inTexture.sample(genSampler, float2(inPosition), int2( 2,-1)).rgb) + (4.0 * DistYCbCr(src[ 0], src[ 8]));
+		const float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[12], src[ 8]) + DistYCbCr(src[ 8], src[ 9]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_07_01) < dist_00_08;
 		
 		blendResult[1] = ((dist_00_08 > dist_07_01) && (v[0] != v[7]) && (v[0] != v[1])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	// Pixel Tap Mapping: --|21|22|--|--
-	//                    19|06|07|08|--
-	//                    18|05|00|01|--
+	// Pixel Tap Mapping: --|GG|12|--|--
+	//                    FF|06|07|08|--
+	//                    11|05|00|01|--
 	//                    --|04|03|--|--
 	//                    --|--|--|--|--
 	// Corner (0, 0)
 	if ( !((v[6] == v[7] && v[5] == v[0]) || (v[6] == v[5] && v[7] == v[0])) )
 	{
-		const float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));
-		const float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));
+		const float dist_05_07 = DistYCbCr(src[11], src[ 6]) + DistYCbCr(src[ 6], src[12]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));
+		const float dist_06_00 = DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-2,-1)).rgb, src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-1,-2)).rgb, src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_07) < dist_06_00;
 		
 		blendResult[0] = ((dist_05_07 < dist_06_00) && (v[0] != v[5]) && (v[0] != v[7])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	float3 dst[25] = {
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0]
-	};
-	
 	// Scale pixel
+	const uint2 outPosition = inPosition * 5;
+	
 	if (IsBlendingNeeded(blendResult))
 	{
 		const float4 dist_01_04 = float4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );
 		const float4 dist_03_08 = float4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );
-		const bool4 haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08);
-		const bool4 haveSteepLine = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04);
-		const bool4 needBlend = (blendResult.zyxw != int4(BLEND_NONE));
-		const bool4 doLineBlend = (blendResult.zyxw >= int4(BLEND_DOMINANT));
-		float3 blendPix[4];
 		
+		bool4 haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08);
 		haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);
-		haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);
-		doLineBlend[0] = (  doLineBlend[0] ||
-						   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
-							 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
-							 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );
-		blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];
-		
 		haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);
-		haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);
-		doLineBlend[1] = (  doLineBlend[1] ||
-					  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
-						(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
-						(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );
-		blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];
-		
 		haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);
-		haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);
-		doLineBlend[2] = (  doLineBlend[2] ||
-					  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
-						(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
-						(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );
-		blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];
-		
 		haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);
-		haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);
-		doLineBlend[3] = (  doLineBlend[3] ||
-					  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
-						(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
-						(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );
-		blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];
 		
-		dst[ 0] = mix(dst[ 0], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250f : 0.000f);
-		dst[ 0] = mix(dst[ 0], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.000f : 0.8631434088f) : 0.000f);
-		dst[ 0] = mix(dst[ 0], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250f : 0.000f);
+		bool4 haveSteepLine = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04);
+		haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);
+		haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);
+		haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);
+		haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);
+		
+		bool4 doLineBlend = (blendResult.zyxw >= char4(BLEND_DOMINANT));
+		doLineBlend[0] = (  doLineBlend[0] ||
+						  !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
+							(blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
+							(IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );
+		doLineBlend[1] = (  doLineBlend[1] ||
+						  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
+							(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
+							(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );
+		doLineBlend[2] = (  doLineBlend[2] ||
+						  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
+							(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
+							(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );
+		doLineBlend[3] = (  doLineBlend[3] ||
+						  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
+							(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
+							(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );
+		
+		const bool4 needBlend = (blendResult.zyxw != char4(BLEND_NONE));
+		
+		const float3 blendPix[4] = {
+			( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3],
+			( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1],
+			( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7],
+			( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5]
+		};
+		
+		float4 outColor = float4(src[0], 1.0f);
+		outTexture.write( outColor, outPosition + uint2(2, 2) );
+		
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.000f : 0.8631434088f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(0, 0) );
 
-		dst[ 1] = mix(dst[ 1], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.750f : 0.000f);
-		dst[ 1] = mix(dst[ 1], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((!haveShallowLine[2] && !haveSteepLine[2]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
-
-		dst[ 2] = mix(dst[ 2], blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveSteepLine[1]) ? 1.000f : ((haveShallowLine[1]) ? 0.250f : 0.125f)) : 0.000f);
-		dst[ 2] = mix(dst[ 2], blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? 1.000f : ((haveSteepLine[2]) ? 0.250f : 0.125f)) : 0.000f);
-
-		dst[ 3] = mix(dst[ 3], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((!haveShallowLine[1] && !haveSteepLine[1]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
-		dst[ 3] = mix(dst[ 3], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.750f : 0.000f);
-
-		dst[ 4] = mix(dst[ 4], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250f : 0.000f);
-		dst[ 4] = mix(dst[ 4], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.000f : 0.8631434088f) : 0.000f);
-		dst[ 4] = mix(dst[ 4], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250f : 0.000f);
-
-		dst[ 5] = mix(dst[ 5], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((!haveShallowLine[2] && !haveSteepLine[2]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
-		dst[ 5] = mix(dst[ 5], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.750f : 0.000f);
-
-		dst[ 6] = mix(dst[ 6], blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? ((haveSteepLine[2]) ? 2.0f/3.0f : 0.750f) : ((haveSteepLine[2]) ? 0.750f : 0.125f)) : 0.000f);
-
-		dst[ 7] = mix(dst[ 7], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250f : 0.000f);
-		dst[ 7] = mix(dst[ 7], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250f : 0.000f);
-
-		dst[ 8] = mix(dst[ 8], blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? ((haveSteepLine[1]) ? 2.0f/3.0f : 0.750f) : ((haveSteepLine[1]) ? 0.750f : 0.125f)) : 0.000f);
-
-		dst[ 9] = mix(dst[ 9], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.750f : 0.000f);
-		dst[ 9] = mix(dst[ 9], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((!haveShallowLine[1] && !haveSteepLine[1]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
-
-		dst[10] = mix(dst[10], blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveSteepLine[2]) ? 1.000f : ((haveShallowLine[2]) ? 0.250f : 0.125f)) : 0.000f);
-		dst[10] = mix(dst[10], blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? 1.000f : ((haveSteepLine[3]) ? 0.250f : 0.125f)) : 0.000f);
-
-		dst[11] = mix(dst[11], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250f : 0.000f);
-		dst[11] = mix(dst[11], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250f : 0.000f);
-
-		dst[13] = mix(dst[13], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250f : 0.000f);
-		dst[13] = mix(dst[13], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250f : 0.000f);
-
-		dst[14] = mix(dst[14], blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveSteepLine[0]) ? 1.000f : ((haveShallowLine[0]) ? 0.250f : 0.125f)) : 0.000f);
-		dst[14] = mix(dst[14], blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? 1.000f : ((haveSteepLine[1]) ? 0.250f : 0.125f)) : 0.000f);
-
-		dst[15] = mix(dst[15], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.750f : 0.000f);
-		dst[15] = mix(dst[15], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((!haveShallowLine[3] && !haveSteepLine[3]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
-
-		dst[16] = mix(dst[16], blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? ((haveSteepLine[3]) ? 2.0f/3.0f : 0.750f) : ((haveSteepLine[3]) ? 0.750f : 0.125f)) : 0.000f);
-
-		dst[17] = mix(dst[17], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250f : 0.000f);
-		dst[17] = mix(dst[17], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250f : 0.000f);
-
-		dst[18] = mix(dst[18], blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? ((haveSteepLine[0]) ? 2.0f/3.0f : 0.750f) : ((haveSteepLine[0]) ? 0.750f : 0.125f)) : 0.000f);
-
-		dst[19] = mix(dst[19], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((!haveShallowLine[0] && !haveSteepLine[0]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
-		dst[19] = mix(dst[19], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.750f : 0.000f);
-
-		dst[20] = mix(dst[20], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250f : 0.000f);
-		dst[20] = mix(dst[20], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250f : 0.000f);
-		dst[20] = mix(dst[20], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.000f : 0.8631434088f) : 0.000f);
-
-		dst[21] = mix(dst[21], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.750f : 0.000f);
-		dst[21] = mix(dst[21], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((!haveShallowLine[3] && !haveSteepLine[3]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
-
-		dst[22] = mix(dst[22], blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? 1.000f : ((haveSteepLine[0]) ? 0.250f : 0.125f)) : 0.000f);
-		dst[22] = mix(dst[22], blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveSteepLine[3]) ? 1.000f : ((haveShallowLine[3]) ? 0.250f : 0.125f)) : 0.000f);
-
-		dst[23] = mix(dst[23], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((!haveShallowLine[0] && !haveSteepLine[0]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
-		dst[23] = mix(dst[23], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.750f : 0.000f);
-
-		dst[24] = mix(dst[24], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.000f : 0.8631434088f) : 0.000f);
-		dst[24] = mix(dst[24], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250f : 0.000f);
-		dst[24] = mix(dst[24], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250f : 0.000f);
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.750f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((!haveShallowLine[2] && !haveSteepLine[2]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(1, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveSteepLine[1]) ? 1.000f : ((haveShallowLine[1]) ? 0.250f : 0.125f)) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? 1.000f : ((haveSteepLine[2]) ? 0.250f : 0.125f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(2, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((!haveShallowLine[1] && !haveSteepLine[1]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.750f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(3, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.000f : 0.8631434088f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(4, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((!haveShallowLine[2] && !haveSteepLine[2]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.750f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(0, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? ((haveSteepLine[2]) ? 2.0f/3.0f : 0.750f) : ((haveSteepLine[2]) ? 0.750f : 0.125f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(1, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(2, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? ((haveSteepLine[1]) ? 2.0f/3.0f : 0.750f) : ((haveSteepLine[1]) ? 0.750f : 0.125f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(3, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.750f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((!haveShallowLine[1] && !haveSteepLine[1]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(4, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveSteepLine[2]) ? 1.000f : ((haveShallowLine[2]) ? 0.250f : 0.125f)) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? 1.000f : ((haveSteepLine[3]) ? 0.250f : 0.125f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(0, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(1, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(3, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveSteepLine[0]) ? 1.000f : ((haveShallowLine[0]) ? 0.250f : 0.125f)) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? 1.000f : ((haveSteepLine[1]) ? 0.250f : 0.125f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(4, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.750f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((!haveShallowLine[3] && !haveSteepLine[3]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(0, 3) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? ((haveSteepLine[3]) ? 2.0f/3.0f : 0.750f) : ((haveSteepLine[3]) ? 0.750f : 0.125f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(1, 3) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(2, 3) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? ((haveSteepLine[0]) ? 2.0f/3.0f : 0.750f) : ((haveSteepLine[0]) ? 0.750f : 0.125f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(3, 3) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((!haveShallowLine[0] && !haveSteepLine[0]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.750f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(4, 3) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.000f : 0.8631434088f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(0, 4) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.750f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((!haveShallowLine[3] && !haveSteepLine[3]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(1, 4) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? 1.000f : ((haveSteepLine[0]) ? 0.250f : 0.125f)) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveSteepLine[3]) ? 1.000f : ((haveShallowLine[3]) ? 0.250f : 0.125f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(2, 4) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((!haveShallowLine[0] && !haveSteepLine[0]) ? 0.875f : 1.000f) : 0.2306749731f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.750f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(3, 4) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.000f : 0.8631434088f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(4, 4) );
 	}
-	
-	const uint2 outPosition = inPosition * 5;
-	outTexture.write( float4(dst[ 0], 1.0f), outPosition + uint2(0, 0) );
-	outTexture.write( float4(dst[ 1], 1.0f), outPosition + uint2(1, 0) );
-	outTexture.write( float4(dst[ 2], 1.0f), outPosition + uint2(2, 0) );
-	outTexture.write( float4(dst[ 3], 1.0f), outPosition + uint2(3, 0) );
-	outTexture.write( float4(dst[ 4], 1.0f), outPosition + uint2(4, 0) );
-	outTexture.write( float4(dst[ 5], 1.0f), outPosition + uint2(0, 1) );
-	outTexture.write( float4(dst[ 6], 1.0f), outPosition + uint2(1, 1) );
-	outTexture.write( float4(dst[ 7], 1.0f), outPosition + uint2(2, 1) );
-	outTexture.write( float4(dst[ 8], 1.0f), outPosition + uint2(3, 1) );
-	outTexture.write( float4(dst[ 9], 1.0f), outPosition + uint2(4, 1) );
-	outTexture.write( float4(dst[10], 1.0f), outPosition + uint2(0, 2) );
-	outTexture.write( float4(dst[11], 1.0f), outPosition + uint2(1, 2) );
-	outTexture.write( float4(dst[12], 1.0f), outPosition + uint2(2, 2) );
-	outTexture.write( float4(dst[13], 1.0f), outPosition + uint2(3, 2) );
-	outTexture.write( float4(dst[14], 1.0f), outPosition + uint2(4, 2) );
-	outTexture.write( float4(dst[15], 1.0f), outPosition + uint2(0, 3) );
-	outTexture.write( float4(dst[16], 1.0f), outPosition + uint2(1, 3) );
-	outTexture.write( float4(dst[17], 1.0f), outPosition + uint2(2, 3) );
-	outTexture.write( float4(dst[18], 1.0f), outPosition + uint2(3, 3) );
-	outTexture.write( float4(dst[19], 1.0f), outPosition + uint2(4, 3) );
-	outTexture.write( float4(dst[20], 1.0f), outPosition + uint2(0, 4) );
-	outTexture.write( float4(dst[21], 1.0f), outPosition + uint2(1, 4) );
-	outTexture.write( float4(dst[22], 1.0f), outPosition + uint2(2, 4) );
-	outTexture.write( float4(dst[23], 1.0f), outPosition + uint2(3, 4) );
-	outTexture.write( float4(dst[24], 1.0f), outPosition + uint2(4, 4) );
+	else
+	{
+		const float4 outColor = float4(src[0], 1.0f);
+		outTexture.write( outColor, outPosition + uint2(0, 0) );
+		outTexture.write( outColor, outPosition + uint2(1, 0) );
+		outTexture.write( outColor, outPosition + uint2(2, 0) );
+		outTexture.write( outColor, outPosition + uint2(3, 0) );
+		outTexture.write( outColor, outPosition + uint2(4, 0) );
+		outTexture.write( outColor, outPosition + uint2(0, 1) );
+		outTexture.write( outColor, outPosition + uint2(1, 1) );
+		outTexture.write( outColor, outPosition + uint2(2, 1) );
+		outTexture.write( outColor, outPosition + uint2(3, 1) );
+		outTexture.write( outColor, outPosition + uint2(4, 1) );
+		outTexture.write( outColor, outPosition + uint2(0, 2) );
+		outTexture.write( outColor, outPosition + uint2(1, 2) );
+		outTexture.write( outColor, outPosition + uint2(2, 2) );
+		outTexture.write( outColor, outPosition + uint2(3, 2) );
+		outTexture.write( outColor, outPosition + uint2(4, 2) );
+		outTexture.write( outColor, outPosition + uint2(0, 3) );
+		outTexture.write( outColor, outPosition + uint2(1, 3) );
+		outTexture.write( outColor, outPosition + uint2(2, 3) );
+		outTexture.write( outColor, outPosition + uint2(3, 3) );
+		outTexture.write( outColor, outPosition + uint2(4, 3) );
+		outTexture.write( outColor, outPosition + uint2(0, 4) );
+		outTexture.write( outColor, outPosition + uint2(1, 4) );
+		outTexture.write( outColor, outPosition + uint2(2, 4) );
+		outTexture.write( outColor, outPosition + uint2(3, 4) );
+		outTexture.write( outColor, outPosition + uint2(4, 4) );
+	}
 }
 
 //----------------------------------------
-// Input Pixel Mapping:   --|21|22|23|--
-//                        19|06|07|08|09
-//                        18|05|00|01|10
-//                        17|04|03|02|11
-//                        --|15|14|13|--
+// Input Pixel Mapping:   --|GG|12|HH|--
+//                        FF|06|07|08|AA
+//                        11|05|00|01|09
+//                        EE|04|03|02|BB
+//                        --|DD|10|CC|--
 //
 // Output Pixel Mapping: 00|01|02|03|04|05
 //                       06|07|08|09|10|11
@@ -2566,7 +2607,7 @@ kernel void pixel_scaler_6xBRZ(const uint2 inPosition [[thread_position_in_grid]
 							   const texture2d<float, access::sample> inTexture [[texture(0)]],
 							   texture2d<float, access::write> outTexture [[texture(1)]])
 {
-	const float3 src[25] = {
+	const float3 src[13] = {
 		inTexture.sample(genSampler, float2(inPosition), int2( 0, 0)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1, 0)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1, 1)).rgb,
@@ -2576,22 +2617,10 @@ kernel void pixel_scaler_6xBRZ(const uint2 inPosition [[thread_position_in_grid]
 		inTexture.sample(genSampler, float2(inPosition), int2(-1,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 0,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 1,-1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2,-1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 2, 0)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 1, 2)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2( 0, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-1, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2, 2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2, 1)).rgb,
 		inTexture.sample(genSampler, float2(inPosition), int2(-2, 0)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2,-1)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-2,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2(-1,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 0,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 1,-2)).rgb,
-		inTexture.sample(genSampler, float2(inPosition), int2( 2,-2)).rgb
+		inTexture.sample(genSampler, float2(inPosition), int2( 0,-2)).rgb
 	};
 	
 	const float v[9] = {
@@ -2606,20 +2635,20 @@ kernel void pixel_scaler_6xBRZ(const uint2 inPosition [[thread_position_in_grid]
 		reduce(src[8])
 	};
 	
-	int4 blendResult = int4(BLEND_NONE);
+	char4 blendResult = char4(BLEND_NONE);
 	
 	// Preprocess corners
 	// Pixel Tap Mapping: --|--|--|--|--
 	//                    --|--|07|08|--
-	//                    --|05|00|01|10
-	//                    --|04|03|02|11
-	//                    --|--|14|13|--
+	//                    --|05|00|01|09
+	//                    --|04|03|02|BB
+	//                    --|--|10|CC|--
 	
 	// Corner (1, 1)
 	if ( !((v[0] == v[1] && v[3] == v[2]) || (v[0] == v[3] && v[1] == v[2])) )
 	{
-		const float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[14], src[ 2]) + DistYCbCr(src[ 2], src[10]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));
-		const float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], src[13]) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], src[11]) + (4.0 * DistYCbCr(src[ 0], src[ 2]));
+		const float dist_03_01 = DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + DistYCbCr(src[10], src[ 2]) + DistYCbCr(src[ 2], src[ 9]) + (4.0 * DistYCbCr(src[ 3], src[ 1]));
+		const float dist_00_02 = DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[ 3], inTexture.sample(genSampler, float2(inPosition), int2( 1, 2)).rgb) + DistYCbCr(src[ 7], src[ 1]) + DistYCbCr(src[ 1], inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb) + (4.0 * DistYCbCr(src[ 0], src[ 2]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_03_01) < dist_00_02;
 		
 		blendResult[2] = ((dist_03_01 < dist_00_02) && (v[0] != v[1]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
@@ -2628,263 +2657,299 @@ kernel void pixel_scaler_6xBRZ(const uint2 inPosition [[thread_position_in_grid]
 	
 	// Pixel Tap Mapping: --|--|--|--|--
 	//                    --|06|07|--|--
-	//                    18|05|00|01|--
-	//                    17|04|03|02|--
-	//                    --|15|14|--|--
+	//                    11|05|00|01|--
+	//                    EE|04|03|02|--
+	//                    --|DD|10|--|--
 	// Corner (0, 1)
 	if ( !((v[5] == v[0] && v[4] == v[3]) || (v[5] == v[4] && v[0] == v[3])) )
 	{
-		const float dist_04_00 = DistYCbCr(src[17], src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[15], src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));
-		const float dist_05_03 = DistYCbCr(src[18], src[ 4]) + DistYCbCr(src[ 4], src[14]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));
+		const float dist_04_00 = DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-2, 1)).rgb, src[ 5]) + DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2( 2, 1)).rgb, src[ 3]) + DistYCbCr(src[ 3], src[ 1]) + (4.0 * DistYCbCr(src[ 4], src[ 0]));
+		const float dist_05_03 = DistYCbCr(src[11], src[ 4]) + DistYCbCr(src[ 4], src[10]) + DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + (4.0 * DistYCbCr(src[ 5], src[ 3]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_03) < dist_04_00;
 		
 		blendResult[3] = ((dist_04_00 > dist_05_03) && (v[0] != v[5]) && (v[0] != v[3])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	// Pixel Tap Mapping: --|--|22|23|--
-	//                    --|06|07|08|09
-	//                    --|05|00|01|10
+	// Pixel Tap Mapping: --|--|12|HH|--
+	//                    --|06|07|08|AA
+	//                    --|05|00|01|09
 	//                    --|--|03|02|--
 	//                    --|--|--|--|--
 	// Corner (1, 0)
 	if ( !((v[7] == v[8] && v[0] == v[1]) || (v[7] == v[0] && v[8] == v[1])) )
 	{
-		const float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], src[23]) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], src[ 9]) + (4.0 * DistYCbCr(src[ 0], src[ 8]));
-		const float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[22], src[ 8]) + DistYCbCr(src[ 8], src[10]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));
+		const float dist_00_08 = DistYCbCr(src[ 5], src[ 7]) + DistYCbCr(src[ 7], inTexture.sample(genSampler, float2(inPosition), int2( 1,-2)).rgb) + DistYCbCr(src[ 3], src[ 1]) + DistYCbCr(src[ 1], inTexture.sample(genSampler, float2(inPosition), int2( 2,-1)).rgb) + (4.0 * DistYCbCr(src[ 0], src[ 8]));
+		const float dist_07_01 = DistYCbCr(src[ 6], src[ 0]) + DistYCbCr(src[ 0], src[ 2]) + DistYCbCr(src[12], src[ 8]) + DistYCbCr(src[ 8], src[ 9]) + (4.0 * DistYCbCr(src[ 7], src[ 1]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_07_01) < dist_00_08;
 		
 		blendResult[1] = ((dist_00_08 > dist_07_01) && (v[0] != v[7]) && (v[0] != v[1])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	// Pixel Tap Mapping: --|21|22|--|--
-	//                    19|06|07|08|--
-	//                    18|05|00|01|--
+	// Pixel Tap Mapping: --|GG|12|--|--
+	//                    FF|06|07|08|--
+	//                    11|05|00|01|--
 	//                    --|04|03|--|--
 	//                    --|--|--|--|--
 	// Corner (0, 0)
 	if ( !((v[6] == v[7] && v[5] == v[0]) || (v[6] == v[5] && v[7] == v[0])) )
 	{
-		const float dist_05_07 = DistYCbCr(src[18], src[ 6]) + DistYCbCr(src[ 6], src[22]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));
-		const float dist_06_00 = DistYCbCr(src[19], src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(src[21], src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));
+		const float dist_05_07 = DistYCbCr(src[11], src[ 6]) + DistYCbCr(src[ 6], src[12]) + DistYCbCr(src[ 4], src[ 0]) + DistYCbCr(src[ 0], src[ 8]) + (4.0 * DistYCbCr(src[ 5], src[ 7]));
+		const float dist_06_00 = DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-2,-1)).rgb, src[ 5]) + DistYCbCr(src[ 5], src[ 3]) + DistYCbCr(inTexture.sample(genSampler, float2(inPosition), int2(-1,-2)).rgb, src[ 7]) + DistYCbCr(src[ 7], src[ 1]) + (4.0 * DistYCbCr(src[ 6], src[ 0]));
 		const bool dominantGradient = (DOMINANT_DIRECTION_THRESHOLD * dist_05_07) < dist_06_00;
 		
 		blendResult[0] = ((dist_05_07 < dist_06_00) && (v[0] != v[5]) && (v[0] != v[7])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	float3 dst[36] = {
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0],
-		src[0]
-	};
-	
 	// Scale pixel
+	const uint2 outPosition = inPosition * 6;
+	
 	if (IsBlendingNeeded(blendResult))
 	{
 		const float4 dist_01_04 = float4( DistYCbCr(src[1], src[4]), DistYCbCr(src[7], src[2]), DistYCbCr(src[5], src[8]), DistYCbCr(src[3], src[6]) );
 		const float4 dist_03_08 = float4( DistYCbCr(src[3], src[8]), DistYCbCr(src[1], src[6]), DistYCbCr(src[7], src[4]), DistYCbCr(src[5], src[2]) );
-		const bool4 haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08);
-		const bool4 haveSteepLine = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04);
-		const bool4 needBlend = (blendResult.zyxw != int4(BLEND_NONE));
-		const bool4 doLineBlend = (blendResult.zyxw >= int4(BLEND_DOMINANT));
-		float3 blendPix[4];
 		
+		bool4 haveShallowLine = (STEEP_DIRECTION_THRESHOLD * dist_01_04 <= dist_03_08);
 		haveShallowLine[0] = haveShallowLine[0] && (v[0] != v[4]) && (v[5] != v[4]);
-		haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);
-		doLineBlend[0] = (  doLineBlend[0] ||
-						   !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
-							 (blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
-							 (IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );
-		blendPix[0] = ( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3];
-		
 		haveShallowLine[1] = haveShallowLine[1] && (v[0] != v[2]) && (v[3] != v[2]);
-		haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);
-		doLineBlend[1] = (  doLineBlend[1] ||
-					  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
-						(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
-						(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );
-		blendPix[1] = ( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1];
-		
 		haveShallowLine[2] = haveShallowLine[2] && (v[0] != v[8]) && (v[1] != v[8]);
-		haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);
-		doLineBlend[2] = (  doLineBlend[2] ||
-					  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
-						(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
-						(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );
-		blendPix[2] = ( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7];
-		
 		haveShallowLine[3] = haveShallowLine[3] && (v[0] != v[6]) && (v[7] != v[6]);
-		haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);
-		doLineBlend[3] = (  doLineBlend[3] ||
-					  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
-						(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
-						(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );
-		blendPix[3] = ( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5];
 		
-		dst[ 0] = mix(dst[ 0], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250f : 0.000f);
-		dst[ 0] = mix(dst[ 0], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.000f : 0.9711013910f) : 0.000f);
-		dst[ 0] = mix(dst[ 0], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250f : 0.000f);
-
-		dst[ 1] = mix(dst[ 1], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.750f : 0.000f);
-		dst[ 1] = mix(dst[ 1], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.000f : 0.4236372243f) : 0.000f);
-
-		dst[ 2] = mix(dst[ 2], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 1.000f : 0.000f);
-		dst[ 2] = mix(dst[ 2], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveShallowLine[2]) ? 1.000f : ((haveSteepLine[2]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
-
-		dst[ 3] = mix(dst[ 3], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveSteepLine[1]) ? 1.000f : ((haveShallowLine[1]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
-		dst[ 3] = mix(dst[ 3], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 1.000f : 0.000f);
-
-		dst[ 4] = mix(dst[ 4], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.000f : 0.4236372243f) : 0.000f);
-		dst[ 4] = mix(dst[ 4], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.750f : 0.000f);
-
-		dst[ 5] = mix(dst[ 5], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250f : 0.000f);
-		dst[ 5] = mix(dst[ 5], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.000f : 0.9711013910f) : 0.000f);
-		dst[ 5] = mix(dst[ 5], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250f : 0.000f);
-
-		dst[ 6] = mix(dst[ 6], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.000f : 0.4236372243f) : 0.000f);
-		dst[ 6] = mix(dst[ 6], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.750f : 0.000f);
-
-		dst[ 7] = mix(dst[ 7], blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((!haveShallowLine[2] && !haveSteepLine[2]) ? 0.500f : 1.000f) : 0.000f);
-
-		dst[ 8] = mix(dst[ 8], blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250f : 0.000f);
-		dst[ 8] = mix(dst[ 8], blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? 0.750f : ((haveSteepLine[2]) ? 0.250f : 0.000f)) : 0.000f);
-
-		dst[ 9] = mix(dst[ 9], blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveSteepLine[1]) ? 0.750f : ((haveShallowLine[1]) ? 0.250f : 0.000f)) : 0.000f);
-		dst[ 9] = mix(dst[ 9], blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250f : 0.000f);
-
-		dst[10] = mix(dst[10], blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((!haveShallowLine[1] && !haveSteepLine[1]) ? 0.500f : 1.000f) : 0.000f);
-
-		dst[11] = mix(dst[11], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.750f : 0.000f);
-		dst[11] = mix(dst[11], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.000f : 0.4236372243f) : 0.000);
-
-		dst[12] = mix(dst[12], blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveSteepLine[2]) ? 1.000f : ((haveShallowLine[2]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
-		dst[12] = mix(dst[12], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 1.000f : 0.000f);
-
-		dst[13] = mix(dst[13], blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveSteepLine[2]) ? 0.750f : ((haveShallowLine[2]) ? 0.250f : 0.000f)) : 0.000f);
-		dst[13] = mix(dst[13], blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250f : 0.000f);
-
-		dst[16] = mix(dst[16], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250f : 0.000f);
-		dst[16] = mix(dst[16], blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? 0.750f : ((haveSteepLine[1]) ? 0.250f : 0.000f)) : 0.000f);
-
-		dst[17] = mix(dst[17], blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 1.000f : 0.000f);
-		dst[17] = mix(dst[17], blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveShallowLine[1]) ? 1.000f : ((haveSteepLine[1]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
-
-		dst[18] = mix(dst[18], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 1.000f : 0.000f);
-		dst[18] = mix(dst[18], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveShallowLine[3]) ? 1.000f : ((haveSteepLine[3]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
-
-		dst[19] = mix(dst[19], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250f : 0.000f);
-		dst[19] = mix(dst[19], blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? 0.750f : ((haveSteepLine[3]) ? 0.250f : 0.000f)) : 0.000f);
-
-		dst[22] = mix(dst[22], blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveSteepLine[0]) ? 0.750f : ((haveShallowLine[0]) ? 0.250f : 0.000f)) : 0.000f);
-		dst[22] = mix(dst[22], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250f : 0.000f);
-
-		dst[23] = mix(dst[23], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveSteepLine[0]) ? 1.000f : ((haveShallowLine[0]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
-		dst[23] = mix(dst[23], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 1.000f : 0.000f);
-
-		dst[24] = mix(dst[24], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.750f : 0.000f);
-		dst[24] = mix(dst[24], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.000f : 0.4236372243f) : 0.000f);
-
-		dst[25] = mix(dst[25], blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((!haveShallowLine[3] && !haveSteepLine[3]) ? 0.500f : 1.000f) : 0.000f);
-
-		dst[26] = mix(dst[26], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250f : 0.000f);
-		dst[26] = mix(dst[26], blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveSteepLine[3]) ? 0.750f : ((haveShallowLine[3]) ? 0.250f : 0.000f)) : 0.000f);
-
-		dst[27] = mix(dst[27], blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? 0.750f : ((haveSteepLine[0]) ? 0.250f : 0.000f)) : 0.000f);
-		dst[27] = mix(dst[27], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250f : 0.000f);
-
-		dst[28] = mix(dst[28], blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((!haveShallowLine[0] && !haveSteepLine[0]) ? 0.500f : 1.000f) : 0.000f);
-
-		dst[29] = mix(dst[29], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.000f : 0.4236372243f) : 0.000f);
-		dst[29] = mix(dst[29], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.750f : 0.000f);
-
-		dst[30] = mix(dst[30], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250f : 0.000f);
-		dst[30] = mix(dst[30], blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250f : 0.000f);
-		dst[30] = mix(dst[30], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.000f : 0.9711013910f) : 0.000f);
-
-		dst[31] = mix(dst[31], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.750f : 0.000f);
-		dst[31] = mix(dst[31], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.000f : 0.4236372243f) : 0.000f);
-
-		dst[32] = mix(dst[32], blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 1.000f : 0.000f);
-		dst[32] = mix(dst[32], blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveSteepLine[3]) ? 1.000f : ((haveShallowLine[3]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
-
-		dst[33] = mix(dst[33], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveShallowLine[0]) ? 1.000f : ((haveSteepLine[0]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
-		dst[33] = mix(dst[33], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 1.000f : 0.000f);
-
-		dst[34] = mix(dst[34], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.000f : 0.4236372243f) : 0.000f);
-		dst[34] = mix(dst[34], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.750f : 0.000f);
-
-		dst[35] = mix(dst[35], blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.000f : 0.9711013910f) : 0.000f);
-		dst[35] = mix(dst[35], blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250f : 0.000f);
-		dst[35] = mix(dst[35], blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250f : 0.000f);
+		bool4 haveSteepLine = (STEEP_DIRECTION_THRESHOLD * dist_03_08 <= dist_01_04);
+		haveSteepLine[0]   = haveSteepLine[0] && (v[0] != v[8]) && (v[7] != v[8]);
+		haveSteepLine[1]   = haveSteepLine[1] && (v[0] != v[6]) && (v[5] != v[6]);
+		haveSteepLine[2]   = haveSteepLine[2] && (v[0] != v[4]) && (v[3] != v[4]);
+		haveSteepLine[3]   = haveSteepLine[3] && (v[0] != v[2]) && (v[1] != v[2]);
+		
+		bool4 doLineBlend = (blendResult.zyxw >= char4(BLEND_DOMINANT));
+		doLineBlend[0] = (  doLineBlend[0] ||
+						  !((blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
+							(blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
+							(IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && !IsPixEqual(src[0], src[2])) ) );
+		doLineBlend[1] = (  doLineBlend[1] ||
+						  !((blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
+							(blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
+							(IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && !IsPixEqual(src[0], src[8])) ) );
+		doLineBlend[2] = (  doLineBlend[2] ||
+						  !((blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
+							(blendResult[1] != BLEND_NONE && !IsPixEqual(src[0], src[4])) ||
+							(IsPixEqual(src[8], src[7]) && IsPixEqual(src[7], src[6]) && IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && !IsPixEqual(src[0], src[6])) ) );
+		doLineBlend[3] = (  doLineBlend[3] ||
+						  !((blendResult[2] != BLEND_NONE && !IsPixEqual(src[0], src[6])) ||
+							(blendResult[0] != BLEND_NONE && !IsPixEqual(src[0], src[2])) ||
+							(IsPixEqual(src[6], src[5]) && IsPixEqual(src[5], src[4]) && IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && !IsPixEqual(src[0], src[4])) ) );
+		
+		const bool4 needBlend = (blendResult.zyxw != char4(BLEND_NONE));
+		
+		const float3 blendPix[4] = {
+			( DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3]) ) ? src[1] : src[3],
+			( DistYCbCr(src[0], src[7]) <= DistYCbCr(src[0], src[1]) ) ? src[7] : src[1],
+			( DistYCbCr(src[0], src[5]) <= DistYCbCr(src[0], src[7]) ) ? src[5] : src[7],
+			( DistYCbCr(src[0], src[3]) <= DistYCbCr(src[0], src[5]) ) ? src[3] : src[5]
+		};
+		
+		float4 outColor = float4(src[0], 1.0f);
+		outTexture.write( outColor, outPosition + uint2(2, 2) );
+		outTexture.write( outColor, outPosition + uint2(3, 2) );
+		outTexture.write( outColor, outPosition + uint2(2, 3) );
+		outTexture.write( outColor, outPosition + uint2(3, 3) );
+		
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.000f : 0.9711013910f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(0, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.750f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.000f : 0.4236372243f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(1, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 1.000f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveShallowLine[2]) ? 1.000f : ((haveSteepLine[2]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(2, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveSteepLine[1]) ? 1.000f : ((haveShallowLine[1]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 1.000f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(3, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.000f : 0.4236372243f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.750f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(4, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.000f : 0.9711013910f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(5, 0) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? 1.000f : 0.4236372243f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.750f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(0, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((!haveShallowLine[2] && !haveSteepLine[2]) ? 0.500f : 1.000f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(1, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveSteepLine[1]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveShallowLine[2]) ? 0.750f : ((haveSteepLine[2]) ? 0.250f : 0.000f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(2, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveSteepLine[1]) ? 0.750f : ((haveShallowLine[1]) ? 0.250f : 0.000f)) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveShallowLine[2]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(3, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((!haveShallowLine[1] && !haveSteepLine[1]) ? 0.500f : 1.000f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(4, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.750f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? 1.000f : 0.4236372243f) : 0.000);
+		outTexture.write( outColor, outPosition + uint2(5, 1) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2]) ? ((doLineBlend[2]) ? ((haveSteepLine[2]) ? 1.000f : ((haveShallowLine[2]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 1.000f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(0, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2]) ? ((haveSteepLine[2]) ? 0.750f : ((haveShallowLine[2]) ? 0.250f : 0.000f)) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveShallowLine[3]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(1, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1]) ? ((haveShallowLine[1]) ? 0.750f : ((haveSteepLine[1]) ? 0.250f : 0.000f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(4, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveSteepLine[0]) ? 1.000f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1]) ? ((doLineBlend[1]) ? ((haveShallowLine[1]) ? 1.000f : ((haveSteepLine[1]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(5, 2) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 1.000f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveShallowLine[3]) ? 1.000f : ((haveSteepLine[3]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(0, 3) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveShallowLine[3]) ? 0.750f : ((haveSteepLine[3]) ? 0.250f : 0.000f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(1, 3) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveSteepLine[0]) ? 0.750f : ((haveShallowLine[0]) ? 0.250f : 0.000f)) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(4, 3) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveSteepLine[0]) ? 1.000f : ((haveShallowLine[0]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 1.000f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(5, 3) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.750f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.000f : 0.4236372243f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(0, 4) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((!haveShallowLine[3] && !haveSteepLine[3]) ? 0.500f : 1.000f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(1, 4) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3]) ? ((haveSteepLine[3]) ? 0.750f : ((haveShallowLine[3]) ? 0.250f : 0.000f)) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(2, 4) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((haveShallowLine[0]) ? 0.750f : ((haveSteepLine[0]) ? 0.250f : 0.000f)) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(3, 4) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0]) ? ((!haveShallowLine[0] && !haveSteepLine[0]) ? 0.500f : 1.000f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(4, 4) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.000f : 0.4236372243f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.750f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(5, 4) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[2], (needBlend[2] && doLineBlend[2] && haveSteepLine[2]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.000f : 0.9711013910f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(0, 5) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 0.750f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? 1.000f : 0.4236372243f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(1, 5) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0] && doLineBlend[0] && haveShallowLine[0]) ? 1.000f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3]) ? ((doLineBlend[3]) ? ((haveSteepLine[3]) ? 1.000f : ((haveShallowLine[3]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(2, 5) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? ((haveShallowLine[0]) ? 1.000f : ((haveSteepLine[0]) ? 0.750f : 0.500f)) : 0.05652034508f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 1.000f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(3, 5) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.000f : 0.4236372243f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.750f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(4, 5) );
+		
+		outColor.rgb = src[0].rgb;
+		outColor.rgb = mix(outColor.rgb, blendPix[0], (needBlend[0]) ? ((doLineBlend[0]) ? 1.000f : 0.9711013910f) : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[1], (needBlend[1] && doLineBlend[1] && haveShallowLine[1]) ? 0.250f : 0.000f);
+		outColor.rgb = mix(outColor.rgb, blendPix[3], (needBlend[3] && doLineBlend[3] && haveSteepLine[3]) ? 0.250f : 0.000f);
+		outTexture.write( outColor, outPosition + uint2(5, 5) );
 	}
-	
-	const uint2 outPosition = inPosition * 6;
-	outTexture.write( float4(dst[ 0], 1.0f), outPosition + uint2(0, 0) );
-	outTexture.write( float4(dst[ 1], 1.0f), outPosition + uint2(1, 0) );
-	outTexture.write( float4(dst[ 2], 1.0f), outPosition + uint2(2, 0) );
-	outTexture.write( float4(dst[ 3], 1.0f), outPosition + uint2(3, 0) );
-	outTexture.write( float4(dst[ 4], 1.0f), outPosition + uint2(4, 0) );
-	outTexture.write( float4(dst[ 5], 1.0f), outPosition + uint2(5, 0) );
-	outTexture.write( float4(dst[ 6], 1.0f), outPosition + uint2(0, 1) );
-	outTexture.write( float4(dst[ 7], 1.0f), outPosition + uint2(1, 1) );
-	outTexture.write( float4(dst[ 8], 1.0f), outPosition + uint2(2, 1) );
-	outTexture.write( float4(dst[ 9], 1.0f), outPosition + uint2(3, 1) );
-	outTexture.write( float4(dst[10], 1.0f), outPosition + uint2(4, 1) );
-	outTexture.write( float4(dst[11], 1.0f), outPosition + uint2(5, 1) );
-	outTexture.write( float4(dst[12], 1.0f), outPosition + uint2(0, 2) );
-	outTexture.write( float4(dst[13], 1.0f), outPosition + uint2(1, 2) );
-	outTexture.write( float4(dst[14], 1.0f), outPosition + uint2(2, 2) );
-	outTexture.write( float4(dst[15], 1.0f), outPosition + uint2(3, 2) );
-	outTexture.write( float4(dst[16], 1.0f), outPosition + uint2(4, 2) );
-	outTexture.write( float4(dst[17], 1.0f), outPosition + uint2(5, 2) );
-	outTexture.write( float4(dst[18], 1.0f), outPosition + uint2(0, 3) );
-	outTexture.write( float4(dst[19], 1.0f), outPosition + uint2(1, 3) );
-	outTexture.write( float4(dst[20], 1.0f), outPosition + uint2(2, 3) );
-	outTexture.write( float4(dst[21], 1.0f), outPosition + uint2(3, 3) );
-	outTexture.write( float4(dst[22], 1.0f), outPosition + uint2(4, 3) );
-	outTexture.write( float4(dst[23], 1.0f), outPosition + uint2(5, 3) );
-	outTexture.write( float4(dst[24], 1.0f), outPosition + uint2(0, 4) );
-	outTexture.write( float4(dst[25], 1.0f), outPosition + uint2(1, 4) );
-	outTexture.write( float4(dst[26], 1.0f), outPosition + uint2(2, 4) );
-	outTexture.write( float4(dst[27], 1.0f), outPosition + uint2(3, 4) );
-	outTexture.write( float4(dst[28], 1.0f), outPosition + uint2(4, 4) );
-	outTexture.write( float4(dst[29], 1.0f), outPosition + uint2(5, 4) );
-	outTexture.write( float4(dst[30], 1.0f), outPosition + uint2(0, 5) );
-	outTexture.write( float4(dst[31], 1.0f), outPosition + uint2(1, 5) );
-	outTexture.write( float4(dst[32], 1.0f), outPosition + uint2(2, 5) );
-	outTexture.write( float4(dst[33], 1.0f), outPosition + uint2(3, 5) );
-	outTexture.write( float4(dst[34], 1.0f), outPosition + uint2(4, 5) );
-	outTexture.write( float4(dst[35], 1.0f), outPosition + uint2(5, 5) );
+	else
+	{
+		const float4 outColor = float4(src[0], 1.0f);
+		outTexture.write( outColor, outPosition + uint2(0, 0) );
+		outTexture.write( outColor, outPosition + uint2(1, 0) );
+		outTexture.write( outColor, outPosition + uint2(2, 0) );
+		outTexture.write( outColor, outPosition + uint2(3, 0) );
+		outTexture.write( outColor, outPosition + uint2(4, 0) );
+		outTexture.write( outColor, outPosition + uint2(5, 0) );
+		outTexture.write( outColor, outPosition + uint2(0, 1) );
+		outTexture.write( outColor, outPosition + uint2(1, 1) );
+		outTexture.write( outColor, outPosition + uint2(2, 1) );
+		outTexture.write( outColor, outPosition + uint2(3, 1) );
+		outTexture.write( outColor, outPosition + uint2(4, 1) );
+		outTexture.write( outColor, outPosition + uint2(5, 1) );
+		outTexture.write( outColor, outPosition + uint2(0, 2) );
+		outTexture.write( outColor, outPosition + uint2(1, 2) );
+		outTexture.write( outColor, outPosition + uint2(2, 2) );
+		outTexture.write( outColor, outPosition + uint2(3, 2) );
+		outTexture.write( outColor, outPosition + uint2(4, 2) );
+		outTexture.write( outColor, outPosition + uint2(5, 2) );
+		outTexture.write( outColor, outPosition + uint2(0, 3) );
+		outTexture.write( outColor, outPosition + uint2(1, 3) );
+		outTexture.write( outColor, outPosition + uint2(2, 3) );
+		outTexture.write( outColor, outPosition + uint2(3, 3) );
+		outTexture.write( outColor, outPosition + uint2(4, 3) );
+		outTexture.write( outColor, outPosition + uint2(5, 3) );
+		outTexture.write( outColor, outPosition + uint2(0, 4) );
+		outTexture.write( outColor, outPosition + uint2(1, 4) );
+		outTexture.write( outColor, outPosition + uint2(2, 4) );
+		outTexture.write( outColor, outPosition + uint2(3, 4) );
+		outTexture.write( outColor, outPosition + uint2(4, 4) );
+		outTexture.write( outColor, outPosition + uint2(5, 4) );
+		outTexture.write( outColor, outPosition + uint2(0, 5) );
+		outTexture.write( outColor, outPosition + uint2(1, 5) );
+		outTexture.write( outColor, outPosition + uint2(2, 5) );
+		outTexture.write( outColor, outPosition + uint2(3, 5) );
+		outTexture.write( outColor, outPosition + uint2(4, 5) );
+		outTexture.write( outColor, outPosition + uint2(5, 5) );
+	}
 }
