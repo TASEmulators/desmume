@@ -91,6 +91,7 @@ FragmentAttributesBuffer::FragmentAttributesBuffer(size_t newCount)
 	stencil = (u8 *)malloc_alignedCacheLine(count * sizeof(u8));
 	isFogged = (u8 *)malloc_alignedCacheLine(count * sizeof(u8));
 	isTranslucentPoly = (u8 *)malloc_alignedCacheLine(count * sizeof(u8));
+	polyFacing = (u8 *)malloc_alignedCacheLine(count * sizeof(u8));
 }
 
 FragmentAttributesBuffer::~FragmentAttributesBuffer()
@@ -101,6 +102,7 @@ FragmentAttributesBuffer::~FragmentAttributesBuffer()
 	free_aligned(stencil);
 	free_aligned(isFogged);
 	free_aligned(isTranslucentPoly);
+	free_aligned(polyFacing);
 }
 
 void FragmentAttributesBuffer::SetAtIndex(const size_t index, const FragmentAttributes &attr)
@@ -111,6 +113,7 @@ void FragmentAttributesBuffer::SetAtIndex(const size_t index, const FragmentAttr
 	this->stencil[index]			= attr.stencil;
 	this->isFogged[index]			= attr.isFogged;
 	this->isTranslucentPoly[index]	= attr.isTranslucentPoly;
+	this->polyFacing[index]			= attr.polyFacing;
 }
 
 Render3DTexture::Render3DTexture(TEXIMAGE_PARAM texAttributes, u32 palAttributes) : TextureStore(texAttributes, palAttributes)
@@ -502,6 +505,7 @@ Render3DError Render3D::ClearFramebuffer(const GFX3D_State &renderState)
 	clearFragment.depth = renderState.clearDepth;
 	clearFragment.stencil = 0;
 	clearFragment.isTranslucentPoly = 0;
+	clearFragment.polyFacing = PolyFacing_Unwritten;
 	clearFragment.isFogged = BIT15(clearColorSwapped);
 	
 	if (renderState.enableClearImage)
@@ -693,6 +697,7 @@ Render3DError Render3D_SSE2::ClearFramebuffer(const GFX3D_State &renderState)
 	clearFragment.depth = renderState.clearDepth;
 	clearFragment.stencil = 0;
 	clearFragment.isTranslucentPoly = 0;
+	clearFragment.polyFacing = PolyFacing_Unwritten;
 	clearFragment.isFogged = BIT15(renderState.clearColor);
 	
 	if (renderState.enableClearImage)

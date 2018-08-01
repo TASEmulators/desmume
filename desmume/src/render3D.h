@@ -70,6 +70,13 @@ enum Render3DErrorCode
 	RENDER3DERROR_NOERR = 0
 };
 
+enum PolyFacing
+{
+	PolyFacing_Unwritten = 0,
+	PolyFacing_Front     = 1,
+	PolyFacing_Back      = 2
+};
+
 typedef int Render3DError;
 
 struct FragmentAttributes
@@ -80,6 +87,7 @@ struct FragmentAttributes
 	u8 stencil;
 	u8 isFogged;
 	u8 isTranslucentPoly;
+	u8 polyFacing;
 };
 
 struct FragmentAttributesBuffer
@@ -91,6 +99,7 @@ struct FragmentAttributesBuffer
 	u8 *stencil;
 	u8 *isFogged;
 	u8 *isTranslucentPoly;
+	u8 *polyFacing;
 	
 	FragmentAttributesBuffer(size_t newCount);
 	~FragmentAttributesBuffer();

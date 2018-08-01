@@ -111,13 +111,13 @@ protected:
 	FORCEINLINE float _round_s(double val);
 	
 	template<bool ISSHADOWPOLYGON> FORCEINLINE void _shade(const PolygonMode polygonMode, const FragmentColor src, FragmentColor &dst, const float texCoordU, const float texCoordV);
-	template<bool ISSHADOWPOLYGON> FORCEINLINE void _pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, FragmentColor &dstColor, float r, float g, float b, float invu, float invv, float w, float z);
-	template<bool ISSHADOWPOLYGON, bool USELINEHACK> FORCEINLINE void _drawscanline(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight);
-	template<bool SLI, bool ISSHADOWPOLYGON, bool USELINEHACK, bool ISHORIZONTAL> void _runscanlines(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *left, edge_fx_fl *right);
+	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON> FORCEINLINE void _pixel(const POLYGON_ATTR polyAttr, const bool isTranslucent, const size_t fragmentIndex, FragmentColor &dstColor, float r, float g, float b, float invu, float invv, float w, float z);
+	template<bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> FORCEINLINE void _drawscanline(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *pLeft, edge_fx_fl *pRight);
+	template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK, bool ISHORIZONTAL> void _runscanlines(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, edge_fx_fl *left, edge_fx_fl *right);
 	
 	template<int TYPE> FORCEINLINE void _rot_verts();
-	template<bool ISBACKWARDS, int TYPE> void _sort_verts();
-	template<bool SLI, bool ISBACKWARDS, bool ISSHADOWPOLYGON, bool USELINEHACK> void _shape_engine(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type);
+	template<bool ISFRONTFACING, int TYPE> void _sort_verts();
+	template<bool SLI, bool ISFRONTFACING, bool ISSHADOWPOLYGON, bool USELINEHACK> void _shape_engine(const POLYGON_ATTR polyAttr, const bool isTranslucent, FragmentColor *dstColor, const size_t framebufferWidth, const size_t framebufferHeight, int type);
 	
 public:
 	void SetSLI(u32 startLine, u32 endLine, bool debug);
@@ -225,6 +225,7 @@ protected:
 	v256u8 _clearAttrStencil_v256u8;
 	v256u8 _clearAttrIsFogged_v256u8;
 	v256u8 _clearAttrIsTranslucentPoly_v256u8;
+	v256u8 _clearAttrPolyFacing_v256u8;
 #elif defined(ENABLE_SSE2) || defined(ENABLE_ALTIVEC)
 	v128u32 _clearColor_v128u32;
 	v128u32 _clearDepth_v128u32;
@@ -233,6 +234,7 @@ protected:
 	v128u8 _clearAttrStencil_v128u8;
 	v128u8 _clearAttrIsFogged_v128u8;
 	v128u8 _clearAttrIsTranslucentPoly_v128u8;
+	v128u8 _clearAttrPolyFacing_v128u8;
 #endif
 	
 	virtual void LoadClearValues(const FragmentColor &clearColor6665, const FragmentAttributes &clearAttributes) = 0;
