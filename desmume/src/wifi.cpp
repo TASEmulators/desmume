@@ -1,5 +1,6 @@
-/*  Copyright (C) 2007 Tim Seidel
-    Copyright (C) 2008-2010 DeSmuME team
+/*
+    Copyright (C) 2007 Tim Seidel
+    Copyright (C) 2008-2018 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1987,6 +1988,7 @@ bool SoftAP_Init()
 	if(wifi_bridge == NULL)
 	{
 		WIFI_LOG(1, "SoftAP: PCap: failed to open %s: %s\n", dev->PCAP_DEVICE_NAME, errbuf);
+		driver->PCAP_freealldevs(alldevs);
 		return false;
 	}
 	else

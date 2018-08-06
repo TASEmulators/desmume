@@ -1,6 +1,7 @@
-/*  Copyright (C) 2007 Tim Seidel
-    Copyright (C) 2008-2009 DeSmuME team
+/*
+    Copyright (C) 2007 Tim Seidel
     Copyright (C) 2014 pleonex
+    Copyright (C) 2008-2018 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -26,7 +27,10 @@
 
 #ifdef EXPERIMENTAL_WIFI_COMM
 
+#ifndef __APPLE__
 #define HAVE_REMOTE
+#endif
+
 #define WPCAP
 #define PACKET_SIZE 65535
 #define _INC_STDIO
