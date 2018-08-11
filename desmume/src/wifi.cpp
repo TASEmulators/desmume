@@ -2733,37 +2733,40 @@ bool WifiHandler::CommStart()
 	WifiCommInterface *selectedCommInterface = NULL;
 	WifiMACMode selectedMACMode = WifiMACMode_Manual;
 	
-	switch (this->_selectedCommID)
+	if (pendingEmulationLevel != WifiEmulationLevel_Off)
 	{
-		case WifiCommInterfaceID_AdHoc:
+		switch (this->_selectedCommID)
 		{
-			if (this->_isSocketsSupported)
+			case WifiCommInterfaceID_AdHoc:
 			{
-				selectedCommInterface = this->_adhocCommInterface;
-				selectedMACMode = this->_adhocMACMode;
+				if (this->_isSocketsSupported)
+				{
+					selectedCommInterface = this->_adhocCommInterface;
+					selectedMACMode = this->_adhocMACMode;
+				}
+				else
+				{
+					WIFI_LOG(1, "Ad-hoc mode requires sockets, but sockets are not supported on this system.\n");
+					pendingEmulationLevel = WifiEmulationLevel_Off;
+				}
+				break;
 			}
-			else
+				
+			case WifiCommInterfaceID_Infrastructure:
 			{
-				WIFI_LOG(1, "Ad-hoc mode requires sockets, but sockets are not supported on this system.\n");
-				pendingEmulationLevel = WifiEmulationLevel_Off;
+				selectedCommInterface = this->_softAPCommInterface;
+				selectedMACMode = this->_infrastructureMACMode;
+				
+				if (!this->IsPCapSupported())
+				{
+					WIFI_LOG(1, "Infrastructure mode requires libpcap for full functionality,\n      but libpcap is not available on this system. Network functions\n      will be disabled for this session.\n");
+				}
+				break;
 			}
-			break;
+				
+			default:
+				break;
 		}
-			
-		case WifiCommInterfaceID_Infrastructure:
-		{
-			selectedCommInterface = this->_softAPCommInterface;
-			selectedMACMode = this->_infrastructureMACMode;
-			
-			if (!this->IsPCapSupported())
-			{
-				WIFI_LOG(1, "Infrastructure mode requires libpcap for full functionality,\n      but libpcap is not available on this system. Network functions\n      will be disabled for this session.\n");
-			}
-			break;
-		}
-			
-		default:
-			break;
 	}
 	
 	// Stop the current comm interface.

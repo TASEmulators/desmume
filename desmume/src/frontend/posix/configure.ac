@@ -40,6 +40,9 @@ AC_DEFINE_UNQUOTED([SVN_REV_STR], ["$REVISION"], [subversion revision number str
 dnl - Check for zlib
 AC_CHECK_LIB(z, gzopen, [], [AC_MSG_ERROR([zlib was not found, we can't go further. Please install it or specify the location where it's installed.])])
 
+dnl - Check for libpcap
+AC_CHECK_LIB(pcap, main, [LIBS="$LIBS -lpcap"], [AC_MSG_ERROR([libpcap was not found, we can't go further. Please install it or specify the location where it's installed.])])
+
 dnl - Check for zziplib
 AC_CHECK_LIB(zzip, zzip_open, [
 	LIBS="-lzzip $LIBS"
@@ -261,13 +264,12 @@ AM_CONDITIONAL([HAVE_JIT], [test "x$HAVE_JIT" = "xyes"])
 
 dnl - wifi support
 AC_ARG_ENABLE(wifi,
-	      [AC_HELP_STRING(--enable-wifi, enable experimental wifi comm support)],
-	      [
-		AC_CHECK_LIB(pcap, main,[
-		  AC_DEFINE(EXPERIMENTAL_WIFI_COMM)
-		  LIBS="$LIBS -lpcap"],
-		  [AC_MSG_WARN([pcap library not found, wifi will not work])])
-	      ])
+              [AC_HELP_STRING(--enable-wifi, enable wifi support)],
+              [wifisupport=yes])
+
+if test "x$wifisupport" = "xyes" ; then
+    AC_DEFINE(EXPERIMENTAL_WIFI_COMM)
+fi
 
 dnl Set compiler library flags per host architecture
 case $host in
