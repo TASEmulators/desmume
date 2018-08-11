@@ -217,14 +217,6 @@ enum NDS_CONSOLE_TYPE
 	NDS_CONSOLE_TYPE_DSI = 0xFE
 };
 
-enum WifiEmulationLevel
-{
-	WifiEmulationLevel_Off = 0,
-	WifiEmulationLevel_Normal = 10000,
-	WifiEmulationLevel_Compatibility = 65535,
-};
-extern WifiEmulationLevel wifiEmulationLevel;
-
 struct NDSSystem
 {
 	s32 wifiCycle;
@@ -573,8 +565,7 @@ extern struct TCommonSettings
 		strcpy(ARM7BIOS, "biosnds7.bin");
 		strcpy(Firmware, "firmware.bin");
 
-		/* WIFI mode: adhoc = 0, infrastructure = 1 */
-		wifi.mode = 1;
+		wifi.mode = WifiCommInterfaceID_Infrastructure;
 		wifi.infraBridgeAdapter = 0;
 
 		for(int i=0;i<16;i++)
@@ -656,7 +647,7 @@ extern struct TCommonSettings
 	u32	jit_max_block_size;
 	
 	struct _Wifi {
-		int mode;
+		WifiCommInterfaceID mode;
 		int infraBridgeAdapter;
 	} wifi;
 

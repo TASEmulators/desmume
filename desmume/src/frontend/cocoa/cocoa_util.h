@@ -44,6 +44,7 @@
 
 + (NSString *) operatingSystemString;
 + (NSString *) modelIdentifierString;
++ (uint32_t) hostIP4AddressAsUInt32;
 
 @end
 

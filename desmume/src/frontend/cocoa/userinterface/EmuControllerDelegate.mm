@@ -1630,6 +1630,7 @@
 	[self pauseCore];
 	
 	CocoaDSCore *cdsCore = (CocoaDSCore *)[cdsCoreController content];
+	[cdsCore execControl]->SetWifiIP4Address([CocoaDSUtil hostIP4AddressAsUInt32]);
 	[cdsCore execControl]->ApplySettingsOnReset();
 	[cdsCore updateSlot1DeviceStatus];
 	[self writeDefaultsSlot1Settings:nil];
@@ -1781,6 +1782,7 @@
 		[[windowController window] displayIfNeeded];
 	}
 	
+	[cdsCore execControl]->SetWifiIP4Address([CocoaDSUtil hostIP4AddressAsUInt32]);
 	[cdsCore execControl]->ApplySettingsOnReset();
 	[cdsCore setMasterExecute:YES];
 	

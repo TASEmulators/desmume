@@ -163,6 +163,60 @@
 	return modelIdentifierStr;
 }
 
++ (uint32_t) hostIP4AddressAsUInt32
+{
+	uint32_t ip4Address_u32 = 0;
+	
+	NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
+	[numberFormatter setAllowsFloats:NO];
+	
+	NSArray *ipAddresses = [[NSHost hostWithName:[[NSHost currentHost] name]] addresses];
+	for (NSString *ipAddress in ipAddresses)
+	{
+		if ([ipAddress isEqualToString:@"127.0.0.1"])
+		{
+			continue;
+		}
+		else
+		{
+			NSArray *ipParts = [ipAddress componentsSeparatedByString:@"."];
+			
+			if ([ipParts count] != 4)
+			{
+				continue;
+			}
+			else
+			{
+				NSNumber *ipPartNumber[4] = {
+					[numberFormatter numberFromString:(NSString *)[ipParts objectAtIndex:0]],
+					[numberFormatter numberFromString:(NSString *)[ipParts objectAtIndex:1]],
+					[numberFormatter numberFromString:(NSString *)[ipParts objectAtIndex:2]],
+					[numberFormatter numberFromString:(NSString *)[ipParts objectAtIndex:3]]
+				};
+				
+				if ( (ipPartNumber[0] == nil) || (ipPartNumber[1] == nil) || (ipPartNumber[2] == nil) || (ipPartNumber[3] == nil) )
+				{
+					continue;
+				}
+				else
+				{
+					const uint8_t ipPart_u8[4] = {
+						[ipPartNumber[0] unsignedCharValue],
+						[ipPartNumber[1] unsignedCharValue],
+						[ipPartNumber[2] unsignedCharValue],
+						[ipPartNumber[3] unsignedCharValue]
+					};
+					
+					ip4Address_u32 = (ipPart_u8[0]) | (ipPart_u8[1] << 8) | (ipPart_u8[2] << 16) | (ipPart_u8[3] << 24);
+					break;
+				}
+			}
+		}
+	}
+	
+	return ip4Address_u32;
+}
+
 @end
 
 @implementation DirectoryURLDragDestTextField

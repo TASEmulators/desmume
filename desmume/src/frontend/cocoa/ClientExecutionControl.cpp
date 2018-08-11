@@ -86,6 +86,8 @@ ClientExecutionControl::ClientExecutionControl()
 	_settingsPending.enableFirmwareBoot					= false;
 	_settingsPending.enableDebugConsole					= false;
 	_settingsPending.enableEnsataEmulation				= false;
+	_settingsPending.wifiMode							= WifiCommInterfaceID_AdHoc;
+	_settingsPending.wifiBridgeDeviceIndex				= 0;
 	
 	_settingsPending.enableExecutionSpeedLimiter		= true;
 	_settingsPending.executionSpeed						= SPEED_SCALAR_NORMAL;
@@ -560,6 +562,60 @@ void ClientExecutionControl::SetEnableEnsataEmulation(bool enable)
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnNDSExec);
 }
 
+int ClientExecutionControl::GetWifiMode()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	const int wifiMode = this->_settingsPending.wifiMode;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	
+	return wifiMode;
+}
+
+void ClientExecutionControl::SetWifiMode(int wifiMode)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	this->_settingsPending.wifiMode = wifiMode;
+	
+	this->_newSettingsPendingOnReset = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+}
+
+int ClientExecutionControl::GetWifiBridgeDeviceIndex()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	const int wifiBridgeDeviceIndex = this->_settingsPending.wifiBridgeDeviceIndex;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	
+	return wifiBridgeDeviceIndex;
+}
+
+void ClientExecutionControl::SetWifiBridgeDeviceIndex(int wifiBridgeDeviceIndex)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	this->_settingsPending.wifiBridgeDeviceIndex = wifiBridgeDeviceIndex;
+	
+	this->_newSettingsPendingOnReset = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+}
+
+uint32_t ClientExecutionControl::GetWifiIP4Address()
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	const uint32_t ip4Address = this->_settingsPending.wifiIP4Address;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+	
+	return ip4Address;
+}
+
+void ClientExecutionControl::SetWifiIP4Address(uint32_t ip4Address)
+{
+	pthread_mutex_lock(&this->_mutexSettingsPendingOnReset);
+	this->_settingsPending.wifiIP4Address = ip4Address;
+	
+	this->_newSettingsPendingOnReset = true;
+	pthread_mutex_unlock(&this->_mutexSettingsPendingOnReset);
+}
+
 bool ClientExecutionControl::GetEnableCheats()
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnNDSExec);
@@ -903,6 +959,10 @@ void ClientExecutionControl::ApplySettingsOnReset()
 		this->_settingsApplied.enableExternalFirmware		= this->_settingsPending.enableExternalFirmware;
 		this->_settingsApplied.enableFirmwareBoot			= this->_settingsPending.enableFirmwareBoot;
 		
+		this->_settingsApplied.wifiMode						= this->_settingsPending.wifiMode;
+		this->_settingsApplied.wifiBridgeDeviceIndex		= this->_settingsPending.wifiBridgeDeviceIndex;
+		this->_settingsApplied.wifiIP4Address				= this->_settingsPending.wifiIP4Address;
+		
 		this->_settingsApplied.cpuEmulationEngineName		= this->_settingsPending.cpuEmulationEngineName;
 		this->_settingsApplied.slot1DeviceName				= this->_settingsPending.slot1DeviceName;
 		this->_ndsFrameInfo.cpuEmulationEngineName			= this->_settingsApplied.cpuEmulationEngineName;
@@ -921,8 +981,15 @@ void ClientExecutionControl::ApplySettingsOnReset()
 		CommonSettings.jit_max_block_size		= this->_settingsApplied.JITMaxBlockSize;
 		CommonSettings.UseExtBIOS				= this->_settingsApplied.enableExternalBIOS;
 		CommonSettings.UseExtFirmware			= this->_settingsApplied.enableExternalFirmware;
-		CommonSettings.UseExtFirmwareSettings	= this->_settingsApplied.enableExternalFirmware;
+		//CommonSettings.UseExtFirmwareSettings	= this->_settingsApplied.enableExternalFirmware;
+		CommonSettings.UseExtFirmwareSettings = false;
 		CommonSettings.BootFromFirmware			= this->_settingsApplied.enableFirmwareBoot;
+		CommonSettings.wifi.mode				= (WifiCommInterfaceID)this->_settingsApplied.wifiMode;
+		CommonSettings.wifi.infraBridgeAdapter	= this->_settingsApplied.wifiBridgeDeviceIndex;
+		
+		wifiHandler->SetIP4Address(this->_settingsApplied.wifiIP4Address);
+		wifiHandler->SetCommInterfaceID((WifiCommInterfaceID)this->_settingsApplied.wifiMode);
+		wifiHandler->SetBridgeDeviceIndex(this->_settingsApplied.wifiBridgeDeviceIndex);
 		
 		if (this->_settingsApplied.filePathARM9BIOS.length() == 0)
 		{

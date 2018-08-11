@@ -19,24 +19,15 @@
     along with DeSmuME; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+
 #ifndef WIFI_H
 #define WIFI_H
 
 #include <stdio.h>
 #include "types.h"
 
-#ifdef EXPERIMENTAL_WIFI_COMM
-
-#ifndef __APPLE__
-#define HAVE_REMOTE
-#endif
-
-#define WPCAP
-#define PACKET_SIZE 65535
-#define _INC_STDIO
-
-#endif
-
+#include <string>
+#include <vector>
 
 #define		REG_WIFI_ID					0x000
 #define     REG_WIFI_MODE       		0x004
@@ -177,11 +168,6 @@
 
 /* WIFI misc constants */
 #define		WIFI_CHIPID					0x1440		/* emulates "old" wifi chip, new is 0xC340 */
-
-// SAVE PACKETS HACK FUNCTIONS
-static void create_packet();
-static void save_packet(u8* packet, u32 len, u32 seconds, u32 millis, bool isReceived);
-u32 timeval2millis(struct timeval tv);
 
 /* Referenced as RF_ in dswifi: rffilter_t */
 /* based on the documentation for the RF2958 chip of RF Micro Devices */
@@ -434,14 +420,34 @@ enum EAPStatus
 	APStatus_Associated
 };
 
+enum WifiEmulationLevel
+{
+	WifiEmulationLevel_Off = 0,
+	WifiEmulationLevel_Normal = 10000,
+	WifiEmulationLevel_Compatibility = 65535,
+};
+
+enum WifiCommInterfaceID
+{
+	WifiCommInterfaceID_AdHoc = 0,
+	WifiCommInterfaceID_Infrastructure = 1
+};
+
+enum WifiMACMode
+{
+	WifiMACMode_Automatic = 0,
+	WifiMACMode_Manual = 1,
+	WifiMACMode_ReadFromFirmware = 2
+};
+
 /* wifimac_t: the buildin mac (arm7 addressrange: 0x04800000-0x04FFFFFF )*/
 /* http://www.akkit.org/info/dswifi.htm#WifiIOMap */
 
 typedef struct 
 {
 	/* power */
-	BOOL powerOn;
-	BOOL powerOnPending;
+	bool powerOn;
+	bool powerOnPending;
 
 	/* status */
 	u16 rfStatus;
@@ -454,7 +460,7 @@ typedef struct
 	/* modes */
 	u16 macMode;
 	u16 wepMode;
-	BOOL WEP_enable;
+	bool WEP_enable;
 
 	/* sending */
 	u16 TXStatCnt;
@@ -464,7 +470,7 @@ typedef struct
 	u16 TXOpt;
 	u16 TXStat;
 	u16 BeaconAddr;
-	BOOL BeaconEnable;
+	bool BeaconEnable;
 	u16 TXSlotExtra;
 	u16 TXSeqNo;
 	u8 txCurSlot;
@@ -501,13 +507,13 @@ typedef struct
 	u16 retryLimit;
 
 	/* timing */
-	BOOL crystalEnabled;
+	bool crystalEnabled;
 	u64 usec;
-	BOOL usecEnable;
+	bool usecEnable;
 	u64 ucmp;
-	BOOL ucmpEnable;
+	bool ucmpEnable;
 	u32 eCount;
-	BOOL eCountEnable;
+	bool eCountEnable;
 	u16 BeaconInterval;
 	u16 BeaconCount1;
 	u16 BeaconCount2;
@@ -542,7 +548,7 @@ typedef struct
 	/* tx packets */
 	s32 curPacketSize[3];
 	s32 curPacketPos[3];
-	BOOL curPacketSending[3];
+	bool curPacketSending[3];
 
 	/* I/O ports */
 	u16			IOPorts[0x800];
@@ -552,40 +558,7 @@ typedef struct
 
 } wifimac_t;
 
-
-typedef struct
-{
-	u64 usecCounter;
-
-} Adhoc_t;
-
-typedef struct
-{
-	u64 usecCounter;
-
-	u8 curPacket[4096];
-	s32 curPacketSize;
-	s32 curPacketPos;
-	BOOL curPacketSending;
-
-	EAPStatus status;
-	u16 seqNum;
-
-} SoftAP_t;
-
-// desmume host communication
-#ifdef EXPERIMENTAL_WIFI_COMM
-typedef struct pcap pcap_t;
-extern pcap_t *wifi_bridge;
-#endif
-
 extern wifimac_t wifiMac;
-extern Adhoc_t Adhoc;
-extern SoftAP_t SoftAP;
-
-bool WIFI_Init();
-void WIFI_DeInit();
-void WIFI_Reset();
 
 /* subchip communication IO functions */
 void WIFI_setRF_CNT(u16 val);
@@ -632,6 +605,199 @@ typedef struct _FW_WFCProfile
 
 } FW_WFCProfile;
 
+class ClientPCapInterface
+{
+public:
+	virtual int findalldevs(void **alldevs, char *errbuf) = 0;
+	virtual void freealldevs(void *alldevs) = 0;
+	virtual void* open(const char *source, int snaplen, int flags, int readtimeout, char *errbuf) = 0;
+	virtual void close(void *dev) = 0;
+	virtual int setnonblock(void *dev, int nonblock, char *errbuf) = 0;
+	virtual int sendpacket(void *dev, const void *data, int len) = 0;
+	virtual int dispatch(void *dev, int num, void *callback, void *userdata) = 0;
+};
+
+class DummyPCapInterface : public ClientPCapInterface
+{
+private:
+	void __CopyErrorString(char *errbuf);
+	
+public:
+	virtual int findalldevs(void **alldevs, char *errbuf);
+	virtual void freealldevs(void *alldevs);
+	virtual void* open(const char *source, int snaplen, int flags, int readtimeout, char *errbuf);
+	virtual void close(void *dev);
+	virtual int setnonblock(void *dev, int nonblock, char *errbuf);
+	virtual int sendpacket(void *dev, const void *data, int len);
+	virtual int dispatch(void *dev, int num, void *callback, void *userdata);
+};
+
+#ifndef HOST_WINDOWS
+
+class POSIXPCapInterface : public ClientPCapInterface
+{
+public:
+	virtual int findalldevs(void **alldevs, char *errbuf);
+	virtual void freealldevs(void *alldevs);
+	virtual void* open(const char *source, int snaplen, int flags, int readtimeout, char *errbuf);
+	virtual void close(void *dev);
+	virtual int setnonblock(void *dev, int nonblock, char *errbuf);
+	virtual int sendpacket(void *dev, const void *data, int len);
+	virtual int dispatch(void *dev, int num, void *callback, void *userdata);
+};
+
+#endif
+
+class WifiCommInterface
+{
+protected:
+	WifiCommInterfaceID _commInterfaceID;
+	WifiEmulationLevel _emulationLevel;
+	u64 _usecCounter;
+	
+public:
+	WifiCommInterface();
+	virtual ~WifiCommInterface();
+	
+	virtual bool Start(WifiEmulationLevel emulationLevel) = 0;
+	virtual void Stop() = 0;
+	virtual void SendPacket(void *data, size_t len) = 0;
+	virtual void Trigger() = 0;
+};
+
+class AdhocCommInterface : public WifiCommInterface
+{
+protected:
+	void *_wifiSocket;
+	void *_sendAddr;
+	u8 *_packetBuffer;
+	
+public:
+	AdhocCommInterface();
+	~AdhocCommInterface();
+	
+	virtual bool Start(WifiEmulationLevel emulationLevel);
+	virtual void Stop();
+	virtual void SendPacket(void *data, size_t len);
+	virtual void Trigger();
+};
+
+class SoftAPCommInterface : public WifiCommInterface
+{
+protected:
+	ClientPCapInterface *_pcap;
+	int _bridgeDeviceIndex;
+	void *_bridgeDevice;
+	FILE *_packetCaptureFile; // PCAP file to store the Ethernet packets.
+	
+	u8 _curPacket[4096];
+	s32 _curPacketSize;
+	s32 _curPacketPos;
+	bool _curPacketSending;
+	
+	EAPStatus _status;
+	u16 _seqNum;
+	
+	void* _GetBridgeDeviceAtIndex(int deviceIndex, char *outErrorBuf);
+	bool _IsDNSRequestToWFC(u16 ethertype, u8 *body);
+	void _Deauthenticate();
+	void _SendBeacon();
+	
+public:
+	SoftAPCommInterface();
+	virtual ~SoftAPCommInterface();
+	
+	void SetPCapInterface(ClientPCapInterface *pcapInterface);
+	ClientPCapInterface* GetPCapInterface();
+	
+	int GetBridgeDeviceIndex();
+	void SetBridgeDeviceIndex(int deviceIndex);
+	
+	void PacketRX(const void *pktHeader, const u8 *pktData);
+	
+	void PacketCaptureFileOpen();
+	void PacketCaptureFileClose();
+	void PacketCaptureFileWrite(const u8 *packet, u32 len, bool isReceived);
+	
+	virtual bool Start(WifiEmulationLevel emulationLevel);
+	virtual void Stop();
+	virtual void SendPacket(void *data, size_t len);
+	virtual void Trigger();
+};
+
+class WifiHandler
+{
+protected:
+	AdhocCommInterface *_adhocCommInterface;
+	SoftAPCommInterface *_softAPCommInterface;
+	
+	WifiEmulationLevel _selectedEmulationLevel;
+	WifiEmulationLevel _currentEmulationLevel;
+	
+	WifiCommInterfaceID _selectedCommID;
+	WifiCommInterfaceID _currentCommID;
+	WifiCommInterface *_currentCommInterface;
+	
+	int _selectedBridgeDeviceIndex;
+	
+	ClientPCapInterface *_pcap;
+	bool _isSocketsSupported;
+	bool _didWarnWFCUser;
+	
+	WifiMACMode _adhocMACMode;
+	WifiMACMode _infrastructureMACMode;
+	u32 _ip4Address;
+	u32 _uniqueMACValue;
+	u8 _userMAC[3];
+	
+public:
+	WifiHandler();
+	~WifiHandler();
+	
+	void Reset();
+	
+	WifiEmulationLevel GetSelectedEmulationLevel();
+	WifiEmulationLevel GetCurrentEmulationLevel();
+	void SetEmulationLevel(WifiEmulationLevel emulationLevel);
+	
+	WifiCommInterfaceID GetSelectedCommInterfaceID();
+	WifiCommInterfaceID GetCurrentCommInterfaceID();
+	void SetCommInterfaceID(WifiCommInterfaceID commID);
+	
+	int GetBridgeDeviceList(std::vector<std::string> *deviceStringList);
+
+	int GetSelectedBridgeDeviceIndex();
+	int GetCurrentBridgeDeviceIndex();
+	void SetBridgeDeviceIndex(int deviceIndex);
+	
+	bool CommStart();
+	void CommStop();
+	void CommSendPacket(void *data, size_t len);
+	void CommTrigger();
+	
+	bool IsSocketsSupported();
+	void SetSocketsSupported(bool isSupported);
+	
+	bool IsPCapSupported();
+	ClientPCapInterface* GetPCapInterface();
+	void SetPCapInterface(ClientPCapInterface *pcapInterface);
+	
+	WifiMACMode GetMACModeForComm(WifiCommInterfaceID commID);
+	void SetMACModeForComm(WifiCommInterfaceID commID, WifiMACMode macMode);
+	
+	uint32_t GetIP4Address();
+	void SetIP4Address(u32 ip4Address);
+	
+	uint32_t GetUniqueMACValue();
+	void SetUniqueMACValue(u32 uniqueValue);
+	
+	void GetUserMACValues(u8 *outValue3, u8 *outValue4, u8 *outValue5);
+	void SetUserMACValues(u8 inValue3, u8 inValue4, u8 inValue5);
+	
+	void GenerateMACFromValues(u8 outMAC[6]);
+	void CopyMACFromUserValues(u8 outMAC[6]);
+};
+
 /* wifi data to be stored in firmware, when no firmware image was loaded */
 extern u8 FW_Mac[6];
 extern const u8 FW_WIFIInit[32];
@@ -642,5 +808,7 @@ extern const u8 FW_BBChannel[14];
 extern FW_WFCProfile FW_WFCProfile1;
 extern FW_WFCProfile FW_WFCProfile2;
 extern FW_WFCProfile FW_WFCProfile3;
+extern DummyPCapInterface dummyPCapInterface;
+extern WifiHandler *wifiHandler;
 
 #endif

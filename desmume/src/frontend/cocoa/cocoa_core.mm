@@ -129,6 +129,9 @@ volatile bool execute = true;
 	
 	threadParam.cdsCore = self;
 	
+	wifiHandler->SetUniqueMACValue((uint32_t)[[NSProcessInfo processInfo] processIdentifier]);
+	wifiHandler->SetEmulationLevel(WifiEmulationLevel_Off);
+	
 	pthread_rwlock_init(&threadParam.rwlockOutputList, NULL);
 	pthread_mutex_init(&threadParam.mutexThreadExecute, NULL);
 	pthread_cond_init(&threadParam.condThreadExecute, NULL);
@@ -794,6 +797,7 @@ volatile bool execute = true;
 	[self setCoreState:ExecutionBehavior_Pause];
 	
 	pthread_mutex_lock(&threadParam.mutexThreadExecute);
+	execControl->SetWifiIP4Address([CocoaDSUtil hostIP4AddressAsUInt32]);
 	execControl->ApplySettingsOnReset();
 	NDS_Reset();
 	pthread_mutex_unlock(&threadParam.mutexThreadExecute);

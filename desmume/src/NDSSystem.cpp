@@ -102,8 +102,6 @@ int TotalLagFrames;
 
 TSCalInfo TSCal;
 
-WifiEmulationLevel wifiEmulationLevel = WifiEmulationLevel_Off;
-
 namespace DLDI
 {
 	bool tryPatch(void* data, size_t size, unsigned int device);
@@ -181,8 +179,9 @@ int NDS_Init()
 	
 	if (SPU_Init(SNDCORE_DUMMY, 740) != 0)
 		return -1;
-
-	WIFI_Init() ;
+	
+	delete wifiHandler;
+	wifiHandler = new WifiHandler;
 
 	cheats = new CHEATS();
 	cheatSearch = new CHEATSEARCH();
@@ -199,7 +198,9 @@ void NDS_DeInit(void)
 	GPU = NULL;
 	
 	MMU_DeInit();
-	WIFI_DeInit();
+	
+	delete wifiHandler;
+	wifiHandler = NULL;
 	
 	delete cheats;
 	cheats = NULL;
@@ -572,6 +573,9 @@ bool GameInfo::loadROM(std::string fname, u32 type)
 
 void GameInfo::closeROM()
 {
+	if (wifiHandler != NULL)
+		wifiHandler->CommStop();
+	
 	if (GPU != NULL)
 		GPU->ForceFrameStop();
 	
@@ -1333,19 +1337,16 @@ void Sequencer::init()
 	dma_1_1.controller = &MMU_new.dma[1][1];
 	dma_1_2.controller = &MMU_new.dma[1][2];
 	dma_1_3.controller = &MMU_new.dma[1][3];
-
-
-	#ifdef EXPERIMENTAL_WIFI_COMM
-	if(wifiEmulationLevel > WifiEmulationLevel_Off) 
+	
+	if (wifiHandler->GetCurrentEmulationLevel() != WifiEmulationLevel_Off)
 	{
 		wifi.enabled = true;
 		wifi.timestamp = kWifiCycles;
 	}
 	else
+	{
 		wifi.enabled = false;
-	#else
-	wifi.enabled = false;
-	#endif
+	}
 }
 
 static void execHardware_hblank()
@@ -1670,10 +1671,7 @@ u64 Sequencer::findNext()
 	if(sqrtunit.isEnabled()) next = _fast_min(next,sqrtunit.next());
 	if(gxfifo.enabled) next = _fast_min(next,gxfifo.next());
 	if(readslot1.isEnabled()) next = _fast_min(next,readslot1.next());
-
-#ifdef EXPERIMENTAL_WIFI_COMM
-	if (wifiEmulationLevel > WifiEmulationLevel_Off) next = _fast_min(next,wifi.next());
-#endif
+	if (wifi.enabled) next = _fast_min(next,wifi.next());
 
 #define test(X,Y) if(dma_##X##_##Y .isEnabled()) next = _fast_min(next,dma_##X##_##Y .next());
 	test(0,0); test(0,1); test(0,2); test(0,3);
@@ -1729,16 +1727,14 @@ void Sequencer::execHardware()
 		}
 	}
 
-#ifdef EXPERIMENTAL_WIFI_COMM
-	if(wifiEmulationLevel > WifiEmulationLevel_Off)
+	if (wifiHandler->GetCurrentEmulationLevel() != WifiEmulationLevel_Off)
 	{
-		if(wifi.isTriggered())
+		if (wifi.isTriggered())
 		{
 			WIFI_usTrigger();
 			wifi.timestamp += kWifiCycles;
 		}
 	}
-#endif
 	
 	if(divider.isTriggered()) divider.exec();
 	if(sqrtunit.isTriggered()) sqrtunit.exec();
@@ -2671,8 +2667,8 @@ void NDS_Reset()
 
 	GPU->Reset();
 
-	WIFI_Reset();
-	memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);
+	wifiHandler->Reset();
+	wifiHandler->CommStart();
 
 	SPU_DeInit();
 	SPU_ReInit(!canBootFromFirmware && bootResult);
@@ -3088,6 +3084,7 @@ void emu_halt(EmuHaltReasonCode reasonCode, NDSErrorTag errorTag)
 	
 	NDS_CurrentCPUInfoToNDSError(_lastNDSError);
 	
+	wifiHandler->CommStop();
 	GPU->ForceFrameStop();
 	execute = false;
 	

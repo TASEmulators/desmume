@@ -92,6 +92,10 @@ struct ClientExecutionControlSettings
 	bool enableDebugConsole;
 	bool enableEnsataEmulation;
 	
+	int wifiMode;
+	int wifiBridgeDeviceIndex;
+	uint32_t wifiIP4Address;
+	
 	bool enableCheats;
 	
 	bool enableExecutionSpeedLimiter;
@@ -294,6 +298,15 @@ public:
 	
 	bool GetEnableEnsataEmulation();
 	void SetEnableEnsataEmulation(bool enable);
+	
+	int GetWifiMode();
+	void SetWifiMode(int wifiMode);
+	
+	int GetWifiBridgeDeviceIndex();
+	void SetWifiBridgeDeviceIndex(int wifiBridgeDeviceIndex);
+	
+	uint32_t GetWifiIP4Address();
+	void SetWifiIP4Address(uint32_t ip4Address);
 	
 	bool GetEnableCheats();
 	void SetEnableCheats(bool enable);

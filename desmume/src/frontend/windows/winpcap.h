@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010 DeSmuME team
+    Copyright (C) 2010-2018 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -21,13 +21,15 @@
 #ifndef WINPCAP_H
 #define WINPCAP_H
 
-#define HAVE_REMOTE
-#define WPCAP
-#define PACKET_SIZE 65535
+#ifndef HAVE_REMOTE
+	#define HAVE_REMOTE
+#endif
+
+#ifndef WPCAP
+	#define WPCAP
+#endif
 
 #include <pcap.h>
-
-static bool bWinPCapAvailable = false;
 
 typedef int (__cdecl *T_pcap_findalldevs)(pcap_if_t** alldevs, char* errbuf);
 typedef void (__cdecl *T_pcap_freealldevs)(pcap_if_t* alldevs);
@@ -51,11 +53,16 @@ T_pcap_dispatch _pcap_dispatch = NULL;
 	if (_##name == NULL) return;
 
 
-static void LoadWinPCap()
+static void LoadWinPCap(bool &outResult)
 {
+	bool result = false;
+
 	HMODULE wpcap = LoadLibrary("wpcap.dll");
 	if (wpcap == NULL)
+	{
+		outResult = result;
 		return;
+	}
 
 	LOADSYMBOL(pcap_findalldevs);
 	LOADSYMBOL(pcap_freealldevs);
@@ -65,7 +72,8 @@ static void LoadWinPCap()
 	LOADSYMBOL(pcap_sendpacket);
 	LOADSYMBOL(pcap_dispatch);
 
-	bWinPCapAvailable = true;
+	result = true;
+	outResult = result;
 }
 
 #endif

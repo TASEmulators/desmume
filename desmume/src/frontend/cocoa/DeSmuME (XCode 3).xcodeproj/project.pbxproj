@@ -693,6 +693,11 @@
 		AB37E3781D6188BC004A2C0D /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB37E36C1D6188BC004A2C0D /* colorspacehandler.cpp */; };
 		AB37E37C1D6188BC004A2C0D /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB37E36C1D6188BC004A2C0D /* colorspacehandler.cpp */; };
 		AB37E3801D6188BC004A2C0D /* colorspacehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB37E36C1D6188BC004A2C0D /* colorspacehandler.cpp */; };
+		AB3932C4211E610200DA9D80 /* libpcap.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3932C3211E610200DA9D80 /* libpcap.dylib */; };
+		AB3932C5211E611F00DA9D80 /* libpcap.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3932C3211E610200DA9D80 /* libpcap.dylib */; };
+		AB3932C6211E612400DA9D80 /* libpcap.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3932C3211E610200DA9D80 /* libpcap.dylib */; };
+		AB3932C7211E612A00DA9D80 /* libpcap.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3932C3211E610200DA9D80 /* libpcap.dylib */; };
+		AB3932C8211E612E00DA9D80 /* libpcap.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3932C3211E610200DA9D80 /* libpcap.dylib */; };
 		AB3ACB7814C2361100D7D192 /* appDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6714C2361100D7D192 /* appDelegate.mm */; };
 		AB3ACB7914C2361100D7D192 /* cheatWindowDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6914C2361100D7D192 /* cheatWindowDelegate.mm */; };
 		AB3ACB7C14C2361100D7D192 /* inputPrefsView.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB3ACB6F14C2361100D7D192 /* inputPrefsView.mm */; };
@@ -1921,6 +1926,7 @@
 		AB37E36F1D6188BC004A2C0D /* colorspacehandler_AltiVec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_AltiVec.h; sourceTree = "<group>"; };
 		AB37E3721D6188BC004A2C0D /* colorspacehandler_SSE2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = colorspacehandler_SSE2.cpp; sourceTree = "<group>"; };
 		AB37E3731D6188BC004A2C0D /* colorspacehandler_SSE2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = colorspacehandler_SSE2.h; sourceTree = "<group>"; };
+		AB3932C3211E610200DA9D80 /* libpcap.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libpcap.dylib; path = usr/lib/libpcap.dylib; sourceTree = SDKROOT; };
 		AB3ACB6614C2361100D7D192 /* appDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = appDelegate.h; sourceTree = "<group>"; };
 		AB3ACB6714C2361100D7D192 /* appDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = appDelegate.mm; sourceTree = "<group>"; };
 		AB3ACB6814C2361100D7D192 /* cheatWindowDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cheatWindowDelegate.h; sourceTree = "<group>"; };
@@ -2349,6 +2355,7 @@
 				AB1CC8001AA509C2008B0A16 /* CoreAudio.framework in Frameworks */,
 				AB3E69801E25FB9800D4CC75 /* QuartzCore.framework in Frameworks */,
 				AB446DB61F69DB69002F32B6 /* CoreVideo.framework in Frameworks */,
+				AB3932C8211E612E00DA9D80 /* libpcap.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2370,6 +2377,7 @@
 				AB1CC80A1AA509DF008B0A16 /* CoreAudio.framework in Frameworks */,
 				AB3E697F1E25FB9700D4CC75 /* QuartzCore.framework in Frameworks */,
 				AB446DB51F69DB69002F32B6 /* CoreVideo.framework in Frameworks */,
+				AB3932C7211E612A00DA9D80 /* libpcap.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2391,6 +2399,7 @@
 				AB1CC80D1AA509E1008B0A16 /* CoreAudio.framework in Frameworks */,
 				AB3E69451E25FB8400D4CC75 /* QuartzCore.framework in Frameworks */,
 				AB446DA11F69DB56002F32B6 /* CoreVideo.framework in Frameworks */,
+				AB3932C4211E610200DA9D80 /* libpcap.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2412,6 +2421,7 @@
 				AB1CC80C1AA509E0008B0A16 /* CoreAudio.framework in Frameworks */,
 				AB3E697D1E25FB9600D4CC75 /* QuartzCore.framework in Frameworks */,
 				AB446DB31F69DB68002F32B6 /* CoreVideo.framework in Frameworks */,
+				AB3932C5211E611F00DA9D80 /* libpcap.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2433,6 +2443,7 @@
 				AB1CC80B1AA509E0008B0A16 /* CoreAudio.framework in Frameworks */,
 				AB3E697E1E25FB9700D4CC75 /* QuartzCore.framework in Frameworks */,
 				AB446DB41F69DB68002F32B6 /* CoreVideo.framework in Frameworks */,
+				AB3932C6211E612400DA9D80 /* libpcap.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2511,6 +2522,7 @@
 				AB350BA41478AC96007165AC /* IOKit.framework */,
 				ABC570D4134431DA00E7B0B1 /* OpenGL.framework */,
 				AB3E69441E25FB8400D4CC75 /* QuartzCore.framework */,
+				AB3932C3211E610200DA9D80 /* libpcap.dylib */,
 				AB0A0D1914AACA9600E83E91 /* libz.dylib */,
 			);
 			name = "Linked Frameworks";

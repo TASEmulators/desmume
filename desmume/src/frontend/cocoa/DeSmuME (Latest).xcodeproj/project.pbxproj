@@ -253,7 +253,6 @@
 		AB405694169F5DCC0016AC3E /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405676169F5DCC0016AC3E /* x86util.cpp */; };
 		AB405695169F5DCC0016AC3E /* x86util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB405676169F5DCC0016AC3E /* x86util.cpp */; };
 		AB407F371A6206FB00313213 /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
-		AB4676F314AB12D60002FF94 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		AB47B52E18A3F722009A42AF /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
 		AB47B52F18A45C35009A42AF /* xbrz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB47B52C18A3F722009A42AF /* xbrz.cpp */; };
 		AB4C81E41B21676C00ACECD5 /* hq3x.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB4C81E31B21676C00ACECD5 /* hq3x.cpp */; };
@@ -263,6 +262,16 @@
 		AB4FCEBD1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
 		AB4FCEBE1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
 		AB4FCEBF1692AB82000F498F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB4FCEBC1692AB82000F498F /* Accelerate.framework */; };
+		AB53B0BE211E63FE003D0ED9 /* libpcap.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AB53B0BC211E63E4003D0ED9 /* libpcap.tbd */; };
+		AB53B0BF211E63FF003D0ED9 /* libpcap.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AB53B0BC211E63E4003D0ED9 /* libpcap.tbd */; };
+		AB53B0C0211E6400003D0ED9 /* libpcap.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AB53B0BC211E63E4003D0ED9 /* libpcap.tbd */; };
+		AB53B0C1211E6400003D0ED9 /* libpcap.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AB53B0BC211E63E4003D0ED9 /* libpcap.tbd */; };
+		AB53B0C2211E6401003D0ED9 /* libpcap.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AB53B0BC211E63E4003D0ED9 /* libpcap.tbd */; };
+		AB53B0C3211E6405003D0ED9 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AB53B0BD211E63E8003D0ED9 /* libz.tbd */; };
+		AB53B0C4211E6405003D0ED9 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AB53B0BD211E63E8003D0ED9 /* libz.tbd */; };
+		AB53B0C5211E6406003D0ED9 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AB53B0BD211E63E8003D0ED9 /* libz.tbd */; };
+		AB53B0C6211E6407003D0ED9 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AB53B0BD211E63E8003D0ED9 /* libz.tbd */; };
+		AB53B0C7211E6407003D0ED9 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AB53B0BD211E63E8003D0ED9 /* libz.tbd */; };
 		AB54718B1E27610500508C5C /* MacMetalDisplayViewShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */; };
 		AB54718C1E27610500508C5C /* MacMetalDisplayViewShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */; };
 		AB54718D1E27610500508C5C /* MacMetalDisplayViewShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */; };
@@ -489,7 +498,6 @@
 		AB796D6915CDCBA200C59155 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97325FDCFA39411CA2CEA /* Foundation.framework */; };
 		AB796D6A15CDCBA200C59155 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
 		AB796D6B15CDCBA200C59155 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
-		AB796D6C15CDCBA200C59155 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		AB7EC7F4189B2B92009D198A /* Icon_AutoholdClear_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB7EC7F2189B2B92009D198A /* Icon_AutoholdClear_420x420.png */; };
 		AB7EC7F5189B2B92009D198A /* Icon_AutoholdClear_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB7EC7F2189B2B92009D198A /* Icon_AutoholdClear_420x420.png */; };
 		AB7EC7F6189B2B92009D198A /* Icon_AutoholdSet_420x420.png in Resources */ = {isa = PBXBuildFile; fileRef = AB7EC7F3189B2B92009D198A /* Icon_AutoholdSet_420x420.png */; };
@@ -789,7 +797,6 @@
 		AB8F3D261A53AC2600A80BF6 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97325FDCFA39411CA2CEA /* Foundation.framework */; };
 		AB8F3D271A53AC2600A80BF6 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
 		AB8F3D281A53AC2600A80BF6 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
-		AB8F3D291A53AC2600A80BF6 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		AB901BDE1420706100348EEC /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB901BDD1420706100348EEC /* Localizable.strings */; };
 		AB9038A617C5ECFD00F410BD /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
 		AB9038A717C5ECFD00F410BD /* advanscene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB9038A517C5ECFD00F410BD /* advanscene.cpp */; };
@@ -895,7 +902,6 @@
 		ABB3C6661501BF8A00E0C22E /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		ABB3C6671501BF8A00E0C22E /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97325FDCFA39411CA2CEA /* Foundation.framework */; };
 		ABB3C6691501BF8A00E0C22E /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
-		ABB3C66A1501BF8A00E0C22E /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		ABB3C66C1501C04F00E0C22E /* NDSGameCore.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABB3C63E1501BB8300E0C22E /* NDSGameCore.mm */; };
 		ABB3C6701501C04F00E0C22E /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
 		ABB3C6721501C04F00E0C22E /* cocoa_file.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB58F32C1364F44B0074C376 /* cocoa_file.mm */; };
@@ -1428,7 +1434,6 @@
 		ABE145AF1FBBA71A0097A4A8 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB350BA41478AC96007165AC /* IOKit.framework */; };
 		ABE145B11FBBA71A0097A4A8 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABC570D4134431DA00E7B0B1 /* OpenGL.framework */; };
 		ABE145B21FBBA71A0097A4A8 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3BF4321E2562F2003E2B24 /* QuartzCore.framework */; };
-		ABE145B31FBBA71A0097A4A8 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = AB0A0D1914AACA9600E83E91 /* libz.dylib */; };
 		ABE145B41FBBA71A0097A4A8 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABAE1F6E1F6873E70080EFE3 /* CoreVideo.framework */; };
 		ABE5DE95143F781900835AD8 /* videofilter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB817A35143EE2DB00A7DFE9 /* videofilter.cpp */; };
 		ABE5DFE5143FB1DA00835AD8 /* cocoa_videofilter.mm in Sources */ = {isa = PBXBuildFile; fileRef = ABE5DFE4143FB1DA00835AD8 /* cocoa_videofilter.mm */; };
@@ -1542,7 +1547,6 @@
 		AB01005D170D07B000D70FBE /* InputProfileController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = InputProfileController.mm; sourceTree = "<group>"; };
 		AB02475B13886BF300E9F9AB /* KeyNames.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = KeyNames.plist; sourceTree = "<group>"; };
 		AB02791814415E4C0075E58C /* Info (Debug).plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Info (Debug).plist"; sourceTree = "<group>"; };
-		AB0A0D1914AACA9600E83E91 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		AB0F28FE14BE6E68009ABC6F /* Icon_Execute_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Execute_420x420.png; path = images/Icon_Execute_420x420.png; sourceTree = "<group>"; };
 		AB0F28FF14BE6E68009ABC6F /* Icon_Pause_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Pause_420x420.png; path = images/Icon_Pause_420x420.png; sourceTree = "<group>"; };
 		AB0F290014BE6E68009ABC6F /* Icon_Speed1x_420x420.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon_Speed1x_420x420.png; path = images/Icon_Speed1x_420x420.png; sourceTree = "<group>"; };
@@ -1785,6 +1789,8 @@
 		AB47B52C18A3F722009A42AF /* xbrz.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = xbrz.cpp; sourceTree = "<group>"; };
 		AB4C81E31B21676C00ACECD5 /* hq3x.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hq3x.cpp; sourceTree = "<group>"; };
 		AB4FCEBC1692AB82000F498F /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		AB53B0BC211E63E4003D0ED9 /* libpcap.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libpcap.tbd; path = usr/lib/libpcap.tbd; sourceTree = SDKROOT; };
+		AB53B0BD211E63E8003D0ED9 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		AB54718A1E27610500508C5C /* MacMetalDisplayViewShaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = MacMetalDisplayViewShaders.metal; sourceTree = "<group>"; };
 		AB5648FD186E6EA8002740F4 /* cocoa_slot2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoa_slot2.h; sourceTree = "<group>"; };
 		AB5648FE186E6EA8002740F4 /* cocoa_slot2.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = cocoa_slot2.mm; sourceTree = "<group>"; };
@@ -2301,6 +2307,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				AB4FCEBE1692AB82000F498F /* Accelerate.framework in Frameworks */,
+				AB53B0C5211E6406003D0ED9 /* libz.tbd in Frameworks */,
+				AB53B0BE211E63FE003D0ED9 /* libpcap.tbd in Frameworks */,
 				ABC5720D1344346600E7B0B1 /* AppKit.framework in Frameworks */,
 				ABACB8DD1710B656003B845D /* AudioToolbox.framework in Frameworks */,
 				ABC570D1134431CE00E7B0B1 /* AudioUnit.framework in Frameworks */,
@@ -2313,7 +2321,6 @@
 				AB3BF4421E262959003E2B24 /* Metal.framework in Frameworks */,
 				ABC570D5134431DA00E7B0B1 /* OpenGL.framework in Frameworks */,
 				AB3BF4341E256309003E2B24 /* QuartzCore.framework in Frameworks */,
-				AB4676F314AB12D60002FF94 /* libz.dylib in Frameworks */,
 				ABAE1F711F6874090080EFE3 /* CoreVideo.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2323,6 +2330,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				AB4FCEBD1692AB82000F498F /* Accelerate.framework in Frameworks */,
+				AB53B0C7211E6407003D0ED9 /* libz.tbd in Frameworks */,
+				AB53B0C1211E6400003D0ED9 /* libpcap.tbd in Frameworks */,
 				AB796D6615CDCBA200C59155 /* AppKit.framework in Frameworks */,
 				ABACB8DC1710B621003B845D /* AudioToolbox.framework in Frameworks */,
 				AB796D6715CDCBA200C59155 /* AudioUnit.framework in Frameworks */,
@@ -2336,7 +2345,6 @@
 				AB78B5C21E384F2200297FED /* Metal.framework in Frameworks */,
 				AB796D6B15CDCBA200C59155 /* OpenGL.framework in Frameworks */,
 				AB3BF4331E2562F2003E2B24 /* QuartzCore.framework in Frameworks */,
-				AB796D6C15CDCBA200C59155 /* libz.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2345,6 +2353,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				AB8F3D1F1A53AC2600A80BF6 /* Accelerate.framework in Frameworks */,
+				AB53B0C6211E6407003D0ED9 /* libz.tbd in Frameworks */,
+				AB53B0C0211E6400003D0ED9 /* libpcap.tbd in Frameworks */,
 				AB8F3D201A53AC2600A80BF6 /* AppKit.framework in Frameworks */,
 				AB8F3D211A53AC2600A80BF6 /* AudioToolbox.framework in Frameworks */,
 				AB8F3D221A53AC2600A80BF6 /* AudioUnit.framework in Frameworks */,
@@ -2357,7 +2367,6 @@
 				AB78B5C11E384F2100297FED /* Metal.framework in Frameworks */,
 				AB8F3D281A53AC2600A80BF6 /* OpenGL.framework in Frameworks */,
 				AB3BF4351E256309003E2B24 /* QuartzCore.framework in Frameworks */,
-				AB8F3D291A53AC2600A80BF6 /* libz.dylib in Frameworks */,
 				ABAE1F701F6874090080EFE3 /* CoreVideo.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2367,13 +2376,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				AB4FCEBF1692AB82000F498F /* Accelerate.framework in Frameworks */,
+				AB53B0C3211E6405003D0ED9 /* libz.tbd in Frameworks */,
 				ABB3C6641501BF8A00E0C22E /* AppKit.framework in Frameworks */,
 				ABACB8DE1710B65F003B845D /* AudioToolbox.framework in Frameworks */,
 				ABB3C6651501BF8A00E0C22E /* AudioUnit.framework in Frameworks */,
 				ABB3C6661501BF8A00E0C22E /* Cocoa.framework in Frameworks */,
 				ABB3C6671501BF8A00E0C22E /* Foundation.framework in Frameworks */,
+				AB53B0C2211E6401003D0ED9 /* libpcap.tbd in Frameworks */,
 				ABB3C6691501BF8A00E0C22E /* OpenGL.framework in Frameworks */,
-				ABB3C66A1501BF8A00E0C22E /* libz.dylib in Frameworks */,
 				ABC503B11AAC4355002FCD43 /* CoreAudio.framework in Frameworks */,
 				AB5785FD17176AFC002C5FC7 /* OpenEmuBase.framework in Frameworks */,
 			);
@@ -2387,15 +2397,16 @@
 				ABE145A71FBBA71A0097A4A8 /* AppKit.framework in Frameworks */,
 				ABE145A81FBBA71A0097A4A8 /* AudioToolbox.framework in Frameworks */,
 				ABE145A91FBBA71A0097A4A8 /* AudioUnit.framework in Frameworks */,
+				AB53B0C4211E6405003D0ED9 /* libz.tbd in Frameworks */,
 				ABE145AA1FBBA71A0097A4A8 /* Carbon.framework in Frameworks */,
 				ABE145AB1FBBA71A0097A4A8 /* Cocoa.framework in Frameworks */,
 				ABE145AC1FBBA71A0097A4A8 /* CoreAudio.framework in Frameworks */,
 				ABE145AD1FBBA71A0097A4A8 /* ForceFeedback.framework in Frameworks */,
+				AB53B0BF211E63FF003D0ED9 /* libpcap.tbd in Frameworks */,
 				ABE145AE1FBBA71A0097A4A8 /* Foundation.framework in Frameworks */,
 				ABE145AF1FBBA71A0097A4A8 /* IOKit.framework in Frameworks */,
 				ABE145B11FBBA71A0097A4A8 /* OpenGL.framework in Frameworks */,
 				ABE145B21FBBA71A0097A4A8 /* QuartzCore.framework in Frameworks */,
-				ABE145B31FBBA71A0097A4A8 /* libz.dylib in Frameworks */,
 				ABE145B41FBBA71A0097A4A8 /* CoreVideo.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2479,7 +2490,8 @@
 				AB3BF4401E262943003E2B24 /* Metal.framework */,
 				ABC570D4134431DA00E7B0B1 /* OpenGL.framework */,
 				AB3BF4321E2562F2003E2B24 /* QuartzCore.framework */,
-				AB0A0D1914AACA9600E83E91 /* libz.dylib */,
+				AB53B0BC211E63E4003D0ED9 /* libpcap.tbd */,
+				AB53B0BD211E63E8003D0ED9 /* libz.tbd */,
 			);
 			name = "Linked Frameworks";
 			sourceTree = "<group>";
