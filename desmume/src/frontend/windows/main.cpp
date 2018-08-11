@@ -3557,6 +3557,11 @@ int _main()
     gdbstub_mutex_destroy();
 #endif
 	
+	if (wifiHandler->IsSocketsSupported())
+	{
+		WSACleanup();
+	}
+
 	NDS_DeInit();
 
 #ifdef DEBUG
@@ -3590,11 +3595,6 @@ int _main()
 	ddraw.release();
 
 	UnregWndClass("DeSmuME");
-
-	if (wifiHandler->IsSocketsSupported())
-	{
-		WSACleanup();
-	}
 
 	return 0;
 }
