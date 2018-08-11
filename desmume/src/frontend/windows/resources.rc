@@ -1635,6 +1635,12 @@ BEGIN
             MENUITEM "&Gray",                       IDM_SCREENSEP_COLORGRAY
             MENUITEM "&Black",                      IDM_SCREENSEP_COLORBLACK
         END
+        POPUP "Fullscreen Options"
+        BEGIN
+            MENUITEM "Non-exclusive Mode",          IDM_FS_WINDOW
+            MENUITEM "Show Menu",                   IDM_FS_MENU
+            MENUITEM "Auto-Hide Cursor",            IDM_FS_HIDE_CURSOR
+        END
         POPUP "Magnification &Filter"
         BEGIN
             MENUITEM "Normal",                      IDM_RENDER_NORMAL

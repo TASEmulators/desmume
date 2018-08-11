@@ -514,6 +514,8 @@ bool frameAdvance = false;
 bool continuousframeAdvancing = false;
 
 unsigned short windowSize = 0;
+bool fsWindow = false;
+bool autoHideCursor = false;
 
 float screenSizeRatio = 1.0f;
 bool vCenterResizedScr = true;
@@ -692,8 +694,12 @@ void ScaleScreen(float factor, bool user)
 {
 	if(user) // have to exit maximized mode if the user told us to set a specific window size
 	{
-		bool maximized = IsZoomed(MainWindow->getHWnd())==TRUE;
-		if(maximized) ShowWindow(MainWindow->getHWnd(),SW_NORMAL);
+		HWND hwnd = MainWindow->getHWnd();
+		if (IsZoomed(hwnd) || fsWindow)
+		{
+			RestoreWindow(hwnd);
+			windowSize = factor;
+		}
 	}
 
 	if(windowSize == 0)
@@ -977,6 +983,8 @@ const u32 DWS_DDRAW_HW = 32;
 const u32 DWS_OPENGL = 64;
 const u32 DWS_DISPMETHODS =  (DWS_DDRAW_SW|DWS_DDRAW_HW|DWS_OPENGL);
 const u32 DWS_FILTER = 128;
+const u32 DWS_FS_MENU = 256;
+const u32 DWS_FS_WINDOW = 512;
 
 static u32 currWindowStyle = DWS_NORMAL;
 void SetStyle(u32 dws);
@@ -985,15 +993,77 @@ static u32 GetStyle() { return currWindowStyle; }
 static void ToggleFullscreen()
 {
 	u32 style = GetStyle();
-	style ^= DWS_FULLSCREEN;
-	SetStyle(style);
+	HWND hwnd = MainWindow->getHWnd();
+
 	if(style&DWS_FULLSCREEN)
-		ShowWindow(MainWindow->getHWnd(),SW_MAXIMIZE);
-	else ShowWindow(MainWindow->getHWnd(),SW_NORMAL);
+		RestoreWindow(hwnd);
+	else ShowFullScreen(hwnd);
 }
 //---------
 
+void SaveWindowSizePos(HWND hwnd)
+{
+	SaveWindowPos(hwnd);
+	SaveWindowSize(hwnd);
+	WritePrivateProfileInt("Video", "Window Size", windowSize, IniName);
+}
 
+void RestoreWindow(HWND hwnd)
+{
+	fsWindow = false;
+	u32 style = GetStyle();
+
+	if (style & DWS_FULLSCREEN)
+	{
+		style &= ~DWS_FULLSCREEN;
+		SetStyle(style);
+		ShowWindow(hwnd, SW_NORMAL);
+
+		windowSize = GetPrivateProfileInt("Video", "Window Size", 0, IniName);
+		WndX = GetPrivateProfileInt("Video", "WindowPosX", CW_USEDEFAULT, IniName);
+		WndY = GetPrivateProfileInt("Video", "WindowPosY", CW_USEDEFAULT, IniName);
+
+		RECT rc;
+		rc.left = WndX;
+		rc.top = WndY;
+		rc.right = rc.left + GetPrivateProfileInt("Video", "Window width", GPU_FRAMEBUFFER_NATIVE_WIDTH, IniName);
+		rc.bottom = rc.top + GetPrivateProfileInt("Video", "Window height", GPU_FRAMEBUFFER_NATIVE_HEIGHT * 2, IniName);
+
+		AdjustWindowRect(&rc, GetWindowLong(hwnd, GWL_STYLE), true);
+		SetWindowPos(hwnd, 0, WndX, WndY, rc.right - rc.left, rc.bottom - rc.top, SWP_NOOWNERZORDER | SWP_NOZORDER);
+	}
+	else
+		ShowWindow(hwnd, SW_NORMAL);
+}
+
+void ShowFullScreen(HWND hwnd)
+{
+	SaveWindowSizePos(hwnd);
+
+	u32 style = GetStyle();
+	style |= DWS_FULLSCREEN;
+	SetStyle(style);
+
+	if (style & DWS_FS_WINDOW)
+	{
+		windowSize = 0;
+		fsWindow = true;
+
+		HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+		MONITORINFO info;
+		info.cbSize = sizeof(MONITORINFO);
+		GetMonitorInfo(monitor, &info);
+		int monitor_width = info.rcMonitor.right - info.rcMonitor.left;
+		int monitor_height = info.rcMonitor.bottom - info.rcMonitor.top;
+
+		SetWindowPos(hwnd, 0, info.rcMonitor.left, info.rcMonitor.top, monitor_width, monitor_height, SWP_NOOWNERZORDER | SWP_NOZORDER);
+	}
+	else
+	{
+		fsWindow = false;
+		ShowWindow(hwnd, SW_MAXIMIZE);
+	}
+}
 
 static HMENU GetMenuItemParent(UINT itemId, HMENU hMenu = mainMenu)
 {
@@ -1213,6 +1283,8 @@ void UpdateWndRects(HWND hwnd, RECT* newClientRect = NULL)
 	POINT ptClient;
 	RECT rc;
 
+	GapRect = {0,0,0,0};
+
 	bool maximized = IsZoomed(hwnd)!=FALSE;
 
 	int wndWidth, wndHeight;
@@ -1421,20 +1493,24 @@ void LCDsSwap(int swapVal)
 	WritePrivateProfileInt("Video", "LCDsSwap", video.swap, IniName);
 }
 
-void doLCDsLayout()
+void doLCDsLayout(int videoLayout)
 {
 	HWND hwnd = MainWindow->getHWnd();
+	u32 style = GetStyle();
+	bool maximized = IsZoomed(hwnd) || fsWindow;
+	if (maximized)
+		RestoreWindow(hwnd);
 
-	bool maximized = IsZoomed(hwnd)==TRUE;
+	if (videoLayout > 2) videoLayout = 0;
 
-	if(maximized) ShowWindow(hwnd,SW_NORMAL);
-
-	if(video.layout != 0)
+	if(videoLayout != 0)
 	{
 		// rotation is not supported in the alternate layouts
 		if(video.rotation != 0)
 			SetRotate(hwnd, 0, false);
 	}
+
+	video.layout = videoLayout;
 
 	osd->singleScreen = (video.layout == 2);
 
@@ -1467,7 +1543,7 @@ void doLCDsLayout()
 
 		if (video.layout_old == 1)
 		{
-			newwidth = oldwidth / 2;
+			newwidth = oldwidth * screenSizeRatio / 2;
 			newheight = (oldheight * 2) + (video.screengap * oldheight / GPU_FRAMEBUFFER_NATIVE_HEIGHT);
 		}
 		else if (video.layout_old == 2)
@@ -1509,12 +1585,12 @@ void doLCDsLayout()
 		{
 			if (video.layout_old == 0)
 			{
-				newwidth = oldwidth * 2;
+				newwidth = oldwidth * 2 / screenSizeRatio;
 				newheight = (oldheight - scaledGap) / 2;
 			}
 			else if (video.layout_old == 2)
 			{
-				newwidth = oldwidth * 2;
+				newwidth = oldwidth * 2 / screenSizeRatio;
 				newheight = oldheight;
 			}
 			else
@@ -1535,7 +1611,7 @@ void doLCDsLayout()
 			}
 			else if (video.layout_old == 1)
 			{
-				newwidth = oldwidth / 2;
+				newwidth = oldwidth * screenSizeRatio / 2;
 				newheight = oldheight;
 			}
 			else
@@ -1571,8 +1647,14 @@ void doLCDsLayout()
 		if(video.rotation != video.rotation_userset)
 			SetRotate(hwnd, video.rotation_userset, false);
 	}
-
-	if(maximized) ShowWindow(hwnd,SW_MAXIMIZE);
+	
+	if (maximized)
+	{
+		if (style & DWS_FULLSCREEN)
+			ShowFullScreen(hwnd);
+		else
+			ShowWindow(hwnd, SW_MAXIMIZE);
+	}
 }
 
 #pragma pack(push,1)
@@ -2998,6 +3080,8 @@ int _main()
 	u32 style = DWS_NORMAL;
 	if(GetPrivateProfileBool("Video","Window Always On Top", false, IniName)) style |= DWS_ALWAYSONTOP;
 	if(GetPrivateProfileBool("Video","Window Lockdown", false, IniName)) style |= DWS_LOCKDOWN;
+	if(GetPrivateProfileBool("Display", "Show Menu In Fullscreen Mode", false, IniName)) style |= DWS_FS_MENU;
+	if (GetPrivateProfileBool("Display", "Non-exclusive Fullscreen Mode", false, IniName)) style |= DWS_FS_WINDOW;
 	
 	if(GetPrivateProfileBool("Video","Display Method Filter", false, IniName))
 		style |= DWS_FILTER;
@@ -3043,6 +3127,7 @@ int _main()
 	GetPrivateProfileString("MicSettings", "MicSampleFile", "micsample.raw", MicSampleName, MAX_PATH, IniName);
 	RefreshMicSettings();
 	
+	autoHideCursor = GetPrivateProfileBool("Display", "Auto-Hide Cursor", false, IniName);
 	GetPrivateProfileString("Display", "Screen Size Ratio", "1.0", scrRatStr, 4, IniName);
 	screenSizeRatio = atof(scrRatStr);
 	vCenterResizedScr = GetPrivateProfileBool("Display", "Vertically Center Resized Screen", 1, IniName);
@@ -3748,6 +3833,12 @@ void FixAspectRatio()
 
 void SetScreenGap(int gap)
 {
+	HWND hwnd = MainWindow->getHWnd();
+	u32 style = GetStyle();
+	bool maximized = IsZoomed(hwnd) || fsWindow;
+	if (maximized)
+		RestoreWindow(hwnd);
+	
 	RECT clientRect;
 	GetClientRect(MainWindow->getHWnd(), &clientRect);
 	RECT rc;
@@ -3762,15 +3853,28 @@ void SetScreenGap(int gap)
 	SetMinWindowSize();
 	FixAspectRatio();
 	UpdateWndRects(MainWindow->getHWnd());
+
+	if (maximized)
+	{
+		if (style & DWS_FULLSCREEN)
+			ShowFullScreen(hwnd);
+		else
+			ShowWindow(hwnd, SW_MAXIMIZE);
+	}
 }
 
 //========================================================================================
 void SetRotate(HWND hwnd, int rot, bool user)
 {
-	bool maximized = IsZoomed(hwnd)==TRUE;
+	if (video.layout != 0) return;
+
+	u32 style = GetStyle();
+	bool maximized = IsZoomed(hwnd) || fsWindow;
+
 	if(((rot == 90) || (rot == 270)) == ((video.rotation == 90) || (video.rotation == 270)))
 		maximized = false; // no need to toggle out to windowed if the dimensions aren't changing
-	if(maximized) ShowWindow(hwnd,SW_NORMAL);
+	if (maximized)
+		RestoreWindow(hwnd);
 	{
 	Lock lock (win_backbuffer_sync);
 
@@ -3840,7 +3944,13 @@ void SetRotate(HWND hwnd, int rot, bool user)
 	UpdateScreenRects();
 	UpdateWndRects(hwnd);
 	}
-	if(maximized) ShowWindow(hwnd,SW_MAXIMIZE);
+	if (maximized)
+	{
+		if (style & DWS_FULLSCREEN)
+			ShowFullScreen(hwnd);
+		else
+			ShowWindow(hwnd, SW_MAXIMIZE);
+	}
 }
 
 void AviEnd()
@@ -4483,6 +4593,11 @@ void RunConfig(CONFIGSCREEN which)
 
 void FilterUpdate(HWND hwnd, bool user)
 {
+	u32 style = GetStyle();
+	bool maximized = IsZoomed(hwnd) || fsWindow;
+	if (maximized)
+		RestoreWindow(hwnd);
+
 	UpdateScreenRects();
 	UpdateWndRects(hwnd);
 	SetScreenGap(video.screengap);
@@ -4495,12 +4610,20 @@ void FilterUpdate(HWND hwnd, bool user)
 	WritePrivateProfileInt("Video", "Filter", video.currentfilter, IniName);
 	WritePrivateProfileInt("Video", "Width", video.width, IniName);
 	WritePrivateProfileInt("Video", "Height", video.height, IniName);
+
+	if (maximized)
+	{
+		if (style & DWS_FULLSCREEN)
+			ShowFullScreen(hwnd);
+		else
+			ShowWindow(hwnd, SW_MAXIMIZE);
+	}
 }
 
 void SaveWindowSize(HWND hwnd)
 {
 	//dont save if window was maximized
-	if(IsZoomed(hwnd)) return;
+	if(IsZoomed(hwnd) || fsWindow) return;
 	RECT rc;
 	GetClientRect(hwnd, &rc);
 	rc.top += MainWindowToolbar->GetHeight();
@@ -4511,7 +4634,7 @@ void SaveWindowSize(HWND hwnd)
 void SaveWindowPos(HWND hwnd)
 {
 	//dont save if window was maximized
-	if(IsZoomed(hwnd)) return;
+	if(IsZoomed(hwnd) || fsWindow) return;
 	WritePrivateProfileInt("Video", "WindowPosX", WndX/*MainWindowRect.left*/, IniName);
 	WritePrivateProfileInt("Video", "WindowPosY", WndY/*MainWindowRect.top*/, IniName);
 }
@@ -4530,6 +4653,7 @@ static void TwiddleLayer(UINT ctlid, int core, int layer)
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
 	static int tmp_execute;
+	static UINT_PTR autoHideCursorTimer = 0;
 
 	switch (message)                  // handle the messages
 	{
@@ -4665,6 +4789,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			// Show toolbar
 			MainWindow->checkMenu(IDM_SHOWTOOLBAR, MainWindowToolbar->Visible());
 	
+			// Show Menu In Fullscreen Mode
+			MainWindow->checkMenu(IDM_FS_MENU, (GetStyle()&DWS_FS_MENU) != 0);
+
+			// Non-exclusive Fullscreen Mode
+			MainWindow->checkMenu(IDM_FS_WINDOW, (GetStyle()&DWS_FS_WINDOW) != 0);
+
+			// Auto-Hide Cursor In Fullscreen Mode
+			MainWindow->checkMenu(IDM_FS_HIDE_CURSOR, autoHideCursor);
+
 			//Counters / Etc.
 			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER,CommonSettings.hud.FrameCounterDisplay);
 			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS,CommonSettings.hud.FpsDisplay);
@@ -4857,8 +4990,18 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			else
 				NDS_UnPause();
 			delete MainWindowToolbar;
+			KillTimer(hwnd, autoHideCursorTimer);
 			return 0;
 		}
+	case WM_TIMER:
+	{
+		if (autoHideCursorTimer == wParam)
+		{
+			if (((IsZoomed(hwnd) && (GetStyle()&DWS_FULLSCREEN)) || fsWindow) && autoHideCursor)
+				while (ShowCursor(FALSE) >= 0);
+		}
+		return 0;
+	}
 	case WM_MOVING:
 		InvalidateRect(hwnd, NULL, FALSE); UpdateWindow(hwnd);
 		return 0;
@@ -4897,6 +5040,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			InvalidateRect(hwnd, NULL, FALSE); 
 			UpdateWindow(hwnd);
+			
+			if (fsWindow) return 1;
 
 			if(wParam==999)
 			{
@@ -5278,6 +5423,9 @@ DOKEYDOWN:
 	case WM_MOUSEMOVE:
 	case WM_LBUTTONDOWN:
 	case WM_LBUTTONDBLCLK:
+		while (ShowCursor(TRUE) <= 0);
+		autoHideCursorTimer = SetTimer(hwnd, 1, 5000, NULL);
+
 		if (((message==WM_POINTERDOWN || message== WM_POINTERUPDATE)
 			&& ((wParam & (POINTER_MESSAGE_FLAG_INCONTACT | POINTER_MESSAGE_FLAG_FIRSTBUTTON))))
 			|| (message != WM_POINTERDOWN && message != WM_POINTERUPDATE && (wParam & MK_LBUTTON)))
@@ -5954,19 +6102,17 @@ DOKEYDOWN:
 
 		case ID_LCDS_VERTICAL:
 			if (video.layout == 0) return 0;
-			video.layout = 0;
-			doLCDsLayout();
+			doLCDsLayout(0);
 			return 0;
+
 		case ID_LCDS_HORIZONTAL:
 			if (video.layout == 1) return 0;
-			video.layout = 1;
-			doLCDsLayout();
+			doLCDsLayout(1);
 			return 0;
 
 		case ID_LCDS_ONE:
 			if (video.layout == 2) return 0;
-			video.layout = 2;
-			doLCDsLayout();
+			doLCDsLayout(2);
 			return 0;
 
 		case ID_LCDS_NOSWAP:
@@ -6306,16 +6452,30 @@ DOKEYDOWN:
 		case IDC_SCR_RATIO_1p4:
 		case IDC_SCR_RATIO_1p5:
 		{
+			u32 style = GetStyle();
+			bool maximized = IsZoomed(hwnd) || fsWindow;
+			if (maximized)
+				RestoreWindow(hwnd);
+
+			float oldScreenSizeRatio = screenSizeRatio;
 			screenSizeRatio = LOWORD(wParam) - IDC_SCR_RATIO_1p0;
 			screenSizeRatio = screenSizeRatio * 0.1 + 1;
 
 			RECT rc;
 			GetClientRect(hwnd, &rc);
-			MainWindow->setClientSize((int)((rc.right - rc.left + 8) / screenSizeRatio), rc.bottom - rc.top);
+			MainWindow->setClientSize((int)((rc.right - rc.left) * (oldScreenSizeRatio / screenSizeRatio)), rc.bottom - rc.top);
 
 			char scrRatStr[4] = "1.0";
 			sprintf(scrRatStr, "%.1f", screenSizeRatio);
 			WritePrivateProfileString("Display", "Screen Size Ratio", scrRatStr, IniName);
+
+			if (maximized)
+			{
+				if (style & DWS_FULLSCREEN)
+					ShowFullScreen(hwnd);
+				else
+					ShowWindow(hwnd, SW_MAXIMIZE);
+			}
 		}
 		return 0;
 
@@ -6334,12 +6494,27 @@ DOKEYDOWN:
 			break;
 
 		case IDC_FORCERATIO:
+		{
+			u32 style = GetStyle();
+			bool maximized = IsZoomed(hwnd) || fsWindow;
+			if (maximized)
+				RestoreWindow(hwnd);
+
 			ForceRatio = (!ForceRatio)?TRUE:FALSE;
 			if((int)(screenSizeRatio * 10) > 10) UpdateWndRects(hwnd);
 			if(ForceRatio)
 				FixAspectRatio();
-			WritePrivateProfileInt("Video","Window Force Ratio",ForceRatio,IniName);
-			break;
+			WritePrivateProfileInt("Video", "Window Force Ratio", ForceRatio, IniName);
+
+			if (maximized)
+			{
+				if (style & DWS_FULLSCREEN)
+					ShowFullScreen(hwnd);
+				else
+					ShowWindow(hwnd, SW_MAXIMIZE);
+			}
+		}	
+		break;
 
 		case IDM_DEFSIZE:
 			{
@@ -6349,6 +6524,11 @@ DOKEYDOWN:
 			break;
 		case IDM_LOCKDOWN:
 			{
+				u32 style = GetStyle();
+				bool maximized = IsZoomed(hwnd) || fsWindow;
+				if (maximized)
+					RestoreWindow(hwnd);
+
 				RECT rc; 
 				GetClientRect(hwnd, &rc);
 
@@ -6357,6 +6537,14 @@ DOKEYDOWN:
 				MainWindow->setClientSize(rc.right-rc.left, rc.bottom-rc.top);
 
 				WritePrivateProfileBool("Video", "Window Lockdown", (GetStyle()&DWS_LOCKDOWN)!=0, IniName);
+
+				if (maximized)
+				{
+					if (style & DWS_FULLSCREEN)
+						ShowFullScreen(hwnd);
+					else
+						ShowWindow(hwnd, SW_MAXIMIZE);
+				}
 			}
 			return 0;
 		case IDM_ALWAYS_ON_TOP:
@@ -6376,8 +6564,10 @@ DOKEYDOWN:
 
 		case IDM_SHOWTOOLBAR:
 			{
-				bool maximized = IsZoomed(hwnd)==TRUE;
-				if(maximized) ShowWindow(hwnd,SW_NORMAL);
+				u32 style = GetStyle();
+				bool maximized = IsZoomed(hwnd) || fsWindow;
+				if (maximized)
+					RestoreWindow(hwnd);
 
 				RECT rc; 
 				GetClientRect(hwnd, &rc); rc.top += MainWindowToolbar->GetHeight();
@@ -6389,9 +6579,49 @@ DOKEYDOWN:
 
 				WritePrivateProfileBool("Display", "Show Toolbar", nowvisible, IniName);
 
-				if(maximized) ShowWindow(hwnd,SW_MAXIMIZE);
+				if (maximized)
+				{
+					if (style & DWS_FULLSCREEN)
+						ShowFullScreen(hwnd);
+					else
+						ShowWindow(hwnd, SW_MAXIMIZE);
+				}
 			}
 			return 0;
+
+		case IDM_FS_MENU:
+			{
+				SetStyle(GetStyle()^DWS_FS_MENU);
+				WritePrivateProfileBool("Display", "Show Menu In Fullscreen Mode", (GetStyle()&DWS_FS_MENU)!= 0, IniName);
+			}
+			return 0;
+
+		case IDM_FS_WINDOW:
+		{
+			u32 style = GetStyle();
+			bool maximized = IsZoomed(hwnd) || fsWindow;
+			if (maximized)
+				RestoreWindow(hwnd);
+
+			SetStyle(GetStyle() ^ DWS_FS_WINDOW);
+			WritePrivateProfileBool("Display", "Non-exclusive Fullscreen Mode", (GetStyle()&DWS_FS_WINDOW) != 0, IniName);
+
+			if (maximized)
+			{
+				if (style & DWS_FULLSCREEN)
+					ShowFullScreen(hwnd);
+				else
+					ShowWindow(hwnd, SW_MAXIMIZE);
+			}
+		}
+		return 0;
+
+		case IDM_FS_HIDE_CURSOR:
+		{
+			autoHideCursor = !autoHideCursor;
+			WritePrivateProfileBool("Display", "Auto-Hide Cursor", autoHideCursor, IniName);
+		}
+		return 0;
 
 		case IDM_AUTODETECTSAVETYPE_INTERNAL: 
 		case IDM_AUTODETECTSAVETYPE_FROMDATABASE: 
@@ -7739,11 +7969,13 @@ void SetStyle(u32 dws)
 		ws |= WS_POPUP | WS_DLGFRAME;
 	else if (!(dws&DWS_FULLSCREEN))
 		ws |= WS_CAPTION | WS_THICKFRAME;
+	else if(dws & DWS_FS_WINDOW)
+		ws |= WS_POPUPWINDOW;
 
 	SetWindowLong(MainWindow->getHWnd(), GWL_STYLE, ws);
 
 
-	if ((dws&DWS_FULLSCREEN))
+	if ((dws&DWS_FULLSCREEN) && !(dws&DWS_FS_MENU))
 		SetMenu(MainWindow->getHWnd(), NULL);
 	else
 		SetMenu(MainWindow->getHWnd(), mainMenu);

@@ -347,12 +347,10 @@ void HK_AutoHoldClearKeyDown(int, bool justPressed) {
 }
 
 extern VideoInfo video;
-extern void doLCDsLayout();
+extern void doLCDsLayout(int videoLayout);
 void HK_LCDsMode(int)
 {
-	video.layout++;
-	if (video.layout > 2) video.layout = 0;
-	doLCDsLayout();
+	doLCDsLayout(video.layout + 1);
 }
 
 extern void LCDsSwap(int);

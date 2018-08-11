@@ -47,6 +47,11 @@ void WavEnd();
 void UpdateToolWindows();
 bool DemandLua();
 void SetRotate(HWND hwnd, int rot, bool user = true);
+void SaveWindowPos(HWND hwnd);
+void SaveWindowSize(HWND hwnd);
+void SaveWindowSizePos(HWND hwnd);
+void RestoreWindow(HWND hwnd);
+void ShowFullScreen(HWND hwnd);
 
 extern bool frameCounterDisplay;
 extern bool FpsDisplay;
