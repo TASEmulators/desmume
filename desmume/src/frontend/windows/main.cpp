@@ -4654,6 +4654,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 { 
 	static int tmp_execute;
 	static UINT_PTR autoHideCursorTimer = 0;
+	static bool mouseLeftClientArea = true;
+
+	TRACKMOUSEEVENT tme;
+	tme.cbSize = sizeof(tme);
+	tme.dwFlags = TME_LEAVE;
+	tme.hwndTrack = hwnd;
 
 	switch (message)                  // handle the messages
 	{
@@ -4997,8 +5003,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	{
 		if (autoHideCursorTimer == wParam)
 		{
-			if (((IsZoomed(hwnd) && (GetStyle()&DWS_FULLSCREEN)) || fsWindow) && autoHideCursor)
-				while (ShowCursor(FALSE) >= 0);
+			if(autoHideCursor && !mouseLeftClientArea)
+				if ((IsZoomed(hwnd) && (GetStyle()&DWS_FULLSCREEN)) || fsWindow)
+					while (ShowCursor(FALSE) >= 0);
 		}
 		return 0;
 	}
@@ -5423,8 +5430,13 @@ DOKEYDOWN:
 	case WM_MOUSEMOVE:
 	case WM_LBUTTONDOWN:
 	case WM_LBUTTONDBLCLK:
+		if (mouseLeftClientArea)
+		{
+			TrackMouseEvent(&tme);
+			mouseLeftClientArea = false;
+		}
 		while (ShowCursor(TRUE) <= 0);
-		autoHideCursorTimer = SetTimer(hwnd, 1, 5000, NULL);
+		autoHideCursorTimer = SetTimer(hwnd, 1, 10000, NULL);
 
 		if (((message==WM_POINTERDOWN || message== WM_POINTERUPDATE)
 			&& ((wParam & (POINTER_MESSAGE_FLAG_INCONTACT | POINTER_MESSAGE_FLAG_FIRSTBUTTON))))
@@ -5519,6 +5531,9 @@ DOKEYDOWN:
 		userTouchesScreen = false;
 		return 0;
 
+	case WM_MOUSELEAVE:
+		mouseLeftClientArea = true;
+		return 0;
 #if 0
 	case WM_INITMENU: {
 		HMENU menu = (HMENU)wParam;
