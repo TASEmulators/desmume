@@ -92,6 +92,7 @@
 #include "winutil.h"
 #include "ogl.h"
 #include "ddraw.h"
+#include "ogl_display.h"
 
 //tools and dialogs
 #include "pathsettings.h"
@@ -342,6 +343,7 @@ Lock::Lock(CRITICAL_SECTION& cs) : m_cs(&cs) { EnterCriticalSection(m_cs); }
 Lock::~Lock() { LeaveCriticalSection(m_cs); }
 
 DDRAW ddraw;
+GLDISPLAY gldisplay;
 
 //===================== Input vars
 #define WM_CUSTKEYDOWN	(WM_USER+50)
@@ -1652,125 +1654,6 @@ static void DD_FillRect(LPDIRECTDRAWSURFACE7 surf, int left, int top, int right,
 	surf->Blt(&r,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT,&fx);
 }
 
-struct GLDISPLAY
-{
-	HGLRC privateContext;
-	HDC privateDC;
-	bool init;
-	bool active;
-	bool wantVsync, haveVsync;
-
-	GLDISPLAY()
-		: init(false)
-		, active(false)
-		, wantVsync(false)
-		, haveVsync(false)
-	{
-	}
-
-	bool initialize()
-	{
-		//do we need to use another HDC?
-		if(init) return true;
-		init = initContext(MainWindow->getHWnd(),&privateContext);
-		setvsync(!!(GetStyle()&DWS_VSYNC));
-		return init;
-	}
-
-	void kill()
-	{
-		if(!init) return;
-		wglDeleteContext(privateContext);
-		privateContext = NULL;
-		haveVsync = false;
-		init = false;
-	}
-
-	bool begin()
-	{
-		DWORD myThread = GetCurrentThreadId();
-
-		//always use another context for display logic
-		//1. if this is a single threaded process (3d rendering and display in the main thread) then alternating contexts is benign
-		//2. if this is a multi threaded process (3d rendernig and display in other threads) then the display needs some context
-
-		if(!init)
-		{
-			if(!initialize()) return false;
-		}
-
-		privateDC = GetDC(MainWindow->getHWnd());
-		wglMakeCurrent(privateDC,privateContext);
-
-		//go ahead and sync the vsync setting while we have the context
-		if (wantVsync != haveVsync)
-			_setvsync();
-
-		return active = true;
-	}
-
-	void end()
-	{
-		wglMakeCurrent(NULL,privateContext);
-		ReleaseDC(MainWindow->getHWnd(),privateDC);
-		privateDC = NULL;
-		active = false;
-	}
-
-
-
-	//http://stackoverflow.com/questions/589064/how-to-enable-vertical-sync-in-opengl
-	bool WGLExtensionSupported(const char *extension_name)
-	{
-		// this is pointer to function which returns pointer to string with list of all wgl extensions
-		PFNWGLGETEXTENSIONSSTRINGEXTPROC _wglGetExtensionsStringEXT = NULL;
-
-		// determine pointer to wglGetExtensionsStringEXT function
-		_wglGetExtensionsStringEXT = (PFNWGLGETEXTENSIONSSTRINGEXTPROC)wglGetProcAddress("wglGetExtensionsStringEXT");
-
-		if (strstr(_wglGetExtensionsStringEXT(), extension_name) == NULL)
-		{
-			// string was not found
-			return false;
-		}
-
-		// extension is supported
-		return true;
-	}
-
-	void setvsync(bool vsync)
-	{
-		wantVsync = vsync;
-	}
-
-	void _setvsync()
-	{
-		//even if it doesn't work, we'll track it
-		haveVsync = wantVsync;
-
-		if (!WGLExtensionSupported("WGL_EXT_swap_control")) return;
-
-		//http://stackoverflow.com/questions/589064/how-to-enable-vertical-sync-in-opengl
-		PFNWGLSWAPINTERVALEXTPROC       wglSwapIntervalEXT = NULL;
-		PFNWGLGETSWAPINTERVALEXTPROC    wglGetSwapIntervalEXT = NULL;
-		{
-			// Extension is supported, init pointers.
-			wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
-
-			// this is another function from WGL_EXT_swap_control extension
-			wglGetSwapIntervalEXT = (PFNWGLGETSWAPINTERVALEXTPROC)wglGetProcAddress("wglGetSwapIntervalEXT");
-		}
-
-		wglSwapIntervalEXT(wantVsync ? 1 : 0);
-	}
-
-	void showPage()
-	{
-		SwapBuffers(privateDC);
-	}
-} gldisplay;
-
-
 static void OGL_DrawTexture(RECT* srcRects, RECT* dstRects)
 {
 	//don't change the original rects
@@ -1844,7 +1727,7 @@ static void OGL_DrawTexture(RECT* srcRects, RECT* dstRects)
 }
 static void OGL_DoDisplay()
 {
-	if(!gldisplay.begin()) return;
+	if(!gldisplay.begin(MainWindow->getHWnd())) return;
 
 	//the ds screen fills the texture entirely, so we dont have garbage at edge to worry about,
 	//but we need to make sure this is clamped for when filtering is selected

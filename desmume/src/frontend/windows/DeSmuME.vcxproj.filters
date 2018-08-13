@@ -924,6 +924,9 @@
     <ClCompile Include="ddraw.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="ogl_display.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\utils\guid.h">
@@ -1614,6 +1617,9 @@
       <Filter>utils\colorspacehandler</Filter>
     </ClInclude>
     <ClInclude Include="ddraw.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="ogl_display.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
   </ItemGroup>

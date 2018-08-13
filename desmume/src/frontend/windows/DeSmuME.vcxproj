@@ -372,6 +372,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mic-win.cpp" />
     <ClCompile Include="ogl.cpp" />
+    <ClCompile Include="ogl_display.cpp" />
     <ClCompile Include="OpenArchive.cpp" />
     <ClCompile Include="pathsettings.cpp" />
     <ClCompile Include="recentroms.cpp" />
@@ -659,6 +660,7 @@
     <ClInclude Include="importSave.h" />
     <ClInclude Include="inputdx.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="ogl_display.h" />
     <ClInclude Include="OpenArchive.h" />
     <ClInclude Include="pathsettings.h" />
     <ClInclude Include="recentroms.h" />
