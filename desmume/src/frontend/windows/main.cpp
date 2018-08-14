@@ -5232,6 +5232,8 @@ DOKEYDOWN:
 		if(wParam != VK_PAUSE)
 			break;
 	case WM_SYSKEYUP:
+		if (wParam == VK_MENU && GetMenu(hwnd) == NULL)
+			return 0;
 	case WM_CUSTKEYUP:
 		{
 			int modifiers = GetModifiers(wParam);
