@@ -116,31 +116,37 @@ static NSDictionary *hidUsageTable = nil;
     CFRelease(elementArray);
 	
 	// Set up force feedback.
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_5
-	ioService = IOHIDDeviceGetService(hidDeviceRef);
-	if (ioService != MACH_PORT_NULL)
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5
+	if (IsOSXVersionSupported(10, 6, 0))
 	{
-		IOObjectRetain(ioService);
-	}
-#else
-	ioService = MACH_PORT_NULL;
-	
-	CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOHIDDeviceKey);
-	if (matchingDict)
-	{
-		CFStringRef locationKey = CFSTR(kIOHIDLocationIDKey);
-		CFTypeRef deviceLocation = IOHIDDeviceGetProperty(hidDeviceRef, locationKey);
-		if (deviceLocation != NULL)
+		ioService = IOHIDDeviceGetService(hidDeviceRef);
+		if (ioService != MACH_PORT_NULL)
 		{
-			CFDictionaryAddValue(matchingDict, locationKey, deviceLocation);
-			
-			//This eats a reference to matchingDict, so we don't need a separate release.
-			//The result, meanwhile, has a reference count of 1 and must be released by the caller.
-			ioService = IOServiceGetMatchingService(kIOMasterPortDefault, matchingDict);
+			IOObjectRetain(ioService);
 		}
-		else
+	}
+	else
+#else
+	{
+		ioService = MACH_PORT_NULL;
+		
+		CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOHIDDeviceKey);
+		if (matchingDict)
 		{
-			CFRelease(matchingDict);
+			CFStringRef locationKey = CFSTR(kIOHIDLocationIDKey);
+			CFTypeRef deviceLocation = IOHIDDeviceGetProperty(hidDeviceRef, locationKey);
+			if (deviceLocation != NULL)
+			{
+				CFDictionaryAddValue(matchingDict, locationKey, deviceLocation);
+				
+				//This eats a reference to matchingDict, so we don't need a separate release.
+				//The result, meanwhile, has a reference count of 1 and must be released by the caller.
+				ioService = IOServiceGetMatchingService(kIOMasterPortDefault, matchingDict);
+			}
+			else
+			{
+				CFRelease(matchingDict);
+			}
 		}
 	}
 #endif
@@ -865,7 +871,6 @@ void HandleQueueValueAvailableCallback(void *inContext, IOReturn inResult, void 
 	CFRelease(cfGenericControllerMatcher);
 	
 	spinlockRunLoop = OS_SPINLOCK_INIT;
-	[self setRunLoop:[NSRunLoop currentRunLoop]];
 	
 	IOReturn result = IOHIDManagerOpen(hidManagerRef, kIOHIDOptionsTypeNone);
 	if (result != kIOReturnSuccess)

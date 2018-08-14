@@ -2238,6 +2238,7 @@
 	
 	[inputManager setMappingsWithMappings:userMappings];
 	[[inputManager hidManager] setDeviceListController:inputDeviceListController];
+	[[inputManager hidManager] setRunLoop:[NSRunLoop currentRunLoop]];
 	
 	// Set the microphone settings per user preferences.
 	[[cdsCore cdsController] setHardwareMicMute:[[NSUserDefaults standardUserDefaults] boolForKey:@"Microphone_HardwareMicMute"]];
