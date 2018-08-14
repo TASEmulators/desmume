@@ -1297,8 +1297,7 @@ public:
 		if (!isDisplayLinkStillActive)
 		{
 			CVDisplayLinkRef newDisplayLink;
-			CVDisplayLinkCreateWithActiveCGDisplays(&newDisplayLink);
-			CVDisplayLinkSetCurrentCGDisplay(newDisplayLink, displayID);
+			CVDisplayLinkCreateWithCGDisplay(displayID, &newDisplayLink);
 			CVDisplayLinkSetOutputCallback(newDisplayLink, &MacDisplayLinkCallback, self);
 			
 			_displayLinksActiveList[displayID] = newDisplayLink;
