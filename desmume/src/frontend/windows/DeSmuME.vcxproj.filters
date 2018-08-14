@@ -927,6 +927,9 @@
     <ClCompile Include="ogl_display.cpp">
       <Filter>frontend\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="display.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\utils\guid.h">
@@ -1620,6 +1623,9 @@
       <Filter>frontend\Windows</Filter>
     </ClInclude>
     <ClInclude Include="ogl_display.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="display.h">
       <Filter>frontend\Windows</Filter>
     </ClInclude>
   </ItemGroup>

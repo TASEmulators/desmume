@@ -15,6 +15,9 @@ You should have received a copy of the GNU General Public License
 along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _VIDEO_H_
+#define _VIDEO_H_
+
 #include "filter/filter.h"
 #include "common.h"
 
@@ -349,3 +352,5 @@ public:
 		return screengap * height / 384;
 	}
 };
+
+#endif
