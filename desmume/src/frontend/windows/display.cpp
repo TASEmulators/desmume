@@ -693,6 +693,8 @@ void DoDisplay()
 	ColorspaceApplyIntensityToBuffer32<false, false>(video.buffer, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Main]);
 	ColorspaceApplyIntensityToBuffer32<false, false>(video.buffer + pixCount, pixCount, displayInfo.backlightIntensity[NDSDisplayID_Touch]);
 
+	// Lua draws to the HUD buffer, so clear it here instead of right before redrawing the HUD.
+	aggDraw.hud->clear();
 	if (AnyLuaActive())
 	{
 		if (sthread_isself(display_thread))
@@ -707,7 +709,6 @@ void DoDisplay()
 	}
 
 	// draw hud
-	aggDraw.hud->clear();
 	DoDisplay_DrawHud();
 	if (displayMethod == DISPMETHOD_DDRAW_HW || displayMethod == DISPMETHOD_DDRAW_SW)
 	{
