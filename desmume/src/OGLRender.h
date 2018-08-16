@@ -535,9 +535,10 @@ struct OGLRenderRef
 	// Client-side Buffers
 	GLfloat *color4fBuffer;
 	GLushort *vertIndexBuffer;
-	CACHE_ALIGN GLuint workingCIDepthStencilBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
-	CACHE_ALIGN GLuint workingCIFogAttributesBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
-	CACHE_ALIGN GLuint workingCIPolyIDBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
+	CACHE_ALIGN GLushort workingCIColorBuffer[GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
+	CACHE_ALIGN GLuint workingCIDepthStencilBuffer[2][GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
+	CACHE_ALIGN GLuint workingCIFogAttributesBuffer[2][GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
+	CACHE_ALIGN GLuint workingCIPolyIDBuffer[2][GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT];
 	
 	// Vertex Attributes Pointers
 	GLvoid *vtxPtrPosition;
@@ -662,6 +663,7 @@ protected:
 	OGLTextureUnitID _lastTextureDrawTarget;
 	
 	bool _enableMultisampledRendering;
+	size_t _clearImageIndex;
 	
 	Render3DError FlushFramebuffer(const FragmentColor *__restrict srcFramebuffer, FragmentColor *__restrict dstFramebufferMain, u16 *__restrict dstFramebuffer16);
 	OpenGLTexture* GetLoadedTextureFromPolygon(const POLY &thePoly, bool enableTexturing);
