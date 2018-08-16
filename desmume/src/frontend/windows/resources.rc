@@ -1637,7 +1637,7 @@ BEGIN
         END
         POPUP "Fullscreen Options"
         BEGIN
-            MENUITEM "Non-exclusive Mode",          IDM_FS_WINDOW
+            MENUITEM "Force Windowed Fullscreen",   IDM_FS_WINDOW
             MENUITEM "Show Menu",                   IDM_FS_MENU
             MENUITEM "Auto-Hide Cursor",            IDM_FS_HIDE_CURSOR
         END
