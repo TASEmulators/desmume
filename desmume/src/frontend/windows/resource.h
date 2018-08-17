@@ -967,6 +967,9 @@
 #define IDC_SCR_RATIO_1p4               40147
 #define IDC_SCR_RATIO_1p5               40148
 #define IDC_SCR_VCENTER                 40149
+#define IDM_FS_MENU                     40150
+#define IDM_FS_WINDOW                   40151
+#define IDM_FS_HIDE_CURSOR              40152
 #define ID_LABEL_HK3b                   44670
 #define ID_LABEL_HK3c                   44671
 #define ID_LABEL_HK3d                   44672
@@ -1081,7 +1084,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        128
-#define _APS_NEXT_COMMAND_VALUE         40150
+#define _APS_NEXT_COMMAND_VALUE         40153
 #define _APS_NEXT_CONTROL_VALUE         1066
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
