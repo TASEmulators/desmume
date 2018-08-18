@@ -1248,7 +1248,6 @@ static struct MainLoopData
 	int toolframecount;
 } mainLoopData = {0};
 
-
 static void StepRunLoop_Core()
 {
 	input_acquire();
@@ -1300,9 +1299,12 @@ static void StepRunLoop_User()
 	Hud.fps = mainLoopData.fps;
 	Hud.fps3d = GPU->GetFPSRender3D();
 
-	// wait for the HUD to update from last frame
-	if(frameskiprate==0) WaitForSingleObject(display_done_event, display_done_timeout);
-	Display();
+	if (mainLoopData.framesskipped == 0)
+	{
+		WaitForSingleObject(display_done_event, display_done_timeout);
+		Display();
+	}
+	ResetEvent(display_done_event);
 
 	mainLoopData.fps3d = Hud.fps3d;
 
