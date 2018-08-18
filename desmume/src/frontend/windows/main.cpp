@@ -856,8 +856,6 @@ void ToDSScreenRelativeCoords(s32& x, s32& y, int whichScreen)
 	}
 }
 
-// END Rotation definitions
-
 //-----window style handling----
 const u32 DWS_NORMAL = 0;
 const u32 DWS_ALWAYSONTOP = 1;
