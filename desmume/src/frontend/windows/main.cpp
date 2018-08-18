@@ -5106,6 +5106,7 @@ DOKEYDOWN:
 			{
 				Lock lock (win_backbuffer_sync);
 				displayMethod = DISPMETHOD_DDRAW_HW;
+				ddraw.systemMemory = false;
 				WritePrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
 				ddraw.createSurfaces(hwnd);
 			}
@@ -5115,6 +5116,7 @@ DOKEYDOWN:
 			{
 				Lock lock (win_backbuffer_sync);
 				displayMethod = DISPMETHOD_DDRAW_SW;
+				ddraw.systemMemory = true;
 				WritePrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_SW, IniName);
 				ddraw.createSurfaces(hwnd);
 			}
@@ -6723,5 +6725,4 @@ void SetStyle(u32 dws)
 	gldisplay.filter = GetStyle()&DWS_FILTER;
 	gldisplay.setvsync(!!(GetStyle()&DWS_VSYNC));
 	ddraw.vSync = GetStyle()&DWS_VSYNC;
-	ddraw.systemMemory = GetStyle()&DWS_DDRAW_SW;
 }
