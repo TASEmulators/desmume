@@ -864,11 +864,6 @@ const u32 DWS_ALWAYSONTOP = 1;
 const u32 DWS_LOCKDOWN = 2;
 const u32 DWS_FULLSCREEN = 4;
 const u32 DWS_VSYNC = 8;
-const u32 DWS_DDRAW_SW = 16;
-const u32 DWS_DDRAW_HW = 32;
-const u32 DWS_OPENGL = 64;
-const u32 DWS_DISPMETHODS =  (DWS_DDRAW_SW|DWS_DDRAW_HW|DWS_OPENGL);
-const u32 DWS_FILTER = 128;
 const u32 DWS_FS_MENU = 256;
 const u32 DWS_FS_WINDOW = 512;
 
@@ -1961,8 +1956,7 @@ int _main()
 	if(GetPrivateProfileBool("Display", "Show Menu In Fullscreen Mode", false, IniName)) style |= DWS_FS_MENU;
 	if (GetPrivateProfileBool("Display", "Non-exclusive Fullscreen Mode", false, IniName)) style |= DWS_FS_WINDOW;
 	
-	if(GetPrivateProfileBool("Video","Display Method Filter", false, IniName))
-		style |= DWS_FILTER;
+	gldisplay.filter = GetPrivateProfileBool("Video","Display Method Filter", false, IniName);
 	if(GetPrivateProfileBool("Video","VSync", false, IniName))
 		style |= DWS_VSYNC;
 	displayMethod = GetPrivateProfileInt("Video","Display Method", DISPMETHOD_DDRAW_HW, IniName);
@@ -3735,7 +3729,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWHW, displayMethod == DISPMETHOD_DDRAW_HW);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWSW, displayMethod == DISPMETHOD_DDRAW_SW);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_OPENGL, displayMethod == DISPMETHOD_OPENGL);
-			MainWindow->checkMenu(ID_DISPLAYMETHOD_FILTER, (GetStyle()&DWS_FILTER)!=0);
+			MainWindow->checkMenu(ID_DISPLAYMETHOD_FILTER, gldisplay.filter);
 
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
 			MainWindow->checkMenu(IDC_BACKGROUNDINPUT, allowBackgroundInput);
@@ -5133,8 +5127,8 @@ DOKEYDOWN:
 		case ID_DISPLAYMETHOD_FILTER:
 			{
 				Lock lock (win_backbuffer_sync);
-				SetStyle((GetStyle()^DWS_FILTER));
-				WritePrivateProfileInt("Video","Display Method Filter", (GetStyle()&DWS_FILTER)?1:0, IniName);
+				gldisplay.filter = !gldisplay.filter;
+				WritePrivateProfileInt("Video","Display Method Filter", gldisplay.filter?1:0, IniName);
 			}
 			break;
 
@@ -6722,7 +6716,6 @@ void SetStyle(u32 dws)
 		insertAfter = HWND_TOPMOST;
 	SetWindowPos(MainWindow->getHWnd(), insertAfter, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 
-	gldisplay.filter = GetStyle()&DWS_FILTER;
 	gldisplay.setvsync(!!(GetStyle()&DWS_VSYNC));
 	ddraw.vSync = GetStyle()&DWS_VSYNC;
 }
