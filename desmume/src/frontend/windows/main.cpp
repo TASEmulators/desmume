@@ -3732,9 +3732,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_RENDER_5XBRZ, video.currentfilter == video._5XBRZ );
 
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_VSYNC, (GetStyle()&DWS_VSYNC)!=0);
-			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWHW, (GetStyle()&DWS_DDRAW_HW)!=0);
-			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWSW, (GetStyle()&DWS_DDRAW_SW)!=0);
-			MainWindow->checkMenu(ID_DISPLAYMETHOD_OPENGL, (GetStyle()&DWS_OPENGL)!=0);
+			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWHW, displayMethod == DISPMETHOD_DDRAW_HW);
+			MainWindow->checkMenu(ID_DISPLAYMETHOD_DIRECTDRAWSW, displayMethod == DISPMETHOD_DDRAW_SW);
+			MainWindow->checkMenu(ID_DISPLAYMETHOD_OPENGL, displayMethod == DISPMETHOD_OPENGL);
 			MainWindow->checkMenu(ID_DISPLAYMETHOD_FILTER, (GetStyle()&DWS_FILTER)!=0);
 
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
