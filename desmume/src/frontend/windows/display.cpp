@@ -457,13 +457,11 @@ static void OGL_DoDisplay()
 }
 static void DD_DoDisplay()
 {
+	if (ddraw.surfDescBack.dwWidth != video.rotatedwidth() || ddraw.surfDescBack.dwHeight != video.rotatedheight())
+		ddraw.createBackSurface(video.rotatedwidth(), video.rotatedheight());
+
 	if (!ddraw.lock()) return;
 	char* buffer = (char*)ddraw.surfDescBack.lpSurface;
-
-	if (ddraw.surfDescBack.dwWidth != video.rotatedwidth() || ddraw.surfDescBack.dwHeight != video.rotatedheight())
-	{
-		ddraw.createBackSurface(video.rotatedwidth(), video.rotatedheight());
-	}
 
 	switch (ddraw.surfDescBack.ddpfPixelFormat.dwRGBBitCount)
 	{
