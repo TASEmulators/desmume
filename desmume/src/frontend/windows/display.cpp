@@ -742,6 +742,8 @@ void UpdateWndRects(HWND hwnd, RECT* newClientRect)
 	POINT ptClient;
 	RECT rc;
 
+	GapRect = {0,0,0,0};
+
 	bool maximized = IsZoomed(hwnd) != FALSE;
 
 	int wndWidth, wndHeight;
