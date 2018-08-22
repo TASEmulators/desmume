@@ -1060,10 +1060,17 @@ static void* RunCoreThread(void *arg)
 	double frameTime = 0.0; // The amount of time that is expected for the frame to run.
 	
 	const double standardNDSFrameTime = execControl->CalculateFrameAbsoluteTime(1.0);
+	double lastSelectedExecSpeedSelected = 1.0;
 	double executionSpeedAverage = 0.0;
 	double executionSpeedAverageFramesCollected = 0.0;
+	double executionWaitBias = 1.0;
+	double lastExecutionWaitBias = 1.0;
+	double lastExecutionSpeedDifference = 0.0;
+	bool needRestoreExecutionWaitBias = false;
+	bool lastExecutionSpeedLimitEnable = execControl->GetEnableSpeedLimiter();
 	
 	ExecutionBehavior behavior = ExecutionBehavior_Pause;
+	ExecutionBehavior lastBehavior = ExecutionBehavior_Pause;
 	uint64_t frameJumpTarget = 0;
 	
 	[[[cdsCore cdsGPU] sharedData] semaphoreFramebufferCreate];
@@ -1083,6 +1090,21 @@ static void* RunCoreThread(void *arg)
 			startTime = execControl->GetCurrentAbsoluteTime();
 			execControl->ApplySettingsOnExecutionLoopStart();
 			behavior = execControl->GetExecutionBehaviorApplied();
+		}
+		
+		if ( (lastBehavior == ExecutionBehavior_Run) && (behavior != ExecutionBehavior_Run) )
+		{
+			lastExecutionWaitBias = executionWaitBias;
+			needRestoreExecutionWaitBias = true;
+		}
+		
+		if ( (behavior == ExecutionBehavior_Run) && lastExecutionSpeedLimitEnable && !execControl->GetEnableSpeedLimiter() )
+		{
+			lastExecutionWaitBias = executionWaitBias;
+		}
+		else if ( (behavior == ExecutionBehavior_Run) && !lastExecutionSpeedLimitEnable && execControl->GetEnableSpeedLimiter() )
+		{
+			needRestoreExecutionWaitBias = true;
 		}
 		
 		frameTime = execControl->GetFrameTime();
@@ -1144,7 +1166,39 @@ static void* RunCoreThread(void *arg)
 			{
 				if (executionSpeedAverageFramesCollected > 0.0001)
 				{
-					execControl->SetFrameInfoExecutionSpeed((executionSpeedAverage / executionSpeedAverageFramesCollected) * 100.0);
+					const double execSpeedSelected = execControl->GetExecutionSpeedApplied();
+					const double execSpeedCurrent = (executionSpeedAverage / executionSpeedAverageFramesCollected);
+					const double execSpeedDifference = execSpeedSelected - execSpeedCurrent;
+					
+					execControl->SetFrameInfoExecutionSpeed(execSpeedCurrent * 100.0);
+					
+					if ( (behavior == ExecutionBehavior_Run) && needRestoreExecutionWaitBias )
+					{
+						executionWaitBias = lastExecutionWaitBias;
+						needRestoreExecutionWaitBias = false;
+					}
+					else
+					{
+						if (lastSelectedExecSpeedSelected == execSpeedSelected)
+						{
+							executionWaitBias -= execSpeedDifference;
+							lastExecutionSpeedDifference = execSpeedDifference;
+							
+							if (executionWaitBias < EXECUTION_WAIT_BIAS_MIN)
+							{
+								executionWaitBias = EXECUTION_WAIT_BIAS_MIN;
+							}
+							else if (executionWaitBias > EXECUTION_WAIT_BIAS_MAX)
+							{
+								executionWaitBias = EXECUTION_WAIT_BIAS_MAX;
+							}
+						}
+						else
+						{
+							executionWaitBias = 1.0;
+							lastSelectedExecSpeedSelected = execSpeedSelected;
+						}
+					}
 				}
 				
 				executionSpeedAverage = 0.0;
@@ -1200,7 +1254,8 @@ static void* RunCoreThread(void *arg)
 					}
 					else
 					{
-						execControl->SetFramesToSkip( execControl->CalculateFrameSkip(startTime, frameTime) );
+						const double frameTimeBias = (lastExecutionSpeedDifference > 0.0) ? 1.0 - lastExecutionSpeedDifference : 1.0;
+						execControl->SetFramesToSkip( execControl->CalculateFrameSkip(startTime, frameTime * frameTimeBias) );
 					}
 				}
 				break;
@@ -1249,9 +1304,14 @@ static void* RunCoreThread(void *arg)
 		else
 		{
 			// If there is any time left in the loop, go ahead and pad it.
-			if ( (execControl->GetCurrentAbsoluteTime() - startTime) < frameTime )
+			const double biasedFrameTime = frameTime * executionWaitBias;
+			
+			if (biasedFrameTime > 0.0)
 			{
-				execControl->WaitUntilAbsoluteTime(startTime + frameTime);
+				if ( (execControl->GetCurrentAbsoluteTime() - startTime) < frameTime )
+				{
+					execControl->WaitUntilAbsoluteTime(startTime + biasedFrameTime);
+				}
 			}
 		}
 		
@@ -1259,6 +1319,8 @@ static void* RunCoreThread(void *arg)
 		const double currentExecutionSpeed = standardNDSFrameTime / (endTime - startTime);
 		executionSpeedAverage += currentExecutionSpeed;
 		executionSpeedAverageFramesCollected += 1.0;
+		lastBehavior = behavior;
+		lastExecutionSpeedLimitEnable = execControl->GetEnableSpeedLimiterApplied();
 		
 	} while(true);
 	

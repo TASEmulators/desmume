@@ -55,6 +55,9 @@ ClientExecutionControl::ClientExecutionControl()
 	
 	_frameTime = 0.0;
 	_framesToSkip = 0;
+	_lastSetFrameSkip = 0.0;
+	_unskipStep = 0;
+	_dynamicBiasStep = 0;
 	_prevExecBehavior = ExecutionBehavior_Pause;
 	
 	_isGdbStubStarted = false;
@@ -643,6 +646,11 @@ bool ClientExecutionControl::GetEnableSpeedLimiter()
 	return enable;
 }
 
+bool ClientExecutionControl::GetEnableSpeedLimiterApplied()
+{
+	return this->_settingsApplied.enableExecutionSpeedLimiter;
+}
+
 void ClientExecutionControl::SetEnableSpeedLimiter(bool enable)
 {
 	pthread_mutex_lock(&this->_mutexSettingsPendingOnExecutionLoopStart);
@@ -659,6 +667,11 @@ double ClientExecutionControl::GetExecutionSpeed()
 	pthread_mutex_unlock(&this->_mutexSettingsPendingOnExecutionLoopStart);
 	
 	return speedScalar;
+}
+
+double ClientExecutionControl::GetExecutionSpeedApplied()
+{
+	return this->_settingsApplied.executionSpeed;
 }
 
 void ClientExecutionControl::SetExecutionSpeed(double speedScalar)
@@ -1242,68 +1255,70 @@ double ClientExecutionControl::GetFrameTime()
 
 uint8_t ClientExecutionControl::CalculateFrameSkip(double startAbsoluteTime, double frameAbsoluteTime)
 {
-	static const double skipCurve[10]	= {0.60, 0.58, 0.55, 0.51, 0.46, 0.40, 0.30, 0.20, 0.10, 0.00};
-	static const double unskipCurve[10]	= {0.75, 0.70, 0.65, 0.60, 0.50, 0.40, 0.30, 0.20, 0.10, 0.00};
-	static size_t skipStep = 0;
-	static size_t unskipStep = 0;
-	static uint64_t lastSetFrameSkip = 0;
+	static const double unskipCurve[21]	= {0.98, 0.95, 0.91, 0.86, 0.80, 0.73, 0.65, 0.56, 0.46, 0.35, 0.23, 0.20, 0.17, 0.14, 0.11, 0.08, 0.06, 0.04, 0.02, 0.01, 0.00};
+	static const double dynamicBiasCurve[15] = {0.0, 0.2, 0.6, 1.2, 2.0, 3.0, 4.2, 5.6, 7.2, 9.0, 11.0, 13.2, 15.6, 18.2, 20.0};
 	
 	// Calculate the time remaining.
 	const double elapsed = this->GetCurrentAbsoluteTime() - startAbsoluteTime;
-	uint64_t framesToSkip = 0;
+	uint64_t framesToSkipInt = 0;
 	
 	if (elapsed > frameAbsoluteTime)
 	{
 		if (frameAbsoluteTime > 0)
 		{
-			framesToSkip = (uint64_t)( (((elapsed - frameAbsoluteTime) * FRAME_SKIP_AGGRESSIVENESS) / frameAbsoluteTime) + FRAME_SKIP_BIAS );
+			const double framesToSkipReal = ((elapsed * FRAME_SKIP_AGGRESSIVENESS) / frameAbsoluteTime) + dynamicBiasCurve[this->_dynamicBiasStep] + FRAME_SKIP_BIAS;
+			framesToSkipInt = (uint64_t)(framesToSkipReal + 0.5);
 			
-			if (framesToSkip > lastSetFrameSkip)
+			const double frameSkipDiff = framesToSkipReal - this->_lastSetFrameSkip;
+			if (this->_unskipStep > 0)
 			{
-				framesToSkip -= (uint64_t)((double)(framesToSkip - lastSetFrameSkip) * skipCurve[skipStep]);
-				if (skipStep < 9)
+				if (this->_dynamicBiasStep > 0)
 				{
-					skipStep++;
+					this->_dynamicBiasStep--;
 				}
 			}
-			else
+			else if (frameSkipDiff > 0.0)
 			{
-				framesToSkip += (uint64_t)((double)(lastSetFrameSkip - framesToSkip) * skipCurve[skipStep]);
-				if (skipStep > 0)
+				if (this->_dynamicBiasStep < 14)
 				{
-					skipStep--;
+					this->_dynamicBiasStep++;
 				}
 			}
+			
+			this->_unskipStep = 0;
+			this->_lastSetFrameSkip = framesToSkipReal;
 		}
 		else
 		{
 			static const double frameRate100x = (double)FRAME_SKIP_AGGRESSIVENESS / CalculateFrameAbsoluteTime(1.0/100.0);
-			framesToSkip = (uint64_t)(elapsed * frameRate100x);
+			framesToSkipInt = (uint64_t)(elapsed * frameRate100x);
 		}
-		
-		unskipStep = 0;
 	}
 	else
 	{
-		framesToSkip = (uint64_t)((double)lastSetFrameSkip * unskipCurve[unskipStep]);
-		if (unskipStep < 9)
+		const double framesToSkipReal = this->_lastSetFrameSkip * unskipCurve[this->_unskipStep];
+		framesToSkipInt = (uint64_t)(framesToSkipReal + 0.5);
+		
+		if (this->_unskipStep < 20)
 		{
-			unskipStep++;
+			this->_unskipStep++;
 		}
 		
-		skipStep = 0;
+		if (framesToSkipInt == 0)
+		{
+			this->_lastSetFrameSkip = 0.0;
+			this->_unskipStep = 20;
+		}
 	}
 	
 	// Bound the frame skip.
 	static const uint64_t kMaxFrameSkip = (uint64_t)MAX_FRAME_SKIP;
-	if (framesToSkip > kMaxFrameSkip)
+	if (framesToSkipInt > kMaxFrameSkip)
 	{
-		framesToSkip = kMaxFrameSkip;
+		framesToSkipInt = kMaxFrameSkip;
 	}
 	
-	lastSetFrameSkip = framesToSkip;
-	
-	return (uint8_t)framesToSkip;
+	return (uint8_t)framesToSkipInt;
 }
 
 double ClientExecutionControl::GetCurrentAbsoluteTime()
