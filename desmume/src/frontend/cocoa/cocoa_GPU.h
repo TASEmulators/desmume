@@ -23,6 +23,7 @@
 #include <mach/semaphore.h>
 #include <mach/sync_policy.h>
 #include <map>
+#include <vector>
 
 #import "cocoa_util.h"
 #include "../../GPU.h"
@@ -57,6 +58,7 @@ enum ClientDisplayBufferState
 };
 
 class GPUEventHandlerOSX;
+class ClientDisplay3DView;
 
 #ifdef ENABLE_SHARED_FETCH_OBJECT
 
@@ -102,7 +104,10 @@ typedef std::map<CGDirectDisplayID, int64_t> DisplayLinkFlushTimeLimitMap;
 - (void) incrementViewsUsingDirectToCPUFiltering;
 - (void) decrementViewsUsingDirectToCPUFiltering;
 - (void) pushVideoDataToAllDisplayViews;
+
 - (void) flushAllDisplaysOnDisplayLink:(CVDisplayLinkRef)displayLink timeStamp:(const CVTimeStamp *)timeStamp;
+- (void) flushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList;
+- (void) finalizeFlushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList;
 
 - (void) displayLinkStartUsingID:(CGDirectDisplayID)displayID;
 - (void) displayLinkListUpdate;

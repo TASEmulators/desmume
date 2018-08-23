@@ -538,7 +538,7 @@ void MacOGLDisplayView::SetUseVerticalSync(const bool useVerticalSync)
 	CGLUnlockContext(context);
 }
 
-void MacOGLDisplayView::FlushView()
+void MacOGLDisplayView::FlushView(void *userData)
 {
 	OSSpinLockLock(&this->_spinlockViewNeedsFlush);
 	this->_viewNeedsFlush = false;
@@ -549,6 +549,15 @@ void MacOGLDisplayView::FlushView()
 	CGLLockContext(context);
 	CGLSetCurrentContext(context);
 	((MacOGLDisplayPresenter *)this->_presenter)->RenderFrameOGL(false);
+	CGLUnlockContext(context);
+}
+
+void MacOGLDisplayView::FinalizeFlush(void *userData)
+{
+	CGLContextObj context = ((MacOGLDisplayPresenter *)this->_presenter)->GetContext();
+	
+	CGLLockContext(context);
+	CGLSetCurrentContext(context);
 	CGLFlushDrawable(context);
 	CGLUnlockContext(context);
 }

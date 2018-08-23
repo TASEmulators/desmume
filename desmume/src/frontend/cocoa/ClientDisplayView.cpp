@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2018 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -1290,10 +1290,21 @@ void ClientDisplayViewInterface::SetAllowViewFlushes(bool allowFlushes)
 	this->_allowViewFlushes = allowFlushes;
 }
 
-void ClientDisplayViewInterface::FlushView()
+void ClientDisplayViewInterface::FlushView(void *userData)
 {
 	// Do nothing. This is implementation dependent.
 	this->_viewNeedsFlush = false;
+}
+
+void ClientDisplayViewInterface::FinalizeFlush(void *userData)
+{
+	// Do nothing. This is implementation dependent.
+}
+
+void ClientDisplayViewInterface::FlushAndFinalizeImmediate()
+{
+	this->FlushView(NULL);
+	this->FinalizeFlush(NULL);
 }
 
 // Touch screen input handling

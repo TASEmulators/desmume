@@ -133,7 +133,8 @@ public:
 	virtual void SetUseVerticalSync(const bool useVerticalSync);
 	
 	// Client view interface
-	virtual void FlushView();
+	virtual void FlushView(void *userData);
+	virtual void FinalizeFlush(void *userData);
 };
 
 #endif // _MAC_OGLDISPLAYOUTPUT_H_

@@ -150,7 +150,7 @@
 		idxBufferPtr[j+5] = k+0;
 	}
 	
-	id<MTLCommandBuffer> cb = [_fetchCommandQueue commandBufferWithUnretainedReferences];;
+	id<MTLCommandBuffer> cb = [_fetchCommandQueue commandBufferWithUnretainedReferences];
 	id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
 	
 	[bce copyFromBuffer:tempHUDIndexBuffer
@@ -383,8 +383,11 @@
 #ifdef MAC_OS_X_VERSION_10_13
 			if (_isSharedBufferTextureSupported)
 			{
-				_texDisplayFetchNative[NDSDisplayID_Main][i]  = [_bufDisplayFetchNative[NDSDisplayID_Main][i]  newTextureWithDescriptor:newTexDisplayNativeDesc offset:0 bytesPerRow:_nativeLineSize];
-				_texDisplayFetchNative[NDSDisplayID_Touch][i] = [_bufDisplayFetchNative[NDSDisplayID_Touch][i] newTextureWithDescriptor:newTexDisplayNativeDesc offset:0 bytesPerRow:_nativeLineSize];
+				if (@available(macOS 10_13, *))
+				{
+					_texDisplayFetchNative[NDSDisplayID_Main][i]  = [_bufDisplayFetchNative[NDSDisplayID_Main][i]  newTextureWithDescriptor:newTexDisplayNativeDesc offset:0 bytesPerRow:_nativeLineSize];
+					_texDisplayFetchNative[NDSDisplayID_Touch][i] = [_bufDisplayFetchNative[NDSDisplayID_Touch][i] newTextureWithDescriptor:newTexDisplayNativeDesc offset:0 bytesPerRow:_nativeLineSize];
+				}
 			}
 			else
 #endif
@@ -409,8 +412,11 @@
 #ifdef MAC_OS_X_VERSION_10_13
 			if (_isSharedBufferTextureSupported)
 			{
-				_texDisplayFetchCustom[NDSDisplayID_Main][i]  = [_bufDisplayFetchCustom[NDSDisplayID_Main][i]  newTextureWithDescriptor:newTexDisplayCustomDesc offset:0 bytesPerRow:_customLineSize];
-				_texDisplayFetchCustom[NDSDisplayID_Touch][i] = [_bufDisplayFetchCustom[NDSDisplayID_Touch][i] newTextureWithDescriptor:newTexDisplayCustomDesc offset:0 bytesPerRow:_customLineSize];
+				if (@available(macOS 10_13, *))
+				{
+					_texDisplayFetchCustom[NDSDisplayID_Main][i]  = [_bufDisplayFetchCustom[NDSDisplayID_Main][i]  newTextureWithDescriptor:newTexDisplayCustomDesc offset:0 bytesPerRow:_customLineSize];
+					_texDisplayFetchCustom[NDSDisplayID_Touch][i] = [_bufDisplayFetchCustom[NDSDisplayID_Touch][i] newTextureWithDescriptor:newTexDisplayCustomDesc offset:0 bytesPerRow:_customLineSize];
+				}
 			}
 			else
 #endif
@@ -729,6 +735,34 @@
 		   destinationLevel:0
 		  destinationOrigin:MTLOriginMake(0, 0, 0)];
 	}
+}
+
+- (void) flushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList
+{
+	const size_t listSize = cdvFlushList.size();
+	id<MTLCommandBuffer> cb = [commandQueue commandBufferWithUnretainedReferences];
+	
+	for (size_t i = 0; i < listSize; i++)
+	{
+		ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
+		cdv->FlushView(cb);
+	}
+	
+	[cb commit];
+}
+
+- (void) finalizeFlushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList
+{
+	const size_t listSize = cdvFlushList.size();
+	id<MTLCommandBuffer> cb = [commandQueue commandBufferWithUnretainedReferences];
+	
+	for (size_t i = 0; i < listSize; i++)
+	{
+		ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
+		cdv->FinalizeFlush(cb);
+	}
+	
+	[cb commit];
 }
 
 @end
@@ -2142,6 +2176,7 @@
 
 @synthesize _cdv;
 @synthesize presenterObject;
+@synthesize layerDrawable;
 
 - (id) initWithDisplayPresenterObject:(MacMetalDisplayPresenterObject *)thePresenterObject
 {
@@ -2153,6 +2188,7 @@
 	
 	_cdv = NULL;
 	_semDrawable = dispatch_semaphore_create(3);
+	layerDrawable = nil;
 	
 	presenterObject = thePresenterObject;
 	if (thePresenterObject != nil)
@@ -2168,6 +2204,7 @@
 
 - (void)dealloc
 {
+	[self setLayerDrawable:nil];
 	dispatch_release(_semDrawable);
 	
 	[super dealloc];
@@ -2182,52 +2219,69 @@
 	}
 }
 
-- (void) renderToDrawable
+- (void) renderToDrawableUsingCommandBuffer:(id<MTLCommandBuffer>)cb
 {
 	@autoreleasepool
 	{
 		// Now that everything is set up, go ahead and draw everything.
 		dispatch_semaphore_wait(_semDrawable, DISPATCH_TIME_FOREVER);
-		id<CAMetalDrawable> layerDrawable = [[self nextDrawable] retain];
+		id<CAMetalDrawable> drawable = [self nextDrawable];
 		
-		if (layerDrawable != nil)
+		if (drawable != nil)
 		{
-			[[presenterObject colorAttachment0Desc] setTexture:[layerDrawable texture]];
-			id<MTLCommandBuffer> cbRender = [presenterObject newCommandBuffer];
-			id<MTLCommandBuffer> cbPresent = [presenterObject newCommandBuffer];
+			[[presenterObject colorAttachment0Desc] setTexture:[drawable texture]];
 			
 			const MetalTexturePair texProcess = [presenterObject texPairProcess];
 			const MetalRenderFrameInfo mrfi = [presenterObject renderFrameInfo];
 			
-			[presenterObject renderForCommandBuffer:cbRender
+			[presenterObject renderForCommandBuffer:cb
 								outputPipelineState:[presenterObject outputDrawablePipeline]
 								   hudPipelineState:[[presenterObject sharedData] hudPipeline]
 										texDisplays:texProcess
 											   mrfi:mrfi
 											doYFlip:NO];
 			
-			[cbRender addScheduledHandler:^(id<MTLCommandBuffer> block) {
+			[cb addScheduledHandler:^(id<MTLCommandBuffer> block) {
 				[presenterObject setRenderBufferState:ClientDisplayBufferState_Reading index:mrfi.renderIndex];
 			}];
 			
-			[cbRender addCompletedHandler:^(id<MTLCommandBuffer> block) {
+			[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
 				[presenterObject renderFinishAtIndex:mrfi.renderIndex];
 			}];
 			
-			[cbPresent presentDrawable:layerDrawable];
-			[cbPresent addCompletedHandler:^(id<MTLCommandBuffer> block) {
-				[layerDrawable release];
-				dispatch_semaphore_signal(_semDrawable);
-			}];
-			
-			[cbRender commit];
-			[cbPresent commit];
+			[self setLayerDrawable:drawable];
 		}
 		else
 		{
 			dispatch_semaphore_signal(_semDrawable);
 		}
 	}
+}
+
+- (void) presentDrawableWithCommandBuffer:(id<MTLCommandBuffer>)cb
+{
+	id<CAMetalDrawable> drawable = [self layerDrawable];
+	if (drawable == nil)
+	{
+		return;
+	}
+	
+	[cb presentDrawable:drawable];
+	[cb addCompletedHandler:^(id<MTLCommandBuffer> block) {
+		[self setLayerDrawable:nil];
+		dispatch_semaphore_signal(_semDrawable);
+	}];
+}
+
+- (void) renderAndPresentDrawableImmediate
+{
+	id<MTLCommandBuffer> cb = [presenterObject newCommandBuffer];
+	_cdv->FlushView(cb);
+	[cb commit];
+	
+	cb = [presenterObject newCommandBuffer];
+	_cdv->FinalizeFlush(cb);
+	[cb commit];
 }
 
 @end
@@ -2575,13 +2629,23 @@ void MacMetalDisplayView::SetAllowViewFlushes(bool allowFlushes)
 	[sharedData displayLinkStartUsingID:displayID];
 }
 
-void MacMetalDisplayView::FlushView()
+void MacMetalDisplayView::FlushView(void *userData)
 {
 	OSSpinLockLock(&this->_spinlockViewNeedsFlush);
 	this->_viewNeedsFlush = false;
 	OSSpinLockUnlock(&this->_spinlockViewNeedsFlush);
 	
-	[(DisplayViewMetalLayer *)this->_caLayer renderToDrawable];
+	[(DisplayViewMetalLayer *)this->_caLayer renderToDrawableUsingCommandBuffer:(id<MTLCommandBuffer>)userData];
+}
+
+void MacMetalDisplayView::FinalizeFlush(void *userData)
+{
+	[(DisplayViewMetalLayer *)this->_caLayer presentDrawableWithCommandBuffer:(id<MTLCommandBuffer>)userData];
+}
+
+void MacMetalDisplayView::FlushAndFinalizeImmediate()
+{
+	[(DisplayViewMetalLayer *)this->_caLayer renderAndPresentDrawableImmediate];
 }
 
 #pragma mark -

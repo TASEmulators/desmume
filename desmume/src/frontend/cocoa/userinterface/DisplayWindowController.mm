@@ -2128,7 +2128,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 		// If localOGLContext isn't nil, then we will not assign the local layer
 		// directly to the view, since the OpenGL context will already be what
 		// is assigned.
-		cdv->FlushView();
+		cdv->FlushAndFinalizeImmediate();
 		return;
 	}
 	
@@ -2144,7 +2144,7 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 	
 	if (isMetalLayer)
 	{
-		cdv->FlushView();
+		cdv->FlushAndFinalizeImmediate();
 	}
 	else
 	{
@@ -2226,12 +2226,12 @@ static std::unordered_map<NSScreen *, DisplayWindowController *> _screenMap; // 
 
 - (void)updateLayer
 {
-	[self clientDisplayView]->FlushView();
+	[self clientDisplayView]->FlushAndFinalizeImmediate();
 }
 
 - (void)drawRect:(NSRect)dirtyRect
 {
-	[self clientDisplayView]->FlushView();
+	[self clientDisplayView]->FlushAndFinalizeImmediate();
 }
 
 - (void)setFrame:(NSRect)rect

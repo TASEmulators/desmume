@@ -24,16 +24,16 @@
 #include "../../rasterize.h"
 
 #ifdef MAC_OS_X_VERSION_10_7
-#include "../../OGLRender_3_2.h"
+	#include "../../OGLRender_3_2.h"
 #else
-#include "../../OGLRender.h"
+	#include "../../OGLRender.h"
 #endif
 
 #include <OpenGL/OpenGL.h>
 #import "userinterface/MacOGLDisplayView.h"
 
 #ifdef ENABLE_APPLE_METAL
-#import "userinterface/MacMetalDisplayView.h"
+	#import "userinterface/MacMetalDisplayView.h"
 #endif
 
 #ifdef BOOL
@@ -1219,6 +1219,8 @@ public:
 	CGDirectDisplayID displayID = CVDisplayLinkGetCurrentCGDisplay(displayLink);
 	bool didFlushOccur = false;
 	
+	std::vector<ClientDisplay3DView *> cdvFlushList;
+	
 	if (currentRWLock != NULL)
 	{
 		pthread_rwlock_rdlock(currentRWLock);
@@ -1234,11 +1236,19 @@ public:
 				
 				if (cdv->GetViewNeedsFlush())
 				{
-					cdv->FlushView();
-					didFlushOccur = true;
+					cdvFlushList.push_back(cdv);
 				}
 			}
 		}
+	}
+	
+	const size_t listSize = cdvFlushList.size();
+	
+	if (listSize > 0)
+	{
+		[self flushMultipleViews:cdvFlushList];
+		[self finalizeFlushMultipleViews:cdvFlushList];
+		didFlushOccur = true;
 	}
 	
 	if (currentRWLock != NULL)
@@ -1254,6 +1264,28 @@ public:
 	else if (timeStamp->videoTime > _displayLinkFlushTimeList[displayID])
 	{
 		CVDisplayLinkStop(displayLink);
+	}
+}
+
+- (void) flushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList
+{
+	const size_t listSize = cdvFlushList.size();
+	
+	for (size_t i = 0; i < listSize; i++)
+	{
+		ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
+		cdv->FlushView(NULL);
+	}
+}
+
+- (void) finalizeFlushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList
+{
+	const size_t listSize = cdvFlushList.size();
+	
+	for (size_t i = 0; i < listSize; i++)
+	{
+		ClientDisplay3DView *cdv = (ClientDisplay3DView *)cdvFlushList[i];
+		cdv->FinalizeFlush(NULL);
 	}
 }
 

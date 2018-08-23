@@ -168,6 +168,9 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 - (void) fetchNativeDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex blitCommandEncoder:(id<MTLBlitCommandEncoder>)bce;
 - (void) fetchCustomDisplayByID:(const NDSDisplayID)displayID bufferIndex:(const u8)bufferIndex blitCommandEncoder:(id<MTLBlitCommandEncoder>)bce;
 
+- (void) flushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList;;
+- (void) finalizeFlushMultipleViews:(const std::vector<ClientDisplay3DView *> &)cdvFlushList;
+
 @end
 
 @interface MacMetalDisplayPresenterObject : NSObject
@@ -261,13 +264,17 @@ typedef DisplayViewShaderProperties DisplayViewShaderProperties;
 	MacDisplayLayeredView *_cdv;
 	MacMetalDisplayPresenterObject *presenterObject;
 	dispatch_semaphore_t _semDrawable;
+	id<CAMetalDrawable> layerDrawable;
 }
 
 @property (readonly, nonatomic) MacMetalDisplayPresenterObject *presenterObject;
+@property (retain) id<CAMetalDrawable> layerDrawable;
 
 - (id) initWithDisplayPresenterObject:(MacMetalDisplayPresenterObject *)thePresenterObject;
 - (void) setupLayer;
-- (void) renderToDrawable;
+- (void) renderToDrawableUsingCommandBuffer:(id<MTLCommandBuffer>)cb;
+- (void) presentDrawableWithCommandBuffer:(id<MTLCommandBuffer>)cb;
+- (void) renderAndPresentDrawableImmediate;
 
 @end
 
@@ -360,7 +367,9 @@ public:
 	virtual void SetAllowViewFlushes(bool allowFlushes);
 	
 	// Client view interface
-	virtual void FlushView();
+	virtual void FlushView(void *userData);
+	virtual void FinalizeFlush(void *userData);
+	virtual void FlushAndFinalizeImmediate();
 };
 
 #pragma mark -

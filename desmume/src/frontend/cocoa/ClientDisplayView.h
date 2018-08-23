@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2017 DeSmuME team
+	Copyright (C) 2017-2018 DeSmuME team
  
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -355,7 +355,9 @@ public:
 	bool GetAllowViewFlushes() const;
 	virtual void SetAllowViewFlushes(bool allowFlushes);
 	
-	virtual void FlushView();
+	virtual void FlushView(void *userData);
+	virtual void FinalizeFlush(void *userData);
+	virtual void FlushAndFinalizeImmediate();
 	
 	// Touch screen input handling
 	void GetNDSPoint(const ClientDisplayPresenterProperties &props,
