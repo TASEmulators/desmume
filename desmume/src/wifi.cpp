@@ -1900,7 +1900,7 @@ void AdhocCommInterface::Trigger()
 		tv.tv_sec = 0;
 		tv.tv_usec = 0;
  
-		if (select(1, &fd, 0, 0, &tv))
+		if (select(thisSocket+1, &fd, NULL, NULL, &tv))
 		{
 			sockaddr_t fromAddr;
 			socklen_t fromLen = sizeof(sockaddr_t);
