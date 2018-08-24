@@ -670,6 +670,13 @@ INT_PTR CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 	return FALSE;
 }
 //==============================================================================
+void AttemptSaveAndClose(HWND dialog)
+{
+	if (cheats->save())
+		EndDialog(dialog, TRUE);
+	else
+		MessageBox(dialog, "Can't save cheats to file.\nCheck your path (Menu->Config->Path Settings->\"Cheats\")", "Error", MB_OK);
+}
 INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
@@ -823,12 +830,25 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 			switch (LOWORD(wparam))
 			{
 				case IDOK:
-					if (cheats->save())
-						EndDialog(dialog, TRUE);
-					else
-						MessageBox(dialog, "Can't save cheats to file.\nCheck your path (Menu->Config->Path Settings->\"Cheats\")","Error",MB_OK);
+					AttemptSaveAndClose(dialog);
 				return TRUE;
+
 				case IDCANCEL:
+				{
+					if (IsWindowEnabled(GetDlgItem(dialog, IDOK)))
+					{
+						int result = MessageBox(dialog, "Do you wish to save your changes?", "Save?", MB_YESNOCANCEL);
+						if (result == IDYES)
+							AttemptSaveAndClose(dialog);
+						else if (result == IDNO)
+							EndDialog(dialog, FALSE);
+					}
+					else
+						EndDialog(dialog, FALSE);
+				}
+				return TRUE;
+
+				case IDCLOSE:
 					EndDialog(dialog, FALSE);
 				return TRUE;
 
