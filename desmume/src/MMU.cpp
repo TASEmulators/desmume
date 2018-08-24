@@ -1820,7 +1820,13 @@ static void writereg_POWCNT1(const int size, const u32 adr, const u32 val)
 	if(wasGeomEnabled && !isGeomEnabled)
 	{
 		//kill the geometry data when the power goes off
+		//but save these tables, first. they shouldnt be cleared.
+		//so, so bad. we need to model this with hardware-like operations instead of c++ code
+		GFX3D_State prior = gfx3d.state;
 		reconstruct(&gfx3d.state);
+		memcpy(gfx3d.state.u16ToonTable, prior.u16ToonTable, sizeof(prior.u16ToonTable));
+		//dont think we should save this one: it's sent with 3d commands, not random bonus immediate register writes like the toon table
+		//memcpy(gfx3d.state.shininessTable, prior.shininessTable, sizeof(prior.shininessTable)); 
 	}
 }
 
