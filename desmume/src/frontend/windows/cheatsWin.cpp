@@ -700,7 +700,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 			lvColumn.cx=100;
 			lvColumn.pszText="Value";
 			ListView_InsertColumn(cheatListView, 2, &lvColumn);
-			lvColumn.cx=245;
+			lvColumn.cx=467;
 			lvColumn.pszText="Description";
 			ListView_InsertColumn(cheatListView, 3, &lvColumn);
 			lvColumn.fmt=LVCFMT_CENTER;
