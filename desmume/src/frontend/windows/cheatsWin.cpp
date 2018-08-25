@@ -806,8 +806,8 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 		case WM_NOTIFY:
 			if (wparam == IDC_LIST1)
 			{
-				LPNMHDR tmp_msg = (LPNMHDR)lparam;
-				switch (tmp_msg->code)
+				tagLVKEYDOWN* tmp_msg = (tagLVKEYDOWN*)lparam;
+				switch (tmp_msg->hdr.code)
 				{
 					case LVN_ITEMACTIVATE:
 						SendMessage(dialog, WM_COMMAND, IDC_BEDIT, 0);
@@ -875,6 +875,16 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 					{
 						draggedItem = ListView_GetSelectionMark(cheatListView);
 						SetCapture(dialog); // This sends all mouse messages to the dialog.
+					}
+					break;
+
+					case LVN_KEYDOWN:
+					{
+						if (tmp_msg->wVKey == 0x41) // A key
+						{
+							if (GetKeyState(VK_CONTROL) & 0x7000)
+								ListView_SetItemState(cheatListView, -1, LVNI_SELECTED, LVNI_SELECTED);
+						}
 					}
 					break;
 				}
