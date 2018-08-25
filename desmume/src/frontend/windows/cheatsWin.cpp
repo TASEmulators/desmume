@@ -58,6 +58,7 @@ static	u8		cheatXXtype = 0;
 static	u8		cheatXXaction = 0;
 static	s32		draggedItem = -1;
 static	s32		highlightedItem = -1;
+static	bool	multiCheck = false;
 
 static	HWND	searchWnd = NULL;
 static	HWND	searchListView = NULL;
@@ -851,6 +852,21 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 								}
 								EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
 							}
+						}
+
+						// check all other selected items too
+						if (!multiCheck)
+						{
+							multiCheck = true;
+							bool check = ListView_GetCheckState(cheatListView, cheatEditPos);
+							int index = ListView_GetNextItem(cheatListView, -1, LVNI_SELECTED);
+							while (index != -1)
+							{
+								if (index != cheatEditPos)
+									ListView_SetCheckState(cheatListView, index, check);
+								index = ListView_GetNextItem(cheatListView, index, LVNI_SELECTED);
+							}
+							multiCheck = false;
 						}
 					}
 					break;
