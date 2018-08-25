@@ -78,10 +78,13 @@ BOOL CHEATS::move(u32 srcPos, u32 dstPos)
 	if (srcPos >= list.size() || dstPos > list.size()) return false;
 	if (srcPos < 0 || dstPos < 0) return false;
 
+	// get the item to move
 	CHEATS_LIST srcCheat = list[srcPos];
-	list.insert(list._Make_iterator_offset(dstPos), srcCheat);
+	// insert item in the new position
+	list.insert(list.begin() + dstPos, srcCheat);
+	// remove the original item
 	if (dstPos < srcPos) srcPos++;
-	remove(srcPos);
+	list.erase(list.begin() + srcPos);
 
 	return true;
 }
