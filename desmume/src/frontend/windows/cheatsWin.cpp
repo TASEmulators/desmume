@@ -855,7 +855,7 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 						}
 
 						// check all other selected items too
-						if (!multiCheck)
+						if (!multiCheck && ListView_GetItemState(cheatListView, cheatEditPos, LVNI_SELECTED))
 						{
 							multiCheck = true;
 							bool check = ListView_GetCheckState(cheatListView, cheatEditPos);
