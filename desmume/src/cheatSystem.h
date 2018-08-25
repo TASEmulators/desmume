@@ -75,6 +75,7 @@ public:
 	void	init(char *path);
 	BOOL	add(u8 size, u32 address, u32 val, char *description, BOOL enabled);
 	BOOL	update(u8 size, u32 address, u32 val, char *description, BOOL enabled, u32 pos);
+	BOOL	move(u32 srcPos, u32 dstPos);
 	BOOL	add_AR(char *code, char *description, BOOL enabled);
 	BOOL	update_AR(char *code, char *description, BOOL enabled, u32 pos);
 	BOOL	add_AR_Direct(CHEATS_LIST cheat);

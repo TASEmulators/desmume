@@ -56,6 +56,8 @@ static	u32		cheatEditPos = 0;
 static	u8		cheatAddPasteCheck = 0;
 static	u8		cheatXXtype = 0;
 static	u8		cheatXXaction = 0;
+static	s32		draggedItem = -1;
+static	s32		highlightedItem = -1;
 
 static	HWND	searchWnd = NULL;
 static	HWND	searchListView = NULL;
@@ -677,6 +679,39 @@ void AttemptSaveAndClose(HWND dialog)
 	else
 		MessageBox(dialog, "Can't save cheats to file.\nCheck your path (Menu->Config->Path Settings->\"Cheats\")", "Error", MB_OK);
 }
+void MoveRow(HWND list, int src, int dst)
+{
+	// move the cheat
+	if (!cheats->move(src, dst))
+		return;
+
+	// insert new row
+	LVITEM item;
+	memset(&item, 0, sizeof(LVITEM));
+	item.mask = LVIF_TEXT | LVIF_STATE;
+	item.iItem = dst;
+	ListView_InsertItem(cheatListView, &item);
+	if (dst < src) src++;
+
+	// get and set each subitem
+	item.iItem = src;
+	char* buf = new char[256];
+	item.pszText = buf;
+	item.cchTextMax = 256;
+	item.mask = LVIF_TEXT;
+	for (int i = 1; i < 4; i++)
+	{
+		item.iSubItem = i;
+		ListView_GetItem(cheatListView, &item);
+		ListView_SetItemText(cheatListView, dst, i, item.pszText);
+	}
+
+	// set check state
+	ListView_SetCheckState(cheatListView, dst, ListView_GetCheckState(cheatListView, src));
+
+	// delete the original item
+	ListView_DeleteItem(cheatListView, src);
+}
 INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
@@ -819,11 +854,65 @@ INT_PTR CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM l
 						}
 					}
 					break;
+
+					case LVN_BEGINDRAG:
+					{
+						draggedItem = ListView_GetSelectionMark(cheatListView);
+						SetCapture(dialog); // This sends all mouse messages to the dialog.
+					}
+					break;
 				}
 
 				return TRUE;
 			}
 		return FALSE;
+
+		case WM_MOUSEMOVE:
+		{
+			if (draggedItem != -1)
+			{
+				// un-highlight any previously highlighted item
+				if (highlightedItem != -1)
+					ListView_SetItemState(cheatListView, highlightedItem, 0, LVIS_DROPHILITED);
+
+				// get location of the cursor, relative to the list view
+				RECT r;
+				GetWindowRect(GetDlgItem(dialog, IDC_LIST1), &r);
+				POINT p = { r.left, r.top };
+				ScreenToClient(dialog, &p);
+
+				LVHITTESTINFO hitTestInfo;
+				hitTestInfo.pt.x = LOWORD(lparam) - p.x;
+				hitTestInfo.pt.y = HIWORD(lparam) - p.y;
+
+				// find the item under the cursor and highlight it
+				ListView_HitTest(cheatListView, &hitTestInfo);
+				if (hitTestInfo.iItem != -1)
+					ListView_SetItemState(cheatListView, hitTestInfo.iItem, LVIS_DROPHILITED, LVIS_DROPHILITED);
+				highlightedItem = hitTestInfo.iItem;
+			}
+		}
+		break;
+
+		case WM_LBUTTONUP:
+		{
+			if (highlightedItem != -1)
+				ListView_SetItemState(cheatListView, highlightedItem, 0, LVIS_DROPHILITED);
+
+			if (draggedItem != -1)
+			{
+				if (highlightedItem != -1 && highlightedItem != draggedItem)
+				{
+					if (highlightedItem > draggedItem)
+						highlightedItem++; // if dragging an item down, item should be placed below highlighted item (required to move an item to the bottom)
+					MoveRow(cheatListView, draggedItem, highlightedItem);
+					EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+				}
+			}
+			draggedItem = -1;
+			ReleaseCapture();
+		}
+		break;
 
 		case WM_COMMAND:
 		{

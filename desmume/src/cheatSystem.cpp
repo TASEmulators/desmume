@@ -73,6 +73,19 @@ BOOL CHEATS::update(u8 size, u32 address, u32 val, char *description, BOOL enabl
 	return TRUE;
 }
 
+BOOL CHEATS::move(u32 srcPos, u32 dstPos)
+{
+	if (srcPos >= list.size() || dstPos > list.size()) return false;
+	if (srcPos < 0 || dstPos < 0) return false;
+
+	CHEATS_LIST srcCheat = list[srcPos];
+	list.insert(list._Make_iterator_offset(dstPos), srcCheat);
+	if (dstPos < srcPos) srcPos++;
+	remove(srcPos);
+
+	return true;
+}
+
 #define CHEATLOG(...) 
 //#define CHEATLOG(...) printf(__VA_ARGS__)
 
