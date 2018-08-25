@@ -1034,7 +1034,10 @@ void CHEATS::process(int targetType)
 	if(cheatsResetJit)
 	{
 		if(CommonSettings.use_jit)
-			arm_jit_reset(true,true);
+		{
+			printf("Cheat code operation potentially not compatible with JIT operations. Resetting JIT...\n");
+			arm_jit_reset(true, true);
+		}
 	}
 #endif
 }
