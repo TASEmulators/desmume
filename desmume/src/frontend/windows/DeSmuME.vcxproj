@@ -284,6 +284,8 @@
     <ClCompile Include="colorctrl.cpp" />
     <ClCompile Include="console.cpp" />
     <ClCompile Include="CWindow.cpp" />
+    <ClCompile Include="ddraw.cpp" />
+    <ClCompile Include="display.cpp" />
     <ClCompile Include="FEX_Interface.cpp" />
     <ClCompile Include="File_Extractor\7z_C\7zAlloc.c" />
     <ClCompile Include="File_Extractor\7z_C\7zBuf.c" />
@@ -371,6 +373,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mic-win.cpp" />
     <ClCompile Include="ogl.cpp" />
+    <ClCompile Include="ogl_display.cpp" />
     <ClCompile Include="OpenArchive.cpp" />
     <ClCompile Include="pathsettings.cpp" />
     <ClCompile Include="recentroms.cpp" />
@@ -582,6 +585,8 @@
     <ClInclude Include="colorctrl.h" />
     <ClInclude Include="console.h" />
     <ClInclude Include="CWindow.h" />
+    <ClInclude Include="ddraw.h" />
+    <ClInclude Include="display.h" />
     <ClInclude Include="FEX_Interface.h" />
     <ClInclude Include="File_Extractor\7z_C\7z.h" />
     <ClInclude Include="File_Extractor\7z_C\7zAlloc.h" />
@@ -657,6 +662,7 @@
     <ClInclude Include="importSave.h" />
     <ClInclude Include="inputdx.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="ogl_display.h" />
     <ClInclude Include="OpenArchive.h" />
     <ClInclude Include="pathsettings.h" />
     <ClInclude Include="recentroms.h" />

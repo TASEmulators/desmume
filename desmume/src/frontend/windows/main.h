@@ -28,6 +28,7 @@ extern WINCLASS	*MainWindow;
 extern HINSTANCE hAppInst;
 extern HMENU mainMenu; //Holds handle to the main DeSmuME menu
 extern CToolBar* MainWindowToolbar;
+extern CRITICAL_SECTION win_backbuffer_sync;
 
 extern volatile bool execute, paused;
 extern bool romloaded;
@@ -97,5 +98,7 @@ void WIN_InstallGBACartridge();
 #define IDT_VIEW_MATRIX                 		50010
 #define IDT_VIEW_LIGHTS                 		50011
 #define IDM_EXEC								50112
+
+#define WM_CUSTINVOKE							WM_USER+52
 
 #endif

@@ -921,6 +921,15 @@
     <ClCompile Include="..\..\utils\colorspacehandler\colorspacehandler_AltiVec.cpp">
       <Filter>utils\colorspacehandler</Filter>
     </ClCompile>
+    <ClCompile Include="ddraw.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="ogl_display.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="display.cpp">
+      <Filter>frontend\Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\utils\guid.h">
@@ -1609,6 +1618,15 @@
     </ClInclude>
     <ClInclude Include="..\..\utils\colorspacehandler\colorspacehandler_SSE2.h">
       <Filter>utils\colorspacehandler</Filter>
+    </ClInclude>
+    <ClInclude Include="ddraw.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="ogl_display.h">
+      <Filter>frontend\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="display.h">
+      <Filter>frontend\Windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
