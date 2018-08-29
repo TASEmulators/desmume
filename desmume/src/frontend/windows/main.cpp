@@ -2105,9 +2105,6 @@ int _main()
 			TABLET_DISABLE_FLICKFALLBACKKEYS
 			));
 
-	InitCustomKeys(&CustomKeys);
-	LoadHotkeyConfig();
-
 	if(MenuInit() == 0)
 	{
 		MessageBox(NULL, "Error creating main menu", "DeSmuME", MB_OK);
