@@ -142,10 +142,20 @@ void HK_JitBlockSizeInc(int, bool justPressed)
 }
 #endif
 
+void HK_ListCheats(int, bool justPressed)
+{
+	if (romloaded)
+		CheatsListDialog(MainWindow->getHWnd());
+}
 void HK_SearchCheats(int, bool justPressed) 
 { 
 	if (romloaded)
 		CheatsSearchDialog(MainWindow->getHWnd()); 
+}
+void HK_ToggleCheats(int, bool justPressed)
+{
+	CommonSettings.cheatsDisable = !CommonSettings.cheatsDisable;
+	WritePrivateProfileBool("General", "cheatsDisable", CommonSettings.cheatsDisable, IniName);
 }
 
 static void DoScreenshot(const char* fname)
@@ -752,12 +762,26 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->LCDsSwap.page = HOTKEY_PAGE_TOOLS;
 	keys->LCDsSwap.key = VK_NEXT;
 
+	keys->ListCheats.handleKeyDown = HK_ListCheats;
+	keys->ListCheats.code = "ListCheats";
+	keys->ListCheats.name = STRW(ID_LABEL_HK63);
+	keys->ListCheats.page = HOTKEY_PAGE_TOOLS;
+	keys->ListCheats.key = 'L';
+	keys->ListCheats.modifiers = CUSTKEY_CTRL_MASK;
+
 	keys->SearchCheats.handleKeyDown = HK_SearchCheats;
 	keys->SearchCheats.code = "SearchCheats";
 	keys->SearchCheats.name = STRW(ID_LABEL_HK54);
 	keys->SearchCheats.page = HOTKEY_PAGE_TOOLS;
 	keys->SearchCheats.key = 'S';
 	keys->SearchCheats.modifiers = CUSTKEY_CTRL_MASK;
+
+	keys->ToggleCheats.handleKeyDown = HK_ToggleCheats;
+	keys->ToggleCheats.code = "ToggleCheats";
+	keys->ToggleCheats.name = STRW(ID_LABEL_HK64);
+	keys->ToggleCheats.page = HOTKEY_PAGE_TOOLS;
+	keys->ToggleCheats.key = 'C';
+	keys->ToggleCheats.modifiers = CUSTKEY_CTRL_MASK;
 
 	keys->NewLuaScript.handleKeyDown = HK_NewLuaScriptDown;
 	keys->NewLuaScript.code = "NewLuaScript";

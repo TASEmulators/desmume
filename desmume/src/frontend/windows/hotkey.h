@@ -101,7 +101,7 @@ struct SCustomKeys
 	SCustomKey LCDsMode;
 	SCustomKey LCDsSwap;
 
-	SCustomKey SearchCheats;
+	SCustomKey ListCheats, SearchCheats, ToggleCheats;
 
 	SCustomKey NewLuaScript, CloseLuaScripts, MostRecentLuaScript;
 

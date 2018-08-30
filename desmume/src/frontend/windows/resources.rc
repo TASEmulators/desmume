@@ -2229,6 +2229,12 @@ BEGIN
     ID_LABEL_HK3d           "Decrease JIT block size"
 END
 
+STRINGTABLE
+BEGIN
+    ID_LABEL_HK63           "List Cheats"
+    ID_LABEL_HK64           "Toggle Cheats"
+END
+
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
