@@ -107,6 +107,9 @@ struct SCustomKeys
 
 	SCustomKey IncreaseVolume, DecreaseVolume;
 
+	SCustomKey ToggleMainGPU, ToggleMainBG0Layer, ToggleMainBG1Layer, ToggleMainBG2Layer, ToggleMainBG3Layer, ToggleMainOBJLayer;
+	SCustomKey ToggleSubGPU, ToggleSubBG0Layer, ToggleSubBG1Layer, ToggleSubBG2Layer, ToggleSubBG3Layer, ToggleSubOBJLayer;
+
 	SCustomKey LastItem; // dummy, must be last
 
 	//--methods--

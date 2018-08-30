@@ -51,6 +51,7 @@
 #include "winutil.h"
 #include "windriver.h"
 #include "utils/xstring.h"
+#include "display.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 
@@ -539,7 +540,6 @@ void HK_Rotate90(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 90);}
 void HK_Rotate180(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 180);}
 void HK_Rotate270(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 270);}
 
-
 void HK_CursorToggle(int, bool)
 {
 	static int cursorVisible = ShowCursor(TRUE);
@@ -548,6 +548,27 @@ void HK_CursorToggle(int, bool)
 	else
 		while( (cursorVisible = ShowCursor(TRUE)) <= 0);
 }
+
+void HK_ToggleMainGPU(int, bool justPressed)
+{
+	CommonSettings.showGpu.main = !CommonSettings.showGpu.main;
+	WritePrivateProfileInt("Display", "MainGpu", CommonSettings.showGpu.main ? 1 : 0, IniName);
+}
+void HK_ToggleSubGPU(int, bool justPressed)
+{
+	CommonSettings.showGpu.sub = !CommonSettings.showGpu.sub;
+	WritePrivateProfileInt("Display", "SubGpu", CommonSettings.showGpu.sub ? 1 : 0, IniName);
+}
+void HK_ToggleMainBG0Layer(int, bool justPressed) { TwiddleLayer(IDM_MBG0, 0, 0); }
+void HK_ToggleMainBG1Layer(int, bool justPressed) { TwiddleLayer(IDM_MBG1, 0, 1); }
+void HK_ToggleMainBG2Layer(int, bool justPressed) { TwiddleLayer(IDM_MBG2, 0, 2); }
+void HK_ToggleMainBG3Layer(int, bool justPressed) { TwiddleLayer(IDM_MBG3, 0, 3); }
+void HK_ToggleMainOBJLayer(int, bool justPressed) { TwiddleLayer(IDM_MOBJ, 0, 4); }
+void HK_ToggleSubBG0Layer(int, bool justPressed) { TwiddleLayer(IDM_SBG0, 1, 0); }
+void HK_ToggleSubBG1Layer(int, bool justPressed) { TwiddleLayer(IDM_SBG1, 1, 1); }
+void HK_ToggleSubBG2Layer(int, bool justPressed) { TwiddleLayer(IDM_SBG2, 1, 2); }
+void HK_ToggleSubBG3Layer(int, bool justPressed) { TwiddleLayer(IDM_SBG3, 1, 3); }
+void HK_ToggleSubOBJLayer(int, bool justPressed) { TwiddleLayer(IDM_SOBJ, 1, 4); }
 
 //======================================================================================
 //=====================================DEFINITIONS======================================
@@ -965,6 +986,78 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->CursorToggle.name = STRW(ID_LABEL_HK62);
 	keys->CursorToggle.page = HOTKEY_PAGE_OTHER;
 	keys->CursorToggle.key = NULL;
+
+	keys->ToggleMainGPU.handleKeyDown = HK_ToggleMainGPU;
+	keys->ToggleMainGPU.code = "Toggle Main GPU";
+	keys->ToggleMainGPU.name = STRW(ID_LABEL_HK65);
+	keys->ToggleMainGPU.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleMainGPU.key = NULL;
+
+	keys->ToggleMainBG0Layer.handleKeyDown = HK_ToggleMainBG0Layer;
+	keys->ToggleMainBG0Layer.code = "Toggle Main BG 0 Layer";
+	keys->ToggleMainBG0Layer.name = STRW(ID_LABEL_HK66);
+	keys->ToggleMainBG0Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleMainBG0Layer.key = NULL;
+
+	keys->ToggleMainBG1Layer.handleKeyDown = HK_ToggleMainBG1Layer;
+	keys->ToggleMainBG1Layer.code = "Toggle Main BG 1 Layer";
+	keys->ToggleMainBG1Layer.name = STRW(ID_LABEL_HK67);
+	keys->ToggleMainBG1Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleMainBG1Layer.key = NULL;
+
+	keys->ToggleMainBG2Layer.handleKeyDown = HK_ToggleMainBG2Layer;
+	keys->ToggleMainBG2Layer.code = "Toggle Main BG 2 Layer";
+	keys->ToggleMainBG2Layer.name = STRW(ID_LABEL_HK68);
+	keys->ToggleMainBG2Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleMainBG2Layer.key = NULL;
+
+	keys->ToggleMainBG3Layer.handleKeyDown = HK_ToggleMainBG3Layer;
+	keys->ToggleMainBG3Layer.code = "Toggle Main BG 3 Layer";
+	keys->ToggleMainBG3Layer.name = STRW(ID_LABEL_HK69);
+	keys->ToggleMainBG3Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleMainBG3Layer.key = NULL;
+
+	keys->ToggleMainOBJLayer.handleKeyDown = HK_ToggleMainOBJLayer;
+	keys->ToggleMainOBJLayer.code = "Toggle Main OBJ Layer";
+	keys->ToggleMainOBJLayer.name = STRW(ID_LABEL_HK70);
+	keys->ToggleMainOBJLayer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleMainOBJLayer.key = NULL;
+
+	keys->ToggleSubGPU.handleKeyDown = HK_ToggleSubGPU;
+	keys->ToggleSubGPU.code = "Toggle Sub GPU";
+	keys->ToggleSubGPU.name = STRW(ID_LABEL_HK71);
+	keys->ToggleSubGPU.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleSubGPU.key = NULL;
+
+	keys->ToggleSubBG0Layer.handleKeyDown = HK_ToggleSubBG0Layer;
+	keys->ToggleSubBG0Layer.code = "Toggle Sub BG 0 Layer";
+	keys->ToggleSubBG0Layer.name = STRW(ID_LABEL_HK72);
+	keys->ToggleSubBG0Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleSubBG0Layer.key = NULL;
+
+	keys->ToggleSubBG1Layer.handleKeyDown = HK_ToggleSubBG1Layer;
+	keys->ToggleSubBG1Layer.code = "Toggle Sub BG 1 Layer";
+	keys->ToggleSubBG1Layer.name = STRW(ID_LABEL_HK73);
+	keys->ToggleSubBG1Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleSubBG1Layer.key = NULL;
+
+	keys->ToggleSubBG2Layer.handleKeyDown = HK_ToggleSubBG2Layer;
+	keys->ToggleSubBG2Layer.code = "Toggle Sub BG 2 Layer";
+	keys->ToggleSubBG2Layer.name = STRW(ID_LABEL_HK74);
+	keys->ToggleSubBG2Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleSubBG2Layer.key = NULL;
+
+	keys->ToggleSubBG3Layer.handleKeyDown = HK_ToggleSubBG3Layer;
+	keys->ToggleSubBG3Layer.code = "Toggle Sub BG 3 Layer";
+	keys->ToggleSubBG3Layer.name = STRW(ID_LABEL_HK75);
+	keys->ToggleSubBG3Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleSubBG3Layer.key = NULL;
+
+	keys->ToggleSubOBJLayer.handleKeyDown = HK_ToggleSubOBJLayer;
+	keys->ToggleSubOBJLayer.code = "Toggle Sub OBJ Layer";
+	keys->ToggleSubOBJLayer.name = STRW(ID_LABEL_HK76);
+	keys->ToggleSubOBJLayer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleSubOBJLayer.key = NULL;
 
 	//State/Slots Pages ------------------------------------------------
 	keys->NextSaveSlot.handleKeyDown = HK_NextSaveSlot;
