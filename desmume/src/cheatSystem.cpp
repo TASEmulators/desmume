@@ -73,6 +73,22 @@ BOOL CHEATS::update(u8 size, u32 address, u32 val, char *description, BOOL enabl
 	return TRUE;
 }
 
+BOOL CHEATS::move(u32 srcPos, u32 dstPos)
+{
+	if (srcPos >= list.size() || dstPos > list.size()) return false;
+	if (srcPos < 0 || dstPos < 0) return false;
+
+	// get the item to move
+	CHEATS_LIST srcCheat = list[srcPos];
+	// insert item in the new position
+	list.insert(list.begin() + dstPos, srcCheat);
+	// remove the original item
+	if (dstPos < srcPos) srcPos++;
+	list.erase(list.begin() + srcPos);
+
+	return true;
+}
+
 #define CHEATLOG(...) 
 //#define CHEATLOG(...) printf(__VA_ARGS__)
 
@@ -1021,7 +1037,10 @@ void CHEATS::process(int targetType)
 	if(cheatsResetJit)
 	{
 		if(CommonSettings.use_jit)
-			arm_jit_reset(true,true);
+		{
+			printf("Cheat code operation potentially not compatible with JIT operations. Resetting JIT...\n");
+			arm_jit_reset(true, true);
+		}
 	}
 #endif
 }
