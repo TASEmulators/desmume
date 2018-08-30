@@ -104,5 +104,6 @@ FORCEINLINE void ServiceDisplayThreadInvocations()
 }
 
 void UpdateWndRects(HWND hwnd, RECT* newClientRect = NULL);
+void TwiddleLayer(UINT ctlid, int core, int layer);
 
 #endif

@@ -3500,16 +3500,6 @@ void SaveWindowPos(HWND hwnd)
 	WritePrivateProfileInt("Video", "WindowPosY", WndY/*MainWindowRect.top*/, IniName);
 }
 
-
-static void TwiddleLayer(UINT ctlid, int core, int layer)
-{
-	GPUEngineBase *gpu = ((GPUEngineID)core == GPUEngineID_Main) ? (GPUEngineBase *)GPU->GetEngineMain() : (GPUEngineBase *)GPU->GetEngineSub();
-
-	const bool newLayerState = !CommonSettings.dispLayers[core][layer];
-	gpu->SetLayerEnableState(layer, newLayerState);
-	MainWindow->checkMenu(ctlid, newLayerState);
-}
-
 //========================================================================================
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
