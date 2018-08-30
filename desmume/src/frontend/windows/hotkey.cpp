@@ -562,7 +562,7 @@ void InitCustomKeys (SCustomKeys *keys)
 		i++;
 	};
 
-	//Main Page---------------------------------------
+	//Main Page -----------------------------------------------------------
 	keys->OpenROM.handleKeyDown = HK_OpenROM;
 	keys->OpenROM.code = "OpenROM";
 	keys->OpenROM.name = STRW(ID_LABEL_HK1);
@@ -678,12 +678,6 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->AutoHold.page = HOTKEY_PAGE_MAIN;
 	keys->AutoHold.key = NULL;
 
-	keys->StylusAutoHold.handleKeyDown = HK_StylusAutoHoldKeyDown;
-	keys->StylusAutoHold.code = "StylusAutoHold";
-	keys->StylusAutoHold.name = STRW(ID_LABEL_HK29);
-	keys->StylusAutoHold.page = HOTKEY_PAGE_TOOLS; // TODO: set more appropriate category?
-	keys->StylusAutoHold.key = NULL;
-
 	keys->AutoHoldClear.handleKeyDown = HK_AutoHoldClearKeyDown;
 	keys->AutoHoldClear.code = "AutoHoldClear";
 	keys->AutoHoldClear.name = STRW(ID_LABEL_HK11);
@@ -696,6 +690,7 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->ToggleRasterizer.page = HOTKEY_PAGE_MAIN;
 	keys->ToggleRasterizer.key = VK_SUBTRACT;
 
+	//Tools Page ----------------------------------------------------------
 	keys->PrintScreen.handleKeyDown = HK_PrintScreen;
 	keys->PrintScreen.code = "SaveScreenshotas";
 	keys->PrintScreen.name = STRW(ID_LABEL_HK13);
@@ -709,6 +704,92 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->QuickPrintScreen.key = VK_F12;
 	keys->QuickPrintScreen.modifiers = CUSTKEY_CTRL_MASK;
 
+	keys->ToggleFrameCounter.handleKeyDown = HK_ToggleFrame;
+	keys->ToggleFrameCounter.code = "ToggleFrameDisplay";
+	keys->ToggleFrameCounter.name = STRW(ID_LABEL_HK16);
+	keys->ToggleFrameCounter.page = HOTKEY_PAGE_TOOLS;
+	keys->ToggleFrameCounter.key = VK_OEM_PERIOD;
+
+	keys->ToggleFPS.handleKeyDown = HK_ToggleFPS;
+	keys->ToggleFPS.code = "ToggleFPSDisplay";
+	keys->ToggleFPS.name = STRW(ID_LABEL_HK17);
+	keys->ToggleFPS.page = HOTKEY_PAGE_TOOLS;
+	keys->ToggleFPS.key = NULL;
+
+	keys->ToggleInput.handleKeyDown = HK_ToggleInput;
+	keys->ToggleInput.code = "ToggleInputDisplay";
+	keys->ToggleInput.name = STRW(ID_LABEL_HK18);
+	keys->ToggleInput.page = HOTKEY_PAGE_TOOLS;
+	keys->ToggleInput.key = VK_OEM_COMMA;
+
+	keys->ToggleLag.handleKeyDown = HK_ToggleLag;
+	keys->ToggleLag.code = "ToggleLagDisplay";
+	keys->ToggleLag.name = STRW(ID_LABEL_HK19);
+	keys->ToggleLag.page = HOTKEY_PAGE_TOOLS;
+	keys->ToggleLag.key = NULL;
+
+	keys->ResetLagCounter.handleKeyDown = HK_ResetLagCounter;
+	keys->ResetLagCounter.code = "ResetLagCounter";
+	keys->ResetLagCounter.name = STRW(ID_LABEL_HK20);
+	keys->ResetLagCounter.page = HOTKEY_PAGE_TOOLS;
+	keys->ResetLagCounter.key = NULL;
+
+	keys->StylusAutoHold.handleKeyDown = HK_StylusAutoHoldKeyDown;
+	keys->StylusAutoHold.code = "StylusAutoHold";
+	keys->StylusAutoHold.name = STRW(ID_LABEL_HK29);
+	keys->StylusAutoHold.page = HOTKEY_PAGE_TOOLS; // TODO: set more appropriate category?
+	keys->StylusAutoHold.key = NULL;
+
+	keys->LCDsMode.handleKeyUp = HK_LCDsMode;
+	keys->LCDsMode.code = "LCDsLayoutMode";
+	keys->LCDsMode.name = STRW(ID_LABEL_HK30);
+	keys->LCDsMode.page = HOTKEY_PAGE_TOOLS;
+	keys->LCDsMode.key = VK_END;
+
+	keys->LCDsSwap.handleKeyUp = HK_LCDsSwap;
+	keys->LCDsSwap.code = "LCDsSwap";
+	keys->LCDsSwap.name = STRW(ID_LABEL_HK31);
+	keys->LCDsSwap.page = HOTKEY_PAGE_TOOLS;
+	keys->LCDsSwap.key = VK_NEXT;
+
+	keys->SearchCheats.handleKeyDown = HK_SearchCheats;
+	keys->SearchCheats.code = "SearchCheats";
+	keys->SearchCheats.name = STRW(ID_LABEL_HK54);
+	keys->SearchCheats.page = HOTKEY_PAGE_TOOLS;
+	keys->SearchCheats.key = 'S';
+	keys->SearchCheats.modifiers = CUSTKEY_CTRL_MASK;
+
+	keys->NewLuaScript.handleKeyDown = HK_NewLuaScriptDown;
+	keys->NewLuaScript.code = "NewLuaScript";
+	keys->NewLuaScript.name = STRW(ID_LABEL_HK26);
+	keys->NewLuaScript.page = HOTKEY_PAGE_TOOLS;
+	keys->NewLuaScript.key = NULL;
+
+	keys->CloseLuaScripts.handleKeyDown = HK_CloseLuaScriptsDown;
+	keys->CloseLuaScripts.code = "CloseLuaScripts";
+	keys->CloseLuaScripts.name = STRW(ID_LABEL_HK27);
+	keys->CloseLuaScripts.page = HOTKEY_PAGE_TOOLS;
+	keys->CloseLuaScripts.key = NULL;
+
+	keys->MostRecentLuaScript.handleKeyDown = HK_MostRecentLuaScriptDown;
+	keys->MostRecentLuaScript.code = "MostRecentLuaScript";
+	keys->MostRecentLuaScript.name = STRW(ID_LABEL_HK28);
+	keys->MostRecentLuaScript.page = HOTKEY_PAGE_TOOLS;
+	keys->MostRecentLuaScript.key = NULL;
+
+	keys->IncreaseVolume.handleKeyDown = HK_IncreaseVolume;
+	keys->IncreaseVolume.code = "IncreaseVolume";
+	keys->IncreaseVolume.name = STRW(ID_LABEL_HK32);
+	keys->IncreaseVolume.page = HOTKEY_PAGE_TOOLS;
+	keys->IncreaseVolume.key = NULL;
+
+	keys->DecreaseVolume.handleKeyDown = HK_DecreaseVolume;
+	keys->DecreaseVolume.code = "DecreaseVolume";
+	keys->DecreaseVolume.name = STRW(ID_LABEL_HK33);
+	keys->DecreaseVolume.page = HOTKEY_PAGE_TOOLS;
+	keys->DecreaseVolume.key = NULL;
+
+	//Movie Page ----------------------------------------------------------
 	keys->ToggleReadOnly.handleKeyDown = HK_ToggleReadOnly;
 	keys->ToggleReadOnly.code = "ToggleReadOnly";
 	keys->ToggleReadOnly.name = STRW(ID_LABEL_HK24);
@@ -745,7 +826,7 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->RecordAVI.page = HOTKEY_PAGE_MOVIE;
 	keys->RecordAVI.key = NULL;
 
-	//Turbo Page---------------------------------------
+	//Turbo Page ----------------------------------------------------------
 	keys->TurboRight.handleKeyDown = HK_TurboRightKeyDown;
 	keys->TurboRight.handleKeyUp = HK_TurboRightKeyUp;
 	keys->TurboRight.code = "TurboRight";
@@ -830,85 +911,6 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->TurboStart.page = HOTKEY_PAGE_TURBO;
 	keys->TurboStart.key = NULL;
 
-	keys->NewLuaScript.handleKeyDown = HK_NewLuaScriptDown;
-	keys->NewLuaScript.code = "NewLuaScript";
-	keys->NewLuaScript.name = STRW(ID_LABEL_HK26);
-	keys->NewLuaScript.page = HOTKEY_PAGE_MOVIE;
-	keys->NewLuaScript.key = NULL;
-
-	keys->CloseLuaScripts.handleKeyDown = HK_CloseLuaScriptsDown;
-	keys->CloseLuaScripts.code = "CloseLuaScripts";
-	keys->CloseLuaScripts.name = STRW(ID_LABEL_HK27);
-	keys->CloseLuaScripts.page = HOTKEY_PAGE_MOVIE;
-	keys->CloseLuaScripts.key = NULL;
-
-	keys->MostRecentLuaScript.handleKeyDown = HK_MostRecentLuaScriptDown;
-	keys->MostRecentLuaScript.code = "MostRecentLuaScript";
-	keys->MostRecentLuaScript.name = STRW(ID_LABEL_HK28);
-	keys->MostRecentLuaScript.page = HOTKEY_PAGE_MOVIE;
-	keys->MostRecentLuaScript.key = NULL;
-
-	keys->LCDsMode.handleKeyUp = HK_LCDsMode;
-	keys->LCDsMode.code = "LCDsLayoutMode";
-	keys->LCDsMode.name = STRW(ID_LABEL_HK30);
-	keys->LCDsMode.page = HOTKEY_PAGE_TOOLS;
-	keys->LCDsMode.key = VK_END;
-
-	keys->LCDsSwap.handleKeyUp = HK_LCDsSwap;
-	keys->LCDsSwap.code = "LCDsSwap";
-	keys->LCDsSwap.name = STRW(ID_LABEL_HK31);
-	keys->LCDsSwap.page = HOTKEY_PAGE_TOOLS;
-	keys->LCDsSwap.key = VK_NEXT;
-
-	keys->SearchCheats.handleKeyDown = HK_SearchCheats;
-	keys->SearchCheats.code = "SearchCheats";
-	keys->SearchCheats.name = STRW(ID_LABEL_HK54);
-	keys->SearchCheats.page = HOTKEY_PAGE_TOOLS;
-	keys->SearchCheats.key = 'S';
-	keys->SearchCheats.modifiers = CUSTKEY_CTRL_MASK;
-
-	keys->IncreaseVolume.handleKeyDown = HK_IncreaseVolume;
-	keys->IncreaseVolume.code = "IncreaseVolume";
-	keys->IncreaseVolume.name = STRW(ID_LABEL_HK32);
-	keys->IncreaseVolume.page = HOTKEY_PAGE_TOOLS;
-	keys->IncreaseVolume.key = NULL;
-
-	keys->DecreaseVolume.handleKeyDown = HK_DecreaseVolume;
-	keys->DecreaseVolume.code = "DecreaseVolume";
-	keys->DecreaseVolume.name = STRW(ID_LABEL_HK33);
-	keys->DecreaseVolume.page = HOTKEY_PAGE_TOOLS;
-	keys->DecreaseVolume.key = NULL;
-
-	keys->ToggleFrameCounter.handleKeyDown = HK_ToggleFrame;
-	keys->ToggleFrameCounter.code = "ToggleFrameDisplay";
-	keys->ToggleFrameCounter.name = STRW(ID_LABEL_HK16);
-	keys->ToggleFrameCounter.page = HOTKEY_PAGE_TOOLS;
-	keys->ToggleFrameCounter.key = VK_OEM_PERIOD;
-
-	keys->ToggleFPS.handleKeyDown = HK_ToggleFPS;
-	keys->ToggleFPS.code = "ToggleFPSDisplay";
-	keys->ToggleFPS.name = STRW(ID_LABEL_HK17);
-	keys->ToggleFPS.page = HOTKEY_PAGE_TOOLS;
-	keys->ToggleFPS.key = NULL;
-
-	keys->ToggleInput.handleKeyDown = HK_ToggleInput;
-	keys->ToggleInput.code = "ToggleInputDisplay";
-	keys->ToggleInput.name = STRW(ID_LABEL_HK18);
-	keys->ToggleInput.page = HOTKEY_PAGE_TOOLS;
-	keys->ToggleInput.key = VK_OEM_COMMA;
-
-	keys->ToggleLag.handleKeyDown = HK_ToggleLag;
-	keys->ToggleLag.code = "ToggleLagDisplay";
-	keys->ToggleLag.name = STRW(ID_LABEL_HK19);
-	keys->ToggleLag.page = HOTKEY_PAGE_TOOLS;
-	keys->ToggleLag.key = NULL;
-
-	keys->ResetLagCounter.handleKeyDown = HK_ResetLagCounter;
-	keys->ResetLagCounter.code = "ResetLagCounter";
-	keys->ResetLagCounter.name = STRW(ID_LABEL_HK20);
-	keys->ResetLagCounter.page = HOTKEY_PAGE_TOOLS;
-	keys->ResetLagCounter.key = NULL;
-
 	//Other Page -------------------------------------------------------
 	keys->Rotate0.handleKeyDown = HK_Rotate0;
 	keys->Rotate0.code = "Rotate0";
@@ -940,7 +942,7 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->CursorToggle.page = HOTKEY_PAGE_OTHER;
 	keys->CursorToggle.key = NULL;
 
-	//StateSlots Page --------------------------------------------------
+	//State/Slots Pages ------------------------------------------------
 	keys->NextSaveSlot.handleKeyDown = HK_NextSaveSlot;
 	keys->NextSaveSlot.code = "NextSaveSlot";
 	keys->NextSaveSlot.name = STRW(ID_LABEL_HK39);
