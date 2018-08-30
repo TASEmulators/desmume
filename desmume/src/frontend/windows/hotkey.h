@@ -92,8 +92,6 @@ struct SCustomKeys
 
 	SCustomKey RecordWAV, RecordAVI;
 
-	SCustomKey NewLuaScript, CloseLuaScripts, MostRecentLuaScript;
-
 	SCustomKey ToggleFrameCounter;
 	SCustomKey ToggleFPS;
 	SCustomKey ToggleInput;
@@ -102,9 +100,16 @@ struct SCustomKeys
 	SCustomKey StylusAutoHold;
 	SCustomKey LCDsMode;
 	SCustomKey LCDsSwap;
-	SCustomKey SearchCheats;
-	SCustomKey IncreaseVolume;
-	SCustomKey DecreaseVolume;
+
+	SCustomKey ListCheats, SearchCheats, ToggleCheats;
+
+	SCustomKey NewLuaScript, CloseLuaScripts, MostRecentLuaScript;
+
+	SCustomKey IncreaseVolume, DecreaseVolume;
+
+	SCustomKey ToggleMainGPU, ToggleMainBG0Layer, ToggleMainBG1Layer, ToggleMainBG2Layer, ToggleMainBG3Layer, ToggleMainOBJLayer;
+	SCustomKey ToggleSubGPU, ToggleSubBG0Layer, ToggleSubBG1Layer, ToggleSubBG2Layer, ToggleSubBG3Layer, ToggleSubOBJLayer;
+
 	SCustomKey LastItem; // dummy, must be last
 
 	//--methods--

@@ -51,6 +51,7 @@
 #include "winutil.h"
 #include "windriver.h"
 #include "utils/xstring.h"
+#include "display.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 
@@ -142,10 +143,20 @@ void HK_JitBlockSizeInc(int, bool justPressed)
 }
 #endif
 
+void HK_ListCheats(int, bool justPressed)
+{
+	if (romloaded)
+		CheatsListDialog(MainWindow->getHWnd());
+}
 void HK_SearchCheats(int, bool justPressed) 
 { 
 	if (romloaded)
 		CheatsSearchDialog(MainWindow->getHWnd()); 
+}
+void HK_ToggleCheats(int, bool justPressed)
+{
+	CommonSettings.cheatsDisable = !CommonSettings.cheatsDisable;
+	WritePrivateProfileBool("General", "cheatsDisable", CommonSettings.cheatsDisable, IniName);
 }
 
 static void DoScreenshot(const char* fname)
@@ -529,7 +540,6 @@ void HK_Rotate90(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 90);}
 void HK_Rotate180(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 180);}
 void HK_Rotate270(int, bool justPressed) { SetRotate(MainWindow->getHWnd(), 270);}
 
-
 void HK_CursorToggle(int, bool)
 {
 	static int cursorVisible = ShowCursor(TRUE);
@@ -538,6 +548,27 @@ void HK_CursorToggle(int, bool)
 	else
 		while( (cursorVisible = ShowCursor(TRUE)) <= 0);
 }
+
+void HK_ToggleMainGPU(int, bool justPressed)
+{
+	CommonSettings.showGpu.main = !CommonSettings.showGpu.main;
+	WritePrivateProfileInt("Display", "MainGpu", CommonSettings.showGpu.main ? 1 : 0, IniName);
+}
+void HK_ToggleSubGPU(int, bool justPressed)
+{
+	CommonSettings.showGpu.sub = !CommonSettings.showGpu.sub;
+	WritePrivateProfileInt("Display", "SubGpu", CommonSettings.showGpu.sub ? 1 : 0, IniName);
+}
+void HK_ToggleMainBG0Layer(int, bool justPressed) { TwiddleLayer(IDM_MBG0, 0, 0); }
+void HK_ToggleMainBG1Layer(int, bool justPressed) { TwiddleLayer(IDM_MBG1, 0, 1); }
+void HK_ToggleMainBG2Layer(int, bool justPressed) { TwiddleLayer(IDM_MBG2, 0, 2); }
+void HK_ToggleMainBG3Layer(int, bool justPressed) { TwiddleLayer(IDM_MBG3, 0, 3); }
+void HK_ToggleMainOBJLayer(int, bool justPressed) { TwiddleLayer(IDM_MOBJ, 0, 4); }
+void HK_ToggleSubBG0Layer(int, bool justPressed) { TwiddleLayer(IDM_SBG0, 1, 0); }
+void HK_ToggleSubBG1Layer(int, bool justPressed) { TwiddleLayer(IDM_SBG1, 1, 1); }
+void HK_ToggleSubBG2Layer(int, bool justPressed) { TwiddleLayer(IDM_SBG2, 1, 2); }
+void HK_ToggleSubBG3Layer(int, bool justPressed) { TwiddleLayer(IDM_SBG3, 1, 3); }
+void HK_ToggleSubOBJLayer(int, bool justPressed) { TwiddleLayer(IDM_SOBJ, 1, 4); }
 
 //======================================================================================
 //=====================================DEFINITIONS======================================
@@ -562,7 +593,7 @@ void InitCustomKeys (SCustomKeys *keys)
 		i++;
 	};
 
-	//Main Page---------------------------------------
+	//Main Page -----------------------------------------------------------
 	keys->OpenROM.handleKeyDown = HK_OpenROM;
 	keys->OpenROM.code = "OpenROM";
 	keys->OpenROM.name = STRW(ID_LABEL_HK1);
@@ -678,12 +709,6 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->AutoHold.page = HOTKEY_PAGE_MAIN;
 	keys->AutoHold.key = NULL;
 
-	keys->StylusAutoHold.handleKeyDown = HK_StylusAutoHoldKeyDown;
-	keys->StylusAutoHold.code = "StylusAutoHold";
-	keys->StylusAutoHold.name = STRW(ID_LABEL_HK29);
-	keys->StylusAutoHold.page = HOTKEY_PAGE_TOOLS; // TODO: set more appropriate category?
-	keys->StylusAutoHold.key = NULL;
-
 	keys->AutoHoldClear.handleKeyDown = HK_AutoHoldClearKeyDown;
 	keys->AutoHoldClear.code = "AutoHoldClear";
 	keys->AutoHoldClear.name = STRW(ID_LABEL_HK11);
@@ -696,6 +721,7 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->ToggleRasterizer.page = HOTKEY_PAGE_MAIN;
 	keys->ToggleRasterizer.key = VK_SUBTRACT;
 
+	//Tools Page ----------------------------------------------------------
 	keys->PrintScreen.handleKeyDown = HK_PrintScreen;
 	keys->PrintScreen.code = "SaveScreenshotas";
 	keys->PrintScreen.name = STRW(ID_LABEL_HK13);
@@ -709,6 +735,106 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->QuickPrintScreen.key = VK_F12;
 	keys->QuickPrintScreen.modifiers = CUSTKEY_CTRL_MASK;
 
+	keys->ToggleFrameCounter.handleKeyDown = HK_ToggleFrame;
+	keys->ToggleFrameCounter.code = "ToggleFrameDisplay";
+	keys->ToggleFrameCounter.name = STRW(ID_LABEL_HK16);
+	keys->ToggleFrameCounter.page = HOTKEY_PAGE_TOOLS;
+	keys->ToggleFrameCounter.key = VK_OEM_PERIOD;
+
+	keys->ToggleFPS.handleKeyDown = HK_ToggleFPS;
+	keys->ToggleFPS.code = "ToggleFPSDisplay";
+	keys->ToggleFPS.name = STRW(ID_LABEL_HK17);
+	keys->ToggleFPS.page = HOTKEY_PAGE_TOOLS;
+	keys->ToggleFPS.key = NULL;
+
+	keys->ToggleInput.handleKeyDown = HK_ToggleInput;
+	keys->ToggleInput.code = "ToggleInputDisplay";
+	keys->ToggleInput.name = STRW(ID_LABEL_HK18);
+	keys->ToggleInput.page = HOTKEY_PAGE_TOOLS;
+	keys->ToggleInput.key = VK_OEM_COMMA;
+
+	keys->ToggleLag.handleKeyDown = HK_ToggleLag;
+	keys->ToggleLag.code = "ToggleLagDisplay";
+	keys->ToggleLag.name = STRW(ID_LABEL_HK19);
+	keys->ToggleLag.page = HOTKEY_PAGE_TOOLS;
+	keys->ToggleLag.key = NULL;
+
+	keys->ResetLagCounter.handleKeyDown = HK_ResetLagCounter;
+	keys->ResetLagCounter.code = "ResetLagCounter";
+	keys->ResetLagCounter.name = STRW(ID_LABEL_HK20);
+	keys->ResetLagCounter.page = HOTKEY_PAGE_TOOLS;
+	keys->ResetLagCounter.key = NULL;
+
+	keys->StylusAutoHold.handleKeyDown = HK_StylusAutoHoldKeyDown;
+	keys->StylusAutoHold.code = "StylusAutoHold";
+	keys->StylusAutoHold.name = STRW(ID_LABEL_HK29);
+	keys->StylusAutoHold.page = HOTKEY_PAGE_TOOLS; // TODO: set more appropriate category?
+	keys->StylusAutoHold.key = NULL;
+
+	keys->LCDsMode.handleKeyUp = HK_LCDsMode;
+	keys->LCDsMode.code = "LCDsLayoutMode";
+	keys->LCDsMode.name = STRW(ID_LABEL_HK30);
+	keys->LCDsMode.page = HOTKEY_PAGE_TOOLS;
+	keys->LCDsMode.key = VK_END;
+
+	keys->LCDsSwap.handleKeyUp = HK_LCDsSwap;
+	keys->LCDsSwap.code = "LCDsSwap";
+	keys->LCDsSwap.name = STRW(ID_LABEL_HK31);
+	keys->LCDsSwap.page = HOTKEY_PAGE_TOOLS;
+	keys->LCDsSwap.key = VK_NEXT;
+
+	keys->ListCheats.handleKeyDown = HK_ListCheats;
+	keys->ListCheats.code = "ListCheats";
+	keys->ListCheats.name = STRW(ID_LABEL_HK63);
+	keys->ListCheats.page = HOTKEY_PAGE_TOOLS;
+	keys->ListCheats.key = 'L';
+	keys->ListCheats.modifiers = CUSTKEY_CTRL_MASK;
+
+	keys->SearchCheats.handleKeyDown = HK_SearchCheats;
+	keys->SearchCheats.code = "SearchCheats";
+	keys->SearchCheats.name = STRW(ID_LABEL_HK54);
+	keys->SearchCheats.page = HOTKEY_PAGE_TOOLS;
+	keys->SearchCheats.key = 'S';
+	keys->SearchCheats.modifiers = CUSTKEY_CTRL_MASK;
+
+	keys->ToggleCheats.handleKeyDown = HK_ToggleCheats;
+	keys->ToggleCheats.code = "ToggleCheats";
+	keys->ToggleCheats.name = STRW(ID_LABEL_HK64);
+	keys->ToggleCheats.page = HOTKEY_PAGE_TOOLS;
+	keys->ToggleCheats.key = 'C';
+	keys->ToggleCheats.modifiers = CUSTKEY_CTRL_MASK;
+
+	keys->NewLuaScript.handleKeyDown = HK_NewLuaScriptDown;
+	keys->NewLuaScript.code = "NewLuaScript";
+	keys->NewLuaScript.name = STRW(ID_LABEL_HK26);
+	keys->NewLuaScript.page = HOTKEY_PAGE_TOOLS;
+	keys->NewLuaScript.key = NULL;
+
+	keys->CloseLuaScripts.handleKeyDown = HK_CloseLuaScriptsDown;
+	keys->CloseLuaScripts.code = "CloseLuaScripts";
+	keys->CloseLuaScripts.name = STRW(ID_LABEL_HK27);
+	keys->CloseLuaScripts.page = HOTKEY_PAGE_TOOLS;
+	keys->CloseLuaScripts.key = NULL;
+
+	keys->MostRecentLuaScript.handleKeyDown = HK_MostRecentLuaScriptDown;
+	keys->MostRecentLuaScript.code = "MostRecentLuaScript";
+	keys->MostRecentLuaScript.name = STRW(ID_LABEL_HK28);
+	keys->MostRecentLuaScript.page = HOTKEY_PAGE_TOOLS;
+	keys->MostRecentLuaScript.key = NULL;
+
+	keys->IncreaseVolume.handleKeyDown = HK_IncreaseVolume;
+	keys->IncreaseVolume.code = "IncreaseVolume";
+	keys->IncreaseVolume.name = STRW(ID_LABEL_HK32);
+	keys->IncreaseVolume.page = HOTKEY_PAGE_TOOLS;
+	keys->IncreaseVolume.key = NULL;
+
+	keys->DecreaseVolume.handleKeyDown = HK_DecreaseVolume;
+	keys->DecreaseVolume.code = "DecreaseVolume";
+	keys->DecreaseVolume.name = STRW(ID_LABEL_HK33);
+	keys->DecreaseVolume.page = HOTKEY_PAGE_TOOLS;
+	keys->DecreaseVolume.key = NULL;
+
+	//Movie Page ----------------------------------------------------------
 	keys->ToggleReadOnly.handleKeyDown = HK_ToggleReadOnly;
 	keys->ToggleReadOnly.code = "ToggleReadOnly";
 	keys->ToggleReadOnly.name = STRW(ID_LABEL_HK24);
@@ -745,7 +871,7 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->RecordAVI.page = HOTKEY_PAGE_MOVIE;
 	keys->RecordAVI.key = NULL;
 
-	//Turbo Page---------------------------------------
+	//Turbo Page ----------------------------------------------------------
 	keys->TurboRight.handleKeyDown = HK_TurboRightKeyDown;
 	keys->TurboRight.handleKeyUp = HK_TurboRightKeyUp;
 	keys->TurboRight.code = "TurboRight";
@@ -830,85 +956,6 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->TurboStart.page = HOTKEY_PAGE_TURBO;
 	keys->TurboStart.key = NULL;
 
-	keys->NewLuaScript.handleKeyDown = HK_NewLuaScriptDown;
-	keys->NewLuaScript.code = "NewLuaScript";
-	keys->NewLuaScript.name = STRW(ID_LABEL_HK26);
-	keys->NewLuaScript.page = HOTKEY_PAGE_MOVIE;
-	keys->NewLuaScript.key = NULL;
-
-	keys->CloseLuaScripts.handleKeyDown = HK_CloseLuaScriptsDown;
-	keys->CloseLuaScripts.code = "CloseLuaScripts";
-	keys->CloseLuaScripts.name = STRW(ID_LABEL_HK27);
-	keys->CloseLuaScripts.page = HOTKEY_PAGE_MOVIE;
-	keys->CloseLuaScripts.key = NULL;
-
-	keys->MostRecentLuaScript.handleKeyDown = HK_MostRecentLuaScriptDown;
-	keys->MostRecentLuaScript.code = "MostRecentLuaScript";
-	keys->MostRecentLuaScript.name = STRW(ID_LABEL_HK28);
-	keys->MostRecentLuaScript.page = HOTKEY_PAGE_MOVIE;
-	keys->MostRecentLuaScript.key = NULL;
-
-	keys->LCDsMode.handleKeyUp = HK_LCDsMode;
-	keys->LCDsMode.code = "LCDsLayoutMode";
-	keys->LCDsMode.name = STRW(ID_LABEL_HK30);
-	keys->LCDsMode.page = HOTKEY_PAGE_TOOLS;
-	keys->LCDsMode.key = VK_END;
-
-	keys->LCDsSwap.handleKeyUp = HK_LCDsSwap;
-	keys->LCDsSwap.code = "LCDsSwap";
-	keys->LCDsSwap.name = STRW(ID_LABEL_HK31);
-	keys->LCDsSwap.page = HOTKEY_PAGE_TOOLS;
-	keys->LCDsSwap.key = VK_NEXT;
-
-	keys->SearchCheats.handleKeyDown = HK_SearchCheats;
-	keys->SearchCheats.code = "SearchCheats";
-	keys->SearchCheats.name = STRW(ID_LABEL_HK54);
-	keys->SearchCheats.page = HOTKEY_PAGE_TOOLS;
-	keys->SearchCheats.key = 'S';
-	keys->SearchCheats.modifiers = CUSTKEY_CTRL_MASK;
-
-	keys->IncreaseVolume.handleKeyDown = HK_IncreaseVolume;
-	keys->IncreaseVolume.code = "IncreaseVolume";
-	keys->IncreaseVolume.name = STRW(ID_LABEL_HK32);
-	keys->IncreaseVolume.page = HOTKEY_PAGE_TOOLS;
-	keys->IncreaseVolume.key = NULL;
-
-	keys->DecreaseVolume.handleKeyDown = HK_DecreaseVolume;
-	keys->DecreaseVolume.code = "DecreaseVolume";
-	keys->DecreaseVolume.name = STRW(ID_LABEL_HK33);
-	keys->DecreaseVolume.page = HOTKEY_PAGE_TOOLS;
-	keys->DecreaseVolume.key = NULL;
-
-	keys->ToggleFrameCounter.handleKeyDown = HK_ToggleFrame;
-	keys->ToggleFrameCounter.code = "ToggleFrameDisplay";
-	keys->ToggleFrameCounter.name = STRW(ID_LABEL_HK16);
-	keys->ToggleFrameCounter.page = HOTKEY_PAGE_TOOLS;
-	keys->ToggleFrameCounter.key = VK_OEM_PERIOD;
-
-	keys->ToggleFPS.handleKeyDown = HK_ToggleFPS;
-	keys->ToggleFPS.code = "ToggleFPSDisplay";
-	keys->ToggleFPS.name = STRW(ID_LABEL_HK17);
-	keys->ToggleFPS.page = HOTKEY_PAGE_TOOLS;
-	keys->ToggleFPS.key = NULL;
-
-	keys->ToggleInput.handleKeyDown = HK_ToggleInput;
-	keys->ToggleInput.code = "ToggleInputDisplay";
-	keys->ToggleInput.name = STRW(ID_LABEL_HK18);
-	keys->ToggleInput.page = HOTKEY_PAGE_TOOLS;
-	keys->ToggleInput.key = VK_OEM_COMMA;
-
-	keys->ToggleLag.handleKeyDown = HK_ToggleLag;
-	keys->ToggleLag.code = "ToggleLagDisplay";
-	keys->ToggleLag.name = STRW(ID_LABEL_HK19);
-	keys->ToggleLag.page = HOTKEY_PAGE_TOOLS;
-	keys->ToggleLag.key = NULL;
-
-	keys->ResetLagCounter.handleKeyDown = HK_ResetLagCounter;
-	keys->ResetLagCounter.code = "ResetLagCounter";
-	keys->ResetLagCounter.name = STRW(ID_LABEL_HK20);
-	keys->ResetLagCounter.page = HOTKEY_PAGE_TOOLS;
-	keys->ResetLagCounter.key = NULL;
-
 	//Other Page -------------------------------------------------------
 	keys->Rotate0.handleKeyDown = HK_Rotate0;
 	keys->Rotate0.code = "Rotate0";
@@ -940,7 +987,79 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->CursorToggle.page = HOTKEY_PAGE_OTHER;
 	keys->CursorToggle.key = NULL;
 
-	//StateSlots Page --------------------------------------------------
+	keys->ToggleMainGPU.handleKeyDown = HK_ToggleMainGPU;
+	keys->ToggleMainGPU.code = "Toggle Main GPU";
+	keys->ToggleMainGPU.name = STRW(ID_LABEL_HK65);
+	keys->ToggleMainGPU.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleMainGPU.key = NULL;
+
+	keys->ToggleMainBG0Layer.handleKeyDown = HK_ToggleMainBG0Layer;
+	keys->ToggleMainBG0Layer.code = "Toggle Main BG 0 Layer";
+	keys->ToggleMainBG0Layer.name = STRW(ID_LABEL_HK66);
+	keys->ToggleMainBG0Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleMainBG0Layer.key = NULL;
+
+	keys->ToggleMainBG1Layer.handleKeyDown = HK_ToggleMainBG1Layer;
+	keys->ToggleMainBG1Layer.code = "Toggle Main BG 1 Layer";
+	keys->ToggleMainBG1Layer.name = STRW(ID_LABEL_HK67);
+	keys->ToggleMainBG1Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleMainBG1Layer.key = NULL;
+
+	keys->ToggleMainBG2Layer.handleKeyDown = HK_ToggleMainBG2Layer;
+	keys->ToggleMainBG2Layer.code = "Toggle Main BG 2 Layer";
+	keys->ToggleMainBG2Layer.name = STRW(ID_LABEL_HK68);
+	keys->ToggleMainBG2Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleMainBG2Layer.key = NULL;
+
+	keys->ToggleMainBG3Layer.handleKeyDown = HK_ToggleMainBG3Layer;
+	keys->ToggleMainBG3Layer.code = "Toggle Main BG 3 Layer";
+	keys->ToggleMainBG3Layer.name = STRW(ID_LABEL_HK69);
+	keys->ToggleMainBG3Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleMainBG3Layer.key = NULL;
+
+	keys->ToggleMainOBJLayer.handleKeyDown = HK_ToggleMainOBJLayer;
+	keys->ToggleMainOBJLayer.code = "Toggle Main OBJ Layer";
+	keys->ToggleMainOBJLayer.name = STRW(ID_LABEL_HK70);
+	keys->ToggleMainOBJLayer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleMainOBJLayer.key = NULL;
+
+	keys->ToggleSubGPU.handleKeyDown = HK_ToggleSubGPU;
+	keys->ToggleSubGPU.code = "Toggle Sub GPU";
+	keys->ToggleSubGPU.name = STRW(ID_LABEL_HK71);
+	keys->ToggleSubGPU.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleSubGPU.key = NULL;
+
+	keys->ToggleSubBG0Layer.handleKeyDown = HK_ToggleSubBG0Layer;
+	keys->ToggleSubBG0Layer.code = "Toggle Sub BG 0 Layer";
+	keys->ToggleSubBG0Layer.name = STRW(ID_LABEL_HK72);
+	keys->ToggleSubBG0Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleSubBG0Layer.key = NULL;
+
+	keys->ToggleSubBG1Layer.handleKeyDown = HK_ToggleSubBG1Layer;
+	keys->ToggleSubBG1Layer.code = "Toggle Sub BG 1 Layer";
+	keys->ToggleSubBG1Layer.name = STRW(ID_LABEL_HK73);
+	keys->ToggleSubBG1Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleSubBG1Layer.key = NULL;
+
+	keys->ToggleSubBG2Layer.handleKeyDown = HK_ToggleSubBG2Layer;
+	keys->ToggleSubBG2Layer.code = "Toggle Sub BG 2 Layer";
+	keys->ToggleSubBG2Layer.name = STRW(ID_LABEL_HK74);
+	keys->ToggleSubBG2Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleSubBG2Layer.key = NULL;
+
+	keys->ToggleSubBG3Layer.handleKeyDown = HK_ToggleSubBG3Layer;
+	keys->ToggleSubBG3Layer.code = "Toggle Sub BG 3 Layer";
+	keys->ToggleSubBG3Layer.name = STRW(ID_LABEL_HK75);
+	keys->ToggleSubBG3Layer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleSubBG3Layer.key = NULL;
+
+	keys->ToggleSubOBJLayer.handleKeyDown = HK_ToggleSubOBJLayer;
+	keys->ToggleSubOBJLayer.code = "Toggle Sub OBJ Layer";
+	keys->ToggleSubOBJLayer.name = STRW(ID_LABEL_HK76);
+	keys->ToggleSubOBJLayer.page = HOTKEY_PAGE_OTHER;
+	keys->ToggleSubOBJLayer.key = NULL;
+
+	//State/Slots Pages ------------------------------------------------
 	keys->NextSaveSlot.handleKeyDown = HK_NextSaveSlot;
 	keys->NextSaveSlot.code = "NextSaveSlot";
 	keys->NextSaveSlot.name = STRW(ID_LABEL_HK39);

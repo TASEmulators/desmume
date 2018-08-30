@@ -2105,9 +2105,6 @@ int _main()
 			TABLET_DISABLE_FLICKFALLBACKKEYS
 			));
 
-	InitCustomKeys(&CustomKeys);
-	LoadHotkeyConfig();
-
 	if(MenuInit() == 0)
 	{
 		MessageBox(NULL, "Error creating main menu", "DeSmuME", MB_OK);
@@ -3501,16 +3498,6 @@ void SaveWindowPos(HWND hwnd)
 	if(IsZoomed(hwnd) || fsWindow) return;
 	WritePrivateProfileInt("Video", "WindowPosX", WndX/*MainWindowRect.left*/, IniName);
 	WritePrivateProfileInt("Video", "WindowPosY", WndY/*MainWindowRect.top*/, IniName);
-}
-
-
-static void TwiddleLayer(UINT ctlid, int core, int layer)
-{
-	GPUEngineBase *gpu = ((GPUEngineID)core == GPUEngineID_Main) ? (GPUEngineBase *)GPU->GetEngineMain() : (GPUEngineBase *)GPU->GetEngineSub();
-
-	const bool newLayerState = !CommonSettings.dispLayers[core][layer];
-	gpu->SetLayerEnableState(layer, newLayerState);
-	MainWindow->checkMenu(ctlid, newLayerState);
 }
 
 //========================================================================================

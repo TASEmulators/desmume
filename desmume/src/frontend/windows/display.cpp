@@ -959,3 +959,12 @@ void _ServiceDisplayThreadInvocation()
 	display_invoke_function = NULL;
 	SetEvent(display_invoke_done_event);
 }
+
+void TwiddleLayer(UINT ctlid, int core, int layer)
+{
+	GPUEngineBase *gpu = ((GPUEngineID)core == GPUEngineID_Main) ? (GPUEngineBase *)GPU->GetEngineMain() : (GPUEngineBase *)GPU->GetEngineSub();
+
+	const bool newLayerState = !CommonSettings.dispLayers[core][layer];
+	gpu->SetLayerEnableState(layer, newLayerState);
+	MainWindow->checkMenu(ctlid, newLayerState);
+}
