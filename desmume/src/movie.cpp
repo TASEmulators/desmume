@@ -343,9 +343,73 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	return end-start;
 }
 
+std::string readUntilWhitespace(EMUFILE &fp)
+{
+	std::string ret = "";
+	while (true)
+	{
+		int c = fp.fgetc();
+		switch (c)
+		{
+		case -1:
+		case ' ':
+		case '\t':
+		case '\r':
+		case '\n':
+			return ret;
+		default:
+			ret += c;
+			break;
+		}
+	}
+}
+std::string readUntilNewline(EMUFILE &fp)
+{
+	std::string ret = "";
+	while (true)
+	{
+		int c = fp.fgetc();
+		switch (c)
+		{
+		case -1:
+		case '\r':
+		case '\n':
+			return ret;
+		default:
+			ret += c;
+			break;
+		}
+	}
+}
+void readUntilNotWhitespace(EMUFILE &fp)
+{
+	while (true)
+	{
+		int c = fp.fgetc();
+		switch (c)
+		{
+		case -1:
+			return;
+		case ' ':
+		case '\t':
+		case '\r':
+		case '\n':
+			break;
+		default:
+			fp.unget();
+			return;
+		}
+	}
+}
 //yuck... another custom text parser.
 bool LoadFM2(MovieData &movieData, EMUFILE &fp, int size, bool stopAfterHeader)
 {
+	int endOfMovie;
+	if (size == INT_MAX)
+		endOfMovie = fp.size();
+	else
+		endOfMovie = fp.ftell() + size;
+
 	//TODO - start with something different. like 'desmume movie version 1"
 	int curr = fp.ftell();
 
@@ -360,85 +424,37 @@ bool LoadFM2(MovieData &movieData, EMUFILE &fp, int size, bool stopAfterHeader)
 
 	std::string key,value;
 	enum {
-		NEWLINE, KEY, SEPARATOR, VALUE, RECORD, COMMENT
+		NEWLINE, KEY, SEPARATOR, VALUE, RECORD
 	} state = NEWLINE;
-	bool bail = false;
-	for(;;)
+	while (fp.ftell() < endOfMovie)
 	{
-		bool iswhitespace, isrecchar, isnewline;
-		int c;
-		if(size--<=0) goto bail;
-		c = fp.fgetc();
-		if(c == -1)
-			goto bail;
-		iswhitespace = (c==' '||c=='\t');
-		isrecchar = (c=='|');
-		isnewline = (c==10||c==13);
-		if(isrecchar && movieData.binaryFlag && !stopAfterHeader)
+		readUntilNotWhitespace(fp);
+		int c = fp.fgetc();
+		if (c == -1)
+			break;
+
+		bool isRecord = c == '|';
+		if(isRecord && movieData.binaryFlag && !stopAfterHeader)
 		{
-			LoadFM2_binarychunk(movieData, fp, size);
+			LoadFM2_binarychunk(movieData, fp, endOfMovie - fp.ftell());
 			return true;
 		}
-		switch(state)
+
+		if (isRecord)
 		{
-		case NEWLINE:
-			if(isnewline) goto done;
-			if(iswhitespace) goto done;
-			if(isrecchar) 
-				goto dorecord;
-			//must be a key
-			key = "";
-			value = "";
-			goto dokey;
-			break;
-		case RECORD:
-			{
-				dorecord:
-				if (stopAfterHeader) return true;
-				int currcount = movieData.records.size();
-				movieData.records.resize(currcount+1);
-				int preparse = fp.ftell();
-				movieData.records[currcount].parse(fp);
-				int postparse = fp.ftell();
-				size -= (postparse-preparse);
-				state = NEWLINE;
-				break;
-			}
-
-		case KEY:
-			dokey: //dookie
-			state = KEY;
-			if(iswhitespace) goto doseparator;
-			if(isnewline) goto commit;
-			key += c;
-			break;
-		case SEPARATOR:
-			doseparator:
-			state = SEPARATOR;
-			if(isnewline) goto commit;
-			if(!iswhitespace) goto dovalue;
-			break;
-		case VALUE:
-			dovalue:
-			state = VALUE;
-			if(isnewline) goto commit;
-			value += c;
-			break;
-		case COMMENT:
-		default:
-			break;
+			if (stopAfterHeader) return true;
+			int currcount = movieData.records.size();
+			movieData.records.resize(currcount + 1);
+			movieData.records[currcount].parse(fp);
 		}
-		goto done;
-
-		bail:
-		bail = true;
-		if(state == VALUE) goto commit;
-		goto done;
-		commit:
-		movieData.installValue(key,value);
-		state = NEWLINE;
-		done: ;
-		if(bail) break;
+		else // key value
+		{
+			fp.unget();
+			key = readUntilWhitespace(fp);
+			readUntilNotWhitespace(fp);
+			value = readUntilNewline(fp);
+			movieData.installValue(key, value);
+		}
 	}
 
 	return true;
