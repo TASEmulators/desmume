@@ -66,7 +66,7 @@ bool movie_readonly = true;
 
 char curMovieFilename[512] = {0};
 MovieData currMovieData;
-MovieData oldSettings = NULL;
+MovieData* oldSettings = NULL;
 // Loading a movie calls NDS_Reset, which calls UnloadMovieEmulationSettings. Don't unload settings on that call.
 bool firstReset = false;
 
@@ -555,11 +555,16 @@ static void LoadSettingsFromMovie(MovieData movieData)
 }
 void UnloadMovieEmulationSettings()
 {
-	if (&oldSettings && !firstReset)
+	if (oldSettings && !firstReset)
 	{
-		LoadSettingsFromMovie(oldSettings);
+		LoadSettingsFromMovie(*oldSettings);
+		delete oldSettings;
 		oldSettings = NULL;
 	}
+}
+bool AreMovieEmulationSettingsActive()
+{
+	return (bool)oldSettings;
 }
 //begin playing an existing movie
 const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe)
@@ -622,7 +627,7 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	//poweron(true);
 
 	// set emulation/firmware settings
-	oldSettings = MovieData(true);
+	oldSettings = new MovieData(true);
 	LoadSettingsFromMovie(currMovieData);
 
 	firstReset = true;
