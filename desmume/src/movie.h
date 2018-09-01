@@ -198,15 +198,37 @@ public:
 	//void TryDumpIncremental();
 
 private:
-	void installInt(std::string& val, int& var)
-	{
-		var = atoi(val.c_str());
-	}
+	void installVersion(std::string& val) { version = atoi(val.c_str()); }
+	void installEmuVersion(std::string& val) { emuVersion = atoi(val.c_str()); }
+	void installRerecordCount(std::string& val) { rerecordCount = atoi(val.c_str()); }
+	void installRomFilename(std::string& val) { romFilename = val; }
+	void installRomSerial(std::string& val) { romSerial = val; }
+	void installGuid(std::string& val) { guid = Desmume_Guid::fromString(val); }
+	void installRtcStartNew(std::string& val) { DateTime::TryParse(val.c_str(), rtcStart); }
+	void installBinary(std::string& val) { binaryFlag = atoi(val.c_str()) != 0; }
+	
+	void installRomChecksum(std::string& val);
+	void installRtcStart(std::string& val);
+	void installComment(std::string& val);
+	void installSavestate(std::string& val);
+	void installSram(std::string& val);
 
-	void installBool(std::string& val, bool& var)
-	{
-		var = atoi(val.c_str())!=0;
-	}
+	typedef void(MovieData::* ivm)(std::string&);
+	std::map<std::string, ivm> installValueMap = {
+		{"version", &MovieData::installVersion},
+		{"emuVersion", &MovieData::installEmuVersion},
+		{"rerecordCount", &MovieData::installRerecordCount},
+		{"romFilename", &MovieData::installRomFilename},
+		{"romChecksum", &MovieData::installRomChecksum},
+		{"romSerial", &MovieData::installRomSerial},
+		{"guid", &MovieData::installGuid},
+		{"rtcStart", &MovieData::installRtcStart},
+		{"rtcStartNew", &MovieData::installRtcStartNew},
+		{"comment", &MovieData::installComment},
+		{"binary", &MovieData::installBinary},
+		{"savestate", &MovieData::installSavestate},
+		{"sram", &MovieData::installSram}
+	};
 };
 
 extern int currFrameCounter;

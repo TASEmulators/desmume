@@ -211,68 +211,49 @@ void MovieData::truncateAt(int frame)
 		records.resize(frame);
 }
 
+void MovieData::installRomChecksum(std::string& val)
+{
+	// TODO: The current implementation of reading the checksum doesn't work correctly, and can
+	// cause crashes when the MovieData object is deallocated. (This is caused by StringToBytes()
+	// overrunning romChecksum into romSerial, making romSerial undefined.) Set romChecksum to
+	// some dummy value for now to prevent crashing. This is okay, since romChecksum isn't actually
+	// used in practice at this time. - rogerman, 2012/08/24
+	//StringToBytes(val,&romChecksum,MD5DATA::size);
+
+	romChecksum = 0;
+}
+void MovieData::installRtcStart(std::string& val)
+{
+	// sloppy format check and parse
+	const char *validFormatStr = "####-##-##T##:##:##Z";
+	bool validFormat = true;
+	for (int i = 0; validFormatStr[i] != '\0'; i++) {
+		if (validFormatStr[i] != val[i] &&
+			!(validFormatStr[i] == '#' && isdigit(val[i]))) {
+			validFormat = false;
+			break;
+		}
+	}
+	if (validFormat) {
+		const char *s = val.data();
+		int year = atoi(&s[0]);
+		int mon = atoi(&s[5]);
+		int day = atoi(&s[8]);
+		int hour = atoi(&s[11]);
+		int min = atoi(&s[14]);
+		int sec = atoi(&s[17]);
+		rtcStart = DateTime(year, mon, day, hour, min, sec);
+	}
+}
+void MovieData::installComment(std::string& val) { comments.push_back(mbstowcs(val)); }
+void MovieData::installSavestate(std::string& val) { BinaryDataFromString(val, &this->savestate); }
+void MovieData::installSram(std::string& val) { BinaryDataFromString(val, &this->sram); }
+
 void MovieData::installValue(std::string& key, std::string& val)
 {
-	//todo - use another config system, or drive this from a little data structure. because this is gross
-	if(key == "version")
-		installInt(val,version);
-	else if(key == "emuVersion")
-		installInt(val,emuVersion);
-	else if(key == "rerecordCount")
-		installInt(val,rerecordCount);
-	else if(key == "romFilename")
-		romFilename = val;
-	else if(key == "romChecksum") {
-		// TODO: The current implementation of reading the checksum doesn't work correctly, and can
-		// cause crashes when the MovieData object is deallocated. (This is caused by StringToBytes()
-		// overrunning romChecksum into romSerial, making romSerial undefined.) Set romChecksum to
-		// some dummy value for now to prevent crashing. This is okay, since romChecksum isn't actually
-		// used in practice at this time. - rogerman, 2012/08/24
-		//StringToBytes(val,&romChecksum,MD5DATA::size);
-		
-		romChecksum = 0;
-	}
-	else if(key == "romSerial")
-		romSerial = val;
-	else if(key == "guid")
-		guid = Desmume_Guid::fromString(val);
-	else if(key == "rtcStart") {
-		// sloppy format check and parse
-		const char *validFormatStr = "####-##-##T##:##:##Z";
-		bool validFormat = true;
-		for (int i = 0; validFormatStr[i] != '\0'; i++) {
-			if (validFormatStr[i] != val[i] && 
-					!(validFormatStr[i] == '#' && isdigit(val[i]))) {
-				validFormat = false;
-				break;
-			}
-		}
-		if (validFormat) {
-			const char *s = val.data();
-			int year = atoi(&s[0]);
-			int mon = atoi(&s[5]);
-			int day = atoi(&s[8]);
-			int hour = atoi(&s[11]);
-			int min = atoi(&s[14]);
-			int sec = atoi(&s[17]);
-			rtcStart = DateTime(year,mon,day,hour,min,sec);
-		}
-	}
-	else if(key == "rtcStartNew") {
-		DateTime::TryParse(val.c_str(),rtcStart);
-	}
-	else if(key == "comment")
-		comments.push_back(mbstowcs(val));
-	else if(key == "binary")
-		installBool(val,binaryFlag);
-	else if(key == "savestate")
-	{
-		BinaryDataFromString(val, &this->savestate);
-	}
-	else if(key == "sram")
-	{
-		BinaryDataFromString(val, &this->sram);
-	}
+	ivm method = installValueMap[key];
+	if (method != NULL)
+		(this->*method)(val);
 }
 
 
