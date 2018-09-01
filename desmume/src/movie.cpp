@@ -391,52 +391,48 @@ bool LoadFM2(MovieData &movieData, EMUFILE &fp, int size, bool stopAfterHeader)
 	else
 		endOfMovie = fp.ftell() + size;
 
-	//TODO - start with something different. like 'desmume movie version 1"
-	int curr = fp.ftell();
-
 	//movie must start with "version 1"
+	//TODO - start with something different. like 'desmume movie version 1"
 	char buf[9];
-	curr = fp.ftell();
-	fp.fread(buf,9);
-	fp.fseek(curr, SEEK_SET);
+	fp.fread(buf, 9);
+	fp.fseek(-9, SEEK_CUR);
 //	if(fp->fail()) return false;
-	if (memcmp(buf,"version 1",9))
+	if (memcmp(buf, "version 1", 9))
 		return false;
 
-	std::string key,value;
-	enum {
-		NEWLINE, KEY, SEPARATOR, VALUE, RECORD
-	} state = NEWLINE;
 	while (fp.ftell() < endOfMovie)
 	{
 		readUntilNotWhitespace(fp);
 		int c = fp.fgetc();
-		if (c == -1)
-			break;
-
-		bool isRecord = c == '|';
-		if(isRecord && movieData.binaryFlag && !stopAfterHeader)
+		// This will be the case if there is a newline at the end of the file.
+		if (c == -1) break;
+		else if (c == '|')
 		{
-			LoadFM2_binarychunk(movieData, fp, endOfMovie - fp.ftell());
-			return true;
-		}
-
-		if (isRecord)
-		{
-			if (stopAfterHeader) return true;
-			int currcount = movieData.records.size();
-			movieData.records.resize(currcount + 1);
-			movieData.records[currcount].parse(fp);
+			if (stopAfterHeader) break;
+			else if (movieData.binaryFlag)
+			{
+				LoadFM2_binarychunk(movieData, fp, endOfMovie - fp.ftell());
+				break;
+			}
+			else
+			{
+				int currcount = movieData.records.size();
+				movieData.records.resize(currcount + 1);
+				movieData.records[currcount].parse(fp);
+			}
 		}
 		else // key value
 		{
 			fp.unget();
-			key = readUntilWhitespace(fp);
+			std::string key = readUntilWhitespace(fp);
 			readUntilNotWhitespace(fp);
-			value = readUntilNewline(fp);
+			std::string value = readUntilNewline(fp);
 			movieData.installValue(key, value);
 		}
 	}
+
+	// just in case readUntilNotWhitespace read past the limit set by size parameter
+	fp.fseek(endOfMovie, SEEK_SET);
 
 	return true;
 }
