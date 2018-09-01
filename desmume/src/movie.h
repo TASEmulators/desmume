@@ -132,8 +132,7 @@ private:
 class MovieData
 {
 public:
-	MovieData();
-	
+	MovieData(bool fromCurrentSettings = false);
 
 	int version;
 	int emuVersion;
@@ -273,6 +272,7 @@ extern bool movie_reset_command;
 bool FCEUI_MovieGetInfo(EMUFILE &fp, MOVIE_INFO &info, bool skipFrameCount);
 void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname, const DateTime &rtcstart);
 const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe); // returns NULL on success, errmsg on failure
+void UnloadMovieEmulationSettings();
 void FCEUI_StopMovie();
 void FCEUMOV_AddInputState();
 void FCEUMOV_HandlePlayback();

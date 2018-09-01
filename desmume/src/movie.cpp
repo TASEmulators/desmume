@@ -66,6 +66,10 @@ bool movie_readonly = true;
 
 char curMovieFilename[512] = {0};
 MovieData currMovieData;
+MovieData oldSettings = NULL;
+// Loading a movie calls NDS_Reset, which calls UnloadMovieEmulationSettings. Don't unload settings on that call.
+bool firstReset = false;
+
 int currRerecordCount;
 bool movie_reset_command = false;
 //--------------
@@ -195,7 +199,7 @@ DateTime FCEUI_MovieGetRTCDefault()
 	return DateTime(2009,1,1,0,0,0);
 }
 
-MovieData::MovieData()
+MovieData::MovieData(bool fromCurrentSettings)
 	: version(MOVIE_VERSION)
 	, emuVersion(EMU_DESMUME_VERSION_NUMERIC())
 	, romChecksum(0)
@@ -203,6 +207,28 @@ MovieData::MovieData()
 	, binaryFlag(false)
 	, rtcStart(FCEUI_MovieGetRTCDefault())
 {
+	if (fromCurrentSettings)
+	{
+		useExtBios = CommonSettings.UseExtBIOS;
+		if (useExtFirmware != -1)
+			useExtFirmware = CommonSettings.UseExtFirmware;
+		if (!CommonSettings.UseExtFirmware)
+		{
+			firmNickname.resize(CommonSettings.fw_config.nickname_len);
+			for (int i = 0; i < CommonSettings.fw_config.nickname_len; i++)
+				firmNickname[i] = CommonSettings.fw_config.nickname[i];
+			firmMessage.resize(CommonSettings.fw_config.message_len);
+			for (int i = 0; i < CommonSettings.fw_config.message_len; i++)
+				firmMessage[i] = CommonSettings.fw_config.message[i];
+
+			firmFavColour = CommonSettings.fw_config.fav_colour;
+			firmBirthMonth = CommonSettings.fw_config.birth_month;
+			firmBirthDay = CommonSettings.fw_config.birth_day;
+			firmLanguage = CommonSettings.fw_config.language;
+		}
+		advancedTiming = CommonSettings.advanced_timing;
+		jitBlockSize = CommonSettings.use_jit ? CommonSettings.jit_max_block_size : 0;
+	}
 }
 
 void MovieData::truncateAt(int frame)
@@ -529,7 +555,7 @@ static void LoadSettingsFromMovie(MovieData movieData)
 }
 void UnloadMovieEmulationSettings()
 {
-	if (&oldSettings)
+	if (&oldSettings && !firstReset)
 	{
 		LoadSettingsFromMovie(oldSettings);
 		oldSettings = NULL;
@@ -596,9 +622,12 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	//poweron(true);
 
 	// set emulation/firmware settings
+	oldSettings = MovieData(true);
 	LoadSettingsFromMovie(currMovieData);
 
+	firstReset = true;
 	NDS_Reset();
+	firstReset = false;
 
 	////WE NEED TO LOAD A SAVESTATE
 	//if(currMovieData.savestate.size() != 0)
