@@ -547,11 +547,13 @@ static void LoadSettingsFromMovie(MovieData movieData)
 	}
 	if (movieData.advancedTiming != -1)
 		CommonSettings.advanced_timing = movieData.advancedTiming;
-	if (movieData.jitBlockSize != -1)
+	if (movieData.jitBlockSize > 0 && movieData.jitBlockSize <= 100)
 	{
-		CommonSettings.use_jit = movieData.jitBlockSize != 0;
+		CommonSettings.use_jit = true;
 		CommonSettings.jit_max_block_size = movieData.jitBlockSize;
 	}
+	else
+		CommonSettings.use_jit = false;
 }
 void UnloadMovieEmulationSettings()
 {
