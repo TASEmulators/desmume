@@ -486,7 +486,47 @@ void FCEUI_StopMovie()
 	freshMovie = false;
 }
 
+static void LoadSettingsFromMovie(MovieData movieData)
+{
+	if (currMovieData.useExtBios != -1)
+		CommonSettings.UseExtBIOS = currMovieData.useExtBios;
+	if (currMovieData.useExtFirmware != -1)
+		CommonSettings.UseExtFirmware = currMovieData.useExtFirmware;
+	if (!CommonSettings.UseExtFirmware)
+	{
+		if (currMovieData.firmNickname != "")
+		{
+			CommonSettings.fw_config.nickname_len = currMovieData.firmNickname.length() > MAX_FW_NICKNAME_LENGTH ? MAX_FW_NICKNAME_LENGTH : currMovieData.firmNickname.length();
+			for (int i = 0; i < CommonSettings.fw_config.nickname_len; i++)
+				CommonSettings.fw_config.nickname[i] = currMovieData.firmNickname[i];
+		}
+		if (currMovieData.firmMessage != "")
+		{
+			CommonSettings.fw_config.message_len = currMovieData.firmMessage.length() > MAX_FW_MESSAGE_LENGTH ? MAX_FW_MESSAGE_LENGTH : currMovieData.firmMessage.length();
+			for (int i = 0; i < CommonSettings.fw_config.message_len; i++)
+				CommonSettings.fw_config.message[i] = currMovieData.firmMessage[i];
+		}
 
+		if (currMovieData.firmFavColour != -1)
+			CommonSettings.fw_config.fav_colour = currMovieData.firmFavColour;
+		if (currMovieData.firmBirthMonth != -1)
+			CommonSettings.fw_config.birth_month = currMovieData.firmBirthMonth;
+		if (currMovieData.firmBirthDay != -1)
+			CommonSettings.fw_config.birth_day = currMovieData.firmBirthDay;
+		if (currMovieData.firmLanguage != -1)
+			CommonSettings.fw_config.language = currMovieData.firmLanguage;
+
+		// reset firmware (some games can write to it)
+		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
+	}
+	if (currMovieData.advancedTiming != -1)
+		CommonSettings.advanced_timing = currMovieData.advancedTiming;
+	if (currMovieData.jitBlockSize != -1)
+	{
+		CommonSettings.use_jit = currMovieData.jitBlockSize != 0;
+		CommonSettings.jit_max_block_size = currMovieData.jitBlockSize;
+	}
+}
 //begin playing an existing movie
 const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe)
 {
@@ -547,11 +587,8 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	//fully reload the game to reinitialize everything before playing any movie
 	//poweron(true);
 
-	// reset firmware (some games can write to it)
-	if (!CommonSettings.UseExtFirmware)
-	{
-		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
-	}
+	// set emulation/firmware settings
+	LoadSettingsFromMovie(currMovieData);
 
 	NDS_Reset();
 

@@ -155,6 +155,19 @@ public:
 	//was the frame data stored in binary?
 	bool binaryFlag;
 
+	int useExtBios = -1;
+	int useExtFirmware = -1;
+
+	std::string firmNickname = "";
+	std::string firmMessage = "";
+	int firmFavColour = -1;
+	int firmBirthMonth = -1;
+	int firmBirthDay = -1;
+	int firmLanguage = -1;
+
+	int advancedTiming = -1;
+	int jitBlockSize = -1;
+
 	int getNumRecords() { return records.size(); }
 
 	class TDictionary : public std::map<std::string,std::string>
@@ -206,7 +219,17 @@ private:
 	void installGuid(std::string& val) { guid = Desmume_Guid::fromString(val); }
 	void installRtcStartNew(std::string& val) { DateTime::TryParse(val.c_str(), rtcStart); }
 	void installBinary(std::string& val) { binaryFlag = atoi(val.c_str()) != 0; }
-	
+	void installUseExtBios(std::string& val) { useExtBios = atoi(val.c_str()) != 0; }
+	void installUseExtFirmware(std::string& val) { useExtFirmware = atoi(val.c_str()) != 0; }
+	void installFirmNickname(std::string& val) { firmNickname = val; }
+	void installFirmMessage(std::string& val) { firmMessage = val; }
+	void installFirmFavColour(std::string& val) { firmFavColour = atoi(val.c_str()); }
+	void installFirmBirthMonth(std::string& val) { firmBirthMonth = atoi(val.c_str()); }
+	void installFirmBirthDay(std::string& val) { firmBirthDay = atoi(val.c_str()); }
+	void installFirmLanguage(std::string& val) { firmLanguage = atoi(val.c_str()); }
+	void installAdvancedTiming(std::string& val) { advancedTiming = atoi(val.c_str()) != 0; }
+	void installJitBlockSize(std::string& val) { jitBlockSize = atoi(val.c_str()); }
+
 	void installRomChecksum(std::string& val);
 	void installRtcStart(std::string& val);
 	void installComment(std::string& val);
@@ -226,6 +249,16 @@ private:
 		{"rtcStartNew", &MovieData::installRtcStartNew},
 		{"comment", &MovieData::installComment},
 		{"binary", &MovieData::installBinary},
+		{"useExtBios", &MovieData::installUseExtBios},
+		{"useExtFirmware", &MovieData::installUseExtBios},
+		{"firmNickname", &MovieData::installFirmNickname},
+		{"firmMessage", &MovieData::installFirmMessage},
+		{"firmFavColour", &MovieData::installFirmFavColour},
+		{"firmBirthMonth", &MovieData::installFirmBirthMonth},
+		{"firmBirthDay", &MovieData::installFirmBirthDay},
+		{"firmLanguage", &MovieData::installFirmLanguage},
+		{"advancedTiming", &MovieData::installAdvancedTiming},
+		{"jitBlockSize", &MovieData::installJitBlockSize},
 		{"savestate", &MovieData::installSavestate},
 		{"sram", &MovieData::installSram}
 	};
