@@ -488,43 +488,51 @@ void FCEUI_StopMovie()
 
 static void LoadSettingsFromMovie(MovieData movieData)
 {
-	if (currMovieData.useExtBios != -1)
-		CommonSettings.UseExtBIOS = currMovieData.useExtBios;
-	if (currMovieData.useExtFirmware != -1)
-		CommonSettings.UseExtFirmware = currMovieData.useExtFirmware;
+	if (movieData.useExtBios != -1)
+		CommonSettings.UseExtBIOS = movieData.useExtBios;
+	if (movieData.useExtFirmware != -1)
+		CommonSettings.UseExtFirmware = movieData.useExtFirmware;
 	if (!CommonSettings.UseExtFirmware)
 	{
-		if (currMovieData.firmNickname != "")
+		if (movieData.firmNickname != "")
 		{
-			CommonSettings.fw_config.nickname_len = currMovieData.firmNickname.length() > MAX_FW_NICKNAME_LENGTH ? MAX_FW_NICKNAME_LENGTH : currMovieData.firmNickname.length();
+			CommonSettings.fw_config.nickname_len = movieData.firmNickname.length() > MAX_FW_NICKNAME_LENGTH ? MAX_FW_NICKNAME_LENGTH : movieData.firmNickname.length();
 			for (int i = 0; i < CommonSettings.fw_config.nickname_len; i++)
-				CommonSettings.fw_config.nickname[i] = currMovieData.firmNickname[i];
+				CommonSettings.fw_config.nickname[i] = movieData.firmNickname[i];
 		}
-		if (currMovieData.firmMessage != "")
+		if (movieData.firmMessage != "")
 		{
-			CommonSettings.fw_config.message_len = currMovieData.firmMessage.length() > MAX_FW_MESSAGE_LENGTH ? MAX_FW_MESSAGE_LENGTH : currMovieData.firmMessage.length();
+			CommonSettings.fw_config.message_len = movieData.firmMessage.length() > MAX_FW_MESSAGE_LENGTH ? MAX_FW_MESSAGE_LENGTH : movieData.firmMessage.length();
 			for (int i = 0; i < CommonSettings.fw_config.message_len; i++)
-				CommonSettings.fw_config.message[i] = currMovieData.firmMessage[i];
+				CommonSettings.fw_config.message[i] = movieData.firmMessage[i];
 		}
 
-		if (currMovieData.firmFavColour != -1)
-			CommonSettings.fw_config.fav_colour = currMovieData.firmFavColour;
-		if (currMovieData.firmBirthMonth != -1)
-			CommonSettings.fw_config.birth_month = currMovieData.firmBirthMonth;
-		if (currMovieData.firmBirthDay != -1)
-			CommonSettings.fw_config.birth_day = currMovieData.firmBirthDay;
-		if (currMovieData.firmLanguage != -1)
-			CommonSettings.fw_config.language = currMovieData.firmLanguage;
+		if (movieData.firmFavColour != -1)
+			CommonSettings.fw_config.fav_colour = movieData.firmFavColour;
+		if (movieData.firmBirthMonth != -1)
+			CommonSettings.fw_config.birth_month = movieData.firmBirthMonth;
+		if (movieData.firmBirthDay != -1)
+			CommonSettings.fw_config.birth_day = movieData.firmBirthDay;
+		if (movieData.firmLanguage != -1)
+			CommonSettings.fw_config.language = movieData.firmLanguage;
 
 		// reset firmware (some games can write to it)
 		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
 	}
-	if (currMovieData.advancedTiming != -1)
-		CommonSettings.advanced_timing = currMovieData.advancedTiming;
-	if (currMovieData.jitBlockSize != -1)
+	if (movieData.advancedTiming != -1)
+		CommonSettings.advanced_timing = movieData.advancedTiming;
+	if (movieData.jitBlockSize != -1)
 	{
-		CommonSettings.use_jit = currMovieData.jitBlockSize != 0;
-		CommonSettings.jit_max_block_size = currMovieData.jitBlockSize;
+		CommonSettings.use_jit = movieData.jitBlockSize != 0;
+		CommonSettings.jit_max_block_size = movieData.jitBlockSize;
+	}
+}
+void UnloadMovieEmulationSettings()
+{
+	if (&oldSettings)
+	{
+		LoadSettingsFromMovie(oldSettings);
+		oldSettings = NULL;
 	}
 }
 //begin playing an existing movie
