@@ -268,13 +268,12 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	fp.fprintf("romChecksum %s\n", u32ToHexString(gameInfo.crc).c_str());
 	fp.fprintf("romSerial %s\n", romSerial.c_str());
 	fp.fprintf("guid %s\n", guid.toString().c_str());
-	fp.fprintf("useExtBios %d\n", CommonSettings.UseExtBIOS?1:0);
-	fp.fprintf("advancedTiming %d\n", CommonSettings.advanced_timing?1:0);
+	fp.fprintf("useExtBios %d\n", CommonSettings.UseExtBIOS?1:0); // TODO: include bios file data, not just a flag saying something was used
 
 	if (CommonSettings.UseExtBIOS)
 		fp.fprintf("swiFromBios %d\n", CommonSettings.SWIFromBIOS?1:0);
 
-	fp.fprintf("useExtFirmware %d\n", CommonSettings.UseExtFirmware?1:0);
+	fp.fprintf("useExtFirmware %d\n", CommonSettings.UseExtFirmware?1:0); // TODO: include firmware file data, not just a flag saying something was used
 
 	if (CommonSettings.UseExtFirmware)
 	{
@@ -295,6 +294,9 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 		fp.fprintf("firmBirthDay %d\n", CommonSettings.fw_config.birth_day);
 		fp.fprintf("firmLanguage %d\n", CommonSettings.fw_config.language);
 	}
+
+	fp.fprintf("advancedTiming %d\n", CommonSettings.advanced_timing?1:0);
+	fp.fprintf("jitBlockSize %d\n", CommonSettings.use_jit ? CommonSettings.jit_max_block_size : 0);
 
 	fp.fprintf("rtcStartNew %s\n", rtcStart.ToString().c_str());
 
