@@ -155,7 +155,9 @@ public:
 	bool binaryFlag;
 
 	int useExtBios = -1;
+	int swiFromBios = -1;
 	int useExtFirmware = -1;
+	int bootFromFirmware = -1;
 
 	std::string firmNickname = "";
 	std::string firmMessage = "";
@@ -219,7 +221,9 @@ private:
 	void installRtcStartNew(std::string& val) { DateTime::TryParse(val.c_str(), rtcStart); }
 	void installBinary(std::string& val) { binaryFlag = atoi(val.c_str()) != 0; }
 	void installUseExtBios(std::string& val) { useExtBios = atoi(val.c_str()) != 0; }
+	void installSwiFromBios(std::string& val) { swiFromBios = atoi(val.c_str()) != 0; }
 	void installUseExtFirmware(std::string& val) { useExtFirmware = atoi(val.c_str()) != 0; }
+	void installBootFromFirmware(std::string& val) { bootFromFirmware = atoi(val.c_str()) != 0; }
 	void installFirmNickname(std::string& val) { firmNickname = val; }
 	void installFirmMessage(std::string& val) { firmMessage = val; }
 	void installFirmFavColour(std::string& val) { firmFavColour = atoi(val.c_str()); }
@@ -249,7 +253,9 @@ private:
 		{"comment", &MovieData::installComment},
 		{"binary", &MovieData::installBinary},
 		{"useExtBios", &MovieData::installUseExtBios},
-		{"useExtFirmware", &MovieData::installUseExtBios},
+		{"swiFromBios", &MovieData::installSwiFromBios},
+		{"useExtFirmware", &MovieData::installUseExtFirmware},
+		{"bootFromFirmware", &MovieData::installBootFromFirmware},
 		{"firmNickname", &MovieData::installFirmNickname},
 		{"firmMessage", &MovieData::installFirmMessage},
 		{"firmFavColour", &MovieData::installFirmFavColour},

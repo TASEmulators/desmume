@@ -210,8 +210,11 @@ MovieData::MovieData(bool fromCurrentSettings)
 	if (fromCurrentSettings)
 	{
 		useExtBios = CommonSettings.UseExtBIOS;
-		if (useExtFirmware != -1)
-			useExtFirmware = CommonSettings.UseExtFirmware;
+		if (useExtBios)
+			swiFromBios = CommonSettings.SWIFromBIOS;
+		useExtFirmware = CommonSettings.UseExtFirmware;
+		if (useExtFirmware)
+			bootFromFirmware = CommonSettings.BootFromFirmware;
 		if (!CommonSettings.UseExtFirmware)
 		{
 			firmNickname.resize(CommonSettings.fw_config.nickname_len);
@@ -516,8 +519,12 @@ static void LoadSettingsFromMovie(MovieData movieData)
 {
 	if (movieData.useExtBios != -1)
 		CommonSettings.UseExtBIOS = movieData.useExtBios;
+	if (movieData.swiFromBios != -1)
+		CommonSettings.SWIFromBIOS = movieData.swiFromBios;
 	if (movieData.useExtFirmware != -1)
 		CommonSettings.UseExtFirmware = movieData.useExtFirmware;
+	if (movieData.bootFromFirmware != -1)
+		CommonSettings.BootFromFirmware = movieData.bootFromFirmware;
 	if (!CommonSettings.UseExtFirmware)
 	{
 		if (movieData.firmNickname != "")
