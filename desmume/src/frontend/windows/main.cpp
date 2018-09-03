@@ -4741,27 +4741,8 @@ DOKEYDOWN:
 			}
 		case IDM_EXPORTBACKUPMEMORY:
 			{
-				OPENFILENAME ofn;
 				NDS_Pause();
-				ZeroMemory(&ofn, sizeof(ofn));
-				ofn.lStructSize = sizeof(ofn);
-				ofn.hwndOwner = hwnd;
-				ofn.lpstrFilter = "Raw Save format (*.sav)\0*.sav\0No$GBA Save format (*.sav)\0*.sav\0\0";
-				ofn.nFilterIndex = 0;
-				ofn.lpstrFile =  ImportSavName;
-				ofn.nMaxFile = MAX_PATH;
-				ofn.lpstrDefExt = "sav";
-				ofn.Flags = OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
-
-				if(!GetSaveFileName(&ofn))
-				{
-					NDS_UnPause();
-					return 0;
-				}
-
-				if (ofn.nFilterIndex == 2) strcat(ImportSavName, "*");
-
-				if (!MMU_new.backupDevice.exportData(ImportSavName))
+				if (!exportSave(hwnd, hAppInst))
 					MessageBox(hwnd,"Save was not successfully exported","Error",MB_OK);
 				NDS_UnPause();
 				return 0;
