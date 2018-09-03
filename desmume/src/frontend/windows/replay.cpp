@@ -150,6 +150,7 @@ INT_PTR CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM
 	OPENFILENAME ofn;
 	char szChoice[MAX_PATH]={0};
 	char filename[MAX_PATH] = "";
+	const char* error;
 
 	switch(uMsg)
 	{
@@ -198,7 +199,10 @@ INT_PTR CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM
 				return true;
 
 			case IDOK:	
-				FCEUI_LoadMovie(playfilename, replayreadonly, false, 80000);
+				error = FCEUI_LoadMovie(playfilename, replayreadonly, false, 80000);
+				if (error)
+					MessageBox(hwndDlg, error, "Failed to load movie", MB_OK);
+
 				ZeroMemory(&playfilename, sizeof(playfilename));
 				EndDialog(hwndDlg, 0);
 				return true;

@@ -143,7 +143,7 @@ public:
 	u32 romChecksum;
 	std::string romSerial;
 	std::string romFilename;
-	std::vector<u8> savestate;
+	bool savestate = false;
 	std::vector<u8> sram;
 	std::vector<MovieRecord> records;
 	std::vector<std::wstring> comments;
@@ -207,9 +207,6 @@ public:
 	void clearRecordRange(int start, int len);
 	void insertEmpty(int at, int frames);
 	
-	static bool loadSavestateFrom(std::vector<u8>* buf);
-	static void dumpSavestateTo(std::vector<u8>* buf, int compressionLevel);
-
 	static bool loadSramFrom(std::vector<u8>* buf);
 	//void TryDumpIncremental();
 
@@ -234,11 +231,11 @@ private:
 	void installFirmLanguage(std::string& val) { firmLanguage = atoi(val.c_str()); }
 	void installAdvancedTiming(std::string& val) { advancedTiming = atoi(val.c_str()) != 0; }
 	void installJitBlockSize(std::string& val) { jitBlockSize = atoi(val.c_str()); }
+	void installSavestate(std::string& val) { savestate = atoi(val.c_str()) != 0; }
 
 	void installRomChecksum(std::string& val);
 	void installRtcStart(std::string& val);
 	void installComment(std::string& val);
-	void installSavestate(std::string& val);
 	void installSram(std::string& val);
 
 	typedef void(MovieData::* ivm)(std::string&);

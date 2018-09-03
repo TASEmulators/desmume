@@ -277,7 +277,6 @@ void MovieData::installRtcStart(std::string& val)
 	}
 }
 void MovieData::installComment(std::string& val) { comments.push_back(mbstowcs(val)); }
-void MovieData::installSavestate(std::string& val) { BinaryDataFromString(val, &this->savestate); }
 void MovieData::installSram(std::string& val) { BinaryDataFromString(val, &this->sram); }
 
 void MovieData::installValue(std::string& key, std::string& val)
@@ -337,8 +336,7 @@ int MovieData::dump(EMUFILE &fp, bool binary)
 	if (binary)
 		fp.fprintf("binary 1\n");
 
-	if (savestate.size() != 0)
-		fp.fprintf("savestate %s\n", BytesToString(&savestate[0],savestate.size()).c_str());
+	fp.fprintf("savestate %d\n", savestate?1:0);
 	if (sram.size() != 0)
 		fp.fprintf("sram %s\n", BytesToString(&sram[0],sram.size()).c_str());
 
@@ -641,16 +639,20 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	oldSettings = new MovieData(true);
 	LoadSettingsFromMovie(currMovieData);
 
-	if (currMovieData.savestate.size() == 0)
+	if (currMovieData.savestate)
+	{
+		// SS file name should be the same as the movie file name, except for extension
+		std::string ssName = fname;
+		ssName.erase(ssName.length() - 3, 3);
+		ssName.append("dst");
+		if (!savestate_load(ssName.c_str()))
+			return "Could not load movie's savestate. There should be a .dst file with the same name as the movie, in the same folder.";
+	}
+	else
 	{
 		firstReset = true;
 		NDS_Reset();
 		firstReset = false;
-	}
-	else
-	{
-		EMUFILE_MEMORY efs = EMUFILE_MEMORY(&currMovieData.savestate);
-		savestate_load(efs);
 	}
 
 	////WE NEED TO LOAD A SAVESTATE
@@ -771,12 +773,12 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFro
 
 	if (startFrom == START_SAVESTATE)
 	{
-		// ?? MovieData::dumpSavestateTo(&currMovieData.savestate,Z_BEST_COMPRESSION);
-		EMUFILE_MEMORY efs;
-		savestate_save(efs, Z_BEST_COMPRESSION);
-		currMovieData.savestate.resize(efs.size());
-		efs.fseek(0, SEEK_SET);
-		efs.fread(currMovieData.savestate.begin()._Ptr, efs.size());
+		// SS file name should be the same as the movie file name, except for extension
+		std::string ssName = fname;
+		ssName.erase(ssName.length() - 3, 3);
+		ssName.append("dst");
+		savestate_save(ssName.c_str());
+		currMovieData.savestate = true;
 	}
 	else
 	{
