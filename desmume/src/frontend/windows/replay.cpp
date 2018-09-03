@@ -243,8 +243,7 @@ INT_PTR CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM
 	return false;
 }
 
-
-int flag=0;
+START_FROM startFrom;
 
 //Record movie dialog
 static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -256,7 +255,11 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 	switch(uMsg)
 	{
 		case WM_INITDIALOG: {
-			CheckDlgButton(hwndDlg, IDC_START_FROM_SRAM, ((flag == 1) ? BST_CHECKED : BST_UNCHECKED));
+			CheckDlgButton(hwndDlg, IDC_START_FROM_SRAM, startFrom == START_SRAM ? BST_CHECKED : BST_UNCHECKED);
+			CheckDlgButton(hwndDlg, IDC_START_FROM_POWER_ON, startFrom == START_SAVESTATE ? BST_UNCHECKED : BST_CHECKED);
+			EnableWindow(GetDlgItem(hwndDlg, IDC_START_FROM_SRAM), startFrom != START_SAVESTATE);
+			EnableWindow(GetDlgItem(hwndDlg, IDC_EDIT_SRAMFILENAME), startFrom == START_SRAM);
+			EnableWindow(GetDlgItem(hwndDlg, IDC_BUTTON_BROWSESRAM), startFrom == START_SRAM);
 			SetFocus(GetDlgItem(hwndDlg, IDC_EDIT_FILENAME));
 
 			DateTime t = FCEUI_MovieGetRTCDefault();
@@ -313,7 +316,7 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 					t.tm_sec  = systime.wSecond;
 					DateTime rtcstart(t.tm_year,t.tm_mon,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec);
 
-					FCEUI_SaveMovie(fname.c_str(), author, flag, sramfname, rtcstart);
+					FCEUI_SaveMovie(fname.c_str(), author, startFrom, sramfname, rtcstart);
 					EndDialog(hwndDlg, 0);
 				}
 				return true;
@@ -402,16 +405,33 @@ static INT_PTR CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 					break;
 				}
 				break;
+
+			case IDC_START_FROM_SRAM:
+			{
+				bool checked = IsDlgButtonChecked(hwndDlg, IDC_START_FROM_SRAM);
+				startFrom = checked ? START_SRAM : START_BLANK;
+				EnableWindow(GetDlgItem(hwndDlg, IDC_EDIT_SRAMFILENAME), checked);
+				EnableWindow(GetDlgItem(hwndDlg, IDC_BUTTON_BROWSESRAM), checked);
+
+				break;
+			}
+
+			case IDC_START_FROM_POWER_ON: // TODO: test movies starting form savestate
+			{
+				bool powerOn = IsDlgButtonChecked(hwndDlg, IDC_START_FROM_POWER_ON);
+				startFrom = powerOn ? START_BLANK : START_SAVESTATE;
+				EnableWindow(GetDlgItem(hwndDlg, IDC_START_FROM_SRAM), powerOn);
+				if (!powerOn)
+				{
+					CheckDlgButton(hwndDlg, IDC_START_FROM_SRAM, false);
+					// CheckDlgButton does not send a WM_COMMAND message, so also disable SRAM stuff here
+					EnableWindow(GetDlgItem(hwndDlg, IDC_EDIT_SRAMFILENAME), false);
+					EnableWindow(GetDlgItem(hwndDlg, IDC_BUTTON_BROWSESRAM), false);
+				}
+				break;
+			}
 		}
 	}
-
-	HWND cur = GetDlgItem(hwndDlg, IDC_EDIT_SRAMFILENAME);
-	
-	IsDlgButtonChecked(hwndDlg, IDC_START_FROM_SRAM) ? flag=1 : flag=0;
-	IsDlgButtonChecked(hwndDlg, IDC_START_FROM_SRAM) ? EnableWindow(cur, TRUE) : EnableWindow(cur, FALSE);
-
-	cur = GetDlgItem(hwndDlg, IDC_BUTTON_BROWSESRAM);
-	IsDlgButtonChecked(hwndDlg, IDC_START_FROM_SRAM) ? EnableWindow(cur, TRUE) : EnableWindow(cur, FALSE);
 
 	return false;
 }

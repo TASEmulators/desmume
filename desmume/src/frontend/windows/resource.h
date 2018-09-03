@@ -273,6 +273,7 @@
 #define IDC_BUTTON_BROWSESRAM           980
 #define IDC_C_WATCH_UP                  980
 #define IDD_EDITWATCH                   980
+#define IDC_START_FROM_POWER_ON         981
 #define IDC_C_WATCH_DOWN                981
 #define RAMMENU_FILE_AUTOLOAD           982
 #define RAMMENU_FILE_SAVEWINDOW         983

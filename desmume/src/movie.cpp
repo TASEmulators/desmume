@@ -39,6 +39,8 @@
 #include "version.h"
 #include "path.h"
 #include "emufile.h"
+#include "replay.h"
+#include "saves.h"
 
 using namespace std;
 bool freshMovie = false;	  //True when a movie loads, false when movie is altered.  Used to determine if a movie has been altered since opening
@@ -639,9 +641,17 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	oldSettings = new MovieData(true);
 	LoadSettingsFromMovie(currMovieData);
 
-	firstReset = true;
-	NDS_Reset();
-	firstReset = false;
+	if (currMovieData.savestate.size() == 0)
+	{
+		firstReset = true;
+		NDS_Reset();
+		firstReset = false;
+	}
+	else
+	{
+		EMUFILE_MEMORY efs = EMUFILE_MEMORY(&currMovieData.savestate);
+		savestate_load(efs);
+	}
 
 	////WE NEED TO LOAD A SAVESTATE
 	//if(currMovieData.savestate.size() != 0)
@@ -729,7 +739,7 @@ bool MovieData::loadSramFrom(std::vector<u8>* buf)
 
 //begin recording a new movie
 //TODO - BUG - the record-from-another-savestate doesnt work.
-void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname, const DateTime &rtcstart)
+void FCEUI_SaveMovie(const char *fname, std::wstring author, START_FROM startFrom, std::string sramfname, const DateTime &rtcstart)
 {
 	//if(!FCEU_IsValidUI(FCEUI_RECORDMOVIE))
 	//	return;
@@ -758,15 +768,26 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::stri
 		NDS_CreateDummyFirmware(&CommonSettings.fw_config);
 	}
 
-	NDS_Reset();
 
-	//todo ?
-	//poweron(true);
-	//else
-	//	MovieData::dumpSavestateTo(&currMovieData.savestate,Z_BEST_COMPRESSION);
+	if (startFrom == START_SAVESTATE)
+	{
+		// ?? MovieData::dumpSavestateTo(&currMovieData.savestate,Z_BEST_COMPRESSION);
+		EMUFILE_MEMORY efs;
+		savestate_save(efs, Z_BEST_COMPRESSION);
+		currMovieData.savestate.resize(efs.size());
+		efs.fseek(0, SEEK_SET);
+		efs.fread(currMovieData.savestate.begin()._Ptr, efs.size());
+	}
+	else
+	{
+		NDS_Reset();
 
-	if(flag == 1)
-		EMUFILE::readAllBytes(&currMovieData.sram, sramfname);
+		//todo ?
+		//poweron(true);
+
+		if (startFrom == START_SRAM)
+			EMUFILE::readAllBytes(&currMovieData.sram, sramfname);
+	}
 
 	//we are going to go ahead and dump the header. from now on we will only be appending frames
 	currMovieData.dump(*osRecordingMovie, false);

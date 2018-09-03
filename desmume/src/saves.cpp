@@ -1043,12 +1043,9 @@ bool savestate_save (const char *file_name)
 {
 	EMUFILE_MEMORY ms;
 	size_t elems_written;
-#ifdef HAVE_LIBZ
-	if (!savestate_save(ms, Z_DEFAULT_COMPRESSION))
-#else
-	if (!savestate_save(ms, 0))
-#endif
+	if (!savestate_save(ms))
 		return false;
+
 	FILE* file = fopen(file_name,"wb");
 	if(file)
 	{
