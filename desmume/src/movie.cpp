@@ -478,14 +478,14 @@ static void closeRecordingMovie()
 	}
 }
 
-/// Stop movie playback.
+// Stop movie playback.
 static void StopPlayback()
 {
 	driver->USR_InfoMessage("Movie playback stopped.");
 	movieMode = MOVIEMODE_INACTIVE;
 }
 
-/// Stop movie playback without closing the movie.
+// Stop movie playback without closing the movie.
 static void FinishPlayback()
 {
 	driver->USR_InfoMessage("Movie finished playing.");
@@ -493,7 +493,7 @@ static void FinishPlayback()
 }
 
 
-/// Stop movie recording
+// Stop movie recording
 static void StopRecording()
 {
 	driver->USR_InfoMessage("Movie recording stopped.");
@@ -597,36 +597,11 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 	currMovieData = MovieData();
 	
 	strcpy(curMovieFilename, fname);
-	//FCEUFILE *fp = FCEU_fopen(fname,0,"rb",0);
-	//if (!fp) return;
-	//if(fp->isArchive() && !_read_only) {
-	//	FCEU_PrintError("Cannot open a movie in read+write from an archive.");
-	//	return;
-	//}
-
-	//LoadFM2(currMovieData, fp->stream, INT_MAX, false);
-	
 	
 	bool loadedfm2 = false;
-	bool opened = false;
-//	{
-		EMUFILE *fp = new EMUFILE_FILE(fname, "rb");
-//		if(fs.is_open())
-//		{
-			loadedfm2 = LoadFM2(currMovieData, *fp, INT_MAX, false);
-			opened = true;
-//		}
-//		fs.close();
-		delete fp;
-//	}
-	if(!opened)
-	{
-		// for some reason fs.open doesn't work, it has to be a whole new fstream object
-//		fstream fs (fname, std::ios_base::in);
-		loadedfm2 = LoadFM2(currMovieData, *fp, INT_MAX, false);
-//		fs.close();
-		delete fp;
-	}
+	EMUFILE *fp = new EMUFILE_FILE(fname, "rb");
+	loadedfm2 = LoadFM2(currMovieData, *fp, INT_MAX, false);
+	delete fp;
 
 	if(!loadedfm2)
 		return "failed to load movie";
@@ -655,12 +630,6 @@ const char* _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tas
 		firstReset = false;
 	}
 
-	////WE NEED TO LOAD A SAVESTATE
-	//if(currMovieData.savestate.size() != 0)
-	//{
-	//	bool success = MovieData::loadSavestateFrom(&currMovieData.savestate);
-	//	if(!success) return;
-	//}
 	lagframecounter=0;
 	LagFrameFlag=0;
 	lastLag=0;
