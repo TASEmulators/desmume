@@ -39,23 +39,17 @@ static const char InvalidPathChars[] = {
 
 //but it is sort of windows-specific. Does it work in linux? Maybe we'll have to make it smarter
 static const char VolumeSeparatorChar = ':';
-static const char AltDirectorySeparatorChar = '/';
 static bool dirEqualsVolume = (DIRECTORY_DELIMITER_CHAR == VolumeSeparatorChar);
-
-
-bool Path::IsPathRooted (const std::string &path)
+bool Path::IsPathRooted(const std::string &path)
 {
-	if (path.empty()) {
+	if (path.empty())
 		return false;
-	}
 	
-	if (path.find_first_of(InvalidPathChars) != std::string::npos) {
+	if (path.find_first_of(InvalidPathChars) != std::string::npos)
 		return false;
-	}
 	
-	char c = path[0];
-	return (c == DIRECTORY_DELIMITER_CHAR 	||
-			c == AltDirectorySeparatorChar 	||
+	std::string delimiters = ALL_DIRECTORY_DELIMITER_STRING;
+	return (delimiters.find(path[0]) != std::string::npos ||
 			(!dirEqualsVolume && path.size() > 1 && path[1] == VolumeSeparatorChar));
 }
 
