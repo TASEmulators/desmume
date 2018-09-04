@@ -3070,11 +3070,8 @@ LRESULT OpenFile()
 	ofn.nMaxFile = MAX_PATH;
 	ofn.lpstrDefExt = "nds";
 	ofn.Flags = OFN_NOCHANGEDIR | OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-
-	char buffer[MAX_PATH];
-	ZeroMemory(buffer, sizeof(buffer));
-	path.getpath(path.ROMS, buffer);
-	ofn.lpstrInitialDir = buffer;
+	std::string dir = path.getpath(path.ROMS);
+	ofn.lpstrInitialDir = dir.c_str();
 
 	if (GetOpenFileName(&ofn) == NULL)
 	{
@@ -3085,14 +3082,9 @@ LRESULT OpenFile()
 	{
 		if(path.savelastromvisit)
 		{
-			char *lchr, buffer[MAX_PATH];
-			ZeroMemory(buffer, sizeof(buffer));
-
-			lchr = strrchr(filename, '\\');
-			strncpy(buffer, filename, strlen(filename) - strlen(lchr));
-			
-			path.setpath(path.ROMS, buffer);
-			WritePathSettings();
+			std::string dir = Path::GetFileDirectoryPath(filename);
+			path.setpath(path.ROMS, dir);
+			WritePrivateProfileString(SECTION, ROMKEY, dir.c_str(), IniName);
 		}
 	}
 
@@ -4660,11 +4652,8 @@ DOKEYDOWN:
 				ofn.nMaxFile = MAX_PATH;
 				ofn.lpstrDefExt = "dst";
 				ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-
-				char buffer[MAX_PATH];
-				ZeroMemory(buffer, sizeof(buffer));
-				path.getpath(path.STATES, buffer);
-				ofn.lpstrInitialDir = buffer;
+				std::string dir = path.getpath(path.STATES);
+				ofn.lpstrInitialDir = dir.c_str();
 
 				if(!GetOpenFileName(&ofn))
 				{
@@ -4690,11 +4679,8 @@ DOKEYDOWN:
 				ofn.nMaxFile = MAX_PATH;
 				ofn.lpstrDefExt = "dst";
 				ofn.Flags = OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
-
-				char buffer[MAX_PATH];
-				ZeroMemory(buffer, sizeof(buffer));
-				path.getpath(path.STATES, buffer);
-				ofn.lpstrInitialDir = buffer;
+				std::string dir = path.getpath(path.STATES);
+				ofn.lpstrInitialDir = dir.c_str();
 
 				if(GetSaveFileName(&ofn))
 				{
@@ -5967,11 +5953,8 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					ofn.nMaxFile = 256;
 					ofn.lpstrDefExt = "bin";
 					ofn.Flags = OFN_NOCHANGEDIR | OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-
-					char buffer[MAX_PATH];
-					ZeroMemory(buffer, sizeof(buffer));
-					path.getpath(path.FIRMWARE, buffer);
-					ofn.lpstrInitialDir = buffer;
+					std::string dir = path.getpath(path.FIRMWARE);
+					ofn.lpstrInitialDir = dir.c_str();
 
 					if(GetOpenFileName(&ofn))
 					{
@@ -6086,11 +6069,8 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 					ofn.nMaxFile = 256;
 					ofn.lpstrDefExt = "wav";
 					ofn.Flags = OFN_NOCHANGEDIR | OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-
-					char buffer[MAX_PATH];
-					ZeroMemory(buffer, sizeof(buffer));
-					path.getpath(path.SOUNDS, buffer);
-					ofn.lpstrInitialDir = buffer;
+					std::string dir = path.getpath(path.SOUNDS);
+					ofn.lpstrInitialDir = dir.c_str();
 
 					if(GetOpenFileName(&ofn))
 					{

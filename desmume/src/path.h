@@ -135,9 +135,9 @@ public:
 	void SwitchPath(Action action, KnownPath path, char *buffer);
 
 	std::string getpath(KnownPath path);
-
 	void getpath(KnownPath path, char *buffer);
 
+	void setpath(KnownPath path, std::string value);
 	void setpath(KnownPath path, char *buffer);
 
 	void getfilename(char *buffer, int maxCount);

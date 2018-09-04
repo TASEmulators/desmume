@@ -178,11 +178,8 @@ bool importSave(HWND hwnd, HINSTANCE hAppInst)
 	ofn.nMaxFile = MAX_PATH;
 	ofn.lpstrDefExt = "sav";
 	ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
-
-	char buffer[MAX_PATH] = {0};
-	ZeroMemory(buffer, sizeof(buffer));
-	path.getpath(path.BATTERY, buffer);
-	ofn.lpstrInitialDir = buffer;
+	std::string dir = path.getpath(path.BATTERY);
+	ofn.lpstrInitialDir = dir.c_str();
 
 	if(!GetOpenFileName(&ofn))
 		return true;
@@ -216,11 +213,8 @@ bool exportSave(HWND hwnd, HINSTANCE hAppInst)
 	ofn.nMaxFile = MAX_PATH;
 	ofn.lpstrDefExt = "sav";
 	ofn.Flags = OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
-
-	char buffer[MAX_PATH] = { 0 };
-	ZeroMemory(buffer, sizeof(buffer));
-	path.getpath(path.BATTERY, buffer);
-	ofn.lpstrInitialDir = buffer;
+	std::string dir = path.getpath(path.BATTERY);
+	ofn.lpstrInitialDir = dir.c_str();
 
 	if (!GetSaveFileName(&ofn))
 		return true;

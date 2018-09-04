@@ -344,7 +344,7 @@ void PathInfo::SwitchPath(Action action, KnownPath path, char *buffer)
 	else if (action == SET)
 	{
 		int len = strlen(buffer) - 1;
-		if (buffer[len] == DIRECTORY_DELIMITER_CHAR)
+		if (std::string(ALL_DIRECTORY_DELIMITER_STRING).find(buffer[len]) != std::string::npos)
 			buffer[len] = '\0';
 
 		strncpy(pathToCopy, buffer, MAX_PATH);
@@ -357,12 +357,15 @@ std::string PathInfo::getpath(KnownPath path)
 	SwitchPath(GET, path, temp);
 	return temp;
 }
-
 void PathInfo::getpath(KnownPath path, char *buffer)
 {
 	SwitchPath(GET, path, buffer);
 }
 
+void PathInfo::setpath(KnownPath path, std::string value)
+{
+	SwitchPath(SET, path, (char*)value.c_str());
+}
 void PathInfo::setpath(KnownPath path, char *buffer)
 {
 	SwitchPath(SET, path, buffer);
