@@ -73,6 +73,7 @@ public:
 	#define ROMKEY			"Roms"
 	#define BATTERYKEY		"Battery"
 	#define STATEKEY		"States"
+	#define STATESLOTKEY	"StateSlots"
 	#define SCREENSHOTKEY	"Screenshots"
 	#define AVIKEY			"AviFiles"
 	#define CHEATKEY		"Cheats"
@@ -93,7 +94,8 @@ public:
 		FIRSTKNOWNPATH = 0,
 		ROMS = 0,
 		BATTERY,
-		STATES, 
+		STATES,
+		STATE_SLOTS,
 		SCREENSHOTS,
 		AVI_FILES,
 		CHEATS,
@@ -107,6 +109,7 @@ public:
 	char pathToRoms[MAX_PATH];
 	char pathToBattery[MAX_PATH];
 	char pathToStates[MAX_PATH];
+	char pathToStateSlots[MAX_PATH];
 	char pathToScreenshots[MAX_PATH];
 	char pathToAviFiles[MAX_PATH];
 	char pathToCheats[MAX_PATH];

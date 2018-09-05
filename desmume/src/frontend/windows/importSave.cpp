@@ -187,6 +187,10 @@ bool importSave(HWND hwnd, HINSTANCE hAppInst)
 	u32 res = DialogBoxW(hAppInst, MAKEINTRESOURCEW(IDD_IMPORT_SAVE_SIZE), hwnd, (DLGPROC)ImportSizeSelect_Proc);
 	if (res < MAX_SAVE_TYPES)
 	{
+		std::string dir = Path::GetFileDirectoryPath(SavFName);
+		path.setpath(path.BATTERY, dir);
+		WritePrivateProfileString(SECTION, BATTERYKEY, dir.c_str(), IniName);
+		
 		res = MMU_new.backupDevice.importData(SavFName, save_types[res+1].size);
 		if (res)
 		{
@@ -197,8 +201,8 @@ bool importSave(HWND hwnd, HINSTANCE hAppInst)
 			printf("Save was not successfully imported");
 		return res;
 	}
-
-	return (res == (MAX_SAVE_TYPES + 1));
+	else // user canceled
+		return (res == (MAX_SAVE_TYPES + 1));
 }
 
 bool exportSave(HWND hwnd, HINSTANCE hAppInst)
@@ -218,6 +222,10 @@ bool exportSave(HWND hwnd, HINSTANCE hAppInst)
 
 	if (!GetSaveFileName(&ofn))
 		return true;
+
+	dir = Path::GetFileDirectoryPath(SavFName);
+	path.setpath(path.BATTERY, dir);
+	WritePrivateProfileString(SECTION, BATTERYKEY, dir.c_str(), IniName);
 
 	if (ofn.nFilterIndex == 2) strcat(SavFName, "*");
 

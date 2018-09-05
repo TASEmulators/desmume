@@ -236,7 +236,7 @@ void HK_PrintScreen(int param, bool justPressed)
 
 	bool unpause = NDS_Pause(false);
 
-	char outFilename[MAX_PATH];
+	char outFilename[MAX_PATH] = "";
 	
 	OPENFILENAME ofn;
 	ZeroMemory(&ofn,sizeof(ofn));
@@ -249,30 +249,30 @@ void HK_PrintScreen(int param, bool justPressed)
 	ofn.lpstrDefExt = "png";
 	ofn.Flags = OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
 
-	std::string filename = path.getpath(path.SCREENSHOTS);
+	std::string dir = path.getpath(path.SCREENSHOTS);
+	ofn.lpstrInitialDir = dir.c_str();
 
-	char file[MAX_PATH];
-	ZeroMemory(file, sizeof(file));
-	path.formatname(file);
-	filename += file;
-
+	path.formatname(outFilename);
 	if(path.imageformat() == PathInfo::PNG)
 	{
-		filename += ".png";
+		strcat(outFilename, ".png");
 		ofn.lpstrDefExt = "png";
 		ofn.nFilterIndex = 1;
 	}
 	else if(path.imageformat() == PathInfo::BMP)
 	{
-		filename += ".bmp";
+		strcat(outFilename, ".bmp");
 		ofn.lpstrDefExt = "bmp";
 		ofn.nFilterIndex = 2;
 	}
 
-	strcpy(outFilename,filename.c_str());
 	if(GetSaveFileName(&ofn))
 	{
 		DoScreenshot(outFilename);
+
+		dir = Path::GetFileDirectoryPath(outFilename);
+		path.setpath(path.SCREENSHOTS, dir);
+		WritePrivateProfileString(SECTION, SCREENSHOTKEY, dir.c_str(), IniName);
 	}
 
 	if(unpause) NDS_UnPause(false);

@@ -254,6 +254,7 @@ void PathInfo::ReadPathSettings()
 	ReadKey(pathToRoms, ROMKEY);
 	ReadKey(pathToBattery, BATTERYKEY);
 	ReadKey(pathToStates, STATEKEY);
+	ReadKey(pathToStateSlots, STATESLOTKEY);
 	ReadKey(pathToScreenshots, SCREENSHOTKEY);
 	ReadKey(pathToAviFiles, AVIKEY);
 	ReadKey(pathToCheats, CHEATKEY);
@@ -294,6 +295,9 @@ void PathInfo::SwitchPath(Action action, KnownPath path, char *buffer)
 		break;
 	case STATES:
 		pathToCopy = pathToStates;
+		break;
+	case STATE_SLOTS:
+		pathToCopy = pathToStateSlots;
 		break;
 	case SCREENSHOTS:
 		pathToCopy = pathToScreenshots;

@@ -672,7 +672,7 @@ void scan_savestates()
 
   for(int i = 0; i < NB_STATES; i++ )
     {
-     path.getpathnoext(path.STATES, filename);
+     path.getpathnoext(path.STATE_SLOTS, filename);
 	  
 	  if (strlen(filename) + strlen(".dst") + strlen("-2147483648") /* = biggest string for i */ >MAX_PATH) return ;
       sprintf(filename+strlen(filename), ".ds%d", i);
@@ -692,7 +692,7 @@ void savestate_slot(int num)
 
 	lastSaveState = num;		//Set last savestate used
 
-    path.getpathnoext(path.STATES, filename);
+    path.getpathnoext(path.STATE_SLOTS, filename);
 
    if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ >MAX_PATH) return ;
    sprintf(filename+strlen(filename), ".ds%d", num);
@@ -726,7 +726,7 @@ void loadstate_slot(int num)
 
    lastSaveState = num;		//Set last savestate used
 
-    path.getpathnoext(path.STATES, filename);
+   path.getpathnoext(path.STATE_SLOTS, filename);
 
    if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ >MAX_PATH) return ;
    sprintf(filename+strlen(filename), ".ds%d", num);

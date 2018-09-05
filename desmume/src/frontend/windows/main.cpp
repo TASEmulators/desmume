@@ -2896,6 +2896,10 @@ void AviRecordTo()
 			LOG("AVI recording started.");
 			driver->AddLine("AVI recording started.");
 		}
+
+		std::string dir = Path::GetFileDirectoryPath(folder);
+		path.setpath(path.AVI_FILES, dir);
+		WritePrivateProfileString(SECTION, AVIKEY, dir.c_str(), IniName);
 	}
 
 	NDS_UnPause();
@@ -4661,6 +4665,10 @@ DOKEYDOWN:
 					return 0;
 				}
 
+				dir = Path::GetFileDirectoryPath(SavName);
+				path.setpath(path.STATES, dir);
+				WritePrivateProfileString(SECTION, STATEKEY, dir.c_str(), IniName);
+
 				savestate_load(SavName);
 				UpdateToolWindows();
 				NDS_UnPause();
@@ -4687,6 +4695,11 @@ DOKEYDOWN:
 					savestate_save(SavName);
 					LoadSaveStateInfo();
 				}
+
+				dir = Path::GetFileDirectoryPath(SavName);
+				path.setpath(path.STATES, dir);
+				WritePrivateProfileString(SECTION, STATEKEY, dir.c_str(), IniName);
+
 				if(unpause) NDS_UnPause();
 				return 0;
 			}
@@ -5958,6 +5971,10 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 
 					if(GetOpenFileName(&ofn))
 					{
+						std::string dir = Path::GetFileDirectoryPath(fileName);
+						path.setpath(path.FIRMWARE, dir);
+						WritePrivateProfileString(SECTION, FIRMWAREKEY, dir.c_str(), IniName);
+
 						HWND cur;
 
 						switch(LOWORD(wParam))
@@ -6074,6 +6091,10 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 
 					if(GetOpenFileName(&ofn))
 					{
+						std::string dir = Path::GetFileDirectoryPath(fileName);
+						path.setpath(path.SOUNDS, dir);
+						WritePrivateProfileString(SECTION, SOUNDKEY, dir.c_str(), IniName);
+
 						HWND cur;
 
 						switch(LOWORD(wParam))
