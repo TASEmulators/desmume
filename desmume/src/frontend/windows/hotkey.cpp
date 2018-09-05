@@ -232,7 +232,7 @@ void HK_QuickScreenShot(int param, bool justPressed)
 void HK_PrintScreen(int param, bool justPressed)
 {
 	if(!justPressed) return;
-  if(!romloaded) return;
+	if(!romloaded) return;
 
 	bool unpause = NDS_Pause(false);
 

@@ -166,7 +166,7 @@ SFORMAT SF_MEM[]={
 	{ "ITCM", 1, sizeof(MMU.ARM9_ITCM),   MMU.ARM9_ITCM},
 	{ "DTCM", 1, sizeof(MMU.ARM9_DTCM),   MMU.ARM9_DTCM},
 
-	 //for legacy purposes, WRAX is a separate variable. shouldnt be a problem.
+	//for legacy purposes, WRAX is a separate variable. shouldnt be a problem.
 	{ "WRAM", 1, 0x400000, MMU.MAIN_MEM},
 	{ "WRAX", 1, 0x400000, MMU.MAIN_MEM+0x400000},
 
@@ -414,17 +414,17 @@ static bool s_slot1_loadstate(EMUFILE &is, int size)
 	u32 version = is.read_u32LE();
 
 	/* version 0: */
-   u8 slotID = is.read_u32LE();
-   slot1Type = NDS_SLOT1_RETAIL_AUTO;
-   if (version >= 1)
-      slot1_getTypeByID(slotID, slot1Type);
+	u8 slotID = is.read_u32LE();
+	slot1Type = NDS_SLOT1_RETAIL_AUTO;
+	if (version >= 1)
+		slot1_getTypeByID(slotID, slot1Type);
 
-   slot1_Change(slot1Type);
+	slot1_Change(slot1Type);
 
-   EMUFILE_MEMORY temp;
-   is.read_MemoryStream(temp);
-   temp.fseek(0,SEEK_SET);
-   slot1_Loadstate(temp);
+	EMUFILE_MEMORY temp;
+	is.read_MemoryStream(temp);
+	temp.fseek(0, SEEK_SET);
+	slot1_Loadstate(temp);
 
 	return true;
 }
@@ -447,16 +447,16 @@ static bool s_slot2_loadstate(EMUFILE &is, int size)
 	u32 version = is.read_u32LE();
 
 	/* version 0: */
-   slot2Type = NDS_SLOT2_AUTO;
-   u8 slotID = is.read_u32LE();
-   if (version == 0)
-      slot2_getTypeByID(slotID, slot2Type);
-   slot2_Change(slot2Type);
+	slot2Type = NDS_SLOT2_AUTO;
+	u8 slotID = is.read_u32LE();
+	if (version == 0)
+		slot2_getTypeByID(slotID, slot2Type);
+	slot2_Change(slot2Type);
 
-   EMUFILE_MEMORY temp;
-   is.read_MemoryStream(temp);
-   temp.fseek(0,SEEK_SET);
-   slot2_Loadstate(temp);
+	EMUFILE_MEMORY temp;
+	is.read_MemoryStream(temp);
+	temp.fseek(0, SEEK_SET);
+	slot2_Loadstate(temp);
 
 	return true;
 }
@@ -646,100 +646,100 @@ static bool cp15_loadstate(EMUFILE &is, int size)
 /* Format time and convert to string */
 static char * format_time(time_t cal_time)
 {
-  struct tm *time_struct;
-  static char str[64];
+	struct tm *time_struct;
+	static char str[64];
 
-  time_struct=localtime(&cal_time);
-  strftime(str, sizeof str, "%d-%b-%Y %H:%M:%S", time_struct);
+	time_struct = localtime(&cal_time);
+	strftime(str, sizeof str, "%d-%b-%Y %H:%M:%S", time_struct);
 
-  return(str);
+	return(str);
 }
 
 void clear_savestates()
 {
-  u8 i;
-  for( i = 0; i < NB_STATES; i++ )
-    savestates[i].exists = FALSE;
+	u8 i;
+	for (i = 0; i < NB_STATES; i++)
+		savestates[i].exists = FALSE;
 }
 
 // Scan for existing savestates and update struct
 void scan_savestates()
 {
-  struct stat sbuf;
-  char filename[MAX_PATH+1];
+	struct stat sbuf;
+	char filename[MAX_PATH + 1];
 
-  clear_savestates();
+	clear_savestates();
 
-  for(int i = 0; i < NB_STATES; i++ )
-    {
-     path.getpathnoext(path.STATE_SLOTS, filename);
-	  
-	  if (strlen(filename) + strlen(".dst") + strlen("-2147483648") /* = biggest string for i */ >MAX_PATH) return ;
-      sprintf(filename+strlen(filename), ".ds%d", i);
-      if( stat(filename,&sbuf) == -1 ) continue;
-      savestates[i].exists = TRUE;
-      strncpy(savestates[i].date, format_time(sbuf.st_mtime),40);
-	  savestates[i].date[40-1] = '\0';
-    }
+	for (int i = 0; i < NB_STATES; i++)
+	{
+		path.getpathnoext(path.STATE_SLOTS, filename);
 
-  return ;
+		if (strlen(filename) + strlen(".dst") + strlen("-2147483648") /* = biggest string for i */ > MAX_PATH) return;
+		sprintf(filename + strlen(filename), ".ds%d", i);
+		if (stat(filename, &sbuf) == -1) continue;
+		savestates[i].exists = TRUE;
+		strncpy(savestates[i].date, format_time(sbuf.st_mtime), 40);
+		savestates[i].date[40 - 1] = '\0';
+	}
+
+	return;
 }
 
 void savestate_slot(int num)
 {
-   struct stat sbuf;
-   char filename[MAX_PATH+1];
+	struct stat sbuf;
+	char filename[MAX_PATH + 1];
 
 	lastSaveState = num;		//Set last savestate used
 
-    path.getpathnoext(path.STATE_SLOTS, filename);
+	path.getpathnoext(path.STATE_SLOTS, filename);
 
-   if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ >MAX_PATH) return ;
-   sprintf(filename+strlen(filename), ".ds%d", num);
+	if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ > MAX_PATH) return;
+	sprintf(filename + strlen(filename), ".ds%d", num);
 
-   if (savestate_save(filename))
-   {
-	   driver->SetLineColor(255, 255, 255);
-	   driver->AddLine("Saved to %i slot", num);
-   }
-   else
-   {
-	   driver->SetLineColor(255, 0, 0);
-	   driver->AddLine("Error saving %i slot", num);
-	   return;
-   }
+	if (savestate_save(filename))
+	{
+		driver->SetLineColor(255, 255, 255);
+		driver->AddLine("Saved to %i slot", num);
+	}
+	else
+	{
+		driver->SetLineColor(255, 0, 0);
+		driver->AddLine("Error saving %i slot", num);
+		return;
+	}
 
-   if (num >= 0 && num < NB_STATES)
-   {
-	   if (stat(filename,&sbuf) != -1)
-	   {
-		   savestates[num].exists = TRUE;
-		   strncpy(savestates[num].date, format_time(sbuf.st_mtime),40);
-		   savestates[num].date[40-1] = '\0';
-	   }
-   }
+	if (num >= 0 && num < NB_STATES)
+	{
+		if (stat(filename, &sbuf) != -1)
+		{
+			savestates[num].exists = TRUE;
+			strncpy(savestates[num].date, format_time(sbuf.st_mtime), 40);
+			savestates[num].date[40 - 1] = '\0';
+		}
+	}
 }
 
 void loadstate_slot(int num)
 {
-   char filename[MAX_PATH];
+	char filename[MAX_PATH];
 
-   lastSaveState = num;		//Set last savestate used
+	lastSaveState = num;		//Set last savestate used
 
-   path.getpathnoext(path.STATE_SLOTS, filename);
+	path.getpathnoext(path.STATE_SLOTS, filename);
 
-   if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ >MAX_PATH) return ;
-   sprintf(filename+strlen(filename), ".ds%d", num);
-   if (savestate_load(filename))
-   {
-	   driver->SetLineColor(255, 255, 255);
-	   driver->AddLine("Loaded from %i slot", num);
-   }
-   else
-   {
-	   driver->SetLineColor(255, 0, 0);
-	   driver->AddLine("Error loading %i slot", num);
-   }
+	if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ > MAX_PATH) return;
+	sprintf(filename + strlen(filename), ".ds%d", num);
+	if (savestate_load(filename))
+	{
+		driver->SetLineColor(255, 255, 255);
+		driver->AddLine("Loaded from %i slot", num);
+	}
+	else
+	{
+		driver->SetLineColor(255, 0, 0);
+		driver->AddLine("Error loading %i slot", num);
+	}
 }
 
 
