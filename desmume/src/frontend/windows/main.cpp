@@ -2971,7 +2971,7 @@ void WavRecordTo(int wavmode)
 
 		dir = Path::GetFileDirectoryPath(outFilename);
 		path.setpath(path.AVI_FILES, dir);
-		WritePrivateProfileString(SECTION, SOUNDKEY, dir.c_str(), IniName);
+		WritePrivateProfileString(SECTION, AVIKEY, dir.c_str(), IniName);
 	}
 
 	NDS_UnPause();
