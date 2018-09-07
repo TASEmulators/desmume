@@ -2952,7 +2952,7 @@ void WavRecordTo(int wavmode)
 	ofn.lpstrDefExt = "wav";
 	ofn.lpstrTitle = "Save WAV as";
 
-	std::string dir = path.getpath(path.SOUNDS);
+	std::string dir = path.getpath(path.AVI_FILES);
 	ofn.lpstrInitialDir = dir.c_str();
 	path.formatname(outFilename);
 	ofn.lpstrFile = outFilename;
@@ -2970,7 +2970,7 @@ void WavRecordTo(int wavmode)
 		WAV_Begin(outFilename, (WAVMode)wavmode);
 
 		dir = Path::GetFileDirectoryPath(outFilename);
-		path.setpath(path.SOUNDS, dir);
+		path.setpath(path.AVI_FILES, dir);
 		WritePrivateProfileString(SECTION, SOUNDKEY, dir.c_str(), IniName);
 	}
 
