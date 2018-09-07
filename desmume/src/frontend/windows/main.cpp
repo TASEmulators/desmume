@@ -2968,6 +2968,10 @@ void WavRecordTo(int wavmode)
 	if(GetSaveFileName(&ofn))
 	{
 		WAV_Begin(outFilename, (WAVMode)wavmode);
+
+		dir = Path::GetFileDirectoryPath(outFilename);
+		path.setpath(path.SOUNDS, dir);
+		WritePrivateProfileString(SECTION, SOUNDKEY, dir.c_str(), IniName);
 	}
 
 	NDS_UnPause();
