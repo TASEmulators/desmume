@@ -475,9 +475,11 @@ void gpu_savestate(EMUFILE &os)
 	const GPUEngineB *subEngine = GPU->GetEngineSub();
 	
 	//version
-	os.write_32LE(2);
+	os.write_32LE(3);
 	
-	os.fwrite((u8 *)dispInfo.masterCustomBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
+	int bufferSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes * 2;
+	os.write_32LE(bufferSize);
+	os.fwrite((u8 *)dispInfo.masterCustomBuffer, bufferSize);
 	
 	os.write_32LE(mainEngine->savedBG2X.value);
 	os.write_32LE(mainEngine->savedBG2Y.value);
@@ -515,9 +517,22 @@ bool gpu_loadstate(EMUFILE &is, int size)
 		if (is.read_32LE(version) != 1) return false;
 	}
 	
-	if (version > 2) return false;
+	if (version > 3) return false;
 	
-	is.fread((u8 *)dispInfo.masterCustomBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
+	int currentBufferSize = dispInfo.customWidth * dispInfo.customHeight * dispInfo.pixelBytes * 2;
+	int streamBufferSize;
+	if (version >= 3)
+		is.read_32LE(streamBufferSize);
+	else
+		streamBufferSize = GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2;
+
+	if (currentBufferSize < streamBufferSize)
+	{
+		is.fread((u8 *)dispInfo.masterCustomBuffer, currentBufferSize);
+		is.fseek(streamBufferSize - currentBufferSize, SEEK_CUR);
+	}
+	else
+		is.fread((u8 *)dispInfo.masterCustomBuffer, streamBufferSize);
 	
 	if (version >= 1)
 	{
