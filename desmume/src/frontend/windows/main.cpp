@@ -2854,6 +2854,7 @@ void AviRecordTo()
 	//}
 
 	// avi record file browser
+	char outFilename[MAX_PATH] = "";
 	memset(&ofn, 0, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = MainWindow->getHWnd();
@@ -2861,22 +2862,15 @@ void AviRecordTo()
 	ofn.lpstrDefExt = "avi";
 	ofn.lpstrTitle = "Save AVI as";
 
-	char folder[MAX_PATH];
-	ZeroMemory(folder, sizeof(folder));
-	path.getpath(path.AVI_FILES, folder);
+	std::string dir = path.getpath(path.AVI_FILES);
+	ofn.lpstrInitialDir = dir.c_str();
+	path.formatname(outFilename);
+	ofn.lpstrFile = outFilename;
 
-	char file[MAX_PATH];
-	ZeroMemory(file, sizeof(file));
-	path.formatname(file);
-
-	strcat(folder, file);
-	int len = strlen(folder);
-	if(len > MAX_PATH - 4)
-		folder[MAX_PATH - 4] = '\0';
-	
-	strcat(folder, ".avi");
-	ofn.lpstrFile = folder;
-
+	int len = strlen(outFilename);
+	if(len + dir.length() > MAX_PATH - 4)
+		outFilename[MAX_PATH - dir.length() - 4] = '\0';
+	strcat(outFilename, ".avi");
 
 	ofn.nMaxFile = MAX_PATH;
 	ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
@@ -2890,14 +2884,14 @@ void AviRecordTo()
 			driver->AddLine("AVI recording ended.");
 		}
 
-		bool result = DRV_AviBegin(folder);
+		bool result = DRV_AviBegin(outFilename);
 		if (result)
 		{
 			LOG("AVI recording started.");
 			driver->AddLine("AVI recording started.");
 		}
 
-		std::string dir = Path::GetFileDirectoryPath(folder);
+		dir = Path::GetFileDirectoryPath(outFilename);
 		path.setpath(path.AVI_FILES, dir);
 		WritePrivateProfileString(SECTION, AVIKEY, dir.c_str(), IniName);
 	}
@@ -2927,7 +2921,6 @@ void WavRecordTo(int wavmode)
 	NDS_Pause();
 
 	OPENFILENAME ofn;
-	char szChoice[MAX_PATH] = {0};
 
 	////if we are playing a movie, construct the filename from the current movie.
 	////else construct it from the filename.
@@ -2951,20 +2944,30 @@ void WavRecordTo(int wavmode)
 	//}
 
 	// wav record file browser
+	char outFilename[MAX_PATH] = "";
 	memset(&ofn, 0, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = MainWindow->getHWnd();
 	ofn.lpstrFilter = "WAV Files (*.wav)\0*.wav\0\0";
-	ofn.lpstrFile = szChoice;
 	ofn.lpstrDefExt = "wav";
 	ofn.lpstrTitle = "Save WAV as";
+
+	std::string dir = path.getpath(path.SOUNDS);
+	ofn.lpstrInitialDir = dir.c_str();
+	path.formatname(outFilename);
+	ofn.lpstrFile = outFilename;
+
+	int len = strlen(outFilename);
+	if (len + dir.length() > MAX_PATH - 4)
+		outFilename[MAX_PATH - dir.length() - 4] = '\0';
+	strcat(outFilename, ".wav");
 
 	ofn.nMaxFile = MAX_PATH;
 	ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST;
 
 	if(GetSaveFileName(&ofn))
 	{
-		WAV_Begin(szChoice, (WAVMode)wavmode);
+		WAV_Begin(outFilename, (WAVMode)wavmode);
 	}
 
 	NDS_UnPause();

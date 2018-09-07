@@ -174,7 +174,8 @@ bool importSave(HWND hwnd, HINSTANCE hAppInst)
 	ofn.hwndOwner = hwnd;
 	ofn.lpstrFilter = "All supported types\0*.sav;*.duc;*.dss\0Raw/No$GBA Save format (*.sav)\0*.sav\0Action Replay DS Save (*.duc,*.dss)\0*.duc;*.dss\0\0";
 	ofn.nFilterIndex = 1;
-	ofn.lpstrFile =  SavFName;
+	ofn.lpstrFile = SavFName;
+	SavFName[0] = 0; // lpstrFile overrides lpstsrInitialDir if lpstrFile contains a path
 	ofn.nMaxFile = MAX_PATH;
 	ofn.lpstrDefExt = "sav";
 	ofn.Flags = OFN_HIDEREADONLY | OFN_FILEMUSTEXIST;
@@ -214,6 +215,7 @@ bool exportSave(HWND hwnd, HINSTANCE hAppInst)
 	ofn.lpstrFilter = "Raw Save format (*.sav)\0*.sav\0No$GBA Save format (*.sav)\0*.sav\0\0";
 	ofn.nFilterIndex = 0;
 	ofn.lpstrFile = SavFName;
+	SavFName[0] = 0; // lpstrFile overrides lpstsrInitialDir if lpstrFile contains a path
 	ofn.nMaxFile = MAX_PATH;
 	ofn.lpstrDefExt = "sav";
 	ofn.Flags = OFN_NOREADONLYRETURN | OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
