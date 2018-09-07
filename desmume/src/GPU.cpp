@@ -475,7 +475,7 @@ void gpu_savestate(EMUFILE &os)
 	const GPUEngineB *subEngine = GPU->GetEngineSub();
 	
 	//version
-	os.write_32LE(1);
+	os.write_32LE(2);
 	
 	os.fwrite((u8 *)dispInfo.masterCustomBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
 	
@@ -487,6 +487,8 @@ void gpu_savestate(EMUFILE &os)
 	os.write_32LE(subEngine->savedBG2Y.value);
 	os.write_32LE(subEngine->savedBG3X.value);
 	os.write_32LE(subEngine->savedBG3Y.value);
+
+	GPU->savestate(os);
 }
 
 bool gpu_loadstate(EMUFILE &is, int size)
@@ -513,11 +515,11 @@ bool gpu_loadstate(EMUFILE &is, int size)
 		if (is.read_32LE(version) != 1) return false;
 	}
 	
-	if (version > 1) return false;
+	if (version > 2) return false;
 	
 	is.fread((u8 *)dispInfo.masterCustomBuffer, GPU_FRAMEBUFFER_NATIVE_WIDTH * GPU_FRAMEBUFFER_NATIVE_HEIGHT * sizeof(u16) * 2);
 	
-	if (version == 1)
+	if (version >= 1)
 	{
 		is.read_32LE(mainEngine->savedBG2X.value);
 		is.read_32LE(mainEngine->savedBG2Y.value);
@@ -532,6 +534,11 @@ bool gpu_loadstate(EMUFILE &is, int size)
 		//subEngine->refreshAffineStartRegs(-1,-1);
 	}
 	
+	if (version >= 2)
+		GPU->loadstate(is);
+	else
+		GPU->loadstateDefault();
+
 	mainEngine->ParseAllRegisters();
 	subEngine->ParseAllRegisters();
 	
@@ -8398,6 +8405,43 @@ void GPUSubsystem::ClearWithColor(const u16 colorBGRA5551)
 			break;
 	}
 }
+
+void GPUSubsystem::savestate(EMUFILE &f)
+{
+	f.write_32LE(1); // version
+	f.write_floatLE(_displayInfo.backlightIntensity[0]);
+	f.write_floatLE(_displayInfo.backlightIntensity[1]);
+	f.write_floatLE(_backlightIntensityTotal[0]);
+	f.write_floatLE(_backlightIntensityTotal[1]);
+}
+
+bool GPUSubsystem::loadstate(EMUFILE &f)
+{
+	u32 version;
+	if (f.read_32LE(version) != 1) return false;
+
+	if (version == 1)
+	{
+		f.read_floatLE(_displayInfo.backlightIntensity[0]);
+		f.read_floatLE(_displayInfo.backlightIntensity[1]);
+		f.read_floatLE(_backlightIntensityTotal[0]);
+		f.read_floatLE(_backlightIntensityTotal[1]);
+	}
+}
+void GPUSubsystem::loadstateDefault()
+{
+	// UpdateAverageBacklightIntensityTotal adds to _backlightIntensityTotal, and is called 263 times per frame.
+	// Of these, 71 calls are after _displayInfo.backlightIntensity is set.
+	// This emulates those calls as a way of guessing what the backlight values were in a savestate which doesn't contain that information.
+	_backlightIntensityTotal[0] = 0.0f;
+	_backlightIntensityTotal[1] = 0.0f;
+	UpdateAverageBacklightIntensityTotal();
+	_displayInfo.backlightIntensity[0] = _backlightIntensityTotal[0];
+	_displayInfo.backlightIntensity[1] = _backlightIntensityTotal[1];
+	_backlightIntensityTotal[0] *= 71;
+	_backlightIntensityTotal[1] *= 71;
+}
+
 
 void GPUEventHandlerDefault::DidFrameBegin(const size_t line, const bool isFrameSkipRequested, const size_t pageCount, u8 &selectedBufferIndexInOut)
 {
